@@ -43,6 +43,11 @@ int pix_abs8x8_x2_mmx2(UINT8 *blk1, UINT8 *blk2, int lx);
 int pix_abs8x8_y2_mmx2(UINT8 *blk1, UINT8 *blk2, int lx);
 int pix_abs8x8_xy2_mmx2(UINT8 *blk1, UINT8 *blk2, int lx);
 
+int sad16x16_mmx(void *s, UINT8 *blk1, UINT8 *blk2, int lx);
+int sad8x8_mmx(void *s, UINT8 *blk1, UINT8 *blk2, int lx);
+int sad16x16_mmx2(void *s, UINT8 *blk1, UINT8 *blk2, int lx);
+int sad8x8_mmx2(void *s, UINT8 *blk1, UINT8 *blk2, int lx);
+
 /* pixel operations */
 static const uint64_t mm_bone __attribute__ ((aligned(8))) = 0x0101010101010101ULL;
 static const uint64_t mm_wone __attribute__ ((aligned(8))) = 0x0001000100010001ULL;
@@ -213,7 +218,7 @@ static void get_pixels_mmx(DCTELEM *block, const UINT8 *pixels, int line_size)
     );
 }
 
-static void diff_pixels_mmx(DCTELEM *block, const UINT8 *s1, const UINT8 *s2, int stride)
+static inline void diff_pixels_mmx(DCTELEM *block, const UINT8 *s1, const UINT8 *s2, int stride)
 {
     asm volatile(
         "pxor %%mm7, %%mm7	\n\t"
@@ -496,7 +501,150 @@ static void diff_bytes_mmx(uint8_t *dst, uint8_t *src1, uint8_t *src2, int w){
     for(; i<w; i++)
         dst[i+0] = src1[i+0]-src2[i+0];
 }
+#define LBUTTERFLY(a,b)\
+    "paddw " #b ", " #a "		\n\t"\
+    "paddw " #b ", " #b "		\n\t"\
+    "psubw " #a ", " #b "		\n\t"
 
+#define HADAMARD48\
+        LBUTTERFLY(%%mm0, %%mm1)\
+        LBUTTERFLY(%%mm2, %%mm3)\
+        LBUTTERFLY(%%mm4, %%mm5)\
+        LBUTTERFLY(%%mm6, %%mm7)\
+        \
+        LBUTTERFLY(%%mm0, %%mm2)\
+        LBUTTERFLY(%%mm1, %%mm3)\
+        LBUTTERFLY(%%mm4, %%mm6)\
+        LBUTTERFLY(%%mm5, %%mm7)\
+        \
+        LBUTTERFLY(%%mm0, %%mm4)\
+        LBUTTERFLY(%%mm1, %%mm5)\
+        LBUTTERFLY(%%mm2, %%mm6)\
+        LBUTTERFLY(%%mm3, %%mm7)
+
+#define MMABS(a,z)\
+    "pxor " #z ", " #z "		\n\t"\
+    "pcmpgtw " #a ", " #z "		\n\t"\
+    "pxor " #z ", " #a "		\n\t"\
+    "psubw " #z ", " #a "		\n\t"
+
+#define MMABS_SUM(a,z, sum)\
+    "pxor " #z ", " #z "		\n\t"\
+    "pcmpgtw " #a ", " #z "		\n\t"\
+    "pxor " #z ", " #a "		\n\t"\
+    "psubw " #z ", " #a "		\n\t"\
+    "paddusw " #a ", " #sum "		\n\t"
+
+    
+#define SBUTTERFLY(a,b,t,n)\
+    "movq " #a ", " #t "		\n\t" /* abcd */\
+    "punpckl" #n " " #b ", " #a "	\n\t" /* aebf */\
+    "punpckh" #n " " #b ", " #t "	\n\t" /* cgdh */\
+    
+#define TRANSPOSE4(a,b,c,d,t)\
+    SBUTTERFLY(a,b,t,wd) /* a=aebf t=cgdh */\
+    SBUTTERFLY(c,d,b,wd) /* c=imjn b=kolp */\
+    SBUTTERFLY(a,c,d,dq) /* a=aeim d=bfjn */\
+    SBUTTERFLY(t,b,c,dq) /* t=cgko c=dhlp */
+
+#define LOAD4(o, a, b, c, d)\
+        "movq "#o"(%1), " #a "		\n\t"\
+        "movq "#o"+16(%1), " #b "	\n\t"\
+        "movq "#o"+32(%1), " #c "	\n\t"\
+        "movq "#o"+48(%1), " #d "	\n\t"
+
+#define STORE4(o, a, b, c, d)\
+        "movq "#a", "#o"(%1)		\n\t"\
+        "movq "#b", "#o"+16(%1)		\n\t"\
+        "movq "#c", "#o"+32(%1)		\n\t"\
+        "movq "#d", "#o"+48(%1)		\n\t"\
+
+static int hadamard8_diff_mmx(void *s, uint8_t *src1, uint8_t *src2, int stride){
+    uint64_t temp[16] __align8;
+    int sum=0;
+
+    diff_pixels_mmx((DCTELEM*)temp, src1, src2, stride);
+
+    asm volatile(
+        LOAD4(0 , %%mm0, %%mm1, %%mm2, %%mm3)
+        LOAD4(64, %%mm4, %%mm5, %%mm6, %%mm7)
+        
+        HADAMARD48
+        
+        "movq %%mm7, 112(%1)		\n\t"
+        
+        TRANSPOSE4(%%mm0, %%mm1, %%mm2, %%mm3, %%mm7)
+        STORE4(0 , %%mm0, %%mm3, %%mm7, %%mm2)
+        
+        "movq 112(%1), %%mm7 		\n\t"
+        TRANSPOSE4(%%mm4, %%mm5, %%mm6, %%mm7, %%mm0)
+        STORE4(64, %%mm4, %%mm7, %%mm0, %%mm6)
+
+        LOAD4(8 , %%mm0, %%mm1, %%mm2, %%mm3)
+        LOAD4(72, %%mm4, %%mm5, %%mm6, %%mm7)
+        
+        HADAMARD48
+        
+        "movq %%mm7, 120(%1)		\n\t"
+        
+        TRANSPOSE4(%%mm0, %%mm1, %%mm2, %%mm3, %%mm7)
+        STORE4(8 , %%mm0, %%mm3, %%mm7, %%mm2)
+        
+        "movq 120(%1), %%mm7 		\n\t"
+        TRANSPOSE4(%%mm4, %%mm5, %%mm6, %%mm7, %%mm0)
+        "movq %%mm7, %%mm5		\n\t"//FIXME remove
+        "movq %%mm6, %%mm7		\n\t"
+        "movq %%mm0, %%mm6		\n\t"
+//        STORE4(72, %%mm4, %%mm7, %%mm0, %%mm6) //FIXME remove
+        
+        LOAD4(64, %%mm0, %%mm1, %%mm2, %%mm3)
+//        LOAD4(72, %%mm4, %%mm5, %%mm6, %%mm7)
+        
+        HADAMARD48
+        "movq %%mm7, 64(%1)		\n\t"
+        MMABS(%%mm0, %%mm7)
+        MMABS_SUM(%%mm1, %%mm7, %%mm0)
+        MMABS_SUM(%%mm2, %%mm7, %%mm0)
+        MMABS_SUM(%%mm3, %%mm7, %%mm0)
+        MMABS_SUM(%%mm4, %%mm7, %%mm0)
+        MMABS_SUM(%%mm5, %%mm7, %%mm0)
+        MMABS_SUM(%%mm6, %%mm7, %%mm0)
+        "movq 64(%1), %%mm1		\n\t"
+        MMABS_SUM(%%mm1, %%mm7, %%mm0)
+        "movq %%mm0, 64(%1)		\n\t"
+        
+        LOAD4(0 , %%mm0, %%mm1, %%mm2, %%mm3)
+        LOAD4(8 , %%mm4, %%mm5, %%mm6, %%mm7)
+        
+        HADAMARD48
+        "movq %%mm7, (%1)		\n\t"
+        MMABS(%%mm0, %%mm7)
+        MMABS_SUM(%%mm1, %%mm7, %%mm0)
+        MMABS_SUM(%%mm2, %%mm7, %%mm0)
+        MMABS_SUM(%%mm3, %%mm7, %%mm0)
+        MMABS_SUM(%%mm4, %%mm7, %%mm0)
+        MMABS_SUM(%%mm5, %%mm7, %%mm0)
+        MMABS_SUM(%%mm6, %%mm7, %%mm0)
+        "movq (%1), %%mm1		\n\t"
+        MMABS_SUM(%%mm1, %%mm7, %%mm0)
+        "movq 64(%1), %%mm1		\n\t"
+        MMABS_SUM(%%mm1, %%mm7, %%mm0)
+        
+        "movq %%mm0, %%mm1		\n\t"
+        "psrlq $32, %%mm0		\n\t"
+        "paddusw %%mm1, %%mm0		\n\t"
+        "movq %%mm0, %%mm1		\n\t"
+        "psrlq $16, %%mm0		\n\t"
+        "paddusw %%mm1, %%mm0		\n\t"
+        "movd %%mm0, %0			\n\t"
+                
+        : "=r" (sum)
+        : "r"(temp)
+    );
+    return sum&0xFFFF;
+}
+
+WARPER88_1616(hadamard8_diff_mmx, hadamard8_diff16_mmx)
 
 #if 0
 static void just_return() { return; }
@@ -579,7 +727,13 @@ void dsputil_init_mmx(DSPContext* c, unsigned mask)
         
         c->add_bytes= add_bytes_mmx;
         c->diff_bytes= diff_bytes_mmx;
-
+        
+        c->hadamard8_diff[0]= hadamard8_diff16_mmx;
+        c->hadamard8_diff[1]= hadamard8_diff_mmx;
+        
+        c->sad[0]= sad16x16_mmx;
+        c->sad[1]= sad8x8_mmx;
+        
         if (mm_flags & MM_MMXEXT) {
             c->pix_abs16x16     = pix_abs16x16_mmx2;
             c->pix_abs16x16_x2  = pix_abs16x16_x2_mmx2;
@@ -591,6 +745,9 @@ void dsputil_init_mmx(DSPContext* c, unsigned mask)
             c->pix_abs8x8_y2  = pix_abs8x8_y2_mmx2;
             c->pix_abs8x8_xy2 = pix_abs8x8_xy2_mmx2;
 
+            c->sad[0]= sad16x16_mmx2;
+            c->sad[1]= sad8x8_mmx2;
+            
             c->put_pixels_tab[0][1] = put_pixels16_x2_mmx2;
             c->put_pixels_tab[0][2] = put_pixels16_y2_mmx2;
             c->put_no_rnd_pixels_tab[0][1] = put_no_rnd_pixels16_x2_mmx2;

@@ -40,7 +40,7 @@ static inline long long rdtsc()
 }
 #endif
 
-static int h263_decode_init(AVCodecContext *avctx)
+int ff_h263_decode_init(AVCodecContext *avctx)
 {
     MpegEncContext *s = avctx->priv_data;
 
@@ -113,7 +113,7 @@ static int h263_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int h263_decode_end(AVCodecContext *avctx)
+int ff_h263_decode_end(AVCodecContext *avctx)
 {
     MpegEncContext *s = avctx->priv_data;
 
@@ -343,7 +343,7 @@ static int mpeg4_find_frame_end(MpegEncContext *s, UINT8 *buf, int buf_size){
     return -1;
 }
 
-static int h263_decode_frame(AVCodecContext *avctx, 
+int ff_h263_decode_frame(AVCodecContext *avctx, 
                              void *data, int *data_size,
                              UINT8 *buf, int buf_size)
 {
@@ -416,9 +416,11 @@ retry:
         if (MPV_common_init(s) < 0) //we need the idct permutaton for reading a custom matrix
             return -1;
     }
-        
+      
     /* let's go :-) */
-    if (s->h263_msmpeg4) {
+    if (s->msmpeg4_version==5) {
+        ret= ff_wmv2_decode_picture_header(s);
+    } else if (s->msmpeg4_version) {
         ret = msmpeg4_decode_picture_header(s);
     } else if (s->h263_pred) {
         if(s->avctx->extradata_size && s->picture_number==0){
@@ -634,7 +636,6 @@ retry:
         }
         if(num_end_markers || error){
             fprintf(stderr, "concealing errors\n");
-//printf("type:%d\n", s->pict_type);
             ff_error_resilience(s);
         }
     }
@@ -713,10 +714,10 @@ AVCodec mpeg4_decoder = {
     CODEC_TYPE_VIDEO,
     CODEC_ID_MPEG4,
     sizeof(MpegEncContext),
-    h263_decode_init,
+    ff_h263_decode_init,
     NULL,
-    h263_decode_end,
-    h263_decode_frame,
+    ff_h263_decode_end,
+    ff_h263_decode_frame,
     CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1 | CODEC_CAP_TRUNCATED,
 };
 
@@ -725,10 +726,10 @@ AVCodec h263_decoder = {
     CODEC_TYPE_VIDEO,
     CODEC_ID_H263,
     sizeof(MpegEncContext),
-    h263_decode_init,
+    ff_h263_decode_init,
     NULL,
-    h263_decode_end,
-    h263_decode_frame,
+    ff_h263_decode_end,
+    ff_h263_decode_frame,
     CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1,
 };
 
@@ -737,10 +738,10 @@ AVCodec msmpeg4v1_decoder = {
     CODEC_TYPE_VIDEO,
     CODEC_ID_MSMPEG4V1,
     sizeof(MpegEncContext),
-    h263_decode_init,
+    ff_h263_decode_init,
     NULL,
-    h263_decode_end,
-    h263_decode_frame,
+    ff_h263_decode_end,
+    ff_h263_decode_frame,
     CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1,
 };
 
@@ -749,10 +750,10 @@ AVCodec msmpeg4v2_decoder = {
     CODEC_TYPE_VIDEO,
     CODEC_ID_MSMPEG4V2,
     sizeof(MpegEncContext),
-    h263_decode_init,
+    ff_h263_decode_init,
     NULL,
-    h263_decode_end,
-    h263_decode_frame,
+    ff_h263_decode_end,
+    ff_h263_decode_frame,
     CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1,
 };
 
@@ -761,10 +762,10 @@ AVCodec msmpeg4v3_decoder = {
     CODEC_TYPE_VIDEO,
     CODEC_ID_MSMPEG4V3,
     sizeof(MpegEncContext),
-    h263_decode_init,
+    ff_h263_decode_init,
     NULL,
-    h263_decode_end,
-    h263_decode_frame,
+    ff_h263_decode_end,
+    ff_h263_decode_frame,
     CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1,
 };
 
@@ -773,22 +774,10 @@ AVCodec wmv1_decoder = {
     CODEC_TYPE_VIDEO,
     CODEC_ID_WMV1,
     sizeof(MpegEncContext),
-    h263_decode_init,
+    ff_h263_decode_init,
     NULL,
-    h263_decode_end,
-    h263_decode_frame,
-    CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1,
-};
-
-AVCodec wmv2_decoder = {
-    "wmv2",
-    CODEC_TYPE_VIDEO,
-    CODEC_ID_WMV2,
-    sizeof(MpegEncContext),
-    h263_decode_init,
-    NULL,
-    h263_decode_end,
-    h263_decode_frame,
+    ff_h263_decode_end,
+    ff_h263_decode_frame,
     CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1,
 };
 
@@ -797,10 +786,10 @@ AVCodec h263i_decoder = {
     CODEC_TYPE_VIDEO,
     CODEC_ID_H263I,
     sizeof(MpegEncContext),
-    h263_decode_init,
+    ff_h263_decode_init,
     NULL,
-    h263_decode_end,
-    h263_decode_frame,
+    ff_h263_decode_end,
+    ff_h263_decode_frame,
     CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1,
 };
 

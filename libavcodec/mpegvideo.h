@@ -129,6 +129,31 @@ typedef struct ParseContext{
     int frame_start_found;
 } ParseContext;
 
+struct MpegEncContext;
+
+typedef struct MotionEstContext{
+    int skip;                          /* set if ME is skiped for the current MB */
+    int co_located_mv[4][2];           /* mv from last p frame for direct mode ME */
+    int direct_basis_mv[4][2];
+    uint8_t *scratchpad;               /* data area for the me algo, so that the ME doesnt need to malloc/free */
+    uint32_t *map;                     /* map to avoid duplicate evaluations */
+    uint32_t *score_map;               /* map to store the scores */
+    int map_generation;  
+    int penalty_factor;
+    int sub_penalty_factor;
+    UINT16 (*mv_penalty)[MAX_MV*2+1];  /* amount of bits needed to encode a MV */
+    int (*sub_motion_search)(struct MpegEncContext * s,
+				  int *mx_ptr, int *my_ptr, int dmin,
+				  int xmin, int ymin, int xmax, int ymax,
+                                  int pred_x, int pred_y, Picture *ref_picture, 
+                                  int n, int size, uint16_t * const mv_penalty);
+    int (*motion_search[7])(struct MpegEncContext * s, int block,
+                             int *mx_ptr, int *my_ptr,
+                             int P[10][2], int pred_x, int pred_y,
+                             int xmin, int ymin, int xmax, int ymax, Picture *ref_picture,
+                             uint16_t * const mv_penalty);
+}MotionEstContext;
+
 typedef struct MpegEncContext {
     struct AVCodecContext *avctx;
     /* the following parameters must be initialized before encoding */
@@ -222,15 +247,8 @@ typedef struct MpegEncContext {
     INT16 (*b_back_mv_table)[2];       /* MV table (1MV per MB) backward mode b-frame encoding */
     INT16 (*b_bidir_forw_mv_table)[2]; /* MV table (1MV per MB) bidir mode b-frame encoding */
     INT16 (*b_bidir_back_mv_table)[2]; /* MV table (1MV per MB) bidir mode b-frame encoding */
-    INT16 (*b_direct_forw_mv_table)[2];/* MV table (1MV per MB) direct mode b-frame encoding */
-    INT16 (*b_direct_back_mv_table)[2];/* MV table (1MV per MB) direct mode b-frame encoding */
     INT16 (*b_direct_mv_table)[2];     /* MV table (1MV per MB) direct mode b-frame encoding */
     int me_method;                     /* ME algorithm */
-    uint8_t *me_scratchpad;            /* data area for the me algo, so that the ME doesnt need to malloc/free */
-    uint32_t *me_map;                  /* map to avoid duplicate evaluations */
-    uint16_t *me_score_map;            /* map to store the SADs */
-    int me_map_generation;
-    int skip_me;                       /* set if ME is skiped for the current MB */
     int scene_change_score;
     int mv_dir;
 #define MV_DIR_BACKWARD  1
@@ -250,8 +268,9 @@ typedef struct MpegEncContext {
     int mv[2][4][2];
     int field_select[2][2];
     int last_mv[2][2][2];             /* last MV, used for MV prediction in MPEG1 & B-frame MPEG4 */
-    UINT16 (*mv_penalty)[MAX_MV*2+1]; /* amount of bits needed to encode a MV, used for ME */
     UINT8 *fcode_tab; /* smallest fcode needed for each MV */
+    
+    MotionEstContext me;
 
     int no_rounding; /* apply no rounding to motion compensation (MPEG4, msmpeg4, ...) 
                         for b-frames rounding mode is allways 0 */
@@ -458,6 +477,7 @@ typedef struct MpegEncContext {
     /* [mb_intra][isChroma][level][run][last] */
     int (*ac_stats)[2][MAX_LEVEL+1][MAX_RUN+1][2];
     int inter_intra_pred;
+    int mspel;
 
     /* decompression specific */
     GetBitContext gb;
@@ -519,6 +539,7 @@ typedef struct MpegEncContext {
     void (*fdct)(DCTELEM *block/* align 16*/);
     void (*idct_put)(UINT8 *dest/*align 8*/, int line_size, DCTELEM *block/*align 16*/);
     void (*idct_add)(UINT8 *dest/*align 8*/, int line_size, DCTELEM *block/*align 16*/);
+    //FIXME move above funcs into dspContext perhaps
 } MpegEncContext;
 
 
@@ -528,6 +549,9 @@ void MPV_common_end(MpegEncContext *s);
 void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64]);
 int MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx);
 void MPV_frame_end(MpegEncContext *s);
+int MPV_encode_init(AVCodecContext *avctx);
+int MPV_encode_end(AVCodecContext *avctx);
+int MPV_encode_picture(AVCodecContext *avctx, unsigned char *buf, int buf_size, void *data);
 #ifdef HAVE_MMX
 void MPV_common_init_mmx(MpegEncContext *s);
 #endif
@@ -553,6 +577,8 @@ void ff_clean_intra_table_entries(MpegEncContext *s);
 void ff_init_scantable(MpegEncContext *s, ScanTable *st, const UINT8 *src_scantable);
 void ff_error_resilience(MpegEncContext *s);
 void ff_draw_horiz_band(MpegEncContext *s);
+void ff_emulated_edge_mc(MpegEncContext *s, UINT8 *src, int linesize, int block_w, int block_h, 
+                                    int src_x, int src_y, int w, int h);
 char ff_get_pict_type_char(int pict_type);
 
 
@@ -585,6 +611,7 @@ void ff_estimate_b_frame_motion(MpegEncContext * s,
 int ff_get_best_fcode(MpegEncContext * s, int16_t (*mv_table)[2], int type);
 void ff_fix_long_p_mvs(MpegEncContext * s);
 void ff_fix_long_b_mvs(MpegEncContext * s, int16_t (*mv_table)[2], int f_code, int type);
+void ff_init_me(MpegEncContext *s);
 
 
 /* mpeg12.c */
@@ -631,6 +658,11 @@ extern UINT8 ff_mpeg4_y_dc_scale_table[32];
 extern UINT8 ff_mpeg4_c_dc_scale_table[32];
 extern const INT16 ff_mpeg4_default_intra_matrix[64];
 extern const INT16 ff_mpeg4_default_non_intra_matrix[64];
+int ff_h263_decode_init(AVCodecContext *avctx);
+int ff_h263_decode_frame(AVCodecContext *avctx, 
+                             void *data, int *data_size,
+                             UINT8 *buf, int buf_size);
+int ff_h263_decode_end(AVCodecContext *avctx);
 void h263_encode_mb(MpegEncContext *s, 
                     DCTELEM block[6][64],
                     int motion_x, int motion_y);
@@ -667,6 +699,7 @@ int ff_mpeg4_decode_partitions(MpegEncContext *s);
 int ff_mpeg4_get_video_packet_prefix_length(MpegEncContext *s);
 int ff_h263_resync(MpegEncContext *s);
 int ff_h263_get_gob_height(MpegEncContext *s);
+void ff_mpeg4_set_direct_mv(MpegEncContext *s, int mx, int my);
 
 
 /* rv10.c */
@@ -684,7 +717,16 @@ int msmpeg4_decode_picture_header(MpegEncContext * s);
 int msmpeg4_decode_ext_header(MpegEncContext * s, int buf_size);
 int ff_msmpeg4_decode_init(MpegEncContext *s);
 void ff_msmpeg4_encode_init(MpegEncContext *s);
-
+int ff_wmv2_decode_picture_header(MpegEncContext * s);
+void ff_wmv2_add_mb(MpegEncContext *s, DCTELEM block[6][64], uint8_t *dest_y, uint8_t *dest_cb, uint8_t *dest_cr);
+void ff_mspel_motion(MpegEncContext *s,
+                               UINT8 *dest_y, UINT8 *dest_cb, UINT8 *dest_cr,
+                               UINT8 **ref_picture, op_pixels_func (*pix_op)[4],
+                               int motion_x, int motion_y, int h);
+int ff_wmv2_encode_picture_header(MpegEncContext * s, int picture_number);
+void ff_wmv2_encode_mb(MpegEncContext * s, 
+                       DCTELEM block[6][64],
+                       int motion_x, int motion_y);
 
 /* mjpegenc.c */
 int mjpeg_init(MpegEncContext *s);

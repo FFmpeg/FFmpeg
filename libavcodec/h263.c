@@ -204,10 +204,6 @@ void h263_encode_picture_header(MpegEncContext * s, int picture_number)
 		
         put_bits(&s->pb,1,0); /* Reference Picture Resampling: off */
         put_bits(&s->pb,1,0); /* Reduced-Resolution Update: off */
-        if (s->pict_type == I_TYPE)
-            s->no_rounding = 0;
-        else
-            s->no_rounding ^= 1;
         put_bits(&s->pb,1,s->no_rounding); /* Rounding Type */
         put_bits(&s->pb,2,0); /* Reserved */
         put_bits(&s->pb,1,1); /* "1" to prevent start code emulation */
@@ -392,6 +388,57 @@ void ff_clean_mpeg4_qscales(MpegEncContext *s){
     }
 }
 
+void ff_mpeg4_set_direct_mv(MpegEncContext *s, int mx, int my){
+    const int mb_index= s->mb_x + s->mb_y*s->mb_width;
+    int xy= s->block_index[0];
+    uint16_t time_pp= s->pp_time;
+    uint16_t time_pb= s->pb_time;
+    int i;
+        
+    //FIXME avoid divides
+    switch(s->co_located_type_table[mb_index]){
+    case 0:
+        s->mv_type= MV_TYPE_16X16;
+        s->mv[0][0][0] = s->motion_val[xy][0]*time_pb/time_pp + mx;
+        s->mv[0][0][1] = s->motion_val[xy][1]*time_pb/time_pp + my;
+        s->mv[1][0][0] = mx ? s->mv[0][0][0] - s->motion_val[xy][0]
+                            : s->motion_val[xy][0]*(time_pb - time_pp)/time_pp;
+        s->mv[1][0][1] = my ? s->mv[0][0][1] - s->motion_val[xy][1] 
+                            : s->motion_val[xy][1]*(time_pb - time_pp)/time_pp;
+        break;
+    case CO_LOCATED_TYPE_4MV:
+        s->mv_type = MV_TYPE_8X8;
+        for(i=0; i<4; i++){
+            xy= s->block_index[i];
+            s->mv[0][i][0] = s->motion_val[xy][0]*time_pb/time_pp + mx;
+            s->mv[0][i][1] = s->motion_val[xy][1]*time_pb/time_pp + my;
+            s->mv[1][i][0] = mx ? s->mv[0][i][0] - s->motion_val[xy][0]
+                                : s->motion_val[xy][0]*(time_pb - time_pp)/time_pp;
+            s->mv[1][i][1] = my ? s->mv[0][i][1] - s->motion_val[xy][1] 
+                                : s->motion_val[xy][1]*(time_pb - time_pp)/time_pp;
+        }
+        break;
+    case CO_LOCATED_TYPE_FIELDMV:
+        s->mv_type = MV_TYPE_FIELD;
+        for(i=0; i<2; i++){
+            if(s->top_field_first){
+                time_pp= s->pp_field_time - s->field_select_table[mb_index][i] + i;
+                time_pb= s->pb_field_time - s->field_select_table[mb_index][i] + i;
+            }else{
+                time_pp= s->pp_field_time + s->field_select_table[mb_index][i] - i;
+                time_pb= s->pb_field_time + s->field_select_table[mb_index][i] - i;
+            }
+            s->mv[0][i][0] = s->field_mv_table[mb_index][i][0]*time_pb/time_pp + mx;
+            s->mv[0][i][1] = s->field_mv_table[mb_index][i][1]*time_pb/time_pp + my;
+            s->mv[1][i][0] = mx ? s->mv[0][i][0] - s->field_mv_table[mb_index][i][0]
+                                : s->field_mv_table[mb_index][i][0]*(time_pb - time_pp)/time_pp;
+            s->mv[1][i][1] = my ? s->mv[0][i][1] - s->field_mv_table[mb_index][i][1] 
+                                : s->field_mv_table[mb_index][i][1]*(time_pb - time_pp)/time_pp;
+        }
+        break;
+    }
+}
+
 #ifdef CONFIG_ENCODERS
 void mpeg4_encode_mb(MpegEncContext * s,
 		    DCTELEM block[6][64],
@@ -442,7 +489,7 @@ void mpeg4_encode_mb(MpegEncContext * s,
 
                 return;
             }
-
+            
             if ((cbp | motion_x | motion_y | mb_type) ==0) {
                 /* direct MB with MV={0,0} */
                 assert(s->dquant==0);
@@ -1386,7 +1433,7 @@ void h263_encode_init(MpegEncContext *s)
 
         init_mv_penalty_and_fcode(s);
     }
-    s->mv_penalty= mv_penalty; //FIXME exact table for msmpeg4 & h263p
+    s->me.mv_penalty= mv_penalty; //FIXME exact table for msmpeg4 & h263p
     
     // use fcodes >1 only for mpeg4 & h263 & h263p FIXME
     switch(s->codec_id){
@@ -1519,7 +1566,7 @@ void ff_set_mpeg4_time(MpegEncContext * s, int picture_number){
 
 static void mpeg4_encode_vol_header(MpegEncContext * s)
 {
-    int vo_ver_id=1; //must be 2 if we want GMC or q-pel
+    int vo_ver_id=2; //must be 2 if we want GMC or q-pel
     char buf[255];
 
     if(s->max_b_frames){
@@ -1584,7 +1631,7 @@ static void mpeg4_encode_vol_header(MpegEncContext * s)
     if(s->mpeg_quant) put_bits(&s->pb, 2, 0); /* no custom matrixes */
 
     if (vo_ver_id != 1)
-        put_bits(&s->pb, 1, s->quarter_sample=0);
+        put_bits(&s->pb, 1, s->quarter_sample);
     put_bits(&s->pb, 1, 1);		/* complexity estimation disable */
     s->resync_marker= s->rtp_mode;
     put_bits(&s->pb, 1, s->resync_marker ? 0 : 1);/* resync marker disable */
@@ -1618,7 +1665,6 @@ void mpeg4_encode_picture_header(MpegEncContext * s, int picture_number)
     int time_div, time_mod;
     
     if(s->pict_type==I_TYPE){
-        s->no_rounding=0;
         if(picture_number==0 || !s->strict_std_compliance)
             mpeg4_encode_vol_header(s);
     }
@@ -1645,7 +1691,6 @@ void mpeg4_encode_picture_header(MpegEncContext * s, int picture_number)
     put_bits(&s->pb, 1, 1);	/* vop coded */
     if (    s->pict_type == P_TYPE 
         || (s->pict_type == S_TYPE && s->vol_sprite_usage==GMC_SPRITE)) {
-        s->no_rounding ^= 1;
 	put_bits(&s->pb, 1, s->no_rounding);	/* rounding type */
     }
     put_bits(&s->pb, 3, 0);	/* intra dc VLC threshold */
@@ -1996,6 +2041,61 @@ static inline void mpeg4_encode_block(MpegEncContext * s, DCTELEM * block, int n
     }
 #endif
 }
+
+static inline int mpeg4_get_block_length(MpegEncContext * s, DCTELEM * block, int n, int intra_dc, 
+                               UINT8 *scan_table)
+{
+    int i, last_non_zero;
+    const RLTable *rl;
+    UINT8 *len_tab;
+    const int last_index = s->block_last_index[n];
+    int len=0;
+
+    if (s->mb_intra) { //Note gcc (3.2.1 at least) will optimize this away
+	/* mpeg4 based DC predictor */
+	//mpeg4_encode_dc(dc_pb, intra_dc, n); //FIXME
+        if(last_index<1) return len;
+	i = 1;
+        rl = &rl_intra;
+        len_tab = uni_mpeg4_intra_rl_len;
+    } else {
+        if(last_index<0) return 0;
+	i = 0;
+        rl = &rl_inter;
+        len_tab = uni_mpeg4_inter_rl_len;
+    }
+
+    /* AC coefs */
+    last_non_zero = i - 1;
+    for (; i < last_index; i++) {
+	int level = block[ scan_table[i] ];
+	if (level) {
+	    int run = i - last_non_zero - 1;
+            level+=64;
+            if((level&(~127)) == 0){
+                const int index= UNI_MPEG4_ENC_INDEX(0, run, level);
+                len += len_tab[index];
+            }else{ //ESC3
+                len += 7+2+1+6+1+12+1;
+            }
+	    last_non_zero = i;
+	}
+    }
+    /*if(i<=last_index)*/{
+	int level = block[ scan_table[i] ];
+        int run = i - last_non_zero - 1;
+        level+=64;
+        if((level&(~127)) == 0){
+            const int index= UNI_MPEG4_ENC_INDEX(1, run, level);
+            len += len_tab[index];
+        }else{ //ESC3
+            len += 7+2+1+6+1+12+1;
+        }
+    }
+    
+    return len;
+}
+
 #endif
 
 
@@ -3050,8 +3150,6 @@ int ff_h263_decode_mb(MpegEncContext *s,
         int modb1; // first bit of modb
         int modb2; // second bit of modb
         int mb_type;
-        uint16_t time_pp;
-        uint16_t time_pb;
         int xy;
 
         s->mb_intra = 0; //B-frames never contain intra blocks
@@ -3173,9 +3271,6 @@ int ff_h263_decode_mb(MpegEncContext *s,
         }
           
         if(mb_type==4 || mb_type==MB_TYPE_B_DIRECT){
-            int mb_index= s->mb_x + s->mb_y*s->mb_width;
-            int i;
-            
             if(mb_type==4)
                 mx=my=0;
             else{
@@ -3184,55 +3279,7 @@ int ff_h263_decode_mb(MpegEncContext *s,
             }
  
             s->mv_dir = MV_DIR_FORWARD | MV_DIR_BACKWARD | MV_DIRECT;
-            xy= s->block_index[0];
-            time_pp= s->pp_time;
-            time_pb= s->pb_time;
-            
-            //FIXME avoid divides
-            switch(s->co_located_type_table[mb_index]){
-            case 0:
-                s->mv_type= MV_TYPE_16X16;
-                s->mv[0][0][0] = s->motion_val[xy][0]*time_pb/time_pp + mx;
-                s->mv[0][0][1] = s->motion_val[xy][1]*time_pb/time_pp + my;
-                s->mv[1][0][0] = mx ? s->mv[0][0][0] - s->motion_val[xy][0]
-                                    : s->motion_val[xy][0]*(time_pb - time_pp)/time_pp;
-                s->mv[1][0][1] = my ? s->mv[0][0][1] - s->motion_val[xy][1] 
-                                    : s->motion_val[xy][1]*(time_pb - time_pp)/time_pp;
-                PRINT_MB_TYPE(mb_type==4 ? "D" : "S");
-                break;
-            case CO_LOCATED_TYPE_4MV:
-                s->mv_type = MV_TYPE_8X8;
-                for(i=0; i<4; i++){
-                    xy= s->block_index[i];
-                    s->mv[0][i][0] = s->motion_val[xy][0]*time_pb/time_pp + mx;
-                    s->mv[0][i][1] = s->motion_val[xy][1]*time_pb/time_pp + my;
-                    s->mv[1][i][0] = mx ? s->mv[0][i][0] - s->motion_val[xy][0]
-                                        : s->motion_val[xy][0]*(time_pb - time_pp)/time_pp;
-                    s->mv[1][i][1] = my ? s->mv[0][i][1] - s->motion_val[xy][1] 
-                                        : s->motion_val[xy][1]*(time_pb - time_pp)/time_pp;
-                }
-                PRINT_MB_TYPE("4");
-                break;
-            case CO_LOCATED_TYPE_FIELDMV:
-                s->mv_type = MV_TYPE_FIELD;
-                for(i=0; i<2; i++){
-                    if(s->top_field_first){
-                        time_pp= s->pp_field_time - s->field_select_table[mb_index][i] + i;
-                        time_pb= s->pb_field_time - s->field_select_table[mb_index][i] + i;
-                    }else{
-                        time_pp= s->pp_field_time + s->field_select_table[mb_index][i] - i;
-                        time_pb= s->pb_field_time + s->field_select_table[mb_index][i] - i;
-                    }
-                    s->mv[0][i][0] = s->field_mv_table[mb_index][i][0]*time_pb/time_pp + mx;
-                    s->mv[0][i][1] = s->field_mv_table[mb_index][i][1]*time_pb/time_pp + my;
-                    s->mv[1][i][0] = mx ? s->mv[0][i][0] - s->field_mv_table[mb_index][i][0]
-                                        : s->field_mv_table[mb_index][i][0]*(time_pb - time_pp)/time_pp;
-                    s->mv[1][i][1] = my ? s->mv[0][i][1] - s->field_mv_table[mb_index][i][1] 
-                                        : s->field_mv_table[mb_index][i][1]*(time_pb - time_pp)/time_pp;
-                }
-                PRINT_MB_TYPE("=");
-                break;
-            }
+            ff_mpeg4_set_direct_mv(s, mx, my);
         }
         
         if(mb_type<0 || mb_type>4){

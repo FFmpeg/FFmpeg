@@ -5,8 +5,8 @@
 
 #define LIBAVCODEC_VERSION_INT 0x000406
 #define LIBAVCODEC_VERSION     "0.4.6"
-#define LIBAVCODEC_BUILD       4646
-#define LIBAVCODEC_BUILD_STR   "4646"
+#define LIBAVCODEC_BUILD       4647
+#define LIBAVCODEC_BUILD_STR   "4647"
 
 enum CodecID {
     CODEC_ID_NONE, 
@@ -850,6 +850,41 @@ typedef struct AVCodecContext {
      * decoding: unused
      */
     int mb_qmax;
+    
+    /**
+     * motion estimation compare function
+     * encoding: set by user.
+     * decoding: unused
+     */
+    int me_cmp;
+    /**
+     * subpixel motion estimation compare function
+     * encoding: set by user.
+     * decoding: unused
+     */
+    int me_sub_cmp;
+    /**
+     * macroblock compare function (not supported yet)
+     * encoding: set by user.
+     * decoding: unused
+     */
+    int mb_cmp;
+#define FF_CMP_SAD  0
+#define FF_CMP_SSE  1
+#define FF_CMP_SATD 2
+#define FF_CMP_DCT  3
+#define FF_CMP_PSNR 4
+#define FF_CMP_BIT  5
+#define FF_CMP_RD   6
+#define FF_CMP_ZERO 7
+#define FF_CMP_CHROMA 256
+    
+    /**
+     * ME diamond size
+     * encoding: set by user.
+     * decoding: unused
+     */
+    int dia_size;
 } AVCodecContext;
 
 typedef struct AVCodec {

@@ -20,6 +20,7 @@
  */
 #include "avcodec.h"
 #include "dsputil.h"
+#include "mpegvideo.h"
 
 int ff_bit_exact=0;
 
@@ -144,7 +145,28 @@ static int pix_norm1_c(UINT8 * pix, int line_size)
 }
 
 
-static int pix_norm_c(UINT8 * pix1, UINT8 * pix2, int line_size)
+static int sse8_c(void *v, UINT8 * pix1, UINT8 * pix2, int line_size)
+{
+    int s, i;
+    UINT32 *sq = squareTbl + 256;
+
+    s = 0;
+    for (i = 0; i < 8; i++) {
+        s += sq[pix1[0] - pix2[0]];
+        s += sq[pix1[1] - pix2[1]];
+        s += sq[pix1[2] - pix2[2]];
+        s += sq[pix1[3] - pix2[3]];
+        s += sq[pix1[4] - pix2[4]];
+        s += sq[pix1[5] - pix2[5]];
+        s += sq[pix1[6] - pix2[6]];
+        s += sq[pix1[7] - pix2[7]];
+        pix1 += line_size;
+        pix2 += line_size;
+    }
+    return s;
+}
+
+static int sse16_c(void *v, UINT8 * pix1, UINT8 * pix2, int line_size)
 {
     int s, i, j;
     UINT32 *sq = squareTbl + 256;
@@ -1141,7 +1163,103 @@ QPEL_MC(0, avg_       , _       , op_avg)
 #undef op_put
 #undef op_put_no_rnd
 
-static int pix_abs16x16_c(UINT8 *pix1, UINT8 *pix2, int line_size)
+static void wmv2_mspel8_h_lowpass(uint8_t *dst, uint8_t *src, int dstStride, int srcStride, int h){
+    uint8_t *cm = cropTbl + MAX_NEG_CROP;
+    int i;
+
+    for(i=0; i<h; i++){
+        dst[0]= cm[(9*(src[0] + src[1]) - (src[-1] + src[2]) + 8)>>4];
+        dst[1]= cm[(9*(src[1] + src[2]) - (src[ 0] + src[3]) + 8)>>4];
+        dst[2]= cm[(9*(src[2] + src[3]) - (src[ 1] + src[4]) + 8)>>4];
+        dst[3]= cm[(9*(src[3] + src[4]) - (src[ 2] + src[5]) + 8)>>4];
+        dst[4]= cm[(9*(src[4] + src[5]) - (src[ 3] + src[6]) + 8)>>4];
+        dst[5]= cm[(9*(src[5] + src[6]) - (src[ 4] + src[7]) + 8)>>4];
+        dst[6]= cm[(9*(src[6] + src[7]) - (src[ 5] + src[8]) + 8)>>4];
+        dst[7]= cm[(9*(src[7] + src[8]) - (src[ 6] + src[9]) + 8)>>4];
+        dst+=dstStride;
+        src+=srcStride;        
+    }
+}
+
+static void wmv2_mspel8_v_lowpass(uint8_t *dst, uint8_t *src, int dstStride, int srcStride, int w){
+    uint8_t *cm = cropTbl + MAX_NEG_CROP;
+    int i;
+
+    for(i=0; i<w; i++){
+        const int src_1= src[ -srcStride];
+        const int src0 = src[0          ];
+        const int src1 = src[  srcStride];
+        const int src2 = src[2*srcStride];
+        const int src3 = src[3*srcStride];
+        const int src4 = src[4*srcStride];
+        const int src5 = src[5*srcStride];
+        const int src6 = src[6*srcStride];
+        const int src7 = src[7*srcStride];
+        const int src8 = src[8*srcStride];
+        const int src9 = src[9*srcStride];
+        dst[0*dstStride]= cm[(9*(src0 + src1) - (src_1 + src2) + 8)>>4];
+        dst[1*dstStride]= cm[(9*(src1 + src2) - (src0  + src3) + 8)>>4];
+        dst[2*dstStride]= cm[(9*(src2 + src3) - (src1  + src4) + 8)>>4];
+        dst[3*dstStride]= cm[(9*(src3 + src4) - (src2  + src5) + 8)>>4];
+        dst[4*dstStride]= cm[(9*(src4 + src5) - (src3  + src6) + 8)>>4];
+        dst[5*dstStride]= cm[(9*(src5 + src6) - (src4  + src7) + 8)>>4];
+        dst[6*dstStride]= cm[(9*(src6 + src7) - (src5  + src8) + 8)>>4];
+        dst[7*dstStride]= cm[(9*(src7 + src8) - (src6  + src9) + 8)>>4];
+        src++;
+        dst++;
+    }
+}
+
+static void put_mspel8_mc00_c (uint8_t *dst, uint8_t *src, int stride){
+    put_pixels8_c(dst, src, stride, 8);
+}
+
+static void put_mspel8_mc10_c(uint8_t *dst, uint8_t *src, int stride){
+    uint8_t half[64];
+    wmv2_mspel8_h_lowpass(half, src, 8, stride, 8);
+    put_pixels8_l2(dst, src, half, stride, stride, 8, 8);
+}
+
+static void put_mspel8_mc20_c(uint8_t *dst, uint8_t *src, int stride){
+    wmv2_mspel8_h_lowpass(dst, src, stride, stride, 8);
+}
+
+static void put_mspel8_mc30_c(uint8_t *dst, uint8_t *src, int stride){
+    uint8_t half[64];
+    wmv2_mspel8_h_lowpass(half, src, 8, stride, 8);
+    put_pixels8_l2(dst, src+1, half, stride, stride, 8, 8);
+}
+
+static void put_mspel8_mc02_c(uint8_t *dst, uint8_t *src, int stride){
+    wmv2_mspel8_v_lowpass(dst, src, stride, stride, 8);
+}
+
+static void put_mspel8_mc12_c(uint8_t *dst, uint8_t *src, int stride){
+    uint8_t halfH[88];
+    uint8_t halfV[64];
+    uint8_t halfHV[64];
+    wmv2_mspel8_h_lowpass(halfH, src-stride, 8, stride, 11);
+    wmv2_mspel8_v_lowpass(halfV, src, 8, stride, 8);
+    wmv2_mspel8_v_lowpass(halfHV, halfH+8, 8, 8, 8);
+    put_pixels8_l2(dst, halfV, halfHV, stride, 8, 8, 8);
+}
+static void put_mspel8_mc32_c(uint8_t *dst, uint8_t *src, int stride){
+    uint8_t halfH[88];
+    uint8_t halfV[64];
+    uint8_t halfHV[64];
+    wmv2_mspel8_h_lowpass(halfH, src-stride, 8, stride, 11);
+    wmv2_mspel8_v_lowpass(halfV, src+1, 8, stride, 8);
+    wmv2_mspel8_v_lowpass(halfHV, halfH+8, 8, 8, 8);
+    put_pixels8_l2(dst, halfV, halfHV, stride, 8, 8, 8);
+}
+static void put_mspel8_mc22_c(uint8_t *dst, uint8_t *src, int stride){
+    uint8_t halfH[88];
+    wmv2_mspel8_h_lowpass(halfH, src-stride, 8, stride, 11);
+    wmv2_mspel8_v_lowpass(dst, halfH+8, stride, 8, 8);
+}
+
+
+static inline int pix_abs16x16_c(UINT8 *pix1, UINT8 *pix2, int line_size)
 {
     int s, i;
 
@@ -1257,7 +1375,7 @@ static int pix_abs16x16_xy2_c(UINT8 *pix1, UINT8 *pix2, int line_size)
     return s;
 }
 
-static int pix_abs8x8_c(UINT8 *pix1, UINT8 *pix2, int line_size)
+static inline int pix_abs8x8_c(UINT8 *pix1, UINT8 *pix2, int line_size)
 {
     int s, i;
 
@@ -1341,6 +1459,14 @@ static int pix_abs8x8_xy2_c(UINT8 *pix1, UINT8 *pix2, int line_size)
     return s;
 }
 
+static int sad16x16_c(void *s, uint8_t *a, uint8_t *b, int stride){
+    return pix_abs16x16_c(a,b,stride);
+}
+
+static int sad8x8_c(void *s, uint8_t *a, uint8_t *b, int stride){
+    return pix_abs8x8_c(a,b,stride);
+}
+
 void ff_block_permute(INT16 *block, UINT8 *permutation, const UINT8 *scantable, int last)
 {
     int i;
@@ -1399,6 +1525,156 @@ static void diff_bytes_c(uint8_t *dst, uint8_t *src1, uint8_t *src2, int w){
         dst[i+0] = src1[i+0]-src2[i+0];
 }
 
+#define BUTTERFLY2(o1,o2,i1,i2) \
+o1= (i1)+(i2);\
+o2= (i1)-(i2);
+
+#define BUTTERFLY1(x,y) \
+{\
+    int a,b;\
+    a= x;\
+    b= y;\
+    x= a+b;\
+    y= a-b;\
+}
+
+#define BUTTERFLYA(x,y) (ABS((x)+(y)) + ABS((x)-(y)))
+
+static int hadamard8_diff_c(/*MpegEncContext*/ void *s, uint8_t *dst, uint8_t *src, int stride){
+    int i;
+    int temp[64];
+    int sum=0;
+
+    for(i=0; i<8; i++){
+        //FIXME try pointer walks
+        BUTTERFLY2(temp[8*i+0], temp[8*i+1], src[stride*i+0]-dst[stride*i+0],src[stride*i+1]-dst[stride*i+1]);
+        BUTTERFLY2(temp[8*i+2], temp[8*i+3], src[stride*i+2]-dst[stride*i+2],src[stride*i+3]-dst[stride*i+3]);
+        BUTTERFLY2(temp[8*i+4], temp[8*i+5], src[stride*i+4]-dst[stride*i+4],src[stride*i+5]-dst[stride*i+5]);
+        BUTTERFLY2(temp[8*i+6], temp[8*i+7], src[stride*i+6]-dst[stride*i+6],src[stride*i+7]-dst[stride*i+7]);
+        
+        BUTTERFLY1(temp[8*i+0], temp[8*i+2]);
+        BUTTERFLY1(temp[8*i+1], temp[8*i+3]);
+        BUTTERFLY1(temp[8*i+4], temp[8*i+6]);
+        BUTTERFLY1(temp[8*i+5], temp[8*i+7]);
+        
+        BUTTERFLY1(temp[8*i+0], temp[8*i+4]);
+        BUTTERFLY1(temp[8*i+1], temp[8*i+5]);
+        BUTTERFLY1(temp[8*i+2], temp[8*i+6]);
+        BUTTERFLY1(temp[8*i+3], temp[8*i+7]);
+    }
+
+    for(i=0; i<8; i++){
+        BUTTERFLY1(temp[8*0+i], temp[8*1+i]);
+        BUTTERFLY1(temp[8*2+i], temp[8*3+i]);
+        BUTTERFLY1(temp[8*4+i], temp[8*5+i]);
+        BUTTERFLY1(temp[8*6+i], temp[8*7+i]);
+        
+        BUTTERFLY1(temp[8*0+i], temp[8*2+i]);
+        BUTTERFLY1(temp[8*1+i], temp[8*3+i]);
+        BUTTERFLY1(temp[8*4+i], temp[8*6+i]);
+        BUTTERFLY1(temp[8*5+i], temp[8*7+i]);
+
+        sum += 
+             BUTTERFLYA(temp[8*0+i], temp[8*4+i])
+            +BUTTERFLYA(temp[8*1+i], temp[8*5+i])
+            +BUTTERFLYA(temp[8*2+i], temp[8*6+i])
+            +BUTTERFLYA(temp[8*3+i], temp[8*7+i]);
+    }
+#if 0
+static int maxi=0;
+if(sum>maxi){
+    maxi=sum;
+    printf("MAX:%d\n", maxi);
+}
+#endif
+    return sum;
+}
+
+static int hadamard8_abs_c(uint8_t *src, int stride, int mean){
+    int i;
+    int temp[64];
+    int sum=0;
+//FIXME OOOPS ignore 0 term instead of mean mess
+    for(i=0; i<8; i++){
+        //FIXME try pointer walks
+        BUTTERFLY2(temp[8*i+0], temp[8*i+1], src[stride*i+0]-mean,src[stride*i+1]-mean);
+        BUTTERFLY2(temp[8*i+2], temp[8*i+3], src[stride*i+2]-mean,src[stride*i+3]-mean);
+        BUTTERFLY2(temp[8*i+4], temp[8*i+5], src[stride*i+4]-mean,src[stride*i+5]-mean);
+        BUTTERFLY2(temp[8*i+6], temp[8*i+7], src[stride*i+6]-mean,src[stride*i+7]-mean);
+        
+        BUTTERFLY1(temp[8*i+0], temp[8*i+2]);
+        BUTTERFLY1(temp[8*i+1], temp[8*i+3]);
+        BUTTERFLY1(temp[8*i+4], temp[8*i+6]);
+        BUTTERFLY1(temp[8*i+5], temp[8*i+7]);
+        
+        BUTTERFLY1(temp[8*i+0], temp[8*i+4]);
+        BUTTERFLY1(temp[8*i+1], temp[8*i+5]);
+        BUTTERFLY1(temp[8*i+2], temp[8*i+6]);
+        BUTTERFLY1(temp[8*i+3], temp[8*i+7]);
+    }
+
+    for(i=0; i<8; i++){
+        BUTTERFLY1(temp[8*0+i], temp[8*1+i]);
+        BUTTERFLY1(temp[8*2+i], temp[8*3+i]);
+        BUTTERFLY1(temp[8*4+i], temp[8*5+i]);
+        BUTTERFLY1(temp[8*6+i], temp[8*7+i]);
+        
+        BUTTERFLY1(temp[8*0+i], temp[8*2+i]);
+        BUTTERFLY1(temp[8*1+i], temp[8*3+i]);
+        BUTTERFLY1(temp[8*4+i], temp[8*6+i]);
+        BUTTERFLY1(temp[8*5+i], temp[8*7+i]);
+    
+        sum += 
+             BUTTERFLYA(temp[8*0+i], temp[8*4+i])
+            +BUTTERFLYA(temp[8*1+i], temp[8*5+i])
+            +BUTTERFLYA(temp[8*2+i], temp[8*6+i])
+            +BUTTERFLYA(temp[8*3+i], temp[8*7+i]);
+    }
+    
+    return sum;
+}
+
+static int dct_sad8x8_c(/*MpegEncContext*/ void *c, uint8_t *src1, uint8_t *src2, int stride){
+    MpegEncContext * const s= (MpegEncContext *)c;
+    DCTELEM temp[64];
+    int sum=0, i;
+
+    s->dsp.diff_pixels(temp, src1, src2, stride);
+    s->fdct(temp);
+
+    for(i=0; i<64; i++)
+        sum+= ABS(temp[i]);
+        
+    return sum;
+}
+
+void simple_idct(INT16 *block); //FIXME
+
+static int quant_psnr8x8_c(/*MpegEncContext*/ void *c, uint8_t *src1, uint8_t *src2, int stride){
+    MpegEncContext * const s= (MpegEncContext *)c;
+    DCTELEM temp[64], bak[64];
+    int sum=0, i;
+
+    s->mb_intra=0;
+    
+    s->dsp.diff_pixels(temp, src1, src2, stride);
+    
+    memcpy(bak, temp, 64*sizeof(DCTELEM));
+    
+    s->dct_quantize(s, temp, 0/*FIXME*/, s->qscale, &i);
+    s->dct_unquantize(s, temp, 0, s->qscale);
+    simple_idct(temp); //FIXME 
+    
+    for(i=0; i<64; i++)
+        sum+= (temp[i]-bak[i])*(temp[i]-bak[i]);
+        
+    return sum;
+}
+
+WARPER88_1616(hadamard8_diff_c, hadamard8_diff16_c)
+WARPER88_1616(dct_sad8x8_c, dct_sad16x16_c)
+WARPER88_1616(quant_psnr8x8_c, quant_psnr16x16_c)
+
 void dsputil_init(DSPContext* c, unsigned mask)
 {
     static int init_done = 0;
@@ -1429,7 +1705,8 @@ void dsputil_init(DSPContext* c, unsigned mask)
     c->clear_blocks = clear_blocks_c;
     c->pix_sum = pix_sum_c;
     c->pix_norm1 = pix_norm1_c;
-    c->pix_norm = pix_norm_c;
+    c->sse[0]= sse16_c;
+    c->sse[1]= sse8_c;
 
     /* TODO [0] 16  [1] 8 */
     c->pix_abs16x16     = pix_abs16x16_c;
@@ -1489,6 +1766,28 @@ void dsputil_init(DSPContext* c, unsigned mask)
     /* dspfunc(avg_no_rnd_qpel, 1, 8); */
 #undef dspfunc
 
+    c->put_mspel_pixels_tab[0]= put_mspel8_mc00_c;
+    c->put_mspel_pixels_tab[1]= put_mspel8_mc10_c;
+    c->put_mspel_pixels_tab[2]= put_mspel8_mc20_c;
+    c->put_mspel_pixels_tab[3]= put_mspel8_mc30_c;
+    c->put_mspel_pixels_tab[4]= put_mspel8_mc02_c;
+    c->put_mspel_pixels_tab[5]= put_mspel8_mc12_c;
+    c->put_mspel_pixels_tab[6]= put_mspel8_mc22_c;
+    c->put_mspel_pixels_tab[7]= put_mspel8_mc32_c;
+    
+    c->hadamard8_diff[0]= hadamard8_diff16_c;
+    c->hadamard8_diff[1]= hadamard8_diff_c;
+    c->hadamard8_abs = hadamard8_abs_c;
+    
+    c->dct_sad[0]= dct_sad16x16_c;
+    c->dct_sad[1]= dct_sad8x8_c;
+    
+    c->sad[0]= sad16x16_c;
+    c->sad[1]= sad8x8_c;
+    
+    c->quant_psnr[0]= quant_psnr16x16_c;
+    c->quant_psnr[1]= quant_psnr8x8_c;
+    
     c->add_bytes= add_bytes_c;
     c->diff_bytes= diff_bytes_c;
 
@@ -1516,7 +1815,6 @@ void dsputil_init(DSPContext* c, unsigned mask)
 #ifdef HAVE_MMI
     dsputil_init_mmi(c, mask);
 #endif
-
 }
 
 /* remove any non bit exact operation (testing purpose) */

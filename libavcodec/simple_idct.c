@@ -473,3 +473,93 @@ void simple_idct248_put(UINT8 *dest, int line_size, INT16 *block)
         idct4col(dest + line_size + i, 2 * line_size, block + 8 + i);
     }
 }
+
+/* 8x4 & 4x8 WMV2 IDCT */
+#undef CN_SHIFT
+#undef C_SHIFT
+#undef C_FIX
+#undef C1
+#undef C2
+#define CN_SHIFT 12
+#define C_FIX(x) ((int)((x) * 1.414213562 * (1 << CN_SHIFT) + 0.5))
+#define C1 C_FIX(0.6532814824)
+#define C2 C_FIX(0.2705980501)
+#define C3 C_FIX(0.5)
+#define C_SHIFT (4+1+12)
+static inline void idct4col_add(UINT8 *dest, int line_size, const INT16 *col)
+{
+    int c0, c1, c2, c3, a0, a1, a2, a3;
+    const UINT8 *cm = cropTbl + MAX_NEG_CROP;
+
+    a0 = col[8*0];
+    a1 = col[8*1];
+    a2 = col[8*2];
+    a3 = col[8*3];
+    c0 = (a0 + a2)*C3 + (1 << (C_SHIFT - 1));
+    c2 = (a0 - a2)*C3 + (1 << (C_SHIFT - 1));
+    c1 = a1 * C1 + a3 * C2;
+    c3 = a1 * C2 - a3 * C1;
+    dest[0] = cm[dest[0] + ((c0 + c1) >> C_SHIFT)];
+    dest += line_size;
+    dest[0] = cm[dest[0] + ((c2 + c3) >> C_SHIFT)];
+    dest += line_size;
+    dest[0] = cm[dest[0] + ((c2 - c3) >> C_SHIFT)];
+    dest += line_size;
+    dest[0] = cm[dest[0] + ((c0 - c1) >> C_SHIFT)];
+}
+
+#define RN_SHIFT 15
+#define R_FIX(x) ((int)((x) * 1.414213562 * (1 << RN_SHIFT) + 0.5))
+#define R1 R_FIX(0.6532814824)
+#define R2 R_FIX(0.2705980501)
+#define R3 R_FIX(0.5)
+#define R_SHIFT 11
+static inline void idct4row(INT16 *row)
+{
+    int c0, c1, c2, c3, a0, a1, a2, a3;
+    const UINT8 *cm = cropTbl + MAX_NEG_CROP;
+
+    a0 = row[0];
+    a1 = row[1];
+    a2 = row[2];
+    a3 = row[3];
+    c0 = (a0 + a2)*R3 + (1 << (R_SHIFT - 1));
+    c2 = (a0 - a2)*R3 + (1 << (R_SHIFT - 1));
+    c1 = a1 * R1 + a3 * R2;
+    c3 = a1 * R2 - a3 * R1;
+    row[0]= (c0 + c1) >> R_SHIFT;
+    row[1]= (c2 + c3) >> R_SHIFT;
+    row[2]= (c2 - c3) >> R_SHIFT;
+    row[3]= (c0 - c1) >> R_SHIFT;
+}
+
+void simple_idct84_add(UINT8 *dest, int line_size, INT16 *block)
+{
+    int i;
+
+    /* IDCT8 on each line */
+    for(i=0; i<4; i++) {
+        idctRowCondDC(block + i*8);
+    }
+
+    /* IDCT4 and store */
+    for(i=0;i<8;i++) {
+        idct4col_add(dest + i, line_size, block + i);
+    }
+}
+
+void simple_idct48_add(UINT8 *dest, int line_size, INT16 *block)
+{
+    int i;
+
+    /* IDCT4 on each line */
+    for(i=0; i<8; i++) {
+        idct4row(block + i*8);
+    }
+
+    /* IDCT8 and store */
+    for(i=0; i<4; i++){
+        idctSparseColAdd(dest + i, line_size, block + i);
+    }
+}
+

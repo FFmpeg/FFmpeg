@@ -3,7 +3,7 @@
  */
 
 /* intra picture macro block coded block pattern */
-static const UINT16 table_mb_intra[64][2] = {
+static const uint16_t table_mb_intra[64][2] = {
 { 0x1, 1 },{ 0x17, 6 },{ 0x9, 5 },{ 0x5, 5 },
 { 0x6, 5 },{ 0x47, 9 },{ 0x20, 7 },{ 0x10, 7 },
 { 0x2, 5 },{ 0x7c, 9 },{ 0x3a, 7 },{ 0x1d, 7 },
@@ -23,7 +23,7 @@ static const UINT16 table_mb_intra[64][2] = {
 };
 
 /* non intra picture macro block coded block pattern + mb type */
-static const UINT32 table_mb_non_intra[128][2] = {
+static const uint32_t table_mb_non_intra[128][2] = {
 { 0x40, 7 },{ 0x13c9, 13 },{ 0x9fd, 12 },{ 0x1fc, 15 },
 { 0x9fc, 12 },{ 0xa83, 18 },{ 0x12d34, 17 },{ 0x83bc, 16 },
 { 0x83a, 12 },{ 0x7f8, 17 },{ 0x3fd, 16 },{ 0x3ff, 16 },
@@ -60,7 +60,7 @@ static const UINT32 table_mb_non_intra[128][2] = {
 
 /* dc table 0 */
 
-static const UINT32 table0_dc_lum[120][2] = {
+static const uint32_t table0_dc_lum[120][2] = {
 { 0x1, 1 },{ 0x1, 2 },{ 0x1, 4 },{ 0x1, 5 },
 { 0x5, 5 },{ 0x7, 5 },{ 0x8, 6 },{ 0xc, 6 },
 { 0x0, 7 },{ 0x2, 7 },{ 0x12, 7 },{ 0x1a, 7 },
@@ -93,7 +93,7 @@ static const UINT32 table0_dc_lum[120][2] = {
 { 0x6078c, 24 },{ 0x6078d, 24 },{ 0x6078e, 24 },{ 0x6078f, 24 },
 };
 
-static const UINT32 table0_dc_chroma[120][2] = {
+static const uint32_t table0_dc_chroma[120][2] = {
 { 0x0, 2 },{ 0x1, 2 },{ 0x5, 3 },{ 0x9, 4 },
 { 0xd, 4 },{ 0x11, 5 },{ 0x1d, 5 },{ 0x1f, 5 },
 { 0x21, 6 },{ 0x31, 6 },{ 0x38, 6 },{ 0x33, 6 },
@@ -128,7 +128,7 @@ static const UINT32 table0_dc_chroma[120][2] = {
 
 /* dc table 1 */
 
-static const UINT32 table1_dc_lum[120][2] = {
+static const uint32_t table1_dc_lum[120][2] = {
 { 0x2, 2 },{ 0x3, 2 },{ 0x3, 3 },{ 0x2, 4 },
 { 0x5, 4 },{ 0x1, 5 },{ 0x3, 5 },{ 0x8, 5 },
 { 0x0, 6 },{ 0x5, 6 },{ 0xd, 6 },{ 0xf, 6 },
@@ -161,7 +161,7 @@ static const UINT32 table1_dc_lum[120][2] = {
 { 0x1e6964, 26 },{ 0x1e6965, 26 },{ 0x1e6966, 26 },{ 0x1e6967, 26 },
 };
 
-static const UINT32 table1_dc_chroma[120][2] = {
+static const uint32_t table1_dc_chroma[120][2] = {
 { 0x0, 2 },{ 0x1, 2 },{ 0x4, 3 },{ 0x7, 3 },
 { 0xb, 4 },{ 0xd, 4 },{ 0x15, 5 },{ 0x28, 6 },
 { 0x30, 6 },{ 0x32, 6 },{ 0x52, 7 },{ 0x62, 7 },
@@ -196,7 +196,7 @@ static const UINT32 table1_dc_chroma[120][2] = {
 
 /* vlc table 0, for intra luma */
 
-static const UINT16 table0_vlc[133][2] = {
+static const uint16_t table0_vlc[133][2] = {
 { 0x1, 2 },{ 0x6, 3 },{ 0xf, 4 },{ 0x16, 5 },
 { 0x20, 6 },{ 0x18, 7 },{ 0x8, 8 },{ 0x9a, 8 },
 { 0x56, 9 },{ 0x13e, 9 },{ 0xf0, 10 },{ 0x3a5, 10 },
@@ -233,7 +233,7 @@ static const UINT16 table0_vlc[133][2] = {
 { 0x16, 7 },
 };
 
-static const INT8 table0_level[132] = {
+static const int8_t table0_level[132] = {
   1,  2,  3,  4,  5,  6,  7,  8,
   9, 10, 11, 12, 13, 14, 15, 16,
   1,  2,  3,  4,  5,  6,  7,  8,
@@ -253,7 +253,7 @@ static const INT8 table0_level[132] = {
   1,  1,  1,  1,
 };
 
-static const INT8 table0_run[132] = {
+static const int8_t table0_run[132] = {
   0,  0,  0,  0,  0,  0,  0,  0,
   0,  0,  0,  0,  0,  0,  0,  0,
   1,  1,  1,  1,  1,  1,  1,  1,
@@ -275,7 +275,7 @@ static const INT8 table0_run[132] = {
 
 /* vlc table 1, for intra chroma and P macro blocks */
 
-static const UINT16 table1_vlc[149][2] = {
+static const uint16_t table1_vlc[149][2] = {
 { 0x4, 3 },{ 0x14, 5 },{ 0x17, 7 },{ 0x7f, 8 },
 { 0x154, 9 },{ 0x1f2, 10 },{ 0xbf, 11 },{ 0x65, 12 },
 { 0xaaa, 12 },{ 0x630, 13 },{ 0x1597, 13 },{ 0x3b7, 14 },
@@ -316,7 +316,7 @@ static const UINT16 table1_vlc[149][2] = {
 { 0xd, 9 },
 };
 
-static const INT8 table1_level[148] = {
+static const int8_t table1_level[148] = {
   1,  2,  3,  4,  5,  6,  7,  8,
   9, 10, 11, 12, 13, 14,  1,  2,
   3,  4,  5,  6,  7,  8,  9,  1,
@@ -338,7 +338,7 @@ static const INT8 table1_level[148] = {
   1,  1,  1,  1,
 };
 
-static const INT8 table1_run[148] = {
+static const int8_t table1_run[148] = {
   0,  0,  0,  0,  0,  0,  0,  0,
   0,  0,  0,  0,  0,  0,  1,  1,
   1,  1,  1,  1,  1,  1,  1,  2,
@@ -362,7 +362,7 @@ static const INT8 table1_run[148] = {
 
 /* third vlc table */
 
-static const UINT16 table2_vlc[186][2] = {
+static const uint16_t table2_vlc[186][2] = {
 { 0x1, 2 },{ 0x5, 3 },{ 0xd, 4 },{ 0x12, 5 },
 { 0xe, 6 },{ 0x15, 7 },{ 0x13, 8 },{ 0x3f, 8 },
 { 0x4b, 9 },{ 0x11f, 9 },{ 0xb8, 10 },{ 0x3e3, 10 },
@@ -412,7 +412,7 @@ static const UINT16 table2_vlc[186][2] = {
 { 0x23dc, 14 },{ 0x4a, 9 },
 };
 
-static const INT8 table2_level[185] = {
+static const int8_t table2_level[185] = {
   1,  2,  3,  4,  5,  6,  7,  8,
   9, 10, 11, 12, 13, 14, 15, 16,
  17, 18, 19,  1,  2,  3,  4,  5,
@@ -439,7 +439,7 @@ static const INT8 table2_level[185] = {
   1,
 };
 
-static const INT8 table2_run[185] = {
+static const int8_t table2_run[185] = {
   0,  0,  0,  0,  0,  0,  0,  0,
   0,  0,  0,  0,  0,  0,  0,  0,
   0,  0,  0,  1,  1,  1,  1,  1,
@@ -467,7 +467,7 @@ static const INT8 table2_run[185] = {
 };
 
 /* second non intra vlc table */
-static const UINT16 table4_vlc[169][2] = {
+static const uint16_t table4_vlc[169][2] = {
 { 0x0, 3 },{ 0x3, 4 },{ 0xb, 5 },{ 0x14, 6 },
 { 0x3f, 6 },{ 0x5d, 7 },{ 0xa2, 8 },{ 0xac, 9 },
 { 0x16e, 9 },{ 0x20a, 10 },{ 0x2e2, 10 },{ 0x432, 11 },
@@ -513,7 +513,7 @@ static const UINT16 table4_vlc[169][2] = {
 { 0x169, 9 },
 };
 
-static const INT8 table4_level[168] = {
+static const int8_t table4_level[168] = {
   1,  2,  3,  4,  5,  6,  7,  8,
   9, 10, 11, 12, 13, 14, 15, 16,
  17, 18, 19, 20, 21, 22, 23,  1,
@@ -537,7 +537,7 @@ static const INT8 table4_level[168] = {
   1,  1,  1,  1,  1,  1,  1,  1,
 };
 
-static const INT8 table4_run[168] = {
+static const int8_t table4_run[168] = {
   0,  0,  0,  0,  0,  0,  0,  0,
   0,  0,  0,  0,  0,  0,  0,  0,
   0,  0,  0,  0,  0,  0,  0,  1,
@@ -561,25 +561,25 @@ static const INT8 table4_run[168] = {
  29, 30, 31, 32, 33, 34, 35, 36,
 };
 
-extern const UINT16 inter_vlc[103][2];
-extern const INT8 inter_level[102];
-extern const INT8 inter_run[102];
+extern const uint16_t inter_vlc[103][2];
+extern const int8_t inter_level[102];
+extern const int8_t inter_run[102];
 
-extern const UINT16 intra_vlc[103][2];
-extern const INT8 intra_level[102];
-extern const INT8 intra_run[102];
+extern const uint16_t intra_vlc[103][2];
+extern const int8_t intra_level[102];
+extern const int8_t intra_run[102];
 
-extern const UINT8 DCtab_lum[13][2];
-extern const UINT8 DCtab_chrom[13][2];
+extern const uint8_t DCtab_lum[13][2];
+extern const uint8_t DCtab_chrom[13][2];
 
-extern const UINT8 cbpy_tab[16][2];
-extern const UINT8 mvtab[33][2];
+extern const uint8_t cbpy_tab[16][2];
+extern const uint8_t mvtab[33][2];
 
-extern const UINT8 intra_MCBPC_code[8];
-extern const UINT8 intra_MCBPC_bits[8];
+extern const uint8_t intra_MCBPC_code[8];
+extern const uint8_t intra_MCBPC_bits[8];
 
-extern const UINT8 inter_MCBPC_code[25];
-extern const UINT8 inter_MCBPC_bits[25];
+extern const uint8_t inter_MCBPC_code[25];
+extern const uint8_t inter_MCBPC_bits[25];
 
 #define NB_RL_TABLES  6
 
@@ -632,7 +632,7 @@ static RLTable rl_table[NB_RL_TABLES] = {
 
 /* motion vector table 0 */
 
-static const UINT16 table0_mv_code[1100] = {
+static const uint16_t table0_mv_code[1100] = {
  0x0001, 0x0003, 0x0005, 0x0007, 0x0003, 0x0008, 0x000c, 0x0001,
  0x0002, 0x001b, 0x0006, 0x000b, 0x0015, 0x0002, 0x000e, 0x000f,
  0x0014, 0x0020, 0x0022, 0x0025, 0x0027, 0x0029, 0x002d, 0x004b,
@@ -773,7 +773,7 @@ static const UINT16 table0_mv_code[1100] = {
  0x5f0d, 0x5f0e, 0x5f0f, 0x0000,
 };
 
-static const UINT8 table0_mv_bits[1100] = {
+static const uint8_t table0_mv_bits[1100] = {
   1,  4,  4,  4,  5,  5,  5,  6,
   6,  6,  7,  7,  7,  8,  8,  8,
   8,  8,  8,  8,  8,  8,  8,  8,
@@ -914,7 +914,7 @@ static const UINT8 table0_mv_bits[1100] = {
  17, 17, 17,  8,
 };
 
-static const UINT8 table0_mvx[1099] = {
+static const uint8_t table0_mvx[1099] = {
  32, 32, 31, 32, 33, 31, 33, 31,
  33, 32, 34, 32, 30, 32, 31, 34,
  35, 32, 34, 33, 29, 33, 30, 30,
@@ -1055,7 +1055,7 @@ static const UINT8 table0_mvx[1099] = {
  61, 19, 19,
 };
 
-static const UINT8 table0_mvy[1099] = {
+static const uint8_t table0_mvy[1099] = {
  32, 31, 32, 33, 32, 31, 31, 33,
  33, 34, 32, 30, 32, 35, 34, 31,
  32, 29, 33, 30, 32, 34, 33, 31,
@@ -1197,7 +1197,7 @@ static const UINT8 table0_mvy[1099] = {
 };
 
 /* motion vector table 1 */
-static const UINT16 table1_mv_code[1100] = {
+static const uint16_t table1_mv_code[1100] = {
  0x0000, 0x0007, 0x0009, 0x000f, 0x000a, 0x0011, 0x001a, 0x001c,
  0x0011, 0x0031, 0x0025, 0x002d, 0x002f, 0x006f, 0x0075, 0x0041,
  0x004c, 0x004e, 0x005c, 0x0060, 0x0062, 0x0066, 0x0068, 0x0069,
@@ -1338,7 +1338,7 @@ static const UINT16 table1_mv_code[1100] = {
  0x2473, 0x26a2, 0x26a3, 0x000b,
 };
 
-static const UINT8 table1_mv_bits[1100] = {
+static const uint8_t table1_mv_bits[1100] = {
   2,  4,  4,  4,  5,  5,  5,  5,
   6,  6,  7,  7,  7,  7,  7,  8,
   8,  8,  8,  8,  8,  8,  8,  8,
@@ -1479,7 +1479,7 @@ static const UINT8 table1_mv_bits[1100] = {
  15, 15, 15,  4,
 };
 
-static const UINT8 table1_mvx[1099] = {
+static const uint8_t table1_mvx[1099] = {
  32, 31, 32, 31, 33, 32, 33, 33,
  31, 34, 30, 32, 32, 34, 35, 32,
  34, 33, 29, 30, 30, 32, 31, 31,
@@ -1620,7 +1620,7 @@ static const UINT8 table1_mvx[1099] = {
   0, 12, 27,
 };
 
-static const UINT8 table1_mvy[1099] = {
+static const uint8_t table1_mvy[1099] = {
  32, 32, 31, 31, 32, 33, 31, 33,
  33, 32, 32, 30, 34, 31, 32, 29,
  33, 30, 32, 33, 31, 35, 34, 30,
@@ -1764,11 +1764,11 @@ static const UINT8 table1_mvy[1099] = {
 /* motion vector table */
 typedef struct MVTable {
     int n;
-    const UINT16 *table_mv_code;
-    const UINT8 *table_mv_bits;
-    const UINT8 *table_mvx;
-    const UINT8 *table_mvy;
-    UINT16 *table_mv_index; /* encoding: convert mv to index in table_mv */
+    const uint16_t *table_mv_code;
+    const uint8_t *table_mv_bits;
+    const uint8_t *table_mvx;
+    const uint8_t *table_mvy;
+    uint16_t *table_mv_index; /* encoding: convert mv to index in table_mv */
     VLC vlc;                /* decoding: vlc */
 } MVTable;
 
@@ -1789,29 +1789,29 @@ static MVTable mv_tables[2] = {
     }
 };
 
-static const UINT8 v2_mb_type[8][2] = {
+static const uint8_t v2_mb_type[8][2] = {
  {1, 1}, {0   , 2}, {3   , 3}, {9   , 5},
  {5, 4}, {0x21, 7}, {0x20, 7}, {0x11, 6},
 };
 
-static const UINT8 v2_intra_cbpc[4][2] = {
+static const uint8_t v2_intra_cbpc[4][2] = {
  {1, 1}, {0, 3}, {1, 3}, {1, 2},
 };
 
-static UINT8 wmv1_y_dc_scale_table[32]={
+static uint8_t wmv1_y_dc_scale_table[32]={
 //  0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31
     0, 8, 8, 8, 8, 8, 9, 9,10,10,11,11,12,12,13,13,14,14,15,15,16,16,17,17,18,18,19,19,20,20,21,21
 };
-static UINT8 wmv1_c_dc_scale_table[32]={
+static uint8_t wmv1_c_dc_scale_table[32]={
 //  0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31
     0, 8, 8, 8, 8, 9, 9,10,10,11,11,12,12,13,13,14,14,15,15,16,16,17,17,18,18,19,19,20,20,21,21,22
 };
 
-static UINT8 old_ff_y_dc_scale_table[32]={
+static uint8_t old_ff_y_dc_scale_table[32]={
 //  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
     0, 8, 8, 8, 8,10,12,14,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39
 };
-static UINT8 old_ff_c_dc_scale_table[32]={
+static uint8_t old_ff_c_dc_scale_table[32]={
 //  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
     0, 8, 8, 8, 8, 9, 9,10,10,11,11,12,12,13,13,14,14,15,15,16,16,17,17,18,18,19,19,20,20,21,21,22
 };
@@ -1819,7 +1819,7 @@ static UINT8 old_ff_c_dc_scale_table[32]={
 
 #define WMV1_SCANTABLE_COUNT 4
 
-static const UINT8 wmv1_scantable00[64]= {
+static const uint8_t wmv1_scantable00[64]= {
 0x00, 0x08, 0x01, 0x02, 0x09, 0x10, 0x18, 0x11, 
 0x0A, 0x03, 0x04, 0x0B, 0x12, 0x19, 0x20, 0x28, 
 0x30, 0x38, 0x29, 0x21, 0x1A, 0x13, 0x0C, 0x05, 
@@ -1829,7 +1829,7 @@ static const UINT8 wmv1_scantable00[64]= {
 0x2C, 0x25, 0x1E, 0x17, 0x1F, 0x26, 0x2D, 0x35, 
 0x3D, 0x3E, 0x36, 0x2E, 0x27, 0x2F, 0x37, 0x3F, 
 };
-static const UINT8 wmv1_scantable01[64]= {
+static const uint8_t wmv1_scantable01[64]= {
 0x00, 0x08, 0x01, 0x02, 0x09, 0x10, 0x18, 0x11, 
 0x0A, 0x03, 0x04, 0x0B, 0x12, 0x19, 0x20, 0x28, 
 0x21, 0x30, 0x1A, 0x13, 0x0C, 0x05, 0x06, 0x0D, 
@@ -1839,7 +1839,7 @@ static const UINT8 wmv1_scantable01[64]= {
 0x1E, 0x17, 0x1F, 0x26, 0x2D, 0x34, 0x3C, 0x35, 
 0x3D, 0x2E, 0x27, 0x2F, 0x36, 0x3E, 0x37, 0x3F, 
 };
-static const UINT8 wmv1_scantable02[64]= {
+static const uint8_t wmv1_scantable02[64]= {
 0x00, 0x01, 0x08, 0x02, 0x03, 0x09, 0x10, 0x18, 
 0x11, 0x0A, 0x04, 0x05, 0x0B, 0x12, 0x19, 0x20, 
 0x28, 0x30, 0x21, 0x1A, 0x13, 0x0C, 0x06, 0x07, 
@@ -1849,7 +1849,7 @@ static const UINT8 wmv1_scantable02[64]= {
 0x17, 0x1F, 0x26, 0x2D, 0x34, 0x3B, 0x3C, 0x35, 
 0x2E, 0x27, 0x2F, 0x36, 0x3D, 0x3E, 0x37, 0x3F, 
 };
-static const UINT8 wmv1_scantable03[64]= {
+static const uint8_t wmv1_scantable03[64]= {
 0x00, 0x08, 0x10, 0x01, 0x18, 0x20, 0x28, 0x09, 
 0x02, 0x03, 0x0A, 0x11, 0x19, 0x30, 0x38, 0x29, 
 0x21, 0x1A, 0x12, 0x0B, 0x04, 0x05, 0x0C, 0x13, 
@@ -1860,14 +1860,141 @@ static const UINT8 wmv1_scantable03[64]= {
 0x2E, 0x27, 0x2F, 0x36, 0x3D, 0x3E, 0x37, 0x3F, 
 };
 
-static const UINT8 *wmv1_scantable[WMV1_SCANTABLE_COUNT+1]={
+static const uint8_t *wmv1_scantable[WMV1_SCANTABLE_COUNT+1]={
     wmv1_scantable00,
     wmv1_scantable01,
     wmv1_scantable02,
     wmv1_scantable03,
 };
 
-static UINT8 table_inter_intra[4][2]={
+static const uint8_t table_inter_intra[4][2]={
     {0,1},{2,2},{6,3},{7,3}
 };
 
+#define WMV2_INTER_CBP_TABLE_COUNT 4
+
+static const uint32_t table_mb_non_intra2[128][2] = {
+{0x0000A7, 14}, {0x01B2B8, 18}, {0x01B28E, 18}, {0x036575, 19}, 
+{0x006CAC, 16}, {0x000A69, 18}, {0x002934, 20}, {0x00526B, 21}, 
+{0x006CA1, 16}, {0x01B2B9, 18}, {0x0029AD, 20}, {0x029353, 24}, 
+{0x006CA7, 16}, {0x006CAB, 16}, {0x01B2BB, 18}, {0x00029B, 16}, 
+{0x00D944, 17}, {0x000A6A, 18}, {0x0149A8, 23}, {0x03651F, 19}, 
+{0x006CAF, 16}, {0x000A4C, 18}, {0x03651E, 19}, {0x000A48, 18}, 
+{0x00299C, 20}, {0x00299F, 20}, {0x029352, 24}, {0x0029AC, 20}, 
+{0x000296, 16}, {0x00D946, 17}, {0x000A68, 18}, {0x000298, 16}, 
+{0x000527, 17}, {0x00D94D, 17}, {0x0014D7, 19}, {0x036574, 19}, 
+{0x000A5C, 18}, {0x01B299, 18}, {0x00299D, 20}, {0x00299E, 20}, 
+{0x000525, 17}, {0x000A66, 18}, {0x00A4D5, 22}, {0x00149B, 19}, 
+{0x000295, 16}, {0x006CAD, 16}, {0x000A49, 18}, {0x000521, 17}, 
+{0x006CAA, 16}, {0x00D945, 17}, {0x01B298, 18}, {0x00052F, 17}, 
+{0x003654, 15}, {0x006CA0, 16}, {0x000532, 17}, {0x000291, 16}, 
+{0x003652, 15}, {0x000520, 17}, {0x000A5D, 18}, {0x000294, 16}, 
+{0x00009B, 11}, {0x0006E2, 12}, {0x000028, 12}, {0x0001B0, 10}, 
+{0x000001,  3}, {0x000010,  8}, {0x00002F,  6}, {0x00004C, 10}, 
+{0x00000D,  4}, {0x000000, 10}, {0x000006,  9}, {0x000134, 12}, 
+{0x00000C,  4}, {0x000007, 10}, {0x000007,  9}, {0x0006E1, 12}, 
+{0x00000E,  5}, {0x0000DA,  9}, {0x000022,  9}, {0x000364, 11}, 
+{0x00000F,  4}, {0x000006, 10}, {0x00000F,  9}, {0x000135, 12}, 
+{0x000014,  5}, {0x0000DD,  9}, {0x000004,  9}, {0x000015, 11}, 
+{0x00001A,  6}, {0x0001B3, 10}, {0x000005, 10}, {0x0006E3, 12}, 
+{0x00000C,  5}, {0x0000B9,  8}, {0x000004,  8}, {0x0000DB,  9}, 
+{0x00000E,  4}, {0x00000B, 10}, {0x000023,  9}, {0x0006CB, 12}, 
+{0x000005,  6}, {0x0001B1, 10}, {0x000001, 10}, {0x0006E0, 12}, 
+{0x000011,  5}, {0x0000DF,  9}, {0x00000E,  9}, {0x000373, 11}, 
+{0x000003,  5}, {0x0000B8,  8}, {0x000006,  8}, {0x000175,  9}, 
+{0x000015,  5}, {0x000174,  9}, {0x000027,  9}, {0x000372, 11}, 
+{0x000010,  5}, {0x0000BB,  8}, {0x000005,  8}, {0x0000DE,  9}, 
+{0x00000F,  5}, {0x000001,  9}, {0x000012,  8}, {0x000004, 10}, 
+{0x000002,  3}, {0x000016,  5}, {0x000009,  4}, {0x000001,  5}, 
+};
+
+static const uint32_t table_mb_non_intra3[128][2] = {
+{0x0002A1, 10}, {0x005740, 15}, {0x01A0BF, 18}, {0x015D19, 17}, 
+{0x001514, 13}, {0x00461E, 15}, {0x015176, 17}, {0x015177, 17}, 
+{0x0011AD, 13}, {0x00682E, 16}, {0x0682F9, 20}, {0x03417D, 19}, 
+{0x001A36, 14}, {0x002A2D, 14}, {0x00D05E, 17}, {0x006824, 16}, 
+{0x001515, 13}, {0x00545C, 15}, {0x0230E9, 18}, {0x011AFA, 17}, 
+{0x0015D7, 13}, {0x005747, 15}, {0x008D79, 16}, {0x006825, 16}, 
+{0x002BA2, 14}, {0x00A8BA, 16}, {0x0235F6, 18}, {0x015D18, 17}, 
+{0x0011AE, 13}, {0x00346F, 15}, {0x008C3B, 16}, {0x00346E, 15}, 
+{0x000D1A, 13}, {0x00461F, 15}, {0x0682F8, 20}, {0x011875, 17}, 
+{0x002BA1, 14}, {0x008D61, 16}, {0x0235F7, 18}, {0x0230E8, 18}, 
+{0x001513, 13}, {0x008D7B, 16}, {0x011AF4, 17}, {0x011AF5, 17}, 
+{0x001185, 13}, {0x0046BF, 15}, {0x008D60, 16}, {0x008D7C, 16}, 
+{0x001512, 13}, {0x00461C, 15}, {0x00AE8D, 16}, {0x008D78, 16}, 
+{0x000D0E, 13}, {0x003413, 15}, {0x0046B1, 15}, {0x003416, 15}, 
+{0x000AEA, 12}, {0x002A2C, 14}, {0x005741, 15}, {0x002A2F, 14}, 
+{0x000158,  9}, {0x0008D2, 12}, {0x00054C, 11}, {0x000686, 12}, 
+{0x000000,  2}, {0x000069,  8}, {0x00006B,  8}, {0x00068C, 12}, 
+{0x000007,  3}, {0x00015E,  9}, {0x0002A3, 10}, {0x000AE9, 12}, 
+{0x000006,  3}, {0x000231, 10}, {0x0002B8, 10}, {0x001A08, 14}, 
+{0x000010,  5}, {0x0001A9, 10}, {0x000342, 11}, {0x000A88, 12}, 
+{0x000004,  4}, {0x0001A2, 10}, {0x0002A4, 10}, {0x001184, 13}, 
+{0x000012,  5}, {0x000232, 10}, {0x0002B2, 10}, {0x000680, 12}, 
+{0x00001B,  6}, {0x00046A, 11}, {0x00068E, 12}, {0x002359, 14}, 
+{0x000016,  5}, {0x00015F,  9}, {0x0002A0, 10}, {0x00054D, 11}, 
+{0x000005,  4}, {0x000233, 10}, {0x0002B9, 10}, {0x0015D6, 13}, 
+{0x000022,  6}, {0x000468, 11}, {0x000683, 12}, {0x001A0A, 14}, 
+{0x000013,  5}, {0x000236, 10}, {0x0002BB, 10}, {0x001186, 13}, 
+{0x000017,  5}, {0x0001AB, 10}, {0x0002A7, 10}, {0x0008D3, 12}, 
+{0x000014,  5}, {0x000237, 10}, {0x000460, 11}, {0x000D0F, 13}, 
+{0x000019,  6}, {0x0001AA, 10}, {0x0002B3, 10}, {0x000681, 12}, 
+{0x000018,  6}, {0x0001A8, 10}, {0x0002A5, 10}, {0x00068F, 12}, 
+{0x000007,  4}, {0x000055,  7}, {0x000047,  7}, {0x0000AD,  8}, 
+};
+
+static const uint32_t table_mb_non_intra4[128][2] = {
+{0x0000D4,  8}, {0x0021C5, 14}, {0x00F18A, 16}, {0x00D5BC, 16}, 
+{0x000879, 12}, {0x00354D, 14}, {0x010E3F, 17}, {0x010F54, 17}, 
+{0x000866, 12}, {0x00356E, 14}, {0x010F55, 17}, {0x010E3E, 17}, 
+{0x0010CE, 13}, {0x003C84, 14}, {0x00D5BD, 16}, {0x00F18B, 16}, 
+{0x000868, 12}, {0x00438C, 15}, {0x0087AB, 16}, {0x00790B, 15}, 
+{0x000F10, 12}, {0x00433D, 15}, {0x006AD3, 15}, {0x00790A, 15}, 
+{0x001AA7, 13}, {0x0043D4, 15}, {0x00871E, 16}, {0x006ADF, 15}, 
+{0x000D7C, 12}, {0x003C94, 14}, {0x00438D, 15}, {0x006AD2, 15}, 
+{0x0006BC, 11}, {0x0021E9, 14}, {0x006ADA, 15}, {0x006A99, 15}, 
+{0x0010F7, 13}, {0x004389, 15}, {0x006ADB, 15}, {0x0078C4, 15}, 
+{0x000D56, 12}, {0x0035F7, 14}, {0x00438E, 15}, {0x006A98, 15}, 
+{0x000D52, 12}, {0x003C95, 14}, {0x004388, 15}, {0x00433C, 15}, 
+{0x000D54, 12}, {0x001E4B, 13}, {0x003C63, 14}, {0x003C83, 14}, 
+{0x000861, 12}, {0x0021EB, 14}, {0x00356C, 14}, {0x0035F6, 14}, 
+{0x000863, 12}, {0x00219F, 14}, {0x003568, 14}, {0x003C82, 14}, 
+{0x0001AE,  9}, {0x0010C0, 13}, {0x000F11, 12}, {0x001AFA, 13}, 
+{0x000000,  1}, {0x0000F0,  8}, {0x0001AD,  9}, {0x0010C1, 13}, 
+{0x00000A,  4}, {0x0003C5, 10}, {0x000789, 11}, {0x001AB5, 13}, 
+{0x000009,  4}, {0x000435, 11}, {0x000793, 11}, {0x001E40, 13}, 
+{0x00001D,  5}, {0x0003CB, 10}, {0x000878, 12}, {0x001AAF, 13}, 
+{0x00000B,  4}, {0x0003C7, 10}, {0x000791, 11}, {0x001AAB, 13}, 
+{0x00001F,  5}, {0x000436, 11}, {0x0006BF, 11}, {0x000F19, 12}, 
+{0x00003D,  6}, {0x000D51, 12}, {0x0010C4, 13}, {0x0021E8, 14}, 
+{0x000036,  6}, {0x000437, 11}, {0x0006AF, 11}, {0x0010C5, 13}, 
+{0x00000C,  4}, {0x000432, 11}, {0x000794, 11}, {0x001E30, 13}, 
+{0x000042,  7}, {0x000870, 12}, {0x000F24, 12}, {0x001E43, 13}, 
+{0x000020,  6}, {0x00043E, 11}, {0x000795, 11}, {0x001AAA, 13}, 
+{0x000037,  6}, {0x0006AC, 11}, {0x0006AE, 11}, {0x0010F6, 13}, 
+{0x000034,  6}, {0x00043A, 11}, {0x000D50, 12}, {0x001AAE, 13}, 
+{0x000039,  6}, {0x00043F, 11}, {0x00078D, 11}, {0x0010D2, 13}, 
+{0x000038,  6}, {0x00043B, 11}, {0x0006BD, 11}, {0x0010D3, 13}, 
+{0x000011,  5}, {0x0001AC,  9}, {0x0000F3,  8}, {0x000439, 11}, 
+};
+
+static const uint32_t (*wmv2_inter_table[WMV2_INTER_CBP_TABLE_COUNT])[2]={
+    table_mb_non_intra2,
+    table_mb_non_intra3,
+    table_mb_non_intra4,
+    table_mb_non_intra,
+};
+
+static const uint8_t wmv2_scantableA[64]={
+0x00, 0x01, 0x02, 0x08, 0x03, 0x09, 0x0A, 0x10,
+0x04, 0x0B, 0x11, 0x18, 0x12, 0x0C, 0x05, 0x13,
+0x19, 0x0D, 0x14, 0x1A, 0x1B, 0x06, 0x15, 0x1C,
+0x0E, 0x16, 0x1D, 0x07, 0x1E, 0x0F, 0x17, 0x1F,
+};
+
+static const uint8_t wmv2_scantableB[64]={
+0x00, 0x08, 0x01, 0x10, 0x09, 0x18, 0x11, 0x02,
+0x20, 0x0A, 0x19, 0x28, 0x12, 0x30, 0x21, 0x1A, 
+0x38, 0x29, 0x22, 0x03, 0x31, 0x39, 0x0B, 0x2A, 
+0x13, 0x32, 0x1B, 0x3A, 0x23, 0x2B, 0x33, 0x3B,
+};

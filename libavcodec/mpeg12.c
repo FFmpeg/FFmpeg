@@ -526,7 +526,7 @@ void ff_mpeg1_encode_init(MpegEncContext *s)
             }
         }
     }
-    s->mv_penalty= mv_penalty;
+    s->me.mv_penalty= mv_penalty;
     s->fcode_tab= fcode_tab;
     s->min_qcoeff=-255;
     s->max_qcoeff= 255;

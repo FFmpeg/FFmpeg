@@ -274,6 +274,15 @@ int pix_abs8x8_ ## suf(UINT8 *blk2, UINT8 *blk1, int stride)\
 \
     return sum_ ## suf();\
 }\
+int sad8x8_ ## suf(void *s, UINT8 *blk2, UINT8 *blk1, int stride)\
+{\
+    asm volatile("pxor %%mm7, %%mm7		\n\t"\
+                 "pxor %%mm6, %%mm6		\n\t":);\
+\
+    sad8_ ## suf(blk1, blk2, stride, 3);\
+\
+    return sum_ ## suf();\
+}\
 \
 int pix_abs8x8_x2_ ## suf(UINT8 *blk2, UINT8 *blk1, int stride)\
 {\
@@ -315,6 +324,16 @@ int pix_abs8x8_xy2_ ## suf(UINT8 *blk2, UINT8 *blk1, int stride)\
 }\
 \
 int pix_abs16x16_ ## suf(UINT8 *blk2, UINT8 *blk1, int stride)\
+{\
+    asm volatile("pxor %%mm7, %%mm7		\n\t"\
+                 "pxor %%mm6, %%mm6		\n\t":);\
+\
+    sad8_ ## suf(blk1  , blk2  , stride, 4);\
+    sad8_ ## suf(blk1+8, blk2+8, stride, 4);\
+\
+    return sum_ ## suf();\
+}\
+int sad16x16_ ## suf(void *s, UINT8 *blk2, UINT8 *blk1, int stride)\
 {\
     asm volatile("pxor %%mm7, %%mm7		\n\t"\
                  "pxor %%mm6, %%mm6		\n\t":);\
