@@ -240,4 +240,28 @@ typedef	union {
 
 #define	sfence() __asm__ __volatile__ ("sfence\n\t")
 
+/* SSE2 */
+#define	pshufhw_m2r(var,reg,imm)	mmx_m2ri(pshufhw, var, reg, imm)
+#define	pshufhw_r2r(regs,regd,imm)	mmx_r2ri(pshufhw, regs, regd, imm)
+#define	pshuflw_m2r(var,reg,imm)	mmx_m2ri(pshuflw, var, reg, imm)
+#define	pshuflw_r2r(regs,regd,imm)	mmx_r2ri(pshuflw, regs, regd, imm)
+
+#define	pshufd_r2r(regs,regd,imm)	mmx_r2ri(pshufd, regs, regd, imm)
+
+#define	movdqa_m2r(var,reg)		mmx_m2r (movdqa, var, reg)
+#define	movdqa_r2m(reg,var)		mmx_r2m (movdqa, reg, var)
+#define	movdqa_r2r(regs,regd)		mmx_r2r (movdqa, regs, regd)
+#define	movdqu_m2r(var,reg)		mmx_m2r (movdqu, var, reg)
+#define	movdqu_r2m(reg,var)		mmx_r2m (movdqu, reg, var)
+#define	movdqu_r2r(regs,regd)		mmx_r2r (movdqu, regs, regd)
+
+#define	pmullw_r2m(reg,var)		mmx_r2m (pmullw, reg, var)
+
+#define	pslldq_i2r(imm,reg)		mmx_i2r (pslldq, imm, reg)
+#define	psrldq_i2r(imm,reg)		mmx_i2r (psrldq, imm, reg)
+
+#define	punpcklqdq_r2r(regs,regd)	mmx_r2r (punpcklqdq, regs, regd)
+#define	punpckhqdq_r2r(regs,regd)	mmx_r2r (punpckhqdq, regs, regd)
+
+
 #endif /* AVCODEC_I386MMX_H */
