@@ -43,6 +43,7 @@ typedef struct AC3BitAllocParameters {
     int cplfleak, cplsleak;
 } AC3BitAllocParameters;
 
+#if 0
 extern const uint16_t ac3_freqs[3];
 extern const uint16_t ac3_bitratetab[19];
 extern const int16_t ac3_window[256];
@@ -52,6 +53,7 @@ extern const uint16_t sgaintab[4];
 extern const uint16_t dbkneetab[4];
 extern const uint16_t floortab[8];
 extern const uint16_t fgaintab[8];
+#endif
 
 void ac3_common_init(void);
 void ac3_parametric_bit_allocation(AC3BitAllocParameters *s, uint8_t *bap,
