@@ -22,6 +22,10 @@
 #ifdef USE_FASTMEMCPY
 #include "fastmemcpy.h"
 #endif
+
+#ifdef HAVE_MMX
+#include "i386/mmx.h"
+#endif
 /* XXX: totally non optimized */
 
 static void yuv422_to_yuv420p(UINT8 *lum, UINT8 *cb, UINT8 *cr,
@@ -762,77 +766,182 @@ int img_convert(AVPicture *dst, int dst_pix_fmt,
     return 0;
 }
 
+
+#ifdef HAVE_MMX
+#define DEINT_INPLACE_LINE_LUM \
+                    movd_m2r(lum_m4[0],mm0);\
+                    movd_m2r(lum_m3[0],mm1);\
+                    movd_m2r(lum_m2[0],mm2);\
+                    movd_m2r(lum_m1[0],mm3);\
+                    movd_m2r(lum[0],mm4);\
+                    punpcklbw_r2r(mm7,mm0);\
+                    movd_r2m(mm2,lum_m4[0]);\
+                    punpcklbw_r2r(mm7,mm1);\
+                    punpcklbw_r2r(mm7,mm2);\
+                    punpcklbw_r2r(mm7,mm3);\
+                    punpcklbw_r2r(mm7,mm4);\
+                    paddw_r2r(mm3,mm1);\
+                    psllw_i2r(1,mm2);\
+                    paddw_r2r(mm4,mm0);\
+                    psllw_i2r(2,mm1);\
+                    paddw_r2r(mm6,mm2);\
+                    paddw_r2r(mm2,mm1);\
+                    psubusw_r2r(mm0,mm1);\
+                    psrlw_i2r(3,mm1);\
+                    packuswb_r2r(mm7,mm1);\
+                    movd_r2m(mm1,lum_m2[0]);
+
+#define DEINT_LINE_LUM \
+                    movd_m2r(lum_m4[0],mm0);\
+                    movd_m2r(lum_m3[0],mm1);\
+                    movd_m2r(lum_m2[0],mm2);\
+                    movd_m2r(lum_m1[0],mm3);\
+                    movd_m2r(lum[0],mm4);\
+                    punpcklbw_r2r(mm7,mm0);\
+                    punpcklbw_r2r(mm7,mm1);\
+                    punpcklbw_r2r(mm7,mm2);\
+                    punpcklbw_r2r(mm7,mm3);\
+                    punpcklbw_r2r(mm7,mm4);\
+                    paddw_r2r(mm3,mm1);\
+                    psllw_i2r(1,mm2);\
+                    paddw_r2r(mm4,mm0);\
+                    psllw_i2r(2,mm1);\
+                    paddw_r2r(mm6,mm2);\
+                    paddw_r2r(mm2,mm1);\
+                    psubusw_r2r(mm0,mm1);\
+                    psrlw_i2r(3,mm1);\
+                    packuswb_r2r(mm7,mm1);\
+                    movd_r2m(mm1,dst[0]);
+#endif
+
 /* filter parameters: [-1 4 2 4 -1] // 8 */
-static void deinterlace_line(UINT8 *dst, UINT8 *src, int src_wrap,
-                             int size)
+static void deinterlace_line(UINT8 *dst, UINT8 *lum_m4, UINT8 *lum_m3, UINT8 *lum_m2, UINT8 *lum_m1, UINT8 *lum,
+                                int size)
 {
+#ifndef HAVE_MMX
     UINT8 *cm = cropTbl + MAX_NEG_CROP;
     int sum;
-    UINT8 *s;
 
     for(;size > 0;size--) {
-        s = src;
-        sum = -s[0];
-        s += src_wrap;
-        sum += s[0] << 2;
-        s += src_wrap;
-        sum += s[0] << 1;
-        s += src_wrap;
-        sum += s[0] << 2;
-        s += src_wrap;
-        sum += -s[0];
+        sum = -lum_m4[0];
+        sum += lum_m3[0] << 2;
+        sum += lum_m2[0] << 1;
+        sum += lum_m1[0] << 2;
+        sum += -lum[0];
         dst[0] = cm[(sum + 4) >> 3];
+        lum_m4++;
+        lum_m3++;
+        lum_m2++;
+        lum_m1++;
+        lum++;
         dst++;
-        src++;
     }
+#else
+
+    for (;size > 3; size-=4) {
+        DEINT_LINE_LUM
+        lum_m4+=4;
+        lum_m3+=4;
+        lum_m2+=4;
+        lum_m1+=4;
+        lum+=4;
+        dst+=4;
+    }
+#endif
+}
+static void deinterlace_line_inplace(UINT8 *lum_m4, UINT8 *lum_m3, UINT8 *lum_m2, UINT8 *lum_m1, UINT8 *lum,
+                             int size)
+{
+#ifndef HAVE_MMX
+    UINT8 *cm = cropTbl + MAX_NEG_CROP;
+    int sum;
+
+    for(;size > 0;size--) {
+        sum = -lum_m4[0];
+        sum += lum_m3[0] << 2;
+        sum += lum_m2[0] << 1;
+        lum_m4[0]=lum_m2[0];
+        sum += lum_m1[0] << 2;
+        sum += -lum[0];
+        lum_m2[0] = cm[(sum + 4) >> 3];
+        lum_m4++;
+        lum_m3++;
+        lum_m2++;
+        lum_m1++;
+        lum++;
+    }
+#else
+
+    for (;size > 3; size-=4) {
+        DEINT_INPLACE_LINE_LUM
+        lum_m4+=4;
+        lum_m3+=4;
+        lum_m2+=4;
+        lum_m1+=4;
+        lum+=4;
+    }
+#endif
 }
 
 /* deinterlacing : 2 temporal taps, 3 spatial taps linear filter. The
    top field is copied as is, but the bottom field is deinterlaced
    against the top field. */
 static void deinterlace_bottom_field(UINT8 *dst, int dst_wrap,
-                                     UINT8 *src1, int src_wrap,
+                                    UINT8 *src1, int src_wrap,
+                                    int width, int height)
+{
+    UINT8 *src_m2, *src_m1, *src_0, *src_p1, *src_p2;
+    int y;
+
+    src_m2 = src1;
+    src_m1 = src1;
+    src_0=&src_m1[src_wrap];
+    src_p1=&src_0[src_wrap];
+    src_p2=&src_p1[src_wrap];
+    for(y=0;y<(height-2);y+=2) {
+        memcpy(dst,src_m1,width);
+        dst += dst_wrap;
+        deinterlace_line(dst,src_m2,src_m1,src_0,src_p1,src_p2,width);
+        src_m2 = src_0;
+        src_m1 = src_p1;
+        src_0 = src_p2;
+        src_p1 += 2*src_wrap;
+        src_p2 += 2*src_wrap;
+        dst += dst_wrap;
+    }
+    memcpy(dst,src_m1,width);
+    dst += dst_wrap;
+    /* do last line */
+    deinterlace_line(dst,src_m2,src_m1,src_0,src_0,src_0,width);
+}
+
+static void deinterlace_bottom_field_inplace(UINT8 *src1, int src_wrap,
                                      int width, int height)
 {
-    UINT8 *src, *ptr;
-    int y, y1, i;
+    UINT8 *src_m1, *src_0, *src_p1, *src_p2;
+    int y;
     UINT8 *buf;
+    buf = (UINT8*)av_malloc(width);
 
-    buf = (UINT8*)av_malloc(5 * width);
-
-    src = src1;
-    for(y=0;y<height;y+=2) {
-        /* copy top field line */
-        memcpy(dst, src, width);
-        dst += dst_wrap;
-        src += (1 - 2) * src_wrap;
-        y1 = y - 2;
-        if (y1 >= 0 && (y1 + 4) < height) {
-            /* fast case : no edges */
-            deinterlace_line(dst, src, src_wrap, width);
-        } else {
-            /* in order to use the same function, we use an intermediate buffer */
-            ptr = buf;
-            for(i=0;i<5;i++) {
-                if (y1 < 0)
-                    memcpy(ptr, src1, width);
-                else if (y1 >= height) 
-                    memcpy(ptr, src1 + (height - 1) * src_wrap, width);
-                else
-                    memcpy(ptr, src1 + y1 * src_wrap, width);
-                y1++;
-                ptr += width;
-            }
-            deinterlace_line(dst, buf, width, width);
-        }
-        dst += dst_wrap;
-        src += (2 + 1) * src_wrap;
+    src_m1 = src1;
+    memcpy(buf,src_m1,width);
+    src_0=&src_m1[src_wrap];
+    src_p1=&src_0[src_wrap];
+    src_p2=&src_p1[src_wrap];
+    for(y=0;y<(height-2);y+=2) {
+        deinterlace_line_inplace(buf,src_m1,src_0,src_p1,src_p2,width);
+        src_m1 = src_p1;
+        src_0 = src_p2;
+        src_p1 += 2*src_wrap;
+        src_p2 += 2*src_wrap;
     }
+    /* do last line */
+    deinterlace_line_inplace(buf,src_m1,src_0,src_0,src_0,width);
     av_free(buf);
 }
 
 
-/* deinterlace, return -1 if format not handled */
+/* deinterlace - if not supported return -1 */
 int avpicture_deinterlace(AVPicture *dst, AVPicture *src,
                           int pix_fmt, int width, int height)
 {
@@ -842,8 +951,21 @@ int avpicture_deinterlace(AVPicture *dst, AVPicture *src,
         pix_fmt != PIX_FMT_YUV422P &&
         pix_fmt != PIX_FMT_YUV444P)
         return -1;
-    if ((width & 1) != 0 || (height & 3) != 0)
+    if ((width & 3) != 0 || (height & 3) != 0)
         return -1;
+
+#ifdef HAVE_MMX
+    {
+        mmx_t rounder;
+        rounder.uw[0]=4;
+        rounder.uw[1]=4;
+        rounder.uw[2]=4;
+        rounder.uw[3]=4;
+        pxor_r2r(mm7,mm7);
+        movq_m2r(rounder,mm6);
+    }
+#endif
+
     
     for(i=0;i<3;i++) {
         if (i == 1) {
@@ -859,10 +981,18 @@ int avpicture_deinterlace(AVPicture *dst, AVPicture *src,
                 break;
             }
         }
-        deinterlace_bottom_field(dst->data[i], dst->linesize[i],
-                                 src->data[i], src->linesize[i],
+        if (src == dst) {
+            deinterlace_bottom_field_inplace(src->data[i], src->linesize[i],
                                  width, height);
+        } else {
+            deinterlace_bottom_field(dst->data[i],dst->linesize[i],
+                                        src->data[i], src->linesize[i],
+                                        width, height);
+        }
     }
+#ifdef HAVE_MMX
+    emms();
+#endif
     return 0;
 }
 
