@@ -1223,9 +1223,7 @@ static inline int decode_dc(MpegEncContext *s, int component)
     if (code == 0) {
         diff = 0;
     } else {
-        diff = get_bits(&s->gb, code);
-        if ((diff & (1 << (code - 1))) == 0) 
-            diff = (-1 << code) | (diff + 1);
+        diff = get_xbits(&s->gb, code);
     }
     return diff;
 }

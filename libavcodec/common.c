@@ -140,9 +140,19 @@ void init_get_bits(GetBitContext *s,
 #ifdef ALT_BITSTREAM_READER
     s->index=0;
 #elif defined LIBMPEG2_BITSTREAM_READER
+#ifdef LIBMPEG2_BITSTREAM_HACK
+  if ((int)buffer&1) {
+     /* word alignment */
+    s->cache = (*buffer++)<<24;
+    s->buffer_ptr = buffer;
+    s->bit_count = 16-8;
+  } else
+#endif
+  {
     s->buffer_ptr = buffer;
     s->bit_count = 16;
     s->cache = 0;
+  }
 #elif defined A32_BITSTREAM_READER
     s->buffer_ptr = (uint32_t*)buffer;
     s->bit_count = 32;

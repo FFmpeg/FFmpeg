@@ -3562,12 +3562,10 @@ static int h263_decode_block(MpegEncContext * s, DCTELEM * block,
             if(level == -128){
                 if (s->h263_rv10) {
                     /* XXX: should patch encoder too */
-                    level = get_bits(&s->gb, 12);
-                    level= (level + ((-1)<<11)) ^ ((-1)<<11); //sign extension
+                    level = get_sbits(&s->gb, 12);
                 }else{
                     level = get_bits(&s->gb, 5);
-                    level += get_bits(&s->gb, 6)<<5;
-                    level= (level + ((-1)<<10)) ^ ((-1)<<10); //sign extension
+                    level |= get_sbits(&s->gb, 6)<<5;
                 }
             }
         } else {
@@ -3619,9 +3617,7 @@ static inline int mpeg4_decode_dc(MpegEncContext * s, int n, int *dir_ptr)
     if (code == 0) {
         level = 0;
     } else {
-        level = get_bits(&s->gb, code);
-        if ((level >> (code - 1)) == 0) /* if MSB not set it is negative*/
-            level = - (level ^ ((1 << code) - 1));
+        level = get_xbits(&s->gb, code);
         if (code > 8){
             if(get_bits1(&s->gb)==0){ /* marker */
                 if(s->error_resilience>=2){
@@ -4083,19 +4079,13 @@ static void mpeg4_decode_sprite_trajectory(MpegEncContext * s)
 
         length= get_vlc(&s->gb, &sprite_trajectory);
         if(length){
-            x= get_bits(&s->gb, length);
-
-            if ((x >> (length - 1)) == 0) /* if MSB not set it is negative*/
-                x = - (x ^ ((1 << length) - 1));
+            x= get_xbits(&s->gb, length);
         }
         if(!(s->divx_version==500 && s->divx_build==413)) skip_bits1(&s->gb); /* marker bit */
         
         length= get_vlc(&s->gb, &sprite_trajectory);
         if(length){
-            y=get_bits(&s->gb, length);
-
-            if ((y >> (length - 1)) == 0) /* if MSB not set it is negative*/
-                y = - (y ^ ((1 << length) - 1));
+            y=get_xbits(&s->gb, length);
         }
         skip_bits1(&s->gb); /* marker bit */
 //printf("%d %d %d %d\n", x, y, i, s->sprite_warping_accuracy);
