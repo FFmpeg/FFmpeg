@@ -407,7 +407,7 @@ static void yuv2rgb_c_init (int bpp, int mode)
     uint32_t *table_32 = 0;
     uint16_t *table_16 = 0;
     uint8_t *table_8 = 0;
-    uint32_t entry_size = 0;
+    int entry_size = 0;
     void *table_r = 0, *table_g = 0, *table_b = 0;
 
     int crv = Inverse_Table_6_9[matrix_coefficients][0];
