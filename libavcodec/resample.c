@@ -75,9 +75,9 @@ static int fractional_resample(ReSampleChannelContext *s, short *output, short *
         *q++ = (l0 * (FRAC - frac) + l1 * frac) >> FRAC_BITS;
         frac = frac + s->incr;
         while (frac >= FRAC) {
+            frac -= FRAC;
             if (p >= pend)
                 goto the_end;
-            frac -= FRAC;
             l0 = l1;
             l1 = *p++;
         }
