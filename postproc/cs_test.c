@@ -132,17 +132,109 @@ main(int argc, char **argv)
 						rgb32to24(src, dst, width*srcBpp);
 						break;
 					case 11:
+						srcBpp=2;
+						dstBpp=2;
+						name="rgb16to15";
+						rgb16to15(src, dst, width*srcBpp);
+						break;
+					
+					case 14:
+						srcBpp=2;
+						dstBpp=2;
+						name="rgb15tobgr15";
+						rgb15tobgr15(src, dst, width*srcBpp);
+						break;
+					case 15:
+						srcBpp=2;
+						dstBpp=2;
+						name="rgb15tobgr16";
+						rgb15tobgr16(src, dst, width*srcBpp);
+						break;
+					case 16:
+						srcBpp=2;
+						dstBpp=3;
+						name="rgb15tobgr24";
+						rgb15tobgr24(src, dst, width*srcBpp);
+						break;
+					case 17:
+						srcBpp=2;
+						dstBpp=4;
+						name="rgb15tobgr32";
+						rgb15tobgr32(src, dst, width*srcBpp);
+						break;
+					case 18:
+						srcBpp=2;
+						dstBpp=2;
+						name="rgb16tobgr15";
+						rgb16tobgr15(src, dst, width*srcBpp);
+						break;
+					case 19:
+						srcBpp=2;
+						dstBpp=2;
+						name="rgb16tobgr16";
+						rgb16tobgr16(src, dst, width*srcBpp);
+						break;
+					case 20:
+						srcBpp=2;
+						dstBpp=3;
+						name="rgb16tobgr24";
+						rgb16tobgr24(src, dst, width*srcBpp);
+						break;
+					case 21:
+						srcBpp=2;
+						dstBpp=4;
+						name="rgb16tobgr32";
+						rgb16tobgr32(src, dst, width*srcBpp);
+						break;
+					case 22:
+						srcBpp=3;
+						dstBpp=2;
+						name="rgb24tobgr15";
+						rgb24tobgr15(src, dst, width*srcBpp);
+						break;
+					case 23:
+						srcBpp=3;
+						dstBpp=2;
+						name="rgb24tobgr16";
+						rgb24tobgr16(src, dst, width*srcBpp);
+						break;
+					case 24:
 						srcBpp=3;
 						dstBpp=3;
 						name="rgb24tobgr24";
 						rgb24tobgr24(src, dst, width*srcBpp);
 						break;
-					case 12:
+					case 25:
+						srcBpp=3;
+						dstBpp=4;
+						name="rgb24tobgr32";
+						rgb24tobgr32(src, dst, width*srcBpp);
+						break;
+					case 26:
+						srcBpp=4;
+						dstBpp=2;
+						name="rgb32tobgr15";
+						rgb32tobgr15(src, dst, width*srcBpp);
+						break;
+					case 27:
+						srcBpp=4;
+						dstBpp=2;
+						name="rgb32tobgr16";
+						rgb32tobgr16(src, dst, width*srcBpp);
+						break;
+					case 28:
+						srcBpp=4;
+						dstBpp=3;
+						name="rgb32tobgr24";
+						rgb32tobgr24(src, dst, width*srcBpp);
+						break;
+					case 29:
 						srcBpp=4;
 						dstBpp=4;
 						name="rgb32tobgr32";
 						rgb32tobgr32(src, dst, width*srcBpp);
 						break;
+
 					}
 					if(!srcBpp) break;
 
