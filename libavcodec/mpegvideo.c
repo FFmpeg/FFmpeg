@@ -3573,12 +3573,13 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
     ptr_cr = s->new_picture.data[2] + (mb_y * 8 * wrap_c) + mb_x * 8;
 
     if(mb_x*16+16 > s->width || mb_y*16+16 > s->height){
-        ff_emulated_edge_mc(s->edge_emu_buffer            , ptr_y , wrap_y,16,16,mb_x*16,mb_y*16, s->width   , s->height);
-        ptr_y= s->edge_emu_buffer;
-        ff_emulated_edge_mc(s->edge_emu_buffer+18*wrap_y  , ptr_cb, wrap_c, 8, 8, mb_x*8, mb_y*8, s->width>>1, s->height>>1);
-        ptr_cb= s->edge_emu_buffer+18*wrap_y;
-        ff_emulated_edge_mc(s->edge_emu_buffer+18*wrap_y+9, ptr_cr, wrap_c, 8, 8, mb_x*8, mb_y*8, s->width>>1, s->height>>1);
-        ptr_cr= s->edge_emu_buffer+18*wrap_y+9;
+        uint8_t *ebuf= s->edge_emu_buffer + 32;
+        ff_emulated_edge_mc(ebuf            , ptr_y , wrap_y,16,16,mb_x*16,mb_y*16, s->width   , s->height);
+        ptr_y= ebuf;
+        ff_emulated_edge_mc(ebuf+18*wrap_y  , ptr_cb, wrap_c, 8, 8, mb_x*8, mb_y*8, s->width>>1, s->height>>1);
+        ptr_cb= ebuf+18*wrap_y;
+        ff_emulated_edge_mc(ebuf+18*wrap_y+8, ptr_cr, wrap_c, 8, 8, mb_x*8, mb_y*8, s->width>>1, s->height>>1);
+        ptr_cr= ebuf+18*wrap_y+8;
     }
 
     if (s->mb_intra) {
