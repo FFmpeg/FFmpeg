@@ -28,6 +28,10 @@
 #include <termios.h>
 #include <sys/resource.h>
 #endif
+#ifdef __BEOS__
+/* for snooze() */
+#include <OS.h>
+#endif
 #include <time.h>
 #include <ctype.h>
 
@@ -925,11 +929,15 @@ static int av_encode(AVFormatContext **output_files,
         if (file_index < 0) {
             if (stream_no_data) {
 #ifndef CONFIG_WIN32
+#ifndef __BEOS__
                 struct timespec ts;
 
                 ts.tv_sec = 0;
                 ts.tv_nsec = 1000 * 1000 * 10;
                 nanosleep(&ts, 0);
+#else
+               snooze(10 * 1000); /* mmu_man */ /* in microsec */
+#endif
 #endif
                 stream_no_data = 0;
                 continue;
