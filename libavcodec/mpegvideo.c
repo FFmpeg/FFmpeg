@@ -3416,7 +3416,7 @@ static void encode_picture(MpegEncContext *s, int picture_number)
     }
     emms_c();
 
-    if(s->scene_change_score > 0 && s->pict_type == P_TYPE){
+    if(s->scene_change_score > s->avctx->scenechange_threshold && s->pict_type == P_TYPE){
         s->pict_type= I_TYPE;
         memset(s->mb_type   , MB_TYPE_INTRA, sizeof(uint8_t)*s->mb_stride*s->mb_height);
 //printf("Scene change detected, encoding as I Frame %d %d\n", s->current_picture.mb_var_sum, s->current_picture.mc_mb_var_sum);
