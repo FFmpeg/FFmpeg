@@ -267,7 +267,7 @@ static inline void fdct_row(const int16_t *in, int16_t *out, const int16_t *tabl
     movq_r2m(mm6, *(out + 4));
 }
 
-void fdct_mmx(int16_t *block)
+void ff_fdct_mmx(int16_t *block)
 {
     /* XXX: not thread safe */
     static int16_t block_tmp[64] ATTR_ALIGN(8);

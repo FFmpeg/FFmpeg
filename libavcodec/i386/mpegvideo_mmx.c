@@ -560,7 +560,7 @@ void MPV_common_init_mmx(MpegEncContext *s)
         draw_edges = draw_edges_mmx;
 
         if(dct_algo==FF_DCT_AUTO || dct_algo==FF_DCT_MMX){
-            s->fdct = fdct_mmx;
+            s->fdct = ff_fdct_mmx;
 
             if(mm_flags & MM_MMXEXT){
                 s->dct_quantize= dct_quantize_MMX2;

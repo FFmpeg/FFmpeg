@@ -41,7 +41,7 @@ static int RENAME(dct_quantize)(MpegEncContext *s,
     static __align8 INT16 temp_block[64];
 
     //s->fdct (block);
-    fdct_mmx (block); //cant be anything else ...
+    ff_fdct_mmx (block); //cant be anything else ...
 
     if (s->mb_intra) {
         int dummy;
