@@ -280,8 +280,8 @@ typedef struct Vp3DecodeContext {
      * numbers corresponds to the fragment indices 0..5 which comprise
      * the macroblock (4 Y fragments and 2 C fragments). */
     int *macroblock_fragments;
-    /* This is an array of that indicates how a particular 
-     * macroblock is coded. */
+    /* This is an array that indicates how a particular macroblock 
+     * is coded. */
     unsigned char *macroblock_coding;
 
     int first_coded_y_fragment;
@@ -1656,6 +1656,16 @@ static int unpack_vlcs(Vp3DecodeContext *s, GetBitContext *gb,
     DCTELEM coeff;
     Vp3Fragment *fragment;
 
+    if ((first_fragment < 0) ||
+        (first_fragment >= s->fragment_count) ||
+        (last_fragment < 0) ||
+        (last_fragment >= s->fragment_count)) {
+
+        printf ("  vp3:unpack_vlcs(): bad fragment number (%d -> %d ?)\n",
+            first_fragment, last_fragment);
+        return 1;
+    }
+
     for (i = first_fragment; i <= last_fragment; i++) {
 
         fragment = &s->all_fragments[s->coded_fragment_list[i]];
@@ -2117,6 +2127,11 @@ static void render_fragments(Vp3DecodeContext *s,
         /* for each fragment in a row... */
         for (x = 0; x < width; x += 8, i++) {
 
+            if ((i < 0) || (i >= s->fragment_count)) {
+                printf ("  vp3:render_fragments(): bad fragment number (%d)\n", i);
+                return;
+            }
+
             /* transform if this block was coded */
             if (s->all_fragments[i].coding_method != MODE_COPY) {
 
@@ -2418,11 +2433,15 @@ static int vp3_decode_frame(AVCodecContext *avctx,
     counter++;
 
     if (s->keyframe) {
-        if ((s->golden_frame.data[0]) &&
-            (s->last_frame.data[0] == s->golden_frame.data[0]))
-            avctx->release_buffer(avctx, &s->golden_frame);
-        else if (s->last_frame.data[0])
-            avctx->release_buffer(avctx, &s->last_frame);
+        if (s->last_frame.data[0] == s->golden_frame.data[0]) {
+            if (s->golden_frame.data[0])
+                avctx->release_buffer(avctx, &s->golden_frame);
+        } else {
+            if (s->golden_frame.data[0])
+                avctx->release_buffer(avctx, &s->golden_frame);
+            if (s->last_frame.data[0])
+                avctx->release_buffer(avctx, &s->last_frame);
+        }
 
         s->golden_frame.reference = 0;
         if(avctx->get_buffer(avctx, &s->golden_frame) < 0) {
