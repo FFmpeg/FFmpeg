@@ -223,7 +223,7 @@ int av_resample(AVResampleContext *c, short *dst, short *src, int *consumed, int
         }
     }
     *consumed= FFMAX(index, 0) >> c->phase_shift;
-    index= FFMIN(index, 0);
+    if(index>=0) index &= c->phase_mask;
 
     if(compensation_distance){
         compensation_distance -= dst_index;
