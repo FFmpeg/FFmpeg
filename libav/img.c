@@ -237,6 +237,7 @@ static int img_read_packet(AVFormatContext *s1, AVPacket *pkt)
         av_free_packet(pkt);
         return -EIO; /* signal EOF */
     } else {
+        pkt->pts = ((INT64)s->img_number * s1->pts_den * FRAME_RATE_BASE) / (s1->streams[0]->codec.frame_rate * s1->pts_num);
         s->img_number++;
         return 0;
     }
