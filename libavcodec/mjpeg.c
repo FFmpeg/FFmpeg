@@ -2148,7 +2148,7 @@ static int sp5x_decode_frame(AVCodecContext *avctx,
     s->mb_width = (s->width * s->h_max * 8 -1) / (s->h_max * 8);
     s->mb_height = (s->height * s->v_max * 8 -1) / (s->v_max * 8);
 
-    init_get_bits(&s->gb, buf, buf_size*8);
+    init_get_bits(&s->gb, buf+14, (buf_size-14)*8);
     
     return mjpeg_decode_scan(s);
 #endif
