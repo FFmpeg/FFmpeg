@@ -707,6 +707,7 @@ following image formats are supported:
 @item Id Cinematic Video     @tab     @tab  X @tab used in Quake II
 @item Planar RGB             @tab     @tab  X @tab fourcc: 8BPS
 @item FLIC video             @tab     @tab  X
+@item Duck TrueMotion v1     @tab     @tab  X @tab fourcc: DUCK
 @end multitable
 
 @code{X} means that the encoding (resp. decoding) is supported.

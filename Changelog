@@ -10,6 +10,8 @@ version <next>:
 - Id Quake II CIN playback support
 - 8BPS video decoder
 - FLIC playback support
+- RealVideo 2.0 (RV20) decoder
+- Duck TrueMotion v1 (DUCK) video decoder
 
 version 0.4.8:
 
