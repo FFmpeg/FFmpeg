@@ -130,8 +130,6 @@ static int h261_decode_init(AVCodecContext *avctx){
 
     h261_decode_init_vlc(h);
 
-    h->bits_left = 0;
-    h->last_bits = 0;
     h->gob_start_code_skipped = 0;
     
     return 0;
@@ -486,10 +484,7 @@ static int h261_decode_block(H261Context * h, DCTELEM * block,
 int h261_decode_picture_header(H261Context *h){
     MpegEncContext * const s = &h->s;
     int format, i;
-    uint32_t startcode;
-    align_get_bits(&s->gb);
-
-    startcode = (h->last_bits << (12 - (8-h->bits_left))) | get_bits(&s->gb, 20-8 - (8- h->bits_left));
+    uint32_t startcode= 0;
 
     for(i= s->gb.size_in_bits - get_bits_count(&s->gb); i>24; i-=1){
         startcode = ((startcode << 1) | get_bits(&s->gb, 1)) & 0x000FFFFF;
@@ -646,13 +641,13 @@ static int h261_parse(AVCodecParserContext *s,
  * returns the number of bytes consumed for building the current frame
  */
 static int get_consumed_bytes(MpegEncContext *s, int buf_size){
-    int pos= (get_bits_count(&s->gb)+7)>>3;
-
     if(s->flags&CODEC_FLAG_TRUNCATED){
+        int pos= (get_bits_count(&s->gb)+7)>>3;
         pos -= s->parse_context.last_index;
         if(pos<0) pos=0;// padding is not really read so this might be -1
         return pos;
     }else{
+        int pos= get_bits_count(&s->gb)>>3;
         if(pos==0) pos=1; //avoid infinite loops (i doubt thats needed but ...)
         if(pos+10>buf_size) pos=buf_size; // oops ;)
 
@@ -678,7 +673,6 @@ static int h261_decode_frame(AVCodecContext *avctx,
 
     /* no supplementary picture */
     if (buf_size == 0) {
-
         return 0;
     }
 
@@ -749,20 +743,6 @@ retry:
         h261_decode_gob(h);
     }
     MPV_frame_end(s);
-
-    // h261 doesn't have byte aligned codes
-    // store the bits of the next frame that are left in the last byte
-    // in the H261Context and remember the number of stored bits
-    {
-        int bitsleft;
-        int current_pos= get_bits_count(&s->gb)>>3;
-        bitsleft =  (current_pos<<3) - get_bits_count(&s->gb);
-        h->bits_left = - bitsleft;
-        if(bitsleft > 0)
-            h->last_bits= get_bits(&s->gb, 8 - h->bits_left);
-        else
-            h->last_bits = 0;
-    }
 
 assert(s->current_picture.pict_type == s->current_picture_ptr->pict_type);
 assert(s->current_picture.pict_type == s->pict_type);
