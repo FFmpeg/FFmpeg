@@ -17,12 +17,13 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 #include "avformat.h"
-#include <linux/videodev.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <sys/time.h>
+#define _LINUX_TIME_H 1
+#include <linux/videodev.h>
 #include <time.h>
 
 typedef struct {
