@@ -2160,7 +2160,12 @@ void img_copy(AVPicture *dst, const AVPicture *src,
 #define AV_LOG_INFO 1
 #define AV_LOG_DEBUG 2
 
+#ifdef __GNUC__
 extern void av_log(void*, int level, const char *fmt, ...) __attribute__ ((__format__ (__printf__, 3, 4)));
+#else
+extern void av_log(void*, int level, const char *fmt, ...);
+#endif
+
 extern void av_vlog(void*, int level, const char *fmt, va_list);
 extern int av_log_get_level(void);
 extern void av_log_set_level(int);
