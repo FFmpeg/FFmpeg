@@ -72,6 +72,26 @@ typedef struct MOVContext {
 
 static int mov_write_esds_tag(ByteIOContext *pb, MOVTrack* track);
 
+const CodecTag ff_mov_obj_type[] = {
+    { CODEC_ID_MPEG4     ,  32 },
+    { CODEC_ID_AAC       ,  64 },
+    { CODEC_ID_MPEG1VIDEO, 106 },
+    { CODEC_ID_MPEG2VIDEO,  96 },//mpeg2 profiles
+    { CODEC_ID_MP2       , 107 },//FIXME mpeg2 mpeg audio -> 105
+    { CODEC_ID_MP3       , 107 },//FIXME mpeg2 mpeg audio -> 105
+    { CODEC_ID_H264      , 241 },
+    { CODEC_ID_H263      , 242 },
+    { CODEC_ID_H261      , 243 },
+    { CODEC_ID_MJPEG     , 108 },
+    { CODEC_ID_PCM_S16LE , 224 },
+    { CODEC_ID_VORBIS    , 225 },
+    { CODEC_ID_AC3       , 226 },
+    { CODEC_ID_PCM_ALAW  , 227 },
+    { CODEC_ID_PCM_MULAW , 228 },
+    { CODEC_ID_PCM_S16BE , 230 },
+    { 0,0  },
+};
+
 //FIXME supprt 64bit varaint with wide placeholders
 static int updateSize (ByteIOContext *pb, int pos)
 {
@@ -430,28 +450,28 @@ static int mov_write_esds_tag(ByteIOContext *pb, MOVTrack* track) // Basic
     // ES descriptor
     putDescr(pb, 0x03, 3 + descrLength(13 + decoderSpecificInfoLen) +
              descrLength(1));
-    put_be16(pb, 0x0001);          // ID (= 1)
+    put_be16(pb, track->trackID);
     put_byte(pb, 0x00);            // flags (= no flags)
 
     // DecoderConfig descriptor
     putDescr(pb, 0x04, 13 + decoderSpecificInfoLen);
 
-    if(track->enc->codec_id == CODEC_ID_AAC)
-        put_byte(pb, 0x40);        // Object type indication
-    else if(track->enc->codec_id == CODEC_ID_MPEG4)
-        put_byte(pb, 0x20);        // Object type indication (Visual 14496-2)
+    // Object type indication
+    put_byte(pb, codec_get_tag(ff_mov_obj_type, track->enc->codec_id));
 
     if(track->enc->codec_type == CODEC_TYPE_AUDIO)
         put_byte(pb, 0x15);            // flags (= Audiostream)
     else
         put_byte(pb, 0x11);            // flags (= Visualstream)
 
-    put_byte(pb, 0x0);             // Buffersize DB (24 bits)
-    put_be16(pb, 0x0dd2);          // Buffersize DB
+    put_byte(pb,  track->enc->rc_buffer_size>>(3+16));             // Buffersize DB (24 bits)
+    put_be16(pb, (track->enc->rc_buffer_size>>3)&0xFFFF);          // Buffersize DB
 
-    // TODO: find real values for these
-    put_be32(pb, track->enc->bit_rate);     // maxbitrate
-    put_be32(pb, track->enc->bit_rate);     // avg bitrate
+    put_be32(pb, FFMAX(track->enc->bit_rate, track->enc->rc_max_rate));     // maxbitrate  (FIXME should be max rate in any 1 sec window)
+    if(track->enc->rc_max_rate != track->enc->rc_min_rate || track->enc->rc_min_rate==0)
+        put_be32(pb, 0);     // vbr
+    else
+        put_be32(pb, track->enc->rc_max_rate);     // avg bitrate
 
     if (track->vosLen)
     {
