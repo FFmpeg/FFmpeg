@@ -59,6 +59,8 @@ typedef struct {
 #define AUDIO_ID 0xc0
 #define VIDEO_ID 0xe0
 
+static int mpeg_mux_check_packet(AVFormatContext *s, int *size);
+
 static int put_pack_header(AVFormatContext *ctx, 
                            UINT8 *buf, INT64 timestamp)
 {
@@ -393,6 +395,19 @@ static int find_start_code(ByteIOContext *pb, int *size_ptr,
     return val;
 }
 
+static int check_stream_id(AVFormatContext *s, int c_id)
+{
+    AVStream *st;
+    int i;
+    
+    for(i = 0;i < s->nb_streams;i++) {
+        st = s->streams[i];
+        if (st && st->id == c_id)
+            return 1;
+    }
+    return 0;   
+}
+
 static int mpeg_mux_read_header(AVFormatContext *s,
                                 AVFormatParameters *ap)
 {
@@ -400,6 +415,7 @@ static int mpeg_mux_read_header(AVFormatContext *s,
     int size, startcode, c, rate_bound, audio_bound, video_bound, mux_rate, val;
     int codec_id, n, i, type;
     AVStream *st;
+    offset_t start_pos;
 
     m = av_mallocz(sizeof(MpegDemuxContext));
     if (!m)
@@ -409,13 +425,70 @@ static int mpeg_mux_read_header(AVFormatContext *s,
     /* search first pack header */
     m->header_state = 0xff;
     size = MAX_SYNC_SIZE;
+    start_pos = url_ftell(&s->pb); /* remember this pos */
     for(;;) {
         while (size > 0) {
             startcode = find_start_code(&s->pb, &size, &m->header_state);
             if (startcode == PACK_START_CODE)
                 goto found;
         }
-        return -ENODATA;
+        /* System Header not found find streams searching through file */
+        fprintf(stderr,"libav: MPEG-PS System Header not found!\n");
+        url_fseek(&s->pb, start_pos, SEEK_SET);
+        video_bound = 0;
+        audio_bound = 0;
+        c = 0;
+        s->nb_streams = 0;
+        size = 15*MAX_SYNC_SIZE;
+        while (size > 0) {
+            type = 0;
+            codec_id = 0;
+            n = 0;
+            startcode = find_start_code(&s->pb, &size, &m->header_state);
+            //fprintf(stderr,"\nstartcode: %x pos=0x%Lx\n", startcode, url_ftell(&s->pb));
+            if (startcode == 0x1bd) {
+                url_fseek(&s->pb, -4, SEEK_CUR);
+                size += 4;
+                startcode = mpeg_mux_check_packet(s, &size);
+                //fprintf(stderr,"\nstartcode: %x pos=0x%Lx\n", startcode, url_ftell(&s->pb));
+                if (startcode >= 0x80 && startcode <= 0x9f && !check_stream_id(s, startcode)) {
+                    //fprintf(stderr,"Found AC3 stream ID: 0x%x\n", startcode);
+                    type = CODEC_TYPE_AUDIO;
+                    codec_id = CODEC_ID_AC3;
+                    audio_bound++;
+                    n = 1;
+                    c = startcode;
+                }    
+            } else if (startcode == 0x1e0 && !check_stream_id(s, startcode)) {
+                //fprintf(stderr,"Found MPEGVIDEO stream ID: 0x%x\n", startcode);
+                type = CODEC_TYPE_VIDEO;
+                codec_id = CODEC_ID_MPEG1VIDEO;
+                n = 1;
+                c = startcode;
+                video_bound++;
+            } /*else if (startcode >= 0x1c0 && startcode <= 0x1df && !check_stream_id(s, startcode)) {
+                fprintf(stderr,"Found MPEGAUDIO stream ID: 0x%x\n", startcode);
+                type = CODEC_TYPE_AUDIO;
+                codec_id = CODEC_ID_MP2;
+                n = 1;
+                c = startcode;
+                audio_bound++;
+            } */
+            for(i=0;i<n;i++) {
+                st = av_mallocz(sizeof(AVStream));
+                if (!st)
+                    return -ENOMEM;
+                s->streams[s->nb_streams++] = st;
+                st->id = c;
+                st->codec.codec_type = type;
+                st->codec.codec_id = codec_id;
+            }
+        }
+        if (video_bound || audio_bound) {
+            url_fseek(&s->pb, start_pos, SEEK_SET);
+            return 0;
+        } else
+            return -ENODATA;
     found:
         /* search system header just after pack header */
         /* parse pack header */
@@ -533,7 +606,7 @@ static int mpeg_mux_read_packet(AVFormatContext *s,
     m->header_state = 0xff;
     size = MAX_SYNC_SIZE;
     startcode = find_start_code(&s->pb, &size, &m->header_state);
-    //    printf("startcode=%x pos=0x%Lx\n", startcode, url_ftell(&s->pb));
+    //printf("startcode=%x pos=0x%Lx\n", startcode, url_ftell(&s->pb));
     if (startcode < 0)
         return -EIO;
     if (startcode == PACK_START_CODE)
@@ -634,6 +707,117 @@ static int mpeg_mux_read_packet(AVFormatContext *s,
     pkt->stream_index = i;
     return 0;
 }
+
+static int mpeg_mux_check_packet(AVFormatContext *s, int *size)
+{
+    MpegDemuxContext *m = s->priv_data;
+    int len, startcode, c, n, flags, header_len;
+    INT64 pts, dts;
+
+    /* next start code (should be immediately after */
+ redo:
+    m->header_state = 0xff;
+    startcode = find_start_code(&s->pb, size, &m->header_state);
+    
+    if (startcode < 0)
+        return -EIO;
+    if (startcode == PACK_START_CODE)
+        goto redo;
+    if (startcode == SYSTEM_HEADER_START_CODE)
+        goto redo;
+    if (startcode == PADDING_STREAM ||
+        startcode == PRIVATE_STREAM_2) {
+        /* skip them */
+        len = get_be16(&s->pb);
+        url_fskip(&s->pb, len);
+        goto redo;
+    }
+    /* find matching stream */
+    if (!((startcode >= 0x1c0 && startcode <= 0x1df) ||
+          (startcode >= 0x1e0 && startcode <= 0x1ef) ||
+          (startcode == 0x1bd)))
+        goto redo;
+
+    n = *size;
+    len = get_be16(&s->pb);
+    n -= 2;
+    pts = 0;
+    dts = 0;
+    /* stuffing */
+    for(;;) {
+        c = get_byte(&s->pb);
+        len--;
+        n--;
+        /* XXX: for mpeg1, should test only bit 7 */
+        if (c != 0xff) 
+            break;
+    }
+    if ((c & 0xc0) == 0x40) {
+        /* buffer scale & size */
+        get_byte(&s->pb);
+        c = get_byte(&s->pb);
+        len -= 2;
+        n -= 2;
+    }
+    if ((c & 0xf0) == 0x20) {
+        pts = get_pts(&s->pb, c);
+        len -= 4;
+        n -= 4;
+        dts = pts;
+    } else if ((c & 0xf0) == 0x30) {
+        pts = get_pts(&s->pb, c);
+        dts = get_pts(&s->pb, -1);
+        len -= 9;
+        n -= 9;
+    } else if ((c & 0xc0) == 0x80) {
+        /* mpeg 2 PES */
+        if ((c & 0x30) != 0) {
+            fprintf(stderr, "Encrypted multiplex not handled\n");
+            return -EIO;
+        }
+        flags = get_byte(&s->pb);
+        header_len = get_byte(&s->pb);
+        len -= 2;
+        n -= 2;
+        if (header_len > len)
+            goto redo;
+        if ((flags & 0xc0) == 0x40) {
+            pts = get_pts(&s->pb, -1);
+            dts = pts;
+            header_len -= 5;
+            len -= 5;
+            n -= 5;
+        } if ((flags & 0xc0) == 0xc0) {
+            pts = get_pts(&s->pb, -1);
+            dts = get_pts(&s->pb, -1);
+            header_len -= 10;
+            len -= 10;
+            n -= 10;
+        }
+        len -= header_len;
+        n -= header_len;
+        while (header_len > 0) {
+            get_byte(&s->pb);
+            header_len--;
+        }
+    }
+    if (startcode == 0x1bd) {
+        startcode = get_byte(&s->pb);
+        len--;
+        n--;
+        if (startcode >= 0x80 && startcode <= 0xbf) {
+            /* audio: skip header */
+            get_byte(&s->pb);
+            get_byte(&s->pb);
+            get_byte(&s->pb);
+            len -= 3;
+            n -= 3;
+        }
+    }
+    *size = n;
+    return startcode;
+}
+
 
 static int mpeg_mux_read_close(AVFormatContext *s)
 {

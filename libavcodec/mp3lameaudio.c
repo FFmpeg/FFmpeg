@@ -81,7 +81,6 @@ int MP3lame_encode_frame(AVCodecContext *avctx,
 	/* lame 3.91 outputs the first frame as garbage */
 	if (s->first_frame)
 		s->first_frame = num = 0;
-
 	return num;
 }
 
