@@ -96,9 +96,19 @@ static int s_last_ypos;
 	int Y=yuvtab_2568[((buf0[i]*yalpha1+buf1[i]*yalpha)>>16)];
 	int U=((uvbuf0[i]*uvalpha1+uvbuf1[i]*uvalpha)>>16);
 	int V=((uvbuf0[i+2048]*uvalpha1+uvbuf1[i+2048]*uvalpha)>>16);
+#if 1
+	// 24/32 bpp
 	dest[0]=clip_table[((Y + yuvtab_3343[U]) >>13)];
 	dest[1]=clip_table[((Y + yuvtab_0c92[V] + yuvtab_1a1e[U]) >>13)];
 	dest[2]=clip_table[((Y + yuvtab_40cf[V]) >>13)];
+#else
+	unsigned short *d=dest;
+	unsigned int r=clip_table[((Y + yuvtab_3343[U]) >>13)];
+	unsigned int g=clip_table[((Y + yuvtab_0c92[V] + yuvtab_1a1e[U]) >>13)];
+	unsigned int b=clip_table[((Y + yuvtab_40cf[V]) >>13)];
+	d[0]=((r>>3)<<10)|((g>>3)<<5)|((b>>3)); // 15bpp
+//	d[0]=((r>>3)<<11)|((g>>2)<<5)|((b>>3)); // 16bpp
+#endif
 	dest+=dstbpp;
     }
   
