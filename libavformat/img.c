@@ -17,9 +17,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 #include <unistd.h>
-#ifdef __BEOS__
-# include <OS.h>
-#endif
 #include "avformat.h"
 
 extern AVInputFormat pgm_iformat;
@@ -40,7 +37,13 @@ extern AVOutputFormat yuv4mpegpipe_oformat;
 
 #ifdef __MINGW32__
 #  include <windows.h>
-#  define usleep(t)	Sleep((t) / 1000)
+#  define usleep(t)    Sleep((t) / 1000)
+#endif
+#ifdef __BEOS__
+#  ifndef usleep
+#    include <OS.h>
+#    define usleep(t)    snooze((bigtime_t)(t))
+#  endif
 #endif
 
 #define IMGFMT_YUV     1
@@ -215,11 +218,7 @@ static int img_read_packet(AVFormatContext *s1, AVPacket *pkt)
             pts = ((INT64)s->img_number * FRAME_RATE_BASE * 1000000) / (s1->streams[0]->codec.frame_rate);
 
             if (pts > nowus)
-#ifdef __BEOS__
-                snooze((bigtime_t)(pts - nowus));
-#else
                 usleep(pts - nowus);
-#endif
         }
     }
 
