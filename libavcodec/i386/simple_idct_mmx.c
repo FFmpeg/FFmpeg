@@ -97,7 +97,7 @@ static void inline idctCol (int16_t * col, int16_t *input)
 	const int C1 = 22725; //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5
 	const int C2 = 21407; //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5
 	const int C3 = 19266; //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5
-	const int C4 = 16384; //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5
+	const int C4 = 16383; //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5
 	const int C5 = 12873; //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5
 	const int C6 = 8867; //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5
 	const int C7 = 4520; //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5
@@ -146,7 +146,7 @@ static void inline idctRow (int16_t * output, int16_t * input)
 	const int C1 = 22725; //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5
 	const int C2 = 21407; //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5
 	const int C3 = 19266; //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5
-	const int C4 = 16384; //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5
+	const int C4 = 16383; //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5
 	const int C5 = 12873; //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5
 	const int C6 = 8867; //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5
 	const int C7 = 4520; //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5

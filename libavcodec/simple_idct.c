@@ -39,7 +39,7 @@
 #define W1  22725  //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5
 #define W2  21407  //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5
 #define W3  19266  //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5
-#define W4  16384  //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5
+#define W4  16383  //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5
 #define W5  12873  //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5
 #define W6  8867   //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5
 #define W7  4520   //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5
