@@ -1,0 +1,4 @@
+config.h
+config.mak
+*ffmpeg
+ffserver
