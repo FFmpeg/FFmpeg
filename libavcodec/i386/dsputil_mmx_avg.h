@@ -53,9 +53,19 @@ static void DEF(put_pixels8_x2)(uint8_t *block, const uint8_t *pixels, int line_
 	:"%eax", "memory");
 }
 
-static __attribute__((unused)) void DEF(put_pixels8_l2)(uint8_t *dst, uint8_t *src1, uint8_t *src2, int dstStride, int src1Stride, int h)
+static void DEF(put_pixels8_l2)(uint8_t *dst, uint8_t *src1, uint8_t *src2, int dstStride, int src1Stride, int h)
 {
     __asm __volatile(
+	"testl $1, %0			\n\t"
+	    " jz 1f				\n\t"
+	"movq	(%1), %%mm0		\n\t"
+	"movq	(%2), %%mm1		\n\t"
+	"addl	%4, %1			\n\t"
+	"addl	$8, %2			\n\t"
+	PAVGB" %%mm1, %%mm0		\n\t"
+	"movq	%%mm0, (%3)		\n\t"
+	"addl	%5, %3			\n\t"
+	"decl	%0			\n\t"
 	"1:				\n\t"
 	"movq	(%1), %%mm0		\n\t"
 	"addl	%4, %1			\n\t"
@@ -80,9 +90,142 @@ static __attribute__((unused)) void DEF(put_pixels8_l2)(uint8_t *dst, uint8_t *s
         "addl	$32, %2			\n\t"
 	"subl	$4, %0			\n\t"
 	"jnz	1b			\n\t"
-	:"+g"(h), "+r"(src1), "+r"(src2), "+r"(dst)
+#ifdef PIC //Note "+bm" and "+mb" are buggy too (with gcc 3.2.2 at least) and cant be used
+	:"+m"(h), "+a"(src1), "+c"(src2), "+d"(dst)
+#else
+	:"+b"(h), "+a"(src1), "+c"(src2), "+d"(dst)
+#endif
+	:"S"(src1Stride), "D"(dstStride)
+	:"memory"); 
+//the following should be used, though better not with gcc ...
+/*	:"+g"(h), "+r"(src1), "+r"(src2), "+r"(dst)
 	:"r"(src1Stride), "r"(dstStride)
-	:"memory");
+	:"memory");*/
+}
+
+static void DEF(put_no_rnd_pixels8_l2)(uint8_t *dst, uint8_t *src1, uint8_t *src2, int dstStride, int src1Stride, int h)
+{
+    __asm __volatile(
+	"pcmpeqb %%mm6, %%mm6	\n\t"
+	"testl $1, %0			\n\t"
+	    " jz 1f				\n\t"
+	"movq	(%1), %%mm0		\n\t"
+	"movq	(%2), %%mm1		\n\t"
+	"addl	%4, %1			\n\t"
+	"addl	$8, %2			\n\t"
+	"pxor %%mm6, %%mm0		\n\t"
+	"pxor %%mm6, %%mm1		\n\t"
+	PAVGB" %%mm1, %%mm0		\n\t"
+	"pxor %%mm6, %%mm0		\n\t"
+	"movq	%%mm0, (%3)		\n\t"
+	"addl	%5, %3			\n\t"
+	"decl	%0			\n\t"
+	"1:				\n\t"
+	"movq	(%1), %%mm0		\n\t"
+	"addl	%4, %1			\n\t"
+	"movq	(%1), %%mm1		\n\t"
+	"addl	%4, %1			\n\t"
+	"movq	(%2), %%mm2		\n\t"
+	"movq	8(%2), %%mm3		\n\t"
+	"pxor %%mm6, %%mm0		\n\t"
+	"pxor %%mm6, %%mm1		\n\t"
+	"pxor %%mm6, %%mm2		\n\t"
+	"pxor %%mm6, %%mm3		\n\t"
+	PAVGB" %%mm2, %%mm0		\n\t"
+	PAVGB" %%mm3, %%mm1		\n\t"
+	"pxor %%mm6, %%mm0		\n\t"
+	"pxor %%mm6, %%mm1		\n\t"
+	"movq	%%mm0, (%3)		\n\t"
+	"addl	%5, %3			\n\t"
+	"movq	%%mm1, (%3)		\n\t"
+	"addl	%5, %3			\n\t"
+	"movq	(%1), %%mm0		\n\t"
+	"addl	%4, %1			\n\t"
+	"movq	(%1), %%mm1		\n\t"
+	"addl	%4, %1			\n\t"
+	"movq	16(%2), %%mm2		\n\t"
+	"movq	24(%2), %%mm3		\n\t"
+	"pxor %%mm6, %%mm0		\n\t"
+	"pxor %%mm6, %%mm1		\n\t"
+	"pxor %%mm6, %%mm2		\n\t"
+	"pxor %%mm6, %%mm3		\n\t"
+	PAVGB" %%mm2, %%mm0		\n\t"
+	PAVGB" %%mm3, %%mm1		\n\t"
+	"pxor %%mm6, %%mm0		\n\t"
+	"pxor %%mm6, %%mm1		\n\t"
+	"movq	%%mm0, (%3)		\n\t"
+	"addl	%5, %3			\n\t"
+	"movq	%%mm1, (%3)		\n\t"
+	"addl	%5, %3			\n\t"
+        "addl	$32, %2			\n\t"
+	"subl	$4, %0			\n\t"
+	"jnz	1b			\n\t"
+#ifdef PIC //Note "+bm" and "+mb" are buggy too (with gcc 3.2.2 at least) and cant be used
+	:"+m"(h), "+a"(src1), "+c"(src2), "+d"(dst)
+#else
+	:"+b"(h), "+a"(src1), "+c"(src2), "+d"(dst)
+#endif
+	:"S"(src1Stride), "D"(dstStride)
+	:"memory"); 
+//the following should be used, though better not with gcc ...
+/*	:"+g"(h), "+r"(src1), "+r"(src2), "+r"(dst)
+	:"r"(src1Stride), "r"(dstStride)
+	:"memory");*/
+}
+
+static void DEF(avg_pixels8_l2)(uint8_t *dst, uint8_t *src1, uint8_t *src2, int dstStride, int src1Stride, int h)
+{
+    __asm __volatile(
+	"testl $1, %0			\n\t"
+	    " jz 1f				\n\t"
+	"movq	(%1), %%mm0		\n\t"
+	"movq	(%2), %%mm1		\n\t"
+	"addl	%4, %1			\n\t"
+	"addl	$8, %2			\n\t"
+	PAVGB" %%mm1, %%mm0		\n\t"
+	PAVGB" (%3), %%mm0		\n\t"
+	"movq	%%mm0, (%3)		\n\t"
+	"addl	%5, %3			\n\t"
+	"decl	%0			\n\t"
+	"1:				\n\t"
+	"movq	(%1), %%mm0		\n\t"
+	"addl	%4, %1			\n\t"
+	"movq	(%1), %%mm1		\n\t"
+	"addl	%4, %1			\n\t"
+	PAVGB" (%2), %%mm0		\n\t"
+	PAVGB" 8(%2), %%mm1		\n\t"
+	PAVGB" (%3), %%mm0	 	\n\t"
+	"movq	%%mm0, (%3)		\n\t"
+	"addl	%5, %3			\n\t"
+	PAVGB" (%3), %%mm1	 	\n\t"
+	"movq	%%mm1, (%3)		\n\t"
+	"addl	%5, %3			\n\t"
+	"movq	(%1), %%mm0		\n\t"
+	"addl	%4, %1			\n\t"
+	"movq	(%1), %%mm1		\n\t"
+	"addl	%4, %1			\n\t"
+	PAVGB" 16(%2), %%mm0		\n\t"
+	PAVGB" 24(%2), %%mm1		\n\t"
+	PAVGB" (%3), %%mm0	 	\n\t"
+	"movq	%%mm0, (%3)		\n\t"
+	"addl	%5, %3			\n\t"
+	PAVGB" (%3), %%mm1	 	\n\t"
+	"movq	%%mm1, (%3)		\n\t"
+	"addl	%5, %3			\n\t"
+        "addl	$32, %2			\n\t"
+	"subl	$4, %0			\n\t"
+	"jnz	1b			\n\t"
+#ifdef PIC //Note "+bm" and "+mb" are buggy too (with gcc 3.2.2 at least) and cant be used
+	:"+m"(h), "+a"(src1), "+c"(src2), "+d"(dst)
+#else
+	:"+b"(h), "+a"(src1), "+c"(src2), "+d"(dst)
+#endif
+	:"S"(src1Stride), "D"(dstStride)
+	:"memory"); 
+//the following should be used, though better not with gcc ...
+/*	:"+g"(h), "+r"(src1), "+r"(src2), "+r"(dst)
+	:"r"(src1Stride), "r"(dstStride)
+	:"memory");*/
 }
 
 static void DEF(put_pixels16_x2)(uint8_t *block, const uint8_t *pixels, int line_size, int h)
@@ -125,9 +268,21 @@ static void DEF(put_pixels16_x2)(uint8_t *block, const uint8_t *pixels, int line
 	:"%eax", "memory");
 }
 
-static __attribute__((unused)) void DEF(put_pixels16_l2)(uint8_t *dst, uint8_t *src1, uint8_t *src2, int dstStride, int src1Stride, int h)
+static void DEF(put_pixels16_l2)(uint8_t *dst, uint8_t *src1, uint8_t *src2, int dstStride, int src1Stride, int h)
 {
     __asm __volatile(
+	"testl $1, %0			\n\t"
+	    " jz 1f				\n\t"
+	"movq	(%1), %%mm0		\n\t"
+	"movq	8(%1), %%mm1		\n\t"
+	PAVGB" (%2), %%mm0		\n\t"
+	PAVGB" 8(%2), %%mm1		\n\t"
+	"addl	%4, %1			\n\t"
+	"addl	$16, %2			\n\t"
+	"movq	%%mm0, (%3)		\n\t"
+	"movq	%%mm1, 8(%3)		\n\t"
+	"addl	%5, %3			\n\t"
+	"decl	%0			\n\t"
 	"1:				\n\t"
 	"movq	(%1), %%mm0		\n\t"
 	"movq	8(%1), %%mm1		\n\t"
@@ -148,9 +303,144 @@ static __attribute__((unused)) void DEF(put_pixels16_l2)(uint8_t *dst, uint8_t *
         "addl	$32, %2			\n\t"
 	"subl	$2, %0			\n\t"
 	"jnz	1b			\n\t"
-	:"+g"(h), "+r"(src1), "+r"(src2), "+r"(dst)
+#ifdef PIC //Note "+bm" and "+mb" are buggy too (with gcc 3.2.2 at least) and cant be used
+	:"+m"(h), "+a"(src1), "+c"(src2), "+d"(dst)
+#else
+	:"+b"(h), "+a"(src1), "+c"(src2), "+d"(dst)
+#endif
+	:"S"(src1Stride), "D"(dstStride)
+	:"memory"); 
+//the following should be used, though better not with gcc ...
+/*	:"+g"(h), "+r"(src1), "+r"(src2), "+r"(dst)
 	:"r"(src1Stride), "r"(dstStride)
-	:"memory");
+	:"memory");*/
+}
+
+static void DEF(avg_pixels16_l2)(uint8_t *dst, uint8_t *src1, uint8_t *src2, int dstStride, int src1Stride, int h)
+{
+    __asm __volatile(
+	"testl $1, %0			\n\t"
+	    " jz 1f				\n\t"
+	"movq	(%1), %%mm0		\n\t"
+	"movq	8(%1), %%mm1		\n\t"
+	PAVGB" (%2), %%mm0		\n\t"
+	PAVGB" 8(%2), %%mm1		\n\t"
+	"addl	%4, %1			\n\t"
+	"addl	$16, %2			\n\t"
+	PAVGB" (%3), %%mm0		\n\t"
+	PAVGB" 8(%3), %%mm1		\n\t"
+	"movq	%%mm0, (%3)		\n\t"
+	"movq	%%mm1, 8(%3)		\n\t"
+	"addl	%5, %3			\n\t"
+	"decl	%0			\n\t"
+	"1:				\n\t"
+	"movq	(%1), %%mm0		\n\t"
+	"movq	8(%1), %%mm1		\n\t"
+	"addl	%4, %1			\n\t"
+	PAVGB" (%2), %%mm0		\n\t"
+	PAVGB" 8(%2), %%mm1		\n\t"
+	PAVGB" (%3), %%mm0		\n\t"
+	PAVGB" 8(%3), %%mm1		\n\t"
+	"movq	%%mm0, (%3)		\n\t"
+	"movq	%%mm1, 8(%3)		\n\t"
+	"addl	%5, %3			\n\t"
+	"movq	(%1), %%mm0		\n\t"
+	"movq	8(%1), %%mm1		\n\t"
+	"addl	%4, %1			\n\t"
+	PAVGB" 16(%2), %%mm0		\n\t"
+	PAVGB" 24(%2), %%mm1		\n\t"
+	PAVGB" (%3), %%mm0		\n\t"
+	PAVGB" 8(%3), %%mm1		\n\t"
+	"movq	%%mm0, (%3)		\n\t"
+	"movq	%%mm1, 8(%3)		\n\t"
+	"addl	%5, %3			\n\t"
+        "addl	$32, %2			\n\t"
+	"subl	$2, %0			\n\t"
+	"jnz	1b			\n\t"
+#ifdef PIC //Note "+bm" and "+mb" are buggy too (with gcc 3.2.2 at least) and cant be used
+	:"+m"(h), "+a"(src1), "+c"(src2), "+d"(dst)
+#else
+	:"+b"(h), "+a"(src1), "+c"(src2), "+d"(dst)
+#endif
+	:"S"(src1Stride), "D"(dstStride)
+	:"memory"); 
+//the following should be used, though better not with gcc ...
+/*	:"+g"(h), "+r"(src1), "+r"(src2), "+r"(dst)
+	:"r"(src1Stride), "r"(dstStride)
+	:"memory");*/
+}
+
+static void DEF(put_no_rnd_pixels16_l2)(uint8_t *dst, uint8_t *src1, uint8_t *src2, int dstStride, int src1Stride, int h)
+{
+    __asm __volatile(
+	"pcmpeqb %%mm6, %%mm6\n\t"
+	"testl $1, %0			\n\t"
+	    " jz 1f				\n\t"
+	"movq	(%1), %%mm0		\n\t"
+	"movq	8(%1), %%mm1		\n\t"
+	"movq	(%2), %%mm2		\n\t"
+	"movq	8(%2), %%mm3		\n\t"
+	"pxor %%mm6, %%mm0		\n\t"
+	"pxor %%mm6, %%mm1		\n\t"
+	"pxor %%mm6, %%mm2		\n\t"
+	"pxor %%mm6, %%mm3		\n\t"
+	PAVGB" %%mm2, %%mm0		\n\t"
+	PAVGB" %%mm3, %%mm1		\n\t"
+	"pxor %%mm6, %%mm0		\n\t"
+	"pxor %%mm6, %%mm1		\n\t"
+	"addl	%4, %1			\n\t"
+	"addl	$16, %2			\n\t"
+	"movq	%%mm0, (%3)		\n\t"
+	"movq	%%mm1, 8(%3)		\n\t"
+	"addl	%5, %3			\n\t"
+	"decl	%0			\n\t"
+	"1:				\n\t"
+	"movq	(%1), %%mm0		\n\t"
+	"movq	8(%1), %%mm1		\n\t"
+	"addl	%4, %1			\n\t"
+	"movq	(%2), %%mm2		\n\t"
+	"movq	8(%2), %%mm3		\n\t"
+	"pxor %%mm6, %%mm0		\n\t"
+	"pxor %%mm6, %%mm1		\n\t"
+	"pxor %%mm6, %%mm2		\n\t"
+	"pxor %%mm6, %%mm3		\n\t"
+	PAVGB" %%mm2, %%mm0		\n\t"
+	PAVGB" %%mm3, %%mm1		\n\t"
+	"pxor %%mm6, %%mm0		\n\t"
+	"pxor %%mm6, %%mm1		\n\t"
+	"movq	%%mm0, (%3)		\n\t"
+	"movq	%%mm1, 8(%3)		\n\t"
+	"addl	%5, %3			\n\t"
+	"movq	(%1), %%mm0		\n\t"
+	"movq	8(%1), %%mm1		\n\t"
+	"addl	%4, %1			\n\t"
+	"movq	16(%2), %%mm2		\n\t"
+	"movq	24(%2), %%mm3		\n\t"
+	"pxor %%mm6, %%mm0		\n\t"
+	"pxor %%mm6, %%mm1		\n\t"
+	"pxor %%mm6, %%mm2		\n\t"
+	"pxor %%mm6, %%mm3		\n\t"
+	PAVGB" %%mm2, %%mm0		\n\t"
+	PAVGB" %%mm3, %%mm1		\n\t"
+	"pxor %%mm6, %%mm0		\n\t"
+	"pxor %%mm6, %%mm1		\n\t"
+	"movq	%%mm0, (%3)		\n\t"
+	"movq	%%mm1, 8(%3)		\n\t"
+	"addl	%5, %3			\n\t"
+        "addl	$32, %2			\n\t"
+	"subl	$2, %0			\n\t"
+	"jnz	1b			\n\t"
+#ifdef PIC //Note "+bm" and "+mb" are buggy too (with gcc 3.2.2 at least) and cant be used
+	:"+m"(h), "+a"(src1), "+c"(src2), "+d"(dst)
+#else
+	:"+b"(h), "+a"(src1), "+c"(src2), "+d"(dst)
+#endif
+	:"S"(src1Stride), "D"(dstStride)
+	:"memory"); 
+//the following should be used, though better not with gcc ...
+/*	:"+g"(h), "+r"(src1), "+r"(src2), "+r"(dst)
+	:"r"(src1Stride), "r"(dstStride)
+	:"memory");*/
 }
  
 /* GL: this function does incorrect rounding if overflow */
