@@ -900,6 +900,11 @@ static int ipvideo_decode_frame(AVCodecContext *avctx,
     IpvideoContext *s = avctx->priv_data;
     AVPaletteControl *palette_control = avctx->palctrl;
 
+    /* compressed buffer needs to be large enough to at least hold an entire
+     * decoding map */
+    if (buf_size < s->decoding_map_size)
+        return buf_size;
+
     s->decoding_map = buf;
     s->buf = buf + s->decoding_map_size;
     s->size = buf_size - s->decoding_map_size;
