@@ -3,7 +3,7 @@ include ../config.mak
 
 LIBNAME = libpostproc.a
 
-SRCS=postprocess.c swscale.c
+SRCS=postprocess.c swscale.c rgb2rgb.c
 OBJS=$(SRCS:.c=.o)
 
 CFLAGS  = $(OPTFLAGS) -I. -I.. -Wall
