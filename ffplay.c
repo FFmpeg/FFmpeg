@@ -1439,7 +1439,11 @@ static int decode_thread(void *arg)
         }
         ret = av_read_frame(ic, pkt);
         if (ret < 0) {
-            break;
+	    if (url_feof(&ic->pb) && url_ferror(&ic->pb) == 0) {
+                SDL_Delay(100); /* wait for user event */
+		continue;
+	    } else
+	        break;
         }
         if (pkt->stream_index == is->audio_stream) {
             packet_queue_put(&is->audioq, pkt);
