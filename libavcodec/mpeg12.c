@@ -68,12 +68,13 @@ static inline int mpeg2_decode_block_intra(MpegEncContext *s,
                                     DCTELEM *block, 
                                     int n);
 static int mpeg_decode_motion(MpegEncContext *s, int fcode, int pred);
+static void exchange_uv(MpegEncContext *s);
 
 #ifdef HAVE_XVMC
 extern int XVMC_field_start(MpegEncContext *s, AVCodecContext *avctx);
 extern int XVMC_field_end(MpegEncContext *s);
 extern void XVMC_pack_pblocks(MpegEncContext *s,int cbp);
-extern void XVMC_init_block(s);//set s->block
+extern void XVMC_init_block(MpegEncContext *s);//set s->block
 #endif
 
 #ifdef CONFIG_ENCODERS
