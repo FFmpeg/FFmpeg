@@ -194,6 +194,7 @@ EXESUF=""
 amr_nb="no"
 amr_wb="no"
 amr_nb_fixed="no"
+amr_if2="no"
 sunmlib="no"
 pthreads="no"
 gpl="no"
@@ -467,6 +468,8 @@ for opt do
   ;;
   --enable-amr_wb) amr_wb="yes"
   ;; 
+  --enable-amr_if2) amr_if2="yes"
+  ;;
   --enable-sunmlib) sunmlib="yes"
   ;;
   --enable-pthreads) pthreads="yes"
@@ -1105,6 +1108,7 @@ echo "pthreads support"      $pthreads
 echo "AMR-NB float support"  $amr_nb
 echo "AMR-NB fixed support"  $amr_nb_fixed
 echo "AMR-WB float support"  $amr_wb
+echo "AMR-WB IF2 support"    $amr_if2
 echo "network support      $network"
 if test "$network" = "yes" ; then
 echo "IPv6 support         $ipv6"
@@ -1539,6 +1543,10 @@ else
   echo "and extracted the source to libavcodec/amr_float"
   echo "and if u try this on an alpha, u may need to change Word32 to int in amr/typedef.h"
   echo
+fi
+
+if test "$amr_if2" = "yes" ; then
+  echo "AMR_CFLAGS=-DIF2=1" >> config.mak
 fi
 
 fi
