@@ -240,8 +240,9 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
                 vbv_buffer_size = (( 20 * s->bit_rate) / (1151929 / 2)) * 8 * 1024;	 
             put_bits(&s->pb, 10, (vbv_buffer_size + 16383) / 16384); 
             put_bits(&s->pb, 1, 1); /* constrained parameter flag */
-            put_bits(&s->pb, 1, 0); /* no custom intra matrix */
-            put_bits(&s->pb, 1, 0); /* no custom non intra matrix */
+            
+            ff_write_quant_matrix(&s->pb, s->avctx->intra_matrix);
+            ff_write_quant_matrix(&s->pb, s->avctx->inter_matrix);
 
             put_header(s, GOP_START_CODE);
             put_bits(&s->pb, 1, 0); /* do drop frame */

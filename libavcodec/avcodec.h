@@ -15,8 +15,8 @@ extern "C" {
 
 #define LIBAVCODEC_VERSION_INT 0x000406
 #define LIBAVCODEC_VERSION     "0.4.6"
-#define LIBAVCODEC_BUILD       4674
-#define LIBAVCODEC_BUILD_STR   "4674"
+#define LIBAVCODEC_BUILD       4675
+#define LIBAVCODEC_BUILD_STR   "4675"
 
 #define LIBAVCODEC_IDENT	"FFmpeg" LIBAVCODEC_VERSION "b" LIBAVCODEC_BUILD_STR
 
@@ -1186,6 +1186,20 @@ typedef struct AVCodecContext {
 #define FF_MB_DECISION_SIMPLE 0        ///< uses mb_cmp
 #define FF_MB_DECISION_BITS   1        ///< chooses the one which needs the fewest bits
 #define FF_MB_DECISION_RD     2        ///< rate distoration
+
+    /**
+     * custom intra quantization matrix
+     * - encoding: set by user, can be NULL
+     * - decoding: set by lavc
+     */
+    uint16_t *intra_matrix;
+
+    /**
+     * custom inter quantization matrix
+     * - encoding: set by user, can be NULL
+     * - decoding: set by lavc
+     */
+    uint16_t *inter_matrix;
     
 } AVCodecContext;
 

@@ -167,6 +167,18 @@ void ff_init_scantable(uint8_t *permutation, ScanTable *st, const uint8_t *src_s
     }
 }
 
+void ff_write_quant_matrix(PutBitContext *pb, int16_t *matrix){
+    int i;
+
+    if(matrix){
+        put_bits(pb, 1, 1);
+        for(i=0;i<64;i++) {
+            put_bits(pb, 8, matrix[ ff_zigzag_direct[i] ]);
+        }
+    }else
+        put_bits(pb, 1, 0);
+}
+
 /* init common dct for both encoder and decoder */
 int DCT_common_init(MpegEncContext *s)
 {
@@ -812,6 +824,10 @@ int MPV_encode_init(AVCodecContext *avctx)
             s->intra_matrix[j] = ff_mpeg1_default_intra_matrix[i];
             s->inter_matrix[j] = ff_mpeg1_default_non_intra_matrix[i];
         }
+        if(s->avctx->intra_matrix)
+            s->intra_matrix[j] = s->avctx->intra_matrix[i];
+        if(s->avctx->inter_matrix)
+            s->inter_matrix[j] = s->avctx->inter_matrix[i];
     }
 
     /* precompute matrix */
