@@ -1004,6 +1004,12 @@ static int mjpeg_decode_sos(MJpegDecodeContext *s,
                     }
                 }
             }
+            if (s->restart_interval && !--s->restart_count) {
+                align_get_bits(&s->gb);
+                skip_bits(&s->gb, 16); /* skip RSTn */
+                for (j=0; j<nb_components; j++) /* reset dc */
+                    s->last_dc[j] = 1024;
+            }
         }
     }
     ret = 0;
@@ -1156,12 +1162,15 @@ static int find_marker(UINT8 **pbuf_ptr, UINT8 *buf_end,
 
     state = *header_state;
     buf_ptr = *pbuf_ptr;
+retry:
     if (state) {
         /* get marker */
     found:
         if (buf_ptr < buf_end) {
             val = *buf_ptr++;
             state = 0;
+            if ((val >= RST0) && (val <= RST7))
+                goto retry;
         } else {
             val = -1;
         }
