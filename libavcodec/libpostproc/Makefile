@@ -50,7 +50,7 @@ $(PPLIB): $(PPOBJS)
 install: all
 ifeq ($(SHARED_PP),yes)
 	install -d $(prefix)/lib
-	install -s -m 755 $(SPPLIB) $(prefix)/lib/$(SPPLIB).$(SPPVERSION)
+	install $(INSTALLSTRIP) -m 755 $(SPPLIB) $(prefix)/lib/$(SPPLIB).$(SPPVERSION)
 	ln -sf $(SPPLIB).$(SPPVERSION) $(prefix)/lib/$(SPPLIB)
 	ldconfig || true
 endif
