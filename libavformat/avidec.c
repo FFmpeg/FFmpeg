@@ -42,6 +42,9 @@ typedef struct AVIStream {
     
     int new_frame_offset; /* temporary storage (used during seek) */
     int cum_len; /* temporary storage (used during seek) */
+    
+    int prefix;                       ///< normally 'd'<<8 + 'c' or 'w'<<8 + 'b'
+    int prefix_count;
 } AVIStream;
 
 typedef struct {
@@ -397,35 +400,54 @@ static int avi_read_packet(AVFormatContext *s, AVPacket *pkt)
         
         size= d[4] + (d[5]<<8) + (d[6]<<16) + (d[7]<<24);
         
-        //parse ix##
-        n= (d[2] - '0') * 10 + (d[3] - '0');
         if(    d[2] >= '0' && d[2] <= '9'
-            && d[3] >= '0' && d[3] <= '9'
-            && d[0] == 'i' && d[1] == 'x'
-            && n < s->nb_streams
-            && i + size <= avi->movi_end){
-            
+            && d[3] >= '0' && d[3] <= '9'){
+            n= (d[2] - '0') * 10 + (d[3] - '0');
+        }else{
+            n= 100; //invalid stream id
+        }
+//av_log(NULL, AV_LOG_DEBUG, "%X %X %X %X %X %X %X %X %lld %d %d\n", d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7], i, size, n);
+        if(i + size > avi->movi_end || d[0]<0)
+            continue;
+        
+        //parse ix##
+        if(  (d[0] == 'i' && d[1] == 'x' && n < s->nb_streams)
+	//parse JUNK
+           ||(d[0] == 'J' && d[1] == 'U' && d[2] == 'N' && d[3] == 'K')){
             url_fskip(pb, size);
+            i+= size;
+            memset(d, -1, sizeof(int)*8);
+//av_log(NULL, AV_LOG_DEBUG, "SKIP\n");
+            continue;
         }
 
-	//parse JUNK
-        if(d[0] == 'J' && d[1] == 'U' && d[2] == 'N' && d[3] == 'K' &&
-           i + size <= avi->movi_end) {
-            
-            url_fskip(pb, size);
+        if(    d[0] >= '0' && d[0] <= '9'
+            && d[1] >= '0' && d[1] <= '9'){
+            n= (d[0] - '0') * 10 + (d[1] - '0');
+        }else{
+            n= 100; //invalid stream id
         }
         
         //parse ##dc/##wb
-        n= (d[0] - '0') * 10 + (d[1] - '0');
-        if(    d[0] >= '0' && d[0] <= '9'
-            && d[1] >= '0' && d[1] <= '9'
-            && ((d[2] == 'd' && d[3] == 'c') || 
-	        (d[2] == 'w' && d[3] == 'b') || 
-		(d[2] == 'd' && d[3] == 'b') ||
-		(d[2] == '_' && d[3] == '_'))
-            && n < s->nb_streams
-            && i + size <= avi->movi_end) {
-        
+        if(n < s->nb_streams){
+          AVStream *st;
+          AVIStream *ast;
+          st = s->streams[n];
+          ast = st->priv_data;
+
+          if(   (ast->prefix_count<5 && d[2]<128 && d[3]<128) || 
+                d[2]*256+d[3] == ast->prefix /*||
+                (d[2] == 'd' && d[3] == 'c') || 
+	        (d[2] == 'w' && d[3] == 'b')*/) {
+
+//av_log(NULL, AV_LOG_DEBUG, "OK\n");
+            if(d[2]*256+d[3] == ast->prefix)
+                ast->prefix_count++;
+            else{
+                ast->prefix= d[2]*256+d[3];
+                ast->prefix_count= 0;
+            }
+
             av_new_packet(pkt, size);
             get_buffer(pb, pkt->data, size);
             if (size & 1) {
@@ -440,11 +462,6 @@ static int avi_read_packet(AVFormatContext *s, AVPacket *pkt)
 		pkt->destruct = dstr;
                 pkt->flags |= PKT_FLAG_KEY;
 	    } else {
-                AVStream *st;
-                AVIStream *ast;
-                st = s->streams[n];
-                ast = st->priv_data;
-                
                 /* XXX: how to handle B frames in avi ? */
                 pkt->dts = ast->frame_offset;
 //                pkt->dts += ast->start;
@@ -471,8 +488,10 @@ static int avi_read_packet(AVFormatContext *s, AVPacket *pkt)
                     ast->frame_offset++;
 	    }
             return size;
+          }
         }
     }
+
     return -1;
 }
 
