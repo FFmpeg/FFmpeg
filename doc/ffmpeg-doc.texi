@@ -837,6 +837,8 @@ solutions.
 @item Apple MACE 6           @tab      @tab X
 @item FLAC lossless audio    @tab      @tab X
 @item Shorten lossless audio @tab      @tab X
+@item Apple lossless audio   @tab      @tab X
+@tab QuickTime fourcc 'alac'
 @item FFmpeg Sonic           @tab X    @tab X
 @tab Experimental lossy/lossless codec
 @end multitable

@@ -132,7 +132,7 @@ static uint32_t readbits_16(alac_file *alac, int bits)
     int new_accumulator;
 
     if (alac->input_buffer_index + 2 >= alac->input_buffer_size) {
-        av_log(NULL, AV_LOG_INFO, "alac: input buffer went out of bounds (%d >= %d)\n",
+        av_log(NULL, AV_LOG_ERROR, "alac: input buffer went out of bounds (%d >= %d)\n",
             alac->input_buffer_index + 2, alac->input_buffer_size);
 //        exit (0);
     }
@@ -184,9 +184,9 @@ static int readbit(alac_file *alac)
     int new_accumulator;
 
     if (alac->input_buffer_index >= alac->input_buffer_size) {
-        av_log(NULL, AV_LOG_INFO, "alac: input buffer went out of bounds (%d >= %d)\n",
+        av_log(NULL, AV_LOG_ERROR, "alac: input buffer went out of bounds (%d >= %d)\n",
             alac->input_buffer_index + 2, alac->input_buffer_size);
-//        exit (0);
+        exit (0);
     }
 
     result = alac->input_buffer[alac->input_buffer_index];
@@ -508,14 +508,6 @@ void deinterlace_16(int32_t *buffer_a, int32_t *buffer_b,
             left = (midright - ((difference * interlacing_leftweight) >> interlacing_shift))
                  + difference;
 
-            /* output is always little endian */
-/*
-            if (host_bigendian) {
-                be2me_16(left);
-                be2me_16(right);
-            }
-*/
-
             buffer_out[i*numchannels] = left;
             buffer_out[i*numchannels + 1] = right;
         }
@@ -530,26 +522,24 @@ void deinterlace_16(int32_t *buffer_a, int32_t *buffer_b,
         left = buffer_a[i];
         right = buffer_b[i];
 
-        /* output is always little endian */
-/*
-        if (host_bigendian) {
-            be2me_16(left);
-            be2me_16(right);
-        }
-*/
-
         buffer_out[i*numchannels] = left;
         buffer_out[i*numchannels + 1] = right;
     }
 }
 
-int decode_frame(ALACContext *s, alac_file *alac,
-                  unsigned char *inbuffer,
-                  int input_buffer_size,
-                  void *outbuffer, int *outputsize)
+static int alac_decode_frame(AVCodecContext *avctx,
+                             void *outbuffer, int *outputsize,
+                             uint8_t *inbuffer, int input_buffer_size)
 {
+    ALACContext *s = avctx->priv_data;
+    alac_file *alac = s->alac;
+
     int channels;
     int32_t outputsamples;
+
+    /* short-circuit null buffers */
+    if (!inbuffer || !input_buffer_size)
+        return input_buffer_size;
 
     /* initialize from the extradata */
     if (!s->context_initialized) {
@@ -906,15 +896,7 @@ int decode_frame(ALACContext *s, alac_file *alac,
     }
     }
 
-av_log(NULL, AV_LOG_INFO, "buf size = %d, consumed %d\n",
-  input_buffer_size, alac->input_buffer_index);
-
-    /* avoid infinite loop: if decoder consumed 0 bytes; report all bytes
-     * consumed */
-//    if (alac->input_buffer_index)
-//        return alac->input_buffer_index;
-//    else
-        return input_buffer_size;
+    return input_buffer_size;
 }
 
 static int alac_decode_init(AVCodecContext * avctx)
@@ -930,20 +912,6 @@ static int alac_decode_init(AVCodecContext * avctx)
     s->alac->bytespersample = (s->alac->samplesize / 8) * s->alac->numchannels;
 
     return 0;
-}
-
-static int alac_decode_frame(AVCodecContext *avctx,
-                             void *data, int *data_size,
-                             uint8_t *buf, int buf_size)
-{
-    ALACContext *s = avctx->priv_data;
-    int bytes_consumed = buf_size;
-
-    if (buf)
-        bytes_consumed = decode_frame(s, s->alac, buf, buf_size, 
-            data, data_size);
-
-    return bytes_consumed;
 }
 
 static int alac_decode_close(AVCodecContext *avctx)
