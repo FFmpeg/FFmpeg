@@ -61,6 +61,8 @@ static uint64_t __attribute__((aligned(8))) vrCoeff=   0x3343334333433343LL;
 static uint64_t __attribute__((aligned(8))) ubCoeff=   0x40cf40cf40cf40cfLL;
 static uint64_t __attribute__((aligned(8))) vgCoeff=   0xE5E2E5E2E5E2E5E2LL;
 static uint64_t __attribute__((aligned(8))) ugCoeff=   0xF36EF36EF36EF36ELL;
+static uint64_t __attribute__((aligned(8))) bF8=       0xF8F8F8F8F8F8F8F8LL;
+static uint64_t __attribute__((aligned(8))) bFC=       0xFCFCFCFCFCFCFCFCLL;
 static uint64_t __attribute__((aligned(8))) w400=      0x0400040004000400LL;
 static uint64_t __attribute__((aligned(8))) w80=       0x0080008000800080LL;
 static uint64_t __attribute__((aligned(8))) w10=       0x0010001000100010LL;
@@ -368,37 +370,24 @@ static int canMMX2BeUsed=0;
 			" jb 1b				\n\t"
 
 #define WRITEBGR16 \
-			"movq %%mm2, %%mm1		\n\t" /* B */\
-			"movq %%mm4, %%mm3		\n\t" /* G */\
-			"movq %%mm5, %%mm6		\n\t" /* R */\
+			"pand bF8, %%mm2		\n\t" /* B */\
+			"pand bFC, %%mm4		\n\t" /* G */\
+			"pand bF8, %%mm5		\n\t" /* R */\
+			"psrlq $3, %%mm2		\n\t"\
 \
-			"punpcklbw %%mm7, %%mm3		\n\t" /* 0G0G0G0G */\
-			"punpcklbw %%mm7, %%mm2		\n\t" /* 0B0B0B0B */\
-			"punpcklbw %%mm7, %%mm5		\n\t" /* 0R0R0R0R */\
+			"movq %%mm2, %%mm1		\n\t"\
+			"movq %%mm4, %%mm3		\n\t"\
 \
-			"psrlw $3, %%mm2		\n\t"\
-			"psllw $3, %%mm3		\n\t"\
-			"psllw $8, %%mm5		\n\t"\
+			"punpcklbw %%mm7, %%mm3		\n\t"\
+			"punpcklbw %%mm5, %%mm2		\n\t"\
+			"punpckhbw %%mm7, %%mm4		\n\t"\
+			"punpckhbw %%mm5, %%mm1		\n\t"\
 \
-			"pand g16Mask, %%mm3		\n\t"\
-			"pand r16Mask, %%mm5		\n\t"\
+			"psllq $3, %%mm3		\n\t"\
+			"psllq $3, %%mm4		\n\t"\
 \
 			"por %%mm3, %%mm2		\n\t"\
-			"por %%mm5, %%mm2		\n\t"\
-\
-			"punpckhbw %%mm7, %%mm4		\n\t" /* 0G0G0G0G */\
-			"punpckhbw %%mm7, %%mm1		\n\t" /* 0B0B0B0B */\
-			"punpckhbw %%mm7, %%mm6		\n\t" /* 0R0R0R0R */\
-\
-			"psrlw $3, %%mm1		\n\t"\
-			"psllw $3, %%mm4		\n\t"\
-			"psllw $8, %%mm6		\n\t"\
-\
-			"pand g16Mask, %%mm4		\n\t"\
-			"pand r16Mask, %%mm6		\n\t"\
-\
 			"por %%mm4, %%mm1		\n\t"\
-			"por %%mm6, %%mm1		\n\t"\
 \
 			MOVNTQ(%%mm2, (%4, %%eax, 2))\
 			MOVNTQ(%%mm1, 8(%4, %%eax, 2))\
@@ -408,37 +397,25 @@ static int canMMX2BeUsed=0;
 			" jb 1b				\n\t"
 
 #define WRITEBGR15 \
-			"movq %%mm2, %%mm1		\n\t" /* B */\
-			"movq %%mm4, %%mm3		\n\t" /* G */\
-			"movq %%mm5, %%mm6		\n\t" /* R */\
+			"pand bF8, %%mm2		\n\t" /* B */\
+			"pand bF8, %%mm4		\n\t" /* G */\
+			"pand bF8, %%mm5		\n\t" /* R */\
+			"psrlq $3, %%mm2		\n\t"\
+			"psrlq $1, %%mm5		\n\t"\
 \
-			"punpcklbw %%mm7, %%mm3		\n\t" /* 0G0G0G0G */\
-			"punpcklbw %%mm7, %%mm2		\n\t" /* 0B0B0B0B */\
-			"punpcklbw %%mm7, %%mm5		\n\t" /* 0R0R0R0R */\
+			"movq %%mm2, %%mm1		\n\t"\
+			"movq %%mm4, %%mm3		\n\t"\
 \
-			"psrlw $3, %%mm2		\n\t"\
-			"psllw $2, %%mm3		\n\t"\
-			"psllw $7, %%mm5		\n\t"\
+			"punpcklbw %%mm7, %%mm3		\n\t"\
+			"punpcklbw %%mm5, %%mm2		\n\t"\
+			"punpckhbw %%mm7, %%mm4		\n\t"\
+			"punpckhbw %%mm5, %%mm1		\n\t"\
 \
-			"pand g15Mask, %%mm3		\n\t"\
-			"pand r15Mask, %%mm5		\n\t"\
+			"psllq $2, %%mm3		\n\t"\
+			"psllq $2, %%mm4		\n\t"\
 \
 			"por %%mm3, %%mm2		\n\t"\
-			"por %%mm5, %%mm2		\n\t"\
-\
-			"punpckhbw %%mm7, %%mm4		\n\t" /* 0G0G0G0G */\
-			"punpckhbw %%mm7, %%mm1		\n\t" /* 0B0B0B0B */\
-			"punpckhbw %%mm7, %%mm6		\n\t" /* 0R0R0R0R */\
-\
-			"psrlw $3, %%mm1		\n\t"\
-			"psllw $2, %%mm4		\n\t"\
-			"psllw $7, %%mm6		\n\t"\
-\
-			"pand g15Mask, %%mm4		\n\t"\
-			"pand r15Mask, %%mm6		\n\t"\
-\
 			"por %%mm4, %%mm1		\n\t"\
-			"por %%mm6, %%mm1		\n\t"\
 \
 			MOVNTQ(%%mm2, (%4, %%eax, 2))\
 			MOVNTQ(%%mm1, 8(%4, %%eax, 2))\
@@ -446,6 +423,7 @@ static int canMMX2BeUsed=0;
 			"addl $8, %%eax			\n\t"\
 			"cmpl %5, %%eax			\n\t"\
 			" jb 1b				\n\t"
+
 // FIXME find a faster way to shuffle it to BGR24
 #define WRITEBGR24 \
 		/* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */\
