@@ -377,7 +377,7 @@ static double modify_qscale(MpegEncContext *s, RateControlEntry *rce, double q, 
         q*= s->avctx->rc_qmod_amp;
 
     bits= qp2bits(rce, q);
-
+//printf("q:%f\n", q);
     /* buffer overflow/underflow protection */
     if(buffer_size){
         double expected_size= rcc->buffer_index - bits;
@@ -385,16 +385,18 @@ static double modify_qscale(MpegEncContext *s, RateControlEntry *rce, double q, 
         if(min_rate){
             double d= 2*(buffer_size - (expected_size + min_rate))/buffer_size;
             if(d>1.0) d=1.0;
-            q/= pow(d, 1.0/s->avctx->rc_buffer_aggressivity);
+            else if(d<0.0001) d=0.0001;
+            q*= pow(d, 1.0/s->avctx->rc_buffer_aggressivity);
         }
 
         if(max_rate){
             double d= 2*expected_size/buffer_size;
             if(d>1.0) d=1.0;
-            q*= pow(d, 1.0/s->avctx->rc_buffer_aggressivity);
+            else if(d<0.0001) d=0.0001;
+            q/= pow(d, 1.0/s->avctx->rc_buffer_aggressivity);
         }
     }
-
+//printf("q:%f max:%f min:%f size:%f index:%d bits:%f agr:%f\n", q,max_rate, min_rate, buffer_size, rcc->buffer_index, bits, s->avctx->rc_buffer_aggressivity);
     if(s->avctx->rc_qsquish==0.0 || qmin==qmax){
         if     (q<qmin) q=qmin;
         else if(q>qmax) q=qmax;
@@ -460,7 +462,7 @@ int ff_rate_estimate_qscale(MpegEncContext *s)
     get_qminmax(&qmin, &qmax, s, pict_type);
 
     fps= (double)s->frame_rate / FRAME_RATE_BASE;
-//printf("input_picture_number:%d picture_number:%d\n", s->input_picture_number, s->picture_number);
+//printf("input_pic_num:%d pic_num:%d frame_rate:%d\n", s->input_picture_number, s->picture_number, s->frame_rate);
         /* update predictors */
     if(picture_number>2){
         const int last_var= s->last_pict_type == I_TYPE ? rcc->last_mb_var_sum : rcc->last_mc_mb_var_sum;
@@ -544,6 +546,8 @@ int ff_rate_estimate_qscale(MpegEncContext *s)
             q= short_term_q= rcc->short_term_qsum/rcc->short_term_qcount;
 //printf("%f ", q);
         }
+        assert(q>0.0);
+        
         q= modify_qscale(s, rce, q, picture_number);
 
         rcc->pass1_wanted_bits+= s->bit_rate/fps;
@@ -566,8 +570,8 @@ int ff_rate_estimate_qscale(MpegEncContext *s)
     qscale= (int)(q + 0.5);
 //printf("%d ", qscale);
     
-//printf("q:%d diff:%d comp:%f rate_q:%d st_q:%f fvar:%d last_size:%d\n", qscale, (int)diff, br_compensation, 
-//       rate_q, short_term_q, s->mc_mb_var, s->frame_bits);
+//printf("q:%d diff:%d comp:%f st_q:%f last_size:%d\n", qscale, (int)diff, br_compensation, 
+//       short_term_q, s->frame_bits);
 //printf("%d %d\n", s->bit_rate, (int)fps);
 
     rcc->last_qscale= qscale;

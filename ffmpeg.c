@@ -1369,6 +1369,11 @@ void opt_video_bitrate_min(const char *arg)
     video_rc_min_rate = atoi(arg) * 1000;
 }
 
+void opt_video_buffer_size(const char *arg)
+{
+    video_rc_buffer_size = atoi(arg) * 1000;
+}
+
 void opt_video_rc_eq(char *arg)
 {
     video_rc_eq = arg;
@@ -1900,6 +1905,7 @@ void opt_output_file(const char *filename)
             video_enc->rc_max_rate = video_rc_max_rate;
             video_enc->rc_min_rate = video_rc_min_rate;
             video_enc->rc_buffer_size = video_rc_buffer_size;
+            video_enc->rc_buffer_aggressivity= video_rc_buffer_aggressivity;
             video_enc->i_quant_factor = video_i_qfactor;
             video_enc->b_quant_factor = video_b_qfactor;
             video_enc->i_quant_offset = video_i_qoffset;
@@ -2260,6 +2266,7 @@ const OptionDef options[] = {
     { "bt", HAS_ARG, {(void*)opt_video_bitrate_tolerance}, "set video bitrate tolerance (in kbit/s)", "tolerance" },
     { "maxrate", HAS_ARG, {(void*)opt_video_bitrate_max}, "set max video bitrate tolerance (in kbit/s)", "bitrate" },
     { "minrate", HAS_ARG, {(void*)opt_video_bitrate_min}, "set min video bitrate tolerance (in kbit/s)", "bitrate" },
+    { "bufsize", HAS_ARG, {(void*)opt_video_buffer_size}, "set ratecontrol buffere size (in kbit)", "size" },
     { "vd", HAS_ARG | OPT_EXPERT, {(void*)opt_video_device}, "set video grab device", "device" },
     { "vcodec", HAS_ARG | OPT_EXPERT, {(void*)opt_video_codec}, "force video codec", "codec" },
     { "me", HAS_ARG | OPT_EXPERT, {(void*)opt_motion_estimation}, "set motion estimation method", 
