@@ -125,11 +125,14 @@ typedef struct MpegEncContext {
     /* bit rate control */
     int I_frame_bits;    /* wanted number of bits per I frame */
     int P_frame_bits;    /* same for P frame */
-    long long wanted_bits;
-    long long total_bits;
+    INT64 wanted_bits;
+    INT64 total_bits;
 
     /* mpeg4 specific */
     int time_increment_bits;
+    int shape;
+    int vol_sprite_usage;
+    int quant_precision;
 
     /* RV10 specific */
     int rv10_version; /* RV10 version: 0 or 3 */

@@ -1,9 +1,85 @@
 #ifndef COMMON_H
 #define COMMON_H
 
-#ifdef HAVE_AV_CONFIG_H
-#include "../config.h"
+#define FFMPEG_VERSION "0.4.5"
+
+#ifdef WIN32
+#define CONFIG_WIN32
 #endif
+
+#ifdef HAVE_AV_CONFIG_H
+/* only include the following when compiling package */
+#include "../config.h"
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <errno.h>
+
+#ifndef ENODATA
+#define ENODATA  61
+#endif
+
+#endif
+
+#ifdef CONFIG_WIN32
+
+/* windows */
+
+typedef unsigned short UINT16;
+typedef signed short INT16;
+typedef unsigned char UINT8;
+typedef unsigned int UINT32;
+typedef unsigned __int64 UINT64;
+typedef signed char INT8;
+typedef signed int INT32;
+typedef signed __int64 INT64;
+
+typedef UINT8 uint8_t;
+typedef INT8 int8_t;
+typedef UINT16 uint16_t;
+typedef INT16 int16_t;
+typedef UINT32 uint32_t;
+typedef INT32 int32_t;
+
+#define INT64_C(c)     (c ## i64)
+#define UINT64_C(c)    (c ## i64)
+
+#define inline __inline
+
+/*
+  Disable warning messages:
+    warning C4244: '=' : conversion from 'double' to 'float', possible loss of data
+    warning C4305: 'argument' : truncation from 'const double' to 'float'
+*/
+#pragma warning( disable : 4244 )
+#pragma warning( disable : 4305 )
+
+#define M_PI    3.14159265358979323846
+#define M_SQRT2 1.41421356237309504880  /* sqrt(2) */
+
+#ifdef _DEBUG
+#define DEBUG
+#endif
+
+// code from bits/byteswap.h (C) 1997, 1998 Free Software Foundation, Inc.
+#define bswap_32(x) \
+     ((((x) & 0xff000000) >> 24) | (((x) & 0x00ff0000) >>  8) | \
+      (((x) & 0x0000ff00) <<  8) | (((x) & 0x000000ff) << 24))
+#define be2me_32(x) bswap_32(x)
+
+#define snprintf _snprintf
+
+#define CONFIG_ENCODERS 1
+#define CONFIG_DECODERS 1
+#define CONFIG_AC3      1
+#define CONFIG_MPGLIB   1
+
+#else
+
+/* unix */
+
+#include <inttypes.h>
 
 #ifndef __WINE_WINDEF16_H
 /* workaround for typedef conflict in MPlayer (wine typedefs) */
@@ -18,6 +94,32 @@ typedef signed char INT8;
 typedef signed int INT32;
 typedef signed long long INT64;
 
+#ifdef HAVE_AV_CONFIG_H
+
+#ifdef __FreeBSD__
+#include <sys/param.h>
+#endif
+
+#ifndef INT64_C
+#define INT64_C(c)     (c ## LL)
+#define UINT64_C(c)    (c ## ULL)
+#endif
+
+#include "../bswap.h"
+
+#ifdef USE_FASTMEMCPY
+#include "fastmemcpy.h"
+#endif
+
+#ifndef DEBUG
+#define NDEBUG
+#endif
+#include <assert.h>
+
+#endif /* HAVE_AV_CONFIG_H */
+
+#endif /* !CONFIG_WIN32 */
+
 /* bit output */
 
 struct PutBitContext;
@@ -28,7 +130,7 @@ typedef struct PutBitContext {
     UINT32 bit_buf;
     int bit_cnt;
     UINT8 *buf, *buf_ptr, *buf_end;
-    long long data_out_size; /* in bytes */
+    INT64 data_out_size; /* in bytes */
     void *opaque;
     WriteDataFunc write_data;
 } PutBitContext;
@@ -38,7 +140,7 @@ void init_put_bits(PutBitContext *s,
                    void *opaque,
                    void (*write_data)(void *, UINT8 *, int));
 void put_bits(PutBitContext *s, int n, unsigned int value);
-long long get_bit_count(PutBitContext *s);
+INT64 get_bit_count(PutBitContext *s);
 void align_put_bits(PutBitContext *s);
 void flush_put_bits(PutBitContext *s);
 

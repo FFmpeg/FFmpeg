@@ -16,19 +16,14 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <math.h>
+//#define DEBUG
+//#define DEBUG_BITALLOC
 #include "avcodec.h"
+#include <math.h>
 
 #include "ac3enc.h"
 #include "ac3tab.h"
 
-//#define DEBUG
-//#define DEBUG_BITALLOC
-#define NDEBUG
-#include <assert.h>
 
 #define MDCT_NBITS 9
 #define N         (1 << MDCT_NBITS)

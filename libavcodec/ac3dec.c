@@ -16,12 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
 #include "avcodec.h"
-
-#include <inttypes.h>
 #include "libac3/ac3.h"
 
 /* currently, I use libac3 which is Copyright (C) Aaron Holtzman and

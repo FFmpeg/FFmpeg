@@ -21,10 +21,7 @@
  *
  */
 
-#include <inttypes.h>
-#include <stdlib.h>
-#include <stdio.h>
-
+#include "../common.h"
 #include "ac3.h"
 #include "ac3_internal.h"
 #include "bitstream.h"

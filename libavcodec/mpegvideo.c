@@ -81,7 +81,8 @@ static void convert_matrix(int *qmat, const UINT16 *quant_matrix, int qscale)
             /* 16 <= qscale * quant_matrix[i] <= 7905 */
             /* 19952 <= aanscales[i] * qscale * quant_matrix[i] <= 249205026 */
             
-            qmat[i] = (int)((1ULL << (QMAT_SHIFT + 11)) / (aanscales[i] * qscale * quant_matrix[i]));
+            qmat[i] = (int)((UINT64_C(1) << (QMAT_SHIFT + 11)) / 
+                            (aanscales[i] * qscale * quant_matrix[i]));
         }
     } else {
         for(i=0;i<64;i++) {
@@ -983,6 +984,10 @@ static int dct_quantize(MpegEncContext *s,
 
     av_fdct (block);
 
+    /* we need this permutation so that we correct the IDCT
+       permutation. will be moved into DCT code */
+    block_permute(block);
+
     if (s->mb_intra) {
         if (n < 4)
             q = s->y_dc_scale;
@@ -1251,7 +1256,7 @@ static void rate_control_init(MpegEncContext *s)
  */
 static int rate_estimate_qscale(MpegEncContext *s)
 {
-    long long total_bits = s->total_bits;
+    INT64 total_bits = s->total_bits;
     float q;
     int qscale, diff, qmin;
 
@@ -1276,9 +1281,9 @@ static int rate_estimate_qscale(MpegEncContext *s)
         q = 31;
     qscale = (int)(q + 0.5);
 #if defined(DEBUG)
-    printf("%d: total=%Ld br=%0.1f diff=%d qest=%0.1f\n", 
+    printf("%d: total=%0.0f br=%0.1f diff=%d qest=%0.1f\n", 
            s->picture_number, 
-           total_bits, 
+           (double)total_bits, 
            (float)s->frame_rate / FRAME_RATE_BASE * 
            total_bits / s->picture_number, 
            diff, q);

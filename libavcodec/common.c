@@ -16,20 +16,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#ifdef __FreeBSD__
-#include <sys/param.h>
-#endif
-#include <netinet/in.h>
-#include <math.h>
 #include "common.h"
-
-#define NDEBUG
-#include <assert.h>
-
-#include "../bswap.h"
+#include <math.h>
 
 void init_put_bits(PutBitContext *s, 
                    UINT8 *buffer, int buffer_size,
@@ -79,7 +67,7 @@ void put_bits(PutBitContext *s, int n, unsigned int value)
         bit_cnt+=n;
     } else {
         bit_buf |= value >> (n + bit_cnt - 32);
-        *(UINT32 *)s->buf_ptr = htonl(bit_buf);
+        *(UINT32 *)s->buf_ptr = be2me_32(bit_buf);
         //printf("bitbuf = %08x\n", bit_buf);
         s->buf_ptr+=4;
         if (s->buf_ptr >= s->buf_end)
@@ -97,9 +85,9 @@ void put_bits(PutBitContext *s, int n, unsigned int value)
 }
 
 /* return the number of bits output */
-long long get_bit_count(PutBitContext *s)
+INT64 get_bit_count(PutBitContext *s)
 {
-    return (s->buf_ptr - s->buf + s->data_out_size) * 8 + (long long)s->bit_cnt;
+    return (s->buf_ptr - s->buf + s->data_out_size) * 8 + (INT64)s->bit_cnt;
 }
 
 void align_put_bits(PutBitContext *s)

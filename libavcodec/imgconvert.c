@@ -16,10 +16,6 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-
 #include "avcodec.h"
 #include "dsputil.h"
 
@@ -481,7 +477,9 @@ static void deinterlace_bottom_field(UINT8 *dst, int dst_wrap,
 {
     UINT8 *src, *ptr;
     int y, y1, i;
-    UINT8 buf[5 * width];
+    UINT8 *buf;
+
+    buf= (UINT8*) malloc(5 * width);
 
     src = src1;
     for(y=0;y<height;y+=2) {
@@ -511,6 +509,7 @@ static void deinterlace_bottom_field(UINT8 *dst, int dst_wrap,
         dst += dst_wrap;
         src += (2 + 1) * src_wrap;
     }
+    free(buf);
 }
 
 

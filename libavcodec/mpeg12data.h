@@ -288,27 +288,73 @@ static const UINT8 mbPatTable[63][2] = {
 #define MB_QUANT 0x10  
 
 static const UINT8 table_mb_ptype[32][2] = {
-    [ MB_FOR|MB_PAT ] { 1, 1 },
-    [ MB_PAT ] { 1, 2 },
-    [ MB_FOR ] { 1, 3 },
-    [ MB_INTRA ] { 3, 5 },
-    [ MB_QUANT|MB_FOR|MB_PAT ] { 2, 5 },
-    [ MB_QUANT|MB_PAT ] { 1, 5 },
-    [ MB_QUANT|MB_INTRA ] { 1, 6 },
+    { 0, 0 }, // 0x00
+    { 3, 5 }, // 0x01 MB_INTRA
+    { 1, 2 }, // 0x02 MB_PAT
+    { 0, 0 }, // 0x03
+    { 0, 0 }, // 0x04
+    { 0, 0 }, // 0x05
+    { 0, 0 }, // 0x06
+    { 0, 0 }, // 0x07
+    { 1, 3 }, // 0x08 MB_FOR
+    { 0, 0 }, // 0x09
+    { 1, 1 }, // 0x0A MB_FOR|MB_PAT
+    { 0, 0 }, // 0x0B
+    { 0, 0 }, // 0x0C
+    { 0, 0 }, // 0x0D
+    { 0, 0 }, // 0x0E
+    { 0, 0 }, // 0x0F
+    { 0, 0 }, // 0x10
+    { 1, 6 }, // 0x11 MB_QUANT|MB_INTRA
+    { 1, 5 }, // 0x12 MB_QUANT|MB_PAT
+    { 0, 0 }, // 0x13
+    { 0, 0 }, // 0x14
+    { 0, 0 }, // 0x15
+    { 0, 0 }, // 0x16
+    { 0, 0 }, // 0x17
+    { 0, 0 }, // 0x18
+    { 0, 0 }, // 0x19
+    { 2, 5 }, // 0x1A MB_QUANT|MB_FOR|MB_PAT
+    { 0, 0 }, // 0x1B
+    { 0, 0 }, // 0x1C
+    { 0, 0 }, // 0x1D
+    { 0, 0 }, // 0x1E
+    { 0, 0 }, // 0x1F
 };
 
 static const UINT8 table_mb_btype[32][2] = {
-    [ MB_FOR|MB_BACK ] { 2, 2 },
-    [ MB_FOR|MB_BACK|MB_PAT ] { 3, 2 },
-    [ MB_BACK ] { 2, 3 },
-    [ MB_BACK|MB_PAT ] { 3, 3 },
-    [ MB_FOR ] { 2, 4 },
-    [ MB_FOR|MB_PAT ] { 3, 4 },
-    [ MB_INTRA ] { 3, 5 },
-    [ MB_QUANT|MB_FOR|MB_BACK|MB_PAT ] { 2, 5 },
-    [ MB_QUANT|MB_FOR|MB_PAT ] { 3, 6 },
-    [ MB_QUANT|MB_BACK|MB_PAT ] { 2, 6 },
-    [ MB_QUANT|MB_INTRA ] { 1, 6 },
+    { 0, 0 }, // 0x00
+    { 3, 5 }, // 0x01 MB_INTRA
+    { 0, 0 }, // 0x02
+    { 0, 0 }, // 0x03
+    { 2, 3 }, // 0x04 MB_BACK
+    { 0, 0 }, // 0x05
+    { 3, 3 }, // 0x06 MB_BACK|MB_PAT
+    { 0, 0 }, // 0x07
+    { 2, 4 }, // 0x08 MB_FOR
+    { 0, 0 }, // 0x09
+    { 3, 4 }, // 0x0A MB_FOR|MB_PAT
+    { 0, 0 }, // 0x0B
+    { 2, 2 }, // 0x0C MB_FOR|MB_BACK
+    { 0, 0 }, // 0x0D
+    { 3, 2 }, // 0x0E MB_FOR|MB_BACK|MB_PAT
+    { 0, 0 }, // 0x0F
+    { 0, 0 }, // 0x10
+    { 1, 6 }, // 0x11 MB_QUANT|MB_INTRA
+    { 0, 0 }, // 0x12
+    { 0, 0 }, // 0x13
+    { 0, 0 }, // 0x14
+    { 0, 0 }, // 0x15
+    { 2, 6 }, // 0x16 MB_QUANT|MB_BACK|MB_PAT
+    { 0, 0 }, // 0x17
+    { 0, 0 }, // 0x18
+    { 0, 0 }, // 0x19
+    { 3, 6 }, // 0x1A MB_QUANT|MB_FOR|MB_PAT
+    { 0, 0 }, // 0x1B
+    { 0, 0 }, // 0x1C
+    { 0, 0 }, // 0x1D
+    { 2, 5 }, // 0x1E MB_QUANT|MB_FOR|MB_BACK|MB_PAT
+    { 0, 0 }, // 0x1F
 };
 
 static const UINT8 mbMotionVectorTable[17][2] = {

@@ -16,24 +16,26 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mpegvideo.h"
 
 #include "mpeg12data.h"
 
-#ifdef USE_FASTMEMCPY
-#include "fastmemcpy.h"
-#endif
 //#define DEBUG
+
+#ifndef CONFIG_WIN32
 
 #ifdef DEBUG
 #define dprintf(fmt,args...) printf(fmt, ## args)
 #else
 #define dprintf(fmt,args...)
+#endif
+
+#else
+
+inline void dprintf(const char* fmt,...) {}
+
 #endif
 
 /* Start codes. */
@@ -118,11 +120,11 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
             fps = frame_rate_tab[s->frame_rate_index];
             time_code = s->fake_picture_number * FRAME_RATE_BASE;
             s->gop_picture_number = s->fake_picture_number;
-            put_bits(&s->pb, 5, (time_code / (fps * 3600)) % 24);
-            put_bits(&s->pb, 6, (time_code / (fps * 60)) % 60);
+            put_bits(&s->pb, 5, (UINT32)((time_code / (fps * 3600)) % 24));
+            put_bits(&s->pb, 6, (UINT32)((time_code / (fps * 60)) % 60));
             put_bits(&s->pb, 1, 1);
-            put_bits(&s->pb, 6, (time_code / fps) % 60);
-            put_bits(&s->pb, 6, (time_code % fps) / FRAME_RATE_BASE);
+            put_bits(&s->pb, 6, (UINT32)((time_code / fps) % 60));
+            put_bits(&s->pb, 6, (UINT32)((time_code % fps) / FRAME_RATE_BASE));
             put_bits(&s->pb, 1, 1); /* closed gop */
             put_bits(&s->pb, 1, 0); /* broken link */
         }

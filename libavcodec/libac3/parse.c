@@ -22,9 +22,7 @@
  *
  */
 
-#include <inttypes.h>
-#include <string.h>
-
+#include "../common.h"
 #include "ac3.h"
 #include "ac3_internal.h"
 

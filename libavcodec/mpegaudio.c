@@ -16,15 +16,9 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <math.h>
 #include "avcodec.h"
+#include <math.h>
 #include "mpegaudio.h"
-
-#define NDEBUG
-#include <assert.h>
 
 /* define it to use floats in quantization (I don't like floats !) */
 //#define USE_FLOATS

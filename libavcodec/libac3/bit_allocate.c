@@ -20,10 +20,7 @@
  *  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA. 
  *
  */
-
-#include <inttypes.h>
-#include <stdlib.h>
-#include <string.h>
+#include "../common.h"
 #include "ac3.h"
 #include "ac3_internal.h"
 
