@@ -520,4 +520,11 @@ typedef enum {
  */
 int avcodec(void* handle, avc_cmd_t cmd, void* pin, void* pout);
 
+/* memory */
+void *av_malloc(int size);
+void *av_mallocz(int size);
+void av_free(void *ptr);
+void __av_freep(void **ptr);
+#define av_freep(p) __av_freep((void **)(p))
+
 #endif /* AVCODEC_H */
