@@ -296,6 +296,7 @@ typedef struct H264Context{
 
     /* 0x100 -> non null luma_dc, 0x80/0x40 -> non null chroma_dc (cb/cr), 0x?0 -> chroma_cbp(0,1,2), 0x0? luma_cbp */
     uint16_t     *cbp_table;
+    /* chroma_pred_mode for i4x4 or i16x16, else 0 */
     uint8_t     *chroma_pred_mode_table;
     int         last_qscale_diff;
     int16_t     (*mvd_table[2])[2];
@@ -3899,16 +3900,12 @@ static int decode_cabac_mb_chroma_pre_mode( H264Context *h) {
 
     int ctx = 0;
 
-    if( s->mb_x > 0 &&
-        ( IS_INTRA4x4( s->current_picture.mb_type[mba_xy] ) || IS_INTRA16x16( s->current_picture.mb_type[mba_xy] ) ) &&
-        h->chroma_pred_mode_table[mba_xy] != 0 ) {
+    /* No need to test for IS_INTRA4x4 and IS_INTRA16x16, as we set chroma_pred_mode_table to 0 */
+    if( s->mb_x > 0 && h->chroma_pred_mode_table[mba_xy] != 0 )
         ctx++;
-    }
-    if( s->mb_y > 0 &&
-        ( IS_INTRA4x4( s->current_picture.mb_type[mbb_xy] ) || IS_INTRA16x16( s->current_picture.mb_type[mbb_xy] ) ) &&
-        h->chroma_pred_mode_table[mbb_xy] != 0 ) {
+
+    if( s->mb_y > 0 && h->chroma_pred_mode_table[mbb_xy] != 0 )
         ctx++;
-    }
 
     if( get_cabac( &h->cabac, &h->cabac_state[64+ctx] ) == 0 )
         return 0;
@@ -3962,15 +3959,16 @@ static int decode_cabac_mb_cbp_luma( H264Context *h) {
         else if( s->mb_y > 0 )
             mbb_xy = mb_xy - s->mb_stride;
 
+        /* No need to test for skip as we put 0 for skip block */
         if( mba_xy >= 0 ) {
             int i8x8a = block_idx_xy[(x-1)&0x03][y]/4;
-            if( IS_SKIP( s->current_picture.mb_type[mba_xy] ) || ((h->cbp_table[mba_xy] >> i8x8a)&0x01) == 0 )
+            if( ((h->cbp_table[mba_xy] >> i8x8a)&0x01) == 0 )
                 ctx++;
         }
 
         if( mbb_xy >= 0 ) {
             int i8x8b = block_idx_xy[x][(y-1)&0x03]/4;
-            if( IS_SKIP( s->current_picture.mb_type[mbb_xy] ) || ((h->cbp_table[mbb_xy] >> i8x8b)&0x01) == 0 )
+            if( ((h->cbp_table[mbb_xy] >> i8x8b)&0x01) == 0 )
                 ctx += 2;
         }
 
@@ -3987,12 +3985,13 @@ static int decode_cabac_mb_cbp_chroma( H264Context *h) {
     int ctx;
     int cbp_a, cbp_b;
 
-    if( s->mb_x > 0 && !IS_SKIP( s->current_picture.mb_type[mb_xy-1] ) )
+    /* No need to test for skip */
+    if( s->mb_x > 0 )
         cbp_a = (h->cbp_table[mb_xy-1]>>4)&0x03;
     else
         cbp_a = -1;
 
-    if( s->mb_y > 0 && !IS_SKIP( s->current_picture.mb_type[mb_xy-s->mb_stride] ) )
+    if( s->mb_y > 0 )
         cbp_b = (h->cbp_table[mb_xy-s->mb_stride]>>4)&0x03;
     else
         cbp_b = -1;
@@ -4146,11 +4145,11 @@ static int get_cabac_cbf_ctx( H264Context *h, int cat, int idx ) {
         else if( s->mb_y > 0 )
             mbb_xy = mb_xy - s->mb_stride;
 
+        /* No need to test for skip */
         if( mba_xy >= 0 ) {
             i8x8a = block_idx_xy[(x-1)&0x03][y]/4;
 
-            if( !IS_SKIP(s->current_picture.mb_type[mba_xy] ) &&
-                !IS_INTRA_PCM(s->current_picture.mb_type[mba_xy] ) &&
+            if( !IS_INTRA_PCM(s->current_picture.mb_type[mba_xy] ) &&
                 ((h->cbp_table[mba_xy]&0x0f)>>i8x8a))
                 nza = h->non_zero_count_cache[scan8[idx] - 1];
         }
@@ -4158,8 +4157,7 @@ static int get_cabac_cbf_ctx( H264Context *h, int cat, int idx ) {
         if( mbb_xy >= 0 ) {
             i8x8b = block_idx_xy[x][(y-1)&0x03]/4;
 
-            if( !IS_SKIP(s->current_picture.mb_type[mbb_xy] ) &&
-                !IS_INTRA_PCM(s->current_picture.mb_type[mbb_xy] ) &&
+            if( !IS_INTRA_PCM(s->current_picture.mb_type[mbb_xy] ) &&
                 ((h->cbp_table[mbb_xy]&0x0f)>>i8x8b))
                 nzb = h->non_zero_count_cache[scan8[idx] - 8];
         }
@@ -4167,16 +4165,14 @@ static int get_cabac_cbf_ctx( H264Context *h, int cat, int idx ) {
         if( s->mb_x > 0 ) {
             mba_xy = mb_xy - 1;
 
-            if( !IS_SKIP(s->current_picture.mb_type[mba_xy] ) &&
-                !IS_INTRA_PCM(s->current_picture.mb_type[mba_xy] ) &&
+            if( !IS_INTRA_PCM(s->current_picture.mb_type[mba_xy] ) &&
                 (h->cbp_table[mba_xy]&0x30) )
                 nza = (h->cbp_table[mba_xy]>>(6+idx))&0x01;
         }
         if( s->mb_y > 0 ) {
             mbb_xy = mb_xy - s->mb_stride;
 
-            if( !IS_SKIP(s->current_picture.mb_type[mbb_xy] ) &&
-                !IS_INTRA_PCM(s->current_picture.mb_type[mbb_xy] ) &&
+            if( !IS_INTRA_PCM(s->current_picture.mb_type[mbb_xy] ) &&
                 (h->cbp_table[mbb_xy]&0x30) )
                 nzb = (h->cbp_table[mbb_xy]>>(6+idx))&0x01;
         }
@@ -4193,13 +4189,11 @@ static int get_cabac_cbf_ctx( H264Context *h, int cat, int idx ) {
             mbb_xy = mb_xy - s->mb_stride;
 
         if( mba_xy >= 0 &&
-            !IS_SKIP(s->current_picture.mb_type[mba_xy] ) &&
             !IS_INTRA_PCM(s->current_picture.mb_type[mba_xy] ) &&
             (h->cbp_table[mba_xy]&0x30) == 0x20 )
             nza = h->non_zero_count_cache[scan8[16+idx] - 1];
 
         if( mbb_xy >= 0 &&
-            !IS_SKIP(s->current_picture.mb_type[mbb_xy] ) &&
             !IS_INTRA_PCM(s->current_picture.mb_type[mbb_xy] ) &&
             (h->cbp_table[mbb_xy]&0x30) == 0x20 )
             nzb = h->non_zero_count_cache[scan8[16+idx] - 8];
@@ -4393,6 +4387,7 @@ static int decode_mb_cabac(H264Context *h) {
             s->current_picture.qscale_table[mb_xy]= s->qscale;
             h->slice_table[ mb_xy ]= h->slice_num;
             h->cbp_table[mb_xy] = 0;
+            h->chroma_pred_mode_table[mb_xy] = 0;
             h->last_qscale_diff = 0;
 
             h->prev_mb_skiped= 1;
@@ -4435,6 +4430,7 @@ decode_intra_mb:
     if(IS_INTRA_PCM(mb_type)) {
         /* TODO */
         h->cbp_table[mb_xy] = 0xf +4*2;
+        h->chroma_pred_mode_table[mb_xy] = 0;
         s->current_picture.qscale_table[mb_xy]= s->qscale;
         return -1;
     }
@@ -4624,8 +4620,10 @@ decode_intra_mb:
         }
     }
 
-   if( IS_INTER( mb_type ) )
+   if( IS_INTER( mb_type ) ) {
+        h->chroma_pred_mode_table[mb_xy] = 0;
         write_back_motion( h, mb_type );
+   }
 
     if( !IS_INTRA16x16( mb_type ) ) {
         cbp  = decode_cabac_mb_cbp_luma( h );
@@ -5582,7 +5580,7 @@ static int decode_nal_units(H264Context *h, uint8_t *buf, int buf_size){
         
         buf_index += consumed;
 
-        if(h->nal_ref_idc < s->hurry_up)
+        if( s->hurry_up == 1 && h->nal_ref_idc  == 0 )
             continue;
         
         switch(h->nal_unit_type){
@@ -5595,7 +5593,7 @@ static int decode_nal_units(H264Context *h, uint8_t *buf, int buf_size){
             s->data_partitioning = 0;
             
             if(decode_slice_header(h) < 0) return -1;
-            if(h->redundant_pic_count==0)
+            if(h->redundant_pic_count==0 && s->hurry_up < 5 )
                 decode_slice(h);
             break;
         case NAL_DPA:
@@ -5614,7 +5612,7 @@ static int decode_nal_units(H264Context *h, uint8_t *buf, int buf_size){
             init_get_bits(&h->inter_gb, ptr, bit_length);
             h->inter_gb_ptr= &h->inter_gb;
 
-            if(h->redundant_pic_count==0 && h->intra_gb_ptr && s->data_partitioning)
+            if(h->redundant_pic_count==0 && h->intra_gb_ptr && s->data_partitioning && s->hurry_up < 5 )
                 decode_slice(h);
             break;
         case NAL_SEI:
