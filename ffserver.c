@@ -60,6 +60,7 @@ enum HTTPState {
 
     RTSPSTATE_WAIT_REQUEST,
     RTSPSTATE_SEND_REPLY,
+    RTSPSTATE_SEND_PACKET,
 };
 
 const char *http_state[] = {
@@ -77,6 +78,7 @@ const char *http_state[] = {
 
     "RTSP_WAIT_REQUEST",
     "RTSP_SEND_REPLY",
+    "RTSP_SEND_PACKET",
 };
 
 #define IOBUFFER_INIT_SIZE 8192
@@ -143,11 +145,16 @@ typedef struct HTTPContext {
     enum RTSPProtocol rtp_protocol;
     char session_id[32]; /* session id */
     AVFormatContext *rtp_ctx[MAX_STREAMS];
-    URLContext *rtp_handles[MAX_STREAMS];
     /* RTP short term bandwidth limitation */
     int packet_byte_count;
     int packet_start_time_us; /* used for short durations (a few
                                  seconds max) */
+    /* RTP/UDP specific */
+    URLContext *rtp_handles[MAX_STREAMS];
+
+    /* RTP/TCP specific */
+    struct HTTPContext *rtsp_c;
+    uint8_t *packet_buffer, *packet_buffer_ptr, *packet_buffer_end;
 } HTTPContext;
 
 static AVFrame dummy_frame;
@@ -259,9 +266,11 @@ static int prepare_sdp_description(FFStream *stream, uint8_t **pbuffer,
 
 /* RTP handling */
 static HTTPContext *rtp_new_connection(struct sockaddr_in *from_addr, 
-                                       FFStream *stream, const char *session_id);
+                                       FFStream *stream, const char *session_id,
+                                       enum RTSPProtocol rtp_protocol);
 static int rtp_new_av_stream(HTTPContext *c, 
-                             int stream_index, struct sockaddr_in *dest_addr);
+                             int stream_index, struct sockaddr_in *dest_addr,
+                             HTTPContext *rtsp_c);
 
 static const char *my_program_name;
 static const char *my_program_dir;
@@ -289,7 +298,7 @@ static long gettime_ms(void)
 
 static FILE *logfile = NULL;
 
-static void http_log(const char *fmt, ...)
+static void __attribute__ ((format (printf, 1, 2))) http_log(const char *fmt, ...) 
 {
     va_list ap;
     va_start(ap, fmt);
@@ -477,7 +486,8 @@ static void start_multicast(void)
             dest_addr.sin_addr = stream->multicast_ip;
             dest_addr.sin_port = htons(stream->multicast_port);
 
-            rtp_c = rtp_new_connection(&dest_addr, stream, session_id);
+            rtp_c = rtp_new_connection(&dest_addr, stream, session_id, 
+                                       RTSP_PROTOCOL_RTP_UDP_MULTICAST);
             if (!rtp_c) {
                 continue;
             }
@@ -487,14 +497,12 @@ static void start_multicast(void)
                 continue;
             }
 
-            rtp_c->rtp_protocol = RTSP_PROTOCOL_RTP_UDP_MULTICAST;
-
             /* open each RTP stream */
             for(stream_index = 0; stream_index < stream->nb_streams; 
                 stream_index++) {
                 dest_addr.sin_port = htons(stream->multicast_port + 
                                            2 * stream_index);
-                if (rtp_new_av_stream(rtp_c, stream_index, &dest_addr) < 0) {
+                if (rtp_new_av_stream(rtp_c, stream_index, &dest_addr, NULL) < 0) {
                     fprintf(stderr, "Could not open output stream '%s/streamid=%d'\n", 
                             stream->filename, stream_index);
                     exit(1);
@@ -551,6 +559,7 @@ static int http_server(void)
             switch(c->state) {
             case HTTPSTATE_SEND_HEADER:
             case RTSPSTATE_SEND_REPLY:
+            case RTSPSTATE_SEND_PACKET:
                 c->poll_entry = poll_entry;
                 poll_entry->fd = fd;
                 poll_entry->events = POLLOUT;
@@ -716,6 +725,12 @@ static void close_connection(HTTPContext *c)
         }
     }
 
+    /* remove references, if any (XXX: do it faster) */
+    for(c1 = first_http_ctx; c1 != NULL; c1 = c1->next) {
+        if (c1->rtsp_c == c)
+            c1->rtsp_c = NULL;
+    }
+
     /* remove connection associated resources */
     if (c->fd >= 0)
         close(c->fd);
@@ -746,7 +761,7 @@ static void close_connection(HTTPContext *c)
             url_close(h);
         }
     }
-
+    
     ctx = &c->fmt_ctx;
 
     if (!c->last_packet_sent) {
@@ -754,7 +769,7 @@ static void close_connection(HTTPContext *c)
             /* prepare header */
             if (url_open_dyn_buf(&ctx->pb) >= 0) {
                 av_write_trailer(ctx);
-                (void) url_close_dyn_buf(&ctx->pb, &c->pb_buffer);
+                url_close_dyn_buf(&ctx->pb, &c->pb_buffer);
             }
         }
     }
@@ -765,6 +780,7 @@ static void close_connection(HTTPContext *c)
     if (c->stream)
         current_bandwidth -= c->stream->bandwidth;
     av_freep(&c->pb_buffer);
+    av_freep(&c->packet_buffer);
     av_free(c->buffer);
     av_free(c);
     nb_connections--;
@@ -914,6 +930,31 @@ static int handle_connection(HTTPContext *c)
                 /* all the buffer was sent : wait for a new request */
                 av_freep(&c->pb_buffer);
                 start_wait_request(c, 1);
+            }
+        }
+        break;
+    case RTSPSTATE_SEND_PACKET:
+        if (c->poll_entry->revents & (POLLERR | POLLHUP)) {
+            av_freep(&c->packet_buffer);
+            return -1;
+        }
+        /* no need to write if no events */
+        if (!(c->poll_entry->revents & POLLOUT))
+            return 0;
+        len = write(c->fd, c->packet_buffer_ptr, 
+                    c->packet_buffer_end - c->packet_buffer_ptr);
+        if (len < 0) {
+            if (errno != EAGAIN && errno != EINTR) {
+                /* error : close connection */
+                av_freep(&c->packet_buffer);
+                return -1;
+            }
+        } else {
+            c->packet_buffer_ptr += len;
+            if (c->packet_buffer_ptr >= c->packet_buffer_end) {
+                /* all the buffer was sent : wait for a new request */
+                av_freep(&c->packet_buffer);
+                c->state = RTSPSTATE_WAIT_REQUEST;
             }
         }
         break;
@@ -2087,13 +2128,15 @@ static int compute_send_delay(HTTPContext *c)
     if (datarate > c->stream->bandwidth * 2000) {
         return 1000;
     }
-    if(!c->stream->feed && c->first_pts!=AV_NOPTS_VALUE) {
-      time_pts = ((int64_t)(cur_time - c->start_time) * c->fmt_in->pts_den) / 
-        ((int64_t) c->fmt_in->pts_num*1000);
-      delta_pts = c->cur_pts - time_pts;
-      m_delay = (delta_pts * 1000 * c->fmt_in->pts_num) / c->fmt_in->pts_den;
-      return m_delay>0 ? m_delay : 0;
-    } else return 0;
+    if (!c->stream->feed && c->first_pts!=AV_NOPTS_VALUE) {
+        time_pts = ((int64_t)(cur_time - c->start_time) * c->fmt_in->pts_den) / 
+            ((int64_t) c->fmt_in->pts_num*1000);
+        delta_pts = c->cur_pts - time_pts;
+        m_delay = (delta_pts * 1000 * c->fmt_in->pts_num) / c->fmt_in->pts_den;
+        return m_delay>0 ? m_delay : 0;
+    } else {
+        return 0;
+    }
 }
 
 #endif
@@ -2103,6 +2146,7 @@ static int http_prepare_data(HTTPContext *c)
     int i, len, ret;
     AVFormatContext *ctx;
 
+    av_freep(&c->pb_buffer);
     switch(c->state) {
     case HTTPSTATE_SEND_DATA_HEADER:
         memset(&c->fmt_ctx, 0, sizeof(c->fmt_ctx));
@@ -2273,8 +2317,12 @@ static int http_prepare_data(HTTPContext *c)
 #endif
                         
                         if (c->is_packetized) {
-                            ret = url_open_dyn_packet_buf(&ctx->pb, 
-                                                          url_get_max_packet_size(c->rtp_handles[c->packet_stream_index]));
+                            int max_packet_size;
+                            if (c->rtp_protocol == RTSP_PROTOCOL_RTP_TCP)
+                                max_packet_size = RTSP_TCP_MAX_PACKET_SIZE;
+                            else
+                                max_packet_size = url_get_max_packet_size(c->rtp_handles[c->packet_stream_index]);
+                            ret = url_open_dyn_packet_buf(&ctx->pb, max_packet_size);
                             c->packet_byte_count = 0;
                             c->packet_start_time_us = av_gettime();
                         } else {
@@ -2327,76 +2375,115 @@ static int http_prepare_data(HTTPContext *c)
 #define SHORT_TERM_BANDWIDTH 8000000
 
 /* should convert the format at the same time */
+/* send data starting at c->buffer_ptr to the output connection
+   (either UDP or TCP connection) */
 static int http_send_data(HTTPContext *c)
 {
     int len, ret, dt;
-    
-    while (c->buffer_ptr >= c->buffer_end) {
-        av_freep(&c->pb_buffer);
-        ret = http_prepare_data(c);
-        if (ret < 0)
-            return -1;
-        else if (ret == 0) {
-            continue;
-        } else {
-            /* state change requested */
-            return 0;
-        }
-    }
 
-    if (c->buffer_ptr < c->buffer_end) {
-        if (c->is_packetized) {
-            /* RTP/UDP data output */
-            len = c->buffer_end - c->buffer_ptr;
-            if (len < 4) {
-                /* fail safe - should never happen */
-            fail1:
-                c->buffer_ptr = c->buffer_end;
-                return 0;
+    for(;;) {
+        if (c->buffer_ptr >= c->buffer_end) {
+            ret = http_prepare_data(c);
+            if (ret < 0)
+                return -1;
+            else if (ret != 0) {
+                /* state change requested */
+                break;
             }
-            len = (c->buffer_ptr[0] << 24) |
-                (c->buffer_ptr[1] << 16) |
-                (c->buffer_ptr[2] << 8) |
-                (c->buffer_ptr[3]);
-            if (len > (c->buffer_end - c->buffer_ptr))
-                goto fail1;
-            
-            /* short term bandwidth limitation */
-            dt = av_gettime() - c->packet_start_time_us;
-            if (dt < 1)
-                dt = 1;
-
-            if ((c->packet_byte_count + len) * (int64_t)1000000 >= 
-                (SHORT_TERM_BANDWIDTH / 8) * (int64_t)dt) {
-                /* bandwidth overflow : wait at most one tick and retry */
-                c->state = HTTPSTATE_WAIT_SHORT;
-                return 0;
-            }
-
-            c->buffer_ptr += 4;
-            url_write(c->rtp_handles[c->packet_stream_index], 
-                      c->buffer_ptr, len);
-            c->buffer_ptr += len;
-            c->packet_byte_count += len;
         } else {
-            /* TCP data output */
-            len = write(c->fd, c->buffer_ptr, c->buffer_end - c->buffer_ptr);
-            if (len < 0) {
-                if (errno != EAGAIN && errno != EINTR) {
-                    /* error : close connection */
-                    return -1;
-                } else {
+            if (c->is_packetized) {
+                /* RTP data output */
+                len = c->buffer_end - c->buffer_ptr;
+                if (len < 4) {
+                    /* fail safe - should never happen */
+                fail1:
+                    c->buffer_ptr = c->buffer_end;
                     return 0;
                 }
-            } else {
+                len = (c->buffer_ptr[0] << 24) |
+                    (c->buffer_ptr[1] << 16) |
+                    (c->buffer_ptr[2] << 8) |
+                    (c->buffer_ptr[3]);
+                if (len > (c->buffer_end - c->buffer_ptr))
+                    goto fail1;
+            
+                if (c->rtp_protocol == RTSP_PROTOCOL_RTP_TCP) {
+                    /* RTP packets are sent inside the RTSP TCP connection */
+                    ByteIOContext pb1, *pb = &pb1;
+                    int interleaved_index, size;
+                    uint8_t header[4];
+                    HTTPContext *rtsp_c;
+                    
+                    rtsp_c = c->rtsp_c;
+                    /* if no RTSP connection left, error */
+                    if (!rtsp_c)
+                        return -1;
+                    /* if already sending something, then wait. */
+                    if (rtsp_c->state != RTSPSTATE_WAIT_REQUEST) {
+                        break;
+                    }
+                    if (url_open_dyn_buf(pb) < 0)
+                        goto fail1;
+                    interleaved_index = c->packet_stream_index * 2;
+                    /* RTCP packets are sent at odd indexes */
+                    if (c->buffer_ptr[1] == 200)
+                        interleaved_index++;
+                    /* write RTSP TCP header */
+                    header[0] = '$';
+                    header[1] = interleaved_index;
+                    header[2] = len >> 8;
+                    header[3] = len;
+                    put_buffer(pb, header, 4);
+                    /* write RTP packet data */
+                    c->buffer_ptr += 4;
+                    put_buffer(pb, c->buffer_ptr, len);
+                    size = url_close_dyn_buf(pb, &c->packet_buffer);
+                    /* prepare asynchronous TCP sending */
+                    rtsp_c->packet_buffer_ptr = c->packet_buffer;
+                    rtsp_c->packet_buffer_end = c->packet_buffer + size;
+                    rtsp_c->state = RTSPSTATE_SEND_PACKET;
+                } else {
+                    /* send RTP packet directly in UDP */
+
+                    /* short term bandwidth limitation */
+                    dt = av_gettime() - c->packet_start_time_us;
+                    if (dt < 1)
+                        dt = 1;
+                    
+                    if ((c->packet_byte_count + len) * (int64_t)1000000 >= 
+                        (SHORT_TERM_BANDWIDTH / 8) * (int64_t)dt) {
+                        /* bandwidth overflow : wait at most one tick and retry */
+                        c->state = HTTPSTATE_WAIT_SHORT;
+                        return 0;
+                    }
+
+                    c->buffer_ptr += 4;
+                    url_write(c->rtp_handles[c->packet_stream_index], 
+                              c->buffer_ptr, len);
+                }
                 c->buffer_ptr += len;
+                c->packet_byte_count += len;
+            } else {
+                /* TCP data output */
+                len = write(c->fd, c->buffer_ptr, c->buffer_end - c->buffer_ptr);
+                if (len < 0) {
+                    if (errno != EAGAIN && errno != EINTR) {
+                        /* error : close connection */
+                        return -1;
+                    } else {
+                        return 0;
+                    }
+                } else {
+                    c->buffer_ptr += len;
+                }
             }
+            c->data_count += len;
+            update_datarate(&c->datarate, c->data_count);
+            if (c->stream)
+                c->stream->bytes_served += len;
+            break;
         }
-        c->data_count += len;
-        update_datarate(&c->datarate, c->data_count);
-        if (c->stream)
-            c->stream->bytes_served += len;
-    }
+    } /* for(;;) */
     return 0;
 }
 
@@ -2884,7 +2971,18 @@ static void rtsp_cmd_setup(HTTPContext *c, const char *url,
     /* find rtp session, and create it if none found */
     rtp_c = find_rtp_session(h->session_id);
     if (!rtp_c) {
-        rtp_c = rtp_new_connection(&c->from_addr, stream, h->session_id);
+        /* always prefer UDP */
+        th = find_transport(h, RTSP_PROTOCOL_RTP_UDP);
+        if (!th) {
+            th = find_transport(h, RTSP_PROTOCOL_RTP_TCP);
+            if (!th) {
+                rtsp_reply_error(c, RTSP_STATUS_TRANSPORT);
+                return;
+            }
+        }
+
+        rtp_c = rtp_new_connection(&c->from_addr, stream, h->session_id,
+                                   th->protocol);
         if (!rtp_c) {
             rtsp_reply_error(c, RTSP_STATUS_BANDWIDTH);
             return;
@@ -2895,17 +2993,6 @@ static void rtsp_cmd_setup(HTTPContext *c, const char *url,
             rtsp_reply_error(c, RTSP_STATUS_INTERNAL);
             return;
         }
-
-        /* always prefer UDP */
-        th = find_transport(h, RTSP_PROTOCOL_RTP_UDP);
-        if (!th) {
-            th = find_transport(h, RTSP_PROTOCOL_RTP_TCP);
-            if (!th) {
-                rtsp_reply_error(c, RTSP_STATUS_TRANSPORT);
-                return;
-            }
-        }
-        rtp_c->rtp_protocol = th->protocol;
     }
     
     /* test if stream is OK (test needed because several SETUP needs
@@ -2947,7 +3034,7 @@ static void rtsp_cmd_setup(HTTPContext *c, const char *url,
     }
     
     /* setup stream */
-    if (rtp_new_av_stream(rtp_c, stream_index, &dest_addr) < 0) {
+    if (rtp_new_av_stream(rtp_c, stream_index, &dest_addr, c) < 0) {
         rtsp_reply_error(c, RTSP_STATUS_TRANSPORT);
         return;
     }
@@ -3096,10 +3183,12 @@ static void rtsp_cmd_teardown(HTTPContext *c, const char *url, RTSPHeader *h)
 /* RTP handling */
 
 static HTTPContext *rtp_new_connection(struct sockaddr_in *from_addr, 
-                                       FFStream *stream, const char *session_id)
+                                       FFStream *stream, const char *session_id,
+                                       enum RTSPProtocol rtp_protocol)
 {
     HTTPContext *c = NULL;
-
+    const char *proto_str;
+    
     /* XXX: should output a warning page when coming
        close to the connection limit */
     if (nb_connections >= nb_max_connections)
@@ -3122,8 +3211,25 @@ static HTTPContext *rtp_new_connection(struct sockaddr_in *from_addr,
     pstrcpy(c->session_id, sizeof(c->session_id), session_id);
     c->state = HTTPSTATE_READY;
     c->is_packetized = 1;
+    c->rtp_protocol = rtp_protocol;
+
     /* protocol is shown in statistics */
-    pstrcpy(c->protocol, sizeof(c->protocol), "RTP");
+    switch(c->rtp_protocol) {
+    case RTSP_PROTOCOL_RTP_UDP_MULTICAST:
+        proto_str = "MCAST";
+        break;
+    case RTSP_PROTOCOL_RTP_UDP:
+        proto_str = "UDP";
+        break;
+    case RTSP_PROTOCOL_RTP_TCP:
+        proto_str = "TCP";
+        break;
+    default:
+        proto_str = "???";
+        break;
+    }
+    pstrcpy(c->protocol, sizeof(c->protocol), "RTP/");
+    pstrcat(c->protocol, sizeof(c->protocol), proto_str);
 
     current_bandwidth += stream->bandwidth;
 
@@ -3140,10 +3246,11 @@ static HTTPContext *rtp_new_connection(struct sockaddr_in *from_addr,
 }
 
 /* add a new RTP stream in an RTP connection (used in RTSP SETUP
-   command). if dest_addr is NULL, then TCP tunneling in RTSP is
+   command). If RTP/TCP protocol is used, TCP connection 'rtsp_c' is
    used. */
 static int rtp_new_av_stream(HTTPContext *c, 
-                             int stream_index, struct sockaddr_in *dest_addr)
+                             int stream_index, struct sockaddr_in *dest_addr,
+                             HTTPContext *rtsp_c)
 {
     AVFormatContext *ctx;
     AVStream *st;
@@ -3151,6 +3258,7 @@ static int rtp_new_av_stream(HTTPContext *c,
     URLContext *h;
     uint8_t *dummy_buf;
     char buf2[32];
+    int max_packet_size;
     
     /* now we can open the relevant output stream */
     ctx = av_mallocz(sizeof(AVFormatContext));
@@ -3173,9 +3281,13 @@ static int rtp_new_av_stream(HTTPContext *c,
                sizeof(AVStream));
     }
     
-    if (dest_addr) {
-        /* build destination RTP address */
-        ipaddr = inet_ntoa(dest_addr->sin_addr);
+    /* build destination RTP address */
+    ipaddr = inet_ntoa(dest_addr->sin_addr);
+
+    switch(c->rtp_protocol) {
+    case RTSP_PROTOCOL_RTP_UDP:
+    case RTSP_PROTOCOL_RTP_UDP_MULTICAST:
+        /* RTP/UDP case */
         
         /* XXX: also pass as parameter to function ? */
         if (c->stream->is_multicast) {
@@ -3194,18 +3306,24 @@ static int rtp_new_av_stream(HTTPContext *c,
         if (url_open(&h, ctx->filename, URL_WRONLY) < 0)
             goto fail;
         c->rtp_handles[stream_index] = h;
-    } else {
+        max_packet_size = url_get_max_packet_size(h);
+        break;
+    case RTSP_PROTOCOL_RTP_TCP:
+        /* RTP/TCP case */
+        c->rtsp_c = rtsp_c;
+        max_packet_size = RTSP_TCP_MAX_PACKET_SIZE;
+        break;
+    default:
         goto fail;
     }
 
-    http_log("%s:%d - - [%s] \"RTPSTART %s/streamid=%d\"\n",
+    http_log("%s:%d - - [%s] \"PLAY %s/streamid=%d %s\"\n",
              ipaddr, ntohs(dest_addr->sin_port), 
              ctime1(buf2), 
-             c->stream->filename, stream_index);
+             c->stream->filename, stream_index, c->protocol);
 
     /* normally, no packets should be output here, but the packet size may be checked */
-    if (url_open_dyn_packet_buf(&ctx->pb, 
-                                url_get_max_packet_size(h)) < 0) {
+    if (url_open_dyn_packet_buf(&ctx->pb, max_packet_size) < 0) {
         /* XXX: close stream */
         goto fail;
     }
@@ -3309,7 +3427,7 @@ static void extract_mpeg4_header(AVFormatContext *infile)
     for(i=0;i<infile->nb_streams;i++) {
         st = infile->streams[i];
         if (st->codec.codec_id == CODEC_ID_MPEG4 &&
-            st->codec.extradata == NULL) {
+            st->codec.extradata_size == 0) {
             mpeg4_count++;
         }
     }
@@ -3322,7 +3440,8 @@ static void extract_mpeg4_header(AVFormatContext *infile)
             break;
         st = infile->streams[pkt.stream_index];
         if (st->codec.codec_id == CODEC_ID_MPEG4 &&
-            st->codec.extradata == NULL) {
+            st->codec.extradata_size == 0) {
+            av_freep(&st->codec.extradata);
             /* fill extradata with the header */
             /* XXX: we make hard suppositions here ! */
             p = pkt.data;
