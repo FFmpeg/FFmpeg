@@ -854,7 +854,7 @@ if (zlibVersion() != ZLIB_VERSION)
 return 0;
 }
 EOF
-$cc $CFLAGS -o $TMPE $TMPC -lz 2> /dev/null || zlib="no"
+$cc $CFLAGS $LDFLAGS -o $TMPE $TMPC -lz 2> /dev/null || zlib="no"
 # $TMPE 2> /dev/null > /dev/null || zlib="no"
 # XXX: more tests needed - runtime test
 fi
