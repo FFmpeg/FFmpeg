@@ -408,7 +408,7 @@ static inline void fill_rectangle(void *vp, int w, int h, int stride, uint32_t v
         assert(0);
 }
 
-static inline void fill_caches(H264Context *h, int mb_type){
+static inline void fill_caches(H264Context *h, int mb_type, int for_deblock){
     MpegEncContext * const s = &h->s;
     const int mb_xy= s->mb_x + s->mb_y*s->mb_stride;
     int topleft_xy, top_xy, topright_xy, left_xy[2];
@@ -435,11 +435,19 @@ static inline void fill_caches(H264Context *h, int mb_type){
         left_block[3]= 3;
     }
 
-    topleft_type = h->slice_table[topleft_xy ] == h->slice_num ? s->current_picture.mb_type[topleft_xy] : 0;
-    top_type     = h->slice_table[top_xy     ] == h->slice_num ? s->current_picture.mb_type[top_xy]     : 0;
-    topright_type= h->slice_table[topright_xy] == h->slice_num ? s->current_picture.mb_type[topright_xy]: 0;
-    left_type[0] = h->slice_table[left_xy[0] ] == h->slice_num ? s->current_picture.mb_type[left_xy[0]] : 0;
-    left_type[1] = h->slice_table[left_xy[1] ] == h->slice_num ? s->current_picture.mb_type[left_xy[1]] : 0;
+    if(for_deblock){
+        topleft_type = h->slice_table[topleft_xy ] < 255 ? s->current_picture.mb_type[topleft_xy] : 0;
+        top_type     = h->slice_table[top_xy     ] < 255 ? s->current_picture.mb_type[top_xy]     : 0;
+        topright_type= h->slice_table[topright_xy] < 255 ? s->current_picture.mb_type[topright_xy]: 0;
+        left_type[0] = h->slice_table[left_xy[0] ] < 255 ? s->current_picture.mb_type[left_xy[0]] : 0;
+        left_type[1] = h->slice_table[left_xy[1] ] < 255 ? s->current_picture.mb_type[left_xy[1]] : 0;
+    }else{
+        topleft_type = h->slice_table[topleft_xy ] == h->slice_num ? s->current_picture.mb_type[topleft_xy] : 0;
+        top_type     = h->slice_table[top_xy     ] == h->slice_num ? s->current_picture.mb_type[top_xy]     : 0;
+        topright_type= h->slice_table[topright_xy] == h->slice_num ? s->current_picture.mb_type[topright_xy]: 0;
+        left_type[0] = h->slice_table[left_xy[0] ] == h->slice_num ? s->current_picture.mb_type[left_xy[0]] : 0;
+        left_type[1] = h->slice_table[left_xy[1] ] == h->slice_num ? s->current_picture.mb_type[left_xy[1]] : 0;
+    }
 
     if(IS_INTRA(mb_type)){
         h->topleft_samples_available= 
@@ -650,6 +658,9 @@ static inline void fill_caches(H264Context *h, int mb_type){
                 h->ref_cache[list][scan8[0] - 1 + 2*8]=
                 h->ref_cache[list][scan8[0] - 1 + 3*8]= left_type[0] ? LIST_NOT_USED : PART_NOT_AVAILABLE;
             }
+
+            if(for_deblock)
+                continue;
 
             h->ref_cache[list][scan8[5 ]+1] = 
             h->ref_cache[list][scan8[7 ]+1] = 
@@ -2835,6 +2846,7 @@ static void hl_decode_mb(H264Context *h){
     }
     if(h->deblocking_filter) {
         backup_mb_border(h, dest_y, dest_cb, dest_cr, linesize, uvlinesize);
+        fill_caches(h, mb_type, 1); //FIXME dont fill stuff which isnt used by filter_mb
         filter_mb(h, mb_x, mb_y, dest_y, dest_cb, dest_cr);
     }
 }
@@ -3857,7 +3869,7 @@ static void decode_mb_skip(H264Context *h){
         mb_type= MB_TYPE_16x16|MB_TYPE_P0L0|MB_TYPE_P0L1|MB_TYPE_DIRECT2|MB_TYPE_SKIP;
         //FIXME mbaff
 
-        fill_caches(h, mb_type); //FIXME check what is needed and what not ...
+        fill_caches(h, mb_type, 0); //FIXME check what is needed and what not ...
         pred_direct_motion(h, &mb_type);
         if(h->pps.cabac){
             fill_rectangle(h->mvd_cache[0][scan8[0]], 4, 4, 8, 0, 4);
@@ -3875,7 +3887,7 @@ static void decode_mb_skip(H264Context *h){
         if(h->mb_field_decoding_flag)
             mb_type|= MB_TYPE_INTERLACED;
         
-        fill_caches(h, mb_type); //FIXME check what is needed and what not ...
+        fill_caches(h, mb_type, 0); //FIXME check what is needed and what not ...
         pred_pskip_motion(h, &mx, &my);
         fill_rectangle(&h->ref_cache[0][scan8[0]], 4, 4, 8, 0, 1);
         fill_rectangle(  h->mv_cache[0][scan8[0]], 4, 4, 8, pack16to32(mx,my), 4);
@@ -3994,7 +4006,7 @@ decode_intra_mb:
         return 0;
     }
         
-    fill_caches(h, mb_type);
+    fill_caches(h, mb_type, 0);
 
     //mb_pred
     if(IS_INTRA(mb_type)){
@@ -4890,7 +4902,7 @@ decode_intra_mb:
         return -1;
     }
 
-    fill_caches(h, mb_type);
+    fill_caches(h, mb_type, 0);
 
     if( IS_INTRA( mb_type ) ) {
         if( IS_INTRA4x4( mb_type ) ) {
@@ -5546,49 +5558,20 @@ static void filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint8
                 bS[0] = bS[1] = bS[2] = bS[3] = ( edge == 0 ? 4 : 3 );
             } else {
                 int i;
-                const int slice_boundary = (h->slice_table[mbn_xy] != h->slice_table[mb_xy]);
                 for( i = 0; i < 4; i++ ) {
                     int x = dir == 0 ? edge : i;
                     int y = dir == 0 ? i    : edge;
                     int b_idx= 8 + 4 + x + 8*y;
                     int bn_idx= b_idx - (dir ? 8:1);
-                    uint8_t left_non_zero_count;
-                    if (slice_boundary) {
-                        // must not use non_zero_count_cache, it is not valid
-                        // across slice boundaries
-                        if (0 == dir) {
-                            left_non_zero_count = h->non_zero_count[mbn_xy][6-i];
-                        } else {
-                            left_non_zero_count = h->non_zero_count[mbn_xy][i];
-                        }
-                    } else {
-                        left_non_zero_count = h->non_zero_count_cache[bn_idx];
-                    }
 
                     if( h->non_zero_count_cache[b_idx] != 0 ||
-                        left_non_zero_count != 0 ) {
+                        h->non_zero_count_cache[bn_idx] != 0 ) {
                         bS[i] = 2;
                     }
                     else if( h->slice_type == P_TYPE ) {
-                        int16_t left_mv[2];
-                        int8_t  left_ref;
-                        if (slice_boundary) {
-                            // must not use ref_cache and mv_cache, they are not 
-                            // valid across slice boundaries
-                            if (dir == 0) {
-                                left_ref = s->current_picture.ref_index[0][h->mb2b8_xy[mbn_xy] + (i>>1) * h->b8_stride + 1];
-                                *(uint32_t*)left_mv = *(uint32_t*)s->current_picture.motion_val[0][h->mb2b_xy[mbn_xy]+i*h->b_stride+3];
-                            } else {
-                                left_ref = s->current_picture.ref_index[0][h->mb2b8_xy[mbn_xy] + (i>>1) + h->b8_stride];
-                                *(uint32_t*)left_mv = *(uint32_t*)s->current_picture.motion_val[0][h->mb2b_xy[mbn_xy]+3*h->b_stride+i];
-                            }
-                        } else {
-                            left_ref = h->ref_cache[0][bn_idx];
-                            *(uint32_t*)left_mv = *(uint32_t*)h->mv_cache[0][bn_idx];
-                        }
-                        if( h->ref_cache[0][b_idx] != left_ref ||
-                            ABS( h->mv_cache[0][b_idx][0] - left_mv[0] ) >= 4 ||
-                            ABS( h->mv_cache[0][b_idx][1] - left_mv[1] ) >= 4 )
+                        if( h->ref_cache[0][b_idx] != h->ref_cache[0][bn_idx] ||
+                            ABS( h->mv_cache[0][b_idx][0] - h->mv_cache[0][bn_idx][0] ) >= 4 ||
+                            ABS( h->mv_cache[0][b_idx][1] - h->mv_cache[0][bn_idx][1] ) >= 4 )
                             bS[i] = 1;
                         else
                             bS[i] = 0;
