@@ -95,6 +95,9 @@ void avcodec_register_all(void)
     register_avcodec(&dvvideo_encoder);
     register_avcodec(&sonic_encoder);
     register_avcodec(&sonic_ls_encoder);
+#ifdef CONFIG_X264
+    register_avcodec(&x264_encoder);
+#endif
 #endif /* CONFIG_ENCODERS */
     register_avcodec(&rawvideo_encoder);
     register_avcodec(&rawvideo_decoder);

@@ -1911,6 +1911,7 @@ extern AVCodec zlib_encoder;
 extern AVCodec sonic_encoder;
 extern AVCodec sonic_ls_encoder;
 extern AVCodec svq1_encoder;
+extern AVCodec x264_encoder;
 
 extern AVCodec h263_decoder;
 extern AVCodec h261_decoder;

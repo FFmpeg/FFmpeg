@@ -105,6 +105,11 @@ OBJS+= xvidff.o
 EXTRALIBS += -lxvidcore
 endif
 
+ifeq ($(CONFIG_X264),yes)
+OBJS+= x264.o
+EXTRALIBS += -L$(X264_DIR) -lx264
+endif
+
 ifeq ($(CONFIG_PP),yes)
 ifeq ($(SHARED_PP),yes)
 EXTRALIBS += -L$(VPATH)/libpostproc -lpostproc

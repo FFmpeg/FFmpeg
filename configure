@@ -22,6 +22,7 @@ echo "  --enable-faad            enable faad support via libfaad [default=no]"
 echo "  --enable-faadbin         build faad support with runtime linking [default=no]"
 echo "  --enable-faac            enable faac support via libfaac [default=no]"
 echo "  --enable-xvid            enable xvid support via xvidcore [default=no]"
+echo "  --enable-x264            enable H.264 encoding via x264 [default=no]"
 echo "  --enable-mingw32         enable mingw32 native/cross windows compile"
 echo "  --enable-a52             enable GPL'ed A52 support [default=no]"
 echo "  --enable-a52bin          open liba52.so.0 at runtime [default=no]"
@@ -158,6 +159,7 @@ faad="no"
 faadbin="no"
 faac="no"
 xvid="no"
+x264="no"
 a52="no"
 a52bin="no"
 dts="no"
@@ -440,6 +442,8 @@ for opt do
   ;;
   --enable-xvid) xvid="yes"
   ;;
+  --enable-x264) x264="yes"; extralibs="$extralibs -lx264"
+  ;;
   --enable-dc1394) dc1394="yes"
   ;;
   --disable-vhook) vhook="no"
@@ -512,6 +516,11 @@ if test "$gpl" != "yes"; then
 
     if test "$xvid" != "no"; then
         echo "libxvidcore is under GPL and --enable-gpl is not specified"
+        fail="yes"
+    fi
+
+    if test "$x264" != "no"; then
+        echo "x264 is under GPL and --enable-gpl is not specified"
         fail="yes"
     fi
 
@@ -1085,6 +1094,7 @@ echo "faad enabled     $faad"
 echo "faadbin enabled  $faadbin"
 echo "faac enabled     $faac"
 echo "xvid enabled     $xvid"
+echo "x264 enabled     $x264"
 echo "a52 support      $a52"
 echo "a52 dlopened     $a52bin"
 echo "dts support      $dts"
@@ -1409,6 +1419,11 @@ fi
 if test "$xvid" = "yes" ; then
   echo "#define CONFIG_XVID 1" >> $TMPH
   echo "CONFIG_XVID=yes" >> config.mak
+fi
+
+if test "$x264" = "yes" ; then
+  echo "#define CONFIG_X264 1" >> $TMPH
+  echo "CONFIG_X264=yes" >> config.mak
 fi
 
 if test "$mingw32" = "yes" ; then
