@@ -948,7 +948,7 @@ static int mpeg1_decode_block(MpegEncContext *s,
         block[j] = level;
         i++;
     }
-    s->block_last_index[n] = i;
+    s->block_last_index[n] = i-1;
     return 0;
 }
 
