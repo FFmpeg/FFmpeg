@@ -26,7 +26,7 @@ isHorizDC		Ec	Ec
 isHorizMinMaxOk		a	E
 doHorizLowPass		E		e	e
 doHorizDefFilter	Ec	Ec	Ec
-deRing					e
+deRing					e	e*
 Vertical RKAlgo1	E		a	a
 Horizontal RKAlgo1			a	a
 Vertical X1		a		E	E
@@ -1808,7 +1808,7 @@ Implemented	Exact 7-Tap
 
 static inline void dering(uint8_t src[], int stride, int QP)
 {
-#ifdef HAVE_MMX2
+#if defined (HAVE_MMX2) || defined (HAVE_3DNOW)
 	asm volatile(
 		"movq pQPb, %%mm0				\n\t"
 		"paddusb %%mm0, %%mm0				\n\t"
@@ -1821,11 +1821,20 @@ static inline void dering(uint8_t src[], int stride, int QP)
 
 		"pcmpeqb %%mm6, %%mm6				\n\t"
 		"pxor %%mm7, %%mm7				\n\t"
-
+#ifdef HAVE_MMX2
 #define FIND_MIN_MAX(addr)\
 		"movq " #addr ", %%mm0				\n\t"\
 		"pminub %%mm0, %%mm6				\n\t"\
 		"pmaxub %%mm0, %%mm7				\n\t"
+#else
+#define FIND_MIN_MAX(addr)\
+		"movq " #addr ", %%mm0				\n\t"\
+		"movq %%mm6, %%mm1				\n\t"\
+		"psubusb %%mm0, %%mm7				\n\t"\
+		"paddb %%mm0, %%mm7				\n\t"\
+		"psubusb %%mm0, %%mm1				\n\t"\
+		"psubb %%mm1, %%mm6				\n\t"
+#endif
 
 FIND_MIN_MAX((%%eax))
 FIND_MIN_MAX((%%eax, %1))
@@ -1838,36 +1847,49 @@ FIND_MIN_MAX((%0, %1, 8))
 
 		"movq %%mm6, %%mm4				\n\t"
 		"psrlq $8, %%mm6				\n\t"
-		"pminub %%mm4, %%mm6				\n\t" // min of pixels
 #ifdef HAVE_MMX2
+		"pminub %%mm4, %%mm6				\n\t" // min of pixels
 		"pshufw $0xF9, %%mm6, %%mm4			\n\t"
 		"pminub %%mm4, %%mm6				\n\t" // min of pixels
 		"pshufw $0xFE, %%mm6, %%mm4			\n\t"
+		"pminub %%mm4, %%mm6				\n\t"
 #else
+		"movq %%mm6, %%mm1				\n\t"
+		"psubusb %%mm4, %%mm1				\n\t"
+		"psubb %%mm1, %%mm6				\n\t"
 		"movq %%mm6, %%mm4				\n\t"
 		"psrlq $16, %%mm6				\n\t"
-		"pminub %%mm4, %%mm6				\n\t"
+		"movq %%mm6, %%mm1				\n\t"
+		"psubusb %%mm4, %%mm1				\n\t"
+		"psubb %%mm1, %%mm6				\n\t"
 		"movq %%mm6, %%mm4				\n\t"
 		"psrlq $32, %%mm6				\n\t"
+		"movq %%mm6, %%mm1				\n\t"
+		"psubusb %%mm4, %%mm1				\n\t"
+		"psubb %%mm1, %%mm6				\n\t"
 #endif
-		"pminub %%mm4, %%mm6				\n\t"
 
 
 		"movq %%mm7, %%mm4				\n\t"
 		"psrlq $8, %%mm7				\n\t"
-		"pmaxub %%mm4, %%mm7				\n\t" // max of pixels
 #ifdef HAVE_MMX2
+		"pmaxub %%mm4, %%mm7				\n\t" // max of pixels
 		"pshufw $0xF9, %%mm7, %%mm4			\n\t"
-		"pmaxub %%mm4, %%mm7				\n\t" // min of pixels
+		"pmaxub %%mm4, %%mm7				\n\t"
 		"pshufw $0xFE, %%mm7, %%mm4			\n\t"
+		"pmaxub %%mm4, %%mm7				\n\t"
 #else
+		"psubusb %%mm4, %%mm7				\n\t"
+		"paddb %%mm4, %%mm7				\n\t"
 		"movq %%mm7, %%mm4				\n\t"
 		"psrlq $16, %%mm7				\n\t"
-		"pmaxub %%mm4, %%mm7				\n\t"
+		"psubusb %%mm4, %%mm7				\n\t"
+		"paddb %%mm4, %%mm7				\n\t"
 		"movq %%mm7, %%mm4				\n\t"
 		"psrlq $32, %%mm7				\n\t"
+		"psubusb %%mm4, %%mm7				\n\t"
+		"paddb %%mm4, %%mm7				\n\t"
 #endif
-		"pmaxub %%mm4, %%mm7				\n\t"
 		PAVGB(%%mm6, %%mm7)				      // a=(max + min)/2
 		"punpcklbw %%mm7, %%mm7				\n\t"
 		"punpcklbw %%mm7, %%mm7				\n\t"
