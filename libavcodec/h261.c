@@ -53,8 +53,6 @@ typedef struct H261Context{
     int current_mv_x;
     int current_mv_y;
     int gob_number;
-    int bits_left; //8 - nr of bits left of the following frame in the last byte in this frame
-    int last_bits; //bits left of the following frame in the last byte in this frame
     int gob_start_code_skipped; // 1 if gob start code is already read before gob header is read
 }H261Context;
 
@@ -176,7 +174,7 @@ static void h261_encode_motion(H261Context * h, int val){
         put_bits(&s->pb,h261_mv_tab[code][1],h261_mv_tab[code][0]);
     } 
     else{
-        if(val > 16)
+        if(val > 15)
             val -=32;
         if(val < -16)
             val+=32;
@@ -847,24 +845,12 @@ static int h261_decode_gob(H261Context *h){
 }
 
 static int h261_find_frame_end(ParseContext *pc, AVCodecContext* avctx, const uint8_t *buf, int buf_size){
-    int vop_found, i, j, bits_left, last_bits;
+    int vop_found, i, j;
     uint32_t state;
-
-    H261Context *h = avctx->priv_data;
-
-    if(h){
-        bits_left = h->bits_left;
-        last_bits = h->last_bits;
-    }
-    else{
-        bits_left = 0;
-        last_bits = 0;
-    }
 
     vop_found= pc->frame_start_found;
     state= pc->state;
-    if(bits_left!=0 && !vop_found)
-        state = state << (8-bits_left) | last_bits;
+   
     i=0;
     if(!vop_found){
         for(i=0; i<buf_size; i++){

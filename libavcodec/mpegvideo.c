@@ -53,10 +53,6 @@ static void dct_unquantize_h263_intra_c(MpegEncContext *s,
                                   DCTELEM *block, int n, int qscale);
 static void dct_unquantize_h263_inter_c(MpegEncContext *s, 
                                   DCTELEM *block, int n, int qscale);
-static void dct_unquantize_h261_intra_c(MpegEncContext *s, 
-                                  DCTELEM *block, int n, int qscale);
-static void dct_unquantize_h261_inter_c(MpegEncContext *s, 
-                                  DCTELEM *block, int n, int qscale);
 static void draw_edges_c(uint8_t *buf, int wrap, int width, int height, int w);
 #ifdef CONFIG_ENCODERS
 static int dct_quantize_c(MpegEncContext *s, DCTELEM *block, int n, int qscale, int *overflow);
@@ -219,8 +215,6 @@ int DCT_common_init(MpegEncContext *s)
 {
     s->dct_unquantize_h263_intra = dct_unquantize_h263_intra_c;
     s->dct_unquantize_h263_inter = dct_unquantize_h263_inter_c;
-    s->dct_unquantize_h261_intra = dct_unquantize_h261_intra_c;
-    s->dct_unquantize_h261_inter = dct_unquantize_h261_inter_c;
     s->dct_unquantize_mpeg1_intra = dct_unquantize_mpeg1_intra_c;
     s->dct_unquantize_mpeg1_inter = dct_unquantize_mpeg1_inter_c;
     s->dct_unquantize_mpeg2_intra = dct_unquantize_mpeg2_intra_c;
@@ -1482,12 +1476,9 @@ alloc:
     if(s->mpeg_quant || s->codec_id == CODEC_ID_MPEG2VIDEO){
         s->dct_unquantize_intra = s->dct_unquantize_mpeg2_intra;
         s->dct_unquantize_inter = s->dct_unquantize_mpeg2_inter;
-    }else if(s->out_format == FMT_H263){
+    }else if(s->out_format == FMT_H263 || s->out_format == FMT_H261){
         s->dct_unquantize_intra = s->dct_unquantize_h263_intra;
         s->dct_unquantize_inter = s->dct_unquantize_h263_inter;
-    }else if(s->out_format == FMT_H261){
-        s->dct_unquantize_intra = s->dct_unquantize_h261_intra;
-        s->dct_unquantize_inter = s->dct_unquantize_h261_inter;
     }else{
         s->dct_unquantize_intra = s->dct_unquantize_mpeg1_intra;
         s->dct_unquantize_inter = s->dct_unquantize_mpeg1_inter;
@@ -4517,6 +4508,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
             if(s->codec_id == CODEC_ID_H261){
                 ff_h261_reorder_mb_index(s);
                 xy= s->mb_y*s->mb_stride + s->mb_x;
+                mb_type= s->mb_type[xy];
             }
 
             /* write gob / video packet header  */
@@ -4990,8 +4982,10 @@ static int encode_thread(AVCodecContext *c, void *arg){
                     s, s->new_picture    .data[2] + s->mb_x*8  + s->mb_y*s->uvlinesize*8,
                     s->dest[2], w>>1, h>>1, s->uvlinesize);
             }
-            if(s->loop_filter)
-                ff_h263_loop_filter(s);
+            if(s->loop_filter){
+                if(s->out_format == FMT_H263)
+                    ff_h263_loop_filter(s);
+            }
 //printf("MB %d %d bits\n", s->mb_x+s->mb_y*s->mb_stride, put_bits_count(&s->pb));
         }
     }
@@ -6247,59 +6241,6 @@ static void dct_unquantize_h263_inter_c(MpegEncContext *s,
             }
             block[i] = level;
         }
-    }
-}
-
-static void dct_unquantize_h261_intra_c(MpegEncContext *s, 
-                                  DCTELEM *block, int n, int qscale)
-{
-    int i, level, even;
-    int nCoeffs;
-    
-    assert(s->block_last_index[n]>=0);
-    
-    if (n < 4) 
-        block[0] = block[0] * s->y_dc_scale;
-    else
-        block[0] = block[0] * s->c_dc_scale;
-    even = (qscale & 1)^1;
-    nCoeffs= s->inter_scantable.raster_end[ s->block_last_index[n] ];
-
-    for(i=1; i<=nCoeffs; i++){
-        level = block[i];
-        if (level){
-            if (level < 0){
-                level = qscale * ((level << 1) - 1) + even;
-            }else{
-                level = qscale * ((level << 1) + 1) - even;
-            }
-        }
-        block[i] = level;
-    }
-}
-
-static void dct_unquantize_h261_inter_c(MpegEncContext *s, 
-                                  DCTELEM *block, int n, int qscale)
-{
-    int i, level, even;
-    int nCoeffs;
-    
-    assert(s->block_last_index[n]>=0);
-
-    even = (qscale & 1)^1;
-    
-    nCoeffs= s->inter_scantable.raster_end[ s->block_last_index[n] ];
-
-    for(i=0; i<=nCoeffs; i++){
-        level = block[i];
-        if (level){
-            if (level < 0){
-                level = qscale * ((level << 1) - 1) + even;
-            }else{
-                level = qscale * ((level << 1) + 1) - even;
-            }
-        }
-        block[i] = level;
     }
 }
 
