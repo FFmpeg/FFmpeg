@@ -68,7 +68,7 @@ lshared="no"
 extralibs="-lm"
 simpleidct="yes"
 bigendian="no"
-vhook="no"
+vhook="default"
 dlfcn="no"
 dlopen="no"
 mpegaudio_hp="yes"
@@ -236,53 +236,6 @@ source_path_used="yes"
 if test -z "$source_path" -o "$source_path" = "." ; then
     source_path=`pwd`
     source_path_used="no"
-fi
-
-cat > $TMPC << EOF
-#include <dlfcn.h>
-int main( void ) { return (int) dlopen("foo", 0); }
-EOF
-
-ldl=-ldl
-
-if $cc -o $TMPE $TMPC -ldl 2> /dev/null  ; then
-vhook=yes
-dlfcn=yes
-dlopen=yes
-fi
-
-if $cc -o $TMPE $TMPC 2> /dev/null  ; then
-vhook=yes
-dlfcn=yes
-dlopen=yes
-ldl=""
-fi
-
-cat > $TMPC << EOF
-int main( void ) { return (int) dlopen("foo", 0); }
-EOF
-
-if $cc -o $TMPE $TMPC -ldl 2> /dev/null  ; then
-vhook=yes
-dlopen=yes
-fi
-
-if $cc -o $TMPE $TMPC 2> /dev/null  ; then
-vhook=yes
-dlopen=yes
-ldl=""
-fi
-
-
-cat > $TMPC << EOF
-#include <X11/Xlib.h>
-#include <Imlib2.h>
-int main( void ) { return (int) imlib_load_font("foo"); }
-EOF
-
-imlib2=no
-if $cc -o $TMPE $TMPC -lImlib2 2> /dev/null  ; then
-imlib2=yes
 fi
 
 for opt do
@@ -543,6 +496,54 @@ EOF
 builtin_vector=no
 if $cc -o $TMPO $TMPC 2> /dev/null ; then
   builtin_vector=yes
+fi
+
+# dlopen/dlfcn.h probing
+
+cat > $TMPC << EOF
+#include <dlfcn.h>
+int main( void ) { return (int) dlopen("foo", 0); }
+EOF
+
+ldl=-ldl
+
+if $cc -o $TMPE $TMPC -ldl 2> /dev/null  ; then
+dlfcn=yes
+dlopen=yes
+fi
+
+if $cc -o $TMPE $TMPC 2> /dev/null  ; then
+dlfcn=yes
+dlopen=yes
+ldl=""
+fi
+
+cat > $TMPC << EOF
+int main( void ) { return (int) dlopen("foo", 0); }
+EOF
+
+if $cc -o $TMPE $TMPC -ldl 2> /dev/null  ; then
+dlopen=yes
+fi
+
+if $cc -o $TMPE $TMPC 2> /dev/null  ; then
+dlopen=yes
+ldl=""
+fi
+
+if test "$vhook" = "default" ; then
+  vhook="$dlopen"
+fi
+
+cat > $TMPC << EOF
+#include <X11/Xlib.h>
+#include <Imlib2.h>
+int main( void ) { return (int) imlib_load_font("foo"); }
+EOF
+
+imlib2=no
+if $cc -o $TMPE $TMPC -lImlib2 2> /dev/null  ; then
+imlib2=yes
 fi
 
 if test x"$1" = x"-h" -o x"$1" = x"--help" ; then
