@@ -5,8 +5,8 @@
 
 #define LIBAVCODEC_VERSION_INT 0x000406
 #define LIBAVCODEC_VERSION     "0.4.6"
-#define LIBAVCODEC_BUILD       4637
-#define LIBAVCODEC_BUILD_STR   "4637"
+#define LIBAVCODEC_BUILD       4638
+#define LIBAVCODEC_BUILD_STR   "4638"
 
 enum CodecID {
     CODEC_ID_NONE, 
@@ -408,7 +408,7 @@ typedef struct AVCodecContext {
     /**
      * number of bits used for the previously encoded frame
      * encoding: set by lavc
-     * decoding: unused
+     * decoding: - for audio - bits_per_sample
      */
     int frame_bits;
                  
@@ -752,20 +752,24 @@ typedef struct AVCodecContext {
      * encoding; unused
      * decoding: set by lavc
      */
-     int8_t *current_qscale_table;
+    int8_t *current_qscale_table;
     /**
      * QP table of the currently displayed frame
      * encoding; unused
      * decoding: set by lavc
      */
-     int8_t *display_qscale_table;
-     
+    int8_t *display_qscale_table;
     /**
      * force specific pict_type.
      * encoding; set by user (I/P/B_TYPE)
      * decoding: unused
      */
     int force_type;
+    /**
+     * dsp_mask could be used to disable unwanted
+     * CPU features (i.e. MMX, SSE. ...)
+     */
+     unsigned dsp_mask;
 } AVCodecContext;
 
 typedef struct AVCodec {
