@@ -1613,7 +1613,6 @@ static int mpeg_decode_slice(AVCodecContext *avctx,
 
     for(;;) {
         clear_blocks(s->block[0]);
-        emms_c();
         
         ret = mpeg_decode_mb(s, s->block);
         dprintf("ret=%d\n", ret);
@@ -1623,30 +1622,7 @@ static int mpeg_decode_slice(AVCodecContext *avctx,
         MPV_decode_mb(s, s->block);
 
         if (++s->mb_x >= s->mb_width) {
-            if (    avctx->draw_horiz_band 
-                && (s->num_available_buffers>=1 || (!s->has_b_frames)) ) {
-                UINT8 *src_ptr[3];
-                int y, h, offset;
-                y = s->mb_y * 16;
-                h = s->height - y;
-                if (h > 16)
-                    h = 16;
-                if(s->pict_type==B_TYPE)
-                    offset = 0;
-                else
-                    offset = y * s->linesize;
-                if(s->pict_type==B_TYPE || (!s->has_b_frames)){
-                    src_ptr[0] = s->current_picture[0] + offset;
-                    src_ptr[1] = s->current_picture[1] + (offset >> 2);
-                    src_ptr[2] = s->current_picture[2] + (offset >> 2);
-                } else {
-                    src_ptr[0] = s->last_picture[0] + offset;
-                    src_ptr[1] = s->last_picture[1] + (offset >> 2);
-                    src_ptr[2] = s->last_picture[2] + (offset >> 2);
-                }
-                avctx->draw_horiz_band(avctx, src_ptr, s->linesize,
-                                   y, s->width, h);
-            }
+            ff_draw_horiz_band(s);
 
             s->mb_x = 0;
             s->mb_y++;

@@ -2147,6 +2147,8 @@ void ff_draw_horiz_band(MpegEncContext *s){
             src_ptr[1] = s->last_picture[1] + (offset >> 2);
             src_ptr[2] = s->last_picture[2] + (offset >> 2);
         }
+        emms_c();
+
         s->avctx->draw_horiz_band(s->avctx, src_ptr, s->linesize,
                                y, s->width, h);
     }
