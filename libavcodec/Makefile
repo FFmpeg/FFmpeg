@@ -130,7 +130,7 @@ distclean: clean
 
 # api example program
 apiexample: apiexample.c $(LIB)
-	$(CC) $(CFLAGS) -o $@ $< $(LIB) -lm
+	$(CC) $(CFLAGS) -o $@ $< $(LIB) $(EXTRALIBS) -lm
 
 # cpuid test
 cpuid_test: i386/cputest.c
