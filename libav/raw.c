@@ -43,27 +43,20 @@ static int raw_read_header(AVFormatContext *s,
                            AVFormatParameters *ap)
 {
     AVStream *st;
+    int id;
 
-    st = av_malloc(sizeof(AVStream));
+    st = av_new_stream(s, 0);
     if (!st)
-        return -1;
-    s->nb_streams = 1;
-    s->streams[0] = st;
-
-    st->id = 0;
-
+        return AVERROR_NOMEM;
     if (ap) {
-        if (s->format->audio_codec != CODEC_ID_NONE) {
-            st->codec.codec_type = CODEC_TYPE_AUDIO;
-            st->codec.codec_id = s->format->audio_codec;
-        } else if (s->format->video_codec != CODEC_ID_NONE) {
+        id = s->iformat->value;
+        if (id == CODEC_ID_RAWVIDEO) {
             st->codec.codec_type = CODEC_TYPE_VIDEO;
-            st->codec.codec_id = s->format->video_codec;
         } else {
-            av_free(st);
-            return -1;
+            st->codec.codec_type = CODEC_TYPE_AUDIO;
         }
-        
+        st->codec.codec_id = id;
+
         switch(st->codec.codec_type) {
         case CODEC_TYPE_AUDIO:
             st->codec.sample_rate = ap->sample_rate;
@@ -116,13 +109,9 @@ static int mp3_read_header(AVFormatContext *s,
 {
     AVStream *st;
 
-    st = av_malloc(sizeof(AVStream));
+    st = av_new_stream(s, 0);
     if (!st)
-        return -1;
-    s->nb_streams = 1;
-    s->streams[0] = st;
-
-    st->id = 0;
+        return AVERROR_NOMEM;
 
     st->codec.codec_type = CODEC_TYPE_AUDIO;
     st->codec.codec_id = CODEC_ID_MP2;
@@ -136,14 +125,12 @@ static int video_read_header(AVFormatContext *s,
 {
     AVStream *st;
 
-    st = av_mallocz(sizeof(AVStream));
+    st = av_new_stream(s, 0);
     if (!st)
-        return -1;
-    s->nb_streams = 1;
-    s->streams[0] = st;
+        return AVERROR_NOMEM;
 
     st->codec.codec_type = CODEC_TYPE_VIDEO;
-    st->codec.codec_id = s->format->video_codec;
+    st->codec.codec_id = s->iformat->value;
     /* for mjpeg, specify frame rate */
     if (st->codec.codec_id == CODEC_ID_MJPEG) {
         if (ap) {
@@ -155,227 +142,206 @@ static int video_read_header(AVFormatContext *s,
     return 0;
 }
 
-AVFormat mp2_format = {
-    "mp2",
+#define SEQ_START_CODE		0x000001b3
+#define GOP_START_CODE		0x000001b8
+#define PICTURE_START_CODE	0x00000100
+
+/* XXX: improve that by looking at several start codes */
+static int mpegvideo_probe(AVProbeData *p)
+{
+    int code, c, i;
+    code = 0xff;
+
+    /* we search the first start code. If it is a sequence, gop or
+       picture start code then we decide it is an mpeg video
+       stream. We do not send highest value to give a chance to mpegts */
+    for(i=0;i<p->buf_size;i++) {
+        c = p->buf[i];
+        code = (code << 8) | c;
+        if ((code & 0xffffff00) == 0x100) {
+            if (code == SEQ_START_CODE ||
+                code == GOP_START_CODE ||
+                code == PICTURE_START_CODE)
+                return AVPROBE_SCORE_MAX - 1;
+            else
+                return 0;
+        }
+    }
+    return 0;
+}
+
+AVInputFormat mp3_iformat = {
+    "mp3",
     "MPEG audio",
+    0,
+    NULL,
+    mp3_read_header,
+    raw_read_packet,
+    raw_read_close,
+    extensions: "mp2,mp3", /* XXX: use probe */
+};
+
+AVOutputFormat mp2_oformat = {
+    "mp2",
+    "MPEG audio layer 2",
     "audio/x-mpeg",
     "mp2,mp3",
+    0,
     CODEC_ID_MP2,
     0,
     raw_write_header,
     raw_write_packet,
     raw_write_trailer,
-
-    mp3_read_header,
-    raw_read_packet,
-    raw_read_close,
 };
 
-AVFormat ac3_format = {
+
+AVInputFormat ac3_iformat = {
+    "ac3",
+    "raw ac3",
+    0,
+    NULL,
+    raw_read_header,
+    raw_read_packet,
+    raw_read_close,
+    extensions: "ac3",
+    value: CODEC_ID_AC3,
+};
+
+AVOutputFormat ac3_oformat = {
     "ac3",
     "raw ac3",
     "audio/x-ac3", 
     "ac3",
+    0,
     CODEC_ID_AC3,
     0,
     raw_write_header,
     raw_write_packet,
     raw_write_trailer,
-    raw_read_header,
-    raw_read_packet,
-    raw_read_close,
 };
 
-AVFormat h263_format = {
+AVOutputFormat h263_oformat = {
     "h263",
     "raw h263",
     "video/x-h263",
     "h263",
     0,
+    0,
     CODEC_ID_H263,
     raw_write_header,
     raw_write_packet,
     raw_write_trailer,
+};
+
+AVInputFormat mpegvideo_iformat = {
+    "mpegvideo",
+    "MPEG video",
+    0,
+    mpegvideo_probe,
     video_read_header,
     raw_read_packet,
     raw_read_close,
+    value: CODEC_ID_MPEG1VIDEO,
 };
 
-AVFormat mpeg1video_format = {
-    "mpegvideo",
+AVOutputFormat mpeg1video_oformat = {
+    "mpeg1video",
     "MPEG video",
     "video/x-mpeg",
     "mpg,mpeg",
+    0,
     0,
     CODEC_ID_MPEG1VIDEO,
     raw_write_header,
     raw_write_packet,
     raw_write_trailer,
+};
+
+AVInputFormat mjpeg_iformat = {
+    "mjpeg",
+    "MJPEG video",
+    0,
+    NULL,
     video_read_header,
     raw_read_packet,
     raw_read_close,
+    extensions: "mjpg,mjpeg",
+    value: CODEC_ID_MJPEG,
 };
 
-AVFormat mjpeg_format = {
+AVOutputFormat mjpeg_oformat = {
     "mjpeg",
     "MJPEG video",
     "video/x-mjpeg",
     "mjpg,mjpeg",
     0,
+    0,
     CODEC_ID_MJPEG,
     raw_write_header,
     raw_write_packet,
     raw_write_trailer,
-    video_read_header,
-    raw_read_packet,
-    raw_read_close,
 };
 
 /* pcm formats */
 
-AVFormat pcm_s16le_format = {
-    "s16le",
-    "pcm signed 16 bit little endian format",
-    NULL,
+#define PCMDEF(name, long_name, ext, codec) \
+AVInputFormat pcm_ ## name ## _iformat = {\
+    #name,\
+    long_name,\
+    0,\
+    NULL,\
+    raw_read_header,\
+    raw_read_packet,\
+    raw_read_close,\
+    extensions: ext,\
+    value: codec,\
+};\
+\
+AVOutputFormat pcm_ ## name ## _oformat = {\
+    #name,\
+    long_name,\
+    NULL,\
+    ext,\
+    0,\
+    codec,\
+    0,\
+    raw_write_header,\
+    raw_write_packet,\
+    raw_write_trailer,\
+};
+
 #ifdef WORDS_BIGENDIAN
-    "",
+#define BE_DEF(s) s
+#define LE_DEF(s) NULL
 #else
-    "sw",
+#define BE_DEF(s) NULL
+#define LE_DEF(s) s
 #endif
-    CODEC_ID_PCM_S16LE,
-    0,
-    raw_write_header,
-    raw_write_packet,
-    raw_write_trailer,
 
-    raw_read_header,
-    raw_read_packet,
-    raw_read_close,
-};
 
-AVFormat pcm_s16be_format = {
-    "s16be",
-    "pcm signed 16 bit big endian format",
-    NULL,
-#ifdef WORDS_BIGENDIAN
-    "sw",
-#else
-    "",
-#endif
-    CODEC_ID_PCM_S16BE,
-    0,
-    raw_write_header,
-    raw_write_packet,
-    raw_write_trailer,
+PCMDEF(s16le, "pcm signed 16 bit little endian format", 
+       LE_DEF("sw"), CODEC_ID_PCM_S16LE)
 
-    raw_read_header,
-    raw_read_packet,
-    raw_read_close,
-};
+PCMDEF(s16be, "pcm signed 16 bit big endian format", 
+       BE_DEF("sw"), CODEC_ID_PCM_S16BE)
 
-AVFormat pcm_u16le_format = {
-    "u16le",
-    "pcm unsigned 16 bit little endian format",
-    NULL,
-#ifdef WORDS_BIGENDIAN
-    "",
-#else
-    "uw",
-#endif
-    CODEC_ID_PCM_U16LE,
-    0,
-    raw_write_header,
-    raw_write_packet,
-    raw_write_trailer,
+PCMDEF(u16le, "pcm unsigned 16 bit little endian format", 
+       LE_DEF("uw"), CODEC_ID_PCM_U16LE)
 
-    raw_read_header,
-    raw_read_packet,
-    raw_read_close,
-};
+PCMDEF(u16be, "pcm unsigned 16 bit big endian format", 
+       BE_DEF("uw"), CODEC_ID_PCM_U16BE)
 
-AVFormat pcm_u16be_format = {
-    "u16be",
-    "pcm unsigned 16 bit big endian format",
-    NULL,
-#ifdef WORDS_BIGENDIAN
-    "uw",
-#else
-    "",
-#endif
-    CODEC_ID_PCM_U16BE,
-    0,
-    raw_write_header,
-    raw_write_packet,
-    raw_write_trailer,
+PCMDEF(s8, "pcm signed 8 bit format", 
+       "sb", CODEC_ID_PCM_S8)
 
-    raw_read_header,
-    raw_read_packet,
-    raw_read_close,
-};
+PCMDEF(u8, "pcm unsigned 8 bit format", 
+       "ub", CODEC_ID_PCM_U8)
 
-AVFormat pcm_s8_format = {
-    "s8",
-    "pcm signed 8 bit format",
-    NULL,
-    "sb",
-    CODEC_ID_PCM_S8,
-    0,
-    raw_write_header,
-    raw_write_packet,
-    raw_write_trailer,
+PCMDEF(mulaw, "pcm mu law format", 
+       "ul", CODEC_ID_PCM_MULAW)
 
-    raw_read_header,
-    raw_read_packet,
-    raw_read_close,
-};
-
-AVFormat pcm_u8_format = {
-    "u8",
-    "pcm unsigned 8 bit format",
-    NULL,
-    "ub",
-    CODEC_ID_PCM_U8,
-    0,
-    raw_write_header,
-    raw_write_packet,
-    raw_write_trailer,
-
-    raw_read_header,
-    raw_read_packet,
-    raw_read_close,
-};
-
-AVFormat pcm_mulaw_format = {
-    "mulaw",
-    "pcm mu law format",
-    NULL,
-    "ul",
-    CODEC_ID_PCM_MULAW,
-    0,
-    raw_write_header,
-    raw_write_packet,
-    raw_write_trailer,
-
-    raw_read_header,
-    raw_read_packet,
-    raw_read_close,
-};
-
-AVFormat pcm_alaw_format = {
-    "alaw",
-    "pcm A law format",
-    NULL,
-    "al",
-    CODEC_ID_PCM_ALAW,
-    0,
-    raw_write_header,
-    raw_write_packet,
-    raw_write_trailer,
-
-    raw_read_header,
-    raw_read_packet,
-    raw_read_close,
-};
+PCMDEF(alaw, "pcm A law format", 
+       "al", CODEC_ID_PCM_ALAW)
 
 int rawvideo_read_packet(AVFormatContext *s,
                          AVPacket *pkt)
@@ -416,18 +382,65 @@ int rawvideo_read_packet(AVFormatContext *s,
     }
 }
 
-AVFormat rawvideo_format = {
+AVInputFormat rawvideo_iformat = {
+    "rawvideo",
+    "raw video format",
+    0,
+    NULL,
+    raw_read_header,
+    rawvideo_read_packet,
+    raw_read_close,
+    extensions: "yuv",
+    value: CODEC_ID_RAWVIDEO,
+};
+
+AVOutputFormat rawvideo_oformat = {
     "rawvideo",
     "raw video format",
     NULL,
     "yuv",
+    0,
     CODEC_ID_NONE,
     CODEC_ID_RAWVIDEO,
     raw_write_header,
     raw_write_packet,
     raw_write_trailer,
-
-    raw_read_header,
-    rawvideo_read_packet,
-    raw_read_close,
 };
+
+int raw_init(void)
+{
+    av_register_input_format(&mp3_iformat);
+    av_register_output_format(&mp2_oformat);
+    
+    av_register_input_format(&ac3_iformat);
+    av_register_output_format(&ac3_oformat);
+
+    av_register_output_format(&h263_oformat);
+
+    av_register_input_format(&mpegvideo_iformat);
+    av_register_output_format(&mpeg1video_oformat);
+
+    av_register_input_format(&mjpeg_iformat);
+    av_register_output_format(&mjpeg_oformat);
+
+    av_register_input_format(&pcm_s16le_iformat);
+    av_register_output_format(&pcm_s16le_oformat);
+    av_register_input_format(&pcm_s16be_iformat);
+    av_register_output_format(&pcm_s16be_oformat);
+    av_register_input_format(&pcm_u16le_iformat);
+    av_register_output_format(&pcm_u16le_oformat);
+    av_register_input_format(&pcm_u16be_iformat);
+    av_register_output_format(&pcm_u16be_oformat);
+    av_register_input_format(&pcm_s8_iformat);
+    av_register_output_format(&pcm_s8_oformat);
+    av_register_input_format(&pcm_u8_iformat);
+    av_register_output_format(&pcm_u8_oformat);
+    av_register_input_format(&pcm_mulaw_iformat);
+    av_register_output_format(&pcm_mulaw_oformat);
+    av_register_input_format(&pcm_alaw_iformat);
+    av_register_output_format(&pcm_alaw_oformat);
+
+    av_register_input_format(&rawvideo_iformat);
+    av_register_output_format(&rawvideo_oformat);
+    return 0;
+}

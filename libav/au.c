@@ -99,6 +99,18 @@ static int au_write_trailer(AVFormatContext *s)
     return 0;
 }
 
+static int au_probe(AVProbeData *p)
+{
+    /* check file header */
+    if (p->buf_size <= 24)
+        return 0;
+    if (p->buf[0] == '.' && p->buf[1] == 's' &&
+        p->buf[2] == 'n' && p->buf[3] == 'd')
+        return AVPROBE_SCORE_MAX;
+    else
+        return 0;
+}
+
 /* au input */
 static int au_read_header(AVFormatContext *s,
                            AVFormatParameters *ap)
@@ -175,18 +187,32 @@ static int au_read_close(AVFormatContext *s)
     return 0;
 }
 
-AVFormat au_format = {
+static AVInputFormat au_iformat = {
+    "au",
+    "SUN AU Format",
+    0,
+    au_probe,
+    au_read_header,
+    au_read_packet,
+    au_read_close,
+};
+
+static AVOutputFormat au_oformat = {
     "au",
     "SUN AU Format",
     "audio/basic",
     "au",
+    0,
     CODEC_ID_PCM_S16BE,
     CODEC_ID_NONE,
     au_write_header,
     au_write_packet,
     au_write_trailer,
-
-    au_read_header,
-    au_read_packet,
-    au_read_close,
 };
+
+int au_init(void)
+{
+    av_register_input_format(&au_iformat);
+    av_register_output_format(&au_oformat);
+    return 0;
+}

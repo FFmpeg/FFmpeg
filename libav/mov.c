@@ -44,7 +44,7 @@
  * QuickTime is a trademark of Apple (AFAIK :))
  */
 
-#define DEBUG
+//#define DEBUG
 
 #ifdef DEBUG
 /*
@@ -394,7 +394,7 @@ static int parse_hdlr(const MOVParseTableEntry *parse_table, ByteIOContext *pb, 
 {
     MOVContext *c;
     int len;
-    char *buf, ch;
+    char *buf;
     UINT32 type;
     AVStream *st;
     UINT32 ctype;
@@ -453,21 +453,23 @@ static int parse_hdlr(const MOVParseTableEntry *parse_table, ByteIOContext *pb, 
         return 0; /* nothing left to read */
     /* XXX: MP4 uses a C string, not a pascal one */
     /* component name */
-    if(c->mp4) {
+    len = get_byte(pb);
+    /* XXX: use a better heuristic */
+    if(len < 32) {
+        /* assume that it is a Pascal like string */
+        buf = av_malloc(len+1);
+        get_buffer(pb, buf, len);
+        buf[len] = '\0';
 #ifdef DEBUG
-        puts("MP4!!!");
+        printf("**buf='%s'\n", buf);
 #endif
-	while ((ch = get_byte(pb)));
+        av_free(buf);
     } else {
-        len = get_byte(pb);
-        if(len) {
-            buf = av_malloc(len+1);
-            get_buffer(pb, buf, len);
-            buf[len] = '\0';
-#ifdef DEBUG
-            puts(buf);
-#endif
-            av_free(buf);
+        /* MP4 string */
+        for(;;) {
+            if (len == 0)
+                break;
+            len = get_byte(pb);
         }
     }
     
@@ -763,21 +765,34 @@ static void mov_free_stream_context(MOVStreamContext *sc)
     }
 }
 
+/* XXX: is it suffisant ? */
+static int mov_probe(AVProbeData *p)
+{
+    /* check file header */
+    if (p->buf_size <= 12)
+        return 0;
+    if ((p->buf[4] == 'm' && p->buf[5] == 'o' &&
+         p->buf[6] == 'o' && p->buf[7] == 'v') ||
+        (p->buf[4] == 'm' && p->buf[5] == 'd' &&
+         p->buf[6] == 'a' && p->buf[7] == 't'))
+        return AVPROBE_SCORE_MAX;
+    else
+        return 0;
+}
+
 static int mov_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
-    MOVContext *mov;
+    MOVContext *mov = s->priv_data;
     ByteIOContext *pb = &s->pb;
     int i, j, nb, err;
     INT64 size;
 
-    mov = av_mallocz(sizeof(MOVContext));
-    if (!mov)
-        return -1;
-    s->priv_data = mov;
-
     mov->fc = s;
-    if(s->format->name[1] == 'p')
+#if 0
+    /* XXX: I think we should auto detect */
+    if(s->iformat->name[1] == 'p')
         mov->mp4 = 1;
+#endif
     if(!url_is_streamed(pb)) /* .mov and .mp4 aren't streamable anyway (only progressive download if moov is before mdat) */
         size = url_filesize(url_fileno(pb));
     else
@@ -916,38 +931,21 @@ static int mov_read_close(AVFormatContext *s)
         mov_free_stream_context(mov->streams[i]);
     for(i=0; i<s->nb_streams; i++)
         av_free(s->streams[i]);
-    av_free(mov);
     return 0;
 }
 
-AVFormat mov_format = {
+static AVInputFormat mov_iformat = {
     "mov",
-    "QuickTime format",
-    "video/quicktime",
-    "mov",
-    CODEC_ID_MP2,
-    CODEC_ID_MJPEG,
-    NULL,
-    NULL,
-    NULL,
-
+    "QuickTime/MPEG4 format",
+    sizeof(MOVContext),
+    mov_probe,
     mov_read_header,
     mov_read_packet,
     mov_read_close,
 };
 
-AVFormat mp4_format = {
-    "mp4",
-    "MPEG4 file format",
-    "video/mpeg4",
-    "mp4",
-    CODEC_ID_MP2,
-    CODEC_ID_MJPEG,
-    NULL,
-    NULL,
-    NULL,
-
-    mov_read_header,
-    mov_read_packet,
-    mov_read_close,
-};
+int mov_init(void)
+{
+    av_register_input_format(&mov_iformat);
+    return 0;
+}

@@ -192,7 +192,7 @@ typedef struct {
 
 static int gif_write_header(AVFormatContext *s)
 {
-    GIFContext *gif;
+    GIFContext *gif = s->priv_data;
     ByteIOContext *pb = &s->pb;
     AVCodecContext *enc, *video_enc;
     int i, width, height, rate;
@@ -201,12 +201,6 @@ static int gif_write_header(AVFormatContext *s)
     if(s->nb_streams > 1)
         return -1;
 */
-
-    gif = av_malloc(sizeof(GIFContext));
-    if (!gif)
-        return -1;
-    s->priv_data = gif;
-
     gif->time = 0;
     gif->file_time = 0;
 
@@ -376,28 +370,28 @@ static int gif_write_packet(AVFormatContext *s, int stream_index,
 
 static int gif_write_trailer(AVFormatContext *s)
 {
-    GIFContext *gif = s->priv_data;
     ByteIOContext *pb = &s->pb;
 
     put_byte(pb, 0x3b);
     put_flush_packet(&s->pb);
-
-    av_free(gif);
     return 0;
 }
 
-AVFormat gif_format = {
+static AVOutputFormat gif_oformat = {
     "gif",
     "GIF Animation",
     "image/gif",
     "gif",
+    sizeof(GIFContext),
     CODEC_ID_NONE,
     CODEC_ID_RAWVIDEO,
     gif_write_header,
     gif_write_packet,
     gif_write_trailer,
-
-    NULL, /* read_header */
-    NULL, /* read_packet */
-    NULL, /* read_close */
 };
+
+int gif_init(void)
+{
+    av_register_output_format(&gif_oformat);
+    return 0;
+}

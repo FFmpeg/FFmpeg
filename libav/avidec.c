@@ -47,18 +47,12 @@ void print_tag(const char *str, unsigned int tag, int size)
 
 int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
-    AVIContext *avi;
+    AVIContext *avi = s->priv_data;
     ByteIOContext *pb = &s->pb;
     UINT32 tag, tag1;
     int codec_type, stream_index, size, frame_period, bit_rate;
     int i, bps;
     AVStream *st;
-
-    avi = av_malloc(sizeof(AVIContext));
-    if (!avi)
-        return -1;
-    memset(avi, 0, sizeof(AVIContext));
-    s->priv_data = avi;
 
     /* check RIFF header */
     tag = get_le32(pb);
@@ -246,7 +240,35 @@ int avi_read_packet(AVFormatContext *s, AVPacket *pkt)
 
 int avi_read_close(AVFormatContext *s)
 {
-    AVIContext *avi = s->priv_data;
-    av_free(avi);
+    return 0;
+}
+
+static int avi_probe(AVProbeData *p)
+{
+    /* check file header */
+    if (p->buf_size <= 32)
+        return 0;
+    if (p->buf[0] == 'R' && p->buf[1] == 'I' &&
+        p->buf[2] == 'F' && p->buf[3] == 'F' &&
+        p->buf[8] == 'A' && p->buf[9] == 'V' &&
+        p->buf[10] == 'I' && p->buf[11] == ' ')
+        return AVPROBE_SCORE_MAX;
+    else
+        return 0;
+}
+
+static AVInputFormat avi_iformat = {
+    "avi",
+    "avi format",
+    sizeof(AVIContext),
+    avi_probe,
+    avi_read_header,
+    avi_read_packet,
+    avi_read_close,
+};
+
+int avidec_init(void)
+{
+    av_register_input_format(&avi_iformat);
     return 0;
 }

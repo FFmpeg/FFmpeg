@@ -52,11 +52,12 @@ static int mpjpeg_write_trailer(AVFormatContext *s)
     return 0;
 }
 
-AVFormat mpjpeg_format = {
+static AVOutputFormat mpjpeg_format = {
     "mpjpeg",
     "Mime multipart JPEG format",
     "multipart/x-mixed-replace;boundary=" BOUNDARY_TAG,
     "mjpg",
+    0,
     CODEC_ID_NONE,
     CODEC_ID_MJPEG,
     mpjpeg_write_header,
@@ -86,11 +87,12 @@ static int single_jpeg_write_trailer(AVFormatContext *s)
     return 0;
 }
 
-AVFormat single_jpeg_format = {
+static AVOutputFormat single_jpeg_format = {
     "singlejpeg",
     "single JPEG image",
     "image/jpeg",
     "jpg,jpeg",
+    0,
     CODEC_ID_NONE,
     CODEC_ID_MJPEG,
     single_jpeg_write_header,
@@ -114,7 +116,7 @@ static int jpeg_write_header(AVFormatContext *s1)
     if (!s)
         return -1;
     s1->priv_data = s;
-    nstrcpy(s->path, sizeof(s->path), s1->filename);
+    pstrcpy(s->path, sizeof(s->path), s1->filename);
     s->img_number = 1;
     return 0;
 }
@@ -162,7 +164,7 @@ static int jpeg_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     if (!s)
         return -1;
     s1->priv_data = s;
-    nstrcpy(s->path, sizeof(s->path), s1->filename);
+    pstrcpy(s->path, sizeof(s->path), s1->filename);
 
     s1->nb_streams = 1;
     st = av_mallocz(sizeof(AVStream));
@@ -231,20 +233,38 @@ static int jpeg_read_close(AVFormatContext *s1)
     return 0;
 }
 
-AVFormat jpeg_format = {
+static AVInputFormat jpeg_iformat = {
+    "jpeg",
+    "JPEG image",
+    sizeof(JpegContext),
+    NULL,
+    jpeg_read_header,
+    jpeg_read_packet,
+    jpeg_read_close,
+    NULL,
+    flags: AVFMT_NOFILE | AVFMT_NEEDNUMBER,
+    extensions: "jpg,jpeg",
+};
+
+static AVOutputFormat jpeg_oformat = {
     "jpeg",
     "JPEG image",
     "image/jpeg",
     "jpg,jpeg",
+    sizeof(JpegContext),
     CODEC_ID_NONE,
     CODEC_ID_MJPEG,
     jpeg_write_header,
     jpeg_write_packet,
     jpeg_write_trailer,
-
-    jpeg_read_header,
-    jpeg_read_packet,
-    jpeg_read_close,
-    NULL,
-    AVFMT_NOFILE | AVFMT_NEEDNUMBER,
+    flags: AVFMT_NOFILE | AVFMT_NEEDNUMBER,
 };
+
+int jpeg_init(void)
+{
+    av_register_output_format(&mpjpeg_format);
+    av_register_output_format(&single_jpeg_format);
+    av_register_input_format(&jpeg_iformat);
+    av_register_output_format(&jpeg_oformat);
+    return 0;
+}

@@ -1,6 +1,6 @@
 /*
  * Image format
- * Copyright (c) 2000, 2001 Gerard Lantau.
+ * Copyright (c) 2000, 2001, 2002 Gerard Lantau.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,6 +17,21 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 #include "avformat.h"
+
+extern AVInputFormat pgm_iformat;
+extern AVOutputFormat pgm_oformat;
+extern AVInputFormat pgmyuv_iformat;
+extern AVOutputFormat pgmyuv_oformat;
+extern AVInputFormat ppm_iformat;
+extern AVOutputFormat ppm_oformat;
+extern AVInputFormat imgyuv_iformat;
+extern AVOutputFormat imgyuv_oformat;
+extern AVInputFormat pgmpipe_iformat;
+extern AVOutputFormat pgmpipe_oformat;
+extern AVInputFormat pgmyuvpipe_iformat;
+extern AVOutputFormat pgmyuvpipe_oformat;
+extern AVInputFormat ppmpipe_iformat;
+extern AVOutputFormat ppmpipe_oformat;
 
 #define IMGFMT_YUV     1
 #define IMGFMT_PGMYUV  2
@@ -248,46 +263,38 @@ static int infer_size(int *width_ptr, int *height_ptr, int size)
 
 static int img_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 {
-    VideoData *s;
+    VideoData *s = s1->priv_data;
     int i, h;
     char buf[1024];
     char buf1[32];
     ByteIOContext pb1, *f = &pb1;
     AVStream *st;
 
-    s = av_malloc(sizeof(VideoData));
-    if (!s)
-        return -ENOMEM;
-
-    s1->priv_data = s;
-
-    s1->nb_streams = 1;
-    st = av_mallocz(sizeof(AVStream));
+    st = av_new_stream(s1, 0);
     if (!st) {
         av_free(s);
         return -ENOMEM;
     }
-    s1->streams[0] = st;
-    
+
     strcpy(s->path, s1->filename);
     s->img_number = 0;
 
     /* find format */
-    if (s1->format->flags & AVFMT_NOFILE)
+    if (s1->iformat->flags & AVFMT_NOFILE)
         s->is_pipe = 0;
     else
         s->is_pipe = 1;
         
-    if (s1->format == &pgmyuvpipe_format ||
-        s1->format == &pgmyuv_format)
+    if (s1->iformat == &pgmyuvpipe_iformat ||
+        s1->iformat == &pgmyuv_iformat)
         s->img_fmt = IMGFMT_PGMYUV;
-    else if (s1->format == &pgmpipe_format ||
-             s1->format == &pgm_format)
+    else if (s1->iformat == &pgmpipe_iformat ||
+             s1->iformat == &pgm_iformat)
         s->img_fmt = IMGFMT_PGM;
-    else if (s1->format == &imgyuv_format)
+    else if (s1->iformat == &imgyuv_iformat)
         s->img_fmt = IMGFMT_YUV;
-    else if (s1->format == &ppmpipe_format ||
-             s1->format == &ppm_format)
+    else if (s1->iformat == &ppmpipe_iformat ||
+             s1->iformat == &ppm_iformat)
         s->img_fmt = IMGFMT_PPM;
     else
         goto fail;
@@ -378,8 +385,6 @@ static int img_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 
 static int img_read_close(AVFormatContext *s1)
 {
-    VideoData *s = s1->priv_data;
-    av_free(s);
     return 0;
 }
 
@@ -479,31 +484,27 @@ static int yuv_save(AVPicture *picture, int width, int height, const char *filen
 
 static int img_write_header(AVFormatContext *s)
 {
-    VideoData *img;
+    VideoData *img = s->priv_data;
 
-    img = av_mallocz(sizeof(VideoData));
-    if (!img)
-        return -1;
-    s->priv_data = img;
     img->img_number = 1;
     strcpy(img->path, s->filename);
 
     /* find format */
-    if (s->format->flags & AVFMT_NOFILE)
+    if (s->oformat->flags & AVFMT_NOFILE)
         img->is_pipe = 0;
     else
         img->is_pipe = 1;
         
-    if (s->format == &pgmyuvpipe_format ||
-        s->format == &pgmyuv_format) {
+    if (s->oformat == &pgmyuvpipe_oformat ||
+        s->oformat == &pgmyuv_oformat) {
         img->img_fmt = IMGFMT_PGMYUV;
-    } else if (s->format == &pgmpipe_format ||
-               s->format == &pgm_format) {
+    } else if (s->oformat == &pgmpipe_oformat ||
+               s->oformat == &pgm_oformat) {
         img->img_fmt = IMGFMT_PGM;
-    } else if (s->format == &imgyuv_format) {
+    } else if (s->oformat == &imgyuv_oformat) {
         img->img_fmt = IMGFMT_YUV;
-    } else if (s->format == &ppmpipe_format ||
-               s->format == &ppm_format) {
+    } else if (s->oformat == &ppmpipe_oformat ||
+               s->oformat == &ppm_oformat) {
         img->img_fmt = IMGFMT_PPM;
     } else {
         goto fail;
@@ -590,22 +591,41 @@ static int img_write_packet(AVFormatContext *s, int stream_index,
 
 static int img_write_trailer(AVFormatContext *s)
 {
-    VideoData *img = s->priv_data;
-    av_free(img);
     return 0;
 }
 
-AVFormat pgm_format = {
+AVInputFormat pgm_iformat = {
+    "pgm",
+    "pgm image format",
+    sizeof(VideoData),
+    NULL,
+    img_read_header,
+    img_read_packet,
+    img_read_close,
+    NULL,
+    AVFMT_NOFILE | AVFMT_NEEDNUMBER,
+    extensions: "pgm",
+};
+
+AVOutputFormat pgm_oformat = {
     "pgm",
     "pgm image format",
     "",
     "pgm",
+    sizeof(VideoData),
     CODEC_ID_NONE,
     CODEC_ID_RAWVIDEO,
     img_write_header,
     img_write_packet,
     img_write_trailer,
+    AVFMT_NOFILE | AVFMT_NEEDNUMBER,
+};
 
+AVInputFormat pgmyuv_iformat = {
+    "pgmyuv",
+    "pgm with YUV content image format",
+    sizeof(VideoData),
+    NULL, /* no probe */
     img_read_header,
     img_read_packet,
     img_read_close,
@@ -613,107 +633,170 @@ AVFormat pgm_format = {
     AVFMT_NOFILE | AVFMT_NEEDNUMBER,
 };
 
-AVFormat pgmyuv_format = {
+AVOutputFormat pgmyuv_oformat = {
     "pgmyuv",
     "pgm with YUV content image format",
     "",
     "pgm",
+    sizeof(VideoData),
     CODEC_ID_NONE,
     CODEC_ID_RAWVIDEO,
     img_write_header,
     img_write_packet,
     img_write_trailer,
+    AVFMT_NOFILE | AVFMT_NEEDNUMBER,
+};
 
+AVInputFormat ppm_iformat = {
+    "ppm",
+    "ppm image format",
+    sizeof(VideoData),
+    NULL,
     img_read_header,
     img_read_packet,
     img_read_close,
     NULL,
-    AVFMT_NOFILE | AVFMT_NEEDNUMBER,
+    AVFMT_NOFILE | AVFMT_NEEDNUMBER | AVFMT_RGB24,
+    extensions: "ppm",
 };
 
-AVFormat ppm_format = {
+AVOutputFormat ppm_oformat = {
     "ppm",
     "ppm image format",
     "",
     "ppm",
+    sizeof(VideoData),
     CODEC_ID_NONE,
     CODEC_ID_RAWVIDEO,
     img_write_header,
     img_write_packet,
     img_write_trailer,
+    AVFMT_NOFILE | AVFMT_NEEDNUMBER | AVFMT_RGB24,
+};
 
+AVInputFormat imgyuv_iformat = {
+    ".Y.U.V",
+    ".Y.U.V format",
+    sizeof(VideoData),
+    NULL,
     img_read_header,
     img_read_packet,
     img_read_close,
     NULL,
     AVFMT_NOFILE | AVFMT_NEEDNUMBER,
+    extensions: "Y",
 };
 
-AVFormat imgyuv_format = {
+AVOutputFormat imgyuv_oformat = {
     ".Y.U.V",
     ".Y.U.V format",
     "",
     "Y",
+    sizeof(VideoData),
     CODEC_ID_NONE,
     CODEC_ID_RAWVIDEO,
     img_write_header,
     img_write_packet,
     img_write_trailer,
+    AVFMT_NOFILE | AVFMT_NEEDNUMBER,
+};
 
+AVInputFormat pgmpipe_iformat = {
+    "pgmpipe",
+    "PGM pipe format",
+    sizeof(VideoData),
+    NULL, /* no probe */
     img_read_header,
     img_read_packet,
     img_read_close,
     NULL,
-    AVFMT_NOFILE | AVFMT_NEEDNUMBER,
 };
 
-AVFormat pgmpipe_format = {
+AVOutputFormat pgmpipe_oformat = {
     "pgmpipe",
     "PGM pipe format",
     "",
     "pgm",
+    sizeof(VideoData),
     CODEC_ID_NONE,
     CODEC_ID_RAWVIDEO,
     img_write_header,
     img_write_packet,
     img_write_trailer,
+};
 
+AVInputFormat pgmyuvpipe_iformat = {
+    "pgmyuvpipe",
+    "PGM YUV pipe format",
+    sizeof(VideoData),
+    NULL, /* no probe */
     img_read_header,
     img_read_packet,
     img_read_close,
     NULL,
 };
 
-AVFormat pgmyuvpipe_format = {
+AVOutputFormat pgmyuvpipe_oformat = {
     "pgmyuvpipe",
     "PGM YUV pipe format",
     "",
     "pgm",
+    sizeof(VideoData),
     CODEC_ID_NONE,
     CODEC_ID_RAWVIDEO,
     img_write_header,
     img_write_packet,
     img_write_trailer,
+};
 
+AVInputFormat ppmpipe_iformat = {
+    "ppmpipe",
+    "PPM pipe format",
+    sizeof(VideoData),
+    NULL, /* no probe */
     img_read_header,
     img_read_packet,
     img_read_close,
     NULL,
+    flags: AVFMT_RGB24,
 };
 
-AVFormat ppmpipe_format = {
+AVOutputFormat ppmpipe_oformat = {
     "ppmpipe",
     "PPM pipe format",
     "",
     "ppm",
+    sizeof(VideoData),
     CODEC_ID_NONE,
     CODEC_ID_RAWVIDEO,
     img_write_header,
     img_write_packet,
     img_write_trailer,
-
-    img_read_header,
-    img_read_packet,
-    img_read_close,
-    NULL,
+    flags: AVFMT_RGB24,
 };
+
+
+int img_init(void)
+{
+    av_register_input_format(&pgm_iformat);
+    av_register_output_format(&pgm_oformat);
+
+    av_register_input_format(&pgmyuv_iformat);
+    av_register_output_format(&pgmyuv_oformat);
+
+    av_register_input_format(&ppm_iformat);
+    av_register_output_format(&ppm_oformat);
+
+    av_register_input_format(&imgyuv_iformat);
+    av_register_output_format(&imgyuv_oformat);
+    
+    av_register_input_format(&pgmpipe_iformat);
+    av_register_output_format(&pgmpipe_oformat);
+
+    av_register_input_format(&pgmyuvpipe_iformat);
+    av_register_output_format(&pgmyuvpipe_oformat);
+
+    av_register_input_format(&ppmpipe_iformat);
+    av_register_output_format(&ppmpipe_oformat);
+    return 0;
+}

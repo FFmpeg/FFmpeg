@@ -110,15 +110,9 @@ typedef struct {
 
 static int wav_write_header(AVFormatContext *s)
 {
-    WAVContext *wav;
+    WAVContext *wav = s->priv_data;
     ByteIOContext *pb = &s->pb;
     offset_t fmt;
-
-    wav = av_malloc(sizeof(WAVContext));
-    if (!wav)
-        return -1;
-    memset(wav, 0, sizeof(WAVContext));
-    s->priv_data = wav;
 
     put_tag(pb, "RIFF");
     put_le32(pb, 0); /* file length */
@@ -165,8 +159,6 @@ static int wav_write_trailer(AVFormatContext *s)
 
         put_flush_packet(pb);
     }
-
-    av_free(wav);
     return 0;
 }
 
@@ -189,6 +181,20 @@ static int find_tag(ByteIOContext *pb, UINT32 tag1)
     if (size < 0)
         size = 0x7fffffff;
     return size;
+}
+
+static int wav_probe(AVProbeData *p)
+{
+    /* check file header */
+    if (p->buf_size <= 32)
+        return 0;
+    if (p->buf[0] == 'R' && p->buf[1] == 'I' &&
+        p->buf[2] == 'F' && p->buf[3] == 'F' &&
+        p->buf[8] == 'W' && p->buf[9] == 'A' &&
+        p->buf[10] == 'V' && p->buf[11] == 'E')
+        return AVPROBE_SCORE_MAX;
+    else
+        return 0;
 }
 
 /* wav input */
@@ -233,14 +239,10 @@ static int wav_read_header(AVFormatContext *s,
         return -1;
     
     /* now we are ready: build format streams */
-    st = av_malloc(sizeof(AVStream));
+    st = av_new_stream(s, 0);
     if (!st)
-        return -1;
-    s->nb_streams = 1;
-    s->streams[0] = st;
+        return AVERROR_NOMEM;
 
-    st->id = 0;
-    
     st->codec.codec_type = CODEC_TYPE_AUDIO;
     st->codec.codec_tag = id;
     st->codec.codec_id = wav_codec_get_id(id, bps);
@@ -280,18 +282,32 @@ static int wav_read_close(AVFormatContext *s)
     return 0;
 }
 
-AVFormat wav_format = {
+static AVInputFormat wav_iformat = {
+    "wav",
+    "wav format",
+    0,
+    wav_probe,
+    wav_read_header,
+    wav_read_packet,
+    wav_read_close,
+};
+
+static AVOutputFormat wav_oformat = {
     "wav",
     "wav format",
     "audio/x-wav",
     "wav",
+    sizeof(WAVContext),
     CODEC_ID_PCM_S16LE,
     CODEC_ID_NONE,
     wav_write_header,
     wav_write_packet,
     wav_write_trailer,
-
-    wav_read_header,
-    wav_read_packet,
-    wav_read_close,
 };
+
+int wav_init(void)
+{
+    av_register_input_format(&wav_iformat);
+    av_register_output_format(&wav_oformat);
+    return 0;
+}

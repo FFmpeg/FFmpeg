@@ -281,17 +281,11 @@ static void write_packet_header(AVFormatContext *ctx, StreamInfo *stream,
 
 static int rm_write_header(AVFormatContext *s)
 {
+    RMContext *rm = s->priv_data;
     StreamInfo *stream;
-    RMContext *rm;
     int n;
     AVCodecContext *codec;
 
-    rm = av_malloc(sizeof(RMContext));
-    if (!rm)
-        return -1;
-    memset(rm, 0, sizeof(RMContext));
-    s->priv_data = rm;
-    
     for(n=0;n<s->nb_streams;n++) {
         s->streams[n]->id = n;
         codec = &s->streams[n]->codec;
@@ -438,8 +432,6 @@ static int rm_write_trailer(AVFormatContext *s)
         put_be32(pb, 0);
     }
     put_flush_packet(pb);
-
-    av_free(rm);
     return 0;
 }
 
@@ -475,7 +467,7 @@ static void get_str8(ByteIOContext *pb, char *buf, int buf_size)
 
 static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
-    RMContext *rm;
+    RMContext *rm = s->priv_data;
     AVStream *st;
     ByteIOContext *pb = &s->pb;
     unsigned int tag, v;
@@ -487,10 +479,6 @@ static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
     if (get_le32(pb) != MKTAG('.', 'R', 'M', 'F'))
         return -EIO;
-    rm = av_mallocz(sizeof(RMContext));
-    if (!rm)
-        return -ENOMEM;
-    s->priv_data = rm;
 
     get_be32(pb); /* header size */
     get_be16(pb);
@@ -579,7 +567,7 @@ static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     st->codec.codec_id = CODEC_ID_AC3;
                 } else {
                     st->codec.codec_id = CODEC_ID_NONE;
-                    nstrcpy(st->codec.codec_name, sizeof(st->codec.codec_name),
+                    pstrcpy(st->codec.codec_name, sizeof(st->codec.codec_name),
                             buf);
                 }
             } else {
@@ -706,23 +694,48 @@ static int rm_read_packet(AVFormatContext *s, AVPacket *pkt)
 
 static int rm_read_close(AVFormatContext *s)
 {
-    RMContext *rm = s->priv_data;
-    av_free(rm);
     return 0;
 }
 
-AVFormat rm_format = {
+static int rm_probe(AVProbeData *p)
+{
+    /* check file header */
+    if (p->buf_size <= 32)
+        return 0;
+    if (p->buf[0] == '.' && p->buf[1] == 'R' &&
+        p->buf[2] == 'M' && p->buf[3] == 'F' &&
+        p->buf[4] == 0 && p->buf[5] == 0)
+        return AVPROBE_SCORE_MAX;
+    else
+        return 0;
+}
+
+AVInputFormat rm_iformat = {
+    "rm",
+    "rm format",
+    sizeof(RMContext),
+    rm_probe,
+    rm_read_header,
+    rm_read_packet,
+    rm_read_close,
+};
+
+AVOutputFormat rm_oformat = {
     "rm",
     "rm format",
     "audio/x-pn-realaudio",
     "rm,ra",
+    sizeof(RMContext),
     CODEC_ID_AC3,
     CODEC_ID_RV10,
     rm_write_header,
     rm_write_packet,
     rm_write_trailer,
-
-    rm_read_header,
-    rm_read_packet,
-    rm_read_close,
 };
+
+int rm_init(void)
+{
+    av_register_input_format(&rm_iformat);
+    av_register_output_format(&rm_oformat);
+    return 0;
+}

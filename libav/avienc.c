@@ -143,17 +143,11 @@ void parse_specific_params(AVCodecContext *stream, int *au_byterate, int *au_ssi
 
 static int avi_write_header(AVFormatContext *s)
 {
-    AVIContext *avi;
+    AVIContext *avi = s->priv_data;
     ByteIOContext *pb = &s->pb;
     int bitrate, n, i, nb_frames, au_byterate, au_ssize, au_scale;
     AVCodecContext *stream, *video_enc;
     offset_t list1, list2, strh, strf;
-
-    avi = av_malloc(sizeof(AVIContext));
-    if (!avi)
-        return -1;
-    memset(avi, 0, sizeof(AVIContext));
-    s->priv_data = avi;
 
     put_tag(pb, "RIFF");
     put_le32(pb, 0); /* file length */
@@ -388,23 +382,24 @@ static int avi_write_trailer(AVFormatContext *s)
         url_fseek(pb, file_size, SEEK_SET);
     }
     put_flush_packet(pb);
-
-    av_free(avi);
     return 0;
 }
 
-AVFormat avi_format = {
+static AVOutputFormat avi_oformat = {
     "avi",
     "avi format",
     "video/x-msvideo",
     "avi",
+    sizeof(AVIContext),
     CODEC_ID_MP2,
     CODEC_ID_MSMPEG4,
     avi_write_header,
     avi_write_packet,
     avi_write_trailer,
-
-    avi_read_header,
-    avi_read_packet,
-    avi_read_close,
 };
+
+int avienc_init(void)
+{
+    av_register_output_format(&avi_oformat);
+    return 0;
+}

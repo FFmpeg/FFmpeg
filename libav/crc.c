@@ -61,15 +61,10 @@ typedef struct CRCState {
     UINT32 crcval;
 } CRCState;
 
-/* simple formats */
 static int crc_write_header(struct AVFormatContext *s)
 {
-    CRCState *crc;
-    crc = av_malloc(sizeof(CRCState));
-    if (!crc)
-        return -1;
-    s->priv_data = crc;
-    
+    CRCState *crc = s->priv_data;
+
     /* init CRC */
     crc->crcval = adler32(0, NULL, 0);
 
@@ -93,18 +88,24 @@ static int crc_write_trailer(struct AVFormatContext *s)
     snprintf(buf, sizeof(buf), "CRC=%08x\n", crc->crcval);
     put_buffer(&s->pb, buf, strlen(buf));
     put_flush_packet(&s->pb);
-    av_free(crc);
     return 0;
 }
 
-AVFormat crc_format = {
+AVOutputFormat crc_format = {
     "crc",
     "crc testing format",
     NULL,
     "",
+    sizeof(CRCState),
     CODEC_ID_PCM_S16LE,
     CODEC_ID_RAWVIDEO,
     crc_write_header,
     crc_write_packet,
     crc_write_trailer,
 };
+
+int crc_init(void)
+{
+    av_register_output_format(&crc_format);
+    return 0;
+}

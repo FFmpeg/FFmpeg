@@ -12,16 +12,6 @@ struct URLContext {
     void *priv_data;
 };
 
-typedef struct URLFormat {
-    char format_name[32];
-    int sample_rate;
-    int frame_rate;
-    int channels;
-    int height;
-    int width;
-    enum PixelFormat pix_fmt;
-} URLFormat;
-
 typedef struct URLContext URLContext;
 
 typedef struct URLPollEntry {
@@ -36,7 +26,6 @@ int url_open(URLContext **h, const char *filename, int flags);
 int url_read(URLContext *h, unsigned char *buf, int size);
 int url_write(URLContext *h, unsigned char *buf, int size);
 offset_t url_seek(URLContext *h, offset_t pos, int whence);
-int url_getformat(URLContext *h, URLFormat *f);
 int url_close(URLContext *h);
 int url_exist(const char *filename);
 offset_t url_filesize(URLContext *h);
@@ -50,9 +39,6 @@ typedef struct URLProtocol {
     int (*url_write)(URLContext *h, unsigned char *buf, int size);
     offset_t (*url_seek)(URLContext *h, offset_t pos, int whence);
     int (*url_close)(URLContext *h);
-    /* get precise information about the format, if available. return
-       -ENODATA if not available */
-    int (*url_getformat)(URLContext *h, URLFormat *f);
     struct URLProtocol *next;
 } URLProtocol;
 

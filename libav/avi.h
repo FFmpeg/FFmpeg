@@ -23,8 +23,3 @@ extern CodecTag codec_wav_tags[];
 
 unsigned int codec_get_tag(const CodecTag *tags, int id);
 int codec_get_id(const CodecTag *tags, unsigned int tag);
-
-/* avidec.c */
-int avi_read_header(AVFormatContext *s, AVFormatParameters *ap);
-int avi_read_packet(AVFormatContext *s, AVPacket *pkt);
-int avi_read_close(AVFormatContext *s);

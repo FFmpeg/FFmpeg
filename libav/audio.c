@@ -147,21 +147,15 @@ static int audio_close(AudioData *s)
 /* sound output support */
 static int audio_write_header(AVFormatContext *s1)
 {
-    AudioData *s;
+    AudioData *s = s1->priv_data;
     AVStream *st;
     int ret;
-
-    s = av_mallocz(sizeof(AudioData));
-    if (!s)
-        return -ENOMEM;
-    s1->priv_data = s;
 
     st = s1->streams[0];
     s->sample_rate = st->codec.sample_rate;
     s->channels = st->codec.channels;
     ret = audio_open(s, 1);
     if (ret < 0) {
-        av_free(s);
         return -EIO;
     } else {
         return 0;
@@ -201,7 +195,6 @@ static int audio_write_trailer(AVFormatContext *s1)
     AudioData *s = s1->priv_data;
 
     audio_close(s);
-    av_free(s);
     return 0;
 }
 
@@ -209,31 +202,23 @@ static int audio_write_trailer(AVFormatContext *s1)
 
 static int audio_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 {
-    AudioData *s;
+    AudioData *s = s1->priv_data;
     AVStream *st;
     int ret;
 
     if (!ap || ap->sample_rate <= 0 || ap->channels <= 0)
         return -1;
 
-    s = av_mallocz(sizeof(AudioData));
-    if (!s)
-        return -ENOMEM;
-    st = av_mallocz(sizeof(AVStream));
+    st = av_new_stream(s1, 0);
     if (!st) {
-        av_free(s);
         return -ENOMEM;
     }
-    s1->priv_data = s;
-    s1->nb_streams = 1;
-    s1->streams[0] = st;
     s->sample_rate = ap->sample_rate;
     s->channels = ap->channels;
 
     ret = audio_open(s, 0);
     if (ret < 0) {
         av_free(st);
-        av_free(s);
         return -EIO;
     } else {
         /* take real parameters */
@@ -284,15 +269,26 @@ static int audio_read_close(AVFormatContext *s1)
     AudioData *s = s1->priv_data;
 
     audio_close(s);
-    av_free(s);
     return 0;
 }
 
-AVFormat audio_device_format = {
+AVInputFormat audio_in_format = {
+    "audio_device",
+    "audio grab and output",
+    sizeof(AudioData),
+    NULL,
+    audio_read_header,
+    audio_read_packet,
+    audio_read_close,
+    flags: AVFMT_NOFILE,
+};
+
+AVOutputFormat audio_out_format = {
     "audio_device",
     "audio grab and output",
     "",
     "",
+    sizeof(AudioData),
     /* XXX: we make the assumption that the soundcard accepts this format */
     /* XXX: find better solution with "preinit" method, needed also in
        other formats */
@@ -305,10 +301,12 @@ AVFormat audio_device_format = {
     audio_write_header,
     audio_write_packet,
     audio_write_trailer,
-
-    audio_read_header,
-    audio_read_packet,
-    audio_read_close,
-    NULL,
-    AVFMT_NOFILE,
+    flags: AVFMT_NOFILE,
 };
+
+int audio_init(void)
+{
+    av_register_input_format(&audio_in_format);
+    av_register_output_format(&audio_out_format);
+    return 0;
+}

@@ -420,12 +420,7 @@ static int asf_write_header1(AVFormatContext *s, INT64 file_size, INT64 data_chu
 
 static int asf_write_header(AVFormatContext *s)
 {
-    ASFContext *asf;
-
-    asf = av_mallocz(sizeof(ASFContext));
-    if (!asf)
-        return -1;
-    s->priv_data = asf;
+    ASFContext *asf = s->priv_data;
 
     asf->packet_size = PACKET_SIZE;
     asf->nb_packets = 0;
@@ -614,8 +609,6 @@ static int asf_write_trailer(AVFormatContext *s)
     }
 
     put_flush_packet(&s->pb);
-
-    av_free(asf);
     return 0;
 }
 
@@ -679,20 +672,40 @@ static void get_str16_nolen(ByteIOContext *pb, int len, char *buf, int buf_size)
     *q = '\0';
 }
 
+static int asf_probe(AVProbeData *pd)
+{
+    GUID g;
+    const unsigned char *p;
+    int i;
+
+    /* check file header */
+    if (pd->buf_size <= 32)
+        return 0;
+    p = pd->buf;
+    g.v1 = p[0] | (p[1] << 8) | (p[2] << 16) | (p[3] << 24);
+    p += 4;
+    g.v2 = p[0] | (p[1] << 8);
+    p += 2;
+    g.v3 = p[0] | (p[1] << 8);
+    p += 2;
+    for(i=0;i<8;i++)
+        g.v4[i] = *p++;
+
+    if (!memcmp(&g, &asf_header, sizeof(GUID)))
+        return AVPROBE_SCORE_MAX;
+    else
+        return 0;
+}
+
 static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
-    ASFContext *asf;
+    ASFContext *asf = s->priv_data;
     GUID g;
     ByteIOContext *pb = &s->pb;
     AVStream *st;
     ASFStream *asf_st;
     int size, i, bps;
     INT64 gsize;
-
-    asf = av_mallocz(sizeof(ASFContext));
-    if (!asf)
-        return -1;
-    s->priv_data = asf;
 
     get_guid(pb, &g);
     if (memcmp(&g, &asf_header, sizeof(GUID)))
@@ -1015,11 +1028,22 @@ static int asf_read_close(AVFormatContext *s)
     return 0;
 }
 
-AVFormat asf_format = {
+AVInputFormat asf_iformat = {
+    "asf",
+    "asf format",
+    sizeof(ASFContext),
+    asf_probe,
+    asf_read_header,
+    asf_read_packet,
+    asf_read_close,
+};
+
+AVOutputFormat asf_oformat = {
     "asf",
     "asf format",
     "application/octet-stream",
     "asf,wmv",
+    sizeof(ASFContext),
 #ifdef CONFIG_MP3LAME
     CODEC_ID_MP3LAME,
 #else
@@ -1029,8 +1053,11 @@ AVFormat asf_format = {
     asf_write_header,
     asf_write_packet,
     asf_write_trailer,
-
-    asf_read_header,
-    asf_read_packet,
-    asf_read_close,
 };
+
+int asf_init(void)
+{
+    av_register_input_format(&asf_iformat);
+    av_register_output_format(&asf_oformat);
+    return 0;
+}

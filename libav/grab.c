@@ -48,7 +48,7 @@ static int gb_frame = 0;
 
 static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 {
-    VideoData *s;
+    VideoData *s = s1->priv_data;
     AVStream *st;
     int width, height;
     int video_fd, frame_size;
@@ -62,17 +62,9 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     height = ap->height;
     frame_rate = ap->frame_rate;
 
-    s = av_mallocz(sizeof(VideoData));
-    if (!s)
+    st = av_new_stream(s1, 0);
+    if (!st)
         return -ENOMEM;
-    st = av_mallocz(sizeof(AVStream));
-    if (!st) {
-        av_free(s);
-        return -ENOMEM;
-    }
-    s1->priv_data = s;
-    s1->nb_streams = 1;
-    s1->streams[0] = st;
 
     s->width = width;
     s->height = height;
@@ -232,7 +224,6 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     if (video_fd >= 0)
         close(video_fd);
     av_free(st);
-    av_free(s);
     return -EIO;
 }
 
@@ -327,24 +318,22 @@ static int grab_read_close(AVFormatContext *s1)
     ioctl(s->fd, VIDIOCSAUDIO, &audio_saved);
 
     close(s->fd);
-    av_free(s);
     return 0;
 }
 
-AVFormat video_grab_device_format = {
+AVInputFormat video_grab_device_format = {
     "video_grab_device",
     "video grab",
-    "",
-    "",
-    CODEC_ID_NONE,
-    CODEC_ID_NONE,
+    sizeof(VideoData),
     NULL,
-    NULL,
-    NULL,
-
     grab_read_header,
     grab_read_packet,
     grab_read_close,
-    NULL,
-    AVFMT_NOFILE,
+    flags: AVFMT_NOFILE,
 };
+
+int video_grab_init(void)
+{
+    av_register_input_format(&video_grab_device_format);
+    return 0;
+}

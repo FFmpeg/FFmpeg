@@ -105,14 +105,6 @@ offset_t url_seek(URLContext *h, offset_t pos, int whence)
     return ret;
 }
 
-int url_getformat(URLContext *h, URLFormat *f)
-{
-    memset(f, 0, sizeof(*f));
-    if (!h->prot->url_getformat)
-        return -ENODATA;
-    return h->prot->url_getformat(h, f);
-}
-
 int url_close(URLContext *h)
 {
     int ret;

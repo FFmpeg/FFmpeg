@@ -51,6 +51,9 @@ typedef struct FFMContext {
     UINT8 packet[1]; /* must be last */
 } FFMContext;
 
+/* disable pts hack for testing */
+int ffm_nopts = 0;
+
 static void flush_packet(AVFormatContext *s)
 {
     FFMContext *ffm = s->priv_data;
@@ -112,18 +115,13 @@ static void ffm_write_data(AVFormatContext *s,
 
 static int ffm_write_header(AVFormatContext *s)
 {
+    FFMContext *ffm = s->priv_data;
     AVStream *st;
     FFMStream *fst;
-    FFMContext *ffm;
     ByteIOContext *pb = &s->pb;
     AVCodecContext *codec;
     int bit_rate, i;
 
-    ffm = av_mallocz(sizeof(FFMContext) + FFM_PACKET_SIZE);
-    if (!ffm)
-        return -1;
-
-    s->priv_data = ffm;
     ffm->packet_size = FFM_PACKET_SIZE;
 
     /* header */
@@ -177,7 +175,10 @@ static int ffm_write_header(AVFormatContext *s)
             abort();
         }
         /* hack to have real time */
-        fst->pts = gettime();
+        if (ffm_nopts)
+            fst->pts = 0;
+        else
+            fst->pts = gettime();
     }
 
     /* flush until end of block reached */
@@ -200,7 +201,6 @@ static int ffm_write_header(AVFormatContext *s)
         fst = st->priv_data;
         av_free(fst);
     }
-    av_free(ffm);
     return -1;
 }
 
@@ -252,7 +252,6 @@ static int ffm_write_trailer(AVFormatContext *s)
 
     for(i=0;i<s->nb_streams;i++)
         av_free(s->streams[i]->priv_data);
-    av_free(ffm);
     return 0;
 }
 
@@ -342,19 +341,13 @@ static int ffm_read_data(AVFormatContext *s,
 
 static int ffm_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
+    FFMContext *ffm = s->priv_data;
     AVStream *st;
     FFMStream *fst;
-    FFMContext *ffm;
     ByteIOContext *pb = &s->pb;
     AVCodecContext *codec;
     int i;
     UINT32 tag;
-
-    ffm = av_mallocz(sizeof(FFMContext) + FFM_PACKET_SIZE);
-    if (!ffm)
-        return -1;
-
-    s->priv_data = ffm;
 
     /* header */
     tag = get_le32(pb);
@@ -436,8 +429,6 @@ static int ffm_read_header(AVFormatContext *s, AVFormatParameters *ap)
             av_free(st);
         }
     }
-    if (ffm)
-        av_free(ffm);
     return -1;
 }
 
@@ -619,19 +610,35 @@ static int ffm_read_close(AVFormatContext *s)
     return 0;
 }
 
-AVFormat ffm_format = {
+AVInputFormat ffm_iformat = {
+    "ffm",
+    "ffm format",
+    sizeof(FFMContext),
+    NULL,
+    ffm_read_header,
+    ffm_read_packet,
+    ffm_read_close,
+    ffm_seek,
+    extensions: "ffm",
+};
+
+AVOutputFormat ffm_oformat = {
     "ffm",
     "ffm format",
     "",
     "ffm",
+    sizeof(FFMContext) + FFM_PACKET_SIZE,
     /* not really used */
     CODEC_ID_MP2,
     CODEC_ID_MPEG1VIDEO,
     ffm_write_header,
     ffm_write_packet,
     ffm_write_trailer,
-    ffm_read_header,
-    ffm_read_packet,
-    ffm_read_close,
-    ffm_seek,
 };
+
+int ffm_init(void)
+{
+    av_register_input_format(&ffm_iformat);
+    av_register_output_format(&ffm_oformat);
+    return 0;
+}

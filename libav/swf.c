@@ -438,6 +438,19 @@ static int get_swf_tag(ByteIOContext *pb, int *len_ptr)
     return tag;
 }
 
+
+static int swf_probe(AVProbeData *p)
+{
+    /* check file header */
+    if (p->buf_size <= 16)
+        return 0;
+    if (p->buf[0] == 'F' && p->buf[1] == 'W' &&
+        p->buf[2] == 'S' && p->buf[3] == '\0')
+        return AVPROBE_SCORE_MAX;
+    else
+        return 0;
+}
+
 static int swf_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     ByteIOContext *pb = &s->pb;
@@ -528,18 +541,32 @@ static int swf_read_close(AVFormatContext *s)
      return 0;
 }
 
-AVFormat swf_format = {
+static AVInputFormat swf_iformat = {
+    "swf",
+    "Flash format",
+    0,
+    swf_probe,
+    swf_read_header,
+    swf_read_packet,
+    swf_read_close,
+};
+
+static AVOutputFormat swf_oformat = {
     "swf",
     "Flash format",
     "application/x-shockwave-flash",
     "swf",
+    sizeof(SWFContext),
     CODEC_ID_MP2,
     CODEC_ID_MJPEG,
     swf_write_header,
     swf_write_packet,
     swf_write_trailer,
-
-    swf_read_header,
-    swf_read_packet,
-    swf_read_close,
 };
+
+int swf_init(void)
+{
+    av_register_input_format(&swf_iformat);
+    av_register_output_format(&swf_oformat);
+    return 0;
+}
