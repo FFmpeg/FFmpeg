@@ -1231,6 +1231,7 @@ static int decode_header(MPADecodeContext *s, uint32_t header)
 int mpa_decode_header(AVCodecContext *avctx, uint32_t head)
 {
     MPADecodeContext s1, *s = &s1;
+    memset( s, 0, sizeof(MPADecodeContext) );
 
     if (check_header(head) != 0)
         return -1;
@@ -1373,6 +1374,10 @@ static int mp_decode_layer2(MPADecodeContext *s)
         bound = sblimit;
 
     dprintf("bound=%d sblimit=%d\n", bound, sblimit);
+
+    /* sanity check */
+    if( bound > sblimit ) bound = sblimit;
+
     /* parse bit allocation */
     j = 0;
     for(i=0;i<bound;i++) {

@@ -1261,18 +1261,11 @@ static int av_encode(AVFormatContext **output_files,
                     ost->topBand = frame_topBand;
                     ost->leftBand = frame_leftBand;
                 } else {
-                    uint8_t *buf;
                     ost->video_resample = 1;
                     ost->video_crop = 0; // cropping is handled as part of resample
-                    buf = av_malloc((codec->width * codec->height * 3) / 2);
-                    if (!buf)
+                    if( avpicture_alloc( &ost->pict_tmp, codec->pix_fmt,
+                                         codec->width, codec->height ) )
                         goto fail;
-                    ost->pict_tmp.data[0] = buf;
-                    ost->pict_tmp.data[1] = ost->pict_tmp.data[0] + (codec->width * codec->height);
-                    ost->pict_tmp.data[2] = ost->pict_tmp.data[1] + (codec->width * codec->height) / 4;
-                    ost->pict_tmp.linesize[0] = codec->width;
-                    ost->pict_tmp.linesize[1] = codec->width / 2;
-                    ost->pict_tmp.linesize[2] = codec->width / 2;
 
                     ost->img_resample_ctx = img_resample_full_init( 
                                       ost->st->codec.width, ost->st->codec.height,
