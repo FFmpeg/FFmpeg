@@ -294,7 +294,7 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
 {
     AVFormatContext *ic = NULL;
     int err, must_open_file;
-    char buf[PROBE_BUF_SIZE];
+    unsigned char buf[PROBE_BUF_SIZE];
     AVProbeData probe_data, *pd = &probe_data;
 
     ic = av_mallocz(sizeof(AVFormatContext));
@@ -1440,8 +1440,8 @@ int get_frame_filename(char *buf, int buf_size,
                        const char *path, int number)
 {
     const char *p;
-    char *q, buf1[20];
-    int nd, len, c, percentd_found;
+    char *q, buf1[20], c;
+    int nd, len, percentd_found;
 
     q = buf;
     p = path;

@@ -90,7 +90,7 @@ static int ogg_write_header(AVFormatContext *avfcontext)
 
 static int ogg_write_packet(AVFormatContext *avfcontext,
 			    int stream_index,
-			    unsigned char *buf, int size, int force_pts)
+			    const uint8_t *buf, int size, int64_t force_pts)
 {
     OggContext *context = avfcontext->priv_data ;
     ogg_packet *op ;
@@ -110,7 +110,7 @@ static int ogg_write_packet(AVFormatContext *avfcontext,
 
     while(l < size) {
 	op = (ogg_packet*)(buf + l) ;
-	op->packet = buf + l + sizeof(ogg_packet) ; /* fix data pointer */
+	op->packet = (uint8_t*) buf + l + sizeof( ogg_packet) ; /* fix data pointer */
 
 	if(!context->base_packet_no) { /* this is the first packet */
 	    context->base_packet_no = op->packetno ; 
