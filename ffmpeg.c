@@ -276,6 +276,7 @@ typedef struct AVInputStream {
     int64_t       next_pts;  /* synthetic pts for cases where pkt.pts
                                 is not defined */
     int64_t       pts;       /* current pts */
+    int is_start;            /* is 1 at the start and after a discontinuity */
 } AVInputStream;
 
 typedef struct AVInputFile {
@@ -421,7 +422,7 @@ static void do_audio_out(AVFormatContext *s,
     const int audio_out_size= 4*MAX_AUDIO_PACKET_SIZE;
 
     int size_out, frame_bytes, ret;
-    AVCodecContext *enc;
+    AVCodecContext *enc= &ost->st->codec;
 
     /* SC: dynamic allocation of buffers */
     if (!audio_buf)
@@ -431,21 +432,49 @@ static void do_audio_out(AVFormatContext *s,
     if (!audio_buf || !audio_out)
         return;               /* Should signal an error ! */
 
-    
-    enc = &ost->st->codec;
-    
     if(audio_sync_method){
         double delta = ost->sync_ipts * enc->sample_rate - ost->sync_opts 
                 - fifo_size(&ost->fifo, ost->fifo.rptr)/(ost->st->codec.channels * 2);
+        double idelta= delta*ist->st->codec.sample_rate / enc->sample_rate;
+        int byte_delta= ((int)idelta)*2*ist->st->codec.channels;
+
         //FIXME resample delay
         if(fabs(delta) > 50){
-            int comp= clip(delta, -audio_sync_method, audio_sync_method);
-            assert(ost->audio_resample);
-            if(verbose > 2)
-                fprintf(stderr, "compensating audio timestamp drift:%f compensation:%d in:%d\n", delta, comp, enc->sample_rate);
-//            fprintf(stderr, "drift:%f len:%d opts:%lld ipts:%lld fifo:%d\n", delta, len/4, ost->sync_opts, (int64_t)(ost->sync_ipts * enc->sample_rate), fifo_size(&ost->fifo, ost->fifo.rptr)/(ost->st->codec.channels * 2));
-            av_resample_compensate(*(struct AVResampleContext**)ost->resample, comp, enc->sample_rate);
-        }
+            if(ist->is_start){
+                if(byte_delta < 0){
+                    byte_delta= FFMIN(byte_delta, size);
+                    size += byte_delta;
+                    buf  -= byte_delta;
+                    if(verbose > 2)
+                        fprintf(stderr, "discarding %d audio samples\n", (int)-delta);
+                    if(!size)
+                        return;
+                    ist->is_start=0;
+                }else{
+                    static uint8_t *input_tmp= NULL;
+                    input_tmp= av_realloc(input_tmp, byte_delta + size);
+
+                    if(byte_delta + size <= MAX_AUDIO_PACKET_SIZE)
+                        ist->is_start=0;
+                    else
+                        byte_delta= MAX_AUDIO_PACKET_SIZE - size;
+
+                    memset(input_tmp, 0, byte_delta);
+                    memcpy(input_tmp + byte_delta, buf, size);
+                    buf= input_tmp;
+                    size += byte_delta;
+                    if(verbose > 2)
+                        fprintf(stderr, "adding %d audio samples of silence\n", (int)delta);
+                }
+            }else if(audio_sync_method>1){
+                int comp= clip(delta, -audio_sync_method, audio_sync_method);
+                assert(ost->audio_resample);
+                if(verbose > 2)
+                    fprintf(stderr, "compensating audio timestamp drift:%f compensation:%d in:%d\n", delta, comp, enc->sample_rate);
+                fprintf(stderr, "drift:%f len:%d opts:%lld ipts:%lld fifo:%d\n", delta, -1, ost->sync_opts, (int64_t)(ost->sync_ipts * enc->sample_rate), fifo_size(&ost->fifo, ost->fifo.rptr)/(ost->st->codec.channels * 2));
+                av_resample_compensate(*(struct AVResampleContext**)ost->resample, comp, enc->sample_rate);
+            }
+        } 
     }else
         ost->sync_opts= lrintf(ost->sync_ipts * enc->sample_rate)
                         - fifo_size(&ost->fifo, ost->fifo.rptr)/(ost->st->codec.channels * 2); //FIXME wrong
@@ -1040,7 +1069,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
     AVFrame picture;
     short samples[AVCODEC_MAX_AUDIO_FRAME_SIZE / 2];
     void *buffer_to_free;
-//fprintf(stderr, "output_packet %d, dts:%lld\n", pkt->stream_index, pkt->dts);
+
     if (pkt && pkt->dts != AV_NOPTS_VALUE) { //FIXME seems redundant, as libavformat does this too
         ist->next_pts = ist->pts = pkt->dts;
     } else {
@@ -1487,7 +1516,7 @@ static int av_encode(AVFormatContext **output_files,
                         ost->audio_resample = 1; 
                     }
                 }
-                if(audio_sync_method)
+                if(audio_sync_method>1)
                     ost->audio_resample = 1;
 
                 if(ost->audio_resample){
@@ -1676,6 +1705,7 @@ static int av_encode(AVFormatContext **output_files,
 	is = input_files[ist->file_index];
         ist->pts = 0;
         ist->next_pts = 0;
+        ist->is_start = 1;
     }
     
     /* compute buffer size max (should use a complete heuristic) */
@@ -1788,6 +1818,7 @@ static int av_encode(AVFormatContext **output_files,
                 for(i=0; i<file_table[file_index].nb_streams; i++){
                     int index= file_table[file_index].ist_index + i;
                     ist_table[index]->next_pts += delta;
+                    ist_table[index]->is_start=1;
                 }
             }
         }
