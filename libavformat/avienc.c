@@ -129,11 +129,12 @@ unsigned int codec_get_bmp_tag(int id)
 /* BITMAPINFOHEADER header */
 void put_bmp_header(ByteIOContext *pb, AVCodecContext *enc, const CodecTag *tags, int for_asf)
 {
-    put_le32(pb, 40); /* size */
+    put_le32(pb, 40 + enc->extradata_size); /* size */
     put_le32(pb, enc->width);
     put_le32(pb, enc->height);
     put_le16(pb, 1); /* planes */
-    put_le16(pb, 24); /* depth */
+    
+    put_le16(pb, enc->bits_per_sample ? enc->bits_per_sample : 24); /* depth */
     /* compression type */
     put_le32(pb, for_asf ? codec_get_asf_tag(tags, enc->codec_id) : codec_get_tag(tags, enc->codec_id));
     put_le32(pb, enc->width * enc->height * 3);
@@ -141,6 +142,11 @@ void put_bmp_header(ByteIOContext *pb, AVCodecContext *enc, const CodecTag *tags
     put_le32(pb, 0);
     put_le32(pb, 0);
     put_le32(pb, 0);
+    
+    put_buffer(pb, enc->extradata, enc->extradata_size);
+
+    if (enc->extradata_size & 1)
+        put_byte(pb, 0);
 }
 
 static void parse_specific_params(AVCodecContext *stream, int *au_byterate, int *au_ssize, int *au_scale)
