@@ -64,7 +64,16 @@ static unsigned char* perfname[] = {
   "hadamard8_diff16_altivec",
   "avg_pixels8_xy2_altivec",
   "clear_blocks_dcbz32_ppc",
-  "clear_blocks_dcbz128_ppc"
+  "clear_blocks_dcbz128_ppc",
+  "put_h264_chroma_mc8_altivec",
+  "avg_h264_chroma_mc8_altivec",
+  "put_h264_qpel16_h_lowpass_altivec",
+  "avg_h264_qpel16_h_lowpass_altivec",
+  "put_h264_qpel16_v_lowpass_altivec",
+  "avg_h264_qpel16_v_lowpass_altivec",
+  "put_h264_qpel16_hv_lowpass_altivec",
+  "avg_h264_qpel16_hv_lowpass_altivec",
+  ""
 };
 #include <stdio.h>
 #endif
@@ -228,6 +237,9 @@ long check_dcbzl_effect(void)
 }
 #endif
 
+
+void dsputil_h264_init_ppc(DSPContext* c, AVCodecContext *avctx);
+
 void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx)
 {
     // Common optimizations whether Altivec is available or not
@@ -242,6 +254,8 @@ void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx)
   default:
     break;
   }
+
+  dsputil_h264_init_ppc(c, avctx);
   
 #ifdef HAVE_ALTIVEC
     if (has_altivec()) {
@@ -310,10 +324,10 @@ void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx)
           {
 	    for (j = 0; j < POWERPC_NUM_PMC_ENABLED ; j++)
 	      {
-		perfdata[j][i][powerpc_data_min] = (unsigned long long)0xFFFFFFFFFFFFFFFF;
-		perfdata[j][i][powerpc_data_max] = (unsigned long long)0x0000000000000000;
-		perfdata[j][i][powerpc_data_sum] = (unsigned long long)0x0000000000000000;
-		perfdata[j][i][powerpc_data_num] = (unsigned long long)0x0000000000000000;
+		perfdata[j][i][powerpc_data_min] = 0xFFFFFFFFFFFFFFFFULL;
+		perfdata[j][i][powerpc_data_max] = 0x0000000000000000ULL;
+		perfdata[j][i][powerpc_data_sum] = 0x0000000000000000ULL;
+		perfdata[j][i][powerpc_data_num] = 0x0000000000000000ULL;
 	      }
 	  }
         }
