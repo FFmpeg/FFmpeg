@@ -2513,7 +2513,7 @@ static void prepare_play(void)
             fprintf(stderr, "Could not find audio device\n");
             exit(1);
         }
-        opt_output_file(audio_device?audio_device:"/dev/dsp0");
+        opt_output_file(audio_device?audio_device:"/dev/dsp");
     }
 
     if (has_video) {
