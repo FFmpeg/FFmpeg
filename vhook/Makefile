@@ -15,7 +15,10 @@ endif
 
 all: $(HOOKS) 
 
-DEPS= $(HOOKS:.so=.d)
+SRCS := $(OBJS:.o=.c)
+
+.depend: $(SRCS)
+	$(CC) -MM $(CFLAGS) $^ 1>.depend
 
 install:
 	install -s -m 755 $(HOOKS) $(INSTDIR)
@@ -26,14 +29,12 @@ imlib2.so: imlib2.o
 %.so: %.o
 	$(CC) -g -o $@ $(SHFLAGS) $<
 
-%.d: %.c
-	@echo $@ \\ > $@
-	$(CC) $(CFLAGS) -MM $< >> $@
-
--include $(DEPS)        
-
 %.html: %.texi
 	texi2html -monolithic -number $<
 
 clean:
 	rm -f *.o *.d *.so *~
+
+ifneq ($(wildcard .depend),)
+include .depend
+endif

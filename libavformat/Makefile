@@ -50,16 +50,19 @@ endif
 
 LIB= $(LIBPREF)avformat$(LIBSUF)
 
-DEPS= $(OBJS:.o=.d)
+SRCS := $(OBJS:.o=.c)
 
 all: $(LIB)
 
-$(LIB): $(OBJS)
+$(LIB): .depend $(OBJS)
 	rm -f $@
 	$(AR) rc $@ $(OBJS)
 ifneq ($(CONFIG_OS2),yes)
 	$(RANLIB) $@
 endif
+
+.depend: $(SRCS)
+	$(CC) -MM $(CFLAGS) $^ 1>.depend
 
 installlib: all
 	install -m 644 $(LIB) $(prefix)/lib
@@ -72,15 +75,16 @@ installlib: all
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $< 
 
-%.d: %.c
-	@echo $@ \\ > $@
-	$(CC) $(CFLAGS) -MM $< >> $@
-
--include $(DEPS)        
-
 # BeOS: remove -Wall to get rid of all the "multibyte constant" warnings
 %.o: %.cpp
 	g++ $(subst -Wall,,$(CFLAGS)) -c -o $@ $< 
 
 clean: 
-	rm -f *.o *.d *~ *.a $(LIB)
+	rm -f *.o *.d .depend *~ *.a $(LIB)
+
+#
+# include dependency files if they exist
+#
+ifneq ($(wildcard .depend),)
+include .depend
+endif
