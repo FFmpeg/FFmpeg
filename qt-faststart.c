@@ -223,7 +223,7 @@ int main(int argc, char *argv[])
     }
 
     /* dump the new moov atom */
-    printf (" writing moov aton...\n");
+    printf (" writing moov atom...\n");
     if (fwrite(moov_atom, moov_atom_size, 1, outfile) != 1) {
         perror(argv[2]);
         goto error_out;
