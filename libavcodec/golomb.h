@@ -220,7 +220,7 @@ static inline int get_ur_golomb_jpegls(GetBitContext *gb, int k, int limit, int 
 
     log= av_log2(buf);
     
-    if(log > 31-12){
+    if(log > 31-11){
         buf >>= log - k;
         buf += (30-log)<<k;
         LAST_SKIP_BITS(re, gb, 32 + k - log);
@@ -385,7 +385,8 @@ static inline void set_ur_golomb_jpegls(PutBitContext *pb, int i, int k, int lim
     e= (i>>k) + 1;
     if(e<limit){
         put_bits(pb, e, 1);
-        put_bits(pb, k, i&((1<<k)-1));
+        if(k)
+            put_bits(pb, k, i&((1<<k)-1));
     }else{
         put_bits(pb, limit  , 1);
         put_bits(pb, esc_len, i - 1);
