@@ -33,18 +33,27 @@ typedef struct {
     int frame_rate;
     INT64 time_frame;
     int frame_size;
+    struct video_capability video_cap;
+    struct video_audio audio_saved;
+    UINT8 *video_buf;
+    struct video_mbuf gb_buffers;
+    struct video_mmap gb_buf;
+    int gb_frame;
+
+    /* ATI All In Wonder specific stuff */
+    /* XXX: remove and merge in libavcodec/imgconvert.c */
+    int aiw_enabled;
+    int deint;
+    int halfw;
+    UINT8 *src_mem;
+    UINT8 *lum_m4_mem;
 } VideoData;
 
+static int aiw_init(VideoData *s);
+static int aiw_read_picture(VideoData *s, uint8_t *data);
+static int aiw_close(VideoData *s);
+
 const char *v4l_device = "/dev/video";
-
-/* XXX: move all that to the context */
-
-static struct video_capability  video_cap;
-static UINT8 *video_buf;
-static struct video_mbuf gb_buffers;
-static struct video_mmap gb_buf;
-static struct video_audio audio, audio_saved;
-static int gb_frame = 0;
 
 static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 {
@@ -54,6 +63,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     int video_fd, frame_size;
     int ret, frame_rate;
     int desired_palette;
+    struct video_audio audio;
 
     if (!ap || ap->width <= 0 || ap->height <= 0 || ap->frame_rate <= 0)
         return -1;
@@ -76,12 +86,12 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         goto fail;
     }
     
-    if (ioctl(video_fd,VIDIOCGCAP,&video_cap) < 0) {
+    if (ioctl(video_fd,VIDIOCGCAP, &s->video_cap) < 0) {
         perror("VIDIOCGCAP");
         goto fail;
     }
 
-    if (!(video_cap.type & VID_TYPE_CAPTURE)) {
+    if (!(s->video_cap.type & VID_TYPE_CAPTURE)) {
         fprintf(stderr, "Fatal: grab device does not handle capture\n");
         goto fail;
     }
@@ -96,12 +106,13 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     }    
     
     /* unmute audio */
+    audio.audio = 0;
     ioctl(video_fd, VIDIOCGAUDIO, &audio);
-    memcpy(&audio_saved, &audio, sizeof(audio));
+    memcpy(&s->audio_saved, &audio, sizeof(audio));
     audio.flags &= ~VIDEO_AUDIO_MUTE;
     ioctl(video_fd, VIDIOCSAUDIO, &audio);
 
-    ret = ioctl(video_fd,VIDIOCGMBUF,&gb_buffers);
+    ret = ioctl(video_fd,VIDIOCGMBUF,&s->gb_buffers);
     if (ret < 0) {
         /* try to use read based access */
         struct video_window win;
@@ -150,34 +161,44 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 
         s->time_frame = av_gettime();
         s->use_mmap = 0;
+        
+        /* ATI All In Wonder automatic activation */
+        if (!strcmp(s->video_cap.name, "Km")) {
+            if (aiw_init(s) < 0)
+                goto fail;
+            s->aiw_enabled = 1;
+            /* force 420P format because convertion from YUV422 to YUV420P
+               is done in this driver (ugly) */
+            s->frame_format = VIDEO_PALETTE_YUV420P;
+        }
     } else {
-        video_buf = mmap(0,gb_buffers.size,PROT_READ|PROT_WRITE,MAP_SHARED,video_fd,0);
-        if ((unsigned char*)-1 == video_buf) {
+        s->video_buf = mmap(0,s->gb_buffers.size,PROT_READ|PROT_WRITE,MAP_SHARED,video_fd,0);
+        if ((unsigned char*)-1 == s->video_buf) {
             perror("mmap");
             goto fail;
         }
-        gb_frame = 0;
+        s->gb_frame = 0;
         s->time_frame = av_gettime();
         
         /* start to grab the first frame */
-        gb_buf.frame = gb_frame % gb_buffers.frames;
-        gb_buf.height = height;
-        gb_buf.width = width;
-        gb_buf.format = desired_palette;
+        s->gb_buf.frame = s->gb_frame % s->gb_buffers.frames;
+        s->gb_buf.height = height;
+        s->gb_buf.width = width;
+        s->gb_buf.format = desired_palette;
 
-        if (desired_palette == -1 || (ret = ioctl(video_fd, VIDIOCMCAPTURE, &gb_buf)) < 0) {
-            gb_buf.format = VIDEO_PALETTE_YUV420P;
+        if (desired_palette == -1 || (ret = ioctl(video_fd, VIDIOCMCAPTURE, &s->gb_buf)) < 0) {
+            s->gb_buf.format = VIDEO_PALETTE_YUV420P;
             
-            ret = ioctl(video_fd, VIDIOCMCAPTURE, &gb_buf);
+            ret = ioctl(video_fd, VIDIOCMCAPTURE, &s->gb_buf);
             if (ret < 0 && errno != EAGAIN) {
                 /* try YUV422 */
-                gb_buf.format = VIDEO_PALETTE_YUV422;
+                s->gb_buf.format = VIDEO_PALETTE_YUV422;
                 
-                ret = ioctl(video_fd, VIDIOCMCAPTURE, &gb_buf);
+                ret = ioctl(video_fd, VIDIOCMCAPTURE, &s->gb_buf);
                 if (ret < 0 && errno != EAGAIN) {
                     /* try RGB24 */
-                    gb_buf.format = VIDEO_PALETTE_RGB24;
-                    ret = ioctl(video_fd, VIDIOCMCAPTURE, &gb_buf);
+                    s->gb_buf.format = VIDEO_PALETTE_RGB24;
+                    ret = ioctl(video_fd, VIDIOCMCAPTURE, &s->gb_buf);
                 }
             }
         }
@@ -190,7 +211,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
             }
             goto fail;
         }
-        s->frame_format = gb_buf.format;
+        s->frame_format = s->gb_buf.format;
         s->use_mmap = 1;
     }
 
@@ -232,8 +253,8 @@ static int v4l_mm_read_picture(VideoData *s, UINT8 *buf)
     UINT8 *ptr;
 
     /* Setup to capture the next frame */
-    gb_buf.frame = (gb_frame + 1) % gb_buffers.frames;
-    if (ioctl(s->fd, VIDIOCMCAPTURE, &gb_buf) < 0) {
+    s->gb_buf.frame = (s->gb_frame + 1) % s->gb_buffers.frames;
+    if (ioctl(s->fd, VIDIOCMCAPTURE, &s->gb_buf) < 0) {
         if (errno == EAGAIN)
             fprintf(stderr,"Cannot Sync\n");
         else
@@ -241,14 +262,14 @@ static int v4l_mm_read_picture(VideoData *s, UINT8 *buf)
         return -EIO;
     }
 
-    while (ioctl(s->fd, VIDIOCSYNC, &gb_frame) < 0 &&
+    while (ioctl(s->fd, VIDIOCSYNC, &s->gb_frame) < 0 &&
            (errno == EAGAIN || errno == EINTR));
 
-    ptr = video_buf + gb_buffers.offsets[gb_frame];
+    ptr = s->video_buf + s->gb_buffers.offsets[s->gb_frame];
     memcpy(buf, ptr, s->frame_size);
 
     /* This is now the grabbing frame */
-    gb_frame = gb_buf.frame;
+    s->gb_frame = s->gb_buf.frame;
 
     return s->frame_size;
 }
@@ -289,7 +310,9 @@ static int grab_read_packet(AVFormatContext *s1, AVPacket *pkt)
         pkt->flags |= PKT_FLAG_DROPPED_FRAME;
 
     /* read one frame */
-    if (s->use_mmap) {
+    if (s->aiw_enabled) {
+        return aiw_read_picture(s, pkt->data);
+    } else if (s->use_mmap) {
         return v4l_mm_read_picture(s, pkt->data);
     } else {
         if (read(s->fd, pkt->data, pkt->size) != pkt->size)
@@ -302,11 +325,16 @@ static int grab_read_close(AVFormatContext *s1)
 {
     VideoData *s = s1->priv_data;
 
-    if (s->use_mmap)
-        munmap(video_buf, gb_buffers.size);
+    if (s->aiw_enabled)
+        aiw_close(s);
 
-    /* restore audio settings */
-    ioctl(s->fd, VIDIOCSAUDIO, &audio_saved);
+    if (s->use_mmap)
+        munmap(s->video_buf, s->gb_buffers.size);
+
+    /* mute audio. we must force it because the BTTV driver does not
+       return its state correctly */
+    s->audio_saved.flags |= VIDEO_AUDIO_MUTE;
+    ioctl(s->fd, VIDIOCSAUDIO, &s->audio_saved);
 
     close(s->fd);
     return 0;
@@ -323,150 +351,32 @@ static AVInputFormat video_grab_device_format = {
     .flags = AVFMT_NOFILE,
 };
 
-/*
- * Done below so we can register the aiw grabber
- * /
-int video_grab_init(void)
+/* All in Wonder specific stuff */
+/* XXX: remove and merge in libavcodec/imgconvert.c */
+
+static int aiw_init(VideoData *s)
 {
-    av_register_input_format(&video_grab_device_format);
-    return 0;
-}
-*/
-
-typedef struct {
-    int fd;
-    int frame_format; /* see VIDEO_PALETTE_xxx */
     int width, height;
-    int frame_rate;
-    INT64 time_frame;
-    int frame_size;
-    int deint;
-    int halfw;
-    UINT8 *src_mem;
-    UINT8 *lum_m4_mem;
-} AIWVideoData;
 
-static int aiw_grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
-{
-    AIWVideoData *s = s1->priv_data;
-    AVStream *st;
-    int width, height;
-    int video_fd, frame_size;
-    int ret, frame_rate;
-    int desired_palette;
+    width = s->width;
+    height = s->height;
 
-    if (!ap || ap->width <= 0 || ap->height <= 0 || ap->frame_rate <= 0)
-        return -1;
-    
-    width = ap->width;
-    height = ap->height;
-    frame_rate = ap->frame_rate;
-
-    st = av_new_stream(s1, 0);
-    if (!st)
-        return -ENOMEM;
-
-    s->width = width;
-    s->height = height;
-    s->frame_rate = frame_rate;
-
-    video_fd = open(v4l_device, O_RDONLY | O_NONBLOCK);
-    if (video_fd < 0) {
-        perror(v4l_device);
-        goto fail;
-    }
-    
-    if (ioctl(video_fd,VIDIOCGCAP,&video_cap) < 0) {
-        perror("VIDIOCGCAP");
-        goto fail;
-    }
-
-    if (!(video_cap.type & VID_TYPE_CAPTURE)) {
-        fprintf(stderr, "Fatal: grab device does not handle capture\n");
-        goto fail;
-    }
-
-    desired_palette = -1;
-    if (st->codec.pix_fmt == PIX_FMT_YUV420P) {
-        desired_palette = VIDEO_PALETTE_YUV420P;
-    } else if (st->codec.pix_fmt == PIX_FMT_YUV422) {
-        desired_palette = VIDEO_PALETTE_YUV422;
-    } else if (st->codec.pix_fmt == PIX_FMT_BGR24) {
-        desired_palette = VIDEO_PALETTE_RGB24;
-    }    
-    
-    /* unmute audio */
-
-    ret = ioctl(video_fd,VIDIOCGMBUF,&gb_buffers);
-    if (ret < 0) {
-        /* try to use read based access */
-        struct video_window win;
-        struct video_picture pict;
-        int val;
-
-        win.x = 0;
-        win.y = 0;
-        win.width = width;
-        win.height = height;
-        win.chromakey = -1;
-        win.flags = 0;
-
-        ioctl(video_fd, VIDIOCSWIN, &win);
-
-        ioctl(video_fd, VIDIOCGPICT, &pict);
-#if 0
-        printf("v4l: colour=%d hue=%d brightness=%d constrast=%d whiteness=%d\n",
-               pict.colour,
-               pict.hue,
-               pict.brightness,
-               pict.contrast,
-               pict.whiteness);
-#endif        
-        /* try to choose a suitable video format */
-        pict.palette=VIDEO_PALETTE_YUV422;
-        ret = ioctl(video_fd, VIDIOCSPICT, &pict);
-        if (ret < 0) {
-            fprintf(stderr,"Could Not Find YUY2 capture window.\n");
-            goto fail;
-        }
-        if ((width == video_cap.maxwidth && height == video_cap.maxheight) ||
-            (width == video_cap.maxwidth && height == video_cap.maxheight*2) ||
-            (width == video_cap.maxwidth/2 && height == video_cap.maxheight)) {
-
-            s->deint=0;
-            s->halfw=0;
-            if (height == video_cap.maxheight*2) s->deint=1;
-            if (width == video_cap.maxwidth/2) s->halfw=1;
-        } else {
-            fprintf(stderr,"\nIncorrect Grab Size Supplied - Supported Sizes Are:\n");
-            fprintf(stderr," %dx%d  %dx%d %dx%d\n\n",
-                video_cap.maxwidth,video_cap.maxheight,
-                video_cap.maxwidth,video_cap.maxheight*2,
-                video_cap.maxwidth/2,video_cap.maxheight);
-            goto fail;
-        }
-
-        s->frame_format = pict.palette;
-
-        val = 1;
-        ioctl(video_fd, VIDIOCCAPTURE, &val);
-
-        s->time_frame = av_gettime();
+    if ((width == s->video_cap.maxwidth && height == s->video_cap.maxheight) ||
+        (width == s->video_cap.maxwidth && height == s->video_cap.maxheight*2) ||
+        (width == s->video_cap.maxwidth/2 && height == s->video_cap.maxheight)) {
+        
+        s->deint=0;
+        s->halfw=0;
+        if (height == s->video_cap.maxheight*2) s->deint=1;
+        if (width == s->video_cap.maxwidth/2) s->halfw=1;
     } else {
-        fprintf(stderr,"mmap-based capture will not work with this grab.\n");
+        fprintf(stderr,"\nIncorrect Grab Size Supplied - Supported Sizes Are:\n");
+        fprintf(stderr," %dx%d  %dx%d %dx%d\n\n",
+                s->video_cap.maxwidth,s->video_cap.maxheight,
+                s->video_cap.maxwidth,s->video_cap.maxheight*2,
+                s->video_cap.maxwidth/2,s->video_cap.maxheight);
         goto fail;
     }
-
-    frame_size = (width * height * 3) / 2;
-    st->codec.pix_fmt = PIX_FMT_YUV420P;
-    s->fd = video_fd;
-    s->frame_size = frame_size;
-    
-    st->codec.codec_type = CODEC_TYPE_VIDEO;
-    st->codec.codec_id = CODEC_ID_RAWVIDEO;
-    st->codec.width = width;
-    st->codec.height = height;
-    st->codec.frame_rate = frame_rate;
 
     if (s->halfw == 0) {
         s->src_mem = av_malloc(s->width*2);
@@ -476,22 +386,14 @@ static int aiw_grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     if (!s->src_mem) goto fail;
 
     s->lum_m4_mem = av_malloc(s->width);
-    if (!s->lum_m4_mem) {
-        av_free(s->src_mem);
+    if (!s->lum_m4_mem)
         goto fail;
-    }
-
     return 0;
  fail:
-    if (video_fd >= 0)
-        close(video_fd);
-    av_free(st);
-    return -EIO;
+    av_freep(&s->src_mem);
+    av_freep(&s->lum_m4_mem);
+    return -1;
 }
-
-//#ifdef HAVE_MMX
-//#undef HAVE_MMX
-//#endif
 
 #ifdef HAVE_MMX
 #include "../libavcodec/i386/mmx.h"
@@ -712,269 +614,218 @@ static int aiw_grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 #endif
 
 
-static int aiw_grab_read_packet(AVFormatContext *s1, AVPacket *pkt)
+/* Read two fields separately. */
+static int aiw_read_picture(VideoData *s, uint8_t *data)
 {
-    AIWVideoData *s = s1->priv_data;
-    INT64 curtime, delay;
-    struct timespec ts;
-    int first;
-    INT64 per_frame = (INT64_C(1000000) * FRAME_RATE_BASE) / s->frame_rate;
-    int dropped = 0;
-
-    /* Calculate the time of the next frame */
-    s->time_frame += per_frame;
-
-    /* wait based on the frame rate */
-    for(first = 1;; first = 0) {
-        curtime = av_gettime();
-        delay = s->time_frame - curtime;
-        if (delay <= 0) {
-            if (delay < -per_frame) {
-                /* printf("grabbing is %d frames late (dropping)\n", (int) -(delay / 16666)); */
-                dropped = 1;
-                s->time_frame += per_frame;
-            }
-            break;
-        }    
-        ts.tv_sec = delay / 1000000;
-        ts.tv_nsec = (delay % 1000000) * 1000;
-        nanosleep(&ts, NULL);
-    }
-
-    if (av_new_packet(pkt, s->frame_size) < 0)
-        return -EIO;
-
-    if (dropped)
-        pkt->flags |= PKT_FLAG_DROPPED_FRAME;
-
-    /* read fields */
-    {
-        UINT8 *ptr, *lum, *cb, *cr;
-        int h;
+    UINT8 *ptr, *lum, *cb, *cr;
+    int h;
 #ifndef HAVE_MMX
-        int sum;
+    int sum;
 #endif
-        UINT8* src = s->src_mem;
-        UINT8 *ptrend = &src[s->width*2];
-        lum=&pkt->data[0];
-        cb=&lum[s->width*s->height];
-        cr=&cb[(s->width*s->height)/4];
-        if (s->deint == 0 && s->halfw == 0) {
-            while (read(s->fd,src,s->width*2) < 0) {
-                usleep(100);
-            }
-            for (h = 0; h < s->height-2; h+=2) {
-                for (ptr = &src[0]; ptr < ptrend; ptr+=32, lum+=16, cb+=8, cr+=8) {
-                    LINE_WITH_UV
-                }
-                read(s->fd,src,s->width*2);
-                for (ptr = &src[0]; ptr < ptrend; ptr+=32, lum+=16) {
-                    LINE_NO_UV
-                }
-                read(s->fd,src,s->width*2);
-            }
-/*
- * Do last two lines
- */
+    UINT8* src = s->src_mem;
+    UINT8 *ptrend = &src[s->width*2];
+    lum=data;
+    cb=&lum[s->width*s->height];
+    cr=&cb[(s->width*s->height)/4];
+    if (s->deint == 0 && s->halfw == 0) {
+        while (read(s->fd,src,s->width*2) < 0) {
+            usleep(100);
+        }
+        for (h = 0; h < s->height-2; h+=2) {
             for (ptr = &src[0]; ptr < ptrend; ptr+=32, lum+=16, cb+=8, cr+=8) {
                 LINE_WITH_UV
-            }
+                    }
             read(s->fd,src,s->width*2);
             for (ptr = &src[0]; ptr < ptrend; ptr+=32, lum+=16) {
                 LINE_NO_UV
-            }
-            /* drop second field */
-            while (read(s->fd,src,s->width*2) < 0) {
-                usleep(100);
-            }
-            for (h = 0; h < s->height - 1; h++) {
-                read(s->fd,src,s->width*2);
-            }
-        } else if (s->halfw == 1) {
-#ifdef HAVE_MMX
-            mmx_t rounder;
-            mmx_t masker;
-            rounder.uw[0]=1;
-            rounder.uw[1]=1;
-            rounder.uw[2]=1;
-            rounder.uw[3]=1;
-            masker.ub[0]=0xff;
-            masker.ub[1]=0;
-            masker.ub[2]=0xff;
-            masker.ub[3]=0;
-            masker.ub[4]=0xff;
-            masker.ub[5]=0;
-            masker.ub[6]=0xff;
-            masker.ub[7]=0;
-            pxor_r2r(mm7,mm7);
-            movq_m2r(rounder,mm6);
-#endif
-            while (read(s->fd,src,s->width*4) < 0) {
-                usleep(100);
-            }
-            ptrend = &src[s->width*4];
-            for (h = 0; h < s->height-2; h+=2) {
-                for (ptr = &src[0]; ptr < ptrend; ptr+=32, lum+=8, cb+=4, cr+=4) {
-                    LINE_WITHUV_AVG
+                    }
+            read(s->fd,src,s->width*2);
+        }
+        /*
+         * Do last two lines
+         */
+        for (ptr = &src[0]; ptr < ptrend; ptr+=32, lum+=16, cb+=8, cr+=8) {
+            LINE_WITH_UV
                 }
-                read(s->fd,src,s->width*4);
-#ifdef HAVE_MMX
-                movq_m2r(masker,mm5);
-#endif
-                for (ptr = &src[0]; ptr < ptrend; ptr+=32, lum+=8) {
-                    LINE_NOUV_AVG
+        read(s->fd,src,s->width*2);
+        for (ptr = &src[0]; ptr < ptrend; ptr+=32, lum+=16) {
+            LINE_NO_UV
                 }
-                read(s->fd,src,s->width*4);
-            }
-/*
- * Do last two lines
- */
+        /* drop second field */
+        while (read(s->fd,src,s->width*2) < 0) {
+            usleep(100);
+        }
+        for (h = 0; h < s->height - 1; h++) {
+            read(s->fd,src,s->width*2);
+        }
+    } else if (s->halfw == 1) {
+#ifdef HAVE_MMX
+        mmx_t rounder;
+        mmx_t masker;
+        rounder.uw[0]=1;
+        rounder.uw[1]=1;
+        rounder.uw[2]=1;
+        rounder.uw[3]=1;
+        masker.ub[0]=0xff;
+        masker.ub[1]=0;
+        masker.ub[2]=0xff;
+        masker.ub[3]=0;
+        masker.ub[4]=0xff;
+        masker.ub[5]=0;
+        masker.ub[6]=0xff;
+        masker.ub[7]=0;
+        pxor_r2r(mm7,mm7);
+        movq_m2r(rounder,mm6);
+#endif
+        while (read(s->fd,src,s->width*4) < 0) {
+            usleep(100);
+        }
+        ptrend = &src[s->width*4];
+        for (h = 0; h < s->height-2; h+=2) {
             for (ptr = &src[0]; ptr < ptrend; ptr+=32, lum+=8, cb+=4, cr+=4) {
                 LINE_WITHUV_AVG
-            }
+                    }
             read(s->fd,src,s->width*4);
 #ifdef HAVE_MMX
             movq_m2r(masker,mm5);
 #endif
             for (ptr = &src[0]; ptr < ptrend; ptr+=32, lum+=8) {
                 LINE_NOUV_AVG
-            }
-            /* drop second field */
-            while (read(s->fd,src,s->width*4) < 0) {
-                usleep(100);
-            }
-            for (h = 0; h < s->height - 1; h++) {
-                read(s->fd,src,s->width*4);
-            }
-        } else {
-            UINT8 *lum_m1, *lum_m2, *lum_m3, *lum_m4;
-#ifdef HAVE_MMX
-            mmx_t rounder;
-            rounder.uw[0]=4;
-            rounder.uw[1]=4;
-            rounder.uw[2]=4;
-            rounder.uw[3]=4;
-            movq_m2r(rounder,mm6);
-            pxor_r2r(mm7,mm7);
-#else
-            UINT8 *cm = cropTbl + MAX_NEG_CROP;
-#endif
-
-            /* read two fields and deinterlace them */
-            while (read(s->fd,src,s->width*2) < 0) {
-                usleep(100);
-            }
-            for (h = 0; h < (s->height/2)-2; h+=2) {
-                for (ptr = &src[0]; ptr < ptrend; ptr+=32, lum+=16, cb+=8, cr+=8) {
-                    LINE_WITH_UV
-                }
-                read(s->fd,src,s->width*2);
-/* skip a luminance line - will be filled in later */
-                lum += s->width;
-                for (ptr = &src[0]; ptr < ptrend; ptr+=32, lum+=16, cb+=8, cr+=8) {
-                    LINE_WITH_UV
-                }
-/* skip a luminance line - will be filled in later */
-                lum += s->width;
-                read(s->fd,src,s->width*2);
-            }
-/*
+                    }
+            read(s->fd,src,s->width*4);
+        }
+        /*
  * Do last two lines
  */
+        for (ptr = &src[0]; ptr < ptrend; ptr+=32, lum+=8, cb+=4, cr+=4) {
+            LINE_WITHUV_AVG
+                }
+        read(s->fd,src,s->width*4);
+#ifdef HAVE_MMX
+        movq_m2r(masker,mm5);
+#endif
+        for (ptr = &src[0]; ptr < ptrend; ptr+=32, lum+=8) {
+            LINE_NOUV_AVG
+                }
+        /* drop second field */
+        while (read(s->fd,src,s->width*4) < 0) {
+            usleep(100);
+        }
+        for (h = 0; h < s->height - 1; h++) {
+            read(s->fd,src,s->width*4);
+        }
+    } else {
+        UINT8 *lum_m1, *lum_m2, *lum_m3, *lum_m4;
+#ifdef HAVE_MMX
+        mmx_t rounder;
+        rounder.uw[0]=4;
+        rounder.uw[1]=4;
+        rounder.uw[2]=4;
+        rounder.uw[3]=4;
+        movq_m2r(rounder,mm6);
+        pxor_r2r(mm7,mm7);
+#else
+        UINT8 *cm = cropTbl + MAX_NEG_CROP;
+#endif
+
+        /* read two fields and deinterlace them */
+        while (read(s->fd,src,s->width*2) < 0) {
+            usleep(100);
+        }
+        for (h = 0; h < (s->height/2)-2; h+=2) {
             for (ptr = &src[0]; ptr < ptrend; ptr+=32, lum+=16, cb+=8, cr+=8) {
                 LINE_WITH_UV
-            }
-/* skip a luminance line - will be filled in later */
+                    }
+            read(s->fd,src,s->width*2);
+            /* skip a luminance line - will be filled in later */
+            lum += s->width;
+            for (ptr = &src[0]; ptr < ptrend; ptr+=32, lum+=16, cb+=8, cr+=8) {
+                LINE_WITH_UV
+                    }
+            /* skip a luminance line - will be filled in later */
             lum += s->width;
             read(s->fd,src,s->width*2);
-            for (ptr = &src[0]; ptr < ptrend; ptr+=32, lum+=16, cb+=8, cr+=8) {
-                LINE_WITH_UV
-            }
-/*
+        }
+        /*
+ * Do last two lines
+ */
+        for (ptr = &src[0]; ptr < ptrend; ptr+=32, lum+=16, cb+=8, cr+=8) {
+            LINE_WITH_UV
+                }
+        /* skip a luminance line - will be filled in later */
+        lum += s->width;
+        read(s->fd,src,s->width*2);
+        for (ptr = &src[0]; ptr < ptrend; ptr+=32, lum+=16, cb+=8, cr+=8) {
+            LINE_WITH_UV
+                }
+        /*
  *
  * SECOND FIELD
  *
  */
-            lum=&pkt->data[s->width];
-            while (read(s->fd,src,s->width*2) < 0) {
-                usleep(10);
-            }
-/* First (and last) two lines not interlaced */
-            for (h = 0; h < 2; h++) {
-                for (ptr = &src[0]; ptr < ptrend; ptr+=32, lum+=16) {
-                    LINE_NO_UV
-                }
-                read(s->fd,src,s->width*2);
-/* skip a luminance line */
-                lum += s->width;
-            }
-            lum_m1=&lum[-s->width];
-            lum_m2=&lum_m1[-s->width];
-            lum_m3=&lum_m2[-s->width];
-            memmove(s->lum_m4_mem,&lum_m3[-s->width],s->width);
-            for (; h < (s->height/2)-1; h++) {
-                lum_m4=s->lum_m4_mem;
-                for (ptr = &src[0]; ptr < ptrend; ptr+=32, lum+=16,lum_m1+=16,lum_m2+=16,lum_m3+=16,lum_m4+=16) {
-                    LINE_NO_UV
+        lum=&data[s->width];
+        while (read(s->fd,src,s->width*2) < 0) {
+            usleep(10);
+        }
+        /* First (and last) two lines not interlaced */
+        for (h = 0; h < 2; h++) {
+            for (ptr = &src[0]; ptr < ptrend; ptr+=32, lum+=16) {
+                LINE_NO_UV
+                    }
+            read(s->fd,src,s->width*2);
+            /* skip a luminance line */
+            lum += s->width;
+        }
+        lum_m1=&lum[-s->width];
+        lum_m2=&lum_m1[-s->width];
+        lum_m3=&lum_m2[-s->width];
+        memmove(s->lum_m4_mem,&lum_m3[-s->width],s->width);
+        for (; h < (s->height/2)-1; h++) {
+            lum_m4=s->lum_m4_mem;
+            for (ptr = &src[0]; ptr < ptrend; ptr+=32, lum+=16,lum_m1+=16,lum_m2+=16,lum_m3+=16,lum_m4+=16) {
+                LINE_NO_UV
 
                     DEINT_LINE_LUM(0)
                     DEINT_LINE_LUM(4)
                     DEINT_LINE_LUM(8)
                     DEINT_LINE_LUM(12)
-                }
-                read(s->fd,src,s->width*2);
-/* skip a luminance line */
-                lum += s->width;
-                lum_m1 += s->width;
-                lum_m2 += s->width;
-                lum_m3 += s->width;
-//                lum_m4 += s->width;
-            }
-/*
+                    }
+            read(s->fd,src,s->width*2);
+            /* skip a luminance line */
+            lum += s->width;
+            lum_m1 += s->width;
+            lum_m2 += s->width;
+            lum_m3 += s->width;
+            //                lum_m4 += s->width;
+        }
+        /*
  * Do last line
  */
-            lum_m4=s->lum_m4_mem;
-            for (ptr = &src[0]; ptr < ptrend; ptr+=32, lum+=16, lum_m1+=16, lum_m2+=16, lum_m3+=16, lum_m4+=16) {
-                LINE_NO_UV
+        lum_m4=s->lum_m4_mem;
+        for (ptr = &src[0]; ptr < ptrend; ptr+=32, lum+=16, lum_m1+=16, lum_m2+=16, lum_m3+=16, lum_m4+=16) {
+            LINE_NO_UV
 
                 DEINT_LINE_LUM(0)
                 DEINT_LINE_LUM(4)
                 DEINT_LINE_LUM(8)
                 DEINT_LINE_LUM(12)
-            }
-        }
-#ifdef HAVE_MMX
-        emms();
-#endif
+                }
     }
+#ifdef HAVE_MMX
+    emms();
+#endif
     return s->frame_size;
 }
 
-static int aiw_grab_read_close(AVFormatContext *s1)
+static int aiw_close(VideoData *s)
 {
-    AIWVideoData *s = s1->priv_data;
-
-    close(s->fd);
-    av_free(s->lum_m4_mem);
-    av_free(s->src_mem);
-
+    av_freep(&s->lum_m4_mem);
+    av_freep(&s->src_mem);
     return 0;
 }
-
-static AVInputFormat aiw_grab_device_format = {
-    "aiw_grab_device",
-    "All-In-Wonder (km read-based) video grab",
-    sizeof(AIWVideoData),
-    NULL,
-    aiw_grab_read_header,
-    aiw_grab_read_packet,
-    aiw_grab_read_close,
-    .flags = AVFMT_NOFILE,
-};
 
 int video_grab_init(void)
 {
     av_register_input_format(&video_grab_device_format);
-    av_register_input_format(&aiw_grab_device_format);
     return 0;
 }
