@@ -61,6 +61,8 @@ network="yes"
 zlib="yes"
 mp3lame="no"
 vorbis="no"
+faad="no"
+faadbin="no"
 a52="yes"
 a52bin="no"
 pp="yes"
@@ -592,6 +594,8 @@ echo "  --help                   print this message"
 echo "  --prefix=PREFIX          install in PREFIX [$prefix]"
 echo "  --enable-mp3lame         enable mp3 encoding via libmp3lame [default=no]"
 echo "  --enable-vorbis          enable vorbis support via libvorbisenc [default=no]"
+echo "  --enable-faad            enable faad support via libfaad [default=no]"
+echo "  --enable-faadbin         build faad support with runtime linking [default=no]"
 echo "  --enable-win32           enable win32 cross compile"
 echo "  --enable-mingw32         enable mingw32 native windows compile"
 echo "  --disable-a52            disable GPL'ed A52 support [default=no]"
@@ -839,6 +843,15 @@ fi
 if test "$vorbis" = "yes" ; then
   echo "#define CONFIG_VORBIS 1" >> $TMPH
   echo "CONFIG_VORBIS=yes" >> config.mak
+fi
+
+if test "$faad" = "yes" ; then
+  echo "#define CONFIG_FAAD 1" >> $TMPH
+  echo "CONFIG_FAAD=yes" >> config.mak
+fi
+
+if test "$faadbin" = "yes" ; then
+  echo "#define CONFIG_FAADBIN 1" >> $TMPH
 fi
 
 if test "$win32" = "yes" ; then
