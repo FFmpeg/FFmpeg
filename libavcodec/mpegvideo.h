@@ -208,8 +208,6 @@ typedef struct MpegEncContext {
     int fixed_qscale; ///< fixed qscale if non zero 
     float qcompress;  ///< amount of qscale change between easy & hard scenes (0.0-1.0) 
     float qblur;      ///< amount of qscale smoothing over time (0.0-1.0) 
-    int qmin;         ///< min qscale 
-    int qmax;         ///< max qscale 
     int max_qdiff;    ///< max qscale difference between frames 
     int encoding;     ///< true if we are encoding (vs decoding) 
     int flags;        ///< AVCodecContext.flags (HQ, MV4, ...) 

@@ -515,8 +515,6 @@ int MPV_encode_init(AVCodecContext *avctx)
     s->rtp_payload_size = avctx->rtp_payload_size;
     if (avctx->rtp_callback)
         s->rtp_callback = avctx->rtp_callback;
-    s->qmin= avctx->qmin;
-    s->qmax= avctx->qmax;
     s->max_qdiff= avctx->max_qdiff;
     s->qcompress= avctx->qcompress;
     s->qblur= avctx->qblur;
