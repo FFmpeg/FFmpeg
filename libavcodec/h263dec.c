@@ -113,13 +113,18 @@ static int h263_decode_frame(AVCodecContext *avctx,
         ret = intel_h263_decode_picture_header(s);
     } else {
         ret = h263_decode_picture_header(s);
-        /* After H263 header decode we have the height, width,     */
-        /* and other parameters. So then we could init the picture */
-        if (s->width != avctx->width || s->height != avctx->height) {
+        /* After H263 header decode we have the height, width,       */
+        /* and other parameters. So then we could init the picture   */
+        /* FIXME: By the way H263 decoder is evolving it should have */
+        /* an H263EncContext                                         */
+        if (!s->context_initialized) {
             avctx->width = s->width;
             avctx->height = s->height;
-            /* FIXME: By the way H263 decoder is evolving it should have */
-            /* an H263EncContext                                         */
+            if (MPV_common_init(s) < 0)
+                return -1;
+        } else if (s->width != avctx->width || s->height != avctx->height) {
+            /* H.263 could change picture size any time */
+            MPV_common_end(s);
             if (MPV_common_init(s) < 0)
                 return -1;
         }
