@@ -531,10 +531,12 @@ static int dvvideo_decode_frame(AVCodecContext *avctx,
     /* init size */
     width = 720;
     if (dsf) {
+        avctx->frame_rate = 25 * FRAME_RATE_BASE;
         packet_size = PAL_FRAME_SIZE;
         height = 576;
         nb_dif_segs = 12;
     } else {
+        avctx->frame_rate = 30 * FRAME_RATE_BASE;
         packet_size = NTSC_FRAME_SIZE;
         height = 480;
         nb_dif_segs = 10;
@@ -546,10 +548,16 @@ static int dvvideo_decode_frame(AVCodecContext *avctx,
     /* XXX: is it correct to assume that 420 is always used in PAL
        mode ? */
     s->sampling_411 = !dsf;
-    if (s->sampling_411)
+    if (s->sampling_411) {
         mb_pos_ptr = dv_place_411;
-    else
+        avctx->pix_fmt = PIX_FMT_YUV411P;
+    } else {
         mb_pos_ptr = dv_place_420;
+        avctx->pix_fmt = PIX_FMT_YUV420P;
+    }
+
+    avctx->width = width;
+    avctx->height = height;
 
     if (avctx->flags & CODEC_FLAG_DR1 && avctx->get_buffer_callback)
     {
@@ -560,7 +568,6 @@ static int dvvideo_decode_frame(AVCodecContext *avctx,
 	    return -1;
 	}
     }
-
 
     /* (re)alloc picture if needed */
     if (s->width != width || s->height != height) {
@@ -610,16 +617,6 @@ static int dvvideo_decode_frame(AVCodecContext *avctx,
     emms_c();
 
     /* return image */
-    avctx->width = width;
-    avctx->height = height;
-    if (s->sampling_411)
-        avctx->pix_fmt = PIX_FMT_YUV411P;
-    else
-        avctx->pix_fmt = PIX_FMT_YUV420P;
-    if (dsf)
-        avctx->frame_rate = 25 * FRAME_RATE_BASE;
-    else
-        avctx->frame_rate = 30 * FRAME_RATE_BASE;
     *data_size = sizeof(AVPicture);
     picture = data;
     for(i=0;i<3;i++) {
