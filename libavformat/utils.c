@@ -591,6 +591,27 @@ static void compute_frame_duration(int *pnum, int *pden, AVStream *st,
     }
 }
 
+static int is_intra_only(AVCodecContext *enc){
+    if(enc->codec_type == CODEC_TYPE_AUDIO){
+        return 1;
+    }else if(enc->codec_type == CODEC_TYPE_VIDEO){
+        switch(enc->codec_id){
+        case CODEC_ID_MJPEG:
+        case CODEC_ID_MJPEGB:
+        case CODEC_ID_LJPEG:
+        case CODEC_ID_RAWVIDEO:
+        case CODEC_ID_DVVIDEO:
+        case CODEC_ID_HUFFYUV:
+        case CODEC_ID_ASV1:
+        case CODEC_ID_ASV2:
+        case CODEC_ID_VCR1:
+            return 1;
+        default: break;
+        }
+    }
+    return 0;
+}
+
 static int64_t lsb2full(int64_t lsb, int64_t last_ts, int lsb_bits){
     int64_t mask = lsb_bits < 64 ? (1LL<<lsb_bits)-1 : -1LL;
     int64_t delta= last_ts - mask/2;
@@ -616,6 +637,9 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
             pkt->duration = av_rescale(1, num * (int64_t)st->time_base.den, den * (int64_t)st->time_base.num);
         }
     }
+
+    if(is_intra_only(&st->codec))
+        pkt->flags |= PKT_FLAG_KEY;
 
     /* do we have a video B frame ? */
     presentation_delayed = 0;

@@ -164,7 +164,6 @@ static int au_read_packet(AVFormatContext *s,
     if (av_new_packet(pkt, MAX_SIZE))
         return AVERROR_IO;
     pkt->stream_index = 0;
-    pkt->flags |= PKT_FLAG_KEY;    
 
     ret = get_buffer(&s->pb, pkt->data, pkt->size);
     if (ret < 0)
