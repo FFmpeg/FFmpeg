@@ -141,15 +141,11 @@ static double evalPrimary(Parser *p){
 
     return d;
 }      
-       
+
 static double evalPow(Parser *p){
-    if(p->s[0]=='+') p->s++;
-       
-    if(p->s[0]=='-'){ 
-        p->s++;
-        return -evalPrimary(p);
-    }else
-        return  evalPrimary(p);
+    int sign= (*p->s == '+') - (*p->s == '-');
+    p->s += sign&1;
+    return (sign|1) * evalPrimary(p);
 }
 
 static double evalFactor(Parser *p){
@@ -171,17 +167,15 @@ static double evalTerm(Parser *p){
 }
 
 static double evalExpression(Parser *p){
-    double ret;
+    double ret= 0;
 
     if(p->stack_index <= 0) //protect against stack overflows
         return NAN;
     p->stack_index--;
 
-    ret= evalTerm(p);
-    while(p->s[0]=='+' || p->s[0]=='-'){
-        if(*p->s++ == '+') ret+= evalTerm(p);
-        else               ret-= evalTerm(p);
-    }
+    do{
+        ret += evalTerm(p);
+    }while(*p->s == '+' || *p->s == '-');
 
     p->stack_index++;
 
@@ -220,6 +214,13 @@ static const char *const_names[]={
     0
 };
 main(){
+    int i;
     printf("%f == 12.7\n", ff_eval("1+(5-2)^(3-1)+1/2+sin(PI)-max(-2.2,-3.1)", const_values, const_names, NULL, NULL, NULL, NULL, NULL));
+    
+    for(i=0; i<1050; i++){
+        START_TIMER
+            ff_eval("1+(5-2)^(3-1)+1/2+sin(PI)-max(-2.2,-3.1)", const_values, const_names, NULL, NULL, NULL, NULL, NULL);
+        STOP_TIMER("ff_eval")
+    }
 }
 #endif
