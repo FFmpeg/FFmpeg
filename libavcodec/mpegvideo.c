@@ -286,6 +286,8 @@ int MPV_encode_init(AVCodecContext *avctx)
     MpegEncContext *s = avctx->priv_data;
     int i;
 
+    avctx->pix_fmt = PIX_FMT_YUV420P;
+
     s->bit_rate = avctx->bit_rate;
     s->bit_rate_tolerance = avctx->bit_rate_tolerance;
     s->frame_rate = avctx->frame_rate;

@@ -39,6 +39,7 @@ enum CodecType {
 };
 
 enum PixelFormat {
+    PIX_FMT_ANY,
     PIX_FMT_YUV420P,
     PIX_FMT_YUV422,
     PIX_FMT_RGB24,
@@ -98,7 +99,7 @@ typedef struct AVCodecContext {
 #define FF_ASPECT_16_9_625 4
 #define FF_ASPECT_16_9_525 5
     int gop_size; /* 0 = intra only */
-    int pix_fmt;  /* pixel format, see PIX_FMT_xxx */
+    enum PixelFormat pix_fmt;  /* pixel format, see PIX_FMT_xxx */
 
     /* if non NULL, 'draw_horiz_band' is called by the libavcodec
        decoder to draw an horizontal band. It improve cache usage. Not

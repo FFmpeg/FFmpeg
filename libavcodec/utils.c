@@ -205,6 +205,7 @@ AVCodec *avcodec_find(enum CodecID id)
 }
 
 const char *pix_fmt_str[] = {
+    "??",
     "yuv420p",
     "yuv422",
     "rgb24",
@@ -259,6 +260,9 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
                      enc->width, enc->height, 
                      (float)enc->frame_rate / FRAME_RATE_BASE);
         }
+        snprintf(buf + strlen(buf), buf_size - strlen(buf),
+                ", q=%d-%d", enc->qmin, enc->qmax);
+
         bitrate = enc->bit_rate;
         break;
     case CODEC_TYPE_AUDIO:
