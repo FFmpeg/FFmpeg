@@ -1677,14 +1677,14 @@ static int av_encode(AVFormatContext **output_files,
 
     term_exit();
 
-    /* dump report by using the first video and audio streams */
-    print_report(output_files, ost_table, nb_ostreams, 1);
-
     /* write the trailer if needed and close file */
     for(i=0;i<nb_output_files;i++) {
         os = output_files[i];
         av_write_trailer(os);
     }
+
+    /* dump report by using the first video and audio streams */
+    print_report(output_files, ost_table, nb_ostreams, 1);
 
     /* close each encoder */
     for(i=0;i<nb_ostreams;i++) {
