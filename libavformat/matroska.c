@@ -624,10 +624,10 @@ ebml_read_float (MatroskaDemuxContext *matroska,
     if (size == 4) {
         float f;
 
-#ifdef WORDS_BIGENDIAN
-        f = * (float *) data;
-#else
         while (size-- > 0)
+#ifdef WORDS_BIGENDIAN
+            ((uint8_t *) &f)[3 - size] = get_byte(pb);
+#else
             ((uint8_t *) &f)[size] = get_byte(pb);
 #endif
 
@@ -635,10 +635,10 @@ ebml_read_float (MatroskaDemuxContext *matroska,
     } else {
         double d;
 
-#ifdef WORDS_BIGENDIAN
-        d = * (double *) data;
-#else
         while (size-- > 0)
+#ifdef WORDS_BIGENDIAN
+            ((uint8_t *) &d)[7 - size] = get_byte(pb);
+#else
             ((uint8_t *) &d)[size] = get_byte(pb);
 #endif
 
