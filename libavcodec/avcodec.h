@@ -1152,7 +1152,7 @@ typedef struct {
     const char* supported;
 } avc_config_t;
 
-void avcodec_getopt(AVCodecContext* avctx, char* str, avc_config_t** config);
+void avcodec_getopt(AVCodecContext* avctx, const char* str, avc_config_t** config);
 
 /**
  * Interface for 0.5.0 version
