@@ -1914,6 +1914,7 @@ typedef struct Mpeg1Context {
     int slice_count;
     int swap_uv;//indicate VCR2
     int save_aspect_info;
+    AVRational frame_rate_ext;       ///< MPEG-2 specific framerate modificator
 
 } Mpeg1Context;
 
@@ -1946,8 +1947,8 @@ static int mpeg_decode_init(AVCodecContext *avctx)
 
 static void quant_matrix_rebuild(uint16_t *matrix, const uint8_t *old_perm, 
                                      const uint8_t *new_perm){
-uint16_t temp_matrix[64];
-int i;
+    uint16_t temp_matrix[64];
+    int i;
 
     memcpy(temp_matrix,matrix,64*sizeof(uint16_t));
     
@@ -1959,10 +1960,9 @@ int i;
 //Call this function when we know all parameters
 //it may be called in different places for mpeg1 and mpeg2
 static int mpeg_decode_postinit(AVCodecContext *avctx){
-Mpeg1Context *s1 = avctx->priv_data;
-MpegEncContext *s = &s1->mpeg_enc_ctx;
-uint8_t old_permutation[64];
-
+    Mpeg1Context *s1 = avctx->priv_data;
+    MpegEncContext *s = &s1->mpeg_enc_ctx;
+    uint8_t old_permutation[64];
 
     if (
     	(s1->mpeg_enc_ctx_allocated == 0)|| 
@@ -2001,8 +2001,8 @@ uint8_t old_permutation[64];
             av_reduce(
                 &s->avctx->frame_rate, 
                 &s->avctx->frame_rate_base, 
-                frame_rate_tab[s->frame_rate_index].num * (s->frame_rate_ext_n+1),
-                frame_rate_tab[s->frame_rate_index].den * (s->frame_rate_ext_d+1),
+                frame_rate_tab[s->frame_rate_index].num * s1->frame_rate_ext.num,
+                frame_rate_tab[s->frame_rate_index].den * s1->frame_rate_ext.den,
                 1<<30);
         //mpeg2 aspect
             if(s->aspect_ratio_info > 1){
@@ -2131,8 +2131,9 @@ static int mpeg1_decode_picture(AVCodecContext *avctx,
     return 0;
 }
 
-static void mpeg_decode_sequence_extension(MpegEncContext *s)
+static void mpeg_decode_sequence_extension(Mpeg1Context *s1)
 {
+    MpegEncContext *s= &s1->mpeg_enc_ctx;
     int horiz_size_ext, vert_size_ext;
     int bit_rate_ext;
 
@@ -2153,8 +2154,8 @@ static void mpeg_decode_sequence_extension(MpegEncContext *s)
     s->low_delay = get_bits1(&s->gb);
     if(s->flags & CODEC_FLAG_LOW_DELAY) s->low_delay=1;
 
-    s->frame_rate_ext_n = get_bits(&s->gb, 2);
-    s->frame_rate_ext_d = get_bits(&s->gb, 5);
+    s1->frame_rate_ext.num = get_bits(&s->gb, 2)+1;
+    s1->frame_rate_ext.den = get_bits(&s->gb, 5)+1;
 
     dprintf("sequence extension\n");
     s->codec_id= s->avctx->codec_id= CODEC_ID_MPEG2VIDEO;
@@ -2320,7 +2321,7 @@ static void mpeg_decode_extension(AVCodecContext *avctx,
     ext_type = get_bits(&s->gb, 4);
     switch(ext_type) {
     case 0x1:
-        mpeg_decode_sequence_extension(s);
+        mpeg_decode_sequence_extension(s1);
         break;
     case 0x2:
         mpeg_decode_sequence_display_extension(s1);
@@ -2338,9 +2339,7 @@ static void mpeg_decode_extension(AVCodecContext *avctx,
 }
 
 static void exchange_uv(MpegEncContext *s){
-short * tmp;
-
-    tmp = s->pblocks[4];
+    short * tmp = s->pblocks[4];
     s->pblocks[4] = s->pblocks[5];
     s->pblocks[5] = tmp;
 }

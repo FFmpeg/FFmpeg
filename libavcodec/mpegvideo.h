@@ -369,8 +369,6 @@ typedef struct MpegEncContext {
     int last_non_b_pict_type;   ///< used for mpeg4 gmc b-frames & ratecontrol 
     int dropable;
     int frame_rate_index;
-    int frame_rate_ext_n;       ///< MPEG-2 specific framerate modificators (numerator)
-    int frame_rate_ext_d;       ///< MPEG-2 specific framerate modificators (denominator)
 
     /* motion compensation */
     int unrestricted_mv;        ///< mv can point outside of the coded picture 
