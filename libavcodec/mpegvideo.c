@@ -1014,32 +1014,33 @@ static void draw_edges_c(uint8_t *buf, int wrap, int width, int height, int w)
     }
 }
 
-static int find_unused_picture(MpegEncContext *s, int shared){
+int ff_find_unused_picture(MpegEncContext *s, int shared){
     int i;
     
     if(shared){
         for(i=0; i<MAX_PICTURE_COUNT; i++){
-            if(s->picture[i].data[0]==NULL && s->picture[i].type==0) break;
+            if(s->picture[i].data[0]==NULL && s->picture[i].type==0) return i;
         }
     }else{
         for(i=0; i<MAX_PICTURE_COUNT; i++){
-            if(s->picture[i].data[0]==NULL && s->picture[i].type!=0) break; //FIXME
+            if(s->picture[i].data[0]==NULL && s->picture[i].type!=0) return i; //FIXME
         }
         for(i=0; i<MAX_PICTURE_COUNT; i++){
-            if(s->picture[i].data[0]==NULL) break;
+            if(s->picture[i].data[0]==NULL) return i;
         }
     }
 
-    assert(i<MAX_PICTURE_COUNT);
-    return i;
+    assert(0);
+    return -1;
 }
 
-/* generic function for encode/decode called before a frame is coded/decoded */
+/**
+ * generic function for encode/decode called after coding/decoding the header and before a frame is coded/decoded
+ */
 int MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
 {
     int i;
     AVFrame *pic;
-
     s->mb_skiped = 0;
 
     assert(s->last_picture_ptr==NULL || s->out_format != FMT_H264 || s->codec_id == CODEC_ID_SVQ3);
@@ -1068,18 +1069,22 @@ alloc:
             }
         }
 
-        i= find_unused_picture(s, 0);
-    
-        pic= (AVFrame*)&s->picture[i];
+        if(s->current_picture_ptr && s->current_picture_ptr->data[0]==NULL)
+            pic= (AVFrame*)s->current_picture_ptr; //we allready have a unused image (maybe it was set before reading the header)
+        else{
+            i= ff_find_unused_picture(s, 0);
+            pic= (AVFrame*)&s->picture[i];
+        }
+
         pic->reference= s->pict_type != B_TYPE ? 3 : 0;
 
-        if(s->current_picture_ptr)
+        if(s->current_picture_ptr) //FIXME broken, we need a coded_picture_number in MpegEncContext
             pic->coded_picture_number= s->current_picture_ptr->coded_picture_number+1;
         
         if( alloc_picture(s, (Picture*)pic, 0) < 0)
             return -1;
 
-        s->current_picture_ptr= &s->picture[i];
+        s->current_picture_ptr= (Picture*)pic;
     }
 
     s->current_picture_ptr->pict_type= s->pict_type;
@@ -1425,7 +1430,7 @@ static int load_input_picture(MpegEncContext *s, AVFrame *pic_arg){
 //    printf("%d %d %d %d\n",pic_arg->linesize[0], pic_arg->linesize[1], s->linesize, s->uvlinesize);
     
     if(direct){
-        i= find_unused_picture(s, 1);
+        i= ff_find_unused_picture(s, 1);
 
         pic= (AVFrame*)&s->picture[i];
         pic->reference= 3;
@@ -1437,7 +1442,7 @@ static int load_input_picture(MpegEncContext *s, AVFrame *pic_arg){
         alloc_picture(s, (Picture*)pic, 1);
     }else{
         int offset= 16;
-        i= find_unused_picture(s, 0);
+        i= ff_find_unused_picture(s, 0);
 
         pic= (AVFrame*)&s->picture[i];
         pic->reference= 3;
@@ -1587,7 +1592,7 @@ static void select_input_picture(MpegEncContext *s){
         if(s->reordered_input_picture[0]->type == FF_BUFFER_TYPE_SHARED){
             // input is a shared pix, so we cant modifiy it -> alloc a new one & ensure that the shared one is reuseable
         
-            int i= find_unused_picture(s, 0);
+            int i= ff_find_unused_picture(s, 0);
             Picture *pic= &s->picture[i];
 
             /* mark us unused / free shared pic */

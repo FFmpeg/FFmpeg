@@ -1848,8 +1848,8 @@ void ff_mpeg4_stuffing(PutBitContext * pbc)
 void ff_set_mpeg4_time(MpegEncContext * s, int picture_number){
     int time_div, time_mod;
 
-    if(s->current_picture.pts)
-        s->time= (s->current_picture.pts*s->time_increment_resolution + 500*1000)/(1000*1000);
+    if(s->current_picture_ptr->pts)
+        s->time= (s->current_picture_ptr->pts*s->time_increment_resolution + 500*1000)/(1000*1000);
     else
         s->time= av_rescale(picture_number*(int64_t)s->avctx->frame_rate_base, s->time_increment_resolution, s->avctx->frame_rate);
     time_div= s->time/s->time_increment_resolution;
@@ -4994,9 +4994,9 @@ static int decode_vop_header(MpegEncContext *s, GetBitContext *gb){
                            - ROUNDED_DIV(s->last_non_b_time - s->pp_time, s->t_frame))*2;
     }
     
-    s->current_picture.pts= s->time*1000LL*1000LL / s->time_increment_resolution;
+    s->current_picture_ptr->pts= s->time*1000LL*1000LL / s->time_increment_resolution;
     if(s->avctx->debug&FF_DEBUG_PTS)
-        printf("MPEG4 PTS: %f\n", s->current_picture.pts/(1000.0*1000.0));
+        printf("MPEG4 PTS: %f\n", s->current_picture_ptr->pts/(1000.0*1000.0));
     
     check_marker(gb, "before vop_coded");
     

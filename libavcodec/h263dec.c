@@ -28,17 +28,6 @@
 
 //#define DEBUG
 //#define PRINT_FRAME_TIME
-#ifdef PRINT_FRAME_TIME
-static inline long long rdtsc()
-{
-	long long l;
-	asm volatile(	"rdtsc\n\t"
-		: "=A" (l)
-	);
-//	printf("%d\n", int(l/1000));
-	return l;
-}
-#endif
 
 int ff_h263_decode_init(AVCodecContext *avctx)
 {
@@ -445,6 +434,12 @@ retry:
     if (!s->context_initialized) {
         if (MPV_common_init(s) < 0) //we need the idct permutaton for reading a custom matrix
             return -1;
+    }
+    
+    //we need to set current_picture_ptr before reading the header, otherwise we cant store anyting im there
+    if(s->current_picture_ptr==NULL || s->current_picture_ptr->data[0]){
+        int i= ff_find_unused_picture(s, 0);
+        s->current_picture_ptr= &s->picture[i];
     }
       
     /* let's go :-) */
