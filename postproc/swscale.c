@@ -728,7 +728,7 @@ static inline void yuv2packedXinC(SwsContext *c, int16_t *lumFilter, int16_t **l
 
 #endif //ARCH_X86
 
-// minor note: the HAVE_xyz is messed up after that line so dont use it
+// minor note: the HAVE_xyz is messed up after that line so don't use it
 
 static double getSplineCoeff(double a, double b, double c, double d, double dist)
 {
@@ -983,7 +983,7 @@ static inline void initFilter(int16_t **outFilter, int16_t **filterPos, int *out
 
 			if(cutOff > SWS_MAX_REDUCE_CUTOFF) break;
 
-			/* preserve Monotonicity because the core cant handle the filter otherwise */
+			/* preserve Monotonicity because the core can't handle the filter otherwise */
 			if(i<dstW-1 && (*filterPos)[i] >= (*filterPos)[i+1]) break;
 
 			// Move filter coeffs left
@@ -1702,7 +1702,7 @@ SwsContext *sws_getContext(int srcW, int srcH, int origSrcFormat, int dstW, int 
 	if(clip_table[512] != 255) globalInit();
 	if(rgb15to16 == NULL) sws_rgb2rgb_init(flags);
 
-	/* avoid dupplicate Formats, so we dont need to check to much */
+	/* avoid duplicate Formats, so we don't need to check to much */
 	srcFormat = remove_dup_fourcc(origSrcFormat);
 	dstFormat = remove_dup_fourcc(origDstFormat);
 
@@ -1872,7 +1872,7 @@ SwsContext *sws_getContext(int srcW, int srcH, int origSrcFormat, int dstW, int 
 			c->lumXInc+= 20;
 			c->chrXInc+= 20;
 		}
-		//we dont use the x86asm scaler if mmx is available
+		//we don't use the x86asm scaler if mmx is available
 		else if(flags & SWS_CPU_CAPS_MMX)
 		{
 			c->lumXInc = ((srcW-2)<<16)/(dstW-2) - 20;
@@ -1894,7 +1894,7 @@ SwsContext *sws_getContext(int srcW, int srcH, int origSrcFormat, int dstW, int 
 				 srcFilter->chrH, dstFilter->chrH);
 
 #ifdef ARCH_X86
-// cant downscale !!!
+// can't downscale !!!
 		if(c->canMMX2BeUsed && (flags & SWS_FAST_BILINEAR))
 		{
 			c->lumMmx2Filter   = (int16_t*)memalign(8, (dstW        /8+8)*sizeof(int16_t));
@@ -1920,7 +1920,7 @@ SwsContext *sws_getContext(int srcW, int srcH, int origSrcFormat, int dstW, int 
 			(flags&SWS_BICUBLIN) ? (flags|SWS_BILINEAR) : flags,
 			srcFilter->chrV, dstFilter->chrV);
 
-	// Calculate Buffer Sizes so that they wont run out while handling these damn slices
+	// Calculate Buffer Sizes so that they won't run out while handling these damn slices
 	c->vLumBufSize= c->vLumFilterSize;
 	c->vChrBufSize= c->vChrFilterSize;
 	for(i=0; i<dstH; i++)
@@ -2079,7 +2079,7 @@ SwsContext *sws_getContext(int srcW, int srcH, int origSrcFormat, int dstW, int 
 }
 
 /**
- * swscale warper, so we dont need to export the SwsContext.
+ * swscale warper, so we don't need to export the SwsContext.
  * assumes planar YUV to be in YUV order instead of YVU
  */
 int sws_scale_ordered(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
@@ -2088,7 +2088,7 @@ int sws_scale_ordered(SwsContext *c, uint8_t* src[], int srcStride[], int srcSli
 }
 
 /**
- * swscale warper, so we dont need to export the SwsContext
+ * swscale warper, so we don't need to export the SwsContext
  */
 int sws_scale(SwsContext *c, uint8_t* srcParam[], int srcStrideParam[], int srcSliceY,
                            int srcSliceH, uint8_t* dstParam[], int dstStrideParam[]){

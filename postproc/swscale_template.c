@@ -950,7 +950,7 @@ static inline void RENAME(yuv2packed2)(SwsContext *c, uint16_t *buf0, uint16_t *
 	int uvalpha1=uvalpha^4095;
 	int i;
 
-#if 0 //isnt used
+#if 0 //isn't used
 	if(flags&SWS_FULL_CHR_H_INT)
 	{
 		switch(dstFormat)
@@ -1169,7 +1169,7 @@ FULL_YSCALEYUV2RGB
 #ifdef HAVE_MMX
 	switch(c->dstFormat)
 	{
-//Note 8280 == DSTW_OFFSET but the preprocessor cant handle that there :(
+//Note 8280 == DSTW_OFFSET but the preprocessor can't handle that there :(
 	case IMGFMT_BGR32:
 			asm volatile(
 				"movl %%esp, "ESP_OFFSET"(%5)		\n\t"
@@ -2211,7 +2211,7 @@ static inline void RENAME(hyscale)(uint16_t *dst, int dstWidth, uint8_t *src, in
     }
 
 #ifdef HAVE_MMX
-	// use the new MMX scaler if th mmx2 cant be used (its faster than the x86asm one)
+	// use the new MMX scaler if the mmx2 can't be used (its faster than the x86asm one)
     if(!(flags&SWS_FAST_BILINEAR) || (!canMMX2BeUsed))
 #else
     if(!(flags&SWS_FAST_BILINEAR))
@@ -2303,7 +2303,7 @@ FUNNY_Y_CODE
 		: "%eax", "%ebx", "%ecx", "%edi", "%esi"
 		);
 #ifdef HAVE_MMX2
-	} //if MMX2 cant be used
+	} //if MMX2 can't be used
 #endif
 #else
 	int i;
@@ -2379,7 +2379,7 @@ inline static void RENAME(hcscale)(uint16_t *dst, int dstWidth, uint8_t *src1, u
     }
 
 #ifdef HAVE_MMX
-	// use the new MMX scaler if th mmx2 cant be used (its faster than the x86asm one)
+	// use the new MMX scaler if the mmx2 can't be used (its faster than the x86asm one)
     if(!(flags&SWS_FAST_BILINEAR) || (!canMMX2BeUsed))
 #else
     if(!(flags&SWS_FAST_BILINEAR))
@@ -2482,7 +2482,7 @@ FUNNY_UV_CODE
 		: "%eax", "%ebx", "%ecx", "%edi", "%esi"
 		);
 #ifdef HAVE_MMX2
-	} //if MMX2 cant be used
+	} //if MMX2 can't be used
 #endif
 #else
 	int i;
@@ -2698,7 +2698,7 @@ i--;
 			//wrap buf index around to stay inside the ring buffer
 			if(lumBufIndex >= vLumBufSize ) lumBufIndex-= vLumBufSize;
 			if(chrBufIndex >= vChrBufSize ) chrBufIndex-= vChrBufSize;
-			break; //we cant output a dstY line so lets try with the next slice
+			break; //we can't output a dstY line so let's try with the next slice
 		}
 
 #ifdef HAVE_MMX
@@ -2772,7 +2772,7 @@ i--;
 			}
 		}
             }
-	    else // hmm looks like we cant use MMX here without overwriting this arrays tail
+	    else // hmm looks like we can't use MMX here without overwriting this array's tail
 	    {
 		int16_t **lumSrcPtr= lumPixBuf + lumBufIndex + firstLumSrcY - lastInLumBuf + vLumBufSize;
 		int16_t **chrSrcPtr= chrPixBuf + chrBufIndex + firstChrSrcY - lastInChrBuf + vChrBufSize;

@@ -72,7 +72,7 @@ main(int argc, char **argv)
 					uint8_t *dst= dstBuffer+dstOffset;
 					char *name=NULL;
 					
-					if(failed) break; //dont fill the screen with shit ...
+					if(failed) break; //don't fill the screen with shit ...
 
 					switch(funcNum){
 					case 0:
