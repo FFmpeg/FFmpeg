@@ -191,6 +191,15 @@ EOF
 $cc -o $TMPO $TMPC 2> /dev/null || _memalign=no
 fi
 
+_restrict=
+for restrict_keyword in restrict __restrict__ __restrict; do
+  echo "void foo(char * $restrict_keyword p);" > $TMPC
+  if $cc -c -o $TMPO $TMPC 2> /dev/null; then
+    _restrict=$restrict_keyword
+    break;
+  fi
+done
+
 if test x"$1" = x"-h" -o x"$1" = x"--help" ; then
 cat << EOF
 
@@ -350,6 +359,8 @@ fi
 if test "$simpleidct" = "yes" ; then
   echo "#define SIMPLE_IDCT 1" >> $TMPH
 fi
+
+echo "#define restrict $_restrict" >> $TMPH
 
 # build tree in object directory if source path is different from current one
 if test "$source_path_used" = "yes" ; then

@@ -21,6 +21,12 @@
 #include "avcodec.h"
 #include "dsputil.h"
 #include "simple_idct.h"
+#include "config.h"
+
+/* Suppress restrict if it was not defined in config.h  */
+#ifndef restrict
+#define restrict
+#endif
 
 void (*ff_idct)(DCTELEM *block);
 void (*ff_idct_put)(UINT8 *dest, int line_size, DCTELEM *block);
@@ -159,96 +165,86 @@ static void build_zigzag_end(void)
     }
 }
 
-void get_pixels_c(DCTELEM *block, const UINT8 *pixels, int line_size)
+void get_pixels_c(DCTELEM *restrict block, const UINT8 *pixels, int line_size)
 {
-    DCTELEM *p;
-    const UINT8 *pix;
     int i;
 
     /* read the pixels */
-    p = block;
-    pix = pixels;
     for(i=0;i<8;i++) {
-        p[0] = pix[0];
-        p[1] = pix[1];
-        p[2] = pix[2];
-        p[3] = pix[3];
-        p[4] = pix[4];
-        p[5] = pix[5];
-        p[6] = pix[6];
-        p[7] = pix[7];
-        pix += line_size;
-        p += 8;
+        block[0] = pixels[0];
+        block[1] = pixels[1];
+        block[2] = pixels[2];
+        block[3] = pixels[3];
+        block[4] = pixels[4];
+        block[5] = pixels[5];
+        block[6] = pixels[6];
+        block[7] = pixels[7];
+        pixels += line_size;
+        block += 8;
     }
 }
 
-void diff_pixels_c(DCTELEM *block, const UINT8 *s1, const UINT8 *s2, int stride){
-    DCTELEM *p;
+void diff_pixels_c(DCTELEM *restrict block, const UINT8 *s1, const UINT8 *s2,
+		   int stride){
     int i;
 
     /* read the pixels */
-    p = block;
     for(i=0;i<8;i++) {
-        p[0] = s1[0] - s2[0];
-        p[1] = s1[1] - s2[1];
-        p[2] = s1[2] - s2[2];
-        p[3] = s1[3] - s2[3];
-        p[4] = s1[4] - s2[4];
-        p[5] = s1[5] - s2[5];
-        p[6] = s1[6] - s2[6];
-        p[7] = s1[7] - s2[7];
+        block[0] = s1[0] - s2[0];
+        block[1] = s1[1] - s2[1];
+        block[2] = s1[2] - s2[2];
+        block[3] = s1[3] - s2[3];
+        block[4] = s1[4] - s2[4];
+        block[5] = s1[5] - s2[5];
+        block[6] = s1[6] - s2[6];
+        block[7] = s1[7] - s2[7];
         s1 += stride;
         s2 += stride;
-        p += 8;
+        block += 8;
     }
 }
 
 
-void put_pixels_clamped_c(const DCTELEM *block, UINT8 *pixels, int line_size)
+void put_pixels_clamped_c(const DCTELEM *block, UINT8 *restrict pixels,
+                          int line_size)
 {
-    const DCTELEM *p;
-    UINT8 *pix;
     int i;
     UINT8 *cm = cropTbl + MAX_NEG_CROP;
     
     /* read the pixels */
-    p = block;
-    pix = pixels;
     for(i=0;i<8;i++) {
-        pix[0] = cm[p[0]];
-        pix[1] = cm[p[1]];
-        pix[2] = cm[p[2]];
-        pix[3] = cm[p[3]];
-        pix[4] = cm[p[4]];
-        pix[5] = cm[p[5]];
-        pix[6] = cm[p[6]];
-        pix[7] = cm[p[7]];
-        pix += line_size;
-        p += 8;
+        pixels[0] = cm[block[0]];
+        pixels[1] = cm[block[1]];
+        pixels[2] = cm[block[2]];
+        pixels[3] = cm[block[3]];
+        pixels[4] = cm[block[4]];
+        pixels[5] = cm[block[5]];
+        pixels[6] = cm[block[6]];
+        pixels[7] = cm[block[7]];
+
+        pixels += line_size;
+        block += 8;
     }
 }
 
-void add_pixels_clamped_c(const DCTELEM *block, UINT8 *pixels, int line_size)
+void add_pixels_clamped_c(const DCTELEM *block, UINT8 *restrict pixels,
+                          int line_size)
 {
-    const DCTELEM *p;
-    UINT8 *pix;
     int i;
     UINT8 *cm = cropTbl + MAX_NEG_CROP;
     
     /* read the pixels */
-    p = block;
-    pix = pixels;
     for(i=0;i<8;i++) {
-        pix[0] = cm[pix[0] + p[0]];
-        pix[1] = cm[pix[1] + p[1]];
-        pix[2] = cm[pix[2] + p[2]];
-        pix[3] = cm[pix[3] + p[3]];
-        pix[4] = cm[pix[4] + p[4]];
-        pix[5] = cm[pix[5] + p[5]];
-        pix[6] = cm[pix[6] + p[6]];
-        pix[7] = cm[pix[7] + p[7]];
-        pix += line_size;
-        p += 8;
+        pixels[0] = cm[pixels[0] + block[0]];
+        pixels[1] = cm[pixels[1] + block[1]];
+        pixels[2] = cm[pixels[2] + block[2]];
+        pixels[3] = cm[pixels[3] + block[3]];
+        pixels[4] = cm[pixels[4] + block[4]];
+        pixels[5] = cm[pixels[5] + block[5]];
+        pixels[6] = cm[pixels[6] + block[6]];
+        pixels[7] = cm[pixels[7] + block[7]];
+        pixels += line_size;
+        block += 8;
     }
 }
 
