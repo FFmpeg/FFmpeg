@@ -270,7 +270,7 @@ cygwin="yes"
 test -f /usr/include/inttypes.h || \
 test -f /usr/local/include/inttypes.h || \
 echo "Missing inttypes.h, please copy cygwin_inttypes.h to" \
-     "/usr/include/inttypes.h !!!"
+     "/usr/local/include/inttypes.h !!!"
 ;;
 Linux)
 LDFLAGS="$LDFLAGS -rdynamic"
