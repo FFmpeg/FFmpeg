@@ -1685,6 +1685,29 @@ static void opt_frame_size(const char *arg)
     }
 }
 
+static void opt_frame_aspect_ratio(const char *arg)
+{
+    int x = 0, y = 0;
+    double ar = 0;
+    const char *p;
+    
+    p = strchr(arg, ':');
+    if (p) {
+        x = strtol(arg, (char **)&arg, 10);
+	if (arg == p)
+	    y = strtol(arg+1, (char **)&arg, 10);
+	if (x > 0 && y > 0)
+	    ar = (double)x / (double)y;
+    } else
+        ar = strtod(arg, (char **)&arg);
+
+    if (!ar) {
+        fprintf(stderr, "Incorrect aspect ratio specification.\n");
+	exit(1);
+    }
+    frame_aspect_ratio = ar;
+}
+
 static void opt_gop_size(const char *arg)
 {
     gop_size = atoi(arg);
@@ -2677,6 +2700,7 @@ const OptionDef options[] = {
     { "r", HAS_ARG, {(void*)opt_frame_rate}, "set frame rate (in Hz)", "rate" },
     { "re", OPT_BOOL|OPT_EXPERT, {(void*)&rate_emu}, "read input at native frame rate" },
     { "s", HAS_ARG, {(void*)opt_frame_size}, "set frame size (WxH or abbreviation)", "size" },
+    { "aspect", HAS_ARG, {(void*)opt_frame_aspect_ratio}, "set aspect ratio (4:3, 16:9 or 1.3333, 1.7777)", "aspect" },
     { "croptop", HAS_ARG, {(void*)opt_frame_crop_top}, "set top crop band size (in pixels)", "size" },
     { "cropbottom", HAS_ARG, {(void*)opt_frame_crop_bottom}, "set bottom crop band size (in pixels)", "size" },
     { "cropleft", HAS_ARG, {(void*)opt_frame_crop_left}, "set left crop band size (in pixels)", "size" },
