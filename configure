@@ -147,6 +147,7 @@ debug="yes"
 extralibs="-lm"
 simpleidct="yes"
 bigendian="no"
+emu_fast_int="no"
 vhook="default"
 dlfcn="no"
 dlopen="no"
@@ -626,6 +627,18 @@ fi
 fi
 
 # ---
+# *int_fast* test
+cat > $TMPC << EOF
+#include <inttypes.h>
+int main(int argc, char ** argv){
+	volatile uint_fast64_t i=0x01234567;
+	return 0;
+}
+EOF
+
+$cc -o $TMPE $TMPC 2>/dev/null || emu_fast_int="yes"
+
+# ---
 # check availability of some header files
 
 cat > $TMPC << EOF
@@ -850,6 +863,7 @@ echo "C compiler       $cc"
 echo "make             $make"
 echo "CPU              $cpu ($tune)"
 echo "Big Endian       $bigendian"
+echo "broken inttypes.h $emu_fast_int"
 if test $cpu = "x86"; then
 echo "MMX enabled      $mmx"
 echo "Vector Builtins  $builtin_vector"
@@ -941,6 +955,15 @@ echo "#define TUNECPU $TUNECPU" >> $TMPH
 if test "$bigendian" = "yes" ; then
   echo "WORDS_BIGENDIAN=yes" >> config.mak
   echo "#define WORDS_BIGENDIAN 1" >> $TMPH
+fi
+if test "$emu_fast_int" = "yes" ; then
+#note, we dont try to emulate fast64
+  echo "typedef signed char int_fast8_t" >> $TMPH
+  echo "typedef signed int  int_fast16_t" >> $TMPH
+  echo "typedef signed int  int_fast32_t" >> $TMPH
+  echo "typedef unsigned char uint_fast8_t" >> $TMPH
+  echo "typedef unsigned int  uint_fast16_t" >> $TMPH
+  echo "typedef unsigned int  uint_fast32_t" >> $TMPH
 fi
 if test "$mmx" = "yes" ; then
   echo "TARGET_MMX=yes" >> config.mak
