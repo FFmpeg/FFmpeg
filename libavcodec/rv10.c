@@ -339,18 +339,20 @@ static int rv10_decode_picture_header(MpegEncContext *s)
 
 static int rv20_decode_picture_header(MpegEncContext *s)
 {
-    int pb_frame, seq, mb_pos;
-    int i;
+    int seq, mb_pos, i;
 
-    if (get_bits(&s->gb, 1))
-        s->pict_type = P_TYPE;
-    else
-        s->pict_type = I_TYPE;
-
-    pb_frame = get_bits(&s->gb, 2); 
-
-    if (pb_frame){
-        av_log(s->avctx, AV_LOG_ERROR, "pb frame not supported\n");
+    i= get_bits(&s->gb, 2);
+    switch(i){
+    case 0: s->pict_type= I_TYPE; break;
+    case 2: s->pict_type= P_TYPE; break;
+    case 3: s->pict_type= B_TYPE; break;
+    default: 
+        av_log(s->avctx, AV_LOG_ERROR, "unknown frame type\n");
+        return -1;
+    }
+    
+    if (get_bits(&s->gb, 1)){
+        av_log(s->avctx, AV_LOG_ERROR, "unknown bit set\n");
         return -1;
     }
 
@@ -359,8 +361,11 @@ static int rv20_decode_picture_header(MpegEncContext *s)
         av_log(s->avctx, AV_LOG_ERROR, "error, qscale:0\n");
         return -1;
     }
-    
-    seq= get_bits(&s->gb, 8);
+
+    if(s->avctx->sub_id == 0x20200002)
+        seq= get_bits(&s->gb, 16);
+    else
+        seq= get_bits(&s->gb, 8);
 
     for(i=0; i<6; i++){
         if(s->mb_width*s->mb_height < ff_mba_max[i]) break;
@@ -379,8 +384,13 @@ static int rv20_decode_picture_header(MpegEncContext *s)
 //    s->modified_quant=1;
     
     if(s->avctx->debug & FF_DEBUG_PICT_INFO){
-            av_log(s->avctx, AV_LOG_INFO, "num:%3d x:%2d y:%2d type:%d qscale:%2d rnd:%d\n", 
+            av_log(s->avctx, AV_LOG_INFO, "num:%5d x:%2d y:%2d type:%d qscale:%2d rnd:%d\n", 
                    seq, s->mb_x, s->mb_y, s->pict_type, s->qscale, s->no_rounding);
+    }
+
+    if (s->pict_type == B_TYPE){
+        av_log(s->avctx, AV_LOG_ERROR, "b frame not supported\n");
+        return -1;
     }
 
     return s->mb_width*s->mb_height - mb_pos;
