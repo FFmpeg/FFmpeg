@@ -524,11 +524,12 @@ int h261_decode_picture_header(H261Context *h){
 
 static int h261_decode_gob(H261Context *h){
     MpegEncContext * const s = &h->s;
+    int v;
     
     ff_set_qscale(s, s->qscale);
 
     /* check for empty gob */
-    int v= show_bits(&s->gb, 15);
+    v= show_bits(&s->gb, 15);
 
     if(get_bits_count(&s->gb) + 15 > s->gb.size_in_bits){
         v>>= get_bits_count(&s->gb) + 15 - s->gb.size_in_bits;
