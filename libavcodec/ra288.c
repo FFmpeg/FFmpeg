@@ -244,7 +244,7 @@ static int ra288_decode_frame(AVCodecContext * avctx,
     int i,j;
     if(buf_size<w*h)
     {
-	fprintf(stderr,"ffra288: Error! Input buffer is too small [%d<%d]\n",buf_size,w*h);
+	av_log(avctx, AV_LOG_ERROR, "ffra288: Error! Input buffer is too small [%d<%d]\n",buf_size,w*h);
 	return 0;
     }
     datao = data;
@@ -260,7 +260,7 @@ static int ra288_decode_frame(AVCodecContext * avctx,
   }
   else
   {
-    fprintf(stderr,"ffra288: Error: need extra data!!!\n");
+    av_log(avctx, AV_LOG_ERROR, "ffra288: Error: need extra data!!!\n");
     return 0;
   }
 }

@@ -109,7 +109,7 @@ int ff_rate_control_init(MpegEncContext *s)
                    &rce->pict_type, &rce->qscale, &rce->i_tex_bits, &rce->p_tex_bits, &rce->mv_bits, &rce->misc_bits, 
                    &rce->f_code, &rce->b_code, &rce->mc_mb_var_sum, &rce->mb_var_sum, &rce->i_count);
             if(e!=12){
-                fprintf(stderr, "statistics are damaged at line %d, parser out=%d\n", i, e);
+                av_log(s->avctx, AV_LOG_ERROR, "statistics are damaged at line %d, parser out=%d\n", i, e);
                 return -1;
             }
             p= next;
@@ -183,14 +183,14 @@ void ff_rate_control_uninit(MpegEncContext *s)
 
 static inline double qp2bits(RateControlEntry *rce, double qp){
     if(qp<=0.0){
-        fprintf(stderr, "qp<=0.0\n");
+        av_log(NULL, AV_LOG_ERROR, "qp<=0.0\n");
     }
     return rce->qscale * (double)(rce->i_tex_bits + rce->p_tex_bits+1)/ qp;
 }
 
 static inline double bits2qp(RateControlEntry *rce, double bits){
     if(bits<0.9){
-        fprintf(stderr, "bits<0.9\n");
+        av_log(NULL, AV_LOG_ERROR, "bits<0.9\n");
     }
     return rce->qscale * (double)(rce->i_tex_bits + rce->p_tex_bits+1)/ bits;
 }
@@ -213,9 +213,9 @@ static void update_rc_buffer(MpegEncContext *s, int frame_size){
         }
         
         if(rcc->buffer_index < 0)
-            fprintf(stderr, "rc buffer underflow\n");
+            av_log(s->avctx, AV_LOG_ERROR, "rc buffer underflow\n");
         if(rcc->buffer_index >= s->avctx->rc_buffer_size)
-            fprintf(stderr, "rc buffer overflow\n");
+            av_log(s->avctx, AV_LOG_ERROR, "rc buffer overflow\n");
     }
 }
 
@@ -667,7 +667,7 @@ float ff_rate_estimate_qscale(MpegEncContext *s)
     }
 
     if(s->avctx->debug&FF_DEBUG_RC){
-        printf("%c qp:%d<%2.1f<%d %d want:%d total:%d comp:%f st_q:%2.2f size:%d var:%d/%d br:%d fps:%d\n",
+        av_log(s->avctx, AV_LOG_DEBUG, "%c qp:%d<%2.1f<%d %d want:%d total:%d comp:%f st_q:%2.2f size:%d var:%d/%d br:%d fps:%d\n",
         av_get_pict_type_char(pict_type), qmin, q, qmax, picture_number, (int)wanted_bits/1000, (int)s->total_bits/1000,
         br_compensation, short_term_q, s->frame_bits, pic->mb_var_sum, pic->mc_mb_var_sum, s->bit_rate/1000, (int)fps
         );
@@ -732,7 +732,7 @@ static int init_pass2(MpegEncContext *s)
     all_const_bits= const_bits[I_TYPE] + const_bits[P_TYPE] + const_bits[B_TYPE];
     
     if(all_available_bits < all_const_bits){
-        fprintf(stderr, "requested bitrate is to low\n");
+        av_log(s->avctx, AV_LOG_ERROR, "requested bitrate is to low\n");
         return -1;
     }
     
@@ -823,7 +823,7 @@ static int init_pass2(MpegEncContext *s)
     av_free(blured_qscale);
 
     if(abs(expected_bits/all_available_bits - 1.0) > 0.01 ){
-        fprintf(stderr, "Error: 2pass curve failed to converge\n");
+        av_log(s->avctx, AV_LOG_ERROR, "Error: 2pass curve failed to converge\n");
         return -1;
     }
 

@@ -88,7 +88,7 @@ static int cyuv_decode_frame(AVCodecContext *avctx,
      * of 4 pixels. Thus, the total size of the buffer ought to be:
      *    (3 * 16) + height * (width * 3 / 4) */
     if (buf_size != 48 + s->height * (s->width * 3 / 4)) {
-      printf ("ffmpeg: cyuv: got a buffer with %d bytes when %d were expected\n",
+      av_log(avctx, AV_LOG_ERROR, "ffmpeg: cyuv: got a buffer with %d bytes when %d were expected\n",
         buf_size,
         48 + s->height * (s->width * 3 / 4));
       return -1;
@@ -102,7 +102,7 @@ static int cyuv_decode_frame(AVCodecContext *avctx,
 
     s->frame.reference = 0;
     if(avctx->get_buffer(avctx, &s->frame) < 0) {
-        fprintf(stderr, "get_buffer() failed\n");
+        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return -1;
     }
 

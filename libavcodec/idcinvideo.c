@@ -158,7 +158,7 @@ static int idcin_decode_init(AVCodecContext *avctx)
 
     /* make sure the Huffman tables make it */
     if (s->avctx->extradata_size != HUFFMAN_TABLE_SIZE) {
-        printf("  Id CIN video: expected extradata size of %d\n", HUFFMAN_TABLE_SIZE);
+        av_log(s->avctx, AV_LOG_ERROR, "  Id CIN video: expected extradata size of %d\n", HUFFMAN_TABLE_SIZE);
         return -1;
     }
 
@@ -193,7 +193,7 @@ static void idcin_decode_vlcs(IdcinContext *s)
             while(node_num >= HUF_TOKENS) {
                 if(!bit_pos) {
                     if(dat_pos > s->size) {
-                        printf("Huffman decode error.\n");
+                        av_log(s->avctx, AV_LOG_ERROR, "Huffman decode error.\n");
                         return;
                     }
                     bit_pos = 8;
@@ -225,7 +225,7 @@ static int idcin_decode_frame(AVCodecContext *avctx,
         avctx->release_buffer(avctx, &s->frame);
 
     if (avctx->get_buffer(avctx, &s->frame)) {
-        printf ("  Id CIN Video: get_buffer() failed\n");
+        av_log(avctx, AV_LOG_ERROR, "  Id CIN Video: get_buffer() failed\n");
         return -1;
     }
 

@@ -129,7 +129,7 @@ static int adpcm_encode_init(AVCodecContext *avctx)
         return -1; /* only stereo or mono =) */
     switch(avctx->codec->id) {
     case CODEC_ID_ADPCM_IMA_QT:
-        fprintf(stderr, "ADPCM: codec admcp_ima_qt unsupported for encoding !\n");
+        av_log(avctx, AV_LOG_ERROR, "ADPCM: codec admcp_ima_qt unsupported for encoding !\n");
         avctx->frame_size = 64; /* XXX: can multiple of avctx->channels * 64 (left and right blocks are interleaved) */
         return -1;
         break;
@@ -140,7 +140,7 @@ static int adpcm_encode_init(AVCodecContext *avctx)
         /* seems frame_size isn't taken into account... have to buffer the samples :-( */
         break;
     case CODEC_ID_ADPCM_MS:
-        fprintf(stderr, "ADPCM: codec admcp_ms unsupported for encoding !\n");
+        av_log(avctx, AV_LOG_ERROR, "ADPCM: codec admcp_ms unsupported for encoding !\n");
         return -1;
         break;
     default:
@@ -496,7 +496,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
 
         cs->step_index = (*src++) & 0x7F;
 
-        if (cs->step_index > 88) fprintf(stderr, "ERROR: step_index = %i\n", cs->step_index);
+        if (cs->step_index > 88) av_log(avctx, AV_LOG_ERROR, "ERROR: step_index = %i\n", cs->step_index);
         if (cs->step_index > 88) cs->step_index = 88;
 
         cs->step = step_table[cs->step_index];
@@ -540,7 +540,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
 	cs->step_index = *src++;
         if (cs->step_index < 0) cs->step_index = 0;
         if (cs->step_index > 88) cs->step_index = 88;
-        if (*src++) fprintf(stderr, "unused byte should be null !!\n"); /* unused */
+        if (*src++) av_log(avctx, AV_LOG_ERROR, "unused byte should be null !!\n"); /* unused */
 
         if (st) {
             cs = &(c->status[1]);

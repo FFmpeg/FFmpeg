@@ -51,7 +51,7 @@ typedef struct MsrleContext {
 #define FETCH_NEXT_STREAM_BYTE() \
     if (stream_ptr >= s->size) \
     { \
-      printf(" MS RLE: stream ptr just went out of bounds (1)\n"); \
+      av_log(s->avctx, AV_LOG_ERROR, " MS RLE: stream ptr just went out of bounds (1)\n"); \
       return; \
     } \
     stream_byte = s->buf[stream_ptr++];
@@ -90,14 +90,14 @@ static void msrle_decode_pal8(MsrleContext *s)
                 /* copy pixels from encoded stream */
                 if ((row_ptr + pixel_ptr + stream_byte > frame_size) ||
                     (row_ptr < 0)) {
-                    printf(" MS RLE: frame ptr just went out of bounds (1)\n");
+                    av_log(s->avctx, AV_LOG_ERROR, " MS RLE: frame ptr just went out of bounds (1)\n");
                     return;
                 }
 
                 rle_code = stream_byte;
                 extra_byte = stream_byte & 0x01;
                 if (stream_ptr + rle_code + extra_byte > s->size) {
-                    printf(" MS RLE: stream ptr just went out of bounds (2)\n");
+                    av_log(s->avctx, AV_LOG_ERROR, " MS RLE: stream ptr just went out of bounds (2)\n");
                     return;
                 }
 
@@ -115,7 +115,7 @@ static void msrle_decode_pal8(MsrleContext *s)
             /* decode a run of data */
             if ((row_ptr + pixel_ptr + stream_byte > frame_size) ||
                 (row_ptr < 0)) {
-                printf(" MS RLE: frame ptr just went out of bounds (2)\n");
+                av_log(s->avctx, AV_LOG_ERROR, " MS RLE: frame ptr just went out of bounds (2)\n");
                 return;
             }
 
@@ -137,7 +137,7 @@ static void msrle_decode_pal8(MsrleContext *s)
 
     /* one last sanity check on the way out */
     if (stream_ptr < s->size)
-        printf(" MS RLE: ended frame decode with bytes left over (%d < %d)\n",
+        av_log(s->avctx, AV_LOG_ERROR, " MS RLE: ended frame decode with bytes left over (%d < %d)\n",
             stream_ptr, s->size);
 }
 
@@ -165,12 +165,12 @@ static int msrle_decode_frame(AVCodecContext *avctx,
 
     s->frame.reference = 1;
     if (avctx->get_buffer(avctx, &s->frame)) {
-        printf ("  MS RLE: get_buffer() failed\n");
+        av_log(avctx, AV_LOG_ERROR, "  MS RLE: get_buffer() failed\n");
         return -1;
     }
 
     if (s->prev_frame.data[0] && (s->frame.linesize[0] != s->prev_frame.linesize[0]))
-        printf ("  MS RLE: Buffer linesize changed: current %u, previous %u.\n"
+        av_log(avctx, AV_LOG_ERROR, "  MS RLE: Buffer linesize changed: current %u, previous %u.\n"
                 "          Expect wrong image and/or crash!\n",
                 s->frame.linesize[0], s->prev_frame.linesize[0]);
 

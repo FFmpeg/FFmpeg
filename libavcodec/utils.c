@@ -1,6 +1,7 @@
 /*
  * utils for libavcodec
  * Copyright (c) 2001 Fabrice Bellard.
+ * Copyright (c) 2003 Michel Bardiaux for the av_log API
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -25,6 +26,7 @@
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mpegvideo.h"
+#include <stdarg.h>
 
 void *av_mallocz(unsigned int size)
 {
@@ -766,3 +768,52 @@ int64_t av_rescale(int64_t a, int b, int c){
 
     return ((h/c)<<32) + l/c;
 }
+
+/* av_log API */
+
+#ifdef AV_LOG_TRAP_PRINTF
+#undef stderr
+#undef fprintf
+#endif
+
+static int av_log_level = AV_LOG_DEBUG;
+
+static void av_log_default_callback(AVCodecContext* avctx, int level, const char* fmt, va_list vl)
+{
+    if(level>av_log_level)
+	    return;
+    if(avctx)
+        fprintf(stderr, "[%s @ %p]", avctx->codec->name, avctx);
+    vfprintf(stderr, fmt, vl);
+}
+
+static void (*av_log_callback)(AVCodecContext*, int, const char*, va_list) = av_log_default_callback;
+
+void av_log(AVCodecContext* avctx, int level, const char *fmt, ...)
+{
+    va_list vl;
+    va_start(vl, fmt);
+    av_vlog(avctx, level, fmt, vl);
+    va_end(vl);
+}
+
+void av_vlog(AVCodecContext* avctx, int level, const char *fmt, va_list vl)
+{
+    av_log_callback(avctx, level, fmt, vl);
+}
+
+int av_log_get_level(void)
+{
+    return av_log_level;
+}
+
+void av_log_set_level(int level)
+{
+    av_log_level = level;
+}
+
+void av_log_set_callback(void (*callback)(AVCodecContext*, int, const char*, va_list))
+{
+    av_log_callback = callback;
+}
+

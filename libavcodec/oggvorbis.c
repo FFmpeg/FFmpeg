@@ -47,7 +47,7 @@ static int oggvorbis_encode_init(AVCodecContext *avccontext) {
 
     vorbis_info_init(&context->vi) ;
     if(oggvorbis_init_encoder(&context->vi, avccontext) < 0) {
-	fprintf(stderr, "oggvorbis_encode_init: init_encoder failed") ;
+	av_log(avccontext, AV_LOG_ERROR, "oggvorbis_encode_init: init_encoder failed") ;
 	return -1 ;
     }
     vorbis_analysis_init(&context->vd, &context->vi) ;
@@ -112,7 +112,7 @@ static int oggvorbis_encode_close(AVCodecContext *avccontext) {
     /* We need to write all the remaining packets into the stream
      * on closing */
     
-    fprintf(stderr, "fixme: not all packets written on oggvorbis_encode_close()\n") ;
+    av_log(avccontext, AV_LOG_ERROR, "fixme: not all packets written on oggvorbis_encode_close()\n") ;
 
 /*
     while(vorbis_bitrate_flushpacket(&context->vd, &op)) {
@@ -195,7 +195,7 @@ static int oggvorbis_decode_frame(AVCodecContext *avccontext,
     }
 
     if(op->packetno == 3) {
-	fprintf(stderr, "vorbis_decode: %d channel, %ldHz, encoder `%s'\n",
+	av_log(avccontext, AV_LOG_ERROR, "vorbis_decode: %d channel, %ldHz, encoder `%s'\n",
 		context->vi.channels, context->vi.rate, context->vc.vendor);
 
 	avccontext->channels = context->vi.channels ;

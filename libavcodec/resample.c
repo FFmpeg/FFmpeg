@@ -243,14 +243,14 @@ ReSampleContext *audio_resample_init(int output_channels, int input_channels,
     
     if ( input_channels > 2)
       {
-	printf("Resampling with input channels greater than 2 unsupported.");
+	av_log(NULL, AV_LOG_ERROR, "Resampling with input channels greater than 2 unsupported.");
 	return NULL;
       }
 
     s = av_mallocz(sizeof(ReSampleContext));
     if (!s)
       {
-	printf("Can't allocate memory for resample context.");
+	av_log(NULL, AV_LOG_ERROR, "Can't allocate memory for resample context.");
 	return NULL;
       }
 

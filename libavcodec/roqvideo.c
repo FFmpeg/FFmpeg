@@ -411,7 +411,7 @@ static void roqvideo_decode_frame(RoqContext *ri)
                     }
                     break;
                 default:
-                    printf("Unknown vq code: %d\n", vqid);
+                    av_log(ri->avctx, AV_LOG_ERROR, "Unknown vq code: %d\n", vqid);
             }
         }
 
@@ -453,7 +453,7 @@ static int roq_decode_frame(AVCodecContext *avctx,
     *data_size = 0;
 
     if (avctx->get_buffer(avctx, &s->current_frame)) {
-        printf ("  RoQ: get_buffer() failed\n");
+        av_log(avctx, AV_LOG_ERROR, "  RoQ: get_buffer() failed\n");
         return -1;
     }
     s->y_stride = s->current_frame.linesize[0];

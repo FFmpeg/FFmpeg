@@ -322,7 +322,7 @@ static void set_cmp(MpegEncContext *s, me_cmp_func *cmp, int type){
         }
         break;
     default:
-        fprintf(stderr,"internal error in cmp function selection\n");
+        av_log(s->avctx, AV_LOG_ERROR,"internal error in cmp function selection\n");
     }
 }
 

@@ -196,7 +196,8 @@ void align_get_bits(GetBitContext *s)
 int check_marker(GetBitContext *s, const char *msg)
 {
     int bit= get_bits1(s);
-    if(!bit) printf("Marker bit missing %s\n", msg);
+    if(!bit)
+	    av_log(NULL, AV_LOG_INFO, "Marker bit missing %s\n", msg);
 
     return bit;
 }
@@ -281,11 +282,11 @@ static int build_table(VLC *vlc, int table_nb_bits,
                 nb = 1 << (table_nb_bits - n);
                 for(k=0;k<nb;k++) {
 #ifdef DEBUG_VLC
-                    printf("%4x: code=%d n=%d\n",
+                    av_log(AV_LOG_DEBUG, "%4x: code=%d n=%d\n",
                            j, i, n);
 #endif
                     if (table[j][1] /*bits*/ != 0) {
-                        fprintf(stderr, "incorrect codes\n");
+                        av_log(NULL, AV_LOG_ERROR, "incorrect codes\n");
                         av_abort();
                     }
                     table[j][1] = n; //bits

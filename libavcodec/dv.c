@@ -297,7 +297,7 @@ static void dv_decode_ac(DVVideoDecodeContext *s,
             if (pos >= 64) {
             read_error:
 #if defined(VLC_DEBUG) || 1
-                fprintf(stderr, "error pos=%d\n", pos);
+                av_log(NULL, AV_LOG_ERROR, "error pos=%d\n", pos);
 #endif
                 /* for errors, we consider the eob is reached */
                 mb->eob_reached = 1;
@@ -868,7 +868,7 @@ static int dvvideo_decode_frame(AVCodecContext *avctx,
     avctx->width = s->sys->width;
     avctx->height = s->sys->height;
     if(avctx->get_buffer(avctx, &s->picture) < 0) {
-        fprintf(stderr, "get_buffer() failed\n");
+        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return -1;
     }
     s->picture.interlaced_frame = 1;

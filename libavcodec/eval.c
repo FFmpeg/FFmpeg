@@ -61,7 +61,7 @@ static void evalExpression(Parser *p);
 
 static void push(Parser *p, double d){
     if(p->stack_index+1>= STACK_SIZE){
-        fprintf(stderr, "stack overflow in the parser\n");
+        av_log(NULL, AV_LOG_ERROR, "stack overflow in the parser\n");
         return;
     }
     p->stack[ p->stack_index++ ]= d;
@@ -70,7 +70,7 @@ static void push(Parser *p, double d){
 
 static double pop(Parser *p){
     if(p->stack_index<=0){
-        fprintf(stderr, "stack underflow in the parser\n");
+        av_log(NULL, AV_LOG_ERROR, "stack underflow in the parser\n");
         return NAN;
     }
 //printf("pop\n"); fflush(stdout);
@@ -109,7 +109,7 @@ static void evalPrimary(Parser *p){
     
     p->s= strchr(p->s, '(');
     if(p->s==NULL){
-        fprintf(stderr, "Parser: missing ( in \"%s\"\n", next);
+        av_log(NULL, AV_LOG_ERROR, "Parser: missing ( in \"%s\"\n", next);
         return;
     }
     p->s++; // "("
@@ -159,13 +159,13 @@ static void evalPrimary(Parser *p){
         }
 
         if(error){
-            fprintf(stderr, "Parser: unknown function in \"%s\"\n", next);
+            av_log(NULL, AV_LOG_ERROR, "Parser: unknown function in \"%s\"\n", next);
             return;
         }
     }
     
     if(p->s[-1]!= ')'){
-        fprintf(stderr, "Parser: missing ) in \"%s\"\n", next);
+        av_log(NULL, AV_LOG_ERROR, "Parser: missing ) in \"%s\"\n", next);
         return;
     }
     push(p, d);
@@ -185,7 +185,7 @@ static void evalPow(Parser *p){
         evalExpression(p);
 
         if(p->s[0]!=')')
-            fprintf(stderr, "Parser: missing )\n");
+            av_log(NULL, AV_LOG_ERROR, "Parser: missing )\n");
         p->s++;
     }else{
         evalPrimary(p);

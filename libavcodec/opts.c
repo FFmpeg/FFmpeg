@@ -89,7 +89,7 @@ static int parse_double(const AVOption *c, char *s, double *var)
     d = atof(s);
     if (c->min != c->max) {
 	if (d < c->min || d > c->max) {
-	    fprintf(stderr, "Option: %s double value: %f out of range <%f, %f>\n",
+	    av_log(NULL, AV_LOG_ERROR, "Option: %s double value: %f out of range <%f, %f>\n",
 		    c->name, d, c->min, c->max);
 	    return -1;
 	}
@@ -106,7 +106,7 @@ static int parse_int(const AVOption* c, char* s, int* var)
     i = atoi(s);
     if (c->min != c->max) {
 	if (i < (int)c->min || i > (int)c->max) {
-	    fprintf(stderr, "Option: %s integer value: %d out of range <%d, %d>\n",
+	    av_log(NULL, AV_LOG_ERROR, "Option: %s integer value: %d out of range <%d, %d>\n",
 		    c->name, i, (int)c->min, (int)c->max);
 	    return -1;
 	}
@@ -136,7 +136,7 @@ static int parse_string(const AVOption *c, char *s, void* strct, char **var)
 
 	    //printf("parsed Rc:  %d,%d,%d,%f  (%d)\n", sf,ef,qs,qf, avctx->rc_override_count);
 	} else {
-	    printf("incorrect/unparsable Rc: \"%s\"\n", s);
+	    av_log(NULL, AV_LOG_ERROR, "incorrect/unparsable Rc: \"%s\"\n", s);
 	}
     } else
 	*var = av_strdup(s);

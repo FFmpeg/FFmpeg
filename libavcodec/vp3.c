@@ -1109,7 +1109,7 @@ static void unpack_token(GetBitContext *gb, int token, int *zero_run,
         break;
 
     default:
-        printf ("  vp3: help! Got a bad token: %d > 31\n", token);
+        av_log(NULL, AV_LOG_ERROR, "  vp3: help! Got a bad token: %d > 31\n", token);
         break;
 
   }
@@ -1549,7 +1549,7 @@ static int unpack_superblocks(Vp3DecodeContext *s, GetBitContext *gb)
             /* if the fragment is in bounds, check its coding status */
             current_fragment = s->superblock_fragments[i * 16 + j];
             if (current_fragment >= s->fragment_count) {
-                printf ("  vp3:unpack_superblocks(): bad fragment number (%d >= %d)\n",
+                av_log(s->avctx, AV_LOG_ERROR, "  vp3:unpack_superblocks(): bad fragment number (%d >= %d)\n",
                     current_fragment, s->fragment_count);
                 return 1;
             }
@@ -1685,7 +1685,7 @@ static int unpack_modes(Vp3DecodeContext *s, GetBitContext *gb)
                     (s->macroblock_coding[current_macroblock] == MODE_COPY))
                     continue;
                 if (current_macroblock >= s->macroblock_count) {
-                    printf ("  vp3:unpack_modes(): bad macroblock number (%d >= %d)\n",
+                    av_log(s->avctx, AV_LOG_ERROR, "  vp3:unpack_modes(): bad macroblock number (%d >= %d)\n",
                         current_macroblock, s->macroblock_count);
                     return 1;
                 }
@@ -1703,7 +1703,7 @@ static int unpack_modes(Vp3DecodeContext *s, GetBitContext *gb)
                     if (current_fragment == -1)
                         continue;
                     if (current_fragment >= s->fragment_count) {
-                        printf ("  vp3:unpack_modes(): bad fragment number (%d >= %d)\n",
+                        av_log(s->avctx, AV_LOG_ERROR, "  vp3:unpack_modes(): bad fragment number (%d >= %d)\n",
                             current_fragment, s->fragment_count);
                         return 1;
                     }
@@ -1764,14 +1764,14 @@ static int unpack_vectors(Vp3DecodeContext *s, GetBitContext *gb)
                     (s->macroblock_coding[current_macroblock] == MODE_COPY))
                     continue;
                 if (current_macroblock >= s->macroblock_count) {
-                    printf ("  vp3:unpack_vectors(): bad macroblock number (%d >= %d)\n",
+                    av_log(s->avctx, AV_LOG_ERROR, "  vp3:unpack_vectors(): bad macroblock number (%d >= %d)\n",
                         current_macroblock, s->macroblock_count);
                     return 1;
                 }
 
                 current_fragment = s->macroblock_fragments[current_macroblock * 6];
                 if (current_fragment >= s->fragment_count) {
-                    printf ("  vp3:unpack_vectors(): bad fragment number (%d >= %d\n",
+                    av_log(s->avctx, AV_LOG_ERROR, "  vp3:unpack_vectors(): bad fragment number (%d >= %d\n",
                         current_fragment, s->fragment_count);
                     return 1;
                 }
@@ -1887,7 +1887,7 @@ static int unpack_vectors(Vp3DecodeContext *s, GetBitContext *gb)
                     if (current_fragment == -1)
                         continue;
                     if (current_fragment >= s->fragment_count) {
-                        printf ("  vp3:unpack_vectors(): bad fragment number (%d >= %d)\n",
+                        av_log(s->avctx, AV_LOG_ERROR, "  vp3:unpack_vectors(): bad fragment number (%d >= %d)\n",
                             current_fragment, s->fragment_count);
                         return 1;
                     }
@@ -1929,7 +1929,7 @@ static int unpack_vlcs(Vp3DecodeContext *s, GetBitContext *gb,
     if ((first_fragment >= s->fragment_count) ||
         (last_fragment >= s->fragment_count)) {
 
-        printf ("  vp3:unpack_vlcs(): bad fragment number (%d -> %d ?)\n",
+        av_log(s->avctx, AV_LOG_ERROR, "  vp3:unpack_vlcs(): bad fragment number (%d -> %d ?)\n",
             first_fragment, last_fragment);
         return 0;
     }
@@ -2393,7 +2393,7 @@ static void render_fragments(Vp3DecodeContext *s,
         for (x = 0; x < width; x += 8, i++) {
 
             if ((i < 0) || (i >= s->fragment_count)) {
-                printf ("  vp3:render_fragments(): bad fragment number (%d)\n", i);
+                av_log(s->avctx, AV_LOG_ERROR, "  vp3:render_fragments(): bad fragment number (%d)\n", i);
                 return;
             }
 
@@ -2424,7 +2424,7 @@ static void render_fragments(Vp3DecodeContext *s,
                     src_x= (motion_x>>1) + x;
                     src_y= (motion_y>>1) + y;
 if ((motion_x == 0xbeef) || (motion_y == 0xbeef))
-printf (" help! got beefy vector! (%X, %X)\n", motion_x, motion_y);
+av_log(s->avctx, AV_LOG_ERROR, " help! got beefy vector! (%X, %X)\n", motion_x, motion_y);
 
                     motion_halfpel_index = motion_x & 0x01;
                     motion_source += (motion_x >> 1);
@@ -2704,7 +2704,7 @@ static int vp3_decode_frame(AVCodecContext *avctx,
     
     if (s->theora && get_bits1(&gb))
     {
-	printf("Theora: bad frame indicator\n");
+	av_log(s->avctx, AV_LOG_ERROR, "Theora: bad frame indicator\n");
 	return -1;
     }
 
@@ -2712,7 +2712,7 @@ static int vp3_decode_frame(AVCodecContext *avctx,
     if (s->theora && s->keyframe)
     {
 	if (get_bits1(&gb))
-	    printf("Theora: warning, unsupported keyframe coding type?!\n");
+	    av_log(s->avctx, AV_LOG_ERROR, "Theora: warning, unsupported keyframe coding type?!\n");
 	skip_bits(&gb, 2); /* reserved? */
     }
     else
@@ -2743,7 +2743,7 @@ static int vp3_decode_frame(AVCodecContext *avctx,
 
         s->golden_frame.reference = 3;
         if(avctx->get_buffer(avctx, &s->golden_frame) < 0) {
-            printf("vp3: get_buffer() failed\n");
+            av_log(s->avctx, AV_LOG_ERROR, "vp3: get_buffer() failed\n");
             return -1;
         }
 
@@ -2758,7 +2758,7 @@ static int vp3_decode_frame(AVCodecContext *avctx,
         /* allocate a new current frame */
         s->current_frame.reference = 3;
         if(avctx->get_buffer(avctx, &s->current_frame) < 0) {
-            printf("vp3: get_buffer() failed\n");
+            av_log(s->avctx, AV_LOG_ERROR, "vp3: get_buffer() failed\n");
             return -1;
         }
     }
@@ -2786,7 +2786,7 @@ if (!s->keyframe) {
         unpack_vectors(s, &gb) ||
         unpack_dct_coeffs(s, &gb)) {
 
-        printf("  vp3: could not decode frame\n");
+        av_log(s->avctx, AV_LOG_ERROR, "  vp3: could not decode frame\n");
         return -1;
     }
 

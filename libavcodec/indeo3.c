@@ -622,7 +622,7 @@ static void iv_Decode_Chunk(Indeo3DecodeContext *s,
                     break;
 
                   case 9:
-                    fprintf(stderr, "UNTESTED.\n");
+                    av_log(s->avctx, AV_LOG_ERROR, "UNTESTED.\n");
                     lv1 = *buf1++;
                     lv = (lv1 & 0x7F) << 1;
                     lv += (lv << 8);
@@ -791,7 +791,7 @@ static void iv_Decode_Chunk(Indeo3DecodeContext *s,
                       break;
 
                     case 9:
-                      fprintf(stderr, "UNTESTED.\n");
+                      av_log(s->avctx, AV_LOG_ERROR, "UNTESTED.\n");
                       lv1 = *buf1;
                       lv = (lv1 & 0x7F) << 1;
                       lv += (lv << 8);
@@ -887,7 +887,7 @@ static void iv_Decode_Chunk(Indeo3DecodeContext *s,
                       break;
 
                     case 9:
-                      fprintf(stderr, "UNTESTED.\n");
+                      av_log(s->avctx, AV_LOG_ERROR, "UNTESTED.\n");
                       lv1 = *buf1;
                       lv = (lv1 & 0x7F) << 1;
                       lv += (lv << 8);
@@ -980,7 +980,7 @@ static void iv_Decode_Chunk(Indeo3DecodeContext *s,
                     break;
 
                 case 9:
-                  fprintf(stderr, "UNTESTED.\n");
+                  av_log(s->avctx, AV_LOG_ERROR, "UNTESTED.\n");
                   lv1 = *buf1++;
                   lv = (lv1 & 0x7F) << 1;
                   lv += (lv << 8);
@@ -1063,7 +1063,7 @@ static int indeo3_decode_frame(AVCodecContext *avctx,
 
     s->frame.reference = 0;
     if(avctx->get_buffer(avctx, &s->frame) < 0) {
-        fprintf(stderr, "get_buffer() failed\n");
+        av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return -1;
     }
 

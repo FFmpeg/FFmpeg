@@ -42,7 +42,7 @@
 #define LE_16(x)  ((((uint8_t*)(x))[1] << 8) | ((uint8_t*)(x))[0])
 #define CHECK_STREAM_PTR(n) \
   if ((stream_ptr + n) > s->size ) { \
-    printf (" MS Video-1 warning: stream_ptr out of bounds (%d >= %d)\n", \
+    av_log(s->avctx, AV_LOG_ERROR, " MS Video-1 warning: stream_ptr out of bounds (%d >= %d)\n", \
       stream_ptr + n, s->size); \
     return; \
   }
@@ -322,12 +322,12 @@ static int msvideo1_decode_frame(AVCodecContext *avctx,
     s->size = buf_size;
 
     if (avctx->get_buffer(avctx, &s->frame)) {
-        printf ("  MS Video-1 Video: get_buffer() failed\n");
+        av_log(s->avctx, AV_LOG_ERROR, "  MS Video-1 Video: get_buffer() failed\n");
         return -1;
     }
 
     if (s->prev_frame.data[0] &&(s->frame.linesize[0] != s->prev_frame.linesize[0]))
-        printf ("  MS Video-1: Buffer linesize changed: current %u, previous %u.\n"
+        av_log(avctx, AV_LOG_ERROR, "  MS Video-1: Buffer linesize changed: current %u, previous %u.\n"
                 "              Expect wrong image and/or crash!\n",
                 s->frame.linesize[0], s->prev_frame.linesize[0]);
 

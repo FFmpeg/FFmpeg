@@ -199,7 +199,7 @@ static int adx_encode_init(AVCodecContext *avctx)
 
 //    avctx->bit_rate = avctx->sample_rate*avctx->channels*18*8/32;
 
-    printf("adx encode init\n"); fflush(stdout);
+    av_log(avctx, AV_LOG_DEBUG, "adx encode init\n");
     adx_decode_init(avctx);
 
     return 0;
@@ -318,11 +318,11 @@ static void dump(unsigned char *buf,size_t len)
 {
     int i;
     for(i=0;i<len;i++) {
-        if ((i&15)==0) printf("%04x  ",i);
-        printf("%02x ",buf[i]);
-        if ((i&15)==15) printf("\n");
+        if ((i&15)==0) av_log(NULL, AV_LOG_DEBUG, "%04x  ",i);
+        av_log(NULL, AV_LOG_DEBUG, "%02x ",buf[i]);
+        if ((i&15)==15) av_log(NULL, AV_LOG_DEBUG, "\n");
     }
-    printf("\n");
+    av_log(NULL, AV_LOG_ERROR, "\n");
 }
 static int adx_decode_frame(AVCodecContext *avctx,
                 void *data, int *data_size,

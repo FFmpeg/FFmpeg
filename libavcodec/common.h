@@ -192,7 +192,7 @@ inline void dprintf(const char* fmt,...) {}
 
 #    endif /* !CONFIG_WIN32 */
 
-#    define av_abort()      do { fprintf(stderr, "Abort at %s:%d\n", __FILE__, __LINE__); abort(); } while (0)
+#    define av_abort()      do { av_log(NULL, AV_LOG_ERROR, "Abort at %s:%d\n", __FILE__, __LINE__); abort(); } while (0)
 
 //rounded divison & shift
 #define RSHIFT(a,b) ((a) > 0 ? ((a) + (1<<((b)-1)))>>(b) : ((a) + (1<<((b)-1))-1)>>(b))

@@ -617,7 +617,7 @@ static inline int get_p_cbp(MpegEncContext * s,
     if(s->flags & CODEC_FLAG_CBP_RD){
         int best_cbpy_score= INT_MAX;
         int best_cbpc_score= INT_MAX;
-        int cbpc, cbpy;
+        int cbpc = (-1), cbpy= (-1);
         const int offset= (s->mv_type==MV_TYPE_16X16 ? 0 : 16) + (s->dquant ? 8 : 0);
         const int lambda= s->lambda2 >> (FF_LAMBDA_SHIFT - 6);
 
@@ -828,7 +828,7 @@ void mpeg4_encode_mb(MpegEncContext * s,
                 s->f_count++;
                 break;
             default:
-                printf("unknown mb type\n");
+                av_log(s->avctx, AV_LOG_ERROR, "unknown mb type\n");
                 return;
             }
 
@@ -2721,7 +2721,7 @@ static int mpeg4_decode_video_packet_header(MpegEncContext *s)
     }
 
     if(len!=ff_mpeg4_get_video_packet_prefix_length(s)){
-        printf("marker does not match f_code\n");
+        av_log(s->avctx, AV_LOG_ERROR, "marker does not match f_code\n");
         return -1;
     }
     
@@ -2732,7 +2732,7 @@ static int mpeg4_decode_video_packet_header(MpegEncContext *s)
 
     mb_num= get_bits(&s->gb, mb_num_bits);
     if(mb_num>=s->mb_num){
-        fprintf(stderr, "illegal mb_num in video packet (%d %d) \n", mb_num, s->mb_num);
+        av_log(s->avctx, AV_LOG_ERROR, "illegal mb_num in video packet (%d %d) \n", mb_num, s->mb_num);
         return -1;
     }
     if(s->pict_type == B_TYPE){
@@ -2771,7 +2771,7 @@ static int mpeg4_decode_video_packet_header(MpegEncContext *s)
 //FIXME dont just ignore everything
             if(s->pict_type == S_TYPE && s->vol_sprite_usage==GMC_SPRITE){
                 mpeg4_decode_sprite_trajectory(s);
-                fprintf(stderr, "untested\n");
+                av_log(s->avctx, AV_LOG_ERROR, "untested\n");
             }
 
             //FIXME reduced res stuff here
@@ -2779,13 +2779,13 @@ static int mpeg4_decode_video_packet_header(MpegEncContext *s)
             if (s->pict_type != I_TYPE) {
                 int f_code = get_bits(&s->gb, 3);	/* fcode_for */
                 if(f_code==0){
-                    printf("Error, video packet header damaged (f_code=0)\n");
+                    av_log(s->avctx, AV_LOG_ERROR, "Error, video packet header damaged (f_code=0)\n");
                 }
             }
             if (s->pict_type == B_TYPE) {
                 int b_code = get_bits(&s->gb, 3);
                 if(b_code==0){
-                    printf("Error, video packet header damaged (b_code=0)\n");
+                    av_log(s->avctx, AV_LOG_ERROR, "Error, video packet header damaged (b_code=0)\n");
                 }
             }       
         }
@@ -2948,7 +2948,7 @@ static int mpeg4_decode_partition_a(MpegEncContext *s){
                 do{
                     cbpc = get_vlc2(&s->gb, intra_MCBPC_vlc.table, INTRA_MCBPC_VLC_BITS, 2);
                     if (cbpc < 0){
-                        fprintf(stderr, "cbpc corrupted at %d %d\n", s->mb_x, s->mb_y);
+                        av_log(s->avctx, AV_LOG_ERROR, "cbpc corrupted at %d %d\n", s->mb_x, s->mb_y);
                         return -1;
                     }
                 }while(cbpc == 8);
@@ -2967,7 +2967,7 @@ static int mpeg4_decode_partition_a(MpegEncContext *s){
                     int dc_pred_dir;
                     int dc= mpeg4_decode_dc(s, i, &dc_pred_dir); 
                     if(dc < 0){
-                        fprintf(stderr, "DC corrupted at %d %d\n", s->mb_x, s->mb_y);
+                        av_log(s->avctx, AV_LOG_ERROR, "DC corrupted at %d %d\n", s->mb_x, s->mb_y);
                         return -1;
                     }
                     dir<<=1;
@@ -3007,7 +3007,7 @@ static int mpeg4_decode_partition_a(MpegEncContext *s){
 
                 cbpc = get_vlc2(&s->gb, inter_MCBPC_vlc.table, INTER_MCBPC_VLC_BITS, 2);
                 if (cbpc < 0){
-                    fprintf(stderr, "cbpc corrupted at %d %d\n", s->mb_x, s->mb_y);
+                    av_log(s->avctx, AV_LOG_ERROR, "cbpc corrupted at %d %d\n", s->mb_x, s->mb_y);
                     return -1;
                 }
 //              }while(cbpc == 20);
@@ -3103,7 +3103,7 @@ static int mpeg4_decode_partition_b(MpegEncContext *s, int mb_count){
                 int ac_pred= get_bits1(&s->gb);
                 int cbpy = get_vlc2(&s->gb, cbpy_vlc.table, CBPY_VLC_BITS, 1);
                 if(cbpy<0){
-                    fprintf(stderr, "cbpy corrupted at %d %d\n", s->mb_x, s->mb_y);
+                    av_log(s->avctx, AV_LOG_ERROR, "cbpy corrupted at %d %d\n", s->mb_x, s->mb_y);
                     return -1;
                 }
                 
@@ -3116,7 +3116,7 @@ static int mpeg4_decode_partition_b(MpegEncContext *s, int mb_count){
                     int cbpy = get_vlc2(&s->gb, cbpy_vlc.table, CBPY_VLC_BITS, 1);
 
                     if(cbpy<0){
-                        fprintf(stderr, "I cbpy corrupted at %d %d\n", s->mb_x, s->mb_y);
+                        av_log(s->avctx, AV_LOG_ERROR, "I cbpy corrupted at %d %d\n", s->mb_x, s->mb_y);
                         return -1;
                     }
                     
@@ -3129,7 +3129,7 @@ static int mpeg4_decode_partition_b(MpegEncContext *s, int mb_count){
                         int dc_pred_dir;
                         int dc= mpeg4_decode_dc(s, i, &dc_pred_dir); 
                         if(dc < 0){
-                            fprintf(stderr, "DC corrupted at %d %d\n", s->mb_x, s->mb_y);
+                            av_log(s->avctx, AV_LOG_ERROR, "DC corrupted at %d %d\n", s->mb_x, s->mb_y);
                             return -1;
                         }
                         dir<<=1;
@@ -3146,7 +3146,7 @@ static int mpeg4_decode_partition_b(MpegEncContext *s, int mb_count){
                     int cbpy = get_vlc2(&s->gb, cbpy_vlc.table, CBPY_VLC_BITS, 1);
 
                     if(cbpy<0){
-                        fprintf(stderr, "P cbpy corrupted at %d %d\n", s->mb_x, s->mb_y);
+                        av_log(s->avctx, AV_LOG_ERROR, "P cbpy corrupted at %d %d\n", s->mb_x, s->mb_y);
                         return -1;
                     }
                     
@@ -3183,7 +3183,7 @@ int ff_mpeg4_decode_partitions(MpegEncContext *s)
     }
     
     if(s->resync_mb_x + s->resync_mb_y*s->mb_width + mb_num > s->mb_num){
-        fprintf(stderr, "slice below monitor ...\n");
+        av_log(s->avctx, AV_LOG_ERROR, "slice below monitor ...\n");
         ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x, s->mb_y, part_a_error);
         return -1;
     }
@@ -3192,12 +3192,12 @@ int ff_mpeg4_decode_partitions(MpegEncContext *s)
         
     if(s->pict_type==I_TYPE){
         if(get_bits_long(&s->gb, 19)!=DC_MARKER){
-            fprintf(stderr, "marker missing after first I partition at %d %d\n", s->mb_x, s->mb_y);
+            av_log(s->avctx, AV_LOG_ERROR, "marker missing after first I partition at %d %d\n", s->mb_x, s->mb_y);
             return -1;
         }
     }else{
         if(get_bits(&s->gb, 17)!=MOTION_MARKER){
-            fprintf(stderr, "marker missing after first P partition at %d %d\n", s->mb_x, s->mb_y);
+            av_log(s->avctx, AV_LOG_ERROR, "marker missing after first P partition at %d %d\n", s->mb_x, s->mb_y);
             return -1;
         }
     }
@@ -3276,7 +3276,7 @@ static int mpeg4_decode_partitioned_mb(MpegEncContext *s, DCTELEM block[6][64])
         /* decode each block */
         for (i = 0; i < 6; i++) {
             if(mpeg4_decode_block(s, block[i], i, cbp&32, s->mb_intra, s->rvlc) < 0){
-                fprintf(stderr, "texture corrupted at %d %d %d\n", s->mb_x, s->mb_y, s->mb_intra);
+                av_log(s->avctx, AV_LOG_ERROR, "texture corrupted at %d %d %d\n", s->mb_x, s->mb_y, s->mb_intra);
                 return -1;
             }
             cbp+=cbp;
@@ -3337,7 +3337,7 @@ int ff_h263_decode_mb(MpegEncContext *s,
         cbpc = get_vlc2(&s->gb, inter_MCBPC_vlc.table, INTER_MCBPC_VLC_BITS, 2);
         //fprintf(stderr, "\tCBPC: %d", cbpc);
         if (cbpc < 0){
-            fprintf(stderr, "cbpc damaged at %d %d\n", s->mb_x, s->mb_y);
+            av_log(s->avctx, AV_LOG_ERROR, "cbpc damaged at %d %d\n", s->mb_x, s->mb_y);
             return -1;
         }
       }while(cbpc == 20);
@@ -3484,7 +3484,7 @@ int ff_h263_decode_mb(MpegEncContext *s,
             modb2= get_bits1(&s->gb);
             mb_type= get_vlc2(&s->gb, mb_type_b_vlc.table, MB_TYPE_B_VLC_BITS, 1);
             if(mb_type<0){
-                printf("illegal MB_type\n");
+                av_log(s->avctx, AV_LOG_ERROR, "illegal MB_type\n");
                 return -1;
             }
             mb_type= mb_type_b_map[ mb_type ];
@@ -3580,7 +3580,7 @@ int ff_h263_decode_mb(MpegEncContext *s,
         do{
             cbpc = get_vlc2(&s->gb, intra_MCBPC_vlc.table, INTRA_MCBPC_VLC_BITS, 2);
             if (cbpc < 0){
-                fprintf(stderr, "I cbpc damaged at %d %d\n", s->mb_x, s->mb_y);
+                av_log(s->avctx, AV_LOG_ERROR, "I cbpc damaged at %d %d\n", s->mb_x, s->mb_y);
                 return -1;
             }
         }while(cbpc == 8);
@@ -3602,7 +3602,7 @@ intra:
         
         cbpy = get_vlc2(&s->gb, cbpy_vlc.table, CBPY_VLC_BITS, 1);
         if(cbpy<0){
-            fprintf(stderr, "I cbpy damaged at %d %d\n", s->mb_x, s->mb_y);
+            av_log(s->avctx, AV_LOG_ERROR, "I cbpy damaged at %d %d\n", s->mb_x, s->mb_y);
             return -1;
         }
         cbp = (cbpc & 3) | (cbpy << 2);
@@ -3771,7 +3771,7 @@ static int h263_decode_block(MpegEncContext * s, DCTELEM * block,
         }else{
             level = get_bits(&s->gb, 8);
             if((level&0x7F) == 0){
-                fprintf(stderr, "illegal dc %d at %d %d\n", level, s->mb_x, s->mb_y);
+                av_log(s->avctx, AV_LOG_ERROR, "illegal dc %d at %d %d\n", level, s->mb_x, s->mb_y);
                 return -1;
             }
             if (level == 255)
@@ -3792,7 +3792,7 @@ static int h263_decode_block(MpegEncContext * s, DCTELEM * block,
     for(;;) {
         code = get_vlc2(&s->gb, rl->vlc.table, TEX_VLC_BITS, 2);
         if (code < 0){
-            fprintf(stderr, "illegal ac vlc code at %dx%d\n", s->mb_x, s->mb_y);
+            av_log(s->avctx, AV_LOG_ERROR, "illegal ac vlc code at %dx%d\n", s->mb_x, s->mb_y);
             return -1;
         }
         if (code == rl->n) {
@@ -3829,7 +3829,7 @@ static int h263_decode_block(MpegEncContext * s, DCTELEM * block,
         }
         i += run;
         if (i >= 64){
-            fprintf(stderr, "run overflow at %dx%d\n", s->mb_x, s->mb_y);
+            av_log(s->avctx, AV_LOG_ERROR, "run overflow at %dx%d\n", s->mb_x, s->mb_y);
             return -1;
         }
         j = scan_table[i];
@@ -3863,7 +3863,7 @@ static inline int mpeg4_decode_dc(MpegEncContext * s, int n, int *dir_ptr)
     else 
         code = get_vlc2(&s->gb, dc_chrom.table, DC_VLC_BITS, 1);
     if (code < 0 || code > 9 /* && s->nbit<9 */){
-        fprintf(stderr, "illegal dc vlc\n");
+        av_log(s->avctx, AV_LOG_ERROR, "illegal dc vlc\n");
         return -1;
     }
     if (code == 0) {
@@ -3885,7 +3885,7 @@ static inline int mpeg4_decode_dc(MpegEncContext * s, int n, int *dir_ptr)
         if (code > 8){
             if(get_bits1(&s->gb)==0){ /* marker */
                 if(s->error_resilience>=2){
-                    fprintf(stderr, "dc marker bit missing\n");
+                    av_log(s->avctx, AV_LOG_ERROR, "dc marker bit missing\n");
                     return -1;
                 }
             }
@@ -3895,7 +3895,7 @@ static inline int mpeg4_decode_dc(MpegEncContext * s, int n, int *dir_ptr)
     level += pred;
     if (level < 0){
         if(s->error_resilience>=3){
-            fprintf(stderr, "dc<0 at %dx%d\n", s->mb_x, s->mb_y);
+            av_log(s->avctx, AV_LOG_ERROR, "dc<0 at %dx%d\n", s->mb_x, s->mb_y);
             return -1;
         }
         level = 0;
@@ -3910,7 +3910,7 @@ static inline int mpeg4_decode_dc(MpegEncContext * s, int n, int *dir_ptr)
     
     if(s->error_resilience>=3){
         if(*dc_val > 2048 + s->y_dc_scale + s->c_dc_scale){
-            fprintf(stderr, "dc overflow at %dx%d\n", s->mb_x, s->mb_y);
+            av_log(s->avctx, AV_LOG_ERROR, "dc overflow at %dx%d\n", s->mb_x, s->mb_y);
             return -1;
         }
     }
@@ -4009,7 +4009,7 @@ static inline int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
           /* escape */                
           if(rvlc){
                 if(SHOW_UBITS(re, &s->gb, 1)==0){
-                    fprintf(stderr, "1. marker bit missing in rvlc esc\n");
+                    av_log(s->avctx, AV_LOG_ERROR, "1. marker bit missing in rvlc esc\n");
                     return -1;
                 }; SKIP_CACHE(re, &s->gb, 1);
  
@@ -4019,14 +4019,14 @@ static inline int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
                 UPDATE_CACHE(re, &s->gb);
               
                 if(SHOW_UBITS(re, &s->gb, 1)==0){
-                    fprintf(stderr, "2. marker bit missing in rvlc esc\n");
+                    av_log(s->avctx, AV_LOG_ERROR, "2. marker bit missing in rvlc esc\n");
                     return -1;
                 }; SKIP_CACHE(re, &s->gb, 1);
  
                 level= SHOW_UBITS(re, &s->gb, 11); SKIP_CACHE(re, &s->gb, 11);
  
                 if(SHOW_UBITS(re, &s->gb, 5)!=0x10){
-                    fprintf(stderr, "reverse esc missing\n");
+                    av_log(s->avctx, AV_LOG_ERROR, "reverse esc missing\n");
                     return -1;
                 }; SKIP_CACHE(re, &s->gb, 5);
 
@@ -4056,14 +4056,14 @@ static inline int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
                         level= SHOW_SBITS(re, &s->gb, 12); LAST_SKIP_BITS(re, &s->gb, 12);
                     }else{
                         if(SHOW_UBITS(re, &s->gb, 1)==0){
-                            fprintf(stderr, "1. marker bit missing in 3. esc\n");
+                            av_log(s->avctx, AV_LOG_ERROR, "1. marker bit missing in 3. esc\n");
                             return -1;
                         }; SKIP_CACHE(re, &s->gb, 1);
 
                         level= SHOW_SBITS(re, &s->gb, 12); SKIP_CACHE(re, &s->gb, 12);
 
                         if(SHOW_UBITS(re, &s->gb, 1)==0){
-                            fprintf(stderr, "2. marker bit missing in 3. esc\n");
+                            av_log(s->avctx, AV_LOG_ERROR, "2. marker bit missing in 3. esc\n");
                             return -1;
                         }; LAST_SKIP_CACHE(re, &s->gb, 1);
 
@@ -4071,7 +4071,7 @@ static inline int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
                     }
  
                     if(level*s->qscale>1024 || level*s->qscale<-1024){
-                        fprintf(stderr, "|level| overflow in 3. esc, qp=%d\n", s->qscale);
+                        av_log(s->avctx, AV_LOG_ERROR, "|level| overflow in 3. esc, qp=%d\n", s->qscale);
                         return -1;
                     }
 #if 0
@@ -4080,7 +4080,7 @@ static inline int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
                         if(abs_level<=MAX_LEVEL && run<=MAX_RUN){
                             const int run1= run - rl->max_run[last][abs_level] - 1;
                             if(abs_level <= rl->max_level[last][run]){
-                                fprintf(stderr, "illegal 3. esc, vlc encoding possible\n");
+                                av_log(s->avctx, AV_LOG_ERROR, "illegal 3. esc, vlc encoding possible\n");
                                 return -1;
                             }
                             if(s->error_resilience > FF_ER_COMPLIANT){
@@ -4137,7 +4137,7 @@ static inline int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
         if (i > 62){
             i-= 192;
             if(i&(~63)){
-                fprintf(stderr, "ac-tex damaged at %d %d\n", s->mb_x, s->mb_y);
+                av_log(s->avctx, AV_LOG_ERROR, "ac-tex damaged at %d %d\n", s->mb_x, s->mb_y);
                 return -1;
             }
 
@@ -4190,7 +4190,7 @@ int h263_decode_picture_header(MpegEncContext *s)
     }
         
     if (startcode != 0x20) {
-        fprintf(stderr, "Bad picture start code\n");
+        av_log(s->avctx, AV_LOG_ERROR, "Bad picture start code\n");
         return -1;
     }
     /* temporal reference */
@@ -4199,11 +4199,11 @@ int h263_decode_picture_header(MpegEncContext *s)
     /* PTYPE starts here */    
     if (get_bits1(&s->gb) != 1) {
         /* marker */
-        fprintf(stderr, "Bad marker\n");
+        av_log(s->avctx, AV_LOG_ERROR, "Bad marker\n");
         return -1;
     }
     if (get_bits1(&s->gb) != 0) {
-        fprintf(stderr, "Bad H263 id\n");
+        av_log(s->avctx, AV_LOG_ERROR, "Bad H263 id\n");
         return -1;	/* h263 id */
     }
     skip_bits1(&s->gb);	/* split screen off */
@@ -4235,7 +4235,7 @@ int h263_decode_picture_header(MpegEncContext *s)
         s->h263_long_vectors = s->unrestricted_mv;
 
         if (get_bits1(&s->gb) != 0) {
-            fprintf(stderr, "H263 SAC not supported\n");
+            av_log(s->avctx, AV_LOG_ERROR, "H263 SAC not supported\n");
             return -1;	/* SAC: off */
         }
         if (get_bits1(&s->gb) != 0) {
@@ -4243,7 +4243,7 @@ int h263_decode_picture_header(MpegEncContext *s)
         }   
         
         if (get_bits1(&s->gb) != 0) {
-            fprintf(stderr, "H263 PB frame not supported\n");
+            av_log(s->avctx, AV_LOG_ERROR, "H263 PB frame not supported\n");
             return -1;	/* not PB frame */
         }
         s->qscale = get_bits(&s->gb, 5);
@@ -4275,29 +4275,29 @@ int h263_decode_picture_header(MpegEncContext *s)
             }
 	    
             if (get_bits1(&s->gb) != 0) {
-                fprintf(stderr, "Deblocking Filter not supported\n");
+                av_log(s->avctx, AV_LOG_ERROR, "Deblocking Filter not supported\n");
             }
             if (get_bits1(&s->gb) != 0) {
-                fprintf(stderr, "Slice Structured not supported\n");
+                av_log(s->avctx, AV_LOG_ERROR, "Slice Structured not supported\n");
             }
             if (get_bits1(&s->gb) != 0) {
-                fprintf(stderr, "Reference Picture Selection not supported\n");
+                av_log(s->avctx, AV_LOG_ERROR, "Reference Picture Selection not supported\n");
             }
             if (get_bits1(&s->gb) != 0) {
-                fprintf(stderr, "Independent Segment Decoding not supported\n");
+                av_log(s->avctx, AV_LOG_ERROR, "Independent Segment Decoding not supported\n");
             }
             if (get_bits1(&s->gb) != 0) {
-                fprintf(stderr, "Alternative Inter VLC not supported\n");
+                av_log(s->avctx, AV_LOG_ERROR, "Alternative Inter VLC not supported\n");
             }
             if (get_bits1(&s->gb) != 0) {
-                fprintf(stderr, "Modified Quantization not supported\n");
+                av_log(s->avctx, AV_LOG_ERROR, "Modified Quantization not supported\n");
             }
             
             skip_bits(&s->gb, 1); /* Prevent start code emulation */
 
             skip_bits(&s->gb, 3); /* Reserved */
         } else if (ufep != 0) {
-            fprintf(stderr, "Bad UFEP type (%d)\n", ufep);
+            av_log(s->avctx, AV_LOG_ERROR, "Bad UFEP type (%d)\n", ufep);
             return -1;
         }
             
@@ -4371,7 +4371,7 @@ int h263_decode_picture_header(MpegEncContext *s)
     }
 
      if(s->avctx->debug&FF_DEBUG_PICT_INFO){
-         printf("qp:%d %c size:%d rnd:%d %s %s %s %s\n", 
+         av_log(s->avctx, AV_LOG_DEBUG, "qp:%d %c size:%d rnd:%d %s %s %s %s\n", 
          s->qscale, av_get_pict_type_char(s->pict_type),
          s->gb.size_in_bits, 1-s->no_rounding,
          s->mv_type == MV_TYPE_8X8 ? "ADV" : "",
@@ -4383,17 +4383,17 @@ int h263_decode_picture_header(MpegEncContext *s)
 #if 1
     if (s->pict_type == I_TYPE && s->avctx->codec_tag == ff_get_fourcc("ZYGO")){
         int i,j;
-        for(i=0; i<85; i++) printf("%d", get_bits1(&s->gb));
-        printf("\n");
+        for(i=0; i<85; i++) av_log(s->avctx, AV_LOG_DEBUG, "%d", get_bits1(&s->gb));
+        av_log(s->avctx, AV_LOG_DEBUG, "\n");
         for(i=0; i<13; i++){
             for(j=0; j<3; j++){
                 int v= get_bits(&s->gb, 8);
                 v |= get_sbits(&s->gb, 8)<<8;
-                printf(" %5d", v);
+                av_log(s->avctx, AV_LOG_DEBUG, " %5d", v);
             }
-            printf("\n");
+            av_log(s->avctx, AV_LOG_DEBUG, "\n");
         }
-        for(i=0; i<50; i++) printf("%d", get_bits1(&s->gb));
+        for(i=0; i<50; i++) av_log(s->avctx, AV_LOG_DEBUG, "%d", get_bits1(&s->gb));
     }
 #endif
 
@@ -4649,7 +4649,7 @@ static int decode_vol_header(MpegEncContext *s, GetBitContext *gb){
     if ((s->vol_control_parameters=get_bits1(gb))) { /* vol control parameter */
         int chroma_format= get_bits(gb, 2);
         if(chroma_format!=1){
-            printf("illegal chroma format\n");
+            av_log(s->avctx, AV_LOG_ERROR, "illegal chroma format\n");
         }
         s->low_delay= get_bits1(gb);
         if(get_bits1(gb)){ /* vbv parameters */
@@ -4672,9 +4672,9 @@ static int decode_vol_header(MpegEncContext *s, GetBitContext *gb){
     }
 
     s->shape = get_bits(gb, 2); /* vol shape */
-    if(s->shape != RECT_SHAPE) printf("only rectangular vol supported\n");
+    if(s->shape != RECT_SHAPE) av_log(s->avctx, AV_LOG_ERROR, "only rectangular vol supported\n");
     if(s->shape == GRAY_SHAPE && vo_ver_id != 1){
-        printf("Gray shape not supported\n");
+        av_log(s->avctx, AV_LOG_ERROR, "Gray shape not supported\n");
         skip_bits(gb, 4);  //video_object_layer_shape_extension
     }
 
@@ -4708,13 +4708,13 @@ static int decode_vol_header(MpegEncContext *s, GetBitContext *gb){
         
         s->progressive_sequence= get_bits1(gb)^1;
         if(!get_bits1(gb) && (s->avctx->debug & FF_DEBUG_PICT_INFO)) 
-            printf("OBMC not supported (very likely buggy encoder)\n");   /* OBMC Disable */
+            av_log(s->avctx, AV_LOG_ERROR, "OBMC not supported (very likely buggy encoder)\n");   /* OBMC Disable */
         if (vo_ver_id == 1) {
             s->vol_sprite_usage = get_bits1(gb); /* vol_sprite_usage */
         } else {
             s->vol_sprite_usage = get_bits(gb, 2); /* vol_sprite_usage */
         }
-        if(s->vol_sprite_usage==STATIC_SPRITE) printf("Static Sprites not supported\n");
+        if(s->vol_sprite_usage==STATIC_SPRITE) av_log(s->avctx, AV_LOG_ERROR, "Static Sprites not supported\n");
         if(s->vol_sprite_usage==STATIC_SPRITE || s->vol_sprite_usage==GMC_SPRITE){
             if(s->vol_sprite_usage==STATIC_SPRITE){
                 s->sprite_width = get_bits(gb, 13);
@@ -4736,8 +4736,8 @@ static int decode_vol_header(MpegEncContext *s, GetBitContext *gb){
         
         if (get_bits1(gb) == 1) {   /* not_8_bit */
             s->quant_precision = get_bits(gb, 4); /* quant_precision */
-            if(get_bits(gb, 4)!=8) printf("N-bit not supported\n"); /* bits_per_pixel */
-            if(s->quant_precision!=5) printf("quant precission %d\n", s->quant_precision);
+            if(get_bits(gb, 4)!=8) av_log(s->avctx, AV_LOG_ERROR, "N-bit not supported\n"); /* bits_per_pixel */
+            if(s->quant_precision!=5) av_log(s->avctx, AV_LOG_ERROR, "quant precission %d\n", s->quant_precision);
         } else {
             s->quant_precision = 5;
         }
@@ -4810,7 +4810,7 @@ static int decode_vol_header(MpegEncContext *s, GetBitContext *gb){
              s->quarter_sample= get_bits1(gb);
         else s->quarter_sample=0;
 
-        if(!get_bits1(gb)) printf("Complexity estimation not supported\n");
+        if(!get_bits1(gb)) av_log(s->avctx, AV_LOG_ERROR, "Complexity estimation not supported\n");
 
         s->resync_marker= !get_bits1(gb); /* resync_marker_disabled */
 
@@ -4822,12 +4822,12 @@ static int decode_vol_header(MpegEncContext *s, GetBitContext *gb){
         if(vo_ver_id != 1) {
             s->new_pred= get_bits1(gb);
             if(s->new_pred){
-                printf("new pred not supported\n");
+                av_log(s->avctx, AV_LOG_ERROR, "new pred not supported\n");
                 skip_bits(gb, 2); /* requested upstream message type */
                 skip_bits1(gb); /* newpred segment type */
             }
             s->reduced_res_vop= get_bits1(gb);
-            if(s->reduced_res_vop) printf("reduced resolution VOP not supported\n");
+            if(s->reduced_res_vop) av_log(s->avctx, AV_LOG_ERROR, "reduced resolution VOP not supported\n");
         }
         else{
             s->new_pred=0;
@@ -4862,7 +4862,7 @@ static int decode_vol_header(MpegEncContext *s, GetBitContext *gb){
                
                 *gb= bak;
             }else
-                printf("scalability not supported\n");
+                av_log(s->avctx, AV_LOG_ERROR, "scalability not supported\n");
             
             // bin shape stuff FIXME
         }
@@ -4929,7 +4929,7 @@ static int decode_vop_header(MpegEncContext *s, GetBitContext *gb){
 
     s->pict_type = get_bits(gb, 2) + I_TYPE;	/* pict type: I = 0 , P = 1 */
     if(s->pict_type==B_TYPE && s->low_delay && s->vol_control_parameters==0 && !(s->flags & CODEC_FLAG_LOW_DELAY)){
-        printf("low_delay flag set, but shouldnt, clearing it\n");
+        av_log(s->avctx, AV_LOG_ERROR, "low_delay flag set, but shouldnt, clearing it\n");
         s->low_delay=0;
     }
  
@@ -4950,13 +4950,13 @@ static int decode_vop_header(MpegEncContext *s, GetBitContext *gb){
     check_marker(gb, "before time_increment");
     
     if(s->time_increment_bits==0){
-        printf("hmm, seems the headers arnt complete, trying to guess time_increment_bits\n");
+        av_log(s->avctx, AV_LOG_ERROR, "hmm, seems the headers arnt complete, trying to guess time_increment_bits\n");
 
         for(s->time_increment_bits=1 ;s->time_increment_bits<16; s->time_increment_bits++){
             if(show_bits(gb, s->time_increment_bits+1)&1) break;
         }
 
-        printf("my guess is %d bits ;)\n",s->time_increment_bits);
+        av_log(s->avctx, AV_LOG_ERROR, "my guess is %d bits ;)\n",s->time_increment_bits);
     }
     
     if(IS_3IV1) time_increment= get_bits1(gb); //FIXME investigate further
@@ -4996,13 +4996,13 @@ static int decode_vop_header(MpegEncContext *s, GetBitContext *gb){
     
     s->current_picture_ptr->pts= s->time*1000LL*1000LL / s->time_increment_resolution;
     if(s->avctx->debug&FF_DEBUG_PTS)
-        printf("MPEG4 PTS: %f\n", s->current_picture_ptr->pts/(1000.0*1000.0));
+        av_log(s->avctx, AV_LOG_DEBUG, "MPEG4 PTS: %f\n", s->current_picture_ptr->pts/(1000.0*1000.0));
     
     check_marker(gb, "before vop_coded");
     
     /* vop coded */
     if (get_bits1(gb) != 1){
-        printf("vop not coded\n");
+        av_log(s->avctx, AV_LOG_ERROR, "vop not coded\n");
         return FRAME_SKIPED;
     }
 //printf("time %d %d %d || %Ld %Ld %Ld\n", s->time_increment_bits, s->time_increment_resolution, s->time_base,
@@ -5059,21 +5059,21 @@ static int decode_vop_header(MpegEncContext *s, GetBitContext *gb){
  
      if(s->pict_type == S_TYPE && (s->vol_sprite_usage==STATIC_SPRITE || s->vol_sprite_usage==GMC_SPRITE)){
          mpeg4_decode_sprite_trajectory(s);
-         if(s->sprite_brightness_change) printf("sprite_brightness_change not supported\n");
-         if(s->vol_sprite_usage==STATIC_SPRITE) printf("static sprite not supported\n");
+         if(s->sprite_brightness_change) av_log(s->avctx, AV_LOG_ERROR, "sprite_brightness_change not supported\n");
+         if(s->vol_sprite_usage==STATIC_SPRITE) av_log(s->avctx, AV_LOG_ERROR, "static sprite not supported\n");
      }
 
      if (s->shape != BIN_ONLY_SHAPE) {
          s->qscale = get_bits(gb, s->quant_precision);
          if(s->qscale==0){
-             printf("Error, header damaged or not MPEG4 header (qscale=0)\n");
+             av_log(s->avctx, AV_LOG_ERROR, "Error, header damaged or not MPEG4 header (qscale=0)\n");
              return -1; // makes no sense to continue, as there is nothing left from the image then
          }
   
          if (s->pict_type != I_TYPE) {
              s->f_code = get_bits(gb, 3);	/* fcode_for */
              if(s->f_code==0){
-                 printf("Error, header damaged or not MPEG4 header (f_code=0)\n");
+                 av_log(s->avctx, AV_LOG_ERROR, "Error, header damaged or not MPEG4 header (f_code=0)\n");
                  return -1; // makes no sense to continue, as the MV decoding will break very quickly
              }
          }else
@@ -5085,7 +5085,7 @@ static int decode_vop_header(MpegEncContext *s, GetBitContext *gb){
              s->b_code=1;
 
          if(s->avctx->debug&FF_DEBUG_PICT_INFO){
-             printf("qp:%d fc:%d,%d %s size:%d pro:%d alt:%d top:%d %spel part:%d resync:%d w:%d a:%d rnd:%d vot:%d%s dc:%d\n", 
+             av_log(s->avctx, AV_LOG_DEBUG, "qp:%d fc:%d,%d %s size:%d pro:%d alt:%d top:%d %spel part:%d resync:%d w:%d a:%d rnd:%d vot:%d%s dc:%d\n", 
                  s->qscale, s->f_code, s->b_code, 
                  s->pict_type == I_TYPE ? "I" : (s->pict_type == P_TYPE ? "P" : (s->pict_type == B_TYPE ? "B" : "S")), 
                  gb->size_in_bits,s->progressive_sequence, s->alternate_scan, s->top_field_first, 
@@ -5101,7 +5101,7 @@ static int decode_vop_header(MpegEncContext *s, GetBitContext *gb){
              if(s->enhancement_type){
                  int load_backward_shape= get_bits1(gb);
                  if(load_backward_shape){
-                     printf("load backward shape isnt supported\n");
+                     av_log(s->avctx, AV_LOG_ERROR, "load backward shape isnt supported\n");
                  }
              }
              skip_bits(gb, 2); //ref_select_code
@@ -5110,7 +5110,7 @@ static int decode_vop_header(MpegEncContext *s, GetBitContext *gb){
      /* detect buggy encoders which dont set the low_delay flag (divx4/xvid/opendivx)*/
      // note we cannot detect divx5 without b-frames easyly (allthough its buggy too)
      if(s->vo_type==0 && s->vol_control_parameters==0 && s->divx_version==0 && s->picture_number==0){
-         printf("looks like this file was encoded with (divx4/(old)xvid/opendivx) -> forcing low_delay flag\n");
+         av_log(s->avctx, AV_LOG_ERROR, "looks like this file was encoded with (divx4/(old)xvid/opendivx) -> forcing low_delay flag\n");
          s->low_delay=1;
      }
 
@@ -5145,7 +5145,7 @@ int ff_mpeg4_decode_picture_header(MpegEncContext * s, GetBitContext *gb)
         
         if(get_bits_count(gb) >= gb->size_in_bits){
             if(gb->size_in_bits==8 && s->divx_version){
-                printf("frame skip %d\n", gb->size_in_bits);
+                av_log(s->avctx, AV_LOG_ERROR, "frame skip %d\n", gb->size_in_bits);
                 return FRAME_SKIPED; //divx bug
             }else
                 return -1; //end of stream
@@ -5155,35 +5155,35 @@ int ff_mpeg4_decode_picture_header(MpegEncContext * s, GetBitContext *gb)
             continue; //no startcode
         
         if(s->avctx->debug&FF_DEBUG_STARTCODE){
-            printf("startcode: %3X ", startcode);
-            if     (startcode<=0x11F) printf("Video Object Start");
-            else if(startcode<=0x12F) printf("Video Object Layer Start");
-            else if(startcode<=0x13F) printf("Reserved");
-            else if(startcode<=0x15F) printf("FGS bp start");
-            else if(startcode<=0x1AF) printf("Reserved");
-            else if(startcode==0x1B0) printf("Visual Object Seq Start");
-            else if(startcode==0x1B1) printf("Visual Object Seq End");
-            else if(startcode==0x1B2) printf("User Data");
-            else if(startcode==0x1B3) printf("Group of VOP start");
-            else if(startcode==0x1B4) printf("Video Session Error");
-            else if(startcode==0x1B5) printf("Visual Object Start");
-            else if(startcode==0x1B6) printf("Video Object Plane start");
-            else if(startcode==0x1B7) printf("slice start");
-            else if(startcode==0x1B8) printf("extension start");
-            else if(startcode==0x1B9) printf("fgs start");
-            else if(startcode==0x1BA) printf("FBA Object start");
-            else if(startcode==0x1BB) printf("FBA Object Plane start");
-            else if(startcode==0x1BC) printf("Mesh Object start");
-            else if(startcode==0x1BD) printf("Mesh Object Plane start");
-            else if(startcode==0x1BE) printf("Still Textutre Object start");
-            else if(startcode==0x1BF) printf("Textutre Spatial Layer start");
-            else if(startcode==0x1C0) printf("Textutre SNR Layer start");
-            else if(startcode==0x1C1) printf("Textutre Tile start");
-            else if(startcode==0x1C2) printf("Textutre Shape Layer start");
-            else if(startcode==0x1C3) printf("stuffing start");
-            else if(startcode<=0x1C5) printf("reserved");
-            else if(startcode<=0x1FF) printf("System start");
-            printf(" at %d\n", get_bits_count(gb));
+            av_log(s->avctx, AV_LOG_DEBUG, "startcode: %3X ", startcode);
+            if     (startcode<=0x11F) av_log(s->avctx, AV_LOG_DEBUG, "Video Object Start");
+            else if(startcode<=0x12F) av_log(s->avctx, AV_LOG_DEBUG, "Video Object Layer Start");
+            else if(startcode<=0x13F) av_log(s->avctx, AV_LOG_DEBUG, "Reserved");
+            else if(startcode<=0x15F) av_log(s->avctx, AV_LOG_DEBUG, "FGS bp start");
+            else if(startcode<=0x1AF) av_log(s->avctx, AV_LOG_DEBUG, "Reserved");
+            else if(startcode==0x1B0) av_log(s->avctx, AV_LOG_DEBUG, "Visual Object Seq Start");
+            else if(startcode==0x1B1) av_log(s->avctx, AV_LOG_DEBUG, "Visual Object Seq End");
+            else if(startcode==0x1B2) av_log(s->avctx, AV_LOG_DEBUG, "User Data");
+            else if(startcode==0x1B3) av_log(s->avctx, AV_LOG_DEBUG, "Group of VOP start");
+            else if(startcode==0x1B4) av_log(s->avctx, AV_LOG_DEBUG, "Video Session Error");
+            else if(startcode==0x1B5) av_log(s->avctx, AV_LOG_DEBUG, "Visual Object Start");
+            else if(startcode==0x1B6) av_log(s->avctx, AV_LOG_DEBUG, "Video Object Plane start");
+            else if(startcode==0x1B7) av_log(s->avctx, AV_LOG_DEBUG, "slice start");
+            else if(startcode==0x1B8) av_log(s->avctx, AV_LOG_DEBUG, "extension start");
+            else if(startcode==0x1B9) av_log(s->avctx, AV_LOG_DEBUG, "fgs start");
+            else if(startcode==0x1BA) av_log(s->avctx, AV_LOG_DEBUG, "FBA Object start");
+            else if(startcode==0x1BB) av_log(s->avctx, AV_LOG_DEBUG, "FBA Object Plane start");
+            else if(startcode==0x1BC) av_log(s->avctx, AV_LOG_DEBUG, "Mesh Object start");
+            else if(startcode==0x1BD) av_log(s->avctx, AV_LOG_DEBUG, "Mesh Object Plane start");
+            else if(startcode==0x1BE) av_log(s->avctx, AV_LOG_DEBUG, "Still Textutre Object start");
+            else if(startcode==0x1BF) av_log(s->avctx, AV_LOG_DEBUG, "Textutre Spatial Layer start");
+            else if(startcode==0x1C0) av_log(s->avctx, AV_LOG_DEBUG, "Textutre SNR Layer start");
+            else if(startcode==0x1C1) av_log(s->avctx, AV_LOG_DEBUG, "Textutre Tile start");
+            else if(startcode==0x1C2) av_log(s->avctx, AV_LOG_DEBUG, "Textutre Shape Layer start");
+            else if(startcode==0x1C3) av_log(s->avctx, AV_LOG_DEBUG, "stuffing start");
+            else if(startcode<=0x1C5) av_log(s->avctx, AV_LOG_DEBUG, "reserved");
+            else if(startcode<=0x1FF) av_log(s->avctx, AV_LOG_DEBUG, "System start");
+            av_log(s->avctx, AV_LOG_DEBUG, " at %d\n", get_bits_count(gb));
         }
 
         if(startcode >= 0x120 && startcode <= 0x12F){
@@ -5212,17 +5212,17 @@ int intel_h263_decode_picture_header(MpegEncContext *s)
 
     /* picture header */
     if (get_bits_long(&s->gb, 22) != 0x20) {
-        fprintf(stderr, "Bad picture start code\n");
+        av_log(s->avctx, AV_LOG_ERROR, "Bad picture start code\n");
         return -1;
     }
     s->picture_number = get_bits(&s->gb, 8); /* picture timestamp */
 
     if (get_bits1(&s->gb) != 1) {
-        fprintf(stderr, "Bad marker\n");
+        av_log(s->avctx, AV_LOG_ERROR, "Bad marker\n");
         return -1;	/* marker */
     }
     if (get_bits1(&s->gb) != 0) {
-        fprintf(stderr, "Bad H263 id\n");
+        av_log(s->avctx, AV_LOG_ERROR, "Bad H263 id\n");
         return -1;	/* h263 id */
     }
     skip_bits1(&s->gb);	/* split screen off */
@@ -5231,7 +5231,7 @@ int intel_h263_decode_picture_header(MpegEncContext *s)
 
     format = get_bits(&s->gb, 3);
     if (format != 7) {
-        fprintf(stderr, "Intel H263 free format not supported\n");
+        av_log(s->avctx, AV_LOG_ERROR, "Intel H263 free format not supported\n");
         return -1;
     }
     s->h263_plus = 0;
@@ -5242,15 +5242,15 @@ int intel_h263_decode_picture_header(MpegEncContext *s)
     s->h263_long_vectors = s->unrestricted_mv;
 
     if (get_bits1(&s->gb) != 0) {
-        fprintf(stderr, "SAC not supported\n");
+        av_log(s->avctx, AV_LOG_ERROR, "SAC not supported\n");
         return -1;	/* SAC: off */
     }
     if (get_bits1(&s->gb) != 0) {
-        fprintf(stderr, "Advanced Prediction Mode not supported\n");
+        av_log(s->avctx, AV_LOG_ERROR, "Advanced Prediction Mode not supported\n");
         return -1;	/* advanced prediction mode: off */
     }
     if (get_bits1(&s->gb) != 0) {
-        fprintf(stderr, "PB frame mode no supported\n");
+        av_log(s->avctx, AV_LOG_ERROR, "PB frame mode no supported\n");
         return -1;	/* PB frame mode */
     }
 
@@ -5278,12 +5278,12 @@ int flv_h263_decode_picture_header(MpegEncContext *s)
 
     /* picture header */
     if (get_bits_long(&s->gb, 17) != 1) {
-        fprintf(stderr, "Bad picture start code\n");
+        av_log(s->avctx, AV_LOG_ERROR, "Bad picture start code\n");
         return -1;
     }
     format = get_bits(&s->gb, 5);
     if (format != 0 && format != 1) {
-        fprintf(stderr, "Bad picture format\n");
+        av_log(s->avctx, AV_LOG_ERROR, "Bad picture format\n");
         return -1;
     }
     s->h263_flv = format+1;
@@ -5345,7 +5345,7 @@ int flv_h263_decode_picture_header(MpegEncContext *s)
     s->f_code = 1;
 
     if(s->avctx->debug & FF_DEBUG_PICT_INFO){
-        printf("%c esc_type:%d, qp:%d num:%d\n",
+        av_log(s->avctx, AV_LOG_DEBUG, "%c esc_type:%d, qp:%d num:%d\n",
                av_get_pict_type_char(s->pict_type), s->h263_flv-1, s->qscale, s->picture_number);
     }
     

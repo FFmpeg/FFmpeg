@@ -76,7 +76,7 @@ typedef struct IpvideoContext {
 
 #define CHECK_STREAM_PTR(n) \
   if ((s->stream_ptr + n) > s->stream_end) { \
-    printf ("Interplay video warning: stream_ptr out of bounds (%p >= %p)\n", \
+    av_log(s->avctx, AV_LOG_ERROR, "Interplay video warning: stream_ptr out of bounds (%p >= %p)\n", \
       s->stream_ptr + n, s->stream_end); \
     return -1; \
   }
@@ -86,10 +86,10 @@ typedef struct IpvideoContext {
     motion_offset += y * s->stride; \
     motion_offset += x; \
     if (motion_offset < 0) { \
-        printf (" Interplay video: motion offset < 0 (%d)\n", motion_offset); \
+        av_log(s->avctx, AV_LOG_ERROR, " Interplay video: motion offset < 0 (%d)\n", motion_offset); \
         return -1; \
     } else if (motion_offset > s->upper_motion_limit_offset) { \
-        printf (" Interplay video: motion offset above limit (%d >= %d)\n", \
+        av_log(s->avctx, AV_LOG_ERROR, " Interplay video: motion offset above limit (%d >= %d)\n", \
             motion_offset, s->upper_motion_limit_offset); \
         return -1; \
     } \
@@ -101,10 +101,10 @@ typedef struct IpvideoContext {
     motion_offset += y * s->stride; \
     motion_offset += x; \
     if (motion_offset < 0) { \
-        printf (" Interplay video: motion offset < 0 (%d)\n", motion_offset); \
+        av_log(s->avctx, AV_LOG_ERROR, " Interplay video: motion offset < 0 (%d)\n", motion_offset); \
         return -1; \
     } else if (motion_offset > s->upper_motion_limit_offset) { \
-        printf (" Interplay video: motion offset above limit (%d >= %d)\n", \
+        av_log(s->avctx, AV_LOG_ERROR, " Interplay video: motion offset above limit (%d >= %d)\n", \
             motion_offset, s->upper_motion_limit_offset); \
         return -1; \
     } \
@@ -116,10 +116,10 @@ typedef struct IpvideoContext {
     motion_offset += y * s->stride; \
     motion_offset += x; \
     if (motion_offset < 0) { \
-        printf (" Interplay video: motion offset < 0 (%d)\n", motion_offset); \
+        av_log(s->avctx, AV_LOG_ERROR, " Interplay video: motion offset < 0 (%d)\n", motion_offset); \
         return -1; \
     } else if (motion_offset > s->upper_motion_limit_offset) { \
-        printf (" Interplay video: motion offset above limit (%d >= %d)\n", \
+        av_log(s->avctx, AV_LOG_ERROR, " Interplay video: motion offset above limit (%d >= %d)\n", \
             motion_offset, s->upper_motion_limit_offset); \
         return -1; \
     } \
@@ -254,7 +254,7 @@ static int ipvideo_decode_block_opcode_0x5(IpvideoContext *s)
 static int ipvideo_decode_block_opcode_0x6(IpvideoContext *s)
 {
     /* mystery opcode? skip multiple blocks? */
-    printf ("  Interplay video: Help! Mystery opcode 0x6 seen\n");
+    av_log(s->avctx, AV_LOG_ERROR, "  Interplay video: Help! Mystery opcode 0x6 seen\n");
 
     /* report success */
     return 0;
@@ -838,7 +838,7 @@ static void ipvideo_decode_opcodes(IpvideoContext *s)
             s->pixel_ptr = s->current_frame.data[0] + x;
             ret = ipvideo_decode_block[opcode](s);
             if (ret != 0) {
-                printf(" Interplay video: decode problem on frame %d, @ block (%d, %d)\n",
+                av_log(s->avctx, AV_LOG_ERROR, " Interplay video: decode problem on frame %d, @ block (%d, %d)\n",
                     frame, x - y, y / s->stride);
                 return;
             }
@@ -846,7 +846,7 @@ static void ipvideo_decode_opcodes(IpvideoContext *s)
     }
     if ((s->stream_ptr != s->stream_end) &&
         (s->stream_ptr + 1 != s->stream_end)) {
-        printf (" Interplay video: decode finished with %d bytes left over\n",
+        av_log(s->avctx, AV_LOG_ERROR, " Interplay video: decode finished with %d bytes left over\n",
             s->stream_end - s->stream_ptr);
     }
 }
@@ -858,7 +858,7 @@ static int ipvideo_decode_init(AVCodecContext *avctx)
     s->avctx = avctx;
 
     if (s->avctx->palctrl == NULL) {
-        printf (" Interplay video: palette expected.\n");
+        av_log(avctx, AV_LOG_ERROR, " Interplay video: palette expected.\n");
         return -1;
     }
 
@@ -906,7 +906,7 @@ static int ipvideo_decode_frame(AVCodecContext *avctx,
 
     s->current_frame.reference = 3;
     if (avctx->get_buffer(avctx, &s->current_frame)) {
-        printf ("  Interplay Video: get_buffer() failed\n");
+        av_log(avctx, AV_LOG_ERROR, "  Interplay Video: get_buffer() failed\n");
         return -1;
     }
 

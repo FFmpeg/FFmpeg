@@ -216,7 +216,7 @@ int rv_decode_dc(MpegEncContext *s, int n)
                 get_bits(&s->gb, 9);
                 code = 1;
             } else {
-                fprintf(stderr, "chroma dc error\n");
+                av_log(s->avctx, AV_LOG_ERROR, "chroma dc error\n");
                 return 0xffff;
             }
         } else {
@@ -286,7 +286,7 @@ static int rv10_decode_picture_header(MpegEncContext *s)
     else
         s->pict_type = I_TYPE;
 //printf("h:%X ver:%d\n",h,s->rv10_version);
-    if(!marker) printf("marker missing\n");
+    if(!marker) av_log(s->avctx, AV_LOG_ERROR, "marker missing\n");
     pb_frame = get_bits(&s->gb, 1);
 
 #ifdef DEBUG
@@ -294,13 +294,13 @@ static int rv10_decode_picture_header(MpegEncContext *s)
 #endif
     
     if (pb_frame){
-        fprintf(stderr, "pb frame not supported\n");
+        av_log(s->avctx, AV_LOG_ERROR, "pb frame not supported\n");
         return -1;
     }
 
     s->qscale = get_bits(&s->gb, 5);
     if(s->qscale==0){
-        fprintf(stderr, "error, qscale:0\n");
+        av_log(s->avctx, AV_LOG_ERROR, "error, qscale:0\n");
         return -1;
     }
 
@@ -363,7 +363,7 @@ static int rv10_decode_init(AVCodecContext *avctx)
         s->h263_long_vectors=0;
         break;
     default:
-        fprintf(stderr, "unknown header %X\n", avctx->sub_id);
+        av_log(s->avctx, AV_LOG_ERROR, "unknown header %X\n", avctx->sub_id);
     }
 //printf("ver:%X\n", avctx->sub_id);
     s->flags= avctx->flags;
@@ -411,19 +411,19 @@ static int rv10_decode_packet(AVCodecContext *avctx,
     
     mb_count = rv10_decode_picture_header(s);
     if (mb_count < 0) {
-        fprintf(stderr, "HEADER ERROR\n");
+        av_log(s->avctx, AV_LOG_ERROR, "HEADER ERROR\n");
         return -1;
     }
     
     if (s->mb_x >= s->mb_width ||
         s->mb_y >= s->mb_height) {
-        fprintf(stderr, "POS ERROR %d %d\n", s->mb_x, s->mb_y);
+        av_log(s->avctx, AV_LOG_ERROR, "POS ERROR %d %d\n", s->mb_x, s->mb_y);
         return -1;
     }
     mb_pos = s->mb_y * s->mb_width + s->mb_x;
     left = s->mb_width * s->mb_height - mb_pos;
     if (mb_count > left) {
-        fprintf(stderr, "COUNT ERROR\n");
+        av_log(s->avctx, AV_LOG_ERROR, "COUNT ERROR\n");
         return -1;
     }
 
@@ -463,7 +463,7 @@ static int rv10_decode_packet(AVCodecContext *avctx,
         s->mv_dir = MV_DIR_FORWARD;
         s->mv_type = MV_TYPE_16X16; 
         if (ff_h263_decode_mb(s, s->block) == SLICE_ERROR) {
-            fprintf(stderr, "ERROR at MB %d %d\n", s->mb_x, s->mb_y);
+            av_log(s->avctx, AV_LOG_ERROR, "ERROR at MB %d %d\n", s->mb_x, s->mb_y);
             return -1;
         }
         ff_h263_update_motion_val(s);

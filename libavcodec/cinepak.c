@@ -418,7 +418,7 @@ static int cinepak_decode_frame(AVCodecContext *avctx,
     s->size = buf_size;
 
     if (avctx->get_buffer(avctx, &s->frame)) {
-        printf ("  Cinepak: get_buffer() failed\n");
+        av_log(avctx, AV_LOG_ERROR, "  Cinepak: get_buffer() failed\n");
         return -1;
     }
 

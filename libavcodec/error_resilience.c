@@ -669,12 +669,12 @@ void ff_er_frame_end(MpegEncContext *s){
     
     if(!s->error_resilience || s->error_count==0) return;
 
-    fprintf(stderr, "concealing errors\n");
+    av_log(s->avctx, AV_LOG_INFO, "concealing errors\n");
     
     if(s->motion_val == NULL){
         int size = (2 * s->mb_width + 2) * (2 * s->mb_height + 2);
         
-        fprintf(stderr, "Warning MVs not available\n");
+        av_log(s->avctx, AV_LOG_ERROR, "Warning MVs not available\n");
         
         s->motion_val= av_mallocz(size * 2 * sizeof(int16_t));
     }
@@ -684,9 +684,9 @@ void ff_er_frame_end(MpegEncContext *s){
             for(mb_x=0; mb_x<s->mb_width; mb_x++){
                 int status= s->error_status_table[mb_x + mb_y*s->mb_stride];
             
-                printf("%2X ", status); 
+                av_log(s->avctx, AV_LOG_DEBUG, "%2X ", status); 
             }
-            printf("\n");
+            av_log(s->avctx, AV_LOG_DEBUG, "\n");
         }
     }
     

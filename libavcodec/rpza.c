@@ -71,7 +71,7 @@ typedef struct RpzaContext {
     total_blocks--; \
     if (total_blocks < 0) \
     { \
-        printf("warning: block counter just went negative (this should not happen)\n"); \
+        av_log(s->avctx, AV_LOG_ERROR, "warning: block counter just went negative (this should not happen)\n"); \
         return; \
     } \
 }
@@ -100,7 +100,7 @@ static void rpza_decode_stream(RpzaContext *s)
 
     /* First byte is always 0xe1. Warn if it's different */
     if (s->buf[stream_ptr] != 0xe1)
-        printf("First chunk byte is 0x%02x instead of 0x1e\n",
+        av_log(s->avctx, AV_LOG_ERROR, "First chunk byte is 0x%02x instead of 0x1e\n",
             s->buf[stream_ptr]);
 
     /* Get chunk size, ingnoring first byte */
@@ -109,7 +109,7 @@ static void rpza_decode_stream(RpzaContext *s)
 
     /* If length mismatch use size from MOV file and try to decode anyway */
     if (chunk_size != s->size)
-        printf("MOV chunk size != encoded chunk size; using MOV chunk size\n");
+        av_log(s->avctx, AV_LOG_ERROR, "MOV chunk size != encoded chunk size; using MOV chunk size\n");
 
     chunk_size = s->size;
 
@@ -236,7 +236,7 @@ static void rpza_decode_stream(RpzaContext *s)
 
         /* Unknown opcode */
         default:
-            printf("Unknown opcode %d in rpza chunk."
+            av_log(s->avctx, AV_LOG_ERROR, "Unknown opcode %d in rpza chunk."
                  " Skip remaining %d bytes of chunk data.\n", opcode,
                  chunk_size - stream_ptr);
             return;
@@ -269,7 +269,7 @@ static int rpza_decode_frame(AVCodecContext *avctx,
 
     s->frame.reference = 1;
     if (avctx->get_buffer(avctx, &s->frame)) {
-        printf ("  RPZA Video: get_buffer() failed\n");
+        av_log(avctx, AV_LOG_ERROR, "  RPZA Video: get_buffer() failed\n");
         return -1;
     }
 

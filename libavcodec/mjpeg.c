@@ -884,7 +884,7 @@ static int mjpeg_decode_init(AVCodecContext *avctx)
 
     if (avctx->flags & CODEC_FLAG_EXTERN_HUFF)
     {
-	printf("mjpeg: using external huffman table\n");
+	av_log(avctx, AV_LOG_INFO, "mjpeg: using external huffman table\n");
 	init_get_bits(&s->gb, avctx->extradata, avctx->extradata_size*8);
 	mjpeg_decode_dht(s);
 	/* should check for error - but dunno */
@@ -987,7 +987,7 @@ static int mjpeg_decode_sof(MJpegDecodeContext *s)
     if(s->bits==9 && !s->pegasus_rct) s->rct=1;    //FIXME ugly
 
     if (s->bits != 8 && !s->lossless){
-        printf("only 8 bits/component accepted\n");
+        av_log(s->avctx, AV_LOG_ERROR, "only 8 bits/component accepted\n");
         return -1;
     }
     height = get_bits(&s->gb, 16);
@@ -1066,7 +1066,7 @@ static int mjpeg_decode_sof(MJpegDecodeContext *s)
 
     s->picture.reference= 0;
     if(s->avctx->get_buffer(s->avctx, &s->picture) < 0){
-        fprintf(stderr, "get_buffer() failed\n");
+        av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return -1;
     }
     s->picture.pict_type= I_TYPE;
@@ -1444,7 +1444,7 @@ static int mjpeg_decode_sos(MJpegDecodeContext *s)
     }
 
     if(s->avctx->debug & FF_DEBUG_PICT_INFO)
-        printf("%s %s p:%d >>:%d\n", s->lossless ? "lossless" : "sequencial DCT", s->rgb ? "RGB" : "", predictor, point_transform);
+        av_log(s->avctx, AV_LOG_DEBUG, "%s %s p:%d >>:%d\n", s->lossless ? "lossless" : "sequencial DCT", s->rgb ? "RGB" : "", predictor, point_transform);
     
     if(s->lossless){
             if(s->rgb){
@@ -1489,7 +1489,7 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
     len -= 6;
 
     if(s->avctx->debug & FF_DEBUG_STARTCODE){
-        printf("APPx %8X\n", id); 
+        av_log(s->avctx, AV_LOG_DEBUG, "APPx %8X\n", id); 
     }
     
     /* buggy AVID, it puts EOI only at every 10th frame */
@@ -1525,7 +1525,7 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
     {
 	int t_w, t_h;
 	skip_bits(&s->gb, 8); /* the trailing zero-byte */
-	printf("mjpeg: JFIF header found (version: %x.%x)\n",
+	av_log(s->avctx, AV_LOG_INFO, "mjpeg: JFIF header found (version: %x.%x)\n",
 	    get_bits(&s->gb, 8), get_bits(&s->gb, 8));
         skip_bits(&s->gb, 8);
 
@@ -1546,7 +1546,7 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
     
     if (id == ff_get_fourcc("Adob") && (get_bits(&s->gb, 8) == 'e'))
     {
-	printf("mjpeg: Adobe header found\n");
+	av_log(s->avctx, AV_LOG_INFO, "mjpeg: Adobe header found\n");
 	skip_bits(&s->gb, 16); /* version */
 	skip_bits(&s->gb, 16); /* flags0 */
 	skip_bits(&s->gb, 16); /* flags1 */
@@ -1556,7 +1556,7 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
     }
 
     if (id == ff_get_fourcc("LJIF")){
-        printf("Pegasus lossless jpeg header found\n");
+        av_log(s->avctx, AV_LOG_INFO, "Pegasus lossless jpeg header found\n");
 	skip_bits(&s->gb, 16); /* version ? */
 	skip_bits(&s->gb, 16); /* unknwon always 0? */
 	skip_bits(&s->gb, 16); /* unknwon always 0? */
@@ -1571,7 +1571,7 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
             s->pegasus_rct=1;
             break;
         default:
-            printf("unknown colorspace\n");
+            av_log(s->avctx, AV_LOG_ERROR, "unknown colorspace\n");
         }
         len -= 9;
         goto out;
@@ -1596,14 +1596,14 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
 	    skip_bits(&s->gb, 32); /* data off */
 #endif
 	    if (s->first_picture)
-		printf("mjpeg: Apple MJPEG-A header found\n");
+		av_log(s->avctx, AV_LOG_INFO, "mjpeg: Apple MJPEG-A header found\n");
 	}
     }
 
 out:
     /* slow but needed for extreme adobe jpegs */
     if (len < 0)
-	printf("mjpeg: error, decode_app parser read over the end\n");
+	av_log(s->avctx, AV_LOG_ERROR, "mjpeg: error, decode_app parser read over the end\n");
     while(--len > 0)
 	skip_bits(&s->gb, 8);
 
@@ -1626,7 +1626,7 @@ static int mjpeg_decode_com(MJpegDecodeContext *s)
 	    else
 		cbuf[i] = 0;
 
-	    printf("mjpeg comment: '%s'\n", cbuf);
+	    av_log(s->avctx, AV_LOG_INFO, "mjpeg comment: '%s'\n", cbuf);
 
 	    /* buggy avid, it puts EOI only at every 10th frame */
 	    if (!strcmp(cbuf, "AVID"))
@@ -1766,7 +1766,7 @@ static int mjpeg_decode_frame(AVCodecContext *avctx,
 		
 		s->start_code = start_code;
                 if(s->avctx->debug & FF_DEBUG_STARTCODE){
-                    printf("startcode: %X\n", start_code);
+                    av_log(s->avctx, AV_LOG_DEBUG, "startcode: %X\n", start_code);
                 }
 
 		/* process markers */
@@ -1791,7 +1791,7 @@ static int mjpeg_decode_frame(AVCodecContext *avctx,
                     break;
                 case DHT:
                     if(mjpeg_decode_dht(s) < 0){
-                        fprintf(stderr, "huffman table decode error\n");
+                        av_log(s->avctx, AV_LOG_ERROR, "huffman table decode error\n");
                         return -1;
                     }
                     break;
@@ -1829,7 +1829,7 @@ eoi_parser:
                             picture->qscale_table= s->qscale_table;
                             memset(picture->qscale_table, picture->quality, (s->width+15)/16);
                             if(avctx->debug & FF_DEBUG_QP)
-                                printf("QP: %d\n", picture->quality);
+                                av_log(s->avctx, AV_LOG_DEBUG, "QP: %d\n", picture->quality);
                             picture->quality*= FF_QP2LAMBDA;
                         }
                         
@@ -1858,7 +1858,7 @@ eoi_parser:
 		case SOF14:
 		case SOF15:
 		case JPG:
-		    printf("mjpeg: unsupported coding type (%x)\n", start_code);
+		    av_log(s->avctx, AV_LOG_ERROR, "mjpeg: unsupported coding type (%x)\n", start_code);
 		    break;
 //		default:
 //		    printf("mjpeg: unsupported marker (%x)\n", start_code);
@@ -1987,7 +1987,7 @@ read_header:
         picture->qscale_table= s->qscale_table;
         memset(picture->qscale_table, picture->quality, (s->width+15)/16);
         if(avctx->debug & FF_DEBUG_QP)
-            printf("QP: %d\n", picture->quality);
+            av_log(avctx, AV_LOG_DEBUG, "QP: %d\n", picture->quality);
         picture->quality*= FF_QP2LAMBDA;
     }
 

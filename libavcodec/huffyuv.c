@@ -219,7 +219,7 @@ static int generate_bits_table(uint32_t *dst, uint8_t *len_table){
                 dst[index]= bits++;
         }
         if(bits & 1){
-            fprintf(stderr, "Error generating huffman table\n");
+            av_log(NULL, AV_LOG_ERROR, "Error generating huffman table\n");
             return -1;
         }
         bits >>= 1;
@@ -480,7 +480,7 @@ static int encode_init(AVCodecContext *avctx)
     switch(avctx->pix_fmt){
     case PIX_FMT_YUV420P:
         if(avctx->strict_std_compliance>=0){
-            fprintf(stderr, "YV12-huffyuv is experimental, there WILL be no compatbility! (use (v)strict=-1)\n");
+            av_log(avctx, AV_LOG_ERROR, "YV12-huffyuv is experimental, there WILL be no compatbility! (use (v)strict=-1)\n");
             return -1;
         }
         s->bitstream_bpp= 12;
@@ -489,7 +489,7 @@ static int encode_init(AVCodecContext *avctx)
         s->bitstream_bpp= 16;
         break;
     default:
-        fprintf(stderr, "format not supported\n");
+        av_log(avctx, AV_LOG_ERROR, "format not supported\n");
         return -1;
     }
     avctx->bits_per_sample= s->bitstream_bpp;
@@ -703,7 +703,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
 
     p->reference= 0;
     if(avctx->get_buffer(avctx, p) < 0){
-        fprintf(stderr, "get_buffer() failed\n");
+        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return -1;
     }
 
@@ -724,7 +724,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
             p->data[0][1]= get_bits(&s->gb, 8);
             p->data[0][0]= get_bits(&s->gb, 8);
             
-            fprintf(stderr, "YUY2 output isnt implemenetd yet\n");
+            av_log(avctx, AV_LOG_ERROR, "YUY2 output isnt implemenetd yet\n");
             return -1;
         }else{
         
@@ -896,11 +896,11 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
                 draw_slice(s, height); // just 1 large slice as this isnt possible in reverse order
                 break;
             default:
-                fprintf(stderr, "prediction type not supported!\n");
+                av_log(avctx, AV_LOG_ERROR, "prediction type not supported!\n");
             }
         }else{
 
-            fprintf(stderr, "BGR24 output isnt implemenetd yet\n");
+            av_log(avctx, AV_LOG_ERROR, "BGR24 output isnt implemenetd yet\n");
             return -1;
         }
     }
@@ -1049,7 +1049,7 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
             }
         }        
     }else{
-        fprintf(stderr, "Format not supported!\n");
+        av_log(avctx, AV_LOG_ERROR, "Format not supported!\n");
     }
     emms_c();
     

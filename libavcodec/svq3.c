@@ -690,7 +690,7 @@ static int svq3_decode_slice_header (H264Context *h) {
 
   if (((header & 0x9F) != 1 && (header & 0x9F) != 2) || (header & 0x60) == 0) {
     /* TODO: what? */
-    fprintf (stderr, "unsupported slice header (%02X)\n", header);
+    av_log(h->s.avctx, AV_LOG_ERROR, "unsupported slice header (%02X)\n", header);
     return -1;
   } else {
     int length = (header >> 5) & 3;
@@ -841,7 +841,7 @@ static int svq3_decode_frame (AVCodecContext *avctx,
   s->picture_number = h->slice_num;
 
   if(avctx->debug&FF_DEBUG_PICT_INFO){
-      printf("%c hpel:%d, tpel:%d aqp:%d qp:%d\n", 
+      av_log(h->s.avctx, AV_LOG_DEBUG, "%c hpel:%d, tpel:%d aqp:%d qp:%d\n", 
       av_get_pict_type_char(s->pict_type), h->halfpel_flag, h->thirdpel_flag,
       s->adaptive_quant, s->qscale
       );
@@ -874,7 +874,7 @@ static int svq3_decode_frame (AVCodecContext *avctx,
       h->frame_num_offset += 256;
     }
     if (h->frame_num_offset == 0 || h->frame_num_offset >= h->prev_frame_num_offset) {
-      printf ("error in B-frame picture id\n");
+      av_log(h->s.avctx, AV_LOG_ERROR, "error in B-frame picture id\n");
       return -1;
     }
   } else {
@@ -920,7 +920,7 @@ static int svq3_decode_frame (AVCodecContext *avctx,
 	mb_type += 4;
       }
       if (mb_type > 33 || svq3_decode_mb (h, mb_type)) {
-	fprintf (stderr, "error while decoding MB %d %d\n", s->mb_x, s->mb_y);
+	av_log(h->s.avctx, AV_LOG_ERROR, "error while decoding MB %d %d\n", s->mb_x, s->mb_y);
 	return -1;
       }
 

@@ -1830,6 +1830,28 @@ void *__av_mallocz_static(void** location, unsigned int size);
 /* add by bero : in adx.c */
 int is_adx(const unsigned char *buf,size_t bufsize);
 
+/* av_log API */
+
+#include <stdarg.h>
+
+#define AV_LOG_ERROR 0
+#define AV_LOG_INFO 1
+#define AV_LOG_DEBUG 2
+
+extern void av_log(AVCodecContext*, int level, const char *fmt, ...) __attribute__ ((__format__ (__printf__, 3, 4)));
+extern void av_vlog(AVCodecContext*, int level, const char *fmt, va_list);
+extern int av_log_get_level(void);
+extern void av_log_set_level(int);
+extern void av_log_set_callback(void (*)(AVCodecContext*, int, const char*, va_list));
+
+#undef  AV_LOG_TRAP_PRINTF
+#ifdef AV_LOG_TRAP_PRINTF
+#define printf DO NOT USE
+#define fprintf DO NOT USE
+#undef stderr
+#define stderr DO NOT USE
+#endif
+
 #ifdef __cplusplus
 }
 #endif

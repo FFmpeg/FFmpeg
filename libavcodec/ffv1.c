@@ -598,7 +598,7 @@ static int encode_init(AVCodecContext *avctx)
         s->colorspace= 1;
         break;
     default:
-        fprintf(stderr, "format not supported\n");
+        av_log(avctx, AV_LOG_ERROR, "format not supported\n");
         return -1;
     }
     avcodec_get_chroma_sub_sample(avctx->pix_fmt, &s->chroma_h_shift, &s->chroma_v_shift);
@@ -642,7 +642,7 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
     int used_count= 0;
 
     if(avctx->strict_std_compliance >= 0){
-        printf("this codec is under development, files encoded with it wont be decodeable with future versions!!!\n"
+        av_log(avctx, AV_LOG_ERROR, "this codec is under development, files encoded with it wont be decodeable with future versions!!!\n"
                "use vstrict=-1 to use it anyway\n");
         return -1;
     }
@@ -885,17 +885,17 @@ static int read_header(FFV1Context *f){
         case 0x20: f->avctx->pix_fmt= PIX_FMT_YUV411P; break;
         case 0x33: f->avctx->pix_fmt= PIX_FMT_YUV410P; break;
         default:
-            fprintf(stderr, "format not supported\n");
+            av_log(f->avctx, AV_LOG_ERROR, "format not supported\n");
             return -1;
         }
     }else if(f->colorspace==1){
         if(f->chroma_h_shift || f->chroma_v_shift){
-            fprintf(stderr, "chroma subsampling not supported in this colorspace\n");
+            av_log(f->avctx, AV_LOG_ERROR, "chroma subsampling not supported in this colorspace\n");
             return -1;
         }
         f->avctx->pix_fmt= PIX_FMT_RGBA32;
     }else{
-        fprintf(stderr, "colorspace not supported\n");
+        av_log(f->avctx, AV_LOG_ERROR, "colorspace not supported\n");
         return -1;
     }
 
@@ -905,7 +905,7 @@ static int read_header(FFV1Context *f){
     for(i=0; i<5; i++){
         context_count*= read_quant_table(c, f->quant_table[i], context_count);
         if(context_count < 0){
-            printf("read_quant_table error\n");
+            av_log(f->avctx, AV_LOG_ERROR, "read_quant_table error\n");
             return -1;
         }
     }
@@ -965,16 +965,16 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
 
     p->reference= 0;
     if(avctx->get_buffer(avctx, p) < 0){
-        fprintf(stderr, "get_buffer() failed\n");
+        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return -1;
     }
 
     if(avctx->debug&FF_DEBUG_PICT_INFO)
-        printf("keyframe:%d coder:%d\n", p->key_frame, f->ac);
+        av_log(avctx, AV_LOG_ERROR, "keyframe:%d coder:%d\n", p->key_frame, f->ac);
     
     if(!f->ac){
         bytes_read = get_cabac_terminate(c);
-        if(bytes_read ==0) printf("error at end of AC stream\n");
+        if(bytes_read ==0) av_log(avctx, AV_LOG_ERROR, "error at end of AC stream\n");
 //printf("pos=%d\n", bytes_read);
         init_get_bits(&f->gb, buf + bytes_read, buf_size - bytes_read);
     } else {
@@ -1004,7 +1004,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
     
     if(f->ac){
         bytes_read= get_cabac_terminate(c);
-        if(bytes_read ==0) printf("error at end of frame\n");
+        if(bytes_read ==0) av_log(f->avctx, AV_LOG_ERROR, "error at end of frame\n");
     }else{
         bytes_read+= (get_bits_count(&f->gb)+7)/8;
     }

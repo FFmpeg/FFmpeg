@@ -207,7 +207,7 @@ static inline int asv1_decode_block(ASV1Context *a, DCTELEM block[64]){
         if(ccp){
             if(ccp == 16) break;
             if(ccp < 0 || i>=10){
-                printf("coded coeff pattern damaged\n");
+                av_log(a->avctx, AV_LOG_ERROR, "coded coeff pattern damaged\n");
                 return -1;
             }
 
@@ -415,7 +415,7 @@ static int decode_frame(AVCodecContext *avctx,
 
     p->reference= 0;
     if(avctx->get_buffer(avctx, p) < 0){
-        fprintf(stderr, "get_buffer() failed\n");
+        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return -1;
     }
     p->pict_type= I_TYPE;
@@ -561,7 +561,7 @@ static int decode_init(AVCodecContext *avctx){
 
     a->inv_qscale= ((uint8_t*)avctx->extradata)[0];
     if(a->inv_qscale == 0){
-        printf("illegal qscale 0\n");
+        av_log(avctx, AV_LOG_ERROR, "illegal qscale 0\n");
         if(avctx->codec_id == CODEC_ID_ASV1)
             a->inv_qscale= 6;
         else
