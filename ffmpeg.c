@@ -129,6 +129,7 @@ static int use_obmc = 0;
 static int use_aic = 0;
 static int use_aiv = 0;
 static int use_umv = 0;
+static int use_ss = 0;
 static int use_alt_scan = 0;
 static int use_trell = 0;
 static int use_scan_offset = 0;
@@ -2481,6 +2482,9 @@ static void opt_output_file(const char *filename)
                 if (use_umv) {
                     video_enc->flags |= CODEC_FLAG_H263P_UMV;
                 }
+                if (use_ss) {
+                    video_enc->flags |= CODEC_FLAG_H263P_SLICE_STRUCT;
+                }
            	if (use_aic) {
                     video_enc->flags |= CODEC_FLAG_H263P_AIC;
                 }
@@ -3205,13 +3209,14 @@ const OptionDef options[] = {
     { "ildct", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&do_interlace_dct}, 
       "force interlaced dct support in encoder (MPEG2/MPEG4)" },
     { "ilme", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&do_interlace_me}, 
-      "force interlacied me support in encoder (MPEG2/MPEG4)" },
+      "force interlaced me support in encoder (MPEG2/MPEG4)" },
     { "psnr", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&do_psnr}, "calculate PSNR of compressed frames" },
     { "vstats", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&do_vstats}, "dump video coding statistics to file" }, 
     { "vhook", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)add_frame_hooker}, "insert video processing module", "module" },
     { "aic", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_aic}, "enable Advanced intra coding (h263+)" },
     { "aiv", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_aiv}, "enable Alternative inter vlc (h263+)" },
     { "umv", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_umv}, "enable Unlimited Motion Vector (h263+)" },
+    { "ssm", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_ss}, "enable Slice Structured mode (h263+)" },
     { "alt", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_alt_scan}, "enable alternate scantable (MPEG2/MPEG4)" },
     { "trell", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_trell}, "enable trellis quantization" },
     { "cgop", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&closed_gop}, "closed gop" },
