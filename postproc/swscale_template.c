@@ -2275,7 +2275,7 @@ static inline void RENAME(hyscale)(uint16_t *dst, int dstWidth, uint8_t *src, in
 			"mov (%%"REG_b"), %%"REG_S"	\n\t"\
 			"call *%4			\n\t"\
 			"addl (%%"REG_b", %%"REG_a"), %%ecx\n\t"\
-			"add %%"REG_a", %%"REG_d"	\n\t"\
+			"add %%"REG_a", %%"REG_D"	\n\t"\
 			"xor %%"REG_a", %%"REG_a"	\n\t"\
 
 FUNNY_Y_CODE
@@ -2289,7 +2289,7 @@ FUNNY_Y_CODE
 
 			:: "m" (src), "m" (dst), "m" (mmx2Filter), "m" (mmx2FilterPos),
 			"m" (funnyYCode)
-			: "%"REG_a, "%"REG_b, "%"REG_c, "%"REG_d, "%"REG_S, "%"REG_d
+			: "%"REG_a, "%"REG_b, "%"REG_c, "%"REG_d, "%"REG_S, "%"REG_D
 		);
 		for(i=dstWidth-1; (i*xInc)>>16 >=srcW-1; i--) dst[i] = src[srcW-1]*128;
 	}
