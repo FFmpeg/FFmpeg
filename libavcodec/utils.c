@@ -60,7 +60,7 @@ void *av_fast_realloc(void *ptr, unsigned int *size, unsigned int min_size)
     if(min_size < *size) 
         return ptr;
     
-    *size= min_size + 10*1024;
+    *size= 17*min_size/16 + 32;
 
     return av_realloc(ptr, *size);
 }
@@ -69,7 +69,6 @@ void *av_fast_realloc(void *ptr, unsigned int *size, unsigned int min_size)
 static unsigned int last_static = 0;
 static unsigned int allocated_static = 0;
 static void** array_static = NULL;
-static const unsigned int grow_static = 64; // ^2
 
 /**
  * allocation of static arrays - do not use for normal allocation.
@@ -79,7 +78,7 @@ void *av_mallocz_static(unsigned int size)
     void *ptr = av_mallocz(size);
 
     if(ptr){ 
-        array_static =av_fast_realloc(array_static, &allocated_static, last_static+1);
+        array_static =av_fast_realloc(array_static, &allocated_static, sizeof(void*)*(last_static+1));
         array_static[last_static++] = ptr;
     }
 
