@@ -39,15 +39,22 @@ endif
 SRCS = $(OBJS:.o=.c) $(ASM_OBJS:.o=.s)
 
 LIB= libavcodec.a
+ifeq ($(BUILD_SHARED),yes)
+SLIB= libffmpeg-$(VERSION).so
+endif
 TESTS= imgresample-test dct-test motion-test
 
-all: $(LIB)
+all: $(LIB) $(SLIB)
 tests: apiexample cpuid_test $(TESTS)
 
 $(LIB): $(OBJS) $(ASM_OBJS)
 	rm -f $@
 	$(AR) rcs $@ $(OBJS) $(ASM_OBJS)
 
+$(SLIB): $(OBJS) $(ASM_OBJS)
+	rm -f $@
+	$(CC) -shared -o $@ $(OBJS) $(ASM_OBJS)
+	ln -sf $@ libffmpeg.so
 dsputil.o: dsputil.c dsputil.h
 
 %.o: %.c
@@ -63,7 +70,7 @@ depend:
 	$(CC) -MM $(CFLAGS) $(SRCS) 1>.depend
 
 clean: 
-	rm -f *.o *~ *.a i386/*.o i386/*~ \
+	rm -f *.o *~ $(LIB) $(SLIB) *.so i386/*.o i386/*~ \
 	   armv4l/*.o armv4l/*~ \
 	   mlib/*.o mlib/*~ \
            libac3/*.o libac3/*~ \
@@ -92,6 +99,13 @@ dct-test: dct-test.o jfdctfst.o i386/fdct_mmx.o \
 motion-test: motion_test.o $(LIB)
 	$(CC) -o $@ $^
 
+install: all
+#	install -s -m 644 $(LIB) $(prefix)/lib
+ifeq ($(BUILD_SHARED),yes)
+	install -s -m 755 $(SLIB) $(prefix)/lib
+	ln -sf $(prefix)/lib/$(SLIB) $(prefix)/lib/libffmpeg.so
+	ldconfig
+endif
 #
 # include dependency files if they exist
 #

@@ -18,17 +18,23 @@ EXT=
 PROG=ffmpeg ffplay ffserver
 endif
 
+ifeq ($(BUILD_SHARED),yes)
+FFMPEG_LIB=-Llibavcodec -lffmpeg
+else
+FFMPEG_LIB=libavcodec/libavcodec.a
+endif
+
 all: lib $(PROG)
 
 lib:
 	$(MAKE) -C libavcodec all
 	$(MAKE) -C libav all
 
-ffmpeg$(EXE): ffmpeg.o libav/libav.a libavcodec/libavcodec.a
-	$(CC) $(LDFLAGS) -o $@ $^ -lm
+ffmpeg$(EXE): ffmpeg.o libav/libav.a 
+	$(CC) $(LDFLAGS) -lm -o $@ $^ $(FFMPEG_LIB)
 
-ffserver$(EXE): ffserver.o libav/libav.a libavcodec/libavcodec.a
-	$(CC) $(LDFLAGS) -o $@ $^ -lm
+ffserver$(EXE): ffserver.o libav/libav.a 
+	$(CC) $(LDFLAGS) -lm -o $@ $^ $(FFMPEG_LIB)
 
 ffplay: ffmpeg$(EXE)
 	ln -sf $< $@
@@ -37,6 +43,7 @@ ffplay: ffmpeg$(EXE)
 	$(CC) $(CFLAGS) -c -o $@ $< 
 
 install: all
+	$(MAKE) -C libavcodec install
 	install -s -m 755 $(PROG) $(prefix)/bin
 	ln -sf ffmpeg $(prefix)/bin/ffplay 
 
