@@ -115,21 +115,33 @@ void open_audio(AVFormatContext *oc, AVStream *st)
     samples = malloc(audio_input_frame_size * 2 * c->channels);
 }
 
+/* prepare a 16 bit dummy audio frame of 'frame_size' samples and
+   'nb_channels' channels */
+void get_audio_frame(int16_t *samples, int frame_size, int nb_channels)
+{
+    int j, i, v;
+    int16_t *q;
+
+    q = samples;
+    for(j=0;j<frame_size;j++) {
+        v = (int)(sin(t) * 10000);
+        for(i = 0; i < nb_channels; i++)
+            *q++ = v;
+        t += tincr;
+        tincr += tincr2;
+    }
+}
+
 void write_audio_frame(AVFormatContext *oc, AVStream *st)
 {
-    int j, out_size;
+    int out_size;
     AVCodecContext *c;
 
 
     c = &st->codec;
 
-    for(j=0;j<audio_input_frame_size;j++) {
-        samples[2*j] = (int)(sin(t) * 10000);
-        samples[2*j+1] = samples[2*j];
-        t += tincr;
-        tincr += tincr2;
-    }
-    
+    get_audio_frame(samples, audio_input_frame_size, c->channels);
+
     out_size = avcodec_encode_audio(c, audio_outbuf, audio_outbuf_size, samples);
 
     /* write the compressed frame in the media file */
