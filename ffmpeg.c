@@ -31,6 +31,9 @@
 #include <time.h>
 #include <ctype.h>
 
+#if !defined(INFINITY) && defined(HUGE_VAL)
+#define INFINITY HUGE_VAL
+#endif
 
 #define MAXINT64 INT64_C(0x7fffffffffffffff)
 
