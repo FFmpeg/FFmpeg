@@ -25,7 +25,7 @@ OBJS+= audio.o
 endif
 
 ifeq ($(CONFIG_NETWORK),yes)
-OBJS+= udp.o http.o
+OBJS+= udp.o tcp.o http.o rtsp.o rtp.o rtpproto.o
 endif
 
 LIB= libavformat.a
