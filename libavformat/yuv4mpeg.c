@@ -54,7 +54,7 @@ static int yuv4_generate_header(AVFormatContext *s, char* buf)
     
     inter = 'p'; /* progressive is the default */
     if (st->codec.coded_frame && st->codec.coded_frame->interlaced_frame) {
-        inter = st->codec.coded_frame->bottom_field_first ? 'b' : 't';
+        inter = st->codec.coded_frame->top_field_first ? 't' : 'b';
     }
 
     /* construct stream header, if this is the first frame */

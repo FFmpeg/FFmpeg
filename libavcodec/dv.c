@@ -855,7 +855,7 @@ static int dvvideo_decode_frame(AVCodecContext *avctx,
         return -1;
     }
     s->picture.interlaced_frame = 1;
-    s->picture.bottom_field_first = 1;
+    s->picture.top_field_first = 0;
 
     /* for each DIF segment */
     mb_pos_ptr = s->sys->video_place;
