@@ -1606,7 +1606,7 @@ FIND_MIN_MAX(%%ebx, %1, 2)
  * the mode value is interpreted as a quality value if its negative, its range is then (-1 ... -63)
  * -63 is best quality -1 is worst
  */
-extern "C"{
+//extern "C"{
 void  postprocess(unsigned char * src[], int src_stride,
                  unsigned char * dst[], int dst_stride,
                  int horizontal_size,   int vertical_size,
@@ -1669,7 +1669,7 @@ int getModeForQuality(int quality){
 	return modes[ (quality*6) >>6 ];
 }
 
-} // extern "C"
+//} // extern "C"
 
 /**
  * Copies a block from src to dst and fixes the blacklevel

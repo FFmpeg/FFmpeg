@@ -64,17 +64,17 @@
 #define PAVGB(a,b) "pavgusb " #a ", " #b " \n\t"
 #endif
 
-#ifdef __cplusplus
+//#ifdef __cplusplus
 //#include <inttypes.h>
 
 void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStride, int width, int height,
 	QP_STORE_T QPs[], int QPStride, int isColor, int mode);
-#endif
+//#endif
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif
+//#ifdef __cplusplus
+//extern "C"
+//{
+//#endif
 void postprocess(unsigned char * src[], int src_stride,
                  unsigned char * dst[], int dst_stride,
                  int horizontal_size,   int vertical_size,
@@ -82,9 +82,9 @@ void postprocess(unsigned char * src[], int src_stride,
 		 					   int mode);
 
 int getModeForQuality(int quality);
-#ifdef __cplusplus
-}
-#endif
+//#ifdef __cplusplus
+//}
+//#endif
 
 
 #endif
