@@ -450,7 +450,7 @@ static int amr_nb_encode_frame(AVCodecContext *avctx,
         data, 
         frame, 
         0);
-    av_log(NULL,AV_LOG_DEBUG,"amr_nb_encode_frame encoded %u bytes, bitrate %u, first byte was %#02x\n",written, s->enc_bitrate, frame[0] );
+    /* av_log(NULL,AV_LOG_DEBUG,"amr_nb_encode_frame encoded %u bytes, bitrate %u, first byte was %#02x\n",written, s->enc_bitrate, frame[0] ); */
 
     return written;
 }
