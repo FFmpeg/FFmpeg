@@ -2478,8 +2478,6 @@ int getPpModeForQuality(int quality){
 	return modes[quality];
 }
 
-//} // extern "C"
-
 /**
  * Copies a block from src to dst and fixes the blacklevel
  * numLines must be a multiple of 4
@@ -2493,8 +2491,6 @@ static inline void blockCopy(uint8_t dst[], int dstStride, uint8_t src[], int sr
 	{
 #ifdef HAVE_MMX
 					asm volatile(
-						"movl %4, %%eax \n\t"
-						"movl %%eax, temp0\n\t"
 						"pushl %0 \n\t"
 						"pushl %1 \n\t"
 						"leal (%2,%2), %%eax	\n\t"
@@ -2505,47 +2501,45 @@ static inline void blockCopy(uint8_t dst[], int dstStride, uint8_t src[], int sr
 
 #define SCALED_CPY					\
 						"movq (%0), %%mm0	\n\t"\
-						"movq (%0,%2), %%mm1	\n\t"\
-						"movq %%mm0, %%mm5	\n\t"\
+						"movq (%0), %%mm5	\n\t"\
 						"punpcklbw %%mm4, %%mm0 \n\t"\
 						"punpckhbw %%mm4, %%mm5 \n\t"\
 						"psubw %%mm2, %%mm0	\n\t"\
 						"psubw %%mm2, %%mm5	\n\t"\
+						"movq (%0,%2), %%mm1	\n\t"\
 						"psllw $6, %%mm0	\n\t"\
 						"psllw $6, %%mm5	\n\t"\
 						"pmulhw %%mm3, %%mm0	\n\t"\
+						"movq (%0,%2), %%mm6	\n\t"\
 						"pmulhw %%mm3, %%mm5	\n\t"\
-						"packuswb %%mm5, %%mm0	\n\t"\
-						"movq %%mm0, (%1)	\n\t"\
-						"movq %%mm1, %%mm5	\n\t"\
 						"punpcklbw %%mm4, %%mm1 \n\t"\
-						"punpckhbw %%mm4, %%mm5 \n\t"\
+						"punpckhbw %%mm4, %%mm6 \n\t"\
 						"psubw %%mm2, %%mm1	\n\t"\
-						"psubw %%mm2, %%mm5	\n\t"\
+						"psubw %%mm2, %%mm6	\n\t"\
 						"psllw $6, %%mm1	\n\t"\
-						"psllw $6, %%mm5	\n\t"\
+						"psllw $6, %%mm6	\n\t"\
 						"pmulhw %%mm3, %%mm1	\n\t"\
-						"pmulhw %%mm3, %%mm5	\n\t"\
-						"packuswb %%mm5, %%mm1	\n\t"\
+						"pmulhw %%mm3, %%mm6	\n\t"\
+						"addl %%eax, %0		\n\t"\
+						"packuswb %%mm5, %%mm0	\n\t"\
+						"packuswb %%mm6, %%mm1	\n\t"\
+						"movq %%mm0, (%1)	\n\t"\
 						"movq %%mm1, (%1, %3)	\n\t"\
 
-						"1:			\n\t"
 SCALED_CPY
-						"addl %%eax, %0		\n\t"
 						"addl %%ebx, %1		\n\t"
 SCALED_CPY
-						"addl %%eax, %0		\n\t"
 						"addl %%ebx, %1		\n\t"
-						"decl temp0		\n\t"
-						"jnz 1b			\n\t"
+SCALED_CPY
+						"addl %%ebx, %1		\n\t"
+SCALED_CPY
 
 						"popl %1 \n\t"
 						"popl %0 \n\t"
 						: : "r" (src),
 						"r" (dst),
 						"r" (srcStride),
-						"r" (dstStride),
-						"m" (numLines>>2)
+						"r" (dstStride)
 						: "%eax", "%ebx"
 					);
 #else
