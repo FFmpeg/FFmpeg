@@ -39,6 +39,7 @@ else
     do_mpeg4=y
     do_huffyuv=y
     do_mjpeg=y
+    do_ljpeg=y
     do_rv10=y
     do_mp2=y
     do_ac3=y
@@ -242,6 +243,16 @@ file=${outfile}mjpeg.avi
 do_ffmpeg $file -y -qscale 10 -f pgmyuv -i $raw_src -an -vcodec mjpeg $file
 
 # mjpeg decoding
+do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst 
+fi
+
+###################################
+if [ -n "$do_ljpeg" ] ; then
+# ljpeg
+file=${outfile}ljpeg.avi
+do_ffmpeg $file -y -f pgmyuv -i $raw_src -an -vcodec ljpeg $file
+
+# ljpeg decoding
 do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst 
 fi
 

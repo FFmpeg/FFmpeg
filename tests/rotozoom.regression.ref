@@ -38,6 +38,9 @@ stddev:  4.69 bytes:6993920
 e9218a1db885fe0262e88f9df630307d *./data/a-mjpeg.avi
 a365b4da246ad68caf96b702b7f961a1 *./data/out.yuv
 stddev:  4.76 bytes:7602176
+defd90b44bced2772c6ca0d8eb75f668 *./data/a-ljpeg.avi
+dde5895817ad9d219f79a52d0bdfb001 *./data/out.yuv
+stddev:  0.00 bytes:7602176
 1b46671251277c14f3a24a034648c458 *./data/a-rv10.rm
 e1923bc2940a017858e354c3fb0e6244 *./data/out.yuv
 stddev: 13.18 bytes:7602176
