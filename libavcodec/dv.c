@@ -845,6 +845,8 @@ static int dvvideo_decode_frame(AVCodecContext *avctx,
     
     s->picture.reference = 0;
     avctx->pix_fmt = s->sys->pix_fmt;
+    avctx->width = s->sys->width;
+    avctx->height = s->sys->height;
     if(avctx->get_buffer(avctx, &s->picture) < 0) {
         fprintf(stderr, "get_buffer() failed\n");
         return -1;
