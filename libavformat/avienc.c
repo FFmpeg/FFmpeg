@@ -113,9 +113,6 @@ const CodecTag codec_bmp_tags[] = {
  
     { CODEC_ID_MSMPEG4V1, MKTAG('M', 'P', 'G', '4') }, 
 
-    /* added based on MPlayer */
-    { CODEC_ID_MSMPEG4V1, MKTAG('D', 'I', 'V', '4') }, 
-
     { CODEC_ID_WMV1, MKTAG('W', 'M', 'V', '1') }, 
 
     /* added based on MPlayer */
