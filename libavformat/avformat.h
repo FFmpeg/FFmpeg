@@ -7,7 +7,7 @@ extern "C" {
 
 #define LIBAVFORMAT_VERSION_INT 0x000406  
 #define LIBAVFORMAT_VERSION     "0.4.6"
-#define LIBAVFORMAT_BUILD       4605
+#define LIBAVFORMAT_BUILD       4606
 
 #include "avcodec.h"
 
@@ -15,7 +15,16 @@ extern "C" {
 
 /* packet functions */
 
-#define AV_NOPTS_VALUE 0
+#ifndef MAXINT64
+#define MAXINT64 int64_t_C(0x7fffffffffffffff)
+#endif
+
+#ifndef MININT64
+#define MININT64 int64_t_C(0x8000000000000000)
+#endif
+
+#define AV_NOPTS_VALUE MININT64
+#define AV_TIME_BASE 1000000
 
 typedef struct AVPacket {
     int64_t pts; /* presentation time stamp in stream units (set av_set_pts_info) */
@@ -164,7 +173,6 @@ typedef struct AVStream {
     AVCodecContext codec; /* codec context */
     int r_frame_rate;     /* real frame rate of the stream */
     int r_frame_rate_base;/* real frame rate base of the stream */
-    uint64_t time_length; /* real length of the stream in miliseconds */
     void *priv_data;
     /* internal data used in av_find_stream_info() */
     int codec_info_state;     
@@ -177,6 +185,12 @@ typedef struct AVStream {
     /* quality, as it has been removed from AVCodecContext and put in AVVideoFrame
      * MN:dunno if thats the right place, for it */
     float quality; 
+    /* decoding: position of the first frame of the component, in
+       AV_TIME_BASE fractional seconds. */
+    int64_t start_time; 
+    /* decoding: duration of the stream, in AV_TIME_BASE fractional
+       seconds. */
+    int64_t duration;
 } AVStream;
 
 #define MAX_STREAMS 20
@@ -203,7 +217,22 @@ typedef struct AVFormatContext {
     /* This buffer is only needed when packets were already buffered but
        not decoded, for example to get the codec parameters in mpeg
        streams */
-   struct AVPacketList *packet_buffer;
+    struct AVPacketList *packet_buffer;
+
+    /* decoding: position of the first frame of the component, in
+       AV_TIME_BASE fractional seconds. NEVER set this value directly:
+       it is deduced from the AVStream values.  */
+    int64_t start_time; 
+    /* decoding: duration of the stream, in AV_TIME_BASE fractional
+       seconds. NEVER set this value directly: it is deduced from the
+       AVStream values.  */
+    int64_t duration;
+    /* decoding: total file size. 0 if unknown */
+    int64_t file_size;
+    /* decoding: total stream bitrate in bit/s, 0 if not
+       available. Never set it directly if the file_size and the
+       duration are known as ffmpeg can compute it automatically. */
+    int bit_rate;
 } AVFormatContext;
 
 typedef struct AVPacketList {
@@ -274,6 +303,7 @@ extern AVImageFormat gif_image_format;
 /* modules */
 
 /* mpeg.c */
+extern AVInputFormat mpegps_demux;
 int mpegps_init(void);
 
 /* mpegts.c */
