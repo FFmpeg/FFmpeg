@@ -240,7 +240,7 @@ int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic){
             if(s->flags&CODEC_FLAG_EMU_EDGE)
                 buf->data[i] = buf->base[i];
             else
-                buf->data[i] = buf->base[i] + (pic->linesize[i]*EDGE_WIDTH>>v_shift) + (EDGE_WIDTH>>h_shift);
+                buf->data[i] = buf->base[i] + ALIGN((pic->linesize[i]*EDGE_WIDTH>>v_shift) + (EDGE_WIDTH>>h_shift), s_align);
         }
         pic->age= 256*256*256*64;
         pic->type= FF_BUFFER_TYPE_INTERNAL;
