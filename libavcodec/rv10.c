@@ -342,6 +342,15 @@ static int rv20_decode_picture_header(MpegEncContext *s)
 {
     int seq, mb_pos, i;
     
+#if 0
+    GetBitContext gb= s->gb;
+    for(i=0; i<64; i++){
+        av_log(s->avctx, AV_LOG_DEBUG, "%d", get_bits1(&gb));
+        if(i%4==3) av_log(s->avctx, AV_LOG_DEBUG, " ");
+    }
+    av_log(s->avctx, AV_LOG_DEBUG, "\n");
+#endif
+    
     if(s->avctx->sub_id == 0x30202002 || s->avctx->sub_id == 0x30203002){
         if (get_bits(&s->gb, 3)){
             av_log(s->avctx, AV_LOG_ERROR, "unknown triplet set\n");
@@ -482,6 +491,7 @@ static int rv10_decode_init(AVCodecContext *avctx)
     case 0x20001000:
     case 0x20100001:
     case 0x20101001:
+    case 0x20103001:
         s->low_delay=1;
         break;
     case 0x20200002:
