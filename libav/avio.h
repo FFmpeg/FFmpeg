@@ -141,11 +141,3 @@ extern URLProtocol udp_protocol;
 
 /* http.c */
 extern URLProtocol http_protocol;
-
-/* audio.c */
-extern const char *audio_device;
-extern URLProtocol audio_protocol;
-
-/* grab.c */
-extern const char *v4l_device;
-extern URLProtocol video_protocol;

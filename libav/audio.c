@@ -30,87 +30,28 @@
 
 const char *audio_device = "/dev/dsp";
 
-typedef struct {
-    int fd;
-    int rate;
-    int channels;
-} AudioData;
-
 #define AUDIO_BLOCK_SIZE 4096
 
-/* audio read support */
+typedef struct {
+    int fd;
+    int sample_rate;
+    int channels;
+    int frame_size; /* in bytes ! */
+    int codec_id;
+    UINT8 buffer[AUDIO_BLOCK_SIZE];
+    int buffer_ptr;
+} AudioData;
 
-static int audio_read(URLContext *h, UINT8 *buf, int size)
+static int audio_open(AudioData *s, int is_output)
 {
-    AudioData *s = h->priv_data;
-    int ret;
-
-    ret = read(s->fd, buf, size);
-    if (ret < 0)
-        return -errno;
-    else
-        return ret;
-}
-
-static int audio_write(URLContext *h, UINT8 *buf, int size)
-{
-    AudioData *s = h->priv_data;
-    int ret;
-
-    ret = write(s->fd, buf, size);
-    if (ret < 0)
-        return -errno;
-    else
-        return ret;
-}
-
-static int audio_get_format(URLContext *h, URLFormat *f)
-{
-    AudioData *s = h->priv_data;
-
-    strcpy(f->format_name, "pcm");
-    f->sample_rate = s->rate;
-    f->channels = s->channels;
-    return 0;
-}
-
-/* URI syntax: 'audio:[rate[,channels]]' 
-   default: rate=44100, channels=2
- */
-static int audio_open(URLContext *h, const char *uri, int flags)
-{
-    AudioData *s;
-    const char *p;
-    int freq, channels, audio_fd;
+    int audio_fd;
     int tmp, err;
 
-    h->is_streamed = 1;
-    h->packet_size = AUDIO_BLOCK_SIZE;
-
-    s = malloc(sizeof(AudioData));
-    if (!s)
-        return -ENOMEM;
-    h->priv_data = s;
-
-    /* extract parameters */
-    p = uri;
-    strstart(p, "audio:", &p);
-    freq = strtol(p, (char **)&p, 0);
-    if (freq <= 0)
-        freq = 44100;
-    if (*p == ',')
-        p++;
-    channels = strtol(p, (char **)&p, 0);
-    if (channels <= 0)
-            channels = 2;
-    s->rate = freq;
-    s->channels = channels;
-    
     /* open linux audio device */
-    if (flags & URL_WRONLY) 
-        audio_fd = open(audio_device,O_WRONLY);
+    if (is_output)
+        audio_fd = open(audio_device, O_WRONLY);
     else
-        audio_fd = open(audio_device,O_RDONLY);
+        audio_fd = open(audio_device, O_RDONLY);
     if (audio_fd < 0) {
         perror(audio_device);
         return -EIO;
@@ -119,60 +60,233 @@ static int audio_open(URLContext *h, const char *uri, int flags)
     /* non blocking mode */
     fcntl(audio_fd, F_SETFL, O_NONBLOCK);
 
+    s->frame_size = AUDIO_BLOCK_SIZE;
 #if 0
-    tmp=(NB_FRAGMENTS << 16) | FRAGMENT_BITS;
-    err=ioctl(audio_fd, SNDCTL_DSP_SETFRAGMENT, &tmp);
+    tmp = (NB_FRAGMENTS << 16) | FRAGMENT_BITS;
+    err = ioctl(audio_fd, SNDCTL_DSP_SETFRAGMENT, &tmp);
     if (err < 0) {
         perror("SNDCTL_DSP_SETFRAGMENT");
     }
 #endif
 
-    tmp=AFMT_S16_LE;
-    err=ioctl(audio_fd,SNDCTL_DSP_SETFMT,&tmp);
+    /* select format : favour native format */
+    err = ioctl(audio_fd, SNDCTL_DSP_GETFMTS, &tmp);
+    
+#ifdef WORDS_BIGENDIAN
+    if (tmp & AFMT_S16_BE) {
+        tmp = AFMT_S16_BE;
+    } else if (tmp & AFMT_S16_LE) {
+        tmp = AFMT_S16_LE;
+    } else {
+        tmp = 0;
+    }
+#else
+    if (tmp & AFMT_S16_LE) {
+        tmp = AFMT_S16_LE;
+    } else if (tmp & AFMT_S16_BE) {
+        tmp = AFMT_S16_BE;
+    } else {
+        tmp = 0;
+    }
+#endif
+
+    switch(tmp) {
+    case AFMT_S16_LE:
+        s->codec_id = CODEC_ID_PCM_S16LE;
+        break;
+    case AFMT_S16_BE:
+        s->codec_id = CODEC_ID_PCM_S16BE;
+        break;
+    default:
+        fprintf(stderr, "Soundcard does not support 16 bit sample format\n");
+        close(audio_fd);
+        return -EIO;
+    }
+    err=ioctl(audio_fd, SNDCTL_DSP_SETFMT, &tmp);
     if (err < 0) {
         perror("SNDCTL_DSP_SETFMT");
         goto fail;
     }
     
-    tmp= (channels == 2);
-    err=ioctl(audio_fd,SNDCTL_DSP_STEREO,&tmp);
+    tmp = (s->channels == 2);
+    err = ioctl(audio_fd, SNDCTL_DSP_STEREO, &tmp);
     if (err < 0) {
         perror("SNDCTL_DSP_STEREO");
         goto fail;
     }
     
-    tmp = freq;
-    err=ioctl(audio_fd, SNDCTL_DSP_SPEED, &tmp);
+    tmp = s->sample_rate;
+    err = ioctl(audio_fd, SNDCTL_DSP_SPEED, &tmp);
     if (err < 0) {
         perror("SNDCTL_DSP_SPEED");
         goto fail;
     }
-
-    s->rate = tmp;
+    s->sample_rate = tmp; /* store real sample rate */
     s->fd = audio_fd;
 
     return 0;
  fail:
     close(audio_fd);
-    free(s);
     return -EIO;
 }
 
-static int audio_close(URLContext *h)
+static int audio_close(AudioData *s)
 {
-    AudioData *s = h->priv_data;
-
     close(s->fd);
+    return 0;
+}
+
+/* sound output support */
+static int audio_write_header(AVFormatContext *s1)
+{
+    AudioData *s;
+    AVStream *st;
+    int ret;
+
+    s = av_mallocz(sizeof(AudioData));
+    if (!s)
+        return -ENOMEM;
+    s1->priv_data = s;
+
+    st = s1->streams[0];
+    s->sample_rate = st->codec.sample_rate;
+    s->channels = st->codec.channels;
+    ret = audio_open(s, 1);
+    if (ret < 0) {
+        free(s);
+        return -EIO;
+    } else {
+        return 0;
+    }
+}
+
+static int audio_write_packet(AVFormatContext *s1, int stream_index,
+                              UINT8 *buf, int size)
+{
+    AudioData *s = s1->priv_data;
+    int len, ret;
+
+    while (size > 0) {
+        len = AUDIO_BLOCK_SIZE - s->buffer_ptr;
+        if (len > size)
+            len = size;
+        memcpy(s->buffer + s->buffer_ptr, buf, len);
+        s->buffer_ptr += len;
+        if (s->buffer_ptr >= AUDIO_BLOCK_SIZE) {
+            for(;;) {
+                ret = write(s->fd, s->buffer, AUDIO_BLOCK_SIZE);
+                if (ret != 0)
+                    break;
+                if (ret < 0 && (errno != EAGAIN && errno != EINTR))
+                    return -EIO;
+            }
+            s->buffer_ptr = 0;
+        }
+        buf += len;
+        size -= len;
+    }
+    return 0;
+}
+
+static int audio_write_trailer(AVFormatContext *s1)
+{
+    AudioData *s = s1->priv_data;
+
+    audio_close(s);
     free(s);
     return 0;
 }
 
-URLProtocol audio_protocol = {
-    "audio",
-    audio_open,
-    audio_read,
-    audio_write,
-    NULL, /* seek */
-    audio_close,
-    audio_get_format,
+/* grab support */
+
+static int audio_read_header(AVFormatContext *s1, AVFormatParameters *ap)
+{
+    AudioData *s;
+    AVStream *st;
+    int ret;
+
+    if (!ap || ap->sample_rate <= 0 || ap->channels <= 0)
+        return -1;
+
+    s = av_mallocz(sizeof(AudioData));
+    if (!s)
+        return -ENOMEM;
+    st = av_mallocz(sizeof(AVStream));
+    if (!st) {
+        free(s);
+        return -ENOMEM;
+    }
+    s1->priv_data = s;
+    s1->nb_streams = 1;
+    s1->streams[0] = st;
+    s->sample_rate = ap->sample_rate;
+    s->channels = ap->channels;
+
+    ret = audio_open(s, 0);
+    if (ret < 0) {
+        free(st);
+        free(s);
+        return -EIO;
+    } else {
+        /* take real parameters */
+        st->codec.codec_type = CODEC_TYPE_AUDIO;
+        st->codec.codec_id = s->codec_id;
+        st->codec.sample_rate = s->sample_rate;
+        st->codec.channels = s->channels;
+        return 0;
+    }
+}
+
+static int audio_read_packet(AVFormatContext *s1, AVPacket *pkt)
+{
+    AudioData *s = s1->priv_data;
+    int ret;
+
+    if (av_new_packet(pkt, s->frame_size) < 0)
+        return -EIO;
+    for(;;) {
+        ret = read(s->fd, pkt->data, pkt->size);
+        if (ret > 0)
+            break;
+        if (!(ret == 0 || (ret == -1 && (errno == EAGAIN || errno == EINTR)))) {
+            av_free_packet(pkt);
+            return -EIO;
+        }
+    }
+    pkt->size = ret;
+    return 0;
+}
+
+static int audio_read_close(AVFormatContext *s1)
+{
+    AudioData *s = s1->priv_data;
+
+    audio_close(s);
+    free(s);
+    return 0;
+}
+
+AVFormat audio_device_format = {
+    "audio_device",
+    "audio grab and output",
+    "",
+    "",
+    /* XXX: we make the assumption that the soundcard accepts this format */
+    /* XXX: find better solution with "preinit" method, needed also in
+       other formats */
+#ifdef WORDS_BIGENDIAN
+    CODEC_ID_PCM_S16BE,
+#else
+    CODEC_ID_PCM_S16LE,
+#endif
+    CODEC_ID_NONE,
+    audio_write_header,
+    audio_write_packet,
+    audio_write_trailer,
+
+    audio_read_header,
+    audio_read_packet,
+    audio_read_close,
+    NULL,
+    AVFMT_NOFILE,
 };

@@ -30,8 +30,9 @@ typedef struct {
     int frame_format; /* see VIDEO_PALETTE_xxx */
     int use_mmap;
     int width, height;
-    float rate;
+    int frame_rate;
     INT64 time_frame;
+    int frame_size;
 } VideoData;
 
 const char *v4l_device = "/dev/video";
@@ -45,20 +46,41 @@ static struct video_mmap gb_buf;
 static struct video_audio audio, audio_saved;
 static int gb_frame = 0;
 
-static int v4l_init(URLContext *h)
+static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 {
-    VideoData *s = h->priv_data;
+    VideoData *s;
+    AVStream *st;
     int width, height;
-    int ret;
     int video_fd, frame_size;
+    int ret, frame_rate;
+
+    if (!ap || ap->width <= 0 || ap->height <= 0 || ap->frame_rate <= 0)
+        return -1;
     
-    width = s->width;
-    height = s->height;
+    width = ap->width;
+    height = ap->height;
+    frame_rate = ap->frame_rate;
+
+    s = av_mallocz(sizeof(VideoData));
+    if (!s)
+        return -ENOMEM;
+    st = av_mallocz(sizeof(AVStream));
+    if (!st) {
+        free(s);
+        return -ENOMEM;
+    }
+    s1->priv_data = s;
+    s1->nb_streams = 1;
+    s1->streams[0] = st;
+
+    s->width = width;
+    s->height = height;
+    s->frame_rate = frame_rate;
 
     video_fd = open(v4l_device, O_RDWR);
     if (video_fd < 0) {
         perror(v4l_device);
-        return -EIO;
+        goto fail;
     }
     
     if (ioctl(video_fd,VIDIOCGCAP,&video_cap) < 0) {
@@ -166,27 +188,38 @@ static int v4l_init(URLContext *h)
     switch(s->frame_format) {
     case VIDEO_PALETTE_YUV420P:
         frame_size = (width * height * 3) / 2;
+        st->codec.pix_fmt = PIX_FMT_YUV420P;
         break;
     case VIDEO_PALETTE_YUV422:
         frame_size = width * height * 2;
+        st->codec.pix_fmt = PIX_FMT_YUV422;
         break;
     case VIDEO_PALETTE_RGB24:
         frame_size = width * height * 3;
+        st->codec.pix_fmt = PIX_FMT_BGR24; /* NOTE: v4l uses BGR24, not RGB24 ! */
         break;
     default:
         goto fail;
     }
     s->fd = video_fd;
-    h->packet_size = frame_size;
+    s->frame_size = frame_size;
+    
+    st->codec.codec_id = CODEC_ID_RAWVIDEO;
+    st->codec.width = width;
+    st->codec.height = height;
+    st->codec.frame_rate = frame_rate;
+
     return 0;
  fail:
-    close(video_fd);
+    if (video_fd >= 0)
+        close(video_fd);
+    free(st);
+    free(s);
     return -EIO;
 }
 
-static int v4l_mm_read_picture(URLContext *h, UINT8 *buf)
+static int v4l_mm_read_picture(VideoData *s, UINT8 *buf)
 {
-    VideoData *s = h->priv_data;
     UINT8 *ptr;
 
     gb_buf.frame = gb_frame;
@@ -203,105 +236,44 @@ static int v4l_mm_read_picture(URLContext *h, UINT8 *buf)
            (errno == EAGAIN || errno == EINTR));
 
     ptr = video_buf + gb_buffers.offsets[gb_frame];
-    memcpy(buf, ptr, h->packet_size);
-    return h->packet_size;
+    memcpy(buf, ptr, s->frame_size);
+    return s->frame_size;
 }
 
-/* note: we support only one picture read at a time */
-static int video_read(URLContext *h, UINT8 *buf, int size)
+static int grab_read_packet(AVFormatContext *s1, AVPacket *pkt)
 {
-    VideoData *s = h->priv_data;
-    INT64 curtime;
-
-    if (size != h->packet_size)
-        return -EINVAL;
+    VideoData *s = s1->priv_data;
+    INT64 curtime, delay;
+    struct timespec ts;
 
     /* wait based on the frame rate */
-    s->time_frame += (int)(1000000 / s->rate);
-    do {
+    s->time_frame += (INT64_C(1000000) * FRAME_RATE_BASE) / s->frame_rate;
+    for(;;) {
         curtime = gettime();
-    } while (curtime < s->time_frame);
+        delay = s->time_frame - curtime;
+        if (delay <= 0)
+            break;
+        ts.tv_sec = delay / 1000000;
+        ts.tv_nsec = (delay % 1000000) * 1000;
+        nanosleep(&ts, NULL);
+    }
+
+    if (av_new_packet(pkt, s->frame_size) < 0)
+        return -EIO;
 
     /* read one frame */
     if (s->use_mmap) {
-        return v4l_mm_read_picture(h, buf);
+        return v4l_mm_read_picture(s, pkt->data);
     } else {
-        if (read(s->fd, buf, size) != size)
+        if (read(s->fd, pkt->data, pkt->size) != pkt->size)
             return -EIO;
-        return h->packet_size;
+        return s->frame_size;
     }
 }
 
-static int video_get_format(URLContext *h, URLFormat *f)
+static int grab_read_close(AVFormatContext *s1)
 {
-    VideoData *s = h->priv_data;
-
-    f->width = s->width;
-    f->height = s->height;
-    f->frame_rate = (int)(s->rate * FRAME_RATE_BASE);
-    strcpy(f->format_name, "rawvideo");
-
-    switch(s->frame_format) {
-    case VIDEO_PALETTE_YUV420P:
-        f->pix_fmt = PIX_FMT_YUV420P;
-        break;
-    case VIDEO_PALETTE_YUV422:
-        f->pix_fmt = PIX_FMT_YUV422;
-        break;
-    case VIDEO_PALETTE_RGB24:
-        f->pix_fmt = PIX_FMT_BGR24; /* NOTE: v4l uses BGR24, not RGB24 ! */
-        break;
-    default:
-        abort();
-    }
-    return 0;
-}
-
-/* URI syntax: 'video:width,height,rate'
- */
-static int video_open(URLContext *h, const char *uri, int flags)
-{
-    VideoData *s;
-    const char *p;
-    int width, height;
-    int ret;
-    float rate;
-
-    /* extract parameters */
-    p = uri;
-    strstart(p, "video:", &p);
-    width = strtol(p, (char **)&p, 0);
-    if (width <= 0)
-        return -EINVAL;
-    if (*p == ',')
-        p++;
-    height = strtol(p, (char **)&p, 0);
-    if (height <= 0)
-        return -EINVAL;
-    if (*p == ',')
-        p++;
-    rate = strtod(p, (char **)&p);
-    if (rate <= 0)
-        return -EINVAL;
-
-    s = malloc(sizeof(VideoData));
-    if (!s)
-        return -ENOMEM;
-    h->priv_data = s;
-    h->is_streamed = 1;
-    s->width = width;
-    s->height = height;
-    s->rate = rate;
-    ret = v4l_init(h);
-    if (ret)
-        free(s);
-    return ret;
-}
-
-static int video_close(URLContext *h)
-{
-    VideoData *s = h->priv_data;
-
+    VideoData *s = s1->priv_data;
     /* restore audio settings */
     ioctl(s->fd, VIDIOCSAUDIO, &audio_saved);
 
@@ -310,12 +282,20 @@ static int video_close(URLContext *h)
     return 0;
 }
 
-URLProtocol video_protocol = {
-    "video",
-    video_open,
-    video_read,
+AVFormat video_grab_device_format = {
+    "video_grab_device",
+    "video grab",
+    "",
+    "",
+    CODEC_ID_NONE,
+    CODEC_ID_NONE,
     NULL,
-    NULL, /* seek */
-    video_close,
-    video_get_format,
+    NULL,
+    NULL,
+
+    grab_read_header,
+    grab_read_packet,
+    grab_read_close,
+    NULL,
+    AVFMT_NOFILE,
 };
