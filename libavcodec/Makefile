@@ -102,7 +102,7 @@ endif
 
 ifeq ($(CONFIG_PP),yes)
 ifeq ($(SHARED_PP),yes)
-EXTRALIBS += -lpostproc
+EXTRALIBS += -L$(VPATH)/libpostproc -lpostproc
 else
 # LIBS += libpostproc/libpostproc.a ... should be fixed
 OBJS += libpostproc/postprocess.o
@@ -207,6 +207,9 @@ $(LIB): $(OBJS) $(AMRLIBS)
 	$(RANLIB) $@
 
 $(SLIB): $(OBJS)
+ifeq ($(CONFIG_PP),yes)
+	$(MAKE) -C $(VPATH)/libpostproc
+endif
 ifeq ($(CONFIG_WIN32),yes)
 	$(CC) $(SHFLAGS) -Wl,--output-def,$(@:.dll=.def) -o $@ $(OBJS) $(EXTRALIBS) $(AMREXTRALIBS)
 	-lib /machine:i386 /def:$(@:.dll=.def)
@@ -286,6 +289,9 @@ else
 	install $(INSTALLSTRIP) -m 755 $(SLIB) $(prefix)/lib/libavcodec-$(VERSION).so
 	ln -sf libavcodec-$(VERSION).so $(prefix)/lib/libavcodec.so
 	ldconfig || true
+endif
+ifeq ($(CONFIG_PP),yes)
+	$(MAKE) -C $(VPATH)/libpostproc $@
 endif
 else
 install:

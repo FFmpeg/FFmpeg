@@ -2,10 +2,10 @@
 include ../../config.mak
 
 ifeq ($(SHARED_PP),yes)
-SPPLIB = libpostproc.so
+SPPLIB = $(SLIBPREF)postproc$(SLIBSUF)
 SPPVERSION = 0.0.1
 endif
-PPLIB = libpostproc.a
+PPLIB = $(LIBPREF)postproc$(LIBSUF)
 
 PPOBJS=postprocess.o
 SPPOBJS=postprocess_pic.o
@@ -23,7 +23,7 @@ CFLAGS  = $(OPTFLAGS) $(MLIB_INC) -I. -I.. $(EXTRA_INC)
 all:    $(SWSLIB) $(PPLIB) $(SPPLIB)
 
 clean:
-	rm -f *.o *.a *~ *.so
+	rm -f *.o *.a *~ *.so $(PPLIB) $(SPPLIB)
 
 distclean:
 	rm -f Makefile.bak *.o *.a *~ *.so .depend
@@ -49,10 +49,14 @@ $(PPLIB): $(PPOBJS)
 
 install: all
 ifeq ($(SHARED_PP),yes)
+ifeq ($(CONFIG_WIN32),yes)
+       install $(INSTALLSTRIP) -m 755 $(SPPLIB) "$(prefix)"
+else
 	install -d $(prefix)/lib
 	install $(INSTALLSTRIP) -m 755 $(SPPLIB) $(prefix)/lib/$(SPPLIB).$(SPPVERSION)
 	ln -sf $(SPPLIB).$(SPPVERSION) $(prefix)/lib/$(SPPLIB)
 	ldconfig || true
+endif
 endif
 	mkdir -p $(prefix)/include/postproc
 	install -m 644 postprocess.h $(prefix)/include/postproc/postprocess.h
