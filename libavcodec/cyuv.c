@@ -100,6 +100,7 @@ static int cyuv_decode_frame(AVCodecContext *avctx,
     if(s->frame.data[0])
         avctx->release_buffer(avctx, &s->frame);
 
+    s->frame.buffer_hints = FF_BUFFER_HINTS_VALID;
     s->frame.reference = 0;
     if(avctx->get_buffer(avctx, &s->frame) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
@@ -180,7 +181,7 @@ AVCodec cyuv_decoder = {
     NULL,
     cyuv_decode_end,
     cyuv_decode_frame,
-    0,
+    CODEC_CAP_DR1,
     NULL
 };
 
