@@ -620,13 +620,11 @@ static int mjpeg_decode_sof0(MJpegDecodeContext *s,
         }
 
         for(i=0;i<nb_components;i++) {
-            int w, h, hh, vv;
-            hh = s->h_max / s->h_count[i];
-            vv = s->v_max / s->v_count[i];
-            w = (s->width + 8 * hh - 1) / (8 * hh);
-            h = (s->height + 8 * vv - 1) / (8 * vv);
-            w = w * 8;
-            h = h * 8;
+            int w, h;
+            w = (s->width  + 8 * s->h_max - 1) / (8 * s->h_max);
+            h = (s->height + 8 * s->v_max - 1) / (8 * s->v_max);
+            w = w * 8 * s->h_count[i];
+            h = h * 8 * s->v_count[i];
             if (s->interlaced)
                 w *= 2;
             s->linesize[i] = w;
