@@ -2113,6 +2113,7 @@ static int http_prepare_data(HTTPContext *c)
         }
         c->fmt_ctx.pb.is_streamed = 1;
 
+        av_set_parameters(&c->fmt_ctx, NULL);
         av_write_header(&c->fmt_ctx);
 
         len = url_close_dyn_buf(&c->fmt_ctx.pb, &c->pb_buffer);
@@ -3143,6 +3144,7 @@ static int rtp_new_av_stream(HTTPContext *c,
         /* XXX: close stream */
         goto fail;
     }
+    av_set_parameters(ctx, NULL);
     if (av_write_header(ctx) < 0) {
     fail:
         if (h)
@@ -3437,6 +3439,7 @@ void build_feed_streams(void)
                 st = feed->streams[i];
                 s->streams[i] = st;
             }
+            av_set_parameters(s, NULL);
             av_write_header(s);
             /* XXX: need better api */
             av_freep(&s->priv_data);
