@@ -23,6 +23,7 @@
  * along with GNU Make; see the file COPYING. If not, write to
  * the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
  *
+ * 15 and 24 bpp support from Michael Niedermayer (michaelni@gmx.at)
  */
 
 #include <stdio.h>
@@ -204,6 +205,92 @@ YUV2RGB
 		     "movd 4 (%1), %%mm0;" /* Load 4 Cb 00 00 00 00 u3 u2 u1 u0 */
 
 		     "por %%mm7, %%mm5;" /* r7r6r5r4 r3g7g6g5 g4g3g2b7 b6b5b4b3 */
+		     "movd 4 (%2), %%mm1;" /* Load 4 Cr 00 00 00 00 v3 v2 v1 v0 */
+
+		     MOVNTQ " %%mm5, 8 (%3);" /* store pixel 4-7 */
+		     : : "r" (_py), "r" (_pu), "r" (_pv), "r" (_image));
+
+	    _py += 8;
+	    _pu += 4;
+	    _pv += 4;
+	    _image += 16;
+	}
+
+	if (!even) {
+	    pu += uv_stride;
+	    pv += uv_stride;
+	}
+
+	py += y_stride;
+	image += rgb_stride;
+
+	even = (!even);
+    }
+
+    __asm__ __volatile__ (EMMS);
+}
+
+static void yuv420_rgb15_mmx (uint8_t * image, uint8_t * py,
+			      uint8_t * pu, uint8_t * pv,
+			      int h_size, int v_size,
+			      int rgb_stride, int y_stride, int uv_stride)
+{
+    int even = 1;
+    int x, y;
+
+    __asm__ __volatile__ ("pxor %mm4, %mm4;" /* zero mm4 */ );
+
+    for (y = v_size; --y >= 0; ) {
+	uint8_t *_image = image;
+	uint8_t *_py = py;
+	uint8_t *_pu = pu;
+	uint8_t *_pv = pv;
+
+	/* load data for start of next scan line */
+	__asm__ __volatile__ (
+		 "movd (%1), %%mm0;" /* Load 4 Cb 00 00 00 00 u3 u2 u1 u0 */
+		 "movd (%2), %%mm1;" /* Load 4 Cr 00 00 00 00 v3 v2 v1 v0 */
+		 "movq (%0), %%mm6;" /* Load 8  Y Y7 Y6 Y5 Y4 Y3 Y2 Y1 Y0 */
+
+		 : : "r" (_py), "r" (_pu), "r" (_pv));
+
+	for (x = h_size >> 3; --x >= 0; ) {
+	    /* this mmx assembly code deals with SINGLE scan line at a time, it convert 8
+	       pixels in each iteration */
+
+	    __asm__ __volatile__ (
+YUV2RGB
+
+		     /* mask unneeded bits off */
+		     "pand mmx_redmask, %%mm0;" /* b7b6b5b4 b3_0_0_0 b7b6b5b4 b3_0_0_0 */
+		     "pand mmx_redmask, %%mm2;" /* g7g6g5g4 g3_0_0_0 g7g6g5g4 g3_0_0_0 */
+		     "pand mmx_redmask, %%mm1;" /* r7r6r5r4 r3_0_0_0 r7r6r5r4 r3_0_0_0 */
+
+		     "psrlw mmx_blueshift,%%mm0;" /* 0_0_0_b7 b6b5b4b3 0_0_0_b7 b6b5b4b3 */
+		     "psrlw $1,%%mm1;"            /* 0_r7r6r5  r4r3_0_0 0_r7r6r5 r4r3_0_0 */
+		     "pxor %%mm4, %%mm4;" /* zero mm4 */
+
+		     "movq %%mm0, %%mm5;" /* Copy B7-B0 */
+		     "movq %%mm2, %%mm7;" /* Copy G7-G0 */
+
+		     /* convert rgb24 plane to rgb16 pack for pixel 0-3 */
+		     "punpcklbw %%mm4, %%mm2;" /* 0_0_0_0 0_0_0_0 g7g6g5g4 g3_0_0_0 */
+		     "punpcklbw %%mm1, %%mm0;" /* r7r6r5r4 r3_0_0_0 0_0_0_b7 b6b5b4b3 */
+
+		     "psllw $2, %%mm2;" /* 0_0_0_0 0_0_g7g6 g5g4g3_0 0_0_0_0 */
+		     "por %%mm2, %%mm0;" /* 0_r7r6r5 r4r3g7g6 g5g4g3b7 b6b5b4b3 */
+
+		     "movq 8 (%0), %%mm6;" /* Load 8 Y Y7 Y6 Y5 Y4 Y3 Y2 Y1 Y0 */
+		     MOVNTQ " %%mm0, (%3);" /* store pixel 0-3 */
+
+		     /* convert rgb24 plane to rgb16 pack for pixel 0-3 */
+		     "punpckhbw %%mm4, %%mm7;" /* 0_0_0_0 0_0_0_0 0_g7g6g5 g4g3_0_0 */
+		     "punpckhbw %%mm1, %%mm5;" /* r7r6r5r4 r3_0_0_0 0_0_0_b7 b6b5b4b3 */
+
+		     "psllw $2, %%mm7;" /* 0_0_0_0 0_0_g7g6 g5g4g3_0 0_0_0_0 */
+		     "movd 4 (%1), %%mm0;" /* Load 4 Cb 00 00 00 00 u3 u2 u1 u0 */
+
+		     "por %%mm7, %%mm5;" /* 0_r7r6r5 r4r3g7g6 g5g4g3b7 b6b5b4b3 */
 		     "movd 4 (%2), %%mm1;" /* Load 4 Cr 00 00 00 00 v3 v2 v1 v0 */
 
 		     MOVNTQ " %%mm5, 8 (%3);" /* store pixel 4-7 */
@@ -435,6 +522,7 @@ YUV2RGB
 yuv2rgb_fun yuv2rgb_init_mmx (int bpp, int mode)
 {
 //    if (bpp == 15 || bpp == 16) {
+    if (bpp == 15 && mode == MODE_RGB) return yuv420_rgb15_mmx;
     if (bpp == 16 && mode == MODE_RGB) return yuv420_rgb16_mmx;
     if (bpp == 24 && mode == MODE_RGB) return yuv420_rgb24_mmx;
     if (bpp == 32 && mode == MODE_RGB) return yuv420_argb32_mmx;
