@@ -451,7 +451,7 @@ resync:
                     index= av_index_search_timestamp(st, pkt->dts, 0);
                     e= &st->index_entries[index];
                     
-                    if(e->timestamp == ast->frame_offset){
+                    if(index >= 0 && e->timestamp == ast->frame_offset){
                         if (e->flags & AVINDEX_KEYFRAME)
                             pkt->flags |= PKT_FLAG_KEY;
                     }
