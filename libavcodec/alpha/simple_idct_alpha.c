@@ -49,7 +49,7 @@ extern void (*add_pixels_clamped_axp_p)(const DCTELEM *block, uint8_t *pixels,
 static inline int idct_row(DCTELEM *row)
 {
     int_fast32_t a0, a1, a2, a3, b0, b1, b2, b3, t;
-    uint64_t l, r;
+    uint64_t l, r, t2;
     l = ldq(row);
     r = ldq(row + 4);
 
@@ -60,12 +60,12 @@ static inline int idct_row(DCTELEM *row)
 
     if (((l & ~0xffffUL) | r) == 0) {
         a0 >>= ROW_SHIFT;
-        a0 = (uint16_t) a0;
-        a0 |= a0 << 16;
-        a0 |= a0 << 32;
+        t2 = (uint16_t) a0;
+        t2 |= t2 << 16;
+        t2 |= t2 << 32;
         
-        stq(a0, row);
-        stq(a0, row + 4);
+        stq(t2, row);
+        stq(t2, row + 4);
         return 1;
     }
 
