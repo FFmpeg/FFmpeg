@@ -1969,6 +1969,7 @@ static int av_encode(AVFormatContext **output_files,
     
     ret = 0;
  fail1:
+    av_freep(&bit_buffer);
     av_free(file_table);
 
     if (ist_table) {
