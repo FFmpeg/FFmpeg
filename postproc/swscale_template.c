@@ -2180,7 +2180,7 @@ if(dststride%widthAlign !=0 )
 				widthAlign);
 }
 
-if(over>0)
+if(over>0 && verbose)
 {
 	if(firstTime)
 		fprintf(stderr, "SwScaler: Warning: output width is not a multiple of 8 (16 for YV12)\n"
