@@ -235,9 +235,7 @@ void j_rev_dct(DCTBLOCK data)
     /* The rotator is sqrt(2)*c(-6). */
 {
     if (d6) {
-	if (d4) {
 	    if (d2) {
-		if (d0) {
 		    /* d0 != 0, d2 != 0, d4 != 0, d6 != 0 */
 		    z1 = MULTIPLY(d2 + d6, FIX_0_541196100);
 		    tmp2 = z1 + MULTIPLY(-d6, FIX_1_847759065);
@@ -250,21 +248,7 @@ void j_rev_dct(DCTBLOCK data)
 		    tmp13 = tmp0 - tmp3;
 		    tmp11 = tmp1 + tmp2;
 		    tmp12 = tmp1 - tmp2;
-		} else {
-		    /* d0 == 0, d2 != 0, d4 != 0, d6 != 0 */
-		    z1 = MULTIPLY(d2 + d6, FIX_0_541196100);
-		    tmp2 = z1 + MULTIPLY(-d6, FIX_1_847759065);
-		    tmp3 = z1 + MULTIPLY(d2, FIX_0_765366865);
-
-		    tmp0 = d4 << CONST_BITS;
-
-		    tmp10 = tmp0 + tmp3;
-		    tmp13 = tmp0 - tmp3;
-		    tmp11 = tmp2 - tmp0;
-		    tmp12 = -(tmp0 + tmp2);
-		}
 	    } else {
-		if (d0) {
 		    /* d0 != 0, d2 == 0, d4 != 0, d6 != 0 */
 		    tmp2 = MULTIPLY(-d6, FIX_1_306562965);
 		    tmp3 = MULTIPLY(d6, FIX_0_541196100);
@@ -276,72 +260,9 @@ void j_rev_dct(DCTBLOCK data)
 		    tmp13 = tmp0 - tmp3;
 		    tmp11 = tmp1 + tmp2;
 		    tmp12 = tmp1 - tmp2;
-		} else {
-		    /* d0 == 0, d2 == 0, d4 != 0, d6 != 0 */
-		    tmp2 = MULTIPLY(-d6, FIX_1_306562965);
-		    tmp3 = MULTIPLY(d6, FIX_0_541196100);
-
-		    tmp0 = d4 << CONST_BITS;
-
-		    tmp10 = tmp0 + tmp3;
-		    tmp13 = tmp0 - tmp3;
-		    tmp11 = tmp2 - tmp0;
-		    tmp12 = -(tmp0 + tmp2);
-		}
 	    }
-	} else {
-	    if (d2) {
-		if (d0) {
-		    /* d0 != 0, d2 != 0, d4 == 0, d6 != 0 */
-		    z1 = MULTIPLY(d2 + d6, FIX_0_541196100);
-		    tmp2 = z1 + MULTIPLY(-d6, FIX_1_847759065);
-		    tmp3 = z1 + MULTIPLY(d2, FIX_0_765366865);
-
-		    tmp0 = d0 << CONST_BITS;
-
-		    tmp10 = tmp0 + tmp3;
-		    tmp13 = tmp0 - tmp3;
-		    tmp11 = tmp0 + tmp2;
-		    tmp12 = tmp0 - tmp2;
-		} else {
-		    /* d0 == 0, d2 != 0, d4 == 0, d6 != 0 */
-		    z1 = MULTIPLY(d2 + d6, FIX_0_541196100);
-		    tmp2 = z1 + MULTIPLY(-d6, FIX_1_847759065);
-		    tmp3 = z1 + MULTIPLY(d2, FIX_0_765366865);
-
-		    tmp10 = tmp3;
-		    tmp13 = -tmp3;
-		    tmp11 = tmp2;
-		    tmp12 = -tmp2;
-		}
-	    } else {
-		if (d0) {
-		    /* d0 != 0, d2 == 0, d4 == 0, d6 != 0 */
-		    tmp2 = MULTIPLY(-d6, FIX_1_306562965);
-		    tmp3 = MULTIPLY(d6, FIX_0_541196100);
-
-		    tmp0 = d0 << CONST_BITS;
-
-		    tmp10 = tmp0 + tmp3;
-		    tmp13 = tmp0 - tmp3;
-		    tmp11 = tmp0 + tmp2;
-		    tmp12 = tmp0 - tmp2;
-		} else {
-		    /* d0 == 0, d2 == 0, d4 == 0, d6 != 0 */
-		    tmp2 = MULTIPLY(-d6, FIX_1_306562965);
-		    tmp3 = MULTIPLY(d6, FIX_0_541196100);
-
-		    tmp10 = tmp3;
-		    tmp13 = -tmp3;
-		    tmp11 = tmp2;
-		    tmp12 = -tmp2;
-		}
-	    }
-	}
     } else {
-	if (d4) {
 	    if (d2) {
-		if (d0) {
 		    /* d0 != 0, d2 != 0, d4 != 0, d6 == 0 */
 		    tmp2 = MULTIPLY(d2, FIX_0_541196100);
 		    tmp3 = MULTIPLY(d2, FIX_1_306562965);
@@ -353,62 +274,11 @@ void j_rev_dct(DCTBLOCK data)
 		    tmp13 = tmp0 - tmp3;
 		    tmp11 = tmp1 + tmp2;
 		    tmp12 = tmp1 - tmp2;
-		} else {
-		    /* d0 == 0, d2 != 0, d4 != 0, d6 == 0 */
-		    tmp2 = MULTIPLY(d2, FIX_0_541196100);
-		    tmp3 = MULTIPLY(d2, FIX_1_306562965);
-
-		    tmp0 = d4 << CONST_BITS;
-
-		    tmp10 = tmp0 + tmp3;
-		    tmp13 = tmp0 - tmp3;
-		    tmp11 = tmp2 - tmp0;
-		    tmp12 = -(tmp0 + tmp2);
-		}
 	    } else {
-		if (d0) {
 		    /* d0 != 0, d2 == 0, d4 != 0, d6 == 0 */
 		    tmp10 = tmp13 = (d0 + d4) << CONST_BITS;
 		    tmp11 = tmp12 = (d0 - d4) << CONST_BITS;
-		} else {
-		    /* d0 == 0, d2 == 0, d4 != 0, d6 == 0 */
-		    tmp10 = tmp13 = d4 << CONST_BITS;
-		    tmp11 = tmp12 = -tmp10;
-		}
 	    }
-	} else {
-	    if (d2) {
-		if (d0) {
-		    /* d0 != 0, d2 != 0, d4 == 0, d6 == 0 */
-		    tmp2 = MULTIPLY(d2, FIX_0_541196100);
-		    tmp3 = MULTIPLY(d2, FIX_1_306562965);
-
-		    tmp0 = d0 << CONST_BITS;
-
-		    tmp10 = tmp0 + tmp3;
-		    tmp13 = tmp0 - tmp3;
-		    tmp11 = tmp0 + tmp2;
-		    tmp12 = tmp0 - tmp2;
-		} else {
-		    /* d0 == 0, d2 != 0, d4 == 0, d6 == 0 */
-		    tmp2 = MULTIPLY(d2, FIX_0_541196100);
-		    tmp3 = MULTIPLY(d2, FIX_1_306562965);
-
-		    tmp10 = tmp3;
-		    tmp13 = -tmp3;
-		    tmp11 = tmp2;
-		    tmp12 = -tmp2;
-		}
-	    } else {
-		if (d0) {
-		    /* d0 != 0, d2 == 0, d4 == 0, d6 == 0 */
-		    tmp10 = tmp13 = tmp11 = tmp12 = d0 << CONST_BITS;
-		} else {
-		    /* d0 == 0, d2 == 0, d4 == 0, d6 == 0 */
-		    tmp10 = tmp13 = tmp11 = tmp12 = 0;
-		}
-	    }
-	}
       }
 
     /* Odd part per figure 8; the matrix is unitary and hence its
@@ -711,9 +581,7 @@ void j_rev_dct(DCTBLOCK data)
     /* Even part: reverse the even part of the forward DCT. */
     /* The rotator is sqrt(2)*c(-6). */
     if (d6) {
-	if (d4) {
 	    if (d2) {
-		if (d0) {
 		    /* d0 != 0, d2 != 0, d4 != 0, d6 != 0 */
 		    z1 = MULTIPLY(d2 + d6, FIX_0_541196100);
 		    tmp2 = z1 + MULTIPLY(-d6, FIX_1_847759065);
@@ -726,21 +594,7 @@ void j_rev_dct(DCTBLOCK data)
 		    tmp13 = tmp0 - tmp3;
 		    tmp11 = tmp1 + tmp2;
 		    tmp12 = tmp1 - tmp2;
-		} else {
-		    /* d0 == 0, d2 != 0, d4 != 0, d6 != 0 */
-		    z1 = MULTIPLY(d2 + d6, FIX_0_541196100);
-		    tmp2 = z1 + MULTIPLY(-d6, FIX_1_847759065);
-		    tmp3 = z1 + MULTIPLY(d2, FIX_0_765366865);
-
-		    tmp0 = d4 << CONST_BITS;
-
-		    tmp10 = tmp0 + tmp3;
-		    tmp13 = tmp0 - tmp3;
-		    tmp11 = tmp2 - tmp0;
-		    tmp12 = -(tmp0 + tmp2);
-		}
 	    } else {
-		if (d0) {
 		    /* d0 != 0, d2 == 0, d4 != 0, d6 != 0 */
 		    tmp2 = MULTIPLY(-d6, FIX_1_306562965);
 		    tmp3 = MULTIPLY(d6, FIX_0_541196100);
@@ -752,72 +606,9 @@ void j_rev_dct(DCTBLOCK data)
 		    tmp13 = tmp0 - tmp3;
 		    tmp11 = tmp1 + tmp2;
 		    tmp12 = tmp1 - tmp2;
-		} else {
-		    /* d0 == 0, d2 == 0, d4 != 0, d6 != 0 */
-		    tmp2 = MULTIPLY(-d6, FIX_1_306562965);
-		    tmp3 = MULTIPLY(d6, FIX_0_541196100);
-
-		    tmp0 = d4 << CONST_BITS;
-
-		    tmp10 = tmp0 + tmp3;
-		    tmp13 = tmp0 - tmp3;
-		    tmp11 = tmp2 - tmp0;
-		    tmp12 = -(tmp0 + tmp2);
-		}
 	    }
-	} else {
-	    if (d2) {
-		if (d0) {
-		    /* d0 != 0, d2 != 0, d4 == 0, d6 != 0 */
-		    z1 = MULTIPLY(d2 + d6, FIX_0_541196100);
-		    tmp2 = z1 + MULTIPLY(-d6, FIX_1_847759065);
-		    tmp3 = z1 + MULTIPLY(d2, FIX_0_765366865);
-
-		    tmp0 = d0 << CONST_BITS;
-
-		    tmp10 = tmp0 + tmp3;
-		    tmp13 = tmp0 - tmp3;
-		    tmp11 = tmp0 + tmp2;
-		    tmp12 = tmp0 - tmp2;
-		} else {
-		    /* d0 == 0, d2 != 0, d4 == 0, d6 != 0 */
-		    z1 = MULTIPLY(d2 + d6, FIX_0_541196100);
-		    tmp2 = z1 + MULTIPLY(-d6, FIX_1_847759065);
-		    tmp3 = z1 + MULTIPLY(d2, FIX_0_765366865);
-
-		    tmp10 = tmp3;
-		    tmp13 = -tmp3;
-		    tmp11 = tmp2;
-		    tmp12 = -tmp2;
-		}
-	    } else {
-		if (d0) {
-		    /* d0 != 0, d2 == 0, d4 == 0, d6 != 0 */
-		    tmp2 = MULTIPLY(-d6, FIX_1_306562965);
-		    tmp3 = MULTIPLY(d6, FIX_0_541196100);
-
-		    tmp0 = d0 << CONST_BITS;
-
-		    tmp10 = tmp0 + tmp3;
-		    tmp13 = tmp0 - tmp3;
-		    tmp11 = tmp0 + tmp2;
-		    tmp12 = tmp0 - tmp2;
-		} else {
-		    /* d0 == 0, d2 == 0, d4 == 0, d6 != 0 */
-		    tmp2 = MULTIPLY(-d6, FIX_1_306562965);
-		    tmp3 = MULTIPLY(d6, FIX_0_541196100);
-
-		    tmp10 = tmp3;
-		    tmp13 = -tmp3;
-		    tmp11 = tmp2;
-		    tmp12 = -tmp2;
-		}
-	    }
-	}
     } else {
-	if (d4) {
 	    if (d2) {
-		if (d0) {
 		    /* d0 != 0, d2 != 0, d4 != 0, d6 == 0 */
 		    tmp2 = MULTIPLY(d2, FIX_0_541196100);
 		    tmp3 = MULTIPLY(d2, FIX_1_306562965);
@@ -829,62 +620,11 @@ void j_rev_dct(DCTBLOCK data)
 		    tmp13 = tmp0 - tmp3;
 		    tmp11 = tmp1 + tmp2;
 		    tmp12 = tmp1 - tmp2;
-		} else {
-		    /* d0 == 0, d2 != 0, d4 != 0, d6 == 0 */
-		    tmp2 = MULTIPLY(d2, FIX_0_541196100);
-		    tmp3 = MULTIPLY(d2, FIX_1_306562965);
-
-		    tmp0 = d4 << CONST_BITS;
-
-		    tmp10 = tmp0 + tmp3;
-		    tmp13 = tmp0 - tmp3;
-		    tmp11 = tmp2 - tmp0;
-		    tmp12 = -(tmp0 + tmp2);
-		}
 	    } else {
-		if (d0) {
 		    /* d0 != 0, d2 == 0, d4 != 0, d6 == 0 */
 		    tmp10 = tmp13 = (d0 + d4) << CONST_BITS;
 		    tmp11 = tmp12 = (d0 - d4) << CONST_BITS;
-		} else {
-		    /* d0 == 0, d2 == 0, d4 != 0, d6 == 0 */
-		    tmp10 = tmp13 = d4 << CONST_BITS;
-		    tmp11 = tmp12 = -tmp10;
-		}
 	    }
-	} else {
-	    if (d2) {
-		if (d0) {
-		    /* d0 != 0, d2 != 0, d4 == 0, d6 == 0 */
-		    tmp2 = MULTIPLY(d2, FIX_0_541196100);
-		    tmp3 = MULTIPLY(d2, FIX_1_306562965);
-
-		    tmp0 = d0 << CONST_BITS;
-
-		    tmp10 = tmp0 + tmp3;
-		    tmp13 = tmp0 - tmp3;
-		    tmp11 = tmp0 + tmp2;
-		    tmp12 = tmp0 - tmp2;
-		} else {
-		    /* d0 == 0, d2 != 0, d4 == 0, d6 == 0 */
-		    tmp2 = MULTIPLY(d2, FIX_0_541196100);
-		    tmp3 = MULTIPLY(d2, FIX_1_306562965);
-
-		    tmp10 = tmp3;
-		    tmp13 = -tmp3;
-		    tmp11 = tmp2;
-		    tmp12 = -tmp2;
-		}
-	    } else {
-		if (d0) {
-		    /* d0 != 0, d2 == 0, d4 == 0, d6 == 0 */
-		    tmp10 = tmp13 = tmp11 = tmp12 = d0 << CONST_BITS;
-		} else {
-		    /* d0 == 0, d2 == 0, d4 == 0, d6 == 0 */
-		    tmp10 = tmp13 = tmp11 = tmp12 = 0;
-		}
-	    }
-	}
     }
 
     /* Odd part per figure 8; the matrix is unitary and hence its
