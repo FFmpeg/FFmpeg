@@ -168,6 +168,7 @@ static int64_t start_time = AV_NOPTS_VALUE;
 static int debug = 0;
 static int debug_mv = 0;
 static int step = 0;
+static int thread_count = 1;
 
 /* current context */
 static int is_full_screen;
@@ -1169,6 +1170,12 @@ static int stream_component_open(VideoState *is, int stream_index)
     if (!codec ||
         avcodec_open(enc, codec) < 0)
         return -1;
+    enc->debug = debug;
+#if defined(HAVE_PTHREADS) || defined(HAVE_W32THREADS)
+    if(thread_count>1)
+        avcodec_thread_init(enc, thread_count);
+#endif
+    enc->thread_count= thread_count;
     switch(enc->codec_type) {
     case CODEC_TYPE_AUDIO:
         is->audio_stream = stream_index;
@@ -1197,7 +1204,6 @@ static int stream_component_open(VideoState *is, int stream_index)
 
         packet_queue_init(&is->videoq);
         is->video_tid = SDL_CreateThread(video_thread, is);
-        enc->debug = debug;
         enc->debug_mv = debug_mv;
         break;
     default:
@@ -1793,6 +1799,14 @@ static void opt_vismv(const char *arg)
 {
     debug_mv = atoi(arg);
 }
+
+static void opt_thread_count(const char *arg)
+{
+    thread_count= atoi(arg);
+#if !defined(HAVE_PTHREADS) && !defined(HAVE_W32THREADS)
+    fprintf(stderr, "Warning: not compiled with thread support, using thread emulation\n");
+#endif
+}
     
 const OptionDef options[] = {
     { "h", 0, {(void*)show_help}, "show help" },    
@@ -1814,7 +1828,8 @@ const OptionDef options[] = {
 #ifdef CONFIG_NETWORK
     { "rtp_tcp", OPT_EXPERT, {(void*)&opt_rtp_tcp}, "force RTP/TCP protocol usage", "" },
 #endif
-    { "sync", HAS_ARG | OPT_EXPERT, {(void*)&opt_sync}, "set audio-video sync. type (type=audio/video/ext)", "type" },
+    { "sync", HAS_ARG | OPT_EXPERT, {(void*)opt_sync}, "set audio-video sync. type (type=audio/video/ext)", "type" },
+    { "threads", HAS_ARG | OPT_EXPERT, {(void*)opt_thread_count}, "thread count", "count" },
     { NULL, },
 };
 

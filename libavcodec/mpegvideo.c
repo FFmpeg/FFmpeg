@@ -468,13 +468,17 @@ static void backup_duplicate_context(MpegEncContext *bak, MpegEncContext *src){
 #undef COPY
 }
 
-static void update_duplicate_context(MpegEncContext *dst, MpegEncContext *src){
+void ff_update_duplicate_context(MpegEncContext *dst, MpegEncContext *src){
     MpegEncContext bak;
+    int i;
     //FIXME copy only needed parts
 //START_TIMER
     backup_duplicate_context(&bak, dst);
     memcpy(dst, src, sizeof(MpegEncContext));
     backup_duplicate_context(dst, &bak);
+    for(i=0;i<12;i++){
+        dst->pblocks[i] = (short *)(&dst->block[i]);
+    }
 //STOP_TIMER("update_duplicate_context") //about 10k cycles / 0.01 sec for 1000frames on 1ghz with 2 threads
 }
 
@@ -4632,7 +4636,7 @@ static void encode_picture(MpegEncContext *s, int picture_number)
     
     s->mb_intra=0; //for the rate distoration & bit compare functions
     for(i=1; i<s->avctx->thread_count; i++){
-        update_duplicate_context(s->thread_context[i], s);
+        ff_update_duplicate_context(s->thread_context[i], s);
     }
     
     /* Estimate motion for every MB */

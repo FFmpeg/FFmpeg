@@ -1707,6 +1707,7 @@ typedef struct Mpeg1Context {
     int mpeg_enc_ctx_allocated; /* true if decoding context allocated */
     int repeat_field; /* true if we must repeat the field */
     AVPanScan pan_scan; /** some temporary storage for the panscan */
+    int slice_count;
 } Mpeg1Context;
 
 static int mpeg_decode_init(AVCodecContext *avctx)
@@ -2015,43 +2016,14 @@ short * tmp;
     s->pblocks[5] = tmp;
 }
 
-#define DECODE_SLICE_FATAL_ERROR -2
-#define DECODE_SLICE_ERROR -1
-#define DECODE_SLICE_OK 0
+static int mpeg_field_start(MpegEncContext *s){
+    AVCodecContext *avctx= s->avctx;
+    Mpeg1Context *s1 = (Mpeg1Context*)s;
 
-/**
- * decodes a slice.
- * @return DECODE_SLICE_FATAL_ERROR if a non recoverable error occured<br>
- *         DECODE_SLICE_ERROR if the slice is damaged<br>
- *         DECODE_SLICE_OK if this slice is ok<br>
- */
-static int mpeg_decode_slice(AVCodecContext *avctx, 
-                              AVFrame *pict,
-                              int start_code,
-                              uint8_t **buf, int buf_size)
-{
-    Mpeg1Context *s1 = avctx->priv_data;
-    MpegEncContext *s = &s1->mpeg_enc_ctx;
-    int ret;
-    const int field_pic= s->picture_structure != PICT_FRAME;
-
-    s->resync_mb_x= s->mb_x = 
-    s->resync_mb_y= s->mb_y = -1;
-    
-    start_code = (start_code - 1) & 0xff;
-    if (start_code >= s->mb_height){
-        av_log(s->avctx, AV_LOG_ERROR, "slice below image (%d >= %d)\n", start_code, s->mb_height);
-        return -1;
-    }
-    
-    ff_mpeg1_clean_buffers(s);
-    s->interlaced_dct = 0;
-        
     /* start frame decoding */
-    if (s->first_slice) {
-      if(s->first_field || s->picture_structure==PICT_FRAME){
+    if(s->first_field || s->picture_structure==PICT_FRAME){
         if(MPV_frame_start(s, avctx) < 0)
-            return DECODE_SLICE_FATAL_ERROR;
+            return -1;
 
         ff_er_frame_start(s);
 
@@ -2069,7 +2041,7 @@ static int mpeg_decode_slice(AVCodecContext *avctx,
         }         
 
         *s->current_picture_ptr->pan_scan= s1->pan_scan;
-      }else{ //second field
+    }else{ //second field
             int i;
             
             if(!s->current_picture_ptr){
@@ -2083,30 +2055,48 @@ static int mpeg_decode_slice(AVCodecContext *avctx,
                     s->current_picture.data[i] += s->current_picture_ptr->linesize[i];
                 } 
             }
-      }
+    }
 #ifdef HAVE_XVMC
 // MPV_frame_start will call this function too,
 // but we need to call it on every field
-      if(s->avctx->xvmc_acceleration)
+    if(s->avctx->xvmc_acceleration)
          XVMC_field_start(s,avctx);
 #endif
-    }//fi(s->first_slice)
 
+    return 0;
+}
+
+#define DECODE_SLICE_ERROR -1
+#define DECODE_SLICE_OK 0
+
+/**
+ * decodes a slice. MpegEncContext.mb_y must be set to the MB row from the startcode
+ * @return DECODE_SLICE_ERROR if the slice is damaged<br>
+ *         DECODE_SLICE_OK if this slice is ok<br>
+ */
+static int mpeg_decode_slice(Mpeg1Context *s1, int mb_y,
+                              uint8_t **buf, int buf_size)
+{
+    MpegEncContext *s = &s1->mpeg_enc_ctx;
+    AVCodecContext *avctx= s->avctx;
+    int ret;
+    const int field_pic= s->picture_structure != PICT_FRAME;
+
+    s->resync_mb_x=
+    s->resync_mb_y= -1;
+
+    if (mb_y >= s->mb_height){
+        av_log(s->avctx, AV_LOG_ERROR, "slice below image (%d >= %d)\n", s->mb_y, s->mb_height);
+        return -1;
+    }
+    
     init_get_bits(&s->gb, *buf, buf_size*8);
 
-    s->qscale = get_qscale(s);
-    if (s->first_slice && (s->first_field || s->picture_structure==PICT_FRAME)) {
-        if(s->avctx->debug&FF_DEBUG_PICT_INFO){
-             av_log(s->avctx, AV_LOG_DEBUG, "qp:%d fc:%2d%2d%2d%2d %s %s %s %s %s dc:%d pstruct:%d fdct:%d cmv:%d qtype:%d ivlc:%d rff:%d %s\n", 
-                 s->qscale, s->mpeg_f_code[0][0],s->mpeg_f_code[0][1],s->mpeg_f_code[1][0],s->mpeg_f_code[1][1],
-                 s->pict_type == I_TYPE ? "I" : (s->pict_type == P_TYPE ? "P" : (s->pict_type == B_TYPE ? "B" : "S")), 
-                 s->progressive_sequence ? "ps" :"", s->progressive_frame ? "pf" : "", s->alternate_scan ? "alt" :"", s->top_field_first ? "top" :"", 
-                 s->intra_dc_precision, s->picture_structure, s->frame_pred_frame_dct, s->concealment_motion_vectors,
-                 s->q_scale_type, s->intra_vlc_format, s->repeat_first_field, s->chroma_420_type ? "420" :"");
-        }
-    }
+    ff_mpeg1_clean_buffers(s);
+    s->interlaced_dct = 0;
 
-    s->first_slice = 0;
+    s->qscale = get_qscale(s);
+
     if(s->qscale == 0){
         av_log(s->avctx, AV_LOG_ERROR, "qscale == 0\n");
         return -1;
@@ -2135,12 +2125,23 @@ static int mpeg_decode_slice(AVCodecContext *avctx,
             break;
         }
     }
-    
+
     s->resync_mb_x= s->mb_x;
-    s->resync_mb_y= s->mb_y = start_code;
+    s->resync_mb_y= s->mb_y= mb_y;
     s->mb_skip_run= 0;
     ff_init_block_index(s);
 
+    if (s->mb_y==0 && s->mb_x==0 && (s->first_field || s->picture_structure==PICT_FRAME)) {
+        if(s->avctx->debug&FF_DEBUG_PICT_INFO){
+             av_log(s->avctx, AV_LOG_DEBUG, "qp:%d fc:%2d%2d%2d%2d %s %s %s %s %s dc:%d pstruct:%d fdct:%d cmv:%d qtype:%d ivlc:%d rff:%d %s\n", 
+                 s->qscale, s->mpeg_f_code[0][0],s->mpeg_f_code[0][1],s->mpeg_f_code[1][0],s->mpeg_f_code[1][1],
+                 s->pict_type == I_TYPE ? "I" : (s->pict_type == P_TYPE ? "P" : (s->pict_type == B_TYPE ? "B" : "S")), 
+                 s->progressive_sequence ? "ps" :"", s->progressive_frame ? "pf" : "", s->alternate_scan ? "alt" :"", s->top_field_first ? "top" :"", 
+                 s->intra_dc_precision, s->picture_structure, s->frame_pred_frame_dct, s->concealment_motion_vectors,
+                 s->q_scale_type, s->intra_vlc_format, s->repeat_first_field, s->chroma_420_type ? "420" :"");
+        }
+    }    
+    
     for(;;) {
 #ifdef HAVE_XVMC
         //one 1 we memcpy blocks in xvmcvideo
@@ -2266,6 +2267,39 @@ eos: // end of slice
     *buf += get_bits_count(&s->gb)/8 - 1;
 //printf("y %d %d %d %d\n", s->resync_mb_x, s->resync_mb_y, s->mb_x, s->mb_y);
     return 0;
+}
+
+static int slice_decode_thread(AVCodecContext *c, void *arg){
+    MpegEncContext *s= arg;
+    uint8_t *buf= s->gb.buffer;
+    int mb_y= s->start_mb_y;
+
+    s->error_count= 3*(s->end_mb_y - s->start_mb_y)*s->mb_width;
+
+    for(;;){
+        int start_code, ret;
+
+        ret= mpeg_decode_slice((Mpeg1Context*)s, mb_y, &buf, s->gb.buffer_end - buf);
+        emms_c();
+//av_log(c, AV_LOG_DEBUG, "ret:%d resync:%d/%d mb:%d/%d ts:%d/%d ec:%d\n", 
+//ret, s->resync_mb_x, s->resync_mb_y, s->mb_x, s->mb_y, s->start_mb_y, s->end_mb_y, s->error_count);
+        if(ret < 0){
+            if(s->resync_mb_x>=0 && s->resync_mb_y>=0)
+                ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x, s->mb_y, AC_ERROR|DC_ERROR|MV_ERROR);
+        }else{
+            ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x-1, s->mb_y, AC_END|DC_END|MV_END);
+        }
+        
+        if(s->mb_y == s->end_mb_y)
+            return 0;
+        
+        start_code = find_start_code(&buf, s->gb.buffer_end);
+        mb_y= start_code - SLICE_MIN_START_CODE;
+        if(mb_y < 0 || mb_y >= s->end_mb_y)
+            return -1;
+    }
+    
+    return 0; //not reached
 }
 
 /**
@@ -2621,12 +2655,21 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
 
     if(s->mpeg_enc_ctx_allocated==0 && avctx->codec_tag == ff_get_fourcc("VCR2"))
         vcr2_init_sequence(avctx);
-
+    
+    s->slice_count= 0;
+        
     for(;;) {
         /* find start next code */
         start_code = find_start_code(&buf_ptr, buf_end);
         if (start_code < 0){
             if(s2->pict_type != B_TYPE || avctx->hurry_up==0){
+                if(avctx->thread_count > 1){
+                    int i;
+
+                    avctx->execute(avctx, slice_decode_thread,  (void**)&(s2->thread_context[0]), NULL, s->slice_count);
+                    for(i=0; i<s->slice_count; i++)
+                        s2->error_count += s2->thread_context[i]->error_count;
+                }
                 if (slice_end(avctx, picture)) {
                     if(s2->last_picture_ptr || s2->low_delay) //FIXME merge with the stuff in mpeg_decode_slice
                         *data_size = sizeof(AVPicture);
@@ -2667,6 +2710,7 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
                 default:
                     if (start_code >= SLICE_MIN_START_CODE &&
                         start_code <= SLICE_MAX_START_CODE) {
+                        int mb_y= start_code - SLICE_MIN_START_CODE;
                         
                         /* skip b frames if we dont have reference frames */
                         if(s2->last_picture_ptr==NULL && s2->pict_type==B_TYPE) break;
@@ -2676,17 +2720,38 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
                         if(avctx->hurry_up>=5) break;
                         
                         if (!s->mpeg_enc_ctx_allocated) break;
-
-                        ret = mpeg_decode_slice(avctx, picture,
-                                                start_code, &buf_ptr, input_size);
-                        emms_c();
-
-                        if(ret < 0){
-                            if(s2->resync_mb_x>=0 && s2->resync_mb_y>=0)
-                                ff_er_add_slice(s2, s2->resync_mb_x, s2->resync_mb_y, s2->mb_x, s2->mb_y, AC_ERROR|DC_ERROR|MV_ERROR);
-                            if(ret==DECODE_SLICE_FATAL_ERROR) return -1;
+                        
+                        if(s2->first_slice){
+                            s2->first_slice=0;
+                            if(mpeg_field_start(s2) < 0)
+                                return -1;
+                        }
+                        
+                        if(avctx->thread_count > 1){
+                            int threshold= (s2->mb_height*s->slice_count + avctx->thread_count/2) / avctx->thread_count;
+                            if(threshold <= mb_y){
+                                MpegEncContext *thread_context= s2->thread_context[s->slice_count];
+                                
+                                thread_context->start_mb_y= mb_y;
+                                thread_context->end_mb_y  = s2->mb_height;
+                                if(s->slice_count){
+                                    s2->thread_context[s->slice_count-1]->end_mb_y= mb_y;
+                                    ff_update_duplicate_context(thread_context, s2);
+                                }
+                                init_get_bits(&thread_context->gb, buf_ptr, input_size*8);
+                                s->slice_count++;
+                            }
+                            buf_ptr += 2; //FIXME add minimum num of bytes per slice
                         }else{
-                            ff_er_add_slice(s2, s2->resync_mb_x, s2->resync_mb_y, s2->mb_x-1, s2->mb_y, AC_END|DC_END|MV_END);
+                            ret = mpeg_decode_slice(s, mb_y, &buf_ptr, input_size);
+                            emms_c();
+
+                            if(ret < 0){
+                                if(s2->resync_mb_x>=0 && s2->resync_mb_y>=0)
+                                    ff_er_add_slice(s2, s2->resync_mb_x, s2->resync_mb_y, s2->mb_x, s2->mb_y, AC_ERROR|DC_ERROR|MV_ERROR);
+                            }else{
+                                ff_er_add_slice(s2, s2->resync_mb_x, s2->resync_mb_y, s2->mb_x-1, s2->mb_y, AC_END|DC_END|MV_END);
+                            }
                         }
                     }
                     break;

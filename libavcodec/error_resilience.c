@@ -652,7 +652,7 @@ void ff_er_add_slice(MpegEncContext *s, int startx, int starty, int endx, int en
  
     s->error_status_table[start_xy] |= VP_START;
 
-    if(start_xy > 0){
+    if(start_xy > 0 && s->avctx->thread_count <= 1){
         int prev_status= s->error_status_table[ s->mb_index2xy[start_i - 1] ];
         
         prev_status &= ~ VP_START;
