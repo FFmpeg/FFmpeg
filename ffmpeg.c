@@ -205,7 +205,8 @@ typedef struct AVInputStream {
 
     int64_t       start;     /* time when read started */
     unsigned long frame;     /* current frame */
-    AVFrac          pts;     /* synthetic pts for cases where pkt.pts == 0 */
+    AVFrac        next_pts;  /* synthetic pts for cases where pkt.pts == 0 */
+    int64_t       pts;       /* current pts */
 } AVInputStream;
 
 typedef struct AVInputFile {
@@ -472,42 +473,33 @@ static void do_video_out(AVFormatContext *s,
        but not for the general case */
     if (audio_sync) {
         /* compute the A-V delay and duplicate/remove frames if needed */
-        double adelta, vdelta, apts, vpts, av_delay;
-        
-        if (audio_sync->sync_ipts != AV_NOPTS_VALUE &&
-            ost->sync_ipts != AV_NOPTS_VALUE) {
-            
-            adelta = (double)(ost->st->pts.val - audio_sync->sync_opts) * 
-                s->pts_num / s->pts_den;
-            apts = audio_sync->sync_ipts + adelta; 
-            
-            vdelta = (double)(ost->st->pts.val - ost->sync_opts) *
-                s->pts_num / s->pts_den;
-            vpts = ost->sync_ipts + vdelta;
-            
-            av_delay = apts - vpts;
-            //            printf("delay=%f\n", av_delay);
-            if (av_delay < -AV_DELAY_MAX)
-                nb_frames = 2;
-            else if (av_delay > AV_DELAY_MAX)
-                nb_frames = 0;
-        }
+        double adelta, vdelta, av_delay;
+
+        adelta = audio_sync->sync_ipts - ((double)audio_sync->sync_opts * 
+            s->pts_num / s->pts_den);
+
+        vdelta = ost->sync_ipts - ((double)ost->sync_opts *
+            s->pts_num / s->pts_den);
+
+        av_delay = adelta - vdelta;
+        //            printf("delay=%f\n", av_delay);
+        if (av_delay < -AV_DELAY_MAX)
+            nb_frames = 2;
+        else if (av_delay > AV_DELAY_MAX)
+            nb_frames = 0;
     } else {
         double vdelta;
 
-        if (ost->sync_ipts != AV_NOPTS_VALUE) {
-            vdelta = (double)(ost->st->pts.val) * s->pts_num / s->pts_den - (ost->sync_ipts - ost->sync_ipts_offset);
-            if (vdelta < 100 && vdelta > -100 && ost->sync_ipts_offset) {
-                if (vdelta < -AV_DELAY_MAX)
-                    nb_frames = 2;
-                else if (vdelta > AV_DELAY_MAX)
-                    nb_frames = 0;
-            } else {
-                ost->sync_ipts_offset -= vdelta;
-                if (!ost->sync_ipts_offset)
-                    ost->sync_ipts_offset = 0.000001; /* one microsecond */
-            }
-
+        vdelta = (double)(ost->st->pts.val) * s->pts_num / s->pts_den - (ost->sync_ipts - ost->sync_ipts_offset);
+        if (vdelta < 100 && vdelta > -100 && ost->sync_ipts_offset) {
+            if (vdelta < -AV_DELAY_MAX)
+                nb_frames = 2;
+            else if (vdelta > AV_DELAY_MAX)
+                nb_frames = 0;
+        } else {
+            ost->sync_ipts_offset -= vdelta;
+            if (!ost->sync_ipts_offset)
+                ost->sync_ipts_offset = 0.000001; /* one microsecond */
         }
     }
     
@@ -1108,13 +1100,14 @@ static int av_encode(AVFormatContext **output_files,
     for(i=0;i<nb_istreams;i++) {
         ist = ist_table[i];
 	is = input_files[ist->file_index];
+        ist->pts = 0;
         switch (ist->st->codec.codec_type) {
         case CODEC_TYPE_AUDIO:
-	    av_frac_init(&ist->pts, 
+	    av_frac_init(&ist->next_pts, 
 	                 0, 0, is->pts_num * ist->st->codec.sample_rate);
             break;
         case CODEC_TYPE_VIDEO:
-            av_frac_init(&ist->pts, 
+            av_frac_init(&ist->next_pts, 
 	                 0, 0, is->pts_num * ist->st->codec.frame_rate);
             break;
         default:
@@ -1220,10 +1213,6 @@ static int av_encode(AVFormatContext **output_files,
         len = pkt.size;
         ptr = pkt.data;
         while (len > 0) {
-            int64_t ipts;
-
-            ipts = AV_NOPTS_VALUE;
-
             /* decode the packet if needed */
             data_buf = NULL; /* fail safe */
             data_size = 0;
@@ -1233,8 +1222,15 @@ static int av_encode(AVFormatContext **output_files,
                 /* NOTE2: even if the fraction is not initialized,
                    av_frac_set can be used to set the integer part */
                 if (ist->frame_decoded) { 
-		    /* If pts is unavailable -- we have to use synthetic one */
-		    ipts = (pkt.pts == AV_NOPTS_VALUE) ? ist->pts.val : pkt.pts;
+                    /* If pts is unavailable -- we have to use synthetic one */
+                    if( pkt.pts != AV_NOPTS_VALUE )
+                    {
+                        ist->pts = ist->next_pts.val = pkt.pts;
+                    }
+                    else
+                    {
+                        ist->pts = ist->next_pts.val;
+                    }
                     ist->frame_decoded = 0;
                 }
 
@@ -1255,7 +1251,7 @@ static int av_encode(AVFormatContext **output_files,
                         continue;
                     }
                     data_buf = (uint8_t *)samples;
-		    av_frac_add(&ist->pts, 
+		    av_frac_add(&ist->next_pts, 
 			        is->pts_den * data_size / (2 * ist->st->codec.channels));
                     break;
                 case CODEC_TYPE_VIDEO:
@@ -1280,7 +1276,7 @@ static int av_encode(AVFormatContext **output_files,
                             len -= ret;
                             continue;
                         }
-                        av_frac_add(&ist->pts, 
+                        av_frac_add(&ist->next_pts, 
 			            is->pts_den * ist->st->codec.frame_rate_base);          
                     }
                     break;
@@ -1334,23 +1330,17 @@ static int av_encode(AVFormatContext **output_files,
                 if (ost->source_index == ist_index) {
                     os = output_files[ost->file_index];
 
-                    if (ipts != AV_NOPTS_VALUE) {
 #if 0
-                        printf("%d: got pts=%f %f\n", 
-                               i, pkt.pts / 90000.0, 
-                               (ipts - ost->st->pts.val) / 90000.0);
+                    printf("%d: got pts=%f %f\n", i, pkt.pts / 90000.0, 
+                           (ist->pts - ost->st->pts.val) / 90000.0);
 #endif
-                        /* set the input output pts pairs */
-                        ost->sync_ipts = (double)ipts * is->pts_num / 
-                            is->pts_den;
-                        /* XXX: take into account the various fifos,
-                           in particular for audio */
-                        ost->sync_opts = ost->st->pts.val;
-                        //printf("ipts=%lld sync_ipts=%f sync_opts=%lld pts.val=%lld pkt.pts=%lld\n", ipts, ost->sync_ipts, ost->sync_opts, ost->st->pts.val, pkt.pts); 
-                    } else {
-                        //printf("pts.val=%lld\n", ost->st->pts.val); 
-                        ost->sync_ipts = AV_NOPTS_VALUE;
-                    }
+                    /* set the input output pts pairs */
+                    ost->sync_ipts = (double)ist->pts * is->pts_num / 
+                        is->pts_den;
+                    /* XXX: take into account the various fifos,
+                       in particular for audio */
+                    ost->sync_opts = ost->st->pts.val;
+                    //printf("ipts=%lld sync_ipts=%f sync_opts=%lld pts.val=%lld pkt.pts=%lld\n", ist->pts, ost->sync_ipts, ost->sync_opts, ost->st->pts.val, pkt.pts); 
 
                     if (ost->encoding_needed) {
                         switch(ost->st->codec.codec_type) {
@@ -1397,7 +1387,6 @@ static int av_encode(AVFormatContext **output_files,
                 }
             }
             av_free(buffer_to_free);
-            ipts = AV_NOPTS_VALUE;
         }
     discard_packet:
         av_free_packet(&pkt);
