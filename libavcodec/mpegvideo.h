@@ -196,7 +196,7 @@ typedef struct Picture{
     uint16_t *mb_var;           ///< Table for MB variances 
     uint16_t *mc_mb_var;        ///< Table for motion compensated MB variances 
     uint8_t *mb_mean;           ///< Table for MB luminance 
-    int32_t *mb_cmp_score;	///< Table for MB cmp scores, for mb decission 
+    int32_t *mb_cmp_score;	///< Table for MB cmp scores, for mb decission FIXME remove
     int b_frame_score;          /* */
 } Picture;
 
@@ -524,6 +524,7 @@ typedef struct MpegEncContext {
     int umvplus;                    ///< == H263+ && unrestricted_mv 
     int h263_aic;                   ///< Advanded INTRA Coding (AIC) 
     int h263_aic_dir;               ///< AIC direction: 0 = left, 1 = top 
+    int obmc;                       ///< overlapped block motion compensation
     
     /* mpeg4 specific */
     int time_increment_resolution;
