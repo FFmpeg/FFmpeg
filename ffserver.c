@@ -2714,7 +2714,7 @@ static int prepare_sdp_description(FFStream *stream, uint8_t **pbuffer,
                     /* we must also add the mpeg4 header */
                     data = st->codec.extradata;
                     if (data) {
-                        url_fprintf(pb, "a=fmtp:%d config=");
+                        url_fprintf(pb, "a=fmtp:%d config=", payload_type);
                         for(j=0;j<st->codec.extradata_size;j++) {
                             url_fprintf(pb, "%02x", data[j]);
                         }
