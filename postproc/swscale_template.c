@@ -1298,7 +1298,7 @@ static inline void RENAME(hScale)(int16_t *dst, int dstW, uint8_t *src, int srcW
 			: "+r" (counter)
 			: "r" (filter), "m" (filterPos), "m" (dst), "m"(src+filterSize),
 			  "m" (src), "r" (filterSize*2)
-			: "%ebx", "%eax", "%ecx", "%edx"
+			: "%ebx", "%eax", "%ecx"
 		);
 	}
 #else
