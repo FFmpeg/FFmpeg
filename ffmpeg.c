@@ -1145,7 +1145,8 @@ static int output_packet(AVInputStream *ist, int ist_index,
                             avcodec_get_frame_defaults(&avframe);
                             ost->st->codec.coded_frame= &avframe;
                             avframe.key_frame = pkt->flags & PKT_FLAG_KEY; 
-                        
+                            ost->st->pts.val= av_rescale(ist->pts, os->pts_den, os->pts_num*AV_TIME_BASE);
+
                             av_write_frame(os, ost->index, data_buf, data_size);
                             ost->st->codec.frame_number++;
                             ost->frame_number++;
