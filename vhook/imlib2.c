@@ -210,9 +210,9 @@ void Process(void *ctx, AVPicture *picture, enum PixelFormat pix_fmt, int width,
     imlib_context_set_image(image);
     data = imlib_image_get_data();
 
-    if (pix_fmt != PIX_FMT_BGRA32) {
-        avpicture_fill(&picture1, (UINT8 *) data, PIX_FMT_BGRA32, width, height);
-        if (img_convert(&picture1, PIX_FMT_BGRA32, 
+    if (pix_fmt != PIX_FMT_RGBA32) {
+        avpicture_fill(&picture1, (UINT8 *) data, PIX_FMT_RGBA32, width, height);
+        if (img_convert(&picture1, PIX_FMT_RGBA32, 
                         picture, pix_fmt, width, height) < 0) {
             goto done;
         }
@@ -264,9 +264,9 @@ void Process(void *ctx, AVPicture *picture, enum PixelFormat pix_fmt, int width,
         }
     }
 
-    if (pix_fmt != PIX_FMT_BGRA32) {
+    if (pix_fmt != PIX_FMT_RGBA32) {
         if (img_convert(picture, pix_fmt, 
-                        &picture1, PIX_FMT_BGRA32, width, height) < 0) {
+                        &picture1, PIX_FMT_RGBA32, width, height) < 0) {
         }
     }
 
