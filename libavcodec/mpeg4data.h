@@ -17,6 +17,10 @@
 #define MOTION_MARKER 0x1F001
 #define DC_MARKER     0x6B001
 
+#define MB_TYPE_B_DIRECT 0
+#define MB_TYPE_B_BIDIR  1
+#define MB_TYPE_B_BACKW  2
+#define MB_TYPE_B_FORW   3
 
 /* dc encoding for mpeg4 */
 const UINT8 DCtab_lum[13][2] =

@@ -339,7 +339,9 @@ typedef struct MpegEncContext {
     INT64 time;                   /* time of current frame */ 
     INT64 last_non_b_time;
     UINT16 pp_time;               /* time distance between the last 2 p,s,i frames */
-    UINT16 bp_time;               /* time distance between the last b and p,s,i frame */
+    UINT16 pb_time;               /* time distance between the last b and p,s,i frame */
+    UINT16 pp_field_time;
+    UINT16 pb_field_time;         /* like above, just for interlaced */
     int shape;
     int vol_sprite_usage;
     int sprite_width;
@@ -377,7 +379,12 @@ typedef struct MpegEncContext {
     uint8_t *tex_pb_buffer;          
     uint8_t *pb2_buffer;
     int mpeg_quant;
-    INT8 *non_b_mv4_table;
+#define CO_LOCATED_TYPE_4MV     1
+#define CO_LOCATED_TYPE_FIELDMV 2
+    INT8 *co_located_type_table;     /* 4mv & field_mv info for next b frame */
+    INT16 (*field_mv_table)[2][2];   /* used for interlaced b frame decoding */
+    INT8 (*field_select_table)[2];   /* wtf, no really another table for interlaced b frames */
+    int t_frame;                     /* time distance of first I -> B, used for interlaced b frames */
 
     /* divx specific, used to workaround (many) bugs in divx5 */
     int divx_version;

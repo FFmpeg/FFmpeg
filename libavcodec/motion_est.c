@@ -1391,8 +1391,8 @@ static inline int direct_search(MpegEncContext * s,
     const int motion_px= s->p_mv_table[mot_xy][0];
     const int motion_py= s->p_mv_table[mot_xy][1];
     const int time_pp= s->pp_time;
-    const int time_bp= s->bp_time;
-    const int time_pb= time_pp - time_bp;
+    const int time_pb= s->pb_time;
+    const int time_bp= time_pp - time_pb;
     int bx, by;
     int mx, my, mx2, my2;
     uint8_t *ref_picture= s->me_scratchpad - (mb_x - 1 + (mb_y - 1)*s->linesize)*16;
