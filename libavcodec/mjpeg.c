@@ -831,9 +831,8 @@ static int mjpeg_decode_sof0(MJpegDecodeContext *s)
 static inline int mjpeg_decode_dc(MJpegDecodeContext *s, int dc_index)
 {
     int code, diff;
-#if 0
-    code = get_vlc2(&s->gb, s->vlc[0][dc_index].table,
-	s->vlc[0][dc_index].bits, 1);
+#if 1
+    code = get_vlc2(&s->gb, s->vlcs[0][dc_index].table, 9, 2);
 #else
     code = get_vlc(&s->gb, &s->vlcs[0][dc_index]);
 #endif
@@ -876,9 +875,8 @@ static int decode_block(MJpegDecodeContext *s, DCTELEM *block,
     ac_vlc = &s->vlcs[1][ac_index];
     i = 1;
     for(;;) {
-#if 0
-	code = get_vlc2(&s->gb, s->vlcs[1][ac_index].table,
-	    s->vlcs[1][ac_index].bits, 2);
+#if 1
+	code = get_vlc2(&s->gb, s->vlcs[1][ac_index].table, 9, 2);
 #else
         code = get_vlc(&s->gb, ac_vlc);
 #endif
