@@ -504,6 +504,7 @@ if test "$mingw32" = "yes" ; then
     audio_oss="no"
     dv1394="no"
     network="no"
+    prefix="/c/Progra~1/FFmpeg"
 fi
 
 cc="${cross_prefix}${cc}"
@@ -957,8 +958,9 @@ if test "$lshared" = "yes" ; then
   echo "PIC=-fPIC" >> config.mak
 fi
 echo "EXTRALIBS=$extralibs" >> config.mak
-echo "VERSION=`head $source_path/VERSION`" >>config.mak
-echo "" >>config.mak
+version=`grep '#define FFMPEG_VERSION ' $source_path/libavcodec/avcodec.h |
+ cut -d '"' -f 2`
+echo "VERSION=$version" >>config.mak
 # if you do not want to use encoders, disable that.
 echo "#define CONFIG_ENCODERS 1" >> $TMPH
 echo "CONFIG_ENCODERS=yes" >> config.mak
