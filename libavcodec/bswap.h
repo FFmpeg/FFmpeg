@@ -5,7 +5,6 @@
 #include <byteswap.h>
 #else
 
-#include <inttypes.h> /* for __WORDSIZE */
 #ifdef ARCH_X86
 inline static unsigned short ByteSwap16(unsigned short x)
 {
@@ -34,8 +33,8 @@ inline static unsigned int ByteSwap32(unsigned int x)
 
 inline static unsigned long long int ByteSwap64(unsigned long long int x)
 {
-  register union { __extension__ unsigned long long int __ll;
-          unsigned long int __l[2]; } __x;
+  register union { __extension__ uint64_t __ll;
+          uint32_t __l[2]; } __x;
   asm("xchgl	%0,%1":
       "=r"(__x.__l[0]),"=r"(__x.__l[1]):
       "0"(bswap_32((unsigned long)x)),"1"(bswap_32((unsigned long)(x>>32))));
@@ -53,26 +52,19 @@ inline static unsigned long long int ByteSwap64(unsigned long long int x)
      ((((x) & 0xff000000) >> 24) | (((x) & 0x00ff0000) >>  8) | \
       (((x) & 0x0000ff00) <<  8) | (((x) & 0x000000ff) << 24))
 
-#if __WORDSIZE >= 64
-# define bswap_64(x) \
-     ((((x) & 0xff00000000000000ull) >> 56)				      \
-      | (((x) & 0x00ff000000000000ull) >> 40)				      \
-      | (((x) & 0x0000ff0000000000ull) >> 24)				      \
-      | (((x) & 0x000000ff00000000ull) >> 8)				      \
-      | (((x) & 0x00000000ff000000ull) << 8)				      \
-      | (((x) & 0x0000000000ff0000ull) << 24)				      \
-      | (((x) & 0x000000000000ff00ull) << 40)				      \
-      | (((x) & 0x00000000000000ffull) << 56))
-#else
-#define bswap_64(x) \
-     (__extension__						\
-      ({ union { __extension__ unsigned long long int __ll;	\
-                 unsigned long int __l[2]; } __w, __r;		\
-         __w.__ll = (x);					\
-         __r.__l[0] = bswap_32 (__w.__l[1]);			\
-         __r.__l[1] = bswap_32 (__w.__l[0]);			\
-         __r.__ll; }))
-#endif
+inline static uint64_t ByteSwap64(uint64_t x)
+{
+    union { 
+        uint64_t ll;
+        uint32_t l[2]; 
+    } w, r;
+    w.ll = x;
+    r.l[0] = bswap_32 (w.l[1]);
+    r.l[1] = bswap_32 (w.l[0]);
+    return r.ll;
+}
+#define bswap_64(x) ByteSwap64(x)
+
 #endif	/* !ARCH_X86 */
 
 #endif	/* !HAVE_BYTESWAP_H */
