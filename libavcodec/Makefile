@@ -27,7 +27,8 @@ endif
 ifeq ($(TARGET_MMX),yes)
 ASM_OBJS += i386/fdct_mmx.o i386/sad_mmx.o
 OBJS += i386/fdctdata.o i386/cputest.o \
-	i386/dsputil_mmx.o i386/mpegvideo_mmx.o
+	i386/dsputil_mmx.o i386/mpegvideo_mmx.o \
+        i386/idct_mmx.o
 endif
 
 SRCS = $(OBJS:.o=.c) $(ASM_OBJS:.o=.s)
@@ -74,7 +75,8 @@ apiexample: apiexample.c $(LIB)
 imgresample-test: imgresample.c
 	$(CC) $(CFLAGS) -DTEST -o $@ $^ 
 
-dct-test: dct-test.o jfdctfst.o i386/fdct_mmx.o i386/fdctdata.o fdctref.o
+dct-test: dct-test.o jfdctfst.o i386/fdct_mmx.o i386/fdctdata.o \
+          fdctref.o jrevdct.o i386/idct_mmx.o
 	$(CC) -o $@ $^
 
 #
