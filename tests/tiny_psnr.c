@@ -120,6 +120,7 @@ int main(int argc,char* argv[]){
         }
     }
     
+    if(!i) i=1;
     dev= int_sqrt((sse*F*F)/i);
     if(sse)
         psnr= (log16(256*256*255*255LL*i/sse)*284619LL*F + (1<<31)) / (1LL<<32);
