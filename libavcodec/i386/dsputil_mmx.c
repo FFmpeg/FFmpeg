@@ -267,63 +267,31 @@ static void add_pixels_clamped_mmx(const DCTELEM *block, UINT8 *pixels, int line
 
 static void put_pixels_mmx(UINT8 *block, const UINT8 *pixels, int line_size, int h)
 {
-#if 0 //FIXME h==4 case
-    asm volatile(
-        "xorl %%eax, %%eax		\n\t"
-        "movl %3, %%esi			\n\t"
-        "1:				\n\t"
-        "movq (%1, %%eax), %%mm0	\n\t"
-        "movq %%mm0, (%0, %%eax)	\n\t"
-        "addl %2, %%eax			\n\t"
-        "movq (%1, %%eax), %%mm0	\n\t"
-        "movq %%mm0, (%0, %%eax)	\n\t"
-        "addl %2, %%eax			\n\t"
-        "movq (%1, %%eax), %%mm0	\n\t"
-        "movq %%mm0, (%0, %%eax)	\n\t"
-        "addl %2, %%eax			\n\t"
-        "movq (%1, %%eax), %%mm0	\n\t"
-        "movq %%mm0, (%0, %%eax)	\n\t"
-        "addl %2, %%eax			\n\t"
-        "movq (%1, %%eax), %%mm0	\n\t"
-        "movq %%mm0, (%0, %%eax)	\n\t"
-        "addl %2, %%eax			\n\t"
-        "movq (%1, %%eax), %%mm0	\n\t"
-        "movq %%mm0, (%0, %%eax)	\n\t"
-        "addl %2, %%eax			\n\t"
-        "movq (%1, %%eax), %%mm0	\n\t"
-        "movq %%mm0, (%0, %%eax)	\n\t"
-        "addl %2, %%eax			\n\t"
-        "movq (%1, %%eax), %%mm0	\n\t"
-        "movq %%mm0, (%0, %%eax)	\n\t"
-        "addl %2, %%eax			\n\t"
-        "subl $8, %%esi			\n\t"
-        " jnz 1b			\n\t"
-    :: "r" (block), "r" (pixels), "r"(line_size), "m"(h)
-    : "%eax", "%esi", "memory"
-    );
-#else
-    asm volatile(
-        "xorl %%eax, %%eax		\n\t"
-        "movl %3, %%esi			\n\t"
-        "1:				\n\t"
-        "movq (%1, %%eax), %%mm0	\n\t"
-        "movq %%mm0, (%0, %%eax)	\n\t"
-        "addl %2, %%eax			\n\t"
-        "movq (%1, %%eax), %%mm0	\n\t"
-        "movq %%mm0, (%0, %%eax)	\n\t"
-        "addl %2, %%eax			\n\t"
-        "movq (%1, %%eax), %%mm0	\n\t"
-        "movq %%mm0, (%0, %%eax)	\n\t"
-        "addl %2, %%eax			\n\t"
-        "movq (%1, %%eax), %%mm0	\n\t"
-        "movq %%mm0, (%0, %%eax)	\n\t"
-        "addl %2, %%eax			\n\t"
-        "subl $4, %%esi			\n\t"
-        " jnz 1b			\n\t"
-    :: "r" (block), "r" (pixels), "r"(line_size), "m"(h)
-    : "%eax", "%esi", "memory"
-    );
+    asm volatile
+	(
+	 "lea (%3, %3), %%eax		\n\t"
+#ifdef PIC
+	 ".balign 16			\n\t"
 #endif
+	 "1:				\n\t"
+	 "movq (%1), %%mm0		\n\t"
+	 "movq (%1, %3), %%mm1		\n\t"
+     	 "movq %%mm0, (%2)		\n\t"
+	 "movq %%mm1, (%2, %3)		\n\t"
+	 "addl %%eax, %1		\n\t"
+         "addl %%eax, %2       		\n\t"
+	 "movq (%1), %%mm0		\n\t"
+	 "movq (%1, %3), %%mm1		\n\t"
+	 "movq %%mm0, (%2)		\n\t"
+	 "movq %%mm1, (%2, %3)		\n\t"
+	 "addl %%eax, %1		\n\t"
+	 "addl %%eax, %2       		\n\t"
+	 "subl $4, %0			\n\t"
+	 "jnz 1b			\n\t"
+	 : "+g"(h), "+r" (pixels),  "+r" (block)
+	 : "r"(line_size)
+	 : "%eax", "memory"
+	);
 }
 
 static void put_pixels_x2_mmx(UINT8 *block, const UINT8 *pixels, int line_size, int h)
