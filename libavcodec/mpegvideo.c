@@ -597,6 +597,11 @@ int MPV_common_init(MpegEncContext *s)
 {
     int y_size, c_size, yc_size, i, mb_array_size, mv_table_size, x, y;
 
+    if(s->avctx->thread_count > MAX_THREADS || 16*s->avctx->thread_count > s->height){
+        av_log(s->avctx, AV_LOG_ERROR, "too many threads\n");
+        return -1;
+    }
+
     dsputil_init(&s->dsp, s->avctx);
     DCT_common_init(s);
 
@@ -987,11 +992,6 @@ int MPV_encode_init(AVCodecContext *avctx)
        && s->codec_id != CODEC_ID_MPEG1VIDEO && s->codec_id != CODEC_ID_MPEG2VIDEO 
        && (s->codec_id != CODEC_ID_H263P || !(s->flags & CODEC_FLAG_H263P_SLICE_STRUCT))){
         av_log(avctx, AV_LOG_ERROR, "multi threaded encoding not supported by codec\n");
-        return -1;
-    }
-    
-    if(s->avctx->thread_count > MAX_THREADS || 16*s->avctx->thread_count > s->height){
-        av_log(avctx, AV_LOG_ERROR, "too many threads\n");
         return -1;
     }
     
