@@ -218,7 +218,7 @@ static const uint8_t dv_vlc_run[409] = {
   0,  0,  0,  0,  0,  0,  0,  0,
   0,  0,  0,  0,  0,  0,  0,  0,
   0,  0,  0,  0,  0,  0,  0,  0,
-  0,
+127,
 };
 
 static const uint8_t dv_vlc_level[409] = {
