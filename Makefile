@@ -77,7 +77,7 @@ TAGS:
 
 # regression tests
 
-test mpeg4 mpeg: ffmpeg$(EXE)
+libavtest test mpeg4 mpeg: ffmpeg$(EXE)
 	make -C tests $@
 
 ifneq ($(wildcard .depend),)
