@@ -18,6 +18,11 @@ OBJS= common.o utils.o mem.o allcodecs.o \
       ratecontrol.o adpcm.o eval.o dv.o error_resilience.o \
       fft.o mdct.o mace.o huffyuv.o cyuv.o opts.o raw.o h264.o golomb.o \
       vp3.o
+
+ifeq ($(AMR_NB),yes)
+OBJS+= amr.o
+endif
+
 ASM_OBJS=
 
 # codecs which are patented in some non free countries like the us

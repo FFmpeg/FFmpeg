@@ -116,6 +116,7 @@ static const CodecTag mov_audio_tags[] = {
 /* MP4 tags */
     { CODEC_ID_AAC, MKTAG('m', 'p', '4', 'a') }, /* MPEG 4 AAC or audio ? */
     /* The standard for mpeg4 audio is still not normalised AFAIK anyway */
+    { CODEC_ID_AMR_NB, MKTAG('s', 'a', 'm', 'r') }, /* AMR-NB 3gp */
     { CODEC_ID_NONE, 0 },
 };
 
@@ -710,7 +711,7 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 
     entries = get_be32(pb);
 
-    while(entries--) {
+    while(entries--) { //Parsing Sample description table
         enum CodecID id;
 	int size = get_be32(pb); /* size */
         format = get_le32(pb); /* data format */
@@ -808,7 +809,7 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
                             get_be32(pb); /* streamType + buffer size */
 			    get_be32(pb); /* max bit rate */
                             get_be32(pb); /* avg bit rate */
-                            len = mp4_read_descr(pb, &tag);
+                            len = mov_mp4_read_descr(pb, &tag);
                             if (tag != 0x05)
                                 goto fail;
                             /* MP4DecSpecificDescrTag */
@@ -844,41 +845,95 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 	    mov_read_default(c, pb, a);
 #endif
 	} else {
-            get_be16(pb); /* version */
-            get_be16(pb); /* revision level */
-            get_be32(pb); /* vendor */
-
-            st->codec.channels = get_be16(pb);		/* channel count */
-	    st->codec.bits_per_sample = get_be16(pb);	/* sample size */
-
-	    st->codec.codec_id = codec_get_id(mov_audio_tags, format);
-            /* handle specific s8 codec */
-            get_be16(pb); /* compression id = 0*/
-            get_be16(pb); /* packet size = 0 */
-
-            st->codec.sample_rate = ((get_be32(pb) >> 16));
-	    //printf("CODECID %d  %d  %.4s\n", st->codec.codec_id, CODEC_ID_PCM_S16BE, (char*)&format);
-
-	    switch (st->codec.codec_id) {
-	    case CODEC_ID_PCM_S16BE:
-		if (st->codec.bits_per_sample == 8)
-		    st->codec.codec_id = CODEC_ID_PCM_S8;
-                /* fall */
-	    case CODEC_ID_PCM_U8:
-		st->codec.bit_rate = st->codec.sample_rate * 8;
-		break;
-	    default:
-                ;
-	    }
-	    get_be32(pb); /* samples per packet */
-	    get_be32(pb); /* bytes per packet */
-            get_be32(pb); /* bytes per frame */
-            get_be32(pb); /* bytes per sample */
-
+            st->codec.codec_id = codec_get_id(mov_audio_tags, format);
+	    if(st->codec.codec_id==CODEC_ID_AMR_NB) //from TS26.244
 	    {
-		MOV_atom_t a = { format, url_ftell(pb), size - (16 + 20 + 16 + 8) };
-		mov_read_default(c, pb, a);
+#ifdef DEBUG
+               printf("AMR-NB audio identified!!\n");
+#endif
+               get_be32(pb);get_be32(pb); //Reserved_8
+               get_be16(pb);//Reserved_2
+               get_be16(pb);//Reserved_2
+               get_be32(pb);//Reserved_4
+               get_be16(pb);//TimeScale
+               get_be16(pb);//Reserved_2
+
+                //AMRSpecificBox.(10 bytes)
+                
+#ifdef DEBUG
+               int damr_size=
+#endif
+               get_be32(pb); //size
+#ifdef DEBUG
+               int damr_type=
+#endif
+               get_be32(pb); //type=='damr'
+#ifdef DEBUG
+               int damr_vendor=
+#endif
+               get_be32(pb); //vendor
+               get_byte(pb); //decoder version
+               get_be16(pb); //mode_set
+               get_byte(pb); //mode_change_period
+               get_byte(pb); //frames_per_sample
+
+#ifdef DEBUG
+               printf("Audio: damr_type=%c%c%c%c damr_size=%Ld damr_vendor=%c%c%c%c\n",
+                       (damr_type >> 24) & 0xff,
+                       (damr_type >> 16) & 0xff,
+                       (damr_type >> 8) & 0xff,
+                       (damr_type >> 0) & 0xff,
+		       damr_size, 
+                       (damr_vendor >> 24) & 0xff,
+                       (damr_vendor >> 16) & 0xff,
+                       (damr_vendor >> 8) & 0xff,
+                       (damr_vendor >> 0) & 0xff
+		       );
+#endif
+                
+               st->time_length=0;//Not possible to get from this info, must count number of AMR frames
+               st->codec.sample_rate=8000;
+               st->codec.channels=1;
+               st->codec.bits_per_sample=16;
+               st->codec.bit_rate=0; /*It is not possible to tell this before we have 
+                                       an audio frame and even then every frame can be different*/
 	    }
+	    else
+	    {
+                get_be16(pb); /* version */
+                get_be16(pb); /* revision level */
+                get_be32(pb); /* vendor */
+
+                st->codec.channels = get_be16(pb);		/* channel count */
+	        st->codec.bits_per_sample = get_be16(pb);	/* sample size */
+
+                /* handle specific s8 codec */
+                get_be16(pb); /* compression id = 0*/
+                get_be16(pb); /* packet size = 0 */
+
+                st->codec.sample_rate = ((get_be32(pb) >> 16));
+	        //printf("CODECID %d  %d  %.4s\n", st->codec.codec_id, CODEC_ID_PCM_S16BE, (char*)&format);
+
+	        switch (st->codec.codec_id) {
+	        case CODEC_ID_PCM_S16BE:
+		    if (st->codec.bits_per_sample == 8)
+		        st->codec.codec_id = CODEC_ID_PCM_S8;
+                    /* fall */
+	        case CODEC_ID_PCM_U8:
+		    st->codec.bit_rate = st->codec.sample_rate * 8;
+		    break;
+	        default:
+                    ;
+	        }
+	        get_be32(pb); /* samples per packet */
+	        get_be32(pb); /* bytes per packet */
+                get_be32(pb); /* bytes per frame */
+                get_be32(pb); /* bytes per sample */
+	        {
+		    MOV_atom_t a = { format, url_ftell(pb), size - (16 + 20 + 16 + 8) };
+		    mov_read_default(c, pb, a);
+	        }
+            }
         }
     }
 
@@ -951,20 +1006,32 @@ static int mov_read_stts(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     AVStream *st = c->fc->streams[c->fc->nb_streams-1];
     //MOVStreamContext *sc = (MOVStreamContext *)st->priv_data;
     int entries, i;
+    int duration=0;
+    int total_sample_count=0;
 
     print_atom("stts", atom);
 
     get_byte(pb); /* version */
     get_byte(pb); get_byte(pb); get_byte(pb); /* flags */
     entries = get_be32(pb);
+
+
 #ifdef DEBUG
 printf("track[%i].stts.entries = %i\n", c->fc->nb_streams-1, entries);
 #endif
     for(i=0; i<entries; i++) {
         int sample_duration;
+        int sample_count;
 
-        get_be32(pb);
+        sample_count=get_be32(pb);
         sample_duration = get_be32(pb);
+#ifdef DEBUG
+        printf("sample_count=%d, sample_duration=%d\n",sample_count,sample_duration);
+#endif
+        duration+=sample_duration*sample_count;
+        total_sample_count+=sample_count;
+
+#if 0 //We calculate an average instead, needed by .mp4-files created with nec e606 3g phone
 
         if (!i && st->codec.codec_type==CODEC_TYPE_VIDEO) {
             st->codec.frame_rate_base = sample_duration ? sample_duration : 1;
@@ -973,6 +1040,18 @@ printf("track[%i].stts.entries = %i\n", c->fc->nb_streams-1, entries);
             printf("VIDEO FRAME RATE= %i (sd= %i)\n", st->codec.frame_rate, sample_duration);
 #endif
         }
+#endif
+    }
+
+    if(st->codec.codec_type==CODEC_TYPE_VIDEO)
+    {
+        //Only support constant frame rate. But lets calculate the average. Needed by .mp4-files created with nec e606 3g phone.
+        //Hmm, lets set base to 1
+        st->codec.frame_rate_base=1;
+        st->codec.frame_rate = st->codec.frame_rate_base * c->streams[c->total_streams]->time_scale * total_sample_count / duration;
+#ifdef DEBUG
+        printf("VIDEO FRAME RATE average= %i (tot sample count= %i ,tot dur= %i)\n", st->codec.frame_rate,total_sample_count,duration);
+#endif
     }
     return 0;
 }

@@ -108,6 +108,9 @@ void avcodec_register_all(void)
 #endif
 #endif /* CONFIG_DECODERS */
 
+#ifdef AMR_NB
+    register_avcodec(&amr_nb_decoder);
+#endif /* AMR_NB */
     /* pcm codecs */
 
 #define PCM_CODEC(id, name) \

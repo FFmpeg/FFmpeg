@@ -91,6 +91,7 @@ SLIBPREF="lib"
 SLIBSUF=".so"
 risky="yes"
 small="no"
+amr_nb="no"
 
 # OS specific
 targetos=`uname -s`
@@ -318,6 +319,8 @@ for opt do
   --disable-risky) risky="no"
   ;;
   --enable-small) small="yes"
+  ;;
+  --enable-amr_nb) amr_nb="yes"
   ;;
   esac
 done
@@ -607,6 +610,7 @@ echo "  --enable-a52bin          open liba52.so.0 at runtime [default=no]"
 echo "  --disable-pp             disable GPL'ed post processing support [default=no]"
 echo "  --enable-shared-pp       use libpostproc.so [default=no]"
 echo "  --enable-shared          build shared libraries [default=no]"
+echo "  --enable-amr_nb          enable amr_nb audio codec"
 echo ""
 echo "Advanced options (experts only):"
 echo "  --source-path=PATH       path of source code [$source_path]"
@@ -672,6 +676,7 @@ if test "$vhook" = "yes" ; then
 echo "Imlib2 support   $imlib2"
 echo "freetype support $freetype2"
 fi
+echo "AMR-NB support"  $amr_nb
 
 echo "Creating config.mak and config.h"
 
@@ -942,6 +947,17 @@ if test "$source_path_used" = "yes" ; then
     done
 fi
 echo "SRC_PATH=$source_path" >> config.mak
+
+if test "$amr_nb" = "yes" ; then
+  echo "#define AMR_NB 1" >> $TMPH
+  echo "AMR_NB=yes" >> config.mak
+  echo
+  echo "AMR NB NOTICE! Make sure you have downloaded TS26.073 from "
+  echo "http://www.3gpp.org/ftp/Specs/latest/Rel-5/26_series/26073-510.zip"
+  echo "and extracted src to libavcodec/amr"
+  echo "You must also add -DMMS_IO to CFLAGS in libavcodec/amr/makefile."
+  echo
+fi
 
 diff $TMPH config.h >/dev/null 2>&1
 if test $? -ne 0 ; then

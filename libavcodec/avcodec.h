@@ -70,6 +70,9 @@ enum CodecID {
     CODEC_ID_ADPCM_IMA_QT,
     CODEC_ID_ADPCM_IMA_WAV,
     CODEC_ID_ADPCM_MS,
+
+	/* AMR */
+    CODEC_ID_AMR_NB,
 };
 
 enum CodecType {
@@ -1224,6 +1227,7 @@ extern AVCodec cyuv_decoder;
 extern AVCodec h264_decoder;
 extern AVCodec indeo3_decoder;
 extern AVCodec vp3_decoder;
+extern AVCodec amr_nb_decoder;
 extern AVCodec aac_decoder;
 extern AVCodec mpeg4aac_decoder;
 
