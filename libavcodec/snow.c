@@ -1278,8 +1278,8 @@ static void encode_subband(SnowContext *s, SubBand *b, DWTELEM *src, DWTELEM *pa
     const int w= b->width;
     const int h= b->height;
     int x, y;
-
-#if 1
+    
+#if 0
     if(orientation==3 && parent && 0){
         int16_t candidate[w*h][2];
         uint8_t state[w*h];
@@ -1401,52 +1401,35 @@ static void encode_subband(SnowContext *s, SubBand *b, DWTELEM *src, DWTELEM *pa
     }
 #endif
     if(1){
-        int w, h;
         int run=0;
-        int last_run=0;
-        int last_v=1;
-        int last_x=0;
-        int runs[b->width*b->height];
+        int runs[w*h];
         int run_index=0;
                 
-        if(orientation==1){
-            w= b->height;
-            h= b->width;
-        }else{
-            w= b->width;
-            h= b->height;
-        }
-
         for(y=0; y<h; y++){
             for(x=0; x<w; x++){
                 int v, p=0;
                 int /*ll=0, */l=0, lt=0, t=0, rt=0;
-                if(orientation==1) v= src[y + x*stride];
-                else               v= src[x + y*stride];
+                v= src[x + y*stride];
 
                 if(y){
-                    if(orientation==1) t= src[y - 1 + x*stride];
-                    else               t= src[x + (y-1)*stride];
+                    t= src[x + (y-1)*stride];
                     if(x){
-                        if(orientation==1) lt= src[y - 1 + (x-1)*stride];
-                        else               lt= src[x - 1 + (y-1)*stride];
+                        lt= src[x - 1 + (y-1)*stride];
                     }
                     if(x + 1 < w){
-                        if(orientation==1) rt= src[y - 1 + (x+1)*stride];
-                        else               rt= src[x + 1 + (y-1)*stride];
+                        rt= src[x + 1 + (y-1)*stride];
                     }
                 }
                 if(x){
-                    if(orientation==1) l= src[y + (x-1)*stride];
-                    else               l= src[x - 1 + y*stride];
+                    l= src[x - 1 + y*stride];
                     /*if(x > 1){
                         if(orientation==1) ll= src[y + (x-2)*stride];
                         else               ll= src[x - 2 + y*stride];
                     }*/
                 }
                 if(parent){
-                    int px= (orientation==1 ? y : x)>>1;
-                    int py= (orientation==1 ? x : y)>>1;
+                    int px= x>>1;
+                    int py= y>>1;
                     if(px<b->parent->width && py<b->parent->height) 
                         p= parent[px + py*2*stride];
                 }
@@ -1470,32 +1453,27 @@ static void encode_subband(SnowContext *s, SubBand *b, DWTELEM *src, DWTELEM *pa
             for(x=0; x<w; x++){
                 int v, p=0;
                 int /*ll=0, */l=0, lt=0, t=0, rt=0;
-                if(orientation==1) v= src[y + x*stride];
-                else               v= src[x + y*stride];
+                v= src[x + y*stride];
 
                 if(y){
-                    if(orientation==1) t= src[y - 1 + x*stride];
-                    else               t= src[x + (y-1)*stride];
+                    t= src[x + (y-1)*stride];
                     if(x){
-                        if(orientation==1) lt= src[y - 1 + (x-1)*stride];
-                        else               lt= src[x - 1 + (y-1)*stride];
+                        lt= src[x - 1 + (y-1)*stride];
                     }
                     if(x + 1 < w){
-                        if(orientation==1) rt= src[y - 1 + (x+1)*stride];
-                        else               rt= src[x + 1 + (y-1)*stride];
+                        rt= src[x + 1 + (y-1)*stride];
                     }
                 }
                 if(x){
-                    if(orientation==1) l= src[y + (x-1)*stride];
-                    else               l= src[x - 1 + y*stride];
+                    l= src[x - 1 + y*stride];
                     /*if(x > 1){
                         if(orientation==1) ll= src[y + (x-2)*stride];
                         else               ll= src[x - 2 + y*stride];
                     }*/
                 }
                 if(parent){
-                    int px= (orientation==1 ? y : x)>>1;
-                    int py= (orientation==1 ? x : y)>>1;
+                    int px= x>>1;
+                    int py= y>>1;
                     if(px<b->parent->width && py<b->parent->height) 
                         p= parent[px + py*2*stride];
                 }
@@ -1523,111 +1501,9 @@ static void encode_subband(SnowContext *s, SubBand *b, DWTELEM *src, DWTELEM *pa
         }
         return;
     }
-    if(1){
-        int w, h;
-        int run=0;
-        int last_run=0;
-        int last_v=1;
-        int last_x=0;
-                
-        if(orientation==1){
-            w= b->height;
-            h= b->width;
-        }else{
-            w= b->width;
-            h= b->height;
-        }
-
-        for(y=0; y<h; y++){
-            for(x=0; x<w; x++){
-                int v, p;
-                if(orientation==1) v= src[y + x*stride];
-                else               v= src[x + y*stride];
-
-                if(v){
-                    int sec=0, pri=0/*, lt=0, rt=0, pri2=0*/;
-                    
-                    if(y){
-                        if(orientation==1) sec= src[y - 1 + x*stride];
-                        else               sec= src[x + (y-1)*stride];
-/*                        if(x){
-                            if(orientation==1) lt= src[y - 1 + (x-1)*stride];
-                            else               lt= src[x - 1 + (y-1)*stride];
-                        }*/
-                    }
-/*                    if      (orientation==1 && y + 1 < h && x) rt= src[y + 1 + (x-1)*stride];
-                    else if (orientation!=1 && x + 1 < w && y) rt= src[x + 1 + (y-1)*stride];*/
-                    if(x){
-                        if(orientation==1) pri= src[y + (x-1)*stride];
-                        else               pri= src[x - 1 + y*stride];
-/*                        if(x > 1){
-                            if(orientation==1) pri2= src[y + (x-2)*stride];
-                            else               pri2= src[x - 2 + y*stride];
-                        }*/
-                    }
-
-                    put_symbol(&s->c, b->state[ABS(quant7[last_v&0xFF])], run, 0);
-//                    context= 3*7 + 3 + quant11[last_v&0xFF] /*+ 7*quant3[(run-1)&0xFF]*/;
-//                    if(parent && orientation!=1) context += 3*7+7*quant3[parent[(x>>1) + (y>>1)*2*stride]&0xFF];
-
-//                    put_symbol(&s->c, b->state[ABS(quant7[pri&0xFF]) + 4*ABS(quant7[sec&0xFF]) + 8], ABS(v)-1, 0);
-                    put_symbol(&s->c, b->state[quant13[(ABS(pri) + ABS(sec))&0x7F] + 8], ABS(v)-1, 0);
-                    
-//                    context= quant3b[sec&0xFF] + 3*quant3b[pri&0xFF];
-//                    put_cabac(&s->c, &b->state[7][ABS(context)], (v^context)<0);
-                    put_cabac(&s->c, &b->state[7][1 + 3 + quant3b[sec&0xFF] + 3*quant3b[pri&0xFF]], v<0);
-                    last_run=run;
-                    last_v=v;
-
-                    run=0;
-                }else{
-                    run++;
-                }
-            }
-        }
-        if(run){
-            put_symbol(&s->c, b->state[ABS(quant7[last_v&0xFF])], run, 0);
-        }
-        return;
-    }
-    
-    {
-        int run=0;
-        int mode=1;
-        for(y=0; y<h; y++){
-            for(x=0; x<w; x++){
-    //            int context=5*11*11 + 5*11+5;
-                int context=3*7 + 3 + 1;
-                int v= src[x + y*stride];
-                
-                if(mode){
-                    if(v){
-                        put_symbol(&s->c, b->state[0], run, 0);                
-                        mode=0;
-                        run=0;
-                    }else{
-                        run++;
-                        continue;
-                    }
-                }
-                if(x /*&& orientation!=1*/)      context +=      quant7[src[x-1 + y*stride       ]&0xFF];
-                if(y /*&& orientation!=2*/)      context +=    7*quant7[src[x   + y*stride-stride]&0xFF];
-                
-    //            if(x>1)    context += 11*11*quant3 [src[x-2 + y*stride       ]&0xFF];
-    //            if(parent) context += 11*11*quant3[parent[(x>>1) + (y>>1)*2*stride]&0xFF];
-    
-                put_symbol(&s->c, b->state[context], v, 1);
-                if(v==0){
-                    mode=1;
-                }
-            }
-        }
-        if(mode && run)
-            put_symbol(&s->c, b->state[0], run, 0);                
-    }
 }
 
-static inline void decode_subbandX(SnowContext *s, SubBand *b, DWTELEM *src, DWTELEM *parent, int stride, int orientation){
+static inline void decode_subband(SnowContext *s, SubBand *b, DWTELEM *src, DWTELEM *parent, int stride, int orientation){
     const int level= b->level;
     const int w= b->width;
     const int h= b->height;
@@ -1636,21 +1512,11 @@ static inline void decode_subbandX(SnowContext *s, SubBand *b, DWTELEM *src, DWT
     START_TIMER
     
     if(1){
-        int w,h;
         int run;
-        int last_run;
                 
         for(y=0; y<b->height; y++)
             memset(&src[y*stride], 0, b->width*sizeof(DWTELEM));
 
-        if(orientation==1){
-            w= b->height;
-            h= b->width;
-        }else{
-            w= b->width;
-            h= b->height;
-        }
-        x=y=0;
         run= get_symbol(&s->c, b->state[1], 0);
         for(y=0; y<h; y++){
             for(x=0; x<w; x++){
@@ -1658,28 +1524,24 @@ static inline void decode_subbandX(SnowContext *s, SubBand *b, DWTELEM *src, DWT
                 int /*ll=0, */l=0, lt=0, t=0, rt=0;
 
                 if(y){
-                    if(orientation==1) t= src[y - 1 + x*stride];
-                    else               t= src[x + (y-1)*stride];
+                    t= src[x + (y-1)*stride];
                     if(x){
-                        if(orientation==1) lt= src[y - 1 + (x-1)*stride];
-                        else               lt= src[x - 1 + (y-1)*stride];
+                        lt= src[x - 1 + (y-1)*stride];
                     }
                     if(x + 1 < w){
-                        if(orientation==1) rt= src[y - 1 + (x+1)*stride];
-                        else               rt= src[x + 1 + (y-1)*stride];
+                        rt= src[x + 1 + (y-1)*stride];
                     }
                 }
                 if(x){
-                    if(orientation==1) l= src[y + (x-1)*stride];
-                    else               l= src[x - 1 + y*stride];
+                    l= src[x - 1 + y*stride];
                     /*if(x > 1){
                         if(orientation==1) ll= src[y + (x-2)*stride];
                         else               ll= src[x - 2 + y*stride];
                     }*/
                 }
                 if(parent){
-                    int px= (orientation==1 ? y : x)>>1;
-                    int py= (orientation==1 ? x : y)>>1;
+                    int px= x>>1;
+                    int py= y>>1;
                     if(px<b->parent->width && py<b->parent->height) 
                         p= parent[px + py*2*stride];
                 }
@@ -1703,8 +1565,7 @@ static inline void decode_subbandX(SnowContext *s, SubBand *b, DWTELEM *src, DWT
                     v= get_symbol(&s->c, b->state[context + 2], 0) + 1;
                     if(get_cabac(&s->c, &b->state[0][16 + 1 + 3 + quant3b[l&0xFF] + 3*quant3b[t&0xFF]]))
                         v= -v;
-                    if(orientation==1) src[y + x*stride]= v;
-                    else               src[x + y*stride]= v;
+                    src[x + y*stride]= v;
                 }
             }
         }
@@ -1714,81 +1575,6 @@ static inline void decode_subbandX(SnowContext *s, SubBand *b, DWTELEM *src, DWT
         
         return;
     }
-    if(1){
-        int w,h;
-        int last_run=0;
-        int last_v=1;
-                
-        for(y=0; y<b->height; y++)
-            memset(&src[y*stride], 0, b->width*sizeof(DWTELEM));
-
-        if(orientation==1){
-            w= b->height;
-            h= b->width;
-        }else{
-            w= b->width;
-            h= b->height;
-        }
-        x=y=0;
-        for(;;){
-            int sec=0, pri=0/*, lt=0, rt=0, pri2=0*/;
-                    
-            last_run= get_symbol(&s->c, b->state[ABS(quant7[last_v&0xFF])], 0);
-
-//            context= 3*7 + 3 + quant7[last_v&0xFF]/* + 7*quant7[(last_run-1)&0xFF]*/;
-            x += last_run;
-            while(x>=w){
-                x-= w;
-                if(++y>=h) break;
-/*                if(orientation!=1)
-                    memset(&src[y*stride], 0, w*sizeof(DWTELEM));*/
-            }
-            if(y>=h) break;
-            if(y){
-                if(orientation==1) sec= src[y - 1 + x*stride];
-                else               sec= src[x + (y-1)*stride];
-/*                if(x){
-                    if(orientation==1) lt= src[y - 1 + (x-1)*stride];
-                    else               lt= src[x - 1 + (y-1)*stride];
-                }*/
-            }
-/*            if      (orientation==1 && y + 1 < h && x) rt= src[y + 1 + (x-1)*stride];
-            else if (orientation!=1 && x + 1 < w && y) rt= src[x + 1 + (y-1)*stride];*/
-            if(x){
-                if(orientation==1) pri= src[y + (x-1)*stride];
-                else               pri= src[x - 1 + y*stride];
-/*                if(x > 1){
-                    if(orientation==1) pri2= src[y + (x-2)*stride];
-                    else               pri2= src[x - 2 + y*stride];
-                }*/
-            }
-
-            last_v= get_symbol(&s->c, b->state[quant13[(ABS(pri) + ABS(sec))&0x7F] + 8], 0) + 1;
-            if(get_cabac(&s->c, &b->state[7][1 + 3 + quant3b[sec&0xFF] + 3*quant3b[pri&0xFF]])) 
-                last_v= -last_v;
-            
-            if(orientation==1) src[y + x*stride]= last_v;
-            else               src[x + y*stride]= last_v;
-
-            if(++x==w){
-                x=0;
-                if(++y>=h) break;
-/*                if(orientation!=1)
-                    memset(&src[y*stride], 0, w*sizeof(DWTELEM));*/
-            }
-        }
-        
-        if(level+1 == s->spatial_decomposition_count){
-            STOP_TIMER("decode_subband")
-        }
-        
-        return;
-    }
-}
-
-static void decode_subband(SnowContext *s, SubBand *b, DWTELEM *src, DWTELEM *parent, int stride, int orientation){
-    if(orientation==1) decode_subbandX(s, b, src, parent, stride, 1);
-    else               decode_subbandX(s, b, src, parent, stride, 0);
 }
 
 static void reset_contexts(SnowContext *s){
