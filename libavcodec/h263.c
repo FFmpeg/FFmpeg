@@ -382,9 +382,10 @@ INT16 *h263_pred_motion(MpegEncContext * s, int block,
 {
     int xy, y, wrap;
     INT16 *A, *B, *C, *mot_val;
+    static const int off[4]= {2, 1, 1, -1};
 
     wrap = 2 * s->mb_width + 2;
-    y = xy = 2 * s->mb_y + 1 + ((block >> 1) & 1); // y
+    y = xy = 2 * s->mb_y + 1 + (block >> 1); // y
     xy *= wrap; // y * wrap
     xy += 2 * s->mb_x + 1 + (block & 1); // x + y * wrap
 
@@ -396,25 +397,9 @@ INT16 *h263_pred_motion(MpegEncContext * s, int block,
         *px = A[0];
         *py = A[1];
     } else {
-        switch(block) {
-        default:
-        case 0:
-            A = s->motion_val[xy - 1];
-            B = s->motion_val[xy - wrap];
-            C = s->motion_val[xy + 2 - wrap];
-            break;
-        case 1:
-        case 2:
-            A = s->motion_val[xy - 1];
-            B = s->motion_val[xy - wrap];
-            C = s->motion_val[xy + 1 - wrap];
-            break;
-        case 3:
-            A = s->motion_val[xy - 1];
-            B = s->motion_val[xy - 1 - wrap];
-            C = s->motion_val[xy - wrap];
-            break;
-        }
+        A = s->motion_val[xy - 1];
+        B = s->motion_val[xy - wrap];
+        C = s->motion_val[xy + off[block] - wrap];
         *px = mid_pred(A[0], B[0], C[0]);
         *py = mid_pred(A[1], B[1], C[1]);
     }
@@ -641,6 +626,8 @@ static void mpeg4_encode_vol_header(MpegEncContext * s)
     put_bits(&s->pb, 16, 0);
     put_bits(&s->pb, 16, 0x1B2);	/* user_data */
     put_string(&s->pb, "ffmpeg"); //FIXME append some version ...
+
+    s->no_rounding = 0;
 }
 
 /* write mpeg4 VOP header */
@@ -1037,7 +1024,7 @@ int h263_decode_mb(MpegEncContext *s,
     int cbpc, cbpy, i, cbp, pred_x, pred_y, mx, my, dquant;
     INT16 *mot_val;
     static INT8 quant_tab[4] = { -1, -2, 1, 2 };
-    
+
     if (s->pict_type == P_TYPE || s->pict_type==S_TYPE) {
         if (get_bits1(&s->gb)) {
             /* skip mb */
@@ -1957,6 +1944,7 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
             return -1;   
         }
         s->shape = get_bits(&s->gb, 2); /* vol shape */
+        if(s->shape != RECT_SHAPE) printf("only rectangular vol supported\n");
         if(s->shape == GRAY_SHAPE && vo_ver_id != 1){
             printf("Gray shape not supported\n");
             skip_bits(&s->gb, 4);  //video_object_layer_shape_extension
@@ -1983,7 +1971,7 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
                 skip_bits1(&s->gb);   /* marker */
             }
             
-            skip_bits1(&s->gb);   /* interlaced */
+            if(get_bits1(&s->gb)) printf("interlaced not supported\n");   /* interlaced */
             if(!get_bits1(&s->gb)) printf("OBMC not supported\n");   /* OBMC Disable */
             if (vo_ver_id == 1) {
                 s->vol_sprite_usage = get_bits1(&s->gb); /* vol_sprite_usage */
@@ -2012,7 +2000,7 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
             
             if (get_bits1(&s->gb) == 1) {   /* not_8_bit */
                 s->quant_precision = get_bits(&s->gb, 4); /* quant_precision */
-                skip_bits(&s->gb, 4); /* bits_per_pixel */
+                if(get_bits(&s->gb, 4)!=8) printf("N-bit not supported\n"); /* bits_per_pixel */
             } else {
                 s->quant_precision = 5;
             }
@@ -2022,11 +2010,11 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
             if(vo_ver_id != 1)
                  s->quarter_sample= get_bits1(&s->gb);
             else s->quarter_sample=0;
+
+            if(!get_bits1(&s->gb)) printf("Complexity estimation not supported\n");
 #if 0
-            if(get_bits1(&s->gb)) printf("Complexity est disabled\n");
             if(get_bits1(&s->gb)) printf("resync disable\n");
 #else
-            skip_bits1(&s->gb);   /* complexity_estimation_disabled */
             skip_bits1(&s->gb);   /* resync_marker_disabled */
 #endif
             s->data_partioning= get_bits1(&s->gb);
@@ -2093,12 +2081,12 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
     }
 
     s->pict_type = get_bits(&s->gb, 2) + 1;	/* pict type: I = 0 , P = 1 */
- 
+//printf("pic: %d\n", s->pict_type); 
     time_incr=0;
     while (get_bits1(&s->gb) != 0) 
         time_incr++;
 
-    skip_bits1(&s->gb);   	/* marker */
+    check_marker(&s->gb, "before time_increment");
     s->time_increment= get_bits(&s->gb, s->time_increment_bits);
     if(s->pict_type!=B_TYPE){
         s->time_base+= time_incr;
@@ -2108,7 +2096,15 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
         s->time= (s->last_non_b_time[1]/s->time_increment_resolution + time_incr)*s->time_increment_resolution;
         s->time+= s->time_increment;
     }
-    skip_bits1(&s->gb);   	/* marker */
+
+    if(check_marker(&s->gb, "before vop_coded")==0 && s->picture_number==0){
+        int i;
+        printf("hmm, seems the headers arnt complete, trying to guess time_increment_bits\n");
+        for(s->time_increment_bits++ ;s->time_increment_bits<16; s->time_increment_bits++){
+            if(get_bits1(&s->gb)) break;
+        }
+        printf("my guess is %d bits ;)\n",s->time_increment_bits);
+    }
     /* vop coded */
     if (get_bits1(&s->gb) != 1)
         goto redo;
@@ -2161,10 +2157,17 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
             MPEG4 vol header as it is found on some old opendivx
             movies */
          s->qscale = get_bits(&s->gb, 5);
+         if(s->qscale==0){
+             printf("Error, header damaged or not MPEG4 header (qscale=0)\n");
+             return -1; // makes no sense to continue, as there is nothing left from the image then
+         }
   
          if (s->pict_type != I_TYPE) {
              s->f_code = get_bits(&s->gb, 3);	/* fcode_for */
-//printf("f-code %d\n", s->f_code);
+             if(s->f_code==0){
+                 printf("Error, header damaged or not MPEG4 header (f_code=0)\n");
+                 return -1; // makes no sense to continue, as the MV decoding will break very quickly
+             }
          }
          if (s->pict_type == B_TYPE) {
              s->b_code = get_bits(&s->gb, 3);
@@ -2177,7 +2180,6 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
              }
          }
      }
-//printf("end Data %X %d\n", show_bits(&s->gb, 32), get_bits_count(&s->gb)&0x7);
      s->picture_number++; // better than pic number==0 allways ;)
      return 0;
 }

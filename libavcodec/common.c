@@ -201,6 +201,14 @@ void align_get_bits(GetBitContext *s)
 #endif
 }
 
+int check_marker(GetBitContext *s, char *msg)
+{
+    int bit= get_bits1(s);
+    if(!bit) printf("Marker bit missing %s\n", msg);
+
+    return bit;
+}
+
 #ifndef ALT_BITSTREAM_READER
 /* This function is identical to get_bits_long(), the */
 /* only diference is that it doesn't touch the buffer */

@@ -593,6 +593,7 @@ static inline int get_bits_count(GetBitContext *s)
 #endif
 }
 
+int check_marker(GetBitContext *s, char *msg);
 void align_get_bits(GetBitContext *s);
 int init_vlc(VLC *vlc, int nb_bits, int nb_codes,
              const void *bits, int bits_wrap, int bits_size,
