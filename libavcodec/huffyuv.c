@@ -25,8 +25,8 @@
 #include "avcodec.h"
 #include "dsputil.h"
 
-#ifndef MAX_INT64
-#define MAX_INT64 9223372036854775807LL
+#ifndef INT64_MAX
+#define INT64_MAX 9223372036854775807LL
 #endif
 
 #define VLC_BITS 11
@@ -237,7 +237,7 @@ static void generate_len_table(uint8_t *dst, uint64_t *stats, int size){
             
             counts[next]= min1 + min2;
             counts[min1_i]=
-            counts[min2_i]= MAX_INT64;
+            counts[min2_i]= INT64_MAX;
             up[min1_i]=
             up[min2_i]= next;
             up[next]= -1;
