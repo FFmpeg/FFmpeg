@@ -25,9 +25,7 @@ Michael's TODO list: (unordered) (if anyone wanna help with sth, just ask)
 - simper rate control
 - split h263.c
 - mpeg2 encoding (after the ME impovements)
-- mpeg1 b frames (after the ME impovements)
-- better mb decission
-- format idependant quality
+- format idependant quality parameter
 
 Francois' TODO list: (unordered, without any timeframe)
 -------------------
