@@ -1640,5 +1640,9 @@ void j_rev_dct2(DCTBLOCK data){
   data[1+1*DCTSTRIDE]= (d01 - d11)>>3;
 }
 
+void j_rev_dct1(DCTBLOCK data){
+  data[0] = (data[0] + 4)>>3;
+}
+
 #undef FIX
 #undef CONST_BITS

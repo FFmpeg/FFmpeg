@@ -3382,6 +3382,19 @@ static void ff_jref_idct2_add(uint8_t *dest, int line_size, DCTELEM *block)
     add_pixels_clamped2_c(block, dest, line_size);
 }
 
+static void ff_jref_idct1_put(uint8_t *dest, int line_size, DCTELEM *block)
+{
+    uint8_t *cm = cropTbl + MAX_NEG_CROP;
+
+    dest[0] = cm[(block[0] + 4)>>3];
+}
+static void ff_jref_idct1_add(uint8_t *dest, int line_size, DCTELEM *block)
+{
+    uint8_t *cm = cropTbl + MAX_NEG_CROP;
+
+    dest[0] = cm[dest[0] + ((block[0] + 4)>>3)];
+}
+
 /* init static data */
 void dsputil_static_init(void)
 {
@@ -3429,6 +3442,11 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
         c->idct_put= ff_jref_idct2_put;
         c->idct_add= ff_jref_idct2_add;
         c->idct    = j_rev_dct2;
+        c->idct_permutation_type= FF_NO_IDCT_PERM;
+    }else if(avctx->lowres==3){
+        c->idct_put= ff_jref_idct1_put;
+        c->idct_add= ff_jref_idct1_add;
+        c->idct    = j_rev_dct1;
         c->idct_permutation_type= FF_NO_IDCT_PERM;
     }else{
         if(avctx->idct_algo==FF_IDCT_INT){
