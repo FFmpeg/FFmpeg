@@ -11,13 +11,18 @@ CFLAGS= $(OPTFLAGS) -Wall -g -DHAVE_AV_CONFIG_H -I.. -D_FILE_OFFSET_BITS=64 -D_L
 LDFLAGS= -g
 
 OBJS= common.o utils.o mem.o allcodecs.o \
-      mpegvideo.o h263.o jrevdct.o jfdctfst.o jfdctint.o\
+      mpegvideo.o jrevdct.o jfdctfst.o jfdctint.o\
       mpegaudio.o ac3enc.o mjpeg.o resample.o dsputil.o \
-      motion_est.o imgconvert.o imgresample.o msmpeg4.o \
-      mpeg12.o h263dec.o svq1.o rv10.o mpegaudiodec.o pcm.o simple_idct.o \
+      motion_est.o imgconvert.o imgresample.o \
+      mpeg12.o mpegaudiodec.o pcm.o simple_idct.o \
       ratecontrol.o adpcm.o eval.o dv.o error_resilience.o \
-      wmadec.o fft.o mdct.o mace.o huffyuv.o
+      fft.o mdct.o mace.o huffyuv.o
 ASM_OBJS=
+
+# codecs which are patented in some non free countries like the us
+ifeq ($(CONFIG_RISKY),yes)
+OBJS+= h263.o msmpeg4.o h263dec.o svq1.o rv10.o wmadec.o
+endif
 
 # currently using liba52 for ac3 decoding
 ifeq ($(CONFIG_AC3),yes)

@@ -11,9 +11,14 @@ CFLAGS= $(OPTFLAGS) -Wall -g -I.. -I$(SRC_PATH) -I$(SRC_PATH)/libavcodec -DHAVE_
 OBJS= utils.o cutils.o allformats.o
 
 # mux and demuxes
-OBJS+=mpeg.o mpegts.o ffm.o crc.o img.o raw.o rm.o asf.o \
+OBJS+=mpeg.o mpegts.o ffm.o crc.o img.o raw.o rm.o \
       avienc.o avidec.o wav.o swf.o au.o gif.o mov.o jpeg.o dv.o \
       yuv4mpeg.o
+
+ifeq ($(CONFIG_RISKY),yes)
+OBJS+= asf.o
+endif
+
 # image formats
 OBJS+= pnm.o yuv.o
 # file I/O
