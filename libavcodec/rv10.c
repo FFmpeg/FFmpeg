@@ -528,15 +528,9 @@ static int rv10_decode_packet(AVCodecContext *avctx,
                              uint8_t *buf, int buf_size)
 {
     MpegEncContext *s = avctx->priv_data;
-    int i, mb_count, mb_pos, left;
+    int mb_count, mb_pos, left;
 
     init_get_bits(&s->gb, buf, buf_size*8);
-#if 0
-    for(i=0; i<buf_size*8 && i<200; i++)
-        printf("%d", get_bits1(&s->gb));
-    printf("\n");
-    return 0;
-#endif
     if(s->codec_id ==CODEC_ID_RV10)
         mb_count = rv10_decode_picture_header(s);
     else

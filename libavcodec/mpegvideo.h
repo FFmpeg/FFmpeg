@@ -904,8 +904,9 @@ int ff_mpeg4_get_video_packet_prefix_length(MpegEncContext *s);
 int ff_h263_resync(MpegEncContext *s);
 int ff_h263_get_gob_height(MpegEncContext *s);
 int ff_mpeg4_set_direct_mv(MpegEncContext *s, int mx, int my);
-inline int ff_h263_round_chroma(int x);
+int ff_h263_round_chroma(int x);
 void ff_h263_encode_motion(MpegEncContext * s, int val, int f_code);
+int ff_mpeg4_find_frame_end(ParseContext *pc, const uint8_t *buf, int buf_size);
 
 
 /* rv10.c */

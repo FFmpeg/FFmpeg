@@ -123,7 +123,7 @@ static uint64_t __attribute__((aligned(8))) attribute_used b80= 		0x808080808080
 static uint8_t clip_table[3*256];
 static uint8_t * const clip_tab= clip_table + 256;
 
-static int verbose= 0;
+static const int verbose= 0;
 
 static const int attribute_used deringThreshold= 20;
 

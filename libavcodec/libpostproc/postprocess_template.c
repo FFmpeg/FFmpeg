@@ -2789,7 +2789,7 @@ static void RENAME(postProcess)(uint8_t src[], int srcStride, uint8_t dst[], int
 	uint64_t * const yHistogram= c.yHistogram;
 	uint8_t * const tempSrc= c.tempSrc;
 	uint8_t * const tempDst= c.tempDst;
-	const int mbWidth= isColor ? (width+7)>>3 : (width+15)>>4;
+	//const int mbWidth= isColor ? (width+7)>>3 : (width+15)>>4;
 
 #ifdef HAVE_MMX
 	for(i=0; i<57; i++){
