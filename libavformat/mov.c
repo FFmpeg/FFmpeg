@@ -1072,10 +1072,11 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
             }
 	    else if(size>=(16+20))
 	    {//16 bytes read, reading atleast 20 more
+                uint16_t version;
 #ifdef DEBUG
                 av_log(NULL, AV_LOG_DEBUG, "audio size=0x%X\n",size);
 #endif
-                uint16_t version = get_be16(pb); /* version */
+                version = get_be16(pb); /* version */
                 get_be16(pb); /* revision level */
                 get_be32(pb); /* vendor */
 
@@ -1115,6 +1116,7 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
                     if(size>(16+20+16))
                     {
                         //Optional, additional atom-based fields
+                        MOV_atom_t a = { format, url_ftell(pb), size - (16 + 20 + 16 + 8) };
 #ifdef DEBUG
                         av_log(NULL, AV_LOG_DEBUG, "offest=0x%X, sizeleft=%d=0x%x,format=%c%c%c%c\n",(int)url_ftell(pb),size - (16 + 20 + 16 ),size - (16 + 20 + 16 ),
                             (format >> 0) & 0xff,
@@ -1122,7 +1124,6 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
                             (format >> 16) & 0xff,
                             (format >> 24) & 0xff);
 #endif
-                        MOV_atom_t a = { format, url_ftell(pb), size - (16 + 20 + 16 + 8) };
                         mov_read_default(c, pb, a);
                     }
                 }
@@ -1800,7 +1801,7 @@ again:
 		    foundsize=sc->sample_to_chunk[i].count*sc->sample_size;
             }
 #ifdef DEBUG
-            /*av_log(NULL, AV_LOG_DEBUG, "sample_to_chunk first=%ld count=%ld, id=%ld\n", sc->sample_to_chunk[i].first, sc->sample_to_chunk[i].count, sc->sample_to_chunk[i].id);*/
+            av_log(NULL, AV_LOG_DEBUG, "sample_to_chunk first=%ld count=%ld, id=%ld\n", sc->sample_to_chunk[i].first, sc->sample_to_chunk[i].count, sc->sample_to_chunk[i].id);
 #endif
         }
         if( (foundsize>0) && (foundsize<size) )
@@ -1831,7 +1832,9 @@ again:
 #endif
 
 readchunk:
-//av_log(NULL, AV_LOG_DEBUG, "chunk: [%i] %lli -> %lli (%i)\n", st_id, offset, offset + size, size);
+#ifdef DEBUG
+    av_log(NULL, AV_LOG_DEBUG, "chunk: %lli -> %lli (%i)\n", offset, offset + size, size);
+#endif
     if(size == 0x0FFFFFFF)
         size = mov->mdat_size + mov->mdat_offset - offset;
     if(size < 0)
@@ -1876,14 +1879,14 @@ readchunk:
         pkt->flags |= PKT_FLAG_KEY;
 
 #ifdef DEBUG
-/*
-    av_log(NULL, AV_LOG_DEBUG, "Packet (%d, %d, %ld) ", pkt->stream_index, st_id, pkt->size);
+
+    av_log(NULL, AV_LOG_DEBUG, "Packet (%d, %ld) ", pkt->stream_index, pkt->size);
     for(i=0; i<8; i++)
         av_log(NULL, AV_LOG_DEBUG, "%02x ", pkt->data[i]);
     for(i=0; i<8; i++)
         av_log(NULL, AV_LOG_DEBUG, "%c ", (pkt->data[i]) & 0x7F);
-    puts("");
-*/
+    av_log(NULL, AV_LOG_DEBUG, "\n");
+
 #endif
 
     mov->next_chunk_offset = offset + size;
