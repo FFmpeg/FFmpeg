@@ -246,7 +246,7 @@ static int h261_decode_mb(H261Context *h,
                           DCTELEM block[6][64])
 {
     MpegEncContext * const s = &h->s;
-    int i, cbp, xy;
+    int i, cbp, xy, old_mtype;
 
     cbp = 63;
     // Read mba
@@ -272,7 +272,7 @@ static int h261_decode_mb(H261Context *h,
     ff_update_block_index(s);
 
     // Read mtype
-    int old_mtype = h->mtype;
+    old_mtype = h->mtype;
     h->mtype = get_vlc2(&s->gb, h261_mtype_vlc.table, H261_MTYPE_VLC_BITS, 2);
     h->mtype = h261_mtype_map[h->mtype];
 
