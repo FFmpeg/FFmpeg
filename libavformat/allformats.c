@@ -48,6 +48,8 @@ void av_register_all(void)
     jpeg_init();
     dv_init();
     fourxm_init();
+    flvenc_init();
+    flvdec_init();
 
 #ifdef AMR_NB
     amr_init();

@@ -41,6 +41,7 @@ enum CodecID {
     CODEC_ID_WMV2,
     CODEC_ID_H263P,
     CODEC_ID_H263I,
+    CODEC_ID_FLV1,
     CODEC_ID_SVQ1,
     CODEC_ID_SVQ3,
     CODEC_ID_DVVIDEO,
@@ -1226,6 +1227,7 @@ extern AVCodec oggvorbis_encoder;
 extern AVCodec mpeg1video_encoder;
 extern AVCodec h263_encoder;
 extern AVCodec h263p_encoder;
+extern AVCodec flv_encoder;
 extern AVCodec rv10_encoder;
 extern AVCodec mjpeg_encoder;
 extern AVCodec ljpeg_encoder;
@@ -1249,6 +1251,7 @@ extern AVCodec wmv1_decoder;
 extern AVCodec wmv2_decoder;
 extern AVCodec mpeg_decoder;
 extern AVCodec h263i_decoder;
+extern AVCodec flv_decoder;
 extern AVCodec rv10_decoder;
 extern AVCodec svq1_decoder;
 extern AVCodec svq3_decoder;

@@ -593,19 +593,19 @@ static void yuv422_to_yuv420p(AVPicture *dst, AVPicture *src,
 {
     const uint8_t *p, *p1;
     uint8_t *lum, *cr, *cb, *lum1, *cr1, *cb1;
-    int x;
+    int w;
  
     p1 = src->data[0];
     lum1 = dst->data[0];
     cb1 = dst->data[1];
     cr1 = dst->data[2];
 
-    for(;height >= 2; height -= 2) {
+    for(;height >= 1; height -= 2) {
         p = p1;
         lum = lum1;
         cb = cb1;
         cr = cr1;
-        for(x=0;x<width;x+=2) {
+        for(w = width; w >= 2; w -= 2) {
             lum[0] = p[0];
             cb[0] = p[1];
             lum[1] = p[2];
@@ -615,18 +615,30 @@ static void yuv422_to_yuv420p(AVPicture *dst, AVPicture *src,
             cb++;
             cr++;
         }
-        p1 += src->linesize[0];
-        lum1 += dst->linesize[0];
-        p = p1;
-        lum = lum1;
-        for(x=0;x<width;x+=2) {
+        if (w) {
             lum[0] = p[0];
-            lum[1] = p[2];
-            p += 4;
-            lum += 2;
+            cb[0] = p[1];
+            cr[0] = p[3];
+            cb++;
+            cr++;
         }
         p1 += src->linesize[0];
         lum1 += dst->linesize[0];
+        if (height>1) {
+            p = p1;
+            lum = lum1;
+            for(w = width; w >= 2; w -= 2) {
+                lum[0] = p[0];
+                lum[1] = p[2];
+                p += 4;
+                lum += 2;
+            }
+            if (w) {
+                lum[0] = p[0];
+            }
+            p1 += src->linesize[0];
+            lum1 += dst->linesize[0];
+        }
         cb1 += dst->linesize[1];
         cr1 += dst->linesize[2];
     }

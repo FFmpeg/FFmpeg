@@ -670,6 +670,14 @@ int MPV_encode_init(AVCodecContext *avctx)
         avctx->delay=0;
         s->low_delay=1;
         break;
+    case CODEC_ID_FLV1:
+        s->out_format = FMT_H263;
+        s->h263_flv = 2; /* format = 1; 11-bit codes */
+        s->unrestricted_mv = 1;
+        s->rtp_mode=0; /* don't allow GOB */
+        avctx->delay=0;
+        s->low_delay=1;
+        break;
     case CODEC_ID_RV10:
         s->out_format = FMT_H263;
         s->h263_rv10 = 1;
@@ -2997,6 +3005,7 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
          ff_wmv2_encode_mb(s, s->block, motion_x, motion_y); break;
     case CODEC_ID_H263:
     case CODEC_ID_H263P:
+    case CODEC_ID_FLV1:
     case CODEC_ID_RV10:
         h263_encode_mb(s, s->block, motion_x, motion_y); break;
 #endif
@@ -3348,6 +3357,7 @@ static void encode_picture(MpegEncContext *s, int picture_number)
             break;
         case CODEC_ID_H263:
         case CODEC_ID_H263P:
+        case CODEC_ID_FLV1:
             ff_clean_h263_qscales(s);
             break;
         }
@@ -3427,11 +3437,17 @@ static void encode_picture(MpegEncContext *s, int picture_number)
     s->last_mv_dir = 0;
 
 #ifdef CONFIG_RISKY
-    if (s->codec_id==CODEC_ID_H263 || s->codec_id==CODEC_ID_H263P)
+    switch(s->codec_id){
+    case CODEC_ID_H263:
+    case CODEC_ID_H263P:
+    case CODEC_ID_FLV1:
         s->gob_index = ff_h263_get_gob_height(s);
-
-    if(s->codec_id==CODEC_ID_MPEG4 && s->partitioned_frame)
-        ff_mpeg4_init_partitions(s);
+        break;
+    case CODEC_ID_MPEG4:
+        if(s->partitioned_frame)
+            ff_mpeg4_init_partitions(s);
+        break;
+    }
 #endif
 
     s->resync_mb_x=0;
@@ -4433,6 +4449,16 @@ AVCodec h263p_encoder = {
     "h263p",
     CODEC_TYPE_VIDEO,
     CODEC_ID_H263P,
+    sizeof(MpegEncContext),
+    MPV_encode_init,
+    MPV_encode_picture,
+    MPV_encode_end,
+};
+
+AVCodec flv_encoder = {
+    "flv",
+    CODEC_TYPE_VIDEO,
+    CODEC_ID_FLV1,
     sizeof(MpegEncContext),
     MPV_encode_init,
     MPV_encode_picture,

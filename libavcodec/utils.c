@@ -610,6 +610,7 @@ void avcodec_flush_buffers(AVCodecContext *avctx)
     case CODEC_ID_WMV2:
     case CODEC_ID_H263P:
     case CODEC_ID_H263I:
+    case CODEC_ID_FLV1:
     case CODEC_ID_SVQ1:
         for(i=0; i<MAX_PICTURE_COUNT; i++){
            if(s->picture[i].data[0] && (   s->picture[i].type == FF_BUFFER_TYPE_INTERNAL

@@ -269,6 +269,7 @@ typedef struct MpegEncContext {
     int h263_rv10;    ///< use RV10 variation for H263 
     int h263_msmpeg4; ///< generate MSMPEG4 compatible stream (deprecated, use msmpeg4_version instead)
     int h263_intel;   ///< use I263 intel h263 header 
+    int h263_flv;     ///< use flv h263 header 
     
     int codec_id;     /* see CODEC_ID_xxx */
     int fixed_qscale; ///< fixed qscale if non zero 
@@ -833,6 +834,7 @@ int ff_mpeg4_decode_picture_header(MpegEncContext * s, GetBitContext *gb);
 
 
 int intel_h263_decode_picture_header(MpegEncContext *s);
+int flv_h263_decode_picture_header(MpegEncContext *s);
 int ff_h263_decode_mb(MpegEncContext *s,
                       DCTELEM block[6][64]);
 int h263_get_picture_format(int width, int height);

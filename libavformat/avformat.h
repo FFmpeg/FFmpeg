@@ -304,6 +304,12 @@ int swf_init(void);
 /* mov.c */
 int mov_init(void);
 
+/* flvenc.c */
+int flvenc_init(void);
+
+/* flvdec.c */
+int flvdec_init(void);
+
 /* jpeg.c */
 int jpeg_init(void);
 

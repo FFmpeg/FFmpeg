@@ -96,6 +96,9 @@ int ff_h263_decode_init(AVCodecContext *avctx)
     case CODEC_ID_H263I:
         s->h263_intel = 1;
         break;
+    case CODEC_ID_FLV1:
+        s->h263_flv = 1;
+        break;
     default:
         return -1;
     }
@@ -451,6 +454,8 @@ retry:
             s->low_delay=1;
     } else if (s->h263_intel) {
         ret = intel_h263_decode_picture_header(s);
+    } else if (s->h263_flv) {
+        ret = flv_h263_decode_picture_header(s);
     } else {
         ret = h263_decode_picture_header(s);
     }
@@ -793,3 +798,14 @@ AVCodec h263i_decoder = {
     mpeg4_decoptions,
 };
 
+AVCodec flv_decoder = {
+    "flv",
+    CODEC_TYPE_VIDEO,
+    CODEC_ID_FLV1,
+    sizeof(MpegEncContext),
+    ff_h263_decode_init,
+    NULL,
+    ff_h263_decode_end,
+    ff_h263_decode_frame,
+    CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1
+};

@@ -39,6 +39,7 @@ static AVCodec* avcodec_find_by_fcc(uint32_t fcc)
 	{ CODEC_ID_MPEG1VIDEO, { MKTAG('P', 'I', 'M', '1'), 0 } },
 	{ CODEC_ID_AC3, { 0x2000, 0 } },
 	{ CODEC_ID_MP2, { 0x50, 0x55, 0 } },
+	{ CODEC_ID_FLV1, { MKTAG('F', 'L', 'V', '1'), 0 } },
 
 	{ CODEC_ID_NONE, {0}}
     };
