@@ -58,11 +58,15 @@ static inline int RENAME(vertClassify)(uint8_t src[], int stride, PPContext *c){
 	int numEq= 0, dcOk;
 	src+= stride*4; // src points to begin of the 8x8 Block
 asm volatile(
+		"movq %0, %%mm7					\n\t" 
+		"movq %1, %%mm6					\n\t" 
+                : : "m" (c->mmxDcOffset[c->nonBQP]),  "m" (c->mmxDcThreshold[c->nonBQP])
+                );
+                
+asm volatile(
 		"leal (%2, %3), %%eax				\n\t"
 //	0	1	2	3	4	5	6	7	8	9
 //	%1	eax	eax+%2	eax+2%2	%1+4%2	ecx	ecx+%2	ecx+2%2	%1+8%2	ecx+4%2
-		"movq %4, %%mm7					\n\t" 
-		"movq %5, %%mm6					\n\t" 
 
 		"movq (%2), %%mm0				\n\t"
 		"movq (%%eax), %%mm1				\n\t"
@@ -140,7 +144,7 @@ asm volatile(
 		"psrlq $32, %%mm0				\n\t"
 		"paddb %%mm1, %%mm0				\n\t"
 #endif
-                "movq %6, %%mm7					\n\t" // QP,..., QP
+                "movq %4, %%mm7					\n\t" // QP,..., QP
 		"paddusb %%mm7, %%mm7				\n\t" // 2QP ... 2QP
 		"psubusb %%mm7, %%mm4				\n\t" // Diff <= 2QP -> 0
 		"packssdw %%mm4, %%mm4				\n\t"
@@ -148,7 +152,7 @@ asm volatile(
 		"movd %%mm4, %1					\n\t"
 
 		: "=r" (numEq), "=r" (dcOk)
-		: "r" (src), "r" (stride), "m" (c->mmxDcOffset[c->nonBQP]),  "m" (c->mmxDcThreshold[c->nonBQP]), "m" (c->pQPb)
+		: "r" (src), "r" (stride), "m" (c->pQPb)
 		: "%eax"
 		);
 
