@@ -25,10 +25,9 @@ endif
 
 # i386 mmx specific stuff
 ifeq ($(TARGET_MMX),yes)
-ASM_OBJS += i386/fdct_mmx.o i386/sad_mmx.o
-OBJS += i386/fdctdata.o i386/cputest.o \
+OBJS += i386/fdct_mmx.o i386/cputest.o \
 	i386/dsputil_mmx.o i386/mpegvideo_mmx.o \
-        i386/idct_mmx.o
+        i386/idct_mmx.o i386/motion_est_mmx.o
 endif
 
 # armv4l specific stuff
@@ -40,7 +39,7 @@ endif
 SRCS = $(OBJS:.o=.c) $(ASM_OBJS:.o=.s)
 
 LIB= libavcodec.a
-TESTS= imgresample-test dct-test
+TESTS= imgresample-test dct-test motion-test
 
 all: $(LIB)
 tests: apiexample cpuid_test $(TESTS)
@@ -56,9 +55,6 @@ dsputil.o: dsputil.c dsputil.h
 
 %.o: %.S
 	$(CC) $(CFLAGS) -c -o $@ $<
-
-%.o: %.s
-	nasm -f elf -o $@ $<
 
 # depend only used by mplayer now
 dep:	depend
@@ -89,8 +85,11 @@ cpuid_test: i386/cputest.c
 imgresample-test: imgresample.c
 	$(CC) $(CFLAGS) -DTEST -o $@ $^ 
 
-dct-test: dct-test.o jfdctfst.o i386/fdct_mmx.o i386/fdctdata.o \
+dct-test: dct-test.o jfdctfst.o i386/fdct_mmx.o \
           fdctref.o jrevdct.o i386/idct_mmx.o
+	$(CC) -o $@ $^
+
+motion-test: motion_test.o $(LIB)
 	$(CC) -o $@ $^
 
 #
