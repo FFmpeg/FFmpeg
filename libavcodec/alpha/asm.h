@@ -22,6 +22,21 @@
 
 #include <inttypes.h>
 
+#if defined __GNUC__
+# define GNUC_PREREQ(maj, min) \
+        ((__GNUC__ << 16) + __GNUC_MINOR__ >= ((maj) << 16) + (min))
+#else
+# define GNUC_PREREQ(maj, min) 0
+#endif
+
+#if GNUC_PREREQ(2,96)
+# define likely(x)      __builtin_expect((x) != 0, 1)
+# define unlikely(x)    __builtin_expect((x) != 0, 0)
+#else
+# define likely(x)      (x)
+# define unlikely(x)    (x)
+#endif
+
 #define AMASK_BWX (1 << 0)
 #define AMASK_FIX (1 << 1)
 #define AMASK_CIX (1 << 2)
@@ -45,6 +60,7 @@ inline static uint64_t WORD_VEC(uint64_t x)
 #define ldl(p) (*(const int32_t *) (p))
 #define stl(l, p) do { *(uint32_t *) (p) = (l); } while (0)
 #define stq(l, p) do { *(uint64_t *) (p) = (l); } while (0)
+#define sextw(x) ((int16_t) (x))
 
 #ifdef __GNUC__
 #define ASM_ACCEPT_MVI asm (".arch pca56")
@@ -52,10 +68,26 @@ struct unaligned_long { uint64_t l; } __attribute__((packed));
 #define ldq_u(p)     (*(const uint64_t *) (((uint64_t) (p)) & ~7ul))
 #define uldq(a)	     (((const struct unaligned_long *) (a))->l)
 
-#if __GNUC__ >= 3 && __GNUC_MINOR__ >= 3
+#if GNUC_PREREQ(3,0)
+/* Unfortunately, __builtin_prefetch is slightly buggy on Alpha. The
+   defines here are kludged so we still get the right
+   instruction. This needs to be adapted as soon as gcc is fixed.  */
+# define prefetch(p)     __builtin_prefetch((p), 0, 1)
+# define prefetch_en(p)  __builtin_prefetch((p), 1, 1)
+# define prefetch_m(p)   __builtin_prefetch((p), 0, 0)
+# define prefetch_men(p) __builtin_prefetch((p), 1, 0)
+#else
+# define prefetch(p)     asm volatile("ldl $31,%0"  : : "m"(*(const char *) (p)) : "memory")
+# define prefetch_en(p)  asm volatile("ldq $31,%0"  : : "m"(*(const char *) (p)) : "memory")
+# define prefetch_m(p)   asm volatile("lds $f31,%0" : : "m"(*(const char *) (p)) : "memory")
+# define prefetch_men(p) asm volatile("ldt $f31,%0" : : "m"(*(const char *) (p)) : "memory")
+#endif
+
+#if GNUC_PREREQ(3,3)
 #define cmpbge	__builtin_alpha_cmpbge
 /* Avoid warnings.  */
 #define extql(a, b)	__builtin_alpha_extql(a, (uint64_t) (b))
+#define extwl(a, b)	__builtin_alpha_extwl(a, (uint64_t) (b))
 #define extqh(a, b)	__builtin_alpha_extqh(a, (uint64_t) (b))
 #define zap	__builtin_alpha_zap
 #define zapnot	__builtin_alpha_zapnot
@@ -78,6 +110,7 @@ struct unaligned_long { uint64_t l; } __attribute__((packed));
 #else
 #define cmpbge(a, b) ({ uint64_t __r; asm ("cmpbge  %r1,%2,%0"  : "=r" (__r) : "rJ"  (a), "rI" (b)); __r; })
 #define extql(a, b)  ({ uint64_t __r; asm ("extql   %r1,%2,%0"  : "=r" (__r) : "rJ"  (a), "rI" (b)); __r; })
+#define extwl(a, b)  ({ uint64_t __r; asm ("extwl   %r1,%2,%0"  : "=r" (__r) : "rJ"  (a), "rI" (b)); __r; })
 #define extqh(a, b)  ({ uint64_t __r; asm ("extqh   %r1,%2,%0"  : "=r" (__r) : "rJ"  (a), "rI" (b)); __r; })
 #define zap(a, b)    ({ uint64_t __r; asm ("zap     %r1,%2,%0"  : "=r" (__r) : "rJ"  (a), "rI" (b)); __r; })
 #define zapnot(a, b) ({ uint64_t __r; asm ("zapnot  %r1,%2,%0"  : "=r" (__r) : "rJ"  (a), "rI" (b)); __r; })
@@ -99,7 +132,7 @@ struct unaligned_long { uint64_t l; } __attribute__((packed));
 #define unpkbw(a)    ({ uint64_t __r; asm ("unpkbw  %r1,%0"     : "=r" (__r) : "rJ"  (a));	     __r; })
 #endif
 
-#elif defined(__DECC)		/* Digital/Compaq "ccc" compiler */
+#elif defined(__DECC)		/* Digital/Compaq/hp "ccc" compiler */
 
 #include <c_asm.h>
 #define ASM_ACCEPT_MVI
@@ -107,6 +140,7 @@ struct unaligned_long { uint64_t l; } __attribute__((packed));
 #define uldq(a)	     (*(const __unaligned uint64_t *) (a))
 #define cmpbge(a, b) asm ("cmpbge  %a0,%a1,%v0", a, b)
 #define extql(a, b)  asm ("extql   %a0,%a1,%v0", a, b)
+#define extwl(a, b)  asm ("extwl   %a0,%a1,%v0", a, b)
 #define extqh(a, b)  asm ("extqh   %a0,%a1,%v0", a, b)
 #define zap(a, b)    asm ("zap     %a0,%a1,%v0", a, b)
 #define zapnot(a, b) asm ("zapnot  %a0,%a1,%v0", a, b)
