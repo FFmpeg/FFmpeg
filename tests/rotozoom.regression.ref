@@ -65,7 +65,7 @@ bc4a00140a3d3f1b1c4a892e9f7eaec6 *./data/out.yuv
 stddev:  4.11 PSNR:35.82 bytes:7145472
 901ebdbc7438744f0832a9a0cc7678e3 *./data/a-error-mpeg4-adv.avi
  194318 ./data/a-error-mpeg4-adv.avi
-2143df4a665ead5fd402189326ce727d *./data/out.yuv
+f9ae5845930dda375afead55cfb8480b *./data/out.yuv
 stddev:  4.41 PSNR:35.23 bytes:7602176
 575cbd5319516c4741edeaf146d6481e *./data/a-mpeg4-nr.avi
  158286 ./data/a-mpeg4-nr.avi
