@@ -1281,6 +1281,9 @@ tend= rdtsc();\
       av_log(NULL, AV_LOG_DEBUG, "%Ld dezicycles in %s, %d runs, %d skips\n", tsum*10/tcount, id, tcount, tskip_count);\
   }\
 }
+#else
+#define START_TIMER 
+#define STOP_TIMER(id) {}
 #endif
 
 #define CLAMP_TO_8BIT(d) ((d > 0xff) ? 0xff : (d < 0) ? 0 : d)
