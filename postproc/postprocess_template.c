@@ -892,11 +892,8 @@ src-=8;
 */
 #elif defined (HAVE_MMX)
 	src+= stride*4;
-
 	asm volatile(
 		"pxor %%mm7, %%mm7				\n\t"
-		"leal (%0, %1), %%eax				\n\t"
-		"leal (%%eax, %1, 4), %%edx			\n\t"
 		"leal -40(%%esp), %%ecx				\n\t" // make space for 4 8-byte vars
 		"andl $0xFFFFFFF8, %%ecx			\n\t" // align
 //	0	1	2	3	4	5	6	7
@@ -908,12 +905,13 @@ src-=8;
 		"punpcklbw %%mm7, %%mm0				\n\t" // low part of line 0
 		"punpckhbw %%mm7, %%mm1				\n\t" // high part of line 0
 
-		"movq (%%eax), %%mm2				\n\t"
+		"movq (%0, %1), %%mm2				\n\t"
+		"leal (%0, %1, 2), %%eax			\n\t"
 		"movq %%mm2, %%mm3				\n\t"
 		"punpcklbw %%mm7, %%mm2				\n\t" // low part of line 1
 		"punpckhbw %%mm7, %%mm3				\n\t" // high part of line 1
 
-		"movq (%%eax, %1), %%mm4			\n\t"
+		"movq (%%eax), %%mm4				\n\t"
 		"movq %%mm4, %%mm5				\n\t"
 		"punpcklbw %%mm7, %%mm4				\n\t" // low part of line 2
 		"punpckhbw %%mm7, %%mm5				\n\t" // high part of line 2
@@ -930,7 +928,7 @@ src-=8;
 		"psubw %%mm2, %%mm0				\n\t" // 2L0 - 5L1 + 5L2
 		"psubw %%mm3, %%mm1				\n\t" // 2H0 - 5H1 + 5H2
 
-		"movq (%%eax, %1, 2), %%mm2			\n\t"
+		"movq (%%eax, %1), %%mm2			\n\t"
 		"movq %%mm2, %%mm3				\n\t"
 		"punpcklbw %%mm7, %%mm2				\n\t" // L3
 		"punpckhbw %%mm7, %%mm3				\n\t" // H3
@@ -942,7 +940,7 @@ src-=8;
 		"movq %%mm0, (%%ecx)				\n\t" // 2L0 - 5L1 + 5L2 - 2L3
 		"movq %%mm1, 8(%%ecx)				\n\t" // 2H0 - 5H1 + 5H2 - 2H3
 
-		"movq (%0, %1, 4), %%mm0			\n\t"
+		"movq (%%eax, %1, 2), %%mm0			\n\t"
 		"movq %%mm0, %%mm1				\n\t"
 		"punpcklbw %%mm7, %%mm0				\n\t" // L4
 		"punpckhbw %%mm7, %%mm1				\n\t" // H4
@@ -956,12 +954,13 @@ src-=8;
 		"psubw %%mm2, %%mm4				\n\t" // 2L2 - L3 + L4
 		"psubw %%mm3, %%mm5				\n\t" // 2H2 - H3 + H4
 
+		"leal (%%eax, %1), %0				\n\t"
 		"psllw $2, %%mm2				\n\t" // 4L3 - 4L4
 		"psllw $2, %%mm3				\n\t" // 4H3 - 4H4
 		"psubw %%mm2, %%mm4				\n\t" // 2L2 - 5L3 + 5L4
 		"psubw %%mm3, %%mm5				\n\t" // 2H2 - 5H3 + 5H4
 //50 opcodes so far
-		"movq (%%edx), %%mm2				\n\t"
+		"movq (%0, %1, 2), %%mm2			\n\t"
 		"movq %%mm2, %%mm3				\n\t"
 		"punpcklbw %%mm7, %%mm2				\n\t" // L5
 		"punpckhbw %%mm7, %%mm3				\n\t" // H5
@@ -970,10 +969,10 @@ src-=8;
 		"psubw %%mm2, %%mm4				\n\t" // 2L2 - 5L3 + 5L4 - 2L5
 		"psubw %%mm3, %%mm5				\n\t" // 2H2 - 5H3 + 5H4 - 2H5
 
-		"movq (%%edx, %1), %%mm6			\n\t"
+		"movq (%%eax, %1, 4), %%mm6			\n\t"
 		"punpcklbw %%mm7, %%mm6				\n\t" // L6
 		"psubw %%mm6, %%mm2				\n\t" // L5 - L6
-		"movq (%%edx, %1), %%mm6			\n\t"
+		"movq (%%eax, %1, 4), %%mm6			\n\t"
 		"punpckhbw %%mm7, %%mm6				\n\t" // H6
 		"psubw %%mm6, %%mm3				\n\t" // H5 - H6
 
@@ -987,7 +986,7 @@ src-=8;
 		"psubw %%mm2, %%mm0				\n\t" // 2L4 - 5L5 + 5L6
 		"psubw %%mm3, %%mm1				\n\t" // 2H4 - 5H5 + 5H6
 
-		"movq (%%edx, %1, 2), %%mm2			\n\t"
+		"movq (%0, %1, 4), %%mm2			\n\t"
 		"movq %%mm2, %%mm3				\n\t"
 		"punpcklbw %%mm7, %%mm2				\n\t" // L7
 		"punpckhbw %%mm7, %%mm3				\n\t" // H7
@@ -1110,16 +1109,16 @@ src-=8;
 		"psubw %%mm6, %%mm4				\n\t"
 		"psubw %%mm7, %%mm5				\n\t"
 		"packsswb %%mm5, %%mm4				\n\t"
-		"movq (%%eax, %1, 2), %%mm0			\n\t"
+		"movq (%0), %%mm0				\n\t"
 		"paddb   %%mm4, %%mm0				\n\t"
-		"movq %%mm0, (%%eax, %1, 2) 			\n\t"
-		"movq (%0, %1, 4), %%mm0			\n\t"
+		"movq %%mm0, (%0)				\n\t"
+		"movq (%0, %1), %%mm0				\n\t"
 		"psubb %%mm4, %%mm0				\n\t"
-		"movq %%mm0, (%0, %1, 4) 			\n\t"
+		"movq %%mm0, (%0, %1)				\n\t"
 
-		:
-		: "r" (src), "r" (stride), "m" (c->pQPb)
-		: "%eax", "%edx", "%ecx"
+		: "+r" (src)
+		: "r" (stride), "m" (c->pQPb)
+		: "%eax", "%ecx"
 	);
 #else
 	const int l1= stride;
