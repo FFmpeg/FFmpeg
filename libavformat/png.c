@@ -41,6 +41,7 @@
 #define PNG_IHDR      0x0001
 #define PNG_IDAT      0x0002
 #define PNG_ALLIMAGE  0x0004
+#define PNG_PLTE      0x0008
 
 #define IOBUF_SIZE 4096
 
@@ -58,6 +59,7 @@ typedef struct PNGDecodeState {
     
     uint8_t *image_buf;
     int image_linesize;
+    uint32_t palette[256];
     uint8_t *crow_buf;
     uint8_t *empty_row;
     int crow_size; /* compressed row size (include filter type) */
@@ -66,7 +68,7 @@ typedef struct PNGDecodeState {
     z_stream zstream;
 } PNGDecodeState;
 
-const uint8_t pngsig[8] = {137, 80, 78, 71, 13, 10, 26, 10};
+static const uint8_t pngsig[8] = {137, 80, 78, 71, 13, 10, 26, 10};
 
 static int png_probe(AVProbeData *pd)
 {
@@ -77,12 +79,12 @@ static int png_probe(AVProbeData *pd)
         return 0;
 }
 
-void *png_zalloc(void *opaque, unsigned int items, unsigned int size)
+static void *png_zalloc(void *opaque, unsigned int items, unsigned int size)
 {
     return av_malloc(items * size);
 }
 
-void png_zfree(void *opaque, void *ptr)
+static void png_zfree(void *opaque, void *ptr)
 {
     av_free(ptr);
 }
@@ -287,6 +289,9 @@ static int png_read(ByteIOContext *f,
                            s->color_type == PNG_COLOR_TYPE_GRAY) {
                     info->pix_fmt = PIX_FMT_MONOBLACK;
                     s->row_size = (s->width + 7) >> 3;
+                } else if (s->color_type == PNG_COLOR_TYPE_PALETTE) {
+                    info->pix_fmt = PIX_FMT_PAL8;
+                    s->row_size = s->width;;
                 } else {
                     goto fail;
                 }
@@ -306,6 +311,9 @@ static int png_read(ByteIOContext *f,
 #endif
                 s->image_buf = info->pict.data[0];
                 s->image_linesize = info->pict.linesize[0];
+                /* copy the palette if needed */
+                if (s->color_type == PNG_COLOR_TYPE_PALETTE)
+                    memcpy(info->pict.data[1], s->palette, 256 * sizeof(uint32_t));
                 /* empty row is used if differencing to the first row */
                 s->empty_row = av_mallocz(s->row_size);
                 if (!s->empty_row)
@@ -323,6 +331,43 @@ static int png_read(ByteIOContext *f,
             /* skip crc */
             crc = get_be32(f);
             break;
+        case MKTAG('P', 'L', 'T', 'E'):
+            {
+                int n, i, r, g, b;
+                
+                if ((length % 3) != 0 || length > 256 * 3)
+                    goto skip_tag;
+                /* read the palette */
+                n = length / 3;
+                for(i=0;i<n;i++) {
+                    r = get_byte(f);
+                    g = get_byte(f);
+                    b = get_byte(f);
+                    s->palette[i] = (0xff << 24) | (r << 16) | (g << 8) | b;
+                }
+                for(;i<256;i++) {
+                    s->palette[i] = (0xff << 24);
+                }
+                s->state |= PNG_PLTE;
+                crc = get_be32(f);
+            }
+            break;
+        case MKTAG('t', 'R', 'N', 'S'):
+            {
+                int v, i;
+
+                /* read the transparency. XXX: Only palette mode supported */
+                if (s->color_type != PNG_COLOR_TYPE_PALETTE ||
+                    length > 256 ||
+                    !(s->state & PNG_PLTE))
+                    goto skip_tag;
+                for(i=0;i<length;i++) {
+                    v = get_byte(f);
+                    s->palette[i] = (s->palette[i] & 0x00ffffff) | (v << 24);
+                }
+                crc = get_be32(f);
+            }
+            break;
         case MKTAG('I', 'E', 'N', 'D'):
             if (!(s->state & PNG_ALLIMAGE))
                 goto fail;
@@ -330,6 +375,7 @@ static int png_read(ByteIOContext *f,
             goto exit_loop;
         default:
             /* skip tag */
+        skip_tag:
             url_fskip(f, length + 4);
             break;
         }
@@ -399,6 +445,11 @@ static int png_write(ByteIOContext *f, AVImageInfo *info)
         color_type = PNG_COLOR_TYPE_GRAY;
         row_size = (info->width + 7) >> 3;
         break;
+    case PIX_FMT_PAL8:
+        bit_depth = 8;
+        color_type = PNG_COLOR_TYPE_PALETTE;
+        row_size = info->width;
+        break;
     default:
         return -1;
     }
@@ -425,6 +476,34 @@ static int png_write(ByteIOContext *f, AVImageInfo *info)
     buf[12] = 0; /* interlace type */
     
     png_write_chunk(f, MKTAG('I', 'H', 'D', 'R'), buf, 13);
+
+    /* put the palette if needed */
+    if (color_type == PNG_COLOR_TYPE_PALETTE) {
+        int has_alpha, alpha, i;
+        unsigned int v;
+        uint32_t *palette;
+        uint8_t *alpha_ptr;
+        
+        palette = (uint32_t *)info->pict.data[1];
+        ptr = buf;
+        alpha_ptr = buf + 256 * 3;
+        has_alpha = 0;
+        for(i = 0; i < 256; i++) {
+            v = palette[i];
+            alpha = v >> 24;
+            if (alpha != 0xff)
+                has_alpha = 1;
+            *alpha_ptr++ = alpha;
+            ptr[0] = v >> 16;
+            ptr[1] = v >> 8;
+            ptr[2] = v;
+            ptr += 3;
+        }
+        png_write_chunk(f, MKTAG('P', 'L', 'T', 'E'), buf, 256 * 3);
+        if (has_alpha) {
+            png_write_chunk(f, MKTAG('t', 'R', 'N', 'S'), buf + 256 * 3, 256);
+        }
+    }
 
     /* now put each row */
     zstream.avail_out = IOBUF_SIZE;
@@ -481,6 +560,6 @@ AVImageFormat png_image_format = {
     "png",
     png_probe,
     png_read,
-    (1 << PIX_FMT_RGB24) | (1 << PIX_FMT_GRAY8) | (1 << PIX_FMT_MONOBLACK),
+    (1 << PIX_FMT_RGB24) | (1 << PIX_FMT_GRAY8) | (1 << PIX_FMT_MONOBLACK) | (1 << PIX_FMT_PAL8),
     png_write,
 };
