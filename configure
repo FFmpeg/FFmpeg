@@ -45,6 +45,9 @@ case "$cpu" in
   mips)
     cpu="mips"
   ;;
+  sun4u)
+    cpu="sparc64"
+  ;;
   *)
     cpu="unknown"
   ;;
