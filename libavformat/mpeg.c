@@ -1178,6 +1178,9 @@ static int mpegps_read_pes_header(AVFormatContext *s,
             header_len--;
         }
     }
+    else if( c!= 0xf )
+        goto redo;
+
     if (startcode == 0x1bd) {
         if (len < 1)
             goto redo;
