@@ -175,7 +175,7 @@ int audio_resample(ReSampleContext *s, short *output, short *input, int nb_sampl
     short *buftmp2[2], *buftmp3[2];
     int lenout;
 
-    if (s->input_channels == s->output_channels && s->ratio == 1.0) {
+    if (s->input_channels == s->output_channels && s->ratio == 1.0 && 0) {
         /* nothing to do */
         memcpy(output, input, nb_samples * s->input_channels * sizeof(short));
         return nb_samples;

@@ -123,8 +123,8 @@ AVResampleContext *av_resample_init(int out_rate, int in_rate){
     c->filter_length= ceil(16.0/factor);
     c->filter_bank= av_mallocz(c->filter_length*(PHASE_COUNT+1)*sizeof(short));
     av_build_filter(c->filter_bank, factor, c->filter_length, PHASE_COUNT, 1<<FILTER_SHIFT, 1);
-    c->filter_bank[c->filter_length*PHASE_COUNT + (c->filter_length-1) + 1]= (1<<FILTER_SHIFT)-1;
-    c->filter_bank[c->filter_length*PHASE_COUNT + (c->filter_length-1) + 2]= 1;
+    c->filter_bank[c->filter_length*PHASE_COUNT + (c->filter_length-1)/2 + 1]= (1<<FILTER_SHIFT)-1;
+    c->filter_bank[c->filter_length*PHASE_COUNT + (c->filter_length-1)/2 + 2]= 1;
 
     c->src_incr= out_rate;
     c->ideal_dst_incr= c->dst_incr= in_rate * PHASE_COUNT;
@@ -170,7 +170,7 @@ int av_resample(AVResampleContext *c, short *dst, short *src, int *consumed, int
         
         if(sample_index < 0){
             for(i=0; i<c->filter_length; i++)
-                val += src[ABS(sample_index + i)] * filter[i];
+                val += src[ABS(sample_index + i) % src_size] * filter[i];
         }else if(sample_index + c->filter_length > src_size){
             break;
         }else{
@@ -199,6 +199,9 @@ int av_resample(AVResampleContext *c, short *dst, short *src, int *consumed, int
             index++;
         }
     }
+    *consumed= FFMAX(index, 0) >> PHASE_SHIFT;
+    index= FFMIN(index, 0);
+
     if(update_ctx){
         if(c->compensation_distance){
             c->compensation_distance -= dst_index;
@@ -206,9 +209,8 @@ int av_resample(AVResampleContext *c, short *dst, short *src, int *consumed, int
                 c->dst_incr= c->ideal_dst_incr;
         }
         c->frac= frac;
-        c->index=0;
+        c->index= index;
     }
-    *consumed= index >> PHASE_SHIFT;
 #if 0    
     if(update_ctx && !c->compensation_distance){
 #undef rand
