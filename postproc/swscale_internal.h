@@ -109,11 +109,11 @@ typedef struct SwsContext{
 #define Y_OFFSET     "8*8"
 #define U_OFFSET     "9*8"
 #define V_OFFSET     "10*8"
-#define VROUNDER_OFFSET "11*8"  
-#define LUM_MMX_FILTER_OFFSET "12*8"
-#define CHR_MMX_FILTER_OFFSET "12*8+4*4*256"
-#define DSTW_OFFSET  "12*8+4*4*256*2"
-#define ESP_OFFSET  "12*8+4*4*256*2+4"
+#define LUM_MMX_FILTER_OFFSET "11*8"
+#define CHR_MMX_FILTER_OFFSET "11*8+4*4*256"
+#define DSTW_OFFSET  "11*8+4*4*256*2" //do not change, its hardcoded in the asm
+#define ESP_OFFSET  "11*8+4*4*256*2+4"
+#define VROUNDER_OFFSET "11*8+4*4*256*2+8"
                   
 	uint64_t redDither   __attribute__((aligned(8)));
 	uint64_t greenDither __attribute__((aligned(8)));
@@ -127,11 +127,11 @@ typedef struct SwsContext{
 	uint64_t yOffset     __attribute__((aligned(8)));
 	uint64_t uOffset     __attribute__((aligned(8)));
 	uint64_t vOffset     __attribute__((aligned(8)));
-	uint64_t vRounder     __attribute__((aligned(8)));
 	int32_t  lumMmxFilter[4*MAX_FILTER_SIZE];
 	int32_t  chrMmxFilter[4*MAX_FILTER_SIZE];
 	int dstW;
 	int esp;
+	uint64_t vRounder     __attribute__((aligned(8)));
 } SwsContext;
 //FIXME check init (where 0)
 
