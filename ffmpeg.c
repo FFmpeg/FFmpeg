@@ -225,6 +225,7 @@ static int64_t audio_size = 0;
 static int64_t extra_size = 0;
 static int nb_frames_dup = 0;
 static int nb_frames_drop = 0;
+static int input_sync;
 
 #define DEFAULT_PASS_LOGFILENAME "ffmpeg2pass"
 
@@ -1655,16 +1656,20 @@ static int av_encode(AVFormatContext **output_files,
         /* select the stream that we must read now by looking at the
            smallest output pts */
         file_index = -1;
-        pts_min = 1e10;
+        pts_min = 1e100;
         for(i=0;i<nb_ostreams;i++) {
             double pts;
             ost = ost_table[i];
             os = output_files[ost->file_index];
             ist = ist_table[ost->source_index];
-            if(ost->st->codec.codec_type == CODEC_TYPE_VIDEO)
-                pts = (double)ost->sync_opts * ost->st->codec.frame_rate_base / ost->st->codec.frame_rate;
-            else
-                pts = (double)ost->st->pts.val * ost->st->time_base.num / ost->st->time_base.den;
+            if (input_sync == 0) {
+                if(ost->st->codec.codec_type == CODEC_TYPE_VIDEO)
+                    pts = (double)ost->sync_opts * ost->st->codec.frame_rate_base / ost->st->codec.frame_rate;
+                else
+                    pts = (double)ost->st->pts.val * ost->st->time_base.num / ost->st->time_base.den;
+            } else {
+                pts = (double)ist->pts;
+            }
             if (!file_table[ist->file_index].eof_reached && 
                 pts < pts_min) {
                 pts_min = pts;
@@ -3792,6 +3797,7 @@ int main(int argc, char **argv)
     }
     
     if (nb_input_files == 0) {
+        input_sync = 1;
         prepare_grab();
     }
 
