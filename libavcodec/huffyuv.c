@@ -281,7 +281,7 @@ static void generate_len_table(uint8_t *dst, uint64_t *stats, int size){
             for(len=0; up[index] != -1; len++)
                 index= up[index];
                 
-            if(len > 32) break;
+            if(len >= 32) break;
             
             dst[i]= len;
         }
