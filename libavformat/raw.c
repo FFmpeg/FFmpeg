@@ -122,6 +122,22 @@ static int mp3_read_header(AVFormatContext *s,
     return 0;
 }
 
+/* ac3 read */
+static int ac3_read_header(AVFormatContext *s,
+                           AVFormatParameters *ap)
+{
+    AVStream *st;
+
+    st = av_new_stream(s, 0);
+    if (!st)
+        return AVERROR_NOMEM;
+
+    st->codec.codec_type = CODEC_TYPE_AUDIO;
+    st->codec.codec_id = CODEC_ID_AC3;
+    /* the parameters will be extracted from the compressed bitstream */
+    return 0;
+}
+
 /* mpeg1/h263 input */
 static int video_read_header(AVFormatContext *s,
                              AVFormatParameters *ap)
@@ -207,11 +223,10 @@ AVInputFormat ac3_iformat = {
     "raw ac3",
     0,
     NULL,
-    raw_read_header,
+    ac3_read_header,
     raw_read_packet,
     raw_read_close,
     .extensions = "ac3",
-    .value = CODEC_ID_AC3,
 };
 
 AVOutputFormat ac3_oformat = {
