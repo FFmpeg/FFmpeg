@@ -1,7 +1,0 @@
-#ifndef FFMPEG_COMMON_H
-#define FFMPEG_COMMON_H
-
-#define FFMPEG_VERSION_INT 0x000408
-#define FFMPEG_VERSION     "0.4.8"
-
-#endif /* COMMON_H */
