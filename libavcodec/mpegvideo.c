@@ -2430,9 +2430,17 @@ if(s->quarter_sample)
     src_y = s->mb_y*(16>>field_based) + (motion_y >> 1);
 
     if (s->out_format == FMT_H263) {
-        uvdxy = dxy | (motion_y & 2) | ((motion_x & 2) >> 1);
-        uvsrc_x = src_x>>1;
-        uvsrc_y = src_y>>1;
+        if((s->workaround_bugs & FF_BUG_HPEL_CHROMA) && field_based){
+            mx = (motion_x>>1)|(motion_x&1);
+            my = motion_y >>1;
+            uvdxy = ((my & 1) << 1) | (mx & 1);
+            uvsrc_x = s->mb_x* 8               + (mx >> 1);
+            uvsrc_y = s->mb_y*(8>>field_based) + (my >> 1);
+        }else{
+            uvdxy = dxy | (motion_y & 2) | ((motion_x & 2) >> 1);
+            uvsrc_x = src_x>>1;
+            uvsrc_y = src_y>>1;
+        }
     } else {
         mx = motion_x / 2;
         my = motion_y / 2;

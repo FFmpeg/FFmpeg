@@ -840,6 +840,7 @@ typedef struct AVCodecContext {
 #define FF_BUG_QPEL_CHROMA2     256
 #define FF_BUG_DIRECT_BLOCKSIZE 512
 #define FF_BUG_EDGE             1024
+#define FF_BUG_HPEL_CHROMA      2048
 //#define FF_BUG_FAKE_SCALABILITY 16 //autodetection should work 100%
         
     /**

@@ -551,6 +551,8 @@ retry:
             s->workaround_bugs|= FF_BUG_EDGE;
         }
         
+        if(s->divx_version)
+            s->workaround_bugs|= FF_BUG_HPEL_CHROMA;
 #if 0
         if(s->divx_version==500)
             s->padding_bug_score= 256*256*256*64;
