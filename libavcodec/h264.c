@@ -2158,6 +2158,7 @@ static void common_init(H264Context *h){
     
     init_pred_ptrs(h);
 
+    s->unrestricted_mv=1;
     s->decode=1; //FIXME
 }
 
