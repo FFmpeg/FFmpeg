@@ -39,6 +39,10 @@ static int dct_quantize(MpegEncContext *s, DCTELEM *block, int n, int qscale);
 static int dct_quantize_mmx(MpegEncContext *s, 
                             DCTELEM *block, int n,
                             int qscale);
+static void draw_edges_c(UINT8 *buf, int wrap, int width, int height, int w);
+
+void (*draw_edges)(UINT8 *buf, int wrap, int width, int height, int w)= draw_edges_c;
+
 #define EDGE_WIDTH 16
 
 /* enable all paranoid tests for rounding, overflows, etc... */
@@ -361,7 +365,7 @@ int MPV_encode_end(AVCodecContext *avctx)
 }
 
 /* draw the edges of width 'w' of an image of size width, height */
-static void draw_edges(UINT8 *buf, int wrap, int width, int height, int w)
+static void draw_edges_c(UINT8 *buf, int wrap, int width, int height, int w)
 {
     UINT8 *ptr, *last_line;
     int i;
@@ -676,7 +680,7 @@ static inline void add_dct(MpegEncContext *s,
 {
     if (s->block_last_index[i] >= 0) {
         if (!s->mpeg2)
-            if(s->encoding || s->avctx==NULL || s->avctx->codec->id!=CODEC_ID_MSMPEG4)
+            if(s->encoding || (!s->h263_msmpeg4))
                 s->dct_unquantize(s, block, i, s->qscale);
         ff_idct (block);
         add_pixels_clamped(block, dest, line_size);

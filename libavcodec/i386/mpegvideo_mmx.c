@@ -24,6 +24,7 @@
 #include "../mpegvideo.h"
 
 extern UINT8 zigzag_end[64];
+extern void (*draw_edges)(UINT8 *buf, int wrap, int width, int height, int w);
 
 #if 0
 
@@ -322,6 +323,95 @@ asm volatile(
     }
 }
 
+/* draw the edges of width 'w' of an image of size width, height 
+   this mmx version can only handle w==8 || w==16 */
+static void draw_edges_mmx(UINT8 *buf, int wrap, int width, int height, int w)
+{
+    UINT8 *ptr, *last_line;
+    int i;
+
+    last_line = buf + (height - 1) * wrap;
+    /* left and right */
+    ptr = buf;
+    if(w==8)
+    {
+	asm volatile(
+		"1:				\n\t"
+		"movd (%0), %%mm0		\n\t"
+		"punpcklbw %%mm0, %%mm0		\n\t" 
+		"punpcklwd %%mm0, %%mm0		\n\t"
+		"punpckldq %%mm0, %%mm0		\n\t"
+		"movq %%mm0, -8(%0)		\n\t"
+		"movq -8(%0, %2), %%mm1		\n\t"
+		"punpckhbw %%mm1, %%mm1		\n\t"
+		"punpckhwd %%mm1, %%mm1		\n\t"
+		"punpckhdq %%mm1, %%mm1		\n\t"
+		"movq %%mm1, (%0, %2)		\n\t"
+		"addl %1, %0			\n\t"
+		"cmpl %3, %0			\n\t"
+		" jb 1b				\n\t"
+		: "+r" (ptr)
+		: "r" (wrap), "r" (width), "r" (ptr + wrap*height)
+	);
+    }
+    else
+    {
+	asm volatile(
+		"1:				\n\t"
+		"movd (%0), %%mm0		\n\t"
+		"punpcklbw %%mm0, %%mm0		\n\t" 
+		"punpcklwd %%mm0, %%mm0		\n\t"
+		"punpckldq %%mm0, %%mm0		\n\t"
+		"movq %%mm0, -8(%0)		\n\t"
+		"movq %%mm0, -16(%0)		\n\t"
+		"movq -8(%0, %2), %%mm1		\n\t"
+		"punpckhbw %%mm1, %%mm1		\n\t"
+		"punpckhwd %%mm1, %%mm1		\n\t"
+		"punpckhdq %%mm1, %%mm1		\n\t"
+		"movq %%mm1, (%0, %2)		\n\t"
+		"movq %%mm1, 8(%0, %2)		\n\t"
+		"addl %1, %0			\n\t"
+		"cmpl %3, %0			\n\t"
+		" jb 1b				\n\t"		
+		: "+r" (ptr)
+		: "r" (wrap), "r" (width), "r" (ptr + wrap*height)
+	);
+    }
+    
+    for(i=0;i<w;i+=4) {
+        /* top and bottom (and hopefully also the corners) */
+	ptr= buf - (i + 1) * wrap - w;
+	asm volatile(
+		"1:				\n\t"
+		"movq (%1, %0), %%mm0		\n\t"
+		"movq %%mm0, (%0)		\n\t"
+		"movq %%mm0, (%0, %2)		\n\t"
+		"movq %%mm0, (%0, %2, 2)	\n\t"
+		"movq %%mm0, (%0, %3)		\n\t"
+		"addl $8, %0			\n\t"
+		"cmpl %4, %0			\n\t"
+		" jb 1b				\n\t"
+		: "+r" (ptr)
+		: "r" ((int)buf - (int)ptr - w), "r" (-wrap), "r" (-wrap*3), "r" (ptr+width+2*w)
+	);
+	ptr= last_line + (i + 1) * wrap - w;
+	asm volatile(
+		"1:				\n\t"
+		"movq (%1, %0), %%mm0		\n\t"
+		"movq %%mm0, (%0)		\n\t"
+		"movq %%mm0, (%0, %2)		\n\t"
+		"movq %%mm0, (%0, %2, 2)	\n\t"
+		"movq %%mm0, (%0, %3)		\n\t"
+		"addl $8, %0			\n\t"
+		"cmpl %4, %0			\n\t"
+		" jb 1b				\n\t"
+		: "+r" (ptr)
+		: "r" ((int)last_line - (int)ptr - w), "r" (wrap), "r" (wrap*3), "r" (ptr+width+2*w)
+	);
+    }
+}
+
+
 void MPV_common_init_mmx(MpegEncContext *s)
 {
     if (mm_flags & MM_MMX) {
@@ -329,5 +419,7 @@ void MPV_common_init_mmx(MpegEncContext *s)
         	s->dct_unquantize = dct_unquantize_h263_mmx;
 	else
         	s->dct_unquantize = dct_unquantize_mpeg1_mmx;
+	
+	draw_edges = draw_edges_mmx;
     }
 }
