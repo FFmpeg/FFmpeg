@@ -113,14 +113,14 @@ all: $(LIB) $(SLIB)
 
 tests: apiexample cpuid_test $(TESTS)
 
-$(LIB): .depend $(OBJS)
+$(LIB): $(OBJS)
 	rm -f $@
 	$(AR) rc $@ $(OBJS)
 ifneq ($(CONFIG_OS2),yes)
 	$(RANLIB) $@
 endif
 
-$(SLIB): .depend $(OBJS)
+$(SLIB): $(OBJS)
 	$(CC) $(SHFLAGS) -o $@ $(OBJS) $(EXTRALIBS)
 
 dsputil.o: dsputil.c dsputil.h
@@ -142,12 +142,10 @@ alpha/motion_est_alpha.o: alpha/motion_est_alpha.c
 	$(CC) $(CFLAGS) -mcpu=$$newcpu -c -o $@ $<
 endif
 
-.depend: $(SRCS)
+depend: $(SRCS)
 	$(CC) -MM $(CFLAGS) $^ 1>.depend
 
 dep:	depend
-
-depend: .depend
 
 clean: 
 	rm -f *.o *.d *~ .depend $(LIB) $(SLIB) *.so i386/*.o i386/*~ \

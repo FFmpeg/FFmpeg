@@ -61,7 +61,7 @@ lib:
 	$(MAKE) -C libavcodec all
 	$(MAKE) -C libavformat all
 
-ffmpeg_g$(EXE): .depend ffmpeg.o $(DEP_LIBS)
+ffmpeg_g$(EXE): ffmpeg.o $(DEP_LIBS)
 	$(CC) $(LDFLAGS) -o $@ ffmpeg.o -L./libavcodec -L./libavformat \
               -lavformat -lavcodec $(EXTRALIBS)
 
@@ -102,6 +102,11 @@ installlib:
 dep:	depend
 
 depend: .depend
+	make -C libavcodec depend
+	make -C libavformat depend
+ifeq ($(BUILD_VHOOK),yes)
+	make -C vhook depend
+endif
 
 .depend: $(SRCS)
 	$(CC) -MM $(CFLAGS) $^ 1>.depend
