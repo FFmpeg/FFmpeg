@@ -309,7 +309,7 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
             put_bits(&s->pb, 1, 0); /* broken link */
         }
 
-        if (s->avctx->frame_rate < (24 * s->avctx->frame_rate_base) && s->picture_number > 0) {
+        if (s->avctx->frame_rate < (23 * s->avctx->frame_rate_base) && s->picture_number > 0) {
             /* insert empty P pictures to slow down to the desired
                frame rate. Each fake pictures takes about 20 bytes */
             fps = frame_rate_tab[s->frame_rate_index];
