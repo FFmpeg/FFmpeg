@@ -1,10 +1,15 @@
 
 include ../config.mak
 
-LIBNAME = libpostproc.a
+SWSLIB = libswscale.a
+SPPLIB = libpostproc.so
+SPPVERSION = 0.0.1
+PPLIB = libpostproc.a
 
-SRCS=postprocess.c swscale.c rgb2rgb.c yuv2rgb.c
-OBJS=$(SRCS:.c=.o)
+SWSSRCS=swscale.c rgb2rgb.c yuv2rgb.c
+SWSOBJS=$(SWSSRCS:.c=.o)
+PPOBJS=postprocess.o
+SPPOBJS=postprocess_pic.o
 CS_TEST_OBJS=cs_test.o rgb2rgb.o ../cpudetect.o ../mp_msg.o
 
 CFLAGS  = $(OPTFLAGS) $(MLIB_INC) -I. -I.. $(EXTRA_INC)
@@ -17,16 +22,16 @@ CFLAGS  = $(OPTFLAGS) $(MLIB_INC) -I. -I.. $(EXTRA_INC)
 .c.o:
 	$(CC) -c $(CFLAGS) -o $@ $<
 
-$(LIBNAME):     $(OBJS)
-	$(AR) r $(LIBNAME) $(OBJS)
+all:    $(SWSLIB) $(PPLIB) $(SPPLIB)
 
-all:    $(LIBNAME)
+$(SWSLIB):     $(SWSOBJS)
+	$(AR) r $(SWSLIB) $(SWSOBJS)
 
 clean:
-	rm -f *.o *.a *~
+	rm -f *.o *.a *~ *.so
 
 distclean:
-	rm -f Makefile.bak *.o *.a *~ .depend
+	rm -f Makefile.bak *.o *.a *~ *.so .depend
 
 dep:    depend
 
@@ -36,6 +41,27 @@ depend:
 cs_test: $(CS_TEST_OBJS)
 	$(CC) $(CS_TEST_OBJS) -o cs_test
 
+postprocess_pic.o: postprocess.c
+	$(CC) -c $(CFLAGS) -fPIC -DPIC -o $@ $<
+
+$(SPPLIB): $(SPPOBJS)
+	$(CC) -shared -Wl,-soname,$(SPPLIB).0 \
+	-o $(SPPLIB) $(SPPOBJS)
+
+$(PPLIB): $(PPOBJS)
+	$(AR) r $(PPLIB) $(PPOBJS)
+
+install: all
+ifeq ($(SHARED_PP),yes)
+	install -d $(prefix)/lib
+	install -s -m 755 $(SPPLIB) $(prefix)/lib/$(SPPLIB).$(SPPVERSION)
+	ln -sf $(SPPLIB).$(SPPVERSION) $(prefix)/lib/$(SPPLIB)
+	ldconfig || true
+	mkdir -p $(prefix)/include/postproc
+	install -m 644 postprocess.h $(prefix)/include/postproc/postprocess.h
+endif
+
+	
 #
 # include dependency files if they exist
 #
