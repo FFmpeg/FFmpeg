@@ -46,7 +46,7 @@
 #define SDL_AUDIO_BUFFER_SIZE 1024
 
 /* no AV sync correction is done if below the AV sync threshold */
-#define AV_SYNC_THRESHOLD 0.08
+#define AV_SYNC_THRESHOLD 0.01
 /* no AV correction is done if too big error */
 #define AV_NOSYNC_THRESHOLD 10.0
 
@@ -611,7 +611,7 @@ static void video_refresh_timer(void *opaque)
     if (is->video_st) {
         if (is->pictq_size == 0) {
             /* if no picture, need to wait */
-            schedule_refresh(is, 40);
+            schedule_refresh(is, 1);
         } else {
             /* dequeue the picture */
             vp = &is->pictq[is->pictq_rindex];
