@@ -219,15 +219,20 @@ typedef struct {
 
 struct MOVParseTableEntry;
 
+typedef struct Time2Sample{
+    int count;
+    int duration;
+}Time2Sample;
+
 typedef struct MOVStreamContext {
     int ffindex; /* the ffmpeg stream id */
     int is_ff_stream; /* Is this stream presented to ffmpeg ? i.e. is this an audio or video stream ? */
     long next_chunk;
     long chunk_count;
     int64_t *chunk_offsets;
-    int32_t stts_count;
-    uint64_t *stts_data;            /* concatenated data from the time-to-sample atom (count|duration) */
-    int32_t edit_count;             /* number of 'edit' (elst atom) */
+    int stts_count;
+    Time2Sample *stts_data;
+    int edit_count;             /* number of 'edit' (elst atom) */
     long sample_to_chunk_sz;
     MOV_sample_to_chunk_tbl *sample_to_chunk;
     long sample_to_chunk_index;
@@ -1275,22 +1280,23 @@ static int mov_read_stts(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     get_byte(pb); /* version */
     get_byte(pb); get_byte(pb); get_byte(pb); /* flags */
     entries = get_be32(pb);
-    if(entries >= UINT_MAX / sizeof(uint64_t))
+    if(entries >= UINT_MAX / sizeof(Time2Sample))
         return -1;
 
     c->streams[c->fc->nb_streams-1]->stts_count = entries;
-    c->streams[c->fc->nb_streams-1]->stts_data = (uint64_t*) av_malloc(entries * sizeof(uint64_t));
+    c->streams[c->fc->nb_streams-1]->stts_data = av_malloc(entries * sizeof(Time2Sample));
 
 #ifdef DEBUG
 av_log(NULL, AV_LOG_DEBUG, "track[%i].stts.entries = %i\n", c->fc->nb_streams-1, entries);
 #endif
     for(i=0; i<entries; i++) {
-        int32_t sample_duration;
-        int32_t sample_count;
+        int sample_duration;
+        int sample_count;
 
         sample_count=get_be32(pb);
         sample_duration = get_be32(pb);
-        c->streams[c->fc->nb_streams - 1]->stts_data[i] = (uint64_t)sample_count<<32 | (uint64_t)sample_duration;
+        c->streams[c->fc->nb_streams - 1]->stts_data[i].count= sample_count;
+        c->streams[c->fc->nb_streams - 1]->stts_data[i].duration= sample_duration;
 #ifdef DEBUG
         av_log(NULL, AV_LOG_DEBUG, "sample_count=%d, sample_duration=%d\n",sample_count,sample_duration);
 #endif
@@ -1915,26 +1921,22 @@ readchunk:
     
     /* find the corresponding dts */	 
     if (sc && sc->sample_to_time_index < sc->stts_count && pkt) {	 
-      uint32_t count;	 
-      uint64_t dts;	 
-      uint32_t duration = (uint32_t)(sc->stts_data[sc->sample_to_time_index]&0xffff);	 
-      count = (uint32_t)(sc->stts_data[sc->sample_to_time_index]>>32);	 
+      unsigned int count;
+      uint64_t dts;
+      unsigned int duration = sc->stts_data[sc->sample_to_time_index].duration;
+      count = sc->stts_data[sc->sample_to_time_index].count;
       if ((sc->sample_to_time_sample + count) < sc->current_sample) {	 
         sc->sample_to_time_sample += count;	 
         sc->sample_to_time_time   += count*duration;	 
         sc->sample_to_time_index ++;	 
-        duration = (uint32_t)(sc->stts_data[sc->sample_to_time_index]&0xffff);	 
+        duration = sc->stts_data[sc->sample_to_time_index].duration;
       }	 
-      dts = sc->sample_to_time_time + (sc->current_sample-1 - sc->sample_to_time_sample) * duration;	 
+      dts = sc->sample_to_time_time + (sc->current_sample-1 - sc->sample_to_time_sample) * (int64_t)duration;
       dts = av_rescale( dts, 	 
                         (int64_t)s->streams[sc->ffindex]->time_base.den, 	 
                         (int64_t)sc->time_scale * (int64_t)s->streams[sc->ffindex]->time_base.num );	 
-      pkt->dts = dts;	 
-      // audio pts = dts, true for video only in low_latency mode (FIXME a good way to know if we are in a low latency stream ?)	 
-      if (s->streams[sc->ffindex]->codec.codec_type == CODEC_TYPE_AUDIO)	 
-        pkt->pts = dts;	 
-      else 	 
-        pkt->pts = AV_NOPTS_VALUE;	 
+      pkt->dts = dts;
+      //do not set pts=dts because u think it might be equal!!!!!!!!
 #ifdef DEBUG 	 
 /*    av_log(NULL, AV_LOG_DEBUG, "stream #%d smp #%ld dts = %ld (smp:%ld time:%ld idx:%ld ent:%d count:%ld dur:%ld)\n"	 
       , pkt->stream_index, sc->current_sample-1, (long)pkt->dts	 
@@ -2006,8 +2008,8 @@ static int mov_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
     av_log(s, AV_LOG_DEBUG, "Searching for sample_time %li \n", (long)sample_time);
 #endif
     for (i = 0; i < sc->stts_count; i++) {
-        count = (uint32_t)(sc->stts_data[i]>>32);
-        duration = (uint32_t)(sc->stts_data[i]&0xffff);
+        count = sc->stts_data[i].count;
+        duration = sc->stts_data[i].duration;
 //av_log(s, AV_LOG_DEBUG, "> sample_time %lli \n", (long)sample_time);                
 //av_log(s, AV_LOG_DEBUG, "> count=%i duration=%i\n", count, duration);        
         if ((start_time + count*duration) > sample_time) {
@@ -2149,8 +2151,8 @@ static int mov_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
         sample = 0;	 
         start_time = 0;	 
         for (msc->sample_to_time_index = 0; msc->sample_to_time_index < msc->stts_count; msc->sample_to_time_index++) {	 
-            count = (uint32_t)(msc->stts_data[msc->sample_to_time_index]>>32);	 
-            duration = (uint32_t)(msc->stts_data[msc->sample_to_time_index]&0xffff);	 
+            count = msc->stts_data[msc->sample_to_time_index].count;
+            duration = msc->stts_data[msc->sample_to_time_index].duration;
             if ((sample + count - 1) > msc->current_sample) {	 
                 msc->sample_to_time_time = start_time;	 
                 msc->sample_to_time_sample = sample;	 
