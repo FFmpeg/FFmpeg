@@ -110,6 +110,7 @@ static int do_hex_dump = 0;
 static int do_play = 0;
 static int do_psnr = 0;
 static int do_vstats = 0;
+static int mpeg_vcd = 0;
 
 typedef struct AVOutputStream {
     int file_index;          /* file index */
@@ -647,6 +648,8 @@ static int av_encode(AVFormatContext **output_files,
     for(i=0;i<nb_output_files;i++) {
         os = output_files[i];
         nb_ostreams += os->nb_streams;
+        if (mpeg_vcd)
+            os->flags |= AVF_FLAG_VCD;
     }
     if (nb_stream_maps > 0 && nb_stream_maps != nb_ostreams) {
         fprintf(stderr, "Number of stream maps must match number of output streams\n");
@@ -2168,6 +2171,7 @@ const OptionDef options[] = {
     { "h", 0, {(void*)show_help}, "show help" },
     { "formats", 0, {(void*)show_formats}, "show available formats, codecs, protocols, ..." },
     { "f", HAS_ARG, {(void*)opt_format}, "force format", "fmt" },
+    { "vcd", OPT_BOOL, {(void*)&mpeg_vcd}, "output Video CD MPEG-PS compliant file" },
     { "i", HAS_ARG, {(void*)opt_input_file}, "input file name", "filename" },
     { "y", OPT_BOOL, {(void*)&file_overwrite}, "overwrite output files" },
     { "map", HAS_ARG | OPT_EXPERT, {(void*)opt_map}, "set input stream mapping", "file:stream" },
