@@ -268,9 +268,11 @@ typedef struct Vp3DecodeContext {
     VLC ac_vlc_3[16];
     VLC ac_vlc_4[16];
 
-    int16_t intra_y_dequant[64];
-    int16_t intra_c_dequant[64];
-    int16_t inter_dequant[64];
+    /* these arrays need to be on 16-byte boundaries since SSE2 operations
+     * index into them */
+    int16_t __align16 intra_y_dequant[64];
+    int16_t __align16 intra_c_dequant[64];
+    int16_t __align16 inter_dequant[64];
 
     /* This table contains superblock_count * 16 entries. Each set of 16
      * numbers corresponds to the fragment indices 0..15 of the superblock.

@@ -73,6 +73,12 @@ void vp3_idct_put_mmx(int16_t *input_data, int16_t *dequant_matrix,
 void vp3_idct_add_mmx(int16_t *input_data, int16_t *dequant_matrix,
     int coeff_count, uint8_t *dest, int stride);
 
+void vp3_dsp_init_sse2(void);
+void vp3_idct_put_sse2(int16_t *input_data, int16_t *dequant_matrix,
+    int coeff_count, uint8_t *dest, int stride);
+void vp3_idct_add_sse2(int16_t *input_data, int16_t *dequant_matrix,
+    int coeff_count, uint8_t *dest, int stride);
+
 
 /* minimum alignment rules ;)
 if u notice errors in the align stuff, need more alignment for some asm code for some cpu
@@ -403,6 +409,7 @@ static inline void emms(void)
 }
 
 #define __align8 __attribute__ ((aligned (8)))
+#define __align16 __attribute__ ((aligned (16)))
 
 void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx);
 void dsputil_init_pix_mmx(DSPContext* c, AVCodecContext *avctx);
