@@ -191,6 +191,8 @@ static int mpeg_mux_init(AVFormatContext *ctx)
             stream->max_buffer_size = 46 * 1024; 
             s->video_bound++;
             break;
+        default:
+            abort();
         }
     }
 
@@ -226,6 +228,8 @@ static int mpeg_mux_init(AVFormatContext *ctx)
                         st->codec.frame_rate,
                         90000 * FRAME_RATE_BASE);
             break;
+        default:
+            abort();
         }
     }
     return 0;
