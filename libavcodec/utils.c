@@ -238,7 +238,8 @@ int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic){
             const int h_shift= i==0 ? 0 : h_chroma_shift;
             const int v_shift= i==0 ? 0 : v_chroma_shift;
 
-            buf->linesize[i]= ALIGN(pixel_size*w>>h_shift, s_align);
+            //FIXME next ensures that linesize= 2^x uvlinesize, thats needed because some MC code assumes it
+            buf->linesize[i]= ALIGN(pixel_size*w>>h_shift, s_align<<(h_chroma_shift-h_shift)); 
 
             buf->base[i]= av_mallocz((buf->linesize[i]*h>>v_shift)+16); //FIXME 16
             if(buf->base[i]==NULL) return -1;
