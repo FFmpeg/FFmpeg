@@ -55,7 +55,7 @@ ffmpeg_g$(EXE): ffmpeg.o $(DEP_LIBS)
               -lavformat -lavcodec $(EXTRALIBS)
 
 ffmpeg$(EXE): ffmpeg_g$(EXE)
-	cp $< $@ ; $(STRIP) $@
+	cp -p $< $@ ; $(STRIP) $@
 
 ffserver$(EXE): ffserver.o $(DEP_LIBS)
 	$(CC) $(LDFLAGS) $(FFSLDFLAGS) \
