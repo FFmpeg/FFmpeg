@@ -444,6 +444,9 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
     int decode_top_nibble_next = 0;
     int diff_channel;
 
+    if (!buf_size)
+        return 0;
+
     samples = data;
     src = buf;
 
