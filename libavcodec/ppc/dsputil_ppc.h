@@ -29,11 +29,13 @@ enum powerpc_perf_index {
   altivec_dct_unquantize_h263_num,
   altivec_idct_add_num,
   altivec_idct_put_num,
-  altivec_put_pixels_clamped_num,
   altivec_put_pixels16_num,
   altivec_avg_pixels16_num,
   altivec_avg_pixels8_num,
   altivec_put_pixels8_xy2_num,
+  altivec_put_no_rnd_pixels8_xy2_num,
+  altivec_put_pixels16_xy2_num,
+  altivec_put_no_rnd_pixels16_xy2_num,
   powerpc_clear_blocks_dcbz32,
   powerpc_perf_total
 };

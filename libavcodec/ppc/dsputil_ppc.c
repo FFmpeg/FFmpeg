@@ -40,18 +40,20 @@ int mm_support(void)
 
 #ifdef POWERPC_TBL_PERFORMANCE_REPORT
 unsigned long long perfdata[powerpc_perf_total][powerpc_data_total];
-/* list below must match enum in dsputil_altivec.h */
+/* list below must match enum in dsputil_ppc.h */
 static unsigned char* perfname[] = {
   "fft_calc_altivec",
   "gmc1_altivec",
   "dct_unquantize_h263_altivec",
   "idct_add_altivec",
   "idct_put_altivec",
-  "put_pixels_clamped_altivec",
   "put_pixels16_altivec",
   "avg_pixels16_altivec",
   "avg_pixels8_altivec",
   "put_pixels8_xy2_altivec",
+  "put_no_rnd_pixels8_xy2_altivec",
+  "put_pixels16_xy2_altivec",
+  "put_no_rnd_pixels16_xy2_altivec",
   "clear_blocks_dcbz32_ppc"
 };
 #ifdef POWERPC_PERF_USE_PMC
@@ -65,9 +67,9 @@ void powerpc_display_perf_report(void)
 {
   int i;
 #ifndef POWERPC_PERF_USE_PMC
-  fprintf(stderr, "AltiVec performance report\n Values are from the Time Base register, and represent 4 bus cycles.\n");
+  fprintf(stderr, "PowerPC performance report\n Values are from the Time Base register, and represent 4 bus cycles.\n");
 #else /* POWERPC_PERF_USE_PMC */
-  fprintf(stderr, "AltiVec performance report\n Values are from the PMC registers, and represent whatever the registers are set to record.\n");
+  fprintf(stderr, "PowerPC performance report\n Values are from the PMC registers, and represent whatever the registers are set to record.\n");
 #endif /* POWERPC_PERF_USE_PMC */
   for(i = 0 ; i < powerpc_perf_total ; i++)
   {
@@ -199,21 +201,23 @@ void dsputil_init_ppc(DSPContext* c, unsigned mask)
         c->pix_sum = pix_sum_altivec;
         c->diff_pixels = diff_pixels_altivec;
         c->get_pixels = get_pixels_altivec;
-// next two disabled as they're untested.
+// next one disabled as it's untested.
 #if 0
         c->add_bytes= add_bytes_altivec;
-        c->put_pixels_clamped = put_pixels_clamped_altivec;
-#endif
+#endif /* 0 */
         c->put_pixels_tab[0][0] = put_pixels16_altivec;
         c->avg_pixels_tab[0][0] = avg_pixels16_altivec;
 // next one disabled as it's untested.
 #if 0
         c->avg_pixels_tab[1][0] = avg_pixels8_altivec;
-#endif
+#endif /* 0 */
         c->put_pixels_tab[1][3] = put_pixels8_xy2_altivec;
+        c->put_no_rnd_pixels_tab[1][3] = put_no_rnd_pixels8_xy2_altivec;
+        c->put_pixels_tab[0][3] = put_pixels16_xy2_altivec;
+        c->put_no_rnd_pixels_tab[0][3] = put_no_rnd_pixels16_xy2_altivec;
         
 	c->gmc1 = gmc1_altivec;
-
+        
 #ifdef POWERPC_TBL_PERFORMANCE_REPORT
         {
           int i;
@@ -228,12 +232,12 @@ void dsputil_init_ppc(DSPContext* c, unsigned mask)
             perfdata_miss[i][powerpc_data_max] = 0x0000000000000000;
             perfdata_miss[i][powerpc_data_sum] = 0x0000000000000000;
             perfdata_miss[i][powerpc_data_num] = 0x0000000000000000;
-#endif
+#endif /* POWERPC_PERF_USE_PMC */
           }
         }
-#endif
+#endif /* POWERPC_TBL_PERFORMANCE_REPORT */
     } else
-#endif
+#endif /* HAVE_ALTIVEC */
     {
         // Non-AltiVec PPC optimisations
 
