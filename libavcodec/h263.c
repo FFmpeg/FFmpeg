@@ -1704,10 +1704,10 @@ void h263_decode_init_vlc(MpegEncContext *s)
         init_vlc_rl(&rl_inter);
         init_vlc_rl(&rl_intra);
         init_vlc_rl(&rl_intra_aic);
-        init_vlc(&dc_lum, DC_VLC_BITS, 9 /* 13 */,
+        init_vlc(&dc_lum, DC_VLC_BITS, 10 /* 13 */,
                  &DCtab_lum[0][1], 2, 1,
                  &DCtab_lum[0][0], 2, 1);
-        init_vlc(&dc_chrom, DC_VLC_BITS, 9 /* 13 */,
+        init_vlc(&dc_chrom, DC_VLC_BITS, 10 /* 13 */,
                  &DCtab_chrom[0][1], 2, 1,
                  &DCtab_chrom[0][0], 2, 1);
         init_vlc(&sprite_trajectory, SPRITE_TRAJ_VLC_BITS, 15,
@@ -2917,10 +2917,12 @@ static inline int mpeg4_decode_dc(MpegEncContext * s, int n, int *dir_ptr)
 static inline int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
                               int n, int coded)
 {
-    int code, level, i, j, last, run;
+    int level, i, last, run;
     int dc_pred_dir;
     RLTable *rl;
+    RL_VLC_ELEM *rl_vlc;
     const UINT8 *scan_table;
+    int qmul, qadd;
 
     if (s->mb_intra) {
 	/* DC coef */
@@ -2935,10 +2937,11 @@ static inline int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
                 return DECODING_ACDC_LOST;
         }
         block[0] = level;
-        i = 1;
+        i = 0;
         if (!coded) 
             goto not_coded;
         rl = &rl_intra;
+        rl_vlc = rl_intra.rl_vlc[0];
         if (s->ac_pred) {
             if (dc_pred_dir == 0) 
                 scan_table = ff_alternate_vertical_scan; /* left */
@@ -2947,37 +2950,52 @@ static inline int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
         } else {
             scan_table = zigzag_direct;
         }
+        qmul=1;
+        qadd=0;
     } else {
-	i = 0;
+        i = -1;
         if (!coded) {
-            s->block_last_index[n] = i - 1;
+            s->block_last_index[n] = i;
             return 0;
         }
         rl = &rl_inter;
+        rl_vlc = rl_inter.rl_vlc[s->qscale];
         scan_table = zigzag_direct;
+        qmul = s->qscale << 1;
+        qadd = (s->qscale - 1) | 1;
     }
-
+  {
+    OPEN_READER(re, &s->gb);
     for(;;) {
-        code = get_vlc2(&s->gb, rl->vlc.table, TEX_VLC_BITS, 2);
-        if (code < 0)
-            return DECODING_AC_LOST;
-        if (code == rl->n) {
+        UPDATE_CACHE(re, &s->gb);
+        GET_RL_VLC(level, run, re, &s->gb, rl_vlc, TEX_VLC_BITS, 2);
+        if (level==0) {
+            int cache;
+            cache= GET_CACHE(re, &s->gb);
             /* escape */
-            if (get_bits1(&s->gb) != 0) {
-                if (get_bits1(&s->gb) != 0) {
+            if (cache&0x80000000) {
+                if (cache&0x40000000) {
                     /* third escape */
-                    last = get_bits1(&s->gb);
-                    run = get_bits(&s->gb, 6);
-                    if(get_bits1(&s->gb)==0){
+                    SKIP_CACHE(re, &s->gb, 2);
+                    last=  SHOW_UBITS(re, &s->gb, 1); SKIP_CACHE(re, &s->gb, 1);
+                    run=   SHOW_UBITS(re, &s->gb, 6); LAST_SKIP_CACHE(re, &s->gb, 6);
+                    SKIP_COUNTER(re, &s->gb, 2+1+6);
+                    UPDATE_CACHE(re, &s->gb);
+
+                    if(SHOW_UBITS(re, &s->gb, 1)==0){
                         fprintf(stderr, "1. marker bit missing in 3. esc\n");
                         return DECODING_AC_LOST;
-                    }
-                    level = get_bits(&s->gb, 12);
-                    level = (level << 20) >> 20; /* sign extend */
-                    if(get_bits1(&s->gb)==0){
+                    }; SKIP_CACHE(re, &s->gb, 1);
+                    
+                    level= SHOW_SBITS(re, &s->gb, 12); SKIP_CACHE(re, &s->gb, 12);
+ 
+                    if(SHOW_UBITS(re, &s->gb, 1)==0){
                         fprintf(stderr, "2. marker bit missing in 3. esc\n");
                         return DECODING_AC_LOST;
-                    }
+                    }; LAST_SKIP_CACHE(re, &s->gb, 1);
+                    
+                    SKIP_COUNTER(re, &s->gb, 1+12+1);
+                    
                     if(level>512 || level<-512){ //FIXME check that QP=1 is ok with this too
                         fprintf(stderr, "|level| overflow in 3. esc\n");
                         return DECODING_AC_LOST;
@@ -3002,54 +3020,66 @@ static inline int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
                         }
                     }
 #endif
+		    if (level>0) level= level * qmul + qadd;
+                    else         level= level * qmul - qadd;
+
+                    i+= run + 1;
+                    if(last) i+=192;
                 } else {
                     /* second escape */
-                    code = get_vlc2(&s->gb, rl->vlc.table, TEX_VLC_BITS, 2);
-                    if (code < 0 || code >= rl->n)
-                        return DECODING_AC_LOST;
-                    run = rl->table_run[code];
-                    level = rl->table_level[code];
-                    last = code >= rl->last;
-                    run += rl->max_run[last][level] + 1;
-                    if (get_bits1(&s->gb))
-                        level = -level;
+#if MIN_CACHE_BITS < 20
+                    LAST_SKIP_BITS(re, &s->gb, 2);
+                    UPDATE_CACHE(re, &s->gb);
+#else
+                    SKIP_BITS(re, &s->gb, 2);
+#endif
+                    GET_RL_VLC(level, run, re, &s->gb, rl_vlc, TEX_VLC_BITS, 2);
+                    i+= run + rl->max_run[run>>7][level/qmul] +1; //FIXME opt indexing
+                    level = (level ^ SHOW_SBITS(re, &s->gb, 1)) - SHOW_SBITS(re, &s->gb, 1);
+                    LAST_SKIP_BITS(re, &s->gb, 1);
                 }
             } else {
                 /* first escape */
-                code = get_vlc2(&s->gb, rl->vlc.table, TEX_VLC_BITS, 2);
-                if (code < 0 || code >= rl->n)
-                    return DECODING_AC_LOST;
-                run = rl->table_run[code];
-                level = rl->table_level[code];
-                last = code >= rl->last;
-                level += rl->max_level[last][run];
-                if (get_bits1(&s->gb))
-                    level = -level;
+#if MIN_CACHE_BITS < 19
+                LAST_SKIP_BITS(re, &s->gb, 1);
+                UPDATE_CACHE(re, &s->gb);
+#else
+                SKIP_BITS(re, &s->gb, 1);
+#endif
+                GET_RL_VLC(level, run, re, &s->gb, rl_vlc, TEX_VLC_BITS, 2);
+                i+= run;
+                level = level + rl->max_level[run>>7][(run-1)&63] * qmul;//FIXME opt indexing
+                level = (level ^ SHOW_SBITS(re, &s->gb, 1)) - SHOW_SBITS(re, &s->gb, 1);
+                LAST_SKIP_BITS(re, &s->gb, 1);
             }
         } else {
-            run = rl->table_run[code];
-            level = rl->table_level[code];
-            last = code >= rl->last;
-            if (get_bits1(&s->gb))
-                level = -level;
+            i+= run;
+            level = (level ^ SHOW_SBITS(re, &s->gb, 1)) - SHOW_SBITS(re, &s->gb, 1);
+            LAST_SKIP_BITS(re, &s->gb, 1);
         }
-        i += run;
-        if (i >= 64)
-            return DECODING_AC_LOST;
-	j = scan_table[i];
-        block[j] = level;
-        i++;
-        if (last)
+        if (i > 62){
+            i-= 192;
+            if(i&(~63)){
+                fprintf(stderr, "ac-tex damaged at %d %d\n", s->mb_x, s->mb_y);
+                return DECODING_AC_LOST;
+            }
+
+            block[scan_table[i]] = level;
             break;
+        }
+
+        block[scan_table[i]] = level;
     }
+    CLOSE_READER(re, &s->gb);
+  }
  not_coded:
     if (s->mb_intra) {
         mpeg4_pred_ac(s, block, n, dc_pred_dir);
         if (s->ac_pred) {
-            i = 64; /* XXX: not optimal */
+            i = 63; /* XXX: not optimal */
         }
     }
-    s->block_last_index[n] = i - 1;
+    s->block_last_index[n] = i;
     return 0;
 }
 

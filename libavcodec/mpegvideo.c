@@ -1318,7 +1318,7 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
             if(s->hurry_up>1) goto the_end;
 
             /* add dct residue */
-            if(!s->mpeg2 && (s->encoding || (!s->h263_msmpeg4))){
+            if(s->encoding || !(s->mpeg2 || s->h263_msmpeg4 || s->codec_id==CODEC_ID_MPEG4)){
                 add_dequant_dct(s, block[0], 0, dest_y, dct_linesize);
                 add_dequant_dct(s, block[1], 1, dest_y + 8, dct_linesize);
                 add_dequant_dct(s, block[2], 2, dest_y + dct_offset, dct_linesize);
