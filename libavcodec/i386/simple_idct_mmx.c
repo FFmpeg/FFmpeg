@@ -1301,10 +1301,10 @@ void ff_simple_idct_mmx(int16_t *block)
 void ff_simple_idct_put_mmx(UINT8 *dest, int line_size, DCTELEM *block)
 {
     idct(block);
-    put_pixels_clamped(block, dest, line_size);
+    put_pixels_clamped_mmx(block, dest, line_size);
 }
 void ff_simple_idct_add_mmx(UINT8 *dest, int line_size, DCTELEM *block)
 {
     idct(block);
-    add_pixels_clamped(block, dest, line_size);
+    add_pixels_clamped_mmx(block, dest, line_size);
 }
