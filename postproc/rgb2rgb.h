@@ -17,6 +17,7 @@ extern void rgb32to15(const uint8_t *src,uint8_t *dst,unsigned src_size);
 extern void rgb24to16(const uint8_t *src,uint8_t *dst,unsigned src_size);
 extern void rgb24to15(const uint8_t *src,uint8_t *dst,unsigned src_size);
 extern void rgb32tobgr32(const uint8_t *src, uint8_t *dst, unsigned src_size);
+extern void rgb24tobgr24(const uint8_t *src, uint8_t *dst, unsigned src_size);
 
 
 extern void palette8torgb32(const uint8_t *src, uint8_t *dst, unsigned num_pixels, const uint8_t *palette);

@@ -24,6 +24,9 @@ static const uint64_t mask32b  __attribute__((aligned(8))) = 0x000000FF000000FFU
 static const uint64_t mask32g  __attribute__((aligned(8))) = 0x0000FF000000FF00ULL;
 static const uint64_t mask32r  __attribute__((aligned(8))) = 0x00FF000000FF0000ULL;
 static const uint64_t mask32   __attribute__((aligned(8))) = 0x00FFFFFF00FFFFFFULL;
+static const uint64_t mask24b  __attribute__((aligned(8))) = 0x00FF0000FF0000FFULL;
+static const uint64_t mask24g  __attribute__((aligned(8))) = 0xFF0000FF0000FF00ULL;
+static const uint64_t mask24r  __attribute__((aligned(8))) = 0x0000FF0000FF0000ULL;
 static const uint64_t mask24l  __attribute__((aligned(8))) = 0x0000000000FFFFFFULL;
 static const uint64_t mask24h  __attribute__((aligned(8))) = 0x0000FFFFFF000000ULL;
 static const uint64_t mask24hh  __attribute__((aligned(8))) = 0xffff000000000000ULL;
@@ -313,6 +316,23 @@ void rgb32tobgr32(const uint8_t *src, uint8_t *dst, unsigned int src_size)
 		rgb32tobgr32_C(src, dst, src_size);
 #else
 		rgb32tobgr32_C(src, dst, src_size);
+#endif
+}
+
+void rgb24tobgr24(const uint8_t *src, uint8_t *dst, unsigned int src_size)
+{
+#ifdef CAN_COMPILE_X86_ASM
+	// ordered per speed fasterst first
+	if(gCpuCaps.hasMMX2)
+		rgb24tobgr24_MMX2(src, dst, src_size);
+	else if(gCpuCaps.has3DNow)
+		rgb24tobgr24_3DNow(src, dst, src_size);
+	else if(gCpuCaps.hasMMX)
+		rgb24tobgr24_MMX(src, dst, src_size);
+	else
+		rgb24tobgr24_C(src, dst, src_size);
+#else
+		rgb24tobgr24_C(src, dst, src_size);
 #endif
 }
 
