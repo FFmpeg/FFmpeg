@@ -2289,6 +2289,24 @@ static void OPNAME ## qpel16_mc22_ ## MMX(uint8_t *dst, uint8_t *src, int stride
     OPNAME ## mpeg4_qpel16_v_lowpass_ ## MMX(dst, halfH, stride, 16);\
 }
 
+#define QPEL_H264V(A,B,C,D,E,F,OP)\
+        "movd (%0), "#F"		\n\t"\
+        "movq "#C", %%mm6		\n\t"\
+        "paddw "#D", %%mm6		\n\t"\
+        "psllw $2, %%mm6		\n\t"\
+        "psubw "#B", %%mm6		\n\t"\
+        "psubw "#E", %%mm6		\n\t"\
+        "pmullw %4, %%mm6		\n\t"\
+        "addl %2, %0			\n\t"\
+        "punpcklbw %%mm7, "#F"		\n\t"\
+        "paddw %5, "#A"			\n\t"\
+        "paddw "#F", "#A"		\n\t"\
+        "paddw "#A", %%mm6		\n\t"\
+        "psraw $5, %%mm6		\n\t"\
+        "packuswb %%mm6, %%mm6		\n\t"\
+        OP(%%mm6, (%1), A, d)\
+        "addl %3, %1			\n\t"     
+        
 #define QPEL_H264(OPNAME, OP, MMX)\
 static void OPNAME ## h264_qpel4_h_lowpass_ ## MMX(uint8_t *dst, uint8_t *src, int dstStride, int srcStride){\
     int h=4;\
@@ -2487,92 +2505,43 @@ static void OPNAME ## h264_qpel8_h_lowpass_ ## MMX(uint8_t *dst, uint8_t *src, i
 }\
 \
 static void OPNAME ## h264_qpel8_v_lowpass_ ## MMX(uint8_t *dst, uint8_t *src, int dstStride, int srcStride){\
-    uint64_t temp[(8+5)*2];\
-    uint64_t *temp_ptr= temp;\
-    int h= 4;\
-\
+    int h= 2;\
     src -= 2*srcStride;\
     \
-    asm volatile(\
+    while(h--){\
+      asm volatile(\
         "pxor %%mm7, %%mm7		\n\t"\
-        "1:				\n\t"\
-        "movq (%0), %%mm0		\n\t"\
-        "movq %%mm0, %%mm1		\n\t"\
-        "addl %3, %0			\n\t"\
+        "movd (%0), %%mm0		\n\t"\
+        "addl %2, %0			\n\t"\
+        "movd (%0), %%mm1		\n\t"\
+        "addl %2, %0			\n\t"\
+        "movd (%0), %%mm2		\n\t"\
+        "addl %2, %0			\n\t"\
+        "movd (%0), %%mm3		\n\t"\
+        "addl %2, %0			\n\t"\
+        "movd (%0), %%mm4		\n\t"\
+        "addl %2, %0			\n\t"\
         "punpcklbw %%mm7, %%mm0		\n\t"\
-        "movq %%mm0, (%1)		\n\t"\
-        "punpckhbw %%mm7, %%mm1		\n\t"\
-        "movq (%0), %%mm0		\n\t"\
-        "movq %%mm1, 8(%1)		\n\t"\
-        "movq %%mm0, %%mm1		\n\t"\
-        "addl %3, %0			\n\t"\
-        "punpcklbw %%mm7, %%mm0		\n\t"\
-        "movq %%mm0, 16(%1)		\n\t"\
-        "punpckhbw %%mm7, %%mm1		\n\t"\
-        "movq (%0), %%mm0		\n\t"\
-        "movq %%mm1, 24(%1)		\n\t"\
-        "movq %%mm0, %%mm1		\n\t"\
-        "addl %3, %0			\n\t"\
-        "punpcklbw %%mm7, %%mm0		\n\t"\
-        "movq %%mm0, 32(%1)		\n\t"\
-        "punpckhbw %%mm7, %%mm1		\n\t"\
-        "movq %%mm1, 40(%1)		\n\t"\
-        "addl $48, %1			\n\t"\
-        "decl %2			\n\t"\
-        " jnz 1b			\n\t"\
-        "movq (%0), %%mm0		\n\t"\
-        "movq %%mm0, %%mm1		\n\t"\
-        "punpcklbw %%mm7, %%mm0		\n\t"\
-        "movq %%mm0, (%1)		\n\t"\
-        "punpckhbw %%mm7, %%mm1		\n\t"\
-        "movq %%mm1, 8(%1)		\n\t"\
-        : "+a" (src), "+c" (temp_ptr), "+d"(h)\
-        : "S" (srcStride)\
-        : "memory"\
-    );\
-    \
-    temp_ptr= temp;\
-    h= 8;\
-    \
-    asm volatile(\
-        "movq %4, %%mm6		\n\t"\
-        "movq %5, %%mm7		\n\t"\
-        "1:				\n\t"\
-        "movq 2*16+0(%0), %%mm0		\n\t"\
-        "movq 2*16+8(%0), %%mm1		\n\t"\
-        "paddw 3*16+0(%0), %%mm0	\n\t"\
-        "paddw 3*16+8(%0), %%mm1	\n\t"\
-        "psllw $2, %%mm0		\n\t"\
-        "psllw $2, %%mm1		\n\t"\
-        "movq 1*16+0(%0), %%mm2		\n\t"\
-        "movq 1*16+8(%0), %%mm3		\n\t"\
-        "paddw 4*16+0(%0), %%mm2	\n\t"\
-        "paddw 4*16+8(%0), %%mm3	\n\t"\
-        "psubw %%mm2, %%mm0		\n\t"\
-        "psubw %%mm3, %%mm1		\n\t"\
-        "pmullw %%mm6, %%mm0		\n\t"\
-        "pmullw %%mm6, %%mm1		\n\t"\
-        "movq 0*16+0(%0), %%mm2		\n\t"\
-        "movq 0*16+8(%0), %%mm3		\n\t"\
-        "paddw 5*16+0(%0), %%mm2	\n\t"\
-        "paddw 5*16+8(%0), %%mm3	\n\t"\
-        "paddw %%mm2, %%mm0		\n\t"\
-        "paddw %%mm3, %%mm1		\n\t"\
-        "paddw %%mm7, %%mm0		\n\t"\
-        "paddw %%mm7, %%mm1		\n\t"\
-        "psraw $5, %%mm0		\n\t"\
-        "psraw $5, %%mm1		\n\t"\
-        "packuswb %%mm1, %%mm0		\n\t"\
-        OP(%%mm0, (%1),%%mm5, q)\
-        "addl %3, %1			\n\t"\
-        "addl $16, %0			\n\t"\
-        "decl %2			\n\t"\
-        " jnz 1b			\n\t"\
+        "punpcklbw %%mm7, %%mm1		\n\t"\
+        "punpcklbw %%mm7, %%mm2		\n\t"\
+        "punpcklbw %%mm7, %%mm3		\n\t"\
+        "punpcklbw %%mm7, %%mm4		\n\t"\
+        QPEL_H264V(%%mm0, %%mm1, %%mm2, %%mm3, %%mm4, %%mm5, OP)\
+        QPEL_H264V(%%mm1, %%mm2, %%mm3, %%mm4, %%mm5, %%mm0, OP)\
+        QPEL_H264V(%%mm2, %%mm3, %%mm4, %%mm5, %%mm0, %%mm1, OP)\
+        QPEL_H264V(%%mm3, %%mm4, %%mm5, %%mm0, %%mm1, %%mm2, OP)\
+        QPEL_H264V(%%mm4, %%mm5, %%mm0, %%mm1, %%mm2, %%mm3, OP)\
+        QPEL_H264V(%%mm5, %%mm0, %%mm1, %%mm2, %%mm3, %%mm4, OP)\
+        QPEL_H264V(%%mm0, %%mm1, %%mm2, %%mm3, %%mm4, %%mm5, OP)\
+        QPEL_H264V(%%mm1, %%mm2, %%mm3, %%mm4, %%mm5, %%mm0, OP)\
          \
-        : "+a"(temp_ptr), "+c"(dst), "+d"(h)\
-        : "S"(dstStride), "m"(ff_pw_5), "m"(ff_pw_16)\
+        : "+a"(src), "+c"(dst)\
+        : "S"(srcStride), "D"(dstStride), "m"(ff_pw_5), "m"(ff_pw_16)\
         : "memory"\
-   );\
+     );\
+     src += 4-13*srcStride;\
+     dst +=  4-8*dstStride;\
+   }\
 }\
 static void OPNAME ## h264_qpel8_hv_lowpass_ ## MMX(uint8_t *dst, int16_t *tmp, uint8_t *src, int dstStride, int tmpStride, int srcStride){\
     OPNAME ## h264_qpel4_hv_lowpass_ ## MMX(dst  , tmp  , src  , dstStride, tmpStride, srcStride);\
