@@ -426,6 +426,9 @@ if test $targetos = Darwin; then
 	    *2.95*) 
 		CFLAGS="-no-cpp-precomp -pipe -fomit-frame-pointer"
 		;;
+	    *3.1*)
+		CFLAGS="-no-cpp-precomp -pipe -fomit-frame-pointer -force_cpusubtype_ALL -Wno-sign-compare"
+		;;
 	    *3.3*)
 		CFLAGS="-no-cpp-precomp -pipe -fomit-frame-pointer -mdynamic-no-pic -force_cpusubtype_ALL -Wno-sign-compare"
 		;;
