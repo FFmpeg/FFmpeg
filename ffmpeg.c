@@ -3746,6 +3746,7 @@ static void opt_target(const char *arg)
 
         opt_frame_size(norm ? "352x240" : "352x288");
         opt_frame_rate(frame_rates[norm]);
+        opt_gop_size(norm ? "18" : "15");
 
         video_bit_rate = 1150000;
         video_rc_max_rate = 1150000;
