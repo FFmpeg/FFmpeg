@@ -43,6 +43,9 @@ typedef struct SwsContext{
 	int lumXInc, chrXInc;
 	int lumYInc, chrYInc;
 	int dstFormat, srcFormat;
+	int chrSrcHSubSample, chrSrcVSubSample;
+	int chrIntHSubSample, chrIntVSubSample;
+	int chrDstHSubSample, chrDstVSubSample;
 
 	int16_t **lumPixBuf;
 	int16_t **chrPixBuf;

@@ -2669,6 +2669,19 @@ static void RENAME(swScale)(SwsContext *c, uint8_t* srcParam[], int srcStridePar
 		dstStride[1]= dstStrideParam[1];
 		dstStride[2]= dstStrideParam[2];
 	}
+	
+//	printf("swscale %X %X %X -> %X %X %X\n", (int)src[0], (int)src[1], (int)src[2],
+//		(int)dst[0], (int)dst[1], (int)dst[2]);
+
+#if 0 //self test FIXME move to a vfilter or something
+{
+static volatile int i=0;
+i++;
+if(srcFormat==IMGFMT_YV12 && i==1 && srcSliceH>= c->srcH)
+	selfTest(src, srcStride, c->srcW, c->srcH);
+i--;
+}
+#endif
 
 //printf("sws Strides:%d %d %d -> %d %d %d\n", srcStride[0],srcStride[1],srcStride[2],
 //dstStride[0],dstStride[1],dstStride[2]);

@@ -266,6 +266,124 @@ void in_asm_used_var_warning_killer()
 }
 #endif
 
+static int testFormat[]={
+IMGFMT_YV12,
+//IMGFMT_IYUV,
+IMGFMT_I420,
+IMGFMT_BGR15,
+IMGFMT_BGR16,
+IMGFMT_BGR24,
+IMGFMT_BGR32,
+//IMGFMT_Y8,
+IMGFMT_Y800,
+//IMGFMT_YUY2,
+0
+};
+
+static uint64_t getSSD(uint8_t *src1, uint8_t *src2, int stride1, int stride2, int w, int h){
+	int x,y;
+	uint64_t ssd=0;
+
+	for(y=0; y<h; y++){
+		for(x=0; x<w; x++){
+			int d= src1[x + y*stride1] - src2[x + y*stride2];
+			ssd+= d*d;
+		}
+	}
+	return ssd;
+}
+
+// test by ref -> src -> dst -> out & compare out against ref
+// ref & out are YV12
+static void doTest(uint8_t *ref[3], int refStride[3], int w, int h, int srcFormat, int dstFormat, 
+                   int srcW, int srcH, int dstW, int dstH, int flags){
+	uint8_t *src[3];
+	uint8_t *dst[3];
+	uint8_t *out[3];
+	int srcStride[3], dstStride[3];
+	int i;
+	uint64_t ssdY, ssdU, ssdV;
+	SwsContext *srcContext, *dstContext, *outContext;
+	
+	for(i=0; i<3; i++){
+		srcStride[i]= srcW*4;
+		dstStride[i]= dstW*4;
+		src[i]= malloc(srcStride[i]*srcH);
+		dst[i]= malloc(dstStride[i]*dstH);
+		out[i]= malloc(refStride[i]*h);
+	}
+
+	srcContext= getSwsContext(w, h, IMGFMT_YV12, srcW, srcH, srcFormat, flags, NULL, NULL);
+	dstContext= getSwsContext(srcW, srcH, srcFormat, dstW, dstH, dstFormat, flags, NULL, NULL);
+	outContext= getSwsContext(dstW, dstH, dstFormat, w, h, IMGFMT_YV12, flags, NULL, NULL);
+	if(srcContext==NULL ||dstContext==NULL ||outContext==NULL){
+		printf("Failed allocating swsContext\n");
+		goto end;
+	}
+//	printf("test %X %X %X -> %X %X %X\n", (int)ref[0], (int)ref[1], (int)ref[2],
+//		(int)src[0], (int)src[1], (int)src[2]);
+
+	srcContext->swScale(srcContext, ref, refStride, 0, h   , src, srcStride);
+	dstContext->swScale(dstContext, src, srcStride, 0, srcH, dst, dstStride);
+	outContext->swScale(outContext, dst, dstStride, 0, dstH, out, refStride);
+	     
+	ssdY= getSSD(ref[0], out[0], refStride[0], refStride[0], w, h);
+	ssdU= getSSD(ref[1], out[1], refStride[1], refStride[1], (w+1)>>1, (h+1)>>1);
+	ssdV= getSSD(ref[2], out[2], refStride[2], refStride[2], (w+1)>>1, (h+1)>>1);
+	
+	if(isGray(srcFormat) || isGray(dstFormat)) ssdU=ssdV=0; //FIXME check that output is really gray
+	
+	ssdY/= w*h;
+	ssdU/= w*h/4;
+	ssdV/= w*h/4;
+	
+	if(ssdY>10 || ssdU>10 || ssdV>10){
+		printf(" %s %dx%d -> %s %4dx%4d flags=%2d SSD=%5lld,%5lld,%5lld\n", 
+			vo_format_name(srcFormat), srcW, srcH, 
+			vo_format_name(dstFormat), dstW, dstH,
+			flags,
+			ssdY, ssdU, ssdV);
+	}
+
+	end:
+	
+	freeSwsContext(srcContext);
+	freeSwsContext(dstContext);
+	freeSwsContext(outContext);
+
+	for(i=0; i<3; i++){
+		free(src[i]);
+		free(dst[i]);
+		free(out[i]);
+	}
+}
+
+static void selfTest(uint8_t *src[3], int stride[3], int w, int h){
+	int srcFormat, dstFormat, srcFormatIndex, dstFormatIndex;
+	int srcW, srcH, dstW, dstH;
+	int flags;
+
+	for(srcFormatIndex=0; ;srcFormatIndex++){
+		srcFormat= testFormat[srcFormatIndex];
+		if(!srcFormat) break;
+		for(dstFormatIndex=0; ;dstFormatIndex++){
+			dstFormat= testFormat[dstFormatIndex];
+			if(!dstFormat) break;
+			if(!isSupportedOut(dstFormat)) continue;
+
+			srcW= w+w/3;
+			srcH= h+h/3;
+			for(dstW=w; dstW<w*2; dstW+= dstW/3){
+				for(dstH=h; dstH<h*2; dstH+= dstH/3){
+					for(flags=1; flags<33; flags*=2)
+						doTest(src, stride, w, h, srcFormat, dstFormat,
+							srcW, srcH, dstW, dstH, flags);
+				}
+			}
+		}
+	}
+}
+
 static inline void yuv2yuvXinC(int16_t *lumFilter, int16_t **lumSrc, int lumFilterSize,
 				    int16_t *chrFilter, int16_t **chrSrc, int chrFilterSize,
 				    uint8_t *dest, uint8_t *uDest, uint8_t *vDest, int dstW)
@@ -1540,21 +1658,21 @@ static void bgr24toyv12Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], i
 /**
  * bring pointers in YUV order instead of YVU
  */
-static inline void orderYUV(SwsContext *c, uint8_t * sortedP[], int sortedStride[], uint8_t * p[], int stride[]){
-	if(c->srcFormat == IMGFMT_YV12){
+static inline void orderYUV(int format, uint8_t * sortedP[], int sortedStride[], uint8_t * p[], int stride[]){
+	if(format == IMGFMT_YV12){
 		sortedP[0]= p[0];
 		sortedP[1]= p[1];
 		sortedP[2]= p[2];
-		sortedStride[0]= sortedStride[0];
-		sortedStride[1]= sortedStride[1];
-		sortedStride[2]= sortedStride[2];
+		sortedStride[0]= stride[0];
+		sortedStride[1]= stride[1];
+		sortedStride[2]= stride[2];
 	}
-	else if(isPacked(c->srcFormat) || isGray(c->srcFormat))
+	else if(isPacked(format) || isGray(format))
 	{
 		sortedP[0]= p[0];
 		sortedP[1]= 
 		sortedP[2]= NULL;
-		sortedStride[0]= sortedStride[0];
+		sortedStride[0]= stride[0];
 		sortedStride[1]= 
 		sortedStride[2]= 0;
 	}
@@ -1563,9 +1681,9 @@ static inline void orderYUV(SwsContext *c, uint8_t * sortedP[], int sortedStride
 		sortedP[0]= p[0];
 		sortedP[1]= p[2];
 		sortedP[2]= p[1];
-		sortedStride[0]= sortedStride[0];
-		sortedStride[1]= sortedStride[2];
-		sortedStride[2]= sortedStride[1];
+		sortedStride[0]= stride[0];
+		sortedStride[1]= stride[2];
+		sortedStride[2]= stride[1];
 	}
 }
 
@@ -1578,8 +1696,8 @@ static void simpleCopy(SwsContext *c, uint8_t* srcParam[], int srcStrideParam[],
 	uint8_t *src[3];
 	uint8_t *dst[3];
 
-	orderYUV(c, src, srcStride, srcParam, srcStrideParam);
-	orderYUV(c, dst, dstStride, dstParam, dstStrideParam);
+	orderYUV(c->srcFormat, src, srcStride, srcParam, srcStrideParam);
+	orderYUV(c->dstFormat, dst, dstStride, dstParam, dstStrideParam);
 
 	if(isPacked(c->srcFormat))
 	{
@@ -1647,6 +1765,28 @@ static int remove_dup_fourcc(int fourcc)
 	    case IMGFMT_IYUV: return IMGFMT_I420;
 	    case IMGFMT_Y8  : return IMGFMT_Y800;
 	    default: return fourcc;
+	}
+}
+
+static void getSubSampleFactors(int *h, int *v, int format){
+	switch(format){
+	case IMGFMT_YUY2:
+		*h=1;
+		*v=0;
+		break;
+	case IMGFMT_YV12:
+	case IMGFMT_I420:
+		*h=1;
+		*v=1;
+		break;
+	case IMGFMT_YVU9:
+		*h=2;
+		*v=2;
+		break;
+	default:
+		*h=0;
+		*v=0;
+		break;
 	}
 }
 
@@ -1925,29 +2065,39 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 	else
 		c->canMMX2BeUsed=0;
 
+	getSubSampleFactors(&c->chrSrcHSubSample, &c->chrSrcVSubSample, srcFormat);
+	getSubSampleFactors(&c->chrDstHSubSample, &c->chrDstVSubSample, dstFormat);
 
-	/* dont use full vertical UV input/internaly if the source doesnt even have it */
-	if(isHalfChrV(srcFormat)) c->flags= flags= flags&(~SWS_FULL_CHR_V);
-	/* dont use full horizontal UV input if the source doesnt even have it */
-	if(isHalfChrH(srcFormat)) c->flags= flags= flags&(~SWS_FULL_CHR_H_INP);
-	/* dont use full horizontal UV internally if the destination doesnt even have it */
-	if(isHalfChrH(dstFormat)) c->flags= flags= flags&(~SWS_FULL_CHR_H_INT);
+	// reuse chroma for 2 pixles rgb/bgr unless user wants full chroma interpolation
+	if((isBGR(dstFormat) || isRGB(dstFormat)) && !(flags&SWS_FULL_CHR_H_INT)) c->chrDstHSubSample=1;
 
-	if(flags&SWS_FULL_CHR_H_INP)	c->chrSrcW= srcW;
-	else				c->chrSrcW= (srcW+1)>>1;
+	// drop eery 2. pixel for chroma calculation unless user wants full chroma
+	if((isBGR(srcFormat) || isRGB(srcFormat) || srcFormat==IMGFMT_YUY2) && !(flags&SWS_FULL_CHR_V)) 
+		c->chrSrcVSubSample=1;
 
-	if(flags&SWS_FULL_CHR_H_INT)	c->chrDstW= dstW;
-	else				c->chrDstW= (dstW+1)>>1;
+	// drop eery 2. pixel for chroma calculation unless user wants full chroma
+	if((isBGR(srcFormat) || isRGB(srcFormat)) && !(flags&SWS_FULL_CHR_H_INP)) 
+		c->chrSrcHSubSample=1;
 
-	if(flags&SWS_FULL_CHR_V)	c->chrSrcH= srcH;
-	else				c->chrSrcH= (srcH+1)>>1;
-
-	if(isHalfChrV(dstFormat))	c->chrDstH= (dstH+1)>>1;
-	else				c->chrDstH= dstH;
-
+	c->chrIntHSubSample= c->chrDstHSubSample;
+	c->chrIntVSubSample= c->chrSrcVSubSample;
+	
+	// note the -((-x)>>y) is so that we allways round toward +inf
+	c->chrSrcW= -((-srcW) >> c->chrSrcHSubSample);
+	c->chrSrcH= -((-srcH) >> c->chrSrcVSubSample);
+	c->chrDstW= -((-dstW) >> c->chrDstHSubSample);
+	c->chrDstH= -((-dstH) >> c->chrDstVSubSample);
+/*	printf("%d %d %d %d / %d %d %d %d //\n", 
+	c->chrSrcW,
+c->chrSrcH,
+c->chrDstW,
+c->chrDstH,
+srcW,
+srcH,
+dstW,
+dstH);*/
 	c->chrXInc= ((c->chrSrcW<<16) + (c->chrDstW>>1))/c->chrDstW;
 	c->chrYInc= ((c->chrSrcH<<16) + (c->chrDstH>>1))/c->chrDstH;
-
 
 	// match pixel 0 of the src to pixel 0 of dst and match pixel n-2 of src to pixel n-2 of dst
 	// but only for the FAST_BILINEAR mode otherwise do correct scaling
