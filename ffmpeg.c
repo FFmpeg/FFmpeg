@@ -121,6 +121,7 @@ static int use_aiv = 0;
 static int use_umv = 0;
 static int use_alt_scan = 0;
 static int use_trell = 0;
+static int use_scan_offset = 0;
 static int do_deinterlace = 0;
 static int do_interlace_dct = 0;
 static int do_interlace_me = 0;
@@ -2399,6 +2400,9 @@ static void opt_output_file(const char *filename)
            	if (use_trell) {
                     video_enc->flags |= CODEC_FLAG_TRELLIS_QUANT;
                 }
+           	if (use_scan_offset) {
+                    video_enc->flags |= CODEC_FLAG_SVCD_SCAN_OFFSET;
+                }
                 if (b_frames) {
                     video_enc->max_b_frames = b_frames;
                     video_enc->b_frame_strategy = 0;
@@ -2906,6 +2910,7 @@ static void opt_target(const char *arg)
         video_rc_max_rate = 2516000;
         video_rc_min_rate = 0; //1145000;
         video_rc_buffer_size = 224*1024*8;
+        use_scan_offset = 1;
 
         audio_bit_rate = 224000;
         audio_sample_rate = 44100;
@@ -3034,6 +3039,7 @@ const OptionDef options[] = {
     { "umv", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_umv}, "enable Unlimited Motion Vector (h263+)" },
     { "alt", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_alt_scan}, "enable alternate scantable (mpeg2)" },
     { "trell", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_trell}, "enable trellis quantization" },
+    { "scan_offset", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_scan_offset}, "enable SVCD Scan Offset placeholder" },
     { "intra_matrix", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_intra_matrix}, "specify intra matrix coeffs", "matrix" },
     { "inter_matrix", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_inter_matrix}, "specify inter matrix coeffs", "matrix" },
     { "top", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_top_field_first}, "top=1/bottom=0/auto=-1 field first", "" },

@@ -473,6 +473,14 @@ void mpeg1_encode_picture_header(MpegEncContext *s, int picture_number)
         put_bits(&s->pb, 1, s->progressive_frame);
         put_bits(&s->pb, 1, 0); //composite_display_flag
     }
+    if(s->flags & CODEC_FLAG_SVCD_SCAN_OFFSET){
+        int i;
+
+        put_header(s, USER_START_CODE);
+        for(i=0; i<sizeof(svcd_scan_offset_placeholder); i++){
+            put_bits(&s->pb, 8, svcd_scan_offset_placeholder[i]);
+        }
+    }
     
     s->mb_y=0;
     ff_mpeg1_encode_slice_header(s);
@@ -1809,7 +1817,7 @@ static int mpeg1_decode_picture(AVCodecContext *avctx,
 static void mpeg_decode_sequence_extension(MpegEncContext *s)
 {
     int horiz_size_ext, vert_size_ext;
-    int bit_rate_ext, vbv_buf_ext;
+    int bit_rate_ext;
     int frame_rate_ext_n, frame_rate_ext_d;
     int level, profile;
 
