@@ -21,7 +21,7 @@ test-server: vsynth1/0.pgm asynth1.sw
 	@$(SRC_PATH)/tests/server-regression.sh $(SERVER_REFFILE) $(SRC_PATH)/tests/test.conf
 
 # fast regression tests for all codecs
-codectest mpeg4 mpeg ac3: vsynth1/0.pgm vsynth2/0.pgm asynth1.sw tiny_psnr
+codectest mpeg4 mpeg ac3 snow: vsynth1/0.pgm vsynth2/0.pgm asynth1.sw tiny_psnr
 	@$(SRC_PATH)/tests/regression.sh $@ $(REFFILE1) vsynth1
 	@$(SRC_PATH)/tests/regression.sh $@ $(REFFILE2) vsynth2
 
