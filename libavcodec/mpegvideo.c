@@ -1491,10 +1491,12 @@ void ff_print_debug_info(MpegEncContext *s, AVFrame *pict){
         int mb_y;
         uint8_t *ptr;
         int i;
+        int h_chroma_shift, v_chroma_shift;
         s->low_delay=0; //needed to see the vectors without trashing the buffers
 
+        avcodec_get_chroma_sub_sample(s->avctx->pix_fmt, &h_chroma_shift, &v_chroma_shift);
         for(i=0; i<3; i++){
-            memcpy(s->visualization_buffer[i], pict->data[i], (i==0) ? pict->linesize[i]*s->height:pict->linesize[i]*s->height/2);
+            memcpy(s->visualization_buffer[i], pict->data[i], (i==0) ? pict->linesize[i]*s->height:pict->linesize[i]*s->height >> v_chroma_shift);
             pict->data[i]= s->visualization_buffer[i];
         }
         pict->type= FF_BUFFER_TYPE_COPY;
