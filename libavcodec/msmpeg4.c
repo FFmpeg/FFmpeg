@@ -1170,6 +1170,8 @@ int ff_msmpeg4_decode_init(MpegEncContext *s)
         break;
     }
     
+    s->slice_height= s->mb_height; //to avoid 1/0 if the first frame isnt a keyframe
+    
     return 0;
 }
 
