@@ -71,7 +71,7 @@ int put_wav_header(ByteIOContext *pb, AVCodecContext *enc)
     }
     
     if (enc->codec_id == CODEC_ID_MP2 || enc->codec_id == CODEC_ID_MP3) {
-        blkalign = 1;
+        blkalign = enc->frame_size; //this is wrong, but seems many demuxers dont work if this is set correctly
         //blkalign = 144 * enc->bit_rate/enc->sample_rate;
     } else if (enc->block_align != 0) { /* specified by the codec */
         blkalign = enc->block_align;

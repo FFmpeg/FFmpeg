@@ -1,8 +1,8 @@
 ffmpeg regression test
-580b53ca26eb2184b928967b8e7d18a7 *./data/b-libav.avi
+8517e7c83227074b8d632477fda310d5 *./data/b-libav.avi
 342282 ./data/b-libav.avi
 ./data/b-libav.avi CRC=001a3415
-80f85b6dce1da8310a49bb4607a34f06 *./data/b-libav.asf
+c83444a0e8ef47b6af1d868d1bb21696 *./data/b-libav.asf
 342967 ./data/b-libav.asf
 ./data/b-libav.asf CRC=750f18c7
 1cbf838e659d7fc3d3e33f4187b91f6c *./data/b-libav.rm
