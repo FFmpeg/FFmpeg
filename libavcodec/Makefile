@@ -1,6 +1,6 @@
 include ../config.mak
 
-CFLAGS= $(OPTFLAGS) -Wall -g -DHAVE_CONFIG_H
+CFLAGS= $(OPTFLAGS) -Wall -g -DHAVE_AV_CONFIG_H
 LDFLAGS= -g
 
 OBJS= common.o utils.o mpegvideo.o h263.o jrevdct.o jfdctfst.o \
@@ -27,7 +27,7 @@ endif
 ifeq ($(TARGET_MMX),yes)
 ASM_OBJS += i386/fdct_mmx.o i386/sad_mmx.o
 OBJS += i386/fdctdata.o i386/cputest.o \
-	i386/dsputil_mmx.o
+	i386/dsputil_mmx.o i386/mpegvideo_mmx.o
 endif
 
 SRCS = $(OBJS:.o=.c) $(ASM_OBJS:.o=.s)
