@@ -119,6 +119,7 @@ OBJS += i386/fdct_mmx.o i386/cputest.o \
 	i386/simple_idct_mmx.o i386/fft_sse.o i386/vp3dsp_mmx.o
 ifdef TARGET_BUILTIN_VECTOR
 i386/fft_sse.o: CFLAGS+= -msse
+depend: CFLAGS+= -msse
 endif
 endif
 

@@ -147,7 +147,7 @@ ifeq ($(BUILD_VHOOK),yes)
 endif
 
 .depend: $(SRCS)
-	$(CC) -MM $(CFLAGS) $^ 1>.depend
+	$(CC) -MM $(CFLAGS) $(SDL_CFLAGS) $^ 1>.depend
 
 .libs: lib
 	@test -f .libs || touch .libs
