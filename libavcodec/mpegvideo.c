@@ -2023,17 +2023,7 @@ static void select_input_picture(MpegEncContext *s){
                 }
             }
 
-            if(s->input_picture[0]->pict_type){
-                /* user selected pict_type */
-                for(b_frames=0; b_frames<s->max_b_frames+1; b_frames++){
-                    if(s->input_picture[b_frames]->pict_type!=B_TYPE) break;
-                }
-            
-                if(b_frames > s->max_b_frames){
-                    av_log(s->avctx, AV_LOG_ERROR, "warning, too many bframes in a row\n");
-                    b_frames = s->max_b_frames;
-                }
-            }else if(s->avctx->b_frame_strategy==0){
+            if(s->avctx->b_frame_strategy==0){
                 b_frames= s->max_b_frames;
                 while(b_frames && !s->input_picture[b_frames]) b_frames--;
             }else if(s->avctx->b_frame_strategy==1){
@@ -2063,6 +2053,16 @@ static void select_input_picture(MpegEncContext *s){
 //static int b_count=0;
 //b_count+= b_frames;
 //av_log(s->avctx, AV_LOG_DEBUG, "b_frames: %d\n", b_count);
+
+            for(i= b_frames - 1; i>=0; i--){
+                int type= s->input_picture[i]->pict_type;
+                if(type && type != B_TYPE)
+                    b_frames= i;
+            }
+            if(s->input_picture[b_frames]->pict_type == B_TYPE && b_frames == s->max_b_frames){
+                av_log(s->avctx, AV_LOG_ERROR, "warning, too many bframes in a row\n");
+            }
+
             if(s->picture_in_gop_number + b_frames >= s->gop_size){
                 if(s->flags & CODEC_FLAG_CLOSED_GOP)
                     b_frames=0;
