@@ -1,6 +1,6 @@
 #
 # Main ffmpeg Makefile
-# (c) 2000, 2001, 2002 Fabrice Bellard
+# (c) 2000-2004 Fabrice Bellard
 #
 include config.mak
 
@@ -16,6 +16,7 @@ endif
 
 PROG=ffmpeg$(EXESUF)
 PROGTEST=output_example$(EXESUF)
+QTFASTSTART=qt-faststart$(EXESUF)
 
 ifeq ($(CONFIG_FFSERVER),yes)
 PROG+=ffserver$(EXESUF)
@@ -70,7 +71,7 @@ OBJS = ffmpeg.o ffserver.o cmdutils.o ffplay.o
 SRCS = $(OBJS:.o=.c) $(ASM_OBJS:.o=.s)
 FFLIBS = -L./libavformat -lavformat -L./libavcodec -lavcodec
 
-all: lib $(PROG) $(PROGTEST) $(VHOOK)
+all: lib $(PROG) $(PROGTEST) $(VHOOK) $(QTFASTSTART)
 
 lib:
 	$(MAKE) -C libavcodec all
@@ -95,6 +96,9 @@ ffplay$(EXESUF): ffplay_g$(EXESUF)
 
 output_example$(EXESUF): output_example.o .libs
 	$(CC) $(LDFLAGS) -o $@ output_example.o $(FFLIBS) $(EXTRALIBS)
+
+qt-faststart$(EXESUF): qt-faststart.c
+	$(CC) qt-faststart.c -o qt-faststart$(EXESUF)
 
 ffplay.o: ffplay.c
 	$(CC) $(CFLAGS) $(SDL_CFLAGS) -c -o $@ $< 
