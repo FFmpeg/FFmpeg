@@ -1939,53 +1939,56 @@ int MPV_encode_picture(AVCodecContext *avctx,
         for(i=0; i<4; i++){
             avctx->error[i] += s->current_picture_ptr->error[i];
         }
-    }
 
-    flush_put_bits(&s->pb);
-    s->frame_bits  = (pbBufPtr(&s->pb) - s->pb.buf) * 8;
-
-    stuffing_count= ff_vbv_update(s, s->frame_bits);
-    if(stuffing_count){
-        switch(s->codec_id){
-        case CODEC_ID_MPEG1VIDEO:
-        case CODEC_ID_MPEG2VIDEO:
-            while(stuffing_count--){
-                put_bits(&s->pb, 8, 0);
-            }
-        break;
-        case CODEC_ID_MPEG4:
-            put_bits(&s->pb, 16, 0);
-            put_bits(&s->pb, 16, 0x1C3);
-            stuffing_count -= 4;
-            while(stuffing_count--){
-                put_bits(&s->pb, 8, 0xFF);
-            }
-        break;
-        default:
-            av_log(s->avctx, AV_LOG_ERROR, "vbv buffer overflow\n");
-        }
         flush_put_bits(&s->pb);
         s->frame_bits  = (pbBufPtr(&s->pb) - s->pb.buf) * 8;
+
+        stuffing_count= ff_vbv_update(s, s->frame_bits);
+        if(stuffing_count){
+            switch(s->codec_id){
+            case CODEC_ID_MPEG1VIDEO:
+            case CODEC_ID_MPEG2VIDEO:
+                while(stuffing_count--){
+                    put_bits(&s->pb, 8, 0);
+                }
+            break;
+            case CODEC_ID_MPEG4:
+                put_bits(&s->pb, 16, 0);
+                put_bits(&s->pb, 16, 0x1C3);
+                stuffing_count -= 4;
+                while(stuffing_count--){
+                    put_bits(&s->pb, 8, 0xFF);
+                }
+            break;
+            default:
+                av_log(s->avctx, AV_LOG_ERROR, "vbv buffer overflow\n");
+            }
+            flush_put_bits(&s->pb);
+            s->frame_bits  = (pbBufPtr(&s->pb) - s->pb.buf) * 8;
+        }
+
+        /* update mpeg1/2 vbv_delay for CBR */    
+        if(s->avctx->rc_max_rate && s->avctx->rc_min_rate == s->avctx->rc_max_rate){
+            int vbv_delay;
+
+            assert(s->repeat_first_field==0);
+            
+            vbv_delay= lrintf(90000 * s->rc_context.buffer_index / s->avctx->rc_max_rate);
+            assert(vbv_delay < 0xFFFF);
+
+            s->vbv_delay_ptr[0] &= 0xF8;
+            s->vbv_delay_ptr[0] |= vbv_delay>>13;
+            s->vbv_delay_ptr[1]  = vbv_delay>>5;
+            s->vbv_delay_ptr[2] &= 0x07;
+            s->vbv_delay_ptr[2] |= vbv_delay<<3;
+        }
+        s->total_bits += s->frame_bits;
+        avctx->frame_bits  = s->frame_bits;
+    }else{
+        assert((pbBufPtr(&s->pb) == s->pb.buf));
+        s->frame_bits=0;
     }
-
-    /* update mpeg1/2 vbv_delay for CBR */    
-    if(s->avctx->rc_max_rate && s->avctx->rc_min_rate == s->avctx->rc_max_rate){
-        int vbv_delay;
-
-        assert(s->repeat_first_field==0);
-        
-        vbv_delay= lrintf(90000 * s->rc_context.buffer_index / s->avctx->rc_max_rate);
-        assert(vbv_delay < 0xFFFF);
-
-        s->vbv_delay_ptr[0] &= 0xF8;
-        s->vbv_delay_ptr[0] |= vbv_delay>>13;
-        s->vbv_delay_ptr[1]  = vbv_delay>>5;
-        s->vbv_delay_ptr[2] &= 0x07;
-        s->vbv_delay_ptr[2] |= vbv_delay<<3;
-    }
-
-    s->total_bits += s->frame_bits;
-    avctx->frame_bits  = s->frame_bits;
+    assert((s->frame_bits&7)==0);
     
     return s->frame_bits/8;
 }
