@@ -22,7 +22,11 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#ifndef __BEOS__
 #include <errno.h>
+#else
+#include "berrno.h"
+#endif
 #include <math.h>
 
 #ifndef ENODATA

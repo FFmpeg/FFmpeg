@@ -52,6 +52,7 @@ extralibs="-lm"
 simpleidct="yes"
 bigendian="no"
 mpegaudio_hp="yes"
+SHFLAGS=-shared
 
 # OS specific
 targetos=`uname -s`
@@ -59,7 +60,10 @@ case $targetos in
 BeOS)
 prefix="/boot/home/config"
 # helps building libavcodec
-CFLAGS="-O3 -DPIC"
+CFLAGS="-O3 -DPIC -fomit-frame-pointer"
+SHFLAGS=-nostart
+# disable linux things
+audio_oss="no"
 v4l="no"
 # no need for libm, but the inet stuff
 # Check for BONE
@@ -262,6 +266,7 @@ echo "AR=$ar" >> config.mak
 echo "STRIP=$strip" >> config.mak
 echo "OPTFLAGS=$CFLAGS" >> config.mak
 echo "LDFLAGS=$LDFLAGS" >> config.mak
+echo "SHFLAGS=$SHFLAGS" >> config.mak
 if test "$cpu" = "x86" ; then
   echo "TARGET_ARCH_X86=yes" >> config.mak
   echo "#define ARCH_X86 1" >> $TMPH

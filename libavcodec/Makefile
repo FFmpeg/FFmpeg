@@ -85,7 +85,7 @@ $(LIB): $(OBJS)
 	$(AR) rc $@ $(OBJS)
 
 $(SLIB): $(OBJS)
-	$(CC) -shared -o $@ $(OBJS) $(EXTRALIBS)
+	$(CC) $(SHFLAGS) -o $@ $(OBJS) $(EXTRALIBS)
 
 dsputil.o: dsputil.c dsputil.h
 
