@@ -89,8 +89,8 @@ stddev:  8.87 PSNR:29.15 bytes:7602176
 stddev:  0.00 PSNR:99.99 bytes:7602176
 4fcfeba819177ad440bd16b0f095ba45 *./data/a-rv10.rm
  671633 ./data/a-rv10.rm
-9092124e1694baf96c1abc4fed26e072 *./data/out.yuv
-stddev: 14.17 PSNR:25.09 bytes:7602176
+bb31a08b20cfabc5332d11938e2f9352 *./data/out.yuv
+stddev:  8.09 PSNR:29.96 bytes:7602176
 89ad858355f9b0a92d024c5ba6e369dd *./data/a-asv1.avi
 2292416 ./data/a-asv1.avi
 b3e1696d73071c8f7f0ff4e10c1677ca *./data/out.yuv

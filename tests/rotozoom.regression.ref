@@ -89,8 +89,8 @@ dde5895817ad9d219f79a52d0bdfb001 *./data/out.yuv
 stddev:  0.00 PSNR:99.99 bytes:7602176
 53a73b773cf790c9379c875ffa73bce5 *./data/a-rv10.rm
  157035 ./data/a-rv10.rm
-fea195d6d9b57893dc68d1b36229a299 *./data/out.yuv
-stddev: 13.52 PSNR:25.50 bytes:7602176
+dd1d762e16189ebc4e35edba973d409a *./data/out.yuv
+stddev:  5.52 PSNR:33.27 bytes:7602176
 9c4f5a4613a5595c90c6b99bf143b6a9 *./data/a-asv1.avi
 1433376 ./data/a-asv1.avi
 4251d7f496bbf362251b065e840a1b73 *./data/out.yuv

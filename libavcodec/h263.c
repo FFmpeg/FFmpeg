@@ -4433,6 +4433,8 @@ static int h263_decode_block(MpegEncContext * s, DCTELEM * block,
             }
           } else {
                 level = get_bits(&s->gb, 8);
+                if (level == 255)
+                    level = 128;
           }
         }else{
             level = get_bits(&s->gb, 8);
