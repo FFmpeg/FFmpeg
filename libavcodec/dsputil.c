@@ -1322,7 +1322,7 @@ void ff_block_permute(INT16 *block, UINT8 *permutation, const UINT8 *scantable, 
     INT16 temp[64];
     
     if(last<=0) return;
-    if(permutation[1]==1) return; //FIXME its ok but not clean and might fail for some perms
+    //if(permutation[1]==1) return; //FIXME its ok but not clean and might fail for some perms
 
     for(i=0; i<=last; i++){
         const int j= scantable[i];
