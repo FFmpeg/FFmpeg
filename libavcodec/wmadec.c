@@ -34,7 +34,7 @@
 
 #define NB_LSP_COEFS 10
 
-/* XXX: is it a suitable value ? */
+/* XXX: is it a suitable [18~value ? */
 #define MAX_CODED_SUPERFRAME_SIZE 4096
 
 #define MAX_CHANNELS 2
@@ -122,7 +122,7 @@ static void wma_lsp_to_curve_init(WMADecodeContext *s, int frame_len);
 #include "wmadata.h"
 
 #ifdef DEBUG_TRACE
-
+#include <stdarg.h>
 int frame_count;
 
 static FILE *flog;
