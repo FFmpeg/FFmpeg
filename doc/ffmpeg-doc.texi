@@ -402,8 +402,8 @@ solutions.
 @tab MP3 encoding is supported thru the external library LAME
 @item AC3                    @tab  IX  @tab  X
 @tab liba52 is used internally for decoding.
-@item Vorbis                 @tab  X   @tab
-@tab encoding is supported thru the external library libvorbis.
+@item Vorbis                 @tab  X   @tab  X
+@tab supported thru the external library libvorbis.
 @item WMA V1/V2              @tab      @tab X
 
 @end multitable
@@ -447,7 +447,7 @@ that ffmpeg negates when returning. This ends up turning errors into
 valid results, then crashes.
 (To be fixed)
 
-@chapter Developpers Guide
+@chapter Developers Guide
 
 @section API
 @itemize
