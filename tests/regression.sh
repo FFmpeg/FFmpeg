@@ -48,6 +48,7 @@ else
     do_ac3=y
     do_rc=y
     do_mpeg4adv=y
+    do_mpeg4nr=y
     do_mpeg1b=y
     do_asv1=y
     do_asv2=y
@@ -251,6 +252,16 @@ file=${outfile}error-mpeg4-adv.avi
 do_ffmpeg $file -y -qscale 7 -4mv -mbd 2 -part -ps 250 -error 10 -aic -f pgmyuv -i $raw_src -an -vcodec mpeg4 $file
 
 # damaged mpeg4 decoding
+do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst 
+fi
+
+###################################
+if [ -n "$do_mpeg4nr" ] ; then
+# noise reduction
+file=${outfile}error-mpeg4-nr.avi
+do_ffmpeg $file -y -qscale 8 -4mv -mbd 2 -nr 200 -f pgmyuv -i $raw_src -an -vcodec mpeg4 $file
+
+# mpeg4 decoding
 do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst 
 fi
 
