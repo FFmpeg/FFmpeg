@@ -42,7 +42,7 @@ static struct video_capability  video_cap;
 static UINT8 *video_buf;
 static struct video_mbuf gb_buffers;
 static struct video_mmap gb_buf;
-static struct video_audio audio;
+static struct video_audio audio, audio_saved;
 static int gb_frame = 0;
 
 static int v4l_init(URLContext *h)
@@ -73,6 +73,7 @@ static int v4l_init(URLContext *h)
     
     /* unmute audio */
     ioctl(video_fd, VIDIOCGAUDIO, &audio);
+    memcpy(&audio_saved, &audio, sizeof(audio));
     audio.flags &= ~VIDEO_AUDIO_MUTE;
     ioctl(video_fd, VIDIOCSAUDIO, &audio);
 
@@ -132,7 +133,7 @@ static int v4l_init(URLContext *h)
         s->time_frame = gettime();
         
         /* start to grab the first frame */
-        gb_buf.frame = 1 - gb_frame;
+        gb_buf.frame = (gb_frame + 1) % gb_buffers.frames;
         gb_buf.height = height;
         gb_buf.width = width;
         gb_buf.format = VIDEO_PALETTE_YUV420P;
@@ -196,7 +197,7 @@ static int v4l_mm_read_picture(URLContext *h, UINT8 *buf)
             perror("VIDIOCMCAPTURE");
 	return -EIO;
     }
-    gb_frame = 1 - gb_frame;
+    gb_frame = (gb_frame + 1) % gb_buffers.frames;
 
     while (ioctl(s->fd, VIDIOCSYNC, &gb_frame) < 0 &&
            (errno == EAGAIN || errno == EINTR));
@@ -300,6 +301,9 @@ static int video_open(URLContext *h, const char *uri, int flags)
 static int video_close(URLContext *h)
 {
     VideoData *s = h->priv_data;
+
+    /* restore audio settings */
+    ioctl(s->fd, VIDIOCSAUDIO, &audio_saved);
 
     close(s->fd);
     free(s);
