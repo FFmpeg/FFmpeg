@@ -55,7 +55,7 @@ typedef struct {
                              computed (VBR case) */
     int64_t last_scr; /* current system clock */
 
-    double vcd_padding_bitrate;
+    double vcd_padding_bitrate; //FIXME floats
     int64_t vcd_padding_bytes_written;
 
 } MpegMuxContext;
@@ -530,33 +530,18 @@ static int get_packet_payload_size(AVFormatContext *ctx, int stream_index,
 }
 
 /* Write an MPEG padding packet header. */
-static int put_padding_header(AVFormatContext *ctx,uint8_t* buf, int full_padding_size)
-{
-    MpegMuxContext *s = ctx->priv_data;
-    int size = full_padding_size - 6;    /* subtract header length */
-
-    buf[0] = (uint8_t)(PADDING_STREAM >> 24);
-    buf[1] = (uint8_t)(PADDING_STREAM >> 16);
-    buf[2] = (uint8_t)(PADDING_STREAM >> 8);
-    buf[3] = (uint8_t)(PADDING_STREAM);
-    buf[4] = (uint8_t)(size >> 8);
-    buf[5] = (uint8_t)(size & 0xff);
-
-    if (!s->is_mpeg2) {
-        buf[6] = 0x0f;
-        return 7;
-    } else
-        return 6;
-}
-
 static void put_padding_packet(AVFormatContext *ctx, ByteIOContext *pb,int packet_bytes)
 {
-    uint8_t buffer[7];
-    int size, i;
+    MpegMuxContext *s = ctx->priv_data;
+    int i;
     
-    size = put_padding_header(ctx,buffer, packet_bytes);
-    put_buffer(pb, buffer, size);
-    packet_bytes -= size;
+    put_be32(pb, PADDING_STREAM);
+    put_be16(pb, packet_bytes - 6);
+    if (!s->is_mpeg2) {
+        put_byte(pb, 0x0f);
+        packet_bytes -= 7;
+    } else
+        packet_bytes -= 6;
 
     for(i=0;i<packet_bytes;i++)
         put_byte(pb, 0xff);
