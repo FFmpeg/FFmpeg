@@ -16,3 +16,17 @@ Fabrice's TODO list: (in approximate decreasing priority order)
 - add new MPEG4-AAC audio decoder (both integer-only and float version)
 - fix telecine and frame rate conversion
 
+Michael's TODO list: (unordered) (if anyone wanna help with sth, just ask)
+-------------------
+- finish implementation of WMV2 j-picture
+- H264 codec (after its a standart or at least more stable)
+- slower / better zonal ME
+- better & cleaner b frame ME
+- per MB ratecontrol (so VCD and such do work better)
+- more optimizations
+- more compare functions for ME
+- simper rate control
+- qpel encoding
+- split h263.c
+- mpeg2 encoding (after the ME impovements)
+- mpeg1 b frames (after the ME impovements)
