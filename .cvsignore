@@ -1,5 +1,6 @@
 config.h
 config.mak
+config.log
 *ffmpeg
 ffmpeg_g
 ffserver
