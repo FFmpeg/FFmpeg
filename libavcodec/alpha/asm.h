@@ -52,7 +52,7 @@ struct unaligned_long { uint64_t l; } __attribute__((packed));
 #define ldq_u(p)     (*(const uint64_t *) (((uint64_t) (p)) & ~7ul))
 #define uldq(a)	     (((const struct unaligned_long *) (a))->l)
 
-#if __GNUC__ >= 3 && __GNUC_MINOR__ >= 2
+#if __GNUC__ >= 3 && __GNUC_MINOR__ >= 3
 #define cmpbge	__builtin_alpha_cmpbge
 /* Avoid warnings.  */
 #define extql(a, b)	__builtin_alpha_extql(a, (uint64_t) (b))
