@@ -6,9 +6,6 @@
 #ifndef VC9DATA_H
 #define VC9DATA_H
 
-/* Set a method for reading VLC in NORM6 bitplane decoding */
-#define VLC_NORM6_METH0D    1
-
 /* bfraction is fractional, we scale to the GCD 3*5*7*8 = 840 */
 const int16_t vc9_bfraction_lut[23] = {
   420 /*1/2*/, 280 /*1/3*/, 560 /*2/3*/, 210 /*1/4*/,
@@ -74,7 +71,6 @@ static const uint8_t vc9_norm2_bits[4] = {
   1, 3, 3, 2
 };
 
-#if VLC_NORM6_METH0D == 1
 static const uint16_t vc9_norm6_codes[64] = {
 0x001, 0x002, 0x003, 0x000, 0x004, 0x001, 0x002, 0x047, 0x005, 0x003, 0x004, 0x04B, 0x005, 0x04D, 0x04E, 0x30E, 
 0x006, 0x006, 0x007, 0x053, 0x008, 0x055, 0x056, 0x30D, 0x009, 0x059, 0x05A, 0x30C, 0x05C, 0x30B, 0x30A, 0x037, 
@@ -155,39 +151,6 @@ static const uint8_t vc9_norm6_spec[64][5] = {
 {62,  3, 5,  2, 4 },
 {63,  3, 5,  1, 1 },
 };
-#endif
-
-//Mechanical way, handling sparse/incomplete tables
-#if VLC_NORM6_METH0D == 2
-//(2,5) is VLC+FLC, (3,5) double VLC
-static const uint8_t vc9_norm6_first[24][2] = {
-    {  1, 1}, {  2, 4}, {  3, 4}, {  0, 8},
-    {  4, 4}, {  1, 8}, {  2, 8}, {  5, 4},
-    {  3, 8}, {  4, 8}, {  5, 8}, {  6, 4},
-    {  6, 8}, {  7, 8}, {  8, 8}, {  9, 8},
-    {  7, 4}, { 10, 8}, { 11, 8}, { 12, 8},
-    { 13, 8}, { 14, 8}, {  2, 5}, {  3, 5}
-};
-
-static const uint8_t vc9_norm6_second[22][2] = {
-    { 14, 8}, { 13, 8}, { 12, 8}, { 11, 8},
-    { 10, 8}, {  7, 4}, {  9, 8}, {  8, 8},
-    {  7, 8}, {  6, 8}, {  6, 4}, {  5, 8},
-    {  4, 8}, {  3, 8}, {  5, 4}, {  2, 8},
-    {  1, 8}, {  4, 4}, {  0, 8}, {  3, 4},
-    {  2, 4}, {  1, 1}
-};
-static const uint8_t vc9_norm6_flc_val[20] = {
-    7, 11, 13, 14, 19, 21, 22, 25,
-   26, 28, 35, 37, 38, 41, 42, 44,
-   49, 50, 52, 56
-};
-static const uint8_t vc9_norm6_second_val[22] = {
-   15, 23, 27, 29, 30, 31, 39, 43,
-   45, 46, 47, 51, 53, 54, 55, 57,
-   58, 59, 60, 61, 62, 63
-};
-#endif
 
 /* 4MV Block pattern VLC tables */
 static const uint8_t vc9_4mv_block_pattern_codes[4][16] = {
@@ -329,6 +292,29 @@ static const uint8_t vc9_ttmb_bits[3][16] = {
   }
 };  
 
+/* TTBLK (Transform Type per Block) tables */
+static const uint8_t vc9_ttblk_codes[3][8] = {
+  {  0,  1,  3,  5, 16, 17, 18, 19},
+  {  3,  0,  1,  2,  3,  5,  8,  9},
+  {  1,  0,  1,  4,  6,  7, 10, 11}
+};
+static const uint8_t vc9_ttblk_bits[3][8] = {
+  {  2,  2,  2,  3,  5,  5,  5,  5},
+  {  2,  3,  3,  3,  3,  3,  4,  4},
+  {  2,  3,  3,  3,  3,  3,  4,  4}
+};
+
+/* SUBBLKPAT tables, p93-94, reordered */
+static const uint8_t vc9_subblkpat_codes[3][15] = {
+  { 14, 12,  7, 11,  9, 26,  2, 10, 27,  8,  0,  6,  1, 15,  1},
+  { 14,  0,  8, 15, 10,  4, 23, 13,  5,  9, 25,  3, 24, 22,  1},
+  {  5,  6,  2,  2,  8,  0, 28,  3,  1,  3, 29,  1, 19, 18, 15}
+};
+static const uint8_t vc9_subblkpat_bits[3][15] = {
+  {  5,  5,  5,  5,  5,  6,  4,  5,  6,  5,  4,  5,  4,  5,  1},
+  {  4,  3,  4,  4,  4,  5,  5,  4,  5,  4,  5,  4,  5,  5,  2},
+  {  3,  3,  4,  3,  4,  5,  5,  3,  5,  4,  5,  4,  5,  5,  4}
+};
 
 /* MV differential tables, p265 */
 static const uint16_t vc9_mv_diff_codes[4][73] = {

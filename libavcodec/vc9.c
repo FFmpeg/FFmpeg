@@ -24,7 +24,7 @@
  * @file vc9.c
  * VC-9 and WMV3 decoder
  *
- * TODO: Norm-6 bitplane imode, most AP stuff, optimize, all of MB layer :)
+ * TODO: most AP stuff, optimize, most of MB layer, transform, filtering and motion compensation, etc
  * TODO: use MPV_ !!
  */
 #include "common.h"
@@ -68,6 +68,7 @@ static const uint16_t table_mb_intra[64][2];
 //@{
 #define PROFILE_SIMPLE   0
 #define PROFILE_MAIN     1
+#define PROFILE_COMPLEX  2 ///< TODO: WMV9 specific
 #define PROFILE_ADVANCED 3
 //@}
 
@@ -158,15 +159,8 @@ static VLC vc9_bfraction_vlc;
 static VLC vc9_imode_vlc;
 #define VC9_NORM2_VLC_BITS 3
 static VLC vc9_norm2_vlc;
-#if VLC_NORM6_METH0D == 1
 #define VC9_NORM6_VLC_BITS 9
 static VLC vc9_norm6_vlc;
-#endif
-#if VLC_NORM6_METH0D == 2
-#define VC9_NORM6_FIRST_BITS 8
-#define VC9_NORM6_SECOND_BITS 8
-static VLC vc9_norm6_first_vlc, vc9_norm6_second_vlc;
-#endif
 /* Could be optimized, one table only needs 8 bits */
 #define VC9_TTMB_VLC_BITS 9 //12
 static VLC vc9_ttmb_vlc[3];
@@ -176,6 +170,10 @@ static VLC vc9_mv_diff_vlc[4];
 static VLC vc9_cbpcy_p_vlc[4];
 #define VC9_4MV_BLOCK_PATTERN_VLC_BITS 6
 static VLC vc9_4mv_block_pattern_vlc[4];
+#define VC9_TTBLK_VLC_BITS 5
+static VLC vc9_ttblk_vlc[3];
+#define VC9_SUBBLKPAT_VLC_BITS 6
+static VLC vc9_subblkpat_vlc[3];
 //@}
 
 /** Bitplane struct
@@ -249,6 +247,8 @@ typedef struct VC9Context{
     //@{
     uint8_t mv_mode;      ///< MV coding monde
     uint8_t mv_mode2;     ///< Secondary MV coding mode (B frames)
+    int k_x;              ///< Number of bits for MVs (depends on MV range)
+    int k_y;              ///< Number of bits for MVs (depends on MV range)
     uint8_t pq, altpq;    ///< Current/alternate frame quantizer scale
     /** pquant parameters */
     //@{
@@ -258,10 +258,10 @@ typedef struct VC9Context{
     uint8_t dqbilevel;
     //@}
     int ac_table_level;   ///< Index for AC tables from ACFRM element
-    VLC *luma_dc_vlc;     ///< Pointer to current luma DC VLC table
-    VLC *chroma_dc_vlc;   ///< Pointer to current luma AC VLC table
     int ttfrm;            ///< Transform type info present at frame level
-    uint8_t ttmbf;        ///< Transform type
+    uint8_t ttmbf;        ///< Transform type flag
+    int ttmb;             ///< Transform type
+    uint8_t ttblk4x4;     ///< Value of ttblk which indicates a 4x4 transform
     /** Luma compensation parameters */
     //@{
     uint8_t lumscale;
@@ -280,8 +280,8 @@ typedef struct VC9Context{
     uint8_t mvrange;
     uint8_t pquantizer;           ///< Uniform (over sequence) quantizer in use
     uint8_t *previous_line_cbpcy; ///< To use for predicted CBPCY
-    VLC *cbpcy_vlc;               ///< Current CBPCY VLC table
-    VLC *ttmb_vlc;                ///< Current MB Transform Type VLC table
+    VLC *cbpcy_vlc;               ///< CBPCY VLC table
+    int tt_index;                 ///< Index for Transform Type tables
     BitPlane mv_type_mb_plane;    ///< bitplane for mv_type == (4MV)
     BitPlane skip_mb_plane;       ///< bitplane for skipped MBs
     BitPlane direct_mb_plane;     ///< bitplane for "direct" MBs
@@ -379,8 +379,7 @@ static int vc9_init_common(VC9Context *v)
 #endif
 
     /* VLC tables */
-#if VLC_NORM6_METH0D == 1
-#  if 0 // spec -> actual tables converter
+#if 0 // spec -> actual tables converter
     for(i=0; i<64; i++){
         int code= (vc9_norm6_spec[i][1] << vc9_norm6_spec[i][4]) + vc9_norm6_spec[i][3];
         av_log(NULL, AV_LOG_DEBUG, "0x%03X, ", code);
@@ -391,7 +390,6 @@ static int vc9_init_common(VC9Context *v)
         av_log(NULL, AV_LOG_DEBUG, "%2d, ", code);
         if(i%16==15) av_log(NULL, AV_LOG_DEBUG, "\n");
     }
-#  endif
 #endif
     if(!done)
     {
@@ -402,19 +400,9 @@ static int vc9_init_common(VC9Context *v)
         INIT_VLC(&vc9_norm2_vlc, VC9_NORM2_VLC_BITS, 4,
                  vc9_norm2_bits, 1, 1,
                  vc9_norm2_codes, 1, 1, 1);
-#if VLC_NORM6_METH0D == 1
         INIT_VLC(&vc9_norm6_vlc, VC9_NORM6_VLC_BITS, 64,
                  vc9_norm6_bits, 1, 1,
                  vc9_norm6_codes, 2, 2, 1);
-#endif
-#if VLC_NORM6_METH0D == 2
-        INIT_VLC(&vc9_norm6_first_vlc, VC9_NORM6_FIRST_BITS, 24,
-                 &vc9_norm6_first[0][1], 1, 1,
-                 &vc9_norm6_first[0][0], 1, 1, 1);
-        INIT_VLC(&vc9_norm6_second_vlc, VC9_NORM6_SECOND_BITS, 22,
-                 &vc9_norm6_second[0][1], 1, 1,
-                 &vc9_norm6_second[0][0], 1, 1, 1);
-#endif
         INIT_VLC(&vc9_imode_vlc, VC9_IMODE_VLC_BITS, 7,
                  vc9_imode_bits, 1, 1,
                  vc9_imode_codes, 1, 1, 1);
@@ -423,6 +411,12 @@ static int vc9_init_common(VC9Context *v)
             INIT_VLC(&vc9_ttmb_vlc[i], VC9_TTMB_VLC_BITS, 16,
                      vc9_ttmb_bits[i], 1, 1,
                      vc9_ttmb_codes[i], 2, 2, 1);
+            INIT_VLC(&vc9_ttblk_vlc[i], VC9_TTBLK_VLC_BITS, 8,
+                     vc9_ttblk_bits[i], 1, 1,
+                     vc9_ttblk_codes[i], 1, 1, 1);
+            INIT_VLC(&vc9_subblkpat_vlc[i], VC9_SUBBLKPAT_VLC_BITS, 15,
+                     vc9_subblkpat_bits[i], 1, 1,
+                     vc9_subblkpat_codes[i], 1, 1, 1);
         }
         for(i=0; i<4; i++)
         {
@@ -666,11 +660,13 @@ static int decode_sequence_header(AVCodecContext *avctx, GetBitContext *gb)
 {
     VC9Context *v = avctx->priv_data;
 
+    av_log(avctx, AV_LOG_DEBUG, "Header: %0X\n", show_bits(gb, 32));
     v->profile = get_bits(gb, 2);
-    av_log(avctx, AV_LOG_DEBUG, "Profile: %i\n", v->profile);
+    if (v->profile == 2)
+        av_log(avctx, AV_LOG_ERROR, "Profile 2 is reserved\n");
 
 #if HAS_ADVANCED_PROFILE
-    if (v->profile > PROFILE_MAIN)
+    if (v->profile == PROFILE_ADVANCED)
     {
         v->level = get_bits(gb, 3);
         v->chromaformat = get_bits(gb, 2);
@@ -689,7 +685,7 @@ static int decode_sequence_header(AVCodecContext *avctx, GetBitContext *gb)
         {
             av_log(avctx, AV_LOG_ERROR,
                    "Reserved RES_SM=%i is forbidden\n", v->res_sm);
-            //return -1;
+            return -1;
         }
     }
 
@@ -700,7 +696,7 @@ static int decode_sequence_header(AVCodecContext *avctx, GetBitContext *gb)
     v->s.loop_filter = get_bits(gb, 1); //common
 
 #if HAS_ADVANCED_PROFILE
-    if (v->profile <= PROFILE_MAIN)
+    if (v->profile < PROFILE_ADVANCED)
 #endif
     {
         v->res_x8 = get_bits(gb, 1); //reserved
@@ -738,7 +734,7 @@ static int decode_sequence_header(AVCodecContext *avctx, GetBitContext *gb)
     v->vstransform =  get_bits(gb, 1); //common
     
 #if HAS_ADVANCED_PROFILE
-    if (v->profile <= PROFILE_MAIN)
+    if (v->profile < PROFILE_ADVANCED)
 #endif
     {
         v->res_transtab = get_bits(gb, 1);
@@ -753,7 +749,7 @@ static int decode_sequence_header(AVCodecContext *avctx, GetBitContext *gb)
     v->overlap = get_bits(gb, 1); //common
 
 #if HAS_ADVANCED_PROFILE
-    if (v->profile <= PROFILE_MAIN)
+    if (v->profile < PROFILE_ADVANCED)
 #endif
     {
         v->s.resync_marker = get_bits(gb, 1);
@@ -764,7 +760,7 @@ static int decode_sequence_header(AVCodecContext *avctx, GetBitContext *gb)
     v->quantizer_mode = get_bits(gb, 2); //common
 
 #if HAS_ADVANCED_PROFILE
-    if (v->profile <= PROFILE_MAIN)
+    if (v->profile < PROFILE_ADVANCED)
 #endif
     {
         v->finterpflag = get_bits(gb, 1); //common
@@ -893,9 +889,8 @@ void free_bitplane(BitPlane *bp)
  * @param[in] height Height of this buffer
  * @param[in] stride of this buffer
  */
-static void decode_rowskip(uint8_t* plane, int width, int height, int stride, VC9Context *v){
+static void decode_rowskip(uint8_t* plane, int width, int height, int stride, GetBitContext *gb){
     int x, y;
-    GetBitContext *gb = &v->s.gb;
 
     for (y=0; y<height; y++){
         if (!get_bits(gb, 1)) //rowskip
@@ -914,9 +909,8 @@ static void decode_rowskip(uint8_t* plane, int width, int height, int stride, VC
  * @param[in] stride of this buffer
  * @fixme FIXME: Optimize
  */
-static void decode_colskip(uint8_t* plane, int width, int height, int stride, VC9Context *v){
+static void decode_colskip(uint8_t* plane, int width, int height, int stride, GetBitContext *gb){
     int x, y;
-    GetBitContext *gb = &v->s.gb;
 
     for (x=0; x<width; x++){
         if (!get_bits(gb, 1)) //colskip
@@ -940,7 +934,7 @@ static int bitplane_decoding(BitPlane *bp, VC9Context *v)
 {
     GetBitContext *gb = &v->s.gb;
 
-    int imode, x, y, code, use_vertical_tile, tile_w, tile_h;
+    int imode, x, y, code, use_vertical_tile, tile_w, tile_h, offset;
     uint8_t invert, *planep = bp->data;
 
     invert = get_bits(gb, 1);
@@ -955,12 +949,35 @@ static int bitplane_decoding(BitPlane *bp, VC9Context *v)
         return invert;
     case IMODE_DIFF2:
     case IMODE_NORM2:
-        if ((bp->height*bp->width) & 1) *(++planep) = get_bits(gb, 1);
-        for(x=0; x<(bp->height*bp->width)>>1; x++){
-            code = get_vlc2(gb, vc9_norm2_vlc.table, VC9_NORM2_VLC_BITS, 2);
-            *(++planep) = code&1; //lsb => left
-            *(++planep) = (code>>1)&1; //msb => right
-            //FIXME width->stride
+        if ((bp->height*bp->width) & 1)
+        {
+            *(++planep) = get_bits(gb, 1);
+            offset = x = 1;
+        }
+        else offset = x = 0;
+        
+        for (y=0; y<bp->height; y++)
+        {
+            for(; x<bp->width; x+=2)
+            {
+                code = get_vlc2(gb, vc9_norm2_vlc.table, VC9_NORM2_VLC_BITS, 2);
+                *(++planep) = code&1; //lsb => left
+                *(++planep) = (code>>1)&1; //msb => right
+            }
+            planep += bp->stride-bp->width;
+            if ((bp->width-offset)&1) //Odd number previously processed
+            {
+                code = get_vlc2(gb, vc9_norm2_vlc.table, VC9_NORM2_VLC_BITS, 2);
+                *planep = code&1;
+                planep += bp->stride-bp->width;
+                *planep = (code>>1)&1; //msb => right
+                offset = x = 1;
+            }
+            else
+            {
+                offset = x = 0;
+                planep += bp->stride-bp->width;
+            }
         }
         break;
     case IMODE_DIFF6:
@@ -971,30 +988,11 @@ static int bitplane_decoding(BitPlane *bp, VC9Context *v)
 
         for(y=  bp->height%tile_h; y< bp->height; y+=tile_h){
             for(x=  bp->width%tile_w; x< bp->width; x+=tile_w){
-#if VLC_NORM6_METH0D == 1
                 code = get_vlc2(gb, vc9_norm6_vlc.table, VC9_NORM6_VLC_BITS, 2);
                 if(code<0){
                     av_log(v->s.avctx, AV_LOG_DEBUG, "invalid NORM-6 VLC\n");
                     return -1;
                 }
-#endif
-#if VLC_NORM6_METH0D == 2 //Failure
-                code = get_vlc2(gb, vc9_norm6_first_vlc.table, VC9_NORM6_FIRST_BITS, 2);
-                if (code == 22)
-                {
-                    code = vc9_norm6_flc_val[get_bits(gb, 5)];
-                }
-                else if (code == 23)
-                {
-#  if TRACE
-                    code = get_vlc2(gb, vc9_norm6_second_vlc.table, VC9_NORM6_SECOND_BITS, 2);
-                    assert(code>-1 && code<22);
-                    code = vc9_norm6_second_val[code];
-#  else
-                    code = vc9_norm6_second_val[get_vlc2(gb, vc9_norm6_second_vlc.table, VC9_NORM6_SECOND_BITS, 2)];
-#  endif
-                }
-#endif //VLC_NORM6_METH0D == 2
                 //FIXME following is a pure guess and probably wrong
                 //FIXME A bitplane (0 | !0), so could the shifts be avoided ?
                 planep[x     + 0*bp->stride]= (code>>0)&1;
@@ -1015,15 +1013,15 @@ static int bitplane_decoding(BitPlane *bp, VC9Context *v)
         }
 
         x=  bp->width % tile_w;
-        decode_colskip(bp->data  ,             x, bp->height         , bp->stride, v);
-        decode_rowskip(bp->data+x, bp->width - x, bp->height % tile_h, bp->stride, v);
+        decode_colskip(bp->data  ,             x, bp->height         , bp->stride, &v->s.gb);
+        decode_rowskip(bp->data+x, bp->width - x, bp->height % tile_h, bp->stride, &v->s.gb);
 
         break;
     case IMODE_ROWSKIP:
-        decode_rowskip(bp->data, bp->width, bp->height, bp->stride, v);
+        decode_rowskip(bp->data, bp->width, bp->height, bp->stride, &v->s.gb);
         break;
-    case IMODE_COLSKIP: //Teh ugly
-        decode_colskip(bp->data, bp->width, bp->height, bp->stride, v);
+    case IMODE_COLSKIP:
+        decode_colskip(bp->data, bp->width, bp->height, bp->stride, &v->s.gb);
         break;
     default: break;
     }
@@ -1148,7 +1146,7 @@ static int decode_b_picture_primary_header(VC9Context *v)
     if (v->quantizer_mode == QUANT_FRAME_EXPLICIT)
         v->pquantizer = get_bits(gb, 1);
 
-    if (v->profile > PROFILE_MAIN)
+    if (v->profile == PROFILE_ADVANCED)
     {
         if (v->postprocflag) v->postproc = get_bits(gb, 2);
         if (v->extended_mv == 1 && v->s.pict_type != BI_TYPE)
@@ -1263,7 +1261,7 @@ static int decode_i_picture_primary_header(VC9Context *v)
 
     /* Prolog common to all frametypes should be done in caller */
     //BF = Buffer Fullness
-    if (v->profile <= PROFILE_MAIN && get_bits(gb, 7))
+    if (v->profile < PROFILE_ADVANCED && get_bits(gb, 7))
     {
         av_log(v->s.avctx, AV_LOG_DEBUG, "I BufferFullness not 0\n");
     }
@@ -1293,7 +1291,7 @@ static int decode_i_picture_secondary_header(VC9Context *v)
 {
     int status;
 #if HAS_ADVANCED_PROFILE
-    if (v->profile > PROFILE_MAIN)
+    if (v->profile == PROFILE_ADVANCED)
     {
         v->s.ac_pred = get_bits(&v->s.gb, 1);
         if (v->postprocflag) v->postproc = get_bits(&v->s.gb, 1);
@@ -1348,7 +1346,7 @@ static int decode_p_picture_primary_header(VC9Context *v)
            v->pq, v->halfpq);
     if (v->extended_mv == 1) v->mvrange = get_prefix(gb, 0, 3);
 #if HAS_ADVANCED_PROFILE
-    if (v->profile > PROFILE_MAIN)
+    if (v->profile == PROFILE_ADVANCED)
     {
         if (v->postprocflag) v->postproc = get_bits(gb, 1);
     }
@@ -1482,7 +1480,7 @@ static int standard_decode_picture_primary_header(VC9Context *v)
 static int standard_decode_picture_secondary_header(VC9Context *v)
 {
     GetBitContext *gb = &v->s.gb;
-    int status = 0, index;
+    int status = 0;
 
     switch (v->s.pict_type)
     {
@@ -1500,10 +1498,8 @@ static int standard_decode_picture_secondary_header(VC9Context *v)
         v->ac2_table_level = decode012(gb);
     }
     /* DC Syntax */
-    index = decode012(gb);
-    v->luma_dc_vlc = &ff_msmp4_dc_luma_vlc[index];
-    v->chroma_dc_vlc = &ff_msmp4_dc_chroma_vlc[index];
-   
+    v->s.dc_table_index = decode012(gb);
+
     return 0;
 }
 /** @} */ //End for group std_frame_hdr
@@ -1584,7 +1580,7 @@ static int advanced_decode_picture_primary_header(VC9Context *v)
 static int advanced_decode_picture_secondary_header(VC9Context *v)
 {
     GetBitContext *gb = &v->s.gb;
-    int index, status = 0;
+    int status = 0;
 
     switch(v->s.pict_type)
     {
@@ -1602,9 +1598,7 @@ static int advanced_decode_picture_secondary_header(VC9Context *v)
         v->ac2_table_level = decode012(gb);
     }
     /* DC Syntax */
-    index = decode012(gb);
-    v->luma_dc_vlc = &ff_msmp4_dc_luma_vlc[index];
-    v->chroma_dc_vlc = &ff_msmp4_dc_chroma_vlc[index];
+    v->s.dc_table_index = decode012(gb);
 
     return 0;
 }
@@ -1618,124 +1612,6 @@ static int advanced_decode_picture_secondary_header(VC9Context *v)
  * @todo TODO: Integrate to MpegEncContext facilities
  * @{
  */
-/** Decode a luma intra block
- * @warning Will be removed, due to necessary integration
- * @see coeff scaling for Adv Profile: 8.1.1.15, p(1)13, 
- * @param v VC9 context
- * @param mquant Macroblock quantizer scale
- * @return Status
- * @todo TODO: Implement Coeff scaling for Advanced Profile
- */
-int decode_luma_intra_block(VC9Context *v, int mquant)
-{
-    GetBitContext *gb = &v->s.gb;
-    int dcdiff;
-
-    dcdiff = get_vlc2(gb, v->luma_dc_vlc->table,
-                      DC_VLC_BITS, 2);
-    if (dcdiff)
-    {
-        if (dcdiff == 119 /* ESC index value */)
-        {
-            /* TODO: Optimize */
-            if (mquant == 1) dcdiff = get_bits(gb, 10);
-            else if (mquant == 2) dcdiff = get_bits(gb, 9);
-            else dcdiff = get_bits(gb, 8);
-        }
-        else
-        {
-            if (mquant == 1)
-                dcdiff = (dcdiff<<2) + get_bits(gb, 2) - 3;
-            else if (mquant == 2)
-                dcdiff = (dcdiff<<1) + get_bits(gb, 1) - 1;
-        }
-        if (get_bits(gb, 1))
-            dcdiff = -dcdiff;
-    }
-    /* FIXME: 8.1.1.15, p(1)13, coeff scaling for Adv Profile */
-
-    return 0;
-}
-/** @} */ //End for group block
-
-/***********************************************************************/
-/** 
- * @defgroup std_mb VC9 Macroblock-level functions in Simple/Main Profiles
- * @see 7.1.4, p91 and 8.1.1.7, p(1)04
- * @todo TODO: Integrate to MpegEncContext facilities
- * @{
- */
-/**
- * @def GET_CBPCY(table, bits)
- * @brief Get the Coded Block Pattern for luma and chroma
- * @param table VLC table to use (get_vlc2 second parameter)
- * @param bits Average bitlength (third parameter to get_vlc2)
- * @see  8.1.1.5, p(1)02-(1)03
- */
-#define GET_CBPCY(table, bits)                                      \
-    predicted_cbpcy = get_vlc2(gb, table, bits, 2);             \
-    cbpcy[0] = (p_cbpcy[-1] == p_cbpcy[2])                          \
-         ? previous_cbpcy[1] : p_cbpcy[+2];                         \
-    cbpcy[0] ^= ((predicted_cbpcy>>5)&0x01);                        \
-    cbpcy[1] = (p_cbpcy[2] == p_cbpcy[3]) ? cbpcy[0] : p_cbpcy[3];  \
-    cbpcy[1] ^= ((predicted_cbpcy>>4)&0x01);                        \
-    cbpcy[2] = (previous_cbpcy[1] == cbpcy[0])                      \
-         ? previous_cbpcy[3] : cbpcy[0];                            \
-    cbpcy[2] ^= ((predicted_cbpcy>>3)&0x01);                        \
-    cbpcy[3] = (cbpcy[1] == cbpcy[0]) ? cbpcy[2] : cbpcy[1];        \
-    cbpcy[3] ^= ((predicted_cbpcy>>2)&0x01);
-     
-/** Decode all MBs for an I frame in Simple/Main profile
- * @see 8.1, p100
- * @todo TODO: Process the blocks
- * @todo TODO: Use M$ MPEG-4 cbp prediction
- */
-static int standard_decode_i_mbs(VC9Context *v)
-{
-    GetBitContext *gb = &v->s.gb;
-    MpegEncContext *s = &v->s;
-    int current_mb = 0; /* MB/Block Position info */
-    uint8_t cbpcy[4], previous_cbpcy[4], predicted_cbpcy,
-        *p_cbpcy /* Pointer to skip some math */;
-
-    /* Reset CBPCY predictors */
-    memset(v->previous_line_cbpcy, 0, s->mb_stride<<2);
-
-    /* Select ttmb table depending on pq */
-    if (v->pq < 5) v->ttmb_vlc = &vc9_ttmb_vlc[0];
-    else if (v->pq < 13) v->ttmb_vlc = &vc9_ttmb_vlc[1];
-    else v->ttmb_vlc = &vc9_ttmb_vlc[2];
-
-    for (s->mb_y=0; s->mb_y<s->mb_height; s->mb_y++)
-    {
-        /* Init CBPCY for line */
-        *((uint32_t*)previous_cbpcy) = 0x00000000;
-        p_cbpcy = v->previous_line_cbpcy+4;
-
-        for (s->mb_x=0; s->mb_x<s->mb_width; s->mb_x++, p_cbpcy += 4)
-        {
-            /* Get CBPCY */
-            GET_CBPCY(ff_msmp4_mb_i_vlc.table, MB_INTRA_VLC_BITS);
-
-            s->ac_pred = get_bits(gb, 1);
-
-            /* TODO: Decode blocks from that mb wrt cbpcy */
-
-            /* Update for next block */
-#if TRACE > 2
-            av_log(s->avctx, AV_LOG_DEBUG, "Block %4i: p_cbpcy=%i%i%i%i, previous_cbpcy=%i%i%i%i,"
-                   " cbpcy=%i%i%i%i\n", current_mb,
-                   p_cbpcy[0], p_cbpcy[1], p_cbpcy[2], p_cbpcy[3],
-                   previous_cbpcy[0], previous_cbpcy[1], previous_cbpcy[2], previous_cbpcy[3],
-                   cbpcy[0], cbpcy[1], cbpcy[2], cbpcy[3]);
-#endif
-            *((uint32_t*)p_cbpcy) = *((uint32_t*)previous_cbpcy);
-            *((uint32_t*)previous_cbpcy) = *((uint32_t*)cbpcy);
-            current_mb++;
-        }
-    }
-    return 0;
-}
 
 /**
  * @def GET_MQUANT
@@ -1779,26 +1655,560 @@ static int standard_decode_i_mbs(VC9Context *v)
   if (!index) { _dmv_x = _dmv_y = 0; }                              \
   else if (index == 35)                                             \
   {                                                                 \
-    _dmv_x = get_bits(gb, k_x);                                 \
-    _dmv_y = get_bits(gb, k_y);                                 \
+    _dmv_x = get_bits(gb, v->k_x);                                  \
+    _dmv_y = get_bits(gb, v->k_y);                                  \
     s->mb_intra = 1;                                                \
   }                                                                 \
   else                                                              \
   {                                                                 \
     index1 = index%6;                                               \
-    if (hpel_flag && index1 == 5) val = 1;                          \
-    else                          val = 0;                          \
-    val = get_bits(gb, size_table[index1] - val);               \
+    if (s->mspel && index1 == 5) val = 1;                           \
+    else                         val = 0;                           \
+    val = get_bits(gb, size_table[index1] - val);                   \
     sign = 0 - (val&1);                                             \
     _dmv_x = (sign ^ ((val>>1) + offset_table[index1])) - sign;     \
                                                                     \
     index1 = index/6;                                               \
-    if (hpel_flag && index1 == 5) val = 1;                          \
+    if (s->mspel && index1 == 5) val = 1;                           \
     else                          val = 0;                          \
-    val = get_bits(gb, size_table[index1] - val);               \
+    val = get_bits(gb, size_table[index1] - val);                   \
     sign = 0 - (val&1);                                             \
     _dmv_y = (sign ^ ((val>>1) + offset_table[index1])) - sign;     \
   }
+
+/** Get predicted DC value
+ * prediction dir: left=0, top=1
+ */
+static inline int vc9_pred_dc(MpegEncContext *s, int n, 
+                              uint16_t **dc_val_ptr, int *dir_ptr)
+{
+    int a, b, c, wrap, pred, scale;
+    int16_t *dc_val;
+
+    /* find prediction */
+    if (n < 4) {
+	scale = s->y_dc_scale;
+    } else {
+	scale = s->c_dc_scale;
+    }
+    
+    wrap = s->block_wrap[n];
+    dc_val= s->dc_val[0] + s->block_index[n];
+
+    /* B C
+     * A X 
+     */
+    a = dc_val[ - 1];
+    b = dc_val[ - 1 - wrap];
+    c = dc_val[ - wrap];
+    
+    if(s->first_slice_line && (n&2)==0) b=c=1024;
+
+    /* XXX: the following solution consumes divisions, but it does not
+       necessitate to modify mpegvideo.c. The problem comes from the
+       fact they decided to store the quantized DC (which would lead
+       to problems if Q could vary !) */
+#if (defined(ARCH_X86) || defined(ARCH_X86_64)) && !defined PIC
+    asm volatile(
+        "movl %3, %%eax		\n\t"
+	"shrl $1, %%eax		\n\t"
+	"addl %%eax, %2		\n\t"
+	"addl %%eax, %1		\n\t"
+	"addl %0, %%eax		\n\t"
+	"mull %4		\n\t"
+	"movl %%edx, %0		\n\t"
+	"movl %1, %%eax		\n\t"
+	"mull %4		\n\t"
+	"movl %%edx, %1		\n\t"
+	"movl %2, %%eax		\n\t"
+	"mull %4		\n\t"
+	"movl %%edx, %2		\n\t"
+	: "+b" (a), "+c" (b), "+D" (c)
+	: "g" (scale), "S" (inverse[scale])
+	: "%eax", "%edx"
+    );
+#else
+    /* #elif defined (ARCH_ALPHA) */
+    /* Divisions are extremely costly on Alpha; optimize the most
+       common case. But they are costly everywhere...
+     */
+    if (scale == 8) {
+	a = (a + (8 >> 1)) / 8;
+	b = (b + (8 >> 1)) / 8;
+	c = (c + (8 >> 1)) / 8;
+    } else {
+	a = FASTDIV((a + (scale >> 1)), scale);
+	b = FASTDIV((b + (scale >> 1)), scale);
+	c = FASTDIV((c + (scale >> 1)), scale);
+    }
+#endif
+
+    if (abs(a - b) <= abs(b - c)) {
+        pred = c;
+        *dir_ptr = 1;
+    } else {
+        pred = a;
+        *dir_ptr = 0;
+    }
+
+    /* update predictor */
+    *dc_val_ptr = &dc_val[0];
+    return pred;
+}
+
+/** Decode one block, inter or intra
+ * @param v The VC9 context
+ * @param block 8x8 DCT block
+ * @param n Block index in the current MB (<4=>luma)
+ * @param coded If the block is coded
+ * @param MB quant, if decoded at the MB layer
+ * @see Inter TT: Table 21, p73 + p91-85
+ * @see Intra TT: Table 20, p72 + p(1)05-(1)07
+ * @todo TODO: Process the blocks
+ * @todo TODO: Use M$ MPEG-4 cbp prediction
+ */
+int vc9_decode_block(VC9Context *v, DCTELEM block[64], int n, int coded, int mquant)
+{
+    GetBitContext *gb = &v->s.gb;
+    MpegEncContext *s = &v->s;
+    int ttblk; /* Transform Type per Block */
+    int subblkpat; /* Sub-block Transform Type Pattern */
+    int dc_pred_dir; /* Direction of the DC prediction used */
+    int run_diff, i;
+
+    if (s->mb_intra)
+    {
+        int dcdiff;
+        uint16_t *dc_val;
+
+        /* Get DC differential */
+        if (n < 4) {
+            dcdiff = get_vlc2(&s->gb, ff_msmp4_dc_luma_vlc[s->dc_table_index].table, DC_VLC_BITS, 3);
+        } else {
+            dcdiff = get_vlc2(&s->gb, ff_msmp4_dc_chroma_vlc[s->dc_table_index].table, DC_VLC_BITS, 3);
+        }
+        if (dcdiff < 0){
+            av_log(s->avctx, AV_LOG_ERROR, "illegal dc vlc\n");
+            return -1;
+        }
+        if (dcdiff)
+        {
+            if (dcdiff == 119 /* ESC index value */)
+            {
+                /* TODO: Optimize */
+                if (mquant == 1) dcdiff = get_bits(gb, 10);
+                else if (mquant == 2) dcdiff = get_bits(gb, 9);
+                else dcdiff = get_bits(gb, 8);
+            }
+            else
+            {
+                if (mquant == 1)
+                  dcdiff = (dcdiff<<2) + get_bits(gb, 2) - 3;
+                else if (mquant == 2)
+                  dcdiff = (dcdiff<<1) + get_bits(gb, 1) - 1;
+            }
+            if (get_bits(gb, 1))
+              dcdiff = -dcdiff;
+        }
+
+        /* Prediction */
+        dcdiff += vc9_pred_dc(s, n, &dc_val, &dc_pred_dir);
+        if (n < 4) {
+            *dc_val = dcdiff * s->y_dc_scale;
+        } else {
+            *dc_val = dcdiff * s->c_dc_scale;
+        }
+        if (dcdiff < 0)
+        {
+            av_log(s->avctx, AV_LOG_ERROR, "DC=%i<0\n", dcdiff);
+            return -1;
+        }
+        block[0] = dcdiff; //XXX: Must be > 0
+        
+        /* Skip ? */
+        run_diff = 0;
+        i = 0;
+        if (!coded) {
+            goto not_coded;
+        }
+    }
+    else
+    {
+        mquant = v->pq;
+
+        /* Get TTBLK */
+        if (v->ttmb < 8) /* per block */
+            ttblk = get_vlc2(gb, vc9_ttblk_vlc[v->tt_index].table, VC9_TTBLK_VLC_BITS, 2);
+        else /* Per frame */
+          ttblk = 0; //FIXME, depends on ttfrm
+
+        /* Get SUBBLKPAT */
+        if (ttblk == v->ttblk4x4) /* 4x4 transform for that qp value */
+            subblkpat = 1+get_vlc2(gb, vc9_subblkpat_vlc[v->tt_index].table,
+                                   VC9_SUBBLKPAT_VLC_BITS, 2);
+        else /* All others: 8x8, 4x8, 8x4 */
+            subblkpat = decode012(gb);
+    }
+
+    //TODO AC Decoding
+
+
+ not_coded:
+    if (s->mb_intra) {
+        mpeg4_pred_ac(s, block, n, dc_pred_dir);
+        if (s->ac_pred) {
+            i = 63; /* XXX: not optimal */
+        }
+    }
+    if(i>0) i=63; //FIXME/XXX optimize
+    s->block_last_index[n] = i;
+    return 0;
+}
+
+/** @} */ //End for group block
+
+/***********************************************************************/
+/** 
+ * @defgroup std_mb VC9 Macroblock-level functions in Simple/Main Profiles
+ * @see 7.1.4, p91 and 8.1.1.7, p(1)04
+ * @todo TODO: Integrate to MpegEncContext facilities
+ * @{
+ */
+
+static inline int vc9_coded_block_pred(MpegEncContext * s, int n, uint8_t **coded_block_ptr)
+{
+    int xy, wrap, pred, a, b, c;
+
+    xy = s->block_index[n];
+    wrap = s->b8_stride;
+
+    /* B C
+     * A X 
+     */
+    a = s->coded_block[xy - 1       ];
+    b = s->coded_block[xy - 1 - wrap];
+    c = s->coded_block[xy     - wrap];
+    
+    if (b == c) {
+        pred = a;
+    } else {
+        pred = c;
+    }
+    
+    /* store value */
+    *coded_block_ptr = &s->coded_block[xy];
+
+    return pred;
+}
+
+int vc9_decode_i_mb(VC9Context *v, DCTELEM block[6][64])
+{
+    int i, cbp, val;
+    uint8_t *coded_val;
+    uint32_t * const mb_type_ptr= &v->s.current_picture.mb_type[ v->s.mb_x + v->s.mb_y*v->s.mb_stride ];
+
+    v->s.mb_intra = 1;
+    cbp = get_vlc2(&v->s.gb, ff_msmp4_mb_i_vlc.table, MB_INTRA_VLC_BITS, 2);
+    if (cbp < 0) return -1;
+    v->s.ac_pred = get_bits(&v->s.gb, 1);
+
+    for (i=0; i<6; i++)
+    {
+        val = ((cbp >> (5 - i)) & 1);
+        if (i < 4) {
+            int pred = vc9_coded_block_pred(&v->s, i, &coded_val);
+            val = val ^ pred;
+            *coded_val = val;
+        }
+        cbp |= val << (5 - i);
+        if (vc9_decode_block(v, block[i], i, val, v->pq) < 0) //FIXME Should be mquant
+	{
+	    av_log(v->s.avctx, AV_LOG_ERROR,
+                   "\nerror while decoding block: %d x %d (%d)\n", v->s.mb_x, v->s.mb_y, i);
+	    return -1;
+	}
+    }
+    return 0;
+}
+
+int vc9_decode_p_mb(VC9Context *v, DCTELEM block[6][64])
+{
+    MpegEncContext *s = &v->s;
+    GetBitContext *gb = &s->gb;
+    int i, mb_offset = s->mb_x + s->mb_y*s->mb_width; /* XXX: mb_stride */
+    int cbp; /* cbp decoding stuff */
+    int hybrid_pred; /* Prediction types */
+    int mv_mode_bit = 0; 
+    int mqdiff, mquant; /* MB quantization */
+    int ttmb; /* MB Transform type */
+    int status;
+    uint8_t *coded_val;
+
+    static const int size_table[6] = { 0, 2, 3, 4, 5, 8 },
+      offset_table[6] = { 0, 1, 3, 7, 15, 31 };
+    int mb_has_coeffs = 1; /* last_flag */
+    int dmv_x, dmv_y; /* Differential MV components */
+    int index, index1; /* LUT indices */
+    int val, sign; /* temp values */
+
+    if (v->mv_type_mb_plane.is_raw)
+        v->mv_type_mb_plane.data[mb_offset] = get_bits(gb, 1);
+    if (v->skip_mb_plane.is_raw)
+        v->skip_mb_plane.data[mb_offset] = get_bits(gb, 1);
+    if (!mv_mode_bit) /* 1MV mode */
+    {
+        if (!v->skip_mb_plane.data[mb_offset])
+        {
+            GET_MVDATA(dmv_x, dmv_y);
+            
+            /* hybrid mv pred, 8.3.5.3.4 */
+            if (v->mv_mode == MV_PMODE_1MV ||
+                v->mv_mode == MV_PMODE_MIXED_MV)
+                hybrid_pred = get_bits(gb, 1);
+            if (s->mb_intra && !mb_has_coeffs)
+            {
+                GET_MQUANT();
+                s->ac_pred = get_bits(gb, 1);
+                /* XXX: how to handle cbp ? */
+            }
+            else if (mb_has_coeffs)
+            {
+                if (s->mb_intra) s->ac_pred = get_bits(gb, 1);
+                cbp = get_vlc2(&v->s.gb, v->cbpcy_vlc->table, VC9_CBPCY_P_VLC_BITS, 2);
+                GET_MQUANT();
+            }
+            else
+            {
+                mquant = v->pq;
+                /* XXX: How to handle cbp ? */
+            }
+
+            if (!v->ttmbf)
+                ttmb = get_vlc2(gb, vc9_ttmb_vlc[v->tt_index].table,
+                                VC9_TTMB_VLC_BITS, 12);
+            for (i=0; i<6; i++)
+            {
+                val = ((cbp >> (5 - i)) & 1);
+                if (i < 4) {
+                    int pred = vc9_coded_block_pred(&v->s, i, &coded_val);
+                    val = val ^ pred;
+                    *coded_val = val;
+                }
+                vc9_decode_block(v, block[i], i, val, mquant); //FIXME
+            }
+        }
+        else //Skipped
+        {
+            /* hybrid mv pred, 8.3.5.3.4 */
+            if (v->mv_mode == MV_PMODE_1MV ||
+                v->mv_mode == MV_PMODE_MIXED_MV)
+                hybrid_pred = get_bits(gb, 1);
+
+            /* TODO: blah */
+            return 0;
+        }
+    } //1MV mode
+    else //4MV mode
+    {
+        if (!v->skip_mb_plane.data[mb_offset] /* unskipped MB */)
+        {
+            /* Get CBPCY */
+            cbp = get_vlc2(&v->s.gb, v->cbpcy_vlc->table, VC9_CBPCY_P_VLC_BITS, 2);
+            for (i=0; i<6; i++)
+            {
+                val = ((cbp >> (5 - i)) & 1);
+                if (i < 4) {
+                    int pred = vc9_coded_block_pred(&v->s, i, &coded_val);
+                    val = val ^ pred;
+                    *coded_val = val;
+                }
+                if (i<4 && val)
+                {
+                    GET_MVDATA(dmv_x, dmv_y);
+                }
+                if (v->mv_mode == MV_PMODE_MIXED_MV /* Hybrid pred */)
+                    hybrid_pred = get_bits(gb, 1);
+                GET_MQUANT();
+                if (s->mb_intra /* One of the 4 blocks is intra */ &&
+                    index /* non-zero pred for that block */)
+                    s->ac_pred = get_bits(gb, 1);
+                if (!v->ttmbf)
+                    ttmb = get_vlc2(gb, vc9_ttmb_vlc[v->tt_index].table,
+                                    VC9_TTMB_VLC_BITS, 12);
+                status = vc9_decode_block(v, block[i], i, val, mquant);
+            }
+            return status;
+        }
+        else //Skipped MB
+        {
+            for (i=0; i<4; i++)
+            {
+                if (v->mv_mode == MV_PMODE_MIXED_MV /* Hybrid pred */)
+                    hybrid_pred = get_bits(gb, 1);
+                vc9_decode_block(v, block[i], i, 0 /*cbp[i]*/, mquant); //FIXME
+            }
+            /* TODO: blah */
+            return 0;
+        }
+    }
+    
+    /* Should never happen */
+    return -1;
+}
+
+int vc9_decode_b_mb(VC9Context *v, DCTELEM block[6][64])
+{
+    int i;
+    //Decode CBP
+    for (i=0; i<6; i++)
+    {
+        vc9_decode_block(v, block[i], i, 0 /*cbp[i]*/, v->pq /*Should be mquant*/); //FIXME
+    }
+    return 0;
+}
+
+static int standard_decode_mbs(VC9Context *v)
+{
+    GetBitContext *gb = &v->s.gb;
+    MpegEncContext *s = &v->s;
+    
+    /* Set transform type info depending on pq */
+    if (v->pq < 5)
+    {
+        v->tt_index = 0;
+        v->ttblk4x4 = 3;
+    }
+    else if (v->pq < 13)
+    {
+        v->tt_index = 1;
+        v->ttblk4x4 = 3;
+    }
+    else
+    {
+        v->tt_index = 2;
+        v->ttblk4x4 = 2;
+    }
+    
+    if (s->pict_type != I_TYPE)
+    {
+        /* Select proper long MV range */
+        switch (v->mvrange)
+        {
+        case 1: v->k_x = 10; v->k_y = 9; break;
+        case 2: v->k_x = 12; v->k_y = 10; break;
+        case 3: v->k_x = 13; v->k_y = 11; break;
+        default: /*case 0 too */ v->k_x = 9; v->k_y = 8; break;
+        }
+
+        s->mspel = v->mv_mode & 1; //MV_PMODE is HPEL
+        v->k_x -= s->mspel;
+        v->k_y -= s->mspel;
+    }
+
+    for (s->mb_y=0; s->mb_y<s->mb_height; s->mb_y++)
+    {
+        for (s->mb_x=0; s->mb_x<s->mb_width; s->mb_x++)
+        {
+            //FIXME Get proper MB DCTELEM
+            //TODO Move out of the loop
+            switch (s->pict_type)
+            {
+            case I_TYPE: vc9_decode_i_mb(v, NULL); break;
+            case P_TYPE: vc9_decode_i_mb(v, NULL); break;
+            case BI_TYPE:
+            case B_TYPE: vc9_decode_i_mb(v, NULL); break;
+            }
+        }
+        //Add a check for overconsumption ?
+    }
+    return 0;
+}
+
+
+/**
+ * @def GET_CBPCY(table, bits)
+ * @brief Get the Coded Block Pattern for luma and chroma
+ * @param table VLC table to use (get_vlc2 second parameter)
+ * @param bits Average bitlength (third parameter to get_vlc2)
+ * @see  8.1.1.5, p(1)02-(1)03
+ */
+#define GET_CBPCY(table, bits)                                      \
+    predicted_cbpcy = get_vlc2(gb, table, bits, 2);             \
+    cbpcy[0] = (p_cbpcy[-1] == p_cbpcy[2])                          \
+         ? previous_cbpcy[1] : p_cbpcy[+2];                         \
+    cbpcy[0] ^= ((predicted_cbpcy>>5)&0x01);                        \
+    cbpcy[1] = (p_cbpcy[2] == p_cbpcy[3]) ? cbpcy[0] : p_cbpcy[3];  \
+    cbpcy[1] ^= ((predicted_cbpcy>>4)&0x01);                        \
+    cbpcy[2] = (previous_cbpcy[1] == cbpcy[0])                      \
+         ? previous_cbpcy[3] : cbpcy[0];                            \
+    cbpcy[2] ^= ((predicted_cbpcy>>3)&0x01);                        \
+    cbpcy[3] = (cbpcy[1] == cbpcy[0]) ? cbpcy[2] : cbpcy[1];        \
+    cbpcy[3] ^= ((predicted_cbpcy>>2)&0x01);
+
+/** Decode all MBs for an I frame in Simple/Main profile
+ * @see 8.1, p100
+ * @todo TODO: Process the blocks
+ * @todo TODO: Use M$ MPEG-4 cbp prediction
+ */
+static int standard_decode_i_mbs(VC9Context *v)
+{
+    GetBitContext *gb = &v->s.gb;
+    MpegEncContext *s = &v->s;
+    int mb_offset = 0; /* MB/Block Position info */
+    uint8_t cbpcy[4], previous_cbpcy[4], predicted_cbpcy,
+        *p_cbpcy /* Pointer to skip some math */;
+
+    /* Reset CBPCY predictors */
+    memset(v->previous_line_cbpcy, 0, s->mb_stride<<2);
+
+    /* Select ttmb table depending on pq */
+    if (v->pq < 5)
+    {
+        v->tt_index = 0;
+        v->ttblk4x4 = 3;
+    }
+    else if (v->pq < 13)
+    {
+        v->tt_index = 1;
+        v->ttblk4x4 = 3;
+    }
+    else
+    {
+        v->tt_index = 2;
+        v->ttblk4x4 = 2;
+    }
+
+    for (s->mb_y=0; s->mb_y<s->mb_height; s->mb_y++)
+    {
+        /* Init CBPCY for line */
+        *((uint32_t*)previous_cbpcy) = 0x00000000;
+        p_cbpcy = v->previous_line_cbpcy+4;
+
+        for (s->mb_x=0; s->mb_x<s->mb_width; s->mb_x++, p_cbpcy += 4)
+        {
+            /* Get CBPCY */
+            GET_CBPCY(ff_msmp4_mb_i_vlc.table, MB_INTRA_VLC_BITS);
+
+            s->ac_pred = get_bits(gb, 1);
+
+            /* TODO: Decode blocks from that mb wrt cbpcy */
+
+            /* Update for next block */
+#if TRACE > 2
+            av_log(s->avctx, AV_LOG_DEBUG, "Block %4i: p_cbpcy=%i%i%i%i, previous_cbpcy=%i%i%i%i,"
+                   " cbpcy=%i%i%i%i\n", mb_offset,
+                   p_cbpcy[0], p_cbpcy[1], p_cbpcy[2], p_cbpcy[3],
+                   previous_cbpcy[0], previous_cbpcy[1], previous_cbpcy[2], previous_cbpcy[3],
+                   cbpcy[0], cbpcy[1], cbpcy[2], cbpcy[3]);
+#endif
+            *((uint32_t*)p_cbpcy) = *((uint32_t*)previous_cbpcy);
+            *((uint32_t*)previous_cbpcy) = *((uint32_t*)cbpcy);
+            mb_offset++;
+        }
+    }
+    return 0;
+}
+
 
 /** Decode all MBs for an P frame in Simple/Main profile
  * @see 8.1, p(1)15
@@ -1809,7 +2219,7 @@ static int decode_p_mbs(VC9Context *v)
 {
     MpegEncContext *s = &v->s;
     GetBitContext *gb = &v->s.gb;
-    int current_mb = 0, i; /* MB/Block Position info */
+    int mb_offset = 0, i; /* MB/Block Position info */
     uint8_t cbpcy[4], previous_cbpcy[4], predicted_cbpcy,
         *p_cbpcy /* Pointer to skip some math */;
     int hybrid_pred; /* Prediction types */
@@ -1821,28 +2231,38 @@ static int decode_p_mbs(VC9Context *v)
         offset_table[6] = { 0, 1, 3, 7, 15, 31 };
         int mb_has_coeffs = 1; /* last_flag */
     int dmv_x, dmv_y; /* Differential MV components */
-    int k_x, k_y; /* Long MV fixed bitlength */
-    int hpel_flag; /* Some MB properties */
     int index, index1; /* LUT indices */
     int val, sign; /* MVDATA temp values */
 
     /* Select ttmb table depending on pq */
-    if (v->pq < 5) v->ttmb_vlc = &vc9_ttmb_vlc[0];
-    else if (v->pq < 13) v->ttmb_vlc = &vc9_ttmb_vlc[1];
-    else v->ttmb_vlc = &vc9_ttmb_vlc[2];
+    if (v->pq < 5)
+    {
+        v->tt_index = 0;
+        v->ttblk4x4 = 3;
+    }
+    else if (v->pq < 13)
+    {
+        v->tt_index = 1;
+        v->ttblk4x4 = 3;
+    }
+    else
+    {
+        v->tt_index = 2;
+        v->ttblk4x4 = 2;
+    }
 
     /* Select proper long MV range */
     switch (v->mvrange)
     {
-    case 1: k_x = 10; k_y = 9; break;
-    case 2: k_x = 12; k_y = 10; break;
-    case 3: k_x = 13; k_y = 11; break;
-    default: /*case 0 too */ k_x = 9; k_y = 8; break;
+    case 1: v->k_x = 10; v->k_y = 9; break;
+    case 2: v->k_x = 12; v->k_y = 10; break;
+    case 3: v->k_x = 13; v->k_y = 11; break;
+    default: /*case 0 too */ v->k_x = 9; v->k_y = 8; break;
     }
 
-    hpel_flag = v->mv_mode & 1; //MV_PMODE is HPEL
-    k_x -= hpel_flag;
-    k_y -= hpel_flag;
+    s->mspel = v->mv_mode & 1; //MV_PMODE is HPEL
+    v->k_x -= s->mspel;
+    v->k_y -= s->mspel;
 
     /* Reset CBPCY predictors */
     memset(v->previous_line_cbpcy, 0, s->mb_stride<<2);
@@ -1856,12 +2276,12 @@ static int decode_p_mbs(VC9Context *v)
         for (s->mb_x=0; s->mb_x<s->mb_width; s->mb_x++, p_cbpcy += 4)
         {
             if (v->mv_type_mb_plane.is_raw)
-                v->mv_type_mb_plane.data[current_mb] = get_bits(gb, 1);
+                v->mv_type_mb_plane.data[mb_offset] = get_bits(gb, 1);
             if (v->skip_mb_plane.is_raw)
-                v->skip_mb_plane.data[current_mb] = get_bits(gb, 1);
+                v->skip_mb_plane.data[mb_offset] = get_bits(gb, 1);
             if (!mv_mode_bit) /* 1MV mode */
             {
-                if (!v->skip_mb_plane.data[current_mb])
+                if (!v->skip_mb_plane.data[mb_offset])
                 {
                     GET_MVDATA(dmv_x, dmv_y);
 
@@ -1878,20 +2298,12 @@ static int decode_p_mbs(VC9Context *v)
                     {
                         if (s->mb_intra) s->ac_pred = get_bits(gb, 1);
                         predicted_cbpcy = get_vlc2(gb, v->cbpcy_vlc->table, VC9_CBPCY_P_VLC_BITS, 2);
-                        cbpcy[0] = (p_cbpcy[-1] == p_cbpcy[2]) ? previous_cbpcy[1] : p_cbpcy[2];
-                        cbpcy[0] ^= ((predicted_cbpcy>>5)&0x01);
-                        cbpcy[1] = (p_cbpcy[2] == p_cbpcy[3]) ? cbpcy[0] : p_cbpcy[3];
-                        cbpcy[1] ^= ((predicted_cbpcy>>4)&0x01);
-                        cbpcy[2] = (previous_cbpcy[1] == cbpcy[0]) ? previous_cbpcy[3] : cbpcy[0];
-                        cbpcy[2] ^= ((predicted_cbpcy>>3)&0x01);
-                        cbpcy[3] = (cbpcy[1] == cbpcy[0]) ? cbpcy[2] : cbpcy[1];
-                        cbpcy[3] ^= ((predicted_cbpcy>>2)&0x01);
-                        //GET_CBPCY(v->cbpcy_vlc->table, VC9_CBPCY_P_VLC_BITS);
+                        GET_CBPCY(v->cbpcy_vlc->table, VC9_CBPCY_P_VLC_BITS);
 
                         GET_MQUANT();
                     }
                     if (!v->ttmbf)
-                        ttmb = get_vlc2(gb, v->ttmb_vlc->table,
+                        ttmb = get_vlc2(gb, vc9_ttmb_vlc[v->tt_index].table,
                                             VC9_TTMB_VLC_BITS, 12);
                     /* TODO: decode blocks from that mb wrt cbpcy */
                 }
@@ -1905,7 +2317,7 @@ static int decode_p_mbs(VC9Context *v)
             } //1MV mode
             else //4MV mode
             {
-              if (!v->skip_mb_plane.data[current_mb] /* unskipped MB */)
+              if (!v->skip_mb_plane.data[mb_offset] /* unskipped MB */)
                 {
                     /* Get CBPCY */
                     GET_CBPCY(v->cbpcy_vlc->table, VC9_CBPCY_P_VLC_BITS);
@@ -1922,7 +2334,7 @@ static int decode_p_mbs(VC9Context *v)
                             index /* non-zero pred for that block */)
                             s->ac_pred = get_bits(gb, 1);
                         if (!v->ttmbf)
-                            ttmb = get_vlc2(gb, v->ttmb_vlc->table,
+                            ttmb = get_vlc2(gb, vc9_ttmb_vlc[v->tt_index].table,
                                             VC9_TTMB_VLC_BITS, 12);
             
                         /* TODO: Process blocks wrt cbpcy */
@@ -1944,14 +2356,14 @@ static int decode_p_mbs(VC9Context *v)
             /* Update for next block */
 #if TRACE > 2
             av_log(s->avctx, AV_LOG_DEBUG, "Block %4i: p_cbpcy=%i%i%i%i, previous_cbpcy=%i%i%i%i,"
-                   " cbpcy=%i%i%i%i\n", current_mb,
+                   " cbpcy=%i%i%i%i\n", mb_offset,
                    p_cbpcy[0], p_cbpcy[1], p_cbpcy[2], p_cbpcy[3],
                    previous_cbpcy[0], previous_cbpcy[1], previous_cbpcy[2], previous_cbpcy[3],
                    cbpcy[0], cbpcy[1], cbpcy[2], cbpcy[3]);
 #endif
             *((uint32_t*)p_cbpcy) = *((uint32_t*)previous_cbpcy);
             *((uint32_t*)previous_cbpcy) = *((uint32_t*)cbpcy);
-            current_mb++;
+            mb_offset++;
         }
     }
     return 0;
@@ -1965,7 +2377,7 @@ static int decode_b_mbs(VC9Context *v)
 {
     MpegEncContext *s = &v->s;
     GetBitContext *gb = &v->s.gb;
-    int current_mb = 0, i /* MB / B postion information */;
+    int mb_offset = 0, i /* MB / B postion information */;
     int b_mv_type = BMV_TYPE_BACKWARD;
     int mquant, mqdiff; /* MB quant stuff */
     int ttmb; /* MacroBlock transform type */
@@ -1992,22 +2404,34 @@ static int decode_b_mbs(VC9Context *v)
     k_y -= hpel_flag;
 
     /* Select ttmb table depending on pq */
-    if (v->pq < 5) v->ttmb_vlc = &vc9_ttmb_vlc[0];
-    else if (v->pq < 13) v->ttmb_vlc = &vc9_ttmb_vlc[1];
-    else v->ttmb_vlc = &vc9_ttmb_vlc[2];
+    if (v->pq < 5)
+    {
+        v->tt_index = 0;
+        v->ttblk4x4 = 3;
+    }
+    else if (v->pq < 13)
+    {
+        v->tt_index = 1;
+        v->ttblk4x4 = 3;
+    }
+    else
+    {
+        v->tt_index = 2;
+        v->ttblk4x4 = 2;
+    }
 
     for (s->mb_y=0; s->mb_y<s->mb_height; s->mb_y++)
     {
         for (s->mb_x=0; s->mb_x<s->mb_width; s->mb_x++)
         {
             if (v->direct_mb_plane.is_raw)
-                v->direct_mb_plane.data[current_mb] = get_bits(gb, 1);
+                v->direct_mb_plane.data[mb_offset] = get_bits(gb, 1);
             if (v->skip_mb_plane.is_raw)
-                v->skip_mb_plane.data[current_mb] = get_bits(gb, 1);
+                v->skip_mb_plane.data[mb_offset] = get_bits(gb, 1);
             
-            if (!v->direct_mb_plane.data[current_mb])
+            if (!v->direct_mb_plane.data[mb_offset])
             {
-                if (v->skip_mb_plane.data[current_mb])
+                if (v->skip_mb_plane.data[mb_offset])
                 {
                     b_mv_type = decode012(gb);
                     if (v->bfraction > 420 /*1/2*/ &&
@@ -2024,7 +2448,7 @@ static int decode_b_mbs(VC9Context *v)
                     }
                 }
             }
-            if (!v->skip_mb_plane.data[current_mb])
+            if (!v->skip_mb_plane.data[mb_offset])
             {
                 if (mb_has_coeffs /* BMV1 == "last" */)
                 {
@@ -2050,8 +2474,8 @@ static int decode_b_mbs(VC9Context *v)
             }
             //End1
             if (v->ttmbf)
-                ttmb = get_vlc2(gb, v->ttmb_vlc->table,
-                                   VC9_TTMB_VLC_BITS, 12);
+                ttmb = get_vlc2(gb, vc9_ttmb_vlc[v->tt_index].table,
+                                VC9_TTMB_VLC_BITS, 12);
 
             //End2
             for (i=0; i<6; i++)
@@ -2059,7 +2483,7 @@ static int decode_b_mbs(VC9Context *v)
                 /* FIXME: process the block */
             }
 
-            current_mb++;
+            mb_offset++;
         }
     }
     return 0;
@@ -2078,7 +2502,7 @@ static int advanced_decode_i_mbs(VC9Context *v)
 {
     MpegEncContext *s = &v->s;
     GetBitContext *gb = &v->s.gb;
-    int mqdiff, mquant, current_mb = 0, over_flags_mb = 0;
+    int mqdiff, mquant, mb_offset = 0, over_flags_mb = 0;
 
     for (s->mb_y=0; s->mb_y<s->mb_height; s->mb_y++)
     {
@@ -2087,14 +2511,14 @@ static int advanced_decode_i_mbs(VC9Context *v)
             if (v->ac_pred_plane.is_raw)
                 s->ac_pred = get_bits(gb, 1);
             else
-                s->ac_pred = v->ac_pred_plane.data[current_mb];
+                s->ac_pred = v->ac_pred_plane.data[mb_offset];
             if (v->condover == 3 && v->over_flags_plane.is_raw)
                 over_flags_mb = get_bits(gb, 1);
             GET_MQUANT();
 
             /* TODO: lots */
         }
-        current_mb++;
+        mb_offset++;
     }
     return 0;
 }
@@ -2130,9 +2554,10 @@ static int vc9_decode_init(AVCodecContext *avctx)
         // the last byte of the extradata is a version number, 1 for the
         // samples we can decode
 
-        init_get_bits(&gb, avctx->extradata, avctx->extradata_size);
+        init_get_bits(&gb, avctx->extradata, avctx->extradata_size*8);
         
-        decode_sequence_header(avctx, &gb);
+        if (decode_sequence_header(avctx, &gb) < 0)
+          return -1;
 
         count = avctx->extradata_size*8 - get_bits_count(&gb);
         if (count>0)
@@ -2140,7 +2565,7 @@ static int vc9_decode_init(AVCodecContext *avctx)
             av_log(avctx, AV_LOG_INFO, "Extra data: %i bits left, value: %X\n",
                    count, get_bits(&gb, count));
         }
-        else
+        else if (count < 0)
         {
             av_log(avctx, AV_LOG_INFO, "Read %i bits in overflow\n", -count);
         }
@@ -2165,7 +2590,7 @@ static int vc9_decode_init(AVCodecContext *avctx)
     if (!v->previous_line_cbpcy) return -1;
 
 #if HAS_ADVANCED_PROFILE
-    if (v->profile > PROFILE_MAIN)
+    if (v->profile == PROFILE_ADVANCED)
     {
         if (alloc_bitplane(&v->over_flags_plane, s->mb_width, s->mb_height) < 0)
             return -1;
@@ -2234,7 +2659,7 @@ static int vc9_decode_frame(AVCodecContext *avctx,
             case 0x0D: //Frame start code
                 break;
             case 0x0E: //Entry point Start Code
-                if (v->profile <= MAIN_PROFILE)
+                if (v->profile < PROFILE_ADVANCED)
                     av_log(avctx, AV_LOG_ERROR,
                            "Found an entry point in profile %i\n", v->profile);
                 advanced_entry_point_process(avctx, gb);
@@ -2285,7 +2710,7 @@ static int vc9_decode_frame(AVCodecContext *avctx,
         s->current_picture_ptr= &s->picture[ff_find_unused_picture(s, 0)];
     }
 #if HAS_ADVANCED_PROFILE
-    if (v->profile > PROFILE_MAIN)
+    if (v->profile == PROFILE_ADVANCED)
         ret= advanced_decode_picture_primary_header(v);
     else
 #endif
@@ -2300,7 +2725,7 @@ static int vc9_decode_frame(AVCodecContext *avctx,
     //No bug workaround yet, no DCT conformance
 
     //WMV9 does have resized images
-    if (v->profile <= PROFILE_MAIN && v->multires){
+    if (v->profile < PROFILE_ADVANCED && v->multires){
         //Parse context stuff in here, don't know how appliable it is
     }
     //Not sure about context initialization
@@ -2333,7 +2758,7 @@ static int vc9_decode_frame(AVCodecContext *avctx,
 
     //wmv9 may or may not have skip bits
 #if HAS_ADVANCED_PROFILE
-    if (v->profile > PROFILE_MAIN)
+    if (v->profile == PROFILE_ADVANCED)
         ret= advanced_decode_picture_secondary_header(v);
     else
 #endif
@@ -2342,7 +2767,7 @@ static int vc9_decode_frame(AVCodecContext *avctx,
 
     //We consider the image coded in only one slice
 #if HAS_ADVANCED_PROFILE
-    if (v->profile > PROFILE_MAIN)
+    if (v->profile == PROFILE_ADVANCED)
     {
         switch(s->pict_type)
         {
