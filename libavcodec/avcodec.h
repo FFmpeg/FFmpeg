@@ -39,6 +39,7 @@ enum CodecID {
 #define CODEC_ID_MSMPEG4 CODEC_ID_MSMPEG4V3
 
 enum CodecType {
+    CODEC_TYPE_UNKNOWN = -1,
     CODEC_TYPE_VIDEO,
     CODEC_TYPE_AUDIO,
 };
@@ -214,8 +215,8 @@ typedef struct AVCodecContext {
     /* the following fields are ignored */
     void *opaque;   /* can be used to carry app specific stuff */
     char codec_name[32];
-    int codec_type; /* see CODEC_TYPE_xxx */
-    int codec_id; /* see CODEC_ID_xxx */
+    enum CodecType codec_type; /* see CODEC_TYPE_xxx */
+    enum CodecID codec_id; /* see CODEC_ID_xxx */
     unsigned int codec_tag;  /* codec tag, only used if unknown codec */
 } AVCodecContext;
 
