@@ -1532,7 +1532,8 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
     {
 	int t_w, t_h;
 	skip_bits(&s->gb, 8); /* the trailing zero-byte */
-	av_log(s->avctx, AV_LOG_INFO, "mjpeg: JFIF header found (version: %x.%x)\n",
+        if (s->avctx->debug & FF_DEBUG_PICT_INFO)
+            av_log(s->avctx, AV_LOG_INFO, "mjpeg: JFIF header found (version: %x.%x)\n",
 	    get_bits(&s->gb, 8), get_bits(&s->gb, 8));
         skip_bits(&s->gb, 8);
 
@@ -1553,7 +1554,8 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
     
     if (id == ff_get_fourcc("Adob") && (get_bits(&s->gb, 8) == 'e'))
     {
-	av_log(s->avctx, AV_LOG_INFO, "mjpeg: Adobe header found\n");
+        if (s->avctx->debug & FF_DEBUG_PICT_INFO)
+            av_log(s->avctx, AV_LOG_INFO, "mjpeg: Adobe header found\n");
 	skip_bits(&s->gb, 16); /* version */
 	skip_bits(&s->gb, 16); /* flags0 */
 	skip_bits(&s->gb, 16); /* flags1 */
@@ -1563,7 +1565,8 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
     }
 
     if (id == ff_get_fourcc("LJIF")){
-        av_log(s->avctx, AV_LOG_INFO, "Pegasus lossless jpeg header found\n");
+        if (s->avctx->debug & FF_DEBUG_PICT_INFO)
+            av_log(s->avctx, AV_LOG_INFO, "Pegasus lossless jpeg header found\n");
 	skip_bits(&s->gb, 16); /* version ? */
 	skip_bits(&s->gb, 16); /* unknwon always 0? */
 	skip_bits(&s->gb, 16); /* unknwon always 0? */
@@ -1602,7 +1605,7 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
 	    skip_bits(&s->gb, 32); /* scan off */
 	    skip_bits(&s->gb, 32); /* data off */
 #endif
-	    if (s->first_picture)
+            if (s->avctx->debug & FF_DEBUG_PICT_INFO)
 		av_log(s->avctx, AV_LOG_INFO, "mjpeg: Apple MJPEG-A header found\n");
 	}
     }
@@ -1779,13 +1782,12 @@ static int mjpeg_decode_frame(AVCodecContext *avctx,
 		/* process markers */
 		if (start_code >= 0xd0 && start_code <= 0xd7) {
 		    dprintf("restart marker: %d\n", start_code&0x0f);
-		} else if (s->first_picture) {
 		    /* APP fields */
-		    if (start_code >= 0xe0 && start_code <= 0xef)
-			mjpeg_decode_app(s);
+		} else if (start_code >= APP0 && start_code <= APP15) {
+		    mjpeg_decode_app(s);
 		    /* Comment */
-		    else if (start_code == COM)
-			mjpeg_decode_com(s);
+		} else if (start_code == COM){
+		    mjpeg_decode_com(s);
 		}
 
                 switch(start_code) {
