@@ -784,6 +784,7 @@ solutions.
 @tab used in Origin's Wing Commander IV AVI files
 @item Apple MACE 3           @tab      @tab X
 @item Apple MACE 6           @tab      @tab X
+@item FLAC                   @tab      @tab X
 @end multitable
 
 @code{X} means that the encoding (resp. decoding) is supported.
