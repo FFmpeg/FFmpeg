@@ -1172,32 +1172,36 @@ static void mpeg_decode_sequence_extension(MpegEncContext *s)
 
 static void mpeg_decode_quant_matrix_extension(MpegEncContext *s)
 {
-    int i, v;
+    int i, v, j;
 
     if (get_bits1(&s->gb)) {
         for(i=0;i<64;i++) {
             v = get_bits(&s->gb, 8);
-            s->intra_matrix[i] = v;
-            s->chroma_intra_matrix[i] = v;
+            j = block_permute_op(i);
+            s->intra_matrix[j] = v;
+            s->chroma_intra_matrix[j] = v;
         }
     }
     if (get_bits1(&s->gb)) {
         for(i=0;i<64;i++) {
             v = get_bits(&s->gb, 8);
-            s->non_intra_matrix[i] = v;
-            s->chroma_non_intra_matrix[i] = v;
+            j = block_permute_op(i);
+            s->non_intra_matrix[j] = v;
+            s->chroma_non_intra_matrix[j] = v;
         }
     }
     if (get_bits1(&s->gb)) {
         for(i=0;i<64;i++) {
             v = get_bits(&s->gb, 8);
-            s->chroma_intra_matrix[i] = v;
+            j = block_permute_op(i);
+            s->chroma_intra_matrix[j] = v;
         }
     }
     if (get_bits1(&s->gb)) {
         for(i=0;i<64;i++) {
             v = get_bits(&s->gb, 8);
-            s->chroma_non_intra_matrix[i] = v;
+            j = block_permute_op(i);
+            s->chroma_non_intra_matrix[j] = v;
         }
     }
 }
@@ -1345,7 +1349,7 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
 {
     Mpeg1Context *s1 = avctx->priv_data;
     MpegEncContext *s = &s1->mpeg_enc_ctx;
-    int width, height, i, v;
+    int width, height, i, v, j;
     
     init_get_bits(&s->gb, buf, buf_size);
 
@@ -1389,8 +1393,9 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
     if (get_bits1(&s->gb)) {
         for(i=0;i<64;i++) {
             v = get_bits(&s->gb, 8);
-            s->intra_matrix[i] = v;
-            s->chroma_intra_matrix[i] = v;
+            j = block_permute_op(i);
+            s->intra_matrix[j] = v;
+            s->chroma_intra_matrix[j] = v;
         }
     } else {
         for(i=0;i<64;i++) {
@@ -1402,8 +1407,9 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
     if (get_bits1(&s->gb)) {
         for(i=0;i<64;i++) {
             v = get_bits(&s->gb, 8);
-            s->non_intra_matrix[i] = v;
-            s->chroma_non_intra_matrix[i] = v;
+            j = block_permute_op(i);
+            s->non_intra_matrix[j] = v;
+            s->chroma_non_intra_matrix[j] = v;
         }
     } else {
         for(i=0;i<64;i++) {
