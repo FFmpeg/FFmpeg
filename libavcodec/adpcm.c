@@ -504,9 +504,6 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
         if (st && channel)
             samples++;
 
-        *samples++ = cs->predictor;
-        samples += st;
-
         for(m=32; n>0 && m>0; n--, m--) { /* in QuickTime, IMA is encoded by chuncks of 34 bytes (=64 samples) */
             *samples = adpcm_ima_expand_nibble(cs, src[0] & 0x0F);
             samples += avctx->channels;
@@ -517,7 +514,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
 
         if(st) { /* handle stereo interlacing */
             c->channel = (channel + 1) % 2; /* we get one packet for left, then one for right data */
-            if(channel == 0) { /* wait for the other packet before outputing anything */
+            if(channel == 1) { /* wait for the other packet before outputing anything */
                 *data_size = 0;
                 return src - buf;
             }
@@ -583,12 +580,10 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
         if(st){
             c->status[1].step_index= (int16_t)(src[0] + (src[1]<<8)); src+=2;
         }
-//            if (cs->step_index < 0) cs->step_index = 0;
-//            if (cs->step_index > 88) cs->step_index = 88;
+        if (cs->step_index < 0) cs->step_index = 0;
+        if (cs->step_index > 88) cs->step_index = 88;
 
         m= (buf_size - (src - buf))>>st;
-//printf("%d %d %d %d\n", st, m, c->status[0].predictor, c->status[0].step_index);
-        //FIXME / XXX decode chanels individual & interleave samples
         for(i=0; i<m; i++) {
 	    *samples++ = adpcm_4xa_expand_nibble(&c->status[0], src[i] & 0x0F);
             if (st)
