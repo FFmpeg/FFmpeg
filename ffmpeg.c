@@ -1941,12 +1941,15 @@ void opt_output_file(const char *filename)
         use_video = file_format->video_codec != CODEC_ID_NONE;
         use_audio = file_format->audio_codec != CODEC_ID_NONE;
 
-        /* disable if no corresponding type found */
-        check_audio_video_inputs(&input_has_video, &input_has_audio);
-        if (!input_has_video)
-            use_video = 0;
-        if (!input_has_audio)
-            use_audio = 0;
+        /* disable if no corresponding type found and at least one
+           input file */
+        if (nb_input_files > 0) {
+            check_audio_video_inputs(&input_has_video, &input_has_audio);
+            if (!input_has_video)
+                use_video = 0;
+            if (!input_has_audio)
+                use_audio = 0;
+        }
 
         /* manual disable */
         if (audio_disable) {
