@@ -3298,6 +3298,9 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
     int i;
     int skip_dct[6];
     int dct_offset   = s->linesize*8; //default for progressive frames
+    uint8_t *ptr_y, *ptr_cb, *ptr_cr;
+    int wrap_y, wrap_c;
+    int emu=0;
     
     for(i=0; i<6; i++) skip_dct[i]=0;
     
@@ -3324,23 +3327,19 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
         ff_set_qscale(s, last_qp + s->dquant);
     }
 
+    wrap_y = s->linesize;
+    wrap_c = s->uvlinesize;
+    ptr_y = s->new_picture.data[0] + (mb_y * 16 * wrap_y) + mb_x * 16;
+    ptr_cb = s->new_picture.data[1] + (mb_y * 8 * wrap_c) + mb_x * 8;
+    ptr_cr = s->new_picture.data[2] + (mb_y * 8 * wrap_c) + mb_x * 8;
+
+    if(mb_x*16+16 > s->width || mb_y*16+16 > s->height){
+        ff_emulated_edge_mc(s->edge_emu_buffer, ptr_y, wrap_y, 16, 16, mb_x*16, mb_y*16, s->width, s->height);
+        ptr_y= s->edge_emu_buffer;
+        emu=1;
+    }
+
     if (s->mb_intra) {
-        uint8_t *ptr_y, *ptr_cb, *ptr_cr;
-        int wrap_y, wrap_c;
-        int emu=0;
-
-        wrap_y = s->linesize;
-        wrap_c = s->uvlinesize;
-        ptr_y = s->new_picture.data[0] + (mb_y * 16 * wrap_y) + mb_x * 16;
-        ptr_cb = s->new_picture.data[1] + (mb_y * 8 * wrap_c) + mb_x * 8;
-        ptr_cr = s->new_picture.data[2] + (mb_y * 8 * wrap_c) + mb_x * 8;
-
-        if(mb_x*16+16 > s->width || mb_y*16+16 > s->height){
-            ff_emulated_edge_mc(s->edge_emu_buffer, ptr_y, wrap_y, 16, 16, mb_x*16, mb_y*16, s->width, s->height);
-            ptr_y= s->edge_emu_buffer;
-            emu=1;
-        }
-        
         if(s->flags&CODEC_FLAG_INTERLACED_DCT){
             int progressive_score, interlaced_score;
 
@@ -3369,44 +3368,23 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
             skip_dct[4]= 1;
             skip_dct[5]= 1;
         }else{
-            if(emu){
+            if(emu){ //FIXME move out of loop and fix edge_emu_buffer mess
                 ff_emulated_edge_mc(s->edge_emu_buffer, ptr_cb, wrap_c, 8, 8, mb_x*8, mb_y*8, s->width>>1, s->height>>1);
                 ptr_cb= s->edge_emu_buffer;
+                ff_emulated_edge_mc(s->edge_emu_buffer+8, ptr_cr, wrap_c, 8, 8, mb_x*8, mb_y*8, s->width>>1, s->height>>1);
+                ptr_cr= s->edge_emu_buffer+8;
             }
 	    s->dsp.get_pixels(s->block[4], ptr_cb, wrap_c);
-
-            if(emu){
-                ff_emulated_edge_mc(s->edge_emu_buffer, ptr_cr, wrap_c, 8, 8, mb_x*8, mb_y*8, s->width>>1, s->height>>1);
-                ptr_cr= s->edge_emu_buffer;
-            }
             s->dsp.get_pixels(s->block[5], ptr_cr, wrap_c);
-        }
-
-        if(s->avctx->quantizer_noise_shaping){
-            get_vissual_weight(weight[0], ptr_y                 , wrap_y);
-            get_vissual_weight(weight[1], ptr_y              + 8, wrap_y);
-            get_vissual_weight(weight[2], ptr_y + dct_offset    , wrap_y);
-            get_vissual_weight(weight[3], ptr_y + dct_offset + 8, wrap_y);
-            get_vissual_weight(weight[4], ptr_cb                , wrap_c);
-            get_vissual_weight(weight[5], ptr_cr               , wrap_c);
-            memcpy(orig[0], s->block[0], sizeof(DCTELEM)*64*6);
         }
     }else{
         op_pixels_func (*op_pix)[4];
         qpel_mc_func (*op_qpix)[16];
         uint8_t *dest_y, *dest_cb, *dest_cr;
-        uint8_t *ptr_y, *ptr_cb, *ptr_cr;
-        int wrap_y, wrap_c;
-        int emu=0;
 
         dest_y  = s->dest[0];
         dest_cb = s->dest[1];
         dest_cr = s->dest[2];
-        wrap_y = s->linesize;
-        wrap_c = s->uvlinesize;
-        ptr_y  = s->new_picture.data[0] + (mb_y * 16 * wrap_y) + mb_x * 16;
-        ptr_cb = s->new_picture.data[1] + (mb_y * 8 * wrap_c) + mb_x * 8;
-        ptr_cr = s->new_picture.data[2] + (mb_y * 8 * wrap_c) + mb_x * 8;
 
         if ((!s->no_rounding) || s->pict_type==B_TYPE){
 	    op_pix = s->dsp.put_pixels_tab;
@@ -3425,12 +3403,6 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
             MPV_motion(s, dest_y, dest_cb, dest_cr, 1, s->next_picture.data, op_pix, op_qpix);
         }
 
-        if(mb_x*16+16 > s->width || mb_y*16+16 > s->height){
-            ff_emulated_edge_mc(s->edge_emu_buffer, ptr_y, wrap_y, 16, 16, mb_x*16, mb_y*16, s->width, s->height);
-            ptr_y= s->edge_emu_buffer;
-            emu=1;
-        }
-        
         if(s->flags&CODEC_FLAG_INTERLACED_DCT){
             int progressive_score, interlaced_score;
 
@@ -3465,12 +3437,10 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
             if(emu){
                 ff_emulated_edge_mc(s->edge_emu_buffer, ptr_cb, wrap_c, 8, 8, mb_x*8, mb_y*8, s->width>>1, s->height>>1);
                 ptr_cb= s->edge_emu_buffer;
+                ff_emulated_edge_mc(s->edge_emu_buffer+8, ptr_cr, wrap_c, 8, 8, mb_x*8, mb_y*8, s->width>>1, s->height>>1);
+                ptr_cr= s->edge_emu_buffer+8;
             }
             s->dsp.diff_pixels(s->block[4], ptr_cb, dest_cb, wrap_c);
-            if(emu){
-                ff_emulated_edge_mc(s->edge_emu_buffer, ptr_cr, wrap_c, 8, 8, mb_x*8, mb_y*8, s->width>>1, s->height>>1);
-                ptr_cr= s->edge_emu_buffer;
-            }
             s->dsp.diff_pixels(s->block[5], ptr_cr, dest_cr, wrap_c);
         }
         /* pre quantization */         
@@ -3483,26 +3453,21 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
             if(s->dsp.sad[1](NULL, ptr_cb              , dest_cb              , wrap_c, 8) < 20*s->qscale) skip_dct[4]= 1;
             if(s->dsp.sad[1](NULL, ptr_cr              , dest_cr              , wrap_c, 8) < 20*s->qscale) skip_dct[5]= 1;
         }
+    }
 
-        if(s->avctx->quantizer_noise_shaping){
-            if(!skip_dct[0]) get_vissual_weight(weight[0], ptr_y                 , wrap_y);
-            if(!skip_dct[1]) get_vissual_weight(weight[1], ptr_y              + 8, wrap_y);
-            if(!skip_dct[2]) get_vissual_weight(weight[2], ptr_y + dct_offset    , wrap_y);
-            if(!skip_dct[3]) get_vissual_weight(weight[3], ptr_y + dct_offset + 8, wrap_y);
-            if(!skip_dct[4]) get_vissual_weight(weight[4], ptr_cb                , wrap_c);
-            if(!skip_dct[5]) get_vissual_weight(weight[5], ptr_cr                , wrap_c);
-            memcpy(orig[0], s->block[0], sizeof(DCTELEM)*64*6);
-        }
+    if(s->avctx->quantizer_noise_shaping){
+        if(!skip_dct[0]) get_vissual_weight(weight[0], ptr_y                 , wrap_y);
+        if(!skip_dct[1]) get_vissual_weight(weight[1], ptr_y              + 8, wrap_y);
+        if(!skip_dct[2]) get_vissual_weight(weight[2], ptr_y + dct_offset    , wrap_y);
+        if(!skip_dct[3]) get_vissual_weight(weight[3], ptr_y + dct_offset + 8, wrap_y);
+        if(!skip_dct[4]) get_vissual_weight(weight[4], ptr_cb                , wrap_c);
+        if(!skip_dct[5]) get_vissual_weight(weight[5], ptr_cr                , wrap_c);
+        memcpy(orig[0], s->block[0], sizeof(DCTELEM)*64*6);
     }
             
     /* DCT & quantize */
-    if(s->out_format==FMT_MJPEG){
-        for(i=0;i<6;i++) {
-            int overflow;
-            s->block_last_index[i] = s->dct_quantize(s, s->block[i], i, 8, &overflow);
-            if (overflow) clip_coeffs(s, s->block[i], s->block_last_index[i]);
-        }
-    }else{
+    assert(s->out_format!=FMT_MJPEG || s->qscale==8);
+    {
         for(i=0;i<6;i++) {
             if(!skip_dct[i]){
                 int overflow;
@@ -4037,6 +4002,7 @@ static void encode_picture(MpegEncContext *s, int picture_number)
         }
         convert_matrix(&s->dsp, s->q_intra_matrix, s->q_intra_matrix16, 
                        s->intra_matrix, s->intra_quant_bias, 8, 8);
+        s->qscale= 8;
     }
     
     //FIXME var duplication
