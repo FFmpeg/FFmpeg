@@ -142,6 +142,27 @@ static int64_t get_utf8(GetBitContext *gb)
     return val;
 }
 
+static int skip_utf8(GetBitContext *gb)
+{
+    int ones=0, bytes;
+    
+    while(get_bits1(gb))
+        ones++;
+
+    if     (ones==0) bytes=0;
+    else if(ones==1) return -1;
+    else             bytes= ones - 1;
+    
+    skip_bits(gb, 7-ones);
+    while(bytes--){
+        const int tmp = get_bits(gb, 8);
+        
+        if((tmp>>6) != 2)
+            return -1;
+    }
+    return 0;
+}
+
 static int get_crc8(const uint8_t *buf, int count){
     int crc=0;
     int i;
