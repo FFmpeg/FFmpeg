@@ -74,12 +74,12 @@ typedef struct {
 #define AC3_ID   0x80
 #define LPCM_ID  0xa0
 
+static const int lpcm_freq_tab[4] = { 48000, 96000, 44100, 32000 };
+
 #ifdef CONFIG_ENCODERS
 extern AVOutputFormat mpeg1system_mux;
 extern AVOutputFormat mpeg1vcd_mux;
 extern AVOutputFormat mpeg2vob_mux;
-
-static const int lpcm_freq_tab[4] = { 48000, 96000, 44100, 32000 };
 
 static int put_pack_header(AVFormatContext *ctx, 
                            uint8_t *buf, int64_t timestamp)
