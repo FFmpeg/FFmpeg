@@ -585,7 +585,7 @@ static void inplace_liftV(int *dst, int width, int height, int stride, int *coef
 #define LX0 0
 #define LX1 1
 
-#if 1 // more accurate 9/7
+#if 0 // more accurate 9/7
 #define N1 2
 #define SHIFT1 14
 #define COEFFS1 (int[]){-25987,-25987}
@@ -602,7 +602,7 @@ static void inplace_liftV(int *dst, int width, int height, int stride, int *coef
 #define N1 4
 #define SHIFT1 4
 #define COEFFS1 (int[]){1,-9,-9,1}
-#define N2 0
+#define N2 4
 #define SHIFT2 4
 #define COEFFS2 (int[]){-1,5,5,-1}
 #define N3 0
