@@ -17,6 +17,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 #include "avformat.h"
+#include <stdarg.h>
 
 #define IO_BUFFER_SIZE 32768
 
@@ -45,7 +46,7 @@ int init_put_byte(ByteIOContext *s,
     s->must_flush = 0;
     s->eof_reached = 0;
     s->is_streamed = 0;
-    s->packet_size = 1;
+    s->max_packet_size = 0;
     return 0;
 }
                   
@@ -136,10 +137,10 @@ offset_t url_fseek(ByteIOContext *s, offset_t offset, int whence)
                 return -EPIPE;
             s->buf_ptr = s->buffer;
             s->buf_end = s->buffer;
-            s->eof_reached = 0;
             s->seek(s->opaque, offset, SEEK_SET);
             s->pos = offset;
         }
+        s->eof_reached = 0;
     }
     return offset;
 }
@@ -212,15 +213,24 @@ static void fill_buffer(ByteIOContext *s)
 {
     int len;
 
+    /* no need to do anything if EOF already reached */
+    if (s->eof_reached)
+        return;
     len = s->read_packet(s->opaque, s->buffer, s->buffer_size);
-    s->pos += len;
-    s->buf_ptr = s->buffer;
-    s->buf_end = s->buffer + len;
-    if (len == 0) {
+    if (len <= 0) {
+        /* do not modify buffer if EOF reached so that a seek back can
+           be done without rereading data */
         s->eof_reached = 1;
+    } else {
+        s->pos += len;
+        s->buf_ptr = s->buffer;
+        s->buf_end = s->buffer + len;
     }
 }
 
+/* NOTE: return 0 if EOF, so you cannot use it if EOF handling is
+   necessary */
+/* XXX: put an inline version */
 int get_byte(ByteIOContext *s)
 {
     if (s->buf_ptr < s->buf_end) {
@@ -231,6 +241,20 @@ int get_byte(ByteIOContext *s)
             return *s->buf_ptr++;
         else
             return 0;
+    }
+}
+
+/* NOTE: return URL_EOF (-1) if EOF */
+int url_fgetc(ByteIOContext *s)
+{
+    if (s->buf_ptr < s->buf_end) {
+        return *s->buf_ptr++;
+    } else {
+        fill_buffer(s);
+        if (s->buf_ptr < s->buf_end)
+            return *s->buf_ptr++;
+        else
+            return URL_EOF;
     }
 }
 
@@ -334,9 +358,15 @@ int url_seek_packet(void *opaque, INT64 offset, int whence)
 int url_fdopen(ByteIOContext *s, URLContext *h)
 {
     UINT8 *buffer;
-    int buffer_size;
+    int buffer_size, max_packet_size;
 
-    buffer_size = (IO_BUFFER_SIZE / h->packet_size) * h->packet_size;
+    
+    max_packet_size = url_get_max_packet_size(h);
+    if (max_packet_size) {
+        buffer_size = max_packet_size; /* no need to bufferize more than one packet */
+    } else {
+        buffer_size = IO_BUFFER_SIZE;
+    }
     buffer = av_malloc(buffer_size);
     if (!buffer)
         return -ENOMEM;
@@ -348,7 +378,7 @@ int url_fdopen(ByteIOContext *s, URLContext *h)
         return -EIO;
     }
     s->is_streamed = h->is_streamed;
-    s->packet_size = h->packet_size;
+    s->max_packet_size = max_packet_size;
     return 0;
 }
 
@@ -371,6 +401,8 @@ int url_setbufsize(ByteIOContext *s, int buf_size)
     return 0;
 }
 
+/* NOTE: when opened as read/write, the buffers are only used for
+   reading */
 int url_fopen(ByteIOContext *s, const char *filename, int flags)
 {
     URLContext *h;
@@ -401,6 +433,56 @@ URLContext *url_fileno(ByteIOContext *s)
     return s->opaque;
 }
 
+/* XXX: currently size is limited */
+int url_fprintf(ByteIOContext *s, const char *fmt, ...)
+{
+    va_list ap;
+    char buf[4096];
+    int ret;
+
+    va_start(ap, fmt);
+    ret = vsnprintf(buf, sizeof(buf), fmt, ap);
+    va_end(ap);
+    put_buffer(s, buf, strlen(buf));
+    return ret;
+}
+
+/* note: unlike fgets, the EOL character is not returned and a whole
+   line is parsed. return NULL if first char read was EOF */
+char *url_fgets(ByteIOContext *s, char *buf, int buf_size)
+{
+    int c;
+    char *q;
+
+    c = url_fgetc(s);
+    if (c == EOF)
+        return NULL;
+    q = buf;
+    for(;;) {
+        if (c == EOF || c == '\n')
+            break;
+        if ((q - buf) < buf_size - 1)
+            *q++ = c;
+        c = url_fgetc(s);
+    }
+    if (buf_size > 0)
+        *q = '\0';
+    return buf;
+}
+
+/* 
+ * Return the maximum packet size associated to packetized buffered file
+ * handle. If the file is not packetized (stream like http or file on
+ * disk), then 0 is returned.
+ * 
+ * @param h buffered file handle
+ * @return maximum packet size in bytes
+ */
+int url_fget_max_packet_size(ByteIOContext *s)
+{
+    return s->max_packet_size;
+}
+
 /* buffer handling */
 int url_open_buf(ByteIOContext *s, UINT8 *buf, int buf_size, int flags)
 {
@@ -411,5 +493,150 @@ int url_open_buf(ByteIOContext *s, UINT8 *buf, int buf_size, int flags)
 /* return the written or read size */
 int url_close_buf(ByteIOContext *s)
 {
+    put_flush_packet(s);
     return s->buf_ptr - s->buffer;
+}
+
+/* output in a dynamic buffer */
+
+typedef struct DynBuffer {
+    int pos, size, allocated_size;
+    UINT8 *buffer;
+    int io_buffer_size;
+    UINT8 io_buffer[1];
+} DynBuffer;
+
+static void dyn_buf_write(void *opaque, UINT8 *buf, int buf_size)
+{
+    DynBuffer *d = opaque;
+    int new_size, new_allocated_size;
+    UINT8 *new_buffer;
+    
+    /* reallocate buffer if needed */
+    new_size = d->pos + buf_size;
+    new_allocated_size = d->allocated_size;
+    while (new_size > new_allocated_size) {
+        if (!new_allocated_size)
+            new_allocated_size = new_size;
+        else
+            new_allocated_size = (new_allocated_size * 3) / 2;
+    }
+    
+    if (new_allocated_size > d->allocated_size) {
+        new_buffer = av_malloc(new_allocated_size);
+        if (!new_buffer)
+            return;
+        memcpy(new_buffer, d->buffer, d->size);
+        av_free(d->buffer);
+        d->buffer = new_buffer;
+        d->allocated_size = new_allocated_size;
+    }
+    memcpy(d->buffer + d->pos, buf, buf_size);
+    d->pos = new_size;
+    if (d->pos > d->size)
+        d->size = d->pos;
+}
+
+static void dyn_packet_buf_write(void *opaque, UINT8 *buf, int buf_size)
+{
+    unsigned char buf1[4];
+
+    /* packetized write: output the header */
+    buf1[0] = (buf_size >> 24);
+    buf1[1] = (buf_size >> 16);
+    buf1[2] = (buf_size >> 8);
+    buf1[3] = (buf_size);
+    dyn_buf_write(opaque, buf1, 4);
+
+    /* then the data */
+    dyn_buf_write(opaque, buf, buf_size);
+}
+
+static int dyn_buf_seek(void *opaque, offset_t offset, int whence)
+{
+    DynBuffer *d = opaque;
+
+    if (whence == SEEK_CUR)
+        offset += d->pos;
+    else if (whence == SEEK_END)
+        offset += d->size;
+    if (offset < 0 || offset > 0x7fffffffLL)
+        return -1;
+    d->pos = offset;
+    return 0;
+}
+
+static int url_open_dyn_buf_internal(ByteIOContext *s, int max_packet_size)
+{
+    DynBuffer *d;
+    int io_buffer_size, ret;
+    
+    if (max_packet_size) 
+        io_buffer_size = max_packet_size;
+    else
+        io_buffer_size = 1024;
+        
+    d = av_malloc(sizeof(DynBuffer) + io_buffer_size);
+    if (!d)
+        return -1;
+    d->io_buffer_size = io_buffer_size;
+    d->buffer = NULL;
+    d->pos = 0;
+    d->size = 0;
+    d->allocated_size = 0;
+    ret = init_put_byte(s, d->io_buffer, io_buffer_size, 
+                        1, d, NULL, 
+                        max_packet_size ? dyn_packet_buf_write : dyn_buf_write, 
+                        max_packet_size ? NULL : dyn_buf_seek);
+    if (ret == 0) {
+        s->max_packet_size = max_packet_size;
+    }
+    return ret;
+}
+
+/*
+ * Open a write only memory stream.
+ * 
+ * @param s new IO context
+ * @return zero if no error.
+ */
+int url_open_dyn_buf(ByteIOContext *s)
+{
+    return url_open_dyn_buf_internal(s, 0);
+}
+
+/*
+ * Open a write only packetized memory stream with a maximum packet
+ * size of 'max_packet_size'.  The stream is stored in a memory buffer
+ * with a big endian 4 byte header giving the packet size in bytes.
+ * 
+ * @param s new IO context
+ * @param max_packet_size maximum packet size (must be > 0) 
+ * @return zero if no error.
+ */
+int url_open_dyn_packet_buf(ByteIOContext *s, int max_packet_size)
+{
+    if (max_packet_size <= 0)
+        return -1;
+    return url_open_dyn_buf_internal(s, max_packet_size);
+}
+
+/* 
+ * Return the written size and a pointer to the buffer. The buffer
+ *  must be freed with av_free(). 
+ * @param s IO context
+ * @param pointer to a byte buffer
+ * @return the length of the byte buffer
+ */
+int url_close_dyn_buf(ByteIOContext *s, UINT8 **pbuffer)
+{
+    DynBuffer *d = s->opaque;
+    int size;
+
+    put_flush_packet(s);
+
+    *pbuffer = d->buffer;
+    size = d->size;
+    av_free(d);
+    return size;
 }
