@@ -25,9 +25,9 @@
 
 /*
  * First version by Francois Revol revol@free.fr
- * 
+ *
  * Features and limitations:
- * - reads most of the QT files I have (at least the structure), 
+ * - reads most of the QT files I have (at least the structure),
  *   the exceptions are .mov with zlib compressed headers ('cmov' section). It shouldn't be hard to implement.
  *   FIXED, Francois Revol, 07/17/2002
  * - ffmpeg has nearly none of the usual QuickTime codecs,
@@ -37,10 +37,10 @@
  *   (to make .mov parser crash maybe ?), despite what they say in the MPEG FAQ at
  *   http://mpeg.telecomitalialab.com/faq.htm
  * - the code is quite ugly... maybe I won't do it recursive next time :-)
- * 
+ *
  * Funny I didn't know about http://sourceforge.net/projects/qt-ffmpeg/
  * when coding this :) (it's a writer anyway)
- * 
+ *
  * Reference documents:
  * http://www.geocities.com/xhelmboyx/quicktime/formats/qtm-layout.txt
  * Apple:
@@ -54,34 +54,6 @@
 /* allows chunk splitting - should work now... */
 /* in case you can't read a file, try commenting */
 #define MOV_SPLIT_CHUNKS
-
-#ifdef DEBUG
-/*
- * XXX: static sux, even more in a multithreaded environment...
- * Avoid them. This is here just to help debugging.
- */
-static int debug_indent = 0;
-void print_atom(const char *str, uint32_t type, uint64_t offset, uint64_t size)
-{
-    unsigned int tag, i;
-    tag = (unsigned int) type;
-    i=debug_indent;
-    if(tag == 0) tag = MKTAG('N', 'U', 'L', 'L');
-    while(i--)
-        printf("|");
-    printf("parse:");
-    printf(" %s: tag=%c%c%c%c offset=0x%x size=0x%x\n",
-           str, tag & 0xff,
-           (tag >> 8) & 0xff,
-           (tag >> 16) & 0xff,
-           (tag >> 24) & 0xff,
-           (unsigned int)offset,
-	   (unsigned int)size);
-    assert((unsigned int)size < 0x7fffffff);// catching errors
-}
-#else
-#define print_atom(a,b,c,d)
-#endif
 
 /* some streams in QT (and in MP4 mostly) aren't either video nor audio */
 /* so we first list them as this, then clean up the list of streams we give back, */
@@ -117,13 +89,13 @@ static const CodecTag mov_video_tags[] = {
     { CODEC_ID_DVVIDEO, MKTAG('d', 'v', 'c', 'p') }, /* DV PAL */
 /*    { CODEC_ID_DVVIDEO, MKTAG('A', 'V', 'd', 'v') }, *//* AVID dv */
     { CODEC_ID_VP3, MKTAG('V', 'P', '3', '1') }, /* On2 VP3 */
-    { 0, 0 },
+    { CODEC_ID_NONE, 0 },
 };
 
 static const CodecTag mov_audio_tags[] = {
 /*    { CODEC_ID_PCM_S16BE, MKTAG('N', 'O', 'N', 'E') }, *//* uncompressed */
     { CODEC_ID_PCM_S16BE, MKTAG('t', 'w', 'o', 's') }, /* 16 bits */
-    { CODEC_ID_PCM_S8, MKTAG('t', 'w', 'o', 's') }, /* 8 bits */
+    /* { CODEC_ID_PCM_S8, MKTAG('t', 'w', 'o', 's') },*/ /* 8 bits */
     { CODEC_ID_PCM_U8, MKTAG('r', 'a', 'w', ' ') }, /* 8 bits unsigned */
     { CODEC_ID_PCM_S16LE, MKTAG('s', 'o', 'w', 't') }, /*  */
     { CODEC_ID_PCM_MULAW, MKTAG('u', 'l', 'a', 'w') }, /*  */
@@ -137,9 +109,9 @@ static const CodecTag mov_audio_tags[] = {
     { CODEC_ID_MP2, 0x5500736D }, /* MPEG layer 3 *//* XXX: check endianness */
 /*    { CODEC_ID_OGG_VORBIS, MKTAG('O', 'g', 'g', 'S') }, *//* sample files at http://heroinewarrior.com/xmovie.php3 use this tag */
 /* MP4 tags */
-/*    { CODEC_ID_AAC, MKTAG('m', 'p', '4', 'a') }, *//* MPEG 4 AAC or audio ? */
-                                                     /* The standard for mpeg4 audio is still not normalised AFAIK anyway */
-    { 0, 0 }, 
+    { CODEC_ID_AAC, MKTAG('m', 'p', '4', 'a') }, /* MPEG 4 AAC or audio ? */
+    /* The standard for mpeg4 audio is still not normalised AFAIK anyway */
+    { CODEC_ID_NONE, 0 },
 };
 
 /* the QuickTime file format is quite convoluted...
@@ -152,6 +124,19 @@ typedef struct MOV_sample_to_chunk_tbl {
     long count;
     long id;
 } MOV_sample_to_chunk_tbl;
+
+typedef struct {
+    uint32_t type;
+    int64_t offset;
+    int64_t size; /* total size (excluding the size and type fields) */
+} MOV_atom_t;
+
+typedef struct {
+    int seed;
+    int flags;
+    int size;
+    void* clrs;
+} MOV_ctab_t;
 
 typedef struct {
     uint8_t  version;
@@ -220,8 +205,8 @@ typedef struct MOVStreamContext {
     long left_in_chunk; /* how many samples before next chunk */
     /* specific MPEG4 header which is added at the beginning of the stream */
     int header_len;
-    MOV_esds_t esds;
     uint8_t *header_data;
+    MOV_esds_t esds;
 } MOVStreamContext;
 
 typedef struct MOVContext {
@@ -241,6 +226,8 @@ typedef struct MOVContext {
 
     int64_t next_chunk_offset;
     MOVStreamContext *partial; /* != 0 : there is still to read in the current chunk */
+    int ctab_size;
+    MOV_ctab_t **ctab;           /* color tables */
     const struct MOVParseTableEntry *parse_table; /* could be eventually used to change the table */
     /* NOTE: for recursion save to/ restore from local variable! */
 } MOVContext;
@@ -254,11 +241,7 @@ typedef struct MOVContext {
  0: continue to parse next atom
  -1: error occured, exit
  */
-typedef int (*mov_parse_function)(MOVContext *ctx,
-                                  ByteIOContext *pb,
-                                  uint32_t atom_type,
-                                  int64_t atom_offset, /* after the size and type field (and eventually the extended size) */
-                                  int64_t atom_size); /* total size (excluding the size and type fields) */
+typedef int (*mov_parse_function)(MOVContext *ctx, ByteIOContext *pb, MOV_atom_t atom);
 
 /* links atom IDs to parse functions */
 typedef struct MOVParseTableEntry {
@@ -266,79 +249,108 @@ typedef struct MOVParseTableEntry {
     mov_parse_function func;
 } MOVParseTableEntry;
 
-static int parse_leaf(MOVContext *c, ByteIOContext *pb, uint32_t atom_type, int64_t atom_offset, int64_t atom_size)
+#ifdef DEBUG
+/*
+ * XXX: static sux, even more in a multithreaded environment...
+ * Avoid them. This is here just to help debugging.
+ */
+static int debug_indent = 0;
+void print_atom(const char *str, MOV_atom_t atom)
 {
-    print_atom("leaf", atom_type, atom_offset, atom_size);
+    unsigned int tag, i;
+    tag = (unsigned int) atom.type;
+    i=debug_indent;
+    if(tag == 0) tag = MKTAG('N', 'U', 'L', 'L');
+    while(i--)
+        printf("|");
+    printf("parse:");
+    printf(" %s: tag=%c%c%c%c offset=0x%x size=0x%x\n",
+           str, tag & 0xff,
+           (tag >> 8) & 0xff,
+           (tag >> 16) & 0xff,
+           (tag >> 24) & 0xff,
+           (unsigned int)atom.offset,
+	   (unsigned int)atom.size);
+    assert((unsigned int)atom.size < 0x7fffffff);// catching errors
+}
+#else
+#define print_atom(a,b)
+#endif
 
-    if(atom_size>1)
-        url_fskip(pb, atom_size);
-/*        url_seek(pb, atom_offset+atom_size, SEEK_SET); */
+
+static int mov_read_leaf(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
+{
+    print_atom("leaf", atom);
+
+    if (atom.size>1)
+        url_fskip(pb, atom.size);
+/*        url_seek(pb, atom_offset+atom.size, SEEK_SET); */
     return 0;
 }
 
-static int parse_default(MOVContext *c, ByteIOContext *pb, uint32_t atom_type, int64_t atom_offset, int64_t atom_size)
+static int mov_read_default(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
-    uint32_t type, foo=0;
-    uint64_t offset, size;
     int64_t total_size = 0;
+    MOV_atom_t a;
     int i;
     int err = 0;
-    foo=0;
+
 #ifdef DEBUG
-    print_atom("default", atom_type, atom_offset, atom_size);
+    print_atom("default", atom);
     debug_indent++;
 #endif
 
-    offset = atom_offset;
+    a.offset = atom.offset;
 
-    if(atom_size < 0)
-        atom_size = 0x0FFFFFFFFFFFFFFF;
-    while(((total_size + 8) < atom_size) && !url_feof(pb) && !err) {
-        size=atom_size;
-        type=0L;
-        if(atom_size >= 8) {
-	    size = get_be32(pb);
-            type = get_le32(pb);
+    if(atom.size < 0)
+        atom.size = 0x0FFFFFFFFFFFFFFF;
+    while(((total_size + 8) < atom.size) && !url_feof(pb) && !err) {
+	a.size = atom.size;
+	a.type=0L;
+        if(atom.size >= 8) {
+	    a.size = get_be32(pb);
+            a.type = get_le32(pb);
         }
 	total_size += 8;
-        offset += 8;
-	//printf("type: %08x  %.4s  sz: %Lx  %Lx   %Lx\n", type, (char*)&type, size, atom_size, total_size);
-        if(size == 1) { /* 64 bit extended size */
-            size = get_be64(pb) - 8;
-            offset+=8;
-            total_size+=8;
+        a.offset += 8;
+	//printf("type: %08x  %.4s  sz: %Lx  %Lx   %Lx\n", type, (char*)&type, size, atom.size, total_size);
+        if (a.size == 1) { /* 64 bit extended size */
+	    a.size = get_be64(pb) - 8;
+            a.offset += 8;
+            total_size += 8;
         }
-	if(size == 0) {
-	    size = atom_size - total_size;
-	    if (size <= 8)
+	if (a.size == 0) {
+	    a.size = atom.size - total_size;
+	    if (a.size <= 8)
                 break;
 	}
-	for (i=0; c->parse_table[i].type != 0L && c->parse_table[i].type != type; i++)
+	for (i = 0; c->parse_table[i].type != 0L
+	     && c->parse_table[i].type != a.type; i++)
 	    /* empty */;
 
-        size -= 8;
+	a.size -= 8;
 //        printf(" i=%ld\n", i);
 	if (c->parse_table[i].type == 0) { /* skip leaf atoms data */
-//            url_seek(pb, atom_offset+atom_size, SEEK_SET);
+//            url_seek(pb, atom.offset+atom.size, SEEK_SET);
 #ifdef DEBUG
-            print_atom("unknown", type, offset, size);
+            print_atom("unknown", a);
 #endif
-            url_fskip(pb, size);
+            url_fskip(pb, a.size);
 	} else {
 #ifdef DEBUG
 	    //char b[5] = { type & 0xff, (type >> 8) & 0xff, (type >> 16) & 0xff, (type >> 24) & 0xff, 0 };
 	    //print_atom(b, type, offset, size);
 #endif
-	    err = (c->parse_table[i].func)(c, pb, type, offset, size);
+	    err = (c->parse_table[i].func)(c, pb, a);
 	}
 
-        offset+=size;
-        total_size+=size;
+	a.offset += a.size;
+        total_size += a.size;
     }
 
-    if (!err && total_size < atom_size && atom_size < 0x7ffff) {
-	printf("RESET  %Ld  %Ld  err:%d\n", atom_size, total_size, err);
-        url_fskip(pb, atom_size - total_size);
+    if (!err && total_size < atom.size && atom.size < 0x7ffff) {
+	//printf("RESET  %Ld  %Ld  err:%d\n", atom.size, total_size, err);
+        url_fskip(pb, atom.size - total_size);
     }
 
 #ifdef DEBUG
@@ -347,211 +359,35 @@ static int parse_default(MOVContext *c, ByteIOContext *pb, uint32_t atom_type, i
     return err;
 }
 
-static int parse_ctab(MOVContext *c, ByteIOContext *pb, uint32_t atom_type, int64_t atom_offset, int64_t atom_size)
+static int mov_read_ctab(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
-    url_fskip(pb, atom_size); // for now
-    return 0;
-}
-
-static int parse_mvhd(MOVContext *c, ByteIOContext *pb, uint32_t atom_type, int64_t atom_offset, int64_t atom_size)
-{
-    print_atom("mvhd", atom_type, atom_offset, atom_size);
-
-    get_byte(pb); /* version */
-    get_byte(pb); get_byte(pb); get_byte(pb); /* flags */
-
-    get_be32(pb); /* creation time */
-    get_be32(pb); /* modification time */
-    c->time_scale = get_be32(pb); /* time scale */
-#ifdef DEBUG
-    printf("time scale = %i\n", c->time_scale);
-#endif
-    c->duration = get_be32(pb); /* duration */
-    get_be32(pb); /* preferred scale */
-
-    get_be16(pb); /* preferred volume */
-
-    url_fskip(pb, 10); /* reserved */
-
-    url_fskip(pb, 36); /* display matrix */
-
-    get_be32(pb); /* preview time */
-    get_be32(pb); /* preview duration */
-    get_be32(pb); /* poster time */
-    get_be32(pb); /* selection time */
-    get_be32(pb); /* selection duration */
-    get_be32(pb); /* current time */
-    get_be32(pb); /* next track ID */
-    
-    return 0;
-}
-
-/* this atom should contain all header atoms */
-static int parse_moov(MOVContext *c, ByteIOContext *pb, uint32_t atom_type, int64_t atom_offset, int64_t atom_size)
-{
-    int err;
-
-    print_atom("moov", atom_type, atom_offset, atom_size);
-
-    err = parse_default(c, pb, atom_type, atom_offset, atom_size);
-    /* we parsed the 'moov' atom, we can terminate the parsing as soon as we find the 'mdat' */
-    /* so we don't parse the whole file if over a network */
-    c->found_moov=1;
-    if(c->found_mdat)
-        return 1; /* found both, just go */
-    return 0; /* now go for mdat */
-}
-
-/* this atom contains actual media data */
-static int parse_mdat(MOVContext *c, ByteIOContext *pb, uint32_t atom_type, int64_t atom_offset, int64_t atom_size)
-{
-    print_atom("mdat", atom_type, atom_offset, atom_size);
-
-    if(atom_size == 0) /* wrong one (MP4) */
-        return 0;
-    c->found_mdat=1;
-    c->mdat_offset = atom_offset;
-    c->mdat_size = atom_size;
-    if(c->found_moov)
-        return 1; /* found both, just go */
-    url_fskip(pb, atom_size);
-    return 0; /* now go for moov */
-}
-
-/* this atom should be null (from specs), but some buggy files put the 'moov' atom inside it... */
-/* like the files created with Adobe Premiere 5.0, for samples see */
-/* http://graphics.tudelft.nl/~wouter/publications/soundtests/ */
-static int parse_wide(MOVContext *c, ByteIOContext *pb, uint32_t atom_type, int64_t atom_offset, int64_t atom_size)
-{
-    int err;
-    uint32_t type;
-
-#ifdef DEBUG
-    print_atom("wide", atom_type, atom_offset, atom_size);
-    debug_indent++;
-#endif
-    if (atom_size < 8)
-        return 0; /* continue */
-    if (get_be32(pb) != 0) { /* 0 sized mdat atom... use the 'wide' atom size */
-        url_fskip(pb, atom_size - 4);
-        return 0;
-    }
-    type = get_le32(pb);
-    if (type != MKTAG('m', 'd', 'a', 't')) {
-        url_fskip(pb, atom_size - 8);
-        return 0;
-    }
-    err = parse_mdat(c, pb, type, atom_offset + 8, atom_size - 8);
-#ifdef DEBUG
-    debug_indent--;
-#endif
-    return err;
-}
-
-static int parse_trak(MOVContext *c, ByteIOContext *pb, uint32_t atom_type, int64_t atom_offset, int64_t atom_size)
-{
-    AVStream *st;
-    MOVStreamContext *sc;
-
-    print_atom("trak", atom_type, atom_offset, atom_size);
-
-    st = av_new_stream(c->fc, c->fc->nb_streams);
-    if (!st) return -2;
-    sc = (MOVStreamContext*) av_mallocz(sizeof(MOVStreamContext));
-    if (!sc) {
-	av_free(st);
-        return -1;
+    unsigned int len;
+    MOV_ctab_t *t;
+    //url_fskip(pb, atom.size); // for now
+    c->ctab = av_realloc(c->ctab, ++c->ctab_size);
+    t = c->ctab[c->ctab_size];
+    t->seed = get_be32(pb);
+    t->flags = get_be16(pb);
+    t->size = get_be16(pb) + 1;
+    len = 2 * t->size * 4;
+    if (len > 0) {
+	t->clrs = av_malloc(len); // 16bit A R G B
+	if (t->clrs)
+	    get_buffer(pb, t->clrs, len);
     }
 
-    sc->sample_to_chunk_index = -1;
-    st->priv_data = sc;
-    st->codec.codec_type = CODEC_TYPE_MOV_OTHER;
-    st->time_length = (c->duration * 1000) / c->time_scale; // time in miliseconds
-    c->streams[c->fc->nb_streams-1] = sc;
-    return parse_default(c, pb, atom_type, atom_offset, atom_size);
-}
-
-static int parse_tkhd(MOVContext *c, ByteIOContext *pb, uint32_t atom_type, int64_t atom_offset, int64_t atom_size)
-{
-    AVStream *st;
-
-    print_atom("tkhd", atom_type, atom_offset, atom_size);
-
-    st = c->fc->streams[c->fc->nb_streams-1];
-
-    get_byte(pb); /* version */
-
-    get_byte(pb); get_byte(pb);
-    get_byte(pb); /* flags */
-    /*
-    MOV_TRACK_ENABLED 0x0001
-    MOV_TRACK_IN_MOVIE 0x0002
-    MOV_TRACK_IN_PREVIEW 0x0004
-    MOV_TRACK_IN_POSTER 0x0008
-    */
-
-    get_be32(pb); /* creation time */
-    get_be32(pb); /* modification time */
-    st->id = (int)get_be32(pb); /* track id (NOT 0 !)*/
-    get_be32(pb); /* reserved */
-    st->time_length = get_be32(pb) * 1000 / c->time_scale; /* duration */
-    get_be32(pb); /* reserved */
-    get_be32(pb); /* reserved */
-
-    get_be16(pb); /* layer */
-    get_be16(pb); /* alternate group */
-    get_be16(pb); /* volume */
-    get_be16(pb); /* reserved */
-
-    url_fskip(pb, 36); /* display matrix */
-
-    /* those are fixed-point */
-    st->codec.width = get_be32(pb) >> 16; /* track width */
-    st->codec.height = get_be32(pb) >> 16; /* track height */
-    
     return 0;
 }
 
-static int parse_mdhd(MOVContext *c, ByteIOContext *pb, uint32_t atom_type, int64_t atom_offset, int64_t atom_size)
+static int mov_read_hdlr(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
-    AVStream *st;
-
-    print_atom("mdhd", atom_type, atom_offset, atom_size);
-
-    st = c->fc->streams[c->fc->nb_streams-1];
-
-    get_byte(pb); /* version */
-
-    get_byte(pb); get_byte(pb);
-    get_byte(pb); /* flags */
-
-    get_be32(pb); /* creation time */
-    get_be32(pb); /* modification time */
-
-    c->streams[c->total_streams]->time_scale = get_be32(pb);
-
-#ifdef DEBUG
-    printf("track[%i].time_scale = %i\n", c->fc->nb_streams-1, c->streams[c->total_streams]->time_scale); /* time scale */
-#endif
-    get_be32(pb); /* duration */
-
-    get_be16(pb); /* language */
-    get_be16(pb); /* quality */
-
-    return 0;
-}
-
-static int parse_hdlr(MOVContext *c, ByteIOContext *pb, uint32_t atom_type, int64_t atom_offset, int64_t atom_size)
-{
+    AVStream *st = c->fc->streams[c->fc->nb_streams-1];
     int len = 0;
     uint8_t *buf;
     uint32_t type;
-    AVStream *st;
     uint32_t ctype;
 
-    print_atom("hdlr", atom_type, atom_offset, atom_size);
-
-    st = c->fc->streams[c->fc->nb_streams-1];
+    print_atom("hdlr", atom);
 
     get_byte(pb); /* version */
     get_byte(pb); get_byte(pb); get_byte(pb); /* flags */
@@ -602,76 +438,50 @@ static int parse_hdlr(MOVContext *c, ByteIOContext *pb, uint32_t atom_type, int6
     get_be32(pb); /* component flags */
     get_be32(pb); /* component flags mask */
 
-    if(atom_size <= 24)
+    if(atom.size <= 24)
         return 0; /* nothing left to read */
     /* XXX: MP4 uses a C string, not a pascal one */
     /* component name */
 
     if(c->mp4) {
         /* .mp4: C string */
-        while(get_byte(pb) && (++len < (atom_size - 24)));
+        while(get_byte(pb) && (++len < (atom.size - 24)));
     } else {
         /* .mov: PASCAL string */
         len = get_byte(pb);
+#ifdef DEBUG
 	buf = (uint8_t*) av_malloc(len+1);
 	if (buf) {
 	    get_buffer(pb, buf, len);
-#ifdef DEBUG
 	    buf[len] = '\0';
 	    printf("**buf='%s'\n", buf);
-#endif
 	    av_free(buf);
 	} else
+#endif
 	    url_fskip(pb, len);
     }
-#if 0
-    len = get_byte(pb);
-    /* XXX: use a better heuristic */
-    if(len < 32) {
-        /* assume that it is a Pascal like string */
-	buf = av_malloc(len+1);
-	if (buf) {
-	    get_buffer(pb, buf, len);
-	    buf[len] = '\0';
-#ifdef DEBUG
-	    printf("**buf='%s'\n", buf);
-#endif
-	    av_free(buf);
-	} else
-            url_fskip(pb, len)l
-    } else {
-        /* MP4 string */
-        for(;;) {
-            if (len == 0)
-                break;
-            len = get_byte(pb);
-        }
-    }
-#endif
 
     return 0;
 }
 
-static int mp4_read_descr_len(ByteIOContext *pb)
+static int mov_mp4_read_descr_len(ByteIOContext *pb)
 {
     int len = 0;
-    int count = 0;
-    for(;;) {
+    int count = 4;
+    while (count--) {
         int c = get_byte(pb);
 	len = (len << 7) | (c & 0x7f);
-        if ((c & 0x80) == 0)
-            break;
-        if (++count == 4)
-            break;
+	if (!(c & 0x80))
+	    break;
     }
     return len;
 }
 
-static int mp4_read_descr(ByteIOContext *pb, int *tag)
+static int mov_mp4_read_descr(ByteIOContext *pb, int *tag)
 {
     int len;
     *tag = get_byte(pb);
-    len = mp4_read_descr_len(pb);
+    len = mov_mp4_read_descr_len(pb);
 #ifdef DEBUG
     printf("MPEG4 description: tag=0x%02x len=%d\n", *tag, len);
 #endif
@@ -687,61 +497,188 @@ static inline unsigned int get_be24(ByteIOContext *s)
     return val;
 }
 
-static int parse_esds(MOVContext *c, ByteIOContext *pb, uint32_t atom_type, int64_t atom_offset, int64_t atom_size)
+static int mov_read_esds(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
-
-    int64_t start_pos = url_ftell(pb);
     AVStream *st = c->fc->streams[c->fc->nb_streams-1];
     MOVStreamContext *sc = (MOVStreamContext *)st->priv_data;
+    int64_t start_pos = url_ftell(pb);
     int tag, len;
 
-    print_atom("esds", atom_type, atom_offset, atom_size);
+    print_atom("esds", atom);
 
     /* Well, broken but suffisant for some MP4 streams */
     get_be32(pb); /* version + flags */
-    len = mp4_read_descr(pb, &tag);
+    len = mov_mp4_read_descr(pb, &tag);
     if (tag == MP4ESDescrTag) {
 	get_be16(pb); /* ID */
 	get_byte(pb); /* priority */
     } else
 	get_be16(pb); /* ID */
 
-    len = mp4_read_descr(pb, &tag);
+    len = mov_mp4_read_descr(pb, &tag);
     if (tag == MP4DecConfigDescrTag) {
 	sc->esds.object_type_id = get_byte(pb);
-	sc->esds.stream_type = get_be24(pb);
+	sc->esds.stream_type = get_byte(pb);
+	sc->esds.buffer_size_db = get_be24(pb);
 	sc->esds.max_bitrate = get_be32(pb);
 	sc->esds.avg_bitrate = get_be32(pb);
 
-	len = mp4_read_descr(pb, &tag);
-	printf("LEN %d  TAG %d  m:%d a:%d\n", len, tag, sc->esds.max_bitrate, sc->esds.avg_bitrate);
+	len = mov_mp4_read_descr(pb, &tag);
+	//printf("LEN %d  TAG %d  m:%d a:%d\n", len, tag, sc->esds.max_bitrate, sc->esds.avg_bitrate);
 	if (tag == MP4DecSpecificDescrTag) {
 #ifdef DEBUG
 	    printf("Specific MPEG4 header len=%d\n", len);
 #endif
-	    sc->header_data = (uint8_t*) av_mallocz(len);
-	    if (sc->header_data) {
-		get_buffer(pb, sc->header_data, len);
-		sc->header_len = len;
+	    st->codec.extradata = (uint8_t*) av_mallocz(len);
+	    if (st->codec.extradata) {
+		get_buffer(pb, st->codec.extradata, len);
+		st->codec.extradata_size = len;
 	    }
 	}
     }
     /* in any case, skip garbage */
-    url_fskip(pb, (atom_size - 8) - ((url_ftell(pb) - start_pos)));
+    url_fskip(pb, atom.size - ((url_ftell(pb) - start_pos)));
     return 0;
 }
 
-static int parse_stsd(MOVContext *c, ByteIOContext *pb, uint32_t atom_type, int64_t atom_offset, int64_t atom_size)
+/* this atom contains actual media data */
+static int mov_read_mdat(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
-    int entries, size, frames_per_sample;
+    print_atom("mdat", atom);
+
+    if(atom.size == 0) /* wrong one (MP4) */
+        return 0;
+    c->found_mdat=1;
+    c->mdat_offset = atom.offset;
+    c->mdat_size = atom.size;
+    if(c->found_moov)
+        return 1; /* found both, just go */
+    url_fskip(pb, atom.size);
+    return 0; /* now go for moov */
+}
+
+/* this atom should contain all header atoms */
+static int mov_read_moov(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
+{
+    int err;
+
+    print_atom("moov", atom);
+
+    err = mov_read_default(c, pb, atom);
+    /* we parsed the 'moov' atom, we can terminate the parsing as soon as we find the 'mdat' */
+    /* so we don't parse the whole file if over a network */
+    c->found_moov=1;
+    if(c->found_mdat)
+        return 1; /* found both, just go */
+    return 0; /* now go for mdat */
+}
+
+
+static int mov_read_mdhd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
+{
+    AVStream *st = c->fc->streams[c->fc->nb_streams-1];
+
+    print_atom("mdhd", atom);
+
+    get_byte(pb); /* version */
+
+    get_byte(pb); get_byte(pb);
+    get_byte(pb); /* flags */
+
+    get_be32(pb); /* creation time */
+    get_be32(pb); /* modification time */
+
+    c->streams[c->total_streams]->time_scale = get_be32(pb);
+
+#ifdef DEBUG
+    printf("track[%i].time_scale = %i\n", c->fc->nb_streams-1, c->streams[c->total_streams]->time_scale); /* time scale */
+#endif
+    get_be32(pb); /* duration */
+
+    get_be16(pb); /* language */
+    get_be16(pb); /* quality */
+
+    return 0;
+}
+
+static int mov_read_mvhd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
+{
+    print_atom("mvhd", atom);
+
+    get_byte(pb); /* version */
+    get_byte(pb); get_byte(pb); get_byte(pb); /* flags */
+
+    get_be32(pb); /* creation time */
+    get_be32(pb); /* modification time */
+    c->time_scale = get_be32(pb); /* time scale */
+#ifdef DEBUG
+    printf("time scale = %i\n", c->time_scale);
+#endif
+    c->duration = get_be32(pb); /* duration */
+    get_be32(pb); /* preferred scale */
+
+    get_be16(pb); /* preferred volume */
+
+    url_fskip(pb, 10); /* reserved */
+
+    url_fskip(pb, 36); /* display matrix */
+
+    get_be32(pb); /* preview time */
+    get_be32(pb); /* preview duration */
+    get_be32(pb); /* poster time */
+    get_be32(pb); /* selection time */
+    get_be32(pb); /* selection duration */
+    get_be32(pb); /* current time */
+    get_be32(pb); /* next track ID */
+
+    return 0;
+}
+
+
+static int mov_read_stco(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
+{
+    AVStream *st = c->fc->streams[c->fc->nb_streams-1];
+    MOVStreamContext *sc = (MOVStreamContext *)st->priv_data;
+    int entries, i;
+
+    print_atom("stco", atom);
+
+    get_byte(pb); /* version */
+    get_byte(pb); get_byte(pb); get_byte(pb); /* flags */
+
+    entries = get_be32(pb);
+    sc->chunk_count = entries;
+    sc->chunk_offsets = (int64_t*) av_malloc(entries * sizeof(int64_t));
+    if (!sc->chunk_offsets)
+        return -1;
+    if (atom.type == MKTAG('s', 't', 'c', 'o')) {
+        for(i=0; i<entries; i++) {
+            sc->chunk_offsets[i] = get_be32(pb);
+        }
+    } else if (atom.type == MKTAG('c', 'o', '6', '4')) {
+        for(i=0; i<entries; i++) {
+            sc->chunk_offsets[i] = get_be64(pb);
+        }
+    } else
+        return -1;
+#ifdef DEBUG
+/*
+    for(i=0; i<entries; i++) {
+        printf("chunk offset=0x%Lx\n", sc->chunk_offsets[i]);
+    }
+*/
+#endif
+    return 0;
+}
+
+static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
+{
+    AVStream *st = c->fc->streams[c->fc->nb_streams-1];
+    MOVStreamContext *sc = (MOVStreamContext *)st->priv_data;
+    int entries, frames_per_sample;
     uint32_t format;
-    AVStream *st;
-    MOVStreamContext *sc;
 
-    print_atom("stsd", atom_type, atom_offset, atom_size);
-
-    st = c->fc->streams[c->fc->nb_streams-1];
-    sc = (MOVStreamContext *)st->priv_data;
+    print_atom("stsd", atom);
 
     get_byte(pb); /* version */
     get_byte(pb); get_byte(pb); get_byte(pb); /* flags */
@@ -750,7 +687,7 @@ static int parse_stsd(MOVContext *c, ByteIOContext *pb, uint32_t atom_type, int6
 
     while(entries--) {
         enum CodecID id;
-	size = get_be32(pb); /* size */
+	int size = get_be32(pb); /* size */
         format = get_le32(pb); /* data format */
 
         get_be32(pb); /* reserved */
@@ -775,8 +712,9 @@ static int parse_stsd(MOVContext *c, ByteIOContext *pb, uint32_t atom_type, int6
                st->codec.codec_type);
 #endif
 	st->codec.codec_tag = format;
-        if(st->codec.codec_type==CODEC_TYPE_VIDEO) {
-            st->codec.codec_id = codec_get_id(mov_video_tags, format);
+	if(st->codec.codec_type==CODEC_TYPE_VIDEO) {
+	    MOV_atom_t a = { 0, 0, 0 };
+            st->codec.codec_id = id;
             get_be16(pb); /* version */
             get_be16(pb); /* revision level */
             get_be32(pb); /* vendor */
@@ -807,38 +745,37 @@ static int parse_stsd(MOVContext *c, ByteIOContext *pb, uint32_t atom_type, int6
             st->codec.frame_rate      = 25;
             st->codec.frame_rate_base = 1;
 
-            size -= (16+8*4+2+32+2*2);
+	    size -= (16+8*4+2+32+2*2);
 #if 0
 	    while (size >= 8) {
-                int atom_size, atom_type;
+		MOV_atom_t a;
                 int64_t start_pos;
 
-                atom_size = get_be32(pb);
-                atom_type = get_le32(pb);
+		a.size = get_be32(pb);
+		a.type = get_le32(pb);
 		size -= 8;
-                printf("NEWSIZE %d\n", size);
 #ifdef DEBUG
-                printf("VIDEO: atom_type=%c%c%c%c atom_size=%d size_left=%d\n",
-                       (atom_type >> 0) & 0xff,
-                       (atom_type >> 8) & 0xff,
-                       (atom_type >> 16) & 0xff,
-                       (atom_type >> 24) & 0xff,
-                       atom_size, size);
+                printf("VIDEO: atom_type=%c%c%c%c atom.size=%Ld size_left=%d\n",
+                       (a.type >> 0) & 0xff,
+                       (a.type >> 8) & 0xff,
+                       (a.type >> 16) & 0xff,
+                       (a.type >> 24) & 0xff,
+		       a.size, size);
 #endif
                 start_pos = url_ftell(pb);
 
-                switch(atom_type) {
+		switch(a.type) {
                 case MKTAG('e', 's', 'd', 's'):
                     {
                         int tag, len;
                         /* Well, broken but suffisant for some MP4 streams */
                         get_be32(pb); /* version + flags */
-                        len = mp4_read_descr(pb, &tag);
+			len = mov_mp4_read_descr(pb, &tag);
                         if (tag == 0x03) {
                             /* MP4ESDescrTag */
                             get_be16(pb); /* ID */
                             get_byte(pb); /* priority */
-                            len = mp4_read_descr(pb, &tag);
+			    len = mov_mp4_read_descr(pb, &tag);
                             if (tag != 0x04)
                                 goto fail;
                             /* MP4DecConfigDescrTag */
@@ -866,12 +803,11 @@ static int parse_stsd(MOVContext *c, ByteIOContext *pb, uint32_t atom_type, int6
                     break;
                 }
 	    fail:
-                printf("ATOMENEWSIZE %d   %d\n", atom_size, url_ftell(pb) - start_pos);
-		if (atom_size > 8) {
-		    url_fskip(pb, (atom_size - 8) -
+		printf("ATOMENEWSIZE %Ld   %d\n", atom.size, url_ftell(pb) - start_pos);
+		if (atom.size > 8) {
+		    url_fskip(pb, (atom.size - 8) -
 			      ((url_ftell(pb) - start_pos)));
-		    size -= atom_size - 8;
-		    printf("NEWSIZE %d\n", size);
+		    size -= atom.size - 8;
 		}
 	    }
             if (size > 0) {
@@ -879,15 +815,16 @@ static int parse_stsd(MOVContext *c, ByteIOContext *pb, uint32_t atom_type, int6
                 url_fskip(pb, size);
             }
 #else
-	    parse_default(c, pb, 0L, 0LL, size);
+            a.size = size;
+	    mov_read_default(c, pb, a);
 #endif
 	} else {
             get_be16(pb); /* version */
             get_be16(pb); /* revision level */
             get_be32(pb); /* vendor */
 
-            st->codec.channels = get_be16(pb);/* channel count */
-	    st->codec.bits_per_sample = get_be16(pb); /* sample size */
+            st->codec.channels = get_be16(pb);		/* channel count */
+	    st->codec.bits_per_sample = get_be16(pb);	/* sample size */
 
 	    st->codec.codec_id = codec_get_id(mov_audio_tags, format);
             /* handle specific s8 codec */
@@ -895,7 +832,7 @@ static int parse_stsd(MOVContext *c, ByteIOContext *pb, uint32_t atom_type, int6
             get_be16(pb); /* packet size = 0 */
 
             st->codec.sample_rate = ((get_be32(pb) >> 16));
-	    printf("CODECID %d  %d  %.4s\n", st->codec.codec_id, CODEC_ID_PCM_S16BE, (char*)&format);
+	    //printf("CODECID %d  %d  %.4s\n", st->codec.codec_id, CODEC_ID_PCM_S16BE, (char*)&format);
 
 	    switch (st->codec.codec_id) {
 	    case CODEC_ID_PCM_S16BE:
@@ -913,86 +850,23 @@ static int parse_stsd(MOVContext *c, ByteIOContext *pb, uint32_t atom_type, int6
             get_be32(pb); /* bytes per frame */
             get_be32(pb); /* bytes per sample */
 
-	    //if (size > 16) url_fskip(pb, size-(16+20));
-#if 1
-	    if (size >= 44 + 8) {
-                int fcc;
-		st->codec.extradata_size = get_be32(pb) - 8;
-		fcc = get_le32(pb); // evaw
-		//printf("%x  %.4s  %d\n", fcc, (char*)&fcc, st->codec.extradata_size);
-		st->codec.extradata = av_mallocz(st->codec.extradata_size);
-                if (st->codec.extradata)
-		    get_buffer(pb, st->codec.extradata, st->codec.extradata_size); // FIXME url_fskip
-		url_fskip(pb, size-(16 + 20 + 16 + 8 + st->codec.extradata_size));
+	    {
+		MOV_atom_t a = { format, url_ftell(pb), size - (16 + 20 + 16 + 8) };
+		mov_read_default(c, pb, a);
 	    }
-            else
-		url_fskip(pb, size-(16 + 20 + 16));
-#else
-	    parse_default(c, pb, 0L, 0LL, size - (16 + 20 + 16 + 8));
-#endif
         }
     }
-/*
-    if(len) {
-    buf = av_malloc(len+1);
-        get_buffer(pb, buf, len);
-        buf[len] = '\0';
-        puts(buf);
-        av_free(buf);
-    }
-*/
+
     return 0;
 }
 
-static int parse_stco(MOVContext *c, ByteIOContext *pb, uint32_t atom_type, int64_t atom_offset, int64_t atom_size)
+static int mov_read_stsc(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
+    AVStream *st = c->fc->streams[c->fc->nb_streams-1];
+    MOVStreamContext *sc = (MOVStreamContext *)st->priv_data;
     int entries, i;
-    AVStream *st;
-    MOVStreamContext *sc;
 
-    print_atom("stco", atom_type, atom_offset, atom_size);
-
-    st = c->fc->streams[c->fc->nb_streams-1];
-    sc = (MOVStreamContext *)st->priv_data;
-
-    get_byte(pb); /* version */
-    get_byte(pb); get_byte(pb); get_byte(pb); /* flags */
-
-    entries = get_be32(pb);
-    sc->chunk_count = entries;
-    sc->chunk_offsets = (int64_t*) av_malloc(entries * sizeof(int64_t));
-    if (!sc->chunk_offsets)
-        return -1;
-    if(atom_type == MKTAG('s', 't', 'c', 'o')) {
-        for(i=0; i<entries; i++) {
-            sc->chunk_offsets[i] = get_be32(pb);
-        }
-    } else if(atom_type == MKTAG('c', 'o', '6', '4')) {
-        for(i=0; i<entries; i++) {
-            sc->chunk_offsets[i] = get_be64(pb);
-        }
-    } else
-        return -1;
-#ifdef DEBUG
-/*
-    for(i=0; i<entries; i++) {
-        printf("chunk offset=0x%Lx\n", sc->chunk_offsets[i]);
-    }
-*/
-#endif
-    return 0;
-}
-
-static int parse_stsc(MOVContext *c, ByteIOContext *pb, uint32_t atom_type, int64_t atom_offset, int64_t atom_size)
-{
-    int entries, i;
-    AVStream *st;
-    MOVStreamContext *sc;
-
-    print_atom("stsc", atom_type, atom_offset, atom_size);
-
-    st = c->fc->streams[c->fc->nb_streams-1];
-    sc = (MOVStreamContext *)st->priv_data;
+    print_atom("stsc", atom);
 
     get_byte(pb); /* version */
     get_byte(pb); get_byte(pb); get_byte(pb); /* flags */
@@ -1016,16 +890,13 @@ printf("track[%i].stsc.entries = %i\n", c->fc->nb_streams-1, entries);
     return 0;
 }
 
-static int parse_stsz(MOVContext *c, ByteIOContext *pb, uint32_t atom_type, int64_t atom_offset, int64_t atom_size)
+static int mov_read_stsz(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
+    AVStream *st = c->fc->streams[c->fc->nb_streams-1];
+    MOVStreamContext *sc = (MOVStreamContext *)st->priv_data;
     int entries, i;
-    AVStream *st;
-    MOVStreamContext *sc;
 
-    print_atom("stsz", atom_type, atom_offset, atom_size);
-
-    st = c->fc->streams[c->fc->nb_streams-1];
-    sc = (MOVStreamContext *)st->priv_data;
+    print_atom("stsz", atom);
 
     get_byte(pb); /* version */
     get_byte(pb); get_byte(pb); get_byte(pb); /* flags */
@@ -1050,16 +921,13 @@ static int parse_stsz(MOVContext *c, ByteIOContext *pb, uint32_t atom_type, int6
     return 0;
 }
 
-static int parse_stts(MOVContext *c, ByteIOContext *pb, uint32_t atom_type, int64_t atom_offset, int64_t atom_size)
+static int mov_read_stts(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
+    AVStream *st = c->fc->streams[c->fc->nb_streams-1];
+    MOVStreamContext *sc = (MOVStreamContext *)st->priv_data;
     int entries, i;
-    AVStream *st;
-    MOVStreamContext *sc;
 
-    print_atom("stts", atom_type, atom_offset, atom_size);
-
-    st = c->fc->streams[c->fc->nb_streams-1];
-    sc = (MOVStreamContext *)st->priv_data;
+    print_atom("stts", atom);
 
     get_byte(pb); /* version */
     get_byte(pb); get_byte(pb); get_byte(pb); /* flags */
@@ -1084,13 +952,111 @@ printf("track[%i].stts.entries = %i\n", c->fc->nb_streams-1, entries);
     return 0;
 }
 
+static int mov_read_trak(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
+{
+    AVStream *st;
+    MOVStreamContext *sc;
+
+    print_atom("trak", atom);
+
+    st = av_new_stream(c->fc, c->fc->nb_streams);
+    if (!st) return -2;
+    sc = (MOVStreamContext*) av_mallocz(sizeof(MOVStreamContext));
+    if (!sc) {
+	av_free(st);
+        return -1;
+    }
+
+    sc->sample_to_chunk_index = -1;
+    st->priv_data = sc;
+    st->codec.codec_type = CODEC_TYPE_MOV_OTHER;
+    st->time_length = (c->duration * 1000) / c->time_scale; // time in miliseconds
+    c->streams[c->fc->nb_streams-1] = sc;
+
+    return mov_read_default(c, pb, atom);
+}
+
+static int mov_read_tkhd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
+{
+    AVStream *st;
+
+    print_atom("tkhd", atom);
+
+    st = c->fc->streams[c->fc->nb_streams-1];
+
+    get_byte(pb); /* version */
+
+    get_byte(pb); get_byte(pb);
+    get_byte(pb); /* flags */
+    /*
+    MOV_TRACK_ENABLED 0x0001
+    MOV_TRACK_IN_MOVIE 0x0002
+    MOV_TRACK_IN_PREVIEW 0x0004
+    MOV_TRACK_IN_POSTER 0x0008
+    */
+
+    get_be32(pb); /* creation time */
+    get_be32(pb); /* modification time */
+    st->id = (int)get_be32(pb); /* track id (NOT 0 !)*/
+    get_be32(pb); /* reserved */
+    st->time_length = get_be32(pb) * 1000 / c->time_scale; /* duration */
+    get_be32(pb); /* reserved */
+    get_be32(pb); /* reserved */
+
+    get_be16(pb); /* layer */
+    get_be16(pb); /* alternate group */
+    get_be16(pb); /* volume */
+    get_be16(pb); /* reserved */
+
+    url_fskip(pb, 36); /* display matrix */
+
+    /* those are fixed-point */
+    st->codec.width = get_be32(pb) >> 16; /* track width */
+    st->codec.height = get_be32(pb) >> 16; /* track height */
+
+    return 0;
+}
+
+/* this atom should be null (from specs), but some buggy files put the 'moov' atom inside it... */
+/* like the files created with Adobe Premiere 5.0, for samples see */
+/* http://graphics.tudelft.nl/~wouter/publications/soundtests/ */
+static int mov_read_wide(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
+{
+    int err;
+    uint32_t type;
+
+#ifdef DEBUG
+    print_atom("wide", atom);
+    debug_indent++;
+#endif
+    if (atom.size < 8)
+        return 0; /* continue */
+    if (get_be32(pb) != 0) { /* 0 sized mdat atom... use the 'wide' atom size */
+        url_fskip(pb, atom.size - 4);
+        return 0;
+    }
+    atom.type = get_le32(pb);
+    atom.offset += 8;
+    atom.size -= 8;
+    if (type != MKTAG('m', 'd', 'a', 't')) {
+        url_fskip(pb, atom.size);
+        return 0;
+    }
+    err = mov_read_mdat(c, pb, atom);
+#ifdef DEBUG
+    debug_indent--;
+#endif
+    return err;
+}
+
+
 #ifdef CONFIG_ZLIB
 static int null_read_packet(void *opaque, uint8_t *buf, int buf_size)
 {
     return -1;
 }
 
-static int parse_cmov(MOVContext *c, ByteIOContext *pb, uint32_t atom_type, int64_t atom_offset, int64_t atom_size)
+static int mov_read_cmov(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
     ByteIOContext ctx;
     uint8_t *cmov_data;
@@ -1098,20 +1064,20 @@ static int parse_cmov(MOVContext *c, ByteIOContext *pb, uint32_t atom_type, int6
     long cmov_len, moov_len;
     int ret;
 
-    print_atom("cmov", atom_type, atom_offset, atom_size);
+    print_atom("cmov", atom);
 
     get_be32(pb); /* dcom atom */
     if (get_le32(pb) != MKTAG( 'd', 'c', 'o', 'm' ))
         return -1;
     if (get_le32(pb) != MKTAG( 'z', 'l', 'i', 'b' )) {
-        puts("unknown compression for cmov atom !");
+        dprintf("unknown compression for cmov atom !");
         return -1;
     }
     get_be32(pb); /* cmvd atom */
     if (get_le32(pb) != MKTAG( 'c', 'm', 'v', 'd' ))
         return -1;
     moov_len = get_be32(pb); /* uncompressed size */
-    cmov_len = atom_size - 6 * 4;
+    cmov_len = atom.size - 6 * 4;
 
     cmov_data = (uint8_t *) av_malloc(cmov_len);
     if (!cmov_data)
@@ -1127,7 +1093,10 @@ static int parse_cmov(MOVContext *c, ByteIOContext *pb, uint32_t atom_type, int6
     if(init_put_byte(&ctx, moov_data, moov_len, 0, NULL, null_read_packet, NULL, NULL) != 0)
         return -1;
     ctx.buf_end = ctx.buffer + moov_len;
-    ret = parse_default(c, &ctx, MKTAG( 'm', 'o', 'o', 'v' ), 0, moov_len);
+    atom.type = MKTAG( 'm', 'o', 'o', 'v' );
+    atom.offset = 0;
+    atom.size = moov_len;
+    ret = mov_read_default(c, &ctx, atom);
     av_free(moov_data);
     av_free(cmov_data);
     return ret;
@@ -1136,78 +1105,79 @@ static int parse_cmov(MOVContext *c, ByteIOContext *pb, uint32_t atom_type, int6
 
 static const MOVParseTableEntry mov_default_parse_table[] = {
 /* mp4 atoms */
-{ MKTAG( 'm', 'p', '4', 'a' ), parse_default },
-{ MKTAG( 'c', 'o', '6', '4' ), parse_stco },
-{ MKTAG( 's', 't', 'c', 'o' ), parse_stco },
-{ MKTAG( 'c', 'r', 'h', 'd' ), parse_default },
-{ MKTAG( 'c', 't', 't', 's' ), parse_leaf },
-{ MKTAG( 'c', 'p', 'r', 't' ), parse_default },
-{ MKTAG( 'u', 'r', 'l', ' ' ), parse_leaf },
-{ MKTAG( 'u', 'r', 'n', ' ' ), parse_leaf },
-{ MKTAG( 'd', 'i', 'n', 'f' ), parse_default },
-{ MKTAG( 'd', 'r', 'e', 'f' ), parse_leaf },
-{ MKTAG( 's', 't', 'd', 'p' ), parse_default },
-{ MKTAG( 'e', 'd', 't', 's' ), parse_default },
-{ MKTAG( 'e', 'l', 's', 't' ), parse_leaf },
-{ MKTAG( 'u', 'u', 'i', 'd' ), parse_default },
-{ MKTAG( 'f', 'r', 'e', 'e' ), parse_leaf },
-{ MKTAG( 'h', 'd', 'l', 'r' ), parse_hdlr },
-{ MKTAG( 'h', 'm', 'h', 'd' ), parse_leaf },
-{ MKTAG( 'h', 'i', 'n', 't' ), parse_leaf },
-{ MKTAG( 'n', 'm', 'h', 'd' ), parse_leaf },
-{ MKTAG( 'm', 'p', '4', 's' ), parse_default },
-{ MKTAG( 'm', 'd', 'i', 'a' ), parse_default },
-{ MKTAG( 'm', 'd', 'a', 't' ), parse_mdat },
-{ MKTAG( 'm', 'd', 'h', 'd' ), parse_mdhd },
-{ MKTAG( 'm', 'i', 'n', 'f' ), parse_default },
-{ MKTAG( 'm', 'o', 'o', 'v' ), parse_moov },
-{ MKTAG( 'm', 'v', 'h', 'd' ), parse_mvhd },
-{ MKTAG( 'i', 'o', 'd', 's' ), parse_leaf },
-{ MKTAG( 'o', 'd', 'h', 'd' ), parse_default },
-{ MKTAG( 'm', 'p', 'o', 'd' ), parse_leaf },
-{ MKTAG( 's', 't', 's', 'd' ), parse_stsd },
-{ MKTAG( 's', 't', 's', 'z' ), parse_stsz },
-{ MKTAG( 's', 't', 'b', 'l' ), parse_default },
-{ MKTAG( 's', 't', 's', 'c' ), parse_stsc },
-{ MKTAG( 's', 'd', 'h', 'd' ), parse_default },
-{ MKTAG( 's', 't', 's', 'h' ), parse_default },
-{ MKTAG( 's', 'k', 'i', 'p' ), parse_default },
-{ MKTAG( 's', 'm', 'h', 'd' ), parse_leaf },
-{ MKTAG( 'd', 'p', 'n', 'd' ), parse_leaf },
-{ MKTAG( 's', 't', 's', 's' ), parse_leaf },
-{ MKTAG( 's', 't', 't', 's' ), parse_stts },
-{ MKTAG( 't', 'r', 'a', 'k' ), parse_trak },
-{ MKTAG( 't', 'k', 'h', 'd' ), parse_tkhd },
-{ MKTAG( 't', 'r', 'e', 'f' ), parse_default }, /* not really */
-{ MKTAG( 'u', 'd', 't', 'a' ), parse_leaf },
-{ MKTAG( 'v', 'm', 'h', 'd' ), parse_leaf },
-{ MKTAG( 'm', 'p', '4', 'v' ), parse_default },
+{ MKTAG( 'c', 'o', '6', '4' ), mov_read_stco },
+{ MKTAG( 'c', 'p', 'r', 't' ), mov_read_default },
+{ MKTAG( 'c', 'r', 'h', 'd' ), mov_read_default },
+{ MKTAG( 'c', 't', 't', 's' ), mov_read_leaf }, /* composition time to sample */
+{ MKTAG( 'd', 'i', 'n', 'f' ), mov_read_default }, /* data information */
+{ MKTAG( 'd', 'p', 'n', 'd' ), mov_read_leaf },
+{ MKTAG( 'd', 'r', 'e', 'f' ), mov_read_leaf },
+{ MKTAG( 'e', 'd', 't', 's' ), mov_read_default },
+{ MKTAG( 'e', 'l', 's', 't' ), mov_read_leaf },
+{ MKTAG( 'f', 'r', 'e', 'e' ), mov_read_leaf },
+{ MKTAG( 'h', 'd', 'l', 'r' ), mov_read_hdlr },
+{ MKTAG( 'h', 'i', 'n', 't' ), mov_read_leaf },
+{ MKTAG( 'h', 'm', 'h', 'd' ), mov_read_leaf },
+{ MKTAG( 'i', 'o', 'd', 's' ), mov_read_leaf },
+{ MKTAG( 'm', 'd', 'a', 't' ), mov_read_mdat },
+{ MKTAG( 'm', 'd', 'h', 'd' ), mov_read_mdhd },
+{ MKTAG( 'm', 'd', 'i', 'a' ), mov_read_default },
+{ MKTAG( 'm', 'i', 'n', 'f' ), mov_read_default },
+{ MKTAG( 'm', 'o', 'o', 'v' ), mov_read_moov },
+{ MKTAG( 'm', 'p', '4', 'a' ), mov_read_default },
+{ MKTAG( 'm', 'p', '4', 's' ), mov_read_default },
+{ MKTAG( 'm', 'p', '4', 'v' ), mov_read_default },
+{ MKTAG( 'm', 'p', 'o', 'd' ), mov_read_leaf },
+{ MKTAG( 'm', 'v', 'h', 'd' ), mov_read_mvhd },
+{ MKTAG( 'n', 'm', 'h', 'd' ), mov_read_leaf },
+{ MKTAG( 'o', 'd', 'h', 'd' ), mov_read_default },
+{ MKTAG( 's', 'd', 'h', 'd' ), mov_read_default },
+{ MKTAG( 's', 'k', 'i', 'p' ), mov_read_default },
+{ MKTAG( 's', 'm', 'h', 'd' ), mov_read_leaf }, /* sound media info header */
+{ MKTAG( 's', 't', 'b', 'l' ), mov_read_default },
+{ MKTAG( 's', 't', 'c', 'o' ), mov_read_stco },
+{ MKTAG( 's', 't', 'd', 'p' ), mov_read_default },
+{ MKTAG( 's', 't', 's', 'c' ), mov_read_stsc },
+{ MKTAG( 's', 't', 's', 'd' ), mov_read_stsd }, /* sample description */
+{ MKTAG( 's', 't', 's', 'h' ), mov_read_default },
+{ MKTAG( 's', 't', 's', 's' ), mov_read_leaf }, /* sync sample */
+{ MKTAG( 's', 't', 's', 'z' ), mov_read_stsz }, /* sample size */
+{ MKTAG( 's', 't', 't', 's' ), mov_read_stts },
+{ MKTAG( 't', 'k', 'h', 'd' ), mov_read_tkhd }, /* track header */
+{ MKTAG( 't', 'r', 'a', 'k' ), mov_read_trak },
+{ MKTAG( 't', 'r', 'e', 'f' ), mov_read_default }, /* not really */
+{ MKTAG( 'u', 'd', 't', 'a' ), mov_read_leaf },
+{ MKTAG( 'u', 'r', 'l', ' ' ), mov_read_leaf },
+{ MKTAG( 'u', 'r', 'n', ' ' ), mov_read_leaf },
+{ MKTAG( 'u', 'u', 'i', 'd' ), mov_read_default },
+{ MKTAG( 'v', 'm', 'h', 'd' ), mov_read_leaf }, /* video media info header */
+{ MKTAG( 'w', 'a', 'v', 'e' ), mov_read_default },
 /* extra mp4 */
-{ MKTAG( 'M', 'D', 'E', 'S' ), parse_leaf },
+{ MKTAG( 'M', 'D', 'E', 'S' ), mov_read_leaf },
 /* QT atoms */
-{ MKTAG( 'c', 'h', 'a', 'p' ), parse_leaf },
-{ MKTAG( 'c', 'l', 'i', 'p' ), parse_default },
-{ MKTAG( 'c', 'r', 'g', 'n' ), parse_leaf },
-{ MKTAG( 'k', 'm', 'a', 't' ), parse_leaf },
-{ MKTAG( 'm', 'a', 't', 't' ), parse_default },
-{ MKTAG( 'r', 'd', 'r', 'f' ), parse_leaf },
-{ MKTAG( 'r', 'm', 'd', 'a' ), parse_default },
-{ MKTAG( 'r', 'm', 'd', 'r' ), parse_leaf },
-//{ MKTAG( 'r', 'm', 'q', 'u' ), parse_leaf },
-{ MKTAG( 'r', 'm', 'r', 'a' ), parse_default },
-{ MKTAG( 's', 'c', 'p', 't' ), parse_leaf },
-{ MKTAG( 's', 'y', 'n', 'c' ), parse_leaf },
-{ MKTAG( 's', 's', 'r', 'c' ), parse_leaf },
-{ MKTAG( 't', 'c', 'm', 'd' ), parse_leaf },
-{ MKTAG( 'w', 'i', 'd', 'e' ), parse_wide }, /* place holder */
-{ MKTAG( 'c', 't', 'a', 'b' ), parse_ctab },
-{ MKTAG( 'e', 's', 'd', 's' ), parse_esds },
+{ MKTAG( 'c', 'h', 'a', 'p' ), mov_read_leaf },
+{ MKTAG( 'c', 'l', 'i', 'p' ), mov_read_default },
+{ MKTAG( 'c', 'r', 'g', 'n' ), mov_read_leaf },
+{ MKTAG( 'c', 't', 'a', 'b' ), mov_read_ctab },
+{ MKTAG( 'e', 's', 'd', 's' ), mov_read_esds },
+{ MKTAG( 'k', 'm', 'a', 't' ), mov_read_leaf },
+{ MKTAG( 'm', 'a', 't', 't' ), mov_read_default },
+{ MKTAG( 'r', 'd', 'r', 'f' ), mov_read_leaf },
+{ MKTAG( 'r', 'm', 'd', 'a' ), mov_read_default },
+{ MKTAG( 'r', 'm', 'd', 'r' ), mov_read_leaf },
+{ MKTAG( 'r', 'm', 'r', 'a' ), mov_read_default },
+{ MKTAG( 's', 'c', 'p', 't' ), mov_read_leaf },
+{ MKTAG( 's', 's', 'r', 'c' ), mov_read_leaf },
+{ MKTAG( 's', 'y', 'n', 'c' ), mov_read_leaf },
+{ MKTAG( 't', 'c', 'm', 'd' ), mov_read_leaf },
+{ MKTAG( 'w', 'i', 'd', 'e' ), mov_read_wide }, /* place holder */
+//{ MKTAG( 'r', 'm', 'q', 'u' ), mov_read_leaf },
 #ifdef CONFIG_ZLIB
-{ MKTAG( 'c', 'm', 'o', 'v' ), parse_cmov },
+{ MKTAG( 'c', 'm', 'o', 'v' ), mov_read_cmov },
 #else
-{ MKTAG( 'c', 'm', 'o', 'v' ), parse_leaf },
+{ MKTAG( 'c', 'm', 'o', 'v' ), mov_read_leaf },
 #endif
-{ 0L, parse_leaf }
+{ 0L, mov_read_leaf }
 };
 
 static void mov_free_stream_context(MOVStreamContext *sc)
@@ -1221,9 +1191,9 @@ static void mov_free_stream_context(MOVStreamContext *sc)
     }
 }
 
-static inline uint32_t to_tag(uint8_t *buf)
+static inline uint32_t mov_to_tag(uint8_t *buf)
 {
-    return buf[0] | (buf[1] << 8) | (buf[2] << 16) | (buf[3] << 24);
+    return MKTAG(buf[0], buf[1], buf[2], buf[3]);
 }
 
 static inline uint32_t to_be32(uint8_t *buf)
@@ -1245,7 +1215,7 @@ static int mov_probe(AVProbeData *p)
         /* ignore invalid offset */
         if ((offset + 8) > (unsigned int)p->buf_size)
             return 0;
-        tag = to_tag(p->buf + offset + 4);
+        tag = mov_to_tag(p->buf + offset + 4);
         switch(tag) {
         case MKTAG( 'm', 'o', 'o', 'v' ):
         case MKTAG( 'w', 'i', 'd', 'e' ):
@@ -1254,7 +1224,7 @@ static int mov_probe(AVProbeData *p)
         case MKTAG( 'p', 'n', 'o', 't' ): /* detect movs with preview pics like ew.mov and april.mov */
             return AVPROBE_SCORE_MAX;
         case MKTAG( 'f', 't', 'y', 'p' ):
-        case MKTAG( 's', 'k', 'i', 'p' ):            
+        case MKTAG( 's', 'k', 'i', 'p' ):
             offset = to_be32(p->buf) + offset;
             break;
         default:
@@ -1270,7 +1240,7 @@ static int mov_read_header(AVFormatContext *s, AVFormatParameters *ap)
     MOVContext *mov = (MOVContext *) s->priv_data;
     ByteIOContext *pb = &s->pb;
     int i, j, nb, err;
-    int64_t size;
+    MOV_atom_t atom = { 0, 0, 0 };
 
     mov->fc = s;
     mov->parse_table = mov_default_parse_table;
@@ -1280,16 +1250,16 @@ static int mov_read_header(AVFormatContext *s, AVFormatParameters *ap)
         mov->mp4 = 1;
 #endif
     if(!url_is_streamed(pb)) /* .mov and .mp4 aren't streamable anyway (only progressive download if moov is before mdat) */
-        size = url_filesize(url_fileno(pb));
+	atom.size = url_filesize(url_fileno(pb));
     else
-        size = 0x7FFFFFFFFFFFFFFF;
+        atom.size = 0x7FFFFFFFFFFFFFFF;
 
 #ifdef DEBUG
-    printf("filesz=%Ld\n", size);
+    printf("filesz=%Ld\n", atom.size);
 #endif
 
     /* check MOV header */
-    err = parse_default(mov, pb, 0L, 0LL, size);
+    err = mov_read_default(mov, pb, atom);
     if(err<0 || (!mov->found_moov || !mov->found_mdat)) {
         puts("header not found !!!");
         exit(1);
@@ -1311,7 +1281,7 @@ static int mov_read_header(AVFormatContext *s, AVFormatParameters *ap)
     printf("streams= %d\n", s->nb_streams);
 #endif
     mov->total_streams = nb = s->nb_streams;
-    
+
 #if 1
     for(i=0; i<s->nb_streams;) {
         if(s->streams[i]->codec.codec_type == CODEC_TYPE_MOV_OTHER) {/* not audio, not video, delete */
@@ -1474,6 +1444,10 @@ static int mov_read_close(AVFormatContext *s)
         mov_free_stream_context(mov->streams[i]);
     for(i=0; i<s->nb_streams; i++)
 	av_freep(&s->streams[i]);
+    /* free color tabs */
+    for(i=0; i<mov->ctab_size; i++)
+	av_freep(&mov->ctab[i]);
+    av_freep(&mov->ctab);
     return 0;
 }
 
