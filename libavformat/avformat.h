@@ -20,15 +20,33 @@ extern "C" {
 typedef struct AVPacket {
     INT64 pts; /* presentation time stamp in stream units (set av_set_pts_info) */
     UINT8 *data;
-    int size;
-    int stream_index;
-    int flags;
-    int duration;       
-#define PKT_FLAG_KEY   0x0001
+    int   size;
+    int   stream_index;
+    int   flags;
+    int   duration;
+    void  (*destruct)(struct AVPacket *);
+    void  *priv;
 } AVPacket; 
+#define PKT_FLAG_KEY   0x0001
+
+static inline void av_init_packet(AVPacket *pkt)
+{
+    pkt->pts   = AV_NOPTS_VALUE;
+    pkt->flags = 0;
+    pkt->stream_index = 0;
+}
 
 int av_new_packet(AVPacket *pkt, int size);
-void av_free_packet(AVPacket *pkt);
+
+/**
+ * Free a packet
+ *
+ * @param pkt packet to free
+ */
+static inline void av_free_packet(AVPacket *pkt)
+{
+    pkt->destruct(pkt);
+}
 
 /*************************************************/
 /* fractional numbers for exact pts handling */

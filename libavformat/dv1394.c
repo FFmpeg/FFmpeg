@@ -19,6 +19,7 @@
 
 #include <unistd.h>
 #include <fcntl.h>
+#include <errno.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <sys/poll.h>
@@ -60,7 +61,8 @@ static int dv1394_reset(struct dv1394_data *dv)
     if (ioctl(dv->fd, DV1394_INIT, &init) < 0)
         return -1;
 
-    dv->avail = 0;
+    dv->avail  = dv->done = 0;
+    dv->stream = 0;
     return 0;
 }
 
@@ -85,7 +87,7 @@ static int dv1394_read_header(AVFormatContext * context, AVFormatParameters * ap
         return -ENOMEM;
     ast = av_new_stream(context, 1);
     if (!ast) {
-       av_free(vst);
+        av_free(vst);
         return -ENOMEM;
     }
 
@@ -158,7 +160,13 @@ failed:
     return -EIO;
 }
 
-static inline int __copy_frame(struct dv1394_data *dv, AVPacket *pkt)
+static void __destruct_pkt(struct AVPacket *pkt)
+{
+    pkt->data = NULL; pkt->size = 0;
+    return;
+}
+
+static inline int __get_frame(struct dv1394_data *dv, AVPacket *pkt)
 {
     char *ptr = dv->ring + (dv->index * dv->frame_size);
 
@@ -166,12 +174,15 @@ static inline int __copy_frame(struct dv1394_data *dv, AVPacket *pkt)
         dv->index = (dv->index + 1) % DV1394_RING_FRAMES;
         dv->done++; dv->avail--;
     } else {
-       dv->pts = av_gettime() & ((1LL << 48) - 1);
+        dv->pts = av_gettime() & ((1LL << 48) - 1);
     }
 
-    memcpy(pkt->data, ptr, dv->frame_size);
+    av_init_packet(pkt);
+    pkt->destruct = __destruct_pkt;
+    pkt->data     = ptr;
+    pkt->size     = dv->frame_size;
+    pkt->pts      = dv->pts;
     pkt->stream_index = dv->stream;
-    pkt->pts = dv->pts;
 
     dv->stream ^= 1;
 
@@ -181,16 +192,33 @@ static inline int __copy_frame(struct dv1394_data *dv, AVPacket *pkt)
 static int dv1394_read_packet(AVFormatContext *context, AVPacket *pkt)
 {
     struct dv1394_data *dv = context->priv_data;
-    int len;
 
     if (!dv->avail) {
         struct dv1394_status s;
         struct pollfd p;
-        p.fd = dv->fd;
-        p.events = POLLIN | POLLERR | POLLHUP;
+
+        if (dv->done) {
+            /* Request more frames */
+            if (ioctl(dv->fd, DV1394_RECEIVE_FRAMES, dv->done) < 0) {
+                /* This usually means that ring buffer overflowed.
+                 * We have to reset :(.
+                 */
+  
+                fprintf(stderr, "DV1394: Ring buffer overflow. Reseting ..\n");
+ 
+                dv1394_reset(dv);
+                dv1394_start(dv);
+            }
+            dv->done = 0;
+        }
 
         /* Wait until more frames are available */
+restart_poll:
+        p.fd = dv->fd;
+        p.events = POLLIN | POLLERR | POLLHUP;
         if (poll(&p, 1, -1) < 0) {
+            if (errno == EAGAIN || errno == EINTR)
+                goto restart_poll;
             perror("Poll failed");
             return -EIO;
         }
@@ -211,7 +239,7 @@ static int dv1394_read_packet(AVFormatContext *context, AVPacket *pkt)
 
         dv->avail = s.n_clear_frames;
         dv->index = s.first_clear_frame;
-        dv->done = 0;
+        dv->done  = 0;
 
         if (s.dropped_frames) {
             fprintf(stderr, "DV1394: Frame drop detected (%d). Reseting ..\n",
@@ -222,31 +250,12 @@ static int dv1394_read_packet(AVFormatContext *context, AVPacket *pkt)
         }
     }
 
-    if (av_new_packet(pkt, dv->frame_size) < 0)
-        return -EIO;
-
 #ifdef DV1394_DEBUG
     fprintf(stderr, "index %d, avail %d, done %d\n", dv->index, dv->avail,
             dv->done);
 #endif
 
-    len = __copy_frame(dv, pkt);
-
-    if (!dv->avail && dv->done) {
-        /* Request more frames */
-        if (ioctl(dv->fd, DV1394_RECEIVE_FRAMES, dv->done) < 0) {
-            /* This usually means that ring buffer overflowed.
-             * We have to reset :(.
-             */
-
-            fprintf(stderr, "DV1394: Ring buffer overflow. Reseting ..\n");
-
-            dv1394_reset(dv);
-            dv1394_start(dv);
-        }
-    }
-
-    return len;
+    return __get_frame(dv, pkt);
 }
 
 static int dv1394_close(AVFormatContext * context)

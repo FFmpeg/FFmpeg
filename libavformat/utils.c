@@ -151,6 +151,15 @@ AVInputFormat *av_find_input_format(const char *short_name)
 /* memory handling */
 
 /**
+ * Default packet destructor 
+ */
+static void av_destruct_packet(AVPacket *pkt)
+{
+    av_free(pkt->data);
+    pkt->data = NULL; pkt->size = 0;
+}
+
+/**
  * Allocate the payload of a packet and intialized its fields to default values.
  *
  * @param pkt packet
@@ -159,32 +168,16 @@ AVInputFormat *av_find_input_format(const char *short_name)
  */
 int av_new_packet(AVPacket *pkt, int size)
 {
-    int i;
-    pkt->data = av_malloc(size + FF_INPUT_BUFFER_PADDING_SIZE);
-    if (!pkt->data)
+    void *data = av_malloc(size + FF_INPUT_BUFFER_PADDING_SIZE);
+    if (!data)
         return AVERROR_NOMEM;
+    memset(data + size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
+
+    av_init_packet(pkt);
+    pkt->data = data; 
     pkt->size = size;
-    /* sane state */
-    pkt->pts = AV_NOPTS_VALUE;
-    pkt->stream_index = 0;
-    pkt->flags = 0;
-    
-    for(i=0; i<FF_INPUT_BUFFER_PADDING_SIZE; i++)
-        pkt->data[size+i]= 0;
-
+    pkt->destruct = av_destruct_packet;
     return 0;
-}
-
-/**
- * Free a packet
- *
- * @param pkt packet to free
- */
-void av_free_packet(AVPacket *pkt)
-{
-    av_freep(&pkt->data);
-    /* fail safe */
-    pkt->size = 0;
 }
 
 /* fifo handling */
