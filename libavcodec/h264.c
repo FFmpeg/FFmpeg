@@ -1077,13 +1077,13 @@ static inline void pred_direct_motion(H264Context * const h, int *mb_type){
         /* FIXME save sub mb types from previous frames (or derive from MVs)
          * so we know exactly what block size to use */
         sub_mb_type = MB_TYPE_8x8|MB_TYPE_P0L0|MB_TYPE_P0L1|MB_TYPE_DIRECT2; /* B_SUB_4x4 */
-        *mb_type =    MB_TYPE_8x8;
+        *mb_type =    MB_TYPE_8x8|MB_TYPE_L0L1;
     }else if(!is_b8x8 && (IS_16X16(mb_type_col) || IS_INTRA(mb_type_col))){
         sub_mb_type = MB_TYPE_16x16|MB_TYPE_P0L0|MB_TYPE_P0L1|MB_TYPE_DIRECT2; /* B_SUB_8x8 */
         *mb_type =    MB_TYPE_16x16|MB_TYPE_P0L0|MB_TYPE_P0L1|MB_TYPE_DIRECT2; /* B_16x16 */
     }else{
         sub_mb_type = MB_TYPE_16x16|MB_TYPE_P0L0|MB_TYPE_P0L1|MB_TYPE_DIRECT2; /* B_SUB_8x8 */
-        *mb_type =    MB_TYPE_8x8;
+        *mb_type =    MB_TYPE_8x8|MB_TYPE_L0L1;
     }
     if(!is_b8x8)
         *mb_type |= MB_TYPE_DIRECT2;
