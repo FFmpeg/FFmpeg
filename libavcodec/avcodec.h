@@ -408,7 +408,15 @@ typedef struct AVCodecContext {
      * - decoding: set by lavc.
      */
     enum PixelFormat pix_fmt;
-        
+ 
+    /**
+     * Frame rate emulation. If not zero lower layer (i.e. format handler) 
+     * has to read frames at native frame rate.
+     * - encoding: set by user.
+     * - decoding: unused.
+     */
+    int rate_emu;
+       
     /**
      * if non NULL, 'draw_horiz_band' is called by the libavcodec
      * decoder to draw an horizontal band. It improve cache usage. Not

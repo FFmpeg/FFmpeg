@@ -89,7 +89,6 @@ static int frame_bottomBand = 0;
 static int frame_leftBand  = 0;
 static int frame_rightBand = 0;
 static int frame_rate = 25 * FRAME_RATE_BASE;
-extern int emulate_frame_rate;
 static int video_bit_rate = 200*1000;
 static int video_bit_rate_tolerance = 4000*1000;
 static int video_qscale = 0;
@@ -164,6 +163,8 @@ static char *pass_logfilename = NULL;
 static int audio_stream_copy = 0;
 static int video_stream_copy = 0;
 
+static int rate_emu = 0;
+
 static char *video_grab_format = "video4linux";
 static char *video_device = NULL;
 static int  video_channel = 0;
@@ -209,6 +210,9 @@ typedef struct AVInputStream {
     int decoding_needed;     /* true if the packets must be decoded in 'raw_fifo' */
     int64_t sample_index;      /* current sample */
     int frame_decoded;       /* true if a video or audio frame has been decoded */
+
+    int64_t       start;     /* time when read started */
+    unsigned long frame;     /* current frame */
 } AVInputStream;
 
 typedef struct AVInputFile {
@@ -873,6 +877,11 @@ static int av_encode(AVFormatContext **output_files,
             ist->index = k;
             ist->discard = 1; /* the stream is discarded by default
                                  (changed later) */
+
+            if (ist->st->codec.rate_emu) {
+                ist->start = av_gettime();
+                ist->frame = 0;
+            }
         }
     }
 
@@ -1347,6 +1356,16 @@ static int av_encode(AVFormatContext **output_files,
             }
 
             ist->frame_decoded = 1;
+
+            /* frame rate emulation */
+            if (ist->st->codec.rate_emu) {
+                int64_t pts = ((int64_t) ist->frame * FRAME_RATE_BASE * 1000000) / (ist->st->codec.frame_rate);
+                int64_t now = av_gettime() - ist->start;
+                if (pts > now)
+                    usleep(pts - now);
+
+                ist->frame++;
+            }
 
 #if 0
             /* mpeg PTS deordering : if it is a P or I frame, the PTS
@@ -2092,6 +2111,8 @@ static void opt_input_file(const char *filename)
             }
             /* update the current frame rate to match the stream frame rate */
             frame_rate = rfps;
+
+            enc->rate_emu = rate_emu;
             break;
         default:
             av_abort();
@@ -2105,6 +2126,8 @@ static void opt_input_file(const char *filename)
     file_iformat = NULL;
     file_oformat = NULL;
     image_format = NULL;
+
+    rate_emu = 0;
 }
 
 static void check_audio_video_inputs(int *has_video_ptr, int *has_audio_ptr)
@@ -2715,7 +2738,7 @@ const OptionDef options[] = {
     /* video options */
     { "b", HAS_ARG, {(void*)opt_video_bitrate}, "set video bitrate (in kbit/s)", "bitrate" },
     { "r", HAS_ARG, {(void*)opt_frame_rate}, "set frame rate (in Hz)", "rate" },
-    { "em_rate", OPT_BOOL|OPT_EXPERT, {(void*)&emulate_frame_rate}, "makes img reading happen at nominal frame rate" },
+    { "re", OPT_BOOL|OPT_EXPERT, {(void*)&rate_emu}, "read input at native frame rate" },
     { "s", HAS_ARG, {(void*)opt_frame_size}, "set frame size (WxH or abbreviation)", "size" },
     { "croptop", HAS_ARG, {(void*)opt_frame_crop_top}, "set top crop band size (in pixels)", "size" },
     { "cropbottom", HAS_ARG, {(void*)opt_frame_crop_bottom}, "set bottom crop band size (in pixels)", "size" },

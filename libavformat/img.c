@@ -47,8 +47,6 @@ typedef struct {
     void *ptr;
 } VideoData;
 
-int emulate_frame_rate;
-
 static int image_probe(AVProbeData *p)
 {
     if (filename_number_test(p->filename) >= 0 && guess_image_format(p->filename))
@@ -157,23 +155,6 @@ static int img_read_packet(AVFormatContext *s1, AVPacket *pkt)
     char filename[1024];
     int ret;
     ByteIOContext f1, *f;
-    static int64_t first_frame; // BUG -> to context FIXME
-
-    if (emulate_frame_rate) {
-        if (!first_frame) {
-            first_frame = av_gettime();
-        } else {
-            int64_t pts;
-            int64_t nowus;
-
-            nowus = av_gettime() - first_frame;
-
-            pts = ((int64_t)s->img_number * FRAME_RATE_BASE * 1000000) / (s1->streams[0]->codec.frame_rate);
-
-            if (pts > nowus)
-                usleep(pts - nowus);
-        }
-    }
 
     if (!s->is_pipe) {
         if (get_frame_filename(filename, sizeof(filename),
