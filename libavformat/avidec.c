@@ -85,8 +85,8 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
     ByteIOContext *pb = &s->pb;
     uint32_t tag, tag1, handler;
     int codec_type, stream_index, frame_period, bit_rate, scale, rate;
-    unsigned int size;
-    int i;
+    unsigned int size, nb_frames;
+    int i, n;
     AVStream *st;
 
     if (get_riff(avi, pb) < 0)
@@ -131,14 +131,11 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
             frame_period = get_le32(pb);
             bit_rate = get_le32(pb) * 8;
 	    url_fskip(pb, 4 * 4);
-            s->nb_streams = get_le32(pb);
-            for(i=0;i<s->nb_streams;i++) {
-                AVStream *st = av_mallocz(sizeof(AVStream));
+            n = get_le32(pb);
+            for(i=0;i<n;i++) {
+                st = av_new_stream(s, 0);
                 if (!st)
                     goto fail;
-                avcodec_get_context_defaults(&st->codec);
-
-                s->streams[i] = st;
 	    }
             url_fskip(pb, size - 7 * 4);
             break;
@@ -181,14 +178,20 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     st->codec.frame_rate = 25;
                     st->codec.frame_rate_base = 1;
                 }
+                get_le32(pb); /* start */
+                nb_frames = get_le32(pb);
+                st->start_time = 0;
+                st->duration = (double)nb_frames * 
+                    st->codec.frame_rate_base * AV_TIME_BASE / 
+                    st->codec.frame_rate;
                 
                 if (avi->type == 1) {
-                    AVStream *st = av_mallocz(sizeof(AVStream));
+                    AVStream *st;
+
+                    st = av_new_stream(s, 0);
                     if (!st)
 		        goto fail;
                     
-		    avcodec_get_context_defaults(&st->codec);
-		    s->streams[s->nb_streams++] = st;
 		    stream_index++;
 		    
 		    for (i=0; AVI1Handlers[i].tag != 0; ++i)
@@ -200,16 +203,39 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                         s->streams[0]->codec.codec_id   = AVI1Handlers[i].vcid;
 		        s->streams[1]->codec.codec_type = CODEC_TYPE_AUDIO;
                         s->streams[1]->codec.codec_id   = AVI1Handlers[i].acid;
-		    } else
+		    } else {
 		        goto fail;
+                    }
 		}
 		
-		url_fskip(pb, size - 7 * 4);
+		url_fskip(pb, size - 9 * 4);
                 break;
             case MKTAG('a', 'u', 'd', 's'):
-                codec_type = CODEC_TYPE_AUDIO;
-                /* nothing really useful */
-                url_fskip(pb, size - 4);
+                {
+                    unsigned int length, rate;
+
+                    codec_type = CODEC_TYPE_AUDIO;
+
+                    if (stream_index >= s->nb_streams) {
+                        url_fskip(pb, size - 4);
+                        break;
+                    } 
+                    st = s->streams[stream_index];
+
+                    get_le32(pb); /* tag */
+                    get_le32(pb); /* flags */
+                    get_le16(pb); /* priority */
+                    get_le16(pb); /* language */
+                    get_le32(pb); /* initial frame */
+                    get_le32(pb); /* scale */
+                    rate = get_le32(pb);
+                    get_le32(pb); /* start */
+                    length = get_le32(pb); /* length, in samples or bytes */
+                    st->start_time = 0;
+                    if (rate != 0)
+                        st->duration = (int64_t)length * AV_TIME_BASE / rate;
+                    url_fskip(pb, size - 9 * 4);
+                }
                 break;
             default:
                 goto fail;

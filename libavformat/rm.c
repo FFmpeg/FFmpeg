@@ -473,7 +473,7 @@ static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
     unsigned int tag, v;
     int tag_size, size, codec_data_size, i;
     int64_t codec_pos;
-    unsigned int h263_hack_version;
+    unsigned int h263_hack_version, start_time, duration;
     char buf[128];
     int flags = 0;
 
@@ -524,19 +524,19 @@ static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
             get_str(pb, s->comment, sizeof(s->comment));
             break;
         case MKTAG('M', 'D', 'P', 'R'):
-            st = av_mallocz(sizeof(AVStream));
+            st = av_new_stream(s, 0);
             if (!st)
                 goto fail;
-            avcodec_get_context_defaults(&st->codec);
-            s->streams[s->nb_streams++] = st;
             st->id = get_be16(pb);
             get_be32(pb); /* max bit rate */
             st->codec.bit_rate = get_be32(pb); /* bit rate */
             get_be32(pb); /* max packet size */
             get_be32(pb); /* avg packet size */
-            get_be32(pb); /* start time */
+            start_time = get_be32(pb); /* start time */
             get_be32(pb); /* preroll */
-            get_be32(pb); /* duration */
+            duration = get_be32(pb); /* duration */
+            st->start_time = start_time * (AV_TIME_BASE / 1000);
+            st->duration = duration * (AV_TIME_BASE / 1000);
             get_str8(pb, buf, sizeof(buf)); /* desc */
             get_str8(pb, buf, sizeof(buf)); /* mimetype */
             codec_data_size = get_be32(pb);
