@@ -154,6 +154,7 @@ static int audio_write_get_buf_size(VideoState *is);
 
 /* options specified by the user */
 static AVInputFormat *file_iformat;
+static AVImageFormat *image_format;
 static const char *input_filename;
 static int fs_screen_width;
 static int fs_screen_height;
@@ -672,14 +673,15 @@ static void alloc_picture(void *opaque)
 {
     VideoState *is = opaque;
     VideoPicture *vp;
-    int is_yuv;
 
     vp = &is->pictq[is->pictq_windex];
 
     if (vp->bmp)
         SDL_FreeYUVOverlay(vp->bmp);
 
+#if 0
     /* XXX: use generic function */
+    /* XXX: disable overlay if no hardware acceleration or if RGB format */
     switch(is->video_st->codec.pix_fmt) {
     case PIX_FMT_YUV420P:
     case PIX_FMT_YUV422P:
@@ -693,22 +695,11 @@ static void alloc_picture(void *opaque)
         is_yuv = 0;
         break;
     }
-
-    if (is_yuv) {
-        vp->bmp = SDL_CreateYUVOverlay(is->video_st->codec.width,
-                                       is->video_st->codec.height,
-                                       SDL_YV12_OVERLAY, 
-                                       screen);
-    } else {
-#if 0
-        vp->bmp = bmp_alloc(screen, 
-                            is->video_st->codec.width,
-                            is->video_st->codec.height,
-                            screen->bitmap_format, 
-                            0);
 #endif
-        vp->bmp = NULL;
-    }
+    vp->bmp = SDL_CreateYUVOverlay(is->video_st->codec.width,
+                                   is->video_st->codec.height,
+                                   SDL_YV12_OVERLAY, 
+                                   screen);
     vp->width = is->video_st->codec.width;
     vp->height = is->video_st->codec.height;
 
@@ -1255,6 +1246,7 @@ static int decode_thread(void *arg)
     AVFormatContext *ic;
     int err, i, ret, video_index, audio_index;
     AVPacket pkt1, *pkt = &pkt1;
+    AVFormatParameters params, *ap = &params;
 
     video_index = -1;
     audio_index = -1;
@@ -1264,7 +1256,10 @@ static int decode_thread(void *arg)
     global_video_state = is;
     url_set_interrupt_cb(decode_interrupt_cb);
 
-    err = av_open_input_file(&ic, is->filename, is->iformat, 0, NULL);
+    memset(ap, 0, sizeof(*ap));
+    ap->image_format = image_format;
+
+    err = av_open_input_file(&ic, is->filename, is->iformat, 0, ap);
     if (err < 0) {
         print_error(is->filename, err);
         ret = -1;
@@ -1613,6 +1608,22 @@ static void opt_format(const char *arg)
         exit(1);
     }
 }
+
+static void opt_image_format(const char *arg)
+{
+    AVImageFormat *f;
+    
+    for(f = first_image_format; f != NULL; f = f->next) {
+        if (!strcmp(arg, f->name))
+            break;
+    }
+    if (!f) {
+        fprintf(stderr, "Unknown image format: '%s'\n", arg);
+        exit(1);
+    }
+    image_format = f;
+}
+
 #ifdef CONFIG_NETWORK
 void opt_rtp_tcp(void)
 {
@@ -1645,6 +1656,7 @@ const OptionDef options[] = {
     { "vn", OPT_BOOL, {(void*)&video_disable}, "disable video" },
     { "nodisp", OPT_BOOL, {(void*)&display_disable}, "disable graphical display" },
     { "f", HAS_ARG, {(void*)opt_format}, "force format", "fmt" },
+    { "img", HAS_ARG, {(void*)opt_image_format}, "force image format", "img_fmt" },
     { "stats", OPT_BOOL | OPT_EXPERT, {(void*)&show_status}, "show status", "" },
 #ifdef CONFIG_NETWORK
     { "rtp_tcp", OPT_EXPERT, {(void*)&opt_rtp_tcp}, "force RTP/TCP protocol usage", "" },
