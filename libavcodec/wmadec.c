@@ -111,6 +111,10 @@ typedef struct WMADecodeContext {
     float lsp_pow_e_table[256];
     float lsp_pow_m_table1[(1 << LSP_POW_BITS)];
     float lsp_pow_m_table2[(1 << LSP_POW_BITS)];
+
+#ifdef TRACE
+    int frame_count;
+#endif
 } WMADecodeContext;
 
 typedef struct CoefVLCTable {
@@ -125,8 +129,6 @@ static void wma_lsp_to_curve_init(WMADecodeContext *s, int frame_len);
 #include "wmadata.h"
 
 #ifdef TRACE
-int frame_count = 0;
-
 static void dump_shorts(const char *name, const short *tab, int n)
 {
     int i;
@@ -694,7 +696,9 @@ static int wma_decode_block(WMADecodeContext *s)
     int nb_coefs[MAX_CHANNELS];
     float mdct_norm;
 
-    tprintf("***decode_block: %d:%d\n", frame_count - 1, s->block_num);
+#ifdef TRACE
+    tprintf("***decode_block: %d:%d\n", s->frame_count - 1, s->block_num);
+#endif
 
     /* compute current block length */
     if (s->use_variable_block_len) {
@@ -1127,7 +1131,9 @@ static int wma_decode_frame(WMADecodeContext *s, int16_t *samples)
     int16_t *ptr;
     float *iptr;
 
-    tprintf("***decode_frame: %d size=%d\n", frame_count++, s->frame_len);
+#ifdef TRACE
+    tprintf("***decode_frame: %d size=%d\n", s->frame_count++, s->frame_len);
+#endif
 
     /* read each block */
     s->block_num = 0;
