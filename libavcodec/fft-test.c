@@ -1,7 +1,7 @@
 /* FFT and MDCT tests */
 #include "dsputil.h"
 #include <math.h>
-#include <getopt.h>
+#include <unistd.h>
 #include <sys/time.h>
 
 int mm_flags;

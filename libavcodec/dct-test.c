@@ -6,12 +6,15 @@
 #include <string.h>
 #include <sys/time.h>
 #include <unistd.h>
-#include <getopt.h>
 
 #include "dsputil.h"
 
 #include "i386/mmx.h"
 #include "simple_idct.h"
+
+#ifndef MAX
+#define MAX(a, b)  (((a) > (b)) ? (a) : (b))
+#endif
 
 /* reference fdct/idct */
 extern void fdct(DCTELEM *block);
@@ -23,12 +26,6 @@ extern void ff_mmx_idct(DCTELEM *data);
 extern void ff_mmxext_idct(DCTELEM *data);
 
 extern void odivx_idct_c (short *block);
-
-void (*add_pixels_clamped)(const DCTELEM *block/*align 16*/, 
-                           UINT8 *pixels/*align 8*/, int line_size);
-
-void (*put_pixels_clamped)(const DCTELEM *block/*align 16*/, 
-                           UINT8 *pixels/*align 8*/, int line_size);
 
 #define AANSCALE_BITS 12
 static const unsigned short aanscales[64] = {

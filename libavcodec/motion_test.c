@@ -4,7 +4,6 @@
 #include <string.h>
 #include <sys/time.h>
 #include <unistd.h>
-#include <getopt.h>
 
 #include "dsputil.h"
 
