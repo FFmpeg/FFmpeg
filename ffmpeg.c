@@ -18,6 +18,7 @@
  */
 #define HAVE_AV_CONFIG_H
 #include "avformat.h"
+#include "framehook.h"
 
 #ifndef CONFIG_WIN32
 #include <unistd.h>
@@ -447,6 +448,46 @@ static void write_picture(AVFormatContext *s, int index, AVPicture *picture,
     av_free(buf);
 }
 
+static void pre_process_video_frame(AVInputStream *ist, AVPicture *picture, void **bufp)
+{
+    AVCodecContext *dec;
+    AVPicture *picture2;
+    AVPicture picture_tmp;
+    UINT8 *buf = 0;
+
+    dec = &ist->st->codec;
+
+    /* deinterlace : must be done before any resize */
+    if (do_deinterlace) {
+        int size;
+
+        /* create temporary picture */
+        size = avpicture_get_size(dec->pix_fmt, dec->width, dec->height);
+        buf = av_malloc(size);
+        if (!buf)
+            return;
+        
+        picture2 = &picture_tmp;
+        avpicture_fill(picture2, buf, dec->pix_fmt, dec->width, dec->height);
+
+        if (avpicture_deinterlace(picture2, picture, 
+                                  dec->pix_fmt, dec->width, dec->height) < 0) {
+            /* if error, do not deinterlace */
+            av_free(buf);
+            buf = NULL;
+            picture2 = picture;
+        }
+    } else {
+        picture2 = picture;
+    }
+
+    frame_hook_process(picture2, dec->pix_fmt, dec->width, dec->height);
+
+    if (picture != picture2)
+        *picture = *picture2;
+    *bufp = buf;
+}
+
 /* we begin to correct av delay at this threshold */
 #define AV_DELAY_MAX 0.100
 
@@ -457,8 +498,8 @@ static void do_video_out(AVFormatContext *s,
                          int *frame_size, AVOutputStream *audio_sync)
 {
     int nb_frames, i, ret;
-    AVPicture *picture, *picture2, *pict;
-    AVPicture picture_tmp1, picture_tmp2;
+    AVPicture *picture, *pict;
+    AVPicture picture_tmp1;
     static UINT8 *video_buffer;
     UINT8 *buf = NULL, *buf1 = NULL;
     AVCodecContext *enc, *dec;
@@ -496,8 +537,18 @@ static void do_video_out(AVFormatContext *s,
             else if (av_delay > AV_DELAY_MAX)
                 nb_frames = 0;
         }
+    } else {
+        double vdelta;
+
+        if (ost->sync_ipts != AV_NOPTS_VALUE) {
+            vdelta = (double)(ost->st->pts.val) * s->pts_num / s->pts_den - ost->sync_ipts;
+            if (vdelta < -AV_DELAY_MAX)
+                nb_frames = 2;
+            else if (vdelta > AV_DELAY_MAX)
+                nb_frames = 0;
+            //printf("vdelta=%f\n", vdelta); 
+        }
     }
-    /* XXX: also handle frame rate conversion */
     if (nb_frames <= 0) 
         return;
 
@@ -505,30 +556,6 @@ static void do_video_out(AVFormatContext *s,
         video_buffer = av_malloc(VIDEO_BUFFER_SIZE);
     if (!video_buffer)
         return;
-
-    /* deinterlace : must be done before any resize */
-    if (do_deinterlace) {
-        int size;
-
-        /* create temporary picture */
-        size = avpicture_get_size(dec->pix_fmt, dec->width, dec->height);
-        buf1 = av_malloc(size);
-        if (!buf1)
-            return;
-        
-        picture2 = &picture_tmp2;
-        avpicture_fill(picture2, buf1, dec->pix_fmt, dec->width, dec->height);
-
-        if (avpicture_deinterlace(picture2, picture1, 
-                                  dec->pix_fmt, dec->width, dec->height) < 0) {
-            /* if error, do not deinterlace */
-            av_free(buf1);
-            buf1 = NULL;
-            picture2 = picture1;
-        }
-    } else {
-        picture2 = picture1;
-    }
 
     /* convert pixel format if needed */
     if (enc->pix_fmt != dec->pix_fmt) {
@@ -543,13 +570,13 @@ static void do_video_out(AVFormatContext *s,
         avpicture_fill(pict, buf, enc->pix_fmt, dec->width, dec->height);
         
         if (img_convert(pict, enc->pix_fmt, 
-                        picture2, dec->pix_fmt, 
+                        picture1, dec->pix_fmt, 
                         dec->width, dec->height) < 0) {
             fprintf(stderr, "pixel format conversion not handled\n");
             goto the_end;
         }
     } else {
-        pict = picture2;
+        pict = picture1;
     }
 
     /* XXX: resampling could be done before raw format convertion in
@@ -690,6 +717,10 @@ void print_report(AVFormatContext **output_files,
         ost = ost_table[i];
         os = output_files[ost->file_index];
         enc = &ost->st->codec;
+        if (vid && enc->codec_type == CODEC_TYPE_VIDEO) {
+            sprintf(buf + strlen(buf), "q=%2d ",
+                    enc->quality);
+        }
         if (!vid && enc->codec_type == CODEC_TYPE_VIDEO) {
             frame_number = ost->frame_number;
             sprintf(buf + strlen(buf), "frame=%5d q=%2d ",
@@ -1019,8 +1050,8 @@ static int av_encode(AVFormatContext **output_files,
             AVCodec *codec;
             codec = avcodec_find_decoder(ist->st->codec.codec_id);
             if (!codec) {
-                fprintf(stderr, "Unsupported codec for input stream #%d.%d\n", 
-                        ist->file_index, ist->index);
+                fprintf(stderr, "Unsupported codec (id=%d) for input stream #%d.%d\n", 
+                        ist->st->codec.codec_id, ist->file_index, ist->index);
                 exit(1);
             }
             if (avcodec_open(&ist->st->codec, codec) < 0) {
@@ -1075,6 +1106,7 @@ static int av_encode(AVFormatContext **output_files,
         int data_size, got_picture;
         AVPicture picture;
         short samples[AVCODEC_MAX_AUDIO_FRAME_SIZE / 2];
+        void *buffer_to_free;
         double pts_min;
         
     redo:
@@ -1221,6 +1253,11 @@ static int av_encode(AVFormatContext **output_files,
             ptr += ret;
             len -= ret;
 
+            buffer_to_free = 0;
+            if (ist->st->codec.codec_type == CODEC_TYPE_VIDEO) {
+                pre_process_video_frame(ist, &picture, &buffer_to_free);
+            }
+
             ist->frame_decoded = 1;
 
 #if 0
@@ -1257,6 +1294,9 @@ static int av_encode(AVFormatContext **output_files,
                         /* XXX: take into account the various fifos,
                            in particular for audio */
                         ost->sync_opts = ost->st->pts.val;
+                        //printf("ipts=%lld sync_ipts=%f sync_opts=%lld pts.val=%lld pkt.pts=%lld\n", ipts, ost->sync_ipts, ost->sync_opts, ost->st->pts.val, pkt.pts); 
+                    } else {
+                        //printf("pts.val=%lld\n", ost->st->pts.val); 
                     }
 
                     if (ost->encoding_needed) {
@@ -1296,6 +1336,7 @@ static int av_encode(AVFormatContext **output_files,
                     }
                 }
             }
+            av_free(buffer_to_free);
             ipts = AV_NOPTS_VALUE;
         }
     discard_packet:
@@ -1716,6 +1757,25 @@ void opt_audio_codec(const char *arg)
         } else {
             audio_codec_id = p->id;
         }
+    }
+}
+
+void add_frame_hooker(const char *arg)
+{
+    int argc = 0;
+    char *argv[64];
+    int i;
+    char *args = strdup(arg);
+
+    argv[0] = strtok(args, " ");
+    while (argc < 62 && (argv[++argc] = strtok(NULL, " "))) {
+    }
+
+    i = frame_hook_add(argc, argv);
+
+    if (i != 0) {
+        fprintf(stderr, "Failed to add video hook function: %s\n", arg);
+        exit(1);
     }
 }
 
@@ -2489,6 +2549,7 @@ const OptionDef options[] = {
     { "psnr", OPT_BOOL | OPT_EXPERT, {(void*)&do_psnr}, "calculate PSNR of compressed frames" },
     { "vstats", OPT_BOOL | OPT_EXPERT, {(void*)&do_vstats}, "dump video coding statistics to file" }, 
     { "bitexact", OPT_EXPERT, {(void*)opt_bitexact}, "only use bit exact algorithms (for codec testing)" }, 
+    { "vhook", HAS_ARG | OPT_EXPERT, {(void*)add_frame_hooker}, "insert video processing module", "module name and parameters" },
     { NULL, },
 };
 
@@ -2526,8 +2587,13 @@ int main(int argc, char **argv)
                 exit(1);
             }
             arg = NULL;
-            if (po->flags & HAS_ARG)
+            if (po->flags & HAS_ARG) {
                 arg = argv[optindex++];
+                if (!arg) {
+                    fprintf(stderr, "%s: missing argument for option '%s'\n", argv[0], opt);
+                    exit(1);
+                }
+            }
             if (po->flags & OPT_STRING) {
                 char *str;
                 str = strdup(arg);
