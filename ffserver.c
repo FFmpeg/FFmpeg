@@ -51,9 +51,6 @@ enum HTTPState {
     HTTPSTATE_SEND_DATA_TRAILER,
     HTTPSTATE_RECEIVE_DATA,       
     HTTPSTATE_WAIT_FEED,          /* wait for data from the feed */
-    HTTPSTATE_WAIT,               /* wait before sending next packets */
-    HTTPSTATE_WAIT_SHORT,         /* short wait for short term 
-                                     bandwidth limitation */
     HTTPSTATE_READY,
 
     RTSPSTATE_WAIT_REQUEST,
@@ -70,8 +67,6 @@ const char *http_state[] = {
     "SEND_DATA_TRAILER",
     "RECEIVE_DATA",
     "WAIT_FEED",
-    "WAIT",
-    "WAIT_SHORT",
     "READY",
 
     "RTSP_WAIT_REQUEST",
@@ -113,8 +108,13 @@ typedef struct HTTPContext {
     AVFormatContext *fmt_in;
     long start_time;            /* In milliseconds - this wraps fairly often */
     int64_t first_pts;            /* initial pts value */
-    int64_t cur_pts;              /* current pts value */
-    int pts_stream_index;       /* stream we choose as clock reference */
+    int64_t cur_pts;             /* current pts value from the stream in us */
+    int64_t cur_frame_duration;  /* duration of the current frame in us */
+    int cur_frame_bytes;       /* output frame size, needed to compute
+                                  the time at which we send each
+                                  packet */
+    int pts_stream_index;        /* stream we choose as clock reference */
+    int64_t cur_clock;           /* current clock reference value in us */
     /* output format handling */
     struct FFStream *stream;
     /* -1 is invalid stream */
@@ -138,15 +138,12 @@ typedef struct HTTPContext {
     uint8_t *pb_buffer; /* XXX: use that in all the code */
     ByteIOContext *pb;
     int seq; /* RTSP sequence number */
-
+    
     /* RTP state specific */
     enum RTSPProtocol rtp_protocol;
     char session_id[32]; /* session id */
     AVFormatContext *rtp_ctx[MAX_STREAMS];
-    /* RTP short term bandwidth limitation */
-    int packet_byte_count;
-    int packet_start_time_us; /* used for short durations (a few
-                                 seconds max) */
+
     /* RTP/UDP specific */
     URLContext *rtp_handles[MAX_STREAMS];
 
@@ -183,6 +180,8 @@ typedef struct FFStream {
     char filename[1024];     /* stream filename */
     struct FFStream *feed;   /* feed we are using (can be null if
                                 coming from file) */
+    AVFormatParameters *ap_in; /* input parameters */
+    AVInputFormat *ifmt;       /* if non NULL, force input format */
     AVOutputFormat *fmt;
     IPAddressACL *acl;
     int nb_streams;
@@ -247,7 +246,6 @@ static void compute_stats(HTTPContext *c);
 static int open_input_stream(HTTPContext *c, const char *info);
 static int http_start_receive_data(HTTPContext *c);
 static int http_receive_data(HTTPContext *c);
-static int compute_send_delay(HTTPContext *c);
 
 /* RTSP handling */
 static int rtsp_parse_request(HTTPContext *c);
@@ -572,9 +570,12 @@ static int http_server(void)
                     poll_entry->events = POLLOUT;
                     poll_entry++;
                 } else {
-                    /* not strictly correct, but currently cannot add
-                       more than one fd in poll entry */
-                    delay = 0;
+                    /* when ffserver is doing the timing, we work by
+                       looking at which packet need to be sent every
+                       10 ms */
+                    delay1 = 10; /* one tick wait XXX: 10 ms assumed */
+                    if (delay1 < delay)
+                        delay = delay1;
                 }
                 break;
             case HTTPSTATE_WAIT_REQUEST:
@@ -586,18 +587,6 @@ static int http_server(void)
                 poll_entry->fd = fd;
                 poll_entry->events = POLLIN;/* Maybe this will work */
                 poll_entry++;
-                break;
-            case HTTPSTATE_WAIT:
-                c->poll_entry = NULL;
-                delay1 = compute_send_delay(c);
-                if (delay1 < delay)
-                    delay = delay1;
-                break;
-            case HTTPSTATE_WAIT_SHORT:
-                c->poll_entry = NULL;
-                delay1 = 10; /* one tick wait XXX: 10 ms assumed */
-                if (delay1 < delay)
-                    delay = delay1;
                 break;
             default:
                 c->poll_entry = NULL;
@@ -894,16 +883,6 @@ static int handle_connection(HTTPContext *c)
             return -1;
 
         /* nothing to do, we'll be waken up by incoming feed packets */
-        break;
-
-    case HTTPSTATE_WAIT:
-        /* if the delay expired, we can send new packets */
-        if (compute_send_delay(c) <= 0)
-            c->state = HTTPSTATE_SEND_DATA;
-        break;
-    case HTTPSTATE_WAIT_SHORT:
-        /* just return back to send data */
-        c->state = HTTPSTATE_SEND_DATA;
         break;
 
     case RTSPSTATE_SEND_REPLY:
@@ -1695,6 +1674,9 @@ static void compute_stats(HTTPContext *c)
                                 video_codec_name = codec->name;
                             }
                             break;
+                        case CODEC_TYPE_DATA:
+                            video_bit_rate += st->codec.bit_rate;
+                            break;
                         default:
                             av_abort();
                         }
@@ -1934,7 +1916,8 @@ static int open_input_stream(HTTPContext *c, const char *info)
 #endif
 
     /* open stream */
-    if (av_open_input_file(&s, input_filename, NULL, buf_size, NULL) < 0) {
+    if (av_open_input_file(&s, input_filename, c->stream->ifmt, 
+                           buf_size, c->stream->ap_in) < 0) {
         http_log("%s not found", input_filename);
         return -1;
     }
@@ -1954,191 +1937,41 @@ static int open_input_stream(HTTPContext *c, const char *info)
         }
     }
 
+#if 0
     if (c->fmt_in->iformat->read_seek) {
         c->fmt_in->iformat->read_seek(c->fmt_in, stream_pos);
     }
+#endif
     /* set the start time (needed for maxtime and RTP packet timing) */
     c->start_time = cur_time;
     c->first_pts = AV_NOPTS_VALUE;
     return 0;
 }
 
-/* currently desactivated because the new PTS handling is not
-   satisfactory yet */
-//#define AV_READ_FRAME
-#ifdef AV_READ_FRAME
-
-/* XXX: generalize that in ffmpeg for picture/audio/data. Currently
-   the return packet MUST NOT be freed */
-int av_read_frame(AVFormatContext *s, AVPacket *pkt)
+/* return the server clock (in us) */
+static int64_t get_server_clock(HTTPContext *c)
 {
-    AVStream *st;
-    int len, ret, old_nb_streams, i;
-
-    /* see if remaining frames must be parsed */
-    for(;;) {
-        if (s->cur_len > 0) {
-            st = s->streams[s->cur_pkt.stream_index];
-            len = avcodec_parse_frame(&st->codec, &pkt->data, &pkt->size, 
-                                      s->cur_ptr, s->cur_len);
-            if (len < 0) {
-                /* error: get next packet */
-                s->cur_len = 0;
-            } else {
-                s->cur_ptr += len;
-                s->cur_len -= len;
-                if (pkt->size) {
-                    /* init pts counter if not done */
-                    if (st->pts.den == 0) {
-                        switch(st->codec.codec_type) {
-                        case CODEC_TYPE_AUDIO:
-                            st->pts_incr = (int64_t)s->pts_den;
-                            av_frac_init(&st->pts, st->pts.val, 0, 
-                                         (int64_t)s->pts_num * st->codec.sample_rate);
-                            break;
-                        case CODEC_TYPE_VIDEO:
-                            st->pts_incr = (int64_t)s->pts_den * st->codec.frame_rate_base;
-                            av_frac_init(&st->pts, st->pts.val, 0,
-                                         (int64_t)s->pts_num * st->codec.frame_rate);
-                            break;
-                        default:
-                            av_abort();
-                        }
-                    }
-                    
-                    /* a frame was read: return it */
-                    pkt->pts = st->pts.val;
-#if 0
-                    printf("add pts=%Lx num=%Lx den=%Lx incr=%Lx\n",
-                           st->pts.val, st->pts.num, st->pts.den, st->pts_incr);
-#endif
-                    switch(st->codec.codec_type) {
-                    case CODEC_TYPE_AUDIO:
-                        av_frac_add(&st->pts, st->pts_incr * st->codec.frame_size);
-                        break;
-                    case CODEC_TYPE_VIDEO:
-                        av_frac_add(&st->pts, st->pts_incr);
-                        break;
-                    default:
-                        av_abort();
-                    }
-                    pkt->stream_index = s->cur_pkt.stream_index;
-                    /* we use the codec indication because it is
-                       more accurate than the demux flags */
-                    pkt->flags = 0;
-                    if (st->codec.coded_frame->key_frame) 
-                        pkt->flags |= PKT_FLAG_KEY;
-                    return 0;
-                }
-            }
-        } else {
-            /* free previous packet */
-            av_free_packet(&s->cur_pkt); 
-
-            old_nb_streams = s->nb_streams;
-            ret = av_read_packet(s, &s->cur_pkt);
-            if (ret)
-                return ret;
-            /* open parsers for each new streams */
-            for(i = old_nb_streams; i < s->nb_streams; i++)
-                open_parser(s, i);
-            st = s->streams[s->cur_pkt.stream_index];
-
-            /* update current pts (XXX: dts handling) from packet, or
-               use current pts if none given */
-            if (s->cur_pkt.pts != AV_NOPTS_VALUE) {
-                av_frac_set(&st->pts, s->cur_pkt.pts);
-            } else {
-                s->cur_pkt.pts = st->pts.val;
-            }
-            if (!st->codec.codec) {
-                /* no codec opened: just return the raw packet */
-                *pkt = s->cur_pkt;
-
-                /* no codec opened: just update the pts by considering we
-                   have one frame and free the packet */
-                if (st->pts.den == 0) {
-                    switch(st->codec.codec_type) {
-                    case CODEC_TYPE_AUDIO:
-                        st->pts_incr = (int64_t)s->pts_den * st->codec.frame_size;
-                        av_frac_init(&st->pts, st->pts.val, 0, 
-                                     (int64_t)s->pts_num * st->codec.sample_rate);
-                        break;
-                    case CODEC_TYPE_VIDEO:
-                        st->pts_incr = (int64_t)s->pts_den * st->codec.frame_rate_base;
-                        av_frac_init(&st->pts, st->pts.val, 0,
-                                     (int64_t)s->pts_num * st->codec.frame_rate);
-                        break;
-                    default:
-                        av_abort();
-                    }
-                }
-                av_frac_add(&st->pts, st->pts_incr);
-                return 0;
-            } else {
-                s->cur_ptr = s->cur_pkt.data;
-                s->cur_len = s->cur_pkt.size;
-            }
-        }
-    }
-}
-
-static int compute_send_delay(HTTPContext *c)
-{
-    int64_t cur_pts, delta_pts, next_pts;
-    int delay1;
-    
     /* compute current pts value from system time */
-    cur_pts = ((int64_t)(cur_time - c->start_time) * c->fmt_in->pts_den) / 
-        (c->fmt_in->pts_num * 1000LL);
-    /* compute the delta from the stream we choose as
-       main clock (we do that to avoid using explicit
-       buffers to do exact packet reordering for each
-       stream */
-    /* XXX: really need to fix the number of streams */
-    if (c->pts_stream_index >= c->fmt_in->nb_streams)
-        next_pts = cur_pts;
-    else
-        next_pts = c->fmt_in->streams[c->pts_stream_index]->pts.val;
-    delta_pts = next_pts - cur_pts;
-    if (delta_pts <= 0) {
-        delay1 = 0;
-    } else {
-        delay1 = (delta_pts * 1000 * c->fmt_in->pts_num) / c->fmt_in->pts_den;
-    }
-    return delay1;
+    return (int64_t)(cur_time - c->start_time) * 1000LL;
 }
-#else
 
-/* just fall backs */
-static int av_read_frame(AVFormatContext *s, AVPacket *pkt)
+/* return the estimated time at which the current packet must be sent
+   (in us) */
+static int64_t get_packet_send_clock(HTTPContext *c)
 {
-    return av_read_packet(s, pkt);
-}
-
-static int compute_send_delay(HTTPContext *c)
-{
-    int datarate = 8 * get_longterm_datarate(&c->datarate, c->data_count); 
-    int64_t delta_pts;
-    int64_t time_pts;
-    int m_delay;
-
-    if (datarate > c->stream->bandwidth * 2000) {
-        return 1000;
-    }
-    if (!c->stream->feed && c->first_pts!=AV_NOPTS_VALUE) {
-        time_pts = ((int64_t)(cur_time - c->start_time) * c->fmt_in->pts_den) / 
-            ((int64_t) c->fmt_in->pts_num*1000);
-        delta_pts = c->cur_pts - time_pts;
-        m_delay = (delta_pts * 1000 * c->fmt_in->pts_num) / c->fmt_in->pts_den;
-        return m_delay>0 ? m_delay : 0;
-    } else {
-        return 0;
-    }
-}
-
-#endif
+    int bytes_left, bytes_sent, frame_bytes;
     
+    frame_bytes = c->cur_frame_bytes;
+    if (frame_bytes <= 0) {
+        return c->cur_pts;
+    } else {
+        bytes_left = c->buffer_end - c->buffer_ptr;
+        bytes_sent = frame_bytes - bytes_left;
+        return c->cur_pts + (c->cur_frame_duration * bytes_sent) / frame_bytes;
+    }
+}
+
+
 static int http_prepare_data(HTTPContext *c)
 {
     int i, len, ret;
@@ -2214,12 +2047,6 @@ static int http_prepare_data(HTTPContext *c)
                 /* We have timed out */
                 c->state = HTTPSTATE_SEND_DATA_TRAILER;
             } else {
-                if (1 || c->is_packetized) {
-                    if (compute_send_delay(c) > 0) {
-                        c->state = HTTPSTATE_WAIT;
-                        return 1; /* state changed */
-                    }
-                }
             redo:
                 if (av_read_frame(c->fmt_in, &pkt) < 0) {
                     if (c->stream->feed && c->stream->feed->feed_opened) {
@@ -2243,10 +2070,9 @@ static int http_prepare_data(HTTPContext *c)
                 } else {
                     /* update first pts if needed */
                     if (c->first_pts == AV_NOPTS_VALUE) {
-                        c->first_pts = pkt.pts;
+                        c->first_pts = pkt.dts;
                         c->start_time = cur_time;
                     }
-                    c->cur_pts = pkt.pts;
                     /* send it to the appropriate stream */
                     if (c->stream->feed) {
                         /* if coming from a feed, select the right stream */
@@ -2290,6 +2116,22 @@ static int http_prepare_data(HTTPContext *c)
                            output stream (one for each RTP
                            connection). XXX: need more abstract handling */
                         if (c->is_packetized) {
+                            AVStream *st;
+                            /* compute send time and duration */
+                            st = c->fmt_in->streams[pkt.stream_index];
+                            c->cur_pts = pkt.dts;
+                            if (st->start_time != AV_NOPTS_VALUE)
+                                c->cur_pts -= st->start_time;
+                            c->cur_frame_duration = pkt.duration;
+#if 0
+                            printf("index=%d pts=%0.3f duration=%0.6f\n",
+                                   pkt.stream_index,
+                                   (double)c->cur_pts / 
+                                   AV_TIME_BASE,
+                                   (double)c->cur_frame_duration / 
+                                   AV_TIME_BASE);
+#endif
+                            /* find RTP context */
                             c->packet_stream_index = pkt.stream_index;
                             ctx = c->rtp_ctx[c->packet_stream_index];
                             if(!ctx) {
@@ -2306,14 +2148,6 @@ static int http_prepare_data(HTTPContext *c)
                         }
                         
                         codec->coded_frame->key_frame = ((pkt.flags & PKT_FLAG_KEY) != 0);
-                        
-#ifdef PJSG
-                        if (codec->codec_type == CODEC_TYPE_AUDIO) {
-                            codec->frame_size = (codec->sample_rate * pkt.duration + 500000) / 1000000;
-                            /* printf("Calculated size %d, from sr %d, duration %d\n", codec->frame_size, codec->sample_rate, pkt.duration); */
-                        }
-#endif
-                        
                         if (c->is_packetized) {
                             int max_packet_size;
                             if (c->rtp_protocol == RTSP_PROTOCOL_RTP_TCP)
@@ -2321,8 +2155,6 @@ static int http_prepare_data(HTTPContext *c)
                             else
                                 max_packet_size = url_get_max_packet_size(c->rtp_handles[c->packet_stream_index]);
                             ret = url_open_dyn_packet_buf(&ctx->pb, max_packet_size);
-                            c->packet_byte_count = 0;
-                            c->packet_start_time_us = av_gettime();
                         } else {
                             ret = url_open_dyn_buf(&ctx->pb);
                         }
@@ -2335,14 +2167,15 @@ static int http_prepare_data(HTTPContext *c)
                         }
                         
                         len = url_close_dyn_buf(&ctx->pb, &c->pb_buffer);
+                        c->cur_frame_bytes = len;
                         c->buffer_ptr = c->pb_buffer;
                         c->buffer_end = c->pb_buffer + len;
                         
                         codec->frame_number++;
+                        if (len == 0)
+                            goto redo;
                     }
-#ifndef AV_READ_FRAME
                     av_free_packet(&pkt);
-#endif
                 }
             }
         }
@@ -2377,7 +2210,7 @@ static int http_prepare_data(HTTPContext *c)
    (either UDP or TCP connection) */
 static int http_send_data(HTTPContext *c)
 {
-    int len, ret, dt;
+    int len, ret;
 
     for(;;) {
         if (c->buffer_ptr >= c->buffer_end) {
@@ -2404,7 +2237,16 @@ static int http_send_data(HTTPContext *c)
                     (c->buffer_ptr[3]);
                 if (len > (c->buffer_end - c->buffer_ptr))
                     goto fail1;
-            
+                if ((get_packet_send_clock(c) - get_server_clock(c)) > 0) {
+                    /* nothing to send yet: we can wait */
+                    return 0;
+                }
+
+                c->data_count += len;
+                update_datarate(&c->datarate, c->data_count);
+                if (c->stream)
+                    c->stream->bytes_served += len;
+
                 if (c->rtp_protocol == RTSP_PROTOCOL_RTP_TCP) {
                     /* RTP packets are sent inside the RTSP TCP connection */
                     ByteIOContext pb1, *pb = &pb1;
@@ -2439,28 +2281,32 @@ static int http_send_data(HTTPContext *c)
                     /* prepare asynchronous TCP sending */
                     rtsp_c->packet_buffer_ptr = c->packet_buffer;
                     rtsp_c->packet_buffer_end = c->packet_buffer + size;
-                    rtsp_c->state = RTSPSTATE_SEND_PACKET;
+                    c->buffer_ptr += len;
+                    
+                    /* send everything we can NOW */
+                    len = write(rtsp_c->fd, rtsp_c->packet_buffer_ptr, 
+                                rtsp_c->packet_buffer_end - rtsp_c->packet_buffer_ptr);
+                    if (len > 0) {
+                        rtsp_c->packet_buffer_ptr += len;
+                    }
+                    if (rtsp_c->packet_buffer_ptr < rtsp_c->packet_buffer_end) {
+                        /* if we could not send all the data, we will
+                           send it later, so a new state is needed to
+                           "lock" the RTSP TCP connection */
+                        rtsp_c->state = RTSPSTATE_SEND_PACKET;
+                        break;
+                    } else {
+                        /* all data has been sent */
+                        av_freep(&c->packet_buffer);
+                    }
                 } else {
                     /* send RTP packet directly in UDP */
-
-                    /* short term bandwidth limitation */
-                    dt = av_gettime() - c->packet_start_time_us;
-                    if (dt < 1)
-                        dt = 1;
-                    
-                    if ((c->packet_byte_count + len) * (int64_t)1000000 >= 
-                        (SHORT_TERM_BANDWIDTH / 8) * (int64_t)dt) {
-                        /* bandwidth overflow : wait at most one tick and retry */
-                        c->state = HTTPSTATE_WAIT_SHORT;
-                        return 0;
-                    }
-
                     c->buffer_ptr += 4;
                     url_write(c->rtp_handles[c->packet_stream_index], 
                               c->buffer_ptr, len);
+                    c->buffer_ptr += len;
+                    /* here we continue as we can send several packets per 10 ms slot */
                 }
-                c->buffer_ptr += len;
-                c->packet_byte_count += len;
             } else {
                 /* TCP data output */
                 len = write(c->fd, c->buffer_ptr, c->buffer_end - c->buffer_ptr);
@@ -2474,12 +2320,12 @@ static int http_send_data(HTTPContext *c)
                 } else {
                     c->buffer_ptr += len;
                 }
+                c->data_count += len;
+                update_datarate(&c->datarate, c->data_count);
+                if (c->stream)
+                    c->stream->bytes_served += len;
+                break;
             }
-            c->data_count += len;
-            update_datarate(&c->datarate, c->data_count);
-            if (c->stream)
-                c->stream->bytes_served += len;
-            break;
         }
     } /* for(;;) */
     return 0;
@@ -2775,19 +2621,23 @@ static int prepare_sdp_description(FFStream *stream, uint8_t **pbuffer,
         url_fprintf(pb, "c=IN IP4 %s\n", inet_ntoa(stream->multicast_ip));
     }
     /* for each stream, we output the necessary info */
-    private_payload_type = 96;
+    private_payload_type = RTP_PT_PRIVATE;
     for(i = 0; i < stream->nb_streams; i++) {
         st = stream->streams[i];
-        switch(st->codec.codec_type) {
-        case CODEC_TYPE_AUDIO:
-            mediatype = "audio";
-            break;
-        case CODEC_TYPE_VIDEO:
+        if (st->codec.codec_id == CODEC_ID_MPEG2TS) {
             mediatype = "video";
-            break;
-        default:
-            mediatype = "application";
-            break;
+        } else {
+            switch(st->codec.codec_type) {
+            case CODEC_TYPE_AUDIO:
+                mediatype = "audio";
+                break;
+            case CODEC_TYPE_VIDEO:
+                mediatype = "video";
+                break;
+            default:
+                mediatype = "application";
+                break;
+            }
         }
         /* NOTE: the port indication is not correct in case of
            unicast. It is not an issue because RTSP gives it */
@@ -2801,7 +2651,7 @@ static int prepare_sdp_description(FFStream *stream, uint8_t **pbuffer,
         }
         url_fprintf(pb, "m=%s %d RTP/AVP %d\n", 
                     mediatype, port, payload_type);
-        if (payload_type >= 96) {
+        if (payload_type >= RTP_PT_PRIVATE) {
             /* for private payload type, we need to give more info */
             switch(st->codec.codec_id) {
             case CODEC_ID_MPEG4:
@@ -2874,7 +2724,6 @@ static void rtsp_cmd_describe(HTTPContext *c, const char *url)
     /* get the host IP */
     len = sizeof(my_addr);
     getsockname(c->fd, (struct sockaddr *)&my_addr, &len);
-    
     content_length = prepare_sdp_description(stream, &content, my_addr.sin_addr);
     if (content_length < 0) {
         rtsp_reply_error(c, RTSP_STATUS_INTERNAL);
@@ -3115,6 +2964,14 @@ static void rtsp_cmd_play(HTTPContext *c, const char *url, RTSPHeader *h)
         rtsp_reply_error(c, RTSP_STATUS_STATE);
         return;
     }
+
+#if 0
+    /* XXX: seek in stream */
+    if (h->range_start != AV_NOPTS_VALUE) {
+        printf("range_start=%0.3f\n", (double)h->range_start / AV_TIME_BASE);
+        av_seek_frame(rtp_c->fmt_in, -1, h->range_start);
+    }
+#endif
 
     rtp_c->state = HTTPSTATE_SEND_DATA;
     
@@ -3477,8 +3334,16 @@ static void build_file_streams(void)
             /* the stream comes from a file */
             /* try to open the file */
             /* open stream */
+            stream->ap_in = av_mallocz(sizeof(AVFormatParameters));
+            if (stream->fmt == &rtp_mux) {
+                /* specific case : if transport stream output to RTP,
+                   we use a raw transport stream reader */
+                stream->ap_in->mpeg2ts_raw = 1;
+                stream->ap_in->mpeg2ts_compute_pcr = 1;
+            }
+            
             if (av_open_input_file(&infile, stream->feed_filename, 
-                                   NULL, 0, NULL) < 0) {
+                                   stream->ifmt, 0, stream->ap_in) < 0) {
                 http_log("%s not found", stream->feed_filename);
                 /* remove stream (no need to spend more time on it) */
             fail:
@@ -3554,7 +3419,8 @@ static void build_feed_streams(void)
 
                         if (sf->index != ss->index ||
                             sf->id != ss->id) {
-                            printf("Index & Id do not match for stream %d\n", i);
+                            printf("Index & Id do not match for stream %d (%s)\n", 
+                                   i, feed->feed_filename);
                             matches = 0;
                         } else {
                             AVCodecContext *ccf, *ccs;
@@ -4090,6 +3956,12 @@ static int parse_ffconfig(const char *filename)
             if (stream->fmt) {
                 audio_id = stream->fmt->audio_codec;
                 video_id = stream->fmt->video_codec;
+            }
+        } else if (!strcasecmp(cmd, "InputFormat")) {
+            stream->ifmt = av_find_input_format(arg);
+            if (!stream->ifmt) {
+                fprintf(stderr, "%s:%d: Unknown input format: %s\n", 
+                        filename, line_num, arg);
             }
         } else if (!strcasecmp(cmd, "FaviconURL")) {
             if (stream && stream->stream_type == STREAM_TYPE_STATUS) {
