@@ -1624,7 +1624,7 @@ typedef struct AVCodec {
     const AVOption *options;
     struct AVCodec *next;
     void (*flush)(AVCodecContext *);
-    AVRational *supported_framerates; ///array of supported framerates, or NULL if any, array is terminated by {0,0}
+    const AVRational *supported_framerates; ///array of supported framerates, or NULL if any, array is terminated by {0,0}
 } AVCodec;
 
 /**
