@@ -2888,7 +2888,7 @@ const OptionDef options[] = {
     { "deinterlace", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&do_deinterlace}, 
       "deinterlace pictures" },
     { "interlace", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&do_interlace}, 
-      "force interlacing support in encoder (MPEG4)" },
+      "force interlacing support in encoder (MPEG2/MPEG4)" },
     { "psnr", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&do_psnr}, "calculate PSNR of compressed frames" },
     { "vstats", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&do_vstats}, "dump video coding statistics to file" }, 
     { "vhook", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)add_frame_hooker}, "insert video processing module", "module" },
