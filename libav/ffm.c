@@ -301,6 +301,7 @@ static int ffm_read_data(AVFormatContext *s,
         if (len == 0) {
             if (url_ftell(pb) == ffm->file_size)
                 url_fseek(pb, ffm->packet_size, SEEK_SET);
+    retry_read:
             get_be16(pb); /* PACKET_ID */
             fill_size = get_be16(pb);
             ffm->pts = get_be64(pb);
@@ -310,7 +311,18 @@ static int ffm_read_data(AVFormatContext *s,
             /* if first packet or resynchronization packet, we must
                handle it specifically */
             if (ffm->first_packet || (frame_offset & 0x8000)) {
+                if (!frame_offset) {
+                    /* This packet has no frame headers in it */
+                    if (url_ftell(pb) >= ffm->packet_size * 3) {
+                        url_fseek(pb, -ffm->packet_size * 2, SEEK_CUR);
+                        goto retry_read;
+                    }
+                    /* This is bad, we cannot find a valid frame header */
+                    return 0;
+                }
                 ffm->first_packet = 0;
+                if ((frame_offset & 0x7ffff) < FFM_HEADER_SIZE)
+                    abort();
                 ffm->packet_ptr = ffm->packet + (frame_offset & 0x7fff) - FFM_HEADER_SIZE;
                 if (!first)
                     break;
