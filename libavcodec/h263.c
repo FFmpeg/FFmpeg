@@ -351,13 +351,32 @@ void mpeg4_encode_mb(MpegEncContext * s,
             s->last_bits=bits;
         }else{ /* s->pict_type==B_TYPE */
             if ((cbp | motion_x | motion_y) == 0 && s->mv_type==MV_TYPE_16X16) {
-                /* skip macroblock */
-                put_bits(&s->pb, 1, 1);
-                s->misc_bits++;
-                s->last_bits++;
-                s->skip_count++;
-                s->mb_skiped=1; // we need that for b-frames
-                return;
+                /* check if the B frames can skip it too, as we must skip it if we skip here 
+                   why didnt they just compress the skip-mb bits instead of reusing them ?! */
+                if(s->max_b_frames>0){
+                    int i;
+                    const int offset= (s->mb_x + s->mb_y*s->linesize)*16;
+                    uint8_t *p_pic= s->new_picture[0] + offset;
+                    s->mb_skiped=1;
+                    for(i=0; i<s->max_b_frames; i++){
+                        uint8_t *b_pic= s->coded_order[i+1].picture[0] + offset;
+                        int diff= pix_abs16x16(p_pic, b_pic, s->linesize);
+                        if(diff>s->qscale*70){
+                            s->mb_skiped=0;
+                            break;
+                        }
+                    }
+                }else
+                    s->mb_skiped=1; 
+
+                if(s->mb_skiped==1){
+                    /* skip macroblock */
+                    put_bits(&s->pb, 1, 1);
+                    s->misc_bits++;
+                    s->last_bits++;
+                    s->skip_count++;
+                    return;
+                }
             }
             put_bits(&s->pb, 1, 0);	/* mb coded */
             if(s->mv_type==MV_TYPE_16X16){
@@ -2602,7 +2621,7 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
                 if(width && height){ /* they should be non zero but who knows ... */
                     s->width = width;
                     s->height = height;
-//                    printf("%d %d\n", width, height);
+//                    printf("width/height: %d %d\n", width, height);
                 }
             }
             
@@ -2860,7 +2879,7 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
              s->b_code = get_bits(&s->gb, 3);
 //printf("b-code %d\n", s->b_code);
          }
-//printf("quant:%d fcode:%d\n", s->qscale, s->f_code);
+//printf("quant:%d fcode:%d bcode:%d type:%d\n", s->qscale, s->f_code, s->b_code, s->pict_type);
          if(!s->scalability){
              if (s->shape!=RECT_SHAPE && s->pict_type!=I_TYPE) {
                  skip_bits1(&s->gb); // vop shape coding type
