@@ -89,7 +89,7 @@ static const int AdaptCoeff2[] = {
 };
 
 /* These are for CD-ROM XA ADPCM */
-const static int xa_adpcm_table[5][2] = {
+static const int xa_adpcm_table[5][2] = {
    {   0,   0 },
    {  60,   0 },
    { 115, -52 },
@@ -235,7 +235,7 @@ static int adpcm_encode_frame(AVCodecContext *avctx,
             *dst++ = 0; /* unknown */
             samples++;
             if (avctx->channels == 2) {
-                c->status[1].prev_sample = (signed short)samples[0];
+                c->status[1].prev_sample = (signed short)samples[1];
 /*                c->status[1].step_index = 0; */
                 *dst++ = (c->status[1].prev_sample) & 0xFF;
                 *dst++ = (c->status[1].prev_sample >> 8) & 0xFF;
