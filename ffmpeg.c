@@ -92,9 +92,11 @@ static int video_qmax = 31;
 static int video_qdiff = 3;
 static float video_qblur = 0.5;
 static float video_qcomp = 0.5;
+#if 0 //experimental, (can be removed)
 static float video_rc_qsquish=1.0;
 static float video_rc_qmod_amp=0;
 static int video_rc_qmod_freq=0;
+#endif
 static char *video_rc_override_string=NULL;
 static char *video_rc_eq="tex^qComp";
 static int video_rc_buffer_size=0;
@@ -1446,6 +1448,11 @@ void opt_video_rc_eq(char *arg)
     video_rc_eq = arg;
 }
 
+void opt_video_rc_override_string(char *arg)
+{
+    video_rc_override_string = arg;
+}
+
 
 void opt_workaround_bugs(const char *arg)
 {
@@ -1632,6 +1639,10 @@ void opt_qcomp(const char *arg)
     video_qcomp = atof(arg);
 }
 
+void opt_rc_initial_cplx(const char *arg)
+{
+    video_rc_initial_cplx = atof(arg);
+}
 void opt_b_qfactor(const char *arg)
 {
     video_b_qfactor = atof(arg);
@@ -1953,6 +1964,9 @@ void opt_output_file(const char *filename)
                 st->stream_copy = 1;
                 video_enc->codec_type = CODEC_TYPE_VIDEO;
             } else {
+                char *p;
+                int i;
+            
                 codec_id = file_oformat->video_codec;
                 if (video_codec_id != CODEC_ID_NONE)
                     codec_id = video_codec_id;
@@ -2004,10 +2018,37 @@ void opt_output_file(const char *filename)
                 video_enc->qblur = video_qblur;
                 video_enc->qcompress = video_qcomp;
                 video_enc->rc_eq = video_rc_eq;
+                
+                p= video_rc_override_string;
+                for(i=0; p; i++){
+                    int start, end, q;
+                    int e=sscanf(p, "%d,%d,%d", &start, &end, &q);
+                    if(e!=3){
+                        fprintf(stderr, "error parsing rc_override\n");
+                        exit(1);
+                    }
+                    video_enc->rc_override= 
+                        realloc(video_enc->rc_override, sizeof(RcOverride)*(i+1));
+                    video_enc->rc_override[i].start_frame= start;
+                    video_enc->rc_override[i].end_frame  = end;
+                    if(q>0){
+                        video_enc->rc_override[i].qscale= q;
+                        video_enc->rc_override[i].quality_factor= 1.0;
+                    }
+                    else{
+                        video_enc->rc_override[i].qscale= 0;
+                        video_enc->rc_override[i].quality_factor= -q/100.0;
+                    }
+                    p= strchr(p, '/');
+                    if(p) p++;
+                }
+                video_enc->rc_override_count=i;
+
                 video_enc->rc_max_rate = video_rc_max_rate;
                 video_enc->rc_min_rate = video_rc_min_rate;
                 video_enc->rc_buffer_size = video_rc_buffer_size;
                 video_enc->rc_buffer_aggressivity= video_rc_buffer_aggressivity;
+                video_enc->rc_initial_cplx= video_rc_initial_cplx;
                 video_enc->i_quant_factor = video_i_qfactor;
                 video_enc->b_quant_factor = video_b_qfactor;
                 video_enc->i_quant_offset = video_i_qoffset;
@@ -2390,11 +2431,13 @@ const OptionDef options[] = {
     { "qdiff", HAS_ARG | OPT_EXPERT, {(void*)opt_qdiff}, "max difference between the quantiser scale (VBR)", "q" },
     { "qblur", HAS_ARG | OPT_EXPERT, {(void*)opt_qblur}, "video quantiser scale blur (VBR)", "blur" },
     { "qcomp", HAS_ARG | OPT_EXPERT, {(void*)opt_qcomp}, "video quantiser scale compression (VBR)", "compression" },
+    { "rc_init_cplx", HAS_ARG | OPT_EXPERT, {(void*)opt_rc_initial_cplx}, "initial complexity for 1-pass encoding", "complexity" },
     { "b_qfactor", HAS_ARG | OPT_EXPERT, {(void*)opt_b_qfactor}, "qp factor between p and b frames", "factor" },
     { "i_qfactor", HAS_ARG | OPT_EXPERT, {(void*)opt_i_qfactor}, "qp factor between p and i frames", "factor" },
     { "b_qoffset", HAS_ARG | OPT_EXPERT, {(void*)opt_b_qoffset}, "qp offset between p and b frames", "offset" },
     { "i_qoffset", HAS_ARG | OPT_EXPERT, {(void*)opt_i_qoffset}, "qp offset between p and i frames", "offset" },
     { "rc_eq", HAS_ARG | OPT_EXPERT, {(void*)opt_video_rc_eq}, "", "equation" },
+    { "rc_override", HAS_ARG | OPT_EXPERT, {(void*)opt_video_rc_override_string}, "Rate control override", "qualities for specific intervals" },
     { "bt", HAS_ARG, {(void*)opt_video_bitrate_tolerance}, "set video bitrate tolerance (in kbit/s)", "tolerance" },
     { "maxrate", HAS_ARG, {(void*)opt_video_bitrate_max}, "set max video bitrate tolerance (in kbit/s)", "bitrate" },
     { "minrate", HAS_ARG, {(void*)opt_video_bitrate_min}, "set min video bitrate tolerance (in kbit/s)", "bitrate" },
