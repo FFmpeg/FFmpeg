@@ -60,7 +60,6 @@ TODO
 more intelligent missalignment avoidance for the horizontal scaler
 dither in C
 change the distance of the u & v buffer
-Move static / global vars into a struct so multiple scalers can be used
 write special vertical cubic upscale version
 Optimize C code (yv12 / minmax)
 */
@@ -144,12 +143,22 @@ static    int clip_yuvtab_40cf[768];
 //global sws_flags from the command line
 int sws_flags=0;
 
+//global srcFilter
+SwsFilter src_filter= {NULL, NULL, NULL, NULL};
+
+float sws_lum_gblur= 0.0;
+float sws_chr_gblur= 0.0;
+int sws_chr_vshift= 0;
+int sws_chr_hshift= 0;
+
 /* cpuCaps combined from cpudetect and whats actually compiled in
    (if there is no support for something compiled in it wont appear here) */
 static CpuCaps cpuCaps;
 
 void (*swScale)(SwsContext *context, uint8_t* src[], int srcStride[], int srcSliceY,
              int srcSliceH, uint8_t* dst[], int dstStride[])=NULL;
+
+static SwsVector *getConvVec(SwsVector *a, SwsVector *b);
 
 #ifdef CAN_COMPILE_X86_ASM
 void in_asm_used_var_warning_killer()
@@ -454,31 +463,39 @@ void SwScale_YV12slice(unsigned char* src[], int srcStride[], int srcSliceY ,
 	int flags=0;
 	static int firstTime=1;
 	int dstStride3[3]= {dstStride, dstStride>>1, dstStride>>1};
-	static SwsFilter srcFilter={NULL, NULL, NULL, NULL};
 
 	if(firstTime)
 	{
 		flags= SWS_PRINT_INFO;
 		firstTime=0;
-{/*
-		SwsVector *g= getGaussianVec(1.7, 2);
-		SwsVector *id= getIdentityVec();
-		scaleVec(g, 0.2);
 
+		if(src_filter.lumH) free(src_filter.lumH);
+		if(src_filter.lumV) free(src_filter.lumV);
+		if(src_filter.chrH) free(src_filter.chrH);
+		if(src_filter.chrV) free(src_filter.chrV);
 
-//		srcFilter.chrH= diffVec(id, g);
-//		srcFilter.chrH= shiftVec(id, 20);
-		srcFilter.chrH= g;
-//		freeVec(g);
-		freeVec(id);
+		if(sws_lum_gblur!=0.0){
+			src_filter.lumH= getGaussianVec(sws_lum_gblur, 3.0);
+			src_filter.lumV= getGaussianVec(sws_lum_gblur, 3.0);
+		}else{
+			src_filter.lumH= getIdentityVec();
+			src_filter.lumV= getIdentityVec();
+		}
 
-		normalizeVec(srcFilter.chrH, 1.0);
-		printVec(srcFilter.chrH);
+		if(sws_chr_gblur!=0.0){
+			src_filter.chrH= getGaussianVec(sws_chr_gblur, 3.0);
+			src_filter.chrV= getGaussianVec(sws_chr_gblur, 3.0);
+		}else{
+			src_filter.chrH= getIdentityVec();
+			src_filter.chrV= getIdentityVec();
+		}
 
-		srcFilter.lumV= srcFilter.lumH= srcFilter.chrV= srcFilter.chrH;
-		srcFilter.lumH = srcFilter.lumV = NULL;
-//		srcFilter.chrH = srcFilter.chrV = NULL;
-*/}
+		if(sws_chr_hshift)
+			shiftVec(src_filter.chrH, sws_chr_hshift);
+
+		if(sws_chr_vshift)
+			shiftVec(src_filter.chrV, sws_chr_vshift);
+
 	}
 
 	switch(dstbpp)
@@ -501,7 +518,7 @@ void SwScale_YV12slice(unsigned char* src[], int srcStride[], int srcSliceY ,
 		default:flags|= SWS_BILINEAR; break;
 	}
 
-	if(!context) context=getSwsContext(srcW, srcH, IMGFMT_YV12, dstW, dstH, dstFormat, flags, &srcFilter, NULL);
+	if(!context) context=getSwsContext(srcW, srcH, IMGFMT_YV12, dstW, dstH, dstFormat, flags, &src_filter, NULL);
 
 
 	swScale(context, src, srcStride, srcSliceY, srcSliceH, dst, dstStride3);
@@ -660,7 +677,7 @@ static inline void initFilter(int16_t **outFilter, int16_t **filterPos, int *out
 		scaleFilter.coeff= filter + i*filterSize;
 		scaleFilter.length= filterSize;
 
-		if(srcFilter) outVec= convVec(srcFilter, &scaleFilter);
+		if(srcFilter) outVec= getConvVec(srcFilter, &scaleFilter);
 		else	      outVec= &scaleFilter;
 
 		ASSERT(outVec->length == filter2Size)
@@ -944,6 +961,11 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 	SwsContext *c;
 	int i;
 	SwsFilter dummyFilter= {NULL, NULL, NULL, NULL};
+
+#ifdef ARCH_X86
+	if(gCpuCaps.hasMMX)
+		asm volatile("emms\n\t"::: "memory");
+#endif
 
 	if(swScale==NULL) globalInit();
 
@@ -1243,7 +1265,7 @@ void scaleVec(SwsVector *a, double scalar){
 		a->coeff[i]*= scalar;
 }
 
-SwsVector *convVec(SwsVector *a, SwsVector *b){
+static SwsVector *getConvVec(SwsVector *a, SwsVector *b){
 	int length= a->length + b->length - 1;
 	double *coeff= memalign(sizeof(double), length*sizeof(double));
 	int i, j;
@@ -1265,7 +1287,7 @@ SwsVector *convVec(SwsVector *a, SwsVector *b){
 	return vec;
 }
 
-SwsVector *sumVec(SwsVector *a, SwsVector *b){
+static SwsVector *sumVec(SwsVector *a, SwsVector *b){
 	int length= MAX(a->length, b->length);
 	double *coeff= memalign(sizeof(double), length*sizeof(double));
 	int i;
@@ -1282,7 +1304,7 @@ SwsVector *sumVec(SwsVector *a, SwsVector *b){
 	return vec;
 }
 
-SwsVector *diffVec(SwsVector *a, SwsVector *b){
+static SwsVector *diffVec(SwsVector *a, SwsVector *b){
 	int length= MAX(a->length, b->length);
 	double *coeff= memalign(sizeof(double), length*sizeof(double));
 	int i;
@@ -1300,7 +1322,7 @@ SwsVector *diffVec(SwsVector *a, SwsVector *b){
 }
 
 /* shift left / or right if "shift" is negative */
-SwsVector *shiftVec(SwsVector *a, int shift){
+static SwsVector *getShiftedVec(SwsVector *a, int shift){
 	int length= a->length + ABS(shift)*2;
 	double *coeff= memalign(sizeof(double), length*sizeof(double));
 	int i, j;
@@ -1315,6 +1337,51 @@ SwsVector *shiftVec(SwsVector *a, int shift){
 	{
 		coeff[i + (length-1)/2 - (a->length-1)/2 - shift]= a->coeff[i];
 	}
+
+	return vec;
+}
+
+void shiftVec(SwsVector *a, int shift){
+	SwsVector *shifted= getShiftedVec(a, shift);
+	free(a->coeff);
+	a->coeff= shifted->coeff;
+	a->length= shifted->length;
+	free(shifted);
+}
+
+void addVec(SwsVector *a, SwsVector *b){
+	SwsVector *sum= sumVec(a, b);
+	free(a->coeff);
+	a->coeff= sum->coeff;
+	a->length= sum->length;
+	free(sum);
+}
+
+void subVec(SwsVector *a, SwsVector *b){
+	SwsVector *diff= diffVec(a, b);
+	free(a->coeff);
+	a->coeff= diff->coeff;
+	a->length= diff->length;
+	free(diff);
+}
+
+void convVec(SwsVector *a, SwsVector *b){
+	SwsVector *conv= getConvVec(a, b);
+	free(a->coeff);
+	a->coeff= conv->coeff;
+	a->length= conv->length;
+	free(conv);
+}
+
+SwsVector *cloneVec(SwsVector *a){
+	double *coeff= memalign(sizeof(double), a->length*sizeof(double));
+	int i;
+	SwsVector *vec= malloc(sizeof(SwsVector));
+
+	vec->coeff= coeff;
+	vec->length= a->length;
+
+	for(i=0; i<a->length; i++) coeff[i]= a->coeff[i];
 
 	return vec;
 }

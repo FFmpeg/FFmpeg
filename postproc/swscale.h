@@ -94,10 +94,11 @@ SwsVector *getGaussianVec(double variance, double quality);
 SwsVector *getIdentityVec(void);
 void scaleVec(SwsVector *a, double scalar);
 void normalizeVec(SwsVector *a, double height);
-SwsVector *convVec(SwsVector *a, SwsVector *b);
-SwsVector *sumVec(SwsVector *a, SwsVector *b);
-SwsVector *diffVec(SwsVector *a, SwsVector *b);
-SwsVector *shiftVec(SwsVector *a, int shift);
+void convVec(SwsVector *a, SwsVector *b);
+void addVec(SwsVector *a, SwsVector *b);
+void subVec(SwsVector *a, SwsVector *b);
+void shiftVec(SwsVector *a, int shift);
+SwsVector *cloneVec(SwsVector *a);
 
 void printVec(SwsVector *a);
 void freeVec(SwsVector *a);
