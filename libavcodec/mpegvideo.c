@@ -2625,10 +2625,19 @@ static always_inline void mpeg_motion_lowres(MpegEncContext *s,
     linesize   = s->current_picture.linesize[0] << field_based;
     uvlinesize = s->current_picture.linesize[1] << field_based;
 
+    if(s->quarter_sample){ //FIXME obviously not perfect but qpel wont work in lowres anyway
+        motion_x/=2;
+        motion_y/=2;
+    }
+    
+    if(field_based){
+        motion_y += (bottom_field - field_select)*((1<<lowres)-1);
+    }
+
     sx= motion_x & s_mask;
     sy= motion_y & s_mask;
     src_x = s->mb_x*2*block_s               + (motion_x >> (lowres+1));
-    src_y = s->mb_y*2*block_s               + (motion_y >> (lowres+1));
+    src_y =(s->mb_y*2*block_s>>field_based) + (motion_y >> (lowres+1));
     
     if (s->out_format == FMT_H263) {
         uvsx = sx | ((motion_x & 2)>>1);
@@ -2648,7 +2657,7 @@ static always_inline void mpeg_motion_lowres(MpegEncContext *s,
         uvsx = mx & s_mask;
         uvsy = my & s_mask;
         uvsrc_x = s->mb_x*block_s               + (mx >> (lowres+1));
-        uvsrc_y = s->mb_y*block_s               + (my >> (lowres+1));
+        uvsrc_y =(s->mb_y*block_s>>field_based) + (my >> (lowres+1));
     }
 
     ptr_y  = ref_picture[0] + src_y * linesize + src_x;
@@ -2669,6 +2678,18 @@ static always_inline void mpeg_motion_lowres(MpegEncContext *s,
                 ptr_cb= uvbuf;
                 ptr_cr= uvbuf+16;
             }
+    }
+
+    if(bottom_field){ //FIXME use this for field pix too instead of the obnoxious hack which changes picture.data
+        dest_y += s->linesize;
+        dest_cb+= s->uvlinesize;
+        dest_cr+= s->uvlinesize;
+    }
+
+    if(field_select){
+        ptr_y += s->linesize;
+        ptr_cb+= s->uvlinesize;
+        ptr_cr+= s->uvlinesize;
     }
 
     sx <<= 2 - lowres;
@@ -3177,11 +3198,115 @@ static inline void MPV_motion_lowres(MpegEncContext *s,
                               int dir, uint8_t **ref_picture, 
                               h264_chroma_mc_func *pix_op)
 {
-    assert(s->mv_type == MV_TYPE_16X16);
-    mpeg_motion_lowres(s, dest_y, dest_cb, dest_cr, 
-                0, 0, 0,
-                ref_picture, pix_op,
-                s->mv[dir][0][0], s->mv[dir][0][1], 16>>s->avctx->lowres);
+    int dxy, mx, my, src_x, src_y, motion_x, motion_y;
+    int mb_x, mb_y, i;
+    uint8_t *ptr, *dest;
+    const int lowres= s->avctx->lowres;
+    const int block_s= 8>>lowres;    
+
+    mb_x = s->mb_x;
+    mb_y = s->mb_y;
+
+    switch(s->mv_type) {
+    case MV_TYPE_16X16:
+        mpeg_motion_lowres(s, dest_y, dest_cb, dest_cr, 
+                    0, 0, 0,
+                    ref_picture, pix_op,
+                    s->mv[dir][0][0], s->mv[dir][0][1], 2*block_s);
+        break;
+/*    case MV_TYPE_8X8:
+        mx = 0;
+        my = 0;
+            for(i=0;i<4;i++) {
+                hpel_motion(s, dest_y + ((i & 1) * 8) + (i >> 1) * 8 * s->linesize,
+                            ref_picture[0], 0, 0,
+                            mb_x * 16 + (i & 1) * 8, mb_y * 16 + (i >>1) * 8,
+                            s->width, s->height, s->linesize,
+                            s->h_edge_pos, s->v_edge_pos,
+                            8, 8, pix_op[1],
+                            s->mv[dir][i][0], s->mv[dir][i][1]);
+
+                mx += s->mv[dir][i][0];
+                my += s->mv[dir][i][1];
+            }
+
+        if(!(s->flags&CODEC_FLAG_GRAY))
+            chroma_4mv_motion(s, dest_cb, dest_cr, ref_picture, pix_op[1], mx, my);
+        break;*/
+    case MV_TYPE_FIELD:
+        if (s->picture_structure == PICT_FRAME) {
+            /* top field */       
+            mpeg_motion_lowres(s, dest_y, dest_cb, dest_cr,
+                        1, 0, s->field_select[dir][0],
+                        ref_picture, pix_op,
+                        s->mv[dir][0][0], s->mv[dir][0][1], block_s);
+            /* bottom field */
+            mpeg_motion_lowres(s, dest_y, dest_cb, dest_cr,
+                        1, 1, s->field_select[dir][1],
+                        ref_picture, pix_op,
+                        s->mv[dir][1][0], s->mv[dir][1][1], block_s);
+        } else {
+            if(s->picture_structure != s->field_select[dir][0] + 1 && s->pict_type != B_TYPE && !s->first_field){
+                ref_picture= s->current_picture_ptr->data;
+            } 
+
+            mpeg_motion_lowres(s, dest_y, dest_cb, dest_cr,
+                        0, 0, s->field_select[dir][0],
+                        ref_picture, pix_op,
+                        s->mv[dir][0][0], s->mv[dir][0][1], 2*block_s);
+        }
+        break;
+    case MV_TYPE_16X8:
+        for(i=0; i<2; i++){
+            uint8_t ** ref2picture;
+
+            if(s->picture_structure == s->field_select[dir][i] + 1 || s->pict_type == B_TYPE || s->first_field){
+                ref2picture= ref_picture;
+            }else{
+                ref2picture= s->current_picture_ptr->data;
+            } 
+
+            mpeg_motion_lowres(s, dest_y, dest_cb, dest_cr, 
+                        0, 0, s->field_select[dir][i],
+                        ref2picture, pix_op,
+                        s->mv[dir][i][0], s->mv[dir][i][1] + 2*block_s*i, block_s);
+                
+            dest_y += 2*block_s*s->linesize;
+            dest_cb+= (2*block_s>>s->chroma_y_shift)*s->uvlinesize;
+            dest_cr+= (2*block_s>>s->chroma_y_shift)*s->uvlinesize;
+        }        
+        break;
+    case MV_TYPE_DMV:
+        if(s->picture_structure == PICT_FRAME){
+            for(i=0; i<2; i++){
+                int j;
+                for(j=0; j<2; j++){
+                    mpeg_motion_lowres(s, dest_y, dest_cb, dest_cr,
+                                1, j, j^i,
+                                ref_picture, pix_op,
+                                s->mv[dir][2*i + j][0], s->mv[dir][2*i + j][1], block_s);
+                }
+                pix_op = s->dsp.avg_h264_chroma_pixels_tab;
+            }
+        }else{
+            for(i=0; i<2; i++){
+                mpeg_motion_lowres(s, dest_y, dest_cb, dest_cr, 
+                            0, 0, s->picture_structure != i+1,
+                            ref_picture, pix_op,
+                            s->mv[dir][2*i][0],s->mv[dir][2*i][1],2*block_s);
+
+                // after put we make avg of the same block
+                pix_op = s->dsp.avg_h264_chroma_pixels_tab;
+
+                //opposite parity is always in the same frame if this is second field
+                if(!s->first_field){
+                    ref_picture = s->current_picture_ptr->data;    
+                }
+            }
+        }
+    break;
+    default: assert(0);
+    }
 }
 
 /* put block[] to dest[] */
