@@ -36,8 +36,12 @@
 
 #define MAX_CHANNELS 2
 
+#define MID_SIDE 0
+#define LEFT_SIDE 1
+#define RIGHT_SIDE 2
+
 typedef struct SonicContext {
-    int lossless, mid_side;
+    int lossless, decorrelation;
     
     int num_taps, downsampling;
     double quantization;
@@ -507,7 +511,7 @@ static int sonic_encode_init(AVCodecContext *avctx)
     }
 
     if (avctx->channels == 2)
-	s->mid_side = 1;
+	s->decorrelation = MID_SIDE;
 
     if (avctx->codec->id == CODEC_ID_SONIC_LS)
     {
@@ -579,7 +583,7 @@ static int sonic_encode_init(AVCodecContext *avctx)
     put_bits(&pb, 1, s->lossless);
     if (!s->lossless)
 	put_bits(&pb, 3, SAMPLE_SHIFT); // XXX FIXME: sample precision
-    put_bits(&pb, 1, s->mid_side);
+    put_bits(&pb, 2, s->decorrelation);
     put_bits(&pb, 2, s->downsampling);
     put_bits(&pb, 5, (s->num_taps >> 5)-1); // 32..1024
     put_bits(&pb, 1, 0); // XXX FIXME: no custom tap quant table
@@ -587,8 +591,8 @@ static int sonic_encode_init(AVCodecContext *avctx)
     flush_put_bits(&pb);
     avctx->extradata_size = put_bits_count(&pb)/8;
 
-    av_log(avctx, AV_LOG_INFO, "Sonic: ver: %d ls: %d ms: %d taps: %d block: %d frame: %d downsamp: %d\n",
-	version, s->lossless, s->mid_side, s->num_taps, s->block_align, s->frame_size, s->downsampling);
+    av_log(avctx, AV_LOG_INFO, "Sonic: ver: %d ls: %d dr: %d taps: %d block: %d frame: %d downsamp: %d\n",
+	version, s->lossless, s->decorrelation, s->num_taps, s->block_align, s->frame_size, s->downsampling);
 
     avctx->coded_frame = avcodec_alloc_frame();
     if (!avctx->coded_frame)
@@ -630,25 +634,30 @@ static int sonic_encode_frame(AVCodecContext *avctx,
 
     // short -> internal
     for (i = 0; i < s->frame_size; i++)
-    {
-//	if (samples[i] < 0)
-//	    s->int_samples[i] = samples[i]+32768;
-//	else
-//	    s->int_samples[i] = samples[i]-32768;
 	s->int_samples[i] = samples[i];
-//	av_log(NULL, AV_LOG_INFO, "%d\n", s->int_samples[i]);
-    }
 
     if (!s->lossless)
 	for (i = 0; i < s->frame_size; i++)
 	    s->int_samples[i] = s->int_samples[i] << SAMPLE_SHIFT;
 
-    if (s->mid_side)
-	for (i = 0; i < s->frame_size; i += s->channels)
-	{
-	    s->int_samples[i] += s->int_samples[i+1];
-	    s->int_samples[i+1] -= shift(s->int_samples[i], 1);
-	}
+    switch(s->decorrelation)
+    {
+	case MID_SIDE:
+	    for (i = 0; i < s->frame_size; i += s->channels)
+	    {
+		s->int_samples[i] += s->int_samples[i+1];
+		s->int_samples[i+1] -= shift(s->int_samples[i], 1);
+	    }
+	    break;
+	case LEFT_SIDE:
+	    for (i = 0; i < s->frame_size; i += s->channels)
+		s->int_samples[i+1] -= s->int_samples[i];
+	    break;
+	case RIGHT_SIDE:
+	    for (i = 0; i < s->frame_size; i += s->channels)
+		s->int_samples[i] -= s->int_samples[i+1];
+	    break;
+    }
 
     memset(s->window, 0, 4* s->window_size);
     
@@ -777,7 +786,7 @@ static int sonic_decode_init(AVCodecContext *avctx)
     s->lossless = get_bits1(&gb);
     if (!s->lossless)
 	skip_bits(&gb, 3); // XXX FIXME
-    s->mid_side = get_bits1(&gb);
+    s->decorrelation = get_bits(&gb, 2);
 
     s->downsampling = get_bits(&gb, 2);
     s->num_taps = (get_bits(&gb, 5)+1)<<5;
@@ -788,8 +797,8 @@ static int sonic_decode_init(AVCodecContext *avctx)
     s->frame_size = s->channels*s->block_align*s->downsampling;
 //    avctx->frame_size = s->block_align;
 
-    av_log(avctx, AV_LOG_INFO, "Sonic: ver: %d ls: %d ms: %d taps: %d block: %d frame: %d downsamp: %d\n",
-	version, s->lossless, s->mid_side, s->num_taps, s->block_align, s->frame_size, s->downsampling);
+    av_log(avctx, AV_LOG_INFO, "Sonic: ver: %d ls: %d dr: %d taps: %d block: %d frame: %d downsamp: %d\n",
+	version, s->lossless, s->decorrelation, s->num_taps, s->block_align, s->frame_size, s->downsampling);
 
     // generate taps
     s->tap_quant = av_mallocz(4* s->num_taps);
@@ -886,12 +895,24 @@ static int sonic_decode_frame(AVCodecContext *avctx,
 	    s->predictor_state[ch][i] = s->int_samples[s->frame_size - s->channels + ch - i*s->channels];
     }
     
-    if (s->mid_side)
-	for (i = 0; i < s->frame_size; i += s->channels)
-	{
-	    s->int_samples[i+1] += shift(s->int_samples[i], 1);
-	    s->int_samples[i] -= s->int_samples[i+1];
-	}
+    switch(s->decorrelation)
+    {
+	case MID_SIDE:
+	    for (i = 0; i < s->frame_size; i += s->channels)
+	    {
+		s->int_samples[i+1] += shift(s->int_samples[i], 1);
+		s->int_samples[i] -= s->int_samples[i+1];
+	    }
+	    break;
+	case LEFT_SIDE:
+	    for (i = 0; i < s->frame_size; i += s->channels)
+		s->int_samples[i+1] += s->int_samples[i];
+	    break;
+	case RIGHT_SIDE:
+	    for (i = 0; i < s->frame_size; i += s->channels)
+		s->int_samples[i] += s->int_samples[i+1];
+	    break;
+    }
 
     if (!s->lossless)
 	for (i = 0; i < s->frame_size; i++)
@@ -909,9 +930,6 @@ static int sonic_decode_frame(AVCodecContext *avctx,
     }
 
     align_get_bits(&gb);
-
-//    if (buf_size != (get_bits_count(&gb)+7)/8)
-//	av_log(NULL, AV_LOG_INFO, "buf_size (%d) and used bytes (%d) differs\n", buf_size, (get_bits_count(&gb)+7)/8);
 
     *data_size = s->frame_size * 2;
 
