@@ -1,28 +1,27 @@
 /*
- * motion_comp_vis.c
+ * dsputil_vis.c
  * Copyright (C) 2003 David S. Miller <davem@redhat.com>
  *
- * This file is part of mpeg2dec, a free MPEG-2 video stream decoder.
- * See http://libmpeg2.sourceforge.net/ for updates.
+ * This file is part of ffmpeg, a free MPEG-4 video stream decoder.
+ * See http://ffmpeg.sourceforge.net/ for updates.
  *
- * mpeg2dec is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
+ * ffmpeg is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation; either version 2.1 of the License, or
  * (at your option) any later version.
  *
- * mpeg2dec is distributed in the hope that it will be useful,
+ * ffmpeg is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
+ * You should have received a copy of the Lesser GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-/* The *no_round* functions have been added by James A. Morrison, 2003.
+/* The *no_round* functions have been added by James A. Morrison, 2003,2004.
    The vis code from libmpeg2 was adapted for ffmpeg by James A. Morrison.
-   Note: This code is GPL'd and may only be distributed in a GPL'd package.
  */
 
 #include "config.h"
@@ -30,6 +29,8 @@
 #ifdef ARCH_SPARC
 
 #include <inttypes.h>
+#include <signal.h>
+#include <setjmp.h>
 
 #include "../dsputil.h"
 
@@ -4000,50 +4001,107 @@ void get_pixels_vis(uint8_t *restrict dest, const uint8_t *_ref, int stride)
     }
 }
 
+static sigjmp_buf jmpbuf;
+static volatile sig_atomic_t canjump = 0;
+ 
+static void sigill_handler (int sig)
+{
+    if (!canjump) {
+        signal (sig, SIG_DFL);
+        raise (sig);
+    }
+                                                                                
+    canjump = 0;
+    siglongjmp (jmpbuf, 1);
+}
+
+#define ACCEL_SPARC_VIS 1
+#define ACCEL_SPARC_VIS2 2
+
+static int vis_level ()
+{
+    int accel = 0;
+
+    signal (SIGILL, sigill_handler);
+    if (sigsetjmp (jmpbuf, 1)) {
+        signal (SIGILL, SIG_DFL);
+        return accel;
+    }
+ 
+    canjump = 1;
+ 
+    /* pdist %f0, %f0, %f0 */
+    __asm__ __volatile__(".word\t0x81b007c0");
+                                                                                
+    canjump = 0;
+    accel |= ACCEL_SPARC_VIS;
+                                                                                
+    if (sigsetjmp (jmpbuf, 1)) {
+        signal (SIGILL, SIG_DFL);
+        return accel;
+    }
+                                                                                
+    canjump = 1;
+                                                                                
+    /* edge8n %g0, %g0, %g0 */
+    __asm__ __volatile__(".word\t0x81b00020");
+                                                                                
+    canjump = 0;
+    accel |= ACCEL_SPARC_VIS2;
+                                                                                
+    signal (SIGILL, SIG_DFL);
+
+    return accel;
+}
+
 /* libavcodec initialization code */
 void dsputil_init_vis(DSPContext* c, AVCodecContext *avctx)
 {
   /* VIS specific optimisations */
-  c->get_pixels = get_pixels_vis;
-  c->put_pixels_tab[0][0] = MC_put_o_16_vis;
-  c->put_pixels_tab[0][1] = MC_put_x_16_vis;
-  c->put_pixels_tab[0][2] = MC_put_y_16_vis;
-  c->put_pixels_tab[0][3] = MC_put_xy_16_vis;
+  int accel = vis_level ();
+
+  if (accel & ACCEL_SPARC_VIS) {
+      c->get_pixels = get_pixels_vis;
+      c->put_pixels_tab[0][0] = MC_put_o_16_vis;
+      c->put_pixels_tab[0][1] = MC_put_x_16_vis;
+      c->put_pixels_tab[0][2] = MC_put_y_16_vis;
+      c->put_pixels_tab[0][3] = MC_put_xy_16_vis;
+      
+      c->put_pixels_tab[1][0] = MC_put_o_8_vis;
+      c->put_pixels_tab[1][1] = MC_put_x_8_vis;
+      c->put_pixels_tab[1][2] = MC_put_y_8_vis;
+      c->put_pixels_tab[1][3] = MC_put_xy_8_vis;
+      
+      c->avg_pixels_tab[0][0] = MC_avg_o_16_vis;
+      c->avg_pixels_tab[0][1] = MC_avg_x_16_vis;
+      c->avg_pixels_tab[0][2] = MC_avg_y_16_vis;
+      c->avg_pixels_tab[0][3] = MC_avg_xy_16_vis;
   
-  c->put_pixels_tab[1][0] = MC_put_o_8_vis;
-  c->put_pixels_tab[1][1] = MC_put_x_8_vis;
-  c->put_pixels_tab[1][2] = MC_put_y_8_vis;
-  c->put_pixels_tab[1][3] = MC_put_xy_8_vis;
+      c->avg_pixels_tab[1][0] = MC_avg_o_8_vis;
+      c->avg_pixels_tab[1][1] = MC_avg_x_8_vis;
+      c->avg_pixels_tab[1][2] = MC_avg_y_8_vis;
+      c->avg_pixels_tab[1][3] = MC_avg_xy_8_vis;
   
-  c->avg_pixels_tab[0][0] = MC_avg_o_16_vis;
-  c->avg_pixels_tab[0][1] = MC_avg_x_16_vis;
-  c->avg_pixels_tab[0][2] = MC_avg_y_16_vis;
-  c->avg_pixels_tab[0][3] = MC_avg_xy_16_vis;
+      c->put_no_rnd_pixels_tab[0][0] = MC_put_no_round_o_16_vis;
+      c->put_no_rnd_pixels_tab[0][1] = MC_put_no_round_x_16_vis;
+      c->put_no_rnd_pixels_tab[0][2] = MC_put_no_round_y_16_vis;
+      c->put_no_rnd_pixels_tab[0][3] = MC_put_no_round_xy_16_vis;
+      
+      c->put_no_rnd_pixels_tab[1][0] = MC_put_no_round_o_8_vis;
+      c->put_no_rnd_pixels_tab[1][1] = MC_put_no_round_x_8_vis;
+      c->put_no_rnd_pixels_tab[1][2] = MC_put_no_round_y_8_vis;
+      c->put_no_rnd_pixels_tab[1][3] = MC_put_no_round_xy_8_vis;
   
-  c->avg_pixels_tab[1][0] = MC_avg_o_8_vis;
-  c->avg_pixels_tab[1][1] = MC_avg_x_8_vis;
-  c->avg_pixels_tab[1][2] = MC_avg_y_8_vis;
-  c->avg_pixels_tab[1][3] = MC_avg_xy_8_vis;
+      c->avg_no_rnd_pixels_tab[0][0] = MC_avg_no_round_o_16_vis;
+      c->avg_no_rnd_pixels_tab[0][1] = MC_avg_no_round_x_16_vis;
+      c->avg_no_rnd_pixels_tab[0][2] = MC_avg_no_round_y_16_vis;
+      c->avg_no_rnd_pixels_tab[0][3] = MC_avg_no_round_xy_16_vis;
   
-  c->put_no_rnd_pixels_tab[0][0] = MC_put_no_round_o_16_vis;
-  c->put_no_rnd_pixels_tab[0][1] = MC_put_no_round_x_16_vis;
-  c->put_no_rnd_pixels_tab[0][2] = MC_put_no_round_y_16_vis;
-  c->put_no_rnd_pixels_tab[0][3] = MC_put_no_round_xy_16_vis;
-  
-  c->put_no_rnd_pixels_tab[1][0] = MC_put_no_round_o_8_vis;
-  c->put_no_rnd_pixels_tab[1][1] = MC_put_no_round_x_8_vis;
-  c->put_no_rnd_pixels_tab[1][2] = MC_put_no_round_y_8_vis;
-  c->put_no_rnd_pixels_tab[1][3] = MC_put_no_round_xy_8_vis;
-  
-  c->avg_no_rnd_pixels_tab[0][0] = MC_avg_no_round_o_16_vis;
-  c->avg_no_rnd_pixels_tab[0][1] = MC_avg_no_round_x_16_vis;
-  c->avg_no_rnd_pixels_tab[0][2] = MC_avg_no_round_y_16_vis;
-  c->avg_no_rnd_pixels_tab[0][3] = MC_avg_no_round_xy_16_vis;
-  
-  c->avg_no_rnd_pixels_tab[1][0] = MC_avg_no_round_o_8_vis;
-  c->avg_no_rnd_pixels_tab[1][1] = MC_avg_no_round_x_8_vis;
-  c->avg_no_rnd_pixels_tab[1][2] = MC_avg_no_round_y_8_vis;
-  c->avg_no_rnd_pixels_tab[1][3] = MC_avg_no_round_xy_8_vis;
+      c->avg_no_rnd_pixels_tab[1][0] = MC_avg_no_round_o_8_vis;
+      c->avg_no_rnd_pixels_tab[1][1] = MC_avg_no_round_x_8_vis;
+      c->avg_no_rnd_pixels_tab[1][2] = MC_avg_no_round_y_8_vis;
+      c->avg_no_rnd_pixels_tab[1][3] = MC_avg_no_round_xy_8_vis;
+  }
 }
 
 #endif  /* !(ARCH_SPARC) */
