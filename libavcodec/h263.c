@@ -57,6 +57,9 @@ static UINT16 mv_penalty[MAX_FCODE+1][MAX_MV*2+1];
 static UINT8 fcode_tab[MAX_MV*2+1];
 static UINT8 umv_fcode_tab[MAX_MV*2+1];
 
+static UINT16 uni_DCtab_lum  [512][2];
+static UINT16 uni_DCtab_chrom[512][2];
+
 int h263_get_picture_format(int width, int height)
 {
     int format;
@@ -706,12 +709,67 @@ static void init_mv_penalty_and_fcode(MpegEncContext *s)
     }
 }
 
+static void init_uni_dc_tab()
+{
+    int level, uni_code, uni_len;
+
+    for(level=-255; level<256; level++){
+        int size, v, l;
+        /* find number of bits */
+        size = 0;
+        v = abs(level);
+        while (v) {
+            v >>= 1;
+	    size++;
+        }
+
+        if (level < 0)
+            l= (-level) ^ ((1 << size) - 1);
+        else
+            l= level;
+
+        /* luminance */
+        uni_code= DCtab_lum[size][0];
+        uni_len = DCtab_lum[size][1];
+
+        if (size > 0) {
+            uni_code<<=size; uni_code|=l;
+            uni_len+=size;
+            if (size > 8){
+                uni_code<<=1; uni_code|=1;
+                uni_len++;
+            }
+        }
+        uni_DCtab_lum[level+256][0]= uni_code;
+        uni_DCtab_lum[level+256][1]= uni_len;
+
+        /* chrominance */
+        uni_code= DCtab_chrom[size][0];
+        uni_len = DCtab_chrom[size][1];
+        
+        if (size > 0) {
+            uni_code<<=size; uni_code|=l;
+            uni_len+=size;
+            if (size > 8){
+                uni_code<<=1; uni_code|=1;
+                uni_len++;
+            }
+        }
+        uni_DCtab_chrom[level+256][0]= uni_code;
+        uni_DCtab_chrom[level+256][1]= uni_len;
+
+    }
+}
+
 void h263_encode_init(MpegEncContext *s)
 {
     static int done = 0;
 
     if (!done) {
         done = 1;
+
+        init_uni_dc_tab();
+
         init_rl(&rl_inter);
         init_rl(&rl_intra);
 
@@ -1033,9 +1091,18 @@ static void mpeg4_inv_pred_ac(MpegEncContext * s, INT16 *block, int n,
     }
 }
 
-
 static inline void mpeg4_encode_dc(MpegEncContext * s, int level, int n)
 {
+#if 1
+    level+=256;
+    if (n < 4) {
+	/* luminance */
+	put_bits(&s->pb, uni_DCtab_lum[level][1], uni_DCtab_lum[level][0]);
+    } else {
+	/* chrominance */
+	put_bits(&s->pb, uni_DCtab_chrom[level][1], uni_DCtab_chrom[level][0]);
+    }
+#else
     int size, v;
     /* find number of bits */
     size = 0;
@@ -1061,6 +1128,7 @@ static inline void mpeg4_encode_dc(MpegEncContext * s, int level, int n)
 	if (size > 8)
 	    put_bits(&s->pb, 1, 1);
     }
+#endif
 }
 
 static void mpeg4_encode_block(MpegEncContext * s, DCTELEM * block, int n, int intra_dc, UINT8 *scan_table)
