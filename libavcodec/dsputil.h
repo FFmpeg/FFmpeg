@@ -422,6 +422,12 @@ void dsputil_init_armv4l(DSPContext* c, AVCodecContext *avctx);
 
 void dsputil_init_mlib(DSPContext* c, AVCodecContext *avctx);
 
+#elif defined(ARCH_SPARC)
+
+/* SPARC/VIS IDCT needs 8-byte aligned DCT blocks */
+#define __align8 __attribute__ ((aligned (8)))
+void dsputil_init_vis(DSPContext* c, AVCodecContext *avctx);
+
 #elif defined(ARCH_ALPHA)
 
 #define __align8 __attribute__ ((aligned (8)))

@@ -3286,6 +3286,9 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
 #ifdef HAVE_MLIB
     dsputil_init_mlib(c, avctx);
 #endif
+#ifdef ARCH_SPARC
+   dsputil_init_vis(c,avctx);
+#endif
 #ifdef ARCH_ALPHA
     dsputil_init_alpha(c, avctx);
 #endif
