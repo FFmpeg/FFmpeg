@@ -1305,6 +1305,25 @@ typedef struct AVPicture {
     int linesize[4];       ///< number of bytes per line
 } AVPicture;
 
+/**
+ * AVPaletteControl
+ * This structure defines a method for communicating palette changes
+ * between and demuxer and a decoder.
+ */
+typedef struct AVPaletteControl {
+
+    /* demuxer sets this to 1 to indicate the palette has changed;
+     * decoder resets to 0 */
+    int palette_changed;
+
+    /* 256 3-byte RGB palette entries; the components should be
+     * formatted in the buffer as "RGBRGB..." and should be scaled to
+     * 8 bits if they originally represented 6-bit VGA palette
+     * components */
+    unsigned char palette[256 * 3];
+
+} AVPaletteControl;
+
 extern AVCodec ac3_encoder;
 extern AVCodec mp2_encoder;
 extern AVCodec mp3lame_encoder;

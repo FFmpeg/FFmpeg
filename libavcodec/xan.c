@@ -115,9 +115,9 @@ static int xan_decode_init(AVCodecContext *avctx)
     s->avctx = avctx;
 
     if ((avctx->codec->id == CODEC_ID_XAN_WC3) && 
-        (s->avctx->extradata_size != PALETTE_CONTROL_SIZE)) {
+        (s->avctx->extradata_size != sizeof(AVPaletteControl))) {
         printf (" WC3 Xan video: expected extradata_size of %d\n",
-            PALETTE_CONTROL_SIZE);
+            sizeof(AVPaletteControl));
         return -1;
     }
 
@@ -809,13 +809,13 @@ static int xan_decode_frame(AVCodecContext *avctx,
                             uint8_t *buf, int buf_size)
 {
     XanContext *s = avctx->priv_data;
-    unsigned char *palette_control = avctx->extradata;
+    AVPaletteControl *palette_control = (AVPaletteControl *)avctx->extradata;
     int keyframe = 0;
 
-    if (palette_control[0]) {
+    if (palette_control->palette_changed) {
         /* load the new palette and reset the palette control */
-        xan_wc3_build_palette(s, &palette_control[1]);
-        palette_control[0] = 0;
+        xan_wc3_build_palette(s, palette_control->palette);
+        palette_control->palette_changed = 0;
         keyframe = 1;
     }
 

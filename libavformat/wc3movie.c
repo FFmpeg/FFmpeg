@@ -74,9 +74,6 @@
 
 #define PALETTE_SIZE (256 * 3)
 #define PALETTE_COUNT 256
-/* palette is 3 bytes per entry plus 1 byte at the front to indicate to the
- * decoder if the palette has changed */
-#define PALETTE_CONTROL_SIZE ((PALETTE_COUNT * 3) + 1)
 
 typedef struct Wc3DemuxContext {
     int width;
@@ -87,8 +84,7 @@ typedef struct Wc3DemuxContext {
     int video_stream_index;
     int audio_stream_index;
 
-    /* save a reference to extradata */
-    unsigned char *palette_control;
+    AVPaletteControl palette_control;
 
 } Wc3DemuxContext;
 
@@ -163,7 +159,6 @@ static int wc3_read_header(AVFormatContext *s,
     wc3->palette_count = 0;
     wc3->pts = 0;
     wc3->video_stream_index = wc3->audio_stream_index = 0;
-    wc3->palette_control = av_mallocz(PALETTE_CONTROL_SIZE);;
 
     /* skip the first 3 32-bit numbers */
     url_fseek(pb, 12, SEEK_CUR);
@@ -263,8 +258,8 @@ static int wc3_read_header(AVFormatContext *s,
     st->codec.height = wc3->height;
 
     /* palette considerations */
-    st->codec.extradata_size = PALETTE_CONTROL_SIZE;
-    st->codec.extradata = wc3->palette_control;
+    st->codec.extradata_size = sizeof(AVPaletteControl);
+    st->codec.extradata = &wc3->palette_control;
 
     st = av_new_stream(s, 0);
     if (!st)
@@ -324,11 +319,10 @@ static int wc3_read_packet(AVFormatContext *s,
             palette_number = LE_32(&preamble[0]);
             if (palette_number >= wc3->palette_count)
                 return AVERROR_INVALIDDATA;
-            memcpy(wc3->palette_control + 1, 
+            memcpy(wc3->palette_control.palette, 
                 &wc3->palettes[palette_number * PALETTE_COUNT * 3],
                 PALETTE_COUNT * 3);
-            /* indicate a palette change */
-            wc3->palette_control[0] = 1;
+            wc3->palette_control.palette_changed = 1;
             break;
 
         case VGA__TAG:
@@ -396,7 +390,6 @@ static int wc3_read_close(AVFormatContext *s)
     Wc3DemuxContext *wc3 = (Wc3DemuxContext *)s->priv_data;
 
     av_free(wc3->palettes);
-    av_free(wc3->palette_control);
 
     return 0;
 }
