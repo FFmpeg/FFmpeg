@@ -653,19 +653,11 @@ static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 get_be16(pb);
                 /* modification of h263 codec version (!) */
                 h263_hack_version = get_be32(pb);
-                switch(h263_hack_version) {
-                case 0x10000000:
-                case 0x10003000:
-                case 0x10003001:
-                default:
-                    st->codec.sub_id = h263_hack_version;
+                st->codec.sub_id = h263_hack_version;
+                if((h263_hack_version>>28)==1)
                     st->codec.codec_id = CODEC_ID_RV10;
-                    break;
-//                default:
-                    /* not handled */
-                    st->codec.codec_id = CODEC_ID_NONE;
-                    break;
-                }
+                else
+                    st->codec.codec_id = CODEC_ID_RV20;
             }
             /* skip codec info */
             size = url_ftell(pb) - codec_pos;
