@@ -258,6 +258,12 @@ echo "Missing inttypes.h, please copy cygwin_inttypes.h to" \
 Linux)
 LDFLAGS="$LDFLAGS -rdynamic"
 ;;
+IRIX*)
+ranlib="echo ignoring ranlib"
+v4l="no"
+audio_oss="no"
+make="gmake"
+;;
 OS/2)
 TMPE=$TMPE".exe"
 ar="emxomfar -p64"
