@@ -916,18 +916,21 @@ static void av_read_frame_flush(AVFormatContext *s)
 }
 
 /**
- * updates the cur_dts field based on the given timestamp and AVStream.
- * only needed if (dts are not set and pts!=dts) or for timestamp wrapping
+ * updates cur_dts of all streams based on given timestamp and AVStream.
+ * stream ref_st unchanged, others set cur_dts in their native timebase
+ * only needed for timestamp wrapping or if (dts not set and pts!=dts)
+ * @param timestamp new dts expressed in time_base of param ref_st
+ * @param ref_st reference stream giving time_base of param timestamp
  */
-static void av_update_cur_dts(AVFormatContext *s, AVStream *st, int64_t timestamp){
+static void av_update_cur_dts(AVFormatContext *s, AVStream *ref_st, int64_t timestamp){
     int i;
 
     for(i = 0; i < s->nb_streams; i++) {
-        AVStream *st2 = s->streams[i];
+        AVStream *st = s->streams[i];
 
         st->cur_dts = av_rescale(timestamp, 
-                                 st2->time_base.den * (int64_t)st ->time_base.num,
-                                 st ->time_base.den * (int64_t)st2->time_base.num);
+                                 st->time_base.den * (int64_t)ref_st->time_base.num,
+                                 st->time_base.num * (int64_t)ref_st->time_base.den);
     }
 }
 
