@@ -7,7 +7,7 @@
 #define SWS_FULL_UV_IPOL 0x100
 #define SWS_PRINT_INFO 0x1000
 
-#define SWS_MAX_SIZE 2000
+#define SWS_MAX_REDUCE_CUTOFF 0.002
 
 /* this struct should be aligned on at least 32-byte boundary */
 typedef struct{
@@ -16,20 +16,21 @@ typedef struct{
 	int lumXInc, chrXInc;
 	int lumYInc, chrYInc;
 	int dstFormat, srcFormat;
-	int16_t __attribute__((aligned(8))) *lumPixBuf[SWS_MAX_SIZE];
-	int16_t __attribute__((aligned(8))) *chrPixBuf[SWS_MAX_SIZE];
-	int16_t __attribute__((aligned(8))) hLumFilter[SWS_MAX_SIZE*5];
-	int16_t __attribute__((aligned(8))) hLumFilterPos[SWS_MAX_SIZE];
-	int16_t __attribute__((aligned(8))) hChrFilter[SWS_MAX_SIZE*5];
-	int16_t __attribute__((aligned(8))) hChrFilterPos[SWS_MAX_SIZE];
-	int16_t __attribute__((aligned(8))) vLumFilter[SWS_MAX_SIZE*5];
-	int16_t __attribute__((aligned(8))) vLumFilterPos[SWS_MAX_SIZE];
-	int16_t __attribute__((aligned(8))) vChrFilter[SWS_MAX_SIZE*5];
-	int16_t __attribute__((aligned(8))) vChrFilterPos[SWS_MAX_SIZE];
+
+	int16_t **lumPixBuf;
+	int16_t **chrPixBuf;
+	int16_t *hLumFilter;
+	int16_t *hLumFilterPos;
+	int16_t *hChrFilter;
+	int16_t *hChrFilterPos;
+	int16_t *vLumFilter;
+	int16_t *vLumFilterPos;
+	int16_t *vChrFilter;
+	int16_t *vChrFilterPos;
 
 // Contain simply the values from v(Lum|Chr)Filter just nicely packed for mmx
-	int16_t __attribute__((aligned(8))) lumMmxFilter[SWS_MAX_SIZE*20];
-	int16_t __attribute__((aligned(8))) chrMmxFilter[SWS_MAX_SIZE*20];
+	int16_t  *lumMmxFilter;
+	int16_t  *chrMmxFilter;
 
 	int hLumFilterSize;
 	int hChrFilterSize;
@@ -52,12 +53,19 @@ typedef struct{
 } SwsContext;
 //FIXME check init (where 0)
 
+// when used for filters they must have an odd number of elements
+// coeffs cannot be shared between vectors
 typedef struct {
-	double *lumH;
-	double *lumV;
-	double *chrH;
-	double *chrV;
+	double *coeff;
 	int length;
+} SwsVector;
+
+// vectors can be shared
+typedef struct {
+	SwsVector *lumH;
+	SwsVector *lumV;
+	SwsVector *chrH;
+	SwsVector *chrV;
 } SwsFilter;
 
 
@@ -74,7 +82,7 @@ void SwScale_Init();
 
 
 
-void freeSwsContext(SwsContext swsContext);
+void freeSwsContext(SwsContext *swsContext);
 
 SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH, int dstFormat, int flags,
 			 SwsFilter *srcFilter, SwsFilter *dstFilter);
@@ -82,9 +90,15 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 extern void (*swScale)(SwsContext *context, uint8_t* src[], int srcStride[], int srcSliceY,
              int srcSliceH, uint8_t* dst[], int dstStride[]);
 
-double *getGaussian(double variance, double quality);
+SwsVector *getGaussianVec(double variance, double quality);
+SwsVector *getIdentityVec(void);
+void scaleVec(SwsVector *a, double scalar);
+void normalizeVec(SwsVector *a, double height);
+SwsVector *convVec(SwsVector *a, SwsVector *b);
+SwsVector *sumVec(SwsVector *a, SwsVector *b);
+SwsVector *diffVec(SwsVector *a, SwsVector *b);
+SwsVector *shiftVec(SwsVector *a, int shift);
 
-void normalize(double *coeff, int length, double height);
-
-double *conv(double *a, int aLength, double *b, int bLength);
+void printVec(SwsVector *a);
+void freeVec(SwsVector *a);
 

@@ -443,7 +443,7 @@ static inline void yuv2rgbXinC(int16_t *lumFilter, int16_t **lumSrc, int lumFilt
 // minor note: the HAVE_xyz is messed up after that line so dont use it
 
 
-// old global scaler, dont use for new code
+// old global scaler, dont use for new code, unless it uses only the stuff from the command line
 // will use sws_flags from the command line
 void SwScale_YV12slice(unsigned char* src[], int srcStride[], int srcSliceY ,
 			     int srcSliceH, uint8_t* dst[], int dstStride, int dstbpp,
@@ -454,11 +454,31 @@ void SwScale_YV12slice(unsigned char* src[], int srcStride[], int srcSliceY ,
 	int flags=0;
 	static int firstTime=1;
 	int dstStride3[3]= {dstStride, dstStride>>1, dstStride>>1};
+	static SwsFilter srcFilter={NULL, NULL, NULL, NULL};
 
 	if(firstTime)
 	{
 		flags= SWS_PRINT_INFO;
 		firstTime=0;
+{/*
+		SwsVector *g= getGaussianVec(1.7, 2);
+		SwsVector *id= getIdentityVec();
+		scaleVec(g, 0.2);
+
+
+//		srcFilter.chrH= diffVec(id, g);
+//		srcFilter.chrH= shiftVec(id, 20);
+		srcFilter.chrH= g;
+//		freeVec(g);
+		freeVec(id);
+
+		normalizeVec(srcFilter.chrH, 1.0);
+		printVec(srcFilter.chrH);
+
+		srcFilter.lumV= srcFilter.lumH= srcFilter.chrV= srcFilter.chrH;
+		srcFilter.lumH = srcFilter.lumV = NULL;
+//		srcFilter.chrH = srcFilter.chrV = NULL;
+*/}
 	}
 
 	switch(dstbpp)
@@ -481,32 +501,40 @@ void SwScale_YV12slice(unsigned char* src[], int srcStride[], int srcSliceY ,
 		default:flags|= SWS_BILINEAR; break;
 	}
 
-	if(!context) context=getSwsContext(srcW, srcH, IMGFMT_YV12, dstW, dstH, dstFormat, flags, NULL, NULL);
+	if(!context) context=getSwsContext(srcW, srcH, IMGFMT_YV12, dstW, dstH, dstFormat, flags, &srcFilter, NULL);
 
 
 	swScale(context, src, srcStride, srcSliceY, srcSliceH, dst, dstStride3);
 }
 
-static inline void initFilter(int16_t *dstFilter, int16_t *filterPos, int *filterSize, int xInc,
-			      int srcW, int dstW, int filterAlign, int one, int flags)
+static inline void initFilter(int16_t **outFilter, int16_t **filterPos, int *outFilterSize, int xInc,
+			      int srcW, int dstW, int filterAlign, int one, int flags,
+			      SwsVector *srcFilter, SwsVector *dstFilter)
 {
 	int i;
-	double filter[10000];
+	int filterSize;
+	int filter2Size;
+	int minFilterSize;
+	double *filter=NULL;
+	double *filter2=NULL;
 #ifdef ARCH_X86
 	if(gCpuCaps.hasMMX)
 		asm volatile("emms\n\t"::: "memory"); //FIXME this shouldnt be required but it IS (even for non mmx versions)
 #endif
 
+	*filterPos = (int16_t*)memalign(8, dstW*sizeof(int16_t));
+
 	if(ABS(xInc - 0x10000) <10) // unscaled
 	{
 		int i;
-		*filterSize= (1 +(filterAlign-1)) & (~(filterAlign-1)); // 1 or 4 normaly
-		for(i=0; i<dstW*(*filterSize); i++) filter[i]=0;
+		filterSize= 1;
+		filter= (double*)memalign(8, dstW*sizeof(double)*filterSize);
+		for(i=0; i<dstW*filterSize; i++) filter[i]=0;
 
 		for(i=0; i<dstW; i++)
 		{
-			filter[i*(*filterSize)]=1;
-			filterPos[i]=i;
+			filter[i*filterSize]=1;
+			(*filterPos)[i]=i;
 		}
 
 	}
@@ -514,19 +542,19 @@ static inline void initFilter(int16_t *dstFilter, int16_t *filterPos, int *filte
 	{
 		int i;
 		int xDstInSrc;
-		if     (flags&SWS_BICUBIC) *filterSize= 4;
-		else if(flags&SWS_X      ) *filterSize= 4;
-		else			   *filterSize= 2;
+		if     (flags&SWS_BICUBIC) filterSize= 4;
+		else if(flags&SWS_X      ) filterSize= 4;
+		else			   filterSize= 2;
 //		printf("%d %d %d\n", filterSize, srcW, dstW);
-		*filterSize= (*filterSize +(filterAlign-1)) & (~(filterAlign-1));
+		filter= (double*)memalign(8, dstW*sizeof(double)*filterSize);
 
 		xDstInSrc= xInc/2 - 0x8000;
 		for(i=0; i<dstW; i++)
 		{
-			int xx= (xDstInSrc>>16) - (*filterSize>>1) + 1;
+			int xx= (xDstInSrc>>16) - (filterSize>>1) + 1;
 			int j;
 
-			filterPos[i]= xx;
+			(*filterPos)[i]= xx;
 			if((flags & SWS_BICUBIC) || (flags & SWS_X))
 			{
 				double d= ABS(((xx+1)<<16) - xDstInSrc)/(double)(1<<16);
@@ -547,21 +575,21 @@ static inline void initFilter(int16_t *dstFilter, int16_t *filterPos, int *filte
 				}
 
 //				printf("%d %d %d \n", coeff, (int)d, xDstInSrc);
-				filter[i*(*filterSize) + 0]= y1;
-				filter[i*(*filterSize) + 1]= y2;
-				filter[i*(*filterSize) + 2]= y3;
-				filter[i*(*filterSize) + 3]= y4;
+				filter[i*filterSize + 0]= y1;
+				filter[i*filterSize + 1]= y2;
+				filter[i*filterSize + 2]= y3;
+				filter[i*filterSize + 3]= y4;
 //				printf("%1.3f %1.3f %1.3f %1.3f %1.3f\n",d , y1, y2, y3, y4);
 			}
 			else
 			{
-				for(j=0; j<*filterSize; j++)
+				for(j=0; j<filterSize; j++)
 				{
 					double d= ABS((xx<<16) - xDstInSrc)/(double)(1<<16);
 					double coeff= 1.0 - d;
 					if(coeff<0) coeff=0;
 	//				printf("%d %d %d \n", coeff, (int)d, xDstInSrc);
-					filter[i*(*filterSize) + j]= coeff;
+					filter[i*filterSize + j]= coeff;
 					xx++;
 				}
 			}
@@ -571,19 +599,19 @@ static inline void initFilter(int16_t *dstFilter, int16_t *filterPos, int *filte
 	else // downscale
 	{
 		int xDstInSrc;
-		if(flags&SWS_BICUBIC) *filterSize= (int)ceil(1 + 4.0*srcW / (double)dstW);
-		else if(flags&SWS_X)  *filterSize= (int)ceil(1 + 4.0*srcW / (double)dstW);
-		else		      *filterSize= (int)ceil(1 + 2.0*srcW / (double)dstW);
+		if(flags&SWS_BICUBIC) filterSize= (int)ceil(1 + 4.0*srcW / (double)dstW);
+		else if(flags&SWS_X)  filterSize= (int)ceil(1 + 4.0*srcW / (double)dstW);
+		else		      filterSize= (int)ceil(1 + 2.0*srcW / (double)dstW);
 //		printf("%d %d %d\n", *filterSize, srcW, dstW);
-		*filterSize= (*filterSize +(filterAlign-1)) & (~(filterAlign-1));
+		filter= (double*)memalign(8, dstW*sizeof(double)*filterSize);
 
 		xDstInSrc= xInc/2 - 0x8000;
 		for(i=0; i<dstW; i++)
 		{
-			int xx= (int)((double)xDstInSrc/(double)(1<<16) - ((*filterSize)-1)*0.5 + 0.5);
+			int xx= (int)((double)xDstInSrc/(double)(1<<16) - (filterSize-1)*0.5 + 0.5);
 			int j;
-			filterPos[i]= xx;
-			for(j=0; j<*filterSize; j++)
+			(*filterPos)[i]= xx;
+			for(j=0; j<filterSize; j++)
 			{
 				double d= ABS((xx<<16) - xDstInSrc)/(double)xInc;
 				double coeff;
@@ -608,62 +636,155 @@ static inline void initFilter(int16_t *dstFilter, int16_t *filterPos, int *filte
 					if(coeff<0) coeff=0;
 				}
 //				printf("%1.3f %d %d \n", coeff, (int)d, xDstInSrc);
-				filter[i*(*filterSize) + j]= coeff;
+				filter[i*filterSize + j]= coeff;
 				xx++;
 			}
 			xDstInSrc+= xInc;
 		}
 	}
 
+	/* apply src & dst Filter to filter -> filter2
+	   free(filter);
+	*/
+	filter2Size= filterSize;
+	if(srcFilter) filter2Size+= srcFilter->length - 1;
+	if(dstFilter) filter2Size+= dstFilter->length - 1;
+	filter2= (double*)memalign(8, filter2Size*dstW*sizeof(double));
+
+	for(i=0; i<dstW; i++)
+	{
+		int j;
+		SwsVector scaleFilter;
+		SwsVector *outVec;
+
+		scaleFilter.coeff= filter + i*filterSize;
+		scaleFilter.length= filterSize;
+
+		if(srcFilter) outVec= convVec(srcFilter, &scaleFilter);
+		else	      outVec= &scaleFilter;
+
+		ASSERT(outVec->length == filter2Size)
+		//FIXME dstFilter
+
+		for(j=0; j<outVec->length; j++)
+		{
+			filter2[i*filter2Size + j]= outVec->coeff[j];
+		}
+
+		(*filterPos)[i]+= (filterSize-1)/2 - (filter2Size-1)/2;
+
+		if(outVec != &scaleFilter) freeVec(outVec);
+	}
+	free(filter); filter=NULL;
+
+	/* try to reduce the filter-size (step1 find size and shift left) */
+	// Assume its near normalized (*0.5 or *2.0 is ok but * 0.001 is not)
+	minFilterSize= 0;
+	for(i=dstW-1; i>=0; i--)
+	{
+		int min= filter2Size;
+		int j;
+		double cutOff=0.0;
+
+		/* get rid off near zero elements on the left by shifting left */
+		for(j=0; j<filter2Size; j++)
+		{
+			int k;
+			cutOff += ABS(filter2[i*filter2Size]);
+
+			if(cutOff > SWS_MAX_REDUCE_CUTOFF) break;
+
+			/* preserve Monotonicity because the core cant handle the filter otherwise */
+			if(i<dstW-1 && (*filterPos)[i] >= (*filterPos)[i+1]) break;
+
+			// Move filter coeffs left
+			for(k=1; k<filter2Size; k++)
+				filter2[i*filter2Size + k - 1]= filter2[i*filter2Size + k];
+			filter2[i*filter2Size + k - 1]= 0.0;
+			(*filterPos)[i]++;
+		}
+
+		cutOff=0.0;
+		/* count near zeros on the right */
+		for(j=filter2Size-1; j>0; j--)
+		{
+			cutOff += ABS(filter2[i*filter2Size + j]);
+
+			if(cutOff > SWS_MAX_REDUCE_CUTOFF) break;
+			min--;
+		}
+
+		if(min>minFilterSize) minFilterSize= min;
+	}
+
+	/* try to reduce the filter-size (step2 reduce it) */
+	for(i=0; i<dstW; i++)
+	{
+		int j;
+
+		for(j=0; j<minFilterSize; j++)
+			filter2[i*minFilterSize + j]= filter2[i*filter2Size + j];
+	}
+	if((flags&SWS_PRINT_INFO) && verbose)
+		printf("SwScaler: reducing filtersize %d -> %d\n", filter2Size, minFilterSize);
+	filter2Size= minFilterSize;
+	ASSERT(filter2Size > 0)
+
+	//FIXME try to align filterpos if possible
+
 	//fix borders
 	for(i=0; i<dstW; i++)
 	{
 		int j;
-		if(filterPos[i] < 0)
+		if((*filterPos)[i] < 0)
 		{
 			// Move filter coeffs left to compensate for filterPos
-			for(j=1; j<*filterSize; j++)
+			for(j=1; j<filter2Size; j++)
 			{
-				int left= MAX(j + filterPos[i], 0);
-				filter[i*(*filterSize) + left] += filter[i*(*filterSize) + j];
-				filter[i*(*filterSize) + j]=0;
+				int left= MAX(j + (*filterPos)[i], 0);
+				filter2[i*filter2Size + left] += filter2[i*filter2Size + j];
+				filter2[i*filter2Size + j]=0;
 			}
-			filterPos[i]= 0;
+			(*filterPos)[i]= 0;
 		}
 
-		if(filterPos[i] + (*filterSize) > srcW)
+		if((*filterPos)[i] + filter2Size > srcW)
 		{
-			int shift= filterPos[i] + (*filterSize) - srcW;
+			int shift= (*filterPos)[i] + filter2Size - srcW;
 			// Move filter coeffs right to compensate for filterPos
-			for(j=(*filterSize)-2; j>=0; j--)
+			for(j=filter2Size-2; j>=0; j--)
 			{
-				int right= MIN(j + shift, (*filterSize)-1);
-				filter[i*(*filterSize) +right] += filter[i*(*filterSize) +j];
-				filter[i*(*filterSize) +j]=0;
+				int right= MIN(j + shift, filter2Size-1);
+				filter2[i*filter2Size +right] += filter2[i*filter2Size +j];
+				filter2[i*filter2Size +j]=0;
 			}
-			filterPos[i]= srcW - (*filterSize);
+			(*filterPos)[i]= srcW - filter2Size;
 		}
 	}
 
-	//FIXME try to align filterpos if possible / try to shift filterpos to put zeros at the end
-	// and skip these than later
 
-	//Normalize
+	*outFilterSize= (filter2Size +(filterAlign-1)) & (~(filterAlign-1));
+	*outFilter= (int16_t*)memalign(8, *outFilterSize*dstW*sizeof(int16_t));
+	memset(*outFilter, 0, *outFilterSize*dstW*sizeof(int16_t));
+
+	/* Normalize & Store in outFilter */
 	for(i=0; i<dstW; i++)
 	{
 		int j;
 		double sum=0;
 		double scale= one;
-		for(j=0; j<*filterSize; j++)
+		for(j=0; j<filter2Size; j++)
 		{
-			sum+= filter[i*(*filterSize) + j];
+			sum+= filter2[i*filter2Size + j];
 		}
 		scale/= sum;
-		for(j=0; j<*filterSize; j++)
+		for(j=0; j<filter2Size; j++)
 		{
-			dstFilter[i*(*filterSize) + j]= (int)(filter[i*(*filterSize) + j]*scale);
+			(*outFilter)[i*(*outFilterSize) + j]= (int)(filter2[i*filter2Size + j]*scale);
 		}
 	}
+
+	free(filter2);
 }
 
 #ifdef ARCH_X86
@@ -822,18 +943,12 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 	const int widthAlign= dstFormat==IMGFMT_YV12 ? 16 : 8;
 	SwsContext *c;
 	int i;
-//const int bytespp= (dstbpp+1)/8; //(12->1, 15&16->2, 24->3, 32->4)
-//const int over= dstFormat==IMGFMT_YV12 ? 	  (((dstW+15)&(~15))) - dststride
-//						: (((dstW+7)&(~7)))*bytespp - dststride;
+	SwsFilter dummyFilter= {NULL, NULL, NULL, NULL};
+
 	if(swScale==NULL) globalInit();
 
 	/* sanity check */
 	if(srcW<1 || srcH<1 || dstW<1 || dstH<1) return NULL;
-	if(srcW>=SWS_MAX_SIZE || dstW>=SWS_MAX_SIZE || srcH>=SWS_MAX_SIZE || dstH>=SWS_MAX_SIZE)
-	{
-		fprintf(stderr, "size is too large, increase SWS_MAX_SIZE\n");
-		return NULL;
-	}
 
 /* FIXME
 	if(dstStride[0]%widthAlign !=0 )
@@ -844,7 +959,11 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 					widthAlign);
 	}
 */
+	if(!dstFilter) dstFilter= &dummyFilter;
+	if(!srcFilter) srcFilter= &dummyFilter;
+
 	c= memalign(64, sizeof(SwsContext));
+	memset(c, 0, sizeof(SwsContext));
 
 	c->srcW= srcW;
 	c->srcH= srcH;
@@ -895,10 +1014,12 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 	{
 		const int filterAlign= cpuCaps.hasMMX ? 4 : 1;
 
-		initFilter(c->hLumFilter, c->hLumFilterPos, &c->hLumFilterSize, c->lumXInc,
-				 srcW      ,       dstW, filterAlign, 1<<14, flags);
-		initFilter(c->hChrFilter, c->hChrFilterPos, &c->hChrFilterSize, c->chrXInc,
-				(srcW+1)>>1, c->chrDstW, filterAlign, 1<<14, flags);
+		initFilter(&c->hLumFilter, &c->hLumFilterPos, &c->hLumFilterSize, c->lumXInc,
+				 srcW      ,       dstW, filterAlign, 1<<14, flags,
+				 srcFilter->lumH, dstFilter->lumH);
+		initFilter(&c->hChrFilter, &c->hChrFilterPos, &c->hChrFilterSize, c->chrXInc,
+				(srcW+1)>>1, c->chrDstW, filterAlign, 1<<14, flags,
+				 srcFilter->chrH, dstFilter->chrH);
 
 #ifdef ARCH_X86
 // cant downscale !!!
@@ -913,10 +1034,12 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 
 
 	/* precalculate vertical scaler filter coefficients */
-	initFilter(c->vLumFilter, c->vLumFilterPos, &c->vLumFilterSize, c->lumYInc,
-			srcH      ,        dstH, 1, (1<<12)-4, flags);
-	initFilter(c->vChrFilter, c->vChrFilterPos, &c->vChrFilterSize, c->chrYInc,
-			(srcH+1)>>1, c->chrDstH, 1, (1<<12)-4, flags);
+	initFilter(&c->vLumFilter, &c->vLumFilterPos, &c->vLumFilterSize, c->lumYInc,
+			srcH      ,        dstH, 1, (1<<12)-4, flags,
+			srcFilter->lumV, dstFilter->lumV);
+	initFilter(&c->vChrFilter, &c->vChrFilterPos, &c->vChrFilterSize, c->chrYInc,
+			(srcH+1)>>1, c->chrDstH, 1, (1<<12)-4, flags,
+			 srcFilter->chrV, dstFilter->chrV);
 
 	// Calculate Buffer Sizes so that they wont run out while handling these damn slices
 	c->vLumBufSize= c->vLumFilterSize;
@@ -935,6 +1058,8 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 
 	// allocate pixbufs (we use dynamic allocation because otherwise we would need to
 	// allocate several megabytes to handle all possible cases)
+	c->lumPixBuf= (int16_t**)memalign(4, c->vLumBufSize*2*sizeof(int16_t*));
+	c->chrPixBuf= (int16_t**)memalign(4, c->vChrBufSize*2*sizeof(int16_t*));
 	for(i=0; i<c->vLumBufSize; i++)
 		c->lumPixBuf[i]= c->lumPixBuf[i+c->vLumBufSize]= (uint16_t*)memalign(8, 4000);
 	for(i=0; i<c->vChrBufSize; i++)
@@ -945,12 +1070,12 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 	for(i=0; i<c->vChrBufSize; i++) memset(c->chrPixBuf[i], 64, 8000);
 
 	ASSERT(c->chrDstH <= dstH)
-	ASSERT(c->vLumFilterSize*      dstH*4 <= SWS_MAX_SIZE*20)
-	ASSERT(c->vChrFilterSize*c->chrDstH*4 <= SWS_MAX_SIZE*20)
 
 	// pack filter data for mmx code
 	if(cpuCaps.hasMMX)
 	{
+		c->lumMmxFilter= (int16_t*)memalign(8, c->vLumFilterSize*      dstH*4*sizeof(int16_t));
+		c->chrMmxFilter= (int16_t*)memalign(8, c->vChrFilterSize*c->chrDstH*4*sizeof(int16_t));
 		for(i=0; i<c->vLumFilterSize*dstH; i++)
 			c->lumMmxFilter[4*i]=c->lumMmxFilter[4*i+1]=c->lumMmxFilter[4*i+2]=c->lumMmxFilter[4*i+3]=
 				c->vLumFilter[i];
@@ -1064,11 +1189,16 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
  * returns a normalized gaussian curve used to filter stuff
  * quality=3 is high quality, lowwer is lowwer quality
  */
-double *getGaussian(double variance, double quality){
+
+SwsVector *getGaussianVec(double variance, double quality){
 	const int length= (int)(variance*quality + 0.5) | 1;
 	int i;
 	double *coeff= memalign(sizeof(double), length*sizeof(double));
 	double middle= (length-1)*0.5;
+	SwsVector *vec= malloc(sizeof(SwsVector));
+
+	vec->coeff= coeff;
+	vec->length= length;
 
 	for(i=0; i<length; i++)
 	{
@@ -1076,51 +1206,201 @@ double *getGaussian(double variance, double quality){
 		coeff[i]= exp( -dist*dist/(2*variance*variance) ) / sqrt(2*variance*PI);
 	}
 
-	normalize(coeff, length, 1.0);
-	return coeff;
+	normalizeVec(vec, 1.0);
+
+	return vec;
 }
 
-void normalize(double *coeff, int length, double height){
+SwsVector *getIdentityVec(void){
+	double *coeff= memalign(sizeof(double), sizeof(double));
+	SwsVector *vec= malloc(sizeof(SwsVector));
+	coeff[0]= 1.0;
+
+	vec->coeff= coeff;
+	vec->length= 1;
+
+	return vec;
+}
+
+void normalizeVec(SwsVector *a, double height){
 	int i;
 	double sum=0;
 	double inv;
 
-	for(i=0; i<length; i++)
-		sum+= coeff[i];
+	for(i=0; i<a->length; i++)
+		sum+= a->coeff[i];
 
 	inv= height/sum;
 
-	for(i=0; i<length; i++)
-		coeff[i]*= height;
+	for(i=0; i<a->length; i++)
+		a->coeff[i]*= height;
 }
 
-double *conv(double *a, int aLength, double *b, int bLength){
-	int length= aLength + bLength - 1;
+void scaleVec(SwsVector *a, double scalar){
+	int i;
+
+	for(i=0; i<a->length; i++)
+		a->coeff[i]*= scalar;
+}
+
+SwsVector *convVec(SwsVector *a, SwsVector *b){
+	int length= a->length + b->length - 1;
 	double *coeff= memalign(sizeof(double), length*sizeof(double));
 	int i, j;
+	SwsVector *vec= malloc(sizeof(SwsVector));
+
+	vec->coeff= coeff;
+	vec->length= length;
 
 	for(i=0; i<length; i++) coeff[i]= 0.0;
 
-	for(i=0; i<aLength; i++)
+	for(i=0; i<a->length; i++)
 	{
-		for(j=0; j<bLength; j++)
+		for(j=0; j<b->length; j++)
 		{
-			coeff[i+j]+= a[i]*b[j];
+			coeff[i+j]+= a->coeff[i]*b->coeff[j];
 		}
 	}
 
-	return coeff;
+	return vec;
 }
 
-/*
-double *sum(double *a, int aLength, double *b, int bLength){
-	int length= MAX(aLength, bLength);
+SwsVector *sumVec(SwsVector *a, SwsVector *b){
+	int length= MAX(a->length, b->length);
 	double *coeff= memalign(sizeof(double), length*sizeof(double));
 	int i;
+	SwsVector *vec= malloc(sizeof(SwsVector));
+
+	vec->coeff= coeff;
+	vec->length= length;
 
 	for(i=0; i<length; i++) coeff[i]= 0.0;
 
-	for(i=0; i<aLength; i++) coeff[i]+= a[i];
+	for(i=0; i<a->length; i++) coeff[i + (length-1)/2 - (a->length-1)/2]+= a->coeff[i];
+	for(i=0; i<b->length; i++) coeff[i + (length-1)/2 - (b->length-1)/2]+= b->coeff[i];
+
+	return vec;
 }
-*/
+
+SwsVector *diffVec(SwsVector *a, SwsVector *b){
+	int length= MAX(a->length, b->length);
+	double *coeff= memalign(sizeof(double), length*sizeof(double));
+	int i;
+	SwsVector *vec= malloc(sizeof(SwsVector));
+
+	vec->coeff= coeff;
+	vec->length= length;
+
+	for(i=0; i<length; i++) coeff[i]= 0.0;
+
+	for(i=0; i<a->length; i++) coeff[i + (length-1)/2 - (a->length-1)/2]+= a->coeff[i];
+	for(i=0; i<b->length; i++) coeff[i + (length-1)/2 - (b->length-1)/2]-= b->coeff[i];
+
+	return vec;
+}
+
+/* shift left / or right if "shift" is negative */
+SwsVector *shiftVec(SwsVector *a, int shift){
+	int length= a->length + ABS(shift)*2;
+	double *coeff= memalign(sizeof(double), length*sizeof(double));
+	int i, j;
+	SwsVector *vec= malloc(sizeof(SwsVector));
+
+	vec->coeff= coeff;
+	vec->length= length;
+
+	for(i=0; i<length; i++) coeff[i]= 0.0;
+
+	for(i=0; i<a->length; i++)
+	{
+		coeff[i + (length-1)/2 - (a->length-1)/2 - shift]= a->coeff[i];
+	}
+
+	return vec;
+}
+
+void printVec(SwsVector *a){
+	int i;
+	double max=0;
+	double min=0;
+	double range;
+
+	for(i=0; i<a->length; i++)
+		if(a->coeff[i]>max) max= a->coeff[i];
+
+	for(i=0; i<a->length; i++)
+		if(a->coeff[i]<min) min= a->coeff[i];
+
+	range= max - min;
+
+	for(i=0; i<a->length; i++)
+	{
+		int x= (int)((a->coeff[i]-min)*60.0/range +0.5);
+		printf("%1.3f ", a->coeff[i]);
+		for(;x>0; x--) printf(" ");
+		printf("|\n");
+	}
+}
+
+void freeVec(SwsVector *a){
+	if(!a) return;
+	if(a->coeff) free(a->coeff);
+	a->coeff=NULL;
+	a->length=0;
+	free(a);
+}
+
+void freeSwsContext(SwsContext *c){
+	int i;
+
+	if(!c) return;
+
+	if(c->lumPixBuf)
+	{
+		for(i=0; i<c->vLumBufSize*2; i++)
+		{
+			if(c->lumPixBuf[i]) free(c->lumPixBuf[i]);
+			c->lumPixBuf[i]=NULL;
+		}
+		free(c->lumPixBuf);
+		c->lumPixBuf=NULL;
+	}
+
+	if(c->chrPixBuf)
+	{
+		for(i=0; i<c->vChrBufSize*2; i++)
+		{
+			if(c->chrPixBuf[i]) free(c->chrPixBuf[i]);
+			c->chrPixBuf[i]=NULL;
+		}
+		free(c->chrPixBuf);
+		c->chrPixBuf=NULL;
+	}
+
+	if(c->vLumFilter) free(c->vLumFilter);
+	c->vLumFilter = NULL;
+	if(c->vChrFilter) free(c->vChrFilter);
+	c->vChrFilter = NULL;
+	if(c->hLumFilter) free(c->hLumFilter);
+	c->hLumFilter = NULL;
+	if(c->hChrFilter) free(c->hChrFilter);
+	c->hChrFilter = NULL;
+
+	if(c->vLumFilterPos) free(c->vLumFilterPos);
+	c->vLumFilterPos = NULL;
+	if(c->vChrFilterPos) free(c->vChrFilterPos);
+	c->vChrFilterPos = NULL;
+	if(c->hLumFilterPos) free(c->hLumFilterPos);
+	c->hLumFilterPos = NULL;
+	if(c->hChrFilterPos) free(c->hChrFilterPos);
+	c->hChrFilterPos = NULL;
+
+	if(c->lumMmxFilter) free(c->lumMmxFilter);
+	c->lumMmxFilter = NULL;
+	if(c->chrMmxFilter) free(c->chrMmxFilter);
+	c->chrMmxFilter = NULL;
+
+	free(c);
+}
+
 

@@ -1935,13 +1935,10 @@ static void RENAME(swScale)(SwsContext *c, uint8_t* src[], int srcStride[], int 
 		const int lastLumSrcY= firstLumSrcY + vLumFilterSize -1; // Last line needed as input
 		const int lastChrSrcY= firstChrSrcY + vChrFilterSize -1; // Last line needed as input
 
-		if(flags&SWS_FAST_BILINEAR)
-		{
-			//handle holes
-			if(firstLumSrcY > lastInLumBuf) lastInLumBuf= firstLumSrcY-1;
-			if(firstChrSrcY > lastInChrBuf) lastInChrBuf= firstChrSrcY-1;
-		}
-
+		//handle holes (FAST_BILINEAR & weird filters)
+		if(firstLumSrcY > lastInLumBuf) lastInLumBuf= firstLumSrcY-1;
+		if(firstChrSrcY > lastInChrBuf) lastInChrBuf= firstChrSrcY-1;
+//printf("%d %d %d\n", firstChrSrcY, lastInChrBuf, vChrBufSize);
 		ASSERT(firstLumSrcY >= lastInLumBuf - vLumBufSize + 1)
 		ASSERT(firstChrSrcY >= lastInChrBuf - vChrBufSize + 1)
 
@@ -1953,6 +1950,7 @@ static void RENAME(swScale)(SwsContext *c, uint8_t* src[], int srcStride[], int 
 			{
 				uint8_t *s= src[0]+(lastInLumBuf + 1 - srcSliceY)*srcStride[0];
 				lumBufIndex++;
+//				printf("%d %d %d %d\n", lumBufIndex, vLumBufSize, lastInLumBuf,  lastLumSrcY);
 				ASSERT(lumBufIndex < 2*vLumBufSize)
 				ASSERT(lastInLumBuf + 1 - srcSliceY < srcSliceH)
 				ASSERT(lastInLumBuf + 1 - srcSliceY >= 0)
