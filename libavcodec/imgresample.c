@@ -545,7 +545,7 @@ static void component_resample(ImgReSampleContext *s,
 static void build_filter(int16_t *filter, float factor)
 {
     int ph, i, v;
-    float x, y, tab[NB_TAPS], norm, mult;
+    float x, y, tab[NB_TAPS], norm, mult, target;
 
     /* if upsampling, only need to interpolate, no filter */
     if (factor > 1.0)
@@ -571,10 +571,13 @@ static void build_filter(int16_t *filter, float factor)
         }
 
         /* normalize so that an uniform color remains the same */
-        mult = (float)(1 << FILTER_BITS) / norm;
+        target= 1 << FILTER_BITS;
         for(i=0;i<NB_TAPS;i++) {
-            v = (int)(tab[i] * mult);
+            mult = target / norm;
+            v = lrintf(tab[i] * mult);
             filter[ph * NB_TAPS + i] = v;
+            norm -= tab[i];
+            target -= v;
         }
     }
 }
