@@ -202,6 +202,7 @@ static char *pass_logfilename = NULL;
 static int audio_stream_copy = 0;
 static int video_stream_copy = 0;
 static int sync_method= 1;
+static int copy_ts= 0;
 
 static int rate_emu = 0;
 
@@ -616,13 +617,16 @@ static void do_video_out(AVFormatContext *s,
             nb_frames = 0;
         else if (vdelta > 1.1)
             nb_frames = 2;
-//printf("vdelta:%f, ost->sync_opts:%lld, ost->sync_ipts:%f nb_frames:%d\n", vdelta, ost->sync_opts, ost->sync_ipts, nb_frames);
+//fprintf(stderr, "vdelta:%f, ost->sync_opts:%lld, ost->sync_ipts:%f nb_frames:%d\n", vdelta, ost->sync_opts, ost->sync_ipts, nb_frames);
     }
-    if (nb_frames == 0)
+    if (nb_frames == 0){
         ++nb_frames_drop;
-    else if (nb_frames == 2) {
+        if (verbose>2)
+            fprintf(stderr, "*** drop!\n");
+    }else if (nb_frames == 2) {
         ++nb_frames_dup;
-	//printf("*** dup!\n");
+        if (verbose>2)
+            fprintf(stderr, "*** dup!\n");
     }
     ost->sync_opts+= nb_frames;
 
@@ -1693,6 +1697,20 @@ static int av_encode(AVFormatContext **output_files,
         if (ist->discard)
             goto discard_packet;
 
+//        fprintf(stderr, "next:%lld dts:%lld off:%lld %d\n", ist->next_pts, pkt.dts, input_files_ts_offset[ist->file_index], ist->st->codec.codec_type);
+        if (pkt.dts != AV_NOPTS_VALUE) {
+            int64_t delta= pkt.dts - ist->next_pts;
+            if(ABS(delta) > 10LL*AV_TIME_BASE && !copy_ts){
+                input_files_ts_offset[ist->file_index]-= delta;
+                if (verbose > 2)
+                    fprintf(stderr, "timestamp discontinuity %lld, new offset= %lld\n", delta, input_files_ts_offset[ist->file_index]);
+                for(i=0; i<file_table[file_index].nb_streams; i++){
+                    int index= file_table[file_index].ist_index + i;
+                    ist_table[index]->next_pts += delta;
+                }
+            }
+        }
+
         //fprintf(stderr,"read #%d.%d size=%d\n", ist->file_index, ist->index, pkt.size);
         if (output_packet(ist, ist_index, ost_table, nb_ostreams, &pkt) < 0) {
 
@@ -2652,8 +2670,6 @@ static void opt_input_file(const char *filename)
     
     input_files[nb_input_files] = ic;
     input_files_ts_offset[nb_input_files] = input_ts_offset;
-    if (ic->start_time != AV_NOPTS_VALUE && 0)
-	input_files_ts_offset[nb_input_files] -= ic->start_time;
     /* dump the file content */
     if (verbose >= 0)
         dump_format(ic, nb_input_files, filename, 0);
@@ -3544,6 +3560,7 @@ const OptionDef options[] = {
     { "target", HAS_ARG, {(void*)opt_target}, "specify target file type (\"vcd\", \"svcd\" or \"dvd\")", "type" },
     { "threads", HAS_ARG | OPT_EXPERT, {(void*)opt_thread_count}, "thread count", "count" },
     { "sync", HAS_ARG | OPT_EXPERT, {(void*)opt_sync_method}, "sync method", "" },
+    { "copyts", OPT_BOOL | OPT_EXPERT, {(void*)&copy_ts}, "copy timestamps" },
 
     /* video options */
     { "b", HAS_ARG | OPT_VIDEO, {(void*)opt_video_bitrate}, "set video bitrate (in kbit/s)", "bitrate" },
