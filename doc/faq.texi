@@ -57,6 +57,40 @@ GPL. Enable it with @code{./configure --enable-a52}. Take care: by
 enabling AC3, you automatically change the license of libavcodec from
 LGPL to GPL.
 
+@section Which codecs are supported by windows ?
+
+Windows does not support standard formats like mpeg very well, unless you 
+install some additional codecs
+
+The following list of video codecs should work on most windows systems
+@table @option
+@item msmpeg4v2
+.avi/.asf
+@item msmpeg4
+.asf only
+@item wmv1
+.asf only
+@item wmv2
+.asf only
+@item mpeg4
+only if you have some mpeg4 codec installed like ffdshow or xvid
+@item mpeg1
+.mpg only
+@end table
+note, asf often uses .wmv or .wma extensions in windows, it should also be
+mentioned that asf is patented, so microsoft may sue or threaten users who
+use it if they see any reason to do so, it is strongly recommanded to avoid asf
+for any use
+
+The following list of audio codecs should work on most windows systems
+@table @option
+@item adpcm_ima_wav
+@item adpcm_ms
+@item pcm
+@item mp3
+if some mp3 codec like lame is installed
+@end table
+
 @chapter Development
 
 @section Are there examples of use of the FFmpeg libraries libavcodec and libavformat ?
