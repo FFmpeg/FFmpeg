@@ -25,6 +25,7 @@ extern UINT8 zigzag_direct[64];
 
 /* temporary */
 extern UINT32 squareTbl[512];
+extern UINT8 cropTbl[256 + 2 * MAX_NEG_CROP];
 
 void dsputil_init(void);
 
