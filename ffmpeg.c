@@ -30,6 +30,7 @@
 #include <sys/time.h>
 #include <termios.h>
 #include <sys/resource.h>
+#include <signal.h>
 #endif
 #ifdef CONFIG_OS2
 #include <sys/types.h>
@@ -238,6 +239,15 @@ static void term_exit(void)
     tcsetattr (0, TCSANOW, &oldtty);
 }
 
+static volatile sig_atomic_t received_sigterm = 0;
+
+static void
+sigterm_handler(int sig)
+{
+    received_sigterm = sig;
+    term_exit();
+}
+
 static void term_init(void)
 {
     struct termios tty;
@@ -256,6 +266,12 @@ static void term_init(void)
     
     tcsetattr (0, TCSANOW, &tty);
 
+    signal(SIGINT , sigterm_handler); /* Interrupt (ANSI).  */
+    signal(SIGQUIT, sigterm_handler); /* Quit (POSIX).  */
+    signal(SIGTERM, sigterm_handler); /* Termination (ANSI).  */
+    /*
+    register a function to be called at normal program termination
+    */
     atexit(term_exit);
 #ifdef CONFIG_BEOS_NETSERVER
     fcntl(0, F_SETFL, fcntl(0, F_GETFL) | O_NONBLOCK);
@@ -2838,5 +2854,14 @@ int main(int argc, char **argv)
     powerpc_display_perf_report();
 #endif /* POWERPC_TBL_PERFORMANCE_REPORT */
 
+#ifndef CONFIG_WIN32
+    if (received_sigterm) {
+        fprintf(stderr,
+            "Received signal %d: terminating.\n",
+            (int) received_sigterm);
+        exit (255);
+    }
+#endif
+    exit(0); /* not all OS-es handle main() return value */
     return 0;
 }
