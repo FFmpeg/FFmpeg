@@ -278,7 +278,7 @@ static void dv_decode_ac(DVVideoDecodeContext *s,
             if (pos >= 64) {
             read_error:
 #if defined(VLC_DEBUG) || 1
-                printf("error pos=%d\n", pos);
+                fprintf(stderr, "error pos=%d\n", pos);
 #endif
                 /* for errors, we consider the eob is reached */
                 mb->eob_reached = 1;
