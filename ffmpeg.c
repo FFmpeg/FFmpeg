@@ -163,6 +163,7 @@ static char *audio_grab_format = "audio_device";
 static char *audio_device = NULL;
 
 static int using_stdin = 0;
+static int verbose = 1;
 
 #define DEFAULT_PASS_LOGFILENAME "ffmpeg2pass"
 
@@ -724,20 +725,20 @@ static void print_report(AVFormatContext **output_files,
     }
     if (ti1 < 0.01)
         ti1 = 0.01;
-    bitrate = (double)(total_size * 8) / ti1 / 1000.0;
     
-    sprintf(buf + strlen(buf), 
+    if (verbose || is_last_report) {
+        bitrate = (double)(total_size * 8) / ti1 / 1000.0;
+        
+        sprintf(buf + strlen(buf), 
             "size=%8.0fkB time=%0.1f bitrate=%6.1fkbits/s",
             (double)total_size / 1024, ti1, bitrate);
-    
-    fprintf(stderr, "%s   ", buf);
-    
-    if (is_last_report) {
-        fprintf(stderr, "\n");
-    } else {
-        fprintf(stderr, "\r");
+        
+        fprintf(stderr, "%s    \r", buf);
         fflush(stderr);
     }
+        
+    if (is_last_report)
+        fprintf(stderr, "\n");
 }
 
 /*
@@ -1594,6 +1595,11 @@ static void opt_error_concealment(const char *arg)
 static void opt_debug(const char *arg)
 {
     debug = atoi(arg);
+}
+
+static void opt_verbose(const char *arg)
+{
+    verbose = atoi(arg);
 }
 
 static void opt_frame_rate(const char *arg)
@@ -2633,6 +2639,7 @@ const OptionDef options[] = {
     { "bitexact", OPT_EXPERT, {(void*)opt_bitexact}, "only use bit exact algorithms (for codec testing)" }, 
     { "re", OPT_BOOL | OPT_EXPERT, {(void*)&rate_emu}, "read input at native frame rate", "" },
     { "loop", OPT_BOOL | OPT_EXPERT, {(void*)&loop_input}, "loop (current only works with images)" },
+    { "v", HAS_ARG, {(void*)opt_verbose}, "control amount of logging", "verbose" },
 
     /* video options */
     { "b", HAS_ARG | OPT_VIDEO, {(void*)opt_video_bitrate}, "set video bitrate (in kbit/s)", "bitrate" },
