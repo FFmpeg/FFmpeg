@@ -633,6 +633,8 @@ static int mpeg_decode_mb(MpegEncContext *s,
         s->mv_type = MV_TYPE_16X16;
         s->last_mv[0][0][0] = 0;
         s->last_mv[0][0][1] = 0;
+        s->last_mv[0][1][0] = 0;
+        s->last_mv[0][1][1] = 0;
         s->mv[0][0][0] = 0;
         s->mv[0][0][1] = 0;
     } else if (mb_type & (MB_FOR | MB_BACK)) {
@@ -641,7 +643,7 @@ static int mpeg_decode_mb(MpegEncContext *s,
         for(i=0;i<2;i++) {
             if (mb_type & (MB_FOR >> i)) {
                 s->mv_dir |= (MV_DIR_FORWARD >> i);
-                dprintf("mv_type=%d\n", motion_type);
+                dprintf("motion_type=%d\n", motion_type);
                 switch(motion_type) {
                 case MT_FRAME: /* or MT_16X8 */
                     if (s->picture_structure == PICT_FRAME) {
@@ -1006,7 +1008,6 @@ static int mpeg2_decode_block_intra(MpegEncContext *s,
         scan_table = ff_alternate_vertical_scan;
     else
         scan_table = zigzag_direct;
-    mismatch = 1;
 
     /* DC coef */
     component = (n <= 3 ? 0 : n - 4 + 1);
@@ -1018,6 +1019,7 @@ static int mpeg2_decode_block_intra(MpegEncContext *s,
     s->last_dc[component] = dc;
     block[0] = dc << (3 - s->intra_dc_precision);
     dprintf("dc=%d\n", block[0]);
+    mismatch = block[0] ^ 1;
     i = 1;
     if (s->intra_vlc_format)
         rl = &rl_mpeg2;
