@@ -364,7 +364,7 @@ static inline int get_vlc_symbol(GetBitContext *gb, VlcState * const state, int 
     return ret;
 }
 
-static always_inline void encode_line(FFV1Context *s, int w, int_fast16_t *sample[2], int plane_index, int bits){
+static inline void encode_line(FFV1Context *s, int w, int_fast16_t *sample[2], int plane_index, int bits){
     PlaneContext * const p= &s->plane[plane_index];
     CABACContext * const c= &s->c;
     int x;
@@ -375,7 +375,7 @@ static always_inline void encode_line(FFV1Context *s, int w, int_fast16_t *sampl
     for(x=0; x<w; x++){
         int diff, context;
         
-        context= get_context(s, sample[1]+x, sample[0]+x, sample[1]+x);
+        context= get_context(s, sample[1]+x, sample[0]+x, sample[2]+x);
         diff= sample[1][x] - predict(sample[1]+x, sample[0]+x);
 
         if(context < 0){
@@ -430,8 +430,8 @@ static always_inline void encode_line(FFV1Context *s, int w, int_fast16_t *sampl
 
 static void encode_plane(FFV1Context *s, uint8_t *src, int w, int h, int stride, int plane_index){
     int x,y;
-    int_fast16_t sample_buffer[2][w+6];
-    int_fast16_t *sample[2]= {sample_buffer[0]+3, sample_buffer[1]+3};
+    int_fast16_t sample_buffer[3][w+6];
+    int_fast16_t *sample[3]= {sample_buffer[0]+3, sample_buffer[1]+3, sample_buffer[2]+3};
     s->run_index=0;
     
     memset(sample_buffer, 0, sizeof(sample_buffer));
@@ -440,7 +440,8 @@ static void encode_plane(FFV1Context *s, uint8_t *src, int w, int h, int stride,
         int_fast16_t *temp= sample[0]; //FIXME try a normal buffer
 
         sample[0]= sample[1];
-        sample[1]= temp;
+        sample[1]= sample[2];
+        sample[2]= temp;
         
         sample[1][-1]= sample[0][0  ];
         sample[0][ w]= sample[0][w-1];
@@ -711,7 +712,7 @@ static int encode_end(AVCodecContext *avctx)
     return 0;
 }
 
-static always_inline void decode_line(FFV1Context *s, int w, int_fast16_t *sample[2], int plane_index, int bits){
+static inline void decode_line(FFV1Context *s, int w, int_fast16_t *sample[2], int plane_index, int bits){
     PlaneContext * const p= &s->plane[plane_index];
     CABACContext * const c= &s->c;
     int x;
