@@ -25,6 +25,21 @@
   YV12/I420/IYUV -> BGR15/BGR16/BGR24/BGR32
   YV12/I420/IYUV -> YV12/I420/IYUV
   YUY2/BGR15/BGR16/BGR24/BGR32/RGB24/RGB32 -> same format
+  BGR24 -> BGR32 & RGB24 -> RGB32
+  BGR32 -> BGR24 & RGB32 -> RGB24
+*/
+
+/* 
+tested special converters
+ YV12/I420 -> BGR16
+ YV12 -> YV12
+
+untested special converters
+  YV12/I420/IYUV -> BGR15/BGR24/BGR32 (its the yuv2rgb stuff, so it should be ok)
+  YV12/I420/IYUV -> YV12/I420/IYUV 
+  YUY2/BGR15/BGR16/BGR24/BGR32/RGB24/RGB32 -> same format
+  BGR24 -> BGR32 & RGB24 -> RGB32
+  BGR32 -> BGR24 & RGB32 -> RGB24
 */
 
 #include <inttypes.h>
@@ -1134,6 +1149,47 @@ static void planarYuvToBgr(SwsContext *c, uint8_t* src[], int srcStride[], int s
 		yuv2rgb( dst,src[0],src[2],src[1],c->srcW,srcSliceH,dstStride[0],srcStride[0],srcStride[1] );
 }
 
+static void bgr24to32Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
+             int srcSliceH, uint8_t* dst[], int dstStride[]){
+	
+	if(dstStride[0]*3==srcStride[0]*4)
+		rgb24to32(src[0], dst[0] + dstStride[0]*srcSliceY, srcSliceH*dstStride[0]>>2);
+	else
+	{
+		int i;
+		uint8_t *srcPtr= src[0];
+		uint8_t *dstPtr= dst[0] + dstStride[0]*srcSliceY;
+
+		for(i=0; i<srcSliceH; i++)
+		{
+			rgb24to32(srcPtr, dstPtr, c->srcW);
+			srcPtr+= srcStride[0];
+			dstPtr+= dstStride[0];
+		}
+	}     
+}
+
+static void bgr32to24Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
+             int srcSliceH, uint8_t* dst[], int dstStride[]){
+	
+	if(dstStride[0]*4==srcStride[0]*3)
+		rgb32to24(src[0], dst[0] + dstStride[0]*srcSliceY, srcSliceH*srcStride[0]>>2);
+	else
+	{
+		int i;
+		uint8_t *srcPtr= src[0];
+		uint8_t *dstPtr= dst[0] + dstStride[0]*srcSliceY;
+
+		for(i=0; i<srcSliceH; i++)
+		{
+			rgb32to24(srcPtr, dstPtr, c->srcW);
+			srcPtr+= srcStride[0];
+			dstPtr+= dstStride[0];
+		}
+	}     
+}
+
+
 /* unscaled copy like stuff (assumes nearly identical formats) */
 static void simpleCopy(SwsContext *c, uint8_t* srcParam[], int srcStrideParam[], int srcSliceY,
              int srcSliceH, uint8_t* dstParam[], int dstStride[]){
@@ -1294,7 +1350,7 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 	if(srcFilter->chrV!=NULL && srcFilter->chrV->length>1) usesFilter=1;
 	if(srcFilter->chrH!=NULL && srcFilter->chrH->length>1) usesFilter=1;
 	
-	/* special Cases */
+	/* unscaled special Cases */
 	if(srcW==dstW && srcH==dstH && !usesFilter)
 	{
 		/* yuv2bgr */
@@ -1314,6 +1370,30 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 		if(srcFormat == dstFormat || (isPlanarYUV(srcFormat) && isPlanarYUV(dstFormat)))
 		{
 			c->swScale= simpleCopy;
+
+			if(flags&SWS_PRINT_INFO)
+				printf("SwScaler: using unscaled %s -> %s special converter\n", 
+					vo_format_name(srcFormat), vo_format_name(dstFormat));
+			return c;
+		}
+		
+		/* bgr32to24 & rgb32to24*/
+		if((srcFormat==IMGFMT_BGR32 && dstFormat==IMGFMT_BGR24)
+		 ||(srcFormat==IMGFMT_RGB32 && dstFormat==IMGFMT_RGB24))
+		{
+			c->swScale= bgr32to24Wrapper;
+
+			if(flags&SWS_PRINT_INFO)
+				printf("SwScaler: using unscaled %s -> %s special converter\n", 
+					vo_format_name(srcFormat), vo_format_name(dstFormat));
+			return c;
+		}
+		
+		/* bgr24to32 & rgb24to32*/
+		if((srcFormat==IMGFMT_BGR24 && dstFormat==IMGFMT_BGR32)
+		 ||(srcFormat==IMGFMT_RGB24 && dstFormat==IMGFMT_RGB32))
+		{
+			c->swScale= bgr24to32Wrapper;
 
 			if(flags&SWS_PRINT_INFO)
 				printf("SwScaler: using unscaled %s -> %s special converter\n", 
