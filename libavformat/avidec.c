@@ -210,6 +210,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
     fail:
         for(i=0;i<s->nb_streams;i++) {
             av_freep(&s->streams[i]);
+            av_freep(&s->streams[i]->codec.extradata);
         }
         return -1;
     }
