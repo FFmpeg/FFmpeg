@@ -518,7 +518,7 @@ static void dump_filter(INT16 *filter)
 }
 
 #ifdef HAVE_MMX
-int mm_flags;
+extern int mm_flags;
 #endif
 
 int main(int argc, char **argv)
