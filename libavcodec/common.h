@@ -1090,6 +1090,35 @@ if((y)<(x)){\
 }
 #endif
 
+#ifdef ARCH_X86
+static inline long long rdtsc()
+{
+	long long l;
+	asm volatile(	"rdtsc\n\t"
+		: "=A" (l)
+	);
+	return l;
+}
+
+#define START_TIMER \
+static uint64_t tsum=0;\
+static int tcount=0;\
+static int tskip_count=0;\
+uint64_t tend;\
+uint64_t tstart= rdtsc();\
+
+#define STOP_TIMER(id) \
+tend= rdtsc();\
+if(tcount<2 || tend - tstart < 4*tsum/tcount){\
+    tsum+= tend - tstart;\
+    tcount++;\
+}else\
+    tskip_count++;\
+if(256*256*256*64%(tcount+tskip_count)==0){\
+    fprintf(stderr, "%Ld dezicycles in %s, %d runs, %d skips\n", tsum*10/tcount, id, tcount, tskip_count);\
+}
+#endif
+
 #define CLAMP_TO_8BIT(d) ((d > 0xff) ? 0xff : (d < 0) ? 0 : d)
 
 /* avoid usage of various functions */
