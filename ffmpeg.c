@@ -1264,7 +1264,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
                                ((double)ost->st->pts.val * ost->st->time_base.num / ost->st->time_base.den));
 #endif
                         /* set the input output pts pairs */
-                        ost->sync_ipts = (double)(ist->pts + input_files_ts_offset[ist->file_index])/ AV_TIME_BASE;
+                        ost->sync_ipts = (double)(ist->pts + input_files_ts_offset[ist->file_index] - start_time)/ AV_TIME_BASE;
 
                         if (ost->encoding_needed) {
                             switch(ost->st->codec.codec_type) {
