@@ -1,6 +1,7 @@
 /*
  * DV decoder
  * Copyright (c) 2002 Fabrice Bellard.
+ * Copyright (c) 2004 Roman Shaposhnik.
  *
  * DV encoder 
  * Copyright (c) 2003 Roman Shaposhnik.
@@ -39,7 +40,7 @@ typedef struct DVVideoContext {
     uint8_t *buf;
     
     uint8_t dv_zigzag[2][64];
-    uint8_t dv_idct_shift[2][22][64];
+    uint8_t dv_idct_shift[2][2][22][64];
   
     void (*get_pixels)(DCTELEM *block, const uint8_t *pixels, int line_size);
     void (*fdct[2])(DCTELEM *block);
@@ -77,15 +78,17 @@ static void dv_build_unquantize_tables(DVVideoContext *s, uint8_t* perm)
         for(i = 1; i < 64; i++) {
             /* 88 table */
             j = perm[i];
-            s->dv_idct_shift[0][q][j] =
+            s->dv_idct_shift[0][0][q][j] =
                 dv_quant_shifts[q][dv_88_areas[i]] + 1;
+	    s->dv_idct_shift[1][0][q][j] = s->dv_idct_shift[0][0][q][j] + 1;
         }
         
         /* 248DCT */
         for(i = 1; i < 64; i++) {
             /* 248 table */
-            s->dv_idct_shift[1][q][i] =  
+            s->dv_idct_shift[0][1][q][i] =  
                 dv_quant_shifts[q][dv_248_areas[i]] + 1;
+	    s->dv_idct_shift[1][1][q][i] = s->dv_idct_shift[0][1][q][i] + 1;
         }
     }
 }
@@ -98,8 +101,11 @@ static int dvvideo_init(AVCodecContext *avctx)
     int i, j;
 
     if (!done) {
-        int i;
         VLC dv_vlc;
+        uint16_t new_dv_vlc_bits[NB_DV_VLC*2];
+        uint8_t new_dv_vlc_len[NB_DV_VLC*2];
+        uint8_t new_dv_vlc_run[NB_DV_VLC*2];
+        int16_t new_dv_vlc_level[NB_DV_VLC*2];
 
         done = 1;
 
@@ -107,6 +113,7 @@ static int dvvideo_init(AVCodecContext *avctx)
 	if (!dv_vlc_map)
 	    return -ENOMEM;
 
+	/* dv_anchor lets each thread know its Id */
 	dv_anchor = av_malloc(12*27*sizeof(void*));
 	if (!dv_anchor) {
 	    av_free(dv_vlc_map);
@@ -114,11 +121,30 @@ static int dvvideo_init(AVCodecContext *avctx)
 	}
 	for (i=0; i<12*27; i++)
 	    dv_anchor[i] = (void*)(size_t)i;
-	
+
+	/* it's faster to include sign bit in a generic VLC parsing scheme */
+	for (i=0, j=0; i<NB_DV_VLC; i++, j++) {
+	    new_dv_vlc_bits[j] = dv_vlc_bits[i];
+	    new_dv_vlc_len[j] = dv_vlc_len[i];
+	    new_dv_vlc_run[j] = dv_vlc_run[i];
+	    new_dv_vlc_level[j] = dv_vlc_level[i];
+	    
+	    if (dv_vlc_level[i]) {
+	        new_dv_vlc_bits[j] <<= 1;
+		new_dv_vlc_len[j]++;
+
+		j++;
+		new_dv_vlc_bits[j] = (dv_vlc_bits[i] << 1) | 1;
+		new_dv_vlc_len[j] = dv_vlc_len[i] + 1;
+		new_dv_vlc_run[j] = dv_vlc_run[i];
+		new_dv_vlc_level[j] = -dv_vlc_level[i];
+	    }
+	}
+             
         /* NOTE: as a trick, we use the fact the no codes are unused
            to accelerate the parsing of partial codes */
-        init_vlc(&dv_vlc, TEX_VLC_BITS, NB_DV_VLC, 
-                 dv_vlc_len, 1, 1, dv_vlc_bits, 2, 2);
+        init_vlc(&dv_vlc, TEX_VLC_BITS, j, 
+                 new_dv_vlc_len, 1, 1, new_dv_vlc_bits, 2, 2);
 
         dv_rl_vlc = av_malloc(dv_vlc.table_size * sizeof(RL_VLC_ELEM));
 	if (!dv_rl_vlc) {
@@ -135,8 +161,8 @@ static int dvvideo_init(AVCodecContext *avctx)
                 run= 0;
                 level= code;
             } else {
-                run=   dv_vlc_run[code] + 1;
-                level= dv_vlc_level[code];
+                run=   new_dv_vlc_run[code] + 1;
+                level= new_dv_vlc_level[code];
             }
             dv_rl_vlc[i].len = len;
             dv_rl_vlc[i].level = level;
@@ -216,6 +242,7 @@ static int dvvideo_end(AVCodecContext *avctx)
 }
 
 // #define VLC_DEBUG
+// #define printf(...) av_log(NULL, AV_LOG_ERROR, __VA_ARGS__)
 
 typedef struct BlockInfo {
     const uint8_t *shift_table;
@@ -259,115 +286,61 @@ static inline int put_bits_left(PutBitContext* s)
 static void dv_decode_ac(GetBitContext *gb, BlockInfo *mb, DCTELEM *block)
 {
     int last_index = get_bits_size(gb);
-    int last_re_index;
-    int shift_offset = mb->shift_offset;
     const uint8_t *scan_table = mb->scan_table;
     const uint8_t *shift_table = mb->shift_table;
     int pos = mb->pos;
-    int level, pos1, run;
-    int partial_bit_count;
-    int sign = 0;
-#ifndef ALT_BITSTREAM_READER //FIXME
-    int re_index=0; 
-    int re1_index=0;
-#endif
-    OPEN_READER(re, gb);
+    int partial_bit_count = mb->partial_bit_count;
+    int level, pos1, run, vlc_len, index;
     
-#ifdef VLC_DEBUG
-    printf("start\n");
-#endif
-
+    OPEN_READER(re, gb);
+    UPDATE_CACHE(re, gb);
+    
     /* if we must parse a partial vlc, we do it here */
-    partial_bit_count = mb->partial_bit_count;
     if (partial_bit_count > 0) {
-        uint8_t buf[4];
-        uint32_t v;
-        int l;
-        GetBitContext gb1;
-
-        /* build the dummy bit buffer */
-        l = 16 - partial_bit_count;
-        UPDATE_CACHE(re, gb);
-#ifdef VLC_DEBUG
-        printf("show=%04x\n", SHOW_UBITS(re, gb, 16));
-#endif
-        v = (mb->partial_bit_buffer << l) | SHOW_UBITS(re, gb, l);
-        buf[0] = v >> 8;
-        buf[1] = v;
-#ifdef VLC_DEBUG
-        printf("v=%04x cnt=%d %04x\n", 
-               v, partial_bit_count, (mb->partial_bit_buffer << l));
-#endif
-        /* try to read the codeword */
-        init_get_bits(&gb1, buf, 4*8);
-        {
-            OPEN_READER(re1, &gb1);
-            UPDATE_CACHE(re1, &gb1);
-            GET_RL_VLC(level, run, re1, &gb1, dv_rl_vlc, 
-                       TEX_VLC_BITS, 2);
-            l = re1_index;
-            CLOSE_READER(re1, &gb1);
-        }
-#ifdef VLC_DEBUG
-        printf("****run=%d level=%d size=%d\n", run, level, l);
-#endif
-        /* compute codeword length -- if too long, we cannot parse */
-        l -= partial_bit_count;
-        if ((re_index + l + (level != 0)) > last_index) {
-	    mb->partial_bit_count += (last_index - re_index);
-	    mb->partial_bit_buffer = v >> (16 - mb->partial_bit_count);
-            return;
-	}
-	
-        /* skip read bits */
-        last_re_index = 0; /* avoid warning */
-        re_index += l;
-        /* by definition, if we can read the vlc, all partial bits
-           will be read (otherwise we could have read the vlc before) */
-        mb->partial_bit_count = 0;
-        UPDATE_CACHE(re, gb);
-        goto handle_vlc;
+        re_cache = ((unsigned)re_cache >> partial_bit_count) |
+	           (mb->partial_bit_buffer << (sizeof(re_cache)*8 - partial_bit_count));
+	re_index -= partial_bit_count;
+	mb->partial_bit_count = 0;
     }
 
     /* get the AC coefficients until last_index is reached */
     for(;;) {
-        UPDATE_CACHE(re, gb);
 #ifdef VLC_DEBUG
-        printf("%2d: bits=%04x index=%d\n", 
-               pos, SHOW_UBITS(re, gb, 16), re_index);
+        printf("%2d: bits=%04x index=%d\n", pos, SHOW_UBITS(re, gb, 16), re_index);
 #endif
-        last_re_index = re_index;
-        GET_RL_VLC(level, run, re, gb, dv_rl_vlc, 
-                   TEX_VLC_BITS, 2);
-    handle_vlc:
-#ifdef VLC_DEBUG
-        printf("run=%d level=%d\n", run, level);
-#endif
-	if (level) {
-	    sign = SHOW_SBITS(re, gb, 1);
-	    LAST_SKIP_BITS(re, gb, 1);
-	}
-	if (re_index > last_index) {
+        /* our own optimized GET_RL_VLC */
+        index = NEG_USR32(re_cache, TEX_VLC_BITS);
+	vlc_len = dv_rl_vlc[index].len;
+        if (vlc_len < 0) {
+            index = NEG_USR32((unsigned)re_cache << TEX_VLC_BITS, -vlc_len) + dv_rl_vlc[index].level;
+            vlc_len = TEX_VLC_BITS - vlc_len;
+        }
+        level = dv_rl_vlc[index].level;
+	run = dv_rl_vlc[index].run;
+	
+	/* gotta check if we're still within gb boundaries */
+	if (re_index + vlc_len > last_index) {
 	    /* should be < 16 bits otherwise a codeword could have been parsed */
-	    re_index = last_re_index;
-	    UPDATE_CACHE(re, gb);
 	    mb->partial_bit_count = last_index - re_index;
-	    mb->partial_bit_buffer = SHOW_UBITS(re, gb, mb->partial_bit_count);
+	    mb->partial_bit_buffer = NEG_USR32(re_cache, mb->partial_bit_count);
 	    re_index = last_index;
 	    break;
 	}
-        
+	re_index += vlc_len;
+
+#ifdef VLC_DEBUG
+	printf("run=%d level=%d\n", run, level);
+#endif
 	pos += run; 	
 	if (pos >= 64)
 	    break;
         
 	if (level) {
-            level = (level ^ sign) - sign;
             pos1 = scan_table[pos];
-            level = level << (shift_table[pos1] + shift_offset);
-            block[pos1] = level;
-            //            printf("run=%d level=%d shift=%d\n", run, level, shift_table[pos1]);
+            block[pos1] = level << shift_table[pos1];
         } 
+
+        UPDATE_CACHE(re, gb);
     }
     CLOSE_READER(re, gb);
     mb->pos = pos;
@@ -429,8 +402,7 @@ static inline void dv_decode_video_segment(DVVideoContext *s,
             mb->dct_mode = dct_mode;
             mb->scan_table = s->dv_zigzag[dct_mode];
             class1 = get_bits(&gb, 2);
-            mb->shift_offset = (class1 == 3);
-            mb->shift_table = s->dv_idct_shift[dct_mode]
+            mb->shift_table = s->dv_idct_shift[class1 == 3][dct_mode]
                 [quant + dv_quant_offset[class1]];
             dc = dc << 2;
             /* convert to unsigned because 128 is not added in the
