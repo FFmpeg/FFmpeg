@@ -24,18 +24,26 @@
 #define SWS_POINT    0x10
 #define SWS_AREA     0x20
 #define SWS_BICUBLIN 0x40
+#define SWS_GAUSS    0x80
+#define SWS_SINC     0x100
+#define SWS_LANCZOS  0x200
+#define SWS_SPLINE   0x400
 
-#define SWS_SRC_V_CHR_DROP_MASK		0x300
-#define SWS_SRC_V_CHR_DROP_SHIFT	8
+#define SWS_SRC_V_CHR_DROP_MASK		0x30000
+#define SWS_SRC_V_CHR_DROP_SHIFT	16
 
-//the following 4 flags are not completly implemented
+#define SWS_PARAM_MASK			0x3FC0000
+#define SWS_PARAM_SHIFT			18
+
+#define SWS_PRINT_INFO		0x1000
+
+//the following 3 flags are not completly implemented
 //internal chrominace subsamling info
 #define SWS_FULL_CHR_H_INT	0x2000
 //input subsampling info
 #define SWS_FULL_CHR_H_INP	0x4000
 #define SWS_DIRECT_BGR		0x8000
 
-#define SWS_PRINT_INFO 0x1000
 
 #define SWS_MAX_REDUCE_CUTOFF 0.002
 

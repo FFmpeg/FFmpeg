@@ -958,6 +958,10 @@ void swsGetFlagsAndFilterFromCmdLine(int *flags, SwsFilter **srcFilterParam, Sws
 		case 4: *flags|= SWS_POINT; break;
 		case 5: *flags|= SWS_AREA; break;
 		case 6: *flags|= SWS_BICUBLIN; break;
+		case 7: *flags|= SWS_GAUSS; break;
+		case 8: *flags|= SWS_SINC; break;
+		case 9: *flags|= SWS_LANCZOS; break;
+		case 10:*flags|= SWS_SPLINE; break;
 		default:*flags|= SWS_BILINEAR; break;
 	}
 	
@@ -975,6 +979,16 @@ SwsContext *getSwsContextFromCmdLine(int srcW, int srcH, int srcFormat, int dstW
 	return getSwsContext(srcW, srcH, srcFormat, dstW, dstH, dstFormat, flags, srcFilterParam, dstFilterParam);
 }
 
+static double getSplineCoeff(double a, double b, double c, double d, double dist)
+{
+//	printf("%f %f %f %f %f\n", a,b,c,d,dist);
+	if(dist<=1.0) 	return ((d*dist + c)*dist + b)*dist +a;
+	else		return getSplineCoeff(	0.0, 
+						 b+ 2.0*c + 3.0*d,
+						        c + 3.0*d,
+						-b- 3.0*c - 6.0*d,
+						dist-1.0);
+}
 
 static inline void initFilter(int16_t **outFilter, int16_t **filterPos, int *outFilterSize, int xInc,
 			      int srcW, int dstW, int filterAlign, int one, int flags,
@@ -1025,7 +1039,7 @@ static inline void initFilter(int16_t **outFilter, int16_t **filterPos, int *out
 			xDstInSrc+= xInc;
 		}
 	}
-	else if(xInc <= (1<<16) || (flags&SWS_FAST_BILINEAR)) // upscale
+	else if((xInc <= (1<<16) && (flags&SWS_AREA)) || (flags&SWS_FAST_BILINEAR)) // bilinear upscale
 	{
 		int i;
 		int xDstInSrc;
@@ -1041,32 +1055,6 @@ static inline void initFilter(int16_t **outFilter, int16_t **filterPos, int *out
 			int j;
 
 			(*filterPos)[i]= xx;
-			if((flags & SWS_BICUBIC) || (flags & SWS_X))
-			{
-				double d= ABS(((xx+1)<<16) - xDstInSrc)/(double)(1<<16);
-				double y1,y2,y3,y4;
-				double A= -0.6;
-				if(flags & SWS_BICUBIC){
-						// Equation is from VirtualDub
-					y1 = (        +     A*d -       2.0*A*d*d +       A*d*d*d);
-					y2 = (+ 1.0             -     (A+3.0)*d*d + (A+2.0)*d*d*d);
-					y3 = (        -     A*d + (2.0*A+3.0)*d*d - (A+2.0)*d*d*d);
-					y4 = (                  +           A*d*d -       A*d*d*d);
-				}else{
-						// cubic interpolation (derived it myself)
-					y1 = (    -2.0*d + 3.0*d*d - 1.0*d*d*d)/6.0;
-					y2 = (6.0 -3.0*d - 6.0*d*d + 3.0*d*d*d)/6.0;
-					y3 = (    +6.0*d + 3.0*d*d - 3.0*d*d*d)/6.0;
-					y4 = (    -1.0*d           + 1.0*d*d*d)/6.0;
-				}
-
-				filter[i*filterSize + 0]= y1;
-				filter[i*filterSize + 1]= y2;
-				filter[i*filterSize + 2]= y3;
-				filter[i*filterSize + 3]= y4;
-			}
-			else
-			{
 				//Bilinear upscale / linear interpolate / Area averaging
 				for(j=0; j<filterSize; j++)
 				{
@@ -1076,35 +1064,48 @@ static inline void initFilter(int16_t **outFilter, int16_t **filterPos, int *out
 					filter[i*filterSize + j]= coeff;
 					xx++;
 				}
-			}
 			xDstInSrc+= xInc;
 		}
 	}
-	else // downscale
+	else
 	{
-		int xDstInSrc;
-		ASSERT(dstW <= srcW)
+		double xDstInSrc;
+		double sizeFactor, filterSizeInSrc;
+		const double xInc1= (double)xInc / (double)(1<<16);
+		int param= (flags&SWS_PARAM_MASK)>>SWS_PARAM_SHIFT;
 
-		if(flags&SWS_BICUBIC)	filterSize= (int)ceil(1 + 4.0*srcW / (double)dstW);
-		else if(flags&SWS_X)	filterSize= (int)ceil(1 + 4.0*srcW / (double)dstW);
-		else if(flags&SWS_AREA)	filterSize= (int)ceil(1 + 1.0*srcW / (double)dstW);
-		else /* BILINEAR */	filterSize= (int)ceil(1 + 2.0*srcW / (double)dstW);
-		filter= (double*)memalign(8, dstW*sizeof(double)*filterSize);
+		if     (flags&SWS_BICUBIC)	sizeFactor= 4.0;
+		else if(flags&SWS_X)		sizeFactor= 8.0;
+		else if(flags&SWS_AREA)		sizeFactor= 1.0; //downscale only, for upscale it is bilinear
+		else if(flags&SWS_GAUSS)	sizeFactor= 8.0;   // infinite ;)
+		else if(flags&SWS_LANCZOS)	sizeFactor= param ? 2.0*param : 6.0;
+		else if(flags&SWS_SINC)		sizeFactor= 100.0; // infinite ;)
+		else if(flags&SWS_SPLINE)	sizeFactor= 20.0;  // infinite ;)
+		else if(flags&SWS_BILINEAR)	sizeFactor= 2.0;
+		else ASSERT(0)
+		
+		if(xInc1 <= 1.0)	filterSizeInSrc= sizeFactor; // upscale
+		else			filterSizeInSrc= sizeFactor*srcW / (double)dstW;
 
-		xDstInSrc= xInc/2 - 0x8000;
+		filterSize= (int)ceil(1 + filterSizeInSrc); // will be reduced later if possible
+		if(filterSize > srcW-2) filterSize=srcW-2;
+
+		filter= (double*)memalign(16, dstW*sizeof(double)*filterSize);
+
+		xDstInSrc= xInc1 / 2.0 - 0.5;
 		for(i=0; i<dstW; i++)
 		{
-			int xx= (int)((double)xDstInSrc/(double)(1<<16) - (filterSize-1)*0.5 + 0.5);
+			int xx= (int)(xDstInSrc - (filterSize-1)*0.5 + 0.5);
 			int j;
 			(*filterPos)[i]= xx;
 			for(j=0; j<filterSize; j++)
 			{
-				double d= ABS((xx<<16) - xDstInSrc)/(double)xInc;
+				double d= ABS(xx - xDstInSrc)/filterSizeInSrc*sizeFactor;
 				double coeff;
-				if((flags & SWS_BICUBIC) || (flags & SWS_X))
+				if(flags & SWS_BICUBIC)
 				{
-					double A= -0.75;
-//					d*=2;
+					double A= param ? -param*0.01 : -0.60;
+					
 					// Equation is from VirtualDub
 					if(d<1.0)
 						coeff = (1.0 - (A+3.0)*d*d + (A+2.0)*d*d*d);
@@ -1113,22 +1114,62 @@ static inline void initFilter(int16_t **outFilter, int16_t **filterPos, int *out
 					else
 						coeff=0.0;
 				}
+/*				else if(flags & SWS_X)
+				{
+					double p= param ? param*0.01 : 0.3;
+					coeff = d ? sin(d*PI)/(d*PI) : 1.0;
+					coeff*= pow(2.0, - p*d*d);
+				}*/
+				else if(flags & SWS_X)
+				{
+					double A= param ? param*0.1 : 1.0;
+					
+					if(d<1.0)
+						coeff = cos(d*PI);
+					else
+						coeff=-1.0;
+					if(coeff<0.0) 	coeff= -pow(-coeff, A);
+					else		coeff=  pow( coeff, A);
+					coeff= coeff*0.5 + 0.5;
+				}
 				else if(flags & SWS_AREA)
 				{
-					double srcPixelSize= (1<<16)/(double)xInc;
+					double srcPixelSize= 1.0/xInc1;
 					if(d + srcPixelSize/2 < 0.5) coeff= 1.0;
 					else if(d - srcPixelSize/2 < 0.5) coeff= (0.5-d)/srcPixelSize + 0.5;
 					else coeff=0.0;
 				}
-				else
+				else if(flags & SWS_GAUSS)
+				{
+					double p= param ? param*0.1 : 3.0;
+					coeff = pow(2.0, - p*d*d);
+				}
+				else if(flags & SWS_SINC)
+				{
+					coeff = d ? sin(d*PI)/(d*PI) : 1.0;
+				}
+				else if(flags & SWS_LANCZOS)
+				{
+					double p= param ? param : 3.0; 
+					coeff = d ? sin(d*PI)*sin(d*PI/p)/(d*d*PI*PI/p) : 1.0;
+					if(d>p) coeff=0;
+				}
+				else if(flags & SWS_BILINEAR)
 				{
 					coeff= 1.0 - d;
 					if(coeff<0) coeff=0;
 				}
+				else if(flags & SWS_SPLINE)
+				{
+					double p=-2.196152422706632;
+					coeff = getSplineCoeff(1.0, 0.0, p, -p-1.0, d);
+				}
+				else ASSERT(0)
+
 				filter[i*filterSize + j]= coeff;
 				xx++;
 			}
-			xDstInSrc+= xInc;
+			xDstInSrc+= xInc1;
 		}
 	}
 
@@ -2178,7 +2219,15 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 		else if(flags&SWS_AREA)
 			MSG_INFO("\nSwScaler: Area Averageing scaler, ");
 		else if(flags&SWS_BICUBLIN)
-			MSG_INFO("\nSwScaler: luma BICUBIC / chroma BILINEAR, ");
+			MSG_INFO("\nSwScaler: luma BICUBIC / chroma BILINEAR scaler, ");
+		else if(flags&SWS_GAUSS)
+			MSG_INFO("\nSwScaler: Gaussian scaler, ");
+		else if(flags&SWS_SINC)
+			MSG_INFO("\nSwScaler: Sinc scaler, ");
+		else if(flags&SWS_LANCZOS)
+			MSG_INFO("\nSwScaler: Lanczos scaler, ");
+		else if(flags&SWS_SPLINE)
+			MSG_INFO("\nSwScaler: Bicubic spline scaler, ");
 		else
 			MSG_INFO("\nSwScaler: ehh flags invalid?! ");
 
