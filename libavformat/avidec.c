@@ -50,7 +50,8 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
     AVIContext *avi = s->priv_data;
     ByteIOContext *pb = &s->pb;
     UINT32 tag, tag1;
-    int codec_type, stream_index, size, frame_period, bit_rate;
+    int codec_type, stream_index, frame_period, bit_rate;
+    unsigned int size;
     int i;
     AVStream *st;
 
