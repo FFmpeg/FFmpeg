@@ -58,7 +58,6 @@ typedef struct H261Context{
 
 void ff_h261_loop_filter(H261Context * h){
     MpegEncContext * const s = &h->s;
-    int i;
     const int linesize  = s->linesize;
     const int uvlinesize= s->uvlinesize;
     uint8_t *dest_y = s->dest[0];
@@ -229,11 +228,25 @@ static int h261_decode_mb_skipped(H261Context *h,
     return 0;
 }
 
+static int decode_mv_component(GetBitContext *gb, int v){
+    int mv_diff = get_vlc2(gb, h261_mv_vlc.table, H261_MV_VLC_BITS, 2);
+    mv_diff = mvmap[mv_diff];
+
+    if(mv_diff && !get_bits1(gb))
+        mv_diff= -mv_diff;
+    
+    v += mv_diff;
+    if     (v <=-16) v+= 32;
+    else if(v >= 16) v-= 32;
+
+    return v;
+}
+
 static int h261_decode_mb(H261Context *h,
                           DCTELEM block[6][64])
 {
     MpegEncContext * const s = &h->s;
-    int i, cbp, mv_x_diff, mv_y_diff, sign, xy;
+    int i, cbp, xy;
 
     cbp = 63;
     // Read mba
@@ -288,36 +301,8 @@ static int h261_decode_mb(H261Context *h,
             h->current_mv_y = 0;
         }
 
-        mv_x_diff = get_vlc2(&s->gb, h261_mv_vlc.table, H261_MV_VLC_BITS, 2);
-        mv_x_diff = mvmap[mv_x_diff];
-
-        if(mv_x_diff != 0){
-            sign = get_bits1(&s->gb);
-
-            if(!sign)
-                mv_x_diff= -mv_x_diff;
-        }
-
-        mv_y_diff = get_vlc2(&s->gb, h261_mv_vlc.table, H261_MV_VLC_BITS, 2);
-        mv_y_diff = mvmap[mv_y_diff];
-
-        if(mv_y_diff != 0){
-            sign = get_bits1(&s->gb);
-
-            if(!sign)
-                mv_y_diff= -mv_y_diff;
-        }
-
-        //mv's are in the range -15...15
-        if((h->current_mv_x + mv_x_diff > -16) && (h->current_mv_x + mv_x_diff < 16) )
-            h->current_mv_x += mv_x_diff;
-        else
-            h->current_mv_x += (mv_x_diff + (mv_x_diff > 0 ? -32 : 32));
-
-        if((h->current_mv_y + mv_y_diff > -16) && (h->current_mv_y + mv_y_diff < 16) )
-            h->current_mv_y += mv_y_diff;
-        else
-            h->current_mv_y += (mv_y_diff + (mv_y_diff>0 ? -32 : 32));
+        h->current_mv_x= decode_mv_component(&s->gb, h->current_mv_x);
+        h->current_mv_y= decode_mv_component(&s->gb, h->current_mv_y);
     }
 
     // Read cbp
