@@ -301,7 +301,7 @@ static int int_pow(int i, int *exp_ptr)
 static int decode_init(AVCodecContext * avctx)
 {
     MPADecodeContext *s = avctx->priv_data;
-    static int init;
+    static int init=0;
     int i, j, k;
 
     if(!init) {
