@@ -1746,6 +1746,8 @@ void h263_decode_init_vlc(MpegEncContext *s)
                  &mb_type_b_tab[0][1], 2, 1,
                  &mb_type_b_tab[0][0], 2, 1);
     }
+
+    s->progressive_sequence=1; // set to most likely for the case of incomplete headers
 }
 
 int h263_decode_gob_header(MpegEncContext *s)
@@ -2426,7 +2428,37 @@ static int mpeg4_decode_partitioned_mb(MpegEncContext *s,
 
     return 0;
 }
+#if 0
+static inline void decode_interlaced_info(MpegEncContext *s, int cbp, int mb_type){
+    s->mv_type= 0;            
+    if(!s->progressive_sequence){
+        if(cbp || s->mb_intra)
+            s->interlaced_dct= get_bits1(&s->gb);
+        
+        if(!s->mb_intra){
+            if(   s->pict_type==P_TYPE //FIXME check that 4MV is forbidden
+               || (s->pict_type==S_TYPE && s->vol_sprite_usage==GMC_SPRITE && !s->mcsel)
+               || (s->pict_type==B_TYPE && mb_type!=0) ){
 
+                if(get_bits1(&s->gb)){
+                    s->mv_type= MV_TYPE_FIELD;
+
+                    if(   s->pict_type==P_TYPE
+                       || (s->pict_type==B_TYPE && mb_type!=2)){
+                        s->field_select[0][0]= get_bits1(&s->gb);
+                        s->field_select[0][1]= get_bits1(&s->gb);
+                    }
+                    if(s->pict_type==B_TYPE && mb_type!=3){
+                        s->field_select[1][0]= get_bits1(&s->gb);
+                        s->field_select[1][1]= get_bits1(&s->gb);
+                    }
+                }else
+                    s->mv_type= 0;            
+            }
+        }   
+    }
+}
+#endif
 
 int h263_decode_mb(MpegEncContext *s,
                    DCTELEM block[6][64])
@@ -2507,55 +2539,75 @@ int h263_decode_mb(MpegEncContext *s,
                 s->qscale = 31;
             h263_dc_scale(s);
         }
+        if((!s->progressive_sequence) && (cbp || s->workaround_bugs==2))
+            s->interlaced_dct= get_bits1(&s->gb);
+        
         s->mv_dir = MV_DIR_FORWARD;
         if ((cbpc & 16) == 0) {
-            PRINT_MB_TYPE("P");
-            /* 16x16 motion prediction */
-            s->mv_type = MV_TYPE_16X16;
-            h263_pred_motion(s, 0, &pred_x, &pred_y);
-            if (s->umvplus_dec)
-               mx = h263p_decode_umotion(s, pred_x);
-            else if(!s->mcsel)
-               mx = h263_decode_motion(s, pred_x, s->f_code);
-            else {
-               const int a= s->sprite_warping_accuracy;
+            if(s->mcsel){
+                const int a= s->sprite_warping_accuracy;
+                PRINT_MB_TYPE("G");
+                /* 16x16 global motion prediction */
+                s->mv_type = MV_TYPE_16X16;
 //        int l = (1 << (s->f_code - 1)) * 32;
                 if(s->divx_version==500 && s->divx_build==413){
                     mx = s->sprite_offset[0][0] / (1<<(a-s->quarter_sample));
-                }else{
-                    mx = RSHIFT(s->sprite_offset[0][0], a-s->quarter_sample);
-                }
-//        if (mx < -l) mx= -l, printf("C");
-//        else if (mx >= l) mx= l-1, printf("C");
-            }
-            if (mx >= 0xffff)
-                return -1;
-            
-            if (s->umvplus_dec)
-               my = h263p_decode_umotion(s, pred_y);
-            else if(!s->mcsel)
-               my = h263_decode_motion(s, pred_y, s->f_code);
-            else{
-               const int a= s->sprite_warping_accuracy;
-//       int l = (1 << (s->f_code - 1)) * 32;
-                if(s->divx_version==500 && s->divx_build==413){
                     my = s->sprite_offset[0][1] / (1<<(a-s->quarter_sample));
                 }else{
+                    mx = RSHIFT(s->sprite_offset[0][0], a-s->quarter_sample);
                     my = RSHIFT(s->sprite_offset[0][1], a-s->quarter_sample);
                 }
-//       if (my < -l) my= -l, printf("C");
-//       else if (my >= l) my= l-1, printf("C");
+//       int l = (1 << (s->f_code - 1)) * 32;
+                s->mv[0][0][0] = mx;
+                s->mv[0][0][1] = my;
+            }else if((!s->progressive_sequence) && get_bits1(&s->gb)){
+                PRINT_MB_TYPE("f");
+                /* 16x8 field motion prediction */
+                s->mv_type= MV_TYPE_FIELD;
+
+                s->field_select[0][0]= get_bits1(&s->gb);
+                s->field_select[0][1]= get_bits1(&s->gb);
+
+                h263_pred_motion(s, 0, &pred_x, &pred_y);
+                
+                for(i=0; i<2; i++){
+                    mx = h263_decode_motion(s, pred_x, s->f_code);
+                    if (mx >= 0xffff)
+                        return -1;
+            
+                    my = h263_decode_motion(s, pred_y/2, s->f_code);
+                    if (my >= 0xffff)
+                        return -1;
+
+                    s->mv[0][i][0] = mx;
+                    s->mv[0][i][1] = my*2;
+                }
+            }else{
+                PRINT_MB_TYPE("P");
+                /* 16x16 motion prediction */
+                s->mv_type = MV_TYPE_16X16;
+                h263_pred_motion(s, 0, &pred_x, &pred_y);
+                if (s->umvplus_dec)
+                   mx = h263p_decode_umotion(s, pred_x);
+                else
+                   mx = h263_decode_motion(s, pred_x, s->f_code);
+            
+                if (mx >= 0xffff)
+                    return -1;
+            
+                if (s->umvplus_dec)
+                   my = h263p_decode_umotion(s, pred_y);
+                else
+                   my = h263_decode_motion(s, pred_y, s->f_code);
+            
+                if (my >= 0xffff)
+                    return -1;
+                s->mv[0][0][0] = mx;
+                s->mv[0][0][1] = my;
+
+                if (s->umvplus_dec && (mx - pred_x) == 1 && (my - pred_y) == 1)
+                   skip_bits1(&s->gb); /* Bit stuffing to prevent PSC */                   
             }
-            if (my >= 0xffff)
-                return -1;
-            s->mv[0][0][0] = mx;
-            s->mv[0][0][1] = my;
-            /*fprintf(stderr, "\n MB %d", (s->mb_y * s->mb_width) + s->mb_x);
-            fprintf(stderr, "\n\tmvx: %d\t\tpredx: %d", mx, pred_x);
-            fprintf(stderr, "\n\tmvy: %d\t\tpredy: %d", my, pred_y);*/
-            if (s->umvplus_dec && (mx - pred_x) == 1 && (my - pred_y) == 1)
-               skip_bits1(&s->gb); /* Bit stuffing to prevent PSC */
-                           
         } else {
             PRINT_MB_TYPE("4");
             s->mv_type = MV_TYPE_8X8;
@@ -2614,9 +2666,6 @@ int h263_decode_mb(MpegEncContext *s,
             s->mv[0][0][1] = 0;
             s->mv[1][0][0] = 0;
             s->mv[1][0][1] = 0;
-//FIXME is this correct?
-/*            s->last_mv[0][0][0]=
-            s->last_mv[0][0][1]=0;*/
             PRINT_MB_TYPE("s");
             return 0;
         }
@@ -2637,6 +2686,7 @@ int h263_decode_mb(MpegEncContext *s,
                     h263_dc_scale(s);
                 }
             }
+//            decode_interlaced_info(s, cbp, mb_type);
         }else{
             mb_type=4; //like 0 but no vectors coded
             cbp=0;
@@ -2682,6 +2732,7 @@ int h263_decode_mb(MpegEncContext *s,
             s->mv[1][0][0] = 
             s->mv[1][0][1] = 1000;*/
             break;
+//FIXME additional MVs for interlaced stuff
         case 1: 
             s->mv_dir = MV_DIR_FORWARD | MV_DIR_BACKWARD;
             mx = h263_decode_motion(s, s->last_mv[0][0][0], s->f_code);
@@ -2741,6 +2792,8 @@ intra:
                 s->qscale = 31;
             h263_dc_scale(s);
         }
+        if(!s->progressive_sequence)
+            s->interlaced_dct= get_bits1(&s->gb);
 
         /* decode each block */
         if (s->h263_pred) {
@@ -3606,7 +3659,7 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
                 }
             }
             
-            if(get_bits1(&s->gb)) printf("interlaced not supported\n");   /* interlaced */
+            s->progressive_sequence= get_bits1(&s->gb)^1;
             if(!get_bits1(&s->gb)) printf("OBMC not supported (very likely buggy encoder)\n");   /* OBMC Disable */
             if (vo_ver_id == 1) {
                 s->vol_sprite_usage = get_bits1(&s->gb); /* vol_sprite_usage */
@@ -3763,11 +3816,6 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
                 printf("This file was encoded with DivX%d Build%d\n", ver, build);
                 if(ver==500 && build==413){
                     printf("WARNING: this version of DivX is not MPEG4 compatible, trying to workaround these bugs...\n");
-#if 0
-                }else{
-                    printf("hmm, i havnt seen that version of divx yet, lets assume they fixed these bugs ...\n"
-                           "using mpeg4 decoder, if it fails contact the developers (of ffmpeg)\n");
-#endif
                 }
             }
         }
@@ -3851,7 +3899,11 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
          int t;
          t=get_bits(&s->gb, 3); /* intra dc VLC threshold */
 //printf("threshold %d\n", t);
-         //FIXME interlaced specific bits
+         if(!s->progressive_sequence){
+             s->top_field_first= get_bits1(&s->gb);
+             s->alternate_scan= get_bits1(&s->gb);
+//printf("top:%d alt:%d\n", s->top_field_first, s->alternate_scan);
+         }
      }
 
      if(s->pict_type == S_TYPE && (s->vol_sprite_usage==STATIC_SPRITE || s->vol_sprite_usage==GMC_SPRITE)){

@@ -600,6 +600,7 @@ int MPV_encode_end(AVCodecContext *avctx)
 }
 
 /* draw the edges of width 'w' of an image of size width, height */
+//FIXME check that this is ok for mpeg4 interlaced
 static void draw_edges_c(UINT8 *buf, int wrap, int width, int height, int w)
 {
     UINT8 *ptr, *last_line;
@@ -1452,18 +1453,25 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
 
     /* update motion predictor, not for B-frames as they need the motion_val from the last P/S-Frame */
     if (s->out_format == FMT_H263 && s->pict_type!=B_TYPE) { //FIXME move into h263.c if possible, format specific stuff shouldnt be here
-        int motion_x, motion_y;
         
         const int wrap = s->block_wrap[0];
         const int xy = s->block_index[0];
-        if (s->mb_intra) {
-            motion_x = 0;
-            motion_y = 0;
-            goto motion_init;
-        } else if (s->mv_type == MV_TYPE_16X16) {
-            motion_x = s->mv[0][0][0];
-            motion_y = s->mv[0][0][1];
-        motion_init:
+        if(s->mv_type == MV_TYPE_8X8){
+            s->non_b_mv4_table[xy]=1;
+        } else {
+            int motion_x, motion_y;
+            if (s->mb_intra) {
+                motion_x = 0;
+                motion_y = 0;
+            } else if (s->mv_type == MV_TYPE_16X16) {
+                motion_x = s->mv[0][0][0];
+                motion_y = s->mv[0][0][1];
+            } else /*if (s->mv_type == MV_TYPE_FIELD)*/ {
+                motion_x = s->mv[0][0][0] + s->mv[0][1][0];
+                motion_y = s->mv[0][0][1] + s->mv[0][1][1];
+                motion_x = (motion_x>>1) | (motion_x&1);
+                motion_y = (motion_y>>1) | (motion_y&1);
+            }
             /* no update if 8X8 because it has been done during parsing */
             s->motion_val[xy][0] = motion_x;
             s->motion_val[xy][1] = motion_y;
@@ -1474,8 +1482,6 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
             s->motion_val[xy + 1 + wrap][0] = motion_x;
             s->motion_val[xy + 1 + wrap][1] = motion_y;
             s->non_b_mv4_table[xy]=0;
-        } else { /* 8X8 */
-            s->non_b_mv4_table[xy]=1;
         }
     }
     
