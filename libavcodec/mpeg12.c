@@ -23,6 +23,12 @@
 
 #include "mpeg12data.h"
 
+#if 1
+#define PRINT_QP(a, b) {}
+#else
+#define PRINT_QP(a, b) printf(a, b)
+#endif
+
 /* Start codes. */
 #define SEQ_END_CODE		0x000001b7
 #define SEQ_START_CODE		0x000001b3
@@ -289,6 +295,7 @@ void mpeg1_encode_mb(MpegEncContext *s,
         (!((mb_x | mb_y) == 0 ||
            (mb_x == s->mb_width - 1 && mb_y == s->mb_height - 1)))) {
         s->mb_incr++;
+        s->qscale -= s->dquant;
     } else {
         /* output mb incr */
         mb_incr = s->mb_incr;
@@ -301,17 +308,39 @@ void mpeg1_encode_mb(MpegEncContext *s,
                  mbAddrIncrTable[mb_incr - 1][0]);
         
         if (s->pict_type == I_TYPE) {
-            put_bits(&s->pb, 1, 1); /* macroblock_type : macroblock_quant = 0 */
+            if(s->dquant && cbp){
+                put_bits(&s->pb, 2, 1); /* macroblock_type : macroblock_quant = 1 */
+                put_bits(&s->pb, 5, s->qscale);
+            }else{
+                put_bits(&s->pb, 1, 1); /* macroblock_type : macroblock_quant = 0 */
+                s->qscale -= s->dquant;
+            }
         } else {
             if (s->mb_intra) {
-                put_bits(&s->pb, 5, 0x03);
+                if(s->dquant && cbp){
+                    put_bits(&s->pb, 6, 0x01);
+                    put_bits(&s->pb, 5, s->qscale);
+                }else{
+                    put_bits(&s->pb, 5, 0x03);
+                    s->qscale -= s->dquant;
+                }
             } else {
                 if (cbp != 0) {
                     if (motion_x == 0 && motion_y == 0) {
-                        put_bits(&s->pb, 2, 1); /* macroblock_pattern only */
+                        if(s->dquant){
+                            put_bits(&s->pb, 5, 1); /* macroblock_pattern & quant */
+                            put_bits(&s->pb, 5, s->qscale);
+                        }else{
+                            put_bits(&s->pb, 2, 1); /* macroblock_pattern only */
+                        }
                         put_bits(&s->pb, mbPatTable[cbp - 1][1], mbPatTable[cbp - 1][0]);
                     } else {
-                        put_bits(&s->pb, 1, 1); /* motion + cbp */
+                        if(s->dquant){
+                            put_bits(&s->pb, 5, 2); /* motion + cbp */
+                            put_bits(&s->pb, 5, s->qscale);
+                        }else{
+                            put_bits(&s->pb, 1, 1); /* motion + cbp */
+                        }
                         mpeg1_encode_motion(s, motion_x - s->last_mv[0][0][0]); 
                         mpeg1_encode_motion(s, motion_y - s->last_mv[0][0][1]); 
                         put_bits(&s->pb, mbPatTable[cbp - 1][1], mbPatTable[cbp - 1][0]);
@@ -320,6 +349,7 @@ void mpeg1_encode_mb(MpegEncContext *s,
                     put_bits(&s->pb, 3, 1); /* motion only */
                     mpeg1_encode_motion(s, motion_x - s->last_mv[0][0][0]); 
                     mpeg1_encode_motion(s, motion_y - s->last_mv[0][0][1]); 
+                    s->qscale -= s->dquant;
                 }
             }
         }
@@ -1502,6 +1532,11 @@ static int mpeg_decode_slice(AVCodecContext *avctx,
             return -1;
         if (ret == 1)
             break;
+    
+        if(s->mb_x==0)
+            PRINT_QP("%s", "\n");
+        PRINT_QP("%2d", s->qscale);
+        
         MPV_decode_mb(s, s->block);
     }
     emms_c();
