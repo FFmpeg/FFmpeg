@@ -145,7 +145,7 @@ static int video_stream_copy = 0;
 
 #define DEFAULT_PASS_LOGFILENAME "ffmpeg2pass"
 
-#ifndef CONFIG_AUDIO_OSS
+#if !defined(CONFIG_AUDIO_OSS) && !defined(CONFIG_AUDIO_BEOS)
 const char *audio_device = "none";
 #endif
 #ifndef CONFIG_VIDEO4LINUX

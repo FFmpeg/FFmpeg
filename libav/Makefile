@@ -29,6 +29,10 @@ ifeq ($(CONFIG_AUDIO_OSS),yes)
 OBJS+= audio.o 
 endif
 
+ifeq ($(CONFIG_AUDIO_BEOS),yes)
+OBJS+= beosaudio.o
+endif
+
 ifeq ($(CONFIG_NETWORK),yes)
 OBJS+= udp.o tcp.o http.o rtsp.o rtp.o rtpproto.o
 # BeOS network stuff
@@ -60,6 +64,10 @@ installlib: all
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $< 
+
+# BeOS: remove -Wall to get rid of all the "multibyte constant" warnings
+%.o: %.cpp
+	g++ $(subst -Wall,,$(CFLAGS)) -c -o $@ $< 
 
 clean: 
 	rm -f *.o *~ *.a 

@@ -56,7 +56,7 @@ void av_register_all(void)
 #ifdef CONFIG_VIDEO4LINUX
     video_grab_init();
 #endif
-#ifdef CONFIG_AUDIO_OSS
+#if defined(CONFIG_AUDIO_OSS) || defined(CONFIG_AUDIO_BEOS)
     audio_init();
 #endif
 
