@@ -73,6 +73,10 @@ CFLAGS += -Wa,-mpca56 -finline-limit=8000 -fforce-addr -freduce-all-givs
 endif
 
 ifeq ($(TARGET_ARCH_POWERPC),yes)
+OBJS += ppc/dsputil_ppc.o
+endif
+
+ifeq ($(TARGET_ALTIVEC),yes)
 CFLAGS += -faltivec
 OBJS += ppc/dsputil_altivec.o
 endif
