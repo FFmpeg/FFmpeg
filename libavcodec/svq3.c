@@ -262,125 +262,11 @@ static inline int svq3_decode_block (GetBitContext *gb, DCTELEM *block,
   return 0;
 }
 
-static void sixpel_mc_put (MpegEncContext *s,
-			   uint8_t *src, uint8_t *dst, int stride,
-			   int dxy, int width, int height) {
-  int i, j;
-
-  switch (dxy) {
-  case 6*0+0:
-    for (i=0; i < height; i++) {
-      memcpy (dst, src, width);
-      src += stride;
-      dst += stride;
-    }
-    break;
-  case 6*0+2:
-    for (i=0; i < height; i++) {
-      for (j=0; j < width; j++) {
-	dst[j] = (683*(2*src[j] + src[j+1] + 1)) >> 11;
-      }
-      src += stride;
-      dst += stride;
-    }
-    break;
-  case 6*0+3:
-    for (i=0; i < height; i++) {
-      for (j=0; j < width; j++) {
-	dst[j] = (src[j] + src[j+1] + 1) >> 1;
-      }
-      src += stride;
-      dst += stride;
-    }
-    break;
-  case 6*0+4:
-    for (i=0; i < height; i++) {
-      for (j=0; j < width; j++) {
-	dst[j] = (683*(src[j] + 2*src[j+1] + 1)) >> 11;
-      }
-      src += stride;
-      dst += stride;
-    }
-    break;
-  case 6*2+0:
-    for (i=0; i < height; i++) {
-      for (j=0; j < width; j++) {
-	dst[j] = (683*(2*src[j] + src[j+stride] + 1)) >> 11;
-      }
-      src += stride;
-      dst += stride;
-    }
-    break;
-  case 6*2+2:
-    for (i=0; i < height; i++) {
-      for (j=0; j < width; j++) {
-	dst[j] = (2731*(4*src[j] + 3*src[j+1] + 3*src[j+stride] + 2*src[j+stride+1] + 6)) >> 15;
-      }
-      src += stride;
-      dst += stride;
-    }
-    break;
-  case 6*2+4:
-    for (i=0; i < height; i++) {
-      for (j=0; j < width; j++) {
-	dst[j] = (2731*(3*src[j] + 4*src[j+1] + 2*src[j+stride] + 3*src[j+stride+1] + 6)) >> 15;
-      }
-      src += stride;
-      dst += stride;
-    }
-    break;
-  case 6*3+0:
-    for (i=0; i < height; i++) {
-      for (j=0; j < width; j++) {
-	dst[j] = (src[j] + src[j+stride]+1) >> 1;
-      }
-      src += stride;
-      dst += stride;
-    }
-    break;
-  case 6*3+3:
-    for (i=0; i < height; i++) {
-      for (j=0; j < width; j++) {
-	dst[j] = (src[j] + src[j+1] + src[j+stride] + src[j+stride+1] + 2) >> 2;
-      }
-      src += stride;
-      dst += stride;
-    }
-    break;
-  case 6*4+0:
-    for (i=0; i < height; i++) {
-      for (j=0; j < width; j++) {
-	dst[j] = (683*(src[j] + 2*src[j+stride] + 1)) >> 11;
-      }
-      src += stride;
-      dst += stride;
-    }
-    break;
-  case 6*4+2:
-    for (i=0; i < height; i++) {
-      for (j=0; j < width; j++) {
-	dst[j] = (2731*(3*src[j] + 2*src[j+1] + 4*src[j+stride] + 3*src[j+stride+1] + 6)) >> 15;
-      }
-      src += stride;
-      dst += stride;
-    }
-    break;
-  case 6*4+4:
-    for (i=0; i < height; i++) {
-      for (j=0; j < width; j++) {
-	dst[j] = (2731*(2*src[j] + 3*src[j+1] + 3*src[j+stride] + 4*src[j+stride+1] + 6)) >> 15;
-      }
-      src += stride;
-      dst += stride;
-    }
-    break;
-  }
-}
-
 static inline void svq3_mc_dir_part (MpegEncContext *s, int x, int y,
-				     int width, int height, int mx, int my, int dxy) {
+				     int width, int height, int mx, int my, int dxy, int thirdpel) {
   uint8_t *src, *dest;
   int i, emu = 0;
+  int blocksize= 2 - (width>>3); //16->0, 8->1, 4->2
 
   mx += x;
   my += y;
@@ -405,13 +291,17 @@ static inline void svq3_mc_dir_part (MpegEncContext *s, int x, int y,
 			 mx, my, s->width, s->height);
     src = s->edge_emu_buffer;
   }
-  sixpel_mc_put (s, src, dest, s->linesize, dxy, width, height);
+  if(thirdpel)
+    s->dsp.put_tpel_pixels_tab[dxy](dest, src, s->linesize, width, height);
+  else
+    s->dsp.put_pixels_tab[blocksize][dxy](dest, src, s->linesize, height);
 
   if (!(s->flags & CODEC_FLAG_GRAY)) {
     mx	   = (mx + (mx < (int) x)) >> 1;
     my	   = (my + (my < (int) y)) >> 1;
     width  = (width  >> 1);
     height = (height >> 1);
+    blocksize++;
 
     for (i=1; i < 3; i++) {
       dest = s->current_picture.data[i] + (x >> 1) + (y >> 1)*s->uvlinesize;
@@ -422,7 +312,10 @@ static inline void svq3_mc_dir_part (MpegEncContext *s, int x, int y,
 			     mx, my, (s->width >> 1), (s->height >> 1));
 	src = s->edge_emu_buffer;
       }
-      sixpel_mc_put (s, src, dest, s->uvlinesize, dxy, width, height);
+      if(thirdpel)
+        s->dsp.put_tpel_pixels_tab[dxy](dest, src, s->uvlinesize, width, height);
+      else
+        s->dsp.put_pixels_tab[blocksize][dxy](dest, src, s->uvlinesize, height);
     }
   }
 }
@@ -441,7 +334,7 @@ static int svq3_decode_mb (H264Context *h, unsigned int mb_type) {
   h->topright_samples_available	= 0xFFFF;
 
   if (mb_type == 0) {		/* SKIP */
-    svq3_mc_dir_part (s, 16*s->mb_x, 16*s->mb_y, 16, 16, 0, 0, 0);
+    svq3_mc_dir_part (s, 16*s->mb_x, 16*s->mb_y, 16, 16, 0, 0, 0, 0);
 
     cbp = 0;
     mb_type = MB_TYPE_SKIP;
@@ -521,17 +414,17 @@ static int svq3_decode_mb (H264Context *h, unsigned int mb_type) {
           my = ((my + 1)>>1) + dy;
           fx= ((unsigned)(mx + 0x3000))/3 - 0x1000;
           fy= ((unsigned)(my + 0x3000))/3 - 0x1000;
-          dxy= 2*(mx - 3*fx) + 2*6*(my - 3*fy);
+          dxy= (mx - 3*fx) + 4*(my - 3*fy);
 
-          svq3_mc_dir_part (s, x, y, part_width, part_height, fx, fy, dxy);
+          svq3_mc_dir_part (s, x, y, part_width, part_height, fx, fy, dxy, 1);
           mx += mx;
           my += my;
 	} else if (mode == HALFPEL_MODE) {
 	  mx = ((unsigned)(mx + 1 + 0x3000))/3 + dx - 0x1000;
 	  my = ((unsigned)(my + 1 + 0x3000))/3 + dy - 0x1000;
-          dxy= 3*(mx&1) + 6*3*(my&1);
+          dxy= (mx&1) + 2*(my&1);
 
-          svq3_mc_dir_part (s, x, y, part_width, part_height, mx>>1, my>>1, dxy);
+          svq3_mc_dir_part (s, x, y, part_width, part_height, mx>>1, my>>1, dxy, 0);
           mx *= 3;
           my *= 3;
 	} else {
@@ -539,7 +432,7 @@ static int svq3_decode_mb (H264Context *h, unsigned int mb_type) {
 	  mx = ((unsigned)(mx + 3 + 0x6000))/6 + dx - 0x1000;
 	  my = ((unsigned)(my + 3 + 0x6000))/6 + dy - 0x1000;
 
-	  svq3_mc_dir_part (s, x, y, part_width, part_height, mx, my, 0);
+	  svq3_mc_dir_part (s, x, y, part_width, part_height, mx, my, 0, 0);
           mx *= 6;
           my *= 6;
 	}
