@@ -29,6 +29,7 @@ const CodecTag codec_wav_tags[] = {
     { CODEC_ID_PCM_MULAW, 0x07 },
     { CODEC_ID_ADPCM_MS, 0x02 },
     { CODEC_ID_ADPCM_IMA_WAV, 0x11 },
+    { CODEC_ID_ADPCM_G726, 0x45 },
     { CODEC_ID_ADPCM_IMA_DK4, 0x61 },  /* rogue format number */
     { CODEC_ID_ADPCM_IMA_DK3, 0x62 },  /* rogue format number */
     { CODEC_ID_WMAV1, 0x160 },
