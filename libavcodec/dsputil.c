@@ -1625,6 +1625,12 @@ static int sad8x8_c(void *s, uint8_t *a, uint8_t *b, int stride){
     return pix_abs8x8_c(a,b,stride);
 }
 
+/**
+ * permutes an 8x8 block.
+ * @param block the block :)
+ * @param permutation the permutation vector
+ * @param last the last non zero coefficient in scantable order, used to speed the permutation up
+ */
 void ff_block_permute(DCTELEM *block, uint8_t *permutation, const uint8_t *scantable, int last)
 {
     int i;
