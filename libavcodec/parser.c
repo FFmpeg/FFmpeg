@@ -60,6 +60,7 @@ AVCodecParserContext *av_parser_init(int codec_id)
             return NULL;
         }
     }
+    s->fetch_timestamp=1;
     return s;
 }
 
@@ -87,7 +88,8 @@ int av_parser_parse(AVCodecParserContext *s,
         s->cur_frame_dts[k] = dts;
 
         /* fill first PTS/DTS */
-        if (s->cur_offset == 0) {
+        if (s->fetch_timestamp){
+            s->fetch_timestamp=0;
             s->last_pts = pts;
             s->last_dts = dts;
         }
@@ -95,6 +97,7 @@ int av_parser_parse(AVCodecParserContext *s,
 
     /* WARNING: the returned index can be negative */
     index = s->parser->parser_parse(s, avctx, poutbuf, poutbuf_size, buf, buf_size);
+//av_log(NULL, AV_LOG_DEBUG, "parser: in:%lld, %lld, out:%lld, %lld, in:%d out:%d %d\n", pts, dts, s->last_pts, s->last_dts, buf_size, *poutbuf_size, avctx->codec_id);
     /* update the file pointer */
     if (*poutbuf_size) {
         /* fill the data for the current frame */
@@ -116,8 +119,15 @@ int av_parser_parse(AVCodecParserContext *s,
                 break;
             k = (k - 1) & (AV_PARSER_PTS_NB - 1);
         }
+
         s->last_pts = s->cur_frame_pts[k];
         s->last_dts = s->cur_frame_dts[k];
+        
+        /* some parsers tell us the packet size even before seeing the first byte of the next packet,
+           so the next pts/dts is in the next chunk */
+        if(index == buf_size){
+            s->fetch_timestamp=1;
+        }
     }
     if (index < 0)
         index = 0;

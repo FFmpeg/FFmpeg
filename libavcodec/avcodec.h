@@ -17,7 +17,7 @@ extern "C" {
 
 #define FFMPEG_VERSION_INT     0x000408
 #define FFMPEG_VERSION         "0.4.8"
-#define LIBAVCODEC_BUILD       4714
+#define LIBAVCODEC_BUILD       4715
 
 #define LIBAVCODEC_VERSION_INT FFMPEG_VERSION_INT
 #define LIBAVCODEC_VERSION     FFMPEG_VERSION
@@ -2090,6 +2090,7 @@ typedef struct AVCodecParserContext {
     /* private data */
     int64_t last_pts;
     int64_t last_dts;
+    int fetch_timestamp;
 
 #define AV_PARSER_PTS_NB 4
     int cur_frame_start_index;
