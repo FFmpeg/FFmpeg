@@ -290,7 +290,7 @@ static int rv10_decode_picture_header(MpegEncContext *s)
     else
         s->pict_type = I_TYPE;
 //printf("h:%d ver:%d\n",h,s->rv10_version);
-if(!marker) printf("marker missing\n");
+    if(!marker) printf("marker missing\n");
     pb_frame = get_bits(&s->gb, 1);
 
 #ifdef DEBUG
@@ -335,12 +335,9 @@ if(!marker) printf("marker missing\n");
     }
     unk= get_bits(&s->gb, 3);	/* ignored */
 //printf("%d\n", unk);
-s->h263_long_vectors =  s->mb_num<100; //FIXME check if this is ok (100 i just guessed)
     s->f_code = 1;
     s->unrestricted_mv = 1;
-#if 0
-    s->h263_long_vectors = 1;
-#endif
+
     return mb_count;
 }
 
@@ -356,7 +353,27 @@ static int rv10_decode_init(AVCodecContext *avctx)
     s->height = avctx->height;
 
     s->h263_rv10 = 1;
-    s->rv10_version = avctx->sub_id;
+    if(avctx->extradata_size >= 8){
+        switch(((uint32_t*)avctx->extradata)[1]){
+        case 0x10000000:
+            s->rv10_version= 0;
+            s->h263_long_vectors=0;
+            break;
+        case 0x10003000:
+            s->rv10_version= 3;
+            s->h263_long_vectors=1;
+            break;
+        case 0x10003001:
+            s->rv10_version= 3;
+            s->h263_long_vectors=0;
+            break;
+        default:
+            fprintf(stderr, "unknown header %X\n", ((uint32_t*)avctx->extradata)[1]);
+        }
+    }else{
+    //  for backward compatibility 
+        s->rv10_version= avctx->sub_id;
+    }
     
     s->flags= avctx->flags;
 
