@@ -89,7 +89,6 @@ OBJS += ppc/dsputil_altivec.o ppc/mpegvideo_altivec.o ppc/idct_altivec.o \
 endif
 
 SRCS := $(OBJS:.o=.c) $(ASM_OBJS:.o=.S)
-DEPS := $(OBJS:.o=.d) 
 OBJS := $(OBJS) $(ASM_OBJS)
 
 LIB= $(LIBPREF)avcodec$(LIBSUF)
@@ -102,26 +101,20 @@ all: $(LIB) $(SLIB)
 
 tests: apiexample cpuid_test $(TESTS)
 
-$(LIB): $(OBJS)
+$(LIB): .depend $(OBJS)
 	rm -f $@
 	$(AR) rc $@ $(OBJS)
 ifneq ($(CONFIG_OS2),yes)
 	$(RANLIB) $@
 endif
 
-$(SLIB): $(OBJS)
+$(SLIB): .depend $(OBJS)
 	$(CC) $(SHFLAGS) -o $@ $(OBJS) $(EXTRALIBS)
 
 dsputil.o: dsputil.c dsputil.h
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $< 
-
-%.d: %.c
-	@echo $@ \\ > $@
-	$(CC) $(CFLAGS) -MM $< >> $@
-
--include $(DEPS)        
 
 %.o: %.S
 	$(CC) $(CFLAGS) -c -o $@ $<
@@ -137,11 +130,12 @@ alpha/motion_est_alpha.o: alpha/motion_est_alpha.c
 	$(CC) $(CFLAGS) -mcpu=$$newcpu -c -o $@ $<
 endif
 
-# depend only used by mplayer now
+.depend: $(SRCS)
+	$(CC) -MM $(CFLAGS) $(SRCS) 1>.depend
+
 dep:	depend
 
-depend:
-	$(CC) -MM $(CFLAGS) $(SRCS) 1>.depend
+depend: .depend
 
 clean: 
 	rm -f *.o *.d *~ .depend $(LIB) $(SLIB) *.so i386/*.o i386/*~ \
