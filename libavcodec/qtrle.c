@@ -84,7 +84,7 @@ static void qtrle_decode_8bpp(QtrleContext *s)
     int header;
     int start_line;
     int lines_to_change;
-    signed char rle_code;
+    int rle_code;
     int row_ptr, pixel_ptr;
     int row_inc = s->frame.linesize[0];
     unsigned char pi1, pi2, pi3, pi4;  /* 4 palette indices */
