@@ -253,6 +253,8 @@ void (*swScale)(SwsContext *context, uint8_t* src[], int srcStride[], int srcSli
              int srcSliceH, uint8_t* dst[], int dstStride[])=NULL;
 
 static SwsVector *getConvVec(SwsVector *a, SwsVector *b);
+static inline void orderYUV(int format, uint8_t * sortedP[], int sortedStride[], uint8_t * p[], int stride[]);
+
 
 #ifdef CAN_COMPILE_X86_ASM
 void in_asm_used_var_warning_killer()
@@ -383,13 +385,13 @@ static void selfTest(uint8_t *src[3], int stride[3], int w, int h){
 	}
 }
 
-static inline void yuv2yuvXinC(SwsContext *c, int16_t *lumFilter, int16_t **lumSrc, int lumFilterSize,
+static inline void yuv2yuvXinC(int16_t *lumFilter, int16_t **lumSrc, int lumFilterSize,
 				    int16_t *chrFilter, int16_t **chrSrc, int chrFilterSize,
-				    uint8_t *dest, uint8_t *uDest, uint8_t *vDest)
+				    uint8_t *dest, uint8_t *uDest, uint8_t *vDest, int dstW, int chrDstW)
 {
 	//FIXME Optimize (just quickly writen not opti..)
 	int i;
-	for(i=0; i<c->dstW; i++)
+	for(i=0; i<dstW; i++)
 	{
 		int val=0;
 		int j;
@@ -400,7 +402,7 @@ static inline void yuv2yuvXinC(SwsContext *c, int16_t *lumFilter, int16_t **lumS
 	}
 
 	if(uDest != NULL)
-		for(i=0; i<c->chrDstW; i++)
+		for(i=0; i<chrDstW; i++)
 		{
 			int u=0;
 			int v=0;
@@ -733,11 +735,10 @@ void SwScale_YV12slice(unsigned char* src[], int srcStride[], int srcSliceY ,
 	context->swScale(context, src, srcStride, srcSliceY, srcSliceH, dst, dstStride3);
 }
 
-// will use sws_flags & src_filter (from cmd line)
-SwsContext *getSwsContextFromCmdLine(int srcW, int srcH, int srcFormat, int dstW, int dstH, int dstFormat)
+void swsGetFlagsAndFilterFromCmdLine(int *flags, SwsFilter **srcFilterParam, SwsFilter **dstFilterParam)
 {
-	int flags=0;
 	static int firstTime=1;
+	*flags=0;
 
 #ifdef ARCH_X86
 	if(gCpuCaps.hasMMX)
@@ -746,9 +747,9 @@ SwsContext *getSwsContextFromCmdLine(int srcW, int srcH, int srcFormat, int dstW
 	if(firstTime)
 	{
 		firstTime=0;
-		flags= SWS_PRINT_INFO;
+		*flags= SWS_PRINT_INFO;
 	}
-	else if(verbose>1) flags= SWS_PRINT_INFO;
+	else if(verbose>1) *flags= SWS_PRINT_INFO;
 
 	if(src_filter.lumH) freeVec(src_filter.lumH);
 	if(src_filter.lumV) freeVec(src_filter.lumV);
@@ -809,16 +810,27 @@ SwsContext *getSwsContextFromCmdLine(int srcW, int srcH, int srcFormat, int dstW
 
 	switch(sws_flags)
 	{
-		case 0: flags|= SWS_FAST_BILINEAR; break;
-		case 1: flags|= SWS_BILINEAR; break;
-		case 2: flags|= SWS_BICUBIC; break;
-		case 3: flags|= SWS_X; break;
-		case 4: flags|= SWS_POINT; break;
-		case 5: flags|= SWS_AREA; break;
-		default:flags|= SWS_BILINEAR; break;
+		case 0: *flags|= SWS_FAST_BILINEAR; break;
+		case 1: *flags|= SWS_BILINEAR; break;
+		case 2: *flags|= SWS_BICUBIC; break;
+		case 3: *flags|= SWS_X; break;
+		case 4: *flags|= SWS_POINT; break;
+		case 5: *flags|= SWS_AREA; break;
+		default:*flags|= SWS_BILINEAR; break;
 	}
+	
+	*srcFilterParam= &src_filter;
+	*dstFilterParam= NULL;
+}
 
-	return getSwsContext(srcW, srcH, srcFormat, dstW, dstH, dstFormat, flags, &src_filter, NULL);
+// will use sws_flags & src_filter (from cmd line)
+SwsContext *getSwsContextFromCmdLine(int srcW, int srcH, int srcFormat, int dstW, int dstH, int dstFormat)
+{
+	int flags;
+	SwsFilter *dstFilterParam, *srcFilterParam;
+	swsGetFlagsAndFilterFromCmdLine(&flags, &srcFilterParam, &dstFilterParam);
+
+	return getSwsContext(srcW, srcH, srcFormat, dstW, dstH, dstFormat, flags, srcFilterParam, dstFilterParam);
 }
 
 
@@ -1863,11 +1875,11 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 	// reuse chroma for 2 pixles rgb/bgr unless user wants full chroma interpolation
 	if((isBGR(dstFormat) || isRGB(dstFormat)) && !(flags&SWS_FULL_CHR_H_INT)) c->chrDstHSubSample=1;
 
-	// drop eery 2. pixel for chroma calculation unless user wants full chroma
-	if((isBGR(srcFormat) || isRGB(srcFormat) || srcFormat==IMGFMT_YUY2) && !(flags&SWS_FULL_CHR_V)) 
-		c->chrSrcVSubSample=1;
+	// drop some chroma lines if the user wants it
+	c->vChrDrop= (flags&SWS_SRC_V_CHR_DROP_MASK)>>SWS_SRC_V_CHR_DROP_SHIFT;
+	c->chrSrcVSubSample+= c->vChrDrop;
 
-	// drop eery 2. pixel for chroma calculation unless user wants full chroma
+	// drop every 2. pixel for chroma calculation unless user wants full chroma
 	if((isBGR(srcFormat) || isRGB(srcFormat)) && !(flags&SWS_FULL_CHR_H_INP)) 
 		c->chrSrcHSubSample=1;
 

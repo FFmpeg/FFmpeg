@@ -683,9 +683,9 @@ static inline void RENAME(yuv2yuvX)(int16_t *lumFilter, int16_t **lumSrc, int lu
 			: "%eax", "%edx", "%esi"
 		);
 #else
-yuv2yuvXinC(c, lumFilter, lumSrc, lumFilterSize,
+yuv2yuvXinC(lumFilter, lumSrc, lumFilterSize,
 	    chrFilter, chrSrc, chrFilterSize,
-	    dest, uDest, vDest);
+	    dest, uDest, vDest, dstW, chrDstW);
 #endif
 }
 
@@ -2623,56 +2623,21 @@ static void RENAME(swScale)(SwsContext *c, uint8_t* srcParam[], int srcStridePar
 	int dstStride[3];
 	uint8_t *src[3];
 	uint8_t *dst[3];
+	
+	orderYUV(c->srcFormat, src, srcStride, srcParam, srcStrideParam);
+	orderYUV(c->dstFormat, dst, dstStride, dstParam, dstStrideParam);
 
-	if(c->srcFormat == IMGFMT_I420){
-		src[0]= srcParam[0];
-		src[1]= srcParam[2];
-		src[2]= srcParam[1];
-		srcStride[0]= srcStrideParam[0];
-		srcStride[1]= srcStrideParam[2];
-		srcStride[2]= srcStrideParam[1];
-	}
-	else if(c->srcFormat==IMGFMT_YV12 || c->srcFormat==IMGFMT_YVU9){
-		src[0]= srcParam[0];
-		src[1]= srcParam[1];
-		src[2]= srcParam[2];
-		srcStride[0]= srcStrideParam[0];
-		srcStride[1]= srcStrideParam[1];
-		srcStride[2]= srcStrideParam[2];
-	}
-	else if(isPacked(c->srcFormat)){
+	if(isPacked(c->srcFormat)){
 		src[0]=
 		src[1]=
 		src[2]= srcParam[0];
-		srcStride[0]= srcStrideParam[0];
+		srcStride[0]=
 		srcStride[1]=
-		srcStride[2]= srcStrideParam[0]<<1;
+		srcStride[2]= srcStrideParam[0];
 	}
-	else if(isGray(c->srcFormat)){
-		src[0]= srcParam[0];
-		src[1]=
-		src[2]= NULL;
-		srcStride[0]= srcStrideParam[0];
-		srcStride[1]=
-		srcStride[2]= 0;
-	}
+	srcStride[1]<<= c->vChrDrop;
+	srcStride[2]<<= c->vChrDrop;
 
-	if(dstFormat == IMGFMT_I420){
-		dst[0]= dstParam[0];
-		dst[1]= dstParam[2];
-		dst[2]= dstParam[1];
-		dstStride[0]= dstStrideParam[0];
-		dstStride[1]= dstStrideParam[2];
-		dstStride[2]= dstStrideParam[1];
-	}else{
-		dst[0]= dstParam[0];
-		dst[1]= dstParam[1];
-		dst[2]= dstParam[2];
-		dstStride[0]= dstStrideParam[0];
-		dstStride[1]= dstStrideParam[1];
-		dstStride[2]= dstStrideParam[2];
-	}
-	
 //	printf("swscale %X %X %X -> %X %X %X\n", (int)src[0], (int)src[1], (int)src[2],
 //		(int)dst[0], (int)dst[1], (int)dst[2]);
 
@@ -2878,10 +2843,10 @@ i--;
 		if(isPlanarYUV(dstFormat)) //YV12
 		{
 			if(dstY&1) uDest=vDest= NULL;
-			yuv2yuvXinC(c, 
+			yuv2yuvXinC(
 				vLumFilter+dstY*vLumFilterSize   , lumSrcPtr, vLumFilterSize,
 				vChrFilter+chrDstY*vChrFilterSize, chrSrcPtr, vChrFilterSize,
-				dest, uDest, vDest);
+				dest, uDest, vDest, dstW, chrDstW);
 		}
 		else
 		{

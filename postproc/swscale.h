@@ -24,9 +24,11 @@
 #define SWS_POINT    0x10
 #define SWS_AREA     0x20
 
+#define SWS_SRC_V_CHR_DROP_MASK		0x300
+#define SWS_SRC_V_CHR_DROP_SHIFT	8
+
 //the following 4 flags are not completly implemented
 //internal chrominace subsamling info
-#define SWS_FULL_CHR_V		0x100
 #define SWS_FULL_CHR_H_INT	0x200
 //input subsampling info
 #define SWS_FULL_CHR_H_INP	0x400
@@ -46,6 +48,7 @@ typedef struct SwsContext{
 	int chrSrcHSubSample, chrSrcVSubSample;
 	int chrIntHSubSample, chrIntVSubSample;
 	int chrDstHSubSample, chrDstVSubSample;
+	int vChrDrop;
 
 	int16_t **lumPixBuf;
 	int16_t **chrPixBuf;
@@ -125,6 +128,7 @@ void freeSwsContext(SwsContext *swsContext);
 SwsContext *getSwsContextFromCmdLine(int srcW, int srcH, int srcFormat, int dstW, int dstH, int dstFormat);
 SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH, int dstFormat, int flags,
 			 SwsFilter *srcFilter, SwsFilter *dstFilter);
+void swsGetFlagsAndFilterFromCmdLine(int *flags, SwsFilter **srcFilterParam, SwsFilter **dstFilterParam);
 
 SwsVector *getGaussianVec(double variance, double quality);
 SwsVector *getConstVec(double c, int length);
