@@ -796,6 +796,7 @@ static int mjpeg_decode_sos(MJpegDecodeContext *s,
             }
         }
     }
+    emms_c();
     return 0;
 }
 
@@ -874,6 +875,7 @@ static int mjpeg_decode_frame(AVCodecContext *avctx,
                 start_code = s->start_code;
                 s->buf_ptr = s->buffer;
                 s->start_code = code;
+                dprintf("marker=%x\n", start_code);
                 switch(start_code) {
                 case SOI:
                     /* nothing to do on SOI */
