@@ -71,7 +71,7 @@ static uint8_t funnyUVCode[10000];
 // *** bilinear scaling and yuv->rgb conversion of yv12 slices:
 // *** Note: it's called multiple times while decoding a frame, first time y==0
 // *** Designed to upscale, but may work for downscale too.
-// s_xinc = (src_width << 8) / dst_width
+// s_xinc = (src_width << 16) / dst_width
 // s_yinc = (src_height << 16) / dst_height
 void SwScale_YV12slice_brg24(unsigned char* srcptr[],int stride[], int y, int h,
 			     unsigned char* dstptr, int dststride, int dstw, int dstbpp,
@@ -104,7 +104,7 @@ static int s_xinc2_diff=0;
 int canMMX2BeUsed;
 
 // we need that precission at least for the mmx2 code
-s_xinc*= 256;
+//s_xinc*= 256;
 s_xinc2=s_xinc>>1;
 canMMX2BeUsed= (s_xinc <= 0x10000 && (dstw&31)==0) ? 1 : 0;
 
