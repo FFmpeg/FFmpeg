@@ -18,7 +18,7 @@
 
 /*
   supported Input formats: YV12, I420/IYUV, YUY2, UYVY, BGR32, BGR24, BGR16, BGR15, RGB32, RGB24, Y8/Y800, YVU9/IF09
-  supported output formats: YV12, I420/IYUV, YUY2, {BGR,RGB}{1,4,8,15,16,24,32}, Y8/Y800, YVU9/IF09
+  supported output formats: YV12, I420/IYUV, YUY2, UYVY, {BGR,RGB}{1,4,8,15,16,24,32}, Y8/Y800, YVU9/IF09
   {BGR,RGB}{1,4,8,15,16} support dithering
   
   unscaled special converters (YV12=I420=IYUV, Y800=Y8)
@@ -107,7 +107,7 @@ untested special converters
 			|| (x)==IMGFMT_RGB32|| (x)==IMGFMT_RGB24\
 			|| (x)==IMGFMT_Y800 || (x)==IMGFMT_YVU9\
 			|| (x)==IMGFMT_444P || (x)==IMGFMT_422P || (x)==IMGFMT_411P)
-#define isSupportedOut(x) ((x)==IMGFMT_YV12 || (x)==IMGFMT_YUY2\
+#define isSupportedOut(x) ((x)==IMGFMT_YV12 || (x)==IMGFMT_YUY2 || (x)==IMGFMT_UYVY\
 			|| (x)==IMGFMT_444P || (x)==IMGFMT_422P || (x)==IMGFMT_411P\
 			|| isRGB(x) || isBGR(x)\
 			|| (x)==IMGFMT_Y800 || (x)==IMGFMT_YVU9)
@@ -503,6 +503,14 @@ static inline void yuv2yuvXinC(int16_t *lumFilter, int16_t **lumSrc, int lumFilt
 			((uint8_t*)dest)[2*i2+3]= V;\
 		}		\
 		break;\
+	case IMGFMT_UYVY:\
+		func2\
+			((uint8_t*)dest)[2*i2+0]= U;\
+			((uint8_t*)dest)[2*i2+1]= Y1;\
+			((uint8_t*)dest)[2*i2+2]= V;\
+			((uint8_t*)dest)[2*i2+3]= Y2;\
+		}		\
+		break;\
 	}\
 
 
@@ -645,6 +653,14 @@ static inline void yuv2packedXinC(SwsContext *c, int16_t *lumFilter, int16_t **l
 			((uint8_t*)dest)[2*i2+1]= U;
 			((uint8_t*)dest)[2*i2+2]= Y2;
 			((uint8_t*)dest)[2*i2+3]= V;
+		}
+                break;
+	case IMGFMT_UYVY:
+		YSCALE_YUV_2_PACKEDX_C(void)
+			((uint8_t*)dest)[2*i2+0]= U;
+			((uint8_t*)dest)[2*i2+1]= Y1;
+			((uint8_t*)dest)[2*i2+2]= V;
+			((uint8_t*)dest)[2*i2+3]= Y2;
 		}
                 break;
 	}
@@ -1336,6 +1352,15 @@ static int PlanarToYuy2Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], i
 	return srcSliceH;
 }
 
+static int PlanarToUyvyWrapper(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
+             int srcSliceH, uint8_t* dstParam[], int dstStride[]){
+	uint8_t *dst=dstParam[0] + dstStride[0]*srcSliceY;
+
+	yv12touyvy( src[0],src[1],src[2],dst,c->srcW,srcSliceH,srcStride[0],srcStride[1],dstStride[0] );
+
+	return srcSliceH;
+}
+
 /* {RGB,BGR}{15,16,24,32} -> {RGB,BGR}{15,16,24,32} */
 static int rgb2rgbWrapper(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
 			   int srcSliceH, uint8_t* dst[], int dstStride[]){
@@ -1821,9 +1846,13 @@ SwsContext *sws_getContext(int srcW, int srcH, int origSrcFormat, int dstW, int 
 				c->swScale= rgb2rgbWrapper;
 
 			/* yv12_to_yuy2 */
-			if(srcFormat == IMGFMT_YV12 && dstFormat == IMGFMT_YUY2)
+			if(srcFormat == IMGFMT_YV12 && 
+			    (dstFormat == IMGFMT_YUY2 || dstFormat == IMGFMT_UYVY))
 			{
-				c->swScale= PlanarToYuy2Wrapper;
+				if (dstFormat == IMGFMT_YUY2)
+				    c->swScale= PlanarToYuy2Wrapper;
+				else
+				    c->swScale= PlanarToUyvyWrapper;
 			}
 		}
 

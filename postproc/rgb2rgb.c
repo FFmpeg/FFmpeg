@@ -41,6 +41,9 @@ void (*rgb32tobgr15)(const uint8_t *src, uint8_t *dst, unsigned src_size);
 void (*yv12toyuy2)(const uint8_t *ysrc, const uint8_t *usrc, const uint8_t *vsrc, uint8_t *dst,
 	unsigned int width, unsigned int height,
 	int lumStride, int chromStride, int dstStride);
+void (*yv12touyvy)(const uint8_t *ysrc, const uint8_t *usrc, const uint8_t *vsrc, uint8_t *dst,
+	unsigned int width, unsigned int height,
+	int lumStride, int chromStride, int dstStride);
 void (*yuv422ptoyuy2)(const uint8_t *ysrc, const uint8_t *usrc, const uint8_t *vsrc, uint8_t *dst,
 	unsigned int width, unsigned int height,
 	int lumStride, int chromStride, int dstStride);
@@ -213,6 +216,7 @@ void sws_rgb2rgb_init(int flags){
 		rgb32tobgr16= rgb32tobgr16_MMX2;
 		rgb32tobgr15= rgb32tobgr15_MMX2;
 		yv12toyuy2= yv12toyuy2_MMX2;
+		yv12touyvy= yv12touyvy_MMX2;
 		yuv422ptoyuy2= yuv422ptoyuy2_MMX2;
 		yuy2toyv12= yuy2toyv12_MMX2;
 		uyvytoyv12= uyvytoyv12_MMX2;
@@ -242,6 +246,7 @@ void sws_rgb2rgb_init(int flags){
 		rgb32tobgr16= rgb32tobgr16_3DNOW;
 		rgb32tobgr15= rgb32tobgr15_3DNOW;
 		yv12toyuy2= yv12toyuy2_3DNOW;
+		yv12touyvy= yv12touyvy_3DNOW;
 		yuv422ptoyuy2= yuv422ptoyuy2_3DNOW;
 		yuy2toyv12= yuy2toyv12_3DNOW;
 		uyvytoyv12= uyvytoyv12_3DNOW;
@@ -271,6 +276,7 @@ void sws_rgb2rgb_init(int flags){
 		rgb32tobgr16= rgb32tobgr16_MMX;
 		rgb32tobgr15= rgb32tobgr15_MMX;
 		yv12toyuy2= yv12toyuy2_MMX;
+		yv12touyvy= yv12touyvy_MMX;
 		yuv422ptoyuy2= yuv422ptoyuy2_MMX;
 		yuy2toyv12= yuy2toyv12_MMX;
 		uyvytoyv12= uyvytoyv12_MMX;
@@ -302,6 +308,7 @@ void sws_rgb2rgb_init(int flags){
 		rgb32tobgr16= rgb32tobgr16_C;
 		rgb32tobgr15= rgb32tobgr15_C;
 		yv12toyuy2= yv12toyuy2_C;
+		yv12touyvy= yv12touyvy_C;
 		yuv422ptoyuy2= yuv422ptoyuy2_C;
 		yuy2toyv12= yuy2toyv12_C;
 //		uyvytoyv12= uyvytoyv12_C;
