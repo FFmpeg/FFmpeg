@@ -1649,13 +1649,20 @@ av_log(s->avctx, AV_LOG_INFO, "* level 5 vector @ %d, %d:\n", x * 16, y * 16);
                     
                     score[1]+= encode_block(s, src+16*x, temp+16, decoded, stride, 5, 64, lambda, 0);
                     best= score[1] <= score[0];
+
+                    vlc= svq1_block_type_vlc[SVQ1_BLOCK_SKIP];
+                    score[2]= s->dsp.sse[0](NULL, src+16*x, ref, stride, 16);
+                    score[2]+= vlc[1]*lambda;
+                    if(score[2] < score[best] && mx==0 && my==0){
+                        best=2;
+                        s->dsp.put_pixels_tab[0][0](decoded, ref, stride, 16);
+                        for(i=0; i<6; i++){
+                            count[2][i]=0;
+                        }
+                        put_bits(&s->pb, vlc[1], vlc[0]);
+                    }
                 }
-#if 0
-                if(skiped_score <= score[best]){
-                    best=3;
-                    ...
-                }
-#endif
+
                 if(best==1){
                     for(i=0; i<6; i++){
                         count[1][i]= put_bits_count(&s->reorder_pb[i]);
