@@ -555,16 +555,18 @@ static void do_video_out(AVFormatContext *s,
 
         if (ost->sync_ipts != AV_NOPTS_VALUE) {
             vdelta = (double)(ost->st->pts.val) * s->pts_num / s->pts_den - (ost->sync_ipts - ost->sync_ipts_offset);
-            if (vdelta < 100 && vdelta > -100) {
+            if (vdelta < 100 && vdelta > -100 && ost->sync_ipts_offset) {
                 if (vdelta < -AV_DELAY_MAX)
                     nb_frames = 2;
                 else if (vdelta > AV_DELAY_MAX)
                     nb_frames = 0;
             } else {
                 ost->sync_ipts_offset -= vdelta;
+                if (!ost->sync_ipts_offset)
+                    ost->sync_ipts_offset = 0.000001; /* one microsecond */
             }
 
-#if 0
+#if defined(PJSG)
             {
                 static char *action[] = { "drop frame", "copy frame", "dup frame" };
                 printf("Input PTS %12.6f, output PTS %12.6f: %s\n",
@@ -1369,6 +1371,7 @@ static int av_encode(AVFormatContext **output_files,
                         //printf("ipts=%lld sync_ipts=%f sync_opts=%lld pts.val=%lld pkt.pts=%lld\n", ipts, ost->sync_ipts, ost->sync_opts, ost->st->pts.val, pkt.pts); 
                     } else {
                         //printf("pts.val=%lld\n", ost->st->pts.val); 
+                        ost->sync_ipts = AV_NOPTS_VALUE;
                     }
 
                     if (ost->encoding_needed) {
