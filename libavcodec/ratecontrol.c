@@ -155,7 +155,7 @@ int ff_rate_estimate_qscale(MpegEncContext *s)
         qmin= (int)(qmin*s->b_quant_factor+0.5);
         qmax= (int)(qmax*s->b_quant_factor+0.5);
     }
-    if(qmin<2) qmin=2;
+    if(qmin<1) qmin=1;
     if(qmax>31) qmax=31;
     if(qmax<=qmin) qmax= qmin;
 
@@ -314,7 +314,7 @@ static int init_pass2(MpegEncContext *s)
                 qmin= (int)(qmin*s->b_quant_factor+0.5);
                 qmax= (int)(qmax*s->b_quant_factor+0.5);
             }
-            if(qmin<2) qmin=2;
+            if(qmin<1) qmin=1;
             if(qmax>31) qmax=31;
             if(qmax<=qmin) qmax= qmin;
             
@@ -386,7 +386,7 @@ int ff_rate_estimate_qscale_pass2(MpegEncContext *s)
         qmin= (int)(qmin*s->b_quant_factor+0.5);
         qmax= (int)(qmax*s->b_quant_factor+0.5);
     }
-    if(qmin<2) qmin=2;
+    if(qmin<1) qmin=1;
     if(qmax>31) qmax=31;
     if(qmax<=qmin) qmax= qmin;
 
