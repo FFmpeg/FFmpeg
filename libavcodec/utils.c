@@ -127,10 +127,48 @@ typedef struct InternalBuffer{
 
 #define INTERNAL_BUFFER_SIZE 32
 
+#define ALIGN(x, a) (((x)+(a)-1)&~((a)-1))
+
+void avcodec_align_dimensions(AVCodecContext *s, int *width, int *height){
+    int w_align= 1;    
+    int h_align= 1;    
+    
+    switch(s->pix_fmt){
+    case PIX_FMT_YUV420P:
+    case PIX_FMT_YUV422:
+    case PIX_FMT_YUV422P:
+    case PIX_FMT_YUV444P:
+    case PIX_FMT_GRAY8:
+    case PIX_FMT_YUVJ420P:
+    case PIX_FMT_YUVJ422P:
+    case PIX_FMT_YUVJ444P:
+        w_align= 16; //FIXME check for non mpeg style codecs and use less alignment
+        h_align= 16;
+        break;
+    case PIX_FMT_YUV411P:
+        w_align=32;
+        h_align=8;
+        break;
+    case PIX_FMT_YUV410P:
+        if(s->codec_id == CODEC_ID_SVQ1){
+            w_align=64;
+            h_align=64;
+        }
+        break;
+    default:
+        w_align= 1;
+        h_align= 1;
+        break;
+    }
+
+    *width = ALIGN(*width , w_align);
+    *height= ALIGN(*height, h_align);
+}
+
 int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic){
     int i;
-    const int width = s->width;
-    const int height= s->height;
+    int w= s->width;
+    int h= s->height;
     InternalBuffer *buf;
     
     assert(pic->data[0]==NULL);
@@ -153,10 +191,11 @@ int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic){
         pic->age= pic->coded_picture_number - buf->last_pic_num;
         buf->last_pic_num= pic->coded_picture_number;
     }else{
-        int align, h_chroma_shift, v_chroma_shift;
-        int w, h, pixel_size;
+        int h_chroma_shift, v_chroma_shift;
+        int s_align, pixel_size;
         
         avcodec_get_chroma_sub_sample(s->pix_fmt, &h_chroma_shift, &v_chroma_shift);
+        
         switch(s->pix_fmt){
         case PIX_FMT_RGB555:
         case PIX_FMT_RGB565:
@@ -173,13 +212,14 @@ int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic){
         default:
             pixel_size=1;
         }
-        
-        if(s->codec_id==CODEC_ID_SVQ1) align=63;
-        else                           align=15;
-    
-        w= (width +align)&~align;
-        h= (height+align)&~align;
-    
+
+        avcodec_align_dimensions(s, &w, &h);
+#if defined(ARCH_POWERPC) || defined(HAVE_MMI) //FIXME some cleaner check
+        s_align= 16;
+#else
+        s_align= 8;
+#endif
+            
         if(!(s->flags&CODEC_FLAG_EMU_EDGE)){
             w+= EDGE_WIDTH*2;
             h+= EDGE_WIDTH*2;
@@ -191,7 +231,7 @@ int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic){
             const int h_shift= i==0 ? 0 : h_chroma_shift;
             const int v_shift= i==0 ? 0 : v_chroma_shift;
 
-            pic->linesize[i]= pixel_size*w>>h_shift;
+            pic->linesize[i]= ALIGN(pixel_size*w>>h_shift, s_align);
 
             buf->base[i]= av_mallocz((pic->linesize[i]*h>>v_shift)+16); //FIXME 16
             if(buf->base[i]==NULL) return -1;
