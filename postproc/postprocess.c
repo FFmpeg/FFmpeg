@@ -75,6 +75,7 @@ dont use #ifdef ARCH_X86 for the asm stuff ... cross compilers? (note cpudetect 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 #ifdef HAVE_MALLOC_H
 #include <malloc.h>
 #endif
@@ -148,6 +149,7 @@ static uint64_t packedYScale=	0x0100010001000100LL;
 extern int divx_quality;
 int newPPFlag=0; //is set if -npp is used
 struct PPMode gPPMode[GET_PP_QUALITY_MAX+1];
+static int firstTime = 0, firstTime2 = 0;
 
 extern int verbose;
 
@@ -759,7 +761,7 @@ struct PPMode getPPModeByNameAndQuality(char *name, int quality)
 /**
  * Check and load the -npp part of the cmd line
  */
-int readPPOpt(void *conf, char *arg)
+int readNPPOpt(void *conf, char *arg)
 {
 	int quality;
 	
@@ -778,9 +780,36 @@ int readPPOpt(void *conf, char *arg)
 	newPPFlag=1;
 
 //divx_quality is passed to postprocess if autoq if off
-	divx_quality= GET_PP_QUALITY_MAX; 
+	divx_quality= GET_PP_QUALITY_MAX;
+	firstTime = firstTime2 = 1;
 	return 1;
 }
+
+int readPPOpt(void *conf, char *arg)
+{
+  int val;
+
+  if(arg == NULL)
+    return -2; // ERR_MISSING_PARAM
+  errno = 0;
+  val = (int)strtol(arg,NULL,0);
+  if(errno != 0)
+    return -4;  // What about include cfgparser.h and use ERR_* defines */
+  if(val < 0)
+    return -3; // ERR_OUT_OF_RANGE
+
+  divx_quality = val;
+  firstTime = firstTime2 = 1;
+
+  return 1;
+}
+  
+void revertPPOpt(void *conf, char* opt) 
+{
+  newPPFlag=0;
+  divx_quality=0;
+}
+
 
 /**
  * Obsolete, dont use it, use postprocess2() instead
@@ -795,7 +824,6 @@ void  postprocess(unsigned char * src[], int src_stride,
 {
 	struct PPMode ppMode;
 	static QP_STORE_T zeroArray[2048/8];
-	static int firstTime=1;
 
 	if(newPPFlag)
 	{
@@ -882,7 +910,6 @@ void  postprocess2(unsigned char * src[], int src_stride,
 {
 
 	QP_STORE_T quantArray[2048/8];
-	static int firstTime=1;
 	
 	if(QP_store==NULL || (mode->lumMode & FORCE_QUANT)) 
 	{
@@ -895,10 +922,10 @@ void  postprocess2(unsigned char * src[], int src_stride,
 			for(i=0; i<2048/8; i++) quantArray[i]= 1;
 	}
 
-	if(firstTime && verbose)
+	if(firstTime2 && verbose)
 	{
 		printf("using npp filters 0x%X/0x%X\n", mode->lumMode, mode->chromMode);
-		firstTime=0;
+		firstTime2=0;
 	}
 
 #ifdef HAVE_ODIVX_POSTPROCESS
