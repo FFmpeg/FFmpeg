@@ -789,7 +789,9 @@ void ff_mpeg1_encode_init(MpegEncContext *s)
         s->max_qcoeff= 2047;
     }
     s->intra_ac_vlc_length=
-    s->inter_ac_vlc_length= uni_mpeg1_ac_vlc_len;
+    s->inter_ac_vlc_length=
+    s->intra_ac_vlc_last_length=
+    s->inter_ac_vlc_last_length= uni_mpeg1_ac_vlc_len;
 }
 
 static inline void encode_dc(MpegEncContext *s, int diff, int component)
