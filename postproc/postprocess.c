@@ -1909,28 +1909,31 @@ static inline void blockCopy(uint8_t dst[], int dstStride, uint8_t src[], int sr
 						"leal (%3,%3), %%ebx	\n\t"
 						"movq packedYOffset, %%mm2	\n\t"
 						"movq packedYScale, %%mm3	\n\t"
+						"pxor %%mm4, %%mm4	\n\t"
 
 #define SCALED_CPY					\
 						"movq (%0), %%mm0	\n\t"\
 						"movq (%0,%2), %%mm1	\n\t"\
 						"psubusb %%mm2, %%mm0	\n\t"\
 						"psubusb %%mm2, %%mm1	\n\t"\
-						"pxor %%mm4, %%mm4	\n\t"\
-						"pxor %%mm5, %%mm5	\n\t"\
-						"punpcklbw %%mm0, %%mm4 \n\t"\
-						"punpckhbw %%mm0, %%mm5 \n\t"\
-						"pmulhuw %%mm3, %%mm4	\n\t"\
-						"pmulhuw %%mm3, %%mm5	\n\t"\
-						"packuswb %%mm5, %%mm4	\n\t"\
-						"movq %%mm4, (%1)	\n\t"\
-						"pxor %%mm4, %%mm4	\n\t"\
-						"pxor %%mm5, %%mm5	\n\t"\
-						"punpcklbw %%mm1, %%mm4 \n\t"\
-						"punpckhbw %%mm1, %%mm5 \n\t"\
-						"pmulhuw %%mm3, %%mm4	\n\t"\
-						"pmulhuw %%mm3, %%mm5	\n\t"\
-						"packuswb %%mm5, %%mm4	\n\t"\
-						"movq %%mm4, (%1, %3)	\n\t"\
+						"movq %%mm0, %%mm5	\n\t"\
+						"punpcklbw %%mm4, %%mm0 \n\t"\
+						"punpckhbw %%mm4, %%mm5 \n\t"\
+						"psllw $7, %%mm0	\n\t"\
+						"psllw $7, %%mm5	\n\t"\
+						"pmulhw %%mm3, %%mm0	\n\t"\
+						"pmulhw %%mm3, %%mm5	\n\t"\
+						"packuswb %%mm5, %%mm0	\n\t"\
+						"movq %%mm0, (%1)	\n\t"\
+						"movq %%mm1, %%mm5	\n\t"\
+						"punpcklbw %%mm4, %%mm1 \n\t"\
+						"punpckhbw %%mm4, %%mm5 \n\t"\
+						"psllw $7, %%mm1	\n\t"\
+						"psllw $7, %%mm5	\n\t"\
+						"pmulhw %%mm3, %%mm1	\n\t"\
+						"pmulhw %%mm3, %%mm5	\n\t"\
+						"packuswb %%mm5, %%mm1	\n\t"\
+						"movq %%mm1, (%1, %3)	\n\t"\
 
 						"1:			\n\t"
 SCALED_CPY
@@ -2073,7 +2076,7 @@ void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStride, int
 
 		scale= (double)(maxAllowedY - minAllowedY) / (double)(white-black);
 
-		packedYScale= (uint16_t)(scale*256.0 + 0.5);
+		packedYScale= (uint16_t)(scale*512.0 + 0.5);
 		packedYScale|= packedYScale<<32;
 		packedYScale|= packedYScale<<16;
 	}
