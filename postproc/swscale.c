@@ -159,15 +159,8 @@ deglobalize yuv2rgb*.c
 #endif
 
 #ifdef CAN_COMPILE_X86_ASM
-static uint64_t __attribute__((aligned(8))) yCoeff=    0x2568256825682568LL;
-static uint64_t __attribute__((aligned(8))) vrCoeff=   0x3343334333433343LL;
-static uint64_t __attribute__((aligned(8))) ubCoeff=   0x40cf40cf40cf40cfLL;
-static uint64_t __attribute__((aligned(8))) vgCoeff=   0xE5E2E5E2E5E2E5E2LL;
-static uint64_t __attribute__((aligned(8))) ugCoeff=   0xF36EF36EF36EF36ELL;
 static uint64_t __attribute__((aligned(8))) bF8=       0xF8F8F8F8F8F8F8F8LL;
 static uint64_t __attribute__((aligned(8))) bFC=       0xFCFCFCFCFCFCFCFCLL;
-static uint64_t __attribute__((aligned(8))) w400=      0x0400040004000400LL;
-static uint64_t __attribute__((aligned(8))) w80=       0x0080008000800080LL;
 static uint64_t __attribute__((aligned(8))) w10=       0x0010001000100010LL;
 static uint64_t __attribute__((aligned(8))) w02=       0x0002000200020002LL;
 static uint64_t __attribute__((aligned(8))) bm00001111=0x00000000FFFFFFFFLL;
@@ -249,7 +242,7 @@ extern const uint8_t dither_8x8_220[8][8];
 #ifdef CAN_COMPILE_X86_ASM
 void in_asm_used_var_warning_killer()
 {
- volatile int i= yCoeff+vrCoeff+ubCoeff+vgCoeff+ugCoeff+bF8+bFC+w400+w80+w10+
+ volatile int i= bF8+bFC+w10+
  bm00001111+bm00000111+bm11111000+b16Mask+g16Mask+r16Mask+b15Mask+g15Mask+r15Mask+
  M24A+M24B+M24C+w02 + b5Dither+g5Dither+r5Dither+g6Dither+dither4[0]+dither8[0]+bm01010101;
  if(i) i=0;
@@ -1675,7 +1668,8 @@ static void rgb2rgbWrapper(SwsContext *c, uint8_t* src[], int srcStride[], int s
 	void (*conv)(const uint8_t *src, uint8_t *dst, unsigned src_size)=NULL;
 
 	/* BGR -> BGR */
-	if(isBGR(srcFormat) && isBGR(dstFormat)){
+	if(   (isBGR(srcFormat) && isBGR(dstFormat))
+	   || (isRGB(srcFormat) && isRGB(dstFormat))){
 		switch(srcId | (dstId<<4)){
 		case 0x34: conv= rgb16to15; break;
 		case 0x36: conv= rgb24to15; break;
@@ -1692,7 +1686,8 @@ static void rgb2rgbWrapper(SwsContext *c, uint8_t* src[], int srcStride[], int s
 		default: MSG_ERR("swScaler: internal error %s -> %s converter\n", 
 				 vo_format_name(srcFormat), vo_format_name(dstFormat)); break;
 		}
-	}else if(isBGR(srcFormat) && isRGB(dstFormat)){
+	}else if(   (isBGR(srcFormat) && isRGB(dstFormat))
+		 || (isRGB(srcFormat) && isBGR(dstFormat))){
 		switch(srcId | (dstId<<4)){
 		case 0x33: conv= rgb15tobgr15; break;
 		case 0x34: conv= rgb16tobgr15; break;
@@ -1713,45 +1708,11 @@ static void rgb2rgbWrapper(SwsContext *c, uint8_t* src[], int srcStride[], int s
 		default: MSG_ERR("swScaler: internal error %s -> %s converter\n", 
 				 vo_format_name(srcFormat), vo_format_name(dstFormat)); break;
 		}
-	}else if(isRGB(srcFormat) && isRGB(dstFormat)){
-		switch(srcId | (dstId<<4)){
-		case 0x34: conv= rgb16to15; break;
-		case 0x36: conv= rgb24to15; break;
-		case 0x38: conv= rgb32to15; break;
-		case 0x43: conv= rgb15to16; break;
-		case 0x46: conv= rgb24to16; break;
-		case 0x48: conv= rgb32to16; break;
-		case 0x63: conv= rgb15to24; break;
-		case 0x64: conv= rgb16to24; break;
-		case 0x68: conv= rgb32to24; break;
-		case 0x83: conv= rgb15to32; break;
-		case 0x84: conv= rgb16to32; break;
-		case 0x86: conv= rgb24to32; break;
-		default: MSG_ERR("swScaler: internal error %s -> %s converter\n", 
-				 vo_format_name(srcFormat), vo_format_name(dstFormat)); break;
-		}
-	}else if(isRGB(srcFormat) && isBGR(dstFormat)){
-		switch(srcId | (dstId<<4)){
-		case 0x33: conv= rgb15tobgr15; break;
-		case 0x34: conv= rgb16tobgr15; break;
-		case 0x36: conv= rgb24tobgr15; break;
-		case 0x38: conv= rgb32tobgr15; break;
-		case 0x43: conv= rgb15tobgr16; break;
-		case 0x44: conv= rgb16tobgr16; break;
-		case 0x46: conv= rgb24tobgr16; break;
-		case 0x48: conv= rgb32tobgr16; break;
-		case 0x63: conv= rgb15tobgr24; break;
-		case 0x64: conv= rgb16tobgr24; break;
-		case 0x66: conv= rgb24tobgr24; break;
-		case 0x68: conv= rgb32tobgr24; break;
-		case 0x83: conv= rgb15tobgr32; break;
-		case 0x84: conv= rgb16tobgr32; break;
-		case 0x86: conv= rgb24tobgr32; break;
-		case 0x88: conv= rgb32tobgr32; break;
-		default: MSG_ERR("swScaler: internal error %s -> %s converter\n", 
-				 vo_format_name(srcFormat), vo_format_name(dstFormat)); break;
-		}
+	}else{
+		MSG_ERR("swScaler: internal error %s -> %s converter\n", 
+			 vo_format_name(srcFormat), vo_format_name(dstFormat));
 	}
+
 	if(dstStride[0]*srcBpp == srcStride[0]*dstBpp)
 		conv(src[0], dst[0] + dstStride[0]*srcSliceY, srcSliceH*srcStride[0]);
 	else
@@ -2112,11 +2073,6 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 		if((srcFormat == IMGFMT_YV12||srcFormat==IMGFMT_I420)&&dstFormat == IMGFMT_NV12)
 		{
 			c->swScale= PlanarToNV12Wrapper;
-
-			if(flags&SWS_PRINT_INFO)
-				MSG_INFO("SwScaler: using unscaled %s -> %s special converter\n", 
-					vo_format_name(srcFormat), vo_format_name(dstFormat));
-			return c;
 		}
 		/* yuv2bgr */
 		if((srcFormat==IMGFMT_YV12 || srcFormat==IMGFMT_I420) && isBGR(dstFormat))
@@ -2132,37 +2088,11 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 			yuv2rgb_init( dstFormat&0xFF /* =bpp */, MODE_RGB);
 #endif
 			c->swScale= planarYuvToBgr;
-
-			if(flags&SWS_PRINT_INFO)
-				MSG_INFO("SwScaler: using unscaled %s -> %s special converter\n", 
-					vo_format_name(srcFormat), vo_format_name(dstFormat));
-			return c;
-		}
-		
-		/* simple copy */
-		if(   srcFormat == dstFormat
-		   || (srcFormat==IMGFMT_YV12 && dstFormat==IMGFMT_I420)
-		   || (srcFormat==IMGFMT_I420 && dstFormat==IMGFMT_YV12)
-		   || (isPlanarYUV(srcFormat) && isGray(dstFormat))
-		   || (isPlanarYUV(dstFormat) && isGray(srcFormat))
-		  )
-		{
-			c->swScale= simpleCopy;
-
-			if(flags&SWS_PRINT_INFO)
-				MSG_INFO("SwScaler: using unscaled %s -> %s special converter\n", 
-					vo_format_name(srcFormat), vo_format_name(dstFormat));
-			return c;
 		}
 		
 		if( srcFormat==IMGFMT_YVU9 && (dstFormat==IMGFMT_YV12 || dstFormat==IMGFMT_I420) )
 		{
 			c->swScale= yvu9toyv12Wrapper;
-
-			if(flags&SWS_PRINT_INFO)
-				MSG_INFO("SwScaler: using unscaled %s -> %s special converter\n", 
-					vo_format_name(srcFormat), vo_format_name(dstFormat));
-			return c;
 		}
 
 		/* bgr24toYV12 */
@@ -2187,12 +2117,18 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 			if((srcFormat == IMGFMT_YV12||srcFormat==IMGFMT_I420)&&dstFormat == IMGFMT_YUY2)
 			{
 				c->swScale= PlanarToYuy2Wrapper;
-
-				if(flags&SWS_PRINT_INFO)
-					MSG_INFO("SwScaler: using unscaled %s -> %s special converter\n", 
-						vo_format_name(srcFormat), vo_format_name(dstFormat));
-				return c;
 			}
+		}
+
+		/* simple copy */
+		if(   srcFormat == dstFormat
+		   || (srcFormat==IMGFMT_YV12 && dstFormat==IMGFMT_I420)
+		   || (srcFormat==IMGFMT_I420 && dstFormat==IMGFMT_YV12)
+		   || (isPlanarYUV(srcFormat) && isGray(dstFormat))
+		   || (isPlanarYUV(dstFormat) && isGray(srcFormat))
+		  )
+		{
+			c->swScale= simpleCopy;
 		}
 
 		if(c->swScale){
