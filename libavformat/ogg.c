@@ -14,6 +14,9 @@
 #include "avformat.h"
 #include "oggvorbis.h"
 
+#undef NDEBUG
+#include <assert.h>
+
 #define DECODER_BUFFER_SIZE 4096
 
 
@@ -21,8 +24,7 @@ typedef struct OggContext {
     /* output */
     ogg_stream_state os ;
     int header_handled ;
-    ogg_int64_t base_packet_no ;
-    ogg_int64_t base_granule_pos ;
+    ogg_packet op;
 
     /* input */
     ogg_sync_state oy ;
@@ -40,7 +42,9 @@ static int ogg_write_header(AVFormatContext *avfcontext)
     vorbis_block vb ;
     ogg_packet header, header_comm, header_code ; 
     int n ;
-    
+
+    av_set_pts_info(avfcontext, 60, 1, AV_TIME_BASE);
+
     ogg_stream_init(&context->os, 31415);
     
     for(n = 0 ; n < avfcontext->nb_streams ; n++) {
@@ -79,7 +83,6 @@ static int ogg_write_header(AVFormatContext *avfcontext)
 	/* end of vorbis specific code */
 
 	context->header_handled = 0 ;
-	context->base_packet_no = 0 ;
     }
     
     return 0 ;
@@ -88,13 +91,21 @@ static int ogg_write_header(AVFormatContext *avfcontext)
 
 static int ogg_write_packet(AVFormatContext *avfcontext,
 			    int stream_index,
-			    const uint8_t *buf, int size, int64_t force_pts)
+			    const uint8_t *buf, int size, int64_t pts)
 {
     OggContext *context = avfcontext->priv_data ;
-    ogg_packet *op ;
+    AVCodecContext *avctx= &avfcontext->streams[stream_index]->codec;
+    ogg_packet *op= &context->op;
     ogg_page og ;
-    int l = 0 ;
-    
+
+    pts= av_rescale(pts, avctx->sample_rate, AV_TIME_BASE);
+
+    if(!size){
+//        av_log(avfcontext, AV_LOG_DEBUG, "zero packet\n");
+        return 0;
+    }
+//    av_log(avfcontext, AV_LOG_DEBUG, "M%d\n", size);
+
     /* flush header packets so audio starts on a new page */
 
     if(!context->header_handled) {
@@ -106,29 +117,21 @@ static int ogg_write_packet(AVFormatContext *avfcontext,
 	context->header_handled = 1 ;
     }
 
-    while(l < size) {
-	op = (ogg_packet*)(buf + l) ;
-	op->packet = (uint8_t*) buf + l + sizeof( ogg_packet) ; /* fix data pointer */
+    op->packet = (uint8_t*) buf;
+    op->bytes  = size;
+    op->b_o_s  = op->packetno == 0;
+    op->granulepos= pts;
 
-	if(!context->base_packet_no) { /* this is the first packet */
-	    context->base_packet_no = op->packetno ; 
-	    context->base_granule_pos = op->granulepos ;
-	}
-
-	/* correct the fields in the packet -- essential for streaming */
-
-	op->packetno -= context->base_packet_no ;
-	op->granulepos -= context->base_granule_pos ;
-
-	ogg_stream_packetin(&context->os, op) ;
-	l += sizeof(ogg_packet) + op->bytes ;
-
-	while(ogg_stream_pageout(&context->os, &og)) {
-	    put_buffer(&avfcontext->pb, og.header, og.header_len) ;
-	    put_buffer(&avfcontext->pb, og.body, og.body_len) ;
-	    put_flush_packet(&avfcontext->pb);
-	}
-    }
+    /* correct the fields in the packet -- essential for streaming */
+                                                        
+    ogg_stream_packetin(&context->os, op);              
+                                                        
+    while(ogg_stream_pageout(&context->os, &og)) {
+        put_buffer(&avfcontext->pb, og.header, og.header_len);
+	put_buffer(&avfcontext->pb, og.body, og.body_len);     
+	put_flush_packet(&avfcontext->pb);
+    }                                                   
+    op->packetno++;
 
     return 0;
 }

@@ -9,13 +9,17 @@
 #include "avcodec.h"
 #include "oggvorbis.h"
 
-#define OGGVORBIS_FRAME_SIZE 1024
+//#define OGGVORBIS_FRAME_SIZE 1024
+#define OGGVORBIS_FRAME_SIZE 64
 
+#define BUFFER_SIZE (1024*64)
 
 typedef struct OggVorbisContext {
     vorbis_info vi ;
     vorbis_dsp_state vd ;
     vorbis_block vb ;
+    uint8_t buffer[BUFFER_SIZE];
+    int buffer_index;
 
     /* decoder */
     vorbis_comment vc ;
@@ -85,20 +89,33 @@ static int oggvorbis_encode_frame(AVCodecContext *avccontext,
     
     vorbis_analysis_wrote(&context->vd, samples) ; 
 
-    l = 0 ;
-
     while(vorbis_analysis_blockout(&context->vd, &context->vb) == 1) {
 	vorbis_analysis(&context->vb, NULL);
 	vorbis_bitrate_addblock(&context->vb) ;
 
 	while(vorbis_bitrate_flushpacket(&context->vd, &op)) {
-	    memcpy(packets + l, &op, sizeof(ogg_packet)) ;
-	    memcpy(packets + l + sizeof(ogg_packet), op.packet, op.bytes) ;
-	    l += sizeof(ogg_packet) + op.bytes ;
+            memcpy(context->buffer + context->buffer_index, &op, sizeof(ogg_packet));
+            context->buffer_index += sizeof(ogg_packet);
+            memcpy(context->buffer + context->buffer_index, op.packet, op.bytes);
+            context->buffer_index += op.bytes;
+//            av_log(avccontext, AV_LOG_DEBUG, "e%d / %d\n", context->buffer_index, op.bytes);
 	}
     }
 
-    return l ;
+    if(context->buffer_index){
+        ogg_packet *op2= context->buffer;
+        op2->packet = context->buffer + sizeof(ogg_packet);
+        l=  op2->bytes;
+        
+        memcpy(packets, op2->packet, l);
+        context->buffer_index -= l + sizeof(ogg_packet);
+        memcpy(context->buffer, context->buffer + l + sizeof(ogg_packet), context->buffer_index);
+        
+//        av_log(avccontext, AV_LOG_DEBUG, "E%d\n", l);
+        return l;
+    }
+
+    return 0;
 }
 
 
