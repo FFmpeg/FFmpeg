@@ -233,6 +233,19 @@ AVOutputFormat h263_oformat = {
     raw_write_trailer,
 };
 
+AVOutputFormat m4v_oformat = {
+    "m4v",
+    "raw MPEG4 video format",
+    NULL,
+    "m4v",
+    0,
+    CODEC_ID_NONE,
+    CODEC_ID_MPEG4,
+    raw_write_header,
+    raw_write_packet,
+    raw_write_trailer,
+};
+
 AVInputFormat mpegvideo_iformat = {
     "mpegvideo",
     "MPEG video",
@@ -420,6 +433,8 @@ int raw_init(void)
     av_register_output_format(&ac3_oformat);
 
     av_register_output_format(&h263_oformat);
+    
+    av_register_output_format(&m4v_oformat);
 
     av_register_input_format(&mpegvideo_iformat);
     av_register_output_format(&mpeg1video_oformat);
