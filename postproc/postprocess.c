@@ -489,7 +489,7 @@ static inline void horizX1Filter(uint8_t *src, int stride, int QP)
 // minor note: the HAVE_xyz is messed up after that line so dont use it
 
 static inline void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStride, int width, int height,
-	QP_STORE_T QPs[], int QPStride, int isColor, PPMode *ppMode, pp_context *vc)
+	QP_STORE_T QPs[], int QPStride, int isColor, PPMode *ppMode, pp_context_t *vc)
 {
 	PPContext *c= (PPContext *)vc;
 	c->ppMode= *ppMode; //FIXME
