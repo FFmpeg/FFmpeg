@@ -33,6 +33,8 @@ struct DVDemuxContext {
     AVStream*        ast[2];       
     AVPacket         audio_pkt[2];
     int              ach;
+    int              frames;
+    uint64_t         abytes;
 };
 
 struct DVMuxContext {
@@ -720,6 +722,8 @@ DVDemuxContext* dv_init_demux(AVFormatContext *s)
     c->fctx = s;
     c->ast[1] = NULL;
     c->ach = 0;
+    c->frames = 0;
+    c->abytes = 0;
     c->audio_pkt[0].size = 0;
     c->audio_pkt[1].size = 0;
     
@@ -731,6 +735,8 @@ DVDemuxContext* dv_init_demux(AVFormatContext *s)
     c->ast[0]->codec.codec_id = CODEC_ID_PCM_S16LE;
    
     s->ctx_flags |= AVFMTCTX_NOHEADER; 
+    
+    av_set_pts_info(s, 64, 1, 30000);
     
     return c;
     
@@ -770,8 +776,9 @@ int dv_produce_packet(DVDemuxContext *c, AVPacket *pkt,
                       uint8_t* buf, int buf_size)
 {
     int size, i;
+    const DVprofile* sys = dv_frame_profile(buf);
    
-    if (buf_size < 4 || buf_size < dv_frame_profile(buf)->frame_size)
+    if (buf_size < 4 || buf_size < sys->frame_size)
         return -1;   /* Broken frame, or not enough data */
 
     /* Queueing audio packet */
@@ -782,8 +789,11 @@ int dv_produce_packet(DVDemuxContext *c, AVPacket *pkt,
        if (av_new_packet(&c->audio_pkt[i], size) < 0)
            return AVERROR_NOMEM;
        c->audio_pkt[i].stream_index = c->ast[i]->index;
+       c->audio_pkt[i].pts = c->abytes * 30000*8 / c->ast[i]->codec.bit_rate;
+       c->audio_pkt[i].flags |= PKT_FLAG_KEY;
     }
     dv_extract_audio(buf, c->audio_pkt[0].data, c->audio_pkt[1].data);
+    c->abytes += size;
     
     /* Now it's time to return video packet */
     size = dv_extract_video_info(c, buf);
@@ -793,10 +803,21 @@ int dv_produce_packet(DVDemuxContext *c, AVPacket *pkt,
     pkt->size     = size; 
     pkt->flags   |= PKT_FLAG_KEY;
     pkt->stream_index = c->vst->id;
+    pkt->pts      = c->frames * sys->frame_rate_base * (30000/sys->frame_rate);
+    
+    c->frames++;
 
     return size;
 }
                            
+int64_t dv_frame_offset(DVDemuxContext *c, int64_t timestamp)
+{
+    const DVprofile* sys = dv_codec_profile(&c->vst->codec);
+
+    return sys->frame_size * ((timestamp * sys->frame_rate) / 
+	                      (AV_TIME_BASE * sys->frame_rate_base));
+}
+
 /************************************************************
  * Implementation of the easiest DV storage of all -- raw DV.
  ************************************************************/
@@ -835,6 +856,13 @@ static int dv_read_packet(AVFormatContext *s, AVPacket *pkt)
     } 
     
     return size;
+}
+
+static int dv_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp)
+{
+    RawDVContext *c = s->priv_data;
+
+    return url_fseek(&s->pb, dv_frame_offset(c->dv_demux, timestamp), SEEK_SET);
 }
 
 static int dv_read_close(AVFormatContext *s)
@@ -892,6 +920,7 @@ static AVInputFormat dv_iformat = {
     dv_read_header,
     dv_read_packet,
     dv_read_close,
+    dv_read_seek,
     .extensions = "dv",
 };
 

@@ -43,8 +43,6 @@ struct dv1394_data {
     int avail;  /* Number of frames available for reading */
     int done;   /* Number of completed frames */
 
-    int64_t pts;  /* Current timestamp */
-
     DVDemuxContext* dv_demux; /* Generic DV muxing/demuxing context */
 };
 
@@ -121,8 +119,6 @@ static int dv1394_read_header(AVFormatContext * context, AVFormatParameters * ap
         goto failed;
     }
 
-    av_set_pts_info(context, 48, 1, 1000000);
-
     if (dv1394_start(dv) < 0)
         goto failed;
 
@@ -140,7 +136,7 @@ static int dv1394_read_packet(AVFormatContext *context, AVPacket *pkt)
 
     size = dv_get_packet(dv->dv_demux, pkt);
     if (size > 0)
-        goto out;
+        return size;
 
     if (!dv->avail) {
         struct dv1394_status s;
@@ -209,10 +205,7 @@ restart_poll:
 			     DV1394_PAL_FRAME_SIZE);
     dv->index = (dv->index + 1) % DV1394_RING_FRAMES;
     dv->done++; dv->avail--;
-    dv->pts = av_gettime() & ((1LL << 48) - 1);
     
-out:
-    pkt->pts = dv->pts;
     return size;
 }
 
