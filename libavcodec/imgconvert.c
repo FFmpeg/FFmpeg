@@ -747,14 +747,13 @@ static void yuv422p_to_yuv422(AVPicture *dst, AVPicture *src,
  cm[(((y) - 128) * FIX(127.0/112.0) + (ONE_HALF + (128 << SCALEBITS))) >> SCALEBITS]
 
 /* NOTE: the clamp is really necessary! */
-#define C_JPEG_TO_CCIR(y)\
-({\
-    int __y;\
-    __y = ((((y) - 128) * FIX(112.0/127.0) + (ONE_HALF + (128 << SCALEBITS))) >> SCALEBITS);\
-    if (__y < 16)\
-         __y = 16;\
-    __y;\
-})
+static inline int C_JPEG_TO_CCIR(int y) {
+    y = (((y - 128) * FIX(112.0/127.0) + (ONE_HALF + (128 << SCALEBITS))) >> SCALEBITS);
+    if (y < 16)
+	y = 16;
+    return y;
+}
+
 
 #define RGB_TO_Y(r, g, b) \
 ((FIX(0.29900) * (r) + FIX(0.58700) * (g) + \
@@ -1608,8 +1607,6 @@ static int avpicture_alloc(AVPicture *picture,
     void *ptr;
 
     size = avpicture_get_size(pix_fmt, width, height);
-    if (size < 0)
-        goto fail;
     ptr = av_malloc(size);
     if (!ptr)
         goto fail;

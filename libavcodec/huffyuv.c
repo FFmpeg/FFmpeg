@@ -1097,7 +1097,7 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
         char *p= avctx->stats_out;
         for(i=0; i<3; i++){
             for(j=0; j<256; j++){
-                sprintf(p, "%Ld ", s->stats[i][j]);
+                sprintf(p, "%llu ", s->stats[i][j]);
                 p+= strlen(p);
                 s->stats[i][j]= 0;
             }

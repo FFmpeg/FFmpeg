@@ -199,7 +199,7 @@ static void pred4x4_down_left_svq3_c(uint8_t *src, uint8_t *topright, int stride
     src[3+2*stride]=
     src[2+3*stride]=
     src[3+3*stride]=(l3 + t3)>>1;
-};
+}
 
 static void pred16x16_plane_svq3_c(uint8_t *src, int stride){
     pred16x16_plane_compat_c(src, stride, 1);

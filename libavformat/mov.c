@@ -1369,7 +1369,7 @@ static int mov_read_header(AVFormatContext *s, AVFormatParameters *ap)
     /* check MOV header */
     err = mov_read_default(mov, pb, atom);
     if (err<0 || (!mov->found_moov && !mov->found_mdat)) {
-	fprintf(stderr, "mov: header not found !!! (err:%d, moov:%d, mdat:%d) pos:%Ld\n",
+	fprintf(stderr, "mov: header not found !!! (err:%d, moov:%d, mdat:%d) pos:%lld\n",
 		err, mov->found_moov, mov->found_mdat, url_ftell(pb));
 	return -1;
     }

@@ -84,7 +84,7 @@ void *__av_mallocz_static(void** location, unsigned int size)
     return ptr;
 }
 /* free all static arrays and reset pointers to 0 */
-void av_free_static()
+void av_free_static(void)
 {
     if (array_static)
     {

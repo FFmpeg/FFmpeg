@@ -26,7 +26,6 @@
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mpegvideo.h"
-#include "bswap.h"
 
 #include "indeo3data.h"
 

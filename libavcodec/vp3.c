@@ -35,7 +35,6 @@
 #include "dsputil.h"
 #include "mpegvideo.h"
 #include "dsputil.h"
-#include "bswap.h"
 
 #include "vp3data.h"
 

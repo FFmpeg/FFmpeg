@@ -993,7 +993,7 @@ static int asf_get_packet(AVFormatContext *s)
     int c = get_byte(pb);
     if (c != 0x82) {
         if (!url_feof(pb))
-	    printf("ff asf bad header %x  at:%Ld\n", c, url_ftell(pb));
+	    printf("ff asf bad header %x  at:%lld\n", c, url_ftell(pb));
 	return -EIO;
     }
     if ((c & 0x0f) == 2) { // always true for now
@@ -1220,7 +1220,7 @@ static int asf_read_close(AVFormatContext *s)
 
 static int asf_read_seek(AVFormatContext *s, int64_t pts)
 {
-    printf("SEEK TO %Ld", pts);
+    printf("SEEK TO %lld", pts);
     return -1;
 }
 

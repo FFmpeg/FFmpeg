@@ -37,7 +37,6 @@
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mpegvideo.h"
-#include "bswap.h"
 #define bit_buffer_t GetBitContext
 
 static inline unsigned int get_bit_cache(GetBitContext *s){

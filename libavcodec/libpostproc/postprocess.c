@@ -765,7 +765,7 @@ static void reallocBuffers(PPContext *c, int width, int height, int stride, int 
 	reallocAlign((void **)&c->forcedQPTable, 8, mbWidth*sizeof(QP_STORE_T));
 }
 
-static void global_init(){
+static void global_init(void){
 	int i;
 	memset(clip_table, 0, 256);
 	for(i=256; i<512; i++)
