@@ -103,8 +103,8 @@ static void iv_alloc_frames(Indeo3DecodeContext *s)
   int luma_width, luma_height, luma_pixels, chroma_width, chroma_height,
     chroma_pixels, bufsize, i;
 
-  luma_width = (s->width + 15) & -0x10;
-  luma_height = (s->height + 15) & -0x10;
+  luma_width   = (s->width  + 3) & (~3);
+  luma_height  = (s->height + 3) & (~3);
 
   s->iv_frame[0].y_w = s->iv_frame[0].y_h = 
     s->iv_frame[0].the_buf_size = 0;
@@ -112,8 +112,8 @@ static void iv_alloc_frames(Indeo3DecodeContext *s)
     s->iv_frame[1].the_buf_size = 0;
   s->iv_frame[1].the_buf = NULL;
 
-  chroma_width = luma_width >> 2;
-  chroma_height = luma_height >> 2;
+  chroma_width  = ((luma_width >> 2) + 3) & (~3);
+  chroma_height = ((luma_height>> 2) + 3) & (~3);
   luma_pixels = luma_width * luma_height;
   chroma_pixels = chroma_width * chroma_height;
 
