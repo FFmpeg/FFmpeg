@@ -1421,12 +1421,17 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
         get_pixels(s->block[2], ptr + 8 * wrap    , wrap);
         get_pixels(s->block[3], ptr + 8 * wrap + 8, wrap);
 
-        wrap >>=1;
-        ptr = s->new_picture[1] + (mb_y * 8 * wrap) + mb_x * 8;
-        get_pixels(s->block[4], ptr, wrap);
+        if(s->flags&CODEC_FLAG_GRAY){
+            skip_dct[4]= 1;
+            skip_dct[5]= 1;
+        }else{
+            wrap >>=1;
+            ptr = s->new_picture[1] + (mb_y * 8 * wrap) + mb_x * 8;
+            get_pixels(s->block[4], ptr, wrap);
 
-        ptr = s->new_picture[2] + (mb_y * 8 * wrap) + mb_x * 8;
-        get_pixels(s->block[5], ptr, wrap);
+            ptr = s->new_picture[2] + (mb_y * 8 * wrap) + mb_x * 8;
+            get_pixels(s->block[5], ptr, wrap);
+        }
     }else{
         op_pixels_func *op_pix;
         qpel_mc_func *op_qpix;
@@ -1466,9 +1471,15 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
         diff_pixels(s->block[1], ptr_y              + 8, dest_y              + 8, wrap_y);
         diff_pixels(s->block[2], ptr_y + 8 * wrap_y    , dest_y + 8 * wrap_y    , wrap_y);
         diff_pixels(s->block[3], ptr_y + 8 * wrap_y + 8, dest_y + 8 * wrap_y + 8, wrap_y);
-        diff_pixels(s->block[4], ptr_cb, dest_cb, wrap_c);
-        diff_pixels(s->block[5], ptr_cr, dest_cr, wrap_c);
-    
+        
+        if(s->flags&CODEC_FLAG_GRAY){
+            skip_dct[4]= 1;
+            skip_dct[5]= 1;
+        }else{
+            diff_pixels(s->block[4], ptr_cb, dest_cb, wrap_c);
+            diff_pixels(s->block[5], ptr_cr, dest_cr, wrap_c);
+        }
+
         /* pre quantization */         
         if(s->mc_mb_var[s->mb_width*mb_y+ mb_x]<2*s->qscale*s->qscale){
             if(pix_abs8x8(ptr_y               , dest_y               , wrap_y) < 20*s->qscale) skip_dct[0]= 1;
@@ -1544,6 +1555,13 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
         if(s->chroma_elim_threshold && !s->mb_intra)
             for(i=4; i<6; i++)
                 dct_single_coeff_elimination(s, i, s->chroma_elim_threshold, 1);
+    }
+
+    if((s->flags&CODEC_FLAG_GRAY) && s->mb_intra){
+        s->block_last_index[4]=
+        s->block_last_index[5]= 0;
+        s->block[4][0]=
+        s->block[5][0]= 128;
     }
 
     /* huffman encode */
