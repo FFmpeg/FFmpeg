@@ -650,6 +650,7 @@ typedef struct AVCodecContext {
 #define FF_DCT_INT     2
 #define FF_DCT_MMX     3
 #define FF_DCT_MLIB    4
+#define FF_DCT_ALTIVEC 5
 
     /**
      * presentation timestamp in micro seconds (time when frame should be shown to user)
@@ -716,6 +717,7 @@ typedef struct AVCodecContext {
 #define FF_IDCT_PS2          5
 #define FF_IDCT_MLIB         6
 #define FF_IDCT_ARM          7
+#define FF_IDCT_ALTIVEC      8
 
     /**
      * slice count

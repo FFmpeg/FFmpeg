@@ -103,6 +103,10 @@ typedef struct ScanTable{
     const UINT8 *scantable;
     UINT8 permutated[64];
     UINT8 raster_end[64];
+#ifdef ARCH_POWERPC
+		/* Used by dct_quantise_alitvec to find last-non-zero */
+    UINT8 __align8 inverse[64];
+#endif
 } ScanTable;
 
 typedef struct MpegEncContext {
@@ -287,8 +291,8 @@ typedef struct MpegEncContext {
     int min_qcoeff;          /* minimum encodable coefficient */
     int max_qcoeff;          /* maximum encodable coefficient */
     /* precomputed matrix (combine qscale and DCT renorm) */
-    int q_intra_matrix[32][64];
-    int q_inter_matrix[32][64];
+    int __align8 q_intra_matrix[32][64];
+    int __align8 q_inter_matrix[32][64];
     /* identical to the above but for MMX & these are not permutated */
     UINT16 __align8 q_intra_matrix16[32][64];
     UINT16 __align8 q_inter_matrix16[32][64];
@@ -296,7 +300,7 @@ typedef struct MpegEncContext {
     UINT16 __align8 q_inter_matrix16_bias[32][64];
     int block_last_index[6];  /* last non zero coefficient in block */
     /* scantables */
-    ScanTable intra_scantable;
+    ScanTable __align8 intra_scantable;
     ScanTable intra_h_scantable;
     ScanTable intra_v_scantable;
     ScanTable inter_scantable; // if inter == intra then intra should be used to reduce tha cache usage
@@ -534,6 +538,9 @@ void MPV_common_init_mlib(MpegEncContext *s);
 #endif
 #ifdef HAVE_MMI
 void MPV_common_init_mmi(MpegEncContext *s);
+#endif
+#ifdef ARCH_POWERPC
+void MPV_common_init_ppc(MpegEncContext *s);
 #endif
 extern void (*draw_edges)(UINT8 *buf, int wrap, int width, int height, int w);
 void ff_conceal_past_errors(MpegEncContext *s, int conceal_all);

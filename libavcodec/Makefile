@@ -75,7 +75,7 @@ CFLAGS += -fforce-addr -freduce-all-givs
 endif
 
 ifeq ($(TARGET_ARCH_POWERPC),yes)
-OBJS += ppc/dsputil_ppc.o
+OBJS += ppc/dsputil_ppc.o ppc/mpegvideo_ppc.o
 endif
 
 ifeq ($(TARGET_MMI),yes)
@@ -84,7 +84,7 @@ endif
 
 ifeq ($(TARGET_ALTIVEC),yes)
 CFLAGS += -faltivec
-OBJS += ppc/dsputil_altivec.o
+OBJS += ppc/dsputil_altivec.o ppc/mpegvideo_altivec.o ppc/idct_altivec.o
 endif
 
 SRCS := $(OBJS:.o=.c) $(ASM_OBJS:.o=.S)

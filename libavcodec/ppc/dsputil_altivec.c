@@ -1,14 +1,28 @@
+/*
+ * Copyright (c) 2002 Brian Foley
+ * Copyright (c) 2002 Dieter Shirley
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
+ 
 #include "../dsputil.h"
+#include "dsputil_altivec.h"
 
 #if CONFIG_DARWIN
 #include <sys/sysctl.h>
 #endif
-
-int pix_abs16x16_altivec(uint8_t *pix1, uint8_t *pix2, int line_size);
-int pix_abs8x8_altivec(uint8_t *pix1, uint8_t *pix2, int line_size);
-int pix_sum_altivec(UINT8 * pix, int line_size);
-
-int has_altivec(void);
 
 int pix_abs16x16_altivec(uint8_t *pix1, uint8_t *pix2, int line_size)
 {
@@ -127,6 +141,105 @@ int pix_sum_altivec(UINT8 * pix, int line_size)
     return s;
 }
 
+void get_pixels_altivec(DCTELEM *restrict block, const UINT8 *pixels, int line_size)
+{
+    int i;
+    vector unsigned char perm, bytes, *pixv;
+    vector unsigned char zero = (vector unsigned char) (0);
+    vector signed short shorts;
+
+    for(i=0;i<8;i++)
+    {
+        // Read potentially unaligned pixels.
+        // We're reading 16 pixels, and actually only want 8,
+        // but we simply ignore the extras.
+        perm = vec_lvsl(0, pixels);
+        pixv = (vector unsigned char *) pixels;
+        bytes = vec_perm(pixv[0], pixv[1], perm);
+
+        // convert the bytes into shorts
+        shorts = (vector signed short)vec_mergeh(zero, bytes);
+
+        // save the data to the block, we assume the block is 16-byte aligned
+        vec_st(shorts, i*16, (vector signed short*)block);
+
+        pixels += line_size;
+    }
+}
+
+void diff_pixels_altivec(DCTELEM *restrict block, const UINT8 *s1,
+        const UINT8 *s2, int stride)
+{
+    int i;
+    vector unsigned char perm, bytes, *pixv;
+    vector unsigned char zero = (vector unsigned char) (0);
+    vector signed short shorts1, shorts2;
+
+    for(i=0;i<4;i++)
+    {
+        // Read potentially unaligned pixels
+        // We're reading 16 pixels, and actually only want 8,
+        // but we simply ignore the extras.
+        perm = vec_lvsl(0, s1);
+        pixv = (vector unsigned char *) s1;
+        bytes = vec_perm(pixv[0], pixv[1], perm);
+
+        // convert the bytes into shorts
+        shorts1 = (vector signed short)vec_mergeh(zero, bytes);
+
+        // Do the same for the second block of pixels
+        perm = vec_lvsl(0, s2);
+        pixv = (vector unsigned char *) s2;
+        bytes = vec_perm(pixv[0], pixv[1], perm);
+
+        // convert the bytes into shorts
+        shorts2 = (vector signed short)vec_mergeh(zero, bytes);
+
+        // Do the subtraction
+        shorts1 = vec_sub(shorts1, shorts2);
+
+        // save the data to the block, we assume the block is 16-byte aligned
+        vec_st(shorts1, 0, (vector signed short*)block);
+
+        s1 += stride;
+        s2 += stride;
+        block += 8;
+
+
+        // The code below is a copy of the code above... This is a manual
+        // unroll.
+
+        // Read potentially unaligned pixels
+        // We're reading 16 pixels, and actually only want 8,
+        // but we simply ignore the extras.
+        perm = vec_lvsl(0, s1);
+        pixv = (vector unsigned char *) s1;
+        bytes = vec_perm(pixv[0], pixv[1], perm);
+
+        // convert the bytes into shorts
+        shorts1 = (vector signed short)vec_mergeh(zero, bytes);
+
+        // Do the same for the second block of pixels
+        perm = vec_lvsl(0, s2);
+        pixv = (vector unsigned char *) s2;
+        bytes = vec_perm(pixv[0], pixv[1], perm);
+
+        // convert the bytes into shorts
+        shorts2 = (vector signed short)vec_mergeh(zero, bytes);
+
+        // Do the subtraction
+        shorts1 = vec_sub(shorts1, shorts2);
+
+        // save the data to the block, we assume the block is 16-byte aligned
+        vec_st(shorts1, 0, (vector signed short*)block);
+
+        s1 += stride;
+        s2 += stride;
+        block += 8;
+    }
+}
+
+
 int has_altivec(void)
 {
 #if CONFIG_DARWIN
@@ -141,3 +254,4 @@ int has_altivec(void)
 #endif
     return 0;
 }
+

@@ -157,6 +157,9 @@ void ff_init_scantable(MpegEncContext *s, ScanTable *st, const UINT8 *src_scanta
         int j;
         j = src_scantable[i];
         st->permutated[i] = s->idct_permutation[j];
+#ifdef ARCH_POWERPC
+        st->inverse[j] = i;
+#endif
     }
     
     end=-1;
@@ -220,6 +223,9 @@ int DCT_common_init(MpegEncContext *s)
 #endif
 #ifdef ARCH_ARMV4L
     MPV_common_init_armv4l();
+#endif
+#ifdef ARCH_POWERPC
+    MPV_common_init_ppc(s);
 #endif
 
     switch(s->idct_permutation_type){
@@ -3011,7 +3017,7 @@ static int dct_quantize_c(MpegEncContext *s,
     int bias;
     int max=0;
     unsigned int threshold1, threshold2;
-    
+
     s->fdct (block);
 
     if (s->mb_intra) {
