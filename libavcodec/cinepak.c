@@ -177,28 +177,28 @@ static int cinepak_decode_vectors (CinepakContext *s, cvid_strip_t *strip,
                         s->frame.data[2][iv[0]] = codebook->v;
                     }
 
-                    s->frame.data[0][iy[0] + 2] = codebook->y0;
-                    s->frame.data[0][iy[0] + 3] = codebook->y0;
-                    s->frame.data[0][iy[1] + 2] = codebook->y0;
-                    s->frame.data[0][iy[1] + 3] = codebook->y0;
+                    s->frame.data[0][iy[0] + 2] = codebook->y1;
+                    s->frame.data[0][iy[0] + 3] = codebook->y1;
+                    s->frame.data[0][iy[1] + 2] = codebook->y1;
+                    s->frame.data[0][iy[1] + 3] = codebook->y1;
                     if (!s->palette_video) {
                         s->frame.data[1][iu[0] + 1] = codebook->u;
                         s->frame.data[2][iv[0] + 1] = codebook->v;
                     }
 
-                    s->frame.data[0][iy[2] + 0] = codebook->y0;
-                    s->frame.data[0][iy[2] + 1] = codebook->y0;
-                    s->frame.data[0][iy[3] + 0] = codebook->y0;
-                    s->frame.data[0][iy[3] + 1] = codebook->y0;
+                    s->frame.data[0][iy[2] + 0] = codebook->y2;
+                    s->frame.data[0][iy[2] + 1] = codebook->y2;
+                    s->frame.data[0][iy[3] + 0] = codebook->y2;
+                    s->frame.data[0][iy[3] + 1] = codebook->y2;
                     if (!s->palette_video) {
                         s->frame.data[1][iu[1]] = codebook->u;
                         s->frame.data[2][iv[1]] = codebook->v;
                     }
 
-                    s->frame.data[0][iy[2] + 2] = codebook->y0;
-                    s->frame.data[0][iy[2] + 3] = codebook->y0;
-                    s->frame.data[0][iy[3] + 2] = codebook->y0;
-                    s->frame.data[0][iy[3] + 3] = codebook->y0;
+                    s->frame.data[0][iy[2] + 2] = codebook->y3;
+                    s->frame.data[0][iy[2] + 3] = codebook->y3;
+                    s->frame.data[0][iy[3] + 2] = codebook->y3;
+                    s->frame.data[0][iy[3] + 3] = codebook->y3;
                     if (!s->palette_video) {
                         s->frame.data[1][iu[1] + 1] = codebook->u;
                         s->frame.data[2][iv[1] + 1] = codebook->v;
