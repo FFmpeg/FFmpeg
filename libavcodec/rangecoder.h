@@ -23,10 +23,6 @@
  * Range coder.
  */
 
-
-#undef NDEBUG
-#include <assert.h>
-
 typedef struct RangeCoder{
     int low;
     int range;
