@@ -2119,7 +2119,10 @@ SwsContext *sws_getContext(int srcW, int srcH, int origSrcFormat, int dstW, int 
  */
 int sws_scale_ordered(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
                            int srcSliceH, uint8_t* dst[], int dstStride[]){
-	return c->swScale(c, src, srcStride, srcSliceY, srcSliceH, dst, dstStride);
+	//copy strides, so they can safely be modified
+	int srcStride2[3]= {srcStride[0], srcStride[1], srcStride[2]};
+	int dstStride2[3]= {dstStride[0], dstStride[1], dstStride[2]};
+	return c->swScale(c, src, srcStride2, srcSliceY, srcSliceH, dst, dstStride2);
 }
 
 /**
