@@ -1716,6 +1716,7 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
     int64_t offset = 0x0FFFFFFFFFFFFFFFLL;
     int i, a, b, m;
     int size;
+    int idx;
     size = 0x0FFFFFFF;
 
 #ifdef MOV_SPLIT_CHUNKS
@@ -1727,7 +1728,7 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
 	idx = sc->sample_to_chunk_index;
 
         if (idx < 0) return 0;
-	size = sc->sample_sizes[sc->current_sample];
+	size = (sc->sample_size)?sc->sample_size:sc->sample_sizes[sc->current_sample];
 
         sc->current_sample++;
         sc->left_in_chunk--;
@@ -1814,21 +1815,19 @@ again:
 
 #ifdef MOV_SPLIT_CHUNKS
     /* split chunks into samples */
-    if (sc->sample_size == 0) {
-        int idx = sc->sample_to_chunk_index;
-        if ((idx + 1 < sc->sample_to_chunk_sz)
-	    && (sc->next_chunk >= sc->sample_to_chunk[idx + 1].first))
-           idx++;
-        sc->sample_to_chunk_index = idx;
-        if (idx >= 0 && sc->sample_to_chunk[idx].count != 1) {
-	    mov->partial = sc;
-            /* we'll have to get those samples before next chunk */
-            sc->left_in_chunk = sc->sample_to_chunk[idx].count - 1;
-            size = sc->sample_sizes[sc->current_sample];
-        }
-
-        sc->current_sample++;
+    idx = sc->sample_to_chunk_index;
+    if ((idx + 1 < sc->sample_to_chunk_sz)
+            && (sc->next_chunk >= sc->sample_to_chunk[idx + 1].first))
+        idx++;
+    sc->sample_to_chunk_index = idx;
+    if (idx >= 0 && sc->sample_to_chunk[idx].count != 1) {
+        mov->partial = sc;
+        /* we'll have to get those samples before next chunk */
+        sc->left_in_chunk = sc->sample_to_chunk[idx].count - 1;
+        size = (sc->sample_size)?sc->sample_size:sc->sample_sizes[sc->current_sample];
     }
+
+    sc->current_sample++;
 #endif
 
 readchunk:
