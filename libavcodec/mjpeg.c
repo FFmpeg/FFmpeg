@@ -1262,11 +1262,11 @@ out:
 
 static int mjpeg_decode_com(MJpegDecodeContext *s)
 {
-    int len, i;
+    int i;
     UINT8 *cbuf;
 
     /* XXX: verify len field validity */
-    len = get_bits(&s->gb, 16)-2;
+    unsigned int len = get_bits(&s->gb, 16)-2;
     cbuf = av_malloc(len+1);
 
     for (i = 0; i < len; i++)

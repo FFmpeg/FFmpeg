@@ -43,7 +43,7 @@ struct ReSampleContext {
 static void init_mono_resample(ReSampleChannelContext *s, float ratio)
 {
     ratio = 1.0 / ratio;
-    s->iratio = (int)floor(ratio);
+    s->iratio = (int)floorf(ratio);
     if (s->iratio == 0)
         s->iratio = 1;
     s->incr = (int)((ratio / s->iratio) * FRAC);

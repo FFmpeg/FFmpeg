@@ -250,7 +250,7 @@ static double get_qscale(MpegEncContext *s, RateControlEntry *rce, double rate_f
         (rcc->i_cplx_sum[pict_type] + rcc->p_cplx_sum[pict_type]) / (double)rcc->frame_count[pict_type],
         0
     };
-    char *const_names[]={
+    static const char *const_names[]={
         "PI",
         "E",
         "iTex",
@@ -282,7 +282,7 @@ static double get_qscale(MpegEncContext *s, RateControlEntry *rce, double rate_f
         (void *)qp2bits,
         NULL
     };
-    char *func1_names[]={
+    static const char *func1_names[]={
         "bits2qp",
         "qp2bits",
         NULL

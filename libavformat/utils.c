@@ -1376,7 +1376,7 @@ int av_read_image(ByteIOContext *pb, const char *filename,
     int ret;
 
     if (!fmt) {
-        pd->filename = (char *)filename;
+        pd->filename = filename;
         pd->buf = buf;
         pos = url_ftell(pb);
         pd->buf_size = get_buffer(pb, buf, PROBE_BUF_SIZE);

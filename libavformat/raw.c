@@ -19,28 +19,26 @@
 #include "avformat.h"
 
 /* simple formats */
-int raw_write_header(struct AVFormatContext *s)
+static int raw_write_header(struct AVFormatContext *s)
 {
     return 0;
 }
 
-int raw_write_packet(struct AVFormatContext *s, 
-                     int stream_index,
-                     unsigned char *buf, int size, int force_pts)
+static int raw_write_packet(struct AVFormatContext *s, int stream_index,
+			    unsigned char *buf, int size, int force_pts)
 {
     put_buffer(&s->pb, buf, size);
     put_flush_packet(&s->pb);
     return 0;
 }
 
-int raw_write_trailer(struct AVFormatContext *s)
+static int raw_write_trailer(struct AVFormatContext *s)
 {
     return 0;
 }
 
 /* raw input */
-static int raw_read_header(AVFormatContext *s,
-                           AVFormatParameters *ap)
+static static int raw_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     AVStream *st;
     int id;
@@ -78,8 +76,7 @@ static int raw_read_header(AVFormatContext *s,
 
 #define RAW_PACKET_SIZE 1024
 
-int raw_read_packet(AVFormatContext *s,
-                    AVPacket *pkt)
+static int raw_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     int ret, size;
     //    AVStream *st = s->streams[0];
@@ -101,7 +98,7 @@ int raw_read_packet(AVFormatContext *s,
     return ret;
 }
 
-int raw_read_close(AVFormatContext *s)
+static int raw_read_close(AVFormatContext *s)
 {
     return 0;
 }
@@ -390,8 +387,7 @@ PCMDEF(mulaw, "pcm mu law format",
 PCMDEF(alaw, "pcm A law format", 
        "al", CODEC_ID_PCM_ALAW)
 
-int rawvideo_read_packet(AVFormatContext *s,
-                         AVPacket *pkt)
+static int rawvideo_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     int packet_size, ret, width, height;
     AVStream *st = s->streams[0];

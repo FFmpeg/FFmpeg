@@ -20,6 +20,8 @@
 #ifndef AVCODEC_MPEGVIDEO_H
 #define AVCODEC_MPEGVIDEO_H
 
+#include "dsputil.h"
+
 #define FRAME_SKIPED 100 // return value for header parsers if frame is not coded
 
 enum OutputFormat {
@@ -771,8 +773,8 @@ int ff_rate_control_init(MpegEncContext *s);
 float ff_rate_estimate_qscale(MpegEncContext *s);
 void ff_write_pass1_stats(MpegEncContext *s);
 void ff_rate_control_uninit(MpegEncContext *s);
-double ff_eval(char *s, double *const_value, char **const_name,
-               double (**func1)(void *, double), char **func1_name, 
+double ff_eval(char *s, double *const_value, const char **const_name,
+               double (**func1)(void *, double), const char **func1_name,
                double (**func2)(void *, double, double), char **func2_name,
                void *opaque);
 

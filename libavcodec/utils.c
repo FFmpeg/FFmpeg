@@ -46,7 +46,7 @@ char *av_strdup(const char *s)
 /**
  * realloc which does nothing if the block is large enough
  */
-void *av_fast_realloc(void *ptr, int *size, int min_size)
+void *av_fast_realloc(void *ptr, unsigned int *size, unsigned int min_size)
 {
     if(min_size < *size) 
         return ptr;
@@ -63,7 +63,7 @@ static char*** array_static = NULL;
 static const unsigned int grow_static = 64; // ^2
 void *__av_mallocz_static(void** location, unsigned int size)
 {
-    int l = (last_static + grow_static) & ~(grow_static - 1);
+    unsigned int l = (last_static + grow_static) & ~(grow_static - 1);
     void *ptr = av_mallocz(size);
     if (!ptr)
 	return NULL;

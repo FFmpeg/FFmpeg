@@ -157,7 +157,7 @@ static int img_read_packet(AVFormatContext *s1, AVPacket *pkt)
     char filename[1024];
     int ret;
     ByteIOContext f1, *f;
-    static INT64 first_frame;
+    static INT64 first_frame; // BUG -> to context FIXME
 
     if (emulate_frame_rate) {
         if (!first_frame) {

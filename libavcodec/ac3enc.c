@@ -28,18 +28,18 @@ typedef struct AC3EncodeContext {
     int nb_all_channels;
     int lfe_channel;
     int bit_rate;
-    int sample_rate;
-    int bsid;
-    int frame_size_min; /* minimum frame size in case rounding is necessary */
-    int frame_size; /* current frame size in words */
+    unsigned int sample_rate;
+    unsigned int bsid;
+    unsigned int frame_size_min; /* minimum frame size in case rounding is necessary */
+    unsigned int frame_size; /* current frame size in words */
     int halfratecod;
-    int frmsizecod;
-    int fscod; /* frequency */
-    int acmod;
+    unsigned int frmsizecod;
+    unsigned int fscod; /* frequency */
+    unsigned int acmod;
     int lfe;
-    int bsmod;
+    unsigned int bsmod;
     short last_samples[AC3_MAX_CHANNELS][256];
-    int chbwcod[AC3_MAX_CHANNELS];
+    unsigned int chbwcod[AC3_MAX_CHANNELS];
     int nb_coefs[AC3_MAX_CHANNELS];
     
     /* bitrate allocation control */
@@ -586,7 +586,7 @@ static int encode_exp(UINT8 encoded_exp[N/2],
 }
 
 /* return the size in bits taken by the mantissa */
-int compute_mantissa_size(AC3EncodeContext *s, UINT8 *m, int nb_coefs)
+static int compute_mantissa_size(AC3EncodeContext *s, UINT8 *m, int nb_coefs)
 {
     int bits, mant, i;
 

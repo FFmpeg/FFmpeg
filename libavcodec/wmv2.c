@@ -467,7 +467,7 @@ s->picture_number++; //FIXME ?
     return 0;
 }
 
-void ff_wmv2_decode_init(MpegEncContext *s){
+static void ff_wmv2_decode_init(MpegEncContext *s){
 }
 
 static inline int wmv2_decode_motion(Wmv2Context *w, int *mx_ptr, int *my_ptr){

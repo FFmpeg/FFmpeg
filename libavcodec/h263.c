@@ -456,7 +456,7 @@ void mpeg4_encode_mb(MpegEncContext * s,
 		    DCTELEM block[6][64],
 		    int motion_x, int motion_y)
 {
-    int cbpc, cbpy, i, pred_x, pred_y;
+    int cbpc, cbpy, pred_x, pred_y;
     int bits;
     PutBitContext * const pb2    = s->data_partitioning                         ? &s->pb2    : &s->pb;
     PutBitContext * const tex_pb = s->data_partitioning && s->pict_type!=B_TYPE ? &s->tex_pb : &s->pb;
@@ -467,7 +467,7 @@ void mpeg4_encode_mb(MpegEncContext * s,
     //    printf("**mb x=%d y=%d\n", s->mb_x, s->mb_y);
     if (!s->mb_intra) {
         /* compute cbp */
-        int cbp = 0;
+        int i, cbp = 0;
         for (i = 0; i < 6; i++) {
             if (s->block_last_index[i] >= 0)
                 cbp |= 1 << (5 - i);
@@ -728,7 +728,8 @@ void mpeg4_encode_mb(MpegEncContext * s,
         int dc_diff[6];   //dc values with the dc prediction subtracted 
         int dir[6];  //prediction direction
         int zigzag_last_index[6];
-        UINT8 *scan_table[6];
+	UINT8 *scan_table[6];
+        int i;
 
         for(i=0; i<6; i++){
             const int level= block[i][0];
@@ -1010,7 +1011,7 @@ static int h263_pred_dc(MpegEncContext * s, int n, UINT16 **dc_val_ptr)
 }
 
 
-void h263_pred_acdc(MpegEncContext * s, DCTELEM *block, int n)
+static void h263_pred_acdc(MpegEncContext * s, DCTELEM *block, int n)
 {
     int x, y, wrap, a, c, pred_dc, scale, i;
     INT16 *dc_val, *ac_val, *ac_val1;
@@ -4353,7 +4354,7 @@ static int decode_vol_header(MpegEncContext *s, GetBitContext *gb){
         // FIXME a bunch of grayscale shape things
 
         if((s->mpeg_quant=get_bits1(gb))){ /* vol_quant_type */
-            int i, j, v;
+            int i, v;
             
             /* load default matrixes */
             for(i=0; i<64; i++){
@@ -4370,7 +4371,8 @@ static int decode_vol_header(MpegEncContext *s, GetBitContext *gb){
             /* load custom intra matrix */
             if(get_bits1(gb)){
                 int last=0;
-                for(i=0; i<64; i++){
+		for(i=0; i<64; i++){
+                    int j;
                     v= get_bits(gb, 8);
                     if(v==0) break;
                     
@@ -4382,7 +4384,7 @@ static int decode_vol_header(MpegEncContext *s, GetBitContext *gb){
 
                 /* replicate last value */
                 for(; i<64; i++){
-                    j= s->idct_permutation[ ff_zigzag_direct[i] ];
+		    int j= s->idct_permutation[ ff_zigzag_direct[i] ];
                     s->intra_matrix[j]= v;
                     s->chroma_intra_matrix[j]= v;
                 }
@@ -4391,7 +4393,8 @@ static int decode_vol_header(MpegEncContext *s, GetBitContext *gb){
             /* load custom non intra matrix */
             if(get_bits1(gb)){
                 int last=0;
-                for(i=0; i<64; i++){
+		for(i=0; i<64; i++){
+                    int j;
                     v= get_bits(gb, 8);
                     if(v==0) break;
 
@@ -4403,7 +4406,7 @@ static int decode_vol_header(MpegEncContext *s, GetBitContext *gb){
 
                 /* replicate last value */
                 for(; i<64; i++){
-                    j= s->idct_permutation[ ff_zigzag_direct[i] ];
+		    int j= s->idct_permutation[ ff_zigzag_direct[i] ];
                     s->inter_matrix[j]= last;
                     s->chroma_inter_matrix[j]= last;
                 }

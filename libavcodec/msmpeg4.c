@@ -625,7 +625,7 @@ void msmpeg4_encode_mb(MpegEncContext * s,
 }
 
 /* old ffmpeg msmpeg4v3 mode */
-void ff_old_msmpeg4_dc_scale(MpegEncContext * s)
+static void ff_old_msmpeg4_dc_scale(MpegEncContext * s)
 {
     if (s->qscale < 5){
         s->y_dc_scale = 8;

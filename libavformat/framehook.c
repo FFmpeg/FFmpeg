@@ -103,7 +103,7 @@ void frame_hook_process(AVPicture *pict, enum PixelFormat pix_fmt, int width, in
     }
 }
 
-void frame_hook_release()
+void frame_hook_release(void)
 {
     FrameHookEntry *fhe;
     FrameHookEntry *fhenext;

@@ -160,16 +160,16 @@ int check_marker(GetBitContext *s, const char *msg)
 
 #define GET_DATA(v, table, i, wrap, size) \
 {\
-    const UINT8 *ptr = (UINT8 *)table + i * wrap;\
+    const UINT8 *ptr = (const UINT8 *)table + i * wrap;\
     switch(size) {\
     case 1:\
-        v = *(UINT8 *)ptr;\
+        v = *(const UINT8 *)ptr;\
         break;\
     case 2:\
-        v = *(UINT16 *)ptr;\
+        v = *(const UINT16 *)ptr;\
         break;\
     default:\
-        v = *(UINT32 *)ptr;\
+        v = *(const UINT32 *)ptr;\
         break;\
     }\
 }

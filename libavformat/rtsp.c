@@ -345,7 +345,7 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
     }
 }
 
-int sdp_parse(AVFormatContext *s, const char *content)
+static int sdp_parse(AVFormatContext *s, const char *content)
 {
     const char *p;
     int letter;

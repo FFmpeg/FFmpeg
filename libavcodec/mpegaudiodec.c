@@ -348,7 +348,8 @@ static int decode_init(AVCodecContext * avctx)
         huff_code_table[0] = NULL;
         for(i=1;i<16;i++) {
             const HuffTable *h = &mpa_huff_tables[i];
-            int xsize, n, x, y;
+	    int xsize, x, y;
+            unsigned int n;
             UINT8 *code_table;
 
             xsize = h->xsize;
@@ -1448,7 +1449,7 @@ static int mp_decode_layer2(MPADecodeContext *s)
 /*
  * Seek back in the stream for backstep bytes (at most 511 bytes)
  */
-static void seek_to_maindata(MPADecodeContext *s, long backstep)
+static void seek_to_maindata(MPADecodeContext *s, unsigned int backstep)
 {
     UINT8 *ptr;
 

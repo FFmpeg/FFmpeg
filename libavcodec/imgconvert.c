@@ -739,7 +739,7 @@ static inline unsigned int bitcopy_n(unsigned int a, int n)
 
 #define RGB_IN(r, g, b, s)\
 {\
-    unsigned int v = ((UINT16 *)(s))[0];\
+    unsigned int v = ((const UINT16 *)(s))[0];\
     r = bitcopy_n(v >> (10 - 3), 3);\
     g = bitcopy_n(v >> (5 - 3), 3);\
     b = bitcopy_n(v << 3, 3);\
@@ -762,7 +762,7 @@ RGB_FUNCTIONS(rgb555)
 
 #define RGB_IN(r, g, b, s)\
 {\
-    unsigned int v = ((UINT16 *)(s))[0];\
+    unsigned int v = ((const UINT16 *)(s))[0];\
     r = bitcopy_n(v >> (11 - 3), 3);\
     g = bitcopy_n(v >> (5 - 2), 2);\
     b = bitcopy_n(v << 3, 3);\
@@ -833,7 +833,7 @@ RGB_FUNCTIONS(rgb24)
 
 #define RGB_IN(r, g, b, s)\
 {\
-    unsigned int v = ((UINT32 *)(s))[0];\
+    unsigned int v = ((const UINT32 *)(s))[0];\
     r = (v >> 16) & 0xff;\
     g = (v >> 8) & 0xff;\
     b = v & 0xff;\
@@ -1229,7 +1229,7 @@ static ConvertEntry convert_table[PIX_FMT_NB][PIX_FMT_NB] = {
 static int avpicture_alloc(AVPicture *picture,
                            int pix_fmt, int width, int height)
 {
-    int size;
+    unsigned int size;
     void *ptr;
 
     size = avpicture_get_size(pix_fmt, width, height);

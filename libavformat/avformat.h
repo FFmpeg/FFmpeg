@@ -68,7 +68,7 @@ struct AVFormatContext;
 
 /* this structure contains the data a format has to probe a file */
 typedef struct AVProbeData {
-    char *filename;
+    const char *filename;
     unsigned char *buf;
     int buf_size;
 } AVProbeData;

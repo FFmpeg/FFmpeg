@@ -71,7 +71,7 @@ int rtp_set_remote_url(URLContext *h, const char *uri)
 
 /* add option to url of the form:
    "http://host:port/path?option1=val1&option2=val2... */
-void url_add_option(char *buf, int buf_size, const char *fmt, ...)
+static void url_add_option(char *buf, int buf_size, const char *fmt, ...)
 {
     char buf1[1024];
     va_list ap;
@@ -86,9 +86,9 @@ void url_add_option(char *buf, int buf_size, const char *fmt, ...)
     va_end(ap);
 }
 
-void build_udp_url(char *buf, int buf_size,
-                   const char *hostname, int port, 
-                   int local_port, int multicast, int ttl)
+static void build_udp_url(char *buf, int buf_size,
+			  const char *hostname, int port,
+			  int local_port, int multicast, int ttl)
 {
     snprintf(buf, buf_size, "udp://%s:%d", hostname, port);
     if (local_port >= 0)

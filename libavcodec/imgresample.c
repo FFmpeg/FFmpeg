@@ -22,7 +22,6 @@
 #ifdef USE_FASTMEMCPY
 #include "fastmemcpy.h"
 #endif
-extern int mm_flags;
 
 #define NB_COMPONENTS 3
 

@@ -17,6 +17,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 #include "avformat.h"
+#include "avio.h"
 #include <stdarg.h>
 
 #define IO_BUFFER_SIZE 32768
@@ -381,19 +382,19 @@ UINT64 get_be64(ByteIOContext *s)
 
 /* link with avio functions */
 
-void url_write_packet(void *opaque, UINT8 *buf, int buf_size)
+static void url_write_packet(void *opaque, UINT8 *buf, int buf_size)
 {
     URLContext *h = opaque;
     url_write(h, buf, buf_size);
 }
 
-int url_read_packet(void *opaque, UINT8 *buf, int buf_size)
+static int url_read_packet(void *opaque, UINT8 *buf, int buf_size)
 {
     URLContext *h = opaque;
     return url_read(h, buf, buf_size);
 }
 
-int url_seek_packet(void *opaque, INT64 offset, int whence)
+static int url_seek_packet(void *opaque, INT64 offset, int whence)
 {
     URLContext *h = opaque;
     url_seek(h, offset, whence);

@@ -60,7 +60,7 @@ int stristart(const char *str, const char *val, const char **ptr)
     p = str;
     q = val;
     while (*q != '\0') {
-        if (toupper(*(unsigned char *)p) != toupper(*(unsigned char *)q))
+	if (toupper(*(const unsigned char *)p) != toupper(*(const unsigned char *)q))
             return 0;
         p++;
         q++;

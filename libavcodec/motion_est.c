@@ -61,8 +61,8 @@ typedef struct Minima{
 }Minima;
 
 static int minima_cmp(const void *a, const void *b){
-    Minima *da = (Minima *) a;
-    Minima *db = (Minima *) b;
+    const Minima *da = (const Minima *) a;
+    const Minima *db = (const Minima *) b;
     
     return da->height - db->height;
 }
@@ -1193,7 +1193,7 @@ int ff_pre_estimate_p_frame_motion(MpegEncContext * s,
     return dmin;
 }
 
-int ff_estimate_motion_b(MpegEncContext * s,
+static int ff_estimate_motion_b(MpegEncContext * s,
                        int mb_x, int mb_y, int16_t (*mv_table)[2], Picture *picture, int f_code)
 {
     int mx, my, range, dmin;
