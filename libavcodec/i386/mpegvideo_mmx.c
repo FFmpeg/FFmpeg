@@ -563,6 +563,60 @@ static void draw_edges_mmx(uint8_t *buf, int wrap, int width, int height, int w)
     }
 }
 
+static void  denoise_dct_mmx(MpegEncContext *s, DCTELEM *block){
+    const int intra= s->mb_intra;
+    int *sum= s->dct_error_sum[intra];
+    uint16_t *offset= s->dct_offset[intra];
+
+    s->dct_count[intra]++;
+
+    asm volatile(
+        "pxor %%mm7, %%mm7		\n\t"
+        "1:				\n\t"
+        "pxor %%mm0, %%mm0		\n\t"
+        "pxor %%mm1, %%mm1		\n\t"
+        "movq (%0), %%mm2		\n\t"
+        "movq 8(%0), %%mm3		\n\t"
+        "pcmpgtw %%mm2, %%mm0		\n\t"
+        "pcmpgtw %%mm3, %%mm1		\n\t"
+        "pxor %%mm0, %%mm2		\n\t"
+        "pxor %%mm1, %%mm3		\n\t"
+        "psubw %%mm0, %%mm2		\n\t"
+        "psubw %%mm1, %%mm3		\n\t"
+        "movq %%mm2, %%mm4		\n\t"
+        "movq %%mm3, %%mm5		\n\t"
+        "psubusw (%2), %%mm2		\n\t"
+        "psubusw 8(%2), %%mm3		\n\t"
+        "pxor %%mm0, %%mm2		\n\t"
+        "pxor %%mm1, %%mm3		\n\t"
+        "psubw %%mm0, %%mm2		\n\t"
+        "psubw %%mm1, %%mm3		\n\t"
+        "movq %%mm2, (%0)		\n\t"
+        "movq %%mm3, 8(%0)		\n\t"
+        "movq %%mm4, %%mm2		\n\t"
+        "movq %%mm5, %%mm3		\n\t"
+        "punpcklwd %%mm7, %%mm4		\n\t"
+        "punpckhwd %%mm7, %%mm2		\n\t"
+        "punpcklwd %%mm7, %%mm5		\n\t"
+        "punpckhwd %%mm7, %%mm3		\n\t"
+        "paddd (%1), %%mm4		\n\t"
+        "paddd 8(%1), %%mm2		\n\t"
+        "paddd 16(%1), %%mm5		\n\t"
+        "paddd 24(%1), %%mm3		\n\t"
+        "movq %%mm4, (%1)		\n\t"
+        "movq %%mm2, 8(%1)		\n\t"
+        "movq %%mm5, 16(%1)		\n\t"
+        "movq %%mm3, 24(%1)		\n\t"
+        "addl $16, %0			\n\t"
+        "addl $32, %1			\n\t"
+        "addl $16, %2			\n\t"
+        "cmpl %3, %0			\n\t"
+            " jb 1b			\n\t"
+        : "+r" (block), "+r" (sum), "+r" (offset)
+        : "r"(block+64)
+    );
+}
+
 #undef HAVE_MMX2
 #define RENAME(a) a ## _MMX
 #define RENAMEl(a) a ## _mmx
@@ -588,6 +642,8 @@ void MPV_common_init_mmx(MpegEncContext *s)
         s->dct_unquantize_mpeg2_inter = dct_unquantize_mpeg2_inter_mmx;
 
         draw_edges = draw_edges_mmx;
+        
+        s->denoise_dct= denoise_dct_mmx;
 
         if(dct_algo==FF_DCT_AUTO || dct_algo==FF_DCT_MMX){
             if(mm_flags & MM_MMXEXT){

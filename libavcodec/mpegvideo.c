@@ -57,6 +57,7 @@ static void draw_edges_c(uint8_t *buf, int wrap, int width, int height, int w);
 static int dct_quantize_c(MpegEncContext *s, DCTELEM *block, int n, int qscale, int *overflow);
 static int dct_quantize_trellis_c(MpegEncContext *s, DCTELEM *block, int n, int qscale, int *overflow);
 static int sse_mb(MpegEncContext *s);
+static void  denoise_dct_c(MpegEncContext *s, DCTELEM *block);
 #endif //CONFIG_ENCODERS
 
 #ifdef HAVE_XVMC
@@ -219,6 +220,7 @@ int DCT_common_init(MpegEncContext *s)
 
 #ifdef CONFIG_ENCODERS
     s->dct_quantize= dct_quantize_c;
+    s->denoise_dct= denoise_dct_c;
 #endif
         
 #ifdef HAVE_MMX
@@ -4611,7 +4613,7 @@ static void encode_picture(MpegEncContext *s, int picture_number)
 
 #endif //CONFIG_ENCODERS
 
-void ff_denoise_dct(MpegEncContext *s, DCTELEM *block){
+static void  denoise_dct_c(MpegEncContext *s, DCTELEM *block){
     const int intra= s->mb_intra;
     int i;
 
@@ -4666,7 +4668,7 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
     s->dsp.fdct (block);
     
     if(s->dct_error_sum)
-        ff_denoise_dct(s, block);
+        s->denoise_dct(s, block);
     qmul= qscale*16;
     qadd= ((qscale-1)|1)*8;
 
@@ -4939,7 +4941,7 @@ static int dct_quantize_c(MpegEncContext *s,
     s->dsp.fdct (block);
 
     if(s->dct_error_sum)
-        ff_denoise_dct(s, block);
+        s->denoise_dct(s, block);
 
     if (s->mb_intra) {
         if (!s->h263_aic) {
