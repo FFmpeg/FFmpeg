@@ -1,6 +1,11 @@
 
 1) Type './configure' create the configuration (use './configure
---help' to have the configure options).
+--help' to have the configure options). 
+
+'configure' can be launched from another directory than the ffmpeg
+sources to put the objects at that place. In that case, use an
+absolute path when launching 'configure',
+e.g. /ffmpegdir/ffmpeg/configure.
 
 2) Then type 'make' to build ffmpeg.
 
