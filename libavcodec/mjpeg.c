@@ -1184,7 +1184,10 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
 	    int y_density = get_bits(&s->gb, 16);
 
             //MN: needs to be checked
-            s->avctx->aspect_ratio= s->width*y_density/((float)s->height*x_density);
+            if(x_density)
+                s->avctx->aspect_ratio= s->width*y_density/((float)s->height*x_density);
+            else
+                s->avctx->aspect_ratio= 0.0;
 	}
 	else
 	{
