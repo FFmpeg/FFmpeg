@@ -53,6 +53,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     int width, height;
     int video_fd, frame_size;
     int ret, frame_rate;
+    int desired_palette;
 
     if (!ap || ap->width <= 0 || ap->height <= 0 || ap->frame_rate <= 0)
         return -1;
@@ -92,6 +93,15 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         fprintf(stderr, "Fatal: grab device does not handle capture\n");
         goto fail;
     }
+
+    desired_palette = -1;
+    if (st->codec.pix_fmt == PIX_FMT_YUV420P) {
+        desired_palette = VIDEO_PALETTE_YUV420P;
+    } else if (st->codec.pix_fmt == PIX_FMT_YUV422) {
+        desired_palette = VIDEO_PALETTE_YUV422;
+    } else if (st->codec.pix_fmt == PIX_FMT_BGR24) {
+        desired_palette = VIDEO_PALETTE_RGB24;
+    }    
     
     /* unmute audio */
     ioctl(video_fd, VIDIOCGAUDIO, &audio);
@@ -125,16 +135,19 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
                pict.whiteness);
 #endif        
         /* try to choose a suitable video format */
-        pict.palette=VIDEO_PALETTE_YUV420P;
-        ret = ioctl(video_fd, VIDIOCSPICT, &pict);
-        if (ret < 0) {
-            pict.palette=VIDEO_PALETTE_YUV422;
+        pict.palette = desired_palette;
+        if (desired_palette == -1 || (ret = ioctl(video_fd, VIDIOCSPICT, &pict)) < 0) {
+            pict.palette=VIDEO_PALETTE_YUV420P;
             ret = ioctl(video_fd, VIDIOCSPICT, &pict);
             if (ret < 0) {
-                pict.palette=VIDEO_PALETTE_RGB24;
+                pict.palette=VIDEO_PALETTE_YUV422;
                 ret = ioctl(video_fd, VIDIOCSPICT, &pict);
-                if (ret < 0) 
-                    goto fail1;
+                if (ret < 0) {
+                    pict.palette=VIDEO_PALETTE_RGB24;
+                    ret = ioctl(video_fd, VIDIOCSPICT, &pict);
+                    if (ret < 0) 
+                        goto fail1;
+                }
             }
         }
 
@@ -155,22 +168,26 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         s->time_frame = gettime();
         
         /* start to grab the first frame */
-        gb_buf.frame = (gb_frame + 1) % gb_buffers.frames;
+        gb_buf.frame = gb_frame % gb_buffers.frames;
         gb_buf.height = height;
         gb_buf.width = width;
-        gb_buf.format = VIDEO_PALETTE_YUV420P;
-        
-        ret = ioctl(video_fd, VIDIOCMCAPTURE, &gb_buf);
-        if (ret < 0 && errno != EAGAIN) {
-            /* try YUV422 */
-            gb_buf.format = VIDEO_PALETTE_YUV422;
+        gb_buf.format = desired_palette;
+
+        if (desired_palette == -1 || (ret = ioctl(video_fd, VIDIOCMCAPTURE, &gb_buf)) < 0) {
+            gb_buf.format = VIDEO_PALETTE_YUV420P;
             
             ret = ioctl(video_fd, VIDIOCMCAPTURE, &gb_buf);
-	    if (ret < 0 && errno != EAGAIN) {
-		/* try RGB24 */
-		gb_buf.format = VIDEO_PALETTE_RGB24;
-		ret = ioctl(video_fd, VIDIOCMCAPTURE, &gb_buf);
-	    }
+            if (ret < 0 && errno != EAGAIN) {
+                /* try YUV422 */
+                gb_buf.format = VIDEO_PALETTE_YUV422;
+                
+                ret = ioctl(video_fd, VIDIOCMCAPTURE, &gb_buf);
+                if (ret < 0 && errno != EAGAIN) {
+                    /* try RGB24 */
+                    gb_buf.format = VIDEO_PALETTE_RGB24;
+                    ret = ioctl(video_fd, VIDIOCMCAPTURE, &gb_buf);
+                }
+            }
         }
         if (ret < 0) {
             if (errno != EAGAIN) {
@@ -221,8 +238,11 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 static int v4l_mm_read_picture(VideoData *s, UINT8 *buf)
 {
     UINT8 *ptr;
+    struct timeval tv_s, tv_e;
+    int delay;
 
-    gb_buf.frame = gb_frame;
+    /* Setup to capture the next frame */
+    gb_buf.frame = (gb_frame + 1) % gb_buffers.frames;
     if (ioctl(s->fd, VIDIOCMCAPTURE, &gb_buf) < 0) {
 	if (errno == EAGAIN)
 	    fprintf(stderr,"Cannot Sync\n");
@@ -230,13 +250,26 @@ static int v4l_mm_read_picture(VideoData *s, UINT8 *buf)
             perror("VIDIOCMCAPTURE");
 	return -EIO;
     }
-    gb_frame = (gb_frame + 1) % gb_buffers.frames;
+
+    gettimeofday(&tv_s, 0);
 
     while (ioctl(s->fd, VIDIOCSYNC, &gb_frame) < 0 &&
            (errno == EAGAIN || errno == EINTR));
 
+    /*
+    gettimeofday(&tv_e, 0);
+
+    delay = (tv_e.tv_sec - tv_s.tv_sec) * 1000000 + tv_e.tv_usec - tv_s.tv_usec;
+    if (delay > 10000) 
+        printf("VIDIOCSYNC took %d us\n", delay);
+    */
+
     ptr = video_buf + gb_buffers.offsets[gb_frame];
     memcpy(buf, ptr, s->frame_size);
+
+    /* This is now the grabbing frame */
+    gb_frame = gb_buf.frame;
+
     return s->frame_size;
 }
 
@@ -245,14 +278,25 @@ static int grab_read_packet(AVFormatContext *s1, AVPacket *pkt)
     VideoData *s = s1->priv_data;
     INT64 curtime, delay;
     struct timespec ts;
+    int first;
+    INT64 per_frame = (INT64_C(1000000) * FRAME_RATE_BASE) / s->frame_rate;
+    int dropped = 0;
+
+    /* Calculate the time of the next frame */
+    s->time_frame += per_frame;
 
     /* wait based on the frame rate */
-    s->time_frame += (INT64_C(1000000) * FRAME_RATE_BASE) / s->frame_rate;
-    for(;;) {
+    for(first = 1;; first = 0) {
         curtime = gettime();
         delay = s->time_frame - curtime;
-        if (delay <= 0)
+        if (delay <= 0) {
+            if (delay < -per_frame) {
+                /* printf("grabbing is %d frames late (dropping)\n", (int) -(delay / 16666)); */
+                dropped = 1;
+                s->time_frame += per_frame;
+            }
             break;
+        }    
         ts.tv_sec = delay / 1000000;
         ts.tv_nsec = (delay % 1000000) * 1000;
         nanosleep(&ts, NULL);
@@ -260,6 +304,9 @@ static int grab_read_packet(AVFormatContext *s1, AVPacket *pkt)
 
     if (av_new_packet(pkt, s->frame_size) < 0)
         return -EIO;
+
+    if (dropped)
+        pkt->flags |= PKT_FLAG_DROPPED_FRAME;
 
     /* read one frame */
     if (s->use_mmap) {

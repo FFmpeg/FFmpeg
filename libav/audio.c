@@ -248,6 +248,11 @@ static int audio_read_packet(AVFormatContext *s1, AVPacket *pkt)
         ret = read(s->fd, pkt->data, pkt->size);
         if (ret > 0)
             break;
+        if (ret == -1 && (errno == EAGAIN || errno == EINTR)) {
+            av_free_packet(pkt);
+            pkt->size = 0;
+            return 0;
+        }
         if (!(ret == 0 || (ret == -1 && (errno == EAGAIN || errno == EINTR)))) {
             av_free_packet(pkt);
             return -EIO;

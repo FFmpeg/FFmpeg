@@ -101,7 +101,7 @@ offset_t url_fseek(ByteIOContext *s, offset_t offset, int whence)
     
     if (s->write_flag) {
         if (whence == SEEK_CUR) {
-            offset1 = s->pos + s->buf_ptr - s->buffer;
+            offset1 = s->pos + (s->buf_ptr - s->buffer);
             if (offset == 0)
                 return offset1;
             offset += offset1;

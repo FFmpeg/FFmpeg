@@ -9,14 +9,14 @@
 offset_t start_tag(ByteIOContext *pb, char *tag);
 void end_tag(ByteIOContext *pb, offset_t start);
 
-void put_bmp_header(ByteIOContext *pb, AVCodecContext *enc);
-int put_wav_header(ByteIOContext *pb, AVCodecContext *enc);
-int wav_codec_get_id(unsigned int tag, int bps);
-
 typedef struct CodecTag {
     int id;
     unsigned int tag;
 } CodecTag;
+
+void put_bmp_header(ByteIOContext *pb, AVCodecContext *enc, CodecTag *tags);
+int put_wav_header(ByteIOContext *pb, AVCodecContext *enc);
+int wav_codec_get_id(unsigned int tag, int bps);
 
 extern CodecTag codec_bmp_tags[];
 extern CodecTag codec_wav_tags[];

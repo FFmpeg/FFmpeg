@@ -39,7 +39,7 @@ enum {
 typedef struct FFMContext {
     /* only reading mode */
     offset_t write_index, file_size;
-    int read_state; 
+    int read_state;
     UINT8 header[FRAME_HEADER_SIZE];
 
     /* read and write */
@@ -59,9 +59,9 @@ static void flush_packet(AVFormatContext *s)
 
     fill_size = ffm->packet_end - ffm->packet_ptr;
     memset(ffm->packet_ptr, 0, fill_size);
-    
+
     /* put header */
-    put_be16(pb, PACKET_ID); 
+    put_be16(pb, PACKET_ID);
     put_be16(pb, fill_size);
     put_be64(pb, ffm->pts);
     h = ffm->frame_offset;
@@ -78,8 +78,8 @@ static void flush_packet(AVFormatContext *s)
 }
 
 /* 'first' is true if first data of a frame */
-static void ffm_write_data(AVFormatContext *s, 
-                           UINT8 *buf, int size, 
+static void ffm_write_data(AVFormatContext *s,
+                           UINT8 *buf, int size,
                            INT64 pts, int first)
 {
     FFMContext *ffm = s->priv_data;
@@ -96,7 +96,7 @@ static void ffm_write_data(AVFormatContext *s,
         if (len > size)
             len = size;
         memcpy(ffm->packet_ptr, buf, len);
-        
+
         ffm->packet_ptr += len;
         buf += len;
         size -= len;
@@ -125,7 +125,7 @@ static int ffm_write_header(AVFormatContext *s)
 
     s->priv_data = ffm;
     ffm->packet_size = FFM_PACKET_SIZE;
-    
+
     /* header */
     put_tag(pb, "FFM1");
     put_be32(pb, ffm->packet_size);
@@ -159,6 +159,11 @@ static int ffm_write_header(AVFormatContext *s)
             put_be32(pb, (codec->frame_rate * 1000) / FRAME_RATE_BASE);
             put_be16(pb, codec->width);
             put_be16(pb, codec->height);
+	    put_byte(pb, codec->qmin);
+	    put_byte(pb, codec->qmax);
+	    put_byte(pb, codec->max_qdiff);
+	    put_be16(pb, (int) (codec->qcompress * 10000.0));
+	    put_be16(pb, (int) (codec->qblur * 10000.0));
             break;
         case CODEC_TYPE_AUDIO:
             put_be32(pb, codec->sample_rate);
@@ -268,7 +273,7 @@ static int ffm_is_avail_data(AVFormatContext *s, int size)
 }
 
 /* first is true if we read the frame header */
-static int ffm_read_data(AVFormatContext *s, 
+static int ffm_read_data(AVFormatContext *s,
                           UINT8 *buf, int size, int first)
 {
     FFMContext *ffm = s->priv_data;
@@ -367,6 +372,11 @@ static int ffm_read_header(AVFormatContext *s, AVFormatParameters *ap)
             codec->frame_rate = ((INT64)get_be32(pb) * FRAME_RATE_BASE) / 1000;
             codec->width = get_be16(pb);
             codec->height = get_be16(pb);
+	    codec->qmin = get_byte(pb);
+	    codec->qmax = get_byte(pb);
+	    codec->max_qdiff = get_byte(pb);
+	    codec->qcompress = get_be16(pb) / 10000.0;
+	    codec->qblur = get_be16(pb) / 10000.0;
             break;
         case CODEC_TYPE_AUDIO:
             codec->sample_rate = get_be32(pb);
@@ -414,12 +424,12 @@ static int ffm_read_packet(AVFormatContext *s, AVPacket *pkt)
         if (!ffm_is_avail_data(s, FRAME_HEADER_SIZE))
             return -EAGAIN;
 #if 0
-        printf("pos=%08Lx spos=%Lx, write_index=%Lx size=%Lx\n", 
+        printf("pos=%08Lx spos=%Lx, write_index=%Lx size=%Lx\n",
                url_ftell(&s->pb), s->pb.pos, ffm->write_index, ffm->file_size);
 #endif
         if (ffm_read_data(s, ffm->header, FRAME_HEADER_SIZE, 1) != FRAME_HEADER_SIZE)
             return -EAGAIN;
-            
+
 #if 0
         {
             int i;
@@ -440,7 +450,7 @@ static int ffm_read_packet(AVFormatContext *s, AVPacket *pkt)
         pkt->stream_index = ffm->header[0];
         if (ffm->header[1] & FLAG_KEY_FRAME)
             pkt->flags |= PKT_FLAG_KEY;
-    
+
         ffm->read_state = READ_HEADER;
         if (ffm_read_data(s, pkt->data, size, 0) != size) {
             /* bad case: desynchronized packet. we cancel all the packet loading */
@@ -476,7 +486,7 @@ static INT64 get_pts(AVFormatContext *s, offset_t pos)
     ByteIOContext *pb = &s->pb;
     INT64 pts;
 
-    ffm_seek1(s, pos); 
+    ffm_seek1(s, pos);
     url_fskip(pb, 4);
     pts = get_be64(pb);
 #ifdef DEBUG_SEEK
@@ -506,7 +516,7 @@ static int ffm_seek(AVFormatContext *s, INT64 wanted_pts)
         pts_min = get_pts(s, pos_min);
         pts_max = get_pts(s, pos_max);
         /* linear interpolation */
-        pos1 = (double)(pos_max - pos_min) * (double)(wanted_pts - pts_min) / 
+        pos1 = (double)(pos_max - pos_min) * (double)(wanted_pts - pts_min) /
             (double)(pts_max - pts_min);
         pos = (((INT64)pos1) / FFM_PACKET_SIZE) * FFM_PACKET_SIZE;
         if (pos <= pos_min)
@@ -540,7 +550,7 @@ offset_t ffm_read_write_index(int fd)
     lseek(fd, 8, SEEK_SET);
     read(fd, buf, 8);
     pos = 0;
-    for(i=0;i<8;i++) 
+    for(i=0;i<8;i++)
         pos |= buf[i] << (56 - i * 8);
     return pos;
 }
@@ -550,7 +560,7 @@ void ffm_write_write_index(int fd, offset_t pos)
     UINT8 buf[8];
     int i;
 
-    for(i=0;i<8;i++) 
+    for(i=0;i<8;i++)
         buf[i] = (pos >> (56 - i * 8)) & 0xff;
     lseek(fd, 8, SEEK_SET);
     write(fd, buf, 8);

@@ -19,7 +19,7 @@ typedef struct URLFormat {
     int channels;
     int height;
     int width;
-    int pix_fmt;
+    enum PixelFormat pix_fmt;
 } URLFormat;
 
 typedef struct URLContext URLContext;

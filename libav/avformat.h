@@ -12,6 +12,7 @@ typedef struct AVPacket {
     int stream_index;
     int flags;
 #define PKT_FLAG_KEY   0x0001
+#define PKT_FLAG_DROPPED_FRAME   0x0002
 } AVPacket; 
 
 int av_new_packet(AVPacket *pkt, int size);
@@ -29,7 +30,7 @@ typedef struct AVFormatParameters {
     int channels;
     int width;
     int height;
-    int pix_fmt;
+    enum PixelFormat pix_fmt;
 } AVFormatParameters;
 
 typedef struct AVFormat {

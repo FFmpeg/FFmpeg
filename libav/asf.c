@@ -29,6 +29,7 @@ typedef struct {
     /* use for reading */
     AVPacket pkt;
     int frag_offset;
+    INT64 duration;
 } ASFStream;
 
 typedef struct {
@@ -119,6 +120,21 @@ static const GUID head2_guid = {
 static const GUID my_guid = {
     0, 0, 0, { 0, 0, 0, 0, 0, 0, 0, 0 },
 };
+
+CodecTag codec_asf_bmp_tags[] = {
+    { CODEC_ID_H263, MKTAG('U', '2', '6', '3') },
+    { CODEC_ID_H263P, MKTAG('U', '2', '6', '3') },
+    { CODEC_ID_H263I, MKTAG('I', '2', '6', '3') }, /* intel h263 */
+    { CODEC_ID_MJPEG, MKTAG('M', 'J', 'P', 'G') },
+    { CODEC_ID_MPEG4, MKTAG('D', 'I', 'V', 'X') },
+    { CODEC_ID_MPEG4, MKTAG('d', 'i', 'v', 'x') },
+    { CODEC_ID_MPEG4, MKTAG(0x04, 0, 0, 0) }, /* some broken avi use this */
+    { CODEC_ID_MSMPEG4, MKTAG('M', 'P', '4', '3') }, /* default signature when using MSMPEG4 */
+    { CODEC_ID_MSMPEG4, MKTAG('D', 'I', 'V', '3') }, 
+    { 0, 0 },
+};
+
+
 
 static void put_guid(ByteIOContext *s, const GUID *g)
 {
@@ -237,7 +253,7 @@ static int asf_write_header1(AVFormatContext *s, INT64 file_size, INT64 data_chu
     put_le64(pb, asf->duration); /* duration (in 100ns units) */
     put_le32(pb, 0); /* start time stamp */ 
     put_le32(pb, 0); /* ??? */ 
-    put_le32(pb, 0); /* ??? */ 
+    put_le32(pb, url_is_streamed(&s->pb) ? 1 : 0); /* ??? */ 
     put_le32(pb, asf->packet_size); /* packet size */
     put_le32(pb, asf->packet_size); /* packet size */
     put_le32(pb, 80 * asf->packet_size); /* frame_size ??? */
@@ -310,7 +326,7 @@ static int asf_write_header1(AVFormatContext *s, INT64 file_size, INT64 data_chu
             put_le16(pb, 40); /* size */
 
             /* BITMAPINFOHEADER header */
-            put_bmp_header(pb, enc);
+            put_bmp_header(pb, enc, codec_asf_bmp_tags);
         }
         end_header(pb, hpos);
     }
@@ -332,7 +348,7 @@ static int asf_write_header1(AVFormatContext *s, INT64 file_size, INT64 data_chu
             put_le16(pb, codec_get_tag(codec_wav_tags, enc->codec_id));
         } else {
             put_le16(pb, 4);
-            put_le32(pb, codec_get_tag(codec_bmp_tags, enc->codec_id));
+            put_le32(pb, codec_get_tag(codec_asf_bmp_tags, enc->codec_id));
         }
     }
     end_header(pb, hpos);
@@ -735,7 +751,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 get_le16(pb); /* depth */
                 tag1 = get_le32(pb);
                 st->codec.codec_tag = tag1;
-                st->codec.codec_id = codec_get_id(codec_bmp_tags, tag1);
+                st->codec.codec_id = codec_get_id(codec_asf_bmp_tags, tag1);
                 url_fskip(pb, size - 5 * 4);
             }
             pos2 = url_ftell(pb);
@@ -944,7 +960,11 @@ AVFormat asf_format = {
     "asf format",
     "application/octet-stream",
     "asf,wmv",
+#ifdef CONFIG_MP3LAME
+    CODEC_ID_MP3LAME,
+#else
     CODEC_ID_MP2,
+#endif
     CODEC_ID_MSMPEG4,
     asf_write_header,
     asf_write_packet,
