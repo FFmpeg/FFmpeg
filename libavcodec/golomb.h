@@ -283,7 +283,7 @@ static inline int get_sr_golomb_flac(GetBitContext *gb, int k, int limit, int es
 
 #ifdef TRACE
 
-static inline int get_ue(GetBitContext *s, char *file, char *func, int line){
+static inline int get_ue(GetBitContext *s, char *file, const char *func, int line){
     int show= show_bits(s, 24);
     int pos= get_bits_count(s);
     int i= get_ue_golomb(s);
@@ -297,7 +297,7 @@ static inline int get_ue(GetBitContext *s, char *file, char *func, int line){
     return i;
 }
 
-static inline int get_se(GetBitContext *s, char *file, char *func, int line){
+static inline int get_se(GetBitContext *s, char *file, const char *func, int line){
     int show= show_bits(s, 24);
     int pos= get_bits_count(s);
     int i= get_se_golomb(s);
@@ -311,7 +311,7 @@ static inline int get_se(GetBitContext *s, char *file, char *func, int line){
     return i;
 }
 
-static inline int get_te(GetBitContext *s, int r, char *file, char *func, int line){
+static inline int get_te(GetBitContext *s, int r, char *file, const char *func, int line){
     int show= show_bits(s, 24);
     int pos= get_bits_count(s);
     int i= get_te0_golomb(s, r);
