@@ -82,6 +82,11 @@ typedef struct AVCodecContext {
     int frame_rate; /* frames per sec multiplied by FRAME_RATE_BASE */
     int width, height;
     int aspect_ratio_info;
+#define FF_ASPECT_SQUARE 1
+#define FF_ASPECT_4_3_625 2
+#define FF_ASPECT_4_3_525 3
+#define FF_ASPECT_16_9_625 4
+#define FF_ASPECT_16_9_525 5
     int gop_size; /* 0 = intra only */
     int pix_fmt;  /* pixel format, see PIX_FMT_xxx */
 
