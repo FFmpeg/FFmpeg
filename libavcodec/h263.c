@@ -5164,21 +5164,18 @@ int ff_mpeg4_decode_picture_header(MpegEncContext * s, GetBitContext *gb)
             printf(" at %d\n", get_bits_count(gb));
         }
 
-        switch(startcode){
-        case 0x120:
+        if(startcode >= 0x120 && startcode <= 0x12F){
             if(decode_vol_header(s, gb) < 0) 
                 return -1;
-            break;
-        case USER_DATA_STARTCODE:
+        }
+        else if(startcode == USER_DATA_STARTCODE){
             decode_user_data(s, gb);
-            break;
-        case GOP_STARTCODE:
+        }
+        else if(startcode == GOP_STARTCODE){
             mpeg4_decode_gop_header(s, gb);
-            break;
-        case VOP_STARTCODE:
+        }
+        else if(startcode == VOP_STARTCODE){
             return decode_vop_header(s, gb);
-        default:
-            break;
         }
 
         align_get_bits(gb);
