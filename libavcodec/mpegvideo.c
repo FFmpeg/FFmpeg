@@ -174,7 +174,7 @@ int MPV_common_init(MpegEncContext *s)
         }
     }
     
-    if (s->out_format == FMT_H263) {
+    if (s->out_format == FMT_H263 || s->encoding) {
         int size;
         /* MV prediction */
         size = (2 * s->mb_width + 2) * (2 * s->mb_height + 2);
@@ -961,8 +961,9 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
     else if (s->h263_pred || s->h263_aic)
         s->mbintra_table[mb_x + mb_y*s->mb_width]=1;
 
-    /* update motion predictor, not for B-frames as they need the motion_val from the last P/S-Frame */
-    if (s->out_format == FMT_H263) {
+    /* update motion predictor, not for B-frames as they need the motion_val from the last P/S-Frame 
+       motion_val is needed for encodig too, as the ME needs it */
+    if (s->out_format == FMT_H263 || s->encoding) {
       if(s->pict_type!=B_TYPE){
         int xy, wrap, motion_x, motion_y;
         
