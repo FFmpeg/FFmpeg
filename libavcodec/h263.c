@@ -46,6 +46,7 @@ static int h263_decode_block(MpegEncContext * s, DCTELEM * block,
                              int n, int coded);
 static int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
                               int n, int coded);
+static int h263_pred_dc(MpegEncContext * s, int n, UINT16 **dc_val_ptr);
 static inline int mpeg4_pred_dc(MpegEncContext * s, int n, UINT16 **dc_val_ptr, int *dir_ptr);
 static void mpeg4_inv_pred_ac(MpegEncContext * s, INT16 *block, int n,
                               int dir);
@@ -128,7 +129,7 @@ void h263_encode_picture_header(MpegEncContext * s, int picture_number)
         put_bits(&s->pb, 1, s->umvplus); /* Unrestricted Motion Vector */
         put_bits(&s->pb,1,0); /* SAC: off */
         put_bits(&s->pb,1,0); /* Advanced Prediction Mode: off */
-        put_bits(&s->pb,1,0); /* Advanced Intra Coding: off */
+        put_bits(&s->pb,1,s->h263_aic); /* Advanced Intra Coding */
         put_bits(&s->pb,1,0); /* Deblocking Filter: off */
         put_bits(&s->pb,1,0); /* Slice Structured: off */
         put_bits(&s->pb,1,0); /* Reference Picture Selection: off */
@@ -142,7 +143,11 @@ void h263_encode_picture_header(MpegEncContext * s, int picture_number)
 		
         put_bits(&s->pb,1,0); /* Reference Picture Resampling: off */
         put_bits(&s->pb,1,0); /* Reduced-Resolution Update: off */
-        put_bits(&s->pb,1,0); /* Rounding Type */
+        if (s->pict_type == I_TYPE)
+            s->no_rounding = 0;
+        else
+            s->no_rounding ^= 1;
+        put_bits(&s->pb,1,s->no_rounding); /* Rounding Type */
         put_bits(&s->pb,2,0); /* Reserved */
         put_bits(&s->pb,1,1); /* "1" to prevent start code emulation */
 		
@@ -539,10 +544,13 @@ void h263_encode_mb(MpegEncContext * s,
 		    int motion_x, int motion_y)
 {
     int cbpc, cbpy, i, cbp, pred_x, pred_y;
-   
-    //    printf("**mb x=%d y=%d\n", s->mb_x, s->mb_y);
+    INT16 pred_dc;
+    INT16 rec_intradc[6];
+    UINT16 *dc_ptr[6];
+           
+    //printf("**mb x=%d y=%d\n", s->mb_x, s->mb_y);
     if (!s->mb_intra) {
-	   /* compute cbp */
+        /* compute cbp */
         cbp = 0;
         for (i = 0; i < 6; i++) {
             if (s->block_last_index[i] >= 0)
@@ -553,16 +561,16 @@ void h263_encode_mb(MpegEncContext * s,
             put_bits(&s->pb, 1, 1);
             return;
         }
-        put_bits(&s->pb, 1, 0);    /* mb coded */
+        put_bits(&s->pb, 1, 0);	/* mb coded */
         cbpc = cbp & 3;
         put_bits(&s->pb,
-                 inter_MCBPC_bits[cbpc],
-                 inter_MCBPC_code[cbpc]);
+		    inter_MCBPC_bits[cbpc],
+		    inter_MCBPC_code[cbpc]);
         cbpy = cbp >> 2;
         cbpy ^= 0xf;
         put_bits(&s->pb, cbpy_tab[cbpy][1], cbpy_tab[cbpy][0]);
 
-       /* motion vectors: 16x16 mode only now */
+        /* motion vectors: 16x16 mode only now */
         h263_pred_motion(s, 0, &pred_x, &pred_y);
       
         if (!s->umvplus) {  
@@ -573,41 +581,131 @@ void h263_encode_mb(MpegEncContext * s,
             h263p_encode_umotion(s, motion_x - pred_x);
             h263p_encode_umotion(s, motion_y - pred_y);
             if (((motion_x - pred_x) == 1) && ((motion_y - pred_y) == 1))
-            /* To prevent Start Code emulation */
+                /* To prevent Start Code emulation */
                 put_bits(&s->pb,1,1);
         }
-   } else {
-	/* compute cbp */
-	cbp = 0;
-	for (i = 0; i < 6; i++) {
-	    if (s->block_last_index[i] >= 1)
-		cbp |= 1 << (5 - i);
-	}
+    } else {
+        int li = s->h263_aic ? 0 : 1;
+        
+        cbp = 0;
+        for(i=0; i<6; i++) {
+            /* Predict DC */
+            if (s->h263_aic && s->mb_intra) {
+                INT16 level = block[i][0];
+            
+                pred_dc = h263_pred_dc(s, i, &dc_ptr[i]);
+                level -= pred_dc;
+                /* Quant */
+                if (level < 0)
+                    level = (level + (s->qscale >> 1))/(s->y_dc_scale);
+                else
+                    level = (level - (s->qscale >> 1))/(s->y_dc_scale);
+                    
+                /* AIC can change CBP */
+                if (level == 0 && s->block_last_index[i] == 0)
+                    s->block_last_index[i] = -1;
+                else if (level < -127)
+                    level = -127;
+                else if (level > 127)
+                    level = 127;
+                
+                block[i][0] = level;
+                /* Reconstruction */ 
+                rec_intradc[i] = (s->y_dc_scale*level) + pred_dc;
+                /* Oddify */
+                rec_intradc[i] |= 1;
+                //if ((rec_intradc[i] % 2) == 0)
+                //    rec_intradc[i]++;
+                /* Clipping */
+                if (rec_intradc[i] < 0)
+                    rec_intradc[i] = 0;
+                else if (rec_intradc[i] > 2047)
+                    rec_intradc[i] = 2047;
+                                
+                /* Update AC/DC tables */
+                *dc_ptr[i] = rec_intradc[i];
+            }
+            /* compute cbp */
+            if (s->block_last_index[i] >= li)
+                cbp |= 1 << (5 - i);
+        }
 
-	cbpc = cbp & 3;
-	if (s->pict_type == I_TYPE) {
-	    put_bits(&s->pb,
-		     intra_MCBPC_bits[cbpc],
-		     intra_MCBPC_code[cbpc]);
-	} else {
-	    put_bits(&s->pb, 1, 0);	/* mb coded */
-	    put_bits(&s->pb,
-		     inter_MCBPC_bits[cbpc + 4],
-		     inter_MCBPC_code[cbpc + 4]);
-	}
-	if (s->h263_pred) {
-	    /* XXX: currently, we do not try to use ac prediction */
-	    put_bits(&s->pb, 1, 0);	/* no ac prediction */
-	}
-	cbpy = cbp >> 2;
-	put_bits(&s->pb, cbpy_tab[cbpy][1], cbpy_tab[cbpy][0]);
+        cbpc = cbp & 3;
+        if (s->pict_type == I_TYPE) {
+            put_bits(&s->pb,
+                intra_MCBPC_bits[cbpc],
+                intra_MCBPC_code[cbpc]);
+        } else {
+            put_bits(&s->pb, 1, 0);	/* mb coded */
+            put_bits(&s->pb,
+                inter_MCBPC_bits[cbpc + 4],
+                inter_MCBPC_code[cbpc + 4]);
+        }
+        if (s->h263_aic) {
+            /* XXX: currently, we do not try to use ac prediction */
+            put_bits(&s->pb, 1, 0);	/* no AC prediction */
+        }
+        cbpy = cbp >> 2;
+        put_bits(&s->pb, cbpy_tab[cbpy][1], cbpy_tab[cbpy][0]);
     }
 
-    /* encode each block */
-    for (i = 0; i < 6; i++) {
+    for(i=0; i<6; i++) {
+        /* encode each block */
         h263_encode_block(s, block[i], i);
+    
+        /* Update INTRADC for decoding */
+        if (s->h263_aic && s->mb_intra) {
+            block[i][0] = rec_intradc[i];
+            
+        }
     }
 }
+
+static int h263_pred_dc(MpegEncContext * s, int n, UINT16 **dc_val_ptr)
+{
+    int x, y, wrap, a, c, pred_dc, scale;
+    INT16 *dc_val, *ac_val;
+
+    /* find prediction */
+    if (n < 4) {
+        x = 2 * s->mb_x + 1 + (n & 1);
+        y = 2 * s->mb_y + 1 + ((n & 2) >> 1);
+        wrap = s->mb_width * 2 + 2;
+        dc_val = s->dc_val[0];
+        ac_val = s->ac_val[0][0];
+        scale = s->y_dc_scale;
+    } else {
+        x = s->mb_x + 1;
+        y = s->mb_y + 1;
+        wrap = s->mb_width + 2;
+        dc_val = s->dc_val[n - 4 + 1];
+        ac_val = s->ac_val[n - 4 + 1][0];
+        scale = s->c_dc_scale;
+    }
+    /* B C
+     * A X 
+     */
+    a = dc_val[(x - 1) + (y) * wrap];
+    c = dc_val[(x) + (y - 1) * wrap];
+    
+    /* No prediction outside GOB boundary */
+    if (s->first_gob_line && ((n < 2) || (n > 3)))
+        c = 1024;
+    pred_dc = 1024;
+    /* just DC prediction */
+    if (a != 1024 && c != 1024)
+        pred_dc = (a + c) >> 1;
+    else if (a != 1024)
+        pred_dc = a;
+    else
+        pred_dc = c;
+    
+    /* we assume pred is positive */
+    //pred_dc = (pred_dc + (scale >> 1)) / scale;
+    *dc_val_ptr = &dc_val[x + y * wrap];
+    return pred_dc;
+}
+
 
 void h263_pred_acdc(MpegEncContext * s, INT16 *block, int n)
 {
@@ -640,6 +738,9 @@ void h263_pred_acdc(MpegEncContext * s, INT16 *block, int n)
     a = dc_val[(x - 1) + (y) * wrap];
     c = dc_val[(x) + (y - 1) * wrap];
     
+    /* No prediction outside GOB boundary */
+    if (s->first_gob_line && ((n < 2) || (n > 3)))
+        c = 1024;
     pred_dc = 1024;
     if (s->ac_pred) {
         if (s->h263_aic_dir) {
@@ -898,6 +999,7 @@ void h263_encode_init(MpegEncContext *s)
 
         init_rl(&rl_inter);
         init_rl(&rl_intra);
+        init_rl(&rl_intra_aic);
 
         init_mv_penalty_and_fcode(s);
     }
@@ -928,11 +1030,11 @@ void h263_encode_init(MpegEncContext *s)
 
 static void h263_encode_block(MpegEncContext * s, DCTELEM * block, int n)
 {
-    int level, run, last, i, j, last_index, last_non_zero, sign, slevel;
-    int code;
-    RLTable *rl = &rl_inter;
+    int level, run, last, i, j, last_index, last_non_zero, sign, slevel, code;
+    RLTable *rl;
 
-    if (s->mb_intra) {
+    rl = &rl_inter;
+    if (s->mb_intra && !s->h263_aic) {
         /* DC coef */
 	    level = block[0];
         /* 255 cannot be represented, so we clamp */
@@ -952,23 +1054,25 @@ static void h263_encode_block(MpegEncContext * s, DCTELEM * block, int n)
 	    i = 1;
     } else {
 	    i = 0;
+	    if (s->h263_aic && s->mb_intra)
+	        rl = &rl_intra_aic;
     }
-
+   
     /* AC coefs */
     last_index = s->block_last_index[n];
     last_non_zero = i - 1;
     for (; i <= last_index; i++) {
-	j = zigzag_direct[i];
-	level = block[j];
-	if (level) {
-	    run = i - last_non_zero - 1;
-	    last = (i == last_index);
-	    sign = 0;
-	    slevel = level;
-	    if (level < 0) {
-		sign = 1;
-		level = -level;
-	    }
+        j = zigzag_direct[i];
+        level = block[j];
+        if (level) {
+            run = i - last_non_zero - 1;
+            last = (i == last_index);
+            sign = 0;
+            slevel = level;
+            if (level < 0) {
+                sign = 1;
+                level = -level;
+            }
             code = get_rl_index(rl, last, run, level);
             put_bits(&s->pb, rl->table_vlc[code][1], rl->table_vlc[code][0]);
             if (code == rl->n) {
@@ -978,8 +1082,8 @@ static void h263_encode_block(MpegEncContext * s, DCTELEM * block, int n)
             } else {
                 put_bits(&s->pb, 1, sign);
             }
-	    last_non_zero = i;
-	}
+	        last_non_zero = i;
+	    }
     }
 }
 
@@ -2628,7 +2732,7 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
             skip_bits(&s->gb, 8); // par_height
         }
 
-        if(vol_control=get_bits1(&s->gb)){ /* vol control parameter */
+        if ((vol_control=get_bits1(&s->gb))) { /* vol control parameter */
             int chroma_format= get_bits(&s->gb, 2);
             if(chroma_format!=1){
                 printf("illegal chroma format\n");

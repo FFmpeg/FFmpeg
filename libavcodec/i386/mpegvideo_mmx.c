@@ -557,12 +557,12 @@ void MPV_common_init_mmx(MpegEncContext *s)
         s->dct_unquantize_mpeg1 = dct_unquantize_mpeg1_mmx;
         s->dct_unquantize_mpeg2 = dct_unquantize_mpeg2_mmx;
 
-	draw_edges = draw_edges_mmx;
+        draw_edges = draw_edges_mmx;
 
-	if(mm_flags & MM_MMXEXT){
-	        dct_quantize= dct_quantize_MMX2;
-	}else{
-		dct_quantize= dct_quantize_MMX;
-	}
+        if(mm_flags & MM_MMXEXT){
+            dct_quantize= dct_quantize_MMX2;
+        } else {
+            dct_quantize= dct_quantize_MMX;
+        }
     }
 }

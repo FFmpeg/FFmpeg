@@ -28,7 +28,6 @@
 static int h263_decode_init(AVCodecContext *avctx)
 {
     MpegEncContext *s = avctx->priv_data;
-    int i;
 
     s->avctx = avctx;
     s->out_format = FMT_H263;

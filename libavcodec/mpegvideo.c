@@ -449,6 +449,7 @@ int MPV_encode_init(AVCodecContext *avctx)
         s->rtp_payload_size = 1200; 
         s->h263_plus = 1;
         s->unrestricted_mv = 1;
+        s->h263_aic = 1;
         
         /* These are just to be sure */
         s->umvplus = 0;
@@ -542,7 +543,7 @@ int MPV_encode_init(AVCodecContext *avctx)
     }
 
     /* precompute matrix */
-        /* for mjpeg, we do include qscale in the matrix */
+    /* for mjpeg, we do include qscale in the matrix */
     if (s->out_format != FMT_MJPEG) {
         convert_matrix(s->q_intra_matrix, s->q_intra_matrix16, s->q_intra_matrix16_bias, 
                        s->intra_matrix, s->intra_quant_bias);
@@ -1338,8 +1339,8 @@ static inline void clip_coeffs(MpegEncContext *s, DCTELEM *block, int last_index
     int i;
     const int maxlevel= s->max_qcoeff;
     const int minlevel= s->min_qcoeff;
-
-    for(i=0; i<=last_index; i++){
+        
+    for(i=0;i<=last_index; i++){
         const int j = zigzag_direct[i];
         int level = block[j];
        
@@ -1441,6 +1442,9 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
     /* DCT & quantize */
     if (s->h263_pred && s->msmpeg4_version!=2) {
         h263_dc_scale(s);
+    } else if (s->h263_aic) {
+        s->y_dc_scale = 2*s->qscale;
+        s->c_dc_scale = 2*s->qscale;
     } else {
         /* default quantization values */
         s->y_dc_scale = 8;
@@ -1450,14 +1454,16 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
         for(i=0;i<6;i++) {
             int overflow;
             s->block_last_index[i] = dct_quantize(s, s->block[i], i, 8, &overflow);
-            if(overflow) clip_coeffs(s, s->block[i], s->block_last_index[i]);
+            if (overflow) clip_coeffs(s, s->block[i], s->block_last_index[i]);
         }
     }else{
         for(i=0;i<6;i++) {
             int overflow;
             s->block_last_index[i] = dct_quantize(s, s->block[i], i, s->qscale, &overflow);
             // FIXME we could decide to change to quantizer instead of clipping
-            if(overflow) clip_coeffs(s, s->block[i], s->block_last_index[i]);
+            // JS: I don't think that would be a good idea it could lower quality instead
+            //     of improve it. Just INTRADC clipping deserves changes in quantizer
+            if (overflow) clip_coeffs(s, s->block[i], s->block_last_index[i]);
         }
     }
 
@@ -2018,12 +2024,16 @@ static int dct_quantize_c(MpegEncContext *s,
     block_permute(block);
 
     if (s->mb_intra) {
-        if (n < 4)
-            q = s->y_dc_scale;
-        else
-            q = s->c_dc_scale;
-        q = q << 3;
-        
+        if (!s->h263_aic) {
+            if (n < 4)
+                q = s->y_dc_scale;
+            else
+                q = s->c_dc_scale;
+            q = q << 3;
+        } else
+            /* For AIC we skip quant/dequant of INTRADC */
+            q = 1 << 3;
+            
         /* note: block[0] is assumed to be positive */
         block[0] = (block[0] + (q >> 1)) / q;
         i = 1;

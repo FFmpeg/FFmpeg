@@ -32,8 +32,8 @@
 #define ROW_SHIFT 11
 #define COL_SHIFT 20 // 6
 
-static uint64_t __attribute__((aligned(8))) wm1010= 0xFFFF0000FFFF0000ULL;
-static uint64_t __attribute__((aligned(8))) d40000= 0x0000000000040000ULL;
+static const uint64_t __attribute__((aligned(8))) wm1010= 0xFFFF0000FFFF0000ULL;
+static const uint64_t __attribute__((aligned(8))) d40000= 0x0000000000040000ULL;
 static int16_t __attribute__((aligned(8))) temp[64];
 static int16_t __attribute__((aligned(8))) coeffs[]= {
 	1<<(ROW_SHIFT-1), 0, 1<<(ROW_SHIFT-1), 0,
@@ -63,12 +63,12 @@ static int16_t __attribute__((aligned(8))) coeffs[]= {
  C3, -C1,  C3, -C1
 };
 
+#if 0
 static void unused_var_killer(){
 	int a= wm1010 + d40000;
 	temp[0]=a;
 }
 
-#if 0
 static void inline idctCol (int16_t * col, int16_t *input)
 {
 #undef C0

@@ -337,7 +337,6 @@ static int rv10_decode_picture_header(MpegEncContext *s)
 static int rv10_decode_init(AVCodecContext *avctx)
 {
     MpegEncContext *s = avctx->priv_data;
-    int i;
     static int done;
 
 //    s->avctx= avctx;

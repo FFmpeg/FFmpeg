@@ -48,6 +48,7 @@ static int RENAME(dct_quantize)(MpegEncContext *s,
         else
             q = s->c_dc_scale;
         /* note: block[0] is assumed to be positive */
+        if (!s->h263_aic) {
 #if 1
         asm volatile (
         	"xorl %%edx, %%edx	\n\t"
@@ -65,6 +66,10 @@ static int RENAME(dct_quantize)(MpegEncContext *s,
         	: "%edx"
         );
 #endif
+        } else
+            /* For AIC we skip quant/dequant of INTRADC */
+            level = block[0];
+            
         block[0]=0; //avoid fake overflow
 //        temp_block[0] = (block[0] + (q >> 1)) / q;
         last_non_zero_p1 = 1;
