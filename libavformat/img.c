@@ -16,6 +16,7 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
+#include <unistd.h>
 #include "avformat.h"
 
 extern AVInputFormat pgm_iformat;
@@ -54,6 +55,8 @@ typedef struct {
     int header_written;
     char path[1024];
 } VideoData;
+
+int emulate_frame_rate;
 
 static inline int pnm_space(int c)  
 {
@@ -190,6 +193,23 @@ static int img_read_packet(AVFormatContext *s1, AVPacket *pkt)
     char filename[1024];
     int ret;
     ByteIOContext f1, *f;
+    static INT64 first_frame;
+
+    if (emulate_frame_rate) {
+        if (!first_frame) {
+            first_frame = av_gettime();
+        } else {
+            INT64 pts;
+            INT64 nowus;
+
+            nowus = av_gettime() - first_frame;
+
+            pts = ((INT64)s->img_number * FRAME_RATE_BASE * 1000000) / (s1->streams[0]->codec.frame_rate);
+
+            if (pts > nowus)
+                usleep(pts - nowus);
+        }
+    }
 
 /*
     This if-statement destroys pipes - I do not see why it is necessary
