@@ -472,7 +472,7 @@ s_xinc&= -2; //clear last bit or uv and y might be shifted relative to each othe
 #ifdef HAVE_MMX
 	//FIXME write lq version with less uv ...
 	//FIXME reorder / optimize
-	if(dstbpp == 4)
+	if(dstbpp == 32)
 	{
 		asm volatile(
 
@@ -555,7 +555,7 @@ YSCALEYUV2RGB
 		: "%eax"
 		);
 	}
-	else if(dstbpp==2)
+	else if(dstbpp==16)
 	{
 		asm volatile(
 
@@ -590,7 +590,7 @@ YSCALEYUV2RGB
 		);
 	}
 #else
-	if(dstbpp==4 || dstbpp==3)
+	if(dstbpp==32 || dstbpp==24)
 	{
 		for(i=0;i<dstw;i++){
 			// vertical linear interpolation && yuv2rgb in a single step:
@@ -600,10 +600,10 @@ YSCALEYUV2RGB
 			dest[0]=clip_table[((Y + yuvtab_3343[U]) >>13)];
 			dest[1]=clip_table[((Y + yuvtab_0c92[V] + yuvtab_1a1e[U]) >>13)];
 			dest[2]=clip_table[((Y + yuvtab_40cf[V]) >>13)];
-			dest+=dstbpp;
+			dest+=dstbpp>>3;
 		}
 	}
-	else if(dstbpp==2) //16bit
+	else if(dstbpp==16) //16bit
 	{
 		for(i=0;i<dstw;i++){
 			// vertical linear interpolation && yuv2rgb in a single step:
@@ -615,10 +615,10 @@ YSCALEYUV2RGB
 				(clip_table[((Y + yuvtab_3343[U]) >>13)]>>3) |
 				(clip_table[((Y + yuvtab_0c92[V] + yuvtab_1a1e[U]) >>13)]<<3)&0x07E0 |
 				(clip_table[((Y + yuvtab_40cf[V]) >>13)]<<8)&0xF800;
-			dest+=dstbpp;
+			dest+=2;
 		}
 	}
-	else if(dstbpp==2) //15bit FIXME how do i figure out if its 15 or 16?
+	else if(dstbpp==15) //15bit FIXME how do i figure out if its 15 or 16?
 	{
 		for(i=0;i<dstw;i++){
 			// vertical linear interpolation && yuv2rgb in a single step:
@@ -630,7 +630,7 @@ YSCALEYUV2RGB
 				(clip_table[((Y + yuvtab_3343[U]) >>13)]>>3) |
 				(clip_table[((Y + yuvtab_0c92[V] + yuvtab_1a1e[U]) >>13)]<<2)&0x03E0 |
 				(clip_table[((Y + yuvtab_40cf[V]) >>13)]<<7)&0x7C00;
-			dest+=dstbpp;
+			dest+=2;
 		}
 	}
 #endif
