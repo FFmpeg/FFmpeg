@@ -420,7 +420,7 @@ static void put_str(ByteIOContext *bc, const char *string){
     put_buffer(bc, string, len);
 }
 
-static void put_s(ByteIOContext *bc, uint64_t val){
+static void put_s(ByteIOContext *bc, int64_t val){
     if (val<=0) put_v(bc, -2*val  );
     else        put_v(bc,  2*val-1);
 }
