@@ -49,6 +49,9 @@ static int yuv4_generate_header(AVFormatContext *s, char* buf)
     }
 
     switch(st->codec.pix_fmt) {
+    case PIX_FMT_GRAY8:
+        colorspace = " Cmono";
+        break;
     case PIX_FMT_YUV411P:
         colorspace = " C411 XYSCSS=411";
         break;
@@ -115,6 +118,7 @@ static int yuv4_write_packet(AVFormatContext *s, AVPacket *pkt)
         ptr += picture->linesize[0];
     }
 
+    if (st->codec.pix_fmt != PIX_FMT_GRAY8){
     // Adjust for smaller Cb and Cr planes
     avcodec_get_chroma_sub_sample(st->codec.pix_fmt, &h_chroma_shift, &v_chroma_shift);
     width >>= h_chroma_shift;
@@ -129,6 +133,7 @@ static int yuv4_write_packet(AVFormatContext *s, AVPacket *pkt)
     for(i=0;i<height;i++) {	/* Cr */
         put_buffer(pb, ptr2, width);
             ptr2 += picture->linesize[2];
+    }
     }
     put_flush_packet(pb);
     return 0;
@@ -146,8 +151,9 @@ static int yuv4_write_header(AVFormatContext *s)
     } 
     else if ((s->streams[0]->codec.pix_fmt != PIX_FMT_YUV420P) && 
              (s->streams[0]->codec.pix_fmt != PIX_FMT_YUV422P) && 
+             (s->streams[0]->codec.pix_fmt != PIX_FMT_GRAY8) && 
              (s->streams[0]->codec.pix_fmt != PIX_FMT_YUV444P)) {
-        av_log(s, AV_LOG_ERROR, "ERROR: yuv4mpeg only handles 4:4:4, 4:2:2, 4:2:0 and 4:1:1 planar YUV data. Use -pix_fmt to select one.\n");
+        av_log(s, AV_LOG_ERROR, "ERROR: yuv4mpeg only handles yuv444p, yuv422p, yuv420p, yuv411p and gray pixel formats. Use -pix_fmt to select one.\n");
 	return AVERROR_IO;
     }
     
@@ -229,8 +235,7 @@ static int yuv4_read_header(AVFormatContext *s, AVFormatParameters *ap)
             } else if (strncmp("444", tokstart, 3)==0)
                 pix_fmt = PIX_FMT_YUV444P;
             else if (strncmp("mono",tokstart, 4)==0) {
-                av_log(s, AV_LOG_ERROR, "Cannot handle luma only YUV4MPEG stream.\n");
-                return -1;
+                pix_fmt = PIX_FMT_GRAY8;
             } else {
                 av_log(s, AV_LOG_ERROR, "YUV4MPEG stream contains an unknown pixel format.\n");
                 return -1;
