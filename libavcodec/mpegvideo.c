@@ -886,6 +886,11 @@ int MPV_encode_init(AVCodecContext *avctx)
         return -1;
     }
     
+    if(s->avctx->thread_count > MAX_THREADS || 16*s->avctx->thread_count > s->height){
+        av_log(avctx, AV_LOG_ERROR, "too many threads\n");
+        return -1;
+    }
+    
     if(s->avctx->thread_count > 1)
         s->rtp_mode= 1;
 
