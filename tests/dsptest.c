@@ -17,10 +17,22 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 #define TESTCPU_MAIN
+#include "avcodec.h"
 #include "dsputil.h"
-//#include "../libavcodec/dsputil.c"
+#include "mpegvideo.h"
+#include "mpeg12data.h"
+#include "mpeg4data.h"
 #include "../libavcodec/i386/cputest.c"
 #include "../libavcodec/i386/dsputil_mmx.c"
+
+#include "../libavcodec/i386/fdct_mmx.c"
+#include "../libavcodec/i386/idct_mmx.c"
+#include "../libavcodec/i386/motion_est_mmx.c"
+#include "../libavcodec/i386/simple_idct_mmx.c"
+#include "../libavcodec/dsputil.c"
+#include "../libavcodec/simple_idct.c"
+#include "../libavcodec/jfdctfst.c"
+
 #undef TESTCPU_MAIN
 
 #define PAD 0x10000
@@ -62,6 +74,8 @@ static const struct pix_func {
 } pix_func[] = {
 
     PIX_FUNC_MMX(put_pixels),
+    //PIX_FUNC_MMX(get_pixels),
+    //PIX_FUNC_MMX(put_pixels_clamped),
 #if 1
     PIX_FUNC(put_pixels_x2),
     PIX_FUNC(put_pixels_y2),
@@ -75,6 +89,11 @@ static const struct pix_func {
     PIX_FUNC(avg_pixels_x2),
     PIX_FUNC(avg_pixels_y2),
     PIX_FUNC(avg_pixels_xy2),
+
+    PIX_FUNC_MMX(avg_no_rnd_pixels),
+    PIX_FUNC_MMX(avg_no_rnd_pixels_x2),
+    PIX_FUNC_MMX(avg_no_rnd_pixels_y2),
+    PIX_FUNC_MMX(avg_no_rnd_pixels_xy2),
 #endif
     { 0, 0 }
 };
@@ -104,25 +123,25 @@ static test_speed(int step)
         op_pixels_func func = pix->func;
 	char* im = bu;
 
-	if (!(pix->mm_flags & mm_flags))
-            continue;
-
-	printf("%30s... ", pix->name);
-        fflush(stdout);
-	ts = rdtsc();
-	for(i=0; i<100000; i++){
-	    func(im, im + 1000, linesize, 16);
-	    im += step;
-	    if (im > bu + 20000)
-		im = bu;
+	if (pix->mm_flags & mm_flags)
+	{
+	    printf("%30s... ", pix->name);
+	    fflush(stdout);
+	    ts = rdtsc();
+	    for(i=0; i<100000; i++){
+		func(im, im + 1000, linesize, 16);
+		im += step;
+		if (im > bu + 20000)
+		    im = bu;
+	    }
+	    te = rdtsc();
+	    emms();
+	    printf("% 9d\n", (int)(te - ts));
+	    sum += (te - ts) / 100000;
+	    if (pix->mm_flags & PAD)
+		puts("");
 	}
-	te = rdtsc();
-        emms();
-	printf("% 9d\n", (int)(te - ts));
-        sum += (te - ts) / 100000;
-	if (pix->mm_flags & PAD)
-            puts("");
-        pix++;
+	pix++;
     }
 
     printf("Total sum: %d\n", sum);
