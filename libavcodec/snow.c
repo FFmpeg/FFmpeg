@@ -326,6 +326,12 @@ static const uint8_t obmc16[256]={
 };
 #endif
 
+typedef struct QTree{
+    int treedim[MAX_DECOMPOSITIONS][2];
+    uint8_t *tree[MAX_DECOMPOSITIONS];
+    int max_level;
+    int stride;
+}QTree;
 
 typedef struct SubBand{
     int level;
@@ -334,6 +340,7 @@ typedef struct SubBand{
     int height;
     int qlog;                                   ///< log(qscale)/log[2^(1/6)]
     DWTELEM *buf;
+    QTree tree;
     struct SubBand *parent;
     uint8_t state[/*7*2*/ 7 + 512][32];
 }SubBand;
@@ -491,6 +498,44 @@ static inline int get_symbol(CABACContext *c, uint8_t *state, int is_signed){
         else
             return a;
     }
+}
+
+static inline void put_symbol2(CABACContext *c, uint8_t *state, int v, int log2){
+    int i;
+    int e= av_log2(v<<1);
+
+    assert(v>=0);
+    if(v==0) assert(e==0);
+    
+    while(e > log2){
+        put_cabac(c, state+log2, 1);
+        v -= 1<<log2;
+        assert(v>=0);
+        e= av_log2(v<<1);
+        log2++;
+    }
+    put_cabac(c, state+log2, 0);
+    
+    for(i=log2-1; i>=0; i--){
+        put_cabac(c, state+31-i, (v>>i)&1);
+    }
+    assert(!((v>>i)&1));
+}
+
+static inline int get_symbol2(CABACContext *c, uint8_t *state, int log2){
+    int i;
+    int v=0;
+
+    while(get_cabac(c, state+log2)){
+        v+= 1<<log2;
+        log2++;
+    }
+    
+    for(i=log2-1; i>=0; i--){
+        v+= get_cabac(c, state+31-i)<<i;
+    }
+
+    return v;
 }
 
 static always_inline void lift(DWTELEM *dst, DWTELEM *src, DWTELEM *ref, int dst_step, int src_step, int ref_step, int width, int mul, int add, int shift, int highpass, int inverse){
@@ -1272,13 +1317,614 @@ static int sig_cmp(const void *a, const void *b){
     else               return da[0] - db[0];
 }
 
+static int alloc_qtree(QTree *t, int w, int h){
+    int lev, x, y, tree_h;
+    int w2= w;
+    int h2= h;
+    
+    t->stride=0;
+    t->max_level= av_log2(2*FFMAX(w,h)-1);
 
-static void encode_subband(SnowContext *s, SubBand *b, DWTELEM *src, DWTELEM *parent, int stride, int orientation){
+    for(lev=t->max_level; lev>=0; lev--){
+        if(lev!=t->max_level) 
+            t->stride += w2;
+        t->treedim[lev][0]= w2;
+        t->treedim[lev][1]= h2;
+av_log(NULL, AV_LOG_DEBUG, "alloc %p %d %d %d\n", t, w2, h2, t->max_level);
+        w2= (w2+1)>>1;
+        h2= (h2+1)>>1;
+    }
+    t->stride= FFMAX(t->stride, w);
+    tree_h= h + t->treedim[t->max_level-1][1];
+
+    t->tree[t->max_level]= av_mallocz(t->stride * tree_h);
+    t->tree[t->max_level-1]= t->tree[t->max_level] + h*t->stride;
+    
+    for(lev=t->max_level-2; lev>=0; lev--){
+        t->tree[lev]= t->tree[lev+1] + t->treedim[lev+1][0];
+    }
+    return 0;
+}
+
+static void free_qtree(QTree *t){
+    if(t && t->tree);
+        av_freep(&t->tree[t->max_level]);
+}
+
+static void init_quandtree(QTree *t, DWTELEM *src, int w, int h, int stride){
+    const int max_level= t->max_level;
+    const int tree_stride= t->stride;
+    uint8_t **tree= t->tree;
+    int lev, x, y, tree_h, w2, h2;
+    
+//av_log(NULL, AV_LOG_DEBUG, "init %p %d %d %d %d %d\n", t, w, h, t->max_level, t->treedim[max_level][0], t->treedim[max_level][1]);
+    assert(w==t->treedim[max_level][0]);
+    assert(h==t->treedim[max_level][1]);
+    
+    for(y=0; y<h; y++){
+        for(x=0; x<w; x++){
+            tree[max_level][x + y*tree_stride]= clip(ABS(src[x + y*stride]), 0, 16);
+        }
+    }
+
+    for(lev=max_level-1; lev>=0; lev--){
+        w2= t->treedim[lev+1][0]>>1;
+        h2= t->treedim[lev+1][1]>>1;
+        for(y=0; y<h2; y++){
+            for(x=0; x<w2; x++){
+                tree[lev][x + y*tree_stride]=clip(  (tree[lev+1][2*x +      2*y   *tree_stride])
+                                                  + (tree[lev+1][2*x + 1 +  2*y   *tree_stride])
+                                                  + (tree[lev+1][2*x +     (2*y+1)*tree_stride]) 
+                                                  + (tree[lev+1][2*x + 1 + (2*y+1)*tree_stride])+3, 0, 64)/4;
+            }
+        }
+        if(w2 != t->treedim[lev][0]){
+            for(y=0; y<h2; y++){
+                tree[lev][w2 + y*tree_stride]=clip( (tree[lev+1][2*w2 +  2*y   *tree_stride])
+                                                   +(tree[lev+1][2*w2 + (2*y+1)*tree_stride])+3, 0, 64)/4;
+            }
+        }
+        if(h2 != t->treedim[lev][1]){
+            for(x=0; x<w2; x++){
+                tree[lev][x + h2*tree_stride]=clip( (tree[lev+1][2*x +     2*h2*tree_stride]) 
+                                                   +(tree[lev+1][2*x + 1 + 2*h2*tree_stride])+3, 0, 64)/4;
+            }
+        }
+        if(w2 != t->treedim[lev][0] && h2 != t->treedim[lev][1]){
+                tree[lev][w2 + h2*tree_stride]=  tree[lev+1][2*w2 +  2*h2*tree_stride];
+        }
+    }
+}
+
+int white_leaf, gray_leaf;
+
+static void encode_branch(SnowContext *s, SubBand *b, DWTELEM *src, DWTELEM *parent, int stride, int lev, int x, int y, int first){
+    const int  max_level= b->tree.max_level;
+    const int pmax_level= b->parent ? b->parent->tree.max_level : 0;
+    const int tree_stride= b->tree.stride;
+    const int ptree_stride= b->parent ? b->parent->tree.stride : 0;
+    int (*treedim)[2]= b->tree.treedim;
+    int (*ptreedim)[2]= b->parent ? b->parent->tree.treedim : NULL;
+    uint8_t **tree= b->tree.tree;
+    uint8_t **ptree= b->parent ? b->parent->tree.tree : NULL;
+//    int w2=w, h2=h;
+
+    int l=0, t=0, lt=0, p=0;
+    int v= tree[lev][x + y*tree_stride];
+    int context, sig;
+    if(!first && !tree[lev-1][x/2 + y/2*tree_stride])
+        return;
+
+    if(x) l= tree[lev][x - 1 + y*tree_stride];
+    if(y){
+        t= tree[lev][x + (y-1)*tree_stride];
+        if(x) lt= tree[lev][x - 1 + (y-1)*tree_stride];
+    }
+    if(lev < max_level && parent && x<ptreedim[lev][0] && y<ptreedim[lev][1])
+        p= ptree[lev - max_level + pmax_level + 1][x + y*ptree_stride];
+
+    if(lev != max_level)
+        context= lev + 32*av_log2(2*(3*(l) + 2*(t) + (lt) + 2*(p)));
+    else{
+            int p=0, l=0, lt=0, t=0, rt=0;
+
+            if(y){
+                t= src[x + (y-1)*stride];
+                if(x)
+                    lt= src[x - 1 + (y-1)*stride];
+            }
+            if(x)
+                l= src[x - 1 + y*stride];
+
+
+            if(parent){
+                int px= x>>1;
+                int py= y>>1;
+                if(px<b->parent->width && py<b->parent->height){
+                    p= parent[px + py*2*stride];
+                }
+            }
+            context= lev + 32*av_log2(2*(3*ABS(l) + 2*ABS(t) + ABS(lt) + ABS(p)));
+    }
+
+    if(     (x&1) && l) sig=1;
+    else if((y&1) && t) sig=1;
+    else if((x&1) && (y&1) && lt) sig=1;
+    else sig=0;
+
+    if(!first){
+        if(sig) context+= 8+16;
+        else    context+= 8*(x&1) + 16*(y&1);
+    }
+
+    if(l||t||lt||(x&1)==0||(y&1)==0||first){
+        put_cabac(&s->c, &b->state[98][context], !!v);
+    }else
+        assert(v);
+
+    if(v){
+        if(lev==max_level){
+            int p=0;
+            int /*ll=0, */l=0, lt=0, t=0;
+            int v= src[x + y*stride];
+
+            if(y){
+                t= src[x + (y-1)*stride];
+                if(x){
+                    lt= src[x - 1 + (y-1)*stride];
+                }
+            }
+            if(x){
+                l= src[x - 1 + y*stride];
+            }
+
+            if(parent){
+                int px= x>>1;
+                int py= y>>1;
+                if(px<b->parent->width && py<b->parent->height){
+                    p= parent[px + py*2*stride];
+                }
+            }
+            {
+                int context= av_log2(/*ABS(ll) + */3*ABS(l) + ABS(lt) + 2*ABS(t) + ABS(p)
+                                                 /*+ 3*(!!r)            + 2*(!!d)*/);
+
+                put_symbol(&s->c, b->state[context + 2], ABS(v)-1, 0);
+                put_cabac(&s->c, &b->state[0][16 + 1 + 3 + quant3b[l&0xFF] + 3*quant3b[t&0xFF]], v<0);
+                assert(tree[max_level][x + y*tree_stride]);
+                assert(tree[max_level-1][x/2 + y/2*tree_stride]);
+            }
+            gray_leaf++;
+        }else{
+            int r= 2*x+1 < treedim[lev+1][0];
+            int d= 2*y+1 < treedim[lev+1][1];
+            encode_branch        (s, b, src, parent, stride, lev+1, 2*x  , 2*y  , 0);
+            if(r)   encode_branch(s, b, src, parent, stride, lev+1, 2*x+1, 2*y  , 0);
+            if(d)   encode_branch(s, b, src, parent, stride, lev+1, 2*x  , 2*y+1, 0);
+            if(r&&d)encode_branch(s, b, src, parent, stride, lev+1, 2*x+1, 2*y+1, 0);
+        }
+    }
+}
+
+static void encode_subband_qtree(SnowContext *s, SubBand *b, DWTELEM *src, DWTELEM *parent, int stride, int orientation){
+    const int level= b->level;
+    const int w= b->width;
+    const int h= b->height;
+    int x, y, i;
+
+    init_quandtree(&b->tree, src, b->width, b->height, stride);
+
+    if(parent){
+        init_quandtree(&b->parent->tree, parent, b->parent->width, b->parent->height, 2*stride);
+    }
+    
+    for(i=0; i<b->tree.max_level; i++){
+        int count=0;
+        for(y=0; y<b->tree.treedim[i][1]; y++){
+            for(x=0; x<b->tree.treedim[i][0]; x++){
+                if(b->tree.tree[i][x + y*b->tree.stride]) 
+                    count++;
+            }
+        }
+        if(2*count < b->tree.treedim[i][1]*b->tree.treedim[i][0])
+            break;
+    }
+    
+    //FIXME try recursive scan
+    for(y=0; y<b->tree.treedim[i][1]; y++){
+        for(x=0; x<b->tree.treedim[i][0]; x++){
+            encode_branch(s, b, src, parent, stride, i, x, y, 1);
+        }
+    }
+//    encode_branch(s, b, src, parent, stride, 0, 0, 0, 1);
+//    av_log(NULL, AV_LOG_DEBUG, "%d %d\n", gray_leaf, white_leaf);
+#if 0         
+    for(lev=0; lev<=max_level; lev++){
+        w2= treedim[lev][0];
+        h2= treedim[lev][1];
+        for(y=0; y<h2; y++){
+            for(x=0; x<w2; x++){
+                int l= 0, t=0, rt=0, lt=0, p=0;
+                int v= tree[lev][x + y*tree_stride];
+                int context, sig;
+                if(lev && !tree[lev-1][x/2 + y/2*tree_stride])
+                    continue;
+
+                if(x) l= tree[lev][x - 1 + y*tree_stride];
+                if(y){
+                    t= tree[lev][x + (y-1)*tree_stride];
+                    if(x) lt= tree[lev][x - 1 + (y-1)*tree_stride];
+                    if(x+1<w2) rt= tree[lev][x + 1 + (y-1)*tree_stride];
+                }
+                if(lev < max_level && parent && x<ptreedim[lev][0] && y<ptreedim[lev][1])
+                    p= ptree[lev][x + y*ptree_stride];
+
+                context= lev + 32*av_log2(2*(3*l + 2*t + lt + rt + 8*p));
+                
+                if(     (x&1) && l) sig=1;
+                else if((y&1) && t) sig=1;
+                else if((x&1) && (y&1) && lt) sig=1;
+                else sig=0;
+
+                if(sig) context+= 8+16;
+                else    context+= 8*(x&1) + 16*(y&1);
+                
+                if(l||t||lt||(x&1)==0||(y&1)==0)
+                    put_cabac(&s->c, &b->state[98][context], !!v);
+                else
+                    assert(v);
+                if(v && lev==max_level){
+                    int p=0;
+                    int /*ll=0, */l=0, lt=0, t=0, rt=0;
+                    int v= src[x + y*stride];
+
+                    if(y){
+                        t= src[x + (y-1)*stride];
+                        if(x){
+                            lt= src[x - 1 + (y-1)*stride];
+                        }
+                        if(x + 1 < w){
+                            rt= src[x + 1 + (y-1)*stride];
+                        }
+                    }
+                    if(x){
+                        l= src[x - 1 + y*stride];
+                        /*if(x > 1){
+                            if(orientation==1) ll= src[y + (x-2)*stride];
+                            else               ll= src[x - 2 + y*stride];
+                        }*/
+                    }
+
+                    if(parent){
+                        int px= x>>1;
+                        int py= y>>1;
+                        if(px<b->parent->width && py<b->parent->height){
+                            p= parent[px + py*2*stride];
+                        }
+                    }
+                    if(v){
+                        int context= av_log2(/*ABS(ll) + */3*ABS(l) + ABS(lt) + 2*ABS(t) + ABS(p)
+                                                         /*+ 3*(!!r)            + 2*(!!d)*/);
+
+                        put_symbol(&s->c, b->state[context + 2], ABS(v)-1, 0);
+                        put_cabac(&s->c, &b->state[0][16 + 1 + 3 + quant3b[l&0xFF] + 3*quant3b[t&0xFF]], v<0);
+                        assert(tree[max_level][x + y*tree_stride]);
+                        assert(tree[max_level-1][x/2 + y/2*tree_stride]);
+                    }else
+                        assert(0);
+                }
+            }
+        }
+    }
+#endif
+}
+
+static int deint(unsigned int a){
+    a &= 0x55555555;         //0 1 2 3 4 5 6 7 8 9 A B C D E F
+    a +=     a & 0x11111111; // 01  23  45  67  89  AB  CD  EF
+    a +=  3*(a & 0x0F0F0F0F);//   0123    4567    89AB    CDEF
+    a += 15*(a & 0x00FF00FF);//       01234567        89ABCDEF
+    a +=255*(a & 0x0000FFFF);//               0123456789ABCDEF
+    return a>>15;
+}
+
+static void encode_subband_z0run(SnowContext *s, SubBand *b, DWTELEM *src, DWTELEM *parent, int stride, int orientation){
+    const int level= b->level;
+    const int w= b->width;
+    const int h= b->height;
+    int x, y, pos;
+
+    if(1){
+        int run=0;
+        int runs[w*h];
+        int run_index=0;
+        int count=0;
+        
+        for(pos=0; ; pos++){
+            int x= deint(pos   );
+            int y= deint(pos>>1);
+            int v, p=0, pr=0, pd=0;
+            int /*ll=0, */l=0, lt=0, t=0/*, rt=0*/;
+
+            if(x>=w || y>=h){
+                if(x>=w && y>=h)
+                    break;
+                continue;
+            }
+            count++;
+                
+            v= src[x + y*stride];
+
+            if(y){
+                t= src[x + (y-1)*stride];
+                if(x){
+                    lt= src[x - 1 + (y-1)*stride];
+                }
+                if(x + 1 < w){
+                    /*rt= src[x + 1 + (y-1)*stride]*/;
+                }
+            }
+            if(x){
+                l= src[x - 1 + y*stride];
+                /*if(x > 1){
+                    if(orientation==1) ll= src[y + (x-2)*stride];
+                    else               ll= src[x - 2 + y*stride];
+                }*/
+            }
+            if(parent){
+                int px= x>>1;
+                int py= y>>1;
+                if(px<b->parent->width && py<b->parent->height){
+                    p= parent[px + py*2*stride];
+                    /*if(px+1<b->parent->width) 
+                        pr= parent[px + 1 + py*2*stride];
+                    if(py+1<b->parent->height) 
+                        pd= parent[px + (py+1)*2*stride];*/
+                }
+            }
+            if(!(/*ll|*/l|lt|t|/*rt|*/p)){
+                if(v){
+                    runs[run_index++]= run;
+                    run=0;
+                }else{
+                    run++;
+                }
+            }
+        }
+        assert(count==w*h);
+        runs[run_index++]= run;
+        run_index=0;
+        run= runs[run_index++];
+
+        put_symbol(&s->c, b->state[1], run, 0);
+        
+        for(pos=0; ; pos++){
+            int x= deint(pos   );
+            int y= deint(pos>>1);
+            int v, p=0, pr=0, pd=0;
+            int /*ll=0, */l=0, lt=0, t=0/*, rt=0*/;
+
+            if(x>=w || y>=h){
+                if(x>=w && y>=h)
+                    break;
+                continue;
+            }
+            v= src[x + y*stride];
+
+            if(y){
+                t= src[x + (y-1)*stride];
+                if(x){
+                    lt= src[x - 1 + (y-1)*stride];
+                }
+                if(x + 1 < w){
+//                    rt= src[x + 1 + (y-1)*stride];
+                }
+            }
+            if(x){
+                l= src[x - 1 + y*stride];
+                /*if(x > 1){
+                    if(orientation==1) ll= src[y + (x-2)*stride];
+                    else               ll= src[x - 2 + y*stride];
+                }*/
+            }
+
+            if(parent){
+                int px= x>>1;
+                int py= y>>1;
+                if(px<b->parent->width && py<b->parent->height){
+                    p= parent[px + py*2*stride];
+/*                        if(px+1<b->parent->width) 
+                        pr= parent[px + 1 + py*2*stride];
+                    if(py+1<b->parent->height) 
+                        pd= parent[px + (py+1)*2*stride];*/
+                }
+            }
+            if(/*ll|*/l|lt|t|/*rt|*/p){
+                int context= av_log2(/*ABS(ll) + */2*(3*ABS(l) + ABS(lt) + 2*ABS(t) + /*ABS(rt) +*/ ABS(p)));
+
+                put_cabac(&s->c, &b->state[0][context], !!v);
+            }else{
+                if(!run){
+                    run= runs[run_index++];
+                    put_symbol(&s->c, b->state[1], run, 0);
+                    assert(v);
+                }else{
+                    run--;
+                    assert(!v);
+                }
+            }
+            if(v){
+                int context= av_log2(/*ABS(ll) + */3*ABS(l) + ABS(lt) + 2*ABS(t) + /*ABS(rt) +*/ ABS(p));
+
+                put_symbol(&s->c, b->state[context + 2], ABS(v)-1, 0);
+                put_cabac(&s->c, &b->state[0][16 + 1 + 3 + quant3b[l&0xFF] + 3*quant3b[t&0xFF]], v<0);
+            }
+        }
+    }
+}
+
+static void encode_subband_bp(SnowContext *s, SubBand *b, DWTELEM *src, DWTELEM *parent, int stride, int orientation){
     const int level= b->level;
     const int w= b->width;
     const int h= b->height;
     int x, y;
-    
+
+#if 0
+    int plane;
+    for(plane=24; plane>=0; plane--){
+        int run=0;
+        int runs[w*h];
+        int run_index=0;
+                
+        for(y=0; y<h; y++){
+            for(x=0; x<w; x++){
+                int v, lv, p=0;
+                int d=0, r=0, rd=0, ld=0;
+                int /*ll=0, */l=0, lt=0, t=0, rt=0;
+                v= src[x + y*stride];
+
+                if(y){
+                    t= src[x + (y-1)*stride];
+                    if(x){
+                        lt= src[x - 1 + (y-1)*stride];
+                    }
+                    if(x + 1 < w){
+                        rt= src[x + 1 + (y-1)*stride];
+                    }
+                }
+                if(x){
+                    l= src[x - 1 + y*stride];
+                    /*if(x > 1){
+                        if(orientation==1) ll= src[y + (x-2)*stride];
+                        else               ll= src[x - 2 + y*stride];
+                    }*/
+                }
+                if(y+1<h){
+                    d= src[x + (y+1)*stride];
+                    if(x)         ld= src[x - 1 + (y+1)*stride];
+                    if(x + 1 < w) rd= src[x + 1 + (y+1)*stride];
+                }
+                if(x + 1 < w)
+                    r= src[x + 1 + y*stride];
+                if(parent){
+                    int px= x>>1;
+                    int py= y>>1;
+                    if(px<b->parent->width && py<b->parent->height) 
+                        p= parent[px + py*2*stride];
+                }
+#define HIDE(c, plane) c= c>=0 ? c&((-1)<<(plane)) : -((-c)&((-1)<<(plane)));
+                lv=v;
+                HIDE( v, plane)
+                HIDE(lv, plane+1)
+                HIDE( p, plane)
+                HIDE( l, plane)
+                HIDE(lt, plane)
+                HIDE( t, plane)
+                HIDE(rt, plane)
+                HIDE( r, plane+1)
+                HIDE(rd, plane+1)
+                HIDE( d, plane+1)
+                HIDE(ld, plane+1)
+                if(!(/*ll|*/l|lt|t|rt|r|rd|ld|d|p|lv)){
+                    if(v){
+                        runs[run_index++]= run;
+                        run=0;
+                    }else{
+                        run++;
+                    }
+                }
+            }
+        }
+        runs[run_index++]= run;
+        run_index=0;
+        run= runs[run_index++];
+
+        put_symbol(&s->c, b->state[1], run, 0);
+        
+        for(y=0; y<h; y++){
+            for(x=0; x<w; x++){
+                int v, p=0, lv;
+                int /*ll=0, */l=0, lt=0, t=0, rt=0;
+                int d=0, r=0, rd=0, ld=0;
+                v= src[x + y*stride];
+
+                if(y){
+                    t= src[x + (y-1)*stride];
+                    if(x){
+                        lt= src[x - 1 + (y-1)*stride];
+                    }
+                    if(x + 1 < w){
+                        rt= src[x + 1 + (y-1)*stride];
+                    }
+                }
+                if(x){
+                    l= src[x - 1 + y*stride];
+                    /*if(x > 1){
+                        if(orientation==1) ll= src[y + (x-2)*stride];
+                        else               ll= src[x - 2 + y*stride];
+                    }*/
+                }
+                if(y+1<h){
+                    d= src[x + (y+1)*stride];
+                    if(x)         ld= src[x - 1 + (y+1)*stride];
+                    if(x + 1 < w) rd= src[x + 1 + (y+1)*stride];
+                }
+                if(x + 1 < w)
+                    r= src[x + 1 + y*stride];
+
+                if(parent){
+                    int px= x>>1;
+                    int py= y>>1;
+                    if(px<b->parent->width && py<b->parent->height) 
+                        p= parent[px + py*2*stride];
+                }
+                lv=v;
+                HIDE( v, plane)
+                HIDE(lv, plane+1)
+                HIDE( p, plane)
+                HIDE( l, plane)
+                HIDE(lt, plane)
+                HIDE( t, plane)
+                HIDE(rt, plane)
+                HIDE( r, plane+1)
+                HIDE(rd, plane+1)
+                HIDE( d, plane+1)
+                HIDE(ld, plane+1)
+                if(/*ll|*/l|lt|t|rt|r|rd|ld|d|p|lv){
+                    int context= av_log2(/*ABS(ll) + */3*ABS(l) + ABS(lt) + 2*ABS(t) + ABS(rt) + ABS(p)
+                                                      +3*ABS(r) + ABS(rd) + 2*ABS(d) + ABS(ld));
+
+                    if(lv) put_cabac(&s->c, &b->state[99][context + 8*(av_log2(ABS(lv))-plane)], !!(v-lv));
+                    else   put_cabac(&s->c, &b->state[ 0][context], !!v);
+                }else{
+                    assert(!lv);
+                    if(!run){
+                        run= runs[run_index++];
+                        put_symbol(&s->c, b->state[1], run, 0);
+                        assert(v);
+                    }else{
+                        run--;
+                        assert(!v);
+                    }
+                }
+                if(v && !lv){
+                    int context=    clip(quant3b[l&0xFF] + quant3b[r&0xFF], -1,1)
+                                + 3*clip(quant3b[t&0xFF] + quant3b[d&0xFF], -1,1);
+                    put_cabac(&s->c, &b->state[0][16 + 1 + 3 + context], v<0);
+                }
+            }
+        }
+    }
+    return;    
+#endif
+}
+
+static void encode_subband_X(SnowContext *s, SubBand *b, DWTELEM *src, DWTELEM *parent, int stride, int orientation){
+    const int level= b->level;
+    const int w= b->width;
+    const int h= b->height;
+    int x, y;
+
 #if 0
     if(orientation==3 && parent && 0){
         int16_t candidate[w*h][2];
@@ -1400,6 +2046,14 @@ static void encode_subband(SnowContext *s, SubBand *b, DWTELEM *src, DWTELEM *pa
         }
     }
 #endif
+}
+
+static void encode_subband_c0run(SnowContext *s, SubBand *b, DWTELEM *src, DWTELEM *parent, int stride, int orientation){
+    const int level= b->level;
+    const int w= b->width;
+    const int h= b->height;
+    int x, y;
+
     if(1){
         int run=0;
         int runs[w*h];
@@ -1447,7 +2101,7 @@ static void encode_subband(SnowContext *s, SubBand *b, DWTELEM *src, DWTELEM *pa
         run_index=0;
         run= runs[run_index++];
 
-        put_symbol(&s->c, b->state[1], run, 0);
+        put_symbol2(&s->c, b->state[1], run, 3);
         
         for(y=0; y<h; y++){
             for(x=0; x<w; x++){
@@ -1484,7 +2138,8 @@ static void encode_subband(SnowContext *s, SubBand *b, DWTELEM *src, DWTELEM *pa
                 }else{
                     if(!run){
                         run= runs[run_index++];
-                        put_symbol(&s->c, b->state[1], run, 0);
+
+                        put_symbol2(&s->c, b->state[1], run, 3);
                         assert(v);
                     }else{
                         run--;
@@ -1499,8 +2154,189 @@ static void encode_subband(SnowContext *s, SubBand *b, DWTELEM *src, DWTELEM *pa
                 }
             }
         }
-        return;
     }
+}
+
+static void encode_subband_dzr(SnowContext *s, SubBand *b, DWTELEM *src, DWTELEM *parent, int stride, int orientation){
+    const int level= b->level;
+    const int w= b->width;
+    const int h= b->height;
+    int x, y;
+
+    if(1){
+        int run[16]={0};
+        int runs[16][w*h]; //FIXME do something about the size
+        int run_index[16]={0};
+        int positions[2][w];
+        int distances[2][w];
+        int dist_count=0;
+        int i;
+                
+        for(y=0; y<h; y++){
+            int *     pos = positions[ y&1];
+            int *last_pos = positions[(y&1)^1];
+            int *     dist= distances[ y&1];
+            int *last_dist= distances[(y&1)^1];
+            int dist_index=0;
+            int last_dist_index=0;
+            
+            for(x=0; x<w; x++){
+                int p=0, l=0, lt=0, t=0, rt=0;
+                int v= src[x + y*stride];
+
+                if(y){
+                    t= src[x + (y-1)*stride];
+                    if(x){
+                        lt= src[x - 1 + (y-1)*stride];
+                    }
+                    if(x + 1 < w){
+                        rt= src[x + 1 + (y-1)*stride];
+                    }
+                }
+                if(x){
+                    l= src[x - 1 + y*stride];
+                }
+                if(parent){
+                    int px= x>>1;
+                    int py= y>>1;
+                    if(px<b->parent->width && py<b->parent->height) 
+                        p= parent[px + py*2*stride];
+                }
+                if(last_dist_index < dist_count && last_pos[last_dist_index] == x){
+                    if(dist_index==0 || x - pos[dist_index-1] > dist[dist_index-1] - last_dist[last_dist_index]){
+                        pos[dist_index]= x;
+                        dist[dist_index++]= last_dist[last_dist_index];
+                    }
+                    last_dist_index++;
+                }
+                
+                if(!(l|lt|t|rt|p)){
+                    int cur_dist=w>>1;
+                    int run_class;
+                    
+                    if(last_dist_index < dist_count) 
+                        cur_dist= last_pos[last_dist_index] - x + y - last_dist[last_dist_index];
+                    if(dist_index)
+                        cur_dist= FFMIN(cur_dist, x - pos[dist_index-1] + y - dist[dist_index-1]);
+                    assert(cur_dist>=2);
+                    run_class= av_log2(cur_dist+62);
+                    
+                    if(v){
+                        runs[run_class][run_index[run_class]++]= run[run_class];
+                        run[run_class]=0;
+                    }else{
+                        run[run_class]++;
+                    }
+                }
+                if(v){
+                    while(dist_index && x - pos[dist_index-1] <= y - dist[dist_index-1])
+                        dist_index--;
+                    pos[dist_index]= x;
+                    dist[dist_index++]= y;
+                }
+            }
+            dist_count= dist_index;
+        }
+        for(i=0; i<12; i++){
+            runs[i][run_index[i]++]= run[i];
+            run_index[i]=0;
+            run[i]=0;
+        }
+        
+        dist_count=0;
+        
+        for(y=0; y<h; y++){
+            int *     pos = positions[ y&1];
+            int *last_pos = positions[(y&1)^1];
+            int *     dist= distances[ y&1];
+            int *last_dist= distances[(y&1)^1];
+            int dist_index=0;
+            int last_dist_index=0;
+            
+            for(x=0; x<w; x++){
+                int p=0, l=0, lt=0, t=0, rt=0;
+                int v= src[x + y*stride];
+
+                if(y){
+                    t= src[x + (y-1)*stride];
+                    if(x){
+                        lt= src[x - 1 + (y-1)*stride];
+                    }
+                    if(x + 1 < w){
+                        rt= src[x + 1 + (y-1)*stride];
+                    }
+                }
+                if(x){
+                    l= src[x - 1 + y*stride];
+                }
+                if(parent){
+                    int px= x>>1;
+                    int py= y>>1;
+                    if(px<b->parent->width && py<b->parent->height) 
+                        p= parent[px + py*2*stride];
+                }
+                if(last_dist_index < dist_count && last_pos[last_dist_index] == x){
+                    if(dist_index==0 || x - pos[dist_index-1] > dist[dist_index-1] - last_dist[last_dist_index]){
+                        pos[dist_index]= x;
+                        dist[dist_index++]= last_dist[last_dist_index];
+                    }
+                    last_dist_index++;
+                }
+                if(l|lt|t|rt|p){
+                    int context= av_log2(/*ABS(ll) + */3*ABS(l) + ABS(lt) + 2*ABS(t) + ABS(rt) + ABS(p));
+
+                    put_cabac(&s->c, &b->state[0][context], !!v);
+                }else{
+                    int cur_dist=w>>1;
+                    int run_class;
+                    
+                    if(last_dist_index < dist_count) 
+                        cur_dist= last_pos[last_dist_index] - x + y - last_dist[last_dist_index];
+                    if(dist_index)
+                        cur_dist= FFMIN(cur_dist, x - pos[dist_index-1] + y - dist[dist_index-1]);
+                    assert(cur_dist>=2);
+                    assert(!dist_index || (pos[dist_index-1] >= 0 && pos[dist_index-1] <w));
+                    assert(last_dist_index >= dist_count || (last_pos[last_dist_index] >= 0 && last_pos[last_dist_index] <w));
+                    assert(!dist_index || dist[dist_index-1] <= y);
+                    assert(last_dist_index >= dist_count || last_dist[last_dist_index] < y);
+                    assert(cur_dist <= y + FFMAX(x, w-x-1));
+                    run_class= av_log2(cur_dist+62);
+
+                    if(!run_index[run_class]){
+                        run[run_class]= runs[run_class][run_index[run_class]++];
+                        put_symbol(&s->c, b->state[run_class+1], run[run_class], 0);
+                    }
+                    if(!run[run_class]){
+                        run[run_class]= runs[run_class][run_index[run_class]++];
+                        put_symbol(&s->c, b->state[run_class+1], run[run_class], 0);
+                        assert(v);
+                    }else{
+                        run[run_class]--;
+                        assert(!v);
+                    }
+                }
+                if(v){
+                    int context= av_log2(/*ABS(ll) + */3*ABS(l) + ABS(lt) + 2*ABS(t) + ABS(rt) + ABS(p));
+
+                    put_symbol(&s->c, b->state[context + 16], ABS(v)-1, 0);
+                    put_cabac(&s->c, &b->state[0][16 + 1 + 3 + quant3b[l&0xFF] + 3*quant3b[t&0xFF]], v<0);
+
+                    while(dist_index && x - pos[dist_index-1] <= y - dist[dist_index-1])
+                        dist_index--;
+                    pos[dist_index]= x;
+                    dist[dist_index++]= y;
+                }
+            }
+            dist_count= dist_index;
+        }
+    }
+}
+
+static void encode_subband(SnowContext *s, SubBand *b, DWTELEM *src, DWTELEM *parent, int stride, int orientation){    
+//    encode_subband_qtree(s, b, src, parent, stride, orientation);
+//    encode_subband_z0run(s, b, src, parent, stride, orientation);
+    encode_subband_c0run(s, b, src, parent, stride, orientation);
+//    encode_subband_dzr(s, b, src, parent, stride, orientation);
 }
 
 static inline void decode_subband(SnowContext *s, SubBand *b, DWTELEM *src, DWTELEM *parent, int stride, int orientation){
@@ -1510,14 +2346,181 @@ static inline void decode_subband(SnowContext *s, SubBand *b, DWTELEM *src, DWTE
     int x,y;
 
     START_TIMER
+#if 0    
+    for(y=0; y<b->height; y++)
+        memset(&src[y*stride], 0, b->width*sizeof(DWTELEM));
+
+    int plane;
+    for(plane=24; plane>=0; plane--){
+        int run;
+
+        run= get_symbol(&s->c, b->state[1], 0);
+                
+#define HIDE(c, plane) c= c>=0 ? c&((-1)<<(plane)) : -((-c)&((-1)<<(plane)));
+        
+        for(y=0; y<h; y++){
+            for(x=0; x<w; x++){
+                int v, p=0, lv;
+                int /*ll=0, */l=0, lt=0, t=0, rt=0;
+                int d=0, r=0, rd=0, ld=0;
+                lv= src[x + y*stride];
+
+                if(y){
+                    t= src[x + (y-1)*stride];
+                    if(x){
+                        lt= src[x - 1 + (y-1)*stride];
+                    }
+                    if(x + 1 < w){
+                        rt= src[x + 1 + (y-1)*stride];
+                    }
+                }
+                if(x){
+                    l= src[x - 1 + y*stride];
+                    /*if(x > 1){
+                        if(orientation==1) ll= src[y + (x-2)*stride];
+                        else               ll= src[x - 2 + y*stride];
+                    }*/
+                }
+                if(y+1<h){
+                    d= src[x + (y+1)*stride];
+                    if(x)         ld= src[x - 1 + (y+1)*stride];
+                    if(x + 1 < w) rd= src[x + 1 + (y+1)*stride];
+                }
+                if(x + 1 < w)
+                    r= src[x + 1 + y*stride];
+
+                if(parent){
+                    int px= x>>1;
+                    int py= y>>1;
+                    if(px<b->parent->width && py<b->parent->height) 
+                        p= parent[px + py*2*stride];
+                }
+                HIDE( p, plane)
+                if(/*ll|*/l|lt|t|rt|r|rd|ld|d|p|lv){
+                    int context= av_log2(/*ABS(ll) + */3*ABS(l) + ABS(lt) + 2*ABS(t) + ABS(rt) + ABS(p)
+                                                      +3*ABS(r) + ABS(rd) + 2*ABS(d) + ABS(ld));
+
+                    if(lv){
+                        assert(context + 8*av_log2(ABS(lv)) < 512 - 100);
+                        if(get_cabac(&s->c, &b->state[99][context + 8*(av_log2(ABS(lv))-plane)])){
+                            if(lv<0) v= lv - (1<<plane);
+                            else     v= lv + (1<<plane);
+                        }else
+                            v=lv;
+                    }else{
+                        v= get_cabac(&s->c, &b->state[ 0][context]) << plane;
+                    }
+                }else{
+                    assert(!lv);
+                    if(!run){
+                        run= get_symbol(&s->c, b->state[1], 0);
+                        v= 1<<plane;
+                    }else{
+                        run--;
+                        v=0;
+                    }
+                }
+                if(v && !lv){
+                    int context=    clip(quant3b[l&0xFF] + quant3b[r&0xFF], -1,1)
+                                + 3*clip(quant3b[t&0xFF] + quant3b[d&0xFF], -1,1);
+                    if(get_cabac(&s->c, &b->state[0][16 + 1 + 3 + context]))
+                        v= -v;
+                }
+                src[x + y*stride]= v;
+            }
+        }
+    }
+    return;    
+#endif
+#if 0
+    int tree[10][w*h]; //FIXME space waste ...
+    int treedim[10][2];
+    int lev;
+    const int max_level= av_log2(2*FFMAX(w,h)-1);
+    int w2=w, h2=h;
+    memset(tree, 0, sizeof(tree));
     
+//    assert(w%2==0 && h%2==0);
+
+    for(lev=max_level; lev>=0; lev--){
+        treedim[lev][0]= w2;
+        treedim[lev][1]= h2;
+        w2= (w2+1)>>1;
+        h2= (h2+1)>>1;
+    }    
+    
+    for(lev=0; lev<=max_level; lev++){
+        w2= treedim[lev][0];
+        h2= treedim[lev][1];
+        for(y=0; y<h2; y++){
+            for(x=0; x<w2; x++){
+                int l= 0, t=0;
+                int context;
+                if(lev && !tree[lev-1][x/2 + y/2*w])
+                    continue;
+
+                if(x) l= tree[lev][x - 1 + y*w];
+                if(y) t= tree[lev][x + (y-1)*w];
+
+                context= lev + 8*(!!l) + 16*(!!t);
+                tree[lev][x + y*w]= get_cabac(&s->c, &b->state[98][context]);
+            }
+        }
+    }
+    if(1){
+        for(y=0; y<b->height; y++)
+            memset(&src[y*stride], 0, b->width*sizeof(DWTELEM));
+
+        for(y=0; y<h; y++){
+            for(x=0; x<w; x++){
+                int v, p=0;
+                int /*ll=0, */l=0, lt=0, t=0, rt=0;
+
+                if(y){
+                    t= src[x + (y-1)*stride];
+                    if(x){
+                        lt= src[x - 1 + (y-1)*stride];
+                    }
+                    if(x + 1 < w){
+                        rt= src[x + 1 + (y-1)*stride];
+                    }
+                }
+                if(x){
+                    l= src[x - 1 + y*stride];
+                    /*if(x > 1){
+                        if(orientation==1) ll= src[y + (x-2)*stride];
+                        else               ll= src[x - 2 + y*stride];
+                    }*/
+                }
+                if(parent){
+                    int px= x>>1;
+                    int py= y>>1;
+                    if(px<b->parent->width && py<b->parent->height) 
+                        p= parent[px + py*2*stride];
+                }
+                if(tree[max_level][x + y*w]){
+                    int context= av_log2(/*ABS(ll) + */3*ABS(l) + ABS(lt) + 2*ABS(t) + ABS(rt) + ABS(p));
+                    v= get_symbol(&s->c, b->state[context + 2], 0) + 1;
+                    if(get_cabac(&s->c, &b->state[0][16 + 1 + 3 + quant3b[l&0xFF] + 3*quant3b[t&0xFF]]))
+                        v= -v;
+                    src[x + y*stride]= v;
+                }
+            }
+        }
+        if(level+1 == s->spatial_decomposition_count){
+            STOP_TIMER("decode_subband")
+        }
+        
+        return;
+    }
+#endif
     if(1){
         int run;
                 
         for(y=0; y<b->height; y++)
             memset(&src[y*stride], 0, b->width*sizeof(DWTELEM));
 
-        run= get_symbol(&s->c, b->state[1], 0);
+        run= get_symbol2(&s->c, b->state[1], 3);
         for(y=0; y<h; y++){
             for(x=0; x<w; x++){
                 int v, p=0;
@@ -1551,7 +2554,7 @@ static inline void decode_subband(SnowContext *s, SubBand *b, DWTELEM *src, DWTE
                     v=get_cabac(&s->c, &b->state[0][context]);
                 }else{
                     if(!run){
-                        run= get_symbol(&s->c, b->state[1], 0);
+                        run= get_symbol2(&s->c, b->state[1], 3);
                         //FIXME optimize this here
                         //FIXME try to store a more naive run
                         v=1;
@@ -2089,6 +3092,8 @@ av_log(NULL, AV_LOG_DEBUG, "%d %d\n", w, h);
                 if(orientation&1) b->buf += (w+1)>>1;
                 if(orientation>1) b->buf += b->stride>>1;
                 
+//                alloc_qtree(&b->tree, b->width, b->height);
+                
                 if(level)
                     b->parent= &s->plane[plane_index].band[level-1][orientation];
             }
@@ -2104,6 +3109,9 @@ av_log(NULL, AV_LOG_DEBUG, "%d %d\n", w, h);
     s->mb_band   .buf= av_mallocz(s->mb_band   .stride * s->mb_band   .height*sizeof(DWTELEM));
     s->mv_band[0].buf= av_mallocz(s->mv_band[0].stride * s->mv_band[0].height*sizeof(DWTELEM));
     s->mv_band[1].buf= av_mallocz(s->mv_band[1].stride * s->mv_band[1].height*sizeof(DWTELEM));
+/*    alloc_qtree(&s->mb_band   .tree, s->mb_band   .width, s->mb_band   .height); //FIXME free these 3
+    alloc_qtree(&s->mv_band[0].tree, s->mv_band[0].width, s->mv_band[0].height);
+    alloc_qtree(&s->mv_band[1].tree, s->mv_band[0].width, s->mv_band[1].height);*/
 
     reset_contexts(s);
 /*    
@@ -2534,6 +3542,8 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
 }
 
 static void common_end(SnowContext *s){
+    int plane_index, level, orientation;
+
     av_freep(&s->spatial_dwt_buffer);
     av_freep(&s->mb_band.buf);
     av_freep(&s->mv_band[0].buf);
@@ -2547,6 +3557,16 @@ static void common_end(SnowContext *s){
     av_freep(&s->dummy);
     av_freep(&s->motion_val8);
     av_freep(&s->motion_val16);
+/*
+    for(plane_index=0; plane_index<3; plane_index++){    
+        for(level=s->spatial_decomposition_count-1; level>=0; level--){
+            for(orientation=level ? 1 : 0; orientation<4; orientation++){
+                SubBand *b= &s->plane[plane_index].band[level][orientation];
+                
+                free_qtree(&b->tree);
+            }
+        }
+    }*/
 }
 
 static int encode_end(AVCodecContext *avctx)
