@@ -448,6 +448,7 @@ int MPV_common_init(MpegEncContext *s)
         CHECKED_ALLOCZ(s->q_intra_matrix16, 64*32*2 * sizeof(uint16_t))
         CHECKED_ALLOCZ(s->q_inter_matrix16, 64*32*2 * sizeof(uint16_t))
     }
+    CHECKED_ALLOCZ(s->blocks, 64*6*2 * sizeof(DCTELEM))
         
     CHECKED_ALLOCZ(s->picture, MAX_PICTURE_COUNT * sizeof(Picture))
 
@@ -569,6 +570,7 @@ void MPV_common_end(MpegEncContext *s)
     av_freep(&s->q_inter_matrix);
     av_freep(&s->q_intra_matrix16);
     av_freep(&s->q_inter_matrix16);
+    av_freep(&s->blocks);
 
     for(i=0; i<MAX_PICTURE_COUNT; i++){
         free_picture(s, &s->picture[i]);
