@@ -168,7 +168,7 @@ clean:
 	   ps2/*.o ps2/*~ \
 	   liba52/*.o liba52/*~ \
 	   apiexample $(TESTS)
-	make -C libpostproc clean
+	$(MAKE) -C libpostproc clean
 
 distclean: clean
 	rm -f Makefile.bak .depend
