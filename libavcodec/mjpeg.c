@@ -1915,21 +1915,21 @@ read_header:
 
     skip_bits(&hgb, 32); /* reserved zeros */
     
-    if (get_bits(&hgb, 32) != be2me_32(ff_get_fourcc("mjpg")))
+    if (get_bits_long(&hgb, 32) != be2me_32(ff_get_fourcc("mjpg")))
     {
 	dprintf("not mjpeg-b (bad fourcc)\n");
 	return 0;
     }
 
-    field_size = get_bits(&hgb, 32); /* field size */
+    field_size = get_bits_long(&hgb, 32); /* field size */
     dprintf("field size: 0x%x\n", field_size);
     skip_bits(&hgb, 32); /* padded field size */
-    second_field_offs = get_bits(&hgb, 32);
+    second_field_offs = get_bits_long(&hgb, 32);
     dprintf("second field offs: 0x%x\n", second_field_offs);
     if (second_field_offs)
 	s->interlaced = 1;
 
-    dqt_offs = get_bits(&hgb, 32);
+    dqt_offs = get_bits_long(&hgb, 32);
     dprintf("dqt offs: 0x%x\n", dqt_offs);
     if (dqt_offs)
     {
@@ -1938,7 +1938,7 @@ read_header:
 	mjpeg_decode_dqt(s);
     }
     
-    dht_offs = get_bits(&hgb, 32);
+    dht_offs = get_bits_long(&hgb, 32);
     dprintf("dht offs: 0x%x\n", dht_offs);
     if (dht_offs)
     {
@@ -1947,7 +1947,7 @@ read_header:
 	mjpeg_decode_dht(s);
     }
 
-    sof_offs = get_bits(&hgb, 32);
+    sof_offs = get_bits_long(&hgb, 32);
     dprintf("sof offs: 0x%x\n", sof_offs);
     if (sof_offs)
     {
@@ -1957,7 +1957,7 @@ read_header:
 	    return -1;
     }
 
-    sos_offs = get_bits(&hgb, 32);
+    sos_offs = get_bits_long(&hgb, 32);
     dprintf("sos offs: 0x%x\n", sos_offs);
     if (sos_offs)
     {

@@ -2719,16 +2719,16 @@ static int theora_decode_comments(AVCodecContext *avctx, GetBitContext gb)
 {
     int nb_comments, i, tmp;
 
-    tmp = get_bits(&gb, 32);
+    tmp = get_bits_long(&gb, 32);
     tmp = be2me_32(tmp);
     while(tmp--)
 	    skip_bits(&gb, 8);
 
-    nb_comments = get_bits(&gb, 32);
+    nb_comments = get_bits_long(&gb, 32);
     nb_comments = be2me_32(nb_comments);
     for (i = 0; i < nb_comments; i++)
     {
-	tmp = get_bits(&gb, 32);
+	tmp = get_bits_long(&gb, 32);
 	tmp = be2me_32(tmp);
 	while(tmp--)
 	    skip_bits(&gb, 8);
