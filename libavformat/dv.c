@@ -913,15 +913,6 @@ static int dv_read_seek(AVFormatContext *s, int stream_index,
        }
     }
 
-    for(i = 0; i < s->nb_streams; i++) {
-        AVStream *st = s->streams[stream_index];
-        AVStream *st2 = s->streams[i];
-
-        st->cur_dts = av_rescale(timestamp, 
-                                 st2->time_base.den * (int64_t)st ->time_base.num,
-                                 st ->time_base.den * (int64_t)st2->time_base.num);
-    }
-
     return url_fseek(&s->pb, offset, SEEK_SET);
 }
 

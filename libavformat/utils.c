@@ -892,6 +892,22 @@ static void av_read_frame_flush(AVFormatContext *s)
 }
 
 /**
+ * updates the cur_dts field based on the given timestamp and AVStream.
+ * only needed if (dts are not set and pts!=dts) or for timestamp wrapping
+ */
+static void av_update_cur_dts(AVFormatContext *s, AVStream *st, int64_t timestamp){
+    int i;
+
+    for(i = 0; i < s->nb_streams; i++) {
+        AVStream *st2 = s->streams[i];
+
+        st->cur_dts = av_rescale(timestamp, 
+                                 st2->time_base.den * (int64_t)st ->time_base.num,
+                                 st ->time_base.den * (int64_t)st2->time_base.num);
+    }
+}
+
+/**
  * add a index entry into a sorted list updateing if it is already there.
  * @param timestamp timestamp in the timebase of the given stream
  */
@@ -1015,7 +1031,7 @@ int av_seek_frame_binary(AVFormatContext *s, int stream_index, int64_t target_ts
     int64_t pos_min, pos_max, pos, pos_limit;
     int64_t ts_min, ts_max, ts;
     int64_t start_pos;
-    int index, no_change, i;
+    int index, no_change;
     AVStream *st;
 
     if (stream_index < 0)
@@ -1150,13 +1166,7 @@ av_log(s, AV_LOG_DEBUG, "%Ld %Ld %Ld / %Ld %Ld %Ld target:%Ld limit:%Ld start:%L
     /* do the seek */
     url_fseek(&s->pb, pos, SEEK_SET);
 
-    for(i = 0; i < s->nb_streams; i++) {
-        AVStream *st2 = s->streams[i];
-
-        st->cur_dts = av_rescale(ts, 
-                                 st2->time_base.den * (int64_t)st ->time_base.num,
-                                 st ->time_base.den * (int64_t)st2->time_base.num);
-    }
+    av_update_cur_dts(s, st, ts);
 
     return 0;
 }
@@ -1182,13 +1192,7 @@ static int av_seek_frame_byte(AVFormatContext *s, int stream_index, int64_t pos,
     url_fseek(&s->pb, pos, SEEK_SET);
 
 #if 0
-    for(i = 0; i < s->nb_streams; i++) {
-        st2 = s->streams[i];
-
-        st->cur_dts = av_rescale(ie->timestamp, 
-                                 st2->time_base.den * (int64_t)st ->time_base.num,
-                                 st ->time_base.den * (int64_t)st2->time_base.num);
-    }
+    av_update_cur_dts(s, st, ts);
 #endif
     return 0;
 }
@@ -1196,7 +1200,7 @@ static int av_seek_frame_byte(AVFormatContext *s, int stream_index, int64_t pos,
 static int av_seek_frame_generic(AVFormatContext *s, 
                                  int stream_index, int64_t timestamp, int flags)
 {
-    int index, i;
+    int index;
     AVStream *st;
     AVIndexEntry *ie;
 
@@ -1219,13 +1223,7 @@ static int av_seek_frame_generic(AVFormatContext *s,
     av_read_frame_flush(s);
     url_fseek(&s->pb, ie->pos, SEEK_SET);
 
-    for(i = 0; i < s->nb_streams; i++) {
-        AVStream *st2 = s->streams[i];
-
-        st->cur_dts = av_rescale(ie->timestamp, 
-                                 st2->time_base.den * (int64_t)st ->time_base.num,
-                                 st ->time_base.den * (int64_t)st2->time_base.num);
-    }
+    av_update_cur_dts(s, st, ie->timestamp);
 
     return 0;
 }
