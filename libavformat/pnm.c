@@ -394,7 +394,7 @@ static int pnm_probe(AVProbeData *pd)
     if (pd->buf_size >= 8 &&
         p[0] == 'P' &&
         p[1] >= '4' && p[1] <= '6' &&
-        p[2] == '\n')
+        pnm_space(p[2]) )
         return AVPROBE_SCORE_MAX - 1; /* to permit pgmyuv probe */
     else
         return 0;
