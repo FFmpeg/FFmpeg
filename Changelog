@@ -25,6 +25,8 @@ version 0.4.5:
 - mpeg4 vol header fixes (Jonathan Marsden <snmjbm@pacbell.net>).
 - ARM optimizations (Lionel Ulmer <lionel.ulmer@free.fr>).
 - Windows porting of file converter.
+- added MJPEG raw format (input/ouput).
+- added JPEG image format support (input/output).
 
 version 0.4.4:
 

@@ -5,25 +5,11 @@ ffmpeg TODO list:
 
 Planned in next release:
 
-(DONE) - apply header fixes
-(DONE) - mpeg audio decoder.
-(DONE) - fix decode/encode codec string.
-(DONE) - fix EINTR error if VIDIOCSYNC.
-(DONE) - add CONFIG system. 
-(DONE) - merge mplayer mmx accel.
-(DONE) - fix emms bug.
-(DONE) - add I263 handling
-(DONE) - add RV10 decoding.
-(DONE) - add true pgm support.
-(DONE) - msmpeg4 0x18 fix.
-- add encode and ac3/mpglib disabling option
+- fix ffserver.
+- add raw h263 decoding support (see vivo streams)
 - add qscale out.
-- add decode quant optimisation.
-- see black region optimization (Arpi request).
-- check ffmpeg mpeg1 encoding (Happy Camer mail)
 - add format autodetect with content (for example to distinguish
   mpegvideo/mpegmux).
-- add external alloc for libavcodec (avifile request).
 - fix -sameq in grabbing
 - find a solution to clear feed1.ffm if format change.
 - new grab architecture : use avformat instead of audio: and video:
@@ -50,6 +36,8 @@ BUGS:
 - Improve psycho acoustic model for AC3 & mpeg audio.
 
 FEATURES:
+
+- add h263 PB frame support (some I263 files use that).
 
 - add MPEG4 in mpegmux support.
 
