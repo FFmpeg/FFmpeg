@@ -166,7 +166,6 @@ static void common_init(MpegEncContext * s)
 
     
     if(s->msmpeg4_version==4){
-        int i;
         ff_init_scantable(s, &s->intra_scantable  , wmv1_scantable[1]);
         ff_init_scantable(s, &s->intra_h_scantable, wmv1_scantable[2]);
         ff_init_scantable(s, &s->intra_v_scantable, wmv1_scantable[3]);
@@ -175,7 +174,6 @@ static void common_init(MpegEncContext * s)
     //Note the default tables are set in common_init in mpegvideo.c
     
     if(!inited){
-        int i;
         inited=1;
 
         init_h263_dc_for_msmpeg4();
