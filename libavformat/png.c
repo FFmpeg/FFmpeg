@@ -519,7 +519,7 @@ static int png_read(ByteIOContext *f,
                 /* init image info */
                 info->width = s->width;
                 info->height = s->height;
-                info->progressive = (s->interlace_type != 0);
+                info->interleaved = (s->interlace_type != 0);
 
                 s->channels = png_get_nb_channels(s->color_type);
                 s->bits_per_pixel = s->bit_depth * s->channels;
@@ -718,7 +718,7 @@ static int png_write(ByteIOContext *f, AVImageInfo *info)
     uint8_t *tmp_buf = NULL;
     
     s->f = f;
-    is_progressive = info->progressive;
+    is_progressive = info->interleaved;
     switch(info->pix_fmt) {
     case PIX_FMT_RGBA32:
         bit_depth = 8;
@@ -882,6 +882,6 @@ AVImageFormat png_image_format = {
     (1 << PIX_FMT_RGBA32) | (1 << PIX_FMT_RGB24) | (1 << PIX_FMT_GRAY8) | 
     (1 << PIX_FMT_MONOBLACK) | (1 << PIX_FMT_PAL8),
     png_write,
-    AVIMAGE_PROGRESSIVE,
+    AVIMAGE_INTERLEAVED,
 };
 #endif
