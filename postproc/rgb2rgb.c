@@ -19,9 +19,12 @@ static const uint64_t mask24h  __attribute__((aligned(8))) = 0x0000FFFFFF000000U
 static const uint64_t mask15b  __attribute__((aligned(8))) = 0x001F001F001F001FULL; /* 00000000 00011111  xxB */
 static const uint64_t mask15rg __attribute__((aligned(8))) = 0x7FE07FE07FE07FE0ULL; /* 01111111 11100000  RGx */
 static const uint64_t mask15s  __attribute__((aligned(8))) = 0xFFE0FFE0FFE0FFE0ULL;
-static const uint64_t red_mask  __attribute__((aligned(8))) = 0x0000f8000000f800ULL;
-static const uint64_t green_mask __attribute__((aligned(8)))= 0x000007e0000007e0ULL;
-static const uint64_t blue_mask __attribute__((aligned(8))) = 0x0000001f0000001fULL;
+static const uint64_t red_16mask  __attribute__((aligned(8))) = 0x0000f8000000f800ULL;
+static const uint64_t green_16mask __attribute__((aligned(8)))= 0x000007e0000007e0ULL;
+static const uint64_t blue_16mask __attribute__((aligned(8))) = 0x0000001f0000001fULL;
+static const uint64_t red_15mask  __attribute__((aligned(8))) = 0x00007c000000f800ULL;
+static const uint64_t green_15mask __attribute__((aligned(8)))= 0x000003e0000007e0ULL;
+static const uint64_t blue_15mask __attribute__((aligned(8))) = 0x0000001f0000001fULL;
 #endif
 
 void rgb24to32(const uint8_t *src,uint8_t *dst,unsigned src_size)
@@ -92,7 +95,6 @@ void rgb32to24(const uint8_t *src,uint8_t *dst,unsigned src_size)
 	"movq	%0, %%mm7\n\t"
 	"movq	%1, %%mm6"
 	::"m"(mask24l),"m"(mask24h):"memory");
-  if(mm_end == end) mm_end -= MMREG_SIZE*2;
   while(s < mm_end)
   {
     __asm __volatile(
@@ -228,6 +230,62 @@ void palette8torgb24(const uint8_t *src, uint8_t *dst, unsigned num_pixels, cons
 
 void rgb32to16(const uint8_t *src, uint8_t *dst, unsigned src_size)
 {
+#ifdef HAVE_MMX
+	const uint8_t *s = src;
+	const uint8_t *end,*mm_end;
+	uint16_t *d = (uint16_t *)dst;
+	end = s + src_size;
+	mm_end = (uint8_t*)((((unsigned long)end)/(MMREG_SIZE*2))*(MMREG_SIZE*2));
+	__asm __volatile(PREFETCH"	%0"::"m"(*src):"memory");
+	__asm __volatile(
+	    "movq	%0, %%mm7\n\t"
+	    "movq	%1, %%mm6\n\t"
+	    ::"m"(red_16mask),"m"(green_16mask));
+	while(s < mm_end)
+	{
+	    __asm __volatile(
+		PREFETCH" 32%1\n\t"
+		"movd	%1, %%mm0\n\t"
+		"movd	4%1, %%mm3\n\t"
+		"punpckldq 8%1, %%mm0\n\t"
+		"punpckldq 12%1, %%mm3\n\t"
+		"movq	%%mm0, %%mm1\n\t"
+		"movq	%%mm0, %%mm2\n\t"
+		"movq	%%mm3, %%mm4\n\t"
+		"movq	%%mm3, %%mm5\n\t"
+		"psrlq	$3, %%mm0\n\t"
+		"psrlq	$3, %%mm3\n\t"
+		"pand	%2, %%mm0\n\t"
+		"pand	%2, %%mm3\n\t"
+		"psrlq	$5, %%mm1\n\t"
+		"psrlq	$5, %%mm4\n\t"
+		"pand	%%mm6, %%mm1\n\t"
+		"pand	%%mm6, %%mm4\n\t"
+		"psrlq	$8, %%mm2\n\t"
+		"psrlq	$8, %%mm5\n\t"
+		"pand	%%mm7, %%mm2\n\t"
+		"pand	%%mm7, %%mm5\n\t"
+		"por	%%mm1, %%mm0\n\t"
+		"por	%%mm4, %%mm3\n\t"
+		"por	%%mm2, %%mm0\n\t"
+		"por	%%mm5, %%mm3\n\t"
+		"psllq	$16, %%mm3\n\t"
+		"por	%%mm3, %%mm0\n\t"
+		MOVNTQ"	%%mm0, %0\n\t"
+		:"=m"(*d):"m"(*s),"m"(blue_16mask):"memory");
+		d += 4;
+		s += 16;
+	}
+	while(s < end)
+	{
+		const int b= *s++;
+		const int g= *s++;
+		const int r= *s++;
+		*d++ = (b>>3) | ((g&0xFC)<<3) | ((r&0xF8)<<8);
+	}
+	__asm __volatile(SFENCE:::"memory");
+	__asm __volatile(EMMS:::"memory");
+#else
 	unsigned j,i,num_pixels=src_size/4;
 	uint16_t *d = (uint16_t *)dst;
 	for(i=0,j=0; j<num_pixels; i+=4,j++)
@@ -238,10 +296,67 @@ void rgb32to16(const uint8_t *src, uint8_t *dst, unsigned src_size)
 
 		d[j]= (b>>3) | ((g&0xFC)<<3) | ((r&0xF8)<<8);
 	}
+#endif
 }
 
 void rgb32to15(const uint8_t *src, uint8_t *dst, unsigned src_size)
 {
+#ifdef HAVE_MMX
+	const uint8_t *s = src;
+	const uint8_t *end,*mm_end;
+	uint16_t *d = (uint16_t *)dst;
+	end = s + src_size;
+	mm_end = (uint8_t*)((((unsigned long)end)/(MMREG_SIZE*2))*(MMREG_SIZE*2));
+	__asm __volatile(PREFETCH"	%0"::"m"(*src):"memory");
+	__asm __volatile(
+	    "movq	%0, %%mm7\n\t"
+	    "movq	%1, %%mm6\n\t"
+	    ::"m"(red_15mask),"m"(green_15mask));
+	while(s < mm_end)
+	{
+	    __asm __volatile(
+		PREFETCH" 32%1\n\t"
+		"movd	%1, %%mm0\n\t"
+		"movd	4%1, %%mm3\n\t"
+		"punpckldq 8%1, %%mm0\n\t"
+		"punpckldq 12%1, %%mm3\n\t"
+		"movq	%%mm0, %%mm1\n\t"
+		"movq	%%mm0, %%mm2\n\t"
+		"movq	%%mm3, %%mm4\n\t"
+		"movq	%%mm3, %%mm5\n\t"
+		"psrlq	$3, %%mm0\n\t"
+		"psrlq	$3, %%mm3\n\t"
+		"pand	%2, %%mm0\n\t"
+		"pand	%2, %%mm3\n\t"
+		"psrlq	$6, %%mm1\n\t"
+		"psrlq	$6, %%mm4\n\t"
+		"pand	%%mm6, %%mm1\n\t"
+		"pand	%%mm6, %%mm4\n\t"
+		"psrlq	$9, %%mm2\n\t"
+		"psrlq	$9, %%mm5\n\t"
+		"pand	%%mm7, %%mm2\n\t"
+		"pand	%%mm7, %%mm5\n\t"
+		"por	%%mm1, %%mm0\n\t"
+		"por	%%mm4, %%mm3\n\t"
+		"por	%%mm2, %%mm0\n\t"
+		"por	%%mm5, %%mm3\n\t"
+		"psllq	$16, %%mm3\n\t"
+		"por	%%mm3, %%mm0\n\t"
+		MOVNTQ"	%%mm0, %0\n\t"
+		:"=m"(*d):"m"(*s),"m"(blue_15mask):"memory");
+		d += 4;
+		s += 16;
+	}
+	while(s < end)
+	{
+		const int b= *s++;
+		const int g= *s++;
+		const int r= *s++;
+		*d++ = (b>>3) | ((g&0xF8)<<2) | ((r&0xF8)<<7);
+	}
+	__asm __volatile(SFENCE:::"memory");
+	__asm __volatile(EMMS:::"memory");
+#else
 	unsigned j,i,num_pixels=src_size/4;
 	uint16_t *d = (uint16_t *)dst;
 	for(i=0,j=0; j<num_pixels; i+=4,j++)
@@ -252,6 +367,7 @@ void rgb32to15(const uint8_t *src, uint8_t *dst, unsigned src_size)
 
 		d[j]= (b>>3) | ((g&0xF8)<<2) | ((r&0xF8)<<7);
 	}
+#endif
 }
 
 void rgb24to16(const uint8_t *src, uint8_t *dst, unsigned src_size)
@@ -266,7 +382,8 @@ void rgb24to16(const uint8_t *src, uint8_t *dst, unsigned src_size)
 	__asm __volatile(
 	    "movq	%0, %%mm7\n\t"
 	    "movq	%1, %%mm6\n\t"
-	    ::"m"(red_mask),"m"(green_mask));
+	    ::"m"(red_16mask),"m"(green_16mask));
+	if(mm_end == end) mm_end -= MMREG_SIZE*2;
 	while(s < mm_end)
 	{
 	    __asm __volatile(
@@ -298,7 +415,7 @@ void rgb24to16(const uint8_t *src, uint8_t *dst, unsigned src_size)
 		"psllq	$16, %%mm3\n\t"
 		"por	%%mm3, %%mm0\n\t"
 		MOVNTQ"	%%mm0, %0\n\t"
-		:"=m"(*d):"m"(*s),"m"(blue_mask):"memory");
+		:"=m"(*d):"m"(*s),"m"(blue_16mask):"memory");
 		d += 4;
 		s += 12;
 	}
@@ -327,6 +444,63 @@ void rgb24to16(const uint8_t *src, uint8_t *dst, unsigned src_size)
 
 void rgb24to15(const uint8_t *src, uint8_t *dst, unsigned src_size)
 {
+#ifdef HAVE_MMX
+	const uint8_t *s = src;
+	const uint8_t *end,*mm_end;
+	uint16_t *d = (uint16_t *)dst;
+	end = s + src_size;
+	mm_end = (uint8_t*)((((unsigned long)end)/(MMREG_SIZE*2))*(MMREG_SIZE*2));
+	__asm __volatile(PREFETCH"	%0"::"m"(*src):"memory");
+	__asm __volatile(
+	    "movq	%0, %%mm7\n\t"
+	    "movq	%1, %%mm6\n\t"
+	    ::"m"(red_15mask),"m"(green_15mask));
+	if(mm_end == end) mm_end -= MMREG_SIZE*2;
+	while(s < mm_end)
+	{
+	    __asm __volatile(
+		PREFETCH" 32%1\n\t"
+		"movd	%1, %%mm0\n\t"
+		"movd	3%1, %%mm3\n\t"
+		"punpckldq 6%1, %%mm0\n\t"
+		"punpckldq 9%1, %%mm3\n\t"
+		"movq	%%mm0, %%mm1\n\t"
+		"movq	%%mm0, %%mm2\n\t"
+		"movq	%%mm3, %%mm4\n\t"
+		"movq	%%mm3, %%mm5\n\t"
+		"psrlq	$3, %%mm0\n\t"
+		"psrlq	$3, %%mm3\n\t"
+		"pand	%2, %%mm0\n\t"
+		"pand	%2, %%mm3\n\t"
+		"psrlq	$6, %%mm1\n\t"
+		"psrlq	$6, %%mm4\n\t"
+		"pand	%%mm6, %%mm1\n\t"
+		"pand	%%mm6, %%mm4\n\t"
+		"psrlq	$9, %%mm2\n\t"
+		"psrlq	$9, %%mm5\n\t"
+		"pand	%%mm7, %%mm2\n\t"
+		"pand	%%mm7, %%mm5\n\t"
+		"por	%%mm1, %%mm0\n\t"
+		"por	%%mm4, %%mm3\n\t"
+		"por	%%mm2, %%mm0\n\t"
+		"por	%%mm5, %%mm3\n\t"
+		"psllq	$16, %%mm3\n\t"
+		"por	%%mm3, %%mm0\n\t"
+		MOVNTQ"	%%mm0, %0\n\t"
+		:"=m"(*d):"m"(*s),"m"(blue_15mask):"memory");
+		d += 4;
+		s += 12;
+	}
+	while(s < end)
+	{
+		const int b= *s++;
+		const int g= *s++;
+		const int r= *s++;
+		*d++ = (b>>3) | ((g&0xF8)<<2) | ((r&0xF8)<<7);
+	}
+	__asm __volatile(SFENCE:::"memory");
+	__asm __volatile(EMMS:::"memory");
+#else
 	unsigned j,i,num_pixels=src_size/3;
 	uint16_t *d = (uint16_t *)dst;
 	for(i=0,j=0; j<num_pixels; i+=3,j++)
@@ -337,6 +511,7 @@ void rgb24to15(const uint8_t *src, uint8_t *dst, unsigned src_size)
 
 		d[j]= (b>>3) | ((g&0xF8)<<2) | ((r&0xF8)<<7);
 	}
+#endif
 }
 
 /**
