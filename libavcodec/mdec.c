@@ -249,7 +249,6 @@ static void mdec_common_init(AVCodecContext *avctx){
 static int decode_init(AVCodecContext *avctx){
     MDECContext * const a = avctx->priv_data;
     AVFrame *p= (AVFrame*)&a->picture;
-    int i;
  
     mdec_common_init(avctx);
     init_vlcs();

@@ -150,9 +150,6 @@ static void common_init(AVCodecContext *avctx){
 }
 
 static int decode_init(AVCodecContext *avctx){
-    VCR1Context * const a = avctx->priv_data;
-    AVFrame *p= (AVFrame*)&a->picture;
-    int i;
  
     common_init(avctx);
     
@@ -162,8 +159,6 @@ static int decode_init(AVCodecContext *avctx){
 }
 
 static int encode_init(AVCodecContext *avctx){
-    VCR1Context * const a = avctx->priv_data;
-    int i;
  
     common_init(avctx);
     
@@ -171,7 +166,6 @@ static int encode_init(AVCodecContext *avctx){
 }
 
 static int decode_end(AVCodecContext *avctx){
-    VCR1Context * const a = avctx->priv_data;
 
     avcodec_default_free_buffers(avctx);
 

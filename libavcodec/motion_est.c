@@ -393,6 +393,7 @@ void ff_init_me(MpegEncContext *s){
     }
 }
       
+#if 0
 static int pix_dev(uint8_t * pix, int line_size, int mean)
 {
     int s, i, j;
@@ -414,6 +415,7 @@ static int pix_dev(uint8_t * pix, int line_size, int mean)
     }
     return s;
 }
+#endif
 
 static inline void no_motion_search(MpegEncContext * s,
 				    int *mx_ptr, int *my_ptr)

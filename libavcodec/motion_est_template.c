@@ -186,7 +186,9 @@ static int RENAME(hpel_motion_search)(MpegEncContext * s,
 #if 1
         int key;
         int map_generation= s->me.map_generation;
+#ifndef NDEBUG
         uint32_t *map= s->me.map;
+#endif
         key= ((my-1)<<ME_MAP_MV_BITS) + (mx) + map_generation;
         assert(map[(index-(1<<ME_MAP_SHIFT))&(ME_MAP_SIZE-1)] == key);
         key= ((my+1)<<ME_MAP_MV_BITS) + (mx) + map_generation;
