@@ -1785,7 +1785,7 @@ int av_find_stream_info(AVFormatContext *ic)
     for(i=0;i<ic->nb_streams;i++) {
         st = ic->streams[i];
         if (st->codec.codec_type == CODEC_TYPE_VIDEO) {
-            if(st->codec.codec_id == CODEC_ID_RAWVIDEO && !st->codec.codec_tag)
+            if(st->codec.codec_id == CODEC_ID_RAWVIDEO && !st->codec.codec_tag && !st->codec.bits_per_sample)
                 st->codec.codec_tag= avcodec_pix_fmt_to_codec_tag(st->codec.pix_fmt);
             /* set real frame rate info */
             /* compute the real frame rate for telecine */
