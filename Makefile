@@ -54,8 +54,11 @@ endif
 
 OBJS = ffmpeg.o ffserver.o
 SRCS = $(OBJS:.o=.c) $(ASM_OBJS:.o=.s)
+DEPS = $(OBJS:.o=.d)
 
 all: lib $(PROG) $(VHOOK)
+
+-include $(DEPS)
 
 lib:
 	$(MAKE) -C libavcodec all
@@ -79,6 +82,10 @@ ffplay: ffmpeg$(EXE)
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $< 
+
+%.d: %.c
+	@echo $@ \\ > $@
+	$(CC) $(CFLAGS) -MM $< >> $@
 
 videohook:
 	$(MAKE) -C vhook all
@@ -108,7 +115,7 @@ clean: $(CLEANVHOOK)
 	$(MAKE) -C libavcodec clean
 	$(MAKE) -C libavformat clean
 	$(MAKE) -C tests clean
-	rm -f *.o *~ .depend gmon.out TAGS ffmpeg_g$(EXE) $(PROG) 
+	rm -f *.o *.d *~ .depend gmon.out TAGS ffmpeg_g$(EXE) $(PROG) 
 
 clean-vhook:
 	$(MAKE) -C vhook clean

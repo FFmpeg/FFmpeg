@@ -89,6 +89,7 @@ OBJS += ppc/dsputil_altivec.o ppc/mpegvideo_altivec.o ppc/idct_altivec.o \
 endif
 
 SRCS := $(OBJS:.o=.c) $(ASM_OBJS:.o=.S)
+DEPS := $(OBJS:.o=.d) 
 OBJS := $(OBJS) $(ASM_OBJS)
 
 LIB= $(LIBPREF)avcodec$(LIBSUF)
@@ -116,6 +117,12 @@ dsputil.o: dsputil.c dsputil.h
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $< 
 
+%.d: %.c
+	@echo $@ \\ > $@
+	$(CC) $(CFLAGS) -MM $< >> $@
+
+-include $(DEPS)        
+
 %.o: %.S
 	$(CC) $(CFLAGS) -c -o $@ $<
 
@@ -137,7 +144,7 @@ depend:
 	$(CC) -MM $(CFLAGS) $(SRCS) 1>.depend
 
 clean: 
-	rm -f *.o *~ .depend $(LIB) $(SLIB) *.so i386/*.o i386/*~ \
+	rm -f *.o *.d *~ .depend $(LIB) $(SLIB) *.so i386/*.o i386/*~ \
 	   armv4l/*.o armv4l/*~ \
 	   mlib/*.o mlib/*~ \
 	   alpha/*.o alpha/*~ \

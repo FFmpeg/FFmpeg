@@ -50,6 +50,8 @@ endif
 
 LIB= $(LIBPREF)avformat$(LIBSUF)
 
+DEPS= $(OBJS:.o=.d)
+
 all: $(LIB)
 
 $(LIB): $(OBJS)
@@ -70,9 +72,15 @@ installlib: all
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $< 
 
+%.d: %.c
+	@echo $@ \\ > $@
+	$(CC) $(CFLAGS) -MM $< >> $@
+
+-include $(DEPS)        
+
 # BeOS: remove -Wall to get rid of all the "multibyte constant" warnings
 %.o: %.cpp
 	g++ $(subst -Wall,,$(CFLAGS)) -c -o $@ $< 
 
 clean: 
-	rm -f *.o *~ *.a $(LIB)
+	rm -f *.o *.d *~ *.a $(LIB)

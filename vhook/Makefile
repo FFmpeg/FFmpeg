@@ -15,18 +15,25 @@ endif
 
 all: $(HOOKS) 
 
+DEPS= $(HOOKS:.so=.d)
+
 install:
 	install -s -m 755 $(HOOKS) $(INSTDIR)
 
 imlib2.so: imlib2.o
 	$(CC) -g -o $@ $(SHFLAGS) $< -lImlib2
-	rm $<
 
 %.so: %.o
 	$(CC) -g -o $@ $(SHFLAGS) $<
+
+%.d: %.c
+	@echo $@ \\ > $@
+	$(CC) $(CFLAGS) -MM $< >> $@
+
+-include $(DEPS)        
 
 %.html: %.texi
 	texi2html -monolithic -number $<
 
 clean:
-	rm -f *.o *.so *~
+	rm -f *.o *.d *.so *~
