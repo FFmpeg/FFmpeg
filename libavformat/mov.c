@@ -142,6 +142,7 @@ static const CodecTag mov_audio_tags[] = {
     { CODEC_ID_AMR_NB, MKTAG('s', 'a', 'm', 'r') }, /* AMR-NB 3gp */
     { CODEC_ID_AMR_WB, MKTAG('s', 'a', 'w', 'b') }, /* AMR-WB 3gp */
     { CODEC_ID_AC3, MKTAG('m', 's', 0x20, 0x00) }, /* Dolby AC-3 */
+    { CODEC_ID_ALAC,MKTAG('a', 'l', 'a', 'c') }, /* Apple Lossless */
     { CODEC_ID_NONE, 0 },
 };
 
@@ -1100,6 +1101,23 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
                    st->codec.sample_rate = samplerate_table[samplerate_index];
                    st->codec.channels = (px[1] >> 3) & 15;
                 }
+            }
+            else if( st->codec.codec_tag == MKTAG( 'a', 'l', 'a', 'c' ))
+            {
+                /* Handle alac audio tag + special extradata */
+                get_be32(pb); /* version */
+                get_be32(pb);
+                st->codec.channels = get_be16(pb); /* channels */
+                st->codec.bits_per_sample = get_be16(pb); /* bits per sample */
+                get_be32(pb);
+                st->codec.sample_rate = get_be16(pb);
+                get_be16(pb);
+
+                /* fetch the 36-byte extradata needed for alac decoding */
+                st->codec.extradata_size = 36;
+                st->codec.extradata = (uint8_t*) 
+                    av_mallocz(st->codec.extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
+                get_buffer(pb, st->codec.extradata, st->codec.extradata_size);
             }
 	    else if(size>=(16+20))
 	    {//16 bytes read, reading atleast 20 more
