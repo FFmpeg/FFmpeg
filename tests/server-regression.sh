@@ -10,7 +10,8 @@ sleep 1
     cd data
     rm -f $FILES;
     for file in $FILES; do
-        wget --user-agent=NSPlayer -q --output-document=- http://localhost:9999/$file?date=19700101T000000Z | head --bytes=100000 > $file &
+        wget --user-agent=NSPlayer -q --proxy=off -e verbose=off -e debug=off -e server_response=off \
+          --output-document=- http://localhost:9999/$file?date=19700101T000000Z | head --bytes=100000 > $file &
     done    
     wait
     # the status page is always different
