@@ -185,7 +185,7 @@ void ff_flv_encode_picture_header(MpegEncContext * s, int picture_number)
 
       if(s->h263_aic){
         s->y_dc_scale_table= 
-          s->c_dc_scale_table= h263_aic_dc_scale_table;
+          s->c_dc_scale_table= ff_aic_dc_scale_table;
       }else{
         s->y_dc_scale_table=
           s->c_dc_scale_table= ff_mpeg1_dc_scale_table;
@@ -288,7 +288,7 @@ void h263_encode_picture_header(MpegEncContext * s, int picture_number)
 
     if(s->h263_aic){
          s->y_dc_scale_table= 
-         s->c_dc_scale_table= h263_aic_dc_scale_table;
+         s->c_dc_scale_table= ff_aic_dc_scale_table;
     }else{
         s->y_dc_scale_table=
         s->c_dc_scale_table= ff_mpeg1_dc_scale_table;
@@ -1139,11 +1139,12 @@ void h263_encode_mb(MpegEncContext * s,
         }
     } else {
         int li = s->h263_aic ? 0 : 1;
+        assert(s->mb_intra);
         
         cbp = 0;
         for(i=0; i<6; i++) {
             /* Predict DC */
-            if (s->h263_aic && s->mb_intra) {
+            if (s->h263_aic) {
                 int16_t level = block[i][0];
             
                 pred_dc = h263_pred_dc(s, i, &dc_ptr[i]);
@@ -1286,7 +1287,7 @@ static void h263_pred_acdc(MpegEncContext * s, DCTELEM *block, int n)
     /* find prediction */
     if (n < 4) {
         x = 2 * s->mb_x + 1 + (n & 1);
-        y = 2 * s->mb_y + 1 + ((n & 2) >> 1);
+        y = 2 * s->mb_y + 1 + (n>> 1);
         wrap = s->mb_width * 2 + 2;
         dc_val = s->dc_val[0];
         ac_val = s->ac_val[0][0];
@@ -1310,10 +1311,13 @@ static void h263_pred_acdc(MpegEncContext * s, DCTELEM *block, int n)
     c = dc_val[(x) + (y - 1) * wrap];
     
     /* No prediction outside GOB boundary */
-    if (s->first_slice_line && ((n < 2) || (n > 3)))
-        c = 1024;
-    pred_dc = 1024;
+    if(s->first_slice_line && n!=3){
+        if(n!=2) c= 1024;
+        if(n!=1 && s->mb_x == s->resync_mb_x) a= 1024;
+    }
+    
     if (s->ac_pred) {
+        pred_dc = 1024;
         if (s->h263_aic_dir) {
             /* left prediction */
             if (a != 1024) {
@@ -1348,8 +1352,8 @@ static void h263_pred_acdc(MpegEncContext * s, DCTELEM *block, int n)
     
     if (block[0] < 0)
         block[0] = 0;
-    else if (!(block[0] & 1))
-        block[0]++;
+    else 
+        block[0] |= 1;
     
     /* Update AC/DC tables */
     dc_val[(x) + (y) * wrap] = block[0];
@@ -3517,7 +3521,14 @@ int ff_h263_decode_mb(MpegEncContext *s,
         
         cbp = (cbpc & 3) | (cbpy << 2);
         if (dquant) {
-            change_qscale(s, quant_tab[get_bits(&s->gb, 2)]);
+            if(s->modified_quant){
+                if(get_bits1(&s->gb))
+                    s->qscale= modified_quant_tab[get_bits1(&s->gb)][ s->qscale ];
+                else
+                    s->qscale= get_bits(&s->gb, 5);
+            }else
+                s->qscale += quant_tab[get_bits(&s->gb, 2)];
+            change_qscale(s, 0);
         }
         if((!s->progressive_sequence) && (cbp || (s->workaround_bugs&FF_BUG_XVID_ILACE)))
             s->interlaced_dct= get_bits1(&s->gb);
@@ -3772,7 +3783,14 @@ intra:
         }
         cbp = (cbpc & 3) | (cbpy << 2);
         if (dquant) {
-            change_qscale(s, quant_tab[get_bits(&s->gb, 2)]);
+            if(s->modified_quant){
+                if(get_bits1(&s->gb))
+                    s->qscale= modified_quant_tab[get_bits1(&s->gb)][ s->qscale ];
+                else
+                    s->qscale= get_bits(&s->gb, 5);
+            }else
+                s->qscale += quant_tab[get_bits(&s->gb, 2)];
+            change_qscale(s, 0);
         }
         
         if(!s->progressive_sequence)
@@ -4459,9 +4477,7 @@ int h263_decode_picture_header(MpegEncContext *s)
                 av_log(s->avctx, AV_LOG_ERROR, "Independent Segment Decoding not supported\n");
             }
             s->alt_inter_vlc= get_bits1(&s->gb);
-            if (get_bits1(&s->gb) != 0) {
-                av_log(s->avctx, AV_LOG_ERROR, "Modified Quantization not supported\n");
-            }
+            s->modified_quant= get_bits1(&s->gb);
             
             skip_bits(&s->gb, 1); /* Prevent start code emulation */
 
@@ -4532,14 +4548,14 @@ int h263_decode_picture_header(MpegEncContext *s)
     
     if(s->h263_aic){
          s->y_dc_scale_table= 
-         s->c_dc_scale_table= h263_aic_dc_scale_table;
+         s->c_dc_scale_table= ff_aic_dc_scale_table;
     }else{
         s->y_dc_scale_table=
         s->c_dc_scale_table= ff_mpeg1_dc_scale_table;
     }
 
      if(s->avctx->debug&FF_DEBUG_PICT_INFO){
-         av_log(s->avctx, AV_LOG_DEBUG, "qp:%d %c size:%d rnd:%d%s%s%s%s%s%s\n", 
+         av_log(s->avctx, AV_LOG_DEBUG, "qp:%d %c size:%d rnd:%d%s%s%s%s%s%s%s\n", 
          s->qscale, av_get_pict_type_char(s->pict_type),
          s->gb.size_in_bits, 1-s->no_rounding,
          s->obmc ? " AP" : "",
@@ -4547,7 +4563,8 @@ int h263_decode_picture_header(MpegEncContext *s)
          s->h263_long_vectors ? " LONG" : "",
          s->h263_plus ? " +" : "",
          s->h263_aic ? " AIC" : "",
-         s->alt_inter_vlc ? " AIV" : ""
+         s->alt_inter_vlc ? " AIV" : "",
+         s->modified_quant ? " MQ" : ""
          ); 
      }
 #if 1

@@ -33,6 +33,7 @@ enum CodecID {
     CODEC_ID_MPEG2VIDEO_XVMC,
     CODEC_ID_H263,
     CODEC_ID_RV10,
+    CODEC_ID_RV20,
     CODEC_ID_MP2,
     CODEC_ID_MP3, /* prefered ID for MPEG Audio layer 1, 2 or3 decoding */
     CODEC_ID_VORBIS,
@@ -1502,6 +1503,7 @@ extern AVCodec h263_encoder;
 extern AVCodec h263p_encoder;
 extern AVCodec flv_encoder;
 extern AVCodec rv10_encoder;
+extern AVCodec rv20_encoder;
 extern AVCodec mjpeg_encoder;
 extern AVCodec ljpeg_encoder;
 extern AVCodec mpeg4_encoder;
@@ -1532,6 +1534,7 @@ extern AVCodec mpeg_xvmc_decoder;
 extern AVCodec h263i_decoder;
 extern AVCodec flv_decoder;
 extern AVCodec rv10_decoder;
+extern AVCodec rv20_decoder;
 extern AVCodec svq1_decoder;
 extern AVCodec svq3_decoder;
 extern AVCodec dvvideo_decoder;

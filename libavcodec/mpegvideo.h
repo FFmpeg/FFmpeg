@@ -526,6 +526,7 @@ typedef struct MpegEncContext {
     int h263_aic;                   ///< Advanded INTRA Coding (AIC) 
     int h263_aic_dir;               ///< AIC direction: 0 = left, 1 = top 
     int alt_inter_vlc;              ///< alternative inter vlc
+    int modified_quant;
     
     /* mpeg4 specific */
     int time_increment_resolution;
@@ -814,8 +815,12 @@ static inline int get_rl_index(const RLTable *rl, int last, int run, int level)
 
 extern uint8_t ff_mpeg4_y_dc_scale_table[32];
 extern uint8_t ff_mpeg4_c_dc_scale_table[32];
+extern uint8_t ff_aic_dc_scale_table[32];
 extern const int16_t ff_mpeg4_default_intra_matrix[64];
 extern const int16_t ff_mpeg4_default_non_intra_matrix[64];
+extern const uint16_t ff_mba_max[6];
+extern const uint8_t ff_mba_length[6];
+
 int ff_h263_decode_init(AVCodecContext *avctx);
 int ff_h263_decode_frame(AVCodecContext *avctx, 
                              void *data, int *data_size,
