@@ -25,6 +25,10 @@
 #include "h263data.h"
 #include "mpeg4data.h"
 
+//rounded divison & shift
+#define RDIV(a,b) ((a) > 0 ? ((a)+((b)>>1))/(b) : ((a)-((b)>>1))/(b))
+#define RSHIFT(a,b) ((a) > 0 ? ((a) + (1<<((b)-1)))>>(b) : ((a) + (1<<((b)-1))-1)>>(b))
+
 static void h263_encode_block(MpegEncContext * s, DCTELEM * block,
 			      int n);
 static void h263_encode_motion(MpegEncContext * s, int val);
@@ -961,9 +965,25 @@ int h263_decode_mb(MpegEncContext *s,
                 s->block_last_index[i] = -1;
             s->mv_dir = MV_DIR_FORWARD;
             s->mv_type = MV_TYPE_16X16;
-            s->mv[0][0][0] = 0;
-            s->mv[0][0][1] = 0;
-            s->mb_skiped = 1;
+            if(s->pict_type==S_TYPE && s->vol_sprite_usage==GMC_SPRITE){
+                const int a= s->sprite_warping_accuracy;
+//                int l = (1 << (s->f_code - 1)) * 32;
+
+                s->mcsel=1;
+                s->mv[0][0][0] = RSHIFT(s->sprite_offset[0][0], a-s->quarter_sample);
+                s->mv[0][0][1] = RSHIFT(s->sprite_offset[0][1], a-s->quarter_sample);
+/*                if (s->mv[0][0][0] < -l) s->mv[0][0][0]= -l;
+                else if (s->mv[0][0][0] >= l) s->mv[0][0][0]= l-1;
+                if (s->mv[0][0][1] < -l) s->mv[0][0][1]= -l;
+                else if (s->mv[0][0][1] >= l) s->mv[0][0][1]= l-1;*/
+
+                s->mb_skiped = 0;
+            }else{
+                s->mcsel=0;
+                s->mv[0][0][0] = 0;
+                s->mv[0][0][1] = 0;
+                s->mb_skiped = 1;
+            }
             return 0;
         }
         cbpc = get_vlc(&s->gb, &inter_MCBPC_vlc);
@@ -1007,7 +1027,13 @@ int h263_decode_mb(MpegEncContext *s,
                mx = h263p_decode_umotion(s, pred_x);
             else if(!s->mcsel)
                mx = h263_decode_motion(s, pred_x);
-            else mx=0;
+            else {
+               const int a= s->sprite_warping_accuracy;
+//        int l = (1 << (s->f_code - 1)) * 32;
+               mx= RSHIFT(s->sprite_offset[0][0], a-s->quarter_sample);
+//        if (mx < -l) mx= -l;
+//        else if (mx >= l) mx= l-1;
+            }
             if (mx >= 0xffff)
                 return -1;
             
@@ -1015,7 +1041,13 @@ int h263_decode_mb(MpegEncContext *s,
                my = h263p_decode_umotion(s, pred_y);
             else if(!s->mcsel)
                my = h263_decode_motion(s, pred_y);
-            else my=0;
+            else{
+               const int a= s->sprite_warping_accuracy;
+//       int l = (1 << (s->f_code - 1)) * 32;
+               my= RSHIFT(s->sprite_offset[0][1], a-s->quarter_sample);
+//       if (my < -l) my= -l;
+//       else if (my >= l) my= l-1;
+            }
             if (my >= 0xffff)
                 return -1;
             s->mv[0][0][0] = mx;
@@ -1510,7 +1542,7 @@ static void mpeg4_decode_sprite_trajectory(MpegEncContext * s)
     int alpha=0, beta=0;
     int w= s->width;
     int h= s->height;
-    
+//printf("SP %d\n", s->sprite_warping_accuracy);
     for(i=0; i<s->num_sprite_warping_points; i++){
         int length;
         int x=0, y=0;
@@ -1518,21 +1550,23 @@ static void mpeg4_decode_sprite_trajectory(MpegEncContext * s)
         length= get_vlc(&s->gb, &sprite_trajectory);
         if(length){
             x= get_bits(&s->gb, length);
+//printf("lx %d %d\n", length, x);
             if ((x >> (length - 1)) == 0) /* if MSB not set it is negative*/
                 x = - (x ^ ((1 << length) - 1));
         }
-// FIXME the mpeg4 std says that here should be a marker but but divx5 doesnt have one here
-//        skip_bits1(&s->gb); /* marker bit */
+        if(!(s->divx_version==500 && s->divx_build==413)) skip_bits1(&s->gb); /* marker bit */
         
         length= get_vlc(&s->gb, &sprite_trajectory);
         if(length){
             y=get_bits(&s->gb, length);
+//printf("ly %d %d\n", length, y);
             if ((y >> (length - 1)) == 0) /* if MSB not set it is negative*/
                 y = - (y ^ ((1 << length) - 1));
         }
         skip_bits1(&s->gb); /* marker bit */
-//        printf("%d %d\n", x, y);
+//printf("%d %d %d %d\n", x, y, i, s->sprite_warping_accuracy);
 //if(i>0 && (x!=0 || y!=0)) printf("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n");
+//x=y=0;
         d[i][0]= x;
         d[i][1]= y;
     }
@@ -1543,13 +1577,21 @@ static void mpeg4_decode_sprite_trajectory(MpegEncContext * s)
     h2= 1<<beta;
 
 // Note, the 4th point isnt used for GMC
-    
+/*
     sprite_ref[0][0]= (a>>1)*(2*vop_ref[0][0] + d[0][0]);
     sprite_ref[0][1]= (a>>1)*(2*vop_ref[0][1] + d[0][1]);
     sprite_ref[1][0]= (a>>1)*(2*vop_ref[1][0] + d[0][0] + d[1][0]);
     sprite_ref[1][1]= (a>>1)*(2*vop_ref[1][1] + d[0][1] + d[1][1]);
     sprite_ref[2][0]= (a>>1)*(2*vop_ref[2][0] + d[0][0] + d[2][0]);
     sprite_ref[2][1]= (a>>1)*(2*vop_ref[2][1] + d[0][1] + d[2][1]);
+*/
+//FIXME DIVX5 vs. mpeg4 ?
+    sprite_ref[0][0]= a*vop_ref[0][0] + d[0][0];
+    sprite_ref[0][1]= a*vop_ref[0][1] + d[0][1];
+    sprite_ref[1][0]= a*vop_ref[1][0] + d[0][0] + d[1][0];
+    sprite_ref[1][1]= a*vop_ref[1][1] + d[0][1] + d[1][1];
+    sprite_ref[2][0]= a*vop_ref[2][0] + d[0][0] + d[2][0];
+    sprite_ref[2][1]= a*vop_ref[2][1] + d[0][1] + d[2][1];
 /*    sprite_ref[3][0]= (a>>1)*(2*vop_ref[3][0] + d[0][0] + d[1][0] + d[2][0] + d[3][0]);
     sprite_ref[3][1]= (a>>1)*(2*vop_ref[3][1] + d[0][1] + d[1][1] + d[2][1] + d[3][1]); */
     
@@ -1557,15 +1599,14 @@ static void mpeg4_decode_sprite_trajectory(MpegEncContext * s)
 // perhaps it should be reordered to be more readable ...
 // the idea behind this virtual_ref mess is to be able to use shifts later per pixel instead of divides
 // so the distance between points is converted from w&h based to w2&h2 based which are of the 2^x form
-// FIXME rounding (they should be positive but who knows ...)
     virtual_ref[0][0]= 16*(vop_ref[0][0] + w2) 
-        + ((w - w2)*(r*sprite_ref[0][0] - 16*vop_ref[0][0]) + w2*(r*sprite_ref[1][0] - 16*vop_ref[1][0]) + w/2)/w;
+        + RDIV(((w - w2)*(r*sprite_ref[0][0] - 16*vop_ref[0][0]) + w2*(r*sprite_ref[1][0] - 16*vop_ref[1][0])),w);
     virtual_ref[0][1]= 16*vop_ref[0][1] 
-        + ((w - w2)*(r*sprite_ref[0][1] - 16*vop_ref[0][1]) + w2*(r*sprite_ref[1][1] - 16*vop_ref[1][1]) + w/2)/w;
+        + RDIV(((w - w2)*(r*sprite_ref[0][1] - 16*vop_ref[0][1]) + w2*(r*sprite_ref[1][1] - 16*vop_ref[1][1])),w);
     virtual_ref[1][0]= 16*vop_ref[0][0] 
-        + ((h - h2)*(r*sprite_ref[0][0] - 16*vop_ref[0][0]) + h2*(r*sprite_ref[2][0] - 16*vop_ref[2][0]) + h/2)/h;
+        + RDIV(((h - h2)*(r*sprite_ref[0][0] - 16*vop_ref[0][0]) + h2*(r*sprite_ref[2][0] - 16*vop_ref[2][0])),h);
     virtual_ref[1][1]= 16*(vop_ref[0][1] + h2) 
-        + ((h - h2)*(r*sprite_ref[0][1] - 16*vop_ref[0][1]) + h2*(r*sprite_ref[2][1] - 16*vop_ref[2][1]) + h/2)/h;
+        + RDIV(((h - h2)*(r*sprite_ref[0][1] - 16*vop_ref[0][1]) + h2*(r*sprite_ref[2][1] - 16*vop_ref[2][1])),h);
 
     switch(s->num_sprite_warping_points)
     {
@@ -1635,7 +1676,46 @@ static void mpeg4_decode_sprite_trajectory(MpegEncContext * s)
 //        case 3:
             break;
     }
+/*printf("%d %d\n", s->sprite_delta[0][0][0], a<<s->sprite_shift[0][0]);
+printf("%d %d\n", s->sprite_delta[0][0][1], 0);
+printf("%d %d\n", s->sprite_delta[0][1][0], 0);
+printf("%d %d\n", s->sprite_delta[0][1][1], a<<s->sprite_shift[0][1]);
+printf("%d %d\n", s->sprite_delta[1][0][0], a<<s->sprite_shift[1][0]);
+printf("%d %d\n", s->sprite_delta[1][0][1], 0);
+printf("%d %d\n", s->sprite_delta[1][1][0], 0);
+printf("%d %d\n", s->sprite_delta[1][1][1], a<<s->sprite_shift[1][1]);*/
+    /* try to simplify the situation */ 
+    if(   s->sprite_delta[0][0][0] == a<<s->sprite_shift[0][0]
+       && s->sprite_delta[0][0][1] == 0
+       && s->sprite_delta[0][1][0] == 0
+       && s->sprite_delta[0][1][1] == a<<s->sprite_shift[0][1]
+       && s->sprite_delta[1][0][0] == a<<s->sprite_shift[1][0]
+       && s->sprite_delta[1][0][1] == 0
+       && s->sprite_delta[1][1][0] == 0
+       && s->sprite_delta[1][1][1] == a<<s->sprite_shift[1][1])
+    {
+        s->sprite_offset[0][0]>>=s->sprite_shift[0][0];
+        s->sprite_offset[0][1]>>=s->sprite_shift[0][1];
+        s->sprite_offset[1][0]>>=s->sprite_shift[1][0];
+        s->sprite_offset[1][1]>>=s->sprite_shift[1][1];
+        s->sprite_delta[0][0][0]= a;
+        s->sprite_delta[0][0][1]= 0;
+        s->sprite_delta[0][1][0]= 0;
+        s->sprite_delta[0][1][1]= a;
+        s->sprite_delta[1][0][0]= a;
+        s->sprite_delta[1][0][1]= 0;
+        s->sprite_delta[1][1][0]= 0;
+        s->sprite_delta[1][1][1]= a;
+        s->sprite_shift[0][0]= 0;
+        s->sprite_shift[0][1]= 0;
+        s->sprite_shift[1][0]= 0;
+        s->sprite_shift[1][1]= 0;
+        s->real_sprite_warping_points=1;
+    }
+    else
+        s->real_sprite_warping_points= s->num_sprite_warping_points;
 
+//FIXME convert stuff if accurace != 3
 }
 
 /* decode mpeg4 VOP header */
@@ -1748,7 +1828,6 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
             if(vo_ver_id != 1)
                  s->quarter_sample= get_bits1(&s->gb);
             else s->quarter_sample=0;
-            if(s->quarter_sample) printf("Quarter sample not supported\n");
 #if 0
             if(get_bits1(&s->gb)) printf("Complexity est disabled\n");
             if(get_bits1(&s->gb)) printf("resync disable\n");
@@ -1786,7 +1865,34 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
 //printf("end Data %X %d\n", show_bits(&s->gb, 32), get_bits_count(&s->gb)&0x7);
         goto redo;
     } else if (startcode == 0x1b2) { //userdata
+        char buf[256];
+        int i;
+        int e;
+        int ver, build;
+
 //printf("user Data %X\n", show_bits(&s->gb, 32));
+        buf[0]= show_bits(&s->gb, 8);
+        for(i=1; i<256; i++){
+            buf[i]= show_bits(&s->gb, 16)&0xFF;
+            if(buf[i]==0) break;
+            skip_bits(&s->gb, 8);
+        }
+        buf[255]=0;
+        e=sscanf(buf, "DivX%dBuild%d", &ver, &build);
+        if(e==2){
+            s->divx_version= ver;
+            s->divx_build= build;
+            if(s->picture_number==0){
+                printf("This file was encoded with DivX%d Build%d\n", ver, build);
+                if(ver==500 && build==413){ //most likely all version are indeed totally buggy but i dunno for sure ...
+                    printf("WARNING: this version of DivX is not MPEG4 compatible, trying to workaround these bugs...\n");
+                }else{
+                    printf("hmm, i havnt seen that version of divx yet, lets assume they fixed these bugs ...\n"
+                           "using mpeg4 decoder, if it fails contact the developers (of ffmpeg)\n");
+                }
+            }
+        }
+//printf("User Data: %s\n", buf);
         goto redo;
     } else if (startcode != 0x1b6) { //VOP
         goto redo;
@@ -1798,12 +1904,7 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
         printf("B-VOP\n");
 	return -1;
     }
-    if(s->pict_type == S_TYPE)
-    {
-        printf("S-VOP\n");
-//	return -1;
-    }
-    
+ 
     /* XXX: parse time base */
     time_incr = 0;
     while (get_bits1(&s->gb) != 0) 
@@ -1878,6 +1979,7 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
          }
      }
 //printf("end Data %X %d\n", show_bits(&s->gb, 32), get_bits_count(&s->gb)&0x7);
+     s->picture_number++; // better than pic number==0 allways ;)
      return 0;
 }
 

@@ -541,6 +541,59 @@ static inline int clip(int a, int amin, int amax)
         return a;
 }
 
+static inline void gmc1_motion(MpegEncContext *s,
+                               UINT8 *dest_y, UINT8 *dest_cb, UINT8 *dest_cr,
+                               int dest_offset,
+                               UINT8 **ref_picture, int src_offset,
+                               int h)
+{
+    UINT8 *ptr;
+    int dxy, offset, mx, my, src_x, src_y, height, linesize;
+    int motion_x, motion_y;
+
+    if(s->real_sprite_warping_points>1) printf("Oops, thats bad, contact the developers\n");
+    motion_x= s->sprite_offset[0][0];
+    motion_y= s->sprite_offset[0][1];
+    src_x = s->mb_x * 16 + (motion_x >> (s->sprite_warping_accuracy+1));
+    src_y = s->mb_y * 16 + (motion_y >> (s->sprite_warping_accuracy+1));
+    motion_x<<=(3-s->sprite_warping_accuracy);
+    motion_y<<=(3-s->sprite_warping_accuracy);
+    src_x = clip(src_x, -16, s->width);
+    if (src_x == s->width)
+        motion_x =0;
+    src_y = clip(src_y, -16, s->height);
+    if (src_y == s->height)
+        motion_y =0;
+    
+    linesize = s->linesize;
+    ptr = ref_picture[0] + (src_y * linesize) + src_x + src_offset;
+
+    dest_y+=dest_offset;
+    gmc1(dest_y  , ptr  , linesize, h, motion_x&15, motion_y&15, s->no_rounding);
+    gmc1(dest_y+8, ptr+8, linesize, h, motion_x&15, motion_y&15, s->no_rounding);
+
+    motion_x= s->sprite_offset[1][0];
+    motion_y= s->sprite_offset[1][1];
+    src_x = s->mb_x * 8 + (motion_x >> (s->sprite_warping_accuracy+1));
+    src_y = s->mb_y * 8 + (motion_y >> (s->sprite_warping_accuracy+1));
+    motion_x<<=(3-s->sprite_warping_accuracy);
+    motion_y<<=(3-s->sprite_warping_accuracy);
+    src_x = clip(src_x, -8, s->width>>1);
+    if (src_x == s->width>>1)
+        motion_x =0;
+    src_y = clip(src_y, -8, s->height>>1);
+    if (src_y == s->height>>1)
+        motion_y =0;
+
+    offset = (src_y * linesize>>1) + src_x + (src_offset>>1);
+    ptr = ref_picture[1] + offset;
+    gmc1(dest_cb + (dest_offset>>1), ptr, linesize>>1, h>>1, motion_x&15, motion_y&15, s->no_rounding);
+    ptr = ref_picture[2] + offset;
+    gmc1(dest_cr + (dest_offset>>1), ptr, linesize>>1, h>>1, motion_x&15, motion_y&15, s->no_rounding);
+    
+    return;
+}
+
 /* apply one mpeg motion vector to the three components */
 static inline void mpeg_motion(MpegEncContext *s,
                                UINT8 *dest_y, UINT8 *dest_cb, UINT8 *dest_cr,
@@ -551,7 +604,11 @@ static inline void mpeg_motion(MpegEncContext *s,
 {
     UINT8 *ptr;
     int dxy, offset, mx, my, src_x, src_y, height, linesize;
-    
+if(s->quarter_sample)
+{
+    motion_x>>=1;
+    motion_y>>=1;
+}
     dxy = ((motion_y & 1) << 1) | (motion_x & 1);
     src_x = s->mb_x * 16 + (motion_x >> 1);
     src_y = s->mb_y * (16 >> field_based) + (motion_y >> 1);
@@ -602,10 +659,69 @@ static inline void mpeg_motion(MpegEncContext *s,
     pix_op[dxy](dest_cr + (dest_offset >> 1), ptr, linesize >> 1, h >> 1);
 }
 
+static inline void qpel_motion(MpegEncContext *s,
+                               UINT8 *dest_y, UINT8 *dest_cb, UINT8 *dest_cr,
+                               int dest_offset,
+                               UINT8 **ref_picture, int src_offset,
+                               int field_based, op_pixels_func *pix_op,
+                               qpel_mc_func *qpix_op,
+                               int motion_x, int motion_y, int h)
+{
+    UINT8 *ptr;
+    int dxy, offset, mx, my, src_x, src_y, height, linesize;
+
+    dxy = ((motion_y & 3) << 2) | (motion_x & 3);
+    src_x = s->mb_x * 16 + (motion_x >> 2);
+    src_y = s->mb_y * (16 >> field_based) + (motion_y >> 2);
+
+    height = s->height >> field_based;
+    src_x = clip(src_x, -16, s->width);
+    if (src_x == s->width)
+        dxy &= ~3;
+    src_y = clip(src_y, -16, height);
+    if (src_y == height)
+        dxy &= ~12;
+    linesize = s->linesize << field_based;
+    ptr = ref_picture[0] + (src_y * linesize) + src_x + src_offset;
+    dest_y += dest_offset;
+//printf("%d %d %d\n", src_x, src_y, dxy);
+    qpix_op[dxy](dest_y                 , ptr                 , linesize, linesize, motion_x&3, motion_y&3);
+    qpix_op[dxy](dest_y              + 8, ptr              + 8, linesize, linesize, motion_x&3, motion_y&3);
+    qpix_op[dxy](dest_y + linesize*8    , ptr + linesize*8    , linesize, linesize, motion_x&3, motion_y&3);
+    qpix_op[dxy](dest_y + linesize*8 + 8, ptr + linesize*8 + 8, linesize, linesize, motion_x&3, motion_y&3);
+    
+    mx= (motion_x>>1) | (motion_x&1);
+    my= (motion_y>>1) | (motion_y&1);
+
+    dxy = 0;
+    if ((mx & 3) != 0)
+        dxy |= 1;
+    if ((my & 3) != 0)
+        dxy |= 2;
+    mx = mx >> 2;
+    my = my >> 2;
+    
+    src_x = s->mb_x * 8 + mx;
+    src_y = s->mb_y * (8 >> field_based) + my;
+    src_x = clip(src_x, -8, s->width >> 1);
+    if (src_x == (s->width >> 1))
+        dxy &= ~1;
+    src_y = clip(src_y, -8, height >> 1);
+    if (src_y == (height >> 1))
+        dxy &= ~2;
+
+    offset = (src_y * (linesize >> 1)) + src_x + (src_offset >> 1);
+    ptr = ref_picture[1] + offset;
+    pix_op[dxy](dest_cb + (dest_offset >> 1), ptr, linesize >> 1, h >> 1);
+    ptr = ref_picture[2] + offset;
+    pix_op[dxy](dest_cr + (dest_offset >> 1), ptr, linesize >> 1, h >> 1);
+}
+
+
 static inline void MPV_motion(MpegEncContext *s, 
                               UINT8 *dest_y, UINT8 *dest_cb, UINT8 *dest_cr,
                               int dir, UINT8 **ref_picture, 
-                              op_pixels_func *pix_op)
+                              op_pixels_func *pix_op, qpel_mc_func *qpix_op)
 {
     int dxy, offset, mx, my, src_x, src_y, motion_x, motion_y;
     int mb_x, mb_y, i;
@@ -616,10 +732,30 @@ static inline void MPV_motion(MpegEncContext *s,
 
     switch(s->mv_type) {
     case MV_TYPE_16X16:
-        mpeg_motion(s, dest_y, dest_cb, dest_cr, 0,
-                    ref_picture, 0,
-                    0, pix_op,
-                    s->mv[dir][0][0], s->mv[dir][0][1], 16);
+        if(s->mcsel){
+#if 0
+            mpeg_motion(s, dest_y, dest_cb, dest_cr, 0,
+                        ref_picture, 0,
+                        0, pix_op,
+                        s->sprite_offset[0][0]>>3,
+                        s->sprite_offset[0][1]>>3,
+                        16);
+#else
+            gmc1_motion(s, dest_y, dest_cb, dest_cr, 0,
+                        ref_picture, 0,
+                        16);
+#endif
+        }else if(s->quarter_sample){
+            qpel_motion(s, dest_y, dest_cb, dest_cr, 0,
+                        ref_picture, 0,
+                        0, pix_op, qpix_op,
+                        s->mv[dir][0][0], s->mv[dir][0][1], 16);
+        }else{
+            mpeg_motion(s, dest_y, dest_cb, dest_cr, 0,
+                        ref_picture, 0,
+                        0, pix_op,
+                        s->mv[dir][0][0], s->mv[dir][0][1], 16);
+        }           
         break;
     case MV_TYPE_8X8:
         for(i=0;i<4;i++) {
@@ -740,6 +876,7 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
     int mb_x, mb_y;
     int dct_linesize, dct_offset;
     op_pixels_func *op_pix;
+    qpel_mc_func *op_qpix;
 
     mb_x = s->mb_x;
     mb_y = s->mb_y;
@@ -851,20 +988,23 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
 
         if (!s->mb_intra) {
             /* motion handling */
-            if (!s->no_rounding) 
+            if (!s->no_rounding){
                 op_pix = put_pixels_tab;
-            else
+                op_qpix= qpel_mc_rnd_tab;
+            }else{
                 op_pix = put_no_rnd_pixels_tab;
+                op_qpix= qpel_mc_no_rnd_tab;
+            }
 
             if (s->mv_dir & MV_DIR_FORWARD) {
-                MPV_motion(s, dest_y, dest_cb, dest_cr, 0, s->last_picture, op_pix);
+                MPV_motion(s, dest_y, dest_cb, dest_cr, 0, s->last_picture, op_pix, op_qpix);
                 if (!s->no_rounding) 
                     op_pix = avg_pixels_tab;
                 else
                     op_pix = avg_no_rnd_pixels_tab;
             }
             if (s->mv_dir & MV_DIR_BACKWARD) {
-                MPV_motion(s, dest_y, dest_cb, dest_cr, 1, s->next_picture, op_pix);
+                MPV_motion(s, dest_y, dest_cb, dest_cr, 1, s->next_picture, op_pix, op_qpix);
             }
 
             /* add dct residue */

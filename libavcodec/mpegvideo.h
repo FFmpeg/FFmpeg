@@ -165,6 +165,7 @@ typedef struct MpegEncContext {
     int sprite_top;
     int sprite_brightness_change;
     int num_sprite_warping_points;
+    int real_sprite_warping_points;
     int sprite_offset[2][2];
     int sprite_delta[2][2][2];
     int sprite_shift[2][2];
@@ -178,7 +179,11 @@ typedef struct MpegEncContext {
     int sprite_warping_accuracy;
     int low_latency_sprite;
     int data_partioning;
-    
+
+    /* divx specific, used to workaround (many) bugs in divx5 */
+    int divx_version;
+    int divx_build;
+
     /* RV10 specific */
     int rv10_version; /* RV10 version: 0 or 3 */
     int rv10_first_dc_coded[3];

@@ -4,6 +4,7 @@
 #include "common.h"
 #include "avcodec.h"
 
+//#define DEBUG
 /* dct code */
 typedef short DCTELEM;
 
@@ -38,6 +39,8 @@ extern void (*ff_idct)(DCTELEM *block);
 extern void (*get_pixels)(DCTELEM *block, const UINT8 *pixels, int line_size);
 extern void (*put_pixels_clamped)(const DCTELEM *block, UINT8 *pixels, int line_size);
 extern void (*add_pixels_clamped)(const DCTELEM *block, UINT8 *pixels, int line_size);
+extern void (*gmc1)(UINT8 *dst, UINT8 *src, int srcStride, int h, int x16, int y16, int rounder);
+
 
 void get_pixels_c(DCTELEM *block, const UINT8 *pixels, int line_size);
 void put_pixels_clamped_c(const DCTELEM *block, UINT8 *pixels, int line_size);
@@ -45,11 +48,15 @@ void add_pixels_clamped_c(const DCTELEM *block, UINT8 *pixels, int line_size);
 
 /* add and put pixel (decoding) */
 typedef void (*op_pixels_func)(UINT8 *block, const UINT8 *pixels, int line_size, int h);
+typedef void (*qpel_mc_func)(UINT8 *dst, UINT8 *src, int dstStride, int srcStride, int mx, int my);
 
 extern op_pixels_func put_pixels_tab[4];
 extern op_pixels_func avg_pixels_tab[4];
 extern op_pixels_func put_no_rnd_pixels_tab[4];
 extern op_pixels_func avg_no_rnd_pixels_tab[4];
+extern qpel_mc_func qpel_mc_rnd_tab[16];
+extern qpel_mc_func qpel_mc_no_rnd_tab[16];
+
 
 /* sub pixel (encoding) */
 extern void (*sub_pixels_tab[4])(DCTELEM *block, const UINT8 *pixels, int line_size, int h);

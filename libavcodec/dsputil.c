@@ -27,6 +27,7 @@ void (*ff_idct)(DCTELEM *block);
 void (*get_pixels)(DCTELEM *block, const UINT8 *pixels, int line_size);
 void (*put_pixels_clamped)(const DCTELEM *block, UINT8 *pixels, int line_size);
 void (*add_pixels_clamped)(const DCTELEM *block, UINT8 *pixels, int line_size);
+void (*gmc1)(UINT8 *dst, UINT8 *src, int srcStride, int h, int x16, int y16, int rounder);
 
 op_pixels_abs_func pix_abs16x16;
 op_pixels_abs_func pix_abs16x16_x2;
@@ -344,6 +345,282 @@ PIXOP(UINT8, avg_no_rnd, op_avg, line_size)
 #define avg2(a,b) ((a+b+1)>>1)
 #define avg4(a,b,c,d) ((a+b+c+d+2)>>2)
 
+static void gmc1_c(UINT8 *dst, UINT8 *src, int srcStride, int h, int x16, int y16, int rounder)
+{
+    const int A=(16-x16)*(16-y16);
+    const int B=(   x16)*(16-y16);
+    const int C=(16-x16)*(   y16);
+    const int D=(   x16)*(   y16);
+    int i;
+    rounder= 128 - rounder;
+
+    for(i=0; i<h; i++)
+    {
+        dst[0]= (A*src[0] + B*src[1] + C*src[srcStride+0] + D*src[srcStride+1] + rounder)>>8;
+        dst[1]= (A*src[1] + B*src[2] + C*src[srcStride+1] + D*src[srcStride+2] + rounder)>>8;
+        dst[2]= (A*src[2] + B*src[3] + C*src[srcStride+2] + D*src[srcStride+3] + rounder)>>8;
+        dst[3]= (A*src[3] + B*src[4] + C*src[srcStride+3] + D*src[srcStride+4] + rounder)>>8;
+        dst[4]= (A*src[4] + B*src[5] + C*src[srcStride+4] + D*src[srcStride+5] + rounder)>>8;
+        dst[5]= (A*src[5] + B*src[6] + C*src[srcStride+5] + D*src[srcStride+6] + rounder)>>8;
+        dst[6]= (A*src[6] + B*src[7] + C*src[srcStride+6] + D*src[srcStride+7] + rounder)>>8;
+        dst[7]= (A*src[7] + B*src[8] + C*src[srcStride+7] + D*src[srcStride+8] + rounder)>>8;
+        dst+= srcStride;
+        src+= srcStride;
+    }
+}
+
+static void qpel_h_lowpass(UINT8 *dst, UINT8 *src, int dstStride, int srcStride, int h, int r)
+{
+    UINT8 *cm = cropTbl + MAX_NEG_CROP;
+    int i;
+    for(i=0; i<h; i++)
+    {
+        dst[0]= cm[(((src[0]+src[1])*160 - (src[0]+src[2])*48 + (src[1]+src[3])*24 - (src[2]+src[4])*8 + r)>>8)];
+        dst[1]= cm[(((src[1]+src[2])*160 - (src[0]+src[3])*48 + (src[0]+src[4])*24 - (src[1]+src[5])*8 + r)>>8)];
+        dst[2]= cm[(((src[2]+src[3])*160 - (src[1]+src[4])*48 + (src[0]+src[5])*24 - (src[0]+src[6])*8 + r)>>8)];
+        dst[3]= cm[(((src[3]+src[4])*160 - (src[2]+src[5])*48 + (src[1]+src[6])*24 - (src[0]+src[7])*8 + r)>>8)];
+        dst[4]= cm[(((src[4]+src[5])*160 - (src[3]+src[6])*48 + (src[2]+src[7])*24 - (src[1]+src[8])*8 + r)>>8)];
+        dst[5]= cm[(((src[5]+src[6])*160 - (src[4]+src[7])*48 + (src[3]+src[8])*24 - (src[2]+src[8])*8 + r)>>8)];
+        dst[6]= cm[(((src[6]+src[7])*160 - (src[5]+src[8])*48 + (src[4]+src[8])*24 - (src[3]+src[7])*8 + r)>>8)];
+        dst[7]= cm[(((src[7]+src[8])*160 - (src[6]+src[8])*48 + (src[5]+src[7])*24 - (src[4]+src[6])*8 + r)>>8)];
+        dst+=dstStride;
+        src+=srcStride;
+    }
+}
+
+static void qpel_v_lowpass(UINT8 *dst, UINT8 *src, int dstStride, int srcStride, int w, int r)
+{
+    UINT8 *cm = cropTbl + MAX_NEG_CROP;
+    int i;
+    for(i=0; i<w; i++)
+    {
+        const int src0= src[0*srcStride];
+        const int src1= src[1*srcStride];
+        const int src2= src[2*srcStride];
+        const int src3= src[3*srcStride];
+        const int src4= src[4*srcStride];
+        const int src5= src[5*srcStride];
+        const int src6= src[6*srcStride];
+        const int src7= src[7*srcStride];
+        const int src8= src[8*srcStride];
+        dst[0*dstStride]= cm[(((src0+src1)*160 - (src0+src2)*48 + (src1+src3)*24 - (src2+src4)*8 + r)>>8)];
+        dst[1*dstStride]= cm[(((src1+src2)*160 - (src0+src3)*48 + (src0+src4)*24 - (src1+src5)*8 + r)>>8)];
+        dst[2*dstStride]= cm[(((src2+src3)*160 - (src1+src4)*48 + (src0+src5)*24 - (src0+src6)*8 + r)>>8)];
+        dst[3*dstStride]= cm[(((src3+src4)*160 - (src2+src5)*48 + (src1+src6)*24 - (src0+src7)*8 + r)>>8)];
+        dst[4*dstStride]= cm[(((src4+src5)*160 - (src3+src6)*48 + (src2+src7)*24 - (src1+src8)*8 + r)>>8)];
+        dst[5*dstStride]= cm[(((src5+src6)*160 - (src4+src7)*48 + (src3+src8)*24 - (src2+src8)*8 + r)>>8)];
+        dst[6*dstStride]= cm[(((src6+src7)*160 - (src5+src8)*48 + (src4+src8)*24 - (src3+src7)*8 + r)>>8)];
+        dst[7*dstStride]= cm[(((src7+src8)*160 - (src6+src8)*48 + (src5+src7)*24 - (src4+src6)*8 + r)>>8)];
+        dst++;
+        src++;
+    }
+}
+
+static inline void put_block(UINT8 *dst, UINT8 *src, int dstStride, int srcStride)
+{
+    int i;
+    for(i=0; i<8; i++)
+    {
+        dst[0]= src[0];
+        dst[1]= src[1];
+        dst[2]= src[2];
+        dst[3]= src[3];
+        dst[4]= src[4];
+        dst[5]= src[5];
+        dst[6]= src[6];
+        dst[7]= src[7];
+        dst+=dstStride;
+        src+=srcStride;
+    }
+}
+
+static inline void avg2_block(UINT8 *dst, UINT8 *src1, UINT8 *src2, int dstStride, int srcStride, int r)
+{
+    int i;
+    for(i=0; i<8; i++)
+    {
+        dst[0]= (src1[0] + src2[0] + r)>>1;
+        dst[1]= (src1[1] + src2[1] + r)>>1;
+        dst[2]= (src1[2] + src2[2] + r)>>1;
+        dst[3]= (src1[3] + src2[3] + r)>>1;
+        dst[4]= (src1[4] + src2[4] + r)>>1;
+        dst[5]= (src1[5] + src2[5] + r)>>1;
+        dst[6]= (src1[6] + src2[6] + r)>>1;
+        dst[7]= (src1[7] + src2[7] + r)>>1;
+        dst+=dstStride;
+        src1+=srcStride;
+        src2+=8;
+    }
+}
+
+static inline void avg4_block(UINT8 *dst, UINT8 *src1, UINT8 *src2, UINT8 *src3, UINT8 *src4, int dstStride, int srcStride, int r)
+{
+    int i;
+    for(i=0; i<8; i++)
+    {
+        dst[0]= (src1[0] + src2[0] + src3[0] + src4[0] + r)>>2;
+        dst[1]= (src1[1] + src2[1] + src3[1] + src4[1] + r)>>2;
+        dst[2]= (src1[2] + src2[2] + src3[2] + src4[2] + r)>>2;
+        dst[3]= (src1[3] + src2[3] + src3[3] + src4[3] + r)>>2;
+        dst[4]= (src1[4] + src2[4] + src3[4] + src4[4] + r)>>2;
+        dst[5]= (src1[5] + src2[5] + src3[5] + src4[5] + r)>>2;
+        dst[6]= (src1[6] + src2[6] + src3[6] + src4[6] + r)>>2;
+        dst[7]= (src1[7] + src2[7] + src3[7] + src4[7] + r)>>2;
+        dst+=dstStride;
+        src1+=srcStride;
+        src2+=8;
+        src3+=9;
+        src4+=8;
+    }
+}
+
+#define QPEL_MC(r, name) \
+static void qpel_mc00_c ## name (UINT8 *dst, UINT8 *src, int dstStride, int srcStride, int mx, int my)\
+{\
+    put_block(dst, src, dstStride, srcStride);\
+}\
+\
+static void qpel_mc10_c ## name (UINT8 *dst, UINT8 *src, int dstStride, int srcStride, int mx, int my)\
+{\
+    UINT8 half[64];\
+    qpel_h_lowpass(half, src, 8, srcStride, 8, 128-r);\
+    avg2_block(dst, src, half, dstStride, srcStride, 1-r);\
+}\
+\
+static void qpel_mc20_c ## name (UINT8 *dst, UINT8 *src, int dstStride, int srcStride, int mx, int my)\
+{\
+    qpel_h_lowpass(dst, src, dstStride, srcStride, 8, 128-r);\
+}\
+\
+static void qpel_mc30_c ## name (UINT8 *dst, UINT8 *src, int dstStride, int srcStride, int mx, int my)\
+{\
+    UINT8 half[64];\
+    qpel_h_lowpass(half, src, 8, srcStride, 8, 128-r);\
+    avg2_block(dst, src+1, half, dstStride, srcStride, 1-r);\
+}\
+\
+static void qpel_mc01_c ## name (UINT8 *dst, UINT8 *src, int dstStride, int srcStride, int mx, int my)\
+{\
+    UINT8 half[64];\
+    qpel_v_lowpass(half, src, 8, srcStride, 8, 128-r);\
+    avg2_block(dst, src, half, dstStride, srcStride, 1-r);\
+}\
+\
+static void qpel_mc02_c ## name (UINT8 *dst, UINT8 *src, int dstStride, int srcStride, int mx, int my)\
+{\
+    qpel_v_lowpass(dst, src, dstStride, srcStride, 8, 128-r);\
+}\
+\
+static void qpel_mc03_c ## name (UINT8 *dst, UINT8 *src, int dstStride, int srcStride, int mx, int my)\
+{\
+    UINT8 half[64];\
+    qpel_v_lowpass(half, src, 8, srcStride, 8, 128-r);\
+    avg2_block(dst, src+srcStride, half, dstStride, srcStride, 1-r);\
+}\
+static void qpel_mc11_c ## name (UINT8 *dst, UINT8 *src, int dstStride, int srcStride, int mx, int my)\
+{\
+    UINT8 halfH[72];\
+    UINT8 halfV[72];\
+    UINT8 halfHV[64];\
+    qpel_h_lowpass(halfH, src, 8, srcStride, 9, 128-r);\
+    qpel_v_lowpass(halfV, src, 9, srcStride, 9, 128-r);\
+    qpel_v_lowpass(halfHV, halfH, 8, 8, 8, 128-r);\
+    avg4_block(dst, src, halfH, halfV, halfHV, dstStride, srcStride, 2-r);\
+}\
+static void qpel_mc31_c ## name (UINT8 *dst, UINT8 *src, int dstStride, int srcStride, int mx, int my)\
+{\
+    UINT8 halfH[72];\
+    UINT8 halfV[72];\
+    UINT8 halfHV[64];\
+    qpel_h_lowpass(halfH, src, 8, srcStride, 9, 128-r);\
+    qpel_v_lowpass(halfV, src, 9, srcStride, 9, 128-r);\
+    qpel_v_lowpass(halfHV, halfH, 8, 8, 8, 128-r);\
+    avg4_block(dst, src+1, halfH, halfV, halfHV, dstStride, srcStride, 2-r);\
+}\
+static void qpel_mc13_c ## name (UINT8 *dst, UINT8 *src, int dstStride, int srcStride, int mx, int my)\
+{\
+    UINT8 halfH[72];\
+    UINT8 halfV[72];\
+    UINT8 halfHV[64];\
+    qpel_h_lowpass(halfH, src, 8, srcStride, 9, 128-r);\
+    qpel_v_lowpass(halfV, src, 9, srcStride, 9, 128-r);\
+    qpel_v_lowpass(halfHV, halfH, 8, 8, 8, 128-r);\
+    avg4_block(dst, src+srcStride, halfH, halfV, halfHV, dstStride, srcStride, 2-r);\
+}\
+static void qpel_mc33_c ## name (UINT8 *dst, UINT8 *src, int dstStride, int srcStride, int mx, int my)\
+{\
+    UINT8 halfH[72];\
+    UINT8 halfV[72];\
+    UINT8 halfHV[64];\
+    qpel_h_lowpass(halfH, src, 8, srcStride, 9, 128-r);\
+    qpel_v_lowpass(halfV, src, 9, srcStride, 9, 128-r);\
+    qpel_v_lowpass(halfHV, halfH, 8, 8, 8, 128-r);\
+    avg4_block(dst, src+srcStride+1, halfH, halfV, halfHV, dstStride, srcStride, 2-r);\
+}\
+static void qpel_mc21_c ## name (UINT8 *dst, UINT8 *src, int dstStride, int srcStride, int mx, int my)\
+{\
+    UINT8 halfH[72];\
+    UINT8 halfHV[64];\
+    qpel_h_lowpass(halfH, src, 8, srcStride, 9, 128-r);\
+    qpel_v_lowpass(halfHV, halfH, 8, 8, 8, 128-r);\
+    avg2_block(dst, halfH, halfHV, dstStride, 8, 1-r);\
+}\
+static void qpel_mc23_c ## name (UINT8 *dst, UINT8 *src, int dstStride, int srcStride, int mx, int my)\
+{\
+    UINT8 halfH[72];\
+    UINT8 halfHV[64];\
+    qpel_h_lowpass(halfH, src, 8, srcStride, 9, 128-r);\
+    qpel_v_lowpass(halfHV, halfH, 8, 8, 8, 128-r);\
+    avg2_block(dst, halfH+8, halfHV, dstStride, 8, 1-r);\
+}\
+static void qpel_mc12_c ## name (UINT8 *dst, UINT8 *src, int dstStride, int srcStride, int mx, int my)\
+{\
+    UINT8 halfH[72];\
+    UINT8 halfV[72];\
+    UINT8 halfHV[64];\
+    qpel_h_lowpass(halfH, src, 8, srcStride, 9, 128-r);\
+    qpel_v_lowpass(halfV, src, 9, srcStride, 9, 128-r);\
+    qpel_v_lowpass(halfHV, halfH, 8, 8, 8, 128-r);\
+    avg2_block(dst, halfV, halfHV, dstStride, 9, 1-r);\
+}\
+static void qpel_mc32_c ## name (UINT8 *dst, UINT8 *src, int dstStride, int srcStride, int mx, int my)\
+{\
+    UINT8 halfH[72];\
+    UINT8 halfV[72];\
+    UINT8 halfHV[64];\
+    qpel_h_lowpass(halfH, src, 8, srcStride, 9, 128-r);\
+    qpel_v_lowpass(halfV, src, 9, srcStride, 9, 128-r);\
+    qpel_v_lowpass(halfHV, halfH, 8, 8, 8, 128-r);\
+    avg2_block(dst, halfV+1, halfHV, dstStride, 9, 1-r);\
+}\
+static void qpel_mc22_c ## name (UINT8 *dst, UINT8 *src, int dstStride, int srcStride, int mx, int my)\
+{\
+    UINT8 halfH[72];\
+    qpel_h_lowpass(halfH, src, 8, srcStride, 9, 128-r);\
+    qpel_v_lowpass(dst, halfH, dstStride, 8, 8, 128-r);\
+}\
+qpel_mc_func qpel_mc ## name ## _tab[16]={ \
+    qpel_mc00_c ## name,                                                                   \
+    qpel_mc10_c ## name,                                                                   \
+    qpel_mc20_c ## name,                                                                   \
+    qpel_mc30_c ## name,                                                                   \
+    qpel_mc01_c ## name,                                                                   \
+    qpel_mc11_c ## name,                                                                   \
+    qpel_mc21_c ## name,                                                                   \
+    qpel_mc31_c ## name,                                                                   \
+    qpel_mc02_c ## name,                                                                   \
+    qpel_mc12_c ## name,                                                                   \
+    qpel_mc22_c ## name,                                                                   \
+    qpel_mc32_c ## name,                                                                   \
+    qpel_mc03_c ## name,                                                                   \
+    qpel_mc13_c ## name,                                                                   \
+    qpel_mc23_c ## name,                                                                   \
+    qpel_mc33_c ## name,                                                                   \
+};
+
+QPEL_MC(0, _rnd)
+QPEL_MC(1, _no_rnd)
+
 int pix_abs16x16_c(UINT8 *pix1, UINT8 *pix2, int line_size, int h)
 {
     int s, i;
@@ -521,6 +798,7 @@ void dsputil_init(void)
     get_pixels = get_pixels_c;
     put_pixels_clamped = put_pixels_clamped_c;
     add_pixels_clamped = add_pixels_clamped_c;
+    gmc1= gmc1_c;
 
     pix_abs16x16 = pix_abs16x16_c;
     pix_abs16x16_x2 = pix_abs16x16_x2_c;
