@@ -18,6 +18,7 @@
  */
 #include "avformat.h"
 
+#include <unistd.h> /* for select() prototype */
 #include <sys/time.h>
 #include <netinet/in.h>
 #include <sys/socket.h>

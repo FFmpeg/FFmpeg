@@ -16,6 +16,8 @@ struct ip_mreq {
     struct in_addr imr_interface;  /* local IP address of interface */
 };
 
+#include <netdb.h>
+
 #else
 # include <arpa/inet.h>
 #endif
