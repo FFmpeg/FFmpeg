@@ -2791,8 +2791,6 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
     MpegEncContext *s2 = &s->mpeg_enc_ctx;
     dprintf("fill_buffer\n");
 
-    *data_size = 0;
-
     /* special case for last picture */
     if (buf_size == 0 && s2->low_delay==0 && s2->next_picture_ptr) {
         *picture= *(AVFrame*)s2->next_picture_ptr;

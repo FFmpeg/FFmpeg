@@ -568,7 +568,6 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
         if(st) { /* handle stereo interlacing */
             c->channel = (channel + 1) % 2; /* we get one packet for left, then one for right data */
             if(channel == 1) { /* wait for the other packet before outputing anything */
-                *data_size = 0;
                 return src - buf;
             }
         }
@@ -842,7 +841,6 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
         }
         break;
     default:
-        *data_size = 0;
         return -1;
     }
     *data_size = (uint8_t *)samples - (uint8_t *)data;

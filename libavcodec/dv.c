@@ -889,7 +889,6 @@ static int dvvideo_decode_frame(AVCodecContext *avctx,
 {
     DVVideoContext *s = avctx->priv_data;
   
-    *data_size=0;
     /* special case for last picture */
     if(buf_size==0)
         return 0;

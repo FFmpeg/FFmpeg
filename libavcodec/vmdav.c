@@ -522,7 +522,6 @@ static int vmdaudio_decode_frame(AVCodecContext *avctx,
     if (buf_size < 16)
         return buf_size;
 
-    *data_size = 0;
     if (buf[6] == 1) {
         /* the chunk contains audio */
         *data_size = vmdaudio_loadsound(s, output_samples, p, 0);

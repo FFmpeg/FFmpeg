@@ -600,8 +600,6 @@ static int decode_frame(AVCodecContext *avctx,
     AVFrame *p, temp;
     int i, frame_4cc, frame_size;
 
-    *data_size = 0;
-
     /* special case for last picture */
     if (buf_size == 0) {
         return 0;

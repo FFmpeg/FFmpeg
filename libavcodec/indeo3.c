@@ -1058,7 +1058,6 @@ static int indeo3_decode_frame(AVCodecContext *avctx,
 
     /* no supplementary picture */
     if (buf_size == 0) {
-        *data_size = 0;
         return 0;
     }
 

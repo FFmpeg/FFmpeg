@@ -421,7 +421,6 @@ puts("mace_decode_frame[6]()");
         *data_size = 2 * 6 * buf_size;
         break;
     default:
-        *data_size = 0;
         return -1;
     }
     return buf_size;

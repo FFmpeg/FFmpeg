@@ -264,7 +264,6 @@ static int oggvorbis_decode_frame(AVCodecContext *avccontext,
  
     if(!buf_size){
     //FIXME flush
-        *data_size=0;
         return 0;
     }
     

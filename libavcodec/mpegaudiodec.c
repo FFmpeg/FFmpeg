@@ -2520,7 +2520,6 @@ static int decode_frame(AVCodecContext * avctx,
     int len, out_size;
     short *out_samples = data;
 
-    *data_size = 0;
     buf_ptr = buf;
     while (buf_size > 0) {
 	len = s->inbuf_ptr - s->inbuf;

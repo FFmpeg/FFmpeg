@@ -43,8 +43,6 @@ static int decode_frame(AVCodecContext *avctx,
     AVFrame * const p= (AVFrame*)&a->picture;
     int x, y;
 
-    *data_size = 0;
-
     /* special case for last picture */
     if (buf_size == 0) {
         return 0;

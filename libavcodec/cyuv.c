@@ -81,8 +81,6 @@ static int cyuv_decode_frame(AVCodecContext *avctx,
     unsigned char cur_byte;
     int pixel_groups;
 
-    *data_size = 0;
-
     /* sanity check the buffer size: A buffer has 3x16-bytes tables
      * followed by (height) lines each with 3 bytes to represent groups
      * of 4 pixels. Thus, the total size of the buffer ought to be:

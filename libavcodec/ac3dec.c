@@ -92,7 +92,6 @@ static int ac3_decode_frame(AVCodecContext *avctx,
 	2, 1, 2, 3, 3, 4, 4, 5
     };
 
-    *data_size = 0;
     buf_ptr = buf;
     while (buf_size > 0) {
         len = s->inbuf_ptr - s->inbuf;

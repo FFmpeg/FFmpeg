@@ -769,8 +769,6 @@ static int svq3_decode_frame (AVCodecContext *avctx,
   unsigned char *extradata;
   unsigned int size;
 
-  *data_size = 0;
-
   s->flags = avctx->flags;
   s->flags2 = avctx->flags2;
   s->unrestricted_mv = 1;

@@ -2474,8 +2474,6 @@ static int vp3_decode_frame(AVCodecContext *avctx,
     GetBitContext gb;
     static int counter = 0;
 
-    *data_size = 0;
-
     init_get_bits(&gb, buf, buf_size * 8);
     
     if (s->theora && get_bits1(&gb))

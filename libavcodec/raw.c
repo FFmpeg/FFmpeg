@@ -118,7 +118,6 @@ static int raw_decode(AVCodecContext *avctx,
     if (buf_size < bytesNeeded) {
         memcpy(context->p, buf, buf_size);
         context->p += buf_size;
-        *data_size = 0;
         return buf_size;
     }
 

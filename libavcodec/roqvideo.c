@@ -450,8 +450,6 @@ static int roq_decode_frame(AVCodecContext *avctx,
 {
     RoqContext *s = avctx->priv_data;
 
-    *data_size = 0;
-
     if (avctx->get_buffer(avctx, &s->current_frame)) {
         av_log(avctx, AV_LOG_ERROR, "  RoQ: get_buffer() failed\n");
         return -1;

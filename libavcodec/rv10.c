@@ -651,7 +651,6 @@ static int rv10_decode_frame(AVCodecContext *avctx,
 
     /* no supplementary picture */
     if (buf_size == 0) {
-        *data_size = 0;
         return 0;
     }
 
@@ -685,8 +684,6 @@ static int rv10_decode_frame(AVCodecContext *avctx,
         }
         
         *data_size = sizeof(AVFrame);
-    }else{
-        *data_size = 0;
     }
 
     return buf_size;

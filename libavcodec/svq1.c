@@ -600,7 +600,6 @@ static uint16_t svq1_packet_checksum (uint8_t *data, int length, int value) {
   return value;
 }
 
-#if 0
 static uint16_t svq1_component_checksum (uint16_t *pixels, int pitch,
                                          int width, int height, int value) {
   int x, y;
@@ -615,7 +614,6 @@ static uint16_t svq1_component_checksum (uint16_t *pixels, int pitch,
 
   return value;
 }
-#endif
 
 static void svq1_parse_string (GetBitContext *bitbuf, uint8_t *out) {
   uint8_t seed;
@@ -715,8 +713,6 @@ static int svq1_decode_frame(AVCodecContext *avctx,
   int		result, i, x, y, width, height;
   AVFrame *pict = data; 
 
-  *data_size=0;
-  
   if(buf==NULL && buf_size==0){
       return 0;
   }

@@ -221,7 +221,6 @@ static int amr_nb_decode_frame(AVCodecContext * avctx,
     Word16 serial[SERIAL_FRAMESIZE];   /* coded bits */
     Word16 *synth;
     UWord8 *packed_bits;
-    *data_size=0;
 
     static Word16 packed_size[16] = {12, 13, 15, 17, 19, 20, 26, 31, 5, 0, 0, 0, 0, 0, 0, 0};
     int i;
@@ -416,7 +415,6 @@ static int amr_nb_decode_frame(AVCodecContext * avctx,
     static short block_size[16]={ 12, 13, 15, 17, 19, 20, 26, 31, 5, 0, 0, 0, 0, 0, 0, 0 };
     enum Mode dec_mode;
     int packet_size;
-    *data_size=0;
 
     //printf("amr_decode_frame data_size=%i buf=0x%X buf_size=%d frameCount=%d!!\n",*data_size,buf,buf_size,s->frameCount);
 
@@ -603,7 +601,6 @@ static int amr_wb_decode_frame(AVCodecContext * avctx,
     int offset=0;
     int mode;
     int packet_size;
-    *data_size=0;
 
     while(offset<buf_size)
     {

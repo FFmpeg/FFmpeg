@@ -488,6 +488,7 @@ int avcodec_decode_video(AVCodecContext *avctx, AVFrame *picture,
 {
     int ret;
     
+    *got_picture_ptr= 0;
     ret = avctx->codec->decode(avctx, picture, got_picture_ptr, 
                                buf, buf_size);
 
@@ -508,6 +509,7 @@ int avcodec_decode_audio(AVCodecContext *avctx, int16_t *samples,
 {
     int ret;
 
+    *frame_size_ptr= 0;
     ret = avctx->codec->decode(avctx, samples, frame_size_ptr, 
                                buf, buf_size);
     avctx->frame_number++;
