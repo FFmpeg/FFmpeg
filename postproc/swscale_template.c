@@ -5,11 +5,6 @@
 // current version mostly by Michael Niedermayer (michaelni@gmx.at)
 // the parts written by michael are under GNU GPL
 
-/* TODO
-Move static / global vars into a struct so multiple scalers can be used
-write vertical cubic upscale / linear downscale stuff
-*/
-
 #undef MOVNTQ
 #undef PAVGB
 #undef PREFETCH
@@ -52,6 +47,129 @@ write vertical cubic upscale / linear downscale stuff
 #else
 #define MOVNTQ(a,b) "movq " #a ", " #b " \n\t"
 #endif
+
+
+#define YSCALEYUV2YV12X(x) \
+			"xorl %%eax, %%eax		\n\t"\
+			"pxor %%mm3, %%mm3		\n\t"\
+			"pxor %%mm4, %%mm4		\n\t"\
+			"movl %0, %%edx			\n\t"\
+			".balign 16			\n\t" /* FIXME Unroll? */\
+			"1:				\n\t"\
+			"movl (%1, %%edx, 4), %%esi	\n\t"\
+			"movq (%2, %%edx, 8), %%mm0	\n\t" /* filterCoeff */\
+			"movq " #x "(%%esi, %%eax, 2), %%mm2	\n\t" /* srcData */\
+			"movq 8+" #x "(%%esi, %%eax, 2), %%mm5	\n\t" /* srcData */\
+			"pmulhw %%mm0, %%mm2		\n\t"\
+			"pmulhw %%mm0, %%mm5		\n\t"\
+			"paddw %%mm2, %%mm3		\n\t"\
+			"paddw %%mm5, %%mm4		\n\t"\
+			"addl $1, %%edx			\n\t"\
+			" jnz 1b			\n\t"\
+			"psraw $3, %%mm3		\n\t"\
+			"psraw $3, %%mm4		\n\t"\
+			"packuswb %%mm4, %%mm3		\n\t"\
+			MOVNTQ(%%mm3, (%3, %%eax))\
+			"addl $8, %%eax			\n\t"\
+			"cmpl %4, %%eax			\n\t"\
+			"pxor %%mm3, %%mm3		\n\t"\
+			"pxor %%mm4, %%mm4		\n\t"\
+			"movl %0, %%edx			\n\t"\
+			"jb 1b				\n\t"
+
+#define YSCALEYUV2YV121 \
+			"movl %2, %%eax			\n\t"\
+			".balign 16			\n\t" /* FIXME Unroll? */\
+			"1:				\n\t"\
+			"movq (%0, %%eax, 2), %%mm0	\n\t"\
+			"movq 8(%0, %%eax, 2), %%mm1	\n\t"\
+			"psraw $7, %%mm0		\n\t"\
+			"psraw $7, %%mm1		\n\t"\
+			"packuswb %%mm1, %%mm0		\n\t"\
+			MOVNTQ(%%mm0, (%1, %%eax))\
+			"addl $8, %%eax			\n\t"\
+			"jnc 1b				\n\t"
+
+/*
+			:: "m" (-lumFilterSize), "m" (-chrFilterSize),
+			   "m" (lumMmxFilter+lumFilterSize*4), "m" (chrMmxFilter+chrFilterSize*4),
+			   "r" (dest), "m" (dstW),
+			   "m" (lumSrc+lumFilterSize), "m" (chrSrc+chrFilterSize)
+			: "%eax", "%ebx", "%ecx", "%edx", "%esi"
+*/
+#define YSCALEYUV2RGBX \
+		"xorl %%eax, %%eax		\n\t"\
+		".balign 16			\n\t"\
+		"1:				\n\t"\
+		"movl %1, %%edx			\n\t" /* -chrFilterSize */\
+		"movl %3, %%ebx			\n\t" /* chrMmxFilter+lumFilterSize */\
+		"movl %7, %%ecx			\n\t" /* chrSrc+lumFilterSize */\
+		"pxor %%mm3, %%mm3		\n\t"\
+		"pxor %%mm4, %%mm4		\n\t"\
+		"2:				\n\t"\
+		"movl (%%ecx, %%edx, 4), %%esi	\n\t"\
+		"movq (%%ebx, %%edx, 8), %%mm0	\n\t" /* filterCoeff */\
+		"movq (%%esi, %%eax), %%mm2	\n\t" /* UsrcData */\
+		"movq 4096(%%esi, %%eax), %%mm5	\n\t" /* VsrcData */\
+		"pmulhw %%mm0, %%mm2		\n\t"\
+		"pmulhw %%mm0, %%mm5		\n\t"\
+		"paddw %%mm2, %%mm3		\n\t"\
+		"paddw %%mm5, %%mm4		\n\t"\
+		"addl $1, %%edx			\n\t"\
+		" jnz 2b			\n\t"\
+\
+		"movl %0, %%edx			\n\t" /* -lumFilterSize */\
+		"movl %2, %%ebx			\n\t" /* lumMmxFilter+lumFilterSize */\
+		"movl %6, %%ecx			\n\t" /* lumSrc+lumFilterSize */\
+		"pxor %%mm1, %%mm1		\n\t"\
+		"pxor %%mm7, %%mm7		\n\t"\
+		"2:				\n\t"\
+		"movl (%%ecx, %%edx, 4), %%esi	\n\t"\
+		"movq (%%ebx, %%edx, 8), %%mm0	\n\t" /* filterCoeff */\
+		"movq (%%esi, %%eax, 2), %%mm2	\n\t" /* Y1srcData */\
+		"movq 8(%%esi, %%eax, 2), %%mm5	\n\t" /* Y2srcData */\
+		"pmulhw %%mm0, %%mm2		\n\t"\
+		"pmulhw %%mm0, %%mm5		\n\t"\
+		"paddw %%mm2, %%mm1		\n\t"\
+		"paddw %%mm5, %%mm7		\n\t"\
+		"addl $1, %%edx			\n\t"\
+		" jnz 2b			\n\t"\
+\
+		"psubw w400, %%mm3		\n\t" /* (U-128)8*/\
+		"psubw w400, %%mm4		\n\t" /* (V-128)8*/\
+		"movq %%mm3, %%mm2		\n\t" /* (U-128)8*/\
+		"movq %%mm4, %%mm5		\n\t" /* (V-128)8*/\
+		"pmulhw ugCoeff, %%mm3		\n\t"\
+		"pmulhw vgCoeff, %%mm4		\n\t"\
+	/* mm2=(U-128)8, mm3=ug, mm4=vg mm5=(V-128)8 */\
+		"pmulhw ubCoeff, %%mm2		\n\t"\
+		"pmulhw vrCoeff, %%mm5		\n\t"\
+		"psubw w80, %%mm1		\n\t" /* 8(Y-16)*/\
+		"psubw w80, %%mm7		\n\t" /* 8(Y-16)*/\
+		"pmulhw yCoeff, %%mm1		\n\t"\
+		"pmulhw yCoeff, %%mm7		\n\t"\
+	/* mm1= Y1, mm2=ub, mm3=ug, mm4=vg mm5=vr, mm7=Y2 */\
+		"paddw %%mm3, %%mm4		\n\t"\
+		"movq %%mm2, %%mm0		\n\t"\
+		"movq %%mm5, %%mm6		\n\t"\
+		"movq %%mm4, %%mm3		\n\t"\
+		"punpcklwd %%mm2, %%mm2		\n\t"\
+		"punpcklwd %%mm5, %%mm5		\n\t"\
+		"punpcklwd %%mm4, %%mm4		\n\t"\
+		"paddw %%mm1, %%mm2		\n\t"\
+		"paddw %%mm1, %%mm5		\n\t"\
+		"paddw %%mm1, %%mm4		\n\t"\
+		"punpckhwd %%mm0, %%mm0		\n\t"\
+		"punpckhwd %%mm6, %%mm6		\n\t"\
+		"punpckhwd %%mm3, %%mm3		\n\t"\
+		"paddw %%mm7, %%mm0		\n\t"\
+		"paddw %%mm7, %%mm6		\n\t"\
+		"paddw %%mm7, %%mm3		\n\t"\
+		/* mm0=B1, mm2=B2, mm3=G2, mm4=G1, mm5=R1, mm6=R2 */\
+		"packuswb %%mm0, %%mm2		\n\t"\
+		"packuswb %%mm6, %%mm5		\n\t"\
+		"packuswb %%mm3, %%mm4		\n\t"\
+		"pxor %%mm7, %%mm7		\n\t"
 
 #define FULL_YSCALEYUV2RGB \
 		"pxor %%mm7, %%mm7		\n\t"\
@@ -238,8 +356,8 @@ write vertical cubic upscale / linear downscale stuff
 		"movq 4096(%3, %%eax), %%mm4	\n\t" /* uvbuf1[eax+2048]*/\
 		"paddw %%mm2, %%mm3		\n\t" /* uvbuf0[eax] + uvbuf1[eax]*/\
 		"paddw %%mm5, %%mm4		\n\t" /* uvbuf0[eax+2048] + uvbuf1[eax+2048]*/\
-		"psrlw $5, %%mm3		\n\t"\
-		"psrlw $5, %%mm4		\n\t"\
+		"psrlw $5, %%mm3		\n\t" /*FIXME might overflow*/\
+		"psrlw $5, %%mm4		\n\t" /*FIXME might overflow*/\
 		"psubw w400, %%mm3		\n\t" /* (U-128)8*/\
 		"psubw w400, %%mm4		\n\t" /* (V-128)8*/\
 		"movq %%mm3, %%mm2		\n\t" /* (U-128)8*/\
@@ -524,36 +642,366 @@ write vertical cubic upscale / linear downscale stuff
 #define WRITEBGR24 WRITEBGR24MMX
 #endif
 
-static inline void RENAME(yuv2yuv)(uint16_t *buf0, uint16_t *buf1, uint16_t *uvbuf0, uint16_t *uvbuf1,
-			   uint8_t *dest, uint8_t *uDest, uint8_t *vDest, int dstW, int yalpha, int uvalpha)
+static inline void RENAME(yuv2yuvX)(int16_t *lumFilter, int16_t **lumSrc, int lumFilterSize,
+				    int16_t *chrFilter, int16_t **chrSrc, int chrFilterSize,
+				    uint8_t *dest, uint8_t *uDest, uint8_t *vDest, int dstW,
+				    int16_t * lumMmxFilter, int16_t * chrMmxFilter)
 {
-	int yalpha1=yalpha^4095;
-	int uvalpha1=uvalpha^4095;
-	int i;
-
-#ifdef ARCH_X86
-	asm volatile ("\n\t"::: "memory");
-#endif
-
-	for(i=0;i<dstW;i++)
+#ifdef HAVE_MMX
+	if(uDest != NULL)
 	{
-		((uint8_t*)dest)[i] = (buf0[i]*yalpha1+buf1[i]*yalpha)>>19;
+		asm volatile(
+				YSCALEYUV2YV12X(0)
+				:: "m" (-chrFilterSize), "r" (chrSrc+chrFilterSize),
+				"r" (chrMmxFilter+chrFilterSize*4), "r" (uDest), "m" (dstW>>1)
+				: "%eax", "%edx", "%esi"
+			);
+
+		asm volatile(
+				YSCALEYUV2YV12X(4096)
+				:: "m" (-chrFilterSize), "r" (chrSrc+chrFilterSize),
+				"r" (chrMmxFilter+chrFilterSize*4), "r" (vDest), "m" (dstW>>1)
+				: "%eax", "%edx", "%esi"
+			);
 	}
 
-	if(uvalpha != -1)
+	asm volatile(
+			YSCALEYUV2YV12X(0)
+			:: "m" (-lumFilterSize), "r" (lumSrc+lumFilterSize),
+			   "r" (lumMmxFilter+lumFilterSize*4), "r" (dest), "m" (dstW)
+			: "%eax", "%edx", "%esi"
+		);
+#else
+	//FIXME Optimize (just quickly writen not opti..)
+	int i;
+	for(i=0; i<dstW; i++)
 	{
+		int val=0;
+		int j;
+		for(j=0; j<lumFilterSize; j++)
+			val += lumSrc[j][i] * lumFilter[j];
+
+		dest[i]= MIN(MAX(val>>19, 0), 255);
+	}
+
+	if(uDest != NULL)
 		for(i=0; i<(dstW>>1); i++)
 		{
-			((uint8_t*)uDest)[i] = (uvbuf0[i]*uvalpha1+uvbuf1[i]*uvalpha)>>19;
-			((uint8_t*)vDest)[i] = (uvbuf0[i+2048]*uvalpha1+uvbuf1[i+2048]*uvalpha)>>19;
+			int u=0;
+			int v=0;
+			int j;
+			for(j=0; j<lumFilterSize; j++)
+			{
+				u += chrSrc[j][i] * chrFilter[j];
+				v += chrSrc[j][i + 2048] * chrFilter[j];
+			}
+
+			uDest[i]= MIN(MAX(u>>19, 0), 255);
+			vDest[i]= MIN(MAX(v>>19, 0), 255);
 		}
-	}
+#endif
 }
+
+static inline void RENAME(yuv2yuv1)(int16_t *lumSrc, int16_t *chrSrc,
+				    uint8_t *dest, uint8_t *uDest, uint8_t *vDest, int dstW)
+{
+#ifdef HAVE_MMX
+	if(uDest != NULL)
+	{
+		asm volatile(
+				YSCALEYUV2YV121
+				:: "r" (chrSrc + (dstW>>1)), "r" (uDest + (dstW>>1)),
+				"g" (-(dstW>>1))
+				: "%eax"
+			);
+
+		asm volatile(
+				YSCALEYUV2YV121
+				:: "r" (chrSrc + 2048 + (dstW>>1)), "r" (vDest + (dstW>>1)),
+				"g" (-(dstW>>1))
+				: "%eax"
+			);
+	}
+
+	asm volatile(
+		YSCALEYUV2YV121
+		:: "r" (lumSrc + dstW), "r" (dest + dstW),
+		"g" (-dstW)
+		: "%eax"
+	);
+#else
+	//FIXME Optimize (just quickly writen not opti..)
+	//FIXME replace MINMAX with LUTs
+	int i;
+	for(i=0; i<dstW; i++)
+	{
+		int val= lumSrc[i]>>7;
+
+		dest[i]= MIN(MAX(val>>19, 0), 255);
+	}
+
+	if(uDest != NULL)
+		for(i=0; i<(dstW>>1); i++)
+		{
+			int u=chrSrc[i]>>7;
+			int v=chrSrc[i + 2048]>>7;
+
+			uDest[i]= MIN(MAX(u>>19, 0), 255);
+			vDest[i]= MIN(MAX(v>>19, 0), 255);
+		}
+#endif
+}
+
 
 /**
  * vertical scale YV12 to RGB
  */
-static inline void RENAME(yuv2rgbX)(uint16_t *buf0, uint16_t *buf1, uint16_t *uvbuf0, uint16_t *uvbuf1,
+static inline void RENAME(yuv2rgbX)(int16_t *lumFilter, int16_t **lumSrc, int lumFilterSize,
+				    int16_t *chrFilter, int16_t **chrSrc, int chrFilterSize,
+			    uint8_t *dest, int dstW, int dstbpp, int16_t * lumMmxFilter, int16_t * chrMmxFilter)
+{
+	if(fullUVIpol)
+	{
+//FIXME
+	}//FULL_UV_IPOL
+	else
+	{
+#ifdef HAVE_MMX
+		if(dstbpp == 32) //FIXME untested
+		{
+			asm volatile(
+				YSCALEYUV2RGBX
+				WRITEBGR32
+
+			:: "m" (-lumFilterSize), "m" (-chrFilterSize),
+			   "m" (lumMmxFilter+lumFilterSize*4), "m" (chrMmxFilter+chrFilterSize*4),
+			   "r" (dest), "m" (dstW),
+			   "m" (lumSrc+lumFilterSize), "m" (chrSrc+chrFilterSize)
+			: "%eax", "%ebx", "%ecx", "%edx", "%esi"
+			);
+		}
+		else if(dstbpp==24) //FIXME untested
+		{
+			asm volatile(
+				YSCALEYUV2RGBX
+				"leal (%%eax, %%eax, 2), %%ebx	\n\t" //FIXME optimize
+				"addl %4, %%ebx			\n\t"
+				WRITEBGR24
+
+			:: "m" (-lumFilterSize), "m" (-chrFilterSize),
+			   "m" (lumMmxFilter+lumFilterSize*4), "m" (chrMmxFilter+chrFilterSize*4),
+			   "r" (dest), "m" (dstW),
+			   "m" (lumSrc+lumFilterSize), "m" (chrSrc+chrFilterSize)
+			: "%eax", "%ebx", "%ecx", "%edx", "%esi"
+			);
+		}
+		else if(dstbpp==15)
+		{
+			asm volatile(
+				YSCALEYUV2RGBX
+		/* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
+#ifdef DITHER1XBPP
+				"paddusb b5Dither, %%mm2	\n\t"
+				"paddusb g5Dither, %%mm4	\n\t"
+				"paddusb r5Dither, %%mm5	\n\t"
+#endif
+
+				WRITEBGR15
+
+			:: "m" (-lumFilterSize), "m" (-chrFilterSize),
+			   "m" (lumMmxFilter+lumFilterSize*4), "m" (chrMmxFilter+chrFilterSize*4),
+			   "r" (dest), "m" (dstW),
+			   "m" (lumSrc+lumFilterSize), "m" (chrSrc+chrFilterSize)
+			: "%eax", "%ebx", "%ecx", "%edx", "%esi"
+			);
+		}
+		else if(dstbpp==16)
+		{
+			asm volatile(
+				YSCALEYUV2RGBX
+		/* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
+#ifdef DITHER1XBPP
+				"paddusb b5Dither, %%mm2	\n\t"
+				"paddusb g6Dither, %%mm4	\n\t"
+				"paddusb r5Dither, %%mm5	\n\t"
+#endif
+
+				WRITEBGR16
+
+			:: "m" (-lumFilterSize), "m" (-chrFilterSize),
+			   "m" (lumMmxFilter+lumFilterSize*4), "m" (chrMmxFilter+chrFilterSize*4),
+			   "r" (dest), "m" (dstW),
+			   "m" (lumSrc+lumFilterSize), "m" (chrSrc+chrFilterSize)
+			: "%eax", "%ebx", "%ecx", "%edx", "%esi"
+			);
+		}
+#else
+		if(dstbpp==32)
+		{
+			int i;
+			for(i=0; i<(dstW>>1); i++){
+				int j;
+				int Y1=0;
+				int Y2=0;
+				int U=0;
+				int V=0;
+				int Cb, Cr, Cg;
+				for(j=0; j<lumFilterSize; j++)
+				{
+					Y1 += lumSrc[j][2*i] * lumFilter[j];
+					Y2 += lumSrc[j][2*i+1] * lumFilter[j];
+				}
+				for(j=0; j<chrFilterSize; j++)
+				{
+					U += chrSrc[j][i] * chrFilter[j];
+					V += chrSrc[j][i+2048] * chrFilter[j];
+				}
+				Y1= clip_yuvtab_2568[ (Y1>>19) + 256 ];
+				Y2= clip_yuvtab_2568[ (Y2>>19) + 256 ];
+				U >>= 19;
+				V >>= 19;
+
+				Cb= clip_yuvtab_40cf[U+ 256];
+				Cg= clip_yuvtab_1a1e[V+ 256] + yuvtab_0c92[U+ 256];
+				Cr= clip_yuvtab_3343[V+ 256];
+
+				dest[8*i+0]=clip_table[((Y1 + Cb) >>13)];
+				dest[8*i+1]=clip_table[((Y1 + Cg) >>13)];
+				dest[8*i+2]=clip_table[((Y1 + Cr) >>13)];
+
+				dest[8*i+4]=clip_table[((Y2 + Cb) >>13)];
+				dest[8*i+5]=clip_table[((Y2 + Cg) >>13)];
+				dest[8*i+6]=clip_table[((Y2 + Cr) >>13)];
+			}
+		}
+		else if(dstbpp==24)
+		{
+			int i;
+			for(i=0; i<(dstW>>1); i++){
+				int j;
+				int Y1=0;
+				int Y2=0;
+				int U=0;
+				int V=0;
+				int Cb, Cr, Cg;
+				for(j=0; j<lumFilterSize; j++)
+				{
+					Y1 += lumSrc[j][2*i] * lumFilter[j];
+					Y2 += lumSrc[j][2*i+1] * lumFilter[j];
+				}
+				for(j=0; j<chrFilterSize; j++)
+				{
+					U += chrSrc[j][i] * chrFilter[j];
+					V += chrSrc[j][i+2048] * chrFilter[j];
+				}
+				Y1= clip_yuvtab_2568[ (Y1>>19) + 256 ];
+				Y2= clip_yuvtab_2568[ (Y2>>19) + 256 ];
+				U >>= 19;
+				V >>= 19;
+
+				Cb= clip_yuvtab_40cf[U+ 256];
+				Cg= clip_yuvtab_1a1e[V+ 256] + yuvtab_0c92[U+ 256];
+				Cr= clip_yuvtab_3343[V+ 256];
+
+				dest[0]=clip_table[((Y1 + Cb) >>13)];
+				dest[1]=clip_table[((Y1 + Cg) >>13)];
+				dest[2]=clip_table[((Y1 + Cr) >>13)];
+
+				dest[3]=clip_table[((Y2 + Cb) >>13)];
+				dest[4]=clip_table[((Y2 + Cg) >>13)];
+				dest[5]=clip_table[((Y2 + Cr) >>13)];
+				dest+=6;
+			}
+		}
+		else if(dstbpp==16)
+		{
+			int i;
+			for(i=0; i<(dstW>>1); i++){
+				int j;
+				int Y1=0;
+				int Y2=0;
+				int U=0;
+				int V=0;
+				int Cb, Cr, Cg;
+				for(j=0; j<lumFilterSize; j++)
+				{
+					Y1 += lumSrc[j][2*i] * lumFilter[j];
+					Y2 += lumSrc[j][2*i+1] * lumFilter[j];
+				}
+				for(j=0; j<chrFilterSize; j++)
+				{
+					U += chrSrc[j][i] * chrFilter[j];
+					V += chrSrc[j][i+2048] * chrFilter[j];
+				}
+				Y1= clip_yuvtab_2568[ (Y1>>19) + 256 ];
+				Y2= clip_yuvtab_2568[ (Y2>>19) + 256 ];
+				U >>= 19;
+				V >>= 19;
+
+				Cb= clip_yuvtab_40cf[U+ 256];
+				Cg= clip_yuvtab_1a1e[V+ 256] + yuvtab_0c92[U+ 256];
+				Cr= clip_yuvtab_3343[V+ 256];
+
+				((uint16_t*)dest)[2*i] =
+					clip_table16b[(Y1 + Cb) >>13] |
+					clip_table16g[(Y1 + Cg) >>13] |
+					clip_table16r[(Y1 + Cr) >>13];
+
+				((uint16_t*)dest)[2*i+1] =
+					clip_table16b[(Y2 + Cb) >>13] |
+					clip_table16g[(Y2 + Cg) >>13] |
+					clip_table16r[(Y2 + Cr) >>13];
+			}
+		}
+		else if(dstbpp==15)
+		{
+			int i;
+			for(i=0; i<(dstW>>1); i++){
+				int j;
+				int Y1=0;
+				int Y2=0;
+				int U=0;
+				int V=0;
+				int Cb, Cr, Cg;
+				for(j=0; j<lumFilterSize; j++)
+				{
+					Y1 += lumSrc[j][2*i] * lumFilter[j];
+					Y2 += lumSrc[j][2*i+1] * lumFilter[j];
+				}
+				for(j=0; j<chrFilterSize; j++)
+				{
+					U += chrSrc[j][i] * chrFilter[j];
+					V += chrSrc[j][i+2048] * chrFilter[j];
+				}
+				Y1= clip_yuvtab_2568[ (Y1>>19) + 256 ];
+				Y2= clip_yuvtab_2568[ (Y2>>19) + 256 ];
+				U >>= 19;
+				V >>= 19;
+
+				Cb= clip_yuvtab_40cf[U+ 256];
+				Cg= clip_yuvtab_1a1e[V+ 256] + yuvtab_0c92[U+ 256];
+				Cr= clip_yuvtab_3343[V+ 256];
+
+				((uint16_t*)dest)[2*i] =
+					clip_table15b[(Y1 + Cb) >>13] |
+					clip_table15g[(Y1 + Cg) >>13] |
+					clip_table15r[(Y1 + Cr) >>13];
+
+				((uint16_t*)dest)[2*i+1] =
+					clip_table15b[(Y2 + Cb) >>13] |
+					clip_table15g[(Y2 + Cg) >>13] |
+					clip_table15r[(Y2 + Cr) >>13];
+			}
+		}
+#endif
+	} //!FULL_UV_IPOL
+}
+
+
+/**
+ * vertical bilinear scale YV12 to RGB
+ */
+static inline void RENAME(yuv2rgb2)(uint16_t *buf0, uint16_t *buf1, uint16_t *uvbuf0, uint16_t *uvbuf1,
 			    uint8_t *dest, int dstW, int yalpha, int uvalpha, int dstbpp)
 {
 	int yalpha1=yalpha^4095;
@@ -708,8 +1156,6 @@ FULL_YSCALEYUV2RGB
 			);
 		}
 #else
-		asm volatile ("\n\t"::: "memory");
-
 		if(dstbpp==32 || dstbpp==24)
 		{
 			int i;
@@ -819,8 +1265,6 @@ FULL_YSCALEYUV2RGB
 			);
 		}
 #else
-		asm volatile ("\n\t"::: "memory");
-
 		if(dstbpp==32)
 		{
 			int i;
@@ -844,7 +1288,7 @@ FULL_YSCALEYUV2RGB
 				dest[4*i+6]=clip_table[((Y2 + Cr) >>13)];
 			}
 		}
-		if(dstbpp==24)
+		else if(dstbpp==24)
 		{
 			int i;
 			for(i=0; i<dstW-1; i+=2){
@@ -925,20 +1369,18 @@ FULL_YSCALEYUV2RGB
 /**
  * YV12 to RGB without scaling or interpolating
  */
-static inline void RENAME(yuv2rgb1)(uint16_t *buf0, uint16_t *buf1, uint16_t *uvbuf0, uint16_t *uvbuf1,
-			    uint8_t *dest, int dstW, int yalpha, int uvalpha, int dstbpp)
+static inline void RENAME(yuv2rgb1)(uint16_t *buf0, uint16_t *uvbuf0, uint16_t *uvbuf1,
+			    uint8_t *dest, int dstW, int uvalpha, int dstbpp)
 {
 	int uvalpha1=uvalpha^4095;
-#ifdef HAVE_MMX
-	int yalpha1=yalpha^4095;
-#endif
+	const int yalpha=0;
+	const int yalpha1=0;
 
 	if(fullUVIpol || allwaysIpol)
 	{
-		RENAME(yuv2rgbX)(buf0, buf1, uvbuf0, uvbuf1, dest, dstW, yalpha, uvalpha, dstbpp);
+		RENAME(yuv2rgb2)(buf0, buf0, uvbuf0, uvbuf1, dest, dstW, 0, uvalpha, dstbpp);
 		return;
 	}
-	if( yalpha > 2048 ) buf0 = buf1;
 
 #ifdef HAVE_MMX
 	if( uvalpha < 2048 ) // note this is not correct (shifts chrominance by 0.5 pixels) but its a bit faster
@@ -948,7 +1390,7 @@ static inline void RENAME(yuv2rgb1)(uint16_t *buf0, uint16_t *buf1, uint16_t *uv
 			asm volatile(
 				YSCALEYUV2RGB1
 				WRITEBGR32
-			:: "r" (buf0), "r" (buf1), "r" (uvbuf0), "r" (uvbuf1), "r" (dest), "m" (dstW),
+			:: "r" (buf0), "r" (buf0), "r" (uvbuf0), "r" (uvbuf1), "r" (dest), "m" (dstW),
 			"m" (yalpha1), "m" (uvalpha1)
 			: "%eax"
 			);
@@ -959,7 +1401,7 @@ static inline void RENAME(yuv2rgb1)(uint16_t *buf0, uint16_t *buf1, uint16_t *uv
 				"movl %4, %%ebx			\n\t"
 				YSCALEYUV2RGB1
 				WRITEBGR24
-			:: "r" (buf0), "r" (buf1), "r" (uvbuf0), "r" (uvbuf1), "m" (dest), "m" (dstW),
+			:: "r" (buf0), "r" (buf0), "r" (uvbuf0), "r" (uvbuf1), "m" (dest), "m" (dstW),
 			"m" (yalpha1), "m" (uvalpha1)
 			: "%eax", "%ebx"
 			);
@@ -975,7 +1417,7 @@ static inline void RENAME(yuv2rgb1)(uint16_t *buf0, uint16_t *buf1, uint16_t *uv
 				"paddusb r5Dither, %%mm5	\n\t"
 #endif
 				WRITEBGR15
-			:: "r" (buf0), "r" (buf1), "r" (uvbuf0), "r" (uvbuf1), "r" (dest), "m" (dstW),
+			:: "r" (buf0), "r" (buf0), "r" (uvbuf0), "r" (uvbuf1), "r" (dest), "m" (dstW),
 			"m" (yalpha1), "m" (uvalpha1)
 			: "%eax"
 			);
@@ -992,7 +1434,7 @@ static inline void RENAME(yuv2rgb1)(uint16_t *buf0, uint16_t *buf1, uint16_t *uv
 #endif
 
 				WRITEBGR16
-			:: "r" (buf0), "r" (buf1), "r" (uvbuf0), "r" (uvbuf1), "r" (dest), "m" (dstW),
+			:: "r" (buf0), "r" (buf0), "r" (uvbuf0), "r" (uvbuf1), "r" (dest), "m" (dstW),
 			"m" (yalpha1), "m" (uvalpha1)
 			: "%eax"
 			);
@@ -1005,7 +1447,7 @@ static inline void RENAME(yuv2rgb1)(uint16_t *buf0, uint16_t *buf1, uint16_t *uv
 			asm volatile(
 				YSCALEYUV2RGB1b
 				WRITEBGR32
-			:: "r" (buf0), "r" (buf1), "r" (uvbuf0), "r" (uvbuf1), "r" (dest), "m" (dstW),
+			:: "r" (buf0), "r" (buf0), "r" (uvbuf0), "r" (uvbuf1), "r" (dest), "m" (dstW),
 			"m" (yalpha1), "m" (uvalpha1)
 			: "%eax"
 			);
@@ -1016,7 +1458,7 @@ static inline void RENAME(yuv2rgb1)(uint16_t *buf0, uint16_t *buf1, uint16_t *uv
 				"movl %4, %%ebx			\n\t"
 				YSCALEYUV2RGB1b
 				WRITEBGR24
-			:: "r" (buf0), "r" (buf1), "r" (uvbuf0), "r" (uvbuf1), "m" (dest), "m" (dstW),
+			:: "r" (buf0), "r" (buf0), "r" (uvbuf0), "r" (uvbuf1), "m" (dest), "m" (dstW),
 			"m" (yalpha1), "m" (uvalpha1)
 			: "%eax", "%ebx"
 			);
@@ -1032,7 +1474,7 @@ static inline void RENAME(yuv2rgb1)(uint16_t *buf0, uint16_t *buf1, uint16_t *uv
 				"paddusb r5Dither, %%mm5	\n\t"
 #endif
 				WRITEBGR15
-			:: "r" (buf0), "r" (buf1), "r" (uvbuf0), "r" (uvbuf1), "r" (dest), "m" (dstW),
+			:: "r" (buf0), "r" (buf0), "r" (uvbuf0), "r" (uvbuf1), "r" (dest), "m" (dstW),
 			"m" (yalpha1), "m" (uvalpha1)
 			: "%eax"
 			);
@@ -1049,7 +1491,7 @@ static inline void RENAME(yuv2rgb1)(uint16_t *buf0, uint16_t *buf1, uint16_t *uv
 #endif
 
 				WRITEBGR16
-			:: "r" (buf0), "r" (buf1), "r" (uvbuf0), "r" (uvbuf1), "r" (dest), "m" (dstW),
+			:: "r" (buf0), "r" (buf0), "r" (uvbuf0), "r" (uvbuf1), "r" (dest), "m" (dstW),
 			"m" (yalpha1), "m" (uvalpha1)
 			: "%eax"
 			);
@@ -1057,7 +1499,6 @@ static inline void RENAME(yuv2rgb1)(uint16_t *buf0, uint16_t *buf1, uint16_t *uv
 	}
 #else
 //FIXME write 2 versions (for even & odd lines)
-	asm volatile ("\n\t"::: "memory");
 
 	if(dstbpp==32)
 	{
@@ -1082,7 +1523,7 @@ static inline void RENAME(yuv2rgb1)(uint16_t *buf0, uint16_t *buf1, uint16_t *uv
 			dest[4*i+6]=clip_table[((Y2 + Cr) >>13)];
 		}
 	}
-	if(dstbpp==24)
+	else if(dstbpp==24)
 	{
 		int i;
 		for(i=0; i<dstW-1; i+=2){
@@ -1245,7 +1686,7 @@ static inline void RENAME(hScale)(int16_t *dst, int dstW, uint8_t *src, int srcW
 			"movd %%mm0, (%4, %%ebp)	\n\t"
 			"addl $4, %%ebp			\n\t"
 			" jnc 1b			\n\t"
-			
+
 			"popl %%ebp			\n\t"
 			: "+a" (counter)
 			: "c" (filter), "d" (filterPos), "S" (src), "D" (dst)
@@ -1294,7 +1735,7 @@ static inline void RENAME(hScale)(int16_t *dst, int dstW, uint8_t *src, int srcW
 			"movd %%mm4, (%%eax, %0)	\n\t"
 			"addl $4, %0			\n\t"
 			" jnc 1b			\n\t"
-			
+
 			: "+r" (counter)
 			: "r" (filter), "m" (filterPos), "m" (dst), "m"(src+filterSize),
 			  "m" (src), "r" (filterSize*2)
@@ -1308,7 +1749,7 @@ static inline void RENAME(hScale)(int16_t *dst, int dstW, uint8_t *src, int srcW
 		int j;
 		int srcPos= filterPos[i];
 		int val=0;
-//		printf("filterPos: %d\n", hFilterPos[i]);
+//		printf("filterPos: %d\n", filterPos[i]);
 		for(j=0; j<filterSize; j++)
 		{
 //			printf("filter: %d, src: %d\n", filter[i], src[srcPos + j]);
@@ -1516,10 +1957,11 @@ FUNNYUVCODE
 		  "m" ((xInc*4)&0xFFFF), "m" (xInc&0xFFFF), "m" (src2)
 		: "%eax", "%ebx", "%ecx", "%edx", "%esi", "%edi"
 	);
-		for(i=dstWidth-1; (i*xInc)>>16 >=srcW/2-1; i--)
+		for(i=dstWidth-1; (i*xInc)>>16 >=srcW-1; i--)
 		{
-			dst[i] = src1[srcW/2-1]*128;
-			dst[i+2048] = src2[srcW/2-1]*128;
+//			printf("%d %d %d\n", dstWidth, i, srcW);
+			dst[i] = src1[srcW-1]*128;
+			dst[i+2048] = src2[srcW-1]*128;
 		}
 	}
 	else
@@ -1584,33 +2026,45 @@ FUNNYUVCODE
    }
 }
 
-static void inline RENAME(initFilter)(int16_t *filter, int16_t *filterPos, int *filterSize, int xInc,
-				      int srcW, int dstW)
+static inline void RENAME(initFilter)(int16_t *filter, int16_t *filterPos, int *filterSize, int xInc,
+				      int srcW, int dstW, int filterAlign, int one)
 {
 	int i;
 #ifdef HAVE_MMX
-	asm volatile("emms\n\t"::: "memory"); //FIXME this shouldnt be required but it IS
+	asm volatile("emms\n\t"::: "memory"); //FIXME this shouldnt be required but it IS (even for non mmx versions) 
 #endif
-	
-	if(xInc <= (1<<16)) // upscale / cubic interpolate
+
+	if(ABS(xInc - 0x10000) <10) // unscaled
+	{
+		int i;
+		*filterSize= (1 +(filterAlign-1)) & (~(filterAlign-1)); // 1 or 4 normaly
+		for(i=0; i<dstW*(*filterSize); i++) filter[i]=0;
+
+		for(i=0; i<dstW; i++)
+		{
+			filter[i*(*filterSize)]=1;
+			filterPos[i]=i;
+		}
+
+	}
+	else if(xInc <= (1<<16) || sws_flags==SWS_FAST_BILINEAR) // upscale
 	{
 		int i;
 		int xDstInSrc;
 		if(sws_flags==SWS_BICUBIC) *filterSize= 4;
 		else			   *filterSize= 2;
 //		printf("%d %d %d\n", filterSize, srcW, dstW);
-#ifdef HAVE_MMX
-		*filterSize= (*filterSize +3) & (~3); // -> *filterSize %4 == 0
-#endif
+		*filterSize= (*filterSize +(filterAlign-1)) & (~(filterAlign-1));
+
 		xDstInSrc= xInc - 0x8000;
 		for(i=0; i<dstW; i++)
 		{
 			int xx= (xDstInSrc>>16) - (*filterSize>>1) + 1;
 			int j;
-			
+
 			filterPos[i]= xx;
 			if(sws_flags == SWS_BICUBIC)
-			{				
+			{
 				double d= ABS(((xx+1)<<16) - xDstInSrc)/(double)(1<<16);
 //				int coeff;
 				int y1,y2,y3,y4;
@@ -1620,7 +2074,7 @@ static void inline RENAME(initFilter)(int16_t *filter, int16_t *filterPos, int *
 		y2 = (int)floor(0.5 + (+ 1.0             -     (A+3.0)*d*d + (A+2.0)*d*d*d) * 16384.0);
 		y3 = (int)floor(0.5 + (        -     A*d + (2.0*A+3.0)*d*d - (A+2.0)*d*d*d) * 16384.0);
 		y4 = (int)floor(0.5 + (                  +           A*d*d -       A*d*d*d) * 16384.0);
-						
+
 //				printf("%d %d %d \n", coeff, (int)d, xDstInSrc);
 				filter[i*(*filterSize) + 0]= y1;
 				filter[i*(*filterSize) + 1]= y2;
@@ -1628,20 +2082,20 @@ static void inline RENAME(initFilter)(int16_t *filter, int16_t *filterPos, int *
 				filter[i*(*filterSize) + 3]= y4;
 //				printf("%1.3f %d, %d, %d, %d\n",d , y1, y2, y3, y4);
 			}
-			else 
+			else
 			{
 				for(j=0; j<*filterSize; j++)
 				{
 					double d= ABS((xx<<16) - xDstInSrc)/(double)(1<<16);
 					int coeff;
 					coeff= (int)(0.5 + (1.0 - d)*(1<<14));
-					if(coeff<0) coeff=0;					
+					if(coeff<0) coeff=0;
 	//				printf("%d %d %d \n", coeff, (int)d, xDstInSrc);
 					filter[i*(*filterSize) + j]= coeff;
 					xx++;
 				}
-			}		
-			xDstInSrc+= xInc;			
+			}
+			xDstInSrc+= xInc;
 		}
 	}
 	else // downscale
@@ -1650,47 +2104,46 @@ static void inline RENAME(initFilter)(int16_t *filter, int16_t *filterPos, int *
 		if(sws_flags==SWS_BICUBIC) *filterSize= (int)ceil(1 + 4.0*srcW / (double)dstW);
 		else			   *filterSize= (int)ceil(1 + 2.0*srcW / (double)dstW);
 //		printf("%d %d %d\n", *filterSize, srcW, dstW);
-#ifdef HAVE_MMX
-		*filterSize= (*filterSize +3) & (~3); // -> *filterSize %4 == 0
-#endif
+		*filterSize= (*filterSize +(filterAlign-1)) & (~(filterAlign-1));
+
 		xDstInSrc= xInc - 0x8000;
 		for(i=0; i<dstW; i++)
 		{
 			int xx= (int)((double)xDstInSrc/(double)(1<<16) - *filterSize*0.5 + 0.5);
 			int j;
-			
+
 			filterPos[i]= xx;
 			for(j=0; j<*filterSize; j++)
 			{
 				double d= ABS((xx<<16) - xDstInSrc)/(double)xInc;
 				int coeff;
 				if(sws_flags == SWS_BICUBIC)
-				{				
+				{
 					double A= -0.75;
 //					d*=2;
 					// Equation is from VirtualDub
 					if(d<1.0)
-						coeff = (int)floor(0.5 + (1.0 - (A+3.0)*d*d 
+						coeff = (int)floor(0.5 + (1.0 - (A+3.0)*d*d
 						        + (A+2.0)*d*d*d) * (1<<14));
 					else if(d<2.0)
-						coeff = (int)floor(0.5 + (-4.0*A + 8.0*A*d 
+						coeff = (int)floor(0.5 + (-4.0*A + 8.0*A*d
 						        - 5.0*A*d*d + A*d*d*d) * (1<<14));
 					else
 						coeff=0;
 				}
-				else 
+				else
 				{
 					coeff= (int)(0.5 + (1.0 - d)*(1<<14));
-					if(coeff<0) coeff=0;					
+					if(coeff<0) coeff=0;
 				}
-//				printf("%d %d %d \n", coeff, (int)d, xDstInSrc);
+//				if(filterAlign==1) printf("%d %d %d \n", coeff, (int)d, xDstInSrc);
 				filter[i*(*filterSize) + j]= coeff;
 				xx++;
 			}
 			xDstInSrc+= xInc;
 		}
 	}
-	
+
 	//fix borders
 	for(i=0; i<dstW; i++)
 	{
@@ -1717,16 +2170,19 @@ static void inline RENAME(initFilter)(int16_t *filter, int16_t *filterPos, int *
 				filter[i*(*filterSize) +right] += filter[i*(*filterSize) +j];
 				filter[i*(*filterSize) +j]=0;
 			}
-			filterPos[i]= srcW - *filterSize; 
+			filterPos[i]= srcW - *filterSize;
 		}
 	}
-	
+
+	//FIXME try to align filterpos if possible / try to shift filterpos to put zeros at the end
+	// and skip these than later
+
 	//Normalize
 	for(i=0; i<dstW; i++)
 	{
 		int j;
 		double sum=0;
-		double scale=1<<14;
+		double scale= one;
 		for(j=0; j<*filterSize; j++)
 		{
 			sum+= filter[i*(*filterSize) + j];
@@ -1739,295 +2195,473 @@ static void inline RENAME(initFilter)(int16_t *filter, int16_t *filterPos, int *
 	}
 }
 
+#ifdef HAVE_MMX2
+static void initMMX2HScaler(int dstW, int xInc, uint8_t *funnyCode)
+{
+	uint8_t *fragment;
+	int imm8OfPShufW1;
+	int imm8OfPShufW2;
+	int fragmentLength;
+
+	int xpos, i;
+
+	// create an optimized horizontal scaling routine
+
+	//code fragment
+
+	asm volatile(
+		"jmp 9f				\n\t"
+	// Begin
+		"0:				\n\t"
+		"movq (%%esi), %%mm0		\n\t" //FIXME Alignment
+		"movq %%mm0, %%mm1		\n\t"
+		"psrlq $8, %%mm0		\n\t"
+		"punpcklbw %%mm7, %%mm1	\n\t"
+		"movq %%mm2, %%mm3		\n\t"
+		"punpcklbw %%mm7, %%mm0	\n\t"
+		"addw %%bx, %%cx		\n\t" //2*xalpha += (4*lumXInc)&0xFFFF
+		"pshufw $0xFF, %%mm1, %%mm1	\n\t"
+		"1:				\n\t"
+		"adcl %%edx, %%esi		\n\t" //xx+= (4*lumXInc)>>16 + carry
+		"pshufw $0xFF, %%mm0, %%mm0	\n\t"
+		"2:				\n\t"
+		"psrlw $9, %%mm3		\n\t"
+		"psubw %%mm1, %%mm0		\n\t"
+		"pmullw %%mm3, %%mm0		\n\t"
+		"paddw %%mm6, %%mm2		\n\t" // 2*alpha += xpos&0xFFFF
+		"psllw $7, %%mm1		\n\t"
+		"paddw %%mm1, %%mm0		\n\t"
+
+		"movq %%mm0, (%%edi, %%eax)	\n\t"
+
+		"addl $8, %%eax			\n\t"
+	// End
+		"9:				\n\t"
+//		"int $3\n\t"
+		"leal 0b, %0			\n\t"
+		"leal 1b, %1			\n\t"
+		"leal 2b, %2			\n\t"
+		"decl %1			\n\t"
+		"decl %2			\n\t"
+		"subl %0, %1			\n\t"
+		"subl %0, %2			\n\t"
+		"leal 9b, %3			\n\t"
+		"subl %0, %3			\n\t"
+		:"=r" (fragment), "=r" (imm8OfPShufW1), "=r" (imm8OfPShufW2),
+		"=r" (fragmentLength)
+	);
+
+	xpos= 0; //lumXInc/2 - 0x8000; // difference between pixel centers
+
+	for(i=0; i<dstW/8; i++)
+	{
+		int xx=xpos>>16;
+
+		if((i&3) == 0)
+		{
+			int a=0;
+			int b=((xpos+xInc)>>16) - xx;
+			int c=((xpos+xInc*2)>>16) - xx;
+			int d=((xpos+xInc*3)>>16) - xx;
+
+			memcpy(funnyCode + fragmentLength*i/4, fragment, fragmentLength);
+
+			funnyCode[fragmentLength*i/4 + imm8OfPShufW1]=
+			funnyCode[fragmentLength*i/4 + imm8OfPShufW2]=
+				a | (b<<2) | (c<<4) | (d<<6);
+
+			// if we dont need to read 8 bytes than dont :), reduces the chance of
+			// crossing a cache line
+			if(d<3) funnyCode[fragmentLength*i/4 + 1]= 0x6E;
+
+			funnyCode[fragmentLength*(i+4)/4]= RET;
+		}
+		xpos+=xInc;
+	}
+/*
+	xpos= 0; //chrXInc/2 - 0x10000; // difference between centers of chrom samples
+	for(i=0; i<dstUVw/8; i++)
+	{
+		int xx=xpos>>16;
+
+		if((i&3) == 0)
+		{
+			int a=0;
+			int b=((xpos+chrXInc)>>16) - xx;
+			int c=((xpos+chrXInc*2)>>16) - xx;
+			int d=((xpos+chrXInc*3)>>16) - xx;
+
+			memcpy(funnyUVCode + fragmentLength*i/4, fragment, fragmentLength);
+
+			funnyUVCode[fragmentLength*i/4 + imm8OfPShufW1]=
+			funnyUVCode[fragmentLength*i/4 + imm8OfPShufW2]=
+				a | (b<<2) | (c<<4) | (d<<6);
+
+			// if we dont need to read 8 bytes than dont :), reduces the chance of
+			// crossing a cache line
+			if(d<3) funnyUVCode[fragmentLength*i/4 + 1]= 0x6E;
+
+			funnyUVCode[fragmentLength*(i+4)/4]= RET;
+		}
+		xpos+=chrXInc;
+	}
+*/
+//	funnyCode[0]= RET;
+}
+#endif // HAVE_MMX2
+
 static void RENAME(SwScale_YV12slice)(unsigned char* srcptr[],int stride[], int srcSliceY ,
 			     int srcSliceH, uint8_t* dstptr[], int dststride, int dstbpp,
 			     int srcW, int srcH, int dstW, int dstH){
 
 
-unsigned int s_xinc2;
-//FIXME do we need th +-2 stuff?
-unsigned int s_xinc= (srcW << 16) / dstW - 2;
-unsigned int s_yinc= (srcH << 16) / dstH + 2;
-			  
-static int lumDstYInSrc; // points to the dst Pixels center in the source (0 is the center of pixel 0,0 in src)
+unsigned int lumXInc= (srcW << 16) / dstW;
+unsigned int lumYInc= (srcH << 16) / dstH;
+unsigned int chrXInc;
+unsigned int chrYInc;
+
 static int dstY;
 
-// last horzontally interpolated lines, used to avoid unnecessary calculations
-static int lastLumSrcY;
-static int lastChrSrcY;
-
+// used to detect a size change
 static int oldDstW= -1;
 static int oldSrcW= -1;
+static int oldDstH= -1;
+static int oldSrcH= -1;
+static int oldFlags=-1;
 
-int dstUVw;
-int i;
+static int lastInLumBuf;
+static int lastInChrBuf;
 
-if(((dstW + 7)&(~7)) >= dststride) dstW&= ~7;
+int chrDstW, chrDstH;
 
-dstUVw= fullUVIpol ? dstW : dstW/2;
+static int lumBufIndex=0;
+static int chrBufIndex=0;
+
+static int firstTime=1;
+
+int widthAlign= dstbpp==12 ? 16 : 8;
+if(((dstW + widthAlign-1)&(~(widthAlign-1))) > dststride)
+{
+	dstW&= ~(widthAlign-1);
+	if(firstTime)
+		fprintf(stderr, "SwScaler: Warning: dstStride is not a multiple of %d!\n"
+				"SwScaler: ->lowering width to compensate, new width=%d\n"
+				"SwScaler: ->cannot do aligned memory acesses anymore\n",
+				widthAlign, dstW);
+}
 
 //printf("%d %d %d %d\n", srcW, srcH, dstW, dstH);
-//printf("%d %d %d %d\n", s_xinc, s_yinc, srcSliceY, srcSliceH);
+//printf("%d %d %d %d\n", lumXInc, lumYInc, srcSliceY, srcSliceH);
 
 #ifdef HAVE_MMX2
-canMMX2BeUsed= (s_xinc <= 0x10000 && (dstW&31)==0 && (srcW&15)==0) ? 1 : 0;
+canMMX2BeUsed= (lumXInc <= 0x10000 && (dstW&31)==0 && (srcW&15)==0) ? 1 : 0;
+if(!canMMX2BeUsed && lumXInc <= 0x10000 && (srcW&15)==0 && sws_flags==SWS_FAST_BILINEAR)
+{
+	if(firstTime) //FIXME only if verbose ?
+		fprintf(stderr, "SwScaler: output Width is not a multiple of 32 -> no MMX2 scaler\n");
+}
 #endif
+
+if(firstTime)
+{
+#ifdef DITHER1X
+	char *dither= "dithered";
+#else
+	char *dither= "";
+#endif
+	if(sws_flags==SWS_FAST_BILINEAR)
+		fprintf(stderr, "SwScaler: FAST_BILINEAR scaler ");
+	else if(sws_flags==SWS_BILINEAR)
+		fprintf(stderr, "SwScaler: BILINEAR scaler ");
+	else if(sws_flags==SWS_BICUBIC)
+		fprintf(stderr, "SwScaler: BICUBIC scaler ");
+	else
+		fprintf(stderr, "SwScaler: ehh flags invalid?! ");
+
+	if(dstbpp==15)
+		fprintf(stderr, "with %s BGR15 output ", dither);
+	else if(dstbpp==16)
+		fprintf(stderr, "with %s BGR16 output ", dither);
+	else if(dstbpp==24)
+		fprintf(stderr, "with BGR24 output ");
+	else if(dstbpp==32)
+		fprintf(stderr, "with BGR32 output ");
+	else if(dstbpp==12)
+		fprintf(stderr, "with YV12 output ");
+	else
+		fprintf(stderr, "without output ");
+
+#ifdef HAVE_MMX2
+		fprintf(stderr, "using MMX2\n");
+#elif defined (HAVE_3DNOW)
+		fprintf(stderr, "using 3DNOW\n");
+#elif defined (HAVE_MMX)
+		fprintf(stderr, "using MMX\n");
+#elif defined (ARCH_X86)
+		fprintf(stderr, "using X86 ASM2\n");
+#else
+		fprintf(stderr, "using C\n");
+#endif
+}
+
 
 // match pixel 0 of the src to pixel 0 of dst and match pixel n-2 of src to pixel n-2 of dst
 // n-2 is the last chrominance sample available
-// FIXME this is not perfect, but noone shuld notice the difference, the more correct variant
+// this is not perfect, but noone shuld notice the difference, the more correct variant
 // would be like the vertical one, but that would require some special code for the
 // first and last pixel
-if(canMMX2BeUsed) 	s_xinc+= 20;
-else			s_xinc = ((srcW-2)<<16)/(dstW-2) - 20;
+if(sws_flags==SWS_FAST_BILINEAR)
+{
+	if(canMMX2BeUsed) 	lumXInc+= 20;
+	else			lumXInc = ((srcW-2)<<16)/(dstW-2) - 20;
+}
 
-if(fullUVIpol && !(dstbpp==12)) 	s_xinc2= s_xinc>>1;
-else					s_xinc2= s_xinc;
+if(fullUVIpol && !(dstbpp==12)) 	chrXInc= lumXInc>>1, chrDstW= dstW;
+else					chrXInc= lumXInc,    chrDstW= dstW>>1;
+
+if(dstbpp==12)	chrYInc= lumYInc,    chrDstH= dstH>>1;
+else		chrYInc= lumYInc>>1, chrDstH= dstH;
+
   // force calculation of the horizontal interpolation of the first line
 
   if(srcSliceY ==0){
 //	printf("dstW %d, srcw %d, mmx2 %d\n", dstW, srcW, canMMX2BeUsed);
-	lastLumSrcY=-99;
-	lastChrSrcY=-99;
-	lumDstYInSrc= s_yinc/2 - 0x8000;
+	lumBufIndex=0;
+	chrBufIndex=0;
 	dstY=0;
 
-	// clean the buffers so that no green stuff is drawen if the width is not sane (%8=0)
-	for(i=dstW-2; i<dstW+20; i++)
-	{
-		pix_buf_uv[0][i] = pix_buf_uv[1][i]
-		= pix_buf_uv[0][2048+i] = pix_buf_uv[1][2048+i] = 128*128;
-		pix_buf_uv[0][i/2] = pix_buf_uv[1][i/2]
-		= pix_buf_uv[0][2048+i/2] = pix_buf_uv[1][2048+i/2] = 128*128;
-		pix_buf_y[0][i]= pix_buf_y[1][i]= 0;
-	}
-	
 	//precalculate horizontal scaler filter coefficients
-    if(oldDstW!=dstW || oldSrcW!=srcW) 
-    {
-//	int i;
-	oldDstW= dstW; oldSrcW= srcW;
+	if(oldDstW!=dstW || oldSrcW!=srcW || oldFlags!=sws_flags)
+	{
+#ifdef HAVE_MMX
+		const int filterAlign=4;
+#else
+		const int filterAlign=1;
+#endif
+		oldDstW= dstW; oldSrcW= srcW; oldFlags= sws_flags;
 
-	RENAME(initFilter)(hLumFilter, hLumFilterPos, &hLumFilterSize, s_xinc, srcW, dstW);
-	RENAME(initFilter)(hChrFilter, hChrFilterPos, &hChrFilterSize, s_xinc2, srcW, dstW);
-	
+		if(sws_flags != SWS_FAST_BILINEAR)
+		{
+			RENAME(initFilter)(hLumFilter, hLumFilterPos, &hLumFilterSize, lumXInc,
+					   srcW   , dstW   , filterAlign, 1<<14);
+			RENAME(initFilter)(hChrFilter, hChrFilterPos, &hChrFilterSize, chrXInc,
+					   srcW>>1, chrDstW, filterAlign, 1<<14);
+		}
+
 #ifdef HAVE_MMX2
 // cant downscale !!!
-	if(canMMX2BeUsed)
+		if(canMMX2BeUsed && sws_flags == SWS_FAST_BILINEAR)
+		{
+			initMMX2HScaler(dstW   , lumXInc, funnyYCode);
+			initMMX2HScaler(chrDstW, chrXInc, funnyUVCode);
+		}
+#endif
+	} // Init Horizontal stuff
+
+	if(oldDstH!=dstH || oldSrcH!=srcH || oldFlags!=sws_flags)
 	{
-		uint8_t *fragment;
-		int imm8OfPShufW1;
-		int imm8OfPShufW2;
-		int fragmentLength;
+		int i;
+		oldDstH= dstH; oldSrcH= srcH; oldFlags= sws_flags; //FIXME swsflags conflict with x check
 
-		int xpos, i;
+		// deallocate pixbufs
+		for(i=0; i<vLumBufSize; i++) free(lumPixBuf[i]);
+		for(i=0; i<vChrBufSize; i++) free(chrPixBuf[i]);
 
-		// create an optimized horizontal scaling routine
+		RENAME(initFilter)(vLumFilter, vLumFilterPos, &vLumFilterSize, lumYInc,
+				srcH   , dstH,    1, (1<<12)-4);
+		RENAME(initFilter)(vChrFilter, vChrFilterPos, &vChrFilterSize, chrYInc,
+				srcH>>1, chrDstH, 1, (1<<12)-4);
 
-		//code fragment
-
-		asm volatile(
-			"jmp 9f				\n\t"
-		// Begin
-			"0:				\n\t"
-			"movq (%%esi), %%mm0		\n\t" //FIXME Alignment
-			"movq %%mm0, %%mm1		\n\t"
-			"psrlq $8, %%mm0		\n\t"
-			"punpcklbw %%mm7, %%mm1	\n\t"
-			"movq %%mm2, %%mm3		\n\t"
-			"punpcklbw %%mm7, %%mm0	\n\t"
-			"addw %%bx, %%cx		\n\t" //2*xalpha += (4*s_xinc)&0xFFFF
-			"pshufw $0xFF, %%mm1, %%mm1	\n\t"
-			"1:				\n\t"
-			"adcl %%edx, %%esi		\n\t" //xx+= (4*s_xinc)>>16 + carry
-			"pshufw $0xFF, %%mm0, %%mm0	\n\t"
-			"2:				\n\t"
-			"psrlw $9, %%mm3		\n\t"
-			"psubw %%mm1, %%mm0		\n\t"
-			"pmullw %%mm3, %%mm0		\n\t"
-			"paddw %%mm6, %%mm2		\n\t" // 2*alpha += xpos&0xFFFF
-			"psllw $7, %%mm1		\n\t"
-			"paddw %%mm1, %%mm0		\n\t"
-
-			"movq %%mm0, (%%edi, %%eax)	\n\t"
-
-			"addl $8, %%eax			\n\t"
-		// End
-			"9:				\n\t"
-//		"int $3\n\t"
-			"leal 0b, %0			\n\t"
-			"leal 1b, %1			\n\t"
-			"leal 2b, %2			\n\t"
-			"decl %1			\n\t"
-			"decl %2			\n\t"
-			"subl %0, %1			\n\t"
-			"subl %0, %2			\n\t"
-			"leal 9b, %3			\n\t"
-			"subl %0, %3			\n\t"
-			:"=r" (fragment), "=r" (imm8OfPShufW1), "=r" (imm8OfPShufW2),
-			 "=r" (fragmentLength)
-		);
-
-		xpos= 0; //s_xinc/2 - 0x8000; // difference between pixel centers
-
-		for(i=0; i<dstW/8; i++)
+		// Calculate Buffer Sizes so that they wont run out while handling these damn slices
+		vLumBufSize= vLumFilterSize; vChrBufSize= vChrFilterSize;
+		for(i=0; i<dstH; i++)
 		{
-			int xx=xpos>>16;
-
-			if((i&3) == 0)
-			{
-				int a=0;
-				int b=((xpos+s_xinc)>>16) - xx;
-				int c=((xpos+s_xinc*2)>>16) - xx;
-				int d=((xpos+s_xinc*3)>>16) - xx;
-
-				memcpy(funnyYCode + fragmentLength*i/4, fragment, fragmentLength);
-
-				funnyYCode[fragmentLength*i/4 + imm8OfPShufW1]=
-				funnyYCode[fragmentLength*i/4 + imm8OfPShufW2]=
-					a | (b<<2) | (c<<4) | (d<<6);
-
-				// if we dont need to read 8 bytes than dont :), reduces the chance of
-				// crossing a cache line
-				if(d<3) funnyYCode[fragmentLength*i/4 + 1]= 0x6E;
-
-				funnyYCode[fragmentLength*(i+4)/4]= RET;
-			}
-			xpos+=s_xinc;
+			int chrI= i*chrDstH / dstH;
+			int nextSlice= MAX(vLumFilterPos[i   ] + vLumFilterSize - 1,
+					 ((vChrFilterPos[chrI] + vChrFilterSize - 1)<<1));
+			nextSlice&= ~1; // Slices start at even boundaries
+			if(vLumFilterPos[i   ] + vLumBufSize < nextSlice)
+				vLumBufSize= nextSlice - vLumFilterPos[i   ];
+			if(vChrFilterPos[chrI] + vChrBufSize < (nextSlice>>1))
+				vChrBufSize= (nextSlice>>1) - vChrFilterPos[chrI];
 		}
 
-		xpos= 0; //s_xinc2/2 - 0x10000; // difference between centers of chrom samples
-		for(i=0; i<dstUVw/8; i++)
-		{
-			int xx=xpos>>16;
+		// allocate pixbufs (we use dynamic allocation because otherwise we would need to
+		// allocate several megabytes to handle all possible cases)
+		for(i=0; i<vLumBufSize; i++)
+			lumPixBuf[i]= lumPixBuf[i+vLumBufSize]= (uint16_t*)memalign(8, 4000);
+		for(i=0; i<vChrBufSize; i++)
+			chrPixBuf[i]= chrPixBuf[i+vChrBufSize]= (uint16_t*)memalign(8, 8000);
 
-			if((i&3) == 0)
-			{
-				int a=0;
-				int b=((xpos+s_xinc2)>>16) - xx;
-				int c=((xpos+s_xinc2*2)>>16) - xx;
-				int d=((xpos+s_xinc2*3)>>16) - xx;
+		//try to avoid drawing green stuff between the right end and the stride end
+		for(i=0; i<vLumBufSize; i++) memset(lumPixBuf[i], 0, 4000);
+		for(i=0; i<vChrBufSize; i++) memset(chrPixBuf[i], 64, 8000);
 
-				memcpy(funnyUVCode + fragmentLength*i/4, fragment, fragmentLength);
-
-				funnyUVCode[fragmentLength*i/4 + imm8OfPShufW1]=
-				funnyUVCode[fragmentLength*i/4 + imm8OfPShufW2]=
-					a | (b<<2) | (c<<4) | (d<<6);
-
-				// if we dont need to read 8 bytes than dont :), reduces the chance of
-				// crossing a cache line
-				if(d<3) funnyUVCode[fragmentLength*i/4 + 1]= 0x6E;
-
-				funnyUVCode[fragmentLength*(i+4)/4]= RET;
-			}
-			xpos+=s_xinc2;
-		}
-//		funnyCode[0]= RET;
-	}
-
-#endif // HAVE_MMX2
-   } // Init stuff
-  } // reset counters
-
-  while(1){
-    unsigned char *dest =dstptr[0]+dststride*dstY;
-    unsigned char *uDest=dstptr[1]+(dststride>>1)*(dstY>>1);
-    unsigned char *vDest=dstptr[2]+(dststride>>1)*(dstY>>1);
-
-    int lumSrcY=(lumDstYInSrc + 0xFFFF)>>16;  // first luminance source line number below the dst line
-	// points to the dst Pixels center in the source (0 is the center of pixel 0,0 in src)
-    int chrDstYInSrc= dstbpp==12 ?	lumDstYInSrc + s_yinc/2 - 0x8000 :
-    					lumDstYInSrc            - 0x8000;
-    int chrSrcY=(chrDstYInSrc + 0x1FFFF)>>17; // first chrominance source line number below the dst line
-    int yalpha= ((lumDstYInSrc-1)&0xFFFF )>>4;
-    int uvalpha=((chrDstYInSrc-1)&0x1FFFF)>>5;
-    uint16_t *buf0=pix_buf_y[ lumSrcY   &1];	// top line of the interpolated slice
-    uint16_t *buf1=pix_buf_y[(lumSrcY+1)&1];	// bottom line of the interpolated slice
-    uint16_t *uvbuf0=pix_buf_uv[ chrSrcY   &1];	// top line of the interpolated slice
-    uint16_t *uvbuf1=pix_buf_uv[(chrSrcY+1)&1];	// bottom line of the interpolated slice
-
-    if(lumSrcY>=srcSliceY + srcSliceH && srcSliceY + srcSliceH < srcH) break;
-    if(dstY >= dstH) break;
-    
-//	printf("lumSrcY:%d, dstY:%d, yalpha:%d\n", lumSrcY, dstY, yalpha*100/0x1000);
-
-    if((dstY&1) && dstbpp==12) uvalpha=-1;
-
-    dstY++; lumDstYInSrc+=s_yinc;
-
-    //only interpolate the src line horizontally if we didnt do it allready
-	if(lastLumSrcY!=lumSrcY)
-	{
-		unsigned char *src;
-		
-		// skip if first line has been horiz scaled alleady
-		if(lastLumSrcY != lumSrcY-1)
-		{
-			// check if first line is before any available src lines
-			if(lumSrcY-1 < srcSliceY ) src=srcptr[0]+(0                   )*stride[0];
-			else			   src=srcptr[0]+(lumSrcY-srcSliceY -1)*stride[0];
-
-			RENAME(hyscale)(buf0, dstW, src, srcW, s_xinc);
-		}
-		// check if second line is after any available src lines
-		if(lumSrcY-srcSliceY  >= srcSliceH) src=srcptr[0]+(srcSliceH-1       )*stride[0];
-		else				    src=srcptr[0]+(lumSrcY-srcSliceY )*stride[0];
-
-		// the min() is required to avoid reuseing lines which where not available
-		lastLumSrcY= MIN(lumSrcY, srcSliceY +srcSliceH-1);
-		RENAME(hyscale)(buf1, dstW, src, srcW, s_xinc);
-	}
-//	printf("%d %d %d %d\n", y, chrSrcY, lastChrSrcY, h);
-      // *** horizontal scale U and V lines to temp buffer
-	if(lastChrSrcY!=chrSrcY)
-	{
-		uint8_t *src1, *src2;
-		// skip if first line has been horiz scaled alleady
-		if(lastChrSrcY != chrSrcY-1)
-		{
-			// check if first line is before any available src lines
-			if(chrSrcY-srcSliceY /2-1 < 0)
-			{
-				src1= srcptr[1]+(0)*stride[1];
-				src2= srcptr[2]+(0)*stride[2];
-			}else{
-				src1= srcptr[1]+(chrSrcY-srcSliceY /2-1)*stride[1];
-				src2= srcptr[2]+(chrSrcY-srcSliceY /2-1)*stride[2];
-			}
-			RENAME(hcscale)(uvbuf0, dstUVw, src1, src2, srcW, s_xinc2);
-		}
-
-		// check if second line is after any available src lines
-		if(chrSrcY - srcSliceY /2 >= srcSliceH/2)
-		{
-			src1= srcptr[1]+(srcSliceH/2-1)*stride[1];
-			src2= srcptr[2]+(srcSliceH/2-1)*stride[2];
-		}else{
-			src1= srcptr[1]+(chrSrcY-srcSliceY /2)*stride[1];
-			src2= srcptr[2]+(chrSrcY-srcSliceY /2)*stride[2];
-		}
-		RENAME(hcscale)(uvbuf1, dstUVw, src1, src2, srcW, s_xinc2);
-
-		// the min() is required to avoid reuseing lines which where not available
-		lastChrSrcY= MIN(chrSrcY, srcSliceY /2+srcSliceH/2-1);
-	}
 #ifdef HAVE_MMX
-	b5Dither= dither8[dstY&1];
-	g6Dither= dither4[dstY&1];
-	g5Dither= dither8[dstY&1];
-	r5Dither= dither8[(dstY+1)&1];
+		// pack filter data for mmx code
+		for(i=0; i<vLumFilterSize*dstH; i++)
+			lumMmxFilter[4*i]=lumMmxFilter[4*i+1]=lumMmxFilter[4*i+2]=lumMmxFilter[4*i+3]=
+				vLumFilter[i];
+
+		for(i=0; i<vChrFilterSize*chrDstH; i++)
+			chrMmxFilter[4*i]=chrMmxFilter[4*i+1]=chrMmxFilter[4*i+2]=chrMmxFilter[4*i+3]=
+				vChrFilter[i];
+#endif
+	}
+
+	lastInLumBuf= -1;
+	lastInChrBuf= -1;
+  } // if(firstLine)
+
+	for(;dstY < dstH; dstY++){
+		unsigned char *dest =dstptr[0]+dststride*dstY;
+		unsigned char *uDest=dstptr[1]+(dststride>>1)*(dstY>>1);
+		unsigned char *vDest=dstptr[2]+(dststride>>1)*(dstY>>1);
+		const int chrDstY= dstbpp==12 ? (dstY>>1) : dstY;
+
+		const int firstLumSrcY= vLumFilterPos[dstY]; //First line needed as input
+		const int firstChrSrcY= vChrFilterPos[chrDstY]; //First line needed as input
+		const int lastLumSrcY= firstLumSrcY + vLumFilterSize -1; // Last line needed as input
+		const int lastChrSrcY= firstChrSrcY + vChrFilterSize -1; // Last line needed as input
+
+		if(sws_flags == SWS_FAST_BILINEAR)
+		{
+			//handle holes
+			if(firstLumSrcY > lastInLumBuf) lastInLumBuf= firstLumSrcY-1;
+			if(firstChrSrcY > lastInChrBuf) lastInChrBuf= firstChrSrcY-1;
+		}
+
+		ASSERT(firstLumSrcY >= lastInLumBuf - vLumBufSize + 1)
+		ASSERT(firstChrSrcY >= lastInChrBuf - vChrBufSize + 1)
+
+		// Do we have enough lines in this slice to output the dstY line
+		if(lastLumSrcY < srcSliceY + srcSliceH && lastChrSrcY < ((srcSliceY + srcSliceH)>>1))
+		{
+			//Do horizontal scaling
+			while(lastInLumBuf < lastLumSrcY)
+			{
+				uint8_t *src= srcptr[0]+(lastInLumBuf + 1 - srcSliceY)*stride[0];
+				lumBufIndex++;
+				ASSERT(lumBufIndex < 2*vLumBufSize)
+				ASSERT(lastInLumBuf + 1 - srcSliceY < srcSliceH)
+				ASSERT(lastInLumBuf + 1 - srcSliceY >= 0)
+//				printf("%d %d\n", lumBufIndex, vLumBufSize);
+				RENAME(hyscale)(lumPixBuf[ lumBufIndex ], dstW, src, srcW, lumXInc);
+				lastInLumBuf++;
+			}
+			while(lastInChrBuf < lastChrSrcY)
+			{
+				uint8_t *src1= srcptr[1]+(lastInChrBuf + 1 - (srcSliceY>>1))*stride[1];
+				uint8_t *src2= srcptr[2]+(lastInChrBuf + 1 - (srcSliceY>>1))*stride[2];
+				chrBufIndex++;
+				ASSERT(chrBufIndex < 2*vChrBufSize)
+				ASSERT(lastInChrBuf + 1 - (srcSliceY>>1) < (srcSliceH>>1))
+				ASSERT(lastInChrBuf + 1 - (srcSliceY>>1) >= 0)
+				RENAME(hcscale)(chrPixBuf[ chrBufIndex ], chrDstW, src1, src2, srcW>>1, chrXInc);
+				lastInChrBuf++;
+			}
+			//wrap buf index around to stay inside the ring buffer
+			if(lumBufIndex >= vLumBufSize ) lumBufIndex-= vLumBufSize;
+			if(chrBufIndex >= vChrBufSize ) chrBufIndex-= vChrBufSize;
+		}
+		else // not enough lines left in this slice -> load the rest in the buffer
+		{
+/*		printf("%d %d Last:%d %d LastInBuf:%d %d Index:%d %d Y:%d FSize: %d %d BSize: %d %d\n",
+			firstChrSrcY,firstLumSrcY,lastChrSrcY,lastLumSrcY,
+			lastInChrBuf,lastInLumBuf,chrBufIndex,lumBufIndex,dstY,vChrFilterSize,vLumFilterSize,
+			vChrBufSize, vLumBufSize);
+*/
+			//Do horizontal scaling
+			while(lastInLumBuf+1 < srcSliceY + srcSliceH)
+			{
+				uint8_t *src= srcptr[0]+(lastInLumBuf + 1 - srcSliceY)*stride[0];
+				lumBufIndex++;
+				ASSERT(lumBufIndex < 2*vLumBufSize)
+				ASSERT(lastInLumBuf + 1 - srcSliceY < srcSliceH)
+				ASSERT(lastInLumBuf + 1 - srcSliceY >= 0)
+				RENAME(hyscale)(lumPixBuf[ lumBufIndex ], dstW, src, srcW, lumXInc);
+				lastInLumBuf++;
+			}
+			while(lastInChrBuf+1 < ((srcSliceY + srcSliceH)>>1))
+			{
+				uint8_t *src1= srcptr[1]+(lastInChrBuf + 1 - (srcSliceY>>1))*stride[1];
+				uint8_t *src2= srcptr[2]+(lastInChrBuf + 1 - (srcSliceY>>1))*stride[2];
+				chrBufIndex++;
+				ASSERT(chrBufIndex < 2*vChrBufSize)
+				ASSERT(lastInChrBuf + 1 - (srcSliceY>>1) < (srcSliceH>>1))
+				ASSERT(lastInChrBuf + 1 - (srcSliceY>>1) >= 0)
+				RENAME(hcscale)(chrPixBuf[ chrBufIndex ], chrDstW, src1, src2, srcW>>1, chrXInc);
+				lastInChrBuf++;
+			}
+			//wrap buf index around to stay inside the ring buffer
+			if(lumBufIndex >= vLumBufSize ) lumBufIndex-= vLumBufSize;
+			if(chrBufIndex >= vChrBufSize ) chrBufIndex-= vChrBufSize;
+			break; //we cant output a dstY line so lets try with the next slice
+		}
+
+#ifdef HAVE_MMX
+		b5Dither= dither8[dstY&1];
+		g6Dither= dither4[dstY&1];
+		g5Dither= dither8[dstY&1];
+		r5Dither= dither8[(dstY+1)&1];
 #endif
 
-	if(dstbpp==12) //YV12
-		RENAME(yuv2yuv)(buf0, buf1, uvbuf0, uvbuf1, dest, uDest, vDest, dstW, yalpha, uvalpha);
-	else if(ABS(s_yinc - 0x10000) < 10)
-		RENAME(yuv2rgb1)(buf0, buf1, uvbuf0, uvbuf1, dest, dstW, yalpha, uvalpha, dstbpp);
-	else
-		RENAME(yuv2rgbX)(buf0, buf1, uvbuf0, uvbuf1, dest, dstW, yalpha, uvalpha, dstbpp);
-  }
+		if(dstbpp==12) //YV12
+		{
+			if(dstY&1) uDest=vDest= NULL; //FIXME split functions in lumi / chromi
+			if(vLumFilterSize == 1 && vChrFilterSize == 1) // Unscaled YV12
+			{
+				int16_t *lumBuf = lumPixBuf[0];
+				int16_t *chrBuf= chrPixBuf[0];
+				RENAME(yuv2yuv1)(lumBuf, chrBuf, dest, uDest, vDest, dstW);
+			}
+			else //General YV12
+			{
+				int16_t **lumSrcPtr= lumPixBuf + lumBufIndex + firstLumSrcY - lastInLumBuf + vLumBufSize;
+				int16_t **chrSrcPtr= chrPixBuf + chrBufIndex + firstChrSrcY - lastInChrBuf + vChrBufSize;
+				RENAME(yuv2yuvX)(
+					vLumFilter+dstY*vLumFilterSize     , lumSrcPtr, vLumFilterSize,
+					vChrFilter+(dstY>>1)*vChrFilterSize, chrSrcPtr, vChrFilterSize,
+					dest, uDest, vDest, dstW,
+					lumMmxFilter+dstY*vLumFilterSize*4, chrMmxFilter+(dstY>>1)*vChrFilterSize*4);
+			}
+		}
+		else
+		{
+			int16_t **lumSrcPtr= lumPixBuf + lumBufIndex + firstLumSrcY - lastInLumBuf + vLumBufSize;
+			int16_t **chrSrcPtr= chrPixBuf + chrBufIndex + firstChrSrcY - lastInChrBuf + vChrBufSize;
+
+			ASSERT(lumSrcPtr + vLumFilterSize - 1 < lumPixBuf + vLumBufSize*2);
+			ASSERT(chrSrcPtr + vChrFilterSize - 1 < chrPixBuf + vChrBufSize*2);
+			if(vLumFilterSize == 1 && vChrFilterSize == 2) //Unscaled RGB
+			{
+				int chrAlpha= vChrFilter[2*dstY+1];
+
+				RENAME(yuv2rgb1)(*lumSrcPtr, *chrSrcPtr, *(chrSrcPtr+1),
+						 dest, dstW, chrAlpha, dstbpp);
+			}
+			else if(vLumFilterSize == 2 && vChrFilterSize == 2) //BiLinear Upscale RGB
+			{
+				int lumAlpha= vLumFilter[2*dstY+1];
+				int chrAlpha= vChrFilter[2*dstY+1];
+
+				RENAME(yuv2rgb2)(*lumSrcPtr, *(lumSrcPtr+1), *chrSrcPtr, *(chrSrcPtr+1),
+						 dest, dstW, lumAlpha, chrAlpha, dstbpp);
+			}
+			else //General RGB
+			{
+				RENAME(yuv2rgbX)(
+					vLumFilter+dstY*vLumFilterSize, lumSrcPtr, vLumFilterSize,
+					vChrFilter+dstY*vChrFilterSize, chrSrcPtr, vChrFilterSize,
+					dest, dstW, dstbpp,
+					lumMmxFilter+dstY*vLumFilterSize*4, chrMmxFilter+dstY*vChrFilterSize*4);
+			}
+		}
+	}
 
 #ifdef HAVE_MMX
 	__asm __volatile(SFENCE:::"memory");
 	__asm __volatile(EMMS:::"memory");
 #endif
+	firstTime=0;
 }

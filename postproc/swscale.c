@@ -8,8 +8,11 @@
 #include <inttypes.h>
 #include <string.h>
 #include <math.h>
-//#include <stdio.h> //FOR DEBUG ONLY
+#include <stdio.h>
 #include "../config.h"
+#ifdef HAVE_MALLOC_H
+#include <malloc.h>
+#endif
 #include "swscale.h"
 #include "../cpudetect.h"
 #undef MOVNTQ
@@ -24,22 +27,28 @@ int fullUVIpol=0;
 int allwaysIpol=0;
 
 #define RET 0xC3 //near return opcode
+
+//#define ASSERT(x) if(!(x)) { printf("ASSERT " #x " failed\n"); *((int*)0)=0; }
+#define ASSERT(x) ;
+
+
 /*
 NOTES
 
 known BUGS with known cause (no bugreports please!, but patches are welcome :) )
 horizontal MMX2 scaler reads 1-7 samples too much (might cause a sig11)
 
-Supported output formats BGR15 BGR16 BGR24 BGR32
+Supported output formats BGR15 BGR16 BGR24 BGR32, YV12
 BGR15 & BGR16 MMX verions support dithering
 Special versions: fast Y 1:1 scaling (no interpolation in y direction)
 
 TODO
 more intelligent missalignment avoidance for the horizontal scaler
-bicubic scaler
 dither in C
 change the distance of the u & v buffer
-how to differenciate between x86 an C at runtime ?! (using C for now)
+Move static / global vars into a struct so multiple scalers can be used
+write special vertical cubic upscale version
+Optimize C code (yv12 / minmax)
 */
 
 #define ABS(a) ((a) > 0 ? (a) : (-(a)))
@@ -94,21 +103,35 @@ static uint64_t __attribute__((aligned(8))) temp0;
 static uint64_t __attribute__((aligned(8))) asm_yalpha1;
 static uint64_t __attribute__((aligned(8))) asm_uvalpha1;
 
-// temporary storage for 4 yuv lines:
-// 16bit for now (mmx likes it more compact)
-static uint16_t __attribute__((aligned(8))) pix_buf_y[4][2048];
-static uint16_t __attribute__((aligned(8))) pix_buf_uv[2][2048*2];
+static int16_t __attribute__((aligned(8))) *lumPixBuf[2000];
+static int16_t __attribute__((aligned(8))) *chrPixBuf[2000];
 static int16_t __attribute__((aligned(8))) hLumFilter[8000];
 static int16_t __attribute__((aligned(8))) hLumFilterPos[2000];
 static int16_t __attribute__((aligned(8))) hChrFilter[8000];
 static int16_t __attribute__((aligned(8))) hChrFilterPos[2000];
+static int16_t __attribute__((aligned(8))) vLumFilter[8000];
+static int16_t __attribute__((aligned(8))) vLumFilterPos[2000];
+static int16_t __attribute__((aligned(8))) vChrFilter[8000];
+static int16_t __attribute__((aligned(8))) vChrFilterPos[2000];
+
+// Contain simply the values from v(Lum|Chr)Filter just nicely packed for mmx
+//FIXME these are very likely too small / 8000 caused problems with 480x480
+static int16_t __attribute__((aligned(8))) lumMmxFilter[16000];
+static int16_t __attribute__((aligned(8))) chrMmxFilter[16000];
 #else
-static uint16_t pix_buf_y[4][2048];
-static uint16_t pix_buf_uv[2][2048*2];
+static int16_t *lumPixBuf[2000];
+static int16_t *chrPixBuf[2000];
 static int16_t hLumFilter[8000];
 static int16_t hLumFilterPos[2000];
 static int16_t hChrFilter[8000];
 static int16_t hChrFilterPos[2000];
+static int16_t vLumFilter[8000];
+static int16_t vLumFilterPos[2000];
+static int16_t vChrFilter[8000];
+static int16_t vChrFilterPos[2000];
+//FIXME just dummy vars
+static int16_t lumMmxFilter[1];
+static int16_t chrMmxFilter[1];
 #endif
 
 // clipping helper table for C implementations:
@@ -127,9 +150,19 @@ static    int yuvtab_3343[256];
 static    int yuvtab_0c92[256];
 static    int yuvtab_1a1e[256];
 static    int yuvtab_40cf[256];
+// Needed for cubic scaler to catch overflows
+static    int clip_yuvtab_2568[768];
+static    int clip_yuvtab_3343[768];
+static    int clip_yuvtab_0c92[768];
+static    int clip_yuvtab_1a1e[768];
+static    int clip_yuvtab_40cf[768];
 
-static int hLumFilterSize;
-static int hChrFilterSize;
+static int hLumFilterSize=0;
+static int hChrFilterSize=0;
+static int vLumFilterSize=0;
+static int vChrFilterSize=0;
+static int vLumBufSize=0;
+static int vChrBufSize=0;
 
 int sws_flags=0;
 
@@ -274,15 +307,14 @@ void SwScale_YV12slice(unsigned char* srcptr[],int stride[], int srcSliceY ,
 void SwScale_Init(){
     // generating tables:
     int i;
-    for(i=0;i<256;i++){
-        clip_table[i]=0;
-        clip_table[i+256]=i;
-        clip_table[i+512]=255;
-	yuvtab_2568[i]=(0x2568*(i-16))+(256<<13);
-	yuvtab_3343[i]=0x3343*(i-128);
-	yuvtab_0c92[i]=-0x0c92*(i-128);
-	yuvtab_1a1e[i]=-0x1a1e*(i-128);
-	yuvtab_40cf[i]=0x40cf*(i-128);
+    for(i=0; i<768; i++){
+	int c= MIN(MAX(i-256, 0), 255);
+	clip_table[i]=c;
+	yuvtab_2568[c]= clip_yuvtab_2568[i]=(0x2568*(c-16))+(256<<13);
+	yuvtab_3343[c]= clip_yuvtab_3343[i]=0x3343*(c-128);
+	yuvtab_0c92[c]= clip_yuvtab_0c92[i]=-0x0c92*(c-128);
+	yuvtab_1a1e[c]= clip_yuvtab_1a1e[i]=-0x1a1e*(c-128);
+	yuvtab_40cf[c]= clip_yuvtab_40cf[i]=0x40cf*(c-128);
     }
 
     for(i=0; i<768; i++)
@@ -295,5 +327,6 @@ void SwScale_Init(){
 	clip_table15g[i]= (v<<2)&0x03E0;
 	clip_table15r[i]= (v<<7)&0x7C00;
     }
+
 }
 
