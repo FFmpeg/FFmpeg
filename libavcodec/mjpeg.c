@@ -827,7 +827,7 @@ typedef struct MJpegDecodeContext {
     int last_dc[MAX_COMPONENTS]; /* last DEQUANTIZED dc (XXX: am I right to do that ?) */
     AVFrame picture; /* picture structure */
     int linesize[MAX_COMPONENTS];                   ///< linesize << interlaced
-    uint8_t *qscale_table;
+    int8_t *qscale_table;
     DCTELEM block[64] __align8;
     ScanTable scantable;
     void (*idct_put)(uint8_t *dest/*align 8*/, int line_size, DCTELEM *block/*align 16*/);
