@@ -984,12 +984,22 @@ static AVInputFormat rtsp_demux = {
     .flags = AVFMT_NOFILE,
 };
 
-
-/* XXX: add mime type support */
-static int sdp_probe(AVProbeData *p)
+static int sdp_probe(AVProbeData *p1)
 {
-    if (match_ext(p->filename, "sdp"))
-        return AVPROBE_SCORE_MAX;
+    const char *p;
+
+    /* we look for a line beginning "c=IN IP4" */
+    p = p1->buf;
+    while (*p != '\0') {
+        if (strstart(p, "c=IN IP4", NULL))
+            return AVPROBE_SCORE_MAX / 2;
+        p = strchr(p, '\n');
+        if (!p)
+            break;
+        p++;
+        if (*p == '\r')
+            p++;
+    }
     return 0;
 }
 
