@@ -25,7 +25,7 @@
  * http://gcc.gnu.org/ml/gcc/2003-04/msg00967.html
  */
 
-static inline vector signed char my_vmrglb (vector signed char const A,
+static inline vector signed char ff_vmrglb (vector signed char const A,
 					  vector signed char const B)
 {
     static const vector unsigned char lowbyte = {
@@ -35,7 +35,7 @@ static inline vector signed char my_vmrglb (vector signed char const A,
     return vec_perm (A, B, lowbyte);
 }
 
-static inline vector signed short my_vmrglh (vector signed short const A,
+static inline vector signed short ff_vmrglh (vector signed short const A,
 					  vector signed short const B)
 {
     static const vector unsigned char lowhalf = {
@@ -45,7 +45,7 @@ static inline vector signed short my_vmrglh (vector signed short const A,
     return vec_perm (A, B, lowhalf);
 }
 
-static inline vector signed int my_vmrglw (vector signed int const A,
+static inline vector signed int ff_vmrglw (vector signed int const A,
 					  vector signed int const B)
 {
     static const vector unsigned char lowword = {
@@ -54,27 +54,27 @@ static inline vector signed int my_vmrglw (vector signed int const A,
     };
     return vec_perm (A, B, lowword);
 }
-/*#define my_vmrglb my_vmrglb 
-#define my_vmrglh my_vmrglh 
-#define my_vmrglw my_vmrglw 
+/*#define ff_vmrglb ff_vmrglb 
+#define ff_vmrglh ff_vmrglh 
+#define ff_vmrglw ff_vmrglw 
 */
 #undef vec_mergel
 
 #define vec_mergel(a1, a2) \
 __ch (__bin_args_eq (vector signed char, (a1), vector signed char, (a2)), \
-      ((vector signed char) my_vmrglb ((vector signed char) (a1), (vector signed char) (a2))), \
+      ((vector signed char) ff_vmrglb ((vector signed char) (a1), (vector signed char) (a2))), \
 __ch (__bin_args_eq (vector unsigned char, (a1), vector unsigned char, (a2)), \
-      ((vector unsigned char) my_vmrglb ((vector signed char) (a1), (vector signed char) (a2))), \
+      ((vector unsigned char) ff_vmrglb ((vector signed char) (a1), (vector signed char) (a2))), \
 __ch (__bin_args_eq (vector signed short, (a1), vector signed short, (a2)), \
-      ((vector signed short) my_vmrglh ((vector signed short) (a1), (vector signed short) (a2))), \
+      ((vector signed short) ff_vmrglh ((vector signed short) (a1), (vector signed short) (a2))), \
 __ch (__bin_args_eq (vector unsigned short, (a1), vector unsigned short, (a2)), \
-      ((vector unsigned short) my_vmrglh ((vector signed short) (a1), (vector signed short) (a2))), \
+      ((vector unsigned short) ff_vmrglh ((vector signed short) (a1), (vector signed short) (a2))), \
 __ch (__bin_args_eq (vector float, (a1), vector float, (a2)), \
-      ((vector float) my_vmrglw ((vector signed int) (a1), (vector signed int) (a2))), \
+      ((vector float) ff_vmrglw ((vector signed int) (a1), (vector signed int) (a2))), \
 __ch (__bin_args_eq (vector signed int, (a1), vector signed int, (a2)), \
-      ((vector signed int) my_vmrglw ((vector signed int) (a1), (vector signed int) (a2))), \
+      ((vector signed int) ff_vmrglw ((vector signed int) (a1), (vector signed int) (a2))), \
 __ch (__bin_args_eq (vector unsigned int, (a1), vector unsigned int, (a2)), \
-      ((vector unsigned int) my_vmrglw ((vector signed int) (a1), (vector signed int) (a2))), \
+      ((vector unsigned int) ff_vmrglw ((vector signed int) (a1), (vector signed int) (a2))), \
     __altivec_link_error_invalid_argument ())))))))
 
 #endif
