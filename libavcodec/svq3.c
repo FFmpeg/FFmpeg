@@ -766,6 +766,7 @@ static int svq3_decode_frame (AVCodecContext *avctx,
   MpegEncContext *const s = avctx->priv_data;
   H264Context *const h = avctx->priv_data;
   int m, mb_type;
+  unsigned char *extradata;
 
   *data_size = 0;
 
@@ -790,13 +791,20 @@ static int svq3_decode_frame (AVCodecContext *avctx,
 
     alloc_tables (h);
 
-    if (avctx->extradata && avctx->extradata_size >= 0x64
-	&& !memcmp (avctx->extradata, "SVQ3", 4)) {
+    /* prowl for the "SEQH" marker in the extradata */
+    extradata = (unsigned char *)avctx->extradata;
+    for (m = 0; m < avctx->extradata_size; m++) {
+      if (!memcmp (extradata, "SEQH", 4))
+        break;
+      extradata++;
+    }
+
+    /* if a match was found, parse the extra data */
+    if (!memcmp (extradata, "SEQH", 4)) {
 
       GetBitContext gb;
 
-      init_get_bits (&gb, (uint8_t *) avctx->extradata + 0x62,
-		     8*(avctx->extradata_size - 0x62));
+      init_get_bits (&gb, extradata + 0x8, 8*8);
 
       /* 'frame size code' and optional 'width, height' */
       if (get_bits (&gb, 3) == 7) {
