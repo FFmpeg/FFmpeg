@@ -602,6 +602,7 @@ float ff_rate_estimate_qscale(MpegEncContext *s)
 
     var= pict_type == I_TYPE ? pic->mb_var_sum : pic->mc_mb_var_sum;
     
+    short_term_q = 0; /* avoid warning */
     if(s->flags&CODEC_FLAG_PASS2){
         if(pict_type!=I_TYPE)
             assert(pict_type == rce->new_pict_type);

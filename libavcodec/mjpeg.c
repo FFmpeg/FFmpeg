@@ -289,6 +289,7 @@ void mjpeg_close(MpegEncContext *s)
         case 4: ret= left   +   top - topleft; break;\
         case 5: ret= left   + ((top - topleft)>>1); break;\
         case 6: ret= top + ((left   - topleft)>>1); break;\
+        default:\
         case 7: ret= (left + top)>>1; break;\
     }
 
@@ -1364,7 +1365,7 @@ static int mjpeg_decode_scan(MJpegDecodeContext *s){
 
 static int mjpeg_decode_sos(MJpegDecodeContext *s)
 {
-    int len, nb_components, i, h, v, predictor, point_transform, ilv;
+    int len, nb_components, i, h, v, predictor, point_transform;
     int vmax, hmax, index, id;
     const int block_size= s->lossless ? 1 : 8;
 
