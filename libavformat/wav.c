@@ -115,7 +115,6 @@ void get_wav_header(ByteIOContext *pb, AVCodecContext *codec, int size)
     int id;
 
     id = get_le16(pb);
-    codec->codec_id = wav_codec_get_id(id, codec->frame_bits);
     codec->codec_type = CODEC_TYPE_AUDIO;
     codec->codec_tag = id;
     codec->channels = get_le16(pb);
@@ -124,10 +123,10 @@ void get_wav_header(ByteIOContext *pb, AVCodecContext *codec, int size)
     codec->block_align = get_le16(pb);
     if (size == 14) {  /* We're dealing with plain vanilla WAVEFORMAT */
         codec->bits_per_sample = 8;
-	return;
-    }
-    
-    codec->bits_per_sample = get_le16(pb);
+    }else
+        codec->bits_per_sample = get_le16(pb);
+    codec->codec_id = wav_codec_get_id(id, codec->bits_per_sample);
+
     if (size > 16) {  /* We're obviously dealing with WAVEFORMATEX */
 	codec->extradata_size = get_le16(pb);
 	if (codec->extradata_size > 0) {
