@@ -172,7 +172,7 @@ uint64_t time= rdtsc();
             return -1;
     }
 
-    if(ret==FRAME_SKIPED) return (get_bits_count(&s->gb)+7)>>3;
+    if(ret==FRAME_SKIPED) return buf_size;
     /* skip if the header was thrashed */
     if (ret < 0){
         fprintf(stderr, "header damaged\n");
@@ -447,10 +447,7 @@ uint64_t time= rdtsc();
 #ifdef PRINT_FRAME_TIME
 printf("%Ld\n", rdtsc()-time);
 #endif
-    if(s->gb.size != buf_size) 
-        return buf_size; //divx5 b frame reorder
-    else 
-        return ((get_bits_count(&s->gb)+7)>>3) + s->bitstream_buffer_size;
+    return buf_size;
 }
 
 AVCodec mpeg4_decoder = {
