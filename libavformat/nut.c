@@ -1028,7 +1028,7 @@ static AVOutputFormat nut_oformat = {
     "video/x-nut",
     "nut",
     sizeof(NUTContext),
-#if 0 //#ifdef CONFIG_VORBIS
+#ifdef CONFIG_VORBIS
     CODEC_ID_VORBIS,
 #elif defined(CONFIG_MP3LAME)
     CODEC_ID_MP3,
