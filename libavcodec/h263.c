@@ -873,7 +873,8 @@ static void put_string(PutBitContext * pbc, char *s)
 static void mpeg4_encode_vol_header(MpegEncContext * s)
 {
     int vo_ver_id=1; //must be 2 if we want GMC or q-pel
-
+    char buf[255];
+    
     if(get_bit_count(&s->pb)!=0) mpeg4_stuffing(&s->pb);
     put_bits(&s->pb, 16, 0);
     put_bits(&s->pb, 16, 0x100);        /* video obj */
@@ -926,7 +927,8 @@ static void mpeg4_encode_vol_header(MpegEncContext * s)
     mpeg4_stuffing(&s->pb);
     put_bits(&s->pb, 16, 0);
     put_bits(&s->pb, 16, 0x1B2);	/* user_data */
-    put_string(&s->pb, "ffmpeg"); //FIXME append some version ...
+    sprintf(buf, "FFmpeg v%s / libavcodec build: %s", FFMPEG_VERSION, LIBAVCODEC_BUILD_STR);
+    put_string(&s->pb, buf);
 
     s->no_rounding = 0;
 }

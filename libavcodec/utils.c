@@ -454,6 +454,7 @@ void avcodec_register_all(void)
     register_avcodec(&h263i_decoder);
     register_avcodec(&rv10_decoder);
     register_avcodec(&mjpeg_decoder);
+    register_avcodec(&mp2_decoder);
     register_avcodec(&mp3_decoder);
 #ifdef CONFIG_AC3
     register_avcodec(&ac3_decoder);

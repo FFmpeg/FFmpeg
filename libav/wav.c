@@ -20,9 +20,8 @@
 #include "avi.h"
 
 CodecTag codec_wav_tags[] = {
-    { CODEC_ID_MP2, 0x55 },
-    { CODEC_ID_MP3LAME, 0x55 },
     { CODEC_ID_MP2, 0x50 },
+    { CODEC_ID_MP3LAME, 0x55 },
     { CODEC_ID_AC3, 0x2000 },
     { CODEC_ID_PCM_S16LE, 0x01 },
     { CODEC_ID_PCM_U8, 0x01 }, /* must come after s16le in this list */
@@ -39,7 +38,7 @@ int put_wav_header(ByteIOContext *pb, AVCodecContext *enc)
     tag = codec_get_tag(codec_wav_tags, enc->codec_id);
     if (tag == 0)
         return -1;
-    put_le16(pb, tag); 
+    put_le16(pb, tag);
     put_le16(pb, enc->channels);
     put_le32(pb, enc->sample_rate);
     if (enc->codec_id == CODEC_ID_PCM_U8 ||
@@ -52,9 +51,10 @@ int put_wav_header(ByteIOContext *pb, AVCodecContext *enc)
         bps = 16;
     }
     
-    if (enc->codec_id == CODEC_ID_MP2 || enc->codec_id == CODEC_ID_MP3LAME)
+    if (enc->codec_id == CODEC_ID_MP2 || enc->codec_id == CODEC_ID_MP3LAME) {
         blkalign = 1;
-    else
+        //blkalign = 144 * enc->bit_rate/enc->sample_rate;
+    } else
         blkalign = enc->channels*bps >> 3;
     if (enc->codec_id == CODEC_ID_PCM_U8 ||
         enc->codec_id == CODEC_ID_PCM_S16LE) {
@@ -65,13 +65,23 @@ int put_wav_header(ByteIOContext *pb, AVCodecContext *enc)
     put_le32(pb, bytespersec); /* bytes per second */
     put_le16(pb, blkalign); /* block align */
     put_le16(pb, bps); /* bits per sample */
-    if (enc->codec_id == CODEC_ID_MP2 || enc->codec_id == CODEC_ID_MP3LAME) {
+    if (enc->codec_id == CODEC_ID_MP3LAME) {
         put_le16(pb, 12); /* wav_extra_size */
         put_le16(pb, 1); /* wID */
         put_le32(pb, 2); /* fdwFlags */
         put_le16(pb, 1152); /* nBlockSize */
         put_le16(pb, 1); /* nFramesPerBlock */
         put_le16(pb, 1393); /* nCodecDelay */
+    } else if (enc->codec_id == CODEC_ID_MP2) {
+        put_le16(pb, 22); /* wav_extra_size */
+        put_le16(pb, 2);  /* fwHeadLayer */
+        put_le32(pb, enc->bit_rate); /* dwHeadBitrate */
+        put_le16(pb, enc->channels == 2 ? 1 : 8); /* fwHeadMode */
+        put_le16(pb, 0);  /* fwHeadModeExt */
+        put_le16(pb, 1);  /* wHeadEmphasis */
+        put_le16(pb, 16); /* fwHeadFlags */
+        put_le32(pb, 0);  /* dwPTSLow */
+        put_le32(pb, 0);  /* dwPTSHigh */
     } else
         put_le16(pb, 0); /* wav_extra_size */
 

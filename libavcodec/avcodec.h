@@ -3,6 +3,11 @@
 
 #include "common.h"
 
+#define LIBAVCODEC_VERSION_INT 0x000406
+#define LIBAVCODEC_VERSION     "0.4.6"
+#define LIBAVCODEC_BUILD       4600
+#define LIBAVCODEC_BUILD_STR   "4600"
+
 enum CodecID {
     CODEC_ID_NONE, 
     CODEC_ID_MPEG1VIDEO,
@@ -70,7 +75,7 @@ enum Motion_Est_ID {
 extern int motion_estimation_method;
 
 /* ME algos sorted by quality */
-static const int Motion_Est_QTab[] = { -4, -1, -2, 1, 0, -3 };
+static const int Motion_Est_QTab[] = { 1, 4, 3, 6, 5, 2 };
 
 /* encoding support */
 /* note not everything is supported yet */
@@ -229,6 +234,7 @@ extern AVCodec mpeg_decoder;
 extern AVCodec h263i_decoder;
 extern AVCodec rv10_decoder;
 extern AVCodec mjpeg_decoder;
+extern AVCodec mp2_decoder;
 extern AVCodec mp3_decoder;
 
 /* pcm codecs */

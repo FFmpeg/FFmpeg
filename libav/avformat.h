@@ -1,4 +1,8 @@
 
+#define LIBAV_VERSION_INT 0x000406  
+#define LIBAV_VERSION     "0.4.6"
+#define LIBAV_BUILD       4600
+
 #include "avcodec.h"
 
 #include "avio.h"

@@ -2393,11 +2393,23 @@ static int decode_frame(AVCodecContext * avctx,
     return buf_ptr - buf;
 }
 
-AVCodec mp3_decoder =
+AVCodec mp2_decoder =
 {
-    "mpegaudio",
+    "mp2",
     CODEC_TYPE_AUDIO,
     CODEC_ID_MP2,
+    sizeof(MPADecodeContext),
+    decode_init,
+    NULL,
+    NULL,
+    decode_frame,
+};
+
+AVCodec mp3_decoder =
+{
+    "mp3",
+    CODEC_TYPE_AUDIO,
+    CODEC_ID_MP3LAME,
     sizeof(MPADecodeContext),
     decode_init,
     NULL,
