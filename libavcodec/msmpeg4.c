@@ -425,7 +425,7 @@ void msmpeg4_encode_ext_header(MpegEncContext * s)
 {
         put_bits(&s->pb, 5, s->frame_rate / FRAME_RATE_BASE); //yes 29.97 -> 29
 
-        put_bits(&s->pb, 11, MIN(s->bit_rate/1024, 2047));
+        put_bits(&s->pb, 11, FFMIN(s->bit_rate/1024, 2047));
 
         if(s->msmpeg4_version<3)
             s->flipflop_rounding=0;

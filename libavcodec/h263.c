@@ -2204,7 +2204,7 @@ int ff_mpeg4_get_video_packet_prefix_length(MpegEncContext *s){
         case S_TYPE:
             return s->f_code+15;
         case B_TYPE:
-            return MAX(MAX(s->f_code, s->b_code)+15, 17);
+            return FFMAX(FFMAX(s->f_code, s->b_code)+15, 17);
         default:
             return -1;
     }
@@ -3981,7 +3981,7 @@ static void mpeg4_decode_sprite_trajectory(MpegEncContext * s)
             s->sprite_shift[1]= alpha+rho+2;
             break;
         case 3:
-            min_ab= MIN(alpha, beta);
+            min_ab= FFMIN(alpha, beta);
             w3= w2>>min_ab;
             h3= h2>>min_ab;
             s->sprite_offset[0][0]=  (sprite_ref[0][0]<<(alpha+beta+rho-min_ab))

@@ -17,10 +17,10 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 #define HAVE_AV_CONFIG_H
-#include <netinet/in.h>
 #include "avformat.h"
 
 #include <stdarg.h>
+#include <netinet/in.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
@@ -31,11 +31,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/wait.h>
-#ifndef __BEOS__
-# include <arpa/inet.h>
-#else
-# include "libav/barpainet.h"
-#endif
+#include <arpa/inet.h>
 #include <netdb.h>
 #include <ctype.h>
 #include <signal.h>

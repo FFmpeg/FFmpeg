@@ -161,13 +161,8 @@ inline void dprintf(const char* fmt,...) {}
 #define ROUNDED_DIV(a,b) (((a)>0 ? (a) + ((b)>>1) : (a) - ((b)>>1))/(b))
 #define ABS(a) ((a) >= 0 ? (a) : (-(a)))
 
-#ifndef MAX
-#    define MAX(a,b) ((a) > (b) ? (a) : (b))
-#endif
-
-#ifndef MIN
-#    define MIN(a,b) ((a) > (b) ? (b) : (a))
-#endif
+#define FFMAX(a,b) ((a) > (b) ? (a) : (b))
+#define FFMIN(a,b) ((a) > (b) ? (b) : (a))
 
 #ifdef ARCH_X86
 // avoid +32 for shift optimization (gcc should do that ...)

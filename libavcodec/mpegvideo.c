@@ -1264,10 +1264,10 @@ static void emulated_edge_mc(MpegEncContext *s, UINT8 *src, int linesize, int bl
         src_x=1-block_w;
     }
 
-    start_y= MAX(0, -src_y);
-    start_x= MAX(0, -src_x);
-    end_y= MIN(block_h, h-src_y);
-    end_x= MIN(block_w, w-src_x);
+    start_y= FFMAX(0, -src_y);
+    start_x= FFMAX(0, -src_x);
+    end_y= FFMIN(block_h, h-src_y);
+    end_x= FFMIN(block_w, w-src_x);
 
     // copy existing part
     for(y=start_y; y<end_y; y++){

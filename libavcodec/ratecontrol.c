@@ -405,7 +405,7 @@ static double modify_qscale(MpegEncContext *s, RateControlEntry *rce, double q, 
             else if(d<0.0001) d=0.0001;
             q*= pow(d, 1.0/s->avctx->rc_buffer_aggressivity);
 
-            q= MIN(q, bits2qp(rce, MAX((min_rate - buffer_size + rcc->buffer_index)*2, 1)));
+            q= FFMIN(q, bits2qp(rce, FFMAX((min_rate - buffer_size + rcc->buffer_index)*2, 1)));
         }
 
         if(max_rate){
@@ -414,7 +414,7 @@ static double modify_qscale(MpegEncContext *s, RateControlEntry *rce, double q, 
             else if(d<0.0001) d=0.0001;
             q/= pow(d, 1.0/s->avctx->rc_buffer_aggressivity);
 
-            q= MAX(q, bits2qp(rce, MAX(rcc->buffer_index/2, 1)));
+            q= FFMAX(q, bits2qp(rce, FFMAX(rcc->buffer_index/2, 1)));
         }
     }
 //printf("q:%f max:%f min:%f size:%f index:%d bits:%f agr:%f\n", q,max_rate, min_rate, buffer_size, rcc->buffer_index, bits, s->avctx->rc_buffer_aggressivity);
