@@ -365,6 +365,8 @@ static int nsv_parse_NSVf_header(AVFormatContext *s, AVFormatParameters *ap)
 
     if (table_entries_used > 0) {
         nsv->index_entries = table_entries_used;
+        if((unsigned)table_entries >= UINT_MAX / sizeof(uint32_t))
+            return -1;
         nsv->nsvf_index_data = av_malloc(table_entries * sizeof(uint32_t));
         get_buffer(pb, nsv->nsvf_index_data, table_entries * sizeof(uint32_t));
     }

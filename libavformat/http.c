@@ -290,12 +290,16 @@ URLProtocol http_protocol = {
 static char *b64_encode( unsigned char *src )
 {
     static const char b64[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-                                                                                
-    char *dst = av_malloc( strlen( src ) * 4 / 3 + 12 );
-    char *ret = dst;
+    unsigned int len= strlen(src);
+    char *ret, *dst;
     unsigned i_bits = 0;
     unsigned i_shift = 0;
-                                                                                
+
+    if(len < UINT_MAX/4){
+        ret=dst= av_malloc( len * 4 / 3 + 12 );
+    }else
+        return NULL;
+
     for( ;; )
     {
         if( *src )

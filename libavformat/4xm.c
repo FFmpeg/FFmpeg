@@ -185,6 +185,8 @@ static int fourxm_read_header(AVFormatContext *s,
             current_track = LE_32(&header[i + 8]);
             if (current_track + 1 > fourxm->track_count) {
                 fourxm->track_count = current_track + 1;
+                if((unsigned)fourxm->track_count >= UINT_MAX / sizeof(AudioTrack))
+                    return -1;
                 fourxm->tracks = av_realloc(fourxm->tracks, 
                     fourxm->track_count * sizeof(AudioTrack));
                 if (!fourxm->tracks) {

@@ -180,7 +180,10 @@ static void av_destruct_packet(AVPacket *pkt)
  */
 int av_new_packet(AVPacket *pkt, int size)
 {
-    void *data = av_malloc(size + FF_INPUT_BUFFER_PADDING_SIZE);
+    void *data;
+    if((unsigned)size > (unsigned)size + FF_INPUT_BUFFER_PADDING_SIZE)
+        return AVERROR_NOMEM;        
+    data = av_malloc(size + FF_INPUT_BUFFER_PADDING_SIZE);
     if (!data)
         return AVERROR_NOMEM;
     memset(data + size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
@@ -200,6 +203,8 @@ int av_dup_packet(AVPacket *pkt)
         uint8_t *data;
         /* we duplicate the packet and don't forget to put the padding
            again */
+        if((unsigned)pkt->size > (unsigned)pkt->size + FF_INPUT_BUFFER_PADDING_SIZE)
+            return AVERROR_NOMEM;        
         data = av_malloc(pkt->size + FF_INPUT_BUFFER_PADDING_SIZE);
         if (!data) {
             return AVERROR_NOMEM;
@@ -277,8 +282,8 @@ int fifo_read(FifoBuffer *f, uint8_t *buf, int buf_size, uint8_t **rptr_ptr)
     return 0;
 }
 
-void fifo_realloc(FifoBuffer *f, int new_size){
-    int old_size= f->end - f->buffer;
+void fifo_realloc(FifoBuffer *f, unsigned int new_size){
+    unsigned int old_size= f->end - f->buffer;
     
     if(old_size < new_size){
         uint8_t *old= f->buffer;
@@ -1007,10 +1012,16 @@ int av_add_index_entry(AVStream *st,
     AVIndexEntry *entries, *ie;
     int index;
     
+    if((unsigned)st->nb_index_entries + 1 >= UINT_MAX / sizeof(AVIndexEntry))
+        return -1;
+    
     entries = av_fast_realloc(st->index_entries,
                               &st->index_entries_allocated_size,
                               (st->nb_index_entries + 1) * 
                               sizeof(AVIndexEntry));
+    if(!entries)
+        return -1;
+
     st->index_entries= entries;
 
     index= av_index_search_timestamp(st, timestamp, 0);

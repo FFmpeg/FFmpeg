@@ -169,6 +169,8 @@ static int wc3_read_header(AVFormatContext *s,
             if ((ret = get_buffer(pb, preamble, 4)) != 4)
                 return AVERROR_IO;
             wc3->palette_count = LE_32(&preamble[0]);
+            if((unsigned)wc3->palette_count >= UINT_MAX / PALETTE_SIZE)
+                return -1;
             wc3->palettes = av_malloc(wc3->palette_count * PALETTE_SIZE);
             break;
 

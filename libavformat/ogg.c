@@ -195,6 +195,8 @@ static int ogg_read_header(AVFormatContext *avfcontext, AVFormatParameters *ap)
         if(next_packet(avfcontext, &op)){
             return -1;
         }
+        if(op.bytes >= (1<<16) || op.bytes < 0)
+            return -1;
         codec->extradata_size+= 2 + op.bytes;
         codec->extradata= av_realloc(codec->extradata, codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
         p= codec->extradata + codec->extradata_size - 2 - op.bytes;

@@ -367,6 +367,10 @@ static int mov_read_default(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 	    /* empty */;
 
 	a.size -= 8;
+        
+        if(a.size < 0)
+            break;
+        
 //        av_log(NULL, AV_LOG_DEBUG, " i=%ld\n", i);
 	if (c->parse_table[i].type == 0) { /* skip leaf atoms data */
 //            url_seek(pb, atom.offset+atom.size, SEEK_SET);
@@ -401,7 +405,10 @@ static int mov_read_ctab(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
     unsigned int len;
     MOV_ctab_t *t;
-    //url_fskip(pb, atom.size); // for now
+#if 1
+    url_fskip(pb, atom.size); // for now
+#else
+    VERY VERY BROKEN, NEVER execute this, needs rewrite
     c->ctab = av_realloc(c->ctab, ++c->ctab_size);
     t = c->ctab[c->ctab_size];
     t->seed = get_be32(pb);
@@ -413,6 +420,7 @@ static int mov_read_ctab(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 	if (t->clrs)
 	    get_buffer(pb, t->clrs, len);
     }
+#endif
 
     return 0;
 }
@@ -677,6 +685,9 @@ static int mov_read_smi(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
     AVStream *st = c->fc->streams[c->fc->nb_streams-1];
 
+    if((uint64_t)atom.size > (1<<30))
+        return -1;
+    
     // currently SVQ3 decoder expect full STSD header - so let's fake it
     // this should be fixed and just SMI header should be passed
     av_free(st->codec.extradata);
@@ -697,6 +708,9 @@ static int mov_read_avcC(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
     AVStream *st = c->fc->streams[c->fc->nb_streams-1];
 
+    if((uint64_t)atom.size > (1<<30))
+        return -1;
+
     av_free(st->codec.extradata);
 
     st->codec.extradata_size = atom.size;
@@ -714,7 +728,7 @@ static int mov_read_stco(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
     AVStream *st = c->fc->streams[c->fc->nb_streams-1];
     MOVStreamContext *sc = (MOVStreamContext *)st->priv_data;
-    int entries, i;
+    unsigned int i, entries;
 
     print_atom("stco", atom);
 
@@ -722,6 +736,10 @@ static int mov_read_stco(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     get_byte(pb); get_byte(pb); get_byte(pb); /* flags */
 
     entries = get_be32(pb);
+        
+    if(entries >= UINT_MAX/sizeof(int64_t))
+        return -1;
+ 
     sc->chunk_count = entries;
     sc->chunk_offsets = (int64_t*) av_malloc(entries * sizeof(int64_t));
     if (!sc->chunk_offsets)
@@ -1138,7 +1156,7 @@ static int mov_read_stsc(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
     AVStream *st = c->fc->streams[c->fc->nb_streams-1];
     MOVStreamContext *sc = (MOVStreamContext *)st->priv_data;
-    int entries, i;
+    unsigned int i, entries;
 
     print_atom("stsc", atom);
 
@@ -1146,6 +1164,10 @@ static int mov_read_stsc(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     get_byte(pb); get_byte(pb); get_byte(pb); /* flags */
 
     entries = get_be32(pb);
+    
+    if(entries >= UINT_MAX / sizeof(MOV_sample_to_chunk_tbl))
+        return -1;
+    
 #ifdef DEBUG
 av_log(NULL, AV_LOG_DEBUG, "track[%i].stsc.entries = %i\n", c->fc->nb_streams-1, entries);
 #endif
@@ -1168,7 +1190,7 @@ static int mov_read_stss(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
     AVStream *st = c->fc->streams[c->fc->nb_streams-1];
     MOVStreamContext *sc = (MOVStreamContext *)st->priv_data;
-    int entries, i;
+    unsigned int i, entries;
 
     print_atom("stss", atom);
 
@@ -1176,6 +1198,10 @@ static int mov_read_stss(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     get_byte(pb); get_byte(pb); get_byte(pb); /* flags */
 
     entries = get_be32(pb);
+    
+    if(entries >= UINT_MAX / sizeof(long))
+        return -1;
+    
     sc->keyframe_count = entries;
 #ifdef DEBUG
     av_log(NULL, AV_LOG_DEBUG, "keyframe_count = %ld\n", sc->keyframe_count);
@@ -1196,7 +1222,7 @@ static int mov_read_stsz(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
     AVStream *st = c->fc->streams[c->fc->nb_streams-1];
     MOVStreamContext *sc = (MOVStreamContext *)st->priv_data;
-    int entries, i;
+    unsigned int i, entries;
 
     print_atom("stsz", atom);
 
@@ -1205,6 +1231,9 @@ static int mov_read_stsz(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 
     sc->sample_size = get_be32(pb);
     entries = get_be32(pb);
+    if(entries >= UINT_MAX / sizeof(long))
+        return -1;
+
     sc->sample_count = entries;
 #ifdef DEBUG
     av_log(NULL, AV_LOG_DEBUG, "sample_size = %ld sample_count = %ld\n", sc->sample_size, sc->sample_count);
@@ -1227,7 +1256,7 @@ static int mov_read_stts(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
     AVStream *st = c->fc->streams[c->fc->nb_streams-1];
     //MOVStreamContext *sc = (MOVStreamContext *)st->priv_data;
-    int entries, i;
+    unsigned int i, entries;
     int64_t duration=0;
     int64_t total_sample_count=0;
 
@@ -1236,6 +1265,8 @@ static int mov_read_stts(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     get_byte(pb); /* version */
     get_byte(pb); get_byte(pb); get_byte(pb); /* flags */
     entries = get_be32(pb);
+    if(entries >= UINT_MAX / sizeof(uint64_t))
+        return -1;
 
     c->streams[c->fc->nb_streams-1]->stts_count = entries;
     c->streams[c->fc->nb_streams-1]->stts_data = (uint64_t*) av_malloc(entries * sizeof(uint64_t));

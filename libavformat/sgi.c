@@ -65,6 +65,9 @@ static void read_sgi_header(ByteIOContext *f, SGIInfo *info)
     info->xsize = (unsigned short) get_be16(f);
     info->ysize = (unsigned short) get_be16(f);
     info->zsize = (unsigned short) get_be16(f);
+    
+    if(info->zsize > 4096) 
+        info->zsize= 0;
 
 #ifdef DEBUG
     printf("sgi header fields:\n");

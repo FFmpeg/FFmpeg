@@ -123,7 +123,7 @@ static int img_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     if (ap && ap->image_format)
         s->img_fmt = ap->image_format;
 
-    strcpy(s->path, s1->filename);
+    pstrcpy(s->path, sizeof(s->path), s1->filename);
     s->img_number = 0;
     s->img_count = 0;
     
@@ -289,7 +289,7 @@ static int img_write_header(AVFormatContext *s)
     VideoData *img = s->priv_data;
 
     img->img_number = 1;
-    strcpy(img->path, s->filename);
+    pstrcpy(img->path, sizeof(img->path), s->filename);
 
     /* find format */
     if (s->oformat->flags & AVFMT_NOFILE)

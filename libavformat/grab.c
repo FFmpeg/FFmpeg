@@ -76,6 +76,9 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     frame_rate      = ap->frame_rate;
     frame_rate_base = ap->frame_rate_base;
 
+    if((unsigned)width > 32767 || (unsigned)height > 32767)
+        return -1;
+    
     st = av_new_stream(s1, 0);
     if (!st)
         return -ENOMEM;

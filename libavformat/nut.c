@@ -82,7 +82,7 @@ typedef struct {
     int written_packet_size;
     int64_t packet_start[3]; //0-> startcode less, 1-> short startcode 2-> long startcodes
     FrameCode frame_code[256];
-    int stream_count;
+    unsigned int stream_count;
     uint64_t next_startcode;     ///< stores the next startcode if it has alraedy been parsed but the stream isnt seekable
     StreamContext *stream;
     int max_distance;
@@ -255,8 +255,8 @@ static uint64_t get_v(ByteIOContext *bc)
     return -1;
 }
 
-static int get_str(ByteIOContext *bc, char *string, int maxlen){
-    int len= get_v(bc);
+static int get_str(ByteIOContext *bc, char *string, unsigned int maxlen){
+    unsigned int len= get_v(bc);
     
     if(len && maxlen)
         get_buffer(bc, string, FFMIN(len, maxlen));
@@ -283,7 +283,7 @@ static int64_t get_s(ByteIOContext *bc){
 
 static uint64_t get_vb(ByteIOContext *bc){
     uint64_t val=0;
-    int i= get_v(bc);
+    unsigned int i= get_v(bc);
     
     if(i>8)
         return UINT64_MAX;
@@ -877,6 +877,10 @@ static int decode_main_header(NUTContext *nut){
     }
     
     nut->stream_count = get_v(bc);
+    if(nut->stream_count > MAX_STREAMS){
+        av_log(s, AV_LOG_ERROR, "too many streams\n");
+        return -1;
+    }
     nut->max_distance = get_v(bc);
     nut->max_short_distance = get_v(bc);
     nut->rate_num= get_v(bc);
@@ -982,6 +986,8 @@ static int decode_stream_header(NUTContext *nut){
     /* codec specific data headers */
     while(get_v(bc) != 0){
         st->codec.extradata_size= get_v(bc);
+        if((unsigned)st->codec.extradata_size > (1<<30))
+            return -1;
         st->codec.extradata= av_mallocz(st->codec.extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
         get_buffer(bc, st->codec.extradata, st->codec.extradata_size);            
 //	    url_fskip(bc, get_v(bc));

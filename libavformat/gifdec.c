@@ -474,6 +474,12 @@ static int gif_read_header1(GifState *s)
     s->transparent_color_index = -1;
     s->screen_width = get_le16(f);
     s->screen_height = get_le16(f);
+    if(   (unsigned)s->screen_width  > 32767 
+       || (unsigned)s->screen_height > 32767){
+        av_log(NULL, AV_LOG_ERROR, "picture size too large\n");
+        return -1;
+    } 
+
     v = get_byte(f);
     s->color_resolution = ((v & 0x70) >> 4) + 1;
     has_global_palette = (v & 0x80);

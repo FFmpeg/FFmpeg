@@ -302,9 +302,11 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     get_le32(pb); /* ClrUsed */
                     get_le32(pb); /* ClrImportant */
 
+                 if(size > 10*4 && size<(1<<30)){
                     st->codec.extradata_size= size - 10*4;
                     st->codec.extradata= av_malloc(st->codec.extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
                     get_buffer(pb, st->codec.extradata, st->codec.extradata_size);
+                 }
                     
                     if(st->codec.extradata_size & 1) //FIXME check if the encoder really did this correctly
                         get_byte(pb);
@@ -548,6 +550,8 @@ static int avi_read_idx1(AVFormatContext *s, int size)
     
     nb_index_entries = size / 16;
     if (nb_index_entries <= 0)
+        return -1;
+    if(nb_index_entries + 1 >= UINT_MAX / sizeof(AVIIndexEntry))
         return -1;
 
     /* read the entries and sort them in each stream component */
