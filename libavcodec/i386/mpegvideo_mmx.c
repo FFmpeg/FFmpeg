@@ -105,6 +105,7 @@ asm volatile(
 		"packssdw %%mm5, %%mm5		\n\t"
 		"psubw %%mm5, %%mm7		\n\t"
 		"pxor %%mm4, %%mm4		\n\t"
+		".balign 16\n\t"
 		"1:				\n\t"
 		"movq (%0, %3), %%mm0		\n\t"
 		"movq 8(%0, %3), %%mm1		\n\t"
@@ -264,6 +265,7 @@ asm volatile(
 		"movd %2, %%mm6			\n\t"
 		"packssdw %%mm6, %%mm6		\n\t"
 		"packssdw %%mm6, %%mm6		\n\t"
+		".balign 16\n\t"
 		"1:				\n\t"
 		"movq (%0, %3), %%mm0		\n\t"
 		"movq 8(%0, %3), %%mm1		\n\t"
@@ -310,45 +312,6 @@ asm volatile(
 		::"r" (block), "r"(quant_matrix), "g" (qscale), "r" (2*i)
 		: "memory"
 	);
-
-#if 0
-	__asm __volatile(
-	"movd	%0, %%mm6\n\t"       /* mm6 = qscale | 0  */
-	"punpckldq %%mm6, %%mm6\n\t" /* mm6 = qscale | qscale */
-	"movq	%2, %%mm4\n\t"
-	"movq	%%mm6, %%mm7\n\t"
-	"movq	%1, %%mm5\n\t"
-	"packssdw %%mm6, %%mm7\n\t" /* mm7 = qscale | qscale | qscale | qscale */
-	"pxor	%%mm6, %%mm6\n\t"
-	::"g"(qscale),"m"(mm_wone),"m"(mm_wabs));
-        for(;i<64;i+=4) {
-		__asm __volatile(
-			"movq	%1, %%mm0\n\t"
-			"movq	%%mm7, %%mm1\n\t"
-			"movq	%%mm0, %%mm2\n\t"
-			"movq	%%mm0, %%mm3\n\t"
-			"pcmpgtw %%mm6, %%mm2\n\t"
-			"pmullw	%2, %%mm1\n\t"
-			"pandn	%%mm4, %%mm2\n\t"
-			"por	%%mm5, %%mm2\n\t"
-			"pmullw	%%mm2, %%mm0\n\t" /* mm0 = abs(block[i]). */
-			"psllw	$1, %%mm0\n\t" /* block[i] <<= 1 */
-			"paddw	%%mm5, %%mm0\n\t" /* block[i] ++ */
-
-			"pmullw	%%mm0, %%mm1\n\t"
-			"psraw	$4, %%mm1\n\t"
-			"pcmpeqw %%mm6, %%mm3\n\t"
-			"psubw	%%mm5, %%mm1\n\t"   /* block[i] --; */
-			"pandn	%%mm4, %%mm3\n\t"  /* fake of pcmpneqw : mm0 != 0 then mm1 = -1 */
-			"por	%%mm5, %%mm1\n\t"   /* block[i] |= 1 */
-			"pmullw %%mm2, %%mm1\n\t"   /* change signs again */
-
-			"pand	%%mm3, %%mm1\n\t" /* nullify if was zero */
-			"movq	%%mm1, %0"
-			:"=m"(block[i])
-			:"m"(block[i]), "m"(quant_matrix[i]));
-        }
-#endif
     }
 }
 
