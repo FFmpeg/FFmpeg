@@ -1519,7 +1519,7 @@ static void h263_encode_block(MpegEncContext * s, DCTELEM * block, int n)
             level = 1;
             block[0] = 1;
         }
-        if (level == 128)
+        if (level == 128) //FIXME check rv10
             put_bits(&s->pb, 8, 0xff);
         else
             put_bits(&s->pb, 8, level & 0xff);
@@ -3548,7 +3548,8 @@ static int h263_decode_block(MpegEncContext * s, DCTELEM * block,
         }
     } else if (s->mb_intra) {
         /* DC coef */
-        if (s->h263_rv10 && s->rv10_version == 3 && s->pict_type == I_TYPE) {
+        if(s->h263_rv10){
+          if (s->rv10_version == 3 && s->pict_type == I_TYPE) {
             int component, diff;
             component = (n <= 3 ? 0 : n - 4 + 1);
             level = s->last_dc[component];
@@ -3562,10 +3563,13 @@ static int h263_decode_block(MpegEncContext * s, DCTELEM * block,
             } else {
                 s->rv10_first_dc_coded[component] = 1;
             }
-        } else {
+          } else {
+                level = get_bits(&s->gb, 8);
+          }
+        }else{
             level = get_bits(&s->gb, 8);
             if((level&0x7F) == 0){
-                fprintf("illegal dc at %d %d\n", s->mb_x, s->mb_y);
+                fprintf(stderr, "illegal dc %d at %d %d\n", level, s->mb_x, s->mb_y);
                 return -1;
             }
             if (level == 255)
