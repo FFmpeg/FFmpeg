@@ -1308,47 +1308,25 @@ POWERPC_PERF_DECLARE(altivec_hadamard8_diff8x8_num, 1);
 POWERPC_PERF_START_COUNT(altivec_hadamard8_diff8x8_num, 1);
   register const_vector unsigned char vzero = (const_vector unsigned char)vec_splat_u8(0);
   register vector signed short temp0, temp1, temp2, temp3, temp4, temp5, temp6, temp7;
-#ifdef CONFIG_DARWIN
   {
-    register const_vector signed short vprod1 = (const_vector signed short)( 1,-1, 1,-1, 1,-1, 1,-1);
-    register const_vector signed short vprod2 = (const_vector signed short)( 1, 1,-1,-1, 1, 1,-1,-1);
-    register const_vector signed short vprod3 = (const_vector signed short)( 1, 1, 1, 1,-1,-1,-1,-1);
+    register const_vector signed short vprod1 = (const_vector signed short)AVV( 1,-1, 1,-1, 1,-1, 1,-1);
+    register const_vector signed short vprod2 = (const_vector signed short)AVV( 1, 1,-1,-1, 1, 1,-1,-1);
+    register const_vector signed short vprod3 = (const_vector signed short)AVV( 1, 1, 1, 1,-1,-1,-1,-1);
     register const_vector unsigned char perm1 = (const_vector unsigned char)
-      (0x02, 0x03, 0x00, 0x01,
+      AVV(0x02, 0x03, 0x00, 0x01,
        0x06, 0x07, 0x04, 0x05,
        0x0A, 0x0B, 0x08, 0x09,
        0x0E, 0x0F, 0x0C, 0x0D);
     register const_vector unsigned char perm2 = (const_vector unsigned char)
-      (0x04, 0x05, 0x06, 0x07,
+      AVV(0x04, 0x05, 0x06, 0x07,
        0x00, 0x01, 0x02, 0x03,
        0x0C, 0x0D, 0x0E, 0x0F,
        0x08, 0x09, 0x0A, 0x0B);
     register const_vector unsigned char perm3 = (const_vector unsigned char)
-      (0x08, 0x09, 0x0A, 0x0B,
+      AVV(0x08, 0x09, 0x0A, 0x0B,
        0x0C, 0x0D, 0x0E, 0x0F,
        0x00, 0x01, 0x02, 0x03,
        0x04, 0x05, 0x06, 0x07);
-#else
-  {
-    register const_vector signed short vprod1 = (const_vector signed short){ 1,-1, 1,-1, 1,-1, 1,-1};
-    register const_vector signed short vprod2 = (const_vector signed short){ 1, 1,-1,-1, 1, 1,-1,-1};
-    register const_vector signed short vprod3 = (const_vector signed short){ 1, 1, 1, 1,-1,-1,-1,-1};
-    register const_vector unsigned char perm1 = (const_vector unsigned char)
-      {0x02, 0x03, 0x00, 0x01,
-       0x06, 0x07, 0x04, 0x05,
-       0x0A, 0x0B, 0x08, 0x09,
-       0x0E, 0x0F, 0x0C, 0x0D};
-    register const_vector unsigned char perm2 = (const_vector unsigned char)
-      {0x04, 0x05, 0x06, 0x07,
-       0x00, 0x01, 0x02, 0x03,
-       0x0C, 0x0D, 0x0E, 0x0F,
-       0x08, 0x09, 0x0A, 0x0B};
-    register const_vector unsigned char perm3 = (const_vector unsigned char)
-      {0x08, 0x09, 0x0A, 0x0B,
-       0x0C, 0x0D, 0x0E, 0x0F,
-       0x00, 0x01, 0x02, 0x03,
-       0x04, 0x05, 0x06, 0x07};
-#endif
 
 #define ONEITERBUTTERFLY(i, res)					\
     {									\
@@ -1476,45 +1454,25 @@ static int hadamard8_diff16x8_altivec(/*MpegEncContext*/ void *s, uint8_t *dst, 
     temp7S asm ("v15");
   register const_vector unsigned char vzero asm ("v31")= (const_vector unsigned char)vec_splat_u8(0);
   {
-#ifdef CONFIG_DARWIN
-    register const_vector signed short vprod1 asm ("v16")= (const_vector signed short)( 1,-1, 1,-1, 1,-1, 1,-1);
-    register const_vector signed short vprod2 asm ("v17")= (const_vector signed short)( 1, 1,-1,-1, 1, 1,-1,-1);
-    register const_vector signed short vprod3 asm ("v18")= (const_vector signed short)( 1, 1, 1, 1,-1,-1,-1,-1);
+    register const_vector signed short vprod1 asm ("v16")= (const_vector signed short)AVV( 1,-1, 1,-1, 1,-1, 1,-1);
+    register const_vector signed short vprod2 asm ("v17")= (const_vector signed short)AVV( 1, 1,-1,-1, 1, 1,-1,-1);
+    register const_vector signed short vprod3 asm ("v18")= (const_vector signed short)AVV( 1, 1, 1, 1,-1,-1,-1,-1);
     register const_vector unsigned char perm1 asm ("v19")= (const_vector unsigned char)
-      (0x02, 0x03, 0x00, 0x01,
+      AVV(0x02, 0x03, 0x00, 0x01,
        0x06, 0x07, 0x04, 0x05,
        0x0A, 0x0B, 0x08, 0x09,
        0x0E, 0x0F, 0x0C, 0x0D);
     register const_vector unsigned char perm2 asm ("v20")= (const_vector unsigned char)
-      (0x04, 0x05, 0x06, 0x07,
+      AVV(0x04, 0x05, 0x06, 0x07,
        0x00, 0x01, 0x02, 0x03,
        0x0C, 0x0D, 0x0E, 0x0F,
        0x08, 0x09, 0x0A, 0x0B);
     register const_vector unsigned char perm3 asm ("v21")= (const_vector unsigned char)
-      (0x08, 0x09, 0x0A, 0x0B,
+      AVV(0x08, 0x09, 0x0A, 0x0B,
        0x0C, 0x0D, 0x0E, 0x0F,
        0x00, 0x01, 0x02, 0x03,
        0x04, 0x05, 0x06, 0x07);
-#else
-    register const_vector signed short vprod1 = (const_vector signed short){ 1,-1, 1,-1, 1,-1, 1,-1};
-    register const_vector signed short vprod2 = (const_vector signed short){ 1, 1,-1,-1, 1, 1,-1,-1};
-    register const_vector signed short vprod3 = (const_vector signed short){ 1, 1, 1, 1,-1,-1,-1,-1};
-    register const_vector unsigned char perm1 = (const_vector unsigned char)
-      {0x02, 0x03, 0x00, 0x01,
-       0x06, 0x07, 0x04, 0x05,
-       0x0A, 0x0B, 0x08, 0x09,
-       0x0E, 0x0F, 0x0C, 0x0D};
-    register const_vector unsigned char perm2 = (const_vector unsigned char)
-      {0x04, 0x05, 0x06, 0x07,
-       0x00, 0x01, 0x02, 0x03,
-       0x0C, 0x0D, 0x0E, 0x0F,
-       0x08, 0x09, 0x0A, 0x0B};
-    register const_vector unsigned char perm3 = (const_vector unsigned char)
-      {0x08, 0x09, 0x0A, 0x0B,
-       0x0C, 0x0D, 0x0E, 0x0F,
-       0x00, 0x01, 0x02, 0x03,
-       0x04, 0x05, 0x06, 0x07};
-#endif
+
 #define ONEITERBUTTERFLY(i, res1, res2)					\
     {									\
       register vector unsigned char src1 asm ("v22"), src2 asm ("v23"); \
