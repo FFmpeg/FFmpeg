@@ -270,25 +270,25 @@ PIXOP(avg_no_rnd, STORE);
 
 void dsputil_init_alpha(void)
 {
-    put_pixels_tab[0] = put_pixels_axp_asm;
-    put_pixels_tab[1] = put_pixels_x2_axp;
-    put_pixels_tab[2] = put_pixels_y2_axp;
-    put_pixels_tab[3] = put_pixels_xy2_axp;
+    put_pixels_tab[1][0] = put_pixels_axp_asm;
+    put_pixels_tab[1][1] = put_pixels_x2_axp;
+    put_pixels_tab[1][2] = put_pixels_y2_axp;
+    put_pixels_tab[1][3] = put_pixels_xy2_axp;
 
-    put_no_rnd_pixels_tab[0] = put_pixels_axp_asm;
-    put_no_rnd_pixels_tab[1] = put_no_rnd_pixels_x2_axp;
-    put_no_rnd_pixels_tab[2] = put_no_rnd_pixels_y2_axp;
-    put_no_rnd_pixels_tab[3] = put_no_rnd_pixels_xy2_axp;
+    put_no_rnd_pixels_tab[1][0] = put_pixels_axp_asm;
+    put_no_rnd_pixels_tab[1][1] = put_no_rnd_pixels_x2_axp;
+    put_no_rnd_pixels_tab[1][2] = put_no_rnd_pixels_y2_axp;
+    put_no_rnd_pixels_tab[1][3] = put_no_rnd_pixels_xy2_axp;
 
-    avg_pixels_tab[0] = avg_pixels_axp;
-    avg_pixels_tab[1] = avg_pixels_x2_axp;
-    avg_pixels_tab[2] = avg_pixels_y2_axp;
-    avg_pixels_tab[3] = avg_pixels_xy2_axp;
+    avg_pixels_tab[1][0] = avg_pixels_axp;
+    avg_pixels_tab[1][1] = avg_pixels_x2_axp;
+    avg_pixels_tab[1][2] = avg_pixels_y2_axp;
+    avg_pixels_tab[1][3] = avg_pixels_xy2_axp;
 
-    avg_no_rnd_pixels_tab[0] = avg_no_rnd_pixels_axp;
-    avg_no_rnd_pixels_tab[1] = avg_no_rnd_pixels_x2_axp;
-    avg_no_rnd_pixels_tab[2] = avg_no_rnd_pixels_y2_axp;
-    avg_no_rnd_pixels_tab[3] = avg_no_rnd_pixels_xy2_axp;
+    avg_no_rnd_pixels_tab[1][0] = avg_no_rnd_pixels_axp;
+    avg_no_rnd_pixels_tab[1][1] = avg_no_rnd_pixels_x2_axp;
+    avg_no_rnd_pixels_tab[1][2] = avg_no_rnd_pixels_y2_axp;
+    avg_no_rnd_pixels_tab[1][3] = avg_no_rnd_pixels_xy2_axp;
 
     clear_blocks = clear_blocks_axp;
 
