@@ -14,6 +14,8 @@
 //#define A32_BITSTREAM_READER
 #define LIBMPEG2_BITSTREAM_READER_HACK //add BERO
  
+extern const uint8_t ff_reverse[256];
+
 #if defined(ARCH_X86) || defined(ARCH_X86_64)
 // avoid +32 for shift optimization (gcc should do that ...)
 static inline  int32_t NEG_SSR32( int32_t a, int8_t s){
