@@ -491,8 +491,8 @@ static int encode_init(AVCodecContext *avctx)
     
     assert(width && height);
     
-    avctx->extradata= av_mallocz(1024*10);
-    avctx->stats_out= av_mallocz(1024*10);
+    avctx->extradata= av_mallocz(1024*30);
+    avctx->stats_out= av_mallocz(1024*30);
     s->version=2;
     
     avctx->coded_frame= &s->picture;
@@ -1054,11 +1054,11 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
                 if(s->predictor == PLANE && s->interlaced < cy){
                     s->dsp.diff_bytes(s->temp[1], ydst, ydst - fake_ystride, width);
                     s->dsp.diff_bytes(s->temp[2], udst, udst - fake_ustride, width2);
-                    s->dsp.diff_bytes(s->temp[3], vdst, vdst - fake_vstride, width2);
+                    s->dsp.diff_bytes(s->temp[2] + 1250, vdst, vdst - fake_vstride, width2);
 
                     lefty= sub_left_prediction(s, s->temp[0], s->temp[1], width , lefty);
                     leftu= sub_left_prediction(s, s->temp[1], s->temp[2], width2, leftu);
-                    leftv= sub_left_prediction(s, s->temp[2], s->temp[3], width2, leftv);
+                    leftv= sub_left_prediction(s, s->temp[2], s->temp[2] + 1250, width2, leftv);
                 }else{
                     lefty= sub_left_prediction(s, s->temp[0], ydst, width , lefty);
                     leftu= sub_left_prediction(s, s->temp[1], udst, width2, leftu);
