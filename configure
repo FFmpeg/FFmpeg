@@ -463,7 +463,7 @@ EOF
     fi
    
 
-    if test "$fail" == "yes"; then
+    if test "$fail" = "yes"; then
         exit 1
     fi
 fi
