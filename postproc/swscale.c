@@ -2300,7 +2300,7 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 			MSG_INFO("using C\n");
 	}
 
-	if((flags & SWS_PRINT_INFO) && verbose)
+	if((flags & SWS_PRINT_INFO) && verbose>0)
 	{
 		if(cpuCaps.hasMMX)
 		{
