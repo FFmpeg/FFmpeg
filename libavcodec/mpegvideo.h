@@ -164,7 +164,11 @@ typedef struct MpegEncContext {
     int sprite_left;
     int sprite_top;
     int sprite_brightness_change;
-    int no_sprite_wraping_points;
+    int num_sprite_warping_points;
+    int sprite_offset[2][2];
+    int sprite_delta[2][2][2];
+    int sprite_shift[2][2];
+    int mcsel;
     int quant_precision;
     int quarter_sample;
     int scalability;
@@ -174,7 +178,7 @@ typedef struct MpegEncContext {
     int sprite_warping_accuracy;
     int low_latency_sprite;
     int data_partioning;
-
+    
     /* RV10 specific */
     int rv10_version; /* RV10 version: 0 or 3 */
     int rv10_first_dc_coded[3];

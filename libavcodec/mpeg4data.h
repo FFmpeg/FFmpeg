@@ -93,3 +93,9 @@ static RLTable rl_intra = {
     intra_run,
     intra_level,
 };
+
+static const UINT16 sprite_trajectory_tab[15][2] = {
+ {0x00, 2}, {0x02, 3},  {0x03, 3},  {0x04, 3}, {0x05, 3}, {0x06, 3},
+ {0x0E, 4}, {0x1E, 5},  {0x3E, 6},  {0x7E, 7}, {0xFE, 8}, 
+ {0x1FE, 9},{0x3FE, 10},{0x7FE, 11},{0xFFE, 12},
+};

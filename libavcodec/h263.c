@@ -834,6 +834,7 @@ static VLC inter_MCBPC_vlc;
 static VLC cbpy_vlc;
 static VLC mv_vlc;
 static VLC dc_lum, dc_chrom;
+static VLC sprite_trajectory;
 
 void init_rl(RLTable *rl)
 {
@@ -914,6 +915,9 @@ void h263_decode_init_vlc(MpegEncContext *s)
         init_vlc(&dc_chrom, 9, 13,
                  &DCtab_chrom[0][1], 2, 1,
                  &DCtab_chrom[0][0], 2, 1);
+        init_vlc(&sprite_trajectory, 9, 15,
+                 &sprite_trajectory_tab[0][1], 4, 2,
+                 &sprite_trajectory_tab[0][0], 4, 2);
     }
 }
 
@@ -949,7 +953,7 @@ int h263_decode_mb(MpegEncContext *s,
     INT16 *mot_val;
     static INT8 quant_tab[4] = { -1, -2, 1, 2 };
     
-    if (s->pict_type == P_TYPE) {
+    if (s->pict_type == P_TYPE || s->pict_type==S_TYPE) {
         if (get_bits1(&s->gb)) {
             /* skip mb */
             s->mb_intra = 0;
@@ -982,6 +986,9 @@ int h263_decode_mb(MpegEncContext *s,
     }
 
     if (!s->mb_intra) {
+        if(s->pict_type==S_TYPE && s->vol_sprite_usage==GMC_SPRITE && (cbpc & 16) == 0)
+            s->mcsel= get_bits1(&s->gb);
+        else s->mcsel= 0;
         cbpy = get_vlc(&s->gb, &cbpy_vlc);
         cbp = (cbpc & 3) | ((cbpy ^ 0xf) << 2);
         if (dquant) {
@@ -998,15 +1005,17 @@ int h263_decode_mb(MpegEncContext *s,
             h263_pred_motion(s, 0, &pred_x, &pred_y);
             if (s->umvplus_dec)
                mx = h263p_decode_umotion(s, pred_x);
-            else
+            else if(!s->mcsel)
                mx = h263_decode_motion(s, pred_x);
+            else mx=0;
             if (mx >= 0xffff)
                 return -1;
             
             if (s->umvplus_dec)
                my = h263p_decode_umotion(s, pred_y);
-            else    
+            else if(!s->mcsel)
                my = h263_decode_motion(s, pred_y);
+            else my=0;
             if (my >= 0xffff)
                 return -1;
             s->mv[0][0][0] = mx;
@@ -1487,6 +1496,148 @@ int h263_decode_picture_header(MpegEncContext *s)
     return 0;
 }
 
+static void mpeg4_decode_sprite_trajectory(MpegEncContext * s)
+{
+    int i;
+    int a= 2<<s->sprite_warping_accuracy;
+    int rho= 3-s->sprite_warping_accuracy;
+    int r=16/a;
+    const int vop_ref[4][2]= {{0,0}, {s->width,0}, {0, s->height}, {s->width, s->height}}; // only true for rectangle shapes
+    int d[4][2]={{0,0}, {0,0}, {0,0}, {0,0}};
+    int sprite_ref[4][2];
+    int virtual_ref[2][2];
+    int w2, h2;
+    int alpha=0, beta=0;
+    int w= s->width;
+    int h= s->height;
+    
+    for(i=0; i<s->num_sprite_warping_points; i++){
+        int length;
+        int x=0, y=0;
+
+        length= get_vlc(&s->gb, &sprite_trajectory);
+        if(length){
+            x= get_bits(&s->gb, length);
+            if ((x >> (length - 1)) == 0) /* if MSB not set it is negative*/
+                x = - (x ^ ((1 << length) - 1));
+        }
+// FIXME the mpeg4 std says that here should be a marker but but divx5 doesnt have one here
+//        skip_bits1(&s->gb); /* marker bit */
+        
+        length= get_vlc(&s->gb, &sprite_trajectory);
+        if(length){
+            y=get_bits(&s->gb, length);
+            if ((y >> (length - 1)) == 0) /* if MSB not set it is negative*/
+                y = - (y ^ ((1 << length) - 1));
+        }
+        skip_bits1(&s->gb); /* marker bit */
+//        printf("%d %d\n", x, y);
+//if(i>0 && (x!=0 || y!=0)) printf("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n");
+        d[i][0]= x;
+        d[i][1]= y;
+    }
+
+    while((1<<alpha)<w) alpha++;
+    while((1<<beta )<h) beta++; // there seems to be a typo in the mpeg4 std for the definition of w' and h'
+    w2= 1<<alpha;
+    h2= 1<<beta;
+
+// Note, the 4th point isnt used for GMC
+    
+    sprite_ref[0][0]= (a>>1)*(2*vop_ref[0][0] + d[0][0]);
+    sprite_ref[0][1]= (a>>1)*(2*vop_ref[0][1] + d[0][1]);
+    sprite_ref[1][0]= (a>>1)*(2*vop_ref[1][0] + d[0][0] + d[1][0]);
+    sprite_ref[1][1]= (a>>1)*(2*vop_ref[1][1] + d[0][1] + d[1][1]);
+    sprite_ref[2][0]= (a>>1)*(2*vop_ref[2][0] + d[0][0] + d[2][0]);
+    sprite_ref[2][1]= (a>>1)*(2*vop_ref[2][1] + d[0][1] + d[2][1]);
+/*    sprite_ref[3][0]= (a>>1)*(2*vop_ref[3][0] + d[0][0] + d[1][0] + d[2][0] + d[3][0]);
+    sprite_ref[3][1]= (a>>1)*(2*vop_ref[3][1] + d[0][1] + d[1][1] + d[2][1] + d[3][1]); */
+    
+// this is mostly identical to the mpeg4 std (and is totally unreadable because of that ...)
+// perhaps it should be reordered to be more readable ...
+// the idea behind this virtual_ref mess is to be able to use shifts later per pixel instead of divides
+// so the distance between points is converted from w&h based to w2&h2 based which are of the 2^x form
+// FIXME rounding (they should be positive but who knows ...)
+    virtual_ref[0][0]= 16*(vop_ref[0][0] + w2) 
+        + ((w - w2)*(r*sprite_ref[0][0] - 16*vop_ref[0][0]) + w2*(r*sprite_ref[1][0] - 16*vop_ref[1][0]) + w/2)/w;
+    virtual_ref[0][1]= 16*vop_ref[0][1] 
+        + ((w - w2)*(r*sprite_ref[0][1] - 16*vop_ref[0][1]) + w2*(r*sprite_ref[1][1] - 16*vop_ref[1][1]) + w/2)/w;
+    virtual_ref[1][0]= 16*vop_ref[0][0] 
+        + ((h - h2)*(r*sprite_ref[0][0] - 16*vop_ref[0][0]) + h2*(r*sprite_ref[2][0] - 16*vop_ref[2][0]) + h/2)/h;
+    virtual_ref[1][1]= 16*(vop_ref[0][1] + h2) 
+        + ((h - h2)*(r*sprite_ref[0][1] - 16*vop_ref[0][1]) + h2*(r*sprite_ref[2][1] - 16*vop_ref[2][1]) + h/2)/h;
+
+    switch(s->num_sprite_warping_points)
+    {
+        case 0:
+            s->sprite_offset[0][0]= 0;
+            s->sprite_offset[0][1]= 0;
+            s->sprite_offset[1][0]= 0;
+            s->sprite_offset[1][1]= 0;
+            s->sprite_delta[0][0][0]= a;
+            s->sprite_delta[0][0][1]= 0;
+            s->sprite_delta[0][1][0]= 0;
+            s->sprite_delta[0][1][1]= a;
+            s->sprite_delta[1][0][0]= a;
+            s->sprite_delta[1][0][1]= 0;
+            s->sprite_delta[1][1][0]= 0;
+            s->sprite_delta[1][1][1]= a;
+            s->sprite_shift[0][0]= 0;
+            s->sprite_shift[0][1]= 0;
+            s->sprite_shift[1][0]= 0;
+            s->sprite_shift[1][1]= 0;
+            break;
+        case 1: //GMC only
+            s->sprite_offset[0][0]= sprite_ref[0][0] - a*vop_ref[0][0];
+            s->sprite_offset[0][1]= sprite_ref[0][1] - a*vop_ref[0][1];
+            s->sprite_offset[1][0]= ((sprite_ref[0][0]>>1)|(sprite_ref[0][0]&1)) - a*(vop_ref[0][0]/2);
+            s->sprite_offset[1][1]= ((sprite_ref[0][1]>>1)|(sprite_ref[0][1]&1)) - a*(vop_ref[0][1]/2);
+            s->sprite_delta[0][0][0]= a;
+            s->sprite_delta[0][0][1]= 0;
+            s->sprite_delta[0][1][0]= 0;
+            s->sprite_delta[0][1][1]= a;
+            s->sprite_delta[1][0][0]= a;
+            s->sprite_delta[1][0][1]= 0;
+            s->sprite_delta[1][1][0]= 0;
+            s->sprite_delta[1][1][1]= a;
+            s->sprite_shift[0][0]= 0;
+            s->sprite_shift[0][1]= 0;
+            s->sprite_shift[1][0]= 0;
+            s->sprite_shift[1][1]= 0;
+            break;
+        case 2:
+        case 3: //FIXME
+            s->sprite_offset[0][0]= (sprite_ref[0][0]<<(alpha+rho))
+                                                  + ((-r*sprite_ref[0][0] + virtual_ref[0][0])*(-vop_ref[0][0])
+                                                    +( r*sprite_ref[0][1] - virtual_ref[0][1])*(-vop_ref[0][1]));
+            s->sprite_offset[0][1]= (sprite_ref[0][1]<<(alpha+rho))
+                                                  + ((-r*sprite_ref[0][1] + virtual_ref[0][1])*(-vop_ref[0][0])
+                                                    +(-r*sprite_ref[0][0] + virtual_ref[0][0])*(-vop_ref[0][1]));
+            s->sprite_offset[1][0]= ((-r*sprite_ref[0][0] + virtual_ref[0][0])*(-2*vop_ref[0][0] + 1)
+                                 +( r*sprite_ref[0][1] - virtual_ref[0][1])*(-2*vop_ref[0][1] + 1)
+                                 +2*w2*r*sprite_ref[0][0] - 16*w2);
+            s->sprite_offset[1][1]= ((-r*sprite_ref[0][1] + virtual_ref[0][1])*(-2*vop_ref[0][0] + 1) 
+                                 +(-r*sprite_ref[0][0] + virtual_ref[0][0])*(-2*vop_ref[0][1] + 1)
+                                 +2*w2*r*sprite_ref[0][1] - 16*w2);
+            s->sprite_delta[0][0][0]=   (-r*sprite_ref[0][0] + virtual_ref[0][0]);
+            s->sprite_delta[0][0][1]=   ( r*sprite_ref[0][1] - virtual_ref[0][1]);
+            s->sprite_delta[0][1][0]=   (-r*sprite_ref[0][1] + virtual_ref[0][1]);
+            s->sprite_delta[0][1][1]=   (-r*sprite_ref[0][0] + virtual_ref[0][0]);
+            s->sprite_delta[1][0][0]= 4*(-r*sprite_ref[0][0] + virtual_ref[0][0]);
+            s->sprite_delta[1][0][1]= 4*( r*sprite_ref[0][1] - virtual_ref[0][1]);
+            s->sprite_delta[1][1][0]= 4*(-r*sprite_ref[0][1] + virtual_ref[0][1]);
+            s->sprite_delta[1][1][1]= 4*(-r*sprite_ref[0][0] + virtual_ref[0][0]);
+            s->sprite_shift[0][0]= alpha+rho;
+            s->sprite_shift[0][1]= alpha+rho;
+            s->sprite_shift[1][0]= alpha+rho+2;
+            s->sprite_shift[1][1]= alpha+rho+2;
+            break;
+//        case 3:
+            break;
+    }
+
+}
+
 /* decode mpeg4 VOP header */
 int mpeg4_decode_picture_header(MpegEncContext * s)
 {
@@ -1559,12 +1710,13 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
             }
             
             skip_bits1(&s->gb);   /* interlaced */
-            skip_bits1(&s->gb);   /* OBMC Disable */
+            if(!get_bits1(&s->gb)) printf("OBMC not supported\n");   /* OBMC Disable */
             if (vo_ver_id == 1) {
                 s->vol_sprite_usage = get_bits1(&s->gb); /* vol_sprite_usage */
             } else {
                 s->vol_sprite_usage = get_bits(&s->gb, 2); /* vol_sprite_usage */
             }
+            if(s->vol_sprite_usage==STATIC_SPRITE) printf("Static Sprites not supported\n");
             if(s->vol_sprite_usage==STATIC_SPRITE || s->vol_sprite_usage==GMC_SPRITE){
                 if(s->vol_sprite_usage==STATIC_SPRITE){
                     s->sprite_width = get_bits(&s->gb, 13);
@@ -1576,7 +1728,7 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
                     s->sprite_top   = get_bits(&s->gb, 13);
                     skip_bits1(&s->gb); /* marker */
                 }
-                s->no_sprite_wraping_points= get_bits(&s->gb, 6);
+                s->num_sprite_warping_points= get_bits(&s->gb, 6);
                 s->sprite_warping_accuracy = get_bits(&s->gb, 2);
                 s->sprite_brightness_change= get_bits1(&s->gb);
                 if(s->vol_sprite_usage==STATIC_SPRITE)
@@ -1649,7 +1801,7 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
     if(s->pict_type == S_TYPE)
     {
         printf("S-VOP\n");
-	return -1;
+//	return -1;
     }
     
     /* XXX: parse time base */
@@ -1697,13 +1849,15 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
          skip_bits(&s->gb, 3); /* intra dc VLC threshold */
          //FIXME interlaced specific bits
      }
-     
+
      if(s->pict_type == S_TYPE && (s->vol_sprite_usage==STATIC_SPRITE || s->vol_sprite_usage==GMC_SPRITE)){
-         if(s->no_sprite_wraping_points) printf("sprite_wraping_points not supported\n");
+         if(s->num_sprite_warping_points){
+             mpeg4_decode_sprite_trajectory(s);
+         }
          if(s->sprite_brightness_change) printf("sprite_brightness_change not supported\n");
          if(s->vol_sprite_usage==STATIC_SPRITE) printf("static sprite not supported\n");
      }
-     
+
      if (s->shape != BIN_ONLY_SHAPE) {
          /* note: we do not use quant_precision to avoid problem if no
             MPEG4 vol header as it is found on some old opendivx
@@ -1716,7 +1870,7 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
          if (s->pict_type == B_TYPE) {
              s->b_code = get_bits(&s->gb, 3);
          }
-         
+//printf("quant:%d fcode:%d\n", s->qscale, s->f_code);
          if(!s->scalability){
              if (s->shape!=RECT_SHAPE && s->pict_type!=I_TYPE) {
                  skip_bits1(&s->gb); // vop shape coding type
