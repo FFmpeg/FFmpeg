@@ -1,4 +1,14 @@
-version 0.4.6pre1:
+version 0.4.7:
+
+- qpel encoding (Michael)
+- 4mv+b frames encoding finally fixed (Michael)
+- chroma ME (Michael)
+- 5 comparission functions for ME (Michael)
+- b frame encoding speedup (Michael)
+- wmv2 codec (unfinished)
+- user specified diamond size for EPZS (Michael)
+
+version 0.4.6:
 
 - completely new integer only mpeg audio layer 1/2/3 decoder rewritten
   from scratch.
