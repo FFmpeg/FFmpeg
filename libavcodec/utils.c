@@ -385,12 +385,24 @@ int avpicture_get_size(int pix_fmt, int width, int height)
 /* must be called before any other functions */
 void avcodec_init(void)
 {
+    static int inited = 0;
+
+    if (inited != 0)
+	return;
+    inited = 1;
+
     dsputil_init();
 }
 
 /* simple call to use all the codecs */
 void avcodec_register_all(void)
 {
+    static int inited = 0;
+    
+    if (inited != 0)
+	return;
+    inited = 1;
+
     /* encoders */
 #ifdef CONFIG_ENCODERS
     register_avcodec(&ac3_encoder);
