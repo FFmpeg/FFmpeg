@@ -1505,8 +1505,8 @@ static int mpeg_decode_slice(AVCodecContext *avctx,
             pict->data[1] = picture[1];
             pict->data[2] = picture[2];
             pict->linesize[0] = s->linesize;
-            pict->linesize[1] = s->linesize / 2;
-            pict->linesize[2] = s->linesize / 2;
+            pict->linesize[1] = s->uvlinesize;
+            pict->linesize[2] = s->uvlinesize;
             return 1;
         } else {
             return 0;
@@ -1546,7 +1546,7 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
         }
         s->width = width;
         s->height = height;
-        s->has_b_frames = 1;
+        avctx->has_b_frames= s->has_b_frames = 1;
         s->avctx = avctx;
         avctx->width = width;
         avctx->height = height;
@@ -1642,8 +1642,8 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
             picture->data[1] = s2->next_picture[1];
             picture->data[2] = s2->next_picture[2];
             picture->linesize[0] = s2->linesize;
-            picture->linesize[1] = s2->linesize / 2;
-            picture->linesize[2] = s2->linesize / 2;
+            picture->linesize[1] = s2->uvlinesize;
+            picture->linesize[2] = s2->uvlinesize;
             *data_size = sizeof(AVPicture);
         }
         return 0;

@@ -487,8 +487,8 @@ static int rv10_decode_frame(AVCodecContext *avctx,
         pict->data[1] = s->current_picture[1];
         pict->data[2] = s->current_picture[2];
         pict->linesize[0] = s->linesize;
-        pict->linesize[1] = s->linesize / 2;
-        pict->linesize[2] = s->linesize / 2;
+        pict->linesize[1] = s->uvlinesize;
+        pict->linesize[2] = s->uvlinesize;
         
         avctx->quality = s->qscale;
         *data_size = sizeof(AVPicture);

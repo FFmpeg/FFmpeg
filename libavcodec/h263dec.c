@@ -154,6 +154,7 @@ uint64_t time= rdtsc();
     } else {
         ret = h263_decode_picture_header(s);
     }
+    avctx->has_b_frames= s->has_b_frames;
 
        
         /* After H263 & mpeg4 header decode we have the height, width,*/
@@ -432,8 +433,8 @@ uint64_t time= rdtsc();
         pict->data[2] = s->last_picture[2];
     }
     pict->linesize[0] = s->linesize;
-    pict->linesize[1] = s->linesize / 2;
-    pict->linesize[2] = s->linesize / 2;
+    pict->linesize[1] = s->uvlinesize;
+    pict->linesize[2] = s->uvlinesize;
 
     avctx->quality = s->qscale;
 

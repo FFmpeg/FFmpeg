@@ -5,8 +5,8 @@
 
 #define LIBAVCODEC_VERSION_INT 0x000406
 #define LIBAVCODEC_VERSION     "0.4.6"
-#define LIBAVCODEC_BUILD       4616
-#define LIBAVCODEC_BUILD_STR   "4616"
+#define LIBAVCODEC_BUILD       4617
+#define LIBAVCODEC_BUILD_STR   "4617"
 
 enum CodecID {
     CODEC_ID_NONE, 
@@ -258,7 +258,11 @@ typedef struct AVCodecContext {
     uint8_t *dr_buffer[3];
     int dr_stride;
     void *dr_opaque_frame;
-    void (*get_buffer_callback)(struct AVCodecContext *c, int width, int height, int pict_type); 
+    void (*get_buffer_callback)(struct AVCodecContext *c, int width, int height, int pict_type);
+
+    int has_b_frames; // is 1 if the decoded stream contains b frames
+    int dr_uvstride;
+    int dr_ip_buffer_count;
 
     //FIXME this should be reordered after kabis API is finished ...
     /*
@@ -282,13 +286,13 @@ typedef struct AVCodecContext {
 	    ul_res0,ul_res1,ul_res2,ul_res3,ul_res4,ul_res5,
 	    ul_res6,ul_res7,ul_res8,ul_res9,ul_res10,ul_res11,ul_res12;
     unsigned int
-	    ui_res0,ui_res1,ui_res2,ui_res3,ui_res4,ui_res5;
+	    ui_res0,ui_res1,ui_res2;
     unsigned short int
 	    us_res0,us_res1,us_res2,us_res3,us_res4,us_res5,
 	    us_res6,us_res7,us_res8,us_res9,us_res10,us_res11,us_res12;
     unsigned char
 	    uc_res0,uc_res1,uc_res2,uc_res3,uc_res4,uc_res5,
-	    uc_res6,uc_res7,uc_res8,uc_res9,uc_res10,uc_res11,uc_res12;    
+	    uc_res6,uc_res7,uc_res8,uc_res9,uc_res10,uc_res11,uc_res12;
 } AVCodecContext;
 
 typedef struct AVCodec {
@@ -299,7 +303,7 @@ typedef struct AVCodec {
     int (*init)(AVCodecContext *);
     int (*encode)(AVCodecContext *, UINT8 *buf, int buf_size, void *data);
     int (*close)(AVCodecContext *);
-    int (*decode)(AVCodecContext *, void *outdata, int *outdata_size, 
+    int (*decode)(AVCodecContext *, void *outdata, int *outdata_size,
                   UINT8 *buf, int buf_size);
     int capabilities;
     struct AVCodec *next;

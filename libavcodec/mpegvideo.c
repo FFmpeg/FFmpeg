@@ -145,7 +145,8 @@ int MPV_common_init(MpegEncContext *s)
     s->mb_height = (s->height + 15) / 16;
     s->mb_num = s->mb_width * s->mb_height;
     if(!(s->flags&CODEC_FLAG_DR1)){
-      s->linesize = s->mb_width * 16 + 2 * EDGE_WIDTH;
+      s->linesize   = s->mb_width * 16 + 2 * EDGE_WIDTH;
+      s->uvlinesize = s->mb_width * 8  +     EDGE_WIDTH;
 
       for(i=0;i<3;i++) {
         int w, h, shift, pict_start;
@@ -153,8 +154,8 @@ int MPV_common_init(MpegEncContext *s)
         w = s->linesize;
         h = s->mb_height * 16 + 2 * EDGE_WIDTH;
         shift = (i == 0) ? 0 : 1;
-        c_size = (w >> shift) * (h >> shift);
-        pict_start = (w >> shift) * (EDGE_WIDTH >> shift) + (EDGE_WIDTH >> shift);
+        c_size = (s->linesize>>shift) * (h >> shift);
+        pict_start = (s->linesize>>shift) * (EDGE_WIDTH >> shift) + (EDGE_WIDTH >> shift);
 
         CHECKED_ALLOCZ(pict, c_size)
         s->last_picture_base[i] = pict;
@@ -175,6 +176,7 @@ int MPV_common_init(MpegEncContext *s)
             if(i>0) memset(s->aux_picture_base[i], 128, c_size);
         }
       }
+      s->ip_buffer_count= 2;
     }
     
     CHECKED_ALLOCZ(s->edge_emu_buffer, (s->width+32)*2*17);
@@ -622,7 +624,9 @@ void MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
         int i;
         avctx->get_buffer_callback(avctx, s->width, s->height, s->pict_type);
 
-        s->linesize= avctx->dr_stride;
+        s->linesize  = avctx->dr_stride;
+        s->uvlinesize= avctx->dr_uvstride;
+        s->ip_buffer_count= avctx->dr_ip_buffer_count;
     }
     
     if (s->pict_type == B_TYPE) {
@@ -664,13 +668,13 @@ void MPV_frame_end(MpegEncContext *s)
     if (s->pict_type != B_TYPE && !s->intra_only && !(s->flags&CODEC_FLAG_EMU_EDGE)) {
       if(s->avctx==NULL || s->avctx->codec->id!=CODEC_ID_MPEG4 || s->divx_version>=500){
         draw_edges(s->current_picture[0], s->linesize, s->mb_width*16, s->mb_height*16, EDGE_WIDTH);
-        draw_edges(s->current_picture[1], s->linesize/2, s->mb_width*8, s->mb_height*8, EDGE_WIDTH/2);
-        draw_edges(s->current_picture[2], s->linesize/2, s->mb_width*8, s->mb_height*8, EDGE_WIDTH/2);
+        draw_edges(s->current_picture[1], s->uvlinesize, s->mb_width*8, s->mb_height*8, EDGE_WIDTH/2);
+        draw_edges(s->current_picture[2], s->uvlinesize, s->mb_width*8, s->mb_height*8, EDGE_WIDTH/2);
       }else{
         /* mpeg4? / opendivx / xvid */
         draw_edges(s->current_picture[0], s->linesize, s->width, s->height, EDGE_WIDTH);
-        draw_edges(s->current_picture[1], s->linesize/2, s->width/2, s->height/2, EDGE_WIDTH/2);
-        draw_edges(s->current_picture[2], s->linesize/2, s->width/2, s->height/2, EDGE_WIDTH/2);
+        draw_edges(s->current_picture[1], s->uvlinesize, s->width/2, s->height/2, EDGE_WIDTH/2);
+        draw_edges(s->current_picture[2], s->uvlinesize, s->width/2, s->height/2, EDGE_WIDTH/2);
       }
     }
     emms_c();
@@ -715,8 +719,8 @@ void reorder_input(MpegEncContext *s, AVPicture *pict)
 //printf("index:%d type:%d strides: %d %d\n", index, s->input_pict_type, pict->linesize[0], s->linesize);
     if(   (index==0 || (s->flags&CODEC_FLAG_INPUT_PRESERVED))
        && pict->linesize[0] == s->linesize
-       && pict->linesize[1] == s->linesize>>1
-       && pict->linesize[2] == s->linesize>>1){
+       && pict->linesize[1] == s->uvlinesize
+       && pict->linesize[2] == s->uvlinesize){
 //printf("ptr\n");
         for(i=0; i<3; i++){
             s->coded_order[index].picture[i]= pict->data[i];
@@ -870,7 +874,7 @@ static inline void gmc1_motion(MpegEncContext *s,
                                int h)
 {
     UINT8 *ptr;
-    int offset, src_x, src_y, linesize;
+    int offset, src_x, src_y, linesize, uvlinesize;
     int motion_x, motion_y;
 
     if(s->real_sprite_warping_points>1) printf("more than 1 warp point isnt supported\n");
@@ -888,6 +892,7 @@ static inline void gmc1_motion(MpegEncContext *s,
         motion_y =0;
     
     linesize = s->linesize;
+    uvlinesize = s->uvlinesize;
     ptr = ref_picture[0] + (src_y * linesize) + src_x + src_offset;
 
     dest_y+=dest_offset;
@@ -907,11 +912,11 @@ static inline void gmc1_motion(MpegEncContext *s,
     if (src_y == s->height>>1)
         motion_y =0;
 
-    offset = (src_y * linesize>>1) + src_x + (src_offset>>1);
+    offset = (src_y * uvlinesize) + src_x + (src_offset>>1);
     ptr = ref_picture[1] + offset;
-    gmc1(dest_cb + (dest_offset>>1), ptr, linesize>>1, h>>1, motion_x&15, motion_y&15, s->no_rounding);
+    gmc1(dest_cb + (dest_offset>>1), ptr, uvlinesize, h>>1, motion_x&15, motion_y&15, s->no_rounding);
     ptr = ref_picture[2] + offset;
-    gmc1(dest_cr + (dest_offset>>1), ptr, linesize>>1, h>>1, motion_x&15, motion_y&15, s->no_rounding);
+    gmc1(dest_cr + (dest_offset>>1), ptr, uvlinesize, h>>1, motion_x&15, motion_y&15, s->no_rounding);
     
     return;
 }
@@ -1047,20 +1052,20 @@ if(s->quarter_sample)
     if (src_y == (height >> 1))
         dxy &= ~2;
 
-    offset = (src_y * (linesize >> 1)) + src_x + (src_offset >> 1);
+    offset = (src_y * s->uvlinesize) + src_x + (src_offset >> 1);
     ptr = ref_picture[1] + offset;
     if(emu){
-        emulated_edge_mc(s->edge_emu_buffer, ptr, linesize>>1, 9, (h>>1)+1, src_x, src_y, s->width>>1, height>>1);
+        emulated_edge_mc(s->edge_emu_buffer, ptr, s->uvlinesize, 9, (h>>1)+1, src_x, src_y, s->width>>1, height>>1);
         ptr= s->edge_emu_buffer;
     }
-    pix_op[dxy](dest_cb + (dest_offset >> 1), ptr, linesize >> 1, h >> 1);
+    pix_op[dxy](dest_cb + (dest_offset >> 1), ptr, s->uvlinesize, h >> 1);
 
     ptr = ref_picture[2] + offset;
     if(emu){
-        emulated_edge_mc(s->edge_emu_buffer, ptr, linesize>>1, 9, (h>>1)+1, src_x, src_y, s->width>>1, height>>1);
+        emulated_edge_mc(s->edge_emu_buffer, ptr, s->uvlinesize, 9, (h>>1)+1, src_x, src_y, s->width>>1, height>>1);
         ptr= s->edge_emu_buffer;
     }
-    pix_op[dxy](dest_cr + (dest_offset >> 1), ptr, linesize >> 1, h >> 1);
+    pix_op[dxy](dest_cr + (dest_offset >> 1), ptr, s->uvlinesize, h >> 1);
 }
 
 static inline void qpel_motion(MpegEncContext *s,
@@ -1126,20 +1131,20 @@ static inline void qpel_motion(MpegEncContext *s,
     if (src_y == (height >> 1))
         dxy &= ~2;
 
-    offset = (src_y * (linesize >> 1)) + src_x + (src_offset >> 1);
+    offset = (src_y * s->uvlinesize) + src_x + (src_offset >> 1);
     ptr = ref_picture[1] + offset;
     if(emu){
-        emulated_edge_mc(s->edge_emu_buffer, ptr, linesize>>1, 9, (h>>1)+1, src_x, src_y, s->width>>1, height>>1);
+        emulated_edge_mc(s->edge_emu_buffer, ptr,  s->uvlinesize, 9, (h>>1)+1, src_x, src_y, s->width>>1, height>>1);
         ptr= s->edge_emu_buffer;
     }
-    pix_op[dxy](dest_cb + (dest_offset >> 1), ptr, linesize >> 1, h >> 1);
+    pix_op[dxy](dest_cb + (dest_offset >> 1), ptr,  s->uvlinesize, h >> 1);
     
     ptr = ref_picture[2] + offset;
     if(emu){
-        emulated_edge_mc(s->edge_emu_buffer, ptr, linesize>>1, 9, (h>>1)+1, src_x, src_y, s->width>>1, height>>1);
+        emulated_edge_mc(s->edge_emu_buffer, ptr,  s->uvlinesize, 9, (h>>1)+1, src_x, src_y, s->width>>1, height>>1);
         ptr= s->edge_emu_buffer;
     }
-    pix_op[dxy](dest_cr + (dest_offset >> 1), ptr, linesize >> 1, h >> 1);
+    pix_op[dxy](dest_cr + (dest_offset >> 1), ptr,  s->uvlinesize, h >> 1);
 }
 
 
@@ -1246,24 +1251,24 @@ static inline void MPV_motion(MpegEncContext *s,
         if (src_y == s->height/2)
             dxy &= ~2;
         
-        offset = (src_y * (s->linesize >> 1)) + src_x;
+        offset = (src_y * (s->uvlinesize)) + src_x;
         ptr = ref_picture[1] + offset;
         if(s->flags&CODEC_FLAG_EMU_EDGE){
                 if(src_x<0 || src_y<0 || src_x + (dxy &1) + 8 > s->width >>1
                                       || src_y + (dxy>>1) + 8 > s->height>>1){
-                    emulated_edge_mc(s->edge_emu_buffer, ptr, s->linesize>>1, 9, 9, src_x, src_y, s->width>>1, s->height>>1);
+                    emulated_edge_mc(s->edge_emu_buffer, ptr, s->uvlinesize, 9, 9, src_x, src_y, s->width>>1, s->height>>1);
                     ptr= s->edge_emu_buffer;
                     emu=1;
                 }
             }
-        pix_op[dxy](dest_cb, ptr, s->linesize >> 1, 8);
+        pix_op[dxy](dest_cb, ptr, s->uvlinesize, 8);
 
         ptr = ref_picture[2] + offset;
         if(emu){
-            emulated_edge_mc(s->edge_emu_buffer, ptr, s->linesize>>1, 9, 9, src_x, src_y, s->width>>1, s->height>>1);
+            emulated_edge_mc(s->edge_emu_buffer, ptr, s->uvlinesize, 9, 9, src_x, src_y, s->width>>1, s->height>>1);
             ptr= s->edge_emu_buffer;
         }
-        pix_op[dxy](dest_cr, ptr, s->linesize >> 1, 8);
+        pix_op[dxy](dest_cr, ptr, s->uvlinesize, 8);
         break;
     case MV_TYPE_FIELD:
         if (s->picture_structure == PICT_FRAME) {
@@ -1425,19 +1430,22 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
             UINT8 *mbskip_ptr = &s->mbskip_table[mb_xy];
             if (s->mb_skiped) {
                 s->mb_skiped = 0;
+
+                (*mbskip_ptr) ++; /* indicate that this time we skiped it */
+                if(*mbskip_ptr >99) *mbskip_ptr= 99;
+
                 /* if previous was skipped too, then nothing to do ! 
                    skip only during decoding as we might trash the buffers during encoding a bit */
-                if (*mbskip_ptr != 0 && !s->encoding) 
+                if (*mbskip_ptr >= s->ip_buffer_count  && !s->encoding) 
                     goto the_end;
-                *mbskip_ptr = 1; /* indicate that this time we skiped it */
             } else {
                 *mbskip_ptr = 0; /* not skipped */
             }
         }
 
         dest_y = s->current_picture[0] + (mb_y * 16 * s->linesize) + mb_x * 16;
-        dest_cb = s->current_picture[1] + (mb_y * 8 * (s->linesize >> 1)) + mb_x * 8;
-        dest_cr = s->current_picture[2] + (mb_y * 8 * (s->linesize >> 1)) + mb_x * 8;
+        dest_cb = s->current_picture[1] + (mb_y * 8 * (s->uvlinesize)) + mb_x * 8;
+        dest_cr = s->current_picture[2] + (mb_y * 8 * (s->uvlinesize)) + mb_x * 8;
 
         if (s->interlaced_dct) {
             dct_linesize = s->linesize * 2;
@@ -1482,8 +1490,8 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
                 add_dequant_dct(s, block[3], 3, dest_y + dct_offset + 8, dct_linesize);
 
                 if(!(s->flags&CODEC_FLAG_GRAY)){
-                    add_dequant_dct(s, block[4], 4, dest_cb, s->linesize >> 1);
-                    add_dequant_dct(s, block[5], 5, dest_cr, s->linesize >> 1);
+                    add_dequant_dct(s, block[4], 4, dest_cb, s->uvlinesize);
+                    add_dequant_dct(s, block[5], 5, dest_cr, s->uvlinesize);
                 }
             } else {
                 add_dct(s, block[0], 0, dest_y, dct_linesize);
@@ -1492,8 +1500,8 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
                 add_dct(s, block[3], 3, dest_y + dct_offset + 8, dct_linesize);
 
                 if(!(s->flags&CODEC_FLAG_GRAY)){
-                    add_dct(s, block[4], 4, dest_cb, s->linesize >> 1);
-                    add_dct(s, block[5], 5, dest_cr, s->linesize >> 1);
+                    add_dct(s, block[4], 4, dest_cb, s->uvlinesize);
+                    add_dct(s, block[5], 5, dest_cr, s->uvlinesize);
                 }
             }
         } else {
@@ -1504,8 +1512,8 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
             put_dct(s, block[3], 3, dest_y + dct_offset + 8, dct_linesize);
 
             if(!(s->flags&CODEC_FLAG_GRAY)){
-                put_dct(s, block[4], 4, dest_cb, s->linesize >> 1);
-                put_dct(s, block[5], 5, dest_cr, s->linesize >> 1);
+                put_dct(s, block[4], 4, dest_cb, s->uvlinesize);
+                put_dct(s, block[5], 5, dest_cr, s->uvlinesize);
             }
         }
     }
@@ -1620,8 +1628,8 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
         int wrap_y, wrap_c;
 
         dest_y  = s->current_picture[0] + (mb_y * 16 * s->linesize       ) + mb_x * 16;
-        dest_cb = s->current_picture[1] + (mb_y * 8  * (s->linesize >> 1)) + mb_x * 8;
-        dest_cr = s->current_picture[2] + (mb_y * 8  * (s->linesize >> 1)) + mb_x * 8;
+        dest_cb = s->current_picture[1] + (mb_y * 8  * (s->uvlinesize)) + mb_x * 8;
+        dest_cr = s->current_picture[2] + (mb_y * 8  * (s->uvlinesize)) + mb_x * 8;
         wrap_y = s->linesize;
         wrap_c = wrap_y>>1;
         ptr_y  = s->new_picture[0] + (mb_y * 16 * wrap_y) + mb_x * 16;
@@ -2566,8 +2574,8 @@ static void remove_ac(MpegEncContext *s, uint8_t *dest_y, uint8_t *dest_cb, uint
     for(y=0; y<8; y++){
         int x;
         for(x=0; x<8; x++){
-            dest_cb[x + y*(s->linesize>>1)]= dcb/8;
-            dest_cr[x + y*(s->linesize>>1)]= dcr/8;
+            dest_cb[x + y*(s->uvlinesize)]= dcb/8;
+            dest_cr[x + y*(s->uvlinesize)]= dcr/8;
         }
     }
 }
@@ -2622,8 +2630,8 @@ void ff_conceal_past_errors(MpegEncContext *s, int unknown_pos)
     for(; mb_y>=0 && mb_y>=s->resync_mb_y; mb_y--){
         for(; mb_x>=0; mb_x--){
             uint8_t *dest_y  = s->current_picture[0] + (mb_y * 16*  s->linesize      ) + mb_x * 16;
-            uint8_t *dest_cb = s->current_picture[1] + (mb_y * 8 * (s->linesize >> 1)) + mb_x * 8;
-            uint8_t *dest_cr = s->current_picture[2] + (mb_y * 8 * (s->linesize >> 1)) + mb_x * 8;
+            uint8_t *dest_cb = s->current_picture[1] + (mb_y * 8 * (s->uvlinesize)) + mb_x * 8;
+            uint8_t *dest_cr = s->current_picture[2] + (mb_y * 8 * (s->uvlinesize)) + mb_x * 8;
             int mb_x_backup= s->mb_x; //FIXME pass xy to mpeg_motion
             int mb_y_backup= s->mb_y;
             s->mb_x=mb_x;

@@ -132,6 +132,7 @@ typedef struct MpegEncContext {
     int mb_width, mb_height;   /* number of MBs horizontally & vertically */
     int mb_num;                /* number of MBs of a picture */
     int linesize;              /* line size, in bytes, may be different from width */
+    int uvlinesize;            /* line size, for chroma in bytes, may be different from width */
     UINT8 *new_picture[3];     /* picture to be compressed */
     UINT8 *picture_buffer[REORDER_BUFFER_SIZE][3]; /* internal buffers used for reordering of input pictures */
     int picture_buffer_index;
@@ -145,6 +146,7 @@ typedef struct MpegEncContext {
     UINT8 *current_picture[3];   /* buffer to store the decompressed current picture */
     void *last_dr_opaque;
     void *next_dr_opaque;
+    int ip_buffer_count;         /* number of buffers, currently only >2 if dr1 is used */
     int num_available_buffers;   /* is 0 at the start & after seeking, after the first I frame its 1 after next I/P 2 */
     int last_dc[3];              /* last DC values for MPEG1 */
     INT16 *dc_val[3];            /* used for mpeg4 DC prediction, all 3 arrays must be continuous */
@@ -340,6 +342,8 @@ typedef struct MpegEncContext {
     int quant_precision;
     int quarter_sample;              /* 1->qpel, 0->half pel ME/MC */ 
     int scalability;
+    int hierachy_type;
+    int enhancement_type;
     int new_pred;
     int reduced_res_vop;
     int aspect_ratio_info;

@@ -763,7 +763,7 @@ static inline int msmpeg4_pred_dc(MpegEncContext * s, int n,
                     wrap= s->linesize;
                     dest= s->current_picture[0] + (((n>>1) + 2*s->mb_y) * 8*  wrap ) + ((n&1) + 2*s->mb_x) * 8;
                 }else{
-                    wrap= s->linesize>>1;
+                    wrap= s->uvlinesize;
                     dest= s->current_picture[n-3] + (s->mb_y * 8 * wrap) + s->mb_x * 8;
                 }
                 if(s->mb_x==0) a= (1024 + (scale>>1))/scale;
