@@ -985,6 +985,8 @@ static int decode_header(MPADecodeContext *s, UINT32 header)
     /* extract frequency */
     sample_rate_index = (header >> 10) & 3;
     sample_rate = mpa_freq_tab[sample_rate_index] >> (s->lsf + mpeg25);
+    if (sample_rate == 0)
+        return 1;
     sample_rate_index += 3 * (s->lsf + mpeg25);
     s->sample_rate_index = sample_rate_index;
     s->error_protection = ((header >> 16) & 1) ^ 1;
@@ -2280,7 +2282,7 @@ static int decode_frame(AVCodecContext * avctx,
 		    (s->inbuf[2] << 8) | s->inbuf[3];
 		if (check_header(header) < 0) {
 		    /* no sync found : move by one byte (inefficient, but simple!) */
-		    memcpy(s->inbuf, s->inbuf + 1, HEADER_SIZE - 1);
+		    memcpy(s->inbuf, s->inbuf + 1, s->inbuf_ptr - s->inbuf);
 		    s->inbuf_ptr--;
                     dprintf("skip %x\n", header);
                     /* reset free format frame size to give a chance
@@ -2290,6 +2292,8 @@ static int decode_frame(AVCodecContext * avctx,
 		    if (decode_header(s, header) == 1) {
                         /* free format: compute frame size */
                         s->frame_size = -1;
+			memcpy(s->inbuf, s->inbuf + 1, s->inbuf_ptr - s->inbuf);
+			s->inbuf_ptr--;
                     } else {
                         /* update codec info */
                         avctx->sample_rate = s->sample_rate;
@@ -2350,14 +2354,18 @@ static int decode_frame(AVCodecContext * avctx,
                 buf_size -= len;
             }
 	} else if (len < s->frame_size) {
+            if (s->frame_size > MPA_MAX_CODED_FRAME_SIZE)
+                s->frame_size = MPA_MAX_CODED_FRAME_SIZE;
 	    len = s->frame_size - len;
 	    if (len > buf_size)
 		len = buf_size;
-
+	    else if (len > 0)
+	    {
 	    memcpy(s->inbuf_ptr, buf_ptr, len);
 	    buf_ptr += len;
 	    s->inbuf_ptr += len;
 	    buf_size -= len;
+	    }
 	} else {
             out_size = mp_decode_frame(s, out_samples);
 	    s->inbuf_ptr = s->inbuf;
