@@ -555,6 +555,9 @@ void MPV_common_end(MpegEncContext *s)
     }
     avcodec_default_free_buffers(s->avctx);
     s->context_initialized = 0;
+    s->last_picture_ptr=
+    s->next_picture_ptr=
+    s->current_picture_ptr= NULL;
 }
 
 #ifdef CONFIG_ENCODERS
