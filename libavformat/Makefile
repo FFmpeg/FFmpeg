@@ -55,8 +55,6 @@ endif
 ifeq ($(CONFIG_AUDIO_BEOS),yes)
 PPOBJS+= beosaudio.o
 EXTRALIBS+=-lbe -lmedia
-# this should be the default !
-EXTRALIBS+=-lavcodec -L../libavcodec
 endif
 
 ifeq ($(CONFIG_NETWORK),yes)
@@ -78,11 +76,11 @@ endif
 LIB= $(LIBPREF)avformat$(LIBSUF)
 ifeq ($(BUILD_SHARED),yes)
 SLIB= $(SLIBPREF)avformat$(SLIBSUF)
-endif
 
-EXTRALIBS+=-lavcodec -L../libavcodec
+AVCLIBS+=-lavcodec -L../libavcodec
 ifeq ($(CONFIG_MP3LAME),yes)
-EXTRALIBS+=-lmp3lame
+AVCLIBS+=-lmp3lame
+endif
 endif
 
 SRCS := $(OBJS:.o=.c) $(PPOBJS:.o=.cpp)
@@ -96,10 +94,10 @@ $(LIB): $(OBJS) $(PPOBJS)
 
 $(SLIB): $(OBJS)
 ifeq ($(CONFIG_WIN32),yes)
-	$(CC) $(SHFLAGS) -Wl,--output-def,$(@:.dll=.def) -o $@ $(OBJS) $(PPOBJS) $(EXTRALIBS) $(VPATH)/../libavcodec/avcodec.dll
+	$(CC) $(SHFLAGS) -Wl,--output-def,$(@:.dll=.def) -o $@ $(OBJS) $(PPOBJS) $(AVCLIBS) $(EXTRALIBS) $(VPATH)/../libavcodec/avcodec.dll
 	-lib /machine:i386 /def:$(@:.dll=.def)
 else
-	$(CC) $(SHFLAGS) -o $@ $(OBJS) $(PPOBJS) $(EXTRALIBS)
+	$(CC) $(SHFLAGS) -o $@ $(OBJS) $(PPOBJS) $(AVCLIBS) $(EXTRALIBS)
 endif
 
 depend: $(SRCS)
