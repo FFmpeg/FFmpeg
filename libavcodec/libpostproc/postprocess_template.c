@@ -170,6 +170,7 @@ asm volatile(
  * Do a vertical low pass filter on the 8x16 block (only write to the 8x8 block in the middle)
  * using the 9-Tap Filter (1,1,2,2,4,2,2,1,1)/16
  */
+#ifndef HAVE_ALTIVEC
 static inline void RENAME(doVertLowPass)(uint8_t *src, int stride, PPContext *c)
 {
 #if defined (HAVE_MMX2) || defined (HAVE_3DNOW)
@@ -340,6 +341,7 @@ static inline void RENAME(doVertLowPass)(uint8_t *src, int stride, PPContext *c)
 	}
 #endif
 }
+#endif //HAVE_ALTIVEC
 
 #if 0
 /**
@@ -582,6 +584,7 @@ static inline void RENAME(vertX1Filter)(uint8_t *src, int stride, PPContext *co)
 #endif
 }
 
+#ifndef HAVE_ALTIVEC
 static inline void RENAME(doVertDefFilter)(uint8_t src[], int stride, PPContext *c)
 {
 #if defined (HAVE_MMX2) || defined (HAVE_3DNOW)
@@ -1149,7 +1152,9 @@ src-=8;
 	}
 #endif
 }
+#endif //HAVE_ALTIVEC
 
+#ifndef HAVE_ALTIVEC
 static inline void RENAME(dering)(uint8_t src[], int stride, PPContext *c)
 {
 #if defined (HAVE_MMX2) || defined (HAVE_3DNOW)
@@ -1505,6 +1510,7 @@ DERING_CORE((%0, %1, 8),(%%edx, %1, 4) ,%%mm2,%%mm4,%%mm0,%%mm3,%%mm5,%%mm1,%%mm
 #endif
 #endif
 }
+#endif //HAVE_ALTIVEC
 
 /**
  * Deinterlaces the given block by linearly interpolating every second line.
@@ -3134,13 +3140,12 @@ static void RENAME(postProcess)(uint8_t src[], int srcStride, uint8_t dst[], int
 					horizX1Filter(dstBlock-4, stride, QP);
 				else if(mode & H_DEBLOCK)
 				{
-					if( isHorizDC(dstBlock-4, stride, &c))
-					{
-						if(isHorizMinMaxOk(dstBlock-4, stride, QP))
-							doHorizLowPass(dstBlock-4, stride, QP);
-					}
-					else
-						doHorizDefFilter(dstBlock-4, stride, QP);
+					const int t= RENAME(horizClassify)(dstBlock-4, stride, &c);
+
+					if(t==1)
+						RENAME(doHorizLowPass)(dstBlock-4, stride, &c);
+					else if(t==2)
+						RENAME(doHorizDefFilter)(dstBlock-4, stride, &c);
 				}
 #endif
 				if(mode & DERING)

@@ -1,6 +1,8 @@
 /*
     Copyright (C) 2001-2003 Michael Niedermayer (michaelni@gmx.at)
 
+    AltiVec optimizations (C) 2004 Romain Dolbeau <romain@dolbeau.org>
+
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation; either version 2 of the License, or
@@ -22,16 +24,16 @@
  */
  
 /*
-			C	MMX	MMX2	3DNow
-isVertDC		Ec	Ec
-isVertMinMaxOk		Ec	Ec
-doVertLowPass		E		e	e
-doVertDefFilter		Ec	Ec	e	e
+			C	MMX	MMX2	3DNow	AltiVec
+isVertDC		Ec	Ec			Ec
+isVertMinMaxOk		Ec	Ec			Ec
+doVertLowPass		E		e	e	Ec
+doVertDefFilter		Ec	Ec	e	e	Ec
 isHorizDC		Ec	Ec
 isHorizMinMaxOk		a	E
 doHorizLowPass		E		e	e
 doHorizDefFilter	Ec	Ec	e	e
-deRing			E		e	e*
+deRing			E		e	e*	Ecp
 Vertical RKAlgo1	E		a	a
 Horizontal RKAlgo1			a	a
 Vertical X1#		a		E	E
@@ -48,6 +50,7 @@ E = Exact implementation
 e = allmost exact implementation (slightly different rounding,...)
 a = alternative / approximate impl
 c = checked against the other implementations (-vo md5)
+p = partially optimized, still some work to do
 */
 
 /*
@@ -194,7 +197,7 @@ static inline void prefetcht2(void *p)
 /**
  * Check if the given 8x8 Block is mostly "flat"
  */
-static inline int isHorizDC(uint8_t src[], int stride, PPContext *c)
+static inline int isHorizDC_C(uint8_t src[], int stride, PPContext *c)
 {
 	int numEq= 0;
 	int y;
@@ -240,7 +243,7 @@ static inline int isVertDC_C(uint8_t src[], int stride, PPContext *c){
 	return numEq > c->ppMode.flatnessThreshold;
 }
 
-static inline int isHorizMinMaxOk(uint8_t src[], int stride, int QP)
+static inline int isHorizMinMaxOk_C(uint8_t src[], int stride, int QP)
 {
 	int i;
 #if 1
@@ -304,6 +307,17 @@ static inline int isVertMinMaxOk_C(uint8_t src[], int stride, int QP)
 #endif
 }
 
+static inline int horizClassify_C(uint8_t src[], int stride, PPContext *c){
+	if( isHorizDC_C(src, stride, c) ){
+		if( isHorizMinMaxOk_C(src, stride, c->QP) )
+			return 1;
+		else
+			return 0;
+	}else{
+		return 2;
+	}
+}
+
 static inline int vertClassify_C(uint8_t src[], int stride, PPContext *c){
 	if( isVertDC_C(src, stride, c) ){
 		if( isVertMinMaxOk_C(src, stride, c->QP) )
@@ -315,14 +329,14 @@ static inline int vertClassify_C(uint8_t src[], int stride, PPContext *c){
 	}
 }
 
-static inline void doHorizDefFilter(uint8_t dst[], int stride, int QP)
+static inline void doHorizDefFilter_C(uint8_t dst[], int stride, PPContext *c)
 {
 	int y;
 	for(y=0; y<BLOCK_SIZE; y++)
 	{
-		const int middleEnergy= 5*(dst[4] - dst[5]) + 2*(dst[2] - dst[5]);
+		const int middleEnergy= 5*(dst[4] - dst[3]) + 2*(dst[2] - dst[5]);
 
-		if(ABS(middleEnergy) < 8*QP)
+		if(ABS(middleEnergy) < 8*c->QP)
 		{
 			const int q=(dst[3] - dst[4])/2;
 			const int leftEnergy=  5*(dst[2] - dst[1]) + 2*(dst[0] - dst[3]);
@@ -356,14 +370,14 @@ static inline void doHorizDefFilter(uint8_t dst[], int stride, int QP)
  * Do a horizontal low pass filter on the 10x8 block (dst points to middle 8x8 Block)
  * using the 9-Tap Filter (1,1,2,2,4,2,2,1,1)/16 (C version)
  */
-static inline void doHorizLowPass(uint8_t dst[], int stride, int QP)
+static inline void doHorizLowPass_C(uint8_t dst[], int stride, PPContext *c)
 {
 
 	int y;
 	for(y=0; y<BLOCK_SIZE; y++)
 	{
-		const int first= ABS(dst[-1] - dst[0]) < QP ? dst[-1] : dst[0];
-		const int last= ABS(dst[8] - dst[7]) < QP ? dst[8] : dst[7];
+		const int first= ABS(dst[-1] - dst[0]) < c->QP ? dst[-1] : dst[0];
+		const int last= ABS(dst[8] - dst[7]) < c->QP ? dst[8] : dst[7];
 
 		int sums[9];
 		sums[0] = first + dst[0];
@@ -462,6 +476,17 @@ static inline void horizX1Filter(uint8_t *src, int stride, int QP)
 #define COMPILE_C
 #endif
 
+#ifdef ARCH_POWERPC
+#ifdef HAVE_ALTIVEC
+#define COMPILE_ALTIVEC
+#ifndef CONFIG_DARWIN
+#warning "################################################################################"
+#warning  "WARNING: No gcc available as of today (2004-05-25) seems to be able to compile properly some of the code under non-Darwin PPC OSes. Some functions result in wrong results, while others simply won't compile (gcc explodes after allocating 1GiB+)."
+#warning "################################################################################"
+#endif //CONFIG_DARWIN
+#endif //HAVE_ALTIVEC
+#endif //ARCH_POWERPC
+
 #ifdef ARCH_X86
 
 #if (defined (HAVE_MMX) && !defined (HAVE_3DNOW) && !defined (HAVE_MMX2)) || defined (RUNTIME_CPUDETECT)
@@ -480,6 +505,7 @@ static inline void horizX1Filter(uint8_t *src, int stride, int QP)
 #undef HAVE_MMX
 #undef HAVE_MMX2
 #undef HAVE_3DNOW
+#undef HAVE_ALTIVEC
 #undef ARCH_X86
 
 #ifdef COMPILE_C
@@ -490,6 +516,16 @@ static inline void horizX1Filter(uint8_t *src, int stride, int QP)
 #define RENAME(a) a ## _C
 #include "postprocess_template.c"
 #endif
+
+#ifdef ARCH_POWERPC
+#ifdef COMPILE_ALTIVEC
+#undef RENAME
+#define HAVE_ALTIVEC
+#define RENAME(a) a ## _altivec
+#include "postprocess_altivec_template.c"
+#include "postprocess_template.c"
+#endif
+#endif //ARCH_POWERPC
 
 //MMX versions
 #ifdef COMPILE_MMX
@@ -548,6 +584,13 @@ static inline void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int 
 	else
 		postProcess_C(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
 #else
+#ifdef ARCH_POWERPC
+#ifdef HAVE_ALTIVEC
+        else if(c->cpuCaps & PP_CPU_CAPS_ALTIVEC)
+		postProcess_altivec(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
+        else
+#endif
+#endif
 		postProcess_C(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
 #endif
 #else //RUNTIME_CPUDETECT
@@ -557,6 +600,8 @@ static inline void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int 
 		postProcess_3DNow(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
 #elif defined (HAVE_MMX)
 		postProcess_MMX(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
+#elif defined (HAVE_ALTIVEC)
+		postProcess_altivec(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
 #else
 		postProcess_C(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
 #endif

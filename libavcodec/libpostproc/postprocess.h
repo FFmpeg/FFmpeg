@@ -59,6 +59,7 @@ void pp_free_context(pp_context_t *ppContext);
 #define PP_CPU_CAPS_MMX   0x80000000
 #define PP_CPU_CAPS_MMX2  0x20000000
 #define PP_CPU_CAPS_3DNOW 0x40000000
+#define PP_CPU_CAPS_ALTIVEC 0x10000000
 
 #define PP_FORMAT         0x00000008
 #define PP_FORMAT_420    (0x00000011|PP_FORMAT)
