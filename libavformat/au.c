@@ -114,7 +114,7 @@ static int au_probe(AVProbeData *p)
 
 /* au input */
 static int au_read_header(AVFormatContext *s,
-                           AVFormatParameters *ap)
+                          AVFormatParameters *ap)
 {
     int size;
     unsigned int tag;
@@ -187,6 +187,7 @@ static AVInputFormat au_iformat = {
     au_read_header,
     au_read_packet,
     au_read_close,
+    pcm_read_seek,
 };
 
 #ifdef CONFIG_ENCODERS

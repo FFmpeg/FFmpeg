@@ -107,6 +107,48 @@ static int raw_read_close(AVFormatContext *s)
     return 0;
 }
 
+int pcm_read_seek(AVFormatContext *s, 
+                  int stream_index, int64_t timestamp)
+{
+    AVStream *st;
+    int block_align, byte_rate;
+    int64_t pos;
+
+    st = s->streams[0];
+    switch(st->codec.codec_id) {
+    case CODEC_ID_PCM_S16LE:
+    case CODEC_ID_PCM_S16BE:
+    case CODEC_ID_PCM_U16LE:
+    case CODEC_ID_PCM_U16BE:
+        block_align = 2 * st->codec.channels;
+        byte_rate = block_align * st->codec.sample_rate;
+        break;
+    case CODEC_ID_PCM_S8:
+    case CODEC_ID_PCM_U8:
+    case CODEC_ID_PCM_MULAW:
+    case CODEC_ID_PCM_ALAW:
+        block_align = st->codec.channels;
+        byte_rate = block_align * st->codec.sample_rate;
+        break;
+    default:
+        block_align = st->codec.block_align;
+        byte_rate = st->codec.bit_rate / 8;
+        break;
+    }
+    
+    if (block_align <= 0 || byte_rate <= 0)
+        return -1;
+
+    /* compute the position by aligning it to block_align */
+    pos = (timestamp * byte_rate) / AV_TIME_BASE;
+    pos = (pos / block_align) * block_align;
+
+    /* recompute exact position */
+    st->cur_dts = (pos * AV_TIME_BASE) / byte_rate;
+    url_fseek(&s->pb, pos + s->data_offset, SEEK_SET);
+    return 0;
+}
+
 /* ac3 read */
 static int ac3_read_header(AVFormatContext *s,
                            AVFormatParameters *ap)
@@ -119,6 +161,7 @@ static int ac3_read_header(AVFormatContext *s,
 
     st->codec.codec_type = CODEC_TYPE_AUDIO;
     st->codec.codec_id = CODEC_ID_AC3;
+    st->need_parsing = 1;
     /* the parameters will be extracted from the compressed bitstream */
     return 0;
 }
@@ -135,10 +178,13 @@ static int video_read_header(AVFormatContext *s,
 
     st->codec.codec_type = CODEC_TYPE_VIDEO;
     st->codec.codec_id = s->iformat->value;
+    st->need_parsing = 1;
+
     /* for mjpeg, specify frame rate */
     /* for mpeg4 specify it too (most mpeg4 streams dont have the fixed_vop_rate set ...)*/
-    if (st->codec.codec_id == CODEC_ID_MJPEG || st->codec.codec_id == CODEC_ID_MPEG4) {
-        if (ap) {
+    if (st->codec.codec_id == CODEC_ID_MJPEG || 
+        st->codec.codec_id == CODEC_ID_MPEG4) {
+        if (ap && ap->frame_rate) {
             st->codec.frame_rate      = ap->frame_rate;
             st->codec.frame_rate_base = ap->frame_rate_base;
         } else {
@@ -356,9 +402,8 @@ AVOutputFormat mjpeg_oformat = {
 #endif //CONFIG_ENCODERS
 
 /* pcm formats */
-#if !defined(CONFIG_ENCODERS) && defined(CONFIG_DECODERS)
 
-#define PCMDEF(name, long_name, ext, codec) \
+#define PCMINPUTDEF(name, long_name, ext, codec) \
 AVInputFormat pcm_ ## name ## _iformat = {\
     #name,\
     long_name,\
@@ -367,24 +412,20 @@ AVInputFormat pcm_ ## name ## _iformat = {\
     raw_read_header,\
     raw_read_packet,\
     raw_read_close,\
+    pcm_read_seek,\
     .extensions = ext,\
     .value = codec,\
 };
 
+#if !defined(CONFIG_ENCODERS) && defined(CONFIG_DECODERS)
+
+#define PCMDEF(name, long_name, ext, codec) \
+    PCMINPUTDEF(name, long_name, ext, codec)
+
 #else
 
 #define PCMDEF(name, long_name, ext, codec) \
-AVInputFormat pcm_ ## name ## _iformat = {\
-    #name,\
-    long_name,\
-    0,\
-    NULL,\
-    raw_read_header,\
-    raw_read_packet,\
-    raw_read_close,\
-    .extensions = ext,\
-    .value = codec,\
-};\
+    PCMINPUTDEF(name, long_name, ext, codec)\
 \
 AVOutputFormat pcm_ ## name ## _oformat = {\
     #name,\
