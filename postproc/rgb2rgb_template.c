@@ -1371,7 +1371,7 @@ static inline void RENAME(rgb24tobgr24)(const uint8_t *src, uint8_t *dst, unsign
 
 static inline void RENAME(yuvPlanartoyuy2)(const uint8_t *ysrc, const uint8_t *usrc, const uint8_t *vsrc, uint8_t *dst,
 	unsigned int width, unsigned int height,
-	unsigned int lumStride, unsigned int chromStride, unsigned int dstStride, int vertLumPerChroma)
+	int lumStride, int chromStride, int dstStride, int vertLumPerChroma)
 {
 	unsigned y;
 	const unsigned chromWidth= width>>1;
@@ -1463,7 +1463,7 @@ asm(    EMMS" \n\t"
  */
 static inline void RENAME(yv12toyuy2)(const uint8_t *ysrc, const uint8_t *usrc, const uint8_t *vsrc, uint8_t *dst,
 	unsigned int width, unsigned int height,
-	unsigned int lumStride, unsigned int chromStride, unsigned int dstStride)
+	int lumStride, int chromStride, int dstStride)
 {
 	//FIXME interpolate chroma
 	RENAME(yuvPlanartoyuy2)(ysrc, usrc, vsrc, dst, width, height, lumStride, chromStride, dstStride, 2);
@@ -1475,7 +1475,7 @@ static inline void RENAME(yv12toyuy2)(const uint8_t *ysrc, const uint8_t *usrc, 
  */
 static inline void RENAME(yuv422ptoyuy2)(const uint8_t *ysrc, const uint8_t *usrc, const uint8_t *vsrc, uint8_t *dst,
 	unsigned int width, unsigned int height,
-	unsigned int lumStride, unsigned int chromStride, unsigned int dstStride)
+	int lumStride, int chromStride, int dstStride)
 {
 	RENAME(yuvPlanartoyuy2)(ysrc, usrc, vsrc, dst, width, height, lumStride, chromStride, dstStride, 1);
 }
@@ -1487,7 +1487,7 @@ static inline void RENAME(yuv422ptoyuy2)(const uint8_t *ysrc, const uint8_t *usr
  */
 static inline void RENAME(yuy2toyv12)(const uint8_t *src, uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
 	unsigned int width, unsigned int height,
-	unsigned int lumStride, unsigned int chromStride, unsigned int srcStride)
+	int lumStride, int chromStride, int srcStride)
 {
 	unsigned y;
 	const unsigned chromWidth= width>>1;
@@ -1607,7 +1607,7 @@ asm volatile(   EMMS" \n\t"
 
 static inline void RENAME(yvu9toyv12)(const uint8_t *ysrc, const uint8_t *usrc, const uint8_t *vsrc,
 	uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
-	unsigned int width, unsigned int height, unsigned int lumStride, unsigned int chromStride)
+	unsigned int width, unsigned int height, int lumStride, int chromStride)
 {
 	/* Y Plane */
 	memcpy(ydst, ysrc, width*height);
@@ -1725,7 +1725,7 @@ asm volatile(   EMMS" \n\t"
  */
 static inline void RENAME(uyvytoyv12)(const uint8_t *src, uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
 	unsigned int width, unsigned int height,
-	unsigned int lumStride, unsigned int chromStride, unsigned int srcStride)
+	int lumStride, int chromStride, int srcStride)
 {
 	unsigned y;
 	const unsigned chromWidth= width>>1;
@@ -1851,7 +1851,7 @@ asm volatile(   EMMS" \n\t"
  */
 static inline void RENAME(rgb24toyv12)(const uint8_t *src, uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
 	unsigned int width, unsigned int height,
-	unsigned int lumStride, unsigned int chromStride, unsigned int srcStride)
+	int lumStride, int chromStride, int srcStride)
 {
 	unsigned y;
 	const unsigned chromWidth= width>>1;
@@ -2147,8 +2147,8 @@ static inline void RENAME(rgb24toyv12)(const uint8_t *src, uint8_t *ydst, uint8_
 }
 
 void RENAME(interleaveBytes)(uint8_t *src1, uint8_t *src2, uint8_t *dest,
-			    unsigned width, unsigned height, unsigned src1Stride,
-			    unsigned src2Stride, unsigned dstStride){
+			    unsigned width, unsigned height, int src1Stride,
+			    int src2Stride, int dstStride){
 	unsigned h;
 
 	for(h=0; h < height; h++)
@@ -2230,10 +2230,11 @@ void RENAME(interleaveBytes)(uint8_t *src1, uint8_t *src2, uint8_t *dest,
 static inline void RENAME(vu9_to_vu12)(const uint8_t *src1, const uint8_t *src2,
 			uint8_t *dst1, uint8_t *dst2,
 			unsigned width, unsigned height,
-			unsigned srcStride1, unsigned srcStride2,
-			unsigned dstStride1, unsigned dstStride2)
+			int srcStride1, int srcStride2,
+			int dstStride1, int dstStride2)
 {
-    unsigned y,x,w,h;
+    unsigned int y,x,h;
+    int w;
     w=width/2; h=height/2;
 #ifdef HAVE_MMX
     asm volatile(
@@ -2246,8 +2247,7 @@ static inline void RENAME(vu9_to_vu12)(const uint8_t *src1, const uint8_t *src2,
 	uint8_t* d=dst1+dstStride1*y;
 	x=0;
 #ifdef HAVE_MMX
-	if(w > 32)
-	for(;x<w;x+=32)
+	for(;x<w-31;x+=32)
 	{
 	    asm volatile(
 		PREFETCH" 32%1\n\t"
@@ -2287,8 +2287,7 @@ static inline void RENAME(vu9_to_vu12)(const uint8_t *src1, const uint8_t *src2,
 	uint8_t* d=dst2+dstStride2*y;
 	x=0;
 #ifdef HAVE_MMX
-	if(w > 32)
-	for(;x<w;x+=32)
+	for(;x<w-31;x+=32)
 	{
 	    asm volatile(
 		PREFETCH" 32%1\n\t"
@@ -2335,8 +2334,8 @@ static inline void RENAME(vu9_to_vu12)(const uint8_t *src1, const uint8_t *src2,
 static inline void RENAME(yvu9_to_yuy2)(const uint8_t *src1, const uint8_t *src2, const uint8_t *src3,
 			uint8_t *dst,
 			unsigned width, unsigned height,
-			unsigned srcStride1, unsigned srcStride2,
-			unsigned srcStride3, unsigned dstStride)
+			int srcStride1, int srcStride2,
+			int srcStride3, int dstStride)
 {
     unsigned y,x,x2,w,h;
     w=width/2; h=height;

@@ -124,7 +124,7 @@
 static inline void RENAME(yuv420_rgb16) (uint8_t * image, uint8_t * py,
 			      uint8_t * pu, uint8_t * pv,
 			      unsigned h_size, unsigned v_size,
-			      unsigned rgb_stride, unsigned y_stride, unsigned uv_stride)
+			      int rgb_stride, int y_stride, int uv_stride)
 {
     int even = 1;
     int x, y;
@@ -229,7 +229,7 @@ YUV2RGB
 static inline void RENAME(yuv420_rgb15) (uint8_t * image, uint8_t * py,
 			      uint8_t * pu, uint8_t * pv,
 			      unsigned h_size, unsigned v_size,
-			      unsigned rgb_stride, unsigned y_stride, unsigned uv_stride)
+			      int rgb_stride, int y_stride, int uv_stride)
 {
     int even = 1;
     int x, y;
@@ -330,7 +330,7 @@ YUV2RGB
 static inline void RENAME(yuv420_rgb24) (uint8_t * image, uint8_t * py,
 			      uint8_t * pu, uint8_t * pv,
 			      unsigned h_size, unsigned v_size,
-			      unsigned rgb_stride, unsigned y_stride, unsigned uv_stride)
+			      int rgb_stride, int y_stride, int uv_stride)
 {
     int even = 1;
     int x, y;
@@ -489,7 +489,7 @@ YUV2RGB
 static inline void RENAME(yuv420_argb32) (uint8_t * image, uint8_t * py,
 			       uint8_t * pu, uint8_t * pv,
 			       unsigned h_size, unsigned v_size,
-			       unsigned rgb_stride, unsigned y_stride, unsigned uv_stride)
+			       int rgb_stride, int y_stride, int uv_stride)
 {
     int even = 1;
     int x, y;

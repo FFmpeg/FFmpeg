@@ -716,7 +716,7 @@ void rgb8tobgr8(const uint8_t *src, uint8_t *dst, unsigned int src_size)
  */
 void yv12toyuy2(const uint8_t *ysrc, const uint8_t *usrc, const uint8_t *vsrc, uint8_t *dst,
 	unsigned int width, unsigned int height,
-	unsigned int lumStride, unsigned int chromStride, unsigned int dstStride)
+	int lumStride, int chromStride, int dstStride)
 {
 #ifdef CAN_COMPILE_X86_ASM
 	// ordered per speed fasterst first
@@ -737,7 +737,7 @@ void yv12toyuy2(const uint8_t *ysrc, const uint8_t *usrc, const uint8_t *vsrc, u
  */
 void yuv422ptoyuy2(const uint8_t *ysrc, const uint8_t *usrc, const uint8_t *vsrc, uint8_t *dst,
 	unsigned int width, unsigned int height,
-	unsigned int lumStride, unsigned int chromStride, unsigned int dstStride)
+	int lumStride, int chromStride, int dstStride)
 {
 #ifdef CAN_COMPILE_X86_ASM
 	// ordered per speed fasterst first
@@ -759,7 +759,7 @@ void yuv422ptoyuy2(const uint8_t *ysrc, const uint8_t *usrc, const uint8_t *vsrc
  */
 void yuy2toyv12(const uint8_t *src, uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
 	unsigned int width, unsigned int height,
-	unsigned int lumStride, unsigned int chromStride, unsigned int srcStride)
+	int lumStride, int chromStride, int srcStride)
 {
 #ifdef CAN_COMPILE_X86_ASM
 	// ordered per speed fasterst first
@@ -782,7 +782,7 @@ void yuy2toyv12(const uint8_t *src, uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
  */
 void uyvytoyv12(const uint8_t *src, uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
 	unsigned int width, unsigned int height,
-	unsigned int lumStride, unsigned int chromStride, unsigned int srcStride)
+	int lumStride, int chromStride, int srcStride)
 {
 #ifdef CAN_COMPILE_X86_ASM
 	// ordered per speed fasterst first
@@ -802,7 +802,7 @@ void uyvytoyv12(const uint8_t *src, uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
 void yvu9toyv12(const uint8_t *ysrc, const uint8_t *usrc, const uint8_t *vsrc,
 	uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
 	unsigned int width, unsigned int height,
-	unsigned int lumStride, unsigned int chromStride)
+	int lumStride, int chromStride)
 {
 #ifdef CAN_COMPILE_X86_ASM
 	// ordered per speed fasterst first
@@ -840,7 +840,7 @@ void planar2x(const uint8_t *src, uint8_t *dst, int width, int height, int srcSt
  */
 void rgb24toyv12(const uint8_t *src, uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
 	unsigned int width, unsigned int height,
-	unsigned int lumStride, unsigned int chromStride, unsigned int srcStride)
+	int lumStride, int chromStride, int srcStride)
 {
 #ifdef CAN_COMPILE_X86_ASM
 	// ordered per speed fasterst first
@@ -856,8 +856,8 @@ void rgb24toyv12(const uint8_t *src, uint8_t *ydst, uint8_t *udst, uint8_t *vdst
 }
 
 void interleaveBytes(uint8_t *src1, uint8_t *src2, uint8_t *dst,
-		     unsigned width, unsigned height, unsigned src1Stride,
-		     unsigned src2Stride, unsigned dstStride)
+		     unsigned width, unsigned height, int src1Stride,
+		     int src2Stride, int dstStride)
 {
 #ifdef CAN_COMPILE_X86_ASM
 	// ordered per speed fasterst first
@@ -875,8 +875,8 @@ void interleaveBytes(uint8_t *src1, uint8_t *src2, uint8_t *dst,
 void vu9_to_vu12(const uint8_t *src1, const uint8_t *src2,
 		uint8_t *dst1, uint8_t *dst2,
 		unsigned width, unsigned height,
-		unsigned srcStride1, unsigned srcStride2,
-		unsigned dstStride1, unsigned dstStride2)
+		int srcStride1, int srcStride2,
+		int dstStride1, int dstStride2)
 {
 #ifdef CAN_COMPILE_X86_ASM
 	if(gCpuCaps.hasMMX2)
@@ -893,8 +893,8 @@ void vu9_to_vu12(const uint8_t *src1, const uint8_t *src2,
 void yvu9_to_yuy2(const uint8_t *src1, const uint8_t *src2, const uint8_t *src3,
 		uint8_t *dst,
 		unsigned width, unsigned height,
-		unsigned srcStride1, unsigned srcStride2,
-		unsigned srcStride3, unsigned dstStride)
+		int srcStride1, int srcStride2,
+		int srcStride3, int dstStride)
 {
 #ifdef CAN_COMPILE_X86_ASM
 	if(gCpuCaps.hasMMX2)

@@ -30,7 +30,7 @@
 static void mlib_YUV2ARGB420_32(uint8_t* image, uint8_t* py, 
 			 uint8_t* pu, uint8_t* pv, 
 			 unsigned h_size, unsigned v_size, 
-			 unsigned rgb_stride, unsigned y_stride, unsigned uv_stride)
+			 int rgb_stride, int y_stride, int uv_stride)
 {
   mlib_VideoColorYUV2ARGB420(image, py, pu, pv, h_size,
 			     v_size, rgb_stride, y_stride, uv_stride);
@@ -39,7 +39,7 @@ static void mlib_YUV2ARGB420_32(uint8_t* image, uint8_t* py,
 static void mlib_YUV2ABGR420_32(uint8_t* image, uint8_t* py, 
 			 uint8_t* pu, uint8_t* pv, 
 			 unsigned h_size, unsigned v_size, 
-			 unsigned rgb_stride, unsigned y_stride, unsigned uv_stride)
+			 int rgb_stride, int y_stride, int uv_stride)
 {
   mlib_VideoColorYUV2ABGR420(image, py, pu, pv, h_size,
 			     v_size, rgb_stride, y_stride, uv_stride);
@@ -48,7 +48,7 @@ static void mlib_YUV2ABGR420_32(uint8_t* image, uint8_t* py,
 static void mlib_YUV2RGB420_24(uint8_t* image, uint8_t* py, 
 			 uint8_t* pu, uint8_t* pv, 
 			 unsigned h_size, unsigned v_size, 
-			 unsigned rgb_stride, unsigned y_stride, unsigned uv_stride)
+			 int rgb_stride, int y_stride, int uv_stride)
 {
   mlib_VideoColorYUV2RGB420(image, py, pu, pv, h_size,
 			    v_size, rgb_stride, y_stride, uv_stride);
