@@ -5,8 +5,8 @@
 
 #define LIBAVCODEC_VERSION_INT 0x000406
 #define LIBAVCODEC_VERSION     "0.4.6"
-#define LIBAVCODEC_BUILD       4611
-#define LIBAVCODEC_BUILD_STR   "4611"
+#define LIBAVCODEC_BUILD       4612
+#define LIBAVCODEC_BUILD_STR   "4612"
 
 enum CodecID {
     CODEC_ID_NONE, 
@@ -239,7 +239,12 @@ typedef struct AVCodecContext {
     int strict_std_compliance; /* strictly follow the std (MPEG4, ...) */
     float b_quant_offset;/* qscale offset between ips and b frames, not implemented yet */
     int error_resilience;
-
+    
+#ifndef MBC
+#define MBC 128
+#define MBR 96
+#endif
+    int *quant_store; /* field for communicating with external postprocessing */
     //FIXME this should be reordered after kabis API is finished ...
     /*
 	Note: Below are located reserved fields for further usage
@@ -257,7 +262,7 @@ typedef struct AVCodecContext {
 	    flt_res6,flt_res7,flt_res8,flt_res9,flt_res10,flt_res11;
     void
 	    *ptr_res0,*ptr_res1,*ptr_res2,*ptr_res3,*ptr_res4,*ptr_res5,
-	    *ptr_res6,*ptr_res7,*ptr_res8,*ptr_res9,*ptr_res10,*ptr_res11,*ptr_res12;
+	    *ptr_res6,*ptr_res7,*ptr_res8,*ptr_res9,*ptr_res10,*ptr_res11;
     unsigned long int
 	    ul_res0,ul_res1,ul_res2,ul_res3,ul_res4,ul_res5,
 	    ul_res6,ul_res7,ul_res8,ul_res9,ul_res10,ul_res11,ul_res12;
@@ -432,10 +437,6 @@ void avcodec_register_all(void);
 void avcodec_flush_buffers(AVCodecContext *avctx);
 
 #ifdef FF_POSTPROCESS
-#ifndef MBC
-#define MBC 128
-#define MBR 96
-#endif
 extern int quant_store[MBR+1][MBC+1]; // [Review]
 #endif
 
