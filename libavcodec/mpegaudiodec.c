@@ -230,11 +230,10 @@ static inline int l3_unscale(int value, int exponent)
     e = FRAC_BITS - e;
 #if FRAC_BITS <= 15    
     if (e > 31)
-        e = 31;
 #else
     if (e > 63)
-        e = 63;
 #endif
+        return 0;
     m = table_4_3_value[value];
 #if FRAC_BITS <= 15    
     m = (m * scale_factor_mult3[exponent & 3]);
