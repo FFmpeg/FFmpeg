@@ -733,7 +733,7 @@ static int open_input_stream(HTTPContext *c, const char *info)
         return -1;
 
     /* open stream */
-    s = av_open_input_file(input_filename, buf_size);
+    s = av_open_input_file(input_filename, NULL, buf_size, NULL);
     if (!s)
         return -1;
     c->fmt_in = s;
