@@ -179,9 +179,6 @@ typedef struct MpegEncContext {
                            DCTELEM *block, int n, int qscale);
 } MpegEncContext;
 
-//const 
-extern UINT8 zigzag_direct[64];
-
 int MPV_common_init(MpegEncContext *s);
 void MPV_common_end(MpegEncContext *s);
 void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64]);
@@ -198,8 +195,8 @@ int estimate_motion(MpegEncContext *s,
                     int *mx_ptr, int *my_ptr);
 
 /* mpeg12.c */
-extern const UINT8 default_intra_matrix[64];
-extern const UINT8 default_non_intra_matrix[64];
+extern INT16 default_intra_matrix[64];
+extern INT16 default_non_intra_matrix[64];
 
 void mpeg1_encode_picture_header(MpegEncContext *s, int picture_number);
 void mpeg1_encode_mb(MpegEncContext *s,
@@ -257,8 +254,6 @@ int intel_h263_decode_picture_header(MpegEncContext *s);
 int h263_decode_mb(MpegEncContext *s,
                    DCTELEM block[6][64]);
 int h263_get_picture_format(int width, int height);
-extern UINT8 ff_alternate_horizontal_scan[64];
-extern UINT8 ff_alternate_vertical_scan[64];
 
 /* rv10.c */
 void rv10_encode_picture_header(MpegEncContext *s, int picture_number);
