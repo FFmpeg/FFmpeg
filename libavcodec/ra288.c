@@ -168,7 +168,7 @@ static void co(int n, int i, int j, float *in, float *out, float *st1, float *st
 {
   int a,b,c;
   unsigned int x;
-  float *fp,*fp2;
+  float *fp;
   float buffer1[37];
   float buffer2[37];
   float work[111];

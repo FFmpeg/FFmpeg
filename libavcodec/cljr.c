@@ -41,8 +41,7 @@ static int decode_frame(AVCodecContext *avctx,
     CLJRContext * const a = avctx->priv_data;
     AVFrame *picture = data;
     AVFrame * const p= (AVFrame*)&a->picture;
-    uint8_t *bytestream= buf;
-    int i, x, y;
+    int x, y;
 
     *data_size = 0;
 
@@ -65,7 +64,6 @@ static int decode_frame(AVCodecContext *avctx,
     init_get_bits(&a->gb, buf, buf_size);
 
     for(y=0; y<avctx->height; y++){
-        int offset;
         uint8_t *luma= &a->picture.data[0][ y*a->picture.linesize[0] ];
         uint8_t *cb= &a->picture.data[1][ y*a->picture.linesize[1] ];
         uint8_t *cr= &a->picture.data[2][ y*a->picture.linesize[2] ];
@@ -120,10 +118,7 @@ static void common_init(AVCodecContext *avctx){
 }
 
 static int decode_init(AVCodecContext *avctx){
-    CLJRContext * const a = avctx->priv_data;
-    AVFrame *p= (AVFrame*)&a->picture;
-    int i;
- 
+
     common_init(avctx);
     
     avctx->pix_fmt= PIX_FMT_YUV411P;
@@ -132,16 +127,13 @@ static int decode_init(AVCodecContext *avctx){
 }
 
 static int encode_init(AVCodecContext *avctx){
-    CLJRContext * const a = avctx->priv_data;
-    int i;
- 
+
     common_init(avctx);
     
     return 0;
 }
 
 static int decode_end(AVCodecContext *avctx){
-    CLJRContext * const a = avctx->priv_data;
 
     avcodec_default_free_buffers(avctx);
 

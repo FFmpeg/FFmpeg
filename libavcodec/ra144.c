@@ -185,7 +185,6 @@ static int irms(short *data, int factor)
 static void add_wav(Real144_internal *glob, int n, int f, int m1, int m2, int m3, short *s1, short *s2, short *s3, short *dest)
 {
   int a,b,c;
-  int x;
   short *ptr,*ptr2;
 
   ptr=glob->wavtable1+n*9;
@@ -308,7 +307,6 @@ static unsigned int rms(int *data, int f)
 {
   int *c;
   int x;
-  int d;
   unsigned int res;
   int b;
 
