@@ -125,6 +125,11 @@ try '-f image -img jpeg test%d.jpg'
 some codecs, like mpeg1/2 only allow a small number of fixed framerates, 
 choose a different codec with -vcodec
 
+@section it doesnt work
+
+try a 'make distclean' if this doesnt help see
+(@url{ffmpeg-bugreport.html})
+
 @chapter Development
 
 @section Are there examples of use of the FFmpeg libraries libavcodec and libavformat ?
