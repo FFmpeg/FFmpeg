@@ -1533,6 +1533,7 @@ static int av_encode(AVFormatContext **output_files,
                 codec->frame_rate_base = icodec->frame_rate_base;
                 codec->width = icodec->width;
                 codec->height = icodec->height;
+                codec->has_b_frames = icodec->has_b_frames;
                 break;
             default:
                 av_abort();
