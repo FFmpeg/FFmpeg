@@ -424,6 +424,7 @@ if test $mmx = "default"; then
 fi
 
 #Darwin CC versions
+needmdynamicnopic="no"
 if test $targetos = Darwin; then
     if test -n "`$cc -v 2>&1 | grep xlc`"; then
 	CFLAGS="-qpdf2 -qlanglvl=extc99 -qmaxmem=-1 -qarch=auto -qtune=auto"
@@ -433,14 +434,17 @@ if test $targetos = Darwin; then
 	    *2.95*) 
 		CFLAGS="-no-cpp-precomp -pipe -fomit-frame-pointer"
 		;;
-	    *3.1*)
+	    *3.*)
 		CFLAGS="-no-cpp-precomp -pipe -fomit-frame-pointer -force_cpusubtype_ALL -Wno-sign-compare"
-		;;
-	    *3.3*)
-		CFLAGS="-no-cpp-precomp -pipe -fomit-frame-pointer -mdynamic-no-pic -force_cpusubtype_ALL -Wno-sign-compare"
+		if test "$lshared" = no; then
+		   needmdynamicnopic="yes"
+		fi
 		;;
 	    *)
-		CFLAGS="-no-cpp-precomp -pipe -fomit-frame-pointer -mdynamic-no-pic"
+		CFLAGS="-no-cpp-precomp -pipe -fomit-frame-pointer"
+		if test "$lshared" = no; then
+		   needmdynamicnopic="yes"
+		fi
 		;;
 	esac
     fi
@@ -916,7 +920,16 @@ echo "CC=$cc" >> config.mak
 echo "AR=$ar" >> config.mak
 echo "RANLIB=$ranlib" >> config.mak
 echo "STRIP=$strip" >> config.mak
+
+# SHCFLAGS is a copy of CFLAGS without -mdynamic-no-pic.  Used when building 
+# shared modules on OS/X (vhook/Makefile).
+SHCFLAGS=$CFLAGS
+if test "$needmdynamicnopic" = yes; then
+   CFLAGS="$CFLAGS -mdynamic-no-pic"
+fi
+
 echo "OPTFLAGS=$CFLAGS" >> config.mak
+echo "SHCFLAGS=$SHCFLAGS">>config.mak
 echo "LDFLAGS=$LDFLAGS" >> config.mak
 echo "FFSLDFLAGS=$FFSLDFLAGS" >> config.mak
 echo "SHFLAGS=$SHFLAGS" >> config.mak

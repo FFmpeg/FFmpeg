@@ -2,10 +2,10 @@ include ../config.mak
 
 VPATH=$(SRC_PATH)/vhook
 
-CFLAGS=-fPIC $(OPTFLAGS) -I.. -I$(SRC_PATH) -I$(SRC_PATH)/libavformat -I$(SRC_PATH)/libavcodec -DHAVE_AV_CONFIG_H
+CFLAGS=-fPIC $(SHCFLAGS) -I.. -I$(SRC_PATH) -I$(SRC_PATH)/libavformat -I$(SRC_PATH)/libavcodec -DHAVE_AV_CONFIG_H
 
 ifeq ($(CONFIG_DARWIN),yes)
-SHFLAGS+=-bundle -flat_namespace -undefined suppress
+SHFLAGS+=-flat_namespace -undefined suppress
 endif
 HOOKS=null.so fish.so ppm.so
 
@@ -26,7 +26,7 @@ depend: $(SRCS)
 	$(CC) -MM $(CFLAGS) $^ 1>.depend
 
 install:
-	install -s -m 755 $(HOOKS) $(INSTDIR)
+	install -m 755 $(HOOKS) $(INSTDIR)
 
 imlib2.so: imlib2.o
 	$(CC) -g -o $@ $(SHFLAGS) $< -lImlib2
