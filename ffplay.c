@@ -913,8 +913,8 @@ static int video_thread(void *arg)
             len1 = avcodec_decode_video(&is->video_st->codec, 
                                         frame, &got_picture, 
                                         pkt->data, pkt->size);
-            if (len1 < 0)
-                break;
+//            if (len1 < 0)
+//                break;
             if (got_picture) {
                 if (output_picture2(is, frame, pts) < 0)
                     goto the_end;
