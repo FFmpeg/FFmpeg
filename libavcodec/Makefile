@@ -38,6 +38,11 @@ endif
 
 ifeq ($(CONFIG_FAAD),yes)
 OBJS+= faad.o
+ifeq ($(CONFIG_FAADBIN),yes)
+# no libs needed
+else
+EXTRALIBS += -lfaad
+endif
 endif
 
 ifeq ($(CONFIG_PP),yes)

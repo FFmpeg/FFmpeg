@@ -297,6 +297,10 @@ for opt do
   ;;
   --enable-vorbis) vorbis="yes"
   ;;
+  --enable-faad) faad="yes"
+  ;;
+  --enable-faadbin) faadbin="yes"
+  ;;
   --disable-vhook) vhook="no"
   ;;
   --disable-simple_idct) simpleidct="no"
@@ -654,6 +658,8 @@ echo "gprof enabled    $gprof"
 echo "zlib enabled     $zlib"
 echo "mp3lame enabled  $mp3lame"
 echo "vorbis enabled   $vorbis"
+echo "faad enabled     $faad"
+echo "faadbin enabled  $faadbin"
 echo "a52 support      $a52"
 echo "a52 dlopened     $a52bin"
 echo "pp support       $pp"
@@ -852,6 +858,7 @@ fi
 
 if test "$faadbin" = "yes" ; then
   echo "#define CONFIG_FAADBIN 1" >> $TMPH
+  echo "CONFIG_FAADBIN=yes" >> config.mak
 fi
 
 if test "$win32" = "yes" ; then

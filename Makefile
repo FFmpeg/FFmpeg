@@ -47,6 +47,14 @@ ifeq ($(CONFIG_VORBIS),yes)
 EXTRALIBS+=-logg -lvorbis -lvorbisenc
 endif
 
+ifeq ($(CONFIG_FAAD),yes)
+ifeq ($(CONFIG_FAADBIN),yes)
+# no libs needed
+else
+EXTRALIBS += -lfaad
+endif
+endif
+
 ifeq ($(BUILD_VHOOK),yes)
 VHOOK=videohook
 INSTALLVHOOK=install-vhook
