@@ -291,6 +291,20 @@ static inline void skip_put_bytes(PutBitContext *s, int n){
 }
 
 /**
+ * skips the given number of bits.
+ * must only be used if the actual values in the bitstream dont matter
+ */
+static inline void skip_put_bits(PutBitContext *s, int n){
+#ifdef ALT_BITSTREAM_WRITER
+    s->index += n;
+#else
+    s->bit_left -= n;
+    s->buf_ptr-= s->bit_left>>5;
+    s->bit_left &= 31;
+#endif        
+}
+
+/**
  * Changes the end of the buffer.
  */
 static inline void set_put_bits_buffer_size(PutBitContext *s, int size){
