@@ -33,12 +33,8 @@
 #include "../libvo/img_format.h" //FIXME try to reduce dependency of such stuff
 #include "swscale.h"
 
-static int mlib_YUV2ARGB420_32(SwsContext *c, uint8_t* srcParam[], int srcStrideParam[], int srcSliceY, 
+static int mlib_YUV2ARGB420_32(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY, 
              int srcSliceH, uint8_t* dst[], int dstStride[]){
-    uint8_t *src[3];
-    int srcStride[3];
-
-    sws_orderYUV(c->srcFormat, src, srcStride, srcParam, srcStrideParam);
     if(c->srcFormat == IMGFMT_422P){
 	srcStride[1] *= 2;
 	srcStride[2] *= 2;
@@ -51,12 +47,8 @@ static int mlib_YUV2ARGB420_32(SwsContext *c, uint8_t* srcParam[], int srcStride
     return srcSliceH;
 }
 
-static int mlib_YUV2ABGR420_32(SwsContext *c, uint8_t* srcParam[], int srcStrideParam[], int srcSliceY, 
+static int mlib_YUV2ABGR420_32(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY, 
              int srcSliceH, uint8_t* dst[], int dstStride[]){
-    uint8_t *src[3];
-    int srcStride[3];
-
-    sws_orderYUV(c->srcFormat, src, srcStride, srcParam, srcStrideParam);
     if(c->srcFormat == IMGFMT_422P){
 	srcStride[1] *= 2;
 	srcStride[2] *= 2;
@@ -69,12 +61,8 @@ static int mlib_YUV2ABGR420_32(SwsContext *c, uint8_t* srcParam[], int srcStride
     return srcSliceH;
 }
 
-static int mlib_YUV2RGB420_24(SwsContext *c, uint8_t* srcParam[], int srcStrideParam[], int srcSliceY, 
+static int mlib_YUV2RGB420_24(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY, 
              int srcSliceH, uint8_t* dst[], int dstStride[]){
-    uint8_t *src[3];
-    int srcStride[3];
-
-    sws_orderYUV(c->srcFormat, src, srcStride, srcParam, srcStrideParam);
     if(c->srcFormat == IMGFMT_422P){
 	srcStride[1] *= 2;
 	srcStride[2] *= 2;

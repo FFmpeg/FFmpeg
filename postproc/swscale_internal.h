@@ -26,6 +26,10 @@ typedef int (*SwsFunc)(struct SwsContext *context, uint8_t* src[], int srcStride
 
 /* this struct should be aligned on at least 32-byte boundary */
 typedef struct SwsContext{
+	/**
+	 *
+	 * Note the src,dst,srcStride,dstStride will be copied, in the sws_scale() warper so they can freely be modified here
+	 */
 	SwsFunc swScale;
 	int srcW, srcH, dstH;
 	int chrSrcW, chrSrcH, chrDstW, chrDstH;
@@ -119,7 +123,6 @@ typedef struct SwsContext{
 } SwsContext;
 //FIXME check init (where 0)
 
-inline void sws_orderYUV(int format, uint8_t * sortedP[], int sortedStride[], uint8_t * p[], int stride[]);
 SwsFunc yuv2rgb_get_func_ptr (SwsContext *c);
 int yuv2rgb_c_init_tables (SwsContext *c, const int inv_table[4], int fullRange, int brightness, int contrast, int saturation);
 

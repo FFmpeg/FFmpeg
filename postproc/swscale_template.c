@@ -1585,7 +1585,7 @@ static inline void RENAME(bgr32ToY)(uint8_t *dst, uint8_t *src, int width)
 	{
 		int b=  ((uint32_t*)src)[i]&0xFF;
 		int g= (((uint32_t*)src)[i]>>8)&0xFF;
-		int r=  ((uint32_t*)src)[i]>>16;
+		int r= (((uint32_t*)src)[i]>>16)&0xFF;
 
 		dst[i]= ((RY*r + GY*g + BY*b + (33<<(RGB2YUV_SHIFT-1)) )>>RGB2YUV_SHIFT);
 	}
@@ -1946,7 +1946,7 @@ static inline void RENAME(rgb32ToY)(uint8_t *dst, uint8_t *src, int width)
 	{
 		int r=  ((uint32_t*)src)[i]&0xFF;
 		int g= (((uint32_t*)src)[i]>>8)&0xFF;
-		int b=  ((uint32_t*)src)[i]>>16;
+		int b= (((uint32_t*)src)[i]>>16)&0xFF;
 
 		dst[i]= ((RY*r + GY*g + BY*b + (33<<(RGB2YUV_SHIFT-1)) )>>RGB2YUV_SHIFT);
 	}
@@ -2502,8 +2502,8 @@ FUNNY_UV_CODE
    }
 }
 
-static int RENAME(swScale)(SwsContext *c, uint8_t* srcParam[], int srcStrideParam[], int srcSliceY,
-             int srcSliceH, uint8_t* dstParam[], int dstStrideParam[]){
+static int RENAME(swScale)(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
+             int srcSliceH, uint8_t* dst[], int dstStride[]){
 
 	/* load a few things into local vars to make the code more readable? and faster */
 	const int srcW= c->srcW;
@@ -2548,21 +2548,14 @@ static int RENAME(swScale)(SwsContext *c, uint8_t* srcParam[], int srcStridePara
 	int chrBufIndex= c->chrBufIndex;
 	int lastInLumBuf= c->lastInLumBuf;
 	int lastInChrBuf= c->lastInChrBuf;
-	int srcStride[3];
-	int dstStride[3];
-	uint8_t *src[3];
-	uint8_t *dst[3];
 	
-	sws_orderYUV(c->srcFormat, src, srcStride, srcParam, srcStrideParam);
-	sws_orderYUV(c->dstFormat, dst, dstStride, dstParam, dstStrideParam);
-
 	if(isPacked(c->srcFormat)){
 		src[0]=
 		src[1]=
-		src[2]= srcParam[0];
+		src[2]= src[0];
 		srcStride[0]=
 		srcStride[1]=
-		srcStride[2]= srcStrideParam[0];
+		srcStride[2]= srcStride[0];
 	}
 	srcStride[1]<<= c->vChrDrop;
 	srcStride[2]<<= c->vChrDrop;

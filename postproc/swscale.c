@@ -1764,7 +1764,7 @@ static int yvu9toyv12Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], int
 /**
  * bring pointers in YUV order instead of YVU
  */
-inline void sws_orderYUV(int format, uint8_t * sortedP[], int sortedStride[], uint8_t * p[], int stride[]){
+inline static void sws_orderYUV(int format, uint8_t * sortedP[], int sortedStride[], uint8_t * p[], int stride[]){
 	if(format == IMGFMT_YV12 || format == IMGFMT_YVU9 
            || format == IMGFMT_444P || format == IMGFMT_422P || format == IMGFMT_411P){
 		sortedP[0]= p[0];
@@ -1797,16 +1797,8 @@ inline void sws_orderYUV(int format, uint8_t * sortedP[], int sortedStride[], ui
 }
 
 /* unscaled copy like stuff (assumes nearly identical formats) */
-static int simpleCopy(SwsContext *c, uint8_t* srcParam[], int srcStrideParam[], int srcSliceY,
-             int srcSliceH, uint8_t* dstParam[], int dstStrideParam[]){
-
-	int srcStride[3];
-	int dstStride[3];
-	uint8_t *src[3];
-	uint8_t *dst[3];
-
-	sws_orderYUV(c->srcFormat, src, srcStride, srcParam, srcStrideParam);
-	sws_orderYUV(c->dstFormat, dst, dstStride, dstParam, dstStrideParam);
+static int simpleCopy(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
+             int srcSliceH, uint8_t* dst[], int dstStride[]){
 
 	if(isPacked(c->srcFormat))
 	{
@@ -2382,11 +2374,18 @@ SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, int dstH
 /**
  * swscale warper, so we dont need to export the SwsContext
  */
-int sws_scale(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
-                           int srcSliceH, uint8_t* dst[], int dstStride[]){
+int sws_scale(SwsContext *c, uint8_t* srcParam[], int srcStrideParam[], int srcSliceY,
+                           int srcSliceH, uint8_t* dstParam[], int dstStrideParam[]){
+	int srcStride[3];
+	int dstStride[3];
+	uint8_t *src[3];
+	uint8_t *dst[3];
+
+	sws_orderYUV(c->srcFormat, src, srcStride, srcParam, srcStrideParam);
+	sws_orderYUV(c->dstFormat, dst, dstStride, dstParam, dstStrideParam);
+//printf("sws: slice %d %d\n", srcSliceY, srcSliceH);
 	return c->swScale(c, src, srcStride, srcSliceY, srcSliceH, dst, dstStride);
 }
-//FIXME order YV12/I420 here
 
 /**
  * returns a normalized gaussian curve used to filter stuff

@@ -123,13 +123,10 @@
 		     "punpcklbw %%mm5, %%mm2;" /* G7 G6 G5 G4 G3 G2 G1 G0 */\
 
 
-static inline int RENAME(yuv420_rgb16)(SwsContext *c, uint8_t* srcParam[], int srcStrideParam[], int srcSliceY,
+static inline int RENAME(yuv420_rgb16)(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
              int srcSliceH, uint8_t* dst[], int dstStride[]){
-    int srcStride[3];
-    uint8_t *src[3];
     int y, h_size;
 
-    sws_orderYUV(c->srcFormat, src, srcStride, srcParam, srcStrideParam);
     if(c->srcFormat == IMGFMT_422P){
 	srcStride[1] *= 2;
 	srcStride[2] *= 2;
@@ -221,13 +218,10 @@ YUV2RGB
     return srcSliceH;
 }
 
-static inline int RENAME(yuv420_rgb15)(SwsContext *c, uint8_t* srcParam[], int srcStrideParam[], int srcSliceY,
+static inline int RENAME(yuv420_rgb15)(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
              int srcSliceH, uint8_t* dst[], int dstStride[]){
-    int srcStride[3];
-    uint8_t *src[3];
     int y, h_size;
 
-    sws_orderYUV(c->srcFormat, src, srcStride, srcParam, srcStrideParam);
     if(c->srcFormat == IMGFMT_422P){
 	srcStride[1] *= 2;
 	srcStride[2] *= 2;
@@ -313,13 +307,10 @@ YUV2RGB
     return srcSliceH;
 }
 
-static inline int RENAME(yuv420_rgb24)(SwsContext *c, uint8_t* srcParam[], int srcStrideParam[], int srcSliceY,
+static inline int RENAME(yuv420_rgb24)(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
              int srcSliceH, uint8_t* dst[], int dstStride[]){
-    int srcStride[3];
-    uint8_t *src[3];
     int y, h_size;
 
-    sws_orderYUV(c->srcFormat, src, srcStride, srcParam, srcStrideParam);
     if(c->srcFormat == IMGFMT_422P){
 	srcStride[1] *= 2;
 	srcStride[2] *= 2;
@@ -462,13 +453,10 @@ YUV2RGB
     return srcSliceH;
 }
 
-static inline int RENAME(yuv420_rgb32)(SwsContext *c, uint8_t* srcParam[], int srcStrideParam[], int srcSliceY,
+static inline int RENAME(yuv420_rgb32)(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
              int srcSliceH, uint8_t* dst[], int dstStride[]){
-    int srcStride[3];
-    uint8_t *src[3];
     int y, h_size;
 
-    sws_orderYUV(c->srcFormat, src, srcStride, srcParam, srcStrideParam);
     if(c->srcFormat == IMGFMT_422P){
 	srcStride[1] *= 2;
 	srcStride[2] *= 2;
