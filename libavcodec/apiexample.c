@@ -195,6 +195,7 @@ void video_encode_example(const char *filename)
     c->frame_rate = 25;  
     c->frame_rate_base= 1;
     c->gop_size = 10; /* emit one intra frame every ten frames */
+    c->max_b_frames=1;
 
     /* open it */
     if (avcodec_open(c, codec) < 0) {
@@ -225,7 +226,6 @@ void video_encode_example(const char *filename)
 
     /* encode 1 second of video */
     for(i=0;i<25;i++) {
-        printf("encoding frame %3d\r", i);
         fflush(stdout);
         /* prepare a dummy image */
         /* Y */
@@ -245,6 +245,16 @@ void video_encode_example(const char *filename)
 
         /* encode the image */
         out_size = avcodec_encode_video(c, outbuf, outbuf_size, picture);
+        printf("encoding frame %3d (size=%5d)\n", i, out_size);
+        fwrite(outbuf, 1, out_size, f);
+    }
+
+    /* get the delayed frames */
+    for(; out_size; i++) {
+        fflush(stdout);
+        
+        out_size = avcodec_encode_video(c, outbuf, outbuf_size, NULL);
+        printf("write frame %3d (size=%5d)\n", i, out_size);
         fwrite(outbuf, 1, out_size, f);
     }
 
@@ -353,7 +363,7 @@ void video_decode_example(const char *outfilename, const char *filename)
                 exit(1);
             }
             if (got_picture) {
-                printf("saving frame %3d\r", frame);
+                printf("saving frame %3d\n", frame);
                 fflush(stdout);
 
                 /* the picture is allocated by the decoder. no need to
@@ -374,7 +384,7 @@ void video_decode_example(const char *outfilename, const char *filename)
     len = avcodec_decode_video(c, picture, &got_picture, 
                                NULL, 0);
     if (got_picture) {
-        printf("saving frame %3d\r", frame);
+        printf("saving last frame %3d\n", frame);
         fflush(stdout);
         
         /* the picture is allocated by the decoder. no need to

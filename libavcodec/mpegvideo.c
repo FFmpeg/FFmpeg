@@ -1300,11 +1300,12 @@ static int get_intra_count(MpegEncContext *s, uint8_t *src, uint8_t *ref, int st
 
 
 static int load_input_picture(MpegEncContext *s, AVFrame *pic_arg){
-    AVFrame *pic;
+    AVFrame *pic=NULL;
     int i;
     const int encoding_delay= s->max_b_frames;
     int direct=1;
-
+    
+  if(pic_arg){
     if(encoding_delay && !(s->flags&CODEC_FLAG_INPUT_PRESERVED)) direct=0;
     if(pic_arg->linesize[0] != s->linesize) direct=0;
     if(pic_arg->linesize[1] != s->uvlinesize) direct=0;
@@ -1374,6 +1375,8 @@ static int load_input_picture(MpegEncContext *s, AVFrame *pic_arg){
     
     if(s->input_picture[encoding_delay])
         pic->display_picture_number= s->input_picture[encoding_delay]->display_picture_number + 1;
+    
+  }
 
     /* shift buffer entries */
     for(i=1; i<MAX_PICTURE_COUNT /*s->encoding_delay+1*/; i++)
@@ -1427,16 +1430,17 @@ static void select_input_picture(MpegEncContext *s){
                 }
             }else if(s->b_frame_strategy==0){
                 b_frames= s->max_b_frames;
+                while(b_frames && !s->input_picture[b_frames]) b_frames--;
             }else if(s->b_frame_strategy==1){
                 for(i=1; i<s->max_b_frames+1; i++){
-                    if(s->input_picture[i]->b_frame_score==0){
+                    if(s->input_picture[i] && s->input_picture[i]->b_frame_score==0){
                         s->input_picture[i]->b_frame_score= 
                             get_intra_count(s, s->input_picture[i  ]->data[0], 
                                                s->input_picture[i-1]->data[0], s->linesize) + 1;
                     }
                 }
                 for(i=0; i<s->max_b_frames; i++){
-                    if(s->input_picture[i]->b_frame_score - 1 > s->mb_num/40) break;
+                    if(s->input_picture[i]==NULL || s->input_picture[i]->b_frame_score - 1 > s->mb_num/40) break;
                 }
                                 
                 b_frames= FFMAX(0, i-1);
