@@ -616,9 +616,9 @@ static int svq1_decode_frame_header (GetBitContext *bitbuf,MpegEncContext *s) {
       printf ("embedded message: \"%s\"\n", (char *) msg);
     }
 
-    get_bits (bitbuf, 2);
-    get_bits (bitbuf, 2);
-    get_bits (bitbuf, 1);
+    skip_bits (bitbuf, 2);
+    skip_bits (bitbuf, 2);
+    skip_bits1 (bitbuf);
 
     /* load frame size */
     frame_size_code = get_bits (bitbuf, 3);
@@ -639,21 +639,21 @@ static int svq1_decode_frame_header (GetBitContext *bitbuf,MpegEncContext *s) {
 
   /* unknown fields */
   if (get_bits (bitbuf, 1) == 1) {
-    get_bits (bitbuf, 1);       /* use packet checksum if (1) */
-    get_bits (bitbuf, 1);       /* component checksums after image data if (1) */
+    skip_bits1 (bitbuf);       /* use packet checksum if (1) */
+    skip_bits1 (bitbuf);       /* component checksums after image data if (1) */
 
     if (get_bits (bitbuf, 2) != 0)
       return -1;
   }
 
   if (get_bits (bitbuf, 1) == 1) {
-    get_bits (bitbuf, 1);
-    get_bits (bitbuf, 4);
-    get_bits (bitbuf, 1);
-    get_bits (bitbuf, 2);
+    skip_bits1 (bitbuf);
+    skip_bits (bitbuf, 4);
+    skip_bits1 (bitbuf);
+    skip_bits (bitbuf, 2);
 
     while (get_bits (bitbuf, 1) == 1) {
-      get_bits (bitbuf, 8);
+      skip_bits (bitbuf, 8);
     }
   }
   
