@@ -58,7 +58,7 @@ static void DEF(put, pixels8_l2)(uint8_t *dst, uint8_t *src1, uint8_t *src2, int
 {
     MOVQ_BFE(mm6);
     __asm __volatile(
-	"test $1, %0			\n\t"
+	"testl $1, %0			\n\t"
         " jz 1f				\n\t"
 	"movq	(%1), %%mm0		\n\t"
 	"movq	(%2), %%mm1		\n\t"
@@ -154,7 +154,7 @@ static void DEF(put, pixels16_l2)(uint8_t *dst, uint8_t *src1, uint8_t *src2, in
 {
     MOVQ_BFE(mm6);
     __asm __volatile(
-	"test $1, %0			\n\t"
+	"testl $1, %0			\n\t"
         " jz 1f				\n\t"
 	"movq	(%1), %%mm0		\n\t"
 	"movq	(%2), %%mm1		\n\t"
