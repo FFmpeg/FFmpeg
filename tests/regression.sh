@@ -32,6 +32,7 @@ elif [ "$1" = "libavtest" ] ; then
     outfile="$datadir/b-"
 else
     do_mpeg=y
+    do_mpeg2=y
     do_msmpeg4v2=y
     do_msmpeg4=y
     do_wmv1=y
@@ -121,10 +122,16 @@ do_ffmpeg $file -y -qscale 10 -f pgmyuv -i $raw_src -f mpeg1video $file
 
 # mpeg1 decoding
 do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst
+fi
+
+###################################
+if [ -n "$do_mpeg2" ] ; then
+# mpeg2 encoding
+file=${outfile}mpeg2.vob
+do_ffmpeg $file -y -qscale 10 -f pgmyuv -i $raw_src -vcodec mpeg2video $file 
 
 # mpeg2 decoding
-#do_ffmpeg /tmp/out-mpeg2.yuv -y -f mpegvideo -i a.vob \
-#          -f rawvideo /tmp/out-mpeg2.yuv
+do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst
 fi
 
 ###################################

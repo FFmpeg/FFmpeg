@@ -2,6 +2,9 @@ ffmpeg regression test
 dda0ba041aef50a5101884291c06d4d9 *./data/a-mpeg1.mpg
 6713259d72260740bbddaea30631ea18 *./data/out.yuv
 stddev:  7.58 bytes:7299072
+17c66261cb5dc193793b5af9564c8592 *./data/a-mpeg2.vob
+9f5d85c6473b802a9d86cfc01a3ed046 *./data/out.yuv
+stddev:  7.66 bytes:7450624
 d0dc46dd831398237a690ebbeff18b64 *./data/a-msmpeg4v2.avi
 712aa6c959d1d90a78fe98657cbff19c *./data/out.yuv
 stddev:  8.11 bytes:7602176
