@@ -78,72 +78,49 @@ const CodecTag codec_bmp_tags[] = {
     { CODEC_ID_H263I, MKTAG('I', '2', '6', '3') }, /* intel h263 */
 
     /* added based on MPlayer */
-    { CODEC_ID_H263I, MKTAG('i', '2', '6', '3') },
     { CODEC_ID_H263P, MKTAG('U', '2', '6', '3') },
-    { CODEC_ID_H263P, MKTAG('h', '2', '6', '3') },
     { CODEC_ID_H263P, MKTAG('v', 'i', 'v', '1') },
 
     { CODEC_ID_MPEG4, MKTAG('D', 'I', 'V', 'X'), .invalid_asf = 1 },
-    { CODEC_ID_MPEG4, MKTAG('d', 'i', 'v', 'x'), .invalid_asf = 1 },
     { CODEC_ID_MPEG4, MKTAG('D', 'X', '5', '0'), .invalid_asf = 1 },
     { CODEC_ID_MPEG4, MKTAG('X', 'V', 'I', 'D'), .invalid_asf = 1 },
-    { CODEC_ID_MPEG4, MKTAG('x', 'v', 'i', 'd'), .invalid_asf = 1 },
-    { CODEC_ID_MPEG4, MKTAG('m', 'p', '4', 's'), .invalid_asf = 1 },
     { CODEC_ID_MPEG4, MKTAG('M', 'P', '4', 'S') },
     { CODEC_ID_MPEG4, MKTAG('M', '4', 'S', '2') },
-    { CODEC_ID_MPEG4, MKTAG('m', '4', 's', '2') },
     { CODEC_ID_MPEG4, MKTAG(0x04, 0, 0, 0) }, /* some broken avi use this */
 
     /* added based on MPlayer */
     { CODEC_ID_MPEG4, MKTAG('D', 'I', 'V', '1') },
-    { CODEC_ID_MPEG4, MKTAG('d', 'i', 'v', '1') },
-    { CODEC_ID_MPEG4, MKTAG('X', 'v', 'i', 'D') },
     { CODEC_ID_MPEG4, MKTAG('B', 'L', 'Z', '0') },
     { CODEC_ID_MPEG4, MKTAG('m', 'p', '4', 'v') },
     { CODEC_ID_MPEG4, MKTAG('U', 'M', 'P', '4') },
 
     { CODEC_ID_MSMPEG4V3, MKTAG('D', 'I', 'V', '3'), .invalid_asf = 1 }, /* default signature when using MSMPEG4 */
-    { CODEC_ID_MSMPEG4V3, MKTAG('d', 'i', 'v', '3'), .invalid_asf = 1 },
     { CODEC_ID_MSMPEG4V3, MKTAG('M', 'P', '4', '3') }, 
 
     /* added based on MPlayer */
     { CODEC_ID_MSMPEG4V3, MKTAG('M', 'P', 'G', '3') }, 
-    { CODEC_ID_MSMPEG4V3, MKTAG('m', 'p', 'g', '3') }, 
-    { CODEC_ID_MSMPEG4V3, MKTAG('m', 'p', '4', '3') }, 
     { CODEC_ID_MSMPEG4V3, MKTAG('D', 'I', 'V', '5') }, 
-    { CODEC_ID_MSMPEG4V3, MKTAG('d', 'i', 'v', '5') }, 
     { CODEC_ID_MSMPEG4V3, MKTAG('D', 'I', 'V', '6') }, 
-    { CODEC_ID_MSMPEG4V3, MKTAG('d', 'i', 'v', '6') }, 
     { CODEC_ID_MSMPEG4V3, MKTAG('D', 'I', 'V', '4') }, 
-    { CODEC_ID_MSMPEG4V3, MKTAG('d', 'i', 'v', '4') }, 
     { CODEC_ID_MSMPEG4V3, MKTAG('A', 'P', '4', '1') }, 
     { CODEC_ID_MSMPEG4V3, MKTAG('C', 'O', 'L', '1') }, 
-    { CODEC_ID_MSMPEG4V3, MKTAG('c', 'o', 'l', '1') }, 
     { CODEC_ID_MSMPEG4V3, MKTAG('C', 'O', 'L', '0') }, 
-    { CODEC_ID_MSMPEG4V3, MKTAG('c', 'o', 'l', '0') }, 
 
     { CODEC_ID_MSMPEG4V2, MKTAG('M', 'P', '4', '2') }, 
 
     /* added based on MPlayer */
     { CODEC_ID_MSMPEG4V2, MKTAG('D', 'I', 'V', '2') },
-    { CODEC_ID_MSMPEG4V2, MKTAG('d', 'i', 'v', '2') },
-    { CODEC_ID_MSMPEG4V2, MKTAG('m', 'p', '4', '2') },
  
     { CODEC_ID_MSMPEG4V1, MKTAG('M', 'P', 'G', '4') }, 
 
     /* added based on MPlayer */
     { CODEC_ID_MSMPEG4V1, MKTAG('D', 'I', 'V', '4') }, 
-    { CODEC_ID_MSMPEG4V1, MKTAG('d', 'i', 'v', '4') }, 
-    { CODEC_ID_MSMPEG4V1, MKTAG('m', 'p', 'g', '4') }, 
 
     { CODEC_ID_WMV1, MKTAG('W', 'M', 'V', '1') }, 
 
     /* added based on MPlayer */
-    { CODEC_ID_WMV1, MKTAG('w', 'm', 'v', '1') }, 
-
     { CODEC_ID_WMV2, MKTAG('W', 'M', 'V', '2') }, 
     { CODEC_ID_DVVIDEO, MKTAG('d', 'v', 's', 'd') }, 
-    { CODEC_ID_DVVIDEO, MKTAG('D', 'V', 'S', 'D') }, 
     { CODEC_ID_DVVIDEO, MKTAG('d', 'v', 'h', 'd') }, 
     { CODEC_ID_DVVIDEO, MKTAG('d', 'v', 's', 'l') }, 
     { CODEC_ID_DVVIDEO, MKTAG('d', 'v', '2', '5') },
@@ -152,18 +129,13 @@ const CodecTag codec_bmp_tags[] = {
     { CODEC_ID_MPEG1VIDEO, MKTAG('P', 'I', 'M', '1') }, 
     { CODEC_ID_MPEG1VIDEO, MKTAG('V', 'C', 'R', '2') }, 
     { CODEC_ID_MJPEG, MKTAG('M', 'J', 'P', 'G') },
-    { CODEC_ID_MJPEG, MKTAG('m', 'j', 'p', 'g') },
     { CODEC_ID_MJPEG, MKTAG('L', 'J', 'P', 'G') },
     { CODEC_ID_LJPEG, MKTAG('L', 'J', 'P', 'G') },
     { CODEC_ID_MJPEG, MKTAG('J', 'P', 'G', 'L') }, /* Pegasus lossless JPEG */
     { CODEC_ID_HUFFYUV, MKTAG('H', 'F', 'Y', 'U') },
-    { CODEC_ID_HUFFYUV, MKTAG('h', 'f', 'y', 'u') },
     { CODEC_ID_CYUV, MKTAG('C', 'Y', 'U', 'V') },
-    { CODEC_ID_CYUV, MKTAG('c', 'y', 'u', 'v') },
     { CODEC_ID_RAWVIDEO, MKTAG('Y', '4', '2', '2') },
     { CODEC_ID_RAWVIDEO, MKTAG('I', '4', '2', '0') },
-    { CODEC_ID_INDEO3, MKTAG('i', 'v', '3', '1') },
-    { CODEC_ID_INDEO3, MKTAG('i', 'v', '3', '2') },
     { CODEC_ID_INDEO3, MKTAG('I', 'V', '3', '1') },
     { CODEC_ID_INDEO3, MKTAG('I', 'V', '3', '2') },
     { CODEC_ID_VP3, MKTAG('V', 'P', '3', '1') },
@@ -197,7 +169,10 @@ static unsigned int codec_get_asf_tag(const CodecTag *tags, int id)
 enum CodecID codec_get_id(const CodecTag *tags, unsigned int tag)
 {
     while (tags->id != 0) {
-        if (tags->tag == tag)
+        if(   toupper((tag >> 0)&0xFF) == toupper((tags->tag >> 0)&0xFF)
+           && toupper((tag >> 8)&0xFF) == toupper((tags->tag >> 8)&0xFF)
+           && toupper((tag >>16)&0xFF) == toupper((tags->tag >>16)&0xFF)
+           && toupper((tag >>24)&0xFF) == toupper((tags->tag >>24)&0xFF))
             return tags->id;
         tags++;
     }
