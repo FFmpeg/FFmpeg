@@ -1778,7 +1778,6 @@ static int open_input_stream(HTTPContext *c, const char *info)
     /* set the start time (needed for maxtime and RTP packet timing) */
     c->start_time = cur_time;
     c->first_pts = AV_NOPTS_VALUE;
-    printf("stream %s opened pos=%0.6f\n", input_filename, stream_pos / 1000000.0);
     return 0;
 }
 
@@ -3976,7 +3975,7 @@ int main(int argc, char **argv)
             chdir("/");
             close(0);
             open("/dev/null", O_RDWR);
-            if (!strcmp(logfilename, "-")) {
+            if (strcmp(logfilename, "-") != 0) {
                 close(1);
                 dup(0);
             }
