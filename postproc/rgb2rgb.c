@@ -585,7 +585,7 @@ void rgb32tobgr32(const uint8_t *src, uint8_t *dst, unsigned int src_size)
 #ifdef HAVE_MMX
 	asm volatile (
 		"xorl %%eax, %%eax		\n\t"
-		".align 16			\n\t"
+		".balign 16			\n\t"
 		"1:				\n\t"
 		PREFETCH" 32(%0, %%eax)		\n\t"
 		"movq (%0, %%eax), %%mm0	\n\t"
@@ -636,7 +636,7 @@ void yv12toyuy2(const uint8_t *ysrc, const uint8_t *usrc, const uint8_t *vsrc, u
 //FIXME handle 2 lines a once (fewer prefetch, reuse some chrom, but very likely limited by mem anyway)
 		asm volatile(
 			"xorl %%eax, %%eax		\n\t"
-			".align 16			\n\t"
+			".balign 16			\n\t"
 			"1:				\n\t"
 			PREFETCH" 32(%1, %%eax, 2)	\n\t"
 			PREFETCH" 32(%2, %%eax)		\n\t"
@@ -710,7 +710,7 @@ void yuy2toyv12(const uint8_t *src, uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
 			"xorl %%eax, %%eax		\n\t"
 			"pcmpeqw %%mm7, %%mm7		\n\t"
 			"psrlw $8, %%mm7		\n\t" // FF,00,FF,00...
-			".align 16			\n\t"
+			".balign 16			\n\t"
 			"1:				\n\t"
 			PREFETCH" 64(%0, %%eax, 4)	\n\t"
 			"movq (%0, %%eax, 4), %%mm0	\n\t" // YUYV YUYV(0)
@@ -760,7 +760,7 @@ void yuy2toyv12(const uint8_t *src, uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
 
 		asm volatile(
 			"xorl %%eax, %%eax		\n\t"
-			".align 16			\n\t"
+			".balign 16			\n\t"
 			"1:				\n\t"
 			PREFETCH" 64(%0, %%eax, 4)	\n\t"
 			"movq (%0, %%eax, 4), %%mm0	\n\t" // YUYV YUYV(0)
