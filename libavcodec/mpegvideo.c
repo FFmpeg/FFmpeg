@@ -902,6 +902,7 @@ int MPV_encode_init(AVCodecContext *avctx)
     s->mpeg_quant= avctx->mpeg_quant;
     s->rtp_mode= !!avctx->rtp_payload_size;
     s->intra_dc_precision= avctx->intra_dc_precision;
+    s->user_specified_pts = AV_NOPTS_VALUE;
 
     if (s->gop_size <= 1) {
         s->intra_only = 1;
@@ -1962,16 +1963,26 @@ static int load_input_picture(MpegEncContext *s, AVFrame *pic_arg){
     copy_picture_attributes(s, pic, pic_arg);
     
     pic->display_picture_number= s->input_picture_number++;
+ 
     if(pic->pts != AV_NOPTS_VALUE){ 
-        s->user_specified_pts= pic->pts;
+        if(s->user_specified_pts != AV_NOPTS_VALUE){
+            int64_t time= av_rescale(pic->pts, s->avctx->frame_rate, s->avctx->frame_rate_base*(int64_t)AV_TIME_BASE);
+            int64_t last= av_rescale(s->user_specified_pts, s->avctx->frame_rate, s->avctx->frame_rate_base*(int64_t)AV_TIME_BASE);
+        
+            if(time <= last){            
+                av_log(s->avctx, AV_LOG_ERROR, "Error, Invalid timestamp=%Ld, last=%Ld\n", pic->pts, s->user_specified_pts);
+                return -1;
+            }
+        }
     }else{
-        if(s->user_specified_pts){
+        if(s->user_specified_pts != AV_NOPTS_VALUE){
             pic->pts= s->user_specified_pts + AV_TIME_BASE*(int64_t)s->avctx->frame_rate_base / s->avctx->frame_rate;
             av_log(s->avctx, AV_LOG_INFO, "Warning: AVFrame.pts=? trying to guess (%Ld)\n", pic->pts);
         }else{
             pic->pts= av_rescale(pic->display_picture_number*(int64_t)s->avctx->frame_rate_base, AV_TIME_BASE, s->avctx->frame_rate);
         }
     }
+    s->user_specified_pts= pic->pts;
   }
   
     /* shift buffer entries */
@@ -2139,7 +2150,8 @@ int MPV_encode_picture(AVCodecContext *avctx,
 
     s->picture_in_gop_number++;
 
-    load_input_picture(s, pic_arg);
+    if(load_input_picture(s, pic_arg) < 0)
+        return -1;
     
     select_input_picture(s);
     

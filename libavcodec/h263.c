@@ -2112,11 +2112,13 @@ void ff_set_mpeg4_time(MpegEncContext * s, int picture_number){
 
     if(s->pict_type==B_TYPE){
         s->pb_time= s->pp_time - (s->last_non_b_time - s->time);
+        assert(s->pb_time > 0 && s->pb_time < s->pp_time);
     }else{
         s->last_time_base= s->time_base;
         s->time_base= time_div;
         s->pp_time= s->time - s->last_non_b_time;
         s->last_non_b_time= s->time;
+        assert(s->pp_time > 0);
     }
 }
 
