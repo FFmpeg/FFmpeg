@@ -29,9 +29,6 @@ imlib2.so: imlib2.o
 %.so: %.o
 	$(CC) -g -o $@ $(SHFLAGS) $<
 
-%.html: %.texi
-	texi2html -monolithic -number $<
-
 clean:
 	rm -f *.o *.d *.so *~
 
