@@ -1,20 +1,20 @@
 /*
  * JPEG based formats
- * Copyright (c) 2000, 2001 Gerard Lantau.
+ * Copyright (c) 2000, 2001 Fabrice Bellard.
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2 of the License, or (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,
+ * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 #include "avformat.h"
 
@@ -91,7 +91,7 @@ static AVOutputFormat single_jpeg_format = {
     "singlejpeg",
     "single JPEG image",
     "image/jpeg",
-    "jpg,jpeg",
+    NULL, /* note: no extension to favorize jpeg multiple images match */
     0,
     CODEC_ID_NONE,
     CODEC_ID_MJPEG,
@@ -145,8 +145,6 @@ static int jpeg_write_packet(AVFormatContext *s1, int stream_index,
 
 static int jpeg_write_trailer(AVFormatContext *s1)
 {
-    JpegContext *s = s1->priv_data;
-    av_free(s);
     return 0;
 }
 
@@ -228,8 +226,6 @@ static int jpeg_read_packet(AVFormatContext *s1, AVPacket *pkt)
 
 static int jpeg_read_close(AVFormatContext *s1)
 {
-    JpegContext *s = s1->priv_data;
-    av_free(s);
     return 0;
 }
 
