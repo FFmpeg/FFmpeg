@@ -181,7 +181,7 @@ int ff_wmv2_encode_picture_header(MpegEncContext * s, int picture_number)
         put_bits(&s->pb, 1, s->dc_table_index);
         put_bits(&s->pb, 1, s->mv_table_index);
     
-        s->inter_intra_pred= (s->width*s->height < 320*240 && s->bit_rate<=II_BITRATE);
+        s->inter_intra_pred= 0;//(s->width*s->height < 320*240 && s->bit_rate<=II_BITRATE);
     }
     s->esc3_level_length= 0;
     s->esc3_run_length= 0;
@@ -443,7 +443,7 @@ int ff_wmv2_decode_secondary_picture_header(MpegEncContext * s)
         s->dc_table_index = get_bits1(&s->gb);
         s->mv_table_index = get_bits1(&s->gb);
     
-        s->inter_intra_pred= (s->width*s->height < 320*240 && s->bit_rate<=II_BITRATE);
+        s->inter_intra_pred= 0;//(s->width*s->height < 320*240 && s->bit_rate<=II_BITRATE);
         s->no_rounding ^= 1;
         
         if(s->avctx->debug&FF_DEBUG_PICT_INFO){
