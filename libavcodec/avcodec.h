@@ -17,7 +17,7 @@ extern "C" {
 
 #define FFMPEG_VERSION_INT     0x000408
 #define FFMPEG_VERSION         "0.4.8"
-#define LIBAVCODEC_BUILD       4692
+#define LIBAVCODEC_BUILD       4693
 
 #define LIBAVCODEC_VERSION_INT FFMPEG_VERSION_INT
 #define LIBAVCODEC_VERSION     FFMPEG_VERSION
@@ -280,10 +280,6 @@ static const __attribute__((unused)) int Motion_Est_QTab[] =
    used */
 #define CODEC_CAP_PARSE_ONLY      0x0004
 #define CODEC_CAP_TRUNCATED       0x0008
-/*
- * Codec can use conditional replenishment if available.
- */
-#define CODEC_CAP_CR              0x0010
 
 /**
  * Pan Scan area.
@@ -1389,11 +1385,15 @@ typedef struct AVCodecContext {
     int noise_reduction;
     
     /**
-     * Conditional replenishment support
+     * called at the beginning of a frame to get cr buffer for it.
+     * buffer type (size, hints) must be the same. lavc won't check it.
+     * lavc will pass previous buffer in pic, function should return
+     * same buffer or new buffer with old frame "painted" into it.
+     * if pic.data[0] == NULL must behave like get_buffer().
      * - encoding: unused
-     * - decoding: set by user, if 1 user can allocate reusable buffers
+     * - decoding: set by lavc, user can override
      */
-    int cr_available;
+    int (*reget_buffer)(struct AVCodecContext *c, AVFrame *pic);
     
 } AVCodecContext;
 
@@ -1906,6 +1906,9 @@ void *__av_mallocz_static(void** location, unsigned int size);
 
 /* add by bero : in adx.c */
 int is_adx(const unsigned char *buf,size_t bufsize);
+
+void img_copy(AVPicture *dst, const AVPicture *src,
+              int pix_fmt, int width, int height);
 
 /* av_log API */
 

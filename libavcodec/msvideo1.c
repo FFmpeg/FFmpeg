@@ -47,22 +47,11 @@
     return; \
   }
 
-#define COPY_PREV_BLOCK() \
-  if (!s->avctx->cr_available) {\
-    pixel_ptr = block_ptr; \
-    for (pixel_y = 0; pixel_y < 4; pixel_y++) { \
-        for (pixel_x = 0; pixel_x < 4; pixel_x++, pixel_ptr++) \
-            pixels[pixel_ptr] = prev_pixels[pixel_ptr]; \
-        pixel_ptr -= row_dec; \
-    } \
-  }
-
 typedef struct Msvideo1Context {
 
     AVCodecContext *avctx;
     DSPContext dsp;
     AVFrame frame;
-    AVFrame prev_frame;
 
     unsigned char *buf;
     int size;
@@ -89,7 +78,7 @@ static int msvideo1_decode_init(AVCodecContext *avctx)
     avctx->has_b_frames = 0;
     dsputil_init(&s->dsp, avctx);
 
-    s->frame.data[0] = s->prev_frame.data[0] = NULL;
+    s->frame.data[0] = NULL;
 
     return 0;
 }
@@ -111,7 +100,6 @@ static void msvideo1_decode_8bit(Msvideo1Context *s)
     int skip_blocks;
     unsigned char colors[8];
     unsigned char *pixels = s->frame.data[0];
-    unsigned char *prev_pixels = s->prev_frame.data[0];
     int stride = s->frame.linesize[0];
 
     stream_ptr = 0;
@@ -127,7 +115,6 @@ static void msvideo1_decode_8bit(Msvideo1Context *s)
         for (block_x = blocks_wide; block_x > 0; block_x--) {
             /* check if this block should be skipped */
             if (skip_blocks) {
-                COPY_PREV_BLOCK();
                 block_ptr += block_inc;
                 skip_blocks--;
                 total_blocks--;
@@ -147,7 +134,6 @@ static void msvideo1_decode_8bit(Msvideo1Context *s)
             else if ((byte_b & 0xFC) == 0x84) {
                 /* skip code, but don't count the current block */
                 skip_blocks = ((byte_b - 0x84) << 8) + byte_a - 1;
-                COPY_PREV_BLOCK();
             } else if (byte_b < 0x80) {
                 /* 2-color encoding */
                 flags = (byte_b << 8) | byte_a;
@@ -219,7 +205,6 @@ static void msvideo1_decode_16bit(Msvideo1Context *s)
     int skip_blocks;
     unsigned short colors[8];
     unsigned short *pixels = (unsigned short *)s->frame.data[0];
-    unsigned short *prev_pixels = (unsigned short *)s->prev_frame.data[0];
     int stride = s->frame.linesize[0] / 2;
 
     stream_ptr = 0;
@@ -235,7 +220,6 @@ static void msvideo1_decode_16bit(Msvideo1Context *s)
         for (block_x = blocks_wide; block_x > 0; block_x--) {
             /* check if this block should be skipped */
             if (skip_blocks) {
-                COPY_PREV_BLOCK();
                 block_ptr += block_inc;
                 skip_blocks--;
                 total_blocks--;
@@ -255,7 +239,6 @@ static void msvideo1_decode_16bit(Msvideo1Context *s)
             } else if ((byte_b & 0xFC) == 0x84) {
                 /* skip code, but don't count the current block */
                 skip_blocks = ((byte_b - 0x84) << 8) + byte_a - 1;
-                COPY_PREV_BLOCK();
             } else if (byte_b < 0x80) {
                 /* 2- or 8-color encoding modes */
                 flags = (byte_b << 8) | byte_a;
@@ -328,32 +311,16 @@ static int msvideo1_decode_frame(AVCodecContext *avctx,
     s->size = buf_size;
 
 	s->frame.reference = 1;
-	s->frame.buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_PRESERVE;
-    if (avctx->cr_available)
-        s->frame.buffer_hints |= FF_BUFFER_HINTS_REUSABLE;
-    else
-        s->frame.buffer_hints |= FF_BUFFER_HINTS_READABLE;
-    if (avctx->get_buffer(avctx, &s->frame)) {
-        av_log(s->avctx, AV_LOG_ERROR, "  MS Video-1 Video: get_buffer() failed\n");
+	s->frame.buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_PRESERVE | FF_BUFFER_HINTS_REUSABLE;
+    if (avctx->reget_buffer(avctx, &s->frame)) {
+        av_log(s->avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
         return -1;
     }
-
-    if (s->prev_frame.data[0] &&(s->frame.linesize[0] != s->prev_frame.linesize[0]))
-        av_log(avctx, AV_LOG_ERROR, "  MS Video-1: Buffer linesize changed: current %u, previous %u.\n"
-                "              Expect wrong image and/or crash!\n",
-                s->frame.linesize[0], s->prev_frame.linesize[0]);
 
     if (s->mode_8bit)
         msvideo1_decode_8bit(s);
     else
         msvideo1_decode_16bit(s);
-
-    if (s->prev_frame.data[0])
-        avctx->release_buffer(avctx, &s->prev_frame);
-
-    /* shuffle frames */
-  if (!avctx->cr_available)
-    s->prev_frame = s->frame;
 
     *data_size = sizeof(AVFrame);
     *(AVFrame*)data = s->frame;
@@ -366,8 +333,8 @@ static int msvideo1_decode_end(AVCodecContext *avctx)
 {
     Msvideo1Context *s = (Msvideo1Context *)avctx->priv_data;
 
-    if (s->prev_frame.data[0])
-        avctx->release_buffer(avctx, &s->prev_frame);
+    if (s->frame.data[0])
+        avctx->release_buffer(avctx, &s->frame);
 
     return 0;
 }
@@ -381,5 +348,5 @@ AVCodec msvideo1_decoder = {
     NULL,
     msvideo1_decode_end,
     msvideo1_decode_frame,
-    CODEC_CAP_DR1 | CODEC_CAP_CR,
+    CODEC_CAP_DR1,
 };

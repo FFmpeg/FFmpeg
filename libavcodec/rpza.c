@@ -47,7 +47,6 @@ typedef struct RpzaContext {
     AVCodecContext *avctx;
     DSPContext dsp;
     AVFrame frame;
-    AVFrame prev_frame;
 
     unsigned char *buf;
     int size;
@@ -90,7 +89,6 @@ static void rpza_decode_stream(RpzaContext *s)
     unsigned char index, idx;
     unsigned short ta, tb;
     unsigned short *pixels = (unsigned short *)s->frame.data[0];
-    unsigned short *prev_pixels = (unsigned short *)s->prev_frame.data[0];
 
     int row_ptr = 0;
     int pixel_ptr = 0;
@@ -140,16 +138,6 @@ static void rpza_decode_stream(RpzaContext *s)
         /* Skip blocks */
         case 0x80:
             while (n_blocks--) {
-              if (!s->avctx->cr_available) {
-                block_ptr = row_ptr + pixel_ptr;
-                for (pixel_y = 0; pixel_y < 4; pixel_y++) {
-                    for (pixel_x = 0; pixel_x < 4; pixel_x++){
-                        pixels[block_ptr] = prev_pixels[block_ptr];
-                        block_ptr++;
-                    }
-                    block_ptr += row_inc;
-                }
-              }
               ADVANCE_BLOCK();
             }
             break;
@@ -255,7 +243,7 @@ static int rpza_decode_init(AVCodecContext *avctx)
     avctx->has_b_frames = 0;
     dsputil_init(&s->dsp, avctx);
 
-    s->frame.data[0] = s->prev_frame.data[0] = NULL;
+    s->frame.data[0] = NULL;
 
     return 0;
 }
@@ -274,29 +262,13 @@ static int rpza_decode_frame(AVCodecContext *avctx,
     s->size = buf_size;
 
     s->frame.reference = 1;
-	s->frame.buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_PRESERVE;
-    if (avctx->cr_available)
-        s->frame.buffer_hints |= FF_BUFFER_HINTS_REUSABLE;
-    else
-        s->frame.buffer_hints |= FF_BUFFER_HINTS_READABLE;
-    if (avctx->get_buffer(avctx, &s->frame)) {
-        av_log(avctx, AV_LOG_ERROR, "  RPZA Video: get_buffer() failed\n");
+	s->frame.buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_PRESERVE | FF_BUFFER_HINTS_REUSABLE;
+    if (avctx->reget_buffer(avctx, &s->frame)) {
+        av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
         return -1;
     }
 
-    if (s->prev_frame.data[0] &&(s->frame.linesize[0] != s->prev_frame.linesize[0]))
-        av_log(avctx, AV_LOG_ERROR, "Buffer linesize changed: current %u, previous %u.\n"
-                "Expect wrong image and/or crash!\n",
-                s->frame.linesize[0], s->prev_frame.linesize[0]);
-
     rpza_decode_stream(s);
-
-    if (s->prev_frame.data[0])
-        avctx->release_buffer(avctx, &s->prev_frame);
-
-    /* shuffle frames */
-  if (!avctx->cr_available)
-    s->prev_frame = s->frame;
 
     *data_size = sizeof(AVFrame);
     *(AVFrame*)data = s->frame;
@@ -309,8 +281,8 @@ static int rpza_decode_end(AVCodecContext *avctx)
 {
     RpzaContext *s = (RpzaContext *)avctx->priv_data;
 
-    if (s->prev_frame.data[0])
-        avctx->release_buffer(avctx, &s->prev_frame);
+    if (s->frame.data[0])
+        avctx->release_buffer(avctx, &s->frame);
 
     return 0;
 }
@@ -324,5 +296,5 @@ AVCodec rpza_decoder = {
     NULL,
     rpza_decode_end,
     rpza_decode_frame,
-    CODEC_CAP_DR1 | CODEC_CAP_CR,
+    CODEC_CAP_DR1,
 };

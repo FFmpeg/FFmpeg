@@ -47,7 +47,6 @@ typedef struct SmcContext {
     AVCodecContext *avctx;
     DSPContext dsp;
     AVFrame frame;
-    AVFrame prev_frame;
 
     unsigned char *buf;
     int size;
@@ -99,7 +98,6 @@ static void smc_decode_stream(SmcContext *s)
     unsigned int flag_mask;
 
     unsigned char *pixels = s->frame.data[0];
-    unsigned char *prev_pixels = s->prev_frame.data[0];
 
     int image_size = height * s->frame.linesize[0];
     int row_ptr = 0;
@@ -157,14 +155,6 @@ static void smc_decode_stream(SmcContext *s)
         case 0x10:
             n_blocks = GET_BLOCK_COUNT();
             while (n_blocks--) {
-                block_ptr = row_ptr + pixel_ptr;
-                for (pixel_y = 0; pixel_y < 4; pixel_y++) {
-                    for (pixel_x = 0; pixel_x < 4; pixel_x++) {
-                        pixels[block_ptr] = prev_pixels[block_ptr];
-                        block_ptr++;
-                    }
-                    block_ptr += row_inc;
-                }
                 ADVANCE_BLOCK();
             }
             break;
@@ -452,7 +442,7 @@ static int smc_decode_init(AVCodecContext *avctx)
     avctx->has_b_frames = 0;
     dsputil_init(&s->dsp, avctx);
 
-    s->frame.data[0] = s->prev_frame.data[0] = NULL;
+    s->frame.data[0] = NULL;
 
     return 0;
 }
@@ -463,22 +453,22 @@ static int smc_decode_frame(AVCodecContext *avctx,
 {
     SmcContext *s = (SmcContext *)avctx->priv_data;
 
+	/* no supplementary picture */
+	if (buf_size == 0)
+		return 0;
+
     s->buf = buf;
     s->size = buf_size;
 
     s->frame.reference = 1;
-    if (avctx->get_buffer(avctx, &s->frame)) {
-        printf ("  smc Video: get_buffer() failed\n");
+	s->frame.buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_PRESERVE | 
+	                        FF_BUFFER_HINTS_REUSABLE | FF_BUFFER_HINTS_READABLE;
+    if (avctx->reget_buffer(avctx, &s->frame)) {
+        printf ("reget_buffer() failed\n");
         return -1;
     }
 
     smc_decode_stream(s);
-
-    if (s->prev_frame.data[0])
-        avctx->release_buffer(avctx, &s->prev_frame);
-
-    /* shuffle frames */
-    s->prev_frame = s->frame;
 
     *data_size = sizeof(AVFrame);
     *(AVFrame*)data = s->frame;
@@ -491,8 +481,8 @@ static int smc_decode_end(AVCodecContext *avctx)
 {
     SmcContext *s = (SmcContext *)avctx->priv_data;
 
-    if (s->prev_frame.data[0])
-        avctx->release_buffer(avctx, &s->prev_frame);
+    if (s->frame.data[0])
+        avctx->release_buffer(avctx, &s->frame);
 
     return 0;
 }

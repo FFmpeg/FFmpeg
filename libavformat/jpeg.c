@@ -68,7 +68,7 @@ static int jpeg_get_buffer(AVCodecContext *c, AVFrame *picture)
     }
 }
 
-static void img_copy(uint8_t *dst, int dst_wrap, 
+static void jpeg_img_copy(uint8_t *dst, int dst_wrap, 
                      uint8_t *src, int src_wrap,
                      int width, int height)
 {
@@ -147,7 +147,7 @@ static int jpeg_read(ByteIOContext *f,
                 break;
             }
         }
-        img_copy(picture->data[i], picture->linesize[i],
+        jpeg_img_copy(picture->data[i], picture->linesize[i],
                  picture1.data[i], picture1.linesize[i],
                  w, h);
     }

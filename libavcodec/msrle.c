@@ -41,7 +41,6 @@
 typedef struct MsrleContext {
     AVCodecContext *avctx;
     AVFrame frame;
-    AVFrame prev_frame;
 
     unsigned char *buf;
     int size;
@@ -244,7 +243,7 @@ static int msrle_decode_init(AVCodecContext *avctx)
 
     avctx->pix_fmt = PIX_FMT_PAL8;
     avctx->has_b_frames = 0;
-    s->frame.data[0] = s->prev_frame.data[0] = NULL;
+    s->frame.data[0] = NULL;
 
     return 0;
 }
@@ -263,25 +262,11 @@ static int msrle_decode_frame(AVCodecContext *avctx,
     s->size = buf_size;
 
     s->frame.reference = 1;
-    s->frame.buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_PRESERVE;
-    if (avctx->cr_available)
-        s->frame.buffer_hints |= FF_BUFFER_HINTS_REUSABLE;
-    else
-        s->frame.buffer_hints |= FF_BUFFER_HINTS_READABLE;
-    if (avctx->get_buffer(avctx, &s->frame)) {
-        av_log(avctx, AV_LOG_ERROR, "  MS RLE: get_buffer() failed\n");
+    s->frame.buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_PRESERVE | FF_BUFFER_HINTS_REUSABLE;
+    if (avctx->reget_buffer(avctx, &s->frame)) {
+        av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
         return -1;
     }
-
-    if (s->prev_frame.data[0] && (s->frame.linesize[0] != s->prev_frame.linesize[0]))
-        av_log(avctx, AV_LOG_ERROR, "  MS RLE: Buffer linesize changed: current %u, previous %u.\n"
-                "          Expect wrong image and/or crash!\n",
-                s->frame.linesize[0], s->prev_frame.linesize[0]);
-
-    /* grossly inefficient, but...oh well */
-    if (s->prev_frame.data[0] != NULL)
-	memcpy(s->frame.data[0], s->prev_frame.data[0], 
-        s->frame.linesize[0] * s->avctx->height);
 
     switch (avctx->bits_per_sample) {
         case 8:
@@ -295,13 +280,6 @@ static int msrle_decode_frame(AVCodecContext *avctx,
                    avctx->bits_per_sample);
     }
 
-    if (s->prev_frame.data[0])
-        avctx->release_buffer(avctx, &s->prev_frame);
-
-    /* shuffle frames */
-  if (!avctx->cr_available)
-    s->prev_frame = s->frame;
-
     *data_size = sizeof(AVFrame);
     *(AVFrame*)data = s->frame;
 
@@ -314,8 +292,8 @@ static int msrle_decode_end(AVCodecContext *avctx)
     MsrleContext *s = (MsrleContext *)avctx->priv_data;
 
     /* release the last frame */
-    if (s->prev_frame.data[0])
-        avctx->release_buffer(avctx, &s->prev_frame);
+    if (s->frame.data[0])
+        avctx->release_buffer(avctx, &s->frame);
 
     return 0;
 }
@@ -329,5 +307,5 @@ AVCodec msrle_decoder = {
     NULL,
     msrle_decode_end,
     msrle_decode_frame,
-    CODEC_CAP_DR1 | CODEC_CAP_CR,
+    CODEC_CAP_DR1,
 };
