@@ -377,7 +377,7 @@ int rawvideo_read_packet(AVFormatContext *s,
         packet_size = (width * height * 3);
         break;
     default:
-        abort();
+        av_abort();
         break;
     }
 

@@ -190,7 +190,7 @@ static int mpeg_mux_init(AVFormatContext *ctx)
             s->video_bound++;
             break;
         default:
-            abort();
+            av_abort();
         }
     }
 
@@ -238,7 +238,7 @@ static int mpeg_mux_init(AVFormatContext *ctx)
                         90000 * FRAME_RATE_BASE);
             break;
         default:
-            abort();
+            av_abort();
         }
     }
     return 0;
