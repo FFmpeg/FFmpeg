@@ -89,6 +89,11 @@ PCM_CODEC(CODEC_ID_PCM_U8, pcm_u8);
 PCM_CODEC(CODEC_ID_PCM_ALAW, pcm_alaw);
 PCM_CODEC(CODEC_ID_PCM_MULAW, pcm_mulaw);
 
+    /* adpcm codecs */
+PCM_CODEC(CODEC_ID_ADPCM_IMA_QT, adpcm_ima_qt);
+PCM_CODEC(CODEC_ID_ADPCM_IMA_WAV, adpcm_ima_wav);
+PCM_CODEC(CODEC_ID_ADPCM_MS, adpcm_ms);
+
 #undef PCM_CODEC
 }
 

@@ -5,8 +5,8 @@
 
 #define LIBAVCODEC_VERSION_INT 0x000406
 #define LIBAVCODEC_VERSION     "0.4.6"
-#define LIBAVCODEC_BUILD       4617
-#define LIBAVCODEC_BUILD_STR   "4617"
+#define LIBAVCODEC_BUILD       4618
+#define LIBAVCODEC_BUILD_STR   "4618"
 
 enum CodecID {
     CODEC_ID_NONE, 
@@ -37,6 +37,11 @@ enum CodecID {
     CODEC_ID_PCM_U8,
     CODEC_ID_PCM_MULAW,
     CODEC_ID_PCM_ALAW,
+
+    /* various adpcm codecs */
+    CODEC_ID_ADPCM_IMA_QT,
+    CODEC_ID_ADPCM_IMA_WAV,
+    CODEC_ID_ADPCM_MS,
 };
 #define CODEC_ID_MSMPEG4 CODEC_ID_MSMPEG4V3
 
@@ -263,6 +268,7 @@ typedef struct AVCodecContext {
     int has_b_frames; // is 1 if the decoded stream contains b frames
     int dr_uvstride;
     int dr_ip_buffer_count;
+    int block_align; /* currently only for adpcm codec in wav/avi */
 
     //FIXME this should be reordered after kabis API is finished ...
     /*
@@ -286,7 +292,7 @@ typedef struct AVCodecContext {
 	    ul_res0,ul_res1,ul_res2,ul_res3,ul_res4,ul_res5,
 	    ul_res6,ul_res7,ul_res8,ul_res9,ul_res10,ul_res11,ul_res12;
     unsigned int
-	    ui_res0,ui_res1,ui_res2;
+	    ui_res0,ui_res1;
     unsigned short int
 	    us_res0,us_res1,us_res2,us_res3,us_res4,us_res5,
 	    us_res6,us_res7,us_res8,us_res9,us_res10,us_res11,us_res12;
@@ -375,6 +381,12 @@ PCM_CODEC(CODEC_ID_PCM_S8, pcm_s8);
 PCM_CODEC(CODEC_ID_PCM_U8, pcm_u8);
 PCM_CODEC(CODEC_ID_PCM_ALAW, pcm_alaw);
 PCM_CODEC(CODEC_ID_PCM_MULAW, pcm_mulaw);
+
+/* adpcm codecs */
+
+PCM_CODEC(CODEC_ID_ADPCM_IMA_QT, adpcm_ima_qt);
+PCM_CODEC(CODEC_ID_ADPCM_IMA_WAV, adpcm_ima_wav);
+PCM_CODEC(CODEC_ID_ADPCM_MS, adpcm_ms);
 
 #undef PCM_CODEC
 

@@ -3,6 +3,9 @@
 
 #include <Errors.h>
 
+// mmu_man: this is needed for http.c (defined errno)
+#include <errno.h>
+
 #ifdef ENOENT
 #undef ENOENT
 #endif 

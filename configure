@@ -43,6 +43,7 @@ gprof="no"
 v4l="yes"
 audio_oss="yes"
 network="yes"
+zlib="yes"
 mp3lame="no"
 a52="yes"
 a52bin="no"
@@ -123,6 +124,8 @@ for opt do
   ;;
   --disable-network) network="no"
   ;;
+  --disable-zlib) zlib="no"
+  ;;
   --disable-a52) a52="no"
   ;;
   --enable-a52bin) a52bin="yes" ; extralibs="-ldl $extralibs"
@@ -195,6 +198,25 @@ EOF
 $cc -o $TMPO $TMPC 2> /dev/null || _memalign=no
 fi
 
+if test "$zlib" = "yes"; then
+# check for zlib - mmu_man
+cat > $TMPC << EOF
+#include <zlib.h>
+int main ( void ) {
+if (zlibVersion() != ZLIB_VERSION)
+   puts("zlib version differs !!!");
+   return 1;
+return 0;
+}
+EOF
+$cc -o $TMPO $TMPC -lz 2> /dev/null || zlib="no"
+# $TMPO 2> /dev/null > /dev/null || zlib="no"
+# XXX: more tests needed - runtime test
+fi
+if test "$zlib" = "yes"; then
+extralibs="$extralibs -lz"
+fi
+
 _restrict=
 for restrict_keyword in restrict __restrict__ __restrict; do
   echo "void foo(char * $restrict_keyword p);" > $TMPC
@@ -233,6 +255,7 @@ echo "  --disable-mmx            disable mmx usage"
 echo "  --disable-audio-oss      disable OSS audio support [default=no]"
 echo "  --disable-v4l            disable video4linux grabbing [default=no]"
 echo "  --disable-network        disable network support [default=no]"
+echo "  --disable-zlib           disable zlib [default=no]"
 echo "  --disable-simple_idct    disable simple IDCT routines [default=no]"
 echo "  --enable-gprof           enable profiling with gprof [$gprof]"
 echo "  --disable-mpegaudio-hp   faster (but less accurate)"
@@ -250,6 +273,7 @@ echo "CPU              $cpu"
 echo "Big Endian       $bigendian"
 echo "MMX enabled      $mmx"
 echo "gprof enabled    $gprof"
+echo "zlib enabled     $zlib"
 echo "mp3lame enabled  $mp3lame"
 echo "a52 support      $a52"
 echo "a52 dlopened     $a52bin"
@@ -337,6 +361,11 @@ fi
 if test "$network" = "yes" ; then
   echo "#define CONFIG_NETWORK 1" >> $TMPH
   echo "CONFIG_NETWORK=yes" >> config.mak
+fi
+
+if test "$zlib" = "yes" ; then
+  echo "#define CONFIG_ZLIB 1" >> $TMPH
+  echo "CONFIG_ZLIB=yes" >> config.mak
 fi
 
 if test "$mp3lame" = "yes" ; then

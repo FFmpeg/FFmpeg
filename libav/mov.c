@@ -19,12 +19,17 @@
 #include "avformat.h"
 #include "avi.h"
 
+#ifdef CONFIG_ZLIB
+#include <zlib.h>
+#endif
+
 /*
  * First version by Francois Revol revol@free.fr
  * 
  * Features and limitations:
  * - reads most of the QT files I have (at least the structure), 
  *   the exceptions are .mov with zlib compressed headers ('cmov' section). It shouldn't be hard to implement.
+ *   FIXED, Francois Revol, 07/17/2002
  * - ffmpeg has nearly none of the usual QuickTime codecs,
  *   although I succesfully dumped raw and mp3 audio tracks off .mov files.
  *   Sample QuickTime files with mp3 audio can be found at: http://www.3ivx.com/showcase.html
@@ -79,8 +84,8 @@ void print_atom(const char *str, UINT32 type, UINT64 offset, UINT64 size)
 static const CodecTag mov_video_tags[] = {
 /*  { CODEC_ID_, MKTAG('c', 'v', 'i', 'd') }, *//* Cinepak */
 /*  { CODEC_ID_JPEG, MKTAG('j', 'p', 'e', 'g') }, *//* JPEG */
-    { CODEC_ID_H263, MKTAG('r', 'a', 'w', ' ') }, /* Uncompressed RGB */
-    { CODEC_ID_H263, MKTAG('Y', 'u', 'v', '2') }, /* Uncompressed YUV422 */
+/*  { CODEC_ID_H263, MKTAG('r', 'a', 'w', ' ') }, *//* Uncompressed RGB */
+/*  { CODEC_ID_H263, MKTAG('Y', 'u', 'v', '2') }, *//* Uncompressed YUV422 */
 /* Graphics */
 /* Animation */
 /* Apple video */
@@ -91,9 +96,12 @@ static const CodecTag mov_video_tags[] = {
     { CODEC_ID_MJPEG, MKTAG('m', 'j', 'p', 'b') }, /* Motion-JPEG (format B) */
 /*    { CODEC_ID_GIF, MKTAG('g', 'i', 'f', ' ') }, *//* embedded gif files as frames (usually one "click to play movie" frame) */
 /* Sorenson video */
+    { CODEC_ID_SVQ1, MKTAG('S', 'V', 'Q', '1') }, /* Sorenson Video v1 */
+    { CODEC_ID_SVQ1, MKTAG('s', 'v', 'q', '1') }, /* Sorenson Video v1 */
     { CODEC_ID_MPEG4, MKTAG('m', 'p', '4', 'v') }, /* OpenDiVX *//* yeah ! */
     { CODEC_ID_MPEG4, MKTAG('D', 'I', 'V', 'X') }, /* OpenDiVX *//* sample files at http://heroinewarrior.com/xmovie.php3 use this tag */
 /*    { CODEC_ID_, MKTAG('I', 'V', '5', '0') }, *//* Indeo 5.0 */
+    { CODEC_ID_H263, MKTAG('h', '2', '6', '3') }, /* H263 */
     { 0, 0 }, 
 };
 
@@ -105,7 +113,7 @@ static const CodecTag mov_audio_tags[] = {
     { CODEC_ID_PCM_S16LE, MKTAG('s', 'o', 'w', 't') }, /*  */
     { CODEC_ID_PCM_MULAW, MKTAG('u', 'l', 'a', 'w') }, /*  */
     { CODEC_ID_PCM_ALAW, MKTAG('a', 'l', 'a', 'w') }, /*  */
-/*    { CODEC_ID_, MKTAG('i', 'm', 'a', '4') }, *//* IMA-4 */
+    { CODEC_ID_ADPCM_IMA_QT, MKTAG('i', 'm', 'a', '4') }, /* IMA-4 ADPCM */
 
     { CODEC_ID_MP2, MKTAG('.', 'm', 'p', '3') }, /* MPEG layer 3 */ /* sample files at http://www.3ivx.com/showcase.html use this tag */
     { CODEC_ID_MP2, 0x6D730055 }, /* MPEG layer 3 */
@@ -139,6 +147,7 @@ typedef struct MOVStreamContext {
     long sample_size;
     long sample_count;
     long *sample_sizes;
+    long time_scale;
 } MOVStreamContext;
 
 typedef struct MOVContext {
@@ -266,6 +275,9 @@ static int parse_mvhd(const MOVParseTableEntry *parse_table, ByteIOContext *pb, 
     get_be32(pb); /* creation time */
     get_be32(pb); /* modification time */
     c->time_scale = get_be32(pb); /* time scale */
+#ifdef DEBUG
+    printf("time scale = %li\n", c->time_scale);
+#endif
     get_be32(pb); /* duration */
     get_be32(pb); /* preferred scale */
     
@@ -390,6 +402,38 @@ static int parse_tkhd(const MOVParseTableEntry *parse_table, ByteIOContext *pb, 
     return 0;
 }
 
+static int parse_mdhd(const MOVParseTableEntry *parse_table, ByteIOContext *pb, UINT32 atom_type, INT64 atom_offset, INT64 atom_size, void *param)
+{
+    MOVContext *c;
+    AVStream *st;
+#ifdef DEBUG
+    print_atom("mdhd", atom_type, atom_offset, atom_size);
+#endif
+
+    c = (MOVContext *)param;
+    st = c->fc->streams[c->fc->nb_streams-1];
+    
+    get_byte(pb); /* version */
+
+    get_byte(pb); get_byte(pb);
+    get_byte(pb); /* flags */
+
+    get_be32(pb); /* creation time */
+    get_be32(pb); /* modification time */
+
+    c->streams[c->total_streams]->time_scale = get_be32(pb);
+
+#ifdef DEBUG
+    printf("track[%i].time_scale = %li\n", c->fc->nb_streams-1, c->streams[c->total_streams]->time_scale); /* time scale */
+#endif
+    get_be32(pb); /* duration */
+
+    get_be16(pb); /* language */
+    get_be16(pb); /* quality */
+    
+    return 0;
+}
+
 static int parse_hdlr(const MOVParseTableEntry *parse_table, ByteIOContext *pb, UINT32 atom_type, INT64 atom_offset, INT64 atom_size, void *param)
 {
     MOVContext *c;
@@ -435,11 +479,15 @@ static int parse_hdlr(const MOVParseTableEntry *parse_table, ByteIOContext *pb, 
 #endif
 
     if(ctype == MKTAG('m', 'h', 'l', 'r')) { /* MOV */
+        /* helps parsing the string hereafter... */
+        c->mp4 = 0;
         if(type == MKTAG('v', 'i', 'd', 'e'))
             st->codec.codec_type = CODEC_TYPE_VIDEO;
         else if(type == MKTAG('s', 'o', 'u', 'n'))
             st->codec.codec_type = CODEC_TYPE_AUDIO;
     } else if(ctype == 0) { /* MP4 */
+        /* helps parsing the string hereafter... */
+        c->mp4 = 1;
         if(type == MKTAG('v', 'i', 'd', 'e'))
             st->codec.codec_type = CODEC_TYPE_VIDEO;
         else if(type == MKTAG('s', 'o', 'u', 'n'))
@@ -453,6 +501,22 @@ static int parse_hdlr(const MOVParseTableEntry *parse_table, ByteIOContext *pb, 
         return 0; /* nothing left to read */
     /* XXX: MP4 uses a C string, not a pascal one */
     /* component name */
+
+    if(c->mp4) {
+        /* .mp4: C string */
+        while(get_byte(pb) && (++len < (atom_size - 24)));
+    } else {
+        /* .mov: PASCAL string */
+        len = get_byte(pb);
+        buf = av_malloc(len+1);
+        get_buffer(pb, buf, len);
+        buf[len] = '\0';
+#ifdef DEBUG
+        printf("**buf='%s'\n", buf);
+#endif
+        av_free(buf);
+    }
+#if 0
     len = get_byte(pb);
     /* XXX: use a better heuristic */
     if(len < 32) {
@@ -472,6 +536,7 @@ static int parse_hdlr(const MOVParseTableEntry *parse_table, ByteIOContext *pb, 
             len = get_byte(pb);
         }
     }
+#endif
     
     return 0;
 }
@@ -559,7 +624,7 @@ static int parse_stsd(const MOVParseTableEntry *parse_table, ByteIOContext *pb, 
             if(format == MKTAG('m', 'p', '4', 'v')) { /* XXX */
                 st->codec.codec_type=CODEC_TYPE_VIDEO; /* force things */
                 st->codec.codec_id = CODEC_ID_MPEG4;
-                st->codec.frame_rate = 25;
+                st->codec.frame_rate = 25 * FRAME_RATE_BASE;
                 st->codec.bit_rate = 100000;
             }
 
@@ -673,7 +738,9 @@ static int parse_stsz(const MOVParseTableEntry *parse_table, ByteIOContext *pb, 
     sc->sample_size = get_be32(pb);
     entries = get_be32(pb);
     sc->sample_count = entries;
+#ifdef DEBUG
     printf("sample_size = %ld sample_count = %ld\n", sc->sample_size, sc->sample_count);
+#endif
     if(sc->sample_size)
         return 0; /* there isn't any table following */
     sc->sample_sizes = av_malloc(entries * sizeof(long));
@@ -685,6 +752,91 @@ static int parse_stsz(const MOVParseTableEntry *parse_table, ByteIOContext *pb, 
     }
     return 0;
 }
+
+static int parse_stts(const MOVParseTableEntry *parse_table, ByteIOContext *pb, UINT32 atom_type, INT64 atom_offset, INT64 atom_size, void *param)
+{
+    MOVContext *c;
+    int entries, i;
+    AVStream *st;
+    MOVStreamContext *sc;
+#ifdef DEBUG
+    print_atom("stts", atom_type, atom_offset, atom_size);
+#endif
+    c = (MOVContext *)param;
+    st = c->fc->streams[c->fc->nb_streams-1];
+    sc = (MOVStreamContext *)st->priv_data;
+
+    get_byte(pb); /* version */
+    get_byte(pb); get_byte(pb); get_byte(pb); /* flags */
+    entries = get_be32(pb);
+    for(i=0; i<entries; i++) {
+        int sample_duration;
+
+        get_be32(pb);
+        sample_duration = get_be32(pb);
+
+        if (!i && st->codec.codec_type==CODEC_TYPE_VIDEO) {
+            st->codec.frame_rate = FRAME_RATE_BASE * c->streams[c->total_streams]->time_scale / sample_duration;
+#ifdef DEBUG
+            printf("VIDEO FRAME RATE= %li (sd= %li)\n", st->codec.frame_rate, sample_duration);
+#endif
+        }
+    }
+    return 0;
+}
+
+#ifdef CONFIG_ZLIB
+static int null_read_packet(void *opaque, UINT8 *buf, int buf_size)
+{
+    return -1;
+}
+
+static int parse_cmov(const MOVParseTableEntry *parse_table, ByteIOContext *pb, UINT32 atom_type, INT64 atom_offset, INT64 atom_size, void *param)
+{
+    MOVContext *c;
+    ByteIOContext ctx;
+    char *cmov_data;
+    unsigned char *moov_data; /* uncompressed data */
+    long cmov_len, moov_len;
+    int ret;
+#ifdef DEBUG
+    print_atom("cmov", atom_type, atom_offset, atom_size);
+#endif
+    c = (MOVContext *)param;
+
+    get_be32(pb); /* dcom atom */
+    if (get_le32(pb) != MKTAG( 'd', 'c', 'o', 'm' ))
+        return -1;
+    if (get_le32(pb) != MKTAG( 'z', 'l', 'i', 'b' )) {
+        puts("unknown compression for cmov atom !");
+        return -1;
+    }
+    get_be32(pb); /* cmvd atom */
+    if (get_le32(pb) != MKTAG( 'c', 'm', 'v', 'd' ))
+        return -1;
+    moov_len = get_be32(pb); /* uncompressed size */
+    cmov_len = atom_size - 6 * 4;
+    
+    cmov_data = av_malloc(cmov_len);
+    if (!cmov_data)
+        return -1;
+    moov_data = av_malloc(moov_len);
+    if (!moov_data) {
+        av_free(cmov_data);
+        return -1;
+    }
+    get_buffer(pb, cmov_data, cmov_len);
+    if(uncompress (moov_data, &moov_len, (const Bytef *)cmov_data, cmov_len) != Z_OK)
+        return -1;
+    if(init_put_byte(&ctx, moov_data, moov_len, 0, NULL, null_read_packet, NULL, NULL) != 0)
+        return -1;
+    ctx.buf_end = ctx.buffer + moov_len;
+    ret = parse_default(parse_table, &ctx, MKTAG( 'm', 'o', 'o', 'v' ), 0, moov_len, param);
+    av_free(moov_data);
+    av_free(cmov_data);
+    return ret;
+}
+#endif
 
 static const MOVParseTableEntry mov_default_parse_table[] = {
 /* mp4 atoms */
@@ -711,7 +863,7 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG( 'm', 'p', '4', 's' ), parse_default },
 { MKTAG( 'm', 'd', 'i', 'a' ), parse_default },
 { MKTAG( 'm', 'd', 'a', 't' ), parse_mdat },
-{ MKTAG( 'm', 'd', 'h', 'd' ), parse_leaf },
+{ MKTAG( 'm', 'd', 'h', 'd' ), parse_mdhd },
 { MKTAG( 'm', 'i', 'n', 'f' ), parse_default },
 { MKTAG( 'm', 'o', 'o', 'v' ), parse_moov },
 { MKTAG( 'm', 'v', 'h', 'd' ), parse_mvhd },
@@ -728,7 +880,7 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG( 's', 'm', 'h', 'd' ), parse_leaf },
 { MKTAG( 'd', 'p', 'n', 'd' ), parse_leaf },
 { MKTAG( 's', 't', 's', 's' ), parse_leaf },
-{ MKTAG( 's', 't', 't', 's' ), parse_leaf },
+{ MKTAG( 's', 't', 't', 's' ), parse_stts },
 { MKTAG( 't', 'r', 'a', 'k' ), parse_trak },
 { MKTAG( 't', 'k', 'h', 'd' ), parse_tkhd },
 { MKTAG( 't', 'r', 'e', 'f' ), parse_default }, /* not really */
@@ -753,6 +905,11 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG( 's', 's', 'r', 'c' ), parse_leaf },
 { MKTAG( 't', 'c', 'm', 'd' ), parse_leaf },
 { MKTAG( 'w', 'i', 'd', 'e' ), parse_leaf }, /* place holder */
+#ifdef CONFIG_ZLIB
+{ MKTAG( 'c', 'm', 'o', 'v' ), parse_cmov },
+#else
+{ MKTAG( 'c', 'm', 'o', 'v' ), parse_leaf },
+#endif
 { 0L, parse_leaf }
 };
 
@@ -773,6 +930,10 @@ static int mov_probe(AVProbeData *p)
         return 0;
     if ((p->buf[4] == 'm' && p->buf[5] == 'o' &&
          p->buf[6] == 'o' && p->buf[7] == 'v') ||
+        (p->buf[4] == 'w' && p->buf[5] == 'i' &&
+         p->buf[6] == 'd' && p->buf[7] == 'e') ||
+        (p->buf[4] == 'f' && p->buf[5] == 'r' &&
+         p->buf[6] == 'e' && p->buf[7] == 'e') ||
         (p->buf[4] == 'm' && p->buf[5] == 'd' &&
          p->buf[6] == 'a' && p->buf[7] == 't'))
         return AVPROBE_SCORE_MAX;

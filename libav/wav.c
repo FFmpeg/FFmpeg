@@ -27,6 +27,8 @@ CodecTag codec_wav_tags[] = {
     { CODEC_ID_PCM_U8, 0x01 }, /* must come after s16le in this list */
     { CODEC_ID_PCM_ALAW, 0x06 },
     { CODEC_ID_PCM_MULAW, 0x07 },
+    { CODEC_ID_ADPCM_MS, 0x02 },
+    { CODEC_ID_ADPCM_IMA_WAV, 0x11 },
     { 0, 0 },
 };
 
@@ -56,6 +58,8 @@ int put_wav_header(ByteIOContext *pb, AVCodecContext *enc)
     if (enc->codec_id == CODEC_ID_MP2 || enc->codec_id == CODEC_ID_MP3LAME) {
         blkalign = 1;
         //blkalign = 144 * enc->bit_rate/enc->sample_rate;
+    } else if (enc->block_align != 0) { /* specified by the codec */
+        blkalign = enc->block_align;
     } else
         blkalign = enc->channels*bps >> 3;
     if (enc->codec_id == CODEC_ID_PCM_U8 ||
@@ -205,6 +209,7 @@ static int wav_read_header(AVFormatContext *s,
     unsigned int tag;
     ByteIOContext *pb = &s->pb;
     unsigned int id, channels, rate, bit_rate, extra_size, bps;
+    unsigned int blkalign;
     AVStream *st;
 
     /* check RIFF header */
@@ -225,7 +230,7 @@ static int wav_read_header(AVFormatContext *s,
     channels = get_le16(pb);
     rate = get_le32(pb);
     bit_rate = get_le32(pb) * 8;
-    get_le16(pb); /* block align */
+    blkalign = get_le16(pb); /* block align */
     bps = get_le16(pb); /* bits per sample */
     if (size >= 18) {
         /* wav_extra_size */
@@ -248,6 +253,7 @@ static int wav_read_header(AVFormatContext *s,
     st->codec.codec_id = wav_codec_get_id(id, bps);
     st->codec.channels = channels;
     st->codec.sample_rate = rate;
+    st->codec.block_align = blkalign;
     return 0;
 }
 

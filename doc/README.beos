@@ -1,0 +1,23 @@
+Compilation on BeOS:
+--------------------
+
+François Revol - revol@free.fr - July 2002
+
+The configure script should guess the configuration itself.
+Networking support is currently not finished.
+errno issues fixed by Andrew Bachmann.
+
+Old stuff:
+
+François Revol - revol@free.fr - April 2002
+
+The configure script should guess the configuration itself, 
+however I still didn't tested building on net_server version of BeOS.
+
+ffserver is broken (needs poll() implementation).
+
+There is still issues with errno codes, which are negative in BeOs, and
+that ffmpeg negates when returning. This ends up turning errors into 
+valid results, then crashes.
+(To be fixed)
+
