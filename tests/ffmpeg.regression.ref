@@ -1,5 +1,5 @@
 ffmpeg regression test
-6c8b6ee8dd9c34f58908fe501d7dbe1e *./data/a-mpeg1.mpg
+67be2deabb210740966ca5fda9a64bca *./data/a-mpeg1.mpg
 59a66b108e8bbd3867c4ee27f4bbe2ca *./data/out.yuv
 297793ed0fd5793182a92e63ffd764af *./data/a-msmpeg4.avi
 951aa2df4ef4c1eeee3ccc8904de8e48 *./data/out.yuv
