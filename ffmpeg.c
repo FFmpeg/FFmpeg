@@ -1,12 +1,21 @@
 /*
  * FFmpeg main 
- * Copyright (c) 2000,2001 Gerard Lantau
+ * Copyright (c) 2000, 2001, 2002 Gerard Lantau
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  *
+ * As a special exception, if you link this library with other files
+ * to produce an executable, this library does not by itself cause the
+ * resulting executable to be covered by the GNU General Public
+ * License.  This exception does not however invalidate any other
+ * reasons why the executable file might be covered by the GNU General
+ * Public License. (The General Public License restrictions do apply
+ * in other respects; for example, they cover modification of the
+ * file, and distribution when not linked into a combine executable.)
+ * 
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -14,7 +23,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  
  */
 #define HAVE_AV_CONFIG_H
 #include "avformat.h"
@@ -120,8 +129,6 @@ typedef struct AVOutputStream {
     AVStream *st;            /* stream in the output file */
     int encoding_needed;   /* true if encoding needed for this stream */
 
-    int fifo_packet_rptr;    /* read index in the corresponding
-                                avinputstream packet fifo */
     /* video only */
     AVPicture pict_tmp;         /* temporary image for resizing */
     int video_resample;
@@ -316,7 +323,7 @@ static void write_picture(AVFormatContext *s, int index, AVPicture *picture,
     switch(pix_fmt) {
     case PIX_FMT_YUV420P:
         size = avpicture_get_size(pix_fmt, w, h);
-        buf = malloc(size);
+        buf = av_malloc(size);
         if (!buf)
             return;
         dest = buf;
@@ -335,7 +342,7 @@ static void write_picture(AVFormatContext *s, int index, AVPicture *picture,
         break;
     case PIX_FMT_YUV422P:
         size = (w * h) * 2; 
-        buf = malloc(size);
+        buf = av_malloc(size);
         if (!buf)
             return;
         dest = buf;
@@ -353,7 +360,7 @@ static void write_picture(AVFormatContext *s, int index, AVPicture *picture,
         break;
     case PIX_FMT_YUV444P:
         size = (w * h) * 3; 
-        buf = malloc(size);
+        buf = av_malloc(size);
         if (!buf)
             return;
         dest = buf;
@@ -368,7 +375,7 @@ static void write_picture(AVFormatContext *s, int index, AVPicture *picture,
         break;
     case PIX_FMT_YUV422:
         size = (w * h) * 2; 
-        buf = malloc(size);
+        buf = av_malloc(size);
         if (!buf)
             return;
         dest = buf;
@@ -382,7 +389,7 @@ static void write_picture(AVFormatContext *s, int index, AVPicture *picture,
     case PIX_FMT_RGB24:
     case PIX_FMT_BGR24:
         size = (w * h) * 3; 
-        buf = malloc(size);
+        buf = av_malloc(size);
         if (!buf)
             return;
         dest = buf;
@@ -397,7 +404,7 @@ static void write_picture(AVFormatContext *s, int index, AVPicture *picture,
         return;
     }
     s->format->write_packet(s, index, buf, size, 0);
-    free(buf);
+    av_free(buf);
 }
 
 
@@ -433,7 +440,7 @@ static void do_video_out(AVFormatContext *s,
 
         /* create temporary picture */
         size = avpicture_get_size(dec->pix_fmt, dec->width, dec->height);
-        buf1 = malloc(size);
+        buf1 = av_malloc(size);
         if (!buf1)
             return;
         
@@ -443,7 +450,7 @@ static void do_video_out(AVFormatContext *s,
         if (avpicture_deinterlace(picture2, picture1, 
                                   dec->pix_fmt, dec->width, dec->height) < 0) {
             /* if error, do not deinterlace */
-            free(buf1);
+            av_free(buf1);
             buf1 = NULL;
             picture2 = picture1;
         }
@@ -457,7 +464,7 @@ static void do_video_out(AVFormatContext *s,
 
         /* create temporary picture */
         size = avpicture_get_size(enc->pix_fmt, dec->width, dec->height);
-        buf = malloc(size);
+        buf = av_malloc(size);
         if (!buf)
             return;
         pict = &picture_tmp1;
@@ -507,10 +514,8 @@ static void do_video_out(AVFormatContext *s,
         }
     }
     the_end:
-    if (buf)
-        free(buf);
-    if (buf1)
-        free(buf1);
+    av_free(buf);
+    av_free(buf1);
 }
 
 static void do_video_stats(AVOutputStream *ost, 
@@ -801,7 +806,7 @@ static int av_encode(AVFormatContext **output_files,
                 } else {
                     UINT8 *buf;
                     ost->video_resample = 1;
-                    buf = malloc((codec->width * codec->height * 3) / 2);
+                    buf = av_malloc((codec->width * codec->height * 3) / 2);
                     if (!buf)
                         goto fail;
                     ost->pict_tmp.data[0] = buf;
@@ -1229,31 +1234,28 @@ static int av_encode(AVFormatContext **output_files,
     
     ret = 0;
  fail1:
-    free(file_table);
+    av_free(file_table);
 
     if (ist_table) {
         for(i=0;i<nb_istreams;i++) {
             ist = ist_table[i];
-            if (ist) {
-                free(ist);
-            }
+            av_free(ist);
         }
-        free(ist_table);
+        av_free(ist_table);
     }
     if (ost_table) {
         for(i=0;i<nb_ostreams;i++) {
             ost = ost_table[i];
             if (ost) {
-                if (ost->pict_tmp.data[0])
-                    free(ost->pict_tmp.data[0]);
+                av_free(ost->pict_tmp.data[0]);
                 if (ost->video_resample)
                     img_resample_close(ost->img_resample_ctx);
                 if (ost->audio_resample)
                     audio_resample_close(ost->resample);
-                free(ost);
+                av_free(ost);
             }
         }
-        free(ost_table);
+        av_free(ost_table);
     }
     return ret;
  fail:
@@ -1287,7 +1289,7 @@ void show_licence(void)
 {
     printf(
     "ffmpeg version " FFMPEG_VERSION "\n"
-    "Copyright (c) 2000,2001 Gerard Lantau\n"
+    "Copyright (c) 2000, 2001, 2002 Gerard Lantau\n"
     "This program is free software; you can redistribute it and/or modify\n"
     "it under the terms of the GNU General Public License as published by\n"
     "the Free Software Foundation; either version 2 of the License, or\n"
@@ -1741,8 +1743,7 @@ int get_real_fps(AVFormatContext *ic, AVFormat *fmt, AVFormatParameters *ap, int
     }
 the_end:
     /* FIXME: leak in packet_buffer */
-    if (fc)
-        free(fc);
+    av_free(fc);
     return rfps;
 }
 
@@ -2299,7 +2300,7 @@ void show_help(void)
     
     prog = do_play ? "ffplay" : "ffmpeg";
 
-    printf("%s version " FFMPEG_VERSION ", Copyright (c) 2000, 2001 Gerard Lantau\n", 
+    printf("%s version " FFMPEG_VERSION ", Copyright (c) 2000, 2001, 2002 Gerard Lantau\n", 
            prog);
     
     if (!do_play) {

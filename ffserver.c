@@ -1,6 +1,6 @@
 /*
  * Multiple format streaming server
- * Copyright (c) 2000,2001 Gerard Lantau.
+ * Copyright (c) 2000, 2001, 2002 Gerard Lantau.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -305,7 +305,7 @@ static int http_server(struct sockaddr_in my_addr)
                     av_close_input_file(c->fmt_in);
                 *cp = c->next;
                 nb_bandwidth -= c->bandwidth;
-                free(c);
+                av_free(c);
                 nb_connections--;
             } else {
                 cp = &c->next;
@@ -1074,10 +1074,10 @@ static int http_prepare_data(HTTPContext *c)
         if (fifo_read(&http_fifo, (UINT8 *)&hdr, sizeof(hdr), &c->rptr) < 0)
             return 0;
         payload_size = ntohs(hdr.payload_size);
-        payload = malloc(payload_size);
+        payload = av_malloc(payload_size);
         if (fifo_read(&http_fifo, payload, payload_size, &c->rptr) < 0) {
             /* cannot read all the payload */
-            free(payload);
+            av_free(payload);
             c->rptr = start_rptr;
             return 0;
         }
@@ -1116,7 +1116,7 @@ static int http_prepare_data(HTTPContext *c)
             c->buffer_ptr = c->buffer;
             c->buffer_end = q;
         }
-        free(payload);
+        av_free(payload);
 #endif
         {
             AVPacket pkt;
@@ -1938,7 +1938,7 @@ static void write_packet(FFCodec *ffenc,
 
 void help(void)
 {
-    printf("ffserver version " FFMPEG_VERSION ", Copyright (c) 2000,2001 Gerard Lantau\n"
+    printf("ffserver version " FFMPEG_VERSION ", Copyright (c) 2000, 2001, 2002 Gerard Lantau\n"
            "usage: ffserver [-L] [-h] [-f configfile]\n"
            "Hyper fast multi format Audio/Video streaming server\n"
            "\n"
@@ -1952,7 +1952,7 @@ void licence(void)
 {
     printf(
     "ffserver version " FFMPEG_VERSION "\n"
-    "Copyright (c) 2000,2001 Gerard Lantau\n"
+    "Copyright (c) 2000, 2001, 2002 Gerard Lantau\n"
     "This program is free software; you can redistribute it and/or modify\n"
     "it under the terms of the GNU General Public License as published by\n"
     "the Free Software Foundation; either version 2 of the License, or\n"
