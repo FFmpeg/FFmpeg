@@ -75,7 +75,7 @@ extern unsigned long long perfdata_miss[powerpc_perf_total][powerpc_data_total];
 #else /* POWERPC_PERF_USE_PMC */
 #define POWERPC_GET_CYCLES(a) asm volatile("mfspr %0, 937" : "=r" (a))
 #define POWERPC_GET_MISS(a) asm volatile("mfspr %0, 938" : "=r" (a))
-#define POWERPC_TBL_DECLARE(a, cond) register unsigned long cycles_start, cycles_stop, miss_start, miss_stop;
+#define POWERPC_TBL_DECLARE(a, cond) register unsigned long cycles_start, cycles_stop, miss_start, miss_stop
 #define POWERPC_TBL_START_COUNT(a, cond) do { POWERPC_GET_MISS(miss_start); POWERPC_GET_CYCLES(cycles_start); } while (0)
 #define POWERPC_TBL_STOP_COUNT(a, cond) do {     \
   POWERPC_GET_CYCLES(cycles_stop);               \
@@ -114,9 +114,10 @@ extern unsigned long long perfdata_miss[powerpc_perf_total][powerpc_data_total];
 
 
 #else /* POWERPC_TBL_PERFORMANCE_REPORT */
-#define POWERPC_TBL_DECLARE(a, cond)
-#define POWERPC_TBL_START_COUNT(a, cond)
-#define POWERPC_TBL_STOP_COUNT(a, cond)
+// those are needed to avoid empty statements.
+#define POWERPC_TBL_DECLARE(a, cond)        int altivec_placeholder __attribute__ ((unused))
+#define POWERPC_TBL_START_COUNT(a, cond)    do {} while (0)
+#define POWERPC_TBL_STOP_COUNT(a, cond)     do {} while (0)
 #endif /* POWERPC_TBL_PERFORMANCE_REPORT */
 
 #endif /*  _DSPUTIL_PPC_ */
