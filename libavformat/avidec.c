@@ -254,7 +254,8 @@ static int avi_read_packet(AVFormatContext *s, AVPacket *pkt)
         n= (d[0] - '0') * 10 + (d[1] - '0');
         if(    d[0] >= '0' && d[0] <= '9'
             && d[1] >= '0' && d[1] <= '9'
-            &&((d[2] == 'd' && d[3] == 'c') || (d[2] == 'w' && d[3] == 'b'))
+            &&((d[2] == 'd' && d[3] == 'c') || (d[2] == 'w' && d[3] == 'b') || (d[2] == 'd' && d[3] == 'b') )
+
             && n < s->nb_streams
             && i + size <= avi->movi_end){
         
