@@ -1125,11 +1125,11 @@ static int av_encode(AVFormatContext **output_files,
             switch (ist->st->codec.codec_type) {
             case CODEC_TYPE_AUDIO:
                 av_frac_init(&ist->next_pts, 
-                             0, 0, is->pts_num * ist->st->codec.sample_rate);
+                             0, 0, (uint64_t)is->pts_num * ist->st->codec.sample_rate);
                 break;
             case CODEC_TYPE_VIDEO:
                 av_frac_init(&ist->next_pts, 
-                             0, 0, is->pts_num * ist->st->codec.frame_rate);
+                             0, 0, (uint64_t)is->pts_num * ist->st->codec.frame_rate);
                 break;
             default:
                 break;
@@ -1275,7 +1275,7 @@ static int av_encode(AVFormatContext **output_files,
                     }
                     data_buf = (uint8_t *)samples;
 		    av_frac_add(&ist->next_pts, 
-			        is->pts_den * data_size / (2 * ist->st->codec.channels));
+			        (uint64_t)is->pts_den * data_size / (2 * ist->st->codec.channels));
                     break;
                 case CODEC_TYPE_VIDEO:
                     {
@@ -1300,7 +1300,7 @@ static int av_encode(AVFormatContext **output_files,
                             continue;
                         }
                         av_frac_add(&ist->next_pts, 
-			            is->pts_den * ist->st->codec.frame_rate_base);          
+			            (uint64_t)is->pts_den * ist->st->codec.frame_rate_base);          
                     }
                     break;
                 default:
