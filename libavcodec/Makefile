@@ -4,7 +4,7 @@ CFLAGS= $(OPTFLAGS) -Wall -g -DHAVE_AV_CONFIG_H
 LDFLAGS= -g
 
 OBJS= common.o utils.o mpegvideo.o h263.o jrevdct.o jfdctfst.o \
-      mpegaudio.o ac3enc.o mjpegenc.o resample.o dsputil.o \
+      mpegaudio.o ac3enc.o mjpeg.o resample.o dsputil.o \
       motion_est.o imgconvert.o imgresample.o msmpeg4.o \
       mpeg12.o h263dec.o rv10.o
 ASM_OBJS=
