@@ -1297,8 +1297,8 @@ static void simpleCopy(SwsContext *c, uint8_t* srcParam[], int srcStrideParam[],
 			int length=0;
 
 			/* universal length finder */
-			while(length+c->srcW <= dstStride[0] 
-			   && length+c->srcW <= srcStride[0]) length+= c->srcW;
+			while(length+c->srcW <= ABS(dstStride[0]) 
+			   && length+c->srcW <= ABS(srcStride[0])) length+= c->srcW;
 			ASSERT(length!=0);
 
 			for(i=0; i<srcSliceH; i++)
