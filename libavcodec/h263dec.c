@@ -495,10 +495,10 @@ retry:
         /* FIXME: By the way H263 decoder is evolving it should have */
         /* an H263EncContext                                         */
     if(s->aspected_height)
-        new_aspect= (float)s->aspected_width / (float)s->aspected_height;
+        new_aspect= s->aspected_width*s->width / (float)(s->height*s->aspected_height);
     else
         new_aspect=0;
-
+    
     if (   s->width != avctx->width || s->height != avctx->height 
         || ABS(new_aspect - avctx->aspect_ratio) > 0.001) {
         /* H.263 could change picture size any time */
