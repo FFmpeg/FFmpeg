@@ -877,8 +877,12 @@ static int mjpeg_decode_sof0(MJpegDecodeContext *s)
             if (s->interlaced)
                 w *= 2;
             s->linesize[i] = w;
-            /* memory test is done in mjpeg_decode_sos() */
             s->current_picture[i] = av_mallocz(w * h);
+	    if (!s->current_picture[i])
+	    {
+		dprintf("error: no picture buffers allocated\n");
+		return -1;
+	    }
         }
         s->first_picture = 0;
     }
@@ -1419,7 +1423,8 @@ static int mjpeg_decode_frame(AVCodecContext *avctx,
                     mjpeg_decode_dht(s);
                     break;
                 case SOF0:
-                    mjpeg_decode_sof0(s);
+                    if (mjpeg_decode_sof0(s) < 0)
+			return -1;
                     break;
 		case EOI:
 eoi_parser:
@@ -1578,7 +1583,8 @@ read_header:
     {
 	init_get_bits(&s->gb, buf+sof_offs, buf_end - (buf+sof_offs));
 	s->start_code = SOF0;
-	mjpeg_decode_sof0(s);
+	if (mjpeg_decode_sof0(s) < 0)
+	    return -1;
     }
 
     sos_offs = get_bits(&hgb, 32);
