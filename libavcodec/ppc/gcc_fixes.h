@@ -12,7 +12,11 @@
 #endif
 
 #ifdef CONFIG_DARWIN
-#define AVV(x...) (x)
+# ifndef __MWERKS__
+#  define AVV(x...) (x)
+# else
+#  define AVV
+# endif
 #else
 #define AVV(x...) {x}
 #if (__GNUC__ * 100 + __GNUC_MINOR__ < 303)  
@@ -80,5 +84,11 @@ __ch (__bin_args_eq (vector unsigned int, (a1), vector unsigned int, (a2)), \
 #endif
 
 #endif /* CONFIG_DARWIN */
+
+#ifndef __MWERKS__
+#define const_vector const vector
+#else
+#define const_vector vector
+#endif
 
 #endif /* _GCC_FIXES_ */

@@ -49,7 +49,7 @@ int sad16_x2_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h
 {
     int i;
     int s __attribute__((aligned(16)));
-    const vector unsigned char zero = (const vector unsigned char)vec_splat_u8(0);
+    const_vector unsigned char zero = (const_vector unsigned char)vec_splat_u8(0);
     vector unsigned char *tv;
     vector unsigned char pix1v, pix2v, pix2iv, avgv, t5;
     vector unsigned int sad;
@@ -96,7 +96,7 @@ int sad16_y2_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h
 {
     int i;
     int s __attribute__((aligned(16)));
-    const vector unsigned char zero = (const vector unsigned char)vec_splat_u8(0);
+    const_vector unsigned char zero = (const_vector unsigned char)vec_splat_u8(0);
     vector unsigned char *tv;
     vector unsigned char pix1v, pix2v, pix3v, avgv, t5;
     vector unsigned int sad;
@@ -157,8 +157,8 @@ int sad16_xy2_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int 
     int i;
     int s __attribute__((aligned(16)));
     uint8_t *pix3 = pix2 + line_size;
-    const vector unsigned char zero = (const vector unsigned char)vec_splat_u8(0);
-    const vector unsigned short two = (const vector unsigned short)vec_splat_u16(2);
+    const_vector unsigned char zero = (const_vector unsigned char)vec_splat_u8(0);
+    const_vector unsigned short two = (const_vector unsigned short)vec_splat_u16(2);
     vector unsigned char *tv, avgv, t5;
     vector unsigned char pix1v, pix2v, pix3v, pix2iv, pix3iv;
     vector unsigned short pix2lv, pix2hv, pix2ilv, pix2ihv;
@@ -257,7 +257,7 @@ int sad16_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
 {
     int i;
     int s __attribute__((aligned(16)));
-    const vector unsigned int zero = (const vector unsigned int)vec_splat_u32(0);
+    const_vector unsigned int zero = (const_vector unsigned int)vec_splat_u32(0);
     vector unsigned char perm1, perm2, *pix1v, *pix2v;
     vector unsigned char t1, t2, t3,t4, t5;
     vector unsigned int sad;
@@ -299,7 +299,7 @@ int sad8_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
 {
     int i;
     int s __attribute__((aligned(16)));
-    const vector unsigned int zero = (const vector unsigned int)vec_splat_u32(0);
+    const_vector unsigned int zero = (const_vector unsigned int)vec_splat_u32(0);
     vector unsigned char perm1, perm2, permclear, *pix1v, *pix2v;
     vector unsigned char t1, t2, t3,t4, t5;
     vector unsigned int sad;
@@ -344,7 +344,7 @@ int pix_norm1_altivec(uint8_t *pix, int line_size)
 {
     int i;
     int s __attribute__((aligned(16)));
-    const vector unsigned int zero = (const vector unsigned int)vec_splat_u32(0);
+    const_vector unsigned int zero = (const_vector unsigned int)vec_splat_u32(0);
     vector unsigned char *tv;
     vector unsigned char pixv;
     vector unsigned int sv;
@@ -380,7 +380,7 @@ int sse8_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
 {
     int i;
     int s __attribute__((aligned(16)));
-    const vector unsigned int zero = (const vector unsigned int)vec_splat_u32(0);
+    const_vector unsigned int zero = (const_vector unsigned int)vec_splat_u32(0);
     vector unsigned char perm1, perm2, permclear, *pix1v, *pix2v;
     vector unsigned char t1, t2, t3,t4, t5;
     vector unsigned int sum;
@@ -436,7 +436,7 @@ int sse16_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
 {
     int i;
     int s __attribute__((aligned(16)));
-    const vector unsigned int zero = (const vector unsigned int)vec_splat_u32(0);
+    const_vector unsigned int zero = (const_vector unsigned int)vec_splat_u32(0);
     vector unsigned char perm1, perm2, *pix1v, *pix2v;
     vector unsigned char t1, t2, t3,t4, t5;
     vector unsigned int sum;
@@ -480,7 +480,7 @@ int sse16_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
 
 int pix_sum_altivec(uint8_t * pix, int line_size)
 {
-    const vector unsigned int zero = (const vector unsigned int)vec_splat_u32(0);
+    const_vector unsigned int zero = (const_vector unsigned int)vec_splat_u32(0);
     vector unsigned char perm, *pixv;
     vector unsigned char t1;
     vector unsigned int sad;
@@ -515,7 +515,7 @@ void get_pixels_altivec(DCTELEM *restrict block, const uint8_t *pixels, int line
 {
     int i;
     vector unsigned char perm, bytes, *pixv;
-    const vector unsigned char zero = (const vector unsigned char)vec_splat_u8(0);
+    const_vector unsigned char zero = (const_vector unsigned char)vec_splat_u8(0);
     vector signed short shorts;
 
     for(i=0;i<8;i++)
@@ -542,7 +542,7 @@ void diff_pixels_altivec(DCTELEM *restrict block, const uint8_t *s1,
 {
     int i;
     vector unsigned char perm, bytes, *pixv;
-    const vector unsigned char zero = (const vector unsigned char)vec_splat_u8(0);
+    const_vector unsigned char zero = (const_vector unsigned char)vec_splat_u8(0);
     vector signed short shorts1, shorts2;
 
     for(i=0;i<4;i++)
@@ -654,10 +654,10 @@ POWERPC_PERF_DECLARE(altivec_put_pixels16_num, 1);
 POWERPC_PERF_START_COUNT(altivec_put_pixels16_num, 1);
 
     for(i=0; i<h; i++) {
-      *((uint32_t*)(block )) = (((const struct unaligned_32 *) (pixels))->l);
-      *((uint32_t*)(block+4)) = (((const struct unaligned_32 *) (pixels+4))->l);
-      *((uint32_t*)(block+8)) = (((const struct unaligned_32 *) (pixels+8))->l);
-      *((uint32_t*)(block+12)) = (((const struct unaligned_32 *) (pixels+12))->l);
+      *((uint32_t*)(block)) = LD32(pixels);
+      *((uint32_t*)(block+4)) = LD32(pixels+4);
+      *((uint32_t*)(block+8)) = LD32(pixels+8);
+      *((uint32_t*)(block+12)) = LD32(pixels+12);
       pixels+=line_size;
       block +=line_size;
     }
@@ -729,10 +729,10 @@ POWERPC_PERF_DECLARE(altivec_avg_pixels16_num, 1);
 POWERPC_PERF_START_COUNT(altivec_avg_pixels16_num, 1);
 
     for(i=0; i<h; i++) {
-      op_avg(*((uint32_t*)(block)),(((const struct unaligned_32 *)(pixels))->l));
-      op_avg(*((uint32_t*)(block+4)),(((const struct unaligned_32 *)(pixels+4))->l));
-      op_avg(*((uint32_t*)(block+8)),(((const struct unaligned_32 *)(pixels+8))->l));
-      op_avg(*((uint32_t*)(block+12)),(((const struct unaligned_32 *)(pixels+12))->l));
+      op_avg(*((uint32_t*)(block)),LD32(pixels));
+      op_avg(*((uint32_t*)(block+4)),LD32(pixels+4));
+      op_avg(*((uint32_t*)(block+8)),LD32(pixels+8));
+      op_avg(*((uint32_t*)(block+12)),LD32(pixels+12));
       pixels+=line_size;
       block +=line_size;
     }
@@ -878,8 +878,8 @@ POWERPC_PERF_STOP_COUNT(altivec_put_pixels8_xy2_num, 1);
      blockv, temp1, temp2;
    register vector unsigned short
      pixelssum1, pixelssum2, temp3;
-   register const vector unsigned char vczero = (const vector unsigned char)vec_splat_u8(0);
-   register const vector unsigned short vctwo = (const vector unsigned short)vec_splat_u16(2);
+   register const_vector unsigned char vczero = (const_vector unsigned char)vec_splat_u8(0);
+   register const_vector unsigned short vctwo = (const_vector unsigned short)vec_splat_u16(2);
    
    temp1 = vec_ld(0, pixels);
    temp2 = vec_ld(16, pixels);
@@ -993,9 +993,9 @@ POWERPC_PERF_STOP_COUNT(altivec_put_no_rnd_pixels8_xy2_num, 1);
      blockv, temp1, temp2;
    register vector unsigned short
      pixelssum1, pixelssum2, temp3;
-   register const vector unsigned char vczero = (const vector unsigned char)vec_splat_u8(0);
-   register const vector unsigned short vcone = (const vector unsigned short)vec_splat_u16(1);
-   register const vector unsigned short vctwo = (const vector unsigned short)vec_splat_u16(2);
+   register const_vector unsigned char vczero = (const_vector unsigned char)vec_splat_u8(0);
+   register const_vector unsigned short vcone = (const_vector unsigned short)vec_splat_u16(1);
+   register const_vector unsigned short vctwo = (const_vector unsigned short)vec_splat_u16(2);
    
    temp1 = vec_ld(0, pixels);
    temp2 = vec_ld(16, pixels);
@@ -1109,8 +1109,8 @@ POWERPC_PERF_STOP_COUNT(altivec_put_pixels16_xy2_num, 1);
    register vector unsigned short
      pixelssum1, pixelssum2, temp3,
      pixelssum3, pixelssum4, temp4;
-   register const vector unsigned char vczero = (const vector unsigned char)vec_splat_u8(0);
-   register const vector unsigned short vctwo = (const vector unsigned short)vec_splat_u16(2);
+   register const_vector unsigned char vczero = (const_vector unsigned char)vec_splat_u8(0);
+   register const_vector unsigned short vctwo = (const_vector unsigned short)vec_splat_u16(2);
 
 POWERPC_PERF_START_COUNT(altivec_put_pixels16_xy2_num, 1);
  
@@ -1230,9 +1230,9 @@ POWERPC_PERF_STOP_COUNT(altivec_put_no_rnd_pixels16_xy2_num, 1);
    register vector unsigned short
      pixelssum1, pixelssum2, temp3,
      pixelssum3, pixelssum4, temp4;
-   register const vector unsigned char vczero = (const vector unsigned char)vec_splat_u8(0);
-   register const vector unsigned short vcone = (const vector unsigned short)vec_splat_u16(1);
-   register const vector unsigned short vctwo = (const vector unsigned short)vec_splat_u16(2);
+   register const_vector unsigned char vczero = (const_vector unsigned char)vec_splat_u8(0);
+   register const_vector unsigned short vcone = (const_vector unsigned short)vec_splat_u16(1);
+   register const_vector unsigned short vctwo = (const_vector unsigned short)vec_splat_u16(2);
 
 POWERPC_PERF_START_COUNT(altivec_put_no_rnd_pixels16_xy2_num, 1);
  
