@@ -632,6 +632,11 @@ int MPV_encode_init(AVCodecContext *avctx)
         return -1;
     }
         
+    if((s->flags & CODEC_FLAG_CBP_RD) && !(s->flags & CODEC_FLAG_TRELLIS_QUANT)){
+        fprintf(stderr, "CBP RD needs trellis quant\n");
+        return -1;
+    }
+
     if(s->codec_id==CODEC_ID_MJPEG){
         s->intra_quant_bias= 1<<(QUANT_BIAS_SHIFT-1); //(a + x/2)/x
         s->inter_quant_bias= 0;
@@ -3020,6 +3025,13 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
             }else
                 s->block_last_index[i]= -1;
         }
+        if(s->flags & CODEC_FLAG_CBP_RD){
+            for(i=0;i<6;i++) {
+                if(s->block_last_index[i] == -1)
+                    s->coded_score[i]= INT_MAX/256;
+            }
+        }
+        
         if(s->luma_elim_threshold && !s->mb_intra)
             for(i=0; i<4; i++)
                 dct_single_coeff_elimination(s, i, s->luma_elim_threshold);
@@ -3995,6 +4007,7 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
     int last_level=0;
     int last_score= 0;
     int last_i= 0;
+    int not_coded_score= 0;
     int coeff[3][64];
     int coeff_count[64];
     int lambda, qmul, qadd, start_i, last_non_zero, i, dc;
@@ -4064,6 +4077,7 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
 //                coeff[2][k]= -level+2;
             }
             coeff_count[k]= FFMIN(level, 2);
+            assert(coeff_count[k]);
             max |=level;
             last_non_zero = i;
         }else{
@@ -4089,6 +4103,7 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
         int best_score=256*256*256*120;
 
         last_score += zero_distoration;
+        not_coded_score += zero_distoration;
         for(level_index=0; level_index < coeff_count[i]; level_index++){
             int distoration;
             int level= coeff[level_index][i];
@@ -4205,6 +4220,8 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
             }
         }
     }
+
+    s->coded_score[n] = last_score - not_coded_score;
     
     dc= block[0];
     last_non_zero= last_i - 1 + start_i;
@@ -4212,13 +4229,13 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
     
     if(last_non_zero < start_i)
         return last_non_zero;
-    
+
     if(last_non_zero == 0 && start_i == 0){
         int best_level= 0;
         int best_score= dc * dc;
-
+        
         for(i=0; i<coeff_count[0]; i++){
-            const int level= coeff[i][0];
+            int level= coeff[i][0];
             int unquant_coeff, score, distoration;
 
             if(s->out_format == FMT_H263){
@@ -4240,18 +4257,23 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
             unquant_coeff<<= 3 + 3;
 
             distoration= (unquant_coeff - dc) * (unquant_coeff - dc);
-            score= distoration + last_length[UNI_AC_ENC_INDEX(0, level+64)]*lambda;
+            level+=64;
+            if((level&(~127)) == 0)
+                score= distoration + last_length[UNI_AC_ENC_INDEX(0, level)]*lambda;
+            else
+                score= distoration + esc_length*lambda;
+
             if(score < best_score){
                 best_score= score;
-                best_level= level;
+                best_level= level - 64;
             }
         }
         block[0]= best_level;
-        if(best_level == 0) 
-            last_non_zero=-1;
-        return last_non_zero;
+        s->coded_score[n] = best_score - dc*dc;
+        if(best_level == 0) return -1;
+        else                return last_non_zero;
     }
-    
+
     i= last_i;
     assert(last_level);
 //FIXME use permutated scantable

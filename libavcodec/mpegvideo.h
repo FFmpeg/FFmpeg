@@ -453,6 +453,8 @@ typedef struct MpegEncContext {
     uint8_t *chroma_dc_vlc_length;
 #define UNI_AC_ENC_INDEX(run,level) ((run)*128 + (level))
 
+    int coded_score[6];
+
     /** precomputed matrix (combine qscale and DCT renorm) */
     int __align8 q_intra_matrix[32][64];
     int __align8 q_inter_matrix[32][64];
