@@ -5,3 +5,4 @@ ffmpeg_g
 ffserver
 Makefile.*
 .depend
+.libs
