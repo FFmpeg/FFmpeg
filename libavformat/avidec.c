@@ -383,18 +383,18 @@ static int avi_read_packet(AVFormatContext *s, AVPacket *pkt)
     AVIContext *avi = s->priv_data;
     ByteIOContext *pb = &s->pb;
     int n, d[8], size;
-    offset_t i;
+    offset_t i, sync;
     void* dstr;
-
-    memset(d, -1, sizeof(int)*8);
    
     if (avi->dv_demux) {
         size = dv_get_packet(avi->dv_demux, pkt);
 	if (size >= 0)
 	    return size;
     }
-        
-    for(i=url_ftell(pb); !url_feof(pb); i++) {
+
+resync:
+    memset(d, -1, sizeof(int)*8);
+    for(i=sync=url_ftell(pb); !url_feof(pb); i++) {
         int j;
 
 	if (i >= avi->movi_end) {
@@ -426,10 +426,8 @@ static int avi_read_packet(AVFormatContext *s, AVPacket *pkt)
 	//parse JUNK
            ||(d[0] == 'J' && d[1] == 'U' && d[2] == 'N' && d[3] == 'K')){
             url_fskip(pb, size);
-            i+= size;
-            memset(d, -1, sizeof(int)*8);
 //av_log(NULL, AV_LOG_DEBUG, "SKIP\n");
-            continue;
+            goto resync;
         }
 
         if(    d[0] >= '0' && d[0] <= '9'
@@ -446,7 +444,7 @@ static int avi_read_packet(AVFormatContext *s, AVPacket *pkt)
           st = s->streams[n];
           ast = st->priv_data;
 
-          if(   (ast->prefix_count<5 && d[2]<128 && d[3]<128) || 
+          if(   ((ast->prefix_count<5 || sync+9 > i) && d[2]<128 && d[3]<128) || 
                 d[2]*256+d[3] == ast->prefix /*||
                 (d[2] == 'd' && d[3] == 'c') || 
 	        (d[2] == 'w' && d[3] == 'b')*/) {
@@ -525,6 +523,7 @@ static int avi_read_packet(AVFormatContext *s, AVPacket *pkt)
                 st->codec.palctrl->palette[k] = b + (g << 8) + (r << 16);
             }
             st->codec.palctrl->palette_changed = 1;
+            goto resync;
         }
 
     }
