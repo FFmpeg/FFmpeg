@@ -11,7 +11,7 @@ CFLAGS=$(OPTFLAGS) -DHAVE_AV_CONFIG_H -I.. -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_S
 
 OBJS= common.o utils.o mem.o allcodecs.o \
       mpegvideo.o jrevdct.o jfdctfst.o jfdctint.o\
-      mpegaudio.o ac3enc.o mjpeg.o resample.o dsputil.o \
+      mpegaudio.o ac3enc.o mjpeg.o resample.o resample2.o dsputil.o \
       motion_est.o imgconvert.o imgresample.o \
       mpeg12.o mpegaudiodec.o pcm.o simple_idct.o \
       ratecontrol.o adpcm.o eval.o dv.o error_resilience.o \
