@@ -656,7 +656,7 @@ WARPER88_1616(hadamard8_diff_mmx, hadamard8_diff16_mmx)
 
 #define QPEL_V_LOW(m3,m4,m5,m6, pw_20, pw_3, rnd, in0, in1, in2, in7, out, OP)\
         "paddw " #m4 ", " #m3 "		\n\t" /* x1 */\
-        "movq " #pw_20 ", %%mm4		\n\t" /* 20 */\
+        "movq "MANGLE(ff_pw_20)", %%mm4		\n\t" /* 20 */\
         "pmullw " #m3 ", %%mm4		\n\t" /* 20x1 */\
         "movq "#in7", " #m3 "		\n\t" /* d */\
         "movq "#in0", %%mm5		\n\t" /* D */\
@@ -668,7 +668,7 @@ WARPER88_1616(hadamard8_diff_mmx, hadamard8_diff16_mmx)
         "paddw " #m5 ", %%mm6		\n\t" /* x2 */\
         "paddw %%mm6, %%mm6		\n\t" /* 2x2 */\
         "psubw %%mm6, %%mm5		\n\t" /* -2x2 + x3 */\
-        "pmullw " #pw_3 ", %%mm5	\n\t" /* -6x2 + 3x3 */\
+        "pmullw "MANGLE(ff_pw_3)", %%mm5	\n\t" /* -6x2 + 3x3 */\
         "paddw " #rnd ", %%mm4		\n\t" /* x2 */\
         "paddw %%mm4, %%mm5		\n\t" /* 20x1 - 6x2 + 3x3 - x4 */\
         "psraw $5, %%mm5		\n\t"\
@@ -680,9 +680,6 @@ void OPNAME ## mpeg4_qpel16_h_lowpass_mmx2(uint8_t *dst, uint8_t *src, int dstSt
     uint64_t temp;\
 \
     asm volatile(\
-        "pushl %0			\n\t"\
-        "pushl %1			\n\t"\
-        "pushl %2			\n\t"\
         "pxor %%mm7, %%mm7		\n\t"\
         "1:				\n\t"\
         "movq  (%0), %%mm0		\n\t" /* ABCDEFGH */\
@@ -705,15 +702,15 @@ void OPNAME ## mpeg4_qpel16_h_lowpass_mmx2(uint8_t *dst, uint8_t *src, int dstSt
         "paddw %%mm5, %%mm5		\n\t" /* 2b */\
         "psubw %%mm5, %%mm6		\n\t" /* c - 2b */\
         "pshufw $0x06, %%mm0, %%mm5	\n\t" /* 0C0B0A0A */\
-        "pmullw %6, %%mm6		\n\t" /* 3c - 6b */\
+        "pmullw "MANGLE(ff_pw_3)", %%mm6		\n\t" /* 3c - 6b */\
         "paddw %%mm4, %%mm0		\n\t" /* a */\
         "paddw %%mm1, %%mm5		\n\t" /* d */\
-        "pmullw %5, %%mm0		\n\t" /* 20a */\
+        "pmullw "MANGLE(ff_pw_20)", %%mm0		\n\t" /* 20a */\
         "psubw %%mm5, %%mm0		\n\t" /* 20a - d */\
-        "paddw %8, %%mm6		\n\t"\
+        "paddw %6, %%mm6		\n\t"\
         "paddw %%mm6, %%mm0		\n\t" /* 20a - 6b + 3c - d */\
         "psraw $5, %%mm0		\n\t"\
-        "movq %%mm0, %7			\n\t"\
+        "movq %%mm0, %5			\n\t"\
         /* mm1=EFGH, mm2=DEFG, mm3=CDEF, mm4=BCDE, mm7=0 */\
         \
         "movq 5(%0), %%mm0		\n\t" /* FGHIJKLM */\
@@ -731,15 +728,15 @@ void OPNAME ## mpeg4_qpel16_h_lowpass_mmx2(uint8_t *dst, uint8_t *src, int dstSt
         "psrlq $24, %%mm6		\n\t" /* IJKLM000 */\
         "punpcklbw %%mm7, %%mm2		\n\t" /* 0F0G0H0I */\
         "punpcklbw %%mm7, %%mm6		\n\t" /* 0I0J0K0L */\
-        "pmullw %6, %%mm3		\n\t" /* 3c - 6b */\
+        "pmullw "MANGLE(ff_pw_3)", %%mm3		\n\t" /* 3c - 6b */\
         "paddw %%mm2, %%mm1		\n\t" /* a */\
         "paddw %%mm6, %%mm4		\n\t" /* d */\
-        "pmullw %5, %%mm1		\n\t" /* 20a */\
+        "pmullw "MANGLE(ff_pw_20)", %%mm1		\n\t" /* 20a */\
         "psubw %%mm4, %%mm3		\n\t" /* - 6b +3c - d */\
-        "paddw %8, %%mm1		\n\t"\
+        "paddw %6, %%mm1		\n\t"\
         "paddw %%mm1, %%mm3		\n\t" /* 20a - 6b +3c - d */\
         "psraw $5, %%mm3		\n\t"\
-        "movq %7, %%mm1			\n\t"\
+        "movq %5, %%mm1			\n\t"\
         "packuswb %%mm3, %%mm1		\n\t"\
         OP_MMX2(%%mm1, (%1),%%mm4, q)\
         /* mm0= GHIJ, mm2=FGHI, mm5=HIJK, mm6=IJKL, mm7=0 */\
@@ -757,7 +754,7 @@ void OPNAME ## mpeg4_qpel16_h_lowpass_mmx2(uint8_t *dst, uint8_t *src, int dstSt
         "psubw %%mm5, %%mm0		\n\t" /* c - 2b */\
         "movq %%mm3, %%mm5		\n\t" /* JKLMNOPQ */\
         "psrlq $24, %%mm3		\n\t" /* MNOPQ000 */\
-        "pmullw %6, %%mm0		\n\t" /* 3c - 6b */\
+        "pmullw "MANGLE(ff_pw_3)", %%mm0		\n\t" /* 3c - 6b */\
         "punpcklbw %%mm7, %%mm3		\n\t" /* 0M0N0O0P */\
         "paddw %%mm3, %%mm2		\n\t" /* d */\
         "psubw %%mm2, %%mm0		\n\t" /* -6b + 3c - d */\
@@ -765,8 +762,8 @@ void OPNAME ## mpeg4_qpel16_h_lowpass_mmx2(uint8_t *dst, uint8_t *src, int dstSt
         "punpcklbw %%mm7, %%mm2		\n\t" /* 0J0K0L0M */\
         "punpckhbw %%mm7, %%mm5		\n\t" /* 0N0O0P0Q */\
         "paddw %%mm2, %%mm6		\n\t" /* a */\
-        "pmullw %5, %%mm6		\n\t" /* 20a */\
-        "paddw %8, %%mm0		\n\t"\
+        "pmullw "MANGLE(ff_pw_20)", %%mm6		\n\t" /* 20a */\
+        "paddw %6, %%mm0		\n\t"\
         "paddw %%mm6, %%mm0		\n\t" /* 20a - 6b + 3c - d */\
         "psraw $5, %%mm0		\n\t"\
         /* mm1=KLMN, mm2=JKLM, mm3=MNOP, mm4=LMNO, mm5=NOPQ mm7=0 */\
@@ -780,10 +777,10 @@ void OPNAME ## mpeg4_qpel16_h_lowpass_mmx2(uint8_t *dst, uint8_t *src, int dstSt
         "paddw %%mm2, %%mm5		\n\t" /* d */\
         "paddw %%mm6, %%mm6		\n\t" /* 2b */\
         "psubw %%mm6, %%mm4		\n\t" /* c - 2b */\
-        "pmullw %5, %%mm3		\n\t" /* 20a */\
-        "pmullw %6, %%mm4		\n\t" /* 3c - 6b */\
+        "pmullw "MANGLE(ff_pw_20)", %%mm3		\n\t" /* 20a */\
+        "pmullw "MANGLE(ff_pw_3)", %%mm4		\n\t" /* 3c - 6b */\
         "psubw %%mm5, %%mm3		\n\t" /* -6b + 3c - d */\
-        "paddw %8, %%mm4		\n\t"\
+        "paddw %6, %%mm4		\n\t"\
         "paddw %%mm3, %%mm4		\n\t" /* 20a - 6b + 3c - d */\
         "psraw $5, %%mm4		\n\t"\
         "packuswb %%mm4, %%mm0		\n\t"\
@@ -793,11 +790,8 @@ void OPNAME ## mpeg4_qpel16_h_lowpass_mmx2(uint8_t *dst, uint8_t *src, int dstSt
         "addl %4, %1			\n\t"\
         "decl %2			\n\t"\
         " jnz 1b				\n\t"\
-        "popl %2			\n\t"\
-        "popl %1			\n\t"\
-        "popl %0			\n\t"\
-        :: "r"(src), "r"(dst), "r"(h),\
-         "r"(srcStride), "r"(dstStride), "m"(ff_pw_20), "m"(ff_pw_3), "m"(temp), "m"(ROUNDER)\
+        : "+r"(src), "+r"(dst), "+g"(h)\
+        : "r"(srcStride), "r"(dstStride), /*"m"(ff_pw_20), "m"(ff_pw_3),*/ "m"(temp), "m"(ROUNDER)\
     );\
 }\
 \
@@ -851,9 +845,6 @@ void OPNAME ## mpeg4_qpel8_h_lowpass_mmx2(uint8_t *dst, uint8_t *src, int dstStr
     uint64_t temp;\
 \
     asm volatile(\
-        "pushl %0			\n\t"\
-        "pushl %1			\n\t"\
-        "pushl %2			\n\t"\
         "pxor %%mm7, %%mm7		\n\t"\
         "1:				\n\t"\
         "movq  (%0), %%mm0		\n\t" /* ABCDEFGH */\
@@ -876,12 +867,12 @@ void OPNAME ## mpeg4_qpel8_h_lowpass_mmx2(uint8_t *dst, uint8_t *src, int dstStr
         "paddw %%mm5, %%mm5		\n\t" /* 2b */\
         "psubw %%mm5, %%mm6		\n\t" /* c - 2b */\
         "pshufw $0x06, %%mm0, %%mm5	\n\t" /* 0C0B0A0A */\
-        "pmullw %6, %%mm6		\n\t" /* 3c - 6b */\
+        "pmullw "MANGLE(ff_pw_3)", %%mm6		\n\t" /* 3c - 6b */\
         "paddw %%mm4, %%mm0		\n\t" /* a */\
         "paddw %%mm1, %%mm5		\n\t" /* d */\
-        "pmullw %5, %%mm0		\n\t" /* 20a */\
+        "pmullw "MANGLE(ff_pw_20)", %%mm0		\n\t" /* 20a */\
         "psubw %%mm5, %%mm0		\n\t" /* 20a - d */\
-        "paddw %8, %%mm6		\n\t"\
+        "paddw %6, %%mm6		\n\t"\
         "paddw %%mm6, %%mm0		\n\t" /* 20a - 6b + 3c - d */\
         "psraw $5, %%mm0		\n\t"\
         /* mm1=EFGH, mm2=DEFG, mm3=CDEF, mm4=BCDE, mm7=0 */\
@@ -897,10 +888,10 @@ void OPNAME ## mpeg4_qpel8_h_lowpass_mmx2(uint8_t *dst, uint8_t *src, int dstStr
         "paddw %%mm5, %%mm4		\n\t" /* d */\
         "paddw %%mm2, %%mm2		\n\t" /* 2b */\
         "psubw %%mm2, %%mm3		\n\t" /* c - 2b */\
-        "pmullw %5, %%mm1		\n\t" /* 20a */\
-        "pmullw %6, %%mm3		\n\t" /* 3c - 6b */\
+        "pmullw "MANGLE(ff_pw_20)", %%mm1		\n\t" /* 20a */\
+        "pmullw "MANGLE(ff_pw_3)", %%mm3		\n\t" /* 3c - 6b */\
         "psubw %%mm4, %%mm3		\n\t" /* -6b + 3c - d */\
-        "paddw %8, %%mm1		\n\t"\
+        "paddw %6, %%mm1		\n\t"\
         "paddw %%mm1, %%mm3		\n\t" /* 20a - 6b + 3c - d */\
         "psraw $5, %%mm3		\n\t"\
         "packuswb %%mm3, %%mm0		\n\t"\
@@ -909,12 +900,9 @@ void OPNAME ## mpeg4_qpel8_h_lowpass_mmx2(uint8_t *dst, uint8_t *src, int dstStr
         "addl %3, %0			\n\t"\
         "addl %4, %1			\n\t"\
         "decl %2			\n\t"\
-        " jnz 1b				\n\t"\
-        "popl %2			\n\t"\
-        "popl %1			\n\t"\
-        "popl %0			\n\t"\
-        :: "r"(src), "r"(dst), "r"(h),\
-         "r"(srcStride), "r"(dstStride), "m"(ff_pw_20), "m"(ff_pw_3), "m"(temp), "m"(ROUNDER)\
+        " jnz 1b			\n\t"\
+        : "+r"(src), "+r"(dst), "+r"(h)\
+        : "r"(srcStride), "r"(dstStride), /*"m"(ff_pw_20), "m"(ff_pw_3),*/ "m"(temp), "m"(ROUNDER)\
     );\
 }\
 \
@@ -983,53 +971,46 @@ static void OPNAME ## mpeg4_qpel16_v_lowpass_ ## MMX(uint8_t *dst, uint8_t *src,
     count=4;\
     \
 /*FIXME reorder for speed */\
-/*FIXME remove push/pop gcc 2.95 bug workaround here and in the other 3 lowpass filters */\
     asm volatile(\
         /*"pxor %%mm7, %%mm7		\n\t"*/\
-        "pushl %0			\n\t"\
-        "pushl %1			\n\t"\
-        "pushl %2			\n\t"\
         "1:				\n\t"\
         "movq (%0), %%mm0		\n\t"\
         "movq 8(%0), %%mm1		\n\t"\
         "movq 16(%0), %%mm2		\n\t"\
         "movq 24(%0), %%mm3		\n\t"\
-        QPEL_V_LOW(%%mm0, %%mm1, %%mm2, %%mm3, %5, %6, %7, 16(%0),  8(%0),   (%0), 32(%0), (%1), OP)\
-        QPEL_V_LOW(%%mm1, %%mm2, %%mm3, %%mm0, %5, %6, %7,  8(%0),   (%0),   (%0), 40(%0), (%1, %3), OP)\
+        QPEL_V_LOW(%%mm0, %%mm1, %%mm2, %%mm3, %5, %6, %5, 16(%0),  8(%0),   (%0), 32(%0), (%1), OP)\
+        QPEL_V_LOW(%%mm1, %%mm2, %%mm3, %%mm0, %5, %6, %5,  8(%0),   (%0),   (%0), 40(%0), (%1, %3), OP)\
         "addl %4, %1			\n\t"\
-        QPEL_V_LOW(%%mm2, %%mm3, %%mm0, %%mm1, %5, %6, %7,   (%0),   (%0),  8(%0), 48(%0), (%1), OP)\
+        QPEL_V_LOW(%%mm2, %%mm3, %%mm0, %%mm1, %5, %6, %5,   (%0),   (%0),  8(%0), 48(%0), (%1), OP)\
         \
-        QPEL_V_LOW(%%mm3, %%mm0, %%mm1, %%mm2, %5, %6, %7,   (%0),  8(%0), 16(%0), 56(%0), (%1, %3), OP)\
+        QPEL_V_LOW(%%mm3, %%mm0, %%mm1, %%mm2, %5, %6, %5,   (%0),  8(%0), 16(%0), 56(%0), (%1, %3), OP)\
         "addl %4, %1			\n\t"\
-        QPEL_V_LOW(%%mm0, %%mm1, %%mm2, %%mm3, %5, %6, %7,  8(%0), 16(%0), 24(%0), 64(%0), (%1), OP)\
-        QPEL_V_LOW(%%mm1, %%mm2, %%mm3, %%mm0, %5, %6, %7, 16(%0), 24(%0), 32(%0), 72(%0), (%1, %3), OP)\
+        QPEL_V_LOW(%%mm0, %%mm1, %%mm2, %%mm3, %5, %6, %5,  8(%0), 16(%0), 24(%0), 64(%0), (%1), OP)\
+        QPEL_V_LOW(%%mm1, %%mm2, %%mm3, %%mm0, %5, %6, %5, 16(%0), 24(%0), 32(%0), 72(%0), (%1, %3), OP)\
         "addl %4, %1			\n\t"\
-        QPEL_V_LOW(%%mm2, %%mm3, %%mm0, %%mm1, %5, %6, %7, 24(%0), 32(%0), 40(%0), 80(%0), (%1), OP)\
-        QPEL_V_LOW(%%mm3, %%mm0, %%mm1, %%mm2, %5, %6, %7, 32(%0), 40(%0), 48(%0), 88(%0), (%1, %3), OP)\
+        QPEL_V_LOW(%%mm2, %%mm3, %%mm0, %%mm1, %5, %6, %5, 24(%0), 32(%0), 40(%0), 80(%0), (%1), OP)\
+        QPEL_V_LOW(%%mm3, %%mm0, %%mm1, %%mm2, %5, %6, %5, 32(%0), 40(%0), 48(%0), 88(%0), (%1, %3), OP)\
         "addl %4, %1			\n\t"\
-        QPEL_V_LOW(%%mm0, %%mm1, %%mm2, %%mm3, %5, %6, %7, 40(%0), 48(%0), 56(%0), 96(%0), (%1), OP)\
-        QPEL_V_LOW(%%mm1, %%mm2, %%mm3, %%mm0, %5, %6, %7, 48(%0), 56(%0), 64(%0),104(%0), (%1, %3), OP)\
+        QPEL_V_LOW(%%mm0, %%mm1, %%mm2, %%mm3, %5, %6, %5, 40(%0), 48(%0), 56(%0), 96(%0), (%1), OP)\
+        QPEL_V_LOW(%%mm1, %%mm2, %%mm3, %%mm0, %5, %6, %5, 48(%0), 56(%0), 64(%0),104(%0), (%1, %3), OP)\
         "addl %4, %1			\n\t"\
-        QPEL_V_LOW(%%mm2, %%mm3, %%mm0, %%mm1, %5, %6, %7, 56(%0), 64(%0), 72(%0),112(%0), (%1), OP)\
-        QPEL_V_LOW(%%mm3, %%mm0, %%mm1, %%mm2, %5, %6, %7, 64(%0), 72(%0), 80(%0),120(%0), (%1, %3), OP)\
+        QPEL_V_LOW(%%mm2, %%mm3, %%mm0, %%mm1, %5, %6, %5, 56(%0), 64(%0), 72(%0),112(%0), (%1), OP)\
+        QPEL_V_LOW(%%mm3, %%mm0, %%mm1, %%mm2, %5, %6, %5, 64(%0), 72(%0), 80(%0),120(%0), (%1, %3), OP)\
         "addl %4, %1			\n\t"\
-        QPEL_V_LOW(%%mm0, %%mm1, %%mm2, %%mm3, %5, %6, %7, 72(%0), 80(%0), 88(%0),128(%0), (%1), OP)\
+        QPEL_V_LOW(%%mm0, %%mm1, %%mm2, %%mm3, %5, %6, %5, 72(%0), 80(%0), 88(%0),128(%0), (%1), OP)\
         \
-        QPEL_V_LOW(%%mm1, %%mm2, %%mm3, %%mm0, %5, %6, %7, 80(%0), 88(%0), 96(%0),128(%0), (%1, %3), OP)\
+        QPEL_V_LOW(%%mm1, %%mm2, %%mm3, %%mm0, %5, %6, %5, 80(%0), 88(%0), 96(%0),128(%0), (%1, %3), OP)\
         "addl %4, %1			\n\t"  \
-        QPEL_V_LOW(%%mm2, %%mm3, %%mm0, %%mm1, %5, %6, %7, 88(%0), 96(%0),104(%0),120(%0), (%1), OP)\
-        QPEL_V_LOW(%%mm3, %%mm0, %%mm1, %%mm2, %5, %6, %7, 96(%0),104(%0),112(%0),112(%0), (%1, %3), OP)\
+        QPEL_V_LOW(%%mm2, %%mm3, %%mm0, %%mm1, %5, %6, %5, 88(%0), 96(%0),104(%0),120(%0), (%1), OP)\
+        QPEL_V_LOW(%%mm3, %%mm0, %%mm1, %%mm2, %5, %6, %5, 96(%0),104(%0),112(%0),112(%0), (%1, %3), OP)\
         \
         "addl $136, %0			\n\t"\
-        "addl %8, %1			\n\t"\
+        "addl %6, %1			\n\t"\
         "decl %2			\n\t"\
         " jnz 1b			\n\t"\
-        "popl %2			\n\t"\
-        "popl %1			\n\t"\
-        "popl %0			\n\t"\
         \
-        :: "r"(temp_ptr), "r"(dst), "r"(count),\
-         "r"(dstStride), "r"(2*dstStride), "m"(ff_pw_20), "m"(ff_pw_3), "m"(ROUNDER), "g"(4-14*dstStride)\
+        : "+r"(temp_ptr), "+r"(dst), "+r"(count)\
+        : "r"(dstStride), "r"(2*dstStride), /*"m"(ff_pw_20), "m"(ff_pw_3),*/ "m"(ROUNDER), "g"(4-14*dstStride)\
     );\
 }\
 \
@@ -1061,39 +1042,33 @@ void OPNAME ## mpeg4_qpel8_v_lowpass_ ## MMX(uint8_t *dst, uint8_t *src, int dst
     \
 /*FIXME reorder for speed */\
     asm volatile(\
-        "pushl %0			\n\t"\
-        "pushl %1			\n\t"\
-        "pushl %2			\n\t"\
         /*"pxor %%mm7, %%mm7		\n\t"*/\
         "1:				\n\t"\
         "movq (%0), %%mm0		\n\t"\
         "movq 8(%0), %%mm1		\n\t"\
         "movq 16(%0), %%mm2		\n\t"\
         "movq 24(%0), %%mm3		\n\t"\
-        QPEL_V_LOW(%%mm0, %%mm1, %%mm2, %%mm3, %5, %6, %7, 16(%0),  8(%0),   (%0), 32(%0), (%1), OP)\
-        QPEL_V_LOW(%%mm1, %%mm2, %%mm3, %%mm0, %5, %6, %7,  8(%0),   (%0),   (%0), 40(%0), (%1, %3), OP)\
+        QPEL_V_LOW(%%mm0, %%mm1, %%mm2, %%mm3, %5, %6, %5, 16(%0),  8(%0),   (%0), 32(%0), (%1), OP)\
+        QPEL_V_LOW(%%mm1, %%mm2, %%mm3, %%mm0, %5, %6, %5,  8(%0),   (%0),   (%0), 40(%0), (%1, %3), OP)\
         "addl %4, %1			\n\t"\
-        QPEL_V_LOW(%%mm2, %%mm3, %%mm0, %%mm1, %5, %6, %7,   (%0),   (%0),  8(%0), 48(%0), (%1), OP)\
+        QPEL_V_LOW(%%mm2, %%mm3, %%mm0, %%mm1, %5, %6, %5,   (%0),   (%0),  8(%0), 48(%0), (%1), OP)\
         \
-        QPEL_V_LOW(%%mm3, %%mm0, %%mm1, %%mm2, %5, %6, %7,   (%0),  8(%0), 16(%0), 56(%0), (%1, %3), OP)\
+        QPEL_V_LOW(%%mm3, %%mm0, %%mm1, %%mm2, %5, %6, %5,   (%0),  8(%0), 16(%0), 56(%0), (%1, %3), OP)\
         "addl %4, %1			\n\t"\
-        QPEL_V_LOW(%%mm0, %%mm1, %%mm2, %%mm3, %5, %6, %7,  8(%0), 16(%0), 24(%0), 64(%0), (%1), OP)\
+        QPEL_V_LOW(%%mm0, %%mm1, %%mm2, %%mm3, %5, %6, %5,  8(%0), 16(%0), 24(%0), 64(%0), (%1), OP)\
         \
-        QPEL_V_LOW(%%mm1, %%mm2, %%mm3, %%mm0, %5, %6, %7, 16(%0), 24(%0), 32(%0), 64(%0), (%1, %3), OP)\
+        QPEL_V_LOW(%%mm1, %%mm2, %%mm3, %%mm0, %5, %6, %5, 16(%0), 24(%0), 32(%0), 64(%0), (%1, %3), OP)\
         "addl %4, %1			\n\t"\
-        QPEL_V_LOW(%%mm2, %%mm3, %%mm0, %%mm1, %5, %6, %7, 24(%0), 32(%0), 40(%0), 56(%0), (%1), OP)\
-        QPEL_V_LOW(%%mm3, %%mm0, %%mm1, %%mm2, %5, %6, %7, 32(%0), 40(%0), 48(%0), 48(%0), (%1, %3), OP)\
+        QPEL_V_LOW(%%mm2, %%mm3, %%mm0, %%mm1, %5, %6, %5, 24(%0), 32(%0), 40(%0), 56(%0), (%1), OP)\
+        QPEL_V_LOW(%%mm3, %%mm0, %%mm1, %%mm2, %5, %6, %5, 32(%0), 40(%0), 48(%0), 48(%0), (%1, %3), OP)\
                 \
         "addl $72, %0			\n\t"\
-        "addl %8, %1			\n\t"\
+        "addl %6, %1			\n\t"\
         "decl %2			\n\t"\
         " jnz 1b			\n\t"\
-        "popl %2			\n\t"\
-        "popl %1			\n\t"\
-        "popl %0			\n\t"\
          \
-        :: "r"(temp_ptr), "r"(dst), "r"(count),\
-         "r"(dstStride), "r"(2*dstStride), "m"(ff_pw_20), "m"(ff_pw_3), "m"(ROUNDER), "g"(4-6*dstStride)\
+        : "+r"(temp_ptr), "+r"(dst), "+g"(count)\
+        : "r"(dstStride), "r"(2*dstStride), /*"m"(ff_pw_20), "m"(ff_pw_3),*/ "m"(ROUNDER), "g"(4-6*dstStride)\
     );\
 }\
 \
@@ -1488,6 +1463,7 @@ void dsputil_init_mmx(DSPContext* c, unsigned mask)
             c->avg_pixels_tab[1][2] = avg_pixels8_y2_mmx2;
             c->avg_pixels_tab[1][3] = avg_pixels8_xy2_mmx2;
 
+#if 1
             SET_QPEL_FUNC(qpel_pixels_tab[0][ 0], qpel16_mc00_mmx2)
             SET_QPEL_FUNC(qpel_pixels_tab[0][ 1], qpel16_mc10_mmx2)
             SET_QPEL_FUNC(qpel_pixels_tab[0][ 2], qpel16_mc20_mmx2)
@@ -1520,6 +1496,7 @@ void dsputil_init_mmx(DSPContext* c, unsigned mask)
             SET_QPEL_FUNC(qpel_pixels_tab[1][13], qpel8_mc13_mmx2)
             SET_QPEL_FUNC(qpel_pixels_tab[1][14], qpel8_mc23_mmx2)
             SET_QPEL_FUNC(qpel_pixels_tab[1][15], qpel8_mc33_mmx2)
+#endif
         } else if (mm_flags & MM_3DNOW) {
             c->put_pixels_tab[0][1] = put_pixels16_x2_3dnow;
             c->put_pixels_tab[0][2] = put_pixels16_y2_3dnow;
