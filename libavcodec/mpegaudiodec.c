@@ -2270,7 +2270,7 @@ static int decode_frame(AVCodecContext * avctx,
 	    len = HEADER_SIZE - len;
 	    if (len > buf_size)
 		len = buf_size;
-	    else if (len > 0) {
+	    if (len > 0) {
 		memcpy(s->inbuf_ptr, buf_ptr, len);
 		buf_ptr += len;
 		buf_size -= len;
@@ -2280,6 +2280,7 @@ static int decode_frame(AVCodecContext * avctx,
             got_header:
 		header = (s->inbuf[0] << 24) | (s->inbuf[1] << 16) |
 		    (s->inbuf[2] << 8) | s->inbuf[3];
+
 		if (check_header(header) < 0) {
 		    /* no sync found : move by one byte (inefficient, but simple!) */
 		    memcpy(s->inbuf, s->inbuf + 1, s->inbuf_ptr - s->inbuf - 1);
