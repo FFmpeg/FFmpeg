@@ -478,8 +478,8 @@ static int swf_write_video(AVFormatContext *s,
     int outSamples = 0;
     
     /* Flash Player limit */
-    if ( swf->swf_frame_number >= 16000 ) {
-        return 0;
+    if ( swf->swf_frame_number == 16000 ) {
+        fprintf(stderr, "warning: Flash Player limit of 16000 frames reached\n");
     }
 
     /* Store video data in queue */
@@ -679,8 +679,8 @@ static int swf_write_audio(AVFormatContext *s,
     int c = 0;
 
     /* Flash Player limit */
-    if ( swf->swf_frame_number >= 16000 ) {
-        return 0;
+    if ( swf->swf_frame_number == 16000 ) {
+        fprintf(stderr, "warning: Flash Player limit of 16000 frames reached\n");
     }
 
     if (enc->codec_id == CODEC_ID_MP3 ) {
