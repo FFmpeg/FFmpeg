@@ -11,6 +11,7 @@
 #include "swscale.h"
 #include "../mmx_defs.h"
 #undef MOVNTQ
+#undef PAVGB
 
 //#undef HAVE_MMX2
 //#undef HAVE_MMX
@@ -1399,9 +1400,14 @@ static int old_dstw= -1;
 static int old_s_xinc= -1;
 #endif
 
-int srcWidth= (dstw*s_xinc + 0x8000)>>16;
-int dstUVw= fullUVIpol ? dstw : dstw/2;
+int srcWidth;
+int dstUVw;
 int i;
+
+if(((dstw + 7)&(~7)) >= dststride) dstw&= ~7;
+
+srcWidth= (dstw*s_xinc + 0x8000)>>16;
+dstUVw= fullUVIpol ? dstw : dstw/2;
 
 #ifdef HAVE_MMX2
 canMMX2BeUsed= (s_xinc <= 0x10000 && (dstw&31)==0 && (srcWidth&15)==0) ? 1 : 0;
@@ -1420,6 +1426,7 @@ else					s_xinc2= s_xinc;
   // force calculation of the horizontal interpolation of the first line
 
   if(y==0){
+//	printf("dstw %d, srcw %d, mmx2 %d\n", dstw, srcWidth, canMMX2BeUsed);
 	s_last_ypos=-99;
 	s_last_y1pos=-99;
 	s_srcypos= s_yinc/2 - 0x8000;
@@ -1429,9 +1436,9 @@ else					s_xinc2= s_xinc;
 	for(i=dstw-2; i<dstw+20; i++)
 	{
 		pix_buf_uv[0][i] = pix_buf_uv[1][i]
-		= pix_buf_uv[0][2048+i] = pix_buf_uv[1][2048+i] = 128;
+		= pix_buf_uv[0][2048+i] = pix_buf_uv[1][2048+i] = 128*128;
 		pix_buf_uv[0][i/2] = pix_buf_uv[1][i/2]
-		= pix_buf_uv[0][2048+i/2] = pix_buf_uv[1][2048+i/2] = 128;
+		= pix_buf_uv[0][2048+i/2] = pix_buf_uv[1][2048+i/2] = 128*128;
 		pix_buf_y[0][i]= pix_buf_y[1][i]= 0;
 	}
 
