@@ -149,6 +149,7 @@ static int dvvideo_init(AVCodecContext *avctx)
     /* FIXME: I really don't think this should be here */
     if (dv_codec_profile(avctx))
 	avctx->pix_fmt = dv_codec_profile(avctx)->pix_fmt; 
+    avctx->coded_frame = &s->picture;
     
     return 0;
 }
@@ -853,6 +854,8 @@ static int dvvideo_decode_frame(AVCodecContext *avctx,
         fprintf(stderr, "get_buffer() failed\n");
         return -1;
     }
+    s->picture.interlaced_frame = 1;
+    s->picture.bottom_field_first = 1;
 
     /* for each DIF segment */
     mb_pos_ptr = s->sys->video_place;

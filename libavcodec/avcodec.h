@@ -399,6 +399,20 @@ static const int Motion_Est_QTab[] = { ME_ZERO, ME_PHODS, ME_LOG,
      * \
      */\
     int qscale_type;\
+    \
+    /**\
+     * The content of the picture is interlaced.\
+     * - encoding: set by user\
+     * - decoding: set by lavc (default 0)\
+     */\
+    int interlaced_frame;\
+    \
+    /**\
+     * if the content is interlaced, is bottom field displayed first.\
+     * - encoding: set by user\
+     * - decoding: set by lavc (default 0)\
+     */\
+    int bottom_field_first;\
 
 #define FF_QSCALE_TYPE_MPEG1	0
 #define FF_QSCALE_TYPE_MPEG2	1

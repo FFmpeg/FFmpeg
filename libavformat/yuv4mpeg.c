@@ -23,94 +23,51 @@
 #define Y4M_LINE_MAX 256
 
 #ifdef CONFIG_ENCODERS
-static int yuv4_write_header(AVFormatContext *s)
+
+
+static struct { int n; int d;} SAR[] = {{10, 11}, /*  4:3 NTSC */
+	                                {59, 54}, /*  4:3 PAL  */
+	                                {40, 33}, /* 16:9 NTSC */
+				       {118, 81}, /* 16:9 PAL  */
+					{ 1,  1}};/* should always be the last */
+
+static int yuv4_generate_header(AVFormatContext *s, char* buf)
 {
     AVStream *st;
     int width, height;
-    int raten, rated, aspectn, aspectd, n;
-    char buf[Y4M_LINE_MAX+1];
+    int raten, rated, aspectn, aspectd, n, i;
+    char inter;
 
-    if (s->nb_streams != 1)
-        return -EIO;
-    
     st = s->streams[0];
     width = st->codec.width;
     height = st->codec.height;
 
-#if 1
-    //this is identical to the code below for exact fps
     av_reduce(&raten, &rated, st->codec.frame_rate, st->codec.frame_rate_base, (1UL<<31)-1);
-#else
-    {
-        int gcd, fps, fps1;
-
-        fps = st->codec.frame_rate;
-        fps1 = (((float)fps / st->codec.frame_rate_base) * 1000);
-        
-        /* Sorry about this messy code, but mpeg2enc is very picky about
-         * the framerates it accepts. */
-        switch(fps1) {
-        case 23976:
-            raten = 24000; /* turn the framerate into a ratio */
-            rated = 1001;
-            break;
-        case 29970:
-            raten = 30000;
-            rated = 1001;
-            break;
-        case 25000:
-            raten = 25;
-            rated = 1;
-            break;
-        case 30000:
-            raten = 30;
-            rated = 1;
-            break;
-        case 24000:
-            raten = 24;
-            rated = 1;
-            break;
-        case 50000:
-            raten = 50;
-            rated = 1;
-            break;
-        case 59940:
-            raten = 60000;
-            rated = 1001;
-            break;
-        case 60000:
-            raten = 60;
-            rated = 1;
-            break;
-        default:
-            raten = st->codec.frame_rate; /* this setting should work, but often doesn't */
-            rated = st->codec.frame_rate_base;
-            gcd= av_gcd(raten, rated);
-            raten /= gcd;
-            rated /= gcd;
-            break;
-        }
-    }
-#endif
     
-    aspectn = 1;
-    aspectd = 1;	/* ffmpeg always uses a 1:1 aspect ratio */ //FIXME not true anymore
+    for (i=0; i<sizeof(SAR)/sizeof(SAR[0])-1; i++) {
+       if (ABS(st->codec.aspect_ratio -
+	       (float)SAR[i].n/SAR[i].d * (float)width/height) < 0.05)
+		  break;
+    }
+    aspectn = SAR[i].n;
+    aspectd = SAR[i].d;
+    
+    inter = 'p'; /* progressive is the default */
+    if (st->codec.coded_frame && st->codec.coded_frame->interlaced_frame) {
+        inter = st->codec.coded_frame->bottom_field_first ? 'b' : 't';
+    }
 
     /* construct stream header, if this is the first frame */
-    n = snprintf(buf, sizeof(buf), "%s W%d H%d F%d:%d I%s A%d:%d\n",
+    n = snprintf(buf, Y4M_LINE_MAX, "%s W%d H%d F%d:%d I%c A%d:%d%s\n",
                  Y4M_MAGIC,
                  width,
                  height,
                  raten, rated,
-                 "p",			/* ffmpeg seems to only output progressive video */
-                 aspectn, aspectd);
-    if (n < 0) {
-        fprintf(stderr, "Error. YUV4MPEG stream header write failed.\n");
-        return -EIO;
-    } else {
-        put_buffer(&s->pb, buf, strlen(buf));
-    }
-    return 0;
+                 inter,
+                 aspectn, aspectd,
+		 (st->codec.pix_fmt == PIX_FMT_YUV411P) ? " XYSCSS=411" : "");
+		 
+    return n;
 }
 
 static int yuv4_write_packet(AVFormatContext *s, int stream_index,
@@ -119,14 +76,28 @@ static int yuv4_write_packet(AVFormatContext *s, int stream_index,
     AVStream *st = s->streams[stream_index];
     ByteIOContext *pb = &s->pb;
     AVPicture *picture;
+    int* first_pkt = s->priv_data;
     int width, height;
     int i, m;
+    char buf2[Y4M_LINE_MAX+1];
     char buf1[20];
     uint8_t *ptr, *ptr1, *ptr2;
 
     picture = (AVPicture *)buf;
 
+    /* for the first packet we have to output the header as well */
+    if (*first_pkt) {
+        *first_pkt = 0;
+	if (yuv4_generate_header(s, buf2) < 0) {
+	    fprintf(stderr, "Error. YUV4MPEG stream header write failed.\n");
+	    return -EIO;
+	} else {
+	    put_buffer(pb, buf2, strlen(buf2)); 
+	}
+    }
+
     /* construct frame header */
+    
     m = snprintf(buf1, sizeof(buf1), "%s\n", Y4M_FRAME_MAGIC);
     put_buffer(pb, buf1, strlen(buf1));
 
@@ -155,6 +126,25 @@ static int yuv4_write_packet(AVFormatContext *s, int stream_index,
     return 0;
 }
 
+static int yuv4_write_header(AVFormatContext *s)
+{
+    int* first_pkt = s->priv_data;
+    
+    if (s->nb_streams != 1)
+        return -EIO;
+    
+    if (s->streams[0]->codec.pix_fmt == PIX_FMT_YUV411P) {
+        fprintf(stderr, "Warning: generating non-standard 4:1:1 YUV stream, some mjpegtools might not work.\n");
+    } 
+    else if (s->streams[0]->codec.pix_fmt != PIX_FMT_YUV420P) {
+        fprintf(stderr, "ERROR: yuv4mpeg only handles 4:2:0, 4:1:1 YUV data. Use -pix_fmt to select one.\n");
+	return -EIO;
+    }
+    
+    *first_pkt = 1;
+    return 0;
+}
+
 static int yuv4_write_trailer(AVFormatContext *s)
 {
     return 0;
@@ -165,7 +155,7 @@ AVOutputFormat yuv4mpegpipe_oformat = {
     "YUV4MPEG pipe format",
     "",
     "yuv4mpeg",
-    0,
+    sizeof(int),
     CODEC_ID_NONE,
     CODEC_ID_RAWVIDEO,
     yuv4_write_header,

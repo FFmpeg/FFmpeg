@@ -608,8 +608,11 @@ static void do_video_out(AVFormatContext *s,
             /* raw pictures are written as AVPicture structure to
                avoid any copies. We support temorarily the older
                method. */
+            AVFrame* old_frame = enc->coded_frame;
+	    enc->coded_frame = dec->coded_frame;
             av_write_frame(s, ost->index, 
                            (uint8_t *)final_picture, sizeof(AVPicture));
+	    enc->coded_frame = old_frame;
         } else {
             AVFrame big_picture;
             
