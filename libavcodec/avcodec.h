@@ -15,7 +15,7 @@ extern "C" {
 
 #define FFMPEG_VERSION_INT     0x000408
 #define FFMPEG_VERSION         "0.4.8"
-#define LIBAVCODEC_BUILD       4682
+#define LIBAVCODEC_BUILD       4683
 
 #define LIBAVCODEC_VERSION_INT FFMPEG_VERSION_INT
 #define LIBAVCODEC_VERSION     FFMPEG_VERSION
@@ -215,6 +215,7 @@ static const int Motion_Est_QTab[] = { ME_ZERO, ME_PHODS, ME_LOG,
 #define CODEC_FLAG_4MV    0x0004  ///< 4 MV per MB allowed 
 #define CODEC_FLAG_QPEL   0x0010  ///< use qpel MC 
 #define CODEC_FLAG_GMC    0x0020  ///< use GMC 
+#define CODEC_FLAG_MV0    0x0040  ///< always try a MB with MV=<0,0> 
 #define CODEC_FLAG_PART   0x0080  ///< use data partitioning 
 /* parent program gurantees that the input for b-frame containing streams is not written to 
    for at least s->max_b_frames+1 frames, if this is not set than the input will be copied */

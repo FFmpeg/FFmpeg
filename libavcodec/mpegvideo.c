@@ -3676,6 +3676,15 @@ static void encode_picture(MpegEncContext *s, int picture_number)
                     encode_mb_hq(s, &backup_s, &best_s, MB_TYPE_INTER, pb, pb2, tex_pb, 
                                  &dmin, &next_block, s->mv[0][0][0], s->mv[0][0][1]);
                 }
+                if(mb_type&MB_TYPE_SKIPED){
+                    s->mv_dir = MV_DIR_FORWARD;
+                    s->mv_type = MV_TYPE_16X16;
+                    s->mb_intra= 0;
+                    s->mv[0][0][0] = 0;
+                    s->mv[0][0][1] = 0;
+                    encode_mb_hq(s, &backup_s, &best_s, MB_TYPE_SKIPED, pb, pb2, tex_pb, 
+                                 &dmin, &next_block, s->mv[0][0][0], s->mv[0][0][1]);
+                }
                 if(mb_type&MB_TYPE_INTER4V){                 
                     s->mv_dir = MV_DIR_FORWARD;
                     s->mv_type = MV_TYPE_8X8;

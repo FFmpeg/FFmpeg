@@ -830,6 +830,7 @@ static inline int h263_mv4_search(MpegEncContext *s, int xmin, int ymin, int xma
     int P[10][2];
     int dmin_sum=0, mx4_sum=0, my4_sum=0;
     uint8_t * const mv_penalty= s->me.mv_penalty[s->f_code] + MAX_MV;
+    int same=1;
 
     for(block=0; block<4; block++){
         int mx4, my4;
@@ -928,7 +929,12 @@ static inline int h263_mv4_search(MpegEncContext *s, int xmin, int ymin, int xma
             
         s->motion_val[ s->block_index[block] ][0]= mx4;
         s->motion_val[ s->block_index[block] ][1]= my4;
+
+        if(mx4 != mx || my4 != my) same=0;
     }
+    
+    if(same)
+        return INT_MAX;
     
     if(s->dsp.me_sub_cmp[0] != s->dsp.mb_cmp[0]){
         dmin_sum += s->dsp.mb_cmp[0](s, s->new_picture.data[0] + s->mb_x*16 + s->mb_y*16*s->linesize, s->me.scratchpad, s->linesize);
@@ -1098,14 +1104,17 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
             mb_type|= MB_TYPE_INTER;
             s->me.sub_motion_search(s, &mx, &my, dmin, rel_xmin, rel_ymin, rel_xmax, rel_ymax,
 				   pred_x, pred_y, &s->last_picture, 0, 0, mv_penalty);
+            if(s->flags&CODEC_FLAG_MV0)
+                if(mx || my)
+                    mb_type |= MB_TYPE_SKIPED; //FIXME check difference
         }else{
             mx <<=shift;
             my <<=shift;
         }
         if((s->flags&CODEC_FLAG_4MV)
            && !s->me.skip && varc>50 && vard>10){
-            h263_mv4_search(s, rel_xmin, rel_ymin, rel_xmax, rel_ymax, mx, my, shift);
-            mb_type|=MB_TYPE_INTER4V;
+            if(h263_mv4_search(s, rel_xmin, rel_ymin, rel_xmax, rel_ymax, mx, my, shift) < INT_MAX)
+                mb_type|=MB_TYPE_INTER4V;
 
             set_p_mv_tables(s, mx, my, 0);
         }else
