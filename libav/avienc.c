@@ -247,6 +247,8 @@ static int avi_write_header(AVFormatContext *s)
             put_le32(pb, 0);
             put_le32(pb, 0);
             break;
+        default:
+            abort();
         }
         end_tag(pb, strh);
 
@@ -261,6 +263,8 @@ static int avi_write_header(AVFormatContext *s)
                 return -1;
             }
             break;
+        default:
+            abort();
         }
         end_tag(pb, strf);
         end_tag(pb, list2);
