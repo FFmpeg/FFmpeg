@@ -2956,7 +2956,7 @@ static inline int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
 #if 1 
                     {
                         const int abs_level= ABS(level);
-                        const int run1= run - rl->max_run[last][abs_level] - 1;
+                        int run1;
                         if(abs_level<=MAX_LEVEL && run<=MAX_RUN && s->error_resilience>=0){
                             if(abs_level <= rl->max_level[last][run]){
                                 fprintf(stderr, "illegal 3. esc, vlc encoding possible\n");
@@ -2966,6 +2966,7 @@ static inline int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
                                 fprintf(stderr, "illegal 3. esc, esc 1 encoding possible\n");
                                 return DECODING_AC_LOST;
                             }
+                            run1 = run - rl->max_run[last][abs_level] - 1;
                             if(run1 >= 0 && abs_level <= rl->max_level[last][run1]){
                                 fprintf(stderr, "illegal 3. esc, esc 2 encoding possible\n");
                                 return DECODING_AC_LOST;
