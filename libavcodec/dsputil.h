@@ -408,6 +408,7 @@ int mm_support(void);
 #define MM_MMXEXT 0x0002 /* SSE integer functions or AMD MMX ext */
 #define MM_SSE    0x0008 /* SSE functions */
 #define MM_SSE2   0x0010 /* PIV SSE2 functions */
+#define MM_3DNOWEXT  0x0020 /* AMD 3DNowExt */
 
 extern int mm_flags;
 

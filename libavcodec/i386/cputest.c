@@ -27,6 +27,7 @@ int mm_support(void)
 {
     int rval = 0;
     int eax, ebx, ecx, edx;
+    int max_std_level, max_ext_level, std_caps=0, ext_caps=0;
     long a, c;
     
     __asm__ __volatile__ (
@@ -52,58 +53,44 @@ int mm_support(void)
     
     if (a == c)
         return 0; /* CPUID not supported */
-    
-    cpuid(0, eax, ebx, ecx, edx);
 
-    if (ebx == 0x756e6547 &&
-        edx == 0x49656e69 &&
-        ecx == 0x6c65746e) {
-        
-        /* intel */
-    inteltest:
-        cpuid(1, eax, ebx, ecx, edx);
-        if ((edx & 0x00800000) == 0)
-            return 0;
-        rval |= MM_MMX;
-        if (edx & 0x02000000) 
+    cpuid(0, max_std_level, ebx, ecx, edx);
+
+    if(max_std_level >= 1){
+        cpuid(1, eax, ebx, ecx, std_caps);
+        if (std_caps & (1<<23))
+            rval |= MM_MMX;
+        if (std_caps & (1<<25)) 
             rval |= MM_MMXEXT | MM_SSE;
-        if (edx & 0x04000000) 
+        if (std_caps & (1<<26)) 
             rval |= MM_SSE2;
-        return rval;
-    } else if (ebx == 0x68747541 &&
+    }
+
+    cpuid(0x80000000, max_ext_level, ebx, ecx, edx);
+
+    if(max_ext_level >= 0x80000001){
+        cpuid(0x80000001, eax, ebx, ecx, ext_caps);
+        if (ext_caps & (1<<31))
+            rval |= MM_3DNOW;
+        if (ext_caps & (1<<30))
+            rval |= MM_3DNOWEXT;
+        if (ext_caps & (1<<23))
+            rval |= MM_MMX;
+    }
+
+    cpuid(0, eax, ebx, ecx, edx);
+    if (       ebx == 0x68747541 &&
                edx == 0x69746e65 &&
                ecx == 0x444d4163) {
         /* AMD */
-        cpuid(0x80000000, eax, ebx, ecx, edx);
-        if ((unsigned)eax < 0x80000001)
-            goto inteltest;
-        cpuid(0x80000001, eax, ebx, ecx, edx);
-        if ((edx & 0x00800000) == 0)
-            return 0;
-        rval = MM_MMX;
-        if (edx & 0x80000000)
-            rval |= MM_3DNOW;
-        if (edx & 0x00400000)
+        if(ext_caps & (1<<22))
             rval |= MM_MMXEXT;
-        goto inteltest;
     } else if (ebx == 0x746e6543 &&
                edx == 0x48727561 &&
                ecx == 0x736c7561) {  /*  "CentaurHauls" */
         /* VIA C3 */
-        cpuid(0x80000000, eax, ebx, ecx, edx);
-        if ((unsigned)eax < 0x80000001)
-            goto inteltest;	
-	cpuid(0x80000001, eax, ebx, ecx, edx);
-	rval = 0;      
-	if( edx & ( 1 << 31) )
-	  rval |= MM_3DNOW;
-	if( edx & ( 1 << 23) )
-	  rval |= MM_MMX;
-	if( edx & ( 1 << 24) )
+	if(ext_caps & (1<<24))
 	  rval |= MM_MMXEXT;
-        if(rval==0)
-            goto inteltest;
-	return rval;
     } else if (ebx == 0x69727943 &&
                edx == 0x736e4978 &&
                ecx == 0x64616574) {
@@ -116,29 +103,21 @@ int mm_support(void)
            According to the table, the only CPU which supports level
            2 is also the only one which supports extended CPUID levels.
         */
-        if (eax != 2) 
-            goto inteltest;
-        cpuid(0x80000001, eax, ebx, ecx, edx);
-        if ((eax & 0x00800000) == 0)
-            return 0;
-        rval = MM_MMX;
-        if (eax & 0x01000000)
+        if (eax < 2) 
+            return rval;
+        if (ext_caps & (1<<24))
             rval |= MM_MMXEXT;
-        return rval;
-    } else if (ebx == 0x756e6547 &&
-               edx == 0x54656e69 &&
-               ecx == 0x3638784d) {
-        /* Tranmeta Crusoe */
-        cpuid(0x80000000, eax, ebx, ecx, edx);
-        if ((unsigned)eax < 0x80000001)
-            return 0;
-        cpuid(0x80000001, eax, ebx, ecx, edx);
-        if ((edx & 0x00800000) == 0)
-            return 0;
-        return MM_MMX;
-    } else {
-        return 0;
     }
+#if 0
+    av_log(NULL, AV_LOG_DEBUG, "%s%s%s%s%s%s\n", 
+        (rval&MM_MMX) ? "MMX ":"", 
+        (rval&MM_MMXEXT) ? "MMX2 ":"", 
+        (rval&MM_SSE) ? "SSE ":"", 
+        (rval&MM_SSE2) ? "SSE2 ":"", 
+        (rval&MM_3DNOW) ? "3DNow ":"", 
+        (rval&MM_3DNOWEXT) ? "3DNowExt ":"");
+#endif
+    return rval;
 }
 
 #ifdef __TEST__
