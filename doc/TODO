@@ -19,7 +19,10 @@ Fabrice's TODO list: (in approximate decreasing priority order)
 Michael's TODO list: (unordered) (if anyone wanna help with sth, just ask)
 -------------------
 - finish implementation of WMV2 j-picture
-- H264 codec (after its a standart or at least more stable)
+- H264 encoder
+- H264 deblock filter
+- H264 B frames
+- H264 CABAC
 - per MB ratecontrol (so VCD and such do work better)
 - more optimizations
 - simper rate control
@@ -50,3 +53,4 @@ Philip'a TODO list: (alphabetically ordered) (please help)
 unassigned TODO: (stuff which should/must be done but noone seems to do it)
 ---------------
 - use AVFrame for audio codecs too
+- H264 interlacing
