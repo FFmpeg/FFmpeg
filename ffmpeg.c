@@ -41,6 +41,9 @@
 
 #include "cmdutils.h"
 
+#undef NDEBUG
+#include <assert.h>
+
 #if !defined(INFINITY) && defined(HUGE_VAL)
 #define INFINITY HUGE_VAL
 #endif
@@ -1081,7 +1084,9 @@ static int output_packet(AVInputStream *ist, int ist_index,
     AVFrame picture;
     void *buffer_to_free;
 
-    if (pkt && pkt->dts != AV_NOPTS_VALUE) { //FIXME seems redundant, as libavformat does this too
+    if(!pkt){
+        ist->pts= ist->next_pts; // needed for last packet if vsync=0
+    } else if (pkt->dts != AV_NOPTS_VALUE) { //FIXME seems redundant, as libavformat does this too
         ist->next_pts = ist->pts = pkt->dts;
     } else {
         assert(ist->pts == ist->next_pts);
