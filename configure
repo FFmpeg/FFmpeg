@@ -509,9 +509,6 @@ EOF
 builtin_vector=no
 if $cc -o $TMPO $TMPC 2> /dev/null ; then
   builtin_vector=yes
-  if test "$mmx" = "yes" ; then
-     CFLAGS="$CFLAGS -msse"
-  fi
 fi
 
 if test x"$1" = x"-h" -o x"$1" = x"--help" ; then
