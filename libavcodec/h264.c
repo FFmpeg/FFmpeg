@@ -4479,17 +4479,15 @@ decode_intra_mb:
                     } else {
                         ref[list][i] = -1;
                     }
-                    h->ref_cache[list][ scan8[4*i]   ]=h->ref_cache[list][ scan8[4*i]+1 ]=
+                                                       h->ref_cache[list][ scan8[4*i]+1 ]=
                     h->ref_cache[list][ scan8[4*i]+8 ]=h->ref_cache[list][ scan8[4*i]+9 ]= ref[list][i];
                 }
             }
         }
 
         for(list=0; list<2; list++){
-
             for(i=0; i<4; i++){
-                //h->ref_cache[list][ scan8[4*i]   ]=h->ref_cache[list][ scan8[4*i]+1 ]=
-                //h->ref_cache[list][ scan8[4*i]+8 ]=h->ref_cache[list][ scan8[4*i]+9 ]= ref[list][i];
+                h->ref_cache[list][ scan8[4*i]   ]=h->ref_cache[list][ scan8[4*i]+1 ];
 
                 if(IS_DIR(h->sub_mb_type[i], 0, list) && !IS_DIRECT(h->sub_mb_type[i])){
                     const int sub_mb_type= h->sub_mb_type[i];
