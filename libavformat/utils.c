@@ -2487,6 +2487,8 @@ int parse_frame_rate(int *frame_rate, int *frame_rate_base, const char *arg)
 
     /* Then, we try to parse it as fraction */
     cp = strchr(arg, '/');
+    if (!cp)
+        cp = strchr(arg, ':');
     if (cp) {
         char* cpp;
 	*frame_rate = strtol(arg, &cpp, 10);
