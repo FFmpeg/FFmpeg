@@ -2770,17 +2770,33 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
  */
 int ff_combine_frame( MpegEncContext *s, int next, uint8_t **buf, int *buf_size){
     ParseContext *pc= &s->parse_context;
-        
+
+#if 0
+    if(pc->overread){
+        printf("overread %d, state:%X next:%d index:%d o_index:%d\n", pc->overread, pc->state, next, pc->index, pc->overread_index);
+        printf("%X %X %X %X\n", (*buf)[0], (*buf)[1],(*buf)[2],(*buf)[3]);
+    }
+#endif
+
+    /* copy overreaded byes from last frame into buffer */
+    for(; pc->overread>0; pc->overread--){
+        pc->buffer[pc->index++]= pc->buffer[pc->overread_index++];
+    }
+    
     pc->last_index= pc->index;
 
-    if(next==-1){
+    /* copy into buffer end return */
+    if(next == END_NOT_FOUND){
         pc->buffer= av_fast_realloc(pc->buffer, &pc->buffer_size, (*buf_size) + pc->index + FF_INPUT_BUFFER_PADDING_SIZE);
 
         memcpy(&pc->buffer[pc->index], *buf, *buf_size);
         pc->index += *buf_size;
         return -1;
     }
-
+    
+    pc->overread_index= pc->index + next;
+    
+    /* append to buffer */
     if(pc->index){
         pc->buffer= av_fast_realloc(pc->buffer, &pc->buffer_size, next + pc->index + FF_INPUT_BUFFER_PADDING_SIZE);
 
@@ -2789,6 +2805,19 @@ int ff_combine_frame( MpegEncContext *s, int next, uint8_t **buf, int *buf_size)
         *buf= pc->buffer;
         *buf_size= pc->last_index + next;
     }
+
+    /* store overread bytes */
+    for(;next < 0; next++){
+        pc->state = (pc->state<<8) | pc->buffer[pc->last_index + next];
+        pc->overread++;
+    }
+
+#if 0
+    if(pc->overread){
+        printf("overread %d, state:%X next:%d index:%d o_index:%d\n", pc->overread, pc->state, next, pc->index, pc->overread_index);
+        printf("%X %X %X %X\n", (*buf)[0], (*buf)[1],(*buf)[2],(*buf)[3]);
+    }
+#endif
 
     return 0;
 }

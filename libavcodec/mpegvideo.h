@@ -205,8 +205,10 @@ typedef struct ParseContext{
     int index;
     int last_index;
     int buffer_size;
-    int state;
+    uint32_t state;             ///< contains the last few bytes in MSB order
     int frame_start_found;
+    int overread;               ///< the number of bytes which where irreversibly read from the next frame
+    int overread_index;         ///< the index into ParseContext.buffer of the overreaded bytes
 } ParseContext;
 
 struct MpegEncContext;
@@ -709,6 +711,7 @@ void ff_draw_horiz_band(MpegEncContext *s, int y, int h);
 void ff_emulated_edge_mc(MpegEncContext *s, uint8_t *src, int linesize, int block_w, int block_h, 
                                     int src_x, int src_y, int w, int h);
 char ff_get_pict_type_char(int pict_type);
+#define END_NOT_FOUND -100
 int ff_combine_frame( MpegEncContext *s, int next, uint8_t **buf, int *buf_size);
 void ff_print_debug_info(MpegEncContext *s, Picture *pict);
 
