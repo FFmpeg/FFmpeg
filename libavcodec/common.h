@@ -291,7 +291,7 @@ void init_put_bits(PutBitContext *s, uint8_t *buffer, int buffer_size);
 int put_bits_count(PutBitContext *s);
 void align_put_bits(PutBitContext *s);
 void flush_put_bits(PutBitContext *s);
-void put_string(PutBitContext * pbc, char *s);
+void put_string(PutBitContext * pbc, char *s, int put_zero);
 
 /* bit input */
 
@@ -1142,7 +1142,7 @@ uint64_t tstart= rdtsc();\
 
 #define STOP_TIMER(id) \
 tend= rdtsc();\
-if(tcount<2 || tend - tstart < 4*tsum/tcount){\
+if(tcount<2 || tend - tstart < 8*tsum/tcount){\
     tsum+= tend - tstart;\
     tcount++;\
 }else\

@@ -104,13 +104,14 @@ void flush_put_bits(PutBitContext *s)
 
 #ifdef CONFIG_ENCODERS
 
-void put_string(PutBitContext * pbc, char *s)
+void put_string(PutBitContext * pbc, char *s, int put_zero)
 {
     while(*s){
         put_bits(pbc, 8, *s);
         s++;
     }
-    put_bits(pbc, 8, 0);
+    if(put_zero)
+        put_bits(pbc, 8, 0);
 }
 
 /* bit input functions */

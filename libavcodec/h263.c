@@ -2326,8 +2326,7 @@ static void mpeg4_encode_vol_header(MpegEncContext * s, int vo_number, int vol_n
     if(!(s->flags & CODEC_FLAG_BITEXACT)){
         put_bits(&s->pb, 16, 0);
         put_bits(&s->pb, 16, 0x1B2);	/* user_data */
-	put_string(&s->pb, LIBAVCODEC_IDENT);
-        ff_mpeg4_stuffing(&s->pb);
+	put_string(&s->pb, LIBAVCODEC_IDENT, 0);
     }
 }
 
