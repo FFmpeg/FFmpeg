@@ -10,7 +10,11 @@
 
 //#define ALT_BITSTREAM_WRITER
 //#define ALIGNED_BITSTREAM_WRITER
-//#define ALT_BITSTREAM_READER
+
+#ifdef ARCH_ALPHA
+#define ALT_BITSTREAM_READER
+#endif
+
 //#define ALIGNED_BITSTREAM
 #define FAST_GET_FIRST_VLC
 //#define DUMP_STREAM // only works with the ALT_BITSTREAM_READER
