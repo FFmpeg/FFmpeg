@@ -1006,8 +1006,10 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
                 st->codec.sample_rate = get_be16(pb); /* sample rate, not always correct */
                 get_be16(pb);
                 c->mp4=1;
+		{
                 MOV_atom_t a = { format, url_ftell(pb), size - (20 + 20 + 8) };
                 mov_read_default(c, pb, a);
+		}
                 /* Get correct sample rate from extradata */
                 if(st->codec.extradata_size) {
                    const int samplerate_table[] = {
