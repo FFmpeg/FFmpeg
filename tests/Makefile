@@ -19,7 +19,7 @@ test-server: vsynth1/0.pgm asynth1.sw
 	@$(SRC_PATH)/tests/server-regression.sh $(SERVER_REFFILE)
 
 # fast regression tests for all codecs
-test mpeg4 mpeg: vsynth1/0.pgm asynth1.sw
+test mpeg4 mpeg: vsynth1/0.pgm asynth1.sw tiny_psnr
 	@$(SRC_PATH)/tests/regression.sh $@ $(REFFILE) || true
 
 # fast regression for libav formats
@@ -43,6 +43,9 @@ asynth1.sw: audiogen
 audiogen: audiogen.c
 	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $<
 
+tiny_psnr: tiny_psnr.c
+	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $<
+        
 DSPDEPS = $(SRC_PATH)/libavcodec/i386/dsputil_mmx.c \
  $(SRC_PATH)/libavcodec/i386/dsputil_mmx_avg.h \
  $(SRC_PATH)/libavcodec/i386/dsputil_mmx_rnd.h \

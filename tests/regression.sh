@@ -42,11 +42,13 @@ fi
 
 # various files
 ffmpeg="../ffmpeg_g"
+tiny_psnr="./tiny_psnr"
 outfile="$datadir/a-"
 reffile="$2"
 benchfile="$datadir/ffmpeg.bench"
 raw_src="vsynth1/%d.pgm"
 raw_dst="$datadir/out.yuv"
+raw_ref="$datadir/ref.yuv"
 pcm_src="asynth1.sw"
 pcm_dst="$datadir/out.wav"
 
@@ -60,6 +62,9 @@ do_ffmpeg()
     echo $ffmpeg -bitexact -dct_algo 1 -idct_algo 2 $*
     $ffmpeg -bitexact -dct_algo 1 -idct_algo 2 -benchmark $* > $datadir/bench.tmp
     md5sum -b $f >> $logfile
+    if [ $f = $raw_dst ] ; then
+        $tiny_psnr $f $raw_ref >> $logfile
+    fi
     expr "`cat $datadir/bench.tmp`" : '.*utime=\(.*s\)' > $datadir/bench2.tmp
     echo `cat $datadir/bench2.tmp` $f >> $benchfile
 }
@@ -74,8 +79,22 @@ do_ffmpeg_crc()
     cat $datadir/ffmpeg.crc >> $logfile
 }
 
+do_ffmpeg_nocheck()
+{
+    f="$1"
+    shift
+    echo $ffmpeg -bitexact -dct_algo 1 -idct_algo 2 $*
+    $ffmpeg -bitexact -dct_algo 1 -idct_algo 2 -benchmark $* > $datadir/bench.tmp
+    expr "`cat $datadir/bench.tmp`" : '.*utime=\(.*s\)' > $datadir/bench2.tmp
+    echo `cat $datadir/bench2.tmp` $f >> $benchfile
+}
+
 echo "ffmpeg regression test" > $logfile
 echo "ffmpeg benchmarks" > $benchfile
+
+###################################
+# generate reference for quality check
+do_ffmpeg_nocheck $raw_ref -y -f pgmyuv -i $raw_src -an -f rawvideo $raw_ref
 
 ###################################
 if [ -n "$do_mpeg" ] ; then
@@ -145,7 +164,7 @@ fi
 if [ -n "$do_h263p" ] ; then
 # h263p encoding
 file=${outfile}h263p.avi
-do_ffmpeg $file -y -qscale 10 -umv -f pgmyuv -i $raw_src -s 352x288 -an -vcodec h263p -ps 300 $file
+do_ffmpeg $file -y -qscale 2 -umv -f pgmyuv -i $raw_src -s 352x288 -an -vcodec h263p -ps 300 $file
 
 # h263p decoding
 do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst 
@@ -155,7 +174,7 @@ fi
 if [ -n "$do_mpeg4" ] ; then
 # mpeg4
 file=${outfile}odivx.avi
-do_ffmpeg $file -y -qscale 10 -f pgmyuv -i $raw_src -an -vcodec mpeg4 $file
+do_ffmpeg $file -y -4mv -qscale 10 -f pgmyuv -i $raw_src -an -vcodec mpeg4 $file
 
 # mpeg4 decoding
 do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst 
