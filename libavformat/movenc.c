@@ -252,7 +252,8 @@ const CodecTag codec_movaudio_tags[] = {
 
 static int mov_write_audio_tag(ByteIOContext *pb, MOVTrack* track)
 {
-    int pos = url_ftell(pb), tag;
+    int pos = url_ftell(pb);
+    int tag;
     
     put_be32(pb, 0); /* size */
 
@@ -261,13 +262,9 @@ static int mov_write_audio_tag(ByteIOContext *pb, MOVTrack* track)
     if (!tag)
     {
 	int tmp = codec_get_tag(codec_wav_tags, track->enc->codec_id);
-	if (tmp)
-	    tag = MKTAG('m', 's', ((tmp >> 8) & 0xff), (tmp & 0xff));
+        tag = MKTAG('m', 's', ((tmp >> 8) & 0xff), (tmp & 0xff));
     }
-    if (!tag)
-	put_tag(pb, "    ");
-    else
-	put_le32(pb, tag); // store it byteswapped
+    put_le32(pb, tag); // store it byteswapped
 
     put_be32(pb, 0); /* Reserved */
     put_be16(pb, 0); /* Reserved */
@@ -442,7 +439,8 @@ const CodecTag codec_movvideo_tags[] = {
 
 static int mov_write_video_tag(ByteIOContext *pb, MOVTrack* track)
 {
-    int pos = url_ftell(pb), tag;
+    int pos = url_ftell(pb);
+    int tag;
 
     put_be32(pb, 0); /* size */
 
@@ -450,10 +448,7 @@ static int mov_write_video_tag(ByteIOContext *pb, MOVTrack* track)
     // if no mac fcc found, try with Microsoft tags
     if (!tag)
 	tag = codec_get_tag(codec_bmp_tags, track->enc->codec_id);
-    if (!tag)
-	put_tag(pb, "    ");
-    else
-	put_le32(pb, tag); // store it byteswapped
+    put_le32(pb, tag); // store it byteswapped
 
     put_be32(pb, 0); /* Reserved */
     put_be16(pb, 0); /* Reserved */
@@ -929,6 +924,26 @@ static int mov_write_header(AVFormatContext *s)
     ByteIOContext *pb = &s->pb;
     MOVContext *mov = s->priv_data;
     int i;
+
+    for(i=0; i<s->nb_streams; i++){
+        AVCodecContext *c= &s->streams[i]->codec;
+
+        if      (c->codec_type == CODEC_TYPE_VIDEO){
+            if (!codec_get_tag(codec_movvideo_tags, c->codec_id)){
+                if(!codec_get_tag(codec_bmp_tags, c->codec_id))
+                    return -1;
+                else
+                    av_log(s, AV_LOG_INFO, "Warning, using MS style video codec tag, the file may be unplayable!\n");
+            }
+        }else if(c->codec_type == CODEC_TYPE_AUDIO){
+            if (!codec_get_tag(codec_movaudio_tags, c->codec_id)){
+                if(!codec_get_tag(codec_wav_tags, c->codec_id))
+                    return -1;
+                else
+                    av_log(s, AV_LOG_INFO, "Warning, using MS style audio codec tag, the file may be unplayable!\n");
+            }
+        }
+    }
 
     /* Default mode == MP4 */
     mov->mode = MODE_MP4;
