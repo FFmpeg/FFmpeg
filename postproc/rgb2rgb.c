@@ -13,6 +13,7 @@
 #include "../cpudetect.h"
 #include "../mangle.h"
 #include "../bswap.h"
+#include "../libvo/fastmemcpy.h"
 
 #ifdef ARCH_X86
 #define CAN_COMPILE_X86_ASM
