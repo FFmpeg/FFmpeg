@@ -103,7 +103,8 @@ untested special converters
 #endif
 
 //FIXME replace this with something faster
-#define isPlanarYUV(x) ((x)==IMGFMT_YV12 || (x)==IMGFMT_I420 || (x)==IMGFMT_YVU9)
+#define isPlanarYUV(x) ((x)==IMGFMT_YV12 || (x)==IMGFMT_I420 || (x)==IMGFMT_YVU9 \
+			|| (x)==IMGFMT_444P || (x)==IMGFMT_422P || (x)==IMGFMT_411P)
 #define isYUV(x)       ((x)==IMGFMT_YUY2 || isPlanarYUV(x))
 #define isGray(x)      ((x)==IMGFMT_Y800)
 #define isRGB(x)       (((x)&IMGFMT_RGB_MASK)==IMGFMT_RGB)
@@ -111,8 +112,10 @@ untested special converters
 #define isSupportedIn(x)  ((x)==IMGFMT_YV12 || (x)==IMGFMT_I420 || (x)==IMGFMT_YUY2 \
 			|| (x)==IMGFMT_BGR32|| (x)==IMGFMT_BGR24|| (x)==IMGFMT_BGR16|| (x)==IMGFMT_BGR15\
 			|| (x)==IMGFMT_RGB32|| (x)==IMGFMT_RGB24\
-			|| (x)==IMGFMT_Y800 || (x)==IMGFMT_YVU9)
+			|| (x)==IMGFMT_Y800 || (x)==IMGFMT_YVU9\
+			|| (x)==IMGFMT_444P || (x)==IMGFMT_422P || (x)==IMGFMT_411P)
 #define isSupportedOut(x) ((x)==IMGFMT_YV12 || (x)==IMGFMT_I420 \
+			|| (x)==IMGFMT_444P || (x)==IMGFMT_422P || (x)==IMGFMT_411P\
 			|| isRGB(x) || isBGR(x)\
 			|| (x)==IMGFMT_Y800 || (x)==IMGFMT_YVU9)
 #define isPacked(x)    ((x)==IMGFMT_YUY2 || isRGB(x) || isBGR(x))
@@ -1757,7 +1760,8 @@ static void yvu9toyv12Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], in
  * bring pointers in YUV order instead of YVU
  */
 static inline void orderYUV(int format, uint8_t * sortedP[], int sortedStride[], uint8_t * p[], int stride[]){
-	if(format == IMGFMT_YV12 || format == IMGFMT_YVU9){
+	if(format == IMGFMT_YV12 || format == IMGFMT_YVU9 
+           || format == IMGFMT_444P || format == IMGFMT_422P || format == IMGFMT_411P){
 		sortedP[0]= p[0];
 		sortedP[1]= p[1];
 		sortedP[2]= p[2];
@@ -1884,6 +1888,18 @@ static void getSubSampleFactors(int *h, int *v, int format){
 	case IMGFMT_YVU9:
 		*h=2;
 		*v=2;
+		break;
+	case IMGFMT_444P:
+		*h=0;
+		*v=0;
+		break;
+	case IMGFMT_422P:
+		*h=1;
+		*v=0;
+		break;
+	case IMGFMT_411P:
+		*h=2;
+		*v=0;
 		break;
 	default:
 		*h=0;
