@@ -265,7 +265,7 @@ typedef struct RLTable {
 void init_rl(RLTable *rl);
 void init_vlc_rl(RLTable *rl);
 
-extern inline int get_rl_index(const RLTable *rl, int last, int run, int level)
+static inline int get_rl_index(const RLTable *rl, int last, int run, int level)
 {
     int index;
     index = rl->index_run[last][run];
