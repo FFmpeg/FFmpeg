@@ -1902,6 +1902,14 @@ static inline void decode_subband(SnowContext *s, SubBand *b, DWTELEM *src, DWTE
     const int w= b->width;
     const int h= b->height;
     int x,y;
+    const int qlog= clip(s->qlog + b->qlog, 0, 128);
+    int qmul= qexp[qlog&7]<<(qlog>>3);
+    int qadd= (s->qbias*qmul)>>QBIAS_SHIFT;
+    
+    if(b->buf == s->spatial_dwt_buffer || s->qlog == LOSSLESS_QLOG){
+        qadd= 0;
+        qmul= 1<<QEXPSHIFT;
+    }
 
     START_TIMER
 
@@ -1931,7 +1939,7 @@ static inline void decode_subband(SnowContext *s, SubBand *b, DWTELEM *src, DWTE
                 lt= t; t= rt;
 
                 if(y){
-                    if(b->x[prev_index] <= x) //FIXME if
+                    if(b->x[prev_index] <= x)
                         prev_index++;
                     if(b->x[prev_index] == x + 1)
                         rt= b->coeff[prev_index];
@@ -1971,9 +1979,12 @@ static inline void decode_subband(SnowContext *s, SubBand *b, DWTELEM *src, DWTE
                 if(v){
                     int context= av_log2(/*ABS(ll) + */3*ABS(l) + ABS(lt) + 2*ABS(t) + ABS(rt) + ABS(p));
                     v= get_symbol2(&s->c, b->state[context + 2], context-4) + 1;
-                    if(get_cabac(&s->c, &b->state[0][16 + 1 + 3 + quant3b[l&0xFF] + 3*quant3b[t&0xFF]]))
+                    if(get_cabac(&s->c, &b->state[0][16 + 1 + 3 + quant3b[l&0xFF] + 3*quant3b[t&0xFF]])){
+                        src[x + y*stride]=-(( v*qmul + qadd)>>(QEXPSHIFT));
                         v= -v;
-                    src[x + y*stride]= v;
+                    }else{
+                        src[x + y*stride]= (( v*qmul + qadd)>>(QEXPSHIFT));
+                    }
                     b->x[index]=x; //FIXME interleave x/coeff
                     b->coeff[index++]= v;
                 }
@@ -2667,6 +2678,7 @@ static void dequantize(SnowContext *s, SubBand *b, DWTELEM *src, int stride){
     const int qmul= qexp[qlog&7]<<(qlog>>3);
     const int qadd= (s->qbias*qmul)>>QBIAS_SHIFT;
     int x,y;
+    START_TIMER
     
     if(s->qlog == LOSSLESS_QLOG) return;
     
@@ -2681,6 +2693,9 @@ static void dequantize(SnowContext *s, SubBand *b, DWTELEM *src, int stride){
                 src[x + y*stride]=  (( i*qmul + qadd)>>(QEXPSHIFT));
             }
         }
+    }
+    if(w > 200 /*level+1 == s->spatial_decomposition_count*/){
+        STOP_TIMER("dquant")
     }
 }
 
@@ -3293,16 +3308,11 @@ if(s->avctx->debug&2048){
                 SubBand *b= &p->band[level][orientation];
 
                 decode_subband(s, b, b->buf, b->parent ? b->parent->buf : NULL, b->stride, orientation);
-                if(orientation==0)
+                if(orientation==0){
                     correlate(s, b, b->buf, b->stride, 1, 0);
-            }
-        }
-if(!(s->avctx->debug&1024))
-        for(level=0; level<s->spatial_decomposition_count; level++){
-            for(orientation=level ? 1 : 0; orientation<4; orientation++){
-                SubBand *b= &p->band[level][orientation];
-
-                dequantize(s, b, b->buf, b->stride);
+                    dequantize(s, b, b->buf, b->stride);
+                    assert(b->buf == s->spatial_dwt_buffer);
+                }
             }
         }
 
