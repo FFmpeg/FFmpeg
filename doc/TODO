@@ -30,3 +30,14 @@ Michael's TODO list: (unordered) (if anyone wanna help with sth, just ask)
 - split h263.c
 - mpeg2 encoding (after the ME impovements)
 - mpeg1 b frames (after the ME impovements)
+
+Francois' TODO list: (unordered, without any timeframe)
+-------------------
+- test MACE decoder against the openquicktime one as suggested by A'rpi
+- mov/mp4 muxer
+- BeOS audio input grabbing backend
+- BeOS video input grabbing backend
+- have a REAL BeOS errno fix (return MKERROR(EXXX);), not a hack
+- publish my BeOS libposix on BeBits so I can officially support ffserver :)
+- check the whole code for thread-safety (global and init stuff)
+
