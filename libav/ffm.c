@@ -166,6 +166,15 @@ static int ffm_write_header(AVFormatContext *s)
             put_be16(pb, (int) (codec->qcompress * 10000.0));
             put_be16(pb, (int) (codec->qblur * 10000.0));
             put_be32(pb, codec->bit_rate_tolerance);
+            put_native_string(pb, codec->rc_eq);
+            put_be32(pb, codec->rc_max_rate);
+            put_be32(pb, codec->rc_min_rate);
+            put_be32(pb, codec->rc_buffer_size);
+            put_native_double(pb, codec->i_quant_factor);
+            put_native_double(pb, codec->b_quant_factor);
+            put_native_double(pb, codec->i_quant_offset);
+            put_native_double(pb, codec->b_quant_offset);
+            put_be32(pb, codec->dct_algo);
             break;
         case CODEC_TYPE_AUDIO:
             put_be32(pb, codec->sample_rate);
@@ -380,6 +389,8 @@ static int ffm_read_header(AVFormatContext *s, AVFormatParameters *ap)
     get_be32(pb); /* total bitrate */
     /* read each stream */
     for(i=0;i<s->nb_streams;i++) {
+        char rc_eq_buf[128];
+
         st = av_mallocz(sizeof(AVStream));
         if (!st)
             goto fail;
@@ -409,6 +420,15 @@ static int ffm_read_header(AVFormatContext *s, AVFormatParameters *ap)
             codec->qcompress = get_be16(pb) / 10000.0;
             codec->qblur = get_be16(pb) / 10000.0;
             codec->bit_rate_tolerance = get_be32(pb);
+            codec->rc_eq = strdup(get_native_string(pb, rc_eq_buf, sizeof(rc_eq_buf)));
+            codec->rc_max_rate = get_be32(pb);
+            codec->rc_min_rate = get_be32(pb);
+            codec->rc_buffer_size = get_be32(pb);
+            codec->i_quant_factor = get_native_double(pb);
+            codec->b_quant_factor = get_native_double(pb);
+            codec->i_quant_offset = get_native_double(pb);
+            codec->b_quant_offset = get_native_double(pb);
+            codec->dct_algo = get_be32(pb);
             break;
         case CODEC_TYPE_AUDIO:
             codec->sample_rate = get_be32(pb);
@@ -416,7 +436,7 @@ static int ffm_read_header(AVFormatContext *s, AVFormatParameters *ap)
             codec->frame_size = get_le16(pb);
             break;
         default:
-            av_abort();
+            goto fail;
         }
 
     }

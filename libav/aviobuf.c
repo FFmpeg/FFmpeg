@@ -68,7 +68,7 @@ void put_byte(ByteIOContext *s, int b)
         flush_buffer(s);
 }
 
-void put_buffer(ByteIOContext *s, unsigned char *buf, int size)
+void put_buffer(ByteIOContext *s, const unsigned char *buf, int size)
 {
     int len;
 
@@ -174,6 +174,19 @@ void put_be32(ByteIOContext *s, unsigned int val)
     put_byte(s, val >> 16);
     put_byte(s, val >> 8);
     put_byte(s, val);
+}
+
+void put_native_double(ByteIOContext *s, double val)
+{
+    put_buffer(s, (const unsigned char *) &val, sizeof(val));
+}
+
+void put_native_string(ByteIOContext *s, const char *str)
+{
+    if (str)
+        put_buffer(s, (const unsigned char *) str, strlen(str) + 1);
+    else
+        put_byte(s, 0);
 }
 
 void put_le64(ByteIOContext *s, UINT64 val)
@@ -324,6 +337,30 @@ unsigned int get_be32(ByteIOContext *s)
     val |= get_byte(s) << 8;
     val |= get_byte(s);
     return val;
+}
+
+double get_native_double(ByteIOContext *s)
+{
+    double val;
+
+    get_buffer(s, (unsigned char *) &val, sizeof(val));
+
+    return val;
+}
+
+char *get_native_string(ByteIOContext *s, char *buf, int maxlen)
+{
+    int i = 0;
+    char c;
+
+    while ((c = get_byte(s))) {
+        if (i < maxlen-1)
+            buf[i++] = c;
+    }
+    
+    buf[i] = 0; /* Ensure null terminated, but may be truncated */
+
+    return buf;
 }
 
 UINT64 get_be64(ByteIOContext *s)
