@@ -658,7 +658,7 @@ static int init_pass2(MpegEncContext *s)
         if(expected_bits < all_available_bits) avg_quantizer[P_TYPE]-= step;
 //printf("%f %lld %f\n", expected_bits, all_available_bits, avg_quantizer[P_TYPE]);
     }
-printf("qp_i:%f, qp_p:%f, qp_b:%f\n", avg_quantizer[I_TYPE],avg_quantizer[P_TYPE],avg_quantizer[B_TYPE]);
+//printf("qp_i:%f, qp_p:%f, qp_b:%f\n", avg_quantizer[I_TYPE],avg_quantizer[P_TYPE],avg_quantizer[B_TYPE]);
 
     for(i=0; i<5; i++){
         available_bits[i]= const_bits[i] + complexity[i]/avg_quantizer[i];
@@ -723,7 +723,7 @@ printf("qp_i:%f, qp_p:%f, qp_b:%f\n", avg_quantizer[I_TYPE],avg_quantizer[P_TYPE
             RateControlEntry *rce= &rcc->entry[i];
             double bits;
             rce->new_qscale= modify_qscale(s, rce, blured_qscale[i], i);
-            bits= qp2bits(rce, rce->new_qscale);
+            bits= qp2bits(rce, rce->new_qscale) + rce->mv_bits + rce->misc_bits;
 //printf("%d %f\n", rce->new_bits, blured_qscale[i]);
             update_rc_buffer(s, bits);
 
