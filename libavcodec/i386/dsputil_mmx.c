@@ -2098,18 +2098,18 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
     }
 
 #if 0
-    fprintf(stderr, "libavcodec: CPU flags:");
+    av_log(avctx, AV_LOG_INFO, "libavcodec: CPU flags:");
     if (mm_flags & MM_MMX)
-        fprintf(stderr, " mmx");
+        av_log(avctx, AV_LOG_INFO, " mmx");
     if (mm_flags & MM_MMXEXT)
-        fprintf(stderr, " mmxext");
+        av_log(avctx, AV_LOG_INFO, " mmxext");
     if (mm_flags & MM_3DNOW)
-        fprintf(stderr, " 3dnow");
+        av_log(avctx, AV_LOG_INFO, " 3dnow");
     if (mm_flags & MM_SSE)
-        fprintf(stderr, " sse");
+        av_log(avctx, AV_LOG_INFO, " sse");
     if (mm_flags & MM_SSE2)
-        fprintf(stderr, " sse2");
-    fprintf(stderr, "\n");
+        av_log(avctx, AV_LOG_INFO, " sse2");
+    av_log(avctx, AV_LOG_INFO, "\n");
 #endif
 
     if (mm_flags & MM_MMX) {
@@ -2145,6 +2145,11 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             }
             c->idct_permutation_type= FF_LIBMPEG2_IDCT_PERM;
         }
+
+        /* VP3 optimized DSP functions */
+        c->vp3_dsp_init = vp3_dsp_init_mmx;
+        c->vp3_idct_put = vp3_idct_put_mmx;
+        c->vp3_idct_add = vp3_idct_add_mmx;
         
 #ifdef CONFIG_ENCODERS
         c->get_pixels = get_pixels_mmx;
