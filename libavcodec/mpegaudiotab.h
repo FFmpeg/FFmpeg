@@ -2,7 +2,7 @@
  * mpeg audio layer 2 tables. Most of them come from the mpeg audio
  * specification.
  * 
- * Copyright (c) 2000, 2001 Gerard Lantau.
+ * Copyright (c) 2000, 2001 Fabrice Bellard.
  *
  * The licence of this code is contained in file LICENCE found in the
  * same archive 

@@ -1,4 +1,4 @@
-/* motion test. (c) 2001 Gerard Lantau. */
+/* motion test. (c) 2001 Fabrice Bellard. */
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>

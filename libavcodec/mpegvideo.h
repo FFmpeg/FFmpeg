@@ -1,20 +1,20 @@
 /*
  * Generic DCT based hybrid video encoder
- * Copyright (c) 2000,2001 Gerard Lantau.
+ * Copyright (c) 2000, 2001, 2002 Fabrice Bellard.
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2 of the License, or (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,
+ * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
 #define FRAME_SKIPED 100 // return value for header parsers if frame is not coded
@@ -47,7 +47,7 @@ typedef struct RateControlEntry{
     int i_tex_bits;
     int p_tex_bits;
     int misc_bits;
-    uint64_t expected_bits;
+    UINT64 expected_bits;
     int new_pict_type;
     float new_qscale;
 }RateControlEntry;
@@ -278,10 +278,10 @@ typedef struct MpegEncContext {
     int time_increment_bits;        /* number of bits to represent the fractional part of time */
     int last_time_base;
     int time_base;                  /* time in seconds of last I,P,S Frame */
-    int64_t time;                   /* time of current frame */ 
-    int64_t last_non_b_time;
-    uint16_t pp_time;               /* time distance between the last 2 p,s,i frames */
-    uint16_t bp_time;               /* time distance between the last b and p,s,i frame */
+    INT64 time;                   /* time of current frame */ 
+    INT64 last_non_b_time;
+    UINT16 pp_time;               /* time distance between the last 2 p,s,i frames */
+    UINT16 bp_time;               /* time distance between the last b and p,s,i frame */
     int shape;
     int vol_sprite_usage;
     int sprite_width;
@@ -314,7 +314,7 @@ typedef struct MpegEncContext {
     int divx_version;
     int divx_build;
 #define BITSTREAM_BUFFER_SIZE 1024*256
-    uint8_t *bitstream_buffer; //Divx 5.01 puts several frames in a single one, this is used to reorder them
+    UINT8 *bitstream_buffer; //Divx 5.01 puts several frames in a single one, this is used to reorder them
     int bitstream_buffer_size;
     
     /* RV10 specific */

@@ -1,4 +1,4 @@
-/* DCT test. (c) 2001 Gerard Lantau. 
+/* DCT test. (c) 2001 Fabrice Bellard. 
    Started from sample code by Juan J. Sierralta P.
 */
 #include <stdlib.h>

@@ -1,5 +1,5 @@
 /* Cpu detection code, extracted from mmx.h ((c)1997-99 by H. Dietz
-   and R. Fisher). Converted to C and improved by Gerard Lantau */
+   and R. Fisher). Converted to C and improved by Fabrice Bellard */
 
 #include <stdlib.h>
 #include "../dsputil.h"
