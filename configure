@@ -247,7 +247,7 @@ if [ "$simpleidct" = "yes" ]; then
   echo "#define SIMPLE_IDCT 1" >> $TMPH
 fi
 
-diff -q $TMPH config.h >/dev/null
+diff -q $TMPH config.h >/dev/null 2>&1
 if test $? -ne 0 ; then
 	mv -f $TMPH config.h
 else
