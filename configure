@@ -224,7 +224,8 @@ v4l="no"
 audio_oss="yes"
 dv1394="no"
 make="gmake"
-LDFLAGS="$LDFLAGS -export-dynamic"
+CFLAGS="-pthread"
+LDFLAGS="$LDFLAGS -export-dynamic -pthread"
 ;;
 BSD/OS)
 v4l="no"
@@ -1092,7 +1093,9 @@ fi
 if test "$pthreads" = "yes" ; then
   echo "HAVE_PTHREADS=yes" >> config.mak
   echo "#define HAVE_PTHREADS 1" >> $TMPH
-  extralibs="$extralibs -lpthread"
+  if $targetos != FreeBSD; then
+     extralibs="$extralibs -lpthread"
+  fi
 fi
 if test "$sdl" = "yes" ; then
   echo "CONFIG_SDL=yes" >> config.mak
