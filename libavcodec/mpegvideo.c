@@ -260,6 +260,7 @@ int MPV_encode_init(AVCodecContext *avctx)
     s->gop_size = avctx->gop_size;
     s->rtp_mode = avctx->rtp_mode;
     s->rtp_payload_size = avctx->rtp_payload_size;
+    s->avctx = avctx;
     
     if (s->gop_size <= 1) {
         s->intra_only = 1;
