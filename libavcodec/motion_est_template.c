@@ -487,6 +487,10 @@ static int qpel_motion_search(MpegEncContext * s,
 {\
     const int key= ((y)<<ME_MAP_MV_BITS) + (x) + map_generation;\
     const int index= (((y)<<ME_MAP_SHIFT) + (x))&(ME_MAP_SIZE-1);\
+    assert((x) >= xmin);\
+    assert((x) <= xmax);\
+    assert((y) >= ymin);\
+    assert((y) <= ymax);\
 /*printf("check_mv %d %d\n", x, y);*/\
     if(map[index]!=key){\
         d= cmp(s, x, y, 0, 0, size, h, ref_index, src_index, cmpf, chroma_cmpf, flags);\
