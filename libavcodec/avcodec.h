@@ -1669,6 +1669,7 @@ extern AVCodec h263p_encoder;
 extern AVCodec flv_encoder;
 extern AVCodec rv10_encoder;
 extern AVCodec rv20_encoder;
+extern AVCodec dvvideo_encoder;
 extern AVCodec mjpeg_encoder;
 extern AVCodec ljpeg_encoder;
 extern AVCodec mpeg4_encoder;

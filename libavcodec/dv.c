@@ -33,9 +33,10 @@
 #include "simple_idct.h"
 #include "dvdata.h"
 
-typedef struct DVVideoDecodeContext {
+typedef struct DVVideoContext {
     const DVprofile* sys;
     AVFrame picture;
+    uint8_t *buf;
     
     uint8_t dv_zigzag[2][64];
     uint8_t dv_idct_shift[2][22][64];
@@ -43,10 +44,7 @@ typedef struct DVVideoDecodeContext {
     void (*get_pixels)(DCTELEM *block, const uint8_t *pixels, int line_size);
     void (*fdct[2])(DCTELEM *block);
     void (*idct_put[2])(uint8_t *dest, int line_size, DCTELEM *block);
-    
-    GetBitContext gb;
-    DCTELEM block[5*6][64] __align8;
-} DVVideoDecodeContext;
+} DVVideoContext;
 
 #define TEX_VLC_BITS 9
 
@@ -58,6 +56,9 @@ typedef struct DVVideoDecodeContext {
 #define DV_VLC_MAP_LEV_SIZE 512
 #endif
 
+/* MultiThreading */
+static uint8_t** dv_anchor;
+
 /* XXX: also include quantization */
 static RL_VLC_ELEM *dv_rl_vlc;
 /* VLC encoding lookup table */
@@ -66,7 +67,7 @@ static struct dv_vlc_pair {
    uint8_t  size;
 } (*dv_vlc_map)[DV_VLC_MAP_LEV_SIZE] = NULL;
 
-static void dv_build_unquantize_tables(DVVideoDecodeContext *s, uint8_t* perm)
+static void dv_build_unquantize_tables(DVVideoContext *s, uint8_t* perm)
 {
     int i, q, j;
 
@@ -91,7 +92,7 @@ static void dv_build_unquantize_tables(DVVideoDecodeContext *s, uint8_t* perm)
 
 static int dvvideo_init(AVCodecContext *avctx)
 {
-    DVVideoDecodeContext *s = avctx->priv_data;
+    DVVideoContext *s = avctx->priv_data;
     DSPContext dsp;
     static int done=0;
     int i, j;
@@ -106,6 +107,14 @@ static int dvvideo_init(AVCodecContext *avctx)
 	if (!dv_vlc_map)
 	    return -ENOMEM;
 
+	dv_anchor = av_malloc(12*27*sizeof(void*));
+	if (!dv_anchor) {
+	    av_free(dv_vlc_map);
+	    return -ENOMEM;
+	}
+	for (i=0; i<12*27; i++)
+	    (int)dv_anchor[i] = i;
+	
         /* NOTE: as a trick, we use the fact the no codes are unused
            to accelerate the parsing of partial codes */
         init_vlc(&dv_vlc, TEX_VLC_BITS, NB_DV_VLC, 
@@ -113,6 +122,7 @@ static int dvvideo_init(AVCodecContext *avctx)
 
         dv_rl_vlc = av_malloc(dv_vlc.table_size * sizeof(RL_VLC_ELEM));
 	if (!dv_rl_vlc) {
+	    av_free(dv_anchor);
 	    av_free(dv_vlc_map);
 	    return -ENOMEM;
 	}
@@ -199,6 +209,12 @@ static int dvvideo_init(AVCodecContext *avctx)
     return 0;
 }
 
+static int dvvideo_end(AVCodecContext *avctx)
+{
+    avcodec_default_free_buffers(avctx);    
+    return 0;
+}
+
 // #define VLC_DEBUG
 
 typedef struct BlockInfo {
@@ -225,9 +241,9 @@ static const int mb_area_start[5] = { 1, 6, 21, 43, 64 };
 #endif
 
 /* decode ac coefs */
-static void dv_decode_ac(DVVideoDecodeContext *s, BlockInfo *mb, DCTELEM *block)
+static void dv_decode_ac(GetBitContext *gb, BlockInfo *mb, DCTELEM *block)
 {
-    int last_index = get_bits_size(&s->gb);
+    int last_index = get_bits_size(gb);
     int last_re_index;
     int shift_offset = mb->shift_offset;
     const uint8_t *scan_table = mb->scan_table;
@@ -240,7 +256,7 @@ static void dv_decode_ac(DVVideoDecodeContext *s, BlockInfo *mb, DCTELEM *block)
     int re_index=0; 
     int re1_index=0;
 #endif
-    OPEN_READER(re, &s->gb);
+    OPEN_READER(re, gb);
     
 #ifdef VLC_DEBUG
     printf("start\n");
@@ -256,11 +272,11 @@ static void dv_decode_ac(DVVideoDecodeContext *s, BlockInfo *mb, DCTELEM *block)
 
         /* build the dummy bit buffer */
         l = 16 - partial_bit_count;
-        UPDATE_CACHE(re, &s->gb);
+        UPDATE_CACHE(re, gb);
 #ifdef VLC_DEBUG
-        printf("show=%04x\n", SHOW_UBITS(re, &s->gb, 16));
+        printf("show=%04x\n", SHOW_UBITS(re, gb, 16));
 #endif
-        v = (mb->partial_bit_buffer << l) | SHOW_UBITS(re, &s->gb, l);
+        v = (mb->partial_bit_buffer << l) | SHOW_UBITS(re, gb, l);
         buf[0] = v >> 8;
         buf[1] = v;
 #ifdef VLC_DEBUG
@@ -294,34 +310,34 @@ static void dv_decode_ac(DVVideoDecodeContext *s, BlockInfo *mb, DCTELEM *block)
         /* by definition, if we can read the vlc, all partial bits
            will be read (otherwise we could have read the vlc before) */
         mb->partial_bit_count = 0;
-        UPDATE_CACHE(re, &s->gb);
+        UPDATE_CACHE(re, gb);
         goto handle_vlc;
     }
 
     /* get the AC coefficients until last_index is reached */
     for(;;) {
-        UPDATE_CACHE(re, &s->gb);
+        UPDATE_CACHE(re, gb);
 #ifdef VLC_DEBUG
         printf("%2d: bits=%04x index=%d\n", 
-               pos, SHOW_UBITS(re, &s->gb, 16), re_index);
+               pos, SHOW_UBITS(re, gb, 16), re_index);
 #endif
         last_re_index = re_index;
-        GET_RL_VLC(level, run, re, &s->gb, dv_rl_vlc, 
+        GET_RL_VLC(level, run, re, gb, dv_rl_vlc, 
                    TEX_VLC_BITS, 2);
     handle_vlc:
 #ifdef VLC_DEBUG
         printf("run=%d level=%d\n", run, level);
 #endif
 	if (level) {
-	    sign = SHOW_SBITS(re, &s->gb, 1);
-	    LAST_SKIP_BITS(re, &s->gb, 1);
+	    sign = SHOW_SBITS(re, gb, 1);
+	    LAST_SKIP_BITS(re, gb, 1);
 	}
 	if (re_index > last_index) {
 	    /* should be < 16 bits otherwise a codeword could have been parsed */
 	    re_index = last_re_index;
-	    UPDATE_CACHE(re, &s->gb);
+	    UPDATE_CACHE(re, gb);
 	    mb->partial_bit_count = last_index - re_index;
-	    mb->partial_bit_buffer = SHOW_UBITS(re, &s->gb, mb->partial_bit_count);
+	    mb->partial_bit_buffer = SHOW_UBITS(re, gb, mb->partial_bit_count);
 	    re_index = last_index;
 	    break;
 	}
@@ -338,7 +354,7 @@ static void dv_decode_ac(DVVideoDecodeContext *s, BlockInfo *mb, DCTELEM *block)
             //            printf("run=%d level=%d shift=%d\n", run, level, shift_table[pos1]);
         } 
     }
-    CLOSE_READER(re, &s->gb);
+    CLOSE_READER(re, gb);
     mb->pos = pos;
 }
 
@@ -355,7 +371,7 @@ static inline void bit_copy(PutBitContext *pb, GetBitContext *gb)
 }
 
 /* mb_x and mb_y are in units of 8 pixels */
-static inline void dv_decode_video_segment(DVVideoDecodeContext *s, 
+static inline void dv_decode_video_segment(DVVideoContext *s, 
                                            uint8_t *buf_ptr1, 
                                            const uint16_t *mb_pos_ptr)
 {
@@ -364,18 +380,20 @@ static inline void dv_decode_video_segment(DVVideoDecodeContext *s,
     DCTELEM *block, *block1;
     int c_offset;
     uint8_t *y_ptr;
-    BlockInfo mb_data[5 * 6], *mb, *mb1;
     void (*idct_put)(uint8_t *dest, int line_size, DCTELEM *block);
     uint8_t *buf_ptr;
     PutBitContext pb, vs_pb;
+    GetBitContext gb;
+    BlockInfo mb_data[5 * 6], *mb, *mb1;
+    DCTELEM sblock[5*6][64] __align8;
     uint8_t mb_bit_buffer[80 + 4]; /* allow some slack */
     uint8_t vs_bit_buffer[5 * 80 + 4]; /* allow some slack */
-    
-    memset(s->block, 0, sizeof(s->block));
+	    
+    memset(sblock, 0, sizeof(sblock));
 
     /* pass 1 : read DC and AC coefficients in blocks */
     buf_ptr = buf_ptr1;
-    block1 = &s->block[0][0];
+    block1 = &sblock[0][0];
     mb1 = mb_data;
     init_put_bits(&vs_pb, vs_bit_buffer, 5 * 80);
     for(mb_index = 0; mb_index < 5; mb_index++, mb1 += 6, block1 += 6 * 64) {
@@ -387,15 +405,15 @@ static inline void dv_decode_video_segment(DVVideoDecodeContext *s,
         block = block1;
         for(j = 0;j < 6; j++) {
             last_index = block_sizes[j];
-	    init_get_bits(&s->gb, buf_ptr, last_index);
+	    init_get_bits(&gb, buf_ptr, last_index);
             
             /* get the dc */
-            dc = get_bits(&s->gb, 9);
+            dc = get_bits(&gb, 9);
             dc = (dc << (32 - 9)) >> (32 - 9);
-            dct_mode = get_bits1(&s->gb);
+            dct_mode = get_bits1(&gb);
             mb->dct_mode = dct_mode;
             mb->scan_table = s->dv_zigzag[dct_mode];
-            class1 = get_bits(&s->gb, 2);
+            class1 = get_bits(&gb, 2);
             mb->shift_offset = (class1 == 3);
             mb->shift_table = s->dv_idct_shift[dct_mode]
                 [quant + dv_quant_offset[class1]];
@@ -411,12 +429,12 @@ static inline void dv_decode_video_segment(DVVideoDecodeContext *s,
 #ifdef VLC_DEBUG
             printf("MB block: %d, %d ", mb_index, j);
 #endif
-            dv_decode_ac(s, mb, block);
+            dv_decode_ac(&gb, mb, block);
 
             /* write the remaining bits  in a new buffer only if the
                block is finished */
             if (mb->pos >= 64)
-                bit_copy(&pb, &s->gb);
+                bit_copy(&pb, &gb);
             
             block += 64;
             mb++;
@@ -428,11 +446,11 @@ static inline void dv_decode_video_segment(DVVideoDecodeContext *s,
 #endif
         block = block1;
         mb = mb1;
-        init_get_bits(&s->gb, mb_bit_buffer, put_bits_count(&pb));
+        init_get_bits(&gb, mb_bit_buffer, put_bits_count(&pb));
 	flush_put_bits(&pb);
         for(j = 0;j < 6; j++, block += 64, mb++) {
-            if (mb->pos < 64 && get_bits_left(&s->gb) > 0) {
-                dv_decode_ac(s, mb, block);
+            if (mb->pos < 64 && get_bits_left(&gb) > 0) {
+                dv_decode_ac(&gb, mb, block);
                 /* if still not finished, no need to parse other blocks */
                 if (mb->pos < 64)
                     break;
@@ -441,16 +459,16 @@ static inline void dv_decode_video_segment(DVVideoDecodeContext *s,
         /* all blocks are finished, so the extra bytes can be used at
            the video segment level */
         if (j >= 6)
-	    bit_copy(&vs_pb, &s->gb);
+	    bit_copy(&vs_pb, &gb);
     }
 
     /* we need a pass other the whole video segment */
 #ifdef VLC_DEBUG
     printf("***pass 3 size=%d\n", put_bits_count(&vs_pb));
 #endif
-    block = &s->block[0][0];
+    block = &sblock[0][0];
     mb = mb_data;
-    init_get_bits(&s->gb, vs_bit_buffer, put_bits_count(&vs_pb));
+    init_get_bits(&gb, vs_bit_buffer, put_bits_count(&vs_pb));
     flush_put_bits(&vs_pb);
     for(mb_index = 0; mb_index < 5; mb_index++) {
         for(j = 0;j < 6; j++) {
@@ -458,7 +476,7 @@ static inline void dv_decode_video_segment(DVVideoDecodeContext *s,
 #ifdef VLC_DEBUG
                 printf("start %d:%d\n", mb_index, j);
 #endif
-                dv_decode_ac(s, mb, block);
+                dv_decode_ac(&gb, mb, block);
             }
 	    if (mb->pos >= 64 && mb->pos < 127)
 		av_log(NULL, AV_LOG_ERROR, "AC EOB marker is absent pos=%d\n", mb->pos);
@@ -468,7 +486,7 @@ static inline void dv_decode_video_segment(DVVideoDecodeContext *s,
     }
     
     /* compute idct and place blocks */
-    block = &s->block[0][0];
+    block = &sblock[0][0];
     mb = mb_data;
     for(mb_index = 0; mb_index < 5; mb_index++) {
         v = *mb_pos_ptr++;
@@ -743,7 +761,7 @@ static inline void dv_guess_qnos(EncBlockInfo* blks, int* qnos)
  * horrible and the weighting is missing. But it's missing from the 
  * decoding step also -- so at least we're on the same page with decoder ;-)
  */
-static inline void dv_encode_video_segment(DVVideoDecodeContext *s, 
+static inline void dv_encode_video_segment(DVVideoContext *s, 
                                            uint8_t *dif, 
                                            const uint16_t *mb_pos_ptr)
 {
@@ -754,6 +772,7 @@ static inline void dv_encode_video_segment(DVVideoDecodeContext *s,
     uint8_t*  ptr;
     int       do_edge_wrap;
     DCTELEM   block[64] __align8;
+    DCTELEM   sblock[5*6][64] __align8;
     EncBlockInfo  enc_blks[5*6];
     PutBitContext pbs[5*6];
     PutBitContext* pb; 
@@ -807,7 +826,7 @@ static inline void dv_encode_video_segment(DVVideoDecodeContext *s,
 	    }
 	  
             enc_blk->dct_mode = dv_guess_dct_mode(block);
-	    enc_blk->mb = &s->block[mb_index*6+j][0];
+	    enc_blk->mb = &sblock[mb_index*6+j][0];
 	    enc_blk->area_q[0] = enc_blk->area_q[1] = enc_blk->area_q[2] = enc_blk->area_q[3] = 0;
 	    enc_blk->partial_bit_count = 0;
 	    enc_blk->partial_bit_buffer = 0;
@@ -859,15 +878,31 @@ static inline void dv_encode_video_segment(DVVideoDecodeContext *s,
        flush_put_bits(&pbs[j]);
 }
 
+static int dv_decode_mt(AVCodecContext *avctx, void* sl)
+{
+    DVVideoContext *s = avctx->priv_data;
+    int slice = (int)sl;
+    dv_decode_video_segment(s, &s->buf[((slice/27)*6+(slice/3)+slice*5+7)*80],
+	                    &s->sys->video_place[slice*5]);
+    return 0;
+}
+
+static int dv_encode_mt(AVCodecContext *avctx, void* sl)
+{
+    DVVideoContext *s = avctx->priv_data;
+    int slice = (int)sl;
+    dv_encode_video_segment(s, &s->buf[((slice/27)*6+(slice/3)+slice*5+7)*80],
+	                    &s->sys->video_place[slice*5]);
+    return 0;
+}
+
 /* NOTE: exactly one frame must be given (120000 bytes for NTSC,
    144000 bytes for PAL) */
 static int dvvideo_decode_frame(AVCodecContext *avctx, 
                                  void *data, int *data_size,
                                  uint8_t *buf, int buf_size)
 {
-    DVVideoDecodeContext *s = avctx->priv_data;
-    int ds, vs;
-    const uint16_t *mb_pos_ptr;
+    DVVideoContext *s = avctx->priv_data;
   
     *data_size=0;
     /* special case for last picture */
@@ -878,7 +913,6 @@ static int dvvideo_decode_frame(AVCodecContext *avctx,
     if (!s->sys || buf_size < s->sys->frame_size)
         return -1; /* NOTE: we only accept several full frames */
 
-	
     if(s->picture.data[0])
         avctx->release_buffer(avctx, &s->picture);
     
@@ -893,24 +927,10 @@ static int dvvideo_decode_frame(AVCodecContext *avctx,
     s->picture.interlaced_frame = 1;
     s->picture.top_field_first = 0;
 
-    /* for each DIF segment */
-    mb_pos_ptr = s->sys->video_place;
-    for (ds = 0; ds < s->sys->difseg_size; ds++) {
-        buf += 6 * 80; /* skip DIF segment header */
-        
-        for(vs = 0; vs < 27; vs++) {
-            if ((vs % 3) == 0)
-	        buf += 80; /* skip audio block */
-            
-#ifdef VLC_DEBUG
-            printf("********************* %d, %d **********************\n", ds, vs);
-#endif
-	    dv_decode_video_segment(s, buf, mb_pos_ptr);
-            buf += 5 * 80;
-            mb_pos_ptr += 5;
-        }
-    }
-
+    s->buf = buf;
+    avctx->execute(avctx, dv_decode_mt, (void**)&dv_anchor[0], NULL, 
+	           s->sys->difseg_size * 27);
+    
     emms_c();
 
     /* return image */
@@ -923,9 +943,7 @@ static int dvvideo_decode_frame(AVCodecContext *avctx,
 static int dvvideo_encode_frame(AVCodecContext *c, uint8_t *buf, int buf_size, 
                                 void *data)
 {
-    DVVideoDecodeContext *s = c->priv_data;
-    const uint16_t *mb_pos_ptr;
-    int ds, vs;
+    DVVideoContext *s = c->priv_data;
 
     s->sys = dv_codec_profile(c);
     if (!s->sys)
@@ -934,41 +952,34 @@ static int dvvideo_encode_frame(AVCodecContext *c, uint8_t *buf, int buf_size,
     c->pix_fmt = s->sys->pix_fmt;
     s->picture = *((AVFrame *)data);
 
-    /* for each DIF segment */
-    mb_pos_ptr = s->sys->video_place;
-    for (ds = 0; ds < s->sys->difseg_size; ds++) {
-        buf += 6 * 80; /* skip DIF segment header */
-        
-        for(vs = 0; vs < 27; vs++) {
-            if ((vs % 3) == 0)
-	        buf += 80; /* skip audio block */
-
-#ifdef VLC_DEBUG
-            printf("********************* %d, %d **********************\n", ds, vs);
-#endif
-	    dv_encode_video_segment(s, buf, mb_pos_ptr);
-            buf += 5 * 80;
-            mb_pos_ptr += 5;
-        }
-    }
+    s->buf = buf;
+    c->execute(c, dv_encode_mt, (void**)&dv_anchor[0], NULL, 
+	       s->sys->difseg_size * 27);
 
     emms_c();
     return s->sys->frame_size;
 }
 
-static int dvvideo_end(AVCodecContext *avctx)
-{
-    avcodec_default_free_buffers(avctx);    
-    return 0;
-}
+AVCodec dvvideo_encoder = {
+    "dvvideo",
+    CODEC_TYPE_VIDEO,
+    CODEC_ID_DVVIDEO,
+    sizeof(DVVideoContext),
+    dvvideo_init,
+    dvvideo_encode_frame,
+    dvvideo_end,
+    NULL,
+    CODEC_CAP_DR1,
+    NULL
+};
 
 AVCodec dvvideo_decoder = {
     "dvvideo",
     CODEC_TYPE_VIDEO,
     CODEC_ID_DVVIDEO,
-    sizeof(DVVideoDecodeContext),
+    sizeof(DVVideoContext),
     dvvideo_init,
-    dvvideo_encode_frame,
+    NULL,
     dvvideo_end,
     dvvideo_decode_frame,
     CODEC_CAP_DR1,

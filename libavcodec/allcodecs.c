@@ -74,6 +74,7 @@ void avcodec_register_all(void)
     register_avcodec(&asv2_encoder);
     register_avcodec(&ffv1_encoder);
     register_avcodec(&zlib_encoder);
+    register_avcodec(&dvvideo_encoder);
 #endif /* CONFIG_ENCODERS */
     register_avcodec(&rawvideo_encoder);
     register_avcodec(&rawvideo_decoder);
