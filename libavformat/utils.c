@@ -698,13 +698,11 @@ static int av_read_frame_internal(AVFormatContext *s, AVPacket *pkt)
                     return 0;
                 }
             } else {
+                /* free packet */
+                av_free_packet(&s->cur_pkt); 
                 s->cur_st = NULL;
             }
         } else {
-            /* free previous packet */
-            if (s->cur_st && s->cur_st->parser)
-                av_free_packet(&s->cur_pkt); 
-
             /* read next packet */
             ret = av_read_packet(s, &s->cur_pkt);
             if (ret < 0)
