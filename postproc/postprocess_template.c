@@ -2658,7 +2658,10 @@ static void RENAME(postProcess)(uint8_t src[], int srcStride, uint8_t dst[], int
 	int black=0, white=255; // blackest black and whitest white in the picture
 	int QPCorrecture= 256*256;
 
-	int copyAhead, i;
+	int copyAhead;
+#ifdef HAVE_MMX
+	int i;
+#endif
 
 	//FIXME remove
 	uint64_t * const yHistogram= c.yHistogram;

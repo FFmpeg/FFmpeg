@@ -1256,7 +1256,9 @@ YSCALE_YUV_2_ANYRGB_C(YSCALE_YUV_2_RGB2_C, YSCALE_YUV_2_PACKED2_C)
 static inline void RENAME(yuv2packed1)(SwsContext *c, uint16_t *buf0, uint16_t *uvbuf0, uint16_t *uvbuf1,
 			    uint8_t *dest, int dstW, int uvalpha, int dstFormat, int flags, int y)
 {
+#ifdef HAVE_MMX
 	int uvalpha1=uvalpha^4095;
+#endif
 	const int yalpha1=0;
 	int i;
 	
