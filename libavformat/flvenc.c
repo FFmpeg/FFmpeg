@@ -35,7 +35,7 @@ static void put_be24(ByteIOContext *pb, int value)
 }
 
 static int get_audio_flags(AVCodecContext *enc){
-    int flags = 0x02;
+    int flags = 0;
 
     switch (enc->sample_rate) {
         case    44100:
@@ -61,8 +61,16 @@ static int get_audio_flags(AVCodecContext *enc){
     
     switch(enc->codec_id){
     case CODEC_ID_MP3:
-        flags |= 0x20;
+        flags |= 0x20 | 0x2;
         break;
+    case CODEC_ID_PCM_S8:
+	break;
+    case CODEC_ID_PCM_S16BE:
+	flags |= 0x60 | 0x2;
+	break;
+    case CODEC_ID_PCM_S16LE:
+	flags |= 0x2;
+	break;
     case 0:
         flags |= enc->codec_tag<<4;
         break;
@@ -155,8 +163,8 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
     put_be32(pb,flv->reserved);
     put_byte(pb,flags);
     put_buffer(pb, pkt->data, size);
-    put_be32(pb,size+1+11); // reserved
-
+    put_be32(pb,size+1+11); // previous tag size
+    
     put_flush_packet(pb);
     return 0;
 }

@@ -60,7 +60,7 @@ static int flv_read_header(AVFormatContext *s,
 static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     int ret, i, type, size, pts, flags, is_audio;
-    AVStream *st;
+    AVStream *st = NULL;
     
  for(;;){
     url_fskip(&s->pb, 4); /* size of previous packet */
@@ -122,7 +122,12 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
             else
                 st->codec.sample_rate = (44100<<((flags>>2)&3))>>3;
             switch(flags >> 4){/* 0: uncompressed 1: ADPCM 2: mp3 5: Nellymoser 8kHz mono 6: Nellymoser*/
+	    case 0: if (flags&2) st->codec.codec_id = CODEC_ID_PCM_S16BE;
+		    else st->codec.codec_id = CODEC_ID_PCM_S8; break;
             case 2: st->codec.codec_id = CODEC_ID_MP3; break;
+	    // this is not listed at FLV but at SWF, strange...
+	    case 3: if (flags&2) st->codec.codec_id = CODEC_ID_PCM_S16LE;
+		    else st->codec.codec_id = CODEC_ID_PCM_S8; break;
             default:
                 st->codec.codec_tag= (flags >> 4);
             }
