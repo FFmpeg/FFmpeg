@@ -895,6 +895,7 @@ static int output_packet(AVFormatContext *ctx, int flush){
     int best_score= INT_MIN;
     int ignore_constraints=0;
     int64_t scr= s->last_scr;
+    PacketDesc *timestamp_packet;
 
 retry:
     for(i=0; i<ctx->nb_streams; i++){
@@ -957,12 +958,20 @@ retry:
 
     assert(avail_space >= s->packet_size || ignore_constraints);
     
-    if(stream->premux_packet->unwritten_size == stream->premux_packet->size)
+    timestamp_packet= stream->premux_packet;
+    if(timestamp_packet->unwritten_size == timestamp_packet->size){
         trailer_size= 0;
-    else
-        trailer_size= stream->premux_packet->unwritten_size;
+    }else{
+        trailer_size= timestamp_packet->unwritten_size;
+        timestamp_packet= timestamp_packet->next;
+    }
 
-    es_size= flush_packet(ctx, best_i, stream->premux_packet->pts, stream->premux_packet->dts, scr, trailer_size);
+    if(timestamp_packet){
+        es_size= flush_packet(ctx, best_i, timestamp_packet->pts, timestamp_packet->dts, scr, trailer_size);
+    }else{
+        assert(fifo_size(&stream->fifo, stream->fifo.rptr) == trailer_size);
+        es_size= flush_packet(ctx, best_i, AV_NOPTS_VALUE, AV_NOPTS_VALUE, scr, trailer_size);
+    }
 
     if (s->is_vcd) {
         /* Write one or more padding sectors, if necessary, to reach
