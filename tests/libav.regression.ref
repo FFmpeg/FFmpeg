@@ -8,6 +8,8 @@ be8eb1b5705c8105e4727258e448cb24 *./data/b-libav.rm
 ./data/b-libav.mpg CRC=eda0e29e
 01a4130e776b8955fa99e477113e94fd *./data/b-libav.swf
 ./data/b-libav.swf CRC=eaaf4640
+f13889dd08a4968e2b783771c7a29229 *./data/b-libav.ffm
+./data/b-libav.ffm CRC=94c26232
 9d1a1e4d23f16ecee9ad46f913acbbe0 *./data/b-libav.flv
 ./data/b-libav.flv CRC=8a731c32
 2759fdd5f1014abfefe36376649c9c90 *./data/b-libav.mov

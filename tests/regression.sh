@@ -461,9 +461,9 @@ do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src -f s16le -i $pcm_src -a
 do_ffmpeg_crc $file -i $file
 
 # ffm
-#file=${outfile}libav.ffm
-#do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src -f s16le -i $pcm_src $file
-#do_ffmpeg_crc $file -i $file
+file=${outfile}libav.ffm
+do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src -f s16le -i $pcm_src $file
+do_ffmpeg_crc $file -i $file
 
 # flv
 file=${outfile}libav.flv
