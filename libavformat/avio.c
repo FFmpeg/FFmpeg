@@ -19,7 +19,10 @@
 #include "avformat.h"
 #include <ctype.h>
 
+static int default_interrupt_cb(void);
+
 URLProtocol *first_protocol = NULL;
+URLInterruptCB *url_interrupt_cb = default_interrupt_cb;
 
 int register_protocol(URLProtocol *protocol)
 {
@@ -164,4 +167,23 @@ int url_get_max_packet_size(URLContext *h)
 void url_get_filename(URLContext *h, char *buf, int buf_size)
 {
     pstrcpy(buf, buf_size, h->filename);
+}
+
+
+static int default_interrupt_cb(void)
+{
+    return 0;
+}
+
+/** 
+ * The callback is called in blocking functions to test regulary if
+ * asynchronous interruption is needed. -EINTR is returned in this
+ * case by the interrupted function. 'NULL' means no interrupt
+ * callback is given.  
+ */
+void url_set_interrupt_cb(URLInterruptCB *interrupt_cb)
+{
+    if (!interrupt_cb)
+        interrupt_cb = default_interrupt_cb;
+    url_interrupt_cb = interrupt_cb;
 }

@@ -28,6 +28,8 @@ typedef struct URLPollEntry {
 #define URL_WRONLY 1
 #define URL_RDWR   2
 
+typedef int URLInterruptCB(void);
+
 int url_open(URLContext **h, const char *filename, int flags);
 int url_read(URLContext *h, unsigned char *buf, int size);
 int url_write(URLContext *h, unsigned char *buf, int size);
@@ -37,6 +39,12 @@ int url_exist(const char *filename);
 offset_t url_filesize(URLContext *h);
 int url_get_max_packet_size(URLContext *h);
 void url_get_filename(URLContext *h, char *buf, int buf_size);
+
+/* the callback is called in blocking functions to test regulary if
+   asynchronous interruption is needed. -EINTR is returned in this
+   case by the interrupted function. 'NULL' means no interrupt
+   callback is given. */
+void url_set_interrupt_cb(URLInterruptCB *interrupt_cb);
 
 /* not implemented */
 int url_poll(URLPollEntry *poll_table, int n, int timeout);
@@ -52,6 +60,7 @@ typedef struct URLProtocol {
 } URLProtocol;
 
 extern URLProtocol *first_protocol;
+extern URLInterruptCB *url_interrupt_cb;
 
 int register_protocol(URLProtocol *protocol);
 
@@ -100,7 +109,7 @@ int url_feof(ByteIOContext *s);
 
 #define URL_EOF (-1)
 int url_fgetc(ByteIOContext *s);
-int url_fprintf(ByteIOContext *s, const char *fmt, ...);
+int url_fprintf(ByteIOContext *s, const char *fmt, ...) __attribute__ ((format (printf, 2, 3)));
 char *url_fgets(ByteIOContext *s, char *buf, int buf_size);
 
 void put_flush_packet(ByteIOContext *s);
