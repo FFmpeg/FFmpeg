@@ -115,6 +115,7 @@ static int use_hq = 0;
 static int use_4mv = 0;
 static int do_deinterlace = 0;
 static int workaround_bugs = 0;
+static int error_resilience = 0;
 static int dct_algo = 0;
 
 static int gop_size = 12;
@@ -1030,6 +1031,7 @@ static int av_encode(AVFormatContext **output_files,
                 case CODEC_TYPE_VIDEO:
                     if (ist->st->codec.codec_id == CODEC_ID_RAWVIDEO) {
                         int size;
+
                         size = (ist->st->codec.width * ist->st->codec.height);
                         avpicture_fill(&picture, ptr, 
                                      ist->st->codec.pix_fmt,
@@ -1383,6 +1385,11 @@ void opt_dct_algo(const char *arg)
     dct_algo = atoi(arg);
 }
 
+void opt_error_resilience(const char *arg)
+{
+    error_resilience = atoi(arg);
+}
+
 void opt_frame_rate(const char *arg)
 {
     frame_rate = (int)(strtod(arg, 0) * FRAME_RATE_BASE);
@@ -1713,6 +1720,7 @@ void opt_input_file(const char *filename)
             frame_width = enc->width;
             rfps = ic->streams[i]->r_frame_rate;
             enc->workaround_bugs = workaround_bugs;
+            enc->error_resilience = error_resilience; 
             if (enc->frame_rate != rfps) {
                 fprintf(stderr,"\nSeems that stream %d comes from film source: %2.2f->%2.2f\n",
                     i, (float)enc->frame_rate / FRAME_RATE_BASE,
@@ -2236,6 +2244,7 @@ const OptionDef options[] = {
     { "me", HAS_ARG | OPT_EXPERT, {(void*)opt_motion_estimation}, "set motion estimation method", 
       "method" },
     { "dct_algo", HAS_ARG | OPT_EXPERT, {(void*)opt_dct_algo}, "set dct algo",  "algo" },
+    { "er", HAS_ARG | OPT_EXPERT, {(void*)opt_error_resilience}, "set error resilience",  "" },
     { "bf", HAS_ARG | OPT_EXPERT, {(void*)opt_b_frames}, "use 'frames' B frames (only MPEG-4)", "frames" },
     { "hq", OPT_BOOL | OPT_EXPERT, {(void*)&use_hq}, "activate high quality settings" },
     { "4mv", OPT_BOOL | OPT_EXPERT, {(void*)&use_4mv}, "use four motion vector by macroblock (only MPEG-4)" },
