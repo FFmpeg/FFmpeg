@@ -419,6 +419,17 @@ if test $tune != "generic"; then
     esac
 fi
 
+# AltiVec flags: The FSF version of GCC differs from the Darwin version 
+if test $cpu = "powerpc"; then
+    if test $altivec = "yes"; then
+        if test "$darwin" = "yes"; then
+            CFLAGS="$CFLAGS -faltivec"
+        else
+            CFLAGS="$CFLAGS -maltivec -mabi=altivec"
+        fi
+    fi
+fi
+
 # See if we have <altivec.h>
 cat > $TMPC << EOF
 #include <altivec.h>
@@ -426,7 +437,7 @@ int main( void ) { return 0; }
 EOF
 
 _altivec_h="no"
-if $cc -o $TMPE $TMPC 2> /dev/null ; then
+if $cc $CFLAGS -o $TMPE $TMPC 2> /dev/null ; then
 _altivec_h="yes"
 fi
 
@@ -450,11 +461,7 @@ int main(void) {
 }
 EOF
 fi
-if test "$darwin" = "yes"; then
-$cc -o $TMPE $TMPC -faltivec 2> /dev/null || altivec="no"
-else
-$cc -o $TMPE $TMPC -maltivec -mabi=altivec 2> /dev/null || altivec="no"
-fi
+$cc $CFLAGS -o $TMPE $TMPC 2> /dev/null || altivec="no"
 fi
 
 # Can only do mmi on mips
