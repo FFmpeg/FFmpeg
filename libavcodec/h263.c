@@ -6141,7 +6141,7 @@ int flv_h263_decode_picture_header(MpegEncContext *s)
 
     if(s->avctx->debug & FF_DEBUG_PICT_INFO){
         av_log(s->avctx, AV_LOG_DEBUG, "%c esc_type:%d, qp:%d num:%d\n",
-               av_get_pict_type_char(s->pict_type), s->h263_flv-1, s->qscale, s->picture_number);
+               s->dropable ? 'D' : av_get_pict_type_char(s->pict_type), s->h263_flv-1, s->qscale, s->picture_number);
     }
     
     s->y_dc_scale_table=
