@@ -1652,6 +1652,144 @@ void dsputil_init(DSPContext* c, unsigned mask)
     c->avg_no_rnd_pixels_tab[1][2] = avg_no_rnd_pixels8_y2;
     c->avg_no_rnd_pixels_tab[1][3] = avg_no_rnd_pixels8_xy2;
 
+    c->put_qpel_pixels_tab[0][ 0]= put_qpel16_mc00_c;
+    c->put_qpel_pixels_tab[0][ 1]= put_qpel16_mc10_c;
+    c->put_qpel_pixels_tab[0][ 2]= put_qpel16_mc20_c;
+    c->put_qpel_pixels_tab[0][ 3]= put_qpel16_mc30_c;
+    c->put_qpel_pixels_tab[0][ 4]= put_qpel16_mc01_c;
+    c->put_qpel_pixels_tab[0][ 5]= put_qpel16_mc11_c;
+    c->put_qpel_pixels_tab[0][ 6]= put_qpel16_mc21_c;
+    c->put_qpel_pixels_tab[0][ 7]= put_qpel16_mc31_c;
+    c->put_qpel_pixels_tab[0][ 8]= put_qpel16_mc02_c;
+    c->put_qpel_pixels_tab[0][ 9]= put_qpel16_mc12_c;
+    c->put_qpel_pixels_tab[0][10]= put_qpel16_mc22_c;
+    c->put_qpel_pixels_tab[0][11]= put_qpel16_mc32_c;
+    c->put_qpel_pixels_tab[0][12]= put_qpel16_mc03_c;
+    c->put_qpel_pixels_tab[0][13]= put_qpel16_mc13_c;
+    c->put_qpel_pixels_tab[0][14]= put_qpel16_mc23_c;
+    c->put_qpel_pixels_tab[0][15]= put_qpel16_mc33_c;
+    
+    c->put_no_rnd_qpel_pixels_tab[0][ 0]= put_no_rnd_qpel16_mc00_c;
+    c->put_no_rnd_qpel_pixels_tab[0][ 1]= put_no_rnd_qpel16_mc10_c;
+    c->put_no_rnd_qpel_pixels_tab[0][ 2]= put_no_rnd_qpel16_mc20_c;
+    c->put_no_rnd_qpel_pixels_tab[0][ 3]= put_no_rnd_qpel16_mc30_c;
+    c->put_no_rnd_qpel_pixels_tab[0][ 4]= put_no_rnd_qpel16_mc01_c;
+    c->put_no_rnd_qpel_pixels_tab[0][ 5]= put_no_rnd_qpel16_mc11_c;
+    c->put_no_rnd_qpel_pixels_tab[0][ 6]= put_no_rnd_qpel16_mc21_c;
+    c->put_no_rnd_qpel_pixels_tab[0][ 7]= put_no_rnd_qpel16_mc31_c;
+    c->put_no_rnd_qpel_pixels_tab[0][ 8]= put_no_rnd_qpel16_mc02_c;
+    c->put_no_rnd_qpel_pixels_tab[0][ 9]= put_no_rnd_qpel16_mc12_c;
+    c->put_no_rnd_qpel_pixels_tab[0][10]= put_no_rnd_qpel16_mc22_c;
+    c->put_no_rnd_qpel_pixels_tab[0][11]= put_no_rnd_qpel16_mc32_c;
+    c->put_no_rnd_qpel_pixels_tab[0][12]= put_no_rnd_qpel16_mc03_c;
+    c->put_no_rnd_qpel_pixels_tab[0][13]= put_no_rnd_qpel16_mc13_c;
+    c->put_no_rnd_qpel_pixels_tab[0][14]= put_no_rnd_qpel16_mc23_c;
+    c->put_no_rnd_qpel_pixels_tab[0][15]= put_no_rnd_qpel16_mc33_c;
+
+    c->avg_qpel_pixels_tab[0][ 0]= avg_qpel16_mc00_c;
+    c->avg_qpel_pixels_tab[0][ 1]= avg_qpel16_mc10_c;
+    c->avg_qpel_pixels_tab[0][ 2]= avg_qpel16_mc20_c;
+    c->avg_qpel_pixels_tab[0][ 3]= avg_qpel16_mc30_c;
+    c->avg_qpel_pixels_tab[0][ 4]= avg_qpel16_mc01_c;
+    c->avg_qpel_pixels_tab[0][ 5]= avg_qpel16_mc11_c;
+    c->avg_qpel_pixels_tab[0][ 6]= avg_qpel16_mc21_c;
+    c->avg_qpel_pixels_tab[0][ 7]= avg_qpel16_mc31_c;
+    c->avg_qpel_pixels_tab[0][ 8]= avg_qpel16_mc02_c;
+    c->avg_qpel_pixels_tab[0][ 9]= avg_qpel16_mc12_c;
+    c->avg_qpel_pixels_tab[0][10]= avg_qpel16_mc22_c;
+    c->avg_qpel_pixels_tab[0][11]= avg_qpel16_mc32_c;
+    c->avg_qpel_pixels_tab[0][12]= avg_qpel16_mc03_c;
+    c->avg_qpel_pixels_tab[0][13]= avg_qpel16_mc13_c;
+    c->avg_qpel_pixels_tab[0][14]= avg_qpel16_mc23_c;
+    c->avg_qpel_pixels_tab[0][15]= avg_qpel16_mc33_c;
+/*
+    c->avg_no_rnd_qpel_pixels_tab[0][ 0]= avg_no_rnd_qpel16_mc00_c;
+    c->avg_no_rnd_qpel_pixels_tab[0][ 1]= avg_no_rnd_qpel16_mc10_c;
+    c->avg_no_rnd_qpel_pixels_tab[0][ 2]= avg_no_rnd_qpel16_mc20_c;
+    c->avg_no_rnd_qpel_pixels_tab[0][ 3]= avg_no_rnd_qpel16_mc30_c;
+    c->avg_no_rnd_qpel_pixels_tab[0][ 4]= avg_no_rnd_qpel16_mc01_c;
+    c->avg_no_rnd_qpel_pixels_tab[0][ 5]= avg_no_rnd_qpel16_mc11_c;
+    c->avg_no_rnd_qpel_pixels_tab[0][ 6]= avg_no_rnd_qpel16_mc21_c;
+    c->avg_no_rnd_qpel_pixels_tab[0][ 7]= avg_no_rnd_qpel16_mc31_c;
+    c->avg_no_rnd_qpel_pixels_tab[0][ 8]= avg_no_rnd_qpel16_mc02_c;
+    c->avg_no_rnd_qpel_pixels_tab[0][ 9]= avg_no_rnd_qpel16_mc12_c;
+    c->avg_no_rnd_qpel_pixels_tab[0][10]= avg_no_rnd_qpel16_mc22_c;
+    c->avg_no_rnd_qpel_pixels_tab[0][11]= avg_no_rnd_qpel16_mc32_c;
+    c->avg_no_rnd_qpel_pixels_tab[0][12]= avg_no_rnd_qpel16_mc03_c;
+    c->avg_no_rnd_qpel_pixels_tab[0][13]= avg_no_rnd_qpel16_mc13_c;
+    c->avg_no_rnd_qpel_pixels_tab[0][14]= avg_no_rnd_qpel16_mc23_c;
+    c->avg_no_rnd_qpel_pixels_tab[0][15]= avg_no_rnd_qpel16_mc33_c;
+*/
+
+    c->put_qpel_pixels_tab[1][ 0]= put_qpel8_mc00_c;
+    c->put_qpel_pixels_tab[1][ 1]= put_qpel8_mc10_c;
+    c->put_qpel_pixels_tab[1][ 2]= put_qpel8_mc20_c;
+    c->put_qpel_pixels_tab[1][ 3]= put_qpel8_mc30_c;
+    c->put_qpel_pixels_tab[1][ 4]= put_qpel8_mc01_c;
+    c->put_qpel_pixels_tab[1][ 5]= put_qpel8_mc11_c;
+    c->put_qpel_pixels_tab[1][ 6]= put_qpel8_mc21_c;
+    c->put_qpel_pixels_tab[1][ 7]= put_qpel8_mc31_c;
+    c->put_qpel_pixels_tab[1][ 8]= put_qpel8_mc02_c;
+    c->put_qpel_pixels_tab[1][ 9]= put_qpel8_mc12_c;
+    c->put_qpel_pixels_tab[1][10]= put_qpel8_mc22_c;
+    c->put_qpel_pixels_tab[1][11]= put_qpel8_mc32_c;
+    c->put_qpel_pixels_tab[1][12]= put_qpel8_mc03_c;
+    c->put_qpel_pixels_tab[1][13]= put_qpel8_mc13_c;
+    c->put_qpel_pixels_tab[1][14]= put_qpel8_mc23_c;
+    c->put_qpel_pixels_tab[1][15]= put_qpel8_mc33_c;
+    
+    c->put_no_rnd_qpel_pixels_tab[1][ 0]= put_no_rnd_qpel8_mc00_c;
+    c->put_no_rnd_qpel_pixels_tab[1][ 1]= put_no_rnd_qpel8_mc10_c;
+    c->put_no_rnd_qpel_pixels_tab[1][ 2]= put_no_rnd_qpel8_mc20_c;
+    c->put_no_rnd_qpel_pixels_tab[1][ 3]= put_no_rnd_qpel8_mc30_c;
+    c->put_no_rnd_qpel_pixels_tab[1][ 4]= put_no_rnd_qpel8_mc01_c;
+    c->put_no_rnd_qpel_pixels_tab[1][ 5]= put_no_rnd_qpel8_mc11_c;
+    c->put_no_rnd_qpel_pixels_tab[1][ 6]= put_no_rnd_qpel8_mc21_c;
+    c->put_no_rnd_qpel_pixels_tab[1][ 7]= put_no_rnd_qpel8_mc31_c;
+    c->put_no_rnd_qpel_pixels_tab[1][ 8]= put_no_rnd_qpel8_mc02_c;
+    c->put_no_rnd_qpel_pixels_tab[1][ 9]= put_no_rnd_qpel8_mc12_c;
+    c->put_no_rnd_qpel_pixels_tab[1][10]= put_no_rnd_qpel8_mc22_c;
+    c->put_no_rnd_qpel_pixels_tab[1][11]= put_no_rnd_qpel8_mc32_c;
+    c->put_no_rnd_qpel_pixels_tab[1][12]= put_no_rnd_qpel8_mc03_c;
+    c->put_no_rnd_qpel_pixels_tab[1][13]= put_no_rnd_qpel8_mc13_c;
+    c->put_no_rnd_qpel_pixels_tab[1][14]= put_no_rnd_qpel8_mc23_c;
+    c->put_no_rnd_qpel_pixels_tab[1][15]= put_no_rnd_qpel8_mc33_c;
+
+    c->avg_qpel_pixels_tab[1][ 0]= avg_qpel8_mc00_c;
+    c->avg_qpel_pixels_tab[1][ 1]= avg_qpel8_mc10_c;
+    c->avg_qpel_pixels_tab[1][ 2]= avg_qpel8_mc20_c;
+    c->avg_qpel_pixels_tab[1][ 3]= avg_qpel8_mc30_c;
+    c->avg_qpel_pixels_tab[1][ 4]= avg_qpel8_mc01_c;
+    c->avg_qpel_pixels_tab[1][ 5]= avg_qpel8_mc11_c;
+    c->avg_qpel_pixels_tab[1][ 6]= avg_qpel8_mc21_c;
+    c->avg_qpel_pixels_tab[1][ 7]= avg_qpel8_mc31_c;
+    c->avg_qpel_pixels_tab[1][ 8]= avg_qpel8_mc02_c;
+    c->avg_qpel_pixels_tab[1][ 9]= avg_qpel8_mc12_c;
+    c->avg_qpel_pixels_tab[1][10]= avg_qpel8_mc22_c;
+    c->avg_qpel_pixels_tab[1][11]= avg_qpel8_mc32_c;
+    c->avg_qpel_pixels_tab[1][12]= avg_qpel8_mc03_c;
+    c->avg_qpel_pixels_tab[1][13]= avg_qpel8_mc13_c;
+    c->avg_qpel_pixels_tab[1][14]= avg_qpel8_mc23_c;
+    c->avg_qpel_pixels_tab[1][15]= avg_qpel8_mc33_c;
+/*
+    c->avg_no_rnd_qpel_pixels_tab[1][ 0]= avg_no_rnd_qpel8_mc00_c;
+    c->avg_no_rnd_qpel_pixels_tab[1][ 1]= avg_no_rnd_qpel8_mc10_c;
+    c->avg_no_rnd_qpel_pixels_tab[1][ 2]= avg_no_rnd_qpel8_mc20_c;
+    c->avg_no_rnd_qpel_pixels_tab[1][ 3]= avg_no_rnd_qpel8_mc30_c;
+    c->avg_no_rnd_qpel_pixels_tab[1][ 4]= avg_no_rnd_qpel8_mc01_c;
+    c->avg_no_rnd_qpel_pixels_tab[1][ 5]= avg_no_rnd_qpel8_mc11_c;
+    c->avg_no_rnd_qpel_pixels_tab[1][ 6]= avg_no_rnd_qpel8_mc21_c;
+    c->avg_no_rnd_qpel_pixels_tab[1][ 7]= avg_no_rnd_qpel8_mc31_c;
+    c->avg_no_rnd_qpel_pixels_tab[1][ 8]= avg_no_rnd_qpel8_mc02_c;
+    c->avg_no_rnd_qpel_pixels_tab[1][ 9]= avg_no_rnd_qpel8_mc12_c;
+    c->avg_no_rnd_qpel_pixels_tab[1][10]= avg_no_rnd_qpel8_mc22_c;
+    c->avg_no_rnd_qpel_pixels_tab[1][11]= avg_no_rnd_qpel8_mc32_c;
+    c->avg_no_rnd_qpel_pixels_tab[1][12]= avg_no_rnd_qpel8_mc03_c;
+    c->avg_no_rnd_qpel_pixels_tab[1][13]= avg_no_rnd_qpel8_mc13_c;
+    c->avg_no_rnd_qpel_pixels_tab[1][14]= avg_no_rnd_qpel8_mc23_c;
+    c->avg_no_rnd_qpel_pixels_tab[1][15]= avg_no_rnd_qpel8_mc33_c;
+*/
+
 #ifdef HAVE_MMX
     dsputil_init_mmx(c, mask);
 #endif
