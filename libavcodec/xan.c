@@ -23,8 +23,9 @@
  * Xan video decoder for Wing Commander III & IV computer games
  * by Mario Brito (mbrito@student.dei.uc.pt)
  * and Mike Melanson (melanson@pcisys.net)
- * For more information about the Xan format, visit:
- *   http://www.pcisys.net/~melanson/codecs/
+ *
+ * The xan_wc3 decoder outputs the following colorspaces natively:
+ *   PAL8 (default), RGB555, RGB565, RGB24, BGR24, RGBA32, YUV444P
  */
 
 #include <stdio.h>
@@ -120,7 +121,7 @@ static int xan_decode_init(AVCodecContext *avctx)
         return -1;
     }
 
-    avctx->pix_fmt = PIX_FMT_YUV444P;
+    avctx->pix_fmt = PIX_FMT_PAL8;
     avctx->has_b_frames = 0;
     dsputil_init(&s->dsp, avctx);
 
@@ -139,8 +140,8 @@ static int xan_decode_init(AVCodecContext *avctx)
         v_b_table[i] = V_B * i;
     }
 
-    s->buffer1 = av_malloc(avctx->width * avctx->height * 4);
-    s->buffer2 = av_malloc(avctx->width * avctx->height * 4);
+    s->buffer1 = av_malloc(avctx->width * avctx->height);
+    s->buffer2 = av_malloc(avctx->width * avctx->height);
     if (!s->buffer1 || !s->buffer2)
         return -1;
 
@@ -160,7 +161,7 @@ static inline void bytecopy(unsigned char *dest, unsigned char *src, int count)
         dest[i] = src[i];
 }
 
-static int xan_decode_method_1(unsigned char *dest, unsigned char *src)
+static int xan_huffman_decode(unsigned char *dest, unsigned char *src)
 {
     unsigned char byte = *src++;
     unsigned char ival = byte + 0x16;
@@ -190,7 +191,7 @@ static int xan_decode_method_1(unsigned char *dest, unsigned char *src)
     return 0;
 }
 
-static int xan_decode_method_2(unsigned char *dest, unsigned char *src)
+static void xan_unpack(unsigned char *dest, unsigned char *src)
 {
     unsigned char opcode;
     int size;
@@ -249,8 +250,6 @@ static int xan_decode_method_2(unsigned char *dest, unsigned char *src)
 
     size = opcode & 3;
     bytecopy(dest, src, size);  dest += size;  src += size;
-
-    return 0;
 }
 
 static void inline xan_wc3_build_palette(XanContext *s, 
@@ -258,11 +257,79 @@ static void inline xan_wc3_build_palette(XanContext *s,
 {
     int i;
     unsigned char r, g, b;
+    unsigned short *palette16;
+    unsigned int *palette32;
 
     /* transform the palette passed through the palette control structure
      * into the necessary internal format depending on colorspace */
 
     switch (s->avctx->pix_fmt) {
+
+    case PIX_FMT_PAL8:
+        for (i = 0; i < PALETTE_COUNT; i++) {
+            r = *palette_data++;
+            g = *palette_data++;
+            b = *palette_data++;
+            s->palette[i * 4 + 0] = b;
+            s->palette[i * 4 + 1] = g;
+            s->palette[i * 4 + 2] = r;
+        }
+        break;
+
+    case PIX_FMT_RGB555:
+        palette16 = (unsigned short *)s->palette;
+        for (i = 0; i < PALETTE_COUNT; i++) {
+            r = *palette_data++;
+            g = *palette_data++;
+            b = *palette_data++;
+            palette16[i] = 
+                ((r >> 3) << 10) |
+                ((g >> 3) <<  5) |
+                ((g >> 3) <<  0);
+        }
+        break;
+
+    case PIX_FMT_RGB565:
+        palette16 = (unsigned short *)s->palette;
+        for (i = 0; i < PALETTE_COUNT; i++) {
+            r = *palette_data++;
+            g = *palette_data++;
+            b = *palette_data++;
+            palette16[i] = 
+                ((r >> 3) << 11) |
+                ((g >> 2) <<  5) |
+                ((g >> 3) <<  0);
+        }
+        break;
+
+    case PIX_FMT_RGB24:
+        for (i = 0; i < PALETTE_COUNT; i++) {
+            s->palette[i * 4 + 0] = *palette_data++;
+            s->palette[i * 4 + 1] = *palette_data++;
+            s->palette[i * 4 + 2] = *palette_data++;
+        }
+        break;
+
+    case PIX_FMT_BGR24:
+        for (i = 0; i < PALETTE_COUNT; i++) {
+            r = *palette_data++;
+            g = *palette_data++;
+            b = *palette_data++;
+            s->palette[i * 4 + 0] = b;
+            s->palette[i * 4 + 1] = g;
+            s->palette[i * 4 + 2] = r;
+        }
+        break;
+
+    case PIX_FMT_RGBA32:
+        palette32 = (unsigned int *)s->palette;
+        for (i = 0; i < PALETTE_COUNT; i++) {
+            r = *palette_data++;
+            g = *palette_data++;
+            b = *palette_data++;
+            palette32[i] = (r << 16) | (g << 8) | (b);
+        }
+        break;
 
     case PIX_FMT_YUV444P:
         for (i = 0; i < PALETTE_COUNT; i++) {
@@ -290,11 +357,102 @@ static void inline xan_wc3_output_pixel_run(XanContext *s,
     int current_x;
     int width = s->avctx->width;
     unsigned char pixel;
+    unsigned char *palette_plane;
     unsigned char *y_plane;
     unsigned char *u_plane;
     unsigned char *v_plane;
+    unsigned char *rgb_plane;
+    unsigned short *rgb16_plane;
+    unsigned short *palette16;
+    unsigned int *rgb32_plane;
+    unsigned int *palette32;
 
     switch (s->avctx->pix_fmt) {
+
+    case PIX_FMT_PAL8:
+        palette_plane = s->current_frame.data[0];
+        stride = s->current_frame.linesize[0];
+        line_inc = stride - width;
+        index = y * stride + x;
+        current_x = x;
+        while(pixel_count--) {
+
+            /* don't do a memcpy() here; keyframes generally copy an entire
+             * frame of data and the stride needs to be accounted for */
+            palette_plane[index++] = *pixel_buffer++;
+
+            current_x++;
+            if (current_x >= width) {
+                /* reset accounting variables */
+                index += line_inc;
+                current_x = 0;
+            }
+        }
+        break;
+
+    case PIX_FMT_RGB555:
+    case PIX_FMT_RGB565:
+        rgb16_plane = (unsigned short *)s->current_frame.data[0];
+        palette16 = (unsigned short *)s->palette;
+        stride = s->current_frame.linesize[0] / 2;
+        line_inc = stride - width;
+        index = y * stride + x;
+        current_x = x;
+        while(pixel_count--) {
+
+            rgb16_plane[index++] = palette16[*pixel_buffer++];
+
+            current_x++;
+            if (current_x >= width) {
+                /* reset accounting variables */
+                index += line_inc;
+                current_x = 0;
+            }
+        }
+        break;
+
+    case PIX_FMT_RGB24:
+    case PIX_FMT_BGR24:
+        rgb_plane = s->current_frame.data[0];
+        stride = s->current_frame.linesize[0];
+        line_inc = stride - width * 3;
+        index = y * stride + x * 3;
+        current_x = x;
+        while(pixel_count--) {
+            pixel = *pixel_buffer++;
+
+            rgb_plane[index++] = s->palette[pixel * 4 + 0];
+            rgb_plane[index++] = s->palette[pixel * 4 + 1];
+            rgb_plane[index++] = s->palette[pixel * 4 + 2];
+
+            current_x++;
+            if (current_x >= width) {
+                /* reset accounting variables */
+                index += line_inc;
+                current_x = 0;
+            }
+        }
+        break;
+
+    case PIX_FMT_RGBA32:
+        rgb32_plane = (unsigned int *)s->current_frame.data[0];
+        palette32 = (unsigned int *)s->palette;
+        stride = s->current_frame.linesize[0] / 4;
+        line_inc = stride - width;
+        index = y * stride + x;
+        current_x = x;
+        while(pixel_count--) {
+
+            rgb32_plane[index++] = palette32[*pixel_buffer++];
+
+            current_x++;
+            if (current_x >= width) {
+                /* reset accounting variables */
+                index += line_inc;
+                current_x = 0;
+            }
+        }
+        break;
 
     case PIX_FMT_YUV444P:
         y_plane = s->current_frame.data[0];
@@ -335,10 +493,138 @@ static void inline xan_wc3_copy_pixel_run(XanContext *s,
     int curframe_index, prevframe_index;
     int curframe_x, prevframe_x;
     int width = s->avctx->width;
+    unsigned char *palette_plane, *prev_palette_plane;
     unsigned char *y_plane, *u_plane, *v_plane;
     unsigned char *prev_y_plane, *prev_u_plane, *prev_v_plane;
+    unsigned char *rgb_plane, *prev_rgb_plane;
+    unsigned short *rgb16_plane, *prev_rgb16_plane;
+    unsigned int *rgb32_plane, *prev_rgb32_plane;
 
     switch (s->avctx->pix_fmt) {
+
+    case PIX_FMT_PAL8:
+        palette_plane = s->current_frame.data[0];
+        prev_palette_plane = s->last_frame.data[0];
+        stride = s->current_frame.linesize[0];
+        line_inc = stride - width;
+        curframe_index = y * stride + x;
+        curframe_x = x;
+        prevframe_index = (y + motion_y) * stride + x + motion_x;
+        prevframe_x = x + motion_x;
+        while(pixel_count--) {
+
+            palette_plane[curframe_index++] = 
+                prev_palette_plane[prevframe_index++];
+
+            curframe_x++;
+            if (curframe_x >= width) {
+                /* reset accounting variables */
+                curframe_index += line_inc;
+                curframe_x = 0;
+            }
+
+            prevframe_x++;
+            if (prevframe_x >= width) {
+                /* reset accounting variables */
+                prevframe_index += line_inc;
+                prevframe_x = 0;
+            }
+        }
+        break;
+
+    case PIX_FMT_RGB555:
+    case PIX_FMT_RGB565:
+        rgb16_plane = (unsigned short *)s->current_frame.data[0];
+        prev_rgb16_plane = (unsigned short *)s->last_frame.data[0];
+        stride = s->current_frame.linesize[0] / 2;
+        line_inc = stride - width;
+        curframe_index = y * stride + x;
+        curframe_x = x;
+        prevframe_index = (y + motion_y) * stride + x + motion_x;
+        prevframe_x = x + motion_x;
+        while(pixel_count--) {
+
+            rgb16_plane[curframe_index++] = 
+                prev_rgb16_plane[prevframe_index++];
+
+            curframe_x++;
+            if (curframe_x >= width) {
+                /* reset accounting variables */
+                curframe_index += line_inc;
+                curframe_x = 0;
+            }
+
+            prevframe_x++;
+            if (prevframe_x >= width) {
+                /* reset accounting variables */
+                prevframe_index += line_inc;
+                prevframe_x = 0;
+            }
+        }
+        break;
+
+    case PIX_FMT_RGB24:
+    case PIX_FMT_BGR24:
+        rgb_plane = s->current_frame.data[0];
+        prev_rgb_plane = s->last_frame.data[0];
+        stride = s->current_frame.linesize[0];
+        line_inc = stride - width * 3;
+        curframe_index = y * stride + x * 3;
+        curframe_x = x;
+        prevframe_index = (y + motion_y) * stride + 
+            (3 * (x + motion_x));
+        prevframe_x = x + motion_x;
+        while(pixel_count--) {
+
+            rgb_plane[curframe_index++] = prev_rgb_plane[prevframe_index++];
+            rgb_plane[curframe_index++] = prev_rgb_plane[prevframe_index++];
+            rgb_plane[curframe_index++] = prev_rgb_plane[prevframe_index++];
+
+            curframe_x++;
+            if (curframe_x >= width) {
+                /* reset accounting variables */
+                curframe_index += line_inc;
+                curframe_x = 0;
+            }
+
+            prevframe_x++;
+            if (prevframe_x >= width) {
+                /* reset accounting variables */
+                prevframe_index += line_inc;
+                prevframe_x = 0;
+            }
+        }
+        break;
+
+    case PIX_FMT_RGBA32:
+        rgb32_plane = (unsigned int *)s->current_frame.data[0];
+        prev_rgb32_plane = (unsigned int *)s->last_frame.data[0];
+        stride = s->current_frame.linesize[0] / 4;
+        line_inc = stride - width;
+        curframe_index = y * stride + x;
+        curframe_x = x;
+        prevframe_index = (y + motion_y) * stride + x + motion_x;
+        prevframe_x = x + motion_x;
+        while(pixel_count--) {
+
+            rgb32_plane[curframe_index++] = 
+                prev_rgb32_plane[prevframe_index++];
+
+            curframe_x++;
+            if (curframe_x >= width) {
+                /* reset accounting variables */
+                curframe_index += line_inc;
+                curframe_x = 0;
+            }
+
+            prevframe_x++;
+            if (prevframe_x >= width) {
+                /* reset accounting variables */
+                prevframe_index += line_inc;
+                prevframe_x = 0;
+            }
+        }
+        break;
 
     case PIX_FMT_YUV444P:
         y_plane = s->current_frame.data[0];
@@ -351,7 +637,7 @@ static void inline xan_wc3_copy_pixel_run(XanContext *s,
         line_inc = stride - width;
         curframe_index = y * stride + x;
         curframe_x = x;
-        prevframe_index = (y + motion_x) * stride + x + motion_x;
+        prevframe_index = (y + motion_y) * stride + x + motion_x;
         prevframe_x = x + motion_x;
         while(pixel_count--) {
 
@@ -394,31 +680,32 @@ static void xan_wc3_decode_frame(XanContext *s) {
     int motion_x, motion_y;
     int x, y;
 
-    unsigned char *method1_buffer = s->buffer1;
-    unsigned char *method2_buffer = s->buffer2;
+    unsigned char *opcode_buffer = s->buffer1;
+    unsigned char *imagedata_buffer = s->buffer2;
 
     /* pointers to segments inside the compressed chunk */
-    unsigned char *method1_segment;
+    unsigned char *huffman_segment;
     unsigned char *size_segment;
     unsigned char *vector_segment;
-    unsigned char *method2_segment;
+    unsigned char *imagedata_segment;
 
-    method1_segment = s->buf + LE_16(&s->buf[0]);
-    size_segment =    s->buf + LE_16(&s->buf[2]);
-    vector_segment =  s->buf + LE_16(&s->buf[4]);
-    method2_segment = s->buf + LE_16(&s->buf[6]);
+    huffman_segment =   s->buf + LE_16(&s->buf[0]);
+    size_segment =      s->buf + LE_16(&s->buf[2]);
+    vector_segment =    s->buf + LE_16(&s->buf[4]);
+    imagedata_segment = s->buf + LE_16(&s->buf[6]);
 
-    xan_decode_method_1(method1_buffer, method1_segment);
-    if (method2_segment[0] == 2)
-        xan_decode_method_2(method2_buffer, method2_segment + 1);
+    xan_huffman_decode(opcode_buffer, huffman_segment);
+
+    if (imagedata_segment[0] == 2)
+        xan_unpack(imagedata_buffer, &imagedata_segment[1]);
     else
-        method2_buffer = method2_segment + 1;
+        imagedata_buffer = &imagedata_segment[1];
 
     /* use the decoded data segments to build the frame */
     x = y = 0;
     while (total_pixels) {
 
-        opcode = *method1_buffer++;
+        opcode = *opcode_buffer++;
         size = 0;
 
         switch (opcode) {
@@ -473,9 +760,9 @@ static void xan_wc3_decode_frame(XanContext *s) {
                 /* run of (size) pixels is unchanged from last frame */
                 xan_wc3_copy_pixel_run(s, x, y, size, 0, 0);
             } else {
-                /* output a run of pixels from method2_buffer */
-                xan_wc3_output_pixel_run(s, method2_buffer, x, y, size);
-                method2_buffer += size;
+                /* output a run of pixels from imagedata_buffer */
+                xan_wc3_output_pixel_run(s, imagedata_buffer, x, y, size);
+                imagedata_buffer += size;
             }
         } else {
             /* run-based motion compensation from last frame */
@@ -508,6 +795,10 @@ static void xan_wc3_decode_frame(XanContext *s) {
             }
         }
     }
+
+    /* for PAL8, make the palette available on the way out */
+    if (s->avctx->pix_fmt == PIX_FMT_PAL8)
+        memcpy(s->current_frame.data[1], s->palette, PALETTE_COUNT * 4);
 }
 
 static void xan_wc4_decode_frame(XanContext *s) {
@@ -532,25 +823,16 @@ static int xan_decode_frame(AVCodecContext *avctx,
         printf ("  Interplay Video: get_buffer() failed\n");
         return -1;
     }
+    s->current_frame.reference = 3;
 
     s->buf = buf;
     s->size = buf_size;
 
-    if (avctx->codec->id == CODEC_ID_XAN_WC3) {
-//        if (keyframe)
-        if (1)
-            xan_wc3_decode_frame(s);
-        else {
-            memcpy(s->current_frame.data[0], s->last_frame.data[0],
-                s->current_frame.linesize[0] * avctx->height);
-            memcpy(s->current_frame.data[1], s->last_frame.data[1],
-                s->current_frame.linesize[1] * avctx->height);
-            memcpy(s->current_frame.data[2], s->last_frame.data[2],
-                s->current_frame.linesize[2] * avctx->height);
-        }
-    } else if (avctx->codec->id == CODEC_ID_XAN_WC4)
+    if (avctx->codec->id == CODEC_ID_XAN_WC3)
+        xan_wc3_decode_frame(s);
+    else if (avctx->codec->id == CODEC_ID_XAN_WC4)
         xan_wc4_decode_frame(s);
-    
+
     /* release the last frame if it is allocated */
     if (s->last_frame.data[0])
         avctx->release_buffer(avctx, &s->last_frame);
