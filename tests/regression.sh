@@ -293,6 +293,16 @@ do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst
 fi
 
 ###################################
+if [ -n "$do_mpeg4adv" ] ; then
+# mpeg4
+file=${outfile}mpeg4-Q.avi
+do_ffmpeg $file -y -qscale 7 -4mv -mbd 2 -qpel -bf 2 -cmp 1 -subcmp 2 -f pgmyuv -i $raw_src -an -vcodec mpeg4 $file
+
+# mpeg4 decoding
+do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst 
+fi
+
+###################################
 if [ -n "$do_error" ] ; then
 # damaged mpeg4
 file=${outfile}error-mpeg4-adv.avi
