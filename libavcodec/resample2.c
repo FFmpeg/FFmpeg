@@ -160,15 +160,13 @@ int av_resample(AVResampleContext *c, short *dst, short *src, int *consumed, int
     int frac= c->frac;
     int dst_incr_frac= c->dst_incr % c->src_incr;
     int dst_incr=      c->dst_incr / c->src_incr;
-    
-    if(c->compensation_distance && c->compensation_distance < dst_size)
-        dst_size= c->compensation_distance;
+    int compensation_distance= c->compensation_distance;
     
     for(dst_index=0; dst_index < dst_size; dst_index++){
         short *filter= c->filter_bank + c->filter_length*(index & PHASE_MASK);
         int sample_index= index >> PHASE_SHIFT;
         int val=0;
-        
+                
         if(sample_index < 0){
             for(i=0; i<c->filter_length; i++)
                 val += src[ABS(sample_index + i) % src_size] * filter[i];
@@ -199,18 +197,25 @@ int av_resample(AVResampleContext *c, short *dst, short *src, int *consumed, int
             frac -= c->src_incr;
             index++;
         }
+
+        if(dst_index + 1 == compensation_distance){
+            compensation_distance= 0;
+            dst_incr_frac= c->ideal_dst_incr % c->src_incr;
+            dst_incr=      c->ideal_dst_incr / c->src_incr;
+        }
     }
     *consumed= FFMAX(index, 0) >> PHASE_SHIFT;
     index= FFMIN(index, 0);
 
+    if(compensation_distance){
+        compensation_distance -= dst_index;
+        assert(compensation_distance > 0);
+    }
     if(update_ctx){
-        if(c->compensation_distance){
-            c->compensation_distance -= dst_index;
-            if(!c->compensation_distance)
-                c->dst_incr= c->ideal_dst_incr;
-        }
         c->frac= frac;
         c->index= index;
+        c->dst_incr= dst_incr_frac + c->src_incr*dst_incr;
+        c->compensation_distance= compensation_distance;
     }
 #if 0    
     if(update_ctx && !c->compensation_distance){
