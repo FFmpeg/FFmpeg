@@ -1583,6 +1583,7 @@ void h263_encode_init(MpegEncContext *s)
         s->ac_esc_length= 7+2+1+6+1+12+1;
         
         if(s->flags & CODEC_FLAG_GLOBAL_HEADER){
+
             s->avctx->extradata= av_malloc(1024);
             init_put_bits(&s->pb, s->avctx->extradata, 1024, NULL, NULL);
             
@@ -2905,7 +2906,7 @@ static int mpeg4_decode_partition_a(MpegEncContext *s){
                 int16_t * const mot_val= s->motion_val[s->block_index[0]];
                 const int stride= s->block_wrap[0]*2;
 
-              do{
+//              do{ //FIXME
                 bits= show_bits(&s->gb, 17);
                 if(bits==MOTION_MARKER){
                     return mb_num-1;
@@ -2936,7 +2937,7 @@ static int mpeg4_decode_partition_a(MpegEncContext *s){
                     fprintf(stderr, "cbpc corrupted at %d %d\n", s->mb_x, s->mb_y);
                     return -1;
                 }
-              }while(cbpc == 20);
+//              }while(cbpc == 20);
 
                 s->cbp_table[xy]= cbpc&(8+3); //8 is dquant
     
