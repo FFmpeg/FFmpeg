@@ -1562,15 +1562,20 @@ static inline void RENAME(deInterlaceInterpolateLinear)(uint8_t src[], int strid
 		: "%eax", "%ecx"
 	);
 #else
-	int x;
+	int a, b, x;
 	src+= 4*stride;
-	for(x=0; x<8; x++)
-	{
-		src[stride]   = (src[0]        + src[stride*2])>>1;
-		src[stride*3] = (src[stride*2] + src[stride*4])>>1;
-		src[stride*5] = (src[stride*4] + src[stride*6])>>1;
-		src[stride*7] = (src[stride*6] + src[stride*8])>>1;
-		src++;
+
+	for(x=0; x<2; x++){
+		a= *(uint32_t*)&src[stride*0];
+		b= *(uint32_t*)&src[stride*2];
+		*(uint32_t*)&src[stride*1]= (a|b) - (((a^b)&0xFEFEFEFEUL)>>1);
+		a= *(uint32_t*)&src[stride*4];
+		*(uint32_t*)&src[stride*3]= (a|b) - (((a^b)&0xFEFEFEFEUL)>>1);
+		b= *(uint32_t*)&src[stride*6];
+		*(uint32_t*)&src[stride*5]= (a|b) - (((a^b)&0xFEFEFEFEUL)>>1);
+		a= *(uint32_t*)&src[stride*8];
+		*(uint32_t*)&src[stride*7]= (a|b) - (((a^b)&0xFEFEFEFEUL)>>1);
+		src += 4;
 	}
 #endif
 }
@@ -1875,19 +1880,45 @@ static inline void RENAME(deInterlaceBlendLinear)(uint8_t src[], int stride)
 		: "%eax", "%edx"
 	);
 #else
-	int x;
+	int a, b, c, x;
 	src+= 4*stride;
-	for(x=0; x<8; x++)
-	{
-		src[0       ] = (src[0       ] + 2*src[stride  ] + src[stride*2])>>2;
-		src[stride  ] = (src[stride  ] + 2*src[stride*2] + src[stride*3])>>2;
-		src[stride*2] = (src[stride*2] + 2*src[stride*3] + src[stride*4])>>2;
-		src[stride*3] = (src[stride*3] + 2*src[stride*4] + src[stride*5])>>2;
-		src[stride*4] = (src[stride*4] + 2*src[stride*5] + src[stride*6])>>2;
-		src[stride*5] = (src[stride*5] + 2*src[stride*6] + src[stride*7])>>2;
-		src[stride*6] = (src[stride*6] + 2*src[stride*7] + src[stride*8])>>2;
-		src[stride*7] = (src[stride*7] + 2*src[stride*8] + src[stride*9])>>2;
-		src++;
+
+	for(x=0; x<2; x++){
+		a= *(uint32_t*)&src[stride*0];
+		b= *(uint32_t*)&src[stride*1];
+		c= *(uint32_t*)&src[stride*2];
+		a= (a&c) + (((a^c)&0xFEFEFEFEUL)>>1);
+		*(uint32_t*)&src[stride*0]= (a|b) - (((a^b)&0xFEFEFEFEUL)>>1);
+
+		a= *(uint32_t*)&src[stride*3];
+		b= (a&b) + (((a^b)&0xFEFEFEFEUL)>>1);
+		*(uint32_t*)&src[stride*1]= (c|b) - (((c^b)&0xFEFEFEFEUL)>>1);
+
+		b= *(uint32_t*)&src[stride*4];
+		c= (b&c) + (((b^c)&0xFEFEFEFEUL)>>1);
+		*(uint32_t*)&src[stride*2]= (c|a) - (((c^a)&0xFEFEFEFEUL)>>1);
+
+		c= *(uint32_t*)&src[stride*5];
+		a= (a&c) + (((a^c)&0xFEFEFEFEUL)>>1);
+		*(uint32_t*)&src[stride*3]= (a|b) - (((a^b)&0xFEFEFEFEUL)>>1);
+
+		a= *(uint32_t*)&src[stride*6];
+		b= (a&b) + (((a^b)&0xFEFEFEFEUL)>>1);
+		*(uint32_t*)&src[stride*4]= (c|b) - (((c^b)&0xFEFEFEFEUL)>>1);
+
+		b= *(uint32_t*)&src[stride*7];
+		c= (b&c) + (((b^c)&0xFEFEFEFEUL)>>1);
+		*(uint32_t*)&src[stride*5]= (c|a) - (((c^a)&0xFEFEFEFEUL)>>1);
+
+		c= *(uint32_t*)&src[stride*8];
+		a= (a&c) + (((a^c)&0xFEFEFEFEUL)>>1);
+		*(uint32_t*)&src[stride*6]= (a|b) - (((a^b)&0xFEFEFEFEUL)>>1);
+
+		a= *(uint32_t*)&src[stride*9];
+		b= (a&b) + (((a^b)&0xFEFEFEFEUL)>>1);
+		*(uint32_t*)&src[stride*7]= (c|b) - (((c^b)&0xFEFEFEFEUL)>>1);
+
+		src += 4;
 	}
 #endif
 }
