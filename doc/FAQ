@@ -21,3 +21,16 @@ after version 5.0.
 
 Currently, the grabbing stuff does not handle synchronisation
 correctly. You are free to correct it. It is planned to fix it ASAP.
+
+5) How do I encode jpegs to another format ?
+
+If the jpegs are named img1.jpg, img2.jpg, img3.jpg,..., use:
+
+  ffmpeg -i img%d.jpg /tmp/a.mpg
+
+'%d' is replaced by the image number.
+
+'img%03d.jpg' generates img001.jpg, img002.jpg, etc...
+
+The same system is used for the other image formats.
+
