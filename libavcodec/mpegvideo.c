@@ -495,7 +495,9 @@ int MPV_encode_init(AVCodecContext *avctx)
     }
     s->mv_penalty= default_mv_penalty;
     s->fcode_tab= default_fcode_tab;
-
+    s->y_dc_scale_table=
+    s->c_dc_scale_table= ff_mpeg1_dc_scale_table;
+ 
     if (s->out_format == FMT_H263)
         h263_encode_init(s);
     else if (s->out_format == FMT_MPEG1)
