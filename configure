@@ -371,7 +371,7 @@ for opt do
   ;;
   --disable-dv1394) dv1394="no"
   ;;
-  --disable-network) network="no"
+  --disable-network) network="no"; ffserver="no"
   ;;
   --disable-zlib) zlib="no"
   ;;
