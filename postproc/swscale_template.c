@@ -103,11 +103,11 @@ static int s_last_ypos;
 	dest[2]=clip_table[((Y + yuvtab_40cf[V]) >>13)];
 #else
 	unsigned short *d=dest;
-	unsigned int r=clip_table[((Y + yuvtab_3343[U]) >>13)];
+	unsigned int b=clip_table[((Y + yuvtab_3343[U]) >>13)];
 	unsigned int g=clip_table[((Y + yuvtab_0c92[V] + yuvtab_1a1e[U]) >>13)];
-	unsigned int b=clip_table[((Y + yuvtab_40cf[V]) >>13)];
-	d[0]=((r>>3)<<10)|((g>>3)<<5)|((b>>3)); // 15bpp
-//	d[0]=((r>>3)<<11)|((g>>2)<<5)|((b>>3)); // 16bpp
+	unsigned int r=clip_table[((Y + yuvtab_40cf[V]) >>13)];
+//	d[0]=((r>>3)<<10)|((g>>3)<<5)|((b>>3)); // 15bpp
+	d[0]=((r>>3)<<11)|((g>>2)<<5)|((b>>3)); // 16bpp
 #endif
 	dest+=dstbpp;
     }
