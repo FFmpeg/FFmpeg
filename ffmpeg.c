@@ -3435,10 +3435,20 @@ static void opt_target(const char *arg)
     }
 }
 
+static void show_version(void)
+{
+    printf("ffmpeg      " FFMPEG_VERSION "\n"
+           "libavcodec  %d\n"
+           "libavformat %d\n", 
+           avcodec_build(), LIBAVFORMAT_BUILD);
+    exit(1);
+}
+
 const OptionDef options[] = {
     /* main options */
     { "L", 0, {(void*)show_license}, "show license" },
     { "h", 0, {(void*)show_help}, "show help" },
+    { "version", 0, {(void*)show_version}, "show version" },
     { "formats", 0, {(void*)show_formats}, "show available formats, codecs, protocols, ..." },
     { "f", HAS_ARG, {(void*)opt_format}, "force format", "fmt" },
     { "img", HAS_ARG, {(void*)opt_image_format}, "force image format", "img_fmt" },
