@@ -907,162 +907,6 @@ static void   avg_no_rnd_pixels_xy2_mmx( UINT8  *block, const UINT8 *pixels, int
   } while(--h);
 }
 
-static void sub_pixels_mmx( DCTELEM  *block, const UINT8 *pixels, int line_size, int h)
-{
-  DCTELEM  *p;
-  const UINT8 *pix;
-  p = block;
-  pix = pixels;
-  MOVQ_ZERO(mm7);
-  do {
-    __asm __volatile(
-	"movq	%0, %%mm0\n\t"
-	"movq	%1, %%mm2\n\t"
-	"movq	8%0, %%mm1\n\t"
-	"movq	%%mm2, %%mm3\n\t"
-	"punpcklbw %%mm7, %%mm2\n\t"
-	"punpckhbw %%mm7, %%mm3\n\t"
-	"psubsw %%mm2, %%mm0\n\t"
-	"psubsw %%mm3, %%mm1\n\t"
-	"movq	%%mm0, %0\n\t"
-	"movq	%%mm1, 8%0\n\t"
-	:"+m"(*p)
-	:"m"(*pix)
-	:"memory");
-   pix += line_size;
-   p +=   8;
-  } while (--h);
-}
-
-static void sub_pixels_x2_mmx( DCTELEM  *block, const UINT8 *pixels, int line_size, int h)
-{
-  DCTELEM  *p;
-  const UINT8 *pix;
-  p = block;
-  pix = pixels;
-  MOVQ_ZERO(mm7);
-  MOVQ_WONE(mm6);
-  JUMPALIGN();
-  do {
-    __asm __volatile(
-	"movq	%0, %%mm0\n\t"
-	"movq	%1, %%mm2\n\t"
-	"movq	8%0, %%mm1\n\t"
-	"movq	1%1, %%mm4\n\t"
-	"movq	%%mm2, %%mm3\n\t"
-	"movq	%%mm4, %%mm5\n\t"
-	"punpcklbw %%mm7, %%mm2\n\t"
-	"punpckhbw %%mm7, %%mm3\n\t"
-	"punpcklbw %%mm7, %%mm4\n\t"
-	"punpckhbw %%mm7, %%mm5\n\t"
-	"paddusw %%mm4, %%mm2\n\t"
-	"paddusw %%mm5, %%mm3\n\t"
-	"paddusw %%mm6, %%mm2\n\t"
-	"paddusw %%mm6, %%mm3\n\t"
-	"psrlw	$1, %%mm2\n\t"
-	"psrlw	$1, %%mm3\n\t"
-	"psubsw %%mm2, %%mm0\n\t"
-	"psubsw %%mm3, %%mm1\n\t"
-	"movq	%%mm0, %0\n\t"
-	"movq	%%mm1, 8%0\n\t"
-	:"+m"(*p)
-	:"m"(*pix)
-	:"memory");
-   pix += line_size;
-   p +=   8;
- } while (--h);
-}
-
-static void sub_pixels_y2_mmx( DCTELEM  *block, const UINT8 *pixels, int line_size, int h)
-{
-  DCTELEM  *p;
-  const UINT8 *pix;
-  p = block;
-  pix = pixels;
-  MOVQ_ZERO(mm7);
-  MOVQ_WONE(mm6);
-  do {
-    __asm __volatile(
-	"movq	%0, %%mm0\n\t"
-	"movq	%1, %%mm2\n\t"
-	"movq	8%0, %%mm1\n\t"
-	"movq	%2, %%mm4\n\t"
-	"movq	%%mm2, %%mm3\n\t"
-	"movq	%%mm4, %%mm5\n\t"
-	"punpcklbw %%mm7, %%mm2\n\t"
-	"punpckhbw %%mm7, %%mm3\n\t"
-	"punpcklbw %%mm7, %%mm4\n\t"
-	"punpckhbw %%mm7, %%mm5\n\t"
-	"paddusw %%mm4, %%mm2\n\t"
-	"paddusw %%mm5, %%mm3\n\t"
-	"paddusw %%mm6, %%mm2\n\t"
-	"paddusw %%mm6, %%mm3\n\t"
-	"psrlw	$1, %%mm2\n\t"
-	"psrlw	$1, %%mm3\n\t"
-	"psubsw %%mm2, %%mm0\n\t"
-	"psubsw %%mm3, %%mm1\n\t"
-	"movq	%%mm0, %0\n\t"
-	"movq	%%mm1, 8%0\n\t"
-	:"+m"(*p)
-	:"m"(*pix), "m"(*(pix+line_size))
-	:"memory");
-   pix += line_size;
-   p +=   8;
- } while (--h);
-}
-
-static void   sub_pixels_xy2_mmx( DCTELEM  *block, const UINT8 *pixels, int line_size, int h)
-{
-  DCTELEM  *p;
-  const UINT8 *pix;
-  p = block;
-  pix = pixels;
-  MOVQ_ZERO(mm7);
-  MOVQ_WTWO(mm6);
-  JUMPALIGN();
-  do {
-    __asm __volatile(
-	"movq	%1, %%mm0\n\t"
-	"movq	%2, %%mm1\n\t"
-	"movq	1%1, %%mm4\n\t"
-	"movq	1%2, %%mm5\n\t"
-	"movq	%%mm0, %%mm2\n\t"
-	"movq	%%mm1, %%mm3\n\t"
-	"punpcklbw %%mm7, %%mm0\n\t"
-	"punpcklbw %%mm7, %%mm1\n\t"
-	"punpckhbw %%mm7, %%mm2\n\t"
-	"punpckhbw %%mm7, %%mm3\n\t"
-	"paddusw %%mm1, %%mm0\n\t"
-	"paddusw %%mm3, %%mm2\n\t"
-	"movq	%%mm4, %%mm1\n\t"
-	"movq	%%mm5, %%mm3\n\t"
-	"punpcklbw %%mm7, %%mm4\n\t"
-	"punpcklbw %%mm7, %%mm5\n\t"
-	"punpckhbw %%mm7, %%mm1\n\t"
-	"punpckhbw %%mm7, %%mm3\n\t"
-	"paddusw %%mm5, %%mm4\n\t"
-	"paddusw %%mm3, %%mm1\n\t"
-	"paddusw %%mm6, %%mm4\n\t"
-	"paddusw %%mm6, %%mm1\n\t"
-	"paddusw %%mm4, %%mm0\n\t"
-	"paddusw %%mm1, %%mm2\n\t"
-	"movq	%0, %%mm1\n\t"
-	"movq	8%0, %%mm3\n\t"
-	"psrlw	$2, %%mm0\n\t"
-	"psrlw	$2, %%mm2\n\t"
-	"psubsw %%mm0, %%mm1\n\t"
-	"psubsw %%mm2, %%mm3\n\t"
-	"movq	%%mm1, %0\n\t"
-	"movq	%%mm3, 8%0\n\t"
-	:"+m"(*p)
-	:"m"(*pix),
-	 "m"(*(pix+line_size))
-	:"memory");
-   pix += line_size;
-   p +=   8 ;
-  } while(--h);
-}
-
 static void clear_blocks_mmx(DCTELEM *blocks)
 {
         asm volatile(
@@ -1139,11 +983,6 @@ void dsputil_init_mmx(void)
         avg_no_rnd_pixels_tab[2] = avg_no_rnd_pixels_y2_mmx;
         avg_no_rnd_pixels_tab[3] = avg_no_rnd_pixels_xy2_mmx;
 
-        sub_pixels_tab[0] = sub_pixels_mmx;
-        sub_pixels_tab[1] = sub_pixels_x2_mmx;
-        sub_pixels_tab[2] = sub_pixels_y2_mmx;
-        sub_pixels_tab[3] = sub_pixels_xy2_mmx;
-
         if (mm_flags & MM_MMXEXT) {
             pix_abs16x16    = pix_abs16x16_mmx2;
             pix_abs16x16_x2 = pix_abs16x16_x2_mmx2;
@@ -1164,9 +1003,6 @@ void dsputil_init_mmx(void)
             avg_pixels_tab[1] = avg_pixels_x2_mmx2;
             avg_pixels_tab[2] = avg_pixels_y2_mmx2;
             avg_pixels_tab[3] = avg_pixels_xy2_mmx2;
-
-            sub_pixels_tab[1] = sub_pixels_x2_mmx2;
-            sub_pixels_tab[2] = sub_pixels_y2_mmx2;
         } else if (mm_flags & MM_3DNOW) {
             put_pixels_tab[1] = put_pixels_x2_3dnow;
             put_pixels_tab[2] = put_pixels_y2_3dnow;
@@ -1177,9 +1013,6 @@ void dsputil_init_mmx(void)
             avg_pixels_tab[1] = avg_pixels_x2_3dnow;
             avg_pixels_tab[2] = avg_pixels_y2_3dnow;
             avg_pixels_tab[3] = avg_pixels_xy2_3dnow;
-
-            sub_pixels_tab[1] = sub_pixels_x2_3dnow;
-            sub_pixels_tab[2] = sub_pixels_y2_3dnow;
         }
 
         /* idct */
@@ -1225,12 +1058,25 @@ void dsputil_init_mmx(void)
     avg_no_rnd_pixels_tab[2] = just_return;
     avg_no_rnd_pixels_tab[3] = just_return;
 
-    sub_pixels_tab[0] = just_return;
-    sub_pixels_tab[1] = just_return;
-    sub_pixels_tab[2] = just_return;
-    sub_pixels_tab[3] = just_return;
-
     //av_fdct = just_return;
     //ff_idct = just_return;
 #endif
+}
+
+/* remove any non bit exact operation (testing purpose). NOTE that
+   this function should be kept as small as possible because it is
+   always difficult to test automatically non bit exact cases. */
+void dsputil_set_bit_exact_mmx(void)
+{
+    if (mm_flags & MM_MMX) {
+        if (mm_flags & MM_MMXEXT) {
+            put_no_rnd_pixels_tab[1] = put_no_rnd_pixels_x2_mmx;
+            put_no_rnd_pixels_tab[2] = put_no_rnd_pixels_y2_mmx;
+            avg_pixels_tab[3] = avg_pixels_xy2_mmx;
+        } else if (mm_flags & MM_3DNOW) {
+            put_no_rnd_pixels_tab[1] = put_no_rnd_pixels_x2_mmx;
+            put_no_rnd_pixels_tab[2] = put_no_rnd_pixels_y2_mmx;
+            avg_pixels_tab[3] = avg_pixels_xy2_mmx;
+        }
+    }
 }
