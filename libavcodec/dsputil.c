@@ -20,28 +20,7 @@
  */
 #include "avcodec.h"
 #include "dsputil.h"
-/*
-void (*get_pixels)(DCTELEM *block, const UINT8 *pixels, int line_size);
-void (*diff_pixels)(DCTELEM *block, const UINT8 *s1, const UINT8 *s2, int stride);
-void (*put_pixels_clamped)(const DCTELEM *block, UINT8 *pixels, int line_size);
-void (*add_pixels_clamped)(const DCTELEM *block, UINT8 *pixels, int line_size);
-void (*ff_gmc1)(UINT8 *dst, UINT8 *src, int srcStride, int h, int x16, int y16, int rounder);
-void (*ff_gmc )(UINT8 *dst, UINT8 *src, int stride, int h, int ox, int oy, 
-                  int dxx, int dxy, int dyx, int dyy, int shift, int r, int width, int height);
-void (*clear_blocks)(DCTELEM *blocks);
-int (*pix_sum)(UINT8 * pix, int line_size);
-int (*pix_norm1)(UINT8 * pix, int line_size);
 
-op_pixels_abs_func pix_abs16x16;
-op_pixels_abs_func pix_abs16x16_x2;
-op_pixels_abs_func pix_abs16x16_y2;
-op_pixels_abs_func pix_abs16x16_xy2;
-
-op_pixels_abs_func pix_abs8x8;
-op_pixels_abs_func pix_abs8x8_x2;
-op_pixels_abs_func pix_abs8x8_y2;
-op_pixels_abs_func pix_abs8x8_xy2;
-*/
 int ff_bit_exact=0;
 
 UINT8 cropTbl[256 + 2 * MAX_NEG_CROP];
@@ -260,7 +239,7 @@ static void OPNAME ## _pixels(uint8_t *block, const uint8_t *pixels, int line_si
     }\
 }\
 \
-static void OPNAME ## _no_rnd_pixels_x2(uint8_t *block, const uint8_t *pixels, int line_size, int h)\
+static void OPNAME ## _no_rnd_pixels_x2_c(uint8_t *block, const uint8_t *pixels, int line_size, int h)\
 {\
     int i;\
     for(i=0; i<h; i++){\
@@ -272,7 +251,7 @@ static void OPNAME ## _no_rnd_pixels_x2(uint8_t *block, const uint8_t *pixels, i
     }\
 }\
 \
-static void OPNAME ## _pixels_x2(uint8_t *block, const uint8_t *pixels, int line_size, int h)\
+static void OPNAME ## _pixels_x2_c(uint8_t *block, const uint8_t *pixels, int line_size, int h)\
 {\
     int i;\
     for(i=0; i<h; i++){\
@@ -284,7 +263,7 @@ static void OPNAME ## _pixels_x2(uint8_t *block, const uint8_t *pixels, int line
     }\
 }\
 \
-static void OPNAME ## _no_rnd_pixels_y2(uint8_t *block, const uint8_t *pixels, int line_size, int h)\
+static void OPNAME ## _no_rnd_pixels_y2_c(uint8_t *block, const uint8_t *pixels, int line_size, int h)\
 {\
     int i;\
     for(i=0; i<h; i++){\
@@ -296,7 +275,7 @@ static void OPNAME ## _no_rnd_pixels_y2(uint8_t *block, const uint8_t *pixels, i
     }\
 }\
 \
-static void OPNAME ## _pixels_y2(uint8_t *block, const uint8_t *pixels, int line_size, int h)\
+static void OPNAME ## _pixels_y2_c(uint8_t *block, const uint8_t *pixels, int line_size, int h)\
 {\
     int i;\
     for(i=0; i<h; i++){\
@@ -308,7 +287,7 @@ static void OPNAME ## _pixels_y2(uint8_t *block, const uint8_t *pixels, int line
     }\
 }\
 \
-static void OPNAME ## _pixels_xy2(uint8_t *block, const uint8_t *pixels, int line_size, int h)\
+static void OPNAME ## _pixels_xy2_c(uint8_t *block, const uint8_t *pixels, int line_size, int h)\
 {\
         int i;\
         const uint64_t a= LD64(pixels  );\
@@ -344,7 +323,7 @@ static void OPNAME ## _pixels_xy2(uint8_t *block, const uint8_t *pixels, int lin
         }\
 }\
 \
-static void OPNAME ## _no_rnd_pixels_xy2(uint8_t *block, const uint8_t *pixels, int line_size, int h)\
+static void OPNAME ## _no_rnd_pixels_xy2_c(uint8_t *block, const uint8_t *pixels, int line_size, int h)\
 {\
         int i;\
         const uint64_t a= LD64(pixels  );\
@@ -380,45 +359,19 @@ static void OPNAME ## _no_rnd_pixels_xy2(uint8_t *block, const uint8_t *pixels, 
         }\
 }\
 \
-CALL_2X_PIXELS(OPNAME ## _pixels16    , OPNAME ## _pixels    , 8)\
-CALL_2X_PIXELS(OPNAME ## _pixels16_x2 , OPNAME ## _pixels_x2 , 8)\
-CALL_2X_PIXELS(OPNAME ## _pixels16_y2 , OPNAME ## _pixels_y2 , 8)\
-CALL_2X_PIXELS(OPNAME ## _pixels16_xy2, OPNAME ## _pixels_xy2, 8)\
-CALL_2X_PIXELS(OPNAME ## _no_rnd_pixels16_x2 , OPNAME ## _no_rnd_pixels_x2 , 8)\
-CALL_2X_PIXELS(OPNAME ## _no_rnd_pixels16_y2 , OPNAME ## _no_rnd_pixels_y2 , 8)\
-CALL_2X_PIXELS(OPNAME ## _no_rnd_pixels16_xy2, OPNAME ## _no_rnd_pixels_xy2, 8)\
-\
-void (*OPNAME ## _pixels_tab[2][4])(uint8_t *block, const uint8_t *pixels, int line_size, int h) = {\
-    {\
-        OPNAME ## _pixels,\
-        OPNAME ## _pixels_x2,\
-        OPNAME ## _pixels_y2,\
-        OPNAME ## _pixels_xy2},\
-    {\
-        OPNAME ## _pixels16,\
-        OPNAME ## _pixels16_x2,\
-        OPNAME ## _pixels16_y2,\
-        OPNAME ## _pixels16_xy2}\
-};\
-\
-void (*OPNAME ## _no_rnd_pixels_tab[2][4])(uint8_t *block, const uint8_t *pixels, int line_size, int h) = {\
-    {\
-        OPNAME ## _pixels,\
-        OPNAME ## _no_rnd_pixels_x2,\
-        OPNAME ## _no_rnd_pixels_y2,\
-        OPNAME ## _no_rnd_pixels_xy2},\
-    {\
-        OPNAME ## _pixels16,\
-        OPNAME ## _no_rnd_pixels16_x2,\
-        OPNAME ## _no_rnd_pixels16_y2,\
-        OPNAME ## _no_rnd_pixels16_xy2}\
-};
+CALL_2X_PIXELS(OPNAME ## _pixels16_c    , OPNAME ## _pixels_c    , 8)\
+CALL_2X_PIXELS(OPNAME ## _pixels16_x2_c , OPNAME ## _pixels_x2_c , 8)\
+CALL_2X_PIXELS(OPNAME ## _pixels16_y2_c , OPNAME ## _pixels_y2_c , 8)\
+CALL_2X_PIXELS(OPNAME ## _pixels16_xy2_c, OPNAME ## _pixels_xy2_c, 8)\
+CALL_2X_PIXELS(OPNAME ## _no_rnd_pixels16_x2_c , OPNAME ## _no_rnd_pixels_x2_c , 8)\
+CALL_2X_PIXELS(OPNAME ## _no_rnd_pixels16_y2_c , OPNAME ## _no_rnd_pixels_y2_c , 8)\
+CALL_2X_PIXELS(OPNAME ## _no_rnd_pixels16_xy2_c, OPNAME ## _no_rnd_pixels_xy2_c, 8)
 
 #define op_avg(a, b) a = ( ((a)|(b)) - ((((a)^(b))&0xFEFEFEFEFEFEFEFEULL)>>1) )
 #else // 64 bit variant
 
 #define PIXOP2(OPNAME, OP) \
-static void OPNAME ## _pixels8(uint8_t *block, const uint8_t *pixels, int line_size, int h){\
+static void OPNAME ## _pixels8_c(uint8_t *block, const uint8_t *pixels, int line_size, int h){\
     int i;\
     for(i=0; i<h; i++){\
         OP(*((uint32_t*)(block  )), LD32(pixels  ));\
@@ -427,8 +380,8 @@ static void OPNAME ## _pixels8(uint8_t *block, const uint8_t *pixels, int line_s
         block +=line_size;\
     }\
 }\
-static inline void OPNAME ## _no_rnd_pixels8(uint8_t *block, const uint8_t *pixels, int line_size, int h){\
-    OPNAME ## _pixels8(block, pixels, line_size, h);\
+static inline void OPNAME ## _no_rnd_pixels8_c(uint8_t *block, const uint8_t *pixels, int line_size, int h){\
+    OPNAME ## _pixels8_c(block, pixels, line_size, h);\
 }\
 \
 static inline void OPNAME ## _no_rnd_pixels8_l2(uint8_t *dst, const uint8_t *src1, const uint8_t *src2, int dst_stride, \
@@ -471,19 +424,19 @@ static inline void OPNAME ## _no_rnd_pixels16_l2(uint8_t *dst, const uint8_t *sr
     OPNAME ## _no_rnd_pixels8_l2(dst+8, src1+8, src2+8, dst_stride, src_stride1, src_stride2, h);\
 }\
 \
-static inline void OPNAME ## _no_rnd_pixels8_x2(uint8_t *block, const uint8_t *pixels, int line_size, int h){\
+static inline void OPNAME ## _no_rnd_pixels8_x2_c(uint8_t *block, const uint8_t *pixels, int line_size, int h){\
     OPNAME ## _no_rnd_pixels8_l2(block, pixels, pixels+1, line_size, line_size, line_size, h);\
 }\
 \
-static inline void OPNAME ## _pixels8_x2(uint8_t *block, const uint8_t *pixels, int line_size, int h){\
+static inline void OPNAME ## _pixels8_x2_c(uint8_t *block, const uint8_t *pixels, int line_size, int h){\
     OPNAME ## _pixels8_l2(block, pixels, pixels+1, line_size, line_size, line_size, h);\
 }\
 \
-static inline void OPNAME ## _no_rnd_pixels8_y2(uint8_t *block, const uint8_t *pixels, int line_size, int h){\
+static inline void OPNAME ## _no_rnd_pixels8_y2_c(uint8_t *block, const uint8_t *pixels, int line_size, int h){\
     OPNAME ## _no_rnd_pixels8_l2(block, pixels, pixels+line_size, line_size, line_size, line_size, h);\
 }\
 \
-static inline void OPNAME ## _pixels8_y2(uint8_t *block, const uint8_t *pixels, int line_size, int h){\
+static inline void OPNAME ## _pixels8_y2_c(uint8_t *block, const uint8_t *pixels, int line_size, int h){\
     OPNAME ## _pixels8_l2(block, pixels, pixels+line_size, line_size, line_size, line_size, h);\
 }\
 \
@@ -568,7 +521,7 @@ static inline void OPNAME ## _no_rnd_pixels16_l4(uint8_t *dst, const uint8_t *sr
     OPNAME ## _no_rnd_pixels8_l4(dst+8, src1+8, src2+8, src3+8, src4+8, dst_stride, src_stride1, src_stride2, src_stride3, src_stride4, h);\
 }\
 \
-static inline void OPNAME ## _pixels8_xy2(uint8_t *block, const uint8_t *pixels, int line_size, int h)\
+static inline void OPNAME ## _pixels8_xy2_c(uint8_t *block, const uint8_t *pixels, int line_size, int h)\
 {\
     int j;\
     for(j=0; j<2; j++){\
@@ -609,7 +562,7 @@ static inline void OPNAME ## _pixels8_xy2(uint8_t *block, const uint8_t *pixels,
     }\
 }\
 \
-static inline void OPNAME ## _no_rnd_pixels8_xy2(uint8_t *block, const uint8_t *pixels, int line_size, int h)\
+static inline void OPNAME ## _no_rnd_pixels8_xy2_c(uint8_t *block, const uint8_t *pixels, int line_size, int h)\
 {\
     int j;\
     for(j=0; j<2; j++){\
@@ -650,40 +603,14 @@ static inline void OPNAME ## _no_rnd_pixels8_xy2(uint8_t *block, const uint8_t *
     }\
 }\
 \
-CALL_2X_PIXELS(OPNAME ## _pixels16    , OPNAME ## _pixels8    , 8)\
-CALL_2X_PIXELS(OPNAME ## _pixels16_x2 , OPNAME ## _pixels8_x2 , 8)\
-CALL_2X_PIXELS(OPNAME ## _pixels16_y2 , OPNAME ## _pixels8_y2 , 8)\
-CALL_2X_PIXELS(OPNAME ## _pixels16_xy2, OPNAME ## _pixels8_xy2, 8)\
-CALL_2X_PIXELS(OPNAME ## _no_rnd_pixels16    , OPNAME ## _pixels8    , 8)\
-CALL_2X_PIXELS(OPNAME ## _no_rnd_pixels16_x2 , OPNAME ## _no_rnd_pixels8_x2 , 8)\
-CALL_2X_PIXELS(OPNAME ## _no_rnd_pixels16_y2 , OPNAME ## _no_rnd_pixels8_y2 , 8)\
-CALL_2X_PIXELS(OPNAME ## _no_rnd_pixels16_xy2, OPNAME ## _no_rnd_pixels8_xy2, 8)\
-\
-void (*OPNAME ## _pixels_tab[2][4])(uint8_t *block, const uint8_t *pixels, int line_size, int h) = {\
-    {\
-        OPNAME ## _pixels16,\
-        OPNAME ## _pixels16_x2,\
-        OPNAME ## _pixels16_y2,\
-        OPNAME ## _pixels16_xy2},\
-    {\
-        OPNAME ## _pixels8,\
-        OPNAME ## _pixels8_x2,\
-        OPNAME ## _pixels8_y2,\
-        OPNAME ## _pixels8_xy2},\
-};\
-\
-void (*OPNAME ## _no_rnd_pixels_tab[2][4])(uint8_t *block, const uint8_t *pixels, int line_size, int h) = {\
-    {\
-        OPNAME ## _pixels16,\
-        OPNAME ## _no_rnd_pixels16_x2,\
-        OPNAME ## _no_rnd_pixels16_y2,\
-        OPNAME ## _no_rnd_pixels16_xy2},\
-    {\
-        OPNAME ## _pixels8,\
-        OPNAME ## _no_rnd_pixels8_x2,\
-        OPNAME ## _no_rnd_pixels8_y2,\
-        OPNAME ## _no_rnd_pixels8_xy2},\
-};
+CALL_2X_PIXELS(OPNAME ## _pixels16_c  , OPNAME ## _pixels8_c  , 8)\
+CALL_2X_PIXELS(OPNAME ## _pixels16_x2_c , OPNAME ## _pixels8_x2_c , 8)\
+CALL_2X_PIXELS(OPNAME ## _pixels16_y2_c , OPNAME ## _pixels8_y2_c , 8)\
+CALL_2X_PIXELS(OPNAME ## _pixels16_xy2_c, OPNAME ## _pixels8_xy2_c, 8)\
+CALL_2X_PIXELS(OPNAME ## _no_rnd_pixels16_c  , OPNAME ## _pixels8_c         , 8)\
+CALL_2X_PIXELS(OPNAME ## _no_rnd_pixels16_x2_c , OPNAME ## _no_rnd_pixels8_x2_c , 8)\
+CALL_2X_PIXELS(OPNAME ## _no_rnd_pixels16_y2_c , OPNAME ## _no_rnd_pixels8_y2_c , 8)\
+CALL_2X_PIXELS(OPNAME ## _no_rnd_pixels16_xy2_c, OPNAME ## _no_rnd_pixels8_xy2_c, 8)\
 
 #define op_avg(a, b) a = ( ((a)|(b)) - ((((a)^(b))&0xFEFEFEFEUL)>>1) )
 #endif
@@ -693,133 +620,6 @@ PIXOP2(avg, op_avg)
 PIXOP2(put, op_put)
 #undef op_avg
 #undef op_put
-
-#if 0
-/* FIXME this stuff could be removed as its ot really used anymore */
-#define PIXOP(BTYPE, OPNAME, OP, INCR)                                                   \
-                                                                                         \
-static void OPNAME ## _pixels(BTYPE *block, const UINT8 *pixels, int line_size, int h)    \
-{                                                                                        \
-    BTYPE *p;                                                                            \
-    const UINT8 *pix;                                                                    \
-                                                                                         \
-    p = block;                                                                           \
-    pix = pixels;                                                                        \
-    do {                                                                                 \
-        OP(p[0], pix[0]);                                                                  \
-        OP(p[1], pix[1]);                                                                  \
-        OP(p[2], pix[2]);                                                                  \
-        OP(p[3], pix[3]);                                                                  \
-        OP(p[4], pix[4]);                                                                  \
-        OP(p[5], pix[5]);                                                                  \
-        OP(p[6], pix[6]);                                                                  \
-        OP(p[7], pix[7]);                                                                  \
-        pix += line_size;                                                                \
-        p += INCR;                                                                       \
-    } while (--h);;                                                                       \
-}                                                                                        \
-                                                                                         \
-static void OPNAME ## _pixels_x2(BTYPE *block, const UINT8 *pixels, int line_size, int h)     \
-{                                                                                        \
-    BTYPE *p;                                                                          \
-    const UINT8 *pix;                                                                    \
-                                                                                         \
-    p = block;                                                                           \
-    pix = pixels;                                                                        \
-    do {                                                                   \
-        OP(p[0], avg2(pix[0], pix[1]));                                                    \
-        OP(p[1], avg2(pix[1], pix[2]));                                                    \
-        OP(p[2], avg2(pix[2], pix[3]));                                                    \
-        OP(p[3], avg2(pix[3], pix[4]));                                                    \
-        OP(p[4], avg2(pix[4], pix[5]));                                                    \
-        OP(p[5], avg2(pix[5], pix[6]));                                                    \
-        OP(p[6], avg2(pix[6], pix[7]));                                                    \
-        OP(p[7], avg2(pix[7], pix[8]));                                                    \
-        pix += line_size;                                                                \
-        p += INCR;                                                                       \
-    } while (--h);                                                                        \
-}                                                                                        \
-                                                                                         \
-static void OPNAME ## _pixels_y2(BTYPE *block, const UINT8 *pixels, int line_size, int h)     \
-{                                                                                        \
-    BTYPE *p;                                                                          \
-    const UINT8 *pix;                                                                    \
-    const UINT8 *pix1;                                                                   \
-                                                                                         \
-    p = block;                                                                           \
-    pix = pixels;                                                                        \
-    pix1 = pixels + line_size;                                                           \
-    do {                                                                                 \
-        OP(p[0], avg2(pix[0], pix1[0]));                                                   \
-        OP(p[1], avg2(pix[1], pix1[1]));                                                   \
-        OP(p[2], avg2(pix[2], pix1[2]));                                                   \
-        OP(p[3], avg2(pix[3], pix1[3]));                                                   \
-        OP(p[4], avg2(pix[4], pix1[4]));                                                   \
-        OP(p[5], avg2(pix[5], pix1[5]));                                                   \
-        OP(p[6], avg2(pix[6], pix1[6]));                                                   \
-        OP(p[7], avg2(pix[7], pix1[7]));                                                   \
-        pix += line_size;                                                                \
-        pix1 += line_size;                                                               \
-        p += INCR;                                                                       \
-    } while(--h);                                                                         \
-}                                                                                        \
-                                                                                         \
-static void OPNAME ## _pixels_xy2(BTYPE *block, const UINT8 *pixels, int line_size, int h)    \
-{                                                                                        \
-    BTYPE *p;                                                                          \
-    const UINT8 *pix;                                                                    \
-    const UINT8 *pix1;                                                                   \
-                                                                                         \
-    p = block;                                                                           \
-    pix = pixels;                                                                        \
-    pix1 = pixels + line_size;                                                           \
-    do {                                                                   \
-        OP(p[0], avg4(pix[0], pix[1], pix1[0], pix1[1]));                                  \
-        OP(p[1], avg4(pix[1], pix[2], pix1[1], pix1[2]));                                  \
-        OP(p[2], avg4(pix[2], pix[3], pix1[2], pix1[3]));                                  \
-        OP(p[3], avg4(pix[3], pix[4], pix1[3], pix1[4]));                                  \
-        OP(p[4], avg4(pix[4], pix[5], pix1[4], pix1[5]));                                  \
-        OP(p[5], avg4(pix[5], pix[6], pix1[5], pix1[6]));                                  \
-        OP(p[6], avg4(pix[6], pix[7], pix1[6], pix1[7]));                                  \
-        OP(p[7], avg4(pix[7], pix[8], pix1[7], pix1[8]));                                  \
-        pix += line_size;                                                                \
-        pix1 += line_size;                                                               \
-        p += INCR;                                                                       \
-    } while(--h);                                                                         \
-}                                                                                        \
-                                                                                         \
-void (*OPNAME ## _pixels_tab[4])(BTYPE *block, const UINT8 *pixels, int line_size, int h) = { \
-    OPNAME ## _pixels,                                                                   \
-    OPNAME ## _pixels_x2,                                                                \
-    OPNAME ## _pixels_y2,                                                                \
-    OPNAME ## _pixels_xy2,                                                               \
-};
-
-/* rounding primitives */
-#define avg2(a,b) ((a+b+1)>>1)
-#define avg4(a,b,c,d) ((a+b+c+d+2)>>2)
-
-#define op_avg(a, b) a = avg2(a, b)
-#define op_sub(a, b) a -= b
-#define op_put(a, b) a = b
-
-PIXOP(DCTELEM, sub, op_sub, 8)
-PIXOP(uint8_t, avg, op_avg, line_size)
-PIXOP(uint8_t, put, op_put, line_size)
-
-/* not rounding primitives */
-#undef avg2
-#undef avg4
-#define avg2(a,b) ((a+b)>>1)
-#define avg4(a,b,c,d) ((a+b+c+d+1)>>2)
-
-PIXOP(uint8_t, avg_no_rnd, op_avg, line_size)
-PIXOP(uint8_t, put_no_rnd, op_put, line_size)
-/* motion estimation */
-
-#undef avg2
-#undef avg4
-#endif
 
 #define avg2(a,b) ((a+b+1)>>1)
 #define avg4(a,b,c,d) ((a+b+c+d+2)>>2)
@@ -1050,7 +850,7 @@ static void OPNAME ## mpeg4_qpel16_v_lowpass(UINT8 *dst, UINT8 *src, int dstStri
 }\
 \
 static void OPNAME ## qpel8_mc00_c (UINT8 *dst, UINT8 *src, int stride){\
-    OPNAME ## pixels8(dst, src, stride, 8);\
+    OPNAME ## pixels8_c(dst, src, stride, 8);\
 }\
 \
 static void OPNAME ## qpel8_mc10_c(UINT8 *dst, UINT8 *src, int stride){\
@@ -1176,7 +976,7 @@ static void OPNAME ## qpel8_mc22_c(UINT8 *dst, UINT8 *src, int stride){\
     OPNAME ## mpeg4_qpel8_v_lowpass(dst, halfH, stride, 8, 8);\
 }\
 static void OPNAME ## qpel16_mc00_c (UINT8 *dst, UINT8 *src, int stride){\
-    OPNAME ## pixels16(dst, src, stride, 16);\
+    OPNAME ## pixels16_c(dst, src, stride, 16);\
 }\
 \
 static void OPNAME ## qpel16_mc10_c(UINT8 *dst, UINT8 *src, int stride){\
@@ -1300,44 +1100,7 @@ static void OPNAME ## qpel16_mc22_c(UINT8 *dst, UINT8 *src, int stride){\
     UINT8 halfH[272];\
     put ## RND ## mpeg4_qpel16_h_lowpass(halfH, src, 16, stride, 17);\
     OPNAME ## mpeg4_qpel16_v_lowpass(dst, halfH, stride, 16, 16);\
-}\
-qpel_mc_func OPNAME ## qpel_pixels_tab[2][16]={ \
-  {\
-    OPNAME ## qpel16_mc00_c,                                                                   \
-    OPNAME ## qpel16_mc10_c,                                                                   \
-    OPNAME ## qpel16_mc20_c,                                                                   \
-    OPNAME ## qpel16_mc30_c,                                                                   \
-    OPNAME ## qpel16_mc01_c,                                                                   \
-    OPNAME ## qpel16_mc11_c,                                                                   \
-    OPNAME ## qpel16_mc21_c,                                                                   \
-    OPNAME ## qpel16_mc31_c,                                                                   \
-    OPNAME ## qpel16_mc02_c,                                                                   \
-    OPNAME ## qpel16_mc12_c,                                                                   \
-    OPNAME ## qpel16_mc22_c,                                                                   \
-    OPNAME ## qpel16_mc32_c,                                                                   \
-    OPNAME ## qpel16_mc03_c,                                                                   \
-    OPNAME ## qpel16_mc13_c,                                                                   \
-    OPNAME ## qpel16_mc23_c,                                                                   \
-    OPNAME ## qpel16_mc33_c,                                                                   \
-  },{\
-    OPNAME ## qpel8_mc00_c,                                                                   \
-    OPNAME ## qpel8_mc10_c,                                                                   \
-    OPNAME ## qpel8_mc20_c,                                                                   \
-    OPNAME ## qpel8_mc30_c,                                                                   \
-    OPNAME ## qpel8_mc01_c,                                                                   \
-    OPNAME ## qpel8_mc11_c,                                                                   \
-    OPNAME ## qpel8_mc21_c,                                                                   \
-    OPNAME ## qpel8_mc31_c,                                                                   \
-    OPNAME ## qpel8_mc02_c,                                                                   \
-    OPNAME ## qpel8_mc12_c,                                                                   \
-    OPNAME ## qpel8_mc22_c,                                                                   \
-    OPNAME ## qpel8_mc32_c,                                                                   \
-    OPNAME ## qpel8_mc03_c,                                                                   \
-    OPNAME ## qpel8_mc13_c,                                                                   \
-    OPNAME ## qpel8_mc23_c,                                                                   \
-    OPNAME ## qpel8_mc33_c,                                                                   \
-  }\
-};
+}
 
 #define op_avg(a, b) a = (((a)+cm[((b) + 16)>>5]+1)>>1)
 #define op_avg_no_rnd(a, b) a = (((a)+cm[((b) + 15)>>5])>>1)
@@ -1603,6 +1366,7 @@ void dsputil_init(DSPContext* c, unsigned mask)
     c->pix_sum = pix_sum_c;
     c->pix_norm1 = pix_norm1_c;
 
+    /* TODO [0] 16  [1] 8 */
     c->pix_abs16x16     = pix_abs16x16_c;
     c->pix_abs16x16_x2  = pix_abs16x16_x2_c;
     c->pix_abs16x16_y2  = pix_abs16x16_y2_c;
@@ -1612,183 +1376,53 @@ void dsputil_init(DSPContext* c, unsigned mask)
     c->pix_abs8x8_y2  = pix_abs8x8_y2_c;
     c->pix_abs8x8_xy2 = pix_abs8x8_xy2_c;
 
-    c->put_pixels_tab[0][0] = put_pixels16;
-    c->put_pixels_tab[0][1] = put_pixels16_x2;
-    c->put_pixels_tab[0][2] = put_pixels16_y2;
-    c->put_pixels_tab[0][3] = put_pixels16_xy2;
+#define dspfunc(PFX, IDX, NUM) \
+    c->PFX ## _pixels_tab[IDX][0] = PFX ## _pixels ## NUM ## _c;     \
+    c->PFX ## _pixels_tab[IDX][1] = PFX ## _pixels ## NUM ## _x2_c;  \
+    c->PFX ## _pixels_tab[IDX][2] = PFX ## _pixels ## NUM ## _y2_c;  \
+    c->PFX ## _pixels_tab[IDX][3] = PFX ## _pixels ## NUM ## _xy2_c
 
-    c->put_no_rnd_pixels_tab[0][0] = put_pixels16;
-    c->put_no_rnd_pixels_tab[0][1] = put_no_rnd_pixels16_x2;
-    c->put_no_rnd_pixels_tab[0][2] = put_no_rnd_pixels16_y2;
-    c->put_no_rnd_pixels_tab[0][3] = put_no_rnd_pixels16_xy2;
+    dspfunc(put, 0, 16);
+    dspfunc(put_no_rnd, 0, 16);
+    dspfunc(put, 1, 8);
+    dspfunc(put_no_rnd, 1, 8);
 
-    c->avg_pixels_tab[0][0] = avg_pixels16;
-    c->avg_pixels_tab[0][1] = avg_pixels16_x2;
-    c->avg_pixels_tab[0][2] = avg_pixels16_y2;
-    c->avg_pixels_tab[0][3] = avg_pixels16_xy2;
+    dspfunc(avg, 0, 16);
+    dspfunc(avg_no_rnd, 0, 16);
+    dspfunc(avg, 1, 8);
+    dspfunc(avg_no_rnd, 1, 8);
+#undef dspfunc
 
-    c->avg_no_rnd_pixels_tab[0][0] = avg_no_rnd_pixels16;
-    c->avg_no_rnd_pixels_tab[0][1] = avg_no_rnd_pixels16_x2;
-    c->avg_no_rnd_pixels_tab[0][2] = avg_no_rnd_pixels16_y2;
-    c->avg_no_rnd_pixels_tab[0][3] = avg_no_rnd_pixels16_xy2;
+#define dspfunc(PFX, IDX, NUM) \
+    c->PFX ## _pixels_tab[IDX][ 0] = PFX ## NUM ## _mc00_c; \
+    c->PFX ## _pixels_tab[IDX][ 1] = PFX ## NUM ## _mc10_c; \
+    c->PFX ## _pixels_tab[IDX][ 2] = PFX ## NUM ## _mc20_c; \
+    c->PFX ## _pixels_tab[IDX][ 3] = PFX ## NUM ## _mc30_c; \
+    c->PFX ## _pixels_tab[IDX][ 4] = PFX ## NUM ## _mc01_c; \
+    c->PFX ## _pixels_tab[IDX][ 5] = PFX ## NUM ## _mc11_c; \
+    c->PFX ## _pixels_tab[IDX][ 6] = PFX ## NUM ## _mc21_c; \
+    c->PFX ## _pixels_tab[IDX][ 7] = PFX ## NUM ## _mc31_c; \
+    c->PFX ## _pixels_tab[IDX][ 8] = PFX ## NUM ## _mc02_c; \
+    c->PFX ## _pixels_tab[IDX][ 9] = PFX ## NUM ## _mc12_c; \
+    c->PFX ## _pixels_tab[IDX][10] = PFX ## NUM ## _mc22_c; \
+    c->PFX ## _pixels_tab[IDX][11] = PFX ## NUM ## _mc32_c; \
+    c->PFX ## _pixels_tab[IDX][12] = PFX ## NUM ## _mc03_c; \
+    c->PFX ## _pixels_tab[IDX][13] = PFX ## NUM ## _mc13_c; \
+    c->PFX ## _pixels_tab[IDX][14] = PFX ## NUM ## _mc23_c; \
+    c->PFX ## _pixels_tab[IDX][15] = PFX ## NUM ## _mc33_c
 
-    c->put_pixels_tab[1][0] = put_pixels8;
-    c->put_pixels_tab[1][1] = put_pixels8_x2;
-    c->put_pixels_tab[1][2] = put_pixels8_y2;
-    c->put_pixels_tab[1][3] = put_pixels8_xy2;
+    dspfunc(put_qpel, 0, 16);
+    dspfunc(put_no_rnd_qpel, 0, 16);
 
-    c->put_no_rnd_pixels_tab[1][0] = put_pixels8;
-    c->put_no_rnd_pixels_tab[1][1] = put_no_rnd_pixels8_x2;
-    c->put_no_rnd_pixels_tab[1][2] = put_no_rnd_pixels8_y2;
-    c->put_no_rnd_pixels_tab[1][3] = put_no_rnd_pixels8_xy2;
+    dspfunc(avg_qpel, 0, 16);
+    /* dspfunc(avg_no_rnd_qpel, 0, 16); */
 
-    c->avg_pixels_tab[1][0] = avg_pixels8;
-    c->avg_pixels_tab[1][1] = avg_pixels8_x2;
-    c->avg_pixels_tab[1][2] = avg_pixels8_y2;
-    c->avg_pixels_tab[1][3] = avg_pixels8_xy2;
+    dspfunc(put_qpel, 1, 8);
+    dspfunc(put_no_rnd_qpel, 1, 8);
 
-    c->avg_no_rnd_pixels_tab[1][0] = avg_no_rnd_pixels8;
-    c->avg_no_rnd_pixels_tab[1][1] = avg_no_rnd_pixels8_x2;
-    c->avg_no_rnd_pixels_tab[1][2] = avg_no_rnd_pixels8_y2;
-    c->avg_no_rnd_pixels_tab[1][3] = avg_no_rnd_pixels8_xy2;
-
-    c->put_qpel_pixels_tab[0][ 0]= put_qpel16_mc00_c;
-    c->put_qpel_pixels_tab[0][ 1]= put_qpel16_mc10_c;
-    c->put_qpel_pixels_tab[0][ 2]= put_qpel16_mc20_c;
-    c->put_qpel_pixels_tab[0][ 3]= put_qpel16_mc30_c;
-    c->put_qpel_pixels_tab[0][ 4]= put_qpel16_mc01_c;
-    c->put_qpel_pixels_tab[0][ 5]= put_qpel16_mc11_c;
-    c->put_qpel_pixels_tab[0][ 6]= put_qpel16_mc21_c;
-    c->put_qpel_pixels_tab[0][ 7]= put_qpel16_mc31_c;
-    c->put_qpel_pixels_tab[0][ 8]= put_qpel16_mc02_c;
-    c->put_qpel_pixels_tab[0][ 9]= put_qpel16_mc12_c;
-    c->put_qpel_pixels_tab[0][10]= put_qpel16_mc22_c;
-    c->put_qpel_pixels_tab[0][11]= put_qpel16_mc32_c;
-    c->put_qpel_pixels_tab[0][12]= put_qpel16_mc03_c;
-    c->put_qpel_pixels_tab[0][13]= put_qpel16_mc13_c;
-    c->put_qpel_pixels_tab[0][14]= put_qpel16_mc23_c;
-    c->put_qpel_pixels_tab[0][15]= put_qpel16_mc33_c;
-    
-    c->put_no_rnd_qpel_pixels_tab[0][ 0]= put_no_rnd_qpel16_mc00_c;
-    c->put_no_rnd_qpel_pixels_tab[0][ 1]= put_no_rnd_qpel16_mc10_c;
-    c->put_no_rnd_qpel_pixels_tab[0][ 2]= put_no_rnd_qpel16_mc20_c;
-    c->put_no_rnd_qpel_pixels_tab[0][ 3]= put_no_rnd_qpel16_mc30_c;
-    c->put_no_rnd_qpel_pixels_tab[0][ 4]= put_no_rnd_qpel16_mc01_c;
-    c->put_no_rnd_qpel_pixels_tab[0][ 5]= put_no_rnd_qpel16_mc11_c;
-    c->put_no_rnd_qpel_pixels_tab[0][ 6]= put_no_rnd_qpel16_mc21_c;
-    c->put_no_rnd_qpel_pixels_tab[0][ 7]= put_no_rnd_qpel16_mc31_c;
-    c->put_no_rnd_qpel_pixels_tab[0][ 8]= put_no_rnd_qpel16_mc02_c;
-    c->put_no_rnd_qpel_pixels_tab[0][ 9]= put_no_rnd_qpel16_mc12_c;
-    c->put_no_rnd_qpel_pixels_tab[0][10]= put_no_rnd_qpel16_mc22_c;
-    c->put_no_rnd_qpel_pixels_tab[0][11]= put_no_rnd_qpel16_mc32_c;
-    c->put_no_rnd_qpel_pixels_tab[0][12]= put_no_rnd_qpel16_mc03_c;
-    c->put_no_rnd_qpel_pixels_tab[0][13]= put_no_rnd_qpel16_mc13_c;
-    c->put_no_rnd_qpel_pixels_tab[0][14]= put_no_rnd_qpel16_mc23_c;
-    c->put_no_rnd_qpel_pixels_tab[0][15]= put_no_rnd_qpel16_mc33_c;
-
-    c->avg_qpel_pixels_tab[0][ 0]= avg_qpel16_mc00_c;
-    c->avg_qpel_pixels_tab[0][ 1]= avg_qpel16_mc10_c;
-    c->avg_qpel_pixels_tab[0][ 2]= avg_qpel16_mc20_c;
-    c->avg_qpel_pixels_tab[0][ 3]= avg_qpel16_mc30_c;
-    c->avg_qpel_pixels_tab[0][ 4]= avg_qpel16_mc01_c;
-    c->avg_qpel_pixels_tab[0][ 5]= avg_qpel16_mc11_c;
-    c->avg_qpel_pixels_tab[0][ 6]= avg_qpel16_mc21_c;
-    c->avg_qpel_pixels_tab[0][ 7]= avg_qpel16_mc31_c;
-    c->avg_qpel_pixels_tab[0][ 8]= avg_qpel16_mc02_c;
-    c->avg_qpel_pixels_tab[0][ 9]= avg_qpel16_mc12_c;
-    c->avg_qpel_pixels_tab[0][10]= avg_qpel16_mc22_c;
-    c->avg_qpel_pixels_tab[0][11]= avg_qpel16_mc32_c;
-    c->avg_qpel_pixels_tab[0][12]= avg_qpel16_mc03_c;
-    c->avg_qpel_pixels_tab[0][13]= avg_qpel16_mc13_c;
-    c->avg_qpel_pixels_tab[0][14]= avg_qpel16_mc23_c;
-    c->avg_qpel_pixels_tab[0][15]= avg_qpel16_mc33_c;
-/*
-    c->avg_no_rnd_qpel_pixels_tab[0][ 0]= avg_no_rnd_qpel16_mc00_c;
-    c->avg_no_rnd_qpel_pixels_tab[0][ 1]= avg_no_rnd_qpel16_mc10_c;
-    c->avg_no_rnd_qpel_pixels_tab[0][ 2]= avg_no_rnd_qpel16_mc20_c;
-    c->avg_no_rnd_qpel_pixels_tab[0][ 3]= avg_no_rnd_qpel16_mc30_c;
-    c->avg_no_rnd_qpel_pixels_tab[0][ 4]= avg_no_rnd_qpel16_mc01_c;
-    c->avg_no_rnd_qpel_pixels_tab[0][ 5]= avg_no_rnd_qpel16_mc11_c;
-    c->avg_no_rnd_qpel_pixels_tab[0][ 6]= avg_no_rnd_qpel16_mc21_c;
-    c->avg_no_rnd_qpel_pixels_tab[0][ 7]= avg_no_rnd_qpel16_mc31_c;
-    c->avg_no_rnd_qpel_pixels_tab[0][ 8]= avg_no_rnd_qpel16_mc02_c;
-    c->avg_no_rnd_qpel_pixels_tab[0][ 9]= avg_no_rnd_qpel16_mc12_c;
-    c->avg_no_rnd_qpel_pixels_tab[0][10]= avg_no_rnd_qpel16_mc22_c;
-    c->avg_no_rnd_qpel_pixels_tab[0][11]= avg_no_rnd_qpel16_mc32_c;
-    c->avg_no_rnd_qpel_pixels_tab[0][12]= avg_no_rnd_qpel16_mc03_c;
-    c->avg_no_rnd_qpel_pixels_tab[0][13]= avg_no_rnd_qpel16_mc13_c;
-    c->avg_no_rnd_qpel_pixels_tab[0][14]= avg_no_rnd_qpel16_mc23_c;
-    c->avg_no_rnd_qpel_pixels_tab[0][15]= avg_no_rnd_qpel16_mc33_c;
-*/
-
-    c->put_qpel_pixels_tab[1][ 0]= put_qpel8_mc00_c;
-    c->put_qpel_pixels_tab[1][ 1]= put_qpel8_mc10_c;
-    c->put_qpel_pixels_tab[1][ 2]= put_qpel8_mc20_c;
-    c->put_qpel_pixels_tab[1][ 3]= put_qpel8_mc30_c;
-    c->put_qpel_pixels_tab[1][ 4]= put_qpel8_mc01_c;
-    c->put_qpel_pixels_tab[1][ 5]= put_qpel8_mc11_c;
-    c->put_qpel_pixels_tab[1][ 6]= put_qpel8_mc21_c;
-    c->put_qpel_pixels_tab[1][ 7]= put_qpel8_mc31_c;
-    c->put_qpel_pixels_tab[1][ 8]= put_qpel8_mc02_c;
-    c->put_qpel_pixels_tab[1][ 9]= put_qpel8_mc12_c;
-    c->put_qpel_pixels_tab[1][10]= put_qpel8_mc22_c;
-    c->put_qpel_pixels_tab[1][11]= put_qpel8_mc32_c;
-    c->put_qpel_pixels_tab[1][12]= put_qpel8_mc03_c;
-    c->put_qpel_pixels_tab[1][13]= put_qpel8_mc13_c;
-    c->put_qpel_pixels_tab[1][14]= put_qpel8_mc23_c;
-    c->put_qpel_pixels_tab[1][15]= put_qpel8_mc33_c;
-    
-    c->put_no_rnd_qpel_pixels_tab[1][ 0]= put_no_rnd_qpel8_mc00_c;
-    c->put_no_rnd_qpel_pixels_tab[1][ 1]= put_no_rnd_qpel8_mc10_c;
-    c->put_no_rnd_qpel_pixels_tab[1][ 2]= put_no_rnd_qpel8_mc20_c;
-    c->put_no_rnd_qpel_pixels_tab[1][ 3]= put_no_rnd_qpel8_mc30_c;
-    c->put_no_rnd_qpel_pixels_tab[1][ 4]= put_no_rnd_qpel8_mc01_c;
-    c->put_no_rnd_qpel_pixels_tab[1][ 5]= put_no_rnd_qpel8_mc11_c;
-    c->put_no_rnd_qpel_pixels_tab[1][ 6]= put_no_rnd_qpel8_mc21_c;
-    c->put_no_rnd_qpel_pixels_tab[1][ 7]= put_no_rnd_qpel8_mc31_c;
-    c->put_no_rnd_qpel_pixels_tab[1][ 8]= put_no_rnd_qpel8_mc02_c;
-    c->put_no_rnd_qpel_pixels_tab[1][ 9]= put_no_rnd_qpel8_mc12_c;
-    c->put_no_rnd_qpel_pixels_tab[1][10]= put_no_rnd_qpel8_mc22_c;
-    c->put_no_rnd_qpel_pixels_tab[1][11]= put_no_rnd_qpel8_mc32_c;
-    c->put_no_rnd_qpel_pixels_tab[1][12]= put_no_rnd_qpel8_mc03_c;
-    c->put_no_rnd_qpel_pixels_tab[1][13]= put_no_rnd_qpel8_mc13_c;
-    c->put_no_rnd_qpel_pixels_tab[1][14]= put_no_rnd_qpel8_mc23_c;
-    c->put_no_rnd_qpel_pixels_tab[1][15]= put_no_rnd_qpel8_mc33_c;
-
-    c->avg_qpel_pixels_tab[1][ 0]= avg_qpel8_mc00_c;
-    c->avg_qpel_pixels_tab[1][ 1]= avg_qpel8_mc10_c;
-    c->avg_qpel_pixels_tab[1][ 2]= avg_qpel8_mc20_c;
-    c->avg_qpel_pixels_tab[1][ 3]= avg_qpel8_mc30_c;
-    c->avg_qpel_pixels_tab[1][ 4]= avg_qpel8_mc01_c;
-    c->avg_qpel_pixels_tab[1][ 5]= avg_qpel8_mc11_c;
-    c->avg_qpel_pixels_tab[1][ 6]= avg_qpel8_mc21_c;
-    c->avg_qpel_pixels_tab[1][ 7]= avg_qpel8_mc31_c;
-    c->avg_qpel_pixels_tab[1][ 8]= avg_qpel8_mc02_c;
-    c->avg_qpel_pixels_tab[1][ 9]= avg_qpel8_mc12_c;
-    c->avg_qpel_pixels_tab[1][10]= avg_qpel8_mc22_c;
-    c->avg_qpel_pixels_tab[1][11]= avg_qpel8_mc32_c;
-    c->avg_qpel_pixels_tab[1][12]= avg_qpel8_mc03_c;
-    c->avg_qpel_pixels_tab[1][13]= avg_qpel8_mc13_c;
-    c->avg_qpel_pixels_tab[1][14]= avg_qpel8_mc23_c;
-    c->avg_qpel_pixels_tab[1][15]= avg_qpel8_mc33_c;
-/*
-    c->avg_no_rnd_qpel_pixels_tab[1][ 0]= avg_no_rnd_qpel8_mc00_c;
-    c->avg_no_rnd_qpel_pixels_tab[1][ 1]= avg_no_rnd_qpel8_mc10_c;
-    c->avg_no_rnd_qpel_pixels_tab[1][ 2]= avg_no_rnd_qpel8_mc20_c;
-    c->avg_no_rnd_qpel_pixels_tab[1][ 3]= avg_no_rnd_qpel8_mc30_c;
-    c->avg_no_rnd_qpel_pixels_tab[1][ 4]= avg_no_rnd_qpel8_mc01_c;
-    c->avg_no_rnd_qpel_pixels_tab[1][ 5]= avg_no_rnd_qpel8_mc11_c;
-    c->avg_no_rnd_qpel_pixels_tab[1][ 6]= avg_no_rnd_qpel8_mc21_c;
-    c->avg_no_rnd_qpel_pixels_tab[1][ 7]= avg_no_rnd_qpel8_mc31_c;
-    c->avg_no_rnd_qpel_pixels_tab[1][ 8]= avg_no_rnd_qpel8_mc02_c;
-    c->avg_no_rnd_qpel_pixels_tab[1][ 9]= avg_no_rnd_qpel8_mc12_c;
-    c->avg_no_rnd_qpel_pixels_tab[1][10]= avg_no_rnd_qpel8_mc22_c;
-    c->avg_no_rnd_qpel_pixels_tab[1][11]= avg_no_rnd_qpel8_mc32_c;
-    c->avg_no_rnd_qpel_pixels_tab[1][12]= avg_no_rnd_qpel8_mc03_c;
-    c->avg_no_rnd_qpel_pixels_tab[1][13]= avg_no_rnd_qpel8_mc13_c;
-    c->avg_no_rnd_qpel_pixels_tab[1][14]= avg_no_rnd_qpel8_mc23_c;
-    c->avg_no_rnd_qpel_pixels_tab[1][15]= avg_no_rnd_qpel8_mc33_c;
-*/
+    dspfunc(avg_qpel, 1, 8);
+    /* dspfunc(avg_no_rnd_qpel, 1, 8); */
+#undef dspfunc
 
 #ifdef HAVE_MMX
     dsputil_init_mmx(c, mask);
