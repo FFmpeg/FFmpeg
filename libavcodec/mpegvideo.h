@@ -302,8 +302,8 @@ typedef struct MpegEncContext {
     int linesize;              ///< line size, in bytes, may be different from width 
     int uvlinesize;            ///< line size, for chroma in bytes, may be different from width 
     Picture *picture;          ///< main picture buffer 
-    Picture *input_picture[MAX_PICTURE_COUNT]; ///< next pictures on display order for encoding
-    Picture *reordered_input_picture[MAX_PICTURE_COUNT]; ///< pointer to the next pictures in codedorder for encoding
+    Picture **input_picture;   ///< next pictures on display order for encoding
+    Picture **reordered_input_picture; ///< pointer to the next pictures in codedorder for encoding
     
     /** 
      * copy of the previous picture structure.
