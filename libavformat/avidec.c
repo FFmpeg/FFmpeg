@@ -152,6 +152,9 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
             stream_index++;
             tag1 = get_le32(pb);
             handler = get_le32(pb); /* codec tag */
+#ifdef DEBUG
+        print_tag("strh", tag1, -1);
+#endif
             switch(tag1) {
             case MKTAG('i', 'a', 'v', 's'):
 	    case MKTAG('i', 'v', 'a', 's'):
@@ -247,6 +250,11 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                         st->duration = (int64_t)length * AV_TIME_BASE / ast->rate;
                     url_fskip(pb, size - 12 * 4);
                 }
+                break;
+            case MKTAG('t', 'x', 't', 's'):
+                //FIXME 
+                codec_type = CODEC_TYPE_DATA; //CODEC_TYPE_SUB ?  FIXME
+                url_fskip(pb, size - 8);
                 break;
             default:
                 goto fail;
@@ -426,13 +434,13 @@ static int avi_read_packet(AVFormatContext *s, AVPacket *pkt)
                 AVIStream *ast;
                 st = s->streams[n];
                 ast = st->priv_data;
-
+                
                 /* XXX: how to handle B frames in avi ? */
                 pkt->dts = ast->frame_offset;
 //                pkt->dts += ast->start;
                 if(ast->sample_size)
                     pkt->dts /= ast->sample_size;
-//printf("%Ld %d %d %d %d\n", pkt->pts, ast->frame_offset, ast->scale,  AV_TIME_BASE,  ast->rate);
+//av_log(NULL, AV_LOG_DEBUG, "dts:%Ld offset:%d %d/%d %d st:%d size:%d\n", pkt->dts, ast->frame_offset, ast->scale, ast->rate, AV_TIME_BASE, n, size);
                 pkt->stream_index = n;
                 /* FIXME: We really should read index for that */
                 if (st->codec.codec_type == CODEC_TYPE_VIDEO) {
