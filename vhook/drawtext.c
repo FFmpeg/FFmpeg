@@ -43,16 +43,17 @@
 
 #define MAXSIZE_TEXT 1024
 
+#include "framehook.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <fcntl.h>
 #include <stdarg.h>
 #include <string.h>
 #include <unistd.h>
+#undef time
 #include <sys/time.h>
 #include <time.h>
-
-#include "framehook.h"
 
 #include <ft2build.h>
 #include FT_FREETYPE_H

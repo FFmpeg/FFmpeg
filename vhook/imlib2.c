@@ -42,17 +42,20 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
+
+#include "framehook.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <fcntl.h>
 #include <stdarg.h>
 #include <string.h>
 #include <unistd.h>
+#undef time
 #include <sys/time.h>
+#include <time.h>
 #include <X11/Xlib.h>
 #include <Imlib2.h>                                                             
-
-#include "framehook.h"
 
 typedef struct {
     int dummy;
