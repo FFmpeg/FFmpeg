@@ -153,7 +153,7 @@ int av_new_packet(AVPacket *pkt, int size)
         return AVERROR_NOMEM;
     pkt->size = size;
     /* sane state */
-    pkt->pts = 0;
+    pkt->pts = AV_NOPTS_VALUE;
     pkt->stream_index = 0;
     pkt->flags = 0;
     return 0;
@@ -355,6 +355,9 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
         err = AVERROR_NOMEM;
         goto fail;
     }
+
+    /* default pts settings is MPEG like */
+    av_set_pts_info(ic, 33, 1, 90000);
 
     /* check filename in case of an image number is expected */
     if (ic->iformat->flags & AVFMT_NEEDNUMBER) {
@@ -695,6 +698,8 @@ int av_write_header(AVFormatContext *s)
     s->priv_data = av_mallocz(s->oformat->priv_data_size);
     if (!s->priv_data)
         return AVERROR_NOMEM;
+    /* default pts settings is MPEG like */
+    av_set_pts_info(s, 33, 1, 90000);
     return s->oformat->write_header(s);
 }
 
@@ -829,11 +834,15 @@ static time_t mktimegm(struct tm *tm)
     return t;
 }
 
-/* syntax:
- *  [YYYY-MM-DD]{T| }HH[:MM[:SS[.m...]]][Z] . 
- *  [YYYYMMDD]{T| }HH[MM[SS[.m...]]][Z] . 
+/* Syntax:
+ * - If not a duration:
+ *  [{YYYY-MM-DD|YYYYMMDD}]{T| }{HH[:MM[:SS[.m...]]][Z]|HH[MM[SS[.m...]]][Z]}
  * Time is localtime unless Z is suffixed to the end. In this case GMT
- * Return the date in micro seconds since 1970 */
+ * Return the date in micro seconds since 1970 
+ * - If duration:
+ *  HH[:MM[:SS[.m...]]]
+ *  S+[.m...]
+ */
 INT64 parse_date(const char *datestr, int duration)
 {
     const char *p;
@@ -849,19 +858,21 @@ INT64 parse_date(const char *datestr, int duration)
         "%H%M%S",
     };
     const char *q;
-    int is_utc;
+    int is_utc, len;
     char lastch;
     time_t now = time(0);
 
-    lastch = datestr[strlen(datestr)-1];
-
+    len = strlen(datestr);
+    if (len > 0)
+        lastch = datestr[len - 1];
+    else
+        lastch = '\0';
     is_utc = (lastch == 'z' || lastch == 'Z');
 
     memset(&dt, 0, sizeof(dt));
 
     p = datestr;
-    q = 0;
-
+    q = NULL;
     if (!duration) {
         for (i = 0; i < sizeof(date_fmt) / sizeof(date_fmt[0]); i++) {
             q = strptime(p, date_fmt[i], &dt);
@@ -883,12 +894,19 @@ INT64 parse_date(const char *datestr, int duration)
 
         if (*p == 'T' || *p == 't' || *p == ' ')
             p++;
-    }
 
-    for (i = 0; i < sizeof(time_fmt) / sizeof(time_fmt[0]); i++) {
-        q = strptime(p, time_fmt[i], &dt);
-        if (q) {
-            break;
+        for (i = 0; i < sizeof(time_fmt) / sizeof(time_fmt[0]); i++) {
+            q = strptime(p, time_fmt[i], &dt);
+            if (q) {
+                break;
+            }
+        }
+    } else {
+        q = strptime(p, time_fmt[0], &dt);
+        if (!q) {
+            dt.tm_sec = strtol(p, (char **)&q, 10);
+            dt.tm_min = 0;
+            dt.tm_hour = 0;
         }
     }
 
@@ -1022,35 +1040,6 @@ int get_frame_filename(char *buf, int buf_size,
     return -1;
 }
 
-static int gcd(INT64 a, INT64 b)
-{
-    INT64 c;
-
-    while (1) {
-        c = a % b;
-        if (c == 0)
-            return b;
-        a = b;
-        b = c;
-    }
-}
-
-void ticker_init(Ticker *tick, INT64 inrate, INT64 outrate)
-{
-    int g;
-
-    g = gcd(inrate, outrate);
-    inrate /= g;
-    outrate /= g;
-
-    tick->value = -outrate/2;
-
-    tick->inrate = inrate;
-    tick->outrate = outrate;
-    tick->div = tick->outrate / tick->inrate;
-    tick->mod = tick->outrate % tick->inrate;
-}
-
 /**
  *
  * Print on stdout a nice hexa dump of a buffer
@@ -1134,3 +1123,74 @@ void url_split(char *proto, int proto_size,
     pstrcpy(path, path_size, p);
 }
 
+/**
+ * Set the pts for a given stream
+ * @param s stream 
+ * @param pts_wrap_bits number of bits effectively used by the pts
+ *        (used for wrap control, 33 is the value for MPEG) 
+ * @param pts_num numerator to convert to seconds (MPEG: 1) 
+ * @param pts_den denominator to convert to seconds (MPEG: 90000)
+ */
+void av_set_pts_info(AVFormatContext *s, int pts_wrap_bits,
+                     int pts_num, int pts_den)
+{
+    s->pts_wrap_bits = pts_wrap_bits;
+    s->pts_num = pts_num;
+    s->pts_den = pts_den;
+}
+
+/* fraction handling */
+
+/**
+ * f = val + (num / den) + 0.5. 'num' is normalized so that it is such
+ * as 0 <= num < den.
+ *
+ * @param f fractional number
+ * @param val integer value
+ * @param num must be >= 0
+ * @param den must be >= 1 
+ */
+void av_frac_init(AVFrac *f, INT64 val, INT64 num, INT64 den)
+{
+    num += (den >> 1);
+    if (num >= den) {
+        val += num / den;
+        num = num % den;
+    }
+    f->val = val;
+    f->num = num;
+    f->den = den;
+}
+
+/* set f to (val + 0.5) */
+void av_frac_set(AVFrac *f, INT64 val)
+{
+    f->val = val;
+    f->num = f->den >> 1;
+}
+
+/**
+ * Fractionnal addition to f: f = f + (incr / f->den)
+ *
+ * @param f fractional number
+ * @param incr increment, can be positive or negative
+ */
+void av_frac_add(AVFrac *f, INT64 incr)
+{
+    INT64 num, den;
+
+    num = f->num + incr;
+    den = f->den;
+    if (num < 0) {
+        f->val += num / den;
+        num = num % den;
+        if (num < 0) {
+            num += den;
+            f->val--;
+        }
+    } else if (num >= den) {
+        f->val += num / den;
+        num = num % den;
+    }
+    f->num = num;
+}

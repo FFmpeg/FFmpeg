@@ -14,7 +14,7 @@
 #define AV_NOPTS_VALUE 0
 
 typedef struct AVPacket {
-    INT64 pts;
+    INT64 pts; /* presentation time stamp in stream units (set av_set_pts_info) */
     UINT8 *data;
     int size;
     int stream_index;
@@ -26,6 +26,19 @@ typedef struct AVPacket {
 
 int av_new_packet(AVPacket *pkt, int size);
 void av_free_packet(AVPacket *pkt);
+
+/*************************************************/
+/* fractional numbers for exact pts handling */
+
+/* the exact value of the fractional number is: 'val + num / den'. num
+   is assumed to be such as 0 <= num < den */
+typedef struct AVFrac {
+    INT64 val, num, den; 
+} AVFrac;
+
+void av_frac_init(AVFrac *f, INT64 val, INT64 num, INT64 den);
+void av_frac_add(AVFrac *f, INT64 incr);
+void av_frac_set(AVFrac *f, INT64 val);
 
 /*************************************************/
 /* input/output formats */
@@ -151,6 +164,9 @@ typedef struct AVFormatContext {
     char copyright[512];
     char comment[512];
     int flags; /* format specific flags */
+    /* private data for pts handling (do not modify directly) */
+    int pts_wrap_bits; /* number of bits in pts (used for wrapping control) */
+    int pts_num, pts_den; /* value to convert to seconds */
     /* This buffer is only needed when packets were already buffered but
        not decoded, for example to get the codec parameters in mpeg
        streams */
@@ -276,6 +292,8 @@ int av_find_stream_info(AVFormatContext *ic);
 int av_read_packet(AVFormatContext *s, AVPacket *pkt);
 void av_close_input_file(AVFormatContext *s);
 AVStream *av_new_stream(AVFormatContext *s, int id);
+void av_set_pts_info(AVFormatContext *s, int pts_wrap_bits,
+                     int pts_num, int pts_den);
 
 /* media file output */
 int av_write_header(AVFormatContext *s);
