@@ -2652,8 +2652,8 @@ static void opt_output_file(const char *filename)
             exit(1);
         }
     } else {
-        use_video = file_oformat->video_codec != CODEC_ID_NONE;
-        use_audio = file_oformat->audio_codec != CODEC_ID_NONE;
+        use_video = file_oformat->video_codec != CODEC_ID_NONE || video_stream_copy;
+        use_audio = file_oformat->audio_codec != CODEC_ID_NONE || audio_stream_copy;
 
         /* disable if no corresponding type found and at least one
            input file */
