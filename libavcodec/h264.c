@@ -5339,31 +5339,6 @@ static inline int decode_vui_parameters(H264Context *h, SPS *sps){
     }
 
 #if 0
-| overscan_info_present_flag                        |0  |u(1)    |
-| if( overscan_info_present_flag )                  |   |        |
-|  overscan_appropriate_flag                        |0  |u(1)    |
-| video_signal_type_present_flag                    |0  |u(1)    |
-| if( video_signal_type_present_flag ) {            |   |        |
-|  video_format                                     |0  |u(3)    |
-|  video_full_range_flag                            |0  |u(1)    |
-|  colour_description_present_flag                  |0  |u(1)    |
-|  if( colour_description_present_flag ) {          |   |        |
-|   colour_primaries                                |0  |u(8)    |
-|   transfer_characteristics                        |0  |u(8)    |
-|   matrix_coefficients                             |0  |u(8)    |
-|  }                                                |   |        |
-| }                                                 |   |        |
-| chroma_location_info_present_flag                 |0  |u(1)    |
-| if ( chroma_location_info_present_flag ) {        |   |        |
-|  chroma_sample_location_type_top_field            |0  |ue(v)   |
-|  chroma_sample_location_type_bottom_field         |0  |ue(v)   |
-| }                                                 |   |        |
-| timing_info_present_flag                          |0  |u(1)    |
-| if( timing_info_present_flag ) {                  |   |        |
-|  num_units_in_tick                                |0  |u(32)   |
-|  time_scale                                       |0  |u(32)   |
-|  fixed_frame_rate_flag                            |0  |u(1)    |
-| }                                                 |   |        |
 | nal_hrd_parameters_present_flag                   |0  |u(1)    |
 | if( nal_hrd_parameters_present_flag  = =  1)      |   |        |
 |  hrd_parameters( )                                |   |        |
