@@ -745,6 +745,8 @@ DVDemuxContext* dv_init_demux(AVFormatContext *s)
     
     c->ast[0]->codec.codec_type = CODEC_TYPE_AUDIO;
     c->ast[0]->codec.codec_id = CODEC_ID_PCM_S16LE;
+    c->ast[0]->codec.sample_rate = 48000;
+    c->ast[0]->codec.channels = 2;
     c->ast[0]->start_time = 0;
     
     return c;
