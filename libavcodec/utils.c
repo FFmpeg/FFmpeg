@@ -23,6 +23,9 @@
 void *av_mallocz(unsigned int size)
 {
     void *ptr;
+    
+    if(size == 0) fprintf(stderr, "Warning, allocating 0 bytes\n");
+    
     ptr = av_malloc(size);
     if (!ptr)
         return NULL;
