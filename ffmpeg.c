@@ -1490,7 +1490,9 @@ int find_codec_parameters(AVFormatContext *ic)
                     ret = -1;
                     goto the_end;
                 }
-                avcodec_open(&st->codec, codec);
+                ret = avcodec_open(&st->codec, codec);
+                if (ret < 0)
+                    goto the_end;
             }
         }
         pktl = av_mallocz(sizeof(AVPacketList));

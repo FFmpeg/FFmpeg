@@ -80,7 +80,7 @@ static int a52_decode_init(AVCodecContext *avctx)
     s->handle = dlopen(liba52name, RTLD_LAZY);
     if (!s->handle)
     {
-	fprintf(stderr, "A52 library %s  could not be opened: %s\n", liba52name, dlerror());
+	fprintf(stderr, "A52 library %s could not be opened! \n%s\n", liba52name, dlerror());
         return -1;
     }
     s->a52_init = (a52_state_t* (*)(uint32_t)) dlsymm(s->handle, "a52_init");
