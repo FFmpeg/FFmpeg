@@ -102,6 +102,7 @@ enum CodecID {
     CODEC_ID_QTRLE,
     CODEC_ID_SNOW,
     CODEC_ID_TSCC,
+    CODEC_ID_ULTI,
 
     /* various pcm "codecs" */
     CODEC_ID_PCM_S16LE,
@@ -1855,6 +1856,7 @@ extern AVCodec sonic_decoder;
 extern AVCodec qtrle_decoder;
 extern AVCodec flac_decoder;
 extern AVCodec tscc_decoder;
+extern AVCodec ulti_decoder;
 
 /* pcm codecs */
 #define PCM_CODEC(id, name) \

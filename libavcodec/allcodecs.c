@@ -106,6 +106,8 @@ void avcodec_register_all(void)
     register_avcodec(&wmav1_decoder);
     register_avcodec(&wmav2_decoder);
     register_avcodec(&indeo3_decoder);
+    register_avcodec(&tscc_decoder);
+    register_avcodec(&ulti_decoder);
 #ifdef CONFIG_FAAD
     register_avcodec(&aac_decoder);
     register_avcodec(&mpeg4aac_decoder);
@@ -169,7 +171,6 @@ void avcodec_register_all(void)
     register_avcodec(&xan_dpcm_decoder);
     register_avcodec(&qtrle_decoder);
     register_avcodec(&flac_decoder);
-    register_avcodec(&tscc_decoder);
 #endif /* CONFIG_DECODERS */
 
 #ifdef AMR_NB
