@@ -430,9 +430,27 @@ static int rv10_decode_frame(AVCodecContext *avctx,
     s->rv10_first_dc_coded[0] = 0;
     s->rv10_first_dc_coded[1] = 0;
     s->rv10_first_dc_coded[2] = 0;
-    
+
+    s->block_wrap[0]=
+    s->block_wrap[1]=
+    s->block_wrap[2]=
+    s->block_wrap[3]= s->mb_width*2 + 2;
+    s->block_wrap[4]=
+    s->block_wrap[5]= s->mb_width + 2;
+    s->block_index[0]= s->block_wrap[0]*(s->mb_y*2 + 1) - 1 + s->mb_x*2;
+    s->block_index[1]= s->block_wrap[0]*(s->mb_y*2 + 1)     + s->mb_x*2;
+    s->block_index[2]= s->block_wrap[0]*(s->mb_y*2 + 2) - 1 + s->mb_x*2;
+    s->block_index[3]= s->block_wrap[0]*(s->mb_y*2 + 2)     + s->mb_x*2;
+    s->block_index[4]= s->block_wrap[4]*(s->mb_y + 1)                    + s->block_wrap[0]*(s->mb_height*2 + 2) + s->mb_x;
+    s->block_index[5]= s->block_wrap[4]*(s->mb_y + 1 + s->mb_height + 2) + s->block_wrap[0]*(s->mb_height*2 + 2) + s->mb_x;
     /* decode each macroblock */
     for(i=0;i<mb_count;i++) {
+        s->block_index[0]+=2;
+        s->block_index[1]+=2;
+        s->block_index[2]+=2;
+        s->block_index[3]+=2;
+        s->block_index[4]++;
+        s->block_index[5]++;
 #ifdef DEBUG
         printf("**mb x=%d y=%d\n", s->mb_x, s->mb_y);
 #endif
@@ -450,6 +468,12 @@ static int rv10_decode_frame(AVCodecContext *avctx,
         if (++s->mb_x == s->mb_width) {
             s->mb_x = 0;
             s->mb_y++;
+            s->block_index[0]= s->block_wrap[0]*(s->mb_y*2 + 1) - 1;
+            s->block_index[1]= s->block_wrap[0]*(s->mb_y*2 + 1);
+            s->block_index[2]= s->block_wrap[0]*(s->mb_y*2 + 2) - 1;
+            s->block_index[3]= s->block_wrap[0]*(s->mb_y*2 + 2);
+            s->block_index[4]= s->block_wrap[4]*(s->mb_y + 1)                    + s->block_wrap[0]*(s->mb_height*2 + 2);
+            s->block_index[5]= s->block_wrap[4]*(s->mb_y + 1 + s->mb_height + 2) + s->block_wrap[0]*(s->mb_height*2 + 2);
         }
     }
 
