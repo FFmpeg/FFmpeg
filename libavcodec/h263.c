@@ -1123,7 +1123,7 @@ void h263_encode_mb(MpegEncContext * s,
         /* compute cbp */
         cbp= get_p_cbp(s, block, motion_x, motion_y);
 
-        if ((cbp | motion_x | motion_y | s->dquant) == 0) {
+        if ((cbp | motion_x | motion_y | s->dquant | (s->mv_type - MV_TYPE_16X16)) == 0) {
             /* skip macroblock */
             put_bits(&s->pb, 1, 1);
             if(interleaved_stats){
