@@ -14,6 +14,10 @@
 #define STATIC_SPRITE 1
 #define GMC_SPRITE 2
 
+#define MOTION_MARKER 0x1F001
+#define DC_MARKER     0x6B001
+
+
 /* dc encoding for mpeg4 */
 const UINT8 DCtab_lum[13][2] =
 {
