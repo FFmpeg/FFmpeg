@@ -10,12 +10,17 @@ case "$cpu" in
     cpu="x86"
     mmx="yes"
   ;;
+  armv4l)
+    cpu="armv4l"
+    mmx="no"
+  ;;
   *)
     mmx="no"
   ;;
 esac
 gprof="no"
 mp3lib="yes"
+grab="yes"
 
 if [ "$1" = "-h" -o "$1" = "--help" ] ; then
 cat << EOF
@@ -31,6 +36,7 @@ echo "  --cpu=CPU               force cpu to CPU  [$cpu]"
 echo "  --disable-mmx           disable mmx usage"
 echo "  --enable-gprof          enable profiling with gprof [$gprof]"
 echo "  --disable-mp3lib        disable mp3 lib compiling"
+echo "  --disable-grab          disable audio/video grabbing code"
 exit 1
 fi
 
@@ -48,6 +54,8 @@ for opt do
   ;;
   --disable-mp3lib) mp3lib="no"
   ;;
+  --disable-grab) grab="no"
+  ;;
   esac
 done
 
@@ -56,6 +64,7 @@ echo "C compiler       $cc"
 echo "CPU              $cpu"
 echo "MMX enabled      $mmx"
 echo "gprof enabled    $gprof"
+echo "grab enabled     $grab"
 
 echo "Creating config.mak and config.h"
 
@@ -75,6 +84,10 @@ echo "OPTFLAGS=$CFLAGS" >> config.mak
 if [ "$cpu" = "x86" ] ; then
   echo "TARGET_ARCH_X86=yes" >> config.mak
   echo "#define ARCH_X86 1" >> config.h
+fi
+if [ "$cpu" = "armv4l" ]; then
+  echo "TARGET_ARCH_ARMV4L=yes" >> config.mak
+  echo "#define ARCH_ARMV4L 1" >> config.h
 fi
 if [ "$mmx" = "yes" ] ; then
   echo "TARGET_MMX=yes" >> config.mak
@@ -101,4 +114,9 @@ echo "CONFIG_AC3=yes" >> config.mak
 if [ "$mp3lib" = "yes" ] ; then
   echo "#define CONFIG_MPGLIB 1" >> config.h
   echo "CONFIG_MPGLIB=yes" >> config.mak
+fi
+
+if [ "$grab" = "yes" ] ; then
+  echo "#define CONFIG_GRAB 1" >> config.h
+  echo "CONFIG_GRAB=yes" >> config.mak
 fi
