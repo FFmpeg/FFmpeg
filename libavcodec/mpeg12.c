@@ -106,7 +106,7 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
             /* time code : we must convert from the real frame rate to a
                fake mpeg frame rate in case of low frame rate */
             fps = frame_rate_tab[s->frame_rate_index];
-            time_code = s->fake_picture_number * FRAME_RATE_BASE;
+            time_code = (INT64)s->fake_picture_number * FRAME_RATE_BASE;
             s->gop_picture_number = s->fake_picture_number;
             put_bits(&s->pb, 5, (UINT32)((time_code / (fps * 3600)) % 24));
             put_bits(&s->pb, 6, (UINT32)((time_code / (fps * 60)) % 60));
@@ -121,7 +121,7 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
             /* insert empty P pictures to slow down to the desired
                frame rate. Each fake pictures takes about 20 bytes */
             fps = frame_rate_tab[s->frame_rate_index];
-            n = ((s->picture_number * fps) / s->frame_rate) - 1;
+            n = (((INT64)s->picture_number * fps) / s->frame_rate) - 1;
             while (s->fake_picture_number < n) {
                 mpeg1_skip_picture(s, s->fake_picture_number - 
                                    s->gop_picture_number); 

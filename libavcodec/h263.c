@@ -68,7 +68,7 @@ void h263_encode_picture_header(MpegEncContext * s, int picture_number)
     s->gob_number = 0;
 
     put_bits(&s->pb, 22, 0x20); /* PSC */
-    put_bits(&s->pb, 8, ((s->picture_number * 30 * FRAME_RATE_BASE) / 
+    put_bits(&s->pb, 8, (((INT64)s->picture_number * 30 * FRAME_RATE_BASE) / 
                          s->frame_rate) & 0xff);
 
     put_bits(&s->pb, 1, 1);	/* marker */
