@@ -763,7 +763,7 @@ int MPA_encode_frame(AVCodecContext *avctx,
     encode_frame(s, bit_alloc, padding);
     
     s->nb_samples += MPA_FRAME_SIZE;
-    return s->pb.buf_ptr - s->pb.buf;
+    return pbBufPtr(&s->pb) - s->pb.buf;
 }
 
 

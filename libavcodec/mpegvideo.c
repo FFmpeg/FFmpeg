@@ -532,9 +532,10 @@ int MPV_encode_picture(AVCodecContext *avctx,
         mjpeg_picture_trailer(s);
 
     flush_put_bits(&s->pb);
-    s->total_bits += (s->pb.buf_ptr - s->pb.buf) * 8;
+    s->total_bits += (pbBufPtr(&s->pb) - s->pb.buf) * 8;
+
     avctx->quality = s->qscale;
-    return s->pb.buf_ptr - s->pb.buf;
+    return pbBufPtr(&s->pb) - s->pb.buf;
 }
 
 static inline int clip(int a, int amin, int amax)
@@ -1115,13 +1116,15 @@ static void encode_picture(MpegEncContext *s, int picture_number)
 
             MPV_decode_mb(s, s->block);
         }
+
+
         /* Obtain average GOB size for RTP */
         if (s->rtp_mode) {
             if (!mb_y)
-                s->mb_line_avgsize = s->pb.buf_ptr - s->ptr_last_mb_line;
+                s->mb_line_avgsize = pbBufPtr(&s->pb) - s->ptr_last_mb_line;
             else if (!(mb_y % s->gob_index)) {    
-                s->mb_line_avgsize = (s->mb_line_avgsize + s->pb.buf_ptr - s->ptr_last_mb_line) >> 1;
-                s->ptr_last_mb_line = s->pb.buf_ptr;
+                s->mb_line_avgsize = (s->mb_line_avgsize + pbBufPtr(&s->pb) - s->ptr_last_mb_line) >> 1;
+                s->ptr_last_mb_line = pbBufPtr(&s->pb);
             }
             //fprintf(stderr, "\nMB line: %d\tSize: %u\tAvg. Size: %u", s->mb_y, 
             //                    (s->pb.buf_ptr - s->ptr_last_mb_line), s->mb_line_avgsize);
@@ -1138,11 +1141,11 @@ static void encode_picture(MpegEncContext *s, int picture_number)
     /* Send the last GOB if RTP */    
     if (s->rtp_mode) {
         flush_put_bits(&s->pb);
-        pdif = s->pb.buf_ptr - s->ptr_lastgob;
+        pdif = pbBufPtr(&s->pb) - s->ptr_lastgob;
         /* Call the RTP callback to send the last GOB */
         if (s->rtp_callback)
             s->rtp_callback(s->ptr_lastgob, pdif, s->gob_number);
-        s->ptr_lastgob = s->pb.buf_ptr;
+        s->ptr_lastgob = pbBufPtr(&s->pb);
         //fprintf(stderr,"\nGOB: %2d size: %d (last)", s->gob_number, pdif);
     }
 

@@ -1227,9 +1227,9 @@ static int output_frame_end(AC3EncodeContext *s)
     flush_put_bits(&s->pb);
     /* add zero bytes to reach the frame size */
     frame = s->pb.buf;
-    n = 2 * s->frame_size - (s->pb.buf_ptr - frame) - 2;
+    n = 2 * s->frame_size - (pbBufPtr(&s->pb) - frame) - 2;
     assert(n >= 0);
-    memset(s->pb.buf_ptr, 0, n);
+    memset(pbBufPtr(&s->pb), 0, n);
     
     /* Now we must compute both crcs : this is not so easy for crc1
        because it is at the beginning of the data... */

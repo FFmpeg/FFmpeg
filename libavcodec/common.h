@@ -8,6 +8,7 @@
 #define CONFIG_WIN32
 #endif
 
+//#define ALT_BITSTREAM_WRITER
 //#define ALT_BITSTREAM_READER
 //#define ALIGNED_BITSTREAM
 #define FAST_GET_FIRST_VLC
@@ -161,25 +162,36 @@ struct PutBitContext;
 typedef void (*WriteDataFunc)(void *, UINT8 *, int);
 
 typedef struct PutBitContext {
+#ifdef ALT_BITSTREAM_WRITER
+    UINT8 *buf, *buf_end;
+    int index;
+#else
     UINT32 bit_buf;
     int bit_cnt;
     UINT8 *buf, *buf_ptr, *buf_end;
-    INT64 data_out_size; /* in bytes */
     void *opaque;
     WriteDataFunc write_data;
+#endif
+    INT64 data_out_size; /* in bytes */
 } PutBitContext;
 
 void init_put_bits(PutBitContext *s, 
                    UINT8 *buffer, int buffer_size,
                    void *opaque,
                    void (*write_data)(void *, UINT8 *, int));
+
+#ifndef ALT_BITSTREAM_WRITER
 void put_bits(PutBitContext *s, int n, unsigned int value);
+#endif
+
 INT64 get_bit_count(PutBitContext *s); /* XXX: change function name */
 void align_put_bits(PutBitContext *s);
 void flush_put_bits(PutBitContext *s);
 
 /* jpeg specific put_bits */
+#ifndef ALT_BITSTREAM_WRITER
 void jput_bits(PutBitContext *s, int n, unsigned int value);
+#endif
 void jflush_put_bits(PutBitContext *s);
 
 /* bit input */
@@ -224,6 +236,99 @@ static inline uint32_t unaligned32(const void *v) {
 }
 #endif
 #endif //!ARCH_X86
+
+#ifdef ALT_BITSTREAM_WRITER
+static inline void put_bits(PutBitContext *s, int n, int value)
+{
+#ifdef ARCH_X86
+    asm volatile(
+	"movl $7, %%ecx			\n\t"
+	"andl %0, %%ecx			\n\t"
+	"addl %3, %%ecx			\n\t"
+	"negl %%ecx			\n\t"
+	"shll %%cl, %1			\n\t"
+	"bswapl %1			\n\t"
+	"movl %0, %%ecx			\n\t"
+	"shrl $3, %%ecx			\n\t"
+	"orl %1, (%%ecx, %2)		\n\t"
+	"addl %3, %0			\n\t"
+	"movl $0, 4(%%ecx, %2)		\n\t"
+	: "=&r" (s->index), "=&r" (value)
+	: "r" (s->buf), "r" (n), "0" (s->index), "1" (value)
+	: "%ecx"
+    );
+#else
+    int index= s->index;
+    uint32_t *ptr= (uint32_t*)(((uint8_t *)s->buf)+(index>>3));
+    
+    ptr[0] |= be2me_32(value<<(32-n-(index&7) ));
+    ptr[1] = 0;
+//if(n>24) printf("%d %d\n", n, value);
+    index+= n;
+    s->index= index;
+#endif
+}
+#endif
+
+#ifdef ALT_BITSTREAM_WRITER
+static inline void jput_bits(PutBitContext *s, int n, int value)
+{
+    int index= s->index;
+    uint32_t *ptr= (uint32_t*)(((uint8_t *)s->buf)+(index>>3));
+    int v= ptr[0];
+//if(n>24) printf("%d %d\n", n, value);
+    
+    v |= be2me_32(value<<(32-n-(index&7) ));
+    if(((v+0x01010101)^0xFFFFFFFF)&v&0x80808080)
+    {
+	/* handle idiotic (m)jpeg escapes */
+	uint8_t *bPtr= (uint8_t*)ptr;
+	int numChecked= ((index+n)>>3) - (index>>3);
+	
+	v= be2me_32(v);
+
+	*(bPtr++)= v>>24;
+	if((v&0xFF000000)==0xFF000000 && numChecked>0){
+		*(bPtr++)= 0x00;
+		index+=8;
+	}
+	*(bPtr++)= (v>>16)&0xFF;
+	if((v&0x00FF0000)==0x00FF0000 && numChecked>1){
+		*(bPtr++)= 0x00;
+		index+=8;
+	}
+	*(bPtr++)= (v>>8)&0xFF;
+	if((v&0x0000FF00)==0x0000FF00 && numChecked>2){
+		*(bPtr++)= 0x00;
+		index+=8;
+	}
+	*(bPtr++)= v&0xFF;
+	if((v&0x000000FF)==0x000000FF && numChecked>3){
+		*(bPtr++)= 0x00;
+		index+=8;
+	}
+	*((uint32_t*)bPtr)= 0;
+    }
+    else
+    {
+	ptr[0] = v;
+	ptr[1] = 0;
+    }
+
+    index+= n;
+    s->index= index;
+ }
+#endif
+
+
+static inline uint8_t* pbBufPtr(PutBitContext *s)
+{
+#ifdef ALT_BITSTREAM_WRITER
+	return s->buf + (s->index>>3);
+#else
+	return s->buf_ptr;
+#endif
+}
 
 void init_get_bits(GetBitContext *s, 
                    UINT8 *buffer, int buffer_size);

@@ -64,7 +64,7 @@ void h263_encode_picture_header(MpegEncContext * s, int picture_number)
     align_put_bits(&s->pb);
 
     /* Update the pointer to last GOB */
-    s->ptr_lastgob = s->pb.buf_ptr;
+    s->ptr_lastgob = pbBufPtr(&s->pb);
     s->gob_number = 0;
 
     put_bits(&s->pb, 22, 0x20); /* PSC */
@@ -152,17 +152,17 @@ int h263_encode_gob_header(MpegEncContext * s, int mb_line)
     /* Check to see if we need to put a new GBSC */
     /* for RTP packetization                    */
     if (s->rtp_mode) {
-        pdif = s->pb.buf_ptr - s->ptr_lastgob;
+        pdif = pbBufPtr(&s->pb) - s->ptr_lastgob;
         if (pdif >= s->rtp_payload_size) {
             /* Bad luck, packet must be cut before */
             align_put_bits(&s->pb);
             flush_put_bits(&s->pb);
             /* Call the RTP callback to send the last GOB */
             if (s->rtp_callback) {
-                pdif = s->pb.buf_ptr - s->ptr_lastgob;
+                pdif = pbBufPtr(&s->pb) - s->ptr_lastgob;
                 s->rtp_callback(s->ptr_lastgob, pdif, s->gob_number);
             }
-            s->ptr_lastgob = s->pb.buf_ptr;
+            s->ptr_lastgob = pbBufPtr(&s->pb);
             put_bits(&s->pb, 17, 1); /* GBSC */
             s->gob_number = mb_line / s->gob_index;
             put_bits(&s->pb, 5, s->gob_number); /* GN */
@@ -176,10 +176,10 @@ int h263_encode_gob_header(MpegEncContext * s, int mb_line)
            flush_put_bits(&s->pb);
            /* Call the RTP callback to send the last GOB */
            if (s->rtp_callback) {
-               pdif = s->pb.buf_ptr - s->ptr_lastgob;
+               pdif = pbBufPtr(&s->pb) - s->ptr_lastgob;
                s->rtp_callback(s->ptr_lastgob, pdif, s->gob_number);
            }
-           s->ptr_lastgob = s->pb.buf_ptr;
+           s->ptr_lastgob = pbBufPtr(&s->pb);
            put_bits(&s->pb, 17, 1); /* GBSC */
            s->gob_number = mb_line / s->gob_index;
            put_bits(&s->pb, 5, s->gob_number); /* GN */
@@ -489,7 +489,8 @@ void mpeg4_encode_picture_header(MpegEncContext * s, int picture_number)
 {
     align_put_bits(&s->pb);
 
-    put_bits(&s->pb, 32, 0x1B6);	/* vop header */
+    put_bits(&s->pb, 16, 0);	        /* vop header */
+    put_bits(&s->pb, 16, 0x1B6);	/* vop header */
     put_bits(&s->pb, 2, s->pict_type - 1);	/* pict type: I = 0 , P = 1 */
     /* XXX: time base + 1 not always correct */
     put_bits(&s->pb, 1, 1);
@@ -846,7 +847,7 @@ int h263_decode_gob_header(MpegEncContext *s)
         gfid = get_bits(&s->gb, 2); /* GFID */
         s->qscale = get_bits(&s->gb, 5); /* GQUANT */
 #ifdef DEBUG
-        fprintf(stderr, "\nGN: %u GFID: %u Quant: %u\n", gn, gfid, s->qscale);
+        fprintf(stderr, "\nGN: %u GFID: %u Quant: %u\n", s->gob_number, gfid, s->qscale);
 #endif
         return 1;
     }

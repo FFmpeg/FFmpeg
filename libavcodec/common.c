@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * alternative bitstream reader by Michael Niedermayer <michaelni@gmx.at>
+ * alternative bitstream reader & writer by Michael Niedermayer <michaelni@gmx.at>
  */
 #include "common.h"
 #include <math.h>
@@ -27,15 +27,26 @@ void init_put_bits(PutBitContext *s,
                    void (*write_data)(void *, UINT8 *, int))
 {
     s->buf = buffer;
-    s->buf_ptr = s->buf;
     s->buf_end = s->buf + buffer_size;
-    s->bit_cnt=0;
-    s->bit_buf=0;
     s->data_out_size = 0;
+#ifdef ALT_BITSTREAM_WRITER
+    s->index=0;
+    ((uint32_t*)(s->buf))[0]=0;
+//    memset(buffer, 0, buffer_size);
+    if(write_data!=NULL) 
+    {
+    	fprintf(stderr, "write Data callback is not supported\n");
+    }
+#else
     s->write_data = write_data;
     s->opaque = opaque;
+    s->buf_ptr = s->buf;
+    s->bit_cnt=0;
+    s->bit_buf=0;
+#endif
 }
 
+#ifndef ALT_BITSTREAM_WRITER
 static void flush_buffer(PutBitContext *s)
 {
     int size;
@@ -85,21 +96,33 @@ void put_bits(PutBitContext *s, int n, unsigned int value)
     s->bit_buf = bit_buf;
     s->bit_cnt = bit_cnt;
 }
+#endif
 
 /* return the number of bits output */
 INT64 get_bit_count(PutBitContext *s)
 {
+#ifdef ALT_BITSTREAM_WRITER
+    return s->data_out_size * 8 + s->index;
+#else
     return (s->buf_ptr - s->buf + s->data_out_size) * 8 + (INT64)s->bit_cnt;
+#endif
 }
 
 void align_put_bits(PutBitContext *s)
 {
+#ifdef ALT_BITSTREAM_WRITER
+    put_bits(s,(  - s->index) & 7,0);
+#else
     put_bits(s,(8 - s->bit_cnt) & 7,0);
+#endif
 }
 
 /* pad the end of the output stream with zeros */
 void flush_put_bits(PutBitContext *s)
 {
+#ifdef ALT_BITSTREAM_WRITER
+    align_put_bits(s);
+#else
     while (s->bit_cnt > 0) {
         /* XXX: should test end of buffer */
         *s->buf_ptr++=s->bit_buf >> 24;
@@ -109,8 +132,10 @@ void flush_put_bits(PutBitContext *s)
     flush_buffer(s);
     s->bit_cnt=0;
     s->bit_buf=0;
+#endif
 }
 
+#ifndef ALT_BITSTREAM_WRITER
 /* for jpeg : escape 0xff with 0x00 after it */
 void jput_bits(PutBitContext *s, int n, unsigned int value)
 {
@@ -152,8 +177,10 @@ void jput_bits(PutBitContext *s, int n, unsigned int value)
     s->bit_buf = bit_buf;
     s->bit_cnt = bit_cnt;
 }
+#endif
 
 /* pad the end of the output stream with zeros */
+#ifndef ALT_BITSTREAM_WRITER
 void jflush_put_bits(PutBitContext *s)
 {
     unsigned int b;
@@ -171,6 +198,13 @@ void jflush_put_bits(PutBitContext *s)
     s->bit_cnt=0;
     s->bit_buf=0;
 }
+#else
+void jflush_put_bits(PutBitContext *s)
+{
+    int num= (  - s->index) & 7;
+    jput_bits(s, num,0xFF>>(8-num));
+}
+#endif
 
 /* bit input functions */
 

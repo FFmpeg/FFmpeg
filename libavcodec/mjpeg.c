@@ -243,7 +243,7 @@ static void jpeg_table_header(MpegEncContext *s)
     /* huffman table */
     put_marker(p, DHT);
     flush_put_bits(p);
-    ptr = p->buf_ptr;
+    ptr = pbBufPtr(p);
     put_bits(p, 16, 0); /* patched later */
     size = 2;
     size += put_huffman_table(s, 0, 0, bits_dc_luminance, val_dc_luminance);

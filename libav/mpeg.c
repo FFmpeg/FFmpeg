@@ -80,7 +80,7 @@ static int put_pack_header(AVFormatContext *ctx,
     put_bits(&pb, 1, 1);
 
     flush_put_bits(&pb);
-    return pb.buf_ptr - pb.buf;
+    return pbBufPtr(&pb) - pb.buf;
 }
 
 static int put_system_header(AVFormatContext *ctx, UINT8 *buf)
@@ -135,7 +135,7 @@ static int put_system_header(AVFormatContext *ctx, UINT8 *buf)
         }
     }
     flush_put_bits(&pb);
-    size = pb.buf_ptr - pb.buf;
+    size = pbBufPtr(&pb) - pb.buf;
     /* patch packet size */
     buf[4] = (size - 6) >> 8;
     buf[5] = (size - 6) & 0xff;
