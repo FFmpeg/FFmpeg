@@ -170,8 +170,6 @@ static int ogg_read_header(AVFormatContext *avfcontext, AVFormatParameters *ap)
     uint8_t *p;
     int i;
      
-    avfcontext->ctx_flags |= AVFMTCTX_NOHEADER;
-     
     ogg_sync_init(&context->oy) ;
     buf = ogg_sync_buffer(&context->oy, DECODER_BUFFER_SIZE) ;
 
