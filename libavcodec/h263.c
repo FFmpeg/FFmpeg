@@ -1395,7 +1395,7 @@ void ff_h263_loop_filter(MpegEncContext * s){
                 const int chroma_qp= s->chroma_qscale_table[qp_dt];
                 s->dsp.h263_h_loop_filter(dest_y -8*linesize  ,   linesize, qp_dt);
                 s->dsp.h263_h_loop_filter(dest_cb-8*uvlinesize, uvlinesize, chroma_qp);
-                s->dsp.h263_h_loop_filter(dest_cb-8*uvlinesize, uvlinesize, chroma_qp);
+                s->dsp.h263_h_loop_filter(dest_cr-8*uvlinesize, uvlinesize, chroma_qp);
             }
         }
     }
