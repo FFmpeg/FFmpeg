@@ -939,7 +939,7 @@ AVFormat asf_format = {
     "asf",
     "asf format",
     "application/octet-stream",
-    "asf",
+    "asf,wmv",
     CODEC_ID_MP2,
     CODEC_ID_MSMPEG4,
     asf_write_header,
