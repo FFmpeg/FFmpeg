@@ -1054,6 +1054,16 @@ int MPV_encode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "framerate not set\n");
         return -1;
     }
+    
+    i= (INT_MAX/2+128)>>8;
+    if(avctx->me_threshold >= i){
+        av_log(avctx, AV_LOG_ERROR, "me_threshold too large, max is %d\n", i - 1);
+        return -1;
+    }
+    if(avctx->mb_threshold >= i){
+        av_log(avctx, AV_LOG_ERROR, "mb_threshold too large, max is %d\n", i - 1);
+        return -1;
+    }
         
     i= ff_gcd(avctx->frame_rate, avctx->frame_rate_base);
     if(i > 1){
