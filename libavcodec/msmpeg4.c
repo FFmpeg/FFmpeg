@@ -361,10 +361,10 @@ void msmpeg4_dc_scale(MpegEncContext * s)
 
 /* dir = 0: left, dir = 1: top prediction */
 static int msmpeg4_pred_dc(MpegEncContext * s, int n, 
-                           UINT16 **dc_val_ptr, int *dir_ptr)
+                           INT16 **dc_val_ptr, int *dir_ptr)
 {
     int a, b, c, x, y, wrap, pred, scale;
-    UINT16 *dc_val;
+    INT16 *dc_val;
 
     /* find prediction */
     if (n < 4) {
@@ -417,7 +417,7 @@ static void msmpeg4_encode_dc(MpegEncContext * s, int level, int n, int *dir_ptr
 {
     int sign, code;
     int pred;
-    UINT16 *dc_val;
+    INT16 *dc_val;
 
     pred = msmpeg4_pred_dc(s, n, &dc_val, dir_ptr);
 
@@ -863,7 +863,7 @@ static int msmpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
 static int msmpeg4_decode_dc(MpegEncContext * s, int n, int *dir_ptr)
 {
     int level, pred;
-    UINT16 *dc_val;
+    INT16 *dc_val;
 
     if (n < 4) {
         level = get_vlc(&s->gb, &dc_lum_vlc[s->dc_table_index]);

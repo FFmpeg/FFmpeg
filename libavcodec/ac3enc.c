@@ -599,7 +599,7 @@ static int bit_alloc(AC3EncodeContext *s,
         s->mant2_cnt = 0;
         s->mant4_cnt = 0;
         for(ch=0;ch<s->nb_channels;ch++) {
-            parametric_bit_allocation(s, bap[i][ch], encoded_exp[i][ch], 
+            parametric_bit_allocation(s, bap[i][ch], (INT8 *)encoded_exp[i][ch], 
                                       0, s->nb_coefs[ch], 
                                       (((csnroffst-15) << 4) + 
                                        fsnroffst) << 2, 

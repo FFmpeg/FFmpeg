@@ -127,7 +127,7 @@ static const UINT16 mpeg2_vlc[113][2] = {
   {0x06,4}, /* EOB */
 };
 
-static const UINT8 mpeg1_level[111] = {
+static const INT8 mpeg1_level[111] = {
   1,  2,  3,  4,  5,  6,  7,  8,
   9, 10, 11, 12, 13, 14, 15, 16,
  17, 18, 19, 20, 21, 22, 23, 24,
@@ -144,7 +144,7 @@ static const UINT8 mpeg1_level[111] = {
   1,  1,  1,  1,  1,  1,  1,
 };
 
-static const UINT8 mpeg1_run[111] = {
+static const INT8 mpeg1_run[111] = {
   0,  0,  0,  0,  0,  0,  0,  0,
   0,  0,  0,  0,  0,  0,  0,  0,
   0,  0,  0,  0,  0,  0,  0,  0,
