@@ -147,9 +147,10 @@ uint64_t time= rdtsc();
     s->workaround_bugs= avctx->workaround_bugs;
     s->flags= avctx->flags;
 
-    /* no supplementary picture */
+    *data_size = 0;
+   
+   /* no supplementary picture */
     if (buf_size == 0) {
-        *data_size = 0;
         return 0;
     }
 
