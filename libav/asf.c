@@ -586,7 +586,7 @@ static void put_frame(AVFormatContext *s, ASFStream *stream, int timestamp,
         if (frag_len1 > 0) {
             if (frag_len > frag_len1)
                 frag_len = frag_len1;
-            put_frame_header(s, stream, timestamp, payload_size, frag_pos, frag_len);
+            put_frame_header(s, stream, timestamp+1, payload_size, frag_pos, frag_len);
             put_buffer(&asf->pb, buf, frag_len);
             asf->packet_size_left -= (frag_len + FRAME_HEADER_SIZE);
             asf->packet_timestamp_end = timestamp;
