@@ -2,6 +2,7 @@
  *
  *  rgb2rgb.c, Software RGB to RGB convertor
  *  Written by Nick Kurshev.
+ *  palette stuff & yuv stuff by Michael
  */
 #include <inttypes.h>
 #include "../config.h"
@@ -185,25 +186,25 @@ void rgb15to16(const uint8_t *src,uint8_t *dst,uint32_t src_size)
 /**
  * Pallete is assumed to contain bgr32
  */
-void palette8torgb32(uint8_t *src, uint8_t *dst, int src_size, uint8_t *palette)
+void palette8torgb32(uint8_t *src, uint8_t *dst, int num_pixels, uint8_t *palette)
 {
 	int i;
-	for(i=0; i<src_size; i++)
+	for(i=0; i<num_pixels; i++)
 		((uint32_t *)dst)[i] = ((uint32_t *)palette)[ src[i] ];
 }
 
 /**
  * Pallete is assumed to contain bgr32
  */
-void palette8torgb24(uint8_t *src, uint8_t *dst, int src_size, uint8_t *palette)
+void palette8torgb24(uint8_t *src, uint8_t *dst, int num_pixels, uint8_t *palette)
 {
 	int i;
 /*
 	writes 1 byte o much and might cause alignment issues on some architectures?
-	for(i=0; i<src_size; i++)
+	for(i=0; i<num_pixels; i++)
 		((uint32_t *)(&dst[i*3])) = ((uint32_t *)palette)[ src[i] ];
 */
-	for(i=0; i<src_size; i++)
+	for(i=0; i<num_pixels; i++)
 	{
 		//FIXME slow?
 		dst[0]= palette[ src[i]*4+0 ];
@@ -213,10 +214,10 @@ void palette8torgb24(uint8_t *src, uint8_t *dst, int src_size, uint8_t *palette)
 	}
 }
 
-void rgb32to16(uint8_t *src, uint8_t *dst, int src_size)
+void rgb32to16(uint8_t *src, uint8_t *dst, int num_pixels)
 {
 	int i;
-	for(i=0; i<src_size; i+=4)
+	for(i=0; i<num_pixels; i+=4)
 	{
 		const int b= src[i+0];
 		const int g= src[i+1];
@@ -226,10 +227,10 @@ void rgb32to16(uint8_t *src, uint8_t *dst, int src_size)
 	}
 }
 
-void rgb32to15(uint8_t *src, uint8_t *dst, int src_size)
+void rgb32to15(uint8_t *src, uint8_t *dst, int num_pixels)
 {
 	int i;
-	for(i=0; i<src_size; i+=4)
+	for(i=0; i<num_pixels; i+=4)
 	{
 		const int b= src[i+0];
 		const int g= src[i+1];
@@ -243,42 +244,82 @@ void rgb32to15(uint8_t *src, uint8_t *dst, int src_size)
 /**
  * Palette is assumed to contain bgr16, see rgb32to16 to convert the palette
  */
-void palette8torgb16(uint8_t *src, uint8_t *dst, int src_size, uint8_t *palette)
+void palette8torgb16(uint8_t *src, uint8_t *dst, int num_pixels, uint8_t *palette)
 {
 	int i;
-	for(i=0; i<src_size; i++)
+	for(i=0; i<num_pixels; i++)
 		((uint16_t *)dst)[i] = ((uint16_t *)palette)[ src[i] ];
 }
 
 /**
  * Pallete is assumed to contain bgr15, see rgb32to15 to convert the palette
  */
-void palette8torgb15(uint8_t *src, uint8_t *dst, int src_size, uint8_t *palette)
+void palette8torgb15(uint8_t *src, uint8_t *dst, int num_pixels, uint8_t *palette)
 {
 	int i;
-	for(i=0; i<src_size; i++)
+	for(i=0; i<num_pixels; i++)
 		((uint16_t *)dst)[i] = ((uint16_t *)palette)[ src[i] ];
 }
-
-void yv12toyuy2(uint8_t *ysrc, uint8_t *usrc, uint8_t *vsrc, uint8_t *dst, int src_size)
+/**
+ *
+ * num_pixels must be a multiple of 16 for the MMX version
+ */
+void yv12toyuy2(uint8_t *ysrc, uint8_t *usrc, uint8_t *vsrc, uint8_t *dst, int num_pixels)
 {
+#ifdef HAVE_MMX
+	asm volatile(
+		"xorl %%eax, %%eax		\n\t"
+		"1:				\n\t"
+		PREFETCH" 32(%1, %%eax, 2)	\n\t"
+		PREFETCH" 32(%2, %%eax)		\n\t"
+		PREFETCH" 32(%3, %%eax)		\n\t"
+		"movq (%2, %%eax), %%mm0	\n\t" // U(0)
+		"movq %%mm0, %%mm2		\n\t" // U(0)
+		"movq (%3, %%eax), %%mm1	\n\t" // V(0)
+		"punpcklbw %%mm1, %%mm0		\n\t" // UVUV UVUV(0)
+		"punpckhbw %%mm1, %%mm2		\n\t" // UVUV UVUV(8)
+
+		"movq (%1, %%eax,2), %%mm3	\n\t" // Y(0)
+		"movq 8(%1, %%eax,2), %%mm5	\n\t" // Y(8)
+		"movq %%mm3, %%mm4		\n\t" // Y(0)
+		"movq %%mm5, %%mm6		\n\t" // Y(8)
+		"punpcklbw %%mm0, %%mm3		\n\t" // YUYV YUYV(0)
+		"punpckhbw %%mm0, %%mm4		\n\t" // YUYV YUYV(4)
+		"punpcklbw %%mm2, %%mm5		\n\t" // YUYV YUYV(8)
+		"punpckhbw %%mm2, %%mm6		\n\t" // YUYV YUYV(12)
+
+		MOVNTQ" %%mm3, (%0, %%eax, 4)	\n\t"
+		MOVNTQ" %%mm4, 8(%0, %%eax, 4)	\n\t"
+		MOVNTQ" %%mm5, 16(%0, %%eax, 4)	\n\t"
+		MOVNTQ" %%mm6, 24(%0, %%eax, 4)	\n\t"
+
+		"addl $8, %%eax			\n\t"
+		"cmpl %4, %%eax			\n\t"
+		" jb 1b				\n\t"
+		EMMS" \n\t"
+		SFENCE
+		::"r"(dst), "r"(ysrc), "r"(usrc), "r"(vsrc), "r" (num_pixels>>1)
+		: "memory", "%eax"
+	);
+
+#else
 	int i;
-	src_size>>=1;
-	for(i=0; i<src_size; i++)
+	num_pixels>>=1;
+	for(i=0; i<num_pixels; i++)
 	{
 		dst[4*i+0] = ysrc[2*i+0];
 		dst[4*i+1] = usrc[i];
 		dst[4*i+2] = ysrc[2*i+1];
 		dst[4*i+3] = vsrc[i];
 	}
-
+#endif
 }
 
-void yuy2toyv12(uint8_t *src, uint8_t *ydst, uint8_t *udst, uint8_t *vdst, int src_size)
+void yuy2toyv12(uint8_t *src, uint8_t *ydst, uint8_t *udst, uint8_t *vdst, int num_pixels)
 {
 	int i;
-	src_size>>=1;
-	for(i=0; i<src_size; i++)
+	num_pixels>>=1;
+	for(i=0; i<num_pixels; i++)
 	{
 		 ydst[2*i+0] 	= src[4*i+0];
 		 udst[i] 	= src[4*i+1];
