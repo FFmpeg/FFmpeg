@@ -103,6 +103,7 @@ void SwScale_Init();
 
 void freeSwsContext(SwsContext *swsContext);
 
+SwsContext *getSwsContextFromCmdLine(int srcW, int srcH, int srcFormat, int dstW, int dstH, int dstFormat);
 SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH, int dstFormat, int flags,
 			 SwsFilter *srcFilter, SwsFilter *dstFilter);
 

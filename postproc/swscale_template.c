@@ -1974,8 +1974,8 @@ FUNNYUVCODE
    }
 }
 
-static void RENAME(swScale)(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
-             int srcSliceH, uint8_t* dst[], int dstStride[]){
+static void RENAME(swScale)(SwsContext *c, uint8_t* srcParam[], int srcStride[], int srcSliceY,
+             int srcSliceH, uint8_t* dstParam[], int dstStride[]){
 
 	/* load a few things into local vars to make the code more readable? and faster */
 	const int srcW= c->srcW;
@@ -2014,6 +2014,41 @@ static void RENAME(swScale)(SwsContext *c, uint8_t* src[], int srcStride[], int 
 	int chrBufIndex= c->chrBufIndex;
 	int lastInLumBuf= c->lastInLumBuf;
 	int lastInChrBuf= c->lastInChrBuf;
+	uint8_t *src[3];
+	uint8_t *dst[3];
+	
+	if((c->srcFormat == IMGFMT_IYUV) || (c->srcFormat == IMGFMT_I420)){
+		src[0]= srcParam[0];
+		src[1]= srcParam[2];
+		src[2]= srcParam[1];
+		
+	}else{
+		src[0]= srcParam[0];
+		src[1]= srcParam[1];
+		src[2]= srcParam[2];
+	}
+
+	if((c->dstFormat == IMGFMT_IYUV) || (c->dstFormat == IMGFMT_I420)){
+		dst[0]= dstParam[0];
+		dst[1]= dstParam[2];
+		dst[2]= dstParam[1];
+		
+	}else{
+		dst[0]= dstParam[0];
+		dst[1]= dstParam[1];
+		dst[2]= dstParam[2];
+	}
+
+	if(dstStride[0]%8 !=0 || dstStride[1]%8 !=0 || dstStride[2]%8 !=0)
+	{
+		static int firstTime=1; //FIXME move this into the context perhaps
+		if(flags & SWS_PRINT_INFO && firstTime)
+		{
+			fprintf(stderr, "SwScaler: Warning: dstStride is not aligned!\n"
+					"SwScaler:          ->cannot do aligned memory acesses anymore\n");
+			firstTime=0;
+		}
+	}
 
 	if(srcSliceY ==0){
 		lumBufIndex=0;
@@ -2027,7 +2062,7 @@ static void RENAME(swScale)(SwsContext *c, uint8_t* src[], int srcStride[], int 
 		unsigned char *dest =dst[0]+dstStride[0]*dstY;
 		unsigned char *uDest=dst[1]+dstStride[1]*(dstY>>1);
 		unsigned char *vDest=dst[2]+dstStride[2]*(dstY>>1);
-		const int chrDstY= dstFormat==IMGFMT_YV12 ? (dstY>>1) : dstY;
+		const int chrDstY= isHalfChrV(dstFormat) ? (dstY>>1) : dstY;
 
 		const int firstLumSrcY= vLumFilterPos[dstY]; //First line needed as input
 		const int firstChrSrcY= vChrFilterPos[chrDstY]; //First line needed as input
@@ -2124,7 +2159,7 @@ static void RENAME(swScale)(SwsContext *c, uint8_t* src[], int srcStride[], int 
 #endif
 	    if(dstY < dstH-2)
 	    {
-		if(dstFormat==IMGFMT_YV12) //YV12
+		if(isPlanarYUV(dstFormat)) //YV12 like
 		{
 			if(dstY&1) uDest=vDest= NULL; //FIXME split functions in lumi / chromi
 			if(vLumFilterSize == 1 && vChrFilterSize == 1) // Unscaled YV12
@@ -2180,7 +2215,7 @@ static void RENAME(swScale)(SwsContext *c, uint8_t* src[], int srcStride[], int 
 	    {
 		int16_t **lumSrcPtr= lumPixBuf + lumBufIndex + firstLumSrcY - lastInLumBuf + vLumBufSize;
 		int16_t **chrSrcPtr= chrPixBuf + chrBufIndex + firstChrSrcY - lastInChrBuf + vChrBufSize;
-		if(dstFormat==IMGFMT_YV12) //YV12
+		if(isPlanarYUV(dstFormat)) //YV12
 		{
 			if(dstY&1) uDest=vDest= NULL; //FIXME split functions in lumi / chromi
 			yuv2yuvXinC(

@@ -17,8 +17,9 @@
 */
 
 /*
-  supported Input formats: YV12 (grayscale soon too)
-  supported output formats: YV12, BGR15, BGR16, BGR24, BGR32 (grayscale soon too)
+  supported Input formats: YV12, I420, IYUV (grayscale soon too)
+  supported output formats: YV12, I420, IYUV, BGR15, BGR16, BGR24, BGR32 (grayscale soon too)
+  BGR15/16 support dithering
 */
 
 #include <inttypes.h>
@@ -56,6 +57,12 @@
 #define PI 3.14159265358979323846
 #endif
 
+//FIXME replace this with something faster
+#define isYUV(x)       ((x)==IMGFMT_YV12 || (x)==IMGFMT_I420 || (x)==IMGFMT_IYUV)
+#define isPlanarYUV(x) ((x)==IMGFMT_YV12 || (x)==IMGFMT_I420 || (x)==IMGFMT_IYUV)
+#define isHalfChrV(x)  ((x)==IMGFMT_YV12 || (x)==IMGFMT_I420 || (x)==IMGFMT_IYUV)
+#define isHalfChrH(x)  ((x)==IMGFMT_YV12 || (x)==IMGFMT_I420 || (x)==IMGFMT_IYUV)
+
 extern int verbose; // defined in mplayer.c
 /*
 NOTES
@@ -63,8 +70,6 @@ NOTES
 known BUGS with known cause (no bugreports please!, but patches are welcome :) )
 horizontal fast_bilinear MMX2 scaler reads 1-7 samples too much (might cause a sig11)
 
-Supported output formats BGR15 BGR16 BGR24 BGR32 YV12
-BGR15 & BGR16 MMX verions support dithering
 Special versions: fast Y 1:1 scaling (no interpolation in y direction)
 
 TODO
@@ -507,7 +512,7 @@ static inline void yuv2rgbXinC(int16_t *lumFilter, int16_t **lumSrc, int lumFilt
 // minor note: the HAVE_xyz is messed up after that line so dont use it
 
 
-// old global scaler, dont use for new code, unless it uses only the stuff from the command line
+// old global scaler, dont use for new code
 // will use sws_flags from the command line
 void SwScale_YV12slice(unsigned char* src[], int srcStride[], int srcSliceY ,
 			     int srcSliceH, uint8_t* dst[], int dstStride, int dstbpp,
@@ -515,76 +520,7 @@ void SwScale_YV12slice(unsigned char* src[], int srcStride[], int srcSliceY ,
 
 	static SwsContext *context=NULL;
 	int dstFormat;
-	int flags=0;
-	static int firstTime=1;
 	int dstStride3[3]= {dstStride, dstStride>>1, dstStride>>1};
-
-	if(firstTime)
-	{
-#ifdef ARCH_X86
-		if(gCpuCaps.hasMMX)
-			asm volatile("emms\n\t"::: "memory"); //FIXME this shouldnt be required but it IS (even for non mmx versions)
-#endif
-		flags= SWS_PRINT_INFO;
-		firstTime=0;
-
-		if(src_filter.lumH) freeVec(src_filter.lumH);
-		if(src_filter.lumV) freeVec(src_filter.lumV);
-		if(src_filter.chrH) freeVec(src_filter.chrH);
-		if(src_filter.chrV) freeVec(src_filter.chrV);
-
-		if(sws_lum_gblur!=0.0){
-			src_filter.lumH= getGaussianVec(sws_lum_gblur, 3.0);
-			src_filter.lumV= getGaussianVec(sws_lum_gblur, 3.0);
-		}else{
-			src_filter.lumH= getIdentityVec();
-			src_filter.lumV= getIdentityVec();
-		}
-
-		if(sws_chr_gblur!=0.0){
-			src_filter.chrH= getGaussianVec(sws_chr_gblur, 3.0);
-			src_filter.chrV= getGaussianVec(sws_chr_gblur, 3.0);
-		}else{
-			src_filter.chrH= getIdentityVec();
-			src_filter.chrV= getIdentityVec();
-		}
-
-		if(sws_chr_sharpen!=0.0){
-			SwsVector *g= getConstVec(-1.0, 3);
-			SwsVector *id= getConstVec(10.0/sws_chr_sharpen, 1);
-			g->coeff[1]=2.0;
-			addVec(id, g);
-			convVec(src_filter.chrH, id);
-			convVec(src_filter.chrV, id);
-			freeVec(g);
-			freeVec(id);
-		}
-
-		if(sws_lum_sharpen!=0.0){
-			SwsVector *g= getConstVec(-1.0, 3);
-			SwsVector *id= getConstVec(10.0/sws_lum_sharpen, 1);
-			g->coeff[1]=2.0;
-			addVec(id, g);
-			convVec(src_filter.lumH, id);
-			convVec(src_filter.lumV, id);
-			freeVec(g);
-			freeVec(id);
-		}
-
-		if(sws_chr_hshift)
-			shiftVec(src_filter.chrH, sws_chr_hshift);
-
-		if(sws_chr_vshift)
-			shiftVec(src_filter.chrV, sws_chr_vshift);
-
-		normalizeVec(src_filter.chrH, 1.0);
-		normalizeVec(src_filter.chrV, 1.0);
-		normalizeVec(src_filter.lumH, 1.0);
-		normalizeVec(src_filter.lumV, 1.0);
-
-		if(verbose > 1) printVec(src_filter.chrH);
-		if(verbose > 1) printVec(src_filter.lumH);
-	}
 
 	switch(dstbpp)
 	{
@@ -597,6 +533,85 @@ void SwScale_YV12slice(unsigned char* src[], int srcStride[], int srcSliceY ,
 		default: return;
 	}
 
+	if(!context) context=getSwsContextFromCmdLine(srcW, srcH, IMGFMT_YV12, dstW, dstH, dstFormat);
+
+	swScale(context, src, srcStride, srcSliceY, srcSliceH, dst, dstStride3);
+}
+
+// will use sws_flags & src_filter (from cmd line)
+SwsContext *getSwsContextFromCmdLine(int srcW, int srcH, int srcFormat, int dstW, int dstH, int dstFormat)
+{
+	int flags=0;
+	static int firstTime=1;
+
+#ifdef ARCH_X86
+	if(gCpuCaps.hasMMX)
+		asm volatile("emms\n\t"::: "memory"); //FIXME this shouldnt be required but it IS (even for non mmx versions)
+#endif
+	if(firstTime)
+	{
+		firstTime=0;
+		flags= SWS_PRINT_INFO;
+	}
+	else if(verbose>1) flags= SWS_PRINT_INFO;
+
+	if(src_filter.lumH) freeVec(src_filter.lumH);
+	if(src_filter.lumV) freeVec(src_filter.lumV);
+	if(src_filter.chrH) freeVec(src_filter.chrH);
+	if(src_filter.chrV) freeVec(src_filter.chrV);
+
+	if(sws_lum_gblur!=0.0){
+		src_filter.lumH= getGaussianVec(sws_lum_gblur, 3.0);
+		src_filter.lumV= getGaussianVec(sws_lum_gblur, 3.0);
+	}else{
+		src_filter.lumH= getIdentityVec();
+		src_filter.lumV= getIdentityVec();
+	}
+
+	if(sws_chr_gblur!=0.0){
+		src_filter.chrH= getGaussianVec(sws_chr_gblur, 3.0);
+		src_filter.chrV= getGaussianVec(sws_chr_gblur, 3.0);
+	}else{
+		src_filter.chrH= getIdentityVec();
+		src_filter.chrV= getIdentityVec();
+	}
+
+	if(sws_chr_sharpen!=0.0){
+		SwsVector *g= getConstVec(-1.0, 3);
+		SwsVector *id= getConstVec(10.0/sws_chr_sharpen, 1);
+		g->coeff[1]=2.0;
+		addVec(id, g);
+		convVec(src_filter.chrH, id);
+		convVec(src_filter.chrV, id);
+		freeVec(g);
+		freeVec(id);
+	}
+
+	if(sws_lum_sharpen!=0.0){
+		SwsVector *g= getConstVec(-1.0, 3);
+		SwsVector *id= getConstVec(10.0/sws_lum_sharpen, 1);
+		g->coeff[1]=2.0;
+		addVec(id, g);
+		convVec(src_filter.lumH, id);
+		convVec(src_filter.lumV, id);
+		freeVec(g);
+		freeVec(id);
+	}
+
+	if(sws_chr_hshift)
+		shiftVec(src_filter.chrH, sws_chr_hshift);
+
+	if(sws_chr_vshift)
+		shiftVec(src_filter.chrV, sws_chr_vshift);
+
+	normalizeVec(src_filter.chrH, 1.0);
+	normalizeVec(src_filter.chrV, 1.0);
+	normalizeVec(src_filter.lumH, 1.0);
+	normalizeVec(src_filter.lumV, 1.0);
+
+	if(verbose > 1) printVec(src_filter.chrH);
+	if(verbose > 1) printVec(src_filter.lumH);
+
 	switch(sws_flags)
 	{
 		case 0: flags|= SWS_FAST_BILINEAR; break;
@@ -608,11 +623,9 @@ void SwScale_YV12slice(unsigned char* src[], int srcStride[], int srcSliceY ,
 		default:flags|= SWS_BILINEAR; break;
 	}
 
-	if(!context) context=getSwsContext(srcW, srcH, IMGFMT_YV12, dstW, dstH, dstFormat, flags, &src_filter, NULL);
-
-
-	swScale(context, src, srcStride, srcSliceY, srcSliceH, dst, dstStride3);
+	return getSwsContext(srcW, srcH, srcFormat, dstW, dstH, dstFormat, flags, &src_filter, NULL);
 }
+
 
 static inline void initFilter(int16_t **outFilter, int16_t **filterPos, int *outFilterSize, int xInc,
 			      int srcW, int dstW, int filterAlign, int one, int flags,
@@ -629,7 +642,9 @@ static inline void initFilter(int16_t **outFilter, int16_t **filterPos, int *out
 		asm volatile("emms\n\t"::: "memory"); //FIXME this shouldnt be required but it IS (even for non mmx versions)
 #endif
 
-	*filterPos = (int16_t*)memalign(8, dstW*sizeof(int16_t));
+	*filterPos = (int16_t*)memalign(8, (dstW+1)*sizeof(int16_t));
+	(*filterPos)[dstW]=0; // the MMX scaler will read over the end 
+
 	if(ABS(xInc - 0x10000) <10) // unscaled
 	{
 		int i;
@@ -846,18 +861,26 @@ static inline void initFilter(int16_t **outFilter, int16_t **filterPos, int *out
 		if(min>minFilterSize) minFilterSize= min;
 	}
 
+	filterSize= (minFilterSize +(filterAlign-1)) & (~(filterAlign-1));
+	filter= (double*)memalign(8, filterSize*dstW*sizeof(double));
+	*outFilterSize= filterSize;
+
+	if((flags&SWS_PRINT_INFO) && verbose)
+		printf("SwScaler: reducing / aligning filtersize %d -> %d\n", filter2Size, filterSize);
 	/* try to reduce the filter-size (step2 reduce it) */
 	for(i=0; i<dstW; i++)
 	{
 		int j;
 
-		for(j=0; j<minFilterSize; j++)
-			filter2[i*minFilterSize + j]= filter2[i*filter2Size + j];
+		for(j=0; j<filterSize; j++)
+		{
+			if(j>=filter2Size) filter[i*filterSize + j]= 0.0;
+			else		   filter[i*filterSize + j]= filter2[i*filter2Size + j];
+		}
 	}
-	if((flags&SWS_PRINT_INFO) && verbose)
-		printf("SwScaler: reducing filtersize %d -> %d\n", filter2Size, minFilterSize);
-	filter2Size= minFilterSize;
-	ASSERT(filter2Size > 0)
+	free(filter2); filter2=NULL;
+	
+	ASSERT(filterSize > 0)
 
 	//FIXME try to align filterpos if possible
 
@@ -868,33 +891,32 @@ static inline void initFilter(int16_t **outFilter, int16_t **filterPos, int *out
 		if((*filterPos)[i] < 0)
 		{
 			// Move filter coeffs left to compensate for filterPos
-			for(j=1; j<filter2Size; j++)
+			for(j=1; j<filterSize; j++)
 			{
 				int left= MAX(j + (*filterPos)[i], 0);
-				filter2[i*filter2Size + left] += filter2[i*filter2Size + j];
-				filter2[i*filter2Size + j]=0;
+				filter[i*filterSize + left] += filter[i*filterSize + j];
+				filter[i*filterSize + j]=0;
 			}
 			(*filterPos)[i]= 0;
 		}
 
-		if((*filterPos)[i] + filter2Size > srcW)
+		if((*filterPos)[i] + filterSize > srcW)
 		{
-			int shift= (*filterPos)[i] + filter2Size - srcW;
+			int shift= (*filterPos)[i] + filterSize - srcW;
 			// Move filter coeffs right to compensate for filterPos
-			for(j=filter2Size-2; j>=0; j--)
+			for(j=filterSize-2; j>=0; j--)
 			{
-				int right= MIN(j + shift, filter2Size-1);
-				filter2[i*filter2Size +right] += filter2[i*filter2Size +j];
-				filter2[i*filter2Size +j]=0;
+				int right= MIN(j + shift, filterSize-1);
+				filter[i*filterSize +right] += filter[i*filterSize +j];
+				filter[i*filterSize +j]=0;
 			}
-			(*filterPos)[i]= srcW - filter2Size;
+			(*filterPos)[i]= srcW - filterSize;
 		}
 	}
 
-
-	*outFilterSize= (filter2Size +(filterAlign-1)) & (~(filterAlign-1));
-	*outFilter= (int16_t*)memalign(8, *outFilterSize*dstW*sizeof(int16_t));
-	memset(*outFilter, 0, *outFilterSize*dstW*sizeof(int16_t));
+	// Note the +1 is for the MMXscaler which reads over the end
+	*outFilter= (int16_t*)memalign(8, *outFilterSize*(dstW+1)*sizeof(int16_t));
+	memset(*outFilter, 0, *outFilterSize*(dstW+1)*sizeof(int16_t));
 
 	/* Normalize & Store in outFilter */
 	for(i=0; i<dstW; i++)
@@ -902,18 +924,18 @@ static inline void initFilter(int16_t **outFilter, int16_t **filterPos, int *out
 		int j;
 		double sum=0;
 		double scale= one;
-		for(j=0; j<filter2Size; j++)
+		for(j=0; j<filterSize; j++)
 		{
-			sum+= filter2[i*filter2Size + j];
+			sum+= filter[i*filterSize + j];
 		}
 		scale/= sum;
-		for(j=0; j<filter2Size; j++)
+		for(j=0; j<filterSize; j++)
 		{
-			(*outFilter)[i*(*outFilterSize) + j]= (int)(filter2[i*filter2Size + j]*scale);
+			(*outFilter)[i*(*outFilterSize) + j]= (int)(filter[i*filterSize + j]*scale);
 		}
 	}
 
-	free(filter2);
+	free(filter);
 }
 
 #ifdef ARCH_X86
@@ -1069,7 +1091,6 @@ cpuCaps= gCpuCaps;
 SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH, int dstFormat, int flags,
                          SwsFilter *srcFilter, SwsFilter *dstFilter){
 
-	const int widthAlign= dstFormat==IMGFMT_YV12 ? 16 : 8;
 	SwsContext *c;
 	int i;
 	SwsFilter dummyFilter= {NULL, NULL, NULL, NULL};
@@ -1082,17 +1103,10 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 	if(swScale==NULL) globalInit();
 
 	/* sanity check */
-	if(srcW<1 || srcH<1 || dstW<1 || dstH<1) return NULL;
+	if(srcW<4 || srcH<1 || dstW<8 || dstH<1) return NULL; //FIXME check if these are enough and try to lowwer them after fixing the relevant parts of the code
+	
+	if(srcFormat!=IMGFMT_YV12 && srcFormat!=IMGFMT_I420 && srcFormat!=IMGFMT_IYUV) return NULL;
 
-/* FIXME
-	if(dstStride[0]%widthAlign !=0 )
-	{
-		if(flags & SWS_PRINT_INFO)
-			fprintf(stderr, "SwScaler: Warning: dstStride is not a multiple of %d!\n"
-					"SwScaler:          ->cannot do aligned memory acesses anymore\n",
-					widthAlign);
-	}
-*/
 	if(!dstFilter) dstFilter= &dummyFilter;
 	if(!srcFilter) srcFilter= &dummyFilter;
 
@@ -1135,14 +1149,15 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 	}
 
 	/* set chrXInc & chrDstW */
-	if((flags&SWS_FULL_UV_IPOL) && dstFormat!=IMGFMT_YV12)
+	if((flags&SWS_FULL_UV_IPOL) && !isHalfChrH(dstFormat))
 		c->chrXInc= c->lumXInc>>1, c->chrDstW= dstW;
 	else
 		c->chrXInc= c->lumXInc,    c->chrDstW= (dstW+1)>>1;
 
 	/* set chrYInc & chrDstH */
-	if(dstFormat==IMGFMT_YV12)	c->chrYInc= c->lumYInc,    c->chrDstH= (dstH+1)>>1;
-	else				c->chrYInc= c->lumYInc>>1, c->chrDstH= dstH;
+	if(isHalfChrV(dstFormat))
+		c->chrYInc= c->lumYInc,    c->chrDstH= (dstH+1)>>1;
+	else	c->chrYInc= c->lumYInc>>1, c->chrDstH= dstH;
 
 	/* precalculate horizontal scaler filter coefficients */
 	{
@@ -1191,9 +1206,9 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 	}
 
 	// allocate pixbufs (we use dynamic allocation because otherwise we would need to
-	// allocate several megabytes to handle all possible cases)
 	c->lumPixBuf= (int16_t**)memalign(4, c->vLumBufSize*2*sizeof(int16_t*));
 	c->chrPixBuf= (int16_t**)memalign(4, c->vChrBufSize*2*sizeof(int16_t*));
+	//Note we need at least one pixel more at the end because of the mmx code (just in case someone wanna replace the 4000/8000)
 	for(i=0; i<c->vLumBufSize; i++)
 		c->lumPixBuf[i]= c->lumPixBuf[i+c->vLumBufSize]= (uint16_t*)memalign(8, 4000);
 	for(i=0; i<c->vChrBufSize; i++)
@@ -1248,6 +1263,10 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 			fprintf(stderr, "with BGR32 output ");
 		else if(dstFormat==IMGFMT_YV12)
 			fprintf(stderr, "with YV12 output ");
+		else if(dstFormat==IMGFMT_I420)
+			fprintf(stderr, "with I420 output ");
+		else if(dstFormat==IMGFMT_IYUV)
+			fprintf(stderr, "with IYUV output ");
 		else
 			fprintf(stderr, "without output ");
 
@@ -1295,12 +1314,12 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 				printf("SwScaler: using C scaler for horizontal scaling\n");
 #endif
 		}
-		if(dstFormat==IMGFMT_YV12)
+		if(isPlanarYUV(dstFormat))
 		{
 			if(c->vLumFilterSize==1)
-				printf("SwScaler: using 1-tap %s \"scaler\" for vertical scaling (YV12)\n", cpuCaps.hasMMX ? "MMX" : "C");
+				printf("SwScaler: using 1-tap %s \"scaler\" for vertical scaling (YV12 like)\n", cpuCaps.hasMMX ? "MMX" : "C");
 			else
-				printf("SwScaler: using n-tap %s scaler for vertical scaling (YV12)\n", cpuCaps.hasMMX ? "MMX" : "C");
+				printf("SwScaler: using n-tap %s scaler for vertical scaling (YV12 like)\n", cpuCaps.hasMMX ? "MMX" : "C");
 		}
 		else
 		{
@@ -1561,7 +1580,7 @@ void freeSwsContext(SwsContext *c){
 
 	if(c->lumPixBuf)
 	{
-		for(i=0; i<c->vLumBufSize*2; i++)
+		for(i=0; i<c->vLumBufSize; i++)
 		{
 			if(c->lumPixBuf[i]) free(c->lumPixBuf[i]);
 			c->lumPixBuf[i]=NULL;
@@ -1572,7 +1591,7 @@ void freeSwsContext(SwsContext *c){
 
 	if(c->chrPixBuf)
 	{
-		for(i=0; i<c->vChrBufSize*2; i++)
+		for(i=0; i<c->vChrBufSize; i++)
 		{
 			if(c->chrPixBuf[i]) free(c->chrPixBuf[i]);
 			c->chrPixBuf[i]=NULL;
