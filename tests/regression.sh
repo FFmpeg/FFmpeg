@@ -52,6 +52,7 @@ else
     do_asv1=y
     do_asv2=y
     do_flv=y
+    do_ffv1=y
 fi
 
 
@@ -302,6 +303,16 @@ file=${outfile}flv.flv
 do_ffmpeg $file -y -qscale 10 -f pgmyuv -i $raw_src -an -vcodec flv $file
 
 # flv decoding
+do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst 
+fi
+
+###################################
+if [ -n "$do_ffv1" ] ; then
+# ffv1 encoding
+file=${outfile}ffv1.avi
+do_ffmpeg $file -y -strict -1 -f pgmyuv -i $raw_src -an -vcodec ffv1 $file
+
+# ffv1 decoding
 do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst 
 fi
 
