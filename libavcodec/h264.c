@@ -2531,7 +2531,7 @@ static int fill_default_ref_list(H264Context *h){
 
         for(out_i=0; out_i<h->short_ref_count; out_i++){
             int best_i=-1;
-            int best_poc=-1;
+            int best_poc=INT_MAX;
 
             for(i=0; i<h->short_ref_count; i++){
                 const int poc= h->short_ref[i]->poc;
@@ -2899,6 +2899,8 @@ static int decode_ref_pic_marking(H264Context *h){
                     av_log(h->s.avctx, AV_LOG_ERROR, "illegal memory management control operation %d\n", opcode);
                     return -1;
                 }
+                if(opcode == MMCO_END)
+                    break;
             }
             h->mmco_index= i;
         }else{
