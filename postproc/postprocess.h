@@ -46,7 +46,7 @@
 #define H_RK1_FILTER	0x1000			// 4096 (not implemented yet)
 #define H_X1_FILTER	0x2000			// 8192
 
-// select between full y range (255-0) or standart one (
+// select between full y range (255-0) or standart one (234-16)
 #define FULL_Y_RANGE	0x8000			// 32768
 
 //Deinterlacing Filters
@@ -67,11 +67,38 @@
 
 #define QP_STORE_T int
 
+struct PPMode{
+	int lumMode; //acivates filters for luminance
+	int chromMode; //acivates filters for chrominance
+	int oldMode; // will be passed to odivx
+	int error; // non zero on error
+
+	int minAllowedY;
+	int maxAllowedY;
+};
+
+struct PPFilter{
+	char *shortName;
+	char *longName;
+	int chromDefault;
+	int minLumQuality;
+	int minChromQuality;
+	int mask;
+};
+
 void postprocess(unsigned char * src[], int src_stride,
                  unsigned char * dst[], int dst_stride,
                  int horizontal_size,   int vertical_size,
                  QP_STORE_T *QP_store,  int QP_stride, int mode);
 
+void postprocess2(unsigned char * src[], int src_stride,
+                 unsigned char * dst[], int dst_stride,
+                 int horizontal_size,   int vertical_size,
+                 QP_STORE_T *QP_store,  int QP_stride, struct PPMode *mode);
+
+
 int getPpModeForQuality(int quality);
+
+struct PPMode getPpModeByNameAndQuality(char *name, int quality);
 
 #endif

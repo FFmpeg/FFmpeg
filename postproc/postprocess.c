@@ -71,6 +71,7 @@ Notes:
 #include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "../config.h"
 //#undef HAVE_MMX2
 //#define HAVE_3DNOW
@@ -87,6 +88,10 @@ Notes:
 #elif defined (HAVE_3DNOW)
 #define PAVGB(a,b) "pavgusb " #a ", " #b " \n\t"
 #endif
+
+#define GET_MODE_BUFFER_SIZE 500
+#define OPTIONS_ARRAY_SIZE 10
+
 
 static uint64_t packedYOffset=	0x0000000000000000LL;
 static uint64_t packedYScale=	0x0100010001000100LL;
@@ -130,9 +135,34 @@ int vFlatnessThreshold= 56 - 16;
 //amount of "black" u r willing to loose to get a brightness corrected picture
 double maxClippedThreshold= 0.01;
 
-int maxAllowedY=255;
+int maxAllowedY=234;
 //FIXME can never make a movie´s black brighter (anyone needs that?)
 int minAllowedY=16;
+
+static struct PPFilter filters[]=
+{
+	{"hb", "hdeblock", 		1, 1, 3, H_DEBLOCK},
+	{"vb", "vdeblock", 		1, 2, 4, V_DEBLOCK},
+	{"vr", "rkvdeblock", 		1, 2, 4, H_RK1_FILTER},
+	{"h1", "x1hdeblock", 		1, 1, 3, H_X1_FILTER},
+	{"v1", "x1vdeblock", 		1, 2, 4, V_X1_FILTER},
+	{"dr", "dering", 		1, 5, 6, DERING},
+	{"al", "autolevels", 		0, 1, 2, LEVEL_FIX},
+	{"lb", "linblenddeint", 	0, 1, 6, LINEAR_BLEND_DEINT_FILTER},
+	{"li", "linipoldeint", 		0, 1, 6, LINEAR_IPOL_DEINT_FILTER},
+	{"ci", "cubicipoldeint",	0, 1, 6, CUBIC_IPOL_DEINT_FILTER},
+	{"md", "mediandeint", 		0, 1, 6, MEDIAN_DEINT_FILTER},
+	{NULL, NULL,0,0,0,0} //End Marker
+};
+
+static char *replaceTable[]=
+{
+	"default", 	"hdeblock:a,vdeblock:a,dering:a,autolevels",
+	"de", 		"hdeblock:a,vdeblock:a,dering:a,autolevels",
+	"fast", 	"x1hdeblock:a,x1vdeblock:a,dering:a,autolevels",
+	"fa", 		"x1hdeblock:a,x1vdeblock:a,dering:a,autolevels",
+	NULL //End Marker
+};
 
 #ifdef TIMING
 static inline long long rdtsc()
@@ -2163,6 +2193,165 @@ int use_old_pp=0;
 static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStride, int width, int height,
 	QP_STORE_T QPs[], int QPStride, int isColor, int mode);
 
+/* -pp Command line Help
+NOTE/FIXME: put this at an appropriate place (--help, html docs, man mplayer)?
+
+-pp <filterName>[:<option>[:<option>...]][,[-]<filterName>[:<option>...]]...
+
+long form example:
+-pp vdeblock:autoq,hdeblock:autoq,linblenddeint		-pp default,-vdeblock
+short form example:
+-pp vb:a,hb:a,lb					-pp de,-vb
+
+Filters			Options
+short	long name	short	long option	Description
+*	*		a	autoq		cpu power dependant enabler
+			c	chrom		chrominance filtring enabled
+			y	nochrom		chrominance filtring disabled
+hb	hdeblock				horizontal deblocking filter
+vb	vdeblock				vertical deblocking filter
+vr	rkvdeblock
+h1	x1hdeblock				Experimental horizontal deblock filter 1
+v1	x1vdeblock				Experimental vertical deblock filter 1
+dr	dering					not implemented yet
+al	autolevels				automatic brightness / contrast fixer
+			f	fullyrange	stretch luminance range to (0..255)
+lb	linblenddeint				linear blend deinterlacer
+li	linipoldeint				linear interpolating deinterlacer
+ci	cubicipoldeint				cubic interpolating deinterlacer
+md	mediandeint				median deinterlacer
+de	default					hdeblock:a,vdeblock:a,dering:a,autolevels
+fa	fast					x1hdeblock:a,x1vdeblock:a,dering:a,autolevels
+*/
+
+/**
+ * returns a PPMode struct which will have a non 0 error variable if an error occured
+ * name is the string after "-pp" on the command line
+ * quality is a number from 0 to GET_PP_QUALITY_MAX
+ */
+struct PPMode getPPModeByNameAndQuality(char *name, int quality)
+{
+	char temp[GET_MODE_BUFFER_SIZE];
+	char *p= temp;
+	char *filterDelimiters= ",";
+	char *optionDelimiters= ":";
+	struct PPMode ppMode= {0,0,0,0,0,0};
+	char *filterToken;
+
+	strncpy(temp, name, GET_MODE_BUFFER_SIZE);
+
+	for(;;){
+		char *p2;
+		char *filterName;
+		int q= GET_PP_QUALITY_MAX;
+		int chrom=-1;
+		char *option;
+		char *options[OPTIONS_ARRAY_SIZE];
+		int i;
+		int filterNameOk=0;
+		int numOfUnknownOptions=0;
+		int enable=1; //does the user want us to enabled or disabled the filter
+
+		filterToken= strtok(p, filterDelimiters);
+		if(filterToken == NULL) break;
+		p+= strlen(filterToken) + 1;
+		filterName= strtok(filterToken, optionDelimiters);
+		printf("%s::%s\n", filterToken, filterName);
+
+		if(*filterName == '-')
+		{
+			enable=0;
+			filterName++;
+		}
+		for(;;){ //for all options
+			option= strtok(NULL, optionDelimiters);
+			if(option == NULL) break;
+
+			printf("%s\n", option);
+			if(!strcmp("autoq", option) || !strcmp("a", option)) q= quality;
+			else if(!strcmp("nochrom", option) || !strcmp("y", option)) chrom=0;
+			else if(!strcmp("chrom", option) || !strcmp("c", option)) chrom=1;
+			else
+			{
+				options[numOfUnknownOptions] = option;
+				numOfUnknownOptions++;
+				options[numOfUnknownOptions] = NULL;
+			}
+			if(numOfUnknownOptions >= OPTIONS_ARRAY_SIZE-1) break;
+		}
+
+		/* replace stuff from the replace Table */
+		for(i=0; replaceTable[2*i]!=NULL; i++)
+		{
+			if(!strcmp(replaceTable[2*i], filterName))
+			{
+				int newlen= strlen(replaceTable[2*i + 1]);
+				int plen;
+				int spaceLeft;
+
+				if(p==NULL) p= temp, *p=0; 	//last filter
+				else p--, *p=',';		//not last filter
+
+				plen= strlen(p);
+				spaceLeft= (int)p - (int)temp + plen;
+				if(spaceLeft + newlen  >= GET_MODE_BUFFER_SIZE)
+				{
+					ppMode.error++;
+					break;
+				}
+				memmove(p + newlen, p, plen+1);
+				memcpy(p, replaceTable[2*i + 1], newlen);
+				filterNameOk=1;
+			}
+		}
+
+		for(i=0; filters[i].shortName!=NULL; i++)
+		{
+			if(   !strcmp(filters[i].longName, filterName)
+			   || !strcmp(filters[i].shortName, filterName))
+			{
+				ppMode.lumMode &= ~filters[i].mask;
+				ppMode.chromMode &= ~filters[i].mask;
+
+				filterNameOk=1;
+				if(!enable) break; // user wants to disable it
+
+				if(q >= filters[i].minLumQuality)
+					ppMode.lumMode|= filters[i].mask;
+				if(chrom==1 || (chrom==-1 && filters[i].chromDefault))
+					if(q >= filters[i].minChromQuality)
+						ppMode.chromMode|= filters[i].mask;
+
+				if(filters[i].mask == LEVEL_FIX)
+				{
+					int o;
+					ppMode.minAllowedY= 16;
+					ppMode.maxAllowedY= 234;
+					for(o=0; options[o]!=NULL; o++)
+						if(  !strcmp(options[o],"fullyrange")
+						   ||!strcmp(options[o],"f"))
+						{
+							ppMode.minAllowedY= 0;
+							ppMode.maxAllowedY= 255;
+							numOfUnknownOptions--;
+						}
+				}
+			}
+		}
+		if(!filterNameOk) ppMode.error++;
+		ppMode.error += numOfUnknownOptions;
+	}
+
+	if(ppMode.lumMode & H_DEBLOCK) ppMode.oldMode |= PP_DEBLOCK_Y_H;
+	if(ppMode.lumMode & V_DEBLOCK) ppMode.oldMode |= PP_DEBLOCK_Y_V;
+	if(ppMode.chromMode & H_DEBLOCK) ppMode.oldMode |= PP_DEBLOCK_C_H;
+	if(ppMode.chromMode & V_DEBLOCK) ppMode.oldMode |= PP_DEBLOCK_C_V;
+	if(ppMode.lumMode & DERING) ppMode.oldMode |= PP_DERING_Y;
+	if(ppMode.chromMode & DERING) ppMode.oldMode |= PP_DERING_C;
+
+	return ppMode;
+}
+
 /**
  * ...
  */
@@ -2172,6 +2361,18 @@ void  postprocess(unsigned char * src[], int src_stride,
                  QP_STORE_T *QP_store,  int QP_stride,
 					  int mode)
 {
+/*
+	static int qual=0;
+
+	struct PPMode ppMode= getPPModeByNameAndQuality("fast,default,-hdeblock,-vdeblock", qual);
+	qual++;
+	qual%=7;
+	printf("\n%d %d %d %d\n", ppMode.lumMode, ppMode.chromMode, ppMode.oldMode, ppMode.error);
+	postprocess2(src, src_stride, dst, dst_stride,
+                 horizontal_size, vertical_size, QP_store, QP_stride, &ppMode);
+
+	return;
+*/
 
 #ifdef HAVE_ODIVX_POSTPROCESS
 // Note: I could make this shit outside of this file, but it would mean one
@@ -2182,21 +2383,6 @@ void  postprocess(unsigned char * src[], int src_stride,
 	}
 #endif
 
-/*
-	long long T= rdtsc();
-	for(int y=vertical_size-1; y>=0 ; y--)
-		memcpy(dst[0] + y*src_stride, src[0] + y*src_stride,src_stride);
-//	memcpy(dst[0], src[0],src_stride*vertical_size);
-	printf("%4dk\r", (rdtsc()-T)/1000);
-
-	return;
-*/
-/*
-	long long T= rdtsc();
-	while( (rdtsc() - T)/1000 < 4000);
-
-	return;
-*/
 	postProcess(src[0], src_stride, dst[0], dst_stride,
 		horizontal_size, vertical_size, QP_store, QP_stride, 0, mode);
 
@@ -2211,7 +2397,7 @@ void  postprocess(unsigned char * src[], int src_stride,
 		postProcess(src[1], src_stride, dst[1], dst_stride,
 			horizontal_size, vertical_size, QP_store, QP_stride, 1, mode);
 		postProcess(src[2], src_stride, dst[2], dst_stride,
-			horizontal_size, vertical_size, QP_store, QP_stride, 1, mode);
+			horizontal_size, vertical_size, QP_store, QP_stride, 2, mode);
 	}
 	else
 	{
@@ -2219,6 +2405,38 @@ void  postprocess(unsigned char * src[], int src_stride,
 		memcpy(dst[2], src[2], src_stride*horizontal_size);
 	}
 }
+
+void  postprocess2(unsigned char * src[], int src_stride,
+                 unsigned char * dst[], int dst_stride,
+                 int horizontal_size,   int vertical_size,
+                 QP_STORE_T *QP_store,  int QP_stride,
+		 struct PPMode *mode)
+{
+
+#ifdef HAVE_ODIVX_POSTPROCESS
+// Note: I could make this shit outside of this file, but it would mean one
+// more function call...
+	if(use_old_pp){
+	    odivx_postprocess(src,src_stride,dst,dst_stride,horizontal_size,vertical_size,QP_store,QP_stride,
+	    mode->oldMode);
+	    return;
+	}
+#endif
+
+	postProcess(src[0], src_stride, dst[0], dst_stride,
+		horizontal_size, vertical_size, QP_store, QP_stride, 0, mode->lumMode);
+
+	horizontal_size >>= 1;
+	vertical_size   >>= 1;
+	src_stride      >>= 1;
+	dst_stride      >>= 1;
+
+	postProcess(src[1], src_stride, dst[1], dst_stride,
+		horizontal_size, vertical_size, QP_store, QP_stride, 1, mode->chromMode);
+	postProcess(src[2], src_stride, dst[2], dst_stride,
+		horizontal_size, vertical_size, QP_store, QP_stride, 2, mode->chromMode);
+}
+
 
 /**
  * gets the mode flags for a given quality (larger values mean slower but better postprocessing)
