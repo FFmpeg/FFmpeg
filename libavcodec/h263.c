@@ -1017,7 +1017,7 @@ static void init_mv_penalty_and_fcode(MpegEncContext *s)
     }
 }
 
-static void init_uni_dc_tab()
+static void init_uni_dc_tab(void)
 {
     int level, uni_code, uni_len;
 
@@ -1367,7 +1367,6 @@ static inline int mpeg4_pred_dc(MpegEncContext * s, int n, UINT16 **dc_val_ptr, 
 {
     int a, b, c, wrap, pred, scale;
     UINT16 *dc_val;
-    int dummy;
 
     /* find prediction */
     if (n < 4) {

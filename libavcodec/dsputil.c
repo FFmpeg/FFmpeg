@@ -144,7 +144,7 @@ UINT8 zigzag_end[64];
 UINT8 permutation[64];
 //UINT8 invPermutation[64];
 
-static void build_zigzag_end()
+static void build_zigzag_end(void)
 {
     int lastIndex;
     int lastIndexAfterPerm=0;

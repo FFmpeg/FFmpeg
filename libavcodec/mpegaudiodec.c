@@ -2481,6 +2481,7 @@ static int decode_frame(AVCodecContext * avctx,
 	    break;
 	}
     next_data:
+	;
     }
     return buf_ptr - buf;
 }

@@ -53,7 +53,7 @@ static int msmpeg4_decode_dc(MpegEncContext * s, int n, int *dir_ptr);
 static int msmpeg4_decode_motion(MpegEncContext * s, 
                                  int *mx_ptr, int *my_ptr);
 static void msmpeg4v2_encode_motion(MpegEncContext * s, int val);
-static void init_h263_dc_for_msmpeg4();
+static void init_h263_dc_for_msmpeg4(void);
 
 
 extern UINT32 inverse[256];
@@ -698,7 +698,7 @@ static VLC v1_intra_cbpc_vlc;
 static VLC v1_inter_cbpc_vlc;
 
 /* this table is practically identical to the one from h263 except that its inverted */
-static void init_h263_dc_for_msmpeg4()
+static void init_h263_dc_for_msmpeg4(void)
 {
     static int inited=0;
     
