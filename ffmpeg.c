@@ -1,6 +1,6 @@
 /*
  * FFmpeg main 
- * Copyright (c) 2000, 2001, 2002 Fabrice Bellard
+ * Copyright (c) 2000-2003 Fabrice Bellard
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -40,27 +40,13 @@
 #include <time.h>
 #include <ctype.h>
 
+#include "cmdutils.h"
+
 #if !defined(INFINITY) && defined(HUGE_VAL)
 #define INFINITY HUGE_VAL
 #endif
 
 #define MAXINT64 int64_t_C(0x7fffffffffffffff)
-
-typedef struct {
-    const char *name;
-    int flags;
-#define HAS_ARG    0x0001
-#define OPT_BOOL   0x0002
-#define OPT_EXPERT 0x0004
-#define OPT_STRING 0x0008
-    union {
-        void (*func_arg)(const char *);
-        int *int_arg;
-        char **str_arg;
-    } u;
-    const char *help;
-    const char *argname;
-} OptionDef;
 
 /* select an input stream for an output stream */
 typedef struct AVStreamMap {
@@ -133,7 +119,6 @@ static int use_4mv = 0;
 static int use_aic = 0;
 static int use_umv = 0;
 /* /Fx */
-static int use_h263p_extra = 0;
 static int do_deinterlace = 0;
 static int workaround_bugs = FF_BUG_AUTODETECT;
 static int error_resilience = 2;
@@ -161,7 +146,6 @@ static char *str_copyright = NULL;
 static char *str_comment = NULL;
 static int do_benchmark = 0;
 static int do_hex_dump = 0;
-static int do_play = 0;
 static int do_psnr = 0;
 static int do_vstats = 0;
 static int do_pass = 0;
@@ -1134,11 +1118,7 @@ static int av_encode(AVFormatContext **output_files,
     }
 
 #ifndef CONFIG_WIN32
-    if (!do_play) {
-        fprintf(stderr, "Press [q] to stop encoding\n");
-    } else {
-        fprintf(stderr, "Press [q] to stop playing\n");
-    }
+    fprintf(stderr, "Press [q] to stop encoding\n");
 #endif
     term_init();
 
@@ -1998,28 +1978,6 @@ static void opt_recording_time(const char *arg)
     recording_time = parse_date(arg, 1);
 }
 
-static void print_error(const char *filename, int err)
-{
-    switch(err) {
-    case AVERROR_NUMEXPECTED:
-        fprintf(stderr, "%s: Incorrect image filename syntax.\n"
-                "Use '%%d' to specify the image number:\n"
-                "  for img1.jpg, img2.jpg, ..., use 'img%%d.jpg';\n"
-                "  for img001.jpg, img002.jpg, ..., use 'img%%03d.jpg'.\n", 
-                filename);
-        break;
-    case AVERROR_INVALIDDATA:
-        fprintf(stderr, "%s: Error while parsing header\n", filename);
-        break;
-    case AVERROR_NOFMT:
-        fprintf(stderr, "%s: Unknown format\n", filename);
-        break;
-    default:
-        fprintf(stderr, "%s: Error while opening file\n", filename);
-        break;
-    }
-}
-
 static void opt_input_file(const char *filename)
 {
     AVFormatContext *ic;
@@ -2524,40 +2482,6 @@ static void prepare_grab(void)
     }
 }
 
-/* open the necessary output devices for playing */
-static void prepare_play(void)
-{
-    int has_video, has_audio;
-    
-    check_audio_video_inputs(&has_video, &has_audio);
-        
-    /* manual disable */
-    if (audio_disable) {
-        has_audio = 0;
-    }
-    if (video_disable) {
-        has_video = 0;
-    }
-        
-    if (has_audio) {
-        file_oformat = guess_format("audio_device", NULL, NULL);
-        if (!file_oformat) {
-            fprintf(stderr, "Could not find audio device\n");
-            exit(1);
-        }
-        opt_output_file(audio_device?audio_device:"/dev/dsp");
-    }
-
-    if (has_video) {
-        file_oformat = guess_format("framebuffer_device", NULL, NULL);
-        if (!file_oformat) {
-            fprintf(stderr, "Could not find framebuffer device\n");
-            exit(1);
-        }
-        opt_output_file("");
-    }
-}
-
 /* same option as mencoder */
 static void opt_pass(const char *pass_str)
 {
@@ -2668,47 +2592,6 @@ static void show_formats(void)
     exit(1);
 }
 
-void show_help(void)
-{
-    const char *prog;
-    const OptionDef *po;
-    int i, expert;
-    
-    prog = do_play ? "ffplay" : "ffmpeg";
-
-    printf("%s version " FFMPEG_VERSION ", Copyright (c) 2000, 2001, 2002 Fabrice Bellard\n",
-           prog);
-    
-    if (!do_play) {
-        printf("usage: ffmpeg [[options] -i input_file]... {[options] outfile}...\n"
-               "Hyper fast MPEG1/MPEG4/H263/RV and AC3/MPEG audio encoder\n");
-    } else {
-        printf("usage: ffplay [options] input_file...\n"
-               "Simple audio player\n");
-    }
-           
-    printf("\n"
-           "Main options are:\n");
-    for(i=0;i<2;i++) {
-        if (i == 1)
-            printf("\nAdvanced options are:\n");
-        for(po = options; po->name != NULL; po++) {
-            char buf[64];
-            expert = (po->flags & OPT_EXPERT) != 0;
-            if (expert == i) {
-                strcpy(buf, po->name);
-                if (po->flags & HAS_ARG) {
-                    strcat(buf, " ");
-                    strcat(buf, po->argname);
-                }
-                printf("-%-17s  %s\n", buf, po->help);
-            }
-        }
-    }
-
-    exit(1);
-}
-
 const OptionDef options[] = {
     { "L", 0, {(void*)show_licence}, "show license" },
     { "h", 0, {(void*)show_help}, "show help" },
@@ -2803,83 +2686,42 @@ const OptionDef options[] = {
     { NULL, },
 };
 
+void show_help(void)
+{
+    printf("ffmpeg version " FFMPEG_VERSION ", Copyright (c) 2000, 2001, 2002 Fabrice Bellard\n");
+    printf("usage: ffmpeg [[options] -i input_file]... {[options] outfile}...\n"
+           "Hyper fast Audio and Video encoder\n");
+    printf("\n");
+    show_help_options(options);
+    exit(1);
+}
+
+void parse_arg_file(const char *filename)
+{
+    opt_output_file(filename);
+}
+
 int main(int argc, char **argv)
 {
-    int optindex, i;
-    const char *opt, *arg;
-    const OptionDef *po;
+    int i;
     int64_t ti;
 
     av_register_all();
-
-    /* detect if invoked as player */
-    i = strlen(argv[0]);
-    if (i >= 6 && !strcmp(argv[0] + i - 6, "ffplay"))
-        do_play = 1;
 
     if (argc <= 1)
         show_help();
     
     /* parse options */
-    optindex = 1;
-    while (optindex < argc) {
-        opt = argv[optindex++];
-        
-        if (opt[0] == '-' && opt[1] != '\0') {
-            po = options;
-            while (po->name != NULL) {
-                if (!strcmp(opt + 1, po->name))
-                    break;
-                po++;
-            }
-            if (!po->name) {
-                fprintf(stderr, "%s: unrecognized option '%s'\n", argv[0], opt);
-                exit(1);
-            }
-            arg = NULL;
-            if (po->flags & HAS_ARG) {
-                arg = argv[optindex++];
-                if (!arg) {
-                    fprintf(stderr, "%s: missing argument for option '%s'\n", argv[0], opt);
-                    exit(1);
-                }
-            }
-            if (po->flags & OPT_STRING) {
-                char *str;
-                str = av_strdup(arg);
-                *po->u.str_arg = str;
-            } else if (po->flags & OPT_BOOL) {
-                *po->u.int_arg = 1;
-            } else {
-		po->u.func_arg(arg);
-            }
-        } else {
-            if (!do_play) {
-                opt_output_file(opt);
-            } else {
-                opt_input_file(opt);
-            }
-        }
+    parse_options(argc, argv, options);
+
+    /* file converter / grab */
+    if (nb_output_files <= 0) {
+        fprintf(stderr, "Must supply at least one output file\n");
+        exit(1);
     }
-
-
-    if (!do_play) {
-        /* file converter / grab */
-        if (nb_output_files <= 0) {
-            fprintf(stderr, "Must supply at least one output file\n");
-            exit(1);
-        }
-        
-        if (nb_input_files == 0) {
-            prepare_grab();
-        }
-    } else {
-        /* player */
-        if (nb_input_files <= 0) {
-            fprintf(stderr, "Must supply at least one input file\n");
-            exit(1);
-        }
-        prepare_play();
+    
+    if (nb_input_files == 0) {
+        prepare_grab();
     }
 
     ti = getutime();

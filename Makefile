@@ -16,18 +16,22 @@ endif
 
 ifeq ($(CONFIG_WIN32),yes)
 EXE=.exe
-PROG=ffmpeg$(EXE)
 else
 ifeq ($(CONFIG_OS2),yes)
 EXE=.exe
-PROG=ffmpeg$(EXE)
 else
 EXE=
-PROG=ffmpeg ffplay
+endif
+endif
+
+PROG=ffmpeg$(EXE)
+
 ifeq ($(CONFIG_FFSERVER),yes)
-PROG+=ffserver
+PROG+=ffserver$(EXE)
 endif
-endif
+
+ifeq ($(CONFIG_FFPLAY),yes)
+PROG+=ffplay$(EXE)
 endif
 
 ifeq ($(CONFIG_AUDIO_BEOS),yes)
@@ -67,7 +71,7 @@ else
 TEST=test
 endif
 
-OBJS = ffmpeg.o ffserver.o
+OBJS = ffmpeg.o ffserver.o cmdutils.o ffplay.o
 SRCS = $(OBJS:.o=.c) $(ASM_OBJS:.o=.s)
 FFLIBS = -L./libavformat -lavformat -L./libavcodec -lavcodec
 
@@ -77,9 +81,8 @@ lib: $(AMRLIBS)
 	$(MAKE) -C libavcodec all
 	$(MAKE) -C libavformat all
 
-
-ffmpeg_g$(EXE): ffmpeg.o .libs
-	$(CC) $(LDFLAGS) -o $@ ffmpeg.o $(FFLIBS) $(EXTRALIBS)
+ffmpeg_g$(EXE): ffmpeg.o cmdutils.o .libs
+	$(CC) $(LDFLAGS) -o $@ ffmpeg.o cmdutils.o $(FFLIBS) $(EXTRALIBS)
 
 ffmpeg$(EXE): ffmpeg_g$(EXE)
 	cp -p $< $@
@@ -88,8 +91,15 @@ ffmpeg$(EXE): ffmpeg_g$(EXE)
 ffserver$(EXE): ffserver.o .libs
 	$(CC) $(LDFLAGS) $(FFSLDFLAGS) -o $@ ffserver.o $(FFLIBS) $(EXTRALIBS) 
 
-ffplay: ffmpeg$(EXE)
-	ln -sf $< $@
+ffplay_g$(EXE): ffplay.o cmdutils.o .libs
+	$(CC) $(LDFLAGS) -o $@ ffplay.o cmdutils.o $(FFLIBS) $(EXTRALIBS) $(SDL_LIBS)
+
+ffplay$(EXE): ffplay_g$(EXE)
+	cp -p $< $@
+	$(STRIP) $@
+
+ffplay.o: ffplay.c
+	$(CC) $(CFLAGS) $(SDL_CFLAGS) -c -o $@ $< 
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $< 
@@ -101,7 +111,6 @@ install: all $(INSTALLVHOOK)
 	$(MAKE) -C libavcodec install
 	install -d $(prefix)/bin
 	install -c -s -m 755 $(PROG) $(prefix)/bin
-	ln -sf ffmpeg $(prefix)/bin/ffplay 
 
 install-vhook: $(prefix)/lib/vhook
 	$(MAKE) -C vhook install INSTDIR=$(prefix)/lib/vhook
@@ -133,7 +142,7 @@ clean: $(CLEANVHOOK)
 	$(MAKE) -C libavcodec clean
 	$(MAKE) -C libavformat clean
 	$(MAKE) -C tests clean
-	rm -f *.o *.d *~ .libs .depend gmon.out TAGS ffmpeg_g$(EXE) $(PROG) 
+	rm -f *.o *.d *~ .libs .depend gmon.out TAGS ffmpeg_g$(EXE) ffplay_g$(EXE) $(PROG) 
 
 clean-vhook:
 	$(MAKE) -C vhook clean
