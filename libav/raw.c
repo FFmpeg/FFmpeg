@@ -44,7 +44,7 @@ static int raw_read_header(AVFormatContext *s,
 {
     AVStream *st;
 
-    st = malloc(sizeof(AVStream));
+    st = av_malloc(sizeof(AVStream));
     if (!st)
         return -1;
     s->nb_streams = 1;
@@ -60,7 +60,7 @@ static int raw_read_header(AVFormatContext *s,
             st->codec.codec_type = CODEC_TYPE_VIDEO;
             st->codec.codec_id = s->format->video_codec;
         } else {
-            free(st);
+            av_free(st);
             return -1;
         }
         
@@ -80,26 +80,6 @@ static int raw_read_header(AVFormatContext *s,
     } else {
         return -1;
     }
-    return 0;
-}
-
-/* raw input */
-static int pcm_read_header(AVFormatContext *s,
-                           AVFormatParameters *ap)
-{
-    AVStream *st;
-
-    st = malloc(sizeof(AVStream));
-    if (!st)
-        return -1;
-    s->nb_streams = 1;
-    s->streams[0] = st;
-
-    st->id = 0;
-
-    st->codec.codec_type = CODEC_TYPE_AUDIO;
-    st->codec.codec_id = s->format->audio_codec;
-
     return 0;
 }
 
@@ -136,7 +116,7 @@ static int mp3_read_header(AVFormatContext *s,
 {
     AVStream *st;
 
-    st = malloc(sizeof(AVStream));
+    st = av_malloc(sizeof(AVStream));
     if (!st)
         return -1;
     s->nb_streams = 1;
@@ -268,7 +248,7 @@ AVFormat pcm_s16le_format = {
     raw_write_packet,
     raw_write_trailer,
 
-    pcm_read_header,
+    raw_read_header,
     raw_read_packet,
     raw_read_close,
 };
@@ -288,7 +268,7 @@ AVFormat pcm_s16be_format = {
     raw_write_packet,
     raw_write_trailer,
 
-    pcm_read_header,
+    raw_read_header,
     raw_read_packet,
     raw_read_close,
 };
@@ -308,7 +288,7 @@ AVFormat pcm_u16le_format = {
     raw_write_packet,
     raw_write_trailer,
 
-    pcm_read_header,
+    raw_read_header,
     raw_read_packet,
     raw_read_close,
 };
@@ -328,7 +308,7 @@ AVFormat pcm_u16be_format = {
     raw_write_packet,
     raw_write_trailer,
 
-    pcm_read_header,
+    raw_read_header,
     raw_read_packet,
     raw_read_close,
 };
@@ -344,7 +324,7 @@ AVFormat pcm_s8_format = {
     raw_write_packet,
     raw_write_trailer,
 
-    pcm_read_header,
+    raw_read_header,
     raw_read_packet,
     raw_read_close,
 };
@@ -360,7 +340,7 @@ AVFormat pcm_u8_format = {
     raw_write_packet,
     raw_write_trailer,
 
-    pcm_read_header,
+    raw_read_header,
     raw_read_packet,
     raw_read_close,
 };
@@ -376,7 +356,7 @@ AVFormat pcm_mulaw_format = {
     raw_write_packet,
     raw_write_trailer,
 
-    pcm_read_header,
+    raw_read_header,
     raw_read_packet,
     raw_read_close,
 };
@@ -392,7 +372,7 @@ AVFormat pcm_alaw_format = {
     raw_write_packet,
     raw_write_trailer,
 
-    pcm_read_header,
+    raw_read_header,
     raw_read_packet,
     raw_read_close,
 };
