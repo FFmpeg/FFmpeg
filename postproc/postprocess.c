@@ -530,13 +530,13 @@ static inline void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int 
 /* -pp Command line Help
 */
 char *pp_help=
-"-npp <filterName>[:<option>[:<option>...]][,[-]<filterName>[:<option>...]]...\n"
+"<filterName>[:<option>[:<option>...]][,[-]<filterName>[:<option>...]]...\n"
 "long form example:\n"
-"-npp vdeblock:autoq,hdeblock:autoq,linblenddeint	-npp default,-vdeblock\n"
+"vdeblock:autoq,hdeblock:autoq,linblenddeint	default,-vdeblock\n"
 "short form example:\n"
-"-npp vb:a,hb:a,lb					-npp de,-vb\n"
+"vb:a,hb:a,lb					de,-vb\n"
 "more examples:\n"
-"-npp tn:64:128:256\n"
+"tn:64:128:256\n"
 "Filters			Options\n"
 "short	long name	short	long option	Description\n"
 "*	*		a	autoq		cpu power dependant enabler\n"
