@@ -2669,7 +2669,7 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
                     }
                 }
 
-                s->dct_unquantize= s->dct_unquantize_mpeg;
+                s->dct_unquantize= s->dct_unquantize_mpeg2;
 
                 // FIXME a bunch of grayscale shape things
             }else

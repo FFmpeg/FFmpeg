@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * 4MV & hq encoding stuff by Michael Niedermayer <michaelni@gmx.at>
+ * 4MV & hq & b-frame encoding stuff by Michael Niedermayer <michaelni@gmx.at>
  */
 #include <stdlib.h>
 #include <stdio.h>
@@ -34,6 +34,8 @@ static void encode_picture(MpegEncContext *s, int picture_number);
 static void rate_control_init(MpegEncContext *s);
 static int rate_estimate_qscale(MpegEncContext *s);
 static void dct_unquantize_mpeg1_c(MpegEncContext *s, 
+                                   DCTELEM *block, int n, int qscale);
+static void dct_unquantize_mpeg2_c(MpegEncContext *s,
                                    DCTELEM *block, int n, int qscale);
 static void dct_unquantize_h263_c(MpegEncContext *s, 
                                   DCTELEM *block, int n, int qscale);
@@ -112,7 +114,8 @@ int MPV_common_init(MpegEncContext *s)
     UINT8 *pict;
 
     s->dct_unquantize_h263 = dct_unquantize_h263_c;
-    s->dct_unquantize_mpeg = dct_unquantize_mpeg1_c;
+    s->dct_unquantize_mpeg1 = dct_unquantize_mpeg1_c;
+    s->dct_unquantize_mpeg2 = dct_unquantize_mpeg2_c;
         
 #ifdef HAVE_MMX
     MPV_common_init_mmx(s);
@@ -121,7 +124,7 @@ int MPV_common_init(MpegEncContext *s)
     if(s->out_format == FMT_H263)
         s->dct_unquantize = s->dct_unquantize_h263;
     else
-        s->dct_unquantize = s->dct_unquantize_mpeg;
+        s->dct_unquantize = s->dct_unquantize_mpeg1;
     
     s->mb_width = (s->width + 15) / 16;
     s->mb_height = (s->height + 15) / 16;
@@ -1943,6 +1946,69 @@ static void dct_unquantize_mpeg1_c(MpegEncContext *s,
         }
     }
 }
+
+static void dct_unquantize_mpeg2_c(MpegEncContext *s, 
+                                   DCTELEM *block, int n, int qscale)
+{
+    int i, level, nCoeffs;
+    const UINT16 *quant_matrix;
+
+    if(s->alternate_scan) nCoeffs= 64;
+    else nCoeffs= s->block_last_index[n]+1;
+    
+    if (s->mb_intra) {
+        if (n < 4) 
+            block[0] = block[0] * s->y_dc_scale;
+        else
+            block[0] = block[0] * s->c_dc_scale;
+        quant_matrix = s->intra_matrix;
+        for(i=1;i<nCoeffs;i++) {
+            int j= zigzag_direct[i];
+            level = block[j];
+            if (level) {
+                if (level < 0) {
+                    level = -level;
+                    level = (int)(level * qscale * quant_matrix[j]) >> 3;
+                    level = -level;
+                } else {
+                    level = (int)(level * qscale * quant_matrix[j]) >> 3;
+                }
+#ifdef PARANOID
+                if (level < -2048 || level > 2047)
+                    fprintf(stderr, "unquant error %d %d\n", i, level);
+#endif
+                block[j] = level;
+            }
+        }
+    } else {
+        int sum=-1;
+        i = 0;
+        quant_matrix = s->non_intra_matrix;
+        for(;i<nCoeffs;i++) {
+            int j= zigzag_direct[i];
+            level = block[j];
+            if (level) {
+                if (level < 0) {
+                    level = -level;
+                    level = (((level << 1) + 1) * qscale *
+                             ((int) (quant_matrix[j]))) >> 4;
+                    level = -level;
+                } else {
+                    level = (((level << 1) + 1) * qscale *
+                             ((int) (quant_matrix[j]))) >> 4;
+                }
+#ifdef PARANOID
+                if (level < -2048 || level > 2047)
+                    fprintf(stderr, "unquant error %d %d\n", i, level);
+#endif
+                block[j] = level;
+                sum+=level;
+            }
+        }
+        block[63]^=sum&1;
+    }
+}
+
 
 static void dct_unquantize_h263_c(MpegEncContext *s, 
                                   DCTELEM *block, int n, int qscale)
