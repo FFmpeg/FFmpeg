@@ -105,7 +105,7 @@ static char *info_table[][2]={
 	{"StartTimestamp"	, "v"},
 	{"EndTimestamp"		, "v"},
 	{"Author"		, "UTF8"},
-	{"Titel"		, "UTF8"},
+	{"Title"		, "UTF8"},
 	{"Description"		, "UTF8"},
 	{"Copyright"		, "UTF8"},
 	{"Encoder"		, "UTF8"},
