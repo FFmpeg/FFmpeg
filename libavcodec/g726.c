@@ -334,6 +334,17 @@ static int g726_init(AVCodecContext * avctx)
     c->bit_buffer = 0;
     c->bits_left = 0;
 
+    avctx->coded_frame = avcodec_alloc_frame();
+    if (!avctx->coded_frame)
+        return -ENOMEM;
+    avctx->coded_frame->key_frame = 1;
+
+    return 0;
+}
+
+static int g726_close(AVCodecContext *avctx)
+{
+    av_freep(&avctx->coded_frame);
     return 0;
 }
 
@@ -394,7 +405,7 @@ AVCodec adpcm_g726_encoder = {
     sizeof(AVG726Context),
     g726_init,
     g726_encode_frame,
-    NULL,
+    g726_close,
     NULL,
 };
 #endif //CONFIG_ENCODERS
@@ -406,6 +417,6 @@ AVCodec adpcm_g726_decoder = {
     sizeof(AVG726Context),
     g726_init,
     NULL,
-    NULL,
+    g726_close,
     g726_decode_frame,
 };
