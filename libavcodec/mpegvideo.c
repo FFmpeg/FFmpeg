@@ -923,7 +923,11 @@ alloc:
         s->current_picture_ptr= &s->picture[i];
     }
 
+    s->current_picture_ptr->pict_type= s->pict_type;
+    s->current_picture_ptr->quality= s->qscale;
+
     s->current_picture= *s->current_picture_ptr;
+  
   if(s->out_format != FMT_H264){
     if (s->pict_type != B_TYPE) {
         s->last_picture_ptr= s->next_picture_ptr;
