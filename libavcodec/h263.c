@@ -1079,7 +1079,7 @@ INT16 *h263_pred_motion(MpegEncContext * s, int block,
 
 static void h263_encode_motion(MpegEncContext * s, int val, int f_code)
 {
-    int range, l, m, bit_size, sign, code, bits;
+    int range, l, bit_size, sign, code, bits;
 
     if (val == 0) {
         /* zero vector */
@@ -1090,12 +1090,20 @@ static void h263_encode_motion(MpegEncContext * s, int val, int f_code)
         range = 1 << bit_size;
         /* modulo encoding */
         l = range * 32;
-        m = 2 * l;
+#if 1
+        val+= l;
+        val&= 2*l-1;
+        val-= l;
+        sign = val>>31;
+        val= (val^sign)-sign;
+        sign&=1;
+#else
         if (val < -l) {
-            val += m;
+            val += 2*l;
         } else if (val >= l) {
-            val -= m;
+            val -= 2*l;
         }
+
         assert(val>=-l && val<l);
 
         if (val >= 0) {
@@ -1104,6 +1112,7 @@ static void h263_encode_motion(MpegEncContext * s, int val, int f_code)
             val = -val;
             sign = 1;
         }
+#endif
         val--;
         code = (val >> bit_size) + 1;
         bits = val & (range - 1);
