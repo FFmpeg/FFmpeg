@@ -3802,8 +3802,7 @@ static void show_banner(void)
         LIBAVCODEC_BUILD);
     printf("  built on " __DATE__ " " __TIME__);
 #ifdef __GNUC__
-    printf(", using gcc %d.%d.%d\n",
-        __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__);
+    printf(", gcc: %s\n", __VERSION__);
 #else
     printf(", using a non-gcc compiler\n");
 #endif
