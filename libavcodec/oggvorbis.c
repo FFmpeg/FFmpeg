@@ -24,12 +24,20 @@ typedef struct OggVorbisContext {
 
 
 int oggvorbis_init_encoder(vorbis_info *vi, AVCodecContext *avccontext) {
-    if(avccontext->coded_frame->quality) /* VBR requested */
-	return vorbis_encode_init_vbr(vi, avccontext->channels,
-		  avccontext->sample_rate, (float)avccontext->coded_frame->quality / 1000) ;
+
+#ifdef OGGVORBIS_VBR_BY_ESTIMATE
+    /* variable bitrate by estimate */
+
+    return (vorbis_encode_setup_managed(vi, avccontext->channels,
+              avccontext->sample_rate, -1, avccontext->bit_rate, -1) ||
+	    vorbis_encode_ctl(vi, OV_ECTL_RATEMANAGE_AVG, NULL) ||
+	    vorbis_encode_setup_init(vi)) ;
+#else
+    /* constant bitrate */
 
     return vorbis_encode_init(vi, avccontext->channels,
 	          avccontext->sample_rate, -1, avccontext->bit_rate, -1) ;
+#endif
 }
 
 
