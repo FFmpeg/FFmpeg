@@ -2117,11 +2117,14 @@ DERING_CORE((%0, %1, 8),(%%ebx, %1, 4) ,%%mm2,%%mm4,%%mm0,%%mm3,%%mm5,%%mm1,%%mm
 
 /**
  * Deinterlaces the given block
- * will be called for every 8x8 block, and can read & write into an 8x16 block
+ * will be called for every 8x8 block and can read & write from line 4-15
+ * lines 0-3 have been passed through the deblock / dering filters allready, but can be read too
+ * lines 4-12 will be read into the deblocking filter and should be deinterlaced
  */
 static inline void deInterlaceInterpolateLinear(uint8_t src[], int stride)
 {
 #if defined (HAVE_MMX2) || defined (HAVE_3DNOW)
+	src+= 4*stride;
 	asm volatile(
 		"leal (%0, %1), %%eax				\n\t"
 		"leal (%%eax, %1, 4), %%ebx			\n\t"
@@ -2147,6 +2150,7 @@ static inline void deInterlaceInterpolateLinear(uint8_t src[], int stride)
 	);
 #else
 	int x;
+	src+= 4*stride;
 	for(x=0; x<8; x++)
 	{
 		src[stride]   = (src[0]        + src[stride*2])>>1;
@@ -2160,12 +2164,16 @@ static inline void deInterlaceInterpolateLinear(uint8_t src[], int stride)
 
 /**
  * Deinterlaces the given block
- * will be called for every 8x8 block, and can read & write into an 8x16 block
+ * will be called for every 8x8 block and can read & write from line 4-15
+ * lines 0-3 have been passed through the deblock / dering filters allready, but can be read too
+ * lines 4-12 will be read into the deblocking filter and should be deinterlaced
+ * this filter will read lines 3-15 and write 7-13
  * no cliping in C version
  */
 static inline void deInterlaceInterpolateCubic(uint8_t src[], int stride)
 {
 #if defined (HAVE_MMX2) || defined (HAVE_3DNOW)
+	src+= stride*3;
 	asm volatile(
 		"leal (%0, %1), %%eax				\n\t"
 		"leal (%%eax, %1, 4), %%ebx			\n\t"
@@ -2207,6 +2215,7 @@ DEINT_CUBIC((%%ebx, %1), (%0, %1, 8), (%%ebx, %1, 4), (%%ecx), (%%ecx, %1, 2))
 	);
 #else
 	int x;
+	src+= stride*3;
 	for(x=0; x<8; x++)
 	{
 		src[stride*3] = (-src[0]        + 9*src[stride*2] + 9*src[stride*4] - src[stride*6])>>4;
@@ -2220,12 +2229,16 @@ DEINT_CUBIC((%%ebx, %1), (%0, %1, 8), (%%ebx, %1, 4), (%%ecx), (%%ecx, %1, 2))
 
 /**
  * Deinterlaces the given block
- * will be called for every 8x8 block, and can read & write into an 8x16 block
+ * will be called for every 8x8 block and can read & write from line 4-15
+ * lines 0-3 have been passed through the deblock / dering filters allready, but can be read too
+ * lines 4-12 will be read into the deblocking filter and should be deinterlaced
  * will shift the image up by 1 line (FIXME if this is a problem)
+ * this filter will read lines 4-13 and write 4-11
  */
 static inline void deInterlaceBlendLinear(uint8_t src[], int stride)
 {
 #if defined (HAVE_MMX2) || defined (HAVE_3DNOW)
+	src+= 4*stride;
 	asm volatile(
 		"leal (%0, %1), %%eax				\n\t"
 		"leal (%%eax, %1, 4), %%ebx			\n\t"
@@ -2273,6 +2286,7 @@ static inline void deInterlaceBlendLinear(uint8_t src[], int stride)
 	);
 #else
 	int x;
+	src+= 4*stride;
 	for(x=0; x<8; x++)
 	{
 		src[0       ] = (src[0       ] + 2*src[stride  ] + src[stride*2])>>2;
@@ -2290,11 +2304,14 @@ static inline void deInterlaceBlendLinear(uint8_t src[], int stride)
 
 /**
  * Deinterlaces the given block
- * will be called for every 8x8 block, except the last row, and can read & write into an 8x16 block
+ * will be called for every 8x8 block and can read & write from line 4-15,
+ * lines 0-3 have been passed through the deblock / dering filters allready, but can be read too
+ * lines 4-12 will be read into the deblocking filter and should be deinterlaced
  */
 static inline void deInterlaceMedian(uint8_t src[], int stride)
 {
 #ifdef HAVE_MMX
+	src+= 4*stride;
 #ifdef HAVE_MMX2
 	asm volatile(
 		"leal (%0, %1), %%eax				\n\t"
@@ -2388,6 +2405,7 @@ MEDIAN((%%ebx, %1), (%%ebx, %1, 2), (%0, %1, 8))
 #else
 	//FIXME
 	int x;
+	src+= 4*stride;
 	for(x=0; x<8; x++)
 	{
 		src[0       ] = (src[0       ] + 2*src[stride  ] + src[stride*2])>>2;
@@ -2774,6 +2792,8 @@ void  postprocess(unsigned char * src[], int src_stride,
 	src_stride      >>= 1;
 	dst_stride      >>= 1;
 	mode= ((mode&0xFF)>>4) | (mode&0xFFFFFF00);
+//	mode&= ~(LINEAR_IPOL_DEINT_FILTER | LINEAR_BLEND_DEINT_FILTER |
+//		 MEDIAN_DEINT_FILTER | CUBIC_IPOL_DEINT_FILTER);
 
 	if(1)
 	{
@@ -3088,9 +3108,82 @@ static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStri
 	if(mode & LEVEL_FIX)	QPCorrecture= packedYScale &0xFFFF;
 	else			QPCorrecture= 256;
 
-	/* copy first row of 8x8 blocks */
-	for(x=0; x<width; x+=BLOCK_SIZE)
-		blockCopy(dst + x, dstStride, src + x, srcStride, 8, mode & LEVEL_FIX);
+	/* line before the first one */
+	y=-BLOCK_SIZE;
+	{
+		//1% speedup if these are here instead of the inner loop
+		uint8_t *srcBlock= &(src[y*srcStride]);
+		uint8_t *dstBlock= &(dst[y*dstStride]);
+
+		dstBlock= tempDst + dstStride;
+
+		// From this point on it is guranteed that we can read and write 16 lines downward
+		// finish 1 block before the next otherwise we´ll might have a problem
+		// with the L1 Cache of the P4 ... or only a few blocks at a time or soemthing
+		for(x=0; x<width; x+=BLOCK_SIZE)
+		{
+
+#ifdef HAVE_MMX2
+/*
+			prefetchnta(srcBlock + (((x>>3)&3) + 5)*srcStride + 32);
+			prefetchnta(srcBlock + (((x>>3)&3) + 9)*srcStride + 32);
+			prefetcht0(dstBlock + (((x>>3)&3) + 5)*dstStride + 32);
+			prefetcht0(dstBlock + (((x>>3)&3) + 9)*dstStride + 32);
+*/
+/*
+			prefetchnta(srcBlock + (((x>>2)&6) + 5)*srcStride + 32);
+			prefetchnta(srcBlock + (((x>>2)&6) + 6)*srcStride + 32);
+			prefetcht0(dstBlock + (((x>>2)&6) + 5)*dstStride + 32);
+			prefetcht0(dstBlock + (((x>>2)&6) + 6)*dstStride + 32);
+*/
+
+			asm(
+				"movl %4, %%eax			\n\t"
+				"shrl $2, %%eax			\n\t"
+				"andl $6, %%eax			\n\t"
+				"addl $8, %%eax			\n\t"
+				"movl %%eax, %%ebx		\n\t"
+				"imul %1, %%eax			\n\t"
+				"imul %3, %%ebx			\n\t"
+				"prefetchnta 32(%%eax, %0)	\n\t"
+				"prefetcht0 32(%%ebx, %2)	\n\t"
+				"addl %1, %%eax			\n\t"
+				"addl %3, %%ebx			\n\t"
+				"prefetchnta 32(%%eax, %0)	\n\t"
+				"prefetcht0 32(%%ebx, %2)	\n\t"
+			:: "r" (srcBlock), "r" (srcStride), "r" (dstBlock), "r" (dstStride),
+			"m" (x)
+			: "%eax", "%ebx"
+			);
+
+#elif defined(HAVE_3DNOW)
+//FIXME check if this is faster on an 3dnow chip or if its faster without the prefetch or ...
+/*			prefetch(srcBlock + (((x>>3)&3) + 5)*srcStride + 32);
+			prefetch(srcBlock + (((x>>3)&3) + 9)*srcStride + 32);
+			prefetchw(dstBlock + (((x>>3)&3) + 5)*dstStride + 32);
+			prefetchw(dstBlock + (((x>>3)&3) + 9)*dstStride + 32);
+*/
+#endif
+
+			blockCopy(dstBlock + dstStride*8, dstStride,
+				srcBlock + srcStride*8, srcStride, 8, mode & LEVEL_FIX);
+
+			if(mode & LINEAR_IPOL_DEINT_FILTER)
+				deInterlaceInterpolateLinear(dstBlock, dstStride);
+			else if(mode & LINEAR_BLEND_DEINT_FILTER)
+				deInterlaceBlendLinear(dstBlock, dstStride);
+			else if(mode & MEDIAN_DEINT_FILTER)
+				deInterlaceMedian(dstBlock, dstStride);
+			else if(mode & CUBIC_IPOL_DEINT_FILTER)
+				deInterlaceInterpolateCubic(dstBlock, dstStride);
+/*			else if(mode & CUBIC_BLEND_DEINT_FILTER)
+				deInterlaceBlendCubic(dstBlock, dstStride);
+*/
+			dstBlock+=8;
+			srcBlock+=8;
+		}
+		memcpy(&(dst[y*dstStride]) + 8*dstStride, tempDst + 9*dstStride, 8*dstStride );
+	}
 
 	for(y=0; y<height; y+=BLOCK_SIZE)
 	{
@@ -3108,23 +3201,22 @@ static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStri
 		   if not than use a temporary buffer */
 		if(y+15 >= height)
 		{
-			/* copy from line 5 to 12 of src, these will be copied with
+			/* copy from line 8 to 15 of src, these will be copied with
 			   blockcopy to dst later */
-			memcpy(tempSrc + srcStride*5, srcBlock + srcStride*5,
-				srcStride*MAX(height-y-5, 0) );
+			memcpy(tempSrc + srcStride*8, srcBlock + srcStride*8,
+				srcStride*MAX(height-y-8, 0) );
 
-			/* duplicate last line to fill the void upto line 12 */
-			if(y+12 >= height)
+			/* duplicate last line to fill the void upto line 15 */
+			if(y+15 >= height)
 			{
 				int i;
-				for(i=height-y; i<=12; i++)
+				for(i=height-y; i<=15; i++)
 					memcpy(tempSrc + srcStride*i,
 						src + srcStride*(height-1), srcStride);
 			}
 
-
-			/* copy up to 6 lines of dst */
-			memcpy(tempDst, dstBlock - dstStride, dstStride*MIN(height-y+1, 6) );
+			/* copy up to 9 lines of dst */
+			memcpy(tempDst, dstBlock - dstStride, dstStride*MIN(height-y+1, 9) );
 			dstBlock= tempDst + dstStride;
 			srcBlock= tempSrc;
 		}
@@ -3190,7 +3282,7 @@ static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStri
 				"movl %4, %%eax			\n\t"
 				"shrl $2, %%eax			\n\t"
 				"andl $6, %%eax			\n\t"
-				"addl $5, %%eax			\n\t"
+				"addl $8, %%eax			\n\t"
 				"movl %%eax, %%ebx		\n\t"
 				"imul %1, %%eax			\n\t"
 				"imul %3, %%ebx			\n\t"
@@ -3233,8 +3325,8 @@ static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStri
 			}
 #endif
 
-			blockCopy(dstBlock + dstStride*5, dstStride,
-				srcBlock + srcStride*5, srcStride, 8, mode & LEVEL_FIX);
+			blockCopy(dstBlock + dstStride*8, dstStride,
+				srcBlock + srcStride*8, srcStride, 8, mode & LEVEL_FIX);
 
 			if(mode & LINEAR_IPOL_DEINT_FILTER)
 				deInterlaceInterpolateLinear(dstBlock, dstStride);
@@ -3361,7 +3453,7 @@ static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStri
 #endif
 		}
 
-		/* did we use a tmp buffer */
+		/* did we use a tmp buffer for the last lines*/
 		if(y+15 >= height)
 		{
 			uint8_t *dstBlock= &(dst[y*dstStride]);
