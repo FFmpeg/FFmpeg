@@ -860,12 +860,15 @@ static void compute_stats(HTTPContext *c)
     while (stream != NULL) {
         if (stream->feed == stream) {
             q += sprintf(q, "<h2>Feed %s</h2>", stream->filename);
-            q += sprintf(q, "<table cellspacing=0 cellpadding=4><tr><th>Stream<th>type<th>kbits/s<th align=left>codec\n");
+            q += sprintf(q, "<table cellspacing=0 cellpadding=4><tr><th>Stream<th>type<th>kbits/s<th align=left>codec<th align=left>Parameters\n");
 
             for (i = 0; i < stream->nb_streams; i++) {
                 AVStream *st = stream->streams[i];
                 AVCodec *codec = avcodec_find_encoder(st->codec.codec_id);
                 char *type = "unknown";
+                char parameters[64];
+
+                parameters[0] = 0;
 
                 switch(st->codec.codec_type) {
                 case CODEC_TYPE_AUDIO:
@@ -873,12 +876,14 @@ static void compute_stats(HTTPContext *c)
                     break;
                 case CODEC_TYPE_VIDEO:
                     type = "video";
+                    sprintf(parameters, "%dx%d, q=%d-%d", st->codec.width, st->codec.height,
+                                st->codec.qmin, st->codec.qmax);
                     break;
                 default:
                     av_abort();
                 }
-                q += sprintf(q, "<tr><td align=right>%d<td>%s<td align=right>%d<td>%s\n",
-                        i, type, st->codec.bit_rate/1000, codec ? codec->name : "");
+                q += sprintf(q, "<tr><td align=right>%d<td>%s<td align=right>%d<td>%s<td>%s\n",
+                        i, type, st->codec.bit_rate/1000, codec ? codec->name : "", parameters);
             }
             q += sprintf(q, "</table>\n");
 
