@@ -23,9 +23,9 @@ isVertMinMaxOk		Ec	Ec
 doVertLowPass		E		e	e
 doVertDefFilter		Ec	Ec	Ec
 isHorizDC		Ec	Ec
-isHorizMinMaxOk		a
-doHorizLowPass		E		a	a
-doHorizDefFilter	E	ac	ac
+isHorizMinMaxOk		a	E
+doHorizLowPass		E		e	e
+doHorizDefFilter	E	E	E
 deRing
 Vertical RKAlgo1	E		a	a
 Vertical X1		a		E	E
@@ -60,7 +60,6 @@ compare the quality & speed of all filters
 split this huge file
 fix warnings (unused vars, ...)
 noise reduction filters
-write an exact implementation of the horizontal delocking filter
 ...
 
 Notes:
@@ -128,7 +127,7 @@ static uint64_t temp3=0;
 static uint64_t temp4=0;
 static uint64_t temp5=0;
 static uint64_t pQPb=0;
-static uint8_t tempBlock[16*16]; //used so the horizontal code gets aligned data
+static uint8_t tempBlocks[8*16*2]; //used for the horizontal code
 
 int hFlatnessThreshold= 56 - 16;
 int vFlatnessThreshold= 56 - 16;
@@ -277,6 +276,7 @@ asm volatile(
 		"movd %%mm0, %0					\n\t"
 		: "=r" (numEq)
 		: "r" (src), "r" (stride)
+		: "%eax", "%ebx"
 		);
 
 	numEq= (256 - numEq) &0xFF;
@@ -850,7 +850,7 @@ static inline void horizX1Filter(uint8_t *src, int stride, int QP)
 		}
 	}
 
-#if defined (HAVE_MMX2) || defined (HAVE_3DNOW)
+#if 0
 	asm volatile(
 		"pxor %%mm7, %%mm7				\n\t" // 0
 //		"movq b80, %%mm6				\n\t" // MIN_SIGNED_BYTE
@@ -1295,13 +1295,13 @@ static inline void doVertDefFilter(uint8_t src[], int stride, int QP)
 
 //FIXME?  |255-0| = 1
 /**
- * Check if the given 8x8 Block is mostly "flat" and copy the unaliged data into tempBlock.
+ * Check if the given 8x8 Block is mostly "flat"
  */
-static inline int isHorizDCAndCopy2Temp(uint8_t src[], int stride)
+static inline int isHorizDC(uint8_t src[], int stride)
 {
 //	src++;
 	int numEq= 0;
-#ifdef HAVE_MMX
+#if 0
 asm volatile (
 //		"int $3 \n\t"
 		"leal (%1, %2), %%ecx				\n\t"
@@ -1386,14 +1386,6 @@ asm volatile (
 		if(((src[4] - src[5] + 1) & 0xFFFF) < 3) numEq++;
 		if(((src[5] - src[6] + 1) & 0xFFFF) < 3) numEq++;
 		if(((src[6] - src[7] + 1) & 0xFFFF) < 3) numEq++;
-		tempBlock[0 + y*TEMP_STRIDE] = src[0];
-		tempBlock[1 + y*TEMP_STRIDE] = src[1];
-		tempBlock[2 + y*TEMP_STRIDE] = src[2];
-		tempBlock[3 + y*TEMP_STRIDE] = src[3];
-		tempBlock[4 + y*TEMP_STRIDE] = src[4];
-		tempBlock[5 + y*TEMP_STRIDE] = src[5];
-		tempBlock[6 + y*TEMP_STRIDE] = src[6];
-		tempBlock[7 + y*TEMP_STRIDE] = src[7];
 		src+= stride;
 	}
 #endif
@@ -1416,40 +1408,14 @@ asm volatile (
 
 static inline int isHorizMinMaxOk(uint8_t src[], int stride, int QP)
 {
-#ifdef MMX_FIXME
-FIXME
-	int isOk;
-	asm volatile(
-//		"int $3 \n\t"
-		"movq (%1, %2), %%mm0				\n\t"
-		"movq (%1, %2, 8), %%mm1			\n\t"
-		"movq %%mm0, %%mm2				\n\t"
-		"psubusb %%mm1, %%mm0				\n\t"
-		"psubusb %%mm2, %%mm1				\n\t"
-		"por %%mm1, %%mm0				\n\t" // ABS Diff
-
-		"movq pQPb, %%mm7				\n\t" // QP,..., QP
-		"paddusb %%mm7, %%mm7				\n\t" // 2QP ... 2QP
-		"psubusb %%mm7, %%mm0				\n\t" // Diff <= 2QP -> 0
-		"pcmpeqd b00, %%mm0				\n\t"
-		"psrlq $16, %%mm0				\n\t"
-		"pcmpeqd bFF, %%mm0				\n\t"
-//		"movd %%mm0, (%1, %2, 4)\n\t"
-		"movd %%mm0, %0					\n\t"
-		: "=r" (isOk)
-		: "r" (src), "r" (stride)
-		);
-	return isOk;
-#else
 	if(abs(src[0] - src[7]) > 2*QP) return 0;
 
 	return 1;
-#endif
 }
 
-static inline void doHorizDefFilterAndCopyBack(uint8_t dst[], int stride, int QP)
+static inline void doHorizDefFilter(uint8_t dst[], int stride, int QP)
 {
-#ifdef HAVE_MMX
+#if 0
 	asm volatile(
 		"leal (%0, %1), %%ecx				\n\t"
 		"leal (%%ecx, %1, 4), %%ebx			\n\t"
@@ -1536,27 +1502,16 @@ static inline void doHorizDefFilterAndCopyBack(uint8_t dst[], int stride, int QP
 		: "%eax", "%ebx", "%ecx"
 	);
 #else
-	uint8_t *src= tempBlock;
-
 	int y;
 	for(y=0; y<BLOCK_SIZE; y++)
 	{
-		const int middleEnergy= 5*(src[4] - src[5]) + 2*(src[2] - src[5]);
-
-		dst[0] = src[0];
-		dst[1] = src[1];
-		dst[2] = src[2];
-		dst[3] = src[3];
-		dst[4] = src[4];
-		dst[5] = src[5];
-		dst[6] = src[6];
-		dst[7] = src[7];
+		const int middleEnergy= 5*(dst[4] - dst[5]) + 2*(dst[2] - dst[5]);
 
 		if(ABS(middleEnergy) < 8*QP)
 		{
-			const int q=(src[3] - src[4])/2;
-			const int leftEnergy=  5*(src[2] - src[1]) + 2*(src[0] - src[3]);
-			const int rightEnergy= 5*(src[6] - src[5]) + 2*(src[4] - src[7]);
+			const int q=(dst[3] - dst[4])/2;
+			const int leftEnergy=  5*(dst[2] - dst[1]) + 2*(dst[0] - dst[3]);
+			const int rightEnergy= 5*(dst[6] - dst[5]) + 2*(dst[4] - dst[7]);
 
 			int d= ABS(middleEnergy) - MIN( ABS(leftEnergy), ABS(rightEnergy) );
 			d= MAX(d, 0);
@@ -1579,7 +1534,6 @@ static inline void doHorizDefFilterAndCopyBack(uint8_t dst[], int stride, int QP
 	        	dst[4]+= d;
 		}
 		dst+= stride;
-		src+= TEMP_STRIDE;
 	}
 #endif
 }
@@ -1589,10 +1543,10 @@ static inline void doHorizDefFilterAndCopyBack(uint8_t dst[], int stride, int QP
  * using the 9-Tap Filter (1,1,2,2,4,2,2,1,1)/16 (C version)
  * using the 7-Tap Filter   (2,2,2,4,2,2,2)/16 (MMX2/3DNOW version)
  */
-static inline void doHorizLowPassAndCopyBack(uint8_t dst[], int stride, int QP)
+static inline void doHorizLowPass(uint8_t dst[], int stride, int QP)
 {
-//return;
-#if defined (HAVE_MMX2) || defined (HAVE_3DNOW)
+
+#if 0
 	asm volatile(
 		"leal (%0, %1), %%ecx				\n\t"
 		"leal (%%ecx, %1, 4), %%ebx			\n\t"
@@ -1802,7 +1756,6 @@ Implemented	Exact 7-Tap
 	);
 
 #else
-	uint8_t *temp= tempBlock;
 	int y;
 	for(y=0; y<BLOCK_SIZE; y++)
 	{
@@ -1810,15 +1763,15 @@ Implemented	Exact 7-Tap
 		const int last= ABS(dst[8] - dst[7]) < QP ? dst[8] : dst[7];
 
 		int sums[9];
-		sums[0] = first + temp[0];
-		sums[1] = temp[0] + temp[1];
-		sums[2] = temp[1] + temp[2];
-		sums[3] = temp[2] + temp[3];
-		sums[4] = temp[3] + temp[4];
-		sums[5] = temp[4] + temp[5];
-		sums[6] = temp[5] + temp[6];
-		sums[7] = temp[6] + temp[7];
-		sums[8] = temp[7] + last;
+		sums[0] = first + dst[0];
+		sums[1] = dst[0] + dst[1];
+		sums[2] = dst[1] + dst[2];
+		sums[3] = dst[2] + dst[3];
+		sums[4] = dst[3] + dst[4];
+		sums[5] = dst[4] + dst[5];
+		sums[6] = dst[5] + dst[6];
+		sums[7] = dst[6] + dst[7];
+		sums[8] = dst[7] + last;
 
 		dst[0]= ((sums[0]<<2) + ((first + sums[2])<<1) + sums[4] + 8)>>4;
 		dst[1]= ((dst[1]<<2) + (first + sums[0] + sums[3]<<1) + sums[5] + 8)>>4;
@@ -1830,11 +1783,9 @@ Implemented	Exact 7-Tap
 		dst[7]= ((sums[8]<<2) + (last + sums[6]<<1) + sums[4] + 8)>>4;
 
 		dst+= stride;
-		temp+= TEMP_STRIDE;
 	}
 #endif
 }
-
 
 static inline void dering(uint8_t src[], int stride, int QP)
 {
@@ -2184,6 +2135,171 @@ MEDIAN((%%ebx, %1), (%%ebx, %1, 2), (%0, %1, 8))
 	}
 #endif
 }
+
+/**
+ * transposes and shift the given 8x8 Block into dst1 and dst2
+ */
+static inline void transpose1(uint8_t *dst1, uint8_t *dst2, uint8_t *src, int srcStride)
+{
+	asm(
+		"leal (%0, %1), %%eax				\n\t"
+		"leal (%%eax, %1, 4), %%ebx			\n\t"
+//	0	1	2	3	4	5	6	7	8	9
+//	%0	eax	eax+%1	eax+2%1	%0+4%1	ebx	ebx+%1	ebx+2%1	%0+8%1	ebx+4%1
+		"movq (%0), %%mm0		\n\t" // 12345678
+		"movq (%%eax), %%mm1		\n\t" // abcdefgh
+		"movq %%mm0, %%mm2		\n\t" // 12345678
+		"punpcklbw %%mm1, %%mm0		\n\t" // 1a2b3c4d
+		"punpckhbw %%mm1, %%mm2		\n\t" // 5e6f7g8h
+
+		"movq (%%eax, %1), %%mm1	\n\t"
+		"movq (%%eax, %1, 2), %%mm3	\n\t"
+		"movq %%mm1, %%mm4		\n\t"
+		"punpcklbw %%mm3, %%mm1		\n\t"
+		"punpckhbw %%mm3, %%mm4		\n\t"
+
+		"movq %%mm0, %%mm3		\n\t"
+		"punpcklwd %%mm1, %%mm0		\n\t"
+		"punpckhwd %%mm1, %%mm3		\n\t"
+		"movq %%mm2, %%mm1		\n\t"
+		"punpcklwd %%mm4, %%mm2		\n\t"
+		"punpckhwd %%mm4, %%mm1		\n\t"
+
+		"movd %%mm0, 128(%2)		\n\t"
+		"psrlq $32, %%mm0		\n\t"
+		"movd %%mm0, 144(%2)		\n\t"
+		"movd %%mm3, 160(%2)		\n\t"
+		"psrlq $32, %%mm3		\n\t"
+		"movd %%mm3, 176(%2)		\n\t"
+		"movd %%mm3, 48(%3)		\n\t"
+		"movd %%mm2, 192(%2)		\n\t"
+		"movd %%mm2, 64(%3)		\n\t"
+		"psrlq $32, %%mm2		\n\t"
+		"movd %%mm2, 80(%3)		\n\t"
+		"movd %%mm1, 96(%3)		\n\t"
+		"psrlq $32, %%mm1		\n\t"
+		"movd %%mm1, 112(%3)		\n\t"
+
+		"movq (%0, %1, 4), %%mm0	\n\t" // 12345678
+		"movq (%%ebx), %%mm1		\n\t" // abcdefgh
+		"movq %%mm0, %%mm2		\n\t" // 12345678
+		"punpcklbw %%mm1, %%mm0		\n\t" // 1a2b3c4d
+		"punpckhbw %%mm1, %%mm2		\n\t" // 5e6f7g8h
+
+		"movq (%%ebx, %1), %%mm1	\n\t"
+		"movq (%%ebx, %1, 2), %%mm3	\n\t"
+		"movq %%mm1, %%mm4		\n\t"
+		"punpcklbw %%mm3, %%mm1		\n\t"
+		"punpckhbw %%mm3, %%mm4		\n\t"
+
+		"movq %%mm0, %%mm3		\n\t"
+		"punpcklwd %%mm1, %%mm0		\n\t"
+		"punpckhwd %%mm1, %%mm3		\n\t"
+		"movq %%mm2, %%mm1		\n\t"
+		"punpcklwd %%mm4, %%mm2		\n\t"
+		"punpckhwd %%mm4, %%mm1		\n\t"
+
+		"movd %%mm0, 132(%2)		\n\t"
+		"psrlq $32, %%mm0		\n\t"
+		"movd %%mm0, 148(%2)		\n\t"
+		"movd %%mm3, 164(%2)		\n\t"
+		"psrlq $32, %%mm3		\n\t"
+		"movd %%mm3, 180(%2)		\n\t"
+		"movd %%mm3, 52(%3)		\n\t"
+		"movd %%mm2, 196(%2)		\n\t"
+		"movd %%mm2, 68(%3)		\n\t"
+		"psrlq $32, %%mm2		\n\t"
+		"movd %%mm2, 84(%3)		\n\t"
+		"movd %%mm1, 100(%3)		\n\t"
+		"psrlq $32, %%mm1		\n\t"
+		"movd %%mm1, 116(%3)		\n\t"
+
+
+	:: "r" (src), "r" (srcStride), "r" (dst1), "r" (dst2)
+	: "%eax", "%ebx"
+	);
+}
+
+/**
+ * transposes the given 8x8 block
+ */
+static inline void transpose2(uint8_t *dst, int dstStride, uint8_t *src)
+{
+	asm(
+		"leal (%0, %1), %%eax				\n\t"
+		"leal (%%eax, %1, 4), %%ebx			\n\t"
+//	0	1	2	3	4	5	6	7	8	9
+//	%0	eax	eax+%1	eax+2%1	%0+4%1	ebx	ebx+%1	ebx+2%1	%0+8%1	ebx+4%1
+		"movq (%2), %%mm0		\n\t" // 12345678
+		"movq 16(%2), %%mm1		\n\t" // abcdefgh
+		"movq %%mm0, %%mm2		\n\t" // 12345678
+		"punpcklbw %%mm1, %%mm0		\n\t" // 1a2b3c4d
+		"punpckhbw %%mm1, %%mm2		\n\t" // 5e6f7g8h
+
+		"movq 32(%2), %%mm1		\n\t"
+		"movq 48(%2), %%mm3		\n\t"
+		"movq %%mm1, %%mm4		\n\t"
+		"punpcklbw %%mm3, %%mm1		\n\t"
+		"punpckhbw %%mm3, %%mm4		\n\t"
+
+		"movq %%mm0, %%mm3		\n\t"
+		"punpcklwd %%mm1, %%mm0		\n\t"
+		"punpckhwd %%mm1, %%mm3		\n\t"
+		"movq %%mm2, %%mm1		\n\t"
+		"punpcklwd %%mm4, %%mm2		\n\t"
+		"punpckhwd %%mm4, %%mm1		\n\t"
+
+		"movd %%mm0, (%0)		\n\t"
+		"psrlq $32, %%mm0		\n\t"
+		"movd %%mm0, (%%eax)		\n\t"
+		"movd %%mm3, (%%eax, %1)	\n\t"
+		"psrlq $32, %%mm3		\n\t"
+		"movd %%mm3, (%%eax, %1, 2)	\n\t"
+		"movd %%mm2, (%0, %1, 4)	\n\t"
+		"psrlq $32, %%mm2		\n\t"
+		"movd %%mm2, (%%ebx)		\n\t"
+		"movd %%mm1, (%%ebx, %1)	\n\t"
+		"psrlq $32, %%mm1		\n\t"
+		"movd %%mm1, (%%ebx, %1, 2)	\n\t"
+
+
+		"movq 64(%2), %%mm0		\n\t" // 12345678
+		"movq 80(%2), %%mm1		\n\t" // abcdefgh
+		"movq %%mm0, %%mm2		\n\t" // 12345678
+		"punpcklbw %%mm1, %%mm0		\n\t" // 1a2b3c4d
+		"punpckhbw %%mm1, %%mm2		\n\t" // 5e6f7g8h
+
+		"movq 96(%2), %%mm1		\n\t"
+		"movq 112(%2), %%mm3		\n\t"
+		"movq %%mm1, %%mm4		\n\t"
+		"punpcklbw %%mm3, %%mm1		\n\t"
+		"punpckhbw %%mm3, %%mm4		\n\t"
+
+		"movq %%mm0, %%mm3		\n\t"
+		"punpcklwd %%mm1, %%mm0		\n\t"
+		"punpckhwd %%mm1, %%mm3		\n\t"
+		"movq %%mm2, %%mm1		\n\t"
+		"punpcklwd %%mm4, %%mm2		\n\t"
+		"punpckhwd %%mm4, %%mm1		\n\t"
+
+		"movd %%mm0, 4(%0)		\n\t"
+		"psrlq $32, %%mm0		\n\t"
+		"movd %%mm0, 4(%%eax)		\n\t"
+		"movd %%mm3, 4(%%eax, %1)	\n\t"
+		"psrlq $32, %%mm3		\n\t"
+		"movd %%mm3, 4(%%eax, %1, 2)	\n\t"
+		"movd %%mm2, 4(%0, %1, 4)	\n\t"
+		"psrlq $32, %%mm2		\n\t"
+		"movd %%mm2, 4(%%ebx)		\n\t"
+		"movd %%mm1, 4(%%ebx, %1)	\n\t"
+		"psrlq $32, %%mm1		\n\t"
+		"movd %%mm1, 4(%%ebx, %1, 2)	\n\t"
+
+	:: "r" (dst), "r" (dstStride), "r" (src)
+	: "%eax", "%ebx"
+	);
+}
+
 
 #ifdef HAVE_ODIVX_POSTPROCESS
 #include "../opendivx/postprocess.h"
@@ -2710,6 +2826,8 @@ static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStri
 		int *QPptr= isColor ? &QPs[(y>>3)*QPStride] :&QPs[(y>>4)*QPStride];
 		int QPDelta= isColor ? 1<<(32-3) : 1<<(32-4);
 		int QPFrac= QPDelta;
+		uint8_t *tempBlock1= tempBlocks;
+		uint8_t *tempBlock2= tempBlocks + 8;
 #endif
 		/* can we mess with a 8x16 block from srcBlock/dstBlock downwards, if not
 		   than use a temporary buffer */
@@ -2742,6 +2860,7 @@ static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStri
 		for(x=0; x<width; x+=BLOCK_SIZE)
 		{
 			const int stride= dstStride;
+			uint8_t *tmpXchg;
 #ifdef ARCH_X86
 			int QP= *QPptr;
 			asm volatile(
@@ -2882,25 +3001,47 @@ static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStri
 				T0=T1;
 #endif
 			}
-
+#ifdef HAVE_MMX
+			transpose1(tempBlock1, tempBlock2, dstBlock, dstStride);
+#endif
 			/* check if we have a previous block to deblock it with dstBlock */
 			if(x - 8 >= 0)
 			{
 #ifdef MORE_TIMING
 				T0= rdtsc();
 #endif
+#ifdef HAVE_MMX
+				if(mode & H_RK1_FILTER)
+					vertRK1Filter(tempBlock1, 16, QP);
+				else if(mode & H_X1_FILTER)
+					vertX1Filter(tempBlock1, 16, QP);
+				else if(mode & H_DEBLOCK)
+				{
+					if( isVertDC(tempBlock1, 16))
+					{
+						if(isVertMinMaxOk(tempBlock1, 16, QP))
+							doVertLowPass(tempBlock1, 16, QP);
+					}
+					else
+						doVertDefFilter(tempBlock1, 16, QP);
+				}
+
+				transpose2(dstBlock-4, dstStride, tempBlock1 + 4*16);
+
+#else
 				if(mode & H_X1_FILTER)
 					horizX1Filter(dstBlock-4, stride, QP);
 				else if(mode & H_DEBLOCK)
 				{
-					if( isHorizDCAndCopy2Temp(dstBlock-4, stride))
+					if( isHorizDC(dstBlock-4, stride))
 					{
-						if(isHorizMinMaxOk(tempBlock, TEMP_STRIDE, QP))
-							doHorizLowPassAndCopyBack(dstBlock-4, stride, QP);
+						if(isHorizMinMaxOk(dstBlock-4, stride, QP))
+							doHorizLowPass(dstBlock-4, stride, QP);
 					}
 					else
-						doHorizDefFilterAndCopyBack(dstBlock-4, stride, QP);
+						doHorizDefFilter(dstBlock-4, stride, QP);
 				}
+#endif
 #ifdef MORE_TIMING
 				T1= rdtsc();
 				horizTime+= T1-T0;
@@ -2929,6 +3070,10 @@ static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStri
 
 			dstBlock+=8;
 			srcBlock+=8;
+
+			tmpXchg= tempBlock1;
+			tempBlock1= tempBlock2;
+			tempBlock2 = tmpXchg;
 		}
 
 		/* did we use a tmp buffer */
