@@ -17,7 +17,7 @@ extern "C" {
 
 #define FFMPEG_VERSION_INT     0x000409
 #define FFMPEG_VERSION         "0.4.9-pre1"
-#define LIBAVCODEC_BUILD       4743
+#define LIBAVCODEC_BUILD       4744
 
 #define LIBAVCODEC_VERSION_INT FFMPEG_VERSION_INT
 #define LIBAVCODEC_VERSION     FFMPEG_VERSION
@@ -104,7 +104,7 @@ enum CodecID {
     CODEC_ID_RV40,
     CODEC_ID_VC9,
     CODEC_ID_WMV3,
-    
+    CODEC_ID_LOCO,
 
     /* various pcm "codecs" */
     CODEC_ID_PCM_S16LE= 0x10000,
@@ -2010,6 +2010,7 @@ extern AVCodec qdraw_decoder;
 extern AVCodec xl_decoder;
 extern AVCodec qpeg_decoder;
 extern AVCodec shorten_decoder;
+extern AVCodec loco_decoder;
 
 /* pcm codecs */
 #define PCM_CODEC(id, name) \

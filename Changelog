@@ -10,6 +10,7 @@ version <next>
 - QPEG video decoder
 - Nullsoft Video (NSV) file demuxer
 - Shorten audio decoder
+- LOCO video decoder
 
 version 0.4.9-pre1:
 
