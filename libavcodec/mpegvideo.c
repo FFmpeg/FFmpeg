@@ -164,7 +164,15 @@ static void convert_matrix(DSPContext *dsp, int (*qmat)[64], uint16_t (*qmat16)[
         }
         
         for(i=intra; i<64; i++){
-            while(((8191LL * qmat[qscale][i]) >> shift) > INT_MAX){ 
+            int64_t max= 8191;
+            if (dsp->fdct == fdct_ifast
+#ifndef FAAN_POSTSCALE
+                   || dsp->fdct == ff_faandct
+#endif
+                   ) {
+                max= (8191LL*aanscales[i]) >> 14;
+            }
+            while(((max * qmat[qscale][i]) >> shift) > INT_MAX){ 
                 shift++;
             }
         }
