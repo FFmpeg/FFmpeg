@@ -3989,6 +3989,11 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
         s->low_delay=0;
     }
 // printf("pic: %d, qpel:%d part:%d resync:%d\n", s->pict_type, s->quarter_sample, s->data_partitioning, s->resync_marker); 
+    
+    if(s->time_increment_resolution==0){
+        s->time_increment_resolution=1;
+//        fprintf(stderr, "time_increment_resolution is illegal\n");
+    }
     time_incr=0;
     while (get_bits1(&s->gb) != 0) 
         time_incr++;
