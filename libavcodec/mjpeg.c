@@ -1182,8 +1182,9 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
 	    get_bits(&s->gb, 8), get_bits(&s->gb, 8));
 	if (get_bits(&s->gb, 8) == 0)
 	{
-	    int x_density = get_bits(&s->gb, 16);
-	    int y_density = get_bits(&s->gb, 16);
+	    int x_density, y_density; 
+	    x_density = get_bits(&s->gb, 16);
+	    y_density = get_bits(&s->gb, 16);
 
 	    dprintf("x/y density: %d (%f), %d (%f)\n", x_density,
 		(float)x_density, y_density, (float)y_density);

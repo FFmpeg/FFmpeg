@@ -446,11 +446,13 @@ static double predict_size(Predictor *p, double q, double var)
      return p->coeff*var / (q*p->count);
 }
 
+/*
 static double predict_qp(Predictor *p, double size, double var)
 {
 //printf("coeff:%f, count:%f, var:%f, size:%f//\n", p->coeff, p->count, var, size);
      return p->coeff*var / (size*p->count);
 }
+*/
 
 static void update_predictor(Predictor *p, double q, double var, double size)
 {
@@ -705,7 +707,7 @@ static int init_pass2(MpegEncContext *s)
     uint64_t all_available_bits= (uint64_t)(s->bit_rate*(double)rcc->num_entries/fps);
     double rate_factor=0;
     double step;
-    int last_i_frame=-10000000;
+    //int last_i_frame=-10000000;
     const int filter_size= (int)(s->qblur*4) | 1;  
     double expected_bits;
     double *qscale, *blured_qscale;

@@ -497,7 +497,6 @@ static int dvvideo_decode_frame(AVCodecContext *avctx,
 {
     DVVideoDecodeContext *s = avctx->priv_data;
     int sct, dsf, apt, ds, nb_dif_segs, vs, width, height, i, packet_size;
-    unsigned size;
     UINT8 *buf_ptr;
     const UINT16 *mb_pos_ptr;
     

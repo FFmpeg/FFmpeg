@@ -529,7 +529,6 @@ static void ff_libmpeg2mmx2_idct_add(UINT8 *dest, int line_size, DCTELEM *block)
 void MPV_common_init_mmx(MpegEncContext *s)
 {
     if (mm_flags & MM_MMX) {
-        int i;
         const int dct_algo = s->avctx->dct_algo;
         const int idct_algo= s->avctx->idct_algo;
         
