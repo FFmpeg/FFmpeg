@@ -73,7 +73,6 @@ a52="yes"
 a52bin="no"
 pp="yes"
 shared_pp="no"
-win32="no"
 mingw32="no"
 cygwin="no"
 os2="no"
@@ -323,8 +322,6 @@ for opt do
   ;;
   --disable-simple_idct) simpleidct="no"
   ;;
-  --enable-win32) win32="yes"
-  ;;
   --enable-mingw32) mingw32="yes"
   ;;
   --enable-shared) lshared="yes"
@@ -495,16 +492,7 @@ if test -z "$CFLAGS"; then
     CFLAGS="-O3"
 fi
 
-if test "$win32" = "yes" ; then
-    cross_prefix="i386-mingw32msvc-"
-    v4l="no"
-    audio_oss="no"
-    dv1394="no"
-    network="no"
-fi
-
 if test "$mingw32" = "yes" ; then
-    cross_prefix=""
     v4l="no"
     audio_oss="no"
     dv1394="no"
@@ -748,8 +736,7 @@ echo "  --enable-mp3lame         enable mp3 encoding via libmp3lame [default=no]
 echo "  --enable-vorbis          enable vorbis support via libvorbisenc [default=no]"
 echo "  --enable-faad            enable faad support via libfaad [default=no]"
 echo "  --enable-faadbin         build faad support with runtime linking [default=no]"
-echo "  --enable-win32           enable win32 cross compile"
-echo "  --enable-mingw32         enable mingw32 native windows compile"
+echo "  --enable-mingw32         enable mingw32 native/cross windows compile"
 echo "  --disable-a52            disable GPL'ed A52 support [default=no]"
 echo "  --enable-a52bin          open liba52.so.0 at runtime [default=no]"
 echo "  --disable-pp             disable GPL'ed post processing support [default=no]"
@@ -1041,15 +1028,12 @@ if test "$faadbin" = "yes" ; then
   echo "CONFIG_FAADBIN=yes" >> config.mak
 fi
 
-if test "$win32" = "yes" ; then
-  echo "#define CONFIG_WIN32 1" >> $TMPH
-  echo "CONFIG_WIN32=yes" >> config.mak
-fi
-
 if test "$mingw32" = "yes" ; then
   echo "#define CONFIG_WIN32 1" >> $TMPH
   echo "CONFIG_WIN32=yes" >> config.mak
+  echo "#ifndef __MINGW32__" >> $TMPH
   echo "#define __MINGW32__ 1" >> $TMPH
+  echo "#endif" >> $TMPH
   echo "__MINGW32__=1" >> config.mak
 fi
 
