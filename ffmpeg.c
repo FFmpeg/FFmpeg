@@ -1019,12 +1019,12 @@ static int output_packet(AVInputStream *ist, int ist_index,
     short samples[AVCODEC_MAX_AUDIO_FRAME_SIZE / 2];
     void *buffer_to_free;
     
-    if (pkt && pkt->pts != AV_NOPTS_VALUE) { //FIXME seems redundant, as libavformat does this too
+    if (pkt && pkt->dts != AV_NOPTS_VALUE) { //FIXME seems redundant, as libavformat does this too
         ist->next_pts = ist->pts = pkt->dts;
     } else {
         ist->pts = ist->next_pts;
     }
-    
+
     if (pkt == NULL) {
         /* EOF handling */
         ptr = NULL;
