@@ -43,8 +43,6 @@ typedef struct {
     PacketDesc *premux_packet;
     PacketDesc **next_packet;
     int packet_number;
-    int64_t start_pts;
-    int64_t start_dts;
     uint8_t lpcm_header[3];
     int lpcm_align;
 } StreamInfo;
@@ -408,8 +406,6 @@ static int mpeg_mux_init(AVFormatContext *ctx)
     for(i=0;i<ctx->nb_streams;i++) {
         stream = ctx->streams[i]->priv_data;
         stream->packet_number = 0;
-        stream->start_pts = AV_NOPTS_VALUE;
-        stream->start_dts = AV_NOPTS_VALUE;
     }
     s->system_header_size = get_system_header_size(ctx);
     s->last_scr = 0;
@@ -840,14 +836,11 @@ static void put_vcd_padding_sector(AVFormatContext *ctx)
     s->packet_number++;
 }
 
-static int64_t update_scr(AVFormatContext *ctx,int stream_index,int64_t pts)
+static int64_t get_vcd_scr(AVFormatContext *ctx,int stream_index,int64_t pts)
 {
     MpegMuxContext *s = ctx->priv_data;
     int64_t scr;
-    StreamInfo *stream;
-    int i;
 
-    if (s->is_vcd) {
         /* Since the data delivery rate is constant, SCR is computed
            using the formula C + i * 1200 where C is the start constant
            and i is the pack index.
@@ -859,35 +852,6 @@ static int64_t update_scr(AVFormatContext *ctx,int stream_index,int64_t pts)
            will still be correct according to the standard. It just won't have
            the "recommended" value).*/
         scr = 36000 + s->packet_number * 1200;
-
-
-#if 0
-        for(i=0;i<ctx->nb_streams;i++) {
-            stream = ctx->streams[i]->priv_data;
-            
-            if(scr > stream->start_pts && stream->start_pts!=AV_NOPTS_VALUE) {
-                av_log(ctx, AV_LOG_DEBUG, "mpeg vcd: SCR above PTS (scr=%0.3f, stream index=%d, stream_pts=%0.3f).\n", scr/90000.0, i, stream->start_pts / 90000.0);                 
-            }
-        }
-#endif
-    }
-    else {
-        
-        
-        /* XXX I believe this calculation of SCR is wrong. SCR
-           specifies at which time the data should enter the decoder.
-           Two packs cannot enter the decoder at the same time. */
-
-        /* XXX: system clock should be computed precisely, especially for
-        CBR case. The current mode gives at least something coherent */
-        if (stream_index == 0
-            && pts != AV_NOPTS_VALUE)
-            scr = pts;
-        else
-            scr = s->last_scr;
-    }
-
-    s->last_scr=scr;
 
     return scr;
 }    
@@ -1000,7 +964,7 @@ retry:
            the constant overall bitrate.*/
         int vcd_pad_bytes;
 
-        while((vcd_pad_bytes = get_vcd_padding_size(ctx,stream->start_pts) ) >= s->packet_size){ //FIXME pts cannot be correct here
+        while((vcd_pad_bytes = get_vcd_padding_size(ctx,stream->premux_packet->pts) ) >= s->packet_size){ //FIXME pts cannot be correct here
             put_vcd_padding_sector(ctx);
             s->last_scr += s->packet_size*90000LL / (s->mux_rate*50LL); //FIXME rounding and first few bytes of each packet
         }
@@ -1030,8 +994,7 @@ static int mpeg_mux_write_packet(AVFormatContext *ctx, AVPacket *pkt)
     uint8_t *buf= pkt->data;
     AVStream *st = ctx->streams[stream_index];
     StreamInfo *stream = st->priv_data;
-    int64_t pts, dts, new_start_pts, new_start_dts;
-    int len, avail_size;
+    int64_t pts, dts;
     PacketDesc *pkt_desc;
     
     pts= pkt->pts;
@@ -1081,79 +1044,9 @@ static int mpeg_mux_write_packet(AVFormatContext *ctx, AVPacket *pkt)
 
     for(;;){
         int ret= output_packet(ctx, 0);
-        if(ret<0) 
+        if(ret<=0) 
             return ret;
-        else if(ret==0)
-            break;
     }
-    
-#if 0
-    
-    /* we assume here that pts != AV_NOPTS_VALUE */
-    new_start_pts = stream->start_pts;
-    new_start_dts = stream->start_dts;
-    
-    if (stream->start_pts == AV_NOPTS_VALUE) {
-        new_start_pts = pts;
-        new_start_dts = dts;
-    }
-    avail_size = get_packet_payload_size(ctx, stream_index,
-                                         new_start_pts, 
-                                         new_start_dts);
-    if (stream->buffer_ptr >= avail_size) {
-
-        update_scr(ctx,stream_index,stream->start_pts);
-
-        /* unlikely case: outputing the pts or dts increase the packet
-           size so that we cannot write the start of the next
-           packet. In this case, we must flush the current packet with
-           padding.
-           Note: this always happens for the first audio and video packet
-           in a VCD file, since they do not carry any data.*/
-        flush_packet(ctx, stream_index,
-                     stream->start_pts, stream->start_dts, s->last_scr);
-        stream->buffer_ptr = 0;
-    }
-    stream->start_pts = new_start_pts;
-    stream->start_dts = new_start_dts;
-    stream->nb_frames++;
-    while (size > 0) {
-        avail_size = get_packet_payload_size(ctx, stream_index,
-                                             stream->start_pts, 
-                                             stream->start_dts);
-        len = avail_size - stream->buffer_ptr;
-        if (len > size)
-            len = size;
-        memcpy(stream->buffer + stream->buffer_ptr, buf, len);
-        stream->buffer_ptr += len;
-        buf += len;
-        size -= len;
-        if (stream->buffer_ptr >= avail_size) {
-
-            update_scr(ctx,stream_index,stream->start_pts);
-
-            /* if packet full, we send it now */
-            flush_packet(ctx, stream_index,
-                         stream->start_pts, stream->start_dts, s->last_scr);
-            stream->buffer_ptr = 0;
-
-            if (s->is_vcd) {
-                /* Write one or more padding sectors, if necessary, to reach
-                   the constant overall bitrate.*/
-                int vcd_pad_bytes;
-            
-                while((vcd_pad_bytes = get_vcd_padding_size(ctx,stream->start_pts) ) >= s->packet_size)
-                    put_vcd_padding_sector(ctx);
-            }
-
-            /* Make sure only the FIRST pes packet for this frame has
-               a timestamp */
-            stream->start_pts = AV_NOPTS_VALUE;
-            stream->start_dts = AV_NOPTS_VALUE;
-        }
-    }
-#endif
-    return 0;
 }
 
 static int mpeg_mux_end(AVFormatContext *ctx)
