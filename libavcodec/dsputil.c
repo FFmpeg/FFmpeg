@@ -2587,11 +2587,11 @@ static int pix_abs8_xy2_c(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, 
     return s;
 }
 
-static int nsse16_c(/*MpegEncContext*/ void *c, uint8_t *s1, uint8_t *s2, int stride, int h){
+static int nsse16_c(MpegEncContext *c, uint8_t *s1, uint8_t *s2, int stride, int h){
     int score1=0;
     int score2=0;
     int x,y;
-    
+
     for(y=0; y<h; y++){
         for(x=0; x<16; x++){
             score1+= (s1[x  ] - s2[x ])*(s1[x  ] - s2[x ]);
@@ -2607,11 +2607,12 @@ static int nsse16_c(/*MpegEncContext*/ void *c, uint8_t *s1, uint8_t *s2, int st
         s1+= stride;
         s2+= stride;
     }
-    
-    return score1 + ABS(score2)*8;
+
+    if(c) return score1 + ABS(score2)*c->avctx->nsse_weight;
+    else  return score1 + ABS(score2)*8;
 }
 
-static int nsse8_c(/*MpegEncContext*/ void *c, uint8_t *s1, uint8_t *s2, int stride, int h){
+static int nsse8_c(MpegEncContext *c, uint8_t *s1, uint8_t *s2, int stride, int h){
     int score1=0;
     int score2=0;
     int x,y;
@@ -2632,7 +2633,8 @@ static int nsse8_c(/*MpegEncContext*/ void *c, uint8_t *s1, uint8_t *s2, int str
         s2+= stride;
     }
     
-    return score1 + ABS(score2)*8;
+    if(c) return score1 + ABS(score2)*c->avctx->nsse_weight;
+    else  return score1 + ABS(score2)*8;
 }
 
 static int try_8x8basis_c(int16_t rem[64], int16_t weight[64], int16_t basis[64], int scale){
