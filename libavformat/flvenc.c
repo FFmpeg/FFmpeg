@@ -268,7 +268,7 @@ static int flv_write_packet(AVFormatContext *s, int stream_index,
     }
     else if (enc->codec_type == CODEC_TYPE_AUDIO) {
 #ifdef CONFIG_MP3LAME
-        if (enc->codec_id == CODEC_ID_MP3LAME ) {
+        if (enc->codec_id == CODEC_ID_MP3 ) {
             int c=0;
             for (;c<size;c++) {
                 flv->audioFifo[(flv->audioOutPos+c)%AUDIO_FIFO_SIZE] = buf[c];
@@ -366,7 +366,7 @@ static AVOutputFormat flv_oformat = {
     "flv",
     sizeof(FLVContext),
 #ifdef CONFIG_MP3LAME
-    CODEC_ID_MP3LAME,
+    CODEC_ID_MP3,
 #else // CONFIG_MP3LAME
     CODEC_ID_NONE,
 #endif // CONFIG_MP3LAME

@@ -2597,7 +2597,7 @@ AVCodec mp3_decoder =
 {
     "mp3",
     CODEC_TYPE_AUDIO,
-    CODEC_ID_MP3LAME,
+    CODEC_ID_MP3,
     sizeof(MPADecodeContext),
     decode_init,
     NULL,

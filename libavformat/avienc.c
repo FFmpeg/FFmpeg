@@ -240,7 +240,7 @@ static void parse_specific_params(AVCodecContext *stream, int *au_byterate, int 
         *au_ssize = 1;
         *au_scale = 1;
         *au_byterate = stream->bit_rate / 8;
-    case CODEC_ID_MP3LAME:
+    case CODEC_ID_MP3:
         *au_ssize = 1;
         *au_scale = 1;
         *au_byterate = stream->bit_rate / 8;    
@@ -570,7 +570,7 @@ static int avi_write_idx1(AVFormatContext *s)
                     if (nb_frames < stream->frame_number)
                         nb_frames = stream->frame_number;
                 } else {
-                    if (stream->codec_id == CODEC_ID_MP2 || stream->codec_id == CODEC_ID_MP3LAME) {
+                    if (stream->codec_id == CODEC_ID_MP2 || stream->codec_id == CODEC_ID_MP3) {
                         put_le32(pb, stream->frame_number);
                         nb_frames += stream->frame_number;
                     } else {
@@ -675,7 +675,7 @@ static int avi_write_trailer(AVFormatContext *s)
                  if (nb_frames < stream->frame_number)
                      nb_frames = stream->frame_number;
              } else {
-                 if (stream->codec_id == CODEC_ID_MP2 || stream->codec_id == CODEC_ID_MP3LAME) {
+                 if (stream->codec_id == CODEC_ID_MP2 || stream->codec_id == CODEC_ID_MP3) {
                      nb_frames += stream->frame_number;
                 }
             }

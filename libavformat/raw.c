@@ -129,7 +129,7 @@ static int mp3_read_header(AVFormatContext *s,
 	    break;
 	    
     if( pos < s->pb.buffer_size-1 && (s->pb.buffer[pos+1] & 6) == 2 )
-	st->codec.codec_id = CODEC_ID_MP3LAME;
+	st->codec.codec_id = CODEC_ID_MP3;
 
     /* the parameters will be extracted from the compressed bitstream */
     return 0;
@@ -259,7 +259,7 @@ AVOutputFormat mp3_oformat = {
     "audio/x-mpeg",
     "mp3",
     0,
-    CODEC_ID_MP3LAME,
+    CODEC_ID_MP3,
     0,
     raw_write_header,
     raw_write_packet,

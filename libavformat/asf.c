@@ -870,7 +870,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
 			asf_st->ds_span = 0; // disable descrambling
 		}
                 switch (st->codec.codec_id) {
-                case CODEC_ID_MP3LAME:
+                case CODEC_ID_MP3:
                     st->codec.frame_size = MPA_FRAME_SIZE;
                     break;
                 case CODEC_ID_PCM_S16LE:
@@ -1252,7 +1252,7 @@ static AVOutputFormat asf_oformat = {
     "asf,wmv",
     sizeof(ASFContext),
 #ifdef CONFIG_MP3LAME
-    CODEC_ID_MP3LAME,
+    CODEC_ID_MP3,
 #else
     CODEC_ID_MP2,
 #endif
@@ -1269,7 +1269,7 @@ static AVOutputFormat asf_stream_oformat = {
     "asf,wmv",
     sizeof(ASFContext),
 #ifdef CONFIG_MP3LAME
-    CODEC_ID_MP3LAME,
+    CODEC_ID_MP3,
 #else
     CODEC_ID_MP2,
 #endif

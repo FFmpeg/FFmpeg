@@ -99,7 +99,7 @@ int MP3lame_encode_close(AVCodecContext *avctx)
 AVCodec mp3lame_encoder = {
     "mp3",
     CODEC_TYPE_AUDIO,
-    CODEC_ID_MP3LAME,
+    CODEC_ID_MP3,
     sizeof(Mp3AudioContext),
     MP3lame_encode_init,
     MP3lame_encode_frame,

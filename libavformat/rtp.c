@@ -170,7 +170,7 @@ int rtp_get_payload_type(AVCodecContext *codec)
         }
         break;
     case CODEC_ID_MP2:
-    case CODEC_ID_MP3LAME:
+    case CODEC_ID_MP3:
         payload_type = RTP_PT_MPEGAUDIO;
         break;
     case CODEC_ID_MJPEG:
@@ -390,7 +390,7 @@ static int rtp_write_header(AVFormatContext *s1)
 
     switch(st->codec.codec_id) {
     case CODEC_ID_MP2:
-    case CODEC_ID_MP3LAME:
+    case CODEC_ID_MP3:
         s->buf_ptr = s->buf + 4;
         s->cur_timestamp = 0;
         break;
@@ -650,7 +650,7 @@ static int rtp_write_packet(AVFormatContext *s1, int stream_index,
         rtp_send_samples(s1, buf1, size, 2 * st->codec.channels);
         break;
     case CODEC_ID_MP2:
-    case CODEC_ID_MP3LAME:
+    case CODEC_ID_MP3:
         rtp_send_mpegaudio(s1, buf1, size);
         break;
     case CODEC_ID_MPEG1VIDEO:

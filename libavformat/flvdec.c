@@ -64,7 +64,7 @@ static int flv_read_header(AVFormatContext *s,
         if (!st)
             return AVERROR_NOMEM;
         st->codec.codec_type = CODEC_TYPE_AUDIO;
-        st->codec.codec_id = CODEC_ID_MP3LAME;
+        st->codec.codec_id = CODEC_ID_MP3;
     }
 
     offset = get_be32(&s->pb);

@@ -567,7 +567,7 @@ static AVOutputFormat nut_oformat = {
 #ifdef CONFIG_VORBIS
     CODEC_ID_VORBIS,
 #elif defined(CONFIG_MP3LAME)
-    CODEC_ID_MP3LAME,
+    CODEC_ID_MP3,
 #else
     CODEC_ID_MP2, /* AC3 needs liba52 decoder */
 #endif
