@@ -2373,6 +2373,10 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
     if (get_bits1(&s->gb)) {
         for(i=0;i<64;i++) {
             v = get_bits(&s->gb, 8);
+            if(v==0){
+                av_log(s->avctx, AV_LOG_ERROR, "intra matrix damaged\n");
+                return -1;
+            }
             j = s->intra_scantable.permutated[i];
             s->intra_matrix[j] = v;
             s->chroma_intra_matrix[j] = v;
@@ -2394,6 +2398,10 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
     if (get_bits1(&s->gb)) {
         for(i=0;i<64;i++) {
             v = get_bits(&s->gb, 8);
+            if(v==0){
+                av_log(s->avctx, AV_LOG_ERROR, "inter matrix damaged\n");
+                return -1;
+            }
             j = s->intra_scantable.permutated[i];
             s->inter_matrix[j] = v;
             s->chroma_inter_matrix[j] = v;
@@ -2411,6 +2419,11 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
             s->inter_matrix[j] = v;
             s->chroma_inter_matrix[j] = v;
         }
+    }
+    
+    if(show_bits(&s->gb, 23) != 0){
+        av_log(s->avctx, AV_LOG_ERROR, "sequence header damaged\n");
+        return -1;
     }
 
     /* we set mpeg2 parameters so that it emulates mpeg1 */
