@@ -34,6 +34,7 @@ const CodecTag codec_wav_tags[] = {
     { CODEC_ID_ADPCM_IMA_DK3, 0x62 },  /* rogue format number */
     { CODEC_ID_WMAV1, 0x160 },
     { CODEC_ID_WMAV2, 0x161 },
+    { CODEC_ID_VORBIS, ('V'<<8)+'o' }, //HACK/FIXME, does vorbis in WAV/AVI have an (in)official id?
     { 0, 0 },
 };
 
