@@ -790,8 +790,8 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
             add_dct(s, block[2], 2, dest_y + dct_offset, dct_linesize);
             add_dct(s, block[3], 3, dest_y + dct_offset + 8, dct_linesize);
 
-            add_dct(s, block[4], 4, dest_cb, dct_linesize >> 1);
-            add_dct(s, block[5], 5, dest_cr, dct_linesize >> 1);
+            add_dct(s, block[4], 4, dest_cb, s->linesize >> 1);
+            add_dct(s, block[5], 5, dest_cr, s->linesize >> 1);
         } else {
             /* dct only in intra block */
             put_dct(s, block[0], 0, dest_y, dct_linesize);
@@ -799,8 +799,8 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
             put_dct(s, block[2], 2, dest_y + dct_offset, dct_linesize);
             put_dct(s, block[3], 3, dest_y + dct_offset + 8, dct_linesize);
 
-            put_dct(s, block[4], 4, dest_cb, dct_linesize >> 1);
-            put_dct(s, block[5], 5, dest_cr, dct_linesize >> 1);
+            put_dct(s, block[4], 4, dest_cb, s->linesize >> 1);
+            put_dct(s, block[5], 5, dest_cr, s->linesize >> 1);
         }
     }
  the_end:
