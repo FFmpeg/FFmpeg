@@ -316,11 +316,13 @@ static int alloc_picture(MpegEncContext *s, Picture *pic, int shared){
                 pic->motion_val[i]= pic->motion_val_base[i]+1;
                 CHECKED_ALLOCZ(pic->ref_index[i] , b8_array_size * sizeof(uint8_t))
             }
+            pic->motion_subsample_log2= 2;
         }else if(s->out_format == FMT_H263 || s->encoding || (s->avctx->debug&(FF_DEBUG_VIS_MV|FF_DEBUG_MV))){
             for(i=0; i<2; i++){
                 CHECKED_ALLOCZ(pic->motion_val_base[i], 2 * (b8_array_size+1) * sizeof(uint16_t)*2) //FIXME
                 pic->motion_val[i]= pic->motion_val_base[i]+1;
             }
+            pic->motion_subsample_log2= 3;
         }
         pic->qstride= s->mb_stride;
         CHECKED_ALLOCZ(pic->pan_scan , 1 * sizeof(AVPanScan))
