@@ -32,23 +32,23 @@
 #define RND_FRW_COL		(1 << (SHIFT_FRW_COL-1))
 
 //concatenated table, for forward DCT transformation
-const int16_t fdct_tg_all_16[] ATTR_ALIGN(8) = {
+static const int16_t fdct_tg_all_16[] ATTR_ALIGN(8) = {
     13036, 13036, 13036, 13036,		// tg * (2<<16) + 0.5
     27146, 27146, 27146, 27146,		// tg * (2<<16) + 0.5
     -21746, -21746, -21746, -21746,	// tg * (2<<16) + 0.5
 };
-const int16_t cos_4_16[4] = {
+static const int16_t cos_4_16[4] ATTR_ALIGN(8) = {
     -19195, -19195, -19195, -19195,	//cos * (2<<16) + 0.5
 };
 
-const int16_t ocos_4_16[4] = {
+static const int16_t ocos_4_16[4] ATTR_ALIGN(8) = {
     23170, 23170, 23170, 23170,	//cos * (2<<15) + 0.5
 };
 
-const long long  fdct_one_corr ATTR_ALIGN(8) = 0x0001000100010001LL;
-const long fdct_r_row[2] ATTR_ALIGN(8) = {RND_FRW_ROW, RND_FRW_ROW };
+static const long long  fdct_one_corr ATTR_ALIGN(8) = 0x0001000100010001LL;
+static const long fdct_r_row[2] ATTR_ALIGN(8) = {RND_FRW_ROW, RND_FRW_ROW };
 
-const int16_t tab_frw_01234567[] ATTR_ALIGN(8) = {  // forward_dct coeff table
+static const int16_t tab_frw_01234567[] ATTR_ALIGN(8) = {  // forward_dct coeff table
     //row0
     16384, 16384, 21407, -8867,     //    w09 w01 w08 w00
     16384, 16384, 8867, -21407,     //    w13 w05 w12 w04
@@ -269,8 +269,8 @@ static inline void fdct_row(const int16_t *in, int16_t *out, const int16_t *tabl
 
 void ff_fdct_mmx(int16_t *block)
 {
-    /* XXX: not thread safe */
-    static int16_t block_tmp[64] ATTR_ALIGN(8);
+    int64_t align_tmp[16] ATTR_ALIGN(8);
+    int16_t * const block_tmp= (int16_t*)align_tmp;
     int16_t *block1, *out;
     const int16_t *table;
     int i;
