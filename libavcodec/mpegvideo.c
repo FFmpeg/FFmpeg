@@ -460,6 +460,22 @@ int MPV_encode_init(AVCodecContext *avctx)
         s->msmpeg4_version= 3;
         avctx->delay=0;
         break;
+    case CODEC_ID_WMV1:
+        s->out_format = FMT_H263;
+        s->h263_msmpeg4 = 1;
+        s->h263_pred = 1;
+        s->unrestricted_mv = 1;
+        s->msmpeg4_version= 4;
+        avctx->delay=0;
+        break;
+    case CODEC_ID_WMV2:
+        s->out_format = FMT_H263;
+        s->h263_msmpeg4 = 1;
+        s->h263_pred = 1;
+        s->unrestricted_mv = 1;
+        s->msmpeg4_version= 5;
+        avctx->delay=0;
+        break;
     default:
         return -1;
     }
@@ -483,7 +499,9 @@ int MPV_encode_init(AVCodecContext *avctx)
     if (s->out_format == FMT_H263)
         h263_encode_init(s);
     else if (s->out_format == FMT_MPEG1)
-        mpeg1_encode_init(s);
+        ff_mpeg1_encode_init(s);
+    if(s->msmpeg4_version)
+        ff_msmpeg4_encode_init(s);
 
     /* dont use mv_penalty table for crap MV as it would be confused */
     if (s->me_method < ME_EPZS) s->mv_penalty = default_mv_penalty;
@@ -1521,16 +1539,6 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
             }
 #endif
     /* DCT & quantize */
-    if (s->h263_pred && !(s->msmpeg4_version==1 || s->msmpeg4_version==2)) {
-        h263_dc_scale(s);
-    } else if (s->h263_aic) {
-        s->y_dc_scale = 2*s->qscale;
-        s->c_dc_scale = 2*s->qscale;
-    } else {
-        /* default quantization values */
-        s->y_dc_scale = 8;
-        s->c_dc_scale = 8;
-    }
     if(s->out_format==FMT_MJPEG){
         for(i=0;i<6;i++) {
             int overflow;
@@ -1585,7 +1593,6 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
 
 void ff_copy_bits(PutBitContext *pb, UINT8 *src, int length)
 {
-#if 1
     int bytes= length>>4;
     int bits= length&15;
     int i;
@@ -1594,14 +1601,6 @@ void ff_copy_bits(PutBitContext *pb, UINT8 *src, int length)
 
     for(i=0; i<bytes; i++) put_bits(pb, 16, be2me_16(((uint16_t*)src)[i]));
     put_bits(pb, bits, be2me_16(((uint16_t*)src)[i])>>(16-bits));
-#else
-    int bytes= length>>3;
-    int bits= length&7;
-    int i;
-
-    for(i=0; i<bytes; i++) put_bits(pb, 8, src[i]);
-    put_bits(pb, bits, src[i]>>(8-bits));
-#endif
 }
 
 static inline void copy_context_before_encode(MpegEncContext *d, MpegEncContext *s, int type){
@@ -1874,6 +1873,9 @@ static void encode_picture(MpegEncContext *s, int picture_number)
                 }
             }
         }
+
+        s->y_dc_scale= s->y_dc_scale_table[ s->qscale ];
+        s->c_dc_scale= s->c_dc_scale_table[ s->qscale ];
         
         s->block_index[0]= s->block_wrap[0]*(mb_y*2 + 1) - 1;
         s->block_index[1]= s->block_wrap[0]*(mb_y*2 + 1);
@@ -2582,6 +2584,26 @@ AVCodec msmpeg4v3_encoder = {
     "msmpeg4",
     CODEC_TYPE_VIDEO,
     CODEC_ID_MSMPEG4V3,
+    sizeof(MpegEncContext),
+    MPV_encode_init,
+    MPV_encode_picture,
+    MPV_encode_end,
+};
+
+AVCodec wmv1_encoder = {
+    "wmv1",
+    CODEC_TYPE_VIDEO,
+    CODEC_ID_WMV1,
+    sizeof(MpegEncContext),
+    MPV_encode_init,
+    MPV_encode_picture,
+    MPV_encode_end,
+};
+
+AVCodec wmv2_encoder = {
+    "wmv2",
+    CODEC_TYPE_VIDEO,
+    CODEC_ID_WMV2,
     sizeof(MpegEncContext),
     MPV_encode_init,
     MPV_encode_picture,
