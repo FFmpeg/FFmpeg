@@ -139,9 +139,6 @@ typedef struct Vp3Fragment {
     int last_coeff;
     int motion_x;
     int motion_y;
-    /* this indicates which ffmpeg put_pixels() function to use:
-     * 00b = no halfpel, 01b = x halfpel, 10b = y halfpel, 11b = both halfpel */
-    int motion_halfpel_index;
     /* address of first pixel taking into account which plane the fragment
      * lives on as well as the plane stride */
     int first_pixel;
@@ -816,6 +813,8 @@ static void init_frame(Vp3DecodeContext *s, GetBitContext *gb)
         memset(s->all_fragments[i].coeffs, 0, 64 * sizeof(DCTELEM));
         s->all_fragments[i].coeff_count = 0;
         s->all_fragments[i].last_coeff = 0;
+s->all_fragments[i].motion_x = 0xbeef;
+s->all_fragments[i].motion_y = 0xbeef;
     }
 }
 
@@ -1161,14 +1160,14 @@ static int unpack_superblocks(Vp3DecodeContext *s, GetBitContext *gb)
 
                 /* if any of the superblocks are not partially coded, flag
                  * a boolean to decode the list of fully-coded superblocks */
-                if (bit == 0)
+                if (bit == 0) {
                     decode_fully_flags = 1;
-            } else {
+                } else {
 
-                /* make a note of the fact that there are partially coded
-                 * superblocks */
-                decode_partial_blocks = 1;
-
+                    /* make a note of the fact that there are partially coded
+                     * superblocks */
+                    decode_partial_blocks = 1;
+                }
             }
             s->superblock_coding[current_superblock++] = 
                 (bit) ? SB_PARTIALLY_CODED : SB_NOT_CODED;
@@ -1309,7 +1308,7 @@ static int unpack_superblocks(Vp3DecodeContext *s, GetBitContext *gb)
         /* only Y fragments coded in this frame */
         s->last_coded_y_fragment = s->coded_fragment_list_index - 1;
     else 
-        /* end the list of coded fragments */
+        /* end the list of coded C fragments */
         s->last_coded_c_fragment = s->coded_fragment_list_index - 1;
 
     debug_block_coding("    %d total coded fragments, y: %d -> %d, c: %d -> %d\n",
@@ -1407,55 +1406,6 @@ static int unpack_modes(Vp3DecodeContext *s, GetBitContext *gb)
 }
 
 /*
- * This function adjusts the components of a motion vector for the halfpel
- * motion grid. c_plane indicates whether the vector applies to the U or V
- * plane. The function returns the halfpel function index to be used in
- * ffmpeg's put_pixels[]() array of functions.
- */
-static inline int adjust_vector(int *x, int *y, int c_plane)
-{
-    int motion_halfpel_index = 0;
-    int x_halfpel;
-    int y_halfpel;
-
-    if (!c_plane) {
-
-        x_halfpel = *x & 1;
-        motion_halfpel_index |= x_halfpel;
-        if (*x >= 0)
-            *x >>= 1;
-        else
-            *x = -( (-(*x) >> 1) + x_halfpel);
-
-        y_halfpel = *y & 1;
-        motion_halfpel_index |= (y_halfpel << 1);
-        if (*y >= 0)
-            *y >>= 1;
-        else
-            *y = -( (-(*y) >> 1) + y_halfpel);
-
-    } else {
-
-        x_halfpel = ((*x & 0x03) != 0);
-        motion_halfpel_index |= x_halfpel;
-        if (*x >= 0)
-            *x >>= 2;
-        else
-            *x = -( (-(*x) >> 2) + x_halfpel);
-
-        y_halfpel = ((*y & 0x03) != 0);
-        motion_halfpel_index |= (y_halfpel << 1);
-        if (*y >= 0)
-            *y >>= 2;
-        else
-            *y = -( (-(*y) >> 2) + y_halfpel);
-
-    }
-
-    return motion_halfpel_index;
-}
-
-/*
  * This function unpacks all the motion vectors for the individual
  * macroblocks from the bitstream.
  */
@@ -1527,7 +1477,7 @@ static int unpack_vectors(Vp3DecodeContext *s, GetBitContext *gb)
                     }
 
                     /* vector maintenance, only on MODE_INTER_PLUS_MV */
-                    if (s->all_fragments[current_fragment].coding_method ==
+                    if (s->macroblock_coding[current_macroblock] ==
                         MODE_INTER_PLUS_MV) {
                         prior_last_motion_x = last_motion_x;
                         prior_last_motion_y = last_motion_y;
@@ -1614,7 +1564,7 @@ static int unpack_vectors(Vp3DecodeContext *s, GetBitContext *gb)
                 /* assign the motion vectors to the correct fragments */
                 debug_vectors("    vectors for macroblock starting @ fragment %d (coding method %d):\n",
                     current_fragment,
-                    s->all_fragments[current_fragment].coding_method);
+                    s->macroblock_coding[current_macroblock]);
                 for (k = 0; k < 6; k++) {
                     current_fragment = 
                         s->macroblock_fragments[current_macroblock * 6 + k];
@@ -1625,14 +1575,10 @@ static int unpack_vectors(Vp3DecodeContext *s, GetBitContext *gb)
                             current_fragment, s->fragment_count);
                         return 1;
                     }
-                    s->all_fragments[current_fragment].motion_halfpel_index =
-                        adjust_vector(&motion_x[k], &motion_y[k],
-                        ((k == 4) || (k == 5)));
                     s->all_fragments[current_fragment].motion_x = motion_x[k];
                     s->all_fragments[current_fragment].motion_y = motion_y[k];
-                    debug_vectors("    vector %d: fragment %d = (%d, %d), index %d\n",
-                        k, current_fragment, motion_x[k], motion_y[k],
-                        s->all_fragments[current_fragment].motion_halfpel_index);
+                    debug_vectors("    vector %d: fragment %d = (%d, %d)\n",
+                        k, current_fragment, motion_x[k], motion_y[k]);
                 }
             }
         }
@@ -2141,22 +2087,45 @@ static void render_fragments(Vp3DecodeContext *s,
             /* transform if this block was coded */
             if (s->all_fragments[i].coding_method != MODE_COPY) {
 
-                /* sort out the motion vector */
-                motion_x = s->all_fragments[i].motion_x;
-                motion_y = s->all_fragments[i].motion_y;
-                motion_halfpel_index = s->all_fragments[i].motion_halfpel_index;
-
                 motion_source = s->all_fragments[i].first_pixel;
-                motion_source += motion_x;
-                motion_source += (motion_y * stride);
+                motion_halfpel_index = 0;
 
-                /* if the are any problems with a motion vector, refuse
-                 * to render the block */
-                if ((motion_source < upper_motion_limit) ||
-                    (motion_source > lower_motion_limit)) {
-//                    printf ("  vp3: help! motion source (%d) out of range (%d..%d)\n",
-//                        motion_source, upper_motion_limit, lower_motion_limit);
-                    continue;
+                /* sort out the motion vector if this fragment is coded
+                 * using a motion vector method */
+                if ((s->all_fragments[i].coding_method > MODE_INTRA) &&
+                    (s->all_fragments[i].coding_method != MODE_USING_GOLDEN)) {
+                    motion_x = s->all_fragments[i].motion_x;
+                    motion_y = s->all_fragments[i].motion_y;
+if ((motion_x == 0xbeef) || (motion_y == 0xbeef))
+printf (" help! got beefy vector! (%X, %X)\n", motion_x, motion_y);
+
+                    if (motion_x >= 0) {
+                        motion_halfpel_index = motion_x & 0x01;
+                        motion_source += (motion_x >> 1);
+                    } else  {
+                        motion_x = -motion_x;
+                        motion_halfpel_index = motion_x & 0x01;
+                        motion_source -= ((motion_x + 1) >> 1);
+                    }
+
+//                    motion_y = -motion_y;
+                    if (motion_y >= 0) {
+                        motion_halfpel_index |= (motion_y & 0x01) << 1;
+                        motion_source += ((motion_y >> 1) * stride);
+                    } else  {
+                        motion_y = -motion_y;
+                        motion_halfpel_index |= (motion_y & 0x01) << 1;
+                        motion_source -= (((motion_y + 1) >> 1) * stride);
+                    }
+
+                    /* if the are any problems with a motion vector, refuse
+                     * to render the block */
+                    if ((motion_source < upper_motion_limit) ||
+                        (motion_source > lower_motion_limit)) {
+//                        printf ("  vp3: help! motion source (%d) out of range (%d..%d)\n",
+//                            motion_source, upper_motion_limit, lower_motion_limit);
+                        continue;
+                    }
                 }
 
                 /* first, take care of copying a block from either the
@@ -2304,8 +2273,13 @@ static int vp3_decode_init(AVCodecContext *avctx)
     int c_superblock_count;
 
     s->avctx = avctx;
+#if 0
     s->width = avctx->width;
     s->height = avctx->height;
+#else
+    s->width = (avctx->width + 15) & 0xFFFFFFF0;
+    s->height = (avctx->height + 15) & 0xFFFFFFF0;
+#endif
     avctx->pix_fmt = PIX_FMT_YUV420P;
     avctx->has_b_frames = 0;
     dsputil_init(&s->dsp, avctx);
@@ -2432,11 +2406,12 @@ static int vp3_decode_frame(AVCodecContext *avctx,
     skip_bits(&gb, 1);
     s->last_quality_index = s->quality_index;
     s->quality_index = get_bits(&gb, 6);
-    if (s->quality_index != s->last_quality_index)
-        init_dequantizer(s);
 
     debug_vp3(" VP3 frame #%d: Q index = %d", counter, s->quality_index);
     counter++;
+
+    if (s->quality_index != s->last_quality_index)
+        init_dequantizer(s);
 
     if (s->keyframe) {
 
@@ -2510,8 +2485,13 @@ if (!s->keyframe) {
         s->fragment_width / 2, s->fragment_height / 2);
 
     render_fragments(s, 0, s->width, s->height, 0);
+#if 1
     render_fragments(s, s->u_fragment_start, s->width / 2, s->height / 2, 1);
     render_fragments(s, s->v_fragment_start, s->width / 2, s->height / 2, 2);
+#else
+memset(s->current_frame.data[1], 0x80, s->width * s->height / 4);
+memset(s->current_frame.data[2], 0x80, s->width * s->height / 4);
+#endif
 
 #if KEYFRAMES_ONLY
 }
