@@ -1172,8 +1172,6 @@ int MPV_encode_init(AVCodecContext *avctx)
     
     ff_set_cmp(&s->dsp, s->dsp.ildct_cmp, s->avctx->ildct_cmp);
     
-    ff_init_me(s);
-
 #ifdef CONFIG_ENCODERS
 #ifdef CONFIG_RISKY
     if (s->out_format == FMT_H263)
@@ -4681,7 +4679,9 @@ static void encode_picture(MpegEncContext *s, int picture_number)
     for(i=1; i<s->avctx->thread_count; i++){
         ff_update_duplicate_context(s->thread_context[i], s);
     }
-    
+
+    ff_init_me(s);
+
     /* Estimate motion for every MB */
     if(s->pict_type != I_TYPE){
         if(s->pict_type != B_TYPE && s->avctx->me_threshold==0){
