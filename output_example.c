@@ -35,7 +35,7 @@
 /**************************************************************/
 /* audio output */
 
-float t, tincr;
+float t, tincr, tincr2;
 int16_t *samples;
 uint8_t *audio_outbuf;
 int audio_outbuf_size;
@@ -46,7 +46,6 @@ int audio_input_frame_size;
  */
 AVStream *add_audio_stream(AVFormatContext *oc, int codec_id)
 {
-    AVCodec *codec;
     AVCodecContext *c;
     AVStream *st;
 
@@ -56,19 +55,30 @@ AVStream *add_audio_stream(AVFormatContext *oc, int codec_id)
         exit(1);
     }
 
-    /* find the MP2 encoder */
-    codec = avcodec_find_encoder(codec_id);
-    if (!codec) {
-        fprintf(stderr, "codec not found\n");
-        exit(1);
-    }
     c = &st->codec;
+    c->codec_id = codec_id;
     c->codec_type = CODEC_TYPE_AUDIO;
 
     /* put sample parameters */
     c->bit_rate = 64000;
     c->sample_rate = 44100;
     c->channels = 2;
+    return st;
+}
+
+void open_audio(AVFormatContext *oc, AVStream *st)
+{
+    AVCodecContext *c;
+    AVCodec *codec;
+
+    c = &st->codec;
+
+    /* find the audio encoder */
+    codec = avcodec_find_encoder(c->codec_id);
+    if (!codec) {
+        fprintf(stderr, "codec not found\n");
+        exit(1);
+    }
 
     /* open it */
     if (avcodec_open(c, codec) < 0) {
@@ -78,7 +88,9 @@ AVStream *add_audio_stream(AVFormatContext *oc, int codec_id)
 
     /* init signal generator */
     t = 0;
-    tincr = 2 * M_PI * 440.0 / c->sample_rate;
+    tincr = 2 * M_PI * 110.0 / c->sample_rate;
+    /* increment frequency by 110 Hz per second */
+    tincr2 = 2 * M_PI * 110.0 / c->sample_rate / c->sample_rate;
 
     audio_outbuf_size = 10000;
     audio_outbuf = malloc(audio_outbuf_size);
@@ -101,8 +113,6 @@ AVStream *add_audio_stream(AVFormatContext *oc, int codec_id)
         audio_input_frame_size = c->frame_size;
     }
     samples = malloc(audio_input_frame_size * 2 * c->channels);
-
-    return st;
 }
 
 void write_audio_frame(AVFormatContext *oc, AVStream *st)
@@ -117,6 +127,7 @@ void write_audio_frame(AVFormatContext *oc, AVStream *st)
         samples[2*j] = (int)(sin(t) * 10000);
         samples[2*j+1] = samples[2*j];
         t += tincr;
+        tincr += tincr2;
     }
     
     out_size = avcodec_encode_audio(c, audio_outbuf, audio_outbuf_size, samples);
@@ -128,21 +139,26 @@ void write_audio_frame(AVFormatContext *oc, AVStream *st)
     }
 }
 
+void close_audio(AVFormatContext *oc, AVStream *st)
+{
+    avcodec_close(&st->codec);
+    
+    av_free(samples);
+    av_free(audio_outbuf);
+}
+
 /**************************************************************/
 /* video output */
 
-AVFrame *picture;
+AVFrame *picture, *tmp_picture;
 uint8_t *video_outbuf;
 int frame_count, video_outbuf_size;
 
 /* add a video output stream */
 AVStream *add_video_stream(AVFormatContext *oc, int codec_id)
 {
-    AVCodec *codec;
     AVCodecContext *c;
     AVStream *st;
-    uint8_t *picture_buf;
-    int size;
 
     st = av_new_stream(oc, 0);
     if (!st) {
@@ -150,14 +166,8 @@ AVStream *add_video_stream(AVFormatContext *oc, int codec_id)
         exit(1);
     }
     
-    /* find the mpeg1 video encoder */
-    codec = avcodec_find_encoder(codec_id);
-    if (!codec) {
-        fprintf(stderr, "codec not found\n");
-        exit(1);
-    }
-
     c = &st->codec;
+    c->codec_id = codec_id;
     c->codec_type = CODEC_TYPE_VIDEO;
 
     /* put sample parameters */
@@ -170,62 +180,148 @@ AVStream *add_video_stream(AVFormatContext *oc, int codec_id)
     c->frame_rate_base= 1;
     c->gop_size = 12; /* emit one intra frame every twelve frames */
 
-    /* open it */
+    return st;
+}
+
+AVFrame *alloc_picture(int pix_fmt, int width, int height)
+{
+    AVFrame *picture;
+    uint8_t *picture_buf;
+    int size;
+    
+    picture = avcodec_alloc_frame();
+    if (!picture)
+        return NULL;
+    size = avpicture_get_size(pix_fmt, width, height);
+    picture_buf = malloc(size);
+    if (!picture_buf) {
+        av_free(picture);
+        return NULL;
+    }
+    avpicture_fill((AVPicture *)picture, picture_buf, 
+                   pix_fmt, width, height);
+    return picture;
+}
+    
+void open_video(AVFormatContext *oc, AVStream *st)
+{
+    AVCodec *codec;
+    AVCodecContext *c;
+
+    c = &st->codec;
+
+    /* find the video encoder */
+    codec = avcodec_find_encoder(c->codec_id);
+    if (!codec) {
+        fprintf(stderr, "codec not found\n");
+        exit(1);
+    }
+
+    /* open the codec */
     if (avcodec_open(c, codec) < 0) {
         fprintf(stderr, "could not open codec\n");
         exit(1);
     }
 
-    /* alloc various buffers */
-    picture= avcodec_alloc_frame();
-    video_outbuf_size = 100000;
-    video_outbuf = malloc(video_outbuf_size);
+    video_outbuf = NULL;
+    if (!(oc->oformat->flags & AVFMT_RAWPICTURE)) {
+        /* allocate output buffer */
+        /* XXX: API change will be done */
+        video_outbuf_size = 200000;
+        video_outbuf = malloc(video_outbuf_size);
+    }
 
-    size = c->width * c->height;
-    picture_buf = malloc((size * 3) / 2); /* size for YUV 420 */
-    
-    picture->data[0] = picture_buf;
-    picture->data[1] = picture->data[0] + size;
-    picture->data[2] = picture->data[1] + size / 4;
-    picture->linesize[0] = c->width;
-    picture->linesize[1] = c->width / 2;
-    picture->linesize[2] = c->width / 2;
+    /* allocate the encoded raw picture */
+    picture = alloc_picture(c->pix_fmt, c->width, c->height);
+    if (!picture) {
+        fprintf(stderr, "Could not allocate picture\n");
+        exit(1);
+    }
 
-    return st;
-}    
+    /* if the output format is not YUV420P, then a temporary YUV420P
+       picture is needed too. It is then converted to the required
+       output format */
+    tmp_picture = NULL;
+    if (c->pix_fmt != PIX_FMT_YUV420P) {
+        tmp_picture = alloc_picture(PIX_FMT_YUV420P, c->width, c->height);
+        if (!tmp_picture) {
+            fprintf(stderr, "Could not allocate temporary picture\n");
+            exit(1);
+        }
+    }
+}
 
-void write_video_frame(AVFormatContext *oc, AVStream *st)
+/* prepare a dummy image */
+void fill_yuv_image(AVFrame *pict, int frame_index, int width, int height)
 {
-    int x, y, i, out_size;
-    AVCodecContext *c;
+    int x, y, i;
 
-    c = &st->codec;
-    
-    /* prepare a dummy image */
+    i = frame_index;
+
     /* Y */
-    i = frame_count++;
-    for(y=0;y<c->height;y++) {
-        for(x=0;x<c->width;x++) {
-            picture->data[0][y * picture->linesize[0] + x] = x + y + i * 3;
+    for(y=0;y<height;y++) {
+        for(x=0;x<width;x++) {
+            pict->data[0][y * pict->linesize[0] + x] = x + y + i * 3;
         }
     }
     
     /* Cb and Cr */
-    for(y=0;y<c->height/2;y++) {
-        for(x=0;x<c->width/2;x++) {
-            picture->data[1][y * picture->linesize[1] + x] = 128 + y + i * 2;
-            picture->data[2][y * picture->linesize[2] + x] = 64 + x + i * 5;
+    for(y=0;y<height/2;y++) {
+        for(x=0;x<width/2;x++) {
+            pict->data[1][y * pict->linesize[1] + x] = 128 + y + i * 2;
+            pict->data[2][y * pict->linesize[2] + x] = 64 + x + i * 5;
         }
     }
+}
 
-    /* encode the image */
-    out_size = avcodec_encode_video(c, video_outbuf, video_outbuf_size, picture);
+void write_video_frame(AVFormatContext *oc, AVStream *st)
+{
+    int out_size, ret;
+    AVCodecContext *c;
 
-    /* write the compressed frame in the media file */
-    if (av_write_frame(oc, st->index, video_outbuf, out_size) != 0) {
+    c = &st->codec;
+    
+    if (c->pix_fmt != PIX_FMT_YUV420P) {
+        /* as we only generate a YUV420P picture, we must convert it
+           to the codec pixel format if needed */
+        fill_yuv_image(tmp_picture, frame_count, c->width, c->height);
+        img_convert((AVPicture *)picture, c->pix_fmt, 
+                    (AVPicture *)tmp_picture, PIX_FMT_YUV420P,
+                    c->width, c->height);
+    } else {
+        fill_yuv_image(picture, frame_count, c->width, c->height);
+    }
+
+    
+    if (oc->oformat->flags & AVFMT_RAWPICTURE) {
+        /* raw video case. The API will change slightly in the near
+           futur for that */
+        ret = av_write_frame(oc, st->index, 
+                       (uint8_t *)picture, sizeof(AVPicture));
+    } else {
+        /* encode the image */
+        out_size = avcodec_encode_video(c, video_outbuf, video_outbuf_size, picture);
+        
+        /* write the compressed frame in the media file */
+        ret = av_write_frame(oc, st->index, video_outbuf, out_size);
+    }
+    if (ret != 0) {
         fprintf(stderr, "Error while writing video frame\n");
         exit(1);
     }
+    frame_count++;
+}
+
+void close_video(AVFormatContext *oc, AVStream *st)
+{
+    avcodec_close(&st->codec);
+    av_free(picture->data[0]);
+    av_free(picture);
+    if (tmp_picture) {
+        av_free(tmp_picture->data[0]);
+        av_free(tmp_picture);
+    }
+    av_free(video_outbuf);
 }
 
 /**************************************************************/
@@ -236,16 +332,18 @@ int main(int argc, char **argv)
     const char *filename;
     AVOutputFormat *fmt;
     AVFormatContext *oc;
-    AVStream *st, *audio_st, *video_st;
-    int i;
+    AVStream *audio_st, *video_st;
     double audio_pts, video_pts;
-    
+    int i;
+
     /* initialize libavcodec, and register all codecs and formats */
     av_register_all();
     
     if (argc != 2) {
         printf("usage: %s output_file\n"
-               "API example program for to output media file with libavformat\n"
+               "API example program to output a media file with libavformat.\n"
+               "The output format is automatically guessed according to the file extension.\n"
+               "Raw images can also be output by using '%%d' in the filename\n"
                "\n", argv[0]);
         exit(1);
     }
@@ -271,6 +369,7 @@ int main(int argc, char **argv)
         exit(1);
     }
     oc->oformat = fmt;
+    snprintf(oc->filename, sizeof(oc->filename), "%s", filename);
 
     /* add the audio and video streams using the default format codecs
        and initialize the codecs */
@@ -283,7 +382,21 @@ int main(int argc, char **argv)
         audio_st = add_audio_stream(oc, fmt->audio_codec);
     }
 
+    /* set the output parameters (must be done even if no
+       parameters). */
+    if (av_set_parameters(oc, NULL) < 0) {
+        fprintf(stderr, "Invalid output format parameters\n");
+        exit(1);
+    }
+
     dump_format(oc, 0, filename, 1);
+
+    /* now that all the parameters are set, we can open the audio and
+       video codecs and allocate the necessary encode buffers */
+    if (video_st)
+        open_video(oc, video_st);
+    if (audio_st)
+        open_audio(oc, audio_st);
 
     /* open the output file, if needed */
     if (!(fmt->flags & AVFMT_NOFILE)) {
@@ -293,9 +406,6 @@ int main(int argc, char **argv)
         }
     }
     
-    /* set the output parameters (must be done even if no parameters) */
-    av_set_parameters(oc, NULL);
-
     /* write the stream header, if any */
     av_write_header(oc);
     
@@ -316,7 +426,7 @@ int main(int argc, char **argv)
             break;
         
         /* write interleaved audio and video frames */
-        if (!video_st || (video_st && audio_pts < video_pts)) {
+        if (!video_st || (video_st && audio_st && audio_pts < video_pts)) {
             write_audio_frame(oc, audio_st);
         } else {
             write_video_frame(oc, video_st);
@@ -324,14 +434,19 @@ int main(int argc, char **argv)
     }
 
     /* close each codec */
-    for(i = 0;i < oc->nb_streams; i++) {
-        st = oc->streams[i];
-        avcodec_close(&st->codec);
-    }
+    if (video_st)
+        close_video(oc, video_st);
+    if (audio_st)
+        close_audio(oc, audio_st);
 
     /* write the trailer, if any */
     av_write_trailer(oc);
     
+    /* free the streams */
+    for(i = 0; i < oc->nb_streams; i++) {
+        av_freep(&oc->streams[i]);
+    }
+
     if (!(fmt->flags & AVFMT_NOFILE)) {
         /* close the output file */
         url_fclose(&oc->pb);
