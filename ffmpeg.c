@@ -18,6 +18,7 @@
  */
 #define HAVE_AV_CONFIG_H
 #include "avformat.h"
+#include "tick.h"
 
 #ifndef CONFIG_WIN32
 #include <unistd.h>
@@ -138,6 +139,8 @@ typedef struct AVInputStream {
     AVStream *st;
     int discard;             /* true if stream data should be discarded */
     int decoding_needed;     /* true if the packets must be decoded in 'raw_fifo' */
+    Ticker pts_ticker;       /* Ticker for PTS calculation */
+    int ticker_inited;       /* to signal if the ticker was initialized */
     INT64 pts;               /* current pts */
     int   pts_increment;     /* expected pts increment for next packet */
     int frame_number;        /* current frame */
@@ -404,7 +407,7 @@ static void do_video_out(AVFormatContext *s,
                          AVPicture *picture1,
                          int *frame_size)
 {
-    int n1, n2, nb, i, ret, frame_number;
+    int n1, n2, nb, i, ret, frame_number, dec_frame_rate;
     AVPicture *picture, *picture2, *pict;
     AVPicture picture_tmp1, picture_tmp2;
     UINT8 video_buffer[1024*1024];
@@ -415,9 +418,11 @@ static void do_video_out(AVFormatContext *s,
     dec = &ist->st->codec;
 
     frame_number = ist->frame_number;
+    dec_frame_rate = ist->st->r_frame_rate;
+    //fprintf(stderr, "\n%d", dec_frame_rate);
     /* first drop frame if needed */
-    n1 = ((INT64)frame_number * enc->frame_rate) / dec->frame_rate;
-    n2 = (((INT64)frame_number + 1) * enc->frame_rate) / dec->frame_rate;
+    n1 = ((INT64)frame_number * enc->frame_rate) / dec_frame_rate;
+    n2 = (((INT64)frame_number + 1) * enc->frame_rate) / dec_frame_rate;
     nb = n2 - n1;
     if (nb <= 0) 
         return;
@@ -477,7 +482,7 @@ static void do_video_out(AVFormatContext *s,
     } else {
         picture = pict;
     }
-
+    nb=1;
     /* duplicates frame if needed */
     /* XXX: pb because no interleaving */
     for(i=0;i<nb;i++) {
@@ -487,6 +492,7 @@ static void do_video_out(AVFormatContext *s,
             if (same_quality) {
                 enc->quality = dec->quality;
             }
+            
             ret = avcodec_encode_video(enc, 
                                        video_buffer, sizeof(video_buffer), 
                                        picture);
@@ -756,7 +762,16 @@ static int av_encode(AVFormatContext **output_files,
                         icodec->codec_id == CODEC_ID_AC3) {
                         /* Special case for 5:1 AC3 input */
                         /* and mono or stereo output      */
-                        ost->audio_resample = 0;
+                        /* Request specific number of channels */
+                        icodec->channels = codec->channels;
+                        if (codec->sample_rate == icodec->sample_rate)
+                            ost->audio_resample = 0;
+                        else {
+                            ost->audio_resample = 1;
+                            ost->resample = audio_resample_init(codec->channels, icodec->channels,
+                                                        codec->sample_rate, 
+                                                        icodec->sample_rate);
+                        }
                         /* Request specific number of channels */
                         icodec->channels = codec->channels;
                     } else {
@@ -844,8 +859,8 @@ static int av_encode(AVFormatContext **output_files,
                         ist->file_index, ist->index);
                 exit(1);
             }
-            if (ist->st->codec.codec_type == CODEC_TYPE_VIDEO)
-                ist->st->codec.repeat_pict = 1;
+            //if (ist->st->codec.codec_type == CODEC_TYPE_VIDEO)
+            //    ist->st->codec.flags |= CODEC_FLAG_REPEAT_FIELD;
         }
     }
 
@@ -1006,6 +1021,7 @@ static int av_encode(AVFormatContext **output_files,
                             len -= ret;
                             continue;
                         }
+                                  
                     }
                     break;
                 default:
@@ -1016,17 +1032,38 @@ static int av_encode(AVFormatContext **output_files,
                 data_size = len;
                 ret = len;
             }
+            /* init tickers */
+            if (!ist->ticker_inited) {
+                switch (ist->st->codec.codec_type) {
+                case CODEC_TYPE_AUDIO:
+                    ticker_init(&ist->pts_ticker,
+                            (INT64)ist->st->codec.sample_rate,
+                            (INT64)(1000000));
+                    ist->ticker_inited = 1;
+                    break;
+                case CODEC_TYPE_VIDEO:
+                    ticker_init(&ist->pts_ticker,
+                            (INT64)ist->st->r_frame_rate,
+                            ((INT64)1000000 * FRAME_RATE_BASE));
+                    ist->ticker_inited = 1;
+                    break;
+                default:
+                    abort();
+                }
+            }
             /* update pts */
             switch(ist->st->codec.codec_type) {
             case CODEC_TYPE_AUDIO:
-                ist->pts = (INT64)1000000 * ist->sample_index / ist->st->codec.sample_rate;
+                //ist->pts = (INT64)1000000 * ist->sample_index / ist->st->codec.sample_rate;
+                ist->pts = ticker_tick(&ist->pts_ticker, ist->sample_index);
                 ist->sample_index += data_size / (2 * ist->st->codec.channels);
                 ist->pts_increment = (INT64) (data_size / (2 * ist->st->codec.channels)) * 1000000 / ist->st->codec.sample_rate;
                 break;
             case CODEC_TYPE_VIDEO:
                 ist->frame_number++;
-                ist->pts = ((INT64)ist->frame_number * 1000000 * FRAME_RATE_BASE) / 
-                    ist->st->codec.frame_rate;
+                //ist->pts = ((INT64)ist->frame_number * 1000000 * FRAME_RATE_BASE) / 
+                //    ist->st->codec.frame_rate;
+                ist->pts = ticker_tick(&ist->pts_ticker, ist->frame_number);
                 ist->pts_increment = ((INT64) 1000000 * FRAME_RATE_BASE) / 
                     ist->st->codec.frame_rate;
                 break;
@@ -1493,7 +1530,7 @@ int find_codec_parameters(AVFormatContext *ic)
     AVStream *st;
     AVPacket *pkt;
     AVPicture picture;
-    AVPacketList *pktl, **ppktl;
+    AVPacketList *pktl=NULL, **ppktl;
     short samples[AVCODEC_MAX_AUDIO_FRAME_SIZE / 2];
     UINT8 *ptr;
 
@@ -1554,7 +1591,7 @@ int find_codec_parameters(AVFormatContext *ic)
             break;
         }
         st = ic->streams[pkt->stream_index];
-
+       
         /* decode the data and update codec parameters */
         ptr = pkt->data;
         size = pkt->size;
@@ -1562,6 +1599,10 @@ int find_codec_parameters(AVFormatContext *ic)
             switch(st->codec.codec_type) {
             case CODEC_TYPE_VIDEO:
                 ret = avcodec_decode_video(&st->codec, &picture, &got_picture, ptr, size);
+                if (st->codec.codec_id == CODEC_ID_MPEG1VIDEO) {
+                    //mpegvid = pkt->stream_index;
+                    //fps = st->codec.frame_rate;
+                }
                 break;
             case CODEC_TYPE_AUDIO:
                 ret = avcodec_decode_audio(&st->codec, samples, &got_picture, ptr, size);
@@ -1583,7 +1624,7 @@ int find_codec_parameters(AVFormatContext *ic)
         count++;
     }
  the_end:
-    if (count > 0) {
+    if (count > 0) {     
         /* close each codec */
         for(i=0;i<ic->nb_streams;i++) {
             st = ic->streams[i];
@@ -1591,6 +1632,118 @@ int find_codec_parameters(AVFormatContext *ic)
         }
     }
     return ret;
+}
+
+/* Returns the real frame rate of telecine streams */
+int get_real_fps(AVFormatContext *ic, AVFormat *fmt, AVFormatParameters *ap, int stream_id)
+{
+    int frame_num, r_frames, fps, rfps;
+    int ret, got_picture, size;
+    UINT8 *ptr;
+    AVStream *st;
+    AVPacket *pkt;
+    AVPicture picture;
+    AVPacketList *pktl=NULL, **ppktl=NULL;
+    AVCodec *codec;
+    AVFormatContext *fc;
+            
+    frame_num = 0;
+    r_frames = 0;
+    fps = rfps = -1;
+    if (stream_id < 0 || stream_id >= ic->nb_streams)
+        return -1;
+
+    /* We must use another AVFormatContext, and open the
+       file again, since we do not have good seeking */        
+    fc = av_mallocz(sizeof(AVFormatContext));
+    if (!fc)
+        goto the_end;
+    
+    strcpy(fc->filename, ic->filename);
+    
+    /* open file */
+    if (!(fmt->flags & AVFMT_NOFILE)) {
+        if (url_fopen(&fc->pb, fc->filename, URL_RDONLY) < 0) {
+            fprintf(stderr, "Could not open '%s'\n", fc->filename);
+            exit(1);
+        }
+    }
+    
+    /* check format */
+    if (!fmt) {
+        goto the_end;
+    }
+    fc->format = fmt;
+    
+    /* Read header */
+    ret = fc->format->read_header(fc, ap);
+    if (ret < 0) {
+        fprintf(stderr, "%s: Error while parsing header\n", fc->filename);
+        goto the_end;
+    }
+
+    /* Find and open codec */    
+    st = fc->streams[stream_id];
+    codec = avcodec_find_decoder(st->codec.codec_id);
+    if (codec == NULL) {
+        goto the_end;
+    }
+    ret = avcodec_open(&st->codec, codec);
+    if (ret < 0)
+        goto the_end;
+        
+    ppktl = &fc->packet_buffer;    
+    if (stream_id > -1) {
+        /* check telecine MPEG video streams, we */
+        /* decode 40 frames to get the real fps  */
+        while(1) {
+            
+            pktl = av_mallocz(sizeof(AVPacketList));
+            if (!pktl) {
+                goto the_end;
+                break;
+            }
+            /* add the packet in the buffered packet list */
+            *ppktl = pktl;
+            ppktl = &pktl->next;
+
+            pkt = &pktl->pkt;
+            if (fc->format->read_packet(fc, pkt) < 0) {
+                goto the_end;
+                break;
+            }
+            st = fc->streams[pkt->stream_index];
+
+            /* decode the video */
+            ptr = pkt->data;
+            size = pkt->size;
+            while (size > 0) {
+                if (pkt->stream_index == stream_id) {
+                    ret = avcodec_decode_video(&st->codec, &picture, &got_picture, ptr, size);
+                    fps = st->codec.frame_rate;                    
+                    if (ret < 0) {
+                        goto the_end;
+                    }
+                    if (got_picture) {
+                        frame_num++;
+                        r_frames += st->codec.repeat_pict;
+                    }
+                }
+                ptr += ret;
+                size -= ret;
+             }
+             if (frame_num > 39)
+                 break;
+        }
+        rfps = (fps * frame_num) / (frame_num + (r_frames >> 1)); 
+        /* close codec */
+        avcodec_close(&st->codec);
+    }
+the_end:
+    /* FIXME: leak in packet_buffer */
+    if (fc)
+        free(fc);
+    return rfps;
 }
 
 int filename_number_test(const char *filename)
@@ -1615,7 +1768,7 @@ void opt_input_file(const char *filename)
     AVFormatParameters params, *ap = &params;
     URLFormat url_format;
     AVFormat *fmt;
-    int err, i, ret;
+    int err, i, ret, rfps;
 
     ic = av_mallocz(sizeof(AVFormatContext));
     strcpy(ic->filename, filename);
@@ -1703,7 +1856,18 @@ void opt_input_file(const char *filename)
         case CODEC_TYPE_VIDEO:
             frame_height = enc->height;
             frame_width = enc->width;
-            frame_rate = enc->frame_rate;
+            rfps = enc->frame_rate;
+            if (enc->codec_id == CODEC_ID_MPEG1VIDEO) {
+                rfps = get_real_fps(ic, fmt, ap, i);
+            }
+            if (rfps > 0 && rfps != enc->frame_rate) {
+                frame_rate = rfps;
+                fprintf(stderr,"\nSeems that stream %d comes from film source: %2.2f->%2.2f\n",
+                    i, (float)enc->frame_rate / FRAME_RATE_BASE,
+                    (float)rfps / FRAME_RATE_BASE);
+            } else                   
+                frame_rate = enc->frame_rate;
+            ic->streams[i]->r_frame_rate = rfps;
             break;
         default:
             abort();
