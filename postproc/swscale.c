@@ -71,12 +71,18 @@ static uint64_t __attribute__((aligned(8))) bm00001111=0x00000000FFFFFFFFLL;
 static uint64_t __attribute__((aligned(8))) bm00000111=0x0000000000FFFFFFLL;
 static uint64_t __attribute__((aligned(8))) bm11111000=0xFFFFFFFFFF000000LL;
 
-static uint64_t __attribute__((aligned(8))) b16Dither= 0x0004000400040004LL;
-static uint64_t __attribute__((aligned(8))) b16Dither1=0x0004000400040004LL;
-static uint64_t __attribute__((aligned(8))) b16Dither2=0x0602060206020602LL;
-static uint64_t __attribute__((aligned(8))) g16Dither= 0x0002000200020002LL;
-static uint64_t __attribute__((aligned(8))) g16Dither1=0x0002000200020002LL;
-static uint64_t __attribute__((aligned(8))) g16Dither2=0x0301030103010301LL;
+static uint64_t __attribute__((aligned(8))) b5Dither;
+static uint64_t __attribute__((aligned(8))) g5Dither;
+static uint64_t __attribute__((aligned(8))) g6Dither;
+static uint64_t __attribute__((aligned(8))) r5Dither;
+
+static uint64_t __attribute__((aligned(8))) dither4[2]={
+	0x0103010301030103LL,
+	0x0200020002000200LL,};
+
+static uint64_t __attribute__((aligned(8))) dither8[2]={
+	0x0602060206020602LL,
+	0x0004000400040004LL,};
 
 static uint64_t __attribute__((aligned(8))) b16Mask=   0x001F001F001F001FLL;
 static uint64_t __attribute__((aligned(8))) g16Mask=   0x07E007E007E007E0LL;
@@ -597,8 +603,7 @@ static int canMMX2BeUsed=0;
 void in_asm_used_var_warning_killer()
 {
  int i= yCoeff+vrCoeff+ubCoeff+vgCoeff+ugCoeff+bF8+bFC+w400+w80+w10+
- bm00001111+bm00000111+bm11111000+b16Dither+b16Dither1+b16Dither2+g16Dither+g16Dither1+
- g16Dither2+b16Mask+g16Mask+r16Mask+b15Mask+g15Mask+r15Mask+temp0+asm_yalpha1+ asm_uvalpha1+
+ bm00001111+bm00000111+bm11111000+b16Mask+g16Mask+r16Mask+b15Mask+g15Mask+r15Mask+temp0+asm_yalpha1+ asm_uvalpha1+
  M24A+M24B+M24C;
  if(i) i=0;
 }
@@ -723,9 +728,9 @@ FULL_YSCALEYUV2RGB
 
 FULL_YSCALEYUV2RGB
 #ifdef DITHER1XBPP
-			"paddusb b16Dither, %%mm1	\n\t"
-			"paddusb b16Dither, %%mm0	\n\t"
-			"paddusb b16Dither, %%mm3	\n\t"
+			"paddusb g5Dither, %%mm1	\n\t"
+			"paddusb r5Dither, %%mm0	\n\t"
+			"paddusb b5Dither, %%mm3	\n\t"
 #endif
 			"punpcklbw %%mm7, %%mm1		\n\t" // 0G0G0G0G
 			"punpcklbw %%mm7, %%mm3		\n\t" // 0B0B0B0B
@@ -757,9 +762,9 @@ FULL_YSCALEYUV2RGB
 
 FULL_YSCALEYUV2RGB
 #ifdef DITHER1XBPP
-			"paddusb g16Dither, %%mm1	\n\t"
-			"paddusb b16Dither, %%mm0	\n\t"
-			"paddusb b16Dither, %%mm3	\n\t"
+			"paddusb g6Dither, %%mm1	\n\t"
+			"paddusb r5Dither, %%mm0	\n\t"
+			"paddusb b5Dither, %%mm3	\n\t"
 #endif
 			"punpcklbw %%mm7, %%mm1		\n\t" // 0G0G0G0G
 			"punpcklbw %%mm7, %%mm3		\n\t" // 0B0B0B0B
@@ -866,9 +871,9 @@ FULL_YSCALEYUV2RGB
 				YSCALEYUV2RGB
 		/* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
 #ifdef DITHER1XBPP
-				"paddusb b16Dither, %%mm2	\n\t"
-				"paddusb b16Dither, %%mm4	\n\t"
-				"paddusb b16Dither, %%mm5	\n\t"
+				"paddusb b5Dither, %%mm2	\n\t"
+				"paddusb g5Dither, %%mm4	\n\t"
+				"paddusb r5Dither, %%mm5	\n\t"
 #endif
 
 				WRITEBGR15
@@ -884,9 +889,9 @@ FULL_YSCALEYUV2RGB
 				YSCALEYUV2RGB
 		/* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
 #ifdef DITHER1XBPP
-				"paddusb g16Dither, %%mm2	\n\t"
-				"paddusb b16Dither, %%mm4	\n\t"
-				"paddusb b16Dither, %%mm5	\n\t"
+				"paddusb b5Dither, %%mm2	\n\t"
+				"paddusb g6Dither, %%mm4	\n\t"
+				"paddusb r5Dither, %%mm5	\n\t"
 #endif
 
 				WRITEBGR16
@@ -1048,9 +1053,9 @@ static inline void yuv2rgb1(uint16_t *buf0, uint16_t *buf1, uint16_t *uvbuf0, ui
 				YSCALEYUV2RGB1
 		/* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
 #ifdef DITHER1XBPP
-				"paddusb b16Dither, %%mm2	\n\t"
-				"paddusb b16Dither, %%mm4	\n\t"
-				"paddusb b16Dither, %%mm5	\n\t"
+				"paddusb b5Dither, %%mm2	\n\t"
+				"paddusb g5Dither, %%mm4	\n\t"
+				"paddusb r5Dither, %%mm5	\n\t"
 #endif
 				WRITEBGR15
 			:: "r" (buf0), "r" (buf1), "r" (uvbuf0), "r" (uvbuf1), "r" (dest), "m" (dstw),
@@ -1064,9 +1069,9 @@ static inline void yuv2rgb1(uint16_t *buf0, uint16_t *buf1, uint16_t *uvbuf0, ui
 				YSCALEYUV2RGB1
 		/* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
 #ifdef DITHER1XBPP
-				"paddusb g16Dither, %%mm2	\n\t"
-				"paddusb b16Dither, %%mm4	\n\t"
-				"paddusb b16Dither, %%mm5	\n\t"
+				"paddusb b5Dither, %%mm2	\n\t"
+				"paddusb g6Dither, %%mm4	\n\t"
+				"paddusb r5Dither, %%mm5	\n\t"
 #endif
 
 				WRITEBGR16
@@ -1105,9 +1110,9 @@ static inline void yuv2rgb1(uint16_t *buf0, uint16_t *buf1, uint16_t *uvbuf0, ui
 				YSCALEYUV2RGB1b
 		/* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
 #ifdef DITHER1XBPP
-				"paddusb b16Dither, %%mm2	\n\t"
-				"paddusb b16Dither, %%mm4	\n\t"
-				"paddusb b16Dither, %%mm5	\n\t"
+				"paddusb b5Dither, %%mm2	\n\t"
+				"paddusb g5Dither, %%mm4	\n\t"
+				"paddusb r5Dither, %%mm5	\n\t"
 #endif
 				WRITEBGR15
 			:: "r" (buf0), "r" (buf1), "r" (uvbuf0), "r" (uvbuf1), "r" (dest), "m" (dstw),
@@ -1121,9 +1126,9 @@ static inline void yuv2rgb1(uint16_t *buf0, uint16_t *buf1, uint16_t *uvbuf0, ui
 				YSCALEYUV2RGB1b
 		/* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
 #ifdef DITHER1XBPP
-				"paddusb g16Dither, %%mm2	\n\t"
-				"paddusb b16Dither, %%mm4	\n\t"
-				"paddusb b16Dither, %%mm5	\n\t"
+				"paddusb b5Dither, %%mm2	\n\t"
+				"paddusb g6Dither, %%mm4	\n\t"
+				"paddusb r5Dither, %%mm5	\n\t"
 #endif
 
 				WRITEBGR16
@@ -1768,6 +1773,12 @@ else					s_xinc2= s_xinc;
 		// the min() is required to avoid reuseing lines which where not available
 		s_last_y1pos= MIN(y1, y/2+h/2-1);
 	}
+#ifdef HAVE_MMX
+	b5Dither= dither8[s_ypos&1];
+	g6Dither= dither4[s_ypos&1];
+	g5Dither= dither8[s_ypos&1];
+	r5Dither= dither8[(s_ypos+1)&1];
+#endif
 
 	if(dstbpp==12) //YV12
 		yuv2yuv(buf0, buf1, uvbuf0, uvbuf1, dest, uDest, vDest, dstw, yalpha, uvalpha);
@@ -1775,16 +1786,6 @@ else					s_xinc2= s_xinc;
 		yuv2rgb1(buf0, buf1, uvbuf0, uvbuf1, dest, dstw, yalpha, uvalpha, dstbpp);
 	else
 		yuv2rgbX(buf0, buf1, uvbuf0, uvbuf1, dest, dstw, yalpha, uvalpha, dstbpp);
-
-#ifdef HAVE_MMX
-    	b16Dither= b16Dither1;
-	b16Dither1= b16Dither2;
-	b16Dither2= b16Dither;
-
-	g16Dither= g16Dither1;
-	g16Dither1= g16Dither2;
-	g16Dither2= g16Dither;
-#endif
   }
 
 #ifdef HAVE_MMX
