@@ -48,6 +48,9 @@ int match_ext(const char *filename, const char *extensions)
     const char *ext, *p;
     char ext1[32], *q;
 
+    if(!filename)
+        return 0;
+    
     ext = strrchr(filename, '.');
     if (ext) {
         ext++;
@@ -264,6 +267,8 @@ void fifo_write(FifoBuffer *f, uint8_t *buf, int size, uint8_t **wptr_ptr)
 int filename_number_test(const char *filename)
 {
     char buf[1024];
+    if(!filename)
+        return -1;
     return get_frame_filename(buf, sizeof(buf), filename, 1);
 }
 
