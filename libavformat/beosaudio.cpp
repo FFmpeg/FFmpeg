@@ -38,6 +38,9 @@ extern "C" {
 /* enable performance checks */
 //#define PERF_CHECK
 
+/* enable Media Kit latency checks */
+//#define LATENCY_CHECK
+
 #define AUDIO_BLOCK_SIZE 4096
 //#define AUDIO_BLOCK_SIZE 2048
 #define AUDIO_BLOCK_COUNT 8
@@ -300,6 +303,10 @@ static int audio_write_packet(AVFormatContext *s1, int stream_index,
 {
     AudioData *s = (AudioData *)s1->priv_data;
     int len, ret;
+#ifdef LATENCY_CHECK
+bigtime_t lat1, lat2;
+lat1 = s->player->Latency();
+#endif
 #ifdef PERF_CHECK
     bigtime_t t = s->starve_time;
     s->starve_time = 0;
@@ -322,6 +329,10 @@ static int audio_write_packet(AVFormatContext *s1, int stream_index,
         buf += len;
         size -= len;
     }
+#ifdef LATENCY_CHECK
+lat2 = s->player->Latency();
+printf("#### BSoundPlayer::Latency(): before= %lld, after= %lld\n", lat1, lat2);
+#endif
     return 0;
 }
 
