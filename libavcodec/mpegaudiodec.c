@@ -279,12 +279,17 @@ static int int_pow(int i, int *exp_ptr)
         a = a << 1;
         eq--;
     }
-    *exp_ptr = eq;
-#if POW_FRAC_BITS == FRAC_BITS
-    return a;
-#else
-    return (a + (1 << (POW_FRAC_BITS - FRAC_BITS - 1))) >> (POW_FRAC_BITS - FRAC_BITS);
+    /* now POW_FRAC_ONE <= a < 2 * POW_FRAC_ONE */
+#if (POW_FRAC_BITS - 1) > FRAC_BITS
+    a = (a + (1 << (POW_FRAC_BITS - FRAC_BITS - 1))) >> (POW_FRAC_BITS - FRAC_BITS);
+    /* correct overflow */
+    if (a >= 2 * (1 << FRAC_BITS)) {
+        a = a >> 1;
+        eq++;
+    }
 #endif
+    *exp_ptr = eq;
+    return a;
 }
 
 static int decode_init(AVCodecContext * avctx)
@@ -388,10 +393,6 @@ static int decode_init(AVCodecContext * avctx)
         for(i=1;i<TABLE_4_3_SIZE;i++) {
             int e, m;
             m = int_pow(i, &e);
-#if FRAC_BITS <= 15
-            if ((unsigned short)m != m)
-                m = 65535;
-#endif
 #if 0
             /* test code */
             {
@@ -401,8 +402,10 @@ static int decode_init(AVCodecContext * avctx)
                 fm = frexp(f, &e1);
                 m1 = FIXR(2 * fm);
 #if FRAC_BITS <= 15
-                if ((unsigned short)m1 != m1)
-                    m1 = 65535;
+                if ((unsigned short)m1 != m1) {
+                    m1 = m1 >> 1;
+                    e1++;
+                }
 #endif
                 e1--;
                 if (m != m1 || e != e1) {
@@ -413,9 +416,8 @@ static int decode_init(AVCodecContext * avctx)
 #endif
             /* normalized to FRAC_BITS */
             table_4_3_value[i] = m;
-            table_4_3_exp[i] = e - 1;
+            table_4_3_exp[i] = e;
         }
-
         
         for(i=0;i<7;i++) {
             float f;
