@@ -1076,12 +1076,12 @@ static int find_prev_start_code(ByteIOContext *pb, int *size_ptr)
     return start_code;
 }
 
-/* read the next (or previous) PES header. Return its position in ppos 
+/* read the next PES header. Return its position in ppos 
    (if not NULL), and its start code, pts and dts.
  */
 static int mpegps_read_pes_header(AVFormatContext *s,
                                   int64_t *ppos, int *pstart_code, 
-                                  int64_t *ppts, int64_t *pdts, int find_next)
+                                  int64_t *ppts, int64_t *pdts)
 {
     MpegDemuxContext *m = s->priv_data;
     int len, size, startcode, c, flags, header_len;
@@ -1089,18 +1089,10 @@ static int mpegps_read_pes_header(AVFormatContext *s,
 
     last_pos = -1;
  redo:
-    if (find_next) {
         /* next start code (should be immediately after) */
         m->header_state = 0xff;
         size = MAX_SYNC_SIZE;
         startcode = find_next_start_code(&s->pb, &size, &m->header_state);
-    } else {
-        if (last_pos >= 0)
-            url_fseek(&s->pb, last_pos, SEEK_SET);
-        size = MAX_SYNC_SIZE;
-        startcode = find_prev_start_code(&s->pb, &size);
-        last_pos = url_ftell(&s->pb) - 4;
-    }
     //printf("startcode=%x pos=0x%Lx\n", startcode, url_ftell(&s->pb));
     if (startcode < 0)
         return -EIO;
@@ -1205,7 +1197,7 @@ static int mpegps_read_pes_header(AVFormatContext *s,
         int i;
         for(i=0; i<s->nb_streams; i++){
             if(startcode == s->streams[i]->id) {
-                av_add_index_entry(s->streams[i], *ppos, dts, 0, 0 /* FIXME keyframe? */);
+                av_add_index_entry(s->streams[i], *ppos, dts*AV_TIME_BASE/90000, 0, 0 /* FIXME keyframe? */);
             }
         }
     }
@@ -1224,7 +1216,7 @@ static int mpegps_read_packet(AVFormatContext *s,
     int64_t pts, dts, dummy_pos; //dummy_pos is needed for the index building to work
 
  redo:
-    len = mpegps_read_pes_header(s, &dummy_pos, &startcode, &pts, &dts, 1);
+    len = mpegps_read_pes_header(s, &dummy_pos, &startcode, &pts, &dts);
     if (len < 0)
         return len;
     
@@ -1295,7 +1287,7 @@ static int mpegps_read_close(AVFormatContext *s)
 }
 
 static int64_t mpegps_read_dts(AVFormatContext *s, int stream_index, 
-                               int64_t *ppos, int find_next)
+                               int64_t *ppos, int64_t pos_limit)
 {
     int len, startcode;
     int64_t pos, pts, dts;
@@ -1306,7 +1298,7 @@ static int64_t mpegps_read_dts(AVFormatContext *s, int stream_index,
 #endif
     url_fseek(&s->pb, pos, SEEK_SET);
     for(;;) {
-        len = mpegps_read_pes_header(s, &pos, &startcode, &pts, &dts, find_next);
+        len = mpegps_read_pes_header(s, &pos, &startcode, &pts, &dts);
         if (len < 0) {
 #ifdef DEBUG_SEEK
             printf("none (ret=%d)\n", len);
@@ -1317,153 +1309,13 @@ static int64_t mpegps_read_dts(AVFormatContext *s, int stream_index,
             dts != AV_NOPTS_VALUE) {
             break;
         }
-        if (find_next) {
-            url_fskip(&s->pb, len);
-        } else {
-            url_fseek(&s->pb, pos, SEEK_SET);
-        }
+        url_fskip(&s->pb, len);
     }
 #ifdef DEBUG_SEEK
     printf("pos=0x%llx dts=0x%llx %0.3f\n", pos, dts, dts / 90000.0);
 #endif
     *ppos = pos;
-    return dts;
-}
-
-static int mpegps_read_seek(AVFormatContext *s, 
-                            int stream_index, int64_t timestamp)
-{
-    int64_t pos_min, pos_max, pos, pos_limit;
-    int64_t dts_min, dts_max, dts;
-    int index, no_change;
-    AVStream *st;
-
-    timestamp = (timestamp * 90000) / AV_TIME_BASE;
-
-#ifdef DEBUG_SEEK
-    printf("read_seek: %d %0.3f\n", stream_index, timestamp / 90000.0);
-#endif
-
-    /* XXX: find stream_index by looking at the first PES packet found */
-    if (stream_index < 0) {
-        stream_index = av_find_default_stream_index(s);
-        if (stream_index < 0)
-            return -1;
-    }
-    
-    dts_max=
-    dts_min= AV_NOPTS_VALUE;
-    pos_limit= -1; //gcc falsely says it may be uninitalized
-
-    st= s->streams[stream_index];
-    if(st->index_entries){
-        AVIndexEntry *e;
-
-        index= av_index_search_timestamp(st, timestamp);
-        e= &st->index_entries[index];
-        if(e->timestamp <= timestamp){
-            pos_min= e->pos;
-            dts_min= e->timestamp;
-#ifdef DEBUG_SEEK
-        printf("unsing cached pos_min=0x%llx dts_min=%0.3f\n", 
-               pos_min,dts_min / 90000.0);
-#endif
-        }else{
-            assert(index==0);
-        }
-        index++;
-        if(index < st->nb_index_entries){
-            e= &st->index_entries[index];
-            assert(e->timestamp >= timestamp);
-            pos_max= e->pos;
-            dts_max= e->timestamp;
-            pos_limit= pos_max - e->min_distance;
-#ifdef DEBUG_SEEK
-        printf("unsing cached pos_max=0x%llx dts_max=%0.3f\n", 
-               pos_max,dts_max / 90000.0);
-#endif
-        }
-    }
-
-    if(dts_min == AV_NOPTS_VALUE){
-        pos_min = 0;
-        dts_min = mpegps_read_dts(s, stream_index, &pos_min, 1);
-        if (dts_min == AV_NOPTS_VALUE) {
-            /* we can reach this case only if no PTS are present in
-               the whole stream */
-            return -1;
-        }
-    }
-    if(dts_max == AV_NOPTS_VALUE){
-        pos_max = url_filesize(url_fileno(&s->pb)) - 1;
-        dts_max = mpegps_read_dts(s, stream_index, &pos_max, 0);
-        pos_limit= pos_max;
-    }
-
-    no_change=0;
-    while (pos_min < pos_limit) {
-#ifdef DEBUG_SEEK
-        printf("pos_min=0x%llx pos_max=0x%llx dts_min=%0.3f dts_max=%0.3f\n", 
-               pos_min, pos_max,
-               dts_min / 90000.0, dts_max / 90000.0);
-#endif
-        int64_t start_pos;
-        assert(pos_limit <= pos_max);
-
-        if(no_change==0){
-            int64_t approximate_keyframe_distance= pos_max - pos_limit;
-            // interpolate position (better than dichotomy)
-            pos = (int64_t)((double)(pos_max - pos_min) *
-                            (double)(timestamp - dts_min) /
-                            (double)(dts_max - dts_min)) + pos_min - approximate_keyframe_distance;
-        }else if(no_change==1){
-            // bisection, if interpolation failed to change min or max pos last time
-            pos = (pos_min + pos_limit)>>1;
-        }else{
-            // linear search if bisection failed, can only happen if there are very few or no keframes between min/max
-            pos=pos_min;
-        }
-        if(pos <= pos_min)
-            pos= pos_min + 1;
-        else if(pos > pos_limit)
-            pos= pos_limit;
-        start_pos= pos;
-
-        // read the next timestamp 
-        dts = mpegps_read_dts(s, stream_index, &pos, 1);
-        if(pos == pos_max)
-            no_change++;
-        else
-            no_change=0;
-#ifdef DEBUG_SEEK
-printf("%Ld %Ld %Ld / %Ld %Ld %Ld target:%Ld limit:%Ld start:%Ld noc:%d\n", pos_min, pos, pos_max, dts_min, dts, dts_max, timestamp, pos_limit, start_pos, no_change);
-#endif
-        assert(dts != AV_NOPTS_VALUE);
-        if (timestamp < dts) {
-            pos_limit = start_pos - 1;
-            pos_max = pos;
-            dts_max = dts;
-        } else {
-            pos_min = pos;
-            dts_min = dts;
-            /* check if we are lucky */
-            if (timestamp == dts)
-                break;
-        }
-    }
-    
-    pos = pos_min;
-#ifdef DEBUG_SEEK
-    pos_min = pos;
-    dts_min = mpegps_read_dts(s, stream_index, &pos_min, 1);
-    pos_min++;
-    dts_max = mpegps_read_dts(s, stream_index, &pos_min, 1);
-    printf("pos=0x%llx %0.3f<=%0.3f<=%0.3f\n", 
-           pos, dts_min / 90000.0, timestamp / 90000.0, dts_max / 90000.0);
-#endif
-    /* do the seek */
-    url_fseek(&s->pb, pos, SEEK_SET);
-    return 0;
+    return dts*AV_TIME_BASE/90000;
 }
 
 #ifdef CONFIG_ENCODERS
@@ -1532,7 +1384,8 @@ AVInputFormat mpegps_demux = {
     mpegps_read_header,
     mpegps_read_packet,
     mpegps_read_close,
-    mpegps_read_seek,
+    NULL, //mpegps_read_seek,
+    mpegps_read_dts,
 };
 
 int mpegps_init(void)

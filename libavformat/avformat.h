@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-#define LIBAVFORMAT_BUILD       4611
+#define LIBAVFORMAT_BUILD       4612
 
 #define LIBAVFORMAT_VERSION_INT FFMPEG_VERSION_INT
 #define LIBAVFORMAT_VERSION     FFMPEG_VERSION
@@ -167,6 +167,11 @@ typedef struct AVInputFormat {
        units) relative to the frames in stream component stream_index */
     int (*read_seek)(struct AVFormatContext *, 
                      int stream_index, int64_t timestamp);
+    /**
+     * gets the next timestamp in AV_TIME_BASE units.
+     */
+    int64_t (*read_timestamp)(struct AVFormatContext *s, int stream_index,
+                              int64_t *pos, int64_t pos_limit);
     /* can use flags: AVFMT_NOFILE, AVFMT_NEEDNUMBER */
     int flags;
     /* if extensions are defined, then no probe is done. You should
@@ -555,6 +560,7 @@ int av_find_default_stream_index(AVFormatContext *s);
 int av_index_search_timestamp(AVStream *st, int timestamp);
 int av_add_index_entry(AVStream *st,
                        int64_t pos, int64_t timestamp, int distance, int flags);
+int av_seek_frame_binary(AVFormatContext *s, int stream_index, int64_t target_ts);
 
 /* media file output */
 int av_set_parameters(AVFormatContext *s, AVFormatParameters *ap);
