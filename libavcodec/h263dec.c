@@ -117,9 +117,10 @@ static int h263_decode_frame(AVCodecContext *avctx,
         return 0;
     }
 
-    if(s->bitstream_buffer_size) //divx 5.01+ frame reorder
+    if(s->bitstream_buffer_size){ //divx 5.01+ frame reorder
         init_get_bits(&s->gb, s->bitstream_buffer, s->bitstream_buffer_size);
-    else
+        s->bitstream_buffer_size=0;
+    }else
         init_get_bits(&s->gb, buf, buf_size);
 
     /* let's go :-) */
@@ -256,8 +257,7 @@ static int h263_decode_frame(AVCodecContext *avctx,
             memcpy(s->bitstream_buffer, buf + current_pos, buf_size - current_pos);
             s->bitstream_buffer_size= buf_size - current_pos;
         }
-    }else
-        s->bitstream_buffer_size=0;
+    }
   
     MPV_frame_end(s);
     
