@@ -3942,6 +3942,7 @@ static inline int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
     //Note intra & rvlc should be optimized away if this is inlined
     
     if(intra) {
+      if(s->qscale < s->intra_dc_threshold){
 	/* DC coef */
         if(s->partitioned_frame){
             level = s->dc_val[0][ s->block_index[n] ];
@@ -3955,6 +3956,9 @@ static inline int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
         }
         block[0] = level;
         i = 0;
+      }else{
+            i = -1;
+      }  
         if (!coded) 
             goto not_coded;
         
@@ -4154,7 +4158,19 @@ static inline int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
     CLOSE_READER(re, &s->gb);
   }
  not_coded:
-    if (s->mb_intra) {
+    if (intra) {
+        if(s->qscale >= s->intra_dc_threshold){
+            uint16_t *dc_val;
+            block[0] += ff_mpeg4_pred_dc(s, n, &dc_val, &dc_pred_dir);
+            if (n < 4) {
+                *dc_val = block[0] * s->y_dc_scale;
+            } else {
+                *dc_val = block[0] * s->c_dc_scale;
+            }
+
+            if(i == -1) i=0;
+        }
+
         mpeg4_pred_ac(s, block, n, dc_pred_dir);
         if (s->ac_pred) {
             i = 63; /* XXX: not optimal */
@@ -5013,9 +5029,7 @@ static int decode_vop_header(MpegEncContext *s, GetBitContext *gb){
 //FIXME complexity estimation stuff
      
      if (s->shape != BIN_ONLY_SHAPE) {
-         int t;
-         t=get_bits(gb, 3); /* intra dc VLC threshold */
-//printf("threshold %d\n", t);
+         s->intra_dc_threshold= mpeg4_dc_threshold[ get_bits(gb, 3) ];
          if(!s->progressive_sequence){
              s->top_field_first= get_bits1(gb);
              s->alternate_scan= get_bits1(gb);
@@ -5063,12 +5077,12 @@ static int decode_vop_header(MpegEncContext *s, GetBitContext *gb){
              s->b_code=1;
 
          if(s->avctx->debug&FF_DEBUG_PICT_INFO){
-             printf("qp:%d fc:%d,%d %s size:%d pro:%d alt:%d top:%d %spel part:%d resync:%d w:%d a:%d rnd:%d vot:%d%s\n", 
+             printf("qp:%d fc:%d,%d %s size:%d pro:%d alt:%d top:%d %spel part:%d resync:%d w:%d a:%d rnd:%d vot:%d%s dc:%d\n", 
                  s->qscale, s->f_code, s->b_code, 
                  s->pict_type == I_TYPE ? "I" : (s->pict_type == P_TYPE ? "P" : (s->pict_type == B_TYPE ? "B" : "S")), 
                  gb->size_in_bits,s->progressive_sequence, s->alternate_scan, s->top_field_first, 
                  s->quarter_sample ? "q" : "h", s->data_partitioning, s->resync_marker, s->num_sprite_warping_points,
-                 s->sprite_warping_accuracy, 1-s->no_rounding, s->vo_type, s->vol_control_parameters ? " VOLC" : " "); 
+                 s->sprite_warping_accuracy, 1-s->no_rounding, s->vo_type, s->vol_control_parameters ? " VOLC" : " ", s->intra_dc_threshold); 
          }
 
          if(!s->scalability){

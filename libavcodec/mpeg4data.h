@@ -395,3 +395,7 @@ uint8_t ff_mpeg4_c_dc_scale_table[32]={
 const uint16_t ff_mpeg4_resync_prefix[8]={
     0x7F00, 0x7E00, 0x7C00, 0x7800, 0x7000, 0x6000, 0x4000, 0x0000
 };
+
+static const uint8_t mpeg4_dc_threshold[8]={
+    99, 13, 15, 17, 19, 21, 23, 0
+};
