@@ -1,6 +1,8 @@
 
 include ../../config.mak
 
+VPATH=$(SRC_PATH)/libavcodec/libpostproc
+
 ifeq ($(SHARED_PP),yes)
 SPPLIB = $(SLIBPREF)postproc$(SLIBSUF)
 SPPVERSION = 0.0.1
@@ -18,7 +20,7 @@ CFLAGS  = $(OPTFLAGS) $(MLIB_INC) -I. -I.. $(EXTRA_INC)
 # .PHONY: all clean
 
 .c.o:
-	$(CC) -c $(CFLAGS) -I.. -I../.. -o $@ $<
+	$(CC) -c $(CFLAGS) -I$(SRC_PATH)/libavcodec -I../.. -o $@ $<
 
 all:    $(SWSLIB) $(PPLIB) $(SPPLIB)
 
