@@ -2396,10 +2396,10 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
             
         if(s->codec_id==CODEC_ID_MPEG4){        
             if(!s->mb_intra){
-                assert(s->dquant==0 || s->mv_type!=MV_TYPE_8X8);
-
                 if(s->mv_dir&MV_DIRECT)
                     s->dquant=0;
+
+                assert(s->dquant==0 || s->mv_type!=MV_TYPE_8X8);
             }
         }
         s->qscale+= s->dquant;
