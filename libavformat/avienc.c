@@ -75,6 +75,8 @@ void end_tag(ByteIOContext *pb, offset_t start)
 /* Note: when encoding, the first matching tag is used, so order is
    important if multiple tags possible for a given codec. */
 const CodecTag codec_bmp_tags[] = {
+    { CODEC_ID_H264, MKTAG('H', '2', '6', '4') },
+
     { CODEC_ID_H263, MKTAG('H', '2', '6', '3') },
     { CODEC_ID_H263P, MKTAG('H', '2', '6', '3') },
     { CODEC_ID_H263I, MKTAG('I', '2', '6', '3') }, /* intel h263 */
