@@ -153,6 +153,7 @@ static uint64_t __attribute__((aligned(8))) temp5=0;
 static uint64_t __attribute__((aligned(8))) pQPb=0;
 static uint64_t __attribute__((aligned(8))) pQPb2=0;
 static uint8_t __attribute__((aligned(8))) tempBlocks[8*16*2]; //used for the horizontal code
+static uint32_t __attribute__((aligned(4))) maxTmpNoise[4];
 #else
 static uint64_t packedYOffset=	0x0000000000000000LL;
 static uint64_t packedYScale=	0x0100010001000100LL;
@@ -2596,7 +2597,7 @@ static inline void transpose2(uint8_t *dst, int dstStride, uint8_t *src)
 //static int test=0;
 
 static void inline tempNoiseReducer(uint8_t *src, int stride,
-				    uint8_t *tempBlured, int *maxNoise)
+				    uint8_t *tempBlured, uint32_t *tempBluredPast, int *maxNoise)
 {
 #define FAST_L2_DIFF
 //#define L1_DIFF //u should change the thresholds too if u try that one
@@ -2694,12 +2695,23 @@ L2_DIFF_CORE((%0, %%ecx), (%1, %%ecx))
 		"psrlq $32, %%mm0				\n\t"
 		"paddd %%mm0, %%mm4				\n\t"
 		"movd %%mm4, %%ecx				\n\t"
+		"shll $2, %%ecx					\n\t"
+		"movl %3, %%ebx					\n\t"
+		"addl -4(%%ebx), %%ecx				\n\t"
+		"addl 4(%%ebx), %%ecx				\n\t"
+		"addl -1024(%%ebx), %%ecx			\n\t"
+		"addl $4, %%ecx					\n\t"
+		"addl 1024(%%ebx), %%ecx			\n\t"
+		"shrl $3, %%ecx					\n\t"
+		"movl %%ecx, (%%ebx)				\n\t"
+		"leal (%%eax, %2, 2), %%ebx			\n\t" // 5*stride
+
 //		"movl %3, %%ecx				\n\t"
 //		"movl %%ecx, test				\n\t"
 //		"jmp 4f \n\t"
-		"cmpl %4, %%ecx				\n\t"
+		"cmpl 4+maxTmpNoise, %%ecx			\n\t"
 		" jb 2f						\n\t"
-		"cmpl %5, %%ecx				\n\t"
+		"cmpl 8+maxTmpNoise, %%ecx			\n\t"
 		" jb 1f						\n\t"
 
 		"leal (%%ebx, %2, 2), %%ecx			\n\t" // 7*stride
@@ -2758,7 +2770,7 @@ L2_DIFF_CORE((%0, %%ecx), (%1, %%ecx))
 		"jmp 4f						\n\t"
 
 		"2:						\n\t"
-		"cmpl %3, %%ecx					\n\t"
+		"cmpl maxTmpNoise, %%ecx			\n\t"
 		" jb 3f						\n\t"
 
 		"leal (%%ebx, %2, 2), %%ecx			\n\t" // 7*stride
@@ -2875,8 +2887,7 @@ L2_DIFF_CORE((%0, %%ecx), (%1, %%ecx))
 
 		"4:						\n\t"
 
-		:: "r" (src), "r" (tempBlured), "r"(stride),
-		   "m"(maxNoise[0]), "m"(maxNoise[1]), "m"(maxNoise[2])
+		:: "r" (src), "r" (tempBlured), "r"(stride), "m" (tempBluredPast)
 		: "%eax", "%ebx", "%ecx", "memory"
 		);
 //printf("%d\n", test);
@@ -2884,6 +2895,7 @@ L2_DIFF_CORE((%0, %%ecx), (%1, %%ecx))
 	int y;
 	int d=0;
 	int sysd=0;
+	int i;
 
 	for(y=0; y<8; y++)
 	{
@@ -2900,6 +2912,16 @@ L2_DIFF_CORE((%0, %%ecx), (%1, %%ecx))
 			sysd+= d1;
 		}
 	}
+	i=d;
+	d= 	(
+		4*d
+		+(*(tempBluredPast-256))
+		+(*(tempBluredPast-1))+ (*(tempBluredPast+1))
+		+(*(tempBluredPast+256))
+		+4)>>3;
+	*tempBluredPast=i;
+//	((*tempBluredPast)*3 + d + 2)>>2;
+
 //printf("%d %d %d\n", maxNoise[0], maxNoise[1], maxNoise[2]);
 /*
 Switch between
@@ -3462,6 +3484,7 @@ static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStri
 
 	/* Temporal noise reducing buffers */
 	static uint8_t *tempBlured[3]= {NULL,NULL,NULL};
+	static uint32_t *tempBluredPast[3]= {NULL,NULL,NULL};
 
 #ifdef PP_FUNNY_STRIDE
 	uint8_t *dstBlockPtrBackup;
@@ -3476,6 +3499,11 @@ static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStri
 	sumTime= rdtsc();
 #endif
 //mode= 0x7F;
+#ifdef HAVE_MMX
+	maxTmpNoise[0]= ppMode->maxTmpNoise[0];
+	maxTmpNoise[1]= ppMode->maxTmpNoise[1];
+	maxTmpNoise[2]= ppMode->maxTmpNoise[2];
+#endif
 
 	if(tempDst==NULL)
 	{
@@ -3491,8 +3519,10 @@ static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStri
 		//FIXME works only as long as the size doesnt increase
 		//Note:the +17*1024 is just there so i dont have to worry about r/w over te end
 		tempBlured[isColor]= (uint8_t*)memalign(8, dstStride*((height+7)&(~7)) + 17*1024);
+		tempBluredPast[isColor]= (uint32_t*)memalign(8, 256*((height+7)&(~7))/2 + 17*1024);
 
 		memset(tempBlured[isColor], 0, dstStride*((height+7)&(~7)) + 17*1024);
+		memset(tempBluredPast[isColor], 0, 256*((height+7)&(~7))/2 + 17*1024);
 	}
 
 	if(!yHistogram)
@@ -3882,6 +3912,7 @@ static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStri
 				{
 					tempNoiseReducer(dstBlock-8, stride,
 						tempBlured[isColor] + y*dstStride + x,
+						tempBluredPast[isColor] + (y>>3)*256 + (x>>3),
 						ppMode->maxTmpNoise);
 				}
 			}
@@ -3920,6 +3951,7 @@ static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStri
 		{
 			tempNoiseReducer(dstBlock-8, dstStride,
 				tempBlured[isColor] + y*dstStride + x,
+				tempBluredPast[isColor] + (y>>3)*256 + (x>>3),
 				ppMode->maxTmpNoise);
 		}
 
