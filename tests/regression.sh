@@ -86,6 +86,7 @@ raw_dst="$datadir/out.yuv"
 raw_ref="$datadir/ref.yuv"
 pcm_src="asynth1.sw"
 pcm_dst="$datadir/out.wav"
+pcm_ref="$datadir/ref.wav"
 if [ X"`echo | md5sum 2> /dev/null`" != X ]; then
     do_md5sum() { md5sum -b $1; }
 elif [ -x /sbin/md5 ]; then
@@ -108,6 +109,8 @@ do_ffmpeg()
     do_md5sum $f >> $logfile
     if [ $f = $raw_dst ] ; then
         $tiny_psnr $f $raw_ref >> $logfile
+    elif [ $f = $pcm_dst ] ; then
+        $tiny_psnr $f $pcm_ref >> $logfile
     else
         wc -c $f >> $logfile
     fi
@@ -144,6 +147,7 @@ echo "ffmpeg benchmarks" > $benchfile
 ###################################
 # generate reference for quality check
 do_ffmpeg_nocheck $raw_ref -y -f pgmyuv -i $raw_src -an -f rawvideo $raw_ref
+do_ffmpeg_nocheck $pcm_ref -y -ab 128 -ac 2 -ar 44100 -f s16le -i $pcm_src -f wav $pcm_ref
 
 ###################################
 if [ -n "$do_mpeg" ] ; then
