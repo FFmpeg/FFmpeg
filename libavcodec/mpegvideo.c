@@ -760,7 +760,7 @@ void reorder_input(MpegEncContext *s, AVPicture *pict)
         }
         if(index!=0){
             s->picture_buffer_index++;
-            if(s->picture_buffer_index >= REORDER_BUFFER_SIZE-1) s->picture_buffer_index=0;
+            if(s->picture_buffer_index >= REORDER_BUFFER_SIZE) s->picture_buffer_index=0;
         }
     }
     s->coded_order[index].pict_type = s->input_pict_type;
