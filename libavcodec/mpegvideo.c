@@ -412,7 +412,7 @@ static int init_duplicate_context(MpegEncContext *s, MpegEncContext *base){
     s->edge_emu_buffer= s->allocated_edge_emu_buffer + (s->width+64)*2*17;
 
      //FIXME should be linesize instead of s->width*2 but that isnt known before get_buffer()
-    CHECKED_ALLOCZ(s->me.scratchpad,  s->width*2*16*2*sizeof(uint8_t)) 
+    CHECKED_ALLOCZ(s->me.scratchpad,  (s->width+64)*2*16*2*sizeof(uint8_t)) 
     s->rd_scratchpad=   s->me.scratchpad;
     s->b_scratchpad=    s->me.scratchpad;
     s->obmc_scratchpad= s->me.scratchpad + 16;
@@ -3158,8 +3158,8 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
             dest_cr= s->dest[2];
         }else{
             dest_y = s->b_scratchpad;
-            dest_cb= s->b_scratchpad+16*s->linesize;
-            dest_cr= s->b_scratchpad+16*s->linesize+8;
+            dest_cb= s->b_scratchpad+16*linesize;
+            dest_cr= s->b_scratchpad+16*linesize+8;
         }
         if (!s->mb_intra) {
             /* motion handling */
@@ -4642,7 +4642,7 @@ static void encode_picture(MpegEncContext *s, int picture_number)
     /* we need to initialize some time vars before we can encode b-frames */
     // RAL: Condition added for MPEG1VIDEO
     if (s->codec_id == CODEC_ID_MPEG1VIDEO || s->codec_id == CODEC_ID_MPEG2VIDEO || (s->h263_pred && !s->h263_msmpeg4))
-        ff_set_mpeg4_time(s, s->picture_number); 
+        ff_set_mpeg4_time(s, s->picture_number);  //FIXME rename and use has_b_frames or similar
 #endif
         
     s->scene_change_score=0;
