@@ -720,8 +720,6 @@ int img_convert(AVPicture *dst, int dst_pix_fmt,
 {
     int i;
 
-    assert(pix_fmt != PIX_FMT_ANY && dst_pix_fmt != PIX_FMT_ANY);
-
     if (dst_pix_fmt == pix_fmt) {
         switch(pix_fmt) {
         case PIX_FMT_YUV420P:
