@@ -1611,7 +1611,7 @@ static void clear_blocks_c(DCTELEM *blocks)
 
 static void add_bytes_c(uint8_t *dst, uint8_t *src, int w){
     int i;
-    for(i=0; i+7<w; i++){
+    for(i=0; i+7<w; i+=8){
         dst[i+0] += src[i+0];
         dst[i+1] += src[i+1];
         dst[i+2] += src[i+2];
@@ -1627,7 +1627,7 @@ static void add_bytes_c(uint8_t *dst, uint8_t *src, int w){
 
 static void diff_bytes_c(uint8_t *dst, uint8_t *src1, uint8_t *src2, int w){
     int i;
-    for(i=0; i+7<w; i++){
+    for(i=0; i+7<w; i+=8){
         dst[i+0] = src1[i+0]-src2[i+0];
         dst[i+1] = src1[i+1]-src2[i+1];
         dst[i+2] = src1[i+2]-src2[i+2];
