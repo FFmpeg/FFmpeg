@@ -219,6 +219,7 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
     const char *codec_name;
     AVCodec *p;
     char buf1[32];
+    char *channels_str=NULL;
     int bitrate;
 
     if (encode)
@@ -269,12 +270,27 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
         snprintf(buf, buf_size,
                  "Audio: %s",
                  codec_name);
+        switch (enc->channels) {
+            case 1:
+                channels_str = "mono";
+                break;
+            case 2:
+                channels_str = "stereo";
+                break;
+            case 6:
+                channels_str = "5:1";
+                break;
+            default:
+                sprintf(channels_str, "%d channels", enc->channels);
+                break;
+        }
         if (enc->sample_rate) {
             snprintf(buf + strlen(buf), buf_size - strlen(buf),
                      ", %d Hz, %s",
                      enc->sample_rate,
-                     enc->channels == 2 ? "stereo" : "mono");
+                     channels_str);
         }
+        
         /* for PCM codecs, compute bitrate directly */
         switch(enc->codec_id) {
         case CODEC_ID_PCM_S16LE:

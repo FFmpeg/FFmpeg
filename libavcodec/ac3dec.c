@@ -108,13 +108,16 @@ static int ac3_decode_frame(AVCodecContext *avctx,
                     /* update codec info */
                     avctx->sample_rate = sample_rate;
                     s->channels = ac3_channels[s->flags & 7];
-		    if (s->flags & AC3_LFE)
-			s->channels++;
-		    if (s->channels < avctx->channels) {
-			fprintf(stderr, "Source channels are less than specified: output to %d channels..\n", s->channels);
-			avctx->channels = s->channels;
-		    }
-                    avctx->bit_rate = bit_rate;
+                    if (s->flags & AC3_LFE)
+			            s->channels++;
+			        if (avctx->channels == 0)
+			            /* No specific number of channel requested */
+			            avctx->channels = s->channels;
+			        else if (s->channels < avctx->channels) {
+			            fprintf(stderr, "libav: AC3 Source channels are less than specified: output to %d channels..\n", s->channels);
+			            avctx->channels = s->channels;
+		            }
+		            avctx->bit_rate = bit_rate;
                 }
             }
         } else if (len < s->frame_size) {
@@ -127,15 +130,13 @@ static int ac3_decode_frame(AVCodecContext *avctx,
             s->inbuf_ptr += len;
             buf_size -= len;
         } else {
-#if 0
+            flags = s->flags;
             if (avctx->channels == 1)
                 flags = AC3_MONO;
-            else
+            else if (avctx->channels == 2)
                 flags = AC3_STEREO;
-#else
-	    flags = s->flags;
-#endif
-            flags |= AC3_ADJUST_LEVEL;
+            else
+                flags |= AC3_ADJUST_LEVEL;
             level = 1;
             if (ac3_frame (&s->state, s->inbuf, &flags, &level, 384)) {
             fail:
@@ -146,7 +147,7 @@ static int ac3_decode_frame(AVCodecContext *avctx,
             for (i = 0; i < 6; i++) {
                 if (ac3_block (&s->state))
                     goto fail;
-		float_to_int (*samples, out_samples + i * 256 * avctx->channels, avctx->channels);
+                float_to_int (*samples, out_samples + i * 256 * avctx->channels, avctx->channels);
             }
             s->inbuf_ptr = s->inbuf;
             s->frame_size = 0;

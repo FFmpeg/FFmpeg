@@ -18,6 +18,7 @@
  */
 #include "avformat.h"
 #include "avi.h"
+#include "tick.h"
 
 #define PACKET_SIZE 3200
 #define PACKET_HEADER_SIZE 12
@@ -26,6 +27,7 @@
 typedef struct {
     int num;
     int seq;
+    Ticker pts_ticker;
     /* use for reading */
     AVPacket pkt;
     int frag_offset;
@@ -283,6 +285,7 @@ static int asf_write_header1(AVFormatContext *s, INT64 file_size, INT64 data_chu
 
     /* stream headers */
     for(n=0;n<s->nb_streams;n++) {
+        ASFStream *stream = &asf->streams[n];
         enc = &s->streams[n]->codec;
         asf->streams[n].num = n + 1;
         asf->streams[n].seq = 0;
@@ -292,12 +295,20 @@ static int asf_write_header1(AVFormatContext *s, INT64 file_size, INT64 data_chu
             wav_extra_size = 0;
             extra_size = 18 + wav_extra_size;
             extra_size2 = 0;
+            /* Init the ticker */
+            ticker_init(&stream->pts_ticker,
+                        enc->sample_rate,
+                        1000 * enc->frame_size);
             break;
         default:
         case CODEC_TYPE_VIDEO:
             wav_extra_size = 0;
             extra_size = 0x33;
             extra_size2 = 0;
+            /* Init the ticker */
+            ticker_init(&stream->pts_ticker,
+                        enc->frame_rate,
+                        1000 * FRAME_RATE_BASE);
             break;
         }
 
@@ -543,26 +554,27 @@ static int asf_write_packet(AVFormatContext *s, int stream_index,
                             UINT8 *buf, int size, int force_pts)
 {
     ASFContext *asf = s->priv_data;
+    ASFStream *stream;
     int timestamp;
     INT64 duration;
     AVCodecContext *codec;
 
     codec = &s->streams[stream_index]->codec;
+    stream = &asf->streams[stream_index];
+    
     if (codec->codec_type == CODEC_TYPE_AUDIO) {
-        timestamp = (int)((float)codec->frame_number * codec->frame_size * 1000.0 / 
-                          codec->sample_rate);
+        timestamp = (int)ticker_tick(&stream->pts_ticker, codec->frame_number);
         duration = (codec->frame_number * codec->frame_size * INT64_C(10000000)) / 
             codec->sample_rate;
     } else {
-        timestamp = (int)((float)codec->frame_number * 1000.0 * FRAME_RATE_BASE / 
-                          codec->frame_rate);
+        timestamp = (int)ticker_tick(&stream->pts_ticker, codec->frame_number);
         duration = codec->frame_number * 
             ((INT64_C(10000000) * FRAME_RATE_BASE) / codec->frame_rate);
     }
     if (duration > asf->duration)
         asf->duration = duration;
     
-    put_frame(s, &asf->streams[stream_index], (int)timestamp, buf, size);
+    put_frame(s, stream, timestamp, buf, size);
     return 0;
 }
     

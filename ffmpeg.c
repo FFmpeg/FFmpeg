@@ -741,10 +741,19 @@ static int av_encode(AVFormatContext **output_files,
                     codec->sample_rate == icodec->sample_rate) {
                     ost->audio_resample = 0;
                 } else {
-                    ost->audio_resample = 1;
-                    ost->resample = audio_resample_init(codec->channels, icodec->channels,
+                    if (codec->channels != icodec->channels &&
+                        icodec->codec_id == CODEC_ID_AC3) {
+                        /* Special case for 5:1 AC3 input */
+                        /* and mono or stereo output      */
+                        ost->audio_resample = 0;
+                        /* Request specific number of channels */
+                        icodec->channels = codec->channels;
+                    } else {
+                        ost->audio_resample = 1; 
+                        ost->resample = audio_resample_init(codec->channels, icodec->channels,
                                                         codec->sample_rate, 
                                                         icodec->sample_rate);
+                    }
                 }
                 ist->decoding_needed = 1;
                 ost->encoding_needed = 1;
@@ -1626,6 +1635,7 @@ void opt_input_file(const char *filename)
         AVCodecContext *enc = &ic->streams[i]->codec;
         switch(enc->codec_type) {
         case CODEC_TYPE_AUDIO:
+            //fprintf(stderr, "\nInput Audio channels: %d", enc->channels);
             audio_channels = enc->channels;
             audio_sample_rate = enc->sample_rate;
             break;
@@ -1789,7 +1799,12 @@ void opt_output_file(const char *filename)
             
             audio_enc->bit_rate = audio_bit_rate;
             audio_enc->sample_rate = audio_sample_rate;
-            audio_enc->channels = audio_channels;
+            /* For audio codecs other than AC3 we limit */
+            /* the number of coded channels to stereo   */
+            if (audio_channels > 2 && codec_id != CODEC_ID_AC3) {
+                audio_enc->channels = 2;
+            } else
+                audio_enc->channels = audio_channels;
             oc->streams[nb_streams] = st;
             nb_streams++;
         }
