@@ -344,6 +344,7 @@ static int rv20_decode_picture_header(MpegEncContext *s)
     i= get_bits(&s->gb, 2);
     switch(i){
     case 0: s->pict_type= I_TYPE; break;
+    case 1: s->pict_type= I_TYPE; break; //hmm ...
     case 2: s->pict_type= P_TYPE; break;
     case 3: s->pict_type= B_TYPE; break;
     default: 
