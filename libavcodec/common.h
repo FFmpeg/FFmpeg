@@ -99,19 +99,23 @@ typedef signed __int64 int64_t;
 #        define int64_t_C(c)     (c ## i64)
 #        define uint64_t_C(c)    (c ## i64)
 
-#        define inline __inline
+#    ifdef HAVE_AV_CONFIG_H
+#            define inline __inline
+#    endif
 
 #    else
 #        define int64_t_C(c)     (c ## LL)
 #        define uint64_t_C(c)    (c ## ULL)
 #    endif /* __MINGW32__ */
 
-#    ifdef _DEBUG
-#        define DEBUG
-#    endif
+#    ifdef HAVE_AV_CONFIG_H
+#        ifdef _DEBUG
+#            define DEBUG
+#        endif
 
-#    define snprintf _snprintf
-#    define vsnprintf _vsnprintf
+#        define snprintf _snprintf
+#        define vsnprintf _vsnprintf
+#    endif
 
 /* CONFIG_WIN32 end */
 #elif defined (CONFIG_OS2)
