@@ -1119,10 +1119,10 @@ src-=8;
 		"psubusw %%mm1, %%mm5				\n\t" // ld
 
 
-		"movq w05, %%mm2				\n\t" // 5
+		"movq "MANGLE(w05)", %%mm2			\n\t" // 5
 		"pmullw %%mm2, %%mm4				\n\t"
 		"pmullw %%mm2, %%mm5				\n\t"
-		"movq w20, %%mm2				\n\t" // 32
+		"movq "MANGLE(w20)", %%mm2			\n\t" // 32
 		"paddw %%mm2, %%mm4				\n\t"
 		"paddw %%mm2, %%mm5				\n\t"
 		"psrlw $6, %%mm4				\n\t"
