@@ -330,8 +330,9 @@ static int decode_ext_header(Wmv2Context *w){
     s->slice_height = s->mb_height / code;
 
     if(s->avctx->debug&FF_DEBUG_PICT_INFO){
-        printf("fps:%d, br:%d, qpbit:%d, abt_flag:%d, j_type_bit:%d, tl_mv_flag:%d, mbrl_bit:%d, code:%d, flag3:%d\n", 
-        fps, s->bit_rate, w->mspel_bit, w->abt_flag, w->j_type_bit, w->top_left_mv_flag, w->per_mb_rl_bit, code, w->flag3);
+        printf("fps:%d, br:%d, qpbit:%d, abt_flag:%d, j_type_bit:%d, tl_mv_flag:%d, mbrl_bit:%d, code:%d, flag3:%d, slices:%d\n", 
+        fps, s->bit_rate, w->mspel_bit, w->abt_flag, w->j_type_bit, w->top_left_mv_flag, w->per_mb_rl_bit, code, w->flag3, 
+        code);
     }
     return 0;
 }
@@ -577,16 +578,7 @@ static void wmv2_add_block(Wmv2Context *w, DCTELEM *block1, uint8_t *dst, int st
     MpegEncContext * const s= &w->s;
     uint8_t temp[2][64];
     int i;
-    
-    if(w->abt_type_table[n] && 0){
-        int a,b;
         
-        a= block1[0];
-        b= w->abt_block2[n][0];
-        block1[0]= a+b;
-        w->abt_block2[n][0]= a-b;
-    }
-    
     switch(w->abt_type_table[n]){
     case 0:
         if (s->block_last_index[n] >= 0) {

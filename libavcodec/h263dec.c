@@ -580,7 +580,7 @@ retry:
                 break;
         }
         
-        if(s->msmpeg4_version!=4 && s->h263_pred)
+        if(s->msmpeg4_version<4 && s->h263_pred)
             ff_mpeg4_clean_buffers(s);
 
         decode_slice(s);

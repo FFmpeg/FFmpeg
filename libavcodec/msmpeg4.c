@@ -502,7 +502,7 @@ static void msmpeg4_encode_motion(MpegEncContext * s,
 static inline void handle_slices(MpegEncContext *s){
     if (s->mb_x == 0) {
         if (s->slice_height && (s->mb_y % s->slice_height) == 0) {
-            if(s->msmpeg4_version != 4){
+            if(s->msmpeg4_version < 4){
                 ff_mpeg4_clean_buffers(s);
             }
             s->first_slice_line = 1;
@@ -691,7 +691,7 @@ static inline int msmpeg4_pred_dc(MpegEncContext * s, int n,
     b = dc_val[ - 1 - wrap];
     c = dc_val[ - wrap];
     
-    if(s->first_slice_line && (n&2)==0 && s->msmpeg4_version!=4){
+    if(s->first_slice_line && (n&2)==0 && s->msmpeg4_version<4){
         b=c=1024;
     }
 
