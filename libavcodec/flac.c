@@ -34,7 +34,7 @@
 #define MAX_CHANNELS 8
 #define MAX_BLOCKSIZE 65535
 
-enum channel_order {
+enum decorrelation_type {
     INDEPENDENT,
     LEFT_SIDE,
     RIGHT_SIDE,
@@ -50,7 +50,7 @@ typedef struct FLACContext {
     int samplerate, channels;
     int blocksize/*, last_blocksize*/;
     int bps, curr_bps;
-    enum channel_order order;
+    enum decorrelation_type decorrelation;
 
     int32_t *decoded[MAX_CHANNELS];
     uint8_t *bitstream;
@@ -68,6 +68,41 @@ static int sample_rate_table[] =
 
 static int sample_size_table[] = 
 { 0, 8, 12, 0, 16, 20, 24, 0 };
+
+static const uint8_t table_crc8[256] = {
+    0x00, 0x07, 0x0e, 0x09, 0x1c, 0x1b, 0x12, 0x15,
+    0x38, 0x3f, 0x36, 0x31, 0x24, 0x23, 0x2a, 0x2d,
+    0x70, 0x77, 0x7e, 0x79, 0x6c, 0x6b, 0x62, 0x65,
+    0x48, 0x4f, 0x46, 0x41, 0x54, 0x53, 0x5a, 0x5d,
+    0xe0, 0xe7, 0xee, 0xe9, 0xfc, 0xfb, 0xf2, 0xf5,
+    0xd8, 0xdf, 0xd6, 0xd1, 0xc4, 0xc3, 0xca, 0xcd,
+    0x90, 0x97, 0x9e, 0x99, 0x8c, 0x8b, 0x82, 0x85,
+    0xa8, 0xaf, 0xa6, 0xa1, 0xb4, 0xb3, 0xba, 0xbd,
+    0xc7, 0xc0, 0xc9, 0xce, 0xdb, 0xdc, 0xd5, 0xd2,
+    0xff, 0xf8, 0xf1, 0xf6, 0xe3, 0xe4, 0xed, 0xea,
+    0xb7, 0xb0, 0xb9, 0xbe, 0xab, 0xac, 0xa5, 0xa2,
+    0x8f, 0x88, 0x81, 0x86, 0x93, 0x94, 0x9d, 0x9a,
+    0x27, 0x20, 0x29, 0x2e, 0x3b, 0x3c, 0x35, 0x32,
+    0x1f, 0x18, 0x11, 0x16, 0x03, 0x04, 0x0d, 0x0a,
+    0x57, 0x50, 0x59, 0x5e, 0x4b, 0x4c, 0x45, 0x42,
+    0x6f, 0x68, 0x61, 0x66, 0x73, 0x74, 0x7d, 0x7a,
+    0x89, 0x8e, 0x87, 0x80, 0x95, 0x92, 0x9b, 0x9c,
+    0xb1, 0xb6, 0xbf, 0xb8, 0xad, 0xaa, 0xa3, 0xa4,
+    0xf9, 0xfe, 0xf7, 0xf0, 0xe5, 0xe2, 0xeb, 0xec,
+    0xc1, 0xc6, 0xcf, 0xc8, 0xdd, 0xda, 0xd3, 0xd4,
+    0x69, 0x6e, 0x67, 0x60, 0x75, 0x72, 0x7b, 0x7c,
+    0x51, 0x56, 0x5f, 0x58, 0x4d, 0x4a, 0x43, 0x44,
+    0x19, 0x1e, 0x17, 0x10, 0x05, 0x02, 0x0b, 0x0c,
+    0x21, 0x26, 0x2f, 0x28, 0x3d, 0x3a, 0x33, 0x34,
+    0x4e, 0x49, 0x40, 0x47, 0x52, 0x55, 0x5c, 0x5b,
+    0x76, 0x71, 0x78, 0x7f, 0x6a, 0x6d, 0x64, 0x63,
+    0x3e, 0x39, 0x30, 0x37, 0x22, 0x25, 0x2c, 0x2b,
+    0x06, 0x01, 0x08, 0x0f, 0x1a, 0x1d, 0x14, 0x13,
+    0xae, 0xa9, 0xa0, 0xa7, 0xb2, 0xb5, 0xbc, 0xbb,
+    0x96, 0x91, 0x98, 0x9f, 0x8a, 0x8d, 0x84, 0x83,
+    0xde, 0xd9, 0xd0, 0xd7, 0xc2, 0xc5, 0xcc, 0xcb,
+    0xe6, 0xe1, 0xe8, 0xef, 0xfa, 0xfd, 0xf4, 0xf3
+};
 
 static int64_t get_utf8(GetBitContext *gb)
 {
@@ -91,6 +126,17 @@ static int64_t get_utf8(GetBitContext *gb)
         val|= tmp&0x3F;
     }
     return val;
+}
+
+static int get_crc8(uint8_t *buf, int count){
+    int crc=0;
+    int i;
+    
+    for(i=0; i<count; i++){
+        crc = table_crc8[crc ^ buf[i]];
+    }
+
+    return crc;
 }
 
 static int flac_decode_init(AVCodecContext * avctx)
@@ -199,10 +245,10 @@ static int decode_subframe_fixed(FLACContext *s, int channel, int pred_order)
 {
     int i;
         
-    av_log(s->avctx, AV_LOG_DEBUG, "  SUBFRAME FIXED\n");
+//    av_log(s->avctx, AV_LOG_DEBUG, "  SUBFRAME FIXED\n");
         
     /* warm up samples */
-    av_log(s->avctx, AV_LOG_DEBUG, "   warm up samples: %d\n", pred_order);
+//    av_log(s->avctx, AV_LOG_DEBUG, "   warm up samples: %d\n", pred_order);
         
     for (i = 0; i < pred_order; i++)
     {
@@ -270,10 +316,14 @@ static int decode_subframe_lpc(FLACContext *s, int channel, int pred_order)
         av_log(s->avctx, AV_LOG_DEBUG, "invalid coeff precision\n");
         return -1;
     }
-    av_log(s->avctx, AV_LOG_DEBUG, "   qlp coeff prec: %d\n", coeff_prec);
+//    av_log(s->avctx, AV_LOG_DEBUG, "   qlp coeff prec: %d\n", coeff_prec);
     qlevel = get_sbits(&s->gb, 5);
-    av_log(s->avctx, AV_LOG_DEBUG, "   quant level: %d\n", qlevel);
-assert(qlevel >= 0); //FIXME
+//    av_log(s->avctx, AV_LOG_DEBUG, "   quant level: %d\n", qlevel);
+    if(qlevel < 0){
+        av_log(s->avctx, AV_LOG_DEBUG, "qlevel %d not supported, maybe buggy stream\n", qlevel);
+        return -1;
+    }
+
     for (i = 0; i < pred_order; i++)
     {
         coeffs[i] = get_sbits(&s->gb, coeff_prec);
@@ -301,10 +351,10 @@ static inline int decode_subframe(FLACContext *s, int channel)
     
     s->curr_bps = s->bps;
     if(channel == 0){
-        if(s->order == RIGHT_SIDE)
+        if(s->decorrelation == RIGHT_SIDE)
             s->curr_bps++;
     }else{
-        if(s->order == LEFT_SIDE || s->order == MID_SIDE)
+        if(s->decorrelation == LEFT_SIDE || s->decorrelation == MID_SIDE)
             s->curr_bps++;
     }
 
@@ -354,7 +404,7 @@ static inline int decode_subframe(FLACContext *s, int channel)
     }
     else if ((type >= 8) && (type <= 12))
     {
-        av_log(s->avctx, AV_LOG_DEBUG, "coding type: fixed\n");
+//        av_log(s->avctx, AV_LOG_DEBUG, "coding type: fixed\n");
         if (decode_subframe_fixed(s, channel, type & ~0x8) < 0)
             return -1;
     }
@@ -382,7 +432,7 @@ static inline int decode_subframe(FLACContext *s, int channel)
 
 static int decode_frame(FLACContext *s)
 {
-    int blocksize_code, sample_rate_code, sample_size_code, assignment, i;
+    int blocksize_code, sample_rate_code, sample_size_code, assignment, i, crc8;
     
     blocksize_code = get_bits(&s->gb, 4);
 
@@ -391,25 +441,14 @@ static int decode_frame(FLACContext *s)
     assignment = get_bits(&s->gb, 4); /* channel assignment */
     if (assignment < 8)
     {
-        s->order = INDEPENDENT;
+        s->decorrelation = INDEPENDENT;
         if (s->channels != assignment+1)
             av_log(s->avctx, AV_LOG_DEBUG, "channel number and number of assigned channels differ!\n");
-        av_log(s->avctx, AV_LOG_DEBUG, "channels: %d\n", assignment+1);
+//        av_log(s->avctx, AV_LOG_DEBUG, "channels: %d\n", assignment+1);
     }
-    else if (assignment == 8)
+    else if (assignment < 11)
     {
-        s->order = LEFT_SIDE;
-        av_log(s->avctx, AV_LOG_DEBUG, "left/side\n");
-    }
-    else if (assignment == 9)
-    {
-        s->order = RIGHT_SIDE;
-        av_log(s->avctx, AV_LOG_DEBUG, "right/side\n");
-    }
-    else if (assignment == 10)
-    {
-        s->order = MID_SIDE;
-        av_log(s->avctx, AV_LOG_DEBUG, "mid/side\n");
+        s->decorrelation= LEFT_SIDE + assignment - 8;
     }
     else
     {
@@ -484,17 +523,18 @@ static int decode_frame(FLACContext *s)
         return -1;
     }
 
-    skip_bits(&s->gb, 8); /* header crc */
+    skip_bits(&s->gb, 8);
+    crc8= get_crc8(s->gb.buffer, get_bits_count(&s->gb)/8);
+    if(crc8){
+        av_log(s->avctx, AV_LOG_ERROR, "header crc missmatch crc=%2X\n", crc8);
+        return -1;
+    }
 
 //    dump_headers(s);
 
     /* subframes */
     for (i = 0; i < s->channels; i++)
     {
-/*        if (s->blocksize != s->last_blocksize)
-        {
-            s->decoded[i] = av_realloc(s->decoded[i], sizeof(uint32_t)*s->blocksize);
-        }*/
 //        av_log(s->avctx, AV_LOG_DEBUG, "decoded: %x residual: %x\n", s->decoded[i], s->residual[i]);
         if (decode_subframe(s, i) < 0)
             return -1;
@@ -566,9 +606,6 @@ static int flac_decode_frame(AVCodecContext *avctx,
                 switch(metadata_type)
                 {
                 case METADATA_TYPE_STREAMINFO:
-                    if(metadata_size == 0)
-                        av_log(s->avctx, AV_LOG_DEBUG, "size= 0 WTF!?\n");
-                    
                     metadata_streaminfo(s);
                     dump_headers(s);
                     break;
@@ -582,7 +619,7 @@ static int flac_decode_frame(AVCodecContext *avctx,
     else
     {
         
-         tmp = show_bits(&s->gb, 16);
+        tmp = show_bits(&s->gb, 16);
         if(tmp != 0xFFF8){
             av_log(s->avctx, AV_LOG_ERROR, "FRAME HEADER not here\n");
             while(get_bits_count(&s->gb)/8+2 < buf_size && show_bits(&s->gb, 16) != 0xFFF8)
@@ -590,8 +627,12 @@ static int flac_decode_frame(AVCodecContext *avctx,
             goto end; // we may not have enough bits left to decode a frame, so try next time
         }
         skip_bits(&s->gb, 16);
-        if (decode_frame(s) < 0)
+        if (decode_frame(s) < 0){
+            av_log(s->avctx, AV_LOG_ERROR, "decode_frame() failed\n");
+            s->bitstream_size=0;
+            s->bitstream_index=0;
             return -1;
+        }
     }
 
     
@@ -637,7 +678,7 @@ static int flac_decode_frame(AVCodecContext *avctx,
     }
     }
 #else
-    switch(s->order)
+    switch(s->decorrelation)
     {
         case INDEPENDENT:
             for (j = 0; j < s->blocksize; j++)
@@ -669,25 +710,34 @@ static int flac_decode_frame(AVCodecContext *avctx,
                 int mid, side;
                 mid = s->decoded[0][i];
                 side = s->decoded[1][i];
+
+#if 1 //needs to be checked but IMHO it should be binary identical
+                mid -= side>>1;
+                *(samples++) = mid + side;
+                *(samples++) = mid;
+#else
                 
                 mid <<= 1;
                 if (side & 1)
                     mid++;
                 *(samples++) = (mid + side) >> 1;
                 *(samples++) = (mid - side) >> 1;
+#endif
             }
             break;
     }
 #endif
 
     *data_size = (int8_t *)samples - (int8_t *)data;
-    av_log(s->avctx, AV_LOG_DEBUG, "data size: %d\n", *data_size);
+//    av_log(s->avctx, AV_LOG_DEBUG, "data size: %d\n", *data_size);
 
 //    s->last_blocksize = s->blocksize;
 end:
     i= (get_bits_count(&s->gb)+7)/8;;
     if(i > buf_size){
         av_log(s->avctx, AV_LOG_ERROR, "overread: %d\n", i - buf_size);
+        s->bitstream_size=0;
+        s->bitstream_index=0;
         return -1;
     }
 
