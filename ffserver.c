@@ -192,6 +192,11 @@ typedef struct FFStream {
     struct FFStream *next;
     /* RTSP options */
     char *rtsp_option;
+    /* multicast specific */
+    int is_multicast;
+    struct in_addr multicast_ip;
+    int multicast_port; /* first port used for multicast */
+
     /* feed specific */
     int feed_opened;     /* true if someone is writing to the feed */
     int is_feed;         /* true if it is a feed */
@@ -236,6 +241,10 @@ static void rtsp_cmd_setup(HTTPContext *c, const char *url, RTSPHeader *h);
 static void rtsp_cmd_play(HTTPContext *c, const char *url, RTSPHeader *h);
 static void rtsp_cmd_pause(HTTPContext *c, const char *url, RTSPHeader *h);
 static void rtsp_cmd_teardown(HTTPContext *c, const char *url, RTSPHeader *h);
+
+/* SDP handling */
+static int prepare_sdp_description(FFStream *stream, UINT8 **pbuffer, 
+                                   struct in_addr my_ip);
 
 /* RTP handling */
 static HTTPContext *rtp_new_connection(HTTPContext *rtsp_c, 
@@ -1001,15 +1010,47 @@ static int validate_acl(FFStream *stream, HTTPContext *c)
     return (last_action == IP_DENY) ? 1 : 0;
 }
 
+/* compute the real filename of a file by matching it without its
+   extensions to all the stream filenames */
+static void compute_real_filename(char *filename, int max_size)
+{
+    char file1[1024];
+    char file2[1024];
+    char *p;
+    FFStream *stream;
+
+    /* compute filename by matching without the file extensions */
+    pstrcpy(file1, sizeof(file1), filename);
+    p = strrchr(file1, '.');
+    if (p)
+        *p = '\0';
+    for(stream = first_stream; stream != NULL; stream = stream->next) {
+        pstrcpy(file2, sizeof(file2), stream->filename);
+        p = strrchr(file2, '.');
+        if (p)
+            *p = '\0';
+        if (!strcmp(file1, file2)) {
+            pstrcpy(filename, max_size, stream->filename);
+            break;
+        }
+    }
+}
+
+enum RedirType {
+    REDIR_NONE,
+    REDIR_ASX,
+    REDIR_RAM,
+    REDIR_ASF,
+    REDIR_RTSP,
+    REDIR_SDP,
+};
+
 /* parse http request and prepare header */
 static int http_parse_request(HTTPContext *c)
 {
     char *p;
     int post;
-    int doing_asx;
-    int doing_asf_redirector;
-    int doing_ram;
-    int doing_rtsp_redirector;
+    enum RedirType redir_type;
     char cmd[32];
     char info[1024], *filename;
     char url[1024], *q;
@@ -1068,57 +1109,27 @@ static int http_parse_request(HTTPContext *c)
         p++;
     }
 
-    if (strlen(filename) > 4 && strcmp(".asx", filename + strlen(filename) - 4) == 0) {
-        doing_asx = 1;
+    redir_type = REDIR_NONE;
+    if (match_ext(filename, "asx")) {
+        redir_type = REDIR_ASX;
         filename[strlen(filename)-1] = 'f';
-    } else {
-        doing_asx = 0;
-    }
-
-    if (strlen(filename) > 4 && strcmp(".asf", filename + strlen(filename) - 4) == 0 &&
+    } else if (match_ext(filename, ".asf") &&
         (!useragent || strncasecmp(useragent, "NSPlayer", 8) != 0)) {
         /* if this isn't WMP or lookalike, return the redirector file */
-        doing_asf_redirector = 1;
-    } else {
-        doing_asf_redirector = 0;
-    }
-
-    if (strlen(filename) > 4 && 
-        (strcmp(".rpm", filename + strlen(filename) - 4) == 0 ||
-         strcmp(".ram", filename + strlen(filename) - 4) == 0)) {
-        doing_ram = 1;
+        redir_type = REDIR_ASF;
+    } else if (match_ext(filename, "rpm,ram")) {
+        redir_type = REDIR_RAM;
         strcpy(filename + strlen(filename)-2, "m");
-    } else {
-        doing_ram = 0;
+    } else if (match_ext(filename, "rtsp")) {
+        redir_type = REDIR_RTSP;
+        compute_real_filename(filename, sizeof(url) - 1);
+    } else if (match_ext(filename, "sdp")) {
+        redir_type = REDIR_SDP;
+        printf("before %s\n", filename);
+        compute_real_filename(filename, sizeof(url) - 1);
+        printf("after %s\n", filename);
     }
-
-    if (strlen(filename) > 5 && 
-        strcmp(".rtsp", filename + strlen(filename) - 5) == 0) {
-        char file1[1024];
-        char file2[1024];
-        char *p;
-
-        doing_rtsp_redirector = 1;
-        /* compute filename by matching without the file extensions */
-        pstrcpy(file1, sizeof(file1), filename);
-        p = strrchr(file1, '.');
-        if (p)
-            *p = '\0';
-        for(stream = first_stream; stream != NULL; stream = stream->next) {
-            pstrcpy(file2, sizeof(file2), stream->filename);
-            p = strrchr(file2, '.');
-            if (p)
-                *p = '\0';
-            if (!strcmp(file1, file2)) {
-                pstrcpy(url, sizeof(url), stream->filename);
-                filename = url;
-                break;
-            }
-        }
-    } else {
-        doing_rtsp_redirector = 0;
-    }
-
+    
     stream = first_stream;
     while (stream != NULL) {
         if (!strcmp(stream->filename, filename) && validate_acl(stream, c))
@@ -1201,8 +1212,7 @@ static int http_parse_request(HTTPContext *c)
         return 0;
     }
     
-    if (doing_asx || doing_ram || doing_asf_redirector || 
-        doing_rtsp_redirector) {
+    if (redir_type != REDIR_NONE) {
         char *hostinfo = 0;
         
         for (p = c->buffer; *p && *p != '\r' && *p != '\n'; ) {
@@ -1235,7 +1245,8 @@ static int http_parse_request(HTTPContext *c)
 
                     c->http_error = 200;
                     q = c->buffer;
-                    if (doing_asx) {
+                    switch(redir_type) {
+                    case REDIR_ASX:
                         q += sprintf(q, "HTTP/1.0 200 ASX Follows\r\n");
                         q += sprintf(q, "Content-type: video/x-ms-asf\r\n");
                         q += sprintf(q, "\r\n");
@@ -1244,36 +1255,68 @@ static int http_parse_request(HTTPContext *c)
                         q += sprintf(q, "<ENTRY><REF HREF=\"http://%s/%s%s\"/></ENTRY>\r\n", 
                                 hostbuf, filename, info);
                         q += sprintf(q, "</ASX>\r\n");
-                    } else if (doing_ram) {
+                        break;
+                    case REDIR_RAM:
                         q += sprintf(q, "HTTP/1.0 200 RAM Follows\r\n");
                         q += sprintf(q, "Content-type: audio/x-pn-realaudio\r\n");
                         q += sprintf(q, "\r\n");
                         q += sprintf(q, "# Autogenerated by ffserver\r\n");
                         q += sprintf(q, "http://%s/%s%s\r\n", 
                                 hostbuf, filename, info);
-                    } else if (doing_asf_redirector) {
+                        break;
+                    case REDIR_ASF:
                         q += sprintf(q, "HTTP/1.0 200 ASF Redirect follows\r\n");
                         q += sprintf(q, "Content-type: video/x-ms-asf\r\n");
                         q += sprintf(q, "\r\n");
                         q += sprintf(q, "[Reference]\r\n");
                         q += sprintf(q, "Ref1=http://%s/%s%s\r\n", 
                                 hostbuf, filename, info);
-                    } else if (doing_rtsp_redirector) {
-                        char hostname[256], *p;
-                        /* extract only hostname */
-                        pstrcpy(hostname, sizeof(hostname), hostbuf);
-                        p = strrchr(hostname, ':');
-                        if (p)
-                            *p = '\0';
-                        q += sprintf(q, "HTTP/1.0 200 RTSP Redirect follows\r\n");
-                        /* XXX: incorrect mime type ? */
-                        q += sprintf(q, "Content-type: application/x-rtsp\r\n");
-                        q += sprintf(q, "\r\n");
-                        q += sprintf(q, "rtsp://%s:%d/%s\r\n", 
-                                     hostname, ntohs(my_rtsp_addr.sin_port), 
-                                     filename);
-                    } else {
+                        break;
+                    case REDIR_RTSP:
+                        {
+                            char hostname[256], *p;
+                            /* extract only hostname */
+                            pstrcpy(hostname, sizeof(hostname), hostbuf);
+                            p = strrchr(hostname, ':');
+                            if (p)
+                                *p = '\0';
+                            q += sprintf(q, "HTTP/1.0 200 RTSP Redirect follows\r\n");
+                            /* XXX: incorrect mime type ? */
+                            q += sprintf(q, "Content-type: application/x-rtsp\r\n");
+                            q += sprintf(q, "\r\n");
+                            q += sprintf(q, "rtsp://%s:%d/%s\r\n", 
+                                         hostname, ntohs(my_rtsp_addr.sin_port), 
+                                         filename);
+                        }
+                        break;
+                    case REDIR_SDP:
+                        {
+                            UINT8 *sdp_data;
+                            int sdp_data_size, len;
+                            struct sockaddr_in my_addr;
+
+                            q += sprintf(q, "HTTP/1.0 200 OK\r\n");
+                            q += sprintf(q, "Content-type: application/sdp\r\n");
+                            q += sprintf(q, "\r\n");
+
+                            len = sizeof(my_addr);
+                            getsockname(c->fd, (struct sockaddr *)&my_addr, &len);
+                            
+                            /* XXX: should use a dynamic buffer */
+                            sdp_data_size = prepare_sdp_description(stream, 
+                                                                    &sdp_data, 
+                                                                    my_addr.sin_addr);
+                            if (sdp_data_size > 0) {
+                                memcpy(q, sdp_data, sdp_data_size);
+                                q += sdp_data_size;
+                                *q = '\0';
+                                av_free(sdp_data);
+                            }
+                        }
+                        break;
+                    default:
                         av_abort();
+                        break;
                     }
 
                     /* prepare output buffer */
@@ -1483,12 +1526,16 @@ static void compute_stats(HTTPContext *c)
                 } else if (strcmp(eosf - 3, ".rm") == 0) {
                     strcpy(eosf - 3, ".ram");
                 } else if (stream->fmt == &rtp_mux) {
-                    /* generate a sample RTSP director - maybe should
-                       generate a .sdp file ? */
+                    /* generate a sample RTSP director if
+                       unicast. Generate an SDP redirector if
+                       multicast */
                     eosf = strrchr(sfilename, '.');
                     if (!eosf)
                         eosf = sfilename + strlen(sfilename);
-                    strcpy(eosf, ".rtsp");
+                    if (stream->is_multicast)
+                        strcpy(eosf, ".sdp");
+                    else
+                        strcpy(eosf, ".rtsp");
                 }
             }
             
@@ -2492,25 +2539,23 @@ static int rtsp_parse_request(HTTPContext *c)
     return 0;
 }
 
-static int prepare_sdp_description(HTTPContext *c, 
-                                   FFStream *stream, UINT8 **pbuffer)
+/* XXX: move that to rtsp.c, but would need to replace FFStream by
+   AVFormatContext */
+static int prepare_sdp_description(FFStream *stream, UINT8 **pbuffer, 
+                                   struct in_addr my_ip)
 {
     ByteIOContext pb1, *pb = &pb1;
-    struct sockaddr_in my_addr;
-    int len, i, payload_type;
+    int i, payload_type, port;
     const char *ipstr, *title, *mediatype;
     AVStream *st;
     
-    len = sizeof(my_addr);
-    getsockname(c->fd, (struct sockaddr *)&my_addr, &len);
-    ipstr = inet_ntoa(my_addr.sin_addr);
-
     if (url_open_dyn_buf(pb) < 0)
         return -1;
     
     /* general media info */
 
     url_fprintf(pb, "v=0\n");
+    ipstr = inet_ntoa(my_ip);
     url_fprintf(pb, "o=- 0 0 IN IP4 %s\n", ipstr);
     title = stream->title;
     if (title[0] == '\0')
@@ -2518,7 +2563,9 @@ static int prepare_sdp_description(HTTPContext *c,
     url_fprintf(pb, "s=%s\n", title);
     if (stream->comment[0] != '\0')
         url_fprintf(pb, "i=%s\n", stream->comment);
-    
+    if (stream->is_multicast) {
+        url_fprintf(pb, "c=IN IP4 %s\n", inet_ntoa(stream->multicast_ip));
+    }
     /* for each stream, we output the necessary info */
     for(i = 0; i < stream->nb_streams; i++) {
         st = stream->streams[i];
@@ -2533,12 +2580,16 @@ static int prepare_sdp_description(HTTPContext *c,
             mediatype = "application";
             break;
         }
-        /* XXX: the port indication is not correct (but should be correct
-           for broadcast) */
+        /* NOTE: the port indication is not correct in case of
+           unicast. It is not an issue because RTSP gives it */
         payload_type = rtp_get_payload_type(&st->codec);
-
+        if (stream->is_multicast) {
+            port = stream->multicast_port + 2 * i;
+        } else {
+            port = 0;
+        }
         url_fprintf(pb, "m=%s %d RTP/AVP %d\n", 
-                    mediatype, 0, payload_type);
+                    mediatype, port, payload_type);
         url_fprintf(pb, "a=control:streamid=%d\n", i);
     }
     return url_close_dyn_buf(pb, pbuffer);
@@ -2550,7 +2601,8 @@ static void rtsp_cmd_describe(HTTPContext *c, const char *url)
     char path1[1024];
     const char *path;
     UINT8 *content;
-    int content_length;
+    int content_length, len;
+    struct sockaddr_in my_addr;
     
     /* find which url is asked */
     url_split(NULL, 0, NULL, 0, NULL, path1, sizeof(path1), url);
@@ -2570,7 +2622,12 @@ static void rtsp_cmd_describe(HTTPContext *c, const char *url)
 
  found:
     /* prepare the media description in sdp format */
-    content_length = prepare_sdp_description(c, stream, &content);
+
+    /* get the host IP */
+    len = sizeof(my_addr);
+    getsockname(c->fd, (struct sockaddr *)&my_addr, &len);
+    
+    content_length = prepare_sdp_description(stream, &content, my_addr.sin_addr);
     if (content_length < 0) {
         rtsp_reply_error(c, RTSP_STATUS_INTERNAL);
         return;
@@ -3885,6 +3942,21 @@ int parse_ffconfig(const char *filename)
                 if (stream->rtsp_option) {
                     strcpy(stream->rtsp_option, arg);
                 }
+            }
+        } else if (!strcasecmp(cmd, "MulticastAddress")) {
+            get_arg(arg, sizeof(arg), &p);
+            if (stream) {
+                if (!inet_aton(arg, &stream->multicast_ip)) {
+                    fprintf(stderr, "%s:%d: Invalid IP address: %s\n", 
+                            filename, line_num, arg);
+                    errors++;
+                }
+                stream->is_multicast = 1;
+            }
+        } else if (!strcasecmp(cmd, "MulticastPort")) {
+            get_arg(arg, sizeof(arg), &p);
+            if (stream) {
+                stream->multicast_port = atoi(arg);
             }
         } else if (!strcasecmp(cmd, "</Stream>")) {
             if (!stream) {
