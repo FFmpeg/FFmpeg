@@ -41,6 +41,10 @@ enum OutputFormat {
 #define ME_MAP_SHIFT 3
 #define ME_MAP_MV_BITS 11
 
+/* run length table */
+#define MAX_RUN    64
+#define MAX_LEVEL  64
+
 typedef struct Predictor{
     double coeff;
     double count;
@@ -143,6 +147,8 @@ typedef struct MpegEncContext {
     int last_dc[3];              /* last DC values for MPEG1 */
     INT16 *dc_val[3];            /* used for mpeg4 DC prediction, all 3 arrays must be continuous */
     int y_dc_scale, c_dc_scale;
+    UINT8 *y_dc_scale_table;     /* qscale -> y_dc_scale table */
+    UINT8 *c_dc_scale_table;     /* qscale -> c_dc_scale table */
     UINT8 *coded_block;          /* used for coded block pattern prediction (msmpeg4v3, wmv1)*/
     INT16 (*ac_val[3])[16];      /* used for for mpeg4 AC prediction, all 3 arrays must be continuous */
     int ac_pred;
@@ -376,7 +382,18 @@ typedef struct MpegEncContext {
     int slice_height;      /* in macroblocks */
     int first_slice_line;  /* used in mpeg4 too to handle resync markers */
     int flipflop_rounding;
-    int msmpeg4_version;   /* 0=not msmpeg4, 1=mp41, 2=mp42, 3=mp43/divx3 */
+    int msmpeg4_version;   /* 0=not msmpeg4, 1=mp41, 2=mp42, 3=mp43/divx3 4=wmv1/7 5=wmv2/8*/
+    int per_mb_rl_table;
+    int esc3_level_length;
+    int esc3_run_length;
+    UINT8 *inter_scantable;
+    UINT8 *intra_scantable;
+    UINT8 *intra_v_scantable;
+    UINT8 *intra_h_scantable;
+    /* [mb_intra][isChroma][level][run][last] */
+    int ac_stats[2][2][MAX_LEVEL+1][MAX_RUN+1][2];
+    
+
     /* decompression specific */
     GetBitContext gb;
 
@@ -452,18 +469,15 @@ void ff_fix_long_b_mvs(MpegEncContext * s, int16_t (*mv_table)[2], int f_code, i
 /* mpeg12.c */
 extern INT16 default_intra_matrix[64];
 extern INT16 default_non_intra_matrix[64];
+extern UINT8 ff_mpeg1_dc_scale_table[128];
 
 void mpeg1_encode_picture_header(MpegEncContext *s, int picture_number);
 void mpeg1_encode_mb(MpegEncContext *s,
                      DCTELEM block[6][64],
                      int motion_x, int motion_y);
-void mpeg1_encode_init(MpegEncContext *s);
+void ff_mpeg1_encode_init(MpegEncContext *s);
 
 /* h263enc.c */
-
-/* run length table */
-#define MAX_RUN    64
-#define MAX_LEVEL  64
 
 typedef struct RLTable {
     int n; /* number of entries of table_vlc minus 1 */
@@ -491,6 +505,8 @@ static inline int get_rl_index(const RLTable *rl, int last, int run, int level)
     return index + level - 1;
 }
 
+extern UINT8 ff_mpeg4_y_dc_scale_table[32];
+extern UINT8 ff_mpeg4_c_dc_scale_table[32];
 void h263_encode_mb(MpegEncContext *s, 
                     DCTELEM block[6][64],
                     int motion_x, int motion_y);
@@ -499,7 +515,6 @@ void mpeg4_encode_mb(MpegEncContext *s,
                     int motion_x, int motion_y);
 void h263_encode_picture_header(MpegEncContext *s, int picture_number);
 int h263_encode_gob_header(MpegEncContext * s, int mb_line);
-void h263_dc_scale(MpegEncContext *s);
 INT16 *h263_pred_motion(MpegEncContext * s, int block, 
                         int *px, int *py);
 void mpeg4_pred_ac(MpegEncContext * s, INT16 *block, int n, 
@@ -523,6 +538,7 @@ void ff_mpeg4_clean_buffers(MpegEncContext *s);
 void ff_mpeg4_stuffing(PutBitContext * pbc);
 void ff_mpeg4_init_partitions(MpegEncContext *s);
 void ff_mpeg4_merge_partitions(MpegEncContext *s);
+extern inline int ff_mpeg4_pred_dc(MpegEncContext * s, int n, UINT16 **dc_val_ptr, int *dir_ptr);
 
 /* rv10.c */
 void rv10_encode_picture_header(MpegEncContext *s, int picture_number);
@@ -538,8 +554,8 @@ int msmpeg4_decode_picture_header(MpegEncContext * s);
 int msmpeg4_decode_ext_header(MpegEncContext * s, int buf_size);
 int msmpeg4_decode_mb(MpegEncContext *s, 
                       DCTELEM block[6][64]);
-int msmpeg4_decode_init_vlc(MpegEncContext *s);
-void ff_old_msmpeg4_dc_scale(MpegEncContext *s);
+int ff_msmpeg4_decode_init(MpegEncContext *s);
+void ff_msmpeg4_encode_init(MpegEncContext *s);
 
 /* mjpegenc.c */
 
