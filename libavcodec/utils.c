@@ -16,37 +16,23 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
-#include <limits.h> /* __GLIBC__ and __GLIBC_MINOR__ are defined here */
-#if __GLIBC__ >=2 && __GLIBC_MINOR__ >= 1 /* Fixme about glibc-2.0 */
-#define HAVE_MEMALIGN 1
-#include <malloc.h>
-#endif
 #include "common.h"
 #include "dsputil.h"
 #include "avcodec.h"
+#ifdef HAVE_MALLOC_H
+#include <malloc.h>
+#else
+#include <stdlib.h>
+#endif
 
 /* memory alloc */
 void *av_mallocz(int size)
 {
     void *ptr;
 #if defined ( ARCH_X86 ) && defined ( HAVE_MEMALIGN )
-/*
-   From glibc-2.1.x manuals:
-   -------------------------
-   The address of a block returned by `malloc' or `realloc' in the GNU
-system is always a multiple of eight (or sixteen on 64-bit systems).
-If you need a block whose address is a multiple of a higher power of
-two than that, use `memalign' or `valloc'.  These functions are
-declared in `stdlib.h'.
-
-   With the GNU library, you can use `free' to free the blocks that
-`memalign' and `valloc' return.  That does not work in BSD,
-however--BSD does not provide any way to free such blocks.
-*/
     ptr = memalign(64,size);
     /* Why 64? 
        Indeed, we should align it:

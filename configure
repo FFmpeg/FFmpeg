@@ -1,5 +1,26 @@
 #!/bin/sh
 
+TMPC="ffmpeg-conf-${RANDOM}-$$-${RANDOM}.c"
+TMPO="ffmpeg-conf-${RANDOM}-$$-${RANDOM}.o"
+TMPS="ffmpeg-conf-${RANDOM}-$$-${RANDOM}.S"
+
+if [ ! -z "$TMPDIR" ]; then
+	TMPC="${TMPDIR}/${TMPC}"
+	TMPCPP="${TMPDIR}/${TMPCPP}"
+	TMPO="${TMPDIR}/${TMPO}"
+	TMPS="${TMPDIR}/${TMPS}"
+elif [ ! -z "$TEMPDIR" ]; then
+	TMPC="${TEMPDIR}/${TMPC}"
+	TMPCPP="${TEMPDIR}/${TMPCPP}"
+	TMPO="${TEMPDIR}/${TMPO}"
+	TMPS="${TEMPDIR}/${TMPS}"
+else
+	TMPC="/tmp/${TMPC}"
+	TMPCPP="/tmp/${TMPCPP}"
+	TMPO="/tmp/${TMPO}"
+	TMPS="/tmp/${TMPS}"
+fi
+
 # default parameters
 prefix="/usr/local"
 cc="gcc"
@@ -75,6 +96,31 @@ if [ "$win32" = "yes" ] ; then
     grab="no"
 fi
 
+# ---
+# check availability of some header files
+
+cat > $TMPC << EOF
+#include <malloc.h>
+int main( void ) { return 0; }
+EOF
+
+_memalign=no
+_malloc_h=no
+if $cc -o $TMPO $TMPC 2> /dev/null ; then
+_malloc_h=yes
+_memalign=yes
+# check for memalign - atmos
+cat > $TMPC << EOF
+#include <malloc.h>
+int main ( void ) {
+char *string = NULL;
+string = memalign(64, sizeof(char));
+return 0;
+}
+EOF
+$cc -o $TMPO $TMPC 2> /dev/null || _memalign=no
+fi
+
 echo "Install prefix   $prefix"
 echo "C compiler       $cc"
 echo "CPU              $cpu"
@@ -136,3 +182,17 @@ if [ "$win32" = "yes" ] ; then
   echo "#define CONFIG_WIN32 1" >> config.h
   echo "CONFIG_WIN32=yes" >> config.mak
 fi
+
+if [ "$_malloc_h" = "yes" ]; then
+  echo "#define HAVE_MALLOC_H 1" >> config.h
+else
+  echo "#undef  HAVE_MALLOC_H" >> config.h
+fi
+
+if [ "$_memalign" = "yes" ]; then
+  echo "#define HAVE_MEMALIGN 1" >> config.h
+else
+  echo "#undef  HAVE_MEMALIGN" >> config.h
+fi
+
+rm -f $TMPO $TMPC $TMPS
