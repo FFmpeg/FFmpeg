@@ -799,13 +799,13 @@ static int svq3_decode_frame (AVCodecContext *avctx,
         break;
       extradata++;
     }
-    size = BE_32(&extradata[4]);
 
     /* if a match was found, parse the extra data */
     if (!memcmp (extradata, "SEQH", 4)) {
 
       GetBitContext gb;
 
+      size = BE_32(&extradata[4]);
       init_get_bits (&gb, extradata + 8, size);
 
       /* 'frame size code' and optional 'width, height' */
