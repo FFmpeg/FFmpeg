@@ -3834,6 +3834,7 @@ static void encode_picture(MpegEncContext *s, int picture_number)
                     if(best_s.mv_type==MV_TYPE_16X16 && !(best_s.mv_dir&MV_DIRECT)){
                         const int last_qp= backup_s.qscale;
                         int dquant, dir, qp, dc[6];
+                        DCTELEM ac[6][16];
                         
                         assert(backup_s.dquant == 0);
 
@@ -3853,15 +3854,21 @@ static void encode_picture(MpegEncContext *s, int picture_number)
                             if(qp < s->avctx->qmin || qp > s->avctx->qmax)
                                 break;
                             backup_s.dquant= dquant;
-                            for(i=0; i<6; i++){
-                                dc[i]= s->dc_val[0][ s->block_index[i] ]; //FIXME AC
+                            if(s->mb_intra){
+                                for(i=0; i<6; i++){
+                                    dc[i]= s->dc_val[0][ s->block_index[i] ];
+                                    memcpy(ac[i], s->ac_val[0][s->block_index[i]], sizeof(DCTELEM)*16);
+                                }
                             }
-//printf("%d %d\n", backup_s.dquant, backup_s.qscale);
+
                             encode_mb_hq(s, &backup_s, &best_s, MB_TYPE_INTER /* wrong but unused */, pb, pb2, tex_pb, 
                                          &dmin, &next_block, s->mv[0][0][0], s->mv[0][0][1]);
                             if(best_s.qscale != qp){
-                                for(i=0; i<6; i++){
-                                    s->dc_val[0][ s->block_index[i] ]= dc[i];
+                                if(s->mb_intra){
+                                    for(i=0; i<6; i++){
+                                        s->dc_val[0][ s->block_index[i] ]= dc[i];
+                                        memcpy(s->ac_val[0][s->block_index[i]], ac[i], sizeof(DCTELEM)*16);
+                                    }
                                 }
                                 if(dir > 0 && dquant==dir){
                                     dquant= 0;
