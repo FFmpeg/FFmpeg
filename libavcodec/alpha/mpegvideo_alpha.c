@@ -59,7 +59,6 @@ static void dct_unquantize_h263_axp(MpegEncContext *s, DCTELEM *block,
 #ifdef __alpha_max__
         /* I don't think the speed difference justifies runtime
            detection.  */
-	ASM_ACCEPT_MVI;
         negmask = maxsw4(levels, -1); /* negative -> ffff (-1) */
         negmask = minsw4(negmask, 0); /* positive -> 0000 (0) */
 #else

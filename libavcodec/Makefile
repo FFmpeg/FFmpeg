@@ -171,17 +171,6 @@ libpostproc/libpostproc.a:
 %.o: %.S
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-# motion_est_alpha uses the MVI extension, which is not available with
-# -mcpu=ev4 (default) or ev5/ev56. Thus, force -mcpu=pca56 in those
-# cases.
-ifeq ($(TARGET_ARCH_ALPHA),yes)
-alpha/motion_est_alpha.o: alpha/motion_est_alpha.c
-	cpu=`echo "$(CFLAGS)" | sed -n 's,.*-mcpu=\([a-zA-Z0-9]*\).*,\1,p'`; \
-	case x"$$cpu" in x|xev[45]*) newcpu=pca56;; *) newcpu=$$cpu;; esac; \
-	echo $(CC) $(CFLAGS) -mcpu=$$newcpu -c -o $@ $<;\
-	$(CC) $(CFLAGS) -mcpu=$$newcpu -c -o $@ $<
-endif
-
 depend: $(SRCS)
 	$(CC) -MM $(CFLAGS) $^ 1>.depend
 
