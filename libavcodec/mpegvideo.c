@@ -487,7 +487,6 @@ int MPV_encode_picture(AVCodecContext *avctx,
     } else {
         s->pict_type = I_TYPE;
     }
-    avctx->key_frame = (s->pict_type == I_TYPE);
     
     MPV_frame_start(s);
     
@@ -518,6 +517,7 @@ int MPV_encode_picture(AVCodecContext *avctx,
     }
 
     encode_picture(s, s->picture_number);
+    avctx->key_frame = (s->pict_type == I_TYPE);
     
     MPV_frame_end(s);
     s->picture_number++;
@@ -1077,6 +1077,18 @@ static void encode_picture(MpegEncContext *s, int picture_number)
             s->mv_table[1][xy] = motion_y;
         }
     }
+
+    if(s->avg_mb_var < s->mc_mb_var && s->pict_type != B_TYPE){ //FIXME subtract MV bits
+        int i;
+        s->pict_type= I_TYPE;
+        for(i=0; i<s->mb_height*s->mb_width; i++){
+            s->mb_type[i] = I_TYPE;
+            s->mv_table[0][i] = 0;
+            s->mv_table[1][i] = 0;
+        }
+    }
+        
+//    printf("%d %d\n", s->avg_mb_var, s->mc_mb_var);
 
     if (!s->fixed_qscale) 
         s->qscale = rate_estimate_qscale(s);
