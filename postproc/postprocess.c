@@ -336,7 +336,7 @@ static inline int isVertMinMaxOk(uint8_t src[], int stride, int QP)
 		: "=r" (isOk)
 		: "r" (src), "r" (stride)
 		);
-	return isOk ? 1 : 0;
+	return isOk;
 #else
 
 	int isOk2= 1;
@@ -1303,40 +1303,60 @@ static inline int isHorizDCAndCopy2Temp(uint8_t src[], int stride)
 #ifdef HAVE_MMX
 asm volatile (
 //		"int $3 \n\t"
-		"pushl %1\n\t"
+		"leal (%1, %2), %%ecx				\n\t"
+		"leal (%%ecx, %2, 4), %%ebx			\n\t"
+//	0	1	2	3	4	5	6	7	8	9
+//	%1	ecx	ecx+%2	ecx+2%2	%1+4%2	ebx	ebx+%2	ebx+2%2	%1+8%2	ebx+4%2
 		"movq b7E, %%mm7				\n\t" // mm7 = 0x7F
 		"movq b7C, %%mm6				\n\t" // mm6 = 0x7D
-		"leal tempBlock, %%eax				\n\t"
 		"pxor %%mm0, %%mm0				\n\t"
+		"movl %1, %%eax					\n\t"
+		"andl $0x1F, %%eax				\n\t"
+		"cmpl $24, %%eax				\n\t"
+		"leal tempBlock, %%eax				\n\t"
+		"jb 1f						\n\t"
 
-#define HDC_CHECK_AND_CPY(i) \
-		"movq -4(%1), %%mm2				\n\t"\
-		"psrlq $32, %%mm2				\n\t"\
-		"punpckldq 4(%1), %%mm2				\n\t" /* (%1) */\
+#define HDC_CHECK_AND_CPY(src, dst) \
+		"movd " #src ", %%mm2				\n\t"\
+		"punpckldq 4" #src ", %%mm2				\n\t" /* (%1) */\
 		"movq %%mm2, %%mm1				\n\t"\
 		"psrlq $8, %%mm2				\n\t"\
 		"psubb %%mm1, %%mm2				\n\t"\
 		"paddb %%mm7, %%mm2				\n\t"\
 		"pcmpgtb %%mm6, %%mm2				\n\t"\
 		"paddb %%mm2, %%mm0				\n\t"\
-		"movq %%mm1," #i "(%%eax)			\n\t"
+		"movq %%mm1," #dst "(%%eax)			\n\t"
 
-		HDC_CHECK_AND_CPY(0)
-		"addl %2, %1					\n\t"
-		HDC_CHECK_AND_CPY(8)
-		"addl %2, %1					\n\t"
-		HDC_CHECK_AND_CPY(16)
-		"addl %2, %1					\n\t"
-		HDC_CHECK_AND_CPY(24)
-		"addl %2, %1					\n\t"
-		HDC_CHECK_AND_CPY(32)
-		"addl %2, %1					\n\t"
-		HDC_CHECK_AND_CPY(40)
-		"addl %2, %1					\n\t"
-		HDC_CHECK_AND_CPY(48)
-		"addl %2, %1					\n\t"
-		HDC_CHECK_AND_CPY(56)
+		HDC_CHECK_AND_CPY((%1),0)
+		HDC_CHECK_AND_CPY((%%ecx),8)
+		HDC_CHECK_AND_CPY((%%ecx, %2),16)
+		HDC_CHECK_AND_CPY((%%ecx, %2, 2),24)
+		HDC_CHECK_AND_CPY((%1, %2, 4),32)
+		HDC_CHECK_AND_CPY((%%ebx),40)
+		HDC_CHECK_AND_CPY((%%ebx, %2),48)
+		HDC_CHECK_AND_CPY((%%ebx, %2, 2),56)
+		"jmp 2f						\n\t"
+		"1:						\n\t"
+// src does not cross a 32 byte cache line so dont waste time with alignment
+#define HDC_CHECK_AND_CPY2(src, dst) \
+		"movq " #src ", %%mm2				\n\t"\
+		"movq " #src ", %%mm1				\n\t"\
+		"psrlq $8, %%mm2				\n\t"\
+		"psubb %%mm1, %%mm2				\n\t"\
+		"paddb %%mm7, %%mm2				\n\t"\
+		"pcmpgtb %%mm6, %%mm2				\n\t"\
+		"paddb %%mm2, %%mm0				\n\t"\
+		"movq %%mm1," #dst "(%%eax)			\n\t"
 
+		HDC_CHECK_AND_CPY2((%1),0)
+		HDC_CHECK_AND_CPY2((%%ecx),8)
+		HDC_CHECK_AND_CPY2((%%ecx, %2),16)
+		HDC_CHECK_AND_CPY2((%%ecx, %2, 2),24)
+		HDC_CHECK_AND_CPY2((%1, %2, 4),32)
+		HDC_CHECK_AND_CPY2((%%ebx),40)
+		HDC_CHECK_AND_CPY2((%%ebx, %2),48)
+		HDC_CHECK_AND_CPY2((%%ebx, %2, 2),56)
+		"2:						\n\t"
 		"psllq $8, %%mm0				\n\t" // remove dummy value
 		"movq %%mm0, %%mm1				\n\t"
 		"psrlw $8, %%mm0				\n\t"
@@ -1347,14 +1367,13 @@ asm volatile (
 		"movq %%mm0, %%mm1				\n\t"
 		"psrlq $32, %%mm0				\n\t"
 		"paddb %%mm1, %%mm0				\n\t"
-		"popl %1\n\t"
 		"movd %%mm0, %0					\n\t"
 		: "=r" (numEq)
 		: "r" (src), "r" (stride)
-		: "%eax"
+		: "%eax", "%ebx", "%ecx"
 		);
 //	printf("%d\n", numEq);
-	numEq= (256 - (numEq & 0xFF)) &0xFF;
+	numEq= (256 - numEq) &0xFF;
 #else
 	int y;
 	for(y=0; y<BLOCK_SIZE; y++)
