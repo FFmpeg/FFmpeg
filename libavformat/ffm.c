@@ -278,8 +278,6 @@ static int ffm_write_trailer(AVFormatContext *s)
         put_flush_packet(pb);
     }
 
-    for(i=0;i<s->nb_streams;i++)
-        av_freep(&s->streams[i]->priv_data);
     return 0;
 }
 #endif //CONFIG_ENCODERS

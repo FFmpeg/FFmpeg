@@ -2094,13 +2094,13 @@ int av_interleaved_write_frame(AVFormatContext *s, AVPacket *pkt){
  * @return 0 if OK. AVERROR_xxx if error.  */
 int av_write_trailer(AVFormatContext *s)
 {
-    int ret;
+    int ret, i;
     
     for(;;){
         AVPacket pkt;
         ret= av_interleave_packet(s, &pkt, NULL, 1);
         if(ret<0) //FIXME cleanup needed for ret<0 ?
-            return ret;
+            goto fail;
         if(!ret)
             break;
         
@@ -2110,10 +2110,13 @@ int av_write_trailer(AVFormatContext *s)
         av_free_packet(&pkt);
         
         if(ret<0)
-            return ret; 
+            goto fail;
     }
 
     ret = s->oformat->write_trailer(s);
+fail:
+    for(i=0;i<s->nb_streams;i++)
+        av_freep(&s->streams[i]->priv_data);
     av_freep(&s->priv_data);
     return ret;
 }
