@@ -35,7 +35,9 @@
 #include <netdb.h>
 #include <ctype.h>
 #include <signal.h>
+#ifdef CONFIG_HAVE_DLFCN
 #include <dlfcn.h>
+#endif
 
 #include "ffserver.h"
 
@@ -3596,6 +3598,7 @@ int opt_video_codec(const char *arg)
 
 /* simplistic plugin support */
 
+#ifdef CONFIG_HAVE_DLOPEN
 void load_module(const char *filename)
 {
     void *dll;
@@ -3617,6 +3620,7 @@ void load_module(const char *filename)
 
     init_func();
 }
+#endif
 
 int parse_ffconfig(const char *filename)
 {
@@ -4204,7 +4208,13 @@ int parse_ffconfig(const char *filename)
             redirect = NULL;
         } else if (!strcasecmp(cmd, "LoadModule")) {
             get_arg(arg, sizeof(arg), &p);
+#ifdef CONFIG_HAVE_DLOPEN
             load_module(arg);
+#else
+            fprintf(stderr, "%s:%d: Module support not compiled into this version: '%s'\n", 
+                    filename, line_num, arg);
+            errors++;
+#endif
         } else {
             fprintf(stderr, "%s:%d: Incorrect keyword: '%s'\n", 
                     filename, line_num, cmd);
