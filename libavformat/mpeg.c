@@ -31,6 +31,8 @@ typedef struct {
     int packet_number;
     int64_t start_pts;
     int64_t start_dts;
+    uint8_t lpcm_header[3];
+    int lpcm_align;
 } StreamInfo;
 
 typedef struct {
@@ -66,11 +68,15 @@ typedef struct {
 
 #define AUDIO_ID 0xc0
 #define VIDEO_ID 0xe0
+#define AC3_ID   0x80
+#define LPCM_ID  0xa0
 
 #ifdef CONFIG_ENCODERS
 extern AVOutputFormat mpeg1system_mux;
 extern AVOutputFormat mpeg1vcd_mux;
 extern AVOutputFormat mpeg2vob_mux;
+
+static const int lpcm_freq_tab[4] = { 48000, 96000, 44100, 32000 };
 
 static int put_pack_header(AVFormatContext *ctx, 
                            uint8_t *buf, int64_t timestamp)
@@ -190,7 +196,7 @@ static int get_system_header_size(AVFormatContext *ctx)
 static int mpeg_mux_init(AVFormatContext *ctx)
 {
     MpegMuxContext *s = ctx->priv_data;
-    int bitrate, i, mpa_id, mpv_id, ac3_id;
+    int bitrate, i, mpa_id, mpv_id, ac3_id, lpcm_id, j;
     AVStream *st;
     StreamInfo *stream;
 
@@ -206,8 +212,9 @@ static int mpeg_mux_init(AVFormatContext *ctx)
     s->audio_bound = 0;
     s->video_bound = 0;
     mpa_id = AUDIO_ID;
-    ac3_id = 0x80;
+    ac3_id = AC3_ID;
     mpv_id = VIDEO_ID;
+    lpcm_id = LPCM_ID;
     s->scr_stream_index = -1;
     for(i=0;i<ctx->nb_streams;i++) {
         st = ctx->streams[i];
@@ -218,10 +225,25 @@ static int mpeg_mux_init(AVFormatContext *ctx)
 
         switch(st->codec.codec_type) {
         case CODEC_TYPE_AUDIO:
-            if (st->codec.codec_id == CODEC_ID_AC3)
+            if (st->codec.codec_id == CODEC_ID_AC3) {
                 stream->id = ac3_id++;
-            else
+            } else if (st->codec.codec_id == CODEC_ID_PCM_S16BE) {
+                stream->id = lpcm_id++;
+                for(j = 0; j < 4; j++) {
+                    if (lpcm_freq_tab[j] == st->codec.sample_rate)
+                        break;
+                }
+                if (j == 4)
+                    goto fail;
+                if (st->codec.channels > 8)
+                    return -1;
+                stream->lpcm_header[0] = 0x0c;
+                stream->lpcm_header[1] = (st->codec.channels - 1) | (j << 4);
+                stream->lpcm_header[2] = 0x80;
+                stream->lpcm_align = st->codec.channels * 2;
+            } else {
                 stream->id = mpa_id++;
+            }
             stream->max_buffer_size = 4 * 1024; 
             s->audio_bound++;
             break;
@@ -335,8 +357,17 @@ static int get_packet_payload_size(AVFormatContext *ctx, int stream_index,
     
     stream = ctx->streams[stream_index]->priv_data;
     if (stream->id < 0xc0) {
-        /* AC3 private data header */
+        /* AC3/LPCM private data header */
         buf_index += 4;
+        if (stream->id >= 0xa0) {
+            int n;
+            buf_index += 3;
+            /* NOTE: we round the payload size to an integer number of
+               LPCM samples */
+            n = (s->packet_size - buf_index) % stream->lpcm_align;
+            if (n)
+                buf_index += (stream->lpcm_align - n);
+        }
     }
     return s->packet_size - buf_index; 
 }
@@ -393,6 +424,8 @@ static void flush_packet(AVFormatContext *ctx, int stream_index,
     if (id < 0xc0) {
         startcode = PRIVATE_STREAM_1;
         payload_size -= 4;
+        if (id >= 0xa0)
+            payload_size -= 3;
     } else {
         startcode = 0x100 + id;
     }
@@ -440,7 +473,15 @@ static void flush_packet(AVFormatContext *ctx, int stream_index,
 
     if (startcode == PRIVATE_STREAM_1) {
         put_byte(&ctx->pb, id);
-        if (id >= 0x80 && id <= 0xbf) {
+        if (id >= 0xa0) {
+            /* LPCM (XXX: check nb_frames) */
+            put_byte(&ctx->pb, 7);
+            put_be16(&ctx->pb, 4); /* skip 3 header bytes */
+            put_byte(&ctx->pb, stream->lpcm_header[0]);
+            put_byte(&ctx->pb, stream->lpcm_header[1]);
+            put_byte(&ctx->pb, stream->lpcm_header[2]);
+        } else {
+            /* AC3 */
             put_byte(&ctx->pb, stream->nb_frames);
             put_be16(&ctx->pb, stream->frame_start_offset);
         }
@@ -867,7 +908,6 @@ static int mpegps_read_packet(AVFormatContext *s,
  found:
     if (startcode >= 0xa0 && startcode <= 0xbf) {
         int b1, freq;
-        static const int lpcm_freq_tab[4] = { 48000, 96000, 44100, 32000 };
 
         /* for LPCM, we just skip the header and consider it is raw
            audio data */
