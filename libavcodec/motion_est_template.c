@@ -43,8 +43,8 @@
     op_pixels_func (*chroma_hpel_put)[4];\
     qpel_mc_func (*qpel_put)[16];\
     qpel_mc_func (*qpel_avg)[16]= &s->dsp.avg_qpel_pixels_tab[size];\
-    const __attribute__((unused)) int unu= time_pp + time_pb + (int)src_u + (int)src_v + (int)ref_u + (int)ref_v\
-                                           + (int)ref2_y + (int)hpel_avg + (int)qpel_avg + (int)score_map;\
+    const __attribute__((unused)) int unu= time_pp + time_pb + (size_t)src_u + (size_t)src_v + (size_t)ref_u + (size_t)ref_v\
+                                           + (size_t)ref2_y + (size_t)hpel_avg + (size_t)qpel_avg + (size_t)score_map;\
     if(s->no_rounding /*FIXME b_type*/){\
         hpel_put= &s->dsp.put_no_rnd_pixels_tab[size];\
         chroma_hpel_put= &s->dsp.put_no_rnd_pixels_tab[size+1];\

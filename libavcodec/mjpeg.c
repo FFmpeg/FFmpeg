@@ -478,7 +478,7 @@ static void escape_FF(MpegEncContext *s, int start)
     int size= get_bit_count(&s->pb) - start*8;
     int i, ff_count;
     uint8_t *buf= s->pb.buf + start;
-    int align= (-(int)(buf))&3;
+    int align= (-(size_t)(buf))&3;
     
     assert((size&7) == 0);
     size >>= 3;

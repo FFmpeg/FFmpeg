@@ -680,7 +680,7 @@ static void do_video_stats(AVFormatContext *os, AVOutputStream *ost,
         avg_bitrate = (double)(total_size * 8) / ti1 / 1000.0;
         fprintf(fvstats, "s_size= %8.0fkB time= %0.3f br= %7.1fkbits/s avg_br= %7.1fkbits/s ",
             (double)total_size / 1024, ti1, bitrate, avg_bitrate);
-        fprintf(fvstats,"type= %s\n", av_get_pict_type_char(enc->coded_frame->pict_type));        
+        fprintf(fvstats,"type= %c\n", av_get_pict_type_char(enc->coded_frame->pict_type));        
     }
 }
 

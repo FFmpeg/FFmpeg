@@ -314,7 +314,7 @@ static const int Motion_Est_QTab[] = { ME_ZERO, ME_PHODS, ME_LOG,
      * type of the buffer (to keep track of who has to dealloc data[*])\
      * - encoding: set by the one who allocs it\
      * - decoding: set by the one who allocs it\
-     * Note: user allocated (direct rendering) & internal buffers can not coexist currently\ 
+     * Note: user allocated (direct rendering) & internal buffers can not coexist currently\
      */\
     int type;\
     \
