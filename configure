@@ -573,7 +573,7 @@ if test "x$targetos" != "xBeOS" && test "$os2" != "yes"; then
   fi
 fi
 
-if test "$small" == "yes"; then
+if test "$small" = "yes"; then
 #  CFLAGS=${CFLAGS//-O3/-Os}
   CFLAGS="$CFLAGS -Os"
 fi
