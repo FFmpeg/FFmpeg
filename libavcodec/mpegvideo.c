@@ -1156,6 +1156,8 @@ int MPV_encode_init(AVCodecContext *avctx)
     default:
         return -1;
     }
+    
+    avctx->has_b_frames= !s->low_delay;
 
     s->encoding = 1;
 
