@@ -1886,7 +1886,7 @@ void opt_audio_device(const char *arg)
 void opt_dv1394(const char *arg)
 {
     video_grab_format = "dv1394";
-    audio_grab_format = "none";
+    audio_grab_format = NULL;
 }
 
 void opt_audio_codec(const char *arg)
@@ -2482,7 +2482,7 @@ void prepare_grab(void)
         dump_format(ic, nb_input_files, "", 0);
         nb_input_files++;
     }
-    if (has_audio) {
+    if (has_audio && audio_grab_format) {
         AVInputFormat *fmt1;
         fmt1 = av_find_input_format(audio_grab_format);
         ap->device = audio_device;

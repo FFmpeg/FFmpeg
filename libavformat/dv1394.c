@@ -31,29 +31,31 @@
 
 #include "dv1394.h"
 
-int dv1394_channel = DV1394_DEFAULT_CHANNEL;
-
 struct dv1394_data {
     int fd;
     int channel;
     int width, height;
     int frame_rate;
     int frame_size;
+    int format;
 
     void *ring; /* Ring buffer */
     int index;  /* Current frame index */
     int avail;  /* Number of frames available for reading */
     int done;   /* Number of completed frames */
+
+    int stream; /* Current stream. 0 - video, 1 - audio */
+    INT64 pts;  /* Current timestamp */
 };
 
 static int dv1394_reset(struct dv1394_data *dv)
 {
     struct dv1394_init init;
 
-    init.channel = dv->channel;
+    init.channel     = dv->channel;
     init.api_version = DV1394_API_VERSION;
-    init.n_frames = DV1394_RING_FRAMES;
-    init.format = DV1394_NTSC;
+    init.n_frames    = DV1394_RING_FRAMES;
+    init.format      = dv->format;
 
     if (ioctl(dv->fd, DV1394_INIT, &init) < 0)
         return -1;
@@ -75,12 +77,17 @@ static int dv1394_start(struct dv1394_data *dv)
 static int dv1394_read_header(AVFormatContext * context, AVFormatParameters * ap)
 {
     struct dv1394_data *dv = context->priv_data;
-    AVStream *st;
+    AVStream *vst, *ast;
     const char *video_device;
 
-    st = av_new_stream(context, 0);
-    if (!st)
+    vst = av_new_stream(context, 0);
+    if (!vst)
         return -ENOMEM;
+    ast = av_new_stream(context, 1);
+    if (!ast) {
+       av_free(vst);
+        return -ENOMEM;
+    }
 
     dv->width   = DV1394_WIDTH;
     dv->height  = DV1394_HEIGHT;
@@ -90,9 +97,16 @@ static int dv1394_read_header(AVFormatContext * context, AVFormatParameters * ap
     else
         dv->channel = DV1394_DEFAULT_CHANNEL;
 
-    dv->frame_rate = 30;
+    /* FIXME: Need a format change parameter */
+    dv->format = DV1394_NTSC;
 
-    dv->frame_size = DV1394_NTSC_FRAME_SIZE;
+    if (dv->format == DV1394_NTSC) {
+        dv->frame_size = DV1394_NTSC_FRAME_SIZE;
+        dv->frame_rate = 30;
+    } else {
+        dv->frame_size = DV1394_PAL_FRAME_SIZE;
+        dv->frame_rate = 25;
+    }
 
     /* Open and initialize DV1394 device */
     video_device = ap->device;
@@ -116,13 +130,19 @@ static int dv1394_read_header(AVFormatContext * context, AVFormatParameters * ap
         goto failed;
     }
 
-    st->codec.codec_type = CODEC_TYPE_VIDEO;
-    st->codec.codec_id   = CODEC_ID_DVVIDEO;
-    st->codec.width      = dv->width;
-    st->codec.height     = dv->height;
-    st->codec.frame_rate = dv->frame_rate * FRAME_RATE_BASE;
+    dv->stream = 0;
 
-    st->codec.bit_rate   = 25000000;  /* Consumer DV is 25Mbps */
+    vst->codec.codec_type = CODEC_TYPE_VIDEO;
+    vst->codec.codec_id   = CODEC_ID_DVVIDEO;
+    vst->codec.width      = dv->width;
+    vst->codec.height     = dv->height;
+    vst->codec.frame_rate = dv->frame_rate * FRAME_RATE_BASE;
+    vst->codec.bit_rate   = 25000000;  /* Consumer DV is 25Mbps */
+
+    ast->codec.codec_type = CODEC_TYPE_AUDIO;
+    ast->codec.codec_id   = CODEC_ID_DVAUDIO;
+    ast->codec.channels   = 2;
+    ast->codec.sample_rate= 48000;
 
     av_set_pts_info(context, 48, 1, 1000000);
 
@@ -133,24 +153,32 @@ static int dv1394_read_header(AVFormatContext * context, AVFormatParameters * ap
 
 failed:
     close(dv->fd);
-    av_free(st);
+    av_free(vst);
+    av_free(ast);
     return -EIO;
 }
 
-static inline int __copy_frame(struct dv1394_data *dv, void *buf)
+static inline int __copy_frame(struct dv1394_data *dv, AVPacket *pkt)
 {
     char *ptr = dv->ring + (dv->index * dv->frame_size);
 
-    memcpy(buf, ptr, dv->frame_size);
+    if (dv->stream) {
+        dv->index = (dv->index + 1) % DV1394_RING_FRAMES;
+        dv->done++; dv->avail--;
+    } else {
+       dv->pts = av_gettime() & ((1LL << 48) - 1);
+    }
 
-    dv->index = (dv->index + 1) % DV1394_RING_FRAMES;
-    dv->avail--;
-    dv->done++;
+    memcpy(pkt->data, ptr, dv->frame_size);
+    pkt->stream_index = dv->stream;
+    pkt->pts = dv->pts;
+
+    dv->stream ^= 1;
 
     return dv->frame_size;
 }
 
-static int dv1394_read_packet(AVFormatContext * context, AVPacket * pkt)
+static int dv1394_read_packet(AVFormatContext *context, AVPacket *pkt)
 {
     struct dv1394_data *dv = context->priv_data;
     int len;
@@ -202,8 +230,7 @@ static int dv1394_read_packet(AVFormatContext * context, AVPacket * pkt)
             dv->done);
 #endif
 
-    len = __copy_frame(dv, pkt->data);
-    pkt->pts = av_gettime() & ((1LL << 48) - 1);
+    len = __copy_frame(dv, pkt);
 
     if (!dv->avail && dv->done) {
         /* Request more frames */
