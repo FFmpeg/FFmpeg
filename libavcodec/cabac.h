@@ -43,9 +43,9 @@ typedef struct CABACContext{
     PutBitContext pb;
 }CABACContext;
 
-const uint8_t ff_h264_lps_range[64][4];
-const uint8_t ff_h264_mps_state[64];
-const uint8_t ff_h264_lps_state[64];
+extern const uint8_t ff_h264_lps_range[64][4];
+extern const uint8_t ff_h264_mps_state[64];
+extern const uint8_t ff_h264_lps_state[64];
 
 void ff_init_cabac_encoder(CABACContext *c, uint8_t *buf, int buf_size);
 void ff_init_cabac_decoder(CABACContext *c, uint8_t *buf, int buf_size);
