@@ -441,7 +441,7 @@ int ff_wav_init(void);
 
 /* raw.c */
 int pcm_read_seek(AVFormatContext *s, 
-                  int stream_index, int64_t timestamp);
+                  int stream_index, int64_t timestamp, int flags);
 int raw_init(void);
 
 /* mp3.c */

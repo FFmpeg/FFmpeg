@@ -1111,7 +1111,7 @@ static int rtsp_read_pause(AVFormatContext *s)
 }
 
 static int rtsp_read_seek(AVFormatContext *s, int stream_index, 
-                          int64_t timestamp)
+                          int64_t timestamp, int flags)
 {
     RTSPState *rt = s->priv_data;
     

@@ -649,7 +649,7 @@ static int locate_frame_in_index(AVIIndexEntry *entries,
     return m;
 }
 
-static int avi_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp)
+static int avi_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp, int flags)
 {
     AVIContext *avi = s->priv_data;
     AVStream *st;

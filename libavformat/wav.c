@@ -344,7 +344,7 @@ static int wav_read_close(AVFormatContext *s)
 }
 
 static int wav_read_seek(AVFormatContext *s, 
-                         int stream_index, int64_t timestamp)
+                         int stream_index, int64_t timestamp, int flags)
 {
     AVStream *st;
 
@@ -359,7 +359,7 @@ static int wav_read_seek(AVFormatContext *s,
     default:
         break;
     }
-    return pcm_read_seek(s, stream_index, timestamp);
+    return pcm_read_seek(s, stream_index, timestamp, flags);
 }
 
 

@@ -1846,7 +1846,7 @@ readchunk:
 /**
  * Seek method based on the one described in the Appendix C of QTFileFormat.pdf
  */
-static int mov_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp)
+static int mov_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp, int flags)
 {
     MOVContext* mov = (MOVContext *) s->priv_data;
     MOVStreamContext* sc;

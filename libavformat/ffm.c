@@ -627,7 +627,7 @@ static int64_t get_pts(AVFormatContext *s, offset_t pos)
 /* seek to a given time in the file. The file read pointer is
    positionned at or before pts. XXX: the following code is quite
    approximative */
-static int ffm_seek(AVFormatContext *s, int64_t wanted_pts)
+static int ffm_seek(AVFormatContext *s, int stream_index, int64_t wanted_pts, int flags)
 {
     FFMContext *ffm = s->priv_data;
     offset_t pos_min, pos_max, pos;
@@ -662,7 +662,7 @@ static int ffm_seek(AVFormatContext *s, int64_t wanted_pts)
             pos_min = pos + FFM_PACKET_SIZE;
         }
     }
-    pos = pos_min;
+    pos = (flags & AVSEEK_FLAG_BACKWARD) ? pos_min : pos_max;
     if (pos > 0)
         pos -= FFM_PACKET_SIZE;
  found:
