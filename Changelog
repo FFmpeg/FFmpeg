@@ -7,6 +7,7 @@ version 0.4.6:
 - fix quantization bug in AC3 encoder.
 - added GOB header parsing on H.263/H.263+ decoder. (Juanjo)
 - bug fix on MCBPC tables of H.263. (Juanjo)
+- bug fix on DC coefficients of H.263. (Juanjo)
 - added Advanced Prediction Mode on H.263/H.263+ decoder. (Juanjo)
 - now we can decode H.263 streams found on QuickTime files. (Juanjo)
 - now we can decode H.263 streams found on VIVO v1 files.(Juanjo)

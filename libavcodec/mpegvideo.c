@@ -264,6 +264,8 @@ int MPV_encode_init(AVCodecContext *avctx)
     s->gop_size = avctx->gop_size;
     s->rtp_mode = avctx->rtp_mode;
     s->rtp_payload_size = avctx->rtp_payload_size;
+    if (avctx->rtp_callback)
+        s->rtp_callback = avctx->rtp_callback;
     s->avctx = avctx;
     
     if (s->gop_size <= 1) {
@@ -868,7 +870,7 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
 
 static void encode_picture(MpegEncContext *s, int picture_number)
 {
-    int mb_x, mb_y, wrap, last_gob;
+    int mb_x, mb_y, wrap, last_gob, pdif = 0;
     UINT8 *ptr;
     int i, motion_x, motion_y;
 
@@ -919,7 +921,7 @@ static void encode_picture(MpegEncContext *s, int picture_number)
     s->mv_dir = MV_DIR_FORWARD;
 
     /* Get the GOB height based on picture height */
-    if (s->out_format == FMT_H263 && s->h263_plus) {
+    if (s->out_format == FMT_H263 && !s->h263_pred && !s->h263_msmpeg4) {
         if (s->height <= 400)
             s->gob_index = 1;
         else if (s->height <= 800)
@@ -930,16 +932,17 @@ static void encode_picture(MpegEncContext *s, int picture_number)
         
     for(mb_y=0; mb_y < s->mb_height; mb_y++) {
         /* Put GOB header based on RTP MTU */
-        if (!mb_y) {
-            s->ptr_lastgob = s->pb.buf_ptr;
-            s->ptr_last_mb_line = s->pb.buf_ptr;
-        } else if (s->out_format == FMT_H263 && s->h263_plus) {
-            last_gob = h263_encode_gob_header(s, mb_y);
-            if (last_gob) {
-                //fprintf(stderr,"\nLast GOB size: %d", last_gob);
-                s->first_gob_line = 1;
-            } else
-                s->first_gob_line = 0;
+        /* TODO: Put all this stuff in a separate generic function */
+        if (s->rtp_mode) {
+            if (!mb_y) {
+                s->ptr_lastgob = s->pb.buf;
+                s->ptr_last_mb_line = s->pb.buf;
+            } else if (s->out_format == FMT_H263 && !s->h263_pred && !s->h263_msmpeg4 && !(mb_y % s->gob_index)) {
+                last_gob = h263_encode_gob_header(s, mb_y);
+                if (last_gob) {
+                    s->first_gob_line = 1;
+                }
+            }
         }
         for(mb_x=0; mb_x < s->mb_width; mb_x++) {
 
@@ -1046,14 +1049,18 @@ static void encode_picture(MpegEncContext *s, int picture_number)
 
             MPV_decode_mb(s, s->block);
         }
-        /* Obtain average MB line size for RTP */
-        if (!mb_y)
-            s->mb_line_avgsize = s->pb.buf_ptr - s->ptr_last_mb_line;
-        else    
-            s->mb_line_avgsize = (s->mb_line_avgsize + s->pb.buf_ptr - s->ptr_last_mb_line) >> 1;
-        //fprintf(stderr, "\nMB line: %d\tSize: %u\tAvg. Size: %u", s->mb_y, 
-        //                    (s->pb.buf_ptr - s->ptr_last_mb_line), s->mb_line_avgsize);
-        s->ptr_last_mb_line = s->pb.buf_ptr;
+        /* Obtain average GOB size for RTP */
+        if (s->rtp_mode) {
+            if (!mb_y)
+                s->mb_line_avgsize = s->pb.buf_ptr - s->ptr_last_mb_line;
+            else if (!(mb_y % s->gob_index)) {    
+                s->mb_line_avgsize = (s->mb_line_avgsize + s->pb.buf_ptr - s->ptr_last_mb_line) >> 1;
+                s->ptr_last_mb_line = s->pb.buf_ptr;
+            }
+            //fprintf(stderr, "\nMB line: %d\tSize: %u\tAvg. Size: %u", s->mb_y, 
+            //                    (s->pb.buf_ptr - s->ptr_last_mb_line), s->mb_line_avgsize);
+            s->first_gob_line = 0;
+        }
     }
     
     if (s->h263_msmpeg4) 
@@ -1061,6 +1068,18 @@ static void encode_picture(MpegEncContext *s, int picture_number)
 
     //if (s->gob_number)
     //    fprintf(stderr,"\nNumber of GOB: %d", s->gob_number);
+    
+    /* Send the last GOB if RTP */    
+    if (s->rtp_mode) {
+        flush_put_bits(&s->pb);
+        pdif = s->pb.buf_ptr - s->ptr_lastgob;
+        /* Call the RTP callback to send the last GOB */
+        if (s->rtp_callback)
+            s->rtp_callback(s->ptr_lastgob, pdif, s->gob_number);
+        s->ptr_lastgob = s->pb.buf_ptr;
+        //fprintf(stderr,"\nGOB: %2d size: %d (last)", s->gob_number, pdif);
+    }
+
 }
 
 static int dct_quantize_c(MpegEncContext *s, 

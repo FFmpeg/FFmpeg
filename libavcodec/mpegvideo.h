@@ -201,8 +201,10 @@ typedef struct MpegEncContext {
     int first_slice;
     
     /* RTP specific */
+    /* These are explained on avcodec.h */
     int rtp_mode;
     int rtp_payload_size;
+    void (*rtp_callback)(void *data, int size, int packet_number);
     UINT8 *ptr_lastgob;
     UINT8 *ptr_last_mb_line;
     UINT32 mb_line_avgsize;

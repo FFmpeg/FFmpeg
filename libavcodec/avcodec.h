@@ -115,6 +115,14 @@ typedef struct AVCodecContext {
                             /* with a start code on some codecs like H.263  */
                             /* This doesn't take account of any particular  */
                             /* headers inside the transmited RTP payload    */
+
+    
+    /* The RTP callcack: This function is called  */
+    /* every time the encoder as a packet to send */
+    /* Depends on the encoder if the data starts  */
+    /* with a Start Code (it should) H.263 does   */
+    void (*rtp_callback)(void *data, int size, int packet_number); 
+
                  
     /* the following fields are ignored */
     void *opaque;   /* can be used to carry app specific stuff */

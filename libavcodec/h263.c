@@ -62,7 +62,12 @@ void h263_encode_picture_header(MpegEncContext * s, int picture_number)
     int format;
 
     align_put_bits(&s->pb);
-    put_bits(&s->pb, 22, 0x20);
+
+    /* Update the pointer to last GOB */
+    s->ptr_lastgob = s->pb.buf_ptr;
+    s->gob_number = 0;
+
+    put_bits(&s->pb, 22, 0x20); /* PSC */
     put_bits(&s->pb, 8, ((s->picture_number * 30 * FRAME_RATE_BASE) / 
                          s->frame_rate) & 0xff);
 
@@ -151,22 +156,36 @@ int h263_encode_gob_header(MpegEncContext * s, int mb_line)
         if (pdif >= s->rtp_payload_size) {
             /* Bad luck, packet must be cut before */
             align_put_bits(&s->pb);
+            flush_put_bits(&s->pb);
+            /* Call the RTP callback to send the last GOB */
+            if (s->rtp_callback) {
+                pdif = s->pb.buf_ptr - s->ptr_lastgob;
+                s->rtp_callback(s->ptr_lastgob, pdif, s->gob_number);
+            }
             s->ptr_lastgob = s->pb.buf_ptr;
             put_bits(&s->pb, 17, 1); /* GBSC */
-            s->gob_number = mb_line;
+            s->gob_number = mb_line / s->gob_index;
             put_bits(&s->pb, 5, s->gob_number); /* GN */
-            put_bits(&s->pb, 2, 1); /* GFID */
+            put_bits(&s->pb, 2, s->pict_type == I_TYPE); /* GFID */
             put_bits(&s->pb, 5, s->qscale); /* GQUANT */
+            //fprintf(stderr,"\nGOB: %2d size: %d", s->gob_number - 1, pdif);
             return pdif;
        } else if (pdif + s->mb_line_avgsize >= s->rtp_payload_size) {
            /* Cut the packet before we can't */
            align_put_bits(&s->pb);
+           flush_put_bits(&s->pb);
+           /* Call the RTP callback to send the last GOB */
+           if (s->rtp_callback) {
+               pdif = s->pb.buf_ptr - s->ptr_lastgob;
+               s->rtp_callback(s->ptr_lastgob, pdif, s->gob_number);
+           }
            s->ptr_lastgob = s->pb.buf_ptr;
            put_bits(&s->pb, 17, 1); /* GBSC */
-           s->gob_number = mb_line;
+           s->gob_number = mb_line / s->gob_index;
            put_bits(&s->pb, 5, s->gob_number); /* GN */
-           put_bits(&s->pb, 2, 1); /* GFID */
+           put_bits(&s->pb, 2, s->pict_type == I_TYPE); /* GFID */
            put_bits(&s->pb, 5, s->qscale); /* GQUANT */
+           //fprintf(stderr,"\nGOB: %2d size: %d", s->gob_number - 1, pdif);
            return pdif;
        }
    }
@@ -413,20 +432,25 @@ static void h263_encode_block(MpegEncContext * s, DCTELEM * block, int n)
     RLTable *rl = &rl_inter;
 
     if (s->mb_intra) {
-	/* DC coef */
-	level = block[0];
+        /* DC coef */
+	    level = block[0];
         /* 255 cannot be represented, so we clamp */
         if (level > 254) {
             level = 254;
             block[0] = 254;
         }
-	if (level == 128)
-	    put_bits(&s->pb, 8, 0xff);
-	else
-	    put_bits(&s->pb, 8, level & 0xff);
-	i = 1;
+        /* 0 cannot be represented also */
+        else if (!level) {
+            level = 1;
+            block[0] = 1;
+        }
+	    if (level == 128)
+	        put_bits(&s->pb, 8, 0xff);
+	    else
+	        put_bits(&s->pb, 8, level & 0xff);
+	    i = 1;
     } else {
-	i = 0;
+	    i = 0;
     }
 
     /* AC coefs */
@@ -1241,8 +1265,8 @@ int h263_decode_picture_header(MpegEncContext *s)
     /* picture header */
     if (get_bits(&s->gb, 22) != 0x20)
         return -1;
-    skip_bits(&s->gb, 8); /* picture timestamp */
-
+    s->picture_number = get_bits(&s->gb, 8); /* picture timestamp */
+    
     if (get_bits1(&s->gb) != 1)
         return -1;	/* marker */
     if (get_bits1(&s->gb) != 0)

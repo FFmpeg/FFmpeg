@@ -225,6 +225,11 @@ static int h263_decode_frame(AVCodecContext *avctx,
     pict->linesize[2] = s->linesize / 2;
 
     avctx->quality = s->qscale;
+
+    /* Return the Picture timestamp as the frame number */
+    /* we substract 1 because it is added on utils.c    */
+    avctx->frame_number = s->picture_number - 1;
+
     *data_size = sizeof(AVPicture);
     return buf_size;
 }
