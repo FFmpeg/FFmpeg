@@ -237,17 +237,16 @@ static int fourxm_read_packet(AVFormatContext *s,
             return ret;
         fourcc_tag = LE_32(&header[0]);
         size = LE_32(&header[4]);
-        if (fourcc_tag == LIST_TAG) {
-            /* skip the LIST-FRAM tag and get the next fourcc */
-            get_le32(pb);
-            fourcc_tag = get_le32(pb);
-            size = get_le32(pb);
-        }
 
         if (url_feof(pb))
             return -EIO;
 
         switch (fourcc_tag) {
+
+        case LIST_TAG:
+            /* skip the LIST-* tag and move on to the next fourcc */
+            get_le32(pb);
+            break;
 
         case ifrm_TAG:
         case pfrm_TAG:
