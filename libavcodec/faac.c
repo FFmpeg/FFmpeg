@@ -46,8 +46,7 @@ static int Faac_encode_init(AVCodecContext *avctx)
     /* check faac version */
     faac_cfg = faacEncGetCurrentConfiguration(s->faac_handle);
     if (faac_cfg->version != FAAC_CFG_VERSION) {
-        fprintf(stderr, "wrong libfaac version (compiled for: %d, using %d)\n",
-                FAAC_CFG_VERSION, faac_cfg->version );
+	av_log(avctx, AV_LOG_ERROR, "wrong libfaac version (compiled for: %d, using %d)\n", FAAC_CFG_VERSION, faac_cfg->version);
         faacEncClose(s->faac_handle);
         return -1;
     }
@@ -62,7 +61,7 @@ static int Faac_encode_init(AVCodecContext *avctx)
     faac_cfg->inputFormat = FAAC_INPUT_16BIT;
 
     if (!faacEncSetConfiguration(s->faac_handle, faac_cfg)) {
-        fprintf(stderr, "libfaac doesn't support this output format!\n");
+        av_log(avctx, AV_LOG_ERROR, "libfaac doesn't support this output format!\n");
         return -1;
     }
 
