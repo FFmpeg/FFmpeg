@@ -14,6 +14,7 @@ static const uint64_t mask24l  __attribute__((aligned(8))) = 0x0000000000FFFFFFU
 static const uint64_t mask24h  __attribute__((aligned(8))) = 0x0000FFFFFF000000ULL;
 static const uint64_t mask15b  __attribute__((aligned(8))) = 0x001F001F001F001FULL; /* 00000000 00011111  xxB */
 static const uint64_t mask15rg __attribute__((aligned(8))) = 0x7FE07FE07FE07FE0ULL; /* 01111111 11100000  RGx */
+static const uint64_t mask15s  __attribute__((aligned(8))) = 0xFFE0FFE0FFE0FFE0ULL;
 #endif
 
 void rgb24to32(const uint8_t *src,uint8_t *dst,uint32_t src_size)
@@ -119,6 +120,7 @@ void rgb32to24(const uint8_t *src,uint8_t *dst,uint32_t src_size)
  Original by Strepto/Astral
  ported to gcc & bugfixed : A'rpi
  MMX2, 3DNOW optimization by Nick Kurshev
+ 32bit c version, and and&add trick by Michael Niedermayer
 */
 void rgb15to16(const uint8_t *src,uint8_t *dst,uint32_t src_size)
 {
@@ -126,11 +128,10 @@ void rgb15to16(const uint8_t *src,uint8_t *dst,uint32_t src_size)
   register const char* s=src+src_size;
   register char* d=dst+src_size;
   register int offs=-src_size;
-  __asm __volatile(PREFETCH"	%0"::"m"(*(s+offs)):"memory");
+  __asm __volatile(PREFETCH"	%0"::"m"(*(s+offs)));
   __asm __volatile(
 	"movq	%0, %%mm4\n\t"
-	"movq	%1, %%mm5"
-	::"m"(mask15b), "m"(mask15rg):"memory");
+	::"m"(mask15s));
   while(offs<0)
   {
 	__asm __volatile(
@@ -140,23 +141,20 @@ void rgb15to16(const uint8_t *src,uint8_t *dst,uint32_t src_size)
 		"movq	%%mm0, %%mm1\n\t"
 		"movq	%%mm2, %%mm3\n\t"
 		"pand	%%mm4, %%mm0\n\t"
-		"pand	%%mm5, %%mm1\n\t"
 		"pand	%%mm4, %%mm2\n\t"
-		"pand	%%mm5, %%mm3\n\t"
-		"psllq	$1, %%mm1\n\t"
-		"psllq	$1, %%mm3\n\t"
-		"por	%%mm1, %%mm0\n\t"
-		"por	%%mm3, %%mm2\n\t"
+		"paddw	%%mm1, %%mm0\n\t"
+		"paddw	%%mm3, %%mm2\n\t"
 		MOVNTQ"	%%mm0, %0\n\t"
 		MOVNTQ"	%%mm2, 8%0"
 		:"=m"(*(d+offs))
 		:"m"(*(s+offs))
-		:"memory");
+		);
 	offs+=16;
   }
   __asm __volatile(SFENCE:::"memory");
   __asm __volatile(EMMS:::"memory");
 #else
+#if 0
    const uint16_t *s1=( uint16_t * )src;
    uint16_t *d1=( uint16_t * )dst;
    uint16_t *e=((uint8_t *)s1)+src_size;
@@ -168,6 +166,19 @@ void rgb15to16(const uint8_t *src,uint8_t *dst,uint32_t src_size)
         00000000000001 1111=0x001F */
      *( d1++ )=( x&0x001F )|( ( x&0x7FE0 )<<1 );
    }
+#else
+	const uint32_t *s1=( uint32_t * )src;
+	uint32_t *d1=( uint32_t * )dst;
+	int i;
+	int size= src_size>>2;
+	for(i=0; i<size; i++)
+	{
+		register int x= s1[i];
+//		d1[i] = x + (x&0x7FE07FE0); //faster but need msbit =0 which might not allways be true
+		d1[i] = (x&0x7FFF7FFF) + (x&0x7FE07FE0);
+
+	}
+#endif
 #endif
 }
 
