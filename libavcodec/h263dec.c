@@ -506,6 +506,8 @@ retry:
         s->context_initialized=0;
     }
     if (!s->context_initialized) {
+        avctx->width = s->width;
+        avctx->height = s->height;
         avctx->aspect_ratio= new_aspect;
 
         goto retry;
