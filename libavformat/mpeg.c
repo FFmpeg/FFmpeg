@@ -1029,13 +1029,13 @@ static int mpeg_mux_write_packet(AVFormatContext *ctx, AVPacket *pkt)
            and the first pack from the other stream, respectively, may also have
            been written before.
            So the real data starts at SCR 36000+3*1200. */
-        pts += 36000 + 3600;
-        dts += 36000 + 3600;
+        if(pts != AV_NOPTS_VALUE) pts += 36000 + 3600;
+        if(dts != AV_NOPTS_VALUE) dts += 36000 + 3600;
     }else{
-        pts += PRELOAD;
-        dts += PRELOAD;
+        if(pts != AV_NOPTS_VALUE) pts += PRELOAD;
+        if(dts != AV_NOPTS_VALUE) dts += PRELOAD;
     }
-//av_log(ctx, AV_LOG_DEBUG, "dts:%f pts:%f flags:%d stream:%d\n", dts/90000.0, pts/90000.0, pkt->flags, pkt->stream_index);
+//av_log(ctx, AV_LOG_DEBUG, "dts:%f pts:%f flags:%d stream:%d nopts:%d\n", dts/90000.0, pts/90000.0, pkt->flags, pkt->stream_index, pts != AV_NOPTS_VALUE);
     *stream->next_packet=
     pkt_desc= av_mallocz(sizeof(PacketDesc));
     pkt_desc->pts= pts;

@@ -1249,7 +1249,10 @@ static int output_packet(AVInputStream *ist, int ist_index,
                             opkt.stream_index= ost->index;
                             opkt.data= data_buf;
                             opkt.size= data_size;
-                            opkt.pts= pkt->pts + input_files_ts_offset[ist->file_index];
+                            if(pkt->pts != AV_NOPTS_VALUE)
+                                opkt.pts= pkt->pts + input_files_ts_offset[ist->file_index];
+                            else
+                                opkt.pts= AV_NOPTS_VALUE;
                             opkt.dts= pkt->dts + input_files_ts_offset[ist->file_index];
                             opkt.flags= pkt->flags;
                             
