@@ -2489,6 +2489,7 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
     s->progressive_frame = 1;
     s->picture_structure = PICT_FRAME;
     s->frame_pred_frame_dct = 1;
+    s->chroma_format = 1;
     s->codec_id= s->avctx->codec_id= CODEC_ID_MPEG1VIDEO;
     avctx->sub_id = 1; /* indicates mpeg1 */
     if(s->flags & CODEC_FLAG_LOW_DELAY) s->low_delay=1;
@@ -2547,6 +2548,7 @@ static int vcr2_init_sequence(AVCodecContext *avctx)
     s->progressive_frame = 1;
     s->picture_structure = PICT_FRAME;
     s->frame_pred_frame_dct = 1;
+    s->chroma_format = 1;
     s->codec_id= s->avctx->codec_id= CODEC_ID_MPEG2VIDEO;
     avctx->sub_id = 2; /* indicates mpeg2 */
     return 0;
