@@ -1401,6 +1401,16 @@ void ff_print_debug_info(MpegEncContext *s, Picture *pict){
                         int my= (s->motion_val[xy][1]>>shift) + sy;
                         draw_arrow(ptr, sx, sy, mx, my, s->width, s->height, s->linesize, 100);
                     }
+                }else if(IS_16X8(s->current_picture.mb_type[mb_index])){
+                    int i;
+                    for(i=0; i<2; i++){
+                        int sx=mb_x*16 + 8;
+                        int sy=mb_y*16 + 4 + 8*i;
+                        int xy=1 + mb_x*2 + (mb_y*2 + 1 + i)*(s->mb_width*2 + 2);
+                        int mx=(s->motion_val[xy][0]>>shift) + sx;
+                        int my=(s->motion_val[xy][1]>>shift) + sy;
+                        draw_arrow(ptr, sx, sy, mx, my, s->width, s->height, s->linesize, 100);
+                    }
                 }else{
                     int sx= mb_x*16 + 8;
                     int sy= mb_y*16 + 8;
