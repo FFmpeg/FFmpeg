@@ -176,10 +176,19 @@ if((x) >= xmin && 2*(x) + (dx) <= 2*xmax && (y) >= ymin && 2*(y) + (dy) <= 2*yma
     }else{\
         int fx = s->me.direct_basis_mv[0][0] + hx;\
         int fy = s->me.direct_basis_mv[0][1] + hy;\
-        int bx = hx ? fx - s->me.co_located_mv[0][0] : s->me.co_located_mv[0][0]*(time_pb - time_pp)/time_pp;\
-        int by = hy ? fy - s->me.co_located_mv[0][1] : s->me.co_located_mv[0][1]*(time_pb - time_pp)/time_pp;\
+        int bx = hx ? fx - s->me.co_located_mv[0][0] : (s->me.co_located_mv[0][0]*(time_pb - time_pp)/time_pp);\
+        int by = hy ? fy - s->me.co_located_mv[0][1] : (s->me.co_located_mv[0][1]*(time_pb - time_pp)/time_pp);\
         int fxy= (fx&1) + 2*(fy&1);\
         int bxy= (bx&1) + 2*(by&1);\
+        \
+        assert((fx>>1) + 16*s->mb_x >= -16);\
+        assert((fy>>1) + 16*s->mb_y >= -16);\
+        assert((fx>>1) + 16*s->mb_x <= s->width);\
+        assert((fy>>1) + 16*s->mb_y <= s->height);\
+        assert((bx>>1) + 16*s->mb_x >= -16);\
+        assert((by>>1) + 16*s->mb_y >= -16);\
+        assert((bx>>1) + 16*s->mb_x <= s->width);\
+        assert((by>>1) + 16*s->mb_y <= s->height);\
 \
         hpel_put[0][fxy](s->me.scratchpad, (ref_y ) + (fx>>1) + (fy>>1)*(stride), stride, 16);\
         hpel_avg[0][bxy](s->me.scratchpad, (ref2_y) + (bx>>1) + (by>>1)*(stride), stride, 16);\
@@ -1406,15 +1415,15 @@ static inline int direct_search(MpegEncContext * s,
 
         max= FFMAX(s->me.direct_basis_mv[i][0], s->me.direct_basis_mv[i][0] - s->me.co_located_mv[i][0])>>shift;
         min= FFMIN(s->me.direct_basis_mv[i][0], s->me.direct_basis_mv[i][0] - s->me.co_located_mv[i][0])>>shift;
-        max+= (2*mb_x + (i& 1))*8 - 1; // +-1 is for the simpler rounding
-        min+= (2*mb_x + (i& 1))*8 + 1;
+        max+= (2*mb_x + (i& 1))*8 + 1; // +-1 is for the simpler rounding
+        min+= (2*mb_x + (i& 1))*8 - 1;
         xmax= FFMIN(xmax, s->width - max);
         xmin= FFMAX(xmin, - 16     - min);
 
         max= FFMAX(s->me.direct_basis_mv[i][1], s->me.direct_basis_mv[i][1] - s->me.co_located_mv[i][1])>>shift;
         min= FFMIN(s->me.direct_basis_mv[i][1], s->me.direct_basis_mv[i][1] - s->me.co_located_mv[i][1])>>shift;
-        max+= (2*mb_y + (i>>1))*8 - 1; // +-1 is for the simpler rounding
-        min+= (2*mb_y + (i>>1))*8 + 1;
+        max+= (2*mb_y + (i>>1))*8 + 1; // +-1 is for the simpler rounding
+        min+= (2*mb_y + (i>>1))*8 - 1;
         ymax= FFMIN(ymax, s->height - max);
         ymin= FFMAX(ymin, - 16      - min);
         
