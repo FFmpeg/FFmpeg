@@ -3823,11 +3823,8 @@ static int parse_ffconfig(const char *filename)
                     if (!argbuf[0])
                         break;
 
-                    if (strlen(argbuf + 1)) {
-		        feed->child_argv[i] = av_malloc(strlen(argbuf + 1));
-                        strcpy(feed->child_argv[i], argbuf);
-		    } else
-		        feed->child_argv[i] = NULL;
+                    feed->child_argv[i] = av_malloc(strlen(argbuf) + 1);
+                    strcpy(feed->child_argv[i], argbuf);
                 }
 
                 feed->child_argv[i] = av_malloc(30 + strlen(feed->filename));
