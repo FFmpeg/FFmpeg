@@ -45,19 +45,11 @@ static int alaw2linear(unsigned char	a_val)
 
 	a_val ^= 0x55;
 
-	t = (a_val & QUANT_MASK) << 4;
+	t = a_val & QUANT_MASK;
 	seg = ((unsigned)a_val & SEG_MASK) >> SEG_SHIFT;
-	switch (seg) {
-	case 0:
-		t += 8;
-		break;
-	case 1:
-		t += 0x108;
-		break;
-	default:
-		t += 0x108;
-		t <<= seg - 1;
-	}
+	if(seg) t= (t + t + 1 + 32) << (seg + 2);
+	else    t= (t + t + 1     ) << 3;
+
 	return ((a_val & SIGN_BIT) ? t : -t);
 }
 
