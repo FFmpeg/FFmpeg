@@ -594,11 +594,6 @@ static always_inline void do_a_deblock_C(uint8_t *src, int step, int stride, PPC
 #ifdef ARCH_POWERPC
 #ifdef HAVE_ALTIVEC
 #define COMPILE_ALTIVEC
-#ifndef CONFIG_DARWIN
-#warning "################################################################################"
-#warning  "WARNING: No gcc available as of today (2004-05-25) seems to be able to compile properly some of the code under non-Darwin PPC OSes. Some functions result in wrong results, while others simply won't compile (gcc explodes after allocating 1GiB+)."
-#warning "################################################################################"
-#endif //CONFIG_DARWIN
 #endif //HAVE_ALTIVEC
 #endif //ARCH_POWERPC
 
