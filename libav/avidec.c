@@ -31,7 +31,6 @@ typedef struct {
     INT64 movi_end;
     offset_t movi_list;
     AVIIndex *first, *last;
-    int framenum;
 } AVIContext;
 
 #ifdef DEBUG
@@ -69,7 +68,6 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
     stream_index = -1;
     codec_type = -1;
     frame_period = 0;
-    avi->framenum = 0;
     for(;;) {
         if (url_feof(pb))
             goto fail;
@@ -213,7 +211,6 @@ static int avi_read_packet(AVFormatContext *s, AVPacket *pkt)
     size = get_le32(pb);
     av_new_packet(pkt, size);
     pkt->stream_index = n;
-    pkt->pts = avi->framenum++;
 
     get_buffer(pb, pkt->data, pkt->size);
 
