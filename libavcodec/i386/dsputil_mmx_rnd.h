@@ -214,10 +214,10 @@ static void DEF(avg, pixels_y2)(UINT8 *block, const UINT8 *pixels, int line_size
 	"movq	(%1, %%eax), %%mm0	\n\t"
 	PAVGBP(%%mm1, %%mm2, %%mm4,   %%mm0, %%mm1, %%mm5)
 	"movq	(%2), %%mm3		\n\t"
-	PAVGB(%%mm3, %%mm4, %%mm0, %%mm6)
+	PAVGB(%%mm3, %%mm4, %%mm2, %%mm6)
 	"movq	(%2, %3), %%mm3		\n\t"
 	PAVGB(%%mm3, %%mm5, %%mm1, %%mm6)
-	"movq	%%mm0, (%2)		\n\t"
+	"movq	%%mm2, (%2)		\n\t"
 	"movq	%%mm1, (%2, %3)		\n\t"
 	"addl	%%eax, %1		\n\t"
 	"addl	%%eax, %2		\n\t"
