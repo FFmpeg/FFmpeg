@@ -67,12 +67,19 @@ typedef struct IpvideoContext {
 
     unsigned char palette[PALETTE_COUNT * 4];
 
+    unsigned char *stream_ptr;
+    unsigned char *stream_end;
+    unsigned char *pixel_ptr;
+    int line_inc;
+    int stride;
+    int upper_motion_limit_offset;
+
 } IpvideoContext;
 
 #define CHECK_STREAM_PTR(n) \
-  if ((sg_stream_ptr + n) > sg_stream_end) { \
+  if ((s->stream_ptr + n) > s->stream_end) { \
     printf ("Interplay video warning: stream_ptr out of bounds (%p >= %p)\n", \
-      sg_stream_ptr + n, sg_stream_end); \
+      s->stream_ptr + n, s->stream_end); \
     return -1; \
   }
 
@@ -82,128 +89,98 @@ static void ipvideo_new_palette(IpvideoContext *s, unsigned char *palette) {
     unsigned char r, g, b;
     unsigned int *palette32;
 
-    switch (s->avctx->pix_fmt) {
-
-    case PIX_FMT_PAL8:
-        palette32 = (unsigned int *)s->palette;
-        for (i = 0; i < PALETTE_COUNT; i++) {
-            r = *palette++;
-            g = *palette++;
-            b = *palette++;
-            palette32[i] = (r << 16) | (g << 8) | (b);
-        }
-        break;
-
-    default:
-        printf ("Interplay video: Unhandled video format\n");
-        break;
+    palette32 = (unsigned int *)s->palette;
+    for (i = 0; i < PALETTE_COUNT; i++) {
+        r = *palette++;
+        g = *palette++;
+        b = *palette++;
+        palette32[i] = (r << 16) | (g << 8) | (b);
     }
-}
-
-static unsigned char *sg_stream_ptr;
-static unsigned char *sg_stream_end;
-static unsigned char *sg_current_plane;
-static unsigned char *sg_output_plane;
-static unsigned char *sg_last_plane;
-static unsigned char *sg_second_last_plane;
-static int sg_line_inc;
-static int sg_stride;
-static int sg_upper_motion_limit_offset;
-static DSPContext sg_dsp;
-
-static int ipvideo_decode_block_opcode_0x0(void)
-{
-    int x, y;
-    unsigned char *src_block;
-
-    /* skip block, which actually means to copy from previous frame */
-    src_block = sg_last_plane + (sg_output_plane - sg_current_plane);
-    for (y = 0; y < 8; y++) {
-        for (x = 0; x < 8; x++) {
-            *sg_output_plane++ = *src_block++;
-        }
-        sg_output_plane += sg_line_inc;
-        src_block += sg_line_inc;
-    }
-
-    /* report success */
-    return 0;
-}
-
-static int ipvideo_decode_block_opcode_0x1(void)
-{
-    int x, y;
-    unsigned char *src_block;
-
-    /* copy block from two frames behind */
-    src_block = sg_second_last_plane + (sg_output_plane - sg_current_plane);
-    for (y = 0; y < 8; y++) {
-        for (x = 0; x < 8; x++) {
-            *sg_output_plane++ = *src_block++;
-        }
-        sg_output_plane += sg_line_inc;
-        src_block += sg_line_inc;
-    }
-
-    /* report success */
-    return 0;
 }
 
 #define COPY_FROM_CURRENT() \
     motion_offset = current_offset; \
-    motion_offset += y * sg_stride; \
+    motion_offset += y * s->stride; \
     motion_offset += x; \
     if (motion_offset < 0) { \
         printf (" Interplay video: motion offset < 0 (%d)\n", motion_offset); \
         return -1; \
-    } else if (motion_offset > sg_upper_motion_limit_offset) { \
+    } else if (motion_offset > s->upper_motion_limit_offset) { \
         printf (" Interplay video: motion offset above limit (%d >= %d)\n", \
-            motion_offset, sg_upper_motion_limit_offset); \
+            motion_offset, s->upper_motion_limit_offset); \
         return -1; \
     } \
-    sg_dsp.put_pixels_tab[0][0](sg_output_plane, \
-        sg_current_plane + motion_offset, sg_stride, 8);
+    s->dsp.put_pixels_tab[0][0](s->pixel_ptr, \
+        s->current_frame.data[0] + motion_offset, s->stride, 8);
 
 #define COPY_FROM_PREVIOUS() \
     motion_offset = current_offset; \
-    motion_offset += y * sg_stride; \
+    motion_offset += y * s->stride; \
     motion_offset += x; \
     if (motion_offset < 0) { \
         printf (" Interplay video: motion offset < 0 (%d)\n", motion_offset); \
         return -1; \
-    } else if (motion_offset > sg_upper_motion_limit_offset) { \
+    } else if (motion_offset > s->upper_motion_limit_offset) { \
         printf (" Interplay video: motion offset above limit (%d >= %d)\n", \
-            motion_offset, sg_upper_motion_limit_offset); \
+            motion_offset, s->upper_motion_limit_offset); \
         return -1; \
     } \
-    sg_dsp.put_pixels_tab[0][0](sg_output_plane, \
-        sg_last_plane + motion_offset, sg_stride, 8);
+    s->dsp.put_pixels_tab[0][0](s->pixel_ptr, \
+        s->last_frame.data[0] + motion_offset, s->stride, 8);
 
 #define COPY_FROM_SECOND_LAST() \
     motion_offset = current_offset; \
-    motion_offset += y * sg_stride; \
+    motion_offset += y * s->stride; \
     motion_offset += x; \
     if (motion_offset < 0) { \
         printf (" Interplay video: motion offset < 0 (%d)\n", motion_offset); \
         return -1; \
-    } else if (motion_offset > sg_upper_motion_limit_offset) { \
+    } else if (motion_offset > s->upper_motion_limit_offset) { \
         printf (" Interplay video: motion offset above limit (%d >= %d)\n", \
-            motion_offset, sg_upper_motion_limit_offset); \
+            motion_offset, s->upper_motion_limit_offset); \
         return -1; \
     } \
-    sg_dsp.put_pixels_tab[0][0](sg_output_plane, \
-        sg_second_last_plane + motion_offset, sg_stride, 8);
+    s->dsp.put_pixels_tab[0][0](s->pixel_ptr, \
+        s->second_last_frame.data[0] + motion_offset, s->stride, 8);
 
-static int ipvideo_decode_block_opcode_0x2(void)
+static int ipvideo_decode_block_opcode_0x0(IpvideoContext *s)
+{
+    int x, y;
+    int motion_offset;
+    int current_offset = s->pixel_ptr - s->current_frame.data[0];
+
+    /* copy a block from the previous frame */
+    x = y = 0;
+    COPY_FROM_PREVIOUS();
+
+    /* report success */
+    return 0;
+}
+
+static int ipvideo_decode_block_opcode_0x1(IpvideoContext *s)
+{
+    int x, y;
+    int motion_offset;
+    int current_offset = s->pixel_ptr - s->current_frame.data[0];
+
+    /* copy block from 2 frames ago */
+    x = y = 0;
+    COPY_FROM_SECOND_LAST();
+
+    /* report success */
+    return 0;
+}
+
+static int ipvideo_decode_block_opcode_0x2(IpvideoContext *s)
 {
     unsigned char B;
     int x, y;
     int motion_offset;
-    int current_offset = sg_output_plane - sg_current_plane;
+    int current_offset = s->pixel_ptr - s->current_frame.data[0];
 
-    /* need 1 more byte for motion */
+    /* copy block from 2 frames ago using a motion vector; need 1 more byte */
     CHECK_STREAM_PTR(1);
-    B = *sg_stream_ptr++;
+    B = *s->stream_ptr++;
 
     if (B < 56) {
         x = 8 + (B % 7);
@@ -220,18 +197,18 @@ static int ipvideo_decode_block_opcode_0x2(void)
     return 0;
 }
 
-static int ipvideo_decode_block_opcode_0x3(void)
+static int ipvideo_decode_block_opcode_0x3(IpvideoContext *s)
 {
     unsigned char B;
     int x, y;
     int motion_offset;
-    int current_offset = sg_output_plane - sg_current_plane;
+    int current_offset = s->pixel_ptr - s->current_frame.data[0];
 
     /* copy 8x8 block from current frame from an up/left block */
 
     /* need 1 more byte for motion */
     CHECK_STREAM_PTR(1);
-    B = *sg_stream_ptr++;
+    B = *s->stream_ptr++;
 
     if (B < 56) {
         x = -(8 + (B % 7));
@@ -248,17 +225,17 @@ static int ipvideo_decode_block_opcode_0x3(void)
     return 0;
 }
 
-static int ipvideo_decode_block_opcode_0x4(void)
+static int ipvideo_decode_block_opcode_0x4(IpvideoContext *s)
 {
     int x, y;
     unsigned char B, BL, BH;
     int motion_offset;
-    int current_offset = sg_output_plane - sg_current_plane;
+    int current_offset = s->pixel_ptr - s->current_frame.data[0];
 
     /* copy a block from the previous frame; need 1 more byte */
     CHECK_STREAM_PTR(1);
 
-    B = *sg_stream_ptr++;
+    B = *s->stream_ptr++;
     BL = B & 0x0F;
     BH = (B >> 4) & 0x0F;
     x = -8 + BL;
@@ -271,18 +248,18 @@ static int ipvideo_decode_block_opcode_0x4(void)
     return 0;
 }
 
-static int ipvideo_decode_block_opcode_0x5(void)
+static int ipvideo_decode_block_opcode_0x5(IpvideoContext *s)
 {
     signed char x, y;
     int motion_offset;
-    int current_offset = sg_output_plane - sg_current_plane;
+    int current_offset = s->pixel_ptr - s->current_frame.data[0];
 
     /* copy a block from the previous frame using an expanded range;
      * need 2 more bytes */
     CHECK_STREAM_PTR(2);
 
-    x = *sg_stream_ptr++;
-    y = *sg_stream_ptr++;
+    x = *s->stream_ptr++;
+    y = *s->stream_ptr++;
 
     debug_interplay ("    motion bytes = %d, %d\n", x, y);
     COPY_FROM_PREVIOUS();
@@ -291,7 +268,7 @@ static int ipvideo_decode_block_opcode_0x5(void)
     return 0;
 }
 
-static int ipvideo_decode_block_opcode_0x6(void)
+static int ipvideo_decode_block_opcode_0x6(IpvideoContext *s)
 {
     /* mystery opcode? skip multiple blocks? */
     printf ("  Interplay video: Help! Mystery opcode 0x6 seen\n");
@@ -300,7 +277,7 @@ static int ipvideo_decode_block_opcode_0x6(void)
     return 0;
 }
 
-static int ipvideo_decode_block_opcode_0x7(void)
+static int ipvideo_decode_block_opcode_0x7(IpvideoContext *s)
 {
     int x, y;
     unsigned char P0, P1;
@@ -311,51 +288,51 @@ static int ipvideo_decode_block_opcode_0x7(void)
     /* 2-color encoding */
     CHECK_STREAM_PTR(2);
 
-    P0 = *sg_stream_ptr++;
-    P1 = *sg_stream_ptr++;
+    P0 = *s->stream_ptr++;
+    P1 = *s->stream_ptr++;
 
     if (P0 <= P1) {
 
         /* need 8 more bytes from the stream */
         CHECK_STREAM_PTR(8);
         for (y = 0; y < 8; y++)
-            B[y] = *sg_stream_ptr++;
+            B[y] = *s->stream_ptr++;
 
         for (y = 0; y < 8; y++) {
             flags = B[y];
             for (x = 0x01; x <= 0x80; x <<= 1) {
                 if (flags & x)
-                    *sg_output_plane++ = P1;
+                    *s->pixel_ptr++ = P1;
                 else
-                    *sg_output_plane++ = P0;
+                    *s->pixel_ptr++ = P0;
             }
-            sg_output_plane += sg_line_inc;
+            s->pixel_ptr += s->line_inc;
         }
 
     } else {
 
         /* need 2 more bytes from the stream */
         CHECK_STREAM_PTR(2);
-        B[0] = *sg_stream_ptr++;
-        B[1] = *sg_stream_ptr++;
+        B[0] = *s->stream_ptr++;
+        B[1] = *s->stream_ptr++;
 
         flags = (B[1] << 8) | B[0];
         bitmask = 0x0001;
         for (y = 0; y < 8; y += 2) {
             for (x = 0; x < 8; x += 2, bitmask <<= 1) {
                 if (flags & bitmask) {
-                    *(sg_output_plane + x) = P1;
-                    *(sg_output_plane + x + 1) = P1;
-                    *(sg_output_plane + sg_stride + x) = P1;
-                    *(sg_output_plane + sg_stride + x + 1) = P1;
+                    *(s->pixel_ptr + x) = P1;
+                    *(s->pixel_ptr + x + 1) = P1;
+                    *(s->pixel_ptr + s->stride + x) = P1;
+                    *(s->pixel_ptr + s->stride + x + 1) = P1;
                 } else {
-                    *(sg_output_plane + x) = P0;
-                    *(sg_output_plane + x + 1) = P0;
-                    *(sg_output_plane + sg_stride + x) = P0;
-                    *(sg_output_plane + sg_stride + x + 1) = P0;
+                    *(s->pixel_ptr + x) = P0;
+                    *(s->pixel_ptr + x + 1) = P0;
+                    *(s->pixel_ptr + s->stride + x) = P0;
+                    *(s->pixel_ptr + s->stride + x + 1) = P0;
                 }
             }
-            sg_output_plane += sg_stride * 2;
+            s->pixel_ptr += s->stride * 2;
         }
     }
 
@@ -363,7 +340,7 @@ static int ipvideo_decode_block_opcode_0x7(void)
     return 0;
 }
 
-static int ipvideo_decode_block_opcode_0x8(void)
+static int ipvideo_decode_block_opcode_0x8(IpvideoContext *s)
 {
     int x, y;
     unsigned char P[8];
@@ -377,20 +354,20 @@ static int ipvideo_decode_block_opcode_0x8(void)
      * either top and bottom or left and right halves */
     CHECK_STREAM_PTR(2);
 
-    P[0] = *sg_stream_ptr++;
-    P[1] = *sg_stream_ptr++;
+    P[0] = *s->stream_ptr++;
+    P[1] = *s->stream_ptr++;
 
     if (P[0] <= P[1]) {
 
         /* need 12 more bytes */
         CHECK_STREAM_PTR(12);
-        B[0] = *sg_stream_ptr++;  B[1] = *sg_stream_ptr++;
-        P[2] = *sg_stream_ptr++;  P[3] = *sg_stream_ptr++;
-        B[2] = *sg_stream_ptr++;  B[3] = *sg_stream_ptr++;
-        P[4] = *sg_stream_ptr++;  P[5] = *sg_stream_ptr++;
-        B[4] = *sg_stream_ptr++;  B[5] = *sg_stream_ptr++;
-        P[6] = *sg_stream_ptr++;  P[7] = *sg_stream_ptr++;
-        B[6] = *sg_stream_ptr++;  B[7] = *sg_stream_ptr++;
+        B[0] = *s->stream_ptr++;  B[1] = *s->stream_ptr++;
+        P[2] = *s->stream_ptr++;  P[3] = *s->stream_ptr++;
+        B[2] = *s->stream_ptr++;  B[3] = *s->stream_ptr++;
+        P[4] = *s->stream_ptr++;  P[5] = *s->stream_ptr++;
+        B[4] = *s->stream_ptr++;  B[5] = *s->stream_ptr++;
+        P[6] = *s->stream_ptr++;  P[7] = *s->stream_ptr++;
+        B[6] = *s->stream_ptr++;  B[7] = *s->stream_ptr++;
 
         for (y = 0; y < 8; y++) {
 
@@ -424,22 +401,22 @@ static int ipvideo_decode_block_opcode_0x8(void)
                 }
 
                 if (flags & bitmask)
-                    *sg_output_plane++ = P1;
+                    *s->pixel_ptr++ = P1;
                 else
-                    *sg_output_plane++ = P0;
+                    *s->pixel_ptr++ = P0;
             }
-            sg_output_plane += sg_line_inc;
+            s->pixel_ptr += s->line_inc;
         }
 
     } else {
 
         /* need 10 more bytes */
         CHECK_STREAM_PTR(10);
-        B[0] = *sg_stream_ptr++;  B[1] = *sg_stream_ptr++;
-        B[2] = *sg_stream_ptr++;  B[3] = *sg_stream_ptr++;
-        P[2] = *sg_stream_ptr++;  P[3] = *sg_stream_ptr++;
-        B[4] = *sg_stream_ptr++;  B[5] = *sg_stream_ptr++;
-        B[6] = *sg_stream_ptr++;  B[7] = *sg_stream_ptr++;
+        B[0] = *s->stream_ptr++;  B[1] = *s->stream_ptr++;
+        B[2] = *s->stream_ptr++;  B[3] = *s->stream_ptr++;
+        P[2] = *s->stream_ptr++;  P[3] = *s->stream_ptr++;
+        B[4] = *s->stream_ptr++;  B[5] = *s->stream_ptr++;
+        B[6] = *s->stream_ptr++;  B[7] = *s->stream_ptr++;
 
         if (P[2] <= P[3]) {
 
@@ -475,11 +452,11 @@ static int ipvideo_decode_block_opcode_0x8(void)
                     }
 
                     if (flags & bitmask)
-                        *sg_output_plane++ = P1;
+                        *s->pixel_ptr++ = P1;
                     else
-                        *sg_output_plane++ = P0;
+                        *s->pixel_ptr++ = P0;
                 }
-                sg_output_plane += sg_line_inc;
+                s->pixel_ptr += s->line_inc;
             }
 
         } else {
@@ -500,11 +477,11 @@ static int ipvideo_decode_block_opcode_0x8(void)
                 for (bitmask = 0x01; bitmask <= 0x80; bitmask <<= 1) {
 
                     if (flags & bitmask)
-                        *sg_output_plane++ = P1;
+                        *s->pixel_ptr++ = P1;
                     else
-                        *sg_output_plane++ = P0;
+                        *s->pixel_ptr++ = P0;
                 }
-                sg_output_plane += sg_line_inc;
+                s->pixel_ptr += s->line_inc;
             }
         }
     }
@@ -513,7 +490,7 @@ static int ipvideo_decode_block_opcode_0x8(void)
     return 0;
 }
 
-static int ipvideo_decode_block_opcode_0x9(void)
+static int ipvideo_decode_block_opcode_0x9(IpvideoContext *s)
 {
     int x, y;
     unsigned char P[4];
@@ -526,7 +503,7 @@ static int ipvideo_decode_block_opcode_0x9(void)
     CHECK_STREAM_PTR(4);
 
     for (y = 0; y < 4; y++)
-        P[y] = *sg_stream_ptr++;
+        P[y] = *s->stream_ptr++;
 
     if ((P[0] <= P[1]) && (P[2] <= P[3])) {
 
@@ -535,12 +512,12 @@ static int ipvideo_decode_block_opcode_0x9(void)
 
         for (y = 0; y < 8; y++) {
             /* get the next set of 8 2-bit flags */
-            flags = (sg_stream_ptr[1] << 8) | sg_stream_ptr[0];
-            sg_stream_ptr += 2;
+            flags = (s->stream_ptr[1] << 8) | s->stream_ptr[0];
+            s->stream_ptr += 2;
             for (x = 0, shifter = 0; x < 8; x++, shifter += 2) {
-                *sg_output_plane++ = P[(flags >> shifter) & 0x03];
+                *s->pixel_ptr++ = P[(flags >> shifter) & 0x03];
             }
-            sg_output_plane += sg_line_inc;
+            s->pixel_ptr += s->line_inc;
         }
 
     } else if ((P[0] <= P[1]) && (P[2] > P[3])) {
@@ -548,22 +525,22 @@ static int ipvideo_decode_block_opcode_0x9(void)
         /* 1 of 4 colors for each 2x2 block, need 4 more bytes */
         CHECK_STREAM_PTR(4);
 
-        B[0] = *sg_stream_ptr++;
-        B[1] = *sg_stream_ptr++;
-        B[2] = *sg_stream_ptr++;
-        B[3] = *sg_stream_ptr++;
+        B[0] = *s->stream_ptr++;
+        B[1] = *s->stream_ptr++;
+        B[2] = *s->stream_ptr++;
+        B[3] = *s->stream_ptr++;
         flags = (B[3] << 24) | (B[2] << 16) | (B[1] << 8) | B[0];
         shifter = 0;
 
         for (y = 0; y < 8; y += 2) {
             for (x = 0; x < 8; x += 2, shifter += 2) {
                 pix = P[(flags >> shifter) & 0x03];
-                *(sg_output_plane + x) = pix;
-                *(sg_output_plane + x + 1) = pix;
-                *(sg_output_plane + sg_stride + x) = pix;
-                *(sg_output_plane + sg_stride + x + 1) = pix;
+                *(s->pixel_ptr + x) = pix;
+                *(s->pixel_ptr + x + 1) = pix;
+                *(s->pixel_ptr + s->stride + x) = pix;
+                *(s->pixel_ptr + s->stride + x + 1) = pix;
             }
-            sg_output_plane += sg_stride * 2;
+            s->pixel_ptr += s->stride * 2;
         }
 
     } else if ((P[0] > P[1]) && (P[2] <= P[3])) {
@@ -574,19 +551,19 @@ static int ipvideo_decode_block_opcode_0x9(void)
         for (y = 0; y < 8; y++) {
             /* time to reload flags? */
             if ((y == 0) || (y == 4)) {
-                B[0] = *sg_stream_ptr++;
-                B[1] = *sg_stream_ptr++;
-                B[2] = *sg_stream_ptr++;
-                B[3] = *sg_stream_ptr++;
+                B[0] = *s->stream_ptr++;
+                B[1] = *s->stream_ptr++;
+                B[2] = *s->stream_ptr++;
+                B[3] = *s->stream_ptr++;
                 flags = (B[3] << 24) | (B[2] << 16) | (B[1] << 8) | B[0];
                 shifter = 0;
             }
             for (x = 0; x < 8; x += 2, shifter += 2) {
                 pix = P[(flags >> shifter) & 0x03];
-                *(sg_output_plane + x) = pix;
-                *(sg_output_plane + x + 1) = pix;
+                *(s->pixel_ptr + x) = pix;
+                *(s->pixel_ptr + x + 1) = pix;
             }
-            sg_output_plane += sg_stride;
+            s->pixel_ptr += s->stride;
         }
 
     } else {
@@ -597,19 +574,19 @@ static int ipvideo_decode_block_opcode_0x9(void)
         for (y = 0; y < 8; y += 2) {
             /* time to reload flags? */
             if ((y == 0) || (y == 4)) {
-                B[0] = *sg_stream_ptr++;
-                B[1] = *sg_stream_ptr++;
-                B[2] = *sg_stream_ptr++;
-                B[3] = *sg_stream_ptr++;
+                B[0] = *s->stream_ptr++;
+                B[1] = *s->stream_ptr++;
+                B[2] = *s->stream_ptr++;
+                B[3] = *s->stream_ptr++;
                 flags = (B[3] << 24) | (B[2] << 16) | (B[1] << 8) | B[0];
                 shifter = 0;
             }
             for (x = 0; x < 8; x++, shifter += 2) {
                 pix = P[(flags >> shifter) & 0x03];
-                *(sg_output_plane + x) = pix;
-                *(sg_output_plane + sg_stride + x) = pix;
+                *(s->pixel_ptr + x) = pix;
+                *(s->pixel_ptr + s->stride + x) = pix;
             }
-            sg_output_plane += sg_stride * 2;
+            s->pixel_ptr += s->stride * 2;
         }
     }
 
@@ -617,7 +594,7 @@ static int ipvideo_decode_block_opcode_0x9(void)
     return 0;
 }
 
-static int ipvideo_decode_block_opcode_0xA(void)
+static int ipvideo_decode_block_opcode_0xA(IpvideoContext *s)
 {
     int x, y;
     unsigned char P[16];
@@ -633,7 +610,7 @@ static int ipvideo_decode_block_opcode_0xA(void)
     CHECK_STREAM_PTR(4);
 
     for (y = 0; y < 4; y++)
-        P[y] = *sg_stream_ptr++;
+        P[y] = *s->stream_ptr++;
 
     if (P[0] <= P[1]) {
 
@@ -641,12 +618,12 @@ static int ipvideo_decode_block_opcode_0xA(void)
         CHECK_STREAM_PTR(28);
 
         for (y = 0; y < 4; y++)
-            B[y] = *sg_stream_ptr++;
+            B[y] = *s->stream_ptr++;
         for (y = 4; y < 16; y += 4) {
             for (x = y; x < y + 4; x++)
-                P[x] = *sg_stream_ptr++;
+                P[x] = *s->stream_ptr++;
             for (x = y; x < y + 4; x++)
-                B[x] = *sg_stream_ptr++;
+                B[x] = *s->stream_ptr++;
         }
 
         for (y = 0; y < 8; y++) {
@@ -657,10 +634,10 @@ static int ipvideo_decode_block_opcode_0xA(void)
             for (x = 0, shifter = 0; x < 8; x++, shifter += 2) {
                 split = (x >= 4) ? 8 : 0;
                 index = split + lower_half + ((flags >> shifter) & 0x03);
-                *sg_output_plane++ = P[index];
+                *s->pixel_ptr++ = P[index];
             }
 
-            sg_output_plane += sg_line_inc;
+            s->pixel_ptr += s->line_inc;
         }
 
     } else {
@@ -670,11 +647,11 @@ static int ipvideo_decode_block_opcode_0xA(void)
         CHECK_STREAM_PTR(20);
 
         for (y = 0; y < 8; y++)
-            B[y] = *sg_stream_ptr++;
+            B[y] = *s->stream_ptr++;
         for (y = 4; y < 8; y++)
-            P[y] = *sg_stream_ptr++;
+            P[y] = *s->stream_ptr++;
         for (y = 8; y < 16; y++)
-            B[y] = *sg_stream_ptr++;
+            B[y] = *s->stream_ptr++;
 
         if (P[4] <= P[5]) {
 
@@ -687,10 +664,10 @@ static int ipvideo_decode_block_opcode_0xA(void)
                 for (x = 0, shifter = 0; x < 8; x++, shifter += 2) {
                     if (x == 4)
                         split = 4;
-                    *sg_output_plane++ = P[split + ((flags >> shifter) & 0x03)];
+                    *s->pixel_ptr++ = P[split + ((flags >> shifter) & 0x03)];
                 }
 
-                sg_output_plane += sg_line_inc;
+                s->pixel_ptr += s->line_inc;
             }
 
         } else {
@@ -704,9 +681,9 @@ static int ipvideo_decode_block_opcode_0xA(void)
                     split = 4;
 
                 for (x = 0, shifter = 0; x < 8; x++, shifter += 2)
-                    *sg_output_plane++ = P[split + ((flags >> shifter) & 0x03)];
+                    *s->pixel_ptr++ = P[split + ((flags >> shifter) & 0x03)];
 
-                sg_output_plane += sg_line_inc;
+                s->pixel_ptr += s->line_inc;
             }
         }
     }
@@ -715,7 +692,7 @@ static int ipvideo_decode_block_opcode_0xA(void)
     return 0;
 }
 
-static int ipvideo_decode_block_opcode_0xB(void)
+static int ipvideo_decode_block_opcode_0xB(IpvideoContext *s)
 {
     int x, y;
 
@@ -724,16 +701,16 @@ static int ipvideo_decode_block_opcode_0xB(void)
 
     for (y = 0; y < 8; y++) {
         for (x = 0; x < 8; x++) {
-            *sg_output_plane++ = *sg_stream_ptr++;
+            *s->pixel_ptr++ = *s->stream_ptr++;
         }
-        sg_output_plane += sg_line_inc;
+        s->pixel_ptr += s->line_inc;
     }
 
     /* report success */
     return 0;
 }
 
-static int ipvideo_decode_block_opcode_0xC(void)
+static int ipvideo_decode_block_opcode_0xC(IpvideoContext *s)
 {
     int x, y;
     unsigned char pix;
@@ -743,20 +720,20 @@ static int ipvideo_decode_block_opcode_0xC(void)
 
     for (y = 0; y < 8; y += 2) {
         for (x = 0; x < 8; x += 2) {
-            pix = *sg_stream_ptr++;
-            *(sg_output_plane + x) = pix;
-            *(sg_output_plane + x + 1) = pix;
-            *(sg_output_plane + sg_stride + x) = pix;
-            *(sg_output_plane + sg_stride + x + 1) = pix;
+            pix = *s->stream_ptr++;
+            *(s->pixel_ptr + x) = pix;
+            *(s->pixel_ptr + x + 1) = pix;
+            *(s->pixel_ptr + s->stride + x) = pix;
+            *(s->pixel_ptr + s->stride + x + 1) = pix;
         }
-        sg_output_plane += sg_stride * 2;
+        s->pixel_ptr += s->stride * 2;
     }
 
     /* report success */
     return 0;
 }
 
-static int ipvideo_decode_block_opcode_0xD(void)
+static int ipvideo_decode_block_opcode_0xD(IpvideoContext *s)
 {
     int x, y;
     unsigned char P[4];
@@ -766,7 +743,7 @@ static int ipvideo_decode_block_opcode_0xD(void)
     CHECK_STREAM_PTR(4);
 
     for (y = 0; y < 4; y++)
-        P[y] = *sg_stream_ptr++;
+        P[y] = *s->stream_ptr++;
 
     for (y = 0; y < 8; y++) {
         if (y < 4)
@@ -777,63 +754,63 @@ static int ipvideo_decode_block_opcode_0xD(void)
         for (x = 0; x < 8; x++) {
             if (x == 4)
                 index++;
-            *sg_output_plane++ = P[index];
+            *s->pixel_ptr++ = P[index];
         }
-        sg_output_plane += sg_line_inc;
+        s->pixel_ptr += s->line_inc;
     }
 
     /* report success */
     return 0;
 }
 
-static int ipvideo_decode_block_opcode_0xE(void)
+static int ipvideo_decode_block_opcode_0xE(IpvideoContext *s)
 {
     int x, y;
     unsigned char pix;
 
     /* 1-color encoding: the whole block is 1 solid color */
     CHECK_STREAM_PTR(1);
-    pix = *sg_stream_ptr++;
+    pix = *s->stream_ptr++;
 
     for (y = 0; y < 8; y++) {
         for (x = 0; x < 8; x++) {
-            *sg_output_plane++ = pix;
+            *s->pixel_ptr++ = pix;
         }
-        sg_output_plane += sg_line_inc;
+        s->pixel_ptr += s->line_inc;
     }
 
     /* report success */
     return 0;
 }
 
-static int ipvideo_decode_block_opcode_0xF(void)
+static int ipvideo_decode_block_opcode_0xF(IpvideoContext *s)
 {
     int x, y;
     unsigned char sample0, sample1;
 
     /* dithered encoding */
     CHECK_STREAM_PTR(2);
-    sample0 = *sg_stream_ptr++;
-    sample1 = *sg_stream_ptr++;
+    sample0 = *s->stream_ptr++;
+    sample1 = *s->stream_ptr++;
 
     for (y = 0; y < 8; y++) {
         for (x = 0; x < 8; x += 2) {
             if (y & 1) {
-                *sg_output_plane++ = sample1;
-                *sg_output_plane++ = sample0;
+                *s->pixel_ptr++ = sample1;
+                *s->pixel_ptr++ = sample0;
             } else {
-                *sg_output_plane++ = sample0;
-                *sg_output_plane++ = sample1;
+                *s->pixel_ptr++ = sample0;
+                *s->pixel_ptr++ = sample1;
             }
         }
-        sg_output_plane += sg_line_inc;
+        s->pixel_ptr += s->line_inc;
     }
 
     /* report success */
     return 0;
 }
 
-static int (*ipvideo_decode_block[16])(void);
+static int (*ipvideo_decode_block[16])(IpvideoContext *s);
 
 static void ipvideo_decode_opcodes(IpvideoContext *s)
 {
@@ -851,58 +828,44 @@ static void ipvideo_decode_opcodes(IpvideoContext *s)
         code_counts[x] = 0;
 
     /* this is PAL8, so make the palette available */
-    if (s->avctx->pix_fmt == PIX_FMT_PAL8)
-        memcpy(s->current_frame.data[1], s->palette, PALETTE_COUNT * 4);
+    memcpy(s->current_frame.data[1], s->palette, PALETTE_COUNT * 4);
 
-    switch (s->avctx->pix_fmt) {
+    s->stride = s->current_frame.linesize[0];
+    s->stream_ptr = s->buf + 14;  /* data starts 14 bytes in */
+    s->stream_end = s->buf + s->size;
+    s->line_inc = s->stride - 8;
+    s->upper_motion_limit_offset = (s->avctx->height - 8) * s->stride
+        + s->avctx->width - 8;
+    s->dsp = s->dsp;
 
-    case PIX_FMT_PAL8:
-        sg_stride = s->current_frame.linesize[0];
-        sg_stream_ptr = s->buf + 14;  /* data starts 14 bytes in */
-        sg_stream_end = s->buf + s->size;
-        sg_line_inc = sg_stride - 8;
-        sg_current_plane = s->current_frame.data[0];
-        sg_last_plane = s->last_frame.data[0];
-        sg_second_last_plane = s->second_last_frame.data[0];
-        sg_upper_motion_limit_offset = (s->avctx->height - 8) * sg_stride
-            + s->avctx->width - 8;
-        sg_dsp = s->dsp;
+    for (y = 0; y < (s->stride * s->avctx->height); y += s->stride * 8) {
+        for (x = y; x < y + s->avctx->width; x += 8) {
+            /* bottom nibble first, then top nibble (which makes it
+             * hard to use a GetBitcontext) */
+            if (index & 1)
+                opcode = s->decoding_map[index >> 1] >> 4;
+            else
+                opcode = s->decoding_map[index >> 1] & 0xF;
+            index++;
 
-        for (y = 0; y < (sg_stride * s->avctx->height); y += sg_stride * 8) {
-            for (x = y; x < y + s->avctx->width; x += 8) {
-                /* bottom nibble first, then top nibble (which makes it
-                 * hard to use a GetBitcontext) */
-                if (index & 1)
-                    opcode = s->decoding_map[index >> 1] >> 4;
-                else
-                    opcode = s->decoding_map[index >> 1] & 0xF;
-                index++;
+            debug_interplay("  block @ (%3d, %3d): encoding 0x%X, data ptr @ %p\n",
+                x - y, y / s->stride, opcode, s->stream_ptr);
+            code_counts[opcode]++;
 
-                debug_interplay("  block @ (%3d, %3d): encoding 0x%X, data ptr @ %p\n",
-                    x - y, y / sg_stride, opcode, sg_stream_ptr);
-                code_counts[opcode]++;
-
-                sg_output_plane = sg_current_plane + x;
-                ret = ipvideo_decode_block[opcode]();
-                if (ret != 0) {
-                    printf(" Interplay video: decode problem on frame %d, @ block (%d, %d)\n",
-                        frame, x - y, y / sg_stride);
-                    return;
-                }
+            s->pixel_ptr = s->current_frame.data[0] + x;
+            ret = ipvideo_decode_block[opcode](s);
+            if (ret != 0) {
+                printf(" Interplay video: decode problem on frame %d, @ block (%d, %d)\n",
+                    frame, x - y, y / s->stride);
+                return;
             }
         }
-        if ((sg_stream_ptr != sg_stream_end) &&
-            (sg_stream_ptr + 1 != sg_stream_end)) {
-            printf (" Interplay video: decode finished with %d bytes left over\n",
-                sg_stream_end - sg_stream_ptr);
-        }
-        break;
-
-    default:
-        printf ("Interplay video: Unhandled video format\n");
-        break;
     }
-
+    if ((s->stream_ptr != s->stream_end) &&
+        (s->stream_ptr + 1 != s->stream_end)) {
+        printf (" Interplay video: decode finished with %d bytes left over\n",
+            s->stream_end - s->stream_ptr);
+    }
 }
 
 static int ipvideo_decode_init(AVCodecContext *avctx)
