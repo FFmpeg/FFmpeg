@@ -56,9 +56,9 @@ $(LIB): $(OBJS)
 installlib: all
 	install -m 644 $(LIB) $(prefix)/lib
 	mkdir -p $(prefix)/include/ffmpeg
-	install -m 644 $(SRC_PATH)/libav/avformat.h $(SRC_PATH)/libav/avio.h \
-                $(SRC_PATH)/libav/rtp.h $(SRC_PATH)/libav/rtsp.h \
-                $(SRC_PATH)/libav/rtspcodes.h \
+	install -m 644 $(SRC_PATH)/libavformat/avformat.h $(SRC_PATH)/libavformat/avio.h \
+                $(SRC_PATH)/libavformat/rtp.h $(SRC_PATH)/libavformat/rtsp.h \
+                $(SRC_PATH)/libavformat/rtspcodes.h \
                 $(prefix)/include/ffmpeg
 
 %.o: %.c
