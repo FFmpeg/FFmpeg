@@ -1,7 +1,7 @@
 /*
  * Motion estimation 
  * Copyright (c) 2000,2001 Fabrice Bellard.
- * Copyright (c) 2002-2003 Michael Niedermayer
+ * Copyright (c) 2002-2004 Michael Niedermayer
  * 
  *
  * This library is free software; you can redistribute it and/or

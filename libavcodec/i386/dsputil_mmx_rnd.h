@@ -1,6 +1,7 @@
 /*
  * DSP utils mmx functions are compiled twice for rnd/no_rnd
  * Copyright (c) 2000, 2001 Fabrice Bellard.
+ * Copyright (c) 2003-2004 Michael Niedermayer <michaelni@gmx.at>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public

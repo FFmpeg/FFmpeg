@@ -1,6 +1,7 @@
 /*
  * MMX optimized forward DCT
  * The gcc porting is Copyright (c) 2001 Fabrice Bellard.
+ * cleanup/optimizations are Copyright (c) 2002-2004 Michael Niedermayer <michaelni@gmx.at>
  *
  * from  fdctam32.c - AP922 MMX(3D-Now) forward-DCT
  * 

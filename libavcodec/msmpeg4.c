@@ -1,6 +1,7 @@
 /*
  * MSMPEG4 backend for ffmpeg encoder and decoder
  * Copyright (c) 2001 Fabrice Bellard.
+ * Copyright (c) 2002-2004 Michael Niedermayer <michaelni@gmx.at>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
