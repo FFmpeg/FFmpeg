@@ -437,7 +437,7 @@ static int msmpeg4_pred_dc(MpegEncContext * s, int n,
        necessitate to modify mpegvideo.c. The problem comes from the
        fact they decided to store the quantized DC (which would lead
        to problems if Q could vary !) */
-#ifdef ARCH_X86
+#if defined ARCH_X86 && !defined PIC
     /* using 16bit divisions as they are large enough and 2x as fast */
     asm volatile(
         "movl %3, %%eax		\n\t"
@@ -460,9 +460,11 @@ static int msmpeg4_pred_dc(MpegEncContext * s, int n,
 	: "r" (scale)
 	: "%eax", "%edx"
     );
-#elif defined (ARCH_ALPHA)
+#else
+    /* #elif defined (ARCH_ALPHA) */
     /* Divisions are extremely costly on Alpha; optimize the most
-       common case.  */
+       common case. But they are costly everywhere...
+     */
     if (scale == 8) {
 	a = (a + (8 >> 1)) / 8;
 	b = (b + (8 >> 1)) / 8;
@@ -472,10 +474,6 @@ static int msmpeg4_pred_dc(MpegEncContext * s, int n,
 	b = (b + (scale >> 1)) / scale;
 	c = (c + (scale >> 1)) / scale;
     }
-#else
-    a = (a + (scale >> 1)) / scale;
-    b = (b + (scale >> 1)) / scale;
-    c = (c + (scale >> 1)) / scale;
 #endif
     /* XXX: WARNING: they did not choose the same test as MPEG4. This
        is very important ! */
