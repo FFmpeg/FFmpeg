@@ -1038,7 +1038,8 @@ static int mpeg_decode_mb(MpegEncContext *s,
                           DCTELEM block[12][64])
 {
     int i, j, k, cbp, val, mb_type, motion_type;
-    
+    const int mb_block_count = 4 + (1<< s->chroma_format)
+
     dprintf("decode_mb: x=%d y=%d\n", s->mb_x, s->mb_y);
 
     assert(s->mb_skiped==0);
@@ -1151,7 +1152,7 @@ static int mpeg_decode_mb(MpegEncContext *s,
 #endif
 
         if (s->codec_id == CODEC_ID_MPEG2VIDEO) {
-            for(i=0;i<4+(1<<s->chroma_format);i++) {
+            for(i=0;i<mb_block_count;i++) {
                 if (mpeg2_decode_block_intra(s, s->pblocks[i], i) < 0)
                     return -1;
             }
@@ -1335,11 +1336,9 @@ static int mpeg_decode_mb(MpegEncContext *s,
                 av_log(s->avctx, AV_LOG_ERROR, "invalid cbp at %d %d\n", s->mb_x, s->mb_y);
                 return -1;
             }
-            if(s->chroma_format == 2){//CHROMA422
-                 cbp|= ( get_bits(&s->gb,2) ) << 6;
-            }else
-            if(s->chroma_format >  2){//CHROMA444
-                 cbp|= ( get_bits(&s->gb,6) ) << 6;
+            if(mb_block_count > 6){
+	         cbp<<= mb_block_count-6;
+		 cbp |= get_bits(&s->gb, mb_block_count-6);
             }
 
 #ifdef HAVE_XVMC
@@ -1353,34 +1352,16 @@ static int mpeg_decode_mb(MpegEncContext *s,
 #endif
 
             if (s->codec_id == CODEC_ID_MPEG2VIDEO) {
-                for(i=0;i<6;i++) {
-                    if (cbp & (1<<(5-i)) ) {
+                cbp<<= 12-mb_block_count;
+
+                for(i=0;i<mb_block_count;i++) {
+                    if ( cbp & (1<<11) ) {
                         if (mpeg2_decode_block_non_intra(s, s->pblocks[i], i) < 0)
                             return -1;
                     } else {
                         s->block_last_index[i] = -1;
                     }
-                }
-                if (s->chroma_format >= 2) {
-                    if (s->chroma_format == 2) {//CHROMA_422)
-                        for(i=6;i<8;i++) {
-                            if (cbp & (1<<(6+7-i)) ) {
-                                if (mpeg2_decode_block_non_intra(s, s->pblocks[i], i) < 0)
-                                    return -1;
-                            } else {
-                                s->block_last_index[i] = -1;
-                            }
-                        }
-                    }else{ /*CHROMA_444*/
-                        for(i=6;i<12;i++) {
-                            if (cbp & (1<<(6+11-i)) ) {
-                                if (mpeg2_decode_block_non_intra(s, s->pblocks[i], i) < 0)
-                                    return -1;
-                            } else {
-                                s->block_last_index[i] = -1;
-                            }
-                        }
-                    }
+                    cbp+=cbp;
                 }
             } else {
                 for(i=0;i<6;i++) {
@@ -3013,6 +2994,8 @@ AVCodec mpeg2video_encoder = {
 static int mpeg_mc_decode_init(AVCodecContext *avctx){
     Mpeg1Context *s;
 
+    if( avctx->thread_count > 1) 
+        return -1;
     if( !(avctx->slice_flags & SLICE_FLAG_CODED_ORDER) )
         return -1;
     if( !(avctx->slice_flags & SLICE_FLAG_ALLOW_FIELD) ){

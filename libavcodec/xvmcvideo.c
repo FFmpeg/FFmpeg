@@ -55,70 +55,20 @@ xvmc_render_state_t * render;
 
 void XVMC_pack_pblocks(MpegEncContext *s, int cbp){
 int i,j;
+const int mb_block_count = 4+(1<<s->chroma_format);
 
     j=0;
-    for(i=0;i<6;i++){
-        if(cbp & (1<<(5-i)) ){
+    cbp<<= 12-mb_block_count;
+    for(i=0; i<mb_block_count; i++){
+        if(cbp & (1<<11)) {
            s->pblocks[i] = (short *)(&s->block[(j++)]);
         }else{
            s->pblocks[i] = NULL;
         }
+	cbp+=cbp;
 //        printf("s->pblocks[%d]=%p ,s->block=%p cbp=%d\n",i,s->pblocks[i],s->block,cbp);
     }
-    if (s->chroma_format >= 2){
-        if (s->chroma_format == 2){//CHROMA_422
-            for(i=6;i<8;i++){
-                if(cbp & (1<<(6+7-i)) ){
-                    s->pblocks[i] = (short *)(&s->block[(j++)]);
-                }else{
-                    s->pblocks[i] = NULL;
-                }
-            }
-        }else{//CHROMA_444
-            for(i=6; i<12; i++){
-                if(cbp & (1<<(6+11-i)) ){
-                    s->pblocks[i] = (short *)(&s->block[(j++)]);
-                }else{
-                    s->pblocks[i] = NULL;
-                }
-            }
-	}
-    }
 }
-
-static int calc_cbp(MpegEncContext *s){
-/* compute cbp */
-int  i,cbp = 0;
-    for(i=0; i<4; i++) {
-        if(s->block_last_index[i] >= 0)
-            cbp |= 1 << (5 - i);
-    }
-    if(s->flags & CODEC_FLAG_GRAY)
-         return cbp; //4 block for grayscale one done
-
-
-    for(i=4; i<6; i++) {
-        if(s->block_last_index[i] >= 0)
-            cbp |= 1 << (5 - i);
-    }
-    if(s->chroma_format <  2) return cbp;
-
-
-    if(s->chroma_format == 2){/*CHROMA_422*/
-        for(i=6; i<8; i++) {
-            if(s->block_last_index[i] >= 0)
-                cbp |= 1 << (6+7 - i);
-        }
-    }else{/*CHROMA_444*/
-        for(i=6; i<12; i++) {
-            if(s->block_last_index[i] >= 0)
-                cbp |= 1 << (6+11 - i);
-        }
-    }
-    return cbp;
-}
-
-
 
 //these functions should be called on every new field or/and frame
 //They should be safe if they are called few times for same field!
@@ -301,6 +251,14 @@ const int mb_xy = s->mb_y * s->mb_stride + s->mb_x;
         blocks_per_mb = 4 + (1 << (s->chroma_format));
     }
 
+//  calculate cbp
+    cbp = 0;
+    for(i=0; i<blocks_per_mb; i++) {
+        cbp+= cbp;
+        if(s->block_last_index[i] >= 0)
+            cbp++;
+    }
+    
     if(s->flags & CODEC_FLAG_GRAY){
         if(s->mb_intra){//intra frames are alwasy full chroma block
             for(i=4; i<blocks_per_mb; i++){
@@ -308,10 +266,11 @@ const int mb_xy = s->mb_y * s->mb_stride + s->mb_x;
                 if(!render->unsigned_intra)
                     s->pblocks[i][0] = 1<<10;
             }
-        }else
+        }else{
+            cbp&= 0xf << (blocks_per_mb - 4);
             blocks_per_mb = 4;//Luminance blocks only
+        }
     }
-    cbp = calc_cbp(s);
     mv_block->coded_block_pattern = cbp;
     if(cbp == 0)
         mv_block->macroblock_type &= ~XVMC_MB_TYPE_PATTERN;
