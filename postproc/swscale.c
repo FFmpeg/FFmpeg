@@ -671,8 +671,8 @@ static inline void initFilter(int16_t **outFilter, int16_t **filterPos, int *out
 		asm volatile("emms\n\t"::: "memory"); //FIXME this shouldnt be required but it IS (even for non mmx versions)
 #endif
 
+	// Note the +1 is for the MMXscaler which reads over the end
 	*filterPos = (int16_t*)memalign(8, (dstW+1)*sizeof(int16_t));
-	(*filterPos)[dstW]=0; // the MMX scaler will read over the end 
 
 	if(ABS(xInc - 0x10000) <10) // unscaled
 	{
@@ -962,6 +962,13 @@ static inline void initFilter(int16_t **outFilter, int16_t **filterPos, int *out
 		{
 			(*outFilter)[i*(*outFilterSize) + j]= (int)(filter[i*filterSize + j]*scale);
 		}
+	}
+	
+	(*filterPos)[dstW]= (*filterPos)[dstW-1]; // the MMX scaler will read over the end
+	for(i=0; i<*outFilterSize; i++)
+	{
+		int j= dstW*(*outFilterSize);
+		(*outFilter)[j + i]= (*outFilter)[j + i - (*outFilterSize)];
 	}
 
 	free(filter);
