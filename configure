@@ -15,6 +15,7 @@ case "$cpu" in
   ;;
 esac
 gprof="no"
+mp3lib="yes"
 
 if [ "$1" = "-h" -o "$1" = "--help" ] ; then
 cat << EOF
@@ -29,6 +30,7 @@ echo "  --cc=CC                 use C compiler CC [$cc]"
 echo "  --cpu=CPU               force cpu to CPU  [$cpu]"
 echo "  --disable-mmx           disable mmx usage"
 echo "  --enable-gprof          enable profiling with gprof [$gprof]"
+echo "  --disable-mp3lib        disable mp3 lib compiling"
 exit 1
 fi
 
@@ -43,6 +45,8 @@ for opt do
   --disable-mmx) mmx="no"
   ;;
   --enable-gprof) gprof="yes"
+  ;;
+  --disable-mp3lib) mp3lib="no"
   ;;
   esac
 done
@@ -94,5 +98,7 @@ echo "CONFIG_DECODERS=yes" >> config.mak
 echo "#define CONFIG_AC3 1" >> config.h
 echo "CONFIG_AC3=yes" >> config.mak
 
-echo "#define CONFIG_MPGLIB 1" >> config.h
-echo "CONFIG_MPGLIB=yes" >> config.mak
+if [ "$mp3lib" = "yes" ] ; then
+  echo "#define CONFIG_MPGLIB 1" >> config.h
+  echo "CONFIG_MPGLIB=yes" >> config.mak
+fi
