@@ -25,6 +25,7 @@ void dsputil_init(void);
 
 /* pixel ops : interface with DCT */
 
+extern void (*ff_idct)(DCTELEM *block);
 extern void (*get_pixels)(DCTELEM *block, const UINT8 *pixels, int line_size);
 extern void (*put_pixels_clamped)(const DCTELEM *block, UINT8 *pixels, int line_size);
 extern void (*add_pixels_clamped)(const DCTELEM *block, UINT8 *pixels, int line_size);

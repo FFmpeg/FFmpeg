@@ -179,7 +179,8 @@ typedef struct MpegEncContext {
                            DCTELEM *block, int n, int qscale);
 } MpegEncContext;
 
-extern const UINT8 zigzag_direct[64];
+//const 
+extern UINT8 zigzag_direct[64];
 
 int MPV_common_init(MpegEncContext *s);
 void MPV_common_end(MpegEncContext *s);

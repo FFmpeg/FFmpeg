@@ -634,7 +634,7 @@ static inline void put_dct(MpegEncContext *s,
 {
     if (!s->mpeg2)
         s->dct_unquantize(s, block, i, s->qscale);
-    j_rev_dct (block);
+    ff_idct (block);
     put_pixels_clamped(block, dest, line_size);
 }
 
@@ -645,7 +645,7 @@ static inline void add_dct(MpegEncContext *s,
     if (s->block_last_index[i] >= 0) {
         if (!s->mpeg2)
             s->dct_unquantize(s, block, i, s->qscale);
-        j_rev_dct (block);
+        ff_idct (block);
         add_pixels_clamped(block, dest, line_size);
     }
 }

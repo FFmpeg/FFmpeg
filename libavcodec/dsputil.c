@@ -21,6 +21,7 @@
 #include "avcodec.h"
 #include "dsputil.h"
 
+void (*ff_idct)(DCTELEM *block);
 void (*get_pixels)(DCTELEM *block, const UINT8 *pixels, int line_size);
 void (*put_pixels_clamped)(const DCTELEM *block, UINT8 *pixels, int line_size);
 void (*add_pixels_clamped)(const DCTELEM *block, UINT8 *pixels, int line_size);
@@ -363,6 +364,7 @@ void dsputil_init(void)
         squareTbl[i] = (i - 256) * (i - 256);
     }
 
+    ff_idct = j_rev_dct;
     get_pixels = get_pixels_c;
     put_pixels_clamped = put_pixels_clamped_c;
     add_pixels_clamped = add_pixels_clamped_c;

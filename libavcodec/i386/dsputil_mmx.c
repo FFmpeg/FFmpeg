@@ -29,6 +29,16 @@ int pix_abs16x16_x2_mmx(UINT8 *blk1, UINT8 *blk2, int lx, int h);
 int pix_abs16x16_y2_mmx(UINT8 *blk1, UINT8 *blk2, int lx, int h);
 int pix_abs16x16_xy2_mmx(UINT8 *blk1, UINT8 *blk2, int lx, int h);
 
+#ifdef USE_MMX_IDCT
+/* external functions, defined in libmpeg2 */
+void mmx_idct(DCTELEM *block);
+void mmxext_idct(DCTELEM *block);
+/* this should be in dsputil.h?  -- A'rpi   */
+extern UINT8 ff_alternate_horizontal_scan[64];
+extern UINT8 ff_alternate_vertical_scan[64];
+extern UINT8 zigzag_direct[64];
+#endif
+
 /* pixel operations */
 static const unsigned long long int mm_wone __attribute__ ((aligned(8))) = 0x0001000100010001;
 static const unsigned long long int mm_wtwo __attribute__ ((aligned(8))) = 0x0002000200020002;
@@ -1039,5 +1049,23 @@ void dsputil_init_mmx(void)
             sub_pixels_tab[1] = sub_pixels_x2_3dnow;
             sub_pixels_tab[2] = sub_pixels_y2_3dnow;
         }
+
+#ifdef USE_MMX_IDCT
+	/* use MMX / MMXEXT iDCT code from libmpeg2 */
+	//printf("LIBAVCODEC: Using MMX%s iDCT code\n",(mm_flags & MM_MMXEXT)?"EXT":"");
+	ff_idct = (mm_flags & MM_MMXEXT) ? mmxext_idct : mmx_idct;
+	/* the mmx/mmxext idct uses a reordered input, so we patch scan tables */
+	{   int i,j;
+	    for (i = 0; i < 64; i++) {
+		j = zigzag_direct[i];
+		zigzag_direct[i] = (j & 0x38) | ((j & 6) >> 1) | ((j & 1) << 2);
+		j = ff_alternate_horizontal_scan[i];
+		ff_alternate_horizontal_scan[i] =  (j & 0x38) | ((j & 6) >> 1) | ((j & 1) << 2);
+		j = ff_alternate_vertical_scan[i];
+		ff_alternate_vertical_scan[i] =  (j & 0x38) | ((j & 6) >> 1) | ((j & 1) << 2);
+	    }
+	}
+#endif
+
     }
 }
