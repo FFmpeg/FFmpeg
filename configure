@@ -870,7 +870,6 @@ elif test "$cpu" = "powerpc" ; then
 elif test "$cpu" = "mips" ; then
   echo "TARGET_ARCH_MIPS=yes" >> config.mak
   echo "#define ARCH_MIPS 1" >> $TMPH
-fi
 elif test "$cpu" = "sh4" ; then
   echo "TARGET_ARCH_SH4=yes" >> config.mak
   echo "#define ARCH_SH4 1" >> $TMPH

@@ -455,7 +455,10 @@ typedef struct AVCodecContext {
 
     /**
      * pixel format, see PIX_FMT_xxx.
-     * - encoding: unused
+     * - encoding: FIXME: used by ffmpeg to decide whether an pix_fmt
+     *                    conversion is in order. This only works for
+     *                    codecs with one supported pix_fmt, we should
+     *                    do something for a generic case as well.
      * - decoding: set by lavc.
      */
     enum PixelFormat pix_fmt;

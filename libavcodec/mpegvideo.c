@@ -540,6 +540,8 @@ int MPV_encode_init(AVCodecContext *avctx)
     int i;
     int chroma_h_shift, chroma_v_shift;
 
+    avctx->pix_fmt = PIX_FMT_YUV420P; // FIXME
+
     s->bit_rate = avctx->bit_rate;
     s->bit_rate_tolerance = avctx->bit_rate_tolerance;
     s->width = avctx->width;
@@ -1515,6 +1517,7 @@ static void select_input_picture(MpegEncContext *s){
             pic->quality   = s->reordered_input_picture[0]->quality;
             pic->coded_picture_number = s->reordered_input_picture[0]->coded_picture_number;
             pic->reference = s->reordered_input_picture[0]->reference;
+	    pic->pts = s->reordered_input_picture[0]->pts;
             
             alloc_picture(s, pic, 0);
 

@@ -2035,7 +2035,7 @@ static int slice_end(AVCodecContext *avctx, AVFrame *pict)
     Mpeg1Context *s1 = avctx->priv_data;
     MpegEncContext *s = &s1->mpeg_enc_ctx;
        
-    if (!s1->mpeg_enc_ctx_allocated)
+    if (!s1->mpeg_enc_ctx_allocated || !s->current_picture_ptr)
         return 0;
 
 #ifdef HAVE_XVMC
