@@ -2826,7 +2826,16 @@ static int decode_slice_header(H264Context *h){
         return -1;
     }
     h->pps= h->pps_buffer[pps_id];
+    if(h->pps.slice_group_count == 0){
+        fprintf(stderr, "non existing PPS referenced\n");
+        return -1;
+    }
+
     h->sps= h->sps_buffer[ h->pps.sps_id ];
+    if(h->sps.log2_max_frame_num == 0){
+        fprintf(stderr, "non existing SPS referenced\n");
+        return -1;
+    }
     
     s->mb_width= h->sps.mb_width;
     s->mb_height= h->sps.mb_height;
@@ -4035,8 +4044,8 @@ static int decode_nal_units(H264Context *h, uint8_t *buf, int buf_size){
         case NAL_DPC:
             init_get_bits(&h->inter_gb, ptr, bit_length);
             h->inter_gb_ptr= &h->inter_gb;
-            
-            if(h->redundant_pic_count==0)
+
+            if(h->redundant_pic_count==0 && h->intra_gb_ptr && s->data_partitioning)
                 decode_slice(h);
             break;
         case NAL_SEI:
@@ -4066,6 +4075,8 @@ static int decode_nal_units(H264Context *h, uint8_t *buf, int buf_size){
         s->current_picture.pict_type= s->pict_type;
         s->current_picture.key_frame= s->pict_type == I_TYPE;
     }
+    
+    if(!s->current_picture_ptr) return buf_index; //no frame
     
     h->prev_frame_num_offset= h->frame_num_offset;
     h->prev_frame_num= h->frame_num;
@@ -4147,21 +4158,14 @@ static int decode_frame(AVCodecContext *avctx,
         *pict= *(AVFrame*)&s->last_picture;
     }
 #endif
+    if(!s->current_picture_ptr){
+        fprintf(stderr, "error, NO frame\n");
+        return -1;
+    }
+
     *pict= *(AVFrame*)&s->current_picture; //FIXME 
     assert(pict->data[0]);
 //printf("out %d\n", (int)pict->data[0]);
-    if(avctx->debug&FF_DEBUG_QP){
-        int8_t *qtab= pict->qscale_table;
-        int x,y;
-        
-        for(y=0; y<s->mb_height; y++){
-            for(x=0; x<s->mb_width; x++){
-                printf("%2d ", qtab[x + y*s->mb_width]);
-            }
-            printf("\n");
-        }
-        printf("\n");
-    }
 #if 0 //?
 
     /* Return the Picture timestamp as the frame number */
