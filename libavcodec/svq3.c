@@ -287,7 +287,7 @@ static inline void svq3_mc_dir_part (MpegEncContext *s, int x, int y,
   src  = s->last_picture.data[0] + mx + my*s->linesize;
 
   if (emu) {
-    ff_emulated_edge_mc (s, src, s->linesize, (width + 1), (height + 1),
+    ff_emulated_edge_mc(s->edge_emu_buffer, src, s->linesize, (width + 1), (height + 1),
 			 mx, my, s->h_edge_pos, s->v_edge_pos);
     src = s->edge_emu_buffer;
   }
@@ -308,7 +308,7 @@ static inline void svq3_mc_dir_part (MpegEncContext *s, int x, int y,
       src  = s->last_picture.data[i] + mx + my*s->uvlinesize;
 
       if (emu) {
-	ff_emulated_edge_mc (s, src, s->uvlinesize, (width + 1), (height + 1),
+	ff_emulated_edge_mc(s->edge_emu_buffer, src, s->uvlinesize, (width + 1), (height + 1),
 			     mx, my, (s->h_edge_pos >> 1), (s->v_edge_pos >> 1));
 	src = s->edge_emu_buffer;
       }

@@ -708,7 +708,7 @@ void ff_copy_bits(PutBitContext *pb, uint8_t *src, int length);
 void ff_clean_intra_table_entries(MpegEncContext *s);
 void ff_init_scantable(uint8_t *, ScanTable *st, const uint8_t *src_scantable);
 void ff_draw_horiz_band(MpegEncContext *s, int y, int h);
-void ff_emulated_edge_mc(MpegEncContext *s, uint8_t *src, int linesize, int block_w, int block_h, 
+void ff_emulated_edge_mc(uint8_t *buf, uint8_t *src, int linesize, int block_w, int block_h, 
                                     int src_x, int src_y, int w, int h);
 #define END_NOT_FOUND -100
 int ff_combine_frame( MpegEncContext *s, int next, uint8_t **buf, int *buf_size);
@@ -877,7 +877,7 @@ void ff_wmv2_encode_mb(MpegEncContext * s,
                        DCTELEM block[6][64],
                        int motion_x, int motion_y);
 
-/* mjpegenc.c */
+/* mjpeg.c */
 int mjpeg_init(MpegEncContext *s);
 void mjpeg_close(MpegEncContext *s);
 void mjpeg_encode_mb(MpegEncContext *s, 
