@@ -587,6 +587,7 @@ void ff_mpeg4_init_partitions(MpegEncContext *s);
 void ff_mpeg4_merge_partitions(MpegEncContext *s);
 extern inline int ff_mpeg4_pred_dc(MpegEncContext * s, int n, UINT16 **dc_val_ptr, int *dir_ptr);
 void ff_clean_mpeg4_qscales(MpegEncContext *s);
+void ff_clean_h263_qscales(MpegEncContext *s);
 
 /* rv10.c */
 void rv10_encode_picture_header(MpegEncContext *s, int picture_number);

@@ -332,9 +332,8 @@ static inline int decide_ac_pred(MpegEncContext * s, DCTELEM block[6][64], int d
     return score0 > score1 ? 1 : 0;    
 }
 
-void ff_clean_mpeg4_qscales(MpegEncContext *s){
+void ff_clean_h263_qscales(MpegEncContext *s){
     int i;
-    /* more braindead iso mpeg mess */
     
     for(i=1; i<s->mb_num; i++){
         if(s->qscale_table[i] - s->qscale_table[i-1] >2)
@@ -344,6 +343,12 @@ void ff_clean_mpeg4_qscales(MpegEncContext *s){
         if(s->qscale_table[i] - s->qscale_table[i+1] >2)
             s->qscale_table[i]= s->qscale_table[i+1]+2;
     }
+}
+
+void ff_clean_mpeg4_qscales(MpegEncContext *s){
+    int i;
+    
+    ff_clean_h263_qscales(s);
     
     for(i=1; i<s->mb_num; i++){
         if(s->qscale_table[i] != s->qscale_table[i-1] && (s->mb_type[i]&MB_TYPE_INTER4V)){
@@ -743,6 +748,7 @@ void h263_encode_mb(MpegEncContext * s,
     INT16 pred_dc;
     INT16 rec_intradc[6];
     UINT16 *dc_ptr[6];
+    const int dquant_code[5]= {1,0,9,2,3};
            
     //printf("**mb x=%d y=%d\n", s->mb_x, s->mb_y);
     if (!s->mb_intra) {
@@ -752,19 +758,22 @@ void h263_encode_mb(MpegEncContext * s,
             if (s->block_last_index[i] >= 0)
                 cbp |= 1 << (5 - i);
         }
-        if ((cbp | motion_x | motion_y) == 0) {
+        if ((cbp | motion_x | motion_y | s->dquant) == 0) {
             /* skip macroblock */
             put_bits(&s->pb, 1, 1);
             return;
         }
         put_bits(&s->pb, 1, 0);	/* mb coded */
         cbpc = cbp & 3;
+        if(s->dquant) cbpc+= 8;
         put_bits(&s->pb,
 		    inter_MCBPC_bits[cbpc],
 		    inter_MCBPC_code[cbpc]);
         cbpy = cbp >> 2;
         cbpy ^= 0xf;
         put_bits(&s->pb, cbpy_tab[cbpy][1], cbpy_tab[cbpy][0]);
+        if(s->dquant)
+            put_bits(&s->pb, 2, dquant_code[s->dquant+2]);
 
         /* motion vectors: 16x16 mode only now */
         h263_pred_motion(s, 0, &pred_x, &pred_y);
@@ -828,10 +837,12 @@ void h263_encode_mb(MpegEncContext * s,
 
         cbpc = cbp & 3;
         if (s->pict_type == I_TYPE) {
+            if(s->dquant) cbpc+=4;
             put_bits(&s->pb,
                 intra_MCBPC_bits[cbpc],
                 intra_MCBPC_code[cbpc]);
         } else {
+            if(s->dquant) cbpc+=8;
             put_bits(&s->pb, 1, 0);	/* mb coded */
             put_bits(&s->pb,
                 inter_MCBPC_bits[cbpc + 4],
@@ -843,6 +854,8 @@ void h263_encode_mb(MpegEncContext * s,
         }
         cbpy = cbp >> 2;
         put_bits(&s->pb, cbpy_tab[cbpy][1], cbpy_tab[cbpy][0]);
+        if(s->dquant)
+            put_bits(&s->pb, 2, dquant_code[s->dquant+2]);
     }
 
     for(i=0; i<6; i++) {

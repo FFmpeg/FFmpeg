@@ -2190,12 +2190,19 @@ static void encode_picture(MpegEncContext *s, int picture_number)
     else
         s->frame_qscale = ff_rate_estimate_qscale(s);
 
-    if(s->adaptive_quant && s->codec_id==CODEC_ID_MPEG4)
-        ff_clean_mpeg4_qscales(s);
-    
-    if(s->adaptive_quant)
+    if(s->adaptive_quant){
+        switch(s->codec_id){
+        case CODEC_ID_MPEG4:
+            ff_clean_mpeg4_qscales(s);
+            break;
+        case CODEC_ID_H263:
+        case CODEC_ID_H263P:
+            ff_clean_h263_qscales(s);
+            break;
+        }
+
         s->qscale= s->qscale_table[0];
-    else
+    }else
         s->qscale= (int)(s->frame_qscale + 0.5);
         
     if (s->out_format == FMT_MJPEG) {
