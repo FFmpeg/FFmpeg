@@ -3672,7 +3672,7 @@ static void opt_target(const char *arg)
 
         opt_video_codec("mpeg2video");
         opt_audio_codec("ac3");
-        opt_format("vob");
+        opt_format("dvd");
 
         opt_frame_size(norm ? "720x480" : "720x576");
         opt_gop_size(norm ? "18" : "15");

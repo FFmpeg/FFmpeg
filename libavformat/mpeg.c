@@ -60,6 +60,7 @@ typedef struct {
     int is_mpeg2;
     int is_vcd;
     int is_svcd;
+    int is_dvd;
     int64_t last_scr; /* current system clock */
 
     double vcd_padding_bitrate; //FIXME floats
@@ -94,6 +95,7 @@ static AVOutputFormat mpeg1system_mux;
 static AVOutputFormat mpeg1vcd_mux;
 static AVOutputFormat mpeg2vob_mux;
 static AVOutputFormat mpeg2svcd_mux;
+static AVOutputFormat mpeg2dvd_mux;
 
 static int put_pack_header(AVFormatContext *ctx, 
                            uint8_t *buf, int64_t timestamp)
@@ -251,7 +253,8 @@ static int mpeg_mux_init(AVFormatContext *ctx)
     s->packet_number = 0;
     s->is_vcd = (ctx->oformat == &mpeg1vcd_mux);
     s->is_svcd = (ctx->oformat == &mpeg2svcd_mux);
-    s->is_mpeg2 = (ctx->oformat == &mpeg2vob_mux || ctx->oformat == &mpeg2svcd_mux);
+    s->is_mpeg2 = (ctx->oformat == &mpeg2vob_mux || ctx->oformat == &mpeg2svcd_mux || ctx->oformat == &mpeg2dvd_mux);
+    s->is_dvd = (ctx->oformat == &mpeg2dvd_mux);
     
     if (s->is_vcd || s->is_svcd)
         s->packet_size = 2324; /* VCD/SVCD packet size */
@@ -1512,7 +1515,19 @@ static AVOutputFormat mpeg2svcd_mux = {
     mpeg_mux_end,
 };
 
-
+/*  Same as mpeg2vob_mux except the 'is_dvd' flag is set to produce NAV pkts */
+static AVOutputFormat mpeg2dvd_mux = {
+    "dvd",
+    "MPEG2 PS format (DVD VOB)",
+    "video/mpeg",
+    "dvd",
+    sizeof(MpegMuxContext),
+    CODEC_ID_MP2,
+    CODEC_ID_MPEG2VIDEO,
+    mpeg_mux_init,
+    mpeg_mux_write_packet,
+    mpeg_mux_end,
+};
 
 #endif //CONFIG_ENCODERS
 
@@ -1535,6 +1550,7 @@ int mpegps_init(void)
     av_register_output_format(&mpeg1vcd_mux);
     av_register_output_format(&mpeg2vob_mux);
     av_register_output_format(&mpeg2svcd_mux);
+    av_register_output_format(&mpeg2dvd_mux);
 #endif //CONFIG_ENCODERS
     av_register_input_format(&mpegps_demux);
     return 0;
