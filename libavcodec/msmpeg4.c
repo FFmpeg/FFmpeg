@@ -882,15 +882,15 @@ static void msmpeg4_encode_dc(MpegEncContext * s, int level, int n, int *dir_ptr
 
         if (s->dc_table_index == 0) {
             if (n < 4) {
-                put_bits(&s->pb, table0_dc_lum[code][1], table0_dc_lum[code][0]);
+                put_bits(&s->pb, ff_table0_dc_lum[code][1], ff_table0_dc_lum[code][0]);
             } else {
-                put_bits(&s->pb, table0_dc_chroma[code][1], table0_dc_chroma[code][0]);
+                put_bits(&s->pb, ff_table0_dc_chroma[code][1], ff_table0_dc_chroma[code][0]);
             }
         } else {
             if (n < 4) {
-                put_bits(&s->pb, table1_dc_lum[code][1], table1_dc_lum[code][0]);
+                put_bits(&s->pb, ff_table1_dc_lum[code][1], ff_table1_dc_lum[code][0]);
             } else {
-                put_bits(&s->pb, table1_dc_chroma[code][1], table1_dc_chroma[code][0]);
+                put_bits(&s->pb, ff_table1_dc_chroma[code][1], ff_table1_dc_chroma[code][0]);
             }
         }
             
@@ -1122,17 +1122,17 @@ int ff_msmpeg4_decode_init(MpegEncContext *s)
         }
 
         init_vlc(&dc_lum_vlc[0], DC_VLC_BITS, 120, 
-                 &table0_dc_lum[0][1], 8, 4,
-                 &table0_dc_lum[0][0], 8, 4, 1);
+                 &ff_table0_dc_lum[0][1], 8, 4,
+                 &ff_table0_dc_lum[0][0], 8, 4, 1);
         init_vlc(&dc_chroma_vlc[0], DC_VLC_BITS, 120, 
-                 &table0_dc_chroma[0][1], 8, 4,
-                 &table0_dc_chroma[0][0], 8, 4, 1);
+                 &ff_table0_dc_chroma[0][1], 8, 4,
+                 &ff_table0_dc_chroma[0][0], 8, 4, 1);
         init_vlc(&dc_lum_vlc[1], DC_VLC_BITS, 120, 
-                 &table1_dc_lum[0][1], 8, 4,
-                 &table1_dc_lum[0][0], 8, 4, 1);
+                 &ff_table1_dc_lum[0][1], 8, 4,
+                 &ff_table1_dc_lum[0][0], 8, 4, 1);
         init_vlc(&dc_chroma_vlc[1], DC_VLC_BITS, 120, 
-                 &table1_dc_chroma[0][1], 8, 4,
-                 &table1_dc_chroma[0][0], 8, 4, 1);
+                 &ff_table1_dc_chroma[0][1], 8, 4,
+                 &ff_table1_dc_chroma[0][0], 8, 4, 1);
     
         init_vlc(&v2_dc_lum_vlc, DC_VLC_BITS, 512, 
                  &v2_dc_lum_table[0][1], 8, 4,

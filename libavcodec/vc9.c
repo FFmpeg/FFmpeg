@@ -26,13 +26,14 @@
  *
  * TODO: Norm-6 bitplane imode, most AP stuff, optimize, all of MB layer :)
  * TODO: use MPV_ !!
- * TODO: export decode012 in bitstream.h ?
  */
 #include "common.h"
 #include "dsputil.h"
 #include "avcodec.h"
 #include "mpegvideo.h"
 #include "vc9data.h"
+extern const uint32_t ff_table0_dc_lum[120][2], ff_table1_dc_lum[120][2];
+extern const uint32_t ff_table0_dc_chroma[120][2], ff_table1_dc_chroma[120][2];
 
 /* Some inhibiting stuff */
 #define HAS_ADVANCED_PROFILE   1
@@ -139,9 +140,8 @@ static VLC vc9_cbpcy_i_vlc;
 static VLC vc9_cbpcy_p_vlc[4];
 #define VC9_4MV_BLOCK_PATTERN_VLC_BITS 6
 static VLC vc9_4mv_block_pattern_vlc[4];
-#define VC9_LUMA_DC_VLC_BITS 9
+#define VC9_DC_VLC_BITS 9
 static VLC vc9_luma_dc_vlc[2];
-#define VC9_CHROMA_DC_VLC_BITS 9
 static VLC vc9_chroma_dc_vlc[2];
 
 //We mainly need data and is_raw, so this struct could be avoided
@@ -345,15 +345,18 @@ static int init_common(VC9Context *v)
         INIT_VLC(&vc9_imode_vlc, VC9_IMODE_VLC_BITS, 7,
                  vc9_imode_bits, 1, 1,
                  vc9_imode_codes, 1, 1, 1);
-        for (i=0; i<2; i++)
-        {
-            INIT_VLC(&vc9_luma_dc_vlc[i], VC9_LUMA_DC_VLC_BITS, 26,
-                     vc9_luma_dc_bits[i], 1, 1,
-                     vc9_luma_dc_codes[i], 4, 4, 1);
-            INIT_VLC(&vc9_chroma_dc_vlc[i], VC9_CHROMA_DC_VLC_BITS, 26,
-                     vc9_chroma_dc_bits[i], 1, 1,
-                     vc9_chroma_dc_codes[i], 4, 4, 1);
-        }
+        INIT_VLC(&vc9_luma_dc_vlc[0], VC9_DC_VLC_BITS, 120, 
+                 &ff_table0_dc_lum[0][1], 8, 4,
+                 &ff_table0_dc_lum[0][0], 8, 4, 1);
+        INIT_VLC(&vc9_chroma_dc_vlc[0], VC9_DC_VLC_BITS, 120, 
+                 &ff_table0_dc_chroma[0][1], 8, 4,
+                 &ff_table0_dc_chroma[0][0], 8, 4, 1);
+        INIT_VLC(&vc9_luma_dc_vlc[1], VC9_DC_VLC_BITS, 120, 
+                 &ff_table1_dc_lum[0][1], 8, 4,
+                 &ff_table1_dc_lum[0][0], 8, 4, 1);
+        INIT_VLC(&vc9_chroma_dc_vlc[1], VC9_DC_VLC_BITS, 120, 
+                 &ff_table1_dc_chroma[0][1], 8, 4,
+                 &ff_table1_dc_chroma[0][0], 8, 4, 1);
         for (i=0; i<3; i++)
         {
             INIT_VLC(&vc9_ttmb_vlc[i], VC9_TTMB_VLC_BITS, 16,
@@ -1373,7 +1376,7 @@ int decode_luma_intra_block(VC9Context *v, int mquant)
     int dcdiff;
 
     dcdiff = get_vlc2(&v->gb, v->luma_dc_vlc->table,
-                      VC9_LUMA_DC_VLC_BITS, 2);
+                      VC9_DC_VLC_BITS, 2);
     if (dcdiff)
     {
         if (dcdiff == 119 /* ESC index value */)
