@@ -1874,7 +1874,7 @@ int MPV_encode_picture(AVCodecContext *avctx,
 
         assert(s->repeat_first_field==0 && s->avctx->repeat_pic==0);
         
-        vbv_delay= lrint(90000 * s->rc_context.buffer_index / s->avctx->rc_max_rate);
+        vbv_delay= lrintf(90000 * s->rc_context.buffer_index / s->avctx->rc_max_rate);
         assert(vbv_delay < 0xFFFF);
 
         s->vbv_delay_ptr[0] &= 0xF8;
