@@ -2814,7 +2814,8 @@ static void RENAME(postProcess)(uint8_t src[], int srcStride, uint8_t dst[], int
 		|| (mode & LOWPASS5_DEINT_FILTER)) copyAhead=14;
 	else if(   (mode & V_DEBLOCK)
 		|| (mode & LINEAR_IPOL_DEINT_FILTER)
-		|| (mode & MEDIAN_DEINT_FILTER)) copyAhead=13;
+		|| (mode & MEDIAN_DEINT_FILTER)
+		|| (mode & V_A_DEBLOCK)) copyAhead=13;
 	else if(mode & V_X1_FILTER) copyAhead=11;
 //	else if(mode & V_RK1_FILTER) copyAhead=10;
 	else if(mode & DERING) copyAhead=9;
@@ -3110,6 +3111,8 @@ static void RENAME(postProcess)(uint8_t src[], int srcStride, uint8_t dst[], int
 						RENAME(doVertLowPass)(dstBlock, stride, &c);
 					else if(t==2)
 						RENAME(doVertDefFilter)(dstBlock, stride, &c);
+				}else if(mode & V_A_DEBLOCK){
+					do_a_deblock(dstBlock, stride, 1, &c);
 				}
 			}
 
@@ -3131,6 +3134,8 @@ static void RENAME(postProcess)(uint8_t src[], int srcStride, uint8_t dst[], int
 						RENAME(doVertLowPass)(tempBlock1, 16, &c);
 					else if(t==2)
 						RENAME(doVertDefFilter)(tempBlock1, 16, &c);
+				}else if(mode & H_A_DEBLOCK){
+					do_a_deblock(tempBlock1, 16, 1, &c);
 				}
 
 				RENAME(transpose2)(dstBlock-4, dstStride, tempBlock1 + 4*16);
@@ -3146,6 +3151,8 @@ static void RENAME(postProcess)(uint8_t src[], int srcStride, uint8_t dst[], int
 						RENAME(doHorizLowPass)(dstBlock-4, stride, &c);
 					else if(t==2)
 						RENAME(doHorizDefFilter)(dstBlock-4, stride, &c);
+				}else if(mode & H_A_DEBLOCK){
+					do_a_deblock(dstBlock-8, 1, stride, &c);
 				}
 #endif
 				if(mode & DERING)

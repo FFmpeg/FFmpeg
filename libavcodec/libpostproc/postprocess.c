@@ -108,8 +108,10 @@ try to unroll inner for(x=0 ... loop to avoid these damn if(x ... checks
 
 #if defined(__GNUC__) && (__GNUC__ > 3 || __GNUC__ == 3 && __GNUC_MINOR__ > 0)
 #    define attribute_used __attribute__((used))
+#    define always_inline __attribute__((always_inline)) inline
 #else
 #    define attribute_used
+#    define always_inline inline
 #endif
 
 #ifdef ARCH_X86
@@ -121,7 +123,6 @@ static uint64_t __attribute__((aligned(8))) attribute_used b02= 		0x020202020202
 static uint64_t __attribute__((aligned(8))) attribute_used b08= 		0x0808080808080808LL;
 static uint64_t __attribute__((aligned(8))) attribute_used b80= 		0x8080808080808080LL;
 #endif
-
 
 static uint8_t clip_table[3*256];
 static uint8_t * const clip_tab= clip_table + 256;
@@ -139,6 +140,8 @@ static struct PPFilter filters[]=
 	{"vr", "rkvdeblock", 		1, 2, 4, V_RK1_FILTER},*/
 	{"h1", "x1hdeblock", 		1, 1, 3, H_X1_FILTER},
 	{"v1", "x1vdeblock", 		1, 2, 4, V_X1_FILTER},
+	{"ha", "ahdeblock", 		1, 1, 3, H_A_DEBLOCK},
+	{"va", "avdeblock", 		1, 2, 4, V_A_DEBLOCK},
 	{"dr", "dering", 		1, 5, 6, DERING},
 	{"al", "autolevels", 		0, 1, 2, LEVEL_FIX},
 	{"lb", "linblenddeint", 	1, 1, 4, LINEAR_BLEND_DEINT_FILTER},
@@ -154,10 +157,11 @@ static struct PPFilter filters[]=
 
 static char *replaceTable[]=
 {
-	"default", 	"hdeblock:a,vdeblock:a,dering:a,autolevels,tmpnoise:a:150:200:400",
-	"de", 		"hdeblock:a,vdeblock:a,dering:a,autolevels,tmpnoise:a:150:200:400",
-	"fast", 	"x1hdeblock:a,x1vdeblock:a,dering:a,autolevels,tmpnoise:a:150:200:400",
-	"fa", 		"x1hdeblock:a,x1vdeblock:a,dering:a,autolevels,tmpnoise:a:150:200:400",
+	"default", 	"hdeblock:a,vdeblock:a,dering:a",
+	"de", 		"hdeblock:a,vdeblock:a,dering:a",
+	"fast", 	"x1hdeblock:a,x1vdeblock:a,dering:a",
+	"fa", 		"x1hdeblock:a,x1vdeblock:a,dering:a",
+	"ac", 		"ha:a:128:7,va:a,dering:a",
 	NULL //End Marker
 };
 
@@ -469,6 +473,111 @@ static inline void horizX1Filter(uint8_t *src, int stride, int QP)
 	}
 }
 
+/**
+ * accurate deblock filter
+ */
+static always_inline void do_a_deblock(uint8_t *src, int step, int stride, PPContext *c){
+	int y;
+	const int QP= c->QP;
+	const int dcOffset= ((c->nonBQP*c->ppMode.baseDcDiff)>>8) + 1;
+	const int dcThreshold= dcOffset*2 + 1;
+//START_TIMER
+	src+= step*4; // src points to begin of the 8x8 Block
+	for(y=0; y<8; y++){
+		int numEq= 0;
+
+		if(((unsigned)(src[-1*step] - src[0*step] + dcOffset)) < dcThreshold) numEq++;
+		if(((unsigned)(src[ 0*step] - src[1*step] + dcOffset)) < dcThreshold) numEq++;
+		if(((unsigned)(src[ 1*step] - src[2*step] + dcOffset)) < dcThreshold) numEq++;
+		if(((unsigned)(src[ 2*step] - src[3*step] + dcOffset)) < dcThreshold) numEq++;
+		if(((unsigned)(src[ 3*step] - src[4*step] + dcOffset)) < dcThreshold) numEq++;
+		if(((unsigned)(src[ 4*step] - src[5*step] + dcOffset)) < dcThreshold) numEq++;
+		if(((unsigned)(src[ 5*step] - src[6*step] + dcOffset)) < dcThreshold) numEq++;
+		if(((unsigned)(src[ 6*step] - src[7*step] + dcOffset)) < dcThreshold) numEq++;
+		if(((unsigned)(src[ 7*step] - src[8*step] + dcOffset)) < dcThreshold) numEq++;
+		if(numEq > c->ppMode.flatnessThreshold){
+			int min, max, x;
+			
+			if(src[0] > src[step]){
+			    max= src[0];
+			    min= src[step];
+			}else{
+			    max= src[step];
+			    min= src[0];
+			}
+			for(x=2; x<8; x+=2){
+				if(src[x*step] > src[(x+1)*step]){
+					if(src[x    *step] > max) max= src[ x   *step];
+					if(src[(x+1)*step] < min) min= src[(x+1)*step];
+				}else{
+					if(src[(x+1)*step] > max) max= src[(x+1)*step];
+					if(src[ x   *step] < min) min= src[ x   *step];
+				}
+			}
+			if(max-min < 2*QP){
+				const int first= ABS(src[-1*step] - src[0]) < QP ? src[-1*step] : src[0];
+				const int last= ABS(src[8*step] - src[7*step]) < QP ? src[8*step] : src[7*step];
+				
+				int sums[10];
+				sums[0] = 4*first + src[0*step] + src[1*step] + src[2*step] + 4;
+				sums[1] = sums[0] - first       + src[3*step];
+				sums[2] = sums[1] - first       + src[4*step];
+				sums[3] = sums[2] - first       + src[5*step];
+				sums[4] = sums[3] - first       + src[6*step];
+				sums[5] = sums[4] - src[0*step] + src[7*step];
+				sums[6] = sums[5] - src[1*step] + last;
+				sums[7] = sums[6] - src[2*step] + last;
+				sums[8] = sums[7] - src[3*step] + last;
+				sums[9] = sums[8] - src[4*step] + last;
+
+				src[0*step]= (sums[0] + sums[2] + 2*src[0*step])>>4;
+				src[1*step]= (sums[1] + sums[3] + 2*src[1*step])>>4;
+				src[2*step]= (sums[2] + sums[4] + 2*src[2*step])>>4;
+				src[3*step]= (sums[3] + sums[5] + 2*src[3*step])>>4;
+				src[4*step]= (sums[4] + sums[6] + 2*src[4*step])>>4;
+				src[5*step]= (sums[5] + sums[7] + 2*src[5*step])>>4;
+				src[6*step]= (sums[6] + sums[8] + 2*src[6*step])>>4;
+				src[7*step]= (sums[7] + sums[9] + 2*src[7*step])>>4;
+			}
+		}else{
+			const int middleEnergy= 5*(src[4*step] - src[3*step]) + 2*(src[2*step] - src[5*step]);
+
+			if(ABS(middleEnergy) < 8*QP)
+			{
+				const int q=(src[3*step] - src[4*step])/2;
+				const int leftEnergy=  5*(src[2*step] - src[1*step]) + 2*(src[0*step] - src[3*step]);
+				const int rightEnergy= 5*(src[6*step] - src[5*step]) + 2*(src[4*step] - src[7*step]);
+
+				int d= ABS(middleEnergy) - MIN( ABS(leftEnergy), ABS(rightEnergy) );
+				d= MAX(d, 0);
+	
+				d= (5*d + 32) >> 6;
+				d*= SIGN(-middleEnergy);
+	
+				if(q>0)
+				{
+					d= d<0 ? 0 : d;
+					d= d>q ? q : d;
+				}
+				else
+				{
+					d= d>0 ? 0 : d;
+					d= d<q ? q : d;
+				}
+	
+				src[3*step]-= d;
+				src[4*step]+= d;
+			}
+		}
+
+		src += stride;
+	}
+/*if(step==16){
+    STOP_TIMER("step16")
+}else{
+    STOP_TIMER("stepX")
+}*/
+}
 
 //Note: we have C, MMX, MMX2, 3DNOW version there is no 3DNOW+MMX2 one
 //Plain C versions
@@ -632,6 +741,8 @@ char *pp_help=
 "			the h & v deblocking filters share these\n"
 "			so you can't set different thresholds for h / v\n"
 "vb	vdeblock	(2 threshold)		vertical deblocking filter\n"
+"ha	hadeblock	(2 threshold)		horizontal deblocking filter\n"
+"va	vadeblock	(2 threshold)		vertical deblocking filter\n"
 "h1	x1hdeblock				experimental h deblock filter 1\n"
 "v1	x1vdeblock				experimental v deblock filter 1\n"
 "dr	dering					deringing filter\n"
@@ -642,8 +753,8 @@ char *pp_help=
 "ci	cubicipoldeint				cubic interpolating deinterlacer\n"
 "md	mediandeint				median deinterlacer\n"
 "fd	ffmpegdeint				ffmpeg deinterlacer\n"
-"de	default					hb:a,vb:a,dr:a,al\n"
-"fa	fast					h1:a,v1:a,dr:a,al\n"
+"de	default					hb:a,vb:a,dr:a\n"
+"fa	fast					h1:a,v1:a,dr:a\n"
 "tn	tmpnoise	(3 threshold)		temporal noise reducer\n"
 "			1. <= 2. <= 3.		larger -> stronger filtering\n"
 "fq	forceQuant	<quantizer>		force quantizer\n"
@@ -793,7 +904,8 @@ pp_mode_t *pp_get_mode_by_name_and_quality(char *name, int quality)
 						}
 					}
 				}
-				else if(filters[i].mask == V_DEBLOCK || filters[i].mask == H_DEBLOCK)
+				else if(filters[i].mask == V_DEBLOCK   || filters[i].mask == H_DEBLOCK 
+				     || filters[i].mask == V_A_DEBLOCK || filters[i].mask == H_A_DEBLOCK)
 				{
 					int o;
 
