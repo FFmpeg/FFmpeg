@@ -618,17 +618,17 @@ static void do_video_out(AVFormatContext *s,
         else if (vdelta > 1.1)
             nb_frames = 2;
 //fprintf(stderr, "vdelta:%f, ost->sync_opts:%lld, ost->sync_ipts:%f nb_frames:%d\n", vdelta, ost->sync_opts, ost->sync_ipts, nb_frames);
-    }
-    if (nb_frames == 0){
-        ++nb_frames_drop;
-        if (verbose>2)
-            fprintf(stderr, "*** drop!\n");
-    }else if (nb_frames == 2) {
-        ++nb_frames_dup;
-        if (verbose>2)
-            fprintf(stderr, "*** dup!\n");
-    }
-    ost->sync_opts+= nb_frames;
+        if (nb_frames == 0){
+            ++nb_frames_drop;
+            if (verbose>2)
+                fprintf(stderr, "*** drop!\n");
+        }else if (nb_frames == 2) {
+            ++nb_frames_dup;
+            if (verbose>2)
+                fprintf(stderr, "*** dup!\n");
+        }
+    }else
+        ost->sync_opts= lrintf(ost->sync_ipts * enc->frame_rate / enc->frame_rate_base);
 
     if (nb_frames <= 0) 
         return;
@@ -811,7 +811,9 @@ static void do_video_out(AVFormatContext *s,
                 big_picture.quality = ost->st->quality;
             if(!me_threshold)
                 big_picture.pict_type = 0;
-            big_picture.pts = AV_NOPTS_VALUE; //FIXME
+//            big_picture.pts = AV_NOPTS_VALUE;
+            big_picture.pts= av_rescale(ost->sync_opts, AV_TIME_BASE*(int64_t)enc->frame_rate_base, enc->frame_rate);
+//av_log(NULL, AV_LOG_DEBUG, "%lld -> encoder\n", ost->sync_opts);
             ret = avcodec_encode_video(enc, 
                                        video_buffer, VIDEO_BUFFER_SIZE,
                                        &big_picture);
@@ -821,6 +823,10 @@ static void do_video_out(AVFormatContext *s,
                 pkt.size= ret;
                 if(enc->coded_frame)
                     pkt.pts= enc->coded_frame->pts;
+/*av_log(NULL, AV_LOG_DEBUG, "encoder -> %lld/%lld\n", 
+   pkt.pts != AV_NOPTS_VALUE ? av_rescale(pkt.pts, enc->frame_rate, AV_TIME_BASE*(int64_t)enc->frame_rate_base) : -1,
+   pkt.dts != AV_NOPTS_VALUE ? av_rescale(pkt.dts, enc->frame_rate, AV_TIME_BASE*(int64_t)enc->frame_rate_base) : -1);*/
+
                 if(enc->coded_frame && enc->coded_frame->key_frame)
                     pkt.flags |= PKT_FLAG_KEY;
                 av_interleaved_write_frame(s, &pkt);
@@ -834,6 +840,7 @@ static void do_video_out(AVFormatContext *s,
                 }
             }
         }
+        ost->sync_opts++;
         ost->frame_number++;
     }
  the_end:
