@@ -41,7 +41,7 @@ typedef struct vlc_code_s {
 		 length	:6;
 } vlc_code_t;
 
-#define MEDIAN(a,b,c)	((a < b != b >= c) ? b : ((a < c != c > b) ? c : a))
+#define MEDIAN(a,b,c)	(((a < b) != (b >= c)) ? b : (((a < c) != (c > b)) ? c : a))
 
 #define SVQ1_BLOCK_SKIP		0
 #define SVQ1_BLOCK_INTER	1
