@@ -1532,8 +1532,13 @@ static inline void RENAME(yuvPlanartoyuy2)(const uint8_t *ysrc, const uint8_t *u
 		int i, *idst = (int32_t *) dst;
 		const uint8_t *yc = ysrc, *uc = usrc, *vc = vsrc;
 		for(i = 0; i < chromWidth; i++){
+#ifdef WORDS_BIGENDIAN
+			*idst++ = (yc[0] << 24)+ (uc[0] << 16) +
+			    (yc[1] << 8) + (vc[0] << 0);
+#else
 			*idst++ = yc[0] + (uc[0] << 8) +
 			    (yc[1] << 16) + (vc[0] << 24);
+#endif
 			yc += 2;
 			uc++;
 			vc++;
@@ -1634,8 +1639,13 @@ static inline void RENAME(yuvPlanartouyvy)(const uint8_t *ysrc, const uint8_t *u
 		int i, *idst = (int32_t *) dst;
 		const uint8_t *yc = ysrc, *uc = usrc, *vc = vsrc;
 		for(i = 0; i < chromWidth; i++){
+#ifdef WORDS_BIGENDIAN
+			*idst++ = (uc[0] << 24)+ (yc[0] << 16) +
+			    (vc[0] << 8) + (yc[1] << 0);
+#else
 			*idst++ = uc[0] + (yc[0] << 8) +
 			    (vc[0] << 16) + (yc[1] << 24);
+#endif
 			yc += 2;
 			uc++;
 			vc++;
