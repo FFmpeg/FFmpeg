@@ -1396,6 +1396,7 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
         s->width = width;
         s->height = height;
         s->has_b_frames = 1;
+        s->avctx = avctx;
         avctx->width = width;
         avctx->height = height;
         avctx->frame_rate = frame_rate_tab[s->frame_rate_index];
