@@ -380,7 +380,7 @@ int avpicture_layout(const AVPicture* src, int pix_fmt, int width, int height,
 	h = height;
     } else {
         data_planes = pf->nb_channels;
-	w = width;
+	w = (width*pf->depth + 7)/8;
 	h = height;
     }
     

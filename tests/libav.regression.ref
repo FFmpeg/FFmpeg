@@ -30,7 +30,7 @@ fea20ced22451312dd463110e594eda6 *./data/b-libav.nut
 ./data/b-libav.dv CRC=37b096b4
 9a9da315747599f7718cc9a9a09c21ff *./data/b-libav.pbm
 317075 ./data/b-libav.pbm
-./data/b-libav.pbm CRC=a1057fd1
+./data/b-libav.pbm CRC=b92906cb
 6ea0e1faf08f6fcdb44db4a104361b57 *./data/b-libav.pgm
 2534775 ./data/b-libav.pgm
 ./data/b-libav.pgm CRC=f4aa7c47
@@ -86,9 +86,9 @@ deb2f7ebe297df2c1fe264d19b34d2fb *./data/b-libav-rgba32.yuv
  304128 ./data/b-libav-rgb555.yuv
 0b62dcf9b57b294dbaa5d9e99b1ee192 *./data/b-libav-gray.yuv
  304128 ./data/b-libav-gray.yuv
-d5a686494c2ded1d211937ef8e22b56b *./data/b-libav-monow.yuv
+e197450dae2feba9e757b551e1e9145c *./data/b-libav-monow.yuv
  304128 ./data/b-libav-monow.yuv
-d5a686494c2ded1d211937ef8e22b56b *./data/b-libav-monob.yuv
+e197450dae2feba9e757b551e1e9145c *./data/b-libav-monob.yuv
  304128 ./data/b-libav-monob.yuv
 7a319375916cae4e691ecb74295e5d2a *./data/b-libav-pal8.yuv
  304128 ./data/b-libav-pal8.yuv
