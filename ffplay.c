@@ -1303,6 +1303,7 @@ static int decode_thread(void *arg)
     for(;;) {
         if (is->abort_request)
             break;
+#ifdef CONFIG_NETWORK
         if (is->paused != is->last_paused) {
             is->last_paused = is->paused;
             if (ic->iformat == &rtsp_demux) {
@@ -1318,6 +1319,7 @@ static int decode_thread(void *arg)
             SDL_Delay(10);
             continue;
         }
+#endif
 
         /* if the queue are full, no need to read more */
         if (is->audioq.size > MAX_AUDIOQ_SIZE ||
@@ -1595,12 +1597,13 @@ static void opt_format(const char *arg)
         exit(1);
     }
 }
-
+#ifdef CONFIG_NETWORK
 void opt_rtp_tcp(void)
 {
     /* only tcp protocol */
     rtsp_default_protocols = (1 << RTSP_PROTOCOL_RTP_TCP);
 }
+#endif
 
 void opt_sync(const char *arg)
 {
@@ -1627,7 +1630,9 @@ const OptionDef options[] = {
     { "nodisp", OPT_BOOL, {(void*)&display_disable}, "disable graphical display" },
     { "f", HAS_ARG, {(void*)opt_format}, "force format", "fmt" },
     { "stats", OPT_BOOL | OPT_EXPERT, {(void*)&show_status}, "show status", "" },
+#ifdef CONFIG_NETWORK
     { "rtp_tcp", OPT_EXPERT, {(void*)&opt_rtp_tcp}, "force RTP/TCP protocol usage", "" },
+#endif
     { "sync", HAS_ARG | OPT_EXPERT, {(void*)&opt_sync}, "set audio-video sync. type (type=audio/video/ext)", "type" },
     { NULL, },
 };
