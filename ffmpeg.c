@@ -1003,7 +1003,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
     void *buffer_to_free;
     
     if (pkt && pkt->pts != AV_NOPTS_VALUE) {
-        ist->pts = pkt->pts;
+        ist->next_pts = ist->pts = pkt->pts;
     } else {
         ist->pts = ist->next_pts;
     }
