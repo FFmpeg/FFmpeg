@@ -1854,7 +1854,7 @@ int av_find_stream_info(AVFormatContext *ic)
                 
                 int_fps= av_rescale(st->r_frame_rate, 1, st->r_frame_rate_base);
                 
-                if(av_rescale(st->r_frame_rate, 1, int_fps) == st->r_frame_rate_base){
+                if(int_fps>0 && av_rescale(st->r_frame_rate, 1, int_fps) == st->r_frame_rate_base){
                     st->r_frame_rate= int_fps;
                     st->r_frame_rate_base= 1;
                 }               
