@@ -827,6 +827,18 @@ static int av_encode(AVFormatContext **output_files,
         exit(1);
     }
 
+    /* Sanity check the mapping args -- do the input files & streams exist? */
+    for(i=0;i<nb_stream_maps;i++) {
+        int fi = stream_maps[i].file_index;
+        int si = stream_maps[i].stream_index;
+        
+        if (fi < 0 || fi > nb_input_files - 1 ||
+            si < 0 || si > file_table[fi].nb_streams - 1) {
+            fprintf(stderr,"Could not find input stream #%d.%d\n", fi, si);
+            exit(1);
+        }
+    }
+    
     ost_table = av_mallocz(sizeof(AVOutputStream *) * nb_ostreams);
     if (!ost_table)
         goto fail;
@@ -849,6 +861,15 @@ static int av_encode(AVFormatContext **output_files,
             if (nb_stream_maps > 0) {
                 ost->source_index = file_table[stream_maps[n-1].file_index].ist_index + 
                     stream_maps[n-1].stream_index;
+                    
+                /* Sanity check that the stream types match */
+                if (ist_table[ost->source_index]->st->codec.codec_type != ost->st->codec.codec_type) {
+                    fprintf(stderr, "Codec type mismatch for mapping #%d.%d -> #%d.%d\n",
+                        stream_maps[n-1].file_index, stream_maps[n-1].stream_index,
+                        ost->file_index, ost->index);
+                    exit(1);
+                }
+                
             } else {
                 /* get corresponding input stream index : we select the first one with the right type */
                 found = 0;
