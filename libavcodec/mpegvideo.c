@@ -940,7 +940,7 @@ int MPV_encode_init(AVCodecContext *avctx)
     default:
         return -1;
     }
-    
+
     { /* set up some save defaults, some codecs might override them later */
         static int done=0;
         if(!done){
@@ -1026,7 +1026,6 @@ int MPV_encode_init(AVCodecContext *avctx)
     s->picture_number = 0;
     s->input_picture_number = 0;
     s->picture_in_gop_number = 0;
-    s->fake_picture_number = 0;
     /* motion detector init */
     s->f_code = 1;
     s->b_code = 1;
@@ -5227,29 +5226,7 @@ static const AVOption mpeg4_options[] =
 };
 
 #ifdef CONFIG_ENCODERS
-
-AVCodec mpeg1video_encoder = {
-    "mpeg1video",
-    CODEC_TYPE_VIDEO,
-    CODEC_ID_MPEG1VIDEO,
-    sizeof(MpegEncContext),
-    MPV_encode_init,
-    MPV_encode_picture,
-    MPV_encode_end,
-};
-
 #ifdef CONFIG_RISKY
-
-AVCodec mpeg2video_encoder = {
-    "mpeg2video",
-    CODEC_TYPE_VIDEO,
-    CODEC_ID_MPEG2VIDEO,
-    sizeof(MpegEncContext),
-    MPV_encode_init,
-    MPV_encode_picture,
-    MPV_encode_end,
-};
-
 AVCodec h263_encoder = {
     "h263",
     CODEC_TYPE_VIDEO,

@@ -58,7 +58,6 @@ static void mpeg1_encode_block(MpegEncContext *s,
                          int component);
 static void mpeg1_encode_motion(MpegEncContext *s, int val, int f_or_b_code);    // RAL: f_code parameter added
 #endif //CONFIG_ENCODERS
-static void mpeg1_skip_picture(MpegEncContext *s, int pict_num);
 static inline int mpeg1_decode_block_inter(MpegEncContext *s, 
                               DCTELEM *block, 
                               int n);
@@ -182,6 +181,46 @@ static void init_uni_ac_vlc(RLTable *rl, uint32_t *uni_ac_vlc_bits, uint8_t *uni
     }
 }
 
+
+static int find_frame_rate_index(MpegEncContext *s){
+    int i;
+    int64_t dmin= INT64_MAX;
+    int64_t d;
+
+    for(i=1;i<14;i++) {
+        if(s->avctx->strict_std_compliance >= 0 && i>=9) break;
+         
+        d = ABS(MPEG1_FRAME_RATE_BASE*(int64_t)s->avctx->frame_rate - frame_rate_tab[i]*(int64_t)s->avctx->frame_rate_base);
+        if(d < dmin){
+            dmin=d;
+            s->frame_rate_index= i;
+        }
+    }
+    if(dmin)
+        return -1;
+    else
+        return 0;
+}
+
+static int encode_init(AVCodecContext *avctx)
+{
+    MpegEncContext *s = avctx->priv_data;
+
+    if(MPV_encode_init(avctx) < 0)
+        return -1;
+
+    if(find_frame_rate_index(s) < 0){
+        if(s->strict_std_compliance >=0){
+            av_log(avctx, AV_LOG_ERROR, "MPEG1/2 doesnt support %d/%d fps\n", avctx->frame_rate, avctx->frame_rate_base);
+            return -1;
+        }else{
+            av_log(avctx, AV_LOG_INFO, "MPEG1/2 doesnt support %d/%d fps, there may be AV sync issues\n", avctx->frame_rate, avctx->frame_rate_base);
+        }
+    }
+    
+    return 0;
+}
+
 static void put_header(MpegEncContext *s, int header)
 {
     align_put_bits(&s->pb);
@@ -205,22 +244,6 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
         if (s->current_picture.key_frame) {
             /* mpeg1 header repeated every gop */
             put_header(s, SEQ_START_CODE);
-            
-            /* search closest frame rate */
-            {
-                int i, dmin, d;
-                s->frame_rate_index = 0;
-                dmin = 0x7fffffff;
-                for(i=1;i<14;i++) {
-                    if(s->avctx->strict_std_compliance >= 0 && i>=9) break;
-                     
-                    d = abs(MPEG1_FRAME_RATE_BASE*(int64_t)s->avctx->frame_rate/s->avctx->frame_rate_base - frame_rate_tab[i]);
-                    if (d < dmin) {
-                        dmin = d;
-                        s->frame_rate_index = i;
-                    }
-                }
-            }
  
             put_bits(&s->pb, 12, s->width);
             put_bits(&s->pb, 12, s->height);
@@ -299,8 +322,9 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
             /* time code : we must convert from the real frame rate to a
                fake mpeg frame rate in case of low frame rate */
             fps = (frame_rate_tab[s->frame_rate_index] + MPEG1_FRAME_RATE_BASE/2)/ MPEG1_FRAME_RATE_BASE;
-            time_code = s->fake_picture_number;
-            s->gop_picture_number = s->fake_picture_number;
+            time_code = s->current_picture_ptr->coded_picture_number;
+
+            s->gop_picture_number = time_code;
             put_bits(&s->pb, 5, (uint32_t)((time_code / (fps * 3600)) % 24));
             put_bits(&s->pb, 6, (uint32_t)((time_code / (fps * 60)) % 60));
             put_bits(&s->pb, 1, 1);
@@ -308,19 +332,6 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
             put_bits(&s->pb, 6, (uint32_t)((time_code % fps)));
             put_bits(&s->pb, 1, 0); /* closed gop */
             put_bits(&s->pb, 1, 0); /* broken link */
-        }
-
-        if (s->avctx->frame_rate < (23 * s->avctx->frame_rate_base) && s->picture_number > 0) {
-            /* insert empty P pictures to slow down to the desired
-               frame rate. Each fake pictures takes about 20 bytes */
-            fps = frame_rate_tab[s->frame_rate_index];
-            n = av_rescale((int64_t)s->picture_number * s->avctx->frame_rate_base, fps, s->avctx->frame_rate) / MPEG1_FRAME_RATE_BASE - 1;
-            while (s->fake_picture_number < n) {
-                mpeg1_skip_picture(s, s->fake_picture_number - 
-                                   s->gop_picture_number); 
-                s->fake_picture_number++;
-            }
-
         }
 }
 
@@ -331,49 +342,6 @@ static inline void encode_mb_skip_run(MpegEncContext *s, int run){
     }
     put_bits(&s->pb, mbAddrIncrTable[run][1], 
              mbAddrIncrTable[run][0]);
-}
-
-/* insert a fake P picture */
-static void mpeg1_skip_picture(MpegEncContext *s, int pict_num)
-{
-    assert(s->codec_id == CODEC_ID_MPEG1VIDEO); // mpeg2 can do these repeat things
-
-    /* mpeg1 picture header */
-    put_header(s, PICTURE_START_CODE);
-    /* temporal reference */
-    put_bits(&s->pb, 10, pict_num & 0x3ff); 
-    
-    put_bits(&s->pb, 3, P_TYPE);
-    put_bits(&s->pb, 16, 0xffff); /* non constant bit rate */
-    
-    put_bits(&s->pb, 1, 1); /* integer coordinates */
-    put_bits(&s->pb, 3, 1); /* forward_f_code */
-    
-    put_bits(&s->pb, 1, 0); /* extra bit picture */
-    
-    /* only one slice */
-    put_header(s, SLICE_MIN_START_CODE);
-    put_bits(&s->pb, 5, 1); /* quantizer scale */
-    put_bits(&s->pb, 1, 0); /* slice extra information */
-    
-    encode_mb_skip_run(s, 0);
-    
-    /* empty macroblock */
-    put_bits(&s->pb, 3, 1); /* motion only */
-    
-    /* zero motion x & y */
-    put_bits(&s->pb, 1, 1); 
-    put_bits(&s->pb, 1, 1); 
-
-    /* output a number of empty slice */
-    encode_mb_skip_run(s, s->mb_width * s->mb_height - 2);
-    
-    /* empty macroblock */
-    put_bits(&s->pb, 3, 1); /* motion only */
-    
-    /* zero motion x & y */
-    put_bits(&s->pb, 1, 1); 
-    put_bits(&s->pb, 1, 1); 
 }
 #endif //CONFIG_ENCODERS
 
@@ -409,8 +377,6 @@ void mpeg1_encode_picture_header(MpegEncContext *s, int picture_number)
     // RAL: s->picture_number instead of s->fake_picture_number
     put_bits(&s->pb, 10, (s->picture_number - 
                           s->gop_picture_number) & 0x3ff); 
-    s->fake_picture_number++;
-    
     put_bits(&s->pb, 3, s->pict_type);
 
     s->vbv_delay_ptr= s->pb.buf + get_bit_count(&s->pb)/8;
@@ -2745,6 +2711,32 @@ AVCodec mpegvideo_decoder = {
     CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1 | CODEC_CAP_TRUNCATED,
     .flush= ff_mpeg_flush,
 };
+
+#ifdef CONFIG_ENCODERS
+
+AVCodec mpeg1video_encoder = {
+    "mpeg1video",
+    CODEC_TYPE_VIDEO,
+    CODEC_ID_MPEG1VIDEO,
+    sizeof(MpegEncContext),
+    encode_init,
+    MPV_encode_picture,
+    MPV_encode_end,
+};
+
+#ifdef CONFIG_RISKY
+
+AVCodec mpeg2video_encoder = {
+    "mpeg2video",
+    CODEC_TYPE_VIDEO,
+    CODEC_ID_MPEG2VIDEO,
+    sizeof(MpegEncContext),
+    encode_init,
+    MPV_encode_picture,
+    MPV_encode_end,
+};
+#endif
+#endif
 
 #ifdef HAVE_XVMC
 static int mpeg_mc_decode_init(AVCodecContext *avctx){
