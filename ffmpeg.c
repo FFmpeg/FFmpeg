@@ -764,8 +764,29 @@ static void print_report(AVFormatContext **output_files,
             frame_number = ost->frame_number;
             sprintf(buf + strlen(buf), "frame=%5d q=%2.1f ",
                     frame_number, enc->coded_frame ? enc->coded_frame->quality/(float)FF_QP2LAMBDA : 0);
-            if (enc->flags&CODEC_FLAG_PSNR)
-                sprintf(buf + strlen(buf), "PSNR= %6.2f ", psnr(enc->coded_frame->error[0]/(enc->width*enc->height*255.0*255.0)));
+            if(is_last_report)
+                sprintf(buf + strlen(buf), "L");
+            if (enc->flags&CODEC_FLAG_PSNR){
+                int j;
+                double error, error_sum=0;
+                double scale, scale_sum=0;
+                char type[3]= {'Y','U','V'};
+                sprintf(buf + strlen(buf), "PSNR=");
+                for(j=0; j<3; j++){
+                    if(is_last_report){
+                        error= enc->error[j];
+                        scale= enc->width*enc->height*255.0*255.0*frame_number;
+                    }else{
+                        error= enc->coded_frame->error[j];
+                        scale= enc->width*enc->height*255.0*255.0;
+                    }
+                    if(j) scale/=4;
+                    error_sum += error;
+                    scale_sum += scale;
+                    sprintf(buf + strlen(buf), "%c:%2.2f ", type[j], psnr(error/scale));
+                }
+                sprintf(buf + strlen(buf), "*:%2.2f ", psnr(error_sum/scale_sum));
+            }
             vid = 1;
         }
         /* compute min output value */
