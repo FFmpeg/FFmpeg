@@ -120,7 +120,7 @@ typedef struct VqaContext {
     unsigned char *buf;
     int size;
 
-    unsigned char palette[PALETTE_COUNT * 4];
+    unsigned int palette[PALETTE_COUNT];
 
     int width;   /* width of a frame */
     int height;   /* height of a frame */
@@ -311,7 +311,6 @@ static void vqa_decode_chunk(VqaContext *s)
     unsigned int index = 0;
     int i;
     unsigned char r, g, b;
-    unsigned int *palette32;
     int index_shift;
 
     int cbf0_chunk = -1;
@@ -407,13 +406,12 @@ static void vqa_decode_chunk(VqaContext *s)
             return;
         }
         cpl0_chunk += CHUNK_PREAMBLE_SIZE;
-        palette32 = (unsigned int *)s->palette;
         for (i = 0; i < chunk_size / 3; i++) {
             /* scale by 4 to transform 6-bit palette -> 8-bit */
             r = s->buf[cpl0_chunk++] * 4;
             g = s->buf[cpl0_chunk++] * 4;
             b = s->buf[cpl0_chunk++] * 4;
-            palette32[i] = (r << 16) | (g << 8) | (b);
+            s->palette[i] = (r << 16) | (g << 8) | (b);
         }
     }
 
@@ -583,6 +581,7 @@ static int vqa_decode_frame(AVCodecContext *avctx,
 
     /* make the palette available on the way out */
     memcpy(s->frame.data[1], s->palette, PALETTE_COUNT * 4);
+    s->frame.palette_has_changed = 1;
 
     *data_size = sizeof(AVFrame);
     *(AVFrame*)data = s->frame;

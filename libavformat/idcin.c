@@ -90,8 +90,7 @@ typedef struct IdcinDemuxContext {
 
     int64_t pts;
 
-    /* keep reference to extradata but never free it */
-    void *extradata;
+    AVPaletteControl palctrl;
 } IdcinDemuxContext;
 
 static int idcin_probe(AVProbeData *p)
@@ -175,7 +174,7 @@ static int idcin_read_header(AVFormatContext *s,
         HUFFMAN_TABLE_SIZE)
         return -EIO;
     /* save a reference in order to transport the palette */
-    idcin->extradata = st->codec.extradata;
+    st->codec.palctrl = &idcin->palctrl;
 
     /* if sample rate is 0, assume no audio */
     if (sample_rate) {
@@ -227,9 +226,10 @@ static int idcin_read_packet(AVFormatContext *s,
     unsigned int chunk_size;
     IdcinDemuxContext *idcin = (IdcinDemuxContext *)s->priv_data;
     ByteIOContext *pb = &s->pb;
-    AVPaletteControl *palette_control = (AVPaletteControl *)idcin->extradata;
     int i;
     int palette_scale;
+    unsigned char r, g, b;
+    unsigned char palette_buffer[768];
 
     if (url_feof(&s->pb))
         return -EIO;
@@ -240,20 +240,23 @@ static int idcin_read_packet(AVFormatContext *s,
             return -EIO;
         } else if (command == 1) {
             /* trigger a palette change */
-            palette_control->palette_changed = 1;
-            if (get_buffer(pb, palette_control->palette, 768) != 768)
+            idcin->palctrl.palette_changed = 1;
+            if (get_buffer(pb, palette_buffer, 768) != 768)
                 return -EIO;
             /* scale the palette as necessary */
             palette_scale = 2;
             for (i = 0; i < 768; i++)
-                if (palette_control->palette[i] > 63) {
+                if (palette_buffer[i] > 63) {
                     palette_scale = 0;
                     break;
                 }
 
-            if (palette_scale)
-                for (i = 0; i < 768; i++)
-                    palette_control->palette[i] <<= palette_scale;
+            for (i = 0; i < 256; i++) {
+                r = palette_buffer[i * 3    ] << palette_scale;
+                g = palette_buffer[i * 3 + 1] << palette_scale;
+                b = palette_buffer[i * 3 + 2] << palette_scale;
+                idcin->palctrl.palette[i] = (r << 16) | (g << 8) | (b);
+            }
         }
 
         chunk_size = get_le32(pb);
@@ -293,6 +296,7 @@ static int idcin_read_packet(AVFormatContext *s,
 
 static int idcin_read_close(AVFormatContext *s)
 {
+
     return 0;
 }
 

@@ -72,8 +72,6 @@ typedef struct IdcinContext {
     unsigned char *buf;
     int size;
 
-    unsigned char palette[PALETTE_COUNT * 4];
-
     hnode_t huff_nodes[256][HUF_TOKENS*2];
     int num_huff_nodes[256];
 
@@ -218,26 +216,10 @@ static int idcin_decode_frame(AVCodecContext *avctx,
                               uint8_t *buf, int buf_size)
 {
     IdcinContext *s = (IdcinContext *)avctx->priv_data;
-    AVPaletteControl *palette_control = 
-        (AVPaletteControl *)avctx->extradata;
-    int i;
-    unsigned int *palette32;
-    int palette_index = 0;
-    unsigned char r, g, b;
+    AVPaletteControl *palette_control = avctx->palctrl;
 
     s->buf = buf;
     s->size = buf_size;
-
-    if (palette_control->palette_changed) {
-        palette32 = (unsigned int *)s->palette;
-        for (i = 0; i < PALETTE_COUNT; i++) {
-            r = palette_control->palette[palette_index++] * 1;
-            g = palette_control->palette[palette_index++] * 1;
-            b = palette_control->palette[palette_index++] * 1;
-            palette32[i] = (r << 16) | (g << 8) | (b);
-        }
-        palette_control->palette_changed = 0;
-    }
 
     if (s->frame.data[0])
         avctx->release_buffer(avctx, &s->frame);
@@ -250,7 +232,12 @@ static int idcin_decode_frame(AVCodecContext *avctx,
     idcin_decode_vlcs(s);
 
     /* make the palette available on the way out */
-    memcpy(s->frame.data[1], s->palette, PALETTE_COUNT * 4);
+    memcpy(s->frame.data[1], palette_control->palette, PALETTE_COUNT * 4);
+    /* If palette changed inform application*/
+    if (palette_control->palette_changed) {
+        palette_control->palette_changed = 0;
+        s->frame.palette_has_changed = 1;
+    }
 
     *data_size = sizeof(AVFrame);
     *(AVFrame*)data = s->frame;

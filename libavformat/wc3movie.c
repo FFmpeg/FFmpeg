@@ -258,8 +258,7 @@ static int wc3_read_header(AVFormatContext *s,
     st->codec.height = wc3->height;
 
     /* palette considerations */
-    st->codec.extradata_size = sizeof(AVPaletteControl);
-    st->codec.extradata = &wc3->palette_control;
+    st->codec.palctrl = &wc3->palette_control;
 
     st = av_new_stream(s, 0);
     if (!st)
@@ -294,6 +293,9 @@ static int wc3_read_packet(AVFormatContext *s,
     unsigned char preamble[WC3_PREAMBLE_SIZE];
     unsigned char text[1024];
     unsigned int palette_number;
+    int i;
+    unsigned char r, g, b;
+    int base_palette_index;
 
     while (!packet_read) {
 
@@ -319,9 +321,13 @@ static int wc3_read_packet(AVFormatContext *s,
             palette_number = LE_32(&preamble[0]);
             if (palette_number >= wc3->palette_count)
                 return AVERROR_INVALIDDATA;
-            memcpy(wc3->palette_control.palette, 
-                &wc3->palettes[palette_number * PALETTE_COUNT * 3],
-                PALETTE_COUNT * 3);
+            base_palette_index = palette_number * PALETTE_COUNT * 3;
+            for (i = 0; i < PALETTE_COUNT; i++) {
+                r = wc3->palettes[base_palette_index + i * 3 + 0];
+                g = wc3->palettes[base_palette_index + i * 3 + 1];
+                b = wc3->palettes[base_palette_index + i * 3 + 2];
+                wc3->palette_control.palette[i] = (r << 16) | (g << 8) | (b);
+            }
             wc3->palette_control.palette_changed = 1;
             break;
 

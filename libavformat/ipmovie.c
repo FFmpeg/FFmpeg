@@ -232,6 +232,7 @@ static int process_ipmovie_chunk(IPMVEContext *s, ByteIOContext *pb,
     int i, j;
     int first_color, last_color;
     int audio_flags;
+    unsigned char r, g, b;
 
     /* see if there are any pending packets */
     chunk_type = load_ipmovie_packet(s, pb, pkt);
@@ -463,9 +464,10 @@ static int process_ipmovie_chunk(IPMVEContext *s, ByteIOContext *pb,
             for (i = first_color; i <= last_color; i++) {
                 /* the palette is stored as a 6-bit VGA palette, thus each
                  * component is shifted up to a 8-bit range */
-                s->palette_control.palette[i * 3 + 0] = scratch[j++] * 4;
-                s->palette_control.palette[i * 3 + 1] = scratch[j++] * 4;
-                s->palette_control.palette[i * 3 + 2] = scratch[j++] * 4;
+                r = scratch[j++] * 4;
+                g = scratch[j++] * 4;
+                b = scratch[j++] * 4;
+                s->palette_control.palette[i] = (r << 16) | (g << 8) | (b);
             }
             /* indicate a palette change */
             s->palette_control.palette_changed = 1;
@@ -573,8 +575,7 @@ static int ipmovie_read_header(AVFormatContext *s,
     st->codec.height = ipmovie->video_height;
 
     /* palette considerations */
-    st->codec.extradata_size = sizeof(AVPaletteControl);
-    st->codec.extradata = &ipmovie->palette_control;
+    st->codec.palctrl = &ipmovie->palette_control;
 
     if (ipmovie->audio_type) {
         st = av_new_stream(s, 0);

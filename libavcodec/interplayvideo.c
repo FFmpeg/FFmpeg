@@ -65,8 +65,6 @@ typedef struct IpvideoContext {
     unsigned char *buf;
     int size;
 
-    unsigned char palette[PALETTE_COUNT * 4];
-
     unsigned char *stream_ptr;
     unsigned char *stream_end;
     unsigned char *pixel_ptr;
@@ -82,21 +80,6 @@ typedef struct IpvideoContext {
       s->stream_ptr + n, s->stream_end); \
     return -1; \
   }
-
-static void ipvideo_new_palette(IpvideoContext *s, unsigned char *palette) {
-
-    int i;
-    unsigned char r, g, b;
-    unsigned int *palette32;
-
-    palette32 = (unsigned int *)s->palette;
-    for (i = 0; i < PALETTE_COUNT; i++) {
-        r = *palette++;
-        g = *palette++;
-        b = *palette++;
-        palette32[i] = (r << 16) | (g << 8) | (b);
-    }
-}
 
 #define COPY_FROM_CURRENT() \
     motion_offset = current_offset; \
@@ -828,7 +811,7 @@ static void ipvideo_decode_opcodes(IpvideoContext *s)
         code_counts[x] = 0;
 
     /* this is PAL8, so make the palette available */
-    memcpy(s->current_frame.data[1], s->palette, PALETTE_COUNT * 4);
+    memcpy(s->current_frame.data[1], s->avctx->palctrl->palette, PALETTE_COUNT * 4);
 
     s->stride = s->current_frame.linesize[0];
     s->stream_ptr = s->buf + 14;  /* data starts 14 bytes in */
@@ -874,9 +857,8 @@ static int ipvideo_decode_init(AVCodecContext *avctx)
 
     s->avctx = avctx;
 
-    if (s->avctx->extradata_size != sizeof(AVPaletteControl)) {
-        printf (" Interplay video: expected extradata_size of %d\n",
-		(int)sizeof(AVPaletteControl));
+    if (s->avctx->palctrl == NULL) {
+        printf (" Interplay video: palette expected.\n");
         return -1;
     }
 
@@ -916,13 +898,7 @@ static int ipvideo_decode_frame(AVCodecContext *avctx,
                                 uint8_t *buf, int buf_size)
 {
     IpvideoContext *s = avctx->priv_data;
-    AVPaletteControl *palette_control = (AVPaletteControl *)avctx->extradata;
-
-    if (palette_control->palette_changed) {
-        /* load the new palette and reset the palette control */
-        ipvideo_new_palette(s, palette_control->palette);
-        palette_control->palette_changed = 0;
-    }
+    AVPaletteControl *palette_control = avctx->palctrl;
 
     s->decoding_map = buf;
     s->buf = buf + s->decoding_map_size;
@@ -935,6 +911,11 @@ static int ipvideo_decode_frame(AVCodecContext *avctx,
     }
 
     ipvideo_decode_opcodes(s);
+
+    if (palette_control->palette_changed) {
+        palette_control->palette_changed = 0;
+        s->current_frame.palette_has_changed = 1;
+    }
 
     *data_size = sizeof(AVFrame);
     *(AVFrame*)data = s->current_frame;

@@ -115,9 +115,8 @@ static int xan_decode_init(AVCodecContext *avctx)
     s->avctx = avctx;
 
     if ((avctx->codec->id == CODEC_ID_XAN_WC3) && 
-        (s->avctx->extradata_size != sizeof(AVPaletteControl))) {
-        printf (" WC3 Xan video: expected extradata_size of %d\n",
-            sizeof(AVPaletteControl));
+        (s->avctx->palctrl == NULL)) {
+        printf (" WC3 Xan video: palette expected.\n");
         return -1;
     }
 
@@ -253,12 +252,13 @@ static void xan_unpack(unsigned char *dest, unsigned char *src)
 }
 
 static void inline xan_wc3_build_palette(XanContext *s, 
-    unsigned char *palette_data)
+    unsigned int *palette_data)
 {
     int i;
     unsigned char r, g, b;
     unsigned short *palette16;
     unsigned int *palette32;
+    unsigned int pal_elem;
 
     /* transform the palette passed through the palette control structure
      * into the necessary internal format depending on colorspace */
@@ -268,9 +268,10 @@ static void inline xan_wc3_build_palette(XanContext *s,
     case PIX_FMT_RGB555:
         palette16 = (unsigned short *)s->palette;
         for (i = 0; i < PALETTE_COUNT; i++) {
-            r = *palette_data++;
-            g = *palette_data++;
-            b = *palette_data++;
+            pal_elem = palette_data[i];
+            r = (pal_elem >> 16) & 0xff;
+            g = (pal_elem >> 8) & 0xff;
+            b = pal_elem & 0xff;
             palette16[i] = 
                 ((r >> 3) << 10) |
                 ((g >> 3) <<  5) |
@@ -281,9 +282,10 @@ static void inline xan_wc3_build_palette(XanContext *s,
     case PIX_FMT_RGB565:
         palette16 = (unsigned short *)s->palette;
         for (i = 0; i < PALETTE_COUNT; i++) {
-            r = *palette_data++;
-            g = *palette_data++;
-            b = *palette_data++;
+            pal_elem = palette_data[i];
+            r = (pal_elem >> 16) & 0xff;
+            g = (pal_elem >> 8) & 0xff;
+            b = pal_elem & 0xff;
             palette16[i] = 
                 ((r >> 3) << 11) |
                 ((g >> 2) <<  5) |
@@ -293,17 +295,22 @@ static void inline xan_wc3_build_palette(XanContext *s,
 
     case PIX_FMT_RGB24:
         for (i = 0; i < PALETTE_COUNT; i++) {
-            s->palette[i * 4 + 0] = *palette_data++;
-            s->palette[i * 4 + 1] = *palette_data++;
-            s->palette[i * 4 + 2] = *palette_data++;
+            pal_elem = palette_data[i];
+            r = (pal_elem >> 16) & 0xff;
+            g = (pal_elem >> 8) & 0xff;
+            b = pal_elem & 0xff;
+            s->palette[i * 4 + 0] = r;
+            s->palette[i * 4 + 1] = g;
+            s->palette[i * 4 + 2] = b;
         }
         break;
 
     case PIX_FMT_BGR24:
         for (i = 0; i < PALETTE_COUNT; i++) {
-            r = *palette_data++;
-            g = *palette_data++;
-            b = *palette_data++;
+            pal_elem = palette_data[i];
+            r = (pal_elem >> 16) & 0xff;
+            g = (pal_elem >> 8) & 0xff;
+            b = pal_elem & 0xff;
             s->palette[i * 4 + 0] = b;
             s->palette[i * 4 + 1] = g;
             s->palette[i * 4 + 2] = r;
@@ -313,19 +320,15 @@ static void inline xan_wc3_build_palette(XanContext *s,
     case PIX_FMT_PAL8:
     case PIX_FMT_RGBA32:
         palette32 = (unsigned int *)s->palette;
-        for (i = 0; i < PALETTE_COUNT; i++) {
-            r = *palette_data++;
-            g = *palette_data++;
-            b = *palette_data++;
-            palette32[i] = (r << 16) | (g << 8) | (b);
-        }
+        memcpy (palette32, palette_data, PALETTE_COUNT * sizeof(unsigned int));
         break;
 
     case PIX_FMT_YUV444P:
         for (i = 0; i < PALETTE_COUNT; i++) {
-            r = *palette_data++;
-            g = *palette_data++;
-            b = *palette_data++;
+            pal_elem = palette_data[i];
+            r = (pal_elem >> 16) & 0xff;
+            g = (pal_elem >> 8) & 0xff;
+            b = pal_elem & 0xff;
             s->palette[i * 4 + 0] = COMPUTE_Y(r, g, b);
             s->palette[i * 4 + 1] = COMPUTE_U(r, g, b);
             s->palette[i * 4 + 2] = COMPUTE_V(r, g, b);
@@ -730,8 +733,11 @@ static void xan_wc3_decode_frame(XanContext *s) {
     }
 
     /* for PAL8, make the palette available on the way out */
-    if (s->avctx->pix_fmt == PIX_FMT_PAL8)
+    if (s->avctx->pix_fmt == PIX_FMT_PAL8) {
         memcpy(s->current_frame.data[1], s->palette, PALETTE_COUNT * 4);
+        s->current_frame.palette_has_changed = 1;
+        s->avctx->palctrl->palette_changed = 0;
+    }
 }
 
 static void xan_wc4_decode_frame(XanContext *s) {
@@ -742,13 +748,15 @@ static int xan_decode_frame(AVCodecContext *avctx,
                             uint8_t *buf, int buf_size)
 {
     XanContext *s = avctx->priv_data;
-    AVPaletteControl *palette_control = (AVPaletteControl *)avctx->extradata;
+    AVPaletteControl *palette_control = avctx->palctrl;
     int keyframe = 0;
 
     if (palette_control->palette_changed) {
         /* load the new palette and reset the palette control */
         xan_wc3_build_palette(s, palette_control->palette);
-        palette_control->palette_changed = 0;
+        /* If pal8 we clear flag when we copy palette */
+        if (s->avctx->pix_fmt != PIX_FMT_PAL8)
+            palette_control->palette_changed = 0;
         keyframe = 1;
     }
 
