@@ -24,7 +24,6 @@
 
 #include "swscale.h"
 #include "../libvo/img_format.h"
-#include "../cpudetect.h"
 
 static int testFormat[]={
 IMGFMT_YVU9,
@@ -142,7 +141,6 @@ void mp_msg_c( int x, const char *format, ... ){
     va_end(va);
 }
 
-int verbose=0; //FIXME
 void fast_memcpy(void *a, void *b, int s){ //FIXME
     memcpy(a, b, s);
 }
@@ -188,7 +186,6 @@ int main(int argc, char **argv){
 	int stride[3]={W, W, W};
 	int x, y;
 	struct SwsContext *sws;
-	GetCpuCaps(&gCpuCaps);
 
 	sws= sws_getContext(W/12, H/12, IMGFMT_BGR32, W, H, IMGFMT_YV12, 2, NULL, NULL);
         
@@ -201,4 +198,6 @@ int main(int argc, char **argv){
 	sws_scale(sws, rgb_src, rgb_stride, 0, H   , src, stride);
 asm volatile ("emms\n\t");
 	selfTest(src,  stride, W, H);
+
+        return 123;
 }

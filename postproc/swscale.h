@@ -57,6 +57,10 @@ extern "C" {
 #define SWS_FULL_CHR_H_INP	0x4000
 #define SWS_DIRECT_BGR		0x8000
 
+#define SWS_CPU_CAPS_MMX   0x80000000
+#define SWS_CPU_CAPS_MMX2  0x20000000
+#define SWS_CPU_CAPS_3DNOW 0x40000000
+
 #define SWS_MAX_REDUCE_CUTOFF 0.002
 
 #define SWS_CS_ITU709		1
@@ -86,20 +90,8 @@ typedef struct {
 
 struct SwsContext;
 
-//typedef struct SwsContext;
-// *** bilinear scaling and yuv->rgb & yuv->yuv conversion of yv12 slices:
-// *** Note: it's called multiple times while decoding a frame, first time y==0
-// dstbpp == 12 -> yv12 output
-// will use sws_flags
-// deprecated, will be removed
-void SwScale_YV12slice(unsigned char* src[],int srcStride[], int srcSliceY,
-			     int srcSliceH, uint8_t* dst[], int dstStride, int dstbpp,
-			     int srcW, int srcH, int dstW, int dstH);
-
-
 void sws_freeContext(struct SwsContext *swsContext);
 
-struct SwsContext *sws_getContextFromCmdLine(int srcW, int srcH, int srcFormat, int dstW, int dstH, int dstFormat);
 struct SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, int dstH, int dstFormat, int flags,
 			 SwsFilter *srcFilter, SwsFilter *dstFilter);
 int sws_scale(struct SwsContext *context, uint8_t* src[], int srcStride[], int srcSliceY,
@@ -107,7 +99,6 @@ int sws_scale(struct SwsContext *context, uint8_t* src[], int srcStride[], int s
 int sws_scale_ordered(struct SwsContext *context, uint8_t* src[], int srcStride[], int srcSliceY,
                            int srcSliceH, uint8_t* dst[], int dstStride[]);
 
-void sws_getFlagsAndFilterFromCmdLine(int *flags, SwsFilter **srcFilterParam, SwsFilter **dstFilterParam); //FIXME try to seperate this 
 
 int sws_setColorspaceDetails(struct SwsContext *c, const int inv_table[4], int srcRange, const int table[4], int dstRange, int brightness, int contrast, int saturation);
 int sws_getColorspaceDetails(struct SwsContext *c, int **inv_table, int *srcRange, int **table, int *dstRange, int *brightness, int *contrast, int *saturation);

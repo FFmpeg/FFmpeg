@@ -132,7 +132,6 @@ untested special converters
 #define RV ((int)( 0.439*(1<<RGB2YUV_SHIFT)+0.5))
 #define RU ((int)(-0.148*(1<<RGB2YUV_SHIFT)+0.5))
 
-extern int verbose; // defined in mplayer.c
 extern const int32_t Inverse_Table_6_9[8][4];
 
 /*
@@ -155,10 +154,6 @@ write special BGR->BGR scaler
 #define MAX(a,b) ((a) < (b) ? (b) : (a))
 
 #ifdef ARCH_X86
-#define CAN_COMPILE_X86_ASM
-#endif
-
-#ifdef CAN_COMPILE_X86_ASM
 static uint64_t __attribute__((aligned(8))) bF8=       0xF8F8F8F8F8F8F8F8LL;
 static uint64_t __attribute__((aligned(8))) bFC=       0xFCFCFCFCFCFCFCFCLL;
 static uint64_t __attribute__((aligned(8))) w10=       0x0010001000100010LL;
@@ -209,26 +204,6 @@ static const uint64_t w1111       __attribute__((aligned(8))) = 0x00010001000100
 // clipping helper table for C implementations:
 static unsigned char clip_table[768];
 
-//global sws_flags from the command line
-int sws_flags=2;
-
-//global srcFilter
-SwsFilter src_filter= {NULL, NULL, NULL, NULL};
-
-float sws_lum_gblur= 0.0;
-float sws_chr_gblur= 0.0;
-int sws_chr_vshift= 0;
-int sws_chr_hshift= 0;
-float sws_chr_sharpen= 0.0;
-float sws_lum_sharpen= 0.0;
-
-/* cpuCaps combined from cpudetect and whats actually compiled in
-   (if there is no support for something compiled in it wont appear here) */
-static CpuCaps cpuCaps;
-
-int (*swScale)(SwsContext *context, uint8_t* src[], int srcStride[], int srcSliceY,
-             int srcSliceH, uint8_t* dst[], int dstStride[])=NULL;
-
 static SwsVector *sws_getConvVec(SwsVector *a, SwsVector *b);
 		  
 extern const uint8_t dither_2x2_4[2][8];
@@ -237,7 +212,7 @@ extern const uint8_t dither_8x8_32[8][8];
 extern const uint8_t dither_8x8_73[8][8];
 extern const uint8_t dither_8x8_220[8][8];
 
-#ifdef CAN_COMPILE_X86_ASM
+#ifdef ARCH_X86
 void in_asm_used_var_warning_killer()
 {
  volatile int i= bF8+bFC+w10+
@@ -690,7 +665,7 @@ static inline void yuv2packedXinC(SwsContext *c, int16_t *lumFilter, int16_t **l
 #define COMPILE_C
 #endif
 
-#ifdef CAN_COMPILE_X86_ASM
+#ifdef ARCH_X86
 
 #if (defined (HAVE_MMX) && !defined (HAVE_3DNOW) && !defined (HAVE_MMX2)) || defined (RUNTIME_CPUDETECT)
 #define COMPILE_MMX
@@ -703,7 +678,7 @@ static inline void yuv2packedXinC(SwsContext *c, int16_t *lumFilter, int16_t **l
 #if (defined (HAVE_3DNOW) && !defined (HAVE_MMX2)) || defined (RUNTIME_CPUDETECT)
 #define COMPILE_3DNOW
 #endif
-#endif //CAN_COMPILE_X86_ASM
+#endif //ARCH_X86
 
 #undef HAVE_MMX
 #undef HAVE_MMX2
@@ -717,7 +692,7 @@ static inline void yuv2packedXinC(SwsContext *c, int16_t *lumFilter, int16_t **l
 #include "swscale_template.c"
 #endif
 
-#ifdef CAN_COMPILE_X86_ASM
+#ifdef ARCH_X86
 
 //X86 versions
 /*
@@ -759,139 +734,9 @@ static inline void yuv2packedXinC(SwsContext *c, int16_t *lumFilter, int16_t **l
 #include "swscale_template.c"
 #endif
 
-#endif //CAN_COMPILE_X86_ASM
+#endif //ARCH_X86
 
 // minor note: the HAVE_xyz is messed up after that line so dont use it
-
-
-// old global scaler, dont use for new code
-// will use sws_flags from the command line
-void SwScale_YV12slice(unsigned char* src[], int srcStride[], int srcSliceY ,
-			     int srcSliceH, uint8_t* dst[], int dstStride, int dstbpp,
-			     int srcW, int srcH, int dstW, int dstH){
-
-	static SwsContext *context=NULL;
-	int dstFormat;
-	int dstStride3[3]= {dstStride, dstStride>>1, dstStride>>1};
-
-	switch(dstbpp)
-	{
-		case 8 : dstFormat= IMGFMT_Y8;		break;
-		case 12: dstFormat= IMGFMT_YV12;	break;
-		case 15: dstFormat= IMGFMT_BGR15;	break;
-		case 16: dstFormat= IMGFMT_BGR16;	break;
-		case 24: dstFormat= IMGFMT_BGR24;	break;
-		case 32: dstFormat= IMGFMT_BGR32;	break;
-		default: return;
-	}
-
-	if(!context) context=sws_getContextFromCmdLine(srcW, srcH, IMGFMT_YV12, dstW, dstH, dstFormat);
-
-	context->swScale(context, src, srcStride, srcSliceY, srcSliceH, dst, dstStride3);
-}
-
-void sws_getFlagsAndFilterFromCmdLine(int *flags, SwsFilter **srcFilterParam, SwsFilter **dstFilterParam)
-{
-	static int firstTime=1;
-	*flags=0;
-
-#ifdef ARCH_X86
-	if(gCpuCaps.hasMMX)
-		asm volatile("emms\n\t"::: "memory"); //FIXME this shouldnt be required but it IS (even for non mmx versions)
-#endif
-	if(firstTime)
-	{
-		firstTime=0;
-		*flags= SWS_PRINT_INFO;
-	}
-	else if(verbose>1) *flags= SWS_PRINT_INFO;
-
-	if(src_filter.lumH) sws_freeVec(src_filter.lumH);
-	if(src_filter.lumV) sws_freeVec(src_filter.lumV);
-	if(src_filter.chrH) sws_freeVec(src_filter.chrH);
-	if(src_filter.chrV) sws_freeVec(src_filter.chrV);
-
-	if(sws_lum_gblur!=0.0){
-		src_filter.lumH= sws_getGaussianVec(sws_lum_gblur, 3.0);
-		src_filter.lumV= sws_getGaussianVec(sws_lum_gblur, 3.0);
-	}else{
-		src_filter.lumH= sws_getIdentityVec();
-		src_filter.lumV= sws_getIdentityVec();
-	}
-
-	if(sws_chr_gblur!=0.0){
-		src_filter.chrH= sws_getGaussianVec(sws_chr_gblur, 3.0);
-		src_filter.chrV= sws_getGaussianVec(sws_chr_gblur, 3.0);
-	}else{
-		src_filter.chrH= sws_getIdentityVec();
-		src_filter.chrV= sws_getIdentityVec();
-	}
-
-	if(sws_chr_sharpen!=0.0){
-		SwsVector *g= sws_getConstVec(-1.0, 3);
-		SwsVector *id= sws_getConstVec(10.0/sws_chr_sharpen, 1);
-		g->coeff[1]=2.0;
-		sws_addVec(id, g);
-		sws_convVec(src_filter.chrH, id);
-		sws_convVec(src_filter.chrV, id);
-		sws_freeVec(g);
-		sws_freeVec(id);
-	}
-
-	if(sws_lum_sharpen!=0.0){
-		SwsVector *g= sws_getConstVec(-1.0, 3);
-		SwsVector *id= sws_getConstVec(10.0/sws_lum_sharpen, 1);
-		g->coeff[1]=2.0;
-		sws_addVec(id, g);
-		sws_convVec(src_filter.lumH, id);
-		sws_convVec(src_filter.lumV, id);
-		sws_freeVec(g);
-		sws_freeVec(id);
-	}
-
-	if(sws_chr_hshift)
-		sws_shiftVec(src_filter.chrH, sws_chr_hshift);
-
-	if(sws_chr_vshift)
-		sws_shiftVec(src_filter.chrV, sws_chr_vshift);
-
-	sws_normalizeVec(src_filter.chrH, 1.0);
-	sws_normalizeVec(src_filter.chrV, 1.0);
-	sws_normalizeVec(src_filter.lumH, 1.0);
-	sws_normalizeVec(src_filter.lumV, 1.0);
-
-	if(verbose > 1) sws_printVec(src_filter.chrH);
-	if(verbose > 1) sws_printVec(src_filter.lumH);
-
-	switch(sws_flags)
-	{
-		case 0: *flags|= SWS_FAST_BILINEAR; break;
-		case 1: *flags|= SWS_BILINEAR; break;
-		case 2: *flags|= SWS_BICUBIC; break;
-		case 3: *flags|= SWS_X; break;
-		case 4: *flags|= SWS_POINT; break;
-		case 5: *flags|= SWS_AREA; break;
-		case 6: *flags|= SWS_BICUBLIN; break;
-		case 7: *flags|= SWS_GAUSS; break;
-		case 8: *flags|= SWS_SINC; break;
-		case 9: *flags|= SWS_LANCZOS; break;
-		case 10:*flags|= SWS_SPLINE; break;
-		default:*flags|= SWS_BILINEAR; break;
-	}
-	
-	*srcFilterParam= &src_filter;
-	*dstFilterParam= NULL;
-}
-
-// will use sws_flags & src_filter (from cmd line)
-SwsContext *sws_getContextFromCmdLine(int srcW, int srcH, int srcFormat, int dstW, int dstH, int dstFormat)
-{
-	int flags;
-	SwsFilter *dstFilterParam, *srcFilterParam;
-	sws_getFlagsAndFilterFromCmdLine(&flags, &srcFilterParam, &dstFilterParam);
-
-	return sws_getContext(srcW, srcH, srcFormat, dstW, dstH, dstFormat, flags, srcFilterParam, dstFilterParam);
-}
 
 static double getSplineCoeff(double a, double b, double c, double d, double dist)
 {
@@ -915,7 +760,7 @@ static inline void initFilter(int16_t **outFilter, int16_t **filterPos, int *out
 	double *filter=NULL;
 	double *filter2=NULL;
 #ifdef ARCH_X86
-	if(gCpuCaps.hasMMX)
+	if(flags & SWS_CPU_CAPS_MMX)
 		asm volatile("emms\n\t"::: "memory"); //FIXME this shouldnt be required but it IS (even for non mmx versions)
 #endif
 
@@ -1438,38 +1283,34 @@ static void globalInit(){
 	int c= MIN(MAX(i-256, 0), 255);
 	clip_table[i]=c;
     }
+}
 
-cpuCaps= gCpuCaps;
-
+static SwsFunc getSwsFunc(int flags){
+    
 #ifdef RUNTIME_CPUDETECT
-#ifdef CAN_COMPILE_X86_ASM
+#ifdef ARCH_X86
 	// ordered per speed fasterst first
-	if(gCpuCaps.hasMMX2)
-		swScale= swScale_MMX2;
-	else if(gCpuCaps.has3DNow)
-		swScale= swScale_3DNow;
-	else if(gCpuCaps.hasMMX)
-		swScale= swScale_MMX;
+	if(flags & SWS_CPU_CAPS_MMX2)
+		return swScale_MMX2;
+	else if(flags & SWS_CPU_CAPS_3DNOW)
+		return swScale_3DNow;
+	else if(flags & SWS_CPU_CAPS_MMX)
+		return swScale_MMX;
 	else
-		swScale= swScale_C;
+		return swScale_C;
 
 #else
-	swScale= swScale_C;
-	cpuCaps.hasMMX2 = cpuCaps.hasMMX = cpuCaps.has3DNow = 0;
+	return swScale_C;
 #endif
 #else //RUNTIME_CPUDETECT
 #ifdef HAVE_MMX2
-	swScale= swScale_MMX2;
-	cpuCaps.has3DNow = 0;
+	return swScale_MMX2;
 #elif defined (HAVE_3DNOW)
-	swScale= swScale_3DNow;
-	cpuCaps.hasMMX2 = 0;
+	return swScale_3DNow;
 #elif defined (HAVE_MMX)
-	swScale= swScale_MMX;
-	cpuCaps.hasMMX2 = cpuCaps.has3DNow = 0;
+	return swScale_MMX;
 #else
-	swScale= swScale_C;
-	cpuCaps.hasMMX2 = cpuCaps.hasMMX = cpuCaps.has3DNow = 0;
+	return swScale_C;
 #endif
 #endif //!RUNTIME_CPUDETECT
 }
@@ -1856,10 +1697,21 @@ SwsContext *sws_getContext(int srcW, int srcH, int origSrcFormat, int dstW, int 
 	int srcFormat, dstFormat;
 	SwsFilter dummyFilter= {NULL, NULL, NULL, NULL};
 #ifdef ARCH_X86
-	if(gCpuCaps.hasMMX)
+	if(flags & SWS_CPU_CAPS_MMX)
 		asm volatile("emms\n\t"::: "memory");
 #endif
-	if(swScale==NULL) globalInit();
+
+#ifndef RUNTIME_CPUDETECT //ensure that the flags match the compiled variant if cpudetect is off
+	flags &= ~(SWS_CPU_CAPS_MMX|SWS_CPU_CAPS_MMX2|SWS_CPU_CAPS_3DNOW);
+#ifdef HAVE_MMX2
+	flags |= SWS_CPU_CAPS_MMX|SWS_CPU_CAPS_MMX2;
+#elif defined (HAVE_3DNOW)
+	flags |= SWS_CPU_CAPS_MMX|SWS_CPU_CAPS_3DNOW;
+#elif defined (HAVE_MMX)
+	flags |= SWS_CPU_CAPS_MMX;
+#endif
+#endif
+	if(clip_table[512] != 255) globalInit();
 
 	/* avoid dupplicate Formats, so we dont need to check to much */
 	srcFormat = remove_dup_fourcc(origSrcFormat);
@@ -2003,7 +1855,7 @@ SwsContext *sws_getContext(int srcW, int srcH, int origSrcFormat, int dstW, int 
 		}
 	}
 
-	if(cpuCaps.hasMMX2)
+	if(flags & SWS_CPU_CAPS_MMX2)
 	{
 		c->canMMX2BeUsed= (dstW >=srcW && (dstW&31)==0 && (srcW&15)==0) ? 1 : 0;
 		if(!c->canMMX2BeUsed && dstW >=srcW && (srcW&15)==0 && (flags&SWS_FAST_BILINEAR))
@@ -2032,7 +1884,7 @@ SwsContext *sws_getContext(int srcW, int srcH, int origSrcFormat, int dstW, int 
 			c->chrXInc+= 20;
 		}
 		//we dont use the x86asm scaler if mmx is available
-		else if(cpuCaps.hasMMX)
+		else if(flags & SWS_CPU_CAPS_MMX)
 		{
 			c->lumXInc = ((srcW-2)<<16)/(dstW-2) - 20;
 			c->chrXInc = ((c->chrSrcW-2)<<16)/(c->chrDstW-2) - 20;
@@ -2041,7 +1893,7 @@ SwsContext *sws_getContext(int srcW, int srcH, int origSrcFormat, int dstW, int 
 
 	/* precalculate horizontal scaler filter coefficients */
 	{
-		const int filterAlign= cpuCaps.hasMMX ? 4 : 1;
+		const int filterAlign= (flags & SWS_CPU_CAPS_MMX) ? 4 : 1;
 
 		initFilter(&c->hLumFilter, &c->hLumFilterPos, &c->hLumFilterSize, c->lumXInc,
 				 srcW      ,       dstW, filterAlign, 1<<14,
@@ -2148,19 +2000,19 @@ SwsContext *sws_getContext(int srcW, int srcH, int origSrcFormat, int dstW, int 
 			MSG_INFO("from %s to %s ", 
 				vo_format_name(srcFormat), vo_format_name(dstFormat));
 
-		if(cpuCaps.hasMMX2)
+		if(flags & SWS_CPU_CAPS_MMX2)
 			MSG_INFO("using MMX2\n");
-		else if(cpuCaps.has3DNow)
+		else if(flags & SWS_CPU_CAPS_3DNOW)
 			MSG_INFO("using 3DNOW\n");
-		else if(cpuCaps.hasMMX)
+		else if(flags & SWS_CPU_CAPS_MMX)
 			MSG_INFO("using MMX\n");
 		else
 			MSG_INFO("using C\n");
 	}
 
-	if((flags & SWS_PRINT_INFO) && verbose>0)
+	if(flags & SWS_PRINT_INFO)
 	{
-		if(cpuCaps.hasMMX)
+		if(flags & SWS_CPU_CAPS_MMX)
 		{
 			if(c->canMMX2BeUsed && (flags&SWS_FAST_BILINEAR))
 				MSG_V("SwScaler: using FAST_BILINEAR MMX2 scaler for horizontal scaling\n");
@@ -2195,34 +2047,34 @@ SwsContext *sws_getContext(int srcW, int srcH, int origSrcFormat, int dstW, int 
 		if(isPlanarYUV(dstFormat))
 		{
 			if(c->vLumFilterSize==1)
-				MSG_V("SwScaler: using 1-tap %s \"scaler\" for vertical scaling (YV12 like)\n", cpuCaps.hasMMX ? "MMX" : "C");
+				MSG_V("SwScaler: using 1-tap %s \"scaler\" for vertical scaling (YV12 like)\n", (flags & SWS_CPU_CAPS_MMX) ? "MMX" : "C");
 			else
-				MSG_V("SwScaler: using n-tap %s scaler for vertical scaling (YV12 like)\n", cpuCaps.hasMMX ? "MMX" : "C");
+				MSG_V("SwScaler: using n-tap %s scaler for vertical scaling (YV12 like)\n", (flags & SWS_CPU_CAPS_MMX) ? "MMX" : "C");
 		}
 		else
 		{
 			if(c->vLumFilterSize==1 && c->vChrFilterSize==2)
 				MSG_V("SwScaler: using 1-tap %s \"scaler\" for vertical luminance scaling (BGR)\n"
-				       "SwScaler:       2-tap scaler for vertical chrominance scaling (BGR)\n",cpuCaps.hasMMX ? "MMX" : "C");
+				       "SwScaler:       2-tap scaler for vertical chrominance scaling (BGR)\n",(flags & SWS_CPU_CAPS_MMX) ? "MMX" : "C");
 			else if(c->vLumFilterSize==2 && c->vChrFilterSize==2)
-				MSG_V("SwScaler: using 2-tap linear %s scaler for vertical scaling (BGR)\n", cpuCaps.hasMMX ? "MMX" : "C");
+				MSG_V("SwScaler: using 2-tap linear %s scaler for vertical scaling (BGR)\n", (flags & SWS_CPU_CAPS_MMX) ? "MMX" : "C");
 			else
-				MSG_V("SwScaler: using n-tap %s scaler for vertical scaling (BGR)\n", cpuCaps.hasMMX ? "MMX" : "C");
+				MSG_V("SwScaler: using n-tap %s scaler for vertical scaling (BGR)\n", (flags & SWS_CPU_CAPS_MMX) ? "MMX" : "C");
 		}
 
 		if(dstFormat==IMGFMT_BGR24)
 			MSG_V("SwScaler: using %s YV12->BGR24 Converter\n",
-				cpuCaps.hasMMX2 ? "MMX2" : (cpuCaps.hasMMX ? "MMX" : "C"));
+				(flags & SWS_CPU_CAPS_MMX2) ? "MMX2" : ((flags & SWS_CPU_CAPS_MMX) ? "MMX" : "C"));
 		else if(dstFormat==IMGFMT_BGR32)
-			MSG_V("SwScaler: using %s YV12->BGR32 Converter\n", cpuCaps.hasMMX ? "MMX" : "C");
+			MSG_V("SwScaler: using %s YV12->BGR32 Converter\n", (flags & SWS_CPU_CAPS_MMX) ? "MMX" : "C");
 		else if(dstFormat==IMGFMT_BGR16)
-			MSG_V("SwScaler: using %s YV12->BGR16 Converter\n", cpuCaps.hasMMX ? "MMX" : "C");
+			MSG_V("SwScaler: using %s YV12->BGR16 Converter\n", (flags & SWS_CPU_CAPS_MMX) ? "MMX" : "C");
 		else if(dstFormat==IMGFMT_BGR15)
-			MSG_V("SwScaler: using %s YV12->BGR15 Converter\n", cpuCaps.hasMMX ? "MMX" : "C");
+			MSG_V("SwScaler: using %s YV12->BGR15 Converter\n", (flags & SWS_CPU_CAPS_MMX) ? "MMX" : "C");
 
 		MSG_V("SwScaler: %dx%d -> %dx%d\n", srcW, srcH, dstW, dstH);
 	}
-	if((flags & SWS_PRINT_INFO) && verbose>1)
+	if(flags & SWS_PRINT_INFO)
 	{
 		MSG_DBG2("SwScaler:Lum srcW=%d srcH=%d dstW=%d dstH=%d xInc=%d yInc=%d\n",
 			c->srcW, c->srcH, c->dstW, c->dstH, c->lumXInc, c->lumYInc);
@@ -2230,7 +2082,7 @@ SwsContext *sws_getContext(int srcW, int srcH, int origSrcFormat, int dstW, int 
 			c->chrSrcW, c->chrSrcH, c->chrDstW, c->chrDstH, c->chrXInc, c->chrYInc);
 	}
 
-	c->swScale= swScale;
+	c->swScale= getSwsFunc(flags);
 	return c;
 }
 
