@@ -28,13 +28,15 @@
 */
 void gmc1_altivec(UINT8 *dst /* align 8 */, UINT8 *src /* align1 */, int stride, int h, int x16, int y16, int rounder)
 {
-#if 0
+ALTIVEC_TBL_DECLARE(altivec_gmc1_num, h == 8);
+#ifdef ALTIVEC_USE_REFERENCE_C_CODE
     const int A=(16-x16)*(16-y16);
     const int B=(   x16)*(16-y16);
     const int C=(16-x16)*(   y16);
     const int D=(   x16)*(   y16);
-    
     int i;
+
+ALTIVEC_TBL_START_COUNT(altivec_gmc1_num, h == 8);
     
     for(i=0; i<h; i++)
     {
@@ -49,7 +51,10 @@ void gmc1_altivec(UINT8 *dst /* align 8 */, UINT8 *src /* align1 */, int stride,
         dst+= stride;
         src+= stride;
     }
-#else
+
+ALTIVEC_TBL_STOP_COUNT(altivec_gmc1_num, h == 8);
+
+#else /* ALTIVEC_USE_REFERENCE_C_CODE */
     const unsigned short __attribute__ ((aligned(16))) rounder_a[8] =
       {rounder, rounder, rounder, rounder,
        rounder, rounder, rounder, rounder};
@@ -61,7 +66,6 @@ void gmc1_altivec(UINT8 *dst /* align 8 */, UINT8 *src /* align1 */, int stride,
         (   x16)*(   y16), /* D */
         0, 0, 0, 0         /* padding */
       };
-    
     register const vector unsigned char vczero = (const vector unsigned char)(0);
     register const vector unsigned short vcsr8 = (const vector unsigned short)(8);
     register vector unsigned char dstv, dstv2, src_0, src_1, srcvA, srcvB, srcvC, srcvD;
@@ -69,6 +73,9 @@ void gmc1_altivec(UINT8 *dst /* align 8 */, UINT8 *src /* align1 */, int stride,
     int i;
     unsigned long dst_odd = (unsigned long)dst & 0x0000000F;
     unsigned long src_really_odd = (unsigned long)src & 0x0000000F;
+
+
+ALTIVEC_TBL_START_COUNT(altivec_gmc1_num, h == 8);
 
     tempA = vec_ld(0, (unsigned short*)ABCD);
     Av = vec_splat(tempA, 0);
@@ -155,5 +162,8 @@ void gmc1_altivec(UINT8 *dst /* align 8 */, UINT8 *src /* align1 */, int stride,
       dst += stride;
       src += stride;
     }
-#endif
+
+ALTIVEC_TBL_STOP_COUNT(altivec_gmc1_num, h == 8);
+
+#endif /* ALTIVEC_USE_REFERENCE_C_CODE */
 }

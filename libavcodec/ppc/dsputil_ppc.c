@@ -60,11 +60,27 @@ void dsputil_init_ppc(DSPContext* c, unsigned mask)
         c->pix_sum = pix_sum_altivec;
         c->diff_pixels = diff_pixels_altivec;
         c->get_pixels = get_pixels_altivec;
-// next one disabled as it it untested.
+// next two disabled as they're untested.
 #if 0
         c->add_bytes= add_bytes_altivec;
+        c->put_pixels_clamped = put_pixels_clamped_altivec;
 #endif
+        c->put_pixels_tab[0][0] = put_pixels16_altivec;
+        c->avg_pixels_tab[0][0] = avg_pixels16_altivec;
 	c->gmc1 = gmc1_altivec;
+
+#ifdef ALTIVEC_TBL_PERFORMANCE_REPORT
+        {
+          int i;
+          for (i = 0 ; i < altivec_perf_total ; i++)
+          {
+            perfdata[i][altivec_data_min] = 0xFFFFFFFFFFFFFFFF;
+            perfdata[i][altivec_data_max] = 0x0000000000000000;
+            perfdata[i][altivec_data_sum] = 0x0000000000000000;
+            perfdata[i][altivec_data_num] = 0x0000000000000000;
+          }
+        }
+#endif
     } else
 #endif
     {

@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include "../dsputil.h"
 #include "../mpegvideo.h"
+#include "dsputil_altivec.h"
 
 // Swaps two variables (used for altivec registers)
 #define SWAP(a,b) \
@@ -510,10 +511,13 @@ int dct_quantize_altivec(MpegEncContext* s,
 void dct_unquantize_h263_altivec(MpegEncContext *s, 
                                  DCTELEM *block, int n, int qscale)
 {
+ALTIVEC_TBL_DECLARE(altivec_dct_unquantize_h263_num, 1);
     int i, level, qmul, qadd;
     int nCoeffs;
     
     assert(s->block_last_index[n]>=0);
+
+ALTIVEC_TBL_START_COUNT(altivec_dct_unquantize_h263_num, 1);
     
     qadd = (qscale - 1) | 1;
     qmul = qscale << 1;
@@ -533,7 +537,7 @@ void dct_unquantize_h263_altivec(MpegEncContext *s,
         nCoeffs= s->intra_scantable.raster_end[ s->block_last_index[n] ];
     }
 
-#if 0
+#ifdef ALTIVEC_USE_REFERENCE_C_CODE
     for(;i<=nCoeffs;i++) {
         level = block[i];
         if (level) {
@@ -545,7 +549,7 @@ void dct_unquantize_h263_altivec(MpegEncContext *s,
             block[i] = level;
         }
     }
-#else
+#else /* ALTIVEC_USE_REFERENCE_C_CODE */
     {
       register const vector short vczero = (const vector short)(0);
       short __attribute__ ((aligned(16))) qmul8[] =
@@ -572,6 +576,7 @@ void dct_unquantize_h263_altivec(MpegEncContext *s,
       qaddv = vec_ld(0, qadd8);
       nqaddv = vec_ld(0, nqadd8);
 
+#if 0 // block *is* 16 bytes-aligned, it seems.
       // first make sure block[j] is 16 bytes-aligned
       for(j = 0; (j <= nCoeffs) && ((((unsigned long)block) + (j << 1)) & 0x0000000F) ; j++) {
         level = block[j];
@@ -584,6 +589,7 @@ void dct_unquantize_h263_altivec(MpegEncContext *s,
             block[j] = level;
         }
       }
+#endif
       
       // vectorize all the 16 bytes-aligned blocks
       // of 8 elements
@@ -622,5 +628,7 @@ void dct_unquantize_h263_altivec(MpegEncContext *s,
         block[0] = backup_0;
       }
     }
-#endif
+#endif /* ALTIVEC_USE_REFERENCE_C_CODE */
+
+ALTIVEC_TBL_STOP_COUNT(altivec_dct_unquantize_h263_num, nCoeffs == 63);
 }

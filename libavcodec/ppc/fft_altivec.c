@@ -22,6 +22,31 @@
 
 #include "dsputil_altivec.h"
 
+/*
+  those three macros are from libavcodec/fft.c
+  and are required for the reference C code
+*/
+/* butter fly op */
+#define BF(pre, pim, qre, qim, pre1, pim1, qre1, qim1) \
+{\
+  FFTSample ax, ay, bx, by;\
+  bx=pre1;\
+  by=pim1;\
+  ax=qre1;\
+  ay=qim1;\
+  pre = (bx + ax);\
+  pim = (by + ay);\
+  qre = (bx - ax);\
+  qim = (by - ay);\
+}
+#define MUL16(a,b) ((a) * (b))
+#define CMUL(pre, pim, are, aim, bre, bim) \
+{\
+   pre = (MUL16(are, bre) - MUL16(aim, bim));\
+   pim = (MUL16(are, bim) + MUL16(bre, aim));\
+}
+
+
 /**
  * Do a complex FFT with the parameters defined in fft_init(). The
  * input data must be permuted before with s->revtab table. No
@@ -35,6 +60,84 @@
  */
 void fft_calc_altivec(FFTContext *s, FFTComplex *z)
 {
+ALTIVEC_TBL_DECLARE(altivec_fft_num, s->nbits >= 6);
+#ifdef ALTIVEC_USE_REFERENCE_C_CODE
+    int ln = s->nbits;
+    int	j, np, np2;
+    int	nblocks, nloops;
+    register FFTComplex *p, *q;
+    FFTComplex *exptab = s->exptab;
+    int l;
+    FFTSample tmp_re, tmp_im;
+    
+ALTIVEC_TBL_START_COUNT(altivec_fft_num, s->nbits >= 6);
+ 
+    np = 1 << ln;
+
+    /* pass 0 */
+
+    p=&z[0];
+    j=(np >> 1);
+    do {
+        BF(p[0].re, p[0].im, p[1].re, p[1].im, 
+           p[0].re, p[0].im, p[1].re, p[1].im);
+        p+=2;
+    } while (--j != 0);
+
+    /* pass 1 */
+
+    
+    p=&z[0];
+    j=np >> 2;
+    if (s->inverse) {
+        do {
+            BF(p[0].re, p[0].im, p[2].re, p[2].im, 
+               p[0].re, p[0].im, p[2].re, p[2].im);
+            BF(p[1].re, p[1].im, p[3].re, p[3].im, 
+               p[1].re, p[1].im, -p[3].im, p[3].re);
+            p+=4;
+        } while (--j != 0);
+    } else {
+        do {
+            BF(p[0].re, p[0].im, p[2].re, p[2].im, 
+               p[0].re, p[0].im, p[2].re, p[2].im);
+            BF(p[1].re, p[1].im, p[3].re, p[3].im, 
+               p[1].re, p[1].im, p[3].im, -p[3].re);
+            p+=4;
+        } while (--j != 0);
+    }
+    /* pass 2 .. ln-1 */
+
+    nblocks = np >> 3;
+    nloops = 1 << 2;
+    np2 = np >> 1;
+    do {
+        p = z;
+        q = z + nloops;
+        for (j = 0; j < nblocks; ++j) {
+            BF(p->re, p->im, q->re, q->im,
+               p->re, p->im, q->re, q->im);
+            
+            p++;
+            q++;
+            for(l = nblocks; l < np2; l += nblocks) {
+                CMUL(tmp_re, tmp_im, exptab[l].re, exptab[l].im, q->re, q->im);
+                BF(p->re, p->im, q->re, q->im,
+                   p->re, p->im, tmp_re, tmp_im);
+                p++;
+                q++;
+            }
+
+            p += nloops;
+            q += nloops;
+        }
+        nblocks = nblocks >> 1;
+        nloops = nloops << 1;
+    } while (nblocks != 0);
+
+ALTIVEC_TBL_STOP_COUNT(altivec_fft_num, s->nbits >= 6);
+
+#else /* ALTIVEC_USE_REFERENCE_C_CODE */
     register const vector float vczero = (const vector float)(0.);
     
     int ln = s->nbits;
@@ -43,6 +146,8 @@ void fft_calc_altivec(FFTContext *s, FFTComplex *z)
     register FFTComplex *p, *q;
     FFTComplex *cptr, *cptr1;
     int k;
+
+ALTIVEC_TBL_START_COUNT(altivec_fft_num, s->nbits >= 6);
 
     np = 1 << ln;
 
@@ -129,5 +234,8 @@ void fft_calc_altivec(FFTContext *s, FFTComplex *z)
         nblocks = nblocks >> 1;
         nloops = nloops << 1;
     } while (nblocks != 0);
-}
 
+ALTIVEC_TBL_STOP_COUNT(altivec_fft_num, s->nbits >= 6);
+
+#endif /* ALTIVEC_USE_REFERENCE_C_CODE */
+}

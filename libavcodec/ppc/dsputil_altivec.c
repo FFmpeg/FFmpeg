@@ -24,6 +24,22 @@
 #include <sys/sysctl.h>
 #endif
 
+#ifdef ALTIVEC_TBL_PERFORMANCE_REPORT
+unsigned long long perfdata[altivec_perf_total][altivec_data_total];
+/* list below must match enum in dsputil_altivec.h */
+static unsigned char* perfname[] = {
+  "fft_calc",
+  "gmc1",
+  "dct_unquantize_h263",
+  "idct_add",
+  "idct_put",
+  "put_pixels_clamped",
+  "put_pixels16",
+  "avg_pixels16"
+};
+#include <stdio.h>
+#endif
+
 int pix_abs16x16_x2_altivec(uint8_t *pix1, uint8_t *pix2, int line_size)
 {
     int i;
@@ -594,7 +610,7 @@ int sad8x8_altivec(void *s, uint8_t *a, uint8_t *b, int stride) {
 }
 
 void add_bytes_altivec(uint8_t *dst, uint8_t *src, int w) {
-#if 0
+#ifdef ALTIVEC_USE_REFERENCE_C_CODE
     int i;
     for(i=0; i+7<w; i++){
         dst[i+0] += src[i+0];
@@ -608,38 +624,188 @@ void add_bytes_altivec(uint8_t *dst, uint8_t *src, int w) {
     }
     for(; i<w; i++)
         dst[i+0] += src[i+0];
-#else
+#else /* ALTIVEC_USE_REFERENCE_C_CODE */
     register int i;
-    register uint8_t *temp_src = src, *temp_dst = dst;
-    register vector unsigned char vdst, vsrc, temp1, temp2;
-    register vector unsigned char perm;
-    register int count = 0;
-
-    for (i = 0; (i < w) && ((unsigned long)temp_dst & 0x0000000F) ; i++)
+    register vector unsigned char vdst, vsrc;
+    
+    /* dst and src are 16 bytes-aligned (guaranteed) */
+    for(i = 0 ; (i + 15) < w ; i++)
     {
-      dst[i] = src[i];
-      temp_src ++;
-      temp_dst ++;
-    }
-    /* temp_dst is a properly aligned pointer */
-    /* we still need to deal with ill-aligned src */
-    perm = vec_lvsl(0, temp_src);
-    temp1 = vec_ld(0, temp_src);
-    while ((i + 15) < w)
-    {
-      temp2 = vec_ld(count + 16, temp_src);
-      vdst = vec_ld(count, temp_dst);
-      vsrc = vec_perm(temp1, temp2, perm);
-      temp1 = temp2;
+      vdst = vec_ld(i << 4, (unsigned char*)dst);
+      vsrc = vec_ld(i << 4, (unsigned char*)src);
       vdst = vec_add(vsrc, vdst);
-      vec_st(vdst, count, temp_dst);
-      count += 16;
+      vec_st(vdst, i << 4, (unsigned char*)dst);
     }
+    /* if w is not a multiple of 16 */
     for (; (i < w) ; i++)
     {
       dst[i] = src[i];
     }
-#endif
+#endif /* ALTIVEC_USE_REFERENCE_C_CODE */
+}
+
+extern UINT8 cropTbl[];
+void put_pixels_clamped_altivec(const DCTELEM *block, UINT8 *restrict pixels,
+                                int line_size)
+{
+ALTIVEC_TBL_DECLARE(altivec_put_pixels_clamped_num, 1);
+#ifdef ALTIVEC_USE_REFERENCE_C_CODE
+    int i;
+    UINT8 *cm = cropTbl + MAX_NEG_CROP;
+
+ALTIVEC_TBL_START_COUNT(altivec_put_pixels_clamped_num, 1);
+    
+    /* read the pixels */
+    for(i=0;i<8;i++) {
+        pixels[0] = cm[block[0]];
+        pixels[1] = cm[block[1]];
+        pixels[2] = cm[block[2]];
+        pixels[3] = cm[block[3]];
+        pixels[4] = cm[block[4]];
+        pixels[5] = cm[block[5]];
+        pixels[6] = cm[block[6]];
+        pixels[7] = cm[block[7]];
+
+        pixels += line_size;
+        block += 8;
+    }
+
+ALTIVEC_TBL_STOP_COUNT(altivec_put_pixels_clamped_num, 1);
+
+#else /* ALTIVEC_USE_REFERENCE_C_CODE */
+    register const vector short vczero = (const vector short)(0);
+    register vector short
+      blockv0, blockv1, blockv2, blockv3,
+      blockv4, blockv5, blockv6, blockv7;
+    register vector unsigned char
+      pixelsv0, pixelsv1, pixelsv2, pixelsv3, pixelsv4,
+      pixelsv0old, pixelsv4old;
+
+ALTIVEC_TBL_START_COUNT(altivec_put_pixels_clamped_num, 1);
+
+    blockv0 = vec_ld(0, block);
+    blockv1 = vec_ld(16, block);
+    blockv2 = vec_ld(32, block);
+    blockv3 = vec_ld(48, block);
+    blockv4 = vec_ld(64, block);
+    blockv5 = vec_ld(80, block);
+    blockv6 = vec_ld(96, block);
+    blockv7 = vec_ld(112, block);
+    if (((unsigned long)pixels) & 0x0000000F)
+    {
+      pixelsv0old = vec_ld(-8, pixels);
+      pixelsv4old = vec_ld(56, pixels);
+      pixelsv0 = vec_packsu(vczero, blockv0);
+      pixelsv1 = vec_packsu(blockv1, blockv2);
+      pixelsv2 = vec_packsu(blockv3, blockv4);
+      pixelsv3 = vec_packsu(blockv5, blockv6);
+      pixelsv4 = vec_packsu(blockv5, vczero);
+      pixelsv0 = vec_perm(pixelsv0old, pixelsv0, vcprm(0, 1, s2, s3));
+      pixelsv4 = vec_perm(pixelsv4, pixelsv4old, vcprm(0, 1, s2, s3));
+      vec_st(pixelsv0, -8, pixels);
+      vec_st(pixelsv1, 8, pixels);
+      vec_st(pixelsv2, 24, pixels);
+      vec_st(pixelsv3, 40, pixels);
+      vec_st(pixelsv4, 56, pixels);
+    }
+    else
+    {
+      pixelsv0 = vec_packsu(blockv0, blockv1);
+      pixelsv1 = vec_packsu(blockv2, blockv3);
+      pixelsv2 = vec_packsu(blockv4, blockv5);
+      pixelsv3 = vec_packsu(blockv6, blockv7);
+      vec_st(pixelsv0, 0, pixels);
+      vec_st(pixelsv1, 16, pixels);
+      vec_st(pixelsv2, 32, pixels);
+      vec_st(pixelsv3, 48, pixels);
+    }
+
+ALTIVEC_TBL_STOP_COUNT(altivec_put_pixels_clamped_num, 1);
+#endif /* ALTIVEC_USE_REFERENCE_C_CODE */
+}
+
+void put_pixels16_altivec(uint8_t *block, const uint8_t *pixels, int line_size, int h)
+{
+ALTIVEC_TBL_DECLARE(altivec_put_pixels16_num, 1);
+#ifdef ALTIVEC_USE_REFERENCE_C_CODE
+    int i;
+
+ALTIVEC_TBL_START_COUNT(altivec_put_pixels16_num, 1);
+
+    for(i=0; i<h; i++) {
+      *((uint32_t*)(block )) = (((const struct unaligned_32 *) (pixels))->l);
+      *((uint32_t*)(block+4)) = (((const struct unaligned_32 *) (pixels+4))->l);
+      *((uint32_t*)(block+8)) = (((const struct unaligned_32 *) (pixels+8))->l);
+      *((uint32_t*)(block+12)) = (((const struct unaligned_32 *) (pixels+12))->l);
+      pixels+=line_size;
+      block +=line_size;
+    }
+
+ALTIVEC_TBL_STOP_COUNT(altivec_put_pixels16_num, 1);
+
+#else /* ALTIVEC_USE_REFERENCE_C_CODE */
+
+    register vector unsigned char perm = vec_lvsl(0, pixels); 
+    register vector unsigned char pixelsv1, pixelsv2;
+    int i;
+
+ALTIVEC_TBL_START_COUNT(altivec_put_pixels16_num, 1);
+
+    for(i=0; i<h; i++) {
+      pixelsv1 = vec_ld(0, (unsigned char*)pixels);
+      pixelsv2 = vec_ld(16, (unsigned char*)pixels);
+      vec_st(vec_perm(pixelsv1, pixelsv2, perm), 0, (unsigned char*)block);
+      pixels+=line_size;
+      block +=line_size;
+    }
+
+ALTIVEC_TBL_STOP_COUNT(altivec_put_pixels16_num, 1);
+
+#endif /* ALTIVEC_USE_REFERENCE_C_CODE */
+}
+
+#define op_avg(a,b)  a = ( ((a)|(b)) - ((((a)^(b))&0xFEFEFEFEUL)>>1) )
+void avg_pixels16_altivec(uint8_t *block, const uint8_t *pixels, int line_size, int h)
+{
+ALTIVEC_TBL_DECLARE(altivec_avg_pixels16_num, 1);
+#ifdef ALTIVEC_USE_REFERENCE_C_CODE
+    int i;
+
+ALTIVEC_TBL_START_COUNT(altivec_avg_pixels16_num, 1);
+
+    for(i=0; i<h; i++) {
+      op_avg(*((uint32_t*)(block)),(((const struct unaligned_32 *)(pixels))->l));
+      op_avg(*((uint32_t*)(block+4)),(((const struct unaligned_32 *)(pixels+4))->l));
+      op_avg(*((uint32_t*)(block+8)),(((const struct unaligned_32 *)(pixels+8))->l));
+      op_avg(*((uint32_t*)(block+12)),(((const struct unaligned_32 *)(pixels+12))->l));
+      pixels+=line_size;
+      block +=line_size;
+    }
+
+ALTIVEC_TBL_STOP_COUNT(altivec_avg_pixels16_num, 1);
+
+#else /* ALTIVEC_USE_REFERENCE_C_CODE */
+
+    register vector unsigned char perm = vec_lvsl(0, pixels); 
+    register vector unsigned char pixelsv1, pixelsv2, pixelsv, blockv;
+    int i;
+
+ALTIVEC_TBL_START_COUNT(altivec_avg_pixels16_num, 1);
+
+    for(i=0; i<h; i++) {
+      pixelsv1 = vec_ld(0, (unsigned char*)pixels);
+      pixelsv2 = vec_ld(16, (unsigned char*)pixels);
+      blockv = vec_ld(0, block);
+      pixelsv = vec_perm(pixelsv1, pixelsv2, perm);
+      blockv = vec_avg(blockv,pixelsv);
+      vec_st(blockv, 0, (unsigned char*)block);
+      pixels+=line_size;
+      block +=line_size;
+    }
+
+ALTIVEC_TBL_STOP_COUNT(altivec_avg_pixels16_num, 1);
+
+#endif /* ALTIVEC_USE_REFERENCE_C_CODE */
 }
 
 int has_altivec(void)
@@ -656,3 +822,22 @@ int has_altivec(void)
 #endif
     return 0;
 }
+
+#ifdef ALTIVEC_TBL_PERFORMANCE_REPORT
+void altivec_display_perf_report(void)
+{
+  int i;
+  fprintf(stderr, "AltiVec performance report\n Values are from the Time Base register, and represent 4 bus cycles.\n");
+  for(i = 0 ; i < altivec_perf_total ; i++)
+  {
+    if (perfdata[i][altivec_data_num] != (unsigned long long)0)
+      fprintf(stderr, " Function \"%s\":\n\tmin: %llu\n\tmax: %llu\n\tavg: %1.2lf (%llu)\n",
+              perfname[i],
+              perfdata[i][altivec_data_min],
+              perfdata[i][altivec_data_max],
+              (double)perfdata[i][altivec_data_sum] /
+              (double)perfdata[i][altivec_data_num],
+              perfdata[i][altivec_data_num]);
+  }
+}
+#endif /* ALTIVEC_TBL_PERFORMANCE_REPORT */

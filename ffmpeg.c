@@ -2829,5 +2829,12 @@ int main(int argc, char **argv)
         av_close_input_file(input_files[i]);
 
     av_free_static();
+
+    
+#ifdef ALTIVEC_TBL_PERFORMANCE_REPORT
+    extern void altivec_display_perf_report(void);
+    altivec_display_perf_report();
+#endif /* ALTIVEC_TBL_PERFORMANCE_REPORT */
+
     return 0;
 }
