@@ -4264,15 +4264,13 @@ static int decode_cabac_residual( H264Context *h, DCTELEM *block, int cat, int n
     const int mb_xy  = h->s.mb_x + h->s.mb_y*h->s.mb_stride;
     const uint16_t *qmul= dequant_coeff[qp];
     static const int significant_coeff_flag_offset[5] = { 0, 15, 29, 44, 47 };
-    static const int last_significant_coeff_flag_offset[5] = { 0, 15, 29, 44, 47 };
-    static const int coeff_abs_level_m1_offset[5] = { 0, 10, 20, 30, 39 };
+    static const int coeff_abs_level_m1_offset[5] = {227+ 0, 227+10, 227+20, 227+30, 227+39 };
 
     int coeff[16];
+    int index[16];
 
-    int last = 0;
+    int i, last;
     int coeff_count = 0;
-    int nz[16] = {0};
-    int i;
 
     int abslevel1 = 0;
     int abslevelgt1 = 0;
@@ -4294,26 +4292,17 @@ static int decode_cabac_residual( H264Context *h, DCTELEM *block, int cat, int n
         return 0;
     }
 
-    while( last < max_coeff - 1 ) {
-        int ctx = FFMIN( last, max_coeff - 2 );
-
-        if( get_cabac( &h->cabac, &h->cabac_state[105+significant_coeff_flag_offset[cat]+ctx] ) == 0 ) {
-            nz[last++] = 0;
-        }
-        else {
-            nz[last++] = 1;
-            coeff_count++;
-            if( get_cabac( &h->cabac, &h->cabac_state[166+last_significant_coeff_flag_offset[cat]+ctx] ) ) {
-                while( last < max_coeff ) {
-                    nz[last++] = 0;
-                }
+    for(last= 0; last < max_coeff - 1; last++) {
+        if( get_cabac( &h->cabac, &h->cabac_state[105+significant_coeff_flag_offset[cat]+last] )) {
+            index[coeff_count++] = last;
+            if( get_cabac( &h->cabac, &h->cabac_state[166+significant_coeff_flag_offset[cat]+last] ) ) {
+                last= max_coeff;
                 break;
             }
         }
     }
     if( last == max_coeff -1 ) {
-        nz[last++] = 1;
-        coeff_count++;
+        index[coeff_count++] = last;
     }
 
     if( cat == 0 && coeff_count > 0 )
@@ -4326,61 +4315,53 @@ static int decode_cabac_residual( H264Context *h, DCTELEM *block, int cat, int n
         h->non_zero_count_cache[scan8[16+n]] = coeff_count;
 
     for( i = coeff_count - 1; i >= 0; i-- ) {
-        int coeff_abs_m1;
-
         int ctx = (abslevelgt1 != 0 ? 0 : FFMIN( 4, abslevel1 + 1 )) + coeff_abs_level_m1_offset[cat];
 
-        if( get_cabac( &h->cabac, &h->cabac_state[227+ctx] ) == 0 ) {
-            coeff_abs_m1 = 0;
-        } else {
-            coeff_abs_m1 = 1;
-            ctx = 5 + FFMIN( 4, abslevelgt1 ) + coeff_abs_level_m1_offset[cat];
-            while( coeff_abs_m1 < 14 && get_cabac( &h->cabac, &h->cabac_state[227+ctx] ) ) {
-                coeff_abs_m1++;
-            }
-        }
-
-        if( coeff_abs_m1 >= 14 ) {
-            int j = 0;
-            while( get_cabac_bypass( &h->cabac ) ) {
-                coeff_abs_m1 += 1 << j;
-                j++;
-            }
-
-            while( j-- ) {
-                if( get_cabac_bypass( &h->cabac ) )
-                    coeff_abs_m1 += 1 << j ;
-            }
-        }
-        if( get_cabac_bypass( &h->cabac ) )
-            coeff[i] = -1 *( coeff_abs_m1 + 1 );
-        else
-            coeff[i] = coeff_abs_m1 + 1;
-
-        if( coeff_abs_m1 == 0 )
+        if( get_cabac( &h->cabac, &h->cabac_state[ctx] ) == 0 ) {
+            if( get_cabac_bypass( &h->cabac ) )
+                coeff[i] = -1;
+            else
+                coeff[i] = 1;
+    
             abslevel1++;
-        else
+        } else {
+            int coeff_abs = 2;
+            ctx = 5 + FFMIN( 4, abslevelgt1 ) + coeff_abs_level_m1_offset[cat];
+            while( coeff_abs < 15 && get_cabac( &h->cabac, &h->cabac_state[ctx] ) ) {
+                coeff_abs++;
+            }
+
+            if( coeff_abs >= 15 ) {
+                int j = 0;
+                while( get_cabac_bypass( &h->cabac ) ) {
+                    coeff_abs += 1 << j;
+                    j++;
+                }
+    
+                while( j-- ) {
+                    if( get_cabac_bypass( &h->cabac ) )
+                        coeff_abs += 1 << j ;
+                }
+            }
+
+            if( get_cabac_bypass( &h->cabac ) )
+                coeff[i] = -coeff_abs;
+            else
+                coeff[i] = coeff_abs;
+    
             abslevelgt1++;
+        }
     }
 
     if( cat == 0 || cat == 3 ) { /* DC */
-        int j;
-        for( i = 0, j = 0; j < coeff_count; i++ ) {
-            if( nz[i] ) {
-                block[scantable[i]] = coeff[j];
-
-                j++;
-            }
+        for(i = 0; i < coeff_count; i++) {
+            block[scantable[ index[i] ]] = coeff[i];
         }
 
     } else { /* AC */
-        int j;
-        for( i = 0, j = 0; j < coeff_count; i++ ) {
-            if( nz[i] ) {
-                block[scantable[i]] = coeff[j] * qmul[scantable[i]];
-
-                j++;
-            }
+        for(i = 0; i < coeff_count; i++) {
+            int j= scantable[index[i]];
+            block[j] = coeff[i] * qmul[j];
         }
     }
     return 0;
