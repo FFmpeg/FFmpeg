@@ -62,6 +62,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     int ret, frame_rate;
     int desired_palette;
     struct video_audio audio;
+    const char *video_device;
 
     if (!ap || ap->width <= 0 || ap->height <= 0 || ap->frame_rate <= 0)
         return -1;
@@ -78,6 +79,9 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     s->height = height;
     s->frame_rate = frame_rate;
 
+    video_device = ap->device;
+    if (!video_device)
+        video_device = "/dev/video";
     video_fd = open(video_device, O_RDWR);
     if (video_fd < 0) {
         perror(video_device);

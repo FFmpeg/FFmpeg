@@ -76,6 +76,7 @@ static int dv1394_read_header(AVFormatContext * context, AVFormatParameters * ap
 {
     struct dv1394_data *dv = context->priv_data;
     AVStream *st;
+    const char *video_device;
 
     st = av_new_stream(context, 0);
     if (!st)
@@ -83,14 +84,16 @@ static int dv1394_read_header(AVFormatContext * context, AVFormatParameters * ap
 
     dv->width   = DV1394_WIDTH;
     dv->height  = DV1394_HEIGHT;
-    dv->channel = dv1394_channel;
+    dv->channel = ap->channel;
 
     dv->frame_rate = 30;
 
     dv->frame_size = DV1394_NTSC_FRAME_SIZE;
 
     /* Open and initialize DV1394 device */
-
+    video_device = ap->device;
+    if (!video_device)
+        video_device = "/dev/dv1394/0";
     dv->fd = open(video_device, O_RDONLY);
     if (dv->fd < 0) {
         perror("Failed to open DV interface");

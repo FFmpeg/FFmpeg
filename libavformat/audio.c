@@ -28,8 +28,6 @@
 #include <sys/mman.h>
 #include <sys/time.h>
 
-const char *audio_device = "/dev/dsp";
-
 #define AUDIO_BLOCK_SIZE 4096
 
 typedef struct {
@@ -43,13 +41,16 @@ typedef struct {
     int buffer_ptr;
 } AudioData;
 
-static int audio_open(AudioData *s, int is_output)
+static int audio_open(AudioData *s, int is_output, const char *audio_device)
 {
     int audio_fd;
     int tmp, err;
     char *flip = getenv("AUDIO_FLIP_LEFT");
 
     /* open linux audio device */
+    if (!audio_device)
+        audio_device = "/dev/dsp";
+
     if (is_output)
         audio_fd = open(audio_device, O_WRONLY);
     else
@@ -155,7 +156,7 @@ static int audio_write_header(AVFormatContext *s1)
     st = s1->streams[0];
     s->sample_rate = st->codec.sample_rate;
     s->channels = st->codec.channels;
-    ret = audio_open(s, 1);
+    ret = audio_open(s, 1, NULL);
     if (ret < 0) {
         return -EIO;
     } else {
@@ -217,7 +218,7 @@ static int audio_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     s->sample_rate = ap->sample_rate;
     s->channels = ap->channels;
 
-    ret = audio_open(s, 0);
+    ret = audio_open(s, 0, ap->device);
     if (ret < 0) {
         av_free(st);
         return -EIO;

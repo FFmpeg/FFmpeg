@@ -34,9 +34,6 @@ extern "C" {
 /* enable performance checks */
 //#define PERF_CHECK
 
-//const char *audio_device = "/dev/dsp";
-const char *audio_device = "beosaudio:";
-
 /* Pipes are 4k in BeOS IIRC */
 #define AUDIO_BLOCK_SIZE 4096
 //#define AUDIO_BLOCK_SIZE 2048

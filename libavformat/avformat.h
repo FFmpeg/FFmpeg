@@ -61,6 +61,8 @@ typedef struct AVFormatParameters {
     int height;
     enum PixelFormat pix_fmt;
     struct AVImageFormat *image_format;
+    int channel; /* used to select dv channel */
+    const char *device; /* video4linux, audio or DV device */
 } AVFormatParameters;
 
 #define AVFMT_NOFILE        0x0001 /* no file should be opened */
@@ -381,10 +383,6 @@ int audio_init(void);
 
 /* DV1394 */
 int dv1394_init(void);
-extern int dv1394_channel;
-
-extern const char *video_device;
-extern const char *audio_device;
 
 #ifdef HAVE_AV_CONFIG_H
 int strstart(const char *str, const char *val, const char **ptr);
