@@ -422,8 +422,6 @@ static void do_video_out(AVFormatContext *s,
     AVCodecContext *enc, *dec;
 
 #define VIDEO_BUFFER_SIZE (1024*1024)
-    video_buffer= av_malloc(VIDEO_BUFFER_SIZE);
-    if(!video_buffer) return;
 
     enc = &ost->st->codec;
     dec = &ist->st->codec;
@@ -437,6 +435,9 @@ static void do_video_out(AVFormatContext *s,
     nb = n2 - n1;
     if (nb <= 0) 
         return;
+
+    video_buffer= av_malloc(VIDEO_BUFFER_SIZE);
+    if(!video_buffer) return;
 
     /* deinterlace : must be done before any resize */
     if (do_deinterlace) {
@@ -805,7 +806,7 @@ static int av_encode(AVFormatContext **output_files,
             }
             break;
         default:
-            abort();
+            av_abort();
         }
     }
 
@@ -1038,7 +1039,7 @@ static int av_encode(AVFormatContext **output_files,
                     ist->ticker_inited = 1;
                     break;
                 default:
-                    abort();
+                    av_abort();
                 }
             }
             /* update pts */
@@ -1058,7 +1059,7 @@ static int av_encode(AVFormatContext **output_files,
                     ist->st->codec.frame_rate;
                 break;
             default:
-                abort();
+                av_abort();
             }
             ptr += ret;
             len -= ret;
@@ -1082,7 +1083,7 @@ static int av_encode(AVFormatContext **output_files,
                                 do_video_stats(ost, ist, frame_size);
                             break;
                         default:
-                            abort();
+                            av_abort();
                         }
                     } else {
                         /* no reencoding needed : output the packet directly */
@@ -1580,7 +1581,7 @@ void opt_input_file(const char *filename)
             frame_rate = rfps;
             break;
         default:
-            abort();
+            av_abort();
         }
     }
     
@@ -1611,7 +1612,7 @@ void check_audio_video_inputs(int *has_video_ptr, int *has_audio_ptr)
                 has_video = 1;
                 break;
             default:
-                abort();
+                av_abort();
             }
         }
     }
@@ -1873,7 +1874,7 @@ void prepare_grab(void)
                 has_video = 1;
                 break;
             default:
-                abort();
+                av_abort();
             }
         }
     }
