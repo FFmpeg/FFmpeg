@@ -4477,23 +4477,27 @@ static void write_packet(FFCodec *ffenc,
 }
 #endif
 
-static void help(void)
+static void show_banner(void)
 {
-    printf("ffserver version " FFMPEG_VERSION ", Copyright (c) 2000, 2001, 2002 Fabrice Bellard\n"
-           "usage: ffserver [-L] [-h] [-f configfile]\n"
+    printf("ffserver version " FFMPEG_VERSION ", Copyright (c) 2000-2003 Fabrice Bellard\n");
+}
+
+static void show_help(void)
+{
+    show_banner();
+    printf("usage: ffserver [-L] [-h] [-f configfile]\n"
            "Hyper fast multi format Audio/Video streaming server\n"
            "\n"
-           "-L            : print the LICENCE\n"
+           "-L            : print the LICENSE\n"
            "-h            : this help\n"
            "-f configfile : use configfile instead of /etc/ffserver.conf\n"
            );
 }
 
-static void licence(void)
+static void show_license(void)
 {
+    show_banner();
     printf(
-    "ffserver version " FFMPEG_VERSION "\n"
-    "Copyright (c) 2000, 2001, 2002 Fabrice Bellard\n"
     "This library is free software; you can redistribute it and/or\n"
     "modify it under the terms of the GNU Lesser General Public\n"
     "License as published by the Free Software Foundation; either\n"
@@ -4556,11 +4560,11 @@ int main(int argc, char **argv)
             break;
         switch(c) {
         case 'L':
-            licence();
+            show_license();
             exit(1);
         case '?':
         case 'h':
-            help();
+            show_help();
             exit(1);
         case 'n':
             no_launch = 1;

@@ -54,7 +54,8 @@ typedef struct AVStreamMap {
 
 extern const OptionDef options[];
 
-void show_help(void);
+static void show_help(void);
+static void show_license(void);
 
 #define MAX_FILES 20
 
@@ -1491,28 +1492,6 @@ int file_read(const char *filename)
 }
 #endif
 
-static void show_licence(void)
-{
-    printf(
-    "ffmpeg version " FFMPEG_VERSION "\n"
-    "Copyright (c) 2000, 2001, 2002 Fabrice Bellard\n"
-    "This library is free software; you can redistribute it and/or\n"
-    "modify it under the terms of the GNU Lesser General Public\n"
-    "License as published by the Free Software Foundation; either\n"
-    "version 2 of the License, or (at your option) any later version.\n"
-    "\n"
-    "This library is distributed in the hope that it will be useful,\n"
-    "but WITHOUT ANY WARRANTY; without even the implied warranty of\n"
-    "MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU\n"
-    "Lesser General Public License for more details.\n"
-    "\n"
-    "You should have received a copy of the GNU Lesser General Public\n"
-    "License along with this library; if not, write to the Free Software\n"
-    "Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA\n"
-    );
-    exit(1);
-}
-
 static void opt_image_format(const char *arg)
 {
     AVImageFormat *f;
@@ -2619,7 +2598,8 @@ static void show_formats(void)
 }
 
 const OptionDef options[] = {
-    { "L", 0, {(void*)show_licence}, "show license" },
+    /* main options */
+    { "L", 0, {(void*)show_license}, "show license" },
     { "h", 0, {(void*)show_help}, "show help" },
     { "formats", 0, {(void*)show_formats}, "show available formats, codecs, protocols, ..." },
     { "f", HAS_ARG, {(void*)opt_format}, "force format", "fmt" },
@@ -2632,95 +2612,145 @@ const OptionDef options[] = {
     { "author", HAS_ARG | OPT_STRING, {(void*)&str_author}, "set the author", "string" },
     { "copyright", HAS_ARG | OPT_STRING, {(void*)&str_copyright}, "set the copyright", "string" },
     { "comment", HAS_ARG | OPT_STRING, {(void*)&str_comment}, "set the comment", "string" },
-    { "pass", HAS_ARG, {(void*)&opt_pass}, "select the pass number (1 or 2)", "n" },
-    { "passlogfile", HAS_ARG | OPT_STRING, {(void*)&pass_logfilename}, "select two pass log file name", "file" },
-    /* video options */
-    { "b", HAS_ARG, {(void*)opt_video_bitrate}, "set video bitrate (in kbit/s)", "bitrate" },
-    { "r", HAS_ARG, {(void*)opt_frame_rate}, "set frame rate (Hz value, fraction or abbreviation)", "rate" },
-    { "re", OPT_BOOL|OPT_EXPERT, {(void*)&rate_emu}, "read input at native frame rate" },
-    { "s", HAS_ARG, {(void*)opt_frame_size}, "set frame size (WxH or abbreviation)", "size" },
-    { "aspect", HAS_ARG, {(void*)opt_frame_aspect_ratio}, "set aspect ratio (4:3, 16:9 or 1.3333, 1.7777)", "aspect" },
-    { "pix_fmt", HAS_ARG | OPT_EXPERT, {(void*)opt_frame_pix_fmt}, "set pixel format", "format" },
-    { "croptop", HAS_ARG, {(void*)opt_frame_crop_top}, "set top crop band size (in pixels)", "size" },
-    { "cropbottom", HAS_ARG, {(void*)opt_frame_crop_bottom}, "set bottom crop band size (in pixels)", "size" },
-    { "cropleft", HAS_ARG, {(void*)opt_frame_crop_left}, "set left crop band size (in pixels)", "size" },
-    { "cropright", HAS_ARG, {(void*)opt_frame_crop_right}, "set right crop band size (in pixels)", "size" },
-    { "g", HAS_ARG | OPT_EXPERT, {(void*)opt_gop_size}, "set the group of picture size", "gop_size" },
-    { "intra", OPT_BOOL | OPT_EXPERT, {(void*)&intra_only}, "use only intra frames"},
-    { "vn", OPT_BOOL, {(void*)&video_disable}, "disable video" },
-    { "qscale", HAS_ARG | OPT_EXPERT, {(void*)opt_qscale}, "use fixed video quantiser scale (VBR)", "q" },
-    { "qmin", HAS_ARG | OPT_EXPERT, {(void*)opt_qmin}, "min video quantiser scale (VBR)", "q" },
-    { "qmax", HAS_ARG | OPT_EXPERT, {(void*)opt_qmax}, "max video quantiser scale (VBR)", "q" },
-    { "mbqmin", HAS_ARG | OPT_EXPERT, {(void*)opt_mb_qmin}, "min macroblock quantiser scale (VBR)", "q" },
-    { "mbqmax", HAS_ARG | OPT_EXPERT, {(void*)opt_mb_qmax}, "max macroblock quantiser scale (VBR)", "q" },
-    { "qdiff", HAS_ARG | OPT_EXPERT, {(void*)opt_qdiff}, "max difference between the quantiser scale (VBR)", "q" },
-    { "qblur", HAS_ARG | OPT_EXPERT, {(void*)opt_qblur}, "video quantiser scale blur (VBR)", "blur" },
-    { "qcomp", HAS_ARG | OPT_EXPERT, {(void*)opt_qcomp}, "video quantiser scale compression (VBR)", "compression" },
-    { "rc_init_cplx", HAS_ARG | OPT_EXPERT, {(void*)opt_rc_initial_cplx}, "initial complexity for 1-pass encoding", "complexity" },
-    { "b_qfactor", HAS_ARG | OPT_EXPERT, {(void*)opt_b_qfactor}, "qp factor between p and b frames", "factor" },
-    { "i_qfactor", HAS_ARG | OPT_EXPERT, {(void*)opt_i_qfactor}, "qp factor between p and i frames", "factor" },
-    { "b_qoffset", HAS_ARG | OPT_EXPERT, {(void*)opt_b_qoffset}, "qp offset between p and b frames", "offset" },
-    { "i_qoffset", HAS_ARG | OPT_EXPERT, {(void*)opt_i_qoffset}, "qp offset between p and i frames", "offset" },
-//    { "b_strategy", HAS_ARG | OPT_EXPERT, {(void*)opt_b_strategy}, "dynamic b frame selection strategy", "strategy" },
-    { "rc_eq", HAS_ARG | OPT_EXPERT, {(void*)opt_video_rc_eq}, "", "equation" },
-    { "rc_override", HAS_ARG | OPT_EXPERT, {(void*)opt_video_rc_override_string}, "Rate control override", "qualities for specific intervals" },
-    { "bt", HAS_ARG, {(void*)opt_video_bitrate_tolerance}, "set video bitrate tolerance (in kbit/s)", "tolerance" },
-    { "maxrate", HAS_ARG, {(void*)opt_video_bitrate_max}, "set max video bitrate tolerance (in kbit/s)", "bitrate" },
-    { "minrate", HAS_ARG, {(void*)opt_video_bitrate_min}, "set min video bitrate tolerance (in kbit/s)", "bitrate" },
-    { "bufsize", HAS_ARG, {(void*)opt_video_buffer_size}, "set ratecontrol buffere size (in kbit)", "size" },
-    { "vd", HAS_ARG | OPT_EXPERT, {(void*)opt_video_device}, "set video grab device", "device" },
-    { "vc", HAS_ARG | OPT_EXPERT, {(void*)opt_video_channel}, "set video grab channel (DV1394 only)", "channel" },
-    { "tvstd", HAS_ARG | OPT_EXPERT, {(void*)opt_video_standard}, "set television standard (NTSC, PAL (SECAM))", "standard" },
-    { "dv1394", OPT_EXPERT, {(void*)opt_dv1394}, "set DV1394 grab", "" },
-    { "vcodec", HAS_ARG | OPT_EXPERT, {(void*)opt_video_codec}, "force video codec ('copy' to copy stream)", "codec" },
-    { "me", HAS_ARG | OPT_EXPERT, {(void*)opt_motion_estimation}, "set motion estimation method", 
-      "method" },
-    { "dct_algo", HAS_ARG | OPT_EXPERT, {(void*)opt_dct_algo}, "set dct algo",  "algo" },
-    { "idct_algo", HAS_ARG | OPT_EXPERT, {(void*)opt_idct_algo}, "set idct algo",  "algo" },
-    { "er", HAS_ARG | OPT_EXPERT, {(void*)opt_error_resilience}, "set error resilience",  "" },
-    { "ec", HAS_ARG | OPT_EXPERT, {(void*)opt_error_concealment}, "set error concealment",  "" },
-    { "bf", HAS_ARG | OPT_EXPERT, {(void*)opt_b_frames}, "use 'frames' B frames (only MPEG-4)", "frames" },
-    { "hq", OPT_BOOL | OPT_EXPERT, {(void*)&mb_decision}, "activate high quality settings" },
-    { "mbd", HAS_ARG | OPT_EXPERT, {(void*)opt_mb_decision}, "macroblock decision", "mode" },
-    { "4mv", OPT_BOOL | OPT_EXPERT, {(void*)&use_4mv}, "use four motion vector by macroblock (only MPEG-4)" },
-    { "part", OPT_BOOL | OPT_EXPERT, {(void*)&use_part}, "use data partitioning (only MPEG-4)" },
-    { "bug", HAS_ARG | OPT_EXPERT, {(void*)opt_workaround_bugs}, "workaround not auto detected encoder bugs", "param" },
-    { "ps", HAS_ARG | OPT_EXPERT, {(void*)opt_packet_size}, "packet size", "size in bits" },
-    { "strict", HAS_ARG | OPT_EXPERT, {(void*)opt_strict}, "strictness", "how strictly to follow the standarts" },
-    { "sameq", OPT_BOOL, {(void*)&same_quality}, 
-      "use same video quality as source (implies VBR)" },
     { "debug", HAS_ARG | OPT_EXPERT, {(void*)opt_debug}, "print specific debug info", "" },
-    /* audio options */
-    { "ab", HAS_ARG, {(void*)opt_audio_bitrate}, "set audio bitrate (in kbit/s)", "bitrate", },
-    { "ar", HAS_ARG, {(void*)opt_audio_rate}, "set audio sampling rate (in Hz)", "rate" },
-    { "ac", HAS_ARG, {(void*)opt_audio_channels}, "set number of audio channels", "channels" },
-    { "an", OPT_BOOL, {(void*)&audio_disable}, "disable audio" },
-    { "ad", HAS_ARG | OPT_EXPERT, {(void*)opt_audio_device}, "set audio device", "device" },
-    { "acodec", HAS_ARG | OPT_EXPERT, {(void*)opt_audio_codec}, "force audio codec ('copy' to copy stream)", "codec" },
-    { "deinterlace", OPT_BOOL | OPT_EXPERT, {(void*)&do_deinterlace}, 
-      "deinterlace pictures" },
     { "benchmark", OPT_BOOL | OPT_EXPERT, {(void*)&do_benchmark}, 
       "add timings for benchmarking" },
     { "hex", OPT_BOOL | OPT_EXPERT, {(void*)&do_hex_dump}, 
       "dump each input packet" },
-    { "psnr", OPT_BOOL | OPT_EXPERT, {(void*)&do_psnr}, "calculate PSNR of compressed frames" },
-    { "vstats", OPT_BOOL | OPT_EXPERT, {(void*)&do_vstats}, "dump video coding statistics to file" }, 
     { "bitexact", OPT_EXPERT, {(void*)opt_bitexact}, "only use bit exact algorithms (for codec testing)" }, 
-    { "vhook", HAS_ARG | OPT_EXPERT, {(void*)add_frame_hooker}, "insert video processing module", "module name and parameters" },
+
+
+    /* video options */
+    { "b", HAS_ARG | OPT_VIDEO, {(void*)opt_video_bitrate}, "set video bitrate (in kbit/s)", "bitrate" },
+    { "r", HAS_ARG | OPT_VIDEO, {(void*)opt_frame_rate}, "set frame rate (Hz value, fraction or abbreviation)", "rate" },
+    { "re", OPT_BOOL|OPT_EXPERT | OPT_VIDEO, {(void*)&rate_emu}, "read input at native frame rate" },
+    { "s", HAS_ARG | OPT_VIDEO, {(void*)opt_frame_size}, "set frame size (WxH or abbreviation)", "size" },
+    { "aspect", HAS_ARG | OPT_VIDEO, {(void*)opt_frame_aspect_ratio}, "set aspect ratio (4:3, 16:9 or 1.3333, 1.7777)", "aspect" },
+    { "pix_fmt", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_frame_pix_fmt}, "set pixel format", "format" },
+    { "croptop", HAS_ARG | OPT_VIDEO, {(void*)opt_frame_crop_top}, "set top crop band size (in pixels)", "size" },
+    { "cropbottom", HAS_ARG | OPT_VIDEO, {(void*)opt_frame_crop_bottom}, "set bottom crop band size (in pixels)", "size" },
+    { "cropleft", HAS_ARG | OPT_VIDEO, {(void*)opt_frame_crop_left}, "set left crop band size (in pixels)", "size" },
+    { "cropright", HAS_ARG | OPT_VIDEO, {(void*)opt_frame_crop_right}, "set right crop band size (in pixels)", "size" },
+    { "g", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_gop_size}, "set the group of picture size", "gop_size" },
+    { "intra", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&intra_only}, "use only intra frames"},
+    { "vn", OPT_BOOL | OPT_VIDEO, {(void*)&video_disable}, "disable video" },
+    { "qscale", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_qscale}, "use fixed video quantiser scale (VBR)", "q" },
+    { "qmin", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_qmin}, "min video quantiser scale (VBR)", "q" },
+    { "qmax", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_qmax}, "max video quantiser scale (VBR)", "q" },
+    { "mbqmin", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_mb_qmin}, "min macroblock quantiser scale (VBR)", "q" },
+    { "mbqmax", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_mb_qmax}, "max macroblock quantiser scale (VBR)", "q" },
+    { "qdiff", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_qdiff}, "max difference between the quantiser scale (VBR)", "q" },
+    { "qblur", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_qblur}, "video quantiser scale blur (VBR)", "blur" },
+    { "qcomp", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_qcomp}, "video quantiser scale compression (VBR)", "compression" },
+    { "rc_init_cplx", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_rc_initial_cplx}, "initial complexity for 1-pass encoding", "complexity" },
+    { "b_qfactor", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_b_qfactor}, "qp factor between p and b frames", "factor" },
+    { "i_qfactor", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_i_qfactor}, "qp factor between p and i frames", "factor" },
+    { "b_qoffset", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_b_qoffset}, "qp offset between p and b frames", "offset" },
+    { "i_qoffset", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_i_qoffset}, "qp offset between p and i frames", "offset" },
+//    { "b_strategy", HAS_ARG | OPT_EXPERT, {(void*)opt_b_strategy}, "dynamic b frame selection strategy", "strategy" },
+    { "rc_eq", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_video_rc_eq}, "set rate control equation", "equation" },
+    { "rc_override", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_video_rc_override_string}, "rate control override for specific internals", "override_string" },
+    { "bt", HAS_ARG | OPT_VIDEO, {(void*)opt_video_bitrate_tolerance}, "set video bitrate tolerance (in kbit/s)", "tolerance" },
+    { "maxrate", HAS_ARG | OPT_VIDEO, {(void*)opt_video_bitrate_max}, "set max video bitrate tolerance (in kbit/s)", "bitrate" },
+    { "minrate", HAS_ARG | OPT_VIDEO, {(void*)opt_video_bitrate_min}, "set min video bitrate tolerance (in kbit/s)", "bitrate" },
+    { "bufsize", HAS_ARG | OPT_VIDEO, {(void*)opt_video_buffer_size}, "set ratecontrol buffere size (in kbit)", "size" },
+    { "vcodec", HAS_ARG | OPT_VIDEO, {(void*)opt_video_codec}, "force video codec ('copy' to copy stream)", "codec" },
+    { "me", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_motion_estimation}, "set motion estimation method", 
+      "method" },
+    { "dct_algo", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_dct_algo}, "set dct algo",  "algo" },
+    { "idct_algo", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_idct_algo}, "set idct algo",  "algo" },
+    { "er", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_error_resilience}, "set error resilience",  "n" },
+    { "ec", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_error_concealment}, "set error concealment",  "n" },
+    { "bf", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_b_frames}, "use 'frames' B frames (only MPEG-4)", "frames" },
+    { "hq", OPT_BOOL, {(void*)&mb_decision}, "activate high quality settings" },
+    { "mbd", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_mb_decision}, "macroblock decision", "mode" },
+    { "4mv", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_4mv}, "use four motion vector by macroblock (only MPEG-4)" },
+    { "part", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_part}, "use data partitioning (only MPEG-4)" },
+    { "bug", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_workaround_bugs}, "workaround not auto detected encoder bugs", "param" },
+    { "ps", HAS_ARG | OPT_EXPERT, {(void*)opt_packet_size}, "set packet size in bits", "size" },
+    { "strict", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_strict}, "how strictly to follow the standarts", "strictness" },
+    { "sameq", OPT_BOOL | OPT_VIDEO, {(void*)&same_quality}, 
+      "use same video quality as source (implies VBR)" },
+    { "pass", HAS_ARG | OPT_VIDEO, {(void*)&opt_pass}, "select the pass number (1 or 2)", "n" },
+    { "passlogfile", HAS_ARG | OPT_STRING | OPT_VIDEO, {(void*)&pass_logfilename}, "select two pass log file name", "file" },
+    { "deinterlace", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&do_deinterlace}, 
+      "deinterlace pictures" },
+    { "psnr", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&do_psnr}, "calculate PSNR of compressed frames" },
+    { "vstats", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&do_vstats}, "dump video coding statistics to file" }, 
+    { "vhook", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)add_frame_hooker}, "insert video processing module", "module" },
     /* Fx */
-    { "aic", OPT_BOOL | OPT_EXPERT, {(void*)&use_aic}, "enable Advanced intra coding (h263+)" },
-    { "umv", OPT_BOOL | OPT_EXPERT, {(void*)&use_umv}, "enable Unlimited Motion Vector (h263+)" },
+    { "aic", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_aic}, "enable Advanced intra coding (h263+)" },
+    { "umv", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_umv}, "enable Unlimited Motion Vector (h263+)" },
     /* /Fx */
+
+    /* audio options */
+    { "ab", HAS_ARG | OPT_AUDIO, {(void*)opt_audio_bitrate}, "set audio bitrate (in kbit/s)", "bitrate", },
+    { "ar", HAS_ARG | OPT_AUDIO, {(void*)opt_audio_rate}, "set audio sampling rate (in Hz)", "rate" },
+    { "ac", HAS_ARG | OPT_AUDIO, {(void*)opt_audio_channels}, "set number of audio channels", "channels" },
+    { "an", OPT_BOOL | OPT_AUDIO, {(void*)&audio_disable}, "disable audio" },
+    { "acodec", HAS_ARG | OPT_AUDIO, {(void*)opt_audio_codec}, "force audio codec ('copy' to copy stream)", "codec" },
+
+    /* grab options */
+    { "vd", HAS_ARG | OPT_EXPERT | OPT_VIDEO | OPT_GRAB, {(void*)opt_video_device}, "set video grab device", "device" },
+    { "vc", HAS_ARG | OPT_EXPERT | OPT_VIDEO | OPT_GRAB, {(void*)opt_video_channel}, "set video grab channel (DV1394 only)", "channel" },
+    { "tvstd", HAS_ARG | OPT_EXPERT | OPT_VIDEO | OPT_GRAB, {(void*)opt_video_standard}, "set television standard (NTSC, PAL (SECAM))", "standard" },
+    { "dv1394", OPT_EXPERT | OPT_GRAB, {(void*)opt_dv1394}, "set DV1394 grab", "" },
+    { "ad", HAS_ARG | OPT_EXPERT | OPT_AUDIO | OPT_GRAB, {(void*)opt_audio_device}, "set audio device", "device" },
     { NULL, },
 };
 
-void show_help(void)
+static void show_banner(void)
 {
-    printf("ffmpeg version " FFMPEG_VERSION ", Copyright (c) 2000, 2001, 2002 Fabrice Bellard\n");
+    printf("ffmpeg version " FFMPEG_VERSION ", Copyright (c) 2000-2003 Fabrice Bellard\n");
+}
+
+static void show_license(void)
+{
+    show_banner();
+    printf(
+    "This library is free software; you can redistribute it and/or\n"
+    "modify it under the terms of the GNU Lesser General Public\n"
+    "License as published by the Free Software Foundation; either\n"
+    "version 2 of the License, or (at your option) any later version.\n"
+    "\n"
+    "This library is distributed in the hope that it will be useful,\n"
+    "but WITHOUT ANY WARRANTY; without even the implied warranty of\n"
+    "MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU\n"
+    "Lesser General Public License for more details.\n"
+    "\n"
+    "You should have received a copy of the GNU Lesser General Public\n"
+    "License along with this library; if not, write to the Free Software\n"
+    "Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA\n"
+    );
+    exit(1);
+}
+
+static void show_help(void)
+{
+    show_banner();
     printf("usage: ffmpeg [[options] -i input_file]... {[options] outfile}...\n"
            "Hyper fast Audio and Video encoder\n");
     printf("\n");
-    show_help_options(options);
+    show_help_options(options, "Main options:\n",
+                      OPT_EXPERT | OPT_AUDIO | OPT_VIDEO, 0);
+    show_help_options(options, "\nVideo options:\n",
+                      OPT_EXPERT | OPT_AUDIO | OPT_VIDEO | OPT_GRAB, 
+                      OPT_VIDEO);
+    show_help_options(options, "\nAdvanced Video options:\n",
+                      OPT_EXPERT | OPT_AUDIO | OPT_VIDEO | OPT_GRAB, 
+                      OPT_VIDEO | OPT_EXPERT);
+    show_help_options(options, "\nAudio options:\n",
+                      OPT_EXPERT | OPT_AUDIO | OPT_VIDEO | OPT_GRAB, 
+                      OPT_AUDIO);
+    show_help_options(options, "\nAdvanced Audio options:\n",
+                      OPT_EXPERT | OPT_AUDIO | OPT_VIDEO | OPT_GRAB, 
+                      OPT_AUDIO | OPT_EXPERT);
+    show_help_options(options, "\nAudio/Video grab options:\n",
+                      OPT_GRAB, 
+                      OPT_GRAB);
+    show_help_options(options, "\nAdvanced options:\n",
+                      OPT_EXPERT | OPT_AUDIO | OPT_VIDEO | OPT_GRAB, 
+                      OPT_EXPERT);
     exit(1);
 }
 

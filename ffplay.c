@@ -1634,10 +1634,14 @@ const OptionDef options[] = {
 
 void show_help(void)
 {
-    printf("usage: ffplay [options] input_file\n"
+    printf("ffplay version " FFMPEG_VERSION ", Copyright (c) 2003 Fabrice Bellard\n"
+           "usage: ffplay [options] input_file\n"
            "Simple media player\n");
     printf("\n");
-    show_help_options(options);
+    show_help_options(options, "Main options:\n",
+                      OPT_EXPERT, 0);
+    show_help_options(options, "\nAdvanced options:\n",
+                      OPT_EXPERT, OPT_EXPERT);
     printf("\nWhile playing:\n"
            "q, ESC              quit\n"
            "f                   toggle full screen\n"

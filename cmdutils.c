@@ -16,38 +16,31 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-
+#define HAVE_AV_CONFIG_H
 #include "common.h"
 #include "avformat.h"
 
 #include "cmdutils.h"
 
-void show_help_options(const OptionDef *options)
+void show_help_options(const OptionDef *options, const char *msg, int mask, int value)
 {
     const OptionDef *po;
-    int i, expert, first;
+    int first;
 
-    printf("Main options are:\n");
-    for(i=0;i<2;i++) {
-        first = 1;
-        for(po = options; po->name != NULL; po++) {
-            char buf[64];
-            expert = (po->flags & OPT_EXPERT) != 0;
-            if (expert == i) {
-                if (expert && first) {
-                    printf("\nAdvanced options are:\n");
-                    first = 0;
-                }
-                strcpy(buf, po->name);
-                if (po->flags & HAS_ARG) {
-                    strcat(buf, " ");
-                    strcat(buf, po->argname);
-                }
-                printf("-%-17s  %s\n", buf, po->help);
+    first = 1;
+    for(po = options; po->name != NULL; po++) {
+        char buf[64];
+        if ((po->flags & mask) == value) {
+            if (first) {
+                printf("%s", msg);
+                first = 0;
             }
+            strcpy(buf, po->name);
+            if (po->flags & HAS_ARG) {
+                strcat(buf, " ");
+                strcat(buf, po->argname);
+            }
+            printf("-%-17s  %s\n", buf, po->help);
         }
     }
 }
@@ -84,7 +77,7 @@ void parse_options(int argc, char **argv, const OptionDef *options)
             }
             if (po->flags & OPT_STRING) {
                 char *str;
-                str = strdup(arg);
+                str = av_strdup(arg);
                 *po->u.str_arg = str;
             } else if (po->flags & OPT_BOOL) {
                 *po->u.int_arg = 1;
