@@ -936,6 +936,11 @@ static int av_encode(AVFormatContext **output_files,
                             ost->resample = audio_resample_init(codec->channels, icodec->channels,
                                                         codec->sample_rate, 
                                                         icodec->sample_rate);
+			    if(!ost->resample)
+			      {
+				printf("Can't resample.  Aborting.\n");
+				av_abort();
+			      }
                         }
                         /* Request specific number of channels */
                         icodec->channels = codec->channels;
@@ -944,6 +949,11 @@ static int av_encode(AVFormatContext **output_files,
                         ost->resample = audio_resample_init(codec->channels, icodec->channels,
                                                         codec->sample_rate, 
                                                         icodec->sample_rate);
+			if(!ost->resample)
+			  {
+			    printf("Can't resample.  Aborting.\n");
+			    av_abort();
+			  }
                     }
                 }
                 ist->decoding_needed = 1;

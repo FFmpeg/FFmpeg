@@ -978,7 +978,7 @@ static void output_audio_block(AC3EncodeContext *s,
                                int8_t global_exp[AC3_MAX_CHANNELS],
                                int block_num)
 {
-    int ch, nb_groups, group_size, i, baie;
+    int ch, nb_groups, group_size, i, baie, rbnd;
     uint8_t *p;
     uint16_t qmant[AC3_MAX_CHANNELS][N/2];
     int exp0, exp1;
@@ -1000,14 +1000,28 @@ static void output_audio_block(AC3EncodeContext *s,
         put_bits(&s->pb, 1, 0); /* no new coupling strategy */
     }
 
-    if (s->acmod == 2) {
-        put_bits(&s->pb, 1, 0); /* no matrixing (but should be used in the future) */
-    }
+    if (s->acmod == 2)
+      {
+	if(block_num==0)
+	  {
+	    /* first block must define rematrixing (rematstr)  */
+	    put_bits(&s->pb, 1, 1); 
+	    
+	    /* dummy rematrixing rematflg(1:4)=0 */
+	    for (rbnd=0;rbnd<4;rbnd++)
+	      put_bits(&s->pb, 1, 0); 
+	  }
+	else 
+	  {
+	    /* no matrixing (but should be used in the future) */
+	    put_bits(&s->pb, 1, 0);
+	  } 
+      }
 
 #if defined(DEBUG) 
     {
-        static int count = 0;
-        printf("Block #%d (%d)\n", block_num, count++);
+      static int count = 0;
+      printf("Block #%d (%d)\n", block_num, count++);
     }
 #endif
     /* exponent strategy */
@@ -1329,7 +1343,8 @@ static int output_frame_end(AC3EncodeContext *s)
     frame = s->pb.buf;
     n = 2 * s->frame_size - (pbBufPtr(&s->pb) - frame) - 2;
     assert(n >= 0);
-    memset(pbBufPtr(&s->pb), 0, n);
+    if(n>0)
+      memset(pbBufPtr(&s->pb), 0, n);
     
     /* Now we must compute both crcs : this is not so easy for crc1
        because it is at the beginning of the data... */

@@ -194,6 +194,23 @@ static void stereo_mux(short *output, short *input1, short *input2, int n)
     }
 }
 
+static void ac3_5p1_mux(short *output, short *input1, short *input2, int n)
+{
+    int i;
+    short l,r;
+
+    for(i=0;i<n;i++) {
+      l=*input1++;
+      r=*input2++;
+      *output++ = l;           /* left */
+      *output++ = (l/2)+(r/2); /* center */
+      *output++ = r;           /* right */
+      *output++ = 0;           /* left surround */
+      *output++ = 0;           /* right surroud */
+      *output++ = 0;           /* low freq */
+    }
+}
+
 static int mono_resample(ReSampleChannelContext *s, short *output, short *input, int nb_samples)
 {
     short *buf1;
@@ -225,12 +242,18 @@ ReSampleContext *audio_resample_init(int output_channels, int input_channels,
     ReSampleContext *s;
     int i;
     
-    if (output_channels > 2 || input_channels > 2)
-        return NULL;
+    if ( input_channels > 2)
+      {
+	printf("Resampling with input channels greater than 2 unsupported.");
+	return NULL;
+      }
 
     s = av_mallocz(sizeof(ReSampleContext));
     if (!s)
-        return NULL;
+      {
+	printf("Can't allocate memory for resample context.");
+	return NULL;
+      }
 
     s->ratio = (float)output_rate / (float)input_rate;
     
@@ -240,6 +263,14 @@ ReSampleContext *audio_resample_init(int output_channels, int input_channels,
     s->filter_channels = s->input_channels;
     if (s->output_channels < s->filter_channels)
         s->filter_channels = s->output_channels;
+
+/*
+ * ac3 output is the only case where filter_channels could be greater than 2.
+ * input channels can't be greater than 2, so resample the 2 channels and then
+ * expand to 6 channels after the resampling.
+ */
+    if(s->filter_channels>2)
+      s->filter_channels = 2;
 
     for(i=0;i<s->filter_channels;i++) {
         init_mono_resample(&s->channel_ctx[i], s->ratio);
@@ -279,10 +310,10 @@ int audio_resample(ReSampleContext *s, short *output, short *input, int nb_sampl
         buftmp2[0] = bufin[0];
         buftmp3[0] = output;
         stereo_to_mono(buftmp2[0], input, nb_samples);
-    } else if (s->output_channels == 2 && s->input_channels == 1) {
+    } else if (s->output_channels >= 2 && s->input_channels == 1) {
         buftmp2[0] = input;
         buftmp3[0] = bufout[0];
-    } else if (s->output_channels == 2) {
+    } else if (s->output_channels >= 2) {
         buftmp2[0] = bufin[0];
         buftmp2[1] = bufin[1];
         buftmp3[0] = bufout[0];
@@ -303,6 +334,8 @@ int audio_resample(ReSampleContext *s, short *output, short *input, int nb_sampl
         mono_to_stereo(output, buftmp3[0], nb_samples1);
     } else if (s->output_channels == 2) {
         stereo_mux(output, buftmp3[0], buftmp3[1], nb_samples1);
+    } else if (s->output_channels == 6) {
+        ac3_5p1_mux(output, buftmp3[0], buftmp3[1], nb_samples1);
     }
 
     av_free(bufin[0]);
