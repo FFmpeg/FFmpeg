@@ -135,19 +135,19 @@
 		"addl $1, %%edx			\n\t"\
 		" jnz 2b			\n\t"\
 \
-		"psubw w400, %%mm3		\n\t" /* (U-128)8*/\
-		"psubw w400, %%mm4		\n\t" /* (V-128)8*/\
+		"psubw "MANGLE(w400)", %%mm3	\n\t" /* (U-128)8*/\
+		"psubw "MANGLE(w400)", %%mm4	\n\t" /* (V-128)8*/\
 		"movq %%mm3, %%mm2		\n\t" /* (U-128)8*/\
 		"movq %%mm4, %%mm5		\n\t" /* (V-128)8*/\
-		"pmulhw ugCoeff, %%mm3		\n\t"\
-		"pmulhw vgCoeff, %%mm4		\n\t"\
+		"pmulhw "MANGLE(ugCoeff)", %%mm3\n\t"\
+		"pmulhw "MANGLE(vgCoeff)", %%mm4\n\t"\
 	/* mm2=(U-128)8, mm3=ug, mm4=vg mm5=(V-128)8 */\
-		"pmulhw ubCoeff, %%mm2		\n\t"\
-		"pmulhw vrCoeff, %%mm5		\n\t"\
-		"psubw w80, %%mm1		\n\t" /* 8(Y-16)*/\
-		"psubw w80, %%mm7		\n\t" /* 8(Y-16)*/\
-		"pmulhw yCoeff, %%mm1		\n\t"\
-		"pmulhw yCoeff, %%mm7		\n\t"\
+		"pmulhw "MANGLE(ubCoeff)", %%mm2\n\t"\
+		"pmulhw "MANGLE(vrCoeff)", %%mm5\n\t"\
+		"psubw "MANGLE(w80)", %%mm1	\n\t" /* 8(Y-16)*/\
+		"psubw "MANGLE(w80)", %%mm7	\n\t" /* 8(Y-16)*/\
+		"pmulhw "MANGLE(yCoeff)", %%mm1	\n\t"\
+		"pmulhw "MANGLE(yCoeff)", %%mm7	\n\t"\
 	/* mm1= Y1, mm2=ub, mm3=ug, mm4=vg mm5=vr, mm7=Y2 */\
 		"paddw %%mm3, %%mm4		\n\t"\
 		"movq %%mm2, %%mm0		\n\t"\
@@ -197,23 +197,23 @@
 		"movq 4096(%3, %%eax,2), %%mm0	\n\t" /* uvbuf1[eax+2048]*/\
 		"paddw %%mm2, %%mm3		\n\t" /* uvbuf0[eax]uvalpha1 - uvbuf1[eax](1-uvalpha1)*/\
 		"psubw %%mm0, %%mm4		\n\t" /* uvbuf0[eax+2048] - uvbuf1[eax+2048]*/\
-		"psubw w80, %%mm1		\n\t" /* 8(Y-16)*/\
-		"psubw w400, %%mm3		\n\t" /* 8(U-128)*/\
-		"pmulhw yCoeff, %%mm1		\n\t"\
+		"psubw "MANGLE(w80)", %%mm1	\n\t" /* 8(Y-16)*/\
+		"psubw "MANGLE(w400)", %%mm3	\n\t" /* 8(U-128)*/\
+		"pmulhw "MANGLE(yCoeff)", %%mm1	\n\t"\
 \
 \
 		"pmulhw %%mm5, %%mm4		\n\t" /* (uvbuf0[eax+2048] - uvbuf1[eax+2048])uvalpha1>>16*/\
 		"movq %%mm3, %%mm2		\n\t" /* (U-128)8*/\
-		"pmulhw ubCoeff, %%mm3		\n\t"\
+		"pmulhw "MANGLE(ubCoeff)", %%mm3\n\t"\
 		"psraw $4, %%mm0		\n\t" /* uvbuf0[eax+2048] - uvbuf1[eax+2048] >>4*/\
-		"pmulhw ugCoeff, %%mm2		\n\t"\
+		"pmulhw "MANGLE(ugCoeff)", %%mm2\n\t"\
 		"paddw %%mm4, %%mm0		\n\t" /* uvbuf0[eax+2048]uvalpha1 - uvbuf1[eax+2048](1-uvalpha1)*/\
-		"psubw w400, %%mm0		\n\t" /* (V-128)8*/\
+		"psubw "MANGLE(w400)", %%mm0	\n\t" /* (V-128)8*/\
 \
 \
 		"movq %%mm0, %%mm4		\n\t" /* (V-128)8*/\
-		"pmulhw vrCoeff, %%mm0		\n\t"\
-		"pmulhw vgCoeff, %%mm4		\n\t"\
+		"pmulhw "MANGLE(vrCoeff)", %%mm0\n\t"\
+		"pmulhw "MANGLE(vgCoeff)", %%mm4\n\t"\
 		"paddw %%mm1, %%mm3		\n\t" /* B*/\
 		"paddw %%mm1, %%mm0		\n\t" /* R*/\
 		"packuswb %%mm3, %%mm3		\n\t"\
@@ -228,11 +228,11 @@
 		"movd %6, %%mm6			\n\t" /*yalpha1*/\
 		"punpcklwd %%mm6, %%mm6		\n\t"\
 		"punpcklwd %%mm6, %%mm6		\n\t"\
-		"movq %%mm6, asm_yalpha1	\n\t"\
+		"movq %%mm6, "MANGLE(asm_yalpha1)"\n\t"\
 		"movd %7, %%mm5			\n\t" /*uvalpha1*/\
 		"punpcklwd %%mm5, %%mm5		\n\t"\
 		"punpcklwd %%mm5, %%mm5		\n\t"\
-		"movq %%mm5, asm_uvalpha1	\n\t"\
+		"movq %%mm5, "MANGLE(asm_uvalpha1)"\n\t"\
 		"xorl %%eax, %%eax		\n\t"\
 		".balign 16			\n\t"\
 		"1:				\n\t"\
@@ -242,19 +242,19 @@
 		"movq 4096(%3, %%eax), %%mm4	\n\t" /* uvbuf1[eax+2048]*/\
 		"psubw %%mm3, %%mm2		\n\t" /* uvbuf0[eax] - uvbuf1[eax]*/\
 		"psubw %%mm4, %%mm5		\n\t" /* uvbuf0[eax+2048] - uvbuf1[eax+2048]*/\
-		"movq asm_uvalpha1, %%mm0	\n\t"\
+		"movq "MANGLE(asm_uvalpha1)", %%mm0\n\t"\
 		"pmulhw %%mm0, %%mm2		\n\t" /* (uvbuf0[eax] - uvbuf1[eax])uvalpha1>>16*/\
 		"pmulhw %%mm0, %%mm5		\n\t" /* (uvbuf0[eax+2048] - uvbuf1[eax+2048])uvalpha1>>16*/\
 		"psraw $4, %%mm3		\n\t" /* uvbuf0[eax] - uvbuf1[eax] >>4*/\
 		"psraw $4, %%mm4		\n\t" /* uvbuf0[eax+2048] - uvbuf1[eax+2048] >>4*/\
 		"paddw %%mm2, %%mm3		\n\t" /* uvbuf0[eax]uvalpha1 - uvbuf1[eax](1-uvalpha1)*/\
 		"paddw %%mm5, %%mm4		\n\t" /* uvbuf0[eax+2048]uvalpha1 - uvbuf1[eax+2048](1-uvalpha1)*/\
-		"psubw w400, %%mm3		\n\t" /* (U-128)8*/\
-		"psubw w400, %%mm4		\n\t" /* (V-128)8*/\
+		"psubw "MANGLE(w400)", %%mm3	\n\t" /* (U-128)8*/\
+		"psubw "MANGLE(w400)", %%mm4	\n\t" /* (V-128)8*/\
 		"movq %%mm3, %%mm2		\n\t" /* (U-128)8*/\
 		"movq %%mm4, %%mm5		\n\t" /* (V-128)8*/\
-		"pmulhw ugCoeff, %%mm3		\n\t"\
-		"pmulhw vgCoeff, %%mm4		\n\t"\
+		"pmulhw "MANGLE(ugCoeff)", %%mm3\n\t"\
+		"pmulhw "MANGLE(vgCoeff)", %%mm4\n\t"\
 	/* mm2=(U-128)8, mm3=ug, mm4=vg mm5=(V-128)8 */\
 		"movq (%0, %%eax, 2), %%mm0	\n\t" /*buf0[eax]*/\
 		"movq (%1, %%eax, 2), %%mm1	\n\t" /*buf1[eax]*/\
@@ -262,18 +262,18 @@
 		"movq 8(%1, %%eax, 2), %%mm7	\n\t" /*buf1[eax]*/\
 		"psubw %%mm1, %%mm0		\n\t" /* buf0[eax] - buf1[eax]*/\
 		"psubw %%mm7, %%mm6		\n\t" /* buf0[eax] - buf1[eax]*/\
-		"pmulhw asm_yalpha1, %%mm0	\n\t" /* (buf0[eax] - buf1[eax])yalpha1>>16*/\
-		"pmulhw asm_yalpha1, %%mm6	\n\t" /* (buf0[eax] - buf1[eax])yalpha1>>16*/\
+		"pmulhw "MANGLE(asm_yalpha1)", %%mm0\n\t" /* (buf0[eax] - buf1[eax])yalpha1>>16*/\
+		"pmulhw "MANGLE(asm_yalpha1)", %%mm6\n\t" /* (buf0[eax] - buf1[eax])yalpha1>>16*/\
 		"psraw $4, %%mm1		\n\t" /* buf0[eax] - buf1[eax] >>4*/\
 		"psraw $4, %%mm7		\n\t" /* buf0[eax] - buf1[eax] >>4*/\
 		"paddw %%mm0, %%mm1		\n\t" /* buf0[eax]yalpha1 + buf1[eax](1-yalpha1) >>16*/\
 		"paddw %%mm6, %%mm7		\n\t" /* buf0[eax]yalpha1 + buf1[eax](1-yalpha1) >>16*/\
-		"pmulhw ubCoeff, %%mm2		\n\t"\
-		"pmulhw vrCoeff, %%mm5		\n\t"\
-		"psubw w80, %%mm1		\n\t" /* 8(Y-16)*/\
-		"psubw w80, %%mm7		\n\t" /* 8(Y-16)*/\
-		"pmulhw yCoeff, %%mm1		\n\t"\
-		"pmulhw yCoeff, %%mm7		\n\t"\
+		"pmulhw "MANGLE(ubCoeff)", %%mm2\n\t"\
+		"pmulhw "MANGLE(vrCoeff)", %%mm5\n\t"\
+		"psubw "MANGLE(w80)", %%mm1	\n\t" /* 8(Y-16)*/\
+		"psubw "MANGLE(w80)", %%mm7	\n\t" /* 8(Y-16)*/\
+		"pmulhw "MANGLE(yCoeff)", %%mm1	\n\t"\
+		"pmulhw "MANGLE(yCoeff)", %%mm7	\n\t"\
 	/* mm1= Y1, mm2=ub, mm3=ug, mm4=vg mm5=vr, mm7=Y2 */\
 		"paddw %%mm3, %%mm4		\n\t"\
 		"movq %%mm2, %%mm0		\n\t"\
@@ -305,23 +305,23 @@
 		"movq 4096(%2, %%eax), %%mm4	\n\t" /* uvbuf0[eax+2048]*/\
 		"psraw $4, %%mm3		\n\t" /* uvbuf0[eax] - uvbuf1[eax] >>4*/\
 		"psraw $4, %%mm4		\n\t" /* uvbuf0[eax+2048] - uvbuf1[eax+2048] >>4*/\
-		"psubw w400, %%mm3		\n\t" /* (U-128)8*/\
-		"psubw w400, %%mm4		\n\t" /* (V-128)8*/\
+		"psubw "MANGLE(w400)", %%mm3	\n\t" /* (U-128)8*/\
+		"psubw "MANGLE(w400)", %%mm4	\n\t" /* (V-128)8*/\
 		"movq %%mm3, %%mm2		\n\t" /* (U-128)8*/\
 		"movq %%mm4, %%mm5		\n\t" /* (V-128)8*/\
-		"pmulhw ugCoeff, %%mm3		\n\t"\
-		"pmulhw vgCoeff, %%mm4		\n\t"\
+		"pmulhw "MANGLE(ugCoeff)", %%mm3\n\t"\
+		"pmulhw "MANGLE(vgCoeff)", %%mm4\n\t"\
 	/* mm2=(U-128)8, mm3=ug, mm4=vg mm5=(V-128)8 */\
 		"movq (%0, %%eax, 2), %%mm1	\n\t" /*buf0[eax]*/\
 		"movq 8(%0, %%eax, 2), %%mm7	\n\t" /*buf0[eax]*/\
 		"psraw $4, %%mm1		\n\t" /* buf0[eax] - buf1[eax] >>4*/\
 		"psraw $4, %%mm7		\n\t" /* buf0[eax] - buf1[eax] >>4*/\
-		"pmulhw ubCoeff, %%mm2		\n\t"\
-		"pmulhw vrCoeff, %%mm5		\n\t"\
-		"psubw w80, %%mm1		\n\t" /* 8(Y-16)*/\
-		"psubw w80, %%mm7		\n\t" /* 8(Y-16)*/\
-		"pmulhw yCoeff, %%mm1		\n\t"\
-		"pmulhw yCoeff, %%mm7		\n\t"\
+		"pmulhw "MANGLE(ubCoeff)", %%mm2\n\t"\
+		"pmulhw "MANGLE(vrCoeff)", %%mm5\n\t"\
+		"psubw "MANGLE(w80)", %%mm1	\n\t" /* 8(Y-16)*/\
+		"psubw "MANGLE(w80)", %%mm7	\n\t" /* 8(Y-16)*/\
+		"pmulhw "MANGLE(yCoeff)", %%mm1	\n\t"\
+		"pmulhw "MANGLE(yCoeff)", %%mm7	\n\t"\
 	/* mm1= Y1, mm2=ub, mm3=ug, mm4=vg mm5=vr, mm7=Y2 */\
 		"paddw %%mm3, %%mm4		\n\t"\
 		"movq %%mm2, %%mm0		\n\t"\
@@ -358,23 +358,23 @@
 		"paddw %%mm5, %%mm4		\n\t" /* uvbuf0[eax+2048] + uvbuf1[eax+2048]*/\
 		"psrlw $5, %%mm3		\n\t" /*FIXME might overflow*/\
 		"psrlw $5, %%mm4		\n\t" /*FIXME might overflow*/\
-		"psubw w400, %%mm3		\n\t" /* (U-128)8*/\
-		"psubw w400, %%mm4		\n\t" /* (V-128)8*/\
+		"psubw "MANGLE(w400)", %%mm3	\n\t" /* (U-128)8*/\
+		"psubw "MANGLE(w400)", %%mm4	\n\t" /* (V-128)8*/\
 		"movq %%mm3, %%mm2		\n\t" /* (U-128)8*/\
 		"movq %%mm4, %%mm5		\n\t" /* (V-128)8*/\
-		"pmulhw ugCoeff, %%mm3		\n\t"\
-		"pmulhw vgCoeff, %%mm4		\n\t"\
+		"pmulhw "MANGLE(ugCoeff)", %%mm3\n\t"\
+		"pmulhw "MANGLE(vgCoeff)", %%mm4\n\t"\
 	/* mm2=(U-128)8, mm3=ug, mm4=vg mm5=(V-128)8 */\
 		"movq (%0, %%eax, 2), %%mm1	\n\t" /*buf0[eax]*/\
 		"movq 8(%0, %%eax, 2), %%mm7	\n\t" /*buf0[eax]*/\
 		"psraw $4, %%mm1		\n\t" /* buf0[eax] - buf1[eax] >>4*/\
 		"psraw $4, %%mm7		\n\t" /* buf0[eax] - buf1[eax] >>4*/\
-		"pmulhw ubCoeff, %%mm2		\n\t"\
-		"pmulhw vrCoeff, %%mm5		\n\t"\
-		"psubw w80, %%mm1		\n\t" /* 8(Y-16)*/\
-		"psubw w80, %%mm7		\n\t" /* 8(Y-16)*/\
-		"pmulhw yCoeff, %%mm1		\n\t"\
-		"pmulhw yCoeff, %%mm7		\n\t"\
+		"pmulhw "MANGLE(ubCoeff)", %%mm2\n\t"\
+		"pmulhw "MANGLE(vrCoeff)", %%mm5\n\t"\
+		"psubw "MANGLE(w80)", %%mm1	\n\t" /* 8(Y-16)*/\
+		"psubw "MANGLE(w80)", %%mm7	\n\t" /* 8(Y-16)*/\
+		"pmulhw "MANGLE(yCoeff)", %%mm1	\n\t"\
+		"pmulhw "MANGLE(yCoeff)", %%mm7	\n\t"\
 	/* mm1= Y1, mm2=ub, mm3=ug, mm4=vg mm5=vr, mm7=Y2 */\
 		"paddw %%mm3, %%mm4		\n\t"\
 		"movq %%mm2, %%mm0		\n\t"\
@@ -423,9 +423,9 @@
 			" jb 1b				\n\t"
 
 #define WRITEBGR16 \
-			"pand bF8, %%mm2		\n\t" /* B */\
-			"pand bFC, %%mm4		\n\t" /* G */\
-			"pand bF8, %%mm5		\n\t" /* R */\
+			"pand "MANGLE(bF8)", %%mm2	\n\t" /* B */\
+			"pand "MANGLE(bFC)", %%mm4	\n\t" /* G */\
+			"pand "MANGLE(bF8)", %%mm5	\n\t" /* R */\
 			"psrlq $3, %%mm2		\n\t"\
 \
 			"movq %%mm2, %%mm1		\n\t"\
@@ -450,9 +450,9 @@
 			" jb 1b				\n\t"
 
 #define WRITEBGR15 \
-			"pand bF8, %%mm2		\n\t" /* B */\
-			"pand bF8, %%mm4		\n\t" /* G */\
-			"pand bF8, %%mm5		\n\t" /* R */\
+			"pand "MANGLE(bF8)", %%mm2	\n\t" /* B */\
+			"pand "MANGLE(bF8)", %%mm4	\n\t" /* G */\
+			"pand "MANGLE(bF8)", %%mm5	\n\t" /* R */\
 			"psrlq $3, %%mm2		\n\t"\
 			"psrlq $1, %%mm5		\n\t"\
 \
@@ -494,8 +494,8 @@
 \
 			"movq %%mm0, %%mm4		\n\t" /* 0RGB0RGB 0 */\
 			"psrlq $8, %%mm0		\n\t" /* 00RGB0RG 0 */\
-			"pand bm00000111, %%mm4		\n\t" /* 00000RGB 0 */\
-			"pand bm11111000, %%mm0		\n\t" /* 00RGB000 0.5 */\
+			"pand "MANGLE(bm00000111)", %%mm4\n\t" /* 00000RGB 0 */\
+			"pand "MANGLE(bm11111000)", %%mm0\n\t" /* 00RGB000 0.5 */\
 			"por %%mm4, %%mm0		\n\t" /* 00RGBRGB 0 */\
 			"movq %%mm2, %%mm4		\n\t" /* 0RGB0RGB 1 */\
 			"psllq $48, %%mm2		\n\t" /* GB000000 1 */\
@@ -505,11 +505,11 @@
 			"psrld $16, %%mm4		\n\t" /* 000R000R 1 */\
 			"psrlq $24, %%mm2		\n\t" /* 0000RGB0 1.5 */\
 			"por %%mm4, %%mm2		\n\t" /* 000RRGBR 1 */\
-			"pand bm00001111, %%mm2		\n\t" /* 0000RGBR 1 */\
+			"pand "MANGLE(bm00001111)", %%mm2\n\t" /* 0000RGBR 1 */\
 			"movq %%mm1, %%mm4		\n\t" /* 0RGB0RGB 2 */\
 			"psrlq $8, %%mm1		\n\t" /* 00RGB0RG 2 */\
-			"pand bm00000111, %%mm4		\n\t" /* 00000RGB 2 */\
-			"pand bm11111000, %%mm1		\n\t" /* 00RGB000 2.5 */\
+			"pand "MANGLE(bm00000111)", %%mm4\n\t" /* 00000RGB 2 */\
+			"pand "MANGLE(bm11111000)", %%mm1\n\t" /* 00RGB000 2.5 */\
 			"por %%mm4, %%mm1		\n\t" /* 00RGBRGB 2 */\
 			"movq %%mm1, %%mm4		\n\t" /* 00RGBRGB 2 */\
 			"psllq $32, %%mm1		\n\t" /* BRGB0000 2 */\
@@ -518,8 +518,8 @@
 			"psrlq $32, %%mm4		\n\t" /* 000000RG 2.5 */\
 			"movq %%mm3, %%mm5		\n\t" /* 0RGB0RGB 3 */\
 			"psrlq $8, %%mm3		\n\t" /* 00RGB0RG 3 */\
-			"pand bm00000111, %%mm5		\n\t" /* 00000RGB 3 */\
-			"pand bm11111000, %%mm3		\n\t" /* 00RGB000 3.5 */\
+			"pand "MANGLE(bm00000111)", %%mm5\n\t" /* 00000RGB 3 */\
+			"pand "MANGLE(bm11111000)", %%mm3\n\t" /* 00RGB000 3.5 */\
 			"por %%mm5, %%mm3		\n\t" /* 00RGBRGB 3 */\
 			"psllq $16, %%mm3		\n\t" /* RGBRGB00 3 */\
 			"por %%mm4, %%mm3		\n\t" /* RGBRGBRG 2.5 */\
@@ -588,8 +588,8 @@
 
 #define WRITEBGR24MMX2 \
 		/* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */\
-			"movq M24A, %%mm0		\n\t"\
-			"movq M24C, %%mm7		\n\t"\
+			"movq "MANGLE(M24A)", %%mm0	\n\t"\
+			"movq "MANGLE(M24C)", %%mm7	\n\t"\
 			"pshufw $0x50, %%mm2, %%mm1	\n\t" /* B3 B2 B3 B2  B1 B0 B1 B0 */\
 			"pshufw $0x50, %%mm4, %%mm3	\n\t" /* G3 G2 G3 G2  G1 G0 G1 G0 */\
 			"pshufw $0x00, %%mm5, %%mm6	\n\t" /* R1 R0 R1 R0  R1 R0 R1 R0 */\
@@ -608,7 +608,7 @@
 			"pshufw $0x55, %%mm4, %%mm3	\n\t" /* G4 G3 G4 G3  G4 G3 G4 G3 */\
 			"pshufw $0xA5, %%mm5, %%mm6	\n\t" /* R5 R4 R5 R4  R3 R2 R3 R2 */\
 \
-			"pand M24B, %%mm1		\n\t" /* B5       B4        B3    */\
+			"pand "MANGLE(M24B)", %%mm1	\n\t" /* B5       B4        B3    */\
 			"pand %%mm7, %%mm3		\n\t" /*       G4        G3       */\
 			"pand %%mm0, %%mm6		\n\t" /*    R4        R3       R2 */\
 \
@@ -622,7 +622,7 @@
 \
 			"pand %%mm7, %%mm1		\n\t" /*       B7        B6       */\
 			"pand %%mm0, %%mm3		\n\t" /*    G7        G6       G5 */\
-			"pand M24B, %%mm6		\n\t" /* R7       R6        R5    */\
+			"pand "MANGLE(M24B)", %%mm6	\n\t" /* R7       R6        R5    */\
 \
 			"por %%mm1, %%mm3		\n\t"\
 			"por %%mm3, %%mm6		\n\t"\
@@ -777,9 +777,9 @@ static inline void RENAME(yuv2rgbX)(int16_t *lumFilter, int16_t **lumSrc, int lu
 				YSCALEYUV2RGBX
 		/* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
 #ifdef DITHER1XBPP
-				"paddusb b5Dither, %%mm2	\n\t"
-				"paddusb g5Dither, %%mm4	\n\t"
-				"paddusb r5Dither, %%mm5	\n\t"
+				"paddusb "MANGLE(b5Dither)", %%mm2\n\t"
+				"paddusb "MANGLE(g5Dither)", %%mm4\n\t"
+				"paddusb "MANGLE(r5Dither)", %%mm5\n\t"
 #endif
 
 				WRITEBGR15
@@ -797,9 +797,9 @@ static inline void RENAME(yuv2rgbX)(int16_t *lumFilter, int16_t **lumSrc, int lu
 				YSCALEYUV2RGBX
 		/* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
 #ifdef DITHER1XBPP
-				"paddusb b5Dither, %%mm2	\n\t"
-				"paddusb g6Dither, %%mm4	\n\t"
-				"paddusb r5Dither, %%mm5	\n\t"
+				"paddusb "MANGLE(b5Dither)", %%mm2\n\t"
+				"paddusb "MANGLE(g6Dither)", %%mm4\n\t"
+				"paddusb "MANGLE(r5Dither)", %%mm5\n\t"
 #endif
 
 				WRITEBGR16
@@ -876,8 +876,8 @@ FULL_YSCALEYUV2RGB
 
 			"movq %%mm3, %%mm2		\n\t" // BGR0BGR0
 			"psrlq $8, %%mm3		\n\t" // GR0BGR00
-			"pand bm00000111, %%mm2		\n\t" // BGR00000
-			"pand bm11111000, %%mm3		\n\t" // 000BGR00
+			"pand "MANGLE(bm00000111)", %%mm2\n\t" // BGR00000
+			"pand "MANGLE(bm11111000)", %%mm3\n\t" // 000BGR00
 			"por %%mm2, %%mm3		\n\t" // BGRBGR00
 			"movq %%mm1, %%mm2		\n\t"
 			"psllq $48, %%mm1		\n\t" // 000000BG
@@ -916,9 +916,9 @@ FULL_YSCALEYUV2RGB
 
 FULL_YSCALEYUV2RGB
 #ifdef DITHER1XBPP
-			"paddusb g5Dither, %%mm1	\n\t"
-			"paddusb r5Dither, %%mm0	\n\t"
-			"paddusb b5Dither, %%mm3	\n\t"
+			"paddusb "MANGLE(g5Dither)", %%mm1\n\t"
+			"paddusb "MANGLE(r5Dither)", %%mm0\n\t"
+			"paddusb "MANGLE(b5Dither)", %%mm3\n\t"
 #endif
 			"punpcklbw %%mm7, %%mm1		\n\t" // 0G0G0G0G
 			"punpcklbw %%mm7, %%mm3		\n\t" // 0B0B0B0B
@@ -927,8 +927,8 @@ FULL_YSCALEYUV2RGB
 			"psrlw $3, %%mm3		\n\t"
 			"psllw $2, %%mm1		\n\t"
 			"psllw $7, %%mm0		\n\t"
-			"pand g15Mask, %%mm1		\n\t"
-			"pand r15Mask, %%mm0		\n\t"
+			"pand "MANGLE(g15Mask)", %%mm1	\n\t"
+			"pand "MANGLE(r15Mask)", %%mm0	\n\t"
 
 			"por %%mm3, %%mm1		\n\t"
 			"por %%mm1, %%mm0		\n\t"
@@ -950,9 +950,9 @@ FULL_YSCALEYUV2RGB
 
 FULL_YSCALEYUV2RGB
 #ifdef DITHER1XBPP
-			"paddusb g6Dither, %%mm1	\n\t"
-			"paddusb r5Dither, %%mm0	\n\t"
-			"paddusb b5Dither, %%mm3	\n\t"
+			"paddusb "MANGLE(g6Dither)", %%mm1\n\t"
+			"paddusb "MANGLE(r5Dither)", %%mm0\n\t"
+			"paddusb "MANGLE(b5Dither)", %%mm3\n\t"
 #endif
 			"punpcklbw %%mm7, %%mm1		\n\t" // 0G0G0G0G
 			"punpcklbw %%mm7, %%mm3		\n\t" // 0B0B0B0B
@@ -961,8 +961,8 @@ FULL_YSCALEYUV2RGB
 			"psrlw $3, %%mm3		\n\t"
 			"psllw $3, %%mm1		\n\t"
 			"psllw $8, %%mm0		\n\t"
-			"pand g16Mask, %%mm1		\n\t"
-			"pand r16Mask, %%mm0		\n\t"
+			"pand "MANGLE(g16Mask)", %%mm1	\n\t"
+			"pand "MANGLE(r16Mask)", %%mm0	\n\t"
 
 			"por %%mm3, %%mm1		\n\t"
 			"por %%mm1, %%mm0		\n\t"
@@ -1057,9 +1057,9 @@ FULL_YSCALEYUV2RGB
 				YSCALEYUV2RGB
 		/* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
 #ifdef DITHER1XBPP
-				"paddusb b5Dither, %%mm2	\n\t"
-				"paddusb g5Dither, %%mm4	\n\t"
-				"paddusb r5Dither, %%mm5	\n\t"
+				"paddusb "MANGLE(b5Dither)", %%mm2\n\t"
+				"paddusb "MANGLE(g5Dither)", %%mm4\n\t"
+				"paddusb "MANGLE(r5Dither)", %%mm5\n\t"
 #endif
 
 				WRITEBGR15
@@ -1075,9 +1075,9 @@ FULL_YSCALEYUV2RGB
 				YSCALEYUV2RGB
 		/* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
 #ifdef DITHER1XBPP
-				"paddusb b5Dither, %%mm2	\n\t"
-				"paddusb g6Dither, %%mm4	\n\t"
-				"paddusb r5Dither, %%mm5	\n\t"
+				"paddusb "MANGLE(b5Dither)", %%mm2\n\t"
+				"paddusb "MANGLE(g6Dither)", %%mm4\n\t"
+				"paddusb "MANGLE(r5Dither)", %%mm5\n\t"
 #endif
 
 				WRITEBGR16
@@ -1234,9 +1234,9 @@ static inline void RENAME(yuv2rgb1)(uint16_t *buf0, uint16_t *uvbuf0, uint16_t *
 				YSCALEYUV2RGB1
 		/* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
 #ifdef DITHER1XBPP
-				"paddusb b5Dither, %%mm2	\n\t"
-				"paddusb g5Dither, %%mm4	\n\t"
-				"paddusb r5Dither, %%mm5	\n\t"
+				"paddusb "MANGLE(b5Dither)", %%mm2\n\t"
+				"paddusb "MANGLE(g5Dither)", %%mm4\n\t"
+				"paddusb "MANGLE(r5Dither)", %%mm5\n\t"
 #endif
 				WRITEBGR15
 			:: "r" (buf0), "r" (buf0), "r" (uvbuf0), "r" (uvbuf1), "r" (dest), "m" (dstW),
@@ -1250,9 +1250,9 @@ static inline void RENAME(yuv2rgb1)(uint16_t *buf0, uint16_t *uvbuf0, uint16_t *
 				YSCALEYUV2RGB1
 		/* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
 #ifdef DITHER1XBPP
-				"paddusb b5Dither, %%mm2	\n\t"
-				"paddusb g6Dither, %%mm4	\n\t"
-				"paddusb r5Dither, %%mm5	\n\t"
+				"paddusb "MANGLE(b5Dither)", %%mm2\n\t"
+				"paddusb "MANGLE(g6Dither)", %%mm4\n\t"
+				"paddusb "MANGLE(r5Dither)", %%mm5\n\t"
 #endif
 
 				WRITEBGR16
@@ -1291,9 +1291,9 @@ static inline void RENAME(yuv2rgb1)(uint16_t *buf0, uint16_t *uvbuf0, uint16_t *
 				YSCALEYUV2RGB1b
 		/* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
 #ifdef DITHER1XBPP
-				"paddusb b5Dither, %%mm2	\n\t"
-				"paddusb g5Dither, %%mm4	\n\t"
-				"paddusb r5Dither, %%mm5	\n\t"
+				"paddusb "MANGLE(b5Dither)", %%mm2\n\t"
+				"paddusb "MANGLE(g5Dither)", %%mm4\n\t"
+				"paddusb "MANGLE(r5Dither)", %%mm5\n\t"
 #endif
 				WRITEBGR15
 			:: "r" (buf0), "r" (buf0), "r" (uvbuf0), "r" (uvbuf1), "r" (dest), "m" (dstW),
@@ -1307,9 +1307,9 @@ static inline void RENAME(yuv2rgb1)(uint16_t *buf0, uint16_t *uvbuf0, uint16_t *
 				YSCALEYUV2RGB1b
 		/* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
 #ifdef DITHER1XBPP
-				"paddusb b5Dither, %%mm2	\n\t"
-				"paddusb g6Dither, %%mm4	\n\t"
-				"paddusb r5Dither, %%mm5	\n\t"
+				"paddusb "MANGLE(b5Dither)", %%mm2\n\t"
+				"paddusb "MANGLE(g6Dither)", %%mm4\n\t"
+				"paddusb "MANGLE(r5Dither)", %%mm5\n\t"
 #endif
 
 				WRITEBGR16
@@ -1435,7 +1435,7 @@ static inline void RENAME(hScale)(int16_t *dst, int dstW, uint8_t *src, int srcW
 		dst-= counter/2;
 		asm volatile(
 			"pxor %%mm7, %%mm7		\n\t"
-			"movq w02, %%mm6		\n\t"
+			"movq "MANGLE(w02)", %%mm6	\n\t"
 			"pushl %%ebp			\n\t" // we use 7 regs here ...
 			"movl %%eax, %%ebp		\n\t"
 			".balign 16			\n\t"
@@ -1473,7 +1473,7 @@ static inline void RENAME(hScale)(int16_t *dst, int dstW, uint8_t *src, int srcW
 		dst-= counter/2;
 		asm volatile(
 			"pxor %%mm7, %%mm7		\n\t"
-			"movq w02, %%mm6		\n\t"
+			"movq "MANGLE(w02)", %%mm6	\n\t"
 			"pushl %%ebp			\n\t" // we use 7 regs here ...
 			"movl %%eax, %%ebp		\n\t"
 			".balign 16			\n\t"
@@ -1523,7 +1523,7 @@ static inline void RENAME(hScale)(int16_t *dst, int dstW, uint8_t *src, int srcW
 		dst-= counter/2;
 		asm volatile(
 			"pxor %%mm7, %%mm7		\n\t"
-			"movq w02, %%mm6		\n\t"
+			"movq "MANGLE(w02)", %%mm6	\n\t"
 			".balign 16			\n\t"
 			"1:				\n\t"
 			"movl %2, %%ecx			\n\t"
@@ -1614,7 +1614,7 @@ static inline void RENAME(hyscale)(uint16_t *dst, int dstWidth, uint8_t *src, in
 			"psllq $16, %%mm2		\n\t"
 			"paddw %%mm6, %%mm2		\n\t"
 			"psllq $16, %%mm2		\n\t" //0,t,2t,3t		t=xInc&0xFF
-			"movq %%mm2, temp0		\n\t"
+			"movq %%mm2, "MANGLE(temp0)"	\n\t"
 			"movd %4, %%mm6			\n\t" //(xInc*4)&0xFFFF
 			"punpcklwd %%mm6, %%mm6		\n\t"
 			"punpcklwd %%mm6, %%mm6		\n\t"
@@ -1630,8 +1630,8 @@ static inline void RENAME(hyscale)(uint16_t *dst, int dstWidth, uint8_t *src, in
 			PREFETCH" 1024(%%esi)		\n\t"\
 			PREFETCH" 1056(%%esi)		\n\t"\
 			PREFETCH" 1088(%%esi)		\n\t"\
-			"call funnyYCode		\n\t"\
-			"movq temp0, %%mm2		\n\t"\
+			"call "MANGLE(funnyYCode)"	\n\t"\
+			"movq "MANGLE(temp0)", %%mm2	\n\t"\
 			"xorl %%ecx, %%ecx		\n\t"
 
 FUNNY_Y_CODE
@@ -1741,7 +1741,7 @@ inline static void RENAME(hcscale)(uint16_t *dst, int dstWidth,
 		"psllq $16, %%mm2		\n\t"
 		"paddw %%mm6, %%mm2		\n\t"
 		"psllq $16, %%mm2		\n\t" //0,t,2t,3t		t=xInc&0xFFFF
-		"movq %%mm2, temp0		\n\t"
+		"movq %%mm2, "MANGLE(temp0)"	\n\t"
 		"movd %4, %%mm6			\n\t" //(xInc*4)&0xFFFF
 		"punpcklwd %%mm6, %%mm6		\n\t"
 		"punpcklwd %%mm6, %%mm6		\n\t"
@@ -1757,8 +1757,8 @@ inline static void RENAME(hcscale)(uint16_t *dst, int dstWidth,
 			PREFETCH" 1024(%%esi)		\n\t"\
 			PREFETCH" 1056(%%esi)		\n\t"\
 			PREFETCH" 1088(%%esi)		\n\t"\
-			"call funnyUVCode		\n\t"\
-			"movq temp0, %%mm2		\n\t"\
+			"call "MANGLE(funnyUVCode)"	\n\t"\
+			"movq "MANGLE(temp0)", %%mm2	\n\t"\
 			"xorl %%ecx, %%ecx		\n\t"
 
 FUNNYUVCODE

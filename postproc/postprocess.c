@@ -86,6 +86,7 @@ dont use #ifdef ARCH_X86 for the asm stuff ... cross compilers? (note cpudetect 
 //#include "../libvo/fastmemcpy.h"
 #include "postprocess.h"
 #include "../cpudetect.h"
+#include "../mangle.h"
 
 #define MIN(a,b) ((a) > (b) ? (b) : (a))
 #define MAX(a,b) ((a) < (b) ? (b) : (a))

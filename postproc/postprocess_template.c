@@ -60,8 +60,8 @@ asm volatile(
 		"leal (%%eax, %2, 4), %%ebx			\n\t"
 //	0	1	2	3	4	5	6	7	8	9
 //	%1	eax	eax+%2	eax+2%2	%1+4%2	ebx	ebx+%2	ebx+2%2	%1+8%2	ebx+4%2
-		"movq mmxDCOffset, %%mm7			\n\t" // mm7 = 0x7F
-		"movq mmxDCThreshold, %%mm6			\n\t" // mm6 = 0x7D
+		"movq "MANGLE(mmxDCOffset)", %%mm7		\n\t" // mm7 = 0x7F
+		"movq "MANGLE(mmxDCThreshold)", %%mm6		\n\t" // mm6 = 0x7D
 		"movq (%1), %%mm0				\n\t"
 		"movq (%%eax), %%mm1				\n\t"
 		"psubb %%mm1, %%mm0				\n\t" // mm0 = differnece
@@ -171,12 +171,12 @@ static inline int RENAME(isVertMinMaxOk)(uint8_t src[], int stride, int QP)
 		"psubusb %%mm2, %%mm1				\n\t"
 		"por %%mm1, %%mm0				\n\t" // ABS Diff
 
-		"movq pQPb, %%mm7				\n\t" // QP,..., QP
+		"movq "MANGLE(pQPb)", %%mm7			\n\t" // QP,..., QP
 		"paddusb %%mm7, %%mm7				\n\t" // 2QP ... 2QP
 		"psubusb %%mm7, %%mm0				\n\t" // Diff <= 2QP -> 0
-		"pcmpeqd b00, %%mm0				\n\t"
+		"pcmpeqd "MANGLE(b00)", %%mm0			\n\t"
 		"psrlq $16, %%mm0				\n\t"
-		"pcmpeqd bFF, %%mm0				\n\t"
+		"pcmpeqd "MANGLE(bFF)", %%mm0			\n\t"
 //		"movd %%mm0, (%1, %2, 4)\n\t"
 		"movd %%mm0, %0					\n\t"
 		: "=r" (isOk)
@@ -219,7 +219,7 @@ static inline void RENAME(doVertLowPass)(uint8_t *src, int stride, int QP)
 #if defined (HAVE_MMX2) || defined (HAVE_3DNOW)
 	src+= stride*3;
 	asm volatile(	//"movv %0 %1 %2\n\t"
-		"movq pQPb, %%mm0				\n\t"  // QP,..., QP
+		"movq "MANGLE(pQPb)", %%mm0			\n\t"  // QP,..., QP
 
 		"movq (%0), %%mm6				\n\t"
 		"movq (%0, %1), %%mm5				\n\t"
@@ -229,7 +229,7 @@ static inline void RENAME(doVertLowPass)(uint8_t *src, int stride, int QP)
 		"psubusb %%mm1, %%mm2				\n\t"
 		"por %%mm5, %%mm2				\n\t" // ABS Diff of lines
 		"psubusb %%mm0, %%mm2				\n\t" // diff <= QP -> 0
-		"pcmpeqb b00, %%mm2				\n\t" // diff <= QP -> FF
+		"pcmpeqb "MANGLE(b00)", %%mm2			\n\t" // diff <= QP -> FF
 
 		"pand %%mm2, %%mm6				\n\t"
 		"pandn %%mm1, %%mm2				\n\t"
@@ -247,7 +247,7 @@ static inline void RENAME(doVertLowPass)(uint8_t *src, int stride, int QP)
 		"psubusb %%mm1, %%mm2				\n\t"
 		"por %%mm5, %%mm2				\n\t" // ABS Diff of lines
 		"psubusb %%mm0, %%mm2				\n\t" // diff <= QP -> 0
-		"pcmpeqb b00, %%mm2				\n\t" // diff <= QP -> FF
+		"pcmpeqb "MANGLE(b00)", %%mm2			\n\t" // diff <= QP -> FF
 
 		"pand %%mm2, %%mm7				\n\t"
 		"pandn %%mm1, %%mm2				\n\t"
@@ -403,16 +403,16 @@ static inline void RENAME(vertRK1Filter)(uint8_t *src, int stride, int QP)
 // FIXME rounding
 	asm volatile(
 		"pxor %%mm7, %%mm7				\n\t" // 0
-		"movq b80, %%mm6				\n\t" // MIN_SIGNED_BYTE
+		"movq "MANGLE(b80)", %%mm6			\n\t" // MIN_SIGNED_BYTE
 		"leal (%0, %1), %%eax				\n\t"
 		"leal (%%eax, %1, 4), %%ebx			\n\t"
 //	0	1	2	3	4	5	6	7	8	9
 //	%0	eax	eax+%1	eax+2%1	%0+4%1	ebx	ebx+%1	ebx+2%1	%0+8%1	ebx+4%1
-		"movq pQPb, %%mm0				\n\t" // QP,..., QP
+		"movq "MANGLE(pQPb)", %%mm0			\n\t" // QP,..., QP
 		"movq %%mm0, %%mm1				\n\t" // QP,..., QP
-		"paddusb b02, %%mm0				\n\t"
+		"paddusb "MANGLE(b02)", %%mm0			\n\t"
 		"psrlw $2, %%mm0				\n\t"
-		"pand b3F, %%mm0				\n\t" // QP/4,..., QP/4
+		"pand "MANGLE(b3F)", %%mm0			\n\t" // QP/4,..., QP/4
 		"paddusb %%mm1, %%mm0				\n\t" // QP*1.25 ...
 		"movq (%0, %1, 4), %%mm2			\n\t" // line 4
 		"movq (%%ebx), %%mm3				\n\t" // line 5
@@ -441,8 +441,8 @@ static inline void RENAME(vertRK1Filter)(uint8_t *src, int stride, int QP)
 
 		"paddb %%mm6, %%mm5				\n\t"
 		"psrlw $2, %%mm5				\n\t"
-		"pand b3F, %%mm5				\n\t"
-		"psubb b20, %%mm5				\n\t" // (l5-l4)/8
+		"pand "MANGLE(b3F)", %%mm5			\n\t"
+		"psubb "MANGLE(b20)", %%mm5			\n\t" // (l5-l4)/8
 
 		"movq (%%eax, %1, 2), %%mm2			\n\t"
 		"paddb %%mm6, %%mm2				\n\t" // line 3 + 0x80
@@ -503,7 +503,7 @@ static inline void RENAME(vertX1Filter)(uint8_t *src, int stride, int QP)
 
 	asm volatile(
 		"pxor %%mm7, %%mm7				\n\t" // 0
-//		"movq b80, %%mm6				\n\t" // MIN_SIGNED_BYTE
+//		"movq "MANGLE(b80)", %%mm6			\n\t" // MIN_SIGNED_BYTE
 		"leal (%0, %1), %%eax				\n\t"
 		"leal (%%eax, %1, 4), %%ebx			\n\t"
 //	0	1	2	3	4	5	6	7	8	9
@@ -529,9 +529,9 @@ static inline void RENAME(vertX1Filter)(uint8_t *src, int stride, int QP)
 		"por %%mm5, %%mm4				\n\t" // |l4 - l5|
 		"psubusb %%mm0, %%mm4		\n\t" //d = MAX(0, |l4-l5| - (|l2-l3| + |l5-l6|)/2)
 		"movq %%mm4, %%mm3				\n\t" // d
-		"psubusb pQPb, %%mm4				\n\t"
+		"psubusb "MANGLE(pQPb)", %%mm4			\n\t"
 		"pcmpeqb %%mm7, %%mm4				\n\t" // d <= QP ? -1 : 0
-		"psubusb b01, %%mm3				\n\t"
+		"psubusb "MANGLE(b01)", %%mm3			\n\t"
 		"pand %%mm4, %%mm3				\n\t" // d <= QP ? d : 0
 
 		PAVGB(%%mm7, %%mm3)				      // d/2
@@ -740,18 +740,18 @@ static inline void RENAME(doVertDefFilter)(uint8_t src[], int stride, int QP)
 
 
 		PMINUB(%%mm2, %%mm1, %%mm4)			      // MIN(|lenergy|,|renergy|)/8
-		"movq pQPb, %%mm4				\n\t" // QP //FIXME QP+1 ?
-		"paddusb b01, %%mm4				\n\t"
+		"movq "MANGLE(pQPb)", %%mm4			\n\t" // QP //FIXME QP+1 ?
+		"paddusb "MANGLE(b01)", %%mm4			\n\t"
 		"pcmpgtb %%mm3, %%mm4				\n\t" // |menergy|/8 < QP
 		"psubusb %%mm1, %%mm3				\n\t" // d=|menergy|/8-MIN(|lenergy|,|renergy|)/8
 		"pand %%mm4, %%mm3				\n\t"
 
 		"movq %%mm3, %%mm1				\n\t"
-//		"psubusb b01, %%mm3				\n\t"
+//		"psubusb "MANGLE(b01)", %%mm3			\n\t"
 		PAVGB(%%mm7, %%mm3)
 		PAVGB(%%mm7, %%mm3)
 		"paddusb %%mm1, %%mm3				\n\t"
-//		"paddusb b01, %%mm3				\n\t"
+//		"paddusb "MANGLE(b01)", %%mm3			\n\t"
 
 		"movq (%%eax, %1, 2), %%mm6			\n\t" //l3
 		"movq (%0, %1, 4), %%mm5			\n\t" //l4
@@ -764,7 +764,7 @@ static inline void RENAME(doVertDefFilter)(uint8_t src[], int stride, int QP)
 		"pand %%mm0, %%mm3				\n\t"
 		PMINUB(%%mm5, %%mm3, %%mm0)
 
-		"psubusb b01, %%mm3				\n\t"
+		"psubusb "MANGLE(b01)", %%mm3			\n\t"
 		PAVGB(%%mm7, %%mm3)
 
 		"movq (%%eax, %1, 2), %%mm0			\n\t"
@@ -796,7 +796,7 @@ static inline void RENAME(doVertDefFilter)(uint8_t src[], int stride, int QP)
 		"movq (%%eax, %1), %%mm3			\n\t" // l2
 		"pxor %%mm6, %%mm2				\n\t" // -l5-1
 		"movq %%mm2, %%mm5				\n\t" // -l5-1
-		"movq b80, %%mm4				\n\t" // 128
+		"movq "MANGLE(b80)", %%mm4			\n\t" // 128
 		"leal (%%eax, %1, 4), %%ebx			\n\t"
 		PAVGB(%%mm3, %%mm2)				      // (l2-l5+256)/2
 		PAVGB(%%mm0, %%mm4)				      // ~(l4-l3)/4 + 128
@@ -808,7 +808,7 @@ static inline void RENAME(doVertDefFilter)(uint8_t src[], int stride, int QP)
 		"pxor %%mm6, %%mm2				\n\t" // -l1-1
 		PAVGB(%%mm3, %%mm2)				      // (l2-l1+256)/2
 		PAVGB((%0), %%mm1)				      // (l0-l3+256)/2
-		"movq b80, %%mm3				\n\t" // 128
+		"movq "MANGLE(b80)", %%mm3			\n\t" // 128
 		PAVGB(%%mm2, %%mm3)				      // ~(l2-l1)/4 + 128
 		PAVGB(%%mm1, %%mm3)				      // ~(l0-l3)/4 +(l2-l1)/8 + 128
 		PAVGB(%%mm2, %%mm3)				      // ~(l0-l3)/8 +5(l2-l1)/16 + 128
@@ -818,14 +818,14 @@ static inline void RENAME(doVertDefFilter)(uint8_t src[], int stride, int QP)
 		"movq (%%ebx, %1, 2), %%mm1			\n\t" // l7
 		"pxor %%mm6, %%mm1				\n\t" // -l7-1
 		PAVGB((%0, %1, 4), %%mm1)			      // (l4-l7+256)/2
-		"movq b80, %%mm2				\n\t" // 128
+		"movq "MANGLE(b80)", %%mm2			\n\t" // 128
 		PAVGB(%%mm5, %%mm2)				      // ~(l6-l5)/4 + 128
 		PAVGB(%%mm1, %%mm2)				      // ~(l4-l7)/4 +(l6-l5)/8 + 128
 		PAVGB(%%mm5, %%mm2)				      // ~(l4-l7)/8 +5(l6-l5)/16 + 128
 // mm0=128-q, mm2=renergy/16 + 128, mm3=lenergy/16 + 128, mm4= menergy/16 + 128
 
-		"movq b00, %%mm1				\n\t" // 0
-		"movq b00, %%mm5				\n\t" // 0
+		"movq "MANGLE(b00)", %%mm1			\n\t" // 0
+		"movq "MANGLE(b00)", %%mm5			\n\t" // 0
 		"psubb %%mm2, %%mm1				\n\t" // 128 - renergy/16
 		"psubb %%mm3, %%mm5				\n\t" // 128 - lenergy/16
 		PMAXUB(%%mm1, %%mm2)				      // 128 + |renergy/16|
@@ -834,8 +834,8 @@ static inline void RENAME(doVertDefFilter)(uint8_t src[], int stride, int QP)
 
 // mm0=128-q, mm3=128 + MIN(|lenergy|,|renergy|)/16, mm4= menergy/16 + 128
 
-		"movq b00, %%mm7				\n\t" // 0
-		"movq pQPb, %%mm2				\n\t" // QP
+		"movq "MANGLE(b00)", %%mm7			\n\t" // 0
+		"movq "MANGLE(pQPb)", %%mm2			\n\t" // QP
 		PAVGB(%%mm6, %%mm2)				      // 128 + QP/2
 		"psubb %%mm6, %%mm2				\n\t"
 
@@ -848,13 +848,13 @@ static inline void RENAME(doVertDefFilter)(uint8_t src[], int stride, int QP)
 // mm0=128-q, mm1= SIGN(menergy), mm2= |menergy|/16 < QP/2, mm4= d/16
 
 		"movq %%mm4, %%mm3				\n\t" // d
-		"psubusb b01, %%mm4				\n\t"
+		"psubusb "MANGLE(b01)", %%mm4			\n\t"
 		PAVGB(%%mm7, %%mm4)				      // d/32
 		PAVGB(%%mm7, %%mm4)				      // (d + 32)/64
 		"paddb %%mm3, %%mm4				\n\t" // 5d/64
 		"pand %%mm2, %%mm4				\n\t"
 
-		"movq b80, %%mm5				\n\t" // 128
+		"movq "MANGLE(b80)", %%mm5			\n\t" // 128
 		"psubb %%mm0, %%mm5				\n\t" // q
 		"paddsb %%mm6, %%mm5				\n\t" // fix bad rounding
 		"pcmpgtb %%mm5, %%mm7				\n\t" // SIGN(q)
@@ -991,8 +991,8 @@ src-=8;
 		"psubw %%mm3, %%mm1				\n\t" // 2H0 - 5H1 + 5H2 - H3
 		"psubw %%mm2, %%mm0				\n\t" // 2L0 - 5L1 + 5L2 - 2L3
 		"psubw %%mm3, %%mm1				\n\t" // 2H0 - 5H1 + 5H2 - 2H3
-		"movq %%mm0, temp0				\n\t" // 2L0 - 5L1 + 5L2 - 2L3
-		"movq %%mm1, temp1				\n\t" // 2H0 - 5H1 + 5H2 - 2H3
+		"movq %%mm0, "MANGLE(temp0)"			\n\t" // 2L0 - 5L1 + 5L2 - 2L3
+		"movq %%mm1, "MANGLE(temp1)"			\n\t" // 2H0 - 5H1 + 5H2 - 2H3
 
 		"movq (%0, %1, 4), %%mm0			\n\t"
 		"movq %%mm0, %%mm1				\n\t"
@@ -1001,8 +1001,8 @@ src-=8;
 
 		"psubw %%mm0, %%mm2				\n\t" // L3 - L4
 		"psubw %%mm1, %%mm3				\n\t" // H3 - H4
-		"movq %%mm2, temp2				\n\t" // L3 - L4
-		"movq %%mm3, temp3				\n\t" // H3 - H4
+		"movq %%mm2, "MANGLE(temp2)"			\n\t" // L3 - L4
+		"movq %%mm3, "MANGLE(temp3)"			\n\t" // H3 - H4
 		"paddw %%mm4, %%mm4				\n\t" // 2L2
 		"paddw %%mm5, %%mm5				\n\t" // 2H2
 		"psubw %%mm2, %%mm4				\n\t" // 2L2 - L3 + L4
@@ -1049,8 +1049,8 @@ src-=8;
 		"psubw %%mm2, %%mm0				\n\t" // 2L4 - 5L5 + 5L6 - 2L7
 		"psubw %%mm3, %%mm1				\n\t" // 2H4 - 5H5 + 5H6 - 2H7
 
-		"movq temp0, %%mm2				\n\t" // 2L0 - 5L1 + 5L2 - 2L3
-		"movq temp1, %%mm3				\n\t" // 2H0 - 5H1 + 5H2 - 2H3
+		"movq "MANGLE(temp0)", %%mm2			\n\t" // 2L0 - 5L1 + 5L2 - 2L3
+		"movq "MANGLE(temp1)", %%mm3			\n\t" // 2H0 - 5H1 + 5H2 - 2H3
 
 #ifdef HAVE_MMX2
 		"movq %%mm7, %%mm6				\n\t" // 0
@@ -1138,8 +1138,8 @@ src-=8;
 		"pmulhw %%mm2, %%mm5				\n\t" // ld/13
 */
 
-		"movq temp2, %%mm0				\n\t" // L3 - L4
-		"movq temp3, %%mm1				\n\t" // H3 - H4
+		"movq "MANGLE(temp2)", %%mm0			\n\t" // L3 - L4
+		"movq "MANGLE(temp3)", %%mm1			\n\t" // H3 - H4
 
 		"pxor %%mm2, %%mm2				\n\t"
 		"pxor %%mm3, %%mm3				\n\t"
@@ -1235,9 +1235,9 @@ static inline void RENAME(dering)(uint8_t src[], int stride, int QP)
 {
 #if defined (HAVE_MMX2) || defined (HAVE_3DNOW)
 	asm volatile(
-		"movq pQPb, %%mm0				\n\t"
+		"movq "MANGLE(pQPb)", %%mm0			\n\t"
 		"paddusb %%mm0, %%mm0				\n\t"
-		"movq %%mm0, pQPb2				\n\t"
+		"movq %%mm0, "MANGLE(pQPb2)"			\n\t"
 
 		"leal (%0, %1), %%eax				\n\t"
 		"leal (%%eax, %1, 4), %%ebx			\n\t"
@@ -1319,13 +1319,13 @@ FIND_MIN_MAX((%0, %1, 8))
 		"movq %%mm6, %%mm0				\n\t" // max
 		"psubb %%mm7, %%mm6				\n\t" // max - min
 		"movd %%mm6, %%ecx				\n\t"
-		"cmpb deringThreshold, %%cl			\n\t"
+		"cmpb "MANGLE(deringThreshold)", %%cl		\n\t"
 		" jb 1f						\n\t"
 		PAVGB(%%mm0, %%mm7)				      // a=(max + min)/2
 		"punpcklbw %%mm7, %%mm7				\n\t"
 		"punpcklbw %%mm7, %%mm7				\n\t"
 		"punpcklbw %%mm7, %%mm7				\n\t"
-		"movq %%mm7, temp0				\n\t"
+		"movq %%mm7, "MANGLE(temp0)"			\n\t"
 
 		"movq (%0), %%mm0				\n\t" // L10
 		"movq %%mm0, %%mm1				\n\t" // L10
@@ -1344,9 +1344,9 @@ FIND_MIN_MAX((%0, %1, 8))
 		"psubusb %%mm7, %%mm0				\n\t"
 		"psubusb %%mm7, %%mm2				\n\t"
 		"psubusb %%mm7, %%mm3				\n\t"
-		"pcmpeqb b00, %%mm0				\n\t" // L10 > a ? 0 : -1
-		"pcmpeqb b00, %%mm2				\n\t" // L20 > a ? 0 : -1
-		"pcmpeqb b00, %%mm3				\n\t" // L00 > a ? 0 : -1
+		"pcmpeqb "MANGLE(b00)", %%mm0			\n\t" // L10 > a ? 0 : -1
+		"pcmpeqb "MANGLE(b00)", %%mm2			\n\t" // L20 > a ? 0 : -1
+		"pcmpeqb "MANGLE(b00)", %%mm3			\n\t" // L00 > a ? 0 : -1
 		"paddb %%mm2, %%mm0				\n\t"
 		"paddb %%mm3, %%mm0				\n\t"
 
@@ -1367,9 +1367,9 @@ FIND_MIN_MAX((%0, %1, 8))
 		"psubusb %%mm7, %%mm2				\n\t"
 		"psubusb %%mm7, %%mm4				\n\t"
 		"psubusb %%mm7, %%mm5				\n\t"
-		"pcmpeqb b00, %%mm2				\n\t" // L11 > a ? 0 : -1
-		"pcmpeqb b00, %%mm4				\n\t" // L21 > a ? 0 : -1
-		"pcmpeqb b00, %%mm5				\n\t" // L01 > a ? 0 : -1
+		"pcmpeqb "MANGLE(b00)", %%mm2			\n\t" // L11 > a ? 0 : -1
+		"pcmpeqb "MANGLE(b00)", %%mm4			\n\t" // L21 > a ? 0 : -1
+		"pcmpeqb "MANGLE(b00)", %%mm5			\n\t" // L01 > a ? 0 : -1
 		"paddb %%mm4, %%mm2				\n\t"
 		"paddb %%mm5, %%mm2				\n\t"
 // 0, 2, 3, 1
@@ -1389,12 +1389,12 @@ FIND_MIN_MAX((%0, %1, 8))
 		PAVGB(t0, lx)				              /* (src[-1] + src[+1])/2 */\
 		PAVGB(sx, lx)				      /* (src[-1] + 2src[0] + src[+1])/4 */\
 		PAVGB(lx, pplx)					     \
-		"movq " #lx ", temp1				\n\t"\
-		"movq temp0, " #lx "				\n\t"\
+		"movq " #lx ", "MANGLE(temp1)"			\n\t"\
+		"movq "MANGLE(temp0)", " #lx "			\n\t"\
 		"psubusb " #lx ", " #t1 "			\n\t"\
 		"psubusb " #lx ", " #t0 "			\n\t"\
 		"psubusb " #lx ", " #sx "			\n\t"\
-		"movq b00, " #lx "				\n\t"\
+		"movq "MANGLE(b00)", " #lx "			\n\t"\
 		"pcmpeqb " #lx ", " #t1 "			\n\t" /* src[-1] > a ? 0 : -1*/\
 		"pcmpeqb " #lx ", " #t0 "			\n\t" /* src[+1] > a ? 0 : -1*/\
 		"pcmpeqb " #lx ", " #sx "			\n\t" /* src[0]  > a ? 0 : -1*/\
@@ -1404,20 +1404,20 @@ FIND_MIN_MAX((%0, %1, 8))
 		PAVGB(plx, pplx)				      /* filtered */\
 		"movq " #dst ", " #t0 "				\n\t" /* dst */\
 		"movq " #t0 ", " #t1 "				\n\t" /* dst */\
-		"psubusb pQPb2, " #t0 "				\n\t"\
-		"paddusb pQPb2, " #t1 "				\n\t"\
+		"psubusb "MANGLE(pQPb2)", " #t0 "		\n\t"\
+		"paddusb "MANGLE(pQPb2)", " #t1 "		\n\t"\
 		PMAXUB(t0, pplx)\
 		PMINUB(t1, pplx, t0)\
 		"paddb " #sx ", " #ppsx "			\n\t"\
 		"paddb " #psx ", " #ppsx "			\n\t"\
-	"#paddb b02, " #ppsx "				\n\t"\
-		"pand b08, " #ppsx "				\n\t"\
+		"#paddb "MANGLE(b02)", " #ppsx "		\n\t"\
+		"pand "MANGLE(b08)", " #ppsx "			\n\t"\
 		"pcmpeqb " #lx ", " #ppsx "			\n\t"\
 		"pand " #ppsx ", " #pplx "			\n\t"\
 		"pandn " #dst ", " #ppsx "			\n\t"\
 		"por " #pplx ", " #ppsx "			\n\t"\
 		"movq " #ppsx ", " #dst "			\n\t"\
-		"movq temp1, " #lx "				\n\t"
+		"movq "MANGLE(temp1)", " #lx "			\n\t"
 
 /*
 0000000
@@ -2082,7 +2082,7 @@ static void inline RENAME(tempNoiseReducer)(uint8_t *src, int stride,
 		"paddw %%mm6, %%mm0				\n\t"
 #elif defined (FAST_L2_DIFF)
 		"pcmpeqb %%mm7, %%mm7				\n\t"
-		"movq b80, %%mm6				\n\t"
+		"movq "MANGLE(b80)", %%mm6			\n\t"
 		"pxor %%mm0, %%mm0				\n\t"
 #define L2_DIFF_CORE(a, b)\
 		"movq " #a ", %%mm5				\n\t"\
@@ -2152,12 +2152,12 @@ L2_DIFF_CORE((%0, %%ecx), (%1, %%ecx))
 		"movl %%ecx, (%%ebx)				\n\t"
 		"leal (%%eax, %2, 2), %%ebx			\n\t" // 5*stride
 
-//		"movl %3, %%ecx				\n\t"
+//		"movl %3, %%ecx					\n\t"
 //		"movl %%ecx, test				\n\t"
 //		"jmp 4f \n\t"
-		"cmpl 4+maxTmpNoise, %%ecx			\n\t"
+		"cmpl 4+"MANGLE(maxTmpNoise)", %%ecx		\n\t"
 		" jb 2f						\n\t"
-		"cmpl 8+maxTmpNoise, %%ecx			\n\t"
+		"cmpl 8+"MANGLE(maxTmpNoise)", %%ecx		\n\t"
 		" jb 1f						\n\t"
 
 		"leal (%%ebx, %2, 2), %%ecx			\n\t" // 7*stride
@@ -2216,7 +2216,7 @@ L2_DIFF_CORE((%0, %%ecx), (%1, %%ecx))
 		"jmp 4f						\n\t"
 
 		"2:						\n\t"
-		"cmpl maxTmpNoise, %%ecx			\n\t"
+		"cmpl "MANGLE(maxTmpNoise)", %%ecx		\n\t"
 		" jb 3f						\n\t"
 
 		"leal (%%ebx, %2, 2), %%ecx			\n\t" // 7*stride
@@ -2461,8 +2461,8 @@ static inline void RENAME(blockCopy)(uint8_t dst[], int dstStride, uint8_t src[]
 					asm volatile(
 						"leal (%0,%2), %%eax	\n\t"
 						"leal (%1,%3), %%ebx	\n\t"
-						"movq packedYOffset, %%mm2	\n\t"
-						"movq packedYScale, %%mm3	\n\t"
+						"movq "MANGLE(packedYOffset)", %%mm2\n\t"
+						"movq "MANGLE(packedYScale)", %%mm3\n\t"
 						"pxor %%mm4, %%mm4	\n\t"
 #ifdef HAVE_MMX2
 #define SCALED_CPY(src1, src2, dst1, dst2)					\
@@ -2884,7 +2884,7 @@ static void RENAME(postProcess)(uint8_t src[], int srcStride, uint8_t dst[], int
 				"packuswb %%mm7, %%mm7				\n\t" // 0, 0, 0, QP, 0, 0, 0, QP
 				"packuswb %%mm7, %%mm7				\n\t" // 0,QP, 0, QP, 0,QP, 0, QP
 				"packuswb %%mm7, %%mm7				\n\t" // QP,..., QP
-				"movq %%mm7, pQPb				\n\t"
+				"movq %%mm7, "MANGLE(pQPb)"			\n\t"
 				: : "r" (QP)
 			);
 #endif

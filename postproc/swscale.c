@@ -10,6 +10,7 @@
 #include <math.h>
 #include <stdio.h>
 #include "../config.h"
+#include "../mangle.h"
 #ifdef HAVE_MALLOC_H
 #include <malloc.h>
 #endif
