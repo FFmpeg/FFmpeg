@@ -173,7 +173,7 @@ static inline int idctRowCondDC(int16_t *row)
 	return 2;
 }
 
-inline static void idctSparseCol(int16_t *col)
+inline static void idctSparseCol2(int16_t *col)
 {
         int a0, a1, a2, a3, b0, b1, b2, b3;
 
@@ -486,7 +486,6 @@ static inline void idctSparseColAdd (UINT8 *dest, int line_size,
 static inline void idctSparseCol (int16_t * col)
 {
 	int a0, a1, a2, a3, b0, b1, b2, b3;
-        UINT8 *cm = cropTbl + MAX_NEG_CROP;
 
         /* XXX: I did that only to give same values as previous code */
 	a0 = W4 * (col[8*0] + ((1<<(COL_SHIFT-1))/W4));
@@ -597,7 +596,7 @@ void simple_idct (short *block)
         } else if (rowsConstant) {
 		uint64_t *lblock = (uint64_t *) block;
 
-		idctSparseCol(block);
+		idctSparseCol2(block);
 		for (i = 0; i < 8; i++) {
 			uint64_t v = (uint16_t) block[i * 8];
 
@@ -609,7 +608,7 @@ void simple_idct (short *block)
 		}
 	} else {
 		for (i = 0; i < 8; i++)
-			idctSparseCol(block + i);
+			idctSparseCol2(block + i);
 	}
 }
 
