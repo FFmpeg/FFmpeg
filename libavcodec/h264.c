@@ -2540,6 +2540,8 @@ static int alloc_tables(H264Context *h){
         }
     }
 
+    s->obmc_scratchpad = NULL;
+
     return 0;
 fail:
     free_tables(h);
