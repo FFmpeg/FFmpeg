@@ -1502,10 +1502,10 @@ static void compute_stats(HTTPContext *c)
                 {
                     int audio_bit_rate = 0;
                     int video_bit_rate = 0;
-                    char *audio_codec_name = "";
-                    char *video_codec_name = "";
-                    char *audio_codec_name_extra = "";
-                    char *video_codec_name_extra = "";
+                    const char *audio_codec_name = "";
+                    const char *video_codec_name = "";
+                    const char *audio_codec_name_extra = "";
+                    const char *video_codec_name_extra = "";
 
                     for(i=0;i<stream->nb_streams;i++) {
                         AVStream *st = stream->streams[i];
