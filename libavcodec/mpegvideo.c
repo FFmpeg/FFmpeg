@@ -427,10 +427,11 @@ int MPV_encode_init(AVCodecContext *avctx)
         s->out_format = FMT_MJPEG;
         s->intra_only = 1; /* force intra only for jpeg */
         s->mjpeg_write_tables = 1; /* write all tables */
+	s->mjpeg_data_only_frames = 0; /* write all the needed headers */
         s->mjpeg_vsample[0] = 2; /* set up default sampling factors */
         s->mjpeg_vsample[1] = 1; /* the only currently supported values */
         s->mjpeg_vsample[2] = 1; 
-        s->mjpeg_hsample[0] = 2; 
+        s->mjpeg_hsample[0] = 2;
         s->mjpeg_hsample[1] = 1; 
         s->mjpeg_hsample[2] = 1; 
         if (mjpeg_init(s) < 0)
@@ -1658,7 +1659,7 @@ static void encode_picture(MpegEncContext *s, int picture_number)
         /* for mjpeg, we do include qscale in the matrix */
         s->intra_matrix[0] = default_intra_matrix[0];
         for(i=1;i<64;i++)
-            s->intra_matrix[i] = (default_intra_matrix[i] * s->qscale) >> 3;
+            s->intra_matrix[i] = CLAMP_TO_8BIT((default_intra_matrix[i] * s->qscale) >> 3);
         convert_matrix(s->q_intra_matrix, s->q_intra_matrix16, 
                        s->q_intra_matrix16_bias, s->intra_matrix, s->intra_quant_bias);
     }

@@ -902,4 +902,6 @@ void *av_mallocz(int size);
 /* math */
 int ff_gcd(int a, int b);
 
+#define CLAMP_TO_8BIT(d) ((d > 0xff) ? 0xff : (d < 0) ? 0 : d)
+
 #endif

@@ -388,6 +388,8 @@ void mjpeg_picture_header(MpegEncContext *s)
 {
     put_marker(&s->pb, SOI);
 
+    if (!s->mjpeg_data_only_frames)
+    {
     jpeg_put_comments(s);    
 
     if (s->mjpeg_write_tables) jpeg_table_header(s);
@@ -425,6 +427,7 @@ void mjpeg_picture_header(MpegEncContext *s)
 #else
     put_bits(&s->pb, 8, 0); /* select matrix */
 #endif
+    }
 
     /* scan header */
     put_marker(&s->pb, SOS);
