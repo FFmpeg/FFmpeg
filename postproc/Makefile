@@ -20,6 +20,7 @@ all:    $(SWSLIB)
 
 $(SWSLIB):     $(SWSOBJS)
 	$(AR) r $(SWSLIB) $(SWSOBJS)
+	$(RANLIB) $(SWSLIB)
 
 clean:
 	rm -f *.o *.a *~ *.so cs_test swscale-example
