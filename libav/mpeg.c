@@ -1,5 +1,5 @@
 /*
- * MPEG1 mux/demux
+ * MPEG1/2 mux/demux
  * Copyright (c) 2000, 2001, 2002 Fabrice Bellard.
  *
  * This library is free software; you can redistribute it and/or
@@ -43,6 +43,8 @@ typedef struct {
     /* stream info */
     int audio_bound;
     int video_bound;
+    int is_mpeg2;
+    int is_vcd;
 } MpegMuxContext;
 
 #define PACK_START_CODE             ((unsigned int)0x000001ba)
@@ -61,6 +63,10 @@ typedef struct {
 
 #define AUDIO_ID 0xc0
 #define VIDEO_ID 0xe0
+
+extern AVOutputFormat mpeg1system_mux;
+extern AVOutputFormat mpeg1vcd_mux;
+extern AVOutputFormat mpeg2vob_mux;
 
 static int put_pack_header(AVFormatContext *ctx, 
                            UINT8 *buf, INT64 timestamp)
@@ -154,9 +160,10 @@ static int mpeg_mux_init(AVFormatContext *ctx)
     StreamInfo *stream;
 
     s->packet_number = 0;
-
-    /* XXX: hardcoded */
-    if (ctx->flags & AVF_FLAG_VCD)
+    s->is_vcd = (ctx->oformat == &mpeg1vcd_mux);
+    s->is_mpeg2 = (ctx->oformat == &mpeg2vob_mux);
+    
+    if (s->is_vcd)
         s->packet_size = 2324; /* VCD packet size */
     else
         s->packet_size = 2048;
@@ -203,14 +210,14 @@ static int mpeg_mux_init(AVFormatContext *ctx)
     }
     s->mux_rate = (bitrate + (8 * 50) - 1) / (8 * 50);
     
-    if (ctx->flags & AVF_FLAG_VCD)
+    if (s->is_vcd || s->is_mpeg2)
         /* every packet */
         s->pack_header_freq = 1;
     else
         /* every 2 seconds */
         s->pack_header_freq = 2 * bitrate / s->packet_size / 8;
     
-    if (ctx->flags & AVF_FLAG_VCD)
+    if (s->is_vcd)
         /* every 40 packets, this is my invention */
         s->system_header_freq = s->pack_header_freq * 40;
     else
@@ -255,7 +262,7 @@ static void flush_packet(AVFormatContext *ctx, int stream_index, int last_pkt)
     MpegMuxContext *s = ctx->priv_data;
     StreamInfo *stream = ctx->streams[stream_index]->priv_data;
     UINT8 *buf_ptr;
-    int size, payload_size, startcode, id, len, stuffing_size, i;
+    int size, payload_size, startcode, id, len, stuffing_size, i, header_len;
     INT64 timestamp;
     UINT8 buffer[128];
     int last = last_pkt ? 4 : 0;
@@ -282,7 +289,12 @@ static void flush_packet(AVFormatContext *ctx, int stream_index, int last_pkt)
     put_buffer(&ctx->pb, buffer, size);
 
     /* packet header */
-    payload_size = s->packet_size - (size + 6 + 5 + last);
+    if (s->is_mpeg2) {
+        header_len = 8;
+    } else {
+        header_len = 5;
+    }
+    payload_size = s->packet_size - (size + 6 + header_len + last);
     if (id < 0xc0) {
         startcode = PRIVATE_STREAM_1;
         payload_size -= 4;
@@ -295,12 +307,16 @@ static void flush_packet(AVFormatContext *ctx, int stream_index, int last_pkt)
 
     put_be32(&ctx->pb, startcode);
 
-    put_be16(&ctx->pb, payload_size + 5);
+    put_be16(&ctx->pb, payload_size + header_len);
     /* stuffing */
     for(i=0;i<stuffing_size;i++)
         put_byte(&ctx->pb, 0xff);
-    
-    /* presentation time stamp */
+
+    if (s->is_mpeg2) {
+        put_byte(&ctx->pb, 0x80); /* mpeg2 id */
+        put_byte(&ctx->pb, 0x80); /* flags */
+        put_byte(&ctx->pb, 0x05); /* header len (only pts is included) */
+    }
     put_byte(&ctx->pb, 
              (0x02 << 4) | 
              (((timestamp >> 30) & 0x07) << 1) | 
@@ -626,11 +642,37 @@ static int mpegps_read_close(AVFormatContext *s)
     return 0;
 }
 
-static AVOutputFormat mpegps_mux = {
+static AVOutputFormat mpeg1system_mux = {
     "mpeg",
-    "MPEG PS format",
+    "MPEG1 System format",
     "video/x-mpeg",
-    "mpg,mpeg,vob",
+    "mpg,mpeg",
+    sizeof(MpegMuxContext),
+    CODEC_ID_MP2,
+    CODEC_ID_MPEG1VIDEO,
+    mpeg_mux_init,
+    mpeg_mux_write_packet,
+    mpeg_mux_end,
+};
+
+static AVOutputFormat mpeg1vcd_mux = {
+    "vcd",
+    "MPEG1 System format (VCD)",
+    "video/x-mpeg",
+    NULL,
+    sizeof(MpegMuxContext),
+    CODEC_ID_MP2,
+    CODEC_ID_MPEG1VIDEO,
+    mpeg_mux_init,
+    mpeg_mux_write_packet,
+    mpeg_mux_end,
+};
+
+static AVOutputFormat mpeg2vob_mux = {
+    "vob",
+    "MPEG2 PS format (VOB)",
+    "video/x-mpeg",
+    "vob",
     sizeof(MpegMuxContext),
     CODEC_ID_MP2,
     CODEC_ID_MPEG1VIDEO,
@@ -652,7 +694,9 @@ static AVInputFormat mpegps_demux = {
 
 int mpegps_init(void)
 {
-    av_register_output_format(&mpegps_mux);
+    av_register_output_format(&mpeg1system_mux);
+    av_register_output_format(&mpeg1vcd_mux);
+    av_register_output_format(&mpeg2vob_mux);
     av_register_input_format(&mpegps_demux);
     return 0;
 }
