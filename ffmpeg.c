@@ -116,6 +116,7 @@ static int use_aic = 0;
 static int use_aiv = 0;
 static int use_umv = 0;
 static int do_deinterlace = 0;
+static int do_interlace = 0;
 static int workaround_bugs = FF_BUG_AUTODETECT;
 static int error_resilience = 2;
 static int error_concealment = 3;
@@ -2274,17 +2275,17 @@ static void opt_output_file(const char *filename)
                 if (use_4mv) {
                     video_enc->flags |= CODEC_FLAG_4MV;
                 }
-            
-                if(use_part)
+                if(use_part) {
                     video_enc->flags |= CODEC_FLAG_PART;
-               
-            
+                }
                 if (b_frames) {
                     video_enc->max_b_frames = b_frames;
                     video_enc->b_frame_strategy = 0;
                     video_enc->b_quant_factor = 2.0;
                 }
-            
+                if (do_interlace) {
+                    video_enc->flags |= CODEC_FLAG_INTERLACED_DCT;
+                }
                 video_enc->qmin = video_qmin;
                 video_enc->qmax = video_qmax;
                 video_enc->mb_qmin = video_mb_qmin;
@@ -2875,8 +2876,8 @@ const OptionDef options[] = {
     { "bf", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_b_frames}, "use 'frames' B frames", "frames" },
     { "hq", OPT_BOOL, {(void*)&mb_decision}, "activate high quality settings" },
     { "mbd", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_mb_decision}, "macroblock decision", "mode" },
-    { "4mv", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_4mv}, "use four motion vector by macroblock (only MPEG-4)" },
-    { "part", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_part}, "use data partitioning (only MPEG-4)" },
+    { "4mv", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_4mv}, "use four motion vector by macroblock (MPEG4)" },
+    { "part", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_part}, "use data partitioning (MPEG4)" },
     { "bug", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_workaround_bugs}, "workaround not auto detected encoder bugs", "param" },
     { "ps", HAS_ARG | OPT_EXPERT, {(void*)opt_packet_size}, "set packet size in bits", "size" },
     { "strict", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_strict}, "how strictly to follow the standarts", "strictness" },
@@ -2886,6 +2887,8 @@ const OptionDef options[] = {
     { "passlogfile", HAS_ARG | OPT_STRING | OPT_VIDEO, {(void*)&pass_logfilename}, "select two pass log file name", "file" },
     { "deinterlace", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&do_deinterlace}, 
       "deinterlace pictures" },
+    { "interlace", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&do_interlace}, 
+      "force interlacing support in encoder (MPEG4)" },
     { "psnr", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&do_psnr}, "calculate PSNR of compressed frames" },
     { "vstats", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&do_vstats}, "dump video coding statistics to file" }, 
     { "vhook", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)add_frame_hooker}, "insert video processing module", "module" },
