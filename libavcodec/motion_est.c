@@ -219,25 +219,6 @@ static always_inline int cmp(MpegEncContext *s, const int x, const int y, const 
 
 #include "motion_est_template.c"
 
-static inline int get_penalty_factor(MpegEncContext *s, int type){
-    switch(type&0xFF){
-    default:
-    case FF_CMP_SAD:
-        return s->lambda>>FF_LAMBDA_SHIFT;
-    case FF_CMP_DCT:
-        return (3*s->lambda)>>(FF_LAMBDA_SHIFT+1);
-    case FF_CMP_SATD:
-        return (2*s->lambda)>>FF_LAMBDA_SHIFT;
-    case FF_CMP_RD:
-    case FF_CMP_PSNR:
-    case FF_CMP_SSE:
-    case FF_CMP_NSSE:
-        return s->lambda2>>FF_LAMBDA_SHIFT;
-    case FF_CMP_BIT:
-        return 1;
-    }
-}
-
 static int zero_cmp(void *s, uint8_t *a, uint8_t *b, int stride, int h){
     return 0;
 }
@@ -1161,9 +1142,9 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
     assert(s->linesize == c->stride);
     assert(s->uvlinesize == c->uvstride);
 
-    c->penalty_factor    = get_penalty_factor(s, c->avctx->me_cmp);
-    c->sub_penalty_factor= get_penalty_factor(s, c->avctx->me_sub_cmp);
-    c->mb_penalty_factor = get_penalty_factor(s, c->avctx->mb_cmp);
+    c->penalty_factor    = get_penalty_factor(s->lambda, s->lambda2, c->avctx->me_cmp);
+    c->sub_penalty_factor= get_penalty_factor(s->lambda, s->lambda2, c->avctx->me_sub_cmp);
+    c->mb_penalty_factor = get_penalty_factor(s->lambda, s->lambda2, c->avctx->mb_cmp);
     c->current_mv_penalty= c->mv_penalty[s->f_code] + MAX_MV;
 
     get_limits(s, 16*mb_x, 16*mb_y);
@@ -1256,7 +1237,7 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
             }
 
         }
-        dmin = epzs_motion_search(s, &mx, &my, P, 0, 0, s->p_mv_table, (1<<16)>>shift);       
+        dmin = ff_epzs_motion_search(s, &mx, &my, P, 0, 0, s->p_mv_table, (1<<16)>>shift, 0, 16);       
 
         break;
     }
@@ -1424,7 +1405,7 @@ int ff_pre_estimate_p_frame_motion(MpegEncContext * s,
     
     assert(s->quarter_sample==0 || s->quarter_sample==1);
 
-    c->pre_penalty_factor    = get_penalty_factor(s, c->avctx->me_pre_cmp);
+    c->pre_penalty_factor    = get_penalty_factor(s->lambda, s->lambda2, c->avctx->me_pre_cmp);
     c->current_mv_penalty= c->mv_penalty[s->f_code] + MAX_MV;
 
     get_limits(s, 16*mb_x, 16*mb_y);
@@ -1457,7 +1438,7 @@ int ff_pre_estimate_p_frame_motion(MpegEncContext * s,
         c->pred_y = P_MEDIAN[1];
     }
 
-    dmin = epzs_motion_search(s, &mx, &my, P, 0, 0, s->p_mv_table, (1<<16)>>shift);       
+    dmin = ff_epzs_motion_search(s, &mx, &my, P, 0, 0, s->p_mv_table, (1<<16)>>shift, 0, 16);       
 
     s->p_mv_table[xy][0] = mx<<shift;
     s->p_mv_table[xy][1] = my<<shift;
@@ -1477,9 +1458,9 @@ static int ff_estimate_motion_b(MpegEncContext * s,
     uint8_t * const mv_penalty= c->mv_penalty[f_code] + MAX_MV;
     int mv_scale;
         
-    c->penalty_factor    = get_penalty_factor(s, c->avctx->me_cmp);
-    c->sub_penalty_factor= get_penalty_factor(s, c->avctx->me_sub_cmp);
-    c->mb_penalty_factor = get_penalty_factor(s, c->avctx->mb_cmp);
+    c->penalty_factor    = get_penalty_factor(s->lambda, s->lambda2, c->avctx->me_cmp);
+    c->sub_penalty_factor= get_penalty_factor(s->lambda, s->lambda2, c->avctx->me_sub_cmp);
+    c->mb_penalty_factor = get_penalty_factor(s->lambda, s->lambda2, c->avctx->mb_cmp);
     c->current_mv_penalty= mv_penalty;
 
     get_limits(s, 16*mb_x, 16*mb_y);
@@ -1540,7 +1521,7 @@ static int ff_estimate_motion_b(MpegEncContext * s,
             mv_scale= ((s->pb_time - s->pp_time)<<16) / (s->pp_time<<shift);
         }
         
-        dmin = epzs_motion_search(s, &mx, &my, P, 0, ref_index, s->p_mv_table, mv_scale);
+        dmin = ff_epzs_motion_search(s, &mx, &my, P, 0, ref_index, s->p_mv_table, mv_scale, 0, 16);
  
         break;
     }
@@ -1731,7 +1712,7 @@ static inline int direct_search(MpegEncContext * s, int mb_x, int mb_y)
         P_MEDIAN[1]= mid_pred(P_LEFT[1], P_TOP[1], P_TOPRIGHT[1]);
     }
  
-    dmin = epzs_motion_search(s, &mx, &my, P, 0, 0, mv_table, 1<<(16-shift));
+    dmin = ff_epzs_motion_search(s, &mx, &my, P, 0, 0, mv_table, 1<<(16-shift), 0, 16);
     if(c->sub_flags&FLAG_QPEL) 
         dmin = qpel_motion_search(s, &mx, &my, dmin, 0, 0, 0, 16);
     else

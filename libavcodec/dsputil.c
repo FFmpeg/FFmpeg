@@ -219,6 +219,23 @@ static void bswap_buf(uint32_t *dst, uint32_t *src, int w){
     }
 }
 
+static int sse4_c(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, int h)
+{
+    int s, i;
+    uint32_t *sq = squareTbl + 256;
+
+    s = 0;
+    for (i = 0; i < h; i++) {
+        s += sq[pix1[0] - pix2[0]];
+        s += sq[pix1[1] - pix2[1]];
+        s += sq[pix1[2] - pix2[2]];
+        s += sq[pix1[3] - pix2[3]];
+        pix1 += line_size;
+        pix2 += line_size;
+    }
+    return s;
+}
+
 static int sse8_c(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, int h)
 {
     int s, i;
@@ -268,6 +285,103 @@ static int sse16_c(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
         pix2 += line_size;
     }
     return s;
+}
+
+
+static inline int w_c(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, int w, int h, int type){
+    int s, i, j;
+    const int dec_count= w==8 ? 3 : 4;
+    int tmp[16*16];
+#if 0
+    int level, ori;
+    static const int scale[2][2][4][4]={ 
+      {
+        {
+            //8x8 dec=3
+            {268, 239, 239, 213},
+            {  0, 224, 224, 152},
+            {  0, 135, 135, 110},
+        },{
+            //16x16 dec=4
+            {344, 310, 310, 280},
+            {  0, 320, 320, 228},
+            {  0, 175, 175, 136},
+            {  0, 129, 129, 102},
+        }
+      },{
+        {//FIXME 5/3
+            //8x8 dec=3
+            {275, 245, 245, 218},
+            {  0, 230, 230, 156},
+            {  0, 138, 138, 113},
+        },{
+            //16x16 dec=4
+            {352, 317, 317, 286},
+            {  0, 328, 328, 233},
+            {  0, 180, 180, 140},
+            {  0, 132, 132, 105},
+        }
+      }
+    };
+#endif
+
+    for (i = 0; i < h; i++) {
+        for (j = 0; j < w; j+=4) {
+            tmp[16*i+j+0] = (pix1[j+0] - pix2[j+0])<<4;
+            tmp[16*i+j+1] = (pix1[j+1] - pix2[j+1])<<4;
+            tmp[16*i+j+2] = (pix1[j+2] - pix2[j+2])<<4;
+            tmp[16*i+j+3] = (pix1[j+3] - pix2[j+3])<<4;
+        }
+        pix1 += line_size;
+        pix2 += line_size;
+    }
+    ff_spatial_dwt(tmp, w, h, 16, type, dec_count);
+
+    s=0;
+#if 0
+    for(level=0; level<dec_count; level++){
+        for(ori= level ? 1 : 0; ori<4; ori++){
+            int sx= (ori&1) ? 1<<level: 0;
+            int stride= 16<<(dec_count-level);
+            int sy= (ori&2) ? stride>>1 : 0;
+            int size= 1<<level;
+            
+            for(i=0; i<size; i++){
+                for(j=0; j<size; j++){
+                    int v= tmp[sx + sy + i*stride + j] * scale[type][dec_count-3][level][ori];
+                    s += ABS(v);
+                }
+            }
+        }
+    }
+#endif
+    for (i = 0; i < h; i++) {
+        for (j = 0; j < w; j+=4) {
+            s+= ABS(tmp[16*i+j+0]);
+            s+= ABS(tmp[16*i+j+1]);
+            s+= ABS(tmp[16*i+j+2]);
+            s+= ABS(tmp[16*i+j+3]);
+        }
+    }
+    assert(s>=0); 
+    
+    return s>>2;
+}
+
+static int w53_8_c(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, int h){
+    return w_c(v, pix1, pix2, line_size,  8, h, 1);
+}
+
+static int w97_8_c(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, int h){
+    return w_c(v, pix1, pix2, line_size,  8, h, 0);
+}
+
+static int w53_16_c(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, int h){
+    return w_c(v, pix1, pix2, line_size, 16, h, 1);
+}
+
+static int w97_16_c(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, int h){
+    return w_c(v, pix1, pix2, line_size, 16, h, 0);
 }
 
 static void get_pixels_c(DCTELEM *restrict block, const uint8_t *pixels, int line_size)
@@ -2733,6 +2847,12 @@ void ff_set_cmp(DSPContext* c, me_cmp_func *cmp, int type){
         case FF_CMP_NSSE:
             cmp[i]= c->nsse[i];
             break;
+        case FF_CMP_W53:
+            cmp[i]= c->w53[i];
+            break;
+        case FF_CMP_W97:
+            cmp[i]= c->w97[i];
+            break;
         default:
             av_log(NULL, AV_LOG_ERROR,"internal error in cmp function selection\n");
         }
@@ -3359,6 +3479,7 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     c->sad[1]= pix_abs8_c;
     c->sse[0]= sse16_c;
     c->sse[1]= sse8_c;
+    c->sse[2]= sse4_c;
     SET_CMP_FUNC(quant_psnr)
     SET_CMP_FUNC(rd)
     SET_CMP_FUNC(bit)
@@ -3368,7 +3489,11 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     c->vsse[4]= vsse_intra16_c;
     c->nsse[0]= nsse16_c;
     c->nsse[1]= nsse8_c;
-        
+    c->w53[0]= w53_16_c;
+    c->w53[1]= w53_8_c;
+    c->w97[0]= w97_16_c;
+    c->w97[1]= w97_8_c;
+
     c->add_bytes= add_bytes_c;
     c->diff_bytes= diff_bytes_c;
     c->sub_hfyu_median_prediction= sub_hfyu_median_prediction_c;
