@@ -2154,6 +2154,9 @@ static inline void RENAME(hScale)(int16_t *dst, int dstW, uint8_t *src, int srcW
 		);
 	}
 #else
+#ifdef HAVE_ALTIVEC
+	hScale_altivec_real(dst, dstW, src, srcW, xInc, filter, filterPos, filterSize);
+#else
 	int i;
 	for(i=0; i<dstW; i++)
 	{
@@ -2170,6 +2173,7 @@ static inline void RENAME(hScale)(int16_t *dst, int dstW, uint8_t *src, int srcW
 		dst[i] = MIN(MAX(0, val>>7), (1<<15)-1); // the cubic equation does overflow ...
 //		dst[i] = val>>7;
 	}
+#endif
 #endif
 }
       // *** horizontal scale Y line to temp buffer

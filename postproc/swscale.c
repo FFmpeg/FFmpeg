@@ -1041,6 +1041,21 @@ static inline void initFilter(int16_t **outFilter, int16_t **filterPos, int *out
 		if(min>minFilterSize) minFilterSize= min;
 	}
 
+        if (flags & SWS_CPU_CAPS_ALTIVEC) {
+          // we can handle the special case 4,
+          // so we don't want to go to the full 8
+          if (minFilterSize < 5)
+            filterAlign = 4;
+
+          // we really don't want to waste our time
+          // doing useless computation, so fall-back on
+          // the scalar C code for very small filter.
+          // vectorizing is worth it only if you have
+          // decent-sized vector.
+          if (minFilterSize < 3)
+            filterAlign = 1;
+        }
+
 	ASSERT(minFilterSize > 0)
 	filterSize= (minFilterSize +(filterAlign-1)) & (~(filterAlign-1));
 	ASSERT(filterSize > 0)
@@ -1947,7 +1962,10 @@ SwsContext *sws_getContext(int srcW, int srcH, int origSrcFormat, int dstW, int 
 
 	/* precalculate horizontal scaler filter coefficients */
 	{
-		const int filterAlign= (flags & SWS_CPU_CAPS_MMX) ? 4 : 1;
+		const int filterAlign=
+		  (flags & SWS_CPU_CAPS_MMX) ? 4 :
+		  (flags & SWS_CPU_CAPS_ALTIVEC) ? 8 :
+		  1;
 
 		initFilter(&c->hLumFilter, &c->hLumFilterPos, &c->hLumFilterSize, c->lumXInc,
 				 srcW      ,       dstW, filterAlign, 1<<14,
@@ -1976,14 +1994,20 @@ SwsContext *sws_getContext(int srcW, int srcH, int origSrcFormat, int dstW, int 
 
 
 	/* precalculate vertical scaler filter coefficients */
-	initFilter(&c->vLumFilter, &c->vLumFilterPos, &c->vLumFilterSize, c->lumYInc,
-			srcH      ,        dstH, 1, (1<<12)-4,
-			(flags&SWS_BICUBLIN) ? (flags|SWS_BICUBIC)  : flags,
-			srcFilter->lumV, dstFilter->lumV);
-	initFilter(&c->vChrFilter, &c->vChrFilterPos, &c->vChrFilterSize, c->chrYInc,
-			c->chrSrcH, c->chrDstH, 1, (1<<12)-4,
-			(flags&SWS_BICUBLIN) ? (flags|SWS_BILINEAR) : flags,
-			srcFilter->chrV, dstFilter->chrV);
+	{
+		const int filterAlign=
+		  (flags & SWS_CPU_CAPS_ALTIVEC) ? 8 :
+		  1;
+
+		initFilter(&c->vLumFilter, &c->vLumFilterPos, &c->vLumFilterSize, c->lumYInc,
+				srcH      ,        dstH, filterAlign, (1<<12)-4,
+				(flags&SWS_BICUBLIN) ? (flags|SWS_BICUBIC)  : flags,
+				srcFilter->lumV, dstFilter->lumV);
+		initFilter(&c->vChrFilter, &c->vChrFilterPos, &c->vChrFilterSize, c->chrYInc,
+				c->chrSrcH, c->chrDstH, filterAlign, (1<<12)-4,
+				(flags&SWS_BICUBLIN) ? (flags|SWS_BILINEAR) : flags,
+				srcFilter->chrV, dstFilter->chrV);
+	}
 
 	// Calculate Buffer Sizes so that they won't run out while handling these damn slices
 	c->vLumBufSize= c->vLumFilterSize;
