@@ -760,6 +760,11 @@ EOF
 $cc -o $TMPE $TMPC 2> /dev/null || _memalign=no
 fi
 
+if test "$_memalign" = "no" -a "$mmx" = "yes" -a "$memalignhack" != "yes"; then
+    echo "error, no memalign() but sse enabled, either disable it or use --enable-memalign-hack"
+    exit 1
+fi
+
 cat > $TMPC << EOF
 #include <time.h>
 int main( void ) { localtime_r(NULL, NULL); }
