@@ -508,11 +508,9 @@ static inline void fill_caches(H264Context *h, int mb_type, int for_deblock){
         }
     }
 
-    if(for_deblock){
-        h->top_mb_xy = top_xy;
-        h->left_mb_xy[0] = left_xy[0];
-        h->left_mb_xy[1] = left_xy[1];
-    }
+    h->top_mb_xy = top_xy;
+    h->left_mb_xy[0] = left_xy[0];
+    h->left_mb_xy[1] = left_xy[1];
     if(for_deblock){
         topleft_type = h->slice_table[topleft_xy ] < 255 ? s->current_picture.mb_type[topleft_xy] : 0;
         top_type     = h->slice_table[top_xy     ] < 255 ? s->current_picture.mb_type[top_xy]     : 0;
@@ -609,7 +607,6 @@ static inline void fill_caches(H264Context *h, int mb_type, int for_deblock){
         h->non_zero_count_cache[1+8*3]= h->non_zero_count[top_xy][12];
         h->non_zero_count_cache[2+8*3]= h->non_zero_count[top_xy][11];
         
-        h->top_cbp= h->cbp_table[top_xy];
     }else{
         h->non_zero_count_cache[4+8*0]=      
         h->non_zero_count_cache[5+8*0]=
@@ -622,25 +619,44 @@ static inline void fill_caches(H264Context *h, int mb_type, int for_deblock){
         h->non_zero_count_cache[1+8*3]=
         h->non_zero_count_cache[2+8*3]= h->pps.cabac && !IS_INTRA(mb_type) ? 0 : 64;
         
-        if(IS_INTRA(mb_type)) h->top_cbp= 0x1C0;
-        else                  h->top_cbp= 0;
     }
-    
+
     for (i=0; i<2; i++) {
         if(left_type[i]){
             h->non_zero_count_cache[3+8*1 + 2*8*i]= h->non_zero_count[left_xy[i]][left_block[0+2*i]];
             h->non_zero_count_cache[3+8*2 + 2*8*i]= h->non_zero_count[left_xy[i]][left_block[1+2*i]];
             h->non_zero_count_cache[0+8*1 +   8*i]= h->non_zero_count[left_xy[i]][left_block[4+2*i]];
             h->non_zero_count_cache[0+8*4 +   8*i]= h->non_zero_count[left_xy[i]][left_block[5+2*i]];
-            h->left_cbp= h->cbp_table[left_xy[i]]; //FIXME interlacing
         }else{
             h->non_zero_count_cache[3+8*1 + 2*8*i]= 
             h->non_zero_count_cache[3+8*2 + 2*8*i]= 
             h->non_zero_count_cache[0+8*1 +   8*i]= 
             h->non_zero_count_cache[0+8*4 +   8*i]= h->pps.cabac && !IS_INTRA(mb_type) ? 0 : 64;
-            
-            if(IS_INTRA(mb_type)) h->left_cbp= 0x1C0;//FIXME interlacing
-            else                  h->left_cbp= 0;
+        }
+    }
+
+    if( h->pps.cabac ) {
+        // top_cbp
+        if(top_type) {
+            h->top_cbp = h->cbp_table[top_xy];
+        } else if(IS_INTRA(mb_type)) {
+            h->top_cbp = 0x1C0;
+        } else {
+            h->top_cbp = 0;
+        }
+        // left_cbp
+        if (left_type[0]) {
+            h->left_cbp = h->cbp_table[left_xy[0]] & 0x1f0;
+        } else if(IS_INTRA(mb_type)) {
+            h->left_cbp = 0x1C0;
+        } else {
+            h->left_cbp = 0;
+        }
+        if (left_type[0]) {
+            h->left_cbp |= ((h->cbp_table[left_xy[0]]>>((left_block[0]&(~1))+1))&0x1) << 1;
+        }
+        if (left_type[1]) {
+            h->left_cbp |= ((h->cbp_table[left_xy[1]]>>((left_block[2]&(~1))+1))&0x1) << 3;
         }
     }
 
@@ -4359,8 +4375,11 @@ decode_intra_mb:
         }
         
         for(list=0; list<2; list++){
-            const int ref_count= IS_REF0(mb_type) ? 1 : h->ref_count[list];
+            int ref_count= IS_REF0(mb_type) ? 1 : h->ref_count[list];
             if(ref_count == 0) continue;
+            if (h->mb_aff_frame && h->mb_field_decoding_flag) {
+                ref_count <<= 1;
+            }
             for(i=0; i<4; i++){
                 if(IS_DIRECT(h->sub_mb_type[i])) continue;
                 if(IS_DIR(h->sub_mb_type[i], 0, list)){
@@ -4614,6 +4633,25 @@ decode_intra_mb:
     return 0;
 }
 
+static int decode_cabac_field_decoding_flag(H264Context *h) {
+    MpegEncContext * const s = &h->s;
+    const int mb_x = s->mb_x;
+    const int mb_y = s->mb_y & ~1;
+    const int mba_xy = mb_x - 1 +  mb_y   *s->mb_stride;
+    const int mbb_xy = mb_x     + (mb_y-2)*s->mb_stride;
+
+    unsigned int ctx = 0;
+    
+    if( h->slice_table[mba_xy] == h->slice_num && IS_INTERLACED( s->current_picture.mb_type[mba_xy] ) ) {
+        ctx += 1;
+    }
+    if( h->slice_table[mbb_xy] == h->slice_num && IS_INTERLACED( s->current_picture.mb_type[mbb_xy] ) ) {
+        ctx += 1;
+    }
+
+    return get_cabac( &h->cabac, &h->cabac_state[70 + ctx] );
+}
+
 static int decode_cabac_intra_mb_type(H264Context *h, int ctx_base, int intra_slice) {
     uint8_t *state= &h->cabac_state[ctx_base];
     int mb_type;
@@ -4757,10 +4795,8 @@ static int decode_cabac_mb_intra4x4_pred_mode( H264Context *h, int pred_mode ) {
 }
 
 static int decode_cabac_mb_chroma_pre_mode( H264Context *h) {
-    MpegEncContext * const s = &h->s;
-    const int mb_xy = s->mb_x + s->mb_y*s->mb_stride;
-    const int mba_xy = mb_xy - 1;
-    const int mbb_xy = mb_xy - s->mb_stride;
+    const int mba_xy = h->left_mb_xy[0];
+    const int mbb_xy = h->top_mb_xy;
 
     int ctx = 0;
 
@@ -4797,16 +4833,13 @@ static const uint8_t block_idx_xy[4][4] = {
 
 static int decode_cabac_mb_cbp_luma( H264Context *h) {
     MpegEncContext * const s = &h->s;
-    const int mb_xy = s->mb_x + s->mb_y*s->mb_stride;
 
     int cbp = 0;
     int i8x8;
 
-    h->cbp_table[mb_xy] = 0;  /* FIXME aaahahahah beurk */
-
     for( i8x8 = 0; i8x8 < 4; i8x8++ ) {
-        int mba_xy = -1;
-        int mbb_xy = -1;
+        int cbp_a = -1;
+        int cbp_b = -1;
         int x, y;
         int ctx = 0;
 
@@ -4814,40 +4847,35 @@ static int decode_cabac_mb_cbp_luma( H264Context *h) {
         y = block_idx_y[4*i8x8];
 
         if( x > 0 )
-            mba_xy = mb_xy;
-        else if( s->mb_x > 0 ) {
-            mba_xy = mb_xy - 1;
-            if (h->slice_table[mba_xy] != h->slice_num) {
-                mba_xy = -1;
-            }
+            cbp_a = cbp;
+        else if( s->mb_x > 0 && (h->slice_table[h->left_mb_xy[0]] == h->slice_num)) {
+            cbp_a = h->left_cbp;
+            tprintf("cbp_a = left_cbp = %x\n", cbp_a);
         }
 
         if( y > 0 )
-            mbb_xy = mb_xy;
-        else if( s->mb_y > 0 ) {
-            mbb_xy = mb_xy - s->mb_stride;
-            if (h->slice_table[mbb_xy] != h->slice_num) {
-                mbb_xy = -1;
-            }
+            cbp_b = cbp;
+        else if( s->mb_y > 0 && (h->slice_table[h->top_mb_xy] == h->slice_num)) {
+            cbp_b = h->top_cbp;
+            tprintf("cbp_b = top_cbp = %x\n", cbp_b);
         }
 
         /* No need to test for skip as we put 0 for skip block */
         /* No need to test for IPCM as we put 1 for IPCM block */
-        if( mba_xy >= 0 ) {
+        if( cbp_a >= 0 ) {
             int i8x8a = block_idx_xy[(x-1)&0x03][y]/4;
-            if( ((h->cbp_table[mba_xy] >> i8x8a)&0x01) == 0 )
+            if( ((cbp_a >> i8x8a)&0x01) == 0 )
                 ctx++;
         }
 
-        if( mbb_xy >= 0 ) {
+        if( cbp_b >= 0 ) {
             int i8x8b = block_idx_xy[x][(y-1)&0x03]/4;
-            if( ((h->cbp_table[mbb_xy] >> i8x8b)&0x01) == 0 )
+            if( ((cbp_b >> i8x8b)&0x01) == 0 )
                 ctx += 2;
         }
 
         if( get_cabac( &h->cabac, &h->cabac_state[73 + ctx] ) ) {
             cbp |= 1 << i8x8;
-            h->cbp_table[mb_xy] = cbp;  /* FIXME aaahahahah beurk */
         }
     }
     return cbp;
@@ -5021,6 +5049,8 @@ static int inline get_cabac_cbf_ctx( H264Context *h, int cat, int idx ) {
 static int inline decode_cabac_residual( H264Context *h, DCTELEM *block, int cat, int n, const uint8_t *scantable, int qp, int max_coeff) {
     const int mb_xy  = h->s.mb_x + h->s.mb_y*h->s.mb_stride;
     const uint16_t *qmul= dequant_coeff[qp];
+    static const int significant_coeff_flag_field_offset[2] = { 105, 277 };
+    static const int last_significant_coeff_flag_field_offset[2] = { 166, 338 };
     static const int significant_coeff_flag_offset[5] = { 0, 15, 29, 44, 47 };
     static const int coeff_abs_level_m1_offset[5] = {227+ 0, 227+10, 227+20, 227+30, 227+39 };
 
@@ -5050,9 +5080,9 @@ static int inline decode_cabac_residual( H264Context *h, DCTELEM *block, int cat
     }
 
     for(last= 0; last < max_coeff - 1; last++) {
-        if( get_cabac( &h->cabac, &h->cabac_state[105+significant_coeff_flag_offset[cat]+last] )) {
+        if( get_cabac( &h->cabac, &h->cabac_state[significant_coeff_flag_field_offset[h->mb_field_decoding_flag]+significant_coeff_flag_offset[cat]+last] )) {
             index[coeff_count++] = last;
-            if( get_cabac( &h->cabac, &h->cabac_state[166+significant_coeff_flag_offset[cat]+last] ) ) {
+            if( get_cabac( &h->cabac, &h->cabac_state[last_significant_coeff_flag_field_offset[h->mb_field_decoding_flag]+significant_coeff_flag_offset[cat]+last] ) ) {
                 last= max_coeff;
                 break;
             }
@@ -5133,11 +5163,6 @@ static int decode_mb_cabac(H264Context *h) {
 
     s->dsp.clear_blocks(h->mb); //FIXME avoid if allready clear (move after skip handlong?)
 
-    if( h->sps.mb_aff ) {
-        av_log( h->s.avctx, AV_LOG_ERROR, "Fields not supported with CABAC\n" );
-        return -1;
-    }
-
     tprintf("pic:%d mb:%d/%d\n", h->frame_num, s->mb_x, s->mb_y);
     if( h->slice_type != I_TYPE && h->slice_type != SI_TYPE ) {
         /* read skip flags */
@@ -5152,6 +5177,12 @@ static int decode_mb_cabac(H264Context *h) {
 
         }
     }
+    if(h->mb_aff_frame){
+        if ( ((s->mb_y&1) == 0) || h->prev_mb_skiped)
+            h->mb_field_decoding_flag = decode_cabac_field_decoding_flag(h);
+    }else
+        h->mb_field_decoding_flag= (s->picture_structure!=PICT_FRAME);
+
     h->prev_mb_skiped = 0;
 
     if( ( mb_type = decode_cabac_mb_type( h ) ) < 0 ) {
@@ -5183,10 +5214,8 @@ decode_intra_mb:
         h->intra16x16_pred_mode= i_mb_type_info[mb_type].pred_mode;
         mb_type= i_mb_type_info[mb_type].type;
     }
-#if 0
     if(h->mb_field_decoding_flag)
         mb_type |= MB_TYPE_INTERLACED;
-#endif
 
     s->current_picture.mb_type[mb_xy]= mb_type;
     h->slice_table[ mb_xy ]= h->slice_num;
