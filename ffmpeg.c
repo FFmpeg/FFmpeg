@@ -1067,7 +1067,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
     uint8_t *data_buf;
     int data_size, got_picture;
     AVFrame picture;
-    short samples[AVCODEC_MAX_AUDIO_FRAME_SIZE / 2];
+    short samples[pkt && pkt->size > AVCODEC_MAX_AUDIO_FRAME_SIZE/2 ? pkt->size : AVCODEC_MAX_AUDIO_FRAME_SIZE/2];
     void *buffer_to_free;
 
     if (pkt && pkt->dts != AV_NOPTS_VALUE) { //FIXME seems redundant, as libavformat does this too
@@ -1075,7 +1075,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
     } else {
         assert(ist->pts == ist->next_pts);
     }
-
+    
     if (pkt == NULL) {
         /* EOF handling */
         ptr = NULL;
