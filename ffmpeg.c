@@ -2262,7 +2262,8 @@ void opt_output_file(const char *filename)
                         exit(1);
                     }
                     video_enc->rc_override= 
-                        realloc(video_enc->rc_override, sizeof(RcOverride)*(i+1));
+                        av_realloc(video_enc->rc_override, 
+                                   sizeof(RcOverride)*(i+1));
                     video_enc->rc_override[i].start_frame= start;
                     video_enc->rc_override[i].end_frame  = end;
                     if(q>0){
