@@ -85,6 +85,7 @@ typedef struct SVQ1Context {
 
     unsigned char *c_plane;
 
+    int64_t rd_total;
 } SVQ1Context;
 
 /* motion vector (prediction) */
@@ -1340,7 +1341,7 @@ static int encode_block(SVQ1Context *s, uint8_t *src, int stride, int level, int
             int8_t *vector;
     
             for(i=0; i<16; i++){
-                int sum=0;
+                int sum= svq1_intra_codebook_sum[level][stage*16 + i];
                 int sqr=0;
                 int diff, mean, score;
     
@@ -1348,7 +1349,6 @@ static int encode_block(SVQ1Context *s, uint8_t *src, int stride, int level, int
     
                 for(j=0; j<size; j++){
                     int v= vector[j];
-                    sum += v;
                     sqr += (v - block[stage][j])*(v - block[stage][j]);
                 }
                 diff= block_sum[stage] - sum;
@@ -1463,6 +1463,8 @@ av_log(s->avctx, AV_LOG_INFO, "********* frame #%d\n", frame++);
 
         for (x = 0; x < block_width; x++) {
             uint8_t reorder_buffer[6][7*32];
+            uint8_t *src= plane + y * 16 * stride + x * 16;
+            uint8_t buf[stride*16];
 
 #ifdef DEBUG_SVQ1
 av_log(s->avctx, AV_LOG_INFO, "* level 5 vector @ %d, %d:\n", x * 16, y * 16);
@@ -1474,7 +1476,11 @@ av_log(s->avctx, AV_LOG_INFO, "* level 5 vector @ %d, %d:\n", x * 16, y * 16);
             for(i=0; i<6; i++){
                 init_put_bits(&s->reorder_pb[i], reorder_buffer[i], 7*32);
             }
-            encode_block(s, &plane[left_edge], stride, 5, 256, (s->picture.quality*s->picture.quality) >> (2*FF_LAMBDA_SHIFT));
+            if(x*16 + 16 > width || y*16 + 16 > height){
+                ff_emulated_edge_mc(buf, src, stride, 16, 16, 16*x, 16*y, width, height);
+                src= buf;
+            }
+            s->rd_total += encode_block(s, src, stride, 5, 256, (s->picture.quality*s->picture.quality) >> (2*FF_LAMBDA_SHIFT));
             for(i=5; i>=0; i--){
                 int count= put_bits_count(&s->reorder_pb[i]);
                 
@@ -1676,6 +1682,8 @@ static int svq1_encode_end(AVCodecContext *avctx)
 {
     SVQ1Context * const s = avctx->priv_data;
 
+    av_log(avctx, AV_LOG_DEBUG, "RD: %f\n", s->rd_total/(double)(avctx->width*avctx->height*avctx->frame_number));
+    
     av_free(s->c_plane);
 
     return 0;
