@@ -112,13 +112,13 @@ unsigned int get_be16(ByteIOContext *s);
 unsigned int get_be32(ByteIOContext *s);
 UINT64 get_be64(ByteIOContext *s);
 
-extern inline int url_is_streamed(ByteIOContext *s)
+static inline int url_is_streamed(ByteIOContext *s)
 {
     return s->is_streamed;
 }
 /* get the prefered packet size of the device. All I/Os should be done
    by multiple of this size */
-extern inline int url_get_packet_size(ByteIOContext *s)
+static inline int url_get_packet_size(ByteIOContext *s)
 {
     return s->packet_size;
 }
