@@ -50,6 +50,10 @@
  */
 
 //#define DEBUG
+#ifdef DEBUG
+#include <stdio.h>
+#include <fcntl.h>
+#endif
 
 /* allows chunk splitting - should work now... */
 /* in case you can't read a file, try commenting */
@@ -302,8 +306,8 @@ static int mov_read_default(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 
     a.offset = atom.offset;
 
-    if(atom.size < 0)
-        atom.size = 0x0FFFFFFFFFFFFFFF;
+    if (atom.size < 0)
+	atom.size = 0x7fffffffffffffffLL;
     while(((total_size + 8) < atom.size) && !url_feof(pb) && !err) {
 	a.size = atom.size;
 	a.type=0L;
@@ -447,6 +451,9 @@ static int mov_read_hdlr(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
         while(get_byte(pb) && (++len < (atom.size - 24)));
     } else {
         /* .mov: PASCAL string */
+#ifdef DEBUG
+        char* buf;
+#endif
         len = get_byte(pb);
 #ifdef DEBUG
 	buf = (uint8_t*) av_malloc(len+1);
@@ -631,6 +638,26 @@ static int mov_read_mvhd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     return 0;
 }
 
+static int mov_read_smi(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
+{
+    AVStream *st = c->fc->streams[c->fc->nb_streams-1];
+
+    // currently SVQ3 decoder expect full STSD header - so let's fake it
+    // this should be fixed and just SMI header should be passed
+    av_free(st->codec.extradata);
+    st->codec.extradata_size = 0x5a + atom.size;
+    st->codec.extradata = (uint8_t*) av_mallocz(st->codec.extradata_size);
+
+    if (st->codec.extradata) {
+        int i;
+	strcpy(st->codec.extradata, "SVQ3"); // fake
+	get_buffer(pb, st->codec.extradata + 0x5a, atom.size);
+	//printf("Reading SMI %Ld  %s\n", atom.size, (char*)st->codec.extradata + 0x5a);
+    } else
+	url_fskip(pb, atom.size);
+
+    return 0;
+}
 
 static int mov_read_stco(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
@@ -1092,9 +1119,13 @@ static int mov_read_cmov(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     atom.type = MKTAG( 'm', 'o', 'o', 'v' );
     atom.offset = 0;
     atom.size = moov_len;
+#ifdef DEBUG
+    { int fd = open("/tmp/uncompheader.mov", O_WRONLY | O_CREAT); write(fd, moov_data, moov_len); close(fd); }
+#endif
     ret = mov_read_default(c, &ctx, atom);
     av_free(moov_data);
     av_free(cmov_data);
+
     return ret;
 }
 #endif
@@ -1130,6 +1161,7 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG( 's', 'd', 'h', 'd' ), mov_read_default },
 { MKTAG( 's', 'k', 'i', 'p' ), mov_read_default },
 { MKTAG( 's', 'm', 'h', 'd' ), mov_read_leaf }, /* sound media info header */
+{ MKTAG( 'S', 'M', 'I', ' ' ), mov_read_smi }, /* Sorrenson extension ??? */
 { MKTAG( 's', 't', 'b', 'l' ), mov_read_default },
 { MKTAG( 's', 't', 'c', 'o' ), mov_read_stco },
 { MKTAG( 's', 't', 'd', 'p' ), mov_read_default },
@@ -1248,7 +1280,7 @@ static int mov_read_header(AVFormatContext *s, AVFormatParameters *ap)
     if(!url_is_streamed(pb)) /* .mov and .mp4 aren't streamable anyway (only progressive download if moov is before mdat) */
 	atom.size = url_filesize(url_fileno(pb));
     else
-        atom.size = 0x7FFFFFFFFFFFFFFF;
+	atom.size = 0x7FFFFFFFFFFFFFFFLL;
 
 #ifdef DEBUG
     printf("filesz=%Ld\n", atom.size);
@@ -1307,7 +1339,7 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     MOVContext *mov = (MOVContext *) s->priv_data;
     MOVStreamContext *sc;
-    int64_t offset = 0x0FFFFFFFFFFFFFFF;
+    int64_t offset = 0x0FFFFFFFFFFFFFFFLL;
     int i;
     int size;
     size = 0x0FFFFFFF;
@@ -1347,7 +1379,7 @@ again:
 	    //printf("SELETED  %Ld  i:%d\n", offset, i);
         }
     }
-    if (!sc || offset==0x0FFFFFFFFFFFFFFF)
+    if (!sc || offset==0x0FFFFFFFFFFFFFFFLL)
 	return -1;
 
     sc->next_chunk++;
@@ -1361,7 +1393,7 @@ again:
     if(!sc->is_ff_stream) {
         url_fskip(&s->pb, (offset - mov->next_chunk_offset));
         mov->next_chunk_offset = offset;
-        offset = 0x0FFFFFFFFFFFFFFF;
+	offset = 0x0FFFFFFFFFFFFFFFLL;
         goto again;
     }
 
