@@ -256,13 +256,13 @@ static inline void RENAME(rgb16to15)(const uint8_t *src,uint8_t *dst,unsigned sr
   register const uint8_t* s=src;
   register uint8_t* d=dst;
   register const uint8_t *end;
-  uint8_t *mm_end;
+  const uint8_t *mm_end;
   end = s + src_size;
 #ifdef HAVE_MMX
   __asm __volatile(PREFETCH"	%0"::"m"(*s));
   __asm __volatile("movq	%0, %%mm7"::"m"(mask15rg));
   __asm __volatile("movq	%0, %%mm6"::"m"(mask15b));
-  mm_end = (uint8_t*)((((unsigned long)end)/16)*16);
+  mm_end = end - 15;
   while(s<mm_end)
   {
 	__asm __volatile(
@@ -290,7 +290,8 @@ static inline void RENAME(rgb16to15)(const uint8_t *src,uint8_t *dst,unsigned sr
   __asm __volatile(SFENCE:::"memory");
   __asm __volatile(EMMS:::"memory");
 #endif
-    while(s < end)
+    mm_end = end - 3;
+    while(s < mm_end)
     {
 	register uint32_t x= *((uint32_t *)s);
 	*((uint32_t *)d) = ((x>>1)&0x7FE07FE0) | (x&0x001F001F);
@@ -385,7 +386,7 @@ static inline void RENAME(rgb32tobgr16)(const uint8_t *src, uint8_t *dst, unsign
 	    "movq	%0, %%mm7\n\t"
 	    "movq	%1, %%mm6\n\t"
 	    ::"m"(red_16mask),"m"(green_16mask));
-	mm_end = (uint8_t*)((((unsigned long)end)/16)*16);
+	mm_end = end - 15;
 	while(s < mm_end)
 	{
 	    __asm __volatile(
@@ -513,7 +514,7 @@ static inline void RENAME(rgb32tobgr15)(const uint8_t *src, uint8_t *dst, unsign
 	    "movq	%0, %%mm7\n\t"
 	    "movq	%1, %%mm6\n\t"
 	    ::"m"(red_15mask),"m"(green_15mask));
-	mm_end = (uint8_t*)((((unsigned long)end)/16)*16);
+	mm_end = end - 15;
 	while(s < mm_end)
 	{
 	    __asm __volatile(
@@ -640,7 +641,7 @@ static inline void RENAME(rgb24tobgr16)(const uint8_t *src, uint8_t *dst, unsign
 	    "movq	%0, %%mm7\n\t"
 	    "movq	%1, %%mm6\n\t"
 	    ::"m"(red_16mask),"m"(green_16mask));
-	mm_end = (uint8_t*)((((unsigned long)end)/16)*16);
+	mm_end = end - 15;
 	while(s < mm_end)
 	{
 	    __asm __volatile(
@@ -766,7 +767,7 @@ static inline void RENAME(rgb24tobgr15)(const uint8_t *src, uint8_t *dst, unsign
 	    "movq	%0, %%mm7\n\t"
 	    "movq	%1, %%mm6\n\t"
 	    ::"m"(red_15mask),"m"(green_15mask));
-	mm_end = (uint8_t*)((((unsigned long)end)/16)*16);
+	mm_end = end - 15;
 	while(s < mm_end)
 	{
 	    __asm __volatile(
