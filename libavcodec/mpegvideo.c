@@ -597,7 +597,7 @@ int MPV_common_init(MpegEncContext *s)
 {
     int y_size, c_size, yc_size, i, mb_array_size, mv_table_size, x, y;
 
-    if(s->avctx->thread_count > MAX_THREADS || 16*s->avctx->thread_count > s->height){
+    if(s->avctx->thread_count > MAX_THREADS || (16*s->avctx->thread_count > s->height && s->height)){
         av_log(s->avctx, AV_LOG_ERROR, "too many threads\n");
         return -1;
     }
