@@ -53,16 +53,22 @@
 static uint32_t v2_dc_lum_table[512][2];
 static uint32_t v2_dc_chroma_table[512][2];
 
+#ifdef CONFIG_ENCODERS
 static inline void msmpeg4_encode_block(MpegEncContext * s, DCTELEM * block, int n);
+#endif //CONFIG_ENCODERS
 static inline int msmpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
                                        int n, int coded, const uint8_t *scantable);
 static int msmpeg4_decode_dc(MpegEncContext * s, int n, int *dir_ptr);
 static int msmpeg4_decode_motion(MpegEncContext * s, 
                                  int *mx_ptr, int *my_ptr);
+#ifdef CONFIG_ENCODERS
 static void msmpeg4v2_encode_motion(MpegEncContext * s, int val);
+#endif //CONFIG_ENCODERS
 static void init_h263_dc_for_msmpeg4(void);
 static inline void msmpeg4_memsetw(short *tab, int val, int n);
+#ifdef CONFIG_ENCODERS
 static int get_size_of_code(MpegEncContext * s, RLTable *rl, int last, int run, int level, int intra);
+#endif //CONFIG_ENCODERS
 static int msmpeg4v12_decode_mb(MpegEncContext *s, DCTELEM block[6][64]);
 static int msmpeg4v34_decode_mb(MpegEncContext *s, DCTELEM block[6][64]);
 static int wmv2_decode_mb(MpegEncContext *s, DCTELEM block[6][64]);
@@ -184,6 +190,8 @@ static void common_init(MpegEncContext * s)
         init_h263_dc_for_msmpeg4();
     }
 }
+
+#ifdef CONFIG_ENCODERS
 
 /* build the table which associate a (x,y) motion vector to a vlc */
 static void init_mv_table(MVTable *tab)
@@ -433,6 +441,8 @@ void msmpeg4_encode_ext_header(MpegEncContext * s)
         }
 }
 
+#endif //CONFIG_ENCODERS
+
 /* predict coded block */
 static inline int coded_block_pred(MpegEncContext * s, int n, uint8_t **coded_block_ptr)
 {
@@ -459,6 +469,8 @@ static inline int coded_block_pred(MpegEncContext * s, int n, uint8_t **coded_bl
 
     return pred;
 }
+
+#ifdef CONFIG_ENCODERS
 
 static void msmpeg4_encode_motion(MpegEncContext * s, 
                                   int mx, int my)
@@ -623,6 +635,8 @@ void msmpeg4_encode_mb(MpegEncContext * s,
         msmpeg4_encode_block(s, block[i], i);
     }
 }
+
+#endif //CONFIG_ENCODERS
 
 /* old ffmpeg msmpeg4v3 mode */
 static void ff_old_msmpeg4_dc_scale(MpegEncContext * s)
@@ -817,6 +831,8 @@ static inline int msmpeg4_pred_dc(MpegEncContext * s, int n,
 
 #define DC_MAX 119
 
+#ifdef CONFIG_ENCODERS
+
 static void msmpeg4_encode_dc(MpegEncContext * s, int level, int n, int *dir_ptr)
 {
     int sign, code;
@@ -1008,6 +1024,8 @@ else
 	}
     }
 }
+
+#endif //CONFIG_ENCODERS
 
 /****************************************/
 /* decoding stuff */
@@ -1391,6 +1409,8 @@ static inline void msmpeg4_memsetw(short *tab, int val, int n)
         tab[i] = val;
 }
 
+#ifdef CONFIG_ENCODERS
+
 static void msmpeg4v2_encode_motion(MpegEncContext * s, int val)
 {
     int range, bit_size, sign, code, bits;
@@ -1423,6 +1443,8 @@ static void msmpeg4v2_encode_motion(MpegEncContext * s, int val)
         }
     }
 }
+
+#endif //CONFIG_ENCODERS
 
 /* this is identical to h263 except that its range is multiplied by 2 */
 static int msmpeg4v2_decode_motion(MpegEncContext * s, int pred, int f_code)

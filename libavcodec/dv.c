@@ -76,7 +76,7 @@ static int dvvideo_decode_init(AVCodecContext *avctx)
 {
     DVVideoDecodeContext *s = avctx->priv_data;
     MpegEncContext s2;
-    static int done;
+    static int done=0;
 
     if (!done) {
         int i;

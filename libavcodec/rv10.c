@@ -220,6 +220,8 @@ int rv_decode_dc(MpegEncContext *s, int n)
     return -code;
 }
 
+#ifdef CONFIG_ENCODERS
+
 /* write RV 1.0 compatible frame header */
 void rv10_encode_picture_header(MpegEncContext *s, int picture_number)
 {
@@ -261,6 +263,8 @@ static int get_num(GetBitContext *gb)
         return (n << 16) | n1;
     }
 }
+
+#endif //CONFIG_ENCODERS
 
 /* read RV 1.0 compatible frame header */
 static int rv10_decode_picture_header(MpegEncContext *s)
@@ -330,7 +334,7 @@ static int rv10_decode_picture_header(MpegEncContext *s)
 static int rv10_decode_init(AVCodecContext *avctx)
 {
     MpegEncContext *s = avctx->priv_data;
-    static int done;
+    static int done=0;
 
     s->avctx= avctx;
     s->out_format = FMT_H263;

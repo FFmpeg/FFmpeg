@@ -79,6 +79,7 @@ static int encode_ext_header(Wmv2Context *w){
     return 0;
 }
 
+#ifdef CONFIG_ENCODERS
 static int wmv2_encode_init(AVCodecContext *avctx){
     Wmv2Context * const w= avctx->priv_data;
     
@@ -255,6 +256,7 @@ void ff_wmv2_encode_mb(MpegEncContext * s,
         msmpeg4_encode_block(s, block[i], i);
     }
 }
+#endif //CONFIG_ENCODERS
 
 static void parse_mb_skip(Wmv2Context * w){
     int mb_x, mb_y;
@@ -828,6 +830,7 @@ AVCodec wmv2_decoder = {
     CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1,
 };
 
+#ifdef CONFIG_ENCODERS
 AVCodec wmv2_encoder = {
     "wmv2",
     CODEC_TYPE_VIDEO,
@@ -837,4 +840,4 @@ AVCodec wmv2_encoder = {
     MPV_encode_picture,
     MPV_encode_end,
 };
-
+#endif

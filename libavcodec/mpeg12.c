@@ -325,6 +325,7 @@ static void common_init(MpegEncContext *s)
     s->c_dc_scale_table= ff_mpeg1_dc_scale_table;
 }
 
+#ifdef CONFIG_ENCODERS
 void mpeg1_encode_picture_header(MpegEncContext *s, int picture_number)
 {
     mpeg1_encode_sequence_header(s);
@@ -511,7 +512,7 @@ void mpeg1_encode_mb(MpegEncContext *s,
                 else
                     {    // No coded bloc pattern
                     if (s->mv_dir == (MV_DIR_FORWARD | MV_DIR_BACKWARD))
-                        {    // Bi-directional motion
+                        {    // Bi-directional motion 
                         put_bits(&s->pb, 2, 2); /* backward & forward motion */
                         mpeg1_encode_motion(s, s->mv[0][0][0] - s->last_mv[0][0][0], s->f_code);
                         mpeg1_encode_motion(s, s->mv[0][0][1] - s->last_mv[0][0][1], s->f_code);
@@ -792,6 +793,7 @@ static void mpeg1_encode_block(MpegEncContext *s,
     /* end of block */
     put_bits(&s->pb, 2, 0x2);
 }
+#endif //CONFIG_ENCODERS
 
 /******************************************/
 /* decoding */

@@ -73,19 +73,21 @@ static inline int mpeg4_decode_dc(MpegEncContext * s, int n, int *dir_ptr);
 static inline int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
                               int n, int coded, int intra);
 static int h263_pred_dc(MpegEncContext * s, int n, uint16_t **dc_val_ptr);
+#ifdef CONFIG_ENCODERS
 static void mpeg4_inv_pred_ac(MpegEncContext * s, DCTELEM *block, int n,
                               int dir);
+#endif //CONFIG_ENCODERS
 static void mpeg4_decode_sprite_trajectory(MpegEncContext * s);
 static inline int ff_mpeg4_pred_dc(MpegEncContext * s, int n, uint16_t **dc_val_ptr, int *dir_ptr);
 
 extern uint32_t inverse[256];
 
+#ifdef CONFIG_ENCODERS
 static uint8_t uni_DCtab_lum_len[512];
 static uint8_t uni_DCtab_chrom_len[512];
 static uint16_t uni_DCtab_lum_bits[512];
 static uint16_t uni_DCtab_chrom_bits[512];
 
-#ifdef CONFIG_ENCODERS
 static uint16_t (*mv_penalty)[MAX_MV*2+1]= NULL;
 static uint8_t fcode_tab[MAX_MV*2+1];
 static uint8_t umv_fcode_tab[MAX_MV*2+1];
@@ -128,6 +130,8 @@ int h263_get_picture_format(int width, int height)
         format = 7;
     return format;
 }
+
+#ifdef CONFIG_ENCODERS
 
 static void float_aspect_to_info(MpegEncContext * s, float aspect){
     int i;
@@ -396,6 +400,8 @@ void ff_clean_mpeg4_qscales(MpegEncContext *s){
         }
     }
 }
+
+#endif //CONFIG_ENCODERS
 
 void ff_mpeg4_set_direct_mv(MpegEncContext *s, int mx, int my){
     const int mb_index= s->mb_x + s->mb_y*s->mb_width;
@@ -1010,7 +1016,6 @@ static int h263_pred_dc(MpegEncContext * s, int n, uint16_t **dc_val_ptr)
     return pred_dc;
 }
 
-
 static void h263_pred_acdc(MpegEncContext * s, DCTELEM *block, int n)
 {
     int x, y, wrap, a, c, pred_dc, scale, i;
@@ -1290,6 +1295,8 @@ static void init_mv_penalty_and_fcode(MpegEncContext *s)
 }
 #endif
 
+#ifdef CONFIG_ENCODERS
+
 static void init_uni_dc_tab(void)
 {
     int level, uni_code, uni_len;
@@ -1341,6 +1348,8 @@ static void init_uni_dc_tab(void)
 
     }
 }
+
+#endif //CONFIG_ENCODERS
 
 #ifdef CONFIG_ENCODERS
 static void init_uni_mpeg4_rl_tab(RLTable *rl, uint32_t *bits_tab, uint8_t *len_tab){
@@ -1548,6 +1557,8 @@ static void h263_encode_block(MpegEncContext * s, DCTELEM * block, int n)
     }
 }
 #endif
+
+#ifdef CONFIG_ENCODERS
 
 /***************************************************/
 /**
@@ -1798,6 +1809,8 @@ void mpeg4_encode_picture_header(MpegEncContext * s, int picture_number)
      s->v_edge_pos= s->height;
 }
 
+#endif //CONFIG_ENCODERS
+
 /**
  * change qscale by given dquant and update qscale dependant variables.
  */
@@ -1938,6 +1951,8 @@ void mpeg4_pred_ac(MpegEncContext * s, DCTELEM *block, int n,
 
 }
 
+#ifdef CONFIG_ENCODERS
+
 static void mpeg4_inv_pred_ac(MpegEncContext * s, DCTELEM *block, int n,
                               int dir)
 {
@@ -2025,7 +2040,7 @@ static inline void mpeg4_encode_dc(PutBitContext * s, int level, int n)
     }
 #endif
 }
-#ifdef CONFIG_ENCODERS
+
 /**
  * encodes a 8x8 block
  * @param n block index (0-3 are luma, 4-5 are chroma)
@@ -2363,6 +2378,8 @@ static inline void memsetw(short *tab, int val, int n)
         tab[i] = val;
 }
 
+#ifdef CONFIG_ENCODERS
+
 void ff_mpeg4_init_partitions(MpegEncContext *s)
 {
     init_put_bits(&s->tex_pb, s->tex_pb_buffer, PB_BUFFER_SIZE, NULL, NULL);
@@ -2394,6 +2411,8 @@ void ff_mpeg4_merge_partitions(MpegEncContext *s)
     s->last_bits= get_bit_count(&s->pb);
 }
 
+#endif //CONFIG_ENCODERS
+
 int ff_mpeg4_get_video_packet_prefix_length(MpegEncContext *s){
     switch(s->pict_type){
         case I_TYPE:
@@ -2408,6 +2427,8 @@ int ff_mpeg4_get_video_packet_prefix_length(MpegEncContext *s){
     }
 }
 
+#ifdef CONFIG_ENCODERS
+
 void ff_mpeg4_encode_video_packet_header(MpegEncContext *s)
 {
     int mb_num_bits= av_log2(s->mb_num - 1) + 1;
@@ -2420,6 +2441,8 @@ void ff_mpeg4_encode_video_packet_header(MpegEncContext *s)
     put_bits(&s->pb, s->quant_precision, s->qscale);
     put_bits(&s->pb, 1, 0); /* no HEC */
 }
+
+#endif //CONFIG_ENCODERS
 
 /**
  * check if the next stuff is a resync marker or the end.

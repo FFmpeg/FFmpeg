@@ -33,7 +33,9 @@
 //#undef NDEBUG
 //#include <assert.h>
 
+#ifdef CONFIG_ENCODERS
 static void encode_picture(MpegEncContext *s, int picture_number);
+#endif //CONFIG_ENCODERS
 static void dct_unquantize_mpeg1_c(MpegEncContext *s, 
                                    DCTELEM *block, int n, int qscale);
 static void dct_unquantize_mpeg2_c(MpegEncContext *s,
@@ -41,8 +43,10 @@ static void dct_unquantize_mpeg2_c(MpegEncContext *s,
 static void dct_unquantize_h263_c(MpegEncContext *s, 
                                   DCTELEM *block, int n, int qscale);
 static void draw_edges_c(uint8_t *buf, int wrap, int width, int height, int w);
+#ifdef CONFIG_ENCODERS
 static int dct_quantize_c(MpegEncContext *s, DCTELEM *block, int n, int qscale, int *overflow);
 static int dct_quantize_trellis_c(MpegEncContext *s, DCTELEM *block, int n, int qscale, int *overflow);
+#endif //CONFIG_ENCODERS
 
 void (*draw_edges)(uint8_t *buf, int wrap, int width, int height, int w)= draw_edges_c;
 
@@ -85,6 +89,7 @@ static const uint8_t h263_chroma_roundtab[16] = {
     0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2,
 };
 
+#ifdef CONFIG_ENCODERS
 static uint16_t (*default_mv_penalty)[MAX_MV*2+1]=NULL;
 static uint8_t default_fcode_tab[MAX_MV*2+1];
 
@@ -137,6 +142,8 @@ static void convert_matrix(MpegEncContext *s, int (*qmat)[64], uint16_t (*qmat16
         }
     }
 }
+#endif //CONFIG_ENCODERS
+
 // move into common.c perhaps 
 #define CHECKED_ALLOCZ(p, size)\
 {\
@@ -198,12 +205,14 @@ int DCT_common_init(MpegEncContext *s)
     s->dct_unquantize_h263 = dct_unquantize_h263_c;
     s->dct_unquantize_mpeg1 = dct_unquantize_mpeg1_c;
     s->dct_unquantize_mpeg2 = dct_unquantize_mpeg2_c;
+#ifdef CONFIG_ENCODERS
     s->dct_quantize= dct_quantize_c;
 
     if(s->avctx->dct_algo==FF_DCT_FASTINT)
         s->fdct = fdct_ifast;
     else
         s->fdct = ff_jpeg_fdct_islow; //slow/accurate/default
+#endif //CONFIG_ENCODERS
 
     if(s->avctx->idct_algo==FF_IDCT_INT){
         s->idct_put= ff_jref_idct_put;
@@ -234,11 +243,14 @@ int DCT_common_init(MpegEncContext *s)
     MPV_common_init_ppc(s);
 #endif
 
+#ifdef CONFIG_ENCODERS
     s->fast_dct_quantize= s->dct_quantize;
 
     if(s->flags&CODEC_FLAG_TRELLIS_QUANT){
         s->dct_quantize= dct_quantize_trellis_c; //move before MPV_common_init_*
     }
+
+#endif //CONFIG_ENCODERS
 
     switch(s->idct_permutation_type){
     case FF_NO_IDCT_PERM:
@@ -544,6 +556,8 @@ void MPV_common_end(MpegEncContext *s)
     s->context_initialized = 0;
 }
 
+#ifdef CONFIG_ENCODERS
+
 /* init video encoder */
 int MPV_encode_init(AVCodecContext *avctx)
 {
@@ -810,6 +824,8 @@ int MPV_encode_end(AVCodecContext *avctx)
     return 0;
 }
 
+#endif //CONFIG_ENCODERS
+
 void init_rl(RLTable *rl)
 {
     int8_t max_level[MAX_RUN+1], max_run[MAX_LEVEL+1];
@@ -1018,6 +1034,8 @@ void MPV_frame_end(MpegEncContext *s)
         printf("pict type: %d\n", s->pict_type);
     }
 }
+
+#ifdef CONFIG_ENCODERS
 
 static int get_sae(uint8_t *src, int ref, int stride){
     int x,y;
@@ -1322,6 +1340,8 @@ int MPV_encode_picture(AVCodecContext *avctx,
     
     return pbBufPtr(&s->pb) - s->pb.buf;
 }
+
+#endif //CONFIG_ENCODERS
 
 static inline void gmc1_motion(MpegEncContext *s,
                                uint8_t *dest_y, uint8_t *dest_cb, uint8_t *dest_cr,
@@ -2188,6 +2208,8 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
     }
 }
 
+#ifdef CONFIG_ENCODERS
+
 static inline void dct_single_coeff_elimination(MpegEncContext *s, int n, int threshold)
 {
     static const char tab[64]=
@@ -2391,6 +2413,8 @@ static int pix_diff_vcmp16x8(uint8_t *s1, uint8_t*s2, int stride){ //FIXME move 
 
 #endif
 
+#endif //CONFIG_ENCODERS
+
 void ff_draw_horiz_band(MpegEncContext *s){
     if (    s->avctx->draw_horiz_band 
         && (s->last_picture.data[0] || s->low_delay) ) {
@@ -2421,6 +2445,8 @@ void ff_draw_horiz_band(MpegEncContext *s){
                                y, s->width, h);
     }
 }
+
+#ifdef CONFIG_ENCODERS
 
 static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
 {
@@ -2658,7 +2684,6 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
         s->block[5][0]= (1024 + s->c_dc_scale/2)/ s->c_dc_scale;
     }
 
-#ifdef CONFIG_ENCODERS
     /* huffman encode */
     switch(s->codec_id){ //FIXME funct ptr could be slightly faster
     case CODEC_ID_MPEG1VIDEO:
@@ -2682,8 +2707,9 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
     default:
         assert(0);
     }
-#endif
 }
+
+#endif //CONFIG_ENCODERS
 
 /**
  * combines the (truncated) bitstream to a complete frame
@@ -2714,6 +2740,7 @@ int ff_combine_frame( MpegEncContext *s, int next, uint8_t **buf, int *buf_size)
     return 0;
 }
 
+#ifdef CONFIG_ENCODERS
 void ff_copy_bits(PutBitContext *pb, uint8_t *src, int length)
 {
     int bytes= length>>4;
@@ -3819,6 +3846,8 @@ static int dct_quantize_c(MpegEncContext *s,
     return last_non_zero;
 }
 
+#endif //CONFIG_ENCODERS
+
 static void dct_unquantize_mpeg1_c(MpegEncContext *s, 
                                    DCTELEM *block, int n, int qscale)
 {
@@ -3988,6 +4017,7 @@ static void dct_unquantize_h263_c(MpegEncContext *s,
     }
 }
 
+
 char ff_get_pict_type_char(int pict_type){
     switch(pict_type){
     case I_TYPE: return 'I'; 
@@ -4021,6 +4051,8 @@ static const AVOption mpeg4_options[] =
     AVOPTION_SUB(common_options),
     AVOPTION_END()
 };
+
+#ifdef CONFIG_ENCODERS
 
 AVCodec mpeg1video_encoder = {
     "mpeg1video",
@@ -4126,3 +4158,6 @@ AVCodec mjpeg_encoder = {
     MPV_encode_picture,
     MPV_encode_end,
 };
+
+#endif //CONFIG_ENCODERS
+
