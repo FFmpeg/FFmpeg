@@ -1362,6 +1362,9 @@ int parse_ffconfig(const char *filename)
                 stream->fmt = NULL;
             } else {
                 stream->stream_type = STREAM_TYPE_LIVE;
+                /* jpeg cannot be used here, so use single frame jpeg */
+                if (!strcmp(arg, "jpeg"))
+                    strcpy(arg, "singlejpeg");
                 stream->fmt = guess_format(arg, NULL, NULL);
                 if (!stream->fmt) {
                     fprintf(stderr, "%s:%d: Unknown Format: %s\n", 
