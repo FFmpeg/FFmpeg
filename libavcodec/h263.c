@@ -287,19 +287,19 @@ static inline int decide_ac_pred(MpegEncContext * s, DCTELEM block[6][64], int d
             if(s->mb_y==0 || s->qscale == s->qscale_table[xy] || n==2 || n==3){
                 /* same qscale */
                 for(i=1; i<8; i++){
-                    const int level= block[n][block_permute_op(i   )];
+                    const int level= block[n][s->idct_permutation[i   ]];
                     score0+= ABS(level);
                     score1+= ABS(level - ac_val[i+8]);
-                    ac_val1[i  ]=    block[n][block_permute_op(i<<3)];
+                    ac_val1[i  ]=    block[n][s->idct_permutation[i<<3]];
                     ac_val1[i+8]= level;
                 }
             }else{
                 /* different qscale, we must rescale */
                 for(i=1; i<8; i++){
-                    const int level= block[n][block_permute_op(i   )];
+                    const int level= block[n][s->idct_permutation[i   ]];
                     score0+= ABS(level);
                     score1+= ABS(level - ROUNDED_DIV(ac_val[i + 8]*s->qscale_table[xy], s->qscale));
-                    ac_val1[i  ]=    block[n][block_permute_op(i<<3)];
+                    ac_val1[i  ]=    block[n][s->idct_permutation[i<<3]];
                     ac_val1[i+8]= level;
                 }
             }
@@ -310,20 +310,20 @@ static inline int decide_ac_pred(MpegEncContext * s, DCTELEM block[6][64], int d
             if(s->mb_x==0 || s->qscale == s->qscale_table[xy] || n==1 || n==3){
                 /* same qscale */
                 for(i=1; i<8; i++){
-                    const int level= block[n][block_permute_op(i<<3)];
+                    const int level= block[n][s->idct_permutation[i<<3]];
                     score0+= ABS(level);
                     score1+= ABS(level - ac_val[i]);
                     ac_val1[i  ]= level;
-                    ac_val1[i+8]=    block[n][block_permute_op(i   )];
+                    ac_val1[i+8]=    block[n][s->idct_permutation[i   ]];
                 }
             }else{
                 /* different qscale, we must rescale */
                 for(i=1; i<8; i++){
-                    const int level= block[n][block_permute_op(i<<3)];
+                    const int level= block[n][s->idct_permutation[i<<3]];
                     score0+= ABS(level);
                     score1+= ABS(level - ROUNDED_DIV(ac_val[i]*s->qscale_table[xy], s->qscale));
                     ac_val1[i  ]= level;
-                    ac_val1[i+8]=    block[n][block_permute_op(i   )];
+                    ac_val1[i+8]=    block[n][s->idct_permutation[i   ]];
                 }
             }
         }
@@ -519,7 +519,7 @@ void mpeg4_encode_mb(MpegEncContext * s,
 
             /* encode each block */
             for (i = 0; i < 6; i++) {
-                mpeg4_encode_block(s, block[i], i, 0, zigzag_direct, NULL, &s->pb);
+                mpeg4_encode_block(s, block[i], i, 0, s->intra_scantable.permutated, NULL, &s->pb);
             }
 
             if(interleaved_stats){
@@ -637,7 +637,7 @@ void mpeg4_encode_mb(MpegEncContext * s,
 
             /* encode each block */
             for (i = 0; i < 6; i++) {
-                mpeg4_encode_block(s, block[i], i, 0, zigzag_direct, NULL, tex_pb);
+                mpeg4_encode_block(s, block[i], i, 0, s->intra_scantable.permutated, NULL, tex_pb);
             }
 
             if(interleaved_stats){
@@ -674,8 +674,8 @@ void mpeg4_encode_mb(MpegEncContext * s,
                 int last_index;
 
                 mpeg4_inv_pred_ac(s, block[i], i, dir[i]);
-                if (dir[i]==0) st = ff_alternate_vertical_scan; /* left */
-                else           st = ff_alternate_horizontal_scan; /* top */
+                if (dir[i]==0) st = s->intra_v_scantable.permutated; /* left */
+                else           st = s->intra_h_scantable.permutated; /* top */
 
                 for(last_index=63; last_index>=0; last_index--) //FIXME optimize
                     if(block[i][st[last_index]]) break;
@@ -685,7 +685,7 @@ void mpeg4_encode_mb(MpegEncContext * s,
             }
         }else{
             for(i=0; i<6; i++)
-                scan_table[i]= zigzag_direct;
+                scan_table[i]= s->intra_scantable.permutated;
         }
 
         /* compute cbp */
@@ -746,10 +746,10 @@ void mpeg4_encode_mb(MpegEncContext * s,
 
                 if(dir[i]){
                     for(j=1; j<8; j++) 
-                        block[i][block_permute_op(j   )]= ac_val[j+8];
+                        block[i][s->idct_permutation[j   ]]= ac_val[j+8];
                 }else{
                     for(j=1; j<8; j++) 
-                        block[i][block_permute_op(j<<3)]= ac_val[j  ];
+                        block[i][s->idct_permutation[j<<3]]= ac_val[j  ];
                 }
                 s->block_last_index[i]= zigzag_last_index[i];
             }
@@ -974,7 +974,7 @@ void h263_pred_acdc(MpegEncContext * s, INT16 *block, int n)
             if (a != 1024) {
                 ac_val -= 16;
                 for(i=1;i<8;i++) {
-                    block[block_permute_op(i*8)] += ac_val[i];
+                    block[s->idct_permutation[i<<3]] += ac_val[i];
                 }
                 pred_dc = a;
             }
@@ -983,7 +983,7 @@ void h263_pred_acdc(MpegEncContext * s, INT16 *block, int n)
             if (c != 1024) {
                 ac_val -= 16 * wrap;
                 for(i=1;i<8;i++) {
-                    block[block_permute_op(i)] += ac_val[i + 8];
+                    block[s->idct_permutation[i   ]] += ac_val[i + 8];
                 }
                 pred_dc = c;
             }
@@ -1011,10 +1011,10 @@ void h263_pred_acdc(MpegEncContext * s, INT16 *block, int n)
     
     /* left copy */
     for(i=1;i<8;i++)
-        ac_val1[i] = block[block_permute_op(i * 8)];
+        ac_val1[i    ] = block[s->idct_permutation[i<<3]];
     /* top copy */
     for(i=1;i<8;i++)
-        ac_val1[8 + i] = block[block_permute_op(i)];
+        ac_val1[8 + i] = block[s->idct_permutation[i   ]];
 }
 
 INT16 *h263_pred_motion(MpegEncContext * s, int block, 
@@ -1425,7 +1425,7 @@ static void h263_encode_block(MpegEncContext * s, DCTELEM * block, int n)
     last_index = s->block_last_index[n];
     last_non_zero = i - 1;
     for (; i <= last_index; i++) {
-        j = zigzag_direct[i];
+        j = s->intra_scantable.permutated[i];
         level = block[j];
         if (level) {
             run = i - last_non_zero - 1;
@@ -1710,12 +1710,12 @@ void mpeg4_pred_ac(MpegEncContext * s, INT16 *block, int n,
             if(s->mb_x==0 || s->qscale == s->qscale_table[xy] || n==1 || n==3){
                 /* same qscale */
                 for(i=1;i<8;i++) {
-                    block[block_permute_op(i*8)] += ac_val[i];
+                    block[s->idct_permutation[i<<3]] += ac_val[i];
                 }
             }else{
                 /* different qscale, we must rescale */
                 for(i=1;i<8;i++) {
-                    block[block_permute_op(i*8)] += ROUNDED_DIV(ac_val[i]*s->qscale_table[xy], s->qscale);
+                    block[s->idct_permutation[i<<3]] += ROUNDED_DIV(ac_val[i]*s->qscale_table[xy], s->qscale);
                 }
             }
         } else {
@@ -1726,23 +1726,23 @@ void mpeg4_pred_ac(MpegEncContext * s, INT16 *block, int n,
             if(s->mb_y==0 || s->qscale == s->qscale_table[xy] || n==2 || n==3){
                 /* same qscale */
                 for(i=1;i<8;i++) {
-                    block[block_permute_op(i)] += ac_val[i + 8];
+                    block[s->idct_permutation[i]] += ac_val[i + 8];
                 }
             }else{
                 /* different qscale, we must rescale */
                 for(i=1;i<8;i++) {
-                    block[block_permute_op(i)] += ROUNDED_DIV(ac_val[i + 8]*s->qscale_table[xy], s->qscale);
+                    block[s->idct_permutation[i]] += ROUNDED_DIV(ac_val[i + 8]*s->qscale_table[xy], s->qscale);
                 }
             }
         }
     }
     /* left copy */
     for(i=1;i<8;i++)
-        ac_val1[i] = block[block_permute_op(i * 8)];
+        ac_val1[i    ] = block[s->idct_permutation[i<<3]];
 
     /* top copy */
     for(i=1;i<8;i++)
-        ac_val1[8 + i] = block[block_permute_op(i)];
+        ac_val1[8 + i] = block[s->idct_permutation[i   ]];
 
 }
 
@@ -1762,12 +1762,12 @@ static void mpeg4_inv_pred_ac(MpegEncContext * s, INT16 *block, int n,
         if(s->mb_x==0 || s->qscale == s->qscale_table[xy] || n==1 || n==3){
             /* same qscale */
             for(i=1;i<8;i++) {
-                block[block_permute_op(i*8)] -= ac_val[i];
+                block[s->idct_permutation[i<<3]] -= ac_val[i];
             }
         }else{
             /* different qscale, we must rescale */
             for(i=1;i<8;i++) {
-                block[block_permute_op(i*8)] -= ROUNDED_DIV(ac_val[i]*s->qscale_table[xy], s->qscale);
+                block[s->idct_permutation[i<<3]] -= ROUNDED_DIV(ac_val[i]*s->qscale_table[xy], s->qscale);
             }
         }
     } else {
@@ -1777,12 +1777,12 @@ static void mpeg4_inv_pred_ac(MpegEncContext * s, INT16 *block, int n,
         if(s->mb_y==0 || s->qscale == s->qscale_table[xy] || n==2 || n==3){
             /* same qscale */
             for(i=1;i<8;i++) {
-                block[block_permute_op(i)] -= ac_val[i + 8];
+                block[s->idct_permutation[i]] -= ac_val[i + 8];
             }
         }else{
             /* different qscale, we must rescale */
             for(i=1;i<8;i++) {
-                block[block_permute_op(i)] -= ROUNDED_DIV(ac_val[i + 8]*s->qscale_table[xy], s->qscale);
+                block[s->idct_permutation[i]] -= ROUNDED_DIV(ac_val[i + 8]*s->qscale_table[xy], s->qscale);
             }
         }
     }
@@ -3192,13 +3192,13 @@ intra:
 static int h263_decode_motion(MpegEncContext * s, int pred, int f_code)
 {
     int code, val, sign, shift, l;
-
     code = get_vlc2(&s->gb, mv_vlc.table, MV_VLC_BITS, 2);
     if (code < 0)
         return 0xffff;
 
     if (code == 0)
         return pred;
+
     sign = get_bits1(&s->gb);
     shift = f_code - 1;
     val = (code - 1) << shift;
@@ -3211,7 +3211,7 @@ static int h263_decode_motion(MpegEncContext * s, int pred, int f_code)
 
     /* modulo decoding */
     if (!s->h263_long_vectors) {
-        l = (1 << (f_code - 1)) * 32;
+        l = 1 << (f_code + 4);
         if (val < -l) {
             val += l<<1;
         } else if (val >= l) {
@@ -3261,15 +3261,15 @@ static int h263_decode_block(MpegEncContext * s, DCTELEM * block,
     RLTable *rl = &rl_inter;
     const UINT8 *scan_table;
 
-    scan_table = zigzag_direct;
+    scan_table = s->intra_scantable.permutated;
     if (s->h263_aic && s->mb_intra) {
         rl = &rl_intra_aic;
         i = 0;
         if (s->ac_pred) {
             if (s->h263_aic_dir) 
-                scan_table = ff_alternate_vertical_scan; /* left */
+                scan_table = s->intra_v_scantable.permutated; /* left */
             else
-                scan_table = ff_alternate_horizontal_scan; /* top */
+                scan_table = s->intra_h_scantable.permutated; /* top */
         }
     } else if (s->mb_intra) {
         /* DC coef */
@@ -3417,14 +3417,14 @@ static inline int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
         rl = &rl_intra;
         rl_vlc = rl_intra.rl_vlc[0];
         if(s->alternate_scan)
-            scan_table = ff_alternate_vertical_scan; /* left */
+            scan_table = s->intra_v_scantable.permutated; /* left */
         else if (s->ac_pred) {
             if (dc_pred_dir == 0) 
-                scan_table = ff_alternate_vertical_scan; /* left */
+                scan_table = s->intra_v_scantable.permutated; /* left */
             else
-                scan_table = ff_alternate_horizontal_scan; /* top */
+                scan_table = s->intra_h_scantable.permutated; /* top */
         } else {
-            scan_table = zigzag_direct;
+            scan_table = s->intra_scantable.permutated;
         }
         qmul=1;
         qadd=0;
@@ -3437,9 +3437,9 @@ static inline int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
         rl = &rl_inter;
    
         if(s->alternate_scan)
-            scan_table = ff_alternate_vertical_scan; /* left */
+            scan_table = s->intra_v_scantable.permutated; /* left */
         else
-            scan_table = zigzag_direct;
+            scan_table = s->intra_scantable.permutated;
 
         if(s->mpeg_quant){
             qmul=1;
@@ -4081,13 +4081,14 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
                 
                 /* load default matrixes */
                 for(i=0; i<64; i++){
+                    int j= s->idct_permutation[i];
                     v= ff_mpeg4_default_intra_matrix[i];
-                    s->intra_matrix[i]= v;
-                    s->chroma_intra_matrix[i]= v;
+                    s->intra_matrix[j]= v;
+                    s->chroma_intra_matrix[j]= v;
                     
                     v= ff_mpeg4_default_non_intra_matrix[i];
-                    s->inter_matrix[i]= v;
-                    s->chroma_inter_matrix[i]= v;
+                    s->inter_matrix[j]= v;
+                    s->chroma_inter_matrix[j]= v;
                 }
 
                 /* load custom intra matrix */
@@ -4096,7 +4097,7 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
                         v= get_bits(&s->gb, 8);
                         if(v==0) break;
 
-                        j= zigzag_direct[i];
+                        j= s->intra_scantable.permutated[i];
                         s->intra_matrix[j]= v;
                         s->chroma_intra_matrix[j]= v;
                     }
@@ -4108,14 +4109,14 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
                         v= get_bits(&s->gb, 8);
                         if(v==0) break;
 
-                        j= zigzag_direct[i];
+                        j= s->intra_scantable.permutated[i];
                         s->inter_matrix[j]= v;
                         s->chroma_inter_matrix[j]= v;
                     }
 
                     /* replicate last value */
                     for(; i<64; i++){
-                        j= zigzag_direct[i];
+                        j= s->intra_scantable.permutated[i];
                         s->inter_matrix[j]= v;
                         s->chroma_inter_matrix[j]= v;
                     }

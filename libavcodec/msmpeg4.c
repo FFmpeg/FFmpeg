@@ -164,32 +164,21 @@ static void common_init(MpegEncContext * s)
         break;
     }
 
+    
     if(s->msmpeg4_version==4){
-        s->intra_scantable  = wmv1_scantable[1];
-        s->intra_h_scantable= wmv1_scantable[2];
-        s->intra_v_scantable= wmv1_scantable[3];
-        s->inter_scantable  = wmv1_scantable[0];
-    }else{
-        s->intra_scantable  = zigzag_direct; 
-        s->intra_h_scantable= ff_alternate_horizontal_scan; 
-        s->intra_v_scantable= ff_alternate_vertical_scan; 
-        s->inter_scantable  = zigzag_direct; 
+        int i;
+        ff_init_scantable(s, &s->intra_scantable  , wmv1_scantable[1]);
+        ff_init_scantable(s, &s->intra_h_scantable, wmv1_scantable[2]);
+        ff_init_scantable(s, &s->intra_v_scantable, wmv1_scantable[3]);
+        ff_init_scantable(s, &s->inter_scantable  , wmv1_scantable[0]);
     }
+    //Note the default tables are set in common_init in mpegvideo.c
     
     if(!inited){
         int i;
         inited=1;
 
         init_h263_dc_for_msmpeg4();
-
-        /* permute for IDCT */
-        for(i=0; i<WMV1_SCANTABLE_COUNT; i++){
-            int k;
-            for(k=0;k<64;k++) {
-                int j = wmv1_scantable[i][k];
-                wmv1_scantable[i][k]= block_permute_op(j);
-            }
-        }
     }
 }
 
@@ -936,7 +925,7 @@ static inline void msmpeg4_encode_block(MpegEncContext * s, DCTELEM * block, int
             rl = &rl_table[3 + s->rl_chroma_table_index];
         }
         run_diff = 0;
-        scantable= s->intra_scantable;
+        scantable= s->intra_scantable.permutated;
         set_stat(ST_INTRA_AC);
     } else {
         i = 0;
@@ -945,12 +934,12 @@ static inline void msmpeg4_encode_block(MpegEncContext * s, DCTELEM * block, int
             run_diff = 0;
         else
             run_diff = 1;
-        scantable= s->inter_scantable;
+        scantable= s->inter_scantable.permutated;
         set_stat(ST_INTER_AC);
     }
 
     /* recalculate block_last_index for M$ wmv1 */
-    if(scantable!=zigzag_direct && s->block_last_index[n]>0){
+    if(s->msmpeg4_version==4 && s->block_last_index[n]>0){
         for(last_index=63; last_index>=0; last_index--){
             if(block[scantable[last_index]]) break;
         }
@@ -1704,11 +1693,11 @@ static inline int msmpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
         }
         if (s->ac_pred) {
             if (dc_pred_dir == 0) 
-                scan_table = s->intra_v_scantable; /* left */
+                scan_table = s->intra_v_scantable.permutated; /* left */
             else
-                scan_table = s->intra_h_scantable; /* top */
+                scan_table = s->intra_h_scantable.permutated; /* top */
         } else {
-            scan_table = s->intra_scantable;
+            scan_table = s->intra_scantable.permutated;
         }
         set_stat(ST_INTRA_AC);
         rl_vlc= rl->rl_vlc[0];
@@ -1727,7 +1716,7 @@ static inline int msmpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
             s->block_last_index[n] = i;
             return 0;
         }
-        scan_table = s->inter_scantable;
+        scan_table = s->inter_scantable.permutated;
         set_stat(ST_INTER_AC);
         rl_vlc= rl->rl_vlc[s->qscale];
     }

@@ -23,52 +23,23 @@
 #include "../dsputil.h"
 #include "../mpegvideo.h"
 #include "../avcodec.h"
+#include "../simple_idct.h"
 
-extern UINT8 zigzag_end[64];
+/* Input permutation for the simple_idct_mmx */
+static UINT8 simple_mmx_permutation[64]={
+	0x00, 0x08, 0x04, 0x09, 0x01, 0x0C, 0x05, 0x0D, 
+	0x10, 0x18, 0x14, 0x19, 0x11, 0x1C, 0x15, 0x1D, 
+	0x20, 0x28, 0x24, 0x29, 0x21, 0x2C, 0x25, 0x2D, 
+	0x12, 0x1A, 0x16, 0x1B, 0x13, 0x1E, 0x17, 0x1F, 
+	0x02, 0x0A, 0x06, 0x0B, 0x03, 0x0E, 0x07, 0x0F, 
+	0x30, 0x38, 0x34, 0x39, 0x31, 0x3C, 0x35, 0x3D, 
+	0x22, 0x2A, 0x26, 0x2B, 0x23, 0x2E, 0x27, 0x2F, 
+	0x32, 0x3A, 0x36, 0x3B, 0x33, 0x3E, 0x37, 0x3F,
+};
 
 extern UINT8 zigzag_direct_noperm[64];
 extern UINT16 inv_zigzag_direct16[64];
 extern UINT32 inverse[256];
-
-#if 0
-
-/* XXX: GL: I don't understand why this function needs optimization
-   (it is called only once per frame!), so I disabled it */
-
-void MPV_frame_start(MpegEncContext *s)
-{
-    if (s->pict_type == B_TYPE) {
-	__asm __volatile(
-	    "movl	(%1), %%eax\n\t"
-	    "movl	4(%1), %%edx\n\t"
-	    "movl	8(%1), %%ecx\n\t"
-	    "movl	%%eax, (%0)\n\t"
-	    "movl	%%edx, 4(%0)\n\t"
-	    "movl	%%ecx, 8(%0)\n\t"
-	    :
-	    :"r"(s->current_picture), "r"(s->aux_picture)
-	    :"eax","edx","ecx","memory");
-    } else {
-            /* swap next and last */
-	__asm __volatile(
-	    "movl	(%1), %%eax\n\t"
-	    "movl	4(%1), %%edx\n\t"
-	    "movl	8(%1), %%ecx\n\t"
-	    "xchgl	(%0), %%eax\n\t"
-	    "xchgl	4(%0), %%edx\n\t"
-	    "xchgl	8(%0), %%ecx\n\t"
-	    "movl	%%eax, (%1)\n\t"
-	    "movl	%%edx, 4(%1)\n\t"
-	    "movl	%%ecx, 8(%1)\n\t"
-	    "movl	%%eax, (%2)\n\t"
-	    "movl	%%edx, 4(%2)\n\t"
-	    "movl	%%ecx, 8(%2)\n\t"
-	    :
-	    :"r"(s->last_picture), "r"(s->next_picture), "r"(s->current_picture)
-	    :"eax","edx","ecx","memory");
-    }
-}
-#endif
 
 static const unsigned long long int mm_wabs __attribute__ ((aligned(8))) = 0xffffffffffffffffULL;
 static const unsigned long long int mm_wone __attribute__ ((aligned(8))) = 0x0001000100010001ULL;
@@ -77,36 +48,26 @@ static const unsigned long long int mm_wone __attribute__ ((aligned(8))) = 0x000
 static void dct_unquantize_h263_mmx(MpegEncContext *s,
                                   DCTELEM *block, int n, int qscale)
 {
-    int i, level, qmul, qadd, nCoeffs;
-    
-    qmul = s->qscale << 1;
-    if (s->h263_aic && s->mb_intra)
-        qadd = 0;
-    else
-        qadd = (s->qscale - 1) | 1;
+    int level, qmul, qadd, nCoeffs;
 
+    qmul = qscale << 1;
+    qadd = (qscale - 1) | 1;
+
+    assert(s->block_last_index[n]>=0);
+        
     if (s->mb_intra) {
         if (!s->h263_aic) {
             if (n < 4)
-                block[0] = block[0] * s->y_dc_scale;
+                level = block[0] * s->y_dc_scale;
             else
-                block[0] = block[0] * s->c_dc_scale;
+                level = block[0] * s->c_dc_scale;
+        }else{
+            qadd = 0;
+            level= block[0];
         }
-        for(i=1; i<8; i++) {
-            level = block[i];
-            if (level) {
-    	        if (level < 0) {
-                    level = level * qmul - qadd;
-                } else {
-                    level = level * qmul + qadd;
-                }
-                block[i] = level;
-            }
-        }
-        nCoeffs=64;
+        nCoeffs=63;
     } else {
-        i = 0;
-        nCoeffs= zigzag_end[ s->block_last_index[n] ];
+        nCoeffs= s->inter_scantable.raster_end[ s->block_last_index[n] ];
     }
 //printf("%d %d  ", qmul, qadd);
 asm volatile(
@@ -152,10 +113,12 @@ asm volatile(
 		"movq %%mm1, 8(%0, %3)		\n\t"
 
 		"addl $16, %3			\n\t"
-		"js 1b				\n\t"
-		::"r" (block+nCoeffs), "g"(qmul), "g" (qadd), "r" (2*(i-nCoeffs))
+		"jng 1b				\n\t"
+		::"r" (block+nCoeffs), "g"(qmul), "g" (qadd), "r" (2*(-nCoeffs))
 		: "memory"
 	);
+        if(s->mb_intra)
+            block[0]= level;
 }
 
 
@@ -193,9 +156,10 @@ static void dct_unquantize_mpeg1_mmx(MpegEncContext *s,
 {
     int nCoeffs;
     const UINT16 *quant_matrix;
-    
-    if(s->alternate_scan) nCoeffs= 64;
-    else nCoeffs= zigzag_end[ s->block_last_index[n] ];
+
+    assert(s->block_last_index[n]>=0);
+
+    nCoeffs= s->intra_scantable.raster_end[ s->block_last_index[n] ]+1;
 
     if (s->mb_intra) {
         int block0;
@@ -312,6 +276,7 @@ asm volatile(
 		: "%eax", "memory"
 	);
     }
+
 }
 
 static void dct_unquantize_mpeg2_mmx(MpegEncContext *s,
@@ -320,8 +285,10 @@ static void dct_unquantize_mpeg2_mmx(MpegEncContext *s,
     int nCoeffs;
     const UINT16 *quant_matrix;
     
-    if(s->alternate_scan) nCoeffs= 64;
-    else nCoeffs= zigzag_end[ s->block_last_index[n] ];
+    assert(s->block_last_index[n]>=0);
+
+    if(s->alternate_scan) nCoeffs= 63; //FIXME
+    else nCoeffs= s->intra_scantable.raster_end[ s->block_last_index[n] ];
 
     if (s->mb_intra) {
         int block0;
@@ -371,7 +338,7 @@ asm volatile(
 		"movq %%mm5, 8(%0, %%eax)	\n\t"
 
 		"addl $16, %%eax		\n\t"
-		"js 1b				\n\t"
+		"jng 1b				\n\t"
 		::"r" (block+nCoeffs), "r"(quant_matrix+nCoeffs), "g" (qscale), "g" (-2*nCoeffs)
 		: "%eax", "memory"
 	);    
@@ -427,7 +394,7 @@ asm volatile(
 		"movq %%mm5, 8(%0, %%eax)	\n\t"
 
 		"addl $16, %%eax		\n\t"
-		"js 1b				\n\t"
+		"jng 1b				\n\t"
                 "movd 124(%0, %3), %%mm0	\n\t"
                 "movq %%mm7, %%mm6		\n\t"
                 "psrlq $32, %%mm7		\n\t"
@@ -534,12 +501,6 @@ static void draw_edges_mmx(UINT8 *buf, int wrap, int width, int height, int w)
     }
 }
 
-static volatile int esp_temp;
-
-void unused_var_warning_killer(){
-	esp_temp++;
-}
-
 #undef HAVE_MMX2
 #define RENAME(a) a ## _MMX
 #include "mpegvideo_mmx_template.c"
@@ -549,10 +510,40 @@ void unused_var_warning_killer(){
 #define RENAME(a) a ## _MMX2
 #include "mpegvideo_mmx_template.c"
 
+/* external functions, from idct_mmx.c */
+void ff_mmx_idct(DCTELEM *block);
+void ff_mmxext_idct(DCTELEM *block);
+
+/* XXX: those functions should be suppressed ASAP when all IDCTs are
+   converted */
+static void ff_libmpeg2mmx_idct_put(UINT8 *dest, int line_size, DCTELEM *block)
+{
+    ff_mmx_idct (block);
+    put_pixels_clamped(block, dest, line_size);
+}
+static void ff_libmpeg2mmx_idct_add(UINT8 *dest, int line_size, DCTELEM *block)
+{
+    ff_mmx_idct (block);
+    add_pixels_clamped(block, dest, line_size);
+}
+static void ff_libmpeg2mmx2_idct_put(UINT8 *dest, int line_size, DCTELEM *block)
+{
+    ff_mmxext_idct (block);
+    put_pixels_clamped(block, dest, line_size);
+}
+static void ff_libmpeg2mmx2_idct_add(UINT8 *dest, int line_size, DCTELEM *block)
+{
+    ff_mmxext_idct (block);
+    add_pixels_clamped(block, dest, line_size);
+}
+
 void MPV_common_init_mmx(MpegEncContext *s)
 {
     if (mm_flags & MM_MMX) {
-        const int dct_algo= s->avctx->dct_algo;
+        int i;
+        const int dct_algo = s->avctx->dct_algo;
+        const int idct_algo= s->avctx->idct_algo;
+        
         s->dct_unquantize_h263 = dct_unquantize_h263_mmx;
         s->dct_unquantize_mpeg1 = dct_unquantize_mpeg1_mmx;
         s->dct_unquantize_mpeg2 = dct_unquantize_mpeg2_mmx;
@@ -567,6 +558,23 @@ void MPV_common_init_mmx(MpegEncContext *s)
             } else {
                 s->dct_quantize= dct_quantize_MMX;
             }
+        }
+        
+        if(idct_algo==FF_IDCT_AUTO || idct_algo==FF_IDCT_SIMPLEMMX){
+            s->idct_put= ff_simple_idct_put_mmx;
+            s->idct_add= ff_simple_idct_add_mmx;
+            for(i=0; i<64; i++)
+                s->idct_permutation[i]= simple_mmx_permutation[i];
+        }else if(idct_algo==FF_IDCT_LIBMPEG2MMX){
+            if(mm_flags & MM_MMXEXT){
+                s->idct_put= ff_libmpeg2mmx2_idct_put;
+                s->idct_add= ff_libmpeg2mmx2_idct_add;
+            }else{
+                s->idct_put= ff_libmpeg2mmx_idct_put;
+                s->idct_add= ff_libmpeg2mmx_idct_add;
+            }
+            for(i=0; i<64; i++)
+                s->idct_permutation[i]= (i & 0x38) | ((i & 6) >> 1) | ((i & 1) << 2);
         }
     }
 }

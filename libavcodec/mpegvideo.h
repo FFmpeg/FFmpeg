@@ -99,6 +99,11 @@ typedef struct ReorderBuffer{
     int picture_in_gop_number;
 } ReorderBuffer;
 
+typedef struct ScanTable{
+    UINT8 permutated[64];
+    UINT8 raster_end[64];
+} ScanTable;
+
 typedef struct MpegEncContext {
     struct AVCodecContext *avctx;
     /* the following parameters must be initialized before encoding */
@@ -286,6 +291,12 @@ typedef struct MpegEncContext {
     UINT16 __align8 q_intra_matrix16_bias[32][64];
     UINT16 __align8 q_inter_matrix16_bias[32][64];
     int block_last_index[6];  /* last non zero coefficient in block */
+    /* scantables */
+    ScanTable intra_scantable;
+    ScanTable intra_h_scantable;
+    ScanTable intra_v_scantable;
+    ScanTable inter_scantable; // if inter == intra then intra should be used to reduce tha cache usage
+    UINT8 idct_permutation[64];
 
     void *opaque; /* private data for the user */
 
@@ -421,10 +432,6 @@ typedef struct MpegEncContext {
     int per_mb_rl_table;
     int esc3_level_length;
     int esc3_run_length;
-    UINT8 *inter_scantable;
-    UINT8 *intra_scantable;
-    UINT8 *intra_v_scantable;
-    UINT8 *intra_h_scantable;
     /* [mb_intra][isChroma][level][run][last] */
     int (*ac_stats)[2][MAX_LEVEL+1][MAX_RUN+1][2];
     int inter_intra_pred;
@@ -477,7 +484,9 @@ typedef struct MpegEncContext {
     void (*dct_unquantize)(struct MpegEncContext *s, // unquantizer to use (mpeg4 can use both)
                            DCTELEM *block, int n, int qscale);
     int (*dct_quantize)(struct MpegEncContext *s, DCTELEM *block, int n, int qscale, int *overflow);
-    void (*fdct)(DCTELEM *block);
+    void (*fdct)(DCTELEM *block/* align 16*/);
+    void (*idct_put)(UINT8 *dest/*align 8*/, int line_size, DCTELEM *block/*align 16*/);
+    void (*idct_add)(UINT8 *dest/*align 8*/, int line_size, DCTELEM *block/*align 16*/);
 } MpegEncContext;
 
 int MPV_common_init(MpegEncContext *s);
@@ -498,6 +507,7 @@ extern void (*draw_edges)(UINT8 *buf, int wrap, int width, int height, int w);
 void ff_conceal_past_errors(MpegEncContext *s, int conceal_all);
 void ff_copy_bits(PutBitContext *pb, UINT8 *src, int length);
 void ff_clean_intra_table_entries(MpegEncContext *s);
+void ff_init_scantable(MpegEncContext *s, ScanTable *st, const UINT8 *src_scantable);
 
 extern int ff_bit_exact;
 
@@ -511,8 +521,8 @@ void ff_fix_long_p_mvs(MpegEncContext * s);
 void ff_fix_long_b_mvs(MpegEncContext * s, int16_t (*mv_table)[2], int f_code, int type);
 
 /* mpeg12.c */
-extern INT16 ff_mpeg1_default_intra_matrix[64];
-extern INT16 ff_mpeg1_default_non_intra_matrix[64];
+extern const INT16 ff_mpeg1_default_intra_matrix[64];
+extern const INT16 ff_mpeg1_default_non_intra_matrix[64];
 extern UINT8 ff_mpeg1_dc_scale_table[128];
 
 void mpeg1_encode_picture_header(MpegEncContext *s, int picture_number);
@@ -551,8 +561,8 @@ static inline int get_rl_index(const RLTable *rl, int last, int run, int level)
 
 extern UINT8 ff_mpeg4_y_dc_scale_table[32];
 extern UINT8 ff_mpeg4_c_dc_scale_table[32];
-extern INT16 ff_mpeg4_default_intra_matrix[64];
-extern INT16 ff_mpeg4_default_non_intra_matrix[64];
+extern const INT16 ff_mpeg4_default_intra_matrix[64];
+extern const INT16 ff_mpeg4_default_non_intra_matrix[64];
 
 void h263_encode_mb(MpegEncContext *s, 
                     DCTELEM block[6][64],

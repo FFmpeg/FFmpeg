@@ -23,10 +23,14 @@
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mpegvideo.h"
+#include "simple_idct.h"
 
 #ifdef USE_FASTMEMCPY
 #include "fastmemcpy.h"
 #endif
+
+//#undef NDEBUG
+//#include <assert.h>
 
 static void encode_picture(MpegEncContext *s, int picture_number);
 static void dct_unquantize_mpeg1_c(MpegEncContext *s, 
@@ -72,8 +76,6 @@ static UINT8 h263_chroma_roundtab[16] = {
 static UINT16 default_mv_penalty[MAX_FCODE+1][MAX_MV*2+1];
 static UINT8 default_fcode_tab[MAX_MV*2+1];
 
-extern UINT8 zigzag_end[64];
-
 /* default motion estimation */
 int motion_estimation_method = ME_EPZS;
 
@@ -86,7 +88,7 @@ static void convert_matrix(MpegEncContext *s, int (*qmat)[64], uint16_t (*qmat16
         int i;
         if (s->fdct == ff_jpeg_fdct_islow) {
             for(i=0;i<64;i++) {
-                const int j= block_permute_op(i);
+                const int j= s->idct_permutation[i];
                 /* 16 <= qscale * quant_matrix[i] <= 7905 */
                 /* 19952         <= aanscales[i] * qscale * quant_matrix[i]           <= 249205026 */
                 /* (1<<36)/19952 >= (1<<36)/(aanscales[i] * qscale * quant_matrix[i]) >= (1<<36)/249205026 */
@@ -97,7 +99,7 @@ static void convert_matrix(MpegEncContext *s, int (*qmat)[64], uint16_t (*qmat16
             }
         } else if (s->fdct == fdct_ifast) {
             for(i=0;i<64;i++) {
-                const int j= block_permute_op(i);
+                const int j= s->idct_permutation[i];
                 /* 16 <= qscale * quant_matrix[i] <= 7905 */
                 /* 19952         <= aanscales[i] * qscale * quant_matrix[i]           <= 249205026 */
                 /* (1<<36)/19952 >= (1<<36)/(aanscales[i] * qscale * quant_matrix[i]) >= (1<<36)/249205026 */
@@ -108,13 +110,14 @@ static void convert_matrix(MpegEncContext *s, int (*qmat)[64], uint16_t (*qmat16
             }
         } else {
             for(i=0;i<64;i++) {
+                const int j= s->idct_permutation[i];
                 /* We can safely suppose that 16 <= quant_matrix[i] <= 255
                    So 16           <= qscale * quant_matrix[i]             <= 7905
                    so (1<<19) / 16 >= (1<<19) / (qscale * quant_matrix[i]) >= (1<<19) / 7905
                    so 32768        >= (1<<19) / (qscale * quant_matrix[i]) >= 67
                 */
                 qmat  [qscale][i] = (1 << QMAT_SHIFT_MMX) / (qscale * quant_matrix[i]);
-                qmat16[qscale][i] = (1 << QMAT_SHIFT_MMX) / (qscale * quant_matrix[block_permute_op(i)]);
+                qmat16[qscale][i] = (1 << QMAT_SHIFT_MMX) / (qscale * quant_matrix[j]);
 
                 if(qmat16[qscale][i]==0 || qmat16[qscale][i]==128*256) qmat16[qscale][i]=128*256-1;
                 qmat16_bias[qscale][i]= ROUNDED_DIV(bias<<(16-QUANT_BIAS_SHIFT), qmat16[qscale][i]);
@@ -131,6 +134,50 @@ static void convert_matrix(MpegEncContext *s, int (*qmat)[64], uint16_t (*qmat16
         goto fail;\
     }\
 }
+/*
+static void build_end(void)
+{
+    int lastIndex;
+    int lastIndexAfterPerm=0;
+    for(lastIndex=0; lastIndex<64; lastIndex++)
+    {
+        if(ff_zigzag_direct[lastIndex] > lastIndexAfterPerm) 
+            lastIndexAfterPerm= ff_zigzag_direct[lastIndex];
+        zigzag_end[lastIndex]= lastIndexAfterPerm + 1;
+    }
+}
+*/
+void ff_init_scantable(MpegEncContext *s, ScanTable *st, const UINT8 *src_scantable){
+    int i;
+    int end;
+
+    for(i=0; i<64; i++){
+        int j;
+        j = src_scantable[i];
+        st->permutated[i] = s->idct_permutation[j];
+    }
+    
+    end=-1;
+    for(i=0; i<64; i++){
+        int j;
+        j = st->permutated[i];
+        if(j>end) end=j;
+        st->raster_end[i]= end;
+    }
+}
+
+/* XXX: those functions should be suppressed ASAP when all IDCTs are
+   converted */
+static void ff_jref_idct_put(UINT8 *dest, int line_size, DCTELEM *block)
+{
+    j_rev_dct (block);
+    put_pixels_clamped(block, dest, line_size);
+}
+static void ff_jref_idct_add(UINT8 *dest, int line_size, DCTELEM *block)
+{
+    j_rev_dct (block);
+    add_pixels_clamped(block, dest, line_size);
+}
 
 /* init common structure for both encoder and decoder */
 int MPV_common_init(MpegEncContext *s)
@@ -146,7 +193,19 @@ int MPV_common_init(MpegEncContext *s)
     if(s->avctx->dct_algo==FF_DCT_FASTINT)
         s->fdct = fdct_ifast;
     else
-        s->fdct = ff_jpeg_fdct_islow;
+        s->fdct = ff_jpeg_fdct_islow; //slow/accurate/default
+
+    if(s->avctx->idct_algo==FF_IDCT_INT){
+        s->idct_put= ff_jref_idct_put;
+        s->idct_add= ff_jref_idct_add;
+        for(i=0; i<64; i++)
+            s->idct_permutation[i]= (i & 0x38) | ((i & 6) >> 1) | ((i & 1) << 2);
+    }else{ //accurate/default
+        s->idct_put= simple_idct_put;
+        s->idct_add= simple_idct_add;
+        for(i=0; i<64; i++)
+            s->idct_permutation[i]= i;
+    }
         
 #ifdef HAVE_MMX
     MPV_common_init_mmx(s);
@@ -157,6 +216,15 @@ int MPV_common_init(MpegEncContext *s)
 #ifdef HAVE_MLIB
     MPV_common_init_mlib(s);
 #endif
+    
+
+    /* load & permutate scantables
+       note: only wmv uses differnt ones 
+    */
+    ff_init_scantable(s, &s->inter_scantable  , ff_zigzag_direct);
+    ff_init_scantable(s, &s->intra_scantable  , ff_zigzag_direct);
+    ff_init_scantable(s, &s->intra_h_scantable, ff_alternate_horizontal_scan);
+    ff_init_scantable(s, &s->intra_v_scantable, ff_alternate_vertical_scan);
 
     s->mb_width = (s->width + 15) / 16;
     s->mb_height = (s->height + 15) / 16;
@@ -577,13 +645,6 @@ int MPV_encode_init(AVCodecContext *avctx)
     s->y_dc_scale_table=
     s->c_dc_scale_table= ff_mpeg1_dc_scale_table;
  
-    if (s->out_format == FMT_H263)
-        h263_encode_init(s);
-    else if (s->out_format == FMT_MPEG1)
-        ff_mpeg1_encode_init(s);
-    if(s->msmpeg4_version)
-        ff_msmpeg4_encode_init(s);
-
     /* dont use mv_penalty table for crap MV as it would be confused */
     if (s->me_method < ME_EPZS) s->mv_penalty = default_mv_penalty;
 
@@ -593,17 +654,25 @@ int MPV_encode_init(AVCodecContext *avctx)
     if (MPV_common_init(s) < 0)
         return -1;
     
+    if (s->out_format == FMT_H263)
+        h263_encode_init(s);
+    else if (s->out_format == FMT_MPEG1)
+        ff_mpeg1_encode_init(s);
+    if(s->msmpeg4_version)
+        ff_msmpeg4_encode_init(s);
+
     /* init default q matrix */
     for(i=0;i<64;i++) {
+        int j= s->idct_permutation[i];
         if(s->codec_id==CODEC_ID_MPEG4 && s->mpeg_quant){
-            s->intra_matrix[i] = ff_mpeg4_default_intra_matrix[i];
-            s->inter_matrix[i] = ff_mpeg4_default_non_intra_matrix[i];
+            s->intra_matrix[j] = ff_mpeg4_default_intra_matrix[i];
+            s->inter_matrix[j] = ff_mpeg4_default_non_intra_matrix[i];
         }else if(s->out_format == FMT_H263){
-            s->intra_matrix[i] =
-            s->inter_matrix[i] = ff_mpeg1_default_non_intra_matrix[i];
+            s->intra_matrix[j] =
+            s->inter_matrix[j] = ff_mpeg1_default_non_intra_matrix[i];
         }else{ /* mpeg1 */
-            s->intra_matrix[i] = ff_mpeg1_default_intra_matrix[i];
-            s->inter_matrix[i] = ff_mpeg1_default_non_intra_matrix[i];
+            s->intra_matrix[j] = ff_mpeg1_default_intra_matrix[i];
+            s->inter_matrix[j] = ff_mpeg1_default_non_intra_matrix[i];
         }
     }
 
@@ -1450,7 +1519,7 @@ static inline void put_dct(MpegEncContext *s,
 {
     if (!s->mpeg2)
         s->dct_unquantize(s, block, i, s->qscale);
-    ff_idct_put (dest, line_size, block);
+    s->idct_put (dest, line_size, block);
 }
 
 /* add block[] to dest[] */
@@ -1458,7 +1527,7 @@ static inline void add_dct(MpegEncContext *s,
                            DCTELEM *block, int i, UINT8 *dest, int line_size)
 {
     if (s->block_last_index[i] >= 0) {
-        ff_idct_add (dest, line_size, block);
+        s->idct_add (dest, line_size, block);
     }
 }
 
@@ -1468,7 +1537,7 @@ static inline void add_dequant_dct(MpegEncContext *s,
     if (s->block_last_index[i] >= 0) {
         s->dct_unquantize(s, block, i, s->qscale);
 
-        ff_idct_add (dest, line_size, block);
+        s->idct_add (dest, line_size, block);
     }
 }
 
@@ -1720,7 +1789,7 @@ static inline void dct_single_coeff_elimination(MpegEncContext *s, int n, int th
     if(last_index<=skip_dc - 1) return;
 
     for(i=0; i<=last_index; i++){
-        const int j = zigzag_direct[i];
+        const int j = s->intra_scantable.permutated[i];
         const int level = ABS(block[j]);
         if(level==1){
             if(skip_dc && i==0) continue;
@@ -1734,7 +1803,7 @@ static inline void dct_single_coeff_elimination(MpegEncContext *s, int n, int th
     }
     if(score >= threshold) return;
     for(i=skip_dc; i<=last_index; i++){
-        const int j = zigzag_direct[i];
+        const int j = s->intra_scantable.permutated[i];
         block[j]=0;
     }
     if(block[0]) s->block_last_index[n]= 0;
@@ -1746,9 +1815,14 @@ static inline void clip_coeffs(MpegEncContext *s, DCTELEM *block, int last_index
     int i;
     const int maxlevel= s->max_qcoeff;
     const int minlevel= s->min_qcoeff;
-        
-    for(i=0;i<=last_index; i++){
-        const int j = zigzag_direct[i];
+    
+    if(s->mb_intra){
+        i=1; //skip clipping of intra dc
+    }else
+        i=0;
+    
+    for(;i<=last_index; i++){
+        const int j= s->intra_scantable.permutated[i];
         int level = block[j];
        
         if     (level>maxlevel) level=maxlevel;
@@ -1760,22 +1834,22 @@ static inline void clip_coeffs(MpegEncContext *s, DCTELEM *block, int last_index
 static inline void requantize_coeffs(MpegEncContext *s, DCTELEM block[64], int oldq, int newq, int n)
 {
     int i;
-    
-    if(s->mb_intra){ 
-        //FIXME requantize, note (mpeg1/h263/h263p-aic dont need it,...)
-        i=1;
+
+    if(s->mb_intra){
+        i=1; //skip clipping of intra dc
+         //FIXME requantize, note (mpeg1/h263/h263p-aic dont need it,...)
     }else
         i=0;
     
     for(;i<=s->block_last_index[n]; i++){
-        const int j = zigzag_direct[i];
+        const int j = s->intra_scantable.permutated[i];
         int level = block[j];
         
         block[j]= ROUNDED_DIV(level*oldq, newq);
     }
 
     for(i=s->block_last_index[n]; i>=0; i--){
-        const int j = zigzag_direct[i]; //FIXME other scantabs
+        const int j = s->intra_scantable.permutated[i];
         if(block[j]) break;
     }
     s->block_last_index[n]= i;
@@ -1791,11 +1865,14 @@ static inline void auto_requantize_coeffs(MpegEncContext *s, DCTELEM block[6][64
     assert(s->adaptive_quant);
     
     for(n=0; n<6; n++){
-        if(s->mb_intra) i=1;
-        else            i=0;
+        if(s->mb_intra){
+            i=1; //skip clipping of intra dc
+             //FIXME requantize, note (mpeg1/h263/h263p-aic dont need it,...)
+        }else
+            i=0;
 
         for(;i<=s->block_last_index[n]; i++){
-            const int j = zigzag_direct[i]; //FIXME other scantabs
+            const int j = s->intra_scantable.permutated[i];
             int level = block[n][j];
             if(largest  < level) largest = level;
             if(smallest > level) smallest= level;
@@ -2379,8 +2456,11 @@ static void encode_picture(MpegEncContext *s, int picture_number)
     if (s->out_format == FMT_MJPEG) {
         /* for mjpeg, we do include qscale in the matrix */
         s->intra_matrix[0] = ff_mpeg1_default_intra_matrix[0];
-        for(i=1;i<64;i++)
-            s->intra_matrix[i] = CLAMP_TO_8BIT((ff_mpeg1_default_intra_matrix[i] * s->qscale) >> 3);
+        for(i=1;i<64;i++){
+            int j= s->idct_permutation[i];
+
+            s->intra_matrix[j] = CLAMP_TO_8BIT((ff_mpeg1_default_intra_matrix[i] * s->qscale) >> 3);
+        }
         convert_matrix(s, s->q_intra_matrix, s->q_intra_matrix16, 
                        s->q_intra_matrix16_bias, s->intra_matrix, s->intra_quant_bias);
     }
@@ -2752,7 +2832,7 @@ static int dct_quantize_c(MpegEncContext *s,
 #ifndef ARCH_ALPHA              /* Alpha uses unpermuted matrix */
     /* we need this permutation so that we correct the IDCT
        permutation. will be moved into DCT code */
-    block_permute(block);
+    block_permute(block, s->idct_permutation); //FIXME remove
 #endif
 
     if (s->mb_intra) {
@@ -2782,7 +2862,7 @@ static int dct_quantize_c(MpegEncContext *s,
     threshold2= (threshold1<<1);
 
     for(;i<64;i++) {
-        j = zigzag_direct[i];
+        j = s->intra_scantable.permutated[i];
         level = block[j];
         level = level * qmat[j];
 
@@ -2813,8 +2893,7 @@ static void dct_unquantize_mpeg1_c(MpegEncContext *s,
     int i, level, nCoeffs;
     const UINT16 *quant_matrix;
 
-    if(s->alternate_scan) nCoeffs= 64;
-    else nCoeffs= s->block_last_index[n]+1;
+    nCoeffs= s->block_last_index[n];
     
     if (s->mb_intra) {
         if (n < 4) 
@@ -2823,8 +2902,8 @@ static void dct_unquantize_mpeg1_c(MpegEncContext *s,
             block[0] = block[0] * s->c_dc_scale;
         /* XXX: only mpeg1 */
         quant_matrix = s->intra_matrix;
-        for(i=1;i<nCoeffs;i++) {
-            int j= zigzag_direct[i];
+        for(i=1;i<=nCoeffs;i++) {
+            int j= s->intra_scantable.permutated[i];
             level = block[j];
             if (level) {
                 if (level < 0) {
@@ -2846,8 +2925,8 @@ static void dct_unquantize_mpeg1_c(MpegEncContext *s,
     } else {
         i = 0;
         quant_matrix = s->inter_matrix;
-        for(;i<nCoeffs;i++) {
-            int j= zigzag_direct[i];
+        for(;i<=nCoeffs;i++) {
+            int j= s->intra_scantable.permutated[i];
             level = block[j];
             if (level) {
                 if (level < 0) {
@@ -2877,8 +2956,8 @@ static void dct_unquantize_mpeg2_c(MpegEncContext *s,
     int i, level, nCoeffs;
     const UINT16 *quant_matrix;
 
-    if(s->alternate_scan) nCoeffs= 64;
-    else nCoeffs= s->block_last_index[n]+1;
+    if(s->alternate_scan) nCoeffs= 63;
+    else nCoeffs= s->block_last_index[n];
     
     if (s->mb_intra) {
         if (n < 4) 
@@ -2886,8 +2965,8 @@ static void dct_unquantize_mpeg2_c(MpegEncContext *s,
         else
             block[0] = block[0] * s->c_dc_scale;
         quant_matrix = s->intra_matrix;
-        for(i=1;i<nCoeffs;i++) {
-            int j= zigzag_direct[i];
+        for(i=1;i<=nCoeffs;i++) {
+            int j= s->intra_scantable.permutated[i];
             level = block[j];
             if (level) {
                 if (level < 0) {
@@ -2908,8 +2987,8 @@ static void dct_unquantize_mpeg2_c(MpegEncContext *s,
         int sum=-1;
         i = 0;
         quant_matrix = s->inter_matrix;
-        for(;i<nCoeffs;i++) {
-            int j= zigzag_direct[i];
+        for(;i<=nCoeffs;i++) {
+            int j= s->intra_scantable.permutated[i];
             level = block[j];
             if (level) {
                 if (level < 0) {
@@ -2940,27 +3019,27 @@ static void dct_unquantize_h263_c(MpegEncContext *s,
     int i, level, qmul, qadd;
     int nCoeffs;
     
+    assert(s->block_last_index[n]>=0);
+    
+    qadd = (qscale - 1) | 1;
+    qmul = qscale << 1;
+    
     if (s->mb_intra) {
         if (!s->h263_aic) {
             if (n < 4) 
                 block[0] = block[0] * s->y_dc_scale;
             else
                 block[0] = block[0] * s->c_dc_scale;
-        }
+        }else
+            qadd = 0;
         i = 1;
-        nCoeffs= 64; //does not allways use zigzag table 
+        nCoeffs= 63; //does not allways use zigzag table 
     } else {
         i = 0;
-        nCoeffs= zigzag_end[ s->block_last_index[n] ];
+        nCoeffs= s->intra_scantable.raster_end[ s->block_last_index[n] ];
     }
 
-    qmul = s->qscale << 1;
-    if (s->h263_aic && s->mb_intra)
-        qadd = 0;
-    else
-        qadd = (s->qscale - 1) | 1;
-
-    for(;i<nCoeffs;i++) {
+    for(;i<=nCoeffs;i++) {
         level = block[i];
         if (level) {
             if (level < 0) {

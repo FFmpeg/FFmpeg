@@ -20,11 +20,7 @@
  */
 #include "avcodec.h"
 #include "dsputil.h"
-#include "simple_idct.h"
 
-void (*ff_idct)(DCTELEM *block);
-void (*ff_idct_put)(UINT8 *dest, int line_size, DCTELEM *block);
-void (*ff_idct_add)(UINT8 *dest, int line_size, DCTELEM *block);
 void (*get_pixels)(DCTELEM *block, const UINT8 *pixels, int line_size);
 void (*diff_pixels)(DCTELEM *block, const UINT8 *s1, const UINT8 *s2, int stride);
 void (*put_pixels_clamped)(const DCTELEM *block, UINT8 *pixels, int line_size);
@@ -49,16 +45,11 @@ int ff_bit_exact=0;
 UINT8 cropTbl[256 + 2 * MAX_NEG_CROP];
 UINT32 squareTbl[512];
 
-extern INT16 ff_mpeg1_default_intra_matrix[64];
-extern INT16 ff_mpeg1_default_non_intra_matrix[64];
-extern INT16 ff_mpeg4_default_intra_matrix[64];
-extern INT16 ff_mpeg4_default_non_intra_matrix[64];
-
-UINT8 zigzag_direct[64] = {
-    0, 1, 8, 16, 9, 2, 3, 10,
-    17, 24, 32, 25, 18, 11, 4, 5,
+const UINT8 ff_zigzag_direct[64] = {
+    0,   1,  8, 16,  9,  2,  3, 10,
+    17, 24, 32, 25, 18, 11,  4,  5,
     12, 19, 26, 33, 40, 48, 41, 34,
-    27, 20, 13, 6, 7, 14, 21, 28,
+    27, 20, 13,  6,  7, 14, 21, 28,
     35, 42, 49, 56, 57, 50, 43, 36,
     29, 22, 15, 23, 30, 37, 44, 51,
     58, 59, 52, 45, 38, 31, 39, 46,
@@ -68,11 +59,8 @@ UINT8 zigzag_direct[64] = {
 /* not permutated inverse zigzag_direct + 1 for MMX quantizer */
 UINT16 __align8 inv_zigzag_direct16[64];
 
-/* not permutated zigzag_direct for MMX quantizer */
-UINT8 zigzag_direct_noperm[64];
-
-UINT8 ff_alternate_horizontal_scan[64] = {
-    0,  1,  2,  3,  8,  9, 16, 17, 
+const UINT8 ff_alternate_horizontal_scan[64] = {
+    0,  1,   2,  3,  8,  9, 16, 17, 
     10, 11,  4,  5,  6,  7, 15, 14,
     13, 12, 19, 18, 24, 25, 32, 33, 
     26, 27, 20, 21, 22, 23, 28, 29,
@@ -82,8 +70,8 @@ UINT8 ff_alternate_horizontal_scan[64] = {
     52, 53, 54, 55, 60, 61, 62, 63,
 };
 
-UINT8 ff_alternate_vertical_scan[64] = {
-    0,  8, 16, 24,  1,  9,  2, 10, 
+const UINT8 ff_alternate_vertical_scan[64] = {
+    0,  8,  16, 24,  1,  9,  2, 10, 
     17, 25, 32, 40, 48, 56, 57, 49,
     41, 33, 26, 18,  3, 11,  4, 12, 
     19, 27, 34, 42, 50, 58, 35, 43,
@@ -92,21 +80,6 @@ UINT8 ff_alternate_vertical_scan[64] = {
     53, 61, 22, 30,  7, 15, 23, 31, 
     38, 46, 54, 62, 39, 47, 55, 63,
 };
-
-#ifdef SIMPLE_IDCT
-
-/* Input permutation for the simple_idct_mmx */
-static UINT8 simple_mmx_permutation[64]={
-	0x00, 0x08, 0x04, 0x09, 0x01, 0x0C, 0x05, 0x0D, 
-	0x10, 0x18, 0x14, 0x19, 0x11, 0x1C, 0x15, 0x1D, 
-	0x20, 0x28, 0x24, 0x29, 0x21, 0x2C, 0x25, 0x2D, 
-	0x12, 0x1A, 0x16, 0x1B, 0x13, 0x1E, 0x17, 0x1F, 
-	0x02, 0x0A, 0x06, 0x0B, 0x03, 0x0E, 0x07, 0x0F, 
-	0x30, 0x38, 0x34, 0x39, 0x31, 0x3C, 0x35, 0x3D, 
-	0x22, 0x2A, 0x26, 0x2B, 0x23, 0x2E, 0x27, 0x2F, 
-	0x32, 0x3A, 0x36, 0x3B, 0x33, 0x3E, 0x37, 0x3F,
-};
-#endif
 
 /* a*inverse[b]>>32 == a/b for all 0<=a<=65536 && 2<=b<=255 */
 UINT32 inverse[256]={
@@ -143,24 +116,6 @@ UINT32 inverse[256]={
   17895698,   17821442,   17747799,   17674763,   17602325,   17530479,   17459217,   17388532, 
   17318417,   17248865,   17179870,   17111424,   17043522,   16976156,   16909321,   16843010,
 };
-
-/* used to skip zeros at the end */
-UINT8 zigzag_end[64];
-
-UINT8 permutation[64];
-//UINT8 invPermutation[64];
-
-static void build_zigzag_end(void)
-{
-    int lastIndex;
-    int lastIndexAfterPerm=0;
-    for(lastIndex=0; lastIndex<64; lastIndex++)
-    {
-        if(zigzag_direct[lastIndex] > lastIndexAfterPerm) 
-            lastIndexAfterPerm= zigzag_direct[lastIndex];
-        zigzag_end[lastIndex]= lastIndexAfterPerm + 1;
-    }
-}
 
 int pix_sum_c(UINT8 * pix, int line_size)
 {
@@ -1540,65 +1495,24 @@ int pix_abs8x8_xy2_c(UINT8 *pix1, UINT8 *pix2, int line_size)
 
 /* permute block according so that it corresponds to the MMX idct
    order */
-#ifdef SIMPLE_IDCT
- /* general permutation, but perhaps slightly slower */
-void block_permute(INT16 *block)
+void block_permute(INT16 *block, UINT8 *permutation)
 {
 	int i;
 	INT16 temp[64];
 
-	for(i=0; i<64; i++) temp[ block_permute_op(i) ] = block[i];
+	for(i=0; i<64; i++) temp[ permutation[i] ] = block[i];
 
 	for(i=0; i<64; i++) block[i] = temp[i];
 }
-#else
-
-void block_permute(INT16 *block)
-{
-    int tmp1, tmp2, tmp3, tmp4, tmp5, tmp6;
-    int i;
-
-    for(i=0;i<8;i++) {
-        tmp1 = block[1];
-        tmp2 = block[2];
-        tmp3 = block[3];
-        tmp4 = block[4];
-        tmp5 = block[5];
-        tmp6 = block[6];
-        block[1] = tmp2;
-        block[2] = tmp4;
-        block[3] = tmp6;
-        block[4] = tmp1;
-        block[5] = tmp3;
-        block[6] = tmp5;
-        block += 8;
-    }
-}
-#endif
 
 void clear_blocks_c(DCTELEM *blocks)
 {
     memset(blocks, 0, sizeof(DCTELEM)*6*64);
 }
 
-/* XXX: those functions should be suppressed ASAP when all IDCTs are
-   converted */
-void gen_idct_put(UINT8 *dest, int line_size, DCTELEM *block)
-{
-    ff_idct (block);
-    put_pixels_clamped(block, dest, line_size);
-}
-
-void gen_idct_add(UINT8 *dest, int line_size, DCTELEM *block)
-{
-    ff_idct (block);
-    add_pixels_clamped(block, dest, line_size);
-}
-
 void dsputil_init(void)
 {
     int i, j;
-    int use_permuted_idct;
 
     for(i=0;i<256;i++) cropTbl[i + MAX_NEG_CROP] = i;
     for(i=0;i<MAX_NEG_CROP;i++) {
@@ -1610,11 +1524,6 @@ void dsputil_init(void)
         squareTbl[i] = (i - 256) * (i - 256);
     }
 
-#ifdef SIMPLE_IDCT
-    ff_idct = NULL;
-#else
-    ff_idct = j_rev_dct;
-#endif
     get_pixels = get_pixels_c;
     diff_pixels = diff_pixels_c;
     put_pixels_clamped = put_pixels_clamped_c;
@@ -1633,8 +1542,6 @@ void dsputil_init(void)
     pix_abs8x8_y2  = pix_abs8x8_y2_c;
     pix_abs8x8_xy2 = pix_abs8x8_xy2_c;
 
-    use_permuted_idct = 1;
-
 #ifdef HAVE_MMX
     dsputil_init_mmx();
 #endif
@@ -1643,61 +1550,18 @@ void dsputil_init(void)
 #endif
 #ifdef HAVE_MLIB
     dsputil_init_mlib();
-    use_permuted_idct = 0;
 #endif
 #ifdef ARCH_ALPHA
     dsputil_init_alpha();
-    use_permuted_idct = 0;
 #endif
 #ifdef ARCH_POWERPC
     dsputil_init_ppc();
 #endif
 #ifdef HAVE_MMI
     dsputil_init_mmi();
-    use_permuted_idct = 0;
 #endif
 
-#ifdef SIMPLE_IDCT
-    if (ff_idct == NULL) {
-        ff_idct_put = simple_idct_put;
-        ff_idct_add = simple_idct_add;
-        use_permuted_idct=0;
-    }
-#endif
-    if(ff_idct != NULL) {
-        ff_idct_put = gen_idct_put;
-        ff_idct_add = gen_idct_add;
-    }
-
-    if(use_permuted_idct)
-#ifdef SIMPLE_IDCT
-        for(i=0; i<64; i++) permutation[i]= simple_mmx_permutation[i];
-#else
-        for(i=0; i<64; i++) permutation[i]= (i & 0x38) | ((i & 6) >> 1) | ((i & 1) << 2);
-#endif
-    else
-        for(i=0; i<64; i++) permutation[i]=i;
-
-    for(i=0; i<64; i++) inv_zigzag_direct16[zigzag_direct[i]]= i+1;
-    for(i=0; i<64; i++) zigzag_direct_noperm[i]= zigzag_direct[i];
-    
-    if (use_permuted_idct) {
-        /* permute for IDCT */
-        for(i=0;i<64;i++) {
-            j = zigzag_direct[i];
-            zigzag_direct[i] = block_permute_op(j);
-            j = ff_alternate_horizontal_scan[i];
-            ff_alternate_horizontal_scan[i] = block_permute_op(j);
-            j = ff_alternate_vertical_scan[i];
-            ff_alternate_vertical_scan[i] = block_permute_op(j);
-        }
-        block_permute(ff_mpeg1_default_intra_matrix);
-        block_permute(ff_mpeg1_default_non_intra_matrix);
-        block_permute(ff_mpeg4_default_intra_matrix);
-        block_permute(ff_mpeg4_default_non_intra_matrix);
-    }
-    
-    build_zigzag_end();
+    for(i=0; i<64; i++) inv_zigzag_direct16[ff_zigzag_direct[i]]= i+1;
 }
 
 /* remove any non bit exact operation (testing purpose) */

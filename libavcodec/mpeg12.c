@@ -542,7 +542,7 @@ static void mpeg1_encode_block(MpegEncContext *s,
     last_non_zero = i - 1;
 
     for(;i<=last_index;i++) {
-        j = zigzag_direct[i];
+        j = s->intra_scantable.permutated[i];
         level = block[j];
     next_coef:
 #if 0
@@ -552,26 +552,11 @@ static void mpeg1_encode_block(MpegEncContext *s,
         /* encode using VLC */
         if (level != 0) {
             run = i - last_non_zero - 1;
-#ifdef ARCH_X86
-            asm volatile(
-		"movl %2, %1		\n\t"
-		"movl %1, %0		\n\t"
-		"addl %1, %1		\n\t"
-		"sbbl %1, %1		\n\t"
-		"xorl %1, %0		\n\t"
-		"subl %1, %0		\n\t"
-		"andl $1, %1		\n\t"
-		: "=&r" (alevel), "=&r" (sign)
-		: "g" (level)
-	    );
-#else
-            sign = 0;
-            alevel = level;
-            if (alevel < 0) {
-		sign = 1;
-                alevel = -alevel;
-	    }
-#endif
+            
+            alevel= level;
+            MASK_ABS(sign, alevel)
+            sign&=1;
+
 //            code = get_rl_index(rl, 0, run, alevel);
             if (alevel > mpeg1_max_level[0][run])
                 code= 111; /*rl->n*/
@@ -1040,6 +1025,7 @@ static int mpeg1_decode_block(MpegEncContext *s,
     int level, dc, diff, i, j, run;
     int code, component;
     RLTable *rl = &rl_mpeg1;
+    UINT8 * const scantable= s->intra_scantable.permutated;
 
     if (s->mb_intra) {
         /* DC coef */
@@ -1099,7 +1085,7 @@ static int mpeg1_decode_block(MpegEncContext *s,
             return -1;
     add_coef:
         dprintf("%d: run=%d level=%d\n", n, run, level);
-	j = zigzag_direct[i];
+	j = scantable[i];
         block[j] = level;
         i++;
     }
@@ -1121,9 +1107,9 @@ static int mpeg2_decode_block_non_intra(MpegEncContext *s,
     int mismatch;
 
     if (s->alternate_scan)
-        scan_table = ff_alternate_vertical_scan;
+        scan_table = s->intra_v_scantable.permutated;
     else
-        scan_table = zigzag_direct;
+        scan_table = s->intra_scantable.permutated;
     mismatch = 1;
 
     {
@@ -1140,7 +1126,7 @@ static int mpeg2_decode_block_non_intra(MpegEncContext *s,
         v= SHOW_UBITS(re, &s->gb, 2);
         if (v & 2) {
             run = 0;
-            level = 1 - ((v & 1) << 1);
+            level = 5 - (v << 1);
             SKIP_BITS(re, &s->gb, 2);
             CLOSE_READER(re, &s->gb);
             goto add_coef;
@@ -1191,6 +1177,7 @@ static int mpeg2_decode_block_non_intra(MpegEncContext *s,
     }
     block[63] ^= (mismatch & 1);
     s->block_last_index[n] = i;
+
     return 0;
 }
 
@@ -1206,9 +1193,9 @@ static int mpeg2_decode_block_intra(MpegEncContext *s,
     int mismatch;
 
     if (s->alternate_scan)
-        scan_table = ff_alternate_vertical_scan;
+        scan_table = s->intra_v_scantable.permutated;
     else
-        scan_table = zigzag_direct;
+        scan_table = s->intra_scantable.permutated;
 
     /* DC coef */
     component = (n <= 3 ? 0 : n - 4 + 1);
@@ -1402,7 +1389,7 @@ static void mpeg_decode_quant_matrix_extension(MpegEncContext *s)
     if (get_bits1(&s->gb)) {
         for(i=0;i<64;i++) {
             v = get_bits(&s->gb, 8);
-            j = zigzag_direct[i];
+            j = s->intra_scantable.permutated[i];
             s->intra_matrix[j] = v;
             s->chroma_intra_matrix[j] = v;
         }
@@ -1410,7 +1397,7 @@ static void mpeg_decode_quant_matrix_extension(MpegEncContext *s)
     if (get_bits1(&s->gb)) {
         for(i=0;i<64;i++) {
             v = get_bits(&s->gb, 8);
-            j = zigzag_direct[i];
+            j = s->intra_scantable.permutated[i];
             s->inter_matrix[j] = v;
             s->chroma_inter_matrix[j] = v;
         }
@@ -1418,14 +1405,14 @@ static void mpeg_decode_quant_matrix_extension(MpegEncContext *s)
     if (get_bits1(&s->gb)) {
         for(i=0;i<64;i++) {
             v = get_bits(&s->gb, 8);
-            j = zigzag_direct[i];
+            j = s->intra_scantable.permutated[i];
             s->chroma_intra_matrix[j] = v;
         }
     }
     if (get_bits1(&s->gb)) {
         for(i=0;i<64;i++) {
             v = get_bits(&s->gb, 8);
-            j = zigzag_direct[i];
+            j = s->intra_scantable.permutated[i];
             s->chroma_inter_matrix[j] = v;
         }
     }
@@ -1636,7 +1623,7 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
     if (get_bits1(&s->gb)) {
         for(i=0;i<64;i++) {
             v = get_bits(&s->gb, 8);
-            j = zigzag_direct[i];
+            j = s->intra_scantable.permutated[i];
             s->intra_matrix[j] = v;
             s->chroma_intra_matrix[j] = v;
         }
@@ -1648,15 +1635,16 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
 #endif
     } else {
         for(i=0;i<64;i++) {
+            int j= s->idct_permutation[i];
             v = ff_mpeg1_default_intra_matrix[i];
-            s->intra_matrix[i] = v;
-            s->chroma_intra_matrix[i] = v;
+            s->intra_matrix[j] = v;
+            s->chroma_intra_matrix[j] = v;
         }
     }
     if (get_bits1(&s->gb)) {
         for(i=0;i<64;i++) {
             v = get_bits(&s->gb, 8);
-            j = zigzag_direct[i];
+            j = s->intra_scantable.permutated[i];
             s->inter_matrix[j] = v;
             s->chroma_inter_matrix[j] = v;
         }
@@ -1668,9 +1656,10 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
 #endif
     } else {
         for(i=0;i<64;i++) {
+            int j= s->idct_permutation[i];
             v = ff_mpeg1_default_non_intra_matrix[i];
-            s->inter_matrix[i] = v;
-            s->chroma_inter_matrix[i] = v;
+            s->inter_matrix[j] = v;
+            s->chroma_inter_matrix[j] = v;
         }
     }
 

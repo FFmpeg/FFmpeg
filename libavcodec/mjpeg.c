@@ -322,14 +322,14 @@ static void jpeg_table_header(MpegEncContext *s)
     put_bits(p, 4, 0); /* 8 bit precision */
     put_bits(p, 4, 0); /* table 0 */
     for(i=0;i<64;i++) {
-        j = zigzag_direct[i];
+        j = s->intra_scantable.permutated[i];
         put_bits(p, 8, s->intra_matrix[j]);
     }
 #ifdef TWOMATRIXES
     put_bits(p, 4, 0); /* 8 bit precision */
     put_bits(p, 4, 1); /* table 1 */
     for(i=0;i<64;i++) {
-        j = zigzag_direct[i];
+        j = s->intra_scantable.permutated[i];
         put_bits(p, 8, s->chroma_intra_matrix[j]);
     }
 #endif
@@ -535,7 +535,7 @@ static void encode_block(MpegEncContext *s, DCTELEM *block, int n)
     run = 0;
     last_index = s->block_last_index[n];
     for(i=1;i<=last_index;i++) {
-        j = zigzag_direct[i];
+        j = s->intra_scantable.permutated[i];
         val = block[j];
         if (val == 0) {
             run++;
@@ -620,6 +620,8 @@ typedef struct MJpegDecodeContext {
     int restart_interval;
     int restart_count;
     int interleaved_rows;
+    ScanTable scantable;
+    void (*idct_put)(UINT8 *dest/*align 8*/, int line_size, DCTELEM *block/*align 16*/);
 } MJpegDecodeContext;
 
 #define SKIP_REMAINING(gb, len) { \
@@ -645,8 +647,22 @@ static void build_vlc(VLC *vlc, const UINT8 *bits_table, const UINT8 *val_table,
 static int mjpeg_decode_init(AVCodecContext *avctx)
 {
     MJpegDecodeContext *s = avctx->priv_data;
+    MpegEncContext s2;
 
     s->avctx = avctx;
+
+    /* ugly way to get the idct & scantable */
+    memset(&s2, 0, sizeof(MpegEncContext));
+    s2.flags= avctx->flags;
+    s2.avctx= avctx;
+//    s2->out_format = FMT_MJPEG;
+    s2.width = 8;
+    s2.height = 8;
+    if (MPV_common_init(&s2) < 0)
+       return -1;
+    s->scantable= s2.intra_scantable;
+    s->idct_put= s2.idct_put;
+    MPV_common_end(&s2);
 
     s->header_state = 0;
     s->mpeg_enc_ctx_allocated = 0;
@@ -657,7 +673,7 @@ static int mjpeg_decode_init(AVCodecContext *avctx)
     s->first_picture = 1;
     s->org_width = avctx->width;
     s->org_height = avctx->height;
-
+    
     build_vlc(&s->vlcs[0][0], bits_dc_luminance, val_dc_luminance, 12);
     build_vlc(&s->vlcs[0][1], bits_dc_chrominance, val_dc_chrominance, 12);
     build_vlc(&s->vlcs[1][0], bits_ac_luminance, val_ac_luminance, 251);
@@ -694,7 +710,7 @@ static int mjpeg_decode_dqt(MJpegDecodeContext *s,
         dprintf("index=%d\n", index);
         /* read quant table */
         for(i=0;i<64;i++) {
-            j = zigzag_direct[i];
+            j = s->scantable.permutated[i];
 	    s->quant_matrixes[index][j] = get_bits(&s->gb, 8);
         }
         len -= 65;
@@ -897,7 +913,7 @@ static int decode_block(MJpegDecodeContext *s, DCTELEM *block,
                 dprintf("error count: %d\n", i);
                 return -1;
             }
-            j = zigzag_direct[i];
+            j = s->scantable.permutated[i];
             block[j] = level * quant_matrix[j];
             i++;
             if (i >= 64)
@@ -1021,7 +1037,7 @@ static int mjpeg_decode_sos(MJpegDecodeContext *s,
                         (h * mb_x + x) * 8;
                     if (s->interlaced && s->bottom_field)
                         ptr += s->linesize[c] >> 1;
-                    ff_idct_put(ptr, s->linesize[c], s->block);
+                    s->idct_put(ptr, s->linesize[c], s->block);
                     if (++x == h) {
                         x = 0;
                         y++;

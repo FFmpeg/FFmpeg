@@ -117,6 +117,7 @@ static int do_deinterlace = 0;
 static int workaround_bugs = 0;
 static int error_resilience = 0;
 static int dct_algo = 0;
+static int idct_algo = 0;
 static int use_part = 0;
 static int packet_size = 0;
 
@@ -1392,6 +1393,12 @@ void opt_dct_algo(const char *arg)
     dct_algo = atoi(arg);
 }
 
+void opt_idct_algo(const char *arg)
+{
+    idct_algo = atoi(arg);
+}
+
+
 void opt_error_resilience(const char *arg)
 {
     error_resilience = atoi(arg);
@@ -1750,6 +1757,7 @@ void opt_input_file(const char *filename)
             rfps = ic->streams[i]->r_frame_rate;
             enc->workaround_bugs = workaround_bugs;
             enc->error_resilience = error_resilience; 
+            enc->idct_algo= idct_algo;
             if (enc->frame_rate != rfps) {
                 fprintf(stderr,"\nSeems that stream %d comes from film source: %2.2f->%2.2f\n",
                     i, (float)enc->frame_rate / FRAME_RATE_BASE,
@@ -1922,6 +1930,7 @@ void opt_output_file(const char *filename)
             video_enc->i_quant_offset = video_i_qoffset;
             video_enc->b_quant_offset = video_b_qoffset;
             video_enc->dct_algo = dct_algo;
+            video_enc->idct_algo = idct_algo;
             if(packet_size){
                 video_enc->rtp_mode= 1;
                 video_enc->rtp_payload_size= packet_size;
@@ -2287,6 +2296,7 @@ const OptionDef options[] = {
     { "me", HAS_ARG | OPT_EXPERT, {(void*)opt_motion_estimation}, "set motion estimation method", 
       "method" },
     { "dct_algo", HAS_ARG | OPT_EXPERT, {(void*)opt_dct_algo}, "set dct algo",  "algo" },
+    { "idct_algo", HAS_ARG | OPT_EXPERT, {(void*)opt_idct_algo}, "set idct algo",  "algo" },
     { "er", HAS_ARG | OPT_EXPERT, {(void*)opt_error_resilience}, "set error resilience",  "" },
     { "bf", HAS_ARG | OPT_EXPERT, {(void*)opt_b_frames}, "use 'frames' B frames (only MPEG-4)", "frames" },
     { "hq", OPT_BOOL | OPT_EXPERT, {(void*)&use_hq}, "activate high quality settings" },

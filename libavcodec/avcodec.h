@@ -5,8 +5,8 @@
 
 #define LIBAVCODEC_VERSION_INT 0x000406
 #define LIBAVCODEC_VERSION     "0.4.6"
-#define LIBAVCODEC_BUILD       4628
-#define LIBAVCODEC_BUILD_STR   "4628"
+#define LIBAVCODEC_BUILD       4629
+#define LIBAVCODEC_BUILD_STR   "4629"
 
 enum CodecID {
     CODEC_ID_NONE, 
@@ -683,6 +683,21 @@ typedef struct AVCodecContext {
      * decoding: set by user, will be converted to upper case by lavc during init
      */
     int fourcc;
+
+    /**
+     * idct algorithm, see FF_IDCT_* below
+     * encoding: set by user
+     * decoding: set by user
+     */
+    int idct_algo;
+#define FF_IDCT_AUTO         0
+#define FF_IDCT_INT          1
+#define FF_IDCT_SIMPLE       2
+#define FF_IDCT_SIMPLEMMX    3
+#define FF_IDCT_LIBMPEG2MMX  4
+#define FF_IDCT_PS2          5
+#define FF_IDCT_MLIB         6
+#define FF_IDCT_ARM          7
 
     //FIXME this should be reordered after kabis API is finished ...
     //TODO kill kabi

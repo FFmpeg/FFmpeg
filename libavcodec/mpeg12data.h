@@ -2,7 +2,7 @@
  * MPEG1/2 tables
  */
 
-INT16 ff_mpeg1_default_intra_matrix[64] = {
+const INT16 ff_mpeg1_default_intra_matrix[64] = {
 	8, 16, 19, 22, 26, 27, 29, 34,
 	16, 16, 22, 24, 27, 29, 34, 37,
 	19, 22, 26, 27, 29, 34, 34, 38,
@@ -13,7 +13,7 @@ INT16 ff_mpeg1_default_intra_matrix[64] = {
 	27, 29, 35, 38, 46, 56, 69, 83
 };
 
-INT16 ff_mpeg1_default_non_intra_matrix[64] = {
+const INT16 ff_mpeg1_default_non_intra_matrix[64] = {
     16, 16, 16, 16, 16, 16, 16, 16,
     16, 16, 16, 16, 16, 16, 16, 16,
     16, 16, 16, 16, 16, 16, 16, 16,

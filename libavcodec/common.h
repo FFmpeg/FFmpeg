@@ -932,6 +932,22 @@ static inline int ff_get_fourcc(char *s){
     return (s[0]) + (s[1]<<8) + (s[2]<<16) + (s[3]<<24);
 }
 
+
+#ifdef ARCH_X86
+#define MASK_ABS(mask, level)\
+            asm volatile(\
+		"cdq			\n\t"\
+		"xorl %1, %0		\n\t"\
+		"subl %1, %0		\n\t"\
+		: "+a" (level), "=&d" (mask)\
+	    );
+#else
+#define MASK_ABS(mask, level)\
+            mask= level>>31;\
+            level= (level^mask)-mask;
+#endif
+
+
 #if __CPU__ >= 686 && !defined(RUNTIME_CPUDETECT)
 #define COPY3_IF_LT(x,y,a,b,c,d)\
 asm volatile (\
