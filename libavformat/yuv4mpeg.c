@@ -126,7 +126,7 @@ static int yuv4_write_packet(AVFormatContext *s, int stream_index,
     picture = (AVPicture *)buf;
 
     /* construct frame header */
-    m = snprintf(buf1, sizeof(buf1), "%s \n", Y4M_FRAME_MAGIC);
+    m = snprintf(buf1, sizeof(buf1), "%s\n", Y4M_FRAME_MAGIC);
     put_buffer(pb, buf1, strlen(buf1));
 
     width = st->codec.width;
