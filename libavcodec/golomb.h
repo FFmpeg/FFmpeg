@@ -179,7 +179,7 @@ static inline int svq3_get_se_golomb(GetBitContext *gb){
 }
 
 /**
- * read unsigned golomb rice code.
+ * read unsigned golomb rice code (ffv1).
  */
 static inline int get_ur_golomb(GetBitContext *gb, int k, int limit, int esc_len){
     unsigned int buf;
@@ -190,7 +190,7 @@ static inline int get_ur_golomb(GetBitContext *gb, int k, int limit, int esc_len
     buf=GET_CACHE(re, gb);
 
     log= av_log2(buf);
-//printf("buf:%X log:%d\n", buf, log);
+
     if(log > 31-limit){
         buf >>= log - k;
         buf += (30-log)<<k;
@@ -198,15 +198,62 @@ static inline int get_ur_golomb(GetBitContext *gb, int k, int limit, int esc_len
         CLOSE_READER(re, gb);
     
         return buf;
-    }else if(log == 31-limit){
-        buf >>= log - esc_len;
-        buf -= 1<<esc_len;
-        LAST_SKIP_BITS(re, gb, esc_len + limit + 1);
+    }else{
+        buf >>= 32 - limit - esc_len;
+        LAST_SKIP_BITS(re, gb, esc_len + limit);
         CLOSE_READER(re, gb);
     
-        return buf + 1;
-    }else
-        return -1;
+        return buf + limit - 1;
+    }
+}
+
+/**
+ * read unsigned golomb rice code (jpegls).
+ */
+static inline int get_ur_golomb_jpegls(GetBitContext *gb, int k, int limit, int esc_len){
+    unsigned int buf;
+    int log;
+    
+    OPEN_READER(re, gb);
+    UPDATE_CACHE(re, gb);
+    buf=GET_CACHE(re, gb);
+
+    log= av_log2(buf);
+    
+    if(log > 31-12){
+        buf >>= log - k;
+        buf += (30-log)<<k;
+        LAST_SKIP_BITS(re, gb, 32 + k - log);
+        CLOSE_READER(re, gb);
+    
+        return buf;
+    }else{
+        int i;
+        for(i=0; SHOW_UBITS(re, gb, 1) == 0; i++){
+            LAST_SKIP_BITS(re, gb, 1);
+            UPDATE_CACHE(re, gb);
+        }
+        SKIP_BITS(re, gb, 1);
+
+        if(i < limit - 1){
+            if(k){
+                buf = SHOW_UBITS(re, gb, k);
+                LAST_SKIP_BITS(re, gb, k);
+            }else{
+                buf=0;
+            }
+
+            CLOSE_READER(re, gb);
+            return buf + (i<<k);
+        }else if(i == limit - 1){
+            buf = SHOW_UBITS(re, gb, esc_len);
+            LAST_SKIP_BITS(re, gb, esc_len);
+            CLOSE_READER(re, gb);
+    
+            return buf + 1;
+        }else
+            return -1;
+    }
 }
 
 #ifdef TRACE
@@ -312,7 +359,7 @@ static inline void set_se_golomb(PutBitContext *pb, int i){
 }
 
 /**
- * write unsigned golomb rice code.
+ * write unsigned golomb rice code (ffv1).
  */
 static inline void set_ur_golomb(PutBitContext *pb, int i, int k, int limit, int esc_len){
     int e;
@@ -323,9 +370,24 @@ static inline void set_ur_golomb(PutBitContext *pb, int i, int k, int limit, int
     if(e<limit){
         put_bits(pb, e + k + 1, (1<<k) + (i&((1<<k)-1)));
     }else{
-//    printf("set %08X, %d\n", (1<<esc_len) + i - 1, limit + esc_len + 1); 
-        put_bits(pb, limit + esc_len + 1, (1<<esc_len) + i - 1);
-//        put_bits(pb, 1, limit + 1);
-//        put_bits(pb, i - 1, esc_len);
+        put_bits(pb, limit + esc_len, i - limit + 1);
+    }
+}
+
+/**
+ * write unsigned golomb rice code (jpegls).
+ */
+static inline void set_ur_golomb_jpegls(PutBitContext *pb, int i, int k, int limit, int esc_len){
+    int e;
+    
+    assert(i>=0);
+    
+    e= (i>>k) + 1;
+    if(e<limit){
+        put_bits(pb, e, 1);
+        put_bits(pb, k, i&((1<<k)-1));
+    }else{
+        put_bits(pb, limit  , 1);
+        put_bits(pb, esc_len, i - 1);
     }
 }
