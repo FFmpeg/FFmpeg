@@ -3786,41 +3786,51 @@ decode_intra_mb:
     return 0;
 }
 
-static int decode_cabac_mb_type( H264Context *h ) {
-    MpegEncContext * const s = &h->s;
-
-    if( h->slice_type == I_TYPE ) {
+static int decode_cabac_intra_mb_type(H264Context *h, int ctx_base, int intra_slice) {
+    uint8_t *state= &h->cabac_state[ctx_base];
+    int mb_type;
+    
+    if(intra_slice){
+        MpegEncContext * const s = &h->s;
         const int mb_xy= s->mb_x + s->mb_y*s->mb_stride;
-        int ctx = 0;
-        int mb_type;
-
+        int ctx=0;
         if( s->mb_x > 0 && !IS_INTRA4x4( s->current_picture.mb_type[mb_xy-1] ) )
             ctx++;
         if( s->mb_y > 0 && !IS_INTRA4x4( s->current_picture.mb_type[mb_xy-s->mb_stride] ) )
             ctx++;
-
-        if( get_cabac( &h->cabac, &h->cabac_state[3+ctx] ) == 0 )
+        if( get_cabac( &h->cabac, &state[ctx] ) == 0 )
             return 0;   /* I4x4 */
+        state += 2;
+    }else{
+        if( get_cabac( &h->cabac, &state[0] ) == 0 )
+            return 0;   /* I4x4 */
+    }
 
-        if( get_cabac_terminate( &h->cabac ) )
-            return 25;  /* PCM */
+    if( get_cabac_terminate( &h->cabac ) )
+        return 25;  /* PCM */
 
-        mb_type = 1;    /* I16x16 */
-        if( get_cabac( &h->cabac, &h->cabac_state[3+3] ) )
-            mb_type += 12;  /* cbp_luma != 0 */
+    mb_type = 1; /* I16x16 */
+    if( get_cabac( &h->cabac, &state[1] ) )
+        mb_type += 12;  /* cbp_luma != 0 */
 
-        if( get_cabac( &h->cabac, &h->cabac_state[3+4] ) ) {
-            if( get_cabac( &h->cabac, &h->cabac_state[3+5] ) )
-                mb_type += 4 * 2;   /* cbp_chroma == 2 */
-            else
-                mb_type += 4 * 1;   /* cbp_chroma == 1 */
-        }
-        if( get_cabac( &h->cabac, &h->cabac_state[3+6] ) )
-            mb_type += 2;
-        if( get_cabac( &h->cabac, &h->cabac_state[3+7] ) )
-            mb_type += 1;
-        return mb_type;
+    if( get_cabac( &h->cabac, &state[2] ) ) {
+        if( get_cabac( &h->cabac, &state[2+intra_slice] ) )
+            mb_type += 4 * 2;   /* cbp_chroma == 2 */
+        else
+            mb_type += 4 * 1;   /* cbp_chroma == 1 */
+    }
+    if( get_cabac( &h->cabac, &state[3+intra_slice] ) )
+        mb_type += 2;
+    if( get_cabac( &h->cabac, &state[3+2*intra_slice] ) )
+        mb_type += 1;
+    return mb_type;
+}
 
+static int decode_cabac_mb_type( H264Context *h ) {
+    MpegEncContext * const s = &h->s;
+
+    if( h->slice_type == I_TYPE ) {
+        return decode_cabac_intra_mb_type(h, 3, 1);
     } else if( h->slice_type == P_TYPE ) {
         if( get_cabac( &h->cabac, &h->cabac_state[14] ) == 0 ) {
             /* P-type */
@@ -3836,28 +3846,7 @@ static int decode_cabac_mb_type( H264Context *h ) {
                     return 1; /* P_L0_D16x8; */
             }
         } else {
-            int mb_type;
-            /* I-type */
-            if( get_cabac( &h->cabac, &h->cabac_state[17] ) == 0 )
-                return 5+0; /* I_4x4 */
-            if( get_cabac_terminate( &h->cabac ) )
-                return 5+25; /*I_PCM */
-            mb_type = 5+1;    /* I16x16 */
-            if( get_cabac( &h->cabac, &h->cabac_state[17+1] ) )
-                mb_type += 12;  /* cbp_luma != 0 */
-
-            if( get_cabac( &h->cabac, &h->cabac_state[17+2] ) ) {
-                if( get_cabac( &h->cabac, &h->cabac_state[17+2] ) )
-                    mb_type += 4 * 2;   /* cbp_chroma == 2 */
-                else
-                    mb_type += 4 * 1;   /* cbp_chroma == 1 */
-            }
-            if( get_cabac( &h->cabac, &h->cabac_state[17+3] ) )
-                mb_type += 2;
-            if( get_cabac( &h->cabac, &h->cabac_state[17+3] ) )
-                mb_type += 1;
-
-            return mb_type;
+            return decode_cabac_intra_mb_type(h, 17, 0) + 5;
         }
     } else if( h->slice_type == B_TYPE ) {
         const int mb_xy= s->mb_x + s->mb_y*s->mb_stride;
@@ -3885,28 +3874,7 @@ static int decode_cabac_mb_type( H264Context *h ) {
         if( bits < 8 )
             return bits + 3; /* B_Bi_16x16 through B_L1_L0_16x8 */
         else if( bits == 13 ) {
-            int mb_type;
-            /* I-type */
-            if( get_cabac( &h->cabac, &h->cabac_state[32] ) == 0 )
-                return 23+0; /* I_4x4 */
-            if( get_cabac_terminate( &h->cabac ) )
-                return 23+25; /* I_PCM */
-            mb_type = 23+1;   /* I_16x16 */
-            if( get_cabac( &h->cabac, &h->cabac_state[32+1] ) )
-                mb_type += 12;  /* cbp_luma != 0 */
-
-            if( get_cabac( &h->cabac, &h->cabac_state[32+2] ) ) {
-                if( get_cabac( &h->cabac, &h->cabac_state[32+2] ) )
-                    mb_type += 4 * 2;   /* cbp_chroma == 2 */
-                else
-                    mb_type += 4 * 1;   /* cbp_chroma == 1 */
-            }
-            if( get_cabac( &h->cabac, &h->cabac_state[32+3] ) )
-                mb_type += 2;
-            if( get_cabac( &h->cabac, &h->cabac_state[32+3] ) )
-                mb_type += 1;
-
-            return mb_type;
+            return decode_cabac_intra_mb_type(h, 32, 0) + 23;
         } else if( bits == 14 )
             return 11; /* B_L1_L0_8x16 */
         else if( bits == 15 )
@@ -5453,14 +5421,15 @@ static inline int decode_seq_parameter_set(H264Context *h){
     get_bits1(&s->gb);   //constraint_set0_flag
     get_bits1(&s->gb);   //constraint_set1_flag
     get_bits1(&s->gb);   //constraint_set2_flag
-    get_bits(&s->gb, 5); // reserved
+    get_bits1(&s->gb);   //constraint_set3_flag
+    get_bits(&s->gb, 4); // reserved
     level_idc= get_bits(&s->gb, 8);
     sps_id= get_ue_golomb(&s->gb);
     
     sps= &h->sps_buffer[ sps_id ];
     sps->profile_idc= profile_idc;
     sps->level_idc= level_idc;
-    
+
     sps->log2_max_frame_num= get_ue_golomb(&s->gb) + 4;
     sps->poc_type= get_ue_golomb(&s->gb);
     
