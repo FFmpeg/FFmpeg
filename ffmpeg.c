@@ -1445,6 +1445,7 @@ static int av_encode(AVFormatContext **output_files,
                         ist->st->codec.codec_type == ost->st->codec.codec_type) {
                         ost->source_index = j;
                         found = 1;
+                        break;
                     }
                 }
                 
