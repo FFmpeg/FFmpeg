@@ -405,7 +405,7 @@ static int decode_init(AVCodecContext * avctx)
             f = pow((double)(i/4), 4.0 / 3.0) * pow(2, (i&3)*0.25);
             fm = frexp(f, &e);
             m = FIXHR(fm*0.5);
-            e+= FRAC_BITS - 31;
+            e+= FRAC_BITS - 31 + 5;
 
             /* normalized to FRAC_BITS */
             table_4_3_value[i] = m;
@@ -951,12 +951,13 @@ static const int icos36[9] = {
 static void imdct12(int *out, int *in)
 {
     int in0, in1, in2, in3, in4, in5, t1, t2;
-    in0= in[0*3]<<5;
-    in1= (in[1*3] + in[0*3])<<5;
-    in2= (in[2*3] + in[1*3])<<5;
-    in3= (in[3*3] + in[2*3])<<5;
-    in4= (in[4*3] + in[3*3])<<5;
-    in5= (in[5*3] + in[4*3])<<5;
+
+    in0= in[0*3];
+    in1= in[1*3] + in[0*3];
+    in2= in[2*3] + in[1*3];
+    in3= in[3*3] + in[2*3];
+    in4= in[4*3] + in[3*3];
+    in5= in[5*3] + in[4*3];
     in5 += in3;
     in3 += in1;
 
@@ -1082,15 +1083,15 @@ static void imdct36(int *out, int *buf, int *in, int *win)
         s1 = MULL(t3 + t2, icos36[j]);
         s3 = MULL(t3 - t2, icos36[8 - j]);
         
-        t0 = (s0 + s1) << 5;
-        t1 = (s0 - s1) << 5;
+        t0 = s0 + s1;
+        t1 = s0 - s1;
         out[(9 + j)*SBLIMIT] =  MULH(t1, win[9 + j]) + buf[9 + j];
         out[(8 - j)*SBLIMIT] =  MULH(t1, win[8 - j]) + buf[8 - j];
         buf[9 + j] = MULH(t0, win[18 + 9 + j]);
         buf[8 - j] = MULH(t0, win[18 + 8 - j]);
         
-        t0 = (s2 + s3) << 5;
-        t1 = (s2 - s3) << 5;
+        t0 = s2 + s3;
+        t1 = s2 - s3;
         out[(9 + 8 - j)*SBLIMIT] =  MULH(t1, win[9 + 8 - j]) + buf[9 + 8 - j];
         out[(        j)*SBLIMIT] =  MULH(t1, win[        j]) + buf[        j];
         buf[9 + 8 - j] = MULH(t0, win[18 + 9 + 8 - j]);
@@ -1100,8 +1101,8 @@ static void imdct36(int *out, int *buf, int *in, int *win)
 
     s0 = tmp[16];
     s1 = MULL(tmp[17], icos36[4]);
-    t0 = (s0 + s1) << 5;
-    t1 = (s0 - s1) << 5;
+    t0 = s0 + s1;
+    t1 = s0 - s1;
     out[(9 + 4)*SBLIMIT] =  MULH(t1, win[9 + 4]) + buf[9 + 4];
     out[(8 - 4)*SBLIMIT] =  MULH(t1, win[8 - 4]) + buf[8 - 4];
     buf[9 + 4] = MULH(t0, win[18 + 9 + 4]);
@@ -1920,11 +1921,11 @@ static void compute_antialias_integer(MPADecodeContext *s,
         int tmp0, tmp1, tmp2;
         csa = &csa_table[0][0];
 #define INT_AA(j) \
-            tmp0 = 4*(ptr[-1-j]);\
-            tmp1 = 4*(ptr[   j]);\
+            tmp0 = ptr[-1-j];\
+            tmp1 = ptr[   j];\
             tmp2= MULH(tmp0 + tmp1, csa[0+4*j]);\
-            ptr[-1-j] = tmp2 - MULH(tmp1, csa[2+4*j]);\
-            ptr[   j] = tmp2 + MULH(tmp0, csa[3+4*j]);
+            ptr[-1-j] = 4*(tmp2 - MULH(tmp1, csa[2+4*j]));\
+            ptr[   j] = 4*(tmp2 + MULH(tmp0, csa[3+4*j]));
 
         INT_AA(0)
         INT_AA(1)
