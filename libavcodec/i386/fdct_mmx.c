@@ -131,7 +131,7 @@ static const int16_t tab_frw_01234567[] ATTR_ALIGN(8) = {  // forward_dct coeff 
 };
 
 
-static inline void fdct_col(const int16_t *in, int16_t *out, int offset)
+static always_inline void fdct_col(const int16_t *in, int16_t *out, int offset)
 {
     movq_m2r(*(in + offset + 1 * 8), mm0);
     movq_m2r(*(in + offset + 6 * 8), mm1);
@@ -210,15 +210,15 @@ static inline void fdct_col(const int16_t *in, int16_t *out, int offset)
     movq_r2m(mm3, *(out + offset + 7 * 8));
 }
 
-static inline void fdct_row(const int16_t *in, int16_t *out, const int16_t *table)
-{
+static always_inline void fdct_row(const int16_t *in, int16_t *out, const int16_t *table)
+{ 
     movd_m2r(*(in + 6), mm5);
     punpcklwd_m2r(*(in + 4), mm5);
     movq_r2r(mm5, mm2);
     psrlq_i2r(0x20, mm5);
     movq_m2r(*(in + 0), mm0);
     punpcklwd_r2r(mm2, mm5);
-    movq_r2r(mm0, mm1);
+    movq_r2r(mm0, mm1);	
     paddsw_r2r(mm5, mm0);
     psubsw_r2r(mm5, mm1);
     movq_r2r(mm0, mm2);
