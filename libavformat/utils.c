@@ -2224,6 +2224,14 @@ void dump_format(AVFormatContext *ic,
         } else {
             av_log(NULL, AV_LOG_DEBUG, "N/A");
         }
+        if (ic->start_time != AV_NOPTS_VALUE) {
+            int secs, us;
+            av_log(NULL, AV_LOG_DEBUG, ", start: ");
+            secs = ic->start_time / AV_TIME_BASE;
+            us = ic->start_time % AV_TIME_BASE;
+            av_log(NULL, AV_LOG_DEBUG, "%d.%06d",
+                   secs, (int)av_rescale(us, 1000000, AV_TIME_BASE));
+        }
         av_log(NULL, AV_LOG_DEBUG, ", bitrate: ");
         if (ic->bit_rate) {
             av_log(NULL, AV_LOG_DEBUG,"%d kb/s", ic->bit_rate / 1000);
