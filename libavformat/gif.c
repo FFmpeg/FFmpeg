@@ -367,9 +367,11 @@ static AVOutputFormat gif_oformat = {
     gif_write_packet,
     gif_write_trailer,
 };
+extern AVInputFormat gif_iformat;
 
 int gif_init(void)
 {
     av_register_output_format(&gif_oformat);
+    av_register_input_format(&gif_iformat);
     return 0;
 }
