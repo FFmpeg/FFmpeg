@@ -16,6 +16,8 @@
 #define CAN_COMPILE_X86_ASM
 #endif
 
+#define FAST_BGR2YV12 // use 7 bit coeffs instead of 15bit
+
 #ifdef CAN_COMPILE_X86_ASM
 static const uint64_t mask32b  __attribute__((aligned(8))) = 0x000000FF000000FFULL;
 static const uint64_t mask32g  __attribute__((aligned(8))) = 0x0000FF000000FF00ULL;
@@ -35,6 +37,20 @@ static const uint64_t blue_16mask __attribute__((aligned(8))) = 0x0000001f000000
 static const uint64_t red_15mask  __attribute__((aligned(8))) = 0x00007c000000f800ULL;
 static const uint64_t green_15mask __attribute__((aligned(8)))= 0x000003e0000007e0ULL;
 static const uint64_t blue_15mask __attribute__((aligned(8))) = 0x0000001f0000001fULL;
+
+#ifdef FAST_BGR2YV12
+static const uint64_t bgr2YCoeff  __attribute__((aligned(8))) = 0x000000210041000DULL;
+static const uint64_t bgr2UCoeff  __attribute__((aligned(8))) = 0x0000FFEEFFDC0038ULL;
+static const uint64_t bgr2VCoeff  __attribute__((aligned(8))) = 0x00000038FFD2FFF8ULL;
+#else
+static const uint64_t bgr2YCoeff  __attribute__((aligned(8))) = 0x000020E540830C8BULL;
+static const uint64_t bgr2UCoeff  __attribute__((aligned(8))) = 0x0000ED0FDAC23831ULL;
+static const uint64_t bgr2VCoeff  __attribute__((aligned(8))) = 0x00003831D0E6F6EAULL;
+#endif
+static const uint64_t bgr2YOffset __attribute__((aligned(8))) = 0x1010101010101010ULL;
+static const uint64_t bgr2UVOffset __attribute__((aligned(8)))= 0x8080808080808080ULL;
+static const uint64_t w1111       __attribute__((aligned(8))) = 0x0001000100010001ULL;
+
 #if 0
 static volatile uint64_t __attribute__((aligned(8))) b5Dither;
 static volatile uint64_t __attribute__((aligned(8))) g5Dither;
