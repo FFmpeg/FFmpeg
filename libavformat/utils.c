@@ -334,7 +334,7 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
     /* do not open file if the format does not need it. XXX: specific
        hack needed to handle RTSP/TCP */
     must_open_file = 1;
-    if ((fmt->flags & AVFMT_NOFILE) ||
+    if ((fmt && (fmt->flags & AVFMT_NOFILE)) ||
         (fmt == &rtp_demux && !strcmp(filename, "null"))) {
         must_open_file = 0;
     }
