@@ -4,7 +4,7 @@
 #define FFMPEG_VERSION_INT 0x000405
 #define FFMPEG_VERSION     "0.4.5"
 
-#ifdef WIN32
+#if defined(WIN32) && !defined(__MINGW32__)
 #define CONFIG_WIN32
 #endif
 
@@ -43,6 +43,7 @@ typedef INT16 int16_t;
 typedef UINT32 uint32_t;
 typedef INT32 int32_t;
 
+#ifndef __MINGW32__
 #define INT64_C(c)     (c ## i64)
 #define UINT64_C(c)    (c ## i64)
 
@@ -55,6 +56,11 @@ typedef INT32 int32_t;
 */
 #pragma warning( disable : 4244 )
 #pragma warning( disable : 4305 )
+
+#else
+#define INT64_C(c)     (c ## LL)
+#define UINT64_C(c)    (c ## ULL)
+#endif /* __MINGW32__ */
 
 #define M_PI    3.14159265358979323846
 #define M_SQRT2 1.41421356237309504880  /* sqrt(2) */
@@ -71,10 +77,13 @@ typedef INT32 int32_t;
 
 #define snprintf _snprintf
 
+#ifndef __MINGW32__
+/* no config.h with VC */
 #define CONFIG_ENCODERS 1
 #define CONFIG_DECODERS 1
 #define CONFIG_AC3      1
 #define CONFIG_MPGLIB   1
+#endif
 
 #else
 
@@ -112,14 +121,34 @@ typedef signed long long INT64;
 #include "fastmemcpy.h"
 #endif
 
+#endif /* HAVE_AV_CONFIG_H */
+
+#endif /* !CONFIG_WIN32 */
+
+/* debug stuff */
+#ifdef HAVE_AV_CONFIG_H
+
 #ifndef DEBUG
 #define NDEBUG
 #endif
 #include <assert.h>
 
-#endif /* HAVE_AV_CONFIG_H */
+/* dprintf macros */
+#if defined(CONFIG_WIN32) && !defined(__MINGW32__)
+
+inline void dprintf(const char* fmt,...) {}
+
+#else
+
+#ifdef DEBUG
+#define dprintf(fmt,args...) printf(fmt, ## args)
+#else
+#define dprintf(fmt,args...)
+#endif
 
 #endif /* !CONFIG_WIN32 */
+
+#endif /* HAVE_AV_CONFIG_H */
 
 /* bit output */
 

@@ -16,6 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
+//#define DEBUG
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mpegvideo.h"
@@ -418,22 +419,6 @@ void mjpeg_encode_mb(MpegEncContext *s,
 
 /******************************************/
 /* decoding */
-
-//#define DEBUG
-
-#ifndef CONFIG_WIN32
-
-#ifdef DEBUG
-#define dprintf(fmt,args...) printf(fmt, ## args)
-#else
-#define dprintf(fmt,args...)
-#endif
-
-#else
-
-inline void dprintf(const char* fmt,...) {}
-
-#endif
 
 /* compressed picture size */
 #define PICTURE_BUFFER_SIZE 100000
