@@ -32,6 +32,16 @@
 
 #define VLC_BITS 11
 
+#ifdef WORDS_BIGENDIAN
+#define B 3
+#define G 2
+#define R 1
+#else
+#define B 0
+#define G 1
+#define R 2
+#endif
+
 typedef enum Predictor{
     LEFT= 0,
     PLANE,
@@ -157,13 +167,13 @@ static inline void add_left_prediction_bgr32(uint8_t *dst, uint8_t *src, int w, 
     b= *blue;
 
     for(i=0; i<w; i++){
-        b+= src[4*i+0];
-        g+= src[4*i+1];
-        r+= src[4*i+2];
+        b+= src[4*i+B];
+        g+= src[4*i+G];
+        r+= src[4*i+R];
         
-        dst[4*i+0]= b;
-        dst[4*i+1]= g;
-        dst[4*i+2]= r;
+        dst[4*i+B]= b;
+        dst[4*i+G]= g;
+        dst[4*i+R]= r;
     }
 
     *red= r;
@@ -619,9 +629,9 @@ static void decode_bgr_bitstream(HYuvContext *s, int count){
             }
         }else{
             for(i=0; i<count; i++){
-                s->temp[0][4*i+1]= get_vlc2(&s->gb, s->vlc[1].table, VLC_BITS, 3); 
-                s->temp[0][4*i  ]= get_vlc2(&s->gb, s->vlc[0].table, VLC_BITS, 3) + s->temp[0][4*i+1];
-                s->temp[0][4*i+2]= get_vlc2(&s->gb, s->vlc[2].table, VLC_BITS, 3) + s->temp[0][4*i+1]; 
+                s->temp[0][4*i+G]= get_vlc2(&s->gb, s->vlc[1].table, VLC_BITS, 3); 
+                s->temp[0][4*i+B]= get_vlc2(&s->gb, s->vlc[0].table, VLC_BITS, 3) + s->temp[0][4*i+G];
+                s->temp[0][4*i+R]= get_vlc2(&s->gb, s->vlc[2].table, VLC_BITS, 3) + s->temp[0][4*i+G]; 
                                    get_vlc2(&s->gb, s->vlc[2].table, VLC_BITS, 3); //?!
             }
         }
@@ -634,9 +644,9 @@ static void decode_bgr_bitstream(HYuvContext *s, int count){
             }
         }else{
             for(i=0; i<count; i++){
-                s->temp[0][4*i  ]= get_vlc2(&s->gb, s->vlc[0].table, VLC_BITS, 3);
-                s->temp[0][4*i+1]= get_vlc2(&s->gb, s->vlc[1].table, VLC_BITS, 3); 
-                s->temp[0][4*i+2]= get_vlc2(&s->gb, s->vlc[2].table, VLC_BITS, 3); 
+                s->temp[0][4*i+B]= get_vlc2(&s->gb, s->vlc[0].table, VLC_BITS, 3);
+                s->temp[0][4*i+G]= get_vlc2(&s->gb, s->vlc[1].table, VLC_BITS, 3); 
+                s->temp[0][4*i+R]= get_vlc2(&s->gb, s->vlc[2].table, VLC_BITS, 3); 
                                    get_vlc2(&s->gb, s->vlc[2].table, VLC_BITS, 3); //?!
             }
         }
