@@ -188,11 +188,11 @@ static int decode_frame(AVCodecContext *avctx,
         decoded = loco_decode_plane(l, p->data[0], avctx->width, avctx->height,
                                     p->linesize[0], buf, buf_size, 1);
         buf += decoded; buf_size -= decoded;
-        decoded = loco_decode_plane(l, p->data[1], avctx->width / 2, avctx->height / 2,
-                                    p->linesize[1], buf, buf_size, 1);
-        buf += decoded; buf_size -= decoded;
         decoded = loco_decode_plane(l, p->data[2], avctx->width / 2, avctx->height / 2,
                                     p->linesize[2], buf, buf_size, 1);
+        buf += decoded; buf_size -= decoded;
+        decoded = loco_decode_plane(l, p->data[1], avctx->width / 2, avctx->height / 2,
+                                    p->linesize[1], buf, buf_size, 1);
         break;
     case LOCO_CRGB: case LOCO_RGB:
         decoded = loco_decode_plane(l, p->data[0], avctx->width, avctx->height,
