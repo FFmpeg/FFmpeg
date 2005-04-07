@@ -12,7 +12,9 @@ static int usage(int ret)
 {
     fprintf(stderr, "dump (up to maxpkts) AVPackets as they are demuxed by libavformat.\n");
     fprintf(stderr, "each packet is dumped in its own file named like `basename file.ext`_$PKTNUM_$STREAMINDEX_$STAMP_$SIZE_$FLAGS.bin\n");
-    fprintf(stderr, "pktdumper file [maxpkts]\n");
+    fprintf(stderr, "pktdumper [-nw] file [maxpkts]\n");
+    fprintf(stderr, "-n\twrite No file at all, only demux.\n");
+    fprintf(stderr, "-w\tWait at end of processing instead of quitting.\n");
     return ret;
 }
 
@@ -24,8 +26,18 @@ int main(int argc, char **argv)
     AVPacket pkt;
     int64_t pktnum = 0;
     int64_t maxpkts = 0;
+    int dontquit = 0;
+    int nowrite = 0;
     int err;
     
+    if ((argc > 1) && !strncmp(argv[1], "-", 1)) {
+        if (strchr(argv[1], 'w'))
+            dontquit = 1;
+        if (strchr(argv[1], 'n'))
+            nowrite = 1;
+        argv++;
+        argc--;
+    }
     if (argc < 2)
         return usage(1);
     if (argc > 2)
@@ -68,13 +80,18 @@ int main(int argc, char **argv)
         snprintf(pktfilename, PATH_MAX-1, fntemplate, pktnum, pkt.stream_index, pkt.pts, pkt.size, (pkt.flags & PKT_FLAG_KEY)?'K':'_');
         printf(PKTFILESUFF"\n", pktnum, pkt.stream_index, pkt.pts, pkt.size, (pkt.flags & PKT_FLAG_KEY)?'K':'_');
         //printf("open(\"%s\")\n", pktfilename);
-        fd = open(pktfilename, O_WRONLY|O_CREAT, 0644);
-        write(fd, pkt.data, pkt.size);
-        close(fd);
+        if (!nowrite) {
+            fd = open(pktfilename, O_WRONLY|O_CREAT, 0644);
+            write(fd, pkt.data, pkt.size);
+            close(fd);
+        }
         pktnum++;
         if (maxpkts && (pktnum >= maxpkts))
             break;
     }
+    
+    while (dontquit)
+        sleep(60);
     
     return 0;
 }
