@@ -195,14 +195,14 @@ static int decode_frame(AVCodecContext *avctx,
                                     p->linesize[1], buf, buf_size, 1);
         break;
     case LOCO_CRGB: case LOCO_RGB:
-        decoded = loco_decode_plane(l, p->data[0], avctx->width, avctx->height,
-                                    p->linesize[0], buf, buf_size, 3);
+        decoded = loco_decode_plane(l, p->data[0] + p->linesize[0]*(avctx->height-1), avctx->width, avctx->height,
+                                    -p->linesize[0], buf, buf_size, 3);
         buf += decoded; buf_size -= decoded;
-        decoded = loco_decode_plane(l, p->data[0] + 1, avctx->width, avctx->height,
-                                    p->linesize[0], buf, buf_size, 3);
+        decoded = loco_decode_plane(l, p->data[0] + p->linesize[0]*(avctx->height-1) + 1, avctx->width, avctx->height,
+                                    -p->linesize[0], buf, buf_size, 3);
         buf += decoded; buf_size -= decoded;
-        decoded = loco_decode_plane(l, p->data[0] + 2, avctx->width, avctx->height,
-                                    p->linesize[0], buf, buf_size, 3);
+        decoded = loco_decode_plane(l, p->data[0] + p->linesize[0]*(avctx->height-1) + 2, avctx->width, avctx->height,
+                                    -p->linesize[0], buf, buf_size, 3);
         break;
     case LOCO_RGBA:
         decoded = loco_decode_plane(l, p->data[0], avctx->width, avctx->height,
