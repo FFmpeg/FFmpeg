@@ -31,7 +31,8 @@
 #define MAX_DECOMPOSITIONS 8
 #define MAX_PLANES 4
 #define DWTELEM int
-#define QROOT 8 
+#define QSHIFT 3
+#define QROOT (1<<QSHIFT)
 #define LOSSLESS_QLOG -128
 #define FRAC_BITS 8
 
@@ -572,13 +573,7 @@ static void slice_buffer_destroy(slice_buffer * buf)
 #undef	qexp
 #endif
 #define QEXPSHIFT (7-FRAC_BITS+8) //FIXME try to change this to 0
-static const uint8_t qexp[8]={
-    128, 140, 152, 166, 181, 197, 215, 235
-//   64,  70,  76,  83,  91,  99, 108, 117
-//   32,  35,  38,  41,  45,  49,  54,  59
-//   16,  17,  19,  21,  23,  25,  27,  29
-//    8,   9,  10,  10,  11,  12,  13,  15
-};
+static uint8_t qexp[QROOT];
 
 static inline int mirror(int v, int m){
     if     (v<0) return -v;
@@ -1836,8 +1831,8 @@ static inline void unpack_coeffs(SnowContext *s, SubBand *b, SubBand * parent, i
 static inline void decode_subband_slice_buffered(SnowContext *s, SubBand *b, slice_buffer * sb, int start_y, int h, int save_state[1]){
     const int w= b->width;
     int x,y;
-    const int qlog= clip(s->qlog + b->qlog, 0, 128);
-    int qmul= qexp[qlog&7]<<(qlog>>3);
+    const int qlog= clip(s->qlog + b->qlog, 0, QROOT*16);
+    int qmul= qexp[qlog&(QROOT-1)]<<(qlog>>QSHIFT);
     int qadd= (s->qbias*qmul)>>QBIAS_SHIFT;
     int new_index = 0;
     
@@ -2843,12 +2838,10 @@ static void quantize(SnowContext *s, SubBand *b, DWTELEM *src, int stride, int b
     const int level= b->level;
     const int w= b->width;
     const int h= b->height;
-    const int qlog= clip(s->qlog + b->qlog, 0, 128);
-    const int qmul= qexp[qlog&7]<<(qlog>>3);
+    const int qlog= clip(s->qlog + b->qlog, 0, QROOT*16);
+    const int qmul= qexp[qlog&(QROOT-1)]<<(qlog>>QSHIFT);
     int x,y, thres1, thres2;
     START_TIMER
-
-    assert(QROOT==8);
 
     if(s->qlog == LOSSLESS_QLOG) return;
  
@@ -2905,15 +2898,13 @@ static void quantize(SnowContext *s, SubBand *b, DWTELEM *src, int stride, int b
 static void dequantize_buffered(SnowContext *s, slice_buffer * sb, SubBand *b, DWTELEM *src, int stride){
     const int w= b->width;
     const int h= b->height;
-    const int qlog= clip(s->qlog + b->qlog, 0, 128);
-    const int qmul= qexp[qlog&7]<<(qlog>>3);
+    const int qlog= clip(s->qlog + b->qlog, 0, QROOT*16);
+    const int qmul= qexp[qlog&(QROOT-1)]<<(qlog>>QSHIFT);
     const int qadd= (s->qbias*qmul)>>QBIAS_SHIFT;
     int x,y;
     START_TIMER
     
     if(s->qlog == LOSSLESS_QLOG) return;
-    
-    assert(QROOT==8);
     
     for(y=0; y<h; y++){
 //        DWTELEM * line = slice_buffer_get_line_from_address(sb, src + (y * stride));
@@ -2935,16 +2926,14 @@ static void dequantize_buffered(SnowContext *s, slice_buffer * sb, SubBand *b, D
 static void dequantize(SnowContext *s, SubBand *b, DWTELEM *src, int stride){
     const int w= b->width;
     const int h= b->height;
-    const int qlog= clip(s->qlog + b->qlog, 0, 128);
-    const int qmul= qexp[qlog&7]<<(qlog>>3);
+    const int qlog= clip(s->qlog + b->qlog, 0, QROOT*16);
+    const int qmul= qexp[qlog&(QROOT-1)]<<(qlog>>QSHIFT);
     const int qadd= (s->qbias*qmul)>>QBIAS_SHIFT;
     int x,y;
     START_TIMER
     
     if(s->qlog == LOSSLESS_QLOG) return;
     
-    assert(QROOT==8);
-
     for(y=0; y<h; y++){
         for(x=0; x<w; x++){
             int i= src[x + y*stride];
@@ -3129,6 +3118,16 @@ static int decode_header(SnowContext *s){
     return 0;
 }
 
+static void init_qexp(){
+    int i;
+    double v=128;
+
+    for(i=0; i<QROOT; i++){
+        qexp[i]= lrintf(v);
+        v *= pow(2, 1.0 / QROOT); 
+    }
+}
+
 static int common_init(AVCodecContext *avctx){
     SnowContext *s = avctx->priv_data;
     int width, height;
@@ -3175,7 +3174,10 @@ static int common_init(AVCodecContext *avctx){
     mcfh(8, 0)
     mcfh(0, 8)
     mcfh(8, 8)
-        
+
+    if(!qexp[0])
+        init_qexp();
+
     dec= s->spatial_decomposition_count= 5;
     s->spatial_decomposition_type= avctx->prediction_method; //FIXME add decorrelator type r transform_type
     
@@ -3367,7 +3369,7 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
     if(pict->quality){
         s->qlog= rint(QROOT*log(pict->quality / (float)FF_QP2LAMBDA)/log(2));
         //<64 >60
-        s->qlog += 61;
+        s->qlog += 61*QROOT/8;
     }else{
         s->qlog= LOSSLESS_QLOG;
     }
