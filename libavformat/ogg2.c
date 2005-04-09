@@ -80,7 +80,7 @@ ogg_save (AVFormatContext * s)
 {
     ogg_t *ogg = s->priv_data;
     ogg_state_t *ost =
-        av_malloc(sizeof (*ost) + ogg->nstreams * sizeof (*ogg->streams));
+        av_malloc(sizeof (*ost) + (ogg->nstreams-1) * sizeof (*ogg->streams));
     int i;
     ost->pos = url_ftell (&s->pb);;
     ost->curidx = ogg->curidx;
