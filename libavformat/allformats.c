@@ -81,9 +81,10 @@ void av_register_all(void)
     amr_init();
 #endif
     yuv4mpeg_init();
-    
-#ifdef CONFIG_LIBOGG
+
     ogg_init();
+#ifdef CONFIG_LIBOGG
+    libogg_init();
 #endif
 
     ffm_init();

@@ -16,7 +16,7 @@ echo "  --prefix=PREFIX          install in PREFIX [$prefix]"
 echo "  --libdir=DIR             install libs in DIR [PREFIX/lib]"
 echo "  --mandir=DIR             man documentation in DIR [PREFIX/man]"
 echo "  --enable-mp3lame         enable mp3 encoding via libmp3lame [default=no]"
-echo "  --enable-ogg             enable ogg support via libogg [default=no]"
+echo "  --enable-libogg          enable ogg support via libogg [default=no]"
 echo "  --enable-vorbis          enable vorbis support via libvorbis [default=no]"
 echo "  --enable-theora          enable theora support via libtheora [default=no]"
 echo "  --enable-faad            enable faad support via libfaad [default=no]"
@@ -154,7 +154,7 @@ dc1394="no"
 network="yes"
 zlib="yes"
 mp3lame="no"
-ogg="no"
+libogg="no"
 vorbis="no"
 theora="no"
 faad="no"
@@ -432,7 +432,7 @@ for opt do
   ;;
   --enable-mp3lame) mp3lame="yes"
   ;;
-  --enable-ogg) ogg="yes"
+  --enable-libogg) libogg="yes"
   ;;
   --enable-vorbis) vorbis="yes"
   ;;
@@ -492,16 +492,16 @@ for opt do
 done
 
 if test "$theora" = "yes" ; then
-    if test "$ogg" = "no" ; then
-        echo "Ogg must be enabled to enable Theora"     
+    if test "$libogg" = "no"; then
+        echo "libogg must be enabled to enable Theora"     
         fail="yes"
         theora="no"
     fi
 fi
 
 if test "$vorbis" = "yes" ; then
-    if test "$ogg" = "no" ; then
-        echo "Ogg must be enabled to enable Vorbis"
+    if test "$libogg" = "no"; then
+        echo "libogg must be enabled to enable Vorbis"
         fail="yes"
         vorbis="no"
     fi
@@ -1095,7 +1095,7 @@ fi
 echo "gprof enabled    $gprof"
 echo "zlib enabled     $zlib"
 echo "mp3lame enabled  $mp3lame"
-echo "ogg enabled      $ogg"
+echo "libogg enabled   $libogg"
 echo "vorbis enabled   $vorbis"
 echo "theora enabled   $theora"
 echo "faad enabled     $faad"
@@ -1395,7 +1395,7 @@ if test "$mp3lame" = "yes" ; then
   echo "CONFIG_MP3LAME=yes" >> config.mak
 fi
 
-if test "$ogg" = "yes" ; then
+if test "$libogg" = "yes" ; then
   echo "#define CONFIG_LIBOGG 1" >> $TMPH
   echo "CONFIG_LIBOGG=yes" >> config.mak
 fi

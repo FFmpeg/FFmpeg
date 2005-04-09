@@ -467,8 +467,11 @@ int mp3_init(void);
 /* yuv4mpeg.c */
 int yuv4mpeg_init(void);
 
-/* ogg.c */
+/* ogg2.c */
 int ogg_init(void);
+
+/* ogg.c */
+int libogg_init(void);
 
 /* dv.c */
 int ff_dv_init(void);

@@ -134,7 +134,7 @@ static AVOutputFormat ogg_oformat = {
 } ;
 #endif //CONFIG_ENCODERS
 
-
+#if 0
 static int next_packet(AVFormatContext *avfcontext, ogg_packet *op) {
     OggContext *context = avfcontext->priv_data ;
     ogg_page og ;
@@ -247,12 +247,12 @@ static AVInputFormat ogg_iformat = {
     ogg_read_close,
     .extensions = "ogg",
 } ;
+#endif
 
-
-int ogg_init(void) {
+int libogg_init(void) {
 #ifdef CONFIG_ENCODERS
     av_register_output_format(&ogg_oformat) ;
 #endif
-    av_register_input_format(&ogg_iformat);
+/*     av_register_input_format(&ogg_iformat); */
     return 0 ;
 }
