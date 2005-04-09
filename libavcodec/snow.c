@@ -31,7 +31,7 @@
 #define MAX_DECOMPOSITIONS 8
 #define MAX_PLANES 4
 #define DWTELEM int
-#define QSHIFT 3
+#define QSHIFT 5
 #define QROOT (1<<QSHIFT)
 #define LOSSLESS_QLOG -128
 #define FRAC_BITS 8
