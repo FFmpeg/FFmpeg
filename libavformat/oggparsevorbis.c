@@ -133,7 +133,7 @@ vorbis_header (AVFormatContext * s, int idx)
     ogg_stream_t *os = ogg->streams + idx;
     AVStream *st = s->streams[idx];
     int cds = st->codec.extradata_size + os->psize + 2;
-    u_char *cdp;
+    uint8_t *cdp;
 
     if (os->seq > 2)
         return 0;
@@ -146,7 +146,7 @@ vorbis_header (AVFormatContext * s, int idx)
     st->codec.extradata_size = cds;
 
     if (os->buf[os->pstart] == 1) {
-        u_char *p = os->buf + os->pstart + 11; //skip up to the audio channels
+        uint8_t *p = os->buf + os->pstart + 11; //skip up to the audio channels
         st->codec.channels = *p++;
         st->codec.sample_rate = le2me_32 (unaligned32 (p));
         p += 8; //skip maximum and and nominal bitrate
