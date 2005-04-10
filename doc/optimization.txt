@@ -1,7 +1,7 @@
 optimization Tips (for libavcodec):
 
 What to optimize:
-if u plan to do non-x86 architecture specific optimiztions (SIMD normally) then
+if you plan to do non-x86 architecture specific optimiztions (SIMD normally) then
 take a look in the i386/ directory, as most important functions are allready
 optimized for MMX
 
