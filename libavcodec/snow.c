@@ -756,6 +756,29 @@ static always_inline void lift5(DWTELEM *dst, DWTELEM *src, DWTELEM *ref, int ds
     }
 }
 
+static always_inline void liftS(DWTELEM *dst, DWTELEM *src, DWTELEM *ref, int dst_step, int src_step, int ref_step, int width, int mul, int add, int shift, int highpass, int inverse){
+    const int mirror_left= !highpass;
+    const int mirror_right= (width&1) ^ highpass;
+    const int w= (width>>1) - 1 + (highpass & width);
+    int i;
+
+    assert(shift == 4);
+#define LIFTS(src, ref, inv) ((inv) ? (src) - (((ref) - 4*(src))>>shift): (16*4*(src) + 4*(ref) + 8 + (5<<27))/(5*16) - (1<<23))
+    if(mirror_left){
+        dst[0] = LIFTS(src[0], mul*2*ref[0]+add, inverse);
+        dst += dst_step;
+        src += src_step;
+    }
+    
+    for(i=0; i<w; i++){
+        dst[i*dst_step] = LIFTS(src[i*src_step], mul*(ref[i*ref_step] + ref[(i+1)*ref_step])+add, inverse);
+    }
+    
+    if(mirror_right){
+        dst[w*dst_step] = LIFTS(src[w*src_step], mul*2*ref[w*ref_step]+add, inverse);
+    }
+}
+
 
 static void inplace_lift(DWTELEM *dst, int width, int *coeffs, int n, int shift, int start, int inverse){
     int x, i;
@@ -1070,24 +1093,25 @@ STOP_TIMER("vertical_decompose53i*")}
     }
 }
 
+#define liftS lift
 #define lift5 lift
 #if 1
 #define W_AM 3
 #define W_AO 0
 #define W_AS 1
 
+#undef liftS
 #define W_BM 1
 #define W_BO 8
 #define W_BS 4
 
-#undef lift5
-#define W_CM 9999
-#define W_CO 2
-#define W_CS 2
+#define W_CM 1
+#define W_CO 0
+#define W_CS 0
 
-#define W_DM 15
-#define W_DO 16
-#define W_DS 5
+#define W_DM 3
+#define W_DO 4
+#define W_DS 3
 #elif 0
 #define W_AM 55
 #define W_AO 16
@@ -1144,7 +1168,7 @@ static void horizontal_decompose97i(DWTELEM *b, int width){
     const int w2= (width+1)>>1;
 
     lift (temp+w2, b    +1, b      , 1, 2, 2, width, -W_AM, W_AO, W_AS, 1, 0);
-    lift (temp   , b      , temp+w2, 1, 2, 1, width, -W_BM, W_BO, W_BS, 0, 0);
+    liftS(temp   , b      , temp+w2, 1, 2, 1, width, -W_BM, W_BO, W_BS, 0, 0);
     lift5(b   +w2, temp+w2, temp   , 1, 1, 1, width,  W_CM, W_CO, W_CS, 1, 0);
     lift (b      , temp   , b   +w2, 1, 1, 1, width,  W_DM, W_DO, W_DS, 0, 0);
 }
@@ -1177,7 +1201,11 @@ static void vertical_decompose97iL0(DWTELEM *b0, DWTELEM *b1, DWTELEM *b2, int w
     int i;
     
     for(i=0; i<width; i++){
+#ifdef liftS
         b1[i] -= (W_BM*(b0[i] + b2[i])+W_BO)>>W_BS;
+#else
+        b1[i] = (16*4*b1[i] - 4*(b0[i] + b2[i]) + 8*5 + (5<<27)) / (5*16) - (1<<23);
+#endif
     }
 }
 
@@ -1373,7 +1401,7 @@ static void horizontal_compose97i(DWTELEM *b, int width){
 
     lift (temp   , b      , b   +w2, 1, 1, 1, width,  W_DM, W_DO, W_DS, 0, 1);
     lift5(temp+w2, b   +w2, temp   , 1, 1, 1, width,  W_CM, W_CO, W_CS, 1, 1);
-    lift (b      , temp   , temp+w2, 2, 1, 1, width, -W_BM, W_BO, W_BS, 0, 1);
+    liftS(b      , temp   , temp+w2, 2, 1, 1, width, -W_BM, W_BO, W_BS, 0, 1);
     lift (b+1    , temp+w2, b      , 2, 1, 2, width, -W_AM, W_AO, W_AS, 1, 1);
 }
 
@@ -1404,7 +1432,11 @@ static void vertical_compose97iL0(DWTELEM *b0, DWTELEM *b1, DWTELEM *b2, int wid
     int i;
     
     for(i=0; i<width; i++){
+#ifdef liftS
         b1[i] += (W_BM*(b0[i] + b2[i])+W_BO)>>W_BS;
+#else
+        b1[i] += (W_BM*(b0[i] + b2[i])+4*b1[i]+W_BO)>>W_BS;
+#endif
     }
 }
 
@@ -1430,7 +1462,11 @@ static void vertical_compose97i(DWTELEM *b0, DWTELEM *b1, DWTELEM *b2, DWTELEM *
         r+= r>>8;
         b3[i] -= (r+W_CO)>>W_CS;
 #endif
+#ifdef liftS
         b2[i] += (W_BM*(b1[i] + b3[i])+W_BO)>>W_BS;
+#else
+        b2[i] += (W_BM*(b1[i] + b3[i])+4*b2[i]+W_BO)>>W_BS;
+#endif
         b1[i] += (W_AM*(b0[i] + b2[i])+W_AO)>>W_AS;
     }
 }
