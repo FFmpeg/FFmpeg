@@ -149,7 +149,7 @@ ogg_reset (ogg_t * ogg)
 }
 
 static ogg_codec_t *
-ogg_find_codec (u_char * buf, int size)
+ogg_find_codec (uint8_t * buf, int size)
 {
     int i;
 
@@ -283,7 +283,7 @@ ogg_read_page (AVFormatContext * s, int *str)
     }
 
     if (os->bufsize - os->bufpos < size){
-        u_char *nb = av_malloc (os->bufsize *= 2);
+        uint8_t *nb = av_malloc (os->bufsize *= 2);
         memset (nb, 0, os->bufsize);
         memcpy (nb, os->buf, os->bufpos);
         av_free (os->buf);
@@ -358,7 +358,7 @@ ogg_packet (AVFormatContext * s, int *str)
         }
 
         if (!complete && os->segp == os->nsegs){
-            u_char *nb = av_malloc (os->bufsize);
+            uint8_t *nb = av_malloc (os->bufsize);
             int size = os->bufpos - os->pstart;
             memset (nb, 0, os->bufsize);
             memcpy (nb, os->buf + os->pstart, size);
