@@ -14,13 +14,13 @@ as many functions, like the c ones tend to be a bit unreadable currently becouse
 of optimizations it is difficult to understand them (and write arichtecture 
 specific versions, or optimize the c functions further) it is recommanded to look
 at older CVS versions of the interresting files (just use CVSWEB at 
-(http://cvs.sourceforge.net/cgi-bin/viewcvs.cgi/ffmpeg/ffmpeg/libavcodec/))
+http://www1.mplayerhq.hu/cgi-bin/cvsweb.cgi/ffmpeg/libavcodec/?cvsroot=FFmpeg)
 or perhaps look into the other architecture specific versions in i386/, ppc/, 
 alpha/, ...; even if u dont understand the instructions exactly it could help
 understanding the functions & how they can be optimized
 
 NOTE:!!! if u still dont understand some function then ask at our mailing list!!!
-(http://lists.sourceforge.net/lists/listinfo/ffmpeg-devel)
+(http://www1.mplayerhq.hu/mailman/listinfo/ffmpeg-devel)
 
 
 

@@ -1158,7 +1158,7 @@ verify that there are no big problems.
 Patches should be posted as base64 encoded attachments (or any other
 encoding which ensures that the patch wont be trashed during 
 transmission) to the ffmpeg-devel mailinglist, see 
-@url{http://lists.sourceforge.net/lists/listinfo/ffmpeg-devel}
+@url{http://www1.mplayerhq.hu/mailman/listinfo/ffmpeg-devel}
 
 It also helps quite a bit if you tell us what the patch does (for example
 'replaces lrint by lrintf') , and why (for example '*bsd isnt c99 compliant
