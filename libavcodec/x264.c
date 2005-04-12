@@ -45,9 +45,9 @@ X264_log(void *p, int level, const char *fmt, va_list args)
 
 
 static int
-encode_nals(u_char *buf, int size, x264_nal_t *nals, int nnal)
+encode_nals(uint8_t *buf, int size, x264_nal_t *nals, int nnal)
 {
-    u_char *p = buf;
+    uint8_t *p = buf;
     int i;
 
     for(i = 0; i < nnal; i++){
