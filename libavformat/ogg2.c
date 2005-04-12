@@ -554,7 +554,7 @@ ogg_read_seek (AVFormatContext * s, int stream_index, int64_t target_ts,
     ogg_save (s);
 
     while (min <= max){
-        uint64_t p = min + (max - min) * target_ts / (tmax - tmin);
+        uint64_t p = min + (max - min) * (target_ts - tmin) / (tmax - tmin);
         int i = -1;
 
         url_fseek (bc, p, SEEK_SET);
