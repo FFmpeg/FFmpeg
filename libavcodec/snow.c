@@ -2758,7 +2758,7 @@ static always_inline void predict_slice_buffered(SnowContext *s, slice_buffer * 
             return;
 
         if(add){
-            for(y=block_w*mb_y; y<block_w*(mb_y+1); y++)
+            for(y=block_w*mb_y; y<FFMIN(h,block_w*(mb_y+1)); y++)
             {
 //                DWTELEM * line = slice_buffer_get_line(sb, y);
                 DWTELEM * line = sb->line[y];
@@ -2772,7 +2772,7 @@ static always_inline void predict_slice_buffered(SnowContext *s, slice_buffer * 
                 }
             }
         }else{
-            for(y=block_w*mb_y; y<block_w*(mb_y+1); y++)
+            for(y=block_w*mb_y; y<FFMIN(h,block_w*(mb_y+1)); y++)
             {
 //                DWTELEM * line = slice_buffer_get_line(sb, y);
                 DWTELEM * line = sb->line[y];
@@ -2826,7 +2826,7 @@ static always_inline void predict_slice(SnowContext *s, DWTELEM *buf, int plane_
             return;
 
         if(add){
-            for(y=block_w*mb_y; y<block_w*(mb_y+1); y++){
+            for(y=block_w*mb_y; y<FFMIN(h,block_w*(mb_y+1)); y++){
                 for(x=0; x<w; x++){
                     int v= buf[x + y*w] + (128<<FRAC_BITS) + (1<<(FRAC_BITS-1));
                     v >>= FRAC_BITS;
@@ -2835,7 +2835,7 @@ static always_inline void predict_slice(SnowContext *s, DWTELEM *buf, int plane_
                 }
             }
         }else{
-            for(y=block_w*mb_y; y<block_w*(mb_y+1); y++){
+            for(y=block_w*mb_y; y<FFMIN(h,block_w*(mb_y+1)); y++){
                 for(x=0; x<w; x++){
                     buf[x + y*w]-= 128<<FRAC_BITS;
                 }
