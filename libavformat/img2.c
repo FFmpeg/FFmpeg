@@ -222,6 +222,8 @@ static int img_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         st->codec.codec_type = CODEC_TYPE_VIDEO;
         st->codec.codec_id = av_str2id(img_tags, s->path);
     }
+    if(st->codec.codec_type == CODEC_TYPE_VIDEO && ap->pix_fmt)
+        st->codec.pix_fmt = ap->pix_fmt;
 
     return 0;
 }
@@ -336,10 +338,10 @@ static int img_write_packet(AVFormatContext *s, AVPacket *pkt)
     }
     
     if(codec->codec_id == CODEC_ID_RAWVIDEO){
-        int size = (codec->width * codec->height)>>2;
-        put_buffer(pb[0], pkt->data         , 4*size);
-        put_buffer(pb[1], pkt->data + 4*size,   size);
-        put_buffer(pb[2], pkt->data + 5*size,   size);
+        int ysize = codec->width * codec->height;
+        put_buffer(pb[0], pkt->data        , ysize);
+        put_buffer(pb[1], pkt->data + ysize, (pkt->size - ysize)/2);
+        put_buffer(pb[2], pkt->data + ysize +(pkt->size - ysize)/2, (pkt->size - ysize)/2);
         put_flush_packet(pb[1]);
         put_flush_packet(pb[2]);
         url_fclose(pb[1]);
