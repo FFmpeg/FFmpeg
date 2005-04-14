@@ -1777,19 +1777,19 @@ static inline void unpack_coeffs(SnowContext *s, SubBand *b, SubBand * parent, i
     
     if(1){
         int run;
-        int index=0;
-        int prev_index=-1;
-        int prev2_index=0;
-        int parent_index= 0;
-        int prev_parent_index= 0;
+        x_and_coeff *xc= b->x_coeff;
+        x_and_coeff *prev_xc= NULL;
+        x_and_coeff *prev2_xc= xc;
+        x_and_coeff *parent_xc= parent ? parent->x_coeff : NULL;
+        x_and_coeff *prev_parent_xc= parent_xc;
 
         run= get_symbol2(&s->c, b->state[1], 3);
         for(y=0; y<h; y++){
             int v=0;
             int lt=0, t=0, rt=0;
 
-            if(y && b->x_coeff[prev_index].x == 0){
-                rt= b->x_coeff[prev_index].coeff;
+            if(y && prev_xc->x == 0){
+                rt= prev_xc->coeff;
             }
             for(x=0; x<w; x++){
                 int p=0;
@@ -1798,19 +1798,19 @@ static inline void unpack_coeffs(SnowContext *s, SubBand *b, SubBand * parent, i
                 lt= t; t= rt;
 
                 if(y){
-                    if(b->x_coeff[prev_index].x <= x)
-                        prev_index++;
-                    if(b->x_coeff[prev_index].x == x + 1)
-                        rt= b->x_coeff[prev_index].coeff;
+                    if(prev_xc->x <= x)
+                        prev_xc++;
+                    if(prev_xc->x == x + 1)
+                        rt= prev_xc->coeff;
                     else
                         rt=0;
                 }
-                if(parent){
-                    if(x>>1 > parent->x_coeff[parent_index].x){
-                        parent_index++;
+                if(parent_xc){
+                    if(x>>1 > parent_xc->x){
+                        parent_xc++;
                     }
-                    if(x>>1 == parent->x_coeff[parent_index].x){
-                        p= parent->x_coeff[parent_index].coeff;
+                    if(x>>1 == parent_xc->x){
+                        p= parent_xc->coeff;
                     }
                 }
                 if(/*ll|*/l|lt|t|rt|p){
@@ -1821,8 +1821,8 @@ static inline void unpack_coeffs(SnowContext *s, SubBand *b, SubBand * parent, i
                         v= 2*(get_symbol2(&s->c, b->state[context + 2], context-4) + 1);
                         v+=get_rac(&s->c, &b->state[0][16 + 1 + 3 + quant3bA[l&0xFF] + 3*quant3bA[t&0xFF]]);
                         
-                        b->x_coeff[index].x=x;
-                        b->x_coeff[index++].coeff= v;
+                        xc->x=x;
+                        (xc++)->coeff= v;
                     }
                 }else{
                     if(!run){
@@ -1830,39 +1830,39 @@ static inline void unpack_coeffs(SnowContext *s, SubBand *b, SubBand * parent, i
                         v= 2*(get_symbol2(&s->c, b->state[0 + 2], 0-4) + 1);
                         v+=get_rac(&s->c, &b->state[0][16 + 1 + 3]);
                         
-                        b->x_coeff[index].x=x;
-                        b->x_coeff[index++].coeff= v;
+                        xc->x=x;
+                        (xc++)->coeff= v;
                     }else{
                         int max_run;
                         run--;
                         v=0;
 
-                        if(y) max_run= FFMIN(run, b->x_coeff[prev_index].x - x - 2);
+                        if(y) max_run= FFMIN(run, prev_xc->x - x - 2);
                         else  max_run= FFMIN(run, w-x-1);
-                        if(parent)
-                            max_run= FFMIN(max_run, 2*parent->x_coeff[parent_index].x - x - 1);
+                        if(parent_xc)
+                            max_run= FFMIN(max_run, 2*parent_xc->x - x - 1);
                         x+= max_run;
                         run-= max_run;
                     }
                 }
             }
-            b->x_coeff[index++].x= w+1; //end marker
-            prev_index= prev2_index;
-            prev2_index= index;
+            (xc++)->x= w+1; //end marker
+            prev_xc= prev2_xc;
+            prev2_xc= xc;
             
-            if(parent){
+            if(parent_xc){
                 if(y&1){
-                    while(parent->x_coeff[parent_index].x != parent->width+1)
-                        parent_index++;
-                    parent_index++;
-                    prev_parent_index= parent_index;
+                    while(parent_xc->x != parent->width+1)
+                        parent_xc++;
+                    parent_xc++;
+                    prev_parent_xc= parent_xc;
                 }else{
-                    parent_index= prev_parent_index;
+                    parent_xc= prev_parent_xc;
                 }
             }
         }
 
-        b->x_coeff[index++].x= w+1; //end marker
+        (xc++)->x= w+1; //end marker
     }
 }
 
