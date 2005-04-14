@@ -1817,10 +1817,21 @@ static inline void unpack_coeffs(SnowContext *s, SubBand *b, SubBand * parent, i
                     int context= av_log2(/*ABS(ll) + */3*(l>>1) + (lt>>1) + (t&~1) + (rt>>1) + (p>>1));
 
                     v=get_rac(&s->c, &b->state[0][context]);
+                    if(v){
+                        v= 2*(get_symbol2(&s->c, b->state[context + 2], context-4) + 1);
+                        v+=get_rac(&s->c, &b->state[0][16 + 1 + 3 + quant3bA[l&0xFF] + 3*quant3bA[t&0xFF]]);
+                        
+                        b->x_coeff[index].x=x;
+                        b->x_coeff[index++].coeff= v;
+                    }
                 }else{
                     if(!run){
                         run= get_symbol2(&s->c, b->state[1], 3);
-                        v=1;
+                        v= 2*(get_symbol2(&s->c, b->state[0 + 2], 0-4) + 1);
+                        v+=get_rac(&s->c, &b->state[0][16 + 1 + 3]);
+                        
+                        b->x_coeff[index].x=x;
+                        b->x_coeff[index++].coeff= v;
                     }else{
                         run--;
                         v=0;
@@ -1834,14 +1845,6 @@ static inline void unpack_coeffs(SnowContext *s, SubBand *b, SubBand * parent, i
                             run-= max_run;
                         }
                     }
-                }
-                if(v){
-                    int context= av_log2(/*ABS(ll) + */3*(l>>1) + (lt>>1) + (t&~1) + (rt>>1) + (p>>1));
-                    v= 2*(get_symbol2(&s->c, b->state[context + 2], context-4) + 1);
-                    v+=get_rac(&s->c, &b->state[0][16 + 1 + 3 + quant3bA[l&0xFF] + 3*quant3bA[t&0xFF]]);
-                       
-                    b->x_coeff[index].x=x;
-                    b->x_coeff[index++].coeff= v;
                 }
             }
             b->x_coeff[index++].x= w+1; //end marker
