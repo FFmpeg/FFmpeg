@@ -1833,17 +1833,16 @@ static inline void unpack_coeffs(SnowContext *s, SubBand *b, SubBand * parent, i
                         b->x_coeff[index].x=x;
                         b->x_coeff[index++].coeff= v;
                     }else{
+                        int max_run;
                         run--;
                         v=0;
 
-                        if(y && parent){
-                            int max_run;
-
-                            max_run= FFMIN(run, b->x_coeff[prev_index].x - x - 2);
+                        if(y) max_run= FFMIN(run, b->x_coeff[prev_index].x - x - 2);
+                        else  max_run= FFMIN(run, w-x-1);
+                        if(parent)
                             max_run= FFMIN(max_run, 2*parent->x_coeff[parent_index].x - x - 1);
-                            x+= max_run;
-                            run-= max_run;
-                        }
+                        x+= max_run;
+                        run-= max_run;
                     }
                 }
             }
