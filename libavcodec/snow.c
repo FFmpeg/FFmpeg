@@ -3331,10 +3331,23 @@ static int encode_init(AVCodecContext *avctx)
  
     s->version=0;
     
+    s->m.avctx   = avctx;
+    s->m.flags   = avctx->flags;
+    s->m.bit_rate= avctx->bit_rate;
+
     s->m.me.scratchpad= av_mallocz((avctx->width+64)*2*16*2*sizeof(uint8_t));
     s->m.me.map       = av_mallocz(ME_MAP_SIZE*sizeof(uint32_t));
     s->m.me.score_map = av_mallocz(ME_MAP_SIZE*sizeof(uint32_t));
     h263_encode_init(&s->m); //mv_penalty
+
+    if(avctx->flags&CODEC_FLAG_PASS1){
+        if(!avctx->stats_out)
+            avctx->stats_out = av_mallocz(256);
+    }
+    if(avctx->flags&CODEC_FLAG_PASS2){
+        if(ff_rate_control_init(&s->m) < 0)
+            return -1;
+    }
 
     for(plane_index=0; plane_index<3; plane_index++){
         calculate_vissual_weight(s, &s->plane[plane_index]);
@@ -3401,8 +3414,16 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
     
     s->input_picture = *pict;
 
-    s->keyframe=avctx->gop_size==0 || avctx->frame_number % avctx->gop_size == 0;
-    pict->pict_type= s->keyframe ? FF_I_TYPE : FF_P_TYPE;
+    if(avctx->flags&CODEC_FLAG_PASS2){
+        s->m.pict_type =
+        pict->pict_type= s->m.rc_context.entry[avctx->frame_number].new_pict_type;
+        s->keyframe= pict->pict_type==FF_I_TYPE;
+        s->m.picture_number= avctx->frame_number;
+        pict->quality= ff_rate_estimate_qscale(&s->m);
+    }else{
+        s->keyframe= avctx->gop_size==0 || avctx->frame_number % avctx->gop_size == 0;
+        pict->pict_type= s->keyframe ? FF_I_TYPE : FF_P_TYPE;
+    }
     
     if(pict->quality){
         s->qlog= rint(QROOT*log(pict->quality / (float)FF_QP2LAMBDA)/log(2));
@@ -3415,6 +3436,7 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
     frame_start(s);
     s->current_picture.key_frame= s->keyframe;
 
+    s->m.current_picture_ptr= &s->m.current_picture;
     if(pict->pict_type == P_TYPE){
         int block_width = (width +15)>>4;
         int block_height= (height+15)>>4;
@@ -3427,7 +3449,6 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
         s->m.current_picture.data[0]= s->current_picture.data[0];
         s->m.   last_picture.data[0]= s->   last_picture.data[0];
         s->m.    new_picture.data[0]= s->  input_picture.data[0];
-        s->m.current_picture_ptr= &s->m.current_picture;
         s->m.   last_picture_ptr= &s->m.   last_picture;
         s->m.linesize=
         s->m.   last_picture.linesize[0]=
@@ -3462,7 +3483,9 @@ redo_frame:
     s->qbias= pict->pict_type == P_TYPE ? 2 : 0;
 
     encode_header(s);
+    s->m.misc_bits = 8*(s->c.bytestream - s->c.bytestream_start);
     encode_blocks(s);
+    s->m.mv_bits = 8*(s->c.bytestream - s->c.bytestream_start) - s->m.misc_bits;
       
     for(plane_index=0; plane_index<3; plane_index++){
         Plane *p= &s->plane[plane_index];
@@ -3553,6 +3576,21 @@ STOP_TIMER("pred-conv")}
     if(s->last_picture.data[0])
         avctx->release_buffer(avctx, &s->last_picture);
 
+    s->current_picture.coded_picture_number = avctx->frame_number;
+    s->current_picture.pict_type = pict->pict_type;
+    s->current_picture.quality = pict->quality;
+    if(avctx->flags&CODEC_FLAG_PASS1){
+        s->m.p_tex_bits = 8*(s->c.bytestream - s->c.bytestream_start) - s->m.misc_bits - s->m.mv_bits;
+        s->m.current_picture.display_picture_number =
+        s->m.current_picture.coded_picture_number = avctx->frame_number;
+        s->m.pict_type = pict->pict_type;
+        s->m.current_picture.quality = pict->quality;
+        ff_write_pass1_stats(&s->m);
+    }
+    if(avctx->flags&CODEC_FLAG_PASS2){
+        s->m.total_bits += 8*(s->c.bytestream - s->c.bytestream_start);
+    }
+
     emms_c();
     
     return ff_rac_terminate(c);
@@ -3585,6 +3623,7 @@ static int encode_end(AVCodecContext *avctx)
     SnowContext *s = avctx->priv_data;
 
     common_end(s);
+    av_free(avctx->stats_out);
 
     return 0;
 }
