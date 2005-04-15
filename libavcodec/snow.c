@@ -1657,6 +1657,7 @@ static int encode_subband_c0run(SnowContext *s, SubBand *b, DWTELEM *src, DWTELE
         int run=0;
         int runs[w*h];
         int run_index=0;
+        int max_index;
                 
         for(y=0; y<h; y++){
             for(x=0; x<w; x++){
@@ -1696,11 +1697,14 @@ static int encode_subband_c0run(SnowContext *s, SubBand *b, DWTELEM *src, DWTELE
                 }
             }
         }
+        max_index= run_index;
         runs[run_index++]= run;
         run_index=0;
         run= runs[run_index++];
 
-        put_symbol2(&s->c, b->state[1], run, 3);
+        put_symbol2(&s->c, b->state[30], max_index, 0);
+        if(run_index <= max_index)
+            put_symbol2(&s->c, b->state[1], run, 3);
         
         for(y=0; y<h; y++){
             if(s->c.bytestream_end - s->c.bytestream < w*40){
@@ -1742,7 +1746,8 @@ static int encode_subband_c0run(SnowContext *s, SubBand *b, DWTELEM *src, DWTELE
                     if(!run){
                         run= runs[run_index++];
 
-                        put_symbol2(&s->c, b->state[1], run, 3);
+                        if(run_index <= max_index)
+                            put_symbol2(&s->c, b->state[1], run, 3);
                         assert(v);
                     }else{
                         run--;
@@ -1776,14 +1781,17 @@ static inline void unpack_coeffs(SnowContext *s, SubBand *b, SubBand * parent, i
     int x,y;
     
     if(1){
-        int run;
+        int run, runs;
         x_and_coeff *xc= b->x_coeff;
         x_and_coeff *prev_xc= NULL;
         x_and_coeff *prev2_xc= xc;
         x_and_coeff *parent_xc= parent ? parent->x_coeff : NULL;
         x_and_coeff *prev_parent_xc= parent_xc;
 
-        run= get_symbol2(&s->c, b->state[1], 3);
+        runs= get_symbol2(&s->c, b->state[30], 0);
+        if(runs-- > 0) run= get_symbol2(&s->c, b->state[1], 3);
+        else           run= INT_MAX;
+
         for(y=0; y<h; y++){
             int v=0;
             int lt=0, t=0, rt=0;
@@ -1826,7 +1834,8 @@ static inline void unpack_coeffs(SnowContext *s, SubBand *b, SubBand * parent, i
                     }
                 }else{
                     if(!run){
-                        run= get_symbol2(&s->c, b->state[1], 3);
+                        if(runs-- > 0) run= get_symbol2(&s->c, b->state[1], 3);
+                        else           run= INT_MAX;
                         v= 2*(get_symbol2(&s->c, b->state[0 + 2], 0-4) + 1);
                         v+=get_rac(&s->c, &b->state[0][16 + 1 + 3]);
                         
