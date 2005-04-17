@@ -2359,8 +2359,13 @@ START_TIMER
 
 //            if(b_w==16) am= 8*(a1+a2);
 
-            if(dx<8) tmp[x]= (32*a2*( 8-dx) +    am* dx    + 128)>>8;
-            else     tmp[x]= (   am*(16-dx) + 32*a3*(dx-8) + 128)>>8;
+            if(dx<8) am = (32*a2*( 8-dx) +    am* dx    + 128)>>8;
+            else     am = (   am*(16-dx) + 32*a3*(dx-8) + 128)>>8;
+            
+            /* FIXME Try increasing tmp buffer to 16 bits and not clipping here. Should give marginally better results. - Robert*/
+            if(am&(~255)) am= ~(am>>31);
+            
+            tmp[x] = am;
 
 /*            if     (dx< 4) tmp[x + y*stride]= (16*a1*( 4-dx) +    aL* dx     + 32)>>6;
             else if(dx< 8) tmp[x + y*stride]= (   aL*( 8-dx) +    am*(dx- 4) + 32)>>6;
@@ -2387,9 +2392,12 @@ START_TIMER
             
 //            if(b_w==16) am= 8*(a1+a2);
 
-            if(dy<8) dst[x]= (32*a2*( 8-dy) +    am* dy    + 128)>>8;
-            else     dst[x]= (   am*(16-dy) + 32*a3*(dy-8) + 128)>>8;
+            if(dy<8) am =  (32*a2*( 8-dy) +    am* dy    + 128)>>8;
+            else     am = (   am*(16-dy) + 32*a3*(dy-8) + 128)>>8;
 
+            if(am&(~255)) am= ~(am>>31);
+            
+            dst[x] = am;
 /*            if     (dy< 4) tmp[x + y*stride]= (16*a1*( 4-dy) +    aL* dy     + 32)>>6;
             else if(dy< 8) tmp[x + y*stride]= (   aL*( 8-dy) +    am*(dy- 4) + 32)>>6;
             else if(dy<12) tmp[x + y*stride]= (   am*(12-dy) +    aR*(dy- 8) + 32)>>6;
