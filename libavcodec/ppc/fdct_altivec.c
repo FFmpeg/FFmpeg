@@ -214,8 +214,8 @@ POWERPC_PERF_STOP_COUNT(altivec_fdct, 1);
 
     /* setup constants {{{ */
     /* mzero = -0.0 */
-    vu32(mzero) = vec_splat_u32(-1);
-    vu32(mzero) = vec_sl(vu32(mzero), vu32(mzero));
+    mzero = ((vector float)vec_splat_u32(-1));
+    mzero = ((vector float)vec_sl(vu32(mzero), vu32(mzero)));
     cp = fdctconsts;
     cnsts0 = vec_ld(0, cp); cp++;
     cnsts1 = vec_ld(0, cp); cp++;
@@ -227,43 +227,43 @@ POWERPC_PERF_STOP_COUNT(altivec_fdct, 1);
 #define MERGE_S16(hl,a,b) vec_merge##hl(vs16(a), vs16(b))
 
     bp = (vector signed short*)block;
-    vs16(b00) = vec_ld(0,    bp);
-    vs16(b40) = vec_ld(16*4, bp);
-    vs16(b01) = MERGE_S16(h, b00, b40);
-    vs16(b11) = MERGE_S16(l, b00, b40);
+    b00 = ((vector float)vec_ld(0,    bp));
+    b40 = ((vector float)vec_ld(16*4, bp));
+    b01 = ((vector float)MERGE_S16(h, b00, b40));
+    b11 = ((vector float)MERGE_S16(l, b00, b40));
     bp++;
-    vs16(b10) = vec_ld(0,    bp);
-    vs16(b50) = vec_ld(16*4, bp);
-    vs16(b21) = MERGE_S16(h, b10, b50);
-    vs16(b31) = MERGE_S16(l, b10, b50);
+    b10 = ((vector float)vec_ld(0,    bp));
+    b50 = ((vector float)vec_ld(16*4, bp));
+    b21 = ((vector float)MERGE_S16(h, b10, b50));
+    b31 = ((vector float)MERGE_S16(l, b10, b50));
     bp++;
-    vs16(b20) = vec_ld(0,    bp);
-    vs16(b60) = vec_ld(16*4, bp);
-    vs16(b41) = MERGE_S16(h, b20, b60);
-    vs16(b51) = MERGE_S16(l, b20, b60);
+    b20 = ((vector float)vec_ld(0,    bp));
+    b60 = ((vector float)vec_ld(16*4, bp));
+    b41 = ((vector float)MERGE_S16(h, b20, b60));
+    b51 = ((vector float)MERGE_S16(l, b20, b60));
     bp++;
-    vs16(b30) = vec_ld(0,    bp);
-    vs16(b70) = vec_ld(16*4, bp);
-    vs16(b61) = MERGE_S16(h, b30, b70);
-    vs16(b71) = MERGE_S16(l, b30, b70);
+    b30 = ((vector float)vec_ld(0,    bp));
+    b70 = ((vector float)vec_ld(16*4, bp));
+    b61 = ((vector float)MERGE_S16(h, b30, b70));
+    b71 = ((vector float)MERGE_S16(l, b30, b70));
 
-    vs16(x0) = MERGE_S16(h, b01, b41);
-    vs16(x1) = MERGE_S16(l, b01, b41);
-    vs16(x2) = MERGE_S16(h, b11, b51);
-    vs16(x3) = MERGE_S16(l, b11, b51);
-    vs16(x4) = MERGE_S16(h, b21, b61);
-    vs16(x5) = MERGE_S16(l, b21, b61);
-    vs16(x6) = MERGE_S16(h, b31, b71);
-    vs16(x7) = MERGE_S16(l, b31, b71);
+    x0 = ((vector float)MERGE_S16(h, b01, b41));
+    x1 = ((vector float)MERGE_S16(l, b01, b41));
+    x2 = ((vector float)MERGE_S16(h, b11, b51));
+    x3 = ((vector float)MERGE_S16(l, b11, b51));
+    x4 = ((vector float)MERGE_S16(h, b21, b61));
+    x5 = ((vector float)MERGE_S16(l, b21, b61));
+    x6 = ((vector float)MERGE_S16(h, b31, b71));
+    x7 = ((vector float)MERGE_S16(l, b31, b71));
 
-    vs16(b00) = MERGE_S16(h, x0, x4);
-    vs16(b10) = MERGE_S16(l, x0, x4);
-    vs16(b20) = MERGE_S16(h, x1, x5);
-    vs16(b30) = MERGE_S16(l, x1, x5);
-    vs16(b40) = MERGE_S16(h, x2, x6);
-    vs16(b50) = MERGE_S16(l, x2, x6);
-    vs16(b60) = MERGE_S16(h, x3, x7);
-    vs16(b70) = MERGE_S16(l, x3, x7);
+    b00 = ((vector float)MERGE_S16(h, x0, x4));
+    b10 = ((vector float)MERGE_S16(l, x0, x4));
+    b20 = ((vector float)MERGE_S16(h, x1, x5));
+    b30 = ((vector float)MERGE_S16(l, x1, x5));
+    b40 = ((vector float)MERGE_S16(h, x2, x6));
+    b50 = ((vector float)MERGE_S16(l, x2, x6));
+    b60 = ((vector float)MERGE_S16(h, x3, x7));
+    b70 = ((vector float)MERGE_S16(l, x3, x7));
 
 #undef MERGE_S16
     /* }}} */
@@ -275,32 +275,32 @@ POWERPC_PERF_STOP_COUNT(altivec_fdct, 1);
  */
 #if 1
     /* fdct rows {{{ */
-    vs16(x0) = vec_add(vs16(b00), vs16(b70));
-    vs16(x7) = vec_sub(vs16(b00), vs16(b70));
-    vs16(x1) = vec_add(vs16(b10), vs16(b60));
-    vs16(x6) = vec_sub(vs16(b10), vs16(b60));
-    vs16(x2) = vec_add(vs16(b20), vs16(b50));
-    vs16(x5) = vec_sub(vs16(b20), vs16(b50));
-    vs16(x3) = vec_add(vs16(b30), vs16(b40));
-    vs16(x4) = vec_sub(vs16(b30), vs16(b40));
+    x0 = ((vector float)vec_add(vs16(b00), vs16(b70)));
+    x7 = ((vector float)vec_sub(vs16(b00), vs16(b70)));
+    x1 = ((vector float)vec_add(vs16(b10), vs16(b60)));
+    x6 = ((vector float)vec_sub(vs16(b10), vs16(b60)));
+    x2 = ((vector float)vec_add(vs16(b20), vs16(b50)));
+    x5 = ((vector float)vec_sub(vs16(b20), vs16(b50)));
+    x3 = ((vector float)vec_add(vs16(b30), vs16(b40)));
+    x4 = ((vector float)vec_sub(vs16(b30), vs16(b40)));
 
-    vs16(b70) = vec_add(vs16(x0), vs16(x3));
-    vs16(b10) = vec_add(vs16(x1), vs16(x2));
+    b70 = ((vector float)vec_add(vs16(x0), vs16(x3)));
+    b10 = ((vector float)vec_add(vs16(x1), vs16(x2)));
 
-    vs16(b00) = vec_add(vs16(b70), vs16(b10));
-    vs16(b40) = vec_sub(vs16(b70), vs16(b10));
+    b00 = ((vector float)vec_add(vs16(b70), vs16(b10)));
+    b40 = ((vector float)vec_sub(vs16(b70), vs16(b10)));
 
 #define CTF0(n) \
-    vs32(b##n##1) = vec_unpackl(vs16(b##n##0)); \
-    vs32(b##n##0) = vec_unpackh(vs16(b##n##0)); \
+    b##n##1 = ((vector float)vec_unpackl(vs16(b##n##0))); \
+    b##n##0 = ((vector float)vec_unpackh(vs16(b##n##0))); \
     b##n##1 = vec_ctf(vs32(b##n##1), 0); \
     b##n##0 = vec_ctf(vs32(b##n##0), 0);
 
     CTF0(0);
     CTF0(4);
 
-    vs16(b20) = vec_sub(vs16(x0), vs16(x3));
-    vs16(b60) = vec_sub(vs16(x1), vs16(x2));
+    b20 = ((vector float)vec_sub(vs16(x0), vs16(x3)));
+    b60 = ((vector float)vec_sub(vs16(x1), vs16(x2)));
 
     CTF0(2);
     CTF0(6);
@@ -321,8 +321,8 @@ POWERPC_PERF_STOP_COUNT(altivec_fdct, 1);
     b61 = vec_madd(cnst, b61, x1);
 
 #define CTFX(x,b) \
-    vs32(b##0) = vec_unpackh(vs16(x)); \
-    vs32(b##1) = vec_unpackl(vs16(x)); \
+    b##0 = ((vector float)vec_unpackh(vs16(x))); \
+    b##1 = ((vector float)vec_unpackl(vs16(x))); \
     b##0 = vec_ctf(vs32(b##0), 0); \
     b##1 = vec_ctf(vs32(b##1), 0); \
 
@@ -473,9 +473,9 @@ POWERPC_PERF_STOP_COUNT(altivec_fdct, 1);
 #define CTS(n) \
     b##n##0 = vec_round(b##n##0); \
     b##n##1 = vec_round(b##n##1); \
-    vs32(b##n##0) = vec_cts(b##n##0, 0); \
-    vs32(b##n##1) = vec_cts(b##n##1, 0); \
-    vs16(b##n##0) = vec_pack(vs32(b##n##0), vs32(b##n##1)); \
+    b##n##0 = ((vector float)vec_cts(b##n##0, 0)); \
+    b##n##1 = ((vector float)vec_cts(b##n##1, 0)); \
+    b##n##0 = ((vector float)vec_pack(vs32(b##n##0), vs32(b##n##1))); \
     vec_st(vs16(b##n##0), 0, bp);
 
     bp = (vector signed short*)block;
