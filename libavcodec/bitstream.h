@@ -429,7 +429,7 @@ static inline int get_bits_count(GetBitContext *s){
 #   define UPDATE_CACHE(name, gb)\
     if(name##_bit_count >= 0){\
         name##_cache+= (int)be2me_16(*(uint16_t*)name##_buffer_ptr) << name##_bit_count;\
-        ((uint16_t*)name##_buffer_ptr)++;\
+        name##_buffer_ptr += 2;\
         name##_bit_count-= 16;\
     }\
 

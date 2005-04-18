@@ -263,6 +263,7 @@ static const int mb_area_start[5] = { 1, 6, 21, 43, 64 };
 
 #ifndef ALT_BITSTREAM_READER
 #warning only works with ALT_BITSTREAM_READER
+static int re_index; //Hack to make it compile
 #endif
 
 static inline int get_bits_left(GetBitContext *s)

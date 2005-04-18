@@ -720,7 +720,7 @@ static int svq3_decode_slice_header (H264Context *h) {
   } else {
     int length = (header >> 5) & 3;
 
-    h->next_slice_index = s->gb.index + 8*show_bits (&s->gb, 8*length) + 8*length;
+    h->next_slice_index = get_bits_count(&s->gb) + 8*show_bits (&s->gb, 8*length) + 8*length;
 
     if (h->next_slice_index > s->gb.size_in_bits){
       av_log(h->s.avctx, AV_LOG_ERROR, "slice after bitstream end\n");
@@ -728,10 +728,10 @@ static int svq3_decode_slice_header (H264Context *h) {
     }
 
     s->gb.size_in_bits = h->next_slice_index - 8*(length - 1);
-    s->gb.index += 8;
+    skip_bits(&s->gb, 8);
 
     if (length > 0) {
-      memcpy ((uint8_t *) &s->gb.buffer[s->gb.index >> 3],
+      memcpy ((uint8_t *) &s->gb.buffer[get_bits_count(&s->gb) >> 3],
              &s->gb.buffer[s->gb.size_in_bits >> 3], (length - 1));
     }
   }
@@ -939,10 +939,10 @@ static int svq3_decode_frame (AVCodecContext *avctx,
   for (s->mb_y=0; s->mb_y < s->mb_height; s->mb_y++) {
     for (s->mb_x=0; s->mb_x < s->mb_width; s->mb_x++) {
 
-      if ( (s->gb.index + 7) >= s->gb.size_in_bits &&
-	  ((s->gb.index & 7) == 0 || show_bits (&s->gb, (-s->gb.index & 7)) == 0)) {
+      if ( (get_bits_count(&s->gb) + 7) >= s->gb.size_in_bits &&
+	  ((get_bits_count(&s->gb) & 7) == 0 || show_bits (&s->gb, (-get_bits_count(&s->gb) & 7)) == 0)) {
 
-	s->gb.index = h->next_slice_index;
+	skip_bits(&s->gb, h->next_slice_index - get_bits_count(&s->gb));
 	s->gb.size_in_bits = 8*buf_size;
 
 	if (svq3_decode_slice_header (h))
