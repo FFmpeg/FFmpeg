@@ -4797,7 +4797,7 @@ static inline int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
     OPEN_READER(re, &s->gb);
     for(;;) {
         UPDATE_CACHE(re, &s->gb);
-        GET_RL_VLC(level, run, re, &s->gb, rl_vlc, TEX_VLC_BITS, 2);
+        GET_RL_VLC(level, run, re, &s->gb, rl_vlc, TEX_VLC_BITS, 2, 0);
         if (level==0) {
           /* escape */                
           if(rvlc){
@@ -4908,7 +4908,7 @@ static inline int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
 #else
                     SKIP_BITS(re, &s->gb, 2);
 #endif
-                    GET_RL_VLC(level, run, re, &s->gb, rl_vlc, TEX_VLC_BITS, 2);
+                    GET_RL_VLC(level, run, re, &s->gb, rl_vlc, TEX_VLC_BITS, 2, 1);
                     i+= run + rl->max_run[run>>7][level/qmul] +1; //FIXME opt indexing
                     level = (level ^ SHOW_SBITS(re, &s->gb, 1)) - SHOW_SBITS(re, &s->gb, 1);
                     LAST_SKIP_BITS(re, &s->gb, 1);
@@ -4921,7 +4921,7 @@ static inline int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
 #else
                 SKIP_BITS(re, &s->gb, 1);
 #endif
-                GET_RL_VLC(level, run, re, &s->gb, rl_vlc, TEX_VLC_BITS, 2);
+                GET_RL_VLC(level, run, re, &s->gb, rl_vlc, TEX_VLC_BITS, 2, 1);
                 i+= run;
                 level = level + rl->max_level[run>>7][(run-1)&63] * qmul;//FIXME opt indexing
                 level = (level ^ SHOW_SBITS(re, &s->gb, 1)) - SHOW_SBITS(re, &s->gb, 1);

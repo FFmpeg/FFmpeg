@@ -81,7 +81,7 @@ static inline int mdec_decode_block_intra(MDECContext *a, DCTELEM *block, int n)
         /* now quantify & encode AC coefs */
         for(;;) {
             UPDATE_CACHE(re, &a->gb);
-            GET_RL_VLC(level, run, re, &a->gb, rl->rl_vlc[0], TEX_VLC_BITS, 2);
+            GET_RL_VLC(level, run, re, &a->gb, rl->rl_vlc[0], TEX_VLC_BITS, 2, 0);
             
             if(level == 127){
                 break;

@@ -727,7 +727,7 @@ void free_vlc(VLC *vlc);
     SKIP_BITS(name, gb, n)\
 }
 
-#define GET_RL_VLC(level, run, name, gb, table, bits, max_depth)\
+#define GET_RL_VLC(level, run, name, gb, table, bits, max_depth, need_update)\
 {\
     int n, index, nb_bits;\
 \
@@ -736,8 +736,10 @@ void free_vlc(VLC *vlc);
     n     = table[index].len;\
 \
     if(max_depth > 1 && n < 0){\
-        LAST_SKIP_BITS(name, gb, bits)\
-        UPDATE_CACHE(name, gb)\
+        SKIP_BITS(name, gb, bits)\
+        if(need_update){\
+            UPDATE_CACHE(name, gb)\
+        }\
 \
         nb_bits = -n;\
 \
