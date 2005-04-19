@@ -182,7 +182,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
 	    asf->packet_size = asf->hdr.max_pktsize;
             asf->nb_packets = asf->hdr.packets_count;
         } else if (!memcmp(&g, &stream_header, sizeof(GUID))) {
-            int type, total_size, type_specific_size;
+            int type, total_size, type_specific_size, sizeX;
             unsigned int tag1;
             int64_t pos1, pos2;
 
@@ -264,7 +264,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 get_le32(pb);
                 get_byte(pb);
                 size = get_le16(pb); /* size */
-                get_le32(pb); /* size */
+                sizeX= get_le32(pb); /* size */
                 st->codec.width = get_le32(pb);
 		st->codec.height = get_le32(pb);
                 /* not available for asf */
@@ -272,6 +272,8 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
 		st->codec.bits_per_sample = get_le16(pb); /* depth */
                 tag1 = get_le32(pb);
 		url_fskip(pb, 20);
+//                av_log(NULL, AV_LOG_DEBUG, "size:%d tsize:%d sizeX:%d\n", size, total_size, sizeX);
+                size= sizeX;
 		if (size > 40) {
 		    st->codec.extradata_size = size - 40;
 		    st->codec.extradata = av_mallocz(st->codec.extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
