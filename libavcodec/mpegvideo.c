@@ -241,7 +241,7 @@ int DCT_common_init(MpegEncContext *s)
 #ifdef CONFIG_ENCODERS
     s->dct_quantize= dct_quantize_c;
     s->denoise_dct= denoise_dct_c;
-#endif
+#endif //CONFIG_ENCODERS
         
 #ifdef HAVE_MMX
     MPV_common_init_mmx(s);
@@ -1255,7 +1255,6 @@ int MPV_encode_init(AVCodecContext *avctx)
     ff_set_cmp(&s->dsp, s->dsp.ildct_cmp, s->avctx->ildct_cmp);
     ff_set_cmp(&s->dsp, s->dsp.frame_skip_cmp, s->avctx->frame_skip_cmp);
     
-#ifdef CONFIG_ENCODERS
     if (s->out_format == FMT_H261)
         ff_h261_encode_init(s);
     if (s->out_format == FMT_H263)
@@ -1264,7 +1263,6 @@ int MPV_encode_init(AVCodecContext *avctx)
         ff_msmpeg4_encode_init(s);
     if (s->out_format == FMT_MPEG1)
         ff_mpeg1_encode_init(s);
-#endif
 
     /* init q matrix */
     for(i=0;i<64;i++) {
