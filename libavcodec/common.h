@@ -501,8 +501,6 @@ tend= rdtsc();\
 #define STOP_TIMER(id) {}
 #endif
 
-#define CLAMP_TO_8BIT(d) ((d > 0xff) ? 0xff : (d < 0) ? 0 : d)
-
 /* avoid usage of various functions */
 #define malloc please_use_av_malloc
 #define free please_use_av_free
