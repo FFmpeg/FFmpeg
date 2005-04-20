@@ -122,6 +122,7 @@ void avcodec_register_all(void)
     register_avcodec(&svq3_decoder);
     register_avcodec(&wmav1_decoder);
     register_avcodec(&wmav2_decoder);
+    register_avcodec(&indeo2_decoder);
     register_avcodec(&indeo3_decoder);
     register_avcodec(&tscc_decoder);
     register_avcodec(&ulti_decoder);
