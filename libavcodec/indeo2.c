@@ -53,7 +53,7 @@ if (value > 255) \
 else if (value < 0) \
     value = 0; \
 
-static void ir2_decode_plane(Ir2Context *ctx, int width, int height, uint8_t *dst, int stride,
+static int ir2_decode_plane(Ir2Context *ctx, int width, int height, uint8_t *dst, int stride,
                              const uint8_t *table)
 {
     int i;
@@ -62,11 +62,16 @@ static void ir2_decode_plane(Ir2Context *ctx, int width, int height, uint8_t *ds
     int c;
     int t;
     
+    if(width&1)
+        return -1;
+
     /* first line contain absolute values, other lines contain deltas */
     while (out < width){
         c = ir2_get_code(&ctx->gb);
         if(c > 0x80) { /* we have a run */
             c -= 0x80;
+            if(out + c*2 > width)
+                return -1;
             for (i = 0; i < c * 2; i++)
                 dst[out++] = 0x80;
         } else { /* copy two values from table */
@@ -82,6 +87,8 @@ static void ir2_decode_plane(Ir2Context *ctx, int width, int height, uint8_t *ds
             c = ir2_get_code(&ctx->gb);
             if(c > 0x80) { /* we have a skip */
                 c -= 0x80;
+                if(out + c*2 > width)
+                    return -1;
                 for (i = 0; i < c * 2; i++) {
                     dst[out] = dst[out - stride];
                     out++;
@@ -99,16 +106,20 @@ static void ir2_decode_plane(Ir2Context *ctx, int width, int height, uint8_t *ds
         }
         dst += stride;
     }
+    return 0;
 }
 
-static void ir2_decode_plane_inter(Ir2Context *ctx, int width, int height, uint8_t *dst, int stride,
+static int ir2_decode_plane_inter(Ir2Context *ctx, int width, int height, uint8_t *dst, int stride,
                              const uint8_t *table)
 {
     int j;
     int out = 0;
     int c;
     int t;
-    
+
+    if(width&1)
+        return -1;
+
     for (j = 0; j < height; j++){
         out = 0;
         while (out < width){
@@ -129,6 +140,7 @@ static void ir2_decode_plane_inter(Ir2Context *ctx, int width, int height, uint8
         }
         dst += stride;
     }
+    return 0;
 }
 
 static int ir2_decode_frame(AVCodecContext *avctx, 
