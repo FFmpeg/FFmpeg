@@ -40,18 +40,8 @@ static VLC ir2_vlc;
 /* Indeo 2 codes are in range 0x01..0x7F and 0x81..0x90 */
 static inline int ir2_get_code(GetBitContext *gb)
 {
-    int code;
-    
-    code = get_vlc2(gb, ir2_vlc.table, CODE_VLC_BITS, 1) + 1;
-    if (code >= 0x80)
-        return (code + 1);
-    return code;
+    return get_vlc2(gb, ir2_vlc.table, CODE_VLC_BITS, 1) + 1;
 }
-#define CLAMP_TO_BYTE(value) \
-if (value > 255) \
-    value = 255; \
-else if (value < 0) \
-    value = 0; \
 
 static int ir2_decode_plane(Ir2Context *ctx, int width, int height, uint8_t *dst, int stride,
                              const uint8_t *table)
@@ -68,8 +58,8 @@ static int ir2_decode_plane(Ir2Context *ctx, int width, int height, uint8_t *dst
     /* first line contain absolute values, other lines contain deltas */
     while (out < width){
         c = ir2_get_code(&ctx->gb);
-        if(c > 0x80) { /* we have a run */
-            c -= 0x80;
+        if(c >= 0x80) { /* we have a run */
+            c -= 0x7F;
             if(out + c*2 > width)
                 return -1;
             for (i = 0; i < c * 2; i++)
@@ -85,8 +75,8 @@ static int ir2_decode_plane(Ir2Context *ctx, int width, int height, uint8_t *dst
         out = 0;
         while (out < width){
             c = ir2_get_code(&ctx->gb);
-            if(c > 0x80) { /* we have a skip */
-                c -= 0x80;
+            if(c >= 0x80) { /* we have a skip */
+                c -= 0x7F;
                 if(out + c*2 > width)
                     return -1;
                 for (i = 0; i < c * 2; i++) {
@@ -95,11 +85,11 @@ static int ir2_decode_plane(Ir2Context *ctx, int width, int height, uint8_t *dst
                 }
             } else { /* add two deltas from table */
                 t = dst[out - stride] + (table[c * 2] - 128);
-                CLAMP_TO_BYTE(t);
+                t= clip_uint8(t);
                 dst[out] = t;
                 out++;
                 t = dst[out - stride] + (table[(c * 2) + 1] - 128);
-                CLAMP_TO_BYTE(t);
+                t= clip_uint8(t);
                 dst[out] = t;
                 out++;
             }
@@ -124,16 +114,16 @@ static int ir2_decode_plane_inter(Ir2Context *ctx, int width, int height, uint8_
         out = 0;
         while (out < width){
             c = ir2_get_code(&ctx->gb);
-            if(c > 0x80) { /* we have a skip */
-                c -= 0x80;
+            if(c >= 0x80) { /* we have a skip */
+                c -= 0x7F;
                 out += c * 2;
             } else { /* add two deltas from table */
                 t = dst[out] + (table[c * 2] - 128);
-                CLAMP_TO_BYTE(t);
+                t= clip_uint8(t);
                 dst[out] = t;
                 out++;
                 t = dst[out] + (table[(c * 2) + 1] - 128);
-                CLAMP_TO_BYTE(t);
+                t= clip_uint8(t);
                 dst[out] = t;
                 out++;
             }
