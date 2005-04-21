@@ -543,6 +543,7 @@ static int rv10_decode_init(AVCodecContext *avctx)
         break;
     case 0x20200002:
     case 0x20201002:
+    case 0x20203002:
     case 0x30202002:
     case 0x30203002:
         s->low_delay=0;
