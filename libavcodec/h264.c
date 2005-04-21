@@ -428,6 +428,12 @@ static inline void fill_caches(H264Context *h, int mb_type, int for_deblock){
     int left_block[8];
     int i;
 
+    //FIXME deblocking can skip fill_caches much of the time with multiple slices too.
+    // the actual condition is whether we're on the edge of a slice,
+    // and even then the intra and nnz parts are unnecessary.
+    if(for_deblock && h->slice_num == 1)
+        return;
+
     //wow what a mess, why didnt they simplify the interlacing&intra stuff, i cant imagine that these complex rules are worth it 
     
     top_xy     = mb_xy  - s->mb_stride;
@@ -662,10 +668,10 @@ static inline void fill_caches(H264Context *h, int mb_type, int for_deblock){
 
 #if 1
     //FIXME direct mb can skip much of this
-    if(IS_INTER(mb_type) || (IS_DIRECT(mb_type) && h->direct_spatial_mv_pred)){
+    if(IS_INTER(mb_type) || IS_DIRECT(mb_type)){
         int list;
-        for(list=0; list<2; list++){
-            if(!USES_LIST(mb_type, list) && !IS_DIRECT(mb_type) && !for_deblock){
+        for(list=0; list<1+(h->slice_type==B_TYPE); list++){
+            if(!USES_LIST(mb_type, list) && !IS_DIRECT(mb_type) && !h->deblocking_filter){
                 /*if(!h->mv_cache_clean[list]){
                     memset(h->mv_cache [list],  0, 8*5*2*sizeof(int16_t)); //FIXME clean only input? clean at all?
                     memset(h->ref_cache[list], PART_NOT_AVAILABLE, 8*5*sizeof(int8_t));
@@ -674,16 +680,6 @@ static inline void fill_caches(H264Context *h, int mb_type, int for_deblock){
                 continue;
             }
             h->mv_cache_clean[list]= 0;
-            
-            if(IS_INTER(topleft_type)){
-                const int b_xy = h->mb2b_xy[topleft_xy] + 3 + 3*h->b_stride;
-                const int b8_xy= h->mb2b8_xy[topleft_xy] + 1 + h->b8_stride;
-                *(uint32_t*)h->mv_cache[list][scan8[0] - 1 - 1*8]= *(uint32_t*)s->current_picture.motion_val[list][b_xy];
-                h->ref_cache[list][scan8[0] - 1 - 1*8]= s->current_picture.ref_index[list][b8_xy];
-            }else{
-                *(uint32_t*)h->mv_cache[list][scan8[0] - 1 - 1*8]= 0;
-                h->ref_cache[list][scan8[0] - 1 - 1*8]= topleft_type ? LIST_NOT_USED : PART_NOT_AVAILABLE;
-            }
             
             if(IS_INTER(top_type)){
                 const int b_xy= h->mb2b_xy[top_xy] + 3*h->b_stride;
@@ -704,16 +700,6 @@ static inline void fill_caches(H264Context *h, int mb_type, int for_deblock){
                 *(uint32_t*)&h->ref_cache[list][scan8[0] + 0 - 1*8]= ((top_type ? LIST_NOT_USED : PART_NOT_AVAILABLE)&0xFF)*0x01010101;
             }
 
-            if(IS_INTER(topright_type)){
-                const int b_xy= h->mb2b_xy[topright_xy] + 3*h->b_stride;
-                const int b8_xy= h->mb2b8_xy[topright_xy] + h->b8_stride;
-                *(uint32_t*)h->mv_cache[list][scan8[0] + 4 - 1*8]= *(uint32_t*)s->current_picture.motion_val[list][b_xy];
-                h->ref_cache[list][scan8[0] + 4 - 1*8]= s->current_picture.ref_index[list][b8_xy];
-            }else{
-                *(uint32_t*)h->mv_cache [list][scan8[0] + 4 - 1*8]= 0;
-                h->ref_cache[list][scan8[0] + 4 - 1*8]= topright_type ? LIST_NOT_USED : PART_NOT_AVAILABLE;
-            }
-            
             //FIXME unify cleanup or sth
             if(IS_INTER(left_type[0])){
                 const int b_xy= h->mb2b_xy[left_xy[0]] + 3;
@@ -743,8 +729,29 @@ static inline void fill_caches(H264Context *h, int mb_type, int for_deblock){
                 h->ref_cache[list][scan8[0] - 1 + 3*8]= left_type[0] ? LIST_NOT_USED : PART_NOT_AVAILABLE;
             }
 
-            if(for_deblock)
+            if(for_deblock || (IS_DIRECT(mb_type) && !h->direct_spatial_mv_pred))
                 continue;
+
+            if(IS_INTER(topleft_type)){
+                const int b_xy = h->mb2b_xy[topleft_xy] + 3 + 3*h->b_stride;
+                const int b8_xy= h->mb2b8_xy[topleft_xy] + 1 + h->b8_stride;
+                *(uint32_t*)h->mv_cache[list][scan8[0] - 1 - 1*8]= *(uint32_t*)s->current_picture.motion_val[list][b_xy];
+                h->ref_cache[list][scan8[0] - 1 - 1*8]= s->current_picture.ref_index[list][b8_xy];
+            }else{
+                *(uint32_t*)h->mv_cache[list][scan8[0] - 1 - 1*8]= 0;
+                h->ref_cache[list][scan8[0] - 1 - 1*8]= topleft_type ? LIST_NOT_USED : PART_NOT_AVAILABLE;
+            }
+            
+            if(IS_INTER(topright_type)){
+                const int b_xy= h->mb2b_xy[topright_xy] + 3*h->b_stride;
+                const int b8_xy= h->mb2b8_xy[topright_xy] + h->b8_stride;
+                *(uint32_t*)h->mv_cache[list][scan8[0] + 4 - 1*8]= *(uint32_t*)s->current_picture.motion_val[list][b_xy];
+                h->ref_cache[list][scan8[0] + 4 - 1*8]= s->current_picture.ref_index[list][b8_xy];
+            }else{
+                *(uint32_t*)h->mv_cache [list][scan8[0] + 4 - 1*8]= 0;
+                h->ref_cache[list][scan8[0] + 4 - 1*8]= topright_type ? LIST_NOT_USED : PART_NOT_AVAILABLE;
+            }
+            
 
             h->ref_cache[list][scan8[5 ]+1] = 
             h->ref_cache[list][scan8[7 ]+1] = 
