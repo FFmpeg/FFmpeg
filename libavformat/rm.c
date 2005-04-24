@@ -606,7 +606,7 @@ static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
                tag,
                tag_size);
 #endif
-        if (tag_size < 10)
+        if (tag_size < 10 && tag != MKTAG('D', 'A', 'T', 'A'))
             goto fail;
         switch(tag) {
         case MKTAG('P', 'R', 'O', 'P'):

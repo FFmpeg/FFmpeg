@@ -440,21 +440,23 @@ static int rv20_decode_picture_header(MpegEncContext *s)
         }
         seq= get_bits(&s->gb, 14)<<1;
 
-        if(v>1 || (s->avctx->sub_id < 0x20201002 && v>0)){
-            f= get_bits(&s->gb, av_log2(v-1)+1);
-        }
-        
+        if(v) 
+            f= get_bits(&s->gb, av_log2(v));
+
         if(s->avctx->debug & FF_DEBUG_PICT_INFO){
             av_log(s->avctx, AV_LOG_DEBUG, "F %d/%d\n", f, v);
         }
+    }else{
+        seq= get_bits(&s->gb, 8)*128;
+    }
 
+//     if(s->avctx->sub_id <= 0x20201002){ //0x20201002 definitely needs this 
+    mb_pos= ff_h263_decode_mba(s);
+/*    }else{
         mb_pos= get_bits(&s->gb, av_log2(s->mb_num-1)+1);
         s->mb_x= mb_pos % s->mb_width;
         s->mb_y= mb_pos / s->mb_width;
-    }else{
-        seq= get_bits(&s->gb, 8)*128;
-        mb_pos= ff_h263_decode_mba(s);
-    }
+    }*/
 //av_log(s->avctx, AV_LOG_DEBUG, "%d\n", seq);
     seq |= s->time &~0x7FFF;
     if(seq - s->time >  0x4000) seq -= 0x8000;
