@@ -2275,10 +2275,34 @@ SwsContext *sws_getContext(int srcW, int srcH, int origSrcFormat, int dstW, int 
  */
 int sws_scale_ordered(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
                            int srcSliceH, uint8_t* dst[], int dstStride[]){
-	//copy strides, so they can safely be modified
-	int srcStride2[3]= {srcStride[0], srcStride[1], srcStride[2]};
-	int dstStride2[3]= {dstStride[0], dstStride[1], dstStride[2]};
-	return c->swScale(c, src, srcStride2, srcSliceY, srcSliceH, dst, dstStride2);
+	if (c->sliceDir == 0 && srcSliceY != 0 && srcSliceY + srcSliceH != c->srcH) {
+	    MSG_ERR("swScaler: slices start in the middle!\n");
+	    return 0;
+	}
+	if (c->sliceDir == 0) {
+	    if (srcSliceY == 0) c->sliceDir = 1; else c->sliceDir = -1;
+	}
+
+	// copy strides, so they can safely be modified
+	if (c->sliceDir == 1) {
+	    // slices go from top to bottom
+	    int srcStride2[3]= {srcStride[0], srcStride[1], srcStride[2]};
+	    int dstStride2[3]= {dstStride[0], dstStride[1], dstStride[2]};
+	    return c->swScale(c, src, srcStride2, srcSliceY, srcSliceH, dst, dstStride2);
+	} else {
+	    // slices go from bottom to top => we flip the image internally
+	    uint8_t* src2[3]= {src[0] + (srcSliceH-1)*srcStride[0],
+			       src[1] + ((srcSliceH>>c->chrSrcVSubSample)-1)*srcStride[1],
+			       src[2] + ((srcSliceH>>c->chrSrcVSubSample)-1)*srcStride[2]
+	    };
+	    uint8_t* dst2[3]= {dst[0] + (c->dstH-1)*dstStride[0],
+			       dst[1] + ((c->dstH>>c->chrDstVSubSample)-1)*dstStride[1],
+			       dst[2] + ((c->dstH>>c->chrDstVSubSample)-1)*dstStride[2]};
+	    int srcStride2[3]= {-srcStride[0], -srcStride[1], -srcStride[2]};
+	    int dstStride2[3]= {-dstStride[0], -dstStride[1], -dstStride[2]};
+	    
+	    return c->swScale(c, src2, srcStride2, c->srcH-srcSliceY-srcSliceH, srcSliceH, dst2, dstStride2);
+	}
 }
 
 /**
