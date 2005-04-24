@@ -1425,7 +1425,7 @@ static int PlanarToNV12Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], i
              int srcSliceH, uint8_t* dstParam[], int dstStride[]){
 	uint8_t *dst=dstParam[0] + dstStride[0]*srcSliceY;
 	/* Copy Y plane */
-	if(dstStride[0]==srcStride[0])
+	if(dstStride[0]==srcStride[0] && srcStride[0] > 0)
 		memcpy(dst, src[0], srcSliceH*dstStride[0]);
 	else
 	{
@@ -1559,7 +1559,7 @@ static int yvu9toyv12Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], int
 	int i;
 
 	/* copy Y */
-	if(srcStride[0]==dstStride[0]) 
+	if(srcStride[0]==dstStride[0] && srcStride[0] > 0) 
 		memcpy(dst[0]+ srcSliceY*dstStride[0], src[0], srcStride[0]*srcSliceH);
 	else{
 		uint8_t *srcPtr= src[0];
@@ -1633,7 +1633,7 @@ static int simpleCopy(SwsContext *c, uint8_t* src[], int srcStride[], int srcSli
 
 	if(isPacked(c->srcFormat))
 	{
-		if(dstStride[0]==srcStride[0])
+		if(dstStride[0]==srcStride[0] && srcStride[0] > 0)
 			memcpy(dst[0] + dstStride[0]*srcSliceY, src[0], srcSliceH*dstStride[0]);
 		else
 		{
@@ -1671,7 +1671,7 @@ static int simpleCopy(SwsContext *c, uint8_t* src[], int srcStride[], int srcSli
 			}
 			else
 			{
-				if(dstStride[plane]==srcStride[plane])
+				if(dstStride[plane]==srcStride[plane] && srcStride[plane] > 0)
 					memcpy(dst[plane] + dstStride[plane]*y, src[plane], height*dstStride[plane]);
 				else
 				{
