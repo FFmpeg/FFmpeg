@@ -6079,6 +6079,10 @@ static void filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint8
     const int mb_xy= mb_x + mb_y*s->mb_stride;
     int first_vertical_edge_done = 0;
     int dir;
+    /* FIXME: A given frame may occupy more than one position in
+     * the reference list. So ref2frm should be populated with
+     * frame numbers, not indices. */
+    static const int ref2frm[18] = {-1,-1,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
 
     if (h->mb_aff_frame
             // left mb is in picture
@@ -6110,13 +6114,10 @@ static void filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint8
                 h->non_zero_count_cache[bn_idx] != 0 ) {
                 bS[i] = 2;
             } else {
-                /* FIXME: A given frame may occupy more than one position in
-                 * the reference list. So we should compare the frame numbers,
-                 * not the indices in the ref list. */
                 int l;
                 bS[i] = 0;
                 for( l = 0; l < 1 + (h->slice_type == B_TYPE); l++ ) {
-                    if( h->ref_cache[l][b_idx] != h->ref_cache[l][bn_idx] ||
+                    if( ref2frm[h->ref_cache[l][b_idx]+2] != ref2frm[h->ref_cache[l][bn_idx]+2] ||
                         ABS( h->mv_cache[l][b_idx][0] - h->mv_cache[l][bn_idx][0] ) >= 4 ||
                         ABS( h->mv_cache[l][b_idx][1] - h->mv_cache[l][bn_idx][1] ) >= 4 ) {
                         bS[i] = 1;
@@ -6249,13 +6250,10 @@ static void filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint8
                     }
                     else
                     {
-                        /* FIXME: A given frame may occupy more than one position in
-                         * the reference list. So we should compare the frame numbers,
-                         * not the indices in the ref list. */
                         int l;
                         bS[i] = 0;
                         for( l = 0; l < 1 + (h->slice_type == B_TYPE); l++ ) {
-                            if( h->ref_cache[l][b_idx] != h->ref_cache[l][bn_idx] ||
+                            if( ref2frm[h->ref_cache[l][b_idx]+2] != ref2frm[h->ref_cache[l][bn_idx]+2] ||
                                 ABS( h->mv_cache[l][b_idx][0] - h->mv_cache[l][bn_idx][0] ) >= 4 ||
                                 ABS( h->mv_cache[l][b_idx][1] - h->mv_cache[l][bn_idx][1] ) >= 4 ) {
                                 bS[i] = 1;
