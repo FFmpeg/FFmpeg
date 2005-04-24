@@ -101,7 +101,7 @@ static int amr_read_header(AVFormatContext *s,
         }
     
         st->codec.codec_type = CODEC_TYPE_AUDIO;
-        st->codec.codec_tag = CODEC_ID_AMR_WB;
+        st->codec.codec_tag = MKTAG('s', 'a', 'w', 'b');
         st->codec.codec_id = CODEC_ID_AMR_WB;
         st->codec.channels = 1;
         st->codec.sample_rate = 16000;
@@ -115,7 +115,7 @@ static int amr_read_header(AVFormatContext *s,
         }
     
         st->codec.codec_type = CODEC_TYPE_AUDIO;
-        st->codec.codec_tag = CODEC_ID_AMR_NB;
+        st->codec.codec_tag = MKTAG('s', 'a', 'm', 'r');
         st->codec.codec_id = CODEC_ID_AMR_NB;
         st->codec.channels = 1;
         st->codec.sample_rate = 8000;
