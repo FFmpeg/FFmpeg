@@ -102,7 +102,7 @@ static int dc1394_read_header(AVFormatContext *c, AVFormatParameters * ap)
     /* Now lets prep the hardware */
     dc1394->handle = dc1394_create_handle(0); /* FIXME: gotta have ap->port */
     if (!dc1394->handle) {
-	av_log(c, AV_LOG_ERROR, "Can't aquire dc1394 handle on port %d\n", 0 /* ap->port */);
+	av_log(c, AV_LOG_ERROR, "Can't acquire dc1394 handle on port %d\n", 0 /* ap->port */);
         goto out;
     }
     camera_nodes = dc1394_get_camera_nodes(dc1394->handle, &res, 1);

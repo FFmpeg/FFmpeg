@@ -162,7 +162,7 @@ typedef struct H264Context{
 
     int chroma_qp; //QPc
 
-    int prev_mb_skiped; //FIXME remove (IMHO not used)
+    int prev_mb_skipped; //FIXME remove (IMHO not used)
 
     //prediction stuff
     int chroma_pred_mode;
@@ -4205,7 +4205,7 @@ static void decode_mb_skip(H264Context *h){
     s->current_picture.mb_type[mb_xy]= mb_type|MB_TYPE_SKIP;
     s->current_picture.qscale_table[mb_xy]= s->qscale;
     h->slice_table[ mb_xy ]= h->slice_num;
-    h->prev_mb_skiped= 1;
+    h->prev_mb_skipped= 1;
 }
 
 /**
@@ -4232,12 +4232,12 @@ static int decode_mb_cavlc(H264Context *h){
         }
     }
     if(h->mb_aff_frame){
-        if ( ((s->mb_y&1) == 0) || h->prev_mb_skiped)
+        if ( ((s->mb_y&1) == 0) || h->prev_mb_skipped)
             h->mb_field_decoding_flag = get_bits1(&s->gb);
     }else
         h->mb_field_decoding_flag= (s->picture_structure!=PICT_FRAME);
     
-    h->prev_mb_skiped= 0;
+    h->prev_mb_skipped= 0;
     
     mb_type= get_ue_golomb(&s->gb);
     if(h->slice_type == B_TYPE){
@@ -5209,12 +5209,12 @@ static int decode_mb_cabac(H264Context *h) {
         }
     }
     if(h->mb_aff_frame){
-        if ( ((s->mb_y&1) == 0) || h->prev_mb_skiped)
+        if ( ((s->mb_y&1) == 0) || h->prev_mb_skipped)
             h->mb_field_decoding_flag = decode_cabac_field_decoding_flag(h);
     }else
         h->mb_field_decoding_flag= (s->picture_structure!=PICT_FRAME);
 
-    h->prev_mb_skiped = 0;
+    h->prev_mb_skipped = 0;
 
     compute_mb_neighboors(h);
     if( ( mb_type = decode_cabac_mb_type( h ) ) < 0 ) {
@@ -6628,7 +6628,7 @@ static inline int decode_seq_parameter_set(H264Context *h){
         sps->crop_top   = get_ue_golomb(&s->gb);
         sps->crop_bottom= get_ue_golomb(&s->gb);
         if(sps->crop_left || sps->crop_top){
-            av_log(h->s.avctx, AV_LOG_ERROR, "insane cropping not completly supported, this could look slightly wrong ...\n");
+            av_log(h->s.avctx, AV_LOG_ERROR, "insane cropping not completely supported, this could look slightly wrong ...\n");
         }
     }else{
         sps->crop_left  = 
@@ -7022,7 +7022,7 @@ static int decode_frame(AVCodecContext *avctx,
 
     //FIXME do something with unavailable reference frames    
  
-//    if(ret==FRAME_SKIPED) return get_consumed_bytes(s, buf_index, buf_size);
+//    if(ret==FRAME_SKIPPED) return get_consumed_bytes(s, buf_index, buf_size);
     if(!s->current_picture_ptr){
         av_log(h->s.avctx, AV_LOG_DEBUG, "error, NO frame\n");
         return -1;

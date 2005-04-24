@@ -1300,7 +1300,7 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
             c->sub_motion_search(s, &mx, &my, dmin, 0, 0, 0, 16);
             if(s->flags&CODEC_FLAG_MV0)
                 if(mx || my)
-                    mb_type |= CANDIDATE_MB_TYPE_SKIPED; //FIXME check difference
+                    mb_type |= CANDIDATE_MB_TYPE_SKIPPED; //FIXME check difference
         }else{
             mx <<=shift;
             my <<=shift;

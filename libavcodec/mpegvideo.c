@@ -409,7 +409,7 @@ static int alloc_picture(MpegEncContext *s, Picture *pic, int shared){
     memmove(s->prev_pict_types+1, s->prev_pict_types, PREV_PICT_TYPES_BUFFER_SIZE-1);
     s->prev_pict_types[0]= s->pict_type;
     if(pic->age < PREV_PICT_TYPES_BUFFER_SIZE && s->prev_pict_types[pic->age] == B_TYPE)
-        pic->age= INT_MAX; // skiped MBs in b frames are quite rare in mpeg1/2 and its a bit tricky to skip them anyway
+        pic->age= INT_MAX; // skipped MBs in b frames are quite rare in mpeg1/2 and its a bit tricky to skip them anyway
     
     return 0;
 fail: //for the CHECKED_ALLOCZ macro
@@ -1444,7 +1444,7 @@ int MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
 {
     int i;
     AVFrame *pic;
-    s->mb_skiped = 0;
+    s->mb_skipped = 0;
 
     assert(s->last_picture_ptr==NULL || s->out_format != FMT_H264 || s->codec_id == CODEC_ID_SVQ3);
 
@@ -3227,7 +3227,7 @@ static inline void MPV_motion(MpegEncContext *s,
         const int mot_stride= s->b8_stride;
         const int mot_xy= mb_x*2 + mb_y*2*mot_stride;
 
-        assert(!s->mb_skiped);
+        assert(!s->mb_skipped);
                 
         memcpy(mv_cache[1][1], s->current_picture.motion_val[0][mot_xy           ], sizeof(int16_t)*4);
         memcpy(mv_cache[2][1], s->current_picture.motion_val[0][mot_xy+mot_stride], sizeof(int16_t)*4);
@@ -3699,11 +3699,11 @@ static always_inline void MPV_decode_mb_internal(MpegEncContext *s, DCTELEM bloc
 
             assert(age);
 
-            if (s->mb_skiped) {
-                s->mb_skiped= 0;
+            if (s->mb_skipped) {
+                s->mb_skipped= 0;
                 assert(s->pict_type!=I_TYPE);
  
-                (*mbskip_ptr) ++; /* indicate that this time we skiped it */
+                (*mbskip_ptr) ++; /* indicate that this time we skipped it */
                 if(*mbskip_ptr >99) *mbskip_ptr= 99;
 
                 /* if previous was skipped too, then nothing to do !  */
@@ -4374,7 +4374,7 @@ static inline void copy_context_before_encode(MpegEncContext *d, MpegEncContext 
     d->misc_bits= s->misc_bits;
     d->last_bits= 0;
 
-    d->mb_skiped= 0;
+    d->mb_skipped= 0;
     d->qscale= s->qscale;
     d->dquant= s->dquant;
 }
@@ -4401,7 +4401,7 @@ static inline void copy_context_after_encode(MpegEncContext *d, MpegEncContext *
     d->misc_bits= s->misc_bits;
 
     d->mb_intra= s->mb_intra;
-    d->mb_skiped= s->mb_skiped;
+    d->mb_skipped= s->mb_skipped;
     d->mv_type= s->mv_type;
     d->mv_dir= s->mv_dir;
     d->pb= s->pb;
@@ -4773,7 +4773,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
                 s->first_slice_line=0; 
             }
 
-            s->mb_skiped=0;
+            s->mb_skipped=0;
             s->dquant=0; //only for QP_RD
 
             if(mb_type & (mb_type-1) || (s->flags & CODEC_FLAG_QP_RD)){ // more than 1 MB type possible or CODEC_FLAG_QP_RD
@@ -4810,13 +4810,13 @@ static int encode_thread(AVCodecContext *c, void *arg){
                     encode_mb_hq(s, &backup_s, &best_s, CANDIDATE_MB_TYPE_INTER_I, pb, pb2, tex_pb, 
                                  &dmin, &next_block, 0, 0);
                 }
-                if(mb_type&CANDIDATE_MB_TYPE_SKIPED){
+                if(mb_type&CANDIDATE_MB_TYPE_SKIPPED){
                     s->mv_dir = MV_DIR_FORWARD;
                     s->mv_type = MV_TYPE_16X16;
                     s->mb_intra= 0;
                     s->mv[0][0][0] = 0;
                     s->mv[0][0][1] = 0;
-                    encode_mb_hq(s, &backup_s, &best_s, CANDIDATE_MB_TYPE_SKIPED, pb, pb2, tex_pb, 
+                    encode_mb_hq(s, &backup_s, &best_s, CANDIDATE_MB_TYPE_SKIPPED, pb, pb2, tex_pb, 
                                  &dmin, &next_block, s->mv[0][0][0], s->mv[0][0][1]);
                 }
                 if(mb_type&CANDIDATE_MB_TYPE_INTER4V){                 

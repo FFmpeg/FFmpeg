@@ -148,7 +148,7 @@ const int mb_xy = s->mb_y * s->mb_stride + s->mb_x;
     }
 
    //MC doesn't skip blocks
-    s->mb_skiped = 0;
+    s->mb_skipped = 0;
 
 
    // do I need to export quant when I could not perform postprocessing?

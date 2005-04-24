@@ -714,7 +714,7 @@ static int decode_init(AVCodecContext *avctx)
                     break;
                 default:
                     if ((c->compression < Z_NO_COMPRESSION) || (c->compression > Z_BEST_COMPRESSION)) {
-                	    av_log(avctx, AV_LOG_ERROR, "Unusupported compression level for ZLIB: (%d).\n", c->compression);
+                	    av_log(avctx, AV_LOG_ERROR, "Unsupported compression level for ZLIB: (%d).\n", c->compression);
                         return 1;
                     }
                     av_log(avctx, AV_LOG_INFO, "Compression level for ZLIB: (%d).\n", c->compression);

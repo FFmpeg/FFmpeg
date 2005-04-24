@@ -226,10 +226,10 @@ static int encode_init(AVCodecContext *avctx)
 
     if(find_frame_rate_index(s) < 0){
         if(s->strict_std_compliance >=0){
-            av_log(avctx, AV_LOG_ERROR, "MPEG1/2 doesnt support %d/%d fps\n", avctx->frame_rate, avctx->frame_rate_base);
+            av_log(avctx, AV_LOG_ERROR, "MPEG1/2 does not support %d/%d fps\n", avctx->frame_rate, avctx->frame_rate_base);
             return -1;
         }else{
-            av_log(avctx, AV_LOG_INFO, "MPEG1/2 doesnt support %d/%d fps, there may be AV sync issues\n", avctx->frame_rate, avctx->frame_rate_base);
+            av_log(avctx, AV_LOG_INFO, "MPEG1/2 does not support %d/%d fps, there may be AV sync issues\n", avctx->frame_rate, avctx->frame_rate_base);
         }
     }
     
@@ -1055,11 +1055,11 @@ static int mpeg_decode_mb(MpegEncContext *s,
 
     dprintf("decode_mb: x=%d y=%d\n", s->mb_x, s->mb_y);
 
-    assert(s->mb_skiped==0);
+    assert(s->mb_skipped==0);
 
     if (s->mb_skip_run-- != 0) {
         if(s->pict_type == I_TYPE){
-            av_log(s->avctx, AV_LOG_ERROR, "skiped MB in I frame at %d %d\n", s->mb_x, s->mb_y);
+            av_log(s->avctx, AV_LOG_ERROR, "skipped MB in I frame at %d %d\n", s->mb_x, s->mb_y);
             return -1;
         }
     
@@ -1078,7 +1078,7 @@ static int mpeg_decode_mb(MpegEncContext *s,
             s->last_mv[0][0][0] = s->last_mv[0][0][1] = 0;
             s->last_mv[0][1][0] = s->last_mv[0][1][1] = 0;
             s->field_select[0][0]= s->picture_structure - 1;
-            s->mb_skiped = 1;
+            s->mb_skipped = 1;
             s->current_picture.mb_type[ s->mb_x + s->mb_y*s->mb_stride ]= MB_TYPE_SKIP | MB_TYPE_L0 | MB_TYPE_16x16;
         } else {
             int mb_type;
@@ -1101,7 +1101,7 @@ static int mpeg_decode_mb(MpegEncContext *s,
 //            assert(s->current_picture.mb_type[ s->mb_x + s->mb_y*s->mb_stride - 1]&(MB_TYPE_16x16|MB_TYPE_16x8));
 
             if((s->mv[0][0][0]|s->mv[0][0][1]|s->mv[1][0][0]|s->mv[1][0][1])==0) 
-                s->mb_skiped = 1;
+                s->mb_skipped = 1;
         }
 
         return 0;

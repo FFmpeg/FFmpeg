@@ -931,7 +931,7 @@ static int decode_main_header(NUTContext *nut){
     }
 
     if(check_checksum(bc)){
-        av_log(s, AV_LOG_ERROR, "Main header checksum missmatch\n");
+        av_log(s, AV_LOG_ERROR, "Main header checksum mismatch\n");
         return -1;
     }
 
@@ -1012,7 +1012,7 @@ static int decode_stream_header(NUTContext *nut){
         st->codec.channels = get_v(bc);
     }
     if(check_checksum(bc)){
-        av_log(s, AV_LOG_ERROR, "Stream header %d checksum missmatch\n", stream_id);
+        av_log(s, AV_LOG_ERROR, "Stream header %d checksum mismatch\n", stream_id);
         return -1;
     }
     av_set_pts_info(s->streams[stream_id], 60, denom, nom);
@@ -1067,7 +1067,7 @@ static int decode_info_header(NUTContext *nut){
         }
     }
     if(check_checksum(bc)){
-        av_log(s, AV_LOG_ERROR, "Info header checksum missmatch\n");
+        av_log(s, AV_LOG_ERROR, "Info header checksum mismatch\n");
         return -1;
     }
     return 0;

@@ -542,7 +542,7 @@ static int encode_init(AVCodecContext *avctx)
         if(s->interlaced != ( s->height > 288 ))
             av_log(avctx, AV_LOG_INFO, "using huffyuv 2.2.0 or newer interlacing flag\n");
     }else if(avctx->strict_std_compliance>=0){
-        av_log(avctx, AV_LOG_ERROR, "This codec is under development; files encoded with it may not be decodeable with future versions!!! Set vstrict=-1 / -strict -1 to use it anyway.\n");
+        av_log(avctx, AV_LOG_ERROR, "This codec is under development; files encoded with it may not be decodable with future versions!!! Set vstrict=-1 / -strict -1 to use it anyway.\n");
         return -1;
     }
     
@@ -827,7 +827,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
             p->data[0][1]= get_bits(&s->gb, 8);
             p->data[0][0]= get_bits(&s->gb, 8);
             
-            av_log(avctx, AV_LOG_ERROR, "YUY2 output isnt implemenetd yet\n");
+            av_log(avctx, AV_LOG_ERROR, "YUY2 output is not implemented yet\n");
             return -1;
         }else{
         
@@ -996,14 +996,14 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
                         }
                     }
                 }
-                draw_slice(s, height); // just 1 large slice as this isnt possible in reverse order
+                draw_slice(s, height); // just 1 large slice as this is not possible in reverse order
                 break;
             default:
                 av_log(avctx, AV_LOG_ERROR, "prediction type not supported!\n");
             }
         }else{
 
-            av_log(avctx, AV_LOG_ERROR, "BGR24 output isnt implemenetd yet\n");
+            av_log(avctx, AV_LOG_ERROR, "BGR24 output is not implemented yet\n");
             return -1;
         }
     }

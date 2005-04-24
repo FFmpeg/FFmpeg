@@ -891,7 +891,7 @@ void free_bitplane(BitPlane *bp)
     if (bp->data) av_freep(&bp->data);
 }
 
-/** Decode rows by checking if they are skiped
+/** Decode rows by checking if they are skipped
  * @param plane Buffer to store decoded bits
  * @param[in] width Width of this buffer
  * @param[in] height Height of this buffer
@@ -910,7 +910,7 @@ static void decode_rowskip(uint8_t* plane, int width, int height, int stride, Ge
     }
 }
 
-/** Decode columns by checking if they are skiped
+/** Decode columns by checking if they are skipped
  * @param plane Buffer to store decoded bits
  * @param[in] width Width of this buffer
  * @param[in] height Height of this buffer
@@ -1126,14 +1126,14 @@ static int decode_b_picture_primary_header(VC9Context *v)
     if (v->profile == PROFILE_SIMPLE)
     {
         av_log(v->s.avctx, AV_LOG_ERROR, "Found a B frame while in Simple Profile!\n");
-        return FRAME_SKIPED;
+        return FRAME_SKIPPED;
     }
     v->bfraction = vc9_bfraction_lut[get_vlc2(gb, vc9_bfraction_vlc.table,
                                               VC9_BFRACTION_VLC_BITS, 2)];
     if (v->bfraction < -1)
     {
         av_log(v->s.avctx, AV_LOG_ERROR, "Invalid BFRaction\n");
-        return FRAME_SKIPED;
+        return FRAME_SKIPPED;
     }
     else if (!v->bfraction)
     {
@@ -1474,7 +1474,7 @@ static int standard_decode_picture_primary_header(VC9Context *v)
     case B_TYPE: status = decode_b_picture_primary_header(v); break;
     }
 
-    if (status == FRAME_SKIPED)
+    if (status == FRAME_SKIPPED)
     {
       av_log(v->s.avctx, AV_LOG_INFO, "Skipping frame...\n");
       return status;
@@ -1499,7 +1499,7 @@ static int standard_decode_picture_secondary_header(VC9Context *v)
     case BI_TYPE:
     case I_TYPE: break; //Nothing needed as it's done in the epilog
     }
-    if (status < 0) return FRAME_SKIPED;
+    if (status < 0) return FRAME_SKIPPED;
 
     /* AC Syntax */
     v->c_ac_table_index = decode012(gb);
@@ -1540,7 +1540,7 @@ static int advanced_decode_picture_primary_header(VC9Context *v)
     }
 
     type = get_prefix(gb, 0, 4);
-    if (type > 4 || type < 0) return FRAME_SKIPED;
+    if (type > 4 || type < 0) return FRAME_SKIPPED;
     v->s.pict_type = type_table[type];
     av_log(v->s.avctx, AV_LOG_INFO, "AP Frame Type: %i\n", v->s.pict_type);
 
@@ -1578,7 +1578,7 @@ static int advanced_decode_picture_primary_header(VC9Context *v)
     case I_TYPE: if (decode_i_picture_primary_header(v) < 0) return -1;
     case P_TYPE: if (decode_p_picture_primary_header(v) < 0) return -1;
     case BI_TYPE:
-    case B_TYPE: if (decode_b_picture_primary_header(v) < 0) return FRAME_SKIPED;
+    case B_TYPE: if (decode_b_picture_primary_header(v) < 0) return FRAME_SKIPPED;
     default: return -1;
     }
 }
@@ -1599,7 +1599,7 @@ static int advanced_decode_picture_secondary_header(VC9Context *v)
     case BI_TYPE:
     case I_TYPE: status = decode_i_picture_secondary_header(v); break; 
     }
-    if (status<0) return FRAME_SKIPED;
+    if (status<0) return FRAME_SKIPPED;
 
     /* AC Syntax */
     v->c_ac_table_index = decode012(gb);
@@ -2367,7 +2367,7 @@ static int vc9_decode_frame(AVCodecContext *avctx,
 {
     VC9Context *v = avctx->priv_data;
     MpegEncContext *s = &v->s;
-    int ret = FRAME_SKIPED, len;
+    int ret = FRAME_SKIPPED, len;
     AVFrame *pict = data;
     uint8_t *tmp_buf;
     v->s.avctx = avctx;
@@ -2470,7 +2470,7 @@ static int vc9_decode_frame(AVCodecContext *avctx,
     else
 #endif
         ret= standard_decode_picture_primary_header(v);
-    if (ret == FRAME_SKIPED) return buf_size;
+    if (ret == FRAME_SKIPPED) return buf_size;
     /* skip if the header was thrashed */
     if (ret < 0){
         av_log(s->avctx, AV_LOG_ERROR, "header damaged\n");
@@ -2518,7 +2518,7 @@ static int vc9_decode_frame(AVCodecContext *avctx,
     else
 #endif
         ret = standard_decode_picture_secondary_header(v);
-    if (ret<0) return FRAME_SKIPED; //FIXME Non fatal for now
+    if (ret<0) return FRAME_SKIPPED; //FIXME Non fatal for now
 
     //We consider the image coded in only one slice
 #if HAS_ADVANCED_PROFILE
@@ -2530,15 +2530,15 @@ static int vc9_decode_frame(AVCodecContext *avctx,
             case P_TYPE: ret = decode_p_mbs(v); break;
             case B_TYPE:
             case BI_TYPE: ret = decode_b_mbs(v); break;
-            default: ret = FRAME_SKIPED;
+            default: ret = FRAME_SKIPPED;
         }
-        if (ret == FRAME_SKIPED) return buf_size; //We ignore for now failures
+        if (ret == FRAME_SKIPPED) return buf_size; //We ignore for now failures
     }
     else
 #endif
     {
         ret = standard_decode_mbs(v);
-        if (ret == FRAME_SKIPED) return buf_size;
+        if (ret == FRAME_SKIPPED) return buf_size;
     }
 
     ff_er_frame_end(s);

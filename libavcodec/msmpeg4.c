@@ -1492,7 +1492,7 @@ static int msmpeg4v12_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
                 s->mv_type = MV_TYPE_16X16;
                 s->mv[0][0][0] = 0;
                 s->mv[0][0][1] = 0;
-                s->mb_skiped = 1;
+                s->mb_skipped = 1;
                 return 0;
             }
         }
@@ -1580,7 +1580,7 @@ static int msmpeg4v34_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
                 s->mv_type = MV_TYPE_16X16;
                 s->mv[0][0][0] = 0;
                 s->mv[0][0][1] = 0;
-                s->mb_skiped = 1;
+                s->mb_skipped = 1;
                 *mb_type_ptr = MB_TYPE_SKIP | MB_TYPE_L0 | MB_TYPE_16x16;
 
                 return 0;

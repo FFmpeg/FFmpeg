@@ -579,7 +579,7 @@ static int asf_read_packet(AVFormatContext *s, AVPacket *pkt)
 	    asf_st->frag_offset = 0;
 	    if (asf->packet_frag_offset != 0) {
 		url_fskip(pb, asf->packet_frag_size);
-		av_log(s, AV_LOG_INFO, "ff asf parser skiping %db\n", asf->packet_frag_size);
+		av_log(s, AV_LOG_INFO, "ff asf parser skipping %db\n", asf->packet_frag_size);
 		asf->packet_size_left -= asf->packet_frag_size;
 		continue;
 	    }

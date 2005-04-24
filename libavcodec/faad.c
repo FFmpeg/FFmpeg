@@ -158,7 +158,7 @@ static int faac_decode_frame(AVCodecContext *avctx,
     out = s->faacDecDecode(s->faac_handle, &frame_info, (unsigned char*)buf, (unsigned long)buf_size);
 
     if (frame_info.error > 0) {
-	av_log(avctx, AV_LOG_ERROR, "faac: frame decodinf failed: %s\n",
+	av_log(avctx, AV_LOG_ERROR, "faac: frame decoding failed: %s\n",
 		s->faacDecGetErrorMessage(frame_info.error));
         return 0;
     }

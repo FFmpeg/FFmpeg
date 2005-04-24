@@ -564,7 +564,7 @@ static int decode_i_frame(FourXContext *f, uint8_t *buf, int length){
     if(prestream_size + bitstream_size + 12 != length
        || bitstream_size > (1<<26)
        || prestream_size > (1<<26)){
-        av_log(f->avctx, AV_LOG_ERROR, "size missmatch %d %d %d\n", prestream_size, bitstream_size, length);
+        av_log(f->avctx, AV_LOG_ERROR, "size mismatch %d %d %d\n", prestream_size, bitstream_size, length);
         return -1;
     }
    
@@ -591,7 +591,7 @@ static int decode_i_frame(FourXContext *f, uint8_t *buf, int length){
     }
 
     if(get_vlc2(&f->pre_gb, f->pre_vlc.table, ACDC_VLC_BITS, 3) != 256)
-        av_log(f->avctx, AV_LOG_ERROR, "end missmatch\n");
+        av_log(f->avctx, AV_LOG_ERROR, "end mismatch\n");
     
     return 0;
 }
@@ -607,7 +607,7 @@ static int decode_frame(AVCodecContext *avctx,
 
     frame_4cc= get32(buf);
     if(buf_size != get32(buf+4)+8){
-        av_log(f->avctx, AV_LOG_ERROR, "size missmatch %d %d\n", buf_size, get32(buf+4));
+        av_log(f->avctx, AV_LOG_ERROR, "size mismatch %d %d\n", buf_size, get32(buf+4));
     }
 
     if(frame_4cc == ff_get_fourcc("cfrm")){
@@ -643,7 +643,7 @@ static int decode_frame(AVCodecContext *avctx,
             frame_size= cfrm->size;
             
             if(id != avctx->frame_number){
-                av_log(f->avctx, AV_LOG_ERROR, "cframe id missmatch %d %d\n", id, avctx->frame_number);
+                av_log(f->avctx, AV_LOG_ERROR, "cframe id mismatch %d %d\n", id, avctx->frame_number);
             }
             
             cfrm->size= cfrm->id= 0;

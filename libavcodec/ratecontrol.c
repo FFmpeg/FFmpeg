@@ -79,7 +79,7 @@ int ff_rate_control_init(MpegEncContext *s)
         rcc->entry = (RateControlEntry*)av_mallocz(i*sizeof(RateControlEntry));
         rcc->num_entries= i;
         
-        /* init all to skiped p frames (with b frames we might have a not encoded frame at the end FIXME) */
+        /* init all to skipped p frames (with b frames we might have a not encoded frame at the end FIXME) */
         for(i=0; i<rcc->num_entries; i++){
             RateControlEntry *rce= &rcc->entry[i];
             rce->pict_type= rce->new_pict_type=P_TYPE;

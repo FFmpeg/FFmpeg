@@ -1691,14 +1691,14 @@ typedef struct AVCodecContext {
      int nsse_weight;
 
     /**
-     * number of macroblock rows at the top which are skiped.
+     * number of macroblock rows at the top which are skipped.
      * - encoding: unused
      * - decoding: set by user
      */
      int skip_top;
 
     /**
-     * number of macroblock rows at the bottom which are skiped.
+     * number of macroblock rows at the bottom which are skipped.
      * - encoding: unused
      * - decoding: set by user
      */

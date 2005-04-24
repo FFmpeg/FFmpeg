@@ -199,7 +199,7 @@ static int decode_slice(MpegEncContext *s){
             
             s->mv_dir = MV_DIR_FORWARD;
             s->mv_type = MV_TYPE_16X16;
-//            s->mb_skiped = 0;
+//            s->mb_skipped = 0;
 //printf("%d %d %06X\n", ret, get_bits_count(&s->gb), show_bits(&s->gb, 24));
             ret= s->decode_mb(s, s->block);
 
@@ -451,7 +451,7 @@ uint64_t time= rdtsc();
         }else if(s->codec_id==CODEC_ID_H263){
             next= h263_find_frame_end(&s->parse_context, buf, buf_size);
         }else{
-            av_log(s->avctx, AV_LOG_ERROR, "this codec doesnt support truncated bitstreams\n");
+            av_log(s->avctx, AV_LOG_ERROR, "this codec does not support truncated bitstreams\n");
             return -1;
         }
         
@@ -503,7 +503,7 @@ retry:
         ret = h263_decode_picture_header(s);
     }
     
-    if(ret==FRAME_SKIPED) return get_consumed_bytes(s, buf_size);
+    if(ret==FRAME_SKIPPED) return get_consumed_bytes(s, buf_size);
 
     /* skip if the header was thrashed */
     if (ret < 0){

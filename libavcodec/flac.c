@@ -556,7 +556,7 @@ static int decode_frame(FLACContext *s)
     skip_bits(&s->gb, 8);
     crc8= get_crc8(s->gb.buffer, get_bits_count(&s->gb)/8);
     if(crc8){
-        av_log(s->avctx, AV_LOG_ERROR, "header crc missmatch crc=%2X\n", crc8);
+        av_log(s->avctx, AV_LOG_ERROR, "header crc mismatch crc=%2X\n", crc8);
         return -1;
     }
     

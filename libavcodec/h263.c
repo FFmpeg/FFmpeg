@@ -619,7 +619,7 @@ void ff_h263_update_motion_val(MpegEncContext * s){
     const int wrap = s->b8_stride;
     const int xy = s->block_index[0];
     
-    s->current_picture.mbskip_table[mb_xy]= s->mb_skiped; 
+    s->current_picture.mbskip_table[mb_xy]= s->mb_skipped; 
 
     if(s->mv_type != MV_TYPE_8X8){
         int motion_x, motion_y;
@@ -855,7 +855,7 @@ void mpeg4_encode_mb(MpegEncContext * s,
             assert((s->dquant&1)==0);
             assert(mb_type>=0);
 
-            /* nothing to do if this MB was skiped in the next P Frame */
+            /* nothing to do if this MB was skipped in the next P Frame */
             if(s->next_picture.mbskip_table[s->mb_y * s->mb_stride + s->mb_x]){ //FIXME avoid DCT & ...
                 s->skip_count++;
                 s->mv[0][0][0]= 
@@ -864,7 +864,7 @@ void mpeg4_encode_mb(MpegEncContext * s,
                 s->mv[1][0][1]= 0;
                 s->mv_dir= MV_DIR_FORWARD; //doesnt matter
                 s->qscale -= s->dquant;
-//                s->mb_skiped=1;
+//                s->mb_skipped=1;
 
                 return;
             }
@@ -990,7 +990,7 @@ void mpeg4_encode_mb(MpegEncContext * s,
                     offset= x + y*s->linesize;
                     p_pic= s->new_picture.data[0] + offset;
                     
-                    s->mb_skiped=1;
+                    s->mb_skipped=1;
                     for(i=0; i<s->max_b_frames; i++){
                         uint8_t *b_pic;
                         int diff;
@@ -1001,14 +1001,14 @@ void mpeg4_encode_mb(MpegEncContext * s,
                         b_pic= pic->data[0] + offset + 16; //FIXME +16
 			diff= s->dsp.sad[0](NULL, p_pic, b_pic, s->linesize, 16);
                         if(diff>s->qscale*70){ //FIXME check that 70 is optimal
-                            s->mb_skiped=0;
+                            s->mb_skipped=0;
                             break;
                         }
                     }
                 }else
-                    s->mb_skiped=1; 
+                    s->mb_skipped=1; 
 
-                if(s->mb_skiped==1){
+                if(s->mb_skipped==1){
                     /* skip macroblock */
                     put_bits(&s->pb, 1, 1);
 
@@ -3211,7 +3211,7 @@ static int mpeg4_decode_video_packet_header(MpegEncContext *s)
     }
     if(s->pict_type == B_TYPE){
         while(s->next_picture.mbskip_table[ s->mb_index2xy[ mb_num ] ]) mb_num++;
-        if(mb_num >= s->mb_num) return -1; // slice contains just skiped MBs which where allready decoded
+        if(mb_num >= s->mb_num) return -1; // slice contains just skipped MBs which where allready decoded
     }
     
     s->mb_x= mb_num % s->mb_width;
@@ -3729,10 +3729,10 @@ static int mpeg4_decode_partitioned_mb(MpegEncContext *s, DCTELEM block[6][64])
             s->mv_type = MV_TYPE_16X16;
             if(s->pict_type==S_TYPE && s->vol_sprite_usage==GMC_SPRITE){
                 s->mcsel=1;
-                s->mb_skiped = 0;
+                s->mb_skipped = 0;
             }else{
                 s->mcsel=0;
-                s->mb_skiped = 1;
+                s->mb_skipped = 1;
             }
         }else if(s->mb_intra){
             s->ac_pred = IS_ACPRED(s->current_picture.mb_type[xy]);
@@ -3910,7 +3910,7 @@ int ff_h263_decode_mb(MpegEncContext *s,
                 s->current_picture.mb_type[xy]= MB_TYPE_SKIP | MB_TYPE_16x16 | MB_TYPE_L0;
                 s->mv[0][0][0] = 0;
                 s->mv[0][0][1] = 0;
-                s->mb_skiped = !(s->obmc | s->loop_filter);
+                s->mb_skipped = !(s->obmc | s->loop_filter);
                 goto end;
             }
             cbpc = get_vlc2(&s->gb, inter_MCBPC_vlc.table, INTER_MCBPC_VLC_BITS, 2);
@@ -4175,13 +4175,13 @@ int ff_mpeg4_decode_mb(MpegEncContext *s,
                     s->mv[0][0][0]= get_amv(s, 0);
                     s->mv[0][0][1]= get_amv(s, 1);
 
-                    s->mb_skiped = 0;
+                    s->mb_skipped = 0;
                 }else{
                     s->current_picture.mb_type[xy]= MB_TYPE_SKIP | MB_TYPE_16x16 | MB_TYPE_L0;
                     s->mcsel=0;
                     s->mv[0][0][0] = 0;
                     s->mv[0][0][1] = 0;
-                    s->mb_skiped = 1;
+                    s->mb_skipped = 1;
                 }
                 goto end;
             }
@@ -4294,9 +4294,9 @@ int ff_mpeg4_decode_mb(MpegEncContext *s,
         }
 
         /* if we skipped it in the future P Frame than skip it now too */
-        s->mb_skiped= s->next_picture.mbskip_table[s->mb_y * s->mb_stride + s->mb_x]; // Note, skiptab=0 if last was GMC
+        s->mb_skipped= s->next_picture.mbskip_table[s->mb_y * s->mb_stride + s->mb_x]; // Note, skiptab=0 if last was GMC
 
-        if(s->mb_skiped){
+        if(s->mb_skipped){
                 /* skip mb */
             for(i=0;i<6;i++)
                 s->block_last_index[i] = -1;
@@ -5586,7 +5586,7 @@ static int decode_vol_header(MpegEncContext *s, GetBitContext *gb){
         if (get_bits1(gb) == 1) {   /* not_8_bit */
             s->quant_precision = get_bits(gb, 4); /* quant_precision */
             if(get_bits(gb, 4)!=8) av_log(s->avctx, AV_LOG_ERROR, "N-bit not supported\n"); /* bits_per_pixel */
-            if(s->quant_precision!=5) av_log(s->avctx, AV_LOG_ERROR, "quant precission %d\n", s->quant_precision);
+            if(s->quant_precision!=5) av_log(s->avctx, AV_LOG_ERROR, "quant precision %d\n", s->quant_precision);
         } else {
             s->quant_precision = 5;
         }
@@ -5778,7 +5778,7 @@ static int decode_vop_header(MpegEncContext *s, GetBitContext *gb){
 
     s->pict_type = get_bits(gb, 2) + I_TYPE;	/* pict type: I = 0 , P = 1 */
     if(s->pict_type==B_TYPE && s->low_delay && s->vol_control_parameters==0 && !(s->flags & CODEC_FLAG_LOW_DELAY)){
-        av_log(s->avctx, AV_LOG_ERROR, "low_delay flag set, but shouldnt, clearing it\n");
+        av_log(s->avctx, AV_LOG_ERROR, "low_delay flag incorrectly, clearing it\n");
         s->low_delay=0;
     }
  
@@ -5799,7 +5799,7 @@ static int decode_vop_header(MpegEncContext *s, GetBitContext *gb){
     check_marker(gb, "before time_increment");
     
     if(s->time_increment_bits==0){
-        av_log(s->avctx, AV_LOG_ERROR, "hmm, seems the headers arnt complete, trying to guess time_increment_bits\n");
+        av_log(s->avctx, AV_LOG_ERROR, "hmm, seems the headers are not complete, trying to guess time_increment_bits\n");
 
         for(s->time_increment_bits=1 ;s->time_increment_bits<16; s->time_increment_bits++){
             if(show_bits(gb, s->time_increment_bits+1)&1) break;
@@ -5830,8 +5830,8 @@ static int decode_vop_header(MpegEncContext *s, GetBitContext *gb){
         s->time= (s->last_time_base + time_incr)*s->time_increment_resolution + time_increment;
         s->pb_time= s->pp_time - (s->last_non_b_time - s->time);
         if(s->pp_time <=s->pb_time || s->pp_time <= s->pp_time - s->pb_time || s->pp_time<=0){
-//            printf("messed up order, seeking?, skiping current b frame\n");
-            return FRAME_SKIPED;
+//            printf("messed up order, maybe after seeking? skipping current b frame\n");
+            return FRAME_SKIPPED;
         }
         
         if(s->t_frame==0) s->t_frame= s->pb_time;
@@ -5853,7 +5853,7 @@ static int decode_vop_header(MpegEncContext *s, GetBitContext *gb){
     if (get_bits1(gb) != 1){
         if(s->avctx->debug&FF_DEBUG_PICT_INFO)
             av_log(s->avctx, AV_LOG_ERROR, "vop not coded\n");
-        return FRAME_SKIPED;
+        return FRAME_SKIPPED;
     }
 //printf("time %d %d %d || %Ld %Ld %Ld\n", s->time_increment_bits, s->time_increment_resolution, s->time_base,
 //s->time, s->last_non_b_time, s->last_non_b_time - s->pp_time);  
@@ -6003,7 +6003,7 @@ int ff_mpeg4_decode_picture_header(MpegEncContext * s, GetBitContext *gb)
         if(get_bits_count(gb) >= gb->size_in_bits){
             if(gb->size_in_bits==8 && (s->divx_version || s->xvid_build)){
                 av_log(s->avctx, AV_LOG_ERROR, "frame skip %d\n", gb->size_in_bits);
-                return FRAME_SKIPED; //divx bug
+                return FRAME_SKIPPED; //divx bug
             }else
                 return -1; //end of stream
         }
@@ -6032,11 +6032,11 @@ int ff_mpeg4_decode_picture_header(MpegEncContext * s, GetBitContext *gb)
             else if(startcode==0x1BB) av_log(s->avctx, AV_LOG_DEBUG, "FBA Object Plane start");
             else if(startcode==0x1BC) av_log(s->avctx, AV_LOG_DEBUG, "Mesh Object start");
             else if(startcode==0x1BD) av_log(s->avctx, AV_LOG_DEBUG, "Mesh Object Plane start");
-            else if(startcode==0x1BE) av_log(s->avctx, AV_LOG_DEBUG, "Still Textutre Object start");
-            else if(startcode==0x1BF) av_log(s->avctx, AV_LOG_DEBUG, "Textutre Spatial Layer start");
-            else if(startcode==0x1C0) av_log(s->avctx, AV_LOG_DEBUG, "Textutre SNR Layer start");
-            else if(startcode==0x1C1) av_log(s->avctx, AV_LOG_DEBUG, "Textutre Tile start");
-            else if(startcode==0x1C2) av_log(s->avctx, AV_LOG_DEBUG, "Textutre Shape Layer start");
+            else if(startcode==0x1BE) av_log(s->avctx, AV_LOG_DEBUG, "Still Texture Object start");
+            else if(startcode==0x1BF) av_log(s->avctx, AV_LOG_DEBUG, "Texture Spatial Layer start");
+            else if(startcode==0x1C0) av_log(s->avctx, AV_LOG_DEBUG, "Texture SNR Layer start");
+            else if(startcode==0x1C1) av_log(s->avctx, AV_LOG_DEBUG, "Texture Tile start");
+            else if(startcode==0x1C2) av_log(s->avctx, AV_LOG_DEBUG, "Texture Shape Layer start");
             else if(startcode==0x1C3) av_log(s->avctx, AV_LOG_DEBUG, "stuffing start");
             else if(startcode<=0x1C5) av_log(s->avctx, AV_LOG_DEBUG, "reserved");
             else if(startcode<=0x1FF) av_log(s->avctx, AV_LOG_DEBUG, "System start");

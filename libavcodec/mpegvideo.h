@@ -29,7 +29,7 @@
 #include "dsputil.h"
 #include "bitstream.h"
 
-#define FRAME_SKIPED 100 ///< return value for header parsers if frame is not coded
+#define FRAME_SKIPPED 100 ///< return value for header parsers if frame is not coded
 
 enum OutputFormat {
     FMT_MPEG1,
@@ -203,7 +203,7 @@ struct MpegEncContext;
  */
 typedef struct MotionEstContext{
     AVCodecContext *avctx;
-    int skip;                          ///< set if ME is skiped for the current MB 
+    int skip;                          ///< set if ME is skipped for the current MB 
     int co_located_mv[4][2];           ///< mv from last p frame for direct mode ME 
     int direct_basis_mv[4][2];
     uint8_t *scratchpad;               ///< data area for the me algo, so that the ME doesnt need to malloc/free 
@@ -350,7 +350,7 @@ typedef struct MpegEncContext {
     int ac_pred;
     uint8_t *prev_pict_types;     ///< previous picture types in bitstream order, used for mb skip 
 #define PREV_PICT_TYPES_BUFFER_SIZE 256
-    int mb_skiped;                ///< MUST BE SET only during DECODING 
+    int mb_skipped;                ///< MUST BE SET only during DECODING 
     uint8_t *mbskip_table;        /**< used to avoid copy if macroblock skipped (for black regions for example) 
                                    and used for b-frame encoding & decoding (contains skip table of next P Frame) */
     uint8_t *mbintra_table;       ///< used to avoid setting {ac, dc, cbp}-pred stuff to zero on inter MB decoding 
@@ -378,7 +378,7 @@ typedef struct MpegEncContext {
     /* motion compensation */
     int unrestricted_mv;        ///< mv can point outside of the coded picture 
     int h263_long_vectors;      ///< use horrible h263v1 long vector mode 
-    int decode;                 ///< if 0 then decoding will be skiped (for encoding b frames for example)
+    int decode;                 ///< if 0 then decoding will be skipped (for encoding b frames for example)
 
     DSPContext dsp;             ///< pointers for accelerated dsp fucntions 
     int f_code;                 ///< forward MV resolution 
@@ -427,7 +427,7 @@ typedef struct MpegEncContext {
     int no_rounding;  /**< apply no rounding to motion compensation (MPEG4, msmpeg4, ...) 
                         for b-frames rounding mode is allways 0 */
 
-    int hurry_up;     /**< when set to 1 during decoding, b frames will be skiped
+    int hurry_up;     /**< when set to 1 during decoding, b frames will be skipped
                          when set to 2 idct/dequant will be skipped too */
                         
     /* macroblock layer */
@@ -438,7 +438,7 @@ typedef struct MpegEncContext {
 #define CANDIDATE_MB_TYPE_INTRA    0x01
 #define CANDIDATE_MB_TYPE_INTER    0x02
 #define CANDIDATE_MB_TYPE_INTER4V  0x04
-#define CANDIDATE_MB_TYPE_SKIPED   0x08
+#define CANDIDATE_MB_TYPE_SKIPPED   0x08
 //#define MB_TYPE_GMC      0x10
 
 #define CANDIDATE_MB_TYPE_DIRECT   0x10
