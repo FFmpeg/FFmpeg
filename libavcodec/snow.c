@@ -2950,7 +2950,7 @@ static void quantize(SnowContext *s, SubBand *b, DWTELEM *src, int stride, int b
     }
 }
 
-static void dequantize_buffered(SnowContext *s, slice_buffer * sb, SubBand *b, DWTELEM *src, int stride){
+static void dequantize_slice_buffered(SnowContext *s, slice_buffer * sb, SubBand *b, DWTELEM *src, int stride, int start_y, int end_y){
     const int w= b->width;
     const int h= b->height;
     const int qlog= clip(s->qlog + b->qlog, 0, QROOT*16);
@@ -2961,7 +2961,7 @@ static void dequantize_buffered(SnowContext *s, slice_buffer * sb, SubBand *b, D
     
     if(s->qlog == LOSSLESS_QLOG) return;
     
-    for(y=0; y<h; y++){
+    for(y=start_y; y<end_y; y++){
 //        DWTELEM * line = slice_buffer_get_line_from_address(sb, src + (y * stride));
         DWTELEM * line = slice_buffer_get_line(sb, (y * b->stride_line) + b->buf_y_offset) + b->buf_x_offset;
         for(x=0; x<w; x++){
@@ -3028,7 +3028,7 @@ static void decorrelate(SnowContext *s, SubBand *b, DWTELEM *src, int stride, in
     }
 }
 
-static void correlate_buffered(SnowContext *s, slice_buffer * sb, SubBand *b, DWTELEM *src, int stride, int inverse, int use_median){
+static void correlate_slice_buffered(SnowContext *s, slice_buffer * sb, SubBand *b, DWTELEM *src, int stride, int inverse, int use_median, int start_y, int end_y){
     const int w= b->width;
     const int h= b->height;
     int x,y;
@@ -3038,7 +3038,10 @@ static void correlate_buffered(SnowContext *s, slice_buffer * sb, SubBand *b, DW
     DWTELEM * line;
     DWTELEM * prev;
     
-    for(y=0; y<h; y++){
+    if (start_y != 0)
+        line = slice_buffer_get_line(sb, ((start_y - 1) * b->stride_line) + b->buf_y_offset) + b->buf_x_offset;
+    
+    for(y=start_y; y<end_y; y++){
         prev = line;
 //        line = slice_buffer_get_line_from_address(sb, src + (y * stride));
         line = slice_buffer_get_line(sb, (y * b->stride_line) + b->buf_y_offset) + b->buf_x_offset;
@@ -3653,11 +3656,7 @@ static int decode_init(AVCodecContext *avctx)
     common_init(avctx);
     
     block_size = MB_SIZE >> s->block_max_depth;
-    /* FIXME block_size * 2 is determined empirically. block_size * 1.5 is definitely needed, but I (Robert) cannot figure out why more than that is needed. Perhaps there is a bug, or perhaps I overlooked some demands that are placed on the buffer. */
-    /* FIXME The formula is WRONG. For height > 480, the buffer will overflow. */
-    /* FIXME For now, I will use a full frame of lines. Fortunately, this should not materially effect cache performance because lines are allocated using a stack, so if in fact only 50 out of 496 lines are needed at a time, the other 446 will sit allocated but never accessed. */
-//    slice_buffer_init(s->plane[0].sb, s->plane[0].height, (block_size * 2) + (s->spatial_decomposition_count * s->spatial_decomposition_count), s->plane[0].width, s->spatial_dwt_buffer);
-    slice_buffer_init(&s->sb, s->plane[0].height, s->plane[0].height, s->plane[0].width, s->spatial_dwt_buffer);
+    slice_buffer_init(&s->sb, s->plane[0].height, (block_size) + (s->spatial_decomposition_count * (s->spatial_decomposition_count + 2)) + 1, s->plane[0].width, s->spatial_dwt_buffer);
     
     return 0;
 }
@@ -3689,7 +3688,6 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
         int h= p->height;
         int x, y;
         int decode_state[MAX_DECOMPOSITIONS][4][1]; /* Stored state info for unpack_coeffs. 1 variable per instance. */
-        SubBand * correlate_band;
         
 if(s->avctx->debug&2048){
         memset(s->spatial_dwt_buffer, 0, sizeof(DWTELEM)*w*h);
@@ -3712,12 +3710,6 @@ if(s->avctx->debug&2048){
     }
     STOP_TIMER("unpack coeffs");
 }
-        
-        /* Handle level 0, orientation 0 specially. It is particularly resistant to slicing but fortunately quite small, so process it in one pass. */
-        correlate_band = &p->band[0][0];
-        decode_subband_slice_buffered(s, correlate_band, &s->sb, 0, correlate_band->height, decode_state[0][0]);
-        correlate_buffered(s, &s->sb, correlate_band, correlate_band->buf, correlate_band->stride, 1, 0);
-        dequantize_buffered(s, &s->sb, correlate_band, correlate_band->buf, correlate_band->stride);
 
 {START_TIMER
     const int mb_h= s->b_height << s->block_max_depth;
@@ -3732,23 +3724,43 @@ if(s->avctx->debug&2048){
     ff_spatial_idwt_buffered_init(cs, &s->sb, w, h, 1, s->spatial_decomposition_type, s->spatial_decomposition_count);
     for(mb_y=0; mb_y<=mb_h; mb_y++){
         
-        const int slice_starty = block_w*mb_y;
-        const int slice_h = block_w*(mb_y+1);
+        int slice_starty = block_w*mb_y;
+        int slice_h = block_w*(mb_y+1);
+        if (!(s->keyframe || s->avctx->debug&512)){
+            slice_starty = FFMAX(0, slice_starty - (block_w >> 1));
+            slice_h -= (block_w >> 1);
+        }
 
         {        
         START_TIMER
         for(level=0; level<s->spatial_decomposition_count; level++){
-            for(orientation=level ? 1 : 1; orientation<4; orientation++){
+            for(orientation=level ? 1 : 0; orientation<4; orientation++){
                 SubBand *b= &p->band[level][orientation];
                 int start_y;
                 int end_y;
                 int our_mb_start = mb_y;
                 int our_mb_end = (mb_y + 1);
-                start_y = FFMIN(b->height, (mb_y ? ((block_w * our_mb_start - 4) >> (s->spatial_decomposition_count - level)) + 5 : 0));
-                end_y = FFMIN(b->height, (((block_w * our_mb_end - 4) >> (s->spatial_decomposition_count - level)) + 5));
-                    
-                if (start_y != end_y)
-                    decode_subband_slice_buffered(s, b, &s->sb, start_y, end_y, decode_state[level][orientation]);
+                start_y = (mb_y ? ((block_w * our_mb_start) >> (s->spatial_decomposition_count - level)) + s->spatial_decomposition_count - level + 2: 0);
+                end_y = (((block_w * our_mb_end) >> (s->spatial_decomposition_count - level)) + s->spatial_decomposition_count - level + 2);
+                if (!(s->keyframe || s->avctx->debug&512)){
+                    start_y = FFMAX(0, start_y - (block_w >> (1+s->spatial_decomposition_count - level)));
+                    end_y = FFMAX(0, end_y - (block_w >> (1+s->spatial_decomposition_count - level)));
+                }
+                start_y = FFMIN(b->height, start_y);
+                end_y = FFMIN(b->height, end_y);
+                
+                if (start_y != end_y){
+                    if (orientation == 0){
+                        SubBand * correlate_band = &p->band[0][0];
+                        int correlate_end_y = FFMIN(b->height, end_y + 1);
+                        int correlate_start_y = FFMIN(b->height, (start_y ? start_y + 1 : 0));
+                        decode_subband_slice_buffered(s, correlate_band, &s->sb, correlate_start_y, correlate_end_y, decode_state[0][0]);
+                        correlate_slice_buffered(s, &s->sb, correlate_band, correlate_band->buf, correlate_band->stride, 1, 0, correlate_start_y, correlate_end_y);
+                        dequantize_slice_buffered(s, &s->sb, correlate_band, correlate_band->buf, correlate_band->stride, start_y, end_y);
+                    }
+                    else
+                        decode_subband_slice_buffered(s, b, &s->sb, start_y, end_y, decode_state[level][orientation]);
+                }
             }
         }
         STOP_TIMER("decode_subband_slice");
@@ -3772,16 +3784,8 @@ if(s->avctx->debug&2048){
 
         predict_slice_buffered(s, &s->sb, s->spatial_dwt_buffer, plane_index, 1, mb_y);
         
-        /* Nasty hack based empirically on how predict_slice_buffered() hits the buffer. */
-        /* FIXME If possible, make predict_slice fit into the slice. As of now, it works on some previous lines (up to slice_height / 2) if the condition on the next line is false. */
-        if (s->keyframe || (s->avctx->debug&512)){
-            y = FFMIN(p->height, slice_starty);
-            end_y = FFMIN(p->height, slice_h);
-        }
-        else{
-            y = FFMAX(0, FFMIN(p->height, slice_starty - (block_w >> 1)));
-            end_y = FFMAX(0, FFMIN(p->height, slice_h - (block_w >> 1)));
-        }
+        y = FFMIN(p->height, slice_starty);
+        end_y = FFMIN(p->height, slice_h);
         while(y < end_y)
             slice_buffer_release(&s->sb, y++);
     }
