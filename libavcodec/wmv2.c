@@ -760,6 +760,7 @@ static int wmv2_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
         wmv2_pred_motion(w, &mx, &my);
         
         if(cbp){
+            s->dsp.clear_blocks(s->block[0]);
             if(s->per_mb_rl_table){
                 s->rl_table_index = decode012(&s->gb);
                 s->rl_chroma_table_index = s->rl_table_index;
@@ -802,6 +803,7 @@ static int wmv2_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
             s->rl_chroma_table_index = s->rl_table_index;
         }
     
+        s->dsp.clear_blocks(s->block[0]);
         for (i = 0; i < 6; i++) {
             if (msmpeg4_decode_block(s, block[i], i, (cbp >> (5 - i)) & 1, NULL) < 0)
 	    {

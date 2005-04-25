@@ -669,7 +669,6 @@ static int rv10_decode_packet(AVCodecContext *avctx,
         printf("**mb x=%d y=%d\n", s->mb_x, s->mb_y);
 #endif
 
-	s->dsp.clear_blocks(s->block[0]);
         s->mv_dir = MV_DIR_FORWARD;
         s->mv_type = MV_TYPE_16X16; 
         ret=ff_h263_decode_mb(s, s->block);

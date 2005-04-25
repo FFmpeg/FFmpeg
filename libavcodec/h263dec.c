@@ -195,8 +195,7 @@ static int decode_slice(MpegEncContext *s){
             }
 
             /* DCT & quantize */
-	    s->dsp.clear_blocks(s->block[0]);
-            
+           
             s->mv_dir = MV_DIR_FORWARD;
             s->mv_type = MV_TYPE_16X16;
 //            s->mb_skipped = 0;

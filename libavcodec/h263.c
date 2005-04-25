@@ -3753,6 +3753,7 @@ static int mpeg4_decode_partitioned_mb(MpegEncContext *s, DCTELEM block[6][64])
 
     if (!IS_SKIP(mb_type)) {
         int i;
+        s->dsp.clear_blocks(s->block[0]);
         /* decode each block */
         for (i = 0; i < 6; i++) {
             if(mpeg4_decode_block(s, block[i], i, cbp&32, s->mb_intra, s->rvlc) < 0){
@@ -3921,6 +3922,8 @@ int ff_h263_decode_mb(MpegEncContext *s,
             }
         }while(cbpc == 20);
         
+        s->dsp.clear_blocks(s->block[0]);
+        
         dquant = cbpc & 8;
         s->mb_intra = ((cbpc & 4) != 0);
         if (s->mb_intra) goto intra;
@@ -4024,6 +4027,7 @@ int ff_h263_decode_mb(MpegEncContext *s,
 
         s->mb_intra = IS_INTRA(mb_type);
         if(HAS_CBP(mb_type)){
+            s->dsp.clear_blocks(s->block[0]);
             cbpc = get_vlc2(&s->gb, cbpc_b_vlc.table, CBPC_B_VLC_BITS, 1);
             if(s->mb_intra){
                 dquant = IS_QUANT(mb_type);
@@ -4101,6 +4105,8 @@ int ff_h263_decode_mb(MpegEncContext *s,
                 return -1;
             }
         }while(cbpc == 8);
+
+        s->dsp.clear_blocks(s->block[0]);
 
         dquant = cbpc & 4;
         s->mb_intra = 1;
@@ -4193,6 +4199,7 @@ int ff_mpeg4_decode_mb(MpegEncContext *s,
             }
         }while(cbpc == 20);
         
+        s->dsp.clear_blocks(s->block[0]);
         dquant = cbpc & 8;
         s->mb_intra = ((cbpc & 4) != 0);
         if (s->mb_intra) goto intra;
@@ -4324,7 +4331,10 @@ int ff_mpeg4_decode_mb(MpegEncContext *s,
             }
             mb_type= mb_type_b_map[ mb_type ];
             if(modb2) cbp= 0;
-            else      cbp= get_bits(&s->gb, 6);
+            else{
+                s->dsp.clear_blocks(s->block[0]);
+                cbp= get_bits(&s->gb, 6);
+            }
 
             if ((!IS_DIRECT(mb_type)) && cbp) {
                 if(get_bits1(&s->gb)){
@@ -4442,6 +4452,7 @@ intra:
         if(!s->progressive_sequence)
             s->interlaced_dct= get_bits1(&s->gb);
 
+        s->dsp.clear_blocks(s->block[0]);
         /* decode each block */
         for (i = 0; i < 6; i++) {
             if (mpeg4_decode_block(s, block[i], i, cbp&32, 1, 0) < 0)

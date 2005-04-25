@@ -531,7 +531,6 @@ static int h261_decode_mb_skipped(H261Context *h, int mba1, int mba2 )
         xy = s->mb_x + s->mb_y * s->mb_stride;
         ff_init_block_index(s);
         ff_update_block_index(s);
-        s->dsp.clear_blocks(s->block[0]);
 
         for(j=0;j<6;j++)
             s->block_last_index[j] = -1;
@@ -606,7 +605,6 @@ static int h261_decode_mb(H261Context *h){
     xy = s->mb_x + s->mb_y * s->mb_stride;
     ff_init_block_index(s);
     ff_update_block_index(s);
-    s->dsp.clear_blocks(s->block[0]);
 
     // Read mtype
     h->mtype = get_vlc2(&s->gb, h261_mtype_vlc.table, H261_MTYPE_VLC_BITS, 2);
@@ -661,12 +659,16 @@ static int h261_decode_mb(H261Context *h){
 intra:
     /* decode each block */
     if(s->mb_intra || HAS_CBP(h->mtype)){
+        s->dsp.clear_blocks(s->block[0]);
         for (i = 0; i < 6; i++) {
             if (h261_decode_block(h, s->block[i], i, cbp&32) < 0){
                 return SLICE_ERROR;
             }
             cbp+=cbp;
         }
+    }else{
+        for (i = 0; i < 6; i++)
+            s->block_last_index[i]= -1;
     }
 
     MPV_decode_mb(s, s->block);
