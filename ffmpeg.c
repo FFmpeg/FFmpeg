@@ -86,7 +86,7 @@ static AVImageFormat *image_format;
 static int frame_width  = 0;
 static int frame_height = 0;
 static float frame_aspect_ratio = 0;
-static enum PixelFormat frame_pix_fmt = PIX_FMT_YUV420P;
+static enum PixelFormat frame_pix_fmt = PIX_FMT_NONE;
 static int frame_padtop  = 0;
 static int frame_padbottom = 0;
 static int frame_padleft  = 0;

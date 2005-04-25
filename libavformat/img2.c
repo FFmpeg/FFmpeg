@@ -222,7 +222,7 @@ static int img_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         st->codec.codec_type = CODEC_TYPE_VIDEO;
         st->codec.codec_id = av_str2id(img_tags, s->path);
     }
-    if(st->codec.codec_type == CODEC_TYPE_VIDEO && ap->pix_fmt)
+    if(st->codec.codec_type == CODEC_TYPE_VIDEO && ap->pix_fmt != PIX_FMT_NONE)
         st->codec.pix_fmt = ap->pix_fmt;
 
     return 0;

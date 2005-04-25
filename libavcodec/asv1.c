@@ -557,6 +557,7 @@ static int decode_init(AVCodecContext *avctx){
     common_init(avctx);
     init_vlcs(a);
     ff_init_scantable(a->dsp.idct_permutation, &a->scantable, scantab);
+    avctx->pix_fmt= PIX_FMT_YUV420P;
 
     a->inv_qscale= ((uint8_t*)avctx->extradata)[0];
     if(a->inv_qscale == 0){

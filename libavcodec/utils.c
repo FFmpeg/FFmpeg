@@ -459,6 +459,7 @@ void avcodec_get_context_defaults(AVCodecContext *s){
     s->profile= FF_PROFILE_UNKNOWN;
     s->level= FF_LEVEL_UNKNOWN;
     s->me_penalty_compensation= 256;
+    s->pix_fmt= PIX_FMT_NONE;
     
     s->intra_quant_bias= FF_DEFAULT_QUANT_BIAS;
     s->inter_quant_bias= FF_DEFAULT_QUANT_BIAS;

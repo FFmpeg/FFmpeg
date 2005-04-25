@@ -3652,6 +3652,8 @@ static int decode_init(AVCodecContext *avctx)
 {
     SnowContext *s = avctx->priv_data;
     int block_size;
+    
+    avctx->pix_fmt= PIX_FMT_YUV420P;
 
     common_init(avctx);
     

@@ -560,7 +560,9 @@ static int rv10_decode_init(AVCodecContext *avctx)
     if(avctx->debug & FF_DEBUG_PICT_INFO){
         av_log(avctx, AV_LOG_DEBUG, "ver:%X ver0:%X\n", avctx->sub_id, avctx->extradata_size >= 4 ? ((uint32_t*)avctx->extradata)[0] : -1);
     }
-    
+
+    avctx->pix_fmt = PIX_FMT_YUV420P;
+
     if (MPV_common_init(s) < 0)
         return -1;
 
@@ -576,8 +578,6 @@ static int rv10_decode_init(AVCodecContext *avctx)
                  rv_chrom_code, 2, 2, 1);
         done = 1;
     }
-    
-    avctx->pix_fmt = PIX_FMT_YUV420P;
 
     return 0;
 }

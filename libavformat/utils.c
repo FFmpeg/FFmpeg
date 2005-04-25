@@ -1682,7 +1682,7 @@ static int has_codec_parameters(AVCodecContext *enc)
         val = enc->sample_rate;
         break;
     case CODEC_TYPE_VIDEO:
-        val = enc->width;
+        val = enc->width && enc->pix_fmt != PIX_FMT_NONE;
         break;
     default:
         val = 1;
@@ -1704,6 +1704,8 @@ static int try_decode_frame(AVStream *st, const uint8_t *data, int size)
     ret = avcodec_open(&st->codec, codec);
     if (ret < 0)
         return ret;
+
+  if(!has_codec_parameters(&st->codec)){
     switch(st->codec.codec_type) {
     case CODEC_TYPE_VIDEO:
         ret = avcodec_decode_video(&st->codec, &picture, 
@@ -1720,6 +1722,7 @@ static int try_decode_frame(AVStream *st, const uint8_t *data, int size)
     default:
         break;
     }
+  }
  fail:
     avcodec_close(&st->codec);
     return ret;
@@ -1739,6 +1742,7 @@ static int try_decode_frame(AVStream *st, const uint8_t *data, int size)
  *
  * @param ic media file handle
  * @return >=0 if OK. AVERROR_xxx if error.  
+ * @todo let user decide somehow what information is needed so we dont waste time geting stuff the user doesnt need
  */
 int av_find_stream_info(AVFormatContext *ic)
 {
@@ -1841,7 +1845,7 @@ int av_find_stream_info(AVFormatContext *ic)
            decompress the frame. We try to avoid that in most cases as
            it takes longer and uses more memory. For MPEG4, we need to
            decompress for Quicktime. */
-        if (!has_codec_parameters(&st->codec) &&
+        if (!has_codec_parameters(&st->codec) /*&&
             (st->codec.codec_id == CODEC_ID_FLV1 ||
              st->codec.codec_id == CODEC_ID_H264 ||
              st->codec.codec_id == CODEC_ID_H263 ||
@@ -1855,7 +1859,7 @@ int av_find_stream_info(AVFormatContext *ic)
              st->codec.codec_id == CODEC_ID_PBM ||
              st->codec.codec_id == CODEC_ID_PPM ||
              st->codec.codec_id == CODEC_ID_SHORTEN ||
-             (st->codec.codec_id == CODEC_ID_MPEG4 && !st->need_parsing)))
+             (st->codec.codec_id == CODEC_ID_MPEG4 && !st->need_parsing))*/)
             try_decode_frame(st, pkt->data, pkt->size);
         
         if (st->codec_info_duration >= MAX_STREAM_DURATION) {

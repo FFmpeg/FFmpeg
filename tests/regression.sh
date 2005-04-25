@@ -290,7 +290,7 @@ file=${outfile}huffyuv.avi
 do_ffmpeg $file -y -f pgmyuv -i $raw_src -an -vcodec huffyuv -pix_fmt yuv422p $file
 
 # huffyuv decoding
-do_ffmpeg $raw_dst -y -i $file -f rawvideo -strict -1 $raw_dst
+do_ffmpeg $raw_dst -y -i $file -f rawvideo -strict -1 -pix_fmt yuv420p $raw_dst
 fi
 
 ###################################
@@ -370,7 +370,7 @@ file=${outfile}mjpeg.avi
 do_ffmpeg $file -y -qscale 10 -f pgmyuv -i $raw_src -an -vcodec mjpeg -pix_fmt yuvj420p $file
 
 # mjpeg decoding
-do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst 
+do_ffmpeg $raw_dst -y -i $file -f rawvideo -pix_fmt yuv420p $raw_dst 
 fi
 
 ###################################
@@ -467,7 +467,7 @@ file=${outfile}svq1.mov
 do_ffmpeg $file -y -f pgmyuv -i $raw_src -an -vcodec svq1 -qscale 3 -pix_fmt yuv410p $file
 
 # svq1 decoding
-do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst 
+do_ffmpeg $raw_dst -y -i $file -f rawvideo -pix_fmt yuv420p $raw_dst 
 fi
 
 ###################################
