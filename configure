@@ -315,12 +315,12 @@ make="gmake"
 ;;
 OS/2)
 TMPE=$TMPE".exe"
-ar="emxomfar -p64"
+ar="emxomfar -p128"
 ranlib="echo ignoring ranlib"
 strip="echo ignoring strip"
 CFLAGS="-Zomf"
 LDFLAGS="-Zomf -Zstack 16384 -s"
-SHFLAGS=""
+SHFLAGS="-Zdll -Zomf"
 FFSLDFLAGS=""
 LIBPREF=""
 LIBSUF=".lib"
@@ -333,7 +333,9 @@ audio_oss="no"
 dv1394="no"
 network="no"
 ffserver="no"
+vhook="no"
 os2="yes"
+
 ;;
 *) ;;
 esac
