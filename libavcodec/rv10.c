@@ -537,15 +537,17 @@ static int rv10_decode_init(AVCodecContext *avctx)
         s->h263_long_vectors=0;
         s->low_delay=1;
         break;
-    case 0x20001000:
-    case 0x20100001:
+    case 0x20001000: /* real rv20 decoder fail on this id */
+    /*case 0x20100001:
     case 0x20101001:
-    case 0x20103001:
+    case 0x20103001:*/
+    case 0x20100000 ... 0x2019ffff:
         s->low_delay=1;
         break;
-    case 0x20200002:
+    /*case 0x20200002:
     case 0x20201002:
-    case 0x20203002:
+    case 0x20203002:*/
+    case 0x20200002 ... 0x202fffff:
     case 0x30202002:
     case 0x30203002:
         s->low_delay=0;
