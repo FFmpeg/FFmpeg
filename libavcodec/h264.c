@@ -5624,48 +5624,15 @@ static void filter_mb_edgev( H264Context *h, uint8_t *pix, int stride, int bS[4]
     const int alpha = alpha_table[index_a];
     const int beta  = beta_table[clip( qp + h->slice_beta_offset, 0, 51 )];
 
-    for( i = 0; i < 4; i++ ) {
-        if( bS[i] == 0 ) {
-            pix += 4 * stride;
-            continue;
-        }
-
-        if( bS[i] < 4 ) {
-            const int tc0 = tc0_table[index_a][bS[i] - 1];
-            /* 4px edge length */
-            for( d = 0; d < 4; d++ ) {
-                const int p0 = pix[-1];
-                const int p1 = pix[-2];
-                const int p2 = pix[-3];
-                const int q0 = pix[0];
-                const int q1 = pix[1];
-                const int q2 = pix[2];
-
-                if( ABS( p0 - q0 ) < alpha &&
-                    ABS( p1 - p0 ) < beta &&
-                    ABS( q1 - q0 ) < beta ) {
-                    int tc = tc0;
-                    int i_delta;
-
-                    if( ABS( p2 - p0 ) < beta ) {
-                        pix[-2] = p1 + clip( ( p2 + ( ( p0 + q0 + 1 ) >> 1 ) - ( p1 << 1 ) ) >> 1, -tc0, tc0 );
-                        tc++;
-                    }
-                    if( ABS( q2 - q0 ) < beta ) {
-                        pix[1] = q1 + clip( ( q2 + ( ( p0 + q0 + 1 ) >> 1 ) - ( q1 << 1 ) ) >> 1, -tc0, tc0 );
-                        tc++;
-                    }
-
-                    i_delta = clip( (((q0 - p0 ) << 2) + (p1 - q1) + 4) >> 3, -tc, tc );
-                    pix[-1] = clip_uint8( p0 + i_delta );    /* p0' */
-                    pix[0]  = clip_uint8( q0 - i_delta );    /* q0' */
-                    tprintf("filter_mb_edgev i:%d d:%d, qp:%d, indexA:%d, alpha:%d, beta:%d, tc:%d\n# bS:%d -> [%02x, %02x, %02x, %02x, %02x, %02x] =>[%02x, %02x, %02x, %02x]\n", i, d, qp, index_a, alpha, beta, tc, bS[i], pix[-3], p1, p0, q0, q1, pix[2], pix[-2], pix[-1], pix[0], pix[1]);
-                }
-                pix += stride;
-            }
-        }else{
-            /* 4px edge length */
-            for( d = 0; d < 4; d++ ) {
+    if( bS[0] < 4 ) {
+        int tc[4];
+        for(i=0; i<4; i++)
+            tc[i] = bS[i] ? tc0_table[index_a][bS[i] - 1] : -1;
+        h->s.dsp.h264_h_loop_filter_luma(pix, stride, alpha, beta, tc);
+    } else {
+        /* 16px edge length, because bS=4 is triggered by being at
+         * the edge of an intra MB, so all 4 bS are the same */
+            for( d = 0; d < 16; d++ ) {
                 const int p0 = pix[-1];
                 const int p1 = pix[-2];
                 const int p2 = pix[-3];
@@ -5710,7 +5677,6 @@ static void filter_mb_edgev( H264Context *h, uint8_t *pix, int stride, int bS[4]
                 }
                 pix += stride;
             }
-        }
     }
 }
 static void filter_mb_edgecv( H264Context *h, uint8_t *pix, int stride, int bS[4], int qp ) {
@@ -5719,35 +5685,14 @@ static void filter_mb_edgecv( H264Context *h, uint8_t *pix, int stride, int bS[4
     const int alpha = alpha_table[index_a];
     const int beta  = beta_table[clip( qp + h->slice_beta_offset, 0, 51 )];
 
-    for( i = 0; i < 4; i++ ) {
-        if( bS[i] == 0 ) {
-            pix += 2 * stride;
-            continue;
-        }
-
-        if( bS[i] < 4 ) {
-            const int tc = tc0_table[index_a][bS[i] - 1] + 1;
-            /* 2px edge length (because we use same bS than the one for luma) */
-            for( d = 0; d < 2; d++ ){
-                const int p0 = pix[-1];
-                const int p1 = pix[-2];
-                const int q0 = pix[0];
-                const int q1 = pix[1];
-
-                if( ABS( p0 - q0 ) < alpha &&
-                    ABS( p1 - p0 ) < beta &&
-                    ABS( q1 - q0 ) < beta ) {
-                    const int i_delta = clip( (((q0 - p0 ) << 2) + (p1 - q1) + 4) >> 3, -tc, tc );
-
-                    pix[-1] = clip_uint8( p0 + i_delta );    /* p0' */
-                    pix[0]  = clip_uint8( q0 - i_delta );    /* q0' */
-                    tprintf("filter_mb_edgecv i:%d d:%d, qp:%d, indexA:%d, alpha:%d, beta:%d, tc:%d\n# bS:%d -> [%02x, %02x, %02x, %02x, %02x, %02x] =>[%02x, %02x, %02x, %02x]\n", i, d, qp, index_a, alpha, beta, tc, bS[i], pix[-3], p1, p0, q0, q1, pix[2], p1, pix[-1], pix[0], q1);
-                }
-                pix += stride;
-            }
-        }else{
-            /* 2px edge length (because we use same bS than the one for luma) */
-            for( d = 0; d < 2; d++ ){
+    if( bS[0] < 4 ) {
+        int tc[4];
+        for(i=0; i<4; i++)
+            tc[i] = bS[i] ? tc0_table[index_a][bS[i] - 1] + 1 : 0;
+        h->s.dsp.h264_h_loop_filter_chroma(pix, stride, alpha, beta, tc);
+    } else {
+        /* 8px edge length, see filter_mb_edgev */
+            for( d = 0; d < 8; d++ ){
                 const int p0 = pix[-1];
                 const int p1 = pix[-2];
                 const int q0 = pix[0];
@@ -5763,7 +5708,6 @@ static void filter_mb_edgecv( H264Context *h, uint8_t *pix, int stride, int bS[4
                 }
                 pix += stride;
             }
-        }
     }
 }
 
@@ -5928,49 +5872,14 @@ static void filter_mb_edgeh( H264Context *h, uint8_t *pix, int stride, int bS[4]
     const int beta  = beta_table[clip( qp + h->slice_beta_offset, 0, 51 )];
     const int pix_next  = stride;
 
-    for( i = 0; i < 4; i++ ) {
-        if( bS[i] == 0 ) {
-            pix += 4;
-            continue;
-        }
-
-        if( bS[i] < 4 ) {
-            const int tc0 = tc0_table[index_a][bS[i] - 1];
-            /* 4px edge length */
-            for( d = 0; d < 4; d++ ) {
-                const int p0 = pix[-1*pix_next];
-                const int p1 = pix[-2*pix_next];
-                const int p2 = pix[-3*pix_next];
-                const int q0 = pix[0];
-                const int q1 = pix[1*pix_next];
-                const int q2 = pix[2*pix_next];
-
-                if( ABS( p0 - q0 ) < alpha &&
-                    ABS( p1 - p0 ) < beta &&
-                    ABS( q1 - q0 ) < beta ) {
-
-                    int tc = tc0;
-                    int i_delta;
-
-                    if( ABS( p2 - p0 ) < beta ) {
-                        pix[-2*pix_next] = p1 + clip( ( p2 + ( ( p0 + q0 + 1 ) >> 1 ) - ( p1 << 1 ) ) >> 1, -tc0, tc0 );
-                        tc++;
-                    }
-                    if( ABS( q2 - q0 ) < beta ) {
-                        pix[pix_next] = q1 + clip( ( q2 + ( ( p0 + q0 + 1 ) >> 1 ) - ( q1 << 1 ) ) >> 1, -tc0, tc0 );
-                        tc++;
-                    }
-
-                    i_delta = clip( (((q0 - p0 ) << 2) + (p1 - q1) + 4) >> 3, -tc, tc );
-                    pix[-pix_next] = clip_uint8( p0 + i_delta );    /* p0' */
-                    pix[0]         = clip_uint8( q0 - i_delta );    /* q0' */
-                    tprintf("filter_mb_edgeh i:%d d:%d, qp:%d, indexA:%d, alpha:%d, beta:%d, tc:%d\n# bS:%d -> [%02x, %02x, %02x, %02x, %02x, %02x] =>[%02x, %02x, %02x, %02x]\n", i, d, qp, index_a, alpha, beta, tc, bS[i], p2, p1, p0, q0, q1, q2, pix[-2*pix_next], pix[-pix_next], pix[0], pix[pix_next]);
-                }
-                pix++;
-            }
-        }else{
-            /* 4px edge length */
-            for( d = 0; d < 4; d++ ) {
+    if( bS[0] < 4 ) {
+        int tc[4];
+        for(i=0; i<4; i++)
+            tc[i] = bS[i] ? tc0_table[index_a][bS[i] - 1] : -1;
+        h->s.dsp.h264_v_loop_filter_luma(pix, stride, alpha, beta, tc);
+    } else {
+        /* 16px edge length, see filter_mb_edgev */
+            for( d = 0; d < 16; d++ ) {
                 const int p0 = pix[-1*pix_next];
                 const int p1 = pix[-2*pix_next];
                 const int p2 = pix[-3*pix_next];
@@ -6013,7 +5922,6 @@ static void filter_mb_edgeh( H264Context *h, uint8_t *pix, int stride, int bS[4]
                 }
                 pix++;
             }
-        }
     }
 }
 
@@ -6024,37 +5932,14 @@ static void filter_mb_edgech( H264Context *h, uint8_t *pix, int stride, int bS[4
     const int beta  = beta_table[clip( qp + h->slice_beta_offset, 0, 51 )];
     const int pix_next  = stride;
 
-    for( i = 0; i < 4; i++ )
-    {
-        if( bS[i] == 0 ) {
-            pix += 2;
-            continue;
-        }
-
-        if( bS[i] < 4 ) {
-            int tc = tc0_table[index_a][bS[i] - 1] + 1;
-            /* 2px edge length (see deblocking_filter_edgecv) */
-            for( d = 0; d < 2; d++ ) {
-                const int p0 = pix[-1*pix_next];
-                const int p1 = pix[-2*pix_next];
-                const int q0 = pix[0];
-                const int q1 = pix[1*pix_next];
-
-                if( ABS( p0 - q0 ) < alpha &&
-                    ABS( p1 - p0 ) < beta &&
-                    ABS( q1 - q0 ) < beta ) {
-
-                    int i_delta = clip( (((q0 - p0 ) << 2) + (p1 - q1) + 4) >> 3, -tc, tc );
-
-                    pix[-pix_next] = clip_uint8( p0 + i_delta );    /* p0' */
-                    pix[0]         = clip_uint8( q0 - i_delta );    /* q0' */
-                    tprintf("filter_mb_edgech i:%d d:%d, qp:%d, indexA:%d, alpha:%d, beta:%d, tc:%d\n# bS:%d -> [%02x, %02x, %02x, %02x, %02x, %02x] =>[%02x, %02x, %02x, %02x]\n", i, d, qp, index_a, alpha, beta, tc, bS[i], pix[-3*pix_next], p1, p0, q0, q1, pix[2*pix_next], pix[-2*pix_next], pix[-pix_next], pix[0], pix[pix_next]);
-                }
-                pix++;
-            }
-        }else{
-            /* 2px edge length (see deblocking_filter_edgecv) */
-            for( d = 0; d < 2; d++ ) {
+    if( bS[0] < 4 ) {
+        int tc[4];
+        for(i=0; i<4; i++)
+            tc[i] = bS[i] ? tc0_table[index_a][bS[i] - 1] + 1 : 0;
+        h->s.dsp.h264_v_loop_filter_chroma(pix, stride, alpha, beta, tc);
+    } else {
+        /* 8px edge length, see filter_mb_edgev */
+            for( d = 0; d < 8; d++ ) {
                 const int p0 = pix[-1*pix_next];
                 const int p1 = pix[-2*pix_next];
                 const int q0 = pix[0];
@@ -6070,7 +5955,6 @@ static void filter_mb_edgech( H264Context *h, uint8_t *pix, int stride, int bS[4
                 }
                 pix++;
             }
-        }
     }
 }
 

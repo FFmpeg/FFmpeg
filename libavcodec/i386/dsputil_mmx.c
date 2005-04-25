@@ -39,6 +39,7 @@ static const uint64_t mm_wtwo attribute_used __attribute__ ((aligned(8))) = 0x00
 
 static const uint64_t ff_pw_20 attribute_used __attribute__ ((aligned(8))) = 0x0014001400140014ULL;
 static const uint64_t ff_pw_3  attribute_used __attribute__ ((aligned(8))) = 0x0003000300030003ULL;
+static const uint64_t ff_pw_4  attribute_used __attribute__ ((aligned(8))) = 0x0004000400040004ULL;
 static const uint64_t ff_pw_5  attribute_used __attribute__ ((aligned(8))) = 0x0005000500050005ULL;
 static const uint64_t ff_pw_16 attribute_used __attribute__ ((aligned(8))) = 0x0010001000100010ULL;
 static const uint64_t ff_pw_32 attribute_used __attribute__ ((aligned(8))) = 0x0020002000200020ULL;
@@ -689,6 +690,204 @@ static void h263_h_loop_filter_mmx(uint8_t *src, int stride, int qscale){
            "r" ((long)   stride ),
            "r" ((long)(3*stride))
     );
+}
+
+// dst = ABS( a - b )
+#define MMABS_DIFF_MMX2(a,b,dst,z)\
+    "movq    " #b ", " #dst " \n\t"\
+    "movq    " #a ", " #z   " \n\t"\
+    "psubusw " #b ", " #z   " \n\t"\
+    "psubusw " #a ", " #dst " \n\t"\
+    "pmaxsw  " #z ", " #dst " \n\t"
+
+// a = clip( a, -tc, tc )
+#define CLIP_MMX2(a,tc,z)\
+    "pxor    " #z  ", " #z "  \n\t"\
+    "psubw   " #tc ", " #z "  \n\t"\
+    "pmaxsw  " #z  ", " #a "  \n\t"\
+    "pminsw  " #tc ", " #a "  \n\t"
+
+// in: mm0=p1, mm1=p0, mm2=q0, mm3=q1
+// out: mm7 = do we filter this pixel?
+#define H264_DEBLOCK_THRESH(alpha,beta)\
+    "pxor      %%mm7, %%mm7     \n\t"\
+    "punpcklbw %%mm7, %%mm0     \n\t"\
+    "punpcklbw %%mm7, %%mm1     \n\t"\
+    "punpcklbw %%mm7, %%mm2     \n\t"\
+    "punpcklbw %%mm7, %%mm3     \n\t"\
+    MMABS_DIFF_MMX2(%%mm1, %%mm2, %%mm5, %%mm4)\
+    "movd " #alpha ", %%mm6     \n\t"\
+    "pshufw    $0, %%mm6, %%mm6 \n\t"\
+    "pcmpgtw   %%mm5, %%mm6     \n\t" /* ABS(p0-q0) < alpha */\
+    MMABS_DIFF_MMX2(%%mm0, %%mm1, %%mm5, %%mm4)\
+    MMABS_DIFF_MMX2(%%mm3, %%mm2, %%mm7, %%mm4)\
+    "pmaxsw    %%mm7, %%mm5     \n\t"\
+    "movd  " #beta ", %%mm7     \n\t"\
+    "pshufw    $0, %%mm7, %%mm7 \n\t"\
+    "movq      %%mm7, %%mm4     \n\t"\
+    "pcmpgtw   %%mm5, %%mm7     \n\t" /* ABS(p1-p0) < beta && ABS(q1-q0) < beta */\
+    "pand      %%mm6, %%mm7     \n\t"
+
+// in: mm0=p1, mm1=p0, mm2=q0, mm3=q1, mm6=tc
+// out: mm1=p0', mm2=q0'
+#define H264_DEBLOCK_P0_Q0(pw4)\
+    "movq   " #pw4 ", %%mm4     \n\t"\
+    "movq      %%mm2, %%mm5     \n\t"\
+    "paddw     %%mm4, %%mm0     \n\t"\
+    "psubw     %%mm1, %%mm5     \n\t"\
+    "psubw     %%mm3, %%mm0     \n\t"\
+    "psllw     $2,    %%mm5     \n\t"\
+    "paddw     %%mm0, %%mm5     \n\t"\
+    "psraw     $3,    %%mm5     \n\t" /* mm5 = (((q0 - p0) << 2) + (p1 - q1) + 4) >> 3 */\
+    CLIP_MMX2(%%mm5, %%mm6, %%mm4)    /* delta = clip( mm5, -tc, tc ) */\
+    "paddw     %%mm5, %%mm1     \n\t" /* p0 += delta */\
+    "psubw     %%mm5, %%mm2     \n\t" /* q0 -= delta */
+
+// in: mm1=p0, mm2=q0, mm6=tc0
+// out: mm5=delta
+#define H264_DEBLOCK_DELTA_PQ1(p1,p2,z)\
+    "movq      %%mm1, %%mm5     \n\t"\
+    "pavgb     %%mm2, %%mm5     \n\t"\
+    "paddw   " #p2 ", %%mm5     \n\t"\
+    "psraw     $1, %%mm5        \n\t"\
+    "psubw   " #p1 ", %%mm5     \n\t" /* ( ( q2 + ((p0+q0+1)>>1) ) >> 1 ) - q1 */\
+    CLIP_MMX2(%%mm5, %%mm6, z)
+
+static inline void h264_loop_filter_luma_mmx2(uint8_t *pix, int stride, int alpha, int beta, int tc0)
+{
+    uint64_t tmp0, tmp1;
+    asm volatile(
+        "movd  (%2,%4),   %%mm0        \n\t" //p1
+        "movd  (%2,%4,2), %%mm1        \n\t" //p0
+        "movd  (%3),      %%mm2        \n\t" //q0
+        "movd  (%3,%4),   %%mm3        \n\t" //q1
+        H264_DEBLOCK_THRESH(%6,%7)
+        "movq      %%mm7, %0           \n\t"
+
+// filter p1 if ABS(p2-p0) < beta
+        "movd      (%2),  %%mm3        \n\t"
+        "pxor      %%mm6, %%mm6        \n\t"
+        "punpcklbw %%mm6, %%mm3        \n\t" //p2
+        MMABS_DIFF_MMX2(%%mm1, %%mm3, %%mm5, %%mm6)
+        "pcmpgtw   %%mm5, %%mm4        \n\t"
+        "pand      %%mm7, %%mm4        \n\t" // mm4 = ( ABS( p2 - p0 ) < beta && filterp )
+        "movd      %5,    %%mm6        \n\t"
+        "pshufw    $0, %%mm6, %%mm6    \n\t" //tc
+
+        H264_DEBLOCK_DELTA_PQ1(%%mm0, %%mm3, %%mm7) // delta = clip( ( p2 + ((p0+q0+1)>>1) ) >> 1 ) - p1 )
+        "pand      %%mm4, %%mm5        \n\t"
+        "paddw     %%mm0, %%mm5        \n\t"
+        "packuswb  %%mm5, %%mm5        \n\t"
+        "movd      %%mm5, (%2,%4)      \n\t" // *p1 += delta
+        "psrlw     $15, %%mm4          \n\t"
+        "paddw     %%mm6, %%mm4        \n\t" // tc++
+        "movq      %%mm4, %1           \n\t"
+
+// filter q1 if ABS(q2-q0) < beta
+        "pxor      %%mm7, %%mm7        \n\t"
+        "movd  (%3,%4),   %%mm3        \n\t" //q1
+        "movd  (%3,%4,2), %%mm4        \n\t" //q2
+        "punpcklbw %%mm7, %%mm3        \n\t"
+        "punpcklbw %%mm7, %%mm4        \n\t"
+        MMABS_DIFF_MMX2(%%mm2, %%mm4, %%mm5, %%mm7)
+        "movd      %7,    %%mm7        \n\t"
+        "pshufw    $0, %%mm7, %%mm7    \n\t"
+        "pcmpgtw   %%mm5, %%mm7        \n\t"
+
+        H264_DEBLOCK_DELTA_PQ1(%%mm3, %%mm4, %%mm4) // delta = clip( ( q2 + ((p0+q0+1)>>1) ) >> 1 ) - q1 )
+        "movq      %0,    %%mm4        \n\t"
+        "pand      %%mm4, %%mm7        \n\t" // mm7 = ( ABS( q2 - q0 ) < beta && filterp )
+        "pand      %%mm7, %%mm5        \n\t"
+        "paddw     %%mm3, %%mm5        \n\t"
+        "packuswb  %%mm5, %%mm5        \n\t"
+        "movd      %%mm5, (%3,%4)      \n\t" // *q1 += delta
+        "movq      %1, %%mm6           \n\t"
+        "psrlw     $15, %%mm7          \n\t"
+        "paddw     %%mm7, %%mm6        \n\t" // tc++
+        "movq      %0,    %%mm4        \n\t"
+        "pand      %%mm4, %%mm6        \n\t"
+
+        H264_DEBLOCK_P0_Q0(%8)
+        "packuswb  %%mm1, %%mm1        \n\t"
+        "packuswb  %%mm2, %%mm2        \n\t"
+        "movd      %%mm1, (%2,%4,2)    \n\t"
+        "movd      %%mm2, (%3)         \n\t"
+
+        : "=m"(tmp0), "=m"(tmp1)
+        : "r"(pix-3*stride), "r"(pix), "r"((long)stride),
+          "r"(tc0), "r"(alpha), "r"(beta), "m"(ff_pw_4)
+    );
+}
+
+static void h264_v_loop_filter_luma_mmx2(uint8_t *pix, int stride, int alpha, int beta, int *tc0)
+{
+    int i;
+    for(i=0; i<4; i++, pix+=4) {
+        if(tc0[i] < 0)
+            continue;
+        h264_loop_filter_luma_mmx2(pix, stride, alpha, beta, tc0[i]);
+    }
+}
+
+static void h264_h_loop_filter_luma_mmx2(uint8_t *pix, int stride, int alpha, int beta, int *tc0)
+{
+    uint8_t trans[4*8];
+    int i;
+    for(i=0; i<4; i++, pix+=4*stride) {
+        if(tc0[i] < 0)
+            continue;
+        //FIXME: could cut some load/stores by merging transpose with filter
+        transpose4x4(trans, pix-4, 4, stride);
+        transpose4x4(trans+4*4, pix, 4, stride);
+        h264_loop_filter_luma_mmx2(trans+4*4, 4, alpha, beta, tc0[i]);
+        transpose4x4(pix-2, trans+2*4, stride, 4);
+    }
+}
+
+static inline void h264_loop_filter_chroma_mmx2(uint8_t *pix, int stride, int alpha, int beta, int *tc0)
+{
+    asm volatile(
+        "movd    (%0),    %%mm0     \n\t"
+        "movd    (%0,%2), %%mm1     \n\t"
+        "movd    (%1),    %%mm2     \n\t"
+        "movd    (%1,%2), %%mm3     \n\t"
+        H264_DEBLOCK_THRESH(%4,%5)
+        "movd      %3,    %%mm6     \n\t"
+        "pshufw $0x50, %%mm6, %%mm6 \n\t" // mm6 = tc[1], tc[1], tc[0], tc[0]
+        "pand      %%mm7, %%mm6     \n\t"
+        H264_DEBLOCK_P0_Q0(%6)
+        "packuswb  %%mm1, %%mm1     \n\t"
+        "packuswb  %%mm2, %%mm2     \n\t"
+        "movd      %%mm1, (%0,%2)   \n\t"
+        "movd      %%mm2, (%1)      \n\t"
+        :: "r"(pix-2*stride), "r"(pix), "r"((long)stride),
+           "r"(tc0[1]<<16 | tc0[0]),
+           "r"(alpha), "r"(beta), "m"(ff_pw_4)
+    );
+}
+
+static void h264_v_loop_filter_chroma_mmx2(uint8_t *pix, int stride, int alpha, int beta, int *tc0)
+{
+    int i;
+    for(i=0; i<2; i++) {
+        h264_loop_filter_chroma_mmx2(pix, stride, alpha, beta, tc0);
+        pix += 4;
+        tc0 += 2;
+    }
+}
+
+static void h264_h_loop_filter_chroma_mmx2(uint8_t *pix, int stride, int alpha, int beta, int *tc0)
+{
+    uint8_t trans[4*4];
+    int i;
+    for(i=0; i<2; i++) {
+        //FIXME: could cut some load/stores by merging transpose with filter
+        transpose4x4(trans, pix-2, 4, stride);
+        h264_loop_filter_chroma_mmx2(trans+2*4, 4, alpha, beta, tc0);
+        transpose4x4(pix-2, trans, stride, 4);
+        pix += 4*stride;
+        tc0 += 2;
+    }
 }
 
 #ifdef CONFIG_ENCODERS
@@ -3183,6 +3382,11 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             dspfunc(avg_h264_qpel, 1, 8);
             dspfunc(avg_h264_qpel, 2, 4);
 #undef dspfunc
+
+            c->h264_v_loop_filter_luma= h264_v_loop_filter_luma_mmx2;
+            c->h264_h_loop_filter_luma= h264_h_loop_filter_luma_mmx2;
+            c->h264_v_loop_filter_chroma= h264_v_loop_filter_chroma_mmx2;
+            c->h264_h_loop_filter_chroma= h264_h_loop_filter_chroma_mmx2;
 
 #ifdef CONFIG_ENCODERS
             c->sub_hfyu_median_prediction= sub_hfyu_median_prediction_mmx2;
