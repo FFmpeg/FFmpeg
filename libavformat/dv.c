@@ -593,6 +593,7 @@ static int dv_extract_video_info(DVDemuxContext *c, uint8_t* frame)
 	
 	avctx->frame_rate = sys->frame_rate;
         avctx->frame_rate_base = sys->frame_rate_base;
+        av_set_pts_info(c->vst, 64, sys->frame_rate_base, sys->frame_rate);
         avctx->width = sys->width;
         avctx->height = sys->height;
         avctx->pix_fmt = sys->pix_fmt;
@@ -744,7 +745,6 @@ DVDemuxContext* dv_init_demux(AVFormatContext *s)
         av_free(c);        
         return NULL;
     }
-    av_set_pts_info(c->vst, 64, 1, 30000);
 
     c->fctx = s;
     c->ast[0] = c->ast[1] = NULL;
@@ -803,7 +803,7 @@ int dv_produce_packet(DVDemuxContext *c, AVPacket *pkt,
     pkt->size     = size; 
     pkt->flags   |= PKT_FLAG_KEY;
     pkt->stream_index = c->vst->id;
-    pkt->pts      = c->frames * sys->frame_rate_base * (30000/sys->frame_rate);
+    pkt->pts      = c->frames;
     
     c->frames++;
 
@@ -815,22 +815,11 @@ static int64_t dv_frame_offset(AVFormatContext *s, DVDemuxContext *c,
 {
     // FIXME: sys may be wrong if last dv_read_packet() failed (buffer is junk)
     const DVprofile* sys = dv_codec_profile(&c->vst->codec);
-    int64_t frame_number, offset;
+    int64_t offset;
     int64_t size = url_filesize(url_fileno(&s->pb));
     int64_t max_offset = ((size-1) / sys->frame_size) * sys->frame_size;
 
-    if (flags & AVSEEK_FLAG_BACKWARD) {
-       frame_number = av_rescale_rnd(timestamp, sys->frame_rate,
-                                     (int64_t) 30000 * sys->frame_rate_base,
-                                     AV_ROUND_DOWN);
-    }
-    else {
-       frame_number = av_rescale_rnd(timestamp, sys->frame_rate,
-                                     (int64_t) 30000 * sys->frame_rate_base,
-                                     AV_ROUND_UP);
-    }  
-
-    offset = sys->frame_size * frame_number;
+    offset = sys->frame_size * timestamp;
     
     if (offset > max_offset) offset = max_offset;
     else if (offset < 0) offset = 0;
