@@ -205,13 +205,13 @@ static const CodecTag nsv_codec_audio_tags[] = {
     { 0, 0 },
 };
 
-static const uint64_t nsv_framerate_table[] = {
-    ((uint64_t)AV_TIME_BASE * 30),
-    ((uint64_t)AV_TIME_BASE * 30000 / 1001), /* 29.97 */
-    ((uint64_t)AV_TIME_BASE * 25),
-    ((uint64_t)AV_TIME_BASE * 24000 / 1001), /* 23.98 */
-    ((uint64_t)AV_TIME_BASE * 30), /* ?? */
-    ((uint64_t)AV_TIME_BASE * 15000 / 1001), /* 14.98 */
+static const AVRational nsv_framerate_table[] = {
+    {30,1},
+    {30000,1001},
+    {25,1},
+    {24000,1001},
+    {30,1},
+    {15000,1001},
 };
 
 //static int nsv_load_index(AVFormatContext *s);
@@ -401,7 +401,8 @@ static int nsv_parse_NSVs_header(AVFormatContext *s, AVFormatParameters *ap)
     ByteIOContext *pb = &s->pb;
     uint32_t vtag, atag;
     uint16_t vwidth, vheight;
-    uint32_t framerate;
+    AVRational framerate;
+    int i;
     uint16_t unknown;
     AVStream *st;
     NSVStream *nst;
@@ -411,17 +412,17 @@ static int nsv_parse_NSVs_header(AVFormatContext *s, AVFormatParameters *ap)
     atag = get_le32(pb);
     vwidth = get_le16(pb);
     vheight = get_le16(pb);
-    framerate = (uint8_t)get_byte(pb);
+    i = get_byte(pb);
     /* XXX how big must the table be ? */
     /* seems there is more to that... */
-    PRINT(("NSV NSVs framerate code %2x\n", framerate));
-    framerate = (framerate & 0x80)?(nsv_framerate_table[framerate & 0x7F]):(framerate*AV_TIME_BASE);
+    PRINT(("NSV NSVs framerate code %2x\n", i));
+    if(i&0x80) framerate= nsv_framerate_table[i & 0x7F];
+    else       framerate= (AVRational){i, 1};
     unknown = get_le16(pb);
 #ifdef DEBUG
     print_tag("NSV NSVs vtag", vtag, 0);
     print_tag("NSV NSVs atag", atag, 0);
     PRINT(("NSV NSVs vsize %dx%d\n", vwidth, vheight));
-    PRINT(("NSV NSVs framerate %2x\n", framerate));
 #endif
     
     /* XXX change to ap != NULL ? */
@@ -446,9 +447,9 @@ static int nsv_parse_NSVs_header(AVFormatContext *s, AVFormatParameters *ap)
             st->codec.height = vheight;
             st->codec.bits_per_sample = 24; /* depth XXX */
 
-            st->codec.frame_rate = framerate;
-            st->codec.frame_rate_base = AV_TIME_BASE;
-            av_set_pts_info(st, 64, AV_TIME_BASE, framerate);
+            av_set_pts_info(st, 64, framerate.den, framerate.num);
+            st->codec.frame_rate = framerate.num;
+            st->codec.frame_rate_base = framerate.den;
             st->start_time = 0;
             st->duration = nsv->duration;
         }
