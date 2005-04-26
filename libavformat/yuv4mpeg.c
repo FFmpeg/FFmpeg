@@ -170,7 +170,7 @@ AVOutputFormat yuv4mpegpipe_oformat = {
     "yuv4mpegpipe",
     "YUV4MPEG pipe format",
     "",
-    "yuv4mpeg",
+    "y4m",
     sizeof(int),
     CODEC_ID_NONE,
     CODEC_ID_RAWVIDEO,
@@ -375,15 +375,26 @@ static int yuv4_read_close(AVFormatContext *s)
     return 0;
 }
 
+static int yuv4_probe(AVProbeData *pd)
+{
+    /* check file header */
+    if (pd->buf_size <= sizeof(Y4M_MAGIC))
+        return 0;
+    if (strncmp(pd->buf, Y4M_MAGIC, sizeof(Y4M_MAGIC)-1)==0)
+        return AVPROBE_SCORE_MAX;
+    else
+        return 0;
+}
+
 AVInputFormat yuv4mpegpipe_iformat = {
     "yuv4mpegpipe",
     "YUV4MPEG pipe format",
     0,
-    NULL,
+    yuv4_probe,
     yuv4_read_header,
     yuv4_read_packet,
     yuv4_read_close,
-    .extensions = "yuv4mpeg"
+    .extensions = "y4m"
 };
 
 int yuv4mpeg_init(void)

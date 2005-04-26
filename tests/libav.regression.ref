@@ -39,8 +39,8 @@ f34e560f8f0f2c603cf0cb3e7eeb031b *./data/b-libav.nut
 ./data/b-libav.ppm CRC=b2bb8e92
 88a98269295fbfce7816558ad84e1259 *./data/b-libav.gif
 2906382 ./data/b-libav.gif
-b977a4fedff90a79baf70c8e02986820 *./data/b-libav.yuv4mpeg
-3801810 ./data/b-libav.yuv4mpeg
+b977a4fedff90a79baf70c8e02986820 *./data/b-libav.y4m
+3801810 ./data/b-libav.y4m
 ./data/b-libav%d.pgm CRC=84c09106
 ./data/b-libav%d.ppm CRC=25c06ecf
 ./data/b-libav%d.jpg CRC=62328baa

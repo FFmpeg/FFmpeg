@@ -608,7 +608,7 @@ do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src $file
 #do_ffmpeg_crc $file -i $file
 
 # yuv4mpeg
-file=${outfile}libav.yuv4mpeg
+file=${outfile}libav.y4m
 do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src $file
 #do_ffmpeg_crc $file -i $file
 
