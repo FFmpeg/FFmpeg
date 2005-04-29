@@ -1617,8 +1617,6 @@ static inline void RENAME(uyvyToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1,
 
 static inline void RENAME(bgr32ToY)(uint8_t *dst, uint8_t *src, int width)
 {
-#ifdef HAVE_MMXFIXME
-#else
 	int i;
 	for(i=0; i<width; i++)
 	{
@@ -1628,13 +1626,10 @@ static inline void RENAME(bgr32ToY)(uint8_t *dst, uint8_t *src, int width)
 
 		dst[i]= ((RY*r + GY*g + BY*b + (33<<(RGB2YUV_SHIFT-1)) )>>RGB2YUV_SHIFT);
 	}
-#endif
 }
 
 static inline void RENAME(bgr32ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1, uint8_t *src2, int width)
 {
-#ifdef HAVE_MMXFIXME
-#else
 	int i;
 	for(i=0; i<width; i++)
 	{
@@ -1651,7 +1646,6 @@ static inline void RENAME(bgr32ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1
 		dstU[i]= ((RU*r + GU*g + BU*b)>>(RGB2YUV_SHIFT+2)) + 128;
 		dstV[i]= ((RV*r + GV*g + BV*b)>>(RGB2YUV_SHIFT+2)) + 128;
 	}
-#endif
 }
 
 static inline void RENAME(bgr24ToY)(uint8_t *dst, uint8_t *src, int width)
