@@ -599,8 +599,8 @@ static int nut_write_header(AVFormatContext *s)
 
 	if (codec->codec_type == CODEC_TYPE_VIDEO)
 	{
-	    nom = codec->frame_rate;
-	    denom = codec->frame_rate_base;
+	    nom = codec->time_base.den;
+	    denom = codec->time_base.num;
 	}
 	else
 	{
@@ -1001,9 +1001,6 @@ static int decode_stream_header(NUTContext *nut){
         st->codec.sample_aspect_ratio.num= get_v(bc);
         st->codec.sample_aspect_ratio.den= get_v(bc);
         get_v(bc); /* csp type */
-
-        st->codec.frame_rate = nom;
-        st->codec.frame_rate_base = denom;
     }
     if (class == 32) /* AUDIO */
     {

@@ -166,8 +166,6 @@ static int fourxm_read_header(AVFormatContext *s,
 
             fourxm->video_stream_index = st->index;
 
-            st->codec.frame_rate = fourxm->fps;
-            st->codec.frame_rate_base = 1.0;
             st->codec.codec_type = CODEC_TYPE_VIDEO;
             st->codec.codec_id = CODEC_ID_4XM;
             st->codec.codec_tag = 0;  /* no fourcc */

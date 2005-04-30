@@ -1208,7 +1208,7 @@ static int mpegts_read_header(AVFormatContext *s,
         ts->cur_pcr = pcrs[0] - ts->pcr_incr * packet_count[0];
         s->bit_rate = (TS_PACKET_SIZE * 8) * 27e6 / ts->pcr_incr;
         st->codec.bit_rate = s->bit_rate;
-        st->start_time = ts->cur_pcr * 1000000.0 / 27.0e6;
+        st->start_time = ts->cur_pcr;
 #if 0
         printf("start=%0.3f pcr=%0.3f incr=%d\n",
                st->start_time / 1000000.0, pcrs[0] / 27e6, ts->pcr_incr);

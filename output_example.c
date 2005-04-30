@@ -199,8 +199,8 @@ AVStream *add_video_stream(AVFormatContext *oc, int codec_id)
     c->width = 352;  
     c->height = 288;
     /* frames per second */
-    c->frame_rate = STREAM_FRAME_RATE;  
-    c->frame_rate_base = 1;
+    c->time_base.den = STREAM_FRAME_RATE;  
+    c->time_base.num = 1;
     c->gop_size = 12; /* emit one intra frame every twelve frames at most */
     if (c->codec_id == CODEC_ID_MPEG2VIDEO) {
         /* just for testing, we also add B frames */

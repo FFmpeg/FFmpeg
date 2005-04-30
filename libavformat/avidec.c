@@ -221,7 +221,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
             nb_frames = get_le32(pb);
 
             st->start_time = 0;
-            st->duration = av_rescale(nb_frames, ast->scale*(int64_t)AV_TIME_BASE, ast->rate);
+            st->duration = nb_frames;
             get_le32(pb); /* buffer size */
             get_le32(pb); /* quality */
             ast->sample_size = get_le32(pb); /* sample ssize */
@@ -232,8 +232,6 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 codec_type = CODEC_TYPE_VIDEO;
 
                 ast->sample_size = 0;
-                st->codec.frame_rate = ast->rate;
-                st->codec.frame_rate_base = ast->scale;
                 break;
             case MKTAG('a', 'u', 'd', 's'):
                 codec_type = CODEC_TYPE_AUDIO;

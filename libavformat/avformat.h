@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-#define LIBAVFORMAT_BUILD       4623
+#define LIBAVFORMAT_BUILD       4624
 
 #define LIBAVFORMAT_VERSION_INT FFMPEG_VERSION_INT
 #define LIBAVFORMAT_VERSION     FFMPEG_VERSION
@@ -98,8 +98,7 @@ typedef struct AVProbeData {
 #define AVPROBE_SCORE_MAX 100
 
 typedef struct AVFormatParameters {
-    int frame_rate;
-    int frame_rate_base;
+    AVRational time_base;
     int sample_rate;
     int channels;
     int width;
@@ -225,8 +224,7 @@ typedef struct AVStream {
     int index;    /* stream index in AVFormatContext */
     int id;       /* format specific stream id */
     AVCodecContext codec; /* codec context */
-    int r_frame_rate;     /* real frame rate of the stream */
-    int r_frame_rate_base;/* real frame rate base of the stream */
+    AVRational r_frame_rate;     /* real frame rate of the stream */
     void *priv_data;
     /* internal data used in av_find_stream_info() */
     int64_t codec_info_duration;     

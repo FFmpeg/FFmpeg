@@ -442,8 +442,7 @@ void avcodec_get_context_defaults(AVCodecContext *s){
     s->error_concealment= 3;
     s->error_resilience= 1;
     s->workaround_bugs= FF_BUG_AUTODETECT;
-    s->frame_rate_base= 1;
-    s->frame_rate = 25;
+    s->time_base= (AVRational){0,1};
     s->gop_size= 50;
     s->me_method= ME_EPZS;
     s->get_buffer= avcodec_default_get_buffer;
@@ -734,7 +733,7 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
             snprintf(buf + strlen(buf), buf_size - strlen(buf),
                      ", %dx%d, %0.2f fps",
                      enc->width, enc->height, 
-                     (float)enc->frame_rate / enc->frame_rate_base);
+                     1/av_q2d(enc->time_base));
         }
         if (encode) {
             snprintf(buf + strlen(buf), buf_size - strlen(buf),
@@ -927,6 +926,12 @@ int64_t av_rescale_rnd(int64_t a, int64_t b, int64_t c, enum AVRounding rnd){
 }
 
 int64_t av_rescale(int64_t a, int64_t b, int64_t c){
+    return av_rescale_rnd(a, b, c, AV_ROUND_NEAR_INF);
+}
+
+int64_t av_rescale_q(int64_t a, AVRational bq, AVRational cq){
+    int64_t b= bq.num * (int64_t)cq.den;
+    int64_t c= cq.num * (int64_t)bq.den;
     return av_rescale_rnd(a, b, c, AV_ROUND_NEAR_INF);
 }
 

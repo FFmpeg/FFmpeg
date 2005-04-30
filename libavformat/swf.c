@@ -348,8 +348,8 @@ static int swf_write_header(AVFormatContext *s)
         swf->video_type = video_enc->codec_id;
         width = video_enc->width;
         height = video_enc->height;
-        rate = video_enc->frame_rate;
-        rate_base = video_enc->frame_rate_base;
+        rate = video_enc->time_base.den;
+        rate_base = video_enc->time_base.num;
     }
 
     if (!audio_enc ) {
@@ -767,8 +767,8 @@ static int swf_read_header(AVFormatContext *s, AVFormatParameters *ap)
         if (tag < 0) {
             if ( ast || vst ) {
                 if ( vst && ast ) {
-                    vst->codec.frame_rate = ast->codec.sample_rate / swf->samples_per_frame;
-                    vst->codec.frame_rate_base = 1;
+                    vst->codec.time_base.den = ast->codec.sample_rate / swf->samples_per_frame;
+                    vst->codec.time_base.num = 1;
                 }
                 break;
             }
@@ -789,8 +789,8 @@ static int swf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 vst->codec.codec_type = CODEC_TYPE_VIDEO;
                 vst->codec.codec_id = CODEC_ID_FLV1;
                 if ( swf->samples_per_frame ) {
-                    vst->codec.frame_rate = 1000. / swf->ms_per_frame;
-                    vst->codec.frame_rate_base = 1;
+                    vst->codec.time_base.den = 1000. / swf->ms_per_frame;
+                    vst->codec.time_base.num = 1;
                 }
             }
         } else if ( ( tag == TAG_STREAMHEAD || tag == TAG_STREAMHEAD2 ) && !ast) {

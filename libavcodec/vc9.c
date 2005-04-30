@@ -595,15 +595,15 @@ static int decode_advanced_sequence_header(AVCodecContext *avctx, GetBitContext 
                 av_log(avctx, AV_LOG_ERROR,
                        "Reserved FRAMERATEDR %i not handled\n", dr);
             }
-            avctx->frame_rate_base = fps_nr[dr];
-            avctx->frame_rate = fps_nr[nr];
+            avctx->time_base.num = fps_nr[dr];
+            avctx->time_base.den = fps_nr[nr];
         }
         else
         {
             nr = get_bits(gb, 16);
             // 0.03125->2048Hz / 0.03125Hz
-            avctx->frame_rate = 1000000;
-            avctx->frame_rate_base = 31250*(1+nr);
+            avctx->time_base.den = 1000000;
+            avctx->time_base.num = 31250*(1+nr);
         }
     }
 

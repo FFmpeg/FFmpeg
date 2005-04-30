@@ -867,8 +867,8 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
             st->codec.color_table_id = get_be16(pb); /* colortable id */
 
 /*          These are set in mov_read_stts and might already be set!
-            st->codec.frame_rate      = 25;
-            st->codec.frame_rate_base = 1;
+            st->codec.time_base.den      = 25;
+            st->codec.time_base.num = 1;
 */
 	    size -= (16+8*4+2+32+2*2);
 #if 0
@@ -1342,10 +1342,10 @@ av_log(NULL, AV_LOG_DEBUG, "track[%i].stts.entries = %i\n", c->fc->nb_streams-1,
 #if 0 //We calculate an average instead, needed by .mp4-files created with nec e606 3g phone
 
         if (!i && st->codec.codec_type==CODEC_TYPE_VIDEO) {
-            st->codec.frame_rate_base = sample_duration ? sample_duration : 1;
-            st->codec.frame_rate = c->streams[c->fc->nb_streams-1]->time_scale;
+            st->codec.time_base.num = sample_duration ? sample_duration : 1;
+            st->codec.time_base.den = c->streams[c->fc->nb_streams-1]->time_scale;
 #ifdef DEBUG
-            av_log(NULL, AV_LOG_DEBUG, "VIDEO FRAME RATE= %i (sd= %i)\n", st->codec.frame_rate, sample_duration);
+            av_log(NULL, AV_LOG_DEBUG, "VIDEO FRAME RATE= %i (sd= %i)\n", st->codec.time_base.den, sample_duration);
 #endif
         }
 #endif
@@ -1355,21 +1355,21 @@ av_log(NULL, AV_LOG_DEBUG, "track[%i].stts.entries = %i\n", c->fc->nb_streams-1,
     if(duration>0)
     {
         av_reduce(
-            &st->codec.frame_rate, 
-            &st->codec.frame_rate_base, 
+            &st->codec.time_base.den, 
+            &st->codec.time_base.num, 
             c->streams[c->fc->nb_streams-1]->time_scale * total_sample_count,
             duration,
             INT_MAX
         );
 
 #ifdef DEBUG
-        av_log(NULL, AV_LOG_DEBUG, "FRAME RATE average (video or audio)= %f (tot sample count= %i ,tot dur= %i timescale=%d)\n", (float)st->codec.frame_rate/st->codec.frame_rate_base,total_sample_count,duration,c->streams[c->fc->nb_streams-1]->time_scale);
+        av_log(NULL, AV_LOG_DEBUG, "FRAME RATE average (video or audio)= %f (tot sample count= %i ,tot dur= %i timescale=%d)\n", (float)st->codec.time_base.den/st->codec.time_base.num,total_sample_count,duration,c->streams[c->fc->nb_streams-1]->time_scale);
 #endif
     }
     else
     {
-        st->codec.frame_rate_base = 1;
-        st->codec.frame_rate = c->streams[c->fc->nb_streams-1]->time_scale;
+        st->codec.time_base.num = 1;
+        st->codec.time_base.den = c->streams[c->fc->nb_streams-1]->time_scale;
     }
     return 0;
 }

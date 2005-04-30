@@ -316,7 +316,7 @@ static int rm_write_header(AVFormatContext *s)
             break;
         case CODEC_TYPE_VIDEO:
             rm->video_stream = stream;
-            stream->frame_rate = (float)codec->frame_rate / (float)codec->frame_rate_base;
+            stream->frame_rate = (float)codec->time_base.den / (float)codec->time_base.num;
             /* XXX: dummy values */
             stream->packet_max_size = 4096;
             stream->nb_packets = 0;
@@ -641,8 +641,8 @@ static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
             start_time = get_be32(pb); /* start time */
             get_be32(pb); /* preroll */
             duration = get_be32(pb); /* duration */
-            st->start_time = start_time * (AV_TIME_BASE / 1000);
-            st->duration = duration * (AV_TIME_BASE / 1000);
+            st->start_time = start_time;
+            st->duration = duration;
             get_str8(pb, buf, sizeof(buf)); /* desc */
             get_str8(pb, buf, sizeof(buf)); /* mimetype */
             codec_data_size = get_be32(pb);
@@ -670,7 +670,7 @@ static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     goto fail1;
                 st->codec.width = get_be16(pb);
                 st->codec.height = get_be16(pb);
-                st->codec.frame_rate_base= 1;
+                st->codec.time_base.num= 1;
                 fps= get_be16(pb);
                 st->codec.codec_type = CODEC_TYPE_VIDEO;
                 get_be32(pb);
@@ -682,7 +682,7 @@ static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 get_buffer(pb, st->codec.extradata, st->codec.extradata_size);
                 
 //                av_log(NULL, AV_LOG_DEBUG, "fps= %d fps2= %d\n", fps, fps2);
-                st->codec.frame_rate = fps * st->codec.frame_rate_base;
+                st->codec.time_base.den = fps * st->codec.time_base.num;
                 /* modification of h263 codec version (!) */
 #ifdef WORDS_BIGENDIAN
                 h263_hack_version = ((uint32_t*)st->codec.extradata)[1];

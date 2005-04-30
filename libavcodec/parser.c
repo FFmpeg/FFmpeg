@@ -282,6 +282,7 @@ static const int frame_rate_tab[16] = {
     25025,
 };
 
+//FIXME move into mpeg12.c
 static void mpegvideo_extract_headers(AVCodecParserContext *s, 
                                       AVCodecContext *avctx,
                                       const uint8_t *buf, int buf_size)
@@ -311,8 +312,8 @@ static void mpegvideo_extract_headers(AVCodecParserContext *s,
                 pc->height = ((buf[1] & 0x0f) << 8) | buf[2];
                 avcodec_set_dimensions(avctx, pc->width, pc->height);
                 frame_rate_index = buf[3] & 0xf;
-                pc->frame_rate = avctx->frame_rate = frame_rate_tab[frame_rate_index];
-                avctx->frame_rate_base = MPEG1_FRAME_RATE_BASE;
+                pc->frame_rate = avctx->time_base.den = frame_rate_tab[frame_rate_index];
+                avctx->time_base.num = MPEG1_FRAME_RATE_BASE;
                 avctx->bit_rate = ((buf[4]<<10) | (buf[5]<<2) | (buf[6]>>6))*400;
                 avctx->codec_id = CODEC_ID_MPEG1VIDEO;
                 avctx->sub_id = 1;
@@ -336,8 +337,8 @@ static void mpegvideo_extract_headers(AVCodecParserContext *s,
                         pc->height |=( vert_size_ext << 12);
                         avctx->bit_rate += (bit_rate_ext << 18) * 400;
                         avcodec_set_dimensions(avctx, pc->width, pc->height);
-                        avctx->frame_rate = pc->frame_rate * (frame_rate_ext_n + 1);
-                        avctx->frame_rate_base = MPEG1_FRAME_RATE_BASE * (frame_rate_ext_d + 1);
+                        avctx->time_base.den = pc->frame_rate * (frame_rate_ext_n + 1);
+                        avctx->time_base.num = MPEG1_FRAME_RATE_BASE * (frame_rate_ext_d + 1);
                         avctx->codec_id = CODEC_ID_MPEG2VIDEO;
                         avctx->sub_id = 2; /* forces MPEG2 */
                     }
@@ -406,7 +407,7 @@ static int mpegvideo_parse(AVCodecParserContext *s,
     mpegvideo_extract_headers(s, avctx, buf, buf_size);
 #if 0
     printf("pict_type=%d frame_rate=%0.3f repeat_pict=%d\n", 
-           s->pict_type, (double)avctx->frame_rate / avctx->frame_rate_base, s->repeat_pict);
+           s->pict_type, (double)avctx->time_base.den / avctx->time_base.num, s->repeat_pict);
 #endif
 
     *poutbuf = (uint8_t *)buf;

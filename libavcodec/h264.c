@@ -3838,8 +3838,7 @@ static int decode_slice_header(H264Context *h){
             s->avctx->sample_aspect_ratio.den = 1;
 
         if(h->sps.timing_info_present_flag && h->sps.fixed_frame_rate_flag){
-            s->avctx->frame_rate = h->sps.time_scale;
-            s->avctx->frame_rate_base = h->sps.num_units_in_tick;
+            s->avctx->time_base= (AVRational){h->sps.num_units_in_tick, h->sps.time_scale};
         }
     }
 

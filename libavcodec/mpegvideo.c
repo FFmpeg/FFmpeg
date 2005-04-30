@@ -1050,7 +1050,7 @@ int MPV_encode_init(AVCodecContext *avctx)
     if(s->avctx->thread_count > 1)
         s->rtp_mode= 1;
 
-    if(!avctx->frame_rate || !avctx->frame_rate_base){
+    if(!avctx->time_base.den || !avctx->time_base.num){
         av_log(avctx, AV_LOG_ERROR, "framerate not set\n");
         return -1;
     }
@@ -1065,11 +1065,11 @@ int MPV_encode_init(AVCodecContext *avctx)
         return -1;
     }
         
-    i= ff_gcd(avctx->frame_rate, avctx->frame_rate_base);
+    i= ff_gcd(avctx->time_base.den, avctx->time_base.num);
     if(i > 1){
         av_log(avctx, AV_LOG_INFO, "removing common factors from framerate\n");
-        avctx->frame_rate /= i;
-        avctx->frame_rate_base /= i;
+        avctx->time_base.den /= i;
+        avctx->time_base.num /= i;
 //        return -1;
     }
     
@@ -1091,8 +1091,11 @@ int MPV_encode_init(AVCodecContext *avctx)
         
     avcodec_get_chroma_sub_sample(avctx->pix_fmt, &chroma_h_shift, &chroma_v_shift);
 
-    av_reduce(&s->time_increment_resolution, &dummy, s->avctx->frame_rate, s->avctx->frame_rate_base, (1<<16)-1);
-    s->time_increment_bits = av_log2(s->time_increment_resolution - 1) + 1;
+    if(s->avctx->time_base.den > (1<<16)-1){
+        av_log(avctx, AV_LOG_ERROR, "timebase not supported by mpeg 4 standard\n");
+        return -1;        
+    }
+    s->time_increment_bits = av_log2(s->avctx->time_base.den - 1) + 1;
 
     switch(avctx->codec->id) {
     case CODEC_ID_MPEG1VIDEO:
@@ -2006,8 +2009,8 @@ static int load_input_picture(MpegEncContext *s, AVFrame *pic_arg){
 
         if(pts != AV_NOPTS_VALUE){ 
             if(s->user_specified_pts != AV_NOPTS_VALUE){
-                int64_t time= av_rescale(pts, s->avctx->frame_rate, s->avctx->frame_rate_base*(int64_t)AV_TIME_BASE);
-                int64_t last= av_rescale(s->user_specified_pts, s->avctx->frame_rate, s->avctx->frame_rate_base*(int64_t)AV_TIME_BASE);
+                int64_t time= pts;
+                int64_t last= s->user_specified_pts;
             
                 if(time <= last){            
                     av_log(s->avctx, AV_LOG_ERROR, "Error, Invalid timestamp=%Ld, last=%Ld\n", pts, s->user_specified_pts);
@@ -2018,10 +2021,10 @@ static int load_input_picture(MpegEncContext *s, AVFrame *pic_arg){
         }else{
             if(s->user_specified_pts != AV_NOPTS_VALUE){
                 s->user_specified_pts= 
-                pts= s->user_specified_pts + AV_TIME_BASE*(int64_t)s->avctx->frame_rate_base / s->avctx->frame_rate;
+                pts= s->user_specified_pts + 1;
                 av_log(s->avctx, AV_LOG_INFO, "Warning: AVFrame.pts=? trying to guess (%Ld)\n", pts);
             }else{
-                pts= av_rescale(pic_arg->display_picture_number*(int64_t)s->avctx->frame_rate_base, AV_TIME_BASE, s->avctx->frame_rate);
+                pts= pic_arg->display_picture_number;
             }
         }
     }

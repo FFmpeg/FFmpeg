@@ -151,8 +151,8 @@ X264_init(AVCodecContext *avctx)
     x4->params.i_height = avctx->height;
     x4->params.vui.i_sar_width = avctx->sample_aspect_ratio.num;
     x4->params.vui.i_sar_height = avctx->sample_aspect_ratio.den;
-    x4->params.i_fps_num = avctx->frame_rate;
-    x4->params.i_fps_den = avctx->frame_rate_base;
+    x4->params.i_fps_num = avctx->time_base.den;
+    x4->params.i_fps_den = avctx->time_base.num;
 
     x4->enc = x264_encoder_open(&x4->params);
     if(!x4->enc)

@@ -195,8 +195,7 @@ void video_encode_example(const char *filename)
     c->width = 352;  
     c->height = 288;
     /* frames per second */
-    c->frame_rate = 25;  
-    c->frame_rate_base= 1;
+    c->time_base= (AVRational){1,25};
     c->gop_size = 10; /* emit one intra frame every ten frames */
     c->max_b_frames=1;
 

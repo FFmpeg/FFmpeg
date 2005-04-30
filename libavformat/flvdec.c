@@ -102,8 +102,7 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
             return AVERROR_NOMEM;
 
         av_set_pts_info(st, 24, 1, 1000); /* 24 bit pts in ms */
-        st->codec.frame_rate_base= 1;
-        st->codec.frame_rate= 1000;
+        st->codec.time_base= (AVRational){1,1000};
     }
 //    av_log(NULL, AV_LOG_DEBUG, "%d %X %d \n", is_audio, flags, st->discard);
     if(  (st->discard >= AVDISCARD_NONKEY && !((flags >> 4)==1 ||  is_audio))

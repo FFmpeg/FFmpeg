@@ -271,8 +271,8 @@ static void parse_specific_params(AVCodecContext *stream, int *au_rate, int *au_
         *au_scale=stream->frame_size;
         *au_rate= stream->sample_rate;
     }else if(stream->codec_type == CODEC_TYPE_VIDEO){
-        *au_scale= stream->frame_rate_base;
-        *au_rate = stream->frame_rate;
+        *au_scale= stream->time_base.num;
+        *au_rate = stream->time_base.den;
     }else{
         *au_scale= stream->block_align ? stream->block_align*8 : 8;
         *au_rate = stream->bit_rate;
@@ -343,7 +343,7 @@ static int avi_write_header(AVFormatContext *s)
     nb_frames = 0;
 
     if(video_enc){
-        put_le32(pb, (uint32_t)(int64_t_C(1000000) * video_enc->frame_rate_base / video_enc->frame_rate));
+        put_le32(pb, (uint32_t)(int64_t_C(1000000) * video_enc->time_base.num / video_enc->time_base.den));
     } else {
 	put_le32(pb, 0);
     }
@@ -390,9 +390,9 @@ static int avi_write_header(AVFormatContext *s)
             put_le16(pb, 0); /* language */
             put_le32(pb, 0); /* initial frame */
             
-            put_le32(pb, stream->frame_rate_base); /* scale */
-            put_le32(pb, stream->frame_rate); /* rate */
-            av_set_pts_info(s->streams[i], 64, stream->frame_rate_base, stream->frame_rate);
+            put_le32(pb, stream->time_base.num); /* scale */
+            put_le32(pb, stream->time_base.den); /* rate */
+            av_set_pts_info(s->streams[i], 64, stream->time_base.num, stream->time_base.den);
 
             put_le32(pb, 0); /* start */
             avi->frames_hdr_strm[i] = url_ftell(pb); /* remember this offset to fill later */

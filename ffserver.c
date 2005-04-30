@@ -1757,7 +1757,7 @@ static void compute_stats(HTTPContext *c)
                 case CODEC_TYPE_VIDEO:
                     type = "video";
                     snprintf(parameters, sizeof(parameters), "%dx%d, q=%d-%d, fps=%d", st->codec.width, st->codec.height,
-                                st->codec.qmin, st->codec.qmax, st->codec.frame_rate / st->codec.frame_rate_base);
+                                st->codec.qmin, st->codec.qmax, st->codec.time_base.den / st->codec.time_base.num);
                     break;
                 default:
                     av_abort();
@@ -2076,7 +2076,7 @@ static int http_prepare_data(HTTPContext *c)
                 } else {
                     /* update first pts if needed */
                     if (c->first_pts == AV_NOPTS_VALUE) {
-                        c->first_pts = pkt.dts;
+                        c->first_pts = av_rescale_q(pkt.dts, c->fmt_in->streams[pkt.stream_index]->time_base, AV_TIME_BASE_Q);
                         c->start_time = cur_time;
                     }
                     /* send it to the appropriate stream */
@@ -2125,10 +2125,10 @@ static int http_prepare_data(HTTPContext *c)
                             AVStream *st;
                             /* compute send time and duration */
                             st = c->fmt_in->streams[pkt.stream_index];
-                            c->cur_pts = pkt.dts;
+                            c->cur_pts = av_rescale_q(pkt.dts, st->time_base, AV_TIME_BASE_Q);
                             if (st->start_time != AV_NOPTS_VALUE)
-                                c->cur_pts -= st->start_time;
-                            c->cur_frame_duration = pkt.duration;
+                                c->cur_pts -= av_rescale_q(st->start_time, st->time_base, AV_TIME_BASE_Q);
+                            c->cur_frame_duration = av_rescale_q(pkt.duration, st->time_base, AV_TIME_BASE_Q);
 #if 0
                             printf("index=%d pts=%0.3f duration=%0.6f\n",
                                    pkt.stream_index,
@@ -3254,8 +3254,8 @@ static int add_av_stream(FFStream *feed, AVStream *st)
             case CODEC_TYPE_VIDEO:
                 if (av1->width == av->width &&
                     av1->height == av->height &&
-                    av1->frame_rate == av->frame_rate &&
-                    av1->frame_rate_base == av->frame_rate_base &&
+                    av1->time_base.den == av->time_base.den &&
+                    av1->time_base.num == av->time_base.num &&
                     av1->gop_size == av->gop_size)
                     goto found;
                 break;
@@ -3452,8 +3452,8 @@ static void build_feed_streams(void)
                                 printf("Codec bitrates do not match for stream %d\n", i);
                                 matches = 0;
                             } else if (ccf->codec_type == CODEC_TYPE_VIDEO) {
-                                if (CHECK_CODEC(frame_rate) ||
-                                    CHECK_CODEC(frame_rate_base) ||
+                                if (CHECK_CODEC(time_base.den) ||
+                                    CHECK_CODEC(time_base.num) ||
                                     CHECK_CODEC(width) ||
                                     CHECK_CODEC(height)) {
                                     printf("Codec width, height and framerate do not match for stream %d\n", i);
@@ -3613,9 +3613,9 @@ static void add_codec(FFStream *stream, AVCodecContext *av)
     case CODEC_TYPE_VIDEO:
         if (av->bit_rate == 0)
             av->bit_rate = 64000;
-        if (av->frame_rate == 0){
-            av->frame_rate = 5;
-            av->frame_rate_base = 1;
+        if (av->time_base.num == 0){
+            av->time_base.den = 5;
+            av->time_base.num = 1;
         }
         if (av->width == 0 || av->height == 0) {
             av->width = 160;
@@ -4095,8 +4095,8 @@ static int parse_ffconfig(const char *filename)
         } else if (!strcasecmp(cmd, "VideoFrameRate")) {
             get_arg(arg, sizeof(arg), &p);
             if (stream) {
-                video_enc.frame_rate_base= DEFAULT_FRAME_RATE_BASE;
-                video_enc.frame_rate = (int)(strtod(arg, NULL) * video_enc.frame_rate_base);
+                video_enc.time_base.num= DEFAULT_FRAME_RATE_BASE;
+                video_enc.time_base.den = (int)(strtod(arg, NULL) * video_enc.time_base.num);
             }
         } else if (!strcasecmp(cmd, "VideoGopSize")) {
             get_arg(arg, sizeof(arg), &p);

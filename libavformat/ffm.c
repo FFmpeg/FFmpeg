@@ -163,8 +163,8 @@ static int ffm_write_header(AVFormatContext *s)
         /* specific info */
         switch(codec->codec_type) {
         case CODEC_TYPE_VIDEO:
-            put_be32(pb, codec->frame_rate_base);
-            put_be32(pb, codec->frame_rate);
+            put_be32(pb, codec->time_base.num);
+            put_be32(pb, codec->time_base.den);
             put_be16(pb, codec->width);
             put_be16(pb, codec->height);
             put_be16(pb, codec->gop_size);
@@ -235,7 +235,7 @@ static int ffm_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (st->codec.codec_type == CODEC_TYPE_AUDIO) {
         duration = ((float)st->codec.frame_size / st->codec.sample_rate * 1000000.0);
     } else {
-        duration = (1000000.0 * st->codec.frame_rate_base / (float)st->codec.frame_rate);
+        duration = (1000000.0 * st->codec.time_base.num / (float)st->codec.time_base.den);
     }
 
     pts = fst->pts;
@@ -480,8 +480,8 @@ static int ffm_read_header(AVFormatContext *s, AVFormatParameters *ap)
         /* specific info */
         switch(codec->codec_type) {
         case CODEC_TYPE_VIDEO:
-            codec->frame_rate_base = get_be32(pb);
-            codec->frame_rate = get_be32(pb);
+            codec->time_base.num = get_be32(pb);
+            codec->time_base.den = get_be32(pb);
             codec->width = get_be16(pb);
             codec->height = get_be16(pb);
             codec->gop_size = get_be16(pb);

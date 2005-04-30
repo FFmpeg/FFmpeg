@@ -140,7 +140,7 @@ static int oggvorbis_encode_frame(AVCodecContext *avccontext,
         op2->packet = context->buffer + sizeof(ogg_packet);
 
         l=  op2->bytes;
-        avccontext->coded_frame->pts= av_rescale(op2->granulepos, AV_TIME_BASE, avccontext->sample_rate);
+        avccontext->coded_frame->pts= op2->granulepos;
 
         memcpy(packets, op2->packet, l);
         context->buffer_index -= l + sizeof(ogg_packet);
@@ -203,6 +203,7 @@ static int oggvorbis_decode_init(AVCodecContext *avccontext) {
     }
     avccontext->channels = context->vi.channels;
     avccontext->sample_rate = context->vi.rate;
+    avccontext->time_base= (AVRational){1, avccontext->sample_rate};
 
     vorbis_synthesis_init(&context->vd, &context->vi);
     vorbis_block_init(&context->vd, &context->vb); 

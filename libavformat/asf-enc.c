@@ -740,7 +740,7 @@ static int asf_write_packet(AVFormatContext *s, AVPacket *pkt)
             duration = (codec->frame_number * (int64_t)codec->frame_size * int64_t_C(10000000)) /
                 codec->sample_rate;
         } else {
-            duration = av_rescale(codec->frame_number * (int64_t)codec->frame_rate_base, 10000000, codec->frame_rate);
+            duration = av_rescale(codec->frame_number * (int64_t)codec->time_base.num, 10000000, codec->time_base.den);
         }
     } else {
         duration = pts * 10000;

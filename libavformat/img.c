@@ -132,15 +132,13 @@ static int img_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         s->is_pipe = 0;
     else
         s->is_pipe = 1;
-        
-    if (!ap || !ap->frame_rate) {
-        st->codec.frame_rate      = 25;
-        st->codec.frame_rate_base = 1;
+
+    if (!ap || !ap->time_base.num) {
+        st->codec.time_base= (AVRational){1,25};
     } else {
-        st->codec.frame_rate      = ap->frame_rate;
-        st->codec.frame_rate_base = ap->frame_rate_base;
+        st->codec.time_base= ap->time_base;
     }
-    
+ 
     if (!s->is_pipe) {
         if (find_image_range(&first_index, &last_index, s->path) < 0)
             goto fail;
@@ -149,9 +147,7 @@ static int img_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         s->img_number = first_index;
         /* compute duration */
         st->start_time = 0;
-        st->duration = ((int64_t)AV_TIME_BASE * 
-                        (last_index - first_index + 1) * 
-                        st->codec.frame_rate_base) / st->codec.frame_rate;
+        st->duration = last_index - first_index + 1;
         if (get_frame_filename(buf, sizeof(buf), s->path, s->img_number) < 0)
             goto fail;
         if (url_fopen(f, buf, URL_RDONLY) < 0)
@@ -236,7 +232,7 @@ static int img_read_packet(AVFormatContext *s1, AVPacket *pkt)
     } else {
         /* XXX: computing this pts is not necessary as it is done in
            the generic code too */
-        pkt->pts = av_rescale((int64_t)s->img_count * s1->streams[0]->codec.frame_rate_base, s1->streams[0]->time_base.den, s1->streams[0]->codec.frame_rate) / s1->streams[0]->time_base.num;
+        pkt->pts = av_rescale((int64_t)s->img_count * s1->streams[0]->codec.time_base.num, s1->streams[0]->time_base.den, s1->streams[0]->codec.time_base.den) / s1->streams[0]->time_base.num;
         s->img_count++;
         s->img_number++;
         return 0;

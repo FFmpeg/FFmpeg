@@ -283,8 +283,8 @@ int ff_xvid_encode_init(AVCodecContext *avctx)  {
 
     /* Frame Rate and Key Frames */
     xvid_correct_framerate(avctx);
-    xvid_enc_create.fincr = avctx->frame_rate_base;
-    xvid_enc_create.fbase = avctx->frame_rate;
+    xvid_enc_create.fincr = avctx->time_base.num;
+    xvid_enc_create.fbase = avctx->time_base.den;
     if( avctx->gop_size > 0 )
         xvid_enc_create.max_key_interval = avctx->gop_size;
     else
@@ -551,8 +551,8 @@ void xvid_correct_framerate(AVCodecContext *avctx) {
     int gcd;
     float est_fps, fps;
     
-    frate = avctx->frame_rate;
-    fbase = avctx->frame_rate_base;
+    frate = avctx->time_base.den;
+    fbase = avctx->time_base.num;
     
     gcd = ff_gcd(frate, fbase);
     if( gcd > 1 ) {
@@ -561,8 +561,8 @@ void xvid_correct_framerate(AVCodecContext *avctx) {
     }
     
     if( frate <= 65000 && fbase <= 65000 ) {
-        avctx->frame_rate = frate;
-        avctx->frame_rate_base = fbase;
+        avctx->time_base.den = frate;
+        avctx->time_base.num = fbase;
         return;
     }
     
@@ -583,14 +583,14 @@ void xvid_correct_framerate(AVCodecContext *avctx) {
     }    
     
     if( fbase > est_fbase ) {
-        avctx->frame_rate = est_frate;
-        avctx->frame_rate_base = est_fbase;
+        avctx->time_base.den = est_frate;
+        avctx->time_base.num = est_fbase;
         av_log(avctx, AV_LOG_DEBUG, 
             "XviD: framerate re-estimated: %.2f, %.3f%% correction\n",
             est_fps, (((est_fps - fps)/fps) * 100.0));
     } else {
-        avctx->frame_rate = frate;
-        avctx->frame_rate_base = fbase;
+        avctx->time_base.den = frate;
+        avctx->time_base.num = fbase;
     }
 }
 

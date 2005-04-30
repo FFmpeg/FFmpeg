@@ -874,8 +874,7 @@ static int output_picture2(VideoState *is, AVFrame *src_frame, double pts1)
         pts = is->video_clock;
     }
     /* update video clock for next frame */
-    frame_delay = (double)is->video_st->codec.frame_rate_base / 
-        (double)is->video_st->codec.frame_rate;
+    frame_delay = av_q2d(is->video_st->codec.time_base);
     /* for MPEG2, the frame can be repeated, so we update the
        clock accordingly */
     if (src_frame->repeat_pict) {
@@ -917,7 +916,7 @@ static int video_thread(void *arg)
            this packet, if any */
         pts = 0;
         if (pkt->dts != AV_NOPTS_VALUE)
-            pts = (double)pkt->dts / AV_TIME_BASE;
+            pts = av_q2d(is->video_st->time_base)*pkt->dts;
 
             SDL_LockMutex(is->video_decoder_mutex);
             len1 = avcodec_decode_video(&is->video_st->codec, 
@@ -1097,7 +1096,7 @@ static int audio_decode_frame(VideoState *is, uint8_t *audio_buf, double *pts_pt
         
         /* if update the audio clock with the pts */
         if (pkt->pts != AV_NOPTS_VALUE) {
-            is->audio_clock = (double)pkt->pts / AV_TIME_BASE;
+            is->audio_clock = av_q2d(is->audio_st->time_base)*pkt->pts;
         }
     }
 }

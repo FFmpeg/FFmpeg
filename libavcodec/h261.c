@@ -103,8 +103,8 @@ void ff_h261_encode_picture_header(MpegEncContext * s, int picture_number){
 
     put_bits(&s->pb, 20, 0x10); /* PSC */
 
-    temp_ref= s->picture_number * (int64_t)30000 * s->avctx->frame_rate_base / 
-                         (1001 * (int64_t)s->avctx->frame_rate);
+    temp_ref= s->picture_number * (int64_t)30000 * s->avctx->time_base.num / 
+                         (1001 * (int64_t)s->avctx->time_base.den); //FIXME maybe this should use a timestamp
     put_bits(&s->pb, 5, temp_ref & 0x1f); /* TemporalReference */
 
     put_bits(&s->pb, 1, 0); /* split screen off */

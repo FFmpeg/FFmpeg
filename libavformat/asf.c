@@ -196,9 +196,9 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             if (!asf_st)
                 goto fail;
             st->priv_data = asf_st;
-            st->start_time = asf->hdr.preroll * (int64_t)AV_TIME_BASE / 1000;
+            st->start_time = asf->hdr.preroll;
             st->duration = asf->hdr.send_time / 
-                (10000000 / AV_TIME_BASE) - st->start_time;
+                (10000000 / 1000) - st->start_time;
             get_guid(pb, &g);
             if (!memcmp(&g, &audio_stream, sizeof(GUID))) {
                 type = CODEC_TYPE_AUDIO;
@@ -217,9 +217,6 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
             get_le32(pb);
 	    st->codec.codec_type = type;
-            /* 1 fps default (XXX: put 0 fps instead) */
-            st->codec.frame_rate = 1000; 
-            st->codec.frame_rate_base = 1;
             if (type == CODEC_TYPE_AUDIO) {
                 get_wav_header(pb, &st->codec, type_specific_size);
                 st->need_parsing = 1;

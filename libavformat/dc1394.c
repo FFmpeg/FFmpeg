@@ -72,7 +72,7 @@ static int dc1394_read_header(AVFormatContext *c, AVFormatParameters * ap)
 	     break;
 	     
     for (fps = dc1394_frame_rates; fps->frame_rate; fps++)
-         if (fps->frame_rate == av_rescale(1000, ap->frame_rate, ap->frame_rate_base))
+         if (fps->frame_rate == av_rescale(1000, ap->time_base.den, ap->time_base.num))
 	     break;
     
     /* create a video stream */
@@ -82,8 +82,8 @@ static int dc1394_read_header(AVFormatContext *c, AVFormatParameters * ap)
     av_set_pts_info(vst, 64, 1, 1000);
     vst->codec.codec_type = CODEC_TYPE_VIDEO;
     vst->codec.codec_id = CODEC_ID_RAWVIDEO;
-    vst->codec.frame_rate = fps->frame_rate;
-    vst->codec.frame_rate_base = 1000;
+    vst->codec.time_base.den = fps->frame_rate;
+    vst->codec.time_base.num = 1000;
     vst->codec.width = fmt->width;
     vst->codec.height = fmt->height;
     vst->codec.pix_fmt = fmt->pix_fmt;

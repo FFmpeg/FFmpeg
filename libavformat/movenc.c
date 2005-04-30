@@ -1181,8 +1181,8 @@ static int mov_write_moov_tag(ByteIOContext *pb, MOVContext *mov,
         if(mov->tracks[i].entry <= 0) continue;
 
         if(mov->tracks[i].enc->codec_type == CODEC_TYPE_VIDEO) {
-            mov->tracks[i].timescale = mov->tracks[i].enc->frame_rate;
-            mov->tracks[i].sampleDuration = mov->tracks[i].enc->frame_rate_base;
+            mov->tracks[i].timescale = mov->tracks[i].enc->time_base.den;
+            mov->tracks[i].sampleDuration = mov->tracks[i].enc->time_base.num;
         }
         else if(mov->tracks[i].enc->codec_type == CODEC_TYPE_AUDIO) {
             /* If AMR, track timescale = 8000, AMR_WB = 16000 */
@@ -1257,10 +1257,10 @@ int mov_write_ftyp_tag(ByteIOContext *pb, AVFormatContext *s)
 static void mov_write_uuidprof_tag(ByteIOContext *pb, AVFormatContext *s)
 {
     int AudioRate = s->streams[1]->codec.sample_rate;
-    int FrameRate = ((s->streams[0]->codec.frame_rate) * (0x10000))/ (s->streams[0]->codec.frame_rate_base);
+    int FrameRate = ((s->streams[0]->codec.time_base.den) * (0x10000))/ (s->streams[0]->codec.time_base.num);
  
     //printf("audiorate = %d\n",AudioRate);
-    //printf("framerate = %d / %d = 0x%x\n",s->streams[0]->codec.frame_rate,s->streams[0]->codec.frame_rate_base,FrameRate);
+    //printf("framerate = %d / %d = 0x%x\n",s->streams[0]->codec.time_base.den,s->streams[0]->codec.time_base.num,FrameRate);
 
     put_be32(pb, 0x94 ); /* size */
     put_tag(pb, "uuid");

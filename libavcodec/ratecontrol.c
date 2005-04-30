@@ -166,7 +166,7 @@ int ff_rate_control_init(MpegEncContext *s)
                 bits= rce.i_tex_bits + rce.p_tex_bits;
 
                 q= get_qscale(s, &rce, rcc->pass1_wanted_bits/rcc->pass1_rc_eq_output_sum, i);
-                rcc->pass1_wanted_bits+= s->bit_rate/(s->avctx->frame_rate / (double)s->avctx->frame_rate_base);
+                rcc->pass1_wanted_bits+= s->bit_rate/(1/av_q2d(s->avctx->time_base)); //FIXME missbehaves a little for variable fps
             }
         }
 
@@ -199,7 +199,7 @@ static inline double bits2qp(RateControlEntry *rce, double bits){
     
 int ff_vbv_update(MpegEncContext *s, int frame_size){
     RateControlContext *rcc= &s->rc_context;
-    const double fps= (double)s->avctx->frame_rate / (double)s->avctx->frame_rate_base;
+    const double fps= 1/av_q2d(s->avctx->time_base);
     const int buffer_size= s->avctx->rc_buffer_size;
     const double min_rate= s->avctx->rc_min_rate/fps;
     const double max_rate= s->avctx->rc_max_rate/fps;
@@ -400,7 +400,7 @@ static double modify_qscale(MpegEncContext *s, RateControlEntry *rce, double q, 
     double bits;
     const int pict_type= rce->new_pict_type;
     const double buffer_size= s->avctx->rc_buffer_size;
-    const double fps= (double)s->avctx->frame_rate / (double)s->avctx->frame_rate_base;
+    const double fps= 1/av_q2d(s->avctx->time_base);
     const double min_rate= s->avctx->rc_min_rate / fps;
     const double max_rate= s->avctx->rc_max_rate / fps;
     
@@ -631,7 +631,7 @@ float ff_rate_estimate_qscale(MpegEncContext *s)
 
     get_qminmax(&qmin, &qmax, s, pict_type);
 
-    fps= (double)s->avctx->frame_rate / (double)s->avctx->frame_rate_base;
+    fps= 1/av_q2d(s->avctx->time_base);
 //printf("input_pic_num:%d pic_num:%d frame_rate:%d\n", s->input_picture_number, s->picture_number, s->frame_rate);
         /* update predictors */
     if(picture_number>2){
@@ -757,7 +757,7 @@ static int init_pass2(MpegEncContext *s)
     RateControlContext *rcc= &s->rc_context;
     AVCodecContext *a= s->avctx;
     int i;
-    double fps= (double)s->avctx->frame_rate / (double)s->avctx->frame_rate_base;
+    double fps= 1/av_q2d(s->avctx->time_base);
     double complexity[5]={0,0,0,0,0};   // aproximate bits at quant=1
     double avg_quantizer[5];
     uint64_t const_bits[5]={0,0,0,0,0}; // quantizer idependant bits

@@ -68,13 +68,13 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     const char *video_device;
     int j;
 
-    if (!ap || ap->width <= 0 || ap->height <= 0 || ap->frame_rate <= 0)
+    if (!ap || ap->width <= 0 || ap->height <= 0 || ap->time_base.den <= 0)
         return -1;
     
     width = ap->width;
     height = ap->height;
-    frame_rate      = ap->frame_rate;
-    frame_rate_base = ap->frame_rate_base;
+    frame_rate      = ap->time_base.den;
+    frame_rate_base = ap->time_base.num;
 
     if((unsigned)width > 32767 || (unsigned)height > 32767)
         return -1;
@@ -265,8 +265,8 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     st->codec.codec_id = CODEC_ID_RAWVIDEO;
     st->codec.width = width;
     st->codec.height = height;
-    st->codec.frame_rate      = frame_rate;
-    st->codec.frame_rate_base = frame_rate_base;
+    st->codec.time_base.den      = frame_rate;
+    st->codec.time_base.num = frame_rate_base;
 
     return 0;
  fail:

@@ -316,7 +316,7 @@ static int gif_write_header(AVFormatContext *s)
     } else {
         width = video_enc->width;
         height = video_enc->height;
-//        rate = video_enc->frame_rate;
+//        rate = video_enc->time_base.den;
     }
 
     /* XXX: is it allowed ? seems to work so far... */
@@ -349,7 +349,7 @@ static int gif_write_video(AVFormatContext *s,
     /* XXX: should use delay, in order to be more accurate */
     /* instead of using the same rounded value each time */
     /* XXX: don't even remember if I really use it for now */
-    jiffies = (70*enc->frame_rate_base/enc->frame_rate) - 1;
+    jiffies = (70*enc->time_base.num/enc->time_base.den) - 1;
 
     put_le16(pb, jiffies);
 

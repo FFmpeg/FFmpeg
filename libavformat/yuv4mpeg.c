@@ -36,7 +36,7 @@ static int yuv4_generate_header(AVFormatContext *s, char* buf)
     width = st->codec.width;
     height = st->codec.height;
 
-    av_reduce(&raten, &rated, st->codec.frame_rate, st->codec.frame_rate_base, (1UL<<31)-1);
+    av_reduce(&raten, &rated, st->codec.time_base.den, st->codec.time_base.num, (1UL<<31)-1);
     
     aspectn = st->codec.sample_aspect_ratio.num;
     aspectd = st->codec.sample_aspect_ratio.den;
@@ -323,8 +323,7 @@ static int yuv4_read_header(AVFormatContext *s, AVFormatParameters *ap)
     st->codec.width = width;
     st->codec.height = height;
     av_reduce(&raten, &rated, raten, rated, (1UL<<31)-1);
-    st->codec.frame_rate = raten;
-    st->codec.frame_rate_base = rated;
+    av_set_pts_info(st, 64, rated, raten);
     st->codec.pix_fmt = pix_fmt;
     st->codec.codec_type = CODEC_TYPE_VIDEO;
     st->codec.codec_id = CODEC_ID_RAWVIDEO;

@@ -300,8 +300,7 @@ static int nsv_parse_NSVf_header(AVFormatContext *s, AVFormatParameters *ap)
     PRINT(("NSV NSVf chunk_size %ld\n", size));
     PRINT(("NSV NSVf file_size %Ld\n", file_size));
 
-    duration = get_le32(pb); /* in ms */
-    nsv->duration = duration * AV_TIME_BASE / 1000; /* convert */
+    nsv->duration = duration = get_le32(pb); /* in ms */
     PRINT(("NSV NSVf duration %Ld ms\n", duration));
     // XXX: store it in AVStreams
 
@@ -448,10 +447,8 @@ static int nsv_parse_NSVs_header(AVFormatContext *s, AVFormatParameters *ap)
             st->codec.bits_per_sample = 24; /* depth XXX */
 
             av_set_pts_info(st, 64, framerate.den, framerate.num);
-            st->codec.frame_rate = framerate.num;
-            st->codec.frame_rate_base = framerate.den;
             st->start_time = 0;
-            st->duration = nsv->duration;
+            st->duration = av_rescale(nsv->duration, framerate.num, 1000*framerate.den);
         }
         if (atag != T_NONE) {
 #ifndef DISABLE_AUDIO
@@ -467,7 +464,7 @@ static int nsv_parse_NSVs_header(AVFormatContext *s, AVFormatParameters *ap)
             st->codec.codec_tag = atag;
             st->codec.codec_id = codec_get_id(nsv_codec_audio_tags, atag);
             st->start_time = 0;
-            st->duration = nsv->duration;
+//            st->duration = nsv->duration; //FIXME
             
             st->need_parsing = 1; /* for PCM we will read a chunk later and put correct info */
             /* XXX:FIXME */
