@@ -177,10 +177,12 @@ static void common_init(MpegEncContext * s)
         s->y_dc_scale_table= wmv1_y_dc_scale_table;
         s->c_dc_scale_table= wmv1_c_dc_scale_table;
         break;
+#if defined(CONFIG_WMV3_DECODER)||defined(CONFIG_VC9_DECODER)
     case 6:
         s->y_dc_scale_table= wmv3_dc_scale_table;
         s->c_dc_scale_table= wmv3_dc_scale_table;
         break;
+#endif
 
     }
 

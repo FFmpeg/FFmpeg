@@ -292,6 +292,7 @@ static int sse16_c(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
 
 
 static inline int w_c(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, int w, int h, int type){
+#ifdef CONFIG_SNOW_ENCODER //idwt is in snow.c
     int s, i, j;
     const int dec_count= w==8 ? 3 : 4;
     int tmp[16*16];
@@ -338,6 +339,7 @@ static inline int w_c(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, in
         pix1 += line_size;
         pix2 += line_size;
     }
+
     ff_spatial_dwt(tmp, w, h, 16, type, dec_count);
 
     s=0;
@@ -369,6 +371,7 @@ static inline int w_c(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, in
     assert(s>=0); 
     
     return s>>2;
+#endif
 }
 
 static int w53_8_c(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, int h){

@@ -542,9 +542,13 @@ PCM_CODEC(CODEC_ID_ADPCM_SWF, adpcm_swf);
     /* parsers */ 
     av_register_codec_parser(&mpegvideo_parser);
     av_register_codec_parser(&mpeg4video_parser);
+#if defined(CONFIG_H261_DECODER) || defined(CONFIG_H261_ENCODER)
     av_register_codec_parser(&h261_parser);
+#endif
     av_register_codec_parser(&h263_parser);
+#ifdef CONFIG_H264_DECODER
     av_register_codec_parser(&h264_parser);
+#endif
     av_register_codec_parser(&mjpeg_parser);
     av_register_codec_parser(&pnm_parser);
 

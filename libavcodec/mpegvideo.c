@@ -1258,8 +1258,10 @@ int MPV_encode_init(AVCodecContext *avctx)
     ff_set_cmp(&s->dsp, s->dsp.ildct_cmp, s->avctx->ildct_cmp);
     ff_set_cmp(&s->dsp, s->dsp.frame_skip_cmp, s->avctx->frame_skip_cmp);
     
+#ifdef CONFIG_H261_ENCODER
     if (s->out_format == FMT_H261)
         ff_h261_encode_init(s);
+#endif
     if (s->out_format == FMT_H263)
         h263_encode_init(s);
     if(s->msmpeg4_version)
@@ -2821,9 +2823,11 @@ if(s->quarter_sample)
         pix_op[s->chroma_x_shift][uvdxy](dest_cb, ptr_cb, uvlinesize, h >> s->chroma_y_shift);
         pix_op[s->chroma_x_shift][uvdxy](dest_cr, ptr_cr, uvlinesize, h >> s->chroma_y_shift);
     }
+#if defined(CONFIG_H261_ENCODER) || defined(CONFIG_H261_DECODER)
     if(s->out_format == FMT_H261){
         ff_h261_loop_filter(s);
     }
+#endif
 }
 
 /* apply one mpeg motion vector to the three components */
@@ -4289,8 +4293,10 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
         msmpeg4_encode_mb(s, s->block, motion_x, motion_y); break;
     case CODEC_ID_WMV2:
          ff_wmv2_encode_mb(s, s->block, motion_x, motion_y); break;
+#ifdef CONFIG_H261_ENCODER
     case CODEC_ID_H261:
         ff_h261_encode_mb(s, s->block, motion_x, motion_y); break;
+#endif
     case CODEC_ID_H263:
     case CODEC_ID_H263P:
     case CODEC_ID_FLV1:
@@ -4684,11 +4690,13 @@ static int encode_thread(AVCodecContext *c, void *arg){
             s->mb_y = mb_y;  // moved into loop, can get changed by H.261
             ff_update_block_index(s);
 
+#ifdef CONFIG_H261_ENCODER
             if(s->codec_id == CODEC_ID_H261){
                 ff_h261_reorder_mb_index(s);
                 xy= s->mb_y*s->mb_stride + s->mb_x;
                 mb_type= s->mb_type[xy];
             }
+#endif
 
             /* write gob / video packet header  */
             if(s->rtp_mode){
@@ -5391,9 +5399,11 @@ static void encode_picture(MpegEncContext *s, int picture_number)
     case FMT_MJPEG:
         mjpeg_picture_header(s);
         break;
+#ifdef CONFIG_H261_ENCODER
     case FMT_H261:
         ff_h261_encode_picture_header(s, picture_number);
         break;
+#endif
     case FMT_H263:
         if (s->codec_id == CODEC_ID_WMV2) 
             ff_wmv2_encode_picture_header(s, picture_number);
@@ -5401,10 +5411,14 @@ static void encode_picture(MpegEncContext *s, int picture_number)
             msmpeg4_encode_picture_header(s, picture_number);
         else if (s->h263_pred)
             mpeg4_encode_picture_header(s, picture_number);
+#ifdef CONFIG_RV10_ENCODER
         else if (s->codec_id == CODEC_ID_RV10) 
             rv10_encode_picture_header(s, picture_number);
+#endif
+#ifdef CONFIG_RV20_ENCODER
         else if (s->codec_id == CODEC_ID_RV20) 
             rv20_encode_picture_header(s, picture_number);
+#endif
         else if (s->codec_id == CODEC_ID_FLV1)
             ff_flv_encode_picture_header(s, picture_number);
         else
