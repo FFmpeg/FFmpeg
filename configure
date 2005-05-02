@@ -70,6 +70,9 @@ echo "  --disable-ffplay         disable ffplay build"
 echo "  --enable-small           optimize for size instead of speed"
 echo "  --enable-memalign-hack   emulate memalign, interferes with memory debuggers"
 echo "  --disable-strip          disable stripping of executables and shared libraries"
+echo "  --enable-code=codec      enables codec"
+echo "  --disable-code=codec     disables codec"
+echo "  --disable-encoders       disables all encoders"
 echo ""
 echo "NOTE: The object files are build at the place where configure is launched"
 exit 1
@@ -376,6 +379,8 @@ for opt do
   FFMPEG_CONFIGURATION="$FFMPEG_CONFIGURATION""$opt "
 done
 
+CODEC_LIST=`grep 'register_avcodec(&[a-z]' libavcodec/allcodecs.c  | sed 's/.*&\(.*\)).*/\1/'`
+
 for opt do
   case "$opt" in
   --prefix=*) prefix=`echo $opt | cut -d '=' -f 2`
@@ -489,6 +494,12 @@ for opt do
   --enable-memalign-hack) memalignhack="yes"
   ;;
   --disable-strip) dostrip="no"
+  ;;
+  --enable-codec=*) CODEC_LIST="$CODEC_LIST ${opt#--enable-codec=}"
+  ;;
+  --disable-codec=*) CODEC_LIST="`echo $CODEC_LIST | sed -e \"s#${opt#--disable-codec=}##\"`"
+  ;;
+  --disable-encoders) CODEC_LIST="`echo $CODEC_LIST | sed 's/[-_a-zA-Z0-9]*encoder//g'`"
   ;;
   esac
 done
@@ -1576,6 +1587,10 @@ if test "$amr_if2" = "yes" ; then
 fi
 
 fi
+
+for codec in $CODEC_LIST ; do
+    echo "#define CONFIG_`echo $codec | awk '{$1=toupper($1)}1'` 1" >> $TMPH
+done
 
 diff $TMPH config.h >/dev/null 2>&1
 if test $? -ne 0 ; then
