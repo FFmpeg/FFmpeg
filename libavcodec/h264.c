@@ -209,8 +209,8 @@ typedef struct H264Context{
      */
     int block_offset[2*(16+8)];
     
-    uint16_t *mb2b_xy; //FIXME are these 4 a good idea?
-    uint16_t *mb2b8_xy;
+    uint32_t *mb2b_xy; //FIXME are these 4 a good idea?
+    uint32_t *mb2b8_xy;
     int b_stride; //FIXME use s->b4_stride
     int b8_stride;
 
@@ -2667,8 +2667,8 @@ static int alloc_tables(H264Context *h){
     memset(h->slice_table_base, -1, big_mb_num  * sizeof(uint8_t));
     h->slice_table= h->slice_table_base + s->mb_stride + 1;
 
-    CHECKED_ALLOCZ(h->mb2b_xy  , big_mb_num * sizeof(uint16_t));
-    CHECKED_ALLOCZ(h->mb2b8_xy , big_mb_num * sizeof(uint16_t));
+    CHECKED_ALLOCZ(h->mb2b_xy  , big_mb_num * sizeof(uint32_t));
+    CHECKED_ALLOCZ(h->mb2b8_xy , big_mb_num * sizeof(uint32_t));
     for(y=0; y<s->mb_height; y++){
         for(x=0; x<s->mb_width; x++){
             const int mb_xy= x + y*s->mb_stride;
