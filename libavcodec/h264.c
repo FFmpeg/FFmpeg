@@ -3457,6 +3457,16 @@ static void idr(H264Context *h){
     h->short_ref_count=0;
 }
 
+/* forget old pics after a seek */
+static void flush_dpb(AVCodecContext *avctx){
+    H264Context *h= avctx->priv_data;
+    int i;
+    for(i=0; i<16; i++)
+        h->delayed_pic[i]= NULL;
+    h->delayed_output_pic= NULL;
+    idr(h);
+}
+
 /**
  *
  * @return the removed picture or NULL if an error occures
@@ -7208,6 +7218,7 @@ AVCodec h264_decoder = {
     decode_end,
     decode_frame,
     /*CODEC_CAP_DRAW_HORIZ_BAND |*/ CODEC_CAP_DR1 | CODEC_CAP_TRUNCATED | CODEC_CAP_DELAY,
+    .flush= flush_dpb,
 };
 
 AVCodecParser h264_parser = {
