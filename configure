@@ -1589,8 +1589,8 @@ fi
 fi
 
 for codec in $CODEC_LIST ; do
-    echo "#define CONFIG_`echo $codec | awk '{$1=toupper($1)}1'` 1" >> $TMPH
-    echo "CONFIG_`echo $codec | awk '{$1=toupper($1)}1'`=yes" >> config.mak
+    echo "#define CONFIG_`echo $codec | tr a-z A-Z` 1" >> $TMPH
+    echo "CONFIG_`echo $codec | tr a-z A-Z`=yes" >> config.mak
 done
 
 diff $TMPH config.h >/dev/null 2>&1
