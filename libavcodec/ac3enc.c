@@ -703,8 +703,10 @@ static int compute_bit_allocation(AC3EncodeContext *s,
     /* audio blocks */
     for(i=0;i<NB_BLOCKS;i++) {
         frame_bits += s->nb_channels * 2 + 2; /* blksw * c, dithflag * c, dynrnge, cplstre */
-        if (s->acmod == 2)
+        if (s->acmod == 2) {
             frame_bits++; /* rematstr */
+            if(i==0) frame_bits += 4;
+        }
         frame_bits += 2 * s->nb_channels; /* chexpstr[2] * c */
 	if (s->lfe)
 	    frame_bits++; /* lfeexpstr */
