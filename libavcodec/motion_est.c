@@ -269,7 +269,7 @@ void ff_init_me(MpegEncContext *s){
 
     // 8x8 fullpel search would need a 4x4 chroma compare, which we dont have yet, and even if we had the motion estimation code doesnt expect it
     if(s->codec_id != CODEC_ID_SNOW){
-        if((c->avctx->me_cmp&FF_CMP_CHROMA) && !s->dsp.me_cmp[2]){
+        if((c->avctx->me_cmp&FF_CMP_CHROMA)/* && !s->dsp.me_cmp[2]*/){
             s->dsp.me_cmp[2]= zero_cmp;
         }
         if((c->avctx->me_sub_cmp&FF_CMP_CHROMA) && !s->dsp.me_sub_cmp[2]){
