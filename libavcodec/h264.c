@@ -227,7 +227,7 @@ typedef struct H264Context{
     /**
      * current pps
      */
-    PPS pps; //FIXME move tp Picture perhaps? (->no) do we need that?
+    PPS pps; //FIXME move to Picture perhaps? (->no) do we need that?
 
     int slice_num;
     uint8_t *slice_table_base;
@@ -370,7 +370,7 @@ static inline void fill_rectangle(void *vp, int w, int h, int stride, uint32_t v
     stride *= size;
     
     assert((((int)vp)&(FFMIN(w, STRIDE_ALIGN)-1)) == 0);
-//FIXME check what gcc generates for 64 bit on x86 and possible write a 32 bit ver of it
+//FIXME check what gcc generates for 64 bit on x86 and possibly write a 32 bit ver of it
     if(w==2 && h==2){
         *(uint16_t*)(p + 0)=
         *(uint16_t*)(p + stride)= size==4 ? val : val*0x0101;
@@ -434,7 +434,7 @@ static inline void fill_caches(H264Context *h, int mb_type, int for_deblock){
     if(for_deblock && h->slice_num == 1)
         return;
 
-    //wow what a mess, why didnt they simplify the interlacing&intra stuff, i cant imagine that these complex rules are worth it 
+    //wow what a mess, why didn't they simplify the interlacing&intra stuff, i can't imagine that these complex rules are worth it 
     
     top_xy     = mb_xy  - s->mb_stride;
     topleft_xy = top_xy - 1;
@@ -755,12 +755,12 @@ static inline void fill_caches(H264Context *h, int mb_type, int for_deblock){
 
             h->ref_cache[list][scan8[5 ]+1] = 
             h->ref_cache[list][scan8[7 ]+1] = 
-            h->ref_cache[list][scan8[13]+1] =  //FIXME remove past 3 (init somewher else)
+            h->ref_cache[list][scan8[13]+1] =  //FIXME remove past 3 (init somewhere else)
             h->ref_cache[list][scan8[4 ]] = 
             h->ref_cache[list][scan8[12]] = PART_NOT_AVAILABLE;
             *(uint32_t*)h->mv_cache [list][scan8[5 ]+1]=
             *(uint32_t*)h->mv_cache [list][scan8[7 ]+1]=
-            *(uint32_t*)h->mv_cache [list][scan8[13]+1]= //FIXME remove past 3 (init somewher else)
+            *(uint32_t*)h->mv_cache [list][scan8[13]+1]= //FIXME remove past 3 (init somewhere else)
             *(uint32_t*)h->mv_cache [list][scan8[4 ]]=
             *(uint32_t*)h->mv_cache [list][scan8[12]]= 0;
 
@@ -803,7 +803,7 @@ static inline void fill_caches(H264Context *h, int mb_type, int for_deblock){
                 }
                 *(uint32_t*)h->mvd_cache [list][scan8[5 ]+1]=
                 *(uint32_t*)h->mvd_cache [list][scan8[7 ]+1]=
-                *(uint32_t*)h->mvd_cache [list][scan8[13]+1]= //FIXME remove past 3 (init somewher else)
+                *(uint32_t*)h->mvd_cache [list][scan8[13]+1]= //FIXME remove past 3 (init somewhere else)
                 *(uint32_t*)h->mvd_cache [list][scan8[4 ]]=
                 *(uint32_t*)h->mvd_cache [list][scan8[12]]= 0;
 
@@ -1363,7 +1363,7 @@ static inline void write_back_motion(H264Context *h, int mb_type){
     for(list=0; list<2; list++){
         int y;
         if(!USES_LIST(mb_type, list)){
-            if(1){ //FIXME skip or never read if mb_type doesnt use it
+            if(1){ //FIXME skip or never read if mb_type doesn't use it
                 for(y=0; y<4; y++){
                     *(uint64_t*)s->current_picture.motion_val[list][b_xy + 0 + y*h->b_stride]=
                     *(uint64_t*)s->current_picture.motion_val[list][b_xy + 2 + y*h->b_stride]= 0;
@@ -1411,7 +1411,7 @@ static inline void write_back_motion(H264Context *h, int mb_type){
  * Decodes a network abstraction layer unit.
  * @param consumed is the number of bytes used as input
  * @param length is the length of the array
- * @param dst_length is the number of decoded bytes FIXME here or a decode rbsp ttailing?
+ * @param dst_length is the number of decoded bytes FIXME here or a decode rbsp tailing?
  * @returns decoded bytes, might be src+1 if no escapes 
  */
 static uint8_t *decode_nal(H264Context *h, uint8_t *src, int *dst_length, int *consumed, int length){
@@ -1448,7 +1448,7 @@ static uint8_t *decode_nal(H264Context *h, uint8_t *src, int *dst_length, int *c
     h->rbsp_buffer= av_fast_realloc(h->rbsp_buffer, &h->rbsp_buffer_size, length);
     dst= h->rbsp_buffer;
 
-//printf("deoding esc\n");
+//printf("decoding esc\n");
     si=di=0;
     while(si<length){ 
         //remove escapes (very rare 1:2^22)
@@ -1736,7 +1736,7 @@ static void h264_diff_dct_c(DCTELEM *block, uint8_t *src1, uint8_t *src2, int st
 }
 #endif
 
-//FIXME need to check that this doesnt overflow signed 32 bit for low qp, iam not sure, its very close
+//FIXME need to check that this doesnt overflow signed 32 bit for low qp, i am not sure, it's very close
 //FIXME check that gcc inlines this (and optimizes intra & seperate_dc stuff away)
 static inline int quantize_c(DCTELEM *block, uint8_t *scantable, int qscale, int intra, int seperate_dc){
     int i;
@@ -2642,7 +2642,7 @@ static void free_tables(H264Context *h){
 
 /**
  * allocates tables.
- * needs widzh/height
+ * needs width/height
  */
 static int alloc_tables(H264Context *h){
     MpegEncContext * const s = &h->s;
@@ -2767,7 +2767,7 @@ static inline void backup_mb_border(H264Context *h, uint8_t *src_y, uint8_t *src
     src_cb -= uvlinesize;
     src_cr -= uvlinesize;
 
-    // There is two lines saved, the line above the the top macroblock of a pair,
+    // There are two lines saved, the line above the the top macroblock of a pair,
     // and the line above the bottom macroblock
     h->left_border[0]= h->top_borders[0][s->mb_x][15];
     for(i=1; i<17; i++){
@@ -2839,7 +2839,7 @@ static inline void backup_pair_border(H264Context *h, uint8_t *src_y, uint8_t *s
     src_cb -= 2 * uvlinesize;
     src_cr -= 2 * uvlinesize;
 
-    // There is two lines saved, the line above the the top macroblock of a pair,
+    // There are two lines saved, the line above the the top macroblock of a pair,
     // and the line above the bottom macroblock
     h->left_border[0]= h->top_borders[0][s->mb_x][15];
     h->left_border[1]= h->top_borders[1][s->mb_x][15];
@@ -3120,7 +3120,7 @@ static void hl_decode_mb(H264Context *h){
             // top 
             s->mb_y--;
             tprintf("call mbaff filter_mb mb_x:%d mb_y:%d pair_dest_y = %p, dest_y = %p\n", mb_x, mb_y, pair_dest_y, dest_y);
-            fill_caches(h, mb_type_top, 1); //FIXME dont fill stuff which isnt used by filter_mb
+            fill_caches(h, mb_type_top, 1); //FIXME don't fill stuff which isn't used by filter_mb
             filter_mb(h, mb_x, mb_y, pair_dest_y, pair_dest_cb, pair_dest_cr, linesize, uvlinesize);
             if (tmp != s->current_picture.data[1][384]) {
                 tprintf("modified pixel 8,1 (1)\n");
@@ -3128,7 +3128,7 @@ static void hl_decode_mb(H264Context *h){
             // bottom
             s->mb_y++;
             tprintf("call mbaff filter_mb\n");
-            fill_caches(h, mb_type_bottom, 1); //FIXME dont fill stuff which isnt used by filter_mb
+            fill_caches(h, mb_type_bottom, 1); //FIXME don't fill stuff which isn't used by filter_mb
             filter_mb(h, mb_x, mb_y+1, dest_y, dest_cb, dest_cr, linesize, uvlinesize);
             if (tmp != s->current_picture.data[1][384]) {
                 tprintf("modified pixel 8,1 (2)\n");
@@ -3136,7 +3136,7 @@ static void hl_decode_mb(H264Context *h){
         } else {
             tprintf("call filter_mb\n");
             backup_mb_border(h, dest_y, dest_cb, dest_cr, linesize, uvlinesize);
-            fill_caches(h, mb_type, 1); //FIXME dont fill stuff which isnt used by filter_mb
+            fill_caches(h, mb_type, 1); //FIXME don't fill stuff which isn't used by filter_mb
             filter_mb(h, mb_x, mb_y, dest_y, dest_cb, dest_cr, linesize, uvlinesize);
         }
     }
@@ -3265,7 +3265,7 @@ static int decode_ref_pic_list_reordering(H264Context *h){
     
     print_short_term(h);
     print_long_term(h);
-    if(h->slice_type==I_TYPE || h->slice_type==SI_TYPE) return 0; //FIXME move beofre func
+    if(h->slice_type==I_TYPE || h->slice_type==SI_TYPE) return 0; //FIXME move before func
     
     for(list=0; list<2; list++){
         memcpy(h->ref_list[list], h->default_ref_list[list], sizeof(Picture)*h->ref_count[list]);
@@ -3469,7 +3469,7 @@ static void flush_dpb(AVCodecContext *avctx){
 
 /**
  *
- * @return the removed picture or NULL if an error occures
+ * @return the removed picture or NULL if an error occurs
  */
 static Picture * remove_short(H264Context *h, int frame_num){
     MpegEncContext * const s = &h->s;
@@ -3494,7 +3494,7 @@ static Picture * remove_short(H264Context *h, int frame_num){
 
 /**
  *
- * @return the removed picture or NULL if an error occures
+ * @return the removed picture or NULL if an error occurs
  */
 static Picture * remove_long(H264Context *h, int i){
     Picture *pic;
@@ -3799,7 +3799,7 @@ static int decode_slice_header(H264Context *h){
     }
     h->slice_type= slice_type;
 
-    s->pict_type= h->slice_type; // to make a few old func happy, its wrong though
+    s->pict_type= h->slice_type; // to make a few old func happy, it's wrong though
         
     pps_id= get_ue_golomb(&s->gb);
     if(pps_id>255){
@@ -4091,7 +4091,7 @@ static int decode_residual(H264Context *h, GetBitContext *gb, DCTELEM *block, in
                 level_code= prefix + get_bits(gb, 4); //part
         }else if(prefix==15){
             level_code= (prefix<<suffix_length) + get_bits(gb, 12); //part
-            if(suffix_length==0) level_code+=15; //FIXME doesnt make (much)sense
+            if(suffix_length==0) level_code+=15; //FIXME doesn't make (much)sense
         }else{
             av_log(h->s.avctx, AV_LOG_ERROR, "prefix too large at %d %d\n", s->mb_x, s->mb_y);
             return -1;
@@ -4226,7 +4226,7 @@ static int decode_mb_cavlc(H264Context *h){
     const int mb_xy= s->mb_x + s->mb_y*s->mb_stride;
     int mb_type, partition_count, cbp;
 
-    s->dsp.clear_blocks(h->mb); //FIXME avoid if allready clear (move after skip handlong?    
+    s->dsp.clear_blocks(h->mb); //FIXME avoid if already clear (move after skip handlong?    
 
     tprintf("pic:%d mb:%d/%d\n", h->frame_num, s->mb_x, s->mb_y);
     cbp = 0; /* avoid warning. FIXME: find a solution without slowing
@@ -4313,10 +4313,10 @@ decode_intra_mb:
             }
         }
     
-        // In deblocking, the quantiser is 0
+        // In deblocking, the quantizer is 0
         s->current_picture.qscale_table[mb_xy]= 0;
         h->chroma_qp = get_chroma_qp(h->pps.chroma_qp_index_offset, 0);
-        // All coeffs are presents
+        // All coeffs are present
         memset(h->non_zero_count[mb_xy], 16, 16);
         
         return 0;
@@ -4582,7 +4582,7 @@ decode_intra_mb:
         h->chroma_qp= chroma_qp= get_chroma_qp(h->pps.chroma_qp_index_offset, s->qscale);
         if(IS_INTRA16x16(mb_type)){
             if( decode_residual(h, h->intra_gb_ptr, h->mb, LUMA_DC_BLOCK_INDEX, dc_scan, s->qscale, 16) < 0){
-                return -1; //FIXME continue if partotioned and other retirn -1 too
+                return -1; //FIXME continue if partitioned and other return -1 too
             }
 
             assert((cbp&15) == 0 || (cbp&15) == 15);
@@ -5201,7 +5201,7 @@ static int decode_mb_cabac(H264Context *h) {
     const int mb_xy= s->mb_x + s->mb_y*s->mb_stride;
     int mb_type, partition_count, cbp = 0;
 
-    s->dsp.clear_blocks(h->mb); //FIXME avoid if allready clear (move after skip handlong?)
+    s->dsp.clear_blocks(h->mb); //FIXME avoid if already clear (move after skip handlong?)
 
     tprintf("pic:%d mb:%d/%d\n", h->frame_num, s->mb_x, s->mb_y);
     if( h->slice_type != I_TYPE && h->slice_type != SI_TYPE ) {
@@ -5296,13 +5296,13 @@ decode_intra_mb:
 
         ff_init_cabac_decoder(&h->cabac, ptr, h->cabac.bytestream_end - ptr);
 
-        // All blocks are presents
+        // All blocks are present
         h->cbp_table[mb_xy] = 0x1ef;
         h->chroma_pred_mode_table[mb_xy] = 0;
-        // In deblocking, the quantiser is 0
+        // In deblocking, the quantizer is 0
         s->current_picture.qscale_table[mb_xy]= 0;
         h->chroma_qp = get_chroma_qp(h->pps.chroma_qp_index_offset, 0);
-        // All coeffs are presents
+        // All coeffs are present
         memset(h->non_zero_count[mb_xy], 16, 16);
         return 0;
     }
@@ -5985,7 +5985,7 @@ static void filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint8
             // and left mb is in the same slice if deblocking_filter == 2
             && (h->deblocking_filter!=2 || h->slice_table[mb_xy-1] == h->slice_table[mb_xy])) {
         /* First vertical edge is different in MBAFF frames
-         * There are 8 differents bS to compute and 2 differents Qp
+         * There are 8 different bS to compute and 2 different Qp
          */
         int bS[8];
         int qp[2];
@@ -6020,7 +6020,7 @@ static void filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint8
             }
         }
         if(bS[0]+bS[1]+bS[2]+bS[3] != 0) {
-            // Do not use s->qscale as luma quantiser because it has not the same
+            // Do not use s->qscale as luma quantizer because it has not the same
             // value in IPCM macroblocks.
             qp[0] = ( s->current_picture.qscale_table[mb_xy] + s->current_picture.qscale_table[h->left_mb_xy[0]] + 1 ) >> 1;
             chroma_qp[0] = ( get_chroma_qp( h->pps.chroma_qp_index_offset, s->current_picture.qscale_table[mb_xy] ) +
@@ -6054,7 +6054,7 @@ static void filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint8
 
         /* Calculate bS */
         for( edge = start; edge < 4; edge++ ) {
-            /* mbn_xy: neighbour macroblock */
+            /* mbn_xy: neighbor macroblock */
             int mbn_xy = edge > 0 ? mb_xy : mbm_xy;
             int bS[4];
             int qp;
@@ -6081,7 +6081,7 @@ static void filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint8
                     assert(0);
                 }
                 /* Filter edge */
-                // Do not use s->qscale as luma quantiser because it has not the same
+                // Do not use s->qscale as luma quantizer because it has not the same
                 // value in IPCM macroblocks.
                 qp = ( s->current_picture.qscale_table[mb_xy] + s->current_picture.qscale_table[mbn_xy] + 1 ) >> 1;
                 tprintf("filter mb:%d/%d dir:%d edge:%d, QPy:%d ls:%d uvls:%d", mb_x, mb_y, dir, edge, qp, tmp_linesize, tmp_uvlinesize);
@@ -6102,7 +6102,7 @@ static void filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint8
                     assert(0);
                 }
                 /* Filter edge */
-                // Do not use s->qscale as luma quantiser because it has not the same
+                // Do not use s->qscale as luma quantizer because it has not the same
                 // value in IPCM macroblocks.
                 qp = ( s->current_picture.qscale_table[mb_xy] + s->current_picture.qscale_table[mbn_xy] + 1 ) >> 1;
                 tprintf("filter mb:%d/%d dir:%d edge:%d, QPy:%d ls:%d uvls:%d", mb_x, mb_y, dir, edge, qp, tmp_linesize, tmp_uvlinesize);
@@ -6161,7 +6161,7 @@ static void filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint8
             }
 
             /* Filter edge */
-            // Do not use s->qscale as luma quantiser because it has not the same
+            // Do not use s->qscale as luma quantizer because it has not the same
             // value in IPCM macroblocks.
             qp = ( s->current_picture.qscale_table[mb_xy] + s->current_picture.qscale_table[mbn_xy] + 1 ) >> 1;
             //tprintf("filter mb:%d/%d dir:%d edge:%d, QPy:%d, QPc:%d, QPcn:%d\n", mb_x, mb_y, dir, edge, qp, h->chroma_qp, s->current_picture.qscale_table[mbn_xy]);
@@ -6741,7 +6741,7 @@ static int decode_nal_units(H264Context *h, uint8_t *buf, int buf_size){
         
         switch(h->nal_unit_type){
         case NAL_IDR_SLICE:
-            idr(h); //FIXME ensure we dont loose some frames if there is reordering
+            idr(h); //FIXME ensure we don't loose some frames if there is reordering
         case NAL_SLICE:
             init_get_bits(&s->gb, ptr, bit_length);
             h->intra_gb_ptr=
@@ -6820,12 +6820,12 @@ static int decode_nal_units(H264Context *h, uint8_t *buf, int buf_size){
 }
 
 /**
- * retunrs the number of bytes consumed for building the current frame
+ * returns the number of bytes consumed for building the current frame
  */
 static int get_consumed_bytes(MpegEncContext *s, int pos, int buf_size){
     if(s->flags&CODEC_FLAG_TRUNCATED){
         pos -= s->parse_context.last_index;
-        if(pos<0) pos=0; // FIXME remove (uneeded?)
+        if(pos<0) pos=0; // FIXME remove (unneeded?)
         
         return pos;
     }else{
