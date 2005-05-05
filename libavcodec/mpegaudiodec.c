@@ -2628,7 +2628,10 @@ static int decode_frame(AVCodecContext * avctx,
             }
 	    s->inbuf_ptr = s->inbuf;
 	    s->frame_size = 0;
-	    *data_size = out_size;
+            if(out_size>=0)
+	        *data_size = out_size;
+            else
+                av_log(avctx, AV_LOG_DEBUG, "Error while decoding mpeg audio frame\n"); //FIXME return -1 / but also return the number of bytes consumed
 	    break;
 	}
     }
