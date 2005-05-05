@@ -2646,7 +2646,7 @@ Switch between
  * accurate deblock filter
  */
 static always_inline void RENAME(do_a_deblock)(uint8_t *src, int step, int stride, PPContext *c){
-	int64_t dc_mask, eq_mask;
+	int64_t dc_mask, eq_mask, both_masks;
 	int64_t sums[10*8*2];
 	src+= step*3; // src points to begin of the 8x8 Block
 //START_TIMER
@@ -2755,7 +2755,9 @@ asm volatile(
 		: "%"REG_a
 		);
 
-	if(dc_mask & eq_mask){
+	both_masks = dc_mask & eq_mask;
+
+	if(both_masks){
 		long offset= -8*step;
 		int64_t *temp_sums= sums;
 
@@ -2930,7 +2932,7 @@ asm volatile(
 		" js 1b						\n\t"
 
 		: "+r"(offset), "+r"(temp_sums)
-		: "r" ((long)step), "r"(src - offset), "m"(dc_mask & eq_mask)
+		: "r" ((long)step), "r"(src - offset), "m"(both_masks)
 		);
 	}else
 		src+= step; // src points to begin of the 8x8 Block
