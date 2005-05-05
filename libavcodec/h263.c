@@ -110,7 +110,7 @@ max run: 29/41
 */
 #endif
 
-#if 0 //3IV1 is quite rare and tis slows things down a tiny bit
+#if 0 //3IV1 is quite rare and it slows things down a tiny bit
 #define IS_3IV1 s->avctx->codec_tag == ff_get_fourcc("3IV1")
 #else 
 #define IS_3IV1 0
@@ -523,8 +523,7 @@ void ff_clean_mpeg4_qscales(MpegEncContext *s){
     
     if(s->pict_type== B_TYPE){
         int odd=0;
-        /* ok, come on, this isnt funny anymore, theres more code for handling this mpeg4 mess than
-           for the actual adaptive quantization */
+        /* ok, come on, this isn't funny anymore, there's more code for handling this mpeg4 mess than for the actual adaptive quantization */
         
         for(i=0; i<s->mb_num; i++){
             int mb_xy= s->mb_index2xy[i];
@@ -615,7 +614,7 @@ int ff_mpeg4_set_direct_mv(MpegEncContext *s, int mx, int my){
 
 void ff_h263_update_motion_val(MpegEncContext * s){
     const int mb_xy = s->mb_y * s->mb_stride + s->mb_x;
-               //FIXME a lot of thet is only needed for !low_delay
+               //FIXME a lot of that is only needed for !low_delay
     const int wrap = s->b8_stride;
     const int xy = s->block_index[0];
     
@@ -862,7 +861,7 @@ void mpeg4_encode_mb(MpegEncContext * s,
                 s->mv[0][0][1]= 
                 s->mv[1][0][0]= 
                 s->mv[1][0][1]= 0;
-                s->mv_dir= MV_DIR_FORWARD; //doesnt matter
+                s->mv_dir= MV_DIR_FORWARD; //doesn't matter
                 s->qscale -= s->dquant;
 //                s->mb_skipped=1;
 
@@ -887,7 +886,7 @@ void mpeg4_encode_mb(MpegEncContext * s,
             
             put_bits(&s->pb, 1, 0);	/* mb coded modb1=0 */
             put_bits(&s->pb, 1, cbp ? 0 : 1); /* modb2 */ //FIXME merge
-            put_bits(&s->pb, mb_type+1, 1); // this table is so simple that we dont need it :)
+            put_bits(&s->pb, mb_type+1, 1); // this table is so simple that we don't need it :)
             if(cbp) put_bits(&s->pb, 6, cbp);
             
             if(cbp && mb_type){
@@ -901,7 +900,7 @@ void mpeg4_encode_mb(MpegEncContext * s,
             if(!s->progressive_sequence){
                 if(cbp)
                     put_bits(&s->pb, 1, s->interlaced_dct);
-                if(mb_type) // not diect mode
+                if(mb_type) // not direct mode
                     put_bits(&s->pb, 1, s->mv_type == MV_TYPE_FIELD);
             }
 
@@ -976,7 +975,7 @@ void mpeg4_encode_mb(MpegEncContext * s,
         
             if ((cbp | motion_x | motion_y | s->dquant) == 0 && s->mv_type==MV_TYPE_16X16) {
                 /* check if the B frames can skip it too, as we must skip it if we skip here 
-                   why didnt they just compress the skip-mb bits instead of reusing them ?! */
+                   why didn't they just compress the skip-mb bits instead of reusing them ?! */
                 if(s->max_b_frames>0){
                     int i;
                     int x,y, offset;
@@ -1623,7 +1622,7 @@ int16_t *h263_pred_motion(MpegEncContext * s, int block, int dir,
     A = mot_val[ - 1];
     /* special case for first (slice) line */
     if (s->first_slice_line && block<3) {
-        // we cant just change some MVs to simulate that as we need them for the B frames (and ME)
+        // we can't just change some MVs to simulate that as we need them for the B frames (and ME)
         // and if we ever support non rectangular objects than we need to do a few ifs here anyway :(
         if(block==0){ //most common case
             if(s->mb_x  == s->resync_mb_x){ //rare
@@ -2054,7 +2053,7 @@ void h263_encode_init(MpegEncContext *s)
         s->y_dc_scale_table=
         s->c_dc_scale_table= ff_mpeg1_dc_scale_table;
         break;
-    default: //nothing needed default table allready set in mpegvideo.c
+    default: //nothing needed - default table already set in mpegvideo.c
         s->min_qcoeff= -127;
         s->max_qcoeff=  127;
         s->y_dc_scale_table=
@@ -2509,7 +2508,7 @@ static inline int ff_mpeg4_pred_dc(MpegEncContext * s, int n, int level, int *di
     b = dc_val[ - 1 - wrap];
     c = dc_val[ - wrap];
 
-    /* outside slice handling (we cant do that by memset as we need the dc for error resilience) */
+    /* outside slice handling (we can't do that by memset as we need the dc for error resilience) */
     if(s->first_slice_line && n!=3){
         if(n!=2) b=c= 1024;
         if(n!=1 && s->mb_x == s->resync_mb_x) b=a= 1024;
@@ -3242,7 +3241,7 @@ static int mpeg4_decode_video_packet_header(MpegEncContext *s)
 
         if(s->shape != BIN_ONLY_SHAPE){
             skip_bits(&s->gb, 3); /* intra dc vlc threshold */
-//FIXME dont just ignore everything
+//FIXME don't just ignore everything
             if(s->pict_type == S_TYPE && s->vol_sprite_usage==GMC_SPRITE){
                 mpeg4_decode_sprite_trajectory(s, &s->gb);
                 av_log(s->avctx, AV_LOG_ERROR, "untested\n");
@@ -3293,7 +3292,7 @@ void ff_mpeg4_clean_buffers(MpegEncContext *s)
     memset(s->ac_val[2] + c_xy, 0, (c_wrap  +1)*16*sizeof(int16_t));
 
     /* clean MV */
-    // we cant clear the MVs as they might be needed by a b frame
+    // we can't clear the MVs as they might be needed by a b frame
 //    memset(s->motion_val + l_xy, 0, (l_wrap*2+1)*2*sizeof(int16_t));
 //    memset(s->motion_val, 0, 2*sizeof(int16_t)*(2 + s->mb_width*2)*(2 + s->mb_height*2));
     s->last_mv[0][0][0]=
@@ -3322,7 +3321,7 @@ int ff_h263_resync(MpegEncContext *s){
         if(ret>=0)
             return 0;
     }
-    //ok, its not where its supposed to be ...
+    //ok, it's not where its supposed to be ...
     s->gb= s->last_resync_gb;
     align_get_bits(&s->gb);
     left= s->gb.size_in_bits - get_bits_count(&s->gb);
@@ -4651,7 +4650,7 @@ retry:
         i += run;
         if (i >= 64){
             if(s->alt_inter_vlc && rl == &rl_inter && !s->mb_intra){
-                //looks like a hack but no, its the way its supposed to work ...
+                //looks like a hack but no, it's the way its supposed to work ...
                 rl = &rl_intra_aic;
                 i = 0;
                 s->gb= gb;
@@ -5298,7 +5297,7 @@ static void mpeg4_decode_sprite_trajectory(MpegEncContext * s, GetBitContext *gb
     w2= 1<<alpha;
     h2= 1<<beta;
 
-// Note, the 4th point isnt used for GMC
+// Note, the 4th point isn't used for GMC
     if(s->divx_version==500 && s->divx_build==413){
         sprite_ref[0][0]= a*vop_ref[0][0] + d[0][0];
         sprite_ref[0][1]= a*vop_ref[0][1] + d[0][1];
@@ -5523,7 +5522,7 @@ static int decode_vol_header(MpegEncContext *s, GetBitContext *gb){
             skip_bits1(gb);	/* marker */               
         }
     }else{
-        // set low delay flag only once so the smart? low delay detection wont be overriden
+        // set low delay flag only once the smartest? low delay detection won't be overriden
         if(s->picture_number==0)
             s->low_delay=0;
     }
@@ -5963,20 +5962,20 @@ static int decode_vop_header(MpegEncContext *s, GetBitContext *gb){
              if(s->enhancement_type){
                  int load_backward_shape= get_bits1(gb);
                  if(load_backward_shape){
-                     av_log(s->avctx, AV_LOG_ERROR, "load backward shape isnt supported\n");
+                     av_log(s->avctx, AV_LOG_ERROR, "load backward shape isn't supported\n");
                  }
              }
              skip_bits(gb, 2); //ref_select_code
          }
      }
-     /* detect buggy encoders which dont set the low_delay flag (divx4/xvid/opendivx)*/
-     // note we cannot detect divx5 without b-frames easyly (allthough its buggy too)
+     /* detect buggy encoders which don't set the low_delay flag (divx4/xvid/opendivx)*/
+     // note we cannot detect divx5 without b-frames easily (although it's buggy too)
      if(s->vo_type==0 && s->vol_control_parameters==0 && s->divx_version==0 && s->picture_number==0){
          av_log(s->avctx, AV_LOG_ERROR, "looks like this file was encoded with (divx4/(old)xvid/opendivx) -> forcing low_delay flag\n");
          s->low_delay=1;
      }
 
-     s->picture_number++; // better than pic number==0 allways ;)
+     s->picture_number++; // better than pic number==0 always ;)
 
      s->y_dc_scale_table= ff_mpeg4_y_dc_scale_table; //FIXME add short header support 
      s->c_dc_scale_table= ff_mpeg4_c_dc_scale_table;
