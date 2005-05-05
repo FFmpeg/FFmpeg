@@ -597,7 +597,7 @@ if test $targetos = Darwin; then
 	    *2.95*) 
 		CFLAGS="$CFLAGS -no-cpp-precomp -pipe -fomit-frame-pointer"
 		;;
-	    *3.*)
+	    *[34].*)
 		CFLAGS="$CFLAGS -no-cpp-precomp -pipe -fomit-frame-pointer -force_cpusubtype_ALL -Wno-sign-compare"
 		if test "$lshared" = no; then
 		   needmdynamicnopic="yes"
