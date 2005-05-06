@@ -1708,7 +1708,8 @@ int av_find_stream_info(AVFormatContext *ic)
     AVPacket pkt1, *pkt;
     AVPacketList *pktl=NULL, **ppktl;
     int64_t last_dts[MAX_STREAMS];
-    int64_t best_duration[MAX_STREAMS];
+    int64_t duration_sum[MAX_STREAMS];
+    int duration_count[MAX_STREAMS]={0};
 
     for(i=0;i<ic->nb_streams;i++) {
         st = ic->streams[i];
@@ -1722,7 +1723,7 @@ int av_find_stream_info(AVFormatContext *ic)
 
     for(i=0;i<MAX_STREAMS;i++){
         last_dts[i]= AV_NOPTS_VALUE;
-        best_duration[i]= INT64_MAX;
+        duration_sum[i]= INT64_MAX;
     }
     
     count = 0;
@@ -1736,7 +1737,7 @@ int av_find_stream_info(AVFormatContext *ic)
                 break;
             /* variable fps and no guess at the real fps */
             if(   st->codec.time_base.den >= 1000LL*st->codec.time_base.num
-               && best_duration[i]== INT64_MAX && st->codec.codec_type == CODEC_TYPE_VIDEO)
+               && duration_count[i]<20 && st->codec.codec_type == CODEC_TYPE_VIDEO)
                 break;
         }
         if (i == ic->nb_streams) {
@@ -1767,8 +1768,7 @@ int av_find_stream_info(AVFormatContext *ic)
                 if (!has_codec_parameters(&st->codec))
                     break;
             }
-            if ((ic->ctx_flags & AVFMTCTX_NOHEADER) &&
-                i == ic->nb_streams)
+            if (i == ic->nb_streams)
                 ret = 0;
             break;
         }
@@ -1800,11 +1800,19 @@ int av_find_stream_info(AVFormatContext *ic)
             st->codec_info_nb_frames++;
 
         if(st->codec.codec_type == CODEC_TYPE_VIDEO){
-            int64_t last= last_dts[pkt->stream_index];
-            
-            if(pkt->dts != AV_NOPTS_VALUE && last != AV_NOPTS_VALUE && last < pkt->dts && 
-               best_duration[pkt->stream_index] > pkt->dts - last){
-                best_duration[pkt->stream_index] = pkt->dts - last;
+            int index= pkt->stream_index;
+            int64_t last= last_dts[index];
+            int64_t duration= pkt->dts - last;
+
+            if(pkt->dts != AV_NOPTS_VALUE && last != AV_NOPTS_VALUE && duration>0){
+                if(duration*duration_count[index]*10/9 < duration_sum[index]){
+                    duration_sum[index]= duration;
+                    duration_count[index]=1;
+                }else{
+                    int factor= av_rescale(duration, duration_count[index], duration_sum[index]);
+                    duration_sum[index] += duration;
+                    duration_count[index]+= factor;
+                }
             }
             last_dts[pkt->stream_index]= pkt->dts;
         }
@@ -1841,19 +1849,20 @@ int av_find_stream_info(AVFormatContext *ic)
             if(st->codec.codec_id == CODEC_ID_RAWVIDEO && !st->codec.codec_tag && !st->codec.bits_per_sample)
                 st->codec.codec_tag= avcodec_pix_fmt_to_codec_tag(st->codec.pix_fmt);
 
-            if(best_duration[i] < INT64_MAX && st->codec.time_base.num*1000 <= st->codec.time_base.den &&
-               st->time_base.num*best_duration[i]*1000LL > st->time_base.den){
-                int int_fps;
+            if(duration_count[i] && st->codec.time_base.num*1000 <= st->codec.time_base.den &&
+               st->time_base.num*duration_sum[i]/duration_count[i]*1000LL > st->time_base.den){
+                AVRational fps1;
+                int64_t num, den;
 
-                st->r_frame_rate.num= st->time_base.den;
-                st->r_frame_rate.den= st->time_base.num*best_duration[i];
+                num= st->time_base.den*duration_count[i];
+                den= st->time_base.num*duration_sum[i];
                 
-                int_fps= av_rescale(st->r_frame_rate.num, 1, st->r_frame_rate.den); // 1/0
-                
-                if(int_fps>0 && av_rescale(st->r_frame_rate.num, 1, int_fps) == st->r_frame_rate.den){
-                    st->r_frame_rate.num= int_fps;
-                    st->r_frame_rate.den= 1;
-                }               
+                av_reduce(&fps1.num, &fps1.den, num*1001, den*1000, FFMAX(st->time_base.den, st->time_base.num)/4);
+                av_reduce(&st->r_frame_rate.num, &st->r_frame_rate.den, num, den, FFMAX(st->time_base.den, st->time_base.num)/4);
+                if(fps1.num < st->r_frame_rate.num && fps1.den == 1 && (fps1.num==24 || fps1.num==30)){ //FIXME better decission
+                    st->r_frame_rate.num= fps1.num*1000;
+                    st->r_frame_rate.den= fps1.den*1001;
+                }
             }
 
             /* set real frame rate info */
