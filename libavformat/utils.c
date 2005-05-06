@@ -1841,12 +1841,12 @@ int av_find_stream_info(AVFormatContext *ic)
             if(st->codec.codec_id == CODEC_ID_RAWVIDEO && !st->codec.codec_tag && !st->codec.bits_per_sample)
                 st->codec.codec_tag= avcodec_pix_fmt_to_codec_tag(st->codec.pix_fmt);
 
-            if(best_duration[i] < INT64_MAX && st->codec.time_base.num*1000 <= st->codec.time_base.den){
+            if(best_duration[i] < INT64_MAX && st->codec.time_base.num*1000 <= st->codec.time_base.den &&
+               st->time_base.num*best_duration[i]*1000LL > st->time_base.den){
                 int int_fps;
 
                 st->r_frame_rate.num= st->time_base.den;
                 st->r_frame_rate.den= st->time_base.num*best_duration[i];
-                av_reduce(&st->r_frame_rate.num, &st->r_frame_rate.den, st->r_frame_rate.num, st->r_frame_rate.den, 1<<15);
                 
                 int_fps= av_rescale(st->r_frame_rate.num, 1, st->r_frame_rate.den); // 1/0
                 
