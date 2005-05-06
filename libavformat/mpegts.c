@@ -768,7 +768,7 @@ static void mpegts_push_data(void *opaque,
                         }
                         st = av_new_stream(pes->stream, pes->pid);
                         if (st) {
-                            av_set_pts_info(st, 60, 1, 90000);
+                            av_set_pts_info(st, 33, 1, 90000);
                             st->priv_data = pes;
                             st->codec.codec_type = codec_type;
                             st->codec.codec_id = codec_id;
