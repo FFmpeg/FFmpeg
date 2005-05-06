@@ -3697,6 +3697,11 @@ static int init_poc(H264Context *h){
     if(h->sps.poc_type==0){
         const int max_poc_lsb= 1<<h->sps.log2_max_poc_lsb;
 
+        if(h->nal_unit_type == NAL_IDR_SLICE){
+             h->prev_poc_msb=
+             h->prev_poc_lsb= 0;
+        }
+
         if     (h->poc_lsb < h->prev_poc_lsb && h->prev_poc_lsb - h->poc_lsb >= max_poc_lsb/2)
             h->poc_msb = h->prev_poc_msb + max_poc_lsb;
         else if(h->poc_lsb > h->prev_poc_lsb && h->prev_poc_lsb - h->poc_lsb < -max_poc_lsb/2)
@@ -6946,7 +6951,7 @@ static int decode_frame(AVCodecContext *avctx,
             cur->reference = 1;
 
         for(i=0; h->delayed_pic[i]; i++)
-            if(h->delayed_pic[i]->key_frame)
+            if(h->delayed_pic[i]->key_frame || h->delayed_pic[i]->poc==0)
                 cross_idr = 1;
 
         out = h->delayed_pic[0];
