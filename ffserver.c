@@ -3633,6 +3633,13 @@ static void add_codec(FFStream *stream, AVCodecContext *av)
         av->qcompress = 0.5;
         av->qblur = 0.5;
 
+        if (!av->nsse_weight) 
+            av->nsse_weight = 8;
+
+        av->frame_skip_cmp = FF_CMP_DCTMAX;
+        av->me_method = ME_EPZS;
+        av->rc_buffer_aggressivity = 1.0;
+
         if (!av->rc_eq)
             av->rc_eq = "tex^qComp";
         if (!av->i_quant_factor)
@@ -3643,6 +3650,11 @@ static void add_codec(FFStream *stream, AVCodecContext *av)
             av->b_quant_offset = 1.25;
         if (!av->rc_max_rate)
             av->rc_max_rate = av->bit_rate * 2;
+
+        if (av->rc_max_rate && !av->rc_buffer_size) {
+            av->rc_buffer_size = av->rc_max_rate;
+        }
+
 
         break;
     default:
@@ -4066,10 +4078,20 @@ static int parse_ffconfig(const char *filename)
                     errors++;
                 }
             }
+        } else if (!strcasecmp(cmd, "Debug")) {
+            if (stream) {
+                get_arg(arg, sizeof(arg), &p);
+                video_enc.debug = strtol(arg,0,0);
+            }
+        } else if (!strcasecmp(cmd, "Strict")) {
+            if (stream) {
+                get_arg(arg, sizeof(arg), &p);
+                video_enc.strict_std_compliance = atoi(arg);
+            }
         } else if (!strcasecmp(cmd, "VideoBufferSize")) {
             if (stream) {
                 get_arg(arg, sizeof(arg), &p);
-                video_enc.rc_buffer_size = atoi(arg) * 1024;
+                video_enc.rc_buffer_size = atoi(arg) * 8*1024;
             }
         } else if (!strcasecmp(cmd, "VideoBitRateTolerance")) {
             if (stream) {
@@ -4286,9 +4308,6 @@ static int parse_ffconfig(const char *filename)
                 if (video_id != CODEC_ID_NONE) {
                     video_enc.codec_type = CODEC_TYPE_VIDEO;
                     video_enc.codec_id = video_id;
-		    if (!video_enc.rc_buffer_size) {
-			video_enc.rc_buffer_size = 40 * 1024;
-		    }
                     add_codec(stream, &video_enc);
                 }
             }
