@@ -66,7 +66,9 @@ static int raw_read_header(AVFormatContext *s, AVFormatParameters *ap)
             av_set_pts_info(st, 64, ap->time_base.num, ap->time_base.den);
             st->codec.width = ap->width;
             st->codec.height = ap->height;
-	    st->codec.pix_fmt = ap->pix_fmt;
+            st->codec.pix_fmt = ap->pix_fmt;
+            if(st->codec.pix_fmt == PIX_FMT_NONE)
+                st->codec.pix_fmt= PIX_FMT_YUV420P;
             break;
         default:
             return -1;
@@ -642,7 +644,7 @@ AVInputFormat rawvideo_iformat = {
     raw_read_header,
     rawvideo_read_packet,
     raw_read_close,
-    .extensions = "yuv",
+    .extensions = "yuv,cif,qcif",
     .value = CODEC_ID_RAWVIDEO,
 };
 
