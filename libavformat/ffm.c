@@ -160,6 +160,8 @@ static int ffm_write_header(AVFormatContext *s)
         put_be32(pb, codec->bit_rate);
 	put_be32(pb, st->quality);
         put_be32(pb, codec->flags);
+        put_be32(pb, codec->flags2);
+        put_be32(pb, codec->debug);
         /* specific info */
         switch(codec->codec_type) {
         case CODEC_TYPE_VIDEO:
@@ -168,6 +170,7 @@ static int ffm_write_header(AVFormatContext *s)
             put_be16(pb, codec->width);
             put_be16(pb, codec->height);
             put_be16(pb, codec->gop_size);
+            put_be32(pb, codec->pix_fmt);
             put_byte(pb, codec->qmin);
             put_byte(pb, codec->qmax);
             put_byte(pb, codec->max_qdiff);
@@ -183,6 +186,17 @@ static int ffm_write_header(AVFormatContext *s)
             put_be64_double(pb, codec->i_quant_offset);
             put_be64_double(pb, codec->b_quant_offset);
             put_be32(pb, codec->dct_algo);
+            put_be32(pb, codec->strict_std_compliance);
+            put_be32(pb, codec->max_b_frames);
+            put_be32(pb, codec->luma_elim_threshold);
+            put_be32(pb, codec->chroma_elim_threshold);
+            put_be32(pb, codec->mpeg_quant);
+            put_be32(pb, codec->intra_dc_precision);
+            put_be32(pb, codec->me_method);
+            put_be32(pb, codec->mb_decision);
+            put_be32(pb, codec->nsse_weight);
+            put_be32(pb, codec->frame_skip_cmp);
+            put_be64_double(pb, codec->rc_buffer_aggressivity);
             break;
         case CODEC_TYPE_AUDIO:
             put_be32(pb, codec->sample_rate);
@@ -477,6 +491,8 @@ static int ffm_read_header(AVFormatContext *s, AVFormatParameters *ap)
         codec->bit_rate = get_be32(pb);
 	st->quality = get_be32(pb);
         codec->flags = get_be32(pb);
+        codec->flags2 = get_be32(pb);
+        codec->debug = get_be32(pb);
         /* specific info */
         switch(codec->codec_type) {
         case CODEC_TYPE_VIDEO:
@@ -485,6 +501,7 @@ static int ffm_read_header(AVFormatContext *s, AVFormatParameters *ap)
             codec->width = get_be16(pb);
             codec->height = get_be16(pb);
             codec->gop_size = get_be16(pb);
+            codec->pix_fmt = get_be32(pb);
             codec->qmin = get_byte(pb);
             codec->qmax = get_byte(pb);
             codec->max_qdiff = get_byte(pb);
@@ -500,6 +517,17 @@ static int ffm_read_header(AVFormatContext *s, AVFormatParameters *ap)
             codec->i_quant_offset = get_be64_double(pb);
             codec->b_quant_offset = get_be64_double(pb);
             codec->dct_algo = get_be32(pb);
+            codec->strict_std_compliance = get_be32(pb);
+            codec->max_b_frames = get_be32(pb);
+            codec->luma_elim_threshold = get_be32(pb);
+            codec->chroma_elim_threshold = get_be32(pb);
+            codec->mpeg_quant = get_be32(pb);
+            codec->intra_dc_precision = get_be32(pb);
+            codec->me_method = get_be32(pb);
+            codec->mb_decision = get_be32(pb);
+            codec->nsse_weight = get_be32(pb);
+            codec->frame_skip_cmp = get_be32(pb);
+            codec->rc_buffer_aggressivity = get_be64_double(pb);
             break;
         case CODEC_TYPE_AUDIO:
             codec->sample_rate = get_be32(pb);
