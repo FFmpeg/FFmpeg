@@ -3301,21 +3301,31 @@ static int decode_ref_pic_list_reordering(H264Context *h){
                         else                                pred+= abs_diff_pic_num;
                         pred &= h->max_pic_num - 1;
                     
-                        for(i= h->short_ref_count-1; i>=0; i--){
-                            ref = h->short_ref[i];
-                            if(ref->data[0] != NULL && ref->frame_num == pred && ref->long_ref == 0) // ignore non existing pictures by testing data[0] pointer
+                        for(i= h->ref_count[list]-1; i>=0; i--){
+                            if(h->ref_list[list][i].data[0] != NULL && h->ref_list[list][i].pic_id == pred && h->ref_list[list][i].long_ref==0) // ignore non existing pictures by testing data[0] pointer
                                 break;
                         }
                     }else{
                         pic_id= get_ue_golomb(&s->gb); //long_term_pic_idx
-                        ref = h->long_ref[pic_id];
+
+                        for(i= h->ref_count[list]-1; i>=0; i--){
+                            if(h->ref_list[list][i].pic_id == pic_id && h->ref_list[list][i].long_ref==1) // no need to ignore non existing pictures as non existing pictures have long_ref==0
+                                break;
+                        }
                     }
 
                     if (i < 0) {
                         av_log(h->s.avctx, AV_LOG_ERROR, "reference picture missing during reorder\n");
                         memset(&h->ref_list[list][index], 0, sizeof(Picture)); //FIXME
-                    } else {
-                        h->ref_list[list][index]= *ref;
+                    } else if (i != index) /* this test is not necessary, it is only an optimisation to skip double copy of Picture structure in this case */ {
+                        Picture tmp= h->ref_list[list][i];
+                        if (i < index) {
+                            i = h->ref_count[list];
+                        }
+                        for(; i > index; i--){
+                            h->ref_list[list][i]= h->ref_list[list][i-1];
+                        }
+                        h->ref_list[list][index]= tmp;
                     }
                 }else{
                     av_log(h->s.avctx, AV_LOG_ERROR, "illegal reordering_of_pic_nums_idc\n");
