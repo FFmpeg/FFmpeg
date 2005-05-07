@@ -1940,9 +1940,9 @@ static int open_input_stream(HTTPContext *c, const char *info)
         }
     }
 
-#if 0
+#if 1
     if (c->fmt_in->iformat->read_seek) {
-        c->fmt_in->iformat->read_seek(c->fmt_in, stream_pos);
+        c->fmt_in->iformat->read_seek(c->fmt_in, 0, stream_pos, 0);
     }
 #endif
     /* set the start time (needed for maxtime and RTP packet timing) */
