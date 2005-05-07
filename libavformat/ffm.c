@@ -78,6 +78,7 @@ static void flush_packet(AVFormatContext *s)
         h |= 0x8000;
     put_be16(pb, h);
     put_buffer(pb, ffm->packet, ffm->packet_end - ffm->packet);
+    put_flush_packet(pb);
 
     /* prepare next packet */
     ffm->frame_offset = 0; /* no key frame */
