@@ -379,7 +379,7 @@ for opt do
   FFMPEG_CONFIGURATION="$FFMPEG_CONFIGURATION""$opt "
 done
 
-CODEC_LIST=`grep 'register_avcodec(&[a-z]' libavcodec/allcodecs.c  | sed 's/.*&\(.*\)).*/\1/'`
+CODEC_LIST=`grep 'register_avcodec(&[a-z]' $source_path/libavcodec/allcodecs.c  | sed 's/.*&\(.*\)).*/\1/'`
 
 for opt do
   case "$opt" in
