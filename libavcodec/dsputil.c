@@ -2667,11 +2667,11 @@ static inline void h264_loop_filter_luma_c(uint8_t *pix, int xstride, int ystrid
                 int i_delta;
     
                 if( ABS( p2 - p0 ) < beta ) {
-                    pix[-2*xstride] = p1 + clip( ( p2 + ( ( p0 + q0 + 1 ) >> 1 ) - ( p1 << 1 ) ) >> 1, -tc0[i], tc0[i] );
+                    pix[-2*xstride] = p1 + clip( (( p2 + ( ( p0 + q0 + 1 ) >> 1 ) ) >> 1) - p1, -tc0[i], tc0[i] );
                     tc++;
                 }
                 if( ABS( q2 - q0 ) < beta ) {
-                    pix[xstride] = q1 + clip( ( q2 + ( ( p0 + q0 + 1 ) >> 1 ) - ( q1 << 1 ) ) >> 1, -tc0[i], tc0[i] );
+                    pix[   xstride] = q1 + clip( (( q2 + ( ( p0 + q0 + 1 ) >> 1 ) ) >> 1) - q1, -tc0[i], tc0[i] );
                     tc++;
                 }
     
