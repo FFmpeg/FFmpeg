@@ -898,12 +898,12 @@ int MPV_encode_init(AVCodecContext *avctx)
     }
 
     if(avctx->codec_id == CODEC_ID_MJPEG || avctx->codec_id == CODEC_ID_LJPEG){
-        if(avctx->strict_std_compliance>=0 && avctx->pix_fmt != PIX_FMT_YUVJ420P){
+        if(avctx->strict_std_compliance>FF_COMPLIANCE_INOFFICIAL && avctx->pix_fmt != PIX_FMT_YUVJ420P){
             av_log(avctx, AV_LOG_ERROR, "colorspace not supported in jpeg\n");
             return -1;
         }
     }else{
-        if(avctx->strict_std_compliance>=0 && avctx->pix_fmt != PIX_FMT_YUV420P){
+        if(avctx->strict_std_compliance>FF_COMPLIANCE_INOFFICIAL && avctx->pix_fmt != PIX_FMT_YUV420P){
             av_log(avctx, AV_LOG_ERROR, "colorspace not supported\n");
             return -1;
         }

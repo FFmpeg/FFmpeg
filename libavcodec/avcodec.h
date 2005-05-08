@@ -954,7 +954,12 @@ typedef struct AVCodecContext {
      * - decoding: unused
      */
     int strict_std_compliance;
-    
+#define FF_COMPLIANCE_VERY_STRICT   2 ///< strictly conform to a older more strict version of the spec or reference software
+#define FF_COMPLIANCE_STRICT        1 ///< strictly conform to all the things in the spec no matter what consequences
+#define FF_COMPLIANCE_NORMAL        0
+#define FF_COMPLIANCE_INOFFICIAL   -1 ///< allow inofficial extensions
+#define FF_COMPLIANCE_EXPERIMENTAL -2 ///< allow non standarized experimental things
+
     /**
      * qscale offset between ip and b frames.
      * if > 0 then the last p frame quantizer will be used (q= lastp_q*factor+offset)

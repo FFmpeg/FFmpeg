@@ -203,7 +203,7 @@ static int find_frame_rate_index(MpegEncContext *s){
     for(i=1;i<14;i++) {
         int64_t n0= 1001LL/frame_rate_tab[i].den*frame_rate_tab[i].num*s->avctx->time_base.num;
         int64_t n1= 1001LL*s->avctx->time_base.den;
-        if(s->avctx->strict_std_compliance >= 0 && i>=9) break;
+        if(s->avctx->strict_std_compliance > FF_COMPLIANCE_INOFFICIAL && i>=9) break;
 
         d = ABS(n0 - n1);
         if(d < dmin){
@@ -225,7 +225,7 @@ static int encode_init(AVCodecContext *avctx)
         return -1;
 
     if(find_frame_rate_index(s) < 0){
-        if(s->strict_std_compliance >=0){
+        if(s->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL){
             av_log(avctx, AV_LOG_ERROR, "MPEG1/2 does not support %d/%d fps\n", avctx->time_base.den, avctx->time_base.num);
             return -1;
         }else{

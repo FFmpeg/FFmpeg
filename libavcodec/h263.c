@@ -2408,9 +2408,9 @@ void mpeg4_encode_picture_header(MpegEncContext * s, int picture_number)
     
     if(s->pict_type==I_TYPE){
         if(!(s->flags&CODEC_FLAG_GLOBAL_HEADER)){
-            if(s->strict_std_compliance < 2) //HACK, the reference sw is buggy
+            if(s->strict_std_compliance < FF_COMPLIANCE_VERY_STRICT) //HACK, the reference sw is buggy
                 mpeg4_encode_visual_object_header(s);
-            if(s->strict_std_compliance < 2 || picture_number==0) //HACK, the reference sw is buggy
+            if(s->strict_std_compliance < FF_COMPLIANCE_VERY_STRICT || picture_number==0) //HACK, the reference sw is buggy
                 mpeg4_encode_vol_header(s, 0, 0);
         }
         if(!(s->workaround_bugs & FF_BUG_MS))

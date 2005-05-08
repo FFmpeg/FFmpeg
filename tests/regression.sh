@@ -290,7 +290,7 @@ file=${outfile}huffyuv.avi
 do_ffmpeg $file -y -f pgmyuv -i $raw_src -an -vcodec huffyuv -pix_fmt yuv422p $file
 
 # huffyuv decoding
-do_ffmpeg $raw_dst -y -i $file -f rawvideo -strict -1 -pix_fmt yuv420p $raw_dst
+do_ffmpeg $raw_dst -y -i $file -f rawvideo -strict -2 -pix_fmt yuv420p $raw_dst
 fi
 
 ###################################
@@ -437,7 +437,7 @@ fi
 if [ -n "$do_ffv1" ] ; then
 # ffv1 encoding
 file=${outfile}ffv1.avi
-do_ffmpeg $file -y -strict -1 -f pgmyuv -i $raw_src -an -vcodec ffv1 $file
+do_ffmpeg $file -y -strict -2 -f pgmyuv -i $raw_src -an -vcodec ffv1 $file
 
 # ffv1 decoding
 do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst 
@@ -447,14 +447,14 @@ fi
 if [ -n "$do_snow" ] ; then
 # snow encoding
 file=${outfile}snow.avi
-do_ffmpeg $file -y -strict -1 -f pgmyuv -i $raw_src -an -vcodec snow -qscale 2 $file
+do_ffmpeg $file -y -strict -2 -f pgmyuv -i $raw_src -an -vcodec snow -qscale 2 $file
 
 # snow decoding
 do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst 
 
 # snow encoding
 file=${outfile}snow53.avi
-do_ffmpeg $file -y -strict -1 -f pgmyuv -i $raw_src -an -vcodec snow -pred 1 -qpel -4mv $file
+do_ffmpeg $file -y -strict -2 -f pgmyuv -i $raw_src -an -vcodec snow -pred 1 -qpel -4mv $file
 
 # snow decoding
 do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst 
