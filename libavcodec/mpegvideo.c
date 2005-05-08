@@ -1091,7 +1091,7 @@ int MPV_encode_init(AVCodecContext *avctx)
         
     avcodec_get_chroma_sub_sample(avctx->pix_fmt, &chroma_h_shift, &chroma_v_shift);
 
-    if(s->avctx->time_base.den > (1<<16)-1){
+    if(avctx->codec_id == CODEC_ID_MPEG4 && s->avctx->time_base.den > (1<<16)-1){
         av_log(avctx, AV_LOG_ERROR, "timebase not supported by mpeg 4 standard\n");
         return -1;        
     }
