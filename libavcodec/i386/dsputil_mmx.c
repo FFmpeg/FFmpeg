@@ -862,7 +862,7 @@ static inline void h264_loop_filter_chroma_mmx2(uint8_t *pix, int stride, int al
         "movd      %%mm2, (%1)      \n\t"
         :: "r"(pix-2*stride), "r"(pix), "r"((long)stride),
            "r"(tc0[1]<<16 | tc0[0]),
-           "r"(alpha), "r"(beta), "m"(ff_pw_4)
+           "r"(alpha), "g"(beta), "m"(ff_pw_4)
     );
 }
 
