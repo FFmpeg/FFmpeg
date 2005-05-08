@@ -587,11 +587,10 @@ static inline int wmv2_decode_inter_block(Wmv2Context *w, DCTELEM *block, int n,
 static void wmv2_add_block(Wmv2Context *w, DCTELEM *block1, uint8_t *dst, int stride, int n){
     MpegEncContext * const s= &w->s;
 
+  if (s->block_last_index[n] >= 0) {
     switch(w->abt_type_table[n]){
     case 0:
-        if (s->block_last_index[n] >= 0) {
-            s->dsp.idct_add (dst, stride, block1);
-        }
+        s->dsp.idct_add (dst, stride, block1);
         break;
     case 1:
         simple_idct84_add(dst           , stride, block1);
@@ -606,6 +605,7 @@ static void wmv2_add_block(Wmv2Context *w, DCTELEM *block1, uint8_t *dst, int st
     default:
         av_log(s->avctx, AV_LOG_ERROR, "internal error in WMV2 abt\n");
     }
+  }
 }
 
 void ff_wmv2_add_mb(MpegEncContext *s, DCTELEM block1[6][64], uint8_t *dest_y, uint8_t *dest_cb, uint8_t *dest_cr){
