@@ -77,7 +77,7 @@ LIB= $(LIBPREF)avformat$(LIBSUF)
 ifeq ($(BUILD_SHARED),yes)
 SLIB= $(SLIBPREF)avformat$(SLIBSUF)
 
-AVCLIBS+=-lavcodec -L../libavcodec
+AVCLIBS+=-lavcodec$(BUILDSUF) -L../libavcodec
 ifeq ($(CONFIG_MP3LAME),yes)
 AVCLIBS+=-lmp3lame
 endif

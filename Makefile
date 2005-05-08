@@ -91,7 +91,7 @@ endif
 
 OBJS = ffmpeg.o ffserver.o cmdutils.o $(FFPLAY_O)
 SRCS = $(OBJS:.o=.c) $(ASM_OBJS:.o=.s)
-FFLIBS = -L./libavformat -lavformat -L./libavcodec -lavcodec
+FFLIBS = -L./libavformat -lavformat$(BUILDSUF) -L./libavcodec -lavcodec$(BUILDSUF)
 
 all: lib $(PROG) $(PROGTEST) $(VHOOK) $(QTFASTSTART) $(DOC)
 
