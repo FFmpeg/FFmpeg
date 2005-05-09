@@ -1317,7 +1317,7 @@ if test "$vhook" = "yes" ; then
 fi
 if test "$lshared" = "yes" ; then
   echo "BUILD_SHARED=yes" >> config.mak
-  echo "PIC=-fPIC" >> config.mak
+  echo "PIC=-fPIC -DPIC" >> config.mak
 fi
 echo "EXTRALIBS=$extralibs" >> config.mak
 version=`grep '#define FFMPEG_VERSION ' "$source_path/libavcodec/avcodec.h" |
