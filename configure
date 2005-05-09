@@ -263,6 +263,15 @@ case `uname -r` in
 ;;
 esac
 ;;
+OpenBSD)
+v4l="no"
+audio_oss="yes"
+dv1394="no"
+make="gmake"
+CFLAGS="$CFLAGS \$(PIC)"
+LDFLAGS="$LDFLAGS -export-dynamic -pthread"
+extralibs="$extralibs -lossaudio"
+;;
 FreeBSD)
 v4l="no"
 audio_oss="yes"
@@ -1295,7 +1304,7 @@ if test "$pthreads" = "yes" ; then
   echo "HAVE_PTHREADS=yes" >> config.mak
   echo "#define HAVE_PTHREADS 1" >> $TMPH
   echo "#define HAVE_THREADS 1" >> $TMPH
-  if test $targetos != FreeBSD; then
+  if test $targetos != FreeBSD -a $targetos != OpenBSD ; then
      extralibs="$extralibs -lpthread"
   fi
 fi

@@ -21,7 +21,11 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#ifdef __OpenBSD__
+#include <soundcard.h>
+#else
 #include <sys/soundcard.h>
+#endif
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
@@ -49,7 +53,11 @@ static int audio_open(AudioData *s, int is_output, const char *audio_device)
 
     /* open linux audio device */
     if (!audio_device)
+#ifdef __OpenBSD__
+	audio_device = "/dev/sound";
+#else
         audio_device = "/dev/dsp";
+#endif
 
     if (is_output)
         audio_fd = open(audio_device, O_WRONLY);
