@@ -21,7 +21,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#if defined(__APPLE__) || defined(__BEOS__)
+#if defined(__BEOS__)
 typedef int socklen_t;
 #endif
 #ifndef __BEOS__
