@@ -75,7 +75,7 @@ rwpipe *rwpipe_open( int argc, char *argv[] )
             close( output[ 0 ] );
             close( output[ 1 ] );
 
-            execl("/bin/sh", "sh", "-c", command, NULL );
+            execl("/bin/sh", "sh", "-c", command, (char*)NULL );
             exit( 255 );
         }
         else
