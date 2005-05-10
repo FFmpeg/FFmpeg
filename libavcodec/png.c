@@ -934,6 +934,7 @@ AVCodec png_decoder = {
     NULL
 };
 
+#ifdef CONFIG_PNG_ENCODER
 AVCodec png_encoder = {
     "png",
     CODEC_TYPE_VIDEO,
@@ -944,4 +945,5 @@ AVCodec png_encoder = {
     NULL, //encode_end,
     .pix_fmts= (enum PixelFormat[]){PIX_FMT_RGB24, PIX_FMT_RGBA32, PIX_FMT_PAL8, PIX_FMT_GRAY8, PIX_FMT_MONOBLACK, -1},
 };
+#endif // CONFIG_PNG_ENCODER
 #endif

@@ -517,6 +517,7 @@ AVCodecParser pnm_parser = {
     ff_parse_close,
 };
 
+#ifdef CONFIG_PGM_ENCODER
 AVCodec pgm_encoder = {
     "pgm",
     CODEC_TYPE_VIDEO,
@@ -528,7 +529,9 @@ AVCodec pgm_encoder = {
     pnm_decode_frame,
     .pix_fmts= (enum PixelFormat[]){PIX_FMT_GRAY8, -1}, 
 };
+#endif // CONFIG_PGM_ENCODER
 
+#ifdef CONFIG_PGMYUV_ENCODER
 AVCodec pgmyuv_encoder = {
     "pgmyuv",
     CODEC_TYPE_VIDEO,
@@ -540,7 +543,9 @@ AVCodec pgmyuv_encoder = {
     pnm_decode_frame,
     .pix_fmts= (enum PixelFormat[]){PIX_FMT_YUV420P, -1}, 
 };
+#endif // CONFIG_PGMYUV_ENCODER
 
+#ifdef CONFIG_PPM_ENCODER
 AVCodec ppm_encoder = {
     "ppm",
     CODEC_TYPE_VIDEO,
@@ -552,7 +557,9 @@ AVCodec ppm_encoder = {
     pnm_decode_frame,
     .pix_fmts= (enum PixelFormat[]){PIX_FMT_RGB24, -1}, 
 };
+#endif // CONFIG_PPM_ENCODER
 
+#ifdef CONFIG_PBM_ENCODER
 AVCodec pbm_encoder = {
     "pbm",
     CODEC_TYPE_VIDEO,
@@ -564,7 +571,9 @@ AVCodec pbm_encoder = {
     pnm_decode_frame,
     .pix_fmts= (enum PixelFormat[]){PIX_FMT_MONOWHITE, -1}, 
 };
+#endif // CONFIG_PBM_ENCODER
 
+#ifdef CONFIG_PAM_ENCODER
 AVCodec pam_encoder = {
     "pam",
     CODEC_TYPE_VIDEO,
@@ -576,3 +585,4 @@ AVCodec pam_encoder = {
     pnm_decode_frame,
     .pix_fmts= (enum PixelFormat[]){PIX_FMT_RGB24, PIX_FMT_RGBA32, PIX_FMT_GRAY8, PIX_FMT_MONOWHITE, -1}, 
 };
+#endif // CONFIG_PAM_ENCODER

@@ -172,6 +172,7 @@ static int raw_encode(AVCodecContext *avctx,
                                                avctx->height, frame, buf_size);
 }
 
+#ifdef CONFIG_RAWVIDEO_ENCODER
 AVCodec rawvideo_encoder = {
     "rawvideo",
     CODEC_TYPE_VIDEO,
@@ -180,6 +181,7 @@ AVCodec rawvideo_encoder = {
     raw_init_encoder,
     raw_encode,
 };
+#endif // CONFIG_RAWVIDEO_ENCODER
 
 AVCodec rawvideo_decoder = {
     "rawvideo",

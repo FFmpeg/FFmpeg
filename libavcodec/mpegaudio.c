@@ -785,6 +785,7 @@ static int MPA_encode_close(AVCodecContext *avctx)
     return 0;
 }
 
+#ifdef CONFIG_MP2_ENCODER
 AVCodec mp2_encoder = {
     "mp2",
     CODEC_TYPE_AUDIO,
@@ -795,5 +796,6 @@ AVCodec mp2_encoder = {
     MPA_encode_close,
     NULL,
 };
+#endif // CONFIG_MP2_ENCODER
 
 #undef FIX

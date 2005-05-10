@@ -942,6 +942,7 @@ static int dvvideo_encode_frame(AVCodecContext *c, uint8_t *buf, int buf_size,
     return s->sys->frame_size;
 }
 
+#ifdef CONFIG_DVVIDEO_ENCODER
 AVCodec dvvideo_encoder = {
     "dvvideo",
     CODEC_TYPE_VIDEO,
@@ -954,6 +955,7 @@ AVCodec dvvideo_encoder = {
     CODEC_CAP_DR1,
     NULL
 };
+#endif // CONFIG_DVVIDEO_ENCODER
 
 AVCodec dvvideo_decoder = {
     "dvvideo",
