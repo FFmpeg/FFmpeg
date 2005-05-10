@@ -17,16 +17,15 @@
 #endif
 
 #if defined(ARCH_X86) || defined(ARCH_X86_64)
-static inline uint16_t ByteSwap16(uint16_t x)
+static always_inline uint16_t bswap_16(uint16_t x)
 {
   __asm("xchgb %b0,%h0"	:
         LEGACY_REGS (x)	:
         "0" (x));
     return x;
 }
-#define bswap_16(x) ByteSwap16(x)
 
-static inline uint32_t ByteSwap32(uint32_t x)
+static always_inline uint32_t bswap_32(uint32_t x)
 {
 #if __CPU__ > 386
  __asm("bswap	%0":
@@ -40,9 +39,8 @@ static inline uint32_t ByteSwap32(uint32_t x)
       "0" (x));
   return x;
 }
-#define bswap_32(x) ByteSwap32(x)
 
-static inline uint64_t ByteSwap64(uint64_t x)
+static inline uint64_t bswap_64(uint64_t x)
 {
 #ifdef ARCH_X86_64
   __asm("bswap	%0":
@@ -58,16 +56,15 @@ static inline uint64_t ByteSwap64(uint64_t x)
   return __x.__ll;
 #endif
 }
-#define bswap_64(x) ByteSwap64(x)
 
 #elif defined(ARCH_SH4)
 
-static inline uint16_t ByteSwap16(uint16_t x) {
+static always_inline uint16_t bswap_16(uint16_t x) {
 	__asm__("swap.b %0,%0":"=r"(x):"0"(x));
 	return x;
 }
 
-static inline uint32_t ByteSwap32(uint32_t x) {
+static always_inline uint32_t bswap_32(uint32_t x) {
 	__asm__(
 	"swap.b %0,%0\n"
 	"swap.w %0,%0\n"
@@ -76,10 +73,7 @@ static inline uint32_t ByteSwap32(uint32_t x) {
 	return x;
 }
 
-#define bswap_16(x) ByteSwap16(x)
-#define bswap_32(x) ByteSwap32(x)
-
-static inline uint64_t ByteSwap64(uint64_t x)
+static inline uint64_t bswap_64(uint64_t x)
 {
     union { 
         uint64_t ll;
@@ -91,19 +85,17 @@ static inline uint64_t ByteSwap64(uint64_t x)
     r.l.h = bswap_32 (x>>32);
     return r.ll;
 }
-#define bswap_64(x) ByteSwap64(x)
-
 #else
 
-#define bswap_16(x) (((x) & 0x00ff) << 8 | ((x) & 0xff00) >> 8)
-			
+static always_inline uint16_t bswap_16(uint16_t x){
+    return (x>>8) | (x<<8);
+}
 
-// code from bits/byteswap.h (C) 1997, 1998 Free Software Foundation, Inc.
-#define bswap_32(x) \
-     ((((x) & 0xff000000) >> 24) | (((x) & 0x00ff0000) >>  8) | \
-      (((x) & 0x0000ff00) <<  8) | (((x) & 0x000000ff) << 24))
+static always_inline uint32_t bswap_32(uint32_t x){
+    return (x >> 24) | ((x & 0x00ff0000) >>  8) | ((x & 0x0000ff00) <<  8) | (x << 24);
+}
 
-static inline uint64_t ByteSwap64(uint64_t x)
+static inline uint64_t bswap_64(uint64_t x)
 {
     union { 
         uint64_t ll;
@@ -114,8 +106,6 @@ static inline uint64_t ByteSwap64(uint64_t x)
     r.l[1] = bswap_32 (w.l[0]);
     return r.ll;
 }
-#define bswap_64(x) ByteSwap64(x)
-
 #endif	/* !ARCH_X86 */
 
 #endif	/* !HAVE_BYTESWAP_H */
