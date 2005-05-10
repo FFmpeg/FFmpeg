@@ -115,12 +115,13 @@ case "$cpu" in
   i386|i486|i586|i686|i86pc|BePC)
     cpu="x86"
   ;;
-  x86_64)
-    if [ "`$cc -dumpmachine | grep x86_64 | cut -d- -f1`" = "x86_64" -a \
-         -z "`echo $CFLAGS | grep -- -m32`"  ]; then
-      cpu="x86_64"
-    else
-      cpu="x86"
+  x86_64|amd64)
+    cpu="x86"
+    canon_arch="`cc -dumpmachine | sed -e 's,\([^-]*\)-.*,\1,'`"
+    if [ x"$canon_arch" = x"x86_64" -o x"$canon_arch" = x"amd64" ]; then
+      if [ -z "`echo $CFLAGS | grep -- -m32`"  ]; then
+        cpu="x86_64"
+      fi
     fi
   ;;
   # armv4l is a subset of armv5tel
