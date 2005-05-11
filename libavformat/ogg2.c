@@ -40,6 +40,7 @@
 static ogg_codec_t *ogg_codecs[] = {
     &vorbis_codec,
     &theora_codec,
+    &flac_codec,
     NULL
 };
 
