@@ -61,7 +61,7 @@ void avcodec_register_all(void)
 #endif
 #ifdef CONFIG_LIBTHEORA
 #ifdef CONFIG_OGGTHEORA_ENCODER
-    register_avcodec(&oggtheora_encoder);
+//    register_avcodec(&oggtheora_encoder);
 #endif //CONFIG_OGGTHEORA_ENCODER
 #ifdef CONFIG_OGGTHEORA_DECODER
     register_avcodec(&oggtheora_decoder);
@@ -358,7 +358,7 @@ void avcodec_register_all(void)
 #ifdef CONFIG_VP3_DECODER
     register_avcodec(&vp3_decoder);
 #endif //CONFIG_VP3_DECODER
-#ifdef CONFIG_THEORA_DECODER
+#if (defined CONFIG_THEORA_DECODER && !defined CONFIG_LIBTHEORA)
     register_avcodec(&theora_decoder);
 #endif //CONFIG_THEORA_DECODER
 #ifdef CONFIG_ASV1_DECODER

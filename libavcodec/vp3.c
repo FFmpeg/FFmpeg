@@ -2973,6 +2973,7 @@ AVCodec vp3_decoder = {
     NULL
 };
 
+#ifndef CONFIG_LIBTHEORA
 AVCodec theora_decoder = {
     "theora",
     CODEC_TYPE_VIDEO,
@@ -2985,3 +2986,4 @@ AVCodec theora_decoder = {
     0,
     NULL
 };
+#endif
