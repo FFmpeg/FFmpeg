@@ -5808,8 +5808,8 @@ static int decode_vop_header(MpegEncContext *s, GetBitContext *gb){
         time_incr++;
 
     check_marker(gb, "before time_increment");
-    
-    if(s->time_increment_bits==0){
+
+    if(s->time_increment_bits==0 || !(show_bits(gb, s->time_increment_bits+1)&1)){
         av_log(s->avctx, AV_LOG_ERROR, "hmm, seems the headers are not complete, trying to guess time_increment_bits\n");
 
         for(s->time_increment_bits=1 ;s->time_increment_bits<16; s->time_increment_bits++){
