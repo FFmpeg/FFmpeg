@@ -368,6 +368,16 @@ static inline int unaligned32_be(const void *v)
 #endif
 }
 
+static inline int unaligned32_le(const void *v)
+{
+#ifdef CONFIG_ALIGN
+       const uint8_t *p=v;
+       return (((p[3]<<8) | p[2])<<16) | (p[1]<<8) | (p[0]);
+#else
+       return le2me_32( unaligned32(v)); //original
+#endif
+}
+
 #ifdef ALT_BITSTREAM_READER
 #   define MIN_CACHE_BITS 25
 
@@ -378,11 +388,19 @@ static inline int unaligned32_be(const void *v)
 #   define CLOSE_READER(name, gb)\
         (gb)->index= name##_index;\
 
+# ifdef ALT_BITSTREAM_READER_LE
+#   define UPDATE_CACHE(name, gb)\
+        name##_cache= unaligned32_le( ((const uint8_t *)(gb)->buffer)+(name##_index>>3) ) >> (name##_index&0x07);\
+
+#   define SKIP_CACHE(name, gb, num)\
+        name##_cache >>= (num);
+# else
 #   define UPDATE_CACHE(name, gb)\
         name##_cache= unaligned32_be( ((const uint8_t *)(gb)->buffer)+(name##_index>>3) ) << (name##_index&0x07);\
 
 #   define SKIP_CACHE(name, gb, num)\
-        name##_cache <<= (num);\
+        name##_cache <<= (num);
+# endif
 
 // FIXME name?
 #   define SKIP_COUNTER(name, gb, num)\
@@ -397,8 +415,13 @@ static inline int unaligned32_be(const void *v)
 #   define LAST_SKIP_BITS(name, gb, num) SKIP_COUNTER(name, gb, num)
 #   define LAST_SKIP_CACHE(name, gb, num) ;
 
+# ifdef ALT_BITSTREAM_READER_LE
+#   define SHOW_UBITS(name, gb, num)\
+        ((name##_cache) & (NEG_USR32(0xffffffff,num)))
+# else
 #   define SHOW_UBITS(name, gb, num)\
         NEG_USR32(name##_cache, num)
+# endif
 
 #   define SHOW_SBITS(name, gb, num)\
         NEG_SSR32(name##_cache, num)
@@ -616,8 +639,13 @@ static inline unsigned int get_bits1(GetBitContext *s){
 #ifdef ALT_BITSTREAM_READER
     int index= s->index;
     uint8_t result= s->buffer[ index>>3 ];
+#ifdef ALT_BITSTREAM_READER_LE
+    result>>= (index&0x07);
+    result&= 1;
+#else
     result<<= (index&0x07);
     result>>= 8 - 1;
+#endif
     index++;
     s->index= index;
 
@@ -687,7 +715,9 @@ void align_get_bits(GetBitContext *s);
 int init_vlc(VLC *vlc, int nb_bits, int nb_codes,
              const void *bits, int bits_wrap, int bits_size,
              const void *codes, int codes_wrap, int codes_size,
-             int use_static);
+             int flags);
+#define INIT_VLC_USE_STATIC 1
+#define INIT_VLC_LE         2
 void free_vlc(VLC *vlc);
 
 /**
