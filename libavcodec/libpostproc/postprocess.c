@@ -747,6 +747,7 @@ char *pp_help=
 "l5	lowpass5				FIR lowpass deinterlacer\n"
 "de	default					hb:a,vb:a,dr:a\n"
 "fa	fast					h1:a,v1:a,dr:a\n"
+"ac						ha:a:128:7,va:a,dr:a\n"
 "tn	tmpnoise	(3 threshold)		temporal noise reducer\n"
 "			1. <= 2. <= 3.		larger -> stronger filtering\n"
 "fq	forceQuant	<quantizer>		force quantizer\n"
