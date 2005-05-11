@@ -17,7 +17,7 @@ OBJS+=mpeg.o mpegts.o mpegtsenc.o ffm.o crc.o img.o img2.o raw.o rm.o \
       yuv4mpeg.o 4xm.o flvenc.o flvdec.o movenc.o psxstr.o idroq.o ipmovie.o \
       nut.o wc3movie.o mp3.o westwood.o segafilm.o idcin.o flic.o \
       sierravmd.o matroska.o sol.o electronicarts.o nsvdec.o asf.o asf-enc.o \
-      ogg2.o oggparsevorbis.o
+      ogg2.o oggparsevorbis.o oggparsetheora.o
 AMROBJS=
 ifeq ($(AMR_NB),yes)
 AMROBJS= amr.o

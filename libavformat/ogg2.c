@@ -39,6 +39,7 @@
 
 static ogg_codec_t *ogg_codecs[] = {
     &vorbis_codec,
+    &theora_codec,
     NULL
 };
 
@@ -425,17 +426,18 @@ ogg_get_headers (AVFormatContext * s)
 static uint64_t
 ogg_gptopts (AVFormatContext * s, int i, uint64_t gp)
 {
+    ogg_t *ogg = s->priv_data;
+    ogg_stream_t *os = ogg->streams + i;
     AVStream *st = s->streams[i];
     AVCodecContext *codec = &st->codec;
     uint64_t pts = AV_NOPTS_VALUE;
 
-    if (codec->codec_type == CODEC_TYPE_AUDIO){
+    if(os->codec->gptopts){
+	pts = os->codec->gptopts(s, i, gp);
+    } else if (codec->codec_type == CODEC_TYPE_AUDIO){
         pts = gp * 1000000LL / codec->sample_rate;
     }else if (codec->codec_type == CODEC_TYPE_VIDEO){
-//FIXME
-        pts = gp * 1000000LL / codec->sample_rate;
-//  pts = gp * st->video.frame_rate.den * 27000000LL /
-//      st->video.frame_rate.num;
+        pts = gp;
     }
 
     return pts;
@@ -534,6 +536,7 @@ ogg_read_close (AVFormatContext * s)
 
     for (i = 0; i < ogg->nstreams; i++){
         av_free (ogg->streams[i].buf);
+        av_free (ogg->streams[i].private);
         av_freep (&s->streams[i]->codec.extradata);
     }
     av_free (ogg->streams);
