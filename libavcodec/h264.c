@@ -370,6 +370,7 @@ static inline void fill_rectangle(void *vp, int w, int h, int stride, uint32_t v
     stride *= size;
     
     assert((((int)vp)&(FFMIN(w, STRIDE_ALIGN)-1)) == 0);
+    assert((stride&(w-1))==0);
 //FIXME check what gcc generates for 64 bit on x86 and possibly write a 32 bit ver of it
     if(w==2 && h==2){
         *(uint16_t*)(p + 0)=
@@ -727,6 +728,7 @@ static inline void fill_caches(H264Context *h, int mb_type, int for_deblock){
                 *(uint32_t*)h->mv_cache [list][scan8[0] - 1 + 3*8]= 0;
                 h->ref_cache[list][scan8[0] - 1 + 2*8]=
                 h->ref_cache[list][scan8[0] - 1 + 3*8]= left_type[0] ? LIST_NOT_USED : PART_NOT_AVAILABLE;
+                assert((!left_type[0]) == (!left_type[1]));
             }
 
             if(for_deblock || (IS_DIRECT(mb_type) && !h->direct_spatial_mv_pred))
