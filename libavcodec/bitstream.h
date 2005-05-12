@@ -130,7 +130,7 @@ typedef struct RL_VLC_ELEM {
     uint8_t run;
 } RL_VLC_ELEM;
 
-#ifdef ARCH_SPARC
+#if defined(ARCH_SPARC) || defined(ARCH_ARMV4L)
 #define UNALIGNED_STORES_ARE_BAD
 #endif
 
