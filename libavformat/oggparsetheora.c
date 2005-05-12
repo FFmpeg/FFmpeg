@@ -43,7 +43,7 @@ theora_header (AVFormatContext * s, int idx)
     int cds = st->codec.extradata_size + os->psize + 2;
     uint8_t *cdp;
 
-    if (os->seq > 2)
+    if(!(os->buf[os->pstart] & 0x80))
         return 0;
 
     if(!thp){
@@ -56,8 +56,12 @@ theora_header (AVFormatContext * s, int idx)
         init_get_bits(&gb, os->buf + os->pstart, os->psize*8);
 
         skip_bits(&gb, 7*8); /* 0x80"theora" */
-        skip_bits(&gb, 3*8);
-        
+        if(get_bits(&gb, 8) != 3) /* major version */
+            return -1;
+        if(get_bits(&gb, 8) != 2) /* minor version */
+            return -1;
+        skip_bits(&gb, 8);      /* revision */
+
         st->codec.width = get_bits(&gb, 16) << 4;
         st->codec.height = get_bits(&gb, 16) << 4;
 
@@ -86,8 +90,7 @@ theora_header (AVFormatContext * s, int idx)
     memcpy (cdp, os->buf + os->pstart, os->psize);
     st->codec.extradata_size = cds;
 
-
-    return os->seq < 3;
+    return 1;
 }
 
 static uint64_t
