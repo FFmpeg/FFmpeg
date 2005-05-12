@@ -1065,6 +1065,11 @@ int MPV_encode_init(AVCodecContext *avctx)
         return -1;
     }
         
+    if(avctx->b_frame_strategy && (avctx->flags&CODEC_FLAG_PASS2)){
+        av_log(avctx, AV_LOG_ERROR, "b_frame_strategy must be 0 on the second pass");
+        return -1;
+    }
+
     i= ff_gcd(avctx->time_base.den, avctx->time_base.num);
     if(i > 1){
         av_log(avctx, AV_LOG_INFO, "removing common factors from framerate\n");
