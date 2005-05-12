@@ -3217,7 +3217,7 @@ static int fill_default_ref_list(H264Context *h){
                     // L0 and L1 are identical
                     Picture temp= h->default_ref_list[1][0];
                     h->default_ref_list[1][0] = h->default_ref_list[1][1];
-                    h->default_ref_list[1][0] = temp;
+                    h->default_ref_list[1][1] = temp;
                 }
 
                 if(index < h->ref_count[ list ])
