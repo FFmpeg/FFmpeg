@@ -1782,7 +1782,7 @@ static int av_encode(AVFormatContext **output_files,
 	is = input_files[ist->file_index];
         ist->pts = 0;
         ist->next_pts = av_rescale_q(ist->st->start_time, ist->st->time_base, AV_TIME_BASE_Q);
-        if(ist->next_pts == AV_NOPTS_VALUE) 
+        if(ist->st->start_time == AV_NOPTS_VALUE) 
             ist->next_pts=0;
         if(input_files_ts_offset[ist->file_index])
             ist->next_pts= AV_NOPTS_VALUE;
