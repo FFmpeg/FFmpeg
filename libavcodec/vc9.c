@@ -459,7 +459,7 @@ static int decode_hrd(VC9Context *v, GetBitContext *gb)
 {
     int i, num;
 
-    num = get_bits(gb, 5);
+    num = 1 + get_bits(gb, 5);
 
     if (v->hrd_rate || num != v->hrd_num_leaky_buckets)
     {
@@ -478,21 +478,21 @@ static int decode_hrd(VC9Context *v, GetBitContext *gb)
     v->hrd_num_leaky_buckets = num;
 
     //exponent in base-2 for rate
-    v->bit_rate_exponent = get_bits(gb, 4);
+    v->bit_rate_exponent = 6 + get_bits(gb, 4);
     //exponent in base-2 for buffer_size
-    v->buffer_size_exponent = get_bits(gb, 4);
+    v->buffer_size_exponent = 4 + get_bits(gb, 4);
 
     for (i=0; i<num; i++)
     {
         //mantissae, ordered (if not, use a function ?
-        v->hrd_rate[i] = get_bits(gb, 16);
+        v->hrd_rate[i] = 1 + get_bits(gb, 16);
         if (i && v->hrd_rate[i-1]>=v->hrd_rate[i])
         {
             av_log(v->s.avctx, AV_LOG_ERROR, "HDR Rates aren't strictly increasing:"
                    "%i vs %i\n", v->hrd_rate[i-1], v->hrd_rate[i]);
             return -1;
         }
-        v->hrd_buffer[i] = get_bits(gb, 16);
+        v->hrd_buffer[i] = 1 + get_bits(gb, 16);
         if (i && v->hrd_buffer[i-1]<v->hrd_buffer[i])
         {
             av_log(v->s.avctx, AV_LOG_ERROR, "HDR Buffers aren't decreasing:"
@@ -536,22 +536,22 @@ static int decode_advanced_sequence_header(AVCodecContext *avctx, GetBitContext 
     /* 6.1.7, p21 */
     if (get_bits(gb, 1) /* pic_size_flag */)
     {
-        avctx->coded_width = get_bits(gb, 12);
-        avctx->coded_height = get_bits(gb, 12);
+        avctx->coded_width = get_bits(gb, 12) << 1;
+        avctx->coded_height = get_bits(gb, 12) << 1;
         if ( get_bits(gb, 1) /* disp_size_flag */)
         {
             avctx->width = get_bits(gb, 14);
             avctx->height = get_bits(gb, 14);
         }
 
-        /* 6.1.7.4, p22 */
+        /* 6.1.7.4, p23 */
         if ( get_bits(gb, 1) /* aspect_ratio_flag */)
         {
             aspect_ratio = get_bits(gb, 4); //SAR
             if (aspect_ratio == 0x0F) //FF_ASPECT_EXTENDED
             {
-                avctx->sample_aspect_ratio.num = get_bits(gb, 8);
-                avctx->sample_aspect_ratio.den = get_bits(gb, 8);
+                avctx->sample_aspect_ratio.num = 1 + get_bits(gb, 8);
+                avctx->sample_aspect_ratio.den = 1 + get_bits(gb, 8);
             }
             else if (aspect_ratio == 0x0E)
             {
@@ -570,9 +570,9 @@ static int decode_advanced_sequence_header(AVCodecContext *avctx, GetBitContext 
     }
 
     /* 6.1.8, p23 */
-    if ( !get_bits(gb, 1) /* framerateflag */)
+    if ( get_bits(gb, 1) /* framerateflag */)
     {
-        if ( get_bits(gb, 1) /* framerateind */)
+        if ( !get_bits(gb, 1) /* framerateind */)
         {
             nr = get_bits(gb, 8);
             dr = get_bits(gb, 4);
@@ -585,18 +585,21 @@ static int decode_advanced_sequence_header(AVCodecContext *avctx, GetBitContext 
             {
                 av_log(avctx, AV_LOG_ERROR,
                        "Reserved FRAMERATENR %i not handled\n", nr);
+                nr = 5; /* overflow protection */
            }
             if (dr<1)
             {
                 av_log(avctx, AV_LOG_ERROR, "0 is forbidden for FRAMERATEDR\n");
+                return -1;
            }
             if (dr>2)
             {
                 av_log(avctx, AV_LOG_ERROR,
                        "Reserved FRAMERATEDR %i not handled\n", dr);
+                dr = 2; /* overflow protection */
             }
-            avctx->time_base.num = fps_nr[dr];
-            avctx->time_base.den = fps_nr[nr];
+            avctx->time_base.num = fps_nr[dr - 1];
+            avctx->time_base.den = fps_nr[nr - 1];
         }
         else
         {
@@ -615,7 +618,7 @@ static int decode_advanced_sequence_header(AVCodecContext *avctx, GetBitContext 
         v->color_prim = get_bits(gb, 8);
         if (v->color_prim<1)
         {
-            av_log(avctx, AV_LOG_ERROR, "0 for COLOR_PRIM is reserved\n");
+            av_log(avctx, AV_LOG_ERROR, "0 for COLOR_PRIM is forbidden\n");
             return -1;
         }
         if (v->color_prim == 3 || v->color_prim>6)
@@ -627,6 +630,11 @@ static int decode_advanced_sequence_header(AVCodecContext *avctx, GetBitContext 
 
         //Opto-electronic transfer characteristics
         v->transfer_char = get_bits(gb, 8);
+        if (v->transfer_char < 1)
+        {
+            av_log(avctx, AV_LOG_ERROR, "0 for TRAMSFER_CHAR is forbidden\n");
+            return -1;
+        }
         if (v->transfer_char == 3 || v->transfer_char>8)
         {
             av_log(avctx, AV_LOG_DEBUG, "Reserved TRANSFERT_CHAR %i found\n",
@@ -636,8 +644,12 @@ static int decode_advanced_sequence_header(AVCodecContext *avctx, GetBitContext 
 
         //Matrix coefficient for primariev->YCbCr
         v->matrix_coef = get_bits(gb, 8);
-        if (v->matrix_coef < 1) return -1; //forbidden
-        if ((v->matrix_coef>3 && v->matrix_coef<6) || v->matrix_coef>7)
+        if (v->matrix_coef < 1)
+        {
+            av_log(avctx, AV_LOG_ERROR, "0 for MATRIX_COEF is forbidden\n");
+            return -1;
+        }
+        if ((v->matrix_coef > 2 && v->matrix_coef < 6) || v->matrix_coef > 7)
         {
             av_log(avctx, AV_LOG_DEBUG, "Reserved MATRIX_COEF %i found\n",
                    v->color_prim);
@@ -671,12 +683,19 @@ static int decode_sequence_header(AVCodecContext *avctx, GetBitContext *gb)
     av_log(avctx, AV_LOG_DEBUG, "Header: %0X\n", show_bits(gb, 32));
     v->profile = get_bits(gb, 2);
     if (v->profile == 2)
-        av_log(avctx, AV_LOG_ERROR, "Profile 2 is reserved\n");
+    {
+        av_log(avctx, AV_LOG_ERROR, "Profile value 2 is forbidden\n");
+        return -1;
+    }
 
 #if HAS_ADVANCED_PROFILE
     if (v->profile == PROFILE_ADVANCED)
     {
         v->level = get_bits(gb, 3);
+        if(v->level >= 5)
+        {
+            av_log(avctx, AV_LOG_ERROR, "Reserved LEVEL %i\n",v->level);
+        }
         v->chromaformat = get_bits(gb, 2);
         if (v->chromaformat != 1)
         {
@@ -702,6 +721,11 @@ static int decode_sequence_header(AVCodecContext *avctx, GetBitContext *gb)
     // (bitrate-32kbps)/64kbps
     v->bitrtq_postproc = get_bits(gb, 5); //common
     v->s.loop_filter = get_bits(gb, 1); //common
+    if(v->s.loop_filter == 1 && v->profile == PROFILE_SIMPLE)
+    {
+        av_log(avctx, AV_LOG_ERROR,
+               "LOOPFILTER shell not be enabled in simple profile\n");
+    }
 
 #if HAS_ADVANCED_PROFILE
     if (v->profile < PROFILE_ADVANCED)
@@ -762,6 +786,11 @@ static int decode_sequence_header(AVCodecContext *avctx, GetBitContext *gb)
     {
         v->s.resync_marker = get_bits(gb, 1);
         v->rangered = get_bits(gb, 1);
+        if (v->rangered && v->profile == PROFILE_SIMPLE)
+        {
+            av_log(avctx, AV_LOG_DEBUG,
+                   "RANGERED should be set to 0 in simple profile\n");	    
+        }
     }
 
     v->s.max_b_frames = avctx->max_b_frames = get_bits(gb, 3); //common
