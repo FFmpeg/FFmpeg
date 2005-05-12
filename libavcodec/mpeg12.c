@@ -2621,6 +2621,7 @@ static int mpeg_decode_slice(Mpeg1Context *s1, int mb_y,
                     s->current_picture.motion_val[dir][xy + 1][1] = motion_y;
                     s->current_picture.ref_index [dir][xy    ]=
                     s->current_picture.ref_index [dir][xy + 1]= s->field_select[dir][i];
+                    assert(s->field_select[dir][i]==0 || s->field_select[dir][i]==1);
                 }
                 xy += wrap;
             }
