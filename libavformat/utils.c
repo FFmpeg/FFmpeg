@@ -632,10 +632,10 @@ static void compute_frame_duration(int *pnum, int *pden, AVStream *st,
     *pden = 0;
     switch(st->codec.codec_type) {
     case CODEC_TYPE_VIDEO:
-        if(st->time_base.num*1000 > st->time_base.den){
+        if(st->time_base.num*1000LL > st->time_base.den){
             *pnum = st->time_base.num;
             *pden = st->time_base.den;
-        }else if(st->codec.time_base.num*1000 > st->codec.time_base.den){
+        }else if(st->codec.time_base.num*1000LL > st->codec.time_base.den){
             *pnum = st->codec.time_base.num;
             *pden = st->codec.time_base.den;
             if (pc && pc->repeat_pict) {
@@ -1849,7 +1849,7 @@ int av_find_stream_info(AVFormatContext *ic)
             if(st->codec.codec_id == CODEC_ID_RAWVIDEO && !st->codec.codec_tag && !st->codec.bits_per_sample)
                 st->codec.codec_tag= avcodec_pix_fmt_to_codec_tag(st->codec.pix_fmt);
 
-            if(duration_count[i] && st->codec.time_base.num*1000 <= st->codec.time_base.den &&
+            if(duration_count[i] && st->codec.time_base.num*1000LL <= st->codec.time_base.den &&
                st->time_base.num*duration_sum[i]/duration_count[i]*1000LL > st->time_base.den){
                 AVRational fps1;
                 int64_t num, den;
