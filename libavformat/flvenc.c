@@ -172,7 +172,7 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
 static AVOutputFormat flv_oformat = {
     "flv",
     "flv format",
-    "video/x-flashvideo",
+    "video/x-flv",
     "flv",
     sizeof(FLVContext),
 #ifdef CONFIG_MP3LAME
