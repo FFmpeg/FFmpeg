@@ -2425,6 +2425,7 @@ void mpeg4_encode_picture_header(MpegEncContext * s, int picture_number)
     put_bits(&s->pb, 16, VOP_STARTCODE);	/* vop header */
     put_bits(&s->pb, 2, s->pict_type - 1);	/* pict type: I = 0 , P = 1 */
 
+    assert(s->time>=0);
     time_div= s->time/s->avctx->time_base.den;
     time_mod= s->time%s->avctx->time_base.den;
     time_incr= time_div - s->last_time_base;
@@ -5856,7 +5857,7 @@ static int decode_vop_header(MpegEncContext *s, GetBitContext *gb){
     
     s->current_picture_ptr->pts= (s->time + s->avctx->time_base.num/2) / s->avctx->time_base.num;
     if(s->avctx->debug&FF_DEBUG_PTS)
-        av_log(s->avctx, AV_LOG_DEBUG, "MPEG4 PTS: %f\n", s->current_picture_ptr->pts);
+        av_log(s->avctx, AV_LOG_DEBUG, "MPEG4 PTS: %Ld\n", s->current_picture_ptr->pts);
 
     check_marker(gb, "before vop_coded");
     
