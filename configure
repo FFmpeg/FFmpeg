@@ -377,13 +377,13 @@ TARGET_OS=`( uname -s ) 2>&1`
   esac
 
 # find source path
-# XXX: we assume an absolute path is given when launching configure, 
-# except in './configure' case.
 source_path="`echo $0 | sed -e 's#/configure##'`"
 source_path_used="yes"
 if test -z "$source_path" -o "$source_path" = "." ; then
     source_path=`pwd`
     source_path_used="no"
+else
+    source_path="`cd \"$source_path\"; pwd`"
 fi
 
 FFMPEG_CONFIGURATION=" "
