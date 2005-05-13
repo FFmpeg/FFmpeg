@@ -2243,44 +2243,13 @@ matroska_read_header (AVFormatContext    *s,
 /*                 codec_id = CODEC_ID_DTS; */
             else if (!strcmp(track->codec_id,
                              MATROSKA_CODEC_ID_AUDIO_VORBIS)) {
-                unsigned char *p = track->codec_priv, *cdp;
-                int cps = track->codec_priv_size;
-                int nf, s[3], cds;
-                int i;
-
-                nf = *p++;
-                cps--;
-
-                if(nf != 2)
-                    continue;
-
-                for(i = 0; i < 2; i++){
-                    int xv;
-                    s[i] = 0;
-                    do {
-                        xv = *p++;
-                        s[i] += xv;
-                        cps--;
-                    } while(xv == 255);
+                extradata_size = track->codec_priv_size;
+                if(extradata_size) {
+                    extradata = av_malloc(extradata_size);
+                    if(extradata == NULL)
+                        return AVERROR_NOMEM;
+                    memcpy(extradata, track->codec_priv, extradata_size);
                 }
-
-                s[2] = cps - s[0] - s[1];
-
-                cds = cps + 6;
-                extradata = cdp = av_malloc(cds);
-                if(extradata == NULL)
-                    return AVERROR_NOMEM;
-                extradata_size = cds;
-
-                for(i = 0; i < 3; i++){
-                    *cdp++ = s[i] >> 8;
-                    *cdp++ = s[i] & 0xff;
-                    memcpy(cdp, p, s[i]);
-                    cdp += s[i];
-                    p += s[i];
-                    cps -= s[i];
-                }
-
                 codec_id = CODEC_ID_VORBIS;
             } else if (!strcmp(track->codec_id,
                                MATROSKA_CODEC_ID_AUDIO_MPEG2) ||

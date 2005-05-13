@@ -2357,6 +2357,8 @@ extern void av_log_set_callback(void (*)(void*, int, const char*, va_list));
                     ((uint8_t*)(x))[0])
 #endif
 
+extern unsigned int av_xiphlacing(unsigned char *s, unsigned int v);
+
 #ifdef __cplusplus
 }
 #endif

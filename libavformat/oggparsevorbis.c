@@ -126,25 +126,56 @@ vorbis_comment (AVFormatContext * as, char *buf, int size)
  * [framing_flag] = read one bit | Not Used
  *    */
 
+typedef struct {
+    unsigned int len[3];
+    unsigned char *packet[3];
+} oggvorbis_private_t;
+
+
+static unsigned int
+fixup_vorbis_headers(AVFormatContext * as, oggvorbis_private_t *priv,
+                     void **buf)
+{
+    int i,offset, len;
+    unsigned char *ptr;
+
+    len = priv->len[0] + priv->len[1] + priv->len[2];
+    ptr = *buf = av_mallocz(len + len/255 + 64);
+
+    ptr[0] = 2;
+    offset = 1;
+    offset += av_xiphlacing(&ptr[offset], priv->len[0]);
+    offset += av_xiphlacing(&ptr[offset], priv->len[1]);
+    for(i = 0; i < 3; i++) {
+        memcpy(&ptr[offset], priv->packet[i], priv->len[i]);
+        offset += priv->len[i];
+    }
+    *buf = av_realloc(*buf, offset);
+    return offset;
+}
+
+
 static int
 vorbis_header (AVFormatContext * s, int idx)
 {
     ogg_t *ogg = s->priv_data;
     ogg_stream_t *os = ogg->streams + idx;
     AVStream *st = s->streams[idx];
-    int cds = st->codec.extradata_size + os->psize + 2;
-    uint8_t *cdp;
+    oggvorbis_private_t *priv;
 
     if (os->seq > 2)
         return 0;
 
-    st->codec.extradata = av_realloc (st->codec.extradata, cds);
-    cdp = st->codec.extradata + st->codec.extradata_size;
-    *cdp++ = os->psize >> 8;
-    *cdp++ = os->psize & 0xff;
-    memcpy (cdp, os->buf + os->pstart, os->psize);
-    st->codec.extradata_size = cds;
+    if(os->seq == 0) {
+        os->private = av_mallocz(sizeof(oggvorbis_private_t));
+        if(!os->private)
+            return 0;
+    }
 
+    priv = os->private;
+    priv->len[os->seq] = os->psize;
+    priv->packet[os->seq] = av_mallocz(os->psize);
+    memcpy(priv->packet[os->seq], os->buf + os->pstart, os->psize);
     if (os->buf[os->pstart] == 1) {
         uint8_t *p = os->buf + os->pstart + 11; //skip up to the audio channels
         st->codec.channels = *p++;
@@ -157,6 +188,9 @@ vorbis_header (AVFormatContext * s, int idx)
 
     } else if (os->buf[os->pstart] == 3) {
         vorbis_comment (s, os->buf + os->pstart + 7, os->psize - 8);
+    } else {
+        st->codec.extradata_size =
+            fixup_vorbis_headers(s, priv, &st->codec.extradata);
     }
 
     return os->seq < 3;
