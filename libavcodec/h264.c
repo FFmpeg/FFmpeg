@@ -4191,7 +4191,7 @@ static int decode_residual(H264Context *h, GetBitContext *gb, DCTELEM *block, in
 static void decode_mb_skip(H264Context *h){
     MpegEncContext * const s = &h->s;
     const int mb_xy= s->mb_x + s->mb_y*s->mb_stride;
-    int mb_type;
+    int mb_type=0;
     
     memset(h->non_zero_count[mb_xy], 0, 16);
     memset(h->non_zero_count_cache + 8, 0, 8*5); //FIXME ugly, remove pfui
@@ -4201,11 +4201,11 @@ static void decode_mb_skip(H264Context *h){
     }
     if(h->mb_field_decoding_flag)
         mb_type|= MB_TYPE_INTERLACED;
-        
+
     if( h->slice_type == B_TYPE )
     {
         // just for fill_caches. pred_direct_motion will set the real mb_type
-        mb_type= MB_TYPE_16x16|MB_TYPE_P0L0|MB_TYPE_P0L1|MB_TYPE_DIRECT2|MB_TYPE_SKIP;
+        mb_type|= MB_TYPE_16x16|MB_TYPE_P0L0|MB_TYPE_P0L1|MB_TYPE_DIRECT2|MB_TYPE_SKIP;
 
         fill_caches(h, mb_type, 0); //FIXME check what is needed and what not ...
         pred_direct_motion(h, &mb_type);
@@ -4217,7 +4217,7 @@ static void decode_mb_skip(H264Context *h){
     else
     {
         int mx, my;
-        mb_type= MB_TYPE_16x16|MB_TYPE_P0L0|MB_TYPE_P1L0|MB_TYPE_SKIP;
+        mb_type|= MB_TYPE_16x16|MB_TYPE_P0L0|MB_TYPE_P1L0|MB_TYPE_SKIP;
 
         fill_caches(h, mb_type, 0); //FIXME check what is needed and what not ...
         pred_pskip_motion(h, &mx, &my);
