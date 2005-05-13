@@ -1378,7 +1378,8 @@ static inline void write_back_motion(H264Context *h, int mb_type){
                     }
                 }
                 for(y=0; y<2; y++){
-                    *(uint16_t*)&s->current_picture.ref_index[list][b8_xy + y*h->b8_stride]= (LIST_NOT_USED&0xFF)*0x0101;
+                    s->current_picture.ref_index[list][b8_xy + 0 + y*h->b8_stride]=
+                    s->current_picture.ref_index[list][b8_xy + 1 + y*h->b8_stride]= LIST_NOT_USED;
                 }
             }
             continue;
