@@ -2641,7 +2641,7 @@ static int vp3_decode_frame(AVCodecContext *avctx,
 	skip_bits(&gb, 1);
     s->last_quality_index = s->quality_index;
     s->quality_index = get_bits(&gb, 6);
-    if (s->theora >= 0x030300)
+    if (s->theora >= 0x030200)
         skip_bits1(&gb);
 
     if (s->avctx->debug & FF_DEBUG_PICT_INFO)
@@ -2810,9 +2810,9 @@ static int theora_decode_header(AVCodecContext *avctx, GetBitContext gb)
     /* FIXME: endianess? */
     s->theora = (major << 16) | (minor << 8) | micro;
 
-    /* 3.3.0 aka alpha3 has the same frame orientation as original vp3 */
+    /* 3.2.0 aka alpha3 has the same frame orientation as original vp3 */
     /* but previous versions have the image flipped relative to vp3 */
-    if (s->theora < 0x030300)
+    if (s->theora < 0x030200)
     {
 	s->flipped_image = 1;
         av_log(avctx, AV_LOG_DEBUG, "Old (<alpha3) Theora bitstream, flipped image\n");
@@ -2837,14 +2837,14 @@ static int theora_decode_header(AVCodecContext *avctx, GetBitContext gb)
     skip_bits(&gb, 24); /* aspect numerator */
     skip_bits(&gb, 24); /* aspect denumerator */
     
-    if (s->theora < 0x030300)
+    if (s->theora < 0x030200)
 	skip_bits(&gb, 5); /* keyframe frequency force */
     skip_bits(&gb, 8); /* colorspace */
     skip_bits(&gb, 24); /* bitrate */
 
     skip_bits(&gb, 6); /* last(?) quality index */
     
-    if (s->theora >= 0x030300)
+    if (s->theora >= 0x030200)
     {
 	skip_bits(&gb, 5); /* keyframe frequency force */
 	skip_bits(&gb, 5); /* spare bits */
@@ -2854,8 +2854,6 @@ static int theora_decode_header(AVCodecContext *avctx, GetBitContext gb)
     
     avctx->width = s->width;
     avctx->height = s->height;
-
-    vp3_decode_init(avctx);
 
     return 0;
 }
@@ -2885,16 +2883,39 @@ static int theora_decode_comments(AVCodecContext *avctx, GetBitContext gb)
 static int theora_decode_tables(AVCodecContext *avctx, GetBitContext gb)
 {
     Vp3DecodeContext *s = avctx->priv_data;
-    int i;
+    int i, n;
+
+    if (s->theora >= 0x030200) {
+        n = get_bits(&gb, 3);
+        /* loop filter table */
+        for (i = 0; i < 64; i++)
+            skip_bits(&gb, n);
+    }
     
+    if (s->theora >= 0x030200)
+        n = get_bits(&gb, 4) + 1;
+    else
+        n = 16;
     /* quality threshold table */
     for (i = 0; i < 64; i++)
-	s->coded_ac_scale_factor[i] = get_bits(&gb, 16);
+	s->coded_ac_scale_factor[i] = get_bits(&gb, n);
 
+    if (s->theora >= 0x030200)
+        n = get_bits(&gb, 4) + 1;
+    else
+        n = 16;
     /* dc scale factor table */
     for (i = 0; i < 64; i++)
-	s->coded_dc_scale_factor[i] = get_bits(&gb, 16);
+	s->coded_dc_scale_factor[i] = get_bits(&gb, n);
 
+    if (s->theora >= 0x030200)
+        n = get_bits(&gb, 9) + 1;
+    else
+        n = 3;
+    if (n != 3) {
+        av_log(NULL,AV_LOG_ERROR, "unsupported nbms : %d\n", n);
+        return -1;
+    }
     /* y coeffs */
     for (i = 0; i < 64; i++)
 	s->coded_intra_y_dequant[i] = get_bits(&gb, 8);
@@ -2946,7 +2967,6 @@ static int theora_decode_init(AVCodecContext *avctx)
     {
         case 0x80:
             theora_decode_header(avctx, gb);
-	    vp3_decode_init(avctx);
     	    break;
 	case 0x81:
 	    theora_decode_comments(avctx, gb);
@@ -2957,6 +2977,7 @@ static int theora_decode_init(AVCodecContext *avctx)
     }
   }
 
+    vp3_decode_init(avctx);
     return 0;
 }
 
