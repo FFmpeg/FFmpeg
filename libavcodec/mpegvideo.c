@@ -1771,7 +1771,7 @@ void ff_print_debug_info(MpegEncContext *s, AVFrame *pict){
                     else if(IS_16X8(mb_type))
                         av_log(s->avctx, AV_LOG_DEBUG, "-");
                     else if(IS_8X16(mb_type))
-                        av_log(s->avctx, AV_LOG_DEBUG, "¦");
+                        av_log(s->avctx, AV_LOG_DEBUG, "|");
                     else if(IS_INTRA(mb_type) || IS_16X16(mb_type))
                         av_log(s->avctx, AV_LOG_DEBUG, " ");
                     else
