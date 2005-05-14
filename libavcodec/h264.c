@@ -3197,6 +3197,8 @@ static int fill_default_ref_list(H264Context *h){
 
                 for(i=0; i<h->short_ref_count && index < h->ref_count[list]; i++, j+=step) {
                     while(j<0 || j>= h->short_ref_count){
+                        if(j != -99 && step == (list ? -1 : 1))
+                            return -1;
                         step = -step;
                         j= smallest_poc_greater_than_current + (step>>1);
                     }
@@ -3264,7 +3266,7 @@ static void print_long_term(H264Context *h);
 
 static int decode_ref_pic_list_reordering(H264Context *h){
     MpegEncContext * const s = &h->s;
-    int list;
+    int list, index;
     
     print_short_term(h);
     print_long_term(h);
@@ -3275,7 +3277,6 @@ static int decode_ref_pic_list_reordering(H264Context *h){
 
         if(get_bits1(&s->gb)){
             int pred= h->curr_pic_num;
-            int index;
 
             for(index=0; ; index++){
                 int reordering_of_pic_nums_idc= get_ue_golomb(&s->gb);
@@ -3337,6 +3338,13 @@ static int decode_ref_pic_list_reordering(H264Context *h){
             }
         }
 
+        if(h->slice_type!=B_TYPE) break;
+    }
+    for(list=0; list<2; list++){
+        for(index= 0; index < h->ref_count[list]; index++){
+            if(!h->ref_list[list][index].data[0])
+                h->ref_list[list][index]= s->current_picture;
+        }
         if(h->slice_type!=B_TYPE) break;
     }
     
