@@ -715,7 +715,6 @@ static int mov_write_mdia_tag(ByteIOContext *pb, MOVTrack* track)
 
 static int mov_write_tkhd_tag(ByteIOContext *pb, MOVTrack* track)
 {
-    int64_t maxTrackLenTemp;
     put_be32(pb, 0x5c); /* size (always 0x5c) */
     put_tag(pb, "tkhd");
     put_be32(pb, 0xf); /* version & flags (track enabled) */
@@ -723,8 +722,7 @@ static int mov_write_tkhd_tag(ByteIOContext *pb, MOVTrack* track)
     put_be32(pb, track->time); /* modification time */
     put_be32(pb, track->trackID); /* track-id */
     put_be32(pb, 0); /* reserved */
-    maxTrackLenTemp = ((int64_t)globalTimescale*(int64_t)track->trackDuration)/(int64_t)track->timescale;
-    put_be32(pb, (long)maxTrackLenTemp); /* duration */
+    put_be32(pb, av_rescale_rnd(track->trackDuration, globalTimescale, track->timescale, AV_ROUND_UP)); /* duration */
 
     put_be32(pb, 0); /* reserved */
     put_be32(pb, 0); /* reserved */
@@ -764,7 +762,6 @@ static int mov_write_tkhd_tag(ByteIOContext *pb, MOVTrack* track)
 // This box seems important for the psp playback ... without it the movie seems to hang
 static int mov_write_edts_tag(ByteIOContext *pb, MOVTrack *track)
 {
-    int64_t maxTrackLenTemp;
     put_be32(pb, 0x24); /* size  */
     put_tag(pb, "edts");
     put_be32(pb, 0x1c); /* size  */
@@ -772,8 +769,7 @@ static int mov_write_edts_tag(ByteIOContext *pb, MOVTrack *track)
     put_be32(pb, 0x0);
     put_be32(pb, 0x1);
 
-    maxTrackLenTemp = ((int64_t)globalTimescale*(int64_t)track->trackDuration)/(int64_t)track->timescale;
-    put_be32(pb, (long)maxTrackLenTemp); /* duration   ... doesn't seem to effect psp */
+    put_be32(pb, av_rescale_rnd(track->trackDuration, globalTimescale, track->timescale, AV_ROUND_UP)); /* duration   ... doesn't seem to effect psp */
 
     put_be32(pb, 0x0);
     put_be32(pb, 0x00010000);
@@ -842,7 +838,7 @@ static int mov_write_mvhd_tag(ByteIOContext *pb, MOVContext *mov)
     put_be32(pb, mov->timescale); /* timescale */
     for (i=0; i<MAX_STREAMS; i++) {
         if(mov->tracks[i].entry > 0) {
-            maxTrackLenTemp = ((int64_t)globalTimescale*(int64_t)mov->tracks[i].trackDuration)/(int64_t)mov->tracks[i].timescale;
+            maxTrackLenTemp = av_rescale_rnd(mov->tracks[i].trackDuration, globalTimescale, mov->tracks[i].timescale, AV_ROUND_UP);
             if(maxTrackLen < maxTrackLenTemp)
                 maxTrackLen = maxTrackLenTemp;
             if(maxTrackID < mov->tracks[i].trackID)
