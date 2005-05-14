@@ -133,7 +133,7 @@ X264_init(AVCodecContext *avctx)
 
     x4->params.i_keyint_max = avctx->gop_size;
     x4->params.rc.i_bitrate = avctx->bit_rate / 1000;
-    x4->params.rc.i_rc_buffer_size = avctx->rc_buffer_size / 1000;
+    x4->params.rc.i_vbv_buffer_size = avctx->rc_buffer_size / 1000;
     if(avctx->rc_buffer_size)
         x4->params.rc.b_cbr = 1;
     x4->params.i_bframe = avctx->max_b_frames;
