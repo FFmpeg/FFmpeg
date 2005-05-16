@@ -314,10 +314,6 @@ ffserver="no"
 extralibs=""
 cygwin="yes"
 EXESUF=".exe"
-test -f /usr/include/inttypes.h || \
-test -f /usr/local/include/inttypes.h || \
-echo "Missing inttypes.h, please copy cygwin_inttypes.h to" \
-     "/usr/local/include/inttypes.h !!!"
 ;;
 Linux)
 LDFLAGS="$LDFLAGS -rdynamic"
