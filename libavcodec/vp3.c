@@ -2318,7 +2318,7 @@ static void apply_loop_filter(Vp3DecodeContext *s)
         for (y = 0; y < height; y++) {
 
             for (x = 0; x < width; x++) {
-
+START_TIMER
                 /* do not perform left edge filter for left columns frags */
                 if ((x > 0) &&
                     (s->all_fragments[fragment].coding_method != MODE_COPY)) {
@@ -2358,6 +2358,7 @@ static void apply_loop_filter(Vp3DecodeContext *s)
                 }
 
                 fragment++;
+STOP_TIMER("loop filter")
             }
         }
     }
@@ -2716,7 +2717,9 @@ static int vp3_decode_frame(AVCodecContext *avctx,
     s->current_frame.qscale_table= s->qscale_table; //FIXME allocate individual tables per AVFrame
     s->current_frame.qstride= 0;
 
+    {START_TIMER
     init_frame(s, &gb);
+    STOP_TIMER("init_frame")}
 
 #if KEYFRAMES_ONLY
 if (!s->keyframe) {
@@ -2731,17 +2734,37 @@ if (!s->keyframe) {
 } else {
 #endif
 
-    if (unpack_superblocks(s, &gb) ||
-        unpack_modes(s, &gb) ||
-        unpack_vectors(s, &gb) ||
-        unpack_dct_coeffs(s, &gb)) {
-
-        av_log(s->avctx, AV_LOG_ERROR, "  vp3: could not decode frame\n");
+    {START_TIMER
+    if (unpack_superblocks(s, &gb)){
+        av_log(s->avctx, AV_LOG_ERROR, "error in unpack_superblocks\n");
         return -1;
     }
+    STOP_TIMER("unpack_superblocks")}
+    {START_TIMER
+    if (unpack_modes(s, &gb)){
+        av_log(s->avctx, AV_LOG_ERROR, "error in unpack_modes\n");
+        return -1;
+    }
+    STOP_TIMER("unpack_modes")}
+    {START_TIMER
+    if (unpack_vectors(s, &gb)){
+        av_log(s->avctx, AV_LOG_ERROR, "error in unpack_vectors\n");
+        return -1;
+    }
+    STOP_TIMER("unpack_vectors")}
+    {START_TIMER
+    if (unpack_dct_coeffs(s, &gb)){
+        av_log(s->avctx, AV_LOG_ERROR, "error in unpack_dct_coeffs\n");
+        return -1;
+    }
+    STOP_TIMER("unpack_dct_coeffs")}
+    {START_TIMER
 
     reverse_dc_prediction(s, 0, s->fragment_width, s->fragment_height);
+    STOP_TIMER("reverse_dc_prediction")}
+    {START_TIMER
     render_fragments(s, 0, s->width, s->height, 0);
+    STOP_TIMER("render_fragments")}
 
     if ((avctx->flags & CODEC_FLAG_GRAY) == 0) {
         reverse_dc_prediction(s, s->u_fragment_start,
@@ -2755,7 +2778,9 @@ if (!s->keyframe) {
         memset(s->current_frame.data[2], 0x80, s->width * s->height / 4);
     }
 
+    {START_TIMER
     apply_loop_filter(s);
+    STOP_TIMER("apply_loop_filter")}
 #if KEYFRAMES_ONLY
 }
 #endif
