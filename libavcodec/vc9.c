@@ -353,14 +353,14 @@ static int get_prefix(GetBitContext *gb, int stop, int len)
   UPDATE_CACHE(re, gb);
   buf=GET_CACHE(re, gb); //Still not sure
   if (stop) buf = ~buf;
-  
+
   log= av_log2(-buf); //FIXME: -?
   if (log < limit){
     LAST_SKIP_BITS(re, gb, log+1);
     CLOSE_READER(re, gb);
     return log;
   }
-  
+
   LAST_SKIP_BITS(re, gb, limit);
   CLOSE_READER(re, gb);
   return limit;
@@ -586,12 +586,12 @@ static int decode_advanced_sequence_header(AVCodecContext *avctx, GetBitContext 
                 av_log(avctx, AV_LOG_ERROR,
                        "Reserved FRAMERATENR %i not handled\n", nr);
                 nr = 5; /* overflow protection */
-           }
+            }
             if (dr<1)
             {
                 av_log(avctx, AV_LOG_ERROR, "0 is forbidden for FRAMERATEDR\n");
                 return -1;
-           }
+            }
             if (dr>2)
             {
                 av_log(avctx, AV_LOG_ERROR,
@@ -764,7 +764,7 @@ static int decode_sequence_header(AVCodecContext *avctx, GetBitContext *gb)
     }
     v->dquant =  get_bits(gb, 2); //common
     v->vstransform =  get_bits(gb, 1); //common
-    
+
 #if HAS_ADVANCED_PROFILE
     if (v->profile < PROFILE_ADVANCED)
 #endif
@@ -789,7 +789,7 @@ static int decode_sequence_header(AVCodecContext *avctx, GetBitContext *gb)
         if (v->rangered && v->profile == PROFILE_SIMPLE)
         {
             av_log(avctx, AV_LOG_DEBUG,
-                   "RANGERED should be set to 0 in simple profile\n");	    
+                   "RANGERED should be set to 0 in simple profile\n");
         }
     }
 
@@ -992,7 +992,7 @@ static int bitplane_decoding(BitPlane *bp, VC9Context *v)
             offset = x = 1;
         }
         else offset = x = 0;
-        
+
         for (y=0; y<bp->height; y++)
         {
             for(; x<bp->width; x+=2)
@@ -1743,7 +1743,7 @@ static inline int vc9_pred_dc(MpegEncContext *s, int n,
     /* find prediction - wmv3_dc_scale always used here in fact */
     if (n < 4)     scale = s->y_dc_scale;
     else           scale = s->c_dc_scale;
-    
+
     wrap = s->block_wrap[n];
     dc_val= s->dc_val[0] + s->block_index[n];
 
@@ -1753,7 +1753,7 @@ static inline int vc9_pred_dc(MpegEncContext *s, int n,
     a = dc_val[ - 1];
     b = dc_val[ - 1 - wrap];
     c = dc_val[ - wrap];
-    
+
     /* XXX: Rule B is used only for I and BI frames in S/M/C profile
      *      with overlap filtering off 
      */
@@ -1859,7 +1859,7 @@ int vc9_decode_block(VC9Context *v, DCTELEM block[64], int n, int coded, int mqu
         dcdiff += vc9_pred_dc(s, n, &dc_val, &dc_pred_dir);
         *dc_val = dcdiff;
         /* Store the quantized DC coeff, used for prediction */
-        
+
         if (n < 4) {
             block[0] = dcdiff * s->y_dc_scale;
         } else {
@@ -1935,13 +1935,13 @@ static inline int vc9_coded_block_pred(MpegEncContext * s, int n, uint8_t **code
     a = s->coded_block[xy - 1       ];
     b = s->coded_block[xy - 1 - wrap];
     c = s->coded_block[xy     - wrap];
-    
+
     if (b == c) {
         pred = a;
     } else {
         pred = c;
     }
-    
+
     /* store value */
     *coded_block_ptr = &s->coded_block[xy];
 
@@ -2016,7 +2016,7 @@ int vc9_decode_p_mb(VC9Context *v, DCTELEM block[6][64])
         if (!v->skip_mb_plane.data[mb_offset])
         {
             GET_MVDATA(dmv_x, dmv_y);
-            
+
             /* hybrid mv pred, 8.3.5.3.4 */
             if (v->mv_mode == MV_PMODE_1MV ||
                 v->mv_mode == MV_PMODE_MIXED_MV)
@@ -2122,7 +2122,7 @@ int vc9_decode_p_mb(VC9Context *v, DCTELEM block[6][64])
             return 0;
         }
     }
-    
+
     /* Should never happen */
     return -1;
 }
@@ -2140,21 +2140,21 @@ int vc9_decode_b_mb(VC9Context *v, DCTELEM block[6][64])
     int b_mv_type = BMV_TYPE_BACKWARD;
     int mquant, mqdiff; /* MB quant stuff */
     int ttmb; /* MacroBlock transform type */
-    
+
     static const int size_table[6] = { 0, 2, 3, 4, 5, 8 },
         offset_table[6] = { 0, 1, 3, 7, 15, 31 };
     int mb_has_coeffs = 1; /* last_flag */
     int dmv1_x, dmv1_y, dmv2_x, dmv2_y; /* Differential MV components */
     int index, index1; /* LUT indices */
     int val, sign; /* MVDATA temp values */
-    
+
     mb_offset = s->mb_width*s->mb_y + s->mb_x; //FIXME: arrays aren't using stride
 
     if (v->direct_mb_plane.is_raw)
         v->direct_mb_plane.data[mb_offset] = get_bits(gb, 1);
     if (v->skip_mb_plane.is_raw)
         v->skip_mb_plane.data[mb_offset] = get_bits(gb, 1);
-            
+
     if (!v->direct_mb_plane.data[mb_offset])
     {
         if (v->skip_mb_plane.data[mb_offset])
@@ -2164,7 +2164,7 @@ int vc9_decode_b_mb(VC9Context *v, DCTELEM block[6][64])
                 b_mv_type < 3) b_mv_type = 1-b_mv_type;
         }
         else
-        { 
+        {
             GET_MVDATA(dmv1_x, dmv1_y);
             if (!s->mb_intra /* b_mv1 tells not intra */)
             {
@@ -2220,7 +2220,7 @@ int vc9_decode_b_mb(VC9Context *v, DCTELEM block[6][64])
 static int standard_decode_mbs(VC9Context *v)
 {
     MpegEncContext *s = &v->s;
-    
+
     /* Set transform type info depending on pq */
     if (v->pq < 5)
     {
@@ -2237,7 +2237,7 @@ static int standard_decode_mbs(VC9Context *v)
         v->tt_index = 2;
         v->ttblk4x4 = 2;
     }
-    
+
     if (s->pict_type != I_TYPE)
     {
         /* Select proper long MV range */
@@ -2339,7 +2339,7 @@ static int vc9_decode_init(AVCodecContext *avctx)
         // samples we can decode
 
         init_get_bits(&gb, avctx->extradata, avctx->extradata_size*8);
-        
+
         if (decode_sequence_header(avctx, &gb) < 0)
           return -1;
 
@@ -2413,25 +2413,25 @@ static int vc9_decode_frame(AVCodecContext *avctx,
     if (avctx->codec_id == CODEC_ID_VC9)
     {
 #if 0
-	// search for IDU's
-	// FIXME
-	uint32_t scp = 0;
-	int scs = 0, i = 0;
+        // search for IDU's
+        // FIXME
+        uint32_t scp = 0;
+        int scs = 0, i = 0;
 
-	while (i < buf_size)
-	{
-	    for (; i < buf_size && scp != 0x000001; i++)
-		scp = ((scp<<8)|buf[i])&0xffffff;
+        while (i < buf_size)
+        {
+            for (; i < buf_size && scp != 0x000001; i++)
+                scp = ((scp<<8)|buf[i])&0xffffff;
 
-	    if (scp != 0x000001)
-		break; // eof ?
-	
-	    scs = buf[i++];	
+            if (scp != 0x000001)
+                break; // eof ?
 
-	    init_get_bits(gb, buf+i, (buf_size-i)*8);
-	
-	    switch(scs)
-	    {
+            scs = buf[i++];	
+
+            init_get_bits(gb, buf+i, (buf_size-i)*8);
+
+            switch(scs)
+            {
             case 0x0A: //Sequence End Code
                 return 0;
             case 0x0B: //Slice Start Code
@@ -2455,11 +2455,11 @@ static int vc9_decode_frame(AVCodecContext *avctx,
                 av_log(avctx, AV_LOG_ERROR,
                        "Unsupported IDU suffix %lX\n", scs);
             }
-	    
-	    i += get_bits_count(gb)*8;
-	}
+
+            i += get_bits_count(gb)*8;
+        }
 #else
-	av_abort();
+        av_abort();
 #endif
     }
     else
@@ -2483,12 +2483,12 @@ static int vc9_decode_frame(AVCodecContext *avctx,
 
     //No IDU - we mimic ff_h263_decode_frame
     s->bitstream_buffer_size=0;
-        
+
     if (!s->context_initialized) {
         if (MPV_common_init(s) < 0) //we need the idct permutaton for reading a custom matrix
             return -1;
     }
-    
+
     //we need to set current_picture_ptr before reading the header, otherwise we cant store anyting im there
     if(s->current_picture_ptr==NULL || s->current_picture_ptr->data[0]){
         s->current_picture_ptr= &s->picture[ff_find_unused_picture(s, 0)];
@@ -2527,7 +2527,7 @@ static int vc9_decode_frame(AVCodecContext *avctx,
     /* skip everything if we are in a hurry>=5 */
     if(avctx->hurry_up>=5)
         return buf_size; //FIXME simulating all buffer consumed
-    
+
     if(s->next_p_frame_damaged){
         if(s->pict_type==B_TYPE)
             return buf_size; //FIXME simulating all buffer consumed
