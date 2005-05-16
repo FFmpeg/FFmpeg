@@ -321,6 +321,11 @@ typedef struct VC9Context{
     BitPlane over_flags_plane;    ///< Overflags bitplane
     uint8_t condover;
     uint16_t *hrd_rate, *hrd_buffer;
+    uint8_t *hrd_fullness;
+    uint8_t range_mapy_flag;
+    uint8_t range_mapuv_flag;
+    uint8_t range_mapy;
+    uint8_t range_mapuv;
     //@}
 #endif
 } VC9Context;
@@ -461,6 +466,7 @@ static int decode_hrd(VC9Context *v, GetBitContext *gb)
 
     num = 1 + get_bits(gb, 5);
 
+    /*hrd rate*/
     if (v->hrd_rate || num != v->hrd_num_leaky_buckets)
     {
         av_freep(&v->hrd_rate);
@@ -468,13 +474,30 @@ static int decode_hrd(VC9Context *v, GetBitContext *gb)
     if (!v->hrd_rate) v->hrd_rate = av_malloc(num*sizeof(uint16_t));
     if (!v->hrd_rate) return -1;
 
+    /*hrd buffer*/
     if (v->hrd_buffer || num != v->hrd_num_leaky_buckets)
     {
         av_freep(&v->hrd_buffer);
     }
     if (!v->hrd_buffer) v->hrd_buffer = av_malloc(num*sizeof(uint16_t));
-    if (!v->hrd_buffer) return -1;
+    if (!v->hrd_buffer)
+    {
+        av_freep(&v->hrd_rate);
+        return -1;
+    }
 
+    /*hrd fullness*/
+    if (v->hrd_fullness || num != v->hrd_num_leaky_buckets)
+    {
+        av_freep(&v->hrd_buffer);
+    }
+    if (!v->hrd_fullness) v->hrd_fullness = av_malloc(num*sizeof(uint8_t));
+    if (!v->hrd_fullness)
+    {
+        av_freep(&v->hrd_rate);
+        av_freep(&v->hrd_buffer);
+        return -1;
+    }
     v->hrd_num_leaky_buckets = num;
 
     //exponent in base-2 for rate
@@ -664,6 +687,10 @@ static int decode_advanced_sequence_header(AVCodecContext *avctx, GetBitContext 
       if (decode_hrd(v, gb) < 0) return -1;
     }
 
+    /*reset scaling ranges, 6.2.2 & 6.2.3, p33*/
+    v->range_mapy_flag = 0;
+    v->range_mapuv_flag = 0;
+
     av_log(avctx, AV_LOG_DEBUG, "Advanced profile not supported yet\n");
     return -1;
 }
@@ -837,7 +864,7 @@ static int decode_sequence_header(AVCodecContext *avctx, GetBitContext *gb)
 static int advanced_entry_point_process(AVCodecContext *avctx, GetBitContext *gb)
 {
     VC9Context *v = avctx->priv_data;
-    int range_mapy_flag, range_mapuv_flag, i;
+    int i;
     if (v->profile != PROFILE_ADVANCED)
     {
         av_log(avctx, AV_LOG_ERROR,
@@ -848,20 +875,21 @@ static int advanced_entry_point_process(AVCodecContext *avctx, GetBitContext *gb
     {
         //Update buffer fullness
         av_log(avctx, AV_LOG_DEBUG, "Buffer fullness update\n");
+        assert(v->hrd_num_leaky_buckets > 0);
         for (i=0; i<v->hrd_num_leaky_buckets; i++)
-            skip_bits(gb, 8);
+            v->hrd_fullness[i] = get_bits(gb, 8);
     }
-    if ((range_mapy_flag = get_bits(gb, 1)))
+    if ((v->range_mapy_flag = get_bits(gb, 1)))
     {
         //RANGE_MAPY
         av_log(avctx, AV_LOG_DEBUG, "RANGE_MAPY\n");
-        skip_bits(gb, 3);
+        v->range_mapy = get_bits(gb, 3);
     }
-    if ((range_mapuv_flag = get_bits(gb, 1)))
+    if ((v->range_mapuv_flag = get_bits(gb, 1)))
     {
         //RANGE_MAPUV
         av_log(avctx, AV_LOG_DEBUG, "RANGE_MAPUV\n");
-        skip_bits(gb, 3);
+        v->range_mapuv = get_bits(gb, 3);
     }
     if (v->panscanflag)
     {
