@@ -2066,7 +2066,6 @@ static void render_fragments(Vp3DecodeContext *s,
 
     /* set up plane-specific parameters */
     if (plane == 0) {
-        dequantizer = s->intra_y_dequant;
         output_plane = s->current_frame.data[0];
         last_plane = s->last_frame.data[0];
         golden_plane = s->golden_frame.data[0];
@@ -2075,7 +2074,6 @@ static void render_fragments(Vp3DecodeContext *s,
         upper_motion_limit = 7 * s->current_frame.linesize[0];
         lower_motion_limit = height * s->current_frame.linesize[0] + width - 8;
     } else if (plane == 1) {
-        dequantizer = s->intra_c_dequant;
         output_plane = s->current_frame.data[1];
         last_plane = s->last_frame.data[1];
         golden_plane = s->golden_frame.data[1];
@@ -2084,7 +2082,6 @@ static void render_fragments(Vp3DecodeContext *s,
         upper_motion_limit = 7 * s->current_frame.linesize[1];
         lower_motion_limit = height * s->current_frame.linesize[1] + width - 8;
     } else {
-        dequantizer = s->intra_c_dequant;
         output_plane = s->current_frame.data[2];
         last_plane = s->last_frame.data[2];
         golden_plane = s->golden_frame.data[2];
@@ -2172,6 +2169,12 @@ av_log(s->avctx, AV_LOG_ERROR, " help! got beefy vector! (%X, %X)\n", motion_x, 
                             motion_source + stride + 1 + d, 
                             stride, 8);
                     }
+                    dequantizer = s->inter_dequant;
+                }else{
+                    if (plane == 0)
+                        dequantizer = s->intra_y_dequant;
+                    else
+                        dequantizer = s->intra_c_dequant;
                 }
 
                 /* dequantize the DCT coefficients */
