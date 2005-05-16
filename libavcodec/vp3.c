@@ -2269,7 +2269,9 @@ static void apply_loop_filter(Vp3DecodeContext *s)
     int fragment;
     int stride;
     unsigned char *plane_data;
-    int bounding_values[256];
+
+    int bounding_values_array[256];
+    int *bounding_values= bounding_values_array+127;
     int filter_limit;
 
     /* find the right loop limit value */
@@ -2277,10 +2279,10 @@ static void apply_loop_filter(Vp3DecodeContext *s)
         if (vp31_ac_scale_factor[x] >= s->quality_index)
             break;
     }
-    filter_limit = vp31_filter_limit_values[x];
+    filter_limit = vp31_filter_limit_values[s->quality_index];
 
     /* set up the bounding values */
-    memset(bounding_values, 0, 256 * sizeof(int));
+    memset(bounding_values_array, 0, 256 * sizeof(int));
     for (x = 0; x < filter_limit; x++) {
         bounding_values[-x - filter_limit] = -filter_limit + x;
         bounding_values[-x] = -x;
@@ -2321,7 +2323,7 @@ static void apply_loop_filter(Vp3DecodeContext *s)
                 if ((x > 0) &&
                     (s->all_fragments[fragment].coding_method != MODE_COPY)) {
                     horizontal_filter(
-                        plane_data + s->all_fragments[fragment].first_pixel, 
+                        plane_data + s->all_fragments[fragment].first_pixel - 7*stride, 
                         stride, bounding_values);
                 }
 
@@ -2329,7 +2331,7 @@ static void apply_loop_filter(Vp3DecodeContext *s)
                 if ((y > 0) &&
                     (s->all_fragments[fragment].coding_method != MODE_COPY)) {
                     vertical_filter(
-                        plane_data + s->all_fragments[fragment].first_pixel, 
+                        plane_data + s->all_fragments[fragment].first_pixel + stride, 
                         stride, bounding_values);
                 }
 
@@ -2340,7 +2342,7 @@ static void apply_loop_filter(Vp3DecodeContext *s)
                     (s->all_fragments[fragment].coding_method != MODE_COPY) &&
                     (s->all_fragments[fragment + 1].coding_method == MODE_COPY)) {
                     horizontal_filter(
-                        plane_data + s->all_fragments[fragment + 1].first_pixel, 
+                        plane_data + s->all_fragments[fragment + 1].first_pixel - 7*stride, 
                         stride, bounding_values);
                 }
 
@@ -2351,7 +2353,7 @@ static void apply_loop_filter(Vp3DecodeContext *s)
                     (s->all_fragments[fragment].coding_method != MODE_COPY) &&
                     (s->all_fragments[fragment + width].coding_method == MODE_COPY)) {
                     vertical_filter(
-                        plane_data + s->all_fragments[fragment + width].first_pixel, 
+                        plane_data + s->all_fragments[fragment + width].first_pixel + stride, 
                         stride, bounding_values);
                 }
 
@@ -2740,7 +2742,6 @@ if (!s->keyframe) {
 
     reverse_dc_prediction(s, 0, s->fragment_width, s->fragment_height);
     render_fragments(s, 0, s->width, s->height, 0);
-//    apply_loop_filter(s);
 
     if ((avctx->flags & CODEC_FLAG_GRAY) == 0) {
         reverse_dc_prediction(s, s->u_fragment_start,
@@ -2754,6 +2755,7 @@ if (!s->keyframe) {
         memset(s->current_frame.data[2], 0x80, s->width * s->height / 4);
     }
 
+    apply_loop_filter(s);
 #if KEYFRAMES_ONLY
 }
 #endif
