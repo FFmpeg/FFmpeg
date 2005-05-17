@@ -55,6 +55,9 @@ endif
 ifeq ($(CONFIG_FOURXM_DECODER),yes)
     OBJS+= 4xm.o
 endif
+ifeq ($(CONFIG_FRAPS_DECODER),yes)
+    OBJS+= fraps.o
+endif
 ifneq ($(CONFIG_H261_DECODER)$(CONFIG_H261_ENCODER),)
     OBJS+= h261.o
 endif

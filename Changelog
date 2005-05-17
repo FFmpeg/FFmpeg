@@ -15,6 +15,7 @@ version <next>
 - Winnov WNV1 video decoder
 - Autodesk Animator Studio Codec (AASC) decoder
 - Indeo 2 video decoder
+- Fraps FPS1 video decoder
 
 version 0.4.9-pre1:
 

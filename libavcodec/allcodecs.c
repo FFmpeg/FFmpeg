@@ -280,6 +280,9 @@ void avcodec_register_all(void)
 #ifdef CONFIG_AASC_DECODER
     register_avcodec(&aasc_decoder);
 #endif //CONFIG_AASC_DECODER
+#ifdef CONFIG_FRAPS_DECODER
+    register_avcodec(&fraps_decoder);
+#endif //CONFIG_FRAPS_DECODER
 #ifdef CONFIG_FAAD
 #ifdef CONFIG_AAC_DECODER
     register_avcodec(&aac_decoder);
