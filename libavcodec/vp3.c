@@ -15,17 +15,17 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * VP3 Video Decoder by Mike Melanson (melanson@pcisys.net)
- * For more information about the VP3 coding process, visit:
- *   http://www.pcisys.net/~melanson/codecs/
- *
- * Theora decoder by Alex Beregszaszi
- *
  */
 
 /**
  * @file vp3.c
  * On2 VP3 Video Decoder
+ *
+ * VP3 Video Decoder by Mike Melanson (mike at multimedia.cx)
+ * For more information about the VP3 coding process, visit:
+ *   http://multimedia.cx/
+ *
+ * Theora decoder by Alex Beregszaszi
  */
 
 #include <stdio.h>
@@ -270,6 +270,11 @@ typedef struct Vp3DecodeContext {
     VLC ac_vlc_2[16];
     VLC ac_vlc_3[16];
     VLC ac_vlc_4[16];
+
+    VLC superblock_run_length_vlc;
+    VLC fragment_run_length_vlc;
+    VLC mode_code_vlc;
+    VLC motion_vector_vlc;
 
     /* these arrays need to be on 16-byte boundaries since SSE2 operations
      * index into them */
@@ -1274,7 +1279,12 @@ static int unpack_superblocks(Vp3DecodeContext *s, GetBitContext *gb)
                      * that cares about the fragment coding runs */
                     if (current_run == 0) {
                         bit ^= 1;
+#if 1
+                        current_run = get_vlc2(gb, 
+                            s->fragment_run_length_vlc.table, 5, 2) + 1;
+#else
                         current_run = get_fragment_run_length(gb);
+#endif
                     }
 
                     if (bit) {
@@ -1404,7 +1414,14 @@ static int unpack_modes(Vp3DecodeContext *s, GetBitContext *gb)
                 if (scheme == 7)
                     coding_mode = get_bits(gb, 3);
                 else
+{
+#if 1
+                    coding_mode = ModeAlphabet[scheme]
+                        [get_vlc2(gb, s->mode_code_vlc.table, 3, 3)];
+#else
                     coding_mode = ModeAlphabet[scheme][get_mode_code(gb)];
+#endif
+}
 
                 s->macroblock_coding[current_macroblock] = coding_mode;
                 for (k = 0; k < 6; k++) {
@@ -1491,8 +1508,13 @@ static int unpack_vectors(Vp3DecodeContext *s, GetBitContext *gb)
                 case MODE_GOLDEN_MV:
                     /* all 6 fragments use the same motion vector */
                     if (coding_mode == 0) {
+#if 1
+                        motion_x[0] = motion_vector_table[get_vlc2(gb, s->motion_vector_vlc.table, 6, 2)];
+                        motion_y[0] = motion_vector_table[get_vlc2(gb, s->motion_vector_vlc.table, 6, 2)];
+#else
                         motion_x[0] = get_motion_vector_vlc(gb);
                         motion_y[0] = get_motion_vector_vlc(gb);
+#endif
                     } else {
                         motion_x[0] = get_motion_vector_fixed(gb);
                         motion_y[0] = get_motion_vector_fixed(gb);
@@ -1518,8 +1540,13 @@ static int unpack_vectors(Vp3DecodeContext *s, GetBitContext *gb)
                     motion_x[4] = motion_y[4] = 0;
                     for (k = 0; k < 4; k++) {
                         if (coding_mode == 0) {
+#if 1
+                            motion_x[0] = motion_vector_table[get_vlc2(gb, s->motion_vector_vlc.table, 6, 2)];
+                            motion_y[0] = motion_vector_table[get_vlc2(gb, s->motion_vector_vlc.table, 6, 2)];
+#else
                             motion_x[k] = get_motion_vector_vlc(gb);
                             motion_y[k] = get_motion_vector_vlc(gb);
+#endif
                         } else {
                             motion_x[k] = get_motion_vector_fixed(gb);
                             motion_y[k] = get_motion_vector_fixed(gb);
@@ -2496,13 +2523,8 @@ static int vp3_decode_init(AVCodecContext *avctx)
 	s->version = 1;
 
     s->avctx = avctx;
-#if 0
-    s->width = avctx->width;
-    s->height = avctx->height;
-#else
     s->width = (avctx->width + 15) & 0xFFFFFFF0;
     s->height = (avctx->height + 15) & 0xFFFFFFF0;
-#endif
     avctx->pix_fmt = PIX_FMT_YUV420P;
     avctx->has_b_frames = 0;
     if(avctx->idct_algo==FF_IDCT_AUTO)
@@ -2607,6 +2629,18 @@ static int vp3_decode_init(AVCodecContext *avctx)
             &ac_bias_3[i][0][1], 4, 2,
             &ac_bias_3[i][0][0], 4, 2, 0);
     }
+
+    init_vlc(&s->fragment_run_length_vlc, 5, 31,
+        &fragment_run_length_vlc_table[0][1], 4, 2,
+        &fragment_run_length_vlc_table[0][0], 4, 2, 0);
+
+    init_vlc(&s->mode_code_vlc, 3, 8,
+        &mode_code_vlc_table[0][1], 2, 1,
+        &mode_code_vlc_table[0][0], 2, 1, 0);
+
+    init_vlc(&s->motion_vector_vlc, 6, 63,
+        &motion_vector_vlc_table[0][1], 2, 1,
+        &motion_vector_vlc_table[0][0], 2, 1, 0);
 
     /* work out the block mapping tables */
     s->superblock_fragments = av_malloc(s->superblock_count * 16 * sizeof(int));
