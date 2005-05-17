@@ -3643,6 +3643,11 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
             c->idct_add= ff_jref_idct_add;
             c->idct    = j_rev_dct;
             c->idct_permutation_type= FF_LIBMPEG2_IDCT_PERM;
+        }else if(avctx->idct_algo==FF_IDCT_VP3){
+            c->idct_put= ff_vp3_idct_put_c;
+            c->idct_add= ff_vp3_idct_add_c;
+            c->idct    = ff_vp3_idct_c;
+            c->idct_permutation_type= FF_NO_IDCT_PERM;
         }else{ //accurate/default
             c->idct_put= simple_idct_put;
             c->idct_add= simple_idct_add;
@@ -3652,10 +3657,6 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     }
 
     c->h264_idct_add= ff_h264_idct_add_c;
-
-    /* VP3 DSP support */
-    c->vp3_dsp_init = vp3_dsp_init_c;
-    c->vp3_idct = vp3_idct_c;
 
     c->get_pixels = get_pixels_c;
     c->diff_pixels = diff_pixels_c;

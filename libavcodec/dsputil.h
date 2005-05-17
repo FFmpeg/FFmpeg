@@ -68,17 +68,9 @@ extern uint32_t squareTbl[512];
 extern uint8_t cropTbl[256 + 2 * MAX_NEG_CROP];
 
 /* VP3 DSP functions */
-void vp3_dsp_init_c(void);
-void vp3_idct_c(int16_t *input_data, int16_t *dequant_matrix,
-    int coeff_count, DCTELEM *output_data);
-
-void vp3_dsp_init_mmx(void);
-void vp3_idct_mmx(int16_t *input_data, int16_t *dequant_matrix,
-    int coeff_count, DCTELEM *output_data);
-
-void vp3_dsp_init_sse2(void);
-void vp3_idct_sse2(int16_t *input_data, int16_t *dequant_matrix,
-    int coeff_count, DCTELEM *output_data);
+void ff_vp3_idct_c(DCTELEM *block/* align 16*/);
+void ff_vp3_idct_put_c(uint8_t *dest/*align 8*/, int line_size, DCTELEM *block/*align 16*/);
+void ff_vp3_idct_add_c(uint8_t *dest/*align 8*/, int line_size, DCTELEM *block/*align 16*/);
 
 /* minimum alignment rules ;)
 if u notice errors in the align stuff, need more alignment for some asm code for some cpu

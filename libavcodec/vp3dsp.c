@@ -36,29 +36,17 @@
 #define xC6S2 25080
 #define xC7S1 12785
 
-void vp3_dsp_init_c(void)
+static always_inline void idct(uint8_t *dst, int stride, int16_t *input, int type)
 {
-    /* nop */
-}
+    int16_t *ip = input;
+    uint8_t *cm = cropTbl + MAX_NEG_CROP;
 
-void vp3_idct_c(int16_t *input_data, int16_t *dequant_matrix,
-    int coeff_count, int16_t *output_data)
-{
-    int32_t dequantized_data[64];
-    int32_t *ip = dequantized_data;
-    int16_t *op = output_data;
-
-    int32_t A_, B_, C_, D_, _Ad, _Bd, _Cd, _Dd, E_, F_, G_, H_;
-    int32_t _Ed, _Gd, _Add, _Bdd, _Fd, _Hd;
-    int32_t t1, t2;
+    int A_, B_, C_, D_, _Ad, _Bd, _Cd, _Dd, E_, F_, G_, H_;
+    int _Ed, _Gd, _Add, _Bdd, _Fd, _Hd;
+    int t1, t2;
 
     int i, j;
     
-    /* de-zigzag and dequantize */
-    for (i = 0; i < coeff_count; i++) {
-        dequantized_data[i] = dequant_matrix[i] * input_data[i];
-    }
-
     /* Inverse DCT on the rows now */
     for (i = 0; i < 8; i++) {
         /* Check for non-zero values */
@@ -131,28 +119,28 @@ void vp3_idct_c(int16_t *input_data, int16_t *dequant_matrix,
             _Hd = _Bd + H_;
 
             /*  Final sequence of operations over-write original inputs. */
-            ip[0] = (int16_t)((_Gd + _Cd )   >> 0);
-            ip[7] = (int16_t)((_Gd - _Cd )   >> 0);
+            ip[0] = _Gd + _Cd ;
+            ip[7] = _Gd - _Cd ;
 
-            ip[1] = (int16_t)((_Add + _Hd )  >> 0);
-            ip[2] = (int16_t)((_Add - _Hd )  >> 0);
+            ip[1] = _Add + _Hd;
+            ip[2] = _Add - _Hd;
 
-            ip[3] = (int16_t)((_Ed + _Dd )   >> 0);
-            ip[4] = (int16_t)((_Ed - _Dd )   >> 0);
+            ip[3] = _Ed + _Dd ;
+            ip[4] = _Ed - _Dd ;
 
-            ip[5] = (int16_t)((_Fd + _Bdd )  >> 0);
-            ip[6] = (int16_t)((_Fd - _Bdd )  >> 0);
+            ip[5] = _Fd + _Bdd;
+            ip[6] = _Fd - _Bdd;
 
         }
 
         ip += 8;            /* next row */
     }
-
-    ip = dequantized_data;
+    
+    ip = input;
 
     for ( i = 0; i < 8; i++) {
         /* Check for non-zero values (bitwise or faster than ||) */
-        if ( ip[0 * 8] | ip[1 * 8] | ip[2 * 8] | ip[3 * 8] |
+        if ( ip[1 * 8] | ip[2 * 8] | ip[3 * 8] |
              ip[4 * 8] | ip[5 * 8] | ip[6 * 8] | ip[7 * 8] ) {
 
             t1 = (int32_t)(xC1S7 * ip[1*8]);
@@ -222,37 +210,103 @@ void vp3_idct_c(int16_t *input_data, int16_t *dequant_matrix,
             _Fd = F_ - _Ad;
             _Hd = _Bd + H_;
 
+            if(type==1){  //HACK
+                _Gd += 16*128;
+                _Add+= 16*128;
+                _Ed += 16*128;
+                _Fd += 16*128;
+            }
             _Gd += IdctAdjustBeforeShift;
             _Add += IdctAdjustBeforeShift;
             _Ed += IdctAdjustBeforeShift;
             _Fd += IdctAdjustBeforeShift;
 
             /* Final sequence of operations over-write original inputs. */
-            op[0*8] = (int16_t)((_Gd + _Cd )   >> 4);
-            op[7*8] = (int16_t)((_Gd - _Cd )   >> 4);
-
-            op[1*8] = (int16_t)((_Add + _Hd )  >> 4);
-            op[2*8] = (int16_t)((_Add - _Hd )  >> 4);
-
-            op[3*8] = (int16_t)((_Ed + _Dd )   >> 4);
-            op[4*8] = (int16_t)((_Ed - _Dd )   >> 4);
-
-            op[5*8] = (int16_t)((_Fd + _Bdd )  >> 4);
-            op[6*8] = (int16_t)((_Fd - _Bdd )  >> 4);
+            if(type==0){
+                ip[0*8] = (_Gd + _Cd )  >> 4;
+                ip[7*8] = (_Gd - _Cd )  >> 4;
+    
+                ip[1*8] = (_Add + _Hd ) >> 4;
+                ip[2*8] = (_Add - _Hd ) >> 4;
+    
+                ip[3*8] = (_Ed + _Dd )  >> 4;
+                ip[4*8] = (_Ed - _Dd )  >> 4;
+    
+                ip[5*8] = (_Fd + _Bdd ) >> 4;
+                ip[6*8] = (_Fd - _Bdd ) >> 4;
+            }else if(type==1){
+                dst[0*stride] = cm[(_Gd + _Cd )  >> 4];
+                dst[7*stride] = cm[(_Gd - _Cd )  >> 4];
+    
+                dst[1*stride] = cm[(_Add + _Hd ) >> 4];
+                dst[2*stride] = cm[(_Add - _Hd ) >> 4];
+    
+                dst[3*stride] = cm[(_Ed + _Dd )  >> 4];
+                dst[4*stride] = cm[(_Ed - _Dd )  >> 4];
+    
+                dst[5*stride] = cm[(_Fd + _Bdd ) >> 4];
+                dst[6*stride] = cm[(_Fd - _Bdd ) >> 4];
+            }else{
+                dst[0*stride] = cm[dst[0*stride] + ((_Gd + _Cd )  >> 4)];
+                dst[7*stride] = cm[dst[7*stride] + ((_Gd - _Cd )  >> 4)];
+    
+                dst[1*stride] = cm[dst[1*stride] + ((_Add + _Hd ) >> 4)];
+                dst[2*stride] = cm[dst[2*stride] + ((_Add - _Hd ) >> 4)];
+    
+                dst[3*stride] = cm[dst[3*stride] + ((_Ed + _Dd )  >> 4)];
+                dst[4*stride] = cm[dst[4*stride] + ((_Ed - _Dd )  >> 4)];
+    
+                dst[5*stride] = cm[dst[5*stride] + ((_Fd + _Bdd ) >> 4)];
+                dst[6*stride] = cm[dst[6*stride] + ((_Fd - _Bdd ) >> 4)];
+            }
 
         } else {
-
-            op[0*8] = 0;
-            op[7*8] = 0;
-            op[1*8] = 0;
-            op[2*8] = 0;
-            op[3*8] = 0;
-            op[4*8] = 0;
-            op[5*8] = 0;
-            op[6*8] = 0;
+            if(type==0){
+                ip[0*8] = 
+                ip[1*8] = 
+                ip[2*8] = 
+                ip[3*8] = 
+                ip[4*8] = 
+                ip[5*8] = 
+                ip[6*8] =
+                ip[7*8] = ((xC4S4 * ip[0*8] + (IdctAdjustBeforeShift<<16))>>20);
+            }else if(type==1){
+                dst[0*stride]=
+                dst[1*stride]=
+                dst[2*stride]=
+                dst[3*stride]=
+                dst[4*stride]=
+                dst[5*stride]=
+                dst[6*stride]=
+                dst[7*stride]= 128 + ((xC4S4 * ip[0*8] + (IdctAdjustBeforeShift<<16))>>20);
+            }else{
+                if(ip[0*8]){
+                    int v= ((xC4S4 * ip[0*8] + (IdctAdjustBeforeShift<<16))>>20);
+                    dst[0*stride] = cm[dst[0*stride] + v];
+                    dst[1*stride] = cm[dst[1*stride] + v];
+                    dst[2*stride] = cm[dst[2*stride] + v];
+                    dst[3*stride] = cm[dst[3*stride] + v];
+                    dst[4*stride] = cm[dst[4*stride] + v];
+                    dst[5*stride] = cm[dst[5*stride] + v];
+                    dst[6*stride] = cm[dst[6*stride] + v];
+                    dst[7*stride] = cm[dst[7*stride] + v];
+                }
+            }
         }
 
         ip++;            /* next column */
-        op++;
+        dst++;
     }
+}
+
+void ff_vp3_idct_c(DCTELEM *block/* align 16*/){
+    idct(NULL, 0, block, 0);
+}
+    
+void ff_vp3_idct_put_c(uint8_t *dest/*align 8*/, int line_size, DCTELEM *block/*align 16*/){
+    idct(dest, line_size, block, 1);
+}
+
+void ff_vp3_idct_add_c(uint8_t *dest/*align 8*/, int line_size, DCTELEM *block/*align 16*/){
+    idct(dest, line_size, block, 2);
 }

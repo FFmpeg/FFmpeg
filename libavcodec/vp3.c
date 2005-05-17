@@ -2053,7 +2053,7 @@ static void render_fragments(Vp3DecodeContext *s,
                              int height,
                              int plane /* 0 = Y, 1 = U, 2 = V */) 
 {
-    int x, y;
+    int x, y, j;
     int m, n;
     int i = first_fragment;
     int16_t *dequantizer;
@@ -2188,21 +2188,32 @@ av_log(s->avctx, AV_LOG_ERROR, " help! got beefy vector! (%X, %X)\n", motion_x, 
                     i, s->all_fragments[i].coding_method, 
                     s->all_fragments[i].coeffs[0], dequantizer[0]);
 
-                /* invert DCT and place (or add) in final output */
-                s->dsp.vp3_idct(s->all_fragments[i].coeffs,
-                    dequantizer,
-                    s->all_fragments[i].coeff_count,
-                    output_samples);
-                memset(s->all_fragments[i].coeffs, 0, 64*sizeof(DCTELEM));
-                if (s->all_fragments[i].coding_method == MODE_INTRA) {
-                    s->dsp.put_signed_pixels_clamped(output_samples,
-                        output_plane + s->all_fragments[i].first_pixel,
-                        stride);
-                } else {
-                    s->dsp.add_pixels_clamped(output_samples,
-                        output_plane + s->all_fragments[i].first_pixel,
-                        stride);
+                if(s->avctx->idct_algo==FF_IDCT_VP3){
+                    for (j = 0; j < 64; j++) {
+                        s->all_fragments[i].coeffs[j] *= dequantizer[j];
+                    }
+                }else{
+                    for (j = 0; j < 64; j++) {
+                        s->all_fragments[i].coeffs[j]= (dequantizer[j] * s->all_fragments[i].coeffs[j] + 2) >> 2;
+                    }
                 }
+
+                /* invert DCT and place (or add) in final output */
+                
+                if (s->all_fragments[i].coding_method == MODE_INTRA) {
+                    if(s->avctx->idct_algo!=FF_IDCT_VP3)
+                        s->all_fragments[i].coeffs[0] += 128<<3;
+                    s->dsp.idct_put(
+                        output_plane + s->all_fragments[i].first_pixel,
+                        stride,
+                        s->all_fragments[i].coeffs);
+                } else {
+                    s->dsp.idct_add(
+                        output_plane + s->all_fragments[i].first_pixel,
+                        stride,
+                        s->all_fragments[i].coeffs);
+                }
+                memset(s->all_fragments[i].coeffs, 0, 64*sizeof(DCTELEM));
 
                 debug_idct("block after idct_%s():\n",
                     (s->all_fragments[i].coding_method == MODE_INTRA)?
@@ -2496,8 +2507,9 @@ static int vp3_decode_init(AVCodecContext *avctx)
 #endif
     avctx->pix_fmt = PIX_FMT_YUV420P;
     avctx->has_b_frames = 0;
+    if(avctx->idct_algo==FF_IDCT_AUTO)
+        avctx->idct_algo=FF_IDCT_VP3;
     dsputil_init(&s->dsp, avctx);
-    s->dsp.vp3_dsp_init();
 
     /* initialize to an impossible value which will force a recalculation
      * in the first frame decode */
