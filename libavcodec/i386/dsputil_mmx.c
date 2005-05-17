@@ -3115,6 +3115,10 @@ static void add_8x8basis_mmx(int16_t rem[64], int16_t basis[64], int scale){
 void ff_mmx_idct(DCTELEM *block);
 void ff_mmxext_idct(DCTELEM *block);
 
+void ff_vp3_idct_sse2(int16_t *input_data);
+void ff_vp3_idct_mmx(int16_t *data);
+void ff_vp3_dsp_init_mmx(void);
+
 /* XXX: those functions should be suppressed ASAP when all IDCTs are
    converted */
 static void ff_libmpeg2mmx_idct_put(uint8_t *dest, int line_size, DCTELEM *block)
@@ -3135,6 +3139,26 @@ static void ff_libmpeg2mmx2_idct_put(uint8_t *dest, int line_size, DCTELEM *bloc
 static void ff_libmpeg2mmx2_idct_add(uint8_t *dest, int line_size, DCTELEM *block)
 {
     ff_mmxext_idct (block);
+    add_pixels_clamped_mmx(block, dest, line_size);
+}
+static void ff_vp3_idct_put_sse2(uint8_t *dest, int line_size, DCTELEM *block)
+{
+    ff_vp3_idct_sse2(block);
+    put_signed_pixels_clamped_mmx(block, dest, line_size);
+}
+static void ff_vp3_idct_add_sse2(uint8_t *dest, int line_size, DCTELEM *block)
+{
+    ff_vp3_idct_sse2(block);
+    add_pixels_clamped_mmx(block, dest, line_size);
+}
+static void ff_vp3_idct_put_mmx(uint8_t *dest, int line_size, DCTELEM *block)
+{
+    ff_vp3_idct_mmx(block);
+    put_signed_pixels_clamped_mmx(block, dest, line_size);
+}
+static void ff_vp3_idct_add_mmx(uint8_t *dest, int line_size, DCTELEM *block)
+{
+    ff_vp3_idct_mmx(block);
     add_pixels_clamped_mmx(block, dest, line_size);
 }
     
@@ -3196,17 +3220,21 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
                     c->idct    = ff_mmx_idct;
                 }
                 c->idct_permutation_type= FF_LIBMPEG2_IDCT_PERM;
+            }else if(idct_algo==FF_IDCT_VP3){
+                if(mm_flags & MM_SSE2){
+                    c->idct_put= ff_vp3_idct_put_sse2;
+                    c->idct_add= ff_vp3_idct_add_sse2;
+                    c->idct    = ff_vp3_idct_sse2;
+                    c->idct_permutation_type= FF_TRANSPOSE_IDCT_PERM;
+                }else{
+                    ff_vp3_dsp_init_mmx();
+                    c->idct_put= ff_vp3_idct_put_mmx;
+                    c->idct_add= ff_vp3_idct_add_mmx;
+                    c->idct    = ff_vp3_idct_mmx;
+                    c->idct_permutation_type= FF_PARTTRANS_IDCT_PERM;
+                }
             }
         }
-
-        /* VP3 optimized DSP functions */
-//         if (mm_flags & MM_SSE2) {
-//             c->vp3_dsp_init = vp3_dsp_init_sse2;
-//             c->vp3_idct = vp3_idct_sse2;
-//         } else {
-//             c->vp3_dsp_init = vp3_dsp_init_mmx;
-//             c->vp3_idct = vp3_idct_mmx;
-//         }
 
 #ifdef CONFIG_ENCODERS
         c->get_pixels = get_pixels_mmx;

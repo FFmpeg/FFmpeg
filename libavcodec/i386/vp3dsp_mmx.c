@@ -257,17 +257,10 @@ static uint16_t idct_cosine_table[7] = {
     movq_r2m(r2, *I(2)); \
 }
 
-void vp3_dsp_init_mmx(void)
+void ff_vp3_dsp_init_mmx(void)
 {
     int j = 16;
     uint16_t *p;
-
-    do {
-        idct_constants[--j] = 0;
-    } while (j);
-
-    idct_constants[0]  = idct_constants[5] =
-    idct_constants[10] = idct_constants[15] = 65535;
 
     j = 1;
     do {
@@ -279,8 +272,7 @@ void vp3_dsp_init_mmx(void)
     idct_constants[46] = idct_constants[47] = IdctAdjustBeforeShift;
 }
 
-void vp3_idct_mmx(int16_t *input_data, int16_t *dequant_matrix,
-    int coeff_count, int16_t *output_data)
+void ff_vp3_idct_mmx(int16_t *output_data)
 {
     /* eax = quantized input
      * ebx = dequantizer matrix
@@ -291,246 +283,11 @@ void vp3_idct_mmx(int16_t *input_data, int16_t *dequant_matrix,
      * r0..r7 = mm0..mm7
      */
 
-#define M(x) (idct_constants + x * 4)
 #define C(x) (idct_constants + 16 + (x - 1) * 4)
 #define Eight (idct_constants + 44)
 
-    unsigned char *input_bytes = (unsigned char *)input_data;
-    unsigned char *dequant_matrix_bytes = (unsigned char *)dequant_matrix;
-    unsigned char *output_data_bytes = (unsigned char *)output_data;
-
-    movq_m2r(*(input_bytes), r0);
-    pmullw_m2r(*(dequant_matrix_bytes), r0);       /* r0 = 03 02 01 00 */
-    movq_m2r(*(input_bytes+16), r1);
-    pmullw_m2r(*(dequant_matrix_bytes+16), r1);    /* r1 = 13 12 11 10 */
-    movq_m2r(*M(0), r2);                           /* r2 = __ __ __ FF */
-    movq_r2r(r0, r3);                              /* r3 = 03 02 01 00 */
-    movq_m2r(*(input_bytes+8), r4);
-    psrlq_i2r(16, r0);                             /* r0 = __ 03 02 01 */
-    pmullw_m2r(*(dequant_matrix_bytes+8), r4);     /* r4 = 07 06 05 04 */
-    pand_r2r(r2, r3);                              /* r3 = __ __ __ 00 */
-    movq_r2r(r0, r5);                              /* r5 = __ 03 02 01 */
-    movq_r2r(r1, r6);                              /* r6 = 13 12 11 10 */
-    pand_r2r(r2, r5);                              /* r5 = __ __ __ 01 */
-    psllq_i2r(32, r6);                             /* r6 = 11 10 __ __ */
-    movq_m2r(*M(3), r7);                           /* r7 = FF __ __ __ */
-    pxor_r2r(r5, r0);                              /* r0 = __ 03 02 __ */
-    pand_r2r(r6, r7);                              /* r7 = 11 __ __ __ */
-    por_r2r(r3, r0);                               /* r0 = __ 03 02 00 */
-    pxor_r2r(r7, r6);                              /* r6 = __ 10 __ __ */
-    por_r2r(r7, r0);                               /* r0 = 11 03 02 00 = R0 */
-    movq_m2r(*M(3), r7);                           /* r7 = FF __ __ __ */
-    movq_r2r(r4, r3);                              /* r3 = 07 06 05 04 */
-    movq_r2m(r0, *(output_data_bytes));            /* write R0 = r0 */
-    pand_r2r(r2, r3);                              /* r3 = __ __ __ 04 */
-    movq_m2r(*(input_bytes+32), r0);
-    psllq_i2r(16, r3);                             /* r3 = __ __ 04 __ */
-    pmullw_m2r(*(dequant_matrix_bytes+32), r0);    /* r0 = 23 22 21 20 */
-    pand_r2r(r1, r7);                              /* r7 = 13 __ __ __ */
-    por_r2r(r3, r5);                               /* r5 = __ __ 04 01 */
-    por_r2r(r6, r7);                               /* r7 = 13 10 __ __ */
-    movq_m2r(*(input_bytes+24), r3);
-    por_r2r(r5, r7);                               /* r7 = 13 10 04 01 = R1 */
-    pmullw_m2r(*(dequant_matrix_bytes+24), r3);    /* r3 = 17 16 15 14 */
-    psrlq_i2r(16, r4);                             /* r4 = __ 07 06 05 */
-    movq_r2m(r7, *(output_data_bytes+16));         /* write R1 = r7 */
-    movq_r2r(r4, r5);                              /* r5 = __ 07 06 05 */
-    movq_r2r(r0, r7);                              /* r7 = 23 22 21 20 */
-    psrlq_i2r(16, r4);                             /* r4 = __ __ 07 06 */
-    psrlq_i2r(48, r7);                             /* r7 = __ __ __ 23 */
-    movq_r2r(r2, r6);                              /* r6 = __ __ __ FF */
-    pand_r2r(r2, r5);                              /* r5 = __ __ __ 05 */
-    pand_r2r(r4, r6);                              /* r6 = __ __ __ 06 */
-    movq_r2m(r7, *(output_data_bytes+80));      /* partial R9 = __ __ __ 23 */
-    pxor_r2r(r6, r4);                              /* r4 = __ __ 07 __ */
-    psrlq_i2r(32, r1);                             /* r1 = __ __ 13 12 */
-    por_r2r(r5, r4);                               /* r4 = __ __ 07 05 */
-    movq_m2r(*M(3), r7);                           /* r7 = FF __ __ __ */
-    pand_r2r(r2, r1);                              /* r1 = __ __ __ 12 */
-    movq_m2r(*(input_bytes+48), r5);
-    psllq_i2r(16, r0);                             /* r0 = 22 21 20 __ */
-    pmullw_m2r(*(dequant_matrix_bytes+48), r5);    /* r5 = 33 32 31 30 */
-    pand_r2r(r0, r7);                              /* r7 = 22 __ __ __ */
-    movq_r2m(r1, *(output_data_bytes+64));      /* partial R8 = __ __ __ 12 */
-    por_r2r(r4, r7);                               /* r7 = 22 __ 07 05 */
-    movq_r2r(r3, r4);                              /* r4 = 17 16 15 14 */
-    pand_r2r(r2, r3);                              /* r3 = __ __ __ 14 */
-    movq_m2r(*M(2), r1);                           /* r1 = __ FF __ __ */
-    psllq_i2r(32, r3);                             /* r3 = __ 14 __ __ */
-    por_r2r(r3, r7);                               /* r7 = 22 14 07 05 = R2 */
-    movq_r2r(r5, r3);                              /* r3 = 33 32 31 30 */
-    psllq_i2r(48, r3);                             /* r3 = 30 __ __ __ */
-    pand_r2r(r0, r1);                              /* r1 = __ 21 __ __ */
-    movq_r2m(r7, *(output_data_bytes+32));         /* write R2 = r7 */
-    por_r2r(r3, r6);                               /* r6 = 30 __ __ 06 */
-    movq_m2r(*M(1), r7);                           /* r7 = __ __ FF __ */
-    por_r2r(r1, r6);                               /* r6 = 30 21 __ 06 */
-    movq_m2r(*(input_bytes+56), r1);
-    pand_r2r(r4, r7);                              /* r7 = __ __ 15 __ */
-    pmullw_m2r(*(dequant_matrix_bytes+56), r1);    /* r1 = 37 36 35 34 */
-    por_r2r(r6, r7);                               /* r7 = 30 21 15 06 = R3 */
-    pand_m2r(*M(1), r0);                           /* r0 = __ __ 20 __ */
-    psrlq_i2r(32, r4);                             /* r4 = __ __ 17 16 */
-    movq_r2m(r7, *(output_data_bytes+48));         /* write R3 = r7 */
-    movq_r2r(r4, r6);                              /* r6 = __ __ 17 16 */
-    movq_m2r(*M(3), r7);                           /* r7 = FF __ __ __ */
-    pand_r2r(r2, r4);                              /* r4 = __ __ __ 16 */
-    movq_m2r(*M(1), r3);                           /* r3 = __ __ FF __ */
-    pand_r2r(r1, r7);                              /* r7 = 37 __ __ __ */
-    pand_r2r(r5, r3);                              /* r3 = __ __ 31 __ */
-    por_r2r(r4, r0);                               /* r0 = __ __ 20 16 */
-    psllq_i2r(16, r3);                             /* r3 = __ 31 __ __ */
-    por_r2r(r0, r7);                               /* r7 = 37 __ 20 16 */
-    movq_m2r(*M(2), r4);                           /* r4 = __ FF __ __ */
-    por_r2r(r3, r7);                               /* r7 = 37 31 20 16 = R4 */
-    movq_m2r(*(input_bytes+80), r0);
-    movq_r2r(r4, r3);                              /* r3 = __ __ FF __ */
-    pmullw_m2r(*(dequant_matrix_bytes+80), r0);    /* r0 = 53 52 51 50 */
-    pand_r2r(r5, r4);                              /* r4 = __ 32 __ __ */
-    movq_r2m(r7, *(output_data_bytes+8));          /* write R4 = r7 */
-    por_r2r(r4, r6);                               /* r6 = __ 32 17 16 */
-    movq_r2r(r3, r4);                              /* r4 = __ FF __ __ */
-    psrlq_i2r(16, r6);                             /* r6 = __ __ 32 17 */
-    movq_r2r(r0, r7);                              /* r7 = 53 52 51 50 */
-    pand_r2r(r1, r4);                              /* r4 = __ 36 __ __ */
-    psllq_i2r(48, r7);                             /* r7 = 50 __ __ __ */
-    por_r2r(r4, r6);                               /* r6 = __ 36 32 17 */
-    movq_m2r(*(input_bytes+88), r4);
-    por_r2r(r6, r7);                               /* r7 = 50 36 32 17 = R5 */
-    pmullw_m2r(*(dequant_matrix_bytes+88), r4);    /* r4 = 57 56 55 54 */
-    psrlq_i2r(16, r3);                             /* r3 = __ __ FF __ */
-    movq_r2m(r7, *(output_data_bytes+24));         /* write R5 = r7 */
-    pand_r2r(r1, r3);                              /* r3 = __ __ 35 __ */
-    psrlq_i2r(48, r5);                             /* r5 = __ __ __ 33 */
-    pand_r2r(r2, r1);                              /* r1 = __ __ __ 34 */
-    movq_m2r(*(input_bytes+104), r6);
-    por_r2r(r3, r5);                               /* r5 = __ __ 35 33 */
-    pmullw_m2r(*(dequant_matrix_bytes+104), r6);   /* r6 = 67 66 65 64 */
-    psrlq_i2r(16, r0);                             /* r0 = __ 53 52 51 */
-    movq_r2r(r4, r7);                              /* r7 = 57 56 55 54 */
-    movq_r2r(r2, r3);                              /* r3 = __ __ __ FF */
-    psllq_i2r(48, r7);                             /* r7 = 54 __ __ __ */
-    pand_r2r(r0, r3);                              /* r3 = __ __ __ 51 */
-    pxor_r2r(r3, r0);                              /* r0 = __ 53 52 __ */
-    psllq_i2r(32, r3);                             /* r3 = __ 51 __ __ */
-    por_r2r(r5, r7);                               /* r7 = 54 __ 35 33 */
-    movq_r2r(r6, r5);                              /* r5 = 67 66 65 64 */
-    pand_m2r(*M(1), r6);                           /* r6 = __ __ 65 __ */
-    por_r2r(r3, r7);                               /* r7 = 54 51 35 33 = R6 */
-    psllq_i2r(32, r6);                             /* r6 = 65 __ __ __ */
-    por_r2r(r1, r0);                               /* r0 = __ 53 52 34 */
-    movq_r2m(r7, *(output_data_bytes+40));         /* write R6 = r7 */
-    por_r2r(r6, r0);                               /* r0 = 65 53 52 34 = R7 */
-    movq_m2r(*(input_bytes+120), r7);
-    movq_r2r(r5, r6);                              /* r6 = 67 66 65 64 */
-    pmullw_m2r(*(dequant_matrix_bytes+120), r7);   /* r7 = 77 76 75 74 */
-    psrlq_i2r(32, r5);                             /* r5 = __ __ 67 66 */
-    pand_r2r(r2, r6);                              /* r6 = __ __ __ 64 */
-    movq_r2r(r5, r1);                              /* r1 = __ __ 67 66 */
-    movq_r2m(r0, *(output_data_bytes+56));         /* write R7 = r0 */
-    pand_r2r(r2, r1);                              /* r1 = __ __ __ 66 */
-    movq_m2r(*(input_bytes+112), r0);
-    movq_r2r(r7, r3);                              /* r3 = 77 76 75 74 */
-    pmullw_m2r(*(dequant_matrix_bytes+112), r0);   /* r0 = 73 72 71 70 */
-    psllq_i2r(16, r3);                             /* r3 = 76 75 74 __ */
-    pand_m2r(*M(3), r7);                           /* r7 = 77 __ __ __ */
-    pxor_r2r(r1, r5);                              /* r5 = __ __ 67 __ */
-    por_r2r(r5, r6);                               /* r6 = __ __ 67 64 */
-    movq_r2r(r3, r5);                              /* r5 = 76 75 74 __ */
-    pand_m2r(*M(3), r5);                           /* r5 = 76 __ __ __ */
-    por_r2r(r1, r7);                               /* r7 = 77 __ __ 66 */
-    movq_m2r(*(input_bytes+96), r1);
-    pxor_r2r(r5, r3);                              /* r3 = __ 75 74 __ */
-    pmullw_m2r(*(dequant_matrix_bytes+96), r1);    /* r1 = 63 62 61 60 */
-    por_r2r(r3, r7);                               /* r7 = 77 75 74 66 = R15 */
-    por_r2r(r5, r6);                               /* r6 = 76 __ 67 64 */
-    movq_r2r(r0, r5);                              /* r5 = 73 72 71 70 */
-    movq_r2m(r7, *(output_data_bytes+120));        /* store R15 = r7 */
-    psrlq_i2r(16, r5);                             /* r5 = __ 73 72 71 */
-    pand_m2r(*M(2), r5);                           /* r5 = __ 73 __ __ */
-    movq_r2r(r0, r7);                              /* r7 = 73 72 71 70 */
-    por_r2r(r5, r6);                               /* r6 = 76 73 67 64 = R14 */
-    pand_r2r(r2, r0);                              /* r0 = __ __ __ 70 */
-    pxor_r2r(r0, r7);                              /* r7 = 73 72 71 __ */
-    psllq_i2r(32, r0);                             /* r0 = __ 70 __ __ */
-    movq_r2m(r6, *(output_data_bytes+104));        /* write R14 = r6 */
-    psrlq_i2r(16, r4);                             /* r4 = __ 57 56 55 */
-    movq_m2r(*(input_bytes+72), r5);
-    psllq_i2r(16, r7);                             /* r7 = 72 71 __ __ */
-    pmullw_m2r(*(dequant_matrix_bytes+72), r5);    /* r5 = 47 46 45 44 */
-    movq_r2r(r7, r6);                              /* r6 = 72 71 __ __ */
-    movq_m2r(*M(2), r3);                           /* r3 = __ FF __ __ */
-    psllq_i2r(16, r6);                             /* r6 = 71 __ __ __ */
-    pand_m2r(*M(3), r7);                           /* r7 = 72 __ __ __ */
-    pand_r2r(r1, r3);                              /* r3 = __ 62 __ __ */
-    por_r2r(r0, r7);                               /* r7 = 72 70 __ __ */
-    movq_r2r(r1, r0);                              /* r0 = 63 62 61 60 */
-    pand_m2r(*M(3), r1);                           /* r1 = 63 __ __ __ */
-    por_r2r(r3, r6);                               /* r6 = 71 62 __ __ */
-    movq_r2r(r4, r3);                              /* r3 = __ 57 56 55 */
-    psrlq_i2r(32, r1);                             /* r1 = __ __ 63 __ */
-    pand_r2r(r2, r3);                              /* r3 = __ __ __ 55 */
-    por_r2r(r1, r7);                               /* r7 = 72 70 63 __ */
-    por_r2r(r3, r7);                               /* r7 = 72 70 63 55 = R13 */
-    movq_r2r(r4, r3);                              /* r3 = __ 57 56 55 */
-    pand_m2r(*M(1), r3);                           /* r3 = __ __ 56 __ */
-    movq_r2r(r5, r1);                              /* r1 = 47 46 45 44 */
-    movq_r2m(r7, *(output_data_bytes+88));         /* write R13 = r7 */
-    psrlq_i2r(48, r5);                             /* r5 = __ __ __ 47 */
-    movq_m2r(*(input_bytes+64), r7);
-    por_r2r(r3, r6);                               /* r6 = 71 62 56 __ */
-    pmullw_m2r(*(dequant_matrix_bytes+64), r7);    /* r7 = 43 42 41 40 */
-    por_r2r(r5, r6);                               /* r6 = 71 62 56 47 = R12 */
-    pand_m2r(*M(2), r4);                           /* r4 = __ 57 __ __ */
-    psllq_i2r(32, r0);                             /* r0 = 61 60 __ __ */
-    movq_r2m(r6, *(output_data_bytes+72));         /* write R12 = r6 */
-    movq_r2r(r0, r6);                              /* r6 = 61 60 __ __ */
-    pand_m2r(*M(3), r0);                           /* r0 = 61 __ __ __ */
-    psllq_i2r(16, r6);                             /* r6 = 60 __ __ __ */
-    movq_m2r(*(input_bytes+40), r5);
-    movq_r2r(r1, r3);                              /* r3 = 47 46 45 44 */
-    pmullw_m2r(*(dequant_matrix_bytes+40), r5);    /* r5 = 27 26 25 24 */
-    psrlq_i2r(16, r1);                             /* r1 = __ 47 46 45 */
-    pand_m2r(*M(1), r1);                           /* r1 = __ __ 46 __ */
-    por_r2r(r4, r0);                               /* r0 = 61 57 __ __ */
-    pand_r2r(r7, r2);                              /* r2 = __ __ __ 40 */
-    por_r2r(r1, r0);                               /* r0 = 61 57 46 __ */
-    por_r2r(r2, r0);                               /* r0 = 61 57 46 40 = R11 */
-    psllq_i2r(16, r3);                             /* r3 = 46 45 44 __ */
-    movq_r2r(r3, r4);                              /* r4 = 46 45 44 __ */
-    movq_r2r(r5, r2);                              /* r2 = 27 26 25 24 */
-    movq_r2m(r0, *(output_data_bytes+112));        /* write R11 = r0 */
-    psrlq_i2r(48, r2);                             /* r2 = __ __ __ 27 */
-    pand_m2r(*M(2), r4);                           /* r4 = __ 45 __ __ */
-    por_r2r(r2, r6);                               /* r6 = 60 __ __ 27 */
-    movq_m2r(*M(1), r2);                           /* r2 = __ __ FF __ */
-    por_r2r(r4, r6);                               /* r6 = 60 45 __ 27 */
-    pand_r2r(r7, r2);                              /* r2 = __ __ 41 __ */
-    psllq_i2r(32, r3);                             /* r3 = 44 __ __ __ */
-    por_m2r(*(output_data_bytes+80), r3);          /* r3 = 44 __ __ 23 */
-    por_r2r(r2, r6);                               /* r6 = 60 45 41 27 = R10 */
-    movq_m2r(*M(3), r2);                           /* r2 = FF __ __ __ */
-    psllq_i2r(16, r5);                             /* r5 = 26 25 24 __ */
-    movq_r2m(r6, *(output_data_bytes+96));         /* store R10 = r6 */
-    pand_r2r(r5, r2);                              /* r2 = 26 __ __ __ */
-    movq_m2r(*M(2), r6);                           /* r6 = __ FF __ __ */
-    pxor_r2r(r2, r5);                              /* r5 = __ 25 24 __ */
-    pand_r2r(r7, r6);                              /* r6 = __ 42 __ __ */
-    psrlq_i2r(32, r2);                             /* r2 = __ __ 26 __ */
-    pand_m2r(*M(3), r7);                           /* r7 = 43 __ __ __ */
-    por_r2r(r2, r3);                               /* r3 = 44 __ 26 23 */
-    por_m2r(*(output_data_bytes+64), r7);          /* r7 = 43 __ __ 12 */
-    por_r2r(r3, r6);                               /* r6 = 44 42 26 23 = R9 */
-    por_r2r(r5, r7);                               /* r7 = 43 25 24 12 = R8 */
-    movq_r2m(r6, *(output_data_bytes+80));         /* store R9 = r6 */
-    movq_r2m(r7, *(output_data_bytes+64));         /* store R8 = r7 */
-
-
-#undef M
-
     /* at this point, function has completed dequantization + dezigzag +
      * partial transposition; now do the idct itself */
-
 #define I(K) (output_data + K * 8)
 #define J(K) (output_data + ((K - 4) * 8) + 4)
 

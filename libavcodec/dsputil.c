@@ -3885,6 +3885,10 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
         for(i=0; i<64; i++)
             c->idct_permutation[i]= ((i&7)<<3) | (i>>3);
         break;
+    case FF_PARTTRANS_IDCT_PERM:
+        for(i=0; i<64; i++)
+            c->idct_permutation[i]= (i&0x24) | ((i&3)<<3) | ((i>>3)&3);
+        break;
     default:
         av_log(avctx, AV_LOG_ERROR, "Internal error, IDCT permutation not set\n");
     }
