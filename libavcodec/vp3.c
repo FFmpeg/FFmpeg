@@ -135,7 +135,7 @@ static inline void debug_idct(const char *format, ...) { }
 #endif
 
 typedef struct Vp3Fragment {
-    DCTELEM coeffs[64];
+    DCTELEM *coeffs;
     int coding_method;
     int coeff_count;
     int last_coeff;
@@ -246,6 +246,7 @@ typedef struct Vp3DecodeContext {
     int fragment_height;
 
     Vp3Fragment *all_fragments;
+    DCTELEM *coeffs;
     int u_fragment_start;
     int v_fragment_start;
     
@@ -825,11 +826,12 @@ static void unpack_token(GetBitContext *gb, int token, int *zero_run,
 static void init_frame(Vp3DecodeContext *s, GetBitContext *gb)
 {
     int i;
+    static const DCTELEM zero_block[64];
 
     /* zero out all of the fragment information */
     s->coded_fragment_list_index = 0;
     for (i = 0; i < s->fragment_count; i++) {
-        memset(s->all_fragments[i].coeffs, 0, 64 * sizeof(DCTELEM));
+        s->all_fragments[i].coeffs = zero_block;
         s->all_fragments[i].coeff_count = 0;
         s->all_fragments[i].last_coeff = 0;
 s->all_fragments[i].motion_x = 0xbeef;
@@ -1278,6 +1280,7 @@ static int unpack_superblocks(Vp3DecodeContext *s, GetBitContext *gb)
                          * the next phase */
                         s->all_fragments[current_fragment].coding_method = 
                             MODE_INTER_NO_MV;
+                        s->all_fragments[current_fragment].coeffs= s->coeffs + 64*s->coded_fragment_list_index;
                         s->coded_fragment_list[s->coded_fragment_list_index] = 
                             current_fragment;
                         if ((current_fragment >= s->u_fragment_start) &&
@@ -1307,6 +1310,7 @@ static int unpack_superblocks(Vp3DecodeContext *s, GetBitContext *gb)
                      * coding will be determined in next step */
                     s->all_fragments[current_fragment].coding_method = 
                         MODE_INTER_NO_MV;
+                    s->all_fragments[current_fragment].coeffs= s->coeffs + 64*s->coded_fragment_list_index;
                     s->coded_fragment_list[s->coded_fragment_list_index] = 
                         current_fragment;
                     if ((current_fragment >= s->u_fragment_start) &&
@@ -2187,6 +2191,7 @@ av_log(s->avctx, AV_LOG_ERROR, " help! got beefy vector! (%X, %X)\n", motion_x, 
                     dequantizer,
                     s->all_fragments[i].coeff_count,
                     output_samples);
+                memset(s->all_fragments[i].coeffs, 0, 64*sizeof(DCTELEM));
                 if (s->all_fragments[i].coding_method == MODE_INTRA) {
                     s->dsp.put_signed_pixels_clamped(output_samples,
                         output_plane + s->all_fragments[i].first_pixel,
@@ -2542,6 +2547,7 @@ static int vp3_decode_init(AVCodecContext *avctx)
         s->v_fragment_start);
 
     s->all_fragments = av_malloc(s->fragment_count * sizeof(Vp3Fragment));
+    s->coeffs = av_malloc(s->fragment_count * sizeof(DCTELEM) * 64);
     s->coded_fragment_list = av_malloc(s->fragment_count * sizeof(int));
     s->pixel_addresses_inited = 0;
 
@@ -2809,6 +2815,7 @@ static int vp3_decode_end(AVCodecContext *avctx)
     Vp3DecodeContext *s = avctx->priv_data;
 
     av_free(s->all_fragments);
+    av_free(s->coeffs);
     av_free(s->coded_fragment_list);
     av_free(s->superblock_fragments);
     av_free(s->superblock_macroblocks);
