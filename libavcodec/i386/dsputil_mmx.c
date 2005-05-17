@@ -3200,13 +3200,13 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
         }
 
         /* VP3 optimized DSP functions */
-        if (mm_flags & MM_SSE2) {
-            c->vp3_dsp_init = vp3_dsp_init_sse2;
-            c->vp3_idct = vp3_idct_sse2;
-        } else {
-            c->vp3_dsp_init = vp3_dsp_init_mmx;
-            c->vp3_idct = vp3_idct_mmx;
-        }
+//         if (mm_flags & MM_SSE2) {
+//             c->vp3_dsp_init = vp3_dsp_init_sse2;
+//             c->vp3_idct = vp3_idct_sse2;
+//         } else {
+//             c->vp3_dsp_init = vp3_dsp_init_mmx;
+//             c->vp3_idct = vp3_idct_mmx;
+//         }
 
 #ifdef CONFIG_ENCODERS
         c->get_pixels = get_pixels_mmx;
