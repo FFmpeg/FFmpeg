@@ -32,7 +32,7 @@
  
 #include "avcodec.h"
 
-#define FPS_TAG MKTAG('F', 'P', 'S', '1')
+#define FPS_TAG MKTAG('F', 'P', 'S', 'x')
 
 /**
  * local variable storage
