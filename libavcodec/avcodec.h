@@ -2018,6 +2018,7 @@ extern AVCodec aasc_decoder;
 extern AVCodec alac_decoder;
 extern AVCodec ws_snd1_decoder;
 extern AVCodec indeo2_decoder;
+extern AVCodec vorbis_decoder;
 
 /* pcm codecs */
 #define PCM_CODEC(id, name) \

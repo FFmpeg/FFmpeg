@@ -55,7 +55,7 @@ void avcodec_register_all(void)
 #ifdef CONFIG_OGGVORBIS_ENCODER
     register_avcodec(&oggvorbis_encoder);
 #endif //CONFIG_OGGVORBIS_ENCODER
-#ifdef CONFIG_OGGVORBIS_DECODER
+#if (defined CONFIG_OGGVORBIS_DECODER && !defined CONFIG_VORBIS_DECODER)
     register_avcodec(&oggvorbis_decoder);
 #endif //CONFIG_OGGVORBIS_DECODER
 #endif
@@ -476,6 +476,9 @@ void avcodec_register_all(void)
 #ifdef CONFIG_WS_SND1_DECODER
     register_avcodec(&ws_snd1_decoder);
 #endif //CONFIG_WS_SND1_DECODER
+#ifdef CONFIG_VORBIS_DECODER
+    register_avcodec(&vorbis_decoder);
+#endif
 #endif /* CONFIG_DECODERS */
 
 #ifdef AMR_NB

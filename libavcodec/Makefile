@@ -151,6 +151,9 @@ endif
 ifneq ($(CONFIG_VMDVIDEO_DECODER)$(CONFIG_VMDAUDIO_DECODER),)
     OBJS+= vmdav.o
 endif
+ifeq ($(CONFIG_VORBIS_DECODER),yes)
+    OBJS+= vorbis.o
+endif
 ifneq ($(CONFIG_VP3_DECODER)$(CONFIG_THEORA_DECODER),)
     OBJS+= vp3.o
 endif
