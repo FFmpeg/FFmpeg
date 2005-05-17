@@ -889,7 +889,6 @@ static void init_dequantizer(Vp3DecodeContext *s)
     for (i = 1; i < 64; i++) {
         int k= s->scantable.scantable[i];
         j = s->scantable.permutated[i];
-        
 
         s->intra_y_dequant[j] = s->coded_intra_y_dequant[k] * ac_scale_factor / 100;
         if (s->intra_y_dequant[j] < MIN_DEQUANT_VAL)
@@ -2613,10 +2612,6 @@ static int vp3_decode_init(AVCodecContext *avctx)
             &ac_bias_3[i][0][1], 4, 2,
             &ac_bias_3[i][0][0], 4, 2, 0);
     }
-
-    /* build quantization zigzag table */
-    for (i = 0; i < 64; i++)
-        zigzag_index[dezigzag_index[i]] = i;
 
     /* work out the block mapping tables */
     s->superblock_fragments = av_malloc(s->superblock_count * 16 * sizeof(int));
