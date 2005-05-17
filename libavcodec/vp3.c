@@ -886,7 +886,7 @@ static void init_dequantizer(Vp3DecodeContext *s)
      * the dequantization phase */
     for (i = 1; i < 64; i++) {
 
-        j = zigzag_index[i];
+        j = i;
 
         s->intra_y_dequant[j] = s->coded_intra_y_dequant[i] * ac_scale_factor / 100;
         if (s->intra_y_dequant[j] < MIN_DEQUANT_VAL)
@@ -1659,7 +1659,7 @@ static int unpack_vlcs(Vp3DecodeContext *s, GetBitContext *gb,
         if (!eob_run) {
             fragment->coeff_count += zero_run;
             if (fragment->coeff_count < 64)
-                fragment->coeffs[fragment->coeff_count++] = coeff;
+                fragment->coeffs[dezigzag_index[fragment->coeff_count++]] = coeff;
             debug_vlc(" fragment %d coeff = %d\n",
                 s->coded_fragment_list[i], fragment->coeffs[coeff_index]);
         } else {

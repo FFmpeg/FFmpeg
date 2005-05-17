@@ -53,11 +53,10 @@ void vp3_idct_c(int16_t *input_data, int16_t *dequant_matrix,
     int32_t t1, t2;
 
     int i, j;
-
+    
     /* de-zigzag and dequantize */
     for (i = 0; i < coeff_count; i++) {
-        j = dezigzag_index[i];
-        dequantized_data[j] = dequant_matrix[i] * input_data[i];
+        dequantized_data[i] = dequant_matrix[i] * input_data[i];
     }
 
     /* Inverse DCT on the rows now */
