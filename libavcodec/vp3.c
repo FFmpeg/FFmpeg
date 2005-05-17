@@ -2248,15 +2248,13 @@ av_log(s->avctx, AV_LOG_ERROR, " help! got beefy vector! (%X, %X)\n", motion_x, 
 static void horizontal_filter(unsigned char *first_pixel, int stride,
     int *bounding_values)
 {
-    int i;
+    unsigned char *end;
     int filter_value;
 
-    for (i = 0; i < 8; i++, first_pixel += stride) {
+    for (end= first_pixel + 8*stride; first_pixel < end; first_pixel += stride) {
         filter_value = 
-            (first_pixel[-2] * 1) - 
-            (first_pixel[-1] * 3) +
-            (first_pixel[ 0] * 3) -
-            (first_pixel[ 1] * 1);
+            (first_pixel[-2] - first_pixel[ 1])
+         +3*(first_pixel[ 0] - first_pixel[-1]);
         filter_value = bounding_values[(filter_value + 4) >> 3];
         first_pixel[-1] = clip_uint8(first_pixel[-1] + filter_value);
         first_pixel[ 0] = clip_uint8(first_pixel[ 0] - filter_value);
@@ -2266,17 +2264,16 @@ static void horizontal_filter(unsigned char *first_pixel, int stride,
 static void vertical_filter(unsigned char *first_pixel, int stride,
     int *bounding_values)
 {
-    int i;
+    unsigned char *end;
     int filter_value;
+    const int nstride= -stride;
 
-    for (i = 0; i < 8; i++, first_pixel++) {
+    for (end= first_pixel + 8; first_pixel < end; first_pixel++) {
         filter_value = 
-            (first_pixel[-(2 * stride)] * 1) - 
-            (first_pixel[-(1 * stride)] * 3) +
-            (first_pixel[ (0         )] * 3) -
-            (first_pixel[ (1 * stride)] * 1);
+            (first_pixel[2 * nstride] - first_pixel[ stride])
+         +3*(first_pixel[0          ] - first_pixel[nstride]);
         filter_value = bounding_values[(filter_value + 4) >> 3];
-        first_pixel[-(1 * stride)] = clip_uint8(first_pixel[-(1 * stride)] + filter_value);
+        first_pixel[nstride] = clip_uint8(first_pixel[nstride] + filter_value);
         first_pixel[0] = clip_uint8(first_pixel[0] - filter_value);
     }
 }
