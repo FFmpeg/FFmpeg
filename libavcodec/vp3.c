@@ -2245,8 +2245,6 @@ av_log(s->avctx, AV_LOG_ERROR, " help! got beefy vector! (%X, %X)\n", motion_x, 
     emms_c();
 }
 
-#define SATURATE_U8(x) ((x) < 0) ? 0 : ((x) > 255) ? 255 : x
-
 static void horizontal_filter(unsigned char *first_pixel, int stride,
     int *bounding_values)
 {
@@ -2260,8 +2258,8 @@ static void horizontal_filter(unsigned char *first_pixel, int stride,
             (first_pixel[ 0] * 3) -
             (first_pixel[ 1] * 1);
         filter_value = bounding_values[(filter_value + 4) >> 3];
-        first_pixel[-1] = SATURATE_U8(first_pixel[-1] + filter_value);
-        first_pixel[ 0] = SATURATE_U8(first_pixel[ 0] - filter_value);
+        first_pixel[-1] = clip_uint8(first_pixel[-1] + filter_value);
+        first_pixel[ 0] = clip_uint8(first_pixel[ 0] - filter_value);
     }
 }
 
@@ -2278,8 +2276,8 @@ static void vertical_filter(unsigned char *first_pixel, int stride,
             (first_pixel[ (0         )] * 3) -
             (first_pixel[ (1 * stride)] * 1);
         filter_value = bounding_values[(filter_value + 4) >> 3];
-        first_pixel[-(1 * stride)] = SATURATE_U8(first_pixel[-(1 * stride)] + filter_value);
-        first_pixel[0] = SATURATE_U8(first_pixel[0] - filter_value);
+        first_pixel[-(1 * stride)] = clip_uint8(first_pixel[-(1 * stride)] + filter_value);
+        first_pixel[0] = clip_uint8(first_pixel[0] - filter_value);
     }
 }
 
