@@ -250,6 +250,8 @@ typedef struct Vp3DecodeContext {
     int u_fragment_start;
     int v_fragment_start;
     
+    ScanTable scantable;
+    
     /* tables */
     uint16_t coded_dc_scale_factor[64];
     uint32_t coded_ac_scale_factor[64];
@@ -885,20 +887,21 @@ static void init_dequantizer(Vp3DecodeContext *s)
     /* scale AC quantizers, zigzag at the same time in preparation for
      * the dequantization phase */
     for (i = 1; i < 64; i++) {
+        int k= s->scantable.scantable[i];
+        j = s->scantable.permutated[i];
+        
 
-        j = i;
-
-        s->intra_y_dequant[j] = s->coded_intra_y_dequant[i] * ac_scale_factor / 100;
+        s->intra_y_dequant[j] = s->coded_intra_y_dequant[k] * ac_scale_factor / 100;
         if (s->intra_y_dequant[j] < MIN_DEQUANT_VAL)
             s->intra_y_dequant[j] = MIN_DEQUANT_VAL;
         s->intra_y_dequant[j] *= SCALER;
 
-        s->intra_c_dequant[j] = s->coded_intra_c_dequant[i] * ac_scale_factor / 100;
+        s->intra_c_dequant[j] = s->coded_intra_c_dequant[k] * ac_scale_factor / 100;
         if (s->intra_c_dequant[j] < MIN_DEQUANT_VAL)
             s->intra_c_dequant[j] = MIN_DEQUANT_VAL;
         s->intra_c_dequant[j] *= SCALER;
 
-        s->inter_dequant[j] = s->coded_inter_dequant[i] * ac_scale_factor / 100;
+        s->inter_dequant[j] = s->coded_inter_dequant[k] * ac_scale_factor / 100;
         if (s->inter_dequant[j] < MIN_DEQUANT_VAL * 2)
             s->inter_dequant[j] = MIN_DEQUANT_VAL * 2;
         s->inter_dequant[j] *= SCALER;
@@ -1633,6 +1636,7 @@ static int unpack_vlcs(Vp3DecodeContext *s, GetBitContext *gb,
     int zero_run;
     DCTELEM coeff;
     Vp3Fragment *fragment;
+    uint8_t *perm= s->scantable.permutated;
 
     if ((first_fragment >= s->fragment_count) ||
         (last_fragment >= s->fragment_count)) {
@@ -1659,7 +1663,7 @@ static int unpack_vlcs(Vp3DecodeContext *s, GetBitContext *gb,
         if (!eob_run) {
             fragment->coeff_count += zero_run;
             if (fragment->coeff_count < 64)
-                fragment->coeffs[dezigzag_index[fragment->coeff_count++]] = coeff;
+                fragment->coeffs[perm[fragment->coeff_count++]] = coeff;
             debug_vlc(" fragment %d coeff = %d\n",
                 s->coded_fragment_list[i], fragment->coeffs[coeff_index]);
         } else {
@@ -2510,6 +2514,8 @@ static int vp3_decode_init(AVCodecContext *avctx)
     if(avctx->idct_algo==FF_IDCT_AUTO)
         avctx->idct_algo=FF_IDCT_VP3;
     dsputil_init(&s->dsp, avctx);
+    
+    ff_init_scantable(s->dsp.idct_permutation, &s->scantable, ff_zigzag_direct);
 
     /* initialize to an impossible value which will force a recalculation
      * in the first frame decode */
