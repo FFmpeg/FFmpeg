@@ -833,7 +833,7 @@ static void init_frame(Vp3DecodeContext *s, GetBitContext *gb)
     for (i = 0; i < s->fragment_count; i++) {
         s->all_fragments[i].coeffs = zero_block;
         s->all_fragments[i].coeff_count = 0;
-        s->all_fragments[i].last_coeff = 0;
+        s->all_fragments[i].last_coeff = -1;
 s->all_fragments[i].motion_x = 0xbeef;
 s->all_fragments[i].motion_y = 0xbeef;
     }
@@ -2036,6 +2036,8 @@ static void reverse_dc_prediction(Vp3DecodeContext *s,
 
                 /* save the DC */
                 last_dc[current_frame_type] = s->all_fragments[i].coeffs[0];
+                if(s->all_fragments[i].coeffs[0] && s->all_fragments[i].last_coeff<0)
+                    s->all_fragments[i].last_coeff= 0;
             }
         }
     }
