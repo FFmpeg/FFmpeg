@@ -136,16 +136,16 @@ static inline void debug_idct(const char *format, ...) { }
 
 typedef struct Vp3Fragment {
     DCTELEM *coeffs;
-    int coding_method;
-    int coeff_count;
-    int last_coeff;
-    int motion_x;
-    int motion_y;
     /* address of first pixel taking into account which plane the fragment
      * lives on as well as the plane stride */
     int first_pixel;
     /* this is the macroblock that the fragment belongs to */
-    int macroblock;
+    uint16_t macroblock;
+    uint8_t coding_method;
+    uint8_t coeff_count;
+    int8_t last_coeff;
+    int8_t motion_x;
+    int8_t motion_y;
 } Vp3Fragment;
 
 #define SB_NOT_CODED        0
