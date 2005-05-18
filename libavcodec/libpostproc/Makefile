@@ -5,7 +5,8 @@ VPATH=$(SRC_PATH)/libavcodec/libpostproc
 
 ifeq ($(SHARED_PP),yes)
 SPPLIB = $(SLIBPREF)postproc$(SLIBSUF)
-SPPVERSION = 0.0.1
+SPPMAJOR = 0
+SPPVERSION = $(SPPMAJOR).0.1
 endif
 PPLIB = $(LIBPREF)postproc$(LIBSUF)
 
@@ -40,7 +41,7 @@ postprocess_pic.o: postprocess.c
 	$(CC) -c $(CFLAGS) -fomit-frame-pointer -fPIC -DPIC -I.. -I../.. -o $@ $<
 
 $(SPPLIB): $(SPPOBJS)
-	$(CC) -shared -Wl,-soname,$(SPPLIB).0 \
+	$(CC) -shared -Wl,-soname,$(SPPLIB).$(SPPMAJOR) \
 	-o $(SPPLIB) $(SPPOBJS)
 endif
 
@@ -57,11 +58,12 @@ else
 	install -d $(libdir)
 	install $(INSTALLSTRIP) -m 755 $(SPPLIB) $(libdir)/$(SPPLIB).$(SPPVERSION)
 	ln -sf $(SPPLIB).$(SPPVERSION) $(libdir)/$(SPPLIB)
+	ln -sf $(SPPLIB).$(SPPVERSION) $(libdir)/$(SPPLIB).$(SPPMAJOR)
 	ldconfig || true
 endif
 endif
 	mkdir -p $(prefix)/include/postproc
-	install -m 644 postprocess.h $(prefix)/include/postproc/postprocess.h
+	install -m 644 $(SRC_PATH)/libavcodec/libpostproc/postprocess.h $(prefix)/include/postproc/postprocess.h
 
 
 #

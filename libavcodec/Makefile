@@ -267,7 +267,7 @@ endif
 
 ifeq ($(CONFIG_PP),yes)
 ifeq ($(SHARED_PP),yes)
-EXTRALIBS += -L$(VPATH)/libpostproc -lpostproc$(BUILDSUF)
+EXTRALIBS += -Llibpostproc -lpostproc$(BUILDSUF)
 else
 # LIBS += libpostproc/libpostproc.a ... should be fixed
 OBJS += libpostproc/postprocess.o
