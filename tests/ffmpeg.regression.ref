@@ -11,15 +11,15 @@ stddev:  7.69 PSNR:30.40 bytes:7602176
 746381 ./data/a-mpeg2.mpg
 c7b9a71245912671889849ed560b67d3 *./data/out.yuv
 stddev:  7.69 PSNR:30.40 bytes:7602176
-2a77ebec455e17c4ab897044c9b3040a *./data/a-mpeg2i.mpg
+59d4471ff2a9749824b4d813900afdfc *./data/a-mpeg2i.mpg
 754366 ./data/a-mpeg2i.mpg
 ddf889858529d09c8fe31c701deacd16 *./data/out.yuv
 stddev:  7.71 PSNR:30.37 bytes:7602176
-d3d2fd4dd186d8c9de7666398d5af13a *./data/a-mpeg2thread.mpg
+781531fff6e20c986a3bcc189fc34e98 *./data/a-mpeg2thread.mpg
 816506 ./data/a-mpeg2thread.mpg
 9db3aca554bb8ee337a109a3b8629575 *./data/out.yuv
 stddev:  7.64 PSNR:30.45 bytes:7602176
-052bcdb13286f4f7137a50c4db032104 *./data/a-mpeg2reuse.mpg
+6e51bb9da148f9128fde429089349c43 *./data/a-mpeg2reuse.mpg
 2115703 ./data/a-mpeg2reuse.mpg
 526e6e6818296a1b63d91fc165e0bda8 *./data/out.yuv
 stddev:  7.68 PSNR:30.41 bytes:7602176
