@@ -72,6 +72,27 @@ static const uint32_t vp31_filter_limit_values[64] =
     0,  0,  0,  0,  0,  0,  0,  0
 };
 
+static const uint16_t superblock_run_length_vlc_table[34][2] = {
+    { 0, 1 },
+
+    { 4, 3 },    { 5, 3 },
+
+    { 0xC, 4 },  { 0xD, 4 },
+
+    { 0x38, 6 },    { 0x39, 6 },    { 0x3A, 6 },    { 0x3B, 6 },
+
+    { 0xF0, 8 },    { 0xF1, 8 },    { 0xF2, 8 },    { 0xF3, 8 },
+    { 0xF4, 8 },    { 0xF5, 8 },    { 0xF6, 8 },    { 0xF7, 8 },
+
+    { 0x3E0, 10 },    { 0x3E1, 10 },    { 0x3E2, 10 },    { 0x3E3, 10 },
+    { 0x3E4, 10 },    { 0x3E5, 10 },    { 0x3E6, 10 },    { 0x3E7, 10 },
+    { 0x3E8, 10 },    { 0x3E9, 10 },    { 0x3EA, 10 },    { 0x3EB, 10 },
+    { 0x3EC, 10 },    { 0x3ED, 10 },    { 0x3EE, 10 },    { 0x3EF, 10 },
+    
+    { 0x3F, 6 }  /* this last VLC is a special case for reading 12 more
+                    bits from stream and adding the value 34 */
+};
+
 static const uint16_t fragment_run_length_vlc_table[30][2] = {
     /* 1 -> 2 */
     { 0x0, 2 },    { 0x1, 2 },

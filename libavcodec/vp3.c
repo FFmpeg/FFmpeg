@@ -1182,7 +1182,14 @@ static int unpack_superblocks(Vp3DecodeContext *s, GetBitContext *gb)
         while (current_superblock < s->superblock_count) {
             if (current_run == 0) {
                 bit ^= 1;
+#if 1
+                current_run = get_vlc2(gb, 
+                    s->superblock_run_length_vlc.table, 6, 2) + 1;
+                if (current_run == 34)
+                    current_run += get_bits(gb, 12);
+#else
                 current_run = get_superblock_run_length(gb);
+#endif
                 debug_block_coding("      setting superblocks %d..%d to %s\n",
                     current_superblock,
                     current_superblock + current_run - 1,
@@ -1221,7 +1228,14 @@ static int unpack_superblocks(Vp3DecodeContext *s, GetBitContext *gb)
 
                     if (current_run == 0) {
                         bit ^= 1;
+#if 1
+                        current_run = get_vlc2(gb, 
+                            s->superblock_run_length_vlc.table, 6, 2) + 1;
+                        if (current_run == 34)
+                            current_run += get_bits(gb, 12);
+#else
                         current_run = get_superblock_run_length(gb);
+#endif
                     }
 
                     debug_block_coding("      setting superblock %d to %s\n",
@@ -2629,6 +2643,10 @@ static int vp3_decode_init(AVCodecContext *avctx)
             &ac_bias_3[i][0][1], 4, 2,
             &ac_bias_3[i][0][0], 4, 2, 0);
     }
+
+    init_vlc(&s->superblock_run_length_vlc, 6, 34,
+        &superblock_run_length_vlc_table[0][1], 4, 2,
+        &superblock_run_length_vlc_table[0][0], 4, 2, 0);
 
     init_vlc(&s->fragment_run_length_vlc, 5, 31,
         &fragment_run_length_vlc_table[0][1], 4, 2,
