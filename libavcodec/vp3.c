@@ -1522,7 +1522,7 @@ static int unpack_vectors(Vp3DecodeContext *s, GetBitContext *gb)
                 case MODE_GOLDEN_MV:
                     /* all 6 fragments use the same motion vector */
                     if (coding_mode == 0) {
-#if 1
+#if 0
                         motion_x[0] = motion_vector_table[get_vlc2(gb, s->motion_vector_vlc.table, 6, 2)];
                         motion_y[0] = motion_vector_table[get_vlc2(gb, s->motion_vector_vlc.table, 6, 2)];
 #else
@@ -1554,7 +1554,7 @@ static int unpack_vectors(Vp3DecodeContext *s, GetBitContext *gb)
                     motion_x[4] = motion_y[4] = 0;
                     for (k = 0; k < 4; k++) {
                         if (coding_mode == 0) {
-#if 1
+#if 0
                             motion_x[0] = motion_vector_table[get_vlc2(gb, s->motion_vector_vlc.table, 6, 2)];
                             motion_y[0] = motion_vector_table[get_vlc2(gb, s->motion_vector_vlc.table, 6, 2)];
 #else
