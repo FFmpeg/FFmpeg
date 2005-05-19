@@ -3156,11 +3156,11 @@ static int fill_default_ref_list(H264Context *h){
     
     if(h->slice_type==B_TYPE){
         int out_i;
-        int limit= -1;
+        int limit= INT_MIN;
 
         /* sort frame according to poc in B slice */
         for(out_i=0; out_i<h->short_ref_count; out_i++){
-            int best_i=-1;
+            int best_i=INT_MIN;
             int best_poc=INT_MAX;
 
             for(i=0; i<h->short_ref_count; i++){
@@ -3171,7 +3171,7 @@ static int fill_default_ref_list(H264Context *h){
                 }
             }
             
-            assert(best_i != -1);
+            assert(best_i != INT_MIN);
             
             limit= best_poc;
             sorted_short_ref[out_i]= *h->short_ref[best_i];
