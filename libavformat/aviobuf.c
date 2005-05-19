@@ -172,6 +172,17 @@ offset_t url_ftell(ByteIOContext *s)
     return url_fseek(s, 0, SEEK_CUR);
 }
 
+offset_t url_fsize(ByteIOContext *s)
+{
+    offset_t size;
+    
+    if (!s->seek)
+        return -EPIPE;
+    size = s->seek(s->opaque, -1, SEEK_END) + 1;
+    s->seek(s->opaque, s->pos, SEEK_SET);
+    return size;
+}
+
 int url_feof(ByteIOContext *s)
 {
     return s->eof_reached;

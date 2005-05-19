@@ -54,9 +54,10 @@ static int yuv_read(ByteIOContext *f,
     URLContext *h;
     AVImageInfo info1, *info = &info1;
     
+    img_size = url_fsize(f);
+
     /* XXX: hack hack */
     h = url_fileno(f);
-    img_size = url_seek(h, 0, SEEK_END);
     url_get_filename(h, fname, sizeof(fname));
 
     if (infer_size(&info->width, &info->height, img_size) < 0) {

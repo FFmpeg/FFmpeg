@@ -462,7 +462,7 @@ static int ffm_read_header(AVFormatContext *s, AVFormatParameters *ap)
     ffm->write_index = get_be64(pb);
     /* get also filesize */
     if (!url_is_streamed(pb)) {
-        ffm->file_size = url_filesize(url_fileno(pb));
+        ffm->file_size = url_fsize(pb);
         adjust_write_index(s);
     } else {
         ffm->file_size = (uint64_t_C(1) << 63) - 1;

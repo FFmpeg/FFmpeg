@@ -258,7 +258,7 @@ static int mp3_read_header(AVFormatContext *s,
     /* try to get the TAG */
     if (!url_is_streamed(&s->pb)) {
         /* XXX: change that */
-        filesize = url_filesize(url_fileno(&s->pb));
+        filesize = url_fsize(&s->pb);
         if (filesize > 128) {
             url_fseek(&s->pb, filesize - 128, SEEK_SET);
             ret = get_buffer(&s->pb, buf, ID3_TAG_SIZE);

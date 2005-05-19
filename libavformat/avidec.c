@@ -125,7 +125,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
             if (tag1 == MKTAG('m', 'o', 'v', 'i')) {
                 avi->movi_list = url_ftell(pb) - 4;
                 if(size) avi->movi_end = avi->movi_list + size;
-                else     avi->movi_end = url_filesize(url_fileno(pb));
+                else     avi->movi_end = url_fsize(pb);
 #ifdef DEBUG
                 printf("movi end=%Lx\n", avi->movi_end);
 #endif
@@ -486,7 +486,7 @@ resync:
 	if (i >= avi->movi_end) {
 	    if (avi->is_odml) {
 		url_fskip(pb, avi->riff_end - i);
-	        avi->riff_end = avi->movi_end = url_filesize(url_fileno(pb));
+	        avi->riff_end = avi->movi_end = url_fsize(pb);
 	    } else
 	        break;
 	}

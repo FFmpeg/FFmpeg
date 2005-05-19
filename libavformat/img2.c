@@ -244,7 +244,7 @@ static int img_read_packet(AVFormatContext *s1, AVPacket *pkt)
         for(i=0; i<3; i++){
             if (url_fopen(f[i], filename, URL_RDONLY) < 0)
                 return AVERROR_IO;
-            size[i]= url_filesize(url_fileno(f[i]));
+            size[i]= url_fsize(f[i]);
             
             if(codec->codec_id != CODEC_ID_RAWVIDEO)
                 break;

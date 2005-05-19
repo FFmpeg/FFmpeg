@@ -815,7 +815,7 @@ static int64_t dv_frame_offset(AVFormatContext *s, DVDemuxContext *c,
     // FIXME: sys may be wrong if last dv_read_packet() failed (buffer is junk)
     const DVprofile* sys = dv_codec_profile(&c->vst->codec);
     int64_t offset;
-    int64_t size = url_filesize(url_fileno(&s->pb));
+    int64_t size = url_fsize(&s->pb);
     int64_t max_offset = ((size-1) / sys->frame_size) * sys->frame_size;
 
     offset = sys->frame_size * timestamp;

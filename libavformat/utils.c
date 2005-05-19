@@ -1192,7 +1192,7 @@ int av_seek_frame_binary(AVFormatContext *s, int stream_index, int64_t target_ts
 
     if(ts_max == AV_NOPTS_VALUE){
         int step= 1024;
-        pos_max = url_filesize(url_fileno(&s->pb)) - 1;
+        pos_max = url_fsize(&s->pb) - 1;
         do{
             pos_max -= step;
             ts_max = avif->read_timestamp(s, stream_index, &pos_max, pos_max + step);
@@ -1289,7 +1289,7 @@ static int av_seek_frame_byte(AVFormatContext *s, int stream_index, int64_t pos,
 #endif
 
     pos_min = s->data_offset;
-    pos_max = url_filesize(url_fileno(&s->pb)) - 1;
+    pos_max = url_fsize(&s->pb) - 1;
 
     if     (pos < pos_min) pos= pos_min;
     else if(pos > pos_max) pos= pos_max;
@@ -1586,15 +1586,13 @@ static void av_estimate_timings_from_pts(AVFormatContext *ic)
 
 static void av_estimate_timings(AVFormatContext *ic)
 {
-    URLContext *h;
     int64_t file_size;
 
     /* get the file size, if possible */
     if (ic->iformat->flags & AVFMT_NOFILE) {
         file_size = 0;
     } else {
-        h = url_fileno(&ic->pb);
-        file_size = url_filesize(h);
+        file_size = url_fsize(&ic->pb);
         if (file_size < 0)
             file_size = 0;
     }

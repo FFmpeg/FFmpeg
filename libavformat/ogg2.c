@@ -449,7 +449,6 @@ static int
 ogg_get_length (AVFormatContext * s)
 {
     ogg_t *ogg = s->priv_data;
-    URLContext *h = url_fileno (&s->pb);
     int idx = -1, i;
 //FIXME: get the right ctx flag to know if is seekable or not
 //    if(ogg->f->flags & URL_FLAG_STREAMED)
@@ -460,7 +459,7 @@ ogg_get_length (AVFormatContext * s)
         return 0;
 
     ogg_save (s);
-    url_seek (h, -MAX_PAGE_SIZE, SEEK_END);
+    url_fseek (&s->pb, -MAX_PAGE_SIZE, SEEK_END);
 
     while (!ogg_read_page (s, &i)){
         if (ogg->streams[i].granule != -1 && ogg->streams[i].granule != 0)
@@ -472,7 +471,7 @@ ogg_get_length (AVFormatContext * s)
             ogg_gptopts (s, idx, ogg->streams[idx].granule);
     }
 
-    ogg->size = url_filesize(h);
+    ogg->size = url_fsize(&s->pb);
     ogg_restore (s, 0);
 
     return 0;

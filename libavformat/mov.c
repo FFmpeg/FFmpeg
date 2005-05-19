@@ -1740,7 +1740,7 @@ static int mov_read_header(AVFormatContext *s, AVFormatParameters *ap)
         mov->mp4 = 1;
 #endif
     if(!url_is_streamed(pb)) /* .mov and .mp4 aren't streamable anyway (only progressive download if moov is before mdat) */
-	atom.size = url_filesize(url_fileno(pb));
+	atom.size = url_fsize(pb);
     else
 	atom.size = 0x7FFFFFFFFFFFFFFFLL;
 
