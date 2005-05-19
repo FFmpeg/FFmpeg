@@ -1029,7 +1029,7 @@ static int vorbis_residue_decode(vorbis_context *vc, vorbis_residue *vr, uint_fa
     uint_fast8_t c_p_c=vc->codebooks[vr->classbook].dimensions;
     uint_fast16_t n_to_read=vr->end-vr->begin;
     uint_fast16_t ptns_to_read=n_to_read/vr->partition_size;
-    uint_fast8_t classifs[ptns_to_read];
+    uint_fast8_t classifs[ptns_to_read*vc->audio_channels];
     uint_fast8_t pass;
     uint_fast8_t ch_used;
     uint_fast8_t i,j,l;
@@ -1139,8 +1139,8 @@ static int vorbis_residue_decode(vorbis_context *vc, vorbis_residue *vr, uint_fa
                                 return 1;
                             }
                         }
-                        j_times_ptns_to_read+=ptns_to_read;
                     }
+                    j_times_ptns_to_read+=ptns_to_read;
                 }
                 ++partition_count;
                 voffset+=vr->partition_size;
