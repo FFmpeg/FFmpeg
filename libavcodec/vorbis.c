@@ -759,33 +759,49 @@ static int vorbis_decode_init(AVCodecContext *avccontext) {
     vorbis_context *vc = avccontext->priv_data ;
     uint8_t *headers = avccontext->extradata;
     int headers_len=avccontext->extradata_size;
+    uint8_t *header_start[3];
     int header_len[3];
     GetBitContext *gb = &(vc->gb);
     int i, j, hdr_type;
 
     vc->avccontext = avccontext;
 
-    if (!headers_len || headers[0]!=2) {
+    if (!headers_len) {
         av_log(avccontext, AV_LOG_ERROR, "Extradata corrupt.\n");
         return -1;
     }
 
-    for(j=1,i=0;i<2;++i, ++j) {
-        header_len[i]=0;
-        while(j<headers_len && headers[j]==0xff) {
-            header_len[i]+=0xff;
-            ++j;
+    if(headers[0] == 0 && headers[1] == 30) {
+        for(i = 0; i < 3; i++){
+            header_len[i] = *headers++ << 8;
+            header_len[i] += *headers++;
+            header_start[i] = headers;
+            headers += header_len[i];
         }
-        if (j>=headers_len) {
-            av_log(avccontext, AV_LOG_ERROR, "Extradata corrupt.\n");
-            return -1;
+    } else if(headers[0] == 2) {
+        for(j=1,i=0;i<2;++i, ++j) {
+            header_len[i]=0;
+            while(j<headers_len && headers[j]==0xff) {
+                header_len[i]+=0xff;
+                ++j;
+            }
+            if (j>=headers_len) {
+                av_log(avccontext, AV_LOG_ERROR, "Extradata corrupt.\n");
+                return -1;
+            }
+            header_len[i]+=headers[j];
         }
-        header_len[i]+=headers[j];
+        header_len[2]=headers_len-header_len[0]-header_len[1]-j;
+        headers+=j;
+        header_start[0] = headers;
+        header_start[1] = header_start[0] + header_len[0];
+        header_start[2] = header_start[1] + header_len[1];
+    } else {
+        av_log(avccontext, AV_LOG_ERROR, "Extradata corrupt.\n");
+        return -1;
     }
-    header_len[2]=headers_len-header_len[0]-header_len[1]-j;
-    headers+=j;
 
-    init_get_bits(gb, headers, header_len[0]*8);
+    init_get_bits(gb, header_start[0], header_len[0]*8);
     hdr_type=get_bits(gb, 8);
     if (hdr_type!=1) {
         av_log(avccontext, AV_LOG_ERROR, "First header is not the id header.\n");
@@ -797,7 +813,7 @@ static int vorbis_decode_init(AVCodecContext *avccontext) {
         return -1;
     }
 
-    init_get_bits(gb, headers+header_len[0]+header_len[1], header_len[2]*8);
+    init_get_bits(gb, header_start[2], header_len[2]*8);
     hdr_type=get_bits(gb, 8);
     if (hdr_type!=5) {
         av_log(avccontext, AV_LOG_ERROR, "Third header is not the setup header.\n");
