@@ -316,6 +316,13 @@ typedef struct Vp3DecodeContext {
 
     uint8_t edge_emu_buffer[9*2048]; //FIXME dynamic alloc
     uint8_t qscale_table[2048]; //FIXME dynamic alloc (width+15)/16
+
+     /* Huffman decode */
+     int hti;
+     unsigned int hbits;
+     int entries;
+     int huff_code_size;
+     uint16_t huffman_table[80][32][2];
 } Vp3DecodeContext;
 
 static int theora_decode_comments(AVCodecContext *avctx, GetBitContext gb);
@@ -2656,35 +2663,63 @@ static int vp3_decode_init(AVCodecContext *avctx)
 	    s->coded_intra_c_dequant[i] = vp31_intra_c_dequant[i];
 	for (i = 0; i < 64; i++)
 	    s->coded_inter_dequant[i] = vp31_inter_dequant[i];
-    }
 
-    /* init VLC tables */
-    for (i = 0; i < 16; i++) {
+        /* init VLC tables */
+        for (i = 0; i < 16; i++) {
 
-        /* DC histograms */
-        init_vlc(&s->dc_vlc[i], 5, 32,
-            &dc_bias[i][0][1], 4, 2,
-            &dc_bias[i][0][0], 4, 2, 0);
+            /* DC histograms */
+            init_vlc(&s->dc_vlc[i], 5, 32,
+                &dc_bias[i][0][1], 4, 2,
+                &dc_bias[i][0][0], 4, 2, 0);
 
-        /* group 1 AC histograms */
-        init_vlc(&s->ac_vlc_1[i], 5, 32,
-            &ac_bias_0[i][0][1], 4, 2,
-            &ac_bias_0[i][0][0], 4, 2, 0);
+            /* group 1 AC histograms */
+            init_vlc(&s->ac_vlc_1[i], 5, 32,
+                &ac_bias_0[i][0][1], 4, 2,
+                &ac_bias_0[i][0][0], 4, 2, 0);
 
-        /* group 2 AC histograms */
-        init_vlc(&s->ac_vlc_2[i], 5, 32,
-            &ac_bias_1[i][0][1], 4, 2,
-            &ac_bias_1[i][0][0], 4, 2, 0);
+            /* group 2 AC histograms */
+            init_vlc(&s->ac_vlc_2[i], 5, 32,
+                &ac_bias_1[i][0][1], 4, 2,
+                &ac_bias_1[i][0][0], 4, 2, 0);
 
-        /* group 3 AC histograms */
-        init_vlc(&s->ac_vlc_3[i], 5, 32,
-            &ac_bias_2[i][0][1], 4, 2,
-            &ac_bias_2[i][0][0], 4, 2, 0);
+            /* group 3 AC histograms */
+            init_vlc(&s->ac_vlc_3[i], 5, 32,
+                &ac_bias_2[i][0][1], 4, 2,
+                &ac_bias_2[i][0][0], 4, 2, 0);
 
-        /* group 4 AC histograms */
-        init_vlc(&s->ac_vlc_4[i], 5, 32,
-            &ac_bias_3[i][0][1], 4, 2,
-            &ac_bias_3[i][0][0], 4, 2, 0);
+            /* group 4 AC histograms */
+            init_vlc(&s->ac_vlc_4[i], 5, 32,
+                &ac_bias_3[i][0][1], 4, 2,
+                &ac_bias_3[i][0][0], 4, 2, 0);
+        }
+    } else {
+        for (i = 0; i < 16; i++) {
+
+            /* DC histograms */
+            init_vlc(&s->dc_vlc[i], 5, 32,
+                &s->huffman_table[i][0][1], 4, 2,
+                &s->huffman_table[i][0][0], 4, 2, 0);
+
+            /* group 1 AC histograms */
+            init_vlc(&s->ac_vlc_1[i], 5, 32,
+                &s->huffman_table[i+16][0][1], 4, 2,
+                &s->huffman_table[i+16][0][0], 4, 2, 0);
+
+            /* group 2 AC histograms */
+            init_vlc(&s->ac_vlc_2[i], 5, 32,
+                &s->huffman_table[i+16*2][0][1], 4, 2,
+                &s->huffman_table[i+16*2][0][0], 4, 2, 0);
+
+            /* group 3 AC histograms */
+            init_vlc(&s->ac_vlc_3[i], 5, 32,
+                &s->huffman_table[i+16*3][0][1], 4, 2,
+                &s->huffman_table[i+16*3][0][0], 4, 2, 0);
+
+            /* group 4 AC histograms */
+            init_vlc(&s->ac_vlc_4[i], 5, 32,
+                &s->huffman_table[i+16*4][0][1], 4, 2,
+                &s->huffman_table[i+16*4][0][0], 4, 2, 0);
+        }
     }
 
     init_vlc(&s->superblock_run_length_vlc, 6, 34,
@@ -2938,6 +2973,38 @@ static int vp3_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
+static int read_huffman_tree(AVCodecContext *avctx, GetBitContext *gb)
+{
+    Vp3DecodeContext *s = avctx->priv_data;
+
+    if (get_bits(gb, 1)) {
+        int token;
+        if (s->entries >= 32) { /* overflow */
+            av_log(avctx, AV_LOG_ERROR, "huffman tree overflow\n");
+            return -1;
+        }
+        token = get_bits(gb, 5);
+        //av_log(avctx, AV_LOG_DEBUG, "hti %d hbits %x token %d entry : %d size %d\n", s->hti, s->hbits, token, s->entries, s->huff_code_size);
+        s->huffman_table[s->hti][token][0] = s->hbits;
+        s->huffman_table[s->hti][token][1] = s->huff_code_size;
+        s->entries++;
+    }
+    else {
+        if (s->huff_code_size >= 32) {/* overflow */
+            av_log(avctx, AV_LOG_ERROR, "huffman tree overflow\n");
+            return -1;
+        }
+        s->huff_code_size++;
+        s->hbits <<= 1;
+        read_huffman_tree(avctx, gb);
+        s->hbits |= 1;
+        read_huffman_tree(avctx, gb);
+        s->hbits >>= 1;
+        s->huff_code_size--;
+    }
+    return 0;
+}
+
 static int theora_decode_header(AVCodecContext *avctx, GetBitContext gb)
 {
     Vp3DecodeContext *s = avctx->priv_data;
@@ -3070,7 +3137,41 @@ static int theora_decode_tables(AVCodecContext *avctx, GetBitContext gb)
     for (i = 0; i < 64; i++)
 	s->coded_inter_dequant[i] = get_bits(&gb, 8);
 
-    /* FIXME: read huffmann tree.. */
+    /* Huffman tables */
+    for (i = 0; i <= 1; i++) {
+        for (n = 0; n <= 2; n++) {
+            int newqr;
+            if (i > 0 || n > 0)
+                newqr = get_bits(&gb, 1);
+            else
+                newqr = 1;
+            if (!newqr) {
+                if (i > 0)
+                    get_bits(&gb, 1);
+            }
+            else {
+                int qi = 0;
+                skip_bits(&gb, av_log2(2)+1);
+                while (qi < 63) {
+                    qi += get_bits(&gb, av_log2(63-qi)+1) + 1;
+                    skip_bits(&gb, av_log2(2)+1);
+                }
+                if (qi > 63)
+                    av_log(NULL, AV_LOG_ERROR, "error...\n");
+            }
+        }
+    }
+
+    for (s->hti = 0; s->hti < 80; s->hti++) {
+        s->entries = 0;
+        s->huff_code_size = 1;
+        if (!get_bits(&gb, 1)) {
+            s->hbits = 0;
+            read_huffman_tree(avctx, &gb);
+            s->hbits = 1;
+            read_huffman_tree(avctx, &gb);
+        }
+    }
     
     s->theora_tables = 1;
     
