@@ -1667,10 +1667,11 @@ static int unpack_vlcs(Vp3DecodeContext *s, GetBitContext *gb,
 {
     int i;
     int token;
-    int zero_run;
-    DCTELEM coeff;
+    int zero_run = 0;
+    DCTELEM coeff = 0;
     Vp3Fragment *fragment;
     uint8_t *perm= s->scantable.permutated;
+    int bits_to_get;
 
     if ((first_fragment >= s->fragment_count) ||
         (last_fragment >= s->fragment_count)) {
@@ -1691,7 +1692,26 @@ static int unpack_vlcs(Vp3DecodeContext *s, GetBitContext *gb,
             token = get_vlc2(gb, table->table, 5, 3);
             debug_vlc(" token = %2d, ", token);
             /* use the token to get a zero run, a coefficient, and an eob run */
+#if 1
+            if (token <= 6) {
+                eob_run = eob_run_base[token];
+                if (eob_run_get_bits[token])
+                    eob_run += get_bits(gb, eob_run_get_bits[token]);
+                coeff = zero_run = 0;
+            } else {
+                bits_to_get = coeff_get_bits[token];
+                if (!bits_to_get)
+                    coeff = coeff_tables[token][0];
+                else
+                    coeff = coeff_tables[token][get_bits(gb, bits_to_get)];
+
+                zero_run = zero_run_base[token];
+                if (zero_run_get_bits[token])
+                    zero_run += get_bits(gb, zero_run_get_bits[token]);
+            }
+#else
             unpack_token(gb, token, &zero_run, &coeff, &eob_run);
+#endif
         }
 
         if (!eob_run) {
