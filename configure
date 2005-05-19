@@ -1618,3 +1618,108 @@ else
 fi
 
 rm -f $TMPO $TMPC $TMPE $TMPS $TMPH
+
+
+# build pkg-config files libavcodec.pc, libavformat.pc and libpostproc.pc 
+
+lavc_build=`grep '#define LIBAVCODEC_BUILD' "$source_path/libavcodec/avcodec.h" | sed 's/[^0-9]//g'`
+lavf_build=`grep '#define LIBAVFORMAT_BUILD' "$source_path/libavformat/avformat.h" | sed 's/[^0-9]//g'`
+
+requires=
+test "$libogg" = "yes" && requires="$requires ogg >= 1.1"
+test "$vorbis" = "yes" && requires="$requires vorbis"
+test "$theora" = "yes" && requires="$requires theora"
+
+# libavcodec.pc
+cat <<EOF >libavcodec.pc
+prefix=$prefix
+exec_prefix=\${prefix}
+libdir=\${exec_prefix}/lib
+includedir=\${prefix}/include
+
+Name: libavcodec
+Description: FFmpeg codec library
+Version: $version-$lavc_build
+Requires: $requires
+Conflicts:
+Libs: -L\${libdir} -lavcodec $extralibs
+Cflags: -I\${includedir} -I\${includedir}/ffmpeg
+EOF
+
+cat <<EOF >libavcodec-uninstalled.pc
+prefix=
+exec_prefix=
+libdir=\${pcfiledir}/libavcodec
+includedir=\${pcfiledir}/libavcodec
+
+Name: libavcodec
+Description: FFmpeg codec library
+Version: $version-$lavc_build
+Requires: $requires
+Conflicts:
+Libs: \${libdir}/${LIBPREF}avcodec${LIBSUF} $extralibs
+Cflags: -I\${includedir}
+EOF
+
+# libavformat.pc
+cat <<EOF >libavformat.pc
+prefix=$prefix
+exec_prefix=\${prefix}
+libdir=\${exec_prefix}/lib
+includedir=\${prefix}/include
+
+Name: libavformat
+Description: FFmpeg container format library
+Version: $version-$lavf_build
+Requires: $requires libavcodec = $version-$lavc_build
+Conflicts:
+Libs: -L\${libdir} -lavformat $extralibs
+Cflags: -I\${includedir} -I\${includedir}/ffmpeg
+EOF
+
+cat <<EOF >libavformat-uninstalled.pc
+prefix=
+exec_prefix=
+libdir=\${pcfiledir}/libavformat
+includedir=\${pcfiledir}/libavformat
+
+Name: libavformat
+Description: FFmpeg container format library
+Version: $version-$lavf_build
+Requires: $requires libavcodec = $version-$lavc_build
+Conflicts:
+Libs: \${libdir}/${LIBPREF}avformat${LIBSUF} $extralibs
+Cflags: -I\${includedir}
+EOF
+
+
+# libpostproc.pc
+cat <<EOF >libpostproc.pc
+prefix=$prefix
+exec_prefix=\${prefix}
+libdir=\${exec_prefix}/lib
+includedir=\${prefix}/include
+
+Name: libpostproc
+Description: FFmpeg post processing library
+Version: $version
+Requires: 
+Conflicts:
+Libs: -L\${libdir} -lpostproc
+Cflags: -I\${includedir} -I\${includedir}/postproc
+EOF
+
+cat <<EOF >libpostproc-uninstalled.pc
+prefix=
+exec_prefix=
+libdir=\${pcfiledir}/libavcodec/libpostproc
+includedir=\${pcfiledir}/libavcodec/libpostproc
+
+Name: libpostproc
+Description: FFmpeg post processing library
+Version: $version
+Requires: 
+Conflicts:
+Libs: \${libdir}/${LIBPREF}postproc${LIBSUF}
+Cflags: -I\${includedir}
+EOF

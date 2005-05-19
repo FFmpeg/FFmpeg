@@ -478,6 +478,8 @@ install-headers:
 	               $(SRC_PATH)/libavcodec/common.h \
 	               $(SRC_PATH)/libavcodec/rational.h \
                 "$(prefix)/include/ffmpeg"
+	install -d $(libdir)/pkgconfig
+	install -m 644 ../libavcodec.pc $(libdir)/pkgconfig
 
 #
 # include dependency files if they exist

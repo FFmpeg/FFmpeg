@@ -59,6 +59,8 @@ else
 	install $(INSTALLSTRIP) -m 755 $(SPPLIB) $(libdir)/$(SPPLIB).$(SPPVERSION)
 	ln -sf $(SPPLIB).$(SPPVERSION) $(libdir)/$(SPPLIB)
 	ln -sf $(SPPLIB).$(SPPVERSION) $(libdir)/$(SPPLIB).$(SPPMAJOR)
+	install -d $(libdir)/pkgconfig
+	install -m 644 ../../libpostproc.pc $(libdir)/pkgconfig
 	ldconfig || true
 endif
 endif
