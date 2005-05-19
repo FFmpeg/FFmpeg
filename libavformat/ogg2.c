@@ -450,9 +450,9 @@ ogg_get_length (AVFormatContext * s)
 {
     ogg_t *ogg = s->priv_data;
     int idx = -1, i;
-//FIXME: get the right ctx flag to know if is seekable or not
-//    if(ogg->f->flags & URL_FLAG_STREAMED)
-//  return 0;
+
+    if(s->pb.is_streamed)
+        return 0;
 
 // already set
     if (s->duration != AV_NOPTS_VALUE)
