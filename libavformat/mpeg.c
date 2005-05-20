@@ -1599,10 +1599,10 @@ static int mpegps_read_packet(AVFormatContext *s,
     } else if (startcode >= 0x1c0 && startcode <= 0x1df) {
         type = CODEC_TYPE_AUDIO;
         codec_id = CODEC_ID_MP2;
-    } else if (startcode >= 0x80 && startcode <= 0x89) {
+    } else if (startcode >= 0x80 && startcode <= 0x87) {
         type = CODEC_TYPE_AUDIO;
         codec_id = CODEC_ID_AC3;
-    } else if (startcode >= 0x8a && startcode <= 0x9f) {
+    } else if (startcode >= 0x88 && startcode <= 0x9f) {
         type = CODEC_TYPE_AUDIO;
         codec_id = CODEC_ID_DTS;
     } else if (startcode >= 0xa0 && startcode <= 0xbf) {
