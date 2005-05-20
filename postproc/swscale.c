@@ -733,7 +733,7 @@ static inline void yuv2packedXinC(SwsContext *c, int16_t *lumFilter, int16_t **l
 #endif
 
 #ifdef ARCH_POWERPC
-#ifdef HAVE_ALTIVEC
+#if defined (HAVE_ALTIVEC) || defined (RUNTIME_CPUDETECT)
 #define COMPILE_ALTIVEC
 #endif //HAVE_ALTIVEC
 #endif //ARCH_POWERPC
@@ -1796,8 +1796,9 @@ int sws_setColorspaceDetails(SwsContext *c, const int inv_table[4], int srcRange
 	yuv2rgb_c_init_tables(c, inv_table, srcRange, brightness, contrast, saturation);
 	//FIXME factorize
 
-#ifdef HAVE_ALTIVEC
-	yuv2rgb_altivec_init_tables (c, inv_table, brightness, contrast, saturation);
+#ifdef COMPILE_ALTIVEC
+	if (c->flags & SWS_CPU_CAPS_ALTIVEC)
+	    yuv2rgb_altivec_init_tables (c, inv_table, brightness, contrast, saturation);
 #endif	
 	return 0;
 }
@@ -1986,7 +1987,7 @@ SwsContext *sws_getContext(int srcW, int srcH, int origSrcFormat, int dstW, int 
 			}
 		}
 
-#ifdef HAVE_ALTIVEC
+#ifdef COMPILE_ALTIVEC
 		if ((c->flags & SWS_CPU_CAPS_ALTIVEC) &&
 		    ((srcFormat == IMGFMT_YV12 && 
 		      (dstFormat == IMGFMT_YUY2 || dstFormat == IMGFMT_UYVY)))) {
