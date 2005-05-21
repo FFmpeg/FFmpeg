@@ -2201,7 +2201,7 @@ static void select_input_picture(MpegEncContext *s){
                                                s->input_picture[i-1]->data[0], s->linesize) + 1;
                     }
                 }
-                for(i=0; i<s->max_b_frames; i++){
+                for(i=0; i<s->max_b_frames+1; i++){
                     if(s->input_picture[i]==NULL || s->input_picture[i]->b_frame_score - 1 > s->mb_num/40) break;
                 }
                                 
