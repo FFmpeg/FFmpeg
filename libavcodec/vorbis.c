@@ -2,6 +2,21 @@
  * @file vorbis.c
  * Vorbis I decoder
  * @author Denes Balatoni  ( dbalatoni programozo hu )
+
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
  */
 
 #undef V_DEBUG
@@ -175,6 +190,8 @@ static void vorbis_free(vorbis_context *vc) {
 
 static int vorbis_parse_setup_hdr_codebooks(vorbis_context *vc) {
     uint_fast16_t cb;
+    uint_fast8_t *tmp_vlc_bits;
+    uint_fast32_t *tmp_vlc_codes;
     GetBitContext *gb=&vc->gb;
 
     vc->codebook_count=get_bits(gb,8)+1;
@@ -182,33 +199,31 @@ static int vorbis_parse_setup_hdr_codebooks(vorbis_context *vc) {
     AV_DEBUG(" Codebooks: %d \n", vc->codebook_count);
 
     vc->codebooks=(vorbis_codebook *)av_mallocz(vc->codebook_count * sizeof(vorbis_codebook));
+    tmp_vlc_bits=(uint_fast8_t *)av_mallocz(V_MAX_VLCS * sizeof(uint_fast8_t));
+    tmp_vlc_codes=(uint_fast32_t *)av_mallocz(V_MAX_VLCS * sizeof(uint_fast32_t));
 
     for(cb=0;cb<vc->codebook_count;++cb) {
         vorbis_codebook *codebook_setup=&vc->codebooks[cb];
         uint_fast8_t ordered;
         uint_fast32_t t, used_entries=0;
         uint_fast32_t entries;
-        uint_fast8_t tmp_vlc_bits[V_MAX_VLCS];
-        uint_fast32_t tmp_vlc_codes[V_MAX_VLCS];
-
-//        memset(tmp_vlc_bits, 0, sizeof(tmp_vlc_bits));
 
         AV_DEBUG(" %d. Codebook \n", cb);
 
         if (get_bits(gb, 24)!=0x564342) {
             av_log(vc->avccontext, AV_LOG_ERROR, " %d. Codebook setup data corrupt. \n", cb);
-            return 1;
+            goto error;
         }
 
         codebook_setup->dimensions=get_bits(gb, 16);
         if (codebook_setup->dimensions>16) {
             av_log(vc->avccontext, AV_LOG_ERROR, " %d. Codebook's dimension is too large (%d). \n", cb, codebook_setup->dimensions);
-            return 1;
+            goto error;
         }
         entries=get_bits(gb, 24);
         if (entries>V_MAX_VLCS) {
             av_log(vc->avccontext, AV_LOG_ERROR, " %d. Codebook has too many entries (%d). \n", cb, entries);
-            return 1;
+            goto error;
         }
 
         ordered=get_bits1(gb);
@@ -266,7 +281,7 @@ static int vorbis_parse_setup_hdr_codebooks(vorbis_context *vc) {
             }
             if (current_entry>used_entries) {
                 av_log(vc->avccontext, AV_LOG_ERROR, " More codelengths than codes in codebook. \n");
-                return 1;
+                goto error;
             }
         }
 
@@ -332,19 +347,19 @@ static int vorbis_parse_setup_hdr_codebooks(vorbis_context *vc) {
             }
             if (j!=used_entries) {
                 av_log(vc->avccontext, AV_LOG_ERROR, "Bug in codevector vector building code. \n");
-                return 1;
+                goto error;
             }
             entries=used_entries;
         }
         else if (codebook_setup->lookup_type>=2) {
             av_log(vc->avccontext, AV_LOG_ERROR, "Codebook lookup type not supported. \n");
-            return 1;
+            goto error;
         }
 
 // Initialize VLC table
         if (vorbis_len2vlc(vc, tmp_vlc_bits, tmp_vlc_codes, entries)) {
             av_log(vc->avccontext, AV_LOG_ERROR, " Invalid code lengths while generating vlcs. \n");
-            return 1;
+            goto error;
         }
         codebook_setup->maxdepth=0;
         for(t=0;t<entries;++t)
@@ -354,10 +369,19 @@ static int vorbis_parse_setup_hdr_codebooks(vorbis_context *vc) {
 
         if (init_vlc(&codebook_setup->vlc, V_NB_BITS, entries, tmp_vlc_bits, sizeof(*tmp_vlc_bits), sizeof(*tmp_vlc_bits), tmp_vlc_codes, sizeof(*tmp_vlc_codes), sizeof(*tmp_vlc_codes), INIT_VLC_LE)) {
             av_log(vc->avccontext, AV_LOG_ERROR, " Error generating vlc tables. \n");
-            return 1;
+            goto error;
         }
     }
+
+    av_free(tmp_vlc_bits);
+    av_free(tmp_vlc_codes);
     return 0;
+
+// Error:
+error:
+    av_free(tmp_vlc_bits);
+    av_free(tmp_vlc_codes);
+    return 1;
 }
 
 // Process time domain transforms part (unused in Vorbis I)
@@ -1190,7 +1214,11 @@ static int vorbis_parse_audio_packet(vorbis_context *vc) {
         return -1; // packet type not audio
     }
 
-    mode_number=get_bits(gb, ilog(vc->mode_count-1));
+    if (vc->mode_count==1) {
+        mode_number=0;
+    } else {
+        mode_number=get_bits(gb, ilog(vc->mode_count-1));
+    }
     mapping=&vc->mappings[vc->modes[mode_number].mapping];
 
     AV_DEBUG(" Mode number: %d , mapping: %d , blocktype %d \n", mode_number, vc->modes[mode_number].mapping, vc->modes[mode_number].blockflag);
