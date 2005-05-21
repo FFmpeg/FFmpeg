@@ -323,24 +323,6 @@ typedef struct DSPContext {
     void (*add_8x8basis)(int16_t rem[64], int16_t basis[64], int scale);
 #define BASIS_SHIFT 16
 #define RECON_SHIFT 6
-
-    /**
-     * This function handles any initialization for the VP3 DSP functions.
-     */
-    void (*vp3_dsp_init)(void);
-
-    /** 
-     * This function is responsible for taking a block of zigzag'd,
-     * quantized DCT coefficients and reconstructing the original block of
-     * samples.
-     * @param input_data 64 zigzag'd, quantized DCT coefficients
-     * @param dequant_matrix 64 zigzag'd quantizer coefficients
-     * @param coeff_count index of the last coefficient
-     * @param output_samples space for 64 DCTELEMs where the transformed
-     * samples will be stored
-     */
-    void (*vp3_idct)(int16_t *input_data, int16_t *dequant_matrix,
-        int coeff_count, DCTELEM *output_samples);
  
     void (*h264_idct_add)(uint8_t *dst, DCTELEM *block, int stride);
 } DSPContext;
