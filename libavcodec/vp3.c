@@ -852,9 +852,9 @@ static void init_frame(Vp3DecodeContext *s, GetBitContext *gb)
     s->coded_fragment_list_index = 0;
     for (i = 0; i < s->fragment_count; i++) {
         s->all_fragments[i].coeff_count = 0;
-s->all_fragments[i].motion_x = 0xbeef;
-s->all_fragments[i].motion_y = 0xbeef;
-s->all_fragments[i].next_coeff= NULL;
+        s->all_fragments[i].motion_x = 127;
+        s->all_fragments[i].motion_y = 127;
+        s->all_fragments[i].next_coeff= NULL;
         s->coeffs[i].index=
         s->coeffs[i].coeff=0;
         s->coeffs[i].next= NULL;
@@ -2153,7 +2153,7 @@ static void render_fragments(Vp3DecodeContext *s,
                              int height,
                              int plane /* 0 = Y, 1 = U, 2 = V */) 
 {
-    int x, y, j;
+    int x, y;
     int m, n;
     int i = first_fragment;
     int16_t *dequantizer;
@@ -2238,13 +2238,12 @@ static void render_fragments(Vp3DecodeContext *s,
 
                     src_x= (motion_x>>1) + x;
                     src_y= (motion_y>>1) + y;
-if ((motion_x == 0xbeef) || (motion_y == 0xbeef))
-av_log(s->avctx, AV_LOG_ERROR, " help! got beefy vector! (%X, %X)\n", motion_x, motion_y);
+                    if ((motion_x == 127) || (motion_y == 127))
+                        av_log(s->avctx, AV_LOG_ERROR, " help! got invalid motion vector! (%X, %X)\n", motion_x, motion_y);
 
                     motion_halfpel_index = motion_x & 0x01;
                     motion_source += (motion_x >> 1);
 
-//                    motion_y = -motion_y;
                     motion_halfpel_index |= (motion_y & 0x01) << 1;
                     motion_source += ((motion_y >> 1) * stride);
 
