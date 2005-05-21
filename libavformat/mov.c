@@ -840,16 +840,13 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
             get_be32(pb); /* vendor */
             get_be32(pb); /* temporal quality */
             get_be32(pb); /* spacial quality */
-            st->codec.width = get_be16(pb); /* width */
-            st->codec.height = get_be16(pb); /* height */
-#if 1
-            if (st->codec.codec_id == CODEC_ID_MPEG4) {
-                /* in some MPEG4 the width/height are not correct, so
-                   we ignore this info */
-                st->codec.width = 0;
-                st->codec.height = 0;
+            if(st->codec.codec_id == CODEC_ID_MPEG4){ //FIXME this is silly
+                get_be16(pb);
+                get_be16(pb);
+            }else{
+                st->codec.width = get_be16(pb); /* width */
+                st->codec.height = get_be16(pb); /* height */
             }
-#endif
             get_be32(pb); /* horiz resolution */
             get_be32(pb); /* vert resolution */
             get_be32(pb); /* data size, always 0 */
