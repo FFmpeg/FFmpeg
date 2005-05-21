@@ -772,10 +772,12 @@ static int mov_read_stco(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     
     for(i=0; i<c->fc->nb_streams; i++){
         MOVStreamContext *sc2 = (MOVStreamContext *)c->fc->streams[i]->priv_data;
-        int64_t first= sc2->chunk_offsets[0];
-        int64_t last= sc2->chunk_offsets[sc2->chunk_count-1];
-        if(first >= sc->chunk_offsets[entries-1] || last <= sc->chunk_offsets[0])
-            c->ni=1;
+        if(sc2 && sc2->chunk_offsets){
+            int64_t first= sc2->chunk_offsets[0];
+            int64_t last= sc2->chunk_offsets[sc2->chunk_count-1];
+            if(first >= sc->chunk_offsets[entries-1] || last <= sc->chunk_offsets[0])
+                c->ni=1;
+        }
     }
 #ifdef DEBUG
 /*
