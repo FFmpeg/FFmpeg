@@ -141,6 +141,7 @@ static int video_codec_id = CODEC_ID_NONE;
 static int video_codec_tag = 0;
 static int same_quality = 0;
 static int b_frames = 0;
+static int b_strategy = 0;
 static int mb_decision = FF_MB_DECISION_SIMPLE;
 static int ildct_cmp = FF_CMP_VSAD;
 static int mb_cmp = FF_CMP_SAD;
@@ -2944,6 +2945,7 @@ static void opt_input_file(const char *filename)
             enc->debug = debug;
             enc->debug_mv = debug_mv;            
             enc->lowres= lowres;
+            if(lowres) enc->flags |= CODEC_FLAG_EMU_EDGE;
             if(bitexact)
                 enc->flags|= CODEC_FLAG_BITEXACT;
             if(me_threshold)
@@ -3241,7 +3243,7 @@ static void opt_output_file(const char *filename)
                 }
                 if (b_frames) {
                     video_enc->max_b_frames = b_frames;
-                    video_enc->b_frame_strategy = 0;
+                    video_enc->b_frame_strategy = b_strategy;
                     video_enc->b_quant_factor = 2.0;
                 }
                 if (do_interlace_dct) {
@@ -3997,7 +3999,7 @@ const OptionDef options[] = {
     { "i_qoffset", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_i_qoffset}, "qp offset between p and i frames", "offset" },
     { "ibias", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_ibias}, "intra quant bias", "bias" },
     { "pbias", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_pbias}, "inter quant bias", "bias" },
-//    { "b_strategy", HAS_ARG | OPT_EXPERT, {(void*)opt_b_strategy}, "dynamic b frame selection strategy", "strategy" },
+    { "b_strategy", HAS_ARG | OPT_INT | OPT_EXPERT, {(void*)&b_strategy}, "dynamic b frame selection strategy", "strategy" },
     { "rc_eq", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_video_rc_eq}, "set rate control equation", "equation" },
     { "rc_override", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_video_rc_override_string}, "rate control override for specific intervals", "override" },
     { "bt", HAS_ARG | OPT_VIDEO, {(void*)opt_video_bitrate_tolerance}, "set video bitrate tolerance (in kbit/s)", "tolerance" },
