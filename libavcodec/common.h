@@ -456,9 +456,9 @@ if((y)<(x)){\
 }
 #endif
 
-#if defined(ARCH_X86) || defined(ARCH_X86_64)
+#if defined(ARCH_X86) || defined(ARCH_X86_64) || defined(ARCH_POWERPC)
 #if defined(ARCH_X86_64)
-static inline uint64_t rdtsc(void)
+static inline uint64_t read_time(void)
 {
 	uint64_t a, d;
 	asm volatile(	"rdtsc\n\t"
@@ -466,8 +466,8 @@ static inline uint64_t rdtsc(void)
 	);
 	return (d << 32) | (a & 0xffffffff);
 }
-#else
-static inline long long rdtsc(void)
+#elif defined(ARCH_X86)
+static inline long long read_time(void)
 {
 	long long l;
 	asm volatile(	"rdtsc\n\t"
@@ -475,14 +475,33 @@ static inline long long rdtsc(void)
 	);
 	return l;
 }
+#else //FIXME check ppc64
+static inline uint64_t read_time(void)
+{
+    uint32_t tbu, tbl, temp;
+
+     /* from section 2.2.1 of the 32-bit PowerPC PEM */
+     __asm__ __volatile__(
+         "1:\n"
+         "mftbu  %2\n"
+         "mftb   %0\n"
+         "mftbu  %1\n"
+         "cmpw   %2,%1\n"
+         "bne    1b\n"
+     : "=r"(tbl), "=r"(tbu), "=r"(temp)
+     :
+     : "cc");
+
+     return (((uint64_t)tbu)<<32) | (uint64_t)tbl;
+}
 #endif
 
 #define START_TIMER \
 uint64_t tend;\
-uint64_t tstart= rdtsc();\
+uint64_t tstart= read_time();\
 
 #define STOP_TIMER(id) \
-tend= rdtsc();\
+tend= read_time();\
 {\
   static uint64_t tsum=0;\
   static int tcount=0;\
