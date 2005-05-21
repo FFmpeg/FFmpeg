@@ -1942,14 +1942,13 @@ again:
     }
 #endif //MOV_MINOLTA_FIX
 
+    idx = sc->sample_to_chunk_index;
+    if (idx + 1 < sc->sample_to_chunk_sz && sc->next_chunk >= sc->sample_to_chunk[idx + 1].first)
+        idx++;
+    sc->sample_to_chunk_index = idx;
 #ifdef MOV_SPLIT_CHUNKS
     /* split chunks into samples */
-    if (sc->sample_size == 0) {
-        idx = sc->sample_to_chunk_index;
-        if ((idx + 1 < sc->sample_to_chunk_sz)
-                && (sc->next_chunk >= sc->sample_to_chunk[idx + 1].first))
-            idx++;
-        sc->sample_to_chunk_index = idx;
+    if (sc->sample_size == 0 || sc->sample_size > 100) {
         if (idx >= 0 && sc->sample_to_chunk[idx].count != 1) {
 	    mov->partial = sc;
             /* we'll have to get those samples before next chunk */
@@ -1958,6 +1957,8 @@ again:
         }
 
         sc->current_sample++;
+    }else if(idx + 1 < sc->sample_to_chunk_sz){
+        sc->current_sample += sc->sample_size * sc->sample_to_chunk[idx].count;
     }
 #endif
 
