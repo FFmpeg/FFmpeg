@@ -2247,7 +2247,7 @@ static void render_slice(Vp3DecodeContext *s, int slice)
             slice_height = y + FRAGMENT_PIXELS;
             i = s->macroblock_fragments[current_macroblock_entry + 5];
         }
-        fragment_width = plane_width / 2;
+        fragment_width = plane_width / FRAGMENT_PIXELS;
     
         if(ABS(stride) > 2048)
             return; //various tables are fixed size
@@ -2396,42 +2396,36 @@ static void render_slice(Vp3DecodeContext *s, int slice)
 
                 }
 #if 0
-                /* do not perform left edge filter for left columns frags */
+                /* perform the left edge filter if:
+                 *   - the fragment is not on the left column
+                 *   - the fragment is coded in this frame
+                 *   - the fragment is not coded in this frame but the left
+                 *     fragment is coded in this frame (this is done instead
+                 *     of a right edge filter when rendering the left fragment
+                 *     since this fragment is not available yet) */
                 if ((x > 0) &&
-                    (s->all_fragments[i].coding_method != MODE_COPY)) {
+                    ((s->all_fragments[i].coding_method != MODE_COPY) ||
+                     ((s->all_fragments[i].coding_method == MODE_COPY) &&
+                      (s->all_fragments[i - 1].coding_method != MODE_COPY)) )) {
                     horizontal_filter(
-                        output_plane + s->all_fragments[i].first_pixel - 7*stride,
-                        stride, bounding_values);
+                        output_plane + s->all_fragments[i].first_pixel + 7*stride,
+                        -stride, bounding_values);
                 }
 
-                /* do not perform top edge filter for top row fragments */
+                /* perform the top edge filter if:
+                 *   - the fragment is not on the top row
+                 *   - the fragment is coded in this frame
+                 *   - the fragment is not coded in this frame but the above
+                 *     fragment is coded in this frame (this is done instead
+                 *     of a bottom edge filter when rendering the above
+                 *     fragment since this fragment is not available yet) */
                 if ((y > 0) &&
-                    (s->all_fragments[i].coding_method != MODE_COPY)) {
+                    ((s->all_fragments[i].coding_method != MODE_COPY) ||
+                     ((s->all_fragments[i].coding_method == MODE_COPY) &&
+                      (s->all_fragments[i - fragment_width].coding_method != MODE_COPY)) )) {
                     vertical_filter(
-                        output_plane + s->all_fragments[i].first_pixel + stride,
-                        stride, bounding_values);
-                }
-
-                /* do not perform right edge filter for right column
-                 * fragments or if right fragment neighbor is also coded
-                 * in this frame (it will be filtered for next fragment) */
-                if ((x < plane_width - 1) &&
-                    (s->all_fragments[i].coding_method != MODE_COPY) &&
-                    (s->all_fragments[i + 1].coding_method == MODE_COPY)) {
-                    horizontal_filter(
-                        output_plane + s->all_fragments[i + 1].first_pixel - 7*stride,
-                        stride, bounding_values);
-                }
-
-                /* do not perform bottom edge filter for bottom row
-                 * fragments or if bottom fragment neighbor is also coded
-                 * in this frame (it will be filtered in the next row) */
-                if ((y < plane_height - 1) &&
-                    (s->all_fragments[i].coding_method != MODE_COPY) &&
-                    (s->all_fragments[i + fragment_width].coding_method == MODE_COPY)) {
-                    vertical_filter(
-                        output_plane + s->all_fragments[i + fragment_width].first_pixel + stride,
-                        stride, bounding_values);
+                        output_plane + s->all_fragments[i].first_pixel - stride,
+                        -stride, bounding_values);
                 }
 #endif
             }
