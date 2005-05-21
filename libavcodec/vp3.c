@@ -317,12 +317,15 @@ typedef struct Vp3DecodeContext {
     uint8_t edge_emu_buffer[9*2048]; //FIXME dynamic alloc
     uint8_t qscale_table[2048]; //FIXME dynamic alloc (width+15)/16
 
-     /* Huffman decode */
-     int hti;
-     unsigned int hbits;
-     int entries;
-     int huff_code_size;
-     uint16_t huffman_table[80][32][2];
+    /* Huffman decode */
+    int hti;
+    unsigned int hbits;
+    int entries;
+    int huff_code_size;
+    uint16_t huffman_table[80][32][2];
+
+    uint32_t filter_limit_values[64];
+    int bounding_values_array[256];
 } Vp3DecodeContext;
 
 static int theora_decode_comments(AVCodecContext *avctx, GetBitContext gb);
@@ -862,7 +865,7 @@ static void init_frame(Vp3DecodeContext *s, GetBitContext *gb)
 }
 
 /*
- * This function sets of the dequantization tables used for a particular
+ * This function sets up the dequantization tables used for a particular
  * frame.
  */
 static void init_dequantizer(Vp3DecodeContext *s)
@@ -955,6 +958,28 @@ static void init_dequantizer(Vp3DecodeContext *s)
       debug_dequantizers("\n");
     }
     debug_dequantizers("\n");
+}
+
+/*
+ * This function initializes the loop filter boundary limits if the frame's
+ * quality index is different from the previous frame's.
+ */
+static void init_loop_filter(Vp3DecodeContext *s)
+{
+    int *bounding_values= s->bounding_values_array+127;
+    int filter_limit;
+    int x;
+
+    filter_limit = s->filter_limit_values[s->quality_index];
+
+    /* set up the bounding values */
+    memset(s->bounding_values_array, 0, 256 * sizeof(int));
+    for (x = 0; x < filter_limit; x++) {
+        bounding_values[-x - filter_limit] = -filter_limit + x;
+        bounding_values[-x] = -x;
+        bounding_values[x] = x;
+        bounding_values[x + filter_limit] = filter_limit - x;
+    }
 }
 
 /*
@@ -2143,6 +2168,12 @@ static void reverse_dc_prediction(Vp3DecodeContext *s,
     }
 }
 
+
+static void horizontal_filter(unsigned char *first_pixel, int stride,
+    int *bounding_values);
+static void vertical_filter(unsigned char *first_pixel, int stride,
+    int *bounding_values);
+
 /*
  * Perform the final rendering for a particular slice of data.
  * The slice number ranges from 0..(macroblock_height - 1).
@@ -2167,6 +2198,8 @@ static void render_slice(Vp3DecodeContext *s, int slice)
     int plane_height;
     int slice_height;
     int current_macroblock_entry = slice * s->macroblock_width * 6;
+    int *bounding_values= s->bounding_values_array+127;
+    int fragment_width;
 
     if (slice >= s->macroblock_height)
         return;
@@ -2214,6 +2247,7 @@ static void render_slice(Vp3DecodeContext *s, int slice)
             slice_height = y + FRAGMENT_PIXELS;
             i = s->macroblock_fragments[current_macroblock_entry + 5];
         }
+        fragment_width = plane_width / 2;
     
         if(ABS(stride) > 2048)
             return; //various tables are fixed size
@@ -2361,25 +2395,54 @@ static void render_slice(Vp3DecodeContext *s, int slice)
                         stride, 8);
 
                 }
+
+                /* do not perform left edge filter for left columns frags */
+                if ((x > 0) &&
+                    (s->all_fragments[i].coding_method != MODE_COPY)) {
+                    horizontal_filter(
+                        output_plane + s->all_fragments[i].first_pixel - 7*stride,
+                        stride, bounding_values);
+                }
+
+                /* do not perform top edge filter for top row fragments */
+                if ((y > 0) &&
+                    (s->all_fragments[i].coding_method != MODE_COPY)) {
+                    vertical_filter(
+                        output_plane + s->all_fragments[i].first_pixel + stride,
+                        stride, bounding_values);
+                }
+
+                /* do not perform right edge filter for right column
+                 * fragments or if right fragment neighbor is also coded
+                 * in this frame (it will be filtered for next fragment) */
+                if ((x < plane_width - 1) &&
+                    (s->all_fragments[i].coding_method != MODE_COPY) &&
+                    (s->all_fragments[i + 1].coding_method == MODE_COPY)) {
+                    horizontal_filter(
+                        output_plane + s->all_fragments[i + 1].first_pixel - 7*stride,
+                        stride, bounding_values);
+                }
+
+                /* do not perform bottom edge filter for bottom row
+                 * fragments or if bottom fragment neighbor is also coded
+                 * in this frame (it will be filtered in the next row) */
+                if ((y < plane_height - 1) &&
+                    (s->all_fragments[i].coding_method != MODE_COPY) &&
+                    (s->all_fragments[i + fragment_width].coding_method == MODE_COPY)) {
+                    vertical_filter(
+                        output_plane + s->all_fragments[i + fragment_width].first_pixel + stride,
+                        stride, bounding_values);
+                }
             }
         }
     }
 
-    /* future loop filter logic goes here... */
-    /* algorithm: 
-     *   if (slice != 0) 
-     *     run filter on 1st row of Y slice
-     *     run filter on U slice
-     *     run filter on V slice
-     *   run filter on 2nd row of Y slice
-     */
-
      /* this looks like a good place for slice dispatch... */
      /* algorithm:
-      *   if (slice > 0)
-      *     dispatch (slice - 1);
       *   if (slice == s->macroblock_height - 1)
-      *     dispatch (slice);  // handle last slice
+      *     dispatch (both last slice & 2nd-to-last slice);
+      *   else if (slice > 0)
+      *     dispatch (slice - 1);
       */
 
     emms_c();
@@ -2628,9 +2691,10 @@ static void apply_loop_filter(Vp3DecodeContext *s)
     int fragment;
     int stride;
     unsigned char *plane_data;
+    int *bounding_values= s->bounding_values_array+127;
 
+#if 0
     int bounding_values_array[256];
-    int *bounding_values= bounding_values_array+127;
     int filter_limit;
 
     /* find the right loop limit value */
@@ -2648,6 +2712,7 @@ static void apply_loop_filter(Vp3DecodeContext *s)
         bounding_values[x] = x;
         bounding_values[x + filter_limit] = filter_limit - x;
     }
+#endif
 
     for (plane = 0; plane < 3; plane++) {
 
@@ -2915,6 +2980,8 @@ static int vp3_decode_init(AVCodecContext *avctx)
 	    s->coded_intra_c_dequant[i] = vp31_intra_c_dequant[i];
 	for (i = 0; i < 64; i++)
 	    s->coded_inter_dequant[i] = vp31_inter_dequant[i];
+	for (i = 0; i < 64; i++)
+	    s->filter_limit_values[i] = vp31_filter_limit_values[i];
 
         /* init VLC tables */
         for (i = 0; i < 16; i++) {
@@ -3054,8 +3121,10 @@ static int vp3_decode_frame(AVCodecContext *avctx,
 	    s->keyframe?"key":"", counter, s->quality_index);
     counter++;
 
-    if (s->quality_index != s->last_quality_index)
+    if (s->quality_index != s->last_quality_index) {
         init_dequantizer(s);
+        init_loop_filter(s);
+    }
 
     if (s->keyframe) {
 	if (!s->theora)
@@ -3185,7 +3254,7 @@ if (!s->keyframe) {
     STOP_TIMER("render_fragments")}
 
     {START_TIMER
-    apply_loop_filter(s);
+//    apply_loop_filter(s);
     STOP_TIMER("apply_loop_filter")}
 #if KEYFRAMES_ONLY
 }
@@ -3433,6 +3502,10 @@ static int theora_decode_tables(AVCodecContext *avctx, GetBitContext gb)
         }
     }
     
+    /* XXX FIXME: these limit values need to come from the Theora header */
+    for (i = 0; i < 64; i++)
+        s->filter_limit_values[i] = vp31_filter_limit_values[i];
+
     s->theora_tables = 1;
     
     return 0;
