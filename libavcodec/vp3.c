@@ -1540,9 +1540,15 @@ static int unpack_vectors(Vp3DecodeContext *s, GetBitContext *gb)
                         motion_y[0] = get_motion_vector_vlc(gb);
 #endif
                     } else {
+#if 1
+                        motion_x[0] = fixed_motion_vector_table[get_bits(gb, 6)];
+                        motion_y[0] = fixed_motion_vector_table[get_bits(gb, 6)];
+#else
                         motion_x[0] = get_motion_vector_fixed(gb);
                         motion_y[0] = get_motion_vector_fixed(gb);
+#endif
                     }
+
                     for (k = 1; k < 6; k++) {
                         motion_x[k] = motion_x[0];
                         motion_y[k] = motion_y[0];
@@ -1572,8 +1578,13 @@ static int unpack_vectors(Vp3DecodeContext *s, GetBitContext *gb)
                             motion_y[k] = get_motion_vector_vlc(gb);
 #endif
                         } else {
+#if 1
+                            motion_x[k] = fixed_motion_vector_table[get_bits(gb, 6)];
+                            motion_y[k] = fixed_motion_vector_table[get_bits(gb, 6)];
+#else
                             motion_x[k] = get_motion_vector_fixed(gb);
                             motion_y[k] = get_motion_vector_fixed(gb);
+#endif
                         }
                         motion_x[4] += motion_x[k];
                         motion_y[4] += motion_y[k];
