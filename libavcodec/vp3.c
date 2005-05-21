@@ -2395,7 +2395,7 @@ static void render_slice(Vp3DecodeContext *s, int slice)
                         stride, 8);
 
                 }
-
+#if 0
                 /* do not perform left edge filter for left columns frags */
                 if ((x > 0) &&
                     (s->all_fragments[i].coding_method != MODE_COPY)) {
@@ -2433,6 +2433,7 @@ static void render_slice(Vp3DecodeContext *s, int slice)
                         output_plane + s->all_fragments[i + fragment_width].first_pixel + stride,
                         stride, bounding_values);
                 }
+#endif
             }
         }
     }
@@ -3254,7 +3255,7 @@ if (!s->keyframe) {
     STOP_TIMER("render_fragments")}
 
     {START_TIMER
-//    apply_loop_filter(s);
+    apply_loop_filter(s);
     STOP_TIMER("apply_loop_filter")}
 #if KEYFRAMES_ONLY
 }
