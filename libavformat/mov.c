@@ -268,6 +268,7 @@ typedef struct MOVContext {
     int found_mdat; /* we suppose we have enough data to read the file */
     int64_t mdat_size;
     int64_t mdat_offset;
+    int ni;                                         ///< non interleaved mode
     int total_streams;
     /* some streams listed here aren't presented to the ffmpeg API, since they aren't either video nor audio
      * but we need the info to be able to skip data from those streams in the 'mdat' section
@@ -768,6 +769,14 @@ static int mov_read_stco(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
         }
     } else
         return -1;
+    
+    for(i=0; i<c->fc->nb_streams; i++){
+        MOVStreamContext *sc2 = (MOVStreamContext *)c->fc->streams[i]->priv_data;
+        int64_t first= sc2->chunk_offsets[0];
+        int64_t last= sc2->chunk_offsets[sc2->chunk_count-1];
+        if(first >= sc->chunk_offsets[entries-1] || last <= sc->chunk_offsets[0])
+            c->ni=1;
+    }
 #ifdef DEBUG
 /*
     for(i=0; i<entries; i++) {
@@ -1799,7 +1808,8 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     MOVContext *mov = (MOVContext *) s->priv_data;
     MOVStreamContext *sc;
-    int64_t offset = 0x0FFFFFFFFFFFFFFFLL;
+    int64_t offset = INT64_MAX;
+    int64_t best_dts = INT64_MAX;
     int i, a, b, m;
     int size;
     int idx;
@@ -1833,17 +1843,44 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
 
 again:
     sc = 0;
+    if(offset == INT64_MAX)
+        best_dts= INT64_MAX;
     for(i=0; i<mov->total_streams; i++) {
 	MOVStreamContext *msc = mov->streams[i];
-	//av_log(NULL, AV_LOG_DEBUG, "MOCHUNK %ld  %d   %p  pos:%Ld\n", mov->streams[i]->next_chunk, mov->total_streams, mov->streams[i], url_ftell(&s->pb));
-        if ((msc->next_chunk < msc->chunk_count) && msc->next_chunk >= 0
-	   && (msc->chunk_offsets[msc->next_chunk] < offset)) {
-	    sc = msc;
-	    offset = msc->chunk_offsets[msc->next_chunk];
-	    //av_log(NULL, AV_LOG_DEBUG, "SELETED  %Ld  i:%d\n", offset, i);
+
+        if ((msc->next_chunk < msc->chunk_count) && msc->next_chunk >= 0){
+            if (msc->sample_to_time_index < msc->stts_count && mov->ni) {
+                int64_t dts;
+                int index= msc->sample_to_time_index;
+                int sample= msc->sample_to_time_sample;
+                int time= msc->sample_to_time_time;
+                int duration = msc->stts_data[index].duration;
+                int count = msc->stts_data[index].count;
+                if (sample + count < msc->current_sample) {
+                    sample += count;
+                    time   += count*duration;
+                    index ++;
+                    duration = msc->stts_data[index].duration;
+                }
+                dts = time + (msc->current_sample-1 - sample) * (int64_t)duration;
+                dts = av_rescale(dts, AV_TIME_BASE, msc->time_scale);
+//                av_log(NULL, AV_LOG_DEBUG, "%d %Ld %Ld %Ld \n", i, dts, best_dts, offset);
+                if(dts < best_dts){
+                    best_dts= dts;
+                    sc = msc;
+                    offset = msc->chunk_offsets[msc->next_chunk];
+                }
+            }else{
+            //av_log(NULL, AV_LOG_DEBUG, "MOCHUNK %ld  %d   %p  pos:%Ld\n", mov->streams[i]->next_chunk, mov->total_streams, mov->streams[i], url_ftell(&s->pb));
+                if ((msc->chunk_offsets[msc->next_chunk] < offset)) {
+                    sc = msc;
+                    offset = msc->chunk_offsets[msc->next_chunk];
+                    //av_log(NULL, AV_LOG_DEBUG, "SELETED  %Ld  i:%d\n", offset, i);
+                }
+            }
         }
     }
-    if (!sc || offset==0x0FFFFFFFFFFFFFFFLL)
+    if (!sc || offset==INT64_MAX)
 	return -1;
 
     sc->next_chunk++;
@@ -1857,7 +1894,7 @@ again:
     if(!sc->is_ff_stream || (s->streams[sc->ffindex]->discard >= AVDISCARD_ALL)) {
         url_fskip(&s->pb, (offset - mov->next_chunk_offset));
         mov->next_chunk_offset = offset;
-	offset = 0x0FFFFFFFFFFFFFFFLL;
+	offset = INT64_MAX;
         goto again;
     }
 
@@ -1866,7 +1903,8 @@ again:
     for(i=0; i<mov->total_streams; i++) {
 	MOVStreamContext *msc = mov->streams[i];
 	if ((msc->next_chunk < msc->chunk_count)
-	    && ((msc->chunk_offsets[msc->next_chunk] - offset) < size))
+            && msc->chunk_offsets[msc->next_chunk] - offset < size
+            && msc->chunk_offsets[msc->next_chunk] > offset)
 	    size = msc->chunk_offsets[msc->next_chunk] - offset;
     }
 
