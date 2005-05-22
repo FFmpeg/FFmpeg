@@ -186,6 +186,9 @@ void avcodec_register_all(void)
     register_avcodec(&x264_encoder);
 #endif //CONFIG_X264_ENCODER
 #endif
+#ifdef CONFIG_LIBGSM
+    register_avcodec(&libgsm_encoder);
+#endif //CONFIG_LIBGSM
 #endif /* CONFIG_ENCODERS */
 #ifdef CONFIG_RAWVIDEO_ENCODER
     register_avcodec(&rawvideo_encoder);
@@ -482,6 +485,9 @@ void avcodec_register_all(void)
 #ifdef CONFIG_VORBIS_DECODER
     register_avcodec(&vorbis_decoder);
 #endif
+#ifdef CONFIG_LIBGSM
+    register_avcodec(&libgsm_decoder);
+#endif //CONFIG_LIBGSM
 #endif /* CONFIG_DECODERS */
 
 #ifdef AMR_NB

@@ -291,6 +291,11 @@ endif
 EXTRALIBS += -logg
 endif
 
+ifeq ($(CONFIG_LIBGSM),yes)
+OBJS += libgsm.o
+EXTRALIBS += -lgsm
+endif
+
 ifeq ($(TARGET_GPROF),yes)
 CFLAGS+=-p
 LDFLAGS+=-p

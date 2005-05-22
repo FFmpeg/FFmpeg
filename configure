@@ -22,6 +22,7 @@ echo "  --enable-theora          enable theora support via libtheora [default=no
 echo "  --enable-faad            enable faad support via libfaad [default=no]"
 echo "  --enable-faadbin         build faad support with runtime linking [default=no]"
 echo "  --enable-faac            enable faac support via libfaac [default=no]"
+echo "  --enable-libgsm          enable gsm support via libgsm [default=no]"
 echo "  --enable-xvid            enable xvid support via xvidcore [default=no]"
 echo "  --enable-x264            enable H.264 encoding via x264 [default=no]"
 echo "  --enable-mingw32         enable mingw32 native/cross windows compile"
@@ -158,6 +159,7 @@ dv1394="yes"
 dc1394="no"
 network="yes"
 zlib="yes"
+libgsm="no"
 mp3lame="no"
 libogg="no"
 vorbis="no"
@@ -446,6 +448,8 @@ for opt do
   --enable-pp) pp="yes"
   ;;
   --enable-shared-pp) shared_pp="yes"
+  ;;
+  --enable-libgsm) libgsm="yes"
   ;;
   --enable-mp3lame) mp3lame="yes"
   ;;
@@ -1123,6 +1127,7 @@ echo "AltiVec enabled  $altivec"
 fi
 echo "gprof enabled    $gprof"
 echo "zlib enabled     $zlib"
+echo "libgsm enabled   $libgsm"
 echo "mp3lame enabled  $mp3lame"
 echo "libogg enabled   $libogg"
 echo "vorbis enabled   $vorbis"
@@ -1418,6 +1423,11 @@ fi
 if test "$zlib" = "yes" ; then
   echo "#define CONFIG_ZLIB 1" >> $TMPH
   echo "CONFIG_ZLIB=yes" >> config.mak
+fi
+
+if test "$libgsm" = "yes" ; then
+  echo "#define CONFIG_LIBGSM 1" >> $TMPH
+  echo "CONFIG_LIBGSM=yes" >> config.mak
 fi
 
 if test "$mp3lame" = "yes" ; then

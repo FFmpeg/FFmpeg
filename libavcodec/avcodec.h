@@ -172,6 +172,7 @@ enum CodecID {
     CODEC_ID_SHORTEN,
     CODEC_ID_ALAC,
     CODEC_ID_WESTWOOD_SND1,
+    CODEC_ID_GSM,    
     
     CODEC_ID_OGGTHEORA= 0x16000, 
     
@@ -2021,6 +2022,8 @@ extern AVCodec ws_snd1_decoder;
 extern AVCodec indeo2_decoder;
 extern AVCodec vorbis_decoder;
 extern AVCodec fraps_decoder;
+extern AVCodec libgsm_encoder;
+extern AVCodec libgsm_decoder;
 
 /* pcm codecs */
 #define PCM_CODEC(id, name) \
