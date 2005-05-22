@@ -465,7 +465,7 @@ else
 	install -d $(libdir)
 	install $(INSTALLSTRIP) -m 755 $(SLIB) $(libdir)/libavcodec-$(VERSION).so
 	ln -sf libavcodec-$(VERSION).so $(libdir)/libavcodec.so
-	ldconfig || true
+	$(LDCONFIG) || true
 endif
 ifeq ($(CONFIG_PP),yes)
 	$(MAKE) -C libpostproc $@

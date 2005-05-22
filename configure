@@ -197,6 +197,7 @@ ffserver="yes"
 ffplay="yes"
 LDFLAGS=-Wl,--warn-common
 FFSLDFLAGS=-Wl,-E
+LDCONFIG="ldconfig"
 LIBPREF="lib"
 LIBSUF=".a"
 SLIBPREF="lib"
@@ -273,6 +274,7 @@ dv1394="no"
 make="gmake"
 CFLAGS="$CFLAGS \$(PIC)"
 LDFLAGS="$LDFLAGS -export-dynamic -pthread"
+LDCONFIG="ldconfig -m \$(libdir)"
 extralibs="$extralibs -lossaudio"
 ;;
 FreeBSD)
@@ -1205,6 +1207,7 @@ fi
 echo "OPTFLAGS=$CFLAGS" >> config.mak
 echo "SHCFLAGS=$SHCFLAGS">>config.mak
 echo "LDFLAGS=$LDFLAGS" >> config.mak
+echo "LDCONFIG=$LDCONFIG" >> config.mak
 echo "FFSLDFLAGS=$FFSLDFLAGS" >> config.mak
 echo "SHFLAGS=$SHFLAGS" >> config.mak
 echo "BUILDSUF=$BUILDSUF" >> config.mak

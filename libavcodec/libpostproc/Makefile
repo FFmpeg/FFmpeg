@@ -61,7 +61,7 @@ else
 	ln -sf $(SPPLIB).$(SPPVERSION) $(libdir)/$(SPPLIB).$(SPPMAJOR)
 	install -d $(libdir)/pkgconfig
 	install -m 644 ../../libpostproc.pc $(libdir)/pkgconfig
-	ldconfig || true
+	$(LDCONFIG) || true
 endif
 endif
 	mkdir -p $(prefix)/include/postproc

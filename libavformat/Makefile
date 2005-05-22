@@ -111,7 +111,7 @@ else
 	install -d $(libdir)
 	install $(INSTALLSTRIP) -m 755 $(SLIB) $(libdir)/libavformat-$(VERSION).so
 	ln -sf libavformat-$(VERSION).so $(libdir)/libavformat.so
-	ldconfig || true
+	$(LDCONFIG) || true
 endif
 else
 install:
