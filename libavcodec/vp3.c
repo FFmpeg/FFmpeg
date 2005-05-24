@@ -3420,9 +3420,9 @@ static int theora_decode_tables(AVCodecContext *avctx, GetBitContext gb)
 
     if (s->theora >= 0x030200) {
         n = get_bits(&gb, 3);
-        /* loop filter table */
+        /* loop filter limit values table */
         for (i = 0; i < 64; i++)
-            skip_bits(&gb, n);
+            s->filter_limit_values[i] = get_bits(&gb, n);
     }
     
     if (s->theora >= 0x030200)
@@ -3497,10 +3497,6 @@ static int theora_decode_tables(AVCodecContext *avctx, GetBitContext gb)
         }
     }
     
-    /* XXX FIXME: these limit values need to come from the Theora header */
-    for (i = 0; i < 64; i++)
-        s->filter_limit_values[i] = vp31_filter_limit_values[i];
-
     s->theora_tables = 1;
     
     return 0;
