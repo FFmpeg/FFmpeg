@@ -35,6 +35,10 @@ enum RTSPProtocol {
 #define RTSP_DEFAULT_PORT   554
 #define RTSP_MAX_TRANSPORTS 8
 #define RTSP_TCP_MAX_PACKET_SIZE 1472
+#define RTSP_DEFAULT_NB_AUDIO_CHANNELS 2
+#define RTSP_DEFAULT_AUDIO_SAMPLERATE 44100
+#define RTSP_RTP_PORT_MIN 5000
+#define RTSP_RTP_PORT_MAX 10000
 
 typedef struct RTSPTransportField {
     int interleaved_min, interleaved_max;  /* interleave ids, if TCP transport */
