@@ -356,17 +356,11 @@ static int yuv4_read_packet(AVFormatContext *s, AVPacket *pkt)
     if (packet_size < 0)
         return -1;
 
-    if (av_new_packet(pkt, packet_size) < 0)
+    if (av_get_packet(&s->pb, pkt, packet_size) != packet_size)
         return AVERROR_IO;
 
     pkt->stream_index = 0;
-    ret = get_buffer(&s->pb, pkt->data, pkt->size);
-    if (ret != pkt->size) {
-        av_free_packet(pkt);
-        return AVERROR_IO;
-    } else {
-        return 0;
-    }
+    return 0;
 }
 
 static int yuv4_read_close(AVFormatContext *s)

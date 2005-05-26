@@ -812,11 +812,9 @@ static int rm_read_packet(AVFormatContext *s, AVPacket *pkt)
     if (rm->old_format) {
         /* just read raw bytes */
         len = RAW_PACKET_SIZE;
-        av_new_packet(pkt, len);
+        len= av_get_packet(pb, pkt, len);
         pkt->stream_index = 0;
-        len = get_buffer(pb, pkt->data, len);
         if (len <= 0) {
-            av_free_packet(pkt);
             return AVERROR_IO;
         }
         pkt->size = len;
@@ -860,9 +858,8 @@ resync:
             goto resync;
         }
         
-        av_new_packet(pkt, len);
+        av_get_packet(pb, pkt, len);
         pkt->stream_index = i;
-        get_buffer(pb, pkt->data, len);
 
 #if 0
         if (st->codec.codec_type == CODEC_TYPE_VIDEO) {

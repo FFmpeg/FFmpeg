@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-#define LIBAVFORMAT_BUILD       4624
+#define LIBAVFORMAT_BUILD       4625
 
 #define LIBAVFORMAT_VERSION_INT FFMPEG_VERSION_INT
 #define LIBAVFORMAT_VERSION     FFMPEG_VERSION
@@ -28,17 +28,16 @@ extern "C" {
 #endif
 
 typedef struct AVPacket {
-    int64_t pts; /* presentation time stamp in AV_TIME_BASE units (or
-                    pts_den units in muxers or demuxers) */
-    int64_t dts; /* decompression time stamp in AV_TIME_BASE units (or
-                    pts_den units in muxers or demuxers) */
+    int64_t pts;                            ///< presentation time stamp in time_base units
+    int64_t dts;                            ///< decompression time stamp in time_base units
     uint8_t *data;
     int   size;
     int   stream_index;
     int   flags;
-    int   duration; /* presentation duration (0 if not available) */
+    int   duration;                         ///< presentation duration in time_base units (0 if not available)
     void  (*destruct)(struct AVPacket *);
     void  *priv;
+    int64_t pos;                            ///< byte position in stream, -1 if unknown
 } AVPacket; 
 #define PKT_FLAG_KEY   0x0001
 
@@ -49,6 +48,7 @@ static inline void av_init_packet(AVPacket *pkt)
 {
     pkt->pts   = AV_NOPTS_VALUE;
     pkt->dts   = AV_NOPTS_VALUE;
+    pkt->pos   = -1;
     pkt->duration = 0;
     pkt->flags = 0;
     pkt->stream_index = 0;
@@ -56,6 +56,7 @@ static inline void av_init_packet(AVPacket *pkt)
 }
 
 int av_new_packet(AVPacket *pkt, int size);
+int av_get_packet(ByteIOContext *s, AVPacket *pkt, int size);
 int av_dup_packet(AVPacket *pkt);
 
 /**

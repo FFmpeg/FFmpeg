@@ -269,6 +269,7 @@ static int vmd_read_packet(AVFormatContext *s,
 
     if (av_new_packet(pkt, frame->frame_size + BYTES_PER_FRAME_RECORD))
         return AVERROR_NOMEM;
+    pkt->pos= url_ftell(pb);
     memcpy(pkt->data, frame->frame_record, BYTES_PER_FRAME_RECORD);
     ret = get_buffer(pb, pkt->data + BYTES_PER_FRAME_RECORD, 
         frame->frame_size);

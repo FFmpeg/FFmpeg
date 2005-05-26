@@ -253,9 +253,6 @@ typedef struct MOVStreamContext {
     int time_scale;
     long current_sample;
     long left_in_chunk; /* how many samples before next chunk */
-    /* specific MPEG4 header which is added at the beginning of the stream */
-    unsigned int header_len;
-    uint8_t *header_data;
     MOV_esds_t esds;
 } MOVStreamContext;
 
@@ -1672,7 +1669,6 @@ static void mov_free_stream_context(MOVStreamContext *sc)
         av_freep(&sc->sample_to_chunk);
         av_freep(&sc->sample_sizes);
         av_freep(&sc->keyframes);
-        av_freep(&sc->header_data);
         av_freep(&sc->stts_data);        
         av_freep(&sc->ctts_data);        
         av_freep(&sc);
@@ -1974,18 +1970,7 @@ readchunk:
         return -1;
     url_fseek(&s->pb, offset, SEEK_SET);
 
-    //av_log(NULL, AV_LOG_DEBUG, "READCHUNK hlen: %d  %d off: %Ld   pos:%Ld\n", size, sc->header_len, offset, url_ftell(&s->pb));
-    if (sc->header_len > 0) {
-        av_new_packet(pkt, size + sc->header_len);
-        memcpy(pkt->data, sc->header_data, sc->header_len);
-        get_buffer(&s->pb, pkt->data + sc->header_len, size);
-        /* free header */
-        av_freep(&sc->header_data);
-        sc->header_len = 0;
-    } else {
-        av_new_packet(pkt, size);
-        get_buffer(&s->pb, pkt->data, pkt->size);
-    }
+    av_get_packet(&s->pb, pkt, size);
     pkt->stream_index = sc->ffindex;
     
     // If the keyframes table exists, mark any samples that are in the table as key frames.

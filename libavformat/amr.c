@@ -154,7 +154,7 @@ static int amr_read_packet(AVFormatContext *s,
             return AVERROR_IO;
         }
         pkt->stream_index = 0;
-        
+        pkt->pos= url_ftell(&s->pb);
         pkt->data[0]=toc;
     
         read = get_buffer(&s->pb, pkt->data+1, size);
@@ -189,6 +189,7 @@ static int amr_read_packet(AVFormatContext *s,
         }
     
         pkt->stream_index = 0;
+        pkt->pos= url_ftell(&s->pb);
         pkt->data[0]=toc;
     
         read = get_buffer(&s->pb, pkt->data+1, size-1);

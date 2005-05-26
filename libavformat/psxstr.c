@@ -283,6 +283,7 @@ static int str_read_packet(AVFormatContext *s,
                     if (av_new_packet(pkt, frame_size))
                         return AVERROR_IO;
 
+                    pkt->pos= url_ftell(pb) - RAW_CD_SECTOR_SIZE;
                     pkt->stream_index = 
                         str->channels[channel].video_stream_index;
                //     pkt->pts = str->pts;

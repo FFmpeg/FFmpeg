@@ -604,6 +604,7 @@ static int asf_read_packet(AVFormatContext *s, AVPacket *pkt)
 	    asf_st->seq = asf->packet_seq;
 	    asf_st->pkt.pts = asf->packet_frag_timestamp;
 	    asf_st->pkt.stream_index = asf->stream_index;
+            asf_st->pkt.pos = 
             asf_st->packet_pos= asf->packet_pos;            
 //printf("new packet: stream:%d key:%d packet_key:%d audio:%d size:%d\n", 
 //asf->stream_index, asf->packet_key_frame, asf_st->pkt.flags & PKT_FLAG_KEY,

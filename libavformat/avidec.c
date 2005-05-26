@@ -423,8 +423,7 @@ resync:
 
         if(size > ast->remaining)
             size= ast->remaining;
-        av_new_packet(pkt, size);
-        get_buffer(pb, pkt->data, size);
+        av_get_packet(pb, pkt, size);
         
         if (avi->dv_demux) {
             dstr = pkt->destruct;

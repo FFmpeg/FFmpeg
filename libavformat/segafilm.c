@@ -233,6 +233,7 @@ static int film_read_packet(AVFormatContext *s,
             return AVERROR_NOMEM;
         if(pkt->size < 10)
             return -1;
+        pkt->pos= url_ftell(pb);
         ret = get_buffer(pb, pkt->data, 10);
         /* skip the non-spec CVID bytes */
         url_fseek(pb, film->cvid_extra_bytes, SEEK_CUR);
@@ -254,6 +255,7 @@ static int film_read_packet(AVFormatContext *s,
             film->stereo_buffer = av_malloc(film->stereo_buffer_size);
         }
 
+        pkt->pos= url_ftell(pb);
         ret = get_buffer(pb, film->stereo_buffer, sample->sample_size);
         if (ret != sample->sample_size)
             ret = AVERROR_IO;
@@ -272,9 +274,7 @@ static int film_read_packet(AVFormatContext *s,
             }
         }
     } else {
-        if (av_new_packet(pkt, sample->sample_size))
-            return AVERROR_NOMEM;
-        ret = get_buffer(pb, pkt->data, sample->sample_size);
+        ret= av_get_packet(pb, pkt, sample->sample_size);
         if (ret != sample->sample_size)
             ret = AVERROR_IO;
     }

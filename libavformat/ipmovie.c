@@ -140,16 +140,11 @@ static int load_ipmovie_packet(IPMVEContext *s, ByteIOContext *pb,
         audio_pts *= s->audio_frame_count;
         audio_pts /= s->audio_sample_rate;
 
-        if (av_new_packet(pkt, s->audio_chunk_size))
-            return CHUNK_NOMEM;
+        if (s->audio_chunk_size != av_get_packet(pb, pkt, s->audio_chunk_size))
+            return CHUNK_EOF;
 
         pkt->stream_index = s->audio_stream_index;
         pkt->pts = audio_pts;
-        if (get_buffer(pb, pkt->data, s->audio_chunk_size) != 
-            s->audio_chunk_size) {
-            av_free_packet(pkt);
-            return CHUNK_EOF;
-        }
 
         /* audio frame maintenance */
         if (s->audio_type != CODEC_ID_INTERPLAY_DPCM)
@@ -171,6 +166,7 @@ static int load_ipmovie_packet(IPMVEContext *s, ByteIOContext *pb,
         if (av_new_packet(pkt, s->decode_map_chunk_size + s->video_chunk_size))
             return CHUNK_NOMEM;
 
+        pkt->pos= s->decode_map_chunk_offset;
         url_fseek(pb, s->decode_map_chunk_offset, SEEK_SET);
         s->decode_map_chunk_offset = 0;
 

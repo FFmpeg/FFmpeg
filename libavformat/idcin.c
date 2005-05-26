@@ -255,26 +255,22 @@ static int idcin_read_packet(AVFormatContext *s,
         /* skip the number of decoded bytes (always equal to width * height) */
         url_fseek(pb, 4, SEEK_CUR);
         chunk_size -= 4;
-        if (av_new_packet(pkt, chunk_size))
-            ret = AVERROR_IO;
+        ret= av_get_packet(pb, pkt, chunk_size); 
+        if (ret != chunk_size)
+            return AVERROR_IO;
         pkt->stream_index = idcin->video_stream_index;
         pkt->pts = idcin->pts;
-        ret = get_buffer(pb, pkt->data, chunk_size);
-        if (ret != chunk_size)
-            ret = AVERROR_IO;
     } else {
         /* send out the audio chunk */
         if (idcin->current_audio_chunk)
             chunk_size = idcin->audio_chunk_size2;
         else
             chunk_size = idcin->audio_chunk_size1;
-        if (av_new_packet(pkt, chunk_size))
+        ret= av_get_packet(pb, pkt, chunk_size);
+        if (ret != chunk_size)
             return AVERROR_IO;
         pkt->stream_index = idcin->audio_stream_index;
         pkt->pts = idcin->pts;
-        ret = get_buffer(&s->pb, pkt->data, chunk_size);
-        if (ret != chunk_size)
-            ret = AVERROR_IO;
 
         idcin->current_audio_chunk ^= 1;
         idcin->pts += FRAME_PTS_INC;

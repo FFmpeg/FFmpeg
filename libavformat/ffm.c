@@ -603,6 +603,7 @@ static int ffm_read_packet(AVFormatContext *s, AVPacket *pkt)
 
         av_new_packet(pkt, size);
         pkt->stream_index = ffm->header[0];
+        pkt->pos = url_ftell(&s->pb); 
         if (ffm->header[1] & FLAG_KEY_FRAME)
             pkt->flags |= PKT_FLAG_KEY;
 

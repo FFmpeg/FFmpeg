@@ -1236,8 +1236,7 @@ static int decode_frame(NUTContext *nut, AVPacket *pkt, int frame_code, int fram
         return 1;
     }
 
-    av_new_packet(pkt, size);
-    get_buffer(bc, pkt->data, size);
+    av_get_packet(bc, pkt, size);
     pkt->stream_index = stream_id;
     if (key_frame)
 	pkt->flags |= PKT_FLAG_KEY;

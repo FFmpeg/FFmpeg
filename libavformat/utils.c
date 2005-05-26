@@ -195,6 +195,31 @@ int av_new_packet(AVPacket *pkt, int size)
     return 0;
 }
 
+/**
+ * Allocate and read the payload of a packet and intialized its fields to default values.
+ *
+ * @param pkt packet
+ * @param size wanted payload size
+ * @return >0 (read size) if OK. AVERROR_xxx otherwise.
+ */
+int av_get_packet(ByteIOContext *s, AVPacket *pkt, int size)
+{
+    int ret= av_new_packet(pkt, size);
+
+    if(ret<0)
+        return ret;
+
+    pkt->pos= url_ftell(s);
+
+    ret= get_buffer(s, pkt->data, size);
+    if(ret<=0)
+        av_free_packet(pkt);
+    else
+        pkt->size= ret;
+
+    return ret;
+}
+
 /* This is a hack - the packet memory allocation stuff is broken. The
    packet is allocated if it was not really allocated */
 int av_dup_packet(AVPacket *pkt)

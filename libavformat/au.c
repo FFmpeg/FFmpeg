@@ -161,13 +161,11 @@ static int au_read_packet(AVFormatContext *s,
 
     if (url_feof(&s->pb))
         return AVERROR_IO;
-    if (av_new_packet(pkt, MAX_SIZE))
+    ret= av_get_packet(&s->pb, pkt, MAX_SIZE);
+    if (ret < 0)
         return AVERROR_IO;
     pkt->stream_index = 0;
 
-    ret = get_buffer(&s->pb, pkt->data, pkt->size);
-    if (ret < 0)
-        av_free_packet(pkt);
     /* note: we need to modify the packet size here to handle the last
        packet */
     pkt->size = ret;

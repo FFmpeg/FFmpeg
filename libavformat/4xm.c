@@ -277,6 +277,7 @@ static int fourxm_read_packet(AVFormatContext *s,
                 return AVERROR_IO;
             pkt->stream_index = fourxm->video_stream_index;
             pkt->pts = fourxm->video_pts;
+            pkt->pos = url_ftell(&s->pb);
             memcpy(pkt->data, header, 8);
             ret = get_buffer(&s->pb, &pkt->data[8], size);
 
@@ -293,16 +294,13 @@ static int fourxm_read_packet(AVFormatContext *s,
             size-=8;
 
             if (track_number == fourxm->selected_track) {
-                if (av_new_packet(pkt, size))
+                ret= av_get_packet(&s->pb, pkt, size);
+                if(ret<0)
                     return AVERROR_IO;
                 pkt->stream_index = 
                     fourxm->tracks[fourxm->selected_track].stream_index;
                 pkt->pts = fourxm->audio_pts;
-                ret = get_buffer(&s->pb, pkt->data, size);
-                if (ret < 0)
-                    av_free_packet(pkt);
-                else
-                    packet_read = 1;
+                packet_read = 1;
 
                 /* pts accounting */
                 audio_frame_count = size;

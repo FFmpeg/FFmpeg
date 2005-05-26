@@ -221,13 +221,11 @@ static int roq_read_packet(AVFormatContext *s,
             url_fseek(pb, codebook_offset, SEEK_SET);
 
             /* load up the packet */
-            if (av_new_packet(pkt, chunk_size))
+            ret= av_get_packet(pb, pkt, chunk_size);
+            if (ret != chunk_size)
                 return AVERROR_IO;
             pkt->stream_index = roq->video_stream_index;
             pkt->pts = roq->video_pts;
-            ret = get_buffer(pb, pkt->data, chunk_size);
-            if (ret != chunk_size)
-                ret = AVERROR_IO;
 
             roq->video_pts += roq->frame_pts_inc;
             packet_read = 1;
@@ -254,6 +252,7 @@ static int roq_read_packet(AVFormatContext *s,
                 roq->audio_frame_count += (chunk_size / roq->audio_channels);
             }
 
+            pkt->pos= url_ftell(pb);
             ret = get_buffer(pb, pkt->data + RoQ_CHUNK_PREAMBLE_SIZE,
                 chunk_size);
             if (ret != chunk_size)

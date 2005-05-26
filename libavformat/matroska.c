@@ -2366,6 +2366,7 @@ matroska_parse_blockgroup (MatroskaDemuxContext *matroska,
                 uint32_t *lace_size = NULL;
                 int n, track, flags, laces = 0;
                 uint64_t num;
+                int64_t pos= url_ftell(&matroska->ctx->pb);
 
                 if ((res = ebml_read_binary(matroska, &id, &data, &size)) < 0)
                     break;
@@ -2507,6 +2508,7 @@ matroska_parse_blockgroup (MatroskaDemuxContext *matroska,
                             matroska->tracks[track]->stream_index;
 
                         pkt->pts = timecode / 1000000; /* ns to ms */
+                        pkt->pos= pos;
 
                         matroska_queue_packet(matroska, pkt);
                     }

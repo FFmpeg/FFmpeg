@@ -234,13 +234,10 @@ static int ea_read_packet(AVFormatContext *s,
         switch (chunk_type) {
         /* audio data */
         case SCDl_TAG:
-            if (av_new_packet(pkt, chunk_size))
+            ret = av_get_packet(pb, pkt, chunk_size);
+            if (ret != chunk_size)
                 ret = AVERROR_IO;
             else {
-                ret = get_buffer(pb, pkt->data, chunk_size);
-                if (ret != chunk_size)
-                    ret = AVERROR_IO;
-                else {
                     pkt->stream_index = ea->audio_stream_index;
                     pkt->pts = 90000;
                     pkt->pts *= ea->audio_frame_counter;
@@ -250,7 +247,6 @@ static int ea_read_packet(AVFormatContext *s,
                      * on stereo; chunk also has 12-byte header */
                     ea->audio_frame_counter += ((chunk_size - 12) * 2) /
                         ea->num_channels;
-                }
             }
 
             packet_read = 1;

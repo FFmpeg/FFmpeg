@@ -858,10 +858,9 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
                 if (st->id == 0) {
                     if ( get_le16(pb) == swf->ch_id ) {
                         frame = get_le16(pb);
-                        av_new_packet(pkt, len-4);
+                        av_get_packet(pb, pkt, len-4);
                         pkt->pts = frame * swf->ms_per_frame;
                         pkt->stream_index = st->index;
-                        get_buffer(pb, pkt->data, pkt->size);
                         return pkt->size;
                     } else {
                         url_fskip(pb, len-2);
@@ -874,9 +873,8 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
             for( i=0; i<s->nb_streams; i++ ) {
         	st = s->streams[i];
                 if (st->id == 1) {
-                    av_new_packet(pkt, len);
+                    av_get_packet(pb, pkt, len);
                     pkt->stream_index = st->index;
-                    get_buffer(pb, pkt->data, pkt->size);
                     return pkt->size;
                 }
             }

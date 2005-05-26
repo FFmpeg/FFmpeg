@@ -1234,6 +1234,7 @@ static int mpegts_raw_read_packet(AVFormatContext *s,
 
     if (av_new_packet(pkt, TS_PACKET_SIZE) < 0)
         return -ENOMEM;
+    pkt->pos= url_ftell(&s->pb);
     ret = read_packet(&s->pb, pkt->data, ts->raw_packet_size);
     if (ret < 0) {
         av_free_packet(pkt);

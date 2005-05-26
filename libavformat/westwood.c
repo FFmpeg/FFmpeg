@@ -170,15 +170,12 @@ static int wsaud_read_packet(AVFormatContext *s,
         return AVERROR_INVALIDDATA;
 
     chunk_size = LE_16(&preamble[0]);
-    if (av_new_packet(pkt, chunk_size))
+    ret= av_get_packet(pb, pkt, chunk_size);
+    if (ret != chunk_size)
         return AVERROR_IO;
     pkt->stream_index = wsaud->audio_stream_index;
     pkt->pts = wsaud->audio_frame_counter;
     pkt->pts /= wsaud->audio_samplerate;
-    if ((ret = get_buffer(pb, pkt->data, chunk_size)) != chunk_size) {
-        av_free_packet(pkt);
-        ret = AVERROR_IO;
-    }
 
     /* 2 samples/byte, 1 or 2 samples per frame depending on stereo */
     wsaud->audio_frame_counter += (chunk_size * 2) / wsaud->audio_channels;
@@ -322,11 +319,8 @@ static int wsvqa_read_packet(AVFormatContext *s,
 
     if ((chunk_type == SND2_TAG) || (chunk_type == VQFR_TAG)) {
 
-        if (av_new_packet(pkt, chunk_size))
-            return AVERROR_IO;
-        ret = get_buffer(pb, pkt->data, chunk_size);
+        av_get_packet(pb, pkt, chunk_size);
         if (ret != chunk_size) {
-            av_free_packet(pkt);
             ret = AVERROR_IO;
         }
 

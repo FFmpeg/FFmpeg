@@ -88,13 +88,10 @@ static int raw_read_packet(AVFormatContext *s, AVPacket *pkt)
     
     size= RAW_PACKET_SIZE;
 
-    if (av_new_packet(pkt, size) < 0)
-        return AVERROR_IO;
+    ret= av_get_packet(&s->pb, pkt, size);
 
     pkt->stream_index = 0;
-    ret = get_buffer(&s->pb, pkt->data, size);
     if (ret <= 0) {
-        av_free_packet(pkt);
         return AVERROR_IO;
     }
     /* note: we need to modify the packet size here to handle the last
@@ -111,7 +108,8 @@ static int raw_read_partial_packet(AVFormatContext *s, AVPacket *pkt)
 
     if (av_new_packet(pkt, size) < 0)
         return AVERROR_IO;
-
+    
+    pkt->pos= url_ftell(&s->pb);
     pkt->stream_index = 0;
     ret = get_partial_buffer(&s->pb, pkt->data, size);
     if (ret <= 0) {
@@ -618,18 +616,10 @@ static int rawvideo_read_packet(AVFormatContext *s, AVPacket *pkt)
     if (packet_size < 0)
         return -1;
 
-    if (av_new_packet(pkt, packet_size) < 0)
-        return AVERROR_IO;
+    ret= av_get_packet(&s->pb, pkt, packet_size);
 
     pkt->stream_index = 0;
-#if 0
-    /* bypass buffered I/O */
-    ret = url_read(url_fileno(&s->pb), pkt->data, pkt->size);
-#else
-    ret = get_buffer(&s->pb, pkt->data, pkt->size);
-#endif
-    if (ret != pkt->size) {
-        av_free_packet(pkt);
+    if (ret != packet_size) {
         return AVERROR_IO;
     } else {
         return 0;

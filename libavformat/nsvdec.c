@@ -592,8 +592,7 @@ null_chunk_retry:
     if (vsize/* && st[NSV_ST_VIDEO]*/) {
         nst = st[NSV_ST_VIDEO]->priv_data;
         pkt = &nsv->ahead[NSV_ST_VIDEO];
-        av_new_packet(pkt, vsize);
-        get_buffer(pb, pkt->data, vsize);
+        av_get_packet(pb, pkt, vsize);
         pkt->stream_index = st[NSV_ST_VIDEO]->index;//NSV_ST_VIDEO;
         pkt->dts = nst->frame_offset++;
         pkt->flags |= PKT_FLAG_KEY; /* stupid format has no way to tell XXX: try the index */
@@ -633,9 +632,7 @@ null_chunk_retry:
                 PRINT(("NSV RAWAUDIO: bps %d, nchan %d, srate %ld\n", bps, channels, samplerate));
             }
         }
-        av_new_packet(pkt, asize);
-        if (asize)
-            get_buffer(pb, pkt->data, asize);
+        av_get_packet(pb, pkt, asize);
         pkt->stream_index = st[NSV_ST_AUDIO]->index;//NSV_ST_AUDIO;
         //pkt->dts = nst->frame_offset;
         //if (nst->sample_size)

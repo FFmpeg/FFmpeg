@@ -318,11 +318,9 @@ static int wc3_read_packet(AVFormatContext *s,
 
         case VGA__TAG:
             /* send out video chunk */
-            if (av_new_packet(pkt, size))
-                ret = AVERROR_IO;
+            ret= av_get_packet(pb, pkt, size);
             pkt->stream_index = wc3->video_stream_index;
             pkt->pts = wc3->pts;
-            ret = get_buffer(pb, pkt->data, size);
             if (ret != size)
                 ret = AVERROR_IO;
             packet_read = 1;
@@ -349,11 +347,9 @@ static int wc3_read_packet(AVFormatContext *s,
 
         case AUDI_TAG:
             /* send out audio chunk */
-            if (av_new_packet(pkt, size))
-                ret = AVERROR_IO;
+            ret= av_get_packet(pb, pkt, size);
             pkt->stream_index = wc3->audio_stream_index;
             pkt->pts = wc3->pts;
-            ret = get_buffer(pb, pkt->data, size);
             if (ret != size)
                 ret = AVERROR_IO;
 

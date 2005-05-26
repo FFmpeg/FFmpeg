@@ -178,6 +178,7 @@ static int flic_read_packet(AVFormatContext *s,
             }
             pkt->stream_index = flic->video_stream_index;
             pkt->pts = flic->pts;
+            pkt->pos = url_ftell(pb); 
             memcpy(pkt->data, preamble, FLIC_PREAMBLE_SIZE);
             ret = get_buffer(pb, pkt->data + FLIC_PREAMBLE_SIZE, 
                 size - FLIC_PREAMBLE_SIZE);
