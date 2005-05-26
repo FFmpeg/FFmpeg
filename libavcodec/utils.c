@@ -961,7 +961,7 @@ int64_t ff_gcd(int64_t a, int64_t b){
 
 /* av_log API */
 
-static int av_log_level = AV_LOG_DEBUG;
+static int av_log_level = AV_LOG_INFO;
 
 static void av_log_default_callback(void* ptr, int level, const char* fmt, va_list vl)
 {
