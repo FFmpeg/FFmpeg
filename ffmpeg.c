@@ -52,6 +52,8 @@
 typedef struct AVStreamMap {
     int file_index;
     int stream_index;
+    int sync_file_index;
+    int sync_stream_index;
 } AVStreamMap;
 
 /** select an input file for an output file */
@@ -277,6 +279,8 @@ static int pgmyuv_compatibility_hack=0;
 
 #define DEFAULT_PASS_LOGFILENAME "ffmpeg2pass"
 
+struct AVInputStream;
+
 typedef struct AVOutputStream {
     int file_index;          /* file index */
     int index;               /* stream index in the output file */
@@ -286,7 +290,8 @@ typedef struct AVOutputStream {
     int frame_number;
     /* input pts and corresponding output pts
        for A/V sync */
-    double sync_ipts;        /* dts from the AVPacket of the demuxer in second units */
+    //double sync_ipts;        /* dts from the AVPacket of the demuxer in second units */
+    struct AVInputStream *sync_ist; /* input stream to sync against */
     int64_t sync_opts;       /* output frame counter, could be changed to some true timestamp */ //FIXME look at frame_number
     /* video only */
     int video_resample;      /* video_resample and video_crop are mutually exclusive */
@@ -456,6 +461,13 @@ static int read_ffserver_streams(AVFormatContext *s, const char *filename)
     return 0;
 }
 
+static double
+get_sync_ipts(const AVOutputStream *ost)
+{
+    const AVInputStream *ist = ost->sync_ist;
+    return (double)(ist->pts + input_files_ts_offset[ist->file_index] - start_time)/AV_TIME_BASE;
+}
+
 #define MAX_AUDIO_PACKET_SIZE (128 * 1024)
 
 static void do_audio_out(AVFormatContext *s, 
@@ -480,7 +492,7 @@ static void do_audio_out(AVFormatContext *s,
         return;               /* Should signal an error ! */
 
     if(audio_sync_method){
-        double delta = ost->sync_ipts * enc->sample_rate - ost->sync_opts 
+        double delta = get_sync_ipts(ost) * enc->sample_rate - ost->sync_opts 
                 - fifo_size(&ost->fifo, ost->fifo.rptr)/(ost->st->codec.channels * 2);
         double idelta= delta*ist->st->codec.sample_rate / enc->sample_rate;
         int byte_delta= ((int)idelta)*2*ist->st->codec.channels;
@@ -518,12 +530,12 @@ static void do_audio_out(AVFormatContext *s,
                 assert(ost->audio_resample);
                 if(verbose > 2)
                     fprintf(stderr, "compensating audio timestamp drift:%f compensation:%d in:%d\n", delta, comp, enc->sample_rate);
-//                fprintf(stderr, "drift:%f len:%d opts:%lld ipts:%lld fifo:%d\n", delta, -1, ost->sync_opts, (int64_t)(ost->sync_ipts * enc->sample_rate), fifo_size(&ost->fifo, ost->fifo.rptr)/(ost->st->codec.channels * 2));
+//                fprintf(stderr, "drift:%f len:%d opts:%lld ipts:%lld fifo:%d\n", delta, -1, ost->sync_opts, (int64_t)(get_sync_ipts(ost) * enc->sample_rate), fifo_size(&ost->fifo, ost->fifo.rptr)/(ost->st->codec.channels * 2));
                 av_resample_compensate(*(struct AVResampleContext**)ost->resample, comp, enc->sample_rate);
             }
         } 
     }else
-        ost->sync_opts= lrintf(ost->sync_ipts * enc->sample_rate)
+        ost->sync_opts= lrintf(get_sync_ipts(ost) * enc->sample_rate)
                         - fifo_size(&ost->fifo, ost->fifo.rptr)/(ost->st->codec.channels * 2); //FIXME wrong
 
     if (ost->audio_resample) {
@@ -709,7 +721,7 @@ static void do_video_out(AVFormatContext *s,
 
     if(video_sync_method){
         double vdelta;
-        vdelta = ost->sync_ipts / av_q2d(enc->time_base) - ost->sync_opts;
+        vdelta = get_sync_ipts(ost) / av_q2d(enc->time_base) - ost->sync_opts;
         //FIXME set to 0.5 after we fix some dts/pts bugs like in avidec.c
         if (vdelta < -1.1)
             nb_frames = 0;
@@ -726,7 +738,7 @@ static void do_video_out(AVFormatContext *s,
                 fprintf(stderr, "*** %d dup!\n", nb_frames-1);
         }
     }else
-        ost->sync_opts= lrintf(ost->sync_ipts / av_q2d(enc->time_base));
+        ost->sync_opts= lrintf(get_sync_ipts(ost) / av_q2d(enc->time_base));
 
     nb_frames= FFMIN(nb_frames, max_frames[CODEC_TYPE_VIDEO] - ost->frame_number);
     if (nb_frames <= 0) 
@@ -1267,7 +1279,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
                                ((double)ost->st->pts.val * ost->st->time_base.num / ost->st->time_base.den));
 #endif
                         /* set the input output pts pairs */
-                        ost->sync_ipts = (double)(ist->pts + input_files_ts_offset[ist->file_index] - start_time)/ AV_TIME_BASE;
+                        //ost->sync_ipts = (double)(ist->pts + input_files_ts_offset[ist->file_index] - start_time)/ AV_TIME_BASE;
 
                         if (ost->encoding_needed) {
                             switch(ost->st->codec.codec_type) {
@@ -1460,6 +1472,13 @@ static int av_encode(AVFormatContext **output_files,
             fprintf(stderr,"Could not find input stream #%d.%d\n", fi, si);
             exit(1);
         }
+        fi = stream_maps[i].sync_file_index;
+        si = stream_maps[i].sync_stream_index;
+        if (fi < 0 || fi > nb_input_files - 1 ||
+            si < 0 || si > file_table[fi].nb_streams - 1) {
+            fprintf(stderr,"Could not find sync stream #%d.%d\n", fi, si);
+            exit(1);
+        }
     }
     
     ost_table = av_mallocz(sizeof(AVOutputStream *) * nb_ostreams);
@@ -1524,6 +1543,9 @@ static int av_encode(AVFormatContext **output_files,
             }
             ist = ist_table[ost->source_index];
             ist->discard = 0;
+            ost->sync_ist = (nb_stream_maps > 0) ?
+                ist_table[file_table[stream_maps[n-1].sync_file_index].ist_index +
+                         stream_maps[n-1].sync_stream_index] : ist;
         }
     }
 
@@ -1728,11 +1750,16 @@ static int av_encode(AVFormatContext **output_files,
         fprintf(stderr, "Stream mapping:\n");
         for(i=0;i<nb_ostreams;i++) {
             ost = ost_table[i];
-            fprintf(stderr, "  Stream #%d.%d -> #%d.%d\n",
+            fprintf(stderr, "  Stream #%d.%d -> #%d.%d",
                     ist_table[ost->source_index]->file_index,
                     ist_table[ost->source_index]->index,
                     ost->file_index, 
                     ost->index);
+            if (ost->sync_ist != ist_table[ost->source_index])
+                fprintf(stderr, " [sync #%d.%d]",
+                        ost->sync_ist->file_index,
+                        ost->sync_ist->index);
+            fprintf(stderr, "\n");
         }
     }
 
@@ -2816,6 +2843,16 @@ static void opt_map(const char *arg)
         p++;
 
     m->stream_index = strtol(p, (char **)&p, 0);
+    if (*p) {
+        p++;
+        m->sync_file_index = strtol(p, (char **)&p, 0);
+        if (*p)
+            p++;
+        m->sync_stream_index = strtol(p, (char **)&p, 0);
+    } else {
+        m->sync_file_index = m->file_index;
+        m->sync_stream_index = m->stream_index;
+    }
 }
 
 static void opt_map_meta_data(const char *arg)
@@ -3929,7 +3966,7 @@ const OptionDef options[] = {
     { "img", HAS_ARG, {(void*)opt_image_format}, "force image format", "img_fmt" },
     { "i", HAS_ARG, {(void*)opt_input_file}, "input file name", "filename" },
     { "y", OPT_BOOL, {(void*)&file_overwrite}, "overwrite output files" },
-    { "map", HAS_ARG | OPT_EXPERT, {(void*)opt_map}, "set input stream mapping", "file:stream" },
+    { "map", HAS_ARG | OPT_EXPERT, {(void*)opt_map}, "set input stream mapping", "file:stream[:syncfile:syncstream]" },
     { "map_meta_data", HAS_ARG | OPT_EXPERT, {(void*)opt_map_meta_data}, "set meta data information of outfile from infile", "outfile:infile" },
     { "t", HAS_ARG, {(void*)opt_recording_time}, "set the recording time", "duration" },
     { "fs", HAS_ARG | OPT_INT, {(void*)&limit_filesize}, "set the limit file size", "limit_size" }, //
