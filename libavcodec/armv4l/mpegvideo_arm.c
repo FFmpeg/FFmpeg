@@ -21,9 +21,7 @@
 #include "../mpegvideo.h"
 #include "../avcodec.h"
 
-#ifdef HAVE_IWMMXT
 extern void MPV_common_init_iwmmxt(MpegEncContext *s);
-#endif
 
 void MPV_common_init_armv4l(MpegEncContext *s)
 {

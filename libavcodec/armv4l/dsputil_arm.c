@@ -22,9 +22,7 @@
 #include "ipp.h"
 #endif
 
-#ifdef HAVE_IWMMXT
 extern void dsputil_init_iwmmxt(DSPContext* c, AVCodecContext *avctx);
-#endif
 
 extern void j_rev_dct_ARM(DCTELEM *data);
 extern void simple_idct_ARM(DCTELEM *data);
@@ -43,41 +41,13 @@ void put_no_rnd_pixels8_y2_arm(uint8_t *block, const uint8_t *pixels, int line_s
 void put_no_rnd_pixels8_xy2_arm(uint8_t *block, const uint8_t *pixels, int line_size, int h);
 
 void put_pixels16_arm(uint8_t *block, const uint8_t *pixels, int line_size, int h);
-static void put_pixels16_x2_arm(uint8_t *block, const uint8_t *pixels, int line_size, int h)
-{
-    put_pixels8_x2_arm(block, pixels, line_size, h);
-    put_pixels8_x2_arm(block + 8, pixels + 8, line_size, h);
-}
 
-static void put_pixels16_y2_arm(uint8_t *block, const uint8_t *pixels, int line_size, int h)
-{
-    put_pixels8_y2_arm(block, pixels, line_size, h);
-    put_pixels8_y2_arm(block + 8, pixels + 8, line_size, h);
-}
-
-static void put_pixels16_xy2_arm(uint8_t *block, const uint8_t *pixels, int line_size, int h)
-{
-    put_pixels8_xy2_arm(block, pixels, line_size, h);
-    put_pixels8_xy2_arm(block + 8, pixels + 8, line_size, h);
-}
-
-static void put_no_rnd_pixels16_x2_arm(uint8_t *block, const uint8_t *pixels, int line_size, int h)
-{
-    put_no_rnd_pixels8_x2_arm(block, pixels, line_size, h);
-    put_no_rnd_pixels8_x2_arm(block + 8, pixels + 8, line_size, h);
-}
-
-static void put_no_rnd_pixels16_y2_arm(uint8_t *block, const uint8_t *pixels, int line_size, int h)
-{
-    put_no_rnd_pixels8_y2_arm(block, pixels, line_size, h);
-    put_no_rnd_pixels8_y2_arm(block + 8, pixels + 8, line_size, h);
-}
-
-static void put_no_rnd_pixels16_xy2_arm(uint8_t *block, const uint8_t *pixels, int line_size, int h)
-{
-    put_no_rnd_pixels8_xy2_arm(block, pixels, line_size, h);
-    put_no_rnd_pixels8_xy2_arm(block + 8, pixels + 8, line_size, h);
-}
+CALL_2X_PIXELS(put_pixels16_x2_arm , put_pixels8_x2_arm , 8)
+CALL_2X_PIXELS(put_pixels16_y2_arm , put_pixels8_y2_arm , 8)
+CALL_2X_PIXELS(put_pixels16_xy2_arm, put_pixels8_xy2_arm, 8)
+CALL_2X_PIXELS(put_no_rnd_pixels16_x2_arm , put_no_rnd_pixels8_x2_arm , 8)
+CALL_2X_PIXELS(put_no_rnd_pixels16_y2_arm , put_no_rnd_pixels8_y2_arm , 8)
+CALL_2X_PIXELS(put_no_rnd_pixels16_xy2_arm, put_no_rnd_pixels8_xy2_arm, 8)
 
 static void add_pixels_clamped_ARM(short *block, unsigned char *dest, int line_size)
 {
@@ -166,10 +136,9 @@ static void add_pixels_clamped_ARM(short *block, unsigned char *dest, int line_s
                   /* [F] */
                   "add %1, %1, %2 \n\t"
                   "bne 1b \n\t"
-                  :
-                  : "r"(block),
-                    "r"(dest),
-                    "r"(line_size)
+                  : "+r"(block),
+                    "+r"(dest)
+                  : "r"(line_size)
                   : "r4", "r5", "r6", "r7", "r8", "r9", "r10", "cc", "memory" );
 }
 
@@ -208,9 +177,7 @@ static void simple_idct_ipp_put(uint8_t *dest, int line_size, DCTELEM *block)
 #endif
 }
 
-#ifdef HAVE_IWMMXT
 void add_pixels_clamped_iwmmxt(const DCTELEM *block, uint8_t *pixels, int line_size);
-#endif
 
 static void simple_idct_ipp_add(uint8_t *dest, int line_size, DCTELEM *block)
 {
