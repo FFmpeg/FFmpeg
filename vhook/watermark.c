@@ -16,6 +16,12 @@
  * An example watermark file is at
  * http://engene.se/ffmpeg_watermark.gif
  *
+ * Example usage:
+ *  ffmpeg -i infile -vhook '/path/watermark.so -f wm.gif' out.mov
+ *
+ * Note that the entire vhook argument is encapsulated in ''. This
+ * way, arguments to the vhook won't be mixed up with those to ffmpeg.
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
