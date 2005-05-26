@@ -316,8 +316,11 @@ endif
 
 # armv4l specific stuff
 ifeq ($(TARGET_ARCH_ARMV4L),yes)
-ASM_OBJS += armv4l/jrevdct_arm.o armv4l/simple_idct_arm.o
+ASM_OBJS += armv4l/jrevdct_arm.o armv4l/simple_idct_arm.o armv4l/dsputil_arm_s.o
 OBJS += armv4l/dsputil_arm.o armv4l/mpegvideo_arm.o
+ifeq ($(TARGET_IWMMXT),yes)
+OBJS += armv4l/dsputil_iwmmxt.o armv4l/mpegvideo_iwmmxt.o
+endif
 endif
 
 # sun mediaLib specific stuff
@@ -325,6 +328,12 @@ endif
 ifeq ($(HAVE_MLIB),yes)
 OBJS += mlib/dsputil_mlib.o
 CFLAGS += $(MLIB_INC)
+endif
+
+# Intel IPP specific stuff
+# currently only works when libavcodec is used in mplayer
+ifeq ($(HAVE_IPP),yes)
+CFLAGS += $(IPP_INC)
 endif
 
 # alpha specific stuff
