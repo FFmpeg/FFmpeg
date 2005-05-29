@@ -938,7 +938,7 @@ return 0;
 EOF
 
 builtin_vector=no
-if $cc -o $TMPO $TMPC 2> /dev/null ; then
+if $cc -msse -o $TMPO $TMPC 2> /dev/null ; then
   builtin_vector=yes
 fi
 

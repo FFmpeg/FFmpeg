@@ -155,6 +155,8 @@ static void vorbis_free(vorbis_context *vc) {
     av_freep(&vc->channel_floors);
     av_freep(&vc->saved);
     av_freep(&vc->ret);
+    av_freep(&vc->buf);
+    av_freep(&vc->buf_tmp);
 
     av_freep(&vc->residues);
     av_freep(&vc->modes);
@@ -759,6 +761,8 @@ static int vorbis_parse_id_hdr(vorbis_context *vc){
     vc->channel_floors=(float *)av_malloc((vc->blocksize_1/2)*vc->audio_channels * sizeof(float));
     vc->saved=(float *)av_malloc((vc->blocksize_1/2)*vc->audio_channels * sizeof(float));
     vc->ret=(float *)av_malloc((vc->blocksize_1/2)*vc->audio_channels * sizeof(float));
+    vc->buf=(float *)av_malloc(vc->blocksize_1 * sizeof(float));
+    vc->buf_tmp=(float *)av_malloc(vc->blocksize_1 * sizeof(float));
     vc->saved_start=0;
 
     ff_mdct_init(&vc->mdct0, bl0, 1);
@@ -1327,8 +1331,8 @@ static int vorbis_parse_audio_packet(vorbis_context *vc) {
         float *ret=vc->ret;
         const float *lwin=vc->lwin;
         const float *swin=vc->swin;
-        float buf[blocksize];
-        float buf_tmp[blocksize];
+        float *buf=vc->buf;
+        float *buf_tmp=vc->buf_tmp;
 
         ch_floor_ptr=vc->channel_floors+j*blocksize/2;
 
