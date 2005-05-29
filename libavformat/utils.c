@@ -2377,13 +2377,13 @@ void dump_format(AVFormatContext *ic,
     int i, flags;
     char buf[256];
 
-    av_log(NULL, AV_LOG_DEBUG, "%s #%d, %s, %s '%s':\n", 
+    av_log(NULL, AV_LOG_INFO, "%s #%d, %s, %s '%s':\n", 
             is_output ? "Output" : "Input",
             index, 
             is_output ? ic->oformat->name : ic->iformat->name, 
             is_output ? "to" : "from", url);
     if (!is_output) {
-        av_log(NULL, AV_LOG_DEBUG, "  Duration: ");
+        av_log(NULL, AV_LOG_INFO, "  Duration: ");
         if (ic->duration != AV_NOPTS_VALUE) {
             int hours, mins, secs, us;
             secs = ic->duration / AV_TIME_BASE;
@@ -2392,31 +2392,31 @@ void dump_format(AVFormatContext *ic,
             secs %= 60;
             hours = mins / 60;
             mins %= 60;
-            av_log(NULL, AV_LOG_DEBUG, "%02d:%02d:%02d.%01d", hours, mins, secs, 
+            av_log(NULL, AV_LOG_INFO, "%02d:%02d:%02d.%01d", hours, mins, secs, 
                    (10 * us) / AV_TIME_BASE);
         } else {
-            av_log(NULL, AV_LOG_DEBUG, "N/A");
+            av_log(NULL, AV_LOG_INFO, "N/A");
         }
         if (ic->start_time != AV_NOPTS_VALUE) {
             int secs, us;
-            av_log(NULL, AV_LOG_DEBUG, ", start: ");
+            av_log(NULL, AV_LOG_INFO, ", start: ");
             secs = ic->start_time / AV_TIME_BASE;
             us = ic->start_time % AV_TIME_BASE;
-            av_log(NULL, AV_LOG_DEBUG, "%d.%06d",
+            av_log(NULL, AV_LOG_INFO, "%d.%06d",
                    secs, (int)av_rescale(us, 1000000, AV_TIME_BASE));
         }
-        av_log(NULL, AV_LOG_DEBUG, ", bitrate: ");
+        av_log(NULL, AV_LOG_INFO, ", bitrate: ");
         if (ic->bit_rate) {
-            av_log(NULL, AV_LOG_DEBUG,"%d kb/s", ic->bit_rate / 1000);
+            av_log(NULL, AV_LOG_INFO,"%d kb/s", ic->bit_rate / 1000);
         } else {
-            av_log(NULL, AV_LOG_DEBUG, "N/A");
+            av_log(NULL, AV_LOG_INFO, "N/A");
         }
-        av_log(NULL, AV_LOG_DEBUG, "\n");
+        av_log(NULL, AV_LOG_INFO, "\n");
     }
     for(i=0;i<ic->nb_streams;i++) {
         AVStream *st = ic->streams[i];
         avcodec_string(buf, sizeof(buf), &st->codec, is_output);
-        av_log(NULL, AV_LOG_DEBUG, "  Stream #%d.%d", index, i);
+        av_log(NULL, AV_LOG_INFO, "  Stream #%d.%d", index, i);
         /* the pid is an important information, so we display it */
         /* XXX: add a generic system */
         if (is_output)
@@ -2424,9 +2424,9 @@ void dump_format(AVFormatContext *ic,
         else
             flags = ic->iformat->flags;
         if (flags & AVFMT_SHOW_IDS) {
-            av_log(NULL, AV_LOG_DEBUG, "[0x%x]", st->id);
+            av_log(NULL, AV_LOG_INFO, "[0x%x]", st->id);
         }
-        av_log(NULL, AV_LOG_DEBUG, ": %s\n", buf);
+        av_log(NULL, AV_LOG_INFO, ": %s\n", buf);
     }
 }
 
