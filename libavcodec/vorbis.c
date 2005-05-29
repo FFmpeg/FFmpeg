@@ -52,14 +52,7 @@ unsigned int get_bits_long_le(GetBitContext *s, int n){
     }
 }
 
-static unsigned int ilog(unsigned int i) { // unfortunatelly av_log2 uses different rounding
-    unsigned int ret=0;
-    while (i!=0) {
-        ++ret;
-        i>>=1;
-    }
-    return ret;
-}
+#define ilog(i) av_log2(2*(i))
 
 static unsigned int nth_root(unsigned int x, unsigned int n) {   // x^(1/n)
     unsigned int ret=0, i, j;
