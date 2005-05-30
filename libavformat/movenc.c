@@ -79,7 +79,7 @@ const CodecTag ff_mov_obj_type[] = {
     { CODEC_ID_MPEG2VIDEO,  96 },//mpeg2 profiles
     { CODEC_ID_MP2       , 107 },//FIXME mpeg2 mpeg audio -> 105
     { CODEC_ID_MP3       , 107 },//FIXME mpeg2 mpeg audio -> 105
-    { CODEC_ID_H264      , 241 },
+    { CODEC_ID_H264      ,  33 },
     { CODEC_ID_H263      , 242 },
     { CODEC_ID_H261      , 243 },
     { CODEC_ID_MJPEG     , 108 },
@@ -459,6 +459,8 @@ static int mov_write_esds_tag(ByteIOContext *pb, MOVTrack* track) // Basic
     // Object type indication
     put_byte(pb, codec_get_tag(ff_mov_obj_type, track->enc->codec_id));
 
+    // the following fields is made of 6 bits to identify the streamtype (4 for video, 5 for audio)
+    // plus 1 bit to indicate upstream and 1 bit set to 1 (reserved)
     if(track->enc->codec_type == CODEC_TYPE_AUDIO)
         put_byte(pb, 0x15);            // flags (= Audiostream)
     else
