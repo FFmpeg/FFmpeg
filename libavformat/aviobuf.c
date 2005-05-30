@@ -29,7 +29,7 @@ int init_put_byte(ByteIOContext *s,
                   void *opaque,
                   int (*read_packet)(void *opaque, uint8_t *buf, int buf_size),
                   int (*write_packet)(void *opaque, uint8_t *buf, int buf_size),
-                  int (*seek)(void *opaque, offset_t offset, int whence))
+                  offset_t (*seek)(void *opaque, offset_t offset, int whence))
 {
     s->buffer = buffer;
     s->buffer_size = buffer_size;
@@ -491,7 +491,7 @@ static int url_read_packet(void *opaque, uint8_t *buf, int buf_size)
     return url_read(h, buf, buf_size);
 }
 
-static int url_seek_packet(void *opaque, int64_t offset, int whence)
+static offset_t url_seek_packet(void *opaque, offset_t offset, int whence)
 {
     URLContext *h = opaque;
     return url_seek(h, offset, whence);
@@ -701,7 +701,7 @@ static int dyn_packet_buf_write(void *opaque, uint8_t *buf, int buf_size)
     return dyn_buf_write(opaque, buf, buf_size);
 }
 
-static int dyn_buf_seek(void *opaque, offset_t offset, int whence)
+static offset_t dyn_buf_seek(void *opaque, offset_t offset, int whence)
 {
     DynBuffer *d = opaque;
 
