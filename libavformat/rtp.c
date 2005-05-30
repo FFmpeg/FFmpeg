@@ -482,6 +482,7 @@ int rtp_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
         case CODEC_ID_MPEG4AAC:
             if (rtp_parse_mp4_au(s, buf))
               return -1;
+            {
             rtp_payload_data_t *infos = s->rtp_payload_data;
             if (infos == NULL)
                 return -1;
@@ -494,6 +495,7 @@ int rtp_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
             memcpy(pkt->data, buf, infos->au_headers[0].size);
             buf += infos->au_headers[0].size;
             len -= infos->au_headers[0].size;
+            }
             s->read_buf_size = len;
             s->buf_ptr = (char *)buf;
             pkt->stream_index = s->st->index;
