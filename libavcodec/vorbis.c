@@ -898,7 +898,7 @@ static uint_fast8_t vorbis_floor1_decode(vorbis_context *vc, vorbis_floor *vf, f
 
         if (cbits) { // this reads all subclasses for this partition's class
             cval=get_vlc2(gb, vc->codebooks[vf->class_masterbook[class_]].vlc.table,
-            V_NB_BITS, vc->codebooks[vf->class_masterbook[class_]].maxdepth);
+            V_NB_BITS, 3);
         }
 
         for(j=0;j<cdim;++j) {
@@ -909,7 +909,7 @@ static uint_fast8_t vorbis_floor1_decode(vorbis_context *vc, vorbis_floor *vf, f
             cval=cval>>cbits;
             if (book>0) {
                 floor1_Y[offset+j]=get_vlc2(gb, vc->codebooks[book].vlc.table,
-                V_NB_BITS, vc->codebooks[book].maxdepth);
+                V_NB_BITS, 3);
             } else {
                 floor1_Y[offset+j]=0;
             }
@@ -1095,7 +1095,7 @@ static int vorbis_residue_decode(vorbis_context *vc, vorbis_residue *vr, uint_fa
                 for(j_times_ptns_to_read=0, j=0;j<ch_used;++j) {
                     if (!do_not_decode[j]) {
                         uint_fast32_t temp=get_vlc2(gb, vc->codebooks[vr->classbook].vlc.table,
-                        V_NB_BITS, vc->codebooks[vr->classbook].maxdepth);
+                        V_NB_BITS, 3);
 
                         AV_DEBUG("Classword: %d \n", temp);
 
@@ -1127,7 +1127,7 @@ static int vorbis_residue_decode(vorbis_context *vc, vorbis_residue *vr, uint_fa
                                 voffs=voffset+j*vlen;
                                 for(k=0;k<step;++k) {
                                     coffs=get_vlc2(gb, vc->codebooks[vqbook].vlc.table,
-                                    V_NB_BITS, vc->codebooks[vr->classbook].maxdepth) * vc->codebooks[vqbook].dimensions;
+                                    V_NB_BITS, 3) * vc->codebooks[vqbook].dimensions;
                                     for(l=0;l<vc->codebooks[vqbook].dimensions;++l) {
                                         vec[voffs+k+l*step]+=vc->codebooks[vqbook].codevectors[coffs+l];  // FPMATH
                                     }
@@ -1137,7 +1137,7 @@ static int vorbis_residue_decode(vorbis_context *vc, vorbis_residue *vr, uint_fa
                                 voffs=voffset+j*vlen;
                                 for(k=0;k<vr->partition_size/vc->codebooks[vqbook].dimensions;++k) {
                                     coffs=get_vlc2(gb, vc->codebooks[vqbook].vlc.table,
-                                    V_NB_BITS, vc->codebooks[vr->classbook].maxdepth) * vc->codebooks[vqbook].dimensions;
+                                    V_NB_BITS, 3) * vc->codebooks[vqbook].dimensions;
                                     for(l=0;l<vc->codebooks[vqbook].dimensions;++l, ++voffs) {
                                         vec[voffs]+=vc->codebooks[vqbook].codevectors[coffs+l];  // FPMATH
 
@@ -1150,7 +1150,7 @@ static int vorbis_residue_decode(vorbis_context *vc, vorbis_residue *vr, uint_fa
 
                                 for(k=0;k<vr->partition_size/vc->codebooks[vqbook].dimensions;++k) {
                                     coffs=get_vlc2(gb, vc->codebooks[vqbook].vlc.table,
-                                    V_NB_BITS, vc->codebooks[vr->classbook].maxdepth) * vc->codebooks[vqbook].dimensions;
+                                    V_NB_BITS, 3) * vc->codebooks[vqbook].dimensions;
                                     for(l=0;l<vc->codebooks[vqbook].dimensions;++l, ++voffs) {
                                         vec[(voffs>>1)+((voffs&1) ? vlen : 0)]+=vc->codebooks[vqbook].codevectors[coffs+l];  // FPMATH
 
@@ -1164,7 +1164,7 @@ static int vorbis_residue_decode(vorbis_context *vc, vorbis_residue *vr, uint_fa
 
                                 for(k=0;k<vr->partition_size/vc->codebooks[vqbook].dimensions;++k) {
                                     coffs=get_vlc2(gb, vc->codebooks[vqbook].vlc.table,
-                                    V_NB_BITS, vc->codebooks[vr->classbook].maxdepth) * vc->codebooks[vqbook].dimensions;
+                                    V_NB_BITS, 3) * vc->codebooks[vqbook].dimensions;
                                     for(l=0;l<vc->codebooks[vqbook].dimensions;++l, ++voffs) {
                                         vec[voffs/ch+(voffs%ch)*vlen]+=vc->codebooks[vqbook].codevectors[coffs+l];  // FPMATH FIXME use if and counter instead of / and %
 
