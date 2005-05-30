@@ -1188,7 +1188,7 @@ static int vorbis_residue_decode(vorbis_context *vc, vorbis_residue *vr, uint_fa
 }
 
 // Decode the audio packet using the functions above
-#define BIAS 384
+#define BIAS 385
 
 static int vorbis_parse_audio_packet(vorbis_context *vc) {
     GetBitContext *gb=&vc->gb;
@@ -1342,27 +1342,34 @@ static int vorbis_parse_audio_packet(vorbis_context *vc) {
                 }
                 retlen=vc->blocksize_1/2;
             } else {
+                buf += (vc->blocksize_1-vc->blocksize_0)/4;
                 for(k=j, i=0;i<vc->blocksize_0/2;++i, k+=step) {
-                    ret[k]=saved[i]+buf[(vc->blocksize_1-vc->blocksize_0)/4+i]*swin[i]+BIAS;
+                    ret[k]=saved[i]+buf[i]*swin[i]+BIAS;
                 }
+                buf += vc->blocksize_0/2;
                 for(i=0;i<(vc->blocksize_1-vc->blocksize_0)/4;++i, k+=step) {
-                    ret[k]=buf[vc->blocksize_0/2+(vc->blocksize_1-vc->blocksize_0)/4+i]+BIAS;
+                    ret[k]=buf[i]+BIAS;
                 }
+                buf=vc->buf;
                 retlen=vc->blocksize_0/2+(vc->blocksize_1-vc->blocksize_0)/4;
             }
             // -- save
             if (next_window) {
+                buf += vc->blocksize_1/2;
+                lwin += vc->blocksize_1/2-1;
                 for(i=0;i<vc->blocksize_1/2;++i) {
-                    saved[i]=buf[vc->blocksize_1/2+i]*lwin[vc->blocksize_1/2-1-i];
+                    saved[i]=buf[i]*lwin[-i];
                 }
                 saved_start=0;
             } else {
                 saved_start=(vc->blocksize_1-vc->blocksize_0)/4;
+                buf += vc->blocksize_1/2;
                 for(i=0;i<saved_start;++i) {
-                    saved[i]=buf[vc->blocksize_1/2+i];
+                    saved[i]=buf[i];
                 }
+                swin += vc->blocksize_0/2-1;
                 for(i=0;i<vc->blocksize_0/2;++i) {
-                    saved[saved_start+i]=buf[vc->blocksize_1/2+saved_start+i]*swin[vc->blocksize_0/2-1-i];
+                    saved[saved_start+i]=buf[saved_start+i]*swin[-i];
                 }
             }
         } else {
@@ -1375,8 +1382,10 @@ static int vorbis_parse_audio_packet(vorbis_context *vc) {
             }
             retlen=saved_start+vc->blocksize_0/2;
             // -- save
+            buf += vc->blocksize_0/2;
+            swin += vc->blocksize_0/2-1;
             for(i=0;i<vc->blocksize_0/2;++i) {
-                saved[i]=buf[vc->blocksize_0/2+i]*swin[vc->blocksize_0/2-1-i];
+                saved[i]=buf[i]*swin[-i];
             }
             saved_start=0;
         }
@@ -1422,11 +1431,12 @@ static int vorbis_decode_frame(AVCodecContext *avccontext,
 
     for(i=0;i<len;++i) {
         int_fast32_t tmp= ((int32_t*)vc->ret)[i];
-        if(tmp > 0x43c07fff)
-            tmp= 32767;
-        else if(tmp < 0x43bf8000)
-            tmp= -32768;
-        ((int16_t*)data)[i]=tmp;
+        if(tmp & 0xf0000){
+//            tmp= (0x43c0ffff - tmp)>>31; //ask gcc devs why this is slower
+            if(tmp > 0x43c0ffff) tmp= 0xFFFF;
+            else                 tmp= 0;
+        }
+        ((int16_t*)data)[i]=tmp - 0x8000;
     }
 
     *data_size=len*2;
