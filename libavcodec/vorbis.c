@@ -1188,6 +1188,7 @@ static int vorbis_residue_decode(vorbis_context *vc, vorbis_residue *vr, uint_fa
 }
 
 // Decode the audio packet using the functions above
+#define BIAS 384
 
 static int vorbis_parse_audio_packet(vorbis_context *vc) {
     GetBitContext *gb=&vc->gb;
@@ -1337,15 +1338,15 @@ static int vorbis_parse_audio_packet(vorbis_context *vc) {
             // -- overlap/add
             if (previous_window) {
                 for(k=j, i=0;i<vc->blocksize_1/2;++i, k+=step) {
-                    ret[k]=saved[i]+buf[i]*lwin[i];
+                    ret[k]=saved[i]+buf[i]*lwin[i]+BIAS;
                 }
                 retlen=vc->blocksize_1/2;
             } else {
                 for(k=j, i=0;i<vc->blocksize_0/2;++i, k+=step) {
-                    ret[k]=saved[i]+buf[(vc->blocksize_1-vc->blocksize_0)/4+i]*swin[i];
+                    ret[k]=saved[i]+buf[(vc->blocksize_1-vc->blocksize_0)/4+i]*swin[i]+BIAS;
                 }
                 for(i=0;i<(vc->blocksize_1-vc->blocksize_0)/4;++i, k+=step) {
-                    ret[k]=buf[vc->blocksize_0/2+(vc->blocksize_1-vc->blocksize_0)/4+i];
+                    ret[k]=buf[vc->blocksize_0/2+(vc->blocksize_1-vc->blocksize_0)/4+i]+BIAS;
                 }
                 retlen=vc->blocksize_0/2+(vc->blocksize_1-vc->blocksize_0)/4;
             }
@@ -1367,10 +1368,10 @@ static int vorbis_parse_audio_packet(vorbis_context *vc) {
         } else {
             // --overlap/add
             for(k=j, i=0;i<saved_start;++i, k+=step) {
-                ret[k]=saved[i];
+                ret[k]=saved[i]+BIAS;
             }
             for(i=0;i<vc->blocksize_0/2;++i, k+=step) {
-                ret[k]=saved[saved_start+i]+buf[i]*swin[i];
+                ret[k]=saved[saved_start+i]+buf[i]*swin[i]+BIAS;
             }
             retlen=saved_start+vc->blocksize_0/2;
             // -- save
@@ -1420,13 +1421,14 @@ static int vorbis_decode_frame(AVCodecContext *avccontext,
     AV_DEBUG("parsed %d bytes %d bits, returned %d samples (*ch*bits) \n", get_bits_count(gb)/8, get_bits_count(gb)%8, len);
 
     for(i=0;i<len;++i) {
-        int_fast32_t tmp;
-
-        tmp=vc->ret[i]*32768;
-        if (tmp>32767) tmp=32767;
-        if (tmp<-32768) tmp=-32768;
+        int_fast32_t tmp= ((int32_t*)vc->ret)[i];
+        if(tmp > 0x43c07fff)
+            tmp= 32767;
+        else if(tmp < 0x43bf8000)
+            tmp= -32768;
         ((int16_t*)data)[i]=tmp;
     }
+
     *data_size=len*2;
 
     return buf_size ;
