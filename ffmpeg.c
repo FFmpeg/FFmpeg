@@ -209,6 +209,7 @@ static int frame_skip_factor= 0;
 static int frame_skip_exp= 0;
 static int frame_skip_cmp= FF_CMP_DCTMAX;
 extern int loop_input; /* currently a hack */
+static int gray_only = 0;
 
 static int gop_size = 12;
 static int intra_only = 0;
@@ -2987,6 +2988,8 @@ static void opt_input_file(const char *filename)
                 enc->flags|= CODEC_FLAG_BITEXACT;
             if(me_threshold)
                 enc->debug |= FF_DEBUG_MV;
+            if(gray_only)
+                enc->flags |= CODEC_FLAG_GRAY;
 
             if (enc->time_base.den != rfps || enc->time_base.num != rfps_base) { 
 
@@ -3291,6 +3294,9 @@ static void opt_output_file(const char *filename)
                 }
                 if (no_output) {
                     video_enc->flags2 |= CODEC_FLAG2_NO_OUTPUT;
+                }
+                if (gray_only) {
+                    video_enc->flags |= CODEC_FLAG_GRAY;
                 }
                 video_enc->qmin = video_qmin;
                 video_enc->qmax = video_qmax;
@@ -4126,6 +4132,7 @@ const OptionDef options[] = {
     { "skip_factor", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&frame_skip_factor}, "frame skip factor", "factor" },
     { "skip_exp", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&frame_skip_exp}, "frame skip exponent", "exponent" },
     { "skip_cmp", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&frame_skip_cmp}, "frame skip compare function", "compare function" },
+    { "gray", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, { &gray_only }, "encode/decode grayscale" },
 
     /* audio options */
     { "ab", HAS_ARG | OPT_AUDIO, {(void*)opt_audio_bitrate}, "set audio bitrate (in kbit/s)", "bitrate", },
