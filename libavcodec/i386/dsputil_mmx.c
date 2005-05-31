@@ -3205,6 +3205,8 @@ void ff_vp3_idct_sse2(int16_t *input_data);
 void ff_vp3_idct_mmx(int16_t *data);
 void ff_vp3_dsp_init_mmx(void);
 
+void ff_h264_idct_add_mmx2(uint8_t *dst, int16_t *block, int stride);
+
 /* XXX: those functions should be suppressed ASAP when all IDCTs are
    converted */
 static void ff_libmpeg2mmx_idct_put(uint8_t *dest, int line_size, DCTELEM *block)
@@ -3423,6 +3425,8 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             c->hadamard8_diff[1]= hadamard8_diff_mmx2;
             c->vsad[4]= vsad_intra16_mmx2;
 #endif //CONFIG_ENCODERS
+
+            c->h264_idct_add= ff_h264_idct_add_mmx2;
 
             if(!(avctx->flags & CODEC_FLAG_BITEXACT)){
                 c->put_no_rnd_pixels_tab[0][1] = put_no_rnd_pixels16_x2_mmx2;

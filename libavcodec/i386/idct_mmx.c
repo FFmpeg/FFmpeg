@@ -597,3 +597,89 @@ declare_idct (ff_mmxext_idct, mmxext_table,
 
 declare_idct (ff_mmx_idct, mmx_table,
 	      mmx_row_head, mmx_row, mmx_row_tail, mmx_row_mid)
+
+
+
+/* in/out: mma=mma+mmb, mmb=mmb-mma */
+#define SUMSUB_BA( a, b ) \
+    "paddw "#b", "#a" \n\t"\
+    "paddw "#b", "#b" \n\t"\
+    "psubw "#a", "#b" \n\t"
+
+#define SUMSUB_BADC( a, b, c, d ) \
+    "paddw "#b", "#a" \n\t"\
+    "paddw "#d", "#c" \n\t"\
+    "paddw "#b", "#b" \n\t"\
+    "paddw "#d", "#d" \n\t"\
+    "psubw "#a", "#b" \n\t"\
+    "psubw "#c", "#d" \n\t"
+
+/* in: a,b  out: a,s */
+#define SUMSUBD2_AB( a, b, t, s ) \
+    "movq  "#a", "#s" \n\t"\
+    "movq  "#b", "#t" \n\t"\
+    "psraw  $1 , "#b" \n\t"\
+    "psraw  $1 , "#s" \n\t"\
+    "paddw "#b", "#a" \n\t"\
+    "psubw "#t", "#s" \n\t"
+
+#define IDCT4_1D( s02, s13, d02, d13, t, u ) \
+    SUMSUB_BA  ( s02, d02 )\
+    SUMSUBD2_AB( s13, d13, u, t )\
+    SUMSUB_BADC( s13, s02, t, d02 )
+
+#define SBUTTERFLY( a, b, t, n )  \
+    "movq   "#a", "#t"       \n\t" /* abcd */\
+    "punpckl"#n"  "#b", "#a" \n\t" /* aebf */\
+    "punpckh"#n"  "#b", "#t" \n\t" /* cgdh */
+
+#define TRANSPOSE4( a, b, c, d, t ) \
+    SBUTTERFLY( a, b, t, wd ) /* a=aebf t=cgdh */\
+    SBUTTERFLY( c, d, b, wd ) /* c=imjn b=kolp */\
+    SBUTTERFLY( a, c, d, dq ) /* a=aeim d=bfjn */\
+    SBUTTERFLY( t, b, c, dq ) /* t=cgko c=dhlp */
+
+#define STORE_DIFF_4P( p, t, pw32, z, dst ) \
+    asm volatile(\
+        "paddw     "#pw32", "#p" \n\t"\
+        "psraw      $6,     "#p" \n\t"\
+        "movd       (%0),   "#t" \n\t"\
+        "punpcklbw "#z",    "#t" \n\t"\
+        "paddsw    "#t",    "#p" \n\t"\
+        "packuswb  "#z",    "#p" \n\t"\
+        "movd      "#p",    (%0) \n\t" :: "r"(dst) )
+
+static const uint64_t ff_pw_32 attribute_used __attribute__ ((aligned(8))) = 0x0020002000200020ULL;
+
+void ff_h264_idct_add_mmx2(uint8_t *dst, int16_t *block, int stride)
+{
+    /* Load dct coeffs */
+    asm volatile(
+        "movq   (%0), %%mm0 \n\t"
+        "movq  8(%0), %%mm1 \n\t"
+        "movq 16(%0), %%mm2 \n\t"
+        "movq 24(%0), %%mm3 \n\t"
+    :: "r"(block) );
+
+    asm volatile(
+        /* mm1=s02+s13  mm2=s02-s13  mm4=d02+d13  mm0=d02-d13 */
+        IDCT4_1D( %%mm2, %%mm1, %%mm0, %%mm3, %%mm4, %%mm5 )
+
+        /* in: 1,4,0,2  out: 1,2,3,0 */
+        TRANSPOSE4( %%mm1, %%mm4, %%mm0, %%mm2, %%mm3 )
+
+        /* mm2=s02+s13  mm3=s02-s13  mm4=d02+d13  mm1=d02-d13 */
+        IDCT4_1D( %%mm3, %%mm2, %%mm1, %%mm0, %%mm4, %%mm5 )
+
+        /* in: 2,4,1,3  out: 2,3,0,1 */
+        TRANSPOSE4( %%mm2, %%mm4, %%mm1, %%mm3, %%mm0 )
+
+        "pxor %%mm7, %%mm7    \n\t"
+        "movq ff_pw_32, %%mm6 \n\t"
+    :: );
+
+    STORE_DIFF_4P( %%mm2, %%mm4, %%mm6, %%mm7, &dst[0*stride] );
+    STORE_DIFF_4P( %%mm3, %%mm4, %%mm6, %%mm7, &dst[1*stride] );
+    STORE_DIFF_4P( %%mm0, %%mm4, %%mm6, %%mm7, &dst[2*stride] );
+    STORE_DIFF_4P( %%mm1, %%mm4, %%mm6, %%mm7, &dst[3*stride] );
+}
