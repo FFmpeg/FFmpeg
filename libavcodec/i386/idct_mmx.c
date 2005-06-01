@@ -639,7 +639,7 @@ declare_idct (ff_mmx_idct, mmx_table,
     SBUTTERFLY( a, c, d, dq ) /* a=aeim d=bfjn */\
     SBUTTERFLY( t, b, c, dq ) /* t=cgko c=dhlp */
 
-#define STORE_DIFF_4P( p, t, pw32, z, dst ) \
+#define STORE_DIFF_4P( p, t, z, dst ) \
     asm volatile(\
         "psraw      $6,     "#p" \n\t"\
         "movd       (%0),   "#t" \n\t"\
@@ -664,7 +664,7 @@ void ff_h264_idct_add_mmx2(uint8_t *dst, int16_t *block, int stride)
         /* mm1=s02+s13  mm2=s02-s13  mm4=d02+d13  mm0=d02-d13 */
         IDCT4_1D( %%mm2, %%mm1, %%mm0, %%mm3, %%mm4, %%mm5 )
 
-        "movq     ff_pw_32, %%mm6 \n\t"
+        "movq      %0,    %%mm6 \n\t"
         /* in: 1,4,0,2  out: 1,2,3,0 */
         TRANSPOSE4( %%mm1, %%mm4, %%mm0, %%mm2, %%mm3 )
 
@@ -677,10 +677,10 @@ void ff_h264_idct_add_mmx2(uint8_t *dst, int16_t *block, int stride)
         TRANSPOSE4( %%mm2, %%mm4, %%mm1, %%mm3, %%mm0 )
 
         "pxor %%mm7, %%mm7    \n\t"
-    :: );
+    :: "m"(ff_pw_32));
 
-    STORE_DIFF_4P( %%mm2, %%mm4, %%mm6, %%mm7, &dst[0*stride] );
-    STORE_DIFF_4P( %%mm3, %%mm4, %%mm6, %%mm7, &dst[1*stride] );
-    STORE_DIFF_4P( %%mm0, %%mm4, %%mm6, %%mm7, &dst[2*stride] );
-    STORE_DIFF_4P( %%mm1, %%mm4, %%mm6, %%mm7, &dst[3*stride] );
+    STORE_DIFF_4P( %%mm2, %%mm4, %%mm7, &dst[0*stride] );
+    STORE_DIFF_4P( %%mm3, %%mm4, %%mm7, &dst[1*stride] );
+    STORE_DIFF_4P( %%mm0, %%mm4, %%mm7, &dst[2*stride] );
+    STORE_DIFF_4P( %%mm1, %%mm4, %%mm7, &dst[3*stride] );
 }
