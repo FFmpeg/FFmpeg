@@ -614,19 +614,17 @@ declare_idct (ff_mmx_idct, mmx_table,
     "psubw "#a", "#b" \n\t"\
     "psubw "#c", "#d" \n\t"
 
-/* in: a,b  out: a,s */
-#define SUMSUBD2_AB( a, b, t, s ) \
-    "movq  "#a", "#s" \n\t"\
+#define SUMSUBD2_AB( a, b, t ) \
     "movq  "#b", "#t" \n\t"\
     "psraw  $1 , "#b" \n\t"\
-    "psraw  $1 , "#s" \n\t"\
-    "paddw "#b", "#a" \n\t"\
-    "psubw "#t", "#s" \n\t"
+    "paddw "#a", "#b" \n\t"\
+    "psraw  $1 , "#a" \n\t"\
+    "psubw "#t", "#a" \n\t"
 
-#define IDCT4_1D( s02, s13, d02, d13, t, u ) \
+#define IDCT4_1D( s02, s13, d02, d13, t ) \
     SUMSUB_BA  ( s02, d02 )\
-    SUMSUBD2_AB( s13, d13, u, t )\
-    SUMSUB_BADC( s13, s02, t, d02 )
+    SUMSUBD2_AB( s13, d13, t )\
+    SUMSUB_BADC( d13, s02, s13, d02 )
 
 #define SBUTTERFLY( a, b, t, n )  \
     "movq   "#a", "#t"       \n\t" /* abcd */\
@@ -662,22 +660,22 @@ void ff_h264_idct_add_mmx2(uint8_t *dst, int16_t *block, int stride)
 
     asm volatile(
         /* mm1=s02+s13  mm2=s02-s13  mm4=d02+d13  mm0=d02-d13 */
-        IDCT4_1D( %%mm2, %%mm1, %%mm0, %%mm3, %%mm4, %%mm5 )
+        IDCT4_1D( %%mm2, %%mm1, %%mm0, %%mm3, %%mm4 )
 
         "movq      %0,    %%mm6 \n\t"
         /* in: 1,4,0,2  out: 1,2,3,0 */
-        TRANSPOSE4( %%mm1, %%mm4, %%mm0, %%mm2, %%mm3 )
+        TRANSPOSE4( %%mm3, %%mm1, %%mm0, %%mm2, %%mm4 )
 
-        "paddw     %%mm6, %%mm1 \n\t"
+        "paddw     %%mm6, %%mm3 \n\t"
 
         /* mm2=s02+s13  mm3=s02-s13  mm4=d02+d13  mm1=d02-d13 */
-        IDCT4_1D( %%mm3, %%mm2, %%mm1, %%mm0, %%mm4, %%mm5 )
+        IDCT4_1D( %%mm4, %%mm2, %%mm3, %%mm0, %%mm1 )
 
         "pxor %%mm7, %%mm7    \n\t"
     :: "m"(ff_pw_32));
 
-    STORE_DIFF_4P( %%mm2, %%mm0, %%mm7, &dst[0*stride] );
-    STORE_DIFF_4P( %%mm4, %%mm0, %%mm7, &dst[1*stride] );
-    STORE_DIFF_4P( %%mm1, %%mm0, %%mm7, &dst[2*stride] );
-    STORE_DIFF_4P( %%mm3, %%mm0, %%mm7, &dst[3*stride] );
+    STORE_DIFF_4P( %%mm0, %%mm1, %%mm7, &dst[0*stride] );
+    STORE_DIFF_4P( %%mm2, %%mm1, %%mm7, &dst[1*stride] );
+    STORE_DIFF_4P( %%mm3, %%mm1, %%mm7, &dst[2*stride] );
+    STORE_DIFF_4P( %%mm4, %%mm1, %%mm7, &dst[3*stride] );
 }
