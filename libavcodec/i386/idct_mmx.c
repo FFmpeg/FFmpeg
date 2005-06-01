@@ -675,13 +675,13 @@ void ff_h264_idct_add_mmx2(uint8_t *dst, int16_t *block, int stride)
 
     asm volatile(
     STORE_DIFF_4P( %%mm0, %%mm1, %%mm7)
-        "addl %1, %0             \n\t"
+        "add %1, %0             \n\t"
     STORE_DIFF_4P( %%mm2, %%mm1, %%mm7)
-        "addl %1, %0             \n\t"
+        "add %1, %0             \n\t"
     STORE_DIFF_4P( %%mm3, %%mm1, %%mm7)
-        "addl %1, %0             \n\t"
+        "add %1, %0             \n\t"
     STORE_DIFF_4P( %%mm4, %%mm1, %%mm7)
         : "+r"(dst)
-        : "r" (stride)
+        : "r" ((long)stride)
     );
 }
