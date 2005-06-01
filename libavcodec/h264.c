@@ -3505,7 +3505,8 @@ static void flush_dpb(AVCodecContext *avctx){
         h->delayed_pic[i]= NULL;
     h->delayed_output_pic= NULL;
     idr(h);
-    h->s.current_picture_ptr->reference= 0;
+    if(h->s.current_picture_ptr)
+        h->s.current_picture_ptr->reference= 0;
 }
 
 /**
