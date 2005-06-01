@@ -673,14 +673,11 @@ void ff_h264_idct_add_mmx2(uint8_t *dst, int16_t *block, int stride)
         /* mm2=s02+s13  mm3=s02-s13  mm4=d02+d13  mm1=d02-d13 */
         IDCT4_1D( %%mm3, %%mm2, %%mm1, %%mm0, %%mm4, %%mm5 )
 
-        /* in: 2,4,1,3  out: 2,3,0,1 */
-        TRANSPOSE4( %%mm2, %%mm4, %%mm1, %%mm3, %%mm0 )
-
         "pxor %%mm7, %%mm7    \n\t"
     :: "m"(ff_pw_32));
 
-    STORE_DIFF_4P( %%mm2, %%mm4, %%mm7, &dst[0*stride] );
-    STORE_DIFF_4P( %%mm3, %%mm4, %%mm7, &dst[1*stride] );
-    STORE_DIFF_4P( %%mm0, %%mm4, %%mm7, &dst[2*stride] );
-    STORE_DIFF_4P( %%mm1, %%mm4, %%mm7, &dst[3*stride] );
+    STORE_DIFF_4P( %%mm2, %%mm0, %%mm7, &dst[0*stride] );
+    STORE_DIFF_4P( %%mm4, %%mm0, %%mm7, &dst[1*stride] );
+    STORE_DIFF_4P( %%mm1, %%mm0, %%mm7, &dst[2*stride] );
+    STORE_DIFF_4P( %%mm3, %%mm0, %%mm7, &dst[3*stride] );
 }

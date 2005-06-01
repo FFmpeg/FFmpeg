@@ -333,6 +333,8 @@ typedef struct H264Context{
     uint8_t     *direct_table;
     uint8_t     direct_cache[5*8];
 
+    uint8_t zigzag_scan[16];
+    uint8_t field_scan[16];
 }H264Context;
 
 static VLC coeff_token_vlc[4];
@@ -2721,6 +2723,18 @@ static int decode_init(AVCodecContext *avctx){
     s->low_delay= 1;
     avctx->pix_fmt= PIX_FMT_YUV420P;
 
+    if(s->dsp.h264_idct_add == ff_h264_idct_add_c){ //FIXME little ugly
+        memcpy(h->zigzag_scan, zigzag_scan, 16*sizeof(uint8_t));
+        memcpy(h-> field_scan,  field_scan, 16*sizeof(uint8_t));
+    }else{
+        int i;
+        for(i=0; i<16; i++){
+#define T(x) (x>>2) | ((x<<2) & 0xF)
+            h->zigzag_scan[i] = T(zigzag_scan[i]);
+            h-> field_scan[i] = T( field_scan[i]);
+        }
+    }
+
     decode_init_vlc(h);
     
     if(avctx->extradata_size > 0 && avctx->extradata &&
@@ -4591,10 +4605,10 @@ decode_intra_mb:
 //        fill_non_zero_count_cache(h);
 
         if(IS_INTERLACED(mb_type)){
-            scan= field_scan;
+            scan= h->field_scan;
             dc_scan= luma_dc_field_scan;
         }else{
-            scan= zigzag_scan;
+            scan= h->zigzag_scan;
             dc_scan= luma_dc_zigzag_scan;
         }
 
@@ -5575,10 +5589,10 @@ decode_intra_mb:
         int dqp;
 
         if(IS_INTERLACED(mb_type)){
-            scan= field_scan;
+            scan= h->field_scan;
             dc_scan= luma_dc_field_scan;
         }else{
-            scan= zigzag_scan;
+            scan= h->zigzag_scan;
             dc_scan= luma_dc_zigzag_scan;
         }
 
