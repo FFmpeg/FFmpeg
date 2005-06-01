@@ -340,8 +340,8 @@ typedef struct MpegEncContext {
     int16_t *dc_val[3];            ///< used for mpeg4 DC prediction, all 3 arrays must be continuous 
     int16_t dc_cache[4*5];
     int y_dc_scale, c_dc_scale;
-    uint8_t *y_dc_scale_table;     ///< qscale -> y_dc_scale table 
-    uint8_t *c_dc_scale_table;     ///< qscale -> c_dc_scale table 
+    const uint8_t *y_dc_scale_table;     ///< qscale -> y_dc_scale table 
+    const uint8_t *c_dc_scale_table;     ///< qscale -> c_dc_scale table 
     const uint8_t *chroma_qscale_table;  ///< qscale -> chroma_qscale (h263)
     uint8_t *coded_block_base;
     uint8_t *coded_block;          ///< used for coded block pattern prediction (msmpeg4v3, wmv1)
@@ -819,7 +819,7 @@ int inline ff_get_mb_score(MpegEncContext * s, int mx, int my, int src_index,
 /* mpeg12.c */
 extern const int16_t ff_mpeg1_default_intra_matrix[64];
 extern const int16_t ff_mpeg1_default_non_intra_matrix[64];
-extern uint8_t ff_mpeg1_dc_scale_table[128];
+extern const uint8_t ff_mpeg1_dc_scale_table[128];
 
 void mpeg1_encode_picture_header(MpegEncContext *s, int picture_number);
 void mpeg1_encode_mb(MpegEncContext *s,
@@ -859,9 +859,9 @@ static inline int get_rl_index(const RLTable *rl, int last, int run, int level)
     return index + level - 1;
 }
 
-extern uint8_t ff_mpeg4_y_dc_scale_table[32];
-extern uint8_t ff_mpeg4_c_dc_scale_table[32];
-extern uint8_t ff_aic_dc_scale_table[32];
+extern const uint8_t ff_mpeg4_y_dc_scale_table[32];
+extern const uint8_t ff_mpeg4_c_dc_scale_table[32];
+extern const uint8_t ff_aic_dc_scale_table[32];
 extern const int16_t ff_mpeg4_default_intra_matrix[64];
 extern const int16_t ff_mpeg4_default_non_intra_matrix[64];
 extern const uint8_t ff_h263_chroma_qscale_table[32];

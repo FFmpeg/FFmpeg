@@ -719,12 +719,12 @@ const uint8_t mpa_huff_data[32][2] = {
 
 
 /* huffman tables for quadrules */
-static uint8_t mpa_quad_codes[2][16] = {
+static const uint8_t mpa_quad_codes[2][16] = {
     {  1,  5,  4,  5,  6,  5,  4,  4, 7,  3,  6,  0,  7,  2,  3,  1, },
     { 15, 14, 13, 12, 11, 10,  9,  8, 7,  6,  5,  4,  3,  2,  1,  0, },
 };
 
-static uint8_t mpa_quad_bits[2][16] = {
+static const uint8_t mpa_quad_bits[2][16] = {
     { 1, 4, 4, 5, 4, 6, 5, 6, 4, 5, 5, 6, 5, 6, 6, 6, },
     { 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, },
 };

@@ -24,7 +24,7 @@
 #include "../dsputil.h"
 #include "mmx.h"
 
-static unsigned short __align16 SSE2_dequant_const[] =
+static const unsigned short __align16 SSE2_dequant_const[] =
 {
     0,65535,65535,0,0,0,0,0,    // 0x0000 0000 0000 0000 0000 FFFF FFFF 0000
     0,0,0,0,65535,65535,0,0,    // 0x0000 0000 FFFF FFFF 0000 0000 0000 0000
@@ -35,7 +35,7 @@ static unsigned short __align16 SSE2_dequant_const[] =
     0,0,65535,65535, 0,0,0,0    // 0x0000 0000 0000 0000 FFFF FFFF 0000 0000
 };
 
-static unsigned int __align16 eight_data[] =
+static const unsigned int __align16 eight_data[] =
 { 
     0x00080008, 
     0x00080008,
@@ -43,7 +43,7 @@ static unsigned int __align16 eight_data[] =
     0x00080008 
 }; 
 
-static unsigned short __align16 SSE2_idct_data[7 * 8] =
+static const unsigned short __align16 SSE2_idct_data[7 * 8] =
 {
     64277,64277,64277,64277,64277,64277,64277,64277, 
     60547,60547,60547,60547,60547,60547,60547,60547, 

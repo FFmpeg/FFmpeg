@@ -99,18 +99,18 @@ static const int xa_adpcm_table[5][2] = {
    { 122, -60 }
 };
 
-static int ea_adpcm_table[] = {
+static const int ea_adpcm_table[] = {
     0, 240, 460, 392, 0, 0, -208, -220, 0, 1,
     3, 4, 7, 8, 10, 11, 0, -1, -3, -4
 };
 
-static int ct_adpcm_table[8] = {
+static const int ct_adpcm_table[8] = {
     0x00E6, 0x00E6, 0x00E6, 0x00E6,
     0x0133, 0x0199, 0x0200, 0x0266
 };
 
 // padded to zero where table size is less then 16
-static int swf_index_tables[4][16] = {
+static const int swf_index_tables[4][16] = {
     /*2*/ { -1, 2 },
     /*3*/ { -1, -1, 2, 4 },
     /*4*/ { -1, -1, -1, -1, 2, 4, 6, 8 },
@@ -911,7 +911,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
     case CODEC_ID_ADPCM_SWF:
     {
 	GetBitContext gb;
-	int *table;
+	const int *table;
 	int k0, signmask;
 	int size = buf_size*8;
 	

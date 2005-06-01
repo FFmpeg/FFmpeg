@@ -20,7 +20,7 @@
 #ifndef SP5X_H
 #define SP5X_H
 
-static uint8_t sp5x_data_sof[] =
+static const uint8_t sp5x_data_sof[] =
 {
     0xFF, 0xC0,	/* SOF */
     0x00, 0x11,	/* len */
@@ -33,7 +33,7 @@ static uint8_t sp5x_data_sof[] =
     0x03, 0x11, 0x01
 };
 
-static uint8_t sp5x_data_sos[] =
+static const uint8_t sp5x_data_sos[] =
 {
     0xFF, 0xDA,	/* SOS */
     0x00, 0x0C,	/* len */
@@ -46,7 +46,7 @@ static uint8_t sp5x_data_sos[] =
     0x00	/* Ah/Al */
 };
 
-static uint8_t sp5x_data_dqt[] =
+static const uint8_t sp5x_data_dqt[] =
 {
     0xFF, 0xDB, /* DQT */
     0x00, 0x84, /* len */
@@ -70,7 +70,7 @@ static uint8_t sp5x_data_dqt[] =
     0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22
 };
 
-static uint8_t sp5x_data_dht[] = {   
+static const uint8_t sp5x_data_dht[] = {   
     0xFF, 0xC4,	/* DHT */
     0x01, 0xA2,	/* len */
     0x00, 0x00, 0x01, 0x05, 0x01, 0x01, 0x01, 0x01,
@@ -128,7 +128,7 @@ static uint8_t sp5x_data_dht[] = {
 };
 
 
-static uint8_t sp5x_quant_table[20][64]=
+static const uint8_t sp5x_quant_table[20][64]=
 {
     /* index 0, Q50 */
     {  16, 11, 12, 14, 12, 10, 16, 14, 13, 14, 18, 17, 16, 19, 24, 40,
@@ -233,7 +233,7 @@ static uint8_t sp5x_quant_table[20][64]=
 
 #if 0
 /* 4NF-M, not ZigZag */
-static uint8_t sp5x_quant_table_orig[18][64] = 
+static const uint8_t sp5x_quant_table_orig[18][64] = 
 {
     /* index 0, Q50 */
     {  16, 11, 10, 16, 24, 40, 51, 61, 12, 12, 14, 19, 26, 58, 60, 55,

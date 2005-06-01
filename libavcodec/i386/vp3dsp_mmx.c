@@ -32,7 +32,7 @@
  * idct_constants[44..47] = 8
  */
 static uint16_t idct_constants[(4 + 7 + 1) * 4];
-static uint16_t idct_cosine_table[7] = {
+static const uint16_t idct_cosine_table[7] = {
     64277, 60547, 54491, 46341, 36410, 25080, 12785
 };
 

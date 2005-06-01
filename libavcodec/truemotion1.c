@@ -248,7 +248,7 @@ static int make_cdt24_entry(int p1, int p2, int16_t *cdt)
     return ((b+r) << 1);
 }
 
-static void gen_vector_table15(TrueMotion1Context *s, uint8_t *sel_vector_table)
+static void gen_vector_table15(TrueMotion1Context *s, const uint8_t *sel_vector_table)
 {
     int len, i, j;
     unsigned char delta_pair;
@@ -269,7 +269,7 @@ static void gen_vector_table15(TrueMotion1Context *s, uint8_t *sel_vector_table)
     }
 }
 
-static void gen_vector_table16(TrueMotion1Context *s, uint8_t *sel_vector_table)
+static void gen_vector_table16(TrueMotion1Context *s, const uint8_t *sel_vector_table)
 {
     int len, i, j;
     unsigned char delta_pair;
@@ -290,7 +290,7 @@ static void gen_vector_table16(TrueMotion1Context *s, uint8_t *sel_vector_table)
     }
 }
 
-static void gen_vector_table24(TrueMotion1Context *s, uint8_t *sel_vector_table)
+static void gen_vector_table24(TrueMotion1Context *s, const uint8_t *sel_vector_table)
 {
     int len, i, j;
     unsigned char delta_pair;
@@ -324,7 +324,7 @@ static int truemotion1_decode_header(TrueMotion1Context *s)
     int i;
     struct frame_header header;
     uint8_t header_buffer[128];  /* logical maximum size of the header */
-    uint8_t *sel_vector_table;
+    const uint8_t *sel_vector_table;
 
     /* There is 1 change bit per 4 pixels, so each change byte represents
      * 32 pixels; divide width by 4 to obtain the number of change bits and

@@ -299,7 +299,7 @@ void put_pixels_clamped_mmx(const DCTELEM *block, uint8_t *pixels, int line_size
 	    :"memory");
 }
 
-static unsigned char __align8 vector128[8] =
+static const unsigned char __align8 vector128[8] =
   { 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80 };
 
 void put_signed_pixels_clamped_mmx(const DCTELEM *block, uint8_t *pixels, int line_size)
