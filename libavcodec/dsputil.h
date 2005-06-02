@@ -50,6 +50,7 @@ void ff_fdct_mmx(DCTELEM *block);
 void ff_fdct_mmx2(DCTELEM *block);
 void ff_fdct_sse2(DCTELEM *block);
 
+void ff_h264_idct8_add_c(uint8_t *dst, DCTELEM *block, int stride);
 void ff_h264_idct_add_c(uint8_t *dst, DCTELEM *block, int stride);
 void ff_h264_lowres_idct_add_c(uint8_t *dst, int stride, DCTELEM *block);
 void ff_h264_lowres_idct_put_c(uint8_t *dst, int stride, DCTELEM *block);
@@ -325,6 +326,7 @@ typedef struct DSPContext {
 #define RECON_SHIFT 6
  
     void (*h264_idct_add)(uint8_t *dst, DCTELEM *block, int stride);
+    void (*h264_idct8_add)(uint8_t *dst, DCTELEM *block, int stride);
 } DSPContext;
 
 void dsputil_static_init(void);
