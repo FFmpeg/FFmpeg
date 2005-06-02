@@ -2129,6 +2129,7 @@ static inline void RENAME(hScale)(int16_t *dst, int dstW, uint8_t *src, int srcW
 	}
 	else
 	{
+		uint8_t *offset = src+filterSize;
 		long counter= -2*dstW;
 //		filter-= counter*filterSize/2;
 		filterPos-= counter/2;
@@ -2171,7 +2172,7 @@ static inline void RENAME(hScale)(int16_t *dst, int dstW, uint8_t *src, int srcW
 			" jnc 1b			\n\t"
 
 			: "+r" (counter), "+r" (filter)
-			: "m" (filterPos), "m" (dst), "m"(src+filterSize),
+			: "m" (filterPos), "m" (dst), "m"(offset),
 			  "m" (src), "r" ((long)filterSize*2)
 			: "%"REG_b, "%"REG_a, "%"REG_c
 		);
@@ -2313,6 +2314,8 @@ FUNNY_Y_CODE
 	else
 	{
 #endif
+	int xInc_shr16 = xInc >> 16;
+	int xInc_mask = xInc & 0xffff;
 	//NO MMX just normal asm ...
 	asm volatile(
 		"xor %%"REG_a", %%"REG_a"	\n\t" // i
@@ -2350,7 +2353,7 @@ FUNNY_Y_CODE
 		" jb 1b				\n\t"
 
 
-		:: "r" (src), "m" (dst), "m" (dstWidth), "m" (xInc>>16), "m" (xInc&0xFFFF)
+		:: "r" (src), "m" (dst), "m" (dstWidth), "m" (xInc_shr16), "m" (xInc_mask)
 		: "%"REG_a, "%"REG_b, "%ecx", "%"REG_D, "%esi"
 		);
 #ifdef HAVE_MMX2
@@ -2509,6 +2512,8 @@ FUNNY_UV_CODE
 	else
 	{
 #endif
+	long xInc_shr16 = (long) (xInc >> 16);
+	int xInc_mask = xInc & 0xffff; 
 	asm volatile(
 		"xor %%"REG_a", %%"REG_a"	\n\t" // i
 		"xor %%"REG_b", %%"REG_b"		\n\t" // xx
@@ -2542,7 +2547,7 @@ FUNNY_UV_CODE
 		"cmp %2, %%"REG_a"		\n\t"
 		" jb 1b				\n\t"
 
-		:: "m" (src1), "m" (dst), "m" ((long)dstWidth), "m" ((long)(xInc>>16)), "m" ((xInc&0xFFFF)),
+		:: "m" (src1), "m" (dst), "m" ((long)dstWidth), "m" (xInc_shr16), "m" (xInc_mask),
 		"r" (src2)
 		: "%"REG_a, "%"REG_b, "%ecx", "%"REG_D, "%esi"
 		);
