@@ -50,7 +50,7 @@ static void H264_CHROMA_MC8_TMPL(uint8_t *dst/*align 8*/, uint8_t *src/*align 1*
                  "paddw %3, %%mm4\n\t"
                  "psubw %%mm7, %%mm4\n\t"     /* mm4 = A = xy - (8x+8y) + 64 */
                  "pxor %%mm7, %%mm7\n\t"
-                 : "=m" (DD) : "rm" (x), "rm" (y), "m" (sixtyfour));
+                 : "=m" (DD) : "rm" (x), "rm" (y), "m" (ff_pw_64));
 
     asm volatile("movq %%mm4, %0" : "=m" (AA));
 
@@ -134,7 +134,7 @@ static void H264_CHROMA_MC8_TMPL(uint8_t *dst/*align 8*/, uint8_t *src/*align 1*
             "packuswb %%mm3, %%mm2\n\t"
             H264_CHROMA_OP(%0, %%mm2)
             "movq %%mm2, %0\n\t"
-            : "=m" (dst[0]) : "m" (thirtytwo));
+            : "=m" (dst[0]) : "m" (ff_pw_32));
         dst+= stride;
     }
 }
