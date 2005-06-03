@@ -1608,6 +1608,9 @@ static int mpegps_read_packet(AVFormatContext *s,
     } else if (startcode >= 0xa0 && startcode <= 0xbf) {
         type = CODEC_TYPE_AUDIO;
         codec_id = CODEC_ID_PCM_S16BE;
+    } else if (startcode >= 0x20 && startcode <= 0x3f) {
+        type = CODEC_TYPE_SUBTITLE;
+        codec_id = CODEC_ID_DVD_SUBTITLE;
     } else {
     skip:
         /* skip packet */
@@ -1771,6 +1774,7 @@ AVInputFormat mpegps_demux = {
     mpegps_read_close,
     NULL, //mpegps_read_seek,
     mpegps_read_dts,
+    .flags = AVFMT_SHOW_IDS,
 };
 
 int mpegps_init(void)
