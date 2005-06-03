@@ -264,7 +264,7 @@ void put_bmp_header(ByteIOContext *pb, AVCodecContext *enc, const CodecTag *tags
         put_byte(pb, 0);
 }
 
-static void parse_specific_params(AVCodecContext *stream, int *au_rate, int *au_ssize, int *au_scale)
+void ff_parse_specific_params(AVCodecContext *stream, int *au_rate, int *au_ssize, int *au_scale)
 {
     int gcd;
 
@@ -384,54 +384,45 @@ static int avi_write_header(AVFormatContext *s)
         /* stream generic header */
         strh = start_tag(pb, "strh");
         switch(stream->codec_type) {
-        case CODEC_TYPE_VIDEO:
-            put_tag(pb, "vids");
-            put_le32(pb, stream->codec_tag);
-            put_le32(pb, 0); /* flags */
-            put_le16(pb, 0); /* priority */
-            put_le16(pb, 0); /* language */
-            put_le32(pb, 0); /* initial frame */
-            
-            put_le32(pb, stream->time_base.num); /* scale */
-            put_le32(pb, stream->time_base.den); /* rate */
-            av_set_pts_info(s->streams[i], 64, stream->time_base.num, stream->time_base.den);
-
-            put_le32(pb, 0); /* start */
-            avi->frames_hdr_strm[i] = url_ftell(pb); /* remember this offset to fill later */
-            put_le32(pb, nb_frames); /* length, XXX: fill later */
-            put_le32(pb, 1024 * 1024); /* suggested buffer size */
-            put_le32(pb, -1); /* quality */
-            put_le32(pb, 0); /* sample size */
-            put_le16(pb, 0);
-            put_le16(pb, 0);
-            put_le16(pb, stream->width);
-            put_le16(pb, stream->height);
-            break;
-        case CODEC_TYPE_AUDIO:
-            put_tag(pb, "auds");
-            put_le32(pb, 1); /* tag */
-            put_le32(pb, 0); /* flags */
-            put_le16(pb, 0); /* priority */
-            put_le16(pb, 0); /* language */
-            put_le32(pb, 0); /* initial frame */
-            parse_specific_params(stream, &au_byterate, &au_ssize, &au_scale);
-            put_le32(pb, au_scale); /* scale */
-            put_le32(pb, au_byterate); /* rate */
-            av_set_pts_info(s->streams[i], 64, au_scale, au_byterate);
-            put_le32(pb, 0); /* start */
-            avi->frames_hdr_strm[i] = url_ftell(pb); /* remember this offset to fill later */
-            put_le32(pb, 0); /* length, XXX: filled later */
-            put_le32(pb, 12 * 1024); /* suggested buffer size */
-            put_le32(pb, -1); /* quality */
-            put_le32(pb, au_ssize); /* sample size */
-            put_le32(pb, 0);
-            put_le32(pb, 0);
-            break;
-        default:
-            return -1;
+        case CODEC_TYPE_VIDEO: put_tag(pb, "vids"); break;
+        case CODEC_TYPE_AUDIO: put_tag(pb, "auds"); break;
+//        case CODEC_TYPE_TEXT : put_tag(pb, "txts"); break;
+        case CODEC_TYPE_DATA : put_tag(pb, "dats"); break;
         }
+        if(stream->codec_type == CODEC_TYPE_VIDEO)
+            put_le32(pb, stream->codec_tag);
+        else
+            put_le32(pb, 1);
+        put_le32(pb, 0); /* flags */
+        put_le16(pb, 0); /* priority */
+        put_le16(pb, 0); /* language */
+        put_le32(pb, 0); /* initial frame */
+
+        ff_parse_specific_params(stream, &au_byterate, &au_ssize, &au_scale);
+
+        put_le32(pb, au_scale); /* scale */
+        put_le32(pb, au_byterate); /* rate */
+        av_set_pts_info(s->streams[i], 64, au_scale, au_byterate);
+
+        put_le32(pb, 0); /* start */
+        avi->frames_hdr_strm[i] = url_ftell(pb); /* remember this offset to fill later */
+        put_le32(pb, 0); /* length, XXX: filled later */
+        
+        /* suggested buffer size */ //FIXME set at the end to largest chunk
+        if(stream->codec_type == CODEC_TYPE_VIDEO)
+            put_le32(pb, 1024 * 1024); 
+        else if(stream->codec_type == CODEC_TYPE_AUDIO)
+            put_le32(pb, 12 * 1024); 
+        else
+            put_le32(pb, 0); 
+        put_le32(pb, -1); /* quality */
+        put_le32(pb, au_ssize); /* sample size */
+        put_le32(pb, 0);
+        put_le16(pb, stream->width);
+        put_le16(pb, stream->height);
         end_tag(pb, strh);
 
+      if(stream->codec_type != CODEC_TYPE_DATA){
         strf = start_tag(pb, "strf");
         switch(stream->codec_type) {
         case CODEC_TYPE_VIDEO:
@@ -447,6 +438,7 @@ static int avi_write_header(AVFormatContext *s)
             return -1;
         }
         end_tag(pb, strf);
+      }
 	
 	if (!url_is_streamed(pb)) {
 	    unsigned char tag[5];
@@ -599,7 +591,7 @@ static int avi_write_idx1(AVFormatContext *s)
             if (avi->frames_hdr_strm[n] != 0) {
                 stream = &s->streams[n]->codec;
                 url_fseek(pb, avi->frames_hdr_strm[n], SEEK_SET);
-                parse_specific_params(stream, &au_byterate, &au_ssize, &au_scale);
+                ff_parse_specific_params(stream, &au_byterate, &au_ssize, &au_scale);
                 if (au_ssize == 0) {
                     put_le32(pb, stream->frame_number);
                     nb_frames += stream->frame_number;
