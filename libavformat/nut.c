@@ -112,6 +112,8 @@ static char *info_table[][2]={
 	{"Cover"		, "PNG"},
 };
 
+void ff_parse_specific_params(AVCodecContext *stream, int *au_rate, int *au_ssize, int *au_scale);
+
 static void update(NUTContext *nut, int stream_index, int64_t frame_start, int frame_type, int frame_code, int key_frame, int size, int64_t pts){
     StreamContext *stream= &nut->stream[stream_index];
     
@@ -576,14 +578,20 @@ static int nut_write_header(AVFormatContext *s)
     /* stream headers */
     for (i = 0; i < s->nb_streams; i++)
     {
-	int nom, denom, gcd;
+	int nom, denom, ssize;
 
 	codec = &s->streams[i]->codec;
 	
 	put_be64(bc, STREAM_STARTCODE);
 	put_packetheader(nut, bc, 120 + codec->extradata_size, 1);
 	put_v(bc, i /*s->streams[i]->index*/);
-	put_v(bc, (codec->codec_type == CODEC_TYPE_AUDIO) ? 32 : 0);
+        switch(codec->codec_type){
+        case CODEC_TYPE_VIDEO: put_v(bc, 0); break;
+        case CODEC_TYPE_AUDIO: put_v(bc, 1); break;
+//        case CODEC_TYPE_TEXT : put_v(bc, 2); break;
+        case CODEC_TYPE_DATA : put_v(bc, 3); break;
+        default: return -1;
+        }
 	if (codec->codec_tag)
 	    put_vb(bc, codec->codec_tag);
 	else if (codec->codec_type == CODEC_TYPE_VIDEO)
@@ -596,23 +604,9 @@ static int nut_write_header(AVFormatContext *s)
 	}
         else
             put_vb(bc, 0);
+        
+        ff_parse_specific_params(codec, &nom, &ssize, &denom);
 
-	if (codec->codec_type == CODEC_TYPE_VIDEO)
-	{
-	    nom = codec->time_base.den;
-	    denom = codec->time_base.num;
-	}
-	else
-	{
-	    nom = codec->sample_rate;
-            if(codec->frame_size>0)
-                denom= codec->frame_size;
-            else
-                denom= 1; //unlucky
-	}
-        gcd= ff_gcd(nom, denom);
-        nom   /= gcd;
-        denom /= gcd;
         nut->stream[i].rate_num= nom;
         nut->stream[i].rate_den= denom;
         av_set_pts_info(s->streams[i], 60, denom, nom);
@@ -965,11 +959,18 @@ static int decode_stream_header(NUTContext *nut){
             if (st->codec.codec_id == CODEC_ID_NONE)
                 av_log(s, AV_LOG_ERROR, "Unknown codec?!\n");
             break;
-        case 32:
+        case 1:
+        case 32: //compatibility
             st->codec.codec_type = CODEC_TYPE_AUDIO;
             st->codec.codec_id = codec_get_wav_id(tmp);
             if (st->codec.codec_id == CODEC_ID_NONE)
                 av_log(s, AV_LOG_ERROR, "Unknown codec?!\n");
+            break;
+        case 2:
+//            st->codec.codec_type = CODEC_TYPE_TEXT;
+//            break;
+        case 3:
+            st->codec.codec_type = CODEC_TYPE_DATA;
             break;
         default:
             av_log(s, AV_LOG_ERROR, "Unknown stream class (%d)\n", class);
@@ -994,7 +995,7 @@ static int decode_stream_header(NUTContext *nut){
 //	    url_fskip(bc, get_v(bc));
     }
     
-    if (class == 0) /* VIDEO */
+    if (st->codec.codec_type == CODEC_TYPE_VIDEO) /* VIDEO */
     {
         st->codec.width = get_v(bc);
         st->codec.height = get_v(bc);
@@ -1002,7 +1003,7 @@ static int decode_stream_header(NUTContext *nut){
         st->codec.sample_aspect_ratio.den= get_v(bc);
         get_v(bc); /* csp type */
     }
-    if (class == 32) /* AUDIO */
+    if (st->codec.codec_type == CODEC_TYPE_AUDIO) /* AUDIO */
     {
         st->codec.sample_rate = get_v(bc);
         get_v(bc); // samplerate_den
@@ -1100,7 +1101,7 @@ static int nut_read_header(AVFormatContext *s, AVFormatParameters *ap)
     pos=0;
     for(inited_stream_count=0; inited_stream_count < nut->stream_count;){
         pos= find_startcode(bc, STREAM_STARTCODE, pos)+1;
-        if (pos<0){
+        if (pos<0+1){
             av_log(s, AV_LOG_ERROR, "not all stream headers found\n");
             return -1;
         }
