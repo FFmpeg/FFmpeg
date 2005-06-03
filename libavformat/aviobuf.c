@@ -272,7 +272,8 @@ static void fill_buffer(ByteIOContext *s)
         return;
 
     if(s->update_checksum){
-        s->checksum= s->update_checksum(s->checksum, s->checksum_ptr, s->buf_end - s->checksum_ptr);
+        if(s->buf_end > s->checksum_ptr)
+            s->checksum= s->update_checksum(s->checksum, s->checksum_ptr, s->buf_end - s->checksum_ptr);
         s->checksum_ptr= s->buffer;
     }
 
