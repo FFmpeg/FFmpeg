@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-#define LIBAVFORMAT_BUILD       4625
+#define LIBAVFORMAT_BUILD       4626
 
 #define LIBAVFORMAT_VERSION_INT FFMPEG_VERSION_INT
 #define LIBAVFORMAT_VERSION     FFMPEG_VERSION
@@ -247,6 +247,8 @@ typedef struct AVStream {
     /* decoding: duration of the stream, in AV_TIME_BASE fractional
        seconds. */
     int64_t duration;
+
+    char language[4]; /* ISO 639 3-letter language code (empty string if undefined) */
 
     /* av_read_frame() support */
     int need_parsing;
