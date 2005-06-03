@@ -13,7 +13,8 @@ typedef struct {
 #define OPT_GRAB   0x0040
 #define OPT_INT    0x0080
 #define OPT_FLOAT  0x0100
-    union {
+#define OPT_SUBTITLE 0x0200
+     union {
         void (*func_arg)(const char *);
         int *int_arg;
         char **str_arg;
