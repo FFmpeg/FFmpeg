@@ -590,6 +590,15 @@ int avcodec_encode_video(AVCodecContext *avctx, uint8_t *buf, int buf_size,
         return 0;
 }
 
+int avcodec_encode_subtitle(AVCodecContext *avctx, uint8_t *buf, int buf_size, 
+                            const AVSubtitle *sub)
+{
+    int ret;
+    ret = avctx->codec->encode(avctx, buf, buf_size, (void *)sub);
+    avctx->frame_number++;
+    return ret;
+}
+
 /** 
  * decode a frame. 
  * @param buf bitstream buffer, must be FF_INPUT_BUFFER_PADDING_SIZE larger then the actual read bytes
@@ -636,6 +645,23 @@ int avcodec_decode_audio(AVCodecContext *avctx, int16_t *samples,
     ret = avctx->codec->decode(avctx, samples, frame_size_ptr, 
                                buf, buf_size);
     avctx->frame_number++;
+    return ret;
+}
+
+/* decode a subtitle message. return -1 if error, otherwise return the
+   *number of bytes used. If no subtitle could be decompressed,
+   *got_sub_ptr is zero. Otherwise, the subtitle is stored in *sub. */
+int avcodec_decode_subtitle(AVCodecContext *avctx, AVSubtitle *sub,
+                            int *got_sub_ptr,
+                            const uint8_t *buf, int buf_size)
+{
+    int ret;
+
+    *got_sub_ptr = 0;
+    ret = avctx->codec->decode(avctx, sub, got_sub_ptr, 
+                               (uint8_t *)buf, buf_size);
+    if (*got_sub_ptr)
+        avctx->frame_number++;
     return ret;
 }
 
@@ -806,6 +832,10 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
         break;
     case CODEC_TYPE_DATA:
         snprintf(buf, buf_size, "Data: %s", codec_name);
+        bitrate = enc->bit_rate;
+        break;
+    case CODEC_TYPE_SUBTITLE:
+        snprintf(buf, buf_size, "Subtitle: %s", codec_name);
         bitrate = enc->bit_rate;
         break;
     default:

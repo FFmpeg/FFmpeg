@@ -551,6 +551,10 @@ PCM_CODEC(CODEC_ID_ADPCM_SWF, adpcm_swf);
 
 #undef PCM_CODEC
 
+    /* subtitles */ 
+    register_avcodec(&dvdsub_decoder);
+    register_avcodec(&dvbsub_encoder);
+
     /* parsers */ 
     av_register_codec_parser(&mpegvideo_parser);
     av_register_codec_parser(&mpeg4video_parser);
@@ -568,5 +572,6 @@ PCM_CODEC(CODEC_ID_ADPCM_SWF, adpcm_swf);
 #ifdef CONFIG_AC3
     av_register_codec_parser(&ac3_parser);
 #endif
+    av_register_codec_parser(&dvdsub_parser);
 }
 

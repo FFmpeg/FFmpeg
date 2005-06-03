@@ -17,7 +17,7 @@ extern "C" {
 
 #define FFMPEG_VERSION_INT     0x000409
 #define FFMPEG_VERSION         "0.4.9-pre1"
-#define LIBAVCODEC_BUILD       4755
+#define LIBAVCODEC_BUILD       4756
 
 #define LIBAVCODEC_VERSION_INT FFMPEG_VERSION_INT
 #define LIBAVCODEC_VERSION     FFMPEG_VERSION
@@ -175,6 +175,10 @@ enum CodecID {
     CODEC_ID_GSM,    
     
     CODEC_ID_OGGTHEORA= 0x16000, 
+
+    /* subtitle codecs */
+    CODEC_ID_DVD_SUBTITLE= 0x17000, 
+    CODEC_ID_DVB_SUBTITLE, 
     
     CODEC_ID_MPEG2TS= 0x20000, /* _FAKE_ codec to indicate a raw MPEG2 transport
                          stream (only used by libavformat) */
@@ -188,6 +192,7 @@ enum CodecType {
     CODEC_TYPE_VIDEO,
     CODEC_TYPE_AUDIO,
     CODEC_TYPE_DATA,
+    CODEC_TYPE_SUBTITLE,
 };
 
 /**
@@ -1880,6 +1885,20 @@ typedef struct AVPaletteControl {
 
 } AVPaletteControl;
 
+typedef struct AVSubtitle {
+    uint16_t format; /* 0 = graphics */
+    uint16_t x;
+    uint16_t y;
+    uint16_t w;
+    uint16_t h;
+    uint16_t nb_colors;
+    uint32_t start_display_time; /* relative to packet pts, in ms */
+    uint32_t end_display_time; /* relative to packet pts, in ms */
+    int linesize;
+    uint32_t *rgba_palette;
+    uint8_t *bitmap;
+} AVSubtitle;
+
 extern AVCodec ac3_encoder;
 extern AVCodec mp2_encoder;
 extern AVCodec mp3lame_encoder;
@@ -2067,6 +2086,10 @@ extern AVCodec rawvideo_decoder;
 extern AVCodec ac3_decoder;
 extern AVCodec dts_decoder;
 
+/* subtitles */
+extern AVCodec dvdsub_decoder;
+extern AVCodec dvbsub_encoder;
+
 /* resample.c */
 
 struct ReSampleContext;
@@ -2204,6 +2227,9 @@ int avcodec_decode_audio(AVCodecContext *avctx, int16_t *samples,
 int avcodec_decode_video(AVCodecContext *avctx, AVFrame *picture, 
                          int *got_picture_ptr,
                          uint8_t *buf, int buf_size);
+int avcodec_decode_subtitle(AVCodecContext *avctx, AVSubtitle *sub,
+                            int *got_sub_ptr,
+                            const uint8_t *buf, int buf_size);
 int avcodec_parse_frame(AVCodecContext *avctx, uint8_t **pdata, 
                         int *data_size_ptr,
                         uint8_t *buf, int buf_size);
@@ -2211,6 +2237,8 @@ int avcodec_encode_audio(AVCodecContext *avctx, uint8_t *buf, int buf_size,
                          const short *samples);
 int avcodec_encode_video(AVCodecContext *avctx, uint8_t *buf, int buf_size, 
                          const AVFrame *pict);
+int avcodec_encode_subtitle(AVCodecContext *avctx, uint8_t *buf, int buf_size, 
+                            const AVSubtitle *sub);
 
 int avcodec_close(AVCodecContext *avctx);
 
@@ -2310,6 +2338,7 @@ extern AVCodecParser mjpeg_parser;
 extern AVCodecParser pnm_parser;
 extern AVCodecParser mpegaudio_parser;
 extern AVCodecParser ac3_parser;
+extern AVCodecParser dvdsub_parser;
 
 /* memory */
 void *av_malloc(unsigned int size);
