@@ -2312,7 +2312,7 @@ static void pred8x8_plane_c(uint8_t *src, int stride){
     const int l0 = ((has_topleft ? SRC(-1,-1) : SRC(-1,0)) \
                      + 2*SRC(-1,0) + SRC(-1,1) + 2) >> 2; \
     PL(1) PL(2) PL(3) PL(4) PL(5) PL(6) \
-    const int l7 = (SRC(-1,6) + 3*SRC(-1,7) + 2) >> 2;
+    const int l7 = (SRC(-1,6) + 3*SRC(-1,7) + 2) >> 2
 
 #define PT(x) \
     const int t##x = (SRC(x-1,-1) + 2*SRC(x,-1) + SRC(x+1,-1) + 2) >> 2;
@@ -2321,7 +2321,7 @@ static void pred8x8_plane_c(uint8_t *src, int stride){
                      + 2*SRC(0,-1) + SRC(1,-1) + 2) >> 2; \
     PT(1) PT(2) PT(3) PT(4) PT(5) PT(6) \
     const int t7 = ((has_topright ? SRC(8,-1) : SRC(7,-1)) \
-                     + 2*SRC(7,-1) + SRC(6,-1) + 2) >> 2; \
+                     + 2*SRC(7,-1) + SRC(6,-1) + 2) >> 2
 
 #define PTR(x) \
     t##x = (SRC(x-1,-1) + 2*SRC(x,-1) + SRC(x+1,-1) + 2) >> 2;
@@ -2333,7 +2333,7 @@ static void pred8x8_plane_c(uint8_t *src, int stride){
     } else t8=t9=t10=t11=t12=t13=t14=t15= SRC(7,-1);
 
 #define PREDICT_8x8_LOAD_TOPLEFT \
-    const int lt = (SRC(-1,0) + 2*SRC(-1,-1) + SRC(0,-1) + 2) >> 2;
+    const int lt = (SRC(-1,0) + 2*SRC(-1,-1) + SRC(0,-1) + 2) >> 2
 
 #define PREDICT_8x8_DC(v) \
     int y; \
@@ -4966,6 +4966,7 @@ decode_intra_mb:
                 if(cbp & (1<<i8x8)){
                     if(IS_8x8DCT(mb_type)){
                         DCTELEM *buf = &h->mb[64*i8x8];
+                        uint8_t *nnz;
                         for(i4x4=0; i4x4<4; i4x4++){
                             if( decode_residual(h, gb, buf, i4x4+4*i8x8, zigzag_scan8x8_cavlc+16*i4x4,
                                                 h->dequant8_coeff[s->qscale], 16) <0 )
@@ -4976,7 +4977,7 @@ decode_intra_mb:
                             for(i=0; i<64; i++)
                                 buf[i] = (buf[i] + 2) >> 2;
                         }
-                        uint8_t * const nnz= &h->non_zero_count_cache[ scan8[4*i8x8] ];
+                        nnz= &h->non_zero_count_cache[ scan8[4*i8x8] ];
                         nnz[0] |= nnz[1] | nnz[8] | nnz[9];
                     }else{
                         for(i4x4=0; i4x4<4; i4x4++){
