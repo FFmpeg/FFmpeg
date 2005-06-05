@@ -2998,18 +2998,6 @@ static int decode_init(AVCodecContext *avctx){
     s->low_delay= 1;
     avctx->pix_fmt= PIX_FMT_YUV420P;
 
-    if(s->dsp.h264_idct_add == ff_h264_idct_add_c){ //FIXME little ugly
-        memcpy(h->zigzag_scan, zigzag_scan, 16*sizeof(uint8_t));
-        memcpy(h-> field_scan,  field_scan, 16*sizeof(uint8_t));
-    }else{
-        int i;
-        for(i=0; i<16; i++){
-#define T(x) (x>>2) | ((x<<2) & 0xF)
-            h->zigzag_scan[i] = T(zigzag_scan[i]);
-            h-> field_scan[i] = T( field_scan[i]);
-        }
-    }
-
     decode_init_vlc(h);
     
     if(avctx->extradata_size > 0 && avctx->extradata &&
@@ -4173,6 +4161,18 @@ static int decode_slice_header(H264Context *h){
     if (!s->context_initialized) {
         if (MPV_common_init(s) < 0)
             return -1;
+            
+        if(s->dsp.h264_idct_add == ff_h264_idct_add_c){ //FIXME little ugly
+            memcpy(h->zigzag_scan, zigzag_scan, 16*sizeof(uint8_t));
+            memcpy(h-> field_scan,  field_scan, 16*sizeof(uint8_t));
+        }else{
+            int i;
+            for(i=0; i<16; i++){
+#define T(x) (x>>2) | ((x<<2) & 0xF)
+                h->zigzag_scan[i] = T(zigzag_scan[i]);
+                h-> field_scan[i] = T( field_scan[i]);
+            }
+        }
 
         alloc_tables(h);
 
