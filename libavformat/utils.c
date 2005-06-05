@@ -1447,7 +1447,7 @@ static void av_update_stream_timings(AVFormatContext *ic)
     }
     if (start_time != MAXINT64) {
         ic->start_time = start_time;
-        if (end_time != MAXINT64) {
+        if (end_time != MININT64) {
             ic->duration = end_time - start_time;
             if (ic->file_size > 0) {
                 /* compute the bit rate */
