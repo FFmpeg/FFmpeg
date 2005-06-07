@@ -2291,6 +2291,7 @@ static void opt_error_concealment(const char *arg)
 static void opt_debug(const char *arg)
 {
     debug = atoi(arg);
+    av_log_set_level(AV_LOG_DEBUG);
 }
 
 static void opt_vismv(const char *arg)
