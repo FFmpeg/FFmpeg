@@ -198,6 +198,7 @@ void video_encode_example(const char *filename)
     c->time_base= (AVRational){1,25};
     c->gop_size = 10; /* emit one intra frame every ten frames */
     c->max_b_frames=1;
+    c->pix_fmt = PIX_FMT_YUV420P;
 
     /* open it */
     if (avcodec_open(c, codec) < 0) {
