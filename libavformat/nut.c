@@ -17,9 +17,8 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * NUT DRAFT can be found in MPlayer CVS at DOCS/tech/mpcf.txt
  *
- * AND http://people.fsn.hu/~alex/nut/ (TeX, pdf, ps, dvi, ..)
+ * Visit the official site at http://www.nut.hu/
  *
  */
 
