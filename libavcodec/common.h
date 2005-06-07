@@ -125,13 +125,13 @@
 #endif
 
 #ifdef EMULATE_FAST_INT
-/* note that we don't emulate 64bit ints */
 typedef signed char int_fast8_t;
 typedef signed int  int_fast16_t;
 typedef signed int  int_fast32_t;
 typedef unsigned char uint_fast8_t;
 typedef unsigned int  uint_fast16_t;
 typedef unsigned int  uint_fast32_t;
+typedef uint64_t      uint_fast64_t;
 #endif
 
 #ifndef INT_BIT
