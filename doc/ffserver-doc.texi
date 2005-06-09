@@ -41,8 +41,8 @@ to make it work correctly.
 @section What do I need?
 
 I use Linux on a 900MHz Duron with a cheapo Bt848 based TV capture card. I'm
-using stock linux 2.4.17 with the stock drivers. [Actually that isn't true,
-I needed some special drivers from my motherboard based sound card.]
+using stock Linux 2.4.17 with the stock drivers. [Actually that isn't true,
+I needed some special drivers for my motherboard-based sound card.]
 
 I understand that FreeBSD systems work just fine as well.
 
@@ -52,8 +52,8 @@ First, build the kit. It *really* helps to have installed LAME first. Then when
 you run the ffserver ./configure, make sure that you have the --enable-mp3lame
 flag turned on.
 
-LAME is important as it allows streaming of audio to Windows Media Player. Don't
-ask why the other audio types do not work.
+LAME is important as it allows streaming audio to Windows Media Player.
+Don't ask why the other audio types do not work.
 
 As a simple test, just run the following two command lines (assuming that you
 have a V4L video capture card):
@@ -63,17 +63,18 @@ have a V4L video capture card):
 ./ffmpeg http://localhost:8090/feed1.ffm
 @end example
 
-At this point you should be able to go to your windows machine and fire up
+At this point you should be able to go to your Windows machine and fire up
 Windows Media Player (WMP). Go to Open URL and enter 
 
 @example
     http://<linuxbox>:8090/test.asf
 @end example
 
-You should see (after a short delay) video and hear audio. 
+You should (after a short delay) see video and hear audio. 
 
 WARNING: trying to stream test1.mpg doesn't work with WMP as it tries to
-transfer the entire file before starting to play. The same is true of avi files.
+transfer the entire file before starting to play.
+The same is true of AVI files.
 
 @section What happens next?
 
@@ -83,10 +84,10 @@ them up, and off you go.
 
 @section Troubleshooting
 
-@subsection I don't hear any audio, but video is fine
+@subsection I don't hear any audio, but video is fine.
 
-Maybe you didn't install LAME, or get your ./configure statement right. Check
-the ffmpeg output to see if a line referring to mp3 is present. If not, then
+Maybe you didn't install LAME, or got your ./configure statement wrong. Check
+the ffmpeg output to see if a line referring to MP3 is present. If not, then
 your configuration was incorrect. If it is, then maybe your wiring is not
 setup correctly. Maybe the sound card is not getting data from the right 
 input source. Maybe you have a really awful audio interface (like I do)
@@ -106,7 +107,7 @@ Yes, it does. Who knows why?
 
 Yes, it does. Any thoughts on this would be gratefully received. These
 differences extend to embedding WMP into a web page. [There are two
-different object ids that you can use, one of them -- the old one -- cannot
+different object IDs that you can use, one of them -- the old one -- cannot
 play very well, and the new one works well (both on the same system). However, 
 I suspect that the new one is not available unless you have installed WMP 7].
 
@@ -115,17 +116,17 @@ I suspect that the new one is not available unless you have installed WMP 7].
 You can replay video from .ffm files that was recorded earlier.
 However, there are a number of caveats which include the fact that the 
 ffserver parameters must match the original parameters used to record the
-file. If not, then ffserver deletes the file before recording into it. (Now I write
-this, this seems broken).
+file. If not, then ffserver deletes the file before recording into it.
+(Now that I write this, it seems broken).
 
 You can fiddle with many of the codec choices and encoding parameters, and
 there are a bunch more parameters that you cannot control. Post a message
-to the mailing list if there are some 'must have' parameters. Look in the
+to the mailing list if there are some 'must have' parameters. Look in
 ffserver.conf for a list of the currently available controls.
 
-It will automatically generate the .ASX or .RAM files that are often used
-in browsers. These files are actually redirections to the underlying .ASF
-or .RM file. The reason for this is that the browser often fetches the
+It will automatically generate the ASX or RAM files that are often used
+in browsers. These files are actually redirections to the underlying ASF
+or RM file. The reason for this is that the browser often fetches the
 entire file before starting up the external viewer. The redirection files
 are very small and can be transferred quickly. [The stream itself is
 often 'infinite' and thus the browser tries to download it and never 
@@ -136,11 +137,11 @@ finishes.]
 * When you connect to a live stream, most players (WMP, RA etc) want to
 buffer a certain number of seconds of material so that they can display the
 signal continuously. However, ffserver (by default) starts sending data
-in real time. This means that there is a pause of a few seconds while the
+in realtime. This means that there is a pause of a few seconds while the
 buffering is being done by the player. The good news is that this can be
-cured by adding a '?buffer=5' to the end of the URL. This says that the
+cured by adding a '?buffer=5' to the end of the URL. This meanss that the
 stream should start 5 seconds in the past -- and so the first 5 seconds 
-of the stream is sent as fast as the network will allow. It will then
+of the stream are sent as fast as the network will allow. It will then
 slow down to real time. This noticeably improves the startup experience.
 
 You can also add a 'Preroll 15' statement into the ffserver.conf that will
@@ -156,18 +157,18 @@ the amount of bandwidth consumed by live streams.
 
 It turns out that (on my machine at least) the number of frames successfully
 grabbed is marginally less than the number that ought to be grabbed. This
-means that the timestamp in the encoded data stream gets behind real time.
-This means that if you say 'preroll 10', then when the stream gets 10
-or more seconds behind, there is no preroll left.
+means that the timestamp in the encoded data stream gets behind realtime.
+This means that if you say 'Preroll 10', then when the stream gets 10
+or more seconds behind, there is no Preroll left.
 
-Fixing this requires a change in the internals in how timestamps are 
+Fixing this requires a change in the internals of how timestamps are 
 handled.
 
 @section Does the @code{?date=} stuff work.
 
-Yes (subject to the caution above). Also note that whenever you start
-ffserver, it deletes the ffm file (if any parameters have changed), thus wiping out what you had recorded
-before. 
+Yes (subject to the limitation outlined above). Also note that whenever you
+start ffserver, it deletes the ffm file (if any parameters have changed),
+thus wiping out what you had recorded before. 
 
 The format of the @code{?date=xxxxxx} is fairly flexible. You should use one
 of the following formats (the 'T' is literal):
@@ -178,8 +179,8 @@ of the following formats (the 'T' is literal):
 @end example
 
 You can omit the YYYY-MM-DD, and then it refers to the current day. However 
-note that @samp{?date=16:00:00}  refers to 4PM on the current day -- this may be
-in the future and so unlikely to useful.
+note that @samp{?date=16:00:00} refers to 4pm on the current day -- this may be
+in the future and so is unlikely to be useful.
 
 You use this by adding the ?date= to the end of the URL for the stream.
 For example:   @samp{http://localhost:8080/test.asf?date=2002-07-26T23:05:00}.
@@ -196,11 +197,11 @@ ffserver [options]
 @c man begin OPTIONS
 @table @option
 @item -L
-print the license
+Print the license.
 @item -h
-print the help
+Print the help.
 @item -f configfile
-use @file{configfile} instead of @file{/etc/ffserver.conf}
+Use @file{configfile} instead of @file{/etc/ffserver.conf}.
 @end table
 @c man end
 
@@ -211,7 +212,7 @@ use @file{configfile} instead of @file{/etc/ffserver.conf}
 
 @c man begin SEEALSO
 ffmpeg(1), ffplay(1), the @file{ffmpeg/doc/ffserver.conf} example and
-the html documentation of @file{ffmpeg}.
+the HTML documentation of @file{ffmpeg}.
 @c man end
 
 @c man begin AUTHOR
