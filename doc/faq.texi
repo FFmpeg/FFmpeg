@@ -27,9 +27,9 @@ documentation.
 Currently, the grabbing stuff does not handle synchronisation
 correctly. You are free to correct it. A fix is planned.
 
-@section How do I encode jpegs to another format ?
+@section How do I encode JPEGs to another format ?
 
-If the jpegs are named img1.jpg, img2.jpg, img3.jpg,..., use:
+If the JPEGs are named img1.jpg, img2.jpg, img3.jpg,..., use:
 
 @example
   ffmpeg -i img%d.jpg /tmp/a.mpg
@@ -65,12 +65,12 @@ with @code{./configure --enable-a52}. Take care: by
 enabling AC3, you automatically change the license of libavcodec from
 LGPL to GPL.
 
-@section Which codecs are supported by windows ?
+@section Which codecs are supported by Windows ?
 
-Windows does not support standard formats like mpeg very well, unless you 
+Windows does not support standard formats like MPEG very well, unless you 
 install some additional codecs
 
-The following list of video codecs should work on most windows systems
+The following list of video codecs should work on most Windows systems
 @table @option
 @item msmpeg4v2
 .avi/.asf
@@ -81,22 +81,22 @@ The following list of video codecs should work on most windows systems
 @item wmv2
 .asf only
 @item mpeg4
-only if you have some mpeg4 codec installed like ffdshow or xvid
+only if you have some MPEG-4 codec installed like ffdshow or xvid
 @item mpeg1
 .mpg only
 @end table
-Note, asf files often have .wmv or .wma extensions in windows. It should also 
+Note, ASF files often have .wmv or .wma extensions in Windows. It should also 
 be mentioned that Microsoft claims a patent on the ASF format, and may sue 
 or threaten users who create ASF files with non-Microsoft software. It is
 strongly advised to avoid ASF where possible.
 
-The following list of audio codecs should work on most windows systems
+The following list of audio codecs should work on most Windows systems
 @table @option
 @item adpcm_ima_wav
 @item adpcm_ms
 @item pcm
 @item mp3
-if some mp3 codec like lame is installed
+if some mp3 codec like LAME is installed
 @end table
 
 @section Why does the chrominance data seem to be sampled at a different time than the luminance data on bt8x8 captures on Linux?
@@ -105,7 +105,7 @@ This is a well-known bug in the bt8x8 driver. For 2.4.26 there is a patch at
 (@url{http://www.mplayerhq.hu/~michael/bttv-420-2.4.26.patch}). This may also
 apply cleanly to other 2.4-series kernels.
 
-@section How do I avoid the ugly aliassing artifacts in bt8x8 captures on linux?
+@section How do I avoid the ugly aliasing artifacts in bt8x8 captures on Linux?
 
 Pass 'combfilter=1 lumafilter=1' to the bttv driver. Note though that 'combfilter=1'
 will cause somewhat too strong filtering. A fix is to apply (@url{http://www.mplayerhq.hu/~michael/bttv-comb-2.4.26.patch})
@@ -114,17 +114,17 @@ and pass 'combfilter=2'.
 
 @section I have a problem with an old version of ffmpeg; where should i report it?
 Nowhere. Upgrade to the latest release or if there is no recent release upgrade
-to cvs. You could also try to report it. Maybe you will get lucky and
-become the first person in history to get a different answer from "upgrade
-to cvs".
+to CVS. You could also try to report it. Maybe you will get lucky and
+become the first person in history to get an answer different from "upgrade
+to CVS".
 
 @section -f jpeg doesnt work.
 
-try '-f image -img jpeg test%d.jpg'
+Try '-f image -img jpeg test%d.jpg'.
 
 @section Why can I not change the framerate?
 
-Some codecs, like MPEG 1/2 only allow a small number of fixed framerates.
+Some codecs, like MPEG-1/2 only allow a small number of fixed framerates.
 Choose a different codec with the -vcodec command line option.
 
 @section ffmpeg does not work; What is wrong?
@@ -132,12 +132,12 @@ Choose a different codec with the -vcodec command line option.
 Try a 'make distclean' in the ffmpeg source directory. If this does not help see
 (@url{ffmpeg-bugreport.html}).
 
-@section How do I encode XviD or DIVX video with ffmpeg?
+@section How do I encode XviD or DivX video with ffmpeg?
 
-Both XviD and DIVX (version 4+) are implementations of the ISO MPEG-4
+Both XviD and DivX (version 4+) are implementations of the ISO MPEG-4
 standard (note that there are many other coding formats that use this
 same standard). Thus, use '-vcodec mpeg4' to encode these formats. The
-default fourcc stored in a MPEG-4-coded file will be 'DIVX'. If you want
+default fourcc stored in an MPEG-4-coded file will be 'DIVX'. If you want
 a different fourcc, use the '-vtag' option. E.g., '-vtag xvid' will 
 force the fourcc 'xvid' to be stored as the video fourcc rather than the 
 default.
@@ -171,7 +171,7 @@ terms of portability.
 
 @section Why not rewrite ffmpeg in object-oriented C++ ?
 
-ffmpeg is already organized in a highly modular manner does not need to
+ffmpeg is already organized in a highly modular manner and does not need to
 be rewritten in a formal object language. Further, many of the developers 
 favor straight C; it works for them. For more arguments on this matter,
 read "Programming Religion" at (@url{http://lkml.org/faq/lkmlfaq-15.html}).
