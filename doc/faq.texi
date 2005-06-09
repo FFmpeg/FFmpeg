@@ -137,7 +137,7 @@ Try a 'make distclean' in the ffmpeg source directory. If this does not help see
 Both XviD and DivX (version 4+) are implementations of the ISO MPEG-4
 standard (note that there are many other coding formats that use this
 same standard). Thus, use '-vcodec mpeg4' to encode these formats. The
-default fourcc stored in an MPEG-4-coded file will be 'DIVX'. If you want
+default fourcc stored in an MPEG-4-coded file will be 'FMP4'. If you want
 a different fourcc, use the '-vtag' option. E.g., '-vtag xvid' will 
 force the fourcc 'xvid' to be stored as the video fourcc rather than the 
 default.
