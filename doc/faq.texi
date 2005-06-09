@@ -70,7 +70,7 @@ LGPL to GPL.
 Windows does not support standard formats like MPEG very well, unless you 
 install some additional codecs
 
-The following list of video codecs should work on most Windows systems
+The following list of video codecs should work on most Windows systems:
 @table @option
 @item msmpeg4v2
 .avi/.asf
@@ -81,7 +81,7 @@ The following list of video codecs should work on most Windows systems
 @item wmv2
 .asf only
 @item mpeg4
-only if you have some MPEG-4 codec installed like ffdshow or xvid
+only if you have some MPEG-4 codec installed like ffdshow or XviD
 @item mpeg1
 .mpg only
 @end table
@@ -90,16 +90,16 @@ be mentioned that Microsoft claims a patent on the ASF format, and may sue
 or threaten users who create ASF files with non-Microsoft software. It is
 strongly advised to avoid ASF where possible.
 
-The following list of audio codecs should work on most Windows systems
+The following list of audio codecs should work on most Windows systems:
 @table @option
 @item adpcm_ima_wav
 @item adpcm_ms
 @item pcm
 @item mp3
-if some mp3 codec like LAME is installed
+if some MP3 codec like LAME is installed
 @end table
 
-@section Why does the chrominance data seem to be sampled at a different time than the luminance data on bt8x8 captures on Linux?
+@section Why does the chrominance data seem to be sampled at a different time from the luminance data on bt8x8 captures on Linux?
 
 This is a well-known bug in the bt8x8 driver. For 2.4.26 there is a patch at 
 (@url{http://www.mplayerhq.hu/~michael/bttv-420-2.4.26.patch}). This may also
@@ -112,19 +112,19 @@ will cause somewhat too strong filtering. A fix is to apply (@url{http://www.mpl
 or (@url{http://www.mplayerhq.hu/~michael/bttv-comb-2.6.6.patch})
 and pass 'combfilter=2'.
 
-@section I have a problem with an old version of ffmpeg; where should i report it?
+@section I have a problem with an old version of ffmpeg; where should I report it?
 Nowhere. Upgrade to the latest release or if there is no recent release upgrade
 to CVS. You could also try to report it. Maybe you will get lucky and
 become the first person in history to get an answer different from "upgrade
 to CVS".
 
-@section -f jpeg doesnt work.
+@section -f jpeg doesn't work.
 
 Try '-f image -img jpeg test%d.jpg'.
 
 @section Why can I not change the framerate?
 
-Some codecs, like MPEG-1/2 only allow a small number of fixed framerates.
+Some codecs, like MPEG-1/2, only allow a small number of fixed framerates.
 Choose a different codec with the -vcodec command line option.
 
 @section ffmpeg does not work; What is wrong?
