@@ -7343,7 +7343,7 @@ static int decode_frame(AVCodecContext *avctx,
     }
 
     if(!h->is_avc && s->avctx->extradata_size && s->picture_number==0){
-        if(0 < decode_nal_units(h, s->avctx->extradata, s->avctx->extradata_size) ) 
+        if(decode_nal_units(h, s->avctx->extradata, s->avctx->extradata_size) < 0) 
             return -1;
     }
 
