@@ -12,8 +12,8 @@
 
 @c man begin DESCRIPTION
 FFplay is a very simple and portable media player using the FFmpeg
-libraries and the SDL library. It is mostly used as a test bench for the
-various APIs of FFmpeg.
+libraries and the SDL library. It is mostly used as a testbed for the
+various FFmpeg APIs.
 @c man end
 
 @chapter Invocation
@@ -44,7 +44,7 @@ disable graphical display
 @item -f fmt
 force format
 @item -img img_fmt
-this option is used to force a given image format
+This option is used to force a given image format
 when playing image sequences. Example:
 @example
 ffplay -img pgmyuv tests/vsynth1/%d.pgm
@@ -54,13 +54,13 @@ ffplay -img pgmyuv tests/vsynth1/%d.pgm
 @section Advanced options
 @table @option
 @item -stats
-show the stream duration, the codec parameters, the current position in
-the stream, and the audio/video synchronisation drift.
+Show the stream duration, the codec parameters, the current position in
+the stream and the audio/video synchronisation drift.
 @item -rtp_tcp
-force RTP/TCP protocol usage instead of RTP/UDP. It is only meaningful
-if you are doing stream with the RTSP protocol.
+Force RTP/TCP protocol usage instead of RTP/UDP. It is only meaningful
+if you are streaming with the RTSP protocol.
 @item -sync type
-set the master clock to audio (@code{type=audio}), video
+Set the master clock to audio (@code{type=audio}), video
 (@code{type=video}) or external (@code{type=ext}). Default is audio. The
 master clock is used to control audio-video synchronization. Most media
 players use audio as master clock, but in some cases (streaming or high
