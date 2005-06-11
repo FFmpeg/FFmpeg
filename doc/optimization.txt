@@ -1,7 +1,7 @@
 optimization Tips (for libavcodec):
 
 What to optimize:
-If you plan to do non-x86 architecture specific optimiztions (SIMD normally)
+If you plan to do non-x86 architecture specific optimizations (SIMD normally),
 then take a look in the i386/ directory, as most important functions are
 already optimized for MMX.
 
@@ -14,10 +14,11 @@ As many functions, like the C ones tend to be a bit unreadable currently
 because of optimizations it is difficult to understand them (and write
 architecture specific versions, or optimize the C functions further) it is
 recommended to look at older CVS versions of the interesting files (just use
-ViewCVS at http://www1.mplayerhq.hu/cgi-bin/cvsweb.cgi/ffmpeg/?cvsroot=FFMpeg)
-or perhaps look into the other architecture-specific versions in i386/, ppc/,
-alpha/, ... Even if you don't understand the instructions exactly it could
-help understanding the functions & how they can be optimized.
+ViewCVS at http://www1.mplayerhq.hu/cgi-bin/cvsweb.cgi/ffmpeg/?cvsroot=FFMpeg).
+Alternatively, look into the other architecture-specific versions in the i386/,
+ppc/, alpha/ subdirectories. Even if you don't exactly understand the
+instructions, it could help understanding the functions and how they
+can be optimized.
 
 NOTE: If you still don't understand some function, ask at our mailing list!!!
 (http://www1.mplayerhq.hu/mailman/listinfo/ffmpeg-devel)
@@ -33,7 +34,7 @@ put(_no_rnd)_pixels{,_x2,_y2,_xy2}
 
 avg_pixels{,_x2,_y2,_xy2}
     Used in motion compensation of B-frames.
-    These are less important then the put*pixels functions.
+    These are less important than the put*pixels functions.
 
 avg_no_rnd_pixels*
     unused
@@ -43,7 +44,7 @@ pix_abs16x16{,_x2,_y2,_xy2}
 
 pix_abs8x8{,_x2,_y2,_xy2}
     Used in motion estimation (encoding) with SAD of MPEG-4 4MV only.
-    These are less important then the pix_abs16x16* functions.
+    These are less important than the pix_abs16x16* functions.
 
 put_mspel8_mc* / wmv2_mspel8*
     Used only in WMV2.
@@ -128,7 +129,7 @@ BTW, most of these functions are in dsputil.c/.h, some are in mpegvideo.c/.h.
 
 Alignment:
 Some instructions on some architectures have strict alignment restrictions,
-for example most SSE/SSE2 inctructios on x86.
+for example most SSE/SSE2 instructions on x86.
 The minimum guaranteed alignment is written in the .h files, for example:
     void (*put_pixels_clamped)(const DCTELEM *block/*align 16*/, UINT8 *pixels/*align 8*/, int line_size);
 
