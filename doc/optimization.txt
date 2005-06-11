@@ -1,102 +1,104 @@
 optimization Tips (for libavcodec):
 
 What to optimize:
-if you plan to do non-x86 architecture specific optimiztions (SIMD normally) then
-take a look in the i386/ directory, as most important functions are allready
-optimized for MMX
+If you plan to do non-x86 architecture specific optimiztions (SIMD normally)
+then take a look in the i386/ directory, as most important functions are
+already optimized for MMX.
 
-if you want to do x86 optimizations then u can either try to finetune the stuff in the
-i386 directory or find some other functions in the c source to optimize, but there
-arent many left
+If you want to do x86 optimizations then you can either try to finetune the
+stuff in the i386 directory or find some other functions in the C source to
+optimize, but there aren't many left.
 
 Understanding these overoptimized functions:
-as many functions, like the c ones tend to be a bit unreadable currently becouse
-of optimizations it is difficult to understand them (and write arichtecture
-specific versions, or optimize the c functions further) it is recommanded to look
-at older CVS versions of the interresting files (just use CVSWEB at
-http://www1.mplayerhq.hu/cgi-bin/cvsweb.cgi/ffmpeg/libavcodec/?cvsroot=FFmpeg)
-or perhaps look into the other architecture specific versions in i386/, ppc/,
-alpha/, ...; even if u dont understand the instructions exactly it could help
-understanding the functions & how they can be optimized
+As many functions, like the C ones tend to be a bit unreadable currently
+because of optimizations it is difficult to understand them (and write
+architecture specific versions, or optimize the C functions further) it is
+recommended to look at older CVS versions of the interesting files (just use
+ViewCVS at http://www1.mplayerhq.hu/cgi-bin/cvsweb.cgi/ffmpeg/?cvsroot=FFMpeg)
+or perhaps look into the other architecture-specific versions in i386/, ppc/,
+alpha/, ... Even if you don't understand the instructions exactly it could
+help understanding the functions & how they can be optimized.
 
-NOTE:!!! if u still dont understand some function then ask at our mailing list!!!
+NOTE: If you still don't understand some function, ask at our mailing list!!!
 (http://www1.mplayerhq.hu/mailman/listinfo/ffmpeg-devel)
 
 
 
-wtf is that function good for ....:
-the primary purpose of that list is to avoid wasting time to optimize functions
+WTF is that function good for ....:
+The primary purpose of that list is to avoid wasting time to optimize functions
 which are rarely used
 
 put(_no_rnd)_pixels{,_x2,_y2,_xy2}
-    used in motion compensation (en/decoding)
+    Used in motion compensation (en/decoding).
 
 avg_pixels{,_x2,_y2,_xy2}
-    used in motion compensation of B Frames
-    these are less important then the put*pixels functions
+    Used in motion compensation of B-frames.
+    These are less important then the put*pixels functions.
 
 avg_no_rnd_pixels*
     unused
 
 pix_abs16x16{,_x2,_y2,_xy2}
-    used in motion estimation (encoding) with SAD
+    Used in motion estimation (encoding) with SAD.
 
 pix_abs8x8{,_x2,_y2,_xy2}
-    used in motion estimation (encoding) with SAD of MPEG4 4MV only
-    these are less important then the pix_abs16x16* functions
+    Used in motion estimation (encoding) with SAD of MPEG-4 4MV only.
+    These are less important then the pix_abs16x16* functions.
 
 put_mspel8_mc* / wmv2_mspel8*
-    used only in WMV2
-    it is not recommanded that u waste ur time with these, as WMV2 is a
-    ugly and relativly useless codec
+    Used only in WMV2.
+    it is not recommended that you waste your time with these, as WMV2
+    is an ugly and relatively useless codec.
 
 mpeg4_qpel* / *qpel_mc*
-    use in MPEG4 qpel Motion compensation (encoding & decoding)
-    the qpel8 functions are used only for 4mv
-    the avg_* functions are used only for b frames
-    optimizing them should have a significant impact on qpel encoding & decoding
+    Used in MPEG-4 qpel motion compensation (encoding & decoding).
+    The qpel8 functions are used only for 4mv,
+    the avg_* functions are used only for B-frames.
+    Optimizing them should have a significant impact on qpel
+    encoding & decoding.
 
 qpel{8,16}_mc??_old_c / *pixels{8,16}_l4
-    just used to workaround a bug in old libavcodec encoder
-    dont optimze them
+    Just used to work around a bug in an old libavcodec encoder version.
+    Don't optimize them.
 
 tpel_mc_func {put,avg}_tpel_pixels_tab
-    used only for SVQ3, so only optimze them if u need fast SVQ3 decoding
+    Used only for SVQ3, so only optimize them if you need fast SVQ3 decoding.
 
 add_bytes/diff_bytes
-    for huffyuv only, optimize if u want a faster ff-huffyuv codec
+    For huffyuv only, optimize if you want a faster ffhuffyuv codec.
 
 get_pixels / diff_pixels
-    used for encoding, easy
+    Used for encoding, easy.
 
 clear_blocks
-    easiest, to optimize
+    easiest to optimize
 
 gmc
-    used for mpeg4 gmc
-    optimizing this should have a significant effect on the gmc decoding speed but
-    its very likely impossible to write in SIMD
+    Used for MPEG-4 gmc.
+    Optimizing this should have a significant effect on the gmc decoding
+    speed but it's very likely impossible to write in SIMD.
 
 gmc1
-    used for chroma blocks in mpeg4 gmc with 1 warp point
-    (there are 4 luma & 2 chroma blocks per macrobock, so
+    Used for chroma blocks in MPEG-4 gmc with 1 warp point
+    (there are 4 luma & 2 chroma blocks per macroblock, so
     only 1/3 of the gmc blocks use this, the other 2/3
     use the normal put_pixel* code, but only if there is
-    just 1 warp point)
-    Note: Divx5 gmc always uses just 1 warp point
+    just 1 warp point).
+    Note: DivX5 gmc always uses just 1 warp point.
 
 pix_sum
-    used for encoding
+    Used for encoding.
 
 hadamard8_diff / sse / sad == pix_norm1 / dct_sad / quant_psnr / rd / bit
-    specific compare functions used in encoding, it depends upon the command line
-    switches which of these are used
-    dont waste ur time with dct_sad & quant_psnr they arent really usefull
+    Specific compare functions used in encoding, it depends upon the
+    command line switches which of these are used.
+    Don't waste your time with dct_sad & quant_psnr, they aren't
+    really useful.
 
 put_pixels_clamped / add_pixels_clamped
-    used for en/decoding in the IDCT, easy
-    Note, some optimized IDCTs have the add/put clamped code included and then
-    put_pixels_clamped / add_pixels_clamped will be unused
+    Used for en/decoding in the IDCT, easy.
+    Note, some optimized IDCTs have the add/put clamped code included and
+    then put_pixels_clamped / add_pixels_clamped will be unused.
 
 idct/fdct
     idct (encoding & decoding)
@@ -104,31 +106,30 @@ idct/fdct
     difficult to optimize
 
 dct_quantize_trellis
-    used for encoding with trellis quantization
+    Used for encoding with trellis quantization.
     difficult to optimize
 
 dct_quantize
-    used for encoding
+    Used for encoding.
 
 dct_unquantize_mpeg1
-    used in mpeg1 en/decoding
+    Used in MPEG-1 en/decoding.
 
 dct_unquantize_mpeg2
-    used in mpeg2 en/decoding
+    Used in MPEG-2 en/decoding.
 
 dct_unquantize_h263
-    used in mpeg4/h263 en/decoding
+    Used in MPEG-4/H.263 en/decoding.
 
 FIXME remaining functions?
-btw, most of these are in dsputil.c/.h some are in mpegvideo.c/.h
+BTW, most of these functions are in dsputil.c/.h, some are in mpegvideo.c/.h.
 
 
 
 Alignment:
-some instructions on some architectures have strict alignment restrictions,
-for example most SSE/SSE2 inctructios on X86
-the minimum guranteed alignment is writen in the .h files
-for example:
+Some instructions on some architectures have strict alignment restrictions,
+for example most SSE/SSE2 inctructios on x86.
+The minimum guaranteed alignment is written in the .h files, for example:
     void (*put_pixels_clamped)(const DCTELEM *block/*align 16*/, UINT8 *pixels/*align 8*/, int line_size);
 
 
@@ -136,7 +137,7 @@ for example:
 Links:
 http://www.aggregate.org/MAGIC/
 
-X86 specific:
+x86-specific:
 http://developer.intel.com/design/pentium4/manuals/248966.htm
 
 The IA-32 Intel Architecture Software Developer's Manual, Volume 2:
@@ -152,6 +153,5 @@ GCC asm links:
 official doc but quite ugly
 http://gcc.gnu.org/onlinedocs/gcc/Extended-Asm.html
 
-a bit old (note "+" is valid for input-output, even though the next says its not)
+a bit old (note "+" is valid for input-output, even though the next disagrees)
 http://www.cs.virginia.edu/~clc5q/gcc-inline-asm.pdf
-
