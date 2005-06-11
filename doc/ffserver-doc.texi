@@ -107,8 +107,8 @@ Yes, it does. Who knows why?
 
 Yes, it does. Any thoughts on this would be gratefully received. These
 differences extend to embedding WMP into a web page. [There are two
-different object IDs that you can use, the old one cannot
-play very well, and the new one works well (both on the same system). However, 
+object IDs that you can use: The old one, which does not play well, and
+the new one, which does (both tested on the same system). However,
 I suspect that the new one is not available unless you have installed WMP 7].
 
 @section What else can it do?
