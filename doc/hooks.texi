@@ -21,7 +21,7 @@ Three modules are provided and are described below. They are all intended to
 be used as a base for your own modules. 
 
 Modules are loaded using the -vhook option to ffmpeg. The value of this parameter
-is a space seperated list of arguments. The first is the module name, and the rest
+is a space separated list of arguments. The first is the module name, and the rest
 are passed as arguments to the Configure function of the module.
 
 @section null.c
