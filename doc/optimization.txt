@@ -10,15 +10,15 @@ stuff in the i386 directory or find some other functions in the C source to
 optimize, but there aren't many left.
 
 Understanding these overoptimized functions:
-As many functions, like the C ones tend to be a bit unreadable currently
-because of optimizations it is difficult to understand them (and write
-architecture specific versions, or optimize the C functions further) it is
-recommended to look at older CVS versions of the interesting files (just use
-ViewCVS at http://www1.mplayerhq.hu/cgi-bin/cvsweb.cgi/ffmpeg/?cvsroot=FFMpeg).
-Alternatively, look into the other architecture-specific versions in the i386/,
-ppc/, alpha/ subdirectories. Even if you don't exactly understand the
-instructions, it could help understanding the functions and how they
-can be optimized.
+As many functions tend to be a bit difficult to understand because
+of optimizations, it can be hard to optimize them further, or write
+architecture-specific versions. It is recommened to look at older
+CVS versions of the interesting files (just use ViewCVS at
+http://www1.mplayerhq.hu/cgi-bin/cvsweb.cgi/ffmpeg/?cvsroot=FFMpeg).
+Alternatively, look into the other architecture-specific versions in
+the i386/, ppc/, alpha/ subdirectories. Even if you don't exactly
+comprehend the instructions, it could help understanding the functions
+and how they can be optimized.
 
 NOTE: If you still don't understand some function, ask at our mailing list!!!
 (http://www1.mplayerhq.hu/mailman/listinfo/ffmpeg-devel)
