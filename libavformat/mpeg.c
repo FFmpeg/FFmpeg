@@ -90,6 +90,7 @@ typedef struct {
 #define AC3_ID   0x80
 #define DTS_ID   0x8a
 #define LPCM_ID  0xa0
+#define SUB_ID   0x20
 
 #define STREAM_TYPE_VIDEO_MPEG1     0x01
 #define STREAM_TYPE_VIDEO_MPEG2     0x02
@@ -322,7 +323,7 @@ static int get_system_header_size(AVFormatContext *ctx)
 static int mpeg_mux_init(AVFormatContext *ctx)
 {
     MpegMuxContext *s = ctx->priv_data;
-    int bitrate, i, mpa_id, mpv_id, ac3_id, dts_id, lpcm_id, j;
+    int bitrate, i, mpa_id, mpv_id, mps_id, ac3_id, dts_id, lpcm_id, j;
     AVStream *st;
     StreamInfo *stream;
     int audio_bitrate;
@@ -348,6 +349,7 @@ static int mpeg_mux_init(AVFormatContext *ctx)
     ac3_id = AC3_ID;
     dts_id = DTS_ID;
     mpv_id = VIDEO_ID;
+    mps_id = SUB_ID;
     lpcm_id = LPCM_ID;
     for(i=0;i<ctx->nb_streams;i++) {
         st = ctx->streams[i];
@@ -403,11 +405,14 @@ static int mpeg_mux_init(AVFormatContext *ctx)
 #endif
             s->video_bound++;
             break;
+        case CODEC_TYPE_SUBTITLE:
+            stream->id = mps_id++;
+            stream->max_buffer_size = 16 * 1024;
+            break;
         default:
             return -1;
         }
         fifo_init(&stream->fifo, 16);
-        stream->next_packet= &stream->premux_packet;
     }
     bitrate = 0;
     audio_bitrate = 0;
@@ -809,9 +814,12 @@ static int flush_packet(AVFormatContext *ctx, int stream_index,
         payload_size = packet_size - header_len;
         if (id < 0xc0) {
             startcode = PRIVATE_STREAM_1;
-            payload_size -= 4;
-            if (id >= 0xa0)
+            payload_size -= 1;
+            if (id >= 0x40) {
                 payload_size -= 3;
+                if (id >= 0xa0)
+                    payload_size -= 3;
+            }
         } else {
             startcode = 0x100 + id;
         }
@@ -935,7 +943,7 @@ static int flush_packet(AVFormatContext *ctx, int stream_index,
                 put_byte(&ctx->pb, stream->lpcm_header[0]);
                 put_byte(&ctx->pb, stream->lpcm_header[1]);
                 put_byte(&ctx->pb, stream->lpcm_header[2]);
-            } else {
+            } else if (id >= 0x40) {
                 /* AC3 */
                 put_byte(&ctx->pb, nb_frames);
                 put_be16(&ctx->pb, trailer_size+1);
@@ -1062,7 +1070,10 @@ retry:
         int rel_space= 1024*space / stream->max_buffer_size;
         PacketDesc *next_pkt= stream->premux_packet;
 
-        if(s->packet_size > avail_data && !flush)
+        /* for subtitle, a single PES packet must be generated,
+           so we flush after every single subtitle packet */
+        if(s->packet_size > avail_data && !flush
+           && st->codec.codec_type != CODEC_TYPE_SUBTITLE)
             return 0;
         if(avail_data==0)
             continue;
@@ -1181,6 +1192,8 @@ static int mpeg_mux_write_packet(AVFormatContext *ctx, AVPacket *pkt)
     if(dts != AV_NOPTS_VALUE) dts += preload;
 
 //av_log(ctx, AV_LOG_DEBUG, "dts:%f pts:%f flags:%d stream:%d nopts:%d\n", dts/90000.0, pts/90000.0, pkt->flags, pkt->stream_index, pts != AV_NOPTS_VALUE);
+    if (!stream->premux_packet)
+        stream->next_packet = &stream->premux_packet;
     *stream->next_packet=
     pkt_desc= av_mallocz(sizeof(PacketDesc));
     pkt_desc->pts= pts;
