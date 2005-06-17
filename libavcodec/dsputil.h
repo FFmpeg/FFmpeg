@@ -141,6 +141,8 @@ typedef struct DSPContext {
     void (*put_pixels_clamped)(const DCTELEM *block/*align 16*/, uint8_t *pixels/*align 8*/, int line_size);
     void (*put_signed_pixels_clamped)(const DCTELEM *block/*align 16*/, uint8_t *pixels/*align 8*/, int line_size);
     void (*add_pixels_clamped)(const DCTELEM *block/*align 16*/, uint8_t *pixels/*align 8*/, int line_size);
+    void (*add_pixels8)(uint8_t *pixels, DCTELEM *block, int line_size);
+    void (*add_pixels4)(uint8_t *pixels, DCTELEM *block, int line_size);
     /**
      * translational global motion compensation.
      */

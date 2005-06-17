@@ -559,6 +559,37 @@ static void add_pixels_clamped2_c(const DCTELEM *block, uint8_t *restrict pixels
         block += 8;
     }
 }
+
+static void add_pixels8_c(uint8_t *restrict pixels, DCTELEM *block, int line_size)
+{
+    int i;
+    for(i=0;i<8;i++) {
+        pixels[0] += block[0];
+        pixels[1] += block[1];
+        pixels[2] += block[2];
+        pixels[3] += block[3];
+        pixels[4] += block[4];
+        pixels[5] += block[5];
+        pixels[6] += block[6];
+        pixels[7] += block[7];
+        pixels += line_size;
+        block += 8;
+    }
+}
+
+static void add_pixels4_c(uint8_t *restrict pixels, DCTELEM *block, int line_size)
+{
+    int i;
+    for(i=0;i<4;i++) {
+        pixels[0] += block[0];
+        pixels[1] += block[1];
+        pixels[2] += block[2];
+        pixels[3] += block[3];
+        pixels += line_size;
+        block += 4;
+    }
+}
+
 #if 0
 
 #define PIXOP2(OPNAME, OP) \
@@ -3692,6 +3723,8 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     c->put_pixels_clamped = put_pixels_clamped_c;
     c->put_signed_pixels_clamped = put_signed_pixels_clamped_c;
     c->add_pixels_clamped = add_pixels_clamped_c;
+    c->add_pixels8 = add_pixels8_c;
+    c->add_pixels4 = add_pixels4_c;
     c->gmc1 = gmc1_c;
     c->gmc = gmc_c;
     c->clear_blocks = clear_blocks_c;
