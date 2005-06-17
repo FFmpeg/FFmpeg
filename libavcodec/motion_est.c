@@ -664,7 +664,7 @@ static inline void set_p_mv_tables(MpegEncContext * s, int mx, int my, int mv4)
     s->p_mv_table[xy][0] = mx;
     s->p_mv_table[xy][1] = my;
 
-    /* has allready been set to the 4 MV if 4MV is done */
+    /* has already been set to the 4 MV if 4MV is done */
     if(mv4){
         int mot_xy= s->block_index[0];
 

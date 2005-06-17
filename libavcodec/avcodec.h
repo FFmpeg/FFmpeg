@@ -298,7 +298,7 @@ extern int motion_estimation_method;
 
 /* encoding support
    these flags can be passed in AVCodecContext.flags before initing 
-   Note: note not everything is supported yet 
+   Note: not everything is supported yet.
 */
 
 #define CODEC_FLAG_QSCALE 0x0002  ///< use fixed qscale 
@@ -314,7 +314,7 @@ extern int motion_estimation_method;
 #define CODEC_FLAG_PASS2 0x0400   ///< use internal 2pass ratecontrol in second pass mode 
 #define CODEC_FLAG_EXTERN_HUFF 0x1000 ///< use external huffman table (for mjpeg) 
 #define CODEC_FLAG_GRAY  0x2000   ///< only decode/encode grayscale 
-#define CODEC_FLAG_EMU_EDGE 0x4000///< dont draw edges 
+#define CODEC_FLAG_EMU_EDGE 0x4000///< don't draw edges
 #define CODEC_FLAG_PSNR           0x8000 ///< error[?] variables will be set during encoding 
 #define CODEC_FLAG_TRUNCATED  0x00010000 /** input bitstream might be truncated at a random location instead 
                                             of only at frame boundaries */
@@ -367,7 +367,7 @@ extern int motion_estimation_method;
  */
 #define CODEC_CAP_DELAY           0x0020
 
-//the following defines might change, so dont expect compatibility if u use them
+//the following defines may change, don't expect compatibility if you use them
 #define MB_TYPE_INTRA4x4   0x0001
 #define MB_TYPE_INTRA16x16 0x0002 //FIXME h264 specific
 #define MB_TYPE_INTRA_PCM  0x0004 //FIXME h264 specific
@@ -430,7 +430,7 @@ typedef struct AVPanScan{
     int linesize[4];\
     /**\
      * pointer to the first allocated byte of the picture. can be used in get_buffer/release_buffer\
-     * this isnt used by lavc unless the default get/release_buffer() is used\
+     * this isn't used by lavc unless the default get/release_buffer() is used\
      * - encoding: \
      * - decoding: \
      */\
@@ -632,8 +632,8 @@ typedef struct AVPanScan{
 
 #define FF_BUFFER_TYPE_INTERNAL 1
 #define FF_BUFFER_TYPE_USER     2 ///< Direct rendering buffers (image is (de)allocated by user)
-#define FF_BUFFER_TYPE_SHARED   4 ///< buffer from somewher else, dont dealloc image (data/base), all other tables are not shared
-#define FF_BUFFER_TYPE_COPY     8 ///< just a (modified) copy of some other buffer, dont dealloc anything
+#define FF_BUFFER_TYPE_SHARED   4 ///< buffer from somewhere else, don't dealloc image (data/base), all other tables are not shared
+#define FF_BUFFER_TYPE_COPY     8 ///< just a (modified) copy of some other buffer, don't dealloc anything
 
 
 #define FF_I_TYPE 1 // Intra
@@ -866,7 +866,7 @@ typedef struct AVCodecContext {
     /* unused, FIXME remove*/
     int rtp_mode;
     
-    int rtp_payload_size;   /* The size of the RTP payload, the coder will  */
+    int rtp_payload_size;   /* The size of the RTP payload: the coder will  */
                             /* do it's best to deliver a chunk with size    */
                             /* below rtp_payload_size, the chunk will start */
                             /* with a start code on some codecs like H.263  */
@@ -874,12 +874,12 @@ typedef struct AVCodecContext {
                             /* headers inside the transmited RTP payload    */
 
     
-    /* The RTP callcack: This function is called  */
-    /* every time the encoder as a packet to send */
-    /* Depends on the encoder if the data starts  */
-    /* with a Start Code (it should) H.263 does.  */
-    /* mb_nb contains the number of macroblocks   */
-    /* encoded in the RTP payload                 */
+    /* The RTP callback: This function is called   */
+    /* every time the encoder has a packet to send */
+    /* Depends on the encoder if the data starts   */
+    /* with a Start Code (it should) H.263 does.   */
+    /* mb_nb contains the number of macroblocks    */
+    /* encoded in the RTP payload                  */
     void (*rtp_callback)(struct AVCodecContext *avctx, void *data, int size, int mb_nb); 
 
     /* statistics, used for 2-pass encoding */
@@ -1458,13 +1458,13 @@ typedef struct AVCodecContext {
     
     /**
      * internal_buffer count. 
-     * Dont touch, used by lavc default_get_buffer()
+     * Don't touch, used by lavc default_get_buffer()
      */
     int internal_buffer_count;
     
     /**
      * internal_buffers. 
-     * Dont touch, used by lavc default_get_buffer()
+     * Don't touch, used by lavc default_get_buffer()
      */
     void *internal_buffer;
 
@@ -2265,13 +2265,13 @@ int av_reduce(int *dst_nom, int *dst_den, int64_t nom, int64_t den, int64_t max)
 
 /**
  * rescale a 64bit integer with rounding to nearest.
- * a simple a*b/c isnt possible as it can overflow
+ * a simple a*b/c isn't possible as it can overflow
  */
 int64_t av_rescale(int64_t a, int64_t b, int64_t c);
 
 /**
  * rescale a 64bit integer with specified rounding.
- * a simple a*b/c isnt possible as it can overflow
+ * a simple a*b/c isn't possible as it can overflow
  */
 int64_t av_rescale_rnd(int64_t a, int64_t b, int64_t c, enum AVRounding);
 

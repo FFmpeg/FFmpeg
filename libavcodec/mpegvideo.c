@@ -364,7 +364,7 @@ static int alloc_picture(MpegEncContext *s, Picture *pic, int shared){
         }
 
         if(pic->linesize[1] != pic->linesize[2]){
-            av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed (uv stride missmatch)\n");
+            av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed (uv stride mismatch)\n");
             return -1;
         }
 
@@ -542,9 +542,9 @@ static void update_duplicate_context_after_me(MpegEncContext *dst, MpegEncContex
     COPY(lambda2);
     COPY(picture_in_gop_number);
     COPY(gop_picture_number);
-    COPY(frame_pred_frame_dct); //FIXME dont set in encode_header
-    COPY(progressive_frame); //FIXME dont set in encode_header
-    COPY(partitioned_frame); //FIXME dont set in encode_header
+    COPY(frame_pred_frame_dct); //FIXME don't set in encode_header
+    COPY(progressive_frame); //FIXME don't set in encode_header
+    COPY(partitioned_frame); //FIXME don't set in encode_header
 #undef COPY
 }
 
@@ -1475,7 +1475,7 @@ int MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
     }
 alloc:
     if(!s->encoding){
-        /* release non refernce frames */
+        /* release non reference frames */
         for(i=0; i<MAX_PICTURE_COUNT; i++){
             if(s->picture[i].data[0] && !s->picture[i].reference /*&& s->picture[i].type!=FF_BUFFER_TYPE_SHARED*/){
                 s->avctx->release_buffer(s->avctx, (AVFrame*)&s->picture[i]);
@@ -1526,7 +1526,7 @@ alloc:
     
     if(s->pict_type != I_TYPE && (s->last_picture_ptr==NULL || s->last_picture_ptr->data[0]==NULL)){
         av_log(avctx, AV_LOG_ERROR, "warning: first frame is no keyframe\n");
-        assert(s->pict_type != B_TYPE); //these should have been dropped if we dont have a reference
+        assert(s->pict_type != B_TYPE); //these should have been dropped if we don't have a reference
         goto alloc;
     }
 
@@ -1548,8 +1548,8 @@ alloc:
     s->hurry_up= s->avctx->hurry_up;
     s->error_resilience= avctx->error_resilience;
 
-    /* set dequantizer, we cant do it during init as it might change for mpeg4
-       and we cant do it in the header decode as init isnt called for mpeg4 there yet */
+    /* set dequantizer, we can't do it during init as it might change for mpeg4
+       and we can't do it in the header decode as init isnt called for mpeg4 there yet */
     if(s->mpeg_quant || s->codec_id == CODEC_ID_MPEG2VIDEO){
         s->dct_unquantize_intra = s->dct_unquantize_mpeg2_intra;
         s->dct_unquantize_inter = s->dct_unquantize_mpeg2_inter;
@@ -1608,7 +1608,7 @@ void MPV_frame_end(MpegEncContext *s)
 #endif    
 
     if(s->encoding){
-        /* release non refernce frames */
+        /* release non-reference frames */
         for(i=0; i<MAX_PICTURE_COUNT; i++){
             if(s->picture[i].data[0] && !s->picture[i].reference /*&& s->picture[i].type!=FF_BUFFER_TYPE_SHARED*/){
                 s->avctx->release_buffer(s->avctx, (AVFrame*)&s->picture[i]);
@@ -2146,7 +2146,7 @@ static void select_input_picture(MpegEncContext *s){
         s->reordered_input_picture[i-1]= s->reordered_input_picture[i];
     s->reordered_input_picture[MAX_PICTURE_COUNT-1]= NULL;
 
-    /* set next picture types & ordering */
+    /* set next picture type & ordering */
     if(s->reordered_input_picture[0]==NULL && s->input_picture[0]){
         if(/*s->picture_in_gop_number >= s->gop_size ||*/ s->next_picture_ptr==NULL || s->intra_only){
             s->reordered_input_picture[0]= s->input_picture[0];
@@ -2263,7 +2263,7 @@ no_output_pic:
         copy_picture(&s->new_picture, s->reordered_input_picture[0]);
 
         if(s->reordered_input_picture[0]->type == FF_BUFFER_TYPE_SHARED){
-            // input is a shared pix, so we cant modifiy it -> alloc a new one & ensure that the shared one is reuseable
+            // input is a shared pix, so we can't modifiy it -> alloc a new one & ensure that the shared one is reuseable
         
             int i= ff_find_unused_picture(s, 0);
             Picture *pic= &s->picture[i];
@@ -3210,7 +3210,7 @@ static inline void chroma_4mv_motion_lowres(MpegEncContext *s,
 }
 
 /**
- * motion compesation of a single macroblock
+ * motion compensation of a single macroblock
  * @param s context
  * @param dest_y luma destination pointer
  * @param dest_cb chroma cb/u destination pointer
@@ -3459,7 +3459,7 @@ static inline void MPV_motion(MpegEncContext *s,
 }
 
 /**
- * motion compesation of a single macroblock
+ * motion compensation of a single macroblock
  * @param s context
  * @param dest_y luma destination pointer
  * @param dest_cb chroma cb/u destination pointer
@@ -4004,7 +4004,7 @@ void ff_draw_horiz_band(MpegEncContext *s, int y, int h){
 }
 
 void ff_init_block_index(MpegEncContext *s){ //FIXME maybe rename
-    const int linesize= s->current_picture.linesize[0]; //not s->linesize as this woulnd be wrong for field pics
+    const int linesize= s->current_picture.linesize[0]; //not s->linesize as this would be wrong for field pics
     const int uvlinesize= s->current_picture.linesize[1];
     const int mb_size= 4 - s->avctx->lowres;
         

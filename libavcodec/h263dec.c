@@ -122,7 +122,7 @@ int ff_h263_decode_end(AVCodecContext *avctx)
 }
 
 /**
- * retunrs the number of bytes consumed for building the current frame
+ * returns the number of bytes consumed for building the current frame
  */
 static int get_consumed_bytes(MpegEncContext *s, int buf_size){
     int pos= (get_bits_count(&s->gb)+7)>>3;
@@ -279,7 +279,7 @@ static int decode_slice(MpegEncContext *s){
             s->workaround_bugs &= ~FF_BUG_NO_PADDING;
     }
 
-    // handle formats which dont have unique end markers
+    // handle formats which don't have unique end markers
     if(s->msmpeg4_version || (s->workaround_bugs&FF_BUG_NO_PADDING)){ //FIXME perhaps solve this more cleanly
         int left= s->gb.size_in_bits - get_bits_count(&s->gb);
         int max_extra=7;
@@ -669,7 +669,7 @@ retry:
     s->current_picture.pict_type= s->pict_type;
     s->current_picture.key_frame= s->pict_type == I_TYPE;
 
-    /* skip b frames if we dont have reference frames */
+    /* skip B-frames if we don't have reference frames */
     if(s->last_picture_ptr==NULL && (s->pict_type==B_TYPE || s->dropable)) return get_consumed_bytes(s, buf_size);
     /* skip b frames if we are in a hurry */
     if(avctx->hurry_up && s->pict_type==B_TYPE) return get_consumed_bytes(s, buf_size);
@@ -772,7 +772,7 @@ assert(s->current_picture.pict_type == s->pict_type);
     /* we substract 1 because it is added on utils.c    */
     avctx->frame_number = s->picture_number - 1;
 
-    /* dont output the last pic after seeking */
+    /* don't output the last pic after seeking */
     if(s->last_picture_ptr || s->low_delay)
         *data_size = sizeof(AVFrame);
 #ifdef PRINT_FRAME_TIME

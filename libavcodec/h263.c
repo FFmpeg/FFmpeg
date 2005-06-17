@@ -245,10 +245,10 @@ void h263_encode_picture_header(MpegEncContext * s, int picture_number)
         /* By now UMV IS DISABLED ON H.263v1, since the restrictions
         of H.263v1 UMV implies to check the predicted MV after
         calculation of the current MB to see if we're on the limits */
-        put_bits(&s->pb, 1, 0);	/* unrestricted motion vector: off */
+        put_bits(&s->pb, 1, 0);	/* Unrestricted Motion Vector: off */
         put_bits(&s->pb, 1, 0);	/* SAC: off */
-        put_bits(&s->pb, 1, s->obmc);	/* advanced prediction mode */
-        put_bits(&s->pb, 1, 0);	/* not PB frame */
+        put_bits(&s->pb, 1, s->obmc);	/* Advanced Prediction */
+        put_bits(&s->pb, 1, 0);	/* only I/P frames, no PB frame */
         put_bits(&s->pb, 5, s->qscale);
         put_bits(&s->pb, 1, 0);	/* Continuous Presence Multipoint mode: off */
     } else {

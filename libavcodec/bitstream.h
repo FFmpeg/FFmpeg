@@ -334,14 +334,14 @@ GET_CACHE(name, gb)
     will output the contents of the internal cache, next bit is MSB of 32 or 64 bit (FIXME 64bit)
 
 SHOW_UBITS(name, gb, num)
-    will return the nest num bits
+    will return the next num bits
 
 SHOW_SBITS(name, gb, num)
-    will return the nest num bits and do sign extension
+    will return the next num bits and do sign extension
 
 SKIP_BITS(name, gb, num)
     will skip over the next num bits
-    note, this is equinvalent to SKIP_CACHE; SKIP_COUNTER
+    note, this is equivalent to SKIP_CACHE; SKIP_COUNTER
 
 SKIP_CACHE(name, gb, num)
     will remove the next num bits from the cache (note SKIP_COUNTER MUST be called before UPDATE_CACHE / CLOSE_READER)
@@ -353,7 +353,7 @@ LAST_SKIP_CACHE(name, gb, num)
     will remove the next num bits from the cache if it is needed for UPDATE_CACHE otherwise it will do nothing
 
 LAST_SKIP_BITS(name, gb, num)
-    is equinvalent to SKIP_LAST_CACHE; SKIP_COUNTER
+    is equivalent to SKIP_LAST_CACHE; SKIP_COUNTER
 
 for examples see get_bits, show_bits, skip_bits, get_vlc
 */
@@ -598,7 +598,7 @@ static inline int get_sbits(GetBitContext *s, int n){
 
 /**
  * reads 0-17 bits.
- * Note, the alt bitstream reader can read upto 25 bits, but the libmpeg2 reader cant
+ * Note, the alt bitstream reader can read up to 25 bits, but the libmpeg2 reader can't
  */
 static inline unsigned int get_bits(GetBitContext *s, int n){
     register int tmp;
@@ -614,7 +614,7 @@ unsigned int get_bits_long(GetBitContext *s, int n);
 
 /**
  * shows 0-17 bits.
- * Note, the alt bitstream reader can read upto 25 bits, but the libmpeg2 reader cant
+ * Note, the alt bitstream reader can read up to 25 bits, but the libmpeg2 reader can't
  */
 static inline unsigned int show_bits(GetBitContext *s, int n){
     register int tmp;
