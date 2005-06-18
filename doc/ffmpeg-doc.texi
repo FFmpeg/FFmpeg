@@ -498,6 +498,9 @@ read input at native frame rate. Mainly used to simulate a grab device.
 @item -loop
 loop over the input stream. Currently it works only for image
 streams. This option is used for ffserver automatic testing.
+@item -loop_output number_of_times
+Repeatedly loop output for formats that support looping such as animated gif
+(Zero will loop the output infinitely)
 @end table
 
 @node FFmpeg formula evaluator

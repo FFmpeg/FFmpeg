@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-#define LIBAVFORMAT_BUILD       4626
+#define LIBAVFORMAT_BUILD       4627
 
 #define LIBAVFORMAT_VERSION_INT FFMPEG_VERSION_INT
 #define LIBAVFORMAT_VERSION     FFMPEG_VERSION
@@ -327,6 +327,12 @@ typedef struct AVFormatContext {
     int packet_size;
     int preload;
     int max_delay;
+
+#define AVFMT_NOOUTPUTLOOP -1 
+#define AVFMT_INFINITEOUTPUTLOOP 0 
+    /* number of times to loop output in formats that support it */
+    int loop_output;
+    
 } AVFormatContext;
 
 typedef struct AVPacketList {

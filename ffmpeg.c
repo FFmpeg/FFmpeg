@@ -209,6 +209,7 @@ static int frame_skip_factor= 0;
 static int frame_skip_exp= 0;
 static int frame_skip_cmp= FF_CMP_DCTMAX;
 extern int loop_input; /* currently a hack */
+static int loop_output = AVFMT_NOOUTPUTLOOP;
 static int gray_only = 0;
 
 static int gop_size = 12;
@@ -3689,6 +3690,7 @@ static void opt_output_file(const char *filename)
     oc->mux_rate= mux_rate;
     oc->preload= (int)(mux_preload*AV_TIME_BASE);
     oc->max_delay= (int)(mux_max_delay*AV_TIME_BASE);
+    oc->loop_output = loop_output;
 
     /* reset some options */
     file_oformat = NULL;
@@ -4177,6 +4179,7 @@ const OptionDef options[] = {
     { "bitexact", OPT_EXPERT, {(void*)opt_bitexact}, "only use bit exact algorithms (for codec testing)" }, 
     { "re", OPT_BOOL | OPT_EXPERT, {(void*)&rate_emu}, "read input at native frame rate", "" },
     { "loop", OPT_BOOL | OPT_EXPERT, {(void*)&loop_input}, "loop (current only works with images)" },
+    { "loop_output", HAS_ARG | OPT_INT | OPT_EXPERT, {(void*)&loop_output}, "number of times to loop output in formats that support looping (0 loops forever)", "" },
     { "v", HAS_ARG, {(void*)opt_verbose}, "control amount of logging", "verbose" },
     { "target", HAS_ARG, {(void*)opt_target}, "specify target file type (\"vcd\", \"svcd\", \"dvd\", \"dv\", \"pal-vcd\", \"ntsc-svcd\", ...)", "type" },
     { "threads", HAS_ARG | OPT_EXPERT, {(void*)opt_thread_count}, "thread count", "count" },
