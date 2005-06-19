@@ -2547,7 +2547,7 @@ FUNNY_UV_CODE
 		"cmp %2, %%"REG_a"		\n\t"
 		" jb 1b				\n\t"
 
-		:: "m" (src1), "m" (dst), "p" ((long)dstWidth), "m" (xInc_shr16), "m" (xInc_mask),
+		:: "m" (src1), "m" (dst), "mp" ((long)dstWidth), "m" (xInc_shr16), "m" (xInc_mask),
 		"r" (src2)
 		: "%"REG_a, "%"REG_b, "%ecx", "%"REG_D, "%esi"
 		);
