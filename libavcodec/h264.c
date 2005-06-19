@@ -3894,8 +3894,10 @@ static int execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count){
         switch(mmco[i].opcode){
         case MMCO_SHORT2UNUSED:
             pic= remove_short(h, mmco[i].short_frame_num);
-            if(pic==NULL) return -1;
-            unreference_pic(h, pic);
+            if(pic)
+                unreference_pic(h, pic);
+            else if(s->avctx->debug&FF_DEBUG_MMCO)
+                av_log(h->s.avctx, AV_LOG_DEBUG, "mmco: remove_short() failure\n");
             break;
         case MMCO_SHORT2LONG:
             pic= remove_long(h, mmco[i].long_index);
@@ -3907,8 +3909,10 @@ static int execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count){
             break;
         case MMCO_LONG2UNUSED:
             pic= remove_long(h, mmco[i].long_index);
-            if(pic==NULL) return -1;
-            unreference_pic(h, pic);
+            if(pic)
+                unreference_pic(h, pic);
+            else if(s->avctx->debug&FF_DEBUG_MMCO)
+                av_log(h->s.avctx, AV_LOG_DEBUG, "mmco: remove_long() failure\n");
             break;
         case MMCO_LONG:
             pic= remove_long(h, mmco[i].long_index);
@@ -4297,7 +4301,8 @@ static int decode_slice_header(H264Context *h){
         fill_default_ref_list(h);
     }
 
-    decode_ref_pic_list_reordering(h);
+    if(decode_ref_pic_list_reordering(h) < 0)
+        return -1;
 
     if(   (h->pps.weighted_pred          && (h->slice_type == P_TYPE || h->slice_type == SP_TYPE )) 
        || (h->pps.weighted_bipred_idc==1 && h->slice_type==B_TYPE ) )
@@ -7166,6 +7171,7 @@ static int decode_nal_units(H264Context *h, uint8_t *buf, int buf_size){
     }
 #endif
     h->slice_num = 0;
+    s->current_picture_ptr= NULL;
     for(;;){
         int consumed;
         int dst_length;
