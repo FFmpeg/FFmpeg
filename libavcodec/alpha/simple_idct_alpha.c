@@ -235,25 +235,22 @@ static inline void idct_col2(DCTELEM *col)
 {
     int i;
     uint64_t l, r;
-    uint64_t *lcol = (uint64_t *) col;
 
     for (i = 0; i < 8; ++i) {
-        int_fast32_t a0 = col[0] + (1 << (COL_SHIFT - 1)) / W4;
+        int_fast32_t a0 = col[i] + (1 << (COL_SHIFT - 1)) / W4;
 
         a0 *= W4;
-        col[0] = a0 >> COL_SHIFT;
-        ++col;
+        col[i] = a0 >> COL_SHIFT;
     }
 
-    l = lcol[0];
-    r = lcol[1];
-    lcol[ 2] = l; lcol[ 3] = r;
-    lcol[ 4] = l; lcol[ 5] = r;
-    lcol[ 6] = l; lcol[ 7] = r;
-    lcol[ 8] = l; lcol[ 9] = r;
-    lcol[10] = l; lcol[11] = r;
-    lcol[12] = l; lcol[13] = r;
-    lcol[14] = l; lcol[15] = r;
+    l = ldq(col + 0 * 4); r = ldq(col + 1 * 4);
+    stq(l, col +  2 * 4); stq(r, col +  3 * 4);
+    stq(l, col +  4 * 4); stq(r, col +  5 * 4);
+    stq(l, col +  6 * 4); stq(r, col +  7 * 4);
+    stq(l, col +  8 * 4); stq(r, col +  9 * 4);
+    stq(l, col + 10 * 4); stq(r, col + 11 * 4);
+    stq(l, col + 12 * 4); stq(r, col + 13 * 4);
+    stq(l, col + 14 * 4); stq(r, col + 15 * 4);
 }
 
 void simple_idct_axp(DCTELEM *block)
@@ -275,22 +272,20 @@ void simple_idct_axp(DCTELEM *block)
     if (rowsZero) {
         idct_col2(block);
     } else if (rowsConstant) {
-        uint64_t *lblock = (uint64_t *) block;
-
         idct_col(block);
         for (i = 0; i < 8; i += 2) {
-            uint64_t v = (uint16_t) block[i * 8];
-            uint64_t w = (uint16_t) block[i * 8 + 8];
+            uint64_t v = (uint16_t) block[0];
+            uint64_t w = (uint16_t) block[8];
 
             v |= v << 16;
             w |= w << 16;
             v |= v << 32;
             w |= w << 32;
-            lblock[0] = v;
-            lblock[1] = v;
-            lblock[2] = w;
-            lblock[3] = w;
-            lblock += 4;
+            stq(v, block + 0 * 4);
+            stq(v, block + 1 * 4);
+            stq(w, block + 2 * 4);
+            stq(w, block + 3 * 4);
+	    block += 4 * 4;
         }
     } else {
         for (i = 0; i < 8; i++)

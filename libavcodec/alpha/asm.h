@@ -56,13 +56,33 @@ static inline uint64_t WORD_VEC(uint64_t x)
     return x;
 }
 
-#define ldq(p) (*(const uint64_t *) (p))
-#define ldl(p) (*(const int32_t *) (p))
-#define stl(l, p) do { *(uint32_t *) (p) = (l); } while (0)
-#define stq(l, p) do { *(uint64_t *) (p) = (l); } while (0)
 #define sextw(x) ((int16_t) (x))
 
 #ifdef __GNUC__
+#define ldq(p)                                                  \
+    (((union {                                                  \
+        uint64_t __l;                                           \
+        __typeof__(*(p)) __s[sizeof (uint64_t) / sizeof *(p)];  \
+    } *) (p))->__l)
+#define ldl(p)                                                  \
+    (((union {                                                  \
+        int32_t __l;                                            \
+        __typeof__(*(p)) __s[sizeof (int32_t) / sizeof *(p)];   \
+    } *) (p))->__l)
+#define stq(l, p)                                                       \
+    do {                                                                \
+        (((union {                                                      \
+            uint64_t __l;                                               \
+            __typeof__(*(p)) __s[sizeof (uint64_t) / sizeof *(p)];      \
+        } *) (p))->__l) = l;                                            \
+    } while (0)
+#define stl(l, p)                                                       \
+    do {                                                                \
+        (((union {                                                      \
+            int32_t __l;                                                \
+            __typeof__(*(p)) __s[sizeof (int32_t) / sizeof *(p)];       \
+        } *) (p))->__l) = l;                                            \
+    } while (0)
 struct unaligned_long { uint64_t l; } __attribute__((packed));
 #define ldq_u(p)     (*(const uint64_t *) (((uint64_t) (p)) & ~7ul))
 #define uldq(a)	     (((const struct unaligned_long *) (a))->l)
@@ -132,6 +152,10 @@ struct unaligned_long { uint64_t l; } __attribute__((packed));
 #elif defined(__DECC)		/* Digital/Compaq/hp "ccc" compiler */
 
 #include <c_asm.h>
+#define ldq(p) (*(const uint64_t *) (p))
+#define ldl(p) (*(const int32_t *)  (p))
+#define stq(l, p) do { *(uint64_t *) (p) = (l); } while (0)
+#define stl(l, p) do { *(int32_t *)  (p) = (l); } while (0)
 #define ldq_u(a)     asm ("ldq_u   %v0,0(%a0)", a)
 #define uldq(a)	     (*(const __unaligned uint64_t *) (a))
 #define cmpbge(a, b) asm ("cmpbge  %a0,%a1,%v0", a, b)
