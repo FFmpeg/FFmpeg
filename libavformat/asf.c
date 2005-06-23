@@ -335,7 +335,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                                 if (strcmp(name,"WM/AlbumTitle")==0) { pstrcpy(s->album, sizeof(s->album), value); }
                                 av_free(value);
                         }
-                        if ((value_type >= 2) || (value_type <= 5)) // boolean or DWORD or QWORD or WORD
+                        if ((value_type >= 2) && (value_type <= 5)) // boolean or DWORD or QWORD or WORD
                         {
                                 if (value_type==2) value_num = get_le32(pb);
                                 if (value_type==3) value_num = get_le32(pb);
