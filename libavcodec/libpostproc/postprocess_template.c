@@ -3495,7 +3495,7 @@ static void RENAME(postProcess)(uint8_t src[], int srcStride, uint8_t dst[], int
 				"prefetchnta 32(%%"REG_a", %0)	\n\t"
 				"prefetcht0 32(%%"REG_d", %2)	\n\t"
 			:: "r" (srcBlock), "r" ((long)srcStride), "r" (dstBlock), "r" ((long)dstStride),
-			"m" ((long)x), "m" ((long)copyAhead)
+			"g" ((long)x), "g" ((long)copyAhead)
 			: "%"REG_a, "%"REG_d
 			);
 
@@ -3641,7 +3641,7 @@ static void RENAME(postProcess)(uint8_t src[], int srcStride, uint8_t dst[], int
 				"prefetchnta 32(%%"REG_a", %0)	\n\t"
 				"prefetcht0 32(%%"REG_d", %2)	\n\t"
 			:: "r" (srcBlock), "r" ((long)srcStride), "r" (dstBlock), "r" ((long)dstStride),
-			"m" ((long)x), "m" ((long)copyAhead)
+			 "g" ((long)x), "g" ((long)copyAhead)
 			: "%"REG_a, "%"REG_d
 			);
 
