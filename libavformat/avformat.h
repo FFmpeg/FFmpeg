@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-#define LIBAVFORMAT_BUILD       4627
+#define LIBAVFORMAT_BUILD       4628
 
 #define LIBAVFORMAT_VERSION_INT FFMPEG_VERSION_INT
 #define LIBAVFORMAT_VERSION     FFMPEG_VERSION
@@ -225,7 +225,12 @@ typedef struct AVStream {
     int index;    /* stream index in AVFormatContext */
     int id;       /* format specific stream id */
     AVCodecContext codec; /* codec context */
-    AVRational r_frame_rate;     /* real frame rate of the stream */
+    /**
+     * real base frame rate of the stream.
+     * for example if the timebase is 1/90000 and all frames have either 
+     * approximately 3600 or 1800 timer ticks then r_frame_rate will be 50/1
+     */
+    AVRational r_frame_rate;
     void *priv_data;
     /* internal data used in av_find_stream_info() */
     int64_t codec_info_duration;     
@@ -262,6 +267,8 @@ typedef struct AVStream {
                                     support seeking natively */
     int nb_index_entries;
     int index_entries_allocated_size;
+    
+    int64_t nb_frames;                 ///< number of frames in this stream if known or 0
 } AVStream;
 
 #define AVFMTCTX_NOHEADER      0x0001 /* signal that no header is present
