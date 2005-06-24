@@ -218,6 +218,7 @@ static void packet_queue_flush(PacketQueue *q)
 {
     AVPacketList *pkt, *pkt1;
 
+    SDL_LockMutex(q->mutex);
     for(pkt = q->first_pkt; pkt != NULL; pkt = pkt1) {
         pkt1 = pkt->next;
         av_free_packet(&pkt->pkt);
@@ -227,6 +228,7 @@ static void packet_queue_flush(PacketQueue *q)
     q->first_pkt = NULL;
     q->nb_packets = 0;
     q->size = 0;
+    SDL_UnlockMutex(q->mutex);
 }
 
 static void packet_queue_end(PacketQueue *q)
@@ -612,9 +614,11 @@ static double get_master_clock(VideoState *is)
 /* seek in the stream */
 static void stream_seek(VideoState *is, int64_t pos, int rel)
 {
-    is->seek_pos = pos;
-    is->seek_req = 1;
-    is->seek_flags = rel < 0 ? AVSEEK_FLAG_BACKWARD : 0;
+    if (!is->seek_req) {
+        is->seek_pos = pos;
+        is->seek_flags = rel < 0 ? AVSEEK_FLAG_BACKWARD : 0;
+        is->seek_req = 1;
+    }
 }
 
 /* pause or resume the video */
@@ -1430,6 +1434,8 @@ static int decode_thread(void *arg)
 #endif
         if (is->seek_req) {
             /* XXX: must lock decoder threads */
+            SDL_LockMutex(is->video_decoder_mutex);
+            SDL_LockMutex(is->audio_decoder_mutex);
             ret = av_seek_frame(is->ic, -1, is->seek_pos, is->seek_flags);
             if (ret < 0) {
                 fprintf(stderr, "%s: error while seeking\n", is->ic->filename);
@@ -1439,11 +1445,11 @@ static int decode_thread(void *arg)
                 }
                 if (is->video_stream >= 0) {
                     packet_queue_flush(&is->videoq);
-                    SDL_LockMutex(is->video_decoder_mutex);
                     avcodec_flush_buffers(&ic->streams[video_index]->codec);
-                    SDL_UnlockMutex(is->video_decoder_mutex);
                 }
             }
+            SDL_UnlockMutex(is->audio_decoder_mutex);
+            SDL_UnlockMutex(is->video_decoder_mutex);
             is->seek_req = 0;
         }
 
