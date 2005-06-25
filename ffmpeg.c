@@ -257,7 +257,11 @@ static int opt_shortest = 0; //
 
 static int rate_emu = 0;
 
+#ifdef CONFIG_BKTR
+static char *video_grab_format = "bktr";
+#else
 static char *video_grab_format = "video4linux";
+#endif
 static char *video_device = NULL;
 static char *grab_device = NULL;
 static int  video_channel = 0;

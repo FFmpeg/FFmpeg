@@ -57,6 +57,7 @@ echo "  --disable-altivec        disable AltiVec usage"
 echo "  --disable-audio-oss      disable OSS audio support [default=no]"
 echo "  --disable-audio-beos     disable BeOS audio support [default=no]"
 echo "  --disable-v4l            disable video4linux grabbing [default=no]"
+echo "  --disable-bktr           disable bktr video grabbing [default=no]"
 echo "  --disable-dv1394         disable DV1394 grabbing [default=no]"
 echo "  --disable-network        disable network support [default=no]"
 echo "  --disable-zlib           disable zlib [default=no]"
@@ -153,6 +154,7 @@ case "$cpu" in
 esac
 gprof="no"
 v4l="yes"
+bktr="no"
 audio_oss="yes"
 audio_beos="no"
 dv1394="yes"
@@ -258,6 +260,7 @@ extralibs="$extralibs -lsocket -lnsl"
 ;;
 NetBSD)
 v4l="no"
+bktr="yes"
 audio_oss="yes"
 dv1394="no"
 make="gmake"
@@ -269,6 +272,7 @@ esac
 ;;
 OpenBSD)
 v4l="no"
+bktr="yes"
 audio_oss="yes"
 dv1394="no"
 make="gmake"
@@ -279,6 +283,7 @@ extralibs="$extralibs -lossaudio"
 ;;
 FreeBSD)
 v4l="no"
+bktr="yes"
 audio_oss="yes"
 dv1394="no"
 make="gmake"
@@ -287,6 +292,7 @@ LDFLAGS="$LDFLAGS -export-dynamic -pthread"
 ;;
 BSD/OS)
 v4l="no"
+bktr="yes"
 audio_oss="yes"
 dv1394="no"
 extralibs="-lpoll -lgnugetopt -lm"
@@ -430,6 +436,8 @@ for opt do
   --enable-gprof) gprof="yes"
   ;;
   --disable-v4l) v4l="no"
+  ;;
+  --disable-bktr) bktr="no"
   ;;
   --disable-audio-oss) audio_oss="no"
   ;;
@@ -769,6 +777,7 @@ fi
 
 if test "$mingw32" = "yes" ; then
     v4l="no"
+    bktr="no"
     audio_oss="no"
     dv1394="no"
     dc1394="no"
@@ -1384,6 +1393,11 @@ fi
 if test "$v4l" = "yes" ; then
   echo "#define CONFIG_VIDEO4LINUX 1" >> $TMPH
   echo "CONFIG_VIDEO4LINUX=yes" >> config.mak
+fi
+
+if test "$bktr" = "yes" ; then
+  echo "#define CONFIG_BKTR 1" >> $TMPH
+  echo "CONFIG_BKTR=yes" >> config.mak
 fi
 
 if test "$dv1394" = "yes" ; then

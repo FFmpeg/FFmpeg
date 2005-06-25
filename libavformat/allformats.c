@@ -88,7 +88,7 @@ void av_register_all(void)
 #endif
 
     ffm_init();
-#ifdef CONFIG_VIDEO4LINUX
+#if defined(CONFIG_VIDEO4LINUX) || defined(CONFIG_BKTR)
     video_grab_init();
 #endif
 #if defined(CONFIG_AUDIO_OSS) || defined(CONFIG_AUDIO_BEOS)
