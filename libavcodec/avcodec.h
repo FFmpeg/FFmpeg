@@ -796,7 +796,10 @@ typedef struct AVCodecContext {
     enum SampleFormat sample_fmt;  ///< sample format, currenly unused 
 
     /* the following data should not be initialized */
-    int frame_size;     ///< in samples, initialized when calling 'init' 
+    /**
+     * samples per packet. initialized when calling 'init' 
+     */
+    int frame_size;
     int frame_number;   ///< audio or video frame number 
     int real_pict_num;  ///< returns the real picture number of previous encoded frame 
     
@@ -1013,8 +1016,12 @@ typedef struct AVCodecContext {
      * - decoding: set by lavc
      */
     int has_b_frames;
-    
-    int block_align; ///< used by some WAV based audio codecs
+
+    /**
+     * number of bytes per packet if constant and known or 0
+     * used by some WAV based audio codecs
+     */
+    int block_align;
     
     int parse_only; /* - decoding only: if true, only parsing is done
                        (function avcodec_parse_frame()). The frame
