@@ -1675,15 +1675,17 @@ static int try_decode_frame(AVStream *st, const uint8_t *data, int size)
 {
     int16_t *samples;
     AVCodec *codec;
-    int got_picture, ret;
+    int got_picture, ret=0;
     AVFrame picture;
     
+  if(!st->codec.codec){
     codec = avcodec_find_decoder(st->codec.codec_id);
     if (!codec)
         return -1;
     ret = avcodec_open(&st->codec, codec);
     if (ret < 0)
         return ret;
+  }
 
   if(!has_codec_parameters(&st->codec)){
     switch(st->codec.codec_type) {
@@ -1704,7 +1706,6 @@ static int try_decode_frame(AVStream *st, const uint8_t *data, int size)
     }
   }
  fail:
-    avcodec_close(&st->codec);
     return ret;
 }
 
@@ -1842,7 +1843,7 @@ int av_find_stream_info(AVFormatContext *ic)
                     duration_sum[index] += duration;
                     duration_count[index]+= factor;
                 }
-                if(st->codec_info_nb_frames == 0)
+                if(st->codec_info_nb_frames == 0 && 0)
                     st->codec_info_duration += duration;
             }
             last_dts[pkt->stream_index]= pkt->dts;
@@ -1883,6 +1884,12 @@ int av_find_stream_info(AVFormatContext *ic)
         count++;
     }
 
+    // close codecs which where opened in try_decode_frame()
+    for(i=0;i<ic->nb_streams;i++) {
+        st = ic->streams[i];
+        if(st->codec.codec)
+            avcodec_close(&st->codec);
+    }
     for(i=0;i<ic->nb_streams;i++) {
         st = ic->streams[i];
         if (st->codec.codec_type == CODEC_TYPE_VIDEO) {
