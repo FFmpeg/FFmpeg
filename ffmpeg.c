@@ -254,6 +254,7 @@ static int video_sync_method= 1;
 static int audio_sync_method= 0;
 static int copy_ts= 0;
 static int opt_shortest = 0; //
+static int video_global_header = 0;
 
 static int rate_emu = 0;
 
@@ -1396,8 +1397,6 @@ static int output_packet(AVInputStream *ist, int ist_index,
                             }
 
                             opkt.stream_index= ost->index;
-                            opkt.data= data_buf;
-                            opkt.size= data_size;
                             if(pkt->pts != AV_NOPTS_VALUE)
                                 opkt.pts= av_rescale_q(av_rescale_q(pkt->pts, ist->st->time_base, AV_TIME_BASE_Q) + input_files_ts_offset[ist->file_index], AV_TIME_BASE_Q,  ost->st->time_base);
                             else
@@ -1412,9 +1411,12 @@ static int output_packet(AVInputStream *ist, int ist_index,
                                 opkt.dts= av_rescale_q(dts + input_files_ts_offset[ist->file_index], AV_TIME_BASE_Q,  ost->st->time_base);
                             }
                             opkt.flags= pkt->flags;
+                            if(av_parser_change(ist->st->parser, &ost->st->codec, &opkt.data, &opkt.size, data_buf, data_size, pkt->flags & PKT_FLAG_KEY))
+                                opkt.destruct= av_destruct_packet;
                             av_interleaved_write_frame(os, &opkt);
                             ost->st->codec.frame_number++;
                             ost->frame_number++;
+                            av_free_packet(&opkt);
                         }
                     }
                 }
@@ -3187,8 +3189,12 @@ static void new_video_stream(AVFormatContext *oc)
     if(video_codec_tag)
         video_enc->codec_tag= video_codec_tag;
     
-    if (oc->oformat->flags & AVFMT_GLOBALHEADER) 
+    if(   (video_global_header&1)
+       || (video_global_header==0 && (oc->oformat->flags & AVFMT_GLOBALHEADER)))
         video_enc->flags |= CODEC_FLAG_GLOBAL_HEADER;
+    if(video_global_header&2)
+        video_enc->flags2 |= CODEC_FLAG2_LOCAL_HEADER;
+
     if (video_stream_copy) {
         st->stream_copy = 1;
         video_enc->codec_type = CODEC_TYPE_VIDEO;
@@ -4189,6 +4195,7 @@ const OptionDef options[] = {
     { "threads", HAS_ARG | OPT_EXPERT, {(void*)opt_thread_count}, "thread count", "count" },
     { "vsync", HAS_ARG | OPT_INT | OPT_EXPERT, {(void*)&video_sync_method}, "video sync method", "" },
     { "async", HAS_ARG | OPT_INT | OPT_EXPERT, {(void*)&audio_sync_method}, "audio sync method", "" },
+    { "vglobal", HAS_ARG | OPT_INT | OPT_EXPERT, {(void*)&video_global_header}, "video global header storage type", "" },
     { "copyts", OPT_BOOL | OPT_EXPERT, {(void*)&copy_ts}, "copy timestamps" },
     { "shortest", OPT_BOOL | OPT_EXPERT, {(void*)&opt_shortest}, "finish encoding within shortest input" }, //
 

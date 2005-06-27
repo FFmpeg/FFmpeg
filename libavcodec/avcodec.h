@@ -341,6 +341,7 @@ extern int motion_estimation_method;
 #define CODEC_FLAG2_FAST          0x00000001 ///< allow non spec compliant speedup tricks
 #define CODEC_FLAG2_STRICT_GOP    0x00000002 ///< strictly enforce GOP size
 #define CODEC_FLAG2_NO_OUTPUT     0x00000004 ///< skip bitstream encoding
+#define CODEC_FLAG2_LOCAL_HEADER  0x00000008 ///< place global headers at every keyframe instead of in extradata
 
 /* Unsupported options :
  * 		Syntax Arithmetic coding (SAC)
@@ -2322,6 +2323,7 @@ typedef struct AVCodecParser {
                         uint8_t **poutbuf, int *poutbuf_size, 
                         const uint8_t *buf, int buf_size);
     void (*parser_close)(AVCodecParserContext *s);
+    int (*split)(AVCodecContext *avctx, const uint8_t *buf, int buf_size);
     struct AVCodecParser *next;
 } AVCodecParser;
 
@@ -2334,6 +2336,10 @@ int av_parser_parse(AVCodecParserContext *s,
                     uint8_t **poutbuf, int *poutbuf_size, 
                     const uint8_t *buf, int buf_size,
                     int64_t pts, int64_t dts);
+int av_parser_change(AVCodecParserContext *s,
+                     AVCodecContext *avctx,
+                     uint8_t **poutbuf, int *poutbuf_size, 
+                     const uint8_t *buf, int buf_size, int keyframe);
 void av_parser_close(AVCodecParserContext *s);
 
 extern AVCodecParser mpegvideo_parser;

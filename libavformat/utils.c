@@ -165,7 +165,7 @@ AVInputFormat *av_find_input_format(const char *short_name)
 /**
  * Default packet destructor 
  */
-static void av_destruct_packet(AVPacket *pkt)
+void av_destruct_packet(AVPacket *pkt)
 {
     av_free(pkt->data);
     pkt->data = NULL; pkt->size = 0;
@@ -834,7 +834,7 @@ static int av_read_frame_internal(AVFormatContext *s, AVPacket *pkt)
         /* select current input stream component */
         st = s->cur_st;
         if (st) {
-            if (!st->parser) {
+            if (!st->need_parsing || !st->parser) {
                 /* no parsing needed: we just output the packet as is */
                 /* raw data support */
                 *pkt = s->cur_pkt;
@@ -876,7 +876,7 @@ static int av_read_frame_internal(AVFormatContext *s, AVPacket *pkt)
                 /* return the last frames, if any */
                 for(i = 0; i < s->nb_streams; i++) {
                     st = s->streams[i];
-                    if (st->parser) {
+                    if (st->parser && st->need_parsing) {
                         av_parser_parse(st->parser, &st->codec, 
                                         &pkt->data, &pkt->size, 
                                         NULL, 0, 
@@ -1742,6 +1742,10 @@ int av_find_stream_info(AVFormatContext *ic)
             if(!st->codec.time_base.num)
                 st->codec.time_base= st->time_base;
         }
+        //only for the split stuff
+        if (!st->parser) {
+            st->parser = av_parser_init(st->codec.codec_id);
+        }
     }
 
     for(i=0;i<MAX_STREAMS;i++){
@@ -1761,6 +1765,8 @@ int av_find_stream_info(AVFormatContext *ic)
             /* variable fps and no guess at the real fps */
             if(   st->codec.time_base.den >= 1000LL*st->codec.time_base.num
                && duration_count[i]<20 && st->codec.codec_type == CODEC_TYPE_VIDEO)
+                break;
+            if(st->parser && st->parser->parser->split && !st->codec.extradata)
                 break;
         }
         if (i == ic->nb_streams) {
@@ -1841,6 +1847,15 @@ int av_find_stream_info(AVFormatContext *ic)
             }
             last_dts[pkt->stream_index]= pkt->dts;
         }
+        if(st->parser && st->parser->parser->split && !st->codec.extradata){
+            int i= st->parser->parser->split(&st->codec, pkt->data, pkt->size);
+            if(i){
+                st->codec.extradata_size= i;
+                st->codec.extradata= av_malloc(st->codec.extradata_size);
+                memcpy(st->codec.extradata, pkt->data, st->codec.extradata_size);
+            }
+        }
+        
         /* if still no information, we try to open the codec and to
            decompress the frame. We try to avoid that in most cases as
            it takes longer and uses more memory. For MPEG4, we need to

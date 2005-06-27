@@ -142,6 +142,38 @@ int av_parser_parse(AVCodecParserContext *s,
     return index;
 }
 
+int av_parser_change(AVCodecParserContext *s,
+                     AVCodecContext *avctx,
+                     uint8_t **poutbuf, int *poutbuf_size, 
+                     const uint8_t *buf, int buf_size, int keyframe){
+   
+    if(s && s->parser->split){
+        if((avctx->flags & CODEC_FLAG_GLOBAL_HEADER) && !(avctx->flags2 & CODEC_FLAG2_LOCAL_HEADER)){
+            int i= s->parser->split(avctx, buf, buf_size);
+            buf += i;
+            buf_size -= i;
+        }
+    }
+
+    *poutbuf= buf;
+    *poutbuf_size= buf_size;
+    if(avctx->extradata){
+        if(  (keyframe && (avctx->flags2 & CODEC_FLAG2_LOCAL_HEADER))
+            /*||(s->pict_type != I_TYPE && (s->flags & PARSER_FLAG_DUMP_EXTRADATA_AT_NOKEY))*/
+            /*||(? && (s->flags & PARSER_FLAG_DUMP_EXTRADATA_AT_BEGIN)*/){
+            int size= buf_size + avctx->extradata_size;
+            *poutbuf_size= size;
+            *poutbuf= av_malloc(size + FF_INPUT_BUFFER_PADDING_SIZE);
+            
+            memcpy(*poutbuf, avctx->extradata, avctx->extradata_size);
+            memcpy((*poutbuf) + avctx->extradata_size, buf, buf_size);
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
 void av_parser_close(AVCodecParserContext *s)
 {
     if (s->parser->parser_close)
@@ -294,7 +326,7 @@ static void mpegvideo_extract_headers(AVCodecParserContext *s,
     int frame_rate_ext_n, frame_rate_ext_d;
     int picture_structure, top_field_first, repeat_first_field, progressive_frame;
     int horiz_size_ext, vert_size_ext, bit_rate_ext;
-
+//FIXME replace the crap with get_bits()
     s->repeat_pict = 0;
     buf_end = buf + buf_size;
     while (buf < buf_end) {
@@ -415,6 +447,20 @@ static int mpegvideo_parse(AVCodecParserContext *s,
     return next;
 }
 
+static int mpegvideo_split(AVCodecContext *avctx,
+                           const uint8_t *buf, int buf_size)
+{
+    int i;
+    uint32_t state= -1;
+    
+    for(i=0; i<buf_size; i++){
+        state= (state<<8) | buf[i];
+        if(state != 0x1B3 && state != 0x1B5 && state < 0x200 && state >= 0x100)
+            return i-4;
+    }
+    return 0;
+}
+
 void ff_parse_close(AVCodecParserContext *s)
 {
     ParseContext *pc = s->priv_data;
@@ -491,6 +537,20 @@ static int mpeg4video_parse(AVCodecParserContext *s,
     *poutbuf = (uint8_t *)buf;
     *poutbuf_size = buf_size;
     return next;
+}
+
+static int mpeg4video_split(AVCodecContext *avctx,
+                           const uint8_t *buf, int buf_size)
+{
+    int i;
+    uint32_t state= -1;
+    
+    for(i=0; i<buf_size; i++){
+        state= (state<<8) | buf[i];
+        if(state == 0x1B3 || state == 0x1B6)
+            return i-4;
+    }
+    return 0;
 }
 
 /*************************/
@@ -768,6 +828,7 @@ AVCodecParser mpegvideo_parser = {
     NULL,
     mpegvideo_parse,
     parse1_close,
+    mpegvideo_split,
 };
 
 AVCodecParser mpeg4video_parser = {
@@ -776,6 +837,7 @@ AVCodecParser mpeg4video_parser = {
     mpeg4video_parse_init,
     mpeg4video_parse,
     parse1_close,
+    mpeg4video_split,
 };
 
 AVCodecParser mpegaudio_parser = {
