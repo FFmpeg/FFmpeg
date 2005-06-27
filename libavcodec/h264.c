@@ -7222,7 +7222,10 @@ static int decode_nal_units(H264Context *h, uint8_t *buf, int buf_size){
             h->inter_gb_ptr= &s->gb;
             s->data_partitioning = 0;
             
-            if(decode_slice_header(h) < 0) return -1;
+            if(decode_slice_header(h) < 0){
+                av_log(h->s.avctx, AV_LOG_ERROR, "decode_slice_header error\n");
+                break;
+            }
             if(h->redundant_pic_count==0 && s->hurry_up < 5 )
                 decode_slice(h);
             break;
@@ -7232,7 +7235,9 @@ static int decode_nal_units(H264Context *h, uint8_t *buf, int buf_size){
             h->inter_gb_ptr= NULL;
             s->data_partitioning = 1;
             
-            if(decode_slice_header(h) < 0) return -1;
+            if(decode_slice_header(h) < 0){
+                av_log(h->s.avctx, AV_LOG_ERROR, "decode_slice_header error\n");
+            }
             break;
         case NAL_DPB:
             init_get_bits(&h->intra_gb, ptr, bit_length);
