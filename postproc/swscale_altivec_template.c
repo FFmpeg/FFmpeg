@@ -400,6 +400,11 @@ static inline int yv12toyuy2_unscaled_altivec(SwsContext *c, uint8_t* src[], int
   const int vertLumPerChroma = 2;  
   register unsigned int y;
 
+  if(width&15){
+    yv12toyuy2( ysrc, usrc, vsrc, dst,c->srcW,srcSliceH, lumStride, chromStride, dstStride);
+    return srcSliceH;
+  }
+
   /* this code assume:
 
   1) dst is 16 bytes-aligned
@@ -473,6 +478,11 @@ static inline int yv12touyvy_unscaled_altivec(SwsContext *c, uint8_t* src[], int
   const int vertLumPerChroma = 2;
   const vector unsigned char yperm = vec_lvsl(0, ysrc);
   register unsigned int y;
+
+  if(width&15){
+    yv12touyvy( ysrc, usrc, vsrc, dst,c->srcW,srcSliceH, lumStride, chromStride, dstStride);
+    return srcSliceH;
+  }
 
   /* this code assume:
 
