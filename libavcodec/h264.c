@@ -4241,6 +4241,9 @@ static int decode_slice_header(H264Context *h){
 
     s->resync_mb_x = s->mb_x = first_mb_in_slice % s->mb_width;
     s->resync_mb_y = s->mb_y = first_mb_in_slice / s->mb_width;
+    if(s->mb_y >= s->mb_height){
+        return -1;
+    }
     
     if(s->picture_structure==PICT_FRAME){
         h->curr_pic_num=   h->frame_num;
