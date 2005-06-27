@@ -197,6 +197,7 @@ netserver="no"
 need_inet_aton="no"
 ffserver="yes"
 ffplay="yes"
+LIBOBJFLAGS=""
 LDFLAGS=-Wl,--warn-common
 FFSLDFLAGS=-Wl,-E
 LDCONFIG="ldconfig"
@@ -276,7 +277,7 @@ bktr="yes"
 audio_oss="yes"
 dv1394="no"
 make="gmake"
-CFLAGS="$CFLAGS \$(PIC)"
+LIBOBJFLAGS="\$(PIC)"
 LDFLAGS="$LDFLAGS -export-dynamic -pthread"
 LDCONFIG="ldconfig -m \$(libdir)"
 extralibs="$extralibs -lossaudio"
@@ -1103,6 +1104,16 @@ if test "$optimize" = "yes"; then
     fi
 fi
 
+# PIC flags for shared library objects where they are needed
+if test "$lshared" = "yes" ; then
+  # LIBOBJFLAGS may have already been set in the OS configuration
+  if test -z "$LIBOBJFLAGS" ; then
+    if test "$cpu" = "x86_64" ; then
+      LIBOBJFLAGS="\$(PIC)"
+    fi
+  fi
+fi
+
 if test x"$bindir" = x""; then
 bindir="${prefix}/bin"
 fi
@@ -1219,6 +1230,7 @@ echo "LDFLAGS=$LDFLAGS" >> config.mak
 echo "LDCONFIG=$LDCONFIG" >> config.mak
 echo "FFSLDFLAGS=$FFSLDFLAGS" >> config.mak
 echo "SHFLAGS=$SHFLAGS" >> config.mak
+echo "LIBOBJFLAGS=$LIBOBJFLAGS" >> config.mak
 echo "BUILDSUF=$BUILDSUF" >> config.mak
 echo "LIBPREF=$LIBPREF" >> config.mak
 echo "LIBSUF=\${BUILDSUF}$LIBSUF" >> config.mak

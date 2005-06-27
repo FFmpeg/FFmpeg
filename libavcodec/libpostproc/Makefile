@@ -21,7 +21,7 @@ CFLAGS  = $(OPTFLAGS) $(MLIB_INC) -I. -I.. $(EXTRA_INC)
 # .PHONY: all clean
 
 .c.o:
-	$(CC) -c $(CFLAGS) -I$(SRC_PATH)/libavcodec -I../.. -o $@ $<
+	$(CC) -c $(CFLAGS) $(LIBOBJFLAGS) -I$(SRC_PATH)/libavcodec -I../.. -o $@ $<
 
 all:    $(SWSLIB) $(PPLIB) $(SPPLIB)
 

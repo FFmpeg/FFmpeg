@@ -134,7 +134,7 @@ install-headers:
 	install -m 644 ../libavformat.pc $(libdir)/pkgconfig
 
 %.o: %.c
-	$(CC) $(CFLAGS) -c -o $@ $< 
+	$(CC) $(CFLAGS) $(LIBOBJFLAGS) -c -o $@ $< 
 
 # BeOS: remove -Wall to get rid of all the "multibyte constant" warnings
 %.o: %.cpp

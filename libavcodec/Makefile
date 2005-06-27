@@ -409,10 +409,10 @@ libpostproc/libpostproc.a:
 	$(MAKE) -C libpostproc
 
 %.o: %.c
-	$(CC) $(CFLAGS) -c -o $@ $< 
+	$(CC) $(CFLAGS) $(LIBOBJFLAGS) -c -o $@ $< 
 
 %.o: %.S
-	$(CC) $(CFLAGS) -c -o $@ $<
+	$(CC) $(CFLAGS) $(LIBOBJFLAGS) -c -o $@ $<
 
 depend: $(SRCS)
 	$(CC) -MM $(CFLAGS) $^ 1>.depend
