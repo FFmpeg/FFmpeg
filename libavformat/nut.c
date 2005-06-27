@@ -1445,6 +1445,7 @@ static AVOutputFormat nut_oformat = {
     nut_write_header,
     nut_write_packet,
     nut_write_trailer,
+    .flags = AVFMT_GLOBALHEADER,
 };
 #endif //CONFIG_ENCODERS
 
