@@ -94,6 +94,7 @@ typedef struct AVRtpDynamicPayloadType_s /* payload type >= 96 */
     enum CodecID codec_id;
 } AVRtpDynamicPayloadType_t;
 
+#if 0
 typedef enum {
   RTCP_SR   = 200,
   RTCP_RR   = 201,
@@ -116,6 +117,7 @@ typedef enum {
   RTCP_SDES_DOOR   = 10,
   RTCP_SDES_SOURCE = 11
 } rtcp_sdes_type_t;
+#endif
 
 extern AVRtpPayloadType_t AVRtpPayloadTypes[];
 extern AVRtpDynamicPayloadType_t AVRtpDynamicPayloadTypes[];
