@@ -2529,7 +2529,7 @@ FUNNY_UV_CODE
 		"addl %%edi, %%esi		\n\t" //src[xx+1]*2*xalpha + src[xx]*(1-2*xalpha)
 		"mov %1, %%"REG_D"		\n\t"
 		"shrl $9, %%esi			\n\t"
-		"movw %%si, (%%"REG_d", %%"REG_a", 2)\n\t"
+		"movw %%si, (%%"REG_D", %%"REG_a", 2)\n\t"
 
 		"movzbl  (%5, %%"REG_b"), %%edi	\n\t" //src[xx]
 		"movzbl 1(%5, %%"REG_b"), %%esi	\n\t" //src[xx+1]
