@@ -76,6 +76,7 @@ echo "  --disable-strip          disable stripping of executables and shared lib
 echo "  --enable-codec=codec     enables codec"
 echo "  --disable-codec=codec    disables codec"
 echo "  --disable-encoders       disables all encoders"
+echo "  --disable-decoders       disables all decoders"
 echo ""
 echo "NOTE: The object files are build at the place where configure is launched"
 exit 1
@@ -525,6 +526,8 @@ for opt do
   --disable-codec=*) CODEC_LIST="`echo $CODEC_LIST | sed -e \"s#${opt#--disable-codec=}##\"`"
   ;;
   --disable-encoders) CODEC_LIST="`echo $CODEC_LIST | sed 's/[-_a-zA-Z0-9]*encoder//g'`"
+  ;;
+  --disable-decoders) CODEC_LIST="`echo $CODEC_LIST | sed 's/[-_a-zA-Z0-9]*decoder//g'`"
   ;;
   esac
 done
