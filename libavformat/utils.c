@@ -21,8 +21,16 @@
 #undef NDEBUG
 #include <assert.h>
 
+/**
+ * @file libavformat/utils.c
+ * Various utility functions for using ffmpeg library.
+ */
+
+/** head of registered input format linked list. */
 AVInputFormat *first_iformat = NULL;
+/** head of registered output format linked list. */
 AVOutputFormat *first_oformat = NULL;
+/** head of registered image format linked list. */
 AVImageFormat *first_image_format = NULL;
 
 void av_register_input_format(AVInputFormat *format)
@@ -131,7 +139,7 @@ AVOutputFormat *guess_stream_format(const char *short_name, const char *filename
 }
 
 /**
- * guesses the codec id based upon muxer and filename.
+ * Guesses the codec id based upon muxer and filename.
  */
 enum CodecID av_guess_codec(AVOutputFormat *fmt, const char *short_name, 
                             const char *filename, const char *mime_type, enum CodecType type){
@@ -150,6 +158,9 @@ enum CodecID av_guess_codec(AVOutputFormat *fmt, const char *short_name,
         return CODEC_ID_NONE;
 }
 
+/**
+ * finds AVInputFormat based on input format's short name.
+ */
 AVInputFormat *av_find_input_format(const char *short_name)
 {
     AVInputFormat *fmt;
@@ -163,7 +174,7 @@ AVInputFormat *av_find_input_format(const char *short_name)
 /* memory handling */
 
 /**
- * Default packet destructor 
+ * Default packet destructor.
  */
 void av_destruct_packet(AVPacket *pkt)
 {
@@ -274,7 +285,9 @@ int fifo_size(FifoBuffer *f, uint8_t *rptr)
     return size;
 }
 
-/* get data from the fifo (return -1 if not enough data) */
+/**
+ * Get data from the fifo (returns -1 if not enough data).
+ */
 int fifo_read(FifoBuffer *f, uint8_t *buf, int buf_size, uint8_t **rptr_ptr)
 {
     uint8_t *rptr;
@@ -307,6 +320,9 @@ int fifo_read(FifoBuffer *f, uint8_t *buf, int buf_size, uint8_t **rptr_ptr)
     return 0;
 }
 
+/**
+ * Resizes a FIFO.
+ */
 void fifo_realloc(FifoBuffer *f, unsigned int new_size){
     unsigned int old_size= f->end - f->buffer;
     
@@ -385,7 +401,9 @@ int filename_number_test(const char *filename)
     return get_frame_filename(buf, sizeof(buf), filename, 1);
 }
 
-/* guess file format */
+/**
+ * Guess file format.
+ */
 AVInputFormat *av_probe_input_format(AVProbeData *pd, int is_opened)
 {
     AVInputFormat *fmt1, *fmt;
@@ -416,9 +434,8 @@ AVInputFormat *av_probe_input_format(AVProbeData *pd, int is_opened)
 /* input media file */
 
 /**
- * open a media file from an IO stream. 'fmt' must be specified.
+ * Open a media file from an IO stream. 'fmt' must be specified.
  */
-
 static const char* format_to_name(void* ptr)
 {
     AVFormatContext* fc = (AVFormatContext*) ptr;
@@ -438,6 +455,10 @@ AVFormatContext *av_alloc_format_context(void)
     return ic;
 }
 
+/**
+ * Allocates all the structures needed to read an input stream.
+ *        This does not open the needed codecs for decoding the stream[s].
+ */
 int av_open_input_stream(AVFormatContext **ic_ptr, 
                          ByteIOContext *pb, const char *filename, 
                          AVInputFormat *fmt, AVFormatParameters *ap)
@@ -486,6 +507,7 @@ int av_open_input_stream(AVFormatContext **ic_ptr,
     return err;
 }
 
+/** Size of probe buffer, for guessing file type from file contents. */
 #define PROBE_BUF_SIZE 2048
 
 /**
@@ -594,8 +616,10 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
 /*******************************************************/
 
 /**
- * Read a transport packet from a media file. This function is
- * absolete and should never be used. Use av_read_frame() instead.
+ * Read a transport packet from a media file.
+ *
+ * This function is absolete and should never be used.
+ * Use av_read_frame() instead.
  * 
  * @param s media file handle
  * @param pkt is filled 
@@ -608,7 +632,9 @@ int av_read_packet(AVFormatContext *s, AVPacket *pkt)
 
 /**********************************************************/
 
-/* get the number of samples of an audio frame. Return (-1) if error */
+/**
+ * Get the number of samples of an audio frame. Return (-1) if error.
+ */
 static int get_audio_frame_size(AVCodecContext *enc, int size)
 {
     int frame_size;
@@ -647,7 +673,9 @@ static int get_audio_frame_size(AVCodecContext *enc, int size)
 }
 
 
-/* return the frame duration in seconds, return 0 if not available */
+/**
+ * Return the frame duration in seconds, return 0 if not available.
+ */
 static void compute_frame_duration(int *pnum, int *pden, AVStream *st, 
                                    AVCodecParserContext *pc, AVPacket *pkt)
 {
@@ -906,7 +934,9 @@ static int av_read_frame_internal(AVFormatContext *s, AVPacket *pkt)
 }
 
 /**
- * Return the next frame of a stream. The returned packet is valid
+ * Return the next frame of a stream.
+ *
+ * The returned packet is valid
  * until the next av_read_frame() or until av_close_input_file() and
  * must be freed with av_free_packet. For video, the packet contains
  * exactly one frame. For audio, it contains an integer number of
@@ -920,7 +950,7 @@ static int av_read_frame_internal(AVFormatContext *s, AVPacket *pkt)
  * has B frames, so it is better to rely on pkt->dts if you do not
  * decompress the payload.
  * 
- * Return 0 if OK, < 0 if error or end of file.  
+ * @return 0 if OK, < 0 if error or end of file.
  */
 int av_read_frame(AVFormatContext *s, AVPacket *pkt)
 {
@@ -972,7 +1002,9 @@ int av_find_default_stream_index(AVFormatContext *s)
     return 0;
 }
 
-/* flush the frame reader */
+/**
+ * Flush the frame reader.
+ */
 static void av_read_frame_flush(AVFormatContext *s)
 {
     AVStream *st;
@@ -1004,8 +1036,9 @@ static void av_read_frame_flush(AVFormatContext *s)
 }
 
 /**
- * updates cur_dts of all streams based on given timestamp and AVStream.
- * stream ref_st unchanged, others set cur_dts in their native timebase
+ * Updates cur_dts of all streams based on given timestamp and AVStream.
+ *
+ * Stream ref_st unchanged, others set cur_dts in their native timebase
  * only needed for timestamp wrapping or if (dts not set and pts!=dts)
  * @param timestamp new dts expressed in time_base of param ref_st
  * @param ref_st reference stream giving time_base of param timestamp
@@ -1023,7 +1056,8 @@ static void av_update_cur_dts(AVFormatContext *s, AVStream *ref_st, int64_t time
 }
 
 /**
- * add a index entry into a sorted list updateing if it is already there.
+ * Add a index entry into a sorted list updateing if it is already there.
+ *
  * @param timestamp timestamp in the timebase of the given stream
  */
 int av_add_index_entry(AVStream *st,
@@ -1069,7 +1103,9 @@ int av_add_index_entry(AVStream *st,
     return index;
 }
 
-/* build an index for raw streams using a parser */
+/**
+ * build an index for raw streams using a parser.
+ */
 static void av_build_index_raw(AVFormatContext *s)
 {
     AVPacket pkt1, *pkt = &pkt1;
@@ -1093,8 +1129,11 @@ static void av_build_index_raw(AVFormatContext *s)
     }
 }
 
-/* return TRUE if we deal with a raw stream (raw codec data and
-   parsing needed) */
+/**
+ * Returns TRUE if we deal with a raw stream.
+ *
+ * Raw codec data and parsing needed.
+ */
 static int is_raw_stream(AVFormatContext *s)
 {
     AVStream *st;
@@ -1108,7 +1147,7 @@ static int is_raw_stream(AVFormatContext *s)
 }
 
 /**
- * gets the index for a specific timestamp.
+ * Gets the index for a specific timestamp.
  * @param flags if AVSEEK_FLAG_BACKWARD then the returned index will correspond to 
  *                 the timestamp which is <= the requested one, if backward is 0 
  *                 then it will be >=
@@ -1406,7 +1445,11 @@ int av_seek_frame(AVFormatContext *s, int stream_index, int64_t timestamp, int f
 
 /*******************************************************/
 
-/* return TRUE if the stream has accurate timings for at least one component */
+/**
+ * Returns TRUE if the stream has accurate timings in any stream.
+ *
+ * @return TRUE if the stream has accurate timings for at least one component.
+ */
 static int av_has_timings(AVFormatContext *ic)
 {
     int i;
@@ -1421,8 +1464,11 @@ static int av_has_timings(AVFormatContext *ic)
     return 0;
 }
 
-/* estimate the stream timings from the one of each components. Also
-   compute the global bitrate if possible */
+/**
+ * Estimate the stream timings from the one of each components.
+ *
+ * Also computes the global bitrate if possible.
+ */
 static void av_update_stream_timings(AVFormatContext *ic)
 {
     int64_t start_time, start_time1, end_time, end_time1;
@@ -1713,7 +1759,7 @@ static int try_decode_frame(AVStream *st, const uint8_t *data, int size)
 #define MAX_READ_SIZE        5000000
 
 /* maximum duration until we stop analysing the stream */
-#define MAX_STREAM_DURATION  ((int)(AV_TIME_BASE * 1.0))
+#define MAX_STREAM_DURATION  ((int)(AV_TIME_BASE * 2.0))
 
 /**
  * Read the beginning of a media file to get stream information. This
@@ -1985,8 +2031,9 @@ int av_read_play(AVFormatContext *s)
 }
 
 /**
- * pause a network based stream (e.g. RTSP stream). Use av_read_play()
- * to resume it.
+ * Pause a network based stream (e.g. RTSP stream).
+ *
+ * Use av_read_play() to resume it.
  */
 int av_read_pause(AVFormatContext *s)
 {
@@ -1996,7 +2043,7 @@ int av_read_pause(AVFormatContext *s)
 }
 
 /**
- * Close a media file (but not its codecs)
+ * Close a media file (but not its codecs).
  *
  * @param s media file handle
  */
@@ -2033,10 +2080,11 @@ void av_close_input_file(AVFormatContext *s)
 }
 
 /**
- * Add a new stream to a media file. Can only be called in the
- * read_header function. If the flag AVFMTCTX_NOHEADER is in the
- * format context, then new streams can be added in read_packet too.
+ * Add a new stream to a media file.
  *
+ * Can only be called in the read_header() function. If the flag
+ * AVFMTCTX_NOHEADER is in the format context, then new streams
+ * can be added in read_packet too.
  *
  * @param s media file handle
  * @param id file format dependent stream id 
@@ -2212,8 +2260,9 @@ static void truncate_ts(AVStream *st, AVPacket *pkt){
 }
 
 /**
- * Write a packet to an output media file. The packet shall contain
- * one audio or video frame.
+ * Write a packet to an output media file.
+ *
+ * The packet shall contain one audio or video frame.
  *
  * @param s media file handle
  * @param pkt the packet, which contains the stream_index, buf/buf_size, dts/pts, ...
@@ -2305,8 +2354,9 @@ static int av_interleave_packet(AVFormatContext *s, AVPacket *out, AVPacket *in,
 }
 
 /**
- * Writes a packet to an output media file ensuring correct interleaving. 
- * The packet shall contain one audio or video frame.
+ * Writes a packet to an output media file ensuring correct interleaving.
+ *
+ * The packet must contain one audio or video frame.
  * If the packets are already correctly interleaved the application should
  * call av_write_frame() instead as its slightly faster, its also important
  * to keep in mind that completly non interleaved input will need huge amounts
@@ -2351,11 +2401,12 @@ int av_interleaved_write_frame(AVFormatContext *s, AVPacket *pkt){
 }
 
 /**
- * write the stream trailer to an output media file and and free the
- * file private data.
+ * @brief Write the stream trailer to an output media file and
+ *        free the file private data.
  *
  * @param s media file handle
- * @return 0 if OK. AVERROR_xxx if error.  */
+ * @return 0 if OK. AVERROR_xxx if error.
+ */
 int av_write_trailer(AVFormatContext *s)
 {
     int ret, i;
@@ -2473,6 +2524,9 @@ static AbvEntry frame_abvs[] = {
     { "4cif",      704, 576,     0,    0 },
 };
 
+/**
+ * parses width and height out of string str.
+ */
 int parse_image_size(int *width_ptr, int *height_ptr, const char *str)
 {
     int i;
@@ -2501,6 +2555,13 @@ int parse_image_size(int *width_ptr, int *height_ptr, const char *str)
     return 0;
 }
 
+/**
+ * Converts frame rate from string to a fraction.
+ *
+ * First we try to get an exact integer or fractional frame rate.
+ * If this fails we convert the frame rate to a double and return
+ * an approximate fraction using the DEFAULT_FRAME_RATE_BASE.
+ */
 int parse_frame_rate(int *frame_rate, int *frame_rate_base, const char *arg)
 {
     int i;
@@ -2537,14 +2598,20 @@ int parse_frame_rate(int *frame_rate, int *frame_rate_base, const char *arg)
         return 0;
 }
 
-/* Syntax:
+/**
+ * Converts date string to number of seconds since Jan 1st, 1970.
+ *
+ * @code
+ * Syntax:
  * - If not a duration:
  *  [{YYYY-MM-DD|YYYYMMDD}]{T| }{HH[:MM[:SS[.m...]]][Z]|HH[MM[SS[.m...]]][Z]}
  * Time is localtime unless Z is suffixed to the end. In this case GMT
  * Return the date in micro seconds since 1970 
- * - If duration:
+ *
+ * - If a duration:
  *  HH[:MM[:SS[.m...]]]
  *  S+[.m...]
+ * @endcode
  */
 int64_t parse_date(const char *datestr, int duration)
 {
@@ -2654,8 +2721,12 @@ int64_t parse_date(const char *datestr, int duration)
     return negative ? -t : t;
 }
 
-/* syntax: '?tag1=val1&tag2=val2...'. Little URL decoding is done. Return
-   1 if found */
+/**
+ * Attempts to find a specific tag in a URL.
+ *
+ * syntax: '?tag1=val1&tag2=val2...'. Little URL decoding is done.
+ * Return 1 if found.
+ */
 int find_info_tag(char *arg, int arg_size, const char *tag1, const char *info)
 {
     const char *p;
@@ -2695,9 +2766,12 @@ int find_info_tag(char *arg, int arg_size, const char *tag1, const char *info)
     return 0;
 }
 
-/* Return in 'buf' the path with '%d' replaced by number. Also handles
-   the '%0nd' format where 'n' is the total number of digits and
-   '%%'. Return 0 if OK, and -1 if format error */
+/**
+ * Returns in 'buf' the path with '%d' replaced by number.
+ *
+ * Also handles the '%0nd' format where 'n' is the total number
+ * of digits and '%%'. Return 0 if OK, and -1 if format error.
+ */
 int get_frame_filename(char *buf, int buf_size,
                        const char *path, int number)
 {
@@ -2887,7 +2961,8 @@ void url_split(char *proto, int proto_size,
 }
 
 /**
- * Set the pts for a given stream
+ * Set the pts for a given stream.
+ *
  * @param s stream 
  * @param pts_wrap_bits number of bits effectively used by the pts
  *        (used for wrap control, 33 is the value for MPEG) 
@@ -2905,8 +2980,9 @@ void av_set_pts_info(AVStream *s, int pts_wrap_bits,
 /* fraction handling */
 
 /**
- * f = val + (num / den) + 0.5. 'num' is normalized so that it is such
- * as 0 <= num < den.
+ * f = val + (num / den) + 0.5.
+ *
+ * 'num' is normalized so that it is such as 0 <= num < den.
  *
  * @param f fractional number
  * @param val integer value
@@ -2925,7 +3001,9 @@ void av_frac_init(AVFrac *f, int64_t val, int64_t num, int64_t den)
     f->den = den;
 }
 
-/* set f to (val + 0.5) */
+/**
+ * Set f to (val + 0.5).
+ */
 void av_frac_set(AVFrac *f, int64_t val)
 {
     f->val = val;
@@ -2933,7 +3011,7 @@ void av_frac_set(AVFrac *f, int64_t val)
 }
 
 /**
- * Fractionnal addition to f: f = f + (incr / f->den)
+ * Fractionnal addition to f: f = f + (incr / f->den).
  *
  * @param f fractional number
  * @param incr increment, can be positive or negative
@@ -2972,7 +3050,9 @@ void av_register_image_format(AVImageFormat *img_fmt)
     img_fmt->next = NULL;
 }
 
-/* guess image format */
+/**
+ * Guesses image format based on data in the image.
+ */
 AVImageFormat *av_probe_image_format(AVProbeData *pd)
 {
     AVImageFormat *fmt1, *fmt;
@@ -2992,6 +3072,9 @@ AVImageFormat *av_probe_image_format(AVProbeData *pd)
     return fmt;
 }
 
+/**
+ * Guesses image format based on file name extensions.
+ */
 AVImageFormat *guess_image_format(const char *filename)
 {
     AVImageFormat *fmt1;
