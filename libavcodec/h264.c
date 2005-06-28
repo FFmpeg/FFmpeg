@@ -4234,7 +4234,7 @@ static int decode_slice_header(H264Context *h){
             s->picture_structure= PICT_TOP_FIELD + get_bits1(&s->gb); //bottom_field_flag
         } else {
             s->picture_structure= PICT_FRAME;
-            first_mb_in_slice <<= 1;
+            first_mb_in_slice <<= h->sps.mb_aff;
             h->mb_aff_frame = h->sps.mb_aff;
         }
     }
