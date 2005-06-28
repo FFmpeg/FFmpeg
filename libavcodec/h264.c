@@ -7133,6 +7133,13 @@ static int find_frame_end(H264Context *h, const uint8_t *buf, int buf_size){
             }
             pc->frame_start_found = 1;
         }
+        if((state&0xFFFFFF1F) == 0x107 || (state&0xFFFFFF1F) == 0x108 || (state&0xFFFFFF1F) == 0x109){
+           if(pc->frame_start_found){
+                pc->state=-1; 
+                pc->frame_start_found= 0;
+                return i-4;               
+           }
+        }
         if (i<buf_size)
             state= (state<<8) | buf[i];
     }
@@ -7162,6 +7169,31 @@ static int h264_parse(AVCodecParserContext *s,
     *poutbuf_size = buf_size;
     return next;
 }
+
+static int h264_split(AVCodecContext *avctx,
+                      const uint8_t *buf, int buf_size)
+{
+    int i;
+    uint32_t state = -1;
+    int has_sps= 0;
+
+    for(i=0; i<=buf_size; i++){
+        if((state&0xFFFFFF1F) == 0x107)
+            has_sps=1;
+/*        if((state&0xFFFFFF1F) == 0x101 || (state&0xFFFFFF1F) == 0x102 || (state&0xFFFFFF1F) == 0x105){
+        }*/
+        if((state&0xFFFFFF00) == 0x100 && (state&0xFFFFFF1F) != 0x107 && (state&0xFFFFFF1F) != 0x108 && (state&0xFFFFFF1F) != 0x109){
+            if(has_sps){
+                while(i>4 && buf[i-5]==0) i--;
+                return i-4;
+            }
+        }
+        if (i<buf_size)
+            state= (state<<8) | buf[i];
+    }
+    return 0;
+}
+
 
 static int decode_nal_units(H264Context *h, uint8_t *buf, int buf_size){
     MpegEncContext * const s = &h->s;
@@ -7709,6 +7741,7 @@ AVCodecParser h264_parser = {
     NULL,
     h264_parse,
     ff_parse_close,
+    h264_split,
 };
 
 #include "svq3.c"
