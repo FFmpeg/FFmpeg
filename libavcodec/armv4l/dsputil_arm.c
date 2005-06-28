@@ -240,9 +240,7 @@ void dsputil_init_armv4l(DSPContext* c, AVCodecContext *avctx)
     c->put_no_rnd_pixels_tab[1][2] = put_no_rnd_pixels8_y2_arm; //OK
 /*     c->put_no_rnd_pixels_tab[1][3] = put_no_rnd_pixels8_xy2_arm;//NG */
 
-#if 1
 #ifdef HAVE_IWMMXT
     dsputil_init_iwmmxt(c, avctx);
-#endif
 #endif
 }

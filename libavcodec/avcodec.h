@@ -17,7 +17,7 @@ extern "C" {
 
 #define FFMPEG_VERSION_INT     0x000409
 #define FFMPEG_VERSION         "0.4.9-pre1"
-#define LIBAVCODEC_BUILD       4756
+#define LIBAVCODEC_BUILD       4757
 
 #define LIBAVCODEC_VERSION_INT FFMPEG_VERSION_INT
 #define LIBAVCODEC_VERSION     FFMPEG_VERSION
@@ -1193,7 +1193,7 @@ typedef struct AVCodecContext {
 #define FF_IDCT_SIMPLEARM    10
 #define FF_IDCT_H264         11
 #define FF_IDCT_VP3          12
-#define FP_IDCT_IPP          13
+#define FF_IDCT_IPP          13
 
     /**
      * slice count.
@@ -1236,6 +1236,9 @@ typedef struct AVCodecContext {
 #define FF_MM_SSE2	0x0010 /* PIV SSE2 functions */
 #define FF_MM_3DNOWEXT	0x0020 /* AMD 3DNowExt */
 #endif /* HAVE_MMX */
+#ifdef HAVE_IWMMXT
+#define FF_MM_IWMMXT	0x0100 /* XScale IWMMXT */
+#endif /* HAVE_IWMMXT */
 
     /**
      * bits per sample/pixel from the demuxer (needed for huffyuv).

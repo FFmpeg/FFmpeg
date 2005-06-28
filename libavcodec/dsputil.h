@@ -432,6 +432,10 @@ void dsputil_init_pix_mmx(DSPContext* c, AVCodecContext *avctx);
 #define __align8 __attribute__ ((aligned (4)))
 #define STRIDE_ALIGN 4
 
+#define MM_IWMMXT    0x0100 /* XScale IWMMXT */
+
+extern int mm_flags;
+
 void dsputil_init_armv4l(DSPContext* c, AVCodecContext *avctx);
 
 #elif defined(HAVE_MLIB)

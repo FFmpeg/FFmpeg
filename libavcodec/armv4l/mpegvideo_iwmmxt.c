@@ -90,6 +90,8 @@ static void dct_unquantize_h263_inter_iwmmxt(MpegEncContext *s,
 
 void MPV_common_init_iwmmxt(MpegEncContext *s)
 {
+    if (!(mm_flags & MM_IWMMXT)) return;
+
     s->dct_unquantize_h263_intra = dct_unquantize_h263_intra_iwmmxt;
 #if 0
     s->dct_unquantize_h263_inter = dct_unquantize_h263_inter_iwmmxt;
