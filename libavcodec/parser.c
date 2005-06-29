@@ -142,13 +142,17 @@ int av_parser_parse(AVCodecParserContext *s,
     return index;
 }
 
+/**
+ *
+ * @return 0 if the output buffer is a subset of the input, 1 if it is allocated and must be freed
+ */
 int av_parser_change(AVCodecParserContext *s,
                      AVCodecContext *avctx,
                      uint8_t **poutbuf, int *poutbuf_size, 
                      const uint8_t *buf, int buf_size, int keyframe){
    
     if(s && s->parser->split){
-        if((avctx->flags & CODEC_FLAG_GLOBAL_HEADER) && !(avctx->flags2 & CODEC_FLAG2_LOCAL_HEADER)){
+        if((avctx->flags & CODEC_FLAG_GLOBAL_HEADER) || (avctx->flags2 & CODEC_FLAG2_LOCAL_HEADER)){
             int i= s->parser->split(avctx, buf, buf_size);
             buf += i;
             buf_size -= i;
@@ -166,7 +170,7 @@ int av_parser_change(AVCodecParserContext *s,
             *poutbuf= av_malloc(size + FF_INPUT_BUFFER_PADDING_SIZE);
             
             memcpy(*poutbuf, avctx->extradata, avctx->extradata_size);
-            memcpy((*poutbuf) + avctx->extradata_size, buf, buf_size);
+            memcpy((*poutbuf) + avctx->extradata_size, buf, buf_size + FF_INPUT_BUFFER_PADDING_SIZE);
             return 1;
         }
     }
@@ -456,7 +460,7 @@ static int mpegvideo_split(AVCodecContext *avctx,
     for(i=0; i<buf_size; i++){
         state= (state<<8) | buf[i];
         if(state != 0x1B3 && state != 0x1B5 && state < 0x200 && state >= 0x100)
-            return i-4;
+            return i-3;
     }
     return 0;
 }
@@ -548,7 +552,7 @@ static int mpeg4video_split(AVCodecContext *avctx,
     for(i=0; i<buf_size; i++){
         state= (state<<8) | buf[i];
         if(state == 0x1B3 || state == 0x1B6)
-            return i-4;
+            return i-3;
     }
     return 0;
 }
