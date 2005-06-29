@@ -2286,6 +2286,8 @@ int av_write_frame(AVFormatContext *s, AVPacket *pkt)
 
 /**
  * interleave_packet implementation which will interleave per DTS.
+ * packets with pkt->destruct == av_destruct_packet will be freed inside this function. 
+ * so they cannot be used after it, note calling av_free_packet() on them is still safe
  */
 static int av_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out, AVPacket *pkt, int flush){
     AVPacketList *pktl, **next_point, *this_pktl;
@@ -2295,11 +2297,14 @@ static int av_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out, AVPac
     if(pkt){
         AVStream *st= s->streams[ pkt->stream_index];
 
-        assert(pkt->destruct != av_destruct_packet); //FIXME
+//        assert(pkt->destruct != av_destruct_packet); //FIXME
 
         this_pktl = av_mallocz(sizeof(AVPacketList));
         this_pktl->pkt= *pkt;
-        av_dup_packet(&this_pktl->pkt);
+        if(pkt->destruct == av_destruct_packet)
+            pkt->destruct= NULL; // non shared -> must keep original from being freed
+        else
+            av_dup_packet(&this_pktl->pkt);  //shared -> must dup
 
         next_point = &s->packet_buffer;
         while(*next_point){
