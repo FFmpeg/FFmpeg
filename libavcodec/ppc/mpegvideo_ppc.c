@@ -39,6 +39,8 @@ void MPV_common_init_ppc(MpegEncContext *s)
 #ifdef HAVE_ALTIVEC
     if (has_altivec())
     {
+      if (s->avctx->lowres==0)
+      {
         if ((s->avctx->idct_algo == FF_IDCT_AUTO) ||
                 (s->avctx->idct_algo == FF_IDCT_ALTIVEC))
         {
@@ -50,6 +52,7 @@ void MPV_common_init_ppc(MpegEncContext *s)
             s->dsp.idct_permutation_type = FF_NO_IDCT_PERM;
 #endif /* ALTIVEC_USE_REFERENCE_C_CODE */
         }
+      }
 
         // Test to make sure that the dct required alignments are met.
         if ((((long)(s->q_intra_matrix) & 0x0f) != 0) ||

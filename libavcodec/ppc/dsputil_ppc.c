@@ -305,6 +305,8 @@ void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx)
 	}
 #endif //CONFIG_ENCODERS
 
+      if (avctx->lowres==0)
+      {
         if ((avctx->idct_algo == FF_IDCT_AUTO) ||
                 (avctx->idct_algo == FF_IDCT_ALTIVEC))
         {
@@ -316,6 +318,7 @@ void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx)
             c->idct_permutation_type = FF_NO_IDCT_PERM;
 #endif /* ALTIVEC_USE_REFERENCE_C_CODE */
         }
+      }
         
 #ifdef POWERPC_PERFORMANCE_REPORT
         {
