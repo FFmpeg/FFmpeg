@@ -16,6 +16,10 @@ version <next>
 - Autodesk Animator Studio Codec (AASC) decoder
 - Indeo 2 video decoder
 - Fraps FPS1 video decoder
+- SNOW video encoder/decoder
+- Sonic audio encoder/decoder
+- Vorbis decoder
+- Macromedia ADPCM decoder
 
 version 0.4.9-pre1:
 
