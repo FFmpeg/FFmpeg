@@ -713,6 +713,7 @@ static int get_swf_tag(ByteIOContext *pb, int *len_ptr)
     if (len == 0x3f) {
         len = get_le32(pb);
     }
+//    av_log(NULL, AV_LOG_DEBUG, "Tag: %d - Len: %d\n", tag, len);
     *len_ptr = len;
     return tag;
 }
@@ -723,7 +724,7 @@ static int swf_probe(AVProbeData *p)
     /* check file header */
     if (p->buf_size <= 16)
         return 0;
-    if (p->buf[0] == 'F' && p->buf[1] == 'W' &&
+    if ((p->buf[0] == 'F' || p->buf[0] == 'C') && p->buf[1] == 'W' &&
         p->buf[2] == 'S')
         return AVPROBE_SCORE_MAX;
     else
@@ -744,7 +745,14 @@ static int swf_read_header(AVFormatContext *s, AVFormatParameters *ap)
         return -1;
     s->priv_data = swf;
 
-    if ((get_be32(pb) & 0xffffff00) != MKBETAG('F', 'W', 'S', 0))
+    tag = get_be32(pb) & 0xffffff00;
+
+    if (tag == MKBETAG('C', 'W', 'S', 0))
+    {
+	av_log(s, AV_LOG_ERROR, "Compressed SWF format not supported\n");
+        return AVERROR_IO;
+    }
+    if (tag != MKBETAG('F', 'W', 'S', 0))
         return AVERROR_IO;
     get_le32(pb);
     /* skip rectangle size */
