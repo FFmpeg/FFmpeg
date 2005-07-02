@@ -2355,6 +2355,8 @@ static int vc9_decode_init(AVCodecContext *avctx)
         return -1;
     if (vc9_init_common(v) < 0) return -1;
 
+    av_log(avctx, AV_LOG_INFO, "This decoder is not supposed to produce picture. Dont report this as a bug!\n");
+
     avctx->coded_width = avctx->width;
     avctx->coded_height = avctx->height;
     if (avctx->codec_id == CODEC_ID_WMV3)
