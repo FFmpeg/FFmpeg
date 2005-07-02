@@ -30,7 +30,7 @@
 #define TAG_FREECHARACTER 3
 #define TAG_PLACEOBJECT   4
 #define TAG_REMOVEOBJECT  5
-#define TAG_STREAMHEAD    45
+#define TAG_STREAMHEAD    18
 #define TAG_STREAMBLOCK   19
 #define TAG_JPEG2         21
 #define TAG_PLACEOBJECT2  26
