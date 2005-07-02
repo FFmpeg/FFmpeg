@@ -2964,7 +2964,7 @@ static int alloc_tables(H264Context *h){
             shift -= 2;
         for(x=0; x<64; x++)
             h->dequant8_coeff[q][x] = dequant8_coeff_init[idx][
-                dequant8_coeff_init_scan[(x>>1)&12 | x&3] ] << shift;
+                dequant8_coeff_init_scan[((x>>1)&12) | (x&3)] ] << shift;
     }
     if(h->sps.transform_bypass){
         for(x=0; x<16; x++)
@@ -4403,7 +4403,7 @@ static inline int get_dct8x8_allowed(H264Context *h){
     int i;
     for(i=0; i<4; i++){
         if(!IS_SUB_8X8(h->sub_mb_type[i])
-           || !h->sps.direct_8x8_inference_flag && IS_DIRECT(h->sub_mb_type[i]))
+           || (!h->sps.direct_8x8_inference_flag && IS_DIRECT(h->sub_mb_type[i])))
             return 0;
     }
     return 1;
