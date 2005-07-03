@@ -444,7 +444,7 @@ AVInputFormat h264_iformat = {
     video_read_header,
     raw_read_partial_packet,
     raw_read_close,
-    .extensions = "h26l,h264", //FIXME remove after writing mpeg4_probe
+    .extensions = "h26l,h264,264", //FIXME remove after writing mpeg4_probe
     .value = CODEC_ID_H264,
 };
 
