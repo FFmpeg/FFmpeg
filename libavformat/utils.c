@@ -1404,6 +1404,7 @@ static int av_seek_frame_generic(AVFormatContext *s,
  * stream is selected, and timestamp is automatically converted 
  * from AV_TIME_BASE units to the stream specific time_base.
  * @param timestamp timestamp in AVStream.time_base units
+ *        or if there is no stream specified then in AV_TIME_BASE units
  * @param flags flags which select direction and seeking mode
  * @return >= 0 on success
  */
