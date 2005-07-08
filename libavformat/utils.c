@@ -1198,7 +1198,7 @@ int av_seek_frame_binary(AVFormatContext *s, int stream_index, int64_t target_ts
     AVInputFormat *avif= s->iformat;
     int64_t pos_min, pos_max, pos, pos_limit;
     int64_t ts_min, ts_max, ts;
-    int64_t start_pos;
+    int64_t start_pos, filesize;
     int index, no_change;
     AVStream *st;
 
@@ -1256,7 +1256,8 @@ int av_seek_frame_binary(AVFormatContext *s, int stream_index, int64_t target_ts
 
     if(ts_max == AV_NOPTS_VALUE){
         int step= 1024;
-        pos_max = url_fsize(&s->pb) - 1;
+        filesize = url_fsize(&s->pb);
+        pos_max = filesize - 1;
         do{
             pos_max -= step;
             ts_max = avif->read_timestamp(s, stream_index, &pos_max, pos_max + step);
@@ -1272,6 +1273,8 @@ int av_seek_frame_binary(AVFormatContext *s, int stream_index, int64_t target_ts
                 break;
             ts_max= tmp_ts;
             pos_max= tmp_pos;
+            if(tmp_pos >= filesize)
+                break;
         }
         pos_limit= pos_max;
     }
