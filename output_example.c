@@ -37,6 +37,7 @@
 #define STREAM_DURATION   5.0
 #define STREAM_FRAME_RATE 25 /* 25 images/s */
 #define STREAM_NB_FRAMES  ((int)(STREAM_DURATION * STREAM_FRAME_RATE))
+#define STREAM_PIX_FMT PIX_FMT_YUV420P /* default pix_fmt */
 
 /**************************************************************/
 /* audio output */
@@ -150,7 +151,7 @@ void write_audio_frame(AVFormatContext *oc, AVStream *st)
 
     pkt.size= avcodec_encode_audio(c, audio_outbuf, audio_outbuf_size, samples);
 
-    pkt.pts= c->coded_frame->pts;
+    pkt.pts= av_rescale_q(c->coded_frame->pts, c->time_base, st->time_base);
     pkt.flags |= PKT_FLAG_KEY;
     pkt.stream_index= st->index;
     pkt.data= audio_outbuf;
@@ -202,6 +203,7 @@ AVStream *add_video_stream(AVFormatContext *oc, int codec_id)
     c->time_base.den = STREAM_FRAME_RATE;  
     c->time_base.num = 1;
     c->gop_size = 12; /* emit one intra frame every twelve frames at most */
+    c->pix_fmt = STREAM_PIX_FMT;
     if (c->codec_id == CODEC_ID_MPEG2VIDEO) {
         /* just for testing, we also add B frames */
         c->max_b_frames = 2;
@@ -314,15 +316,13 @@ void write_video_frame(AVFormatContext *oc, AVStream *st)
 {
     int out_size, ret;
     AVCodecContext *c;
-    AVFrame *picture_ptr;
     
     c = &st->codec;
     
     if (frame_count >= STREAM_NB_FRAMES) {
         /* no more frame to compress. The codec has a latency of a few
            frames if using B frames, so we get the last frames by
-           passing a NULL picture */
-        picture_ptr = NULL;
+           passing the same picture again */
     } else {
         if (c->pix_fmt != PIX_FMT_YUV420P) {
             /* as we only generate a YUV420P picture, we must convert it
@@ -334,7 +334,6 @@ void write_video_frame(AVFormatContext *oc, AVStream *st)
         } else {
             fill_yuv_image(picture, frame_count, c->width, c->height);
         }
-        picture_ptr = picture;
     }
 
     
@@ -346,19 +345,19 @@ void write_video_frame(AVFormatContext *oc, AVStream *st)
         
         pkt.flags |= PKT_FLAG_KEY;
         pkt.stream_index= st->index;
-        pkt.data= (uint8_t *)picture_ptr;
+        pkt.data= (uint8_t *)picture;
         pkt.size= sizeof(AVPicture);
         
         ret = av_write_frame(oc, &pkt);
     } else {
         /* encode the image */
-        out_size = avcodec_encode_video(c, video_outbuf, video_outbuf_size, picture_ptr);
+        out_size = avcodec_encode_video(c, video_outbuf, video_outbuf_size, picture);
         /* if zero size, it means the image was buffered */
         if (out_size != 0) {
             AVPacket pkt;
             av_init_packet(&pkt);
             
-            pkt.pts= c->coded_frame->pts;
+            pkt.pts= av_rescale_q(c->coded_frame->pts, c->time_base, st->time_base);
             if(c->coded_frame->key_frame)
                 pkt.flags |= PKT_FLAG_KEY;
             pkt.stream_index= st->index;
