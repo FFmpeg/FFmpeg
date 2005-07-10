@@ -19,6 +19,7 @@
 
 #include "avcodec.h"
 #include <x264.h>
+#include <math.h>
 
 typedef struct X264Context {
     x264_param_t params;
