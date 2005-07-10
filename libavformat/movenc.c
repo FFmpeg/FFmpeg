@@ -267,6 +267,7 @@ static const CodecTag codec_movaudio_tags[] = {
     { CODEC_ID_MACE6, MKTAG('M', 'A', 'C', '6') },
     { CODEC_ID_AAC, MKTAG('m', 'p', '4', 'a') },
     { CODEC_ID_AMR_NB, MKTAG('s', 'a', 'm', 'r') },
+    { CODEC_ID_AMR_WB, MKTAG('s', 'a', 'w', 'b') },
     { CODEC_ID_PCM_S16BE, MKTAG('t', 'w', 'o', 's') },
     { CODEC_ID_PCM_S16LE, MKTAG('s', 'o', 'w', 't') },
     { CODEC_ID_MP3, MKTAG('.', 'm', 'p', '3') },
