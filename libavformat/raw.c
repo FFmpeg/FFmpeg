@@ -479,7 +479,7 @@ AVOutputFormat mpeg1video_oformat = {
     "mpeg1video",
     "MPEG video",
     "video/x-mpeg",
-    "mpg,mpeg",
+    "mpg,mpeg,m1v",
     0,
     0,
     CODEC_ID_MPEG1VIDEO,
