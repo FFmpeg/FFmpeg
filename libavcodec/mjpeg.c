@@ -1585,10 +1585,11 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
 {
     int len, id;
 
-    /* XXX: verify len field validity */
     len = get_bits(&s->gb, 16);
     if (len < 5)
 	return -1;
+    if(8*len + get_bits_count(&s->gb) > s->gb.size_in_bits)
+        return -1;
 
     id = (get_bits(&s->gb, 16) << 16) | get_bits(&s->gb, 16);
     id = be2me_32(id);
