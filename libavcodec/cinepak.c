@@ -274,6 +274,9 @@ static int cinepak_decode_strip (CinepakContext *s,
     while ((data + 4) <= eod) {
         chunk_id   = BE_16 (&data[0]);
         chunk_size = BE_16 (&data[2]) - 4;
+        if(chunk_size < 0)
+            return -1;
+
         data      += 4;
         chunk_size = ((data + chunk_size) > eod) ? (eod - data) : chunk_size;
 
