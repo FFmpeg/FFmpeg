@@ -1020,7 +1020,7 @@ int main( void ) { return (int) imlib_load_font("foo"); }
 EOF
 
 imlib2=no
-if $cc -o $TMPE $TMPC -lImlib2 -lm > /dev/null 2>&1  ; then
+if $cc $CFLAGS $LDFLAGS -o $TMPE $TMPC -lImlib2 -lm > /dev/null 2>&1  ; then
 imlib2=yes
 fi
 

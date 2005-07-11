@@ -30,13 +30,13 @@ install:
 	install -m 755 $(HOOKS) "$(libdir)/vhook"
 
 imlib2.so: imlib2.o
-	$(CC) -g -o $@ $(SHFLAGS) $< -lImlib2
+	$(CC) $(LDFLAGS) -g -o $@ $(SHFLAGS) $< -lImlib2
 
 drawtext.so: drawtext.o
-	$(CC) -g -o $@ $(SHFLAGS) $< `freetype-config --libs`
+	$(CC) $(LDFLAGS) -g -o $@ $(SHFLAGS) $< `freetype-config --libs`
 
 %.so: %.o
-	$(CC) -g -o $@ $(SHFLAGS) $<
+	$(CC) $(LDFLAGS) -g -o $@ $(SHFLAGS) $<
 
 clean:
 	rm -f *.o *.d .depend *.so *~

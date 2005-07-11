@@ -101,7 +101,7 @@ ifeq ($(CONFIG_WIN32),yes)
 	$(CC) $(SHFLAGS) -Wl,--output-def,$(@:.dll=.def) -o $@ $(OBJS) $(PPOBJS) $(AVCLIBS) $(EXTRALIBS)
 	-lib /machine:i386 /def:$(@:.dll=.def)
 else
-	$(CC) $(SHFLAGS) -o $@ $(OBJS) $(PPOBJS) $(AVCLIBS) $(EXTRALIBS)
+	$(CC) $(SHFLAGS) $(LDFLAGS) -o $@ $(OBJS) $(PPOBJS) $(AVCLIBS) $(EXTRALIBS)
 endif
 
 depend: $(SRCS)
