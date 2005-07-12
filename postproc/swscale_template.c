@@ -2547,7 +2547,13 @@ FUNNY_UV_CODE
 		"cmp %2, %%"REG_a"		\n\t"
 		" jb 1b				\n\t"
 
+/* GCC-3.3 makes MPlayer crash on IA-32 machines when using "g" operand here,
+   which is needed to support GCC-4.0 */
+#if defined(ARCH_X86_64) && ((__GNUC__ > 3) || ( __GNUC__ == 3 && __GNUC_MINOR__ >= 4))
+		:: "m" (src1), "m" (dst), "g" ((long)dstWidth), "m" (xInc_shr16), "m" (xInc_mask),
+#else
 		:: "m" (src1), "m" (dst), "m" ((long)dstWidth), "m" (xInc_shr16), "m" (xInc_mask),
+#endif
 		"r" (src2)
 		: "%"REG_a, "%"REG_b, "%ecx", "%"REG_D, "%esi"
 		);
