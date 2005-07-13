@@ -290,7 +290,7 @@ static int vmd_read_packet(AVFormatContext *s,
             pkt->data, pkt->size, vmd->audio_block_align);
 
     }
-printf (" dispatching %s frame with %d bytes and pts %lld (%0.1f sec)\n",
+av_log(NULL, AV_LOG_INFO, " dispatching %s frame with %d bytes and pts %lld (%0.1f sec)\n",
   (frame->frame_record[0] == 0x02) ? "video" : "audio",
   frame->frame_size + BYTES_PER_FRAME_RECORD,
   pkt->pts, (float)(pkt->pts / 90000.0));

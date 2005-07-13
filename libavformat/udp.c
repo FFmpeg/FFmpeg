@@ -133,7 +133,7 @@ struct addrinfo* udp_ipv6_resolve_host(const char *hostname, int port, int type,
         hints.ai_family   = family;
         hints.ai_flags = flags; 
         if ((error = getaddrinfo(node, service, &hints, &res))) {
-            fprintf(stderr, "udp_ipv6_resolve_host: %s\n", gai_strerror(error));
+            av_log(NULL, AV_LOG_ERROR, "udp_ipv6_resolve_host: %s\n", gai_strerror(error));
         }
     }
     return res;
