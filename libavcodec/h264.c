@@ -4349,6 +4349,11 @@ static int decode_slice_header(H264Context *h){
             h->slice_beta_offset = get_se_golomb(&s->gb) << 1;
         }
     }
+    if(   s->avctx->skip_loop_filter >= AVDISCARD_ALL
+       ||(s->avctx->skip_loop_filter >= AVDISCARD_NONKEY && h->slice_type != I_TYPE)
+       ||(s->avctx->skip_loop_filter >= AVDISCARD_BIDIR  && h->slice_type == B_TYPE)
+       ||(s->avctx->skip_loop_filter >= AVDISCARD_NONREF && h->nal_ref_idc == 0))
+        h->deblocking_filter= 0;
 
 #if 0 //FMO
     if( h->pps.num_slice_groups > 1  && h->pps.mb_slice_group_map_type >= 3 && h->pps.mb_slice_group_map_type <= 5)
@@ -7245,7 +7250,8 @@ static int decode_nal_units(H264Context *h, uint8_t *buf, int buf_size){
 
         buf_index += consumed;
 
-        if( s->hurry_up == 1 && h->nal_ref_idc  == 0 )
+        if(  (s->hurry_up == 1 && h->nal_ref_idc  == 0)
+           ||(avctx->skip_frame >= AVDISCARD_NONREF && h->nal_ref_idc  == 0))
             continue;
         
         switch(h->nal_unit_type){
@@ -7261,7 +7267,7 @@ static int decode_nal_units(H264Context *h, uint8_t *buf, int buf_size){
                 av_log(h->s.avctx, AV_LOG_ERROR, "decode_slice_header error\n");
                 break;
             }
-            if(h->redundant_pic_count==0 && s->hurry_up < 5 )
+            if(h->redundant_pic_count==0 && s->hurry_up < 5 && avctx->skip_frame < AVDISCARD_ALL)
                 decode_slice(h);
             break;
         case NAL_DPA:
@@ -7282,7 +7288,8 @@ static int decode_nal_units(H264Context *h, uint8_t *buf, int buf_size){
             init_get_bits(&h->inter_gb, ptr, bit_length);
             h->inter_gb_ptr= &h->inter_gb;
 
-            if(h->redundant_pic_count==0 && h->intra_gb_ptr && s->data_partitioning && s->hurry_up < 5 )
+            if(h->redundant_pic_count==0 && h->intra_gb_ptr && s->data_partitioning 
+               && s->hurry_up < 5 && avctx->skip_frame < AVDISCARD_ALL)
                 decode_slice(h);
             break;
         case NAL_SEI:

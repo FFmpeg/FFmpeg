@@ -17,7 +17,8 @@ extern "C" {
 
 #define FFMPEG_VERSION_INT     0x000409
 #define FFMPEG_VERSION         "CVS"
-#define LIBAVCODEC_BUILD       4757
+#define LIBAVCODEC_BUILD       4758
+
 
 #define LIBAVCODEC_VERSION_INT FFMPEG_VERSION_INT
 #define LIBAVCODEC_VERSION     FFMPEG_VERSION
@@ -282,6 +283,16 @@ enum AVRounding {
     AV_ROUND_DOWN     = 2, ///< round toward -infinity
     AV_ROUND_UP       = 3, ///< round toward +infinity
     AV_ROUND_NEAR_INF = 5, ///< round to nearest and halfway cases away from zero
+};
+
+enum AVDiscard{
+//we leave some space between them for extensions (drop some keyframes for intra only or drop just some bidir frames)
+    AVDISCARD_NONE   =-16, ///< discard nothing
+    AVDISCARD_DEFAULT=  0, ///< discard useless packets like 0 size packets in avi
+    AVDISCARD_NONREF =  8, ///< discard all non reference
+    AVDISCARD_BIDIR  = 16, ///< discard all bidirectional frames
+    AVDISCARD_NONKEY = 32, ///< discard all frames except keyframes
+    AVDISCARD_ALL    = 48, ///< discard all
 };
 
 typedef struct RcOverride{
@@ -858,6 +869,7 @@ typedef struct AVCodecContext {
 
     /**
      * hurry up amount.
+     * deprecated in favor of skip_idct and skip_frame
      * - encoding: unused
      * - decoding: set by user. 1-> skip b frames, 2-> skip idct/dequant too, 5-> skip everything except header
      */
@@ -1807,6 +1819,27 @@ typedef struct AVCodecContext {
      * - decoding: unused
      */
     int me_penalty_compensation;
+
+    /**
+     * 
+     * - encoding: unused
+     * - decoding: set by user.
+     */
+    enum AVDiscard skip_loop_filter;
+
+    /**
+     * 
+     * - encoding: unused
+     * - decoding: set by user.
+     */
+    enum AVDiscard skip_idct;
+
+    /**
+     * 
+     * - encoding: unused
+     * - decoding: set by user.
+     */
+    enum AVDiscard skip_frame;
 } AVCodecContext;
 
 

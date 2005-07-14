@@ -194,6 +194,9 @@ static int workaround_bugs = 1;
 static int fast = 0;
 static int lowres = 0;
 static int idct = FF_IDCT_AUTO;
+static enum AVDiscard skip_frame= AVDISCARD_DEFAULT;
+static enum AVDiscard skip_idct= AVDISCARD_DEFAULT;
+static enum AVDiscard skip_loop_filter= AVDISCARD_DEFAULT;
 
 /* current context */
 static int is_full_screen;
@@ -1190,6 +1193,9 @@ static int stream_component_open(VideoState *is, int stream_index)
     if(lowres) enc->flags |= CODEC_FLAG_EMU_EDGE;
     enc->idct_algo= idct;
     if(fast) enc->flags2 |= CODEC_FLAG2_FAST;
+    enc->skip_frame= skip_frame;
+    enc->skip_idct= skip_idct;
+    enc->skip_loop_filter= skip_loop_filter;
     if (!codec ||
         avcodec_open(enc, codec) < 0)
         return -1;
@@ -1863,6 +1869,9 @@ const OptionDef options[] = {
     { "vismv", HAS_ARG | OPT_EXPERT, {(void*)opt_vismv}, "visualize motion vectors", "" },
     { "fast", OPT_BOOL | OPT_EXPERT, {(void*)&fast}, "non spec compliant optimizations", "" },
     { "lowres", OPT_INT | HAS_ARG | OPT_EXPERT, {(void*)&lowres}, "", "" },
+    { "skiploop", OPT_INT | HAS_ARG | OPT_EXPERT, {(void*)&skip_loop_filter}, "", "" },
+    { "skipframe", OPT_INT | HAS_ARG | OPT_EXPERT, {(void*)&skip_frame}, "", "" },
+    { "skipidct", OPT_INT | HAS_ARG | OPT_EXPERT, {(void*)&skip_idct}, "", "" },
     { "idct", OPT_INT | HAS_ARG | OPT_EXPERT, {(void*)&idct}, "set idct algo",  "algo" },
 #ifdef CONFIG_NETWORK
     { "rtp_tcp", OPT_EXPERT, {(void*)&opt_rtp_tcp}, "force RTP/TCP protocol usage", "" },

@@ -970,6 +970,10 @@ retry:
 
     /* skip everything if we are in a hurry>=5 */
     if(avctx->hurry_up>=5) return get_consumed_bytes(s, buf_size);
+    if(  (avctx->skip_frame >= AVDISCARD_NONREF && s->pict_type==B_TYPE)
+       ||(avctx->skip_frame >= AVDISCARD_NONKEY && s->pict_type!=I_TYPE)
+       || avctx->skip_frame >= AVDISCARD_ALL)
+        return get_consumed_bytes(s, buf_size);
 
     if(MPV_frame_start(s, avctx) < 0)
         return -1;

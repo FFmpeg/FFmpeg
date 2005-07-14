@@ -896,6 +896,10 @@ static int svq3_decode_frame (AVCodecContext *avctx,
   if (avctx->hurry_up && s->pict_type == B_TYPE) return 0;
   /* skip everything if we are in a hurry >= 5 */
   if (avctx->hurry_up >= 5) return 0;
+  if(  (avctx->skip_frame >= AVDISCARD_NONREF && s->pict_type==B_TYPE)
+     ||(avctx->skip_frame >= AVDISCARD_NONKEY && s->pict_type!=I_TYPE)
+     || avctx->skip_frame >= AVDISCARD_ALL)
+      return 0;
 
   if (s->next_p_frame_damaged) {
     if (s->pict_type == B_TYPE)

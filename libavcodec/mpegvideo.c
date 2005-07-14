@@ -3777,7 +3777,13 @@ static always_inline void MPV_decode_mb_internal(MpegEncContext *s, DCTELEM bloc
             }
 
             /* skip dequant / idct if we are really late ;) */
-            if(s->hurry_up>1) return;
+            if(s->hurry_up>1) goto skip_idct;
+            if(s->avctx->skip_idct){
+                if(  (s->avctx->skip_idct >= AVDISCARD_NONREF && s->pict_type == B_TYPE)
+                   ||(s->avctx->skip_idct >= AVDISCARD_NONKEY && s->pict_type != I_TYPE)
+                   || s->avctx->skip_idct >= AVDISCARD_ALL)
+                    goto skip_idct;
+            }
 
             /* add dct residue */
             if(s->encoding || !(   s->h263_msmpeg4 || s->codec_id==CODEC_ID_MPEG1VIDEO || s->codec_id==CODEC_ID_MPEG2VIDEO
@@ -3863,6 +3869,7 @@ static always_inline void MPV_decode_mb_internal(MpegEncContext *s, DCTELEM bloc
                 }//gray
             }
         }
+skip_idct:
         if(!readable){
             s->dsp.put_pixels_tab[0][0](s->dest[0], dest_y ,   linesize,16);
             s->dsp.put_pixels_tab[s->chroma_x_shift][0](s->dest[1], dest_cb, uvlinesize,16 >> s->chroma_y_shift);
