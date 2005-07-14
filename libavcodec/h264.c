@@ -7267,7 +7267,11 @@ static int decode_nal_units(H264Context *h, uint8_t *buf, int buf_size){
                 av_log(h->s.avctx, AV_LOG_ERROR, "decode_slice_header error\n");
                 break;
             }
-            if(h->redundant_pic_count==0 && s->hurry_up < 5 && avctx->skip_frame < AVDISCARD_ALL)
+            if(h->redundant_pic_count==0 && s->hurry_up < 5 
+               && (avctx->skip_frame < AVDISCARD_NONREF || h->nal_ref_idc)
+               && (avctx->skip_frame < AVDISCARD_BIDIR  || h->slice_type!=B_TYPE)
+               && (avctx->skip_frame < AVDISCARD_NONKEY || h->slice_type==I_TYPE)
+               && avctx->skip_frame < AVDISCARD_ALL)
                 decode_slice(h);
             break;
         case NAL_DPA:
@@ -7289,7 +7293,11 @@ static int decode_nal_units(H264Context *h, uint8_t *buf, int buf_size){
             h->inter_gb_ptr= &h->inter_gb;
 
             if(h->redundant_pic_count==0 && h->intra_gb_ptr && s->data_partitioning 
-               && s->hurry_up < 5 && avctx->skip_frame < AVDISCARD_ALL)
+               && s->hurry_up < 5
+               && (avctx->skip_frame < AVDISCARD_NONREF || h->nal_ref_idc)
+               && (avctx->skip_frame < AVDISCARD_BIDIR  || h->slice_type!=B_TYPE)
+               && (avctx->skip_frame < AVDISCARD_NONKEY || h->slice_type==I_TYPE)
+               && avctx->skip_frame < AVDISCARD_ALL)
                 decode_slice(h);
             break;
         case NAL_SEI:
