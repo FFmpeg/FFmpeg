@@ -16,7 +16,7 @@ extern "C" {
 #include <sys/types.h> /* size_t */
 
 #define FFMPEG_VERSION_INT     0x000409
-#define FFMPEG_VERSION         "0.4.9-pre1"
+#define FFMPEG_VERSION         "CVS"
 #define LIBAVCODEC_BUILD       4757
 
 #define LIBAVCODEC_VERSION_INT FFMPEG_VERSION_INT
