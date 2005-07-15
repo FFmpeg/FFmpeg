@@ -117,6 +117,16 @@ static const int swf_index_tables[4][16] = {
     /*5*/ { -1, -1, -1, -1, -1, -1, -1, -1, 1, 2, 4, 6, 8, 10, 13, 16 }
 };
 
+static const int yamaha_indexscale[] = {
+    230, 230, 230, 230, 307, 409, 512, 614,
+    230, 230, 230, 230, 307, 409, 512, 614
+};
+
+static const int yamaha_difflookup[] = {
+    1, 3, 5, 7, 9, 11, 13, 15,
+    -1, -3, -5, -7, -9, -11, -13, -15
+};
+
 /* end of tables */
 
 typedef struct ADPCMChannelStatus {
@@ -166,6 +176,10 @@ static int adpcm_encode_init(AVCodecContext *avctx)
     case CODEC_ID_ADPCM_MS:
         avctx->frame_size = (BLKSIZE - 7 * avctx->channels) * 2 / avctx->channels + 2; /* each 16 bits sample gives one nibble */
                                                              /* and we have 7 bytes per channel overhead */
+        avctx->block_align = BLKSIZE;
+        break;
+    case CODEC_ID_ADPCM_YAMAHA:
+        avctx->frame_size = BLKSIZE * avctx->channels;
         avctx->block_align = BLKSIZE;
         break;
     default:
@@ -258,6 +272,31 @@ static inline unsigned char adpcm_ms_compress_sample(ADPCMChannelStatus *c, shor
     if (c->idelta < 16) c->idelta = 16;
 
     return nibble;
+}
+
+static inline unsigned char adpcm_yamaha_compress_sample(ADPCMChannelStatus *c, short sample)
+{
+    int i1 = 0, j1;
+
+    if(!c->step) {
+        c->predictor = 0;
+        c->step = 127;
+    }
+    j1 = sample - c->predictor;
+
+    j1 = (j1 * 8) / c->step;
+    i1 = abs(j1) / 2;
+    if (i1 > 7)
+        i1 = 7;
+    if (j1 < 0)
+        i1 += 8;
+
+    c->predictor = c->predictor + ((c->step * yamaha_difflookup[i1]) / 8);
+    CLAMP_TO_SHORT(c->predictor);
+    c->step = (c->step * yamaha_indexscale[i1]) >> 8;
+    c->step = clip(c->step, 127, 24567);
+
+    return i1;
 }
 
 static int adpcm_encode_frame(AVCodecContext *avctx,
@@ -362,6 +401,18 @@ static int adpcm_encode_frame(AVCodecContext *avctx,
             *dst++ = nibble;
         }
         break;
+    case CODEC_ID_ADPCM_YAMAHA:
+        n = avctx->frame_size / 2;
+        for (; n>0; n--) {
+            for(i = 0; i < avctx->channels; i++) {
+                int nibble;
+                nibble  = adpcm_yamaha_compress_sample(&c->status[i], samples[i]) << 4;
+                nibble |= adpcm_yamaha_compress_sample(&c->status[i], samples[i+avctx->channels]);
+                *dst++ = nibble;
+            }
+            samples += 2 * avctx->channels;
+        }
+        break;
     default:
         return -1;
     }
@@ -461,6 +512,20 @@ static inline short adpcm_ct_expand_nibble(ADPCMChannelStatus *c, char nibble)
     CLAMP_TO_SHORT(predictor);
     c->predictor = predictor;
     return (short)predictor;
+}
+
+static inline short adpcm_yamaha_expand_nibble(ADPCMChannelStatus *c, unsigned char nibble)
+{
+    if(!c->step) {
+        c->predictor = 0;
+        c->step = 127;
+    }
+
+    c->predictor += (c->step * yamaha_difflookup[nibble]) / 8;
+    CLAMP_TO_SHORT(c->predictor);
+    c->step = (c->step * yamaha_indexscale[nibble]) >> 8;
+    c->step = clip(c->step, 127, 24567);
+    return c->predictor;
 }
 
 static void xa_decode(short *out, const unsigned char *in, 
@@ -978,6 +1043,22 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
 	
 	break;
     }
+    case CODEC_ID_ADPCM_YAMAHA:
+        while (src < buf + buf_size) {
+            if (st) {
+                *samples++ = adpcm_yamaha_expand_nibble(&c->status[0],
+                        (src[0] >> 4) & 0x0F);
+                *samples++ = adpcm_yamaha_expand_nibble(&c->status[1],
+                        src[0] & 0x0F);
+            } else {
+                *samples++ = adpcm_yamaha_expand_nibble(&c->status[0],
+                        (src[0] >> 4) & 0x0F);
+                *samples++ = adpcm_yamaha_expand_nibble(&c->status[0],
+                        src[0] & 0x0F);
+            }
+            src++;
+        }
+        break;
     default:
         return -1;
     }
@@ -1035,5 +1116,6 @@ ADPCM_CODEC(CODEC_ID_ADPCM_ADX, adpcm_adx);
 ADPCM_CODEC(CODEC_ID_ADPCM_EA, adpcm_ea);
 ADPCM_CODEC(CODEC_ID_ADPCM_CT, adpcm_ct);
 ADPCM_CODEC(CODEC_ID_ADPCM_SWF, adpcm_swf);
+ADPCM_CODEC(CODEC_ID_ADPCM_YAMAHA, adpcm_yamaha);
 
 #undef ADPCM_CODEC
