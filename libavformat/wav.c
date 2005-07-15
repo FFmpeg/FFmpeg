@@ -29,6 +29,7 @@ const CodecTag codec_wav_tags[] = {
     { CODEC_ID_PCM_MULAW, 0x07 },
     { CODEC_ID_ADPCM_MS, 0x02 },
     { CODEC_ID_ADPCM_IMA_WAV, 0x11 },
+    { CODEC_ID_ADPCM_YAMAHA, 0x20 },
     { CODEC_ID_ADPCM_G726, 0x45 },
     { CODEC_ID_ADPCM_IMA_DK4, 0x61 },  /* rogue format number */
     { CODEC_ID_ADPCM_IMA_DK3, 0x62 },  /* rogue format number */
@@ -65,7 +66,7 @@ int put_wav_header(ByteIOContext *pb, AVCodecContext *enc)
         bps = 8;
     } else if (enc->codec_id == CODEC_ID_MP2 || enc->codec_id == CODEC_ID_MP3) {
         bps = 0;
-    } else if (enc->codec_id == CODEC_ID_ADPCM_IMA_WAV || enc->codec_id == CODEC_ID_ADPCM_MS || enc->codec_id == CODEC_ID_ADPCM_G726) { //
+    } else if (enc->codec_id == CODEC_ID_ADPCM_IMA_WAV || enc->codec_id == CODEC_ID_ADPCM_MS || enc->codec_id == CODEC_ID_ADPCM_G726 || enc->codec_id == CODEC_ID_ADPCM_YAMAHA) { //
         bps = 4;
     } else {
         bps = 16;
