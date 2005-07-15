@@ -51,6 +51,7 @@ void av_register_all(void)
 #endif //CONFIG_ENCODERS
     avidec_init();
     ff_wav_init();
+    ff_mmf_init();
     swf_init();
     au_init();
 #ifdef CONFIG_ENCODERS

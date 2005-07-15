@@ -462,6 +462,9 @@ int amr_init(void);
 /* wav.c */
 int ff_wav_init(void);
 
+/* mmf.c */
+int ff_mmf_init(void);
+
 /* raw.c */
 int pcm_read_seek(AVFormatContext *s, 
                   int stream_index, int64_t timestamp, int flags);
