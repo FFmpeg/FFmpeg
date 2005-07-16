@@ -1156,6 +1156,10 @@ First, (@pxref{Coding Rules}) above if you didn't yet.
 When you submit your patch, try to send a unified diff (diff '-up'
 option). I cannot read other diffs :-)
 
+Also please do not submit patches which contain several unrelated changes,
+split them into individual self-contained patches, this makes reviewing 
+them much easier.
+
 Run the regression tests before submitting a patch so that you can
 verify that there are no big problems.
 
