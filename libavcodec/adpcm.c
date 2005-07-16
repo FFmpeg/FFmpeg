@@ -406,8 +406,8 @@ static int adpcm_encode_frame(AVCodecContext *avctx,
         for (; n>0; n--) {
             for(i = 0; i < avctx->channels; i++) {
                 int nibble;
-                nibble  = adpcm_yamaha_compress_sample(&c->status[i], samples[i]) << 4;
-                nibble |= adpcm_yamaha_compress_sample(&c->status[i], samples[i+avctx->channels]);
+                nibble  = adpcm_yamaha_compress_sample(&c->status[i], samples[i]);
+                nibble |= adpcm_yamaha_compress_sample(&c->status[i], samples[i+avctx->channels]) << 4;
                 *dst++ = nibble;
             }
             samples += 2 * avctx->channels;
@@ -1047,14 +1047,14 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
         while (src < buf + buf_size) {
             if (st) {
                 *samples++ = adpcm_yamaha_expand_nibble(&c->status[0],
-                        (src[0] >> 4) & 0x0F);
-                *samples++ = adpcm_yamaha_expand_nibble(&c->status[1],
                         src[0] & 0x0F);
+                *samples++ = adpcm_yamaha_expand_nibble(&c->status[1],
+                        (src[0] >> 4) & 0x0F);
             } else {
                 *samples++ = adpcm_yamaha_expand_nibble(&c->status[0],
-                        (src[0] >> 4) & 0x0F);
-                *samples++ = adpcm_yamaha_expand_nibble(&c->status[0],
                         src[0] & 0x0F);
+                *samples++ = adpcm_yamaha_expand_nibble(&c->status[0],
+                        (src[0] >> 4) & 0x0F);
             }
             src++;
         }
