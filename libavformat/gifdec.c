@@ -555,14 +555,14 @@ static int gif_read_header(AVFormatContext * s1,
     if (!st)
 	return -1;
 
-    st->codec.codec_type = CODEC_TYPE_VIDEO;
-    st->codec.codec_id = CODEC_ID_RAWVIDEO;
-    st->codec.time_base.den = 5;
-    st->codec.time_base.num = 1;
+    st->codec->codec_type = CODEC_TYPE_VIDEO;
+    st->codec->codec_id = CODEC_ID_RAWVIDEO;
+    st->codec->time_base.den = 5;
+    st->codec->time_base.num = 1;
     /* XXX: check if screen size is always valid */
-    st->codec.width = s->screen_width;
-    st->codec.height = s->screen_height;
-    st->codec.pix_fmt = PIX_FMT_RGB24;
+    st->codec->width = s->screen_width;
+    st->codec->height = s->screen_height;
+    st->codec->pix_fmt = PIX_FMT_RGB24;
     return 0;
 }
 

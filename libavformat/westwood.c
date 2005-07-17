@@ -136,15 +136,15 @@ static int wsaud_read_header(AVFormatContext *s,
     if (!st)
         return AVERROR_NOMEM;
     av_set_pts_info(st, 33, 1, wsaud->audio_samplerate);
-    st->codec.codec_type = CODEC_TYPE_AUDIO;
-    st->codec.codec_id = wsaud->audio_type;
-    st->codec.codec_tag = 0;  /* no tag */
-    st->codec.channels = wsaud->audio_channels;
-    st->codec.sample_rate = wsaud->audio_samplerate;
-    st->codec.bits_per_sample = wsaud->audio_bits;
-    st->codec.bit_rate = st->codec.channels * st->codec.sample_rate *
-        st->codec.bits_per_sample / 4;
-    st->codec.block_align = st->codec.channels * st->codec.bits_per_sample;
+    st->codec->codec_type = CODEC_TYPE_AUDIO;
+    st->codec->codec_id = wsaud->audio_type;
+    st->codec->codec_tag = 0;  /* no tag */
+    st->codec->channels = wsaud->audio_channels;
+    st->codec->sample_rate = wsaud->audio_samplerate;
+    st->codec->bits_per_sample = wsaud->audio_bits;
+    st->codec->bit_rate = st->codec->channels * st->codec->sample_rate *
+        st->codec->bits_per_sample / 4;
+    st->codec->block_align = st->codec->channels * st->codec->bits_per_sample;
 
     wsaud->audio_stream_index = st->index;
     wsaud->audio_frame_counter = 0;
@@ -222,24 +222,24 @@ static int wsvqa_read_header(AVFormatContext *s,
         return AVERROR_NOMEM;
     av_set_pts_info(st, 33, 1, 90000);
     wsvqa->video_stream_index = st->index;
-    st->codec.codec_type = CODEC_TYPE_VIDEO;
-    st->codec.codec_id = CODEC_ID_WS_VQA;
-    st->codec.codec_tag = 0;  /* no fourcc */
+    st->codec->codec_type = CODEC_TYPE_VIDEO;
+    st->codec->codec_id = CODEC_ID_WS_VQA;
+    st->codec->codec_tag = 0;  /* no fourcc */
 
     /* skip to the start of the VQA header */
     url_fseek(pb, 20, SEEK_SET);
 
     /* the VQA header needs to go to the decoder */
-    st->codec.extradata_size = VQA_HEADER_SIZE;
-    st->codec.extradata = av_malloc(VQA_HEADER_SIZE);
-    header = (unsigned char *)st->codec.extradata;
-    if (get_buffer(pb, st->codec.extradata, VQA_HEADER_SIZE) !=
+    st->codec->extradata_size = VQA_HEADER_SIZE;
+    st->codec->extradata = av_malloc(VQA_HEADER_SIZE);
+    header = (unsigned char *)st->codec->extradata;
+    if (get_buffer(pb, st->codec->extradata, VQA_HEADER_SIZE) !=
         VQA_HEADER_SIZE) {
-        av_free(st->codec.extradata);
+        av_free(st->codec->extradata);
         return AVERROR_IO;
     }
-    st->codec.width = LE_16(&header[6]);
-    st->codec.height = LE_16(&header[8]);
+    st->codec->width = LE_16(&header[6]);
+    st->codec->height = LE_16(&header[8]);
 
     /* initialize the audio decoder stream is sample rate is non-zero */
     if (LE_16(&header[24])) {
@@ -247,19 +247,19 @@ static int wsvqa_read_header(AVFormatContext *s,
         if (!st)
             return AVERROR_NOMEM;
         av_set_pts_info(st, 33, 1, 90000);
-        st->codec.codec_type = CODEC_TYPE_AUDIO;
-        st->codec.codec_id = CODEC_ID_ADPCM_IMA_WS;
-        st->codec.codec_tag = 0;  /* no tag */
-        st->codec.sample_rate = LE_16(&header[24]);
-        st->codec.channels = header[26];
-        st->codec.bits_per_sample = 16;
-        st->codec.bit_rate = st->codec.channels * st->codec.sample_rate *
-            st->codec.bits_per_sample / 4;
-        st->codec.block_align = st->codec.channels * st->codec.bits_per_sample;
+        st->codec->codec_type = CODEC_TYPE_AUDIO;
+        st->codec->codec_id = CODEC_ID_ADPCM_IMA_WS;
+        st->codec->codec_tag = 0;  /* no tag */
+        st->codec->sample_rate = LE_16(&header[24]);
+        st->codec->channels = header[26];
+        st->codec->bits_per_sample = 16;
+        st->codec->bit_rate = st->codec->channels * st->codec->sample_rate *
+            st->codec->bits_per_sample / 4;
+        st->codec->block_align = st->codec->channels * st->codec->bits_per_sample;
 
         wsvqa->audio_stream_index = st->index;
-        wsvqa->audio_samplerate = st->codec.sample_rate;
-        wsvqa->audio_channels = st->codec.channels;
+        wsvqa->audio_samplerate = st->codec->sample_rate;
+        wsvqa->audio_channels = st->codec->channels;
         wsvqa->audio_frame_counter = 0;
     }
 
@@ -267,7 +267,7 @@ static int wsvqa_read_header(AVFormatContext *s,
      * FINF has been skipped and the file will be ready to be demuxed */
     do {
         if (get_buffer(pb, scratch, VQA_PREAMBLE_SIZE) != VQA_PREAMBLE_SIZE) {
-            av_free(st->codec.extradata);
+            av_free(st->codec->extradata);
             return AVERROR_IO;
         }
         chunk_tag = BE_32(&scratch[0]);

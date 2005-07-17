@@ -182,11 +182,11 @@ static int str_read_header(AVFormatContext *s,
 
                 str->channels[channel].video_stream_index = st->index;
 
-                st->codec.codec_type = CODEC_TYPE_VIDEO;
-                st->codec.codec_id = CODEC_ID_MDEC; 
-                st->codec.codec_tag = 0;  /* no fourcc */
-                st->codec.width = str->channels[channel].width;
-                st->codec.height = str->channels[channel].height;
+                st->codec->codec_type = CODEC_TYPE_VIDEO;
+                st->codec->codec_id = CODEC_ID_MDEC; 
+                st->codec->codec_tag = 0;  /* no fourcc */
+                st->codec->width = str->channels[channel].width;
+                st->codec->height = str->channels[channel].height;
             }
             break;
 
@@ -212,13 +212,13 @@ static int str_read_header(AVFormatContext *s,
                 str->channels[channel].audio_stream_index = st->index;
 
                 fmt = sector[0x13];
-                st->codec.codec_type = CODEC_TYPE_AUDIO;
-                st->codec.codec_id = CODEC_ID_ADPCM_XA; 
-                st->codec.codec_tag = 0;  /* no fourcc */
-                st->codec.channels = (fmt&1)?2:1;
-                st->codec.sample_rate = (fmt&4)?18900:37800;
-            //    st->codec.bit_rate = 0; //FIXME;
-                st->codec.block_align = 128;
+                st->codec->codec_type = CODEC_TYPE_AUDIO;
+                st->codec->codec_id = CODEC_ID_ADPCM_XA; 
+                st->codec->codec_tag = 0;  /* no fourcc */
+                st->codec->channels = (fmt&1)?2:1;
+                st->codec->sample_rate = (fmt&4)?18900:37800;
+            //    st->codec->bit_rate = 0; //FIXME;
+                st->codec->block_align = 128;
             }
             break;
 

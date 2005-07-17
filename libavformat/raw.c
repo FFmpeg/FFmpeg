@@ -50,25 +50,25 @@ static int raw_read_header(AVFormatContext *s, AVFormatParameters *ap)
     if (ap) {
         id = s->iformat->value;
         if (id == CODEC_ID_RAWVIDEO) {
-            st->codec.codec_type = CODEC_TYPE_VIDEO;
+            st->codec->codec_type = CODEC_TYPE_VIDEO;
         } else {
-            st->codec.codec_type = CODEC_TYPE_AUDIO;
+            st->codec->codec_type = CODEC_TYPE_AUDIO;
         }
-        st->codec.codec_id = id;
+        st->codec->codec_id = id;
 
-        switch(st->codec.codec_type) {
+        switch(st->codec->codec_type) {
         case CODEC_TYPE_AUDIO:
-            st->codec.sample_rate = ap->sample_rate;
-            st->codec.channels = ap->channels;
-            av_set_pts_info(st, 64, 1, st->codec.sample_rate);
+            st->codec->sample_rate = ap->sample_rate;
+            st->codec->channels = ap->channels;
+            av_set_pts_info(st, 64, 1, st->codec->sample_rate);
             break;
         case CODEC_TYPE_VIDEO:
             av_set_pts_info(st, 64, ap->time_base.num, ap->time_base.den);
-            st->codec.width = ap->width;
-            st->codec.height = ap->height;
-            st->codec.pix_fmt = ap->pix_fmt;
-            if(st->codec.pix_fmt == PIX_FMT_NONE)
-                st->codec.pix_fmt= PIX_FMT_YUV420P;
+            st->codec->width = ap->width;
+            st->codec->height = ap->height;
+            st->codec->pix_fmt = ap->pix_fmt;
+            if(st->codec->pix_fmt == PIX_FMT_NONE)
+                st->codec->pix_fmt= PIX_FMT_YUV420P;
             break;
         default:
             return -1;
@@ -133,24 +133,24 @@ int pcm_read_seek(AVFormatContext *s,
     int64_t pos;
 
     st = s->streams[0];
-    switch(st->codec.codec_id) {
+    switch(st->codec->codec_id) {
     case CODEC_ID_PCM_S16LE:
     case CODEC_ID_PCM_S16BE:
     case CODEC_ID_PCM_U16LE:
     case CODEC_ID_PCM_U16BE:
-        block_align = 2 * st->codec.channels;
-        byte_rate = block_align * st->codec.sample_rate;
+        block_align = 2 * st->codec->channels;
+        byte_rate = block_align * st->codec->sample_rate;
         break;
     case CODEC_ID_PCM_S8:
     case CODEC_ID_PCM_U8:
     case CODEC_ID_PCM_MULAW:
     case CODEC_ID_PCM_ALAW:
-        block_align = st->codec.channels;
-        byte_rate = block_align * st->codec.sample_rate;
+        block_align = st->codec->channels;
+        byte_rate = block_align * st->codec->sample_rate;
         break;
     default:
-        block_align = st->codec.block_align;
-        byte_rate = st->codec.bit_rate / 8;
+        block_align = st->codec->block_align;
+        byte_rate = st->codec->bit_rate / 8;
         break;
     }
     
@@ -180,8 +180,8 @@ static int ac3_read_header(AVFormatContext *s,
     if (!st)
         return AVERROR_NOMEM;
 
-    st->codec.codec_type = CODEC_TYPE_AUDIO;
-    st->codec.codec_id = CODEC_ID_AC3;
+    st->codec->codec_type = CODEC_TYPE_AUDIO;
+    st->codec->codec_id = CODEC_ID_AC3;
     st->need_parsing = 1;
     /* the parameters will be extracted from the compressed bitstream */
     return 0;
@@ -195,8 +195,8 @@ static int shorten_read_header(AVFormatContext *s,
     st = av_new_stream(s, 0);
     if (!st)
         return AVERROR_NOMEM;
-    st->codec.codec_type = CODEC_TYPE_AUDIO;
-    st->codec.codec_id = CODEC_ID_SHORTEN;
+    st->codec->codec_type = CODEC_TYPE_AUDIO;
+    st->codec->codec_id = CODEC_ID_SHORTEN;
     st->need_parsing = 1;
     /* the parameters will be extracted from the compressed bitstream */
     return 0;
@@ -212,8 +212,8 @@ static int dts_read_header(AVFormatContext *s,
     if (!st)
         return AVERROR_NOMEM;
 
-    st->codec.codec_type = CODEC_TYPE_AUDIO;
-    st->codec.codec_id = CODEC_ID_DTS;
+    st->codec->codec_type = CODEC_TYPE_AUDIO;
+    st->codec->codec_id = CODEC_ID_DTS;
     st->need_parsing = 1;
     /* the parameters will be extracted from the compressed bitstream */
     return 0;
@@ -229,17 +229,17 @@ static int video_read_header(AVFormatContext *s,
     if (!st)
         return AVERROR_NOMEM;
 
-    st->codec.codec_type = CODEC_TYPE_VIDEO;
-    st->codec.codec_id = s->iformat->value;
+    st->codec->codec_type = CODEC_TYPE_VIDEO;
+    st->codec->codec_id = s->iformat->value;
     st->need_parsing = 1;
 
     /* for mjpeg, specify frame rate */
     /* for mpeg4 specify it too (most mpeg4 streams dont have the fixed_vop_rate set ...)*/
     if (ap && ap->time_base.num) {
         av_set_pts_info(st, 64, ap->time_base.num, ap->time_base.den);
-    } else if ( st->codec.codec_id == CODEC_ID_MJPEG || 
-                st->codec.codec_id == CODEC_ID_MPEG4 ||
-                st->codec.codec_id == CODEC_ID_H264) {
+    } else if ( st->codec->codec_id == CODEC_ID_MJPEG || 
+                st->codec->codec_id == CODEC_ID_MPEG4 ||
+                st->codec->codec_id == CODEC_ID_H264) {
         av_set_pts_info(st, 64, 1, 25);
     }
 
@@ -609,10 +609,10 @@ static int rawvideo_read_packet(AVFormatContext *s, AVPacket *pkt)
     int packet_size, ret, width, height;
     AVStream *st = s->streams[0];
 
-    width = st->codec.width;
-    height = st->codec.height;
+    width = st->codec->width;
+    height = st->codec->height;
 
-    packet_size = avpicture_get_size(st->codec.pix_fmt, width, height);
+    packet_size = avpicture_get_size(st->codec->pix_fmt, width, height);
     if (packet_size < 0)
         return -1;
 

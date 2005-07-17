@@ -199,13 +199,13 @@ static int wav_write_header(AVFormatContext *s)
 
     /* format header */
     fmt = start_tag(pb, "fmt ");
-    if (put_wav_header(pb, &s->streams[0]->codec) < 0) {
+    if (put_wav_header(pb, s->streams[0]->codec) < 0) {
         av_free(wav);
         return -1;
     }
     end_tag(pb, fmt);
 
-    av_set_pts_info(s->streams[0], 64, 1, s->streams[0]->codec.sample_rate);
+    av_set_pts_info(s->streams[0], 64, 1, s->streams[0]->codec->sample_rate);
 
     /* data header */
     wav->data = start_tag(pb, "data");
@@ -305,10 +305,10 @@ static int wav_read_header(AVFormatContext *s,
     if (!st)
         return AVERROR_NOMEM;
 
-    get_wav_header(pb, &st->codec, size);
+    get_wav_header(pb, st->codec, size);
     st->need_parsing = 1;
 
-    av_set_pts_info(st, 64, 1, st->codec.sample_rate);
+    av_set_pts_info(st, 64, 1, st->codec->sample_rate);
 
     size = find_tag(pb, MKTAG('d', 'a', 't', 'a'));
     if (size < 0)
@@ -329,10 +329,10 @@ static int wav_read_packet(AVFormatContext *s,
     st = s->streams[0];
 
     size = MAX_SIZE;
-    if (st->codec.block_align > 1) {
-        if (size < st->codec.block_align)
-            size = st->codec.block_align;
-        size = (size / st->codec.block_align) * st->codec.block_align;
+    if (st->codec->block_align > 1) {
+        if (size < st->codec->block_align)
+            size = st->codec->block_align;
+        size = (size / st->codec->block_align) * st->codec->block_align;
     }
     if (av_new_packet(pkt, size))
         return AVERROR_IO;
@@ -358,7 +358,7 @@ static int wav_read_seek(AVFormatContext *s,
     AVStream *st;
 
     st = s->streams[0];
-    switch(st->codec.codec_id) {
+    switch(st->codec->codec_id) {
     case CODEC_ID_MP2:
     case CODEC_ID_MP3:
     case CODEC_ID_AC3:

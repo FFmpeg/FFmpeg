@@ -2273,46 +2273,46 @@ matroska_read_header (AVFormatContext    *s,
                 return AVERROR_NOMEM;
             av_set_pts_info(st, 24, 1, 1000); /* 24 bit pts in ms */
 
-            st->codec.codec_id = codec_id;
+            st->codec->codec_id = codec_id;
 
             if(extradata){
-                st->codec.extradata = extradata;
-                st->codec.extradata_size = extradata_size;
+                st->codec->extradata = extradata;
+                st->codec->extradata_size = extradata_size;
             } else if(track->codec_priv && track->codec_priv_size > 0){
-                st->codec.extradata = av_malloc(track->codec_priv_size);
-                if(st->codec.extradata == NULL)
+                st->codec->extradata = av_malloc(track->codec_priv_size);
+                if(st->codec->extradata == NULL)
                     return AVERROR_NOMEM;
-                st->codec.extradata_size = track->codec_priv_size;
-                memcpy(st->codec.extradata, track->codec_priv,
+                st->codec->extradata_size = track->codec_priv_size;
+                memcpy(st->codec->extradata, track->codec_priv,
                        track->codec_priv_size);
             }
 
             if (track->type == MATROSKA_TRACK_TYPE_VIDEO) {
                 MatroskaVideoTrack *videotrack = (MatroskaVideoTrack *)track;
 
-                st->codec.codec_type = CODEC_TYPE_VIDEO;
-                st->codec.codec_tag = videotrack->fourcc;
-                st->codec.width = videotrack->pixel_width;
-                st->codec.height = videotrack->pixel_height;
+                st->codec->codec_type = CODEC_TYPE_VIDEO;
+                st->codec->codec_tag = videotrack->fourcc;
+                st->codec->width = videotrack->pixel_width;
+                st->codec->height = videotrack->pixel_height;
                 if (videotrack->display_width == 0)
-                    st->codec.sample_aspect_ratio.num =
+                    st->codec->sample_aspect_ratio.num =
                         videotrack->pixel_width;
                 else
-                    st->codec.sample_aspect_ratio.num =
+                    st->codec->sample_aspect_ratio.num =
                         videotrack->display_width;
                 if (videotrack->display_height == 0)
-                    st->codec.sample_aspect_ratio.num =
+                    st->codec->sample_aspect_ratio.num =
                         videotrack->pixel_height;
                 else
-                    st->codec.sample_aspect_ratio.num =
+                    st->codec->sample_aspect_ratio.num =
                         videotrack->display_height;
 
             } else if (track->type == MATROSKA_TRACK_TYPE_AUDIO) {
                 MatroskaAudioTrack *audiotrack = (MatroskaAudioTrack *)track;
 
-                st->codec.codec_type = CODEC_TYPE_AUDIO;
-                st->codec.sample_rate = audiotrack->samplerate;
-                st->codec.channels = audiotrack->channels;
+                st->codec->codec_type = CODEC_TYPE_AUDIO;
+                st->codec->sample_rate = audiotrack->samplerate;
+                st->codec->channels = audiotrack->channels;
             }
 
             /* What do we do with private data? E.g. for Vorbis. */
@@ -2700,7 +2700,7 @@ matroska_read_close (AVFormatContext *s)
     }
 
     for (n = 0; n < s->nb_streams; n++) {
-        av_free(s->streams[n]->codec.extradata);
+        av_free(s->streams[n]->codec->extradata);
     }
 
     memset(matroska, 0, sizeof(MatroskaDemuxContext));

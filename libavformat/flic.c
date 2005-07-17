@@ -86,19 +86,19 @@ static int flic_read_header(AVFormatContext *s,
     if (!st)
         return AVERROR_NOMEM;
     flic->video_stream_index = st->index;
-    st->codec.codec_type = CODEC_TYPE_VIDEO;
-    st->codec.codec_id = CODEC_ID_FLIC;
-    st->codec.codec_tag = 0;  /* no fourcc */
-    st->codec.width = LE_16(&header[0x08]);
-    st->codec.height = LE_16(&header[0x0A]);
+    st->codec->codec_type = CODEC_TYPE_VIDEO;
+    st->codec->codec_id = CODEC_ID_FLIC;
+    st->codec->codec_tag = 0;  /* no fourcc */
+    st->codec->width = LE_16(&header[0x08]);
+    st->codec->height = LE_16(&header[0x0A]);
 
-    if (!st->codec.width || !st->codec.height)
+    if (!st->codec->width || !st->codec->height)
         return AVERROR_INVALIDDATA;
 
     /* send over the whole 128-byte FLIC header */
-    st->codec.extradata_size = FLIC_HEADER_SIZE;
-    st->codec.extradata = av_malloc(FLIC_HEADER_SIZE);
-    memcpy(st->codec.extradata, header, FLIC_HEADER_SIZE);
+    st->codec->extradata_size = FLIC_HEADER_SIZE;
+    st->codec->extradata = av_malloc(FLIC_HEADER_SIZE);
+    memcpy(st->codec->extradata, header, FLIC_HEADER_SIZE);
 
     av_set_pts_info(st, 33, 1, 90000);
 
@@ -113,10 +113,10 @@ static int flic_read_header(AVFormatContext *s,
         url_fseek(pb, 12, SEEK_SET);
 
         /* send over abbreviated FLIC header chunk */
-        av_free(st->codec.extradata);
-        st->codec.extradata_size = 12;
-        st->codec.extradata = av_malloc(12);
-        memcpy(st->codec.extradata, header, 12);
+        av_free(st->codec->extradata);
+        st->codec->extradata_size = 12;
+        st->codec->extradata = av_malloc(12);
+        memcpy(st->codec->extradata, header, 12);
 
     } else if (magic_number == FLIC_FILE_MAGIC_1) {
         /*

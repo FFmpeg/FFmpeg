@@ -430,7 +430,7 @@ ogg_gptopts (AVFormatContext * s, int i, uint64_t gp)
     ogg_t *ogg = s->priv_data;
     ogg_stream_t *os = ogg->streams + i;
     AVStream *st = s->streams[i];
-    AVCodecContext *codec = &st->codec;
+    AVCodecContext *codec = st->codec;
     uint64_t pts = AV_NOPTS_VALUE;
 
     if(os->codec->gptopts){
@@ -537,7 +537,7 @@ ogg_read_close (AVFormatContext * s)
     for (i = 0; i < ogg->nstreams; i++){
         av_free (ogg->streams[i].buf);
         av_free (ogg->streams[i].private);
-        av_freep (&s->streams[i]->codec.extradata);
+        av_freep (&s->streams[i]->codec->extradata);
     }
     av_free (ogg->streams);
     return 0;

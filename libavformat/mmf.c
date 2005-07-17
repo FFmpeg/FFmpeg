@@ -61,9 +61,9 @@ static int mmf_write_header(AVFormatContext *s)
     offset_t pos;
     int rate;
 
-    rate = mmf_rate_code(s->streams[0]->codec.sample_rate);
+    rate = mmf_rate_code(s->streams[0]->codec->sample_rate);
     if(rate < 0) {
-        av_log(s, AV_LOG_ERROR, "Unsupported sample rate %d\n", s->streams[0]->codec.sample_rate);
+        av_log(s, AV_LOG_ERROR, "Unsupported sample rate %d\n", s->streams[0]->codec->sample_rate);
         return -1;
     }
     
@@ -96,7 +96,7 @@ static int mmf_write_header(AVFormatContext *s)
 
     mmf->awapos = start_tag(pb, "Awa\x01");
 
-    av_set_pts_info(s->streams[0], 64, 1, s->streams[0]->codec.sample_rate);
+    av_set_pts_info(s->streams[0], 64, 1, s->streams[0]->codec->sample_rate);
 
     put_flush_packet(pb);
 
@@ -144,7 +144,7 @@ static int mmf_write_trailer(AVFormatContext *s)
         /* "play wav" */
         put_byte(pb, 0); /* start time */
         put_byte(pb, 1); /* (channel << 6) | wavenum */
-        gatetime = size * 500 / s->streams[0]->codec.sample_rate;
+        gatetime = size * 500 / s->streams[0]->codec->sample_rate;
         put_varlength(pb, gatetime); /* duration */
 
         /* "nop" */
@@ -239,14 +239,14 @@ static int mmf_read_header(AVFormatContext *s,
     if (!st)
         return AVERROR_NOMEM;
 
-    st->codec.codec_type = CODEC_TYPE_AUDIO;
-    st->codec.codec_id = CODEC_ID_ADPCM_YAMAHA;
-    st->codec.sample_rate = rate;
-    st->codec.channels = 1;
-    st->codec.bits_per_sample = 4;
-    st->codec.bit_rate = st->codec.sample_rate * st->codec.bits_per_sample;
+    st->codec->codec_type = CODEC_TYPE_AUDIO;
+    st->codec->codec_id = CODEC_ID_ADPCM_YAMAHA;
+    st->codec->sample_rate = rate;
+    st->codec->channels = 1;
+    st->codec->bits_per_sample = 4;
+    st->codec->bit_rate = st->codec->sample_rate * st->codec->bits_per_sample;
 
-    av_set_pts_info(st, 64, 1, st->codec.sample_rate);
+    av_set_pts_info(st, 64, 1, st->codec->sample_rate);
 
     return 0;
 }

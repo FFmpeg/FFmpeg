@@ -262,7 +262,7 @@ static void mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
     for(i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
         MpegTSWriteStream *ts_st = st->priv_data;
-        switch(st->codec.codec_id) {
+        switch(st->codec->codec_id) {
         case CODEC_ID_MPEG1VIDEO:
         case CODEC_ID_MPEG2VIDEO:
             stream_type = STREAM_TYPE_VIDEO_MPEG2;
@@ -293,7 +293,7 @@ static void mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
         q += 2; /* patched after */
 
         /* write optional descriptors here */
-        switch(st->codec.codec_type) {
+        switch(st->codec->codec_type) {
         case CODEC_TYPE_AUDIO:
             if (strlen(st->language) == 3) {
                 *q++ = 0x0a; /* ISO 639 language descriptor */
@@ -452,10 +452,10 @@ static int mpegts_write_header(AVFormatContext *s)
         ts_st->pid = DEFAULT_START_PID + i;
         ts_st->payload_pts = AV_NOPTS_VALUE;
         /* update PCR pid by using the first video stream */
-        if (st->codec.codec_type == CODEC_TYPE_VIDEO && 
+        if (st->codec->codec_type == CODEC_TYPE_VIDEO && 
             service->pcr_pid == 0x1fff)
             service->pcr_pid = ts_st->pid;
-        total_bit_rate += st->codec.bit_rate;
+        total_bit_rate += st->codec->bit_rate;
     }
     
     /* if no video stream, use the first stream as PCR */
@@ -570,15 +570,15 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
             *q++ = 0x00;
             *q++ = 0x01;
             private_code = 0;
-            if (st->codec.codec_type == CODEC_TYPE_VIDEO) {
+            if (st->codec->codec_type == CODEC_TYPE_VIDEO) {
                 *q++ = 0xe0;
-            } else if (st->codec.codec_type == CODEC_TYPE_AUDIO &&
-                       (st->codec.codec_id == CODEC_ID_MP2 ||
-                        st->codec.codec_id == CODEC_ID_MP3)) {
+            } else if (st->codec->codec_type == CODEC_TYPE_AUDIO &&
+                       (st->codec->codec_id == CODEC_ID_MP2 ||
+                        st->codec->codec_id == CODEC_ID_MP3)) {
                 *q++ = 0xc0; 
             } else {
                 *q++ = 0xbd;
-                if (st->codec.codec_type == CODEC_TYPE_SUBTITLE) {
+                if (st->codec->codec_type == CODEC_TYPE_SUBTITLE) {
                     private_code = 0x20;
                 }
             }
@@ -593,7 +593,7 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
             *q++ = len;
             val = 0x80;
             /* data alignment indicator is required for subtitle data */
-            if (st->codec.codec_type == CODEC_TYPE_SUBTITLE)
+            if (st->codec->codec_type == CODEC_TYPE_SUBTITLE)
                 val |= 0x04;
             *q++ = val;
             if (pts != AV_NOPTS_VALUE) {
@@ -660,7 +660,7 @@ static int mpegts_write_packet(AVFormatContext *s, AVPacket *pkt)
     MpegTSWriteStream *ts_st = st->priv_data;
     int len, max_payload_size;
 
-    if (st->codec.codec_type == CODEC_TYPE_SUBTITLE) {
+    if (st->codec->codec_type == CODEC_TYPE_SUBTITLE) {
         /* for subtitle, a single PES packet must be generated */
         mpegts_write_pes(s, st, buf, size, pkt->pts);
         return 0;

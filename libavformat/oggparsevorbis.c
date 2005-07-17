@@ -178,19 +178,19 @@ vorbis_header (AVFormatContext * s, int idx)
     memcpy(priv->packet[os->seq], os->buf + os->pstart, os->psize);
     if (os->buf[os->pstart] == 1) {
         uint8_t *p = os->buf + os->pstart + 11; //skip up to the audio channels
-        st->codec.channels = *p++;
-        st->codec.sample_rate = le2me_32 (unaligned32 (p));
+        st->codec->channels = *p++;
+        st->codec->sample_rate = le2me_32 (unaligned32 (p));
         p += 8; //skip maximum and and nominal bitrate
-        st->codec.bit_rate = le2me_32 (unaligned32 (p)); //Minimum bitrate
+        st->codec->bit_rate = le2me_32 (unaligned32 (p)); //Minimum bitrate
 
-        st->codec.codec_type = CODEC_TYPE_AUDIO;
-        st->codec.codec_id = CODEC_ID_VORBIS;
+        st->codec->codec_type = CODEC_TYPE_AUDIO;
+        st->codec->codec_id = CODEC_ID_VORBIS;
 
     } else if (os->buf[os->pstart] == 3) {
         vorbis_comment (s, os->buf + os->pstart + 7, os->psize - 8);
     } else {
-        st->codec.extradata_size =
-            fixup_vorbis_headers(s, priv, &st->codec.extradata);
+        st->codec->extradata_size =
+            fixup_vorbis_headers(s, priv, &st->codec->extradata);
     }
 
     return os->seq < 3;

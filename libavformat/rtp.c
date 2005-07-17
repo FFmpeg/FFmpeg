@@ -290,7 +290,7 @@ RTPDemuxContext *rtp_parse_open(AVFormatContext *s1, AVStream *st, int payload_t
             return NULL;
         }
     } else {
-        switch(st->codec.codec_id) {
+        switch(st->codec->codec_id) {
         case CODEC_ID_MPEG1VIDEO:
         case CODEC_ID_MPEG2VIDEO:
         case CODEC_ID_MP2:
@@ -307,7 +307,6 @@ RTPDemuxContext *rtp_parse_open(AVFormatContext *s1, AVStream *st, int payload_t
 
 static int rtp_parse_mp4_au(RTPDemuxContext *s, const uint8_t *buf)
 {
-    AVCodecContext codec;
     int au_headers_length, au_header_size, i;
     GetBitContext getbitcontext;
     rtp_payload_data_t *infos;
@@ -316,8 +315,6 @@ static int rtp_parse_mp4_au(RTPDemuxContext *s, const uint8_t *buf)
 
     if (infos == NULL)
         return -1;
-
-    codec = s->st->codec;
 
     /* decode the first 2 bytes where are stored the AUHeader sections
        length in bits */
@@ -407,7 +404,7 @@ int rtp_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
         return -1;
 #if defined(DEBUG) || 1
     if (seq != ((s->seq + 1) & 0xffff)) {
-        av_log(&s->st->codec, AV_LOG_ERROR, "RTP: PT=%02x: bad cseq %04x expected=%04x\n", 
+        av_log(s->st->codec, AV_LOG_ERROR, "RTP: PT=%02x: bad cseq %04x expected=%04x\n", 
                payload_type, seq, ((s->seq + 1) & 0xffff));
     }
 #endif
@@ -428,7 +425,7 @@ int rtp_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
             return 1;
         }
     } else {
-        switch(st->codec.codec_id) {
+        switch(st->codec->codec_id) {
         case CODEC_ID_MP2:
             /* better than nothing: skip mpeg audio RTP header */
             if (len <= 4)
@@ -462,7 +459,7 @@ int rtp_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
             break;
         }
         
-        switch(st->codec.codec_id) {
+        switch(st->codec->codec_id) {
         case CODEC_ID_MP2:
         case CODEC_ID_MPEG1VIDEO:
             if (s->last_rtcp_ntp_time != AV_NOPTS_VALUE) {
@@ -529,7 +526,7 @@ static int rtp_write_header(AVFormatContext *s1)
         return -1;
     st = s1->streams[0];
 
-    payload_type = rtp_get_payload_type(&st->codec);
+    payload_type = rtp_get_payload_type(st->codec);
     if (payload_type < 0)
         payload_type = RTP_PT_PRIVATE; /* private payload type */
     s->payload_type = payload_type;
@@ -544,7 +541,7 @@ static int rtp_write_header(AVFormatContext *s1)
         return AVERROR_IO;
     s->max_payload_size = max_packet_size - 12;
 
-    switch(st->codec.codec_id) {
+    switch(st->codec->codec_id) {
     case CODEC_ID_MP2:
     case CODEC_ID_MP3:
         s->buf_ptr = s->buf + 4;
@@ -663,7 +660,7 @@ static void rtp_send_mpegaudio(AVFormatContext *s1,
             s->buf_ptr = s->buf + 4;
             /* 90 KHz time stamp */
             s->timestamp = s->base_timestamp + 
-                (s->cur_timestamp * 90000LL) / st->codec.sample_rate;
+                (s->cur_timestamp * 90000LL) / st->codec->sample_rate;
         }
     }
 
@@ -697,7 +694,7 @@ static void rtp_send_mpegaudio(AVFormatContext *s1,
         memcpy(s->buf_ptr, buf1, size);
         s->buf_ptr += size;
     }
-    s->cur_timestamp += st->codec.frame_size;
+    s->cur_timestamp += st->codec->frame_size;
 }
 
 /* NOTE: a single frame must be passed with sequence header if
@@ -715,7 +712,7 @@ static void rtp_send_mpegvideo(AVFormatContext *s1,
     while (size > 0) {
         /* XXX: more correct headers */
         h = 0;
-        if (st->codec.sub_id == 2)
+        if (st->codec->sub_id == 2)
             h |= 1 << 26; /* mpeg 2 indicator */
         q = s->buf;
         *q++ = h >> 24;
@@ -723,7 +720,7 @@ static void rtp_send_mpegvideo(AVFormatContext *s1,
         *q++ = h >> 8;
         *q++ = h;
 
-        if (st->codec.sub_id == 2) {
+        if (st->codec->sub_id == 2) {
             h = 0;
             *q++ = h >> 24;
             *q++ = h >> 16;
@@ -740,7 +737,7 @@ static void rtp_send_mpegvideo(AVFormatContext *s1,
 
         /* 90 KHz time stamp */
         s->timestamp = s->base_timestamp + 
-            av_rescale((int64_t)s->cur_timestamp * st->codec.time_base.num, 90000, st->codec.time_base.den); //FIXME pass timestamps
+            av_rescale((int64_t)s->cur_timestamp * st->codec->time_base.num, 90000, st->codec->time_base.den); //FIXME pass timestamps
         rtp_send_data(s1, s->buf, q - s->buf);
 
         buf1 += len;
@@ -765,7 +762,7 @@ static void rtp_send_raw(AVFormatContext *s1,
 
         /* 90 KHz time stamp */
         s->timestamp = s->base_timestamp + 
-            av_rescale((int64_t)s->cur_timestamp * st->codec.time_base.num, 90000, st->codec.time_base.den); //FIXME pass timestamps
+            av_rescale((int64_t)s->cur_timestamp * st->codec->time_base.num, 90000, st->codec->time_base.den); //FIXME pass timestamps
         rtp_send_data(s1, buf1, len);
 
         buf1 += len;
@@ -824,18 +821,18 @@ static int rtp_write_packet(AVFormatContext *s1, AVPacket *pkt)
         s->first_packet = 0;
     }
 
-    switch(st->codec.codec_id) {
+    switch(st->codec->codec_id) {
     case CODEC_ID_PCM_MULAW:
     case CODEC_ID_PCM_ALAW:
     case CODEC_ID_PCM_U8:
     case CODEC_ID_PCM_S8:
-        rtp_send_samples(s1, buf1, size, 1 * st->codec.channels);
+        rtp_send_samples(s1, buf1, size, 1 * st->codec->channels);
         break;
     case CODEC_ID_PCM_U16BE:
     case CODEC_ID_PCM_U16LE:
     case CODEC_ID_PCM_S16BE:
     case CODEC_ID_PCM_S16LE:
-        rtp_send_samples(s1, buf1, size, 2 * st->codec.channels);
+        rtp_send_samples(s1, buf1, size, 2 * st->codec->channels);
         break;
     case CODEC_ID_MP2:
     case CODEC_ID_MP3:

@@ -166,11 +166,11 @@ static int fourxm_read_header(AVFormatContext *s,
 
             fourxm->video_stream_index = st->index;
 
-            st->codec.codec_type = CODEC_TYPE_VIDEO;
-            st->codec.codec_id = CODEC_ID_4XM;
-            st->codec.codec_tag = 0;  /* no fourcc */
-            st->codec.width = fourxm->width;
-            st->codec.height = fourxm->height;
+            st->codec->codec_type = CODEC_TYPE_VIDEO;
+            st->codec->codec_id = CODEC_ID_4XM;
+            st->codec->codec_tag = 0;  /* no fourcc */
+            st->codec->width = fourxm->width;
+            st->codec->height = fourxm->height;
 
         } else if (fourcc_tag == strk_TAG) {
             /* check that there is enough data */
@@ -205,20 +205,20 @@ static int fourxm_read_header(AVFormatContext *s,
 
             fourxm->tracks[current_track].stream_index = st->index;
 
-            st->codec.codec_type = CODEC_TYPE_AUDIO;
-            st->codec.codec_tag = 1;
-            st->codec.channels = fourxm->tracks[current_track].channels;
-            st->codec.sample_rate = fourxm->tracks[current_track].sample_rate;
-            st->codec.bits_per_sample = fourxm->tracks[current_track].bits;
-            st->codec.bit_rate = st->codec.channels * st->codec.sample_rate *
-                st->codec.bits_per_sample;
-            st->codec.block_align = st->codec.channels * st->codec.bits_per_sample;
+            st->codec->codec_type = CODEC_TYPE_AUDIO;
+            st->codec->codec_tag = 1;
+            st->codec->channels = fourxm->tracks[current_track].channels;
+            st->codec->sample_rate = fourxm->tracks[current_track].sample_rate;
+            st->codec->bits_per_sample = fourxm->tracks[current_track].bits;
+            st->codec->bit_rate = st->codec->channels * st->codec->sample_rate *
+                st->codec->bits_per_sample;
+            st->codec->block_align = st->codec->channels * st->codec->bits_per_sample;
             if (fourxm->tracks[current_track].adpcm)
-                st->codec.codec_id = CODEC_ID_ADPCM_4XM;
-            else if (st->codec.bits_per_sample == 8)
-                st->codec.codec_id = CODEC_ID_PCM_U8;
+                st->codec->codec_id = CODEC_ID_ADPCM_4XM;
+            else if (st->codec->bits_per_sample == 8)
+                st->codec->codec_id = CODEC_ID_PCM_U8;
             else
-                st->codec.codec_id = CODEC_ID_PCM_S16LE;
+                st->codec->codec_id = CODEC_ID_PCM_S16LE;
         }
     }
 

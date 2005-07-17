@@ -728,8 +728,8 @@ static void close_connection(HTTPContext *c)
         /* close each frame parser */
         for(i=0;i<c->fmt_in->nb_streams;i++) {
             st = c->fmt_in->streams[i];
-            if (st->codec.codec) {
-                avcodec_close(&st->codec);
+            if (st->codec->codec) {
+                avcodec_close(st->codec);
             }
         }
         av_close_input_file(c->fmt_in);
@@ -1002,7 +1002,7 @@ static int find_stream_in_feed(FFStream *feed, AVCodecContext *codec, int bit_ra
     int best = -1;
 
     for (i = 0; i < feed->nb_streams; i++) {
-        AVCodecContext *feed_codec = &feed->streams[i]->codec;
+        AVCodecContext *feed_codec = feed->streams[i]->codec;
 
         if (feed_codec->codec_id != codec->codec_id ||
             feed_codec->sample_rate != codec->sample_rate ||
@@ -1044,7 +1044,7 @@ static int modify_current_stream(HTTPContext *c, char *rates)
         return 0;
 
     for (i = 0; i < req->nb_streams; i++) {
-        AVCodecContext *codec = &req->streams[i]->codec;
+        AVCodecContext *codec = req->streams[i]->codec;
 
         switch(rates[i]) {
             case 0:
@@ -1659,10 +1659,10 @@ static void compute_stats(HTTPContext *c)
 
                     for(i=0;i<stream->nb_streams;i++) {
                         AVStream *st = stream->streams[i];
-                        AVCodec *codec = avcodec_find_encoder(st->codec.codec_id);
-                        switch(st->codec.codec_type) {
+                        AVCodec *codec = avcodec_find_encoder(st->codec->codec_id);
+                        switch(st->codec->codec_type) {
                         case CODEC_TYPE_AUDIO:
-                            audio_bit_rate += st->codec.bit_rate;
+                            audio_bit_rate += st->codec->bit_rate;
                             if (codec) {
                                 if (*audio_codec_name)
                                     audio_codec_name_extra = "...";
@@ -1670,7 +1670,7 @@ static void compute_stats(HTTPContext *c)
                             }
                             break;
                         case CODEC_TYPE_VIDEO:
-                            video_bit_rate += st->codec.bit_rate;
+                            video_bit_rate += st->codec->bit_rate;
                             if (codec) {
                                 if (*video_codec_name)
                                     video_codec_name_extra = "...";
@@ -1678,7 +1678,7 @@ static void compute_stats(HTTPContext *c)
                             }
                             break;
                         case CODEC_TYPE_DATA:
-                            video_bit_rate += st->codec.bit_rate;
+                            video_bit_rate += st->codec->bit_rate;
                             break;
                         default:
                             av_abort();
@@ -1744,26 +1744,26 @@ static void compute_stats(HTTPContext *c)
 
             for (i = 0; i < stream->nb_streams; i++) {
                 AVStream *st = stream->streams[i];
-                AVCodec *codec = avcodec_find_encoder(st->codec.codec_id);
+                AVCodec *codec = avcodec_find_encoder(st->codec->codec_id);
                 const char *type = "unknown";
                 char parameters[64];
 
                 parameters[0] = 0;
 
-                switch(st->codec.codec_type) {
+                switch(st->codec->codec_type) {
                 case CODEC_TYPE_AUDIO:
                     type = "audio";
                     break;
                 case CODEC_TYPE_VIDEO:
                     type = "video";
-                    snprintf(parameters, sizeof(parameters), "%dx%d, q=%d-%d, fps=%d", st->codec.width, st->codec.height,
-                                st->codec.qmin, st->codec.qmax, st->codec.time_base.den / st->codec.time_base.num);
+                    snprintf(parameters, sizeof(parameters), "%dx%d, q=%d-%d, fps=%d", st->codec->width, st->codec->height,
+                                st->codec->qmin, st->codec->qmax, st->codec->time_base.den / st->codec->time_base.num);
                     break;
                 default:
                     av_abort();
                 }
                 url_fprintf(pb, "<tr><td align=right>%d<td>%s<td align=right>%d<td>%s<td>%s\n",
-                        i, type, st->codec.bit_rate/1000, codec ? codec->name : "", parameters);
+                        i, type, st->codec->bit_rate/1000, codec ? codec->name : "", parameters);
             }
             url_fprintf(pb, "</table>\n");
 
@@ -1786,7 +1786,7 @@ static void compute_stats(HTTPContext *c)
             for(i=0;i<stream->nb_streams;i++) {
                 AVStream *st = stream->streams[i];
                 FeedData *fdata = st->priv_data;
-                enc = &st->codec;
+                enc = st->codec;
             
                 avcodec_string(buf, sizeof(buf), enc);
                 avg = fdata->avg_frame_size * (float)enc->rate * 8.0;
@@ -1822,10 +1822,10 @@ static void compute_stats(HTTPContext *c)
         if (c1->stream) {
             for (j = 0; j < c1->stream->nb_streams; j++) {
                 if (!c1->stream->feed) {
-                    bitrate += c1->stream->streams[j]->codec.bit_rate;
+                    bitrate += c1->stream->streams[j]->codec->bit_rate;
                 } else {
                     if (c1->feed_streams[j] >= 0) {
-                        bitrate += c1->stream->feed->streams[c1->feed_streams[j]]->codec.bit_rate;
+                        bitrate += c1->stream->feed->streams[c1->feed_streams[j]]->codec->bit_rate;
                     }
                 }
             }
@@ -1867,12 +1867,12 @@ static void open_parser(AVFormatContext *s, int i)
     AVStream *st = s->streams[i];
     AVCodec *codec;
 
-    if (!st->codec.codec) {
-        codec = avcodec_find_decoder(st->codec.codec_id);
+    if (!st->codec->codec) {
+        codec = avcodec_find_decoder(st->codec->codec_id);
         if (codec && (codec->capabilities & CODEC_CAP_PARSE_ONLY)) {
-            st->codec.parse_only = 1;
-            if (avcodec_open(&st->codec, codec) < 0) {
-                st->codec.parse_only = 0;
+            st->codec->parse_only = 1;
+            if (avcodec_open(st->codec, codec) < 0) {
+                st->codec->parse_only = 0;
             }
         }
     }
@@ -1935,7 +1935,7 @@ static int open_input_stream(HTTPContext *c, const char *info)
     c->pts_stream_index = 0;
     for(i=0;i<c->stream->nb_streams;i++) {
         if (c->pts_stream_index == 0 && 
-            c->stream->streams[i]->codec.codec_type == CODEC_TYPE_VIDEO) {
+            c->stream->streams[i]->codec->codec_type == CODEC_TYPE_VIDEO) {
             c->pts_stream_index = i;
         }
     }
@@ -2010,12 +2010,12 @@ static int http_prepare_data(HTTPContext *c)
 
 	    *st = *src;
 	    st->priv_data = 0;
-            st->codec.frame_number = 0; /* XXX: should be done in
+            st->codec->frame_number = 0; /* XXX: should be done in
                                            AVStream, not in codec */
             /* I'm pretty sure that this is not correct...
              * However, without it, we crash
              */
-            st->codec.coded_frame = &dummy_frame;
+            st->codec->coded_frame = &dummy_frame;
         }
         c->got_key_frame = 0;
 
@@ -2144,13 +2144,13 @@ static int http_prepare_data(HTTPContext *c)
                               av_free_packet(&pkt);
                               break;
                             }
-                            codec = &ctx->streams[0]->codec;
+                            codec = ctx->streams[0]->codec;
                             /* only one stream per RTP connection */
                             pkt.stream_index = 0;
                         } else {
                             ctx = &c->fmt_ctx;
                             /* Fudge here */
-                            codec = &ctx->streams[pkt.stream_index]->codec;
+                            codec = ctx->streams[pkt.stream_index]->codec;
                         }
                         
                         codec->coded_frame->key_frame = ((pkt.flags & PKT_FLAG_KEY) != 0);
@@ -2462,8 +2462,8 @@ static int http_receive_data(HTTPContext *c)
                 goto fail;
             }
             for (i = 0; i < s.nb_streams; i++) {
-                memcpy(&feed->streams[i]->codec, 
-                       &s.streams[i]->codec, sizeof(AVCodecContext));
+                memcpy(feed->streams[i]->codec, 
+                       s.streams[i]->codec, sizeof(AVCodecContext));
             } 
             av_freep(&s.priv_data);
         }
@@ -2638,10 +2638,10 @@ static int prepare_sdp_description(FFStream *stream, uint8_t **pbuffer,
     private_payload_type = RTP_PT_PRIVATE;
     for(i = 0; i < stream->nb_streams; i++) {
         st = stream->streams[i];
-        if (st->codec.codec_id == CODEC_ID_MPEG2TS) {
+        if (st->codec->codec_id == CODEC_ID_MPEG2TS) {
             mediatype = "video";
         } else {
-            switch(st->codec.codec_type) {
+            switch(st->codec->codec_type) {
             case CODEC_TYPE_AUDIO:
                 mediatype = "audio";
                 break;
@@ -2655,7 +2655,7 @@ static int prepare_sdp_description(FFStream *stream, uint8_t **pbuffer,
         }
         /* NOTE: the port indication is not correct in case of
            unicast. It is not an issue because RTSP gives it */
-        payload_type = rtp_get_payload_type(&st->codec);
+        payload_type = rtp_get_payload_type(st->codec);
         if (payload_type < 0)
             payload_type = private_payload_type++;
         if (stream->is_multicast) {
@@ -2667,17 +2667,17 @@ static int prepare_sdp_description(FFStream *stream, uint8_t **pbuffer,
                     mediatype, port, payload_type);
         if (payload_type >= RTP_PT_PRIVATE) {
             /* for private payload type, we need to give more info */
-            switch(st->codec.codec_id) {
+            switch(st->codec->codec_id) {
             case CODEC_ID_MPEG4:
                 {
                     uint8_t *data;
                     url_fprintf(pb, "a=rtpmap:%d MP4V-ES/%d\n", 
                                 payload_type, 90000);
                     /* we must also add the mpeg4 header */
-                    data = st->codec.extradata;
+                    data = st->codec->extradata;
                     if (data) {
                         url_fprintf(pb, "a=fmtp:%d config=", payload_type);
-                        for(j=0;j<st->codec.extradata_size;j++) {
+                        for(j=0;j<st->codec->extradata_size;j++) {
                             url_fprintf(pb, "%02x", data[j]);
                         }
                         url_fprintf(pb, "\n");
@@ -3222,8 +3222,8 @@ static AVStream *add_av_stream1(FFStream *stream, AVCodecContext *codec)
     if (!fst)
         return NULL;
     fst->priv_data = av_mallocz(sizeof(FeedData));
-    memcpy(&fst->codec, codec, sizeof(AVCodecContext));
-    fst->codec.coded_frame = &dummy_frame;
+    memcpy(fst->codec, codec, sizeof(AVCodecContext));
+    fst->codec->coded_frame = &dummy_frame;
     fst->index = stream->nb_streams;
     av_set_pts_info(fst, 33, 1, 90000);
     stream->streams[stream->nb_streams++] = fst;
@@ -3237,10 +3237,10 @@ static int add_av_stream(FFStream *feed, AVStream *st)
     AVCodecContext *av, *av1;
     int i;
 
-    av = &st->codec;
+    av = st->codec;
     for(i=0;i<feed->nb_streams;i++) {
         st = feed->streams[i];
-        av1 = &st->codec;
+        av1 = st->codec;
         if (av1->codec_id == av->codec_id &&
             av1->codec_type == av->codec_type &&
             av1->bit_rate == av->bit_rate) {
@@ -3297,8 +3297,8 @@ static void extract_mpeg4_header(AVFormatContext *infile)
     mpeg4_count = 0;
     for(i=0;i<infile->nb_streams;i++) {
         st = infile->streams[i];
-        if (st->codec.codec_id == CODEC_ID_MPEG4 &&
-            st->codec.extradata_size == 0) {
+        if (st->codec->codec_id == CODEC_ID_MPEG4 &&
+            st->codec->extradata_size == 0) {
             mpeg4_count++;
         }
     }
@@ -3310,9 +3310,9 @@ static void extract_mpeg4_header(AVFormatContext *infile)
         if (av_read_packet(infile, &pkt) < 0)
             break;
         st = infile->streams[pkt.stream_index];
-        if (st->codec.codec_id == CODEC_ID_MPEG4 &&
-            st->codec.extradata_size == 0) {
-            av_freep(&st->codec.extradata);
+        if (st->codec->codec_id == CODEC_ID_MPEG4 &&
+            st->codec->extradata_size == 0) {
+            av_freep(&st->codec->extradata);
             /* fill extradata with the header */
             /* XXX: we make hard suppositions here ! */
             p = pkt.data;
@@ -3322,9 +3322,9 @@ static void extract_mpeg4_header(AVFormatContext *infile)
                     p[2] == 0x01 && p[3] == 0xb6) {
                     size = p - pkt.data;
                     //                    av_hex_dump(pkt.data, size);
-                    st->codec.extradata = av_malloc(size);
-                    st->codec.extradata_size = size;
-                    memcpy(st->codec.extradata, pkt.data, size);
+                    st->codec->extradata = av_malloc(size);
+                    st->codec->extradata_size = size;
+                    memcpy(st->codec->extradata, pkt.data, size);
                     break;
                 }
                 p++;
@@ -3376,7 +3376,7 @@ static void build_file_streams(void)
                 extract_mpeg4_header(infile);
 
                 for(i=0;i<infile->nb_streams;i++) {
-                    add_av_stream1(stream, &infile->streams[i]->codec);
+                    add_av_stream1(stream, infile->streams[i]->codec);
                 }
                 av_close_input_file(infile);
             }
@@ -3441,8 +3441,8 @@ static void build_feed_streams(void)
                         } else {
                             AVCodecContext *ccf, *ccs;
 
-                            ccf = &sf->codec;
-                            ccs = &ss->codec;
+                            ccf = sf->codec;
+                            ccs = ss->codec;
 #define CHECK_CODEC(x)  (ccf->x != ccs->x)
 
                             if (CHECK_CODEC(codec) || CHECK_CODEC(codec_type)) {
@@ -3550,10 +3550,10 @@ static void compute_bandwidth(void)
         bandwidth = 0;
         for(i=0;i<stream->nb_streams;i++) {
             AVStream *st = stream->streams[i];
-            switch(st->codec.codec_type) {
+            switch(st->codec->codec_type) {
             case CODEC_TYPE_AUDIO:
             case CODEC_TYPE_VIDEO:
-                bandwidth += st->codec.bit_rate;
+                bandwidth += st->codec->bit_rate;
                 break;
             default:
                 break;
@@ -3665,7 +3665,7 @@ static void add_codec(FFStream *stream, AVCodecContext *av)
     if (!st)
         return;
     stream->streams[stream->nb_streams++] = st;
-    memcpy(&st->codec, av, sizeof(AVCodecContext));
+    memcpy(st->codec, av, sizeof(AVCodecContext));
 }
 
 static int opt_audio_codec(const char *arg)

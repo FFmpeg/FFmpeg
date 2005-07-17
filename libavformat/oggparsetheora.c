@@ -40,7 +40,7 @@ theora_header (AVFormatContext * s, int idx)
     ogg_stream_t *os = ogg->streams + idx;
     AVStream *st = s->streams[idx];
     theora_params_t *thp = os->private;
-    int cds = st->codec.extradata_size + os->psize + 2;
+    int cds = st->codec->extradata_size + os->psize + 2;
     uint8_t *cdp;
 
     if(!(os->buf[os->pstart] & 0x80))
@@ -62,33 +62,33 @@ theora_header (AVFormatContext * s, int idx)
             return -1;
         skip_bits(&gb, 8);      /* revision */
 
-        st->codec.width = get_bits(&gb, 16) << 4;
-        st->codec.height = get_bits(&gb, 16) << 4;
+        st->codec->width = get_bits(&gb, 16) << 4;
+        st->codec->height = get_bits(&gb, 16) << 4;
 
         skip_bits(&gb, 64);
-        st->codec.time_base.den = get_bits(&gb, 32);
-        st->codec.time_base.num = get_bits(&gb, 32);
+        st->codec->time_base.den = get_bits(&gb, 32);
+        st->codec->time_base.num = get_bits(&gb, 32);
         
-        st->codec.sample_aspect_ratio.num = get_bits(&gb, 24);
-        st->codec.sample_aspect_ratio.den = get_bits(&gb, 24);
+        st->codec->sample_aspect_ratio.num = get_bits(&gb, 24);
+        st->codec->sample_aspect_ratio.den = get_bits(&gb, 24);
 
         skip_bits(&gb, 38);
         thp->gpshift = get_bits(&gb, 5);
 	thp->gpmask = (1 << thp->gpshift) - 1;
 
-        st->codec.codec_type = CODEC_TYPE_VIDEO;
-        st->codec.codec_id = CODEC_ID_THEORA;
+        st->codec->codec_type = CODEC_TYPE_VIDEO;
+        st->codec->codec_id = CODEC_ID_THEORA;
 
     } else if (os->buf[os->pstart] == 0x83) {
         vorbis_comment (s, os->buf + os->pstart + 7, os->psize - 8);
     }
 
-    st->codec.extradata = av_realloc (st->codec.extradata, cds);
-    cdp = st->codec.extradata + st->codec.extradata_size;
+    st->codec->extradata = av_realloc (st->codec->extradata, cds);
+    cdp = st->codec->extradata + st->codec->extradata_size;
     *cdp++ = os->psize >> 8;
     *cdp++ = os->psize & 0xff;
     memcpy (cdp, os->buf + os->pstart, os->psize);
-    st->codec.extradata_size = cds;
+    st->codec->extradata_size = cds;
 
     return 1;
 }
@@ -103,8 +103,8 @@ theora_gptopts(AVFormatContext *ctx, int idx, uint64_t gp)
     uint64_t iframe = gp >> thp->gpshift;
     uint64_t pframe = gp & thp->gpmask;
 
-    return (iframe + pframe) * AV_TIME_BASE * st->codec.time_base.num /
-        st->codec.time_base.den;
+    return (iframe + pframe) * AV_TIME_BASE * st->codec->time_base.num /
+        st->codec->time_base.den;
 }
 
 ogg_codec_t theora_codec = {

@@ -439,12 +439,12 @@ static int nsv_parse_NSVs_header(AVFormatContext *s, AVFormatParameters *ap)
             if (!nst)
                 goto fail;
             st->priv_data = nst;
-            st->codec.codec_type = CODEC_TYPE_VIDEO;
-            st->codec.codec_tag = vtag;
-            st->codec.codec_id = codec_get_id(nsv_codec_video_tags, vtag);
-            st->codec.width = vwidth;
-            st->codec.height = vheight;
-            st->codec.bits_per_sample = 24; /* depth XXX */
+            st->codec->codec_type = CODEC_TYPE_VIDEO;
+            st->codec->codec_tag = vtag;
+            st->codec->codec_id = codec_get_id(nsv_codec_video_tags, vtag);
+            st->codec->width = vwidth;
+            st->codec->height = vheight;
+            st->codec->bits_per_sample = 24; /* depth XXX */
 
             av_set_pts_info(st, 64, framerate.den, framerate.num);
             st->start_time = 0;
@@ -460,17 +460,17 @@ static int nsv_parse_NSVs_header(AVFormatContext *s, AVFormatParameters *ap)
             if (!nst)
                 goto fail;
             st->priv_data = nst;
-            st->codec.codec_type = CODEC_TYPE_AUDIO;
-            st->codec.codec_tag = atag;
-            st->codec.codec_id = codec_get_id(nsv_codec_audio_tags, atag);
+            st->codec->codec_type = CODEC_TYPE_AUDIO;
+            st->codec->codec_tag = atag;
+            st->codec->codec_id = codec_get_id(nsv_codec_audio_tags, atag);
             st->start_time = 0;
 //            st->duration = nsv->duration; //FIXME
             
             st->need_parsing = 1; /* for PCM we will read a chunk later and put correct info */
             /* XXX:FIXME */
-            //st->codec.channels = 2; //XXX:channels;
-            //st->codec.sample_rate = 1000;
-            //av_set_pts_info(st, 64, 1, st->codec.sample_rate);
+            //st->codec->channels = 2; //XXX:channels;
+            //st->codec->sample_rate = 1000;
+            //av_set_pts_info(st, 64, 1, st->codec->sample_rate);
 
 #endif
         }
@@ -606,7 +606,7 @@ null_chunk_retry:
         pkt = &nsv->ahead[NSV_ST_AUDIO];
         /* read raw audio specific header on the first audio chunk... */
         /* on ALL audio chunks ?? seems so! */
-        if (asize && st[NSV_ST_AUDIO]->codec.codec_tag == MKTAG('P', 'C', 'M', ' ')/* && fill_header*/) {
+        if (asize && st[NSV_ST_AUDIO]->codec->codec_tag == MKTAG('P', 'C', 'M', ' ')/* && fill_header*/) {
             uint8_t bps;
             uint8_t channels;
             uint16_t samplerate;
@@ -622,13 +622,13 @@ null_chunk_retry:
                 }
                 bps /= channels; // ???
                 if (bps == 8)
-                    st[NSV_ST_AUDIO]->codec.codec_id = CODEC_ID_PCM_U8;
+                    st[NSV_ST_AUDIO]->codec->codec_id = CODEC_ID_PCM_U8;
                 samplerate /= 4;/* UGH ??? XXX */
                 channels = 1;
-                st[NSV_ST_AUDIO]->codec.channels = channels;
-                st[NSV_ST_AUDIO]->codec.sample_rate = samplerate;
+                st[NSV_ST_AUDIO]->codec->channels = channels;
+                st[NSV_ST_AUDIO]->codec->sample_rate = samplerate;
                 av_set_pts_info(st[NSV_ST_AUDIO], 64, 1, 
-                                st[NSV_ST_AUDIO]->codec.sample_rate);
+                                st[NSV_ST_AUDIO]->codec->sample_rate);
                 PRINT(("NSV RAWAUDIO: bps %d, nchan %d, srate %ld\n", bps, channels, samplerate));
             }
         }
@@ -704,8 +704,8 @@ static int nsv_read_close(AVFormatContext *s)
             av_free(ast->index_entries);
             av_free(ast);
         }
-        av_free(st->codec.extradata);
-        av_free(st->codec.palctrl);
+        av_free(st->codec->extradata);
+        av_free(st->codec->palctrl);
     }
 
 #endif

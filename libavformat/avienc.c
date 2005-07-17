@@ -338,7 +338,7 @@ static int avi_write_header(AVFormatContext *s)
 
     video_enc = NULL;
     for(n=0;n<s->nb_streams;n++) {
-        stream = &s->streams[n]->codec;
+        stream = s->streams[n]->codec;
         bitrate += stream->bit_rate;
         if (stream->codec_type == CODEC_TYPE_VIDEO)
             video_enc = stream;
@@ -376,7 +376,7 @@ static int avi_write_header(AVFormatContext *s)
         list2 = start_tag(pb, "LIST");
         put_tag(pb, "strl");
     
-        stream = &s->streams[i]->codec;
+        stream = s->streams[i]->codec;
 
         /* FourCC should really be set by the codec itself */
         if (! stream->codec_tag) {
@@ -504,7 +504,7 @@ static int avi_write_ix(AVFormatContext *s)
     for (i=0;i<s->nb_streams;i++) {
 	 offset_t ix, pos;
 	 
-	 avi_stream2fourcc(&tag[0], i, s->streams[i]->codec.codec_type);
+	 avi_stream2fourcc(&tag[0], i, s->streams[i]->codec->codec_type);
 	 ix_tag[3] = '0' + i;
 	 
 	 /* Writing AVI OpenDML leaf index chunk */
@@ -576,7 +576,7 @@ static int avi_write_idx1(AVFormatContext *s)
 	    }
 	    if (!empty) {
 	        avi_stream2fourcc(&tag[0], stream_id, 
-		                  s->streams[stream_id]->codec.codec_type); 
+		                  s->streams[stream_id]->codec->codec_type); 
 	        put_tag(pb, &tag[0]);
 		put_le32(pb, ie->flags);
                 put_le32(pb, ie->pos);
@@ -591,7 +591,7 @@ static int avi_write_idx1(AVFormatContext *s)
         nb_frames = 0;
         for(n=0;n<s->nb_streams;n++) {
             if (avi->frames_hdr_strm[n] != 0) {
-                stream = &s->streams[n]->codec;
+                stream = s->streams[n]->codec;
                 url_fseek(pb, avi->frames_hdr_strm[n], SEEK_SET);
                 ff_parse_specific_params(stream, &au_byterate, &au_ssize, &au_scale);
                 if (au_ssize == 0) {
@@ -618,7 +618,7 @@ static int avi_write_packet(AVFormatContext *s, AVPacket *pkt)
     unsigned char tag[5];
     unsigned int flags=0;
     const int stream_index= pkt->stream_index;
-    AVCodecContext *enc= &s->streams[stream_index]->codec;
+    AVCodecContext *enc= s->streams[stream_index]->codec;
     int size= pkt->size;
 
 //    av_log(s, AV_LOG_DEBUG, "%lld %d %d\n", pkt->dts, avi->packet_count[stream_index], stream_index);
@@ -705,7 +705,7 @@ static int avi_write_trailer(AVFormatContext *s)
 	url_fskip(pb, 16);
 
         for (n=nb_frames=0;n<s->nb_streams;n++) {
-             AVCodecContext *stream = &s->streams[n]->codec;
+             AVCodecContext *stream = s->streams[n]->codec;
              if (stream->codec_type == CODEC_TYPE_VIDEO) {
                  if (nb_frames < stream->frame_number)
                      nb_frames = stream->frame_number;

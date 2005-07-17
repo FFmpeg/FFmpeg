@@ -360,26 +360,26 @@ static int mpeg_mux_init(AVFormatContext *ctx)
 
         av_set_pts_info(st, 64, 1, 90000);
 
-        switch(st->codec.codec_type) {
+        switch(st->codec->codec_type) {
         case CODEC_TYPE_AUDIO:
-            if (st->codec.codec_id == CODEC_ID_AC3) {
+            if (st->codec->codec_id == CODEC_ID_AC3) {
                 stream->id = ac3_id++;
-            } else if (st->codec.codec_id == CODEC_ID_DTS) {
+            } else if (st->codec->codec_id == CODEC_ID_DTS) {
                 stream->id = dts_id++;
-            } else if (st->codec.codec_id == CODEC_ID_PCM_S16BE) {
+            } else if (st->codec->codec_id == CODEC_ID_PCM_S16BE) {
                 stream->id = lpcm_id++;
                 for(j = 0; j < 4; j++) {
-                    if (lpcm_freq_tab[j] == st->codec.sample_rate)
+                    if (lpcm_freq_tab[j] == st->codec->sample_rate)
                         break;
                 }
                 if (j == 4)
                     goto fail;
-                if (st->codec.channels > 8)
+                if (st->codec->channels > 8)
                     return -1;
                 stream->lpcm_header[0] = 0x0c;
-                stream->lpcm_header[1] = (st->codec.channels - 1) | (j << 4);
+                stream->lpcm_header[1] = (st->codec->channels - 1) | (j << 4);
                 stream->lpcm_header[2] = 0x80;
-                stream->lpcm_align = st->codec.channels * 2;
+                stream->lpcm_align = st->codec->channels * 2;
             } else {
                 stream->id = mpa_id++;
             }
@@ -391,8 +391,8 @@ static int mpeg_mux_init(AVFormatContext *ctx)
             break;
         case CODEC_TYPE_VIDEO:
             stream->id = mpv_id++;
-            if (st->codec.rc_buffer_size)
-                stream->max_buffer_size = 6*1024 + st->codec.rc_buffer_size/8;
+            if (st->codec->rc_buffer_size)
+                stream->max_buffer_size = 6*1024 + st->codec->rc_buffer_size/8;
             else
                 stream->max_buffer_size = 230*1024; //FIXME this is probably too small as default
 #if 0
@@ -422,10 +422,10 @@ static int mpeg_mux_init(AVFormatContext *ctx)
         st = ctx->streams[i];
         stream = (StreamInfo*) st->priv_data;
 
-        if(st->codec.rc_max_rate || stream->id==VIDEO_ID)
-            codec_rate= st->codec.rc_max_rate;
+        if(st->codec->rc_max_rate || stream->id==VIDEO_ID)
+            codec_rate= st->codec->rc_max_rate;
         else
-            codec_rate= st->codec.bit_rate;
+            codec_rate= st->codec->bit_rate;
                 
         if(!codec_rate)
             codec_rate= (1<<21)*8*50/ctx->nb_streams;
@@ -1073,7 +1073,7 @@ retry:
         /* for subtitle, a single PES packet must be generated,
            so we flush after every single subtitle packet */
         if(s->packet_size > avail_data && !flush
-           && st->codec.codec_type != CODEC_TYPE_SUBTITLE)
+           && st->codec->codec_type != CODEC_TYPE_SUBTITLE)
             return 0;
         if(avail_data==0)
             continue;
@@ -1183,7 +1183,7 @@ static int mpeg_mux_write_packet(AVFormatContext *ctx, AVPacket *pkt)
     int64_t pts, dts;
     PacketDesc *pkt_desc;
     const int preload= av_rescale(ctx->preload, 90000, AV_TIME_BASE);
-    const int is_iframe = st->codec.codec_type == CODEC_TYPE_VIDEO && (pkt->flags & PKT_FLAG_KEY);
+    const int is_iframe = st->codec->codec_type == CODEC_TYPE_VIDEO && (pkt->flags & PKT_FLAG_KEY);
     
     pts= pkt->pts;
     dts= pkt->dts;
@@ -1634,8 +1634,8 @@ static int mpegps_read_packet(AVFormatContext *s,
     st = av_new_stream(s, startcode);
     if (!st) 
         goto skip;
-    st->codec.codec_type = type;
-    st->codec.codec_id = codec_id;
+    st->codec->codec_type = type;
+    st->codec->codec_id = codec_id;
     if (codec_id != CODEC_ID_PCM_S16BE)
         st->need_parsing = 1;
  found:
@@ -1653,9 +1653,9 @@ static int mpegps_read_packet(AVFormatContext *s,
         get_byte(&s->pb); /* dynamic range control (0x80 = off) */
         len -= 3;
         freq = (b1 >> 4) & 3;
-        st->codec.sample_rate = lpcm_freq_tab[freq];
-        st->codec.channels = 1 + (b1 & 7);
-        st->codec.bit_rate = st->codec.channels * st->codec.sample_rate * 2;
+        st->codec->sample_rate = lpcm_freq_tab[freq];
+        st->codec->channels = 1 + (b1 & 7);
+        st->codec->bit_rate = st->codec->channels * st->codec->sample_rate * 2;
     }
     av_new_packet(pkt, len);
     get_buffer(&s->pb, pkt->data, pkt->size);

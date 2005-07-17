@@ -327,7 +327,7 @@ static int gif_write_header(AVFormatContext *s)
 
     video_enc = NULL;
     for(i=0;i<s->nb_streams;i++) {
-        enc = &s->streams[i]->codec;
+        enc = s->streams[i]->codec;
         if (enc->codec_type != CODEC_TYPE_AUDIO)
             video_enc = enc;
     }
@@ -388,7 +388,7 @@ static int gif_write_video(AVFormatContext *s,
 
 static int gif_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    AVCodecContext *codec = &s->streams[pkt->stream_index]->codec;
+    AVCodecContext *codec = s->streams[pkt->stream_index]->codec;
     if (codec->codec_type == CODEC_TYPE_AUDIO)
         return 0; /* just ignore audio */
     else

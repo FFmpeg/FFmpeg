@@ -282,7 +282,7 @@ static void sdp_parse_fmtp(AVStream *st, const char *p)
     int i;
 
     RTSPStream *rtsp_st = st->priv_data;
-    AVCodecContext *codec = &st->codec;
+    AVCodecContext *codec = st->codec;
     rtp_payload_data_t *rtp_payload_data = &rtsp_st->rtp_payload_data;
 
     /* loop on each attribute */
@@ -405,10 +405,10 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
                 return;
             st->priv_data = rtsp_st;
             rtsp_st->stream_index = st->index;
-            st->codec.codec_type = codec_type;
+            st->codec->codec_type = codec_type;
             if (rtsp_st->sdp_payload_type < RTP_PT_PRIVATE) {
                 /* if standard payload type, we can find the codec right now */
-                rtp_get_codec_info(&st->codec, rtsp_st->sdp_payload_type);
+                rtp_get_codec_info(st->codec, rtsp_st->sdp_payload_type);
             }
         }
         /* put a default control url */
@@ -438,7 +438,7 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
                 st = s->streams[i];
                 rtsp_st = st->priv_data;
                 if (rtsp_st->sdp_payload_type == payload_type) {
-                    sdp_parse_rtpmap(&st->codec, payload_type, p);
+                    sdp_parse_rtpmap(st->codec, payload_type, p);
                 }
             }
         } else if (strstart(p, "fmtp:", &p)) {

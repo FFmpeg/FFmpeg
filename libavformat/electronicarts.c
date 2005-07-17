@@ -188,9 +188,9 @@ static int ea_read_header(AVFormatContext *s,
         return AVERROR_NOMEM;
     av_set_pts_info(st, 33, 1, 90000);
     ea->video_stream_index = st->index;
-    st->codec.codec_type = CODEC_TYPE_VIDEO;
-    st->codec.codec_id = CODEC_ID_EA_MJPEG;
-    st->codec.codec_tag = 0;  /* no fourcc */
+    st->codec->codec_type = CODEC_TYPE_VIDEO;
+    st->codec->codec_id = CODEC_ID_EA_MJPEG;
+    st->codec->codec_tag = 0;  /* no fourcc */
 #endif    
 
     /* initialize the audio decoder stream */
@@ -198,15 +198,15 @@ static int ea_read_header(AVFormatContext *s,
     if (!st)
         return AVERROR_NOMEM;
     av_set_pts_info(st, 33, 1, EA_SAMPLE_RATE);
-    st->codec.codec_type = CODEC_TYPE_AUDIO;
-    st->codec.codec_id = CODEC_ID_ADPCM_EA;
-    st->codec.codec_tag = 0;  /* no tag */
-    st->codec.channels = ea->num_channels;
-    st->codec.sample_rate = EA_SAMPLE_RATE;
-    st->codec.bits_per_sample = EA_BITS_PER_SAMPLE;
-    st->codec.bit_rate = st->codec.channels * st->codec.sample_rate *
-        st->codec.bits_per_sample / 4;
-    st->codec.block_align = st->codec.channels * st->codec.bits_per_sample;
+    st->codec->codec_type = CODEC_TYPE_AUDIO;
+    st->codec->codec_id = CODEC_ID_ADPCM_EA;
+    st->codec->codec_tag = 0;  /* no tag */
+    st->codec->channels = ea->num_channels;
+    st->codec->sample_rate = EA_SAMPLE_RATE;
+    st->codec->bits_per_sample = EA_BITS_PER_SAMPLE;
+    st->codec->bit_rate = st->codec->channels * st->codec->sample_rate *
+        st->codec->bits_per_sample / 4;
+    st->codec->block_align = st->codec->channels * st->codec->bits_per_sample;
 
     ea->audio_stream_index = st->index;
     ea->audio_frame_counter = 0;

@@ -141,7 +141,7 @@ static int ffm_write_header(AVFormatContext *s)
     bit_rate = 0;
     for(i=0;i<s->nb_streams;i++) {
         st = s->streams[i];
-        bit_rate += st->codec.bit_rate;
+        bit_rate += st->codec->bit_rate;
     }
     put_be32(pb, bit_rate);
 
@@ -154,7 +154,7 @@ static int ffm_write_header(AVFormatContext *s)
         av_set_pts_info(st, 64, 1, 1000000);
         st->priv_data = fst;
 
-        codec = &st->codec;
+        codec = st->codec;
         /* generic info */
         put_be32(pb, codec->codec_id);
         put_byte(pb, codec->codec_type);
@@ -247,10 +247,10 @@ static int ffm_write_packet(AVFormatContext *s, AVPacket *pkt)
     int size= pkt->size;
 
     //XXX/FIXME use duration from pkt
-    if (st->codec.codec_type == CODEC_TYPE_AUDIO) {
-        duration = ((float)st->codec.frame_size / st->codec.sample_rate * 1000000.0);
+    if (st->codec->codec_type == CODEC_TYPE_AUDIO) {
+        duration = ((float)st->codec->frame_size / st->codec->sample_rate * 1000000.0);
     } else {
-        duration = (1000000.0 * st->codec.time_base.num / (float)st->codec.time_base.den);
+        duration = (1000000.0 * st->codec->time_base.num / (float)st->codec->time_base.den);
     }
 
     pts = fst->pts;
@@ -485,10 +485,10 @@ static int ffm_read_header(AVFormatContext *s, AVFormatParameters *ap)
             
         st->priv_data = fst;
 
-        codec = &st->codec;
+        codec = st->codec;
         /* generic info */
-        st->codec.codec_id = get_be32(pb);
-        st->codec.codec_type = get_byte(pb); /* codec_type */
+        st->codec->codec_id = get_be32(pb);
+        st->codec->codec_type = get_byte(pb); /* codec_type */
         codec->bit_rate = get_be32(pb);
 	st->quality = get_be32(pb);
         codec->flags = get_be32(pb);

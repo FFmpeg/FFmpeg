@@ -33,22 +33,22 @@ static int yuv4_generate_header(AVFormatContext *s, char* buf)
     char *colorspace = "";
 
     st = s->streams[0];
-    width = st->codec.width;
-    height = st->codec.height;
+    width = st->codec->width;
+    height = st->codec->height;
 
-    av_reduce(&raten, &rated, st->codec.time_base.den, st->codec.time_base.num, (1UL<<31)-1);
+    av_reduce(&raten, &rated, st->codec->time_base.den, st->codec->time_base.num, (1UL<<31)-1);
     
-    aspectn = st->codec.sample_aspect_ratio.num;
-    aspectd = st->codec.sample_aspect_ratio.den;
+    aspectn = st->codec->sample_aspect_ratio.num;
+    aspectd = st->codec->sample_aspect_ratio.den;
     
     if ( aspectn == 0 && aspectd == 1 ) aspectd = 0;  // 0:0 means unknown
 
     inter = 'p'; /* progressive is the default */
-    if (st->codec.coded_frame && st->codec.coded_frame->interlaced_frame) {
-        inter = st->codec.coded_frame->top_field_first ? 't' : 'b';
+    if (st->codec->coded_frame && st->codec->coded_frame->interlaced_frame) {
+        inter = st->codec->coded_frame->top_field_first ? 't' : 'b';
     }
 
-    switch(st->codec.pix_fmt) {
+    switch(st->codec->pix_fmt) {
     case PIX_FMT_GRAY8:
         colorspace = " Cmono";
         break;
@@ -56,7 +56,7 @@ static int yuv4_generate_header(AVFormatContext *s, char* buf)
         colorspace = " C411 XYSCSS=411";
         break;
     case PIX_FMT_YUV420P:
-        colorspace = (st->codec.codec_id == CODEC_ID_DVVIDEO)?" C420paldv XYSCSS=420PALDV":" C420mpeg2 XYSCSS=420MPEG2";
+        colorspace = (st->codec->codec_id == CODEC_ID_DVVIDEO)?" C420paldv XYSCSS=420PALDV":" C420mpeg2 XYSCSS=420MPEG2";
         break;
     case PIX_FMT_YUV422P:
         colorspace = " C422 XYSCSS=422";
@@ -109,8 +109,8 @@ static int yuv4_write_packet(AVFormatContext *s, AVPacket *pkt)
     m = snprintf(buf1, sizeof(buf1), "%s\n", Y4M_FRAME_MAGIC);
     put_buffer(pb, buf1, strlen(buf1));
 
-    width = st->codec.width;
-    height = st->codec.height;
+    width = st->codec->width;
+    height = st->codec->height;
     
     ptr = picture->data[0];
     for(i=0;i<height;i++) {
@@ -118,9 +118,9 @@ static int yuv4_write_packet(AVFormatContext *s, AVPacket *pkt)
         ptr += picture->linesize[0];
     }
 
-    if (st->codec.pix_fmt != PIX_FMT_GRAY8){
+    if (st->codec->pix_fmt != PIX_FMT_GRAY8){
     // Adjust for smaller Cb and Cr planes
-    avcodec_get_chroma_sub_sample(st->codec.pix_fmt, &h_chroma_shift, &v_chroma_shift);
+    avcodec_get_chroma_sub_sample(st->codec->pix_fmt, &h_chroma_shift, &v_chroma_shift);
     width >>= h_chroma_shift;
     height >>= v_chroma_shift;
 
@@ -146,13 +146,13 @@ static int yuv4_write_header(AVFormatContext *s)
     if (s->nb_streams != 1)
         return AVERROR_IO;
     
-    if (s->streams[0]->codec.pix_fmt == PIX_FMT_YUV411P) {
+    if (s->streams[0]->codec->pix_fmt == PIX_FMT_YUV411P) {
         av_log(s, AV_LOG_ERROR, "Warning: generating rarely used 4:1:1 YUV stream, some mjpegtools might not work.\n");
     } 
-    else if ((s->streams[0]->codec.pix_fmt != PIX_FMT_YUV420P) && 
-             (s->streams[0]->codec.pix_fmt != PIX_FMT_YUV422P) && 
-             (s->streams[0]->codec.pix_fmt != PIX_FMT_GRAY8) && 
-             (s->streams[0]->codec.pix_fmt != PIX_FMT_YUV444P)) {
+    else if ((s->streams[0]->codec->pix_fmt != PIX_FMT_YUV420P) && 
+             (s->streams[0]->codec->pix_fmt != PIX_FMT_YUV422P) && 
+             (s->streams[0]->codec->pix_fmt != PIX_FMT_GRAY8) && 
+             (s->streams[0]->codec->pix_fmt != PIX_FMT_YUV444P)) {
         av_log(s, AV_LOG_ERROR, "ERROR: yuv4mpeg only handles yuv444p, yuv422p, yuv420p, yuv411p and gray pixel formats. Use -pix_fmt to select one.\n");
 	return AVERROR_IO;
     }
@@ -320,14 +320,14 @@ static int yuv4_read_header(AVFormatContext *s, AVFormatParameters *ap)
         
     st = av_new_stream(s, 0);
     st = s->streams[0];
-    st->codec.width = width;
-    st->codec.height = height;
+    st->codec->width = width;
+    st->codec->height = height;
     av_reduce(&raten, &rated, raten, rated, (1UL<<31)-1);
     av_set_pts_info(st, 64, rated, raten);
-    st->codec.pix_fmt = pix_fmt;
-    st->codec.codec_type = CODEC_TYPE_VIDEO;
-    st->codec.codec_id = CODEC_ID_RAWVIDEO;
-    st->codec.sample_aspect_ratio= (AVRational){aspectn, aspectd};
+    st->codec->pix_fmt = pix_fmt;
+    st->codec->codec_type = CODEC_TYPE_VIDEO;
+    st->codec->codec_id = CODEC_ID_RAWVIDEO;
+    st->codec->sample_aspect_ratio= (AVRational){aspectn, aspectd};
 
     return 0;
 }
@@ -349,10 +349,10 @@ static int yuv4_read_packet(AVFormatContext *s, AVPacket *pkt)
     if (i == MAX_FRAME_HEADER) return -1;
     if (strncmp(header, Y4M_FRAME_MAGIC, strlen(Y4M_FRAME_MAGIC))) return -1;
     
-    width = st->codec.width;
-    height = st->codec.height;
+    width = st->codec->width;
+    height = st->codec->height;
 
-    packet_size = avpicture_get_size(st->codec.pix_fmt, width, height);
+    packet_size = avpicture_get_size(st->codec->pix_fmt, width, height);
     if (packet_size < 0)
         return -1;
 

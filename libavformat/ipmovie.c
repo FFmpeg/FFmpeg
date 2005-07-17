@@ -554,14 +554,14 @@ static int ipmovie_read_header(AVFormatContext *s,
         return AVERROR_NOMEM;
     av_set_pts_info(st, 33, 1, 90000);
     ipmovie->video_stream_index = st->index;
-    st->codec.codec_type = CODEC_TYPE_VIDEO;
-    st->codec.codec_id = CODEC_ID_INTERPLAY_VIDEO;
-    st->codec.codec_tag = 0;  /* no fourcc */
-    st->codec.width = ipmovie->video_width;
-    st->codec.height = ipmovie->video_height;
+    st->codec->codec_type = CODEC_TYPE_VIDEO;
+    st->codec->codec_id = CODEC_ID_INTERPLAY_VIDEO;
+    st->codec->codec_tag = 0;  /* no fourcc */
+    st->codec->width = ipmovie->video_width;
+    st->codec->height = ipmovie->video_height;
 
     /* palette considerations */
-    st->codec.palctrl = &ipmovie->palette_control;
+    st->codec->palctrl = &ipmovie->palette_control;
 
     if (ipmovie->audio_type) {
         st = av_new_stream(s, 0);
@@ -569,17 +569,17 @@ static int ipmovie_read_header(AVFormatContext *s,
             return AVERROR_NOMEM;
         av_set_pts_info(st, 33, 1, 90000);
         ipmovie->audio_stream_index = st->index;
-        st->codec.codec_type = CODEC_TYPE_AUDIO;
-        st->codec.codec_id = ipmovie->audio_type;
-        st->codec.codec_tag = 0;  /* no tag */
-        st->codec.channels = ipmovie->audio_channels;
-        st->codec.sample_rate = ipmovie->audio_sample_rate;
-        st->codec.bits_per_sample = ipmovie->audio_bits;
-        st->codec.bit_rate = st->codec.channels * st->codec.sample_rate *
-            st->codec.bits_per_sample;
-        if (st->codec.codec_id == CODEC_ID_INTERPLAY_DPCM)
-            st->codec.bit_rate /= 2;
-        st->codec.block_align = st->codec.channels * st->codec.bits_per_sample;
+        st->codec->codec_type = CODEC_TYPE_AUDIO;
+        st->codec->codec_id = ipmovie->audio_type;
+        st->codec->codec_tag = 0;  /* no tag */
+        st->codec->channels = ipmovie->audio_channels;
+        st->codec->sample_rate = ipmovie->audio_sample_rate;
+        st->codec->bits_per_sample = ipmovie->audio_bits;
+        st->codec->bit_rate = st->codec->channels * st->codec->sample_rate *
+            st->codec->bits_per_sample;
+        if (st->codec->codec_id == CODEC_ID_INTERPLAY_DPCM)
+            st->codec->bit_rate /= 2;
+        st->codec->block_align = st->codec->channels * st->codec->bits_per_sample;
     }
 
     return 0;

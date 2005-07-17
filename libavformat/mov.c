@@ -481,16 +481,16 @@ static int mov_read_hdlr(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
         /* helps parsing the string hereafter... */
         c->mp4 = 0;
         if(type == MKTAG('v', 'i', 'd', 'e'))
-            st->codec.codec_type = CODEC_TYPE_VIDEO;
+            st->codec->codec_type = CODEC_TYPE_VIDEO;
         else if(type == MKTAG('s', 'o', 'u', 'n'))
-            st->codec.codec_type = CODEC_TYPE_AUDIO;
+            st->codec->codec_type = CODEC_TYPE_AUDIO;
     } else if(ctype == 0) { /* MP4 */
         /* helps parsing the string hereafter... */
         c->mp4 = 1;
         if(type == MKTAG('v', 'i', 'd', 'e'))
-            st->codec.codec_type = CODEC_TYPE_VIDEO;
+            st->codec->codec_type = CODEC_TYPE_VIDEO;
         else if(type == MKTAG('s', 'o', 'u', 'n'))
-            st->codec.codec_type = CODEC_TYPE_AUDIO;
+            st->codec->codec_type = CODEC_TYPE_AUDIO;
     }
     get_be32(pb); /* component  manufacture */
     get_be32(pb); /* component flags */
@@ -591,10 +591,10 @@ static int mov_read_esds(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 #ifdef DEBUG
 	    av_log(NULL, AV_LOG_DEBUG, "Specific MPEG4 header len=%d\n", len);
 #endif
-	    st->codec.extradata = (uint8_t*) av_mallocz(len + FF_INPUT_BUFFER_PADDING_SIZE);
-	    if (st->codec.extradata) {
-		get_buffer(pb, st->codec.extradata, len);
-		st->codec.extradata_size = len;
+	    st->codec->extradata = (uint8_t*) av_mallocz(len + FF_INPUT_BUFFER_PADDING_SIZE);
+	    if (st->codec->extradata) {
+		get_buffer(pb, st->codec->extradata, len);
+		st->codec->extradata_size = len;
 	    }
 	}
     }
@@ -703,14 +703,14 @@ static int mov_read_smi(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     
     // currently SVQ3 decoder expect full STSD header - so let's fake it
     // this should be fixed and just SMI header should be passed
-    av_free(st->codec.extradata);
-    st->codec.extradata_size = 0x5a + atom.size;
-    st->codec.extradata = (uint8_t*) av_mallocz(st->codec.extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
+    av_free(st->codec->extradata);
+    st->codec->extradata_size = 0x5a + atom.size;
+    st->codec->extradata = (uint8_t*) av_mallocz(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
 
-    if (st->codec.extradata) {
-	strcpy(st->codec.extradata, "SVQ3"); // fake
-	get_buffer(pb, st->codec.extradata + 0x5a, atom.size);
-	//av_log(NULL, AV_LOG_DEBUG, "Reading SMI %Ld  %s\n", atom.size, (char*)st->codec.extradata + 0x5a);
+    if (st->codec->extradata) {
+	strcpy(st->codec->extradata, "SVQ3"); // fake
+	get_buffer(pb, st->codec->extradata + 0x5a, atom.size);
+	//av_log(NULL, AV_LOG_DEBUG, "Reading SMI %Ld  %s\n", atom.size, (char*)st->codec->extradata + 0x5a);
     } else
 	url_fskip(pb, atom.size);
 
@@ -724,13 +724,13 @@ static int mov_read_avcC(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     if((uint64_t)atom.size > (1<<30))
         return -1;
 
-    av_free(st->codec.extradata);
+    av_free(st->codec->extradata);
 
-    st->codec.extradata_size = atom.size;
-    st->codec.extradata = (uint8_t*) av_mallocz(st->codec.extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
+    st->codec->extradata_size = atom.size;
+    st->codec->extradata = (uint8_t*) av_mallocz(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
 
-    if (st->codec.extradata) {
-	get_buffer(pb, st->codec.extradata, atom.size);
+    if (st->codec->extradata) {
+	get_buffer(pb, st->codec->extradata, atom.size);
     } else
 	url_fskip(pb, atom.size);
 
@@ -829,7 +829,7 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
             AVCodec *codec;
 	    codec = avcodec_find_decoder(id);
             if (codec)
-		st->codec.codec_type = codec->type;
+		st->codec->codec_type = codec->type;
         }
 #ifdef DEBUG
         av_log(NULL, AV_LOG_DEBUG, "size=%d 4CC= %c%c%c%c codec_type=%d\n",
@@ -838,23 +838,23 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
                (format >> 8) & 0xff,
                (format >> 16) & 0xff,
                (format >> 24) & 0xff,
-               st->codec.codec_type);
+               st->codec->codec_type);
 #endif
-	st->codec.codec_tag = format;
-	if(st->codec.codec_type==CODEC_TYPE_VIDEO) {
+	st->codec->codec_tag = format;
+	if(st->codec->codec_type==CODEC_TYPE_VIDEO) {
 	    MOV_atom_t a = { 0, 0, 0 };
-            st->codec.codec_id = id;
+            st->codec->codec_id = id;
             get_be16(pb); /* version */
             get_be16(pb); /* revision level */
             get_be32(pb); /* vendor */
             get_be32(pb); /* temporal quality */
             get_be32(pb); /* spacial quality */
-            if(st->codec.codec_id == CODEC_ID_MPEG4){ //FIXME this is silly
+            if(st->codec->codec_id == CODEC_ID_MPEG4){ //FIXME this is silly
                 get_be16(pb);
                 get_be16(pb);
             }else{
-                st->codec.width = get_be16(pb); /* width */
-                st->codec.height = get_be16(pb); /* height */
+                st->codec->width = get_be16(pb); /* width */
+                st->codec->height = get_be16(pb); /* height */
             }
             get_be32(pb); /* horiz resolution */
             get_be32(pb); /* vert resolution */
@@ -865,16 +865,16 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 #endif
         get_buffer(pb, codec_name, 32); /* codec name, pascal string (FIXME: true for mp4?) */
         if (codec_name[0] <= 31) {
-            memcpy(st->codec.codec_name, &codec_name[1],codec_name[0]);
-            st->codec.codec_name[codec_name[0]] = 0;
+            memcpy(st->codec->codec_name, &codec_name[1],codec_name[0]);
+            st->codec->codec_name[codec_name[0]] = 0;
         }
 
-	    st->codec.bits_per_sample = get_be16(pb); /* depth */
-            st->codec.color_table_id = get_be16(pb); /* colortable id */
+	    st->codec->bits_per_sample = get_be16(pb); /* depth */
+            st->codec->color_table_id = get_be16(pb); /* colortable id */
 
 /*          These are set in mov_read_stts and might already be set!
-            st->codec.time_base.den      = 25;
-            st->codec.time_base.num = 1;
+            st->codec->time_base.den      = 25;
+            st->codec->time_base.num = 1;
 */
 	    size -= (16+8*4+2+32+2*2);
 #if 0
@@ -948,8 +948,8 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 #else
 
             /* figure out the palette situation */
-            color_depth = st->codec.bits_per_sample & 0x1F;
-            color_greyscale = st->codec.bits_per_sample & 0x20;
+            color_depth = st->codec->bits_per_sample & 0x1F;
+            color_greyscale = st->codec->bits_per_sample & 0x20;
 
             /* if the depth is 2, 4, or 8 bpp, file is palettized */
             if ((color_depth == 2) || (color_depth == 4) || 
@@ -970,7 +970,7 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
                             color_index = 0;
                     }
 
-                } else if (st->codec.color_table_id & 0x08) {
+                } else if (st->codec->color_table_id & 0x08) {
 
                     /* if flag bit 3 is set, use the default palette */
                     color_count = 1 << color_depth;
@@ -1012,17 +1012,17 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
                     }
                 }
 
-                st->codec.palctrl = &c->palette_control;
-                st->codec.palctrl->palette_changed = 1;
+                st->codec->palctrl = &c->palette_control;
+                st->codec->palctrl->palette_changed = 1;
             } else
-                st->codec.palctrl = NULL;
+                st->codec->palctrl = NULL;
 
             a.size = size;
 	    mov_read_default(c, pb, a);
 #endif
 	} else {
-            st->codec.codec_id = codec_get_id(mov_audio_tags, format);
-	    if(st->codec.codec_id==CODEC_ID_AMR_NB || st->codec.codec_id==CODEC_ID_AMR_WB) //from TS26.244
+            st->codec->codec_id = codec_get_id(mov_audio_tags, format);
+	    if(st->codec->codec_id==CODEC_ID_AMR_NB || st->codec->codec_id==CODEC_ID_AMR_WB) //from TS26.244
 	    {
 #ifdef DEBUG
                av_log(NULL, AV_LOG_DEBUG, "AMR-NB or AMR-WB audio identified!!\n");
@@ -1045,21 +1045,21 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
                get_byte(pb); //frames_per_sample
 
                st->duration = AV_NOPTS_VALUE;//Not possible to get from this info, must count number of AMR frames
-               if(st->codec.codec_id==CODEC_ID_AMR_NB)
+               if(st->codec->codec_id==CODEC_ID_AMR_NB)
                {
-                   st->codec.sample_rate=8000;
-                   st->codec.channels=1;
+                   st->codec->sample_rate=8000;
+                   st->codec->channels=1;
                }
                else //AMR-WB
                {
-                   st->codec.sample_rate=16000;
-                   st->codec.channels=1;
+                   st->codec->sample_rate=16000;
+                   st->codec->channels=1;
                }
-               st->codec.bits_per_sample=16;
-               st->codec.bit_rate=0; /*It is not possible to tell this before we have 
+               st->codec->bits_per_sample=16;
+               st->codec->bit_rate=0; /*It is not possible to tell this before we have 
                                        an audio frame and even then every frame can be different*/
 	    }
-            else if( st->codec.codec_tag == MKTAG( 'm', 'p', '4', 's' ))
+            else if( st->codec->codec_tag == MKTAG( 'm', 'p', '4', 's' ))
             {
                 //This is some stuff for the hint track, lets ignore it!
                 //Do some mp4 auto detect.
@@ -1067,7 +1067,7 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
                 size-=(16);
                 url_fskip(pb, size); /* The mp4s atom also contians a esds atom that we can skip*/
             }
-            else if( st->codec.codec_tag == MKTAG( 'm', 'p', '4', 'a' ))
+            else if( st->codec->codec_tag == MKTAG( 'm', 'p', '4', 'a' ))
             {
                 MOV_atom_t a;
                 int mp4_version;
@@ -1076,10 +1076,10 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
                 mp4_version=get_be16(pb);/*version*/
                 get_be16(pb); /*revesion*/
                 get_be32(pb);
-                st->codec.channels = get_be16(pb); /* channels */
-                st->codec.bits_per_sample = get_be16(pb); /* bits per sample */
+                st->codec->channels = get_be16(pb); /* channels */
+                st->codec->bits_per_sample = get_be16(pb); /* bits per sample */
                 get_be32(pb);
-                st->codec.sample_rate = get_be16(pb); /* sample rate, not always correct */
+                st->codec->sample_rate = get_be16(pb); /* sample rate, not always correct */
                 get_be16(pb);
                 c->mp4=1;
                 
@@ -1096,35 +1096,35 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
                 mov_read_default(c, pb, a);
 
                 /* Get correct sample rate from extradata */
-                if(st->codec.extradata_size) {
+                if(st->codec->extradata_size) {
                    const int samplerate_table[] = {
                      96000, 88200, 64000, 48000, 44100, 32000, 
                      24000, 22050, 16000, 12000, 11025, 8000,
                      7350, 0, 0, 0
                    };
-                   unsigned char *px = st->codec.extradata;
+                   unsigned char *px = st->codec->extradata;
                    // 5 bits objectTypeIndex, 4 bits sampleRateIndex, 4 bits channels
                    int samplerate_index = ((px[0] & 7) << 1) + ((px[1] >> 7) & 1);
-                   st->codec.sample_rate = samplerate_table[samplerate_index];
-                   st->codec.channels = (px[1] >> 3) & 15;
+                   st->codec->sample_rate = samplerate_table[samplerate_index];
+                   st->codec->channels = (px[1] >> 3) & 15;
                 }
             }
-            else if( st->codec.codec_tag == MKTAG( 'a', 'l', 'a', 'c' ))
+            else if( st->codec->codec_tag == MKTAG( 'a', 'l', 'a', 'c' ))
             {
                 /* Handle alac audio tag + special extradata */
                 get_be32(pb); /* version */
                 get_be32(pb);
-                st->codec.channels = get_be16(pb); /* channels */
-                st->codec.bits_per_sample = get_be16(pb); /* bits per sample */
+                st->codec->channels = get_be16(pb); /* channels */
+                st->codec->bits_per_sample = get_be16(pb); /* bits per sample */
                 get_be32(pb);
-                st->codec.sample_rate = get_be16(pb);
+                st->codec->sample_rate = get_be16(pb);
                 get_be16(pb);
 
                 /* fetch the 36-byte extradata needed for alac decoding */
-                st->codec.extradata_size = 36;
-                st->codec.extradata = (uint8_t*) 
-                    av_mallocz(st->codec.extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
-                get_buffer(pb, st->codec.extradata, st->codec.extradata_size);
+                st->codec->extradata_size = 36;
+                st->codec->extradata = (uint8_t*) 
+                    av_mallocz(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
+                get_buffer(pb, st->codec->extradata, st->codec->extradata_size);
             }
 	    else if(size>=(16+20))
 	    {//16 bytes read, reading atleast 20 more
@@ -1136,23 +1136,23 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
                 get_be16(pb); /* revision level */
                 get_be32(pb); /* vendor */
 
-                st->codec.channels = get_be16(pb);		/* channel count */
-	        st->codec.bits_per_sample = get_be16(pb);	/* sample size */
+                st->codec->channels = get_be16(pb);		/* channel count */
+	        st->codec->bits_per_sample = get_be16(pb);	/* sample size */
 
                 /* handle specific s8 codec */
                 get_be16(pb); /* compression id = 0*/
                 get_be16(pb); /* packet size = 0 */
 
-                st->codec.sample_rate = ((get_be32(pb) >> 16));
-	        //av_log(NULL, AV_LOG_DEBUG, "CODECID %d  %d  %.4s\n", st->codec.codec_id, CODEC_ID_PCM_S16BE, (char*)&format);
+                st->codec->sample_rate = ((get_be32(pb) >> 16));
+	        //av_log(NULL, AV_LOG_DEBUG, "CODECID %d  %d  %.4s\n", st->codec->codec_id, CODEC_ID_PCM_S16BE, (char*)&format);
 
-	        switch (st->codec.codec_id) {
+	        switch (st->codec->codec_id) {
 	        case CODEC_ID_PCM_S16BE:
-		    if (st->codec.bits_per_sample == 8)
-		        st->codec.codec_id = CODEC_ID_PCM_S8;
+		    if (st->codec->bits_per_sample == 8)
+		        st->codec->codec_id = CODEC_ID_PCM_S8;
                     /* fall */
 	        case CODEC_ID_PCM_U8:
-		    st->codec.bit_rate = st->codec.sample_rate * 8;
+		    st->codec->bit_rate = st->codec->sample_rate * 8;
 		    break;
 	        default:
                     ;
@@ -1348,8 +1348,8 @@ av_log(NULL, AV_LOG_DEBUG, "track[%i].stts.entries = %i\n", c->fc->nb_streams-1,
     }
 
     av_set_pts_info(st, 64, 1, c->streams[c->fc->nb_streams-1]->time_scale);
-//    st->codec.time_base.num = 1;
-//    st->codec.time_base.den = c->streams[c->fc->nb_streams-1]->time_scale;
+//    st->codec->time_base.num = 1;
+//    st->codec->time_base.den = c->streams[c->fc->nb_streams-1]->time_scale;
     st->nb_frames= total_sample_count;
     if(duration)
         st->duration= duration;
@@ -1400,7 +1400,7 @@ static int mov_read_trak(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 
     sc->sample_to_chunk_index = -1;
     st->priv_data = sc;
-    st->codec.codec_type = CODEC_TYPE_MOV_OTHER;
+    st->codec->codec_type = CODEC_TYPE_MOV_OTHER;
     st->start_time = 0; /* XXX: check */
     c->streams[c->fc->nb_streams-1] = sc;
 
@@ -1443,8 +1443,8 @@ static int mov_read_tkhd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     url_fskip(pb, 36); /* display matrix */
 
     /* those are fixed-point */
-    /*st->codec.width =*/ get_be32(pb) >> 16; /* track width */
-    /*st->codec.height =*/ get_be32(pb) >> 16; /* track height */
+    /*st->codec->width =*/ get_be32(pb) >> 16; /* track width */
+    /*st->codec->height =*/ get_be32(pb) >> 16; /* track height */
 
     return 0;
 }
@@ -1755,7 +1755,7 @@ static int mov_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
 #if 1
     for(i=0; i<s->nb_streams;) {
-        if(s->streams[i]->codec.codec_type == CODEC_TYPE_MOV_OTHER) {/* not audio, not video, delete */
+        if(s->streams[i]->codec->codec_type == CODEC_TYPE_MOV_OTHER) {/* not audio, not video, delete */
             av_free(s->streams[i]);
             for(j=i+1; j<s->nb_streams; j++)
                 s->streams[j-1] = s->streams[j];
@@ -1894,7 +1894,7 @@ again:
             {
 		// I can't figure out why for PCM audio sample_size is always 1
 		// (it should actually be channels*bits_per_second/8) but it is.
-		AVCodecContext* cod = &s->streams[sc->ffindex]->codec;
+		AVCodecContext* cod = s->streams[sc->ffindex]->codec;
                 if (sc->sample_size == 1 && (cod->codec_id == CODEC_ID_PCM_S16BE || cod->codec_id == CODEC_ID_PCM_S16LE))
 		    foundsize=(sc->sample_to_chunk[i].count*cod->channels*cod->bits_per_sample)/8;
 		else

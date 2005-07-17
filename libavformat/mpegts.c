@@ -493,7 +493,7 @@ static void pmt_cb(void *opaque, const uint8_t *section, int section_len)
             }
 
             if (stream_type == STREAM_TYPE_SUBTITLE_DVB) {
-                st->codec.sub_id = (anc_page << 16) | comp_page;
+                st->codec->sub_id = (anc_page << 16) | comp_page;
             }
         }
     }
@@ -921,8 +921,8 @@ static AVStream* new_pes_av_stream(PESContext *pes, uint32_t code)
     if (st) {
         av_set_pts_info(st, 33, 1, 90000);
         st->priv_data = pes;
-        st->codec.codec_type = codec_type;
-        st->codec.codec_id = codec_id;
+        st->codec->codec_type = codec_type;
+        st->codec->codec_id = codec_id;
         st->need_parsing = 1;
         pes->st = st;
     }
@@ -1253,8 +1253,8 @@ static int mpegts_read_header(AVFormatContext *s,
         if (!st)
             goto fail;
         av_set_pts_info(st, 60, 1, 27000000);
-        st->codec.codec_type = CODEC_TYPE_DATA;
-        st->codec.codec_id = CODEC_ID_MPEG2TS;
+        st->codec->codec_type = CODEC_TYPE_DATA;
+        st->codec->codec_id = CODEC_ID_MPEG2TS;
         
         /* we iterate until we find two PCRs to estimate the bitrate */
         pcr_pid = -1;
@@ -1283,7 +1283,7 @@ static int mpegts_read_header(AVFormatContext *s,
         ts->pcr_incr = (pcrs[1] - pcrs[0]) / (packet_count[1] - packet_count[0]);
         ts->cur_pcr = pcrs[0] - ts->pcr_incr * packet_count[0];
         s->bit_rate = (TS_PACKET_SIZE * 8) * 27e6 / ts->pcr_incr;
-        st->codec.bit_rate = s->bit_rate;
+        st->codec->bit_rate = s->bit_rate;
         st->start_time = ts->cur_pcr;
 #if 0
         printf("start=%0.3f pcr=%0.3f incr=%d\n",

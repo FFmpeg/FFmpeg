@@ -131,14 +131,14 @@ static int vmd_read_header(AVFormatContext *s,
         return AVERROR_NOMEM;
     av_set_pts_info(st, 33, 1, 90000);
     vmd->video_stream_index = st->index;
-    st->codec.codec_type = CODEC_TYPE_VIDEO;
-    st->codec.codec_id = CODEC_ID_VMDVIDEO;
-    st->codec.codec_tag = 0;  /* no fourcc */
-    st->codec.width = LE_16(&vmd->vmd_header[12]);
-    st->codec.height = LE_16(&vmd->vmd_header[14]);
-    st->codec.extradata_size = VMD_HEADER_SIZE;
-    st->codec.extradata = av_malloc(VMD_HEADER_SIZE);
-    memcpy(st->codec.extradata, vmd->vmd_header, VMD_HEADER_SIZE);
+    st->codec->codec_type = CODEC_TYPE_VIDEO;
+    st->codec->codec_id = CODEC_ID_VMDVIDEO;
+    st->codec->codec_tag = 0;  /* no fourcc */
+    st->codec->width = LE_16(&vmd->vmd_header[12]);
+    st->codec->height = LE_16(&vmd->vmd_header[14]);
+    st->codec->extradata_size = VMD_HEADER_SIZE;
+    st->codec->extradata = av_malloc(VMD_HEADER_SIZE);
+    memcpy(st->codec->extradata, vmd->vmd_header, VMD_HEADER_SIZE);
 
     /* if sample rate is 0, assume no audio */
     vmd->sample_rate = LE_16(&vmd->vmd_header[804]);
@@ -148,29 +148,29 @@ static int vmd_read_header(AVFormatContext *s,
             return AVERROR_NOMEM;
         av_set_pts_info(st, 33, 1, 90000);
         vmd->audio_stream_index = st->index;
-        st->codec.codec_type = CODEC_TYPE_AUDIO;
-        st->codec.codec_id = CODEC_ID_VMDAUDIO;
-        st->codec.codec_tag = 0;  /* no codec tag */
-        st->codec.channels = (vmd->vmd_header[811] & 0x80) ? 2 : 1;
-        st->codec.sample_rate = vmd->sample_rate;
-        st->codec.block_align = vmd->audio_block_align = 
+        st->codec->codec_type = CODEC_TYPE_AUDIO;
+        st->codec->codec_id = CODEC_ID_VMDAUDIO;
+        st->codec->codec_tag = 0;  /* no codec tag */
+        st->codec->channels = (vmd->vmd_header[811] & 0x80) ? 2 : 1;
+        st->codec->sample_rate = vmd->sample_rate;
+        st->codec->block_align = vmd->audio_block_align = 
             LE_16(&vmd->vmd_header[806]);
-        if (st->codec.block_align & 0x8000) {
-            st->codec.bits_per_sample = 16;
-            st->codec.block_align = -(st->codec.block_align - 0x10000);
+        if (st->codec->block_align & 0x8000) {
+            st->codec->bits_per_sample = 16;
+            st->codec->block_align = -(st->codec->block_align - 0x10000);
         } else
-            st->codec.bits_per_sample = 16;
-//            st->codec.bits_per_sample = 8;
-        st->codec.bit_rate = st->codec.sample_rate * 
-            st->codec.bits_per_sample * st->codec.channels;
+            st->codec->bits_per_sample = 16;
+//            st->codec->bits_per_sample = 8;
+        st->codec->bit_rate = st->codec->sample_rate * 
+            st->codec->bits_per_sample * st->codec->channels;
 
         /* for calculating pts */
-        vmd->audio_frame_divisor = st->codec.bits_per_sample / 8 / 
-            st->codec.channels;
+        vmd->audio_frame_divisor = st->codec->bits_per_sample / 8 / 
+            st->codec->channels;
 
         video_pts_inc = 90000;
-        video_pts_inc *= st->codec.block_align;
-        video_pts_inc /= st->codec.sample_rate;
+        video_pts_inc *= st->codec->block_align;
+        video_pts_inc /= st->codec->sample_rate;
     } else {
         /* if no audio, assume 10 frames/second */
         video_pts_inc = 90000 / 10;

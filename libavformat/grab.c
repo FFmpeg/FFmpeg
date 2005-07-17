@@ -109,11 +109,11 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     }
 
     desired_palette = -1;
-    if (st->codec.pix_fmt == PIX_FMT_YUV420P) {
+    if (st->codec->pix_fmt == PIX_FMT_YUV420P) {
         desired_palette = VIDEO_PALETTE_YUV420P;
-    } else if (st->codec.pix_fmt == PIX_FMT_YUV422) {
+    } else if (st->codec->pix_fmt == PIX_FMT_YUV422) {
         desired_palette = VIDEO_PALETTE_YUV422;
-    } else if (st->codec.pix_fmt == PIX_FMT_BGR24) {
+    } else if (st->codec->pix_fmt == PIX_FMT_BGR24) {
         desired_palette = VIDEO_PALETTE_RGB24;
     }    
 
@@ -245,15 +245,15 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     switch(s->frame_format) {
     case VIDEO_PALETTE_YUV420P:
         frame_size = (width * height * 3) / 2;
-        st->codec.pix_fmt = PIX_FMT_YUV420P;
+        st->codec->pix_fmt = PIX_FMT_YUV420P;
         break;
     case VIDEO_PALETTE_YUV422:
         frame_size = width * height * 2;
-        st->codec.pix_fmt = PIX_FMT_YUV422;
+        st->codec->pix_fmt = PIX_FMT_YUV422;
         break;
     case VIDEO_PALETTE_RGB24:
         frame_size = width * height * 3;
-        st->codec.pix_fmt = PIX_FMT_BGR24; /* NOTE: v4l uses BGR24, not RGB24 ! */
+        st->codec->pix_fmt = PIX_FMT_BGR24; /* NOTE: v4l uses BGR24, not RGB24 ! */
         break;
     default:
         goto fail;
@@ -261,12 +261,12 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     s->fd = video_fd;
     s->frame_size = frame_size;
     
-    st->codec.codec_type = CODEC_TYPE_VIDEO;
-    st->codec.codec_id = CODEC_ID_RAWVIDEO;
-    st->codec.width = width;
-    st->codec.height = height;
-    st->codec.time_base.den      = frame_rate;
-    st->codec.time_base.num = frame_rate_base;
+    st->codec->codec_type = CODEC_TYPE_VIDEO;
+    st->codec->codec_id = CODEC_ID_RAWVIDEO;
+    st->codec->width = width;
+    st->codec->height = height;
+    st->codec->time_base.den      = frame_rate;
+    st->codec->time_base.num = frame_rate_base;
 
     return 0;
  fail:

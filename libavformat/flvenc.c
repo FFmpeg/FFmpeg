@@ -97,7 +97,7 @@ static int flv_write_header(AVFormatContext *s)
     put_be32(pb,0);
     
     for(i=0; i<s->nb_streams; i++){
-        AVCodecContext *enc = &s->streams[i]->codec;
+        AVCodecContext *enc = s->streams[i]->codec;
         av_set_pts_info(s->streams[i], 24, 1, 1000); /* 24 bit pts in ms */
         if(enc->codec_tag == 5){
             put_byte(pb,8); // message type
@@ -134,7 +134,7 @@ static int flv_write_trailer(AVFormatContext *s)
 static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     ByteIOContext *pb = &s->pb;
-    AVCodecContext *enc = &s->streams[pkt->stream_index]->codec;
+    AVCodecContext *enc = s->streams[pkt->stream_index]->codec;
     FLVContext *flv = s->priv_data;
     int size= pkt->size;
     int flags;

@@ -62,7 +62,7 @@ AVStream *add_audio_stream(AVFormatContext *oc, int codec_id)
         exit(1);
     }
 
-    c = &st->codec;
+    c = st->codec;
     c->codec_id = codec_id;
     c->codec_type = CODEC_TYPE_AUDIO;
 
@@ -78,7 +78,7 @@ void open_audio(AVFormatContext *oc, AVStream *st)
     AVCodecContext *c;
     AVCodec *codec;
 
-    c = &st->codec;
+    c = st->codec;
 
     /* find the audio encoder */
     codec = avcodec_find_encoder(c->codec_id);
@@ -106,7 +106,7 @@ void open_audio(AVFormatContext *oc, AVStream *st)
        support to compute the input frame size in samples */
     if (c->frame_size <= 1) {
         audio_input_frame_size = audio_outbuf_size / c->channels;
-        switch(st->codec.codec_id) {
+        switch(st->codec->codec_id) {
         case CODEC_ID_PCM_S16LE:
         case CODEC_ID_PCM_S16BE:
         case CODEC_ID_PCM_U16LE:
@@ -145,7 +145,7 @@ void write_audio_frame(AVFormatContext *oc, AVStream *st)
     AVPacket pkt;
     av_init_packet(&pkt);
     
-    c = &st->codec;
+    c = st->codec;
 
     get_audio_frame(samples, audio_input_frame_size, c->channels);
 
@@ -165,7 +165,7 @@ void write_audio_frame(AVFormatContext *oc, AVStream *st)
 
 void close_audio(AVFormatContext *oc, AVStream *st)
 {
-    avcodec_close(&st->codec);
+    avcodec_close(st->codec);
     
     av_free(samples);
     av_free(audio_outbuf);
@@ -190,7 +190,7 @@ AVStream *add_video_stream(AVFormatContext *oc, int codec_id)
         exit(1);
     }
     
-    c = &st->codec;
+    c = st->codec;
     c->codec_id = codec_id;
     c->codec_type = CODEC_TYPE_VIDEO;
 
@@ -246,7 +246,7 @@ void open_video(AVFormatContext *oc, AVStream *st)
     AVCodec *codec;
     AVCodecContext *c;
 
-    c = &st->codec;
+    c = st->codec;
 
     /* find the video encoder */
     codec = avcodec_find_encoder(c->codec_id);
@@ -317,7 +317,7 @@ void write_video_frame(AVFormatContext *oc, AVStream *st)
     int out_size, ret;
     AVCodecContext *c;
     
-    c = &st->codec;
+    c = st->codec;
     
     if (frame_count >= STREAM_NB_FRAMES) {
         /* no more frame to compress. The codec has a latency of a few
@@ -379,7 +379,7 @@ void write_video_frame(AVFormatContext *oc, AVStream *st)
 
 void close_video(AVFormatContext *oc, AVStream *st)
 {
-    avcodec_close(&st->codec);
+    avcodec_close(st->codec);
     av_free(picture->data[0]);
     av_free(picture);
     if (tmp_picture) {

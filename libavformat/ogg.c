@@ -39,7 +39,7 @@ static int ogg_write_header(AVFormatContext *avfcontext)
     ogg_stream_init(&context->os, 31415);
     
     for(n = 0 ; n < avfcontext->nb_streams ; n++) {
-        AVCodecContext *codec = &avfcontext->streams[n]->codec;
+        AVCodecContext *codec = avfcontext->streams[n]->codec;
         uint8_t *p= codec->extradata;
         
         av_set_pts_info(avfcontext->streams[n], 60, 1, AV_TIME_BASE);
@@ -65,7 +65,7 @@ static int ogg_write_header(AVFormatContext *avfcontext)
 static int ogg_write_packet(AVFormatContext *avfcontext, AVPacket *pkt)
 {
     OggContext *context = avfcontext->priv_data ;
-    AVCodecContext *avctx= &avfcontext->streams[pkt->stream_index]->codec;
+    AVCodecContext *avctx= avfcontext->streams[pkt->stream_index]->codec;
     ogg_packet *op= &context->op;
     ogg_page og ;
     int64_t pts;

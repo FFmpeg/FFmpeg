@@ -193,8 +193,8 @@ static int img_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     }
     
     if(ap && ap->width && ap->height){
-        st->codec.width = ap->width;
-        st->codec.height= ap->height;
+        st->codec->width = ap->width;
+        st->codec->height= ap->height;
     }
     
     if (!s->is_pipe) {
@@ -209,17 +209,17 @@ static int img_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     }
     
     if(ap->video_codec_id){
-        st->codec.codec_type = CODEC_TYPE_VIDEO;
-        st->codec.codec_id = ap->video_codec_id;
+        st->codec->codec_type = CODEC_TYPE_VIDEO;
+        st->codec->codec_id = ap->video_codec_id;
     }else if(ap->audio_codec_id){
-        st->codec.codec_type = CODEC_TYPE_AUDIO;
-        st->codec.codec_id = ap->audio_codec_id;
+        st->codec->codec_type = CODEC_TYPE_AUDIO;
+        st->codec->codec_id = ap->audio_codec_id;
     }else{
-        st->codec.codec_type = CODEC_TYPE_VIDEO;
-        st->codec.codec_id = av_str2id(img_tags, s->path);
+        st->codec->codec_type = CODEC_TYPE_VIDEO;
+        st->codec->codec_id = av_str2id(img_tags, s->path);
     }
-    if(st->codec.codec_type == CODEC_TYPE_VIDEO && ap->pix_fmt != PIX_FMT_NONE)
-        st->codec.pix_fmt = ap->pix_fmt;
+    if(st->codec->codec_type == CODEC_TYPE_VIDEO && ap->pix_fmt != PIX_FMT_NONE)
+        st->codec->pix_fmt = ap->pix_fmt;
 
     return 0;
 }
@@ -231,7 +231,7 @@ static int img_read_packet(AVFormatContext *s1, AVPacket *pkt)
     int i;
     int size[3]={0}, ret[3]={0};
     ByteIOContext f1[3], *f[3]= {&f1[0], &f1[1], &f1[2]};
-    AVCodecContext *codec= &s1->streams[0]->codec;
+    AVCodecContext *codec= s1->streams[0]->codec;
 
     if (!s->is_pipe) {
         /* loop over input */
@@ -314,7 +314,7 @@ static int img_write_packet(AVFormatContext *s, AVPacket *pkt)
     VideoData *img = s->priv_data;
     ByteIOContext pb1[3], *pb[3]= {&pb1[0], &pb1[1], &pb1[2]};
     char filename[1024];
-    AVCodecContext *codec= &s->streams[ pkt->stream_index ]->codec;
+    AVCodecContext *codec= s->streams[ pkt->stream_index ]->codec;
     int i;
 
     if (!img->is_pipe) {

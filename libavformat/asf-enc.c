@@ -289,7 +289,7 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size, int64_t data
 
     bit_rate = 0;
     for(n=0;n<s->nb_streams;n++) {
-        enc = &s->streams[n]->codec;
+        enc = s->streams[n]->codec;
 
         av_set_pts_info(s->streams[n], 32, 1, 1000); /* 32 bit pts in ms */
 
@@ -353,7 +353,7 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size, int64_t data
         int er_spr_len = 0;
         //        ASFStream *stream = &asf->streams[n];
 
-        enc = &s->streams[n]->codec;
+        enc = s->streams[n]->codec;
         asf->streams[n].num = n + 1;
         asf->streams[n].seq = 0;
 
@@ -437,7 +437,7 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size, int64_t data
     for(n=0;n<s->nb_streams;n++) {
         AVCodec *p;
 
-        enc = &s->streams[n]->codec;
+        enc = s->streams[n]->codec;
         p = avcodec_find_encoder(enc->codec_id);
 
         put_le16(pb, asf->streams[n].num);
@@ -730,7 +730,7 @@ static int asf_write_packet(AVFormatContext *s, AVPacket *pkt)
     int64_t packet_st,pts; 
     int start_sec,i;
 
-    codec = &s->streams[pkt->stream_index]->codec;
+    codec = s->streams[pkt->stream_index]->codec;
     stream = &asf->streams[pkt->stream_index];
 
     //XXX /FIXME use duration from AVPacket (quick hack by)

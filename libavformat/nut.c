@@ -155,7 +155,7 @@ static void build_frame_code(AVFormatContext *s){
     for(stream_id= 0; stream_id<s->nb_streams; stream_id++){
         int start2= start + (end-start)*stream_id / s->nb_streams;
         int end2  = start + (end-start)*(stream_id+1) / s->nb_streams;
-        AVCodecContext *codec = &s->streams[stream_id]->codec;
+        AVCodecContext *codec = s->streams[stream_id]->codec;
         int is_audio= codec->codec_type == CODEC_TYPE_AUDIO;
         int intra_only= /*codec->intra_only || */is_audio;
         int pred_count;
@@ -579,7 +579,7 @@ static int nut_write_header(AVFormatContext *s)
     {
 	int nom, denom, ssize;
 
-	codec = &s->streams[i]->codec;
+	codec = s->streams[i]->codec;
 	
 	put_be64(bc, STREAM_STARTCODE);
 	put_packetheader(nut, bc, 120 + codec->extradata_size, 1);
@@ -674,7 +674,7 @@ static int nut_write_header(AVFormatContext *s)
         put_str(bc, s->copyright);
     }
     /* encoder */
-    if(!(s->streams[0]->codec.flags & CODEC_FLAG_BITEXACT)){
+    if(!(s->streams[0]->codec->flags & CODEC_FLAG_BITEXACT)){
         put_v(bc, 13); /* type */
         put_str(bc, LIBAVFORMAT_IDENT);
     }
@@ -707,7 +707,7 @@ static int nut_write_packet(AVFormatContext *s, AVPacket *pkt)
     int size= pkt->size;
     int stream_index= pkt->stream_index;
 
-    enc = &s->streams[stream_index]->codec;
+    enc = s->streams[stream_index]->codec;
     key_frame = !!(pkt->flags & PKT_FLAG_KEY);
     
     frame_type=0;
@@ -949,27 +949,27 @@ static int decode_stream_header(NUTContext *nut){
 
     class = get_v(bc);
     tmp = get_vb(bc);
-    st->codec.codec_tag= tmp;
+    st->codec->codec_tag= tmp;
     switch(class)
     {
         case 0:
-            st->codec.codec_type = CODEC_TYPE_VIDEO;
-            st->codec.codec_id = codec_get_bmp_id(tmp);
-            if (st->codec.codec_id == CODEC_ID_NONE)
+            st->codec->codec_type = CODEC_TYPE_VIDEO;
+            st->codec->codec_id = codec_get_bmp_id(tmp);
+            if (st->codec->codec_id == CODEC_ID_NONE)
                 av_log(s, AV_LOG_ERROR, "Unknown codec?!\n");
             break;
         case 1:
         case 32: //compatibility
-            st->codec.codec_type = CODEC_TYPE_AUDIO;
-            st->codec.codec_id = codec_get_wav_id(tmp);
-            if (st->codec.codec_id == CODEC_ID_NONE)
+            st->codec->codec_type = CODEC_TYPE_AUDIO;
+            st->codec->codec_id = codec_get_wav_id(tmp);
+            if (st->codec->codec_id == CODEC_ID_NONE)
                 av_log(s, AV_LOG_ERROR, "Unknown codec?!\n");
             break;
         case 2:
-//            st->codec.codec_type = CODEC_TYPE_TEXT;
+//            st->codec->codec_type = CODEC_TYPE_TEXT;
 //            break;
         case 3:
-            st->codec.codec_type = CODEC_TYPE_DATA;
+            st->codec->codec_type = CODEC_TYPE_DATA;
             break;
         default:
             av_log(s, AV_LOG_ERROR, "Unknown stream class (%d)\n", class);
@@ -980,33 +980,33 @@ static int decode_stream_header(NUTContext *nut){
     nom = get_v(bc);
     denom = get_v(bc);
     nut->stream[stream_id].msb_timestamp_shift = get_v(bc);
-    st->codec.has_b_frames=
+    st->codec->has_b_frames=
     nut->stream[stream_id].decode_delay= get_v(bc);
     get_byte(bc); /* flags */
 
     /* codec specific data headers */
     while(get_v(bc) != 0){
-        st->codec.extradata_size= get_v(bc);
-        if((unsigned)st->codec.extradata_size > (1<<30))
+        st->codec->extradata_size= get_v(bc);
+        if((unsigned)st->codec->extradata_size > (1<<30))
             return -1;
-        st->codec.extradata= av_mallocz(st->codec.extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
-        get_buffer(bc, st->codec.extradata, st->codec.extradata_size);            
+        st->codec->extradata= av_mallocz(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
+        get_buffer(bc, st->codec->extradata, st->codec->extradata_size);            
 //	    url_fskip(bc, get_v(bc));
     }
     
-    if (st->codec.codec_type == CODEC_TYPE_VIDEO) /* VIDEO */
+    if (st->codec->codec_type == CODEC_TYPE_VIDEO) /* VIDEO */
     {
-        st->codec.width = get_v(bc);
-        st->codec.height = get_v(bc);
-        st->codec.sample_aspect_ratio.num= get_v(bc);
-        st->codec.sample_aspect_ratio.den= get_v(bc);
+        st->codec->width = get_v(bc);
+        st->codec->height = get_v(bc);
+        st->codec->sample_aspect_ratio.num= get_v(bc);
+        st->codec->sample_aspect_ratio.den= get_v(bc);
         get_v(bc); /* csp type */
     }
-    if (st->codec.codec_type == CODEC_TYPE_AUDIO) /* AUDIO */
+    if (st->codec->codec_type == CODEC_TYPE_AUDIO) /* AUDIO */
     {
-        st->codec.sample_rate = get_v(bc);
+        st->codec->sample_rate = get_v(bc);
         get_v(bc); // samplerate_den
-        st->codec.channels = get_v(bc);
+        st->codec->channels = get_v(bc);
     }
     if(check_checksum(bc)){
         av_log(s, AV_LOG_ERROR, "Stream header %d checksum mismatch\n", stream_id);
@@ -1407,7 +1407,7 @@ static int nut_read_close(AVFormatContext *s)
     int i;
 
     for(i=0;i<s->nb_streams;i++) {
-        av_freep(&s->streams[i]->codec.extradata);
+        av_freep(&s->streams[i]->codec->extradata);
     }
     av_freep(&nut->stream);
 

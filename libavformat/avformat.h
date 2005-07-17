@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-#define LIBAVFORMAT_BUILD       4628
+#define LIBAVFORMAT_BUILD       4629
 
 #define LIBAVFORMAT_VERSION_INT FFMPEG_VERSION_INT
 #define LIBAVFORMAT_VERSION     FFMPEG_VERSION
@@ -216,7 +216,7 @@ typedef struct AVIndexEntry {
 typedef struct AVStream {
     int index;    /* stream index in AVFormatContext */
     int id;       /* format specific stream id */
-    AVCodecContext codec; /* codec context */
+    AVCodecContext *codec; /* codec context */
     /**
      * real base frame rate of the stream.
      * for example if the timebase is 1/90000 and all frames have either 

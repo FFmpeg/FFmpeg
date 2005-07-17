@@ -324,7 +324,7 @@ static int swf_write_header(AVFormatContext *s)
     video_enc = NULL;
     audio_enc = NULL;
     for(i=0;i<s->nb_streams;i++) {
-        enc = &s->streams[i]->codec;
+        enc = s->streams[i]->codec;
         if (enc->codec_type == CODEC_TYPE_AUDIO)
             audio_enc = enc;
         else {
@@ -652,7 +652,7 @@ static int swf_write_audio(AVFormatContext *s,
 
 static int swf_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    AVCodecContext *codec = &s->streams[pkt->stream_index]->codec;
+    AVCodecContext *codec = s->streams[pkt->stream_index]->codec;
     if (codec->codec_type == CODEC_TYPE_AUDIO)
         return swf_write_audio(s, codec, pkt->data, pkt->size);
     else
@@ -668,7 +668,7 @@ static int swf_write_trailer(AVFormatContext *s)
 
     video_enc = NULL;
     for(i=0;i<s->nb_streams;i++) {
-        enc = &s->streams[i]->codec;
+        enc = s->streams[i]->codec;
         if (enc->codec_type == CODEC_TYPE_VIDEO)
             video_enc = enc;
     }
@@ -775,8 +775,8 @@ static int swf_read_header(AVFormatContext *s, AVFormatParameters *ap)
         if (tag < 0) {
             if ( ast || vst ) {
                 if ( vst && ast ) {
-                    vst->codec.time_base.den = ast->codec.sample_rate / swf->samples_per_frame;
-                    vst->codec.time_base.num = 1;
+                    vst->codec->time_base.den = ast->codec->sample_rate / swf->samples_per_frame;
+                    vst->codec->time_base.num = 1;
                 }
                 break;
             }
@@ -794,11 +794,11 @@ static int swf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 vst = av_new_stream(s, 0);
                 av_set_pts_info(vst, 24, 1, 1000); /* 24 bit pts in ms */
     
-                vst->codec.codec_type = CODEC_TYPE_VIDEO;
-                vst->codec.codec_id = CODEC_ID_FLV1;
+                vst->codec->codec_type = CODEC_TYPE_VIDEO;
+                vst->codec->codec_id = CODEC_ID_FLV1;
                 if ( swf->samples_per_frame ) {
-                    vst->codec.time_base.den = 1000. / swf->ms_per_frame;
-                    vst->codec.time_base.num = 1;
+                    vst->codec->time_base.den = 1000. / swf->ms_per_frame;
+                    vst->codec->time_base.num = 1;
                 }
             }
         } else if ( ( tag == TAG_STREAMHEAD || tag == TAG_STREAMHEAD2 ) && !ast) {
@@ -819,26 +819,26 @@ static int swf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     return -ENOMEM;
 
                 if (v & 0x01)
-                    ast->codec.channels = 2;
+                    ast->codec->channels = 2;
                 else
-                    ast->codec.channels = 1;
+                    ast->codec->channels = 1;
 
                 switch((v>> 2) & 0x03) {
                 case 1:
-                    ast->codec.sample_rate = 11025;
+                    ast->codec->sample_rate = 11025;
                     break;
                 case 2:
-                    ast->codec.sample_rate = 22050;
+                    ast->codec->sample_rate = 22050;
                     break;
                 case 3:
-                    ast->codec.sample_rate = 44100;
+                    ast->codec->sample_rate = 44100;
                     break;
                 default:
                     av_free(ast);
                     return AVERROR_IO;
                 }
-                ast->codec.codec_type = CODEC_TYPE_AUDIO;
-                ast->codec.codec_id = CODEC_ID_MP3;
+                ast->codec->codec_type = CODEC_TYPE_AUDIO;
+                ast->codec->codec_id = CODEC_ID_MP3;
             }
         } else {
             url_fskip(pb, len);
