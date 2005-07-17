@@ -197,6 +197,8 @@ static int idct = FF_IDCT_AUTO;
 static enum AVDiscard skip_frame= AVDISCARD_DEFAULT;
 static enum AVDiscard skip_idct= AVDISCARD_DEFAULT;
 static enum AVDiscard skip_loop_filter= AVDISCARD_DEFAULT;
+static int error_resilience = FF_ER_CAREFULL;
+static int error_concealment = 3;
 
 /* current context */
 static int is_full_screen;
@@ -1196,6 +1198,8 @@ static int stream_component_open(VideoState *is, int stream_index)
     enc->skip_frame= skip_frame;
     enc->skip_idct= skip_idct;
     enc->skip_loop_filter= skip_loop_filter;
+    enc->error_resilience= error_resilience;
+    enc->error_concealment= error_concealment;
     if (!codec ||
         avcodec_open(enc, codec) < 0)
         return -1;
@@ -1873,6 +1877,8 @@ const OptionDef options[] = {
     { "skipframe", OPT_INT | HAS_ARG | OPT_EXPERT, {(void*)&skip_frame}, "", "" },
     { "skipidct", OPT_INT | HAS_ARG | OPT_EXPERT, {(void*)&skip_idct}, "", "" },
     { "idct", OPT_INT | HAS_ARG | OPT_EXPERT, {(void*)&idct}, "set idct algo",  "algo" },
+    { "er", OPT_INT | HAS_ARG | OPT_EXPERT, {(void*)&error_resilience}, "set error detection threshold (0-4)",  "threshold" },
+    { "ec", OPT_INT | HAS_ARG | OPT_EXPERT, {(void*)&error_concealment}, "set error concealment options",  "bit_mask" },
 #ifdef CONFIG_NETWORK
     { "rtp_tcp", OPT_EXPERT, {(void*)&opt_rtp_tcp}, "force RTP/TCP protocol usage", "" },
 #endif
