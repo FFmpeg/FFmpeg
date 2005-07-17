@@ -2508,6 +2508,9 @@ void dump_format(AVFormatContext *ic,
         if (flags & AVFMT_SHOW_IDS) {
             av_log(NULL, AV_LOG_INFO, "[0x%x]", st->id);
         }
+        if (strlen(st->language) > 0) {
+            av_log(NULL, AV_LOG_INFO, "(%s)", st->language);
+        }
         av_log(NULL, AV_LOG_INFO, ": %s\n", buf);
     }
 }

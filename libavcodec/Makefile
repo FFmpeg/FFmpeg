@@ -17,7 +17,7 @@ OBJS= bitstream.o utils.o mem.o allcodecs.o \
       ratecontrol.o adpcm.o eval.o error_resilience.o \
       fft.o mdct.o raw.o golomb.o cabac.o\
       dpcm.o adx.o rational.o faandct.o parser.o g726.o \
-      vp3dsp.o integer.o h264idct.o rangecoder.o pnm.o h263.o msmpeg4.o h263dec.o dvdsub.o dvbsub.o
+      vp3dsp.o integer.o h264idct.o rangecoder.o pnm.o h263.o msmpeg4.o h263dec.o dvdsub.o dvbsub.o dvbsubdec.o
 
 ifeq ($(CONFIG_AASC_DECODER),yes)
     OBJS+= aasc.o

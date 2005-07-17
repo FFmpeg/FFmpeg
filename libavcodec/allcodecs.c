@@ -555,6 +555,7 @@ PCM_CODEC(CODEC_ID_ADPCM_YAMAHA, adpcm_yamaha);
     /* subtitles */ 
     register_avcodec(&dvdsub_decoder);
     register_avcodec(&dvbsub_encoder);
+    register_avcodec(&dvbsub_decoder);
 
     /* parsers */ 
     av_register_codec_parser(&mpegvideo_parser);
@@ -574,5 +575,6 @@ PCM_CODEC(CODEC_ID_ADPCM_YAMAHA, adpcm_yamaha);
     av_register_codec_parser(&ac3_parser);
 #endif
     av_register_codec_parser(&dvdsub_parser);
+    av_register_codec_parser(&dvbsub_parser);
 }
 

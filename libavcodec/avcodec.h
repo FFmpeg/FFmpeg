@@ -1930,18 +1930,23 @@ typedef struct AVPaletteControl {
 
 } AVPaletteControl;
 
-typedef struct AVSubtitle {
-    uint16_t format; /* 0 = graphics */
+typedef struct AVSubtitleRect {
     uint16_t x;
     uint16_t y;
     uint16_t w;
     uint16_t h;
     uint16_t nb_colors;
-    uint32_t start_display_time; /* relative to packet pts, in ms */
-    uint32_t end_display_time; /* relative to packet pts, in ms */
     int linesize;
     uint32_t *rgba_palette;
     uint8_t *bitmap;
+} AVSubtitleRect;
+
+typedef struct AVSubtitle {
+    uint16_t format; /* 0 = graphics */
+    uint32_t start_display_time; /* relative to packet pts, in ms */
+    uint32_t end_display_time; /* relative to packet pts, in ms */
+    uint32_t num_rects;
+    AVSubtitleRect *rects;
 } AVSubtitle;
 
 extern AVCodec ac3_encoder;
@@ -2135,6 +2140,7 @@ extern AVCodec dts_decoder;
 /* subtitles */
 extern AVCodec dvdsub_decoder;
 extern AVCodec dvbsub_encoder;
+extern AVCodec dvbsub_decoder;
 
 /* resample.c */
 
@@ -2390,6 +2396,7 @@ extern AVCodecParser pnm_parser;
 extern AVCodecParser mpegaudio_parser;
 extern AVCodecParser ac3_parser;
 extern AVCodecParser dvdsub_parser;
+extern AVCodecParser dvbsub_parser;
 
 /* memory */
 void *av_malloc(unsigned int size);

@@ -1423,8 +1423,14 @@ static int output_packet(AVInputStream *ist, int ist_index,
             av_free(buffer_to_free);
             /* XXX: allocate the subtitles in the codec ? */
             if (subtitle_to_free) {
-                av_free(subtitle_to_free->bitmap);
-                av_free(subtitle_to_free->rgba_palette);
+                if (subtitle_to_free->rects != NULL) {
+                    for (i = 0; i < subtitle_to_free->num_rects; i++) {
+                        av_free(subtitle_to_free->rects[i].bitmap);
+                        av_free(subtitle_to_free->rects[i].rgba_palette);
+                    }
+                    av_freep(&subtitle_to_free->rects);
+                }
+                subtitle_to_free->num_rects = 0;
                 subtitle_to_free = NULL;
             }
         }

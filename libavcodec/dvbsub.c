@@ -225,18 +225,9 @@ static int encode_dvb_subtitles(DVBSubtitleContext *s,
     q = outbuf;
 
     page_id = 1;
-    region_id = 0;
-    clut_id = 0;
-    object_id = 0;
-    if (h->nb_colors <= 4) {
-        /* 2 bpp, some decoders do not support it correctly */
-        bpp_index = 0;
-    } else if (h->nb_colors <= 16) {
-        /* 4 bpp, standard encoding */
-        bpp_index = 1;
-    } else {
+
+    if (h->num_rects == 0 || h->rects == NULL)
         return -1;
-    }
 
     *q++ = 0x00; /* subtitle_stream_id */
 
@@ -254,108 +245,153 @@ static int encode_dvb_subtitles(DVBSubtitleContext *s,
         page_state = 2; /* mode change */
     /* page_version = 0 + page_state */
     *q++ = s->object_version | (page_state << 2) | 3; 
-    *q++ = region_id;
-    *q++ = 0xff; /* reserved */
-    putbe16(&q, 0); /* left pos */
-    putbe16(&q, 0); /* top pos */
+
+    for (region_id = 0; region_id < h->num_rects; region_id++) {
+        *q++ = region_id;
+        *q++ = 0xff; /* reserved */
+        putbe16(&q, h->rects[region_id].x); /* left pos */
+        putbe16(&q, h->rects[region_id].y); /* top pos */
+    }
 
     putbe16(&pseg_len, q - pseg_len - 2);
 
     if (!s->hide_state) {
-        /* CLUT segment */
+        for (clut_id = 0; clut_id < h->num_rects; clut_id++) {
+
+            /* CLUT segment */
+
+            if (h->rects[clut_id].nb_colors <= 4) {
+                /* 2 bpp, some decoders do not support it correctly */
+                bpp_index = 0;
+            } else if (h->rects[clut_id].nb_colors <= 16) {
+                /* 4 bpp, standard encoding */
+                bpp_index = 1;
+            } else {
+                return -1;
+            }
+
+            *q++ = 0x0f; /* sync byte */
+            *q++ = 0x12; /* CLUT definition segment */
+            putbe16(&q, page_id);
+            pseg_len = q;
+            q += 2; /* segment length */
+            *q++ = clut_id;
+            *q++ = (0 << 4) | 0xf; /* version = 0 */
+
+            for(i = 0; i < h->rects[clut_id].nb_colors; i++) {
+                *q++ = i; /* clut_entry_id */
+                *q++ = (1 << (7 - bpp_index)) | (0xf << 1) | 1; /* 2 bits/pixel full range */
+                {
+                    int a, r, g, b;
+                    a = (h->rects[clut_id].rgba_palette[i] >> 24) & 0xff;
+                    r = (h->rects[clut_id].rgba_palette[i] >> 16) & 0xff;
+                    g = (h->rects[clut_id].rgba_palette[i] >> 8) & 0xff;
+                    b = (h->rects[clut_id].rgba_palette[i] >> 0) & 0xff;
+
+                    *q++ = RGB_TO_Y_CCIR(r, g, b);
+                    *q++ = RGB_TO_V_CCIR(r, g, b, 0);
+                    *q++ = RGB_TO_U_CCIR(r, g, b, 0);
+                    *q++ = 255 - a;
+                }
+            }
+
+            putbe16(&pseg_len, q - pseg_len - 2);
+        }
+    }
+
+    for (region_id = 0; region_id < h->num_rects; region_id++) {
+
+        /* region composition segment */
         
-        *q++ = 0x0f; /* sync byte */
-        *q++ = 0x12; /* CLUT definition segment */
+        if (h->rects[region_id].nb_colors <= 4) {
+            /* 2 bpp, some decoders do not support it correctly */
+            bpp_index = 0;
+        } else if (h->rects[region_id].nb_colors <= 16) {
+            /* 4 bpp, standard encoding */
+            bpp_index = 1;
+        } else {
+            return -1;
+        }
+
+        *q++ = 0x0f; /* sync_byte */
+        *q++ = 0x11; /* segment_type */
         putbe16(&q, page_id);
         pseg_len = q;
         q += 2; /* segment length */
-        *q++ = clut_id;
-        *q++ = (0 << 4) | 0xf; /* version = 0 */
-        
-        for(i = 0; i < h->nb_colors; i++) {
-            *q++ = i; /* clut_entry_id */
-            *q++ = (1 << (7 - bpp_index)) | (0xf << 1) | 1; /* 2 bits/pixel full range */
-            {
-                int a, r, g, b;
-                a = (h->rgba_palette[i] >> 24) & 0xff;
-                r = (h->rgba_palette[i] >> 16) & 0xff;
-                g = (h->rgba_palette[i] >> 8) & 0xff;
-                b = (h->rgba_palette[i] >> 0) & 0xff;
-                
-                *q++ = RGB_TO_Y_CCIR(r, g, b);
-                *q++ = RGB_TO_V_CCIR(r, g, b, 0);
-                *q++ = RGB_TO_U_CCIR(r, g, b, 0);
-                *q++ = 255 - a;
-            }
+        *q++ = region_id;
+        *q++ = (s->object_version << 4) | (0 << 3) | 0x07; /* version , no fill */
+        putbe16(&q, h->rects[region_id].w); /* region width */
+        putbe16(&q, h->rects[region_id].h); /* region height */
+        *q++ = ((1 + bpp_index) << 5) | ((1 + bpp_index) << 2) | 0x03;
+        *q++ = region_id; /* clut_id == region_id */
+        *q++ = 0; /* 8 bit fill colors */
+        *q++ = 0x03; /* 4 bit and 2 bit fill colors */
+
+        if (!s->hide_state) {
+            putbe16(&q, region_id); /* object_id == region_id */
+            *q++ = (0 << 6) | (0 << 4);
+            *q++ = 0;
+            *q++ = 0xf0;
+            *q++ = 0;
         }
 
         putbe16(&pseg_len, q - pseg_len - 2);
     }
-    /* region composition segment */
-
-    *q++ = 0x0f; /* sync_byte */
-    *q++ = 0x11; /* segment_type */
-    putbe16(&q, page_id);
-    pseg_len = q;
-    q += 2; /* segment length */
-    *q++ = region_id;
-    *q++ = (s->object_version << 4) | (0 << 3) | 0x07; /* version , no fill */
-    putbe16(&q, 720); /* region width */
-    putbe16(&q, 576); /* region height */
-    *q++ = ((1 + bpp_index) << 5) | ((1 + bpp_index) << 2) | 0x03; 
-    *q++ = clut_id;
-    *q++ = 0; /* 8 bit fill colors */
-    *q++ = 0x03; /* 4 bit and 2 bit fill colors */
-    
-    if (!s->hide_state) {
-        putbe16(&q, object_id);
-        *q++ = (0 << 6) | (0 << 4) | ((h->x >> 8) & 0xf);  
-        *q++ = h->x;
-        *q++ = 0xf0 | ((h->y >> 8) & 0xf);
-        *q++ = h->y;
-    }
-    
-    putbe16(&pseg_len, q - pseg_len - 2);
 
     if (!s->hide_state) {
         
-    /* Object Data segment */
+        for (object_id = 0; object_id < h->num_rects; object_id++) {
+            /* Object Data segment */
 
-    *q++ = 0x0f; /* sync byte */
-    *q++ = 0x13;
-    putbe16(&q, page_id);
-    pseg_len = q;
-    q += 2; /* segment length */
-    
-    putbe16(&q, object_id);
-    *q++ = (s->object_version << 4) | (0 << 2) | (0 << 1) | 1; /* version = 0,
-                                                               onject_coding_method,
-                                                               non_modifying_color_flag */
-    {
-        uint8_t *ptop_field_len, *pbottom_field_len, *top_ptr, *bottom_ptr;
-        void (*dvb_encode_rle)(uint8_t **pq,
-                                const uint8_t *bitmap, int linesize,
-                                int w, int h);
-        ptop_field_len = q;
-        q += 2;
-        pbottom_field_len = q;
-        q += 2;
+            if (h->rects[region_id].nb_colors <= 4) {
+                /* 2 bpp, some decoders do not support it correctly */
+                bpp_index = 0;
+            } else if (h->rects[region_id].nb_colors <= 16) {
+                /* 4 bpp, standard encoding */
+                bpp_index = 1;
+            } else {
+                return -1;
+            }
 
-        if (bpp_index == 0)
-            dvb_encode_rle = dvb_encode_rle2;
-        else
-            dvb_encode_rle = dvb_encode_rle4;
-            
-        top_ptr = q;
-        dvb_encode_rle(&q, h->bitmap, h->w * 2, h->w, h->h >> 1);
-        bottom_ptr = q;
-        dvb_encode_rle(&q, h->bitmap + h->w, h->w * 2, h->w, h->h >> 1);
+            *q++ = 0x0f; /* sync byte */
+            *q++ = 0x13;
+            putbe16(&q, page_id);
+            pseg_len = q;
+            q += 2; /* segment length */
 
-        putbe16(&ptop_field_len, bottom_ptr - top_ptr);
-        putbe16(&pbottom_field_len, q - bottom_ptr);
-    }
+            putbe16(&q, object_id);
+            *q++ = (s->object_version << 4) | (0 << 2) | (0 << 1) | 1; /* version = 0,
+                                                                       onject_coding_method,
+                                                                       non_modifying_color_flag */
+            {
+                uint8_t *ptop_field_len, *pbottom_field_len, *top_ptr, *bottom_ptr;
+                void (*dvb_encode_rle)(uint8_t **pq,
+                                        const uint8_t *bitmap, int linesize,
+                                        int w, int h);
+                ptop_field_len = q;
+                q += 2;
+                pbottom_field_len = q;
+                q += 2;
 
-    putbe16(&pseg_len, q - pseg_len - 2);
+                if (bpp_index == 0)
+                    dvb_encode_rle = dvb_encode_rle2;
+                else
+                    dvb_encode_rle = dvb_encode_rle4;
+
+                top_ptr = q;
+                dvb_encode_rle(&q, h->rects[object_id].bitmap, h->rects[object_id].w * 2,
+                                    h->rects[object_id].w, h->rects[object_id].h >> 1);
+                bottom_ptr = q;
+                dvb_encode_rle(&q, h->rects[object_id].bitmap + h->rects[object_id].w,
+                                    h->rects[object_id].w * 2, h->rects[object_id].w,
+                                    h->rects[object_id].h >> 1);
+
+                putbe16(&ptop_field_len, bottom_ptr - top_ptr);
+                putbe16(&pbottom_field_len, q - bottom_ptr);
+            }
+
+            putbe16(&pseg_len, q - pseg_len - 2);
+        }
     }
 
     /* end of display set segment */
