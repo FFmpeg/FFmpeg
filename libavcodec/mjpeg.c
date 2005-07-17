@@ -1728,10 +1728,8 @@ out:
 
 static int mjpeg_decode_com(MJpegDecodeContext *s)
 {
-    /* XXX: verify len field validity */
     int len = get_bits(&s->gb, 16);
-    if (len >= 2 && len < 32768) {
-	/* XXX: any better upper bound */
+    if (len >= 2 && 8*len - 16 + get_bits_count(&s->gb) <= s->gb.size_in_bits) {
 	uint8_t *cbuf = av_malloc(len - 1);
 	if (cbuf) {
 	    int i;
