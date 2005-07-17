@@ -896,11 +896,8 @@ static int mjpeg_decode_init(AVCodecContext *avctx)
     s->idct_put= s2.dsp.idct_put;
 
     s->mpeg_enc_ctx_allocated = 0;
-    s->buffer_size = 102400; /* smaller buffer should be enough,
-				but photojpg files could ahive bigger sizes */
-    s->buffer = av_malloc(s->buffer_size);
-    if (!s->buffer)
-	return -1;
+    s->buffer_size = 0;
+    s->buffer = NULL;
     s->start_code = -1;
     s->first_picture = 1;
     s->org_height = avctx->coded_height;
@@ -1841,7 +1838,7 @@ static int mjpeg_decode_frame(AVCodecContext *avctx,
 		{
 		    av_free(s->buffer);
 		    s->buffer_size = buf_end-buf_ptr;
-		    s->buffer = av_malloc(s->buffer_size);
+                    s->buffer = av_malloc(s->buffer_size + FF_INPUT_BUFFER_PADDING_SIZE);
 		    dprintf("buffer too small, expanding to %d bytes\n",
 			s->buffer_size);
 		}
