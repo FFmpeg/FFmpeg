@@ -2000,6 +2000,7 @@ static int http_prepare_data(HTTPContext *c)
             AVStream *st;
 	    AVStream *src;
             st = av_mallocz(sizeof(AVStream));
+            st->codec= avcodec_alloc_context();
             c->fmt_ctx.streams[i] = st;
             /* if file or feed, then just take streams from FFStream struct */
             if (!c->stream->feed || 
@@ -3138,6 +3139,7 @@ static int rtp_new_av_stream(HTTPContext *c,
     st = av_mallocz(sizeof(AVStream));
     if (!st)
         goto fail;
+    st->codec= avcodec_alloc_context();
     ctx->nb_streams = 1;
     ctx->streams[0] = st;
 
@@ -3221,6 +3223,7 @@ static AVStream *add_av_stream1(FFStream *stream, AVCodecContext *codec)
     fst = av_mallocz(sizeof(AVStream));
     if (!fst)
         return NULL;
+    fst->codec= avcodec_alloc_context();
     fst->priv_data = av_mallocz(sizeof(FeedData));
     memcpy(fst->codec, codec, sizeof(AVCodecContext));
     fst->codec->coded_frame = &dummy_frame;
@@ -3664,6 +3667,7 @@ static void add_codec(FFStream *stream, AVCodecContext *av)
     st = av_mallocz(sizeof(AVStream));
     if (!st)
         return;
+    st->codec = avcodec_alloc_context();
     stream->streams[stream->nb_streams++] = st;
     memcpy(st->codec, av, sizeof(AVCodecContext));
 }
@@ -3971,7 +3975,7 @@ static int parse_ffconfig(const char *filename)
                 stream->stream_type = STREAM_TYPE_LIVE;
                 /* jpeg cannot be used here, so use single frame jpeg */
                 if (!strcmp(arg, "jpeg"))
-                    strcpy(arg, "singlejpeg");
+                    strcpy(arg, "mjpeg");
                 stream->fmt = guess_stream_format(arg, NULL, NULL);
                 if (!stream->fmt) {
                     fprintf(stderr, "%s:%d: Unknown Format: %s\n", 
