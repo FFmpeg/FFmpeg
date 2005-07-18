@@ -307,7 +307,7 @@ int get_watermark_picture(ContextInfo *ci, int cleanup)
          */
         ci->videoStream=-1;
         for(ci->i = 0; ci->i < ci->pFormatCtx->nb_streams; ci->i++)
-            if(ci->pFormatCtx->streams[ci->i]->codec.codec_type==CODEC_TYPE_VIDEO)
+            if(ci->pFormatCtx->streams[ci->i]->codec->codec_type==CODEC_TYPE_VIDEO)
             {
                 ci->videoStream = ci->i;
                 break;
@@ -318,11 +318,11 @@ int get_watermark_picture(ContextInfo *ci, int cleanup)
         }
         
         ci->st = ci->pFormatCtx->streams[ci->videoStream];
-        ci->x_size = ci->st->codec.width;
-        ci->y_size = ci->st->codec.height;
+        ci->x_size = ci->st->codec->width;
+        ci->y_size = ci->st->codec->height;
         
         // Get a pointer to the codec context for the video stream
-        ci->pCodecCtx = &ci->pFormatCtx->streams[ci->videoStream]->codec;
+        ci->pCodecCtx = ci->pFormatCtx->streams[ci->videoStream]->codec;
             
         
         /*
