@@ -992,6 +992,34 @@ int64_t ff_gcd(int64_t a, int64_t b){
     else  return a;
 }
 
+double av_int2dbl(int64_t v){
+    if(v+v > 0xFFELLU<<52)
+        return 0.0/0.0;
+    return ldexp(((v&(1LL<<52)-1) + (1LL<<52)) * (v>>63|1), (v>>52&0x7FF)-1075);
+}
+
+float av_int2flt(int32_t v){
+    if(v+v > 0xFF000000U)
+        return 0.0/0.0;
+    return ldexp(((v&0x7FFFFF) + (1<<23)) * (v>>31|1), (v>>23&0xFF)-150);
+}
+
+int64_t av_dbl2int(double d){
+    int e;
+    if     ( !d) return 0;
+    else if(d-d) return 0x7FF0000000000000LL + ((int64_t)(d<0)<<63) + (d!=d);
+    d= frexp(d, &e);
+    return (int64_t)(d<0)<<63 | (e+1022LL)<<52 | (int64_t)((fabs(d)-0.5)*(1LL<<53));
+}
+
+int32_t av_flt2int(float d){
+    int e;
+    if     ( !d) return 0;
+    else if(d-d) return 0x7F800000 + ((d<0)<<31) + (d!=d);
+    d= frexp(d, &e);
+    return (d<0)<<31 | (e+126)<<23 | (int64_t)((fabs(d)-0.5)*(1<<24));
+}
+
 /* av_log API */
 
 static int av_log_level = AV_LOG_INFO;
