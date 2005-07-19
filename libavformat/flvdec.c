@@ -58,7 +58,7 @@ static int flv_read_header(AVFormatContext *s,
 
 static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    int ret, i, type, size, pts, flags, is_audio;
+    int ret, i, type, size, pts, flags, is_audio, next;
     AVStream *st = NULL;
     
  for(;;){
@@ -74,19 +74,59 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
     
     if(size == 0)
         continue;
-    
+        
+    next= size + url_ftell(&s->pb);
+
     if (type == 8) {
         is_audio=1;
         flags = get_byte(&s->pb);
-        size--;
     } else if (type == 9) {
         is_audio=0;
         flags = get_byte(&s->pb);
-        size--;
+    } else if (type == 18 && size > 13+1+4) {
+        url_fskip(&s->pb, 13); //onMetaData blah
+        if(get_byte(&s->pb) == 8){
+            url_fskip(&s->pb, 4);
+        }
+        while(url_ftell(&s->pb) + 5 < next){
+            char tmp[128];
+            int type, len;
+            double d= 0;
+            
+            len= get_be16(&s->pb);
+            if(len >= sizeof(tmp) || !len)
+                break;
+            get_buffer(&s->pb, tmp, len);
+            tmp[len]=0;
+            
+            type= get_byte(&s->pb);
+            if(type==0){
+                d= av_int2dbl(get_be64(&s->pb));
+            }else if(type==2){
+                len= get_be16(&s->pb);
+                if(len >= sizeof(tmp))
+                    break;
+                url_fskip(&s->pb, len);
+            }else if(type==8){
+                //array
+                break;
+            }else if(type==11){
+                d= av_int2dbl(get_be64(&s->pb));
+                get_be16(&s->pb);
+            }
+            
+            if(!strcmp(tmp, "duration")){
+                s->duration = d*AV_TIME_BASE;
+            }else if(!strcmp(tmp, "videodatarate")){
+            }else if(!strcmp(tmp, "audiodatarate")){
+            }
+        }
+        url_fseek(&s->pb, next, SEEK_SET);
+        continue;
     } else {
         /* skip packet */
         av_log(s, AV_LOG_ERROR, "skipping flv packet: type %d, size %d, flags %d\n", type, size, flags);
-        url_fskip(&s->pb, size);
+        url_fseek(&s->pb, next, SEEK_SET);
         continue;
     }
 
@@ -109,7 +149,7 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
        ||(st->discard >= AVDISCARD_BIDIR  &&  ((flags >> 4)==3 && !is_audio))
        || st->discard >= AVDISCARD_ALL
        ){
-        url_fskip(&s->pb, size);
+        url_fseek(&s->pb, next, SEEK_SET);
         continue;
     }
     break;
@@ -147,7 +187,7 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
             }
     }
 
-    ret= av_get_packet(&s->pb, pkt, size);
+    ret= av_get_packet(&s->pb, pkt, size - 1);
     if (ret <= 0) {
         return AVERROR_IO;
     }
