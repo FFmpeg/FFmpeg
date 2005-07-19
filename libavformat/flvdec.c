@@ -18,15 +18,6 @@
  */
 #include "avformat.h"
 
-unsigned int get_be24(ByteIOContext *s)
-{
-    unsigned int val;
-    val = get_byte(s) << 16;
-    val |= get_byte(s) << 8;
-    val |= get_byte(s);
-    return val;
-}
-
 static int flv_probe(AVProbeData *p)
 {
     const uint8_t *d;

@@ -253,6 +253,12 @@ void put_be16(ByteIOContext *s, unsigned int val)
     put_byte(s, val);
 }
 
+void put_be24(ByteIOContext *s, unsigned int val)
+{
+    put_be16(s, val >> 8);
+    put_byte(s, val);
+}
+
 void put_tag(ByteIOContext *s, const char *tag)
 {
     while (*tag) {
@@ -407,10 +413,8 @@ unsigned int get_le16(ByteIOContext *s)
 unsigned int get_le32(ByteIOContext *s)
 {
     unsigned int val;
-    val = get_byte(s);
-    val |= get_byte(s) << 8;
-    val |= get_byte(s) << 16;
-    val |= get_byte(s) << 24;
+    val = get_le16(s);
+    val |= get_le16(s) << 16;
     return val;
 }
 
@@ -430,13 +434,18 @@ unsigned int get_be16(ByteIOContext *s)
     return val;
 }
 
+unsigned int get_be24(ByteIOContext *s)
+{
+    unsigned int val;
+    val = get_be16(s) << 8;
+    val |= get_byte(s);
+    return val;
+}
 unsigned int get_be32(ByteIOContext *s)
 {
     unsigned int val;
-    val = get_byte(s) << 24;
-    val |= get_byte(s) << 16;
-    val |= get_byte(s) << 8;
-    val |= get_byte(s);
+    val = get_be16(s) << 16;
+    val |= get_be16(s);
     return val;
 }
 

@@ -550,15 +550,6 @@ static int mov_mp4_read_descr(ByteIOContext *pb, int *tag)
     return len;
 }
 
-static inline unsigned int get_be24(ByteIOContext *s)
-{
-    unsigned int val;
-    val = get_byte(s) << 16;
-    val |= get_byte(s) << 8;
-    val |= get_byte(s);
-    return val;
-}
-
 static int mov_read_esds(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
     AVStream *st = c->fc->streams[c->fc->nb_streams-1];

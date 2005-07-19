@@ -27,13 +27,6 @@ typedef struct FLVContext {
     int reserved;
 } FLVContext;
 
-static void put_be24(ByteIOContext *pb, int value)
-{
-    put_byte(pb, (value>>16) & 0xFF );
-    put_byte(pb, (value>> 8) & 0xFF );
-    put_byte(pb, (value>> 0) & 0xFF );
-}
-
 static int get_audio_flags(AVCodecContext *enc){
     int flags = (enc->bits_per_sample == 16) ? 0x2 : 0x0;
 
@@ -52,6 +45,7 @@ static int get_audio_flags(AVCodecContext *enc){
             flags |= 0x00;
             break;
         default:
+            av_log(enc, AV_LOG_ERROR, "flv doesnt support that sample rate, choose from (44100, 22050, 11025)\n");
             return -1;
     }
 
@@ -75,6 +69,7 @@ static int get_audio_flags(AVCodecContext *enc){
         flags |= enc->codec_tag<<4;
         break;
     default:
+        av_log(enc, AV_LOG_ERROR, "codec not compatible with flv\n");
         return -1;
     }
     

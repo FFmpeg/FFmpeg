@@ -99,6 +99,7 @@ void put_le64(ByteIOContext *s, uint64_t val);
 void put_be64(ByteIOContext *s, uint64_t val);
 void put_le32(ByteIOContext *s, unsigned int val);
 void put_be32(ByteIOContext *s, unsigned int val);
+void put_be24(ByteIOContext *s, unsigned int val);
 void put_le16(ByteIOContext *s, unsigned int val);
 void put_be16(ByteIOContext *s, unsigned int val);
 void put_tag(ByteIOContext *s, const char *tag);
@@ -134,6 +135,7 @@ unsigned int get_le16(ByteIOContext *s);
 double get_be64_double(ByteIOContext *s);
 char *get_strz(ByteIOContext *s, char *buf, int maxlen);
 unsigned int get_be16(ByteIOContext *s);
+unsigned int get_be24(ByteIOContext *s);
 unsigned int get_be32(ByteIOContext *s);
 uint64_t get_be64(ByteIOContext *s);
 
