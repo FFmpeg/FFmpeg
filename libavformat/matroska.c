@@ -609,41 +609,20 @@ ebml_read_float (MatroskaDemuxContext *matroska,
         return res;
     size = rlength;
 
-    if (size != 4 && size != 8 && size != 10) {
+    if (size == 4) {
+        *num= av_int2flt(get_be32(pb));
+    } else if(size==8){
+        *num= av_int2dbl(get_be64(pb));
+    } else if(size==10){
+        av_log(matroska->ctx, AV_LOG_ERROR,
+               "FIXME! 10-byte floats unimplemented\n");
+        return AVERROR_UNKNOWN;
+    } else{
         offset_t pos = url_ftell(pb);
         av_log(matroska->ctx, AV_LOG_ERROR,
                "Invalid float element size %d at position %llu (0x%llx)\n",
                size, pos, pos);
         return AVERROR_INVALIDDATA;
-    }
-    if (size == 10) {
-        av_log(matroska->ctx, AV_LOG_ERROR,
-               "FIXME! 10-byte floats unimplemented\n");
-        return AVERROR_UNKNOWN;
-    }
-
-    if (size == 4) {
-        float f;
-
-        while (size-- > 0)
-#ifdef WORDS_BIGENDIAN
-            ((uint8_t *) &f)[3 - size] = get_byte(pb);
-#else
-            ((uint8_t *) &f)[size] = get_byte(pb);
-#endif
-
-        *num = f;
-    } else {
-        double d;
-
-        while (size-- > 0)
-#ifdef WORDS_BIGENDIAN
-            ((uint8_t *) &d)[7 - size] = get_byte(pb);
-#else
-            ((uint8_t *) &d)[size] = get_byte(pb);
-#endif
-
-        *num = d;
     }
 
     return 0;

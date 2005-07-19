@@ -75,26 +75,6 @@ typedef struct FourxmDemuxContext {
     float fps;
 } FourxmDemuxContext;
 
-static float get_le_float(unsigned char *buffer)
-{
-    float f;
-    unsigned char *float_buffer = (unsigned char *)&f;
-
-#ifdef WORDS_BIGENDIAN
-    float_buffer[0] = buffer[3];
-    float_buffer[1] = buffer[2];
-    float_buffer[2] = buffer[1];
-    float_buffer[3] = buffer[0];
-#else
-    float_buffer[0] = buffer[0];
-    float_buffer[1] = buffer[1];
-    float_buffer[2] = buffer[2];
-    float_buffer[3] = buffer[3];
-#endif
-
-    return f;
-}
-
 static int fourxm_probe(AVProbeData *p)
 {
     if (p->buf_size < 12)
@@ -147,7 +127,7 @@ static int fourxm_read_header(AVFormatContext *s,
         size = LE_32(&header[i + 4]);
 
         if (fourcc_tag == std__TAG) {
-            fourxm->fps = get_le_float(&header[i + 12]);
+            fourxm->fps = av_int2flt(LE_32(&header[i + 12]));
         } else if (fourcc_tag == vtrk_TAG) {
             /* check that there is enough data */
             if (size != vtrk_SIZE) {
