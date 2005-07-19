@@ -17,7 +17,7 @@ extern "C" {
 
 #define FFMPEG_VERSION_INT     0x000409
 #define FFMPEG_VERSION         "CVS"
-#define LIBAVCODEC_BUILD       4758
+#define LIBAVCODEC_BUILD       4759
 
 
 #define LIBAVCODEC_VERSION_INT FFMPEG_VERSION_INT
@@ -2331,6 +2331,12 @@ int64_t av_rescale_rnd(int64_t a, int64_t b, int64_t c, enum AVRounding);
  * rescale a 64bit integer by 2 rational numbers.
  */
 int64_t av_rescale_q(int64_t a, AVRational bq, AVRational cq);
+
+double av_int2dbl(int64_t v);
+float av_int2flt(int32_t v);
+int64_t av_dbl2int(double d);
+int32_t av_flt2int(float d);
+
 
 /* frame parsing */
 typedef struct AVCodecParserContext {
