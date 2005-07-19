@@ -210,17 +210,6 @@ void put_be32(ByteIOContext *s, unsigned int val)
     put_byte(s, val);
 }
 
-/* IEEE format is assumed */
-void put_be64_double(ByteIOContext *s, double val)
-{
-    union {
-        double d;
-        uint64_t ull;
-    } u;
-    u.d = val;
-    put_be64(s, u.ull);
-}
-
 void put_strz(ByteIOContext *s, const char *str)
 {
     if (str)
@@ -447,17 +436,6 @@ unsigned int get_be32(ByteIOContext *s)
     val = get_be16(s) << 16;
     val |= get_be16(s);
     return val;
-}
-
-double get_be64_double(ByteIOContext *s)
-{
-    union {
-        double d;
-        uint64_t ull;
-    } u;
-
-    u.ull = get_be64(s);
-    return u.d;
 }
 
 char *get_strz(ByteIOContext *s, char *buf, int maxlen)

@@ -104,7 +104,6 @@ void put_le16(ByteIOContext *s, unsigned int val);
 void put_be16(ByteIOContext *s, unsigned int val);
 void put_tag(ByteIOContext *s, const char *tag);
 
-void put_be64_double(ByteIOContext *s, double val);
 void put_strz(ByteIOContext *s, const char *buf);
 
 offset_t url_fseek(ByteIOContext *s, offset_t offset, int whence);
@@ -132,7 +131,6 @@ unsigned int get_le32(ByteIOContext *s);
 uint64_t get_le64(ByteIOContext *s);
 unsigned int get_le16(ByteIOContext *s);
 
-double get_be64_double(ByteIOContext *s);
 char *get_strz(ByteIOContext *s, char *buf, int maxlen);
 unsigned int get_be16(ByteIOContext *s);
 unsigned int get_be24(ByteIOContext *s);

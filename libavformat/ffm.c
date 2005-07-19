@@ -182,10 +182,10 @@ static int ffm_write_header(AVFormatContext *s)
             put_be32(pb, codec->rc_max_rate);
             put_be32(pb, codec->rc_min_rate);
             put_be32(pb, codec->rc_buffer_size);
-            put_be64_double(pb, codec->i_quant_factor);
-            put_be64_double(pb, codec->b_quant_factor);
-            put_be64_double(pb, codec->i_quant_offset);
-            put_be64_double(pb, codec->b_quant_offset);
+            put_be64(pb, av_dbl2int(codec->i_quant_factor));
+            put_be64(pb, av_dbl2int(codec->b_quant_factor));
+            put_be64(pb, av_dbl2int(codec->i_quant_offset));
+            put_be64(pb, av_dbl2int(codec->b_quant_offset));
             put_be32(pb, codec->dct_algo);
             put_be32(pb, codec->strict_std_compliance);
             put_be32(pb, codec->max_b_frames);
@@ -197,7 +197,7 @@ static int ffm_write_header(AVFormatContext *s)
             put_be32(pb, codec->mb_decision);
             put_be32(pb, codec->nsse_weight);
             put_be32(pb, codec->frame_skip_cmp);
-            put_be64_double(pb, codec->rc_buffer_aggressivity);
+            put_be64(pb, av_dbl2int(codec->rc_buffer_aggressivity));
             break;
         case CODEC_TYPE_AUDIO:
             put_be32(pb, codec->sample_rate);
@@ -513,10 +513,10 @@ static int ffm_read_header(AVFormatContext *s, AVFormatParameters *ap)
             codec->rc_max_rate = get_be32(pb);
             codec->rc_min_rate = get_be32(pb);
             codec->rc_buffer_size = get_be32(pb);
-            codec->i_quant_factor = get_be64_double(pb);
-            codec->b_quant_factor = get_be64_double(pb);
-            codec->i_quant_offset = get_be64_double(pb);
-            codec->b_quant_offset = get_be64_double(pb);
+            codec->i_quant_factor = av_int2dbl(get_be64(pb));
+            codec->b_quant_factor = av_int2dbl(get_be64(pb));
+            codec->i_quant_offset = av_int2dbl(get_be64(pb));
+            codec->b_quant_offset = av_int2dbl(get_be64(pb));
             codec->dct_algo = get_be32(pb);
             codec->strict_std_compliance = get_be32(pb);
             codec->max_b_frames = get_be32(pb);
@@ -528,7 +528,7 @@ static int ffm_read_header(AVFormatContext *s, AVFormatParameters *ap)
             codec->mb_decision = get_be32(pb);
             codec->nsse_weight = get_be32(pb);
             codec->frame_skip_cmp = get_be32(pb);
-            codec->rc_buffer_aggressivity = get_be64_double(pb);
+            codec->rc_buffer_aggressivity = av_int2dbl(get_be64(pb));
             break;
         case CODEC_TYPE_AUDIO:
             codec->sample_rate = get_be32(pb);
