@@ -3108,7 +3108,7 @@ b= t;
     if(deblock_top){
         XCHG(*(uint64_t*)(h->top_borders[0][s->mb_x]+0), *(uint64_t*)(src_y +1), temp64, xchg);
         XCHG(*(uint64_t*)(h->top_borders[0][s->mb_x]+8), *(uint64_t*)(src_y +9), temp64, 1);
-        if(s->mb_x < s->mb_width){
+        if(s->mb_x+1 < s->mb_width){
             XCHG(*(uint64_t*)(h->top_borders[0][s->mb_x+1]), *(uint64_t*)(src_y +17), temp64, 1);
         }
     }
