@@ -882,6 +882,7 @@ static int mjpeg_decode_init(AVCodecContext *avctx)
 {
     MJpegDecodeContext *s = avctx->priv_data;
     MpegEncContext s2;
+    memset(s, 0, sizeof(MJpegDecodeContext));
 
     s->avctx = avctx;
 
@@ -1573,6 +1574,7 @@ static int mjpeg_decode_dri(MJpegDecodeContext *s)
     if (get_bits(&s->gb, 16) != 4)
 	return -1;
     s->restart_interval = get_bits(&s->gb, 16);
+    s->restart_count = 0;
     dprintf("restart interval: %d\n", s->restart_interval);
 
     return 0;
@@ -1892,6 +1894,7 @@ static int mjpeg_decode_frame(AVCodecContext *avctx,
                 switch(start_code) {
                 case SOI:
 		    s->restart_interval = 0;
+		    s->restart_count = 0;
                     /* nothing to do on SOI */
                     break;
                 case DQT:
@@ -2000,6 +2003,7 @@ static int mjpegb_decode_frame(AVCodecContext *avctx,
 read_header:
     /* reset on every SOI */
     s->restart_interval = 0;
+    s->restart_count = 0;
     s->mjpb_skiptosod = 0;
 
     init_get_bits(&hgb, buf_ptr, /*buf_size*/(buf_end - buf_ptr)*8);
