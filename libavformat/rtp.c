@@ -738,7 +738,7 @@ static void rtp_send_mpegvideo(AVFormatContext *s1,
         /* 90 KHz time stamp */
         s->timestamp = s->base_timestamp + 
             av_rescale((int64_t)s->cur_timestamp * st->codec->time_base.num, 90000, st->codec->time_base.den); //FIXME pass timestamps
-        rtp_send_data(s1, s->buf, q - s->buf, 0);
+        rtp_send_data(s1, s->buf, q - s->buf, (len == size));
 
         buf1 += len;
         size -= len;
