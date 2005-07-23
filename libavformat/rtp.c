@@ -585,7 +585,7 @@ static void rtcp_send_sr(AVFormatContext *s1, int64_t ntp_time)
 
 /* send an rtp packet. sequence number is incremented, but the caller
    must update the timestamp itself */
-static void rtp_send_data(AVFormatContext *s1, const uint8_t *buf1, int len)
+static void rtp_send_data(AVFormatContext *s1, const uint8_t *buf1, int len, int m)
 {
     RTPDemuxContext *s = s1->priv_data;
 
@@ -595,7 +595,7 @@ static void rtp_send_data(AVFormatContext *s1, const uint8_t *buf1, int len)
 
     /* build the RTP header */
     put_byte(&s1->pb, (RTP_VERSION << 6));
-    put_byte(&s1->pb, s->payload_type & 0x7f);
+    put_byte(&s1->pb, (s->payload_type & 0x7f) | ((m & 0x01) << 7));
     put_be16(&s1->pb, s->seq);
     put_be32(&s1->pb, s->timestamp);
     put_be32(&s1->pb, s->ssrc);
@@ -633,7 +633,7 @@ static void rtp_send_samples(AVFormatContext *s1,
         n = (s->buf_ptr - s->buf);
         /* if buffer full, then send it */
         if (n >= max_packet_size) {
-            rtp_send_data(s1, s->buf, n);
+            rtp_send_data(s1, s->buf, n, 0);
             s->buf_ptr = s->buf;
             /* update timestamp */
             s->timestamp += n / sample_size;
@@ -656,7 +656,7 @@ static void rtp_send_mpegaudio(AVFormatContext *s1,
     len = (s->buf_ptr - s->buf);
     if ((len + size) > max_packet_size) {
         if (len > 4) {
-            rtp_send_data(s1, s->buf, s->buf_ptr - s->buf);
+            rtp_send_data(s1, s->buf, s->buf_ptr - s->buf, 0);
             s->buf_ptr = s->buf + 4;
             /* 90 KHz time stamp */
             s->timestamp = s->base_timestamp + 
@@ -678,7 +678,7 @@ static void rtp_send_mpegaudio(AVFormatContext *s1,
             s->buf[2] = count >> 8;
             s->buf[3] = count;
             memcpy(s->buf + 4, buf1, len);
-            rtp_send_data(s1, s->buf, len + 4);
+            rtp_send_data(s1, s->buf, len + 4, 0);
             size -= len;
             buf1 += len;
             count += len;
@@ -738,7 +738,7 @@ static void rtp_send_mpegvideo(AVFormatContext *s1,
         /* 90 KHz time stamp */
         s->timestamp = s->base_timestamp + 
             av_rescale((int64_t)s->cur_timestamp * st->codec->time_base.num, 90000, st->codec->time_base.den); //FIXME pass timestamps
-        rtp_send_data(s1, s->buf, q - s->buf);
+        rtp_send_data(s1, s->buf, q - s->buf, 0);
 
         buf1 += len;
         size -= len;
@@ -763,7 +763,7 @@ static void rtp_send_raw(AVFormatContext *s1,
         /* 90 KHz time stamp */
         s->timestamp = s->base_timestamp + 
             av_rescale((int64_t)s->cur_timestamp * st->codec->time_base.num, 90000, st->codec->time_base.den); //FIXME pass timestamps
-        rtp_send_data(s1, buf1, len);
+        rtp_send_data(s1, buf1, len, (len == size));
 
         buf1 += len;
         size -= len;
@@ -789,7 +789,7 @@ static void rtp_send_mpegts_raw(AVFormatContext *s1,
         
         out_len = s->buf_ptr - s->buf;
         if (out_len >= s->max_payload_size) {
-            rtp_send_data(s1, s->buf, out_len);
+            rtp_send_data(s1, s->buf, out_len, 0);
             s->buf_ptr = s->buf;
         }
     }
