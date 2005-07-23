@@ -353,7 +353,7 @@ void write_video_frame(AVFormatContext *oc, AVStream *st)
         /* encode the image */
         out_size = avcodec_encode_video(c, video_outbuf, video_outbuf_size, picture);
         /* if zero size, it means the image was buffered */
-        if (out_size != 0) {
+        if (out_size > 0) {
             AVPacket pkt;
             av_init_packet(&pkt);
             
