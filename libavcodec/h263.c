@@ -5742,13 +5742,11 @@ static int decode_user_data(MpegEncContext *s, GetBitContext *gb){
     int ver, build, ver2, ver3;
     char last;
 
-    buf[0]= show_bits(gb, 8);
-    for(i=1; i<256; i++){
-        buf[i]= show_bits(gb, 16)&0xFF;
-        if(buf[i]==0) break;
-        skip_bits(gb, 8);
+    for(i=0; i<255; i++){
+        if(show_bits(gb, 23) == 0) break;
+        buf[i]= get_bits(gb, 8);
     }
-    buf[255]=0;
+    buf[i]=0;
 
     /* divx detection */
     e=sscanf(buf, "DivX%dBuild%d%c", &ver, &build, &last);
