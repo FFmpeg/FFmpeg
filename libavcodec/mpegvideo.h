@@ -609,7 +609,6 @@ typedef struct MpegEncContext {
     int xvid_build;
     
     /* lavc specific stuff, used to workaround bugs in libavcodec */
-    int ffmpeg_version;
     int lavc_build;
     
     /* RV10 specific */
