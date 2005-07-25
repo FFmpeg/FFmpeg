@@ -68,6 +68,8 @@ const uint8_t ff_reverse[256]={
 0x0F,0x8F,0x4F,0xCF,0x2F,0xAF,0x6F,0xEF,0x1F,0x9F,0x5F,0xDF,0x3F,0xBF,0x7F,0xFF,
 };
 
+static int volatile entangled_thread_counter=0;
+
 void avcodec_default_free_buffers(AVCodecContext *s);
 
 void *av_mallocz(unsigned int size)
@@ -522,10 +524,16 @@ AVFrame *avcodec_alloc_frame(void){
 
 int avcodec_open(AVCodecContext *avctx, AVCodec *codec)
 {
-    int ret;
+    int ret= -1;
+    
+    entangled_thread_counter++;
+    if(entangled_thread_counter != 1){
+        av_log(avctx, AV_LOG_ERROR, "insufficient thread locking around avcodec_open/close()\n");
+        goto end;
+    }
 
     if(avctx->codec)
-        return -1;
+        goto end;
 
     avctx->codec = codec;
     avctx->codec_id = codec->id;
@@ -533,7 +541,7 @@ int avcodec_open(AVCodecContext *avctx, AVCodec *codec)
     if (codec->priv_data_size > 0) {
         avctx->priv_data = av_mallocz(codec->priv_data_size);
         if (!avctx->priv_data) 
-            return -ENOMEM;
+            goto end;
     } else {
         avctx->priv_data = NULL;
     }
@@ -545,15 +553,18 @@ int avcodec_open(AVCodecContext *avctx, AVCodec *codec)
 
     if((avctx->coded_width||avctx->coded_height) && avcodec_check_dimensions(avctx,avctx->coded_width,avctx->coded_height)){
         av_freep(&avctx->priv_data);
-        return -1;
+        goto end;
     }
 
     ret = avctx->codec->init(avctx);
     if (ret < 0) {
         av_freep(&avctx->priv_data);
-        return ret;
+        goto end;
     }
-    return 0;
+    ret=0;
+end:
+    entangled_thread_counter--;
+    return ret;
 }
 
 int avcodec_encode_audio(AVCodecContext *avctx, uint8_t *buf, int buf_size, 
@@ -670,11 +681,19 @@ int avcodec_decode_subtitle(AVCodecContext *avctx, AVSubtitle *sub,
 
 int avcodec_close(AVCodecContext *avctx)
 {
+    entangled_thread_counter++;
+    if(entangled_thread_counter != 1){
+        av_log(avctx, AV_LOG_ERROR, "insufficient thread locking around avcodec_open/close()\n");
+        entangled_thread_counter--;
+        return -1;
+    }
+
     if (avctx->codec->close)
         avctx->codec->close(avctx);
     avcodec_default_free_buffers(avctx);
     av_freep(&avctx->priv_data);
     avctx->codec = NULL;
+    entangled_thread_counter--;
     return 0;
 }
 
