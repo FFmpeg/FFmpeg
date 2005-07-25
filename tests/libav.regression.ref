@@ -59,6 +59,9 @@ e2a6d6fae17394dfe87cb5bb8ae11837 *./data/b-libav.al
 7a21ff174e3cca1702e0826c4ca0eccf *./data/b-libav.au
   89112 ./data/b-libav.au
 ./data/b-libav.au CRC=2a09519c
+20f9fa55b3c5bebe3520f5667ee4928b *./data/b-libav.mmf
+22609 ./data/b-libav.mmf
+./data/b-libav.mmf CRC=7e78cffe
 ce356ce2708cb6033ab5d762da93cfd4 *./data/b-libav-yuv420p.yuv
  304128 ./data/b-libav-yuv420p.yuv
 ce356ce2708cb6033ab5d762da93cfd4 *./data/b-libav-yuv422p.yuv

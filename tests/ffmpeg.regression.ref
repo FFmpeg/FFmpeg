@@ -150,3 +150,7 @@ d2eee867856d2bdb6d08e936d4ceec0c *./data/a-adpcm_ms.wav
 267308 ./data/a-adpcm_ms.wav
 91a84bb4f319a3a0bf0c0441b3d3a529 *./data/out.wav
 stddev:1050.18 PSNR:35.89 bytes:527360
+5d99e12e911b0f96d44a5792db23dbe2 *./data/a-adpcm_yam.wav
+264236 ./data/a-adpcm_yam.wav
+1b3ad9196ca3e97bfe17259b2e2db470 *./data/out.wav
+stddev:18866.39 PSNR:10.81 bytes:528384

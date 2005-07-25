@@ -76,6 +76,7 @@ else
     do_error=y
     do_svq1=y
     do_snow=y
+    do_adpcm_yam=y
 fi
 
 
@@ -522,6 +523,16 @@ do_ffmpeg $pcm_dst -y -i $file -f wav $pcm_dst
 fi
 
 ###################################
+if [ -n "$do_adpcm_yam" ] ; then
+# encoding
+file=${outfile}adpcm_yam.wav
+do_ffmpeg $file -y -ab 128 -ac 2 -ar 44100 -f s16le -i $pcm_src -acodec adpcm_yamaha $file 
+
+# decoding
+do_ffmpeg $pcm_dst -y -i $file -f wav $pcm_dst 
+fi
+
+###################################
 # libav testing
 ###################################
 
@@ -652,6 +663,11 @@ do_ffmpeg_crc $file -i $file
 
 # au
 file=${outfile}libav.au
+do_ffmpeg $file -t 1 -y -qscale 10 -f s16le -i $pcm_src $file
+do_ffmpeg_crc $file -i $file
+
+# mmf
+file=${outfile}libav.mmf
 do_ffmpeg $file -t 1 -y -qscale 10 -f s16le -i $pcm_src $file
 do_ffmpeg_crc $file -i $file
 
