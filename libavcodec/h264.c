@@ -1205,6 +1205,7 @@ static inline void pred_direct_motion(H264Context * const h, int *mb_type){
     const int b4_xy = 4*s->mb_x + 4*s->mb_y*h->b_stride;
     const int mb_type_col = h->ref_list[1][0].mb_type[mb_xy];
     const int16_t (*l1mv0)[2] = (const int16_t (*)[2]) &h->ref_list[1][0].motion_val[0][b4_xy];
+    const int16_t (*l1mv1)[2] = (const int16_t (*)[2]) &h->ref_list[1][0].motion_val[1][b4_xy];
     const int8_t *l1ref0 = &h->ref_list[1][0].ref_index[0][b8_xy];
     const int8_t *l1ref1 = &h->ref_list[1][0].ref_index[1][b8_xy];
     const int is_b8x8 = IS_8X8(*mb_type);
@@ -1273,8 +1274,9 @@ static inline void pred_direct_motion(H264Context * const h, int *mb_type){
         if(IS_16X16(*mb_type)){
             fill_rectangle(&h->ref_cache[0][scan8[0]], 4, 4, 8, ref[0], 1);
             fill_rectangle(&h->ref_cache[1][scan8[0]], 4, 4, 8, ref[1], 1);
-            if(!IS_INTRA(mb_type_col) && l1ref0[0] == 0 &&
-                ABS(l1mv0[0][0]) <= 1 && ABS(l1mv0[0][1]) <= 1){
+            if(!IS_INTRA(mb_type_col) 
+               && (   l1ref0[0] == 0 && ABS(l1mv0[0][0]) <= 1 && ABS(l1mv0[0][1]) <= 1
+                   || l1ref0[0]  < 0 && l1ref1[0] == 0 && ABS(l1mv1[0][0]) <= 1 && ABS(l1mv1[0][1]) <= 1)){
                 if(ref[0] > 0)
                     fill_rectangle(&h->mv_cache[0][scan8[0]], 4, 4, 8, pack16to32(mv[0][0],mv[0][1]), 4);
                 else
@@ -1302,9 +1304,11 @@ static inline void pred_direct_motion(H264Context * const h, int *mb_type){
                 fill_rectangle(&h->ref_cache[1][scan8[i8*4]], 2, 2, 8, ref[1], 1);
     
                 /* col_zero_flag */
-                if(!IS_INTRA(mb_type_col) && l1ref0[x8 + y8*h->b8_stride] == 0){
+                if(!IS_INTRA(mb_type_col) && (   l1ref0[x8 + y8*h->b8_stride] == 0 
+                                              || l1ref0[x8 + y8*h->b8_stride] < 0 && l1ref1[x8 + y8*h->b8_stride] == 0)){
+                    const int16_t (*l1mv)[2]= l1ref0[x8 + y8*h->b8_stride] == 0 ? l1mv0 : l1mv1;
                     for(i4=0; i4<4; i4++){
-                        const int16_t *mv_col = l1mv0[x8*2 + (i4&1) + (y8*2 + (i4>>1))*h->b_stride];
+                        const int16_t *mv_col = l1mv[x8*2 + (i4&1) + (y8*2 + (i4>>1))*h->b_stride];
                         if(ABS(mv_col[0]) <= 1 && ABS(mv_col[1]) <= 1){
                             if(ref[0] == 0)
                                 *(uint32_t*)h->mv_cache[0][scan8[i8*4+i4]] = 0;
