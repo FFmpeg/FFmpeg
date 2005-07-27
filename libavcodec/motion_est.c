@@ -1896,6 +1896,11 @@ int ff_get_best_fcode(MpegEncContext * s, int16_t (*mv_table)[2], int type)
         int best_fcode=-1;
         int best_score=-10000000;
 
+        if(s->msmpeg4_version) 
+            range= FFMIN(range, 16);
+        else if(s->codec_id == CODEC_ID_MPEG2VIDEO && s->avctx->strict_std_compliance >= FF_COMPLIANCE_NORMAL)
+            range= FFMIN(range, 256);
+
         for(i=0; i<8; i++) score[i]= s->mb_num*(8-i);
 
         for(y=0; y<s->mb_height; y++){
@@ -1950,9 +1955,10 @@ void ff_fix_long_p_mvs(MpegEncContext * s)
     int y, range;
     assert(s->pict_type==P_TYPE);
 
-    range = (((s->out_format == FMT_MPEG1) ? 8 : 16) << f_code);
-    
-    if(s->msmpeg4_version) range= 16;
+    range = (((s->out_format == FMT_MPEG1 || s->msmpeg4_version) ? 8 : 16) << f_code);
+
+    assert(range <= 16 || !s->msmpeg4_version);
+    assert(range <=256 || !(s->codec_id == CODEC_ID_MPEG2VIDEO && s->avctx->strict_std_compliance >= FF_COMPLIANCE_NORMAL));
     
     if(c->avctx->me_range && range > c->avctx->me_range) range= c->avctx->me_range;
     
@@ -2000,9 +2006,8 @@ void ff_fix_long_mvs(MpegEncContext * s, uint8_t *field_select_table, int field_
     int y, h_range, v_range;
 
     // RAL: 8 in MPEG-1, 16 in MPEG-4
-    int range = (((s->out_format == FMT_MPEG1) ? 8 : 16) << f_code);
+    int range = (((s->out_format == FMT_MPEG1 || s->msmpeg4_version) ? 8 : 16) << f_code);
 
-    if(s->msmpeg4_version) range= 16;
     if(c->avctx->me_range && range > c->avctx->me_range) range= c->avctx->me_range;
 
     h_range= range;
