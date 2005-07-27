@@ -422,8 +422,6 @@ static int asf_get_packet(AVFormatContext *s)
     int rsize = 9;
     int c;
     
-    if((url_ftell(&s->pb) - s->data_offset) % asf->packet_size)
-        return -1;
     assert((url_ftell(&s->pb) - s->data_offset) % asf->packet_size == 0);
     
     c = get_byte(pb);
@@ -485,6 +483,8 @@ static int asf_read_packet(AVFormatContext *s, AVPacket *pkt)
 	    //asf->packet_size_left <= asf->packet_padsize) {
 	    int ret = asf->packet_size_left + asf->packet_padsize;
 	    //printf("PacketLeftSize:%d  Pad:%d Pos:%Ld\n", asf->packet_size_left, asf->packet_padsize, url_ftell(pb));
+            if((url_ftell(&s->pb) + ret - s->data_offset) % asf->packet_size)
+                ret += asf->packet_size - ((url_ftell(&s->pb) + ret - s->data_offset) % asf->packet_size);
 	    /* fail safe */
 	    url_fskip(pb, ret);
             asf->packet_pos= url_ftell(&s->pb);
