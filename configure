@@ -457,7 +457,7 @@ for opt do
   ;;
   --enable-a52) a52="yes"
   ;;
-  --enable-a52bin) a52bin="yes" ; extralibs="$ldl $extralibs"
+  --enable-a52bin) a52bin="yes"
   ;;
   --enable-dts) dts="yes" ; extralibs="$extralibs -ldts"
   ;;
@@ -1010,6 +1010,11 @@ if test "$vhook" = "default" ; then
   vhook="$dlopen"
 fi
 
+if test "$vhook" = "yes" -o "$a52bin" = "yes" -o "$faadbin" = "yes"; then
+  extralibs="$extralibs $ldl"
+fi
+
+
 ##########################################
 # imlib probe
 
@@ -1379,7 +1384,6 @@ fi
 if test "$vhook" = "yes" ; then
   echo "BUILD_VHOOK=yes" >> config.mak
   echo "#define HAVE_VHOOK 1" >> $TMPH
-  extralibs="$extralibs $ldl"
 fi
 if test "$lshared" = "yes" ; then
   echo "BUILD_SHARED=yes" >> config.mak
