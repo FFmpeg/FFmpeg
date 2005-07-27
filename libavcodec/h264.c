@@ -1330,7 +1330,7 @@ static inline void pred_direct_motion(H264Context * const h, int *mb_type){
                 const int ref0 = l1ref0[0] >= 0 ? h->map_col_to_list0[0][l1ref0[0]]
                                                 : h->map_col_to_list0[1][l1ref1[0]];
                 const int dist_scale_factor = h->dist_scale_factor[ref0];
-                const int16_t *mv_col = l1mv0[0];
+                const int16_t *mv_col = l1ref0[0] >= 0 ? l1mv0[0] : l1mv1[0];
                 int mv_l0[2];
                 mv_l0[0] = (dist_scale_factor * mv_col[0] + 128) >> 8;
                 mv_l0[1] = (dist_scale_factor * mv_col[1] + 128) >> 8;
@@ -1343,7 +1343,8 @@ static inline void pred_direct_motion(H264Context * const h, int *mb_type){
                 const int x8 = i8&1;
                 const int y8 = i8>>1;
                 int ref0, dist_scale_factor;
-    
+                int16_t (*l1mv)[2]= l1mv0;
+
                 if(is_b8x8 && !IS_DIRECT(h->sub_mb_type[i8]))
                     continue;
                 h->sub_mb_type[i8] = sub_mb_type;
@@ -1358,14 +1359,16 @@ static inline void pred_direct_motion(H264Context * const h, int *mb_type){
                 ref0 = l1ref0[x8 + y8*h->b8_stride];
                 if(ref0 >= 0)
                     ref0 = h->map_col_to_list0[0][ref0];
-                else
+                else{
                     ref0 = h->map_col_to_list0[1][l1ref1[x8 + y8*h->b8_stride]];
+                    l1mv= l1mv1;
+                }
                 dist_scale_factor = h->dist_scale_factor[ref0];
     
                 fill_rectangle(&h->ref_cache[0][scan8[i8*4]], 2, 2, 8, ref0, 1);
                 fill_rectangle(&h->ref_cache[1][scan8[i8*4]], 2, 2, 8, 0, 1);
                 for(i4=0; i4<4; i4++){
-                    const int16_t *mv_col = l1mv0[x8*2 + (i4&1) + (y8*2 + (i4>>1))*h->b_stride];
+                    const int16_t *mv_col = l1mv[x8*2 + (i4&1) + (y8*2 + (i4>>1))*h->b_stride];
                     int16_t *mv_l0 = h->mv_cache[0][scan8[i8*4+i4]];
                     mv_l0[0] = (dist_scale_factor * mv_col[0] + 128) >> 8;
                     mv_l0[1] = (dist_scale_factor * mv_col[1] + 128) >> 8;
