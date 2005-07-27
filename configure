@@ -1134,7 +1134,7 @@ fi
 if test "$lshared" = "yes" ; then
   # LIBOBJFLAGS may have already been set in the OS configuration
   if test -z "$LIBOBJFLAGS" ; then
-    if test "$cpu" = "x86_64" ; then
+    if test "$cpu" = "x86_64" -o "$cpu" = "ia64" ; then
       LIBOBJFLAGS="\$(PIC)"
     fi
   fi
