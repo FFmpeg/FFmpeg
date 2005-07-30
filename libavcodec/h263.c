@@ -5156,6 +5156,7 @@ int h263_decode_picture_header(MpegEncContext *s)
                 s->avctx->time_base.num*= get_bits(&s->gb, 7);
                 if(s->avctx->time_base.num == 0){
                     av_log(s, AV_LOG_ERROR, "zero framerate\n");
+                    s->avctx->time_base= (AVRational){1001, 30000}; //prevent crash
                     return -1;
                 }
                 gcd= ff_gcd(s->avctx->time_base.den, s->avctx->time_base.num);
@@ -5538,6 +5539,10 @@ static int decode_vol_header(MpegEncContext *s, GetBitContext *gb){
     check_marker(gb, "before time_increment_resolution");
     
     s->avctx->time_base.den = get_bits(gb, 16);
+    if(!s->avctx->time_base.den){
+        av_log(s->avctx, AV_LOG_ERROR, "time_base.den==0\n");
+        return -1;
+    }
     
     s->time_increment_bits = av_log2(s->avctx->time_base.den - 1) + 1;
     if (s->time_increment_bits < 1)
