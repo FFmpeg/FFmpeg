@@ -15,17 +15,18 @@ extern "C" {
 #include "rational.h"
 #include <sys/types.h> /* size_t */
 
+//FIXME the following 2 really dont belong in here
 #define FFMPEG_VERSION_INT     0x000409
 #define FFMPEG_VERSION         "CVS"
-#define LIBAVCODEC_BUILD       4759
-
-
-#define LIBAVCODEC_VERSION_INT FFMPEG_VERSION_INT
-#define LIBAVCODEC_VERSION     FFMPEG_VERSION
 
 #define AV_STRINGIFY(s)	AV_TOSTRING(s)
 #define AV_TOSTRING(s) #s
-#define LIBAVCODEC_IDENT	"FFmpeg" LIBAVCODEC_VERSION "b" AV_STRINGIFY(LIBAVCODEC_BUILD)
+
+#define LIBAVCODEC_VERSION_INT ((49<<16)+(0<<8)+0)
+#define LIBAVCODEC_VERSION     49.0.0
+#define LIBAVCODEC_BUILD       LIBAVCODEC_VERSION_INT
+
+#define LIBAVCODEC_IDENT       "Lavc" AV_STRINGIFY(LIBAVCODEC_VERSION)
 
 #define AV_NOPTS_VALUE int64_t_C(0x8000000000000000)
 #define AV_TIME_BASE 1000000

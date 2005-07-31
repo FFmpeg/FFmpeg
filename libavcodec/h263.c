@@ -5767,6 +5767,10 @@ static int decode_user_data(MpegEncContext *s, GetBitContext *gb){
     if(e!=4)
         e=sscanf(buf, "FFmpeg v%d.%d.%d / libavcodec build: %d", &ver, &ver2, &ver3, &build); 
     if(e!=4){
+        e=sscanf(buf, "Lavc%d.%d.%d", &ver, &ver2, &ver3)+1;
+        build= (ver<<16) + (ver2<<8) + ver3;
+    }
+    if(e!=4){
         if(strcmp(buf, "ffmpeg")==0){
             s->lavc_build= 4600;
         }
