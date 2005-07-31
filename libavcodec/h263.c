@@ -5156,7 +5156,6 @@ int h263_decode_picture_header(MpegEncContext *s)
                 s->avctx->time_base.num*= get_bits(&s->gb, 7);
                 if(s->avctx->time_base.num == 0){
                     av_log(s, AV_LOG_ERROR, "zero framerate\n");
-                    s->avctx->time_base= (AVRational){1001, 30000}; //prevent crash
                     return -1;
                 }
                 gcd= ff_gcd(s->avctx->time_base.den, s->avctx->time_base.num);
@@ -5801,10 +5800,6 @@ static int decode_vop_header(MpegEncContext *s, GetBitContext *gb){
     else
         s->decode_mb= ff_mpeg4_decode_mb;
 
-    if(s->avctx->time_base.den==0){
-        s->avctx->time_base.den=1;
-//        fprintf(stderr, "time_increment_resolution is illegal\n");
-    }
     time_incr=0;
     while (get_bits1(gb) != 0) 
         time_incr++;
@@ -5856,7 +5851,10 @@ static int decode_vop_header(MpegEncContext *s, GetBitContext *gb){
     }
 //av_log(s->avctx, AV_LOG_DEBUG, "last nonb %Ld last_base %d time %Ld pp %d pb %d t %d ppf %d pbf %d\n", s->last_non_b_time, s->last_time_base, s->time, s->pp_time, s->pb_time, s->t_frame, s->pp_field_time, s->pb_field_time);
     
-    s->current_picture_ptr->pts= (s->time + s->avctx->time_base.num/2) / s->avctx->time_base.num;
+    if(s->avctx->time_base.num)
+        s->current_picture_ptr->pts= (s->time + s->avctx->time_base.num/2) / s->avctx->time_base.num;
+    else
+        s->current_picture_ptr->pts= AV_NOPTS_VALUE;
     if(s->avctx->debug&FF_DEBUG_PTS)
         av_log(s->avctx, AV_LOG_DEBUG, "MPEG4 PTS: %Ld\n", s->current_picture_ptr->pts);
 
