@@ -348,6 +348,8 @@ typedef struct H264Context{
     uint8_t field_scan[16];
     const uint8_t *zigzag_scan_q0;
     const uint8_t *field_scan_q0;
+    
+    int x264_build;
 }H264Context;
 
 static VLC coeff_token_vlc[4];
@@ -1276,7 +1278,8 @@ static inline void pred_direct_motion(H264Context * const h, int *mb_type){
             fill_rectangle(&h->ref_cache[1][scan8[0]], 4, 4, 8, ref[1], 1);
             if(!IS_INTRA(mb_type_col) 
                && (   l1ref0[0] == 0 && ABS(l1mv0[0][0]) <= 1 && ABS(l1mv0[0][1]) <= 1
-                   || l1ref0[0]  < 0 && l1ref1[0] == 0 && ABS(l1mv1[0][0]) <= 1 && ABS(l1mv1[0][1]) <= 1)){
+                   || l1ref0[0]  < 0 && l1ref1[0] == 0 && ABS(l1mv1[0][0]) <= 1 && ABS(l1mv1[0][1]) <= 1
+                      && (h->x264_build>33 || !h->x264_build))){
                 if(ref[0] > 0)
                     fill_rectangle(&h->mv_cache[0][scan8[0]], 4, 4, 8, pack16to32(mv[0][0],mv[0][1]), 4);
                 else
@@ -1305,7 +1308,8 @@ static inline void pred_direct_motion(H264Context * const h, int *mb_type){
     
                 /* col_zero_flag */
                 if(!IS_INTRA(mb_type_col) && (   l1ref0[x8 + y8*h->b8_stride] == 0 
-                                              || l1ref0[x8 + y8*h->b8_stride] < 0 && l1ref1[x8 + y8*h->b8_stride] == 0)){
+                                              || l1ref0[x8 + y8*h->b8_stride] < 0 && l1ref1[x8 + y8*h->b8_stride] == 0 
+                                                 && (h->x264_build>33 || !h->x264_build))){
                     const int16_t (*l1mv)[2]= l1ref0[x8 + y8*h->b8_stride] == 0 ? l1mv0 : l1mv1;
                     for(i4=0; i4<4; i4++){
                         const int16_t *mv_col = l1mv[x8*2 + (i4&1) + (y8*2 + (i4>>1))*h->b_stride];
@@ -6830,6 +6834,64 @@ static int decode_slice(H264Context *h){
     return -1; //not reached
 }
 
+static int decode_unregistered_user_data(H264Context *h, int size){
+    MpegEncContext * const s = &h->s;
+    uint8_t user_data[16+256];
+    int e, build, i;
+    
+    if(size<16)
+        return -1;
+    
+    for(i=0; i<sizeof(user_data)-1 && i<size; i++){
+        user_data[i]= get_bits(&s->gb, 8);
+    }
+    
+    user_data[i]= 0;
+    e= sscanf(user_data+16, "x264 - core %d"/*%s - H.264/MPEG-4 AVC codec - Copyleft 2005 - http://www.videolan.org/x264.html*/, &build);
+    if(e==1 && build>=0)
+        h->x264_build= build;
+        
+    if(s->avctx->debug & FF_DEBUG_BUGS)
+        av_log(s->avctx, AV_LOG_DEBUG, "user data:\"%s\"\n", user_data+16);
+
+    for(; i<size; i++)
+        skip_bits(&s->gb, 8);
+    
+    return 0;
+}
+
+static int decode_sei(H264Context *h){
+    MpegEncContext * const s = &h->s;
+    
+    while(get_bits_count(&s->gb) + 16 < s->gb.size_in_bits){
+        int size, type;
+        
+        type=0;
+        do{
+            type+= show_bits(&s->gb, 8);
+        }while(get_bits(&s->gb, 8) == 255);
+        
+        size=0;
+        do{
+            size+= show_bits(&s->gb, 8);
+        }while(get_bits(&s->gb, 8) == 255);
+        
+        switch(type){
+        case 5:
+            if(decode_unregistered_user_data(h, size) < 0);
+                return -1;
+            break;
+        default:
+            skip_bits(&s->gb, 8*size);
+        }
+        
+        //FIXME check bits here
+        align_get_bits(&s->gb);
+    }
+
+    return 0;
+}
+
 static inline void decode_hrd_parameters(H264Context *h, SPS *sps){
     MpegEncContext * const s = &h->s;
     int cpb_count, i;
@@ -7257,7 +7319,7 @@ static int decode_nal_units(H264Context *h, uint8_t *buf, int buf_size){
 
         buf_index += consumed;
 
-        if(  (s->hurry_up == 1 && h->nal_ref_idc  == 0)
+        if(  (s->hurry_up == 1 && h->nal_ref_idc  == 0) //FIXME dont discard SEI id
            ||(avctx->skip_frame >= AVDISCARD_NONREF && h->nal_ref_idc  == 0))
             continue;
         
@@ -7308,6 +7370,8 @@ static int decode_nal_units(H264Context *h, uint8_t *buf, int buf_size){
                 decode_slice(h);
             break;
         case NAL_SEI:
+            init_get_bits(&s->gb, ptr, bit_length);
+            decode_sei(h);
             break;
         case NAL_SPS:
             init_get_bits(&s->gb, ptr, bit_length);
