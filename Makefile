@@ -6,7 +6,7 @@ include config.mak
 
 VPATH=$(SRC_PATH)
 
-CFLAGS=$(OPTFLAGS) -I. -I$(SRC_PATH) -I$(SRC_PATH)/libavcodec -I$(SRC_PATH)/libavformat -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_GNU_SOURCE
+CFLAGS=$(OPTFLAGS) -I. -I$(SRC_PATH) -I$(SRC_PATH)/libavutil -I$(SRC_PATH)/libavcodec -I$(SRC_PATH)/libavformat -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_GNU_SOURCE
 LDFLAGS+= -g 
 
 ifeq ($(TARGET_GPROF),yes)
@@ -91,11 +91,12 @@ endif
 
 OBJS = ffmpeg.o ffserver.o cmdutils.o $(FFPLAY_O)
 SRCS = $(OBJS:.o=.c) $(ASM_OBJS:.o=.s)
-FFLIBS = -L./libavformat -lavformat$(BUILDSUF) -L./libavcodec -lavcodec$(BUILDSUF)
+FFLIBS = -L./libavformat -lavformat$(BUILDSUF) -L./libavcodec -lavcodec$(BUILDSUF) -L./libavutil -lavutil$(BUILDSUF)
 
 all: lib $(PROG) $(PROGTEST) $(VHOOK) $(QTFASTSTART) $(DOC)
 
 lib:
+	$(MAKE) -C libavutil all
 	$(MAKE) -C libavcodec all
 	$(MAKE) -C libavformat all
 
@@ -140,6 +141,7 @@ documentation:
 .PHONY: install
 
 install: all install-man $(INSTALLVHOOK)
+	$(MAKE) -C libavutil install
 	$(MAKE) -C libavcodec install
 	$(MAKE) -C libavformat install
 	install -d "$(bindir)"
@@ -162,6 +164,7 @@ install-vhook:
 	$(MAKE) -C vhook install
 
 installlib:
+	$(MAKE) -C libavutil installlib
 	$(MAKE) -C libavcodec installlib
 	$(MAKE) -C libavformat installlib
 
@@ -182,6 +185,7 @@ endif
 	@for i in $(DEP_LIBS) ; do if $(TEST) $$i -nt .libs ; then touch .libs; fi ; done
 
 clean: $(CLEANVHOOK)
+	$(MAKE) -C libavutil clean
 	$(MAKE) -C libavcodec clean
 	$(MAKE) -C libavformat clean
 	$(MAKE) -C tests clean

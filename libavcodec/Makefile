@@ -7,7 +7,7 @@ include ../config.mak
 VPATH=$(SRC_PATH)/libavcodec
 
 # NOTE: -I.. is needed to include config.h
-CFLAGS=$(OPTFLAGS) -DHAVE_AV_CONFIG_H -I.. -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_GNU_SOURCE $(AMR_CFLAGS)
+CFLAGS=$(OPTFLAGS) -DHAVE_AV_CONFIG_H -I.. -I$(SRC_PATH)/libavutil -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_GNU_SOURCE $(AMR_CFLAGS)
 
 OBJS= bitstream.o utils.o mem.o allcodecs.o \
       mpegvideo.o jrevdct.o jfdctfst.o jfdctint.o\
@@ -16,8 +16,8 @@ OBJS= bitstream.o utils.o mem.o allcodecs.o \
       mpeg12.o mpegaudiodec.o pcm.o simple_idct.o \
       ratecontrol.o adpcm.o eval.o error_resilience.o \
       fft.o mdct.o raw.o golomb.o cabac.o\
-      dpcm.o adx.o rational.o faandct.o parser.o g726.o \
-      vp3dsp.o integer.o h264idct.o rangecoder.o pnm.o h263.o msmpeg4.o h263dec.o dvdsub.o dvbsub.o dvbsubdec.o
+      dpcm.o adx.o faandct.o parser.o g726.o \
+      vp3dsp.o h264idct.o rangecoder.o pnm.o h263.o msmpeg4.o h263dec.o dvdsub.o dvbsub.o dvbsubdec.o
 
 ifeq ($(CONFIG_AASC_DECODER),yes)
     OBJS+= aasc.o
@@ -234,6 +234,8 @@ OBJS+= liba52/bit_allocate.o liba52/bitstream.o liba52/downmix.o \
 endif
 endif
 
+EXTRALIBS += -L$(SRC_PATH)/libavutil -lavutil$(BUILDSUF)
+
 # currently using libdts for dts decoding
 ifeq ($(CONFIG_DTS),yes)
 OBJS+= dtsdec.o
@@ -375,6 +377,7 @@ SRCS := $(OBJS:.o=.c) $(ASM_OBJS:.o=.S)
 OBJS := $(OBJS) $(ASM_OBJS)
 
 LIB= $(LIBPREF)avcodec$(LIBSUF)
+LIBAVUTIL= $(SRC_PATH)/libavutil/$(LIBPREF)avutil$(LIBSUF)
 ifeq ($(BUILD_SHARED),yes)
 SLIB= $(SLIBPREF)avcodec$(SLIBSUF)
 endif
@@ -446,7 +449,7 @@ cleanamrwbfloat:
 
 # api example program
 apiexample: apiexample.c $(LIB)
-	$(CC) $(CFLAGS) -o $@ $< $(LIB) $(EXTRALIBS) -lm
+	$(CC) $(CFLAGS) -o $@ $< $(LIB) $(LIBAVUTIL) $(EXTRALIBS) -lm
 
 # cpuid test
 cpuid_test: i386/cputest.c
@@ -464,7 +467,7 @@ motion-test: motion_test.o $(LIB)
 	$(CC) -o $@ $^ -lm
 
 fft-test: fft-test.o $(LIB)
-	$(CC) -o $@ $^ -lm
+	$(CC) -o $@ $^ $(LIBAVUTIL) -lm
 
 ifeq ($(BUILD_SHARED),yes)
 install: all install-headers
@@ -489,8 +492,6 @@ installlib: all install-headers
 install-headers:
 	mkdir -p "$(prefix)/include/ffmpeg"
 	install -m 644 $(SRC_PATH)/libavcodec/avcodec.h \
-	               $(SRC_PATH)/libavcodec/common.h \
-	               $(SRC_PATH)/libavcodec/rational.h \
                 "$(prefix)/include/ffmpeg"
 	install -d $(libdir)/pkgconfig
 	install -m 644 ../libavcodec.pc $(libdir)/pkgconfig

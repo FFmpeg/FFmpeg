@@ -11,8 +11,7 @@
 extern "C" {
 #endif
 
-#include "common.h"
-#include "rational.h"
+#include "avutil.h"
 #include <sys/types.h> /* size_t */
 
 //FIXME the following 2 really dont belong in here
@@ -22,8 +21,8 @@ extern "C" {
 #define AV_STRINGIFY(s)	AV_TOSTRING(s)
 #define AV_TOSTRING(s) #s
 
-#define LIBAVCODEC_VERSION_INT ((49<<16)+(0<<8)+0)
-#define LIBAVCODEC_VERSION     49.0.0
+#define LIBAVCODEC_VERSION_INT ((49<<16)+(0<<8)+1)
+#define LIBAVCODEC_VERSION     49.0.1
 #define LIBAVCODEC_BUILD       LIBAVCODEC_VERSION_INT
 
 #define LIBAVCODEC_IDENT       "Lavc" AV_STRINGIFY(LIBAVCODEC_VERSION)
@@ -277,14 +276,6 @@ enum Motion_Est_ID {
     ME_PHODS,
     ME_EPZS,
     ME_X1
-};
-
-enum AVRounding {
-    AV_ROUND_ZERO     = 0, ///< round toward zero
-    AV_ROUND_INF      = 1, ///< round away from zero
-    AV_ROUND_DOWN     = 2, ///< round toward -infinity
-    AV_ROUND_UP       = 3, ///< round toward +infinity
-    AV_ROUND_NEAR_INF = 5, ///< round to nearest and halfway cases away from zero
 };
 
 enum AVDiscard{
@@ -2307,36 +2298,6 @@ void avcodec_default_free_buffers(AVCodecContext *s);
  * returns a single letter to describe the picture type
  */
 char av_get_pict_type_char(int pict_type);
-
-/**
- * reduce a fraction.
- * this is usefull for framerate calculations
- * @param max the maximum allowed for dst_nom & dst_den
- * @return 1 if exact, 0 otherwise
- */
-int av_reduce(int *dst_nom, int *dst_den, int64_t nom, int64_t den, int64_t max);
-
-/**
- * rescale a 64bit integer with rounding to nearest.
- * a simple a*b/c isn't possible as it can overflow
- */
-int64_t av_rescale(int64_t a, int64_t b, int64_t c);
-
-/**
- * rescale a 64bit integer with specified rounding.
- * a simple a*b/c isn't possible as it can overflow
- */
-int64_t av_rescale_rnd(int64_t a, int64_t b, int64_t c, enum AVRounding);
-
-/**
- * rescale a 64bit integer by 2 rational numbers.
- */
-int64_t av_rescale_q(int64_t a, AVRational bq, AVRational cq);
-
-double av_int2dbl(int64_t v);
-float av_int2flt(int32_t v);
-int64_t av_dbl2int(double d);
-int32_t av_flt2int(float d);
 
 
 /* frame parsing */

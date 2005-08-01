@@ -13,7 +13,7 @@
  * a page about fdct at http://www.geocities.com/ssavekar/dct.htm
  * Skal's fdct at http://skal.planet-d.net/coding/dct.html
  */
-#include "../common.h"
+#include "common.h"
 #include "../dsputil.h"
 #include "mmx.h"
 

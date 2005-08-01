@@ -52,6 +52,14 @@ static inline double av_q2d(AVRational a){
     return a.num / (double) a.den;
 }
 
+/**
+ * reduce a fraction.
+ * this is usefull for framerate calculations
+ * @param max the maximum allowed for dst_nom & dst_den
+ * @return 1 if exact, 0 otherwise
+ */
+int av_reduce(int *dst_nom, int *dst_den, int64_t nom, int64_t den, int64_t max);
+
 AVRational av_mul_q(AVRational b, AVRational c);
 AVRational av_div_q(AVRational b, AVRational c);
 AVRational av_add_q(AVRational b, AVRational c);

@@ -31,24 +31,6 @@
 #include <stdarg.h>
 #include <limits.h>
 
-const uint8_t ff_sqrt_tab[128]={
-        0, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5,
-        5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
-        8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9,
-        9, 9, 9, 9,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,11,11,11,11,11,11,11
-};
-
-const uint8_t ff_log2_tab[256]={
-        0,0,1,1,2,2,2,2,3,3,3,3,3,3,3,3,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,
-        5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,
-        6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,
-        6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,
-        7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
-        7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
-        7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
-        7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7
-};
-
 const uint8_t ff_reverse[256]={
 0x00,0x80,0x40,0xC0,0x20,0xA0,0x60,0xE0,0x10,0x90,0x50,0xD0,0x30,0xB0,0x70,0xF0,
 0x08,0x88,0x48,0xC8,0x28,0xA8,0x68,0xE8,0x18,0x98,0x58,0xD8,0x38,0xB8,0x78,0xF8,
@@ -936,107 +918,6 @@ char av_get_pict_type_char(int pict_type){
     case SP_TYPE:return 'p'; 
     default:     return '?';
     }
-}
-
-int av_reduce(int *dst_nom, int *dst_den, int64_t nom, int64_t den, int64_t max){
-    AVRational a0={0,1}, a1={1,0};
-    int sign= (nom<0) ^ (den<0);
-    int64_t gcd= ff_gcd(ABS(nom), ABS(den));
-
-    nom = ABS(nom)/gcd;
-    den = ABS(den)/gcd;
-    if(nom<=max && den<=max){
-        a1= (AVRational){nom, den};
-        den=0;
-    }
-    
-    while(den){
-        int64_t x       = nom / den;
-        int64_t next_den= nom - den*x;
-        int64_t a2n= x*a1.num + a0.num;
-        int64_t a2d= x*a1.den + a0.den;
-
-        if(a2n > max || a2d > max) break;
-
-        a0= a1;
-        a1= (AVRational){a2n, a2d};
-        nom= den;
-        den= next_den;
-    }
-    assert(ff_gcd(a1.num, a1.den) == 1);
-    
-    *dst_nom = sign ? -a1.num : a1.num;
-    *dst_den = a1.den;
-    
-    return den==0;
-}
-
-int64_t av_rescale_rnd(int64_t a, int64_t b, int64_t c, enum AVRounding rnd){
-    AVInteger ai;
-    int64_t r=0;
-    assert(c > 0);
-    assert(b >=0);
-    assert(rnd >=0 && rnd<=5 && rnd!=4);
-    
-    if(a<0 && a != INT64_MIN) return -av_rescale_rnd(-a, b, c, rnd ^ ((rnd>>1)&1)); 
-    
-    if(rnd==AV_ROUND_NEAR_INF) r= c/2;
-    else if(rnd&1)             r= c-1;
-
-    if(b<=INT_MAX && c<=INT_MAX){
-        if(a<=INT_MAX)
-            return (a * b + r)/c;
-        else
-            return a/c*b + (a%c*b + r)/c;
-    }
-    
-    ai= av_mul_i(av_int2i(a), av_int2i(b));
-    ai= av_add_i(ai, av_int2i(r));
-    
-    return av_i2int(av_div_i(ai, av_int2i(c)));
-}
-
-int64_t av_rescale(int64_t a, int64_t b, int64_t c){
-    return av_rescale_rnd(a, b, c, AV_ROUND_NEAR_INF);
-}
-
-int64_t av_rescale_q(int64_t a, AVRational bq, AVRational cq){
-    int64_t b= bq.num * (int64_t)cq.den;
-    int64_t c= cq.num * (int64_t)bq.den;
-    return av_rescale_rnd(a, b, c, AV_ROUND_NEAR_INF);
-}
-
-int64_t ff_gcd(int64_t a, int64_t b){
-    if(b) return ff_gcd(b, a%b);
-    else  return a;
-}
-
-double av_int2dbl(int64_t v){
-    if(v+v > 0xFFELLU<<52)
-        return 0.0/0.0;
-    return ldexp(((v&(1LL<<52)-1) + (1LL<<52)) * (v>>63|1), (v>>52&0x7FF)-1075);
-}
-
-float av_int2flt(int32_t v){
-    if(v+v > 0xFF000000U)
-        return 0.0/0.0;
-    return ldexp(((v&0x7FFFFF) + (1<<23)) * (v>>31|1), (v>>23&0xFF)-150);
-}
-
-int64_t av_dbl2int(double d){
-    int e;
-    if     ( !d) return 0;
-    else if(d-d) return 0x7FF0000000000000LL + ((int64_t)(d<0)<<63) + (d!=d);
-    d= frexp(d, &e);
-    return (int64_t)(d<0)<<63 | (e+1022LL)<<52 | (int64_t)((fabs(d)-0.5)*(1LL<<53));
-}
-
-int32_t av_flt2int(float d){
-    int e;
-    if     ( !d) return 0;
-    else if(d-d) return 0x7F800000 + ((d<0)<<31) + (d!=d);
-    d= frexp(d, &e);
-    return (d<0)<<31 | (e+126)<<23 | (int64_t)((fabs(d)-0.5)*(1<<24));
 }
 
 /* av_log API */
