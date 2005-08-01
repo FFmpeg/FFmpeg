@@ -1891,7 +1891,7 @@ int ff_get_best_fcode(MpegEncContext * s, int16_t (*mv_table)[2], int type)
 {
     if(s->me_method>=ME_EPZS){
         int score[8];
-        int i, y, range= s->avctx->me_range;
+        int i, y, range= s->avctx->me_range ? s->avctx->me_range : (INT_MAX/2);
         uint8_t * fcode_tab= s->fcode_tab;
         int best_fcode=-1;
         int best_score=-10000000;
@@ -1914,11 +1914,9 @@ int ff_get_best_fcode(MpegEncContext * s, int16_t (*mv_table)[2], int type)
                                      fcode_tab[my + MAX_MV]);
                     int j;
                     
-                    if(range){
                         if(mx >= range || mx < -range || 
                            my >= range || my < -range)
                             continue;
-                    }
                     
                     for(j=0; j<fcode && j<8; j++){
                         if(s->pict_type==B_TYPE || s->current_picture.mc_mb_var[xy] < s->current_picture.mb_var[xy])
