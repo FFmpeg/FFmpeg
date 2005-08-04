@@ -513,9 +513,12 @@ static int16_t *wmv2_pred_motion(Wmv2Context *w, int *px, int *py){
     B = s->current_picture.motion_val[0][xy - wrap];
     C = s->current_picture.motion_val[0][xy + 2 - wrap];
     
-    diff= FFMAX(ABS(A[0] - B[0]), ABS(A[1] - B[1]));
+    if(s->mb_x && !s->first_slice_line && !s->mspel && w->top_left_mv_flag)
+        diff= FFMAX(ABS(A[0] - B[0]), ABS(A[1] - B[1]));
+    else 
+        diff=0;
     
-    if(s->mb_x && !s->first_slice_line && !s->mspel && w->top_left_mv_flag && diff >= 8)
+    if(diff >= 8)
         type= get_bits1(&s->gb);
     else
         type= 2;
