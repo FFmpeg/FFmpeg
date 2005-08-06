@@ -81,8 +81,8 @@ install-headers:
 	               $(SRC_PATH)/libavutil/rational.h \
 	               $(SRC_PATH)/libavutil/intfloat_readwrite.h \
                 "$(prefix)/include/ffmpeg"
-#	install -d $(libdir)/pkgconfig
-#	install -m 644 ../libavutil.pc $(libdir)/pkgconfig
+	install -d $(libdir)/pkgconfig
+	install -m 644 ../libavutil.pc $(libdir)/pkgconfig
 
 #
 # include dependency files if they exist

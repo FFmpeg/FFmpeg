@@ -1690,14 +1690,46 @@ rm -f $TMPO $TMPC $TMPE $TMPS $TMPH
 
 
 # build pkg-config files libavcodec.pc, libavformat.pc and libpostproc.pc 
-
-lavc_build=`grep '#define LIBAVCODEC_BUILD' "$source_path/libavcodec/avcodec.h" | sed 's/[^0-9]//g'`
-lavf_build=`grep '#define LIBAVFORMAT_BUILD' "$source_path/libavformat/avformat.h" | sed 's/[^0-9]//g'`
+lavc_version=`grep '#define LIBAVCODEC_VERSION ' "$source_path/libavcodec/avcodec.h" | sed 's/[^0-9\.]//g'`
+lavf_version=`grep '#define LIBAVFORMAT_VERSION ' "$source_path/libavformat/avformat.h" | sed 's/[^0-9\.]//g'`
+lavu_version=`grep '#define LIBAVUTIL_VERSION ' "$source_path/libavutil/avutil.h" | sed 's/[^0-9\.]//g'`
 
 requires=
 test "$libogg" = "yes" && requires="$requires ogg >= 1.1"
 test "$vorbis" = "yes" && requires="$requires vorbis"
 test "$theora" = "yes" && requires="$requires theora"
+test "$faad" = "yes" && test "$faadbin" = "no" && extralibs="$extralibs -lfaad"
+
+# libavutil.pc
+cat <<EOF >libavutil.pc
+prefix=$prefix
+exec_prefix=\${prefix}
+libdir=\${exec_prefix}/lib
+includedir=\${prefix}/include
+
+Name: libavutil
+Description: FFmpeg utility library
+Version: $lavu_version
+Requires: 
+Conflicts:
+Libs: -L\${libdir} -lavutil
+Cflags: -I\${includedir} -I\${includedir}/ffmpeg
+EOF
+
+cat <<EOF >libavutil-uninstalled.pc
+prefix=
+exec_prefix=
+libdir=\${pcfiledir}/libavutil
+includedir=\${pcfiledir}/libavutil
+
+Name: libavutil
+Description: FFmpeg utility library
+Version: $lavu_version
+Requires: 
+Conflicts:
+Libs: \${libdir}/${LIBPREF}avutil${LIBSUF}
+Cflags: -I\${includedir}
+EOF
 
 # libavcodec.pc
 cat <<EOF >libavcodec.pc
@@ -1708,8 +1740,8 @@ includedir=\${prefix}/include
 
 Name: libavcodec
 Description: FFmpeg codec library
-Version: $version-$lavc_build
-Requires: $requires
+Version: $lavc_version
+Requires: $requires libavutil = $lavu_version
 Conflicts:
 Libs: -L\${libdir} -lavcodec $extralibs
 Cflags: -I\${includedir} -I\${includedir}/ffmpeg
@@ -1723,8 +1755,8 @@ includedir=\${pcfiledir}/libavcodec
 
 Name: libavcodec
 Description: FFmpeg codec library
-Version: $version-$lavc_build
-Requires: $requires
+Version: $lavc_version
+Requires: $requires libavutil = $lavu_version
 Conflicts:
 Libs: \${libdir}/${LIBPREF}avcodec${LIBSUF} $extralibs
 Cflags: -I\${includedir}
@@ -1739,8 +1771,8 @@ includedir=\${prefix}/include
 
 Name: libavformat
 Description: FFmpeg container format library
-Version: $version-$lavf_build
-Requires: $requires libavcodec = $version-$lavc_build
+Version: $lavf_version
+Requires: $requires libavcodec = $lavc_version
 Conflicts:
 Libs: -L\${libdir} -lavformat $extralibs
 Cflags: -I\${includedir} -I\${includedir}/ffmpeg
@@ -1754,8 +1786,8 @@ includedir=\${pcfiledir}/libavformat
 
 Name: libavformat
 Description: FFmpeg container format library
-Version: $version-$lavf_build
-Requires: $requires libavcodec = $version-$lavc_build
+Version: $lavf_version
+Requires: $requires libavcodec = $lavc_version
 Conflicts:
 Libs: \${libdir}/${LIBPREF}avformat${LIBSUF} $extralibs
 Cflags: -I\${includedir}
@@ -1771,7 +1803,7 @@ includedir=\${prefix}/include
 
 Name: libpostproc
 Description: FFmpeg post processing library
-Version: $version
+Version: $lavc_version
 Requires: 
 Conflicts:
 Libs: -L\${libdir} -lpostproc
@@ -1786,7 +1818,7 @@ includedir=\${pcfiledir}/libavcodec/libpostproc
 
 Name: libpostproc
 Description: FFmpeg post processing library
-Version: $version
+Version: $lavc_version
 Requires: 
 Conflicts:
 Libs: \${libdir}/${LIBPREF}postproc${LIBSUF}
