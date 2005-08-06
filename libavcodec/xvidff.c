@@ -27,6 +27,9 @@
 #include <unistd.h>
 #include "common.h"
 #include "avcodec.h"
+#ifdef CONFIG_WIN32
+#include <fcntl.h>
+#endif
 
 /**
  * Buffer management macros.
@@ -226,6 +229,26 @@ int ff_xvid_encode_init(AVCodecContext *avctx)  {
         rc2pass2.version = XVID_VERSION;
         rc2pass2.bitrate = avctx->bit_rate;
         
+#ifdef CONFIG_WIN32 /* Ugly work around */
+        {
+           char *tempname;
+
+           tempname = tempnam(".", "xvidff");
+            fd = -1;
+            if( tempname &&
+                (fd = open(tempname, _O_RDWR | _O_BINARY)) != -1 ) {
+                x->twopassfile = av_strdup(tempname);
+#undef free
+                free(tempname);
+#define free please_use_av_free
+                if( x->twopassfile == NULL ) {
+                    av_log(avctx, AV_LOG_ERROR,
+                        "XviD: Cannot allocate 2-pass buffer\n");
+                    return -1;
+                }
+            }
+       }
+#else
         x->twopassfile = av_malloc(BUFFER_SIZE);
         if( x->twopassfile == NULL ) {
             av_log(avctx, AV_LOG_ERROR,
@@ -238,6 +261,7 @@ int ff_xvid_encode_init(AVCodecContext *avctx)  {
             strcpy(x->twopassfile, "./xvidff.XXXXXX");
             fd = mkstemp(x->twopassfile);
         }
+#endif
         if( fd == -1 ) {
             av_log(avctx, AV_LOG_ERROR,
                 "XviD: Cannot write 2-pass pipe\n");
