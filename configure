@@ -1617,13 +1617,33 @@ fi
 
 # build tree in object directory if source path is different from current one
 if test "$source_path_used" = "yes" ; then
-    DIRS="doc libavformat libavcodec libavcodec/alpha libavcodec/armv4l \
-          libavcodec/i386 libavcodec/sparc libavcodec/mlib \
-          libavcodec/ppc libavcodec/liba52 libavcodec/libpostproc tests \
-          vhook libavutil"
-    FILES="Makefile libavformat/Makefile libavcodec/Makefile \
-          libavcodec/libpostproc/Makefile tests/Makefile vhook/Makefile \
-          doc/Makefile doc/texi2pod.pl libavutil/Makefile"
+    DIRS="\
+         doc \
+         libavformat \
+         libavcodec \
+         libavcodec/alpha \
+         libavcodec/armv4l \
+         libavcodec/i386 \
+         libavcodec/sparc \
+         libavcodec/mlib \
+         libavcodec/ppc \
+         libavcodec/liba52 \
+         libavcodec/libpostproc \
+         libavutil \
+         tests \
+         vhook \
+         "
+    FILES="\
+          Makefile \
+          libavformat/Makefile \
+          libavcodec/Makefile \
+          libavcodec/libpostproc/Makefile \
+          libavutil/Makefile \
+          tests/Makefile \
+          vhook/Makefile \
+          doc/Makefile \
+          doc/texi2pod.pl \
+          "
     for dir in $DIRS ; do
             mkdir -p $dir
     done
