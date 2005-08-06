@@ -1619,10 +1619,11 @@ fi
 if test "$source_path_used" = "yes" ; then
     DIRS="doc libavformat libavcodec libavcodec/alpha libavcodec/armv4l \
           libavcodec/i386 libavcodec/sparc libavcodec/mlib \
-          libavcodec/ppc libavcodec/liba52 libavcodec/libpostproc tests vhook"
+          libavcodec/ppc libavcodec/liba52 libavcodec/libpostproc tests \
+          vhook libavutil"
     FILES="Makefile libavformat/Makefile libavcodec/Makefile \
           libavcodec/libpostproc/Makefile tests/Makefile vhook/Makefile \
-          doc/Makefile doc/texi2pod.pl"
+          doc/Makefile doc/texi2pod.pl libavutil/Makefile"
     for dir in $DIRS ; do
             mkdir -p $dir
     done
