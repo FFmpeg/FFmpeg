@@ -312,7 +312,7 @@ SHFLAGS="-dynamiclib"
 extralibs=""
 darwin="yes"
 strip="strip -x"
-LDFLAGS="-Wl,-d,-search_paths_first"
+LDFLAGS="-Wl,-search_paths_first"
 FFSLDFLAGS=-Wl,-bind_at_load
 ;;
 MINGW32*)
