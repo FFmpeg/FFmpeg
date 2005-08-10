@@ -51,6 +51,7 @@ static void print_guid(const GUID *g)
     else PRINT_IF_GUID(g, audio_conceal_none);
     else PRINT_IF_GUID(g, video_stream);
     else PRINT_IF_GUID(g, video_conceal_none);
+    else PRINT_IF_GUID(g, command_stream);
     else PRINT_IF_GUID(g, comment_header);
     else PRINT_IF_GUID(g, codec_comment_header);
     else PRINT_IF_GUID(g, codec_comment1_header);
@@ -204,6 +205,8 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 type = CODEC_TYPE_AUDIO;
             } else if (!memcmp(&g, &video_stream, sizeof(GUID))) {
                 type = CODEC_TYPE_VIDEO;
+            } else if (!memcmp(&g, &command_stream, sizeof(GUID))) {
+                type = CODEC_TYPE_UNKNOWN;
             } else {
                 goto fail;
             }

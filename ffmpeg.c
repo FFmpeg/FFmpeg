@@ -3116,6 +3116,8 @@ static void opt_input_file(const char *filename)
             break;
         case CODEC_TYPE_SUBTITLE:
             break;
+        case CODEC_TYPE_UNKNOWN:
+            break;
         default:
             av_abort();
         }
@@ -3163,6 +3165,7 @@ static void check_audio_video_inputs(int *has_video_ptr, int *has_audio_ptr)
                 has_video = 1;
                 break;
             case CODEC_TYPE_DATA:
+            case CODEC_TYPE_UNKNOWN:
             case CODEC_TYPE_SUBTITLE:
                 break;
             default:
