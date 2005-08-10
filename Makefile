@@ -69,6 +69,10 @@ ifeq ($(CONFIG_XVID),yes)
 EXTRALIBS+=-lxvidcore
 endif
 
+ifeq ($(CONFIG_LIBGSM),yes)
+EXTRALIBS+=-lgsm
+endif
+
 ifeq ($(CONFIG_DC1394),yes)
 EXTRALIBS+=-ldc1394_control -lraw1394
 endif
