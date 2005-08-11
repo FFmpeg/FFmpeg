@@ -897,6 +897,8 @@ static int dvvideo_decode_frame(AVCodecContext *avctx,
         avctx->release_buffer(avctx, &s->picture);
     
     s->picture.reference = 0;
+    s->picture.key_frame = 1;
+    s->picture.pict_type = FF_I_TYPE;
     avctx->pix_fmt = s->sys->pix_fmt;
     avctx->width = s->sys->width;
     avctx->height = s->sys->height;
@@ -933,6 +935,8 @@ static int dvvideo_encode_frame(AVCodecContext *c, uint8_t *buf, int buf_size,
 
     c->pix_fmt = s->sys->pix_fmt;
     s->picture = *((AVFrame *)data);
+    s->picture.key_frame = 1;
+    s->picture.pict_type = FF_I_TYPE;
 
     s->buf = buf;
     c->execute(c, dv_encode_mt, (void**)&dv_anchor[0], NULL, 
