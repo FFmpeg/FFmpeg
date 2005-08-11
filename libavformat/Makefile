@@ -56,6 +56,8 @@ ifeq ($(CONFIG_AUDIO_OSS),yes)
 OBJS+= audio.o 
 endif
 
+EXTRALIBS += -L$(SRC_PATH)/libavutil -lavutil$(BUILDSUF)
+
 ifeq ($(CONFIG_AUDIO_BEOS),yes)
 PPOBJS+= beosaudio.o
 EXTRALIBS+=-lbe -lmedia
