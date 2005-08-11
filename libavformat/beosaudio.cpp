@@ -287,8 +287,8 @@ static int audio_write_header(AVFormatContext *s1)
     int ret;
 
     st = s1->streams[0];
-    s->sample_rate = st->codec.sample_rate;
-    s->channels = st->codec.channels;
+    s->sample_rate = st->codec->sample_rate;
+    s->channels = st->codec->channels;
     ret = audio_open(s, 1, NULL);
     if (ret < 0)
         return -EIO;
@@ -365,10 +365,10 @@ static int audio_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         return -EIO;
     }
     /* take real parameters */
-    st->codec.codec_type = CODEC_TYPE_AUDIO;
-    st->codec.codec_id = s->codec_id;
-    st->codec.sample_rate = s->sample_rate;
-    st->codec.channels = s->channels;
+    st->codec->codec_type = CODEC_TYPE_AUDIO;
+    st->codec->codec_id = s->codec_id;
+    st->codec->sample_rate = s->sample_rate;
+    st->codec->channels = s->channels;
     return 0;
     av_set_pts_info(s1, 48, 1, 1000000);  /* 48 bits pts in us */
 }

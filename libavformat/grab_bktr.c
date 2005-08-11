@@ -268,13 +268,13 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     s->frame_rate_base = frame_rate_base;
     s->per_frame = ((u_int64_t)1000000 * s->frame_rate_base) / s->frame_rate;
 
-    st->codec.codec_type = CODEC_TYPE_VIDEO;
-    st->codec.pix_fmt = PIX_FMT_YUV420P;
-    st->codec.codec_id = CODEC_ID_RAWVIDEO;
-    st->codec.width = width;
-    st->codec.height = height;
-    st->codec.time_base.den = frame_rate;
-    st->codec.time_base.num = frame_rate_base;
+    st->codec->codec_type = CODEC_TYPE_VIDEO;
+    st->codec->pix_fmt = PIX_FMT_YUV420P;
+    st->codec->codec_id = CODEC_ID_RAWVIDEO;
+    st->codec->width = width;
+    st->codec->height = height;
+    st->codec->time_base.den = frame_rate;
+    st->codec->time_base.num = frame_rate_base;
 
     if (ap->standard) {
         if (!strcasecmp(ap->standard, "pal"))

@@ -80,13 +80,13 @@ static int dc1394_read_header(AVFormatContext *c, AVFormatParameters * ap)
     if (!vst)
 	return -1;
     av_set_pts_info(vst, 64, 1, 1000);
-    vst->codec.codec_type = CODEC_TYPE_VIDEO;
-    vst->codec.codec_id = CODEC_ID_RAWVIDEO;
-    vst->codec.time_base.den = fps->frame_rate;
-    vst->codec.time_base.num = 1000;
-    vst->codec.width = fmt->width;
-    vst->codec.height = fmt->height;
-    vst->codec.pix_fmt = fmt->pix_fmt;
+    vst->codec->codec_type = CODEC_TYPE_VIDEO;
+    vst->codec->codec_id = CODEC_ID_RAWVIDEO;
+    vst->codec->time_base.den = fps->frame_rate;
+    vst->codec->time_base.num = 1000;
+    vst->codec->width = fmt->width;
+    vst->codec->height = fmt->height;
+    vst->codec->pix_fmt = fmt->pix_fmt;
 
     /* packet init */
     av_init_packet(&dc1394->packet);
@@ -97,7 +97,7 @@ static int dc1394_read_header(AVFormatContext *c, AVFormatParameters * ap)
     dc1394->current_frame = 0;
     dc1394->fps = fps->frame_rate;
 
-    vst->codec.bit_rate = av_rescale(dc1394->packet.size * 8, fps->frame_rate, 1000);
+    vst->codec->bit_rate = av_rescale(dc1394->packet.size * 8, fps->frame_rate, 1000);
     
     /* Now lets prep the hardware */
     dc1394->handle = dc1394_create_handle(0); /* FIXME: gotta have ap->port */
