@@ -143,6 +143,14 @@ static void apply_motion_4x4(RoqContext *ri, int x, int y, unsigned char mv,
     mx = x + 8 - (mv >> 4) - mean_x;
     my = y + 8 - (mv & 0xf) - mean_y;
 
+    /* check MV against frame boundaries */
+    if ((mx < 0) || (mx > ri->avctx->width - 4) ||
+        (my < 0) || (my > ri->avctx->height - 4)) {
+        av_log(ri->avctx, AV_LOG_ERROR, "motion vector out of bounds: MV = (%d, %d), boundaries = (0, 0, %d, %d)\n",
+            mx, my, ri->avctx->width, ri->avctx->height);
+        return;
+    }
+
     pa = ri->current_frame.data[0] + (y * ri->y_stride) + x;
     pb = ri->last_frame.data[0] + (my * ri->y_stride) + mx;
     for(i = 0; i < 4; i++) {
@@ -154,25 +162,6 @@ static void apply_motion_4x4(RoqContext *ri, int x, int y, unsigned char mv,
         pb += ri->y_stride;
     }
 
-#if 0
-    pa = ri->current_frame.data[1] + (y/2) * (ri->c_stride) + x/2;
-    pb = ri->last_frame.data[1] + (my/2) * (ri->c_stride) + (mx + 1)/2;
-    for(i = 0; i < 2; i++) {
-        pa[0] = pb[0];
-        pa[1] = pb[1];
-        pa += ri->c_stride;
-        pb += ri->c_stride;
-    }
-
-    pa = ri->current_frame.data[2] + (y/2) * (ri->c_stride) + x/2;
-    pb = ri->last_frame.data[2] + (my/2) * (ri->c_stride) + (mx + 1)/2;
-    for(i = 0; i < 2; i++) {
-        pa[0] = pb[0];
-        pa[1] = pb[1];
-        pa += ri->c_stride;
-        pb += ri->c_stride;
-    }
-#else
     hw = ri->y_stride/2;
     pa = ri->current_frame.data[1] + (y * ri->y_stride)/4 + x/2;
     pb = ri->last_frame.data[1] + (my/2) * (ri->y_stride/2) + (mx + 1)/2;
@@ -212,7 +201,6 @@ static void apply_motion_4x4(RoqContext *ri, int x, int y, unsigned char mv,
         pa = ri->current_frame.data[2] + (y * ri->y_stride)/4 + x/2;
         pb = ri->last_frame.data[2] + (my/2) * (ri->y_stride/2) + (mx + 1)/2;
     }
-#endif
 }
 
 static void apply_motion_8x8(RoqContext *ri, int x, int y,
@@ -223,6 +211,14 @@ static void apply_motion_8x8(RoqContext *ri, int x, int y,
 
     mx = x + 8 - (mv >> 4) - mean_x;
     my = y + 8 - (mv & 0xf) - mean_y;
+
+    /* check MV against frame boundaries */
+    if ((mx < 0) || (mx > ri->avctx->width - 8) ||
+        (my < 0) || (my > ri->avctx->height - 8)) {
+        av_log(ri->avctx, AV_LOG_ERROR, "motion vector out of bounds: MV = (%d, %d), boundaries = (0, 0, %d, %d)\n",
+            mx, my, ri->avctx->width, ri->avctx->height);
+        return;
+    }
 
     pa = ri->current_frame.data[0] + (y * ri->y_stride) + x;
     pb = ri->last_frame.data[0] + (my * ri->y_stride) + mx;
@@ -239,29 +235,6 @@ static void apply_motion_8x8(RoqContext *ri, int x, int y,
         pb += ri->y_stride;
     }
 
-#if 0
-    pa = ri->current_frame.data[1] + (y/2) * (ri->c_stride) + x/2;
-    pb = ri->last_frame.data[1] + (my/2) * (ri->c_stride) + (mx + 1)/2;
-    for(i = 0; i < 4; i++) {
-        pa[0] = pb[0];
-        pa[1] = pb[1];
-        pa[2] = pb[2];
-        pa[3] = pb[3];
-        pa += ri->c_stride;
-        pb += ri->c_stride;
-    }
-
-    pa = ri->current_frame.data[2] + (y/2) * (ri->c_stride) + x/2;
-    pb = ri->last_frame.data[2] + (my/2) * (ri->c_stride) + (mx + 1)/2;
-    for(i = 0; i < 4; i++) {
-        pa[0] = pb[0];
-        pa[1] = pb[1];
-        pa[2] = pb[2];
-        pa[3] = pb[3];
-        pa += ri->c_stride;
-        pb += ri->c_stride;
-    }
-#else
     hw = ri->c_stride;
     pa = ri->current_frame.data[1] + (y * ri->y_stride)/4 + x/2;
     pb = ri->last_frame.data[1] + (my/2) * (ri->y_stride/2) + (mx + 1)/2;
@@ -304,7 +277,6 @@ static void apply_motion_8x8(RoqContext *ri, int x, int y,
         pa = ri->current_frame.data[2] + (y * ri->y_stride)/4 + x/2;
         pb = ri->last_frame.data[2] + (my/2) * (ri->y_stride/2) + (mx + 1)/2;
     }
-#endif
 }
 
 static void roqvideo_decode_frame(RoqContext *ri)
@@ -481,7 +453,8 @@ static int roq_decode_end(AVCodecContext *avctx)
     RoqContext *s = avctx->priv_data;
 
     /* release the last frame */
-    avctx->release_buffer(avctx, &s->last_frame);
+    if (s->last_frame.data[0])
+        avctx->release_buffer(avctx, &s->last_frame);
 
     return 0;
 }
