@@ -58,8 +58,8 @@ typedef struct QtrleContext {
   }
 
 #define CHECK_PIXEL_PTR(n) \
-  if (pixel_ptr + n > pixel_limit) { \
-    av_log (s->avctx, AV_LOG_INFO, "Problem: pixel_ptr >= pixel_limit (%d >= %d)\n", \
+  if ((pixel_ptr + n > pixel_limit) || (pixel_ptr + n < 0)) { \
+    av_log (s->avctx, AV_LOG_INFO, "Problem: pixel_ptr = %d, pixel_limit = %d\n", \
       pixel_ptr + n, pixel_limit); \
     return; \
   } \
@@ -119,6 +119,7 @@ static void qtrle_decode_4bpp(QtrleContext *s)
                 /* there's another skip code in the stream */
                 CHECK_STREAM_PTR(1);
                 pixel_ptr += (8 * (s->buf[stream_ptr++] - 1));
+                CHECK_PIXEL_PTR(0);  /* make sure pixel_ptr is positive */
             } else if (rle_code < 0) {
                 /* decode the run length code */
                 rle_code = -rle_code;
@@ -209,6 +210,7 @@ static void qtrle_decode_8bpp(QtrleContext *s)
                 /* there's another skip code in the stream */
                 CHECK_STREAM_PTR(1);
                 pixel_ptr += (4 * (s->buf[stream_ptr++] - 1));
+                CHECK_PIXEL_PTR(0);  /* make sure pixel_ptr is positive */
             } else if (rle_code < 0) {
                 /* decode the run length code */
                 rle_code = -rle_code;
@@ -290,6 +292,7 @@ static void qtrle_decode_16bpp(QtrleContext *s)
                 /* there's another skip code in the stream */
                 CHECK_STREAM_PTR(1);
                 pixel_ptr += (s->buf[stream_ptr++] - 1) * 2;
+                CHECK_PIXEL_PTR(0);  /* make sure pixel_ptr is positive */
             } else if (rle_code < 0) {
                 /* decode the run length code */
                 rle_code = -rle_code;
@@ -367,6 +370,7 @@ static void qtrle_decode_24bpp(QtrleContext *s)
                 /* there's another skip code in the stream */
                 CHECK_STREAM_PTR(1);
                 pixel_ptr += (s->buf[stream_ptr++] - 1) * 3;
+                CHECK_PIXEL_PTR(0);  /* make sure pixel_ptr is positive */
             } else if (rle_code < 0) {
                 /* decode the run length code */
                 rle_code = -rle_code;
@@ -446,6 +450,7 @@ static void qtrle_decode_32bpp(QtrleContext *s)
                 /* there's another skip code in the stream */
                 CHECK_STREAM_PTR(1);
                 pixel_ptr += (s->buf[stream_ptr++] - 1) * 4;
+                CHECK_PIXEL_PTR(0);  /* make sure pixel_ptr is positive */
             } else if (rle_code < 0) {
                 /* decode the run length code */
                 rle_code = -rle_code;
