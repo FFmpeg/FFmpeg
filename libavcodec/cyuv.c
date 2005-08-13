@@ -51,6 +51,9 @@ static int cyuv_decode_init(AVCodecContext *avctx)
 
     s->avctx = avctx;
     s->width = avctx->width;
+    /* width needs to be divisible by 4 for this codec to work */
+    if (s->width & 0x3)
+        return -1;
     s->height = avctx->height;
     avctx->pix_fmt = PIX_FMT_YUV411P;
     avctx->has_b_frames = 0;
