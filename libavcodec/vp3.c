@@ -621,230 +621,6 @@ static int init_block_mapping(Vp3DecodeContext *s)
 }
 
 /*
- * This function unpacks a single token (which should be in the range 0..31)
- * and returns a zero run (number of zero coefficients in current DCT matrix
- * before next non-zero coefficient), the next DCT coefficient, and the
- * number of consecutive, non-EOB'd DCT blocks to EOB.
- */
-static void unpack_token(GetBitContext *gb, int token, int *zero_run,
-                         DCTELEM *coeff, int *eob_run) 
-{
-    int sign;
-
-    *zero_run = 0;
-    *eob_run = 0;
-    *coeff = 0;
-
-    debug_token("    vp3 token %d: ", token);
-    switch (token) {
-
-    case 0:
-        debug_token("DCT_EOB_TOKEN, EOB next block\n");
-        *eob_run = 1;
-        break;
-
-    case 1:
-        debug_token("DCT_EOB_PAIR_TOKEN, EOB next 2 blocks\n");
-        *eob_run = 2;
-        break;
-
-    case 2:
-        debug_token("DCT_EOB_TRIPLE_TOKEN, EOB next 3 blocks\n");
-        *eob_run = 3;
-        break;
-
-    case 3:
-        debug_token("DCT_REPEAT_RUN_TOKEN, ");
-        *eob_run = get_bits(gb, 2) + 4;
-        debug_token("EOB the next %d blocks\n", *eob_run);
-        break;
-
-    case 4:
-        debug_token("DCT_REPEAT_RUN2_TOKEN, ");
-        *eob_run = get_bits(gb, 3) + 8;
-        debug_token("EOB the next %d blocks\n", *eob_run);
-        break;
-
-    case 5:
-        debug_token("DCT_REPEAT_RUN3_TOKEN, ");
-        *eob_run = get_bits(gb, 4) + 16;
-        debug_token("EOB the next %d blocks\n", *eob_run);
-        break;
-
-    case 6:
-        debug_token("DCT_REPEAT_RUN4_TOKEN, ");
-        *eob_run = get_bits(gb, 12);
-        debug_token("EOB the next %d blocks\n", *eob_run);
-        break;
-
-    case 7:
-        debug_token("DCT_SHORT_ZRL_TOKEN, ");
-        /* note that this token actually indicates that (3 extra bits) + 1 0s
-         * should be output; this case specifies a run of (3 EBs) 0s and a
-         * coefficient of 0. */
-        *zero_run = get_bits(gb, 3);
-        *coeff = 0;
-        debug_token("skip the next %d positions in output matrix\n", *zero_run + 1);
-        break;
-
-    case 8:
-        debug_token("DCT_ZRL_TOKEN, ");
-        /* note that this token actually indicates that (6 extra bits) + 1 0s
-         * should be output; this case specifies a run of (6 EBs) 0s and a
-         * coefficient of 0. */
-        *zero_run = get_bits(gb, 6);
-        *coeff = 0;
-        debug_token("skip the next %d positions in output matrix\n", *zero_run + 1);
-        break;
-
-    case 9:
-        debug_token("ONE_TOKEN, output 1\n");
-        *coeff = 1;
-        break;
-
-    case 10:
-        debug_token("MINUS_ONE_TOKEN, output -1\n");
-        *coeff = -1;
-        break;
-
-    case 11:
-        debug_token("TWO_TOKEN, output 2\n");
-        *coeff = 2;
-        break;
-
-    case 12:
-        debug_token("MINUS_TWO_TOKEN, output -2\n");
-        *coeff = -2;
-        break;
-
-    case 13:
-    case 14:
-    case 15:
-    case 16:
-        debug_token("LOW_VAL_TOKENS, ");
-        if (get_bits(gb, 1))
-            *coeff = -(3 + (token - 13));
-        else
-            *coeff = 3 + (token - 13);
-        debug_token("output %d\n", *coeff);
-        break;
-
-    case 17:
-        debug_token("DCT_VAL_CATEGORY3, ");
-        sign = get_bits(gb, 1);
-        *coeff = 7 + get_bits(gb, 1);
-        if (sign)
-            *coeff = -(*coeff);
-        debug_token("output %d\n", *coeff);
-        break;
-
-    case 18:
-        debug_token("DCT_VAL_CATEGORY4, ");
-        sign = get_bits(gb, 1);
-        *coeff = 9 + get_bits(gb, 2);
-        if (sign)
-            *coeff = -(*coeff);
-        debug_token("output %d\n", *coeff);
-        break;
-
-    case 19:
-        debug_token("DCT_VAL_CATEGORY5, ");
-        sign = get_bits(gb, 1);
-        *coeff = 13 + get_bits(gb, 3);
-        if (sign)
-            *coeff = -(*coeff);
-        debug_token("output %d\n", *coeff);
-        break;
-
-    case 20:
-        debug_token("DCT_VAL_CATEGORY6, ");
-        sign = get_bits(gb, 1);
-        *coeff = 21 + get_bits(gb, 4);
-        if (sign)
-            *coeff = -(*coeff);
-        debug_token("output %d\n", *coeff);
-        break;
-
-    case 21:
-        debug_token("DCT_VAL_CATEGORY7, ");
-        sign = get_bits(gb, 1);
-        *coeff = 37 + get_bits(gb, 5);
-        if (sign)
-            *coeff = -(*coeff);
-        debug_token("output %d\n", *coeff);
-        break;
-
-    case 22:
-        debug_token("DCT_VAL_CATEGORY8, ");
-        sign = get_bits(gb, 1);
-        *coeff = 69 + get_bits(gb, 9);
-        if (sign)
-            *coeff = -(*coeff);
-        debug_token("output %d\n", *coeff);
-        break;
-
-    case 23:
-    case 24:
-    case 25:
-    case 26:
-    case 27:
-        debug_token("DCT_RUN_CATEGORY1, ");
-        *zero_run = token - 22;
-        if (get_bits(gb, 1))
-            *coeff = -1;
-        else
-            *coeff = 1;
-        debug_token("output %d 0s, then %d\n", *zero_run, *coeff);
-        break;
-
-    case 28:
-        debug_token("DCT_RUN_CATEGORY1B, ");
-        if (get_bits(gb, 1))
-            *coeff = -1;
-        else
-            *coeff = 1;
-        *zero_run = 6 + get_bits(gb, 2);
-        debug_token("output %d 0s, then %d\n", *zero_run, *coeff);
-        break;
-
-    case 29:
-        debug_token("DCT_RUN_CATEGORY1C, ");
-        if (get_bits(gb, 1))
-            *coeff = -1;
-        else
-            *coeff = 1;
-        *zero_run = 10 + get_bits(gb, 3);
-        debug_token("output %d 0s, then %d\n", *zero_run, *coeff);
-        break;
-
-    case 30:
-        debug_token("DCT_RUN_CATEGORY2, ");
-        sign = get_bits(gb, 1);
-        *coeff = 2 + get_bits(gb, 1);
-        if (sign)
-            *coeff = -(*coeff);
-        *zero_run = 1;
-        debug_token("output %d 0s, then %d\n", *zero_run, *coeff);
-        break;
-
-    case 31:
-        debug_token("DCT_RUN_CATEGORY2, ");
-        sign = get_bits(gb, 1);
-        *coeff = 2 + get_bits(gb, 1);
-        if (sign)
-            *coeff = -(*coeff);
-        *zero_run = 2 + get_bits(gb, 1);
-        debug_token("output %d 0s, then %d\n", *zero_run, *coeff);
-        break;
-
-    default:
-        av_log(NULL, AV_LOG_ERROR, "  vp3: help! Got a bad token: %d > 31\n", token);
-        break;
-
-  }
-}
-
-/*
  * This function wipes out all of the fragment data.
  */
 static void init_frame(Vp3DecodeContext *s, GetBitContext *gb)
@@ -983,213 +759,6 @@ static void init_loop_filter(Vp3DecodeContext *s)
 }
 
 /*
- * This function is used to fetch runs of 1s or 0s from the bitstream for
- * use in determining which superblocks are fully and partially coded.
- *
- *  Codeword                RunLength
- *  0                       1
- *  10x                     2-3
- *  110x                    4-5
- *  1110xx                  6-9
- *  11110xxx                10-17
- *  111110xxxx              18-33
- *  111111xxxxxxxxxxxx      34-4129
- */
-static int get_superblock_run_length(GetBitContext *gb)
-{
-
-    if (get_bits(gb, 1) == 0)
-        return 1;
-
-    else if (get_bits(gb, 1) == 0)
-        return (2 + get_bits(gb, 1));
-
-    else if (get_bits(gb, 1) == 0)
-        return (4 + get_bits(gb, 1));
-
-    else if (get_bits(gb, 1) == 0)
-        return (6 + get_bits(gb, 2));
-
-    else if (get_bits(gb, 1) == 0)
-        return (10 + get_bits(gb, 3));
-
-    else if (get_bits(gb, 1) == 0)
-        return (18 + get_bits(gb, 4));
-
-    else
-        return (34 + get_bits(gb, 12));
-
-}
-
-/*
- * This function is used to fetch runs of 1s or 0s from the bitstream for
- * use in determining which particular fragments are coded.
- *
- * Codeword                RunLength
- * 0x                      1-2
- * 10x                     3-4
- * 110x                    5-6
- * 1110xx                  7-10
- * 11110xx                 11-14
- * 11111xxxx               15-30
- */
-static int get_fragment_run_length(GetBitContext *gb)
-{
-
-    if (get_bits(gb, 1) == 0)
-        return (1 + get_bits(gb, 1));
-
-    else if (get_bits(gb, 1) == 0)
-        return (3 + get_bits(gb, 1));
-
-    else if (get_bits(gb, 1) == 0)
-        return (5 + get_bits(gb, 1));
-
-    else if (get_bits(gb, 1) == 0)
-        return (7 + get_bits(gb, 2));
-
-    else if (get_bits(gb, 1) == 0)
-        return (11 + get_bits(gb, 2));
-
-    else
-        return (15 + get_bits(gb, 4));
-
-}
-
-/*
- * This function decodes a VLC from the bitstream and returns a number
- * that ranges from 0..7. The number indicates which of the 8 coding
- * modes to use.
- *
- *  VLC       Number
- *  0            0
- *  10           1
- *  110          2
- *  1110         3
- *  11110        4
- *  111110       5
- *  1111110      6
- *  1111111      7
- *
- */
-static int get_mode_code(GetBitContext *gb)
-{
-
-    if (get_bits(gb, 1) == 0)
-        return 0;
-
-    else if (get_bits(gb, 1) == 0)
-        return 1;
-
-    else if (get_bits(gb, 1) == 0)
-        return 2;
-
-    else if (get_bits(gb, 1) == 0)
-        return 3;
-
-    else if (get_bits(gb, 1) == 0)
-        return 4;
-
-    else if (get_bits(gb, 1) == 0)
-        return 5;
-
-    else if (get_bits(gb, 1) == 0)
-        return 6;
-
-    else
-        return 7;
-
-}
-
-/*
- * This function extracts a motion vector from the bitstream using a VLC
- * scheme. 3 bits are fetched from the bitstream and 1 of 8 actions is
- * taken depending on the value on those 3 bits:
- *
- *  0: return 0
- *  1: return 1
- *  2: return -1
- *  3: if (next bit is 1) return -2, else return 2
- *  4: if (next bit is 1) return -3, else return 3
- *  5: return 4 + (next 2 bits), next bit is sign
- *  6: return 8 + (next 3 bits), next bit is sign
- *  7: return 16 + (next 4 bits), next bit is sign
- */
-static int get_motion_vector_vlc(GetBitContext *gb)
-{
-    int bits;
-
-    bits = get_bits(gb, 3);
-
-    switch(bits) {
-
-    case 0:
-        bits = 0;
-        break;
-
-    case 1:
-        bits = 1;
-        break;
-
-    case 2:
-        bits = -1;
-        break;
-
-    case 3:
-        if (get_bits(gb, 1) == 0)
-            bits = 2;
-        else
-            bits = -2;
-        break;
-
-    case 4:
-        if (get_bits(gb, 1) == 0)
-            bits = 3;
-        else
-            bits = -3;
-        break;
-
-    case 5:
-        bits = 4 + get_bits(gb, 2);
-        if (get_bits(gb, 1) == 1)
-            bits = -bits;
-        break;
-
-    case 6:
-        bits = 8 + get_bits(gb, 3);
-        if (get_bits(gb, 1) == 1)
-            bits = -bits;
-        break;
-
-    case 7:
-        bits = 16 + get_bits(gb, 4);
-        if (get_bits(gb, 1) == 1)
-            bits = -bits;
-        break;
-
-    }
-
-    return bits;
-}
-
-/*
- * This function fetches a 5-bit number from the stream followed by
- * a sign and calls it a motion vector.
- */
-static int get_motion_vector_fixed(GetBitContext *gb)
-{
-
-    int bits;
-
-    bits = get_bits(gb, 5);
-
-    if (get_bits(gb, 1) == 1)
-        bits = -bits;
-
-    return bits;
-}
-
-/*
  * This function unpacks all of the superblock/macroblock/fragment coding 
  * information from the bitstream.
  */
@@ -1222,14 +791,10 @@ static int unpack_superblocks(Vp3DecodeContext *s, GetBitContext *gb)
         while (current_superblock < s->superblock_count) {
             if (current_run-- == 0) {
                 bit ^= 1;
-#if 1
                 current_run = get_vlc2(gb, 
                     s->superblock_run_length_vlc.table, 6, 2);
                 if (current_run == 33)
                     current_run += get_bits(gb, 12);
-#else
-                current_run = get_superblock_run_length(gb);
-#endif
                 debug_block_coding("      setting superblocks %d..%d to %s\n",
                     current_superblock,
                     current_superblock + current_run - 1,
@@ -1266,14 +831,10 @@ static int unpack_superblocks(Vp3DecodeContext *s, GetBitContext *gb)
 
                     if (current_run-- == 0) {
                         bit ^= 1;
-#if 1
                         current_run = get_vlc2(gb, 
                             s->superblock_run_length_vlc.table, 6, 2);
                         if (current_run == 33)
                             current_run += get_bits(gb, 12);
-#else
-                        current_run = get_superblock_run_length(gb);
-#endif
                     }
 
                     debug_block_coding("      setting superblock %d to %s\n",
@@ -1330,12 +891,8 @@ static int unpack_superblocks(Vp3DecodeContext *s, GetBitContext *gb)
                      * that cares about the fragment coding runs */
                     if (current_run-- == 0) {
                         bit ^= 1;
-#if 1
                         current_run = get_vlc2(gb, 
                             s->fragment_run_length_vlc.table, 5, 2);
-#else
-                        current_run = get_fragment_run_length(gb);
-#endif
                     }
 
                     if (bit) {
@@ -1463,14 +1020,8 @@ static int unpack_modes(Vp3DecodeContext *s, GetBitContext *gb)
                 if (scheme == 7)
                     coding_mode = get_bits(gb, 3);
                 else
-{
-#if 1
                     coding_mode = ModeAlphabet[scheme]
                         [get_vlc2(gb, s->mode_code_vlc.table, 3, 3)];
-#else
-                    coding_mode = ModeAlphabet[scheme][get_mode_code(gb)];
-#endif
-}
 
                 s->macroblock_coding[current_macroblock] = coding_mode;
                 for (k = 0; k < 6; k++) {
@@ -1557,21 +1108,11 @@ static int unpack_vectors(Vp3DecodeContext *s, GetBitContext *gb)
                 case MODE_GOLDEN_MV:
                     /* all 6 fragments use the same motion vector */
                     if (coding_mode == 0) {
-#if 1
                         motion_x[0] = motion_vector_table[get_vlc2(gb, s->motion_vector_vlc.table, 6, 2)];
                         motion_y[0] = motion_vector_table[get_vlc2(gb, s->motion_vector_vlc.table, 6, 2)];
-#else
-                        motion_x[0] = get_motion_vector_vlc(gb);
-                        motion_y[0] = get_motion_vector_vlc(gb);
-#endif
                     } else {
-#if 1
                         motion_x[0] = fixed_motion_vector_table[get_bits(gb, 6)];
                         motion_y[0] = fixed_motion_vector_table[get_bits(gb, 6)];
-#else
-                        motion_x[0] = get_motion_vector_fixed(gb);
-                        motion_y[0] = get_motion_vector_fixed(gb);
-#endif
                     }
 
                     for (k = 1; k < 6; k++) {
@@ -1595,21 +1136,11 @@ static int unpack_vectors(Vp3DecodeContext *s, GetBitContext *gb)
                     motion_x[4] = motion_y[4] = 0;
                     for (k = 0; k < 4; k++) {
                         if (coding_mode == 0) {
-#if 1
                             motion_x[k] = motion_vector_table[get_vlc2(gb, s->motion_vector_vlc.table, 6, 2)];
                             motion_y[k] = motion_vector_table[get_vlc2(gb, s->motion_vector_vlc.table, 6, 2)];
-#else
-                            motion_x[k] = get_motion_vector_vlc(gb);
-                            motion_y[k] = get_motion_vector_vlc(gb);
-#endif
                         } else {
-#if 1
                             motion_x[k] = fixed_motion_vector_table[get_bits(gb, 6)];
                             motion_y[k] = fixed_motion_vector_table[get_bits(gb, 6)];
-#else
-                            motion_x[k] = get_motion_vector_fixed(gb);
-                            motion_y[k] = get_motion_vector_fixed(gb);
-#endif
                         }
                         motion_x[4] += motion_x[k];
                         motion_y[4] += motion_y[k];
@@ -1744,7 +1275,6 @@ static int unpack_vlcs(Vp3DecodeContext *s, GetBitContext *gb,
             token = get_vlc2(gb, table->table, 5, 3);
             debug_vlc(" token = %2d, ", token);
             /* use the token to get a zero run, a coefficient, and an eob run */
-#if 1
             if (token <= 6) {
                 eob_run = eob_run_base[token];
                 if (eob_run_get_bits[token])
@@ -1761,9 +1291,6 @@ static int unpack_vlcs(Vp3DecodeContext *s, GetBitContext *gb,
                 if (zero_run_get_bits[token])
                     zero_run += get_bits(gb, zero_run_get_bits[token]);
             }
-#else
-            unpack_token(gb, token, &zero_run, &coeff, &eob_run);
-#endif
         }
 
         if (!eob_run) {
@@ -2443,209 +1970,6 @@ static void render_slice(Vp3DecodeContext *s, int slice)
     emms_c();
 }
 
-/*
- * This function performs the final rendering of each fragment's data
- * onto the output frame.
- */
-static void render_fragments(Vp3DecodeContext *s,
-                             int first_fragment,
-                             int width,
-                             int height,
-                             int plane /* 0 = Y, 1 = U, 2 = V */) 
-{
-    int x, y;
-    int m, n;
-    int i = first_fragment;
-    int16_t *dequantizer;
-    DCTELEM __align16 block[64];
-    unsigned char *output_plane;
-    unsigned char *last_plane;
-    unsigned char *golden_plane;
-    int stride;
-    int motion_x = 0xdeadbeef, motion_y = 0xdeadbeef;
-    int upper_motion_limit, lower_motion_limit;
-    int motion_halfpel_index;
-    uint8_t *motion_source;
-
-    debug_vp3("  vp3: rendering final fragments for %s\n",
-        (plane == 0) ? "Y plane" : (plane == 1) ? "U plane" : "V plane");
-
-    /* set up plane-specific parameters */
-    if (plane == 0) {
-        output_plane = s->current_frame.data[0];
-        last_plane = s->last_frame.data[0];
-        golden_plane = s->golden_frame.data[0];
-        stride = s->current_frame.linesize[0];
-	if (!s->flipped_image) stride = -stride;
-        upper_motion_limit = 7 * s->current_frame.linesize[0];
-        lower_motion_limit = height * s->current_frame.linesize[0] + width - 8;
-    } else if (plane == 1) {
-        output_plane = s->current_frame.data[1];
-        last_plane = s->last_frame.data[1];
-        golden_plane = s->golden_frame.data[1];
-        stride = s->current_frame.linesize[1];
-	if (!s->flipped_image) stride = -stride;
-        upper_motion_limit = 7 * s->current_frame.linesize[1];
-        lower_motion_limit = height * s->current_frame.linesize[1] + width - 8;
-    } else {
-        output_plane = s->current_frame.data[2];
-        last_plane = s->last_frame.data[2];
-        golden_plane = s->golden_frame.data[2];
-        stride = s->current_frame.linesize[2];
-	if (!s->flipped_image) stride = -stride;
-        upper_motion_limit = 7 * s->current_frame.linesize[2];
-        lower_motion_limit = height * s->current_frame.linesize[2] + width - 8;
-    }
-    
-    if(ABS(stride) > 2048)
-        return; //various tables are fixed size
-
-    /* for each fragment row... */
-    for (y = 0; y < height; y += 8) {
-
-        /* for each fragment in a row... */
-        for (x = 0; x < width; x += 8, i++) {
-
-            if ((i < 0) || (i >= s->fragment_count)) {
-                av_log(s->avctx, AV_LOG_ERROR, "  vp3:render_fragments(): bad fragment number (%d)\n", i);
-                return;
-            }
-
-            /* transform if this block was coded */
-            if ((s->all_fragments[i].coding_method != MODE_COPY) &&
-		!((s->avctx->flags & CODEC_FLAG_GRAY) && plane)) {
-
-                if ((s->all_fragments[i].coding_method == MODE_USING_GOLDEN) ||
-                    (s->all_fragments[i].coding_method == MODE_GOLDEN_MV))
-                    motion_source= golden_plane;
-                else 
-                    motion_source= last_plane;
-
-                motion_source += s->all_fragments[i].first_pixel;
-                motion_halfpel_index = 0;
-
-                /* sort out the motion vector if this fragment is coded
-                 * using a motion vector method */
-                if ((s->all_fragments[i].coding_method > MODE_INTRA) &&
-                    (s->all_fragments[i].coding_method != MODE_USING_GOLDEN)) {
-                    int src_x, src_y;
-                    motion_x = s->all_fragments[i].motion_x;
-                    motion_y = s->all_fragments[i].motion_y;
-                    if(plane){
-                        motion_x= (motion_x>>1) | (motion_x&1);
-                        motion_y= (motion_y>>1) | (motion_y&1);
-                    }
-
-                    src_x= (motion_x>>1) + x;
-                    src_y= (motion_y>>1) + y;
-                    if ((motion_x == 127) || (motion_y == 127))
-                        av_log(s->avctx, AV_LOG_ERROR, " help! got invalid motion vector! (%X, %X)\n", motion_x, motion_y);
-
-                    motion_halfpel_index = motion_x & 0x01;
-                    motion_source += (motion_x >> 1);
-
-                    motion_halfpel_index |= (motion_y & 0x01) << 1;
-                    motion_source += ((motion_y >> 1) * stride);
-
-                    if(src_x<0 || src_y<0 || src_x + 9 >= width || src_y + 9 >= height){
-                        uint8_t *temp= s->edge_emu_buffer;
-                        if(stride<0) temp -= 9*stride;
-			else temp += 9*stride;
-
-                        ff_emulated_edge_mc(temp, motion_source, stride, 9, 9, src_x, src_y, width, height);
-                        motion_source= temp;
-                    }
-                }
-                
-
-                /* first, take care of copying a block from either the
-                 * previous or the golden frame */
-                if (s->all_fragments[i].coding_method != MODE_INTRA) {
-                    //Note, it is possible to implement all MC cases with put_no_rnd_pixels_l2 which would look more like the VP3 source but this would be slower as put_no_rnd_pixels_tab is better optimzed
-                    if(motion_halfpel_index != 3){
-                        s->dsp.put_no_rnd_pixels_tab[1][motion_halfpel_index](
-                            output_plane + s->all_fragments[i].first_pixel,
-                            motion_source, stride, 8);
-                    }else{
-                        int d= (motion_x ^ motion_y)>>31; // d is 0 if motion_x and _y have the same sign, else -1
-                        s->dsp.put_no_rnd_pixels_l2[1](
-                            output_plane + s->all_fragments[i].first_pixel,
-                            motion_source - d, 
-                            motion_source + stride + 1 + d, 
-                            stride, 8);
-                    }
-                    dequantizer = s->inter_dequant;
-                }else{
-                    if (plane == 0)
-                        dequantizer = s->intra_y_dequant;
-                    else
-                        dequantizer = s->intra_c_dequant;
-                }
-
-                /* dequantize the DCT coefficients */
-                debug_idct("fragment %d, coding mode %d, DC = %d, dequant = %d:\n", 
-                    i, s->all_fragments[i].coding_method, 
-                    DC_COEFF(i), dequantizer[0]);
-
-                if(s->avctx->idct_algo==FF_IDCT_VP3){
-                    Coeff *coeff= s->coeffs + i;
-                    memset(block, 0, sizeof(block));
-                    while(coeff->next){
-                        block[coeff->index]= coeff->coeff * dequantizer[coeff->index];
-                        coeff= coeff->next;
-                    }
-                }else{
-                    Coeff *coeff= s->coeffs + i;
-                    memset(block, 0, sizeof(block));
-                    while(coeff->next){
-                        block[coeff->index]= (coeff->coeff * dequantizer[coeff->index] + 2)>>2;
-                        coeff= coeff->next;
-                    }
-                }
-
-                /* invert DCT and place (or add) in final output */
-                
-                if (s->all_fragments[i].coding_method == MODE_INTRA) {
-                    if(s->avctx->idct_algo!=FF_IDCT_VP3)
-                        block[0] += 128<<3;
-                    s->dsp.idct_put(
-                        output_plane + s->all_fragments[i].first_pixel,
-                        stride,
-                        block);
-                } else {
-                    s->dsp.idct_add(
-                        output_plane + s->all_fragments[i].first_pixel,
-                        stride,
-                        block);
-                }
-
-                debug_idct("block after idct_%s():\n",
-                    (s->all_fragments[i].coding_method == MODE_INTRA)?
-                    "put" : "add");
-                for (m = 0; m < 8; m++) {
-                    for (n = 0; n < 8; n++) {
-                        debug_idct(" %3d", *(output_plane + 
-                            s->all_fragments[i].first_pixel + (m * stride + n)));
-                    }
-                    debug_idct("\n");
-                }
-                debug_idct("\n");
-
-            } else {
-
-                /* copy directly from the previous frame */
-                s->dsp.put_pixels_tab[1][0](
-                    output_plane + s->all_fragments[i].first_pixel,
-                    last_plane + s->all_fragments[i].first_pixel,
-                    stride, 8);
-
-            }
-        }
-    }
-
-    emms_c();
-}
-
 static void horizontal_filter(unsigned char *first_pixel, int stride,
     int *bounding_values)
 {
@@ -3233,19 +2557,8 @@ if (!s->keyframe) {
     STOP_TIMER("reverse_dc_prediction")}
     {START_TIMER
 
-#if 1
     for (i = 0; i < s->macroblock_height; i++)
         render_slice(s, i);
-#else
-    render_fragments(s, 0, s->width, s->height, 0);
-    if ((avctx->flags & CODEC_FLAG_GRAY) == 0) {
-        render_fragments(s, s->u_fragment_start, s->width / 2, s->height / 2, 1);
-        render_fragments(s, s->v_fragment_start, s->width / 2, s->height / 2, 2);
-    } else {
-        memset(s->current_frame.data[1], 0x80, s->width * s->height / 4);
-        memset(s->current_frame.data[2], 0x80, s->width * s->height / 4);
-    }
-#endif
     STOP_TIMER("render_fragments")}
 
     {START_TIMER
