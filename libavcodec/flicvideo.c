@@ -51,6 +51,13 @@
 #define FLI_COPY      16
 #define FLI_MINI      18
 
+#define CHECK_PIXEL_PTR(n) \
+    if (pixel_ptr + n > pixel_limit) { \
+        av_log (s->avctx, AV_LOG_INFO, "Problem: pixel_ptr >= pixel_limit (%d >= %d)\n", \
+        pixel_ptr + n, pixel_limit); \
+        return -1; \
+    } \
+
 typedef struct FlicDecodeContext {
     AVCodecContext *avctx;
     AVFrame frame;
@@ -120,6 +127,7 @@ static int flic_decode_frame(AVCodecContext *avctx,
     int pixel_skip;
     int pixel_countdown;
     unsigned char *pixels;
+    int pixel_limit;
 
     s->frame.reference = 1;
     s->frame.buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_PRESERVE | FF_BUFFER_HINTS_REUSABLE;
@@ -129,6 +137,7 @@ static int flic_decode_frame(AVCodecContext *avctx,
     }
 
     pixels = s->frame.data[0];
+    pixel_limit = s->avctx->height * s->frame.linesize[0];
 
     frame_size = LE_32(&buf[stream_ptr]);
     stream_ptr += 6;  /* skip the magic number */
@@ -218,11 +227,13 @@ static int flic_decode_frame(AVCodecContext *avctx,
                             byte_run = -byte_run;
                             palette_idx1 = buf[stream_ptr++];
                             palette_idx2 = buf[stream_ptr++];
+                            CHECK_PIXEL_PTR(byte_run);
                             for (j = 0; j < byte_run; j++, pixel_countdown -= 2) {
                                 pixels[pixel_ptr++] = palette_idx1;
                                 pixels[pixel_ptr++] = palette_idx2;
                             }
                         } else {
+                            CHECK_PIXEL_PTR(byte_run * 2);
                             for (j = 0; j < byte_run * 2; j++, pixel_countdown--) {
                                 palette_idx1 = buf[stream_ptr++];
                                 pixels[pixel_ptr++] = palette_idx1;
@@ -256,6 +267,7 @@ static int flic_decode_frame(AVCodecContext *avctx,
                         pixel_countdown -= pixel_skip;
                         byte_run = buf[stream_ptr++];
                         if (byte_run > 0) {
+                            CHECK_PIXEL_PTR(byte_run);
                             for (j = 0; j < byte_run; j++, pixel_countdown--) {
                                 palette_idx1 = buf[stream_ptr++];
                                 pixels[pixel_ptr++] = palette_idx1;
@@ -263,6 +275,7 @@ static int flic_decode_frame(AVCodecContext *avctx,
                         } else {
                             byte_run = -byte_run;
                             palette_idx1 = buf[stream_ptr++];
+                            CHECK_PIXEL_PTR(byte_run);
                             for (j = 0; j < byte_run; j++, pixel_countdown--) {
                                 pixels[pixel_ptr++] = palette_idx1;
                             }
@@ -295,6 +308,7 @@ static int flic_decode_frame(AVCodecContext *avctx,
                     byte_run = buf[stream_ptr++];
                     if (byte_run > 0) {
                         palette_idx1 = buf[stream_ptr++];
+                        CHECK_PIXEL_PTR(byte_run);
                         for (j = 0; j < byte_run; j++) {
                             pixels[pixel_ptr++] = palette_idx1;
                             pixel_countdown--;
@@ -304,6 +318,7 @@ static int flic_decode_frame(AVCodecContext *avctx,
                         }
                     } else {  /* copy bytes if byte_run < 0 */
                         byte_run = -byte_run;
+                        CHECK_PIXEL_PTR(byte_run);
                         for (j = 0; j < byte_run; j++) {
                             palette_idx1 = buf[stream_ptr++];
                             pixels[pixel_ptr++] = palette_idx1;
