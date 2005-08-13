@@ -30,7 +30,7 @@
 #  include <machine/ioctl_meteor.h>
 #  include <machine/ioctl_bt848.h>
 # endif
-#elseif defined(__DragonFly__)
+#elif defined(__DragonFly__)
 # include <dev/video/meteor/ioctl_meteor.h>
 # include <dev/video/bktr/ioctl_bt848.h>
 #else
