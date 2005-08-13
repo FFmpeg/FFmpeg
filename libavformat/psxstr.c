@@ -177,8 +177,7 @@ static int str_read_header(AVFormatContext *s,
                 st = av_new_stream(s, 0);
                 if (!st)
                     return AVERROR_NOMEM;
-                /* set the pts reference (1 pts = 1/90000) */
-                av_set_pts_info(st, 33, 1, 90000);
+                av_set_pts_info(st, 64, 1, 15);
 
                 str->channels[channel].video_stream_index = st->index;
 
@@ -207,7 +206,7 @@ static int str_read_header(AVFormatContext *s,
                 st = av_new_stream(s, 0);
                 if (!st)
                     return AVERROR_NOMEM;
-                av_set_pts_info(st, 33, 1, 90000);
+                av_set_pts_info(st, 64, 128, str->channels[channel].sample_rate);
 
                 str->channels[channel].audio_stream_index = st->index;
 
