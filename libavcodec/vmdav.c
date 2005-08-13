@@ -66,16 +66,18 @@ typedef struct VmdVideoContext {
 
     unsigned char palette[PALETTE_COUNT * 4];
     unsigned char *unpack_buffer;
+    int unpack_buffer_size;
 
 } VmdVideoContext;
 
 #define QUEUE_SIZE 0x1000
 #define QUEUE_MASK 0x0FFF
 
-static void lz_unpack(unsigned char *src, unsigned char *dest)
+static void lz_unpack(unsigned char *src, unsigned char *dest, int dest_len)
 {
     unsigned char *s;
     unsigned char *d;
+    unsigned char *d_end;
     unsigned char queue[QUEUE_SIZE];
     unsigned int qpos;
     unsigned int dataleft;
@@ -87,6 +89,7 @@ static void lz_unpack(unsigned char *src, unsigned char *dest)
 
     s = src;
     d = dest;
+    d_end = d + dest_len;
     dataleft = LE_32(s);
     s += 4;
     memset(queue, QUEUE_SIZE, 0x20);
@@ -102,6 +105,8 @@ static void lz_unpack(unsigned char *src, unsigned char *dest)
     while (dataleft > 0) {
         tag = *s++;
         if ((tag == 0xFF) && (dataleft > 8)) {
+            if (d + 8 > d_end)
+                return;
             for (i = 0; i < 8; i++) {
                 queue[qpos++] = *d++ = *s++;
                 qpos &= QUEUE_MASK;
@@ -112,6 +117,8 @@ static void lz_unpack(unsigned char *src, unsigned char *dest)
                 if (dataleft == 0)
                     break;
                 if (tag & 0x01) {
+                    if (d + 1 > d_end)
+                        return;
                     queue[qpos++] = *d++ = *s++;
                     qpos &= QUEUE_MASK;
                     dataleft--;
@@ -121,6 +128,8 @@ static void lz_unpack(unsigned char *src, unsigned char *dest)
                     chainlen = (*s++ & 0x0F) + 3;
                     if (chainlen == speclen)
                         chainlen = *s++ + 0xF + 3;
+                    if (d + chainlen > d_end)
+                        return;
                     for (j = 0; j < chainlen; j++) {
                         *d = queue[chainofs++ & QUEUE_MASK];
                         queue[qpos++] = *d++;
@@ -134,27 +143,33 @@ static void lz_unpack(unsigned char *src, unsigned char *dest)
     }
 }
 
-static int rle_unpack(unsigned char *src, unsigned char *dest, int len)
+static int rle_unpack(unsigned char *src, unsigned char *dest, 
+    int src_len, int dest_len)
 {
     unsigned char *ps;
     unsigned char *pd;
     int i, l;
+    unsigned char *dest_end = dest + dest_len;
 
     ps = src;
     pd = dest;
-    if (len & 1)
+    if (src_len & 1)
         *pd++ = *ps++;
 
-    len >>= 1;
+    src_len >>= 1;
     i = 0;
     do {
         l = *ps++;
         if (l & 0x80) {
             l = (l & 0x7F) * 2;
+            if (pd + l > dest_end)
+                return (ps - src);
             memcpy(pd, ps, l);
             ps += l;
             pd += l;
         } else {
+            if (pd + i > dest_end)
+                return (ps - src);
             for (i = 0; i < l; i++) {
                 *pd++ = ps[0];
                 *pd++ = ps[1];
@@ -162,7 +177,7 @@ static int rle_unpack(unsigned char *src, unsigned char *dest, int len)
             ps += 2;
         }
         i += l;
-    } while (i < len);
+    } while (i < src_len);
 
     return (ps - src);
 }
@@ -185,6 +200,7 @@ static void vmd_decode(VmdVideoContext *s)
 
     int frame_x, frame_y;
     int frame_width, frame_height;
+    int dp_size;
 
     frame_x = LE_16(&s->buf[6]);
     frame_y = LE_16(&s->buf[8]);
@@ -217,12 +233,13 @@ static void vmd_decode(VmdVideoContext *s)
         pb = p;
         meth = *pb++;
         if (meth & 0x80) {
-            lz_unpack(pb, s->unpack_buffer);
+            lz_unpack(pb, s->unpack_buffer, s->unpack_buffer_size);
             meth &= 0x7F;
             pb = s->unpack_buffer;
         }
 
         dp = &s->frame.data[0][frame_y * s->frame.linesize[0] + frame_x];
+        dp_size = s->frame.linesize[0] * s->avctx->height;
         pp = &s->prev_frame.data[0][frame_y * s->prev_frame.linesize[0] + frame_x];
         switch (meth) {
         case 1:
@@ -232,11 +249,15 @@ static void vmd_decode(VmdVideoContext *s)
                     len = *pb++;
                     if (len & 0x80) {
                         len = (len & 0x7F) + 1;
+                        if (ofs + len > frame_width)
+                            return;
                         memcpy(&dp[ofs], pb, len);
                         pb += len;
                         ofs += len;
                     } else {
                         /* interframe pixel copy */
+                        if (ofs + len + 1 > frame_width)
+                            return;
                         memcpy(&dp[ofs], &pp[ofs], len + 1);
                         ofs += len + 1;
                     }
@@ -268,13 +289,15 @@ static void vmd_decode(VmdVideoContext *s)
                     if (len & 0x80) {
                         len = (len & 0x7F) + 1;
                         if (*pb++ == 0xFF)
-                            len = rle_unpack(pb, &dp[ofs], len);
+                            len = rle_unpack(pb, &dp[ofs], len, frame_width - ofs);
                         else
                             memcpy(&dp[ofs], pb, len);
                         pb += len;
                         ofs += len;
                     } else {
                         /* interframe pixel copy */
+                        if (ofs + len + 1 > frame_width)
+                            return;
                         memcpy(&dp[ofs], &pp[ofs], len + 1);
                         ofs += len + 1;
                     }
@@ -314,7 +337,8 @@ static int vmdvideo_decode_init(AVCodecContext *avctx)
     }
     vmd_header = (unsigned char *)avctx->extradata;
 
-    s->unpack_buffer = av_malloc(LE_32(&vmd_header[800]));
+    s->unpack_buffer_size = LE_32(&vmd_header[800]);
+    s->unpack_buffer = av_malloc(s->unpack_buffer_size);
     if (!s->unpack_buffer)
         return -1;
 
