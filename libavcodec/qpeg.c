@@ -40,11 +40,13 @@ static void qpeg_decode_intra(uint8_t *src, uint8_t *dst, int size,
     int c0, c1;
     int run, copy;
     int filled = 0;
+    int rows_to_go;
     
+    rows_to_go = height;
     height--;
     dst = dst + height * stride;
     
-    while(size > 0) {
+    while((size > 0) && (rows_to_go > 0)) {
 	code = *src++;
 	size--;
 	run = copy = 0;
@@ -85,17 +87,23 @@ static void qpeg_decode_intra(uint8_t *src, uint8_t *dst, int size,
 		if (filled >= width) {
 		    filled = 0;
 		    dst -= stride;
+                    rows_to_go--;
+                    if(rows_to_go <= 0)
+                        break;
 		}
 	    }
 	} else {
+            size -= copy;
 	    for(i = 0; i < copy; i++) {
 		dst[filled++] = *src++;
 		if (filled >= width) {
 		    filled = 0;
 		    dst -= stride;
+                    rows_to_go--;
+                    if(rows_to_go <= 0)
+                        break;
 		}
 	    }
-	    size -= copy;
 	}
     }
 }
@@ -113,17 +121,19 @@ static void qpeg_decode_inter(uint8_t *src, uint8_t *dst, int size,
     int i, j;
     int code;
     int filled = 0;
+    int orig_height;
     uint8_t *blkdata;
     
     /* copy prev frame */
     for(i = 0; i < height; i++)
 	memcpy(refdata + (i * width), dst + (i * stride), width);
     
+    orig_height = height;
     blkdata = src - 0x86;
     height--;
     dst = dst + height * stride;
 
-    while(size > 0) {
+    while((size > 0) && (height >= 0)) {
 	code = *src++;
 	size--;
 	
@@ -155,11 +165,19 @@ static void qpeg_decode_inter(uint8_t *src, uint8_t *dst, int size,
 			val -= 16;
 		    me_y = val;
 		    
-		    /* do motion compensation */
-		    me_plane = refdata + (filled + me_x) + (height - me_y) * width;
-		    for(j = 0; j < me_h; j++) {
-			for(i = 0; i < me_w; i++)
-			    dst[filled + i - (j * stride)] = me_plane[i - (j * width)];
+                    /* check motion vector */
+                    if ((me_x + filled < 0) || (me_x + me_w + filled > width) ||
+                       (height - me_y - me_h < 0) || (height - me_y > orig_height) ||
+                       (filled + me_w > width) || (height - me_h < 0))
+                        av_log(NULL, AV_LOG_ERROR, "Bogus motion vector (%i,%i), block size %ix%i at %i,%i\n",
+                               me_x, me_y, me_w, me_h, filled, height);
+                    else {
+                        /* do motion compensation */
+                        me_plane = refdata + (filled + me_x) + (height - me_y) * width;
+                        for(j = 0; j < me_h; j++) {
+                            for(i = 0; i < me_w; i++)
+                                dst[filled + i - (j * stride)] = me_plane[i - (j * width)];
+                        }
 		    }
 		}
 		code = *src++;
@@ -212,6 +230,8 @@ static void qpeg_decode_inter(uint8_t *src, uint8_t *dst, int size,
 		filled -= width;
 		dst -= stride;
 		height--;
+                if(height < 0)
+                    break;
 	    }
 	} else {
 	    /* zero code treated as one-pixel skip */
