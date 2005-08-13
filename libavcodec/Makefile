@@ -234,7 +234,7 @@ OBJS+= liba52/bit_allocate.o liba52/bitstream.o liba52/downmix.o \
 endif
 endif
 
-EXTRALIBS += -L$(SRC_PATH)/libavutil -lavutil$(BUILDSUF)
+EXTRALIBS += -L../libavutil -lavutil$(BUILDSUF)
 
 # currently using libdts for dts decoding
 ifeq ($(CONFIG_DTS),yes)
