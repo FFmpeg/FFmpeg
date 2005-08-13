@@ -239,6 +239,7 @@ static int decode_init(AVCodecContext *avctx){
 */
     p->qstride= a->mb_width;
     p->qscale_table= av_mallocz( p->qstride * a->mb_height);
+    avctx->pix_fmt= PIX_FMT_YUV420P;
 
     return 0;
 }
