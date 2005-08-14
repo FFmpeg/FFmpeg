@@ -107,20 +107,21 @@ static void guess_palette(uint32_t *rgba_palette,
     if (nb_opaque_colors == 0)
         return;
     
-    j = 0;
+    j = nb_opaque_colors;
     memset(color_used, 0, 16);
     for(i = 0; i < 4; i++) {
         if (alpha[i] != 0) {
             if (!color_used[palette[i]])  {
-                level = (0xff * (j + 1)) / nb_opaque_colors;
+                level = (0xff * j) / nb_opaque_colors;
                 r = (((subtitle_color >> 16) & 0xff) * level) >> 8;
                 g = (((subtitle_color >> 8) & 0xff) * level) >> 8;
                 b = (((subtitle_color >> 0) & 0xff) * level) >> 8;
-                rgba_palette[i] = b | (g << 8) | (r << 16) | (0xff << 24);
+                rgba_palette[i] = b | (g << 8) | (r << 16) | ((alpha[i] * 17) << 24);
                 color_used[palette[i]] = (i + 1);
-                j++;
+                j--;
             } else {
-                rgba_palette[i] = rgba_palette[color_used[palette[i]] - 1];
+                rgba_palette[i] = (rgba_palette[color_used[palette[i]] - 1] & 0x00ffffff) |
+                                    ((alpha[i] * 17) << 24);
             }
         }
     }
@@ -133,6 +134,7 @@ static int decode_dvd_subtitles(AVSubtitle *sub_header,
     uint8_t palette[4], alpha[4];
     int date;
     int i;
+    int is_menu = 0;
     
     if (buf_size < 4)
         return -1;
@@ -160,35 +162,39 @@ static int decode_dvd_subtitles(AVSubtitle *sub_header,
 #endif
             switch(cmd) {
             case 0x00:
-                /* force display */
+                /* menu subpicture */
+                is_menu = 1;
                 break;
             case 0x01:
                 /* set start date */
-                sub_header->start_display_time = date * 10;
+                sub_header->start_display_time = (date << 10) / 90;
                 break;
             case 0x02:
                 /* set end date */
-                sub_header->end_display_time = date * 10;
+                sub_header->end_display_time = (date << 10) / 90;
                 break;
             case 0x03:
                 /* set palette */
                 if ((buf_size - pos) < 2)
                     goto fail;
-                palette[0] = buf[pos] >> 4;
-                palette[1] = buf[pos] & 0x0f;
-                palette[2] = buf[pos + 1] >> 4;
-                palette[3] = buf[pos + 1] & 0x0f;
+                palette[3] = buf[pos] >> 4;
+                palette[2] = buf[pos] & 0x0f;
+                palette[1] = buf[pos + 1] >> 4;
+                palette[0] = buf[pos + 1] & 0x0f;
                 pos += 2;
                 break;
             case 0x04:
                 /* set alpha */
                 if ((buf_size - pos) < 2)
                     goto fail;
-                alpha[0] = buf[pos] >> 4;
-                alpha[1] = buf[pos] & 0x0f;
-                alpha[2] = buf[pos + 1] >> 4;
-                alpha[3] = buf[pos + 1] & 0x0f;
+                alpha[3] = buf[pos] >> 4;
+                alpha[2] = buf[pos] & 0x0f;
+                alpha[1] = buf[pos + 1] >> 4;
+                alpha[0] = buf[pos + 1] & 0x0f;
                 pos += 2;
+#ifdef DEBUG
+            av_log(NULL, AV_LOG_INFO, "alpha=%x%x%x%x\n", alpha[0],alpha[1],alpha[2],alpha[3]);
+#endif
                 break;
             case 0x05:
                 if ((buf_size - pos) < 6)
@@ -264,7 +270,7 @@ static int decode_dvd_subtitles(AVSubtitle *sub_header,
         cmd_pos = next_cmd_pos;
     }
     if (sub_header->num_rects > 0)
-        return 0;
+        return is_menu;
  fail:
     return -1;
 }
@@ -282,7 +288,7 @@ static int is_transp(const uint8_t *buf, int pitch, int n,
 }
 
 /* return 0 if empty rectangle, 1 if non empty */
-static int find_smallest_bouding_rectangle(AVSubtitle *s)
+static int find_smallest_bounding_rectangle(AVSubtitle *s)
 {
     uint8_t transp_color[256];
     int y1, y2, x1, x2, y, w, h, i;
@@ -375,14 +381,17 @@ static int dvdsub_decode(AVCodecContext *avctx,
                          uint8_t *buf, int buf_size)
 {
     AVSubtitle *sub = (void *)data;
+    int is_menu;
 
-    if (decode_dvd_subtitles(sub, buf, buf_size) < 0) {
+    is_menu = decode_dvd_subtitles(sub, buf, buf_size);
+
+    if (is_menu < 0) {
     no_subtitle:
         *data_size = 0;
 
         return buf_size;
     }
-    if (find_smallest_bouding_rectangle(sub) == 0)
+    if (!is_menu && find_smallest_bounding_rectangle(sub) == 0)
         goto no_subtitle;
 
 #if defined(DEBUG)

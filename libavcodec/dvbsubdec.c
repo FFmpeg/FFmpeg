@@ -1310,10 +1310,8 @@ static int dvbsub_display_end_segment(AVCodecContext *avctx, uint8_t *buf,
 
     sub->num_rects = ctx->display_list_size;
     
-    if (sub->num_rects == 0)
-        return 0;
-    
-    sub->rects = av_mallocz(sizeof(AVSubtitleRect) * sub->num_rects);
+    if (sub->num_rects > 0)
+        sub->rects = av_mallocz(sizeof(AVSubtitleRect) * sub->num_rects);
 
     i = 0;
 
@@ -1447,7 +1445,7 @@ static int dvbsub_decode(AVCodecContext *avctx,
         return -1;
     }
 
-    return 0;
+    return buf_size;
 }
 
 
