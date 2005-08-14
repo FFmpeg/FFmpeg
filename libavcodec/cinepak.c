@@ -316,13 +316,22 @@ static int cinepak_decode (CinepakContext *s)
     uint8_t      *eod = (s->data + s->size);
     int           i, result, strip_size, frame_flags, num_strips;
     int           y0 = 0;
+    int           encoded_buf_size;
+    /* if true, Cinepak data is from a Sega FILM/CPK file */
+    int           sega_film_data = 0;
 
     if (s->size < 10)
         return -1;
 
     frame_flags = s->data[0];
     num_strips  = BE_16 (&s->data[8]);
-    s->data    += 10;
+    encoded_buf_size = BE_16 (&s->data[2]);
+    if (encoded_buf_size != s->size)
+        sega_film_data = 1;
+    if (sega_film_data)
+        s->data    += 12;
+    else
+        s->data    += 10;
 
     if (num_strips > MAX_STRIPS)
         num_strips = MAX_STRIPS;
