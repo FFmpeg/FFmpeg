@@ -2158,6 +2158,30 @@ int av_write_header(AVFormatContext *s)
     int ret, i;
     AVStream *st;
 
+    // some sanity checks
+    for(i=0;i<s->nb_streams;i++) {
+        st = s->streams[i];
+
+        switch (st->codec->codec_type) {
+        case CODEC_TYPE_AUDIO:
+            if(st->codec->sample_rate<=0){
+                av_log(s, AV_LOG_ERROR, "sample rate not set\n");
+                return -1;
+            }
+            break;
+        case CODEC_TYPE_VIDEO:
+            if(st->codec->time_base.num<=0 || st->codec->time_base.den<=0){ //FIXME audio too?
+                av_log(s, AV_LOG_ERROR, "time base not set\n");
+                return -1;
+            }
+            if(st->codec->width<=0 || st->codec->height<=0){
+                av_log(s, AV_LOG_ERROR, "dimensions not set\n");
+                return -1;
+            }
+            break;
+        }
+    }
+
     ret = s->oformat->write_header(s);
     if (ret < 0)
         return ret;
