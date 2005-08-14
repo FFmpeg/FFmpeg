@@ -336,7 +336,7 @@ static int yuv4_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     int i;
     char header[MAX_FRAME_HEADER+1];
-    int packet_size, ret, width, height;
+    int packet_size, width, height;
     AVStream *st = s->streams[0];
 
     for (i=0; i<MAX_FRAME_HEADER; i++) {

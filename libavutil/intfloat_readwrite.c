@@ -28,7 +28,7 @@
 double av_int2dbl(int64_t v){
     if(v+v > 0xFFELLU<<52)
         return 0.0/0.0;
-    return ldexp(((v&(1LL<<52)-1) + (1LL<<52)) * (v>>63|1), (v>>52&0x7FF)-1075);
+    return ldexp(((v&((1LL<<52)-1)) + (1LL<<52)) * (v>>63|1), (v>>52&0x7FF)-1075);
 }
 
 float av_int2flt(int32_t v){

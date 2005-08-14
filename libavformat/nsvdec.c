@@ -297,8 +297,8 @@ static int nsv_parse_NSVf_header(AVFormatContext *s, AVFormatParameters *ap)
 
     //s->file_size = (uint32_t)get_le32(pb);
     file_size = (uint32_t)get_le32(pb);
-    PRINT(("NSV NSVf chunk_size %ld\n", size));
-    PRINT(("NSV NSVf file_size %Ld\n", file_size));
+    PRINT(("NSV NSVf chunk_size %u\n", size));
+    PRINT(("NSV NSVf file_size %u\n", file_size));
 
     nsv->duration = duration = get_le32(pb); /* in ms */
     PRINT(("NSV NSVf duration %Ld ms\n", duration));
@@ -561,7 +561,7 @@ null_chunk_retry:
     asize = get_le16(pb);
     vsize = (vsize << 4) | (auxcount >> 4);
     auxcount &= 0x0f;
-    PRINT(("NSV CHUNK %d aux, %ld bytes video, %d bytes audio\n", auxcount, vsize, asize));
+    PRINT(("NSV CHUNK %d aux, %u bytes video, %d bytes audio\n", auxcount, vsize, asize));
     /* skip aux stuff */
     for (i = 0; i < auxcount; i++) {
         auxsize = get_le16(pb);
@@ -614,7 +614,7 @@ null_chunk_retry:
             channels = get_byte(pb);
             samplerate = get_le16(pb);
             asize-=4;
-            PRINT(("NSV RAWAUDIO: bps %d, nchan %d, srate %ld\n", bps, channels, samplerate));
+            PRINT(("NSV RAWAUDIO: bps %d, nchan %d, srate %d\n", bps, channels, samplerate));
             if (fill_header) {
                 st[NSV_ST_AUDIO]->need_parsing = 0; /* we know everything */
                 if (bps != 16) {
@@ -629,7 +629,7 @@ null_chunk_retry:
                 st[NSV_ST_AUDIO]->codec->sample_rate = samplerate;
                 av_set_pts_info(st[NSV_ST_AUDIO], 64, 1, 
                                 st[NSV_ST_AUDIO]->codec->sample_rate);
-                PRINT(("NSV RAWAUDIO: bps %d, nchan %d, srate %ld\n", bps, channels, samplerate));
+                PRINT(("NSV RAWAUDIO: bps %d, nchan %d, srate %d\n", bps, channels, samplerate));
             }
         }
         av_get_packet(pb, pkt, asize);

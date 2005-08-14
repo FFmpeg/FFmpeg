@@ -1277,9 +1277,9 @@ static inline void pred_direct_motion(H264Context * const h, int *mb_type){
             fill_rectangle(&h->ref_cache[0][scan8[0]], 4, 4, 8, ref[0], 1);
             fill_rectangle(&h->ref_cache[1][scan8[0]], 4, 4, 8, ref[1], 1);
             if(!IS_INTRA(mb_type_col) 
-               && (   l1ref0[0] == 0 && ABS(l1mv0[0][0]) <= 1 && ABS(l1mv0[0][1]) <= 1
-                   || l1ref0[0]  < 0 && l1ref1[0] == 0 && ABS(l1mv1[0][0]) <= 1 && ABS(l1mv1[0][1]) <= 1
-                      && (h->x264_build>33 || !h->x264_build))){
+               && (   (l1ref0[0] == 0 && ABS(l1mv0[0][0]) <= 1 && ABS(l1mv0[0][1]) <= 1)
+                   || (l1ref0[0]  < 0 && l1ref1[0] == 0 && ABS(l1mv1[0][0]) <= 1 && ABS(l1mv1[0][1]) <= 1
+                       && (h->x264_build>33 || !h->x264_build)))){
                 if(ref[0] > 0)
                     fill_rectangle(&h->mv_cache[0][scan8[0]], 4, 4, 8, pack16to32(mv[0][0],mv[0][1]), 4);
                 else
@@ -1308,8 +1308,8 @@ static inline void pred_direct_motion(H264Context * const h, int *mb_type){
     
                 /* col_zero_flag */
                 if(!IS_INTRA(mb_type_col) && (   l1ref0[x8 + y8*h->b8_stride] == 0 
-                                              || l1ref0[x8 + y8*h->b8_stride] < 0 && l1ref1[x8 + y8*h->b8_stride] == 0 
-                                                 && (h->x264_build>33 || !h->x264_build))){
+                                              || (l1ref0[x8 + y8*h->b8_stride] < 0 && l1ref1[x8 + y8*h->b8_stride] == 0 
+                                                  && (h->x264_build>33 || !h->x264_build)))){
                     const int16_t (*l1mv)[2]= l1ref0[x8 + y8*h->b8_stride] == 0 ? l1mv0 : l1mv1;
                     for(i4=0; i4<4; i4++){
                         const int16_t *mv_col = l1mv[x8*2 + (i4&1) + (y8*2 + (i4>>1))*h->b_stride];
@@ -1347,7 +1347,7 @@ static inline void pred_direct_motion(H264Context * const h, int *mb_type){
                 const int x8 = i8&1;
                 const int y8 = i8>>1;
                 int ref0, dist_scale_factor;
-                int16_t (*l1mv)[2]= l1mv0;
+                const int16_t (*l1mv)[2]= l1mv0;
 
                 if(is_b8x8 && !IS_DIRECT(h->sub_mb_type[i8]))
                     continue;
@@ -2327,7 +2327,7 @@ static void pred8x8_plane_c(uint8_t *src, int stride){
     const int l0 = ((has_topleft ? SRC(-1,-1) : SRC(-1,0)) \
                      + 2*SRC(-1,0) + SRC(-1,1) + 2) >> 2; \
     PL(1) PL(2) PL(3) PL(4) PL(5) PL(6) \
-    const int l7 = (SRC(-1,6) + 3*SRC(-1,7) + 2) >> 2
+    const int l7 attribute_unused = (SRC(-1,6) + 3*SRC(-1,7) + 2) >> 2
 
 #define PT(x) \
     const int t##x = (SRC(x-1,-1) + 2*SRC(x,-1) + SRC(x+1,-1) + 2) >> 2;
@@ -2335,7 +2335,7 @@ static void pred8x8_plane_c(uint8_t *src, int stride){
     const int t0 = ((has_topleft ? SRC(-1,-1) : SRC(0,-1)) \
                      + 2*SRC(0,-1) + SRC(1,-1) + 2) >> 2; \
     PT(1) PT(2) PT(3) PT(4) PT(5) PT(6) \
-    const int t7 = ((has_topright ? SRC(8,-1) : SRC(7,-1)) \
+    const int t7 attribute_unused = ((has_topright ? SRC(8,-1) : SRC(7,-1)) \
                      + 2*SRC(7,-1) + SRC(6,-1) + 2) >> 2
 
 #define PTR(x) \
@@ -6188,7 +6188,7 @@ static void filter_mb_edgev( H264Context *h, uint8_t *pix, int stride, int bS[4]
     }
 }
 static void filter_mb_edgecv( H264Context *h, uint8_t *pix, int stride, int bS[4], int qp ) {
-    int i, d;
+    int i;
     const int index_a = clip( qp + h->slice_alpha_c0_offset, 0, 51 );
     const int alpha = alpha_table[index_a];
     const int beta  = beta_table[clip( qp + h->slice_beta_offset, 0, 51 )];
@@ -6418,7 +6418,7 @@ static void filter_mb_edgeh( H264Context *h, uint8_t *pix, int stride, int bS[4]
 }
 
 static void filter_mb_edgech( H264Context *h, uint8_t *pix, int stride, int bS[4], int qp ) {
-    int i, d;
+    int i;
     const int index_a = clip( qp + h->slice_alpha_c0_offset, 0, 51 );
     const int alpha = alpha_table[index_a];
     const int beta  = beta_table[clip( qp + h->slice_beta_offset, 0, 51 )];

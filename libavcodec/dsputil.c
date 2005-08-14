@@ -2988,7 +2988,8 @@ static int pix_abs8_xy2_c(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, 
     return s;
 }
 
-static int nsse16_c(MpegEncContext *c, uint8_t *s1, uint8_t *s2, int stride, int h){
+static int nsse16_c(void *v, uint8_t *s1, uint8_t *s2, int stride, int h){
+    MpegEncContext *c = v;
     int score1=0;
     int score2=0;
     int x,y;
@@ -3013,7 +3014,8 @@ static int nsse16_c(MpegEncContext *c, uint8_t *s1, uint8_t *s2, int stride, int
     else  return score1 + ABS(score2)*8;
 }
 
-static int nsse8_c(MpegEncContext *c, uint8_t *s1, uint8_t *s2, int stride, int h){
+static int nsse8_c(void *v, uint8_t *s1, uint8_t *s2, int stride, int h){
+    MpegEncContext *c = v;
     int score1=0;
     int score2=0;
     int x,y;

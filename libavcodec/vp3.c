@@ -1725,7 +1725,6 @@ static void render_slice(Vp3DecodeContext *s, int slice)
     int plane_height;
     int slice_height;
     int current_macroblock_entry = slice * s->macroblock_width * 6;
-    int *bounding_values= s->bounding_values_array+127;
     int fragment_width;
 
     if (slice >= s->macroblock_height)

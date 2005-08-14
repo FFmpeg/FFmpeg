@@ -1569,7 +1569,7 @@ static void av_estimate_timings_from_pts(AVFormatContext *ic)
     AVPacket pkt1, *pkt = &pkt1;
     AVStream *st;
     int read_size, i, ret;
-    int64_t start_time, end_time, end_time1;
+    int64_t end_time;
     int64_t filesize, offset, duration;
     
     /* free previous packet */

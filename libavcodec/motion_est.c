@@ -175,7 +175,7 @@ static always_inline int cmp(MpegEncContext *s, const int x, const int y, const 
         }else
             d= 256*256*256*32;
     }else{
-        int uvdxy;
+        int uvdxy;              /* no, it might not be used uninitialized */
         if(dxy){
             if(qpel){
                 c->qpel_put[size][dxy](c->temp, ref[0] + x + y*stride, stride); //FIXME prototype (add h)
@@ -1563,7 +1563,6 @@ static inline int check_bidir_mv(MpegEncContext * s,
     MotionEstContext * const c= &s->me;
     uint8_t * const mv_penalty= c->mv_penalty[s->f_code] + MAX_MV; // f_code of the prev frame
     int stride= c->stride;
-    int uvstride= c->uvstride;
     uint8_t *dest_y = c->scratchpad;
     uint8_t *ptr;
     int dxy;

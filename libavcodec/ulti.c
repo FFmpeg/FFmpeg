@@ -37,7 +37,7 @@ typedef struct UltimotionDecodeContext {
     AVCodecContext *avctx;
     int width, height, blocks;
     AVFrame frame;
-    uint8_t *ulti_codebook;
+    const uint8_t *ulti_codebook;
 } UltimotionDecodeContext;
 
 static int ulti_decode_init(AVCodecContext *avctx)

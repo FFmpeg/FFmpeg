@@ -644,14 +644,12 @@ static int avi_read_idx1(AVFormatContext *s, int size)
 }
 
 static int guess_ni_flag(AVFormatContext *s){
-    AVIContext *avi = s->priv_data;
     int i;
     int64_t last_start=0;
     int64_t first_end= INT64_MAX;
     
     for(i=0; i<s->nb_streams; i++){
         AVStream *st = s->streams[i];
-        AVIStream *ast = st->priv_data;
         int n= st->nb_index_entries;
 
         if(n <= 0)

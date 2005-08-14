@@ -141,7 +141,6 @@ static int ir2_decode_frame(AVCodecContext *avctx,
     AVFrame *picture = data;
     AVFrame * const p= (AVFrame*)&s->picture;
     int start;
-    int i;
 
     if(p->data[0])
         avctx->release_buffer(avctx, p);

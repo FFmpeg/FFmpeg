@@ -887,7 +887,7 @@ void MPV_common_end(MpegEncContext *s)
 int MPV_encode_init(AVCodecContext *avctx)
 {
     MpegEncContext *s = avctx->priv_data;
-    int i, dummy;
+    int i;
     int chroma_h_shift, chroma_v_shift;
     
     MPV_encode_defaults(s);

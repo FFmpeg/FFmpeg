@@ -45,7 +45,7 @@ static always_inline void idct(uint8_t *dst, int stride, int16_t *input, int typ
     int _Ed, _Gd, _Add, _Bdd, _Fd, _Hd;
     int t1, t2;
 
-    int i, j;
+    int i;
     
     /* Inverse DCT on the rows now */
     for (i = 0; i < 8; i++) {

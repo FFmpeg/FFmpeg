@@ -1810,7 +1810,6 @@ static inline int mpeg2_fast_decode_block_non_intra(MpegEncContext *s,
     RLTable *rl = &rl_mpeg1;
     uint8_t * const scantable= s->intra_scantable.permutated;
     const int qscale= s->qscale;
-    int v;
     OPEN_READER(re, &s->gb);
     i = -1;
 
