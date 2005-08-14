@@ -2188,19 +2188,23 @@ int av_write_header(AVFormatContext *s)
 
     /* init PTS generation */
     for(i=0;i<s->nb_streams;i++) {
+        int64_t den = AV_NOPTS_VALUE;
         st = s->streams[i];
 
         switch (st->codec->codec_type) {
         case CODEC_TYPE_AUDIO:
-            av_frac_init(&st->pts, 0, 0, 
-                         (int64_t)st->time_base.num * st->codec->sample_rate);
+            den = (int64_t)st->time_base.num * st->codec->sample_rate;
             break;
         case CODEC_TYPE_VIDEO:
-            av_frac_init(&st->pts, 0, 0, 
-                         (int64_t)st->time_base.num * st->codec->time_base.den);
+            den = (int64_t)st->time_base.num * st->codec->time_base.den;
             break;
         default:
             break;
+        }
+        if (den != AV_NOPTS_VALUE) {
+            if (den <= 0)
+                return AVERROR_INVALIDDATA;
+            av_frac_init(&st->pts, 0, 0, den);
         }
     }
     return 0;
