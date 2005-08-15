@@ -927,6 +927,8 @@ static int av_read_frame_internal(AVFormatContext *s, AVPacket *pkt)
                 if (!st->parser) {
                     /* no parser available : just output the raw packets */
                     st->need_parsing = 0;
+                }else if(st->need_parsing == 2){
+                    st->parser->flags |= PARSER_FLAG_COMPLETE_FRAMES;
                 }
             }
         }
@@ -1846,6 +1848,9 @@ int av_find_stream_info(AVFormatContext *ic)
         //only for the split stuff
         if (!st->parser) {
             st->parser = av_parser_init(st->codec->codec_id);
+            if(st->need_parsing == 2 && st->parser){
+                st->parser->flags |= PARSER_FLAG_COMPLETE_FRAMES;
+            }
         }
     }
 

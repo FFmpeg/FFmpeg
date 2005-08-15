@@ -429,13 +429,18 @@ static int mpegvideo_parse(AVCodecParserContext *s,
     ParseContext1 *pc1 = s->priv_data;
     ParseContext *pc= &pc1->pc;
     int next;
-    
-    next= ff_mpeg1_find_frame_end(pc, buf, buf_size);
-    
-    if (ff_combine_frame(pc, next, (uint8_t **)&buf, &buf_size) < 0) {
-        *poutbuf = NULL;
-        *poutbuf_size = 0;
-        return buf_size;
+   
+    if(s->flags & PARSER_FLAG_COMPLETE_FRAMES){
+        next= buf_size;
+    }else{
+        next= ff_mpeg1_find_frame_end(pc, buf, buf_size);
+        
+        if (ff_combine_frame(pc, next, (uint8_t **)&buf, &buf_size) < 0) {
+            *poutbuf = NULL;
+            *poutbuf_size = 0;
+            return buf_size;
+        }
+       
     }
     /* we have a full frame : we just parse the first few MPEG headers
        to have the full timing information. The time take by this
@@ -506,6 +511,7 @@ static int av_mpeg4_decode_header(AVCodecParserContext *s1,
     if (s->width) {
         avcodec_set_dimensions(avctx, s->width, s->height);
     }
+    s1->pict_type= s->pict_type;
     pc->first_picture = 0;
     return ret;
 }
@@ -529,12 +535,16 @@ static int mpeg4video_parse(AVCodecParserContext *s,
     ParseContext *pc = s->priv_data;
     int next;
     
-    next= ff_mpeg4_find_frame_end(pc, buf, buf_size);
-
-    if (ff_combine_frame(pc, next, (uint8_t **)&buf, &buf_size) < 0) {
-        *poutbuf = NULL;
-        *poutbuf_size = 0;
-        return buf_size;
+    if(s->flags & PARSER_FLAG_COMPLETE_FRAMES){
+        next= buf_size;
+    }else{
+        next= ff_mpeg4_find_frame_end(pc, buf, buf_size);
+    
+        if (ff_combine_frame(pc, next, (uint8_t **)&buf, &buf_size) < 0) {
+            *poutbuf = NULL;
+            *poutbuf_size = 0;
+            return buf_size;
+        }
     }
     av_mpeg4_decode_header(s, avctx, buf, buf_size);
 

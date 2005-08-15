@@ -248,7 +248,7 @@ typedef struct AVStream {
     char language[4]; /* ISO 639 3-letter language code (empty string if undefined) */
 
     /* av_read_frame() support */
-    int need_parsing;
+    int need_parsing;                  ///< 1->full parsing needed, 2->only parse headers dont repack
     struct AVCodecParserContext *parser;
 
     int64_t cur_dts;

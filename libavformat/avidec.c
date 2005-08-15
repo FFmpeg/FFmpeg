@@ -302,6 +302,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     st->codec->codec_id = codec_get_id(codec_bmp_tags, tag1);
                     if (st->codec->codec_id == CODEC_ID_XAN_WC4)
                         xan_video = 1;
+                    st->need_parsing = 2; //only parse headers dont do slower repacketization, this is needed to get the pict type which is needed for generating correct pts
 //                    url_fskip(pb, size - 5 * 4);
                     break;
                 case CODEC_TYPE_AUDIO:
