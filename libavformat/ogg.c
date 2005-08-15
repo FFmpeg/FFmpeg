@@ -40,15 +40,32 @@ static int ogg_write_header(AVFormatContext *avfcontext)
     
     for(n = 0 ; n < avfcontext->nb_streams ; n++) {
         AVCodecContext *codec = avfcontext->streams[n]->codec;
-        uint8_t *p= codec->extradata;
+        uint8_t *headers = codec->extradata;
+        int headers_len = codec->extradata_size;
+        uint8_t *header_start[3];
+        int header_len[3];
+        int i, j, hdr_type;
         
         av_set_pts_info(avfcontext->streams[n], 60, 1, AV_TIME_BASE);
 
-        for(i=0; i < codec->extradata_size; i+= op->bytes){
-            op->bytes = p[i++]<<8;
-            op->bytes+= p[i++];
+        for(j=1,i=0;i<2;++i, ++j) {
+            header_len[i]=0;
+            while(j<headers_len && headers[j]==0xff) {
+                header_len[i]+=0xff;
+                ++j;
+            }
+            header_len[i]+=headers[j];
+        }
+        header_len[2]=headers_len-header_len[0]-header_len[1]-j;
+        headers+=j;
+        header_start[0] = headers;
+        header_start[1] = header_start[0] + header_len[0];
+        header_start[2] = header_start[1] + header_len[1];
 
-            op->packet= &p[i];
+        for(i=0; i < 3; ++i){
+            op->bytes = header_len[i];
+
+            op->packet= header_start[i];
             op->b_o_s= op->packetno==0;
 
             ogg_stream_packetin(&context->os, op);
