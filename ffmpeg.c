@@ -211,6 +211,7 @@ static int frame_skip_cmp= FF_CMP_DCTMAX;
 extern int loop_input; /* currently a hack */
 static int loop_output = AVFMT_NOOUTPUTLOOP;
 static int gray_only = 0;
+static int genpts = 0;
 
 static int gop_size = 12;
 static int intra_only = 0;
@@ -3031,6 +3032,9 @@ static void opt_input_file(const char *filename)
         print_error(filename, err);
         exit(1);
     }
+
+    if(genpts)
+        ic->flags|= AVFMT_FLAG_GENPTS;
     
     /* If not enough info to get the stream parameters, we decode the
        first frames to get it. (used in mpeg case for example) */
@@ -4340,6 +4344,7 @@ const OptionDef options[] = {
     { "skip_cmp", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&frame_skip_cmp}, "frame skip compare function", "compare function" },
     { "gray", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, { (void *)&gray_only }, "encode/decode grayscale" },
     { "newvideo", OPT_VIDEO, {(void*)opt_new_video_stream}, "add a new video stream to the current output stream" },
+    { "genpts", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, { (void *)&genpts }, "generate pts" },
 
     /* audio options */
     { "ab", HAS_ARG | OPT_AUDIO, {(void*)opt_audio_bitrate}, "set audio bitrate (in kbit/s)", "bitrate", },

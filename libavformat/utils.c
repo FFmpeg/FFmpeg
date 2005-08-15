@@ -955,16 +955,66 @@ static int av_read_frame_internal(AVFormatContext *s, AVPacket *pkt)
 int av_read_frame(AVFormatContext *s, AVPacket *pkt)
 {
     AVPacketList *pktl;
+    int eof=0;
+    const int genpts= s->flags & AVFMT_FLAG_GENPTS;
 
-    pktl = s->packet_buffer;
-    if (pktl) {
-        /* read packet from packet buffer, if there is data */
-        *pkt = pktl->pkt;
-        s->packet_buffer = pktl->next;
-        av_free(pktl);
-        return 0;
-    } else {
-        return av_read_frame_internal(s, pkt);
+    for(;;){
+        pktl = s->packet_buffer;
+        if (pktl) {
+            AVPacket *next_pkt= &pktl->pkt;
+            AVStream *st= s->streams[ next_pkt->stream_index ];
+
+            if(genpts && next_pkt->dts != AV_NOPTS_VALUE){
+                while(pktl && next_pkt->pts == AV_NOPTS_VALUE){
+                    if(   pktl->pkt.stream_index == next_pkt->stream_index 
+                       && next_pkt->dts < pktl->pkt.dts
+                       && pktl->pkt.pts != pktl->pkt.dts //not b frame
+                       /*&& pktl->pkt.dts != AV_NOPTS_VALUE*/){
+                        next_pkt->pts= pktl->pkt.dts;
+                    }
+                    pktl= pktl->next;
+                }
+                pktl = s->packet_buffer;
+            }
+            
+            if(   next_pkt->pts != AV_NOPTS_VALUE 
+               || next_pkt->dts == AV_NOPTS_VALUE 
+               || !genpts || eof){
+                /* read packet from packet buffer, if there is data */
+                *pkt = *next_pkt;
+                s->packet_buffer = pktl->next;
+                av_free(pktl);
+                return 0;
+            }
+        }
+        if(genpts){
+            AVPacketList **plast_pktl= &s->packet_buffer;
+            int ret= av_read_frame_internal(s, pkt);
+            if(ret<0){
+                if(pktl && ret != -EAGAIN){
+                    eof=1;
+                    continue;
+                }else
+                    return ret;
+            }
+            
+            /* duplicate the packet */
+            if (av_dup_packet(pkt) < 0)
+                return AVERROR_NOMEM;
+
+            while(*plast_pktl) plast_pktl= &(*plast_pktl)->next; //FIXME maybe maintain pointer to the last?
+            
+            pktl = av_mallocz(sizeof(AVPacketList));
+            if (!pktl)
+                return AVERROR_NOMEM;
+    
+            /* add the packet in the buffered packet list */
+            *plast_pktl = pktl;
+            pktl->pkt= *pkt;            
+        }else{
+            assert(!s->packet_buffer);
+            return av_read_frame_internal(s, pkt);
+        }
     }
 }
 

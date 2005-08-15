@@ -210,6 +210,7 @@ static int step = 0;
 static int thread_count = 1;
 static int workaround_bugs = 1;
 static int fast = 0;
+static int genpts = 0;
 static int lowres = 0;
 static int idct = FF_IDCT_AUTO;
 static enum AVDiscard skip_frame= AVDISCARD_DEFAULT;
@@ -1802,6 +1803,10 @@ static int decode_thread(void *arg)
 #else
     use_play = 0;
 #endif
+
+    if(genpts)
+        ic->flags |= AVFMT_FLAG_GENPTS;
+
     if (!use_play) {
         err = av_find_stream_info(ic);
         if (err < 0) {
@@ -2356,6 +2361,7 @@ const OptionDef options[] = {
     { "bug", OPT_INT | HAS_ARG | OPT_EXPERT, {(void*)&workaround_bugs}, "workaround bugs", "" },
     { "vismv", HAS_ARG | OPT_EXPERT, {(void*)opt_vismv}, "visualize motion vectors", "" },
     { "fast", OPT_BOOL | OPT_EXPERT, {(void*)&fast}, "non spec compliant optimizations", "" },
+    { "genpts", OPT_BOOL | OPT_EXPERT, {(void*)&genpts}, "generate pts", "" },
     { "lowres", OPT_INT | HAS_ARG | OPT_EXPERT, {(void*)&lowres}, "", "" },
     { "skiploop", OPT_INT | HAS_ARG | OPT_EXPERT, {(void*)&skip_loop_filter}, "", "" },
     { "skipframe", OPT_INT | HAS_ARG | OPT_EXPERT, {(void*)&skip_frame}, "", "" },

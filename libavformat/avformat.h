@@ -5,8 +5,8 @@
 extern "C" {
 #endif
 
-#define LIBAVFORMAT_VERSION_INT ((49<<16)+(0<<8)+0)
-#define LIBAVFORMAT_VERSION     49.0.0
+#define LIBAVFORMAT_VERSION_INT ((49<<16)+(1<<8)+0)
+#define LIBAVFORMAT_VERSION     49.1.0
 #define LIBAVFORMAT_BUILD       LIBAVFORMAT_VERSION_INT
 
 #define LIBAVFORMAT_IDENT       "Lavf" AV_STRINGIFY(LIBAVFORMAT_VERSION)
@@ -332,6 +332,8 @@ typedef struct AVFormatContext {
     /* number of times to loop output in formats that support it */
     int loop_output;
     
+    int flags;
+#define AVFMT_FLAG_GENPTS       0x0001 ///< generate pts if missing even if it requires parsing future frames
 } AVFormatContext;
 
 typedef struct AVPacketList {
