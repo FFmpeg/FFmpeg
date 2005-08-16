@@ -1033,30 +1033,30 @@ above them explaining what the function does, even if it's just one sentence.
 All structures and their member variables should be documented, too.
 @example
 /**
- * @@file mpeg.c
- * MPEG codec.
- * @@author ...
- */
+ * @@file mpeg.c
+ * MPEG codec.
+ * @@author ...
+ */
 
 /**
- * Summary sentence.
- * more text ...
- * ...
- */
+ * Summary sentence.
+ * more text ...
+ * ...
+ */
 typedef struct Foobar@{
-    int var1; /**< var1 description */
-    int var2; ///< var2 description
-    /** var3 description */
-    int var3;
+    int var1; /**< var1 description */
+    int var2; ///< var2 description
+    /** var3 description */
+    int var3;
 @} Foobar;
 
 /**
- * Summary sentence.
- * more text ...
- * ...
- * @@param my_parameter description of my_parameter
- * @@return return value description
- */
+ * Summary sentence.
+ * more text ...
+ * ...
+ * @@param my_parameter description of my_parameter
+ * @@return return value description
+ */
 int myfunc(int my_parameter)
 ...
 @end example
