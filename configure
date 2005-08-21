@@ -736,7 +736,7 @@ fi
 if test $cpu = "powerpc"; then
     if test $altivec = "yes"; then
         if test -n "`$cc -v 2>&1 | grep version | grep Apple`"; then
-            CFLAGS="$CFLAGS -faltivec -maltivec"
+            CFLAGS="$CFLAGS -faltivec"
         else
             CFLAGS="$CFLAGS -maltivec -mabi=altivec"
         fi
