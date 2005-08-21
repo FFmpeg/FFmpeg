@@ -2470,7 +2470,9 @@ static always_inline void add_yblock_buffered(SnowContext *s, slice_buffer * sb,
     BlockNode *lb= lt+b_stride;
     BlockNode *rb= lb+1;
     uint8_t *block[4]; 
-    uint8_t tmp[src_stride*(b_h+5)]; //FIXME align
+    int tmp_step= src_stride >= 7*MB_SIZE ? MB_SIZE : MB_SIZE*src_stride;
+    uint8_t tmp[src_stride*7*MB_SIZE]; //FIXME align
+    uint8_t *ptmp;
     int x,y;
 
     if(b_x<0){
@@ -2505,18 +2507,21 @@ static always_inline void add_yblock_buffered(SnowContext *s, slice_buffer * sb,
     
     if(b_w<=0 || b_h<=0) return;
 
-assert(src_stride > 7*MB_SIZE);
+assert(src_stride > 2*MB_SIZE + 5);
 //    old_dst += src_x + src_y*dst_stride;
     dst8+= src_x + src_y*src_stride;
 //    src += src_x + src_y*src_stride;
 
-    block[0]= tmp+3*MB_SIZE;
+    ptmp= tmp + 3*tmp_step;
+    block[0]= ptmp;
+    ptmp+=tmp_step;
     pred_block(s, block[0], src, tmp, src_stride, src_x, src_y, b_w, b_h, lt, plane_index, w, h);    
 
     if(same_block(lt, rt)){
         block[1]= block[0];
     }else{
-        block[1]= tmp + 4*MB_SIZE;
+        block[1]= ptmp;
+        ptmp+=tmp_step;
         pred_block(s, block[1], src, tmp, src_stride, src_x, src_y, b_w, b_h, rt, plane_index, w, h);
     }
         
@@ -2525,7 +2530,8 @@ assert(src_stride > 7*MB_SIZE);
     }else if(same_block(rt, lb)){
         block[2]= block[1];
     }else{
-        block[2]= tmp+5*MB_SIZE;
+        block[2]= ptmp;
+        ptmp+=tmp_step;
         pred_block(s, block[2], src, tmp, src_stride, src_x, src_y, b_w, b_h, lb, plane_index, w, h);
     }
 
@@ -2536,7 +2542,7 @@ assert(src_stride > 7*MB_SIZE);
     }else if(same_block(lb, rb)){
         block[3]= block[2];
     }else{
-        block[3]= tmp+6*MB_SIZE;
+        block[3]= ptmp;
         pred_block(s, block[3], src, tmp, src_stride, src_x, src_y, b_w, b_h, rb, plane_index, w, h);
     }
 #if 0
@@ -2623,7 +2629,9 @@ static always_inline void add_yblock(SnowContext *s, DWTELEM *dst, uint8_t *dst8
     BlockNode *lb= lt+b_stride;
     BlockNode *rb= lb+1;
     uint8_t *block[4]; 
-    uint8_t tmp[src_stride*(b_h+5)]; //FIXME align
+    int tmp_step= src_stride >= 7*MB_SIZE ? MB_SIZE : MB_SIZE*src_stride;
+    uint8_t tmp[src_stride*7*MB_SIZE]; //FIXME align
+    uint8_t *ptmp;
     int x,y;
 
     if(b_x<0){
@@ -2658,18 +2666,21 @@ static always_inline void add_yblock(SnowContext *s, DWTELEM *dst, uint8_t *dst8
     
     if(b_w<=0 || b_h<=0) return;
 
-assert(src_stride > 7*MB_SIZE);
+assert(src_stride > 2*MB_SIZE + 5);
     dst += src_x + src_y*dst_stride;
     dst8+= src_x + src_y*src_stride;
 //    src += src_x + src_y*src_stride;
 
-    block[0]= tmp+3*MB_SIZE;
+    ptmp= tmp + 3*tmp_step;
+    block[0]= ptmp;
+    ptmp+=tmp_step;
     pred_block(s, block[0], src, tmp, src_stride, src_x, src_y, b_w, b_h, lt, plane_index, w, h);    
 
     if(same_block(lt, rt)){
         block[1]= block[0];
     }else{
-        block[1]= tmp + 4*MB_SIZE;
+        block[1]= ptmp;
+        ptmp+=tmp_step;
         pred_block(s, block[1], src, tmp, src_stride, src_x, src_y, b_w, b_h, rt, plane_index, w, h);
     }
         
@@ -2678,7 +2689,8 @@ assert(src_stride > 7*MB_SIZE);
     }else if(same_block(rt, lb)){
         block[2]= block[1];
     }else{
-        block[2]= tmp+5*MB_SIZE;
+        block[2]= ptmp;
+        ptmp+=tmp_step;
         pred_block(s, block[2], src, tmp, src_stride, src_x, src_y, b_w, b_h, lb, plane_index, w, h);
     }
 
@@ -2689,7 +2701,7 @@ assert(src_stride > 7*MB_SIZE);
     }else if(same_block(lb, rb)){
         block[3]= block[2];
     }else{
-        block[3]= tmp+6*MB_SIZE;
+        block[3]= ptmp;
         pred_block(s, block[3], src, tmp, src_stride, src_x, src_y, b_w, b_h, rb, plane_index, w, h);
     }
 #if 0
