@@ -641,7 +641,7 @@ You can use the @code{-formats} option to have an exhaustive list.
 FFmpeg supports the following file formats through the @code{libavformat}
 library:
 
-@multitable @columnfractions .4 .1 .1
+@multitable @columnfractions .4 .1 .1 .4
 @item Supported File Format @tab Encoding @tab Decoding @tab Comments
 @item MPEG audio @tab X @tab X
 @item MPEG-1 systems @tab X  @tab  X
@@ -705,7 +705,7 @@ library:
 FFmpeg can read and write images for each frame of a video sequence. The
 following image formats are supported:
 
-@multitable @columnfractions .4 .1 .1
+@multitable @columnfractions .4 .1 .1 .4
 @item Supported Image Format @tab Encoding @tab Decoding @tab Comments
 @item PGM, PPM     @tab X @tab X 
 @item PAM          @tab X @tab X @tab PAM is a PNM extension with alpha support.
@@ -721,7 +721,7 @@ following image formats are supported:
 
 @section Video Codecs
 
-@multitable @columnfractions .4 .1 .1 .7
+@multitable @columnfractions .4 .1 .1 .4
 @item Supported Codec @tab Encoding @tab Decoding @tab Comments
 @item MPEG-1 video           @tab  X  @tab  X
 @item MPEG-2 video           @tab  X  @tab  X
