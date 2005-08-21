@@ -144,6 +144,17 @@ void av_free_static(void)
 }
 
 /**
+ * Call av_free_static automatically before it's too late
+ */
+
+static void do_free() __attribute__ ((destructor));
+
+static void do_free()
+{
+    av_free_static();
+}
+
+/**
  * Frees memory and sets the pointer to NULL.
  * @param arg pointer to the pointer which should be freed
  */
