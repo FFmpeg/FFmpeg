@@ -217,6 +217,8 @@ static int gop_size = 12;
 static int intra_only = 0;
 static int audio_sample_rate = 44100;
 static int audio_bit_rate = 64000;
+#define QSCALE_NONE -99999
+static float audio_qscale = QSCALE_NONE;
 static int audio_disable = 0;
 static int audio_channels = 1;
 static int audio_codec_id = CODEC_ID_NONE;
@@ -3501,6 +3503,10 @@ static void new_audio_stream(AVFormatContext *oc)
         audio_enc->codec_id = codec_id;
         
         audio_enc->bit_rate = audio_bit_rate;
+        if (audio_qscale > QSCALE_NONE) {
+            audio_enc->flags |= CODEC_FLAG_QSCALE;
+            audio_enc->global_quality = st->quality = FF_QP2LAMBDA * audio_qscale;
+        }
         audio_enc->strict_std_compliance = strict;
         audio_enc->thread_count = thread_count;
         /* For audio codecs other than AC3 or DTS we limit */
@@ -4348,6 +4354,7 @@ const OptionDef options[] = {
 
     /* audio options */
     { "ab", HAS_ARG | OPT_AUDIO, {(void*)opt_audio_bitrate}, "set audio bitrate (in kbit/s)", "bitrate", },
+    { "aq", OPT_FLOAT | HAS_ARG | OPT_AUDIO, {(void*)&audio_qscale}, "set audio quality (codec-specific)", "quality", },
     { "ar", HAS_ARG | OPT_AUDIO, {(void*)opt_audio_rate}, "set audio sampling rate (in Hz)", "rate" },
     { "ac", HAS_ARG | OPT_AUDIO, {(void*)opt_audio_channels}, "set number of audio channels", "channels" },
     { "an", OPT_BOOL | OPT_AUDIO, {(void*)&audio_disable}, "disable audio" },

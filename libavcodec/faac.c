@@ -56,7 +56,11 @@ static int Faac_encode_init(AVCodecContext *avctx)
     faac_cfg->mpegVersion = MPEG4;
     faac_cfg->useTns = 0;
     faac_cfg->allowMidside = 1;
-    faac_cfg->bitRate = avctx->bit_rate;
+    faac_cfg->bitRate = avctx->bit_rate / avctx->channels;
+    if(avctx->flags & CODEC_FLAG_QSCALE) {
+        faac_cfg->bitRate = 0;
+        faac_cfg->quantqual = avctx->global_quality / FF_QP2LAMBDA;
+    }
     faac_cfg->outputFormat = 0;
     faac_cfg->inputFormat = FAAC_INPUT_16BIT;
 

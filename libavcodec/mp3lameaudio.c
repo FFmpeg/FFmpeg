@@ -53,6 +53,11 @@ static int MP3lame_encode_init(AVCodecContext *avctx)
 	/* lame 3.91 doesn't work in mono */
 	lame_set_mode(s->gfp, JOINT_STEREO);
 	lame_set_brate(s->gfp, avctx->bit_rate/1000);
+    if(avctx->flags & CODEC_FLAG_QSCALE) {
+        lame_set_brate(s->gfp, 0);
+        lame_set_VBR(s->gfp, vbr_default);
+        lame_set_VBR_q(s->gfp, avctx->global_quality / (float)FF_QP2LAMBDA);
+    }
         lame_set_bWriteVbrTag(s->gfp,0);
 	if (lame_init_params(s->gfp) < 0)
 		goto err_close;
