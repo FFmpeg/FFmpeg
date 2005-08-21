@@ -229,6 +229,13 @@ typedef struct AVStream {
     int codec_info_nb_frames;
     /* encoding: PTS generation when outputing stream */
     AVFrac pts;
+
+    /**
+     * this is the fundamental unit of time (in seconds) in terms
+     * of which frame timestamps are represented. for fixed-fps content,
+     * timebase should be 1/framerate and timestamp increments should be
+     * identically 1.
+     */
     AVRational time_base;
     int pts_wrap_bits; /* number of bits in pts (used for wrapping control) */
     /* ffmpeg.c private use */

@@ -199,7 +199,10 @@ AVStream *add_video_stream(AVFormatContext *oc, int codec_id)
     /* resolution must be a multiple of two */
     c->width = 352;  
     c->height = 288;
-    /* frames per second */
+    /* time base: this is the fundamental unit of time (in seconds) in terms
+       of which frame timestamps are represented. for fixed-fps content,
+       timebase should be 1/framerate and timestamp increments should be
+       identically 1. */
     c->time_base.den = STREAM_FRAME_RATE;  
     c->time_base.num = 1;
     c->gop_size = 12; /* emit one intra frame every twelve frames at most */

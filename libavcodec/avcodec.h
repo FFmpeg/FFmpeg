@@ -732,14 +732,17 @@ typedef struct AVCodecContext {
     void *extradata;
     int extradata_size;
     
-    /* video only */
     /**
-     * time base in which the timestamps are specified.
+     * this is the fundamental unit of time (in seconds) in terms
+     * of which frame timestamps are represented. for fixed-fps content,
+     * timebase should be 1/framerate and timestamp increments should be
+     * identically 1.
      * - encoding: MUST be set by user
      * - decoding: set by lavc.
      */
     AVRational time_base;
     
+    /* video only */
     /**
      * picture width / height.
      * - encoding: MUST be set by user. 
