@@ -198,6 +198,8 @@ static int pnm_decode_frame(AVCodecContext *avctx,
     do_read:
         ptr = p->data[0];
         linesize = p->linesize[0];
+        if(s->bytestream + n*avctx->height > s->bytestream_end)
+            return -1;
         for(i = 0; i < avctx->height; i++) {
             memcpy(ptr, s->bytestream, n);
             s->bytestream += n;
@@ -211,6 +213,8 @@ static int pnm_decode_frame(AVCodecContext *avctx,
             n = avctx->width;
             ptr = p->data[0];
             linesize = p->linesize[0];
+            if(s->bytestream + n*avctx->height*3/2 > s->bytestream_end)
+                return -1;
             for(i = 0; i < avctx->height; i++) {
                 memcpy(ptr, s->bytestream, n);
                 s->bytestream += n;
@@ -233,6 +237,8 @@ static int pnm_decode_frame(AVCodecContext *avctx,
     case PIX_FMT_RGBA32:
         ptr = p->data[0];
         linesize = p->linesize[0];
+        if(s->bytestream + avctx->width*avctx->height*4 > s->bytestream_end)
+            return -1;
         for(i = 0; i < avctx->height; i++) {
             int j, r, g, b, a;
 
