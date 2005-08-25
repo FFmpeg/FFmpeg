@@ -5363,6 +5363,8 @@ static int decode_cabac_mb_dqp( H264Context *h) {
         else
             ctx = 3;
         val++;
+        if(val > 52) //prevent infinite loop
+            return INT_MIN;
     }
 
     if( val&0x01 )
@@ -6548,7 +6550,7 @@ static void filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint8
                     bS[0] = bS[1] = bS[2] = bS[3] = 3;
                 } else {
                     // TODO
-                    assert(0);
+                    av_log(h->s.avctx, AV_LOG_ERROR, "both non intra (TODO)\n");
                 }
                 /* Filter edge */
                 // Do not use s->qscale as luma quantizer because it has not the same
@@ -6569,7 +6571,7 @@ static void filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint8
                     bS[0] = bS[1] = bS[2] = bS[3] = 3;
                 } else {
                     // TODO
-                    assert(0);
+                    av_log(h->s.avctx, AV_LOG_ERROR, "both non intra (TODO)\n");
                 }
                 /* Filter edge */
                 // Do not use s->qscale as luma quantizer because it has not the same
@@ -6701,7 +6703,7 @@ static int decode_slice(H264Context *h){
 
                 if(ret>=0) ret = decode_mb_cabac(h);
 
-                hl_decode_mb(h);
+                if(ret>=0) hl_decode_mb(h);
                 s->mb_y--;
             }
             eos = get_cabac_terminate( &h->cabac );
