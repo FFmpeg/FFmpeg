@@ -441,7 +441,7 @@ static int log_motion_search(MpegEncContext * s,
     } while (range >= 1);
 
 #ifdef DEBUG
-    fprintf(stderr, "log       - MX: %d\tMY: %d\n", mx, my);
+    av_log(s->avctx, AV_LOG_DEBUG, "log       - MX: %d\tMY: %d\n", mx, my);
 #endif
     *mx_ptr = mx;
     *my_ptr = my;
@@ -530,7 +530,7 @@ static int phods_motion_search(MpegEncContext * s,
     } while (range >= 1);
 
 #ifdef DEBUG
-    fprintf(stderr, "phods     - MX: %d\tMY: %d\n", mx, my);
+    av_log(s->avctx, AV_LOG_DEBUG, "phods     - MX: %d\tMY: %d\n", mx, my);
 #endif
 
     /* half pixel search */

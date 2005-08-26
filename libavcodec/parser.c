@@ -748,8 +748,13 @@ static int mpegaudio_parse(AVCodecParserContext *s1,
 }
 
 #ifdef CONFIG_AC3
+#ifdef CONFIG_A52BIN
+extern int ff_a52_syncinfo (AVCodecContext * avctx, const uint8_t * buf,
+                       int * flags, int * sample_rate, int * bit_rate);
+#else
 extern int a52_syncinfo (const uint8_t * buf, int * flags,
                          int * sample_rate, int * bit_rate);
+#endif
 
 typedef struct AC3ParseContext {
     uint8_t inbuf[4096]; /* input buffer */
@@ -796,7 +801,11 @@ static int ac3_parse(AVCodecParserContext *s1,
             s->inbuf_ptr += len;
             buf_size -= len;
             if ((s->inbuf_ptr - s->inbuf) == AC3_HEADER_SIZE) {
+#ifdef CONFIG_A52BIN
+                len = ff_a52_syncinfo(avctx, s->inbuf, &s->flags, &sample_rate, &bit_rate);
+#else
                 len = a52_syncinfo(s->inbuf, &s->flags, &sample_rate, &bit_rate);
+#endif
                 if (len == 0) {
                     /* no sync found : move by one byte (inefficient, but simple!) */
                     memmove(s->inbuf, s->inbuf + 1, AC3_HEADER_SIZE - 1);

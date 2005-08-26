@@ -121,7 +121,7 @@ static int ac3_decode_frame(AVCodecContext *avctx,
 			/* No specific number of channel requested */
 			avctx->channels = s->channels;
 		    else if (s->channels < avctx->channels) {
-			fprintf(stderr, "ac3dec: AC3 Source channels are less than specified: output to %d channels.. (frmsize: %d)\n", s->channels, len);
+                        av_log( avctx, AV_LOG_INFO, "ac3dec: AC3 Source channels are less than specified: output to %d channels.. (frmsize: %d)\n", s->channels, len);
 			avctx->channels = s->channels;
 		    }
 		    avctx->bit_rate = bit_rate;

@@ -3999,7 +3999,7 @@ static int decode_ref_pic_marking(H264Context *h){
                 if(opcode==MMCO_SHORT2UNUSED || opcode==MMCO_SHORT2LONG){
                     h->mmco[i].short_frame_num= (h->frame_num - get_ue_golomb(&s->gb) - 1) & ((1<<h->sps.log2_max_frame_num)-1); //FIXME fields
 /*                    if(h->mmco[i].short_frame_num >= h->short_ref_count || h->short_ref[ h->mmco[i].short_frame_num ] == NULL){
-                        fprintf(stderr, "illegal short ref in memory management control operation %d\n", mmco);
+                        av_log(s->avctx, AV_LOG_ERROR, "illegal short ref in memory management control operation %d\n", mmco);
                         return -1;
                     }*/
                 }

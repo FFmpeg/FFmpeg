@@ -73,8 +73,15 @@ static void* dlsymm(void* handle, const char* symbol)
 {
     void* f = dlsym(handle, symbol);
     if (!f)
-	fprintf(stderr, "A52 Decoder - function '%s' can't be resolved\n", symbol);
+        av_log( NULL, AV_LOG_ERROR, "A52 Decoder - function '%s' can't be resolved\n", symbol);
     return f;
+}
+
+int ff_a52_syncinfo( AVCodecContext * avctx, uint8_t * buf, int * flags, int * sample_rate, int * bit_rate )
+{
+    AC3DecodeState *s = avctx->priv_data;
+
+    return s->a52_syncinfo(buf, flags, sample_rate, bit_rate);
 }
 #endif
 
@@ -86,7 +93,7 @@ static int a52_decode_init(AVCodecContext *avctx)
     s->handle = dlopen(liba52name, RTLD_LAZY);
     if (!s->handle)
     {
-	fprintf(stderr, "A52 library %s could not be opened! \n%s\n", liba52name, dlerror());
+        av_log( avctx, AV_LOG_ERROR, "A52 library %s could not be opened! \n%s\n", liba52name, dlerror());
         return -1;
     }
     s->a52_init = (a52_state_t* (*)(uint32_t)) dlsymm(s->handle, "a52_init");

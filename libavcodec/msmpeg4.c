@@ -1821,9 +1821,9 @@ static inline int msmpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
                     if(last) i+=192;
 #ifdef ERROR_DETAILS
                 if(run==66)
-                    fprintf(stderr, "illegal vlc code in ESC3 level=%d\n", level);
+                    av_log(s->avctx, AV_LOG_ERROR, "illegal vlc code in ESC3 level=%d\n", level);
                 else if((i>62 && i<192) || i>192+63)
-                    fprintf(stderr, "run overflow in ESC3 i=%d run=%d level=%d\n", i, run, level);
+                    av_log(s->avctx, AV_LOG_ERROR, "run overflow in ESC3 i=%d run=%d level=%d\n", i, run, level);
 #endif
                 } else {
                     /* second escape */
@@ -1839,9 +1839,9 @@ static inline int msmpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
                     LAST_SKIP_BITS(re, &s->gb, 1);
 #ifdef ERROR_DETAILS
                 if(run==66)
-                    fprintf(stderr, "illegal vlc code in ESC2 level=%d\n", level);
+                    av_log(s->avctx, AV_LOG_ERROR, "illegal vlc code in ESC2 level=%d\n", level);
                 else if((i>62 && i<192) || i>192+63)
-                    fprintf(stderr, "run overflow in ESC2 i=%d run=%d level=%d\n", i, run, level);
+                    av_log(s->avctx, AV_LOG_ERROR, "run overflow in ESC2 i=%d run=%d level=%d\n", i, run, level);
 #endif
                 }
             } else {
@@ -1859,9 +1859,9 @@ static inline int msmpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
                 LAST_SKIP_BITS(re, &s->gb, 1);
 #ifdef ERROR_DETAILS
                 if(run==66)
-                    fprintf(stderr, "illegal vlc code in ESC1 level=%d\n", level);
+                    av_log(s->avctx, AV_LOG_ERROR, "illegal vlc code in ESC1 level=%d\n", level);
                 else if((i>62 && i<192) || i>192+63)
-                    fprintf(stderr, "run overflow in ESC1 i=%d run=%d level=%d\n", i, run, level);
+                    av_log(s->avctx, AV_LOG_ERROR, "run overflow in ESC1 i=%d run=%d level=%d\n", i, run, level);
 #endif
             }
         } else {
@@ -1870,9 +1870,9 @@ static inline int msmpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
             LAST_SKIP_BITS(re, &s->gb, 1);
 #ifdef ERROR_DETAILS
                 if(run==66)
-                    fprintf(stderr, "illegal vlc code level=%d\n", level);
+                    av_log(s->avctx, AV_LOG_ERROR, "illegal vlc code level=%d\n", level);
                 else if((i>62 && i<192) || i>192+63)
-                    fprintf(stderr, "run overflow i=%d run=%d level=%d\n", i, run, level);
+                    av_log(s->avctx, AV_LOG_ERROR, "run overflow i=%d run=%d level=%d\n", i, run, level);
 #endif
         }
         if (i > 62){

@@ -2183,7 +2183,7 @@ static int sp5x_decode_frame(AVCodecContext *avctx,
     s->picture.reference = 0;
     if (avctx->get_buffer(avctx, &s->picture) < 0)
     {
-	fprintf(stderr, "get_buffer() failed\n");
+        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
 	return -1;
     }
 
