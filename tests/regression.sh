@@ -77,6 +77,7 @@ else
     do_svq1=y
     do_snow=y
     do_adpcm_yam=y
+    do_dv=y
 fi
 
 
@@ -459,6 +460,16 @@ do_ffmpeg $file -y -strict -2 -f pgmyuv -i $raw_src -an -vcodec snow -pred 1 -qp
 
 # snow decoding
 do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst 
+fi
+
+###################################
+if [ -n "$do_dv" ] ; then
+# dv encoding
+file=${outfile}dv.dv
+do_ffmpeg $file -dct_algo 2 -y -f pgmyuv -i $raw_src -s pal -an $file
+
+# dv decoding
+do_ffmpeg $raw_dst -y -i $file -f rawvideo -s cif $raw_dst 
 fi
 
 ###################################
