@@ -34,9 +34,13 @@
 #include "simple_idct.h"
 #include "dvdata.h"
 
+//#undef NDEBUG
+//#include <assert.h>
+
 typedef struct DVVideoContext {
     const DVprofile* sys;
     AVFrame picture;
+    AVCodecContext *avctx;
     uint8_t *buf;
     
     uint8_t dv_zigzag[2][64];
@@ -54,7 +58,7 @@ typedef struct DVVideoContext {
 #define DV_VLC_MAP_LEV_SIZE 23
 #else
 #define DV_VLC_MAP_RUN_SIZE  64 
-#define DV_VLC_MAP_LEV_SIZE 512
+#define DV_VLC_MAP_LEV_SIZE 512 //FIXME sign was removed so this should be /2 but needs check
 #endif
 
 /* MultiThreading */
@@ -233,6 +237,7 @@ static int dvvideo_init(AVCodecContext *avctx)
     if (dv_codec_profile(avctx))
 	avctx->pix_fmt = dv_codec_profile(avctx)->pix_fmt; 
     avctx->coded_frame = &s->picture;
+    s->avctx= avctx;
     
     return 0;
 }
@@ -332,10 +337,9 @@ static void dv_decode_ac(GetBitContext *gb, BlockInfo *mb, DCTELEM *block)
 	if (pos >= 64)
 	    break;
         
-	if (level) {
-            pos1 = scan_table[pos];
-            block[pos1] = level << shift_table[pos1];
-        } 
+        assert(level);
+        pos1 = scan_table[pos];
+        block[pos1] = level << shift_table[pos1];
 
         UPDATE_CACHE(re, gb);
     }
@@ -346,9 +350,9 @@ static void dv_decode_ac(GetBitContext *gb, BlockInfo *mb, DCTELEM *block)
 static inline void bit_copy(PutBitContext *pb, GetBitContext *gb)
 {
     int bits_left = get_bits_left(gb);
-    while (bits_left >= 16) {
-        put_bits(pb, 16, get_bits(gb, 16));
-        bits_left -= 16;
+    while (bits_left >= MIN_CACHE_BITS) {
+        put_bits(pb, MIN_CACHE_BITS, get_bits(gb, MIN_CACHE_BITS));
+        bits_left -= MIN_CACHE_BITS;
     }
     if (bits_left > 0) {
         put_bits(pb, bits_left, get_bits(gb, bits_left));
@@ -371,9 +375,12 @@ static inline void dv_decode_video_segment(DVVideoContext *s,
     GetBitContext gb;
     BlockInfo mb_data[5 * 6], *mb, *mb1;
     DCTELEM sblock[5*6][64] __align8;
-    uint8_t mb_bit_buffer[80 + 4]; /* allow some slack */
-    uint8_t vs_bit_buffer[5 * 80 + 4]; /* allow some slack */
+    uint8_t mb_bit_buffer[80 + 4] __align8; /* allow some slack */
+    uint8_t vs_bit_buffer[5 * 80 + 4] __align8; /* allow some slack */
 	    
+    assert((((int)mb_bit_buffer)&7)==0);
+    assert((((int)vs_bit_buffer)&7)==0);
+    
     memset(sblock, 0, sizeof(sblock));
 
     /* pass 1 : read DC and AC coefficients in blocks */
@@ -525,14 +532,9 @@ static inline void dv_decode_video_segment(DVVideoContext *s,
 
 #ifdef DV_CODEC_TINY_TARGET
 /* Converts run and level (where level != 0) pair into vlc, returning bit size */
-static always_inline int dv_rl2vlc(int run, int l, uint32_t* vlc)
+static always_inline int dv_rl2vlc(int run, int level, int sign, uint32_t* vlc)
 {
-    int sign = l >> 8;
-    int level = (l ^ sign) - sign;
     int size;
-    
-    sign = (sign & 1);
-
     if (run < DV_VLC_MAP_RUN_SIZE && level < DV_VLC_MAP_LEV_SIZE) {
         *vlc = dv_vlc_map[run][level].vlc | sign;
 	size = dv_vlc_map[run][level].size;
@@ -555,9 +557,8 @@ static always_inline int dv_rl2vlc(int run, int l, uint32_t* vlc)
     return size;
 }
 
-static always_inline int dv_rl2vlc_size(int run, int l)
+static always_inline int dv_rl2vlc_size(int run, int level)
 {
-    int level = (l ^ (l >> 8)) - (l >> 8);
     int size;
     
     if (run < DV_VLC_MAP_RUN_SIZE && level < DV_VLC_MAP_LEV_SIZE) {
@@ -572,41 +573,43 @@ static always_inline int dv_rl2vlc_size(int run, int l)
     return size;
 }
 #else
-static always_inline int dv_rl2vlc(int run, int l, uint32_t* vlc)
+static always_inline int dv_rl2vlc(int run, int l, int sign, uint32_t* vlc)
 {
-    *vlc = dv_vlc_map[run][((uint16_t)l)&0x1ff].vlc;
-    return dv_vlc_map[run][((uint16_t)l)&0x1ff].size;
+    *vlc = dv_vlc_map[run][l].vlc | sign;
+    return dv_vlc_map[run][l].size;
 }
 
 static always_inline int dv_rl2vlc_size(int run, int l)
 {
-    return dv_vlc_map[run][((uint16_t)l)&0x1ff].size;
+    return dv_vlc_map[run][l].size;
 }
 #endif
 
 typedef struct EncBlockInfo {
     int area_q[4];
     int bit_size[4];
-    int prev_run[4];
+    int prev[5];
     int cur_ac;
     int cno;
     int dct_mode;
-    DCTELEM *mb;
+    DCTELEM mb[64];
+    uint8_t next[64];
+    uint8_t sign[64];
     uint8_t partial_bit_count;
     uint32_t partial_bit_buffer; /* we can't use uint16_t here */
 } EncBlockInfo;
 
-static always_inline void dv_encode_ac(EncBlockInfo* bi, PutBitContext* pb_pool, 
-                                       int pb_size)
+static always_inline PutBitContext* dv_encode_ac(EncBlockInfo* bi, PutBitContext* pb_pool, 
+                                       PutBitContext* pb_end)
 {
-    int run;
+    int prev;
     int bits_left;
     PutBitContext* pb = pb_pool;
     int size = bi->partial_bit_count;
     uint32_t vlc = bi->partial_bit_buffer;
-    
+
     bi->partial_bit_count = bi->partial_bit_buffer = 0;
-vlc_loop:
+    for(;;){
        /* Find suitable storage space */
        for (; size > (bits_left = put_bits_left(pb)); pb++) {
           if (bits_left) {
@@ -614,69 +617,84 @@ vlc_loop:
 	      put_bits(pb, bits_left, vlc >> size);
 	      vlc = vlc & ((1<<size)-1);
 	  }
-	  if (pb_size == 1) {
+	  if (pb + 1 >= pb_end) {
 	      bi->partial_bit_count = size;
 	      bi->partial_bit_buffer = vlc;
-	      return;
+	      return pb;
 	  }
-	  --pb_size;
        }
        
        /* Store VLC */
        put_bits(pb, size, vlc);
        
+       if(bi->cur_ac>=64)
+           break;
+       
        /* Construct the next VLC */
-       run = 0;
-       for (; bi->cur_ac < 64; bi->cur_ac++, run++) {
-           if (bi->mb[bi->cur_ac]) {
-	       size = dv_rl2vlc(run, bi->mb[bi->cur_ac], &vlc);
-	       bi->cur_ac++;
-	       goto vlc_loop;
-	   }
-       }
-   
-       if (bi->cur_ac == 64) {
+       prev= bi->cur_ac;
+       bi->cur_ac = bi->next[prev];
+       if(bi->cur_ac < 64){
+           size = dv_rl2vlc(bi->cur_ac - prev - 1, bi->mb[bi->cur_ac], bi->sign[bi->cur_ac], &vlc);
+       } else {
            size = 4; vlc = 6; /* End Of Block stamp */
-	   bi->cur_ac++;
-	   goto vlc_loop;
        }
+    }
+    return pb;
 }
 
 static always_inline void dv_set_class_number(DCTELEM* blk, EncBlockInfo* bi, 
                                               const uint8_t* zigzag_scan, int bias)
 {
     int i, area;
-    int run;
-    int classes[] = {12, 24, 36, 0xffff};
+    static const int classes[] = {12, 24, 36, 0xffff};
+    int max=12;
+    int prev=0;
 
-    run = 0;
     bi->mb[0] = blk[0]; 
-    bi->cno = 0;
+    
     for (area = 0; area < 4; area++) {
-       bi->prev_run[area] = run;
-       bi->bit_size[area] = 0;
+       bi->prev[area] = prev;
+       bi->bit_size[area] = 1; // 4 areas 4 bits for EOB :)
        for (i=mb_area_start[area]; i<mb_area_start[area+1]; i++) {
-          bi->mb[i] = (blk[zigzag_scan[i]] / 16);
-          while ((bi->mb[i] ^ (bi->mb[i] >> 8)) > classes[bi->cno])
-              bi->cno++;
+          int level = blk[zigzag_scan[i]];
        
-          if (bi->mb[i]) {
-              bi->bit_size[area] += dv_rl2vlc_size(run, bi->mb[i]);
-	      run = 0;
-          } else
-              ++run;
+          if (level+15 > 30U) {
+              bi->sign[i] = (level>>31)&1;
+              bi->mb[i] = level= ABS(level)>>4;
+              if(level>max) max= level;
+              bi->bit_size[area] += dv_rl2vlc_size(i - prev  - 1, level);
+              bi->next[prev]= i;
+              prev= i;
+          }
        }
     }
-    bi->bit_size[3] += 4; /* EOB marker */
+    bi->next[prev]= i;
+    for(bi->cno = 0; max > classes[bi->cno]; bi->cno++);
+
     bi->cno += bias;
     
-    if (bi->cno >= 3) { /* FIXME: we have to recreate bit_size[], prev_run[] */
+    if (bi->cno >= 3) {
         bi->cno = 3;
-	for (i=1; i<64; i++)
-	   bi->mb[i] /= 2;
+        prev=0;
+        i= bi->next[prev];
+        for (area = 0; area < 4; area++) {
+            bi->prev[area] = prev;
+            bi->bit_size[area] = 1; // 4 areas 4 bits for EOB :)
+            for (; i<mb_area_start[area+1]; i= bi->next[i]) {
+                bi->mb[i] >>=1;
+            
+                if (bi->mb[i]) {
+                    bi->bit_size[area] += dv_rl2vlc_size(i - prev - 1, bi->mb[i]);
+                    bi->next[prev]= i;
+                    prev= i;
+                }
+            }
+        }
+        bi->next[prev]= i;
     }
 }
 
+//FIXME replace this by dsputil
 #define SC(x, y) ((s[x] - s[y]) ^ ((s[x] - s[y]) >> 7))
 static always_inline int dv_guess_dct_mode(DCTELEM *blk) {
     DCTELEM *s;
@@ -705,9 +723,9 @@ static always_inline int dv_guess_dct_mode(DCTELEM *blk) {
 static inline void dv_guess_qnos(EncBlockInfo* blks, int* qnos)
 {
     int size[5];
-    int i, j, k, a, run;
+    int i, j, k, a, prev;
     EncBlockInfo* b;
-    
+
     do {
        b = blks;
        for (i=0; i<5; i++) {
@@ -719,17 +737,19 @@ static inline void dv_guess_qnos(EncBlockInfo* blks, int* qnos)
           for (j=0; j<6; j++, b++) {
 	     for (a=0; a<4; a++) {
 	        if (b->area_q[a] != dv_quant_shifts[qnos[i] + dv_quant_offset[b->cno]][a]) {
-		    b->bit_size[a] = (a==3)?4:0;
+		    b->bit_size[a] = 1; // 4 areas 4 bits for EOB :)
 		    b->area_q[a]++;
-		    run = b->prev_run[a];
-		    for (k=mb_area_start[a]; k<mb_area_start[a+1]; k++) {
-		       b->mb[k] /= 2;
+                    prev= b->prev[a];
+                    for (k= b->next[prev] ; k<mb_area_start[a+1]; k= b->next[k]) {
+		       b->mb[k] >>= 1;
 		       if (b->mb[k]) {
-                           b->bit_size[a] += dv_rl2vlc_size(run, b->mb[k]);
-	                   run = 0;
-                       } else
-                           ++run;
+                           b->bit_size[a] += dv_rl2vlc_size(k - prev - 1, b->mb[k]);
+	                   prev= k;
+                       } else {
+                           b->next[prev] = b->next[k];
+                       }
 		    }
+                    b->prev[a+1]= prev;
 		}
 		size[i] += b->bit_size[a];
 	     }
@@ -755,13 +775,14 @@ static inline void dv_encode_video_segment(DVVideoContext *s,
     uint8_t*  ptr;
     int       do_edge_wrap;
     DCTELEM   block[64] __align8;
-    DCTELEM   sblock[5*6][64] __align8;
     EncBlockInfo  enc_blks[5*6];
     PutBitContext pbs[5*6];
     PutBitContext* pb; 
     EncBlockInfo* enc_blk;
     int       vs_bit_size = 0;
     int       qnos[5];
+    
+    assert((((int)block) & 7) == 0);
    
     enc_blk = &enc_blks[0];
     pb = &pbs[0];
@@ -808,21 +829,22 @@ static inline void dv_encode_video_segment(DVVideoContext *s,
 	        s->get_pixels(block, data, linesize);
 	    }
 	  
-            enc_blk->dct_mode = dv_guess_dct_mode(block);
-	    enc_blk->mb = &sblock[mb_index*6+j][0];
+            if(s->avctx->flags & CODEC_FLAG_INTERLACED_DCT)
+                enc_blk->dct_mode = dv_guess_dct_mode(block);
+            else
+                enc_blk->dct_mode = 0;
 	    enc_blk->area_q[0] = enc_blk->area_q[1] = enc_blk->area_q[2] = enc_blk->area_q[3] = 0;
 	    enc_blk->partial_bit_count = 0;
 	    enc_blk->partial_bit_buffer = 0;
-	    enc_blk->cur_ac = 1;
+	    enc_blk->cur_ac = 0;
 	    
 	    s->fdct[enc_blk->dct_mode](block);
 	    
 	    dv_set_class_number(block, enc_blk, 
-	                        enc_blk->dct_mode ? ff_zigzag248_direct : ff_zigzag_direct,
-				j/4*(j%2));
+	                        enc_blk->dct_mode ? ff_zigzag248_direct : ff_zigzag_direct, j/4);
            
             init_put_bits(pb, ptr, block_sizes[j]/8);
-	    put_bits(pb, 9, (uint16_t)(((enc_blk->mb[0] >> 3) - 1024) >> 2));
+	    put_bits(pb, 9, (uint16_t)(((enc_blk->mb[0] >> 3) - 1024 + 2) >> 2));
 	    put_bits(pb, 1, enc_blk->dct_mode);
 	    put_bits(pb, 2, enc_blk->cno);
 	    
@@ -843,18 +865,22 @@ static inline void dv_encode_video_segment(DVVideoContext *s,
 
     /* First pass over individual cells only */
     for (j=0; j<5*6; j++)
-       dv_encode_ac(&enc_blks[j], &pbs[j], 1);
+       dv_encode_ac(&enc_blks[j], &pbs[j], &pbs[j+1]);
 
     /* Second pass over each MB space */
-    for (j=0; j<5*6; j++) {
-       if (enc_blks[j].cur_ac < 65 || enc_blks[j].partial_bit_count)
-           dv_encode_ac(&enc_blks[j], &pbs[(j/6)*6], 6);
+    for (j=0; j<5*6; j+=6) {
+        pb= &pbs[j];
+        for (i=0; i<6; i++) {
+            if (enc_blks[i+j].partial_bit_count)
+                pb=dv_encode_ac(&enc_blks[i+j], pb, &pbs[j+6]);
+        }
     }
 
     /* Third and final pass over the whole vides segment space */
+    pb= &pbs[0];
     for (j=0; j<5*6; j++) {
-       if (enc_blks[j].cur_ac < 65 || enc_blks[j].partial_bit_count)
-           dv_encode_ac(&enc_blks[j], &pbs[0], 6*5);
+       if (enc_blks[j].partial_bit_count)
+           pb=dv_encode_ac(&enc_blks[j], pb, &pbs[6*5]);
     }
 
     for (j=0; j<5*6; j++)

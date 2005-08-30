@@ -127,10 +127,10 @@ d0a8bdb25d7ed641eab0debcac396eb7 *./data/a-snow53.avi
 2725842 ./data/a-snow53.avi
 dde5895817ad9d219f79a52d0bdfb001 *./data/out.yuv
 stddev:  0.00 PSNR:99.99 bytes:7602176
-feb77e60f0d3c4cb6856a949cf135f21 *./data/a-dv.dv
+a553532dcd54c1c421b52c3b6fece6ef *./data/a-dv.dv
 7200000 ./data/a-dv.dv
-8d6956ba685c53e97dd2a7501d2fe917 *./data/out.yuv
-stddev:  3.33 PSNR:37.66 bytes:7602176
+1a1717b271a7536d641d5e1750d852d9 *./data/out.yuv
+stddev:  3.16 PSNR:38.12 bytes:7602176
 920c610ec324b772d882b0717e375943 *./data/a-svq1.mov
 768683 ./data/a-svq1.mov
 89b1946242e6998e05fc9a6e09668edd *./data/out.yuv
