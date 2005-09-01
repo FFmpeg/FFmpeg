@@ -620,8 +620,14 @@ static int rv10_decode_packet(AVCodecContext *avctx,
 //if(s->pict_type == P_TYPE) return 0;
 
     if ((s->mb_x == 0 && s->mb_y == 0) || s->current_picture_ptr==NULL) {
+        if(s->current_picture_ptr){ //FIXME write parser so we always have complete frames?
+            ff_er_frame_end(s);
+            MPV_frame_end(s);
+            s->mb_x= s->mb_y = s->resync_mb_x = s->resync_mb_y= 0;
+        }
         if(MPV_frame_start(s, avctx) < 0)
             return -1;
+        ff_er_frame_start(s);
     }
 
 #ifdef DEBUG
@@ -673,7 +679,7 @@ static int rv10_decode_packet(AVCodecContext *avctx,
         s->mv_type = MV_TYPE_16X16; 
         ret=ff_h263_decode_mb(s, s->block);
 
-        if (ret == SLICE_ERROR) {
+        if (ret == SLICE_ERROR || s->gb.size_in_bits < get_bits_count(&s->gb)) {
             av_log(s->avctx, AV_LOG_ERROR, "ERROR at MB %d %d\n", s->mb_x, s->mb_y);
             return -1;
         }
@@ -692,6 +698,8 @@ static int rv10_decode_packet(AVCodecContext *avctx,
             s->first_slice_line=0;
         if(ret == SLICE_END) break;
     }
+
+    ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x-1, s->mb_y, AC_END|DC_END|MV_END);
 
     return buf_size;
 }
@@ -723,15 +731,14 @@ static int rv10_decode_frame(AVCodecContext *avctx,
             else
                 size= avctx->slice_offset[i+1] - offset;
 
-            if( rv10_decode_packet(avctx, buf+offset, size) < 0 )
-                return -1;
+            rv10_decode_packet(avctx, buf+offset, size);
         }
     }else{
-        if( rv10_decode_packet(avctx, buf, buf_size) < 0 )
-            return -1;
+        rv10_decode_packet(avctx, buf, buf_size);
     }
     
     if(s->mb_y>=s->mb_height){
+        ff_er_frame_end(s);
         MPV_frame_end(s);
     
         if(s->pict_type==B_TYPE || s->low_delay){
@@ -743,6 +750,7 @@ static int rv10_decode_frame(AVCodecContext *avctx,
         }
         if(s->last_picture_ptr || s->low_delay)
             *data_size = sizeof(AVFrame);
+        s->current_picture_ptr= NULL; //so we can detect if frame_end wasnt called (find some nicer solution...)
     }
 
     return buf_size;
