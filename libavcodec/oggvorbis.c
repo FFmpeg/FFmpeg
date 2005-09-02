@@ -30,6 +30,11 @@ typedef struct OggVorbisContext {
 
 static int oggvorbis_init_encoder(vorbis_info *vi, AVCodecContext *avccontext) {
 
+    if(avccontext->flags & CODEC_FLAG_QSCALE) {
+        return vorbis_encode_init_vbr(vi, avccontext->channels,
+                avccontext->sample_rate,
+                avccontext->global_quality / (float)FF_QP2LAMBDA);
+    }
 #ifdef OGGVORBIS_VBR_BY_ESTIMATE
     /* variable bitrate by estimate */
 
@@ -87,6 +92,8 @@ static int oggvorbis_encode_init(AVCodecContext *avccontext) {
     vorbis_comment_clear(&context->vc);
        
     avccontext->frame_size = OGGVORBIS_FRAME_SIZE ;
+    avccontext->time_base.den = avccontext->sample_rate;
+    avccontext->time_base.num = 1;
  
     avccontext->coded_frame= avcodec_alloc_frame();
     avccontext->coded_frame->key_frame= 1;
