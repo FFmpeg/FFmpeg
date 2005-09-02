@@ -228,7 +228,13 @@ static int dvvideo_init(AVCodecContext *avctx)
     /* 248DCT setup */
     s->fdct[1] = dsp.fdct248;
     s->idct_put[1] = simple_idct248_put;  // FIXME: need to add it to DSP
-    memcpy(s->dv_zigzag[1], ff_zigzag248_direct, 64);
+    if(avctx->lowres){
+        for (i=0; i<64; i++){
+            int j= ff_zigzag248_direct[i];
+            s->dv_zigzag[1][i] = dsp.idct_permutation[(j&7) + (j&8)*4 + (j&48)/2];
+        }
+    }else
+        memcpy(s->dv_zigzag[1], ff_zigzag248_direct, 64);
 
     /* XXX: do it only for constant case */
     dv_build_unquantize_tables(s, dsp.idct_permutation);
@@ -377,6 +383,7 @@ static inline void dv_decode_video_segment(DVVideoContext *s,
     DCTELEM sblock[5*6][64] __align8;
     uint8_t mb_bit_buffer[80 + 4] __align8; /* allow some slack */
     uint8_t vs_bit_buffer[5 * 80 + 4] __align8; /* allow some slack */
+    const int log2_blocksize= 3-s->avctx->lowres;
 	    
     assert((((int)mb_bit_buffer)&7)==0);
     assert((((int)vs_bit_buffer)&7)==0);
@@ -482,39 +489,38 @@ static inline void dv_decode_video_segment(DVVideoContext *s,
         v = *mb_pos_ptr++;
         mb_x = v & 0xff;
         mb_y = v >> 8;
-        y_ptr = s->picture.data[0] + (mb_y * s->picture.linesize[0] * 8) + (mb_x * 8);
+        y_ptr = s->picture.data[0] + ((mb_y * s->picture.linesize[0] + mb_x)<<log2_blocksize);
         if (s->sys->pix_fmt == PIX_FMT_YUV411P)
-            c_offset = (mb_y * s->picture.linesize[1] * 8) + ((mb_x >> 2) * 8);
+            c_offset = ((mb_y * s->picture.linesize[1] + (mb_x >> 2))<<log2_blocksize);
         else
-            c_offset = ((mb_y >> 1) * s->picture.linesize[1] * 8) + ((mb_x >> 1) * 8);
+            c_offset = (((mb_y >> 1) * s->picture.linesize[1] + (mb_x >> 1))<<log2_blocksize);
         for(j = 0;j < 6; j++) {
-            idct_put = s->idct_put[mb->dct_mode];
+            idct_put = s->idct_put[mb->dct_mode && log2_blocksize==3];
             if (j < 4) {
                 if (s->sys->pix_fmt == PIX_FMT_YUV411P && mb_x < (704 / 8)) {
                     /* NOTE: at end of line, the macroblock is handled as 420 */
-                    idct_put(y_ptr + (j * 8), s->picture.linesize[0], block);
+                    idct_put(y_ptr + (j<<log2_blocksize), s->picture.linesize[0], block);
                 } else {
-                    idct_put(y_ptr + ((j & 1) * 8) + ((j >> 1) * 8 * s->picture.linesize[0]),
+                    idct_put(y_ptr + (((j & 1) + (j >> 1) * s->picture.linesize[0])<<log2_blocksize),
                              s->picture.linesize[0], block);
                 }
             } else {
                 if (s->sys->pix_fmt == PIX_FMT_YUV411P && mb_x >= (704 / 8)) {
                     uint64_t aligned_pixels[64/8];
                     uint8_t *pixels= (uint8_t*)aligned_pixels;
-		    uint8_t *c_ptr, *c_ptr1, *ptr;
-                    int y, linesize;
+		    uint8_t *c_ptr, *c_ptr1, *ptr, *ptr1;
+                    int x, y, linesize;
                     /* NOTE: at end of line, the macroblock is handled as 420 */
                     idct_put(pixels, 8, block);
                     linesize = s->picture.linesize[6 - j];
                     c_ptr = s->picture.data[6 - j] + c_offset;
                     ptr = pixels;
-                    for(y = 0;y < 8; y++) {
-                        /* convert to 411P */
-                        c_ptr1 = c_ptr + 8*linesize;
-                        c_ptr[0]= ptr[0]; c_ptr1[0]= ptr[4];
-                        c_ptr[1]= ptr[1]; c_ptr1[1]= ptr[5];
-                        c_ptr[2]= ptr[2]; c_ptr1[2]= ptr[6];
-                        c_ptr[3]= ptr[3]; c_ptr1[3]= ptr[7];
+                    for(y = 0;y < (1<<log2_blocksize); y++) {
+                        ptr1= ptr + (1<<(log2_blocksize-1));
+                        c_ptr1 = c_ptr + (linesize<<log2_blocksize);
+                        for(x=0; x < (1<<(log2_blocksize-1)); x++){
+                            c_ptr[x]= ptr[x]; c_ptr1[x]= ptr1[x];
+                        }
                         c_ptr += linesize;
                         ptr += 8;
                     }
@@ -924,8 +930,7 @@ static int dvvideo_decode_frame(AVCodecContext *avctx,
     s->picture.key_frame = 1;
     s->picture.pict_type = FF_I_TYPE;
     avctx->pix_fmt = s->sys->pix_fmt;
-    avctx->width = s->sys->width;
-    avctx->height = s->sys->height;
+    avcodec_set_dimensions(avctx, s->sys->width, s->sys->height);
     if(avctx->get_buffer(avctx, &s->picture) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return -1;
