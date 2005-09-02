@@ -188,6 +188,7 @@ static int pcm_encode_close(AVCodecContext *avctx)
  * \brief convert samples from 16 bit
  * \param bps byte per sample for the destination format, must be >= 2
  * \param le 0 for big-, 1 for little-endian
+ * \param us 0 for signed, 1 for unsigned output
  * \param samples input samples
  * \param dst output samples
  * \param n number of samples in samples buffer.
@@ -378,6 +379,7 @@ static int pcm_decode_init(AVCodecContext * avctx)
  * \brief convert samples to 16 bit
  * \param bps byte per sample for the source format, must be >= 2
  * \param le 0 for big-, 1 for little-endian
+ * \param us 0 for signed, 1 for unsigned input
  * \param src input samples
  * \param samples output samples
  * \param src_len number of bytes in src
