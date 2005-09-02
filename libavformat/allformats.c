@@ -109,6 +109,7 @@ void av_register_all(void)
     sol_init();
     ea_init();
     nsvdec_init();
+    daud_init();
 
 #ifdef CONFIG_ENCODERS
     /* image formats */
