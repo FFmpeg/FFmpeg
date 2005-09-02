@@ -599,6 +599,19 @@ static void do_audio_out(AVFormatContext *s,
         /* output a pcm frame */
         /* XXX: change encoding codec API to avoid this ? */
         switch(enc->codec->id) {
+        case CODEC_ID_PCM_S32LE:
+        case CODEC_ID_PCM_S32BE:
+        case CODEC_ID_PCM_U32LE:
+        case CODEC_ID_PCM_U32BE:
+            size_out = size_out << 1;
+            break;
+        case CODEC_ID_PCM_S24LE:
+        case CODEC_ID_PCM_S24BE:
+        case CODEC_ID_PCM_U24LE:
+        case CODEC_ID_PCM_U24BE:
+        case CODEC_ID_PCM_S24DAUD:
+            size_out = size_out / 2 * 3;
+            break;
         case CODEC_ID_PCM_S16LE:
         case CODEC_ID_PCM_S16BE:
         case CODEC_ID_PCM_U16LE:

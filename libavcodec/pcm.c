@@ -23,6 +23,7 @@
  */
  
 #include "avcodec.h"
+#include "bitstream.h" // for ff_reverse
 
 /* from g711.c by SUN microsystems (unrestricted use) */
 
@@ -128,6 +129,19 @@ static int pcm_encode_init(AVCodecContext *avctx)
     }
     
     switch(avctx->codec->id) {
+    case CODEC_ID_PCM_S32LE:
+    case CODEC_ID_PCM_S32BE:
+    case CODEC_ID_PCM_U32LE:
+    case CODEC_ID_PCM_U32BE:
+        avctx->block_align = 4 * avctx->channels;
+        break;
+    case CODEC_ID_PCM_S24LE:
+    case CODEC_ID_PCM_S24BE:
+    case CODEC_ID_PCM_U24LE:
+    case CODEC_ID_PCM_U24BE:
+    case CODEC_ID_PCM_S24DAUD:
+        avctx->block_align = 3 * avctx->channels;
+        break;
     case CODEC_ID_PCM_S16LE:
     case CODEC_ID_PCM_S16BE:
     case CODEC_ID_PCM_U16LE:
@@ -170,6 +184,29 @@ static int pcm_encode_close(AVCodecContext *avctx)
     return 0;
 }
 
+/**
+ * \brief convert samples from 16 bit
+ * \param bps byte per sample for the destination format, must be >= 2
+ * \param le 0 for big-, 1 for little-endian
+ * \param samples input samples
+ * \param dst output samples
+ * \param n number of samples in samples buffer.
+ */
+static inline void encode_from16(int bps, int le, int us,
+                               short **samples, uint8_t **dst, int n) {
+    if (bps > 2)
+        memset(*dst, 0, n * bps);
+    if (le) *dst += bps - 2;
+    for(;n>0;n--) {
+        register int v = *(*samples)++;
+        if (us) v += 0x8000;
+        (*dst)[le] = v >> 8;
+        (*dst)[1 - le] = v;
+        *dst += bps;
+    }
+    if (le) *dst -= bps - 2;
+}
+
 static int pcm_encode_frame(AVCodecContext *avctx,
 			    unsigned char *frame, int buf_size, void *data)
 {
@@ -178,6 +215,19 @@ static int pcm_encode_frame(AVCodecContext *avctx,
     unsigned char *dst;
 
     switch(avctx->codec->id) {
+    case CODEC_ID_PCM_S32LE:
+    case CODEC_ID_PCM_S32BE:
+    case CODEC_ID_PCM_U32LE:
+    case CODEC_ID_PCM_U32BE:
+        sample_size = 4;
+        break;
+    case CODEC_ID_PCM_S24LE:
+    case CODEC_ID_PCM_S24BE:
+    case CODEC_ID_PCM_U24LE:
+    case CODEC_ID_PCM_U24BE:
+    case CODEC_ID_PCM_S24DAUD:
+        sample_size = 3;
+        break;
     case CODEC_ID_PCM_S16LE:
     case CODEC_ID_PCM_S16BE:
     case CODEC_ID_PCM_U16LE:
@@ -193,6 +243,43 @@ static int pcm_encode_frame(AVCodecContext *avctx,
     dst = frame;
 
     switch(avctx->codec->id) {
+    case CODEC_ID_PCM_S32LE:
+        encode_from16(4, 1, 0, &samples, &dst, n);
+        break;
+    case CODEC_ID_PCM_S32BE:
+        encode_from16(4, 0, 0, &samples, &dst, n);
+        break;
+    case CODEC_ID_PCM_U32LE:
+        encode_from16(4, 1, 1, &samples, &dst, n);
+        break;
+    case CODEC_ID_PCM_U32BE:
+        encode_from16(4, 0, 1, &samples, &dst, n);
+        break;
+    case CODEC_ID_PCM_S24LE:
+        encode_from16(3, 1, 0, &samples, &dst, n);
+        break;
+    case CODEC_ID_PCM_S24BE:
+        encode_from16(3, 0, 0, &samples, &dst, n);
+        break;
+    case CODEC_ID_PCM_U24LE:
+        encode_from16(3, 1, 1, &samples, &dst, n);
+        break;
+    case CODEC_ID_PCM_U24BE:
+        encode_from16(3, 0, 1, &samples, &dst, n);
+        break;
+    case CODEC_ID_PCM_S24DAUD:
+        for(;n>0;n--) {
+            uint32_t tmp = ff_reverse[*samples >> 8] +
+                           (ff_reverse[*samples & 0xff] << 8);
+            tmp <<= 4; // sync flags would go here
+            dst[2] = tmp & 0xff;
+            tmp >>= 8;
+            dst[1] = tmp & 0xff;
+            dst[0] = tmp >> 8;
+            samples++;
+            dst += 3;
+        }
+        break;
     case CODEC_ID_PCM_S16LE:
         for(;n>0;n--) {
             v = *samples++;
@@ -287,6 +374,26 @@ static int pcm_decode_init(AVCodecContext * avctx)
     return 0;
 }
 
+/**
+ * \brief convert samples to 16 bit
+ * \param bps byte per sample for the source format, must be >= 2
+ * \param le 0 for big-, 1 for little-endian
+ * \param src input samples
+ * \param samples output samples
+ * \param src_len number of bytes in src
+ */
+static inline void decode_to16(int bps, int le, int us,
+                               uint8_t **src, short **samples, int src_len)
+{
+    register int n = src_len / bps;
+    if (le) *src += bps - 2;
+    for(;n>0;n--) {
+        *(*samples)++ = ((*src)[le] << 8 | (*src)[1 - le]) - (us?0x8000:0);
+        *src += bps;
+    }
+    if (le) *src -= bps - 2;
+}
+
 static int pcm_decode_frame(AVCodecContext *avctx,
 			    void *data, int *data_size,
 			    uint8_t *buf, int buf_size)
@@ -303,6 +410,40 @@ static int pcm_decode_frame(AVCodecContext *avctx,
         buf_size = AVCODEC_MAX_AUDIO_FRAME_SIZE/2;
 
     switch(avctx->codec->id) {
+    case CODEC_ID_PCM_S32LE:
+        decode_to16(4, 1, 0, &src, &samples, buf_size);
+        break;
+    case CODEC_ID_PCM_S32BE:
+        decode_to16(4, 0, 0, &src, &samples, buf_size);
+        break;
+    case CODEC_ID_PCM_U32LE:
+        decode_to16(4, 1, 1, &src, &samples, buf_size);
+        break;
+    case CODEC_ID_PCM_U32BE:
+        decode_to16(4, 0, 1, &src, &samples, buf_size);
+        break;
+    case CODEC_ID_PCM_S24LE:
+        decode_to16(3, 1, 0, &src, &samples, buf_size);
+        break;
+    case CODEC_ID_PCM_S24BE:
+        decode_to16(3, 0, 0, &src, &samples, buf_size);
+        break;
+    case CODEC_ID_PCM_U24LE:
+        decode_to16(3, 1, 1, &src, &samples, buf_size);
+        break;
+    case CODEC_ID_PCM_U24BE:
+        decode_to16(3, 0, 1, &src, &samples, buf_size);
+        break;
+    case CODEC_ID_PCM_S24DAUD:
+        n = buf_size / 3;
+        for(;n>0;n--) {
+          uint32_t v = src[0] << 16 | src[1] << 8 | src[2];
+          v >>= 4; // sync flags are here
+          *samples++ = ff_reverse[(v >> 8) & 0xff] +
+                       (ff_reverse[v & 0xff] << 8);
+          src += 3;
+        }
+        break;
     case CODEC_ID_PCM_S16LE:
         n = buf_size >> 1;
         for(;n>0;n--) {
@@ -382,6 +523,15 @@ AVCodec name ## _decoder = {                    \
     pcm_decode_frame,                           \
 }
 
+PCM_CODEC(CODEC_ID_PCM_S32LE, pcm_s32le);
+PCM_CODEC(CODEC_ID_PCM_S32BE, pcm_s32be);
+PCM_CODEC(CODEC_ID_PCM_U32LE, pcm_u32le);
+PCM_CODEC(CODEC_ID_PCM_U32BE, pcm_u32be);
+PCM_CODEC(CODEC_ID_PCM_S24LE, pcm_s24le);
+PCM_CODEC(CODEC_ID_PCM_S24BE, pcm_s24be);
+PCM_CODEC(CODEC_ID_PCM_U24LE, pcm_u24le);
+PCM_CODEC(CODEC_ID_PCM_U24BE, pcm_u24be);
+PCM_CODEC(CODEC_ID_PCM_S24DAUD, pcm_s24daud);
 PCM_CODEC(CODEC_ID_PCM_S16LE, pcm_s16le);
 PCM_CODEC(CODEC_ID_PCM_S16BE, pcm_s16be);
 PCM_CODEC(CODEC_ID_PCM_U16LE, pcm_u16le);

@@ -25,6 +25,8 @@ const CodecTag codec_wav_tags[] = {
     { CODEC_ID_AC3, 0x2000 },
     { CODEC_ID_PCM_S16LE, 0x01 },
     { CODEC_ID_PCM_U8, 0x01 }, /* must come after s16le in this list */
+    { CODEC_ID_PCM_S24LE, 0x01 },
+    { CODEC_ID_PCM_S32LE, 0x01 },
     { CODEC_ID_PCM_ALAW, 0x06 },
     { CODEC_ID_PCM_MULAW, 0x07 },
     { CODEC_ID_ADPCM_MS, 0x02 },
@@ -68,6 +70,10 @@ int put_wav_header(ByteIOContext *pb, AVCodecContext *enc)
         bps = 0;
     } else if (enc->codec_id == CODEC_ID_ADPCM_IMA_WAV || enc->codec_id == CODEC_ID_ADPCM_MS || enc->codec_id == CODEC_ID_ADPCM_G726 || enc->codec_id == CODEC_ID_ADPCM_YAMAHA) { //
         bps = 4;
+    } else if (enc->codec_id == CODEC_ID_PCM_S24LE) {
+        bps = 24;
+    } else if (enc->codec_id == CODEC_ID_PCM_S32LE) {
+        bps = 32;
     } else {
         bps = 16;
     }
@@ -82,6 +88,8 @@ int put_wav_header(ByteIOContext *pb, AVCodecContext *enc)
     } else
         blkalign = enc->channels*bps >> 3;
     if (enc->codec_id == CODEC_ID_PCM_U8 ||
+        enc->codec_id == CODEC_ID_PCM_S24LE ||
+        enc->codec_id == CODEC_ID_PCM_S32LE ||
         enc->codec_id == CODEC_ID_PCM_S16LE) {
         bytespersec = enc->sample_rate * blkalign;
     } else {
@@ -179,6 +187,10 @@ int wav_codec_get_id(unsigned int tag, int bps)
     /* handle specific u8 codec */
     if (id == CODEC_ID_PCM_S16LE && bps == 8)
         id = CODEC_ID_PCM_U8;
+    if (id == CODEC_ID_PCM_S16LE && bps == 24)
+        id = CODEC_ID_PCM_S24LE;
+    if (id == CODEC_ID_PCM_S16LE && bps == 32)
+        id = CODEC_ID_PCM_S32LE;
     return id;
 }
 

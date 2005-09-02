@@ -524,6 +524,15 @@ void avcodec_register_all(void)
     register_avcodec(& name ## _decoder);
 #endif
 
+PCM_CODEC(CODEC_ID_PCM_S32LE, pcm_s32le);
+PCM_CODEC(CODEC_ID_PCM_S32BE, pcm_s32be);
+PCM_CODEC(CODEC_ID_PCM_U32LE, pcm_u32le);
+PCM_CODEC(CODEC_ID_PCM_U32BE, pcm_u32be);
+PCM_CODEC(CODEC_ID_PCM_S24LE, pcm_s24le);
+PCM_CODEC(CODEC_ID_PCM_S24BE, pcm_s24be);
+PCM_CODEC(CODEC_ID_PCM_U24LE, pcm_u24le);
+PCM_CODEC(CODEC_ID_PCM_U24BE, pcm_u24be);
+PCM_CODEC(CODEC_ID_PCM_S24DAUD, pcm_s24daud);
 PCM_CODEC(CODEC_ID_PCM_S16LE, pcm_s16le);
 PCM_CODEC(CODEC_ID_PCM_S16BE, pcm_s16be);
 PCM_CODEC(CODEC_ID_PCM_U16LE, pcm_u16le);

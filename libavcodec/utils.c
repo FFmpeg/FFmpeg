@@ -828,6 +828,19 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
         
         /* for PCM codecs, compute bitrate directly */
         switch(enc->codec_id) {
+        case CODEC_ID_PCM_S32LE:
+        case CODEC_ID_PCM_S32BE:
+        case CODEC_ID_PCM_U32LE:
+        case CODEC_ID_PCM_U32BE:
+            bitrate = enc->sample_rate * enc->channels * 32;
+            break;
+        case CODEC_ID_PCM_S24LE:
+        case CODEC_ID_PCM_S24BE:
+        case CODEC_ID_PCM_U24LE:
+        case CODEC_ID_PCM_U24BE:
+        case CODEC_ID_PCM_S24DAUD:
+            bitrate = enc->sample_rate * enc->channels * 24;
+            break;
         case CODEC_ID_PCM_S16LE:
         case CODEC_ID_PCM_S16BE:
         case CODEC_ID_PCM_U16LE:
