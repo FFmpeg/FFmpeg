@@ -162,11 +162,10 @@ void ff_h264_idct_add_mmx2(uint8_t *dst, int16_t *block, int stride)
         /* delta = (avg(q0, p1>>2) + (d&a))
          *       - (avg(p0, q1>>2) + (d&~a)) */\
         "pavgb   %%mm2, %%mm0  \n\t"\
-        "movq    %%mm5, %%mm6  \n\t"\
-        "pand    %%mm4, %%mm6  \n\t"\
-        "paddusb %%mm6, %%mm0  \n\t"\
+        "pand    %%mm5, %%mm4  \n\t"\
+        "paddusb %%mm4, %%mm0  \n\t"\
         "pavgb   %%mm1, %%mm3  \n\t"\
-        "pandn   %%mm5, %%mm4  \n\t"\
+        "pxor    %%mm5, %%mm4  \n\t"\
         "paddusb %%mm4, %%mm3  \n\t"\
         /* p0 += clip(delta, -tc0, tc0)
          * q0 -= clip(delta, -tc0, tc0) */\
