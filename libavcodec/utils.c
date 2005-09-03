@@ -767,12 +767,14 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
         codec_name = enc->codec_name;
     } else {
         /* output avi tags */
-        if (enc->codec_type == CODEC_TYPE_VIDEO) {
-            snprintf(buf1, sizeof(buf1), "%c%c%c%c", 
+        if(   isprint(enc->codec_tag&0xFF) && isprint((enc->codec_tag>>8)&0xFF) 
+           && isprint((enc->codec_tag>>16)&0xFF) && isprint((enc->codec_tag>>24)&0xFF)){
+            snprintf(buf1, sizeof(buf1), "%c%c%c%c / 0x%04X", 
                      enc->codec_tag & 0xff,
                      (enc->codec_tag >> 8) & 0xff,
                      (enc->codec_tag >> 16) & 0xff,
-                     (enc->codec_tag >> 24) & 0xff);
+                     (enc->codec_tag >> 24) & 0xff,
+                      enc->codec_tag);
         } else {
             snprintf(buf1, sizeof(buf1), "0x%04x", enc->codec_tag);
         }
