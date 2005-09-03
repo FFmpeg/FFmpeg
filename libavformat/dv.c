@@ -67,7 +67,7 @@ enum dv_pack_type {
      dv_audio_rectime = 0x53,
      dv_video_source  = 0x60,
      dv_video_control = 0x61,
-     dv_viedo_recdate = 0x62,
+     dv_video_recdate = 0x62,
      dv_video_rectime = 0x63,
      dv_unknown_pack  = 0xff,
 };
@@ -251,7 +251,7 @@ static int dv_write_pack(enum dv_pack_type pack_id, DVMuxContext *c, uint8_t* bu
                     0x7f;     /* genre category */
 	  break;
     case dv_audio_recdate:
-    case dv_viedo_recdate:  /* VAUX recording date */
+    case dv_video_recdate:  /* VAUX recording date */
           ct = c->start_time + (time_t)(c->frames / 
 	       ((float)c->sys->frame_rate / (float)c->sys->frame_rate_base));
           brktimegm(ct, &tc);
