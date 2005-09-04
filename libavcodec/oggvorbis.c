@@ -146,6 +146,7 @@ static int oggvorbis_encode_frame(AVCodecContext *avccontext,
 
         l=  op2->bytes;
         avccontext->coded_frame->pts= av_rescale_q(op2->granulepos, (AVRational){1, avccontext->sample_rate}, avccontext->time_base);
+        //FIXME we should reorder the user supplied pts and not assume that they are spaced by 1/sample_rate
 
         memcpy(packets, op2->packet, l);
         context->buffer_index -= l + sizeof(ogg_packet);
