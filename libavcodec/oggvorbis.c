@@ -145,7 +145,7 @@ static int oggvorbis_encode_frame(AVCodecContext *avccontext,
         op2->packet = context->buffer + sizeof(ogg_packet);
 
         l=  op2->bytes;
-        avccontext->coded_frame->pts= op2->granulepos;
+        avccontext->coded_frame->pts= av_rescale_q(op2->granulepos, (AVRational){1, avccontext->sample_rate}, avccontext->time_base);
 
         memcpy(packets, op2->packet, l);
         context->buffer_index -= l + sizeof(ogg_packet);
