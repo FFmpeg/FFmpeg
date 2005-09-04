@@ -781,7 +781,7 @@ static int mov_read_stco(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
     AVStream *st = c->fc->streams[c->fc->nb_streams-1];
-    //MOVStreamContext *sc = (MOVStreamContext *)st->priv_data;
+    MOVStreamContext *sc = (MOVStreamContext *)st->priv_data;
     int entries, frames_per_sample;
     uint32_t format;
     uint8_t codec_name[32];
@@ -1071,6 +1071,9 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
                 st->codec->bits_per_sample = get_be16(pb); /* bits per sample */
                 get_be32(pb);
                 st->codec->sample_rate = get_be16(pb); /* sample rate, not always correct */
+                if(st->codec->sample_rate == 1) //nonsese rate? -> ignore
+                    st->codec->sample_rate= 0;
+
                 get_be16(pb);
                 c->mp4=1;
                 
@@ -1195,6 +1198,10 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
                 url_fskip(pb, size);
             }
         }
+    }
+    
+    if(st->codec->codec_type==CODEC_TYPE_AUDIO && st->codec->sample_rate==0 && sc->time_scale>1) {
+        st->codec->sample_rate= sc->time_scale;
     }
 
     return 0;
