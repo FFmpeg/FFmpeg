@@ -1683,6 +1683,7 @@ static int av_encode(AVFormatContext **output_files,
             codec->bit_rate = icodec->bit_rate;
             codec->extradata= icodec->extradata;
             codec->extradata_size= icodec->extradata_size;
+            codec->time_base = icodec->time_base;
             switch(codec->codec_type) {
             case CODEC_TYPE_AUDIO:
                 codec->sample_rate = icodec->sample_rate;
@@ -1691,7 +1692,6 @@ static int av_encode(AVFormatContext **output_files,
                 codec->block_align= icodec->block_align;
                 break;
             case CODEC_TYPE_VIDEO:
-                codec->time_base = icodec->time_base;
                 codec->width = icodec->width;
                 codec->height = icodec->height;
                 codec->has_b_frames = icodec->has_b_frames;
@@ -3531,6 +3531,7 @@ static void new_audio_stream(AVFormatContext *oc)
             audio_enc->channels = audio_channels;
     }
     audio_enc->sample_rate = audio_sample_rate;
+    audio_enc->time_base= (AVRational){1, audio_sample_rate};
     if (audio_language) {
         pstrcpy(st->language, sizeof(st->language), audio_language);
         av_free(audio_language);
