@@ -2578,6 +2578,8 @@ static inline void mc_dir_part(H264Context *h, Picture *pic, int n, int square, 
     int emu=0;
     const int full_mx= mx>>2;
     const int full_my= my>>2;
+    const int pic_width  = 16*s->mb_width;
+    const int pic_height = 16*s->mb_height;
     
     assert(pic->data[0]);
     
@@ -2586,9 +2588,9 @@ static inline void mc_dir_part(H264Context *h, Picture *pic, int n, int square, 
     
     if(   full_mx < 0-extra_width 
        || full_my < 0-extra_height 
-       || full_mx + 16/*FIXME*/ > s->width + extra_width 
-       || full_my + 16/*FIXME*/ > s->height + extra_height){
-        ff_emulated_edge_mc(s->edge_emu_buffer, src_y - 2 - 2*s->linesize, s->linesize, 16+5, 16+5/*FIXME*/, full_mx-2, full_my-2, s->width, s->height);
+       || full_mx + 16/*FIXME*/ > pic_width + extra_width 
+       || full_my + 16/*FIXME*/ > pic_height + extra_height){
+        ff_emulated_edge_mc(s->edge_emu_buffer, src_y - 2 - 2*s->linesize, s->linesize, 16+5, 16+5/*FIXME*/, full_mx-2, full_my-2, pic_width, pic_height);
             src_y= s->edge_emu_buffer + 2 + 2*s->linesize;
         emu=1;
     }
@@ -2601,13 +2603,13 @@ static inline void mc_dir_part(H264Context *h, Picture *pic, int n, int square, 
     if(s->flags&CODEC_FLAG_GRAY) return;
     
     if(emu){
-        ff_emulated_edge_mc(s->edge_emu_buffer, src_cb, s->uvlinesize, 9, 9/*FIXME*/, (mx>>3), (my>>3), s->width>>1, s->height>>1);
+        ff_emulated_edge_mc(s->edge_emu_buffer, src_cb, s->uvlinesize, 9, 9/*FIXME*/, (mx>>3), (my>>3), pic_width>>1, pic_height>>1);
             src_cb= s->edge_emu_buffer;
     }
     chroma_op(dest_cb, src_cb, s->uvlinesize, chroma_height, mx&7, my&7);
 
     if(emu){
-        ff_emulated_edge_mc(s->edge_emu_buffer, src_cr, s->uvlinesize, 9, 9/*FIXME*/, (mx>>3), (my>>3), s->width>>1, s->height>>1);
+        ff_emulated_edge_mc(s->edge_emu_buffer, src_cr, s->uvlinesize, 9, 9/*FIXME*/, (mx>>3), (my>>3), pic_width>>1, pic_height>>1);
             src_cr= s->edge_emu_buffer;
     }
     chroma_op(dest_cr, src_cr, s->uvlinesize, chroma_height, mx&7, my&7);
