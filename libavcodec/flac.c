@@ -406,7 +406,7 @@ static inline int decode_subframe(FLACContext *s, int channel)
 
     if (get_bits1(&s->gb))
     {
-        av_log(s->avctx, AV_LOG_DEBUG, "invalid subframe padding\n");
+        av_log(s->avctx, AV_LOG_ERROR, "invalid subframe padding\n");
         return -1;
     }
     type = get_bits(&s->gb, 6);
@@ -462,7 +462,7 @@ static inline int decode_subframe(FLACContext *s, int channel)
     }
     else
     {
-        av_log(s->avctx, AV_LOG_DEBUG, "invalid coding type\n");
+        av_log(s->avctx, AV_LOG_ERROR, "invalid coding type\n");
         return -1;
     }
         
@@ -492,7 +492,7 @@ static int decode_frame(FLACContext *s)
         decorrelation = LEFT_SIDE + assignment - 8;
     else
     {
-        av_log(s->avctx, AV_LOG_DEBUG, "unsupported channel assignment %d (channels=%d)\n", assignment, s->channels);
+        av_log(s->avctx, AV_LOG_ERROR, "unsupported channel assignment %d (channels=%d)\n", assignment, s->channels);
         return -1;
     }
         
@@ -503,13 +503,13 @@ static int decode_frame(FLACContext *s)
         bps = sample_size_table[sample_size_code];
     else 
     {
-        av_log(s->avctx, AV_LOG_DEBUG, "invalid sample size code (%d)\n", sample_size_code);
+        av_log(s->avctx, AV_LOG_ERROR, "invalid sample size code (%d)\n", sample_size_code);
         return -1;
     }
 
     if (get_bits1(&s->gb))
     {
-        av_log(s->avctx, AV_LOG_DEBUG, "broken stream, invalid padding\n");
+        av_log(s->avctx, AV_LOG_ERROR, "broken stream, invalid padding\n");
         return -1;
     }
     
