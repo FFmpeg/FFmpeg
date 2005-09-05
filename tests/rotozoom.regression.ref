@@ -131,10 +131,10 @@ a553532dcd54c1c421b52c3b6fece6ef *./data/a-dv.dv
 7200000 ./data/a-dv.dv
 1a1717b271a7536d641d5e1750d852d9 *./data/out.yuv
 stddev:  3.16 PSNR:38.12 bytes:7602176
-920c610ec324b772d882b0717e375943 *./data/a-svq1.mov
-768683 ./data/a-svq1.mov
-89b1946242e6998e05fc9a6e09668edd *./data/out.yuv
-stddev:  3.43 PSNR:37.39 bytes:7602176
+102bc57b87c9ab3b25e903a357783a65 *./data/a-svq1.mov
+769519 ./data/a-svq1.mov
+44777d1ddbccd0ef7f8d08394465670c *./data/out.yuv
+stddev:  3.44 PSNR:37.38 bytes:7602176
 21f8ff9f1daacd9133683bb4ea0f50a4 *./data/a-mp2.mp2
 95712 ./data/a-mp2.mp2
 6956f2c5185c4edbae648c614992a14b *./data/out.wav

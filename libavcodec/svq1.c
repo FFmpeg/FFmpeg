@@ -1118,8 +1118,15 @@ static int svq1_encode_plane(SVQ1Context *s, int plane, unsigned char *src_plane
         s->m.b8_stride= 2*s->m.mb_width+1;
         s->m.f_code=1;
         s->m.pict_type= s->picture.pict_type;
-        s->m.qscale= s->picture.quality/FF_QP2LAMBDA;
         s->m.me_method= s->avctx->me_method;
+        s->m.me.scene_change_score=0;
+        s->m.flags= s->avctx->flags;
+//        s->m.out_format = FMT_H263;
+//        s->m.unrestricted_mv= 1;
+        
+        s->m.lambda= s->picture.quality;
+        s->m.qscale= (s->m.lambda*139 + FF_LAMBDA_SCALE*64) >> (FF_LAMBDA_SHIFT + 7);
+        s->m.lambda2= (s->m.lambda*s->m.lambda + FF_LAMBDA_SCALE/2) >> FF_LAMBDA_SHIFT;
         
         if(!s->motion_val8[plane]){
             s->motion_val8 [plane]= av_mallocz((s->m.b8_stride*block_height*2 + 2)*2*sizeof(int16_t));
