@@ -25,7 +25,6 @@
 #include "common.h"
 #include "avcodec.h"
 #include "dsputil.h"
-#include "vp3data.h"
 
 #define IdctAdjustBeforeShift 8
 #define xC1S7 64277

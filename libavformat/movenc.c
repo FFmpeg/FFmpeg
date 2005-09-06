@@ -432,13 +432,13 @@ static int mov_write_esds_tag(ByteIOContext *pb, MOVTrack* track) // Basic
         if (track->enc->codec_id == CODEC_ID_AAC)
         {
             track->vosLen = 2;
-            track->vosData = PSPAACData;
+            track->vosData = (uint8_t *) PSPAACData;
         }
 
         if (track->enc->codec_id == CODEC_ID_MPEG4)
         {
             track->vosLen = 28;
-            track->vosData = PSPMP4Data;
+            track->vosData = (uint8_t *) PSPMP4Data;
         }
     }
 

@@ -473,8 +473,8 @@ retry:
         pnmctx.bytestream_end= pc->buffer + pc->index;
     }else{
         pnmctx.bytestream_start=
-        pnmctx.bytestream= buf;
-        pnmctx.bytestream_end= buf + buf_size;
+        pnmctx.bytestream= (uint8_t *) buf; /* casts avoid warnings */
+        pnmctx.bytestream_end= (uint8_t *) buf + buf_size;
     }
     if(pnm_decode_header(avctx, &pnmctx) < 0){
         if(pnmctx.bytestream < pnmctx.bytestream_end){

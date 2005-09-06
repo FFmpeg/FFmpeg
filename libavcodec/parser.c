@@ -159,7 +159,8 @@ int av_parser_change(AVCodecParserContext *s,
         }
     }
 
-    *poutbuf= buf;
+    /* cast to avoid warning about discarding qualifiers */
+    *poutbuf= (uint8_t *) buf;
     *poutbuf_size= buf_size;
     if(avctx->extradata){
         if(  (keyframe && (avctx->flags2 & CODEC_FLAG2_LOCAL_HEADER))

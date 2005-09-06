@@ -49,7 +49,8 @@ void ff_init_range_encoder(RangeCoder *c, uint8_t *buf, int buf_size){
 }
 
 void ff_init_range_decoder(RangeCoder *c, const uint8_t *buf, int buf_size){
-    ff_init_range_encoder(c, buf, buf_size);
+    /* cast to avoid compiler warning */
+    ff_init_range_encoder(c, (uint8_t *) buf, buf_size);
 
     c->low =(*c->bytestream++)<<8;
     c->low+= *c->bytestream++;

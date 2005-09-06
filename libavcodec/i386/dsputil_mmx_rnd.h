@@ -55,7 +55,7 @@ static void DEF(put, pixels8_x2)(uint8_t *block, const uint8_t *pixels, int line
 	:REG_a, "memory");
 }
 
-static void DEF(put, pixels8_l2)(uint8_t *dst, uint8_t *src1, uint8_t *src2, int dstStride, int src1Stride, int h)
+static void attribute_unused DEF(put, pixels8_l2)(uint8_t *dst, uint8_t *src1, uint8_t *src2, int dstStride, int src1Stride, int h)
 {
     MOVQ_BFE(mm6);
     __asm __volatile(
@@ -151,7 +151,7 @@ static void DEF(put, pixels16_x2)(uint8_t *block, const uint8_t *pixels, int lin
 	:REG_a, "memory");
 }
 
-static void DEF(put, pixels16_l2)(uint8_t *dst, uint8_t *src1, uint8_t *src2, int dstStride, int src1Stride, int h)
+static void attribute_unused DEF(put, pixels16_l2)(uint8_t *dst, uint8_t *src1, uint8_t *src2, int dstStride, int src1Stride, int h)
 {
     MOVQ_BFE(mm6);
     __asm __volatile(
@@ -296,7 +296,7 @@ static void DEF(put, pixels8_xy2)(uint8_t *block, const uint8_t *pixels, int lin
 }
 
 // avg_pixels
-static void DEF(avg, pixels4)(uint8_t *block, const uint8_t *pixels, int line_size, int h)
+static void attribute_unused DEF(avg, pixels4)(uint8_t *block, const uint8_t *pixels, int line_size, int h)
 {
     MOVQ_BFE(mm6);
     JUMPALIGN();

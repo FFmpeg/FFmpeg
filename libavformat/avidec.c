@@ -366,7 +366,7 @@ static int avi_read_packet(AVFormatContext *s, AVPacket *pkt)
     }
     
     if(avi->non_interleaved){
-        int best_stream_index;
+        int best_stream_index = 0;
         AVStream *best_st= NULL;
         AVIStream *best_ast;
         int64_t best_ts= INT64_MAX;

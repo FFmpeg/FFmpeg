@@ -1080,7 +1080,8 @@ static int hf_noise16_mmx(uint8_t * pix1, int line_size, int h) {
       return tmp + hf_noise8_mmx(pix+8, line_size, h);
 }
 
-static int nsse16_mmx(MpegEncContext *c, uint8_t * pix1, uint8_t * pix2, int line_size, int h) {
+static int nsse16_mmx(void *p, uint8_t * pix1, uint8_t * pix2, int line_size, int h) {
+    MpegEncContext *c = p;
     int score1= sse16_mmx(c, pix1, pix2, line_size, h);
     int score2= hf_noise16_mmx(pix1, line_size, h) - hf_noise16_mmx(pix2, line_size, h);
 
@@ -1088,7 +1089,8 @@ static int nsse16_mmx(MpegEncContext *c, uint8_t * pix1, uint8_t * pix2, int lin
     else  return score1 + ABS(score2)*8;
 }
 
-static int nsse8_mmx(MpegEncContext *c, uint8_t * pix1, uint8_t * pix2, int line_size, int h) {
+static int nsse8_mmx(void *p, uint8_t * pix1, uint8_t * pix2, int line_size, int h) {
+    MpegEncContext *c = p;
     int score1= sse8_mmx(c, pix1, pix2, line_size, h);
     int score2= hf_noise8_mmx(pix1, line_size, h) - hf_noise8_mmx(pix2, line_size, h);
 

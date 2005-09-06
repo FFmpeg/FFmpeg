@@ -376,7 +376,7 @@ static void pmt_cb(void *opaque, const uint8_t *section, int section_len)
     const uint8_t *p, *p_end, *desc_list_end, *desc_end;
     int program_info_length, pcr_pid, pid, stream_type;
     int desc_list_len, desc_len, desc_tag;
-    int comp_page, anc_page;
+    int comp_page = 0, anc_page = 0; /* initialize to kill warnings */
     char language[4];
     
 #ifdef DEBUG_SI

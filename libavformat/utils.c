@@ -981,7 +981,6 @@ int av_read_frame(AVFormatContext *s, AVPacket *pkt)
         pktl = s->packet_buffer;
         if (pktl) {
             AVPacket *next_pkt= &pktl->pkt;
-            AVStream *st= s->streams[ next_pkt->stream_index ];
 
             if(genpts && next_pkt->dts != AV_NOPTS_VALUE){
                 while(pktl && next_pkt->pts == AV_NOPTS_VALUE){
