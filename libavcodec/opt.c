@@ -46,6 +46,12 @@ static AVOption *find_opt(void *v, const char *name){
     return NULL;
 }
 
+AVOption *av_next_option(void *obj, AVOption *last){
+    if(last && last[1].name) return ++last;
+    else if(last)            return NULL;
+    else                     return (*(AVClass**)obj)->option;
+}
+
 static int av_set_number(void *obj, const char *name, double num, int den, int64_t intnum){
     AVOption *o= find_opt(obj, name);
     void *dst;
