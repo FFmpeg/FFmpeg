@@ -640,6 +640,7 @@ static int mov_read_mdhd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     get_be32(pb); /* modification time */
 
     c->streams[c->fc->nb_streams-1]->time_scale = get_be32(pb);
+    av_set_pts_info(c->fc->streams[c->fc->nb_streams-1], 64, 1, c->streams[c->fc->nb_streams-1]->time_scale);
 
 #ifdef DEBUG
     av_log(NULL, AV_LOG_DEBUG, "track[%i].time_scale = %i\n", c->fc->nb_streams-1, c->streams[c->fc->nb_streams-1]->time_scale); /* time scale */
@@ -1345,9 +1346,6 @@ av_log(NULL, AV_LOG_DEBUG, "track[%i].stts.entries = %i\n", c->fc->nb_streams-1,
         total_sample_count+=sample_count;
     }
 
-    av_set_pts_info(st, 64, 1, c->streams[c->fc->nb_streams-1]->time_scale);
-//    st->codec->time_base.num = 1;
-//    st->codec->time_base.den = c->streams[c->fc->nb_streams-1]->time_scale;
     st->nb_frames= total_sample_count;
     if(duration)
         st->duration= duration;
