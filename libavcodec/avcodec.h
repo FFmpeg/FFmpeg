@@ -21,8 +21,8 @@ extern "C" {
 #define AV_STRINGIFY(s)	AV_TOSTRING(s)
 #define AV_TOSTRING(s) #s
 
-#define LIBAVCODEC_VERSION_INT ((49<<16)+(0<<8)+2)
-#define LIBAVCODEC_VERSION     49.0.2
+#define LIBAVCODEC_VERSION_INT ((49<<16)+(1<<8)+0)
+#define LIBAVCODEC_VERSION     49.1.0
 #define LIBAVCODEC_BUILD       LIBAVCODEC_VERSION_INT
 
 #define LIBAVCODEC_IDENT       "Lavc" AV_STRINGIFY(LIBAVCODEC_VERSION)
@@ -671,6 +671,35 @@ typedef struct AVFrame {
 
 #define DEFAULT_FRAME_RATE_BASE 1001000
 
+enum AVOptionType{
+    FF_OPT_TYPE_INT,
+    FF_OPT_TYPE_INT64,
+    FF_OPT_TYPE_DOUBLE,
+    FF_OPT_TYPE_FLOAT,
+    FF_OPT_TYPE_STRING,
+    FF_OPT_TYPE_RATIONAL,
+    FF_OPT_TYPE_CONST=128,
+};
+
+/**
+ * AVOption.
+ */
+typedef struct AVOption {
+    const char *name;
+
+    /**
+     * short English text help.
+     * @fixme what about other languages
+     */
+    const char *help;
+    int offset;             ///< offset to context structure where the parsed value should be stored 
+    enum AVOptionType type;
+    
+    double default_val;
+    double min;
+    double max;
+} AVOption;
+
 /**
  * Used by av_log
  */
@@ -681,6 +710,7 @@ struct AVCLASS {
 					or AVFormatContext, which begin with an AVClass.
 					Needed because av_log is in libavcodec and has no visibility
 					of AVIn/OutputFormat */
+    AVOption *option;
 };
 
 /**
@@ -1847,41 +1877,13 @@ typedef struct AVCodecContext {
     enum AVDiscard skip_frame;
 } AVCodecContext;
 
+int av_set_string(void *obj, const char *name, const char *val);
+int av_set_double(void *obj, const char *name, double n);
+int av_set_q(void *obj, const char *name, AVRational n);
+int av_set_int(void *obj, const char *name, int64_t n);
+const char *av_get_string(void *obj, const char *name);
+double av_get_double(void *obj, const char *name);
 
-/**
- * AVOption.
- */
-typedef struct AVOption {
-    /** options' name */
-    const char *name; /* if name is NULL, it indicates a link to next */
-    /** short English text help or const struct AVOption* subpointer */
-    const char *help; //	const struct AVOption* sub;
-    /** offset to context structure where the parsed value should be stored */
-    int offset;
-    /** options' type */
-    int type;
-#define FF_OPT_TYPE_BOOL 1      ///< boolean - true,1,on  (or simply presence)
-#define FF_OPT_TYPE_DOUBLE 2    ///< double
-#define FF_OPT_TYPE_INT 3       ///< integer
-#define FF_OPT_TYPE_STRING 4    ///< string (finished with \0)
-#define FF_OPT_TYPE_MASK 0x1f	///< mask for types - upper bits are various flags
-//#define FF_OPT_TYPE_EXPERT 0x20 // flag for expert option
-#define FF_OPT_TYPE_FLAG (FF_OPT_TYPE_BOOL | 0x40)
-#define FF_OPT_TYPE_RCOVERRIDE (FF_OPT_TYPE_STRING | 0x80)
-    /** min value  (min == max   ->  no limits) */
-    double min;
-    /** maximum value for double/int */
-    double max;
-    /** default boo [0,1]l/double/int value */
-    double defval;
-    /**
-     * default string value (with optional semicolon delimited extra option-list
-     * i.e.   option1;option2;option3
-     * defval might select other then first argument as default
-     */
-    const char *defstr;
-#define FF_OPT_MAX_DEPTH 10
-} AVOption;
 
 /**
  * AVCodec.
