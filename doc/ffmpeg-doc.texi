@@ -75,7 +75,7 @@ horizontal resolution.
 * You can output to a raw YUV420P file:
 
 @example
-ffmpeg -i mydivx.avi -o hugefile.yuv
+ffmpeg -i mydivx.avi hugefile.yuv
 @end example
 
 * You can set several input files and output files:
