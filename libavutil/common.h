@@ -102,7 +102,7 @@
         typedef signed long long   int64_t;
         typedef unsigned long long uint64_t;
 #   endif /* other OS */
-#endif /* HAVE_INTTYPES_H */
+#endif /* EMULATE_INTTYPES */
 
 #ifndef INT16_MIN
 #define INT16_MIN       (-0x7fff-1)
