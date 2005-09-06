@@ -1118,7 +1118,7 @@ static inline void initFilter(int16_t **outFilter, int16_t **filterPos, int *out
 	*outFilterSize= filterSize;
 
 	if(flags&SWS_PRINT_INFO)
-		MSG_INFO("SwScaler: reducing / aligning filtersize %d -> %d\n", filter2Size, filterSize);
+		MSG_V("SwScaler: reducing / aligning filtersize %d -> %d\n", filter2Size, filterSize);
 	/* try to reduce the filter-size (step2 reduce it) */
 	for(i=0; i<dstW; i++)
 	{
