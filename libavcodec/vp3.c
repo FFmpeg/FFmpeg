@@ -75,61 +75,61 @@
 #define DEBUG_IDCT 0
 
 #if DEBUG_VP3
-#define debug_vp3 printf
+#define debug_vp3(args...) av_log(NULL, AV_LOG_DEBUG, ## args)
 #else
 static inline void debug_vp3(const char *format, ...) { }
 #endif
 
 #if DEBUG_INIT
-#define debug_init printf
+#define debug_init(args...) av_log(NULL, AV_LOG_DEBUG, ## args)
 #else
 static inline void debug_init(const char *format, ...) { }
 #endif
 
 #if DEBUG_DEQUANTIZERS
-#define debug_dequantizers printf 
+#define debug_dequantizers(args...) av_log(NULL, AV_LOG_DEBUG, ## args)
 #else
 static inline void debug_dequantizers(const char *format, ...) { } 
 #endif
 
 #if DEBUG_BLOCK_CODING
-#define debug_block_coding printf 
+#define debug_block_coding(args...) av_log(NULL, AV_LOG_DEBUG, ## args)
 #else
 static inline void debug_block_coding(const char *format, ...) { } 
 #endif
 
 #if DEBUG_MODES
-#define debug_modes printf 
+#define debug_modes(args...) av_log(NULL, AV_LOG_DEBUG, ## args) 
 #else
 static inline void debug_modes(const char *format, ...) { } 
 #endif
 
 #if DEBUG_VECTORS
-#define debug_vectors printf 
+#define debug_vectors(args...) av_log(NULL, AV_LOG_DEBUG, ## args)
 #else
 static inline void debug_vectors(const char *format, ...) { } 
 #endif
 
 #if DEBUG_TOKEN 
-#define debug_token printf 
+#define debug_token(args...) av_log(NULL, AV_LOG_DEBUG, ## args)
 #else
 static inline void debug_token(const char *format, ...) { } 
 #endif
 
 #if DEBUG_VLC
-#define debug_vlc printf 
+#define debug_vlc(args...) av_log(NULL, AV_LOG_DEBUG, ## args)
 #else
 static inline void debug_vlc(const char *format, ...) { } 
 #endif
 
 #if DEBUG_DC_PRED
-#define debug_dc_pred printf 
+#define debug_dc_pred(args...) av_log(NULL, AV_LOG_DEBUG, ## args)
 #else
 static inline void debug_dc_pred(const char *format, ...) { } 
 #endif
 
 #if DEBUG_IDCT
-#define debug_idct printf 
+#define debug_idct(args...) av_log(NULL, AV_LOG_DEBUG, ## args)
 #else
 static inline void debug_idct(const char *format, ...) { } 
 #endif
