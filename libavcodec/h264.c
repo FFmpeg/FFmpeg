@@ -7279,8 +7279,8 @@ static int decode_nal_units(H264Context *h, uint8_t *buf, int buf_size){
     int buf_index=0;
 #if 0
     int i;
-    for(i=0; i<32; i++){
-        printf("%X ", buf[i]);
+    for(i=0; i<50; i++){
+        av_log(NULL, AV_LOG_ERROR,"%02X ", buf[i]);
     }
 #endif
     h->slice_num = 0;
@@ -7484,7 +7484,7 @@ static int decode_frame(AVCodecContext *avctx,
         p += 6;
         for (i = 0; i < cnt; i++) {
             nalsize = BE_16(p) + 2;
-            if(decode_nal_units(h, p, nalsize) != nalsize) {
+            if(decode_nal_units(h, p, nalsize) < 0) {
                 av_log(avctx, AV_LOG_ERROR, "Decoding sps %d from avcC failed\n", i);
                 return -1;
             }
