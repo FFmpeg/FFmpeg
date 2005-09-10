@@ -636,9 +636,9 @@ retry:
 }
 #endif
 
-#ifdef HAVE_MMX
+#if defined(HAVE_MMX) && defined(CONFIG_GPL)
     if(s->codec_id == CODEC_ID_MPEG4 && s->xvid_build && avctx->idct_algo == FF_IDCT_AUTO && (mm_flags & MM_MMX) && !(s->flags&CODEC_FLAG_BITEXACT)){
-        avctx->idct_algo= FF_IDCT_LIBMPEG2MMX;
+        avctx->idct_algo= FF_IDCT_XVIDMMX;
         avctx->coded_width= 0; // force reinit
     }
 #endif
