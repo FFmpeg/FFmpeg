@@ -20,9 +20,15 @@
 #define MAX(a, b)  (((a) > (b)) ? (a) : (b))
 #endif
 
+#undef printf
+
+void *fast_memcpy(void *a, const void *b, size_t c){return memcpy(a,b,c);};
+
 /* reference fdct/idct */
 extern void fdct(DCTELEM *block);
 extern void idct(DCTELEM *block);
+extern void ff_idct_xvid_mmx(DCTELEM *block);
+extern void ff_idct_xvid_mmx2(DCTELEM *block);
 extern void init_fdct();
 
 extern void j_rev_dct(DCTELEM *data);
@@ -493,6 +499,8 @@ int main(int argc, char **argv)
             dct_error("LIBMPEG2-MMXEXT", 1, ff_mmxext_idct, idct, test);
             dct_error("SIMPLE-C", 1, simple_idct, idct, test);
             dct_error("SIMPLE-MMX", 1, ff_simple_idct_mmx, idct, test);
+            dct_error("XVID-MMX", 1, ff_idct_xvid_mmx, idct, test);
+            dct_error("XVID-MMX2", 1, ff_idct_xvid_mmx2, idct, test);
             //        dct_error("ODIVX-C", 1, odivx_idct_c, idct);
             //printf(" test against odivx idct\n");
             //	dct_error("REF", 1, idct, odivx_idct_c);

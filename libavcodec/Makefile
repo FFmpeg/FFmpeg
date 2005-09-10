@@ -465,7 +465,7 @@ imgresample-test: imgresample.c
 	$(CC) $(CFLAGS) -DTEST -o $@ $^ -lm
 
 dct-test: dct-test.o fdctref.o $(LIB)
-	$(CC) -o $@ $^ -lm
+	$(CC) -o $@ $^ -lm $(LIBAVUTIL)
 
 motion-test: motion_test.o $(LIB)
 	$(CC) -o $@ $^ -lm
