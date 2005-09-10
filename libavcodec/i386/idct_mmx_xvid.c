@@ -72,28 +72,11 @@
 //-----------------------------------------------------------------------------
 
 
-static const int16_t one_corr[4] attribute_used __attribute__ ((aligned(8))) = {
-  1,1,1,1};
-static const int32_t round_inv_row[2] attribute_used __attribute__ ((aligned(8))) = { 
- RND_INV_ROW,  RND_INV_ROW};
-static const int16_t round_inv_col[4] attribute_used __attribute__ ((aligned(8))) = { 
- RND_INV_COL,  RND_INV_COL,  RND_INV_COL, RND_INV_COL};
-static const int16_t round_inv_corr[4] attribute_used __attribute__ ((aligned(8))) = { 
- RND_INV_CORR, RND_INV_CORR, RND_INV_CORR, RND_INV_CORR};
-static const int32_t round_frw_row[2] attribute_used __attribute__ ((aligned(8))) = { 
- RND_FRW_ROW,  RND_FRW_ROW};
-static const int16_t tg_1_16[4] attribute_used __attribute__ ((aligned(8))) = { 
-  13036,13036,13036,13036};       // tg * (2<<16) + 0.5
-static const int16_t tg_2_16[4] attribute_used __attribute__ ((aligned(8))) = { 
-  27146,27146,27146,27146};       // tg * (2<<16) + 0.5
-static const int16_t tg_3_16[4] attribute_used __attribute__ ((aligned(8))) = { 
-  -21746,-21746,-21746,-21746};    // tg * (2<<16) + 0.5
-static const int16_t cos_4_16[4] attribute_used __attribute__ ((aligned(8))) = { 
-  -19195,-19195,-19195,-19195};    // cos * (2<<16) + 0.5
-static const int16_t ocos_4_16[4] attribute_used __attribute__ ((aligned(8))) = { 
+static const int16_t tg_1_16[4*4] attribute_used __attribute__ ((aligned(8))) = { 
+  13036,13036,13036,13036,        // tg * (2<<16) + 0.5
+  27146,27146,27146,27146,        // tg * (2<<16) + 0.5
+  -21746,-21746,-21746,-21746,    // tg * (2<<16) + 0.5
   23170,23170,23170,23170};       // cos * (2<<15) + 0.5
-static const int16_t otg_3_16[4] attribute_used __attribute__ ((aligned(8))) = { 
-  21895,21895,21895,21895};       // tg * (2<<16) + 0.5
 
 static const int32_t rounder_0[2*8] attribute_used __attribute__ ((aligned(8))) = { 
   65536,65536,
@@ -414,12 +397,12 @@ static const int16_t tab_i_04_xmm[32*4] attribute_used __attribute__ ((aligned(8
 //-----------------------------------------------------------------------------
 
 #define DCT_8_INV_COL(A1,A2)\
-  "movq tg_3_16,%%mm0\n\t"\
+  "movq 2*8(%3),%%mm0\n\t"\
   "movq 16*3+" #A1 ",%%mm3\n\t"\
   "movq %%mm0,%%mm1            \n\t"/* tg_3_16*/\
   "movq 16*5+" #A1 ",%%mm5\n\t"\
   "pmulhw %%mm3,%%mm0          \n\t"/* x3*(tg_3_16-1)*/\
-  "movq tg_1_16,%%mm4\n\t"\
+  "movq (%3),%%mm4\n\t"\
   "pmulhw %%mm5,%%mm1          \n\t"/* x5*(tg_3_16-1)*/\
   "movq 16*7+" #A1 ",%%mm7\n\t"\
   "movq %%mm4,%%mm2            \n\t"/* tg_1_16*/\
@@ -429,7 +412,7 @@ static const int16_t tab_i_04_xmm[32*4] attribute_used __attribute__ ((aligned(8
   "pmulhw %%mm6,%%mm2          \n\t"/* x1*tg_1_16*/\
   "paddsw %%mm3,%%mm1          \n\t"/* x3+x5*(tg_3_16-1)*/\
   "psubsw %%mm5,%%mm0          \n\t"/* x3*tg_3_16-x5 = tm35*/\
-  "movq ocos_4_16,%%mm3\n\t"\
+  "movq 3*8(%3),%%mm3\n\t"\
   "paddsw %%mm5,%%mm1          \n\t"/* x3+x5*tg_3_16 = tp35*/\
   "paddsw %%mm6,%%mm4          \n\t"/* x1+tg_1_16*x7 = tp17*/\
   "psubsw %%mm7,%%mm2          \n\t"/* x1*tg_1_16-x7 = tm17*/\
@@ -439,7 +422,7 @@ static const int16_t tab_i_04_xmm[32*4] attribute_used __attribute__ ((aligned(8
   "psubsw %%mm0,%%mm6          \n\t"/* tm17-tm35 = b3*/\
   "psubsw %%mm1,%%mm4          \n\t"/* tp17-tp35 = t1*/\
   "paddsw %%mm0,%%mm2          \n\t"/* tm17+tm35 = t2*/\
-  "movq tg_2_16,%%mm7\n\t"\
+  "movq 1*8(%3),%%mm7\n\t"\
   "movq %%mm4,%%mm1            \n\t"/* t1*/\
   "movq %%mm5,3*16         +" #A2 "\n\t"/* save b0*/\
   "paddsw %%mm2,%%mm1          \n\t"/* t1+t2*/\
@@ -522,7 +505,7 @@ asm volatile(
             //# Process the columns (4 at a time)
     DCT_8_INV_COL(0(%0), 0(%0))
     DCT_8_INV_COL(8(%0), 8(%0))
-    :: "r"(block), "r"(rounder_0), "r"(tab_i_04_mmx));
+    :: "r"(block), "r"(rounder_0), "r"(tab_i_04_mmx), "r"(tg_1_16));
 }
 
 //-----------------------------------------------------------------------------
@@ -545,6 +528,6 @@ asm volatile(
             //# Process the columns (4 at a time)
     DCT_8_INV_COL(0(%0), 0(%0))
     DCT_8_INV_COL(8(%0), 8(%0))
-    :: "r"(block), "r"(rounder_0), "r"(tab_i_04_xmm));
+    :: "r"(block), "r"(rounder_0), "r"(tab_i_04_xmm), "r"(tg_1_16));
 }
 
