@@ -29,6 +29,8 @@
 //#include <assert.h>
 
 extern const uint8_t ff_h263_loop_filter_strength[32];
+extern void ff_idct_xvid_mmx(short *block);
+extern void ff_idct_xvid_mmx2(short *block);
 
 int mm_flags; /* multimedia extension flags */
 
@@ -2457,6 +2459,28 @@ static void ff_vp3_idct_add_mmx(uint8_t *dest, int line_size, DCTELEM *block)
     ff_vp3_idct_mmx(block);
     add_pixels_clamped_mmx(block, dest, line_size);
 }
+#ifdef CONFIG_GPL
+static void ff_idct_xvid_mmx_put(uint8_t *dest, int line_size, DCTELEM *block)
+{
+    ff_idct_xvid_mmx (block);
+    put_pixels_clamped_mmx(block, dest, line_size);
+}
+static void ff_idct_xvid_mmx_add(uint8_t *dest, int line_size, DCTELEM *block)
+{
+    ff_idct_xvid_mmx (block);
+    add_pixels_clamped_mmx(block, dest, line_size);
+}
+static void ff_idct_xvid_mmx2_put(uint8_t *dest, int line_size, DCTELEM *block)
+{
+    ff_idct_xvid_mmx2 (block);
+    put_pixels_clamped_mmx(block, dest, line_size);
+}
+static void ff_idct_xvid_mmx2_add(uint8_t *dest, int line_size, DCTELEM *block)
+{
+    ff_idct_xvid_mmx2 (block);
+    add_pixels_clamped_mmx(block, dest, line_size);
+}
+#endif
     
 void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
 {
@@ -2529,7 +2553,19 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
                     c->idct    = ff_vp3_idct_mmx;
                     c->idct_permutation_type= FF_PARTTRANS_IDCT_PERM;
                 }
+#ifdef CONFIG_GPL
+            }else if(idct_algo==FF_IDCT_XVIDMMX){
+                if(mm_flags & MM_MMXEXT){
+                    c->idct_put= ff_idct_xvid_mmx2_put;
+                    c->idct_add= ff_idct_xvid_mmx2_add;
+                    c->idct    = ff_idct_xvid_mmx2;
+                }else{
+                    c->idct_put= ff_idct_xvid_mmx_put;
+                    c->idct_add= ff_idct_xvid_mmx_add;
+                    c->idct    = ff_idct_xvid_mmx;
+                }
             }
+#endif
         }
 
 #ifdef CONFIG_ENCODERS
