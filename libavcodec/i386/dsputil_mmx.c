@@ -2564,8 +2564,8 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
                     c->idct_add= ff_idct_xvid_mmx_add;
                     c->idct    = ff_idct_xvid_mmx;
                 }
-            }
 #endif
+            }
         }
 
 #ifdef CONFIG_ENCODERS
