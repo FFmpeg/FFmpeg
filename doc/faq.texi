@@ -182,4 +182,25 @@ The build process creates ffmpeg_g, ffplay_g, etc. which contain full debug
 information. Those binaries are strip'd to create ffmpeg, ffplay, etc. If
 you need the debug information, used the *_g versions.
 
+@section I do not like the LGPL, can I contribute code under the GPL instead
+
+yes, ffmpeg contains GPL and LGPL code, the GPL code is only compiled if
+'--enable-gpl' is passed to configure in which case the resulting binary will
+be covered by the GPL instead of the LGPL
+
+@section I want to compile xyz.c alone but my compier produced many errors
+
+common code is in its own files in libav* and is used by the individual
+codecs, they will not work without the common parts, you have to compile
+the whole libav* and if you wish disable some parts with configure
+switches, you can also try to hack it and remove more but if you seriously
+wanted to ask the question above then you are not qualified for this
+
+@section visual c++ produced many errors
+
+you need a c compiler (visual c++ is not compliant to the c standard)
+if you wish for whatever weird reason use visual c++ for your project
+then you can link the visual c++ code with libav* as long as you compile
+the later with a working c compiler
+
 @bye
