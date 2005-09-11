@@ -24,7 +24,6 @@
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
  
-#include <stdio.h> //for FILE *
 #include "avcodec.h"
  
 static double av_parse_num(const char *name, char **tail){
@@ -224,26 +223,26 @@ int64_t av_get_int(void *obj, const char *name, AVOption **o_out){
     return num*intnum/den;
 }
 
-int av_opt_show(void *obj, FILE *f){
+int av_opt_show(void *obj, void *av_log_obj){
     AVOption *opt=NULL;
     
     if(!obj)
         return -1;
-#undef fprintf
-    fprintf(f, "%s AVOptions:\n", (*(AVClass**)obj)->class_name);
+
+    av_log(av_log_obj, AV_LOG_INFO, "%s AVOptions:\n", (*(AVClass**)obj)->class_name);
 
     while((opt= av_next_option(obj, opt))){
         if(!(opt->flags & (AV_OPT_FLAG_ENCODING_PARAM|AV_OPT_FLAG_DECODING_PARAM)))
             continue;
             
-        fprintf(f, "-%-17s ", opt->name);
-        fprintf(f, "%c", (opt->flags & AV_OPT_FLAG_ENCODING_PARAM) ? 'E' : '.');
-        fprintf(f, "%c", (opt->flags & AV_OPT_FLAG_DECODING_PARAM) ? 'D' : '.');
-        fprintf(f, "%c", (opt->flags & AV_OPT_FLAG_VIDEO_PARAM   ) ? 'V' : '.');
-        fprintf(f, "%c", (opt->flags & AV_OPT_FLAG_AUDIO_PARAM   ) ? 'A' : '.');
-        fprintf(f, "%c", (opt->flags & AV_OPT_FLAG_SUBTITLE_PARAM) ? 'S' : '.');
+        av_log(av_log_obj, AV_LOG_INFO, "-%-17s ", opt->name);
+        av_log(av_log_obj, AV_LOG_INFO, "%c", (opt->flags & AV_OPT_FLAG_ENCODING_PARAM) ? 'E' : '.');
+        av_log(av_log_obj, AV_LOG_INFO, "%c", (opt->flags & AV_OPT_FLAG_DECODING_PARAM) ? 'D' : '.');
+        av_log(av_log_obj, AV_LOG_INFO, "%c", (opt->flags & AV_OPT_FLAG_VIDEO_PARAM   ) ? 'V' : '.');
+        av_log(av_log_obj, AV_LOG_INFO, "%c", (opt->flags & AV_OPT_FLAG_AUDIO_PARAM   ) ? 'A' : '.');
+        av_log(av_log_obj, AV_LOG_INFO, "%c", (opt->flags & AV_OPT_FLAG_SUBTITLE_PARAM) ? 'S' : '.');
         
-        fprintf(f, " %s\n", opt->help);
+        av_log(av_log_obj, AV_LOG_INFO, " %s\n", opt->help);
     }
     return 0;
 }

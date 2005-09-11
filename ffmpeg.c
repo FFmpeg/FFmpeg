@@ -4495,7 +4495,7 @@ static void show_help(void)
     show_help_options(options, "\nAdvanced options:\n",
                       OPT_EXPERT | OPT_AUDIO | OPT_VIDEO | OPT_GRAB, 
                       OPT_EXPERT);
-    av_opt_show(avctx_opts, stdout);
+    av_opt_show(avctx_opts, NULL);
                          
     exit(1);
 }
