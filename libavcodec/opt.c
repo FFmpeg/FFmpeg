@@ -52,46 +52,36 @@ AVOption *av_next_option(void *obj, AVOption *last){
     else                     return (*(AVClass**)obj)->option;
 }
 
-static int av_set_number(void *obj, const char *name, double num, int den, int64_t intnum){
+static AVOption *av_set_number(void *obj, const char *name, double num, int den, int64_t intnum){
     AVOption *o= find_opt(obj, name);
     void *dst;
     if(!o || o->offset<=0) 
-        return -1;
+        return NULL;
     
     if(o->max*den < num*intnum || o->min*den > num*intnum)
-        return -1;
+        return NULL;
         
     dst= ((uint8_t*)obj) + o->offset;
 
     switch(o->type){
-    case FF_OPT_TYPE_INT:
-        *(int*)dst= lrintf(num/den)*intnum;
-        break;
-    case FF_OPT_TYPE_INT64:
-        *(int64_t*)dst= lrintf(num/den)*intnum;
-        break;
-    case FF_OPT_TYPE_FLOAT:
-        *(float*)dst= num*intnum/den;
-        break;
-    case FF_OPT_TYPE_DOUBLE:
-        *(double*)dst= num*intnum/den;
-        break;
+    case FF_OPT_TYPE_INT:   *(int       *)dst= lrintf(num/den)*intnum; break;
+    case FF_OPT_TYPE_INT64: *(int64_t   *)dst= lrintf(num/den)*intnum; break;
+    case FF_OPT_TYPE_FLOAT: *(float     *)dst= num*intnum/den;         break;
+    case FF_OPT_TYPE_DOUBLE:*(double    *)dst= num*intnum/den;         break;
     case FF_OPT_TYPE_RATIONAL:
-        if((int)num == num)
-            *(AVRational*)dst= (AVRational){num*intnum, den};
-        else
-            *(AVRational*)dst= av_d2q(num*intnum/den, 1<<24);
+        if((int)num == num) *(AVRational*)dst= (AVRational){num*intnum, den};
+        else                *(AVRational*)dst= av_d2q(num*intnum/den, 1<<24);
     default:
-        return -1;
+        return NULL;
     }
-    return 0;
+    return o;
 }
 
 //FIXME use eval.c maybe?
-int av_set_string(void *obj, const char *name, const char *val){
+AVOption *av_set_string(void *obj, const char *name, const char *val){
     AVOption *o= find_opt(obj, name);
     if(!o || !val || o->offset<=0) 
-        return -1;
+        return NULL;
     if(o->type != FF_OPT_TYPE_STRING){
         double d=0, tmp_d;
         for(;;){
@@ -113,56 +103,136 @@ int av_set_string(void *obj, const char *name, const char *val){
                 else if(!strcmp(buf, "default")) d+= o->default_val;
                 else if(!strcmp(buf, "max"    )) d+= o->max;
                 else if(!strcmp(buf, "min"    )) d+= o->min;
-                else return -1;
+                else return NULL;
             }
 
             if(*val == '+') val++;
             if(!*val)
                 return av_set_number(obj, name, d, 1, 1);
         }
-        return -1;
+        return NULL;
     }
     
     memcpy(((uint8_t*)obj) + o->offset, val, sizeof(val));
-    return 0;
+    return o;
 }
 
-int av_set_double(void *obj, const char *name, double n){
+AVOption *av_set_double(void *obj, const char *name, double n){
     return av_set_number(obj, name, n, 1, 1);
 }
 
-int av_set_q(void *obj, const char *name, AVRational n){
+AVOption *av_set_q(void *obj, const char *name, AVRational n){
     return av_set_number(obj, name, n.num, n.den, 1);
 }
 
-int av_set_int(void *obj, const char *name, int64_t n){
+AVOption *av_set_int(void *obj, const char *name, int64_t n){
     return av_set_number(obj, name, 1, 1, n);
 }
 
-const char *av_get_string(void *obj, const char *name){
-    AVOption *o= find_opt(obj, name);
-    if(!o || o->offset<=0)
-        return NULL;
-    if(o->type != FF_OPT_TYPE_STRING) //FIXME convert to string? but what about free()?
-        return NULL;
-
-    return (const char*)(((uint8_t*)obj) + o->offset);
-}
-
-double av_get_double(void *obj, const char *name){
+/**
+ * 
+ * @param buf a buffer which is used for returning non string values as strings, can be NULL
+ * @param buf_len allocated length in bytes of buf
+ */
+const char *av_get_string(void *obj, const char *name, AVOption **o_out, char *buf, int buf_len){
     AVOption *o= find_opt(obj, name);
     void *dst;
     if(!o || o->offset<=0)
-        return NAN;
+        return NULL;
+    if(o->type != FF_OPT_TYPE_STRING && (!buf || !buf_len))
+        return NULL;
+
+    dst= ((uint8_t*)obj) + o->offset;
+    if(o_out) *o_out= o;
+    
+    if(o->type == FF_OPT_TYPE_STRING)
+        return dst;
+    
+    switch(o->type){
+    case FF_OPT_TYPE_INT:       snprintf(buf, buf_len, "%d" , *(int    *)dst);break;
+    case FF_OPT_TYPE_INT64:     snprintf(buf, buf_len, "%Ld", *(int64_t*)dst);break;
+    case FF_OPT_TYPE_FLOAT:     snprintf(buf, buf_len, "%f" , *(float  *)dst);break;
+    case FF_OPT_TYPE_DOUBLE:    snprintf(buf, buf_len, "%f" , *(double *)dst);break;
+    case FF_OPT_TYPE_RATIONAL:  snprintf(buf, buf_len, "%d/%d", ((AVRational*)dst)->num, ((AVRational*)dst)->den);break;
+    default: return NULL;
+    }
+    return buf;
+}
+
+static int av_get_number(void *obj, const char *name, AVOption **o_out, double *num, int *den, int64_t *intnum){
+    AVOption *o= find_opt(obj, name);
+    void *dst;
+    if(!o || o->offset<=0)
+        goto error;
 
     dst= ((uint8_t*)obj) + o->offset;
 
+    if(o_out) *o_out= o;
+
     switch(o->type){
-    case FF_OPT_TYPE_INT:       return *(int*)dst;
-    case FF_OPT_TYPE_INT64:     return *(int64_t*)dst; //FIXME maybe write a av_get_int64() ?
-    case FF_OPT_TYPE_FLOAT:     return *(float*)dst;
-    case FF_OPT_TYPE_DOUBLE:    return *(double*)dst;
-    case FF_OPT_TYPE_RATIONAL:  return av_q2d(*(AVRational*)dst); //FIXME maybe write a av_get_q() ?
-    default:                    return NAN;
+    case FF_OPT_TYPE_INT:       *intnum= *(int    *)dst;return 0;
+    case FF_OPT_TYPE_INT64:     *intnum= *(int64_t*)dst;return 0;
+    case FF_OPT_TYPE_FLOAT:     *num=    *(float  *)dst;return 0;
+    case FF_OPT_TYPE_DOUBLE:    *num=    *(double *)dst;return 0;
+    case FF_OPT_TYPE_RATIONAL:  *intnum= ((AVRational*)dst)->num; 
+                                *den   = ((AVRational*)dst)->den;
+                                                        return 0;
     }
+error:
+    *den=*intnum=0;
+    return -1;
+}
+
+double av_get_double(void *obj, const char *name, AVOption **o_out){
+    int64_t intnum=1;
+    double num=1;
+    int den=1;
+
+    av_get_number(obj, name, o_out, &num, &den, &intnum);
+    return num*intnum/den;
+}
+
+AVRational av_get_q(void *obj, const char *name, AVOption **o_out){
+    int64_t intnum=1;
+    double num=1;
+    int den=1;
+
+    av_get_number(obj, name, o_out, &num, &den, &intnum);
+    if(num == 1.0 && (int)intnum == intnum)
+        return (AVRational){intnum, den};
+    else
+        return av_d2q(num*intnum/den, 1<<24);
+}
+
+int64_t av_get_int(void *obj, const char *name, AVOption **o_out){
+    int64_t intnum=1;
+    double num=1;
+    int den=1;
+
+    av_get_number(obj, name, o_out, &num, &den, &intnum);
+    return num*intnum/den;
+}
+
+int av_opt_show(void *obj, FILE *f){
+    AVOption *opt=NULL;
+    
+    if(!obj)
+        return -1;
+#undef fprintf
+    fprintf(f, "%s AVOptions:\n", (*(AVClass**)obj)->class_name);
+
+    while((opt= av_next_option(obj, opt))){
+        if(!(opt->flags & (AV_OPT_FLAG_ENCODING_PARAM|AV_OPT_FLAG_DECODING_PARAM)))
+            continue;
+            
+        fprintf(f, "-%-17s ", opt->name);
+        fprintf(f, "%c", (opt->flags & AV_OPT_FLAG_ENCODING_PARAM) ? 'E' : '.');
+        fprintf(f, "%c", (opt->flags & AV_OPT_FLAG_DECODING_PARAM) ? 'D' : '.');
+        fprintf(f, "%c", (opt->flags & AV_OPT_FLAG_VIDEO_PARAM   ) ? 'V' : '.');
+        fprintf(f, "%c", (opt->flags & AV_OPT_FLAG_AUDIO_PARAM   ) ? 'A' : '.');
+        fprintf(f, "%c", (opt->flags & AV_OPT_FLAG_SUBTITLE_PARAM) ? 'S' : '.');
+        
+        fprintf(f, " %s\n", opt->help);
+    }
+    return 0;
 }

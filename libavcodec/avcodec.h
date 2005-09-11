@@ -21,8 +21,8 @@ extern "C" {
 #define AV_STRINGIFY(s)	AV_TOSTRING(s)
 #define AV_TOSTRING(s) #s
 
-#define LIBAVCODEC_VERSION_INT ((49<<16)+(2<<8)+0)
-#define LIBAVCODEC_VERSION     49.2.0
+#define LIBAVCODEC_VERSION_INT ((50<<16)+(0<<8)+0)
+#define LIBAVCODEC_VERSION     50.0.0
 #define LIBAVCODEC_BUILD       LIBAVCODEC_VERSION_INT
 
 #define LIBAVCODEC_IDENT       "Lavc" AV_STRINGIFY(LIBAVCODEC_VERSION)
@@ -703,6 +703,10 @@ typedef struct AVOption {
 #define AV_OPT_FLAG_ENCODING_PARAM  1   ///< a generic parameter which can be set by the user for muxing or encoding
 #define AV_OPT_FLAG_DECODING_PARAM  2   ///< a generic parameter which can be set by the user for demuxing or decoding
 #define AV_OPT_FLAG_METADATA        4   ///< some data extracted or inserted into the file like title, comment, ...
+#define AV_OPT_FLAG_AUDIO_PARAM     8
+#define AV_OPT_FLAG_VIDEO_PARAM     16
+#define AV_OPT_FLAG_SUBTITLE_PARAM  32
+//FIXME think about enc-audio, ... style flags
 } AVOption;
 
 /**
@@ -1883,14 +1887,16 @@ typedef struct AVCodecContext {
     enum AVDiscard skip_frame;
 } AVCodecContext;
 
-int av_set_string(void *obj, const char *name, const char *val);
-int av_set_double(void *obj, const char *name, double n);
-int av_set_q(void *obj, const char *name, AVRational n);
-int av_set_int(void *obj, const char *name, int64_t n);
-const char *av_get_string(void *obj, const char *name);
-double av_get_double(void *obj, const char *name);
+AVOption *av_set_string(void *obj, const char *name, const char *val);
+AVOption *av_set_double(void *obj, const char *name, double n);
+AVOption *av_set_q(void *obj, const char *name, AVRational n);
+AVOption *av_set_int(void *obj, const char *name, int64_t n);
+double av_get_double(void *obj, const char *name, AVOption **o_out);
+AVRational av_get_q(void *obj, const char *name, AVOption **o_out);
+int64_t av_get_int(void *obj, const char *name, AVOption **o_out);
+const char *av_get_string(void *obj, const char *name, AVOption **o_out, char *buf, int buf_len);
 AVOption *av_next_option(void *obj, AVOption *last);
-
+int av_opt_show(void *obj, FILE *f);
 
 /**
  * AVCodec.

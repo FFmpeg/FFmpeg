@@ -111,8 +111,6 @@ static int video_lmax = 31*FF_QP2LAMBDA;
 static int video_mb_lmin = 2*FF_QP2LAMBDA;
 static int video_mb_lmax = 31*FF_QP2LAMBDA;
 static int video_qdiff = 3;
-static int video_lelim = 0;
-static int video_celim = 0;
 static float video_qblur = 0.5;
 static float video_qsquish = 0.0;
 static float video_qcomp = 0.5;
@@ -290,6 +288,10 @@ static int input_sync;
 static int limit_filesize = 0; //
 
 static int pgmyuv_compatibility_hack=0;
+
+const char **opt_names=NULL;
+int opt_name_count=0;
+AVCodecContext *avctx_opts;
 
 
 #define DEFAULT_PASS_LOGFILENAME "ffmpeg2pass"
@@ -2638,26 +2640,6 @@ static void opt_qsquish(const char *arg)
     }
 }
 
-static void opt_lelim(const char *arg)
-{
-    video_lelim = atoi(arg);
-    if (video_lelim < -99 ||
-        video_lelim > 99) {
-        fprintf(stderr, "lelim must be >= -99 and <= 99\n");
-        exit(1);
-    }
-}
-
-static void opt_celim(const char *arg)
-{
-    video_celim = atoi(arg);
-    if (video_celim < -99 ||
-        video_celim > 99) {
-        fprintf(stderr, "celim must be >= -99 and <= 99\n");
-        exit(1);
-    }
-}
-
 static void opt_lmax(const char *arg)
 {
     video_lmax = atof(arg)*FF_QP2LAMBDA;
@@ -3237,6 +3219,13 @@ static void new_video_stream(AVFormatContext *oc)
                 
         video_enc->codec_id = codec_id;
         codec = avcodec_find_encoder(codec_id);
+        
+        for(i=0; i<opt_name_count; i++){
+             AVOption *opt;
+             double d= av_get_double(avctx_opts, opt_names[i], &opt);
+             if(d==d && (opt->flags&AV_OPT_FLAG_VIDEO_PARAM) && (opt->flags&AV_OPT_FLAG_ENCODING_PARAM))
+                 av_set_double(video_enc, opt_names[i], d);
+        }
                 
         video_enc->bit_rate = video_bit_rate;
         video_enc->bit_rate_tolerance = video_bit_rate_tolerance;
@@ -3383,8 +3372,6 @@ static void new_video_stream(AVFormatContext *oc)
         video_enc->lmin = video_lmin;
         video_enc->lmax = video_lmax;
         video_enc->rc_qsquish = video_qsquish;
-        video_enc->luma_elim_threshold = video_lelim;
-        video_enc->chroma_elim_threshold = video_celim;
         video_enc->mb_lmin = video_mb_lmin;
         video_enc->mb_lmax = video_mb_lmax;
         video_enc->max_qdiff = video_qdiff;
@@ -3486,7 +3473,7 @@ static void new_audio_stream(AVFormatContext *oc)
 {
     AVStream *st;
     AVCodecContext *audio_enc;
-    int codec_id;
+    int codec_id, i;
             
     st = av_new_stream(oc, oc->nb_streams);
     if (!st) {
@@ -3511,6 +3498,14 @@ static void new_audio_stream(AVFormatContext *oc)
         audio_enc->channels = audio_channels;
     } else {
         codec_id = av_guess_codec(oc->oformat, NULL, oc->filename, NULL, CODEC_TYPE_AUDIO);
+       
+        for(i=0; i<opt_name_count; i++){
+            AVOption *opt;
+            double d= av_get_double(avctx_opts, opt_names[i], &opt);
+            if(d==d && (opt->flags&AV_OPT_FLAG_AUDIO_PARAM) && (opt->flags&AV_OPT_FLAG_ENCODING_PARAM))
+                av_set_double(audio_enc, opt_names[i], d);
+        }
+       
         if (audio_codec_id != CODEC_ID_NONE)
             codec_id = audio_codec_id;
         audio_enc->codec_id = codec_id;
@@ -3549,6 +3544,7 @@ static void opt_new_subtitle_stream(void)
     AVFormatContext *oc;
     AVStream *st;
     AVCodecContext *subtitle_enc;
+    int i;
             
     if (nb_output_files <= 0) {
         fprintf(stderr, "At least one output file must be specified\n");
@@ -3567,6 +3563,12 @@ static void opt_new_subtitle_stream(void)
     if (subtitle_stream_copy) {
         st->stream_copy = 1;
     } else {
+        for(i=0; i<opt_name_count; i++){
+             AVOption *opt;
+             double d= av_get_double(avctx_opts, opt_names[i], &opt);
+             if(d==d && (opt->flags&AV_OPT_FLAG_SUBTITLE_PARAM) && (opt->flags&AV_OPT_FLAG_ENCODING_PARAM))
+                 av_set_double(subtitle_enc, opt_names[i], d);
+        }
         subtitle_enc->codec_id = subtitle_codec_id;
     }
 
@@ -4190,6 +4192,18 @@ static void show_version(void)
     exit(1);
 }
 
+static int opt_default(const char *opt, const char *arg){
+    AVOption *o= av_set_string(avctx_opts, opt, arg);
+    if(!o)
+        return -1;
+
+    //FIXME we should always use avctx_opts, ... for storing options so there wont be any need to keep track of whats set over this
+    opt_names= av_realloc(opt_names, sizeof(void*)*(opt_name_count+1));
+    opt_names[opt_name_count++]= opt;
+        
+    return 0;
+}
+
 const OptionDef options[] = {
     /* main options */
     { "L", 0, {(void*)show_license}, "show license" },
@@ -4297,8 +4311,6 @@ const OptionDef options[] = {
     { "cmp", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_cmp}, "fullpel compare function", "cmp function" },
     { "precmp", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_pre_cmp}, "pre motion estimation compare function", "cmp function" },
     { "preme", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_pre_me}, "pre motion estimation", "" },
-    { "lelim", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_lelim}, "single coefficient elimination threshold for luminance (negative values also consider DC coefficient)", "elim" },
-    { "celim", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_celim}, "single coefficient elimination threshold for chrominance (negative values also consider DC coefficient)", "elim" },
     { "lumi_mask", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_lumi_mask}, "luminance masking", "" },
     { "dark_mask", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_dark_mask}, "darkness masking", "" },
     { "scplx_mask", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_scplx_mask}, "spatial complexity masking", "" },
@@ -4398,6 +4410,7 @@ const OptionDef options[] = {
     { "packetsize", OPT_INT | HAS_ARG | OPT_EXPERT, {(void*)&mux_packet_size}, "set packet size", "size" },
     { "muxdelay", OPT_FLOAT | HAS_ARG | OPT_EXPERT, {(void*)&mux_max_delay}, "set the maximum demux-decode delay", "seconds" },
     { "muxpreload", OPT_FLOAT | HAS_ARG | OPT_EXPERT, {(void*)&mux_preload}, "set the initial demux-decode delay", "seconds" },
+    { "default", OPT_FUNC2 | HAS_ARG | OPT_AUDIO | OPT_VIDEO | OPT_EXPERT, {(void*)opt_default}, "generic catch all option", "" },
     { NULL, },
 };
 
@@ -4482,6 +4495,8 @@ static void show_help(void)
     show_help_options(options, "\nAdvanced options:\n",
                       OPT_EXPERT | OPT_AUDIO | OPT_VIDEO | OPT_GRAB, 
                       OPT_EXPERT);
+    av_opt_show(avctx_opts, stdout);
+                         
     exit(1);
 }
 
@@ -4496,6 +4511,8 @@ int main(int argc, char **argv)
     int64_t ti;
 
     av_register_all();
+    
+    avctx_opts= avcodec_alloc_context();
 
     if (argc <= 1)
         show_help();

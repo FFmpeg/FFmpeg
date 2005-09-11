@@ -45,6 +45,15 @@ void show_help_options(const OptionDef *options, const char *msg, int mask, int 
     }
 }
 
+static OptionDef* find_option(const OptionDef *po, const char *name){
+    while (po->name != NULL) {
+        if (!strcmp(name, po->name))
+            break;
+        po++;
+    }
+    return po;
+}
+
 void parse_options(int argc, char **argv, const OptionDef *options)
 {
     const char *opt, *arg;
@@ -57,13 +66,11 @@ void parse_options(int argc, char **argv, const OptionDef *options)
         opt = argv[optindex++];
         
         if (opt[0] == '-' && opt[1] != '\0') {
-            po = options;
-            while (po->name != NULL) {
-                if (!strcmp(opt + 1, po->name))
-                    break;
-                po++;
-            }
+            po= find_option(options, opt + 1);
+            if (!po->name)
+                po= find_option(options, "default");
             if (!po->name) {
+unknown_opt:
                 fprintf(stderr, "%s: unrecognized option '%s'\n", argv[0], opt);
                 exit(1);
             }
@@ -85,6 +92,9 @@ void parse_options(int argc, char **argv, const OptionDef *options)
                 *po->u.int_arg = atoi(arg);
             } else if (po->flags & OPT_FLOAT) {
                 *po->u.float_arg = atof(arg);
+            } else if (po->flags & OPT_FUNC2) {
+                if(po->u.func2_arg(opt+1, arg)<0)
+                    goto unknown_opt;
             } else {
 		po->u.func_arg(arg);
             }
