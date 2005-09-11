@@ -462,8 +462,7 @@ static inline void put_vb_trace(ByteIOContext *bc, uint64_t v, char *file, char 
 static int put_packetheader(NUTContext *nut, ByteIOContext *bc, int max_size, int calculate_checksum)
 {
     put_flush_packet(bc);
-    nut->packet_start[2]+= nut->written_packet_size;
-    assert(url_ftell(bc) - 8 == nut->packet_start[2]);
+    nut->packet_start[2]= url_ftell(bc) - 8;
     nut->written_packet_size = max_size;
     
     if(calculate_checksum)
@@ -475,10 +474,14 @@ static int put_packetheader(NUTContext *nut, ByteIOContext *bc, int max_size, in
     return 0;
 }
 
+/**
+ *
+ * must not be called more then once per packet
+ */
 static int update_packetheader(NUTContext *nut, ByteIOContext *bc, int additional_size, int calculate_checksum){
     int64_t start= nut->packet_start[2];
     int64_t cur= url_ftell(bc);
-    int size= cur - start + additional_size;
+    int size= cur - start - get_length(nut->written_packet_size)/7 - 8;
     
     if(calculate_checksum)
         size += 4;
@@ -1276,7 +1279,7 @@ static int nut_read_packet(AVFormatContext *s, AVPacket *pkt)
         case INDEX_STARTCODE:
             get_packetheader(nut, bc, 0);
             assert(nut->packet_start[2] == pos);
-            url_fseek(bc, nut->written_packet_size + nut->packet_start[2], SEEK_SET);
+            url_fseek(bc, nut->written_packet_size, SEEK_CUR);
             break;
         case INFO_STARTCODE:
             if(decode_info_header(nut)<0)
@@ -1357,7 +1360,7 @@ av_log(s, AV_LOG_DEBUG, "read_timestamp(X,%d,%lld,%lld)\n", stream_index, *pos_a
         case INFO_STARTCODE:
             get_packetheader(nut, bc, 0);
             assert(nut->packet_start[2]==pos);
-            url_fseek(bc, nut->written_packet_size + pos, SEEK_SET);
+            url_fseek(bc, nut->written_packet_size, SEEK_CUR);
             break;
         case KEYFRAME_STARTCODE:
             frame_type=2;
