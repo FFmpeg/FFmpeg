@@ -24,6 +24,7 @@
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
  
+#include <stdio.h> //for FILE *
 #include "avcodec.h"
  
 static double av_parse_num(const char *name, char **tail){
