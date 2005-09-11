@@ -328,9 +328,9 @@ static int get_packetheader(NUTContext *nut, ByteIOContext *bc, int calculate_ch
     int64_t start, size;
     start= url_ftell(bc) - 8;
 
-    init_checksum(bc, calculate_checksum ? update_adler32 : NULL, 0);
-
     size= get_v(bc);
+
+    init_checksum(bc, calculate_checksum ? update_adler32 : NULL, 0);
 
     nut->packet_start[2] = start;
     nut->written_packet_size= size;
@@ -465,11 +465,11 @@ static int put_packetheader(NUTContext *nut, ByteIOContext *bc, int max_size, in
     nut->packet_start[2]= url_ftell(bc) - 8;
     nut->written_packet_size = max_size;
     
-    if(calculate_checksum)
-        init_checksum(bc, update_adler32, 0);
-
     /* packet header */
     put_v(bc, nut->written_packet_size); /* forward ptr */
+
+    if(calculate_checksum)
+        init_checksum(bc, update_adler32, 0);
 
     return 0;
 }
