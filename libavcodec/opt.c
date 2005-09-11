@@ -64,6 +64,7 @@ static AVOption *av_set_number(void *obj, const char *name, double num, int den,
     dst= ((uint8_t*)obj) + o->offset;
 
     switch(o->type){
+    case FF_OPT_TYPE_FLAGS:   
     case FF_OPT_TYPE_INT:   *(int       *)dst= lrintf(num/den)*intnum; break;
     case FF_OPT_TYPE_INT64: *(int64_t   *)dst= lrintf(num/den)*intnum; break;
     case FF_OPT_TYPE_FLOAT: *(float     *)dst= num*intnum/den;         break;
@@ -83,32 +84,39 @@ AVOption *av_set_string(void *obj, const char *name, const char *val){
     if(!o || !val || o->offset<=0) 
         return NULL;
     if(o->type != FF_OPT_TYPE_STRING){
-        double d=0, tmp_d;
         for(;;){
             int i;
             char buf[256], *tail;
+            int cmd=0;
+            double d;
 
-            for(i=0; i<sizeof(buf)-1 && val[i] && val[i]!='+'; i++)
+            if(*val == '+' || *val == '-')
+                cmd= *(val++);
+            
+            for(i=0; i<sizeof(buf)-1 && val[i] && val[i]!='+' && val[i]!='-'; i++)
                 buf[i]= val[i];
             buf[i]=0;
             val+= i;
             
-            tmp_d= av_parse_num(buf, &tail);
-            if(tail > buf)
-                d+= tmp_d;
-            else{
+            d= av_parse_num(buf, &tail);
+            if(tail <= buf){
                 AVOption *o_named= find_opt(obj, buf);
-                if(o_named && o_named->type == FF_OPT_TYPE_CONST) 
-                    d+= o_named->default_val;
-                else if(!strcmp(buf, "default")) d+= o->default_val;
-                else if(!strcmp(buf, "max"    )) d+= o->max;
-                else if(!strcmp(buf, "min"    )) d+= o->min;
+                if(o_named && o_named->type == FF_OPT_TYPE_CONST && !strcmp(o_named->unit, o->unit)) 
+                    d= o_named->default_val;
+                else if(!strcmp(buf, "default")) d= o->default_val;
+                else if(!strcmp(buf, "max"    )) d= o->max;
+                else if(!strcmp(buf, "min"    )) d= o->min;
                 else return NULL;
             }
+            if(o->type == FF_OPT_TYPE_FLAGS){
+                if     (cmd=='+') d= av_get_int(obj, name, NULL) | (int64_t)d;
+                else if(cmd=='-') d= av_get_int(obj, name, NULL) &~(int64_t)d;
+            }else if(cmd=='-')
+                d= -d;
 
-            if(*val == '+') val++;
+            av_set_number(obj, name, d, 1, 1);
             if(!*val)
-                return av_set_number(obj, name, d, 1, 1);
+                return o;
         }
         return NULL;
     }
@@ -149,6 +157,7 @@ const char *av_get_string(void *obj, const char *name, AVOption **o_out, char *b
         return dst;
     
     switch(o->type){
+    case FF_OPT_TYPE_FLAGS:     snprintf(buf, buf_len, "0x%08X",*(int    *)dst);break;
     case FF_OPT_TYPE_INT:       snprintf(buf, buf_len, "%d" , *(int    *)dst);break;
     case FF_OPT_TYPE_INT64:     snprintf(buf, buf_len, "%Ld", *(int64_t*)dst);break;
     case FF_OPT_TYPE_FLOAT:     snprintf(buf, buf_len, "%f" , *(float  *)dst);break;
@@ -170,6 +179,7 @@ static int av_get_number(void *obj, const char *name, AVOption **o_out, double *
     if(o_out) *o_out= o;
 
     switch(o->type){
+    case FF_OPT_TYPE_FLAGS:   
     case FF_OPT_TYPE_INT:       *intnum= *(int    *)dst;return 0;
     case FF_OPT_TYPE_INT64:     *intnum= *(int64_t*)dst;return 0;
     case FF_OPT_TYPE_FLOAT:     *num=    *(float  *)dst;return 0;
