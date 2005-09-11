@@ -583,7 +583,7 @@ static void do_audio_out(AVFormatContext *s,
             pkt.stream_index= ost->index;
             pkt.data= audio_out;
             pkt.size= ret;
-            if(enc->coded_frame)
+            if(enc->coded_frame && enc->coded_frame->pts != AV_NOPTS_VALUE)
                 pkt.pts= av_rescale_q(enc->coded_frame->pts, enc->time_base, ost->st->time_base);
             pkt.flags |= PKT_FLAG_KEY;
             av_interleaved_write_frame(s, &pkt);
@@ -627,7 +627,7 @@ static void do_audio_out(AVFormatContext *s,
         pkt.stream_index= ost->index;
         pkt.data= audio_out;
         pkt.size= ret;
-        if(enc->coded_frame)
+        if(enc->coded_frame && enc->coded_frame->pts != AV_NOPTS_VALUE)
             pkt.pts= av_rescale_q(enc->coded_frame->pts, enc->time_base, ost->st->time_base);
         pkt.flags |= PKT_FLAG_KEY;
         av_interleaved_write_frame(s, &pkt);
@@ -967,7 +967,7 @@ static void do_video_out(AVFormatContext *s,
 	    enc->coded_frame = dec->coded_frame; //FIXME/XXX remove this hack
             pkt.data= (uint8_t *)final_picture;
             pkt.size=  sizeof(AVPicture);
-            if(dec->coded_frame)
+            if(dec->coded_frame && enc->coded_frame->pts != AV_NOPTS_VALUE)
                 pkt.pts= av_rescale_q(enc->coded_frame->pts, enc->time_base, ost->st->time_base);
             if(dec->coded_frame && dec->coded_frame->key_frame)
                 pkt.flags |= PKT_FLAG_KEY;
@@ -1007,7 +1007,7 @@ static void do_video_out(AVFormatContext *s,
             if(ret>0){
                 pkt.data= bit_buffer;
                 pkt.size= ret;
-                if(enc->coded_frame)
+                if(enc->coded_frame && enc->coded_frame->pts != AV_NOPTS_VALUE)
                     pkt.pts= av_rescale_q(enc->coded_frame->pts, enc->time_base, ost->st->time_base);
 /*av_log(NULL, AV_LOG_DEBUG, "encoder -> %lld/%lld\n", 
    pkt.pts != AV_NOPTS_VALUE ? av_rescale(pkt.pts, enc->time_base.den, AV_TIME_BASE*(int64_t)enc->time_base.num) : -1,
@@ -1494,7 +1494,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
                             break;
                         pkt.data= bit_buffer;
                         pkt.size= ret;
-                        if(enc->coded_frame)
+                        if(enc->coded_frame && enc->coded_frame->pts != AV_NOPTS_VALUE)
                             pkt.pts= av_rescale_q(enc->coded_frame->pts, enc->time_base, ost->st->time_base);
                         av_interleaved_write_frame(os, &pkt);
                     }
