@@ -279,7 +279,7 @@ fi
 if [ -n "$do_mpeg4" ] ; then
 # mpeg4
 file=${outfile}odivx.mp4
-do_ffmpeg $file -y -flags +MV4 -hq -qscale 10 -f pgmyuv -i $raw_src -an -vcodec mpeg4 $file
+do_ffmpeg $file -y -flags +MV4 -mbd BITS -qscale 10 -f pgmyuv -i $raw_src -an -vcodec mpeg4 $file
 
 # mpeg4 decoding
 do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst 
@@ -309,7 +309,7 @@ fi
 if [ -n "$do_mpeg4adv" ] ; then
 # mpeg4
 file=${outfile}mpeg4-adv.avi
-do_ffmpeg $file -y -qscale 9 -flags +MV4+PART+AIC+TRELL -hq -ps 200 -f pgmyuv -i $raw_src -an -vcodec mpeg4 $file
+do_ffmpeg $file -y -qscale 9 -flags +MV4+PART+AIC+TRELL -mbd BITS -ps 200 -f pgmyuv -i $raw_src -an -vcodec mpeg4 $file
 
 # mpeg4 decoding
 do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst 
@@ -319,7 +319,7 @@ fi
 if [ -n "$do_mpeg4thread" ] ; then
 # mpeg4
 file=${outfile}mpeg4-thread.avi
-do_ffmpeg $file -y -b 500 -flags +MV4+PART+AIC+TRELL -hq  -ps 200 -bf 2 -f pgmyuv -i $raw_src -an -vcodec mpeg4 -threads 2 $file
+do_ffmpeg $file -y -b 500 -flags +MV4+PART+AIC+TRELL -mbd BITS  -ps 200 -bf 2 -f pgmyuv -i $raw_src -an -vcodec mpeg4 -threads 2 $file
 
 # mpeg4 decoding
 do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst 
@@ -339,7 +339,7 @@ fi
 if [ -n "$do_error" ] ; then
 # damaged mpeg4
 file=${outfile}error-mpeg4-adv.avi
-do_ffmpeg $file -y -qscale 7 -flags +MV4+PART+AIC -mbd 2 -ps 250 -error 10 -f pgmyuv -i $raw_src -an -vcodec mpeg4 $file
+do_ffmpeg $file -y -qscale 7 -flags +MV4+PART+AIC -mbd RD -ps 250 -error 10 -f pgmyuv -i $raw_src -an -vcodec mpeg4 $file
 
 # damaged mpeg4 decoding
 do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst 
@@ -349,7 +349,7 @@ fi
 if [ -n "$do_mpeg4nr" ] ; then
 # noise reduction
 file=${outfile}mpeg4-nr.avi
-do_ffmpeg $file -y -qscale 8 -flags +MV4 -mbd 2 -nr 200 -f pgmyuv -i $raw_src -an -vcodec mpeg4 $file
+do_ffmpeg $file -y -qscale 8 -flags +MV4 -mbd RD -nr 200 -f pgmyuv -i $raw_src -an -vcodec mpeg4 $file
 
 # mpeg4 decoding
 do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst 

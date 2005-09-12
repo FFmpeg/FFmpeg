@@ -143,12 +143,6 @@ static int video_codec_tag = 0;
 static int same_quality = 0;
 static int b_frames = 0;
 static int b_strategy = 0;
-static int mb_decision = FF_MB_DECISION_SIMPLE;
-static int ildct_cmp = FF_CMP_VSAD;
-static int mb_cmp = FF_CMP_SAD;
-static int sub_cmp = FF_CMP_SAD;
-static int cmp = FF_CMP_SAD;
-static int pre_cmp = FF_CMP_SAD;
 static int pre_me = 0;
 static float lumi_mask = 0;
 static float dark_mask = 0;
@@ -177,7 +171,6 @@ static int me_penalty_compensation= 256;
 static int frame_skip_threshold= 0;
 static int frame_skip_factor= 0;
 static int frame_skip_exp= 0;
-static int frame_skip_cmp= FF_CMP_DCTMAX;
 extern int loop_input; /* currently a hack */
 static int loop_output = AVFMT_NOOUTPUTLOOP;
 static int genpts = 0;
@@ -2509,36 +2502,6 @@ static void opt_b_frames(const char *arg)
     }
 }
 
-static void opt_mb_decision(const char *arg)
-{
-    mb_decision = atoi(arg);
-}
-
-static void opt_mb_cmp(const char *arg)
-{
-    mb_cmp = atoi(arg);
-}
-
-static void opt_ildct_cmp(const char *arg)
-{
-    ildct_cmp = atoi(arg);
-}
-
-static void opt_sub_cmp(const char *arg)
-{
-    sub_cmp = atoi(arg);
-}
-
-static void opt_cmp(const char *arg)
-{
-    cmp = atoi(arg);
-}
-
-static void opt_pre_cmp(const char *arg)
-{
-    pre_cmp = atoi(arg);
-}
-
 static void opt_pre_me(const char *arg)
 {
     pre_me = atoi(arg);
@@ -3236,12 +3199,6 @@ static void new_video_stream(AVFormatContext *oc)
         if(inter_matrix)
             video_enc->inter_matrix = inter_matrix;
 
-        video_enc->mb_decision = mb_decision;
-        video_enc->mb_cmp = mb_cmp;
-        video_enc->ildct_cmp = ildct_cmp;
-        video_enc->me_sub_cmp = sub_cmp;
-        video_enc->me_cmp = cmp;
-        video_enc->me_pre_cmp = pre_cmp;
         video_enc->pre_me = pre_me;
         video_enc->lumi_masking = lumi_mask;
         video_enc->dark_masking = dark_mask;
@@ -3322,7 +3279,6 @@ static void new_video_stream(AVFormatContext *oc)
         video_enc->frame_skip_threshold= frame_skip_threshold;
         video_enc->frame_skip_factor= frame_skip_factor;
         video_enc->frame_skip_exp= frame_skip_exp;
-        video_enc->frame_skip_cmp= frame_skip_cmp;
 
         if(packet_size){
             video_enc->rtp_mode= 1;
@@ -4183,13 +4139,6 @@ const OptionDef options[] = {
     { "er", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_error_resilience}, "set error resilience",  "n" },
     { "ec", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_error_concealment}, "set error concealment",  "bit_mask" },
     { "bf", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_b_frames}, "use 'frames' B frames", "frames" },
-    { "hq", OPT_BOOL, {(void*)&mb_decision}, "activate high quality settings" },
-    { "mbd", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_mb_decision}, "macroblock decision", "mode" },
-    { "mbcmp", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_mb_cmp}, "macroblock compare function", "cmp function" },
-    { "ildctcmp", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_ildct_cmp}, "ildct compare function", "cmp function" },
-    { "subcmp", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_sub_cmp}, "subpel compare function", "cmp function" },
-    { "cmp", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_cmp}, "fullpel compare function", "cmp function" },
-    { "precmp", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_pre_cmp}, "pre motion estimation compare function", "cmp function" },
     { "preme", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_pre_me}, "pre motion estimation", "" },
     { "lumi_mask", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_lumi_mask}, "luminance masking", "" },
     { "dark_mask", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_dark_mask}, "darkness masking", "" },
@@ -4226,7 +4175,6 @@ const OptionDef options[] = {
     { "skip_threshold", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&frame_skip_threshold}, "frame skip threshold", "threshold" },
     { "skip_factor", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&frame_skip_factor}, "frame skip factor", "factor" },
     { "skip_exp", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&frame_skip_exp}, "frame skip exponent", "exponent" },
-    { "skip_cmp", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&frame_skip_cmp}, "frame skip compare function", "compare function" },
     { "newvideo", OPT_VIDEO, {(void*)opt_new_video_stream}, "add a new video stream to the current output stream" },
     { "genpts", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, { (void *)&genpts }, "generate pts" },
 
