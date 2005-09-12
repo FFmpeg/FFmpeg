@@ -21,6 +21,7 @@
 #include "avformat.h"
 #include "framehook.h"
 #include "dsputil.h"
+#include "opt.h"
 
 #ifndef CONFIG_WIN32
 #include <unistd.h>

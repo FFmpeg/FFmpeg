@@ -28,6 +28,7 @@
 #include "dsputil.h"
 #include "mpegvideo.h"
 #include "integer.h"
+#include "opt.h"
 #include <stdarg.h>
 #include <limits.h>
 #include <float.h>

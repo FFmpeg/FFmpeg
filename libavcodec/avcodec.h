@@ -12,7 +12,6 @@ extern "C" {
 #endif
 
 #include "avutil.h"
-#include "opt.h"
 #include <sys/types.h> /* size_t */
 
 //FIXME the following 2 really dont belong in here
@@ -682,7 +681,7 @@ struct AVCLASS {
 					or AVFormatContext, which begin with an AVClass.
 					Needed because av_log is in libavcodec and has no visibility
 					of AVIn/OutputFormat */
-    AVOption *option;
+    struct AVOption *option;
 };
 
 /**

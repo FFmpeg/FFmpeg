@@ -25,6 +25,7 @@
  */
  
 #include "avcodec.h"
+#include "opt.h"
  
 static double av_parse_num(const char *name, char **tail){
     double d;
