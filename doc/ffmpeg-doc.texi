@@ -388,7 +388,7 @@ FF_IDCT_SIMPLEARM
 Set error resilience to @var{n}.
 @table @samp
 @item 1 
-FF_ER_CAREFULL (default)
+FF_ER_CAREFUL (default)
 @item 2
 FF_ER_COMPLIANT
 @item 3

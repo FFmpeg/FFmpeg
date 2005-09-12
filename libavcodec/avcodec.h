@@ -1006,7 +1006,7 @@ typedef struct AVCodecContext {
      * - decoding: set by user
      */
     int error_resilience;
-#define FF_ER_CAREFULL        1
+#define FF_ER_CAREFUL         1
 #define FF_ER_COMPLIANT       2
 #define FF_ER_AGGRESSIVE      3
 #define FF_ER_VERY_AGGRESSIVE 4

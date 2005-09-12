@@ -216,7 +216,7 @@ static int idct = FF_IDCT_AUTO;
 static enum AVDiscard skip_frame= AVDISCARD_DEFAULT;
 static enum AVDiscard skip_idct= AVDISCARD_DEFAULT;
 static enum AVDiscard skip_loop_filter= AVDISCARD_DEFAULT;
-static int error_resilience = FF_ER_CAREFULL;
+static int error_resilience = FF_ER_CAREFUL;
 static int error_concealment = 3;
 
 /* current context */
