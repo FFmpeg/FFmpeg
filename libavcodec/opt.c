@@ -35,12 +35,12 @@ static double av_parse_num(const char *name, char **tail){
 }
 
 //FIXME order them and do a bin search
-static AVOption *find_opt(void *v, const char *name){
+static AVOption *find_opt(void *v, const char *name, const char *unit){
     AVClass *c= *(AVClass**)v; //FIXME silly way of storing AVClass
     AVOption *o= c->option;
     
     for(;o && o->name; o++){
-        if(!strcmp(o->name, name))
+        if(!strcmp(o->name, name) && (!unit || !strcmp(o->unit, unit)) )
             return o;
     }
     return NULL;
@@ -53,7 +53,7 @@ AVOption *av_next_option(void *obj, AVOption *last){
 }
 
 static AVOption *av_set_number(void *obj, const char *name, double num, int den, int64_t intnum){
-    AVOption *o= find_opt(obj, name);
+    AVOption *o= find_opt(obj, name, NULL);
     void *dst;
     if(!o || o->offset<=0) 
         return NULL;
@@ -78,9 +78,30 @@ static AVOption *av_set_number(void *obj, const char *name, double num, int den,
     return o;
 }
 
+static AVOption *set_all_opt(void *v, const char *unit, double d){
+    AVClass *c= *(AVClass**)v; //FIXME silly way of storing AVClass
+    AVOption *o= c->option;
+    AVOption *ret=NULL;
+    
+    for(;o && o->name; o++){
+        if(o->type != FF_OPT_TYPE_CONST && o->unit && !strcmp(o->unit, unit)){
+            double tmp= d;
+            if(o->type == FF_OPT_TYPE_FLAGS)
+                tmp= av_get_int(v, o->name, NULL) | (int64_t)d;
+
+            av_set_number(v, o->name, tmp, 1, 1);
+            ret= o;
+        }
+    }
+    return ret;
+}
+
 //FIXME use eval.c maybe?
 AVOption *av_set_string(void *obj, const char *name, const char *val){
-    AVOption *o= find_opt(obj, name);
+    AVOption *o= find_opt(obj, name, NULL);
+    if(o && o->offset==0 && o->type == FF_OPT_TYPE_CONST && o->unit){
+        return set_all_opt(obj, o->unit, o->default_val);
+    }
     if(!o || !val || o->offset<=0) 
         return NULL;
     if(o->type != FF_OPT_TYPE_STRING){
@@ -100,8 +121,8 @@ AVOption *av_set_string(void *obj, const char *name, const char *val){
             
             d= av_parse_num(buf, &tail);
             if(tail <= buf){
-                AVOption *o_named= find_opt(obj, buf);
-                if(o_named && o_named->type == FF_OPT_TYPE_CONST && !strcmp(o_named->unit, o->unit)) 
+                AVOption *o_named= find_opt(obj, buf, o->unit);
+                if(o_named && o_named->type == FF_OPT_TYPE_CONST) 
                     d= o_named->default_val;
                 else if(!strcmp(buf, "default")) d= o->default_val;
                 else if(!strcmp(buf, "max"    )) d= o->max;
@@ -143,7 +164,7 @@ AVOption *av_set_int(void *obj, const char *name, int64_t n){
  * @param buf_len allocated length in bytes of buf
  */
 const char *av_get_string(void *obj, const char *name, AVOption **o_out, char *buf, int buf_len){
-    AVOption *o= find_opt(obj, name);
+    AVOption *o= find_opt(obj, name, NULL);
     void *dst;
     if(!o || o->offset<=0)
         return NULL;
@@ -169,7 +190,7 @@ const char *av_get_string(void *obj, const char *name, AVOption **o_out, char *b
 }
 
 static int av_get_number(void *obj, const char *name, AVOption **o_out, double *num, int *den, int64_t *intnum){
-    AVOption *o= find_opt(obj, name);
+    AVOption *o= find_opt(obj, name, NULL);
     void *dst;
     if(!o || o->offset<=0)
         goto error;

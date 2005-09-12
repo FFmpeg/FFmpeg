@@ -66,6 +66,7 @@ extern const OptionDef options[];
 
 static void show_help(void);
 static void show_license(void);
+static int opt_default(const char *opt, const char *arg);
 
 #define MAX_FILES 20
 
@@ -154,61 +155,31 @@ static float dark_mask = 0;
 static float scplx_mask = 0;
 static float tcplx_mask = 0;
 static float p_mask = 0;
-static int use_4mv = 0;
-static int use_obmc = 0;
-static int use_loop = 0;
-static int use_aic = 0;
-static int use_aiv = 0;
-static int use_umv = 0;
-static int use_ss = 0;
-static int use_alt_scan = 0;
-static int use_trell = 0;
-static int use_scan_offset = 0;
-static int use_qpel = 0;
-static int use_qprd = 0;
-static int use_cbprd = 0;
-static int use_mv0 = 0;
-static int do_normalize_aqp = 0;
 static int qns = 0;
-static int closed_gop = 0;
-static int strict_gop = 0;
-static int no_output = 0;
 static int do_deinterlace = 0;
-static int do_interlace_dct = 0;
-static int do_interlace_me = 0;
 static int workaround_bugs = FF_BUG_AUTODETECT;
 static int error_resilience = FF_ER_CAREFULL;
 static int error_concealment = 3;
-static int dct_algo = 0;
-static int idct_algo = 0;
-static int use_part = 0;
 static int packet_size = 0;
 static int error_rate = 0;
 static int strict = 0;
 static int top_field_first = -1;
 static int noise_reduction = 0;
 static int sc_threshold = 0;
-static int debug = 0;
-static int debug_mv = 0;
 static int me_threshold = 0;
 static int mb_threshold = 0;
 static int intra_dc_precision = 8;
 static int coder = 0;
 static int context = 0;
 static int predictor = 0;
-static int video_profile = FF_PROFILE_UNKNOWN;
-static int video_level = FF_LEVEL_UNKNOWN;
 static int nsse_weight = 8;
-static int subpel_quality= 8;
 static int me_penalty_compensation= 256;
-static int lowres= 0;
 static int frame_skip_threshold= 0;
 static int frame_skip_factor= 0;
 static int frame_skip_exp= 0;
 static int frame_skip_cmp= FF_CMP_DCTMAX;
 extern int loop_input; /* currently a hack */
 static int loop_output = AVFMT_NOOUTPUTLOOP;
-static int gray_only = 0;
 static int genpts = 0;
 
 static int gop_size = 12;
@@ -246,7 +217,6 @@ static int do_pkt_dump = 0;
 static int do_psnr = 0;
 static int do_vstats = 0;
 static int do_pass = 0;
-static int bitexact = 0;
 static char *pass_logfilename = NULL;
 static int audio_stream_copy = 0;
 static int video_stream_copy = 0;
@@ -983,7 +953,7 @@ static void do_video_out(AVFormatContext *s,
             /* better than nothing: use input picture interlaced
                settings */
             big_picture.interlaced_frame = in_picture->interlaced_frame;
-            if(do_interlace_me || do_interlace_dct){
+            if(avctx_opts->flags & (CODEC_FLAG_INTERLACED_DCT|CODEC_FLAG_INTERLACED_ME)){
                 if(top_field_first == -1)
                     big_picture.top_field_first = in_picture->top_field_first;
                 else
@@ -2289,16 +2259,6 @@ static void opt_workaround_bugs(const char *arg)
     workaround_bugs = atoi(arg);
 }
 
-static void opt_dct_algo(const char *arg)
-{
-    dct_algo = atoi(arg);
-}
-
-static void opt_idct_algo(const char *arg)
-{
-    idct_algo = atoi(arg);
-}
-
 static void opt_me_threshold(const char *arg)
 {
     me_threshold = atoi(arg);
@@ -2319,17 +2279,6 @@ static void opt_error_concealment(const char *arg)
     error_concealment = atoi(arg);
 }
 
-static void opt_debug(const char *arg)
-{
-    debug = atoi(arg);
-    av_log_set_level(AV_LOG_DEBUG);
-}
-
-static void opt_vismv(const char *arg)
-{
-    debug_mv = atoi(arg);
-}
-    
 static void opt_verbose(const char *arg)
 {
     verbose = atoi(arg);
@@ -3059,6 +3008,7 @@ static void opt_input_file(const char *filename)
 
     /* update the current parameters so that they match the one of the input stream */
     for(i=0;i<ic->nb_streams;i++) {
+        int j;
         AVCodecContext *enc = ic->streams[i]->codec;
 #if defined(HAVE_THREADS)
         if(thread_count>1)
@@ -3067,6 +3017,12 @@ static void opt_input_file(const char *filename)
         enc->thread_count= thread_count;
         switch(enc->codec_type) {
         case CODEC_TYPE_AUDIO:
+            for(j=0; j<opt_name_count; j++){
+                AVOption *opt;
+                double d= av_get_double(avctx_opts, opt_names[j], &opt);
+                if(d==d && (opt->flags&AV_OPT_FLAG_AUDIO_PARAM) && (opt->flags&AV_OPT_FLAG_DECODING_PARAM))
+                    av_set_double(enc, opt_names[j], d);
+            }
             //fprintf(stderr, "\nInput Audio channels: %d", enc->channels);
             audio_channels = enc->channels;
             audio_sample_rate = enc->sample_rate;
@@ -3074,6 +3030,12 @@ static void opt_input_file(const char *filename)
                 ic->streams[i]->discard= AVDISCARD_ALL;
             break;
         case CODEC_TYPE_VIDEO:
+            for(j=0; j<opt_name_count; j++){
+                AVOption *opt;
+                double d= av_get_double(avctx_opts, opt_names[j], &opt);
+                if(d==d && (opt->flags&AV_OPT_FLAG_VIDEO_PARAM) && (opt->flags&AV_OPT_FLAG_DECODING_PARAM))
+                    av_set_double(enc, opt_names[j], d);
+            }
             frame_height = enc->height;
             frame_width = enc->width;
 	    frame_aspect_ratio = av_q2d(enc->sample_aspect_ratio) * enc->width / enc->height;
@@ -3083,17 +3045,9 @@ static void opt_input_file(const char *filename)
             enc->workaround_bugs = workaround_bugs;
             enc->error_resilience = error_resilience; 
             enc->error_concealment = error_concealment; 
-            enc->idct_algo = idct_algo;
-            enc->debug = debug;
-            enc->debug_mv = debug_mv;            
-            enc->lowres= lowres;
-            if(lowres) enc->flags |= CODEC_FLAG_EMU_EDGE;
-            if(bitexact)
-                enc->flags|= CODEC_FLAG_BITEXACT;
+            if(enc->lowres) enc->flags |= CODEC_FLAG_EMU_EDGE;
             if(me_threshold)
                 enc->debug |= FF_DEBUG_MV;
-            if(gray_only)
-                enc->flags |= CODEC_FLAG_GRAY;
 
             if (enc->time_base.den != rfps || enc->time_base.num != rfps_base) { 
 
@@ -3200,10 +3154,14 @@ static void new_video_stream(AVFormatContext *oc)
         video_enc->codec_tag= video_codec_tag;
     
     if(   (video_global_header&1)
-       || (video_global_header==0 && (oc->oformat->flags & AVFMT_GLOBALHEADER)))
+       || (video_global_header==0 && (oc->oformat->flags & AVFMT_GLOBALHEADER))){
         video_enc->flags |= CODEC_FLAG_GLOBAL_HEADER;
-    if(video_global_header&2)
+        avctx_opts->flags|= CODEC_FLAG_GLOBAL_HEADER;
+    }
+    if(video_global_header&2){
         video_enc->flags2 |= CODEC_FLAG2_LOCAL_HEADER;
+        avctx_opts->flags2|= CODEC_FLAG2_LOCAL_HEADER;
+    }
 
     if (video_stream_copy) {
         st->stream_copy = 1;
@@ -3278,9 +3236,6 @@ static void new_video_stream(AVFormatContext *oc)
         if(inter_matrix)
             video_enc->inter_matrix = inter_matrix;
 
-        if(bitexact)
-            video_enc->flags |= CODEC_FLAG_BITEXACT;
-
         video_enc->mb_decision = mb_decision;
         video_enc->mb_cmp = mb_cmp;
         video_enc->ildct_cmp = ildct_cmp;
@@ -3295,77 +3250,10 @@ static void new_video_stream(AVFormatContext *oc)
         video_enc->p_masking = p_mask;
         video_enc->quantizer_noise_shaping= qns;
                 
-        if (use_umv) {
-            video_enc->flags |= CODEC_FLAG_H263P_UMV;
-        }
-        if (use_ss) {
-            video_enc->flags |= CODEC_FLAG_H263P_SLICE_STRUCT;
-        }
-        if (use_aic) {
-            video_enc->flags |= CODEC_FLAG_H263P_AIC;
-        }
-        if (use_aiv) {
-            video_enc->flags |= CODEC_FLAG_H263P_AIV;
-        }
-        if (use_4mv) {
-            video_enc->flags |= CODEC_FLAG_4MV;
-        }
-        if (use_obmc) {
-            video_enc->flags |= CODEC_FLAG_OBMC;
-        }
-        if (use_loop) {
-            video_enc->flags |= CODEC_FLAG_LOOP_FILTER;
-        }
-            
-        if(use_part) {
-            video_enc->flags |= CODEC_FLAG_PART;
-        }
-        if (use_alt_scan) {
-            video_enc->flags |= CODEC_FLAG_ALT_SCAN;
-        }
-        if (use_trell) {
-            video_enc->flags |= CODEC_FLAG_TRELLIS_QUANT;
-        }
-        if (use_mv0) {
-            video_enc->flags |= CODEC_FLAG_MV0;
-        }
-        if (do_normalize_aqp) {
-            video_enc->flags |= CODEC_FLAG_NORMALIZE_AQP;
-        }
-        if (use_scan_offset) {
-            video_enc->flags |= CODEC_FLAG_SVCD_SCAN_OFFSET;
-        }
-        if (closed_gop) {
-            video_enc->flags |= CODEC_FLAG_CLOSED_GOP;
-        }
-        if (strict_gop) {
-            video_enc->flags2 |= CODEC_FLAG2_STRICT_GOP;
-        }
-        if (use_qpel) {
-            video_enc->flags |= CODEC_FLAG_QPEL;
-        }
-        if (use_qprd) {
-            video_enc->flags |= CODEC_FLAG_QP_RD;
-        }
-        if (use_cbprd) {
-            video_enc->flags |= CODEC_FLAG_CBP_RD;
-        }
         if (b_frames) {
             video_enc->max_b_frames = b_frames;
             video_enc->b_frame_strategy = b_strategy;
             video_enc->b_quant_factor = 2.0;
-        }
-        if (do_interlace_dct) {
-            video_enc->flags |= CODEC_FLAG_INTERLACED_DCT;
-        }
-        if (do_interlace_me) {
-            video_enc->flags |= CODEC_FLAG_INTERLACED_ME;
-        }
-        if (no_output) {
-            video_enc->flags2 |= CODEC_FLAG2_NO_OUTPUT;
-        }
-        if (gray_only) {
-            video_enc->flags |= CODEC_FLAG_GRAY;
         }
         video_enc->qmin = video_qmin;
         video_enc->qmax = video_qmax;
@@ -3378,8 +3266,6 @@ static void new_video_stream(AVFormatContext *oc)
         video_enc->qblur = video_qblur;
         video_enc->qcompress = video_qcomp;
         video_enc->rc_eq = video_rc_eq;
-        video_enc->debug = debug;
-        video_enc->debug_mv = debug_mv;
         video_enc->workaround_bugs = workaround_bugs;
         video_enc->thread_count = thread_count;
         p= video_rc_override_string;
@@ -3420,8 +3306,6 @@ static void new_video_stream(AVFormatContext *oc)
         video_enc->b_quant_offset = video_b_qoffset;
         video_enc->intra_quant_bias = video_intra_quant_bias;
         video_enc->inter_quant_bias = video_inter_quant_bias;
-        video_enc->dct_algo = dct_algo;
-        video_enc->idct_algo = idct_algo;
         video_enc->me_threshold= me_threshold;
         video_enc->mb_threshold= mb_threshold;
         video_enc->intra_dc_precision= intra_dc_precision - 8;
@@ -3433,10 +3317,7 @@ static void new_video_stream(AVFormatContext *oc)
         video_enc->coder_type= coder;
         video_enc->context_model= context;
         video_enc->prediction_method= predictor;
-        video_enc->profile= video_profile;
-        video_enc->level= video_level;
         video_enc->nsse_weight= nsse_weight;
-        video_enc->me_subpel_quality= subpel_quality;
         video_enc->me_penalty_compensation= me_penalty_compensation;
         video_enc->frame_skip_threshold= frame_skip_threshold;
         video_enc->frame_skip_factor= frame_skip_factor;
@@ -3491,8 +3372,10 @@ static void new_audio_stream(AVFormatContext *oc)
     if(audio_codec_tag)
         audio_enc->codec_tag= audio_codec_tag;
     
-    if (oc->oformat->flags & AVFMT_GLOBALHEADER) 
+    if (oc->oformat->flags & AVFMT_GLOBALHEADER) {
         audio_enc->flags |= CODEC_FLAG_GLOBAL_HEADER;
+        avctx_opts->flags|= CODEC_FLAG_GLOBAL_HEADER;
+    }
     if (audio_stream_copy) {
         st->stream_copy = 1;
         audio_enc->channels = audio_channels;
@@ -3864,13 +3747,6 @@ static int64_t getutime(void)
 
 extern int ffm_nopts;
 
-static void opt_bitexact(void)
-{
-    bitexact=1;
-    /* disable generate of real time pts in ffm (need to be supressed anyway) */
-    ffm_nopts = 1;
-}
-
 static void show_formats(void)
 {
     AVInputFormat *ifmt;
@@ -4139,7 +4015,8 @@ static void opt_target(const char *arg)
         video_rc_max_rate = 2516000;
         video_rc_min_rate = 0; //1145000;
         video_rc_buffer_size = 224*1024*8;
-        use_scan_offset = 1;
+        opt_default("flags", "+SCAN_OFFSET");
+
 
         audio_bit_rate = 224000;
         audio_sample_rate = 44100;
@@ -4196,11 +4073,19 @@ static int opt_default(const char *opt, const char *arg){
     AVOption *o= av_set_string(avctx_opts, opt, arg);
     if(!o)
         return -1;
+        
+//    av_log(NULL, AV_LOG_ERROR, "%s:%s: %f 0x%0X\n", opt, arg, av_get_double(avctx_opts, opt, NULL), (int)av_get_int(avctx_opts, opt, NULL));
 
     //FIXME we should always use avctx_opts, ... for storing options so there wont be any need to keep track of whats set over this
     opt_names= av_realloc(opt_names, sizeof(void*)*(opt_name_count+1));
-    opt_names[opt_name_count++]= opt;
-        
+    opt_names[opt_name_count++]= o->name;
+    
+    /* disable generate of real time pts in ffm (need to be supressed anyway) */
+    if(avctx_opts->flags & CODEC_FLAG_BITEXACT)
+        ffm_nopts = 1;
+
+    if(avctx_opts->debug)
+        av_log_set_level(AV_LOG_DEBUG);
     return 0;
 }
 
@@ -4225,15 +4110,12 @@ const OptionDef options[] = {
     { "author", HAS_ARG | OPT_STRING, {(void*)&str_author}, "set the author", "string" },
     { "copyright", HAS_ARG | OPT_STRING, {(void*)&str_copyright}, "set the copyright", "string" },
     { "comment", HAS_ARG | OPT_STRING, {(void*)&str_comment}, "set the comment", "string" },
-    { "debug", HAS_ARG | OPT_EXPERT, {(void*)opt_debug}, "print specific debug info", "" },
-    { "vismv", HAS_ARG | OPT_EXPERT, {(void*)opt_vismv}, "visualize motion vectors", "" },
     { "benchmark", OPT_BOOL | OPT_EXPERT, {(void*)&do_benchmark}, 
       "add timings for benchmarking" },
     { "dump", OPT_BOOL | OPT_EXPERT, {(void*)&do_pkt_dump}, 
       "dump each input packet" },
     { "hex", OPT_BOOL | OPT_EXPERT, {(void*)&do_hex_dump}, 
       "when dumping packets, also dump the payload" },
-    { "bitexact", OPT_EXPERT, {(void*)opt_bitexact}, "only use bit exact algorithms (for codec testing)" }, 
     { "re", OPT_BOOL | OPT_EXPERT, {(void*)&rate_emu}, "read input at native frame rate", "" },
     { "loop", OPT_BOOL | OPT_EXPERT, {(void*)&loop_input}, "loop (current only works with images)" },
     { "loop_output", HAS_ARG | OPT_INT | OPT_EXPERT, {(void*)&loop_output}, "number of times to loop output in formats that support looping (0 loops forever)", "" },
@@ -4296,8 +4178,6 @@ const OptionDef options[] = {
     { "vcodec", HAS_ARG | OPT_VIDEO, {(void*)opt_video_codec}, "force video codec ('copy' to copy stream)", "codec" },
     { "me", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_motion_estimation}, "set motion estimation method", 
       "method" },
-    { "dct_algo", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_dct_algo}, "set dct algo",  "algo" },
-    { "idct_algo", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_idct_algo}, "set idct algo",  "algo" },
     { "me_threshold", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_me_threshold}, "motion estimaton threshold",  "" },
     { "mb_threshold", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_mb_threshold}, "macroblock threshold",  "" },
     { "er", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_error_resilience}, "set error resilience",  "n" },
@@ -4316,10 +4196,6 @@ const OptionDef options[] = {
     { "scplx_mask", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_scplx_mask}, "spatial complexity masking", "" },
     { "tcplx_mask", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_tcplx_mask}, "temporal complexity masking", "" },
     { "p_mask", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_p_mask}, "inter masking", "" },
-    { "4mv", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_4mv}, "use four motion vector by macroblock (MPEG4)" },
-    { "obmc", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_obmc}, "use overlapped block motion compensation (h263+)" },
-    { "lf", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_loop}, "use loop filter (h263+)" },
-    { "part", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_part}, "use data partitioning (MPEG4)" },
     { "bug", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_workaround_bugs}, "workaround not auto detected encoder bugs", "param" },
     { "ps", HAS_ARG | OPT_EXPERT, {(void*)opt_packet_size}, "set packet size in bits", "size" },
     { "error", HAS_ARG | OPT_EXPERT, {(void*)opt_error_rate}, "error rate", "rate" },
@@ -4330,28 +4206,9 @@ const OptionDef options[] = {
     { "passlogfile", HAS_ARG | OPT_STRING | OPT_VIDEO, {(void*)&pass_logfilename}, "select two pass log file name", "file" },
     { "deinterlace", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&do_deinterlace}, 
       "deinterlace pictures" },
-    { "ildct", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&do_interlace_dct}, 
-      "force interlaced dct support in encoder (MPEG2/MPEG4)" },
-    { "ilme", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&do_interlace_me}, 
-      "force interlaced me support in encoder (MPEG2/MPEG4)" },
     { "psnr", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&do_psnr}, "calculate PSNR of compressed frames" },
     { "vstats", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&do_vstats}, "dump video coding statistics to file" }, 
     { "vhook", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)add_frame_hooker}, "insert video processing module", "module" },
-    { "aic", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_aic}, "enable Advanced intra coding (h263+)" },
-    { "aiv", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_aiv}, "enable Alternative inter vlc (h263+)" },
-    { "umv", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_umv}, "enable Unlimited Motion Vector (h263+)" },
-    { "ssm", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_ss}, "enable Slice Structured mode (h263+)" },
-    { "alt", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_alt_scan}, "enable alternate scantable (MPEG2/MPEG4)" },
-    { "qprd", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_qprd}, "" },
-    { "cbp", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_cbprd}, "" },
-    { "trell", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_trell}, "enable trellis quantization" },
-    { "mv0", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_mv0}, "try to encode each MB with MV=<0,0> and choose the better one (has no effect if mbd=0)" },
-    { "naq", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&do_normalize_aqp}, "normalize adaptive quantization" },
-    { "cgop", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&closed_gop}, "closed gop" },
-    { "sgop", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&strict_gop}, "strict gop" },
-    { "noout", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&no_output}, "skip bitstream encoding" },
-    { "scan_offset", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_scan_offset}, "enable SVCD Scan Offset placeholder" },
-    { "qpel", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_qpel}, "enable 1/4-pel" },
     { "intra_matrix", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_intra_matrix}, "specify intra matrix coeffs", "matrix" },
     { "inter_matrix", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_inter_matrix}, "specify inter matrix coeffs", "matrix" },
     { "top", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_top_field_first}, "top=1/bottom=0/auto=-1 field first", "" },
@@ -4363,18 +4220,13 @@ const OptionDef options[] = {
     { "coder", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&coder}, "coder type", "" },
     { "context", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&context}, "context model", "" },
     { "pred", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&predictor}, "prediction method", "" },
-    { "vprofile", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&video_profile}, "profile", "" },
-    { "vlevel", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&video_level}, "level", "" },
     { "nssew", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&nsse_weight}, "weight", "" },
-    { "subq", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&subpel_quality}, "", "" },
     { "mepc", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&me_penalty_compensation}, "motion estimation bitrate penalty compensation", "factor (1.0 = 256)" },
-    { "lowres", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&lowres}, "", "" },
     { "vtag", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_video_tag}, "force video tag/fourcc", "fourcc/tag" },
     { "skip_threshold", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&frame_skip_threshold}, "frame skip threshold", "threshold" },
     { "skip_factor", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&frame_skip_factor}, "frame skip factor", "factor" },
     { "skip_exp", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&frame_skip_exp}, "frame skip exponent", "exponent" },
     { "skip_cmp", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&frame_skip_cmp}, "frame skip compare function", "compare function" },
-    { "gray", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, { (void *)&gray_only }, "encode/decode grayscale" },
     { "newvideo", OPT_VIDEO, {(void*)opt_new_video_stream}, "add a new video stream to the current output stream" },
     { "genpts", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, { (void *)&genpts }, "generate pts" },
 
