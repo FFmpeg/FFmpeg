@@ -107,8 +107,8 @@ do_ffmpeg()
 {
     f="$1"
     shift
-    echo $ffmpeg -y -flags +BITEXACT -dct FASTINT -idct SIMPLE $*
-    $ffmpeg -y -flags +BITEXACT -dct FASTINT -idct SIMPLE -benchmark $* > $datadir/bench.tmp 2> /tmp/ffmpeg$$
+    echo $ffmpeg -y -flags +bitexact -dct fastint -idct simple $*
+    $ffmpeg -y -flags +bitexact -dct fastint -idct simple -benchmark $* > $datadir/bench.tmp 2> /tmp/ffmpeg$$
     egrep -v "^(Stream|Press|Input|Output|frame|  Stream|  Duration|video:)" /tmp/ffmpeg$$ || true
     rm -f /tmp/ffmpeg$$
     do_md5sum $f >> $logfile
@@ -127,8 +127,8 @@ do_ffmpeg_crc()
 {
     f="$1"
     shift
-    echo $ffmpeg -y -flags +BITEXACT -dct FASTINT -idct SIMPLE $* -f crc $datadir/ffmpeg.crc
-    $ffmpeg -y -flags +BITEXACT -dct FASTINT -idct SIMPLE $* -f crc $datadir/ffmpeg.crc > /tmp/ffmpeg$$ 2>&1
+    echo $ffmpeg -y -flags +bitexact -dct fastint -idct simple $* -f crc $datadir/ffmpeg.crc
+    $ffmpeg -y -flags +bitexact -dct fastint -idct simple $* -f crc $datadir/ffmpeg.crc > /tmp/ffmpeg$$ 2>&1
     egrep -v "^(Stream|Press|Input|Output|frame|  Stream|  Duration|video:|ffmpeg version|  configuration|  built)" /tmp/ffmpeg$$ || true
     rm -f /tmp/ffmpeg$$ 
     echo "$f `cat $datadir/ffmpeg.crc`" >> $logfile
@@ -138,8 +138,8 @@ do_ffmpeg_nocheck()
 {
     f="$1"
     shift
-    echo $ffmpeg -y -flags +BITEXACT -dct FASTINT -idct SIMPLE $*
-    $ffmpeg -y -flags +BITEXACT -dct FASTINT -idct SIMPLE -benchmark $* > $datadir/bench.tmp 2> /tmp/ffmpeg$$
+    echo $ffmpeg -y -flags +bitexact -dct fastint -idct simple $*
+    $ffmpeg -y -flags +bitexact -dct fastint -idct simple -benchmark $* > $datadir/bench.tmp 2> /tmp/ffmpeg$$
     egrep -v "^(Stream|Press|Input|Output|frame|  Stream|  Duration|video:)" /tmp/ffmpeg$$ || true
     rm -f /tmp/ffmpeg$$
     expr "`cat $datadir/bench.tmp`" : '.*utime=\(.*s\)' > $datadir/bench2.tmp
@@ -175,14 +175,14 @@ do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst
 
 # mpeg2 encoding
 file=${outfile}mpeg2.mpg
-do_ffmpeg $file -y -qscale 10 -f pgmyuv -i $raw_src -vcodec mpeg2video -idct INT -dct INT -f mpeg1video $file 
+do_ffmpeg $file -y -qscale 10 -f pgmyuv -i $raw_src -vcodec mpeg2video -idct int -dct int -f mpeg1video $file 
 
 # mpeg2 decoding
-do_ffmpeg $raw_dst -y -idct INT -i $file -f rawvideo $raw_dst
+do_ffmpeg $raw_dst -y -idct int -i $file -f rawvideo $raw_dst
 
 # mpeg2 encoding interlaced
 file=${outfile}mpeg2i.mpg
-do_ffmpeg $file -y -qscale 10 -f pgmyuv -i $raw_src -vcodec mpeg2video -f mpeg1video -flags +ILDCT+ILME $file 
+do_ffmpeg $file -y -qscale 10 -f pgmyuv -i $raw_src -vcodec mpeg2video -f mpeg1video -flags +ildct+ilme $file 
 
 # mpeg2 decoding
 do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst
@@ -192,14 +192,14 @@ fi
 if [ -n "$do_mpeg2thread" ] ; then
 # mpeg2 encoding interlaced
 file=${outfile}mpeg2thread.mpg
-do_ffmpeg $file -y -qscale 10 -f pgmyuv -i $raw_src -vcodec mpeg2video -f mpeg1video -bf 2 -flags +ILDCT+ILME -threads 2 $file 
+do_ffmpeg $file -y -qscale 10 -f pgmyuv -i $raw_src -vcodec mpeg2video -f mpeg1video -bf 2 -flags +ildct+ilme -threads 2 $file 
 
 # mpeg2 decoding
 do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst
 
 # mpeg2 encoding interlaced
 file=${outfile}mpeg2reuse.mpg
-do_ffmpeg $file -y -sameq -me_threshold 256 -mb_threshold 1024 -i ${outfile}mpeg2thread.mpg -vcodec mpeg2video -f mpeg1video -bf 2 -flags +ILDCT+ILME -threads 4 $file 
+do_ffmpeg $file -y -sameq -me_threshold 256 -mb_threshold 1024 -i ${outfile}mpeg2thread.mpg -vcodec mpeg2video -f mpeg1video -bf 2 -flags +ildct+ilme -threads 4 $file 
 
 # mpeg2 decoding
 do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst
@@ -269,7 +269,7 @@ fi
 if [ -n "$do_h263p" ] ; then
 # h263p encoding
 file=${outfile}h263p.avi
-do_ffmpeg $file -y -qscale 2 -flags +UMV+AIV+AIC -f pgmyuv -i $raw_src -s 352x288 -an -vcodec h263p -ps 300 $file
+do_ffmpeg $file -y -qscale 2 -flags +umv+aiv+aic -f pgmyuv -i $raw_src -s 352x288 -an -vcodec h263p -ps 300 $file
 
 # h263p decoding
 do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst 
@@ -279,7 +279,7 @@ fi
 if [ -n "$do_mpeg4" ] ; then
 # mpeg4
 file=${outfile}odivx.mp4
-do_ffmpeg $file -y -flags +MV4 -mbd BITS -qscale 10 -f pgmyuv -i $raw_src -an -vcodec mpeg4 $file
+do_ffmpeg $file -y -flags +mv4 -mbd bits -qscale 10 -f pgmyuv -i $raw_src -an -vcodec mpeg4 $file
 
 # mpeg4 decoding
 do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst 
@@ -309,7 +309,7 @@ fi
 if [ -n "$do_mpeg4adv" ] ; then
 # mpeg4
 file=${outfile}mpeg4-adv.avi
-do_ffmpeg $file -y -qscale 9 -flags +MV4+PART+AIC+TRELL -mbd BITS -ps 200 -f pgmyuv -i $raw_src -an -vcodec mpeg4 $file
+do_ffmpeg $file -y -qscale 9 -flags +mv4+part+aic+trell -mbd bits -ps 200 -f pgmyuv -i $raw_src -an -vcodec mpeg4 $file
 
 # mpeg4 decoding
 do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst 
@@ -319,7 +319,7 @@ fi
 if [ -n "$do_mpeg4thread" ] ; then
 # mpeg4
 file=${outfile}mpeg4-thread.avi
-do_ffmpeg $file -y -b 500 -flags +MV4+PART+AIC+TRELL -mbd BITS  -ps 200 -bf 2 -f pgmyuv -i $raw_src -an -vcodec mpeg4 -threads 2 $file
+do_ffmpeg $file -y -b 500 -flags +mv4+part+aic+trell -mbd bits  -ps 200 -bf 2 -f pgmyuv -i $raw_src -an -vcodec mpeg4 -threads 2 $file
 
 # mpeg4 decoding
 do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst 
@@ -329,7 +329,7 @@ fi
 if [ -n "$do_mpeg4adv" ] ; then
 # mpeg4
 file=${outfile}mpeg4-Q.avi
-do_ffmpeg $file -y -qscale 7 -flags +MV4+QPEL -mbd 2 -bf 2 -cmp 1 -subcmp 2 -f pgmyuv -i $raw_src -an -vcodec mpeg4 $file
+do_ffmpeg $file -y -qscale 7 -flags +mv4+qpel -mbd 2 -bf 2 -cmp 1 -subcmp 2 -f pgmyuv -i $raw_src -an -vcodec mpeg4 $file
 
 # mpeg4 decoding
 do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst 
@@ -339,7 +339,7 @@ fi
 if [ -n "$do_error" ] ; then
 # damaged mpeg4
 file=${outfile}error-mpeg4-adv.avi
-do_ffmpeg $file -y -qscale 7 -flags +MV4+PART+AIC -mbd RD -ps 250 -error 10 -f pgmyuv -i $raw_src -an -vcodec mpeg4 $file
+do_ffmpeg $file -y -qscale 7 -flags +mv4+part+aic -mbd rd -ps 250 -error 10 -f pgmyuv -i $raw_src -an -vcodec mpeg4 $file
 
 # damaged mpeg4 decoding
 do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst 
@@ -349,7 +349,7 @@ fi
 if [ -n "$do_mpeg4nr" ] ; then
 # noise reduction
 file=${outfile}mpeg4-nr.avi
-do_ffmpeg $file -y -qscale 8 -flags +MV4 -mbd RD -nr 200 -f pgmyuv -i $raw_src -an -vcodec mpeg4 $file
+do_ffmpeg $file -y -qscale 8 -flags +mv4 -mbd rd -nr 200 -f pgmyuv -i $raw_src -an -vcodec mpeg4 $file
 
 # mpeg4 decoding
 do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst 
@@ -456,7 +456,7 @@ do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst
 
 # snow encoding
 file=${outfile}snow53.avi
-do_ffmpeg $file -y -strict -2 -f pgmyuv -i $raw_src -an -vcodec snow -pred 1 -flags +MV4+QPEL $file
+do_ffmpeg $file -y -strict -2 -f pgmyuv -i $raw_src -an -vcodec snow -pred 1 -flags +mv4+qpel $file
 
 # snow decoding
 do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst 
@@ -466,7 +466,7 @@ fi
 if [ -n "$do_dv" ] ; then
 # dv encoding
 file=${outfile}dv.dv
-do_ffmpeg $file -dct INT -y -f pgmyuv -i $raw_src -s pal -an $file
+do_ffmpeg $file -dct int -y -f pgmyuv -i $raw_src -s pal -an $file
 
 # dv decoding
 do_ffmpeg $raw_dst -y -i $file -f rawvideo -s cif $raw_dst 
@@ -651,7 +651,7 @@ do_ffmpeg_crc $file -i $file
 
 # jpeg (we do not do md5 on image files yet)
 file=${outfile}libav%d.jpg
-$ffmpeg -t 0.5 -y -qscale 10 -f pgmyuv -i $raw_src -flags +BITEXACT -dct FASTINT -idct SIMPLE -pix_fmt yuvj420p -f image2 $file
+$ffmpeg -t 0.5 -y -qscale 10 -f pgmyuv -i $raw_src -flags +bitexact -dct fastint -idct simple -pix_fmt yuvj420p -f image2 $file
 do_ffmpeg_crc $file -f image2 -i $file
 
 ####################
