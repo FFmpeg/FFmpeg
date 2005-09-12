@@ -184,9 +184,9 @@ you need the debug information, used the *_g versions.
 
 @section I do not like the LGPL, can I contribute code under the GPL instead
 
-yes, ffmpeg contains GPL and LGPL code, the GPL code is only compiled if
-'--enable-gpl' is passed to configure in which case the resulting binary will
-be covered by the GPL instead of the LGPL
+yes, as long as the code is optional and can easily and cleanly be placed under 
+#ifdef CONFIG_GPL without breaking anythng, so for example
+a new codec or filter would be ok under GPL while a bugfix to LGPL code wont
 
 @section I want to compile xyz.c alone but my compier produced many errors
 
