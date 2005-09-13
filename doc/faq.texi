@@ -196,11 +196,11 @@ the whole libav*. If you wish, disable some parts with configure switches.
 You can also try to hack it and remove more, but if you had problems fixing
 the compilation failure then you are probably not qualified for this.
 
-@section Visual c++ produces many errors.
+@section Visual C++ produces many errors.
 
-You need a C compiler (visual C++ is not compliant to the C standard).
-If you wish - for whatever weird reason - to use visual C++ for your
-project then you can link the visual C++ code with libav* as long as
+You need a C compiler (Visual C++ is not compliant to the C standard).
+If you wish - for whatever weird reason - to use Visual C++ for your
+project then you can link the Visual C++ code with libav* as long as
 you compile the latter with a working C compiler.
 
 @bye
