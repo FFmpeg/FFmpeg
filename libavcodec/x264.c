@@ -135,6 +135,7 @@ X264_init(AVCodecContext *avctx)
     x4->params.i_keyint_max = avctx->gop_size;
     x4->params.rc.i_bitrate = avctx->bit_rate / 1000;
     x4->params.rc.i_vbv_buffer_size = avctx->rc_buffer_size / 1000;
+    x4->params.rc.i_vbv_max_bitrate = avctx->rc_max_rate / 1000;
     if(avctx->rc_buffer_size)
         x4->params.rc.b_cbr = 1;
     x4->params.i_bframe = avctx->max_b_frames;
@@ -143,6 +144,9 @@ X264_init(AVCodecContext *avctx)
     x4->params.rc.i_qp_min = avctx->qmin;
     x4->params.rc.i_qp_max = avctx->qmax;
     x4->params.rc.i_qp_step = avctx->max_qdiff;
+
+    x4->params.rc.f_qcompress = avctx->qcompress;  /* 0.0 => cbr, 1.0 => constant qp */
+    x4->params.rc.f_qblur = avctx->qblur;        /* temporally blur quants */
 
     if(avctx->flags & CODEC_FLAG_QSCALE && avctx->global_quality > 0)
         x4->params.rc.i_qp_constant =
