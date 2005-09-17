@@ -6044,6 +6044,10 @@ decode_intra_mb:
         }
 
         h->last_qscale_diff = dqp = decode_cabac_mb_dqp( h );
+        if( dqp == INT_MIN ){
+            av_log(h->s.avctx, AV_LOG_ERROR, "cabac decode of qscale diff failed at %d %d\n", s->mb_x, s->mb_y);
+            return -1;
+        }
         s->qscale += dqp;
         if(((unsigned)s->qscale) > 51){
             if(s->qscale<0) s->qscale+= 52;
