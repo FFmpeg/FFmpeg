@@ -2598,6 +2598,7 @@ void dump_format(AVFormatContext *ic,
     }
     for(i=0;i<ic->nb_streams;i++) {
         AVStream *st = ic->streams[i];
+        int g= ff_gcd(st->time_base.num, st->time_base.den);
         avcodec_string(buf, sizeof(buf), st->codec, is_output);
         av_log(NULL, AV_LOG_INFO, "  Stream #%d.%d", index, i);
         /* the pid is an important information, so we display it */
@@ -2611,6 +2612,10 @@ void dump_format(AVFormatContext *ic,
         }
         if (strlen(st->language) > 0) {
             av_log(NULL, AV_LOG_INFO, "(%s)", st->language);
+        }
+        av_log(NULL, AV_LOG_DEBUG, ", %d/%d", st->time_base.num/g, st->time_base.den/g);
+        if(st->codec->codec_type == CODEC_TYPE_VIDEO){
+            av_log(NULL, AV_LOG_INFO, ", %5.2f fps", av_q2d(st->r_frame_rate));
         }
         av_log(NULL, AV_LOG_INFO, ": %s\n", buf);
     }
