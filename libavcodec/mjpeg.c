@@ -380,7 +380,7 @@ static void jpeg_put_comments(MpegEncContext *s)
     /* JFIF header */
     put_marker(p, APP0);
     put_bits(p, 16, 16);
-    put_string(p, "JFIF", 1); /* this puts the trailing zero-byte too */
+    ff_put_string(p, "JFIF", 1); /* this puts the trailing zero-byte too */
     put_bits(p, 16, 0x0201); /* v 1.02 */
     put_bits(p, 8, 0); /* units type: 0 - aspect ratio */
     put_bits(p, 16, s->avctx->sample_aspect_ratio.num);
@@ -395,7 +395,7 @@ static void jpeg_put_comments(MpegEncContext *s)
         flush_put_bits(p);
         ptr = pbBufPtr(p);
         put_bits(p, 16, 0); /* patched later */
-        put_string(p, LIBAVCODEC_IDENT, 1);
+        ff_put_string(p, LIBAVCODEC_IDENT, 1);
         size = strlen(LIBAVCODEC_IDENT)+3;
         ptr[0] = size >> 8;
         ptr[1] = size;
@@ -408,7 +408,7 @@ static void jpeg_put_comments(MpegEncContext *s)
         flush_put_bits(p);
         ptr = pbBufPtr(p);
         put_bits(p, 16, 0); /* patched later */
-        put_string(p, "CS=ITU601", 1);
+        ff_put_string(p, "CS=ITU601", 1);
         size = strlen("CS=ITU601")+3;
         ptr[0] = size >> 8;
         ptr[1] = size;
