@@ -543,6 +543,35 @@ tend= read_time();\
     }\
 }
 
+#ifndef HAVE_LRINTF
+/* XXX: add ISOC specific test to avoid specific BSD testing. */
+/* better than nothing implementation. */
+/* btw, rintf() is existing on fbsd too -- alex */
+static always_inline long int lrintf(float x)
+{
+#ifdef CONFIG_WIN32
+#  ifdef ARCH_X86
+    int32_t i;
+    asm volatile(
+        "fistpl %0\n\t"
+        : "=m" (i) : "t" (x) : "st"
+    );
+    return i;
+#  else
+    /* XXX: incorrect, but make it compile */
+    return (int)(x + (x < 0 ? -0.5 : 0.5));
+#  endif /* ARCH_X86 */
+#else
+    return (int)(rint(x));
+#endif /* CONFIG_WIN32 */
+}
+#else
+#ifndef _ISOC9X_SOURCE
+#define _ISOC9X_SOURCE
+#endif
+#include <math.h>
+#endif /* HAVE_LRINTF */
+
 #endif /* HAVE_AV_CONFIG_H */
 
 #endif /* COMMON_H */

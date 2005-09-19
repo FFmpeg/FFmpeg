@@ -594,33 +594,4 @@ static int name16(void /*MpegEncContext*/ *s, uint8_t *dst, uint8_t *src, int st
     return score;\
 }
 
-#ifndef HAVE_LRINTF
-/* XXX: add ISOC specific test to avoid specific BSD testing. */
-/* better than nothing implementation. */
-/* btw, rintf() is existing on fbsd too -- alex */
-static always_inline long int lrintf(float x)
-{
-#ifdef CONFIG_WIN32
-#  ifdef ARCH_X86
-    int32_t i;
-    asm volatile(
-        "fistpl %0\n\t"
-        : "=m" (i) : "t" (x) : "st"
-    );
-    return i;
-#  else
-    /* XXX: incorrect, but make it compile */
-    return (int)(x + (x < 0 ? -0.5 : 0.5));
-#  endif
-#else
-    return (int)(rint(x));
-#endif
-}
-#else
-#ifndef _ISOC9X_SOURCE
-#define _ISOC9X_SOURCE
-#endif
-#include <math.h>
-#endif
-
 #endif
