@@ -5003,6 +5003,7 @@ int h263_decode_picture_header(MpegEncContext *s)
     i = get_bits(&s->gb, 8); /* picture timestamp */
     if( (s->picture_number&~0xFF)+i < s->picture_number)
         i+= 256;
+    s->current_picture_ptr->pts=
     s->picture_number= (s->picture_number&~0xFF) + i;
 
     /* PTYPE starts here */    
