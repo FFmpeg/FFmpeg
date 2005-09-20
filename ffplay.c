@@ -90,7 +90,7 @@ typedef struct PacketQueue {
 #define SUBPICTURE_QUEUE_SIZE 4
 
 typedef struct VideoPicture {
-    double pts; /* presentation time stamp for this picture */
+    double pts;                                  ///<presentation time stamp for this picture
     SDL_Overlay *bmp;
     int width, height; /* source height & width */
     int allocated;
@@ -162,17 +162,12 @@ typedef struct VideoState {
     double frame_timer;
     double frame_last_pts;
     double frame_last_delay;
-    double video_clock;
+    double video_clock;                          ///<pts of last decoded frame / predicted pts of next decoded frame 
     int video_stream;
     AVStream *video_st;
     PacketQueue videoq;
-    double video_last_P_pts; /* pts of the last P picture (needed if B
-                                frames are present) */
-    double video_current_pts; /* current displayed pts (different from
-                                 video_clock if frame fifos are used) */
-    int64_t video_current_pts_time; /* time at which we updated
-                                       video_current_pts - used to
-                                       have running video pts */
+    double video_current_pts;                    ///<current displayed pts (different from video_clock if frame fifos are used)
+    int64_t video_current_pts_time;              ///<time (av_gettime) at which we updated video_current_pts - used to have running video pts
     VideoPicture pictq[VIDEO_PICTURE_QUEUE_SIZE];
     int pictq_size, pictq_rindex, pictq_windex;
     SDL_mutex *pictq_mutex;
@@ -1146,6 +1141,10 @@ static void alloc_picture(void *opaque)
     SDL_UnlockMutex(is->pictq_mutex);
 }
 
+/**
+ *
+ * @param pts the dts of the pkt / pts of the frame and guessed if not known
+ */
 static int queue_picture(VideoState *is, AVFrame *src_frame, double pts)
 {
     VideoPicture *vp;
@@ -1221,7 +1220,10 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts)
     return 0;
 }
 
-/* compute the exact PTS for the picture if it is omitted in the stream */
+/** 
+ * compute the exact PTS for the picture if it is omitted in the stream 
+ * @param pts1 the dts of the pkt / pts of the frame
+ */
 static int output_picture2(VideoState *is, AVFrame *src_frame, double pts1)
 {
     double frame_delay, pts;
@@ -1238,9 +1240,7 @@ static int output_picture2(VideoState *is, AVFrame *src_frame, double pts1)
     frame_delay = av_q2d(is->video_st->codec->time_base);
     /* for MPEG2, the frame can be repeated, so we update the
        clock accordingly */
-    if (src_frame->repeat_pict) {
-        frame_delay += src_frame->repeat_pict * (frame_delay * 0.5);
-    }
+    frame_delay += src_frame->repeat_pict * (frame_delay * 0.5);
     is->video_clock += frame_delay;
 
 #if defined(DEBUG_SYNC) && 0
