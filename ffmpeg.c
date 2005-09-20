@@ -145,29 +145,16 @@ static int same_quality = 0;
 static int b_frames = 0;
 static int b_strategy = 0;
 static int pre_me = 0;
-static float lumi_mask = 0;
-static float dark_mask = 0;
-static float scplx_mask = 0;
-static float tcplx_mask = 0;
-static float p_mask = 0;
-static int qns = 0;
 static int do_deinterlace = 0;
 static int workaround_bugs = FF_BUG_AUTODETECT;
-static int error_resilience = FF_ER_CAREFUL;
-static int error_concealment = 3;
 static int packet_size = 0;
 static int error_rate = 0;
 static int strict = 0;
 static int top_field_first = -1;
-static int noise_reduction = 0;
 static int sc_threshold = 0;
 static int me_threshold = 0;
 static int mb_threshold = 0;
 static int intra_dc_precision = 8;
-static int coder = 0;
-static int context = 0;
-static int predictor = 0;
-static int nsse_weight = 8;
 static int me_penalty_compensation= 256;
 static int frame_skip_threshold= 0;
 static int frame_skip_factor= 0;
@@ -2263,16 +2250,6 @@ static void opt_mb_threshold(const char *arg)
     mb_threshold = atoi(arg);
 }
 
-static void opt_error_resilience(const char *arg)
-{
-    error_resilience = atoi(arg);
-}
-
-static void opt_error_concealment(const char *arg)
-{
-    error_concealment = atoi(arg);
-}
-
 static void opt_verbose(const char *arg)
 {
     verbose = atoi(arg);
@@ -2508,31 +2485,6 @@ static void opt_pre_me(const char *arg)
     pre_me = atoi(arg);
 }
 
-static void opt_lumi_mask(const char *arg)
-{
-    lumi_mask = atof(arg);
-}
-
-static void opt_dark_mask(const char *arg)
-{
-    dark_mask = atof(arg);
-}
-
-static void opt_scplx_mask(const char *arg)
-{
-    scplx_mask = atof(arg);
-}
-
-static void opt_tcplx_mask(const char *arg)
-{
-    tcplx_mask = atof(arg);
-}
-
-static void opt_p_mask(const char *arg)
-{
-    p_mask = atof(arg);
-}
-
 static void opt_qscale(const char *arg)
 {
     video_qscale = atof(arg);
@@ -2671,16 +2623,6 @@ static void opt_strict(const char *arg)
 static void opt_top_field_first(const char *arg)
 {
     top_field_first= atoi(arg);
-}
-
-static void opt_noise_reduction(const char *arg)
-{
-    noise_reduction= atoi(arg);
-}
-
-static void opt_qns(const char *arg)
-{
-    qns= atoi(arg);
 }
 
 static void opt_sc_threshold(const char *arg)
@@ -3007,8 +2949,6 @@ static void opt_input_file(const char *filename)
             rfps      = ic->streams[i]->r_frame_rate.num;
             rfps_base = ic->streams[i]->r_frame_rate.den;
             enc->workaround_bugs = workaround_bugs;
-            enc->error_resilience = error_resilience; 
-            enc->error_concealment = error_concealment; 
             if(enc->lowres) enc->flags |= CODEC_FLAG_EMU_EDGE;
             if(me_threshold)
                 enc->debug |= FF_DEBUG_MV;
@@ -3201,12 +3141,6 @@ static void new_video_stream(AVFormatContext *oc)
             video_enc->inter_matrix = inter_matrix;
 
         video_enc->pre_me = pre_me;
-        video_enc->lumi_masking = lumi_mask;
-        video_enc->dark_masking = dark_mask;
-        video_enc->spatial_cplx_masking = scplx_mask;
-        video_enc->temporal_cplx_masking = tcplx_mask;
-        video_enc->p_masking = p_mask;
-        video_enc->quantizer_noise_shaping= qns;
                 
         if (b_frames) {
             video_enc->max_b_frames = b_frames;
@@ -3269,13 +3203,8 @@ static void new_video_stream(AVFormatContext *oc)
         video_enc->intra_dc_precision= intra_dc_precision - 8;
         video_enc->strict_std_compliance = strict;
         video_enc->error_rate = error_rate;
-        video_enc->noise_reduction= noise_reduction;
         video_enc->scenechange_threshold= sc_threshold;
         video_enc->me_range = me_range;
-        video_enc->coder_type= coder;
-        video_enc->context_model= context;
-        video_enc->prediction_method= predictor;
-        video_enc->nsse_weight= nsse_weight;
         video_enc->me_penalty_compensation= me_penalty_compensation;
         video_enc->frame_skip_threshold= frame_skip_threshold;
         video_enc->frame_skip_factor= frame_skip_factor;
@@ -4137,15 +4066,8 @@ const OptionDef options[] = {
       "method" },
     { "me_threshold", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_me_threshold}, "motion estimaton threshold",  "" },
     { "mb_threshold", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_mb_threshold}, "macroblock threshold",  "" },
-    { "er", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_error_resilience}, "set error resilience",  "n" },
-    { "ec", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_error_concealment}, "set error concealment",  "bit_mask" },
     { "bf", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_b_frames}, "use 'frames' B frames", "frames" },
     { "preme", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_pre_me}, "pre motion estimation", "" },
-    { "lumi_mask", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_lumi_mask}, "luminance masking", "" },
-    { "dark_mask", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_dark_mask}, "darkness masking", "" },
-    { "scplx_mask", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_scplx_mask}, "spatial complexity masking", "" },
-    { "tcplx_mask", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_tcplx_mask}, "temporal complexity masking", "" },
-    { "p_mask", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_p_mask}, "inter masking", "" },
     { "bug", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_workaround_bugs}, "workaround not auto detected encoder bugs", "param" },
     { "ps", HAS_ARG | OPT_EXPERT, {(void*)opt_packet_size}, "set packet size in bits", "size" },
     { "error", HAS_ARG | OPT_EXPERT, {(void*)opt_error_rate}, "error rate", "rate" },
@@ -4162,15 +4084,9 @@ const OptionDef options[] = {
     { "intra_matrix", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_intra_matrix}, "specify intra matrix coeffs", "matrix" },
     { "inter_matrix", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_inter_matrix}, "specify inter matrix coeffs", "matrix" },
     { "top", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_top_field_first}, "top=1/bottom=0/auto=-1 field first", "" },
-    { "nr", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_noise_reduction}, "noise reduction", "" },
-    { "qns", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_qns}, "quantization noise shaping", "" },
     { "sc_threshold", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_sc_threshold}, "scene change threshold", "threshold" },
     { "me_range", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_me_range}, "limit motion vectors range (1023 for DivX player)", "range" },
     { "dc", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&intra_dc_precision}, "intra_dc_precision", "precision" },
-    { "coder", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&coder}, "coder type", "" },
-    { "context", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&context}, "context model", "" },
-    { "pred", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&predictor}, "prediction method", "" },
-    { "nssew", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&nsse_weight}, "weight", "" },
     { "mepc", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&me_penalty_compensation}, "motion estimation bitrate penalty compensation", "factor (1.0 = 256)" },
     { "vtag", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_video_tag}, "force video tag/fourcc", "fourcc/tag" },
     { "skip_threshold", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&frame_skip_threshold}, "frame skip threshold", "threshold" },
