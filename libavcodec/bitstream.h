@@ -53,6 +53,9 @@ typedef struct PutBitContext {
 
 static inline void init_put_bits(PutBitContext *s, uint8_t *buffer, int buffer_size)
 {
+    if(buffer_size < 0)
+        buffer= buffer_size= 0;
+
     s->buf = buffer;
     s->buf_end = s->buf + buffer_size;
 #ifdef ALT_BITSTREAM_WRITER
@@ -672,7 +675,9 @@ static inline void skip_bits1(GetBitContext *s){
 static inline void init_get_bits(GetBitContext *s,
                    const uint8_t *buffer, int bit_size)
 {
-    const int buffer_size= (bit_size+7)>>3;
+    int buffer_size= (bit_size+7)>>3;
+    if(buffer_size < 0 || bit_size < 0)
+        buffer= buffer_size= bit_size= 0;
 
     s->buffer= buffer;
     s->size_in_bits= bit_size;
