@@ -264,7 +264,9 @@ int av_opt_show(void *obj, void *av_log_obj){
         av_log(av_log_obj, AV_LOG_INFO, "%c", (opt->flags & AV_OPT_FLAG_AUDIO_PARAM   ) ? 'A' : '.');
         av_log(av_log_obj, AV_LOG_INFO, "%c", (opt->flags & AV_OPT_FLAG_SUBTITLE_PARAM) ? 'S' : '.');
         
-        av_log(av_log_obj, AV_LOG_INFO, " %s\n", opt->help);
+        if(opt->help)
+            av_log(av_log_obj, AV_LOG_INFO, " %s", opt->help);
+        av_log(av_log_obj, AV_LOG_INFO, "\n");
     }
     return 0;
 }
