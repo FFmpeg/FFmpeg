@@ -19,12 +19,12 @@
 #include "avformat.h"
 #include "avi.h"
 
-#ifdef CONFIG_ENCODERS
 typedef struct {
     offset_t atrpos, atsqpos, awapos;
     offset_t data_size;
 } MMFContext;
 
+#ifdef CONFIG_ENCODERS
 static int mmf_rates[] = { 4000, 8000, 11025, 22050, 44100 };
 
 static int mmf_rate_code(int rate)
