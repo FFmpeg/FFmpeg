@@ -6,3 +6,11 @@ Makefile.*
 .depend
 dsptest
 dsptestpic
+asynth1.sw
+audiogen
+data
+rotozoom
+tiny_psnr
+videogen
+vsynth1
+vsynth2
