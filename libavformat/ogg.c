@@ -34,7 +34,7 @@ static int ogg_write_header(AVFormatContext *avfcontext)
 {
     OggContext *context = avfcontext->priv_data;
     ogg_packet *op= &context->op;    
-    int n, i;
+    int n;
 
     ogg_stream_init(&context->os, 31415);
     
@@ -44,7 +44,7 @@ static int ogg_write_header(AVFormatContext *avfcontext)
         int headers_len = codec->extradata_size;
         uint8_t *header_start[3];
         int header_len[3];
-        int i, j, hdr_type;
+        int i, j;
         
         av_set_pts_info(avfcontext->streams[n], 60, 1, AV_TIME_BASE);
 

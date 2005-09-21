@@ -294,7 +294,7 @@ static int oggvorbis_decode_frame(AVCodecContext *avccontext,
     OggVorbisContext *context = avccontext->priv_data ;
     float **pcm ;
     ogg_packet *op= &context->op;    
-    int samples, total_samples, total_bytes,i;
+    int samples, total_samples, total_bytes;
  
     if(!buf_size){
     //FIXME flush

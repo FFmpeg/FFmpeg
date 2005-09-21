@@ -1983,7 +1983,7 @@ int vc9_decode_i_mb(VC9Context *v, DCTELEM block[6][64])
 {
     int i, cbp, val;
     uint8_t *coded_val;
-    uint32_t * const mb_type_ptr= &v->s.current_picture.mb_type[ v->s.mb_x + v->s.mb_y*v->s.mb_stride ];
+//    uint32_t * const mb_type_ptr= &v->s.current_picture.mb_type[ v->s.mb_x + v->s.mb_y*v->s.mb_stride ];
 
     v->s.mb_intra = 1;
     cbp = get_vlc2(&v->s.gb, ff_msmp4_mb_i_vlc.table, MB_INTRA_VLC_BITS, 2);
