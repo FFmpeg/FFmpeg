@@ -279,7 +279,7 @@ int main(int argc, char **argv)
     init_demo(argv[2]);
 
     for(i=0;i<DEFAULT_NB_PICT;i++) {
-        snprintf(buf, sizeof(buf), "%s%d.pgm", argv[1], i);
+        snprintf(buf, sizeof(buf), "%s%02d.pgm", argv[1], i);
         gen_image(i, w, h);
         pgmyuv_save(buf, w, h, rgb_tab);
     }

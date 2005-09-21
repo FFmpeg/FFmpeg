@@ -86,7 +86,7 @@ ffmpeg="../ffmpeg_g"
 tiny_psnr="./tiny_psnr"
 reffile="$2"
 benchfile="$datadir/ffmpeg.bench"
-raw_src="$3/%d.pgm"
+raw_src="$3/%02d.pgm"
 raw_dst="$datadir/out.yuv"
 raw_ref="$datadir/ref.yuv"
 pcm_src="asynth1.sw"
@@ -640,17 +640,17 @@ do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src $file
 ####################
 # image formats
 # pgm (we do not do md5 on image files yet)
-file=${outfile}libav%d.pgm
+file=${outfile}libav%02d.pgm
 $ffmpeg -t 0.5 -y -qscale 10 -f pgmyuv -i $raw_src $file
 do_ffmpeg_crc $file -i $file
 
 # ppm (we do not do md5 on image files yet)
-file=${outfile}libav%d.ppm
+file=${outfile}libav%02d.ppm
 $ffmpeg -t 0.5 -y -qscale 10 -f pgmyuv -i $raw_src $file
 do_ffmpeg_crc $file -i $file
 
 # jpeg (we do not do md5 on image files yet)
-file=${outfile}libav%d.jpg
+file=${outfile}libav%02d.jpg
 $ffmpeg -t 0.5 -y -qscale 10 -f pgmyuv -i $raw_src -flags +bitexact -dct fastint -idct simple -pix_fmt yuvj420p -f image2 $file
 do_ffmpeg_crc $file -f image2 -i $file
 
