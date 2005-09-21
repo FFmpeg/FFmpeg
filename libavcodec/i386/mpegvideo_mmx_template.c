@@ -22,7 +22,11 @@
 #ifdef HAVE_MMX2
 #define SPREADW(a) "pshufw $0, " #a ", " #a " \n\t"
 #define PMAXW(a,b) "pmaxsw " #a ", " #b " \n\t"
-
+#define PMAX(a,b) \
+            "pshufw $0x0E," #a ", " #b "		\n\t"\
+	    PMAXW(b, a)\
+            "pshufw $0x01," #a ", " #b "		\n\t"\
+	    PMAXW(b, a)
 #else
 #define SPREADW(a) \
 	"punpcklwd " #a ", " #a " \n\t"\
@@ -30,6 +34,14 @@
 #define PMAXW(a,b) \
 	"psubusw " #a ", " #b " \n\t"\
 	"paddw " #a ", " #b " \n\t"
+#define PMAX(a,b)  \
+            "movq " #a ", " #b "		\n\t"\
+            "psrlq $32, " #a "			\n\t"\
+	    PMAXW(b, a)\
+            "movq " #a ", " #b "		\n\t"\
+            "psrlq $16, " #a "			\n\t"\
+	    PMAXW(b, a)
+
 #endif
 
 static int RENAME(dct_quantize)(MpegEncContext *s,
@@ -119,12 +131,7 @@ static int RENAME(dct_quantize)(MpegEncContext *s,
 	    PMAXW(%%mm0, %%mm3)
             "add $8, %%"REG_a"			\n\t"
             " js 1b				\n\t"
-            "movq %%mm3, %%mm0			\n\t"
-            "psrlq $32, %%mm3			\n\t"
-	    PMAXW(%%mm0, %%mm3)
-            "movq %%mm3, %%mm0			\n\t"
-            "psrlq $16, %%mm3			\n\t"
-	    PMAXW(%%mm0, %%mm3)
+	    PMAX(%%mm3, %%mm0)
             "movd %%mm3, %%"REG_a"		\n\t"
             "movzb %%al, %%"REG_a"		\n\t" // last_non_zero_p1
 	    : "+a" (last_non_zero_p1)
@@ -170,12 +177,7 @@ static int RENAME(dct_quantize)(MpegEncContext *s,
 	    PMAXW(%%mm0, %%mm3)
             "add $8, %%"REG_a"			\n\t"
             " js 1b				\n\t"
-            "movq %%mm3, %%mm0			\n\t"
-            "psrlq $32, %%mm3			\n\t"
-	    PMAXW(%%mm0, %%mm3)
-            "movq %%mm3, %%mm0			\n\t"
-            "psrlq $16, %%mm3			\n\t"
-	    PMAXW(%%mm0, %%mm3)
+	    PMAX(%%mm3, %%mm0)
             "movd %%mm3, %%"REG_a"		\n\t"
             "movzb %%al, %%"REG_a"		\n\t" // last_non_zero_p1
 	    : "+a" (last_non_zero_p1)

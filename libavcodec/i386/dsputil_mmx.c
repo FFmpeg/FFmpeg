@@ -1621,11 +1621,9 @@ static int hadamard8_diff_mmx2(void *s, uint8_t *src1, uint8_t *src2, int stride
         "movq 64(%1), %%mm1		\n\t"
         MMABS_SUM_MMX2(%%mm1, %%mm7, %%mm0)
         
-        "movq %%mm0, %%mm1		\n\t"
-        "psrlq $32, %%mm0		\n\t"
+        "pshufw $0x0E, %%mm0, %%mm1     \n\t"
         "paddusw %%mm1, %%mm0		\n\t"
-        "movq %%mm0, %%mm1		\n\t"
-        "psrlq $16, %%mm0		\n\t"
+        "pshufw $0x01, %%mm0, %%mm1     \n\t"
         "paddusw %%mm1, %%mm0		\n\t"
         "movd %%mm0, %0			\n\t"
                 
