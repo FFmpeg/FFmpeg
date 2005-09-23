@@ -541,6 +541,11 @@ for opt do
   ;;
   --disable-demuxers) demuxers="no"
   ;;
+  *)
+  echo "Unknown option \"$opt\"."
+  echo "See $0 --help for available options."
+  exit 1
+  ;;
   esac
 done
 
