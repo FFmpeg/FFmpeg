@@ -314,7 +314,7 @@ static int mp3_read_close(AVFormatContext *s)
     return 0;
 }
 
-#ifdef CONFIG_ENCODERS
+#ifdef CONFIG_MUXERS
 /* simple formats */
 static int mp3_write_header(struct AVFormatContext *s)
 {
@@ -340,7 +340,7 @@ static int mp3_write_trailer(struct AVFormatContext *s)
     }
     return 0;
 }
-#endif //CONFIG_ENCODERS
+#endif //CONFIG_MUXERS
 
 AVInputFormat mp3_iformat = {
     "mp3",
@@ -353,7 +353,7 @@ AVInputFormat mp3_iformat = {
     .extensions = "mp2,mp3,m2a", /* XXX: use probe */
 };
 
-#ifdef CONFIG_ENCODERS
+#ifdef CONFIG_MUXERS
 AVOutputFormat mp2_oformat = {
     "mp2",
     "MPEG audio layer 2",
@@ -385,16 +385,16 @@ AVOutputFormat mp3_oformat = {
     mp3_write_trailer,
 };
 #endif
-#endif //CONFIG_ENCODERS
+#endif //CONFIG_MUXERS
 
 int mp3_init(void)
 {
     av_register_input_format(&mp3_iformat);
-#ifdef CONFIG_ENCODERS
+#ifdef CONFIG_MUXERS
     av_register_output_format(&mp2_oformat);
 #ifdef CONFIG_MP3LAME
     av_register_output_format(&mp3_oformat);
 #endif    
-#endif //CONFIG_ENCODERS
+#endif //CONFIG_MUXERS
     return 0;
 }

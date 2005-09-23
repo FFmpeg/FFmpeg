@@ -1498,7 +1498,7 @@ AVInputFormat mpegts_demux = {
 int mpegts_init(void)
 {
     av_register_input_format(&mpegts_demux);
-#ifdef CONFIG_ENCODERS
+#ifdef CONFIG_MUXERS
     av_register_output_format(&mpegts_mux);
 #endif
     return 0;

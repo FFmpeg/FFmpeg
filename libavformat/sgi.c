@@ -260,7 +260,7 @@ static int sgi_read(ByteIOContext *f,
     return 0; /* not reached */
 }
 
-#ifdef CONFIG_ENCODERS
+#ifdef CONFIG_MUXERS
 static void write_sgi_header(ByteIOContext *f, const SGIInfo *info)
 {
     int i;
@@ -442,7 +442,7 @@ static int sgi_write(ByteIOContext *pb, AVImageInfo *info)
 
     return 0;
 }
-#endif // CONFIG_ENCODERS
+#endif // CONFIG_MUXERS
 
 AVImageFormat sgi_image_format = {
     "sgi",
@@ -450,9 +450,9 @@ AVImageFormat sgi_image_format = {
     sgi_probe,
     sgi_read,
     (1 << PIX_FMT_GRAY8) | (1 << PIX_FMT_RGB24) | (1 << PIX_FMT_RGBA32), 
-#ifdef CONFIG_ENCODERS
+#ifdef CONFIG_MUXERS
     sgi_write,
 #else
     NULL,
-#endif // CONFIG_ENCODERS
+#endif // CONFIG_MUXERS
 };

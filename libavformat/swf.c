@@ -148,7 +148,7 @@ static int swf_mp3_info(void *data, int *byteSize, int *samplesPerFrame, int *sa
     return 1;
 }
 
-#ifdef CONFIG_ENCODERS
+#ifdef CONFIG_MUXERS
 static void put_swf_tag(AVFormatContext *s, int tag)
 {
     SWFContext *swf = s->priv_data;
@@ -691,7 +691,7 @@ static int swf_write_trailer(AVFormatContext *s)
 
     return 0;
 }
-#endif //CONFIG_ENCODERS
+#endif //CONFIG_MUXERS
 
 /*********************************************/
 /* Extract FLV encoded frame and MP3 from swf
@@ -909,7 +909,7 @@ static AVInputFormat swf_iformat = {
     swf_read_close,
 };
 
-#ifdef CONFIG_ENCODERS
+#ifdef CONFIG_MUXERS
 static AVOutputFormat swf_oformat = {
     "swf",
     "Flash format",
@@ -922,13 +922,13 @@ static AVOutputFormat swf_oformat = {
     swf_write_packet,
     swf_write_trailer,
 };
-#endif //CONFIG_ENCODERS
+#endif //CONFIG_MUXERS
 
 int swf_init(void)
 {
     av_register_input_format(&swf_iformat);
-#ifdef CONFIG_ENCODERS
+#ifdef CONFIG_MUXERS
     av_register_output_format(&swf_oformat);
-#endif //CONFIG_ENCODERS
+#endif //CONFIG_MUXERS
     return 0;
 }

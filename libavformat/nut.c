@@ -394,7 +394,7 @@ static int64_t find_startcode(ByteIOContext *bc, uint64_t code, int64_t pos){
     }
 }
 
-#ifdef CONFIG_ENCODERS
+#ifdef CONFIG_MUXERS
 
 static void put_v(ByteIOContext *bc, uint64_t val)
 {
@@ -843,7 +843,7 @@ static int nut_write_trailer(AVFormatContext *s)
 
     return 0;
 }
-#endif //CONFIG_ENCODERS
+#endif //CONFIG_MUXERS
 
 static int nut_probe(AVProbeData *p)
 {
@@ -1430,7 +1430,7 @@ static AVInputFormat nut_iformat = {
     .extensions = "nut",
 };
 
-#ifdef CONFIG_ENCODERS
+#ifdef CONFIG_MUXERS
 static AVOutputFormat nut_oformat = {
     "nut",
     "nut format",
@@ -1450,13 +1450,13 @@ static AVOutputFormat nut_oformat = {
     nut_write_trailer,
     .flags = AVFMT_GLOBALHEADER,
 };
-#endif //CONFIG_ENCODERS
+#endif //CONFIG_MUXERS
 
 int nut_init(void)
 {
     av_register_input_format(&nut_iformat);
-#ifdef CONFIG_ENCODERS
+#ifdef CONFIG_MUXERS
     av_register_output_format(&nut_oformat);
-#endif //CONFIG_ENCODERS
+#endif //CONFIG_MUXERS
     return 0;
 }

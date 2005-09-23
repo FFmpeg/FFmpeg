@@ -24,7 +24,7 @@ typedef struct {
     offset_t data_size;
 } MMFContext;
 
-#ifdef CONFIG_ENCODERS
+#ifdef CONFIG_MUXERS
 static int mmf_rates[] = { 4000, 8000, 11025, 22050, 44100 };
 
 static int mmf_rate_code(int rate)
@@ -160,7 +160,7 @@ static int mmf_write_trailer(AVFormatContext *s)
     }
     return 0;
 }
-#endif //CONFIG_ENCODERS
+#endif //CONFIG_MUXERS
 
 static int mmf_probe(AVProbeData *p)
 {
@@ -308,7 +308,7 @@ static AVInputFormat mmf_iformat = {
     mmf_read_seek,
 };
 
-#ifdef CONFIG_ENCODERS
+#ifdef CONFIG_MUXERS
 static AVOutputFormat mmf_oformat = {
     "mmf",
     "mmf format",
@@ -321,14 +321,14 @@ static AVOutputFormat mmf_oformat = {
     mmf_write_packet,
     mmf_write_trailer,
 };
-#endif //CONFIG_ENCODERS
+#endif //CONFIG_MUXERS
 
 int ff_mmf_init(void)
 {
     av_register_input_format(&mmf_iformat);
-#ifdef CONFIG_ENCODERS
+#ifdef CONFIG_MUXERS
     av_register_output_format(&mmf_oformat);
-#endif //CONFIG_ENCODERS
+#endif //CONFIG_MUXERS
     return 0;
 }
 

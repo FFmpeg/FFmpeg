@@ -18,7 +18,7 @@
  */
 #include "avformat.h"
 
-#ifdef CONFIG_ENCODERS
+#ifdef CONFIG_MUXERS
 /* simple formats */
 static int raw_write_header(struct AVFormatContext *s)
 {
@@ -36,7 +36,7 @@ static int raw_write_trailer(struct AVFormatContext *s)
 {
     return 0;
 }
-#endif //CONFIG_ENCODERS
+#endif //CONFIG_MUXERS
 
 /* raw input */
 static int raw_read_header(AVFormatContext *s, AVFormatParameters *ap)
@@ -329,7 +329,7 @@ AVInputFormat ac3_iformat = {
     .extensions = "ac3",
 };
 
-#ifdef CONFIG_ENCODERS
+#ifdef CONFIG_MUXERS
 AVOutputFormat ac3_oformat = {
     "ac3",
     "raw ac3",
@@ -342,7 +342,7 @@ AVOutputFormat ac3_oformat = {
     raw_write_packet,
     raw_write_trailer,
 };
-#endif //CONFIG_ENCODERS
+#endif //CONFIG_MUXERS
 
 AVInputFormat dts_iformat = {
     "dts",
@@ -367,7 +367,7 @@ AVInputFormat h261_iformat = {
     .value = CODEC_ID_H261,
 };
 
-#ifdef CONFIG_ENCODERS
+#ifdef CONFIG_MUXERS
 AVOutputFormat h261_oformat = {
     "h261",
     "raw h261",
@@ -380,7 +380,7 @@ AVOutputFormat h261_oformat = {
     raw_write_packet,
     raw_write_trailer,
 };
-#endif //CONFIG_ENCODERS
+#endif //CONFIG_MUXERS
 
 AVInputFormat h263_iformat = {
     "h263",
@@ -394,7 +394,7 @@ AVInputFormat h263_iformat = {
     .value = CODEC_ID_H263,
 };
 
-#ifdef CONFIG_ENCODERS
+#ifdef CONFIG_MUXERS
 AVOutputFormat h263_oformat = {
     "h263",
     "raw h263",
@@ -407,7 +407,7 @@ AVOutputFormat h263_oformat = {
     raw_write_packet,
     raw_write_trailer,
 };
-#endif //CONFIG_ENCODERS
+#endif //CONFIG_MUXERS
 
 AVInputFormat m4v_iformat = {
     "m4v",
@@ -421,7 +421,7 @@ AVInputFormat m4v_iformat = {
     .value = CODEC_ID_MPEG4,
 };
 
-#ifdef CONFIG_ENCODERS
+#ifdef CONFIG_MUXERS
 AVOutputFormat m4v_oformat = {
     "m4v",
     "raw MPEG4 video format",
@@ -434,7 +434,7 @@ AVOutputFormat m4v_oformat = {
     raw_write_packet,
     raw_write_trailer,
 };
-#endif //CONFIG_ENCODERS
+#endif //CONFIG_MUXERS
 
 AVInputFormat h264_iformat = {
     "h264",
@@ -448,7 +448,7 @@ AVInputFormat h264_iformat = {
     .value = CODEC_ID_H264,
 };
 
-#ifdef CONFIG_ENCODERS
+#ifdef CONFIG_MUXERS
 AVOutputFormat h264_oformat = {
     "h264",
     "raw H264 video format",
@@ -461,7 +461,7 @@ AVOutputFormat h264_oformat = {
     raw_write_packet,
     raw_write_trailer,
 };
-#endif //CONFIG_ENCODERS
+#endif //CONFIG_MUXERS
 
 AVInputFormat mpegvideo_iformat = {
     "mpegvideo",
@@ -474,7 +474,7 @@ AVInputFormat mpegvideo_iformat = {
     .value = CODEC_ID_MPEG1VIDEO,
 };
 
-#ifdef CONFIG_ENCODERS
+#ifdef CONFIG_MUXERS
 AVOutputFormat mpeg1video_oformat = {
     "mpeg1video",
     "MPEG video",
@@ -487,9 +487,9 @@ AVOutputFormat mpeg1video_oformat = {
     raw_write_packet,
     raw_write_trailer,
 };
-#endif //CONFIG_ENCODERS
+#endif //CONFIG_MUXERS
 
-#ifdef CONFIG_ENCODERS
+#ifdef CONFIG_MUXERS
 AVOutputFormat mpeg2video_oformat = {
     "mpeg2video",
     "MPEG2 video",
@@ -502,7 +502,7 @@ AVOutputFormat mpeg2video_oformat = {
     raw_write_packet,
     raw_write_trailer,
 };
-#endif //CONFIG_ENCODERS
+#endif //CONFIG_MUXERS
 
 AVInputFormat mjpeg_iformat = {
     "mjpeg",
@@ -516,7 +516,7 @@ AVInputFormat mjpeg_iformat = {
     .value = CODEC_ID_MJPEG,
 };
 
-#ifdef CONFIG_ENCODERS
+#ifdef CONFIG_MUXERS
 AVOutputFormat mjpeg_oformat = {
     "mjpeg",
     "MJPEG video",
@@ -529,7 +529,7 @@ AVOutputFormat mjpeg_oformat = {
     raw_write_packet,
     raw_write_trailer,
 };
-#endif //CONFIG_ENCODERS
+#endif //CONFIG_MUXERS
 
 /* pcm formats */
 
@@ -547,7 +547,7 @@ AVInputFormat pcm_ ## name ## _iformat = {\
     .value = codec,\
 };
 
-#if !defined(CONFIG_ENCODERS) && defined(CONFIG_DECODERS)
+#if !defined(CONFIG_MUXERS) && defined(CONFIG_DEMUXERS)
 
 #define PCMDEF(name, long_name, ext, codec) \
     PCMINPUTDEF(name, long_name, ext, codec)
@@ -569,7 +569,7 @@ AVOutputFormat pcm_ ## name ## _oformat = {\
     raw_write_packet,\
     raw_write_trailer,\
 };
-#endif //CONFIG_ENCODERS
+#endif //CONFIG_MUXERS
 
 #ifdef WORDS_BIGENDIAN
 #define BE_DEF(s) s
@@ -638,7 +638,7 @@ AVInputFormat rawvideo_iformat = {
     .value = CODEC_ID_RAWVIDEO,
 };
 
-#ifdef CONFIG_ENCODERS
+#ifdef CONFIG_MUXERS
 AVOutputFormat rawvideo_oformat = {
     "rawvideo",
     "raw video format",
@@ -651,9 +651,9 @@ AVOutputFormat rawvideo_oformat = {
     raw_write_packet,
     raw_write_trailer,
 };
-#endif //CONFIG_ENCODERS
+#endif //CONFIG_MUXERS
 
-#ifdef CONFIG_ENCODERS
+#ifdef CONFIG_MUXERS
 static int null_write_packet(struct AVFormatContext *s, AVPacket *pkt)
 {
     return 0;
@@ -676,12 +676,12 @@ AVOutputFormat null_oformat = {
     raw_write_trailer,
     .flags = AVFMT_NOFILE | AVFMT_RAWPICTURE,
 };
-#endif //CONFIG_ENCODERS
+#endif //CONFIG_MUXERS
 
-#ifndef CONFIG_ENCODERS
+#ifndef CONFIG_MUXERS
 #define av_register_output_format(format)
 #endif
-#ifndef CONFIG_DECODERS
+#ifndef CONFIG_DEMUXERS
 #define av_register_input_format(format)
 #endif
 

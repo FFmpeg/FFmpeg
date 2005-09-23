@@ -29,7 +29,7 @@ typedef struct OggContext {
 } OggContext ;
 
 
-#ifdef CONFIG_ENCODERS
+#ifdef CONFIG_MUXERS
 static int ogg_write_header(AVFormatContext *avfcontext) 
 {
     OggContext *context = avfcontext->priv_data;
@@ -149,7 +149,7 @@ static AVOutputFormat ogg_oformat = {
     ogg_write_packet,
     ogg_write_trailer,
 } ;
-#endif //CONFIG_ENCODERS
+#endif //CONFIG_MUXERS
 
 #if 0
 static int next_packet(AVFormatContext *avfcontext, ogg_packet *op) {
@@ -267,7 +267,7 @@ static AVInputFormat ogg_iformat = {
 #endif
 
 int libogg_init(void) {
-#ifdef CONFIG_ENCODERS
+#ifdef CONFIG_MUXERS
     av_register_output_format(&ogg_oformat) ;
 #endif
 /*     av_register_input_format(&ogg_iformat); */

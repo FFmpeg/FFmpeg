@@ -78,6 +78,8 @@ echo "  --enable-codec=codec     enables codec"
 echo "  --disable-codec=codec    disables codec"
 echo "  --disable-encoders       disables all encoders"
 echo "  --disable-decoders       disables all decoders"
+echo "  --disable-muxers         disables all muxers"
+echo "  --disable-demuxers       disables all demuxers"
 echo ""
 echo "NOTE: The object files are build at the place where configure is launched"
 exit 1
@@ -218,6 +220,8 @@ sunmlib="no"
 pthreads="no"
 gpl="no"
 memalignhack="no"
+muxers="yes"
+demuxers="yes"
 
 # OS specific
 targetos=`uname -s`
@@ -532,6 +536,10 @@ for opt do
   --disable-encoders) CODEC_LIST="`echo $CODEC_LIST | sed 's/[-_a-zA-Z0-9]*encoder//g'`"
   ;;
   --disable-decoders) CODEC_LIST="`echo $CODEC_LIST | sed 's/[-_a-zA-Z0-9]*decoder//g'`"
+  ;;
+  --disable-muxers) muxers="no"
+  ;;
+  --disable-demuxers) demuxers="no"
   ;;
   esac
 done
@@ -1398,6 +1406,18 @@ echo "CONFIG_ENCODERS=yes" >> config.mak
 # if you do not want to use decoders, disable that.
 echo "#define CONFIG_DECODERS 1" >> $TMPH
 echo "CONFIG_DECODERS=yes" >> config.mak
+
+# muxers
+if test "$muxers" = "yes" ; then
+  echo "#define CONFIG_MUXERS 1" >> $TMPH
+  echo "CONFIG_MUXERS=yes" >> config.mak
+fi
+
+# demuxers
+if test "$demuxers" = "yes" ; then
+  echo "#define CONFIG_DEMUXERS 1" >> $TMPH
+  echo "CONFIG_DEMUXERS=yes" >> config.mak
+fi
 
 # AC3
 if test "$a52" = "yes" ; then

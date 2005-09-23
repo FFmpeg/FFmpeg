@@ -44,7 +44,7 @@ static ogg_codec_t *ogg_codecs[] = {
     NULL
 };
 
-#if 0                           // CONFIG_ENCODERS
+#if 0                           // CONFIG_MUXERS
 static int
 ogg_write_header (AVFormatContext * avfcontext)
 {
@@ -74,7 +74,7 @@ static AVOutputFormat ogg_oformat = {
     ogg_write_packet,
     ogg_write_trailer,
 };
-#endif //CONFIG_ENCODERS
+#endif //CONFIG_MUXERS
 
 //FIXME We could avoid some structure duplication
 static int
@@ -638,7 +638,7 @@ static AVInputFormat ogg_iformat = {
 int
 ogg_init (void)
 {
-#if 0 // CONFIG_ENCODERS
+#if 0 // CONFIG_MUXERS
     av_register_output_format (&ogg_oformat);
 #endif
     av_register_input_format (&ogg_iformat);

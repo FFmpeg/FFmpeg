@@ -792,17 +792,17 @@ static AVInputFormat asf_iformat = {
     asf_read_pts,
 };
 
-#ifdef CONFIG_ENCODERS
+#ifdef CONFIG_MUXERS
     extern AVOutputFormat asf_oformat;
     extern AVOutputFormat asf_stream_oformat;
-#endif //CONFIG_ENCODERS
+#endif //CONFIG_MUXERS
 
 int asf_init(void)
 {
     av_register_input_format(&asf_iformat);
-#ifdef CONFIG_ENCODERS
+#ifdef CONFIG_MUXERS
     av_register_output_format(&asf_oformat);
     av_register_output_format(&asf_stream_oformat);
-#endif //CONFIG_ENCODERS
+#endif //CONFIG_MUXERS
     return 0;
 }

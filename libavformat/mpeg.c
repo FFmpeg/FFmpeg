@@ -107,7 +107,7 @@ typedef struct {
 
 static const int lpcm_freq_tab[4] = { 48000, 96000, 44100, 32000 };
 
-#ifdef CONFIG_ENCODERS
+#ifdef CONFIG_MUXERS
 static AVOutputFormat mpeg1system_mux;
 static AVOutputFormat mpeg1vcd_mux;
 static AVOutputFormat mpeg2vob_mux;
@@ -1253,7 +1253,7 @@ static int mpeg_mux_end(AVFormatContext *ctx)
     }
     return 0;
 }
-#endif //CONFIG_ENCODERS
+#endif //CONFIG_MUXERS
 
 /*********************************************/
 /* demux code */
@@ -1707,7 +1707,7 @@ static int64_t mpegps_read_dts(AVFormatContext *s, int stream_index,
     return dts;
 }
 
-#ifdef CONFIG_ENCODERS
+#ifdef CONFIG_MUXERS
 static AVOutputFormat mpeg1system_mux = {
     "mpeg",
     "MPEG1 System format",
@@ -1775,7 +1775,7 @@ static AVOutputFormat mpeg2dvd_mux = {
     mpeg_mux_end,
 };
 
-#endif //CONFIG_ENCODERS
+#endif //CONFIG_MUXERS
 
 AVInputFormat mpegps_demux = {
     "mpeg",
@@ -1792,13 +1792,13 @@ AVInputFormat mpegps_demux = {
 
 int mpegps_init(void)
 {
-#ifdef CONFIG_ENCODERS
+#ifdef CONFIG_MUXERS
     av_register_output_format(&mpeg1system_mux);
     av_register_output_format(&mpeg1vcd_mux);
     av_register_output_format(&mpeg2vob_mux);
     av_register_output_format(&mpeg2svcd_mux);
     av_register_output_format(&mpeg2dvd_mux);
-#endif //CONFIG_ENCODERS
+#endif //CONFIG_MUXERS
     av_register_input_format(&mpegps_demux);
     return 0;
 }

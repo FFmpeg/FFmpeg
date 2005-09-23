@@ -44,7 +44,7 @@ typedef struct {
     int remaining_len;
 } RMContext;
 
-#ifdef CONFIG_ENCODERS
+#ifdef CONFIG_MUXERS
 static void put_str(ByteIOContext *s, const char *tag)
 {
     put_be16(s,strlen(tag));
@@ -443,7 +443,7 @@ static int rm_write_trailer(AVFormatContext *s)
     put_flush_packet(pb);
     return 0;
 }
-#endif //CONFIG_ENCODERS
+#endif //CONFIG_MUXERS
 
 /***************************************************/
 
@@ -969,7 +969,7 @@ static AVInputFormat rm_iformat = {
     rm_read_dts,
 };
 
-#ifdef CONFIG_ENCODERS
+#ifdef CONFIG_MUXERS
 static AVOutputFormat rm_oformat = {
     "rm",
     "rm format",
@@ -982,13 +982,13 @@ static AVOutputFormat rm_oformat = {
     rm_write_packet,
     rm_write_trailer,
 };
-#endif //CONFIG_ENCODERS
+#endif //CONFIG_MUXERS
 
 int rm_init(void)
 {
     av_register_input_format(&rm_iformat);
-#ifdef CONFIG_ENCODERS
+#ifdef CONFIG_MUXERS
     av_register_output_format(&rm_oformat);
-#endif //CONFIG_ENCODERS
+#endif //CONFIG_MUXERS
     return 0;
 }

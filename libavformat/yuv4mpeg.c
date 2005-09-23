@@ -22,7 +22,7 @@
 #define Y4M_FRAME_MAGIC "FRAME"
 #define Y4M_LINE_MAX 256
 
-#ifdef CONFIG_ENCODERS
+#ifdef CONFIG_MUXERS
 
 static int yuv4_generate_header(AVFormatContext *s, char* buf)
 {
@@ -179,7 +179,7 @@ AVOutputFormat yuv4mpegpipe_oformat = {
     yuv4_write_trailer,
     .flags = AVFMT_RAWPICTURE,
 };
-#endif //CONFIG_ENCODERS
+#endif //CONFIG_MUXERS
 
 /* Header size increased to allow room for optional flags */
 #define MAX_YUV4_HEADER 80
@@ -393,9 +393,9 @@ AVInputFormat yuv4mpegpipe_iformat = {
 int yuv4mpeg_init(void)
 {
     av_register_input_format(&yuv4mpegpipe_iformat);
-#ifdef CONFIG_ENCODERS
+#ifdef CONFIG_MUXERS
     av_register_output_format(&yuv4mpegpipe_oformat);
-#endif //CONFIG_ENCODERS
+#endif //CONFIG_MUXERS
     return 0;
 }
 

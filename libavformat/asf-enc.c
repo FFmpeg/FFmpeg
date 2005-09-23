@@ -23,7 +23,7 @@
 #undef NDEBUG
 #include <assert.h>
 
-#ifdef CONFIG_ENCODERS
+#ifdef CONFIG_MUXERS
 
 
 #define ASF_INDEXED_INTERVAL 10000000
@@ -858,4 +858,4 @@ AVOutputFormat asf_stream_oformat = {
     asf_write_trailer,
     .flags = AVFMT_GLOBALHEADER,
 };
-#endif //CONFIG_ENCODERS
+#endif //CONFIG_MUXERS

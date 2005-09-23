@@ -37,36 +37,36 @@ void av_register_all(void)
 
     mpegps_init();
     mpegts_init();
-#ifdef CONFIG_ENCODERS
+#ifdef CONFIG_MUXERS
     crc_init();
     img_init();
     img2_init();
-#endif //CONFIG_ENCODERS
+#endif //CONFIG_MUXERS
     raw_init();
     mp3_init();
     rm_init();
     asf_init();
-#ifdef CONFIG_ENCODERS
+#ifdef CONFIG_MUXERS
     avienc_init();
-#endif //CONFIG_ENCODERS
+#endif //CONFIG_MUXERS
     avidec_init();
     ff_wav_init();
     ff_mmf_init();
     swf_init();
     au_init();
-#ifdef CONFIG_ENCODERS
+#ifdef CONFIG_MUXERS
     gif_init();
-#endif //CONFIG_ENCODERS
+#endif //CONFIG_MUXERS
     mov_init();
-#ifdef CONFIG_ENCODERS
+#ifdef CONFIG_MUXERS
     movenc_init();
     jpeg_init();
-#endif //CONFIG_ENCODERS
+#endif //CONFIG_MUXERS
     ff_dv_init();
     fourxm_init();
-#ifdef CONFIG_ENCODERS
+#ifdef CONFIG_MUXERS
     flvenc_init();
-#endif //CONFIG_ENCODERS
+#endif //CONFIG_MUXERS
     flvdec_init();
     str_init();
     roq_init();
@@ -111,7 +111,7 @@ void av_register_all(void)
     nsvdec_init();
     daud_init();
 
-#ifdef CONFIG_ENCODERS
+#ifdef CONFIG_MUXERS
     /* image formats */
 #if 0
     av_register_image_format(&pnm_image_format);
@@ -128,7 +128,7 @@ void av_register_all(void)
 #endif
     av_register_image_format(&gif_image_format);  
 //    av_register_image_format(&sgi_image_format); heap corruption, dont enable
-#endif //CONFIG_ENCODERS
+#endif //CONFIG_MUXERS
 
     /* file protocols */
     register_protocol(&file_protocol);

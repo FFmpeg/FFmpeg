@@ -56,7 +56,7 @@ static int64_t get_pts(AVFormatContext *s, offset_t pos);
 /* disable pts hack for testing */
 int ffm_nopts = 0;
 
-#ifdef CONFIG_ENCODERS
+#ifdef CONFIG_MUXERS
 static void flush_packet(AVFormatContext *s)
 {
     FFMContext *ffm = s->priv_data;
@@ -294,7 +294,7 @@ static int ffm_write_trailer(AVFormatContext *s)
 
     return 0;
 }
-#endif //CONFIG_ENCODERS
+#endif //CONFIG_MUXERS
 
 /* ffm demux */
 
@@ -763,7 +763,7 @@ static AVInputFormat ffm_iformat = {
     ffm_seek,
 };
 
-#ifdef CONFIG_ENCODERS
+#ifdef CONFIG_MUXERS
 static AVOutputFormat ffm_oformat = {
     "ffm",
     "ffm format",
@@ -777,13 +777,13 @@ static AVOutputFormat ffm_oformat = {
     ffm_write_packet,
     ffm_write_trailer,
 };
-#endif //CONFIG_ENCODERS
+#endif //CONFIG_MUXERS
 
 int ffm_init(void)
 {
     av_register_input_format(&ffm_iformat);
-#ifdef CONFIG_ENCODERS
+#ifdef CONFIG_MUXERS
     av_register_output_format(&ffm_oformat);
-#endif //CONFIG_ENCODERS
+#endif //CONFIG_MUXERS
     return 0;
 }
