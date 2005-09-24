@@ -14,35 +14,38 @@ echo "Standard options:"
 echo "  --help                   print this message"
 echo "  --prefix=PREFIX          install in PREFIX [$prefix]"
 echo "  --libdir=DIR             install libs in DIR [PREFIX/lib]"
-echo "  --mandir=DIR             man documentation in DIR [PREFIX/man]"
-echo "  --enable-mp3lame         enable mp3 encoding via libmp3lame [default=no]"
-echo "  --enable-libogg          enable ogg support via libogg [default=no]"
-echo "  --enable-vorbis          enable vorbis support via libvorbis [default=no]"
-echo "  --enable-theora          enable theora support via libtheora [default=no]"
-echo "  --enable-faad            enable faad support via libfaad [default=no]"
-echo "  --enable-faadbin         build faad support with runtime linking [default=no]"
-echo "  --enable-faac            enable faac support via libfaac [default=no]"
-echo "  --enable-libgsm          enable gsm support via libgsm [default=no]"
-echo "  --enable-xvid            enable xvid support via xvidcore [default=no]"
+echo "  --mandir=DIR             install man page in DIR [PREFIX/man]"
+echo "  --enable-mp3lame         enable MP3 encoding via libmp3lame [default=no]"
+echo "  --enable-libogg          enable Ogg support via libogg [default=no]"
+echo "  --enable-vorbis          enable Vorbis support via libvorbis [default=no]"
+echo "  --enable-theora          enable Theora support via libtheora [default=no]"
+echo "  --enable-faad            enable FAAD support via libfaad [default=no]"
+echo "  --enable-faadbin         build FAAD support with runtime linking [default=no]"
+echo "  --enable-faac            enable FAAC support via libfaac [default=no]"
+echo "  --enable-libgsm          enable GSM support via libgsm [default=no]"
+echo "  --enable-xvid            enable XviD support via xvidcore [default=no]"
 echo "  --enable-x264            enable H.264 encoding via x264 [default=no]"
-echo "  --enable-mingw32         enable mingw32 native/cross windows compile"
-echo "  --enable-a52             enable GPL'ed A52 support [default=no]"
+echo "  --enable-mingw32         enable MinGW native/cross Windows compile"
+echo "  --enable-a52             enable GPLed A52 support [default=no]"
 echo "  --enable-a52bin          open liba52.so.0 at runtime [default=no]"
-echo "  --enable-dts             enable GPL'ed DTS support [default=no]"
-echo "  --enable-pp              enable GPL'ed post processing support [default=no]"
+echo "  --enable-dts             enable GPLed DTS support [default=no]"
+echo "  --enable-pp              enable GPLed postprocessing support [default=no]"
 echo "  --enable-shared-pp       use libpostproc.so [default=no]"
 echo "  --enable-shared          build shared libraries [default=no]"
 echo "  --enable-amr_nb          enable amr_nb float audio codec"
 echo "  --enable-amr_nb-fixed    use fixed point for amr-nb codec"
 echo "  --enable-amr_wb          enable amr_wb float audio codec"
+echo "  --enable-amr_if2         enable amr_wb IF2 audio codec"
 echo "  --enable-sunmlib         use Sun medialib [default=no]"
 echo "  --enable-pthreads        use pthreads [default=no]"
-echo "  --enable-dc1394          enable IIDC-1394 grabbing using libdc1394 and libraw1394 [default=no]"
-echo "  --enable-gpl             allow use of gpl code, the resulting libav* and ffmpeg will be under gpl [default=no]"
+echo "  --enable-dc1394          enable IIDC-1394 grabbing using libdc1394"
+echo "                           and libraw1394 [default=no]"
+echo "  --enable-gpl             allow use of GPL code, the resulting libav*"
+echo "                           and ffmpeg will be under GPL [default=no]"
 echo ""
 echo "Advanced options (experts only):"
-echo "  --source-path=PATH       path of source code [$source_path]"
-echo "  --cross-prefix=PREFIX    use PREFIX for compile tools [$cross_prefix]"
+echo "  --source-path=PATH       path to source code [$source_path]"
+echo "  --cross-prefix=PREFIX    use PREFIX for compilation tools [$cross_prefix]"
 echo "  --cc=CC                  use C compiler CC [$cc]"
 echo "  --make=MAKE              use specified make [$make]"
 echo "  --extra-cflags=ECFLAGS   add ECFLAGS to CFLAGS [$CFLAGS]"
@@ -50,9 +53,11 @@ echo "  --extra-ldflags=ELDFLAGS add ELDFLAGS to LDFLAGS [$LDFLAGS]"
 echo "  --extra-libs=ELIBS       add ELIBS [$ELIBS]"
 echo "  --build-suffix=SUFFIX    suffix for application specific build []"
 echo "  --cpu=CPU                force cpu to CPU  [$cpu]"
-echo "  --tune=PROCESSOR         tune code for a particular CPU (may fails or misperforms on other CPUs)"
-echo "  --powerpc-perf-enable    enable performance report on PPC (requires enabling PMC)"
-echo "  --disable-mmx            disable mmx usage"
+echo "  --tune=CPU               tune code for a particular CPU"
+echo "                           (may fail or perform badly on other CPUs)"
+echo "  --powerpc-perf-enable    enable performance report on PPC"
+echo "                           (requires enabling PMC)"
+echo "  --disable-mmx            disable MMX usage"
 echo "  --disable-iwmmxt         disable iwmmxt usage"
 echo "  --disable-altivec        disable AltiVec usage"
 echo "  --disable-audio-oss      disable OSS audio support [default=no]"
@@ -68,20 +73,20 @@ echo "  --enable-gprof           enable profiling with gprof [$gprof]"
 echo "  --disable-debug          disable debugging symbols"
 echo "  --disable-opts           disable compiler optimizations"
 echo "  --disable-mpegaudio-hp   faster (but less accurate)"
-echo "                           mpegaudio decoding [default=no]"
+echo "                           MPEG audio decoding [default=no]"
 echo "  --disable-ffserver       disable ffserver build"
 echo "  --disable-ffplay         disable ffplay build"
 echo "  --enable-small           optimize for size instead of speed"
 echo "  --enable-memalign-hack   emulate memalign, interferes with memory debuggers"
 echo "  --disable-strip          disable stripping of executables and shared libraries"
-echo "  --enable-codec=codec     enables codec"
-echo "  --disable-codec=codec    disables codec"
+echo "  --enable-codec=CODEC     enables CODEC"
+echo "  --disable-codec=CODEC    disables CODEC"
 echo "  --disable-encoders       disables all encoders"
 echo "  --disable-decoders       disables all decoders"
 echo "  --disable-muxers         disables all muxers"
 echo "  --disable-demuxers       disables all demuxers"
 echo ""
-echo "NOTE: The object files are build at the place where configure is launched"
+echo "NOTE: Object files are built at the place where configure is launched."
 exit 1
 fi
 
@@ -241,11 +246,11 @@ CFLAGS="$CFLAGS -fno-expensive-optimizations"
 ;;
 esac
 SHFLAGS=-nostart
-# disable linux things
+# disable Linux things
 audio_oss="no"
 v4l="no"
 dv1394="no"
-# enable beos things
+# enable BeOS things
 audio_beos="yes"
 # no need for libm, but the inet stuff
 # Check for BONE
@@ -321,7 +326,7 @@ FFSLDFLAGS=-Wl,-bind_at_load
 ;;
 MINGW32*)
 # Note: the rest of the mingw32 config is done afterwards as mingw32
-# can be forced on command line for linux cross compilation
+# can be forced on the command line for Linux cross compilation.
 mingw32="yes"
 ;;
 CYGWIN*)
@@ -369,9 +374,9 @@ os2="yes"
 *) ;;
 esac
 
-# From mplayer configure. We need TARGET_OS available
+# From MPlayer configure. We need TARGET_OS available
 # to the Makefile, so it can distinguish between flavors
-# of AltiVec on PowerPC
+# of AltiVec on PowerPC.
 TARGET_OS=`( uname -s ) 2>&1`
   case "$TARGET_OS" in
   Linux|FreeBSD|NetBSD|BSD/OS|OpenBSD|SunOS|QNX|Darwin|GNU|BeOS)
@@ -551,7 +556,7 @@ done
 
 if test "$theora" = "yes" ; then
     if test "$libogg" = "no"; then
-        echo "libogg must be enabled to enable Theora"     
+        echo "libogg must be enabled to enable Theora."
         fail="yes"
         theora="no"
     fi
@@ -559,7 +564,7 @@ fi
 
 if test "$vorbis" = "yes" ; then
     if test "$libogg" = "no"; then
-        echo "libogg must be enabled to enable Vorbis"
+        echo "libogg must be enabled to enable Vorbis."
         fail="yes"
         vorbis="no"
     fi
@@ -567,27 +572,27 @@ fi
 
 if test "$gpl" != "yes"; then
     if test "$pp" != "no" -o "$shared_pp" != "no"; then
-        echo "The Postprocessing code is under GPL and --enable-gpl is not specified"
+        echo "The Postprocessing code is under GPL and --enable-gpl is not specified."
         fail="yes"
     fi
 
     if test "$a52" != "no" -o "$a52bin" != "no"; then
-        echo "liba52 is under GPL and --enable-gpl is not specified"
+        echo "liba52 is under GPL and --enable-gpl is not specified."
         fail="yes"
     fi
 
     if test "$xvid" != "no"; then
-        echo "libxvidcore is under GPL and --enable-gpl is not specified"
+        echo "libxvidcore is under GPL and --enable-gpl is not specified."
         fail="yes"
     fi
 
     if test "$x264" != "no"; then
-        echo "x264 is under GPL and --enable-gpl is not specified"
+        echo "x264 is under GPL and --enable-gpl is not specified."
         fail="yes"
     fi
 
     if test "$dts" != "no"; then
-        echo "libdts is under GPL and --enable-gpl is not specified"
+        echo "libdts is under GPL and --enable-gpl is not specified."
         fail="yes"
     fi
     
@@ -606,13 +611,13 @@ EOF
                 int main( void ) { return 0; }
 EOF
             if $cc $CFLAGS -o $TMPE $TMPC 2> /dev/null ; then
-                echo "faad2 is under GPL and --enable-gpl is not specified"
+                echo "FAAD2 is under GPL and --enable-gpl is not specified."
                 fail="yes"
             fi
         else
             faad="no"
             faadbin="no"
-            echo "faad test failed"
+            echo "FAAD test failed."
         fi
     fi
    
@@ -622,7 +627,7 @@ EOF
     fi
 fi
 
-# compute mmx state
+# compute MMX state
 if test $mmx = "default"; then
     if test $cpu = "x86" -o $cpu = "x86_64"; then
         mmx="yes"
@@ -689,49 +694,49 @@ if test $tune != "generic"; then
 	601|ppc601|PowerPC601)
 	    CFLAGS="$CFLAGS -mcpu=601"
 	    if test $altivec = "yes"; then
-		echo "WARNING: tuning for PPC601 but altivec enabled !";
+		echo "WARNING: Tuning for PPC601 but AltiVec enabled!";
 	    fi
 	    TUNECPU=ppc601
 	;;
 	603*|ppc603*|PowerPC603*)
 	    CFLAGS="$CFLAGS -mcpu=603"
 	    if test $altivec = "yes"; then
-		echo "WARNING: tuning for PPC603 but altivec enabled !";
+		echo "WARNING: Tuning for PPC603 but AltiVec enabled!";
 	    fi
 	    TUNECPU=ppc603
 	;;
 	604*|ppc604*|PowerPC604*)
 	    CFLAGS="$CFLAGS -mcpu=604"
 	    if test $altivec = "yes"; then
-		echo "WARNING: tuning for PPC604 but altivec enabled !";
+		echo "WARNING: Tuning for PPC604 but AltiVec enabled!";
 	    fi
 	    TUNECPU=ppc604
 	;;
 	G3|g3|75*|ppc75*|PowerPC75*)
 	    CFLAGS="$CFLAGS -mcpu=750 -mtune=750 -mpowerpc-gfxopt"
 	    if test $altivec = "yes"; then
-		echo "WARNING: tuning for PPC75x but altivec enabled !";
+		echo "WARNING: Tuning for PPC75x but AltiVec enabled!";
 	    fi
 	    TUNECPU=ppc750
 	;;
 	G4|g4|745*|ppc745*|PowerPC745*)
 	    CFLAGS="$CFLAGS -mcpu=7450 -mtune=7450 -mpowerpc-gfxopt"
 	    if test $altivec = "no"; then
-		echo "WARNING: tuning for PPC745x but altivec disabled !";
+		echo "WARNING: Tuning for PPC745x but AltiVec disabled!";
 	    fi
 	    TUNECPU=ppc7450
 	;;
 	74*|ppc74*|PowerPC74*)
 	    CFLAGS="$CFLAGS -mcpu=7400 -mtune=7400 -mpowerpc-gfxopt"
 	    if test $altivec = "no"; then
-		echo "WARNING: tuning for PPC74xx but altivec disabled !";
+		echo "WARNING: Tuning for PPC74xx but AltiVec disabled!";
 	    fi
 	    TUNECPU=ppc7400
 	;;
 	G5|g5|970|ppc970|PowerPC970|power4*|Power4*)
 	    CFLAGS="$CFLAGS -mcpu=970 -mtune=970 -mpowerpc-gfxopt -mpowerpc64"
 	    if test $altivec = "no"; then
-		echo "WARNING: tuning for PPC970 but altivec disabled !";
+		echo "WARNING: Tuning for PPC970 but AltiVec disabled!";
 	    fi
 	    TUNECPU=ppc970
             POWERPCMODE="64bits"
@@ -740,7 +745,7 @@ if test $tune != "generic"; then
 	    CFLAGS="$CFLAGS -march=$tune"
 	;;
 	*)
-	echo "WARNING: unknown CPU \"$tune\", ignored"
+	echo "WARNING: Unknown CPU \"$tune\", ignored."
 	;;
     esac
 fi
@@ -756,7 +761,7 @@ if test $cpu = "powerpc"; then
     fi
 fi
 
-# See if we have <altivec.h>
+# check if we have <altivec.h>
 cat > $TMPC << EOF
 #include <altivec.h>
 int main( void ) { return 0; }
@@ -767,7 +772,7 @@ if $cc $CFLAGS -o $TMPE $TMPC 2> /dev/null ; then
 _altivec_h="yes"
 fi
 
-# See does our compiler support Motorola AltiVec C API
+# check if our compiler supports Motorola AltiVec C API
 if test $altivec = "yes"; then
 if test $_altivec_h = "yes"; then
 cat > $TMPC << EOF
@@ -790,7 +795,7 @@ fi
 $cc $CFLAGS -o $TMPE $TMPC 2> /dev/null || altivec="no"
 fi
 
-# Can only do mmi on mips
+# mmi only available on mips
 if test $mmi = "default"; then
     if test $cpu = "mips"; then
         mmi="yes"
@@ -799,7 +804,7 @@ if test $mmi = "default"; then
     fi
 fi
 
-# See does our compiler support mmi
+# check if our compiler supports mmi
 if test $mmi = "yes"; then
 cat > $TMPC << EOF
 int main(void) {
@@ -833,7 +838,7 @@ strip="${cross_prefix}${strip}"
 if test -z "$cross_prefix" ; then
 
 # ---
-# big/little endian test
+# big/little-endian test
 cat > $TMPC << EOF
 #include <inttypes.h>
 int main(int argc, char ** argv){
@@ -850,7 +855,7 @@ fi
 
 else
 
-# if cross compiling, cannot launch a program, so make a static guess
+# programs cannot be launched if cross compiling, so make a static guess
 if test "$cpu" = "powerpc" -o "$cpu" = "mips" ; then
     bigendian="yes"
 fi
@@ -907,7 +912,7 @@ $cc -o $TMPE $TMPC 2> /dev/null || _memalign=no
 fi
 
 if test "$_memalign" = "no" -a "$mmx" = "yes" -a "$memalignhack" != "yes"; then
-    echo "error, no memalign() but sse enabled, either disable it or use --enable-memalign-hack"
+    echo "Error, no memalign() but SSE enabled, disable it or use --enable-memalign-hack."
     exit 1
 fi
 
@@ -1027,7 +1032,7 @@ fi
 
 
 ##########################################
-# imlib probe
+# imlib check
 
 cat > $TMPC << EOF
 #include <X11/Xlib.h>
@@ -1041,7 +1046,7 @@ imlib2=yes
 fi
 
 ##########################################
-# freetype probe
+# FreeType check
 
 cat > $TMPC << EOF
 #include <ft2build.h>
@@ -1058,7 +1063,7 @@ if test "x$targetos" != "xBeOS" && test "$os2" != "yes"; then
 fi
 
 ##########################################
-# SDL probe
+# SDL check
 
 cat > $TMPC << EOF
 #include <SDL.h>
@@ -1080,7 +1085,7 @@ fi
 fi
 
 ##########################################
-# texi2html probe
+# texi2html check
 
 texi2html=no
 if (texi2html -version) >/dev/null 2>&1; then
@@ -1089,7 +1094,7 @@ fi
 
 if test "$network" = "yes" ; then
 ##########################################
-# IPv6 probe
+# IPv6 check
 
 cat > $TMPC << EOF
 #include <sys/types.h>
@@ -1163,15 +1168,15 @@ if test x"$mandir" = x""; then
 mandir="${prefix}/man"
 fi
 
-echo "Install prefix   $prefix"
-echo "Source path      $source_path"
+echo "install prefix   $prefix"
+echo "source path      $source_path"
 echo "C compiler       $cc"
 echo "make             $make"
 echo "CPU              $cpu ($tune)"
 if test "$BUILDSUF" != ""; then
-echo "Build suffix     $BUILDSUF"
+echo "build suffix     $BUILDSUF"
 fi
-echo "Big Endian       $bigendian"
+echo "big-endian       $bigendian"
 echo "inttypes.h       $inttypes"
 echo "broken inttypes.h $emu_fast_int"
 if test $cpu = "x86" -o $cpu = "x86_64"; then
@@ -1192,30 +1197,30 @@ echo "zlib enabled     $zlib"
 echo "libgsm enabled   $libgsm"
 echo "mp3lame enabled  $mp3lame"
 echo "libogg enabled   $libogg"
-echo "vorbis enabled   $vorbis"
-echo "theora enabled   $theora"
-echo "faad enabled     $faad"
+echo "Vorbis enabled   $vorbis"
+echo "Theora enabled   $theora"
+echo "FAAD enabled     $faad"
 echo "faadbin enabled  $faadbin"
-echo "faac enabled     $faac"
-echo "xvid enabled     $xvid"
+echo "FAAC enabled     $faac"
+echo "XviD enabled     $xvid"
 echo "x264 enabled     $x264"
 echo "a52 support      $a52"
 echo "a52 dlopened     $a52bin"
-echo "dts support      $dts"
+echo "DTS support      $dts"
 echo "pp support       $pp"
 echo "debug symbols    $debug"
 echo "strip symbols    $dostrip"
 echo "optimize         $optimize"
 echo "shared pp        $shared_pp"
-echo "Video hooking    $vhook"
+echo "video hooking    $vhook"
 echo "SDL support      $sdl"
 if test $sdl_too_old = "yes"; then
-echo "-> Your SDL version is too old - please upgrade to have FFplay/SDL support"
+echo "-> Your SDL version is too old - please upgrade to have FFplay/SDL support."
 fi
 
 if test "$vhook" = "yes" ; then
 echo "Imlib2 support   $imlib2"
-echo "freetype support $freetype2"
+echo "FreeType support $freetype2"
 fi
 echo "Sun medialib support"  $sunmlib
 echo "pthreads support"      $pthreads
@@ -1233,12 +1238,12 @@ else
 echo "License: GPL"
 fi
 
-echo "Creating config.mak and config.h"
+echo "Creating config.mak and config.h..."
 
 date >> config.log
 echo "   $0 $FFMPEG_CONFIGURATION" >> config.log
-echo "# Automatically generated by configure - do not modify" > config.mak
-echo "/* Automatically generated by configure - do not modify */" > $TMPH
+echo "# Automatically generated by configure - do not modify!" > config.mak
+echo "/* Automatically generated by configure - do not modify! */" > $TMPH
 echo "#define FFMPEG_CONFIGURATION "'"'"$FFMPEG_CONFIGURATION"'"' >> $TMPH
 
 echo "prefix=$prefix" >> config.mak
@@ -1257,7 +1262,7 @@ echo "STRIP=echo ignoring strip" >> config.mak
 echo "INSTALLSTRIP=" >> config.mak
 fi
 
-# SHCFLAGS is a copy of CFLAGS without -mdynamic-no-pic.  Used when building 
+# SHCFLAGS is a copy of CFLAGS without -mdynamic-no-pic, used when building
 # shared modules on OS/X (vhook/Makefile).
 SHCFLAGS=$CFLAGS
 if test "$needmdynamicnopic" = yes; then
@@ -1404,11 +1409,11 @@ echo "EXTRALIBS=$extralibs" >> config.mak
 version=`grep '#define FFMPEG_VERSION ' "$source_path/libavcodec/avcodec.h" |
  cut -d '"' -f 2`
 echo "VERSION=$version" >>config.mak
-# if you do not want to use encoders, disable that.
+# If you do not want to use encoders, disable them.
 echo "#define CONFIG_ENCODERS 1" >> $TMPH
 echo "CONFIG_ENCODERS=yes" >> config.mak
 
-# if you do not want to use decoders, disable that.
+# If you do not want to use decoders, disable them.
 echo "#define CONFIG_DECODERS 1" >> $TMPH
 echo "CONFIG_DECODERS=yes" >> config.mak
 
@@ -1452,7 +1457,7 @@ if test "$pp" = "yes" ; then
   fi
 fi
 
-# mpeg audio high precision mode
+# MPEG audio high precision mode
 if test "$mpegaudio_hp" = "yes" ; then
   echo "#define CONFIG_MPEGAUDIO_HP 1" >> $TMPH
 fi
@@ -1735,7 +1740,7 @@ fi
 rm -f $TMPO $TMPC $TMPE $TMPS $TMPH
 
 
-# build pkg-config files libavcodec.pc, libavformat.pc and libpostproc.pc 
+# build pkg-config files libav*.pc and libpostproc.pc
 lavc_version=`grep '#define LIBAVCODEC_VERSION ' "$source_path/libavcodec/avcodec.h" | sed 's/[^0-9\.]//g'`
 lavf_version=`grep '#define LIBAVFORMAT_VERSION ' "$source_path/libavformat/avformat.h" | sed 's/[^0-9\.]//g'`
 lavu_version=`grep '#define LIBAVUTIL_VERSION ' "$source_path/libavutil/avutil.h" | sed 's/[^0-9\.]//g'`
