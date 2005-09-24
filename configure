@@ -146,7 +146,7 @@ case "$cpu" in
   "Power Macintosh"|ppc)
     cpu="powerpc"
   ;;
-  mips)
+  mips|mipsel)
     cpu="mips"
   ;;
   sun4u|sparc64)
@@ -157,6 +157,18 @@ case "$cpu" in
   ;;
   sh4)
     cpu="sh4"
+  ;;
+  parisc|parisc64)
+    cpu="parisc"
+  ;;
+  s390|s390x)
+    cpu="s390"
+  ;;
+  m68k)
+    cpu="m68k"
+  ;;
+  ia64)
+    cpu="ia64"
   ;;
   *)
     cpu="unknown"
@@ -1320,6 +1332,18 @@ elif test "$cpu" = "mips" ; then
 elif test "$cpu" = "sh4" ; then
   echo "TARGET_ARCH_SH4=yes" >> config.mak
   echo "#define ARCH_SH4 1" >> $TMPH
+elif test "$cpu" = "parisc" ; then
+  echo "TARGET_ARCH_PARISC=yes" >> config.mak
+  echo "#define ARCH_PARISC 1" >> $TMPH
+elif test "$cpu" = "s390" ; then
+  echo "TARGET_ARCH_S390=yes" >> config.mak
+  echo "#define ARCH_S390 1" >> $TMPH
+elif test "$cpu" = "m68k" ; then
+  echo "TARGET_ARCH_M68K=yes" >> config.mak
+  echo "#define ARCH_M68K 1" >> $TMPH
+elif test "$cpu" = "ia64" ; then
+  echo "TARGET_ARCH_IA64=yes" >> config.mak
+  echo "#define ARCH_IA64 1" >> $TMPH
 fi
 echo "#define TUNECPU $TUNECPU" >> $TMPH
 if test "$bigendian" = "yes" ; then
