@@ -326,7 +326,7 @@ static int amr_nb_encode_frame(AVCodecContext *avctx,
 }
 
 
-#else /* Float point version*/
+#elif defined(AMR_NB) /* Float point version*/
 
 typedef struct AMRContext {
     int frameCount;
@@ -457,6 +457,8 @@ static int amr_nb_encode_frame(AVCodecContext *avctx,
 
 #endif
 
+#if defined(AMR_NB) || defined(AMR_NB_FIXED)
+
 AVCodec amr_nb_decoder =
 {
     "amr_nb",
@@ -480,6 +482,8 @@ AVCodec amr_nb_encoder =
     amr_nb_encode_close,
     NULL,
 };
+
+#endif
 
 /* -----------AMR wideband ------------*/
 #ifdef AMR_WB
