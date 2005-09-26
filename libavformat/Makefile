@@ -81,9 +81,11 @@ endif
 
 LIB= $(LIBPREF)avformat$(LIBSUF)
 ifeq ($(BUILD_SHARED),yes)
-SLIB= $(SLIBPREF)avformat$(SLIBSUF)
-
-AVCLIBS+=-lavcodec$(BUILDSUF) -L../libavcodec
+SLIBNAME= $(SLIBPREF)avformat$(SLIBSUF)
+AVCLIBS+=-lavcodec$(BUILDSUF) -L../libavcodec -lavutil$(BUILDSUF) -L../libavutil
+ifeq ($(CONFIG_DARWIN),yes)
+SHFLAGS += -Wl,-install_name,$(libdir)/$(SLIBNAME),-current_version,$(SPPVERSION),-compatibility_version,$(SPPVERSION)
+endif
 ifeq ($(CONFIG_MP3LAME),yes)
 AVCLIBS+=-lmp3lame
 endif
@@ -91,14 +93,14 @@ endif
 
 SRCS := $(OBJS:.o=.c) $(PPOBJS:.o=.cpp)
 
-all: $(LIB) $(SLIB)
+all: $(LIB) $(SLIBNAME)
 
 $(LIB): $(OBJS) $(PPOBJS)
 	rm -f $@
 	$(AR) rc $@ $(OBJS) $(PPOBJS)
 	$(RANLIB) $@
 
-$(SLIB): $(OBJS)
+$(SLIBNAME): $(OBJS)
 ifeq ($(CONFIG_WIN32),yes)
 	$(CC) $(SHFLAGS) -Wl,--output-def,$(@:.dll=.def) -o $@ $(OBJS) $(PPOBJS) $(AVCLIBS) $(EXTRALIBS)
 	-lib /machine:i386 /def:$(@:.dll=.def)
@@ -112,11 +114,11 @@ depend: $(SRCS)
 ifeq ($(BUILD_SHARED),yes)
 install: all install-headers
 ifeq ($(CONFIG_WIN32),yes)
-	install $(INSTALLSTRIP) -m 755 $(SLIB) "$(prefix)"
+	install $(INSTALLSTRIP) -m 755 $(SLIBNAME) "$(prefix)"
 else
 	install -d $(libdir)
-	install $(INSTALLSTRIP) -m 755 $(SLIB) $(libdir)/libavformat-$(VERSION).so
-	ln -sf libavformat-$(VERSION).so $(libdir)/libavformat.so
+	install $(INSTALLSTRIP) -m 755 $(SLIBNAME) $(libdir)/$(SLIBPREF)avformat-$(VERSION)$(SLIBSUF)
+	ln -sf $(SLIBPREF)avformat-$(VERSION)$(SLIBSUF) $(libdir)/$(SLIBNAME)
 	$(LDCONFIG) || true
 endif
 else
@@ -143,7 +145,7 @@ install-headers:
 	g++ $(subst -Wall,,$(CFLAGS)) -c -o $@ $< 
 
 distclean clean: 
-	rm -f *.o *.d .depend *~ *.a *.so $(LIB)
+	rm -f *.o *.d .depend *~ *.a *$(SLIBSUF) $(LIB)
 
 #
 # include dependency files if they exist

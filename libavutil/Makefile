@@ -22,22 +22,25 @@ SRCS := $(OBJS:.o=.c)
 
 LIB= $(LIBPREF)avutil$(LIBSUF)
 ifeq ($(BUILD_SHARED),yes)
-SLIB= $(SLIBPREF)avutil$(SLIBSUF)
+SLIBNAME= $(SLIBPREF)avutil$(SLIBSUF)
+ifeq ($(CONFIG_DARWIN),yes)
+SHFLAGS += -Wl,-install_name,$(libdir)/$(SLIBNAME),-current_version,$(SPPVERSION),-compatibility_version,$(SPPVERSION)
+endif
 endif
 
-all: $(LIB) $(SLIB)
+all: $(LIB) $(SLIBNAME)
 
 $(LIB): $(OBJS)
 	rm -f $@
 	$(AR) rc $@ $(OBJS)
 	$(RANLIB) $@
 
-$(SLIB): $(OBJS)
+$(SLIBNAME): $(OBJS)
 ifeq ($(CONFIG_WIN32),yes)
 	$(CC) $(SHFLAGS) -Wl,--output-def,$(@:.dll=.def) -o $@ $(OBJS) $(EXTRALIBS) $(AMREXTRALIBS)
 	-lib /machine:i386 /def:$(@:.dll=.def)
 else
-	$(CC) $(SHFLAGS) -o $@ $(OBJS) $(EXTRALIBS) $(AMREXTRALIBS) $(LDFLAGS)
+	$(CC) $(SHFLAGS) $(LDFLAGS) -o $@ $(OBJS) $(EXTRALIBS) $(AMREXTRALIBS)
 endif
 
 %.o: %.c
@@ -49,7 +52,7 @@ depend: $(SRCS)
 dep:	depend
 
 clean:
-	rm -f *.o *.d *~ .depend $(LIB) $(SLIB) *.so
+	rm -f *.o *.d *~ .depend $(LIB) $(SLIBNAME) *$(SLIBSUF)
 
 distclean: clean
 	rm -f Makefile.bak .depend
@@ -58,11 +61,11 @@ distclean: clean
 ifeq ($(BUILD_SHARED),yes)
 install: all install-headers
 ifeq ($(CONFIG_WIN32),yes)
-	install $(INSTALLSTRIP) -m 755 $(SLIB) "$(prefix)"
+	install $(INSTALLSTRIP) -m 755 $(SLIBNAME) "$(prefix)"
 else
 	install -d $(libdir)
-	install $(INSTALLSTRIP) -m 755 $(SLIB) $(libdir)/libavutil-$(VERSION).so
-	ln -sf libavutil-$(VERSION).so $(libdir)/libavutil.so
+	install $(INSTALLSTRIP) -m 755 $(SLIBNAME) $(libdir)/libavutil-$(VERSION)$(SLIBSUF)
+	ln -sf libavutil-$(VERSION)$(SLIBSUF) $(libdir)/$(SLIBNAME)
 	$(LDCONFIG) || true
 endif
 else

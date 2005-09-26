@@ -377,17 +377,22 @@ ifeq ($(TARGET_ARCH_SPARC64),yes)
 CFLAGS+= -mcpu=ultrasparc -mtune=ultrasparc
 endif
 
+# Darwin specific stuff
+ifeq ($(CONFIG_DARWIN),yes)
+SHFLAGS += -Wl,-install_name,$(libdir)/$(SLIBPREF)avcodec$(SLIBSUF),-current_version,$(SPPVERSION),-compatibility_version,$(SPPVERSION)
+endif
+
 SRCS := $(OBJS:.o=.c) $(ASM_OBJS:.o=.S)
 OBJS := $(OBJS) $(ASM_OBJS)
 
 LIB= $(LIBPREF)avcodec$(LIBSUF)
 LIBAVUTIL= $(SRC_PATH)/libavutil/$(LIBPREF)avutil$(LIBSUF)
 ifeq ($(BUILD_SHARED),yes)
-SLIB= $(SLIBPREF)avcodec$(SLIBSUF)
+SLIBNAME= $(SLIBPREF)avcodec$(SLIBSUF)
 endif
 TESTS= imgresample-test dct-test motion-test fft-test
 
-all: $(LIB) $(SLIB)
+all: $(LIB) $(SLIBNAME)
 
 amrlibs:
 	$(MAKE) -C amr spclib fipoplib
@@ -399,7 +404,7 @@ $(LIB): $(OBJS) $(AMRLIBS)
 	$(AR) rc $@ $(OBJS) $(AMREXTRALIBS)
 	$(RANLIB) $@
 
-$(SLIB): $(OBJS)
+$(SLIBNAME): $(OBJS)
 ifeq ($(CONFIG_PP),yes)
 	$(MAKE) -C libpostproc
 endif
@@ -407,7 +412,7 @@ ifeq ($(CONFIG_WIN32),yes)
 	$(CC) $(SHFLAGS) -Wl,--output-def,$(@:.dll=.def) -o $@ $(OBJS) $(EXTRALIBS) $(AMREXTRALIBS)
 	-lib /machine:i386 /def:$(@:.dll=.def)
 else
-	$(CC) $(SHFLAGS) -o $@ $(OBJS) $(EXTRALIBS) $(AMREXTRALIBS) $(LDFLAGS)
+	$(CC) $(SHFLAGS) $(LDFLAGS) -o $@ $(OBJS) $(EXTRALIBS) $(AMREXTRALIBS)
 endif
 
 dsputil.o: dsputil.c dsputil.h
@@ -427,7 +432,7 @@ depend: $(SRCS)
 dep:	depend
 
 clean: $(CLEANAMR)
-	rm -f *.o *.d *~ .depend $(LIB) $(SLIB) *.so i386/*.o i386/*~ \
+	rm -f *.o *.d *~ .depend $(LIB) $(SLIBNAME) *$(SLIBSUF) i386/*.o i386/*~ \
 	   armv4l/*.o armv4l/*~ \
 	   mlib/*.o mlib/*~ \
 	   alpha/*.o alpha/*~ \
@@ -476,11 +481,11 @@ fft-test: fft-test.o $(LIB)
 ifeq ($(BUILD_SHARED),yes)
 install: all install-headers
 ifeq ($(CONFIG_WIN32),yes)
-	install $(INSTALLSTRIP) -m 755 $(SLIB) "$(prefix)"
+	install $(INSTALLSTRIP) -m 755 $(SLIBNAME) "$(prefix)"
 else
 	install -d $(libdir)
-	install $(INSTALLSTRIP) -m 755 $(SLIB) $(libdir)/libavcodec-$(VERSION).so
-	ln -sf libavcodec-$(VERSION).so $(libdir)/libavcodec.so
+	install $(INSTALLSTRIP) -m 755 $(SLIBNAME) $(libdir)/libavcodec-$(VERSION)$(SLIBSUF)
+	ln -sf libavcodec-$(VERSION)$(SLIBSUF) $(libdir)/libavcodec$(SLIBSUF)
 	$(LDCONFIG) || true
 endif
 ifeq ($(CONFIG_PP),yes)

@@ -5,22 +5,22 @@ VPATH=$(SRC_PATH)/vhook
 CFLAGS=-fPIC $(SHCFLAGS) -I.. -I$(SRC_PATH) -I$(SRC_PATH)/libavformat -I$(SRC_PATH)/libavcodec -I$(SRC_PATH)/libavutil -DHAVE_AV_CONFIG_H
 
 ifeq ($(CONFIG_DARWIN),yes)
-SHFLAGS+=-flat_namespace -undefined suppress
+	SHFLAGS += -flat_namespace
 endif
-HOOKS=null.so fish.so ppm.so watermark.so
+HOOKS=null$(SLIBSUF) fish$(SLIBSUF) ppm$(SLIBSUF) watermark$(SLIBSUF)
 
 ifeq ($(HAVE_IMLIB2),yes)
-    HOOKS += imlib2.so
+    HOOKS += imlib2$(SLIBSUF)
 endif    
 
 ifeq ($(HAVE_FREETYPE2),yes)
-    HOOKS += drawtext.so
+    HOOKS += drawtext$(SLIBSUF)
     CFLAGS += `freetype-config --cflags`
 endif    
 
 all: $(HOOKS) 
 
-SRCS := $(HOOKS:.so=.c)
+SRCS := $(HOOKS:$(SLIBSUF)=.c)
 
 depend: $(SRCS)
 	$(CC) -MM $(CFLAGS) $^ 1>.depend
@@ -29,17 +29,21 @@ install:
 	install -d "$(libdir)/vhook"
 	install -m 755 $(HOOKS) "$(libdir)/vhook"
 
-imlib2.so: imlib2.o
+imlib2$(SLIBSUF): imlib2.o
 	$(CC) $(LDFLAGS) -g -o $@ $(SHFLAGS) $< -lImlib2
 
-drawtext.so: drawtext.o
+drawtext$(SLIBSUF): drawtext.o
 	$(CC) $(LDFLAGS) -g -o $@ $(SHFLAGS) $< `freetype-config --libs`
 
-%.so: %.o
+%$(SLIBSUF): %.o
+ifeq ($(CONFIG_DARWIN),yes)
+	$(CC) $(LDFLAGS) $(SHFLAGS) -Wl,-install_name,$(libdir)/vhoook/$@ -g -o $@ $<
+else
 	$(CC) $(LDFLAGS) -g -o $@ $(SHFLAGS) $<
+endif
 
 clean:
-	rm -f *.o *.d .depend *.so *~
+	rm -f *.o *.d .depend *$(SLIBSUF) *~
 
 ifneq ($(wildcard .depend),)
 include .depend
