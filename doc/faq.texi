@@ -160,8 +160,8 @@ related to the compiler.
 
 Yes, but the MinGW tools @emph{must} be used to compile FFmpeg. You
 can link the resulting DLLs with any other Windows program. Read the
-@emph{Native Windows Compilation} section in the FFmpeg documentation
-to find more information.
+@emph{Native Windows Compilation} and @emph{Visual C++ compatibility}
+sections in the FFmpeg documentation to find more information.
 
 @section Can you add automake, libtool or autoconf support ?
 
@@ -201,6 +201,7 @@ the compilation failure then you are probably not qualified for this.
 You need a C compiler (Visual C++ is not compliant to the C standard).
 If you wish - for whatever weird reason - to use Visual C++ for your
 project then you can link the Visual C++ code with libav* as long as
-you compile the latter with a working C compiler.
+you compile the latter with a working C compiler. For more information, see
+the @emph{Visual C++ compatibility} section in the FFmpeg documentation.
 
 @bye

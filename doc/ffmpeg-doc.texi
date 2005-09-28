@@ -918,9 +918,133 @@ headers in @file{Program Files/FFmpeg}.
 when configuring FFmpeg, FFmpeg tries to use the Microsoft Visual
 C++ @code{lib} tool to build @code{avcodec.lib} and
 @code{avformat.lib}. With these libraries you can link your Visual C++
-code directly with the FFmpeg DLLs.
+code directly with the FFmpeg DLLs (see below).
 
 @end itemize
+
+@subsection Visual C++ compatibility
+
+FFmpeg will not compile under Visual C++ -- and it has too many
+dependencies on the GCC compiler to make a port viable. However,
+if you want to use the FFmpeg libraries in your own applications,
+you can still compile those applications using Visual C++. An
+important restriction to this is that you have to use the
+dynamically linked versions of the FFmpeg libraries (i.e. the
+DLLs), and you have to make sure that Visual-C++-compatible
+import libraries are created during the FFmpeg build process.
+
+This description of how to use the FFmpeg libraries with Visual C++ is
+based on Visual C++ 2005 Express Edition Beta 2. If you have a different
+version, you might have to modify the procedures slightly.
+
+Here are the step-by-step instructions for building the FFmpeg libraries
+so they can be used with Visual C++:
+
+@enumerate
+
+@item Install Visual C++ (if you haven't done so already).
+
+@item Install MinGW and MSYS as described above.
+
+@item Add a call to @file{vcvars32.bat} (which sets up the environment
+variables for the Visual C++ tools) as the first line of
+@file{msys.bat}. The standard location for @file{vcvars32.bat} is
+@file{C:\Program Files\Microsoft Visual Studio 8\VC\bin\vcvars32.bat},
+and the standard location for @file{msys.bat} is
+@file{C:\msys\1.0\msys.bat}. If this corresponds to your setup, add the
+following line as the first line of @file{msys.bat}:
+
+@code{call "C:\Program Files\Microsoft Visual Studio 8\VC\bin\vcvars32.bat"}
+
+@item Start the MSYS shell (file @file{msys.bat}) and type @code{link.exe}.
+If you get a help message with the command line options of @code{link.exe},
+this means your environment variables are set up correctly, the
+Microsoft linker is on the path and will be used by FFmpeg to
+create Visual-C++-compatible import libraries.
+
+@item Extract the current version of FFmpeg (the latest release version or
+the current CVS snapshot, whichever is recommended) and change to the
+FFmpeg directory.
+
+@item Type the command
+@code{./configure --enable-shared --enable-memalign-hack} to configure and,
+if that didn't produce any errors, type @code{make} to build FFmpeg.
+
+@item The subdirectories @file{libavformat}, @file{libavcodec}, and
+@file{libavutil} should now contain the files @file{avformat.dll},
+@file{avformat.lib}, @file{avcodec.dll}, @file{avcodec.lib},
+@file{avutil.dll}, and @file{avutil.lib}, respectively. Copy the three
+DLLs to your System32 directory (typically @file{C:\Windows\System32}).
+
+@end enumerate
+
+And here is how to use these libraries with Visual C++:
+
+@enumerate
+
+@item Create a new console application ("File / New / Project") and then
+select "Win32 Console Application". On the appropriate page of the
+Application Wizard, uncheck the "Precompiled headers" option.
+
+@item Write the source code for your application, or, for testing, just
+copy the code from an existing sample application into the source file
+that Visual C++ has already created for you. (Note that your source
+filehas to have a @code{.cpp} extension; otherwise, Visual C++ won't
+compile the FFmpeg headers correctly because in C mode, it doesn't
+recognize the @code{inline} keyword.)  For example, you can copy
+@file{output_example.c} from the FFmpeg distribution (but you will
+have to make minor modifications so the code will compile under
+C++, see below).
+
+@item Open the "Project / Properties" dialog box. In the "Configuration"
+combo box, select "All Configurations" so that the changes you make will
+affect both debug and release builds. In the tree view on the left hand
+side, select "C/C++ / General", then edit the "Additional Include
+Directories" setting to contain the complete paths to the
+@file{libavformat}, @file{libavcodec}, and @file{libavutil}
+subdirectories of your FFmpeg directory. Note that the directories have
+to be separated using semicolons. Now select "Linker / General" from the
+tree view and edit the "Additional Library Directories" setting to
+contain the same three directories.
+
+@item Still in the "Project / Properties" dialog box, select "Linker / Input"
+from the tree view, then add the files @file{avformat.lib},
+@file{avcodec.lib}, and @file{avutil.lib} to the end of the "Additional
+Dependencies". Note that the names of the libraries have to be separated
+using spaces.
+
+@item Now, select "C/C++ / Preprocessor" from the tree view. Select "Debug"
+in the "Configuration" combo box. Add @code{EMULATE_INTTYPES} to the
+"Preprocessor Definitions". (Note that the various preprocessor
+definitions have to be separated using semicolons.) Select "Release" in
+the "Configuration" combo box and, again, add @code{EMULATE_INTTYPES} to
+the "Preprocessor Definitions". (This has to be done separately because
+debug and release builds have different preprocessor definitions.)
+Finally, select "C/C++ / Code Generation" from the tree view. Select
+"Debug" in the "Configuration" combo box. Make sure that "Runtime
+Library" is set to "Multi-threaded Debug DLL". Then, select "Release" in
+the "Configuration" combo box and make sure that "Runtime Library" is
+set to "Multi-threaded DLL".
+
+@item Click "OK" to close the "Project / Properties" dialog box and build
+the application. Hopefully, it should compile and run cleanly. If you
+used @file{output_example.c} as your sample application, you will get a
+few compiler errors, but they are easy to fix. The first type of error
+occurs because Visual C++ doesn't allow an @code{int} to be converted to
+an @code{enum} without a cast. To solve the problem, insert the required
+casts (this error occurs once for a @code{CodecID} and once for a
+@code{CodecType}).  The second type of error occurs because C++ requires
+the return value of @code{malloc} to be cast to the exact type of the
+pointer it is being assigned to. Visual C++ will complain that, for
+example, @code{(void *)} is being assigned to @code{(uint8_t *)} without
+an explicit cast. So insert an explicit cast in these places to silence
+the compiler. The third type of error occurs because the @code{snprintf}
+library function is called @code{_snprintf} under Visual C++.  So just
+add an underscore to fix the problem. With these changes,
+@file{output_example.c} should compile under Visual C++, and the
+resulting executable should produce valid video files.
+
+@end enumerate
 
 @subsection Cross compilation for Windows with Linux
 
