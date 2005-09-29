@@ -1068,7 +1068,7 @@ errno issues fixed by Andrew Bachmann.
 
 Old stuff:
 
-François Revol - revol at free dot fr - April 2002
+FranÃ§ois Revol - revol at free dot fr - April 2002
 
 The configure script should guess the configuration itself, 
 however I still didn't test building on the net_server version of BeOS.
