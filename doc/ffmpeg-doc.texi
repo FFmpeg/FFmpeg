@@ -884,8 +884,7 @@ unpack the archive @file{i386-mingw32msvc.tar.gz} in the MinGW tool
 directory. Edit the @file{sdl-config} script so that it gives the
 correct SDL directory when invoked.
 
-@item Extract the current version of FFmpeg (the latest release version or
-the current CVS snapshot, whichever is recommended).
+@item Extract the current version of FFmpeg.
  
 @item Start the MSYS shell (file @file{msys.bat}).
 
@@ -962,9 +961,7 @@ this means your environment variables are set up correctly, the
 Microsoft linker is on the path and will be used by FFmpeg to
 create Visual-C++-compatible import libraries.
 
-@item Extract the current version of FFmpeg (the latest release version or
-the current CVS snapshot, whichever is recommended) and change to the
-FFmpeg directory.
+@item Extract the current version of FFmpeg and change to the FFmpeg directory.
 
 @item Type the command
 @code{./configure --enable-shared --enable-memalign-hack} to configure and,
