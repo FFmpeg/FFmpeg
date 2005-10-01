@@ -37,7 +37,7 @@ drawtext$(SLIBSUF): drawtext.o
 
 %$(SLIBSUF): %.o
 ifeq ($(CONFIG_DARWIN),yes)
-	$(CC) $(LDFLAGS) $(SHFLAGS) -Wl,-install_name,$(libdir)/vhoook/$@ -g -o $@ $<
+	$(CC) $(LDFLAGS) $(SHFLAGS) -Wl,-install_name,$(libdir)/vhook/$@ -g -o $@ $<
 else
 	$(CC) $(LDFLAGS) -g -o $@ $(SHFLAGS) $<
 endif
