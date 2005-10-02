@@ -489,7 +489,7 @@ for opt do
   ;;
   --enable-libgsm) libgsm="yes"
   ;;
-  --enable-mp3lame) mp3lame="yes"
+  --enable-mp3lame) mp3lame="yes"; extralibs="$extralibs -lmp3lame"
   ;;
   --enable-libogg) libogg="yes"
   ;;
@@ -501,7 +501,7 @@ for opt do
   ;;
   --enable-faadbin) faadbin="yes"
   ;;
-  --enable-faac) faac="yes"
+  --enable-faac) faac="yes"; extralibs="$extralibs -lfaac"
   ;;
   --enable-xvid) xvid="yes"
   ;;
