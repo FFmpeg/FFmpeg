@@ -1773,10 +1773,15 @@ lavf_version=`grep '#define LIBAVFORMAT_VERSION ' "$source_path/libavformat/avfo
 lavu_version=`grep '#define LIBAVUTIL_VERSION ' "$source_path/libavutil/avutil.h" | sed 's/[^0-9\.]//g'`
 
 requires=
+test "$dc1394" = "yes" && extralibs="$extralibs -ldc1394_control" && requires="$requires libraw1394"
+test "$libgsm" = "yes" && extralibs="$extralibs -lgsm"
 test "$libogg" = "yes" && requires="$requires ogg >= 1.1"
 test "$vorbis" = "yes" && requires="$requires vorbis"
+test "$mp3lame" = "yes" && extralibs="$extralibs -lmp3lame"
 test "$theora" = "yes" && requires="$requires theora"
 test "$faad" = "yes" && test "$faadbin" = "no" && extralibs="$extralibs -lfaad"
+test "$faac" = "yes" && extralibs="$extralibs -lfaac"
+test "$xvid" = "yes" && extralibs="$extralibs -lxvidcore"
 
 # libavutil.pc
 cat <<EOF >libavutil.pc
