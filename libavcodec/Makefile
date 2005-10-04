@@ -240,32 +240,22 @@ EXTRALIBS += -L../libavutil -lavutil$(BUILDSUF)
 # currently using libdts for dts decoding
 ifeq ($(CONFIG_DTS),yes)
 OBJS+= dtsdec.o
-CFLAGS += $(DTS_INC)
-EXTRALIBS += -ldts
 endif
 
 ifeq ($(CONFIG_FAAD),yes)
 OBJS+= faad.o
-ifeq ($(CONFIG_FAADBIN),yes)
-# no libs needed
-else
-EXTRALIBS += -lfaad
-endif
 endif
 
 ifeq ($(CONFIG_FAAC),yes)
 OBJS+= faac.o
-EXTRALIBS += -lfaac
 endif
 
 ifeq ($(CONFIG_XVID),yes)
 OBJS+= xvidff.o
-EXTRALIBS += -lxvidcore
 endif
 
 ifeq ($(CONFIG_X264),yes)
 OBJS+= x264.o
-EXTRALIBS += -lx264
 endif
 
 ifeq ($(CONFIG_PP),yes)
@@ -279,24 +269,19 @@ endif
 
 ifeq ($(CONFIG_MP3LAME),yes)
 OBJS += mp3lameaudio.o
-EXTRALIBS += -lmp3lame
 endif
 
 ifeq ($(CONFIG_LIBOGG),yes)
 ifeq ($(CONFIG_LIBVORBIS),yes)
 OBJS += oggvorbis.o
-EXTRALIBS += -lvorbisenc -lvorbis
 endif
 ifeq ($(CONFIG_LIBTHEORA), yes)
 OBJS += oggtheora.o
-EXTRALIBS += -ltheora
 endif
-EXTRALIBS += -logg
 endif
 
 ifeq ($(CONFIG_LIBGSM),yes)
 OBJS += libgsm.o
-EXTRALIBS += -lgsm
 endif
 
 ifeq ($(TARGET_GPROF),yes)

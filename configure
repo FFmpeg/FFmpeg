@@ -375,6 +375,7 @@ SLIBPREF=""
 SLIBSUF=".dll"
 EXESUF=".exe"
 extralibs=""
+pkg_requires=""
 v4l="no"
 audio_oss="no"
 dv1394="no"
@@ -470,6 +471,7 @@ for opt do
   --disable-audio-oss) audio_oss="no"
   ;;
   --disable-audio-beos) audio_beos="no"
+    extralibs="$extralibs -lbe -lmedia"
   ;;
   --disable-dv1394) dv1394="no"
   ;;
@@ -481,33 +483,48 @@ for opt do
   ;;
   --enable-a52bin) a52bin="yes"
   ;;
-  --enable-dts) dts="yes" ; extralibs="$extralibs -ldts"
+  --enable-dts) dts="yes"
+    extralibs="$extralibs -ldts"
   ;;
   --enable-pp) pp="yes"
   ;;
   --enable-shared-pp) shared_pp="yes"
   ;;
   --enable-libgsm) libgsm="yes"
+    extralibs="$extralibs -lgsm"
   ;;
-  --enable-mp3lame) mp3lame="yes"; extralibs="$extralibs -lmp3lame"
+  --enable-mp3lame) mp3lame="yes"
+    extralibs="$extralibs -lmp3lame"
   ;;
   --enable-libogg) libogg="yes"
+    extralibs="$extralibs -logg"
+    pkg_requires="$pkg_requires ogg >= 1.1"
   ;;
   --enable-vorbis) vorbis="yes"
+    extralibs="$extralibs -lvorbis -lvorbisenc"
+    pkg_requires="$pkg_requires vorbis vorbisenc"
   ;;
   --enable-theora) theora="yes"
+    extralibs="$extralibs -ltheora"
+    pkg_requires="$pkg_requires theora"
   ;;
   --enable-faad) faad="yes"
+    extralibs="$extralibs -lfaad"
   ;;
   --enable-faadbin) faadbin="yes"
   ;;
-  --enable-faac) faac="yes"; extralibs="$extralibs -lfaac"
+  --enable-faac) faac="yes"
+    extralibs="$extralibs -lfaac"
   ;;
   --enable-xvid) xvid="yes"
+    extralibs="$extralibs -lxvidcore"
   ;;
-  --enable-x264) x264="yes"; extralibs="$extralibs -lx264"
+  --enable-x264) x264="yes"
+    extralibs="$extralibs -lx264"
   ;;
   --enable-dc1394) dc1394="yes"
+    extralibs="$extralibs -ldc1394_control -lraw1394"
+    pkg_requires="$pkg_requires libraw1394"
   ;;
   --disable-vhook) vhook="no"
   ;;
@@ -1772,17 +1789,6 @@ lavc_version=`grep '#define LIBAVCODEC_VERSION ' "$source_path/libavcodec/avcode
 lavf_version=`grep '#define LIBAVFORMAT_VERSION ' "$source_path/libavformat/avformat.h" | sed 's/[^0-9\.]//g'`
 lavu_version=`grep '#define LIBAVUTIL_VERSION ' "$source_path/libavutil/avutil.h" | sed 's/[^0-9\.]//g'`
 
-requires=
-test "$dc1394" = "yes" && extralibs="$extralibs -ldc1394_control" && requires="$requires libraw1394"
-test "$libgsm" = "yes" && extralibs="$extralibs -lgsm"
-test "$libogg" = "yes" && requires="$requires ogg >= 1.1"
-test "$vorbis" = "yes" && requires="$requires vorbis"
-test "$mp3lame" = "yes" && extralibs="$extralibs -lmp3lame"
-test "$theora" = "yes" && requires="$requires theora"
-test "$faad" = "yes" && test "$faadbin" = "no" && extralibs="$extralibs -lfaad"
-test "$faac" = "yes" && extralibs="$extralibs -lfaac"
-test "$xvid" = "yes" && extralibs="$extralibs -lxvidcore"
-
 # libavutil.pc
 cat <<EOF >libavutil.pc
 prefix=$prefix
@@ -1824,7 +1830,7 @@ includedir=\${prefix}/include
 Name: libavcodec
 Description: FFmpeg codec library
 Version: $lavc_version
-Requires: $requires libavutil = $lavu_version
+Requires: $pkg_requires libavutil = $lavu_version
 Conflicts:
 Libs: -L\${libdir} -lavcodec $extralibs
 Cflags: -I\${includedir} -I\${includedir}/ffmpeg
@@ -1839,7 +1845,7 @@ includedir=\${pcfiledir}/libavcodec
 Name: libavcodec
 Description: FFmpeg codec library
 Version: $lavc_version
-Requires: $requires libavutil = $lavu_version
+Requires: $pkg_requires libavutil = $lavu_version
 Conflicts:
 Libs: \${libdir}/${LIBPREF}avcodec${LIBSUF} $extralibs
 Cflags: -I\${includedir}
@@ -1855,7 +1861,7 @@ includedir=\${prefix}/include
 Name: libavformat
 Description: FFmpeg container format library
 Version: $lavf_version
-Requires: $requires libavcodec = $lavc_version
+Requires: $pkg_requires libavcodec = $lavc_version
 Conflicts:
 Libs: -L\${libdir} -lavformat $extralibs
 Cflags: -I\${includedir} -I\${includedir}/ffmpeg
@@ -1870,7 +1876,7 @@ includedir=\${pcfiledir}/libavformat
 Name: libavformat
 Description: FFmpeg container format library
 Version: $lavf_version
-Requires: $requires libavcodec = $lavc_version
+Requires: $pkg_requires libavcodec = $lavc_version
 Conflicts:
 Libs: \${libdir}/${LIBPREF}avformat${LIBSUF} $extralibs
 Cflags: -I\${includedir}

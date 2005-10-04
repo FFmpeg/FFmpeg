@@ -60,7 +60,6 @@ EXTRALIBS += -L../libavutil -lavutil$(BUILDSUF)
 
 ifeq ($(CONFIG_AUDIO_BEOS),yes)
 PPOBJS+= beosaudio.o
-EXTRALIBS+=-lbe -lmedia
 endif
 
 ifeq ($(CONFIG_NETWORK),yes)
@@ -85,9 +84,6 @@ SLIBNAME= $(SLIBPREF)avformat$(SLIBSUF)
 AVCLIBS+=-lavcodec$(BUILDSUF) -L../libavcodec -lavutil$(BUILDSUF) -L../libavutil
 ifeq ($(CONFIG_DARWIN),yes)
 SHFLAGS += -Wl,-install_name,$(libdir)/$(SLIBNAME),-current_version,$(SPPVERSION),-compatibility_version,$(SPPVERSION)
-endif
-ifeq ($(CONFIG_MP3LAME),yes)
-AVCLIBS+=-lmp3lame
 endif
 endif
 

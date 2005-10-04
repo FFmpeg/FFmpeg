@@ -38,43 +38,6 @@ ifeq ($(BUILD_SHARED),yes)
 DEP_LIBS=libavcodec/$(SLIBPREF)avcodec$(SLIBSUF) libavformat/$(SLIBPREF)avformat$(SLIBSUF)
 else
 DEP_LIBS=libavcodec/$(LIBPREF)avcodec$(LIBSUF) libavformat/$(LIBPREF)avformat$(LIBSUF)
-ifeq ($(CONFIG_MP3LAME),yes)
-EXTRALIBS+=-lmp3lame
-endif
-endif
-
-ifeq ($(CONFIG_LIBOGG),yes)
-ifeq ($(CONFIG_LIBVORBIS),yes)
-EXTRALIBS+= -lvorbisenc -lvorbis
-endif
-ifeq ($(CONFIG_LIBTHEORA),yes)
-EXTRALIBS+= -ltheora
-endif
-EXTRALIBS+= -logg
-endif
-
-ifeq ($(CONFIG_FAAD),yes)
-ifeq ($(CONFIG_FAADBIN),yes)
-# no libs needed
-else
-EXTRALIBS += -lfaad
-endif
-endif
-
-ifeq ($(CONFIG_FAAC),yes)
-EXTRALIBS+=-lfaac
-endif
-
-ifeq ($(CONFIG_XVID),yes)
-EXTRALIBS+=-lxvidcore
-endif
-
-ifeq ($(CONFIG_LIBGSM),yes)
-EXTRALIBS+=-lgsm
-endif
-
-ifeq ($(CONFIG_DC1394),yes)
-EXTRALIBS+=-ldc1394_control -lraw1394
 endif
 
 ifeq ($(BUILD_VHOOK),yes)
