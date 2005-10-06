@@ -1,2 +1,4 @@
 Makefile.*
 .depend
+amr
+amr*_float
