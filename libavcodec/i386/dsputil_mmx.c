@@ -2832,6 +2832,24 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             c->h264_v_loop_filter_chroma_intra= h264_v_loop_filter_chroma_intra_mmx2;
             c->h264_h_loop_filter_chroma_intra= h264_h_loop_filter_chroma_intra_mmx2;
 
+            c->weight_h264_pixels_tab[0]= ff_h264_weight_16x16_mmx2;
+            c->weight_h264_pixels_tab[1]= ff_h264_weight_16x8_mmx2;
+            c->weight_h264_pixels_tab[2]= ff_h264_weight_8x16_mmx2;
+            c->weight_h264_pixels_tab[3]= ff_h264_weight_8x8_mmx2;
+            c->weight_h264_pixels_tab[4]= ff_h264_weight_8x4_mmx2;
+            c->weight_h264_pixels_tab[5]= ff_h264_weight_4x8_mmx2;
+            c->weight_h264_pixels_tab[6]= ff_h264_weight_4x4_mmx2;
+            c->weight_h264_pixels_tab[7]= ff_h264_weight_4x2_mmx2;
+
+            c->biweight_h264_pixels_tab[0]= ff_h264_biweight_16x16_mmx2;
+            c->biweight_h264_pixels_tab[1]= ff_h264_biweight_16x8_mmx2;
+            c->biweight_h264_pixels_tab[2]= ff_h264_biweight_8x16_mmx2;
+            c->biweight_h264_pixels_tab[3]= ff_h264_biweight_8x8_mmx2;
+            c->biweight_h264_pixels_tab[4]= ff_h264_biweight_8x4_mmx2;
+            c->biweight_h264_pixels_tab[5]= ff_h264_biweight_4x8_mmx2;
+            c->biweight_h264_pixels_tab[6]= ff_h264_biweight_4x4_mmx2;
+            c->biweight_h264_pixels_tab[7]= ff_h264_biweight_4x2_mmx2;
+
 #ifdef CONFIG_ENCODERS
             c->sub_hfyu_median_prediction= sub_hfyu_median_prediction_mmx2;
 #endif //CONFIG_ENCODERS
