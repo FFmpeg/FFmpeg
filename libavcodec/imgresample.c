@@ -558,6 +558,9 @@ ImgReSampleContext *img_resample_full_init(int owidth, int oheight,
 {
     ImgReSampleContext *s;
 
+    if (!owidth || !oheight || !iwidth || !iheight)
+	return NULL;
+
     s = av_mallocz(sizeof(ImgReSampleContext));
     if (!s)
         return NULL;
