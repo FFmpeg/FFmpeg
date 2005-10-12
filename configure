@@ -143,7 +143,7 @@ case "$cpu" in
   alpha)
     cpu="alpha"
   ;;
-  "Power Macintosh"|ppc)
+  "Power Macintosh"|ppc|powerpc)
     cpu="powerpc"
   ;;
   mips|mipsel)
@@ -393,7 +393,7 @@ esac
 # of AltiVec on PowerPC.
 TARGET_OS=`( uname -s ) 2>&1`
   case "$TARGET_OS" in
-  Linux|FreeBSD|NetBSD|BSD/OS|OpenBSD|SunOS|QNX|Darwin|GNU|BeOS)
+  Linux|FreeBSD|NetBSD|BSD/OS|OpenBSD|SunOS|QNX|Darwin|GNU|BeOS|MorphOS)
     ;;
   IRIX*)
     TARGET_OS=IRIX
