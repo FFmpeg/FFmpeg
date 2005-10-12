@@ -132,7 +132,7 @@ static int ffm_write_header(AVFormatContext *s)
     ffm->packet_size = FFM_PACKET_SIZE;
 
     /* header */
-    put_tag(pb, "FFM1");
+    put_le32(pb, MKTAG('F', 'F', 'M', '1'));
     put_be32(pb, ffm->packet_size);
     /* XXX: store write position in other file ? */
     put_be64(pb, ffm->packet_size); /* current write position */
@@ -480,6 +480,7 @@ static int ffm_read_header(AVFormatContext *s, AVFormatParameters *ap)
         fst = av_mallocz(sizeof(FFMStream));
         if (!fst)
             goto fail;
+        s->streams[i] = st;
             
         av_set_pts_info(st, 64, 1, 1000000);
             
@@ -487,10 +488,10 @@ static int ffm_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
         codec = st->codec;
         /* generic info */
-        st->codec->codec_id = get_be32(pb);
-        st->codec->codec_type = get_byte(pb); /* codec_type */
+        codec->codec_id = get_be32(pb);
+        codec->codec_type = get_byte(pb); /* codec_type */
         codec->bit_rate = get_be32(pb);
-	st->quality = get_be32(pb);
+        st->quality = get_be32(pb);
         codec->flags = get_be32(pb);
         codec->flags2 = get_be32(pb);
         codec->debug = get_be32(pb);
