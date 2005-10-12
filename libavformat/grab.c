@@ -267,6 +267,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     st->codec->height = height;
     st->codec->time_base.den      = frame_rate;
     st->codec->time_base.num = frame_rate_base;
+    st->codec->bit_rate = frame_size * 1/av_q2d(st->codec->time_base) * 8;
 
     return 0;
  fail:
