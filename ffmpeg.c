@@ -420,8 +420,11 @@ static int read_ffserver_streams(AVFormatContext *s, const char *filename)
     for(i=0;i<ic->nb_streams;i++) {
         AVStream *st;
 
+        // FIXME: a more elegant solution is needed
         st = av_mallocz(sizeof(AVStream));
         memcpy(st, ic->streams[i], sizeof(AVStream));
+        st->codec = avcodec_alloc_context();
+        memcpy(st->codec, ic->streams[i]->codec, sizeof(AVCodecContext));
         s->streams[i] = st;
     }
 
@@ -1742,8 +1745,8 @@ static int av_encode(AVFormatContext **output_files,
                         goto fail;
 
                     ost->img_resample_ctx = img_resample_full_init( 
-                                      ost->st->codec->width, ost->st->codec->height,
-                                      ist->st->codec->width, ist->st->codec->height,
+                                      codec->width, codec->height,
+                                      icodec->width, icodec->height,
                                       frame_topBand, frame_bottomBand,
                             frame_leftBand, frame_rightBand, 
                             frame_padtop, frame_padbottom, 
