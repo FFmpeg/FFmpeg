@@ -188,6 +188,7 @@ const CodecTag codec_bmp_tags[] = {
     { CODEC_ID_INDEO2, MKTAG('R', 'T', '2', '1') },
     { CODEC_ID_FRAPS, MKTAG('F', 'P', 'S', '1') },
     { CODEC_ID_THEORA, MKTAG('t', 'h', 'e', 'o') },
+    { CODEC_ID_TRUEMOTION2, MKTAG('T', 'M', '2', '0') },
     { CODEC_ID_RAWVIDEO, 0 },
     { 0, 0 },
 };

@@ -111,6 +111,7 @@ enum CodecID {
     CODEC_ID_AASC,
     CODEC_ID_INDEO2,
     CODEC_ID_FRAPS,
+    CODEC_ID_TRUEMOTION2,
 
     /* various pcm "codecs" */
     CODEC_ID_PCM_S16LE= 0x10000,
@@ -2039,6 +2040,7 @@ extern AVCodec flic_decoder;
 extern AVCodec vmdvideo_decoder;
 extern AVCodec vmdaudio_decoder;
 extern AVCodec truemotion1_decoder;
+extern AVCodec truemotion2_decoder;
 extern AVCodec mszh_decoder;
 extern AVCodec zlib_decoder;
 extern AVCodec ra_144_decoder;

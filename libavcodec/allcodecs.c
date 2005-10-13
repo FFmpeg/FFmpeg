@@ -424,6 +424,9 @@ void avcodec_register_all(void)
 #ifdef CONFIG_TRUEMOTION1_DECODER
     register_avcodec(&truemotion1_decoder);
 #endif //CONFIG_TRUEMOTION1_DECODER
+#ifdef CONFIG_TRUEMOTION2_DECODER
+    register_avcodec(&truemotion2_decoder);
+#endif //CONFIG_TRUEMOTION2_DECODER
 #ifdef CONFIG_VMDVIDEO_DECODER
     register_avcodec(&vmdvideo_decoder);
 #endif //CONFIG_VMDVIDEO_DECODER
