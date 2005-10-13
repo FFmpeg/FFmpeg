@@ -33,6 +33,8 @@
 
 #define FLIC_FILE_MAGIC_1 0xAF11
 #define FLIC_FILE_MAGIC_2 0xAF12
+#define FLIC_FILE_MAGIC_3 0xAF44  /* Flic Type for Extended FLX Format which 
+                                     originated in Dave's Targa Animator (DTA) */
 #define FLIC_CHUNK_MAGIC_1 0xF1FA
 #define FLIC_CHUNK_MAGIC_2 0xF5FA
 #define FLIC_MC_PTS_INC 6000  /* pts increment for Magic Carpet game FLIs */
@@ -56,7 +58,8 @@ static int flic_probe(AVProbeData *p)
 
     magic_number = LE_16(&p->buf[4]);
     if ((magic_number != FLIC_FILE_MAGIC_1) &&
-        (magic_number != FLIC_FILE_MAGIC_2))
+        (magic_number != FLIC_FILE_MAGIC_2) &&
+        (magic_number != FLIC_FILE_MAGIC_3))
         return 0;
 
     return AVPROBE_SCORE_MAX;
@@ -129,7 +132,8 @@ static int flic_read_header(AVFormatContext *s,
          *  therefore, the frame pts increment = n * 1285.7
          */
         flic->frame_pts_inc = speed * 1285.7;
-    } else if (magic_number == FLIC_FILE_MAGIC_2) {
+    } else if ((magic_number == FLIC_FILE_MAGIC_2) ||
+               (magic_number == FLIC_FILE_MAGIC_3)) {
         /*
          * in this case, the speed (n) is number of milliseconds between frames:
          *
@@ -206,7 +210,7 @@ static int flic_read_close(AVFormatContext *s)
 
 static AVInputFormat flic_iformat = {
     "flic",
-    "FLI/FLC animation format",
+    "FLI/FLC/FLX animation format",
     sizeof(FlicDemuxContext),
     flic_probe,
     flic_read_header,
