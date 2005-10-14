@@ -336,7 +336,7 @@ static inline int GET_TOK(TM2Context *ctx,int type) {
 /* blocks decoding routines */
 
 /* common Y, U, V pointers initialisation */
-#define TM2_INIT_POINTERS(); \
+#define TM2_INIT_POINTERS() \
     int *last, *clast; \
     int *Y, *U, *V;\
     int Ystride, Ustride, Vstride;\
@@ -350,7 +350,7 @@ static inline int GET_TOK(TM2Context *ctx,int type) {
     last = ctx->last + bx * 4;\
     clast = ctx->clast + bx * 4;
 
-#define TM2_INIT_POINTERS_2(); \
+#define TM2_INIT_POINTERS_2() \
     int *Yo, *Uo, *Vo;\
     int oYstride, oUstride, oVstride;\
 \
