@@ -100,6 +100,7 @@ typedef struct HTTPContext {
     long timeout;
     uint8_t *buffer_ptr, *buffer_end;
     int http_error;
+    int post;
     struct HTTPContext *next;
     int got_key_frame; /* stream 0 => 1, stream 1 => 2, stream 2=> 4 */
     int64_t data_count;
@@ -767,7 +768,7 @@ static void close_connection(HTTPContext *c)
     for(i=0; i<ctx->nb_streams; i++) 
         av_free(ctx->streams[i]) ; 
 
-    if (c->stream)
+    if (c->stream && !c->post && c->stream->stream_type == STREAM_TYPE_LIVE)
         current_bandwidth -= c->stream->bandwidth;
     av_freep(&c->pb_buffer);
     av_freep(&c->packet_buffer);
@@ -1170,7 +1171,6 @@ enum RedirType {
 static int http_parse_request(HTTPContext *c)
 {
     char *p;
-    int post;
     enum RedirType redir_type;
     char cmd[32];
     char info[1024], *filename;
@@ -1188,9 +1188,9 @@ static int http_parse_request(HTTPContext *c)
     pstrcpy(c->method, sizeof(c->method), cmd);
 
     if (!strcmp(cmd, "GET"))
-        post = 0;
+        c->post = 0;
     else if (!strcmp(cmd, "POST"))
-        post = 1;
+        c->post = 1;
     else
         return -1;
 
@@ -1292,11 +1292,11 @@ static int http_parse_request(HTTPContext *c)
         }
     }
 
-    if (post == 0 && stream->stream_type == STREAM_TYPE_LIVE) {
+    if (c->post == 0 && stream->stream_type == STREAM_TYPE_LIVE) {
         current_bandwidth += stream->bandwidth;
     }
     
-    if (post == 0 && max_bandwidth < current_bandwidth) {
+    if (c->post == 0 && max_bandwidth < current_bandwidth) {
         c->http_error = 200;
         q = c->buffer;
         q += snprintf(q, q - (char *) c->buffer + c->buffer_size, "HTTP/1.0 200 Server too busy\r\n");
@@ -1439,7 +1439,7 @@ static int http_parse_request(HTTPContext *c)
 
     /* XXX: add there authenticate and IP match */
 
-    if (post) {
+    if (c->post) {
         /* if post, it means a feed is being sent */
         if (!stream->is_feed) {
             /* However it might be a status report from WMP! Lets log the data
