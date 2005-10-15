@@ -48,7 +48,7 @@
 #define WFRAC_BITS  14   /* fractional bits for window */
 #endif
 
-#if defined(USE_HIGHPRECISION)
+#if defined(USE_HIGHPRECISION) && defined(CONFIG_AUDIO_NONSHORT)
 typedef int32_t OUT_INT;
 #define OUT_MAX INT32_MAX
 #define OUT_MIN INT32_MIN
@@ -329,7 +329,7 @@ static int decode_init(AVCodecContext * avctx)
     static int init=0;
     int i, j, k;
 
-#if defined(USE_HIGHPRECISION)
+#if defined(USE_HIGHPRECISION) && defined(CONFIG_AUDIO_NONSHORT)
     avctx->sample_fmt= SAMPLE_FMT_S32;
 #else
     avctx->sample_fmt= SAMPLE_FMT_S16;
