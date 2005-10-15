@@ -29,7 +29,7 @@
 #include "dsputil.h"
 
 #define TM2_ESCAPE 0x80000000
-#define TM2_DELTAS 32
+#define TM2_DELTAS 64
 /* Huffman-coded streams of different types of blocks */
 enum TM2_STREAMS{ TM2_C_HI = 0, TM2_C_LO, TM2_L_HI, TM2_L_LO,
      TM2_UPD, TM2_MOT, TM2_TYPE, TM2_NUM_STREAMS};
@@ -218,7 +218,7 @@ static inline int tm2_read_header(TM2Context *ctx, uint8_t *buf)
         length = LE_32(buf);
         buf += 4;
         
-        init_get_bits(&ctx->gb, buf, 32);
+        init_get_bits(&ctx->gb, buf, 32 * 8);
         size = get_bits_long(&ctx->gb, 31);
         h = get_bits(&ctx->gb, 15);
         w = get_bits(&ctx->gb, 15);
@@ -281,7 +281,7 @@ static int tm2_read_stream(TM2Context *ctx, uint8_t *buf, int stream_id) {
             len = BE_32(buf); buf += 4; cur += 4;
         }
         if(len > 0) {
-            init_get_bits(&ctx->gb, buf, skip - cur);
+            init_get_bits(&ctx->gb, buf, (skip - cur) * 8);
             if(tm2_read_deltas(ctx, stream_id) == -1)
                 return -1;
             buf += ((get_bits_count(&ctx->gb) + 31) >> 5) << 2;
@@ -295,7 +295,7 @@ static int tm2_read_stream(TM2Context *ctx, uint8_t *buf, int stream_id) {
     buf += 4; cur += 4;
     buf += 4; cur += 4; /* unused by decoder */
     
-    init_get_bits(&ctx->gb, buf, skip - cur);
+    init_get_bits(&ctx->gb, buf, (skip - cur) * 8);
     if(tm2_build_huff_table(ctx, &codes) == -1)
         return -1;
     buf += ((get_bits_count(&ctx->gb) + 31) >> 5) << 2;
@@ -312,11 +312,12 @@ static int tm2_read_stream(TM2Context *ctx, uint8_t *buf, int stream_id) {
     ctx->tok_lens[stream_id] = toks;
     len = BE_32(buf); buf += 4; cur += 4;
     if(len > 0) {
-        init_get_bits(&ctx->gb, buf, skip - cur);
+        init_get_bits(&ctx->gb, buf, (skip - cur) * 8);
         for(i = 0; i < toks; i++)
             ctx->tokens[stream_id][i] = tm2_get_token(&ctx->gb, &codes);
     } else {
-        memset(ctx->tokens[stream_id], 0, toks * sizeof(int));
+        for(i = 0; i < toks; i++)
+            ctx->tokens[stream_id][i] = codes.recode[0];
     }
     tm2_free_codes(&codes);
     
@@ -765,7 +766,8 @@ static int decode_frame(AVCodecContext *avctx,
     int skip, t;
 
     p->reference = 1;
-    if(avctx->get_buffer(avctx, p) < 0){
+    p->buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_PRESERVE | FF_BUFFER_HINTS_REUSABLE;
+    if(avctx->reget_buffer(avctx, p) < 0){
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return -1;
     }
