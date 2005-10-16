@@ -413,7 +413,7 @@ static inline void tm2_low_chroma(int *data, int stride, int *clast, int *CD, in
     else
         prev = 0;
     t = (CD[0] + CD[1]) >> 1;
-    l = (prev - CD[0] - CD[1] + clast[1] + 1) >> 1;
+    l = (prev - CD[0] - CD[1] + clast[1]) >> 1;
     CD[1] = CD[0] + CD[1] - t;
     CD[0] = t;
     clast[0] = l;
