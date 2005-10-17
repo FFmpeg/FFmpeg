@@ -1475,7 +1475,7 @@ static int rgb2rgbWrapper(SwsContext *c, uint8_t* src[], int srcStride[], int sr
 	const int dstBpp= ((dstFormat&0xFF) + 7)>>3;
 	const int srcId= (srcFormat&0xFF)>>2; // 1:0, 4:1, 8:2, 15:3, 16:4, 24:6, 32:8 
 	const int dstId= (dstFormat&0xFF)>>2;
-	void (*conv)(const uint8_t *src, uint8_t *dst, unsigned src_size)=NULL;
+	void (*conv)(const uint8_t *src, uint8_t *dst, long src_size)=NULL;
 
 	/* BGR -> BGR */
 	if(   (isBGR(srcFormat) && isBGR(dstFormat))
