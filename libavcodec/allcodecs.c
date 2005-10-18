@@ -491,6 +491,9 @@ void avcodec_register_all(void)
 #ifdef CONFIG_LIBGSM
     register_avcodec(&libgsm_decoder);
 #endif //CONFIG_LIBGSM
+#ifdef CONFIG_QDM2_DECODER
+    register_avcodec(&qdm2_decoder);
+#endif //CONFIG_QDM2_DECODER
 #endif /* CONFIG_DECODERS */
 
 #ifdef AMR_NB

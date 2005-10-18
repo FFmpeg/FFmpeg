@@ -851,6 +851,8 @@ other implementations.
 @tab QuickTime fourcc 'alac'
 @item FFmpeg Sonic           @tab X    @tab X
 @tab experimental lossy/lossless codec
+@item Qdesign QDM2           @tab      @tab X
+@tab there are still some distortions
 @end multitable
 
 @code{X} means that encoding (resp. decoding) is supported.

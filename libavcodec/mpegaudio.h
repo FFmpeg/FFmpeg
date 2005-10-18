@@ -22,8 +22,42 @@
 #define SAME_HEADER_MASK \
    (0xffe00000 | (3 << 17) | (0xf << 12) | (3 << 10) | (3 << 19))
 
+/* define USE_HIGHPRECISION to have a bit exact (but slower) mpeg
+   audio decoder */
+
+#ifdef USE_HIGHPRECISION
+#define FRAC_BITS   23   /* fractional bits for sb_samples and dct */
+#define WFRAC_BITS  16   /* fractional bits for window */
+#else
+#define FRAC_BITS   15   /* fractional bits for sb_samples and dct */
+#define WFRAC_BITS  14   /* fractional bits for window */
+#endif
+
+#if defined(USE_HIGHPRECISION) && defined(CONFIG_AUDIO_NONSHORT)
+typedef int32_t OUT_INT;
+#define OUT_MAX INT32_MAX
+#define OUT_MIN INT32_MIN
+#define OUT_SHIFT (WFRAC_BITS + FRAC_BITS - 31)
+#else
+typedef int16_t OUT_INT;
+#define OUT_MAX INT16_MAX
+#define OUT_MIN INT16_MIN
+#define OUT_SHIFT (WFRAC_BITS + FRAC_BITS - 15)
+#endif
+
+#if FRAC_BITS <= 15
+typedef int16_t MPA_INT;
+#else
+typedef int32_t MPA_INT;
+#endif
+
 int l2_select_table(int bitrate, int nb_channels, int freq, int lsf);
 int mpa_decode_header(AVCodecContext *avctx, uint32_t head);
+void ff_mpa_synth_init(MPA_INT *window);
+void ff_mpa_synth_filter(MPA_INT *synth_buf_ptr, int *synth_buf_offset,
+			 MPA_INT *window, int *dither_state,
+                         OUT_INT *samples, int incr,
+                         int32_t sb_samples[SBLIMIT]);
 
 extern const uint16_t mpa_bitrate_tab[2][3][15];
 extern const uint16_t mpa_freq_tab[3];

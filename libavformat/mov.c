@@ -145,6 +145,7 @@ static const CodecTag mov_audio_tags[] = {
     { CODEC_ID_AMR_WB, MKTAG('s', 'a', 'w', 'b') }, /* AMR-WB 3gp */
     { CODEC_ID_AC3, MKTAG('m', 's', 0x20, 0x00) }, /* Dolby AC-3 */
     { CODEC_ID_ALAC,MKTAG('a', 'l', 'a', 'c') }, /* Apple Lossless */
+    { CODEC_ID_QDM2,MKTAG('Q', 'D', 'M', '2') }, /* QDM2 */
     { CODEC_ID_NONE, 0 },
 };
 
@@ -703,6 +704,27 @@ static int mov_read_smi(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 	strcpy(st->codec->extradata, "SVQ3"); // fake
 	get_buffer(pb, st->codec->extradata + 0x5a, atom.size);
 	//av_log(NULL, AV_LOG_DEBUG, "Reading SMI %Ld  %s\n", atom.size, (char*)st->codec->extradata + 0x5a);
+    } else
+	url_fskip(pb, atom.size);
+
+    return 0;
+}
+
+static int mov_read_wave(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
+{
+    AVStream *st = c->fc->streams[c->fc->nb_streams-1];
+
+    if((uint64_t)atom.size > (1<<30))
+        return -1;
+    
+    // pass all frma atom to codec, needed at least for QDM2
+    av_free(st->codec->extradata);
+    st->codec->extradata_size = atom.size;
+    st->codec->extradata = (uint8_t*) av_mallocz(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
+
+    if (st->codec->extradata) {
+	get_buffer(pb, st->codec->extradata, atom.size);
+	//av_log(NULL, AV_LOG_DEBUG, "Reading frma %Ld  %s\n", atom.size, (char*)st->codec->extradata);
     } else
 	url_fskip(pb, atom.size);
 
@@ -1605,7 +1627,7 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG( 'u', 'r', 'n', ' ' ), mov_read_leaf },
 { MKTAG( 'u', 'u', 'i', 'd' ), mov_read_leaf },
 { MKTAG( 'v', 'm', 'h', 'd' ), mov_read_leaf }, /* video media info header */
-{ MKTAG( 'w', 'a', 'v', 'e' ), mov_read_default },
+{ MKTAG( 'w', 'a', 'v', 'e' ), mov_read_wave },
 /* extra mp4 */
 { MKTAG( 'M', 'D', 'E', 'S' ), mov_read_leaf },
 /* QT atoms */

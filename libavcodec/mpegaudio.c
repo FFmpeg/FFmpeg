@@ -28,8 +28,6 @@
 
 /* currently, cannot change these constants (need to modify
    quantization stage) */
-#define FRAC_BITS 15
-#define WFRAC_BITS  14
 #define MUL(a,b) (((int64_t)(a) * (int64_t)(b)) >> FRAC_BITS)
 #define FIX(a)   ((int)((a) * (1 << FRAC_BITS)))
 

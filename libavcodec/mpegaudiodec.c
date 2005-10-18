@@ -25,7 +25,6 @@
 //#define DEBUG
 #include "avcodec.h"
 #include "bitstream.h"
-#include "mpegaudio.h"
 #include "dsputil.h"
 
 /*
@@ -40,25 +39,7 @@
 #define USE_HIGHPRECISION
 #endif
 
-#ifdef USE_HIGHPRECISION
-#define FRAC_BITS   23   /* fractional bits for sb_samples and dct */
-#define WFRAC_BITS  16   /* fractional bits for window */
-#else
-#define FRAC_BITS   15   /* fractional bits for sb_samples and dct */
-#define WFRAC_BITS  14   /* fractional bits for window */
-#endif
-
-#if defined(USE_HIGHPRECISION) && defined(CONFIG_AUDIO_NONSHORT)
-typedef int32_t OUT_INT;
-#define OUT_MAX INT32_MAX
-#define OUT_MIN INT32_MIN
-#define OUT_SHIFT (WFRAC_BITS + FRAC_BITS - 31)
-#else
-typedef int16_t OUT_INT;
-#define OUT_MAX INT16_MAX
-#define OUT_MIN INT16_MIN
-#define OUT_SHIFT (WFRAC_BITS + FRAC_BITS - 15)
-#endif
+#include "mpegaudio.h"
 
 #define FRAC_ONE    (1 << FRAC_BITS)
 
@@ -74,12 +55,6 @@ typedef int16_t OUT_INT;
 static always_inline int MULH(int a, int b){
     return ((int64_t)(a) * (int64_t)(b))>>32;
 }
-
-#if FRAC_BITS <= 15
-typedef int16_t MPA_INT;
-#else
-typedef int32_t MPA_INT;
-#endif
 
 /****************/
 
