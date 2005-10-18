@@ -165,7 +165,7 @@ clean-vhook:
 # Note well: config.log is NOT removed.
 distclean: clean
 	$(MAKE) -C libavcodec distclean
-	rm -f config.mak config.h
+	rm -f config.mak config.h *.pc
 
 TAGS:
 	etags *.[ch] libavformat/*.[ch] libavcodec/*.[ch]
