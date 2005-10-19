@@ -1082,7 +1082,7 @@ static void process_subpacket_9 (QDM2Context *q, QDM2SubPNode *node)
     GetBitContext gb;
     int i, j, k, n, ch, run, level, diff;
 
-    init_get_bits(&gb, node->packet->data, node->packet->size);
+    init_get_bits(&gb, node->packet->data, node->packet->size*8);
 
     n = coeff_per_sb_for_avg[q->coeff_per_sb_select][QDM2_SB_USED(q->sub_sampling) - 1] + 1; // same as averagesomething function
 
@@ -1120,7 +1120,7 @@ static void process_subpacket_10 (QDM2Context *q, QDM2SubPNode *node, int length
 {
     GetBitContext gb;
 
-    init_get_bits(&gb, ((node == NULL) ? empty_buffer : node->packet->data), ((node == NULL) ? 0 : node->packet->size));
+    init_get_bits(&gb, ((node == NULL) ? empty_buffer : node->packet->data), ((node == NULL) ? 0 : node->packet->size*8));
 
     if (length != 0) {
         init_tone_level_dequantization(q, &gb, length);
@@ -1142,7 +1142,7 @@ static void process_subpacket_11 (QDM2Context *q, QDM2SubPNode *node, int length
 {
     GetBitContext gb;
 
-    init_get_bits(&gb, ((node == NULL) ? empty_buffer : node->packet->data), ((node == NULL) ? 0 : node->packet->size));
+    init_get_bits(&gb, ((node == NULL) ? empty_buffer : node->packet->data), ((node == NULL) ? 0 : node->packet->size*8));
     if (length >= 32) {
         int c = get_bits (&gb, 13);
 
@@ -1166,7 +1166,7 @@ static void process_subpacket_12 (QDM2Context *q, QDM2SubPNode *node, int length
 {
     GetBitContext gb;
 
-    init_get_bits(&gb, ((node == NULL) ? empty_buffer : node->packet->data), ((node == NULL) ? 0 : node->packet->size));
+    init_get_bits(&gb, ((node == NULL) ? empty_buffer : node->packet->data), ((node == NULL) ? 0 : node->packet->size*8));
     synthfilt_build_sb_samples(q, &gb, length, 8, QDM2_SB_USED(q->sub_sampling));
 }
 
@@ -1225,7 +1225,7 @@ static void qdm2_decode_super_block (QDM2Context *q)
 
     average_quantized_coeffs(q); // average elements in quantized_coeffs[max_ch][10][8]
 
-    init_get_bits(&gb, q->compressed_data, q->compressed_size);
+    init_get_bits(&gb, q->compressed_data, q->compressed_size*8);
     qdm2_decode_sub_packet_header(&gb, &header);
 
     if (header.type < 2 || header.type >= 8) {
@@ -1237,7 +1237,7 @@ static void qdm2_decode_super_block (QDM2Context *q)
     q->superblocktype_2_3 = (header.type == 2 || header.type == 3);
     packet_bytes = (q->compressed_size - get_bits_count(&gb) / 8);
 
-    init_get_bits(&gb, header.data, header.size);
+    init_get_bits(&gb, header.data, header.size*8);
 
     if (header.type == 2 || header.type == 4 || header.type == 5) {
         int csum = 257 * get_bits(&gb, 8) + 2 * get_bits(&gb, 8);
@@ -1267,7 +1267,7 @@ static void qdm2_decode_super_block (QDM2Context *q)
             q->sub_packet_list_A[i - 1].next = &q->sub_packet_list_A[i];
 
             /* seek to next block */
-            init_get_bits(&gb, header.data, header.size);
+            init_get_bits(&gb, header.data, header.size*8);
             skip_bits(&gb, next_index*8);
 
             if (next_index >= header.size)
@@ -1455,7 +1455,7 @@ static void qdm2_decode_fft_packets (QDM2Context *q)
             return;
 
         /* decode FFT tones */
-        init_get_bits (&gb, packet->data, packet->size);
+        init_get_bits (&gb, packet->data, packet->size*8);
 
         if (packet->type >= 32 && packet->type < 48 && !fft_subpackets[packet->type - 16])
             unknown_flag = 1;
