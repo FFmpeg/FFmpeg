@@ -5,7 +5,7 @@ VPATH=$(SRC_PATH)/vhook
 CFLAGS=-fPIC $(SHCFLAGS) -I.. -I$(SRC_PATH) -I$(SRC_PATH)/libavformat -I$(SRC_PATH)/libavcodec -I$(SRC_PATH)/libavutil -DHAVE_AV_CONFIG_H
 
 ifeq ($(CONFIG_DARWIN),yes)
-	SHFLAGS += -flat_namespace
+	SHFLAGS += -flat_namespace -undefined suppress
 endif
 HOOKS=null$(SLIBSUF) fish$(SLIBSUF) ppm$(SLIBSUF) watermark$(SLIBSUF)
 
