@@ -240,6 +240,7 @@ EXTRALIBS += -L../libavutil -lavutil$(BUILDSUF)
 # currently using libdts for dts decoding
 ifeq ($(CONFIG_DTS),yes)
 OBJS+= dtsdec.o
+CFLAGS += $(DTS_INC)
 endif
 
 ifeq ($(CONFIG_FAAD),yes)
