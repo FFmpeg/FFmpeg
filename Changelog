@@ -22,6 +22,7 @@ version <next>
 - Macromedia ADPCM decoder
 - Duck TrueMotion 2 decoder
 - Support for decoding FLX and DTA extensions in FLIC files
+- H.264 custom quantization matrices support
 
 version 0.4.9-pre1:
 
