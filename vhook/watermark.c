@@ -99,7 +99,7 @@ int Configure(void **ctxp, int argc, char *argv[])
     if (0 == (*ctxp = av_mallocz(sizeof(ContextInfo)))) return -1;
     ci = (ContextInfo *) *ctxp;
 
-    optind = 0;
+    optind = 1;
     
     // Struct is mallocz:ed so no need to reset.
         
@@ -110,18 +110,19 @@ int Configure(void **ctxp, int argc, char *argv[])
                 ci->filename[1999] = 0;
                 break;
             default:
-                av_log(NULL, AV_LOG_DEBUG, "Unrecognized argument '%s'\n", argv[optind]);
+                av_log(NULL, AV_LOG_ERROR, "Watermark: Unrecognized argument '%s'\n", argv[optind]);
                 return -1;
         }
     }
     
     //
-    if (0 == ci->filename[0]) return -1;
+    if (0 == ci->filename[0]) {
+        av_log(NULL, AV_LOG_ERROR, "Watermark: There is no filename specified.\n");
+        return -1;
+    }
         
     av_register_all();
     return get_watermark_picture(ci, 0);
-
-    return 0;
 }
 
 
@@ -268,7 +269,7 @@ int get_watermark_picture(ContextInfo *ci, int cleanup)
             // NULL instead of file_iformat to av_open_input_file()
             ci->i = strlen(ci->filename);
             if (0 == ci->i) {
-                av_log(NULL, AV_LOG_DEBUG, "get_watermark_picture() No filename to watermark vhook\n");
+                av_log(NULL, AV_LOG_ERROR, "get_watermark_picture() No filename to watermark vhook\n");
                 return -1;
             }
             while (ci->i > 0) {
@@ -281,13 +282,13 @@ int get_watermark_picture(ContextInfo *ci, int cleanup)
                ci->p_ext = &(ci->filename[ci->i]);
             ci->file_iformat = av_find_input_format (ci->p_ext);
             if (0 == ci->file_iformat) {
-                av_log(NULL, AV_LOG_DEBUG, "get_watermark_picture() Really failed to find iformat [%s]\n", ci->p_ext);
+                av_log(NULL, AV_LOG_ERROR, "get_watermark_picture() Really failed to find iformat [%s]\n", ci->p_ext);
                 return -1;
             }
             // now continues the Martin template.    
             
             if (av_open_input_file(&ci->pFormatCtx, ci->filename, ci->file_iformat, 0, NULL)!=0) {
-                av_log(NULL, AV_LOG_DEBUG, "get_watermark_picture() Failed to open input file [%s]\n", ci->filename);
+                av_log(NULL, AV_LOG_ERROR, "get_watermark_picture() Failed to open input file [%s]\n", ci->filename);
                 return -1;
             }            
         }
@@ -296,7 +297,7 @@ int get_watermark_picture(ContextInfo *ci, int cleanup)
          * This fills the streams field of the AVFormatContext with valid information.
          */
         if(av_find_stream_info(ci->pFormatCtx)<0) {
-            av_log(NULL, AV_LOG_DEBUG, "get_watermark_picture() Failed to find stream info\n");
+            av_log(NULL, AV_LOG_ERROR, "get_watermark_picture() Failed to find stream info\n");
             return -1;
         }
     
@@ -313,7 +314,7 @@ int get_watermark_picture(ContextInfo *ci, int cleanup)
                 break;
             }
         if(ci->videoStream == -1) {
-            av_log(NULL, AV_LOG_DEBUG, "get_watermark_picture() Failed to find any video stream\n");
+            av_log(NULL, AV_LOG_ERROR, "get_watermark_picture() Failed to find any video stream\n");
             return -1;
         }
         
@@ -332,7 +333,7 @@ int get_watermark_picture(ContextInfo *ci, int cleanup)
         // Find the decoder for the video stream
         ci->pCodec = avcodec_find_decoder(ci->pCodecCtx->codec_id);
         if(ci->pCodec == NULL) {
-            av_log(NULL, AV_LOG_DEBUG, "get_watermark_picture() Failed to find any codec\n");
+            av_log(NULL, AV_LOG_ERROR, "get_watermark_picture() Failed to find any codec\n");
             return -1;
         }
         
@@ -343,7 +344,7 @@ int get_watermark_picture(ContextInfo *ci, int cleanup)
         
         // Open codec
         if(avcodec_open(ci->pCodecCtx, ci->pCodec)<0) {
-            av_log(NULL, AV_LOG_DEBUG, "get_watermark_picture() Failed to open codec\n");
+            av_log(NULL, AV_LOG_ERROR, "get_watermark_picture() Failed to open codec\n");
             return -1;
         }
         
@@ -364,7 +365,7 @@ int get_watermark_picture(ContextInfo *ci, int cleanup)
         // Allocate an AVFrame structure
         ci->pFrameRGB=avcodec_alloc_frame();
         if(ci->pFrameRGB==NULL) {
-            av_log(NULL, AV_LOG_DEBUG, "get_watermark_picture() Failed to alloc pFrameRGB\n");
+            av_log(NULL, AV_LOG_ERROR, "get_watermark_picture() Failed to alloc pFrameRGB\n");
             return -1;
         }
         
