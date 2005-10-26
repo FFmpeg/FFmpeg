@@ -172,8 +172,8 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
 	    asf->hdr.file_size		= get_le64(pb);
 	    asf->hdr.create_time	= get_le64(pb);
 	    asf->hdr.packets_count	= get_le64(pb);
-	    asf->hdr.play_time		= get_le64(pb);
 	    asf->hdr.send_time		= get_le64(pb);
+	    asf->hdr.play_time		= get_le64(pb);
 	    asf->hdr.preroll		= get_le32(pb);
 	    asf->hdr.ignore		= get_le32(pb);
 	    asf->hdr.flags		= get_le32(pb);
