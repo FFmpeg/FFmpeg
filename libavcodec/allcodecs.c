@@ -189,13 +189,10 @@ void avcodec_register_all(void)
 #ifdef CONFIG_LIBGSM
     register_avcodec(&libgsm_encoder);
 #endif //CONFIG_LIBGSM
-#endif /* CONFIG_ENCODERS */
 #ifdef CONFIG_RAWVIDEO_ENCODER
     register_avcodec(&rawvideo_encoder);
 #endif //CONFIG_RAWVIDEO_ENCODER
-#ifdef CONFIG_RAWVIDEO_DECODER
-    register_avcodec(&rawvideo_decoder);
-#endif //CONFIG_RAWVIDEO_DECODER
+#endif /* CONFIG_ENCODERS */
 
     /* decoders */
 #ifdef CONFIG_DECODERS
@@ -494,6 +491,9 @@ void avcodec_register_all(void)
 #ifdef CONFIG_QDM2_DECODER
     register_avcodec(&qdm2_decoder);
 #endif //CONFIG_QDM2_DECODER
+#ifdef CONFIG_RAWVIDEO_DECODER
+    register_avcodec(&rawvideo_decoder);
+#endif //CONFIG_RAWVIDEO_DECODER
 #endif /* CONFIG_DECODERS */
 
 #ifdef AMR_NB
@@ -519,15 +519,16 @@ void avcodec_register_all(void)
 #endif /* AMR_WB */
 
     /* pcm codecs */
-
-#ifdef CONFIG_ENCODERS
-#define PCM_CODEC(id, name) \
-    register_avcodec(& name ## _encoder); \
-    register_avcodec(& name ## _decoder); \
-
-#else
-#define PCM_CODEC(id, name) \
-    register_avcodec(& name ## _decoder);
+#if defined (CONFIG_ENCODERS) && defined (CONFIG_DECODERS)
+    #define PCM_CODEC(id, name) \
+        register_avcodec(& name ## _encoder); \
+        register_avcodec(& name ## _decoder);
+#elif defined (CONFIG_ENCODERS)
+    #define PCM_CODEC(id, name) \
+        register_avcodec(& name ## _encoder);
+#elif defined (CONFIG_DECODERS)
+    #define PCM_CODEC(id, name) \
+        register_avcodec(& name ## _decoder);
 #endif
 
 PCM_CODEC(CODEC_ID_PCM_S32LE, pcm_s32le);
@@ -564,13 +565,17 @@ PCM_CODEC(CODEC_ID_ADPCM_G726, adpcm_g726);
 PCM_CODEC(CODEC_ID_ADPCM_CT, adpcm_ct);
 PCM_CODEC(CODEC_ID_ADPCM_SWF, adpcm_swf);
 PCM_CODEC(CODEC_ID_ADPCM_YAMAHA, adpcm_yamaha);
-
 #undef PCM_CODEC
 
-    /* subtitles */ 
-    register_avcodec(&dvdsub_decoder);
+    /* subtitles */
+#ifdef CONFIG_ENCODERS
     register_avcodec(&dvbsub_encoder);
+#endif
+
+#ifdef CONFIG_DECODERS
+    register_avcodec(&dvdsub_decoder);
     register_avcodec(&dvbsub_decoder);
+#endif
 
     /* parsers */ 
     av_register_codec_parser(&mpegvideo_parser);
