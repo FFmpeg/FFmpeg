@@ -3033,6 +3033,9 @@ static int alloc_tables(H264Context *h){
 
     s->obmc_scratchpad = NULL;
 
+    if(!h->dequant4_coeff[0])
+        init_dequant_tables(h);
+
     return 0;
 fail:
     free_tables(h);
@@ -3051,6 +3054,9 @@ static void common_init(H264Context *h){
     h->dequant_coeff_pps= -1;
     s->unrestricted_mv=1;
     s->decode=1; //FIXME
+
+    memset(h->pps.scaling_matrix4, 16, 6*16*sizeof(uint8_t));
+    memset(h->pps.scaling_matrix8, 16, 2*64*sizeof(uint8_t));
 }
 
 static int decode_init(AVCodecContext *avctx){
