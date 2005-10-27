@@ -43,6 +43,7 @@ static const uint64_t ff_pw_20 attribute_used __attribute__ ((aligned(8))) = 0x0
 static const uint64_t ff_pw_3  attribute_used __attribute__ ((aligned(8))) = 0x0003000300030003ULL;
 static const uint64_t ff_pw_4  attribute_used __attribute__ ((aligned(8))) = 0x0004000400040004ULL;
 static const uint64_t ff_pw_5  attribute_used __attribute__ ((aligned(8))) = 0x0005000500050005ULL;
+static const uint64_t ff_pw_8  attribute_used __attribute__ ((aligned(8))) = 0x0008000800080008ULL;
 static const uint64_t ff_pw_16 attribute_used __attribute__ ((aligned(8))) = 0x0010001000100010ULL;
 static const uint64_t ff_pw_32 attribute_used __attribute__ ((aligned(8))) = 0x0020002000200020ULL;
 static const uint64_t ff_pw_64 attribute_used __attribute__ ((aligned(8))) = 0x0040004000400040ULL;
@@ -2726,6 +2727,7 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
         c->h263_v_loop_filter= h263_v_loop_filter_mmx;
         c->h263_h_loop_filter= h263_h_loop_filter_mmx;        
 	c->put_h264_chroma_pixels_tab[0]= put_h264_chroma_mc8_mmx;
+        c->put_h264_chroma_pixels_tab[1]= put_h264_chroma_mc4_mmx;
         
         if (mm_flags & MM_MMXEXT) {
             c->put_pixels_tab[0][1] = put_pixels16_x2_mmx2;
@@ -2825,6 +2827,7 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
 #undef dspfunc
 
 	    c->avg_h264_chroma_pixels_tab[0]= avg_h264_chroma_mc8_mmx2;
+            c->avg_h264_chroma_pixels_tab[1]= avg_h264_chroma_mc4_mmx2;
             c->h264_v_loop_filter_luma= h264_v_loop_filter_luma_mmx2;
             c->h264_h_loop_filter_luma= h264_h_loop_filter_luma_mmx2;
             c->h264_v_loop_filter_chroma= h264_v_loop_filter_chroma_mmx2;
@@ -2936,6 +2939,7 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             dspfunc(avg_h264_qpel, 2, 4);
 
 	    c->avg_h264_chroma_pixels_tab[0]= avg_h264_chroma_mc8_3dnow;
+            c->avg_h264_chroma_pixels_tab[1]= avg_h264_chroma_mc4_3dnow;
         }
     }
         
