@@ -7672,7 +7672,7 @@ static int decode_frame(AVCodecContext *avctx,
         out_of_order = !cross_idr && prev && out->poc < prev->poc;
         if(prev && pics <= s->avctx->has_b_frames)
             out = prev;
-        else if((out_of_order && pics-1 == s->avctx->has_b_frames)
+        else if((out_of_order && pics-1 == s->avctx->has_b_frames && pics < 15)
            || (s->low_delay && 
             ((!cross_idr && prev && out->poc > prev->poc + 2)
              || cur->pict_type == B_TYPE)))
