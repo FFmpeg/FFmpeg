@@ -6582,14 +6582,6 @@ static void filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint8
         const int mbm_type = s->current_picture.mb_type[mbm_xy];
         int start = h->slice_table[mbm_xy] == 255 ? 1 : 0;
 
-        if (first_vertical_edge_done) {
-            start = 1;
-            first_vertical_edge_done = 0;
-        }
-
-        if (h->deblocking_filter==2 && h->slice_table[mbm_xy] != h->slice_table[mb_xy])
-            start = 1;
-
         const int edges = ((mb_type & mbm_type) & (MB_TYPE_16x16|MB_TYPE_SKIP))
                                                == (MB_TYPE_16x16|MB_TYPE_SKIP) ? 1 : 4;
         // how often to recheck mv-based bS when iterating between edges
@@ -6597,6 +6589,14 @@ static void filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint8
                               (mb_type & (MB_TYPE_8x16 >> dir)) ? 1 : 0;
         // how often to recheck mv-based bS when iterating along each edge
         const int mask_par0 = mb_type & (MB_TYPE_16x16 | (MB_TYPE_8x16 >> dir));
+
+        if (first_vertical_edge_done) {
+            start = 1;
+            first_vertical_edge_done = 0;
+        }
+
+        if (h->deblocking_filter==2 && h->slice_table[mbm_xy] != h->slice_table[mb_xy])
+            start = 1;
 
         /* Calculate bS */
         for( edge = start; edge < edges; edge++ ) {
