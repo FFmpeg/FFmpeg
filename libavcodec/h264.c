@@ -6578,6 +6578,8 @@ static void filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint8
     {
         int edge;
         const int mbm_xy = dir == 0 ? mb_xy -1 : h->top_mb_xy;
+        const int mb_type = s->current_picture.mb_type[mb_xy];
+        const int mbm_type = s->current_picture.mb_type[mbm_xy];
         int start = h->slice_table[mbm_xy] == 255 ? 1 : 0;
 
         if (first_vertical_edge_done) {
@@ -6588,19 +6590,28 @@ static void filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint8
         if (h->deblocking_filter==2 && h->slice_table[mbm_xy] != h->slice_table[mb_xy])
             start = 1;
 
+        const int edges = ((mb_type & mbm_type) & (MB_TYPE_16x16|MB_TYPE_SKIP))
+                                               == (MB_TYPE_16x16|MB_TYPE_SKIP) ? 1 : 4;
+        // how often to recheck mv-based bS when iterating between edges
+        const int mask_edge = (mb_type & (MB_TYPE_16x16 | (MB_TYPE_16x8 << dir))) ? 3 :
+                              (mb_type & (MB_TYPE_8x16 >> dir)) ? 1 : 0;
+        // how often to recheck mv-based bS when iterating along each edge
+        const int mask_par0 = mb_type & (MB_TYPE_16x16 | (MB_TYPE_8x16 >> dir));
+
         /* Calculate bS */
-        for( edge = start; edge < 4; edge++ ) {
+        for( edge = start; edge < edges; edge++ ) {
             /* mbn_xy: neighbor macroblock */
-            int mbn_xy = edge > 0 ? mb_xy : mbm_xy;
+            const int mbn_xy = edge > 0 ? mb_xy : mbm_xy;
+            const int mbn_type = s->current_picture.mb_type[mbn_xy];
             int bS[4];
             int qp;
 
-            if( (edge&1) && IS_8x8DCT(s->current_picture.mb_type[mb_xy]) )
+            if( (edge&1) && IS_8x8DCT(mb_type) )
                 continue;
 
             if (h->mb_aff_frame && (dir == 1) && (edge == 0) && ((mb_y & 1) == 0)
-                && !IS_INTERLACED(s->current_picture.mb_type[mb_xy])
-                && IS_INTERLACED(s->current_picture.mb_type[mbn_xy])
+                && !IS_INTERLACED(mb_type)
+                && IS_INTERLACED(mbn_type)
                 ) {
                 // This is a special case in the norm where the filtering must
                 // be done twice (one each of the field) even if we are in a
@@ -6612,8 +6623,8 @@ static void filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint8
                 int qp, chroma_qp;
 
                 // first filtering
-                if( IS_INTRA( s->current_picture.mb_type[mb_xy] ) ||
-                    IS_INTRA( s->current_picture.mb_type[mbn_xy] ) ) {
+                if( IS_INTRA(mb_type) ||
+                    IS_INTRA(s->current_picture.mb_type[mbn_xy]) ) {
                     bS[0] = bS[1] = bS[2] = bS[3] = 3;
                 } else {
                     // TODO
@@ -6633,8 +6644,8 @@ static void filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint8
 
                 // second filtering
                 mbn_xy += s->mb_stride;
-                if( IS_INTRA( s->current_picture.mb_type[mb_xy] ) ||
-                    IS_INTRA( s->current_picture.mb_type[mbn_xy] ) ) {
+                if( IS_INTRA(mb_type) ||
+                    IS_INTRA(mbn_type) ) {
                     bS[0] = bS[1] = bS[2] = bS[3] = 3;
                 } else {
                     // TODO
@@ -6653,11 +6664,11 @@ static void filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint8
                 filter_mb_edgech( h, &img_cr[uvlinesize], tmp_uvlinesize, bS, chroma_qp );
                 continue;
             }
-            if( IS_INTRA( s->current_picture.mb_type[mb_xy] ) ||
-                IS_INTRA( s->current_picture.mb_type[mbn_xy] ) ) {
+            if( IS_INTRA(mb_type) ||
+                IS_INTRA(mbn_type) ) {
                 int value;
                 if (edge == 0) {
-                    if (   (!IS_INTERLACED(s->current_picture.mb_type[mb_xy]) && !IS_INTERLACED(s->current_picture.mb_type[mbm_xy]))
+                    if (   (!IS_INTERLACED(mb_type) && !IS_INTERLACED(mbm_type))
                         || ((h->mb_aff_frame || (s->picture_structure != PICT_FRAME)) && (dir == 0))
                     ) {
                         value = 4;
@@ -6669,7 +6680,28 @@ static void filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint8
                 }
                 bS[0] = bS[1] = bS[2] = bS[3] = value;
             } else {
-                int i;
+                int i, l;
+                int mv_done;
+
+                if( edge & mask_edge ) {
+                    bS[0] = bS[1] = bS[2] = bS[3] = 0;
+                    mv_done = 1;
+                }
+                else if( mask_par0 && (edge || (mbn_type & (MB_TYPE_16x16 | (MB_TYPE_8x16 >> dir)))) ) {
+                    int b_idx= 8 + 4 + edge * (dir ? 8:1);
+                    int bn_idx= b_idx - (dir ? 8:1);
+                    int v = 0;
+                    for( l = 0; !v && l < 1 + (h->slice_type == B_TYPE); l++ ) {
+                        v |= ref2frm[h->ref_cache[l][b_idx]+2] != ref2frm[h->ref_cache[l][bn_idx]+2] ||
+                             ABS( h->mv_cache[l][b_idx][0] - h->mv_cache[l][bn_idx][0] ) >= 4 ||
+                             ABS( h->mv_cache[l][b_idx][1] - h->mv_cache[l][bn_idx][1] ) >= 4;
+                    }
+                    bS[0] = bS[1] = bS[2] = bS[3] = v;
+                    mv_done = 1;
+                }
+                else
+                    mv_done = 0;
+
                 for( i = 0; i < 4; i++ ) {
                     int x = dir == 0 ? edge : i;
                     int y = dir == 0 ? i    : edge;
@@ -6680,9 +6712,8 @@ static void filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint8
                         h->non_zero_count_cache[bn_idx] != 0 ) {
                         bS[i] = 2;
                     }
-                    else
+                    else if(!mv_done)
                     {
-                        int l;
                         bS[i] = 0;
                         for( l = 0; l < 1 + (h->slice_type == B_TYPE); l++ ) {
                             if( ref2frm[h->ref_cache[l][b_idx]+2] != ref2frm[h->ref_cache[l][bn_idx]+2] ||
