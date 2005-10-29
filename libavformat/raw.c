@@ -1,6 +1,7 @@
 /* 
  * RAW encoder and decoder
  * Copyright (c) 2001 Fabrice Bellard.
+ * Copyright (c) 2005 Alex Beregszaszi
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -112,6 +113,42 @@ static int raw_read_partial_packet(AVFormatContext *s, AVPacket *pkt)
     pkt->pos= url_ftell(&s->pb);
     pkt->stream_index = 0;
     ret = get_partial_buffer(&s->pb, pkt->data, size);
+    if (ret <= 0) {
+        av_free_packet(pkt);
+        return AVERROR_IO;
+    }
+    pkt->size = ret;
+    return ret;
+}
+
+// http://www.artificis.hu/files/texts/ingenient.txt
+static int ingenient_read_packet(AVFormatContext *s, AVPacket *pkt)
+{
+    int ret, size, w, h, unk1, unk2;
+    
+    if (get_le32(&s->pb) != MKTAG('M', 'J', 'P', 'G'))
+	return AVERROR_IO; // FIXME
+
+    size = get_le32(&s->pb);
+    
+    w = get_le16(&s->pb);
+    h = get_le16(&s->pb);
+    
+    url_fskip(&s->pb, 8); // zero + size (padded?)
+    url_fskip(&s->pb, 2);
+    unk1 = get_le16(&s->pb);
+    unk2 = get_le16(&s->pb);
+    url_fskip(&s->pb, 22); // ascii timestamp
+    
+    av_log(NULL, AV_LOG_DEBUG, "Ingenient packet: size=%d, width=%d, height=%d, unk1=%d unk2=%d\n",
+	size, w, h, unk1, unk2);
+
+    if (av_new_packet(pkt, size) < 0)
+        return AVERROR_IO;
+
+    pkt->pos = url_ftell(&s->pb);
+    pkt->stream_index = 0;
+    ret = get_buffer(&s->pb, pkt->data, size);
     if (ret <= 0) {
         av_free_packet(pkt);
         return AVERROR_IO;
@@ -309,7 +346,7 @@ static int h261_probe(AVProbeData *p)
 
 AVInputFormat shorten_iformat = {
     "shn",
-    "raw shn",
+    "raw shorten",
     0,
     NULL,
     shorten_read_header,
@@ -516,6 +553,18 @@ AVInputFormat mjpeg_iformat = {
     .value = CODEC_ID_MJPEG,
 };
 
+AVInputFormat ingenient_iformat = {
+    "ingenient",
+    "Ingenient MJPEG",
+    0,
+    NULL,
+    video_read_header,
+    ingenient_read_packet,
+    raw_read_close,
+    .extensions = "cgi", // FIXME
+    .value = CODEC_ID_MJPEG,
+};
+
 #ifdef CONFIG_MUXERS
 AVOutputFormat mjpeg_oformat = {
     "mjpeg",
@@ -714,6 +763,8 @@ int raw_init(void)
 
     av_register_input_format(&mjpeg_iformat);
     av_register_output_format(&mjpeg_oformat);
+    
+    av_register_input_format(&ingenient_iformat);
 
     av_register_input_format(&pcm_s16le_iformat);
     av_register_output_format(&pcm_s16le_oformat);
