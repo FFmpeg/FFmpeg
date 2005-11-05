@@ -18,7 +18,7 @@ OBJS= bitstream.o utils.o mem.o allcodecs.o \
       fft.o mdct.o raw.o golomb.o cabac.o\
       dpcm.o adx.o faandct.o parser.o g726.o \
       vp3dsp.o h264idct.o rangecoder.o pnm.o h263.o msmpeg4.o h263dec.o dvdsub.o dvbsub.o dvbsubdec.o\
-      opt.o qdm2.o truemotion2.o
+      opt.o
 
 ifeq ($(CONFIG_AASC_DECODER),yes)
     OBJS+= aasc.o
@@ -98,6 +98,9 @@ endif
 ifneq ($(CONFIG_PNG_DECODER)$(CONFIG_PNG_ENCODER),)
     OBJS+= png.o
 endif
+ifeq ($(CONFIG_QDM2_DECODER),yes)
+    OBJS+= qdm2.o
+endif
 ifeq ($(CONFIG_QDRAW_DECODER),yes)
     OBJS+= qdrw.o
 endif
@@ -139,6 +142,9 @@ ifneq ($(CONFIG_SVQ1_DECODER)$(CONFIG_SVQ1_ENCODER),)
 endif
 ifeq ($(CONFIG_TRUEMOTION1_DECODER),yes)
     OBJS+= truemotion1.o
+endif
+ifeq ($(CONFIG_TRUEMOTION2_DECODER),yes)
+    OBJS+= truemotion2.o
 endif
 ifeq ($(CONFIG_TSCC_DECODER),yes)
     OBJS+= tscc.o
