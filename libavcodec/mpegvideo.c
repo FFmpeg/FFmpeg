@@ -2117,7 +2117,8 @@ static int skip_check(MpegEncContext *s, Picture *p, Picture *ref){
         const int bw= plane ? 1 : 2;
         for(y=0; y<s->mb_height*bw; y++){
             for(x=0; x<s->mb_width*bw; x++){
-                int v= s->dsp.frame_skip_cmp[1](s, p->data[plane] + 8*(x + y*stride), ref->data[plane] + 8*(x + y*stride), stride, 8);
+                int off= p->type == FF_BUFFER_TYPE_SHARED ? 0: 16;
+                int v= s->dsp.frame_skip_cmp[1](s, p->data[plane] + 8*(x + y*stride)+off, ref->data[plane] + 8*(x + y*stride), stride, 8);
                 
                 switch(s->avctx->frame_skip_exp){
                     case 0: score= FFMAX(score, v); break;
@@ -2156,7 +2157,8 @@ static void select_input_picture(MpegEncContext *s){
             int b_frames;
 
             if(s->avctx->frame_skip_threshold || s->avctx->frame_skip_factor){
-                if(skip_check(s, s->input_picture[0], s->next_picture_ptr)){
+                if(s->picture_in_gop_number < s->gop_size && skip_check(s, s->input_picture[0], s->next_picture_ptr)){
+                //FIXME check that te gop check above is +-1 correct
 //av_log(NULL, AV_LOG_DEBUG, "skip %p %Ld\n", s->input_picture[0]->data[0], s->input_picture[0]->pts);
                 
                     if(s->input_picture[0]->type == FF_BUFFER_TYPE_SHARED){
@@ -2169,6 +2171,9 @@ static void select_input_picture(MpegEncContext *s){
             
                         s->avctx->release_buffer(s->avctx, (AVFrame*)s->input_picture[0]);
                     }
+                    
+                    emms_c();
+                    ff_vbv_update(s, 0);
 
                     goto no_output_pic;
                 }
