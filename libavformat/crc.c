@@ -83,7 +83,18 @@ static int crc_write_trailer(struct AVFormatContext *s)
     CRCState *crc = s->priv_data;
     char buf[64];
 
-    snprintf(buf, sizeof(buf), "CRC=%08x\n", crc->crcval);
+    snprintf(buf, sizeof(buf), "CRC=0x%08x\n", crc->crcval);
+    put_buffer(&s->pb, buf, strlen(buf));
+    put_flush_packet(&s->pb);
+    return 0;
+}
+
+static int framecrc_write_packet(struct AVFormatContext *s, AVPacket *pkt)
+{
+    uint32_t crc = update_adler32(0, pkt->data, pkt->size);
+    char buf[256];
+
+    snprintf(buf, sizeof(buf), "%d, %Ld, %d, 0x%08x\n", pkt->stream_index, pkt->dts, pkt->size, crc);
     put_buffer(&s->pb, buf, strlen(buf));
     put_flush_packet(&s->pb);
     return 0;
@@ -102,8 +113,22 @@ static AVOutputFormat crc_format = {
     crc_write_trailer,
 };
 
+static AVOutputFormat framecrc_format = {
+    "framecrc",
+    "framecrc testing format",
+    NULL,
+    "",
+    0,
+    CODEC_ID_PCM_S16LE,
+    CODEC_ID_RAWVIDEO,
+    NULL,
+    framecrc_write_packet,
+    NULL,
+};
+
 int crc_init(void)
 {
     av_register_output_format(&crc_format);
+    av_register_output_format(&framecrc_format);
     return 0;
 }
