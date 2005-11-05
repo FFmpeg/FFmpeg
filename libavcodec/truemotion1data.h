@@ -11,7 +11,7 @@
 
 /* Y delta tables, skinny and fat */
 static const int16_t ydt1[8] = { 0, -2, 2, -6, 6, -12, 12, -12 };
-static const int16_t ydt2[8] = { 0, -2, 2, -6, 6, -12, 12, -12 };
+static const int16_t ydt2[8] = { 0, -2, 4, -6, 8, -12, 12, -12 };
 static const int16_t ydt3[8] = { 4, -6, 20, -20, 46, -46, 94, -94 };
 static const int16_t fat_ydt3[8] = { 0, -15, 50, -50, 115, -115, 235, -235 };
 static const int16_t ydt4[8] = { 0, -4, 4, -16, 16, -36, 36, -80 };
@@ -29,7 +29,7 @@ static const int16_t fat_cdt3[8] = { 0, 40, 80, -76, 160, -154, 236, -236 };
 /* all the delta tables to choose from, at all 4 delta levels */
 static const int16_t *ydts[] = { ydt1, ydt2, ydt3, ydt4, NULL };
 static const int16_t *fat_ydts[] = { fat_ydt3, fat_ydt3, fat_ydt3, fat_ydt4, NULL };
-static const int16_t *cdts[] = { cdt1, cdt2, cdt3, cdt3, NULL };
+static const int16_t *cdts[] = { cdt1, cdt1, cdt2, cdt3, NULL };
 static const int16_t *fat_cdts[] = { fat_cdt2, fat_cdt2, fat_cdt2, fat_cdt3, NULL };
 
 static const uint8_t pc_tbl2[] = {
