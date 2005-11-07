@@ -494,8 +494,8 @@ install-headers:
 	mkdir -p "$(prefix)/include/ffmpeg"
 	install -m 644 $(SRC_PATH)/libavcodec/avcodec.h \
                 "$(prefix)/include/ffmpeg"
-	install -d $(libdir)/pkgconfig
-	install -m 644 ../libavcodec.pc $(libdir)/pkgconfig
+	install -d "$(libdir)/pkgconfig"
+	install -m 644 ../libavcodec.pc "$(libdir)/pkgconfig"
 
 #
 # include dependency files if they exist

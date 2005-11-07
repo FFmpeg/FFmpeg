@@ -130,8 +130,8 @@ install-headers:
                 $(SRC_PATH)/libavformat/rtp.h $(SRC_PATH)/libavformat/rtsp.h \
                 $(SRC_PATH)/libavformat/rtspcodes.h \
                 "$(prefix)/include/ffmpeg"
-	install -d $(libdir)/pkgconfig
-	install -m 644 ../libavformat.pc $(libdir)/pkgconfig
+	install -d "$(libdir)/pkgconfig"
+	install -m 644 ../libavformat.pc "$(libdir)/pkgconfig"
 
 %.o: %.c
 	$(CC) $(CFLAGS) $(LIBOBJFLAGS) -c -o $@ $< 
