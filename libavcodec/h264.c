@@ -3089,11 +3089,12 @@ static int decode_init(AVCodecContext *avctx){
     return 0;
 }
 
-static void frame_start(H264Context *h){
+static int frame_start(H264Context *h){
     MpegEncContext * const s = &h->s;
     int i;
 
-    MPV_frame_start(s, s->avctx);
+    if(MPV_frame_start(s, s->avctx) < 0)
+        return -1;
     ff_er_frame_start(s);
 
     assert(s->linesize && s->uvlinesize);
@@ -3115,6 +3116,7 @@ static void frame_start(H264Context *h){
         s->obmc_scratchpad = av_malloc(16*s->linesize + 2*8*s->uvlinesize);
 
 //    s->decode= (s->flags&CODEC_FLAG_PSNR) || !s->encoding || s->current_picture.reference /*|| h->contains_intra*/ || 1;
+    return 0;
 }
 
 static inline void backup_mb_border(H264Context *h, uint8_t *src_y, uint8_t *src_cb, uint8_t *src_cr, int linesize, int uvlinesize){
@@ -4290,7 +4292,8 @@ static int decode_slice_header(H264Context *h){
     }
 
     if(h->slice_num == 0){
-        frame_start(h);
+        if(frame_start(h) < 0)
+            return -1;
     }
 
     s->current_picture_ptr->frame_num= //FIXME frame_num cleanup
