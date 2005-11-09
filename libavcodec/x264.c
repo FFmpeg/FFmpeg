@@ -150,7 +150,7 @@ X264_init(AVCodecContext *avctx)
 
     if(avctx->flags & CODEC_FLAG_QSCALE && avctx->global_quality > 0)
         x4->params.rc.i_qp_constant =
-            12 + 6 * av_log2((double) avctx->global_quality / FF_QP2LAMBDA);
+            12 + 6 * log2((double) avctx->global_quality / FF_QP2LAMBDA);
 
     x4->params.i_width = avctx->width;
     x4->params.i_height = avctx->height;
