@@ -7731,10 +7731,13 @@ static int decode_frame(AVCodecContext *avctx,
         h->delayed_output_pic = out;
 #endif
 
-        *pict= *(AVFrame*)out;
+        if(out)
+            *pict= *(AVFrame*)out;
+        else
+            av_log(avctx, AV_LOG_DEBUG, "no picture\n");
     }
 
-    assert(pict->data[0]);
+    assert(pict->data[0] || !*data_size);
     ff_print_debug_info(s, pict);
 //printf("out %d\n", (int)pict->data[0]);
 #if 0 //?
