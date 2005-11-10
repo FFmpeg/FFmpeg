@@ -144,6 +144,14 @@ default.
 
 @chapter Development
 
+@section Why doesn't FFmpeg support feature [xyz]?
+
+Because no one has taken on that task yet. FFmpeg development is
+driven by the tasks that are important to the individual developers.
+If there is a feature that is important to you, the best way to get
+it implemented is to undertake the task yourself.
+
+
 @section Are there examples illustrating how to use the FFmpeg libraries, particularly libavcodec and libavformat ?
 
 Yes. Read the Developers Guide of the FFmpeg documentation. Alternatively,
