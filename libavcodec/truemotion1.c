@@ -744,7 +744,7 @@ static void truemotion1_decode_24bit(TrueMotion1Context *s)
     int index;
 
     /* clean out the line buffer */
-    memset(s->vert_pred, 0, s->avctx->width * sizeof(unsigned short));
+    memset(s->vert_pred, 0, s->avctx->width * sizeof(unsigned int));
 
     GET_NEXT_INDEX();
 
