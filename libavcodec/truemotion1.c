@@ -232,7 +232,7 @@ static int make_ydt24_entry(int p1, int p2, int16_t *ydt)
     
     lo = ydt[p1];
     hi = ydt[p2];
-    return ((lo + (hi << 8)) << 1);
+    return ((lo + (hi << 8) + (hi << 16)) << 1);
 }
 
 #ifdef WORDS_BIGENDIAN
@@ -410,7 +410,7 @@ static int truemotion1_decode_header(TrueMotion1Context *s)
     
     // FIXME: where to place this ?!?!
     if (compression_types[header.compression].algorithm == ALGO_RGB24H)
-        s->avctx->pix_fmt = PIX_FMT_BGR24;
+        s->avctx->pix_fmt = PIX_FMT_RGBA32;
     else
 	s->avctx->pix_fmt = PIX_FMT_RGB555; // RGB565 is supported aswell
 
@@ -474,7 +474,7 @@ static int truemotion1_decode_init(AVCodecContext *avctx)
     /* there is a vertical predictor for each pixel in a line; each vertical
      * predictor is 0 to start with */
     s->vert_pred = 
-        (unsigned int *)av_malloc(s->avctx->width * sizeof(unsigned short));
+        (unsigned int *)av_malloc(s->avctx->width * sizeof(unsigned int));
 
     return 0;
 }
@@ -533,13 +533,13 @@ hres,vres,i,i%vres (0 < i < 4)
 
 #define APPLY_C_PREDICTOR_24() \
     predictor_pair = s->c_predictor_table[index]; \
-    c_horiz_pred += (predictor_pair >> 1); \
+    horiz_pred += (predictor_pair >> 1); \
     if (predictor_pair & 1) { \
         GET_NEXT_INDEX() \
         if (!index) { \
             GET_NEXT_INDEX() \
             predictor_pair = s->fat_c_predictor_table[index]; \
-            c_horiz_pred += (predictor_pair >> 1); \
+            horiz_pred += (predictor_pair >> 1); \
             if (predictor_pair & 1) \
                 GET_NEXT_INDEX() \
             else \
@@ -547,7 +547,6 @@ hres,vres,i,i%vres (0 < i < 4)
         } \
     } else \
         index++; 
-//    c_last+coff = clast+c_horiz_pred;
 
 
 #define APPLY_Y_PREDICTOR() \
@@ -613,7 +612,7 @@ static void truemotion1_decode_16bit(TrueMotion1Context *s)
     int index;
 
     /* clean out the line buffer */
-    memset(s->vert_pred, 0, s->avctx->width * sizeof(unsigned short));
+    memset(s->vert_pred, 0, s->avctx->width * sizeof(unsigned int));
 
     GET_NEXT_INDEX();
 
@@ -727,7 +726,6 @@ static void truemotion1_decode_24bit(TrueMotion1Context *s)
     int pixels_left;  /* remaining pixels on this line */
     unsigned int predictor_pair;
     unsigned int horiz_pred;
-    unsigned int c_horiz_pred;
     unsigned int *vert_pred;
     unsigned int *current_pixel_pair;
     unsigned int *prev_pixel_pair;
@@ -753,7 +751,7 @@ static void truemotion1_decode_24bit(TrueMotion1Context *s)
     for (y = 0; y < s->avctx->height; y++) {
 
         /* re-init variables for the next line iteration */
-        horiz_pred = c_horiz_pred = 0;
+        horiz_pred = 0;
         current_pixel_pair = (unsigned int *)current_line;
         prev_pixel_pair = (unsigned int *)prev_line;
         vert_pred = s->vert_pred;
@@ -774,19 +772,15 @@ static void truemotion1_decode_24bit(TrueMotion1Context *s)
                         APPLY_C_PREDICTOR_24();
                         APPLY_Y_PREDICTOR_24();
                         OUTPUT_PIXEL_PAIR();
-//                        OUTPUT_PIXEL_PAIR_24_C();
                         APPLY_C_PREDICTOR_24();
                         APPLY_Y_PREDICTOR_24();
                         OUTPUT_PIXEL_PAIR();
-//                        OUTPUT_PIXEL_PAIR_24_C();
                     } else {
                         APPLY_C_PREDICTOR_24();
                         APPLY_Y_PREDICTOR_24();
                         OUTPUT_PIXEL_PAIR();
-//                        OUTPUT_PIXEL_PAIR_24_C();
                         APPLY_Y_PREDICTOR_24();
                         OUTPUT_PIXEL_PAIR();
-//                        OUTPUT_PIXEL_PAIR_24_C();
                     }
                     break;
 
@@ -806,19 +800,15 @@ static void truemotion1_decode_24bit(TrueMotion1Context *s)
                         APPLY_C_PREDICTOR_24();
                         APPLY_Y_PREDICTOR_24();
                         OUTPUT_PIXEL_PAIR();
-//                        OUTPUT_PIXEL_PAIR_24_C();
                         APPLY_C_PREDICTOR_24();
                         APPLY_Y_PREDICTOR_24();
                         OUTPUT_PIXEL_PAIR();
-//                        OUTPUT_PIXEL_PAIR_24_C();
                     } else if (s->block_type == BLOCK_4x2) {
                         APPLY_C_PREDICTOR_24();
                         APPLY_Y_PREDICTOR_24();
                         OUTPUT_PIXEL_PAIR();
-//                        OUTPUT_PIXEL_PAIR_24_C();
                         APPLY_Y_PREDICTOR_24();
                         OUTPUT_PIXEL_PAIR();
-//                        OUTPUT_PIXEL_PAIR_24_C();
                     } else {
                         APPLY_Y_PREDICTOR_24();
                         OUTPUT_PIXEL_PAIR();
@@ -836,7 +826,6 @@ static void truemotion1_decode_24bit(TrueMotion1Context *s)
                 *vert_pred++ = *current_pixel_pair++;
                 *current_pixel_pair = *prev_pixel_pair++;
                 horiz_pred = *current_pixel_pair - *vert_pred;
-//		c_horiz_pred = *current_pixel_pair - *vert_pred;
                 *vert_pred++ = *current_pixel_pair++;
                 
             }
