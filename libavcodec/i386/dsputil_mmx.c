@@ -1165,8 +1165,11 @@ static int hf_noise16_mmx(uint8_t * pix1, int line_size, int h) {
 
 static int nsse16_mmx(void *p, uint8_t * pix1, uint8_t * pix2, int line_size, int h) {
     MpegEncContext *c = p;
-    int score1= sse16_mmx(c, pix1, pix2, line_size, h);
-    int score2= hf_noise16_mmx(pix1, line_size, h) - hf_noise16_mmx(pix2, line_size, h);
+    int score1, score2;
+
+    if(c) score1 = c->dsp.sse[0](c, pix1, pix2, line_size, h);
+    else  score1 = sse16_mmx(c, pix1, pix2, line_size, h);
+    score2= hf_noise16_mmx(pix1, line_size, h) - hf_noise16_mmx(pix2, line_size, h);
 
     if(c) return score1 + ABS(score2)*c->avctx->nsse_weight;
     else  return score1 + ABS(score2)*8;
