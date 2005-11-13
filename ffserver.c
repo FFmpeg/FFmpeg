@@ -1202,6 +1202,9 @@ static int http_parse_request(HTTPContext *c)
         return -1;
 
     pstrcpy(c->protocol, sizeof(c->protocol), protocol);
+
+    if (ffserver_debug)
+	http_log("New connection: %s %s\n", cmd, url);
     
     /* find the filename and the optional info string in the request */
     p = url;
@@ -3870,6 +3873,15 @@ static int parse_ffconfig(const char *filename)
             	    (my_http_addr.sin_addr.s_addr == INADDR_ANY) ? "127.0.0.1" :
 		    inet_ntoa(my_http_addr.sin_addr),
 		    ntohs(my_http_addr.sin_port), feed->filename);
+		
+		if (ffserver_debug)
+		{
+		    int j;
+		    fprintf(stdout, "Launch commandline: ");
+		    for (j = 0; j <= i; j++)
+			fprintf(stdout, "%s ", feed->child_argv[j]);
+		    fprintf(stdout, "\n");
+		}
             }
         } else if (!strcasecmp(cmd, "ReadOnlyFile")) {
             if (feed) {
