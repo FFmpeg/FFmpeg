@@ -118,7 +118,7 @@ static const uint16_t fragment_run_length_vlc_table[30][2] = {
     { 0x1FC, 9 },  { 0x1FD, 9 },  { 0x1FE, 9 },  { 0x1FF, 9 }
 };
 
-static const uint8_t mode_code_vlc_table[30][2] = {
+static const uint8_t mode_code_vlc_table[8][2] = {
     { 0, 1 },      { 2, 2 },
     { 6, 3 },      { 14, 4 },
     { 30, 5 },     { 62, 6 },
