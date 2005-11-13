@@ -2407,7 +2407,11 @@ static int vp3_decode_frame(AVCodecContext *avctx,
     
     if (s->theora && get_bits1(&gb))
     {
-	int ptype = get_bits(&gb, 7);
+#if 1
+	av_log(avctx, AV_LOG_ERROR, "Header packet passed to frame decoder, skipping\n");
+	return -1;
+#else
+	int ptype = get_bits(&gb, 7);	
 
 	skip_bits(&gb, 6*8); /* "theora" */
 	
@@ -2424,6 +2428,7 @@ static int vp3_decode_frame(AVCodecContext *avctx,
 		av_log(avctx, AV_LOG_ERROR, "Unknown Theora config packet: %d\n", ptype);
 	}
 	return buf_size;
+#endif
     }
 
     s->keyframe = !get_bits1(&gb);
@@ -2667,12 +2672,27 @@ static int theora_decode_header(AVCodecContext *avctx, GetBitContext gb)
     s->height = get_bits(&gb, 16) << 4;
     
     if(avcodec_check_dimensions(avctx, s->width, s->height)){
+        av_log(avctx, AV_LOG_ERROR, "Invalid dimensions (%dx%d)\n", s->width, s->height);
         s->width= s->height= 0;
         return -1;
     }
-    
-    skip_bits(&gb, 24); /* frame width */
-    skip_bits(&gb, 24); /* frame height */
+
+    if (s->theora >= 0x030400)
+    {
+	skip_bits(&gb, 32); /* total number of superblocks in a frame */
+	// fixme, the next field is 36bits long
+	skip_bits(&gb, 32); /* total number of blocks in a frame */
+	skip_bits(&gb, 4); /* total number of blocks in a frame */
+	skip_bits(&gb, 32); /* total number of macroblocks in a frame */
+	
+	skip_bits(&gb, 24); /* frame width */
+	skip_bits(&gb, 24); /* frame height */
+    }
+    else
+    {
+	skip_bits(&gb, 24); /* frame width */
+	skip_bits(&gb, 24); /* frame height */
+    }
 
     skip_bits(&gb, 8); /* offset x */
     skip_bits(&gb, 8); /* offset y */
@@ -2685,14 +2705,18 @@ static int theora_decode_header(AVCodecContext *avctx, GetBitContext gb)
     if (s->theora < 0x030200)
 	skip_bits(&gb, 5); /* keyframe frequency force */
     skip_bits(&gb, 8); /* colorspace */
+    if (s->theora >= 0x030400)
+	skip_bits(&gb, 2); /* pixel format: 420,res,422,444 */
     skip_bits(&gb, 24); /* bitrate */
 
-    skip_bits(&gb, 6); /* last(?) quality index */
+    skip_bits(&gb, 6); /* quality hint */
     
     if (s->theora >= 0x030200)
     {
 	skip_bits(&gb, 5); /* keyframe frequency force */
-	skip_bits(&gb, 5); /* spare bits */
+	
+	if (s->theora < 0x030400)
+	    skip_bits(&gb, 5); /* spare bits */
     }
     
 //    align_get_bits(&gb);
@@ -2703,25 +2727,53 @@ static int theora_decode_header(AVCodecContext *avctx, GetBitContext gb)
     return 0;
 }
 
+static inline int theora_get_32bit(GetBitContext gb)
+{
+    int ret = get_bits(&gb, 8);
+    ret += get_bits(&gb, 8) << 8;
+    ret += get_bits(&gb, 8) << 16;
+    ret += get_bits(&gb, 8) << 24;
+    
+    return ret;
+}
+
 static int theora_decode_comments(AVCodecContext *avctx, GetBitContext gb)
 {
-    int nb_comments, i, tmp;
+    Vp3DecodeContext *s = avctx->priv_data;
+    int len;
 
-    tmp = get_bits_long(&gb, 32);
-    tmp = be2me_32(tmp);
-    while(tmp--)
-	    skip_bits(&gb, 8);
-
-    nb_comments = get_bits_long(&gb, 32);
-    nb_comments = be2me_32(nb_comments);
-    for (i = 0; i < nb_comments; i++)
+    if (s->theora <= 0x030200)
     {
-	tmp = get_bits_long(&gb, 32);
-	tmp = be2me_32(tmp);
-	while(tmp--)
+	int i, comments;
+
+	// vendor string
+	len = get_bits_long(&gb, 32);
+	len = le2me_32(len);
+	while(len--)
 	    skip_bits(&gb, 8);
+
+	// user comments
+	comments = get_bits_long(&gb, 32);
+	comments = le2me_32(comments);
+	for (i = 0; i < comments; i++)
+	{
+	    len = get_bits_long(&gb, 32);
+	    len = be2me_32(len);
+	    while(len--)
+		skip_bits(&gb, 8);
+	}
     }
-    
+    else
+    {
+	do {
+	    len = get_bits_long(&gb, 32);
+	    len = le2me_32(len);
+	    if (len <= 0)
+		break;
+	    while (len--)
+		skip_bits(&gb, 8);
+	} while (1);
+    }    
     return 0;
 }
 
@@ -2758,7 +2810,7 @@ static int theora_decode_tables(AVCodecContext *avctx, GetBitContext gb)
     else
         n = 3;
     if (n != 3) {
-        av_log(NULL,AV_LOG_ERROR, "unsupported nbms : %d\n", n);
+        av_log(avctx,AV_LOG_ERROR, "unsupported nbms : %d\n", n);
         return -1;
     }
     /* y coeffs */
@@ -2793,7 +2845,7 @@ static int theora_decode_tables(AVCodecContext *avctx, GetBitContext gb)
                     skip_bits(&gb, av_log2(2)+1);
                 }
                 if (qi > 63)
-                    av_log(NULL, AV_LOG_ERROR, "error...\n");
+                    av_log(avctx, AV_LOG_ERROR, "invalid qi %d > 63\n", qi);
             }
         }
     }
@@ -2825,7 +2877,10 @@ static int theora_decode_init(AVCodecContext *avctx)
     s->theora = 1;
 
     if (!avctx->extradata_size)
+    {
+        av_log(avctx, AV_LOG_ERROR, "Missing extradata!\n");
 	return -1;
+    }
 
   for(i=0;i<3;i++) {
     op_bytes = *(p++)<<8;
@@ -2837,9 +2892,13 @@ static int theora_decode_init(AVCodecContext *avctx)
     ptype = get_bits(&gb, 8);
     debug_vp3("Theora headerpacket type: %x\n", ptype);
 	    
-    if (!(ptype & 0x80))
+     if (!(ptype & 0x80))
+     {
+        av_log(avctx, AV_LOG_ERROR, "Invalid extradata!\n");
 	return -1;
-	
+     }	
+
+    // FIXME: check for this aswell
     skip_bits(&gb, 6*8); /* "theora" */
 	
     switch(ptype)
@@ -2852,6 +2911,9 @@ static int theora_decode_init(AVCodecContext *avctx)
 	    break;
 	case 0x82:
 	    theora_decode_tables(avctx, gb);
+	    break;
+	default:
+	    av_log(avctx, AV_LOG_ERROR, "Unknown Theora config packet: %d\n", ptype&~0x80);
 	    break;
     }
   }
