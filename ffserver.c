@@ -218,7 +218,7 @@ typedef struct FFStream {
     int readonly;        /* True if writing is prohibited to the file */
     int conns_served;
     int64_t bytes_served;
-    int64_t feed_max_size;      /* maximum storage size */
+    int64_t feed_max_size;      /* maximum storage size, zero means unlimited */
     int64_t feed_write_index;   /* current write position in feed (it wraps round) */
     int64_t feed_size;          /* current size of feed */
     struct FFStream *next_feed;
@@ -2417,7 +2417,7 @@ static int http_receive_data(HTTPContext *c)
                 feed->feed_size = feed->feed_write_index;
 
             /* handle wrap around if max file size reached */
-            if (feed->feed_write_index >= c->stream->feed_max_size)
+            if (c->stream->feed_max_size && feed->feed_write_index >= c->stream->feed_max_size)
                 feed->feed_write_index = FFM_PACKET_SIZE;
 
             /* write index */
@@ -3539,7 +3539,7 @@ static void build_feed_streams(void)
         feed->feed_write_index = ffm_read_write_index(fd);
         feed->feed_size = lseek(fd, 0, SEEK_END);
         /* ensure that we do not wrap before the end of file */
-        if (feed->feed_max_size < feed->feed_size)
+        if (feed->feed_max_size && feed->feed_max_size < feed->feed_size)
             feed->feed_max_size = feed->feed_size;
 
         close(fd);
