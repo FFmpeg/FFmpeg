@@ -24,7 +24,7 @@ sleep 2
 (
     cd data || exit $?
     rm -f ff-*;
-    WGET_OPTIONS="--user-agent=NSPlayer -q --proxy=off -e verbose=off -e debug=off -e server_response=off"
+    WGET_OPTIONS="--user-agent=NSPlayer -q --proxy=off -e verbose=off -e server_response=off"
     for file in $FILES; do
         if [ `expr match $file "a-*"` -ne 0 ]; then
             wget $WGET_OPTIONS --output-document=- http://localhost:9999/$file > ff-$file &
