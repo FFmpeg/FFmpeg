@@ -3852,10 +3852,7 @@ static int parse_ffconfig(const char *filename)
 
                 feed->child_argv = (char **) av_mallocz(64 * sizeof(char *));
 
-                feed->child_argv[0] = av_malloc(7);
-                strcpy(feed->child_argv[0], "ffmpeg");
-
-                for (i = 1; i < 62; i++) {
+                for (i = 0; i < 62; i++) {
                     char argbuf[256];
 
                     get_arg(argbuf, sizeof(argbuf), &p);
