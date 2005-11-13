@@ -63,7 +63,7 @@
 
 #define KEYFRAMES_ONLY 0
 
-#define DEBUG_VP3 0
+#define DEBUG_VP3 1
 #define DEBUG_INIT 0
 #define DEBUG_DEQUANTIZERS 0
 #define DEBUG_BLOCK_CODING 0
@@ -2780,7 +2780,7 @@ static int theora_decode_comments(AVCodecContext *avctx, GetBitContext gb)
 static int theora_decode_tables(AVCodecContext *avctx, GetBitContext gb)
 {
     Vp3DecodeContext *s = avctx->priv_data;
-    int i, n;
+    int i, n, matrices;
 
     if (s->theora >= 0x030200) {
         n = get_bits(&gb, 3);
@@ -2806,12 +2806,12 @@ static int theora_decode_tables(AVCodecContext *avctx, GetBitContext gb)
 	s->coded_dc_scale_factor[i] = get_bits(&gb, n);
 
     if (s->theora >= 0x030200)
-        n = get_bits(&gb, 9) + 1;
+        matrices = get_bits(&gb, 9) + 1;
     else
-        n = 3;
-    if (n != 3) {
-        av_log(avctx,AV_LOG_ERROR, "unsupported nbms : %d\n", n);
-        return -1;
+        matrices = 3;
+    if (matrices != 3) {
+        av_log(avctx,AV_LOG_ERROR, "unsupported matrices: %d\n", matrices);
+//        return -1;
     }
     /* y coeffs */
     for (i = 0; i < 64; i++)
@@ -2825,7 +2825,12 @@ static int theora_decode_tables(AVCodecContext *avctx, GetBitContext gb)
     for (i = 0; i < 64; i++)
 	s->coded_inter_dequant[i] = get_bits(&gb, 8);
 
-    /* Huffman tables */
+    /* skip unknown matrices */
+    n = matrices - 3;
+    while(n--)
+	for (i = 0; i < 64; i++)
+	    skip_bits(&gb, 8);
+
     for (i = 0; i <= 1; i++) {
         for (n = 0; n <= 2; n++) {
             int newqr;
@@ -2839,17 +2844,20 @@ static int theora_decode_tables(AVCodecContext *avctx, GetBitContext gb)
             }
             else {
                 int qi = 0;
-                skip_bits(&gb, av_log2(2)+1);
+                skip_bits(&gb, av_log2(matrices-1)+1);
                 while (qi < 63) {
                     qi += get_bits(&gb, av_log2(63-qi)+1) + 1;
-                    skip_bits(&gb, av_log2(2)+1);
+                    skip_bits(&gb, av_log2(matrices-1)+1);
                 }
-                if (qi > 63)
+                if (qi > 63) {
                     av_log(avctx, AV_LOG_ERROR, "invalid qi %d > 63\n", qi);
+		    return -1;
+		}
             }
         }
     }
 
+    /* Huffman tables */
     for (s->hti = 0; s->hti < 80; s->hti++) {
         s->entries = 0;
         s->huff_code_size = 1;
@@ -2907,7 +2915,8 @@ static int theora_decode_init(AVCodecContext *avctx)
             theora_decode_header(avctx, gb);
     	    break;
 	case 0x81:
-	    theora_decode_comments(avctx, gb);
+// FIXME: is this needed? it breaks sometimes
+//	    theora_decode_comments(avctx, gb);
 	    break;
 	case 0x82:
 	    theora_decode_tables(avctx, gb);
