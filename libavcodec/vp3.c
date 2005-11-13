@@ -63,7 +63,7 @@
 
 #define KEYFRAMES_ONLY 0
 
-#define DEBUG_VP3 1
+#define DEBUG_VP3 0
 #define DEBUG_INIT 0
 #define DEBUG_DEQUANTIZERS 0
 #define DEBUG_BLOCK_CODING 0
