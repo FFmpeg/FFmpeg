@@ -1,67 +1,67 @@
 ffmpeg regression test
 9f2252939564a3b735605be5e6575f04 *./data/b-libav.avi
-342282 ./data/b-libav.avi
-./data/b-libav.avi CRC=ccab3a27
+ 342282 ./data/b-libav.avi
+./data/b-libav.avi CRC=0xccab3a27
 6f4dca897d9a009009798e434fe5f651 *./data/b-libav.asf
-342967 ./data/b-libav.asf
-./data/b-libav.asf CRC=41af1ed9
+ 342967 ./data/b-libav.asf
+./data/b-libav.asf CRC=0x41af1ed9
 5240a23a9264bc6062d6739c70825ace *./data/b-libav.rm
-360251 ./data/b-libav.rm
+ 360251 ./data/b-libav.rm
 90784a1b9589095f20fc6bcc0cc23cc4 *./data/b-libav.mpg
-387072 ./data/b-libav.mpg
-./data/b-libav.mpg CRC=8b644837
+ 387072 ./data/b-libav.mpg
+./data/b-libav.mpg CRC=0x8b644837
 c9050b51f6d6636cdda3160d43463bc3 *./data/b-libav.ts
-479400 ./data/b-libav.ts
-./data/b-libav.ts CRC=7968c81f
+ 479400 ./data/b-libav.ts
+./data/b-libav.ts CRC=0x7968c81f
 57a8dfc7926802bb337a9d8918de94a8 *./data/b-libav.swf
-41816 ./data/b-libav.swf
-./data/b-libav.swf CRC=2b273fea
+  41816 ./data/b-libav.swf
+./data/b-libav.swf CRC=0x2b273fea
 8f908b4651a7e5915f0f6e505bafb0b1 *./data/b-libav.ffm
-389120 ./data/b-libav.ffm
-./data/b-libav.ffm CRC=688bd1eb
+ 389120 ./data/b-libav.ffm
+./data/b-libav.ffm CRC=0x688bd1eb
 794934a02582f8dfc85d1856514cf37c *./data/b-libav.flv
-339325 ./data/b-libav.flv
-./data/b-libav.flv CRC=7b9076f8
+ 339325 ./data/b-libav.flv
+./data/b-libav.flv CRC=0x7b9076f8
 55d26d5f682f75fa57a5c126056c4c31 *./data/b-libav.mov
-369865 ./data/b-libav.mov
-./data/b-libav.mov CRC=48f5a90d
+ 369865 ./data/b-libav.mov
+./data/b-libav.mov CRC=0x48f5a90d
 8bf16d40a2ec19fa36b124a928e47e23 *./data/b-libav.nut
-332358 ./data/b-libav.nut
-./data/b-libav.nut CRC=ccab3a27
+ 332358 ./data/b-libav.nut
+./data/b-libav.nut CRC=0xccab3a27
 b466c970d54eb254ad0f954b08535634 *./data/b-libav.dv
 3600000 ./data/b-libav.dv
-./data/b-libav.dv CRC=c5215996
+./data/b-libav.dv CRC=0xc5215996
 9a9da315747599f7718cc9a9a09c21ff *./data/b-libav.pbm
-317075 ./data/b-libav.pbm
-./data/b-libav.pbm CRC=b92906cb
+ 317075 ./data/b-libav.pbm
+./data/b-libav.pbm CRC=0xb92906cb
 6ea0e1faf08f6fcdb44db4a104361b57 *./data/b-libav.pgm
 2534775 ./data/b-libav.pgm
-./data/b-libav.pgm CRC=f4aa7c47
+./data/b-libav.pgm CRC=0xf4aa7c47
 0c5fe86621b7377705837f304d4ba1e9 *./data/b-libav.ppm
 7603575 ./data/b-libav.ppm
-./data/b-libav.ppm CRC=b2bb8e92
+./data/b-libav.ppm CRC=0xb2bb8e92
 88a98269295fbfce7816558ad84e1259 *./data/b-libav.gif
 2906382 ./data/b-libav.gif
 b977a4fedff90a79baf70c8e02986820 *./data/b-libav.y4m
 3801810 ./data/b-libav.y4m
-./data/b-libav%02d.pgm CRC=84c09106
-./data/b-libav%02d.ppm CRC=25c06ecf
-./data/b-libav%02d.jpg CRC=62328baa
+./data/b-libav%02d.pgm CRC=0x84c09106
+./data/b-libav%02d.ppm CRC=0x25c06ecf
+./data/b-libav%02d.jpg CRC=0x62328baa
 b0a8c8063d81921db5d7c8f50a1cc454 *./data/b-libav.wav
-89132 ./data/b-libav.wav
-./data/b-libav.wav CRC=2a09519c
+  89132 ./data/b-libav.wav
+./data/b-libav.wav CRC=0x2a09519c
 e2a6d6fae17394dfe87cb5bb8ae11837 *./data/b-libav.al
   44544 ./data/b-libav.al
-./data/b-libav.al CRC=efdf94c3
+./data/b-libav.al CRC=0xefdf94c3
 4574d7e2c09e1e13663e61bd2889f12d *./data/b-libav.ul
   44544 ./data/b-libav.ul
-./data/b-libav.ul CRC=6064b2f8
+./data/b-libav.ul CRC=0x6064b2f8
 7a21ff174e3cca1702e0826c4ca0eccf *./data/b-libav.au
   89112 ./data/b-libav.au
-./data/b-libav.au CRC=2a09519c
+./data/b-libav.au CRC=0x2a09519c
 20f9fa55b3c5bebe3520f5667ee4928b *./data/b-libav.mmf
-22609 ./data/b-libav.mmf
-./data/b-libav.mmf CRC=7e78cffe
+  22609 ./data/b-libav.mmf
+./data/b-libav.mmf CRC=0x7e78cffe
 ce356ce2708cb6033ab5d762da93cfd4 *./data/b-libav-yuv420p.yuv
  304128 ./data/b-libav-yuv420p.yuv
 ce356ce2708cb6033ab5d762da93cfd4 *./data/b-libav-yuv422p.yuv
