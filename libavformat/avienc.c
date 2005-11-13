@@ -357,7 +357,10 @@ static int avi_write_header(AVFormatContext *s)
     }
     put_le32(pb, bitrate / 8); /* XXX: not quite exact */
     put_le32(pb, 0); /* padding */
-    put_le32(pb, AVIF_TRUSTCKTYPE | AVIF_HASINDEX | AVIF_ISINTERLEAVED); /* flags */
+    if (url_is_streamed(pb))
+	put_le32(pb, AVIF_TRUSTCKTYPE | AVIF_ISINTERLEAVED); /* flags */
+    else
+	put_le32(pb, AVIF_TRUSTCKTYPE | AVIF_HASINDEX | AVIF_ISINTERLEAVED); /* flags */
     avi->frames_hdr_all = url_ftell(pb); /* remember this offset to fill later */
     put_le32(pb, nb_frames); /* nb frames, filled later */
     put_le32(pb, 0); /* initial frame */
@@ -412,7 +415,10 @@ static int avi_write_header(AVFormatContext *s)
 
         put_le32(pb, 0); /* start */
         avi->frames_hdr_strm[i] = url_ftell(pb); /* remember this offset to fill later */
-        put_le32(pb, 0); /* length, XXX: filled later */
+	if (url_is_streamed(pb))
+	    put_le32(pb, AVI_MAX_RIFF_SIZE); /* FIXME: this may be broken, but who cares */
+	else
+	    put_le32(pb, 0); /* length, XXX: filled later */
         
         /* suggested buffer size */ //FIXME set at the end to largest chunk
         if(stream->codec_type == CODEC_TYPE_VIDEO)
@@ -502,6 +508,9 @@ static int avi_write_ix(AVFormatContext *s)
     unsigned char ix_tag[] = "ix00";
     int i, j;
     
+    if (url_is_streamed(pb))
+	return -1;
+
     if (avi->riff_id > AVI_MASTER_INDEX_SIZE)
         return -1;
     
@@ -638,7 +647,10 @@ static int avi_write_packet(AVFormatContext *s, AVPacket *pkt)
     }
     avi->packet_count[stream_index]++;
 
-    if (url_ftell(pb) - avi->riff_start > AVI_MAX_RIFF_SIZE) { 
+    // Make sure to put an OpenDML chunk when the file size exceeds the limits
+    if (!url_is_streamed(pb) && 
+	(url_ftell(pb) - avi->riff_start > AVI_MAX_RIFF_SIZE)) {
+	 
         avi_write_ix(s);
         end_tag(pb, avi->movi_list);
         
@@ -694,6 +706,8 @@ static int avi_write_trailer(AVFormatContext *s)
     int i, j, n, nb_frames;
     offset_t file_size;
 
+    if (!url_is_streamed(pb))
+    {
     if (avi->riff_id == 1) {
         end_tag(pb, avi->movi_list);
         res = avi_write_idx1(s);
@@ -721,6 +735,7 @@ static int avi_write_trailer(AVFormatContext *s)
         }
 	put_le32(pb, nb_frames);
 	url_fseek(pb, file_size, SEEK_SET);
+    }
     }
     put_flush_packet(pb);
 
