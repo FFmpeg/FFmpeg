@@ -23,6 +23,7 @@ const CodecTag codec_wav_tags[] = {
     { CODEC_ID_MP2, 0x50 },
     { CODEC_ID_MP3, 0x55 },
     { CODEC_ID_AC3, 0x2000 },
+    { CODEC_ID_DTS, 0x2001 },
     { CODEC_ID_PCM_S16LE, 0x01 },
     { CODEC_ID_PCM_U8, 0x01 }, /* must come after s16le in this list */
     { CODEC_ID_PCM_S24LE, 0x01 },
