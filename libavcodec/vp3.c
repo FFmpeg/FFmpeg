@@ -2363,7 +2363,7 @@ static int vp3_decode_init(AVCodecContext *avctx)
         &superblock_run_length_vlc_table[0][1], 4, 2,
         &superblock_run_length_vlc_table[0][0], 4, 2, 0);
 
-    init_vlc(&s->fragment_run_length_vlc, 5, 31,
+    init_vlc(&s->fragment_run_length_vlc, 5, 30,
         &fragment_run_length_vlc_table[0][1], 4, 2,
         &fragment_run_length_vlc_table[0][0], 4, 2, 0);
 
