@@ -22,10 +22,10 @@
 #include <inttypes.h>
 #include <stdarg.h>
 
-#include "../config.h"
+#include "config.h"
 
 #include "swscale.h"
-#include "../libvo/img_format.h"
+#include "libvo/img_format.h"
 
 static int testFormat[]={
 IMGFMT_YVU9,

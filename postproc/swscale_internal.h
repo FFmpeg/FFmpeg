@@ -29,7 +29,7 @@
 #define AVV(x...) {x}
 #endif
 
-#include "../mp_msg.h"
+#include "mp_msg.h"
 
 #define MSG_WARN(args...) mp_msg(MSGT_SWS,MSGL_WARN, ##args )
 #define MSG_FATAL(args...) mp_msg(MSGT_SWS,MSGL_FATAL, ##args )

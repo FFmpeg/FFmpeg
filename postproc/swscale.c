@@ -54,8 +54,8 @@ untested special converters
 #include <math.h>
 #include <stdio.h>
 #include <unistd.h>
-#include "../config.h"
-#include "../mangle.h"
+#include "config.h"
+#include "mangle.h"
 #include <assert.h>
 #ifdef HAVE_MALLOC_H
 #include <malloc.h>
@@ -70,11 +70,11 @@ untested special converters
 #endif
 #include "swscale.h"
 #include "swscale_internal.h"
-#include "../cpudetect.h"
-#include "../bswap.h"
-#include "../libvo/img_format.h"
+#include "cpudetect.h"
+#include "bswap.h"
+#include "libvo/img_format.h"
 #include "rgb2rgb.h"
-#include "../libvo/fastmemcpy.h"
+#include "libvo/fastmemcpy.h"
 
 #undef MOVNTQ
 #undef PAVGB

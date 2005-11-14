@@ -8,13 +8,13 @@
  *  palette & yuv & runtime cpu stuff by Michael (michaelni@gmx.at) (under GPL)
  */
 #include <inttypes.h>
-#include "../config.h"
+#include "config.h"
 #include "rgb2rgb.h"
 #include "swscale.h"
-#include "../cpudetect.h"
-#include "../mangle.h"
-#include "../bswap.h"
-#include "../libvo/fastmemcpy.h"
+#include "cpudetect.h"
+#include "mangle.h"
+#include "bswap.h"
+#include "libvo/fastmemcpy.h"
 
 #define FAST_BGR2YV12 // use 7 bit coeffs instead of 15bit
 

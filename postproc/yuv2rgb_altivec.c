@@ -71,8 +71,8 @@
 #include "rgb2rgb.h"
 #include "swscale.h"
 #include "swscale_internal.h"
-#include "../mangle.h"
-#include "../libvo/img_format.h" //FIXME try to reduce dependency of such stuff
+#include "mangle.h"
+#include "libvo/img_format.h" //FIXME try to reduce dependency of such stuff
 
 #undef PROFILE_THE_BEAST
 #undef INC_SCALING

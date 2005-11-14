@@ -22,7 +22,7 @@
 
 #include "swscale.h"
 #include "rgb2rgb.h"
-#include "../cpudetect.h"
+#include "cpudetect.h"
 
 #define SIZE 1000
 #define srcByte 0x55
