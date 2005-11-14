@@ -570,6 +570,7 @@ PCM_CODEC(CODEC_ID_ADPCM_YAMAHA, adpcm_yamaha);
     /* subtitles */
 #ifdef CONFIG_ENCODERS
     register_avcodec(&dvbsub_encoder);
+    register_avcodec(&dvdsub_encoder);
 #endif
 
 #ifdef CONFIG_DECODERS

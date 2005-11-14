@@ -343,10 +343,10 @@ static int encode_dvb_subtitles(DVBSubtitleContext *s,
         for (object_id = 0; object_id < h->num_rects; object_id++) {
             /* Object Data segment */
 
-            if (h->rects[region_id].nb_colors <= 4) {
+            if (h->rects[object_id].nb_colors <= 4) {
                 /* 2 bpp, some decoders do not support it correctly */
                 bpp_index = 0;
-            } else if (h->rects[region_id].nb_colors <= 16) {
+            } else if (h->rects[object_id].nb_colors <= 16) {
                 /* 4 bpp, standard encoding */
                 bpp_index = 1;
             } else {

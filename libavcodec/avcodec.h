@@ -2124,6 +2124,7 @@ extern AVCodec ac3_decoder;
 extern AVCodec dts_decoder;
 
 /* subtitles */
+extern AVCodec dvdsub_encoder;
 extern AVCodec dvdsub_decoder;
 extern AVCodec dvbsub_encoder;
 extern AVCodec dvbsub_decoder;
