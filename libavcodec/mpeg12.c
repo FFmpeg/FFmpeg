@@ -1436,7 +1436,7 @@ static int mpeg_decode_mb(MpegEncContext *s,
                 }
             }
         }else{
-            for(i=0;i<6;i++)
+            for(i=0;i<12;i++)
                 s->block_last_index[i] = -1;
         }
     }
