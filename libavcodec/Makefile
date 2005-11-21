@@ -18,7 +18,7 @@ OBJS= bitstream.o utils.o mem.o allcodecs.o \
       fft.o mdct.o raw.o golomb.o cabac.o\
       dpcm.o adx.o faandct.o parser.o g726.o \
       vp3dsp.o h264idct.o rangecoder.o pnm.o h263.o msmpeg4.o h263dec.o \
-      dvdsub.o dvbsub.o dvbsubdec.o dvdsubenc.o opt.o
+      opt.o
 
 ifeq ($(CONFIG_AASC_DECODER),yes)
     OBJS+= aasc.o
@@ -37,6 +37,18 @@ ifneq ($(CONFIG_CLJR_DECODER)$(CONFIG_CLJR_ENCODER),)
 endif
 ifeq ($(CONFIG_CYUV_DECODER),yes)
     OBJS+= cyuv.o
+endif
+ifeq ($(CONFIG_DVBSUB_DECODER),yes)
+   OBJS+= dvbsubdec.o
+endif
+ifeq ($(CONFIG_DVBSUB_ENCODER),yes)
+   OBJS+= dvbsub.o
+endif
+ifeq ($(CONFIG_DVDSUB_DECODER),yes)
+   OBJS+= dvdsub.o
+endif
+ifeq ($(CONFIG_DVDSUB_ENCODER),yes)
+   OBJS+= dvdsubenc.o
 endif
 ifneq ($(CONFIG_DVVIDEO_DECODER)$(CONFIG_DVVIDEO_ENCODER),)
     OBJS+= dv.o
