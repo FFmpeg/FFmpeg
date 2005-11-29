@@ -1030,12 +1030,12 @@ EOF
 
 ldl=-ldl
 
-if $cc -o $TMPE $TMPC -ldl > /dev/null 2>&1 ; then
+if $cc $CFLAGS $LDFLAGS -o $TMPE $TMPC -ldl > /dev/null 2>&1 ; then
 dlfcn=yes
 dlopen=yes
 fi
 
-if $cc -o $TMPE $TMPC > /dev/null 2>&1 ; then
+if $cc $CFLAGS $LDFLAGS -o $TMPE $TMPC > /dev/null 2>&1 ; then
 dlfcn=yes
 dlopen=yes
 ldl=""
@@ -1045,11 +1045,11 @@ cat > $TMPC << EOF
 int main( void ) { return (int) dlopen("foo", 0); }
 EOF
 
-if $cc -o $TMPE $TMPC -ldl > /dev/null 2>&1  ; then
+if $cc $CFLAGS $LDFLAGS -o $TMPE $TMPC -ldl > /dev/null 2>&1  ; then
 dlopen=yes
 fi
 
-if $cc -o $TMPE $TMPC > /dev/null 2>&1  ; then
+if $cc $CFLAGS $LDFLAGS -o $TMPE $TMPC > /dev/null 2>&1  ; then
 dlopen=yes
 ldl=""
 fi
