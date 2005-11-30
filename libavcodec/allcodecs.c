@@ -518,6 +518,10 @@ void avcodec_register_all(void)
 #endif //CONFIG_ENCODERS
 #endif /* AMR_WB */
 
+#ifdef CONFIG_BMP_DECODER
+    register_avcodec(&bmp_decoder);
+#endif
+
     /* pcm codecs */
 #if defined (CONFIG_ENCODERS) && defined (CONFIG_DECODERS)
     #define PCM_CODEC(id, name) \

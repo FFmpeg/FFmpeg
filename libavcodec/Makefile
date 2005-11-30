@@ -197,8 +197,10 @@ endif
 ifeq ($(CONFIG_XL_DECODER),yes)
     OBJS+= xl.o
 endif
-      
-      
+ifeq ($(CONFIG_BMP_DECODER),yes)
+	OBJS+= bmp.o
+endif
+
 AMROBJS=
 ifeq ($(AMR_NB),yes)
 ifeq ($(AMR_NB_FIXED),yes)
