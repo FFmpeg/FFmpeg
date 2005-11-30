@@ -77,6 +77,10 @@ void end_tag(ByteIOContext *pb, offset_t start)
    important if multiple tags possible for a given codec. */
 const CodecTag codec_bmp_tags[] = {
     { CODEC_ID_H264, MKTAG('H', '2', '6', '4') },
+    { CODEC_ID_H264, MKTAG('h', '2', '6', '4') },
+    { CODEC_ID_H264, MKTAG('X', '2', '6', '4') },
+    { CODEC_ID_H264, MKTAG('x', '2', '6', '4') },
+    { CODEC_ID_H264, MKTAG('a', 'v', 'c', '1') },
     { CODEC_ID_H264, MKTAG('V', 'S', 'S', 'H') },
 
     { CODEC_ID_H263, MKTAG('H', '2', '6', '3') },
