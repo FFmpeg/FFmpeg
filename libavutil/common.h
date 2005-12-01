@@ -512,7 +512,7 @@ tend= read_time();\
   }else\
       tskip_count++;\
   if(256*256*256*64%(tcount+tskip_count)==0){\
-      av_log(NULL, AV_LOG_DEBUG, "%Ld dezicycles in %s, %d runs, %d skips\n", tsum*10/tcount, id, tcount, tskip_count);\
+      av_log(NULL, AV_LOG_DEBUG, "%"PRIu64" dezicycles in %s, %d runs, %d skips\n", tsum*10/tcount, id, tcount, tskip_count);\
   }\
 }
 #else
