@@ -10,12 +10,6 @@
 
 @chapter General Problems
 
-@section ffserver does not work. 
-
-ffmpeg development is now concentrated on the codec and format
-handling. New developments broke ffserver, so don't expect it to work
-correctly. If you have time and experience, please help us fix it.
-
 @section I cannot read this file although this format seems to be supported by ffmpeg.
 
 Even if ffmpeg can read the file format, it may not support all its
