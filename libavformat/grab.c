@@ -420,7 +420,7 @@ static int aiw_init(VideoData *s)
 }
 
 #ifdef HAVE_MMX
-#include "../libavcodec/i386/mmx.h"
+#include "libavcodec/i386/mmx.h"
 
 #define LINE_WITH_UV \
                     movq_m2r(ptr[0],mm0); \
@@ -571,7 +571,7 @@ static int aiw_init(VideoData *s)
                     movd_r2m(mm1,lum_m2[(ptroff)]);
 
 #else
-#include "../libavcodec/dsputil.h"
+#include "libavcodec/dsputil.h"
 
 #define LINE_WITH_UV \
                     lum[0]=ptr[0];lum[1]=ptr[2];lum[2]=ptr[4];lum[3]=ptr[6];\

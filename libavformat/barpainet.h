@@ -1,7 +1,7 @@
 #ifndef BARPA_INET_H
 #define BARPA_INET_H
 
-#include "../config.h"
+#include "config.h"
 
 #ifdef CONFIG_BEOS_NETSERVER
 
