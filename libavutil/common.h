@@ -104,6 +104,10 @@
 #   endif /* other OS */
 #endif /* EMULATE_INTTYPES */
 
+#ifndef PRIu64
+#define PRIu64 "lld"
+#endif
+
 #ifndef INT16_MIN
 #define INT16_MIN       (-0x7fff-1)
 #endif
