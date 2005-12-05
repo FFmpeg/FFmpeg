@@ -622,11 +622,23 @@ ogg_read_timestamp (AVFormatContext * s, int stream_index, int64_t * pos_arg,
 }
 #endif
 
+static int ogg_probe(AVProbeData *p)
+{
+    if (p->buf_size < 6)
+        return 0;
+    if (p->buf[0] == 'O' && p->buf[1] == 'g' &&
+        p->buf[2] == 'g' && p->buf[3] == 'S' &&
+        p->buf[4] == 0x0 && p->buf[5] <= 0x7 )
+        return AVPROBE_SCORE_MAX;
+    else
+        return 0;
+}
+
 static AVInputFormat ogg_iformat = {
     "ogg",
     "Ogg",
     sizeof (ogg_t),
-    NULL,
+    ogg_probe,
     ogg_read_header,
     ogg_read_packet,
     ogg_read_close,
