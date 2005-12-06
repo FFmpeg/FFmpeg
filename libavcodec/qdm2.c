@@ -1876,10 +1876,7 @@ static int qdm2_decode_init(AVCodecContext *avctx)
     s->group_order = av_log2(s->group_size) + 1;
     s->frame_size = s->group_size / 16; // 16 iterations per super block
 
-    if (s->fft_order == 8)
-        s->sub_sampling = 1;
-    else
-        s->sub_sampling = 2;
+    s->sub_sampling = s->fft_order - 7;
     s->frequency_range = 255 / (1 << (2 - s->sub_sampling));
     
     switch ((s->sub_sampling * 2 + s->channels - 1)) {
@@ -1899,11 +1896,11 @@ static int qdm2_decode_init(AVCodecContext *avctx)
     s->cm_table_select = tmp_val;
 
     if (s->sub_sampling == 0)
-        tmp = 16000;
+        tmp = 7999;
     else
         tmp = ((-(s->sub_sampling -1)) & 8000) + 20000;
     /*
-    0: 16000 -> 1
+    0: 7999 -> 0
     1: 20000 -> 2
     2: 28000 -> 2
     */
@@ -1914,8 +1911,11 @@ static int qdm2_decode_init(AVCodecContext *avctx)
     else
         s->coeff_per_sb_select = 2;
 
-    if (s->fft_order != 8 && s->fft_order != 9)
+    // Fail on unknown fft order, if it's > 9 it can overflow s->exptab[]
+    if ((s->fft_order < 7) || (s->fft_order > 9)) {
         av_log(avctx, AV_LOG_ERROR, "Unknown FFT order (%d), contact the developers!\n", s->fft_order);
+        return -1;
+    }
 
     ff_fft_init(&s->fft_ctx, s->fft_order - 1, 1);
 
