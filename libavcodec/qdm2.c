@@ -1925,7 +1925,6 @@ static int qdm2_decode_init(AVCodecContext *avctx)
         s->exptab[i].im = sin(alpha);
     }
 
-    ff_fft_init(&s->fft_ctx, s->fft_order - 1, 1);
     qdm2_init(s);
     
 //    dump_context(s);
