@@ -323,6 +323,8 @@ audio_oss="yes"
 dv1394="no"
 extralibs="-lpoll -lgnugetopt -lm"
 make="gmake"
+strip="strip -d"
+installstrip=""
 ;;
 Darwin)
 cc="cc"
