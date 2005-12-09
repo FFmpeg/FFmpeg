@@ -228,41 +228,19 @@ static int ra288_decode_frame(AVCodecContext * avctx,
             void *data, int *data_size,
             uint8_t * buf, int buf_size)
 {
-  if(avctx->extradata_size>=6)
-  {
-//((short*)(avctx->extradata))[0]; /* subpacket size */
-//((short*)(avctx->extradata))[1]; /* subpacket height */
-//((short*)(avctx->extradata))[2]; /* subpacket flavour */
-//((short*)(avctx->extradata))[3]; /* coded frame size */
-//((short*)(avctx->extradata))[4]; /* codec's data length  */
-//((short*)(avctx->extradata))[5...] /* codec's data */
-    int bret;
     void *datao;
-    int w=avctx->block_align; /* 228 */
-    int h=((short*)(avctx->extradata))[1]; /* 12 */
-    int cfs=((short*)(avctx->extradata))[3]; /* coded frame size 38 */
-    int i,j;
-    if(buf_size<w*h)
+
+    if (buf_size < avctx->block_align)
     {
-	av_log(avctx, AV_LOG_ERROR, "ffra288: Error! Input buffer is too small [%d<%d]\n",buf_size,w*h);
+	av_log(avctx, AV_LOG_ERROR, "ffra288: Error! Input buffer is too small [%d<%d]\n",buf_size,avctx->block_align);
 	return 0;
     }
+
     datao = data;
-    bret = 0;
-    for (j = 0; j < h/2; j++)
-	for (i = 0; i < h; i++)
-    {
-	    data=decode_block(avctx,&buf[j*cfs+cfs*i*h/2],(signed short *)data,cfs);
-	    bret += cfs;
-    }
+    data = decode_block(avctx, buf, (signed short *)data, avctx->block_align);
+
     *data_size = (char *)data - (char *)datao;
-    return bret;
-  }
-  else
-  {
-    av_log(avctx, AV_LOG_ERROR, "ffra288: Error: need extra data!!!\n");
-    return 0;
-  }
+    return avctx->block_align;
 }
 
 AVCodec ra_288_decoder =

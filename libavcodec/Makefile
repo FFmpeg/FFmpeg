@@ -32,6 +32,9 @@ endif
 ifeq ($(CONFIG_CINEPAK_DECODER),yes)
     OBJS+= cinepak.o
 endif
+ifeq ($(CONFIG_COOK_DECODER),yes)
+    OBJS+= cook.o
+endif
 ifneq ($(CONFIG_CLJR_DECODER)$(CONFIG_CLJR_ENCODER),)
     OBJS+= cljr.o
 endif

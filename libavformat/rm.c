@@ -42,6 +42,14 @@ typedef struct {
     int old_format;
     int current_stream;
     int remaining_len;
+    /// Audio descrambling matrix parameters
+    uint8_t *audiobuf; ///< place to store reordered audio data
+    int64_t audiotimestamp; ///< Audio packet timestamp
+    int sub_packet_cnt; // Subpacket counter, used while reading
+    int sub_packet_size, sub_packet_h, coded_framesize; ///< Descrambling parameters from container
+    int audio_stream_num; ///< Stream number for audio packets
+    int audio_pkt_cnt; ///< Output packet counter
+    int audio_framesize; /// Audio frame size from container
 } RMContext;
 
 #ifdef CONFIG_MUXERS
@@ -478,6 +486,7 @@ static void get_str8(ByteIOContext *pb, char *buf, int buf_size)
 static void rm_read_audio_stream_info(AVFormatContext *s, AVStream *st, 
                                       int read_all)
 {
+    RMContext *rm = s->priv_data;
     ByteIOContext *pb = &s->pb;
     char buf[128];
     uint32_t version;
@@ -500,39 +509,60 @@ static void rm_read_audio_stream_info(AVFormatContext *s, AVStream *st,
         st->codec->codec_type = CODEC_TYPE_AUDIO;
         st->codec->codec_id = CODEC_ID_RA_144;
     } else {
-        int flavor, sub_packet_h, coded_framesize;
+        int flavor, sub_packet_h, coded_framesize, sub_packet_size;
         /* old version (4) */
         get_be32(pb); /* .ra4 */
         get_be32(pb); /* data size */
         get_be16(pb); /* version2 */
         get_be32(pb); /* header size */
         flavor= get_be16(pb); /* add codec info / flavor */
-        coded_framesize= get_be32(pb); /* coded frame size */
+        rm->coded_framesize = coded_framesize = get_be32(pb); /* coded frame size */
         get_be32(pb); /* ??? */
         get_be32(pb); /* ??? */
         get_be32(pb); /* ??? */
-        sub_packet_h= get_be16(pb); /* 1 */ 
+        rm->sub_packet_h = sub_packet_h = get_be16(pb); /* 1 */ 
         st->codec->block_align= get_be16(pb); /* frame size */
-        get_be16(pb); /* sub packet size */
+        rm->sub_packet_size = sub_packet_size = get_be16(pb); /* sub packet size */
         get_be16(pb); /* ??? */
+        if (((version >> 16) & 0xff) == 5) {
+            get_be16(pb); get_be16(pb); get_be16(pb); }
         st->codec->sample_rate = get_be16(pb);
         get_be32(pb);
         st->codec->channels = get_be16(pb);
+        if (((version >> 16) & 0xff) == 5) {
+            get_be32(pb);
+	    buf[0] = get_byte(pb);
+	    buf[1] = get_byte(pb);
+	    buf[2] = get_byte(pb);
+	    buf[3] = get_byte(pb);
+	    buf[4] = 0;
+	} else {
         get_str8(pb, buf, sizeof(buf)); /* desc */
         get_str8(pb, buf, sizeof(buf)); /* desc */
+	}
         st->codec->codec_type = CODEC_TYPE_AUDIO;
         if (!strcmp(buf, "dnet")) {
             st->codec->codec_id = CODEC_ID_AC3;
         } else if (!strcmp(buf, "28_8")) {
             st->codec->codec_id = CODEC_ID_RA_288;
-            st->codec->extradata_size= 10;
+            st->codec->extradata_size= 0;
+            rm->audio_framesize = st->codec->block_align;
+            st->codec->block_align = coded_framesize;
+            rm->audiobuf = av_malloc(rm->audio_framesize * sub_packet_h);
+        } else if (!strcmp(buf, "cook")) {
+            int codecdata_length, i;
+            get_be16(pb); get_byte(pb);
+            if (((version >> 16) & 0xff) == 5)
+                get_byte(pb);
+            codecdata_length = get_be32(pb);
+            st->codec->codec_id = CODEC_ID_COOK;
+            st->codec->extradata_size= codecdata_length;
             st->codec->extradata= av_mallocz(st->codec->extradata_size);
-            /* this is completly braindead and broken, the idiot who added this codec and endianness
-               specific reordering to mplayer and libavcodec/ra288.c should be drowned in a see of cola */
-            //FIXME pass the unpermutated extradata
-            ((uint16_t*)st->codec->extradata)[1]= sub_packet_h;
-            ((uint16_t*)st->codec->extradata)[2]= flavor;
-            ((uint16_t*)st->codec->extradata)[3]= coded_framesize;
+            for(i = 0; i < codecdata_length; i++)
+                ((uint8_t*)st->codec->extradata)[i] = get_byte(pb);
+            rm->audio_framesize = st->codec->block_align;
+            st->codec->block_align = rm->sub_packet_size;
+            rm->audiobuf = av_malloc(rm->audio_framesize * sub_packet_h);
         } else {
             st->codec->codec_id = CODEC_ID_NONE;
             pstrcpy(st->codec->codec_name, sizeof(st->codec->codec_name),
@@ -819,6 +849,16 @@ static int rm_read_packet(AVFormatContext *s, AVPacket *pkt)
         }
         pkt->size = len;
         st = s->streams[0];
+    } else if (rm->audio_pkt_cnt) {
+        // If there are queued audio packet return them first
+        st = s->streams[rm->audio_stream_num];
+        av_new_packet(pkt, st->codec->block_align);
+        memcpy(pkt->data, rm->audiobuf + st->codec->block_align *
+               (rm->sub_packet_h * rm->audio_framesize / st->codec->block_align - rm->audio_pkt_cnt),
+               st->codec->block_align);
+        rm->audio_pkt_cnt--;
+        pkt->flags = 0;
+        pkt->stream_index = rm->audio_stream_num;
     } else {
         int seq=1;
 resync:
@@ -850,15 +890,57 @@ resync:
             if(len2 && len2<len)
                 len=len2;
             rm->remaining_len-= len;
+            av_get_packet(pb, pkt, len);
+        }
+
+        if (st->codec->codec_type == CODEC_TYPE_AUDIO) {
+            if ((st->codec->codec_id == CODEC_ID_RA_288) ||
+                (st->codec->codec_id == CODEC_ID_COOK)) {
+                int x;
+                int sps = rm->sub_packet_size;
+                int cfs = rm->coded_framesize;
+                int h = rm->sub_packet_h;
+                int y = rm->sub_packet_cnt;
+                int w = rm->audio_framesize;
+
+                if (flags & 2)
+                    y = rm->sub_packet_cnt = 0;
+                if (!y)
+                    rm->audiotimestamp = timestamp;
+
+                switch(st->codec->codec_id) {
+                    case CODEC_ID_RA_288:
+                        for (x = 0; x < h/2; x++)
+                            get_buffer(pb, rm->audiobuf+x*2*w+y*cfs, cfs);
+                        break;
+                    case CODEC_ID_COOK:
+                        for (x = 0; x < w/sps; x++)
+                            get_buffer(pb, rm->audiobuf+sps*(h*x+((h+1)/2)*(y&1)+(y>>1)), sps);
+                        break;
+                }
+
+                if (++(rm->sub_packet_cnt) < h)
+                    goto resync;
+                else {
+                    rm->sub_packet_cnt = 0;
+                    rm->audio_stream_num = i;
+                    rm->audio_pkt_cnt = h * w / st->codec->block_align - 1;
+                    // Release first audio packet
+                    av_new_packet(pkt, st->codec->block_align);
+                    memcpy(pkt->data, rm->audiobuf, st->codec->block_align);
+                    timestamp = rm->audiotimestamp;
+                    flags = 2; // Mark first packet as keyframe
+                }
+            } else
+                av_get_packet(pb, pkt, len);
         }
 
         if(  (st->discard >= AVDISCARD_NONKEY && !(flags&2))
            || st->discard >= AVDISCARD_ALL){
-            url_fskip(pb, len);
+            av_free_packet(pkt);
             goto resync;
         }
         
-        av_get_packet(pb, pkt, len);
         pkt->stream_index = i;
 
 #if 0
@@ -896,6 +978,9 @@ resync:
 
 static int rm_read_close(AVFormatContext *s)
 {
+    RMContext *rm = s->priv_data;
+
+    av_free(rm->audiobuf);
     return 0;
 }
 

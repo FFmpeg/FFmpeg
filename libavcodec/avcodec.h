@@ -21,8 +21,8 @@ extern "C" {
 #define AV_STRINGIFY(s)	AV_TOSTRING(s)
 #define AV_TOSTRING(s) #s
 
-#define LIBAVCODEC_VERSION_INT ((50<<16)+(1<<8)+0)
-#define LIBAVCODEC_VERSION     50.1.0
+#define LIBAVCODEC_VERSION_INT ((51<<16)+(0<<8)+0)
+#define LIBAVCODEC_VERSION     51.0.0
 #define LIBAVCODEC_BUILD       LIBAVCODEC_VERSION_INT
 
 #define LIBAVCODEC_IDENT       "Lavc" AV_STRINGIFY(LIBAVCODEC_VERSION)
@@ -187,6 +187,7 @@ enum CodecID {
     CODEC_ID_WESTWOOD_SND1,
     CODEC_ID_GSM,    
     CODEC_ID_QDM2,
+    CODEC_ID_COOK,
     
     CODEC_ID_OGGTHEORA= 0x16000, 
 
@@ -2004,6 +2005,7 @@ extern AVCodec mp3_decoder;
 extern AVCodec mp3adu_decoder;
 extern AVCodec mp3on4_decoder;
 extern AVCodec qdm2_decoder;
+extern AVCodec cook_decoder;
 extern AVCodec mace3_decoder;
 extern AVCodec mace6_decoder;
 extern AVCodec huffyuv_decoder;
