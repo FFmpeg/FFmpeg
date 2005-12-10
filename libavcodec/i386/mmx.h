@@ -7,8 +7,18 @@
 
 #ifdef ARCH_X86_64
 #  define REG_a "rax"
+#  define REG_b "rbx"
+#  define REG_c "rcx"
+#  define REG_d "rdx"
+#  define REG_D "rdi"
+#  define REG_S "rsi"
 #else
 #  define REG_a "eax"
+#  define REG_b "ebx"
+#  define REG_c "ecx"
+#  define REG_d "edx"
+#  define REG_D "edi"
+#  define REG_S "esi"
 #endif
 
 /*
