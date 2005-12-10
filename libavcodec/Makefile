@@ -488,6 +488,7 @@ fft-test: fft-test.o $(LIB)
 	$(CC) -o $@ $^ $(LIBAVUTIL) -lm
 
 ifeq ($(BUILD_SHARED),yes)
+LIBVERSION=$(LAVCMAJOR)
 install: all install-headers
 ifeq ($(CONFIG_WIN32),yes)
 	install $(INSTALLSTRIP) -m 755 $(SLIBNAME) "$(prefix)"

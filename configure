@@ -215,7 +215,7 @@ vhook="default"
 dlfcn="no"
 dlopen="no"
 mpegaudio_hp="yes"
-SHFLAGS=-shared
+SHFLAGS='-shared -Wl,-soname,$@.$(LIBVERSION)'
 netserver="no"
 need_inet_aton="no"
 ffserver="yes"
@@ -1447,11 +1447,24 @@ if test "$vhook" = "yes" ; then
   echo "BUILD_VHOOK=yes" >> config.mak
   echo "#define HAVE_VHOOK 1" >> $TMPH
 fi
+
+lavc_version=`grep '#define LIBAVCODEC_VERSION ' "$source_path/libavcodec/avcodec.h" | sed 's/[^0-9\.]//g'`
+lavf_version=`grep '#define LIBAVFORMAT_VERSION ' "$source_path/libavformat/avformat.h" | sed 's/[^0-9\.]//g'`
+lavu_version=`grep '#define LIBAVUTIL_VERSION ' "$source_path/libavutil/avutil.h" | sed 's/[^0-9\.]//g'`
+
+
+
 if test "$lshared" = "yes" ; then
   echo "BUILD_SHARED=yes" >> config.mak
   echo "PIC=-fPIC -DPIC" >> config.mak
-  echo "SPPMAJOR=0" >> config.mak
-  echo "SPPVERSION=0.0.1" >> config.mak 
+  echo "SPPMAJOR=${lavc_version/.*/}" >> config.mak
+  echo "SPPVERSION=$lavc_version" >> config.mak
+  echo "LAVCMAJOR=${lavc_version/.*/}" >> config.mak
+  echo "LAVCVERSION=$lavc_version" >> config.mak
+  echo "LAVFMAJOR=${lavf_version/.*/}" >> config.mak
+  echo "LAVFVERSION=$lavf_version" >> config.mak
+  echo "LAVUMAJOR=${lavu_version/.*/}" >> config.mak
+  echo "LAVUVERSION=$lavu_version" >> config.mak
 fi
 echo "EXTRALIBS=$extralibs" >> config.mak
 version=`grep '#define FFMPEG_VERSION ' "$source_path/libavcodec/avcodec.h" |
@@ -1789,10 +1802,6 @@ rm -f $TMPO $TMPC $TMPE $TMPS $TMPH
 
 
 # build pkg-config files libav*.pc and libpostproc.pc
-lavc_version=`grep '#define LIBAVCODEC_VERSION ' "$source_path/libavcodec/avcodec.h" | sed 's/[^0-9\.]//g'`
-lavf_version=`grep '#define LIBAVFORMAT_VERSION ' "$source_path/libavformat/avformat.h" | sed 's/[^0-9\.]//g'`
-lavu_version=`grep '#define LIBAVUTIL_VERSION ' "$source_path/libavutil/avutil.h" | sed 's/[^0-9\.]//g'`
-
 # libavutil.pc
 cat <<EOF >libavutil.pc
 prefix=$prefix

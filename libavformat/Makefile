@@ -80,6 +80,7 @@ endif
 
 LIB= $(LIBPREF)avformat$(LIBSUF)
 ifeq ($(BUILD_SHARED),yes)
+LIBVERSION=$(LAVFMAJOR)
 SLIBNAME= $(SLIBPREF)avformat$(SLIBSUF)
 AVCLIBS+=-lavcodec$(BUILDSUF) -L../libavcodec -lavutil$(BUILDSUF) -L../libavutil
 ifeq ($(CONFIG_DARWIN),yes)
