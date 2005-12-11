@@ -155,8 +155,12 @@ typedef struct H264Context{
 #define NAL_SEI			6
 #define NAL_SPS			7
 #define NAL_PPS			8
-#define NAL_PICTURE_DELIMITER	9
-#define NAL_FILTER_DATA		10
+#define NAL_AUD                 9
+#define NAL_END_SEQUENCE        10
+#define NAL_END_STREAM          11
+#define NAL_FILLER_DATA         12
+#define NAL_SPS_EXT             13
+#define NAL_AUXILIARY_SLICE     19
     uint8_t *rbsp_buffer;
     int rbsp_buffer_size;
 
@@ -7534,9 +7538,12 @@ static int decode_nal_units(H264Context *h, uint8_t *buf, int buf_size){
             decode_picture_parameter_set(h, bit_length);
 
             break;
-        case NAL_PICTURE_DELIMITER:
-            break;
-        case NAL_FILTER_DATA:
+        case NAL_AUD:
+        case NAL_END_SEQUENCE:
+        case NAL_END_STREAM:
+        case NAL_FILLER_DATA:
+        case NAL_SPS_EXT:
+        case NAL_AUXILIARY_SLICE:
             break;
 	default:
 	    av_log(avctx, AV_LOG_ERROR, "Unknown NAL code: %d\n", h->nal_unit_type);
