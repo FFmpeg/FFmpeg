@@ -985,7 +985,7 @@ static int decode_subpacket(COOKContext *q, uint8_t *inbuffer,
     init_get_bits(&q->gb, q->decoded_bytes_buffer, sub_packet_size*8);
     decode_gain_info(&q->gb, &q->gain_current);
     memcpy(&q->gain_copy, &q->gain_current ,sizeof(COOKgain));  //This copy does not seem to be used. FIXME
-    //fprintf(stdout,"cu bits ds = %d\n",get_bits_count(&q->gb));
+
     if(q->nb_channels==2 && q->joint_stereo==1){
         joint_decode(q, q->decode_buf_ptr[0], q->decode_buf_ptr[2]);
 
@@ -1025,10 +1025,9 @@ static int decode_subpacket(COOKContext *q, uint8_t *inbuffer,
         memcpy(&q->gain_previous, &q->gain_current, sizeof(COOKgain));
 
     } else if (q->nb_channels==2 && q->joint_stereo==0) {
-        for (i=0 ; i<q->nb_channels ; i++){
+            /* channel 0 */
             mono_decode(q, q->decode_buf_ptr[0]);
 
-            av_log(NULL,AV_LOG_ERROR,"Non-joint-stereo files are not supported at the moment, do not report as a bug!\n");
             tmp_ptr = q->decode_buf_ptr[0];
             q->decode_buf_ptr[0] = q->decode_buf_ptr[1];
             q->decode_buf_ptr[1] = q->decode_buf_ptr[2];
@@ -1050,11 +1049,43 @@ static int decode_subpacket(COOKContext *q, uint8_t *inbuffer,
                 value = lrintf(q->mono_mdct_output[j]);
                 if(value < -32768) value = -32768;
                 else if(value > 32767) value = 32767;
-                outbuffer[2*j+i] = value;
+                outbuffer[2*j+1] = value;
             }
+
+            /* channel 1 */
+            //av_log(NULL,AV_LOG_ERROR,"bits = %d\n",get_bits_count(&q->gb));
+            init_get_bits(&q->gb, q->decoded_bytes_buffer, sub_packet_size*8+q->bits_per_subpacket);
+            decode_gain_info(&q->gb, &q->gain_current);
+            //memcpy(&q->gain_copy, &q->gain_current ,sizeof(COOKgain));
+            mono_decode(q, q->decode_buf_ptr[0]);
+            tmp_ptr = q->decode_buf_ptr[0];
+            q->decode_buf_ptr[1] = q->decode_buf_ptr[2];
+            q->decode_buf_ptr[2] = q->decode_buf_ptr[3];
+            q->decode_buf_ptr[3] = tmp_ptr;
+
+            q->gain_now_ptr = &q->gain_now;
+            q->gain_previous_ptr = &q->gain_previous;
+
+            cook_imlt(q, q->decode_buf_ptr[0], q->mono_mdct_output,q->mlt_tmp);
+            gain_compensate(q, q->mono_mdct_output, q->gain_now_ptr, q->gain_previous_ptr, q->previous_buffer_ptr[0]);
+
+            /* Swap out the previous buffer. */
+            tmp_ptr = q->previous_buffer_ptr[0];
+            q->previous_buffer_ptr[0] = q->previous_buffer_ptr[1];
+            q->previous_buffer_ptr[1] = tmp_ptr;
+
+            for (j=0 ; j<q->samples_per_frame ; j++){
+                value = lrintf(q->mono_mdct_output[j]);
+                if(value < -32768) value = -32768;
+                else if(value > 32767) value = 32767;
+                outbuffer[2*j] = value;
+            }
+
+
+            /* Swap out the previous buffer. */
             memcpy(&q->gain_now, &q->gain_previous, sizeof(COOKgain));
             memcpy(&q->gain_previous, &q->gain_current, sizeof(COOKgain));
-        }
+
     } else {
         mono_decode(q, q->decode_buf_ptr[0]);
 
@@ -1082,8 +1113,7 @@ static int decode_subpacket(COOKContext *q, uint8_t *inbuffer,
         memcpy(&q->gain_now, &q->gain_previous, sizeof(COOKgain));
         memcpy(&q->gain_previous, &q->gain_current, sizeof(COOKgain));
     }
-    /* FIXME: Shouldn't the total number of bytes be returned? */
-    return /*q->nb_channels*/ q->samples_per_frame * sizeof(int16_t);
+    return q->samples_per_frame * sizeof(int16_t);
 }
 
 
@@ -1096,12 +1126,6 @@ static int decode_subpacket(COOKContext *q, uint8_t *inbuffer,
 static int cook_decode_frame(AVCodecContext *avctx,
             void *data, int *data_size,
             uint8_t *buf, int buf_size) {
-    /* This stuff is quite messy, the Cook packets are sent unordered
-     * and need to be ordered before they are sent to the rest of the
-     * decoder. The order can be found in the q->frame_reorder_index.
-     * Currently decoding of the last packets is not handled at
-     * all. FIXME */
-
     COOKContext *q = avctx->priv_data;
 
     if (buf_size < avctx->block_align)
@@ -1201,8 +1225,9 @@ static int cook_decode_init(AVCodecContext *avctx)
         case MONO_COOK2:
             if (q->nb_channels != 1) {
                 q->joint_stereo = 0;
-                av_log(NULL,AV_LOG_ERROR,"Non-joint-stereo files are not supported at the moment!\n");
-                return -1;
+                av_log(NULL,AV_LOG_ERROR,"Non-joint-stereo files are decoded with wrong gain at the moment!\n");
+                q->bits_per_subpacket = q->bits_per_subpacket/2;
+
             }
             av_log(NULL,AV_LOG_DEBUG,"MONO_COOK2\n");
             break;
