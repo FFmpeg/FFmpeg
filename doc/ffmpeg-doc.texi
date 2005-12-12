@@ -1015,14 +1015,7 @@ from the tree view, then add the files @file{avformat.lib},
 Dependencies". Note that the names of the libraries have to be separated
 using spaces.
 
-@item Now, select "C/C++ / Preprocessor" from the tree view. Select "Debug"
-in the "Configuration" combo box. Add @code{EMULATE_INTTYPES} to the
-"Preprocessor Definitions". (Note that the various preprocessor
-definitions have to be separated using semicolons.) Select "Release" in
-the "Configuration" combo box and, again, add @code{EMULATE_INTTYPES} to
-the "Preprocessor Definitions". (This has to be done separately because
-debug and release builds have different preprocessor definitions.)
-Finally, select "C/C++ / Code Generation" from the tree view. Select
+@item Now, select "C/C++ / Code Generation" from the tree view. Select
 "Debug" in the "Configuration" combo box. Make sure that "Runtime
 Library" is set to "Multi-threaded Debug DLL". Then, select "Release" in
 the "Configuration" combo box and make sure that "Runtime Library" is
