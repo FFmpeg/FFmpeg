@@ -24,6 +24,7 @@ version <next>
 - Support for decoding FLX and DTA extensions in FLIC files
 - H.264 custom quantization matrices support
 - ffserver fixed, it should now be usable again
+- QDM2 audio decoder
 - cook decoder
 
 version 0.4.9-pre1:
