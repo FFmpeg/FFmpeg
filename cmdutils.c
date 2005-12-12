@@ -45,7 +45,7 @@ void show_help_options(const OptionDef *options, const char *msg, int mask, int 
     }
 }
 
-static OptionDef* find_option(const OptionDef *po, const char *name){
+static const OptionDef* find_option(const OptionDef *po, const char *name){
     while (po->name != NULL) {
         if (!strcmp(name, po->name))
             break;
