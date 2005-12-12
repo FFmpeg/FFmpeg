@@ -28,7 +28,7 @@ static void dct_unquantize_h263_intra_axp(MpegEncContext *s, DCTELEM *block,
     uint64_t qmul, qadd;
     uint64_t correction;
     DCTELEM *orig_block = block;
-    DCTELEM block0;
+    DCTELEM block0;             /* might not be used uninitialized */
 
     qadd = WORD_VEC((qscale - 1) | 1);
     qmul = qscale << 1;
@@ -92,8 +92,6 @@ static void dct_unquantize_h263_inter_axp(MpegEncContext *s, DCTELEM *block,
     int i, n_coeffs;
     uint64_t qmul, qadd;
     uint64_t correction;
-    DCTELEM *orig_block = block;
-    DCTELEM block0;
 
     qadd = WORD_VEC((qscale - 1) | 1);
     qmul = qscale << 1;
