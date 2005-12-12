@@ -208,18 +208,18 @@ static int vorbis_parse_setup_hdr_codebooks(vorbis_context *vc) {
         AV_DEBUG(" %d. Codebook \n", cb);
 
         if (get_bits(gb, 24)!=0x564342) {
-            av_log(vc->avccontext, AV_LOG_ERROR, " %d. Codebook setup data corrupt. \n", cb);
+            av_log(vc->avccontext, AV_LOG_ERROR, " %"PRIdFAST16". Codebook setup data corrupt. \n", cb);
             goto error;
         }
 
         codebook_setup->dimensions=get_bits(gb, 16);
         if (codebook_setup->dimensions>16) {
-            av_log(vc->avccontext, AV_LOG_ERROR, " %d. Codebook's dimension is too large (%d). \n", cb, codebook_setup->dimensions);
+            av_log(vc->avccontext, AV_LOG_ERROR, " %"PRIdFAST16". Codebook's dimension is too large (%d). \n", cb, codebook_setup->dimensions);
             goto error;
         }
         entries=get_bits(gb, 24);
         if (entries>V_MAX_VLCS) {
-            av_log(vc->avccontext, AV_LOG_ERROR, " %d. Codebook has too many entries (%d). \n", cb, entries);
+            av_log(vc->avccontext, AV_LOG_ERROR, " %"PRIdFAST16". Codebook has too many entries (%"PRIdFAST32"). \n", cb, entries);
             goto error;
         }
 

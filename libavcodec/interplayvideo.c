@@ -846,7 +846,7 @@ static void ipvideo_decode_opcodes(IpvideoContext *s)
     }
     if ((s->stream_ptr != s->stream_end) &&
         (s->stream_ptr + 1 != s->stream_end)) {
-        av_log(s->avctx, AV_LOG_ERROR, " Interplay video: decode finished with %d bytes left over\n",
+        av_log(s->avctx, AV_LOG_ERROR, " Interplay video: decode finished with %td bytes left over\n",
             s->stream_end - s->stream_ptr);
     }
 }

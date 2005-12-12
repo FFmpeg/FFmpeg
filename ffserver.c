@@ -329,7 +329,7 @@ static void log_connection(HTTPContext *c)
     if (c->suppress_log) 
         return;
 
-    http_log("%s - - [%s] \"%s %s %s\" %d %lld\n", 
+    http_log("%s - - [%s] \"%s %s %s\" %d %"PRId64"\n", 
              inet_ntoa(c->from_addr.sin_addr), 
              ctime1(buf2), c->method, c->url, 
              c->protocol, (c->http_error ? c->http_error : 200), c->data_count);
@@ -1584,7 +1584,7 @@ static void fmt_bytecount(ByteIOContext *pb, int64_t count)
     for (s = suffix; count >= 100000 && s[1]; count /= 1000, s++) {
     }
 
-    url_fprintf(pb, "%lld%c", count, *s);
+    url_fprintf(pb, "%"PRId64"%c", count, *s);
 }
 
 static void compute_stats(HTTPContext *c)

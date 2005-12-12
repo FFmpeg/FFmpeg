@@ -379,7 +379,7 @@ ebml_read_num (MatroskaDemuxContext *matroska,
         if (!url_feof(pb)) {
             offset_t pos = url_ftell(pb);
             av_log(matroska->ctx, AV_LOG_ERROR,
-                   "Read error at pos. %llu (0x%llx)\n",
+                   "Read error at pos. %"PRIu64" (0x%"PRIx64")\n",
                    pos, pos);
         }
         return AVERROR_IO; /* EOS or actual I/O error */
@@ -393,7 +393,7 @@ ebml_read_num (MatroskaDemuxContext *matroska,
     if (read > max_size) {
         offset_t pos = url_ftell(pb) - 1;
         av_log(matroska->ctx, AV_LOG_ERROR,
-               "Invalid EBML number size tag 0x%02x at pos %llu (0x%llx)\n",
+               "Invalid EBML number size tag 0x%02x at pos %"PRIu64" (0x%"PRIx64")\n",
                (uint8_t) total, pos, pos);
         return AVERROR_INVALIDDATA;
     }
@@ -537,7 +537,7 @@ ebml_read_uint (MatroskaDemuxContext *matroska,
     if (size < 1 || size > 8) {
         offset_t pos = url_ftell(pb);
         av_log(matroska->ctx, AV_LOG_ERROR,
-               "Invalid uint element size %d at position %lld (0x%llx)\n",
+               "Invalid uint element size %d at position %"PRId64" (0x%"PRIx64")\n",
                 size, pos, pos);
         return AVERROR_INVALIDDATA;
     }
@@ -571,7 +571,7 @@ ebml_read_sint (MatroskaDemuxContext *matroska,
     if (size < 1 || size > 8) {
         offset_t pos = url_ftell(pb);
         av_log(matroska->ctx, AV_LOG_ERROR,
-               "Invalid sint element size %d at position %lld (0x%llx)\n",
+               "Invalid sint element size %d at position %"PRId64" (0x%"PRIx64")\n",
                 size, pos, pos);
         return AVERROR_INVALIDDATA;
     }
@@ -620,7 +620,7 @@ ebml_read_float (MatroskaDemuxContext *matroska,
     } else{
         offset_t pos = url_ftell(pb);
         av_log(matroska->ctx, AV_LOG_ERROR,
-               "Invalid float element size %d at position %llu (0x%llx)\n",
+               "Invalid float element size %d at position %"PRIu64" (0x%"PRIx64")\n",
                size, pos, pos);
         return AVERROR_INVALIDDATA;
     }
@@ -656,7 +656,7 @@ ebml_read_ascii (MatroskaDemuxContext *matroska,
     if (get_buffer(pb, (uint8_t *) *str, size) != size) {
         offset_t pos = url_ftell(pb);
         av_log(matroska->ctx, AV_LOG_ERROR,
-               "Read error at pos. %llu (0x%llx)\n", pos, pos);
+               "Read error at pos. %"PRIu64" (0x%"PRIx64")\n", pos, pos);
         return AVERROR_IO;
     }
     (*str)[size] = '\0';
@@ -753,7 +753,7 @@ ebml_read_binary (MatroskaDemuxContext *matroska,
     if (get_buffer(pb, *binary, *size) != *size) {
         offset_t pos = url_ftell(pb);
         av_log(matroska->ctx, AV_LOG_ERROR,
-               "Read error at pos. %llu (0x%llx)\n", pos, pos);
+               "Read error at pos. %"PRIu64" (0x%"PRIx64")\n", pos, pos);
         return AVERROR_IO;
     }
 
@@ -877,7 +877,7 @@ ebml_read_header (MatroskaDemuxContext *matroska,
                     return res;
                 if (num > EBML_VERSION) {
                     av_log(matroska->ctx, AV_LOG_ERROR,
-                           "EBML version %llu (> %d) is not supported\n",
+                           "EBML version %"PRIu64" (> %d) is not supported\n",
                            num, EBML_VERSION);
                     return AVERROR_INVALIDDATA;
                 }
@@ -892,7 +892,7 @@ ebml_read_header (MatroskaDemuxContext *matroska,
                     return res;
                 if (num > sizeof(uint64_t)) {
                     av_log(matroska->ctx, AV_LOG_ERROR,
-                           "Integers of size %llu (> %d) not supported\n",
+                           "Integers of size %"PRIu64" (> %zd) not supported\n",
                            num, sizeof(uint64_t));
                     return AVERROR_INVALIDDATA;
                 }
@@ -907,7 +907,7 @@ ebml_read_header (MatroskaDemuxContext *matroska,
                     return res;
                 if (num > sizeof(uint32_t)) {
                     av_log(matroska->ctx, AV_LOG_ERROR,
-                           "IDs of size %llu (> %u) not supported\n",
+                           "IDs of size %"PRIu64" (> %zu) not supported\n",
 			    num, sizeof(uint32_t));
                     return AVERROR_INVALIDDATA;
                 }
@@ -1870,7 +1870,7 @@ matroska_parse_seekhead (MatroskaDemuxContext *matroska)
 
                 if (!seek_id || seek_pos == (uint64_t) -1) {
                     av_log(matroska->ctx, AV_LOG_INFO,
-                           "Incomplete seekhead entry (0x%x/%llu)\n",
+                           "Incomplete seekhead entry (0x%x/%"PRIu64")\n",
                            seek_id, seek_pos);
                     break;
                 }
@@ -1913,7 +1913,7 @@ matroska_parse_seekhead (MatroskaDemuxContext *matroska)
                         if (id != seek_id) {
                             av_log(matroska->ctx, AV_LOG_INFO,
                                    "We looked for ID=0x%x but got "
-                                   "ID=0x%x (pos=%llu)",
+                                   "ID=0x%x (pos=%"PRIu64")",
                                    seek_id, id, seek_pos +
                                    matroska->segment_start);
                             goto finish;
@@ -2543,7 +2543,7 @@ matroska_parse_cluster (MatroskaDemuxContext *matroska)
     uint64_t cluster_time = 0;
 
     av_log(matroska->ctx, AV_LOG_DEBUG,
-           "parsing cluster at %lld\n", url_ftell(&matroska->ctx->pb));
+           "parsing cluster at %"PRId64"\n", url_ftell(&matroska->ctx->pb));
 
     while (res == 0) {
         if (!(id = ebml_peek_id(matroska, &matroska->level_up))) {

@@ -208,7 +208,7 @@ static int encode_dvd_subtitles(uint8_t *outbuf, int outbuf_size,
     qq = outbuf;
     putbe16(&qq, q - outbuf);
     
-    av_log(NULL, AV_LOG_DEBUG, "subtitle_packet size=%d\n", q - outbuf);
+    av_log(NULL, AV_LOG_DEBUG, "subtitle_packet size=%td\n", q - outbuf);
     return q - outbuf;
 }
 

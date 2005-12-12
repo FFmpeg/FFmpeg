@@ -1274,7 +1274,7 @@ int av_seek_frame_binary(AVFormatContext *s, int stream_index, int64_t target_ts
         return -1;
     
 #ifdef DEBUG_SEEK
-    av_log(s, AV_LOG_DEBUG, "read_seek: %d %lld\n", stream_index, target_ts);
+    av_log(s, AV_LOG_DEBUG, "read_seek: %d %"PRId64"\n", stream_index, target_ts);
 #endif
 
     ts_max=
@@ -1293,7 +1293,7 @@ int av_seek_frame_binary(AVFormatContext *s, int stream_index, int64_t target_ts
             pos_min= e->pos;
             ts_min= e->timestamp;
 #ifdef DEBUG_SEEK
-        av_log(s, AV_LOG_DEBUG, "using cached pos_min=0x%llx dts_min=%lld\n", 
+        av_log(s, AV_LOG_DEBUG, "using cached pos_min=0x%"PRIx64" dts_min=%"PRId64"\n", 
                pos_min,ts_min);
 #endif
         }else{
@@ -1309,7 +1309,7 @@ int av_seek_frame_binary(AVFormatContext *s, int stream_index, int64_t target_ts
             ts_max= e->timestamp;
             pos_limit= pos_max - e->min_distance;
 #ifdef DEBUG_SEEK
-        av_log(s, AV_LOG_DEBUG, "using cached pos_max=0x%llx pos_limit=0x%llx dts_max=%lld\n", 
+        av_log(s, AV_LOG_DEBUG, "using cached pos_max=0x%"PRIx64" pos_limit=0x%"PRIx64" dts_max=%"PRId64"\n", 
                pos_max,pos_limit, ts_max);
 #endif
         }
@@ -1350,7 +1350,7 @@ int av_seek_frame_binary(AVFormatContext *s, int stream_index, int64_t target_ts
     no_change=0;
     while (pos_min < pos_limit) {
 #ifdef DEBUG_SEEK
-        av_log(s, AV_LOG_DEBUG, "pos_min=0x%llx pos_max=0x%llx dts_min=%lld dts_max=%lld\n", 
+        av_log(s, AV_LOG_DEBUG, "pos_min=0x%"PRIx64" pos_max=0x%"PRIx64" dts_min=%"PRId64" dts_max=%"PRId64"\n", 
                pos_min, pos_max,
                ts_min, ts_max);
 #endif
@@ -1380,7 +1380,7 @@ int av_seek_frame_binary(AVFormatContext *s, int stream_index, int64_t target_ts
         else
             no_change=0;
 #ifdef DEBUG_SEEK
-av_log(s, AV_LOG_DEBUG, "%Ld %Ld %Ld / %Ld %Ld %Ld target:%Ld limit:%Ld start:%Ld noc:%d\n", pos_min, pos, pos_max, ts_min, ts, ts_max, target_ts, pos_limit, start_pos, no_change);
+av_log(s, AV_LOG_DEBUG, "%"PRId64" %"PRId64" %"PRId64" / %"PRId64" %"PRId64" %"PRId64" target:%"PRId64" limit:%"PRId64" start:%"PRId64" noc:%d\n", pos_min, pos, pos_max, ts_min, ts, ts_max, target_ts, pos_limit, start_pos, no_change);
 #endif
         assert(ts != AV_NOPTS_VALUE);
         if (target_ts <= ts) {
@@ -1401,7 +1401,7 @@ av_log(s, AV_LOG_DEBUG, "%Ld %Ld %Ld / %Ld %Ld %Ld target:%Ld limit:%Ld start:%L
     ts_min = avif->read_timestamp(s, stream_index, &pos_min, INT64_MAX);
     pos_min++;
     ts_max = avif->read_timestamp(s, stream_index, &pos_min, INT64_MAX);
-    av_log(s, AV_LOG_DEBUG, "pos=0x%llx %lld<=%lld<=%lld\n", 
+    av_log(s, AV_LOG_DEBUG, "pos=0x%"PRIx64" %"PRId64"<=%"PRId64"<=%"PRId64"\n", 
            pos, ts_min, target_ts, ts_max);
 #endif
     /* do the seek */
@@ -2324,7 +2324,7 @@ static int compute_pkt_fields2(AVStream *st, AVPacket *pkt){
     }
     
     if(st->cur_dts && st->cur_dts != AV_NOPTS_VALUE && st->cur_dts >= pkt->dts){
-        av_log(NULL, AV_LOG_ERROR, "error, non monotone timestamps %Ld >= %Ld\n", st->cur_dts, pkt->dts);
+        av_log(NULL, AV_LOG_ERROR, "error, non monotone timestamps %"PRId64" >= %"PRId64"\n", st->cur_dts, pkt->dts);
         return -1;
     }
     if(pkt->dts != AV_NOPTS_VALUE && pkt->pts != AV_NOPTS_VALUE && pkt->pts < pkt->dts){

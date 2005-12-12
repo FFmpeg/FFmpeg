@@ -398,7 +398,7 @@ static inline void fill_rectangle(void *vp, int w, int h, int stride, uint32_t v
     w      *= size;
     stride *= size;
     
-    assert((((int)vp)&(FFMIN(w, STRIDE_ALIGN)-1)) == 0);
+    assert((((long)vp)&(FFMIN(w, STRIDE_ALIGN)-1)) == 0);
     assert((stride&(w-1))==0);
 //FIXME check what gcc generates for 64 bit on x86 and possibly write a 32 bit ver of it
     if(w==2 && h==2){

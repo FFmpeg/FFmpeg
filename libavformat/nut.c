@@ -868,7 +868,7 @@ static int decode_main_header(NUTContext *nut){
 
     tmp = get_v(bc);
     if (tmp != 2){
-	av_log(s, AV_LOG_ERROR, "bad version (%Ld)\n", tmp);
+	av_log(s, AV_LOG_ERROR, "bad version (%"PRId64")\n", tmp);
         return -1;
     }
     
@@ -1034,7 +1034,7 @@ static int decode_info_header(NUTContext *nut){
         if(!id)
             break;
         else if(id >= sizeof(info_table)/sizeof(info_table[0])){
-            av_log(s, AV_LOG_ERROR, "info id is too large %d %d\n", id, sizeof(info_table)/sizeof(info_table[0]));
+            av_log(s, AV_LOG_ERROR, "info id is too large %d %zd\n", id, sizeof(info_table)/sizeof(info_table[0]));
             return -1;
         }
 
@@ -1297,7 +1297,7 @@ static int nut_read_packet(AVFormatContext *s, AVPacket *pkt)
                 break;
         default:
 resync:
-av_log(s, AV_LOG_DEBUG, "syncing from %lld\n", nut->packet_start[2]+1);
+av_log(s, AV_LOG_DEBUG, "syncing from %"PRId64"\n", nut->packet_start[2]+1);
             tmp= find_any_startcode(bc, nut->packet_start[2]+1);
             if(tmp==0)
                 return -1;
@@ -1314,7 +1314,7 @@ static int64_t nut_read_timestamp(AVFormatContext *s, int stream_index, int64_t 
     int64_t pos, pts;
     uint64_t code;
     int frame_code,step, stream_id, i,size, key_frame;
-av_log(s, AV_LOG_DEBUG, "read_timestamp(X,%d,%lld,%lld)\n", stream_index, *pos_arg, pos_limit);
+av_log(s, AV_LOG_DEBUG, "read_timestamp(X,%d,%"PRId64",%"PRId64")\n", stream_index, *pos_arg, pos_limit);
 
     if(*pos_arg < 0)
         return AV_NOPTS_VALUE;
@@ -1381,7 +1381,7 @@ av_log(s, AV_LOG_DEBUG, "read_timestamp(X,%d,%lld,%lld)\n", stream_index, *pos_a
             return pts;
         default:
 resync:
-av_log(s, AV_LOG_DEBUG, "syncing from %lld\n", nut->packet_start[2]+1);
+av_log(s, AV_LOG_DEBUG, "syncing from %"PRId64"\n", nut->packet_start[2]+1);
             if(!find_any_startcode(bc, nut->packet_start[2]+1))
                 return AV_NOPTS_VALUE;
 

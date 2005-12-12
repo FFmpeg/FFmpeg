@@ -2045,7 +2045,7 @@ static int av_encode(AVFormatContext **output_files,
             if(ABS(delta) > 10LL*AV_TIME_BASE && !copy_ts){
                 input_files_ts_offset[ist->file_index]-= delta;
                 if (verbose > 2)
-                    fprintf(stderr, "timestamp discontinuity %lld, new offset= %lld\n", delta, input_files_ts_offset[ist->file_index]);
+                    fprintf(stderr, "timestamp discontinuity %"PRId64", new offset= %"PRId64"\n", delta, input_files_ts_offset[ist->file_index]);
                 for(i=0; i<file_table[file_index].nb_streams; i++){
                     int index= file_table[file_index].ist_index + i;
                     ist_table[index]->next_pts += delta;

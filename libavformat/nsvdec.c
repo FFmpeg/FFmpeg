@@ -236,7 +236,7 @@ static int nsv_resync(AVFormatContext *s)
     uint32_t v = 0;
     int i;
     
-    PRINT(("%s(), offset = %Ld, state = %d\n", __FUNCTION__, url_ftell(pb), nsv->state));
+    PRINT(("%s(), offset = %"PRId64", state = %d\n", __FUNCTION__, url_ftell(pb), nsv->state));
     
     //nsv->state = NSV_UNSYNC;
     
@@ -301,7 +301,7 @@ static int nsv_parse_NSVf_header(AVFormatContext *s, AVFormatParameters *ap)
     PRINT(("NSV NSVf file_size %u\n", file_size));
 
     nsv->duration = duration = get_le32(pb); /* in ms */
-    PRINT(("NSV NSVf duration %Ld ms\n", duration));
+    PRINT(("NSV NSVf duration %"PRId64" ms\n", duration));
     // XXX: store it in AVStreams
 
     strings_size = get_le32(pb);
@@ -312,7 +312,7 @@ static int nsv_parse_NSVf_header(AVFormatContext *s, AVFormatParameters *ap)
     if (url_feof(pb))
         return -1;
     
-    PRINT(("NSV got header; filepos %Ld\n", url_ftell(pb)));
+    PRINT(("NSV got header; filepos %"PRId64"\n", url_ftell(pb)));
 
     if (strings_size > 0) {
         char *strings; /* last byte will be '\0' to play safe with str*() */
@@ -355,17 +355,18 @@ static int nsv_parse_NSVf_header(AVFormatContext *s, AVFormatParameters *ap)
     if (url_feof(pb))
         return -1;
     
-    PRINT(("NSV got infos; filepos %Ld\n", url_ftell(pb)));
+    PRINT(("NSV got infos; filepos %"PRId64"\n", url_ftell(pb)));
 
     if (table_entries_used > 0) {
         nsv->index_entries = table_entries_used;
         if((unsigned)table_entries >= UINT_MAX / sizeof(uint32_t))
             return -1;
         nsv->nsvf_index_data = av_malloc(table_entries * sizeof(uint32_t));
-        get_buffer(pb, nsv->nsvf_index_data, table_entries * sizeof(uint32_t));
+#warning "FIXME: Byteswap buffer as needed"
+        get_buffer(pb, (unsigned char *)nsv->nsvf_index_data, table_entries * sizeof(uint32_t));
     }
 
-    PRINT(("NSV got index; filepos %Ld\n", url_ftell(pb)));
+    PRINT(("NSV got index; filepos %"PRId64"\n", url_ftell(pb)));
     
 #ifdef DEBUG_DUMP_INDEX
 #define V(v) ((v<0x20 || v > 127)?'.':v)

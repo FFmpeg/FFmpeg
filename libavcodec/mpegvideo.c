@@ -2020,7 +2020,7 @@ static int load_input_picture(MpegEncContext *s, AVFrame *pic_arg){
                 int64_t last= s->user_specified_pts;
             
                 if(time <= last){            
-                    av_log(s->avctx, AV_LOG_ERROR, "Error, Invalid timestamp=%Ld, last=%Ld\n", pts, s->user_specified_pts);
+                    av_log(s->avctx, AV_LOG_ERROR, "Error, Invalid timestamp=%"PRId64", last=%"PRId64"\n", pts, s->user_specified_pts);
                     return -1;
                 }
             }
@@ -2029,7 +2029,7 @@ static int load_input_picture(MpegEncContext *s, AVFrame *pic_arg){
             if(s->user_specified_pts != AV_NOPTS_VALUE){
                 s->user_specified_pts= 
                 pts= s->user_specified_pts + 1;
-                av_log(s->avctx, AV_LOG_INFO, "Warning: AVFrame.pts=? trying to guess (%Ld)\n", pts);
+                av_log(s->avctx, AV_LOG_INFO, "Warning: AVFrame.pts=? trying to guess (%"PRId64")\n", pts);
             }else{
                 pts= pic_arg->display_picture_number;
             }

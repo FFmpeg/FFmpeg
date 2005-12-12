@@ -1188,7 +1188,7 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
         char *end= p + 1024*30;
         for(i=0; i<3; i++){
             for(j=0; j<256; j++){
-                snprintf(p, end-p, "%llu ", s->stats[i][j]);
+                snprintf(p, end-p, "%"PRIu64" ", s->stats[i][j]);
                 p+= strlen(p);
                 s->stats[i][j]= 0;
             }
