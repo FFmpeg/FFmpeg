@@ -108,8 +108,28 @@
 #   endif /* other OS */
 #endif /* EMULATE_INTTYPES */
 
+#ifndef PRId64
+#define PRId64 "lld"
+#endif
+
 #ifndef PRIu64
-#define PRIu64 "lld"
+#define PRIu64 "llu"
+#endif
+
+#ifndef PRIx64
+#define PRIx64 "llx"
+#endif
+
+#ifndef PRId32
+#define PRId32 "d"
+#endif
+
+#ifndef PRIdFAST16
+#define PRIdFAST16 PRId32
+#endif
+
+#ifndef PRIdFAST32
+#define PRIdFAST32 PRId32
 #endif
 
 #ifndef INT16_MIN
