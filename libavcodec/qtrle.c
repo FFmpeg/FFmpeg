@@ -411,7 +411,7 @@ static void qtrle_decode_32bpp(QtrleContext *s)
     int rle_code;
     int row_ptr, pixel_ptr;
     int row_inc = s->frame.linesize[0];
-    unsigned char r, g, b;
+    unsigned char a, r, g, b;
     unsigned int argb;
     unsigned char *rgb = s->frame.data[0];
     int pixel_limit = s->frame.linesize[0] * s->avctx->height;
@@ -455,11 +455,11 @@ static void qtrle_decode_32bpp(QtrleContext *s)
                 /* decode the run length code */
                 rle_code = -rle_code;
                 CHECK_STREAM_PTR(4);
-                stream_ptr++;  /* skip the alpha (?) byte */
+                a = s->buf[stream_ptr++];
                 r = s->buf[stream_ptr++];
                 g = s->buf[stream_ptr++];
                 b = s->buf[stream_ptr++];
-                argb = (r << 16) | (g << 8) | (b << 0);
+                argb = (a << 24) | (r << 16) | (g << 8) | (b << 0);
 
                 CHECK_PIXEL_PTR(rle_code * 4);
 
@@ -473,11 +473,11 @@ static void qtrle_decode_32bpp(QtrleContext *s)
 
                 /* copy pixels directly to output */
                 while (rle_code--) {
-                    stream_ptr++;  /* skip the alpha (?) byte */
+                    a = s->buf[stream_ptr++];
                     r = s->buf[stream_ptr++];
                     g = s->buf[stream_ptr++];
                     b = s->buf[stream_ptr++];
-                    argb = (r << 16) | (g << 8) | (b << 0);
+                    argb = (a << 24) | (r << 16) | (g << 8) | (b << 0);
                     *(unsigned int *)(&rgb[pixel_ptr]) = argb;
                     pixel_ptr += 4;
                 }
