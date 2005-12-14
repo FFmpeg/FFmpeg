@@ -325,7 +325,7 @@ static int cinepak_decode (CinepakContext *s)
 
     frame_flags = s->data[0];
     num_strips  = BE_16 (&s->data[8]);
-    encoded_buf_size = BE_16 (&s->data[2]);
+    encoded_buf_size = ((s->data[1] << 16) | BE_16 (&s->data[2]));
     if (encoded_buf_size != s->size)
         sega_film_data = 1;
     if (sega_film_data)
