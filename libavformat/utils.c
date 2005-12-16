@@ -2618,7 +2618,12 @@ void dump_format(AVFormatContext *ic,
         }
         av_log(NULL, AV_LOG_DEBUG, ", %d/%d", st->time_base.num/g, st->time_base.den/g);
         if(st->codec->codec_type == CODEC_TYPE_VIDEO){
-            av_log(NULL, AV_LOG_INFO, ", %5.2f fps", av_q2d(st->r_frame_rate));
+            if(st->r_frame_rate.den && st->r_frame_rate.num)
+                av_log(NULL, AV_LOG_INFO, ", %5.2f fps(r)", av_q2d(st->r_frame_rate));
+/*            else if(st->time_base.den && st->time_base.num)
+                av_log(NULL, AV_LOG_INFO, ", %5.2f fps(m)", 1/av_q2d(st->time_base));*/
+            else
+                av_log(NULL, AV_LOG_INFO, ", %5.2f fps(c)", 1/av_q2d(st->codec->time_base));
         }
         av_log(NULL, AV_LOG_INFO, ": %s\n", buf);
     }
