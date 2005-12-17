@@ -796,9 +796,6 @@ matroska_ebmlnum_uint (uint8_t  *data,
         n++;
     }
 
-    if (!total)
-        return AVERROR_INVALIDDATA;
-
     if (read == num_ffs)
         *num = (uint64_t)-1;
     else
