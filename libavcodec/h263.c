@@ -5744,10 +5744,10 @@ static int decode_user_data(MpegEncContext *s, GetBitContext *gb){
     char buf[256];
     int i;
     int e;
-    int ver, build, ver2, ver3;
+    int ver = 0, build = 0, ver2 = 0, ver3 = 0;
     char last;
 
-    for(i=0; i<255; i++){
+    for(i=0; i<255 && gb->index < gb->size_in_bits; i++){
         if(show_bits(gb, 23) == 0) break;
         buf[i]= get_bits(gb, 8);
     }
@@ -5769,7 +5769,8 @@ static int decode_user_data(MpegEncContext *s, GetBitContext *gb){
         e=sscanf(buf, "FFmpeg v%d.%d.%d / libavcodec build: %d", &ver, &ver2, &ver3, &build); 
     if(e!=4){
         e=sscanf(buf, "Lavc%d.%d.%d", &ver, &ver2, &ver3)+1;
-        build= (ver<<16) + (ver2<<8) + ver3;
+        if (e>1)
+            build= (ver<<16) + (ver2<<8) + ver3;
     }
     if(e!=4){
         if(strcmp(buf, "ffmpeg")==0){
@@ -6013,9 +6014,6 @@ int ff_mpeg4_decode_picture_header(MpegEncContext * s, GetBitContext *gb)
 
     startcode = 0xff;
     for(;;) {
-        v = get_bits(gb, 8);
-        startcode = ((startcode << 8) | v) & 0xffffffff;
-        
         if(get_bits_count(gb) >= gb->size_in_bits){
             if(gb->size_in_bits==8 && (s->divx_version || s->xvid_build)){
                 av_log(s->avctx, AV_LOG_ERROR, "frame skip %d\n", gb->size_in_bits);
@@ -6023,6 +6021,10 @@ int ff_mpeg4_decode_picture_header(MpegEncContext * s, GetBitContext *gb)
             }else
                 return -1; //end of stream
         }
+
+        /* use the bits after the test */
+        v = get_bits(gb, 8);
+        startcode = ((startcode << 8) | v) & 0xffffffff;
 
         if((startcode&0xFFFFFF00) != 0x100)
             continue; //no startcode
