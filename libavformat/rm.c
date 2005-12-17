@@ -557,7 +557,7 @@ static void rm_read_audio_stream_info(AVFormatContext *s, AVStream *st,
             codecdata_length = get_be32(pb);
             st->codec->codec_id = CODEC_ID_COOK;
             st->codec->extradata_size= codecdata_length;
-            st->codec->extradata= av_mallocz(st->codec->extradata_size);
+            st->codec->extradata= av_mallocz(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
             for(i = 0; i < codecdata_length; i++)
                 ((uint8_t*)st->codec->extradata)[i] = get_byte(pb);
             rm->audio_framesize = st->codec->block_align;
@@ -708,7 +708,7 @@ static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 get_be16(pb);
                 
                 st->codec->extradata_size= codec_data_size - (url_ftell(pb) - codec_pos);
-                st->codec->extradata= av_malloc(st->codec->extradata_size);
+                st->codec->extradata= av_mallocz(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
                 get_buffer(pb, st->codec->extradata, st->codec->extradata_size);
                 
 //                av_log(NULL, AV_LOG_DEBUG, "fps= %d fps2= %d\n", fps, fps2);

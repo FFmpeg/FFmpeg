@@ -137,7 +137,7 @@ static int vmd_read_header(AVFormatContext *s,
     st->codec->width = LE_16(&vmd->vmd_header[12]);
     st->codec->height = LE_16(&vmd->vmd_header[14]);
     st->codec->extradata_size = VMD_HEADER_SIZE;
-    st->codec->extradata = av_malloc(VMD_HEADER_SIZE);
+    st->codec->extradata = av_mallocz(VMD_HEADER_SIZE + FF_INPUT_BUFFER_PADDING_SIZE);
     memcpy(st->codec->extradata, vmd->vmd_header, VMD_HEADER_SIZE);
 
     /* if sample rate is 0, assume no audio */

@@ -231,7 +231,7 @@ static int wsvqa_read_header(AVFormatContext *s,
 
     /* the VQA header needs to go to the decoder */
     st->codec->extradata_size = VQA_HEADER_SIZE;
-    st->codec->extradata = av_malloc(VQA_HEADER_SIZE);
+    st->codec->extradata = av_mallocz(VQA_HEADER_SIZE + FF_INPUT_BUFFER_PADDING_SIZE);
     header = (unsigned char *)st->codec->extradata;
     if (get_buffer(pb, st->codec->extradata, VQA_HEADER_SIZE) !=
         VQA_HEADER_SIZE) {
