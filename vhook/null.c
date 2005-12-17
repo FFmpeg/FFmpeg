@@ -1,5 +1,5 @@
 /*
- * Null Video Hook 
+ * Null Video Hook
  * Copyright (c) 2002 Philip Gladstone
  *
  * This library is free software; you can redistribute it and/or
@@ -57,7 +57,7 @@ void Process(void *ctx, AVPicture *picture, enum PixelFormat pix_fmt, int width,
         buf = av_malloc(size);
 
         avpicture_fill(&picture1, buf, PIX_FMT_RGB24, width, height);
-        if (img_convert(&picture1, PIX_FMT_RGB24, 
+        if (img_convert(&picture1, PIX_FMT_RGB24,
                         picture, pix_fmt, width, height) < 0) {
             av_free(buf);
             return;
@@ -68,7 +68,7 @@ void Process(void *ctx, AVPicture *picture, enum PixelFormat pix_fmt, int width,
     /* Insert filter code here */
 
     if (pix_fmt != PIX_FMT_RGB24) {
-        if (img_convert(picture, pix_fmt, 
+        if (img_convert(picture, pix_fmt,
                         &picture1, PIX_FMT_RGB24, width, height) < 0) {
         }
     }

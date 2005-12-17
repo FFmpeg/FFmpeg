@@ -15,7 +15,7 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
- 
+
 #include "../dsputil.h"
 
 #include "gcc_fixes.h"
@@ -228,7 +228,7 @@ H264_MC(put_, 16, altivec)
      H264_MC(avg_, 16, altivec)
 
 void dsputil_h264_init_ppc(DSPContext* c, AVCodecContext *avctx) {
-    
+
 #ifdef HAVE_ALTIVEC
   if (has_altivec()) {
     c->put_h264_chroma_pixels_tab[0] = put_h264_chroma_mc8_altivec;
@@ -251,16 +251,16 @@ void dsputil_h264_init_ppc(DSPContext* c, AVCodecContext *avctx) {
     c->PFX ## _pixels_tab[IDX][13] = PFX ## NUM ## _mc13_altivec; \
     c->PFX ## _pixels_tab[IDX][14] = PFX ## NUM ## _mc23_altivec; \
     c->PFX ## _pixels_tab[IDX][15] = PFX ## NUM ## _mc33_altivec
-    
+
     dspfunc(put_h264_qpel, 0, 16);
     dspfunc(avg_h264_qpel, 0, 16);
 #undef dspfunc
-    
+
   } else
 #endif /* HAVE_ALTIVEC */
   {
     // Non-AltiVec PPC optimisations
-    
+
     // ... pending ...
   }
 }

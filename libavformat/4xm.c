@@ -163,7 +163,7 @@ static int fourxm_read_header(AVFormatContext *s,
                 fourxm->track_count = current_track + 1;
                 if((unsigned)fourxm->track_count >= UINT_MAX / sizeof(AudioTrack))
                     return -1;
-                fourxm->tracks = av_realloc(fourxm->tracks, 
+                fourxm->tracks = av_realloc(fourxm->tracks,
                     fourxm->track_count * sizeof(AudioTrack));
                 if (!fourxm->tracks) {
                     av_free(header);
@@ -277,7 +277,7 @@ static int fourxm_read_packet(AVFormatContext *s,
                 ret= av_get_packet(&s->pb, pkt, size);
                 if(ret<0)
                     return AVERROR_IO;
-                pkt->stream_index = 
+                pkt->stream_index =
                     fourxm->tracks[fourxm->selected_track].stream_index;
                 pkt->pts = fourxm->audio_pts;
                 packet_read = 1;
@@ -285,13 +285,13 @@ static int fourxm_read_packet(AVFormatContext *s,
                 /* pts accounting */
                 audio_frame_count = size;
                 if (fourxm->tracks[fourxm->selected_track].adpcm)
-                    audio_frame_count -= 
+                    audio_frame_count -=
                         2 * (fourxm->tracks[fourxm->selected_track].channels);
                 audio_frame_count /=
                       fourxm->tracks[fourxm->selected_track].channels;
                 if (fourxm->tracks[fourxm->selected_track].adpcm)
                     audio_frame_count *= 2;
-                else 
+                else
                     audio_frame_count /=
                     (fourxm->tracks[fourxm->selected_track].bits / 8);
                 fourxm->audio_pts += audio_frame_count;

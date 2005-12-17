@@ -67,7 +67,7 @@ static int32 ff_thread_func(void *v){
 //printf("thread_func %X signal complete\n", (int)v); fflush(stdout);
         release_sem(c->done_sem);
     }
-    
+
     return B_OK;
 }
 
@@ -81,7 +81,7 @@ void avcodec_thread_free(AVCodecContext *s){
     int32 ret;
 
     for(i=0; i<s->thread_count; i++){
-        
+
         c[i].func= NULL;
         release_sem(c[i].work_sem);
         wait_for_thread(c[i].thread, &ret);
@@ -95,10 +95,10 @@ void avcodec_thread_free(AVCodecContext *s){
 int avcodec_thread_execute(AVCodecContext *s, int (*func)(AVCodecContext *c2, void *arg2),void **arg, int *ret, int count){
     ThreadContext *c= s->thread_opaque;
     int i;
-    
+
     assert(s == c->avctx);
     assert(count <= s->thread_count);
-    
+
     /* note, we can be certain that this is not called with the same AVCodecContext by different threads at the same time */
 
     for(i=0; i<count; i++){
@@ -110,7 +110,7 @@ int avcodec_thread_execute(AVCodecContext *s, int (*func)(AVCodecContext *c2, vo
     }
     for(i=0; i<count; i++){
         acquire_sem(c[i].done_sem);
-        
+
         c[i].func= NULL;
         if(ret) ret[i]= c[i].ret;
     }
@@ -126,7 +126,7 @@ int avcodec_thread_init(AVCodecContext *s, int thread_count){
     assert(!s->thread_opaque);
     c= av_mallocz(sizeof(ThreadContext)*thread_count);
     s->thread_opaque= c;
-    
+
     for(i=0; i<thread_count; i++){
 //printf("init semaphors %d\n", i); fflush(stdout);
         c[i].avctx= s;
@@ -142,7 +142,7 @@ int avcodec_thread_init(AVCodecContext *s, int thread_count){
         resume_thread(c[i].thread );
     }
 //printf("init done\n"); fflush(stdout);
-    
+
     s->execute= avcodec_thread_execute;
 
     return 0;

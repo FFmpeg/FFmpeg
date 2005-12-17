@@ -125,7 +125,7 @@ static void load_matrix_(float xf[],const float table[])
 
 
 #if 1
-//optimized 
+//optimized
 
 void idct_sh4(DCTELEM *block)
 {

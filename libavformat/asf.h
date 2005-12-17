@@ -31,7 +31,7 @@ typedef struct {
     int ds_chunk_size;
     int ds_data_size;
     int ds_silence_data;
-    
+
     int packet_pos;
 
 } ASFStream;

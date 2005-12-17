@@ -191,7 +191,7 @@ static int ea_read_header(AVFormatContext *s,
     st->codec->codec_type = CODEC_TYPE_VIDEO;
     st->codec->codec_id = CODEC_ID_EA_MJPEG;
     st->codec->codec_tag = 0;  /* no fourcc */
-#endif    
+#endif
 
     /* initialize the audio decoder stream */
     st = av_new_stream(s, 0);
@@ -243,7 +243,7 @@ static int ea_read_packet(AVFormatContext *s,
                     pkt->pts *= ea->audio_frame_counter;
                     pkt->pts /= EA_SAMPLE_RATE;
 
-                    /* 2 samples/byte, 1 or 2 samples per frame depending 
+                    /* 2 samples/byte, 1 or 2 samples per frame depending
                      * on stereo; chunk also has 12-byte header */
                     ea->audio_frame_counter += ((chunk_size - 12) * 2) /
                         ea->num_channels;

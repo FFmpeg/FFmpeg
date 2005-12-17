@@ -19,7 +19,7 @@ various FFmpeg APIs.
 @chapter Invocation
 
 @section Syntax
-@example 
+@example
 @c man begin SYNOPSIS
 ffplay [options] @file{input_file}
 @c man end

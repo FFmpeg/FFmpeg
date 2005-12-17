@@ -61,7 +61,7 @@ static int corrector_type_0[24] = {
 
 static int corrector_type_2[8] = { 9, 7, 6, 8, 5, 4, 3, 2 };
 
-static void build_modpred(Indeo3DecodeContext *s) 
+static void build_modpred(Indeo3DecodeContext *s)
 {
   int i, j;
 
@@ -90,8 +90,8 @@ static void build_modpred(Indeo3DecodeContext *s)
   }
 }
 
-static void iv_Decode_Chunk(Indeo3DecodeContext *s, unsigned char *cur, 
-  unsigned char *ref, int width, int height, unsigned char *buf1, 
+static void iv_Decode_Chunk(Indeo3DecodeContext *s, unsigned char *cur,
+  unsigned char *ref, int width, int height, unsigned char *buf1,
   long fflags2, unsigned char *hdr,
   unsigned char *buf2, int min_width_160);
 
@@ -100,7 +100,7 @@ static void iv_Decode_Chunk(Indeo3DecodeContext *s, unsigned char *cur,
 #endif
 
 /* ---------------------------------------------------------------------- */
-static void iv_alloc_frames(Indeo3DecodeContext *s) 
+static void iv_alloc_frames(Indeo3DecodeContext *s)
 {
   int luma_width, luma_height, luma_pixels, chroma_width, chroma_height,
       chroma_pixels, i;
@@ -109,9 +109,9 @@ static void iv_alloc_frames(Indeo3DecodeContext *s)
   luma_width   = (s->width  + 3) & (~3);
   luma_height  = (s->height + 3) & (~3);
 
-  s->iv_frame[0].y_w = s->iv_frame[0].y_h = 
+  s->iv_frame[0].y_w = s->iv_frame[0].y_h =
     s->iv_frame[0].the_buf_size = 0;
-  s->iv_frame[1].y_w = s->iv_frame[1].y_h = 
+  s->iv_frame[1].y_w = s->iv_frame[1].y_h =
     s->iv_frame[1].the_buf_size = 0;
   s->iv_frame[1].the_buf = NULL;
 
@@ -120,11 +120,11 @@ static void iv_alloc_frames(Indeo3DecodeContext *s)
   luma_pixels = luma_width * luma_height;
   chroma_pixels = chroma_width * chroma_height;
 
-  bufsize = luma_pixels * 2 + luma_width * 3 + 
+  bufsize = luma_pixels * 2 + luma_width * 3 +
     (chroma_pixels + chroma_width) * 4;
 
-  if((s->iv_frame[0].the_buf = 
-    (s->iv_frame[0].the_buf_size == 0 ? av_malloc(bufsize) : 
+  if((s->iv_frame[0].the_buf =
+    (s->iv_frame[0].the_buf_size == 0 ? av_malloc(bufsize) :
       av_realloc(s->iv_frame[0].the_buf, bufsize))) == NULL)
     return;
   s->iv_frame[0].y_w = s->iv_frame[1].y_w = luma_width;
@@ -146,7 +146,7 @@ static void iv_alloc_frames(Indeo3DecodeContext *s)
   s->iv_frame[1].Vbuf = s->iv_frame[0].the_buf + i;
 
   for(i = 1; i <= luma_width; i++)
-    s->iv_frame[0].Ybuf[-i] = s->iv_frame[1].Ybuf[-i] = 
+    s->iv_frame[0].Ybuf[-i] = s->iv_frame[1].Ybuf[-i] =
       s->iv_frame[0].Ubuf[-i] = 0x80;
 
   for(i = 1; i <= chroma_width; i++) {
@@ -158,14 +158,14 @@ static void iv_alloc_frames(Indeo3DecodeContext *s)
 }
 
 /* ---------------------------------------------------------------------- */
-static void iv_free_func(Indeo3DecodeContext *s) 
+static void iv_free_func(Indeo3DecodeContext *s)
 {
   int i;
 
   for(i = 0 ; i < 2 ; i++) {
-    if(s->iv_frame[i].the_buf != NULL) 
+    if(s->iv_frame[i].the_buf != NULL)
       av_free(s->iv_frame[i].the_buf);
-    s->iv_frame[i].Ybuf = s->iv_frame[i].Ubuf = 
+    s->iv_frame[i].Ybuf = s->iv_frame[i].Ubuf =
       s->iv_frame[i].Vbuf = NULL;
     s->iv_frame[i].the_buf = NULL;
     s->iv_frame[i].the_buf_size = 0;
@@ -178,8 +178,8 @@ static void iv_free_func(Indeo3DecodeContext *s)
 }
 
 /* ---------------------------------------------------------------------- */
-static unsigned long iv_decode_frame(Indeo3DecodeContext *s, 
-                                     unsigned char *buf, int buf_size) 
+static unsigned long iv_decode_frame(Indeo3DecodeContext *s,
+                                     unsigned char *buf, int buf_size)
 {
   unsigned int hdr_width, hdr_height,
     chroma_width, chroma_height;
@@ -198,10 +198,10 @@ static unsigned long iv_decode_frame(Indeo3DecodeContext *s,
   hdr_height = le2me_16(*(uint16_t *)buf_pos);
   buf_pos += 2;
   hdr_width = le2me_16(*(uint16_t *)buf_pos);
-  
+
   if(avcodec_check_dimensions(NULL, hdr_width, hdr_height))
       return -1;
-  
+
   buf_pos += 2;
   chroma_height = ((hdr_height >> 2) + 3) & 0x7ffc;
   chroma_width = ((hdr_width >> 2) + 3) & 0x7ffc;
@@ -226,8 +226,8 @@ static unsigned long iv_decode_frame(Indeo3DecodeContext *s,
   offs = le2me_32(*(uint32_t *)buf_pos);
   buf_pos += 4;
 
-  iv_Decode_Chunk(s, s->cur_frame->Ybuf, s->ref_frame->Ybuf, hdr_width, 
-    hdr_height, buf_pos + offs * 2, fflags2, hdr_pos, buf_pos, 
+  iv_Decode_Chunk(s, s->cur_frame->Ybuf, s->ref_frame->Ybuf, hdr_width,
+    hdr_height, buf_pos + offs * 2, fflags2, hdr_pos, buf_pos,
     min(hdr_width, 160));
 
   if (!(s->avctx->flags & CODEC_FLAG_GRAY))
@@ -237,16 +237,16 @@ static unsigned long iv_decode_frame(Indeo3DecodeContext *s,
   offs = le2me_32(*(uint32_t *)buf_pos);
   buf_pos += 4;
 
-  iv_Decode_Chunk(s, s->cur_frame->Vbuf, s->ref_frame->Vbuf, chroma_width, 
-    chroma_height, buf_pos + offs * 2, fflags2, hdr_pos, buf_pos, 
+  iv_Decode_Chunk(s, s->cur_frame->Vbuf, s->ref_frame->Vbuf, chroma_width,
+    chroma_height, buf_pos + offs * 2, fflags2, hdr_pos, buf_pos,
     min(chroma_width, 40));
 
   buf_pos = buf + 16 + offs3;
   offs = le2me_32(*(uint32_t *)buf_pos);
   buf_pos += 4;
 
-  iv_Decode_Chunk(s, s->cur_frame->Ubuf, s->ref_frame->Ubuf, chroma_width, 
-    chroma_height, buf_pos + offs * 2, fflags2, hdr_pos, buf_pos, 
+  iv_Decode_Chunk(s, s->cur_frame->Ubuf, s->ref_frame->Ubuf, chroma_width,
+    chroma_height, buf_pos + offs * 2, fflags2, hdr_pos, buf_pos,
     min(chroma_width, 40));
 
   }
@@ -309,7 +309,7 @@ typedef struct {
   lp2 = 4;
 
 static void iv_Decode_Chunk(Indeo3DecodeContext *s,
-  unsigned char *cur, unsigned char *ref, int width, int height, 
+  unsigned char *cur, unsigned char *ref, int width, int height,
   unsigned char *buf1, long fflags2, unsigned char *hdr,
   unsigned char *buf2, int min_width_160)
 {
@@ -331,7 +331,7 @@ static void iv_Decode_Chunk(Indeo3DecodeContext *s,
 
   width_tbl = width_tbl_arr + 1;
   i = (width < 0 ? width + 3 : width)/4;
-  for(j = -1; j < 8; j++) 
+  for(j = -1; j < 8; j++)
     width_tbl[j] = i * j;
 
   strip = strip_tbl;
@@ -389,7 +389,7 @@ static void iv_Decode_Chunk(Indeo3DecodeContext *s,
 
     cur_frm_pos = cur + width * strip->ypos + strip->xpos;
 
-    if((blks_width = strip->width) < 0) 
+    if((blks_width = strip->width) < 0)
       blks_width += 3;
     blks_width >>= 2;
     blks_height = strip->height;
@@ -397,7 +397,7 @@ static void iv_Decode_Chunk(Indeo3DecodeContext *s,
     if(ref_vectors != NULL) {
       ref_frm_pos = ref + (ref_vectors[0] + strip->ypos) * width +
         ref_vectors[1] + strip->xpos;
-    } else 
+    } else
       ref_frm_pos = cur_frm_pos - width_tbl[4];
 
     if(cmd == 2) {
@@ -416,7 +416,7 @@ static void iv_Decode_Chunk(Indeo3DecodeContext *s,
           cur_frm_pos += 4;
           ref_frm_pos += 4;
         }
-      } else if(cmd != 1) 
+      } else if(cmd != 1)
         return;
     } else {
       k = *buf1 >> 4;
@@ -427,9 +427,9 @@ static void iv_Decode_Chunk(Indeo3DecodeContext *s,
       if((lv - 8) <= 7 && (k == 0 || k == 3 || k == 10)) {
         cp2 = s->ModPred + ((lv - 8) << 7);
         cp = ref_frm_pos;
-        for(i = 0; i < blks_width << 2; i++) { 
+        for(i = 0; i < blks_width << 2; i++) {
             int v = *cp >> 1;
-            *(cp++) = cp2[v]; 
+            *(cp++) = cp2[v];
         }
       }
 
@@ -508,7 +508,7 @@ static void iv_Decode_Chunk(Indeo3DecodeContext *s,
                     break;
 
                   case 7:
-                    if(rle_v3 != 0) 
+                    if(rle_v3 != 0)
                       rle_v3 = 0;
                     else {
                       buf1--;
@@ -532,7 +532,7 @@ static void iv_Decode_Chunk(Indeo3DecodeContext *s,
 
                     LV1_CHECK(buf1,rle_v3,lv1,lp2)
                     break;
-                  default: 
+                  default:
                     return;
                 }
               }
@@ -548,7 +548,7 @@ static void iv_Decode_Chunk(Indeo3DecodeContext *s,
 
         case 4:
         case 3:                    /********** CASE 3 **********/
-          if(ref_vectors != NULL) 
+          if(ref_vectors != NULL)
             return;
           flag1 = 1;
 
@@ -605,7 +605,7 @@ static void iv_Decode_Chunk(Indeo3DecodeContext *s,
                     break;
 
                   case 7:
-                    if(rle_v3 != 0) 
+                    if(rle_v3 != 0)
                       rle_v3 = 0;
                     else {
                       buf1--;
@@ -650,7 +650,7 @@ static void iv_Decode_Chunk(Indeo3DecodeContext *s,
                     LV1_CHECK(buf1,rle_v3,lv1,lp2)
                     break;
 
-                  default: 
+                  default:
                     return;
                 }
               }
@@ -804,7 +804,7 @@ static void iv_Decode_Chunk(Indeo3DecodeContext *s,
 
                     case 7:
                       if(lp2 == 0) {
-                        if(rle_v3 != 0) 
+                        if(rle_v3 != 0)
                           rle_v3 = 0;
                         else {
                           buf1--;
@@ -825,7 +825,7 @@ static void iv_Decode_Chunk(Indeo3DecodeContext *s,
                       LV1_CHECK(buf1,rle_v3,lv1,lp2)
                       break;
 
-                    default: 
+                    default:
                       return;
                   }
                 }
@@ -921,7 +921,7 @@ static void iv_Decode_Chunk(Indeo3DecodeContext *s,
                       LV1_CHECK(buf1,rle_v3,lv1,lp2)
                       break;
 
-                    default: 
+                    default:
                       return;
                   }
                 }
@@ -937,7 +937,7 @@ static void iv_Decode_Chunk(Indeo3DecodeContext *s,
           break;
 
         case 11:                    /********** CASE 11 **********/
-          if(ref_vectors == NULL) 
+          if(ref_vectors == NULL)
             return;
 
           for( ; blks_height > 0; blks_height -= 8) {
@@ -1018,7 +1018,7 @@ static void iv_Decode_Chunk(Indeo3DecodeContext *s,
                   LV1_CHECK(buf1,rle_v3,lv1,lp2)
                   break;
 
-                  default: 
+                  default:
                     return;
                 }
               }
@@ -1032,12 +1032,12 @@ static void iv_Decode_Chunk(Indeo3DecodeContext *s,
           }
           break;
 
-        default: 
+        default:
           return;
       }
     }
 
-    if(strip < strip_tbl) 
+    if(strip < strip_tbl)
       return;
 
     for( ; strip >= strip_tbl; strip--) {

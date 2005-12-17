@@ -1,5 +1,5 @@
 /*
- * High quality image resampling with polyphase filters 
+ * High quality image resampling with polyphase filters
  * Copyright (c) 2001 Fabrice Bellard.
  *
  * This library is free software; you can redistribute it and/or
@@ -16,12 +16,12 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
- 
+
 /**
  * @file imgresample.c
  * High quality image resampling with polyphase filters .
  */
- 
+
 #include "avcodec.h"
 #include "dsputil.h"
 
@@ -174,7 +174,7 @@ static void h_resample_fast4_mmx(uint8_t *dst, int dst_width,
     const uint8_t *s;
     int16_t *filter;
     mmx_t tmp;
-    
+
     src_pos = src_start;
     pxor_r2r(mm7, mm7);
 
@@ -218,7 +218,7 @@ static void v_resample4_mmx(uint8_t *dst, int dst_width, const uint8_t *src,
     const uint8_t *s;
     mmx_t tmp;
     mmx_t coefs[4];
-    
+
     for(i=0;i<4;i++) {
         v = filter[i];
         coefs[i].uw[0] = v;
@@ -226,7 +226,7 @@ static void v_resample4_mmx(uint8_t *dst, int dst_width, const uint8_t *src,
         coefs[i].uw[2] = v;
         coefs[i].uw[3] = v;
     }
-    
+
     pxor_r2r(mm7, mm7);
     s = src;
     while (dst_width >= 4) {
@@ -248,7 +248,7 @@ static void v_resample4_mmx(uint8_t *dst, int dst_width, const uint8_t *src,
         paddw_r2r(mm3, mm2);
         paddw_r2r(mm2, mm0);
         psraw_i2r(FILTER_BITS, mm0);
-        
+
         packuswb_r2r(mm7, mm0);
         movq_r2m(mm0, tmp);
 
@@ -294,7 +294,7 @@ void v_resample16_altivec(uint8_t *dst, int dst_width, const uint8_t *src,
     const uint8_t *s;
     vector unsigned char *tv, tmp, dstv, zero;
     vec_ss_t srchv[4], srclv[4], fv[4];
-    vector signed short zeros, sumhv, sumlv;    
+    vector signed short zeros, sumhv, sumlv;
     s = src;
 
     for(i=0;i<4;i++)
@@ -308,7 +308,7 @@ void v_resample16_altivec(uint8_t *dst, int dst_width, const uint8_t *src,
         fv[i].s[0] = filter[i] << (15-FILTER_BITS);
         fv[i].v = vec_splat(fv[i].v, 0);
     }
-    
+
     zero = vec_splat_u8(0);
     zeros = vec_splat_s16(0);
 
@@ -334,7 +334,7 @@ void v_resample16_altivec(uint8_t *dst, int dst_width, const uint8_t *src,
         dst_width--;
         i--;
     }
-    
+
     /* Do our altivec resampling on 16 pixels at once. */
     while(dst_width>=16) {
         /*
@@ -371,14 +371,14 @@ void v_resample16_altivec(uint8_t *dst, int dst_width, const uint8_t *src,
         srclv[3].v = (vector signed short) vec_mergel(zero, tmp);
         sumhv = vec_madds(srchv[3].v, fv[3].v, sumhv);
         sumlv = vec_madds(srclv[3].v, fv[3].v, sumlv);
-    
+
         /*
            Pack the results into our destination vector,
            and do an aligned write of that back to memory.
         */
         dstv = vec_packsu(sumhv, sumlv) ;
         vec_st(dstv, 0, (vector unsigned char *) dst);
-        
+
         dst+=16;
         s+=16;
         dst_width-=16;
@@ -455,29 +455,29 @@ static void h_resample(uint8_t *dst, int dst_width, const uint8_t *src,
     }
     src_end = src_start + dst_width * src_incr;
     if (src_end > ((src_width - NB_TAPS) << POS_FRAC_BITS)) {
-        n = (((src_width - NB_TAPS + 1) << POS_FRAC_BITS) - 1 - src_start) / 
+        n = (((src_width - NB_TAPS + 1) << POS_FRAC_BITS) - 1 - src_start) /
             src_incr;
     } else {
         n = dst_width;
     }
 #ifdef HAVE_MMX
     if ((mm_flags & MM_MMX) && NB_TAPS == 4)
-        h_resample_fast4_mmx(dst, n, 
+        h_resample_fast4_mmx(dst, n,
                              src, src_width, src_start, src_incr, filters);
     else
 #endif
-        h_resample_fast(dst, n, 
+        h_resample_fast(dst, n,
                         src, src_width, src_start, src_incr, filters);
     if (n < dst_width) {
         dst += n;
         dst_width -= n;
         src_start += n * src_incr;
-        h_resample_slow(dst, dst_width, 
+        h_resample_slow(dst, dst_width,
                         src, src_width, src_start, src_incr, filters);
     }
 }
 
-static void component_resample(ImgReSampleContext *s, 
+static void component_resample(ImgReSampleContext *s,
                                uint8_t *output, int owrap, int owidth, int oheight,
                                uint8_t *input, int iwrap, int iwidth, int iheight)
 {
@@ -486,7 +486,7 @@ static void component_resample(ImgReSampleContext *s,
 
     last_src_y = - FCENTER - 1;
     /* position of the bottom of the filter in the source image */
-    src_y = (last_src_y + NB_TAPS) * POS_FRAC; 
+    src_y = (last_src_y + NB_TAPS) * POS_FRAC;
     ring_y = NB_TAPS; /* position in ring buffer */
     for(y=0;y<oheight;y++) {
         /* apply horizontal filter on new lines from input if needed */
@@ -506,8 +506,8 @@ static void component_resample(ImgReSampleContext *s,
             src_line = input + y1 * iwrap;
             new_line = s->line_buf + ring_y * owidth;
             /* apply filter and handle limit cases correctly */
-            h_resample(new_line, owidth, 
-                       src_line, iwidth, - FCENTER * POS_FRAC, s->h_incr, 
+            h_resample(new_line, owidth,
+                       src_line, iwidth, - FCENTER * POS_FRAC, s->h_incr,
                        &s->h_filters[0][0]);
             /* handle ring buffer wraping */
             if (ring_y >= LINE_BUF_HEIGHT) {
@@ -520,8 +520,8 @@ static void component_resample(ImgReSampleContext *s,
 #ifdef HAVE_MMX
         /* desactivated MMX because loss of precision */
         if ((mm_flags & MM_MMX) && NB_TAPS == 4 && 0)
-            v_resample4_mmx(output, owidth, 
-                            s->line_buf + (ring_y - NB_TAPS + 1) * owidth, owidth, 
+            v_resample4_mmx(output, owidth,
+                            s->line_buf + (ring_y - NB_TAPS + 1) * owidth, owidth,
                             &s->v_filters[phase_y][0]);
         else
 #endif
@@ -532,12 +532,12 @@ static void component_resample(ImgReSampleContext *s,
                                 &s->v_filters[phase_y][0]);
         else
 #endif
-            v_resample(output, owidth, 
-                       s->line_buf + (ring_y - NB_TAPS + 1) * owidth, owidth, 
+            v_resample(output, owidth,
+                       s->line_buf + (ring_y - NB_TAPS + 1) * owidth, owidth,
                        &s->v_filters[phase_y][0]);
-            
+
         src_y += s->v_incr;
-        
+
         output += owrap;
     }
 }
@@ -545,7 +545,7 @@ static void component_resample(ImgReSampleContext *s,
 ImgReSampleContext *img_resample_init(int owidth, int oheight,
                                       int iwidth, int iheight)
 {
-    return img_resample_full_init(owidth, oheight, iwidth, iheight, 
+    return img_resample_full_init(owidth, oheight, iwidth, iheight,
             0, 0, 0, 0, 0, 0, 0, 0);
 }
 
@@ -567,19 +567,19 @@ ImgReSampleContext *img_resample_full_init(int owidth, int oheight,
     if((unsigned)owidth >= UINT_MAX / (LINE_BUF_HEIGHT + NB_TAPS))
         return NULL;
     s->line_buf = av_mallocz(owidth * (LINE_BUF_HEIGHT + NB_TAPS));
-    if (!s->line_buf) 
+    if (!s->line_buf)
         goto fail;
-    
+
     s->owidth = owidth;
     s->oheight = oheight;
     s->iwidth = iwidth;
     s->iheight = iheight;
-  
+
     s->topBand = topBand;
     s->bottomBand = bottomBand;
     s->leftBand = leftBand;
     s->rightBand = rightBand;
-    
+
     s->padtop = padtop;
     s->padbottom = padbottom;
     s->padleft = padleft;
@@ -589,11 +589,11 @@ ImgReSampleContext *img_resample_full_init(int owidth, int oheight,
     s->pad_oheight = oheight - (padtop + padbottom);
 
     s->h_incr = ((iwidth - leftBand - rightBand) * POS_FRAC) / s->pad_owidth;
-    s->v_incr = ((iheight - topBand - bottomBand) * POS_FRAC) / s->pad_oheight; 
+    s->v_incr = ((iheight - topBand - bottomBand) * POS_FRAC) / s->pad_oheight;
 
-    av_build_filter(&s->h_filters[0][0], (float) s->pad_owidth  / 
+    av_build_filter(&s->h_filters[0][0], (float) s->pad_owidth  /
             (float) (iwidth - leftBand - rightBand), NB_TAPS, NB_PHASES, 1<<FILTER_BITS, 0);
-    av_build_filter(&s->v_filters[0][0], (float) s->pad_oheight / 
+    av_build_filter(&s->v_filters[0][0], (float) s->pad_oheight /
             (float) (iheight - topBand - bottomBand), NB_TAPS, NB_PHASES, 1<<FILTER_BITS, 0);
 
     return s;
@@ -602,7 +602,7 @@ fail:
     return NULL;
 }
 
-void img_resample(ImgReSampleContext *s, 
+void img_resample(ImgReSampleContext *s,
                   AVPicture *output, const AVPicture *input)
 {
     int i, shift;
@@ -611,14 +611,14 @@ void img_resample(ImgReSampleContext *s,
     for (i=0;i<3;i++) {
         shift = (i == 0) ? 0 : 1;
 
-        optr = output->data[i] + (((output->linesize[i] * 
+        optr = output->data[i] + (((output->linesize[i] *
                         s->padtop) + s->padleft) >> shift);
 
-        component_resample(s, optr, output->linesize[i], 
+        component_resample(s, optr, output->linesize[i],
                 s->pad_owidth >> shift, s->pad_oheight >> shift,
-                input->data[i] + (input->linesize[i] * 
+                input->data[i] + (input->linesize[i] *
                     (s->topBand >> shift)) + (s->leftBand >> shift),
-                input->linesize[i], ((s->iwidth - s->leftBand - 
+                input->linesize[i], ((s->iwidth - s->leftBand -
                         s->rightBand) >> shift),
                            (s->iheight - s->topBand - s->bottomBand) >> shift);
     }
@@ -690,20 +690,20 @@ int main(int argc, char **argv)
                     else
                         v = 0x00;
                 } else if (x < XSIZE/4) {
-                    if (x & 1) 
+                    if (x & 1)
                         v = 0xff;
-                    else 
+                    else
                         v = 0;
                 } else if (y < XSIZE/4) {
-                    if (y & 1) 
+                    if (y & 1)
                         v = 0xff;
-                    else 
+                    else
                         v = 0;
                 } else {
                     if (y < YSIZE*3/8) {
-                        if ((y+x) & 1) 
+                        if ((y+x) & 1)
                             v = 0xff;
-                        else 
+                        else
                             v = 0;
                     } else {
                         if (((x+3) % 4) <= 1 &&

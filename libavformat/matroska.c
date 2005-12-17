@@ -1661,7 +1661,7 @@ matroska_parse_index (MatroskaDemuxContext *matroska)
                             break;
                         }
 
-                        /* position in the file + track to which it 
+                        /* position in the file + track to which it
                          * belongs */
                         case MATROSKA_ID_CUETRACKPOSITION:
                             if ((res = ebml_read_master(matroska, &id)) < 0)
@@ -1897,7 +1897,7 @@ matroska_parse_seekhead (MatroskaDemuxContext *matroska)
                                    "cannot parse further.\n", EBML_MAX_DEPTH);
                             return AVERROR_UNKNOWN;
                         }
-                            
+
                         level.start = 0;
                         level.length = (uint64_t)-1;
                         matroska->levels[matroska->num_levels] = level;
@@ -2179,7 +2179,7 @@ matroska_read_header (AVFormatContext    *s,
 
             /* This is the MS compatibility mode which stores a
              * WAVEFORMATEX in the CodecPrivate. */
-            else if (!strcmp(track->codec_id, 
+            else if (!strcmp(track->codec_id,
                              MATROSKA_CODEC_ID_AUDIO_ACM) &&
                 (track->codec_priv_size >= 18) &&
                 (track->codec_priv != NULL)) {
@@ -2368,7 +2368,7 @@ matroska_parse_blockgroup (MatroskaDemuxContext *matroska,
                 }
                 if(matroska->ctx->streams[ matroska->tracks[track]->stream_index ]->discard >= AVDISCARD_ALL){
                     av_free(origdata);
-                    break;                
+                    break;
                 }
 
                 /* time (relative to cluster time) */

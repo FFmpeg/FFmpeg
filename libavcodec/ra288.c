@@ -19,7 +19,7 @@
 
 #include "avcodec.h"
 #include "ra288.h"
- 
+
 typedef struct {
 	float	history[8];
 	float	output[40];
@@ -180,7 +180,7 @@ static void co(int n, int i, int j, float *in, float *out, float *st1, float *st
     if (x==c) fp=in;
     work[x]=*(table++)*(*(st1++)=*(fp++));
   }
-  
+
   prodsum(buffer1,work+n,i,n);
   prodsum(buffer2,work+a,j,n);
 

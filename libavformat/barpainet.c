@@ -6,7 +6,7 @@
 int inet_aton (const char * str, struct in_addr * add) {
 	const char * pch = str;
 	unsigned int add1 = 0, add2 = 0, add3 = 0, add4 = 0;
-	
+
 	add1 = atoi(pch);
 	pch = strpbrk(pch,".");
 	if (pch == 0 || ++pch == 0) goto done;
@@ -20,6 +20,6 @@ int inet_aton (const char * str, struct in_addr * add) {
 
 done:
 	add->s_addr=(add4<<24)+(add3<<16)+(add2<<8)+add1;
-	
-	return 1;	
+
+	return 1;
 }

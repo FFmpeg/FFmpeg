@@ -17,19 +17,19 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
- 
+
 /**
  * @file fraps.c
  * Lossless Fraps 'FPS1' decoder
  * @author Roine Gustafsson <roine at users sf net>
- * 
+ *
  * Only decodes version 0 and 1 files.
  * Codec algorithm for version 0 is taken from Transcode <www.transcoding.org>
  *
  * Version 2 files, which are the most commonly found Fraps files, cannot be
  * decoded yet.
  */
- 
+
 #include "avcodec.h"
 
 #define FPS_TAG MKTAG('F', 'P', 'S', 'x')
@@ -57,7 +57,7 @@ static int decode_init(AVCodecContext *avctx)
     avctx->pix_fmt= PIX_FMT_NONE; /* set in decode_frame */
 
     s->avctx = avctx;
-    s->frame.data[0] = NULL;    
+    s->frame.data[0] = NULL;
 
     return 0;
 }
@@ -72,7 +72,7 @@ static int decode_init(AVCodecContext *avctx)
  * @param buf_size size of input data frame
  * @return number of consumed bytes on success or negative if decode fails
  */
-static int decode_frame(AVCodecContext *avctx, 
+static int decode_frame(AVCodecContext *avctx,
                         void *data, int *data_size,
                         uint8_t *buf, int buf_size)
 {
@@ -91,7 +91,7 @@ static int decode_frame(AVCodecContext *avctx,
     header_size = (header & (1<<30))? 8 : 4; /* bit 30 means pad to 8 bytes */
 
     if (version > 1) {
-        av_log(avctx, AV_LOG_ERROR, 
+        av_log(avctx, AV_LOG_ERROR,
                "This file is encoded with Fraps version %d. " \
                "This codec can only decode version 0 and 1.\n", version);
         return -1;
@@ -100,40 +100,40 @@ static int decode_frame(AVCodecContext *avctx,
     buf+=4;
     if (header_size == 8)
         buf+=4;
-        
+
     switch(version) {
     case 0:
     default:
         /* Fraps v0 is a reordered YUV420 */
         avctx->pix_fmt = PIX_FMT_YUV420P;
 
-        if ( (buf_size != avctx->width*avctx->height*3/2+header_size) && 
+        if ( (buf_size != avctx->width*avctx->height*3/2+header_size) &&
              (buf_size != header_size) ) {
             av_log(avctx, AV_LOG_ERROR,
-                   "Invalid frame length %d (should be %d)\n", 
+                   "Invalid frame length %d (should be %d)\n",
                    buf_size, avctx->width*avctx->height*3/2+header_size);
             return -1;
         }
-        
+
         if (( (avctx->width % 8) != 0) || ( (avctx->height % 2) != 0 )) {
-            av_log(avctx, AV_LOG_ERROR, "Invalid frame size %dx%d\n", 
+            av_log(avctx, AV_LOG_ERROR, "Invalid frame size %dx%d\n",
                    avctx->width, avctx->height);
             return -1;
         }
 
-        f->reference = 1; 
-        f->buffer_hints = FF_BUFFER_HINTS_VALID | 
-                          FF_BUFFER_HINTS_PRESERVE | 
+        f->reference = 1;
+        f->buffer_hints = FF_BUFFER_HINTS_VALID |
+                          FF_BUFFER_HINTS_PRESERVE |
                           FF_BUFFER_HINTS_REUSABLE;
         if (avctx->reget_buffer(avctx, f)) {
             av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
             return -1;
-        }        
+        }
         /* bit 31 means same as previous pic */
-        f->pict_type = (header & (1<<31))? FF_P_TYPE : FF_I_TYPE; 
+        f->pict_type = (header & (1<<31))? FF_P_TYPE : FF_I_TYPE;
         f->key_frame = f->pict_type == FF_I_TYPE;
 
-        if (f->pict_type == FF_I_TYPE) { 
+        if (f->pict_type == FF_I_TYPE) {
             buf32=(uint32_t*)buf;
             for(y=0; y<avctx->height/2; y++){
                 luma1=(uint32_t*)&f->data[0][ y*2*f->linesize[0] ];
@@ -156,9 +156,9 @@ static int decode_frame(AVCodecContext *avctx,
         /* Fraps v1 is an upside-down BGR24 */
         avctx->pix_fmt = PIX_FMT_BGR24;
 
-        if ( (buf_size != avctx->width*avctx->height*3+header_size) && 
+        if ( (buf_size != avctx->width*avctx->height*3+header_size) &&
              (buf_size != header_size) ) {
-            av_log(avctx, AV_LOG_ERROR, 
+            av_log(avctx, AV_LOG_ERROR,
                    "Invalid frame length %d (should be %d)\n",
                    buf_size, avctx->width*avctx->height*3+header_size);
             return -1;

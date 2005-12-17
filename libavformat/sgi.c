@@ -65,8 +65,8 @@ static void read_sgi_header(ByteIOContext *f, SGIInfo *info)
     info->xsize = (unsigned short) get_be16(f);
     info->ysize = (unsigned short) get_be16(f);
     info->zsize = (unsigned short) get_be16(f);
-    
-    if(info->zsize > 4096) 
+
+    if(info->zsize > 4096)
         info->zsize= 0;
 
 #ifdef DEBUG
@@ -85,13 +85,13 @@ static void read_sgi_header(ByteIOContext *f, SGIInfo *info)
 
 
 /* read an uncompressed sgi image */
-static int read_uncompressed_sgi(const SGIInfo *si, 
+static int read_uncompressed_sgi(const SGIInfo *si,
         AVPicture *pict, ByteIOContext *f)
 {
     int x, y, z, chan_offset, ret = 0;
     uint8_t *dest_row;
 
-    /* skip header */ 
+    /* skip header */
     url_fseek(f, SGI_HEADER_SIZE, SEEK_SET);
 
     pict->linesize[0] = si->xsize;
@@ -100,17 +100,17 @@ static int read_uncompressed_sgi(const SGIInfo *si,
 
 #ifndef WORDS_BIGENDIAN
         /* rgba -> bgra for rgba32 on little endian cpus */
-        if (si->zsize == 4 && z != 3) 
+        if (si->zsize == 4 && z != 3)
             chan_offset = 2 - z;
         else
 #endif
             chan_offset = z;
-            
+
         for (y = si->ysize - 1; y >= 0; y--) {
             dest_row = pict->data[0] + (y * si->xsize * si->zsize);
 
             for (x = 0; x < si->xsize; x++) {
-                dest_row[chan_offset] = get_byte(f); 
+                dest_row[chan_offset] = get_byte(f);
                 dest_row += si->zsize;
             }
         }
@@ -126,14 +126,14 @@ static int expand_rle_row(ByteIOContext *f, unsigned char *optr,
 {
     unsigned char pixel, count;
     int length = 0;
- 
+
 #ifndef WORDS_BIGENDIAN
     /* rgba -> bgra for rgba32 on little endian cpus */
     if (pixelstride == 4 && chan_offset != 3) {
        chan_offset = 2 - chan_offset;
     }
 #endif
-        
+
     optr += chan_offset;
 
     while (1) {
@@ -162,12 +162,12 @@ static int expand_rle_row(ByteIOContext *f, unsigned char *optr,
 
 
 /* read a run length encoded sgi image */
-static int read_rle_sgi(const SGIInfo *sgi_info, 
+static int read_rle_sgi(const SGIInfo *sgi_info,
         AVPicture *pict, ByteIOContext *f)
 {
     uint8_t *dest_row;
     unsigned long *start_table;
-    int y, z, xsize, ysize, zsize, tablen; 
+    int y, z, xsize, ysize, zsize, tablen;
     long start_offset;
     int ret = 0;
 
@@ -175,7 +175,7 @@ static int read_rle_sgi(const SGIInfo *sgi_info,
     ysize = sgi_info->ysize;
     zsize = sgi_info->zsize;
 
-    /* skip header */ 
+    /* skip header */
     url_fseek(f, SGI_HEADER_SIZE, SEEK_SET);
 
     /* size of rle offset and length tables */
@@ -188,7 +188,7 @@ static int read_rle_sgi(const SGIInfo *sgi_info,
         goto fail;
     }
 
-    /* skip run length table */ 
+    /* skip run length table */
     url_fseek(f, tablen, SEEK_CUR);
 
     for (z = 0; z < zsize; z++) {
@@ -216,7 +216,7 @@ fail:
 }
 
 
-static int sgi_read(ByteIOContext *f, 
+static int sgi_read(ByteIOContext *f,
         int (*alloc_cb)(void *opaque, AVImageInfo *info), void *opaque)
 {
     SGIInfo sgi_info, *s = &sgi_info;
@@ -267,23 +267,23 @@ static void write_sgi_header(ByteIOContext *f, const SGIInfo *info)
 
     put_be16(f, SGI_MAGIC);
     put_byte(f, info->rle);
-    put_byte(f, info->bytes_per_channel); 
+    put_byte(f, info->bytes_per_channel);
     put_be16(f, info->dimension);
     put_be16(f, info->xsize);
     put_be16(f, info->ysize);
     put_be16(f, info->zsize);
 
     /* The rest are constant in this implementation */
-    put_be32(f, 0L); /* pixmin */ 
-    put_be32(f, 255L); /* pixmax */ 
-    put_be32(f, 0L); /* dummy */ 
+    put_be32(f, 0L); /* pixmin */
+    put_be32(f, 255L); /* pixmax */
+    put_be32(f, 0L); /* dummy */
 
     /* name */
     for (i = 0; i < 80; i++) {
         put_byte(f, 0);
     }
 
-    put_be32(f, 0L); /* colormap */ 
+    put_be32(f, 0L); /* colormap */
 
     /* The rest of the 512 byte header is unused. */
     for (i = 0; i < 404; i++) {
@@ -302,7 +302,7 @@ static int rle_row(ByteIOContext *f, char *row, int stride, int rowsize)
         row += (2 * stride);
         x -= 2;
 
-        while (x > 0 && (row[-2 * stride] != row[-1 * stride] || 
+        while (x > 0 && (row[-2 * stride] != row[-1 * stride] ||
                     row[-1 * stride] != row[0])) {
             row += stride;
             x--;
@@ -316,7 +316,7 @@ static int rle_row(ByteIOContext *f, char *row, int stride, int rowsize)
             i = count > 126 ? 126 : count;
             count -= i;
 
-            put_byte(f, 0x80 | i); 
+            put_byte(f, 0x80 | i);
             length++;
 
             while (i > 0) {
@@ -350,14 +350,14 @@ static int rle_row(ByteIOContext *f, char *row, int stride, int rowsize)
             put_byte(f, i);
             length++;
 
-            put_byte(f, repeat); 
+            put_byte(f, repeat);
             length++;
         };
     };
 
     length++;
 
-    put_byte(f, 0); 
+    put_byte(f, 0);
     return (length);
 }
 
@@ -374,7 +374,7 @@ static int sgi_write(ByteIOContext *pb, AVImageInfo *info)
     si->ysize = info->height;
     si->rle = 1;
     si->bytes_per_channel = 1;
-    
+
     switch(info->pix_fmt) {
         case PIX_FMT_GRAY8:
             si->dimension = SGI_SINGLE_CHAN;
@@ -392,14 +392,14 @@ static int sgi_write(ByteIOContext *pb, AVImageInfo *info)
             return AVERROR_INVALIDDATA;
     }
 
-    write_sgi_header(pb, si); 
+    write_sgi_header(pb, si);
 
     tablesize = si->zsize * si->ysize * sizeof(long);
-    
+
     /* skip rle offset and length tables, write them at the end. */
     url_fseek(pb, tablesize * 2, SEEK_CUR);
     put_flush_packet(pb);
-    
+
     lengthtab = av_malloc(tablesize);
     offsettab = av_malloc(tablesize);
 
@@ -407,36 +407,36 @@ static int sgi_write(ByteIOContext *pb, AVImageInfo *info)
 
 #ifndef WORDS_BIGENDIAN
         /* rgba -> bgra for rgba32 on little endian cpus */
-        if (si->zsize == 4 && z != 3) 
+        if (si->zsize == 4 && z != 3)
             chan_offset = 2 - z;
         else
 #endif
             chan_offset = z;
-        
+
         srcrow = info->pict.data[0] + chan_offset;
-        
+
         for (y = si->ysize -1; y >= 0; y--) {
             offsettab[(z * si->ysize) + y] = url_ftell(pb);
             lengthtab[(z * si->ysize) + y] = rle_row(pb, srcrow,
                     si->zsize, si->xsize);
-            srcrow += info->pict.linesize[0]; 
+            srcrow += info->pict.linesize[0];
         }
     }
 
     url_fseek(pb, 512, SEEK_SET);
-    
+
     /* write offset table */
     for (i = 0; i < (si->ysize * si->zsize); i++) {
         put_be32(pb, offsettab[i]);
     }
- 
+
     /* write length table */
     for (i = 0; i < (si->ysize * si->zsize); i++) {
         put_be32(pb, lengthtab[i]);
     }
 
     put_flush_packet(pb);
-    
+
     av_free(lengthtab);
     av_free(offsettab);
 
@@ -449,7 +449,7 @@ AVImageFormat sgi_image_format = {
     "sgi,rgb,rgba,bw",
     sgi_probe,
     sgi_read,
-    (1 << PIX_FMT_GRAY8) | (1 << PIX_FMT_RGB24) | (1 << PIX_FMT_RGBA32), 
+    (1 << PIX_FMT_GRAY8) | (1 << PIX_FMT_RGB24) | (1 << PIX_FMT_RGBA32),
 #ifdef CONFIG_MUXERS
     sgi_write,
 #else

@@ -29,7 +29,7 @@
 
 extern void (*put_pixels_clamped_axp_p)(const DCTELEM *block, uint8_t *pixels,
                                         int line_size);
-extern void (*add_pixels_clamped_axp_p)(const DCTELEM *block, uint8_t *pixels, 
+extern void (*add_pixels_clamped_axp_p)(const DCTELEM *block, uint8_t *pixels,
                                         int line_size);
 
 // cos(i * M_PI / 16) * sqrt(2) * (1 << 14)
@@ -55,7 +55,7 @@ static inline int idct_row(DCTELEM *row)
 
     if (l == 0 && r == 0)
         return 0;
-    
+
     a0 = W4 * sextw(l) + (1 << (ROW_SHIFT - 1));
 
     if (((l & ~0xffffUL) | r) == 0) {
@@ -63,7 +63,7 @@ static inline int idct_row(DCTELEM *row)
         t2 = (uint16_t) a0;
         t2 |= t2 << 16;
         t2 |= t2 << 32;
-        
+
         stq(t2, row);
         stq(t2, row + 4);
         return 1;
@@ -123,7 +123,7 @@ static inline int idct_row(DCTELEM *row)
         b3 -= W5 * t;
     }
 
-    
+
     t = extwl(r, 2);            /* row[5] */
     if (t) {
         t = sextw(t);

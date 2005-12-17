@@ -16,12 +16,12 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
- 
+
 /**
  * @file raw.c
  * Raw Video Codec
  */
- 
+
 #include "avcodec.h"
 
 typedef struct RawVideoContext {
@@ -71,7 +71,7 @@ unsigned int avcodec_pix_fmt_to_codec_tag(enum PixelFormat fmt)
     while (tags->pix_fmt >= 0) {
         if (tags->pix_fmt == fmt)
 	    return tags->fourcc;
-	tags++; 
+	tags++;
     }
     return 0;
 }
@@ -92,18 +92,18 @@ static int raw_init_decoder(AVCodecContext *avctx)
         case 32: avctx->pix_fmt= PIX_FMT_RGBA32; break;
         }
     }
-    
+
     context->length = avpicture_get_size(avctx->pix_fmt, avctx->width, avctx->height);
     context->buffer = av_malloc(context->length);
     context->p      = context->buffer;
     context->pic.pict_type = FF_I_TYPE;
     context->pic.key_frame = 1;
-    
+
     avctx->coded_frame= &context->pic;
-    
+
     if (!context->buffer)
         return -1;
-   
+
     return 0;
 }
 
@@ -126,7 +126,7 @@ static int raw_decode(AVCodecContext *avctx,
     /* Early out without copy if packet size == frame size */
     if (buf_size == context->length  &&  context->p == context->buffer) {
         avpicture_fill(picture, buf, avctx->pix_fmt, avctx->width, avctx->height);
-        flip(avctx, picture);        
+        flip(avctx, picture);
         *data_size = sizeof(AVPicture);
         return buf_size;
     }
@@ -141,7 +141,7 @@ static int raw_decode(AVCodecContext *avctx,
     memcpy(context->p, buf, bytesNeeded);
     context->p = context->buffer;
     avpicture_fill(picture, context->buffer, avctx->pix_fmt, avctx->width, avctx->height);
-    flip(avctx, picture);        
+    flip(avctx, picture);
     *data_size = sizeof(AVPicture);
     return bytesNeeded;
 }
@@ -149,7 +149,7 @@ static int raw_decode(AVCodecContext *avctx,
 static int raw_close_decoder(AVCodecContext *avctx)
 {
     RawVideoContext *context = avctx->priv_data;
-    
+
     av_freep(&context->buffer);
     return 0;
 }

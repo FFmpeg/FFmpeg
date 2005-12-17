@@ -29,7 +29,7 @@ int main(int argc, char **argv)
     int dontquit = 0;
     int nowrite = 0;
     int err;
-    
+
     if ((argc > 1) && !strncmp(argv[1], "-", 1)) {
         if (strchr(argv[1], 'w'))
             dontquit = 1;
@@ -57,24 +57,24 @@ int main(int argc, char **argv)
     }
     strcat(fntemplate, PKTFILESUFF);
     printf("FNTEMPLATE: '%s'\n", fntemplate);
-    
+
     // register all file formats
     av_register_all();
-    
+
     err = av_open_input_file(&fctx, argv[1], NULL, 0, NULL);
     if (err < 0) {
         fprintf(stderr, "av_open_input_file: error %d\n", err);
         return 1;
     }
-    
+
     err = av_find_stream_info(fctx);
     if (err < 0) {
         fprintf(stderr, "av_find_stream_info: error %d\n", err);
         return 1;
     }
-    
+
     av_init_packet(&pkt);
-    
+
     while ((err = av_read_frame(fctx, &pkt)) >= 0) {
         int fd;
         snprintf(pktfilename, PATH_MAX-1, fntemplate, pktnum, pkt.stream_index, pkt.pts, pkt.size, (pkt.flags & PKT_FLAG_KEY)?'K':'_');
@@ -89,9 +89,9 @@ int main(int argc, char **argv)
         if (maxpkts && (pktnum >= maxpkts))
             break;
     }
-    
+
     while (dontquit)
         sleep(60);
-    
+
     return 0;
 }

@@ -2,7 +2,7 @@
  * Fish Detector Hook
  * Copyright (c) 2002 Philip Gladstone
  *
- * This file implements a fish detector. It is used to see when a 
+ * This file implements a fish detector. It is used to see when a
  * goldfish passes in front of the camera. It does this by counting
  * the number of input pixels that fall within a particular HSV
  * range.
@@ -69,14 +69,14 @@
 }
 
 
- 
-  
+
+
 typedef struct {
     int h;  /* 0 .. 360 */
     int s;  /* 0 .. 255 */
     int v;  /* 0 .. 255 */
 } HSV;
-              
+
 typedef struct {
     int zapping;
     int threshold;
@@ -180,21 +180,21 @@ int Configure(void **ctxp, int argc, char *argv[])
 static void get_hsv(HSV *hsv, int r, int g, int b)
 {
     int i, v, x, f;
-         
+
     x = (r < g) ? r : g;
     if (b < x)
         x = b;
     v = (r > g) ? r : g;
     if (b > v)
         v = b;
-          
+
     if (v == x) {
         hsv->h = 0;
         hsv->s = 0;
         hsv->v = v;
         return;
     }
-       
+
     if (r == v) {
         f = g - b;
         i = 0;
@@ -205,21 +205,21 @@ static void get_hsv(HSV *hsv, int r, int g, int b)
         f = r - g;
         i = 4 * 60;
     }
-        
+
     hsv->h = i + (60 * f) / (v - x);
     if (hsv->h < 0)
         hsv->h += 360;
 
     hsv->s = (255 * (v - x)) / v;
     hsv->v = v;
-         
+
     return;
-}                                                                               
+}
 
 void Process(void *ctx, AVPicture *picture, enum PixelFormat pix_fmt, int width, int height, int64_t pts)
 {
     ContextInfo *ci = (ContextInfo *) ctx;
-    uint8_t *cm = cropTbl + MAX_NEG_CROP;                                         
+    uint8_t *cm = cropTbl + MAX_NEG_CROP;
     int rowsize = picture->linesize[0];
 
 #if 0
@@ -233,7 +233,7 @@ void Process(void *ctx, AVPicture *picture, enum PixelFormat pix_fmt, int width,
     if (width < ci->min_width)
         return;
 
-    ci->next_pts = pts + 1000000;    
+    ci->next_pts = pts + 1000000;
 
     if (pix_fmt == PIX_FMT_YUV420P) {
         uint8_t *y, *u, *v;
@@ -269,14 +269,14 @@ void Process(void *ctx, AVPicture *picture, enum PixelFormat pix_fmt, int width,
 
                 get_hsv(&hsv, r, g, b);
 
-                if (ci->debug > 1) 
+                if (ci->debug > 1)
                     fprintf(stderr, "(%d,%d,%d) -> (%d,%d,%d)\n",
                         r,g,b,hsv.h,hsv.s,hsv.v);
 
 
                 if (hsv.h >= ci->dark.h && hsv.h <= ci->bright.h &&
                     hsv.s >= ci->dark.s && hsv.s <= ci->bright.s &&
-                    hsv.v >= ci->dark.v && hsv.v <= ci->bright.v) {            
+                    hsv.v >= ci->dark.v && hsv.v <= ci->bright.v) {
                     inrange++;
                 } else if (ci->zapping) {
                     y[0] = y[1] = y[rowsize] = y[rowsize + 1] = 16;
@@ -294,7 +294,7 @@ void Process(void *ctx, AVPicture *picture, enum PixelFormat pix_fmt, int width,
             v += picture->linesize[2] - (w_start - w_end);
         }
 
-        if (ci->debug) 
+        if (ci->debug)
             fprintf(stderr, "Fish: Inrange=%d of %d = %d threshold\n", inrange, pixcnt, 1000 * inrange / pixcnt);
 
         if (inrange * 1000 / pixcnt >= ci->threshold) {
@@ -331,7 +331,7 @@ void Process(void *ctx, AVPicture *picture, enum PixelFormat pix_fmt, int width,
                 buf = av_malloc(size);
 
                 avpicture_fill(&picture1, buf, PIX_FMT_RGB24, width, height);
-                if (img_convert(&picture1, PIX_FMT_RGB24, 
+                if (img_convert(&picture1, PIX_FMT_RGB24,
                                 picture, pix_fmt, width, height) >= 0) {
                     /* Write out the PPM file */
 
@@ -348,7 +348,7 @@ void Process(void *ctx, AVPicture *picture, enum PixelFormat pix_fmt, int width,
                 }
 
                 av_free(buf);
-                ci->next_pts = pts + ci->min_interval;    
+                ci->next_pts = pts + ci->min_interval;
             }
         }
     }

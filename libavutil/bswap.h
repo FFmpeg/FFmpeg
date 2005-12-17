@@ -48,7 +48,7 @@ static inline uint64_t bswap_64(uint64_t x)
         "0" (x));
   return x;
 #else
-    union { 
+    union {
         uint64_t ll;
         struct {
            uint32_t l,h;
@@ -78,7 +78,7 @@ static always_inline uint32_t bswap_32(uint32_t x) {
 
 static inline uint64_t bswap_64(uint64_t x)
 {
-    union { 
+    union {
         uint64_t ll;
         struct {
            uint32_t l,h;
@@ -119,9 +119,9 @@ static inline uint64_t bswap_64(uint64_t x)
     x= ((x<<16)&0xFFFF0000FFFF0000ULL) | ((x>>16)&0x0000FFFF0000FFFFULL);
     return (x>>32) | (x<<32);
 #else
-    union { 
+    union {
         uint64_t ll;
-        uint32_t l[2]; 
+        uint32_t l[2];
     } w, r;
     w.ll = x;
     r.l[0] = bswap_32 (w.l[1]);

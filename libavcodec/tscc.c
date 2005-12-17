@@ -71,13 +71,13 @@ typedef struct TsccContext {
  *              and enhanced to bigger color depths
  *
  */
- 
+
 static int decode_rle(CamtasiaContext *c, unsigned int srcsize)
 {
     unsigned char *src = c->decomp_buf;
     unsigned char *output, *output_end;
     int p1, p2, line=c->height, pos=0, i;
-    
+
     output = c->pic.data[0] + (c->height - 1) * c->pic.linesize[0];
     output_end = c->pic.data[0] + (c->height) * c->pic.linesize[0];
     while(src < c->decomp_buf + srcsize) {
@@ -156,8 +156,8 @@ static int decode_rle(CamtasiaContext *c, unsigned int srcsize)
             pos += p1;
         }
     }
-    
-    av_log(c->avctx, AV_LOG_ERROR, "Camtasia warning: no End-of-picture code\n");        
+
+    av_log(c->avctx, AV_LOG_ERROR, "Camtasia warning: no End-of-picture code\n");
     return 1;
 }
 
@@ -208,7 +208,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
 
     if(zret != Z_DATA_ERROR)
         decode_rle(c, c->zstream.avail_out);
-    
+
     /* make the palette available on the way out */
     if (c->avctx->pix_fmt == PIX_FMT_PAL8) {
         memcpy(c->pic.data[1], c->avctx->palctrl->palette, AVPALETTE_SIZE);
@@ -254,7 +254,7 @@ static int decode_init(AVCodecContext *avctx)
 
 #ifdef CONFIG_ZLIB
     // Needed if zlib unused or init aborted before inflateInit
-    memset(&(c->zstream), 0, sizeof(z_stream)); 
+    memset(&(c->zstream), 0, sizeof(z_stream));
 #else
     av_log(avctx, AV_LOG_ERROR, "Zlib support not compiled.\n");
     return 1;
@@ -267,7 +267,7 @@ static int decode_init(AVCodecContext *avctx)
              break;
     case 32: avctx->pix_fmt = PIX_FMT_RGBA32; break;
     default: av_log(avctx, AV_LOG_ERROR, "Camtasia error: unknown depth %i bpp\n", avctx->bits_per_sample);
-             return -1;             
+             return -1;
     }
     c->bpp = avctx->bits_per_sample;
     c->decomp_size = (avctx->width * c->bpp + (avctx->width + 254) / 255 + 2) * avctx->height + 2;//RLE in the 'best' case
@@ -279,7 +279,7 @@ static int decode_init(AVCodecContext *avctx)
             return 1;
         }
     }
-  
+
 #ifdef CONFIG_ZLIB
     c->zstream.zalloc = Z_NULL;
     c->zstream.zfree = Z_NULL;

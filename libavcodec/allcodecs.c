@@ -28,12 +28,12 @@
    formats you want to support */
 
 /**
- * simple call to register all the codecs. 
+ * simple call to register all the codecs.
  */
 void avcodec_register_all(void)
 {
     static int inited = 0;
-    
+
     if (inited != 0)
 	return;
     inited = 1;
@@ -589,7 +589,7 @@ PCM_CODEC(CODEC_ID_ADPCM_YAMAHA, adpcm_yamaha);
     register_avcodec(&dvbsub_encoder);
 #endif
 
-    /* parsers */ 
+    /* parsers */
     av_register_codec_parser(&mpegvideo_parser);
     av_register_codec_parser(&mpeg4video_parser);
 #if defined(CONFIG_H261_DECODER) || defined(CONFIG_H261_ENCODER)

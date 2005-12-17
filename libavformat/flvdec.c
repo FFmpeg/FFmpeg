@@ -35,7 +35,7 @@ static int flv_read_header(AVFormatContext *s,
                            AVFormatParameters *ap)
 {
     int offset, flags;
-    
+
     s->ctx_flags |= AVFMTCTX_NOHEADER; //ok we have a header but theres no fps, codec type, sample_rate, ...
 
     url_fskip(&s->pb, 4);
@@ -51,7 +51,7 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     int ret, i, type, size, pts, flags, is_audio, next;
     AVStream *st = NULL;
-    
+
  for(;;){
     url_fskip(&s->pb, 4); /* size of previous packet */
     type = get_byte(&s->pb);
@@ -62,10 +62,10 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
         return AVERROR_IO;
     url_fskip(&s->pb, 4); /* reserved */
     flags = 0;
-    
+
     if(size == 0)
         continue;
-        
+
     next= size + url_ftell(&s->pb);
 
     if (type == 8) {
@@ -83,13 +83,13 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
             char tmp[128];
             int type, len;
             double d= 0;
-            
+
             len= get_be16(&s->pb);
             if(len >= sizeof(tmp) || !len)
                 break;
             get_buffer(&s->pb, tmp, len);
             tmp[len]=0;
-            
+
             type= get_byte(&s->pb);
             if(type==0){
                 d= av_int2dbl(get_be64(&s->pb));
@@ -105,7 +105,7 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
                 d= av_int2dbl(get_be64(&s->pb));
                 get_be16(&s->pb);
             }
-            
+
             if(!strcmp(tmp, "duration")){
                 s->duration = d*AV_TIME_BASE;
             }else if(!strcmp(tmp, "videodatarate")){
@@ -187,10 +187,10 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
     pkt->size = ret;
     pkt->pts = pts;
     pkt->stream_index = st->index;
-    
+
     if (is_audio || ((flags >> 4)==1))
 	pkt->flags |= PKT_FLAG_KEY;
-    
+
     return ret;
 }
 

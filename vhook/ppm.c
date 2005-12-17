@@ -1,5 +1,5 @@
 /*
- * PPM Video Hook 
+ * PPM Video Hook
  * Copyright (c) 2003 Charles Yates
  *
  * This library is free software; you can redistribute it and/or
@@ -122,7 +122,7 @@ int rwpipe_read_number( rwpipe *rw )
     int c = 0;
     FILE *in = rwpipe_reader( rw );
 
-    do 
+    do
     {
         c = fgetc( in );
 
@@ -181,14 +181,14 @@ void rwpipe_close( rwpipe *this )
 /** Context info for this vhook - stores the pipe and image buffers.
 */
 
-typedef struct 
+typedef struct
 {
     rwpipe *rw;
     int size1;
     char *buf1;
     int size2;
     char *buf2;
-} 
+}
 ContextInfo;
 
 /** Initialise the context info for this vhook.
@@ -231,7 +231,7 @@ void Process(void *ctx, AVPicture *picture, enum PixelFormat pix_fmt, int width,
         err = 1;
 
     /* Convert to RGB24 if necessary */
-    if ( !err && pix_fmt != PIX_FMT_RGB24 ) 
+    if ( !err && pix_fmt != PIX_FMT_RGB24 )
     {
         int size = avpicture_get_size(PIX_FMT_RGB24, width, height);
 
@@ -295,9 +295,9 @@ void Process(void *ctx, AVPicture *picture, enum PixelFormat pix_fmt, int width,
     if ( !err )
     {
         /* Actually, this is wrong, since the out_width/out_height returned from the
-         * filter won't necessarily be the same as width and height - img_resample 
-         * won't scale rgb24, so the only way out of this is to convert to something 
-         * that img_resample does like [which may or may not be pix_fmt], rescale 
+         * filter won't necessarily be the same as width and height - img_resample
+         * won't scale rgb24, so the only way out of this is to convert to something
+         * that img_resample does like [which may or may not be pix_fmt], rescale
          * and finally convert to pix_fmt... slow, but would provide the most flexibility.
          *
          * Currently, we take the upper left width/height pixels from the filtered image,
@@ -307,7 +307,7 @@ void Process(void *ctx, AVPicture *picture, enum PixelFormat pix_fmt, int width,
          * are gracefully ignored and the original image is returned - in this case, a
          * failure may corrupt the input.
          */
-        if (img_convert(picture, pix_fmt, &picture2, PIX_FMT_RGB24, width, height) < 0) 
+        if (img_convert(picture, pix_fmt, &picture2, PIX_FMT_RGB24, width, height) < 0)
         {
         }
     }

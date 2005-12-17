@@ -171,8 +171,8 @@ typedef uint64_t      uint_fast64_t;
 #endif
 
 #if defined(CONFIG_OS2) || defined(CONFIG_SUNOS)
-static inline float floorf(float f) { 
-    return floor(f); 
+static inline float floorf(float f) {
+    return floor(f);
 }
 #endif
 
@@ -311,7 +311,7 @@ extern const uint32_t inverse[256];
 #else
 #    define FASTDIV(a,b)   ((a)/(b))
 #endif
- 
+
 /* define it to include statistics code (useful only for optimizing
    codec efficiency */
 //#define STATS
@@ -424,9 +424,9 @@ static inline int ff_sqrt(int a)
     int ret=0;
     int s;
     int ret_sq=0;
-    
+
     if(a<128) return ff_sqrt_tab[a];
-    
+
     for(s=15; s>=0; s--){
         int b= ret_sq + (1<<(s*2)) + (ret<<s)*2;
         if(b<=a){
@@ -544,7 +544,7 @@ tend= read_time();\
   }\
 }
 #else
-#define START_TIMER 
+#define START_TIMER
 #define STOP_TIMER(id) {}
 #endif
 

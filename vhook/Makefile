@@ -11,14 +11,14 @@ HOOKS=null$(SLIBSUF) fish$(SLIBSUF) ppm$(SLIBSUF) watermark$(SLIBSUF)
 
 ifeq ($(HAVE_IMLIB2),yes)
     HOOKS += imlib2$(SLIBSUF)
-endif    
+endif
 
 ifeq ($(HAVE_FREETYPE2),yes)
     HOOKS += drawtext$(SLIBSUF)
     CFLAGS += `freetype-config --cflags`
-endif    
+endif
 
-all: $(HOOKS) 
+all: $(HOOKS)
 
 SRCS := $(HOOKS:$(SLIBSUF)=.c)
 

@@ -17,16 +17,16 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
- 
+
 /**
  * @file opt.c
  * AVOptions
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
- 
+
 #include "avcodec.h"
 #include "opt.h"
- 
+
 static double av_parse_num(const char *name, char **tail){
     double d;
     d= strtod(name, tail);
@@ -39,7 +39,7 @@ static double av_parse_num(const char *name, char **tail){
 static AVOption *find_opt(void *v, const char *name, const char *unit){
     AVClass *c= *(AVClass**)v; //FIXME silly way of storing AVClass
     AVOption *o= c->option;
-    
+
     for(;o && o->name; o++){
         if(!strcmp(o->name, name) && (!unit || !strcmp(o->unit, unit)) )
             return o;
@@ -56,16 +56,16 @@ AVOption *av_next_option(void *obj, AVOption *last){
 static AVOption *av_set_number(void *obj, const char *name, double num, int den, int64_t intnum){
     AVOption *o= find_opt(obj, name, NULL);
     void *dst;
-    if(!o || o->offset<=0) 
+    if(!o || o->offset<=0)
         return NULL;
-    
+
     if(o->max*den < num*intnum || o->min*den > num*intnum)
         return NULL;
-        
+
     dst= ((uint8_t*)obj) + o->offset;
 
     switch(o->type){
-    case FF_OPT_TYPE_FLAGS:   
+    case FF_OPT_TYPE_FLAGS:
     case FF_OPT_TYPE_INT:   *(int       *)dst= lrintf(num/den)*intnum; break;
     case FF_OPT_TYPE_INT64: *(int64_t   *)dst= lrintf(num/den)*intnum; break;
     case FF_OPT_TYPE_FLOAT: *(float     *)dst= num*intnum/den;         break;
@@ -83,7 +83,7 @@ static AVOption *set_all_opt(void *v, const char *unit, double d){
     AVClass *c= *(AVClass**)v; //FIXME silly way of storing AVClass
     AVOption *o= c->option;
     AVOption *ret=NULL;
-    
+
     for(;o && o->name; o++){
         if(o->type != FF_OPT_TYPE_CONST && o->unit && !strcmp(o->unit, unit)){
             double tmp= d;
@@ -103,7 +103,7 @@ AVOption *av_set_string(void *obj, const char *name, const char *val){
     if(o && o->offset==0 && o->type == FF_OPT_TYPE_CONST && o->unit){
         return set_all_opt(obj, o->unit, o->default_val);
     }
-    if(!o || !val || o->offset<=0) 
+    if(!o || !val || o->offset<=0)
         return NULL;
     if(o->type != FF_OPT_TYPE_STRING){
         for(;;){
@@ -114,16 +114,16 @@ AVOption *av_set_string(void *obj, const char *name, const char *val){
 
             if(*val == '+' || *val == '-')
                 cmd= *(val++);
-            
+
             for(i=0; i<sizeof(buf)-1 && val[i] && val[i]!='+' && val[i]!='-'; i++)
                 buf[i]= val[i];
             buf[i]=0;
             val+= i;
-            
+
             d= av_parse_num(buf, &tail);
             if(tail <= buf){
                 AVOption *o_named= find_opt(obj, buf, o->unit);
-                if(o_named && o_named->type == FF_OPT_TYPE_CONST) 
+                if(o_named && o_named->type == FF_OPT_TYPE_CONST)
                     d= o_named->default_val;
                 else if(!strcmp(buf, "default")) d= o->default_val;
                 else if(!strcmp(buf, "max"    )) d= o->max;
@@ -142,7 +142,7 @@ AVOption *av_set_string(void *obj, const char *name, const char *val){
         }
         return NULL;
     }
-    
+
     memcpy(((uint8_t*)obj) + o->offset, val, sizeof(val));
     return o;
 }
@@ -160,7 +160,7 @@ AVOption *av_set_int(void *obj, const char *name, int64_t n){
 }
 
 /**
- * 
+ *
  * @param buf a buffer which is used for returning non string values as strings, can be NULL
  * @param buf_len allocated length in bytes of buf
  */
@@ -174,10 +174,10 @@ const char *av_get_string(void *obj, const char *name, AVOption **o_out, char *b
 
     dst= ((uint8_t*)obj) + o->offset;
     if(o_out) *o_out= o;
-    
+
     if(o->type == FF_OPT_TYPE_STRING)
         return dst;
-    
+
     switch(o->type){
     case FF_OPT_TYPE_FLAGS:     snprintf(buf, buf_len, "0x%08X",*(int    *)dst);break;
     case FF_OPT_TYPE_INT:       snprintf(buf, buf_len, "%d" , *(int    *)dst);break;
@@ -201,12 +201,12 @@ static int av_get_number(void *obj, const char *name, AVOption **o_out, double *
     if(o_out) *o_out= o;
 
     switch(o->type){
-    case FF_OPT_TYPE_FLAGS:   
+    case FF_OPT_TYPE_FLAGS:
     case FF_OPT_TYPE_INT:       *intnum= *(int    *)dst;return 0;
     case FF_OPT_TYPE_INT64:     *intnum= *(int64_t*)dst;return 0;
     case FF_OPT_TYPE_FLOAT:     *num=    *(float  *)dst;return 0;
     case FF_OPT_TYPE_DOUBLE:    *num=    *(double *)dst;return 0;
-    case FF_OPT_TYPE_RATIONAL:  *intnum= ((AVRational*)dst)->num; 
+    case FF_OPT_TYPE_RATIONAL:  *intnum= ((AVRational*)dst)->num;
                                 *den   = ((AVRational*)dst)->den;
                                                         return 0;
     }
@@ -247,7 +247,7 @@ int64_t av_get_int(void *obj, const char *name, AVOption **o_out){
 
 int av_opt_show(void *obj, void *av_log_obj){
     AVOption *opt=NULL;
-    
+
     if(!obj)
         return -1;
 
@@ -256,14 +256,14 @@ int av_opt_show(void *obj, void *av_log_obj){
     while((opt= av_next_option(obj, opt))){
         if(!(opt->flags & (AV_OPT_FLAG_ENCODING_PARAM|AV_OPT_FLAG_DECODING_PARAM)))
             continue;
-            
+
         av_log(av_log_obj, AV_LOG_INFO, "-%-17s ", opt->name);
         av_log(av_log_obj, AV_LOG_INFO, "%c", (opt->flags & AV_OPT_FLAG_ENCODING_PARAM) ? 'E' : '.');
         av_log(av_log_obj, AV_LOG_INFO, "%c", (opt->flags & AV_OPT_FLAG_DECODING_PARAM) ? 'D' : '.');
         av_log(av_log_obj, AV_LOG_INFO, "%c", (opt->flags & AV_OPT_FLAG_VIDEO_PARAM   ) ? 'V' : '.');
         av_log(av_log_obj, AV_LOG_INFO, "%c", (opt->flags & AV_OPT_FLAG_AUDIO_PARAM   ) ? 'A' : '.');
         av_log(av_log_obj, AV_LOG_INFO, "%c", (opt->flags & AV_OPT_FLAG_SUBTITLE_PARAM) ? 'S' : '.');
-        
+
         if(opt->help)
             av_log(av_log_obj, AV_LOG_INFO, " %s", opt->help);
         av_log(av_log_obj, AV_LOG_INFO, "\n");

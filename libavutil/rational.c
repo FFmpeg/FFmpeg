@@ -17,7 +17,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
- 
+
 /**
  * @file rational.c
  * Rational numbers
@@ -26,7 +26,7 @@
 
 //#include <math.h>
 #include <limits.h>
- 
+
 #include "common.h"
 #include "mathematics.h"
 #include "rational.h"
@@ -42,7 +42,7 @@ int av_reduce(int *dst_nom, int *dst_den, int64_t nom, int64_t den, int64_t max)
         a1= (AVRational){nom, den};
         den=0;
     }
-    
+
     while(den){
         int64_t x       = nom / den;
         int64_t next_den= nom - den*x;
@@ -57,10 +57,10 @@ int av_reduce(int *dst_nom, int *dst_den, int64_t nom, int64_t den, int64_t max)
         den= next_den;
     }
     assert(ff_gcd(a1.num, a1.den) == 1);
-    
+
     *dst_nom = sign ? -a1.num : a1.num;
     *dst_den = a1.den;
-    
+
     return den==0;
 }
 

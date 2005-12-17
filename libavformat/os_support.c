@@ -51,7 +51,7 @@ int64_t av_gettime(void)
 struct tm *localtime_r(const time_t *t, struct tm *tp)
 {
     struct tm *l;
-    
+
     l = localtime(t);
     if (!l)
         return 0;

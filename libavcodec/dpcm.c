@@ -91,7 +91,7 @@ static int sol_table_old[16] =
 static int sol_table_new[16] =
     { 0x0,  0x1,  0x2,  0x3,  0x6,  0xA,  0xF,  0x15,
       0x0, -0x1, -0x2, -0x3, -0x6, -0xA, -0xF, -0x15};
-    
+
 static int sol_table_16[128] = {
     0x000, 0x008, 0x010, 0x020, 0x030, 0x040, 0x050, 0x060, 0x070, 0x080,
     0x090, 0x0A0, 0x0B0, 0x0C0, 0x0D0, 0x0E0, 0x0F0, 0x100, 0x110, 0x120,
@@ -130,7 +130,7 @@ static int dpcm_decode_init(AVCodecContext *avctx)
         }
         break;
 
-        
+
     case CODEC_ID_SOL_DPCM:
         switch(avctx->codec_tag){
         case 1:
@@ -149,7 +149,7 @@ static int dpcm_decode_init(AVCodecContext *avctx)
             return -1;
         }
         break;
-     
+
     default:
         break;
     }

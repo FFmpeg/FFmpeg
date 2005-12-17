@@ -26,10 +26,10 @@
  * the calling app must make the SVQ3 ImageDescription atom available
  * via the AVCodecContext's extradata[_size] field:
  *
- * AVCodecContext.extradata = pointer to ImageDescription, first characters 
+ * AVCodecContext.extradata = pointer to ImageDescription, first characters
  * are expected to be 'S', 'V', 'Q', and '3', NOT the 4-byte atom length
- * AVCodecContext.extradata_size = size of ImageDescription atom memory 
- * buffer (which will be the same as the ImageDescription atom size field 
+ * AVCodecContext.extradata_size = size of ImageDescription atom memory
+ * buffer (which will be the same as the ImageDescription atom size field
  * from the QT file, minus 4 bytes since the length is missing)
  *
  * You will know you have these parameters passed correctly when the decoder
@@ -37,24 +37,24 @@
  *  ftp://ftp.mplayerhq.hu/MPlayer/samples/V-codecs/SVQ3/Vertical400kbit.sorenson3.mov
  *
  */
- 
+
 /**
  * @file svq3.c
  * svq3 decoder.
  */
 
-#define FULLPEL_MODE  1 
-#define HALFPEL_MODE  2 
+#define FULLPEL_MODE  1
+#define HALFPEL_MODE  2
 #define THIRDPEL_MODE 3
 #define PREDICT_MODE  4
- 
+
 /* dual scan (from some older h264 draft)
  o-->o-->o   o
          |  /|
  o   o   o / o
  | / |   |/  |
  o   o   o   o
-   / 
+   /
  o-->o-->o-->o
 */
 static const uint8_t svq3_scan[16]={
@@ -179,8 +179,8 @@ static void svq3_add_idct_c (uint8_t *dst, DCTELEM *block, int stride, int qp, i
 }
 
 static void pred4x4_down_left_svq3_c(uint8_t *src, uint8_t *topright, int stride){
-    LOAD_TOP_EDGE    
-    LOAD_LEFT_EDGE    
+    LOAD_TOP_EDGE
+    LOAD_LEFT_EDGE
     const __attribute__((unused)) int unu0= t0;
     const __attribute__((unused)) int unu1= l0;
 
@@ -275,7 +275,7 @@ static inline void svq3_mc_dir_part (MpegEncContext *s,
 
   mx += x;
   my += y;
-  
+
   if (mx < 0 || mx >= (s->h_edge_pos - width  - 1) ||
       my < 0 || my >= (s->v_edge_pos - height - 1)) {
 
@@ -480,7 +480,7 @@ static int svq3_decode_mb (H264Context *h, unsigned int mb_type) {
         N??11111
         N
     */
-    
+
     for (m=0; m < 2; m++) {
       if (s->mb_x > 0 && h->intra4x4_pred_mode[mb_xy - 1][0] != -1) {
 	for (i=0; i < 4; i++) {
@@ -880,7 +880,7 @@ static int svq3_decode_frame (AVCodecContext *avctx,
   s->picture_number = h->slice_num;
 
   if(avctx->debug&FF_DEBUG_PICT_INFO){
-      av_log(h->s.avctx, AV_LOG_DEBUG, "%c hpel:%d, tpel:%d aqp:%d qp:%d\n", 
+      av_log(h->s.avctx, AV_LOG_DEBUG, "%c hpel:%d, tpel:%d aqp:%d qp:%d\n",
       av_get_pict_type_char(s->pict_type), h->halfpel_flag, h->thirdpel_flag,
       s->adaptive_quant, s->qscale
       );
@@ -939,7 +939,7 @@ static int svq3_decode_frame (AVCodecContext *avctx,
       h->ref_cache[m][scan8[0] + 8*i + j]= PART_NOT_AVAILABLE;
     }
   }
-  
+
   for (s->mb_y=0; s->mb_y < s->mb_height; s->mb_y++) {
     for (s->mb_x=0; s->mb_x < s->mb_width; s->mb_x++) {
 

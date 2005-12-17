@@ -40,7 +40,7 @@ POWERPC_PERF_DECLARE(altivec_gmc1_num, GMC1_PERF_COND);
     int i;
 
 POWERPC_PERF_START_COUNT(altivec_gmc1_num, GMC1_PERF_COND);
-    
+
     for(i=0; i<h; i++)
     {
         dst[0]= (A*src[0] + B*src[1] + C*src[stride+0] + D*src[stride+1] + rounder)>>8;
@@ -87,7 +87,7 @@ POWERPC_PERF_START_COUNT(altivec_gmc1_num, GMC1_PERF_COND);
     Dv = vec_splat(tempA, 3);
 
     rounderV = vec_ld(0, (unsigned short*)rounder_a);
-    
+
     // we'll be able to pick-up our 9 char elements
     // at src from those 32 bytes
     // we load the first batch here, as inside the loop
@@ -96,7 +96,7 @@ POWERPC_PERF_START_COUNT(altivec_gmc1_num, GMC1_PERF_COND);
     src_0 = vec_ld(0, src);
     src_1 = vec_ld(16, src);
     srcvA = vec_perm(src_0, src_1, vec_lvsl(0, src));
-    
+
     if (src_really_odd != 0x0000000F)
     { // if src & 0xF == 0xF, then (src+1) is properly aligned on the second vector.
       srcvB = vec_perm(src_0, src_1, vec_lvsl(1, src));
@@ -107,14 +107,14 @@ POWERPC_PERF_START_COUNT(altivec_gmc1_num, GMC1_PERF_COND);
     }
     srcvA = vec_mergeh(vczero, srcvA);
     srcvB = vec_mergeh(vczero, srcvB);
-    
+
     for(i=0; i<h; i++)
     {
       dst_odd = (unsigned long)dst & 0x0000000F;
       src_really_odd = (((unsigned long)src) + stride) & 0x0000000F;
-      
+
       dstv = vec_ld(0, dst);
-      
+
       // we we'll be able to pick-up our 9 char elements
       // at src + stride from those 32 bytes
       // then reuse the resulting 2 vectors srvcC and srcvD
@@ -122,7 +122,7 @@ POWERPC_PERF_START_COUNT(altivec_gmc1_num, GMC1_PERF_COND);
       src_0 = vec_ld(stride + 0, src);
       src_1 = vec_ld(stride + 16, src);
       srcvC = vec_perm(src_0, src_1, vec_lvsl(stride + 0, src));
-      
+
       if (src_really_odd != 0x0000000F)
       { // if src & 0xF == 0xF, then (src+1) is properly aligned on the second vector.
         srcvD = vec_perm(src_0, src_1, vec_lvsl(stride + 1, src));
@@ -131,10 +131,10 @@ POWERPC_PERF_START_COUNT(altivec_gmc1_num, GMC1_PERF_COND);
       {
         srcvD = src_1;
       }
-      
+
       srcvC = vec_mergeh(vczero, srcvC);
       srcvD = vec_mergeh(vczero, srcvD);
-      
+
 
       // OK, now we (finally) do the math :-)
       // those four instructions replaces 32 int muls & 32 int adds.
@@ -143,14 +143,14 @@ POWERPC_PERF_START_COUNT(altivec_gmc1_num, GMC1_PERF_COND);
       tempB = vec_mladd((vector unsigned short)srcvB, Bv, tempA);
       tempC = vec_mladd((vector unsigned short)srcvC, Cv, tempB);
       tempD = vec_mladd((vector unsigned short)srcvD, Dv, tempC);
-      
+
       srcvA = srcvC;
       srcvB = srcvD;
-      
+
       tempD = vec_sr(tempD, vcsr8);
-      
+
       dstv2 = vec_pack(tempD, (vector unsigned short)vczero);
-      
+
       if (dst_odd)
       {
         dstv2 = vec_perm(dstv, dstv2, vcprm(0,1,s0,s1));
@@ -159,9 +159,9 @@ POWERPC_PERF_START_COUNT(altivec_gmc1_num, GMC1_PERF_COND);
       {
         dstv2 = vec_perm(dstv, dstv2, vcprm(s0,s1,2,3));
       }
-      
+
       vec_st(dstv2, 0, dst);
-      
+
       dst += stride;
       src += stride;
     }

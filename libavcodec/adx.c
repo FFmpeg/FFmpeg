@@ -171,7 +171,7 @@ static int adx_encode_header(AVCodecContext *avctx,unsigned char *buf,size_t buf
         long loop_start_byte;
         long loop_end_sample;
         long loop_end_byte;
-        long 
+        long
     */
     } adxhdr; /* big endian */
     /* offset-6 "(c)CRI" */

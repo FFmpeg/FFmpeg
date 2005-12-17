@@ -168,7 +168,7 @@ static void smc_decode_stream(SmcContext *s)
 
             /* figure out where the previous block started */
             if (pixel_ptr == 0)
-                prev_block_ptr1 = 
+                prev_block_ptr1 =
                     (row_ptr - s->avctx->width * 4) + s->avctx->width - 4;
             else
                 prev_block_ptr1 = row_ptr + pixel_ptr - 4;
@@ -202,7 +202,7 @@ static void smc_decode_stream(SmcContext *s)
 
             /* figure out where the previous 2 blocks started */
             if (pixel_ptr == 0)
-                prev_block_ptr1 = (row_ptr - s->avctx->width * 4) + 
+                prev_block_ptr1 = (row_ptr - s->avctx->width * 4) +
                     s->avctx->width - 4 * 2;
             else if (pixel_ptr == 4)
                 prev_block_ptr1 = (row_ptr - s->avctx->width * 4) + row_inc;
@@ -326,7 +326,7 @@ static void smc_decode_stream(SmcContext *s)
                 block_ptr = row_ptr + pixel_ptr;
                 for (pixel_y = 0; pixel_y < 4; pixel_y++) {
                     for (pixel_x = 0; pixel_x < 4; pixel_x++) {
-                        pixel = color_table_index + 
+                        pixel = color_table_index +
                             ((color_flags >> flag_mask) & 0x03);
                         flag_mask -= 2;
                         pixels[block_ptr++] = s->color_quads[pixel];
@@ -394,7 +394,7 @@ static void smc_decode_stream(SmcContext *s)
                         flag_mask = 21;
                     }
                     for (pixel_x = 0; pixel_x < 4; pixel_x++) {
-                        pixel = color_table_index + 
+                        pixel = color_table_index +
                             ((color_flags >> flag_mask) & 0x07);
                         flag_mask -= 3;
                         pixels[block_ptr++] = s->color_octets[pixel];
@@ -452,7 +452,7 @@ static int smc_decode_frame(AVCodecContext *avctx,
     s->size = buf_size;
 
     s->frame.reference = 1;
-    s->frame.buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_PRESERVE | 
+    s->frame.buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_PRESERVE |
                             FF_BUFFER_HINTS_REUSABLE | FF_BUFFER_HINTS_READABLE;
     if (avctx->reget_buffer(avctx, &s->frame)) {
         av_log(s->avctx, AV_LOG_ERROR, "reget_buffer() failed\n");

@@ -16,12 +16,12 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
- 
+
 /**
  * @file pcm.c
  * PCM codecs
  */
- 
+
 #include "avcodec.h"
 #include "bitstream.h" // for ff_reverse
 
@@ -78,9 +78,9 @@ static int linear_to_alaw_ref = 0;
 static uint8_t *linear_to_ulaw = NULL;
 static int linear_to_ulaw_ref = 0;
 
-static void build_xlaw_table(uint8_t *linear_to_xlaw, 
+static void build_xlaw_table(uint8_t *linear_to_xlaw,
                              int (*xlaw2linear)(unsigned char),
-                             int mask) 
+                             int mask)
 {
     int i, j, v, v1, v2;
 
@@ -127,7 +127,7 @@ static int pcm_encode_init(AVCodecContext *avctx)
     default:
         break;
     }
-    
+
     switch(avctx->codec->id) {
     case CODEC_ID_PCM_S32LE:
     case CODEC_ID_PCM_S32BE:
@@ -160,7 +160,7 @@ static int pcm_encode_init(AVCodecContext *avctx)
 
     avctx->coded_frame= avcodec_alloc_frame();
     avctx->coded_frame->key_frame= 1;
-    
+
     return 0;
 }
 

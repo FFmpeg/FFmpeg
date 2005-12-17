@@ -33,7 +33,7 @@
 
 #define FLIC_FILE_MAGIC_1 0xAF11
 #define FLIC_FILE_MAGIC_2 0xAF12
-#define FLIC_FILE_MAGIC_3 0xAF44  /* Flic Type for Extended FLX Format which 
+#define FLIC_FILE_MAGIC_3 0xAF44  /* Flic Type for Extended FLX Format which
                                      originated in Dave's Targa Animator (DTA) */
 #define FLIC_CHUNK_MAGIC_1 0xF1FA
 #define FLIC_CHUNK_MAGIC_2 0xF5FA
@@ -182,9 +182,9 @@ static int flic_read_packet(AVFormatContext *s,
             }
             pkt->stream_index = flic->video_stream_index;
             pkt->pts = flic->pts;
-            pkt->pos = url_ftell(pb); 
+            pkt->pos = url_ftell(pb);
             memcpy(pkt->data, preamble, FLIC_PREAMBLE_SIZE);
-            ret = get_buffer(pb, pkt->data + FLIC_PREAMBLE_SIZE, 
+            ret = get_buffer(pb, pkt->data + FLIC_PREAMBLE_SIZE,
                 size - FLIC_PREAMBLE_SIZE);
             if (ret != size - FLIC_PREAMBLE_SIZE) {
                 av_free_packet(pkt);

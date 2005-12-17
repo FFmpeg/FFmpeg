@@ -72,10 +72,10 @@ unsigned int mpegts_crc32(const uint8_t *data, int len)
 {
     register int i;
     unsigned int crc = 0xffffffff;
-    
+
     for (i=0; i<len; i++)
         crc = (crc << 8) ^ crc_table[((crc >> 24) ^ *data++) & 0xff];
-    
+
     return crc;
 }
 
@@ -103,7 +103,7 @@ void mpegts_write_section(MpegTSSection *s, uint8_t *buf, int len)
     buf[len - 3] = (crc >> 16) & 0xff;
     buf[len - 2] = (crc >> 8) & 0xff;
     buf[len - 1] = (crc) & 0xff;
-    
+
     /* send each packet */
     buf_ptr = buf;
     while (len > 0) {
@@ -120,7 +120,7 @@ void mpegts_write_section(MpegTSSection *s, uint8_t *buf, int len)
         if (first)
             *q++ = 0; /* 0 offset */
         len1 = TS_PACKET_SIZE - (q - packet);
-        if (len1 > len) 
+        if (len1 > len)
             len1 = len;
         memcpy(q, buf_ptr, len1);
         q += len1;
@@ -145,13 +145,13 @@ static inline void put16(uint8_t **q_ptr, int val)
     *q_ptr = q;
 }
 
-int mpegts_write_section1(MpegTSSection *s, int tid, int id, 
+int mpegts_write_section1(MpegTSSection *s, int tid, int id,
                           int version, int sec_num, int last_sec_num,
                           uint8_t *buf, int len)
 {
     uint8_t section[1024], *q;
     unsigned int tot_len;
-    
+
     tot_len = 3 + 5 + len + 4;
     /* check if not too big */
     if (tot_len > 1024)
@@ -165,7 +165,7 @@ int mpegts_write_section1(MpegTSSection *s, int tid, int id,
     *q++ = sec_num;
     *q++ = last_sec_num;
     memcpy(q, buf, len);
-    
+
     mpegts_write_section(s, section, tot_len);
     return 0;
 }
@@ -230,7 +230,7 @@ static void mpegts_write_pat(AVFormatContext *s)
     MpegTSService *service;
     uint8_t data[1012], *q;
     int i;
-    
+
     q = data;
     for(i = 0; i < ts->nb_services; i++) {
         service = ts->services[i];
@@ -258,7 +258,7 @@ static void mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
     val = 0xf000 | (q - program_info_length_ptr - 2);
     program_info_length_ptr[0] = val >> 8;
     program_info_length_ptr[1] = val;
-    
+
     for(i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
         MpegTSWriteStream *ts_st = st->priv_data;
@@ -328,7 +328,7 @@ static void mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
     }
     mpegts_write_section1(&service->pmt, PMT_TID, service->sid, 0, 0, 0,
                           data, q - data);
-}   
+}
 
 /* NOTE: str == NULL is accepted for an empty string */
 static void putstr8(uint8_t **q_ptr, const char *str)
@@ -353,7 +353,7 @@ static void mpegts_write_sdt(AVFormatContext *s)
     MpegTSService *service;
     uint8_t data[1012], *q, *desc_list_len_ptr, *desc_len_ptr;
     int i, running_status, free_ca_mode, val;
-    
+
     q = data;
     put16(&q, ts->onid);
     *q++ = 0xff;
@@ -376,7 +376,7 @@ static void mpegts_write_sdt(AVFormatContext *s)
         desc_len_ptr[0] = q - desc_len_ptr - 1;
 
         /* fill descriptor length */
-        val = (running_status << 13) | (free_ca_mode << 12) | 
+        val = (running_status << 13) | (free_ca_mode << 12) |
             (q - desc_list_len_ptr - 2);
         desc_list_len_ptr[0] = val >> 8;
         desc_list_len_ptr[1] = val;
@@ -385,9 +385,9 @@ static void mpegts_write_sdt(AVFormatContext *s)
                           data, q - data);
 }
 
-static MpegTSService *mpegts_add_service(MpegTSWrite *ts, 
-                                         int sid, 
-                                         const char *provider_name, 
+static MpegTSService *mpegts_add_service(MpegTSWrite *ts,
+                                         int sid,
+                                         const char *provider_name,
                                          const char *name)
 {
     MpegTSService *service;
@@ -418,14 +418,14 @@ static int mpegts_write_header(AVFormatContext *s)
     AVStream *st;
     int i, total_bit_rate;
     const char *service_name;
-    
+
     ts->tsid = DEFAULT_TSID;
     ts->onid = DEFAULT_ONID;
     /* allocate a single DVB service */
     service_name = s->title;
     if (service_name[0] == '\0')
         service_name = DEFAULT_SERVICE_NAME;
-    service = mpegts_add_service(ts, DEFAULT_SID, 
+    service = mpegts_add_service(ts, DEFAULT_SID,
                                  DEFAULT_PROVIDER_NAME, service_name);
     service->pmt.write_packet = section_write_packet;
     service->pmt.opaque = s;
@@ -452,12 +452,12 @@ static int mpegts_write_header(AVFormatContext *s)
         ts_st->pid = DEFAULT_START_PID + i;
         ts_st->payload_pts = AV_NOPTS_VALUE;
         /* update PCR pid by using the first video stream */
-        if (st->codec->codec_type == CODEC_TYPE_VIDEO && 
+        if (st->codec->codec_type == CODEC_TYPE_VIDEO &&
             service->pcr_pid == 0x1fff)
             service->pcr_pid = ts_st->pid;
         total_bit_rate += st->codec->bit_rate;
     }
-    
+
     /* if no video stream, use the first stream as PCR */
     if (service->pcr_pid == 0x1fff && s->nb_streams > 0) {
         ts_st = s->streams[0]->priv_data;
@@ -466,14 +466,14 @@ static int mpegts_write_header(AVFormatContext *s)
 
     if (total_bit_rate <= 8 * 1024)
         total_bit_rate = 8 * 1024;
-    service->pcr_packet_freq = (total_bit_rate * PCR_RETRANS_TIME) / 
+    service->pcr_packet_freq = (total_bit_rate * PCR_RETRANS_TIME) /
         (TS_PACKET_SIZE * 8 * 1000);
-    ts->sdt_packet_freq = (total_bit_rate * SDT_RETRANS_TIME) / 
+    ts->sdt_packet_freq = (total_bit_rate * SDT_RETRANS_TIME) /
         (TS_PACKET_SIZE * 8 * 1000);
-    ts->pat_packet_freq = (total_bit_rate * PAT_RETRANS_TIME) / 
+    ts->pat_packet_freq = (total_bit_rate * PAT_RETRANS_TIME) /
         (TS_PACKET_SIZE * 8 * 1000);
 #if 0
-    printf("%d %d %d\n", 
+    printf("%d %d %d\n",
            total_bit_rate, ts->sdt_packet_freq, ts->pat_packet_freq);
 #endif
 
@@ -534,7 +534,7 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
         write_pcr = 0;
         if (ts_st->pid == ts_st->service->pcr_pid) {
             ts_st->service->pcr_packet_count++;
-            if (ts_st->service->pcr_packet_count >= 
+            if (ts_st->service->pcr_packet_count >=
                 ts_st->service->pcr_packet_freq) {
                 ts_st->service->pcr_packet_count = 0;
                 write_pcr = 1;
@@ -575,7 +575,7 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
             } else if (st->codec->codec_type == CODEC_TYPE_AUDIO &&
                        (st->codec->codec_id == CODEC_ID_MP2 ||
                         st->codec->codec_id == CODEC_ID_MP3)) {
-                *q++ = 0xc0; 
+                *q++ = 0xc0;
             } else {
                 *q++ = 0xbd;
                 if (st->codec->codec_type == CODEC_TYPE_SUBTITLE) {
@@ -599,7 +599,7 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
             if (pts != AV_NOPTS_VALUE) {
                 *q++ = 0x80; /* PTS only */
                 *q++ = 0x05; /* header len */
-                val = (0x02 << 4) | 
+                val = (0x02 << 4) |
                     (((pts >> 30) & 0x07) << 1) | 1;
                 *q++ = val;
                 val = (((pts >> 15) & 0x7fff) << 1) | 1;
@@ -629,7 +629,7 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
                 /* stuffing already present: increase its size */
                 afc_len = buf[4] + 1;
                 memmove(buf + 4 + afc_len + stuffing_len,
-                        buf + 4 + afc_len, 
+                        buf + 4 + afc_len,
                         header_len - (4 + afc_len));
                 buf[4] += stuffing_len;
                 memset(buf + 4 + afc_len, 0xff, stuffing_len);
@@ -665,7 +665,7 @@ static int mpegts_write_packet(AVFormatContext *s, AVPacket *pkt)
         mpegts_write_pes(s, st, buf, size, pkt->pts);
         return 0;
     }
-    
+
     max_payload_size = DEFAULT_PES_PAYLOAD_SIZE;
     while (size > 0) {
         len = max_payload_size - ts_st->payload_index;
@@ -705,7 +705,7 @@ static int mpegts_write_end(AVFormatContext *s)
         }
     }
     put_flush_packet(&s->pb);
-        
+
     for(i = 0; i < ts->nb_services; i++) {
         service = ts->services[i];
         av_freep(&service->provider_name);

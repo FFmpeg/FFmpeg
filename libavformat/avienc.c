@@ -20,7 +20,7 @@
 #include "avi.h"
 
 /*
- * TODO: 
+ * TODO:
  *  - fill all fields if non streamed (nb_frames for example)
  */
 
@@ -48,7 +48,7 @@ typedef struct {
     AVIIndex indexes[MAX_STREAMS];
 } AVIContext;
 
-static inline AVIIentry* avi_get_ientry(AVIIndex* idx, int ent_id) 
+static inline AVIIentry* avi_get_ientry(AVIIndex* idx, int ent_id)
 {
     int cl = ent_id / AVI_INDEX_CLUSTER_SIZE;
     int id = ent_id % AVI_INDEX_CLUSTER_SIZE;
@@ -108,39 +108,39 @@ const CodecTag codec_bmp_tags[] = {
     { CODEC_ID_MPEG4, MKTAG('W', 'V', '1', 'F') },
 
     { CODEC_ID_MSMPEG4V3, MKTAG('D', 'I', 'V', '3'), .invalid_asf = 1 }, /* default signature when using MSMPEG4 */
-    { CODEC_ID_MSMPEG4V3, MKTAG('M', 'P', '4', '3') }, 
+    { CODEC_ID_MSMPEG4V3, MKTAG('M', 'P', '4', '3') },
 
     /* added based on MPlayer */
-    { CODEC_ID_MSMPEG4V3, MKTAG('M', 'P', 'G', '3') }, 
-    { CODEC_ID_MSMPEG4V3, MKTAG('D', 'I', 'V', '5') }, 
-    { CODEC_ID_MSMPEG4V3, MKTAG('D', 'I', 'V', '6') }, 
-    { CODEC_ID_MSMPEG4V3, MKTAG('D', 'I', 'V', '4') }, 
-    { CODEC_ID_MSMPEG4V3, MKTAG('A', 'P', '4', '1') }, 
-    { CODEC_ID_MSMPEG4V3, MKTAG('C', 'O', 'L', '1') }, 
-    { CODEC_ID_MSMPEG4V3, MKTAG('C', 'O', 'L', '0') }, 
+    { CODEC_ID_MSMPEG4V3, MKTAG('M', 'P', 'G', '3') },
+    { CODEC_ID_MSMPEG4V3, MKTAG('D', 'I', 'V', '5') },
+    { CODEC_ID_MSMPEG4V3, MKTAG('D', 'I', 'V', '6') },
+    { CODEC_ID_MSMPEG4V3, MKTAG('D', 'I', 'V', '4') },
+    { CODEC_ID_MSMPEG4V3, MKTAG('A', 'P', '4', '1') },
+    { CODEC_ID_MSMPEG4V3, MKTAG('C', 'O', 'L', '1') },
+    { CODEC_ID_MSMPEG4V3, MKTAG('C', 'O', 'L', '0') },
 
-    { CODEC_ID_MSMPEG4V2, MKTAG('M', 'P', '4', '2') }, 
+    { CODEC_ID_MSMPEG4V2, MKTAG('M', 'P', '4', '2') },
 
     /* added based on MPlayer */
     { CODEC_ID_MSMPEG4V2, MKTAG('D', 'I', 'V', '2') },
- 
-    { CODEC_ID_MSMPEG4V1, MKTAG('M', 'P', 'G', '4') }, 
 
-    { CODEC_ID_WMV1, MKTAG('W', 'M', 'V', '1') }, 
+    { CODEC_ID_MSMPEG4V1, MKTAG('M', 'P', 'G', '4') },
+
+    { CODEC_ID_WMV1, MKTAG('W', 'M', 'V', '1') },
 
     /* added based on MPlayer */
-    { CODEC_ID_WMV2, MKTAG('W', 'M', 'V', '2') }, 
-    { CODEC_ID_DVVIDEO, MKTAG('d', 'v', 's', 'd') }, 
-    { CODEC_ID_DVVIDEO, MKTAG('d', 'v', 'h', 'd') }, 
-    { CODEC_ID_DVVIDEO, MKTAG('d', 'v', 's', 'l') }, 
+    { CODEC_ID_WMV2, MKTAG('W', 'M', 'V', '2') },
+    { CODEC_ID_DVVIDEO, MKTAG('d', 'v', 's', 'd') },
+    { CODEC_ID_DVVIDEO, MKTAG('d', 'v', 'h', 'd') },
+    { CODEC_ID_DVVIDEO, MKTAG('d', 'v', 's', 'l') },
     { CODEC_ID_DVVIDEO, MKTAG('d', 'v', '2', '5') },
-    { CODEC_ID_MPEG1VIDEO, MKTAG('m', 'p', 'g', '1') }, 
-    { CODEC_ID_MPEG1VIDEO, MKTAG('m', 'p', 'g', '2') }, 
-    { CODEC_ID_MPEG2VIDEO, MKTAG('m', 'p', 'g', '2') }, 
-    { CODEC_ID_MPEG1VIDEO, MKTAG('P', 'I', 'M', '1') }, 
-    { CODEC_ID_MPEG1VIDEO, MKTAG('V', 'C', 'R', '2') }, 
-    { CODEC_ID_MPEG1VIDEO, 0x10000001 }, 
-    { CODEC_ID_MPEG2VIDEO, 0x10000002 }, 
+    { CODEC_ID_MPEG1VIDEO, MKTAG('m', 'p', 'g', '1') },
+    { CODEC_ID_MPEG1VIDEO, MKTAG('m', 'p', 'g', '2') },
+    { CODEC_ID_MPEG2VIDEO, MKTAG('m', 'p', 'g', '2') },
+    { CODEC_ID_MPEG1VIDEO, MKTAG('P', 'I', 'M', '1') },
+    { CODEC_ID_MPEG1VIDEO, MKTAG('V', 'C', 'R', '2') },
+    { CODEC_ID_MPEG1VIDEO, 0x10000001 },
+    { CODEC_ID_MPEG2VIDEO, 0x10000002 },
     { CODEC_ID_MPEG2VIDEO, MKTAG('D', 'V', 'R', ' ') },
     { CODEC_ID_MJPEG, MKTAG('M', 'J', 'P', 'G') },
     { CODEC_ID_MJPEG, MKTAG('L', 'J', 'P', 'G') },
@@ -258,7 +258,7 @@ void put_bmp_header(ByteIOContext *pb, AVCodecContext *enc, const CodecTag *tags
     put_le32(pb, enc->width);
     put_le32(pb, enc->height);
     put_le16(pb, 1); /* planes */
-    
+
     put_le16(pb, enc->bits_per_sample ? enc->bits_per_sample : 24); /* depth */
     /* compression type */
     put_le32(pb, for_asf ? (enc->codec_tag ? enc->codec_tag : codec_get_asf_tag(tags, enc->codec_id)) : enc->codec_tag); //
@@ -267,7 +267,7 @@ void put_bmp_header(ByteIOContext *pb, AVCodecContext *enc, const CodecTag *tags
     put_le32(pb, 0);
     put_le32(pb, 0);
     put_le32(pb, 0);
-    
+
     put_buffer(pb, enc->extradata, enc->extradata_size);
 
     if (enc->extradata_size & 1)
@@ -294,16 +294,16 @@ void ff_parse_specific_params(AVCodecContext *stream, int *au_rate, int *au_ssiz
     *au_rate /= gcd;
 }
 
-static offset_t avi_start_new_riff(AVIContext *avi, ByteIOContext *pb, 
+static offset_t avi_start_new_riff(AVIContext *avi, ByteIOContext *pb,
                                    const char* riff_tag, const char* list_tag)
 {
     offset_t loff;
     int i;
-    
+
     avi->riff_id++;
     for (i=0; i<MAX_STREAMS; i++)
          avi->indexes[i].entry = 0;
-    
+
     avi->riff_start = start_tag(pb, "RIFF");
     put_tag(pb, riff_tag);
     loff = start_tag(pb, "LIST");
@@ -311,7 +311,7 @@ static offset_t avi_start_new_riff(AVIContext *avi, ByteIOContext *pb,
     return loff;
 }
 
-static unsigned char* avi_stream2fourcc(unsigned char* tag, int index, 
+static unsigned char* avi_stream2fourcc(unsigned char* tag, int index,
                                         enum CodecType type)
 {
     tag[0] = '0';
@@ -351,7 +351,7 @@ static int avi_write_header(AVFormatContext *s)
         if (stream->codec_type == CODEC_TYPE_VIDEO)
             video_enc = stream;
     }
-    
+
     nb_frames = 0;
 
     if(video_enc){
@@ -370,23 +370,23 @@ static int avi_write_header(AVFormatContext *s)
     put_le32(pb, 0); /* initial frame */
     put_le32(pb, s->nb_streams); /* nb streams */
     put_le32(pb, 1024 * 1024); /* suggested buffer size */
-    if(video_enc){    
+    if(video_enc){
     put_le32(pb, video_enc->width);
     put_le32(pb, video_enc->height);
     } else {
 	put_le32(pb, 0);
 	put_le32(pb, 0);
-    }	
+    }
     put_le32(pb, 0); /* reserved */
     put_le32(pb, 0); /* reserved */
     put_le32(pb, 0); /* reserved */
     put_le32(pb, 0); /* reserved */
-    
+
     /* stream list */
     for(i=0;i<n;i++) {
         list2 = start_tag(pb, "LIST");
         put_tag(pb, "strl");
-    
+
         stream = s->streams[i]->codec;
 
         /* FourCC should really be set by the codec itself */
@@ -423,14 +423,14 @@ static int avi_write_header(AVFormatContext *s)
 	    put_le32(pb, AVI_MAX_RIFF_SIZE); /* FIXME: this may be broken, but who cares */
 	else
 	    put_le32(pb, 0); /* length, XXX: filled later */
-        
+
         /* suggested buffer size */ //FIXME set at the end to largest chunk
         if(stream->codec_type == CODEC_TYPE_VIDEO)
-            put_le32(pb, 1024 * 1024); 
+            put_le32(pb, 1024 * 1024);
         else if(stream->codec_type == CODEC_TYPE_AUDIO)
-            put_le32(pb, 12 * 1024); 
+            put_le32(pb, 12 * 1024);
         else
-            put_le32(pb, 0); 
+            put_le32(pb, 0);
         put_le32(pb, -1); /* quality */
         put_le32(pb, au_ssize); /* sample size */
         put_le32(pb, 0);
@@ -455,18 +455,18 @@ static int avi_write_header(AVFormatContext *s)
         }
         end_tag(pb, strf);
       }
-	
+
 	if (!url_is_streamed(pb)) {
 	    unsigned char tag[5];
 	    int j;
-    
-            /* Starting to lay out AVI OpenDML master index. 
+
+            /* Starting to lay out AVI OpenDML master index.
 	     * We want to make it JUNK entry for now, since we'd
-	     * like to get away without making AVI an OpenDML one 
+	     * like to get away without making AVI an OpenDML one
 	     * for compatibility reasons.
 	     */
 	    avi->indexes[i].entry = avi->indexes[i].ents_allocated = 0;
-	    avi->indexes[i].indx_start = start_tag(pb, "JUNK"); 
+	    avi->indexes[i].indx_start = start_tag(pb, "JUNK");
 	    put_le16(pb, 4);        /* wLongsPerEntry */
 	    put_byte(pb, 0);        /* bIndexSubType (0 == frame index) */
 	    put_byte(pb, 0);        /* bIndexType (0 == AVI_INDEX_OF_INDEXES) */
@@ -479,10 +479,10 @@ static int avi_write_header(AVFormatContext *s)
 	         put_le64(pb, 0);
 	    end_tag(pb, avi->indexes[i].indx_start);
 	}
-	
+
         end_tag(pb, list2);
     }
-    
+
     if (!url_is_streamed(pb)) {
         /* AVI could become an OpenDML one, if it grows beyond 2Gb range */
         avi->odml_list = start_tag(pb, "JUNK");
@@ -495,7 +495,7 @@ static int avi_write_header(AVFormatContext *s)
     }
 
     end_tag(pb, list1);
-    
+
     avi->movi_list = start_tag(pb, "LIST");
     put_tag(pb, "movi");
 
@@ -511,28 +511,28 @@ static int avi_write_ix(AVFormatContext *s)
     unsigned char tag[5];
     unsigned char ix_tag[] = "ix00";
     int i, j;
-    
+
     if (url_is_streamed(pb))
 	return -1;
 
     if (avi->riff_id > AVI_MASTER_INDEX_SIZE)
         return -1;
-    
+
     for (i=0;i<s->nb_streams;i++) {
 	 offset_t ix, pos;
-	 
+
 	 avi_stream2fourcc(&tag[0], i, s->streams[i]->codec->codec_type);
 	 ix_tag[3] = '0' + i;
-	 
+
 	 /* Writing AVI OpenDML leaf index chunk */
-	 ix = url_ftell(pb); 
+	 ix = url_ftell(pb);
 	 put_tag(pb, &ix_tag[0]);     /* ix?? */
-	 put_le32(pb, avi->indexes[i].entry * 8 + 24); 
+	 put_le32(pb, avi->indexes[i].entry * 8 + 24);
 	                              /* chunk size */
          put_le16(pb, 2);             /* wLongsPerEntry */
-	 put_byte(pb, 0);             /* bIndexSubType (0 == frame index) */ 
+	 put_byte(pb, 0);             /* bIndexSubType (0 == frame index) */
 	 put_byte(pb, 1);             /* bIndexType (1 == AVI_INDEX_OF_CHUNKS) */
-	 put_le32(pb, avi->indexes[i].entry);          
+	 put_le32(pb, avi->indexes[i].entry);
 	                              /* nEntriesInUse */
 	 put_tag(pb, &tag[0]);        /* dwChunkId */
 	 put_le64(pb, avi->movi_list);/* qwBaseOffset */
@@ -546,7 +546,7 @@ static int avi_write_ix(AVFormatContext *s)
          }
 	 put_flush_packet(pb);
          pos = url_ftell(pb);
-	
+
 	 /* Updating one entry in the AVI OpenDML master index */
 	 url_fseek(pb, avi->indexes[i].indx_start - 8, SEEK_SET);
 	 put_tag(pb, "indx");                 /* enabling this entry */
@@ -583,17 +583,17 @@ static int avi_write_idx1(AVFormatContext *s)
 	    for (i=0; i<s->nb_streams; i++) {
 	         if (avi->indexes[i].entry <= entry[i])
 		     continue;
-		 
+
 		 tie = avi_get_ientry(&avi->indexes[i], entry[i]);
 		 if (empty || tie->pos < ie->pos) {
-		     ie = tie; 
+		     ie = tie;
 		     stream_id = i;
 		 }
 		 empty = 0;
 	    }
 	    if (!empty) {
-	        avi_stream2fourcc(&tag[0], stream_id, 
-		                  s->streams[stream_id]->codec->codec_type); 
+	        avi_stream2fourcc(&tag[0], stream_id,
+		                  s->streams[stream_id]->codec->codec_type);
 	        put_tag(pb, &tag[0]);
 		put_le32(pb, ie->flags);
                 put_le32(pb, ie->pos);
@@ -621,7 +621,7 @@ static int avi_write_idx1(AVFormatContext *s)
        }
        if (avi->frames_hdr_all != 0) {
            url_fseek(pb, avi->frames_hdr_all, SEEK_SET);
-           put_le32(pb, nb_frames); 
+           put_le32(pb, nb_frames);
        }
        url_fseek(pb, file_size, SEEK_SET);
     }
@@ -652,19 +652,19 @@ static int avi_write_packet(AVFormatContext *s, AVPacket *pkt)
     avi->packet_count[stream_index]++;
 
     // Make sure to put an OpenDML chunk when the file size exceeds the limits
-    if (!url_is_streamed(pb) && 
+    if (!url_is_streamed(pb) &&
 	(url_ftell(pb) - avi->riff_start > AVI_MAX_RIFF_SIZE)) {
-	 
+
         avi_write_ix(s);
         end_tag(pb, avi->movi_list);
-        
+
 	if (avi->riff_id == 1)
 	    avi_write_idx1(s);
 
 	end_tag(pb, avi->riff_start);
 	avi->movi_list = avi_start_new_riff(avi, pb, "AVIX", "movi");
     }
-    
+
     avi_stream2fourcc(&tag[0], stream_index, enc->codec_type);
     if(pkt->flags&PKT_FLAG_KEY)
         flags = 0x10;
@@ -677,7 +677,7 @@ static int avi_write_packet(AVFormatContext *s, AVPacket *pkt)
 	int cl = idx->entry / AVI_INDEX_CLUSTER_SIZE;
 	int id = idx->entry % AVI_INDEX_CLUSTER_SIZE;
         if (idx->ents_allocated <= idx->entry) {
-	    idx->cluster = av_realloc(idx->cluster, (cl+1)*sizeof(void*)); 
+	    idx->cluster = av_realloc(idx->cluster, (cl+1)*sizeof(void*));
 	    if (!idx->cluster)
 	        return -1;
             idx->cluster[cl] = av_malloc(AVI_INDEX_CLUSTER_SIZE*sizeof(AVIIentry));
@@ -685,13 +685,13 @@ static int avi_write_packet(AVFormatContext *s, AVPacket *pkt)
 		return -1;
 	    idx->ents_allocated += AVI_INDEX_CLUSTER_SIZE;
 	}
- 	
-	idx->cluster[cl][id].flags = flags; 
+
+	idx->cluster[cl][id].flags = flags;
         idx->cluster[cl][id].pos = url_ftell(pb) - avi->movi_list;
         idx->cluster[cl][id].len = size;
 	idx->entry++;
     }
-    
+
     put_buffer(pb, tag, 4);
     put_le32(pb, size);
     put_buffer(pb, pkt->data, size);
@@ -750,7 +750,7 @@ static int avi_write_trailer(AVFormatContext *s)
 	 avi->indexes[i].cluster = NULL;
 	 avi->indexes[i].ents_allocated = avi->indexes[i].entry = 0;
     }
-    
+
     return res;
 }
 

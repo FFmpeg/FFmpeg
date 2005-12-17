@@ -64,13 +64,13 @@ have a V4L video capture card):
 @end example
 
 At this point you should be able to go to your Windows machine and fire up
-Windows Media Player (WMP). Go to Open URL and enter 
+Windows Media Player (WMP). Go to Open URL and enter
 
 @example
     http://<linuxbox>:8090/test.asf
 @end example
 
-You should (after a short delay) see video and hear audio. 
+You should (after a short delay) see video and hear audio.
 
 WARNING: trying to stream test1.mpg doesn't work with WMP as it tries to
 transfer the entire file before starting to play.
@@ -78,7 +78,7 @@ The same is true of AVI files.
 
 @section What happens next?
 
-You should edit the ffserver.conf file to suit your needs (in terms of 
+You should edit the ffserver.conf file to suit your needs (in terms of
 frame rates etc). Then install ffserver and ffmpeg, write a script to start
 them up, and off you go.
 
@@ -89,10 +89,10 @@ them up, and off you go.
 Maybe you didn't install LAME, or got your ./configure statement wrong. Check
 the ffmpeg output to see if a line referring to MP3 is present. If not, then
 your configuration was incorrect. If it is, then maybe your wiring is not
-set up correctly. Maybe the sound card is not getting data from the right 
+set up correctly. Maybe the sound card is not getting data from the right
 input source. Maybe you have a really awful audio interface (like I do)
-that only captures in stereo and also requires that one channel be flipped. 
-If you are one of these people, then export 'AUDIO_FLIP_LEFT=1' before 
+that only captures in stereo and also requires that one channel be flipped.
+If you are one of these people, then export 'AUDIO_FLIP_LEFT=1' before
 starting ffmpeg.
 
 @subsection The audio and video loose sync after a while.
@@ -114,7 +114,7 @@ I suspect that the new one is not available unless you have installed WMP 7].
 @section What else can it do?
 
 You can replay video from .ffm files that was recorded earlier.
-However, there are a number of caveats, including the fact that the 
+However, there are a number of caveats, including the fact that the
 ffserver parameters must match the original parameters used to record the
 file. If they do not, then ffserver deletes the file before recording into it.
 (Now that I write this, it seems broken).
@@ -129,7 +129,7 @@ in browsers. These files are actually redirections to the underlying ASF
 or RM file. The reason for this is that the browser often fetches the
 entire file before starting up the external viewer. The redirection files
 are very small and can be transferred quickly. [The stream itself is
-often 'infinite' and thus the browser tries to download it and never 
+often 'infinite' and thus the browser tries to download it and never
 finishes.]
 
 @section Tips
@@ -140,7 +140,7 @@ signal continuously. However, ffserver (by default) starts sending data
 in realtime. This means that there is a pause of a few seconds while the
 buffering is being done by the player. The good news is that this can be
 cured by adding a '?buffer=5' to the end of the URL. This means that the
-stream should start 5 seconds in the past -- and so the first 5 seconds 
+stream should start 5 seconds in the past -- and so the first 5 seconds
 of the stream are sent as fast as the network will allow. It will then
 slow down to real time. This noticeably improves the startup experience.
 
@@ -161,14 +161,14 @@ means that the timestamp in the encoded data stream gets behind realtime.
 This means that if you say 'Preroll 10', then when the stream gets 10
 or more seconds behind, there is no Preroll left.
 
-Fixing this requires a change in the internals of how timestamps are 
+Fixing this requires a change in the internals of how timestamps are
 handled.
 
 @section Does the @code{?date=} stuff work.
 
 Yes (subject to the limitation outlined above). Also note that whenever you
 start ffserver, it deletes the ffm file (if any parameters have changed),
-thus wiping out what you had recorded before. 
+thus wiping out what you had recorded before.
 
 The format of the @code{?date=xxxxxx} is fairly flexible. You should use one
 of the following formats (the 'T' is literal):
@@ -178,7 +178,7 @@ of the following formats (the 'T' is literal):
 * YYYY-MM-DDTHH:MM:SSZ    (UTC)
 @end example
 
-You can omit the YYYY-MM-DD, and then it refers to the current day. However 
+You can omit the YYYY-MM-DD, and then it refers to the current day. However
 note that @samp{?date=16:00:00} refers to 16:00 on the current day -- this
 may be in the future and so is unlikely to be useful.
 
@@ -187,7 +187,7 @@ For example:   @samp{http://localhost:8080/test.asf?date=2002-07-26T23:05:00}.
 
 @chapter Invocation
 @section Syntax
-@example 
+@example
 @c man begin SYNOPSIS
 ffserver [options]
 @c man end

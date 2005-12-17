@@ -30,7 +30,7 @@ void get_pixels_mvi(DCTELEM *restrict block,
 
         p = ldq(pixels);
         stq(unpkbw(p),       block);
-        stq(unpkbw(p >> 32), block + 4); 
+        stq(unpkbw(p >> 32), block + 4);
 
         pixels += line_size;
         block += 8;
@@ -187,7 +187,7 @@ int pix_abs16x16_x2_mvi(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, in
         /* |.......l|lllllllr|rrrrrrr*|
            This case is special because disalign1 would be 8, which
            gets treated as 0 by extqh.  At least it is a bit faster
-           that way :)  */   
+           that way :)  */
         do {
             uint64_t p1_l, p1_r, p2_l, p2_r;
             uint64_t l, m, r;
@@ -201,7 +201,7 @@ int pix_abs16x16_x2_mvi(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, in
             p2_r  = avg2(extql(m, disalign) | extqh(r, disalign), r);
             pix1 += line_size;
             pix2 += line_size;
-            
+
             result += perr(p1_l, p2_l)
                     + perr(p1_r, p2_r);
         } while (--h);
@@ -288,7 +288,7 @@ int pix_abs16x16_y2_mvi(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, in
 int pix_abs16x16_xy2_mvi(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
 {
     int result = 0;
-    
+
     uint64_t p1_l, p1_r;
     uint64_t p2_l, p2_r, p2_x;
 

@@ -71,9 +71,9 @@ POWERPC_PERF_DECLARE(altivec_fft_num, s->nbits >= 6);
     FFTComplex *exptab = s->exptab;
     int l;
     FFTSample tmp_re, tmp_im;
-    
+
 POWERPC_PERF_START_COUNT(altivec_fft_num, s->nbits >= 6);
- 
+
     np = 1 << ln;
 
     /* pass 0 */
@@ -81,29 +81,29 @@ POWERPC_PERF_START_COUNT(altivec_fft_num, s->nbits >= 6);
     p=&z[0];
     j=(np >> 1);
     do {
-        BF(p[0].re, p[0].im, p[1].re, p[1].im, 
+        BF(p[0].re, p[0].im, p[1].re, p[1].im,
            p[0].re, p[0].im, p[1].re, p[1].im);
         p+=2;
     } while (--j != 0);
 
     /* pass 1 */
 
-    
+
     p=&z[0];
     j=np >> 2;
     if (s->inverse) {
         do {
-            BF(p[0].re, p[0].im, p[2].re, p[2].im, 
+            BF(p[0].re, p[0].im, p[2].re, p[2].im,
                p[0].re, p[0].im, p[2].re, p[2].im);
-            BF(p[1].re, p[1].im, p[3].re, p[3].im, 
+            BF(p[1].re, p[1].im, p[3].re, p[3].im,
                p[1].re, p[1].im, -p[3].im, p[3].re);
             p+=4;
         } while (--j != 0);
     } else {
         do {
-            BF(p[0].re, p[0].im, p[2].re, p[2].im, 
+            BF(p[0].re, p[0].im, p[2].re, p[2].im,
                p[0].re, p[0].im, p[2].re, p[2].im);
-            BF(p[1].re, p[1].im, p[3].re, p[3].im, 
+            BF(p[1].re, p[1].im, p[3].re, p[3].im,
                p[1].re, p[1].im, p[3].im, -p[3].re);
             p+=4;
         } while (--j != 0);
@@ -119,7 +119,7 @@ POWERPC_PERF_START_COUNT(altivec_fft_num, s->nbits >= 6);
         for (j = 0; j < nblocks; ++j) {
             BF(p->re, p->im, q->re, q->im,
                p->re, p->im, q->re, q->im);
-            
+
             p++;
             q++;
             for(l = nblocks; l < np2; l += nblocks) {
@@ -145,7 +145,7 @@ POWERPC_PERF_STOP_COUNT(altivec_fft_num, s->nbits >= 6);
 #else
     register const vector float vczero = (const vector float){0.,0.,0.,0.};
 #endif
-    
+
     int ln = s->nbits;
     int	j, np, np2;
     int	nblocks, nloops;
@@ -163,7 +163,7 @@ POWERPC_PERF_START_COUNT(altivec_fft_num, s->nbits >= 6);
         r = (vector float *)&z[0];
 
         c1 = vcii(p,p,n,n);
-        
+
         if (s->inverse)
             {
                 c2 = vcii(p,p,n,p);
@@ -172,27 +172,27 @@ POWERPC_PERF_START_COUNT(altivec_fft_num, s->nbits >= 6);
             {
                 c2 = vcii(p,p,p,n);
             }
-        
+
         j = (np >> 2);
         do {
             a = vec_ld(0, r);
             a1 = vec_ld(sizeof(vector float), r);
-            
+
             b = vec_perm(a,a,vcprmle(1,0,3,2));
             a = vec_madd(a,c1,b);
             /* do the pass 0 butterfly */
-            
+
             b = vec_perm(a1,a1,vcprmle(1,0,3,2));
             b = vec_madd(a1,c1,b);
             /* do the pass 0 butterfly */
-            
+
             /* multiply third by -i */
             b = vec_perm(b,b,vcprmle(2,3,1,0));
-            
+
             /* do the pass 1 butterfly */
             vec_st(vec_madd(b,c2,a), 0, r);
             vec_st(vec_nmsub(b,c2,a), sizeof(vector float), r);
-            
+
             r += 2;
         } while (--j != 0);
     }
@@ -215,7 +215,7 @@ POWERPC_PERF_START_COUNT(altivec_fft_num, s->nbits >= 6);
 
                 a = vec_ld(0, (float*)p);
                 b = vec_ld(0, (float*)q);
-                
+
                 /* complex mul */
                 c = vec_ld(0, (float*)cptr);
                 /*  cre*re cim*re */
@@ -223,16 +223,16 @@ POWERPC_PERF_START_COUNT(altivec_fft_num, s->nbits >= 6);
                 c = vec_ld(sizeof(vector float), (float*)cptr);
                 /*  -cim*im cre*im */
                 b = vec_madd(c, vec_perm(b,b,vcprmle(3,3,1,1)),t1);
-                
+
                 /* butterfly */
                 vec_st(vec_add(a,b), 0, (float*)p);
                 vec_st(vec_sub(a,b), 0, (float*)q);
-                
+
                 p += 2;
                 q += 2;
                 cptr += 4;
             } while (--k);
-            
+
             p += nloops;
             q += nloops;
         } while (--j);

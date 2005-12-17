@@ -18,7 +18,7 @@
 
 /**
  * @file vp3dsp.c
- * Standard C DSP-oriented functions cribbed from the original VP3 
+ * Standard C DSP-oriented functions cribbed from the original VP3
  * source code.
  */
 
@@ -45,7 +45,7 @@ static always_inline void idct(uint8_t *dst, int stride, int16_t *input, int typ
     int t1, t2;
 
     int i;
-    
+
     /* Inverse DCT on the rows now */
     for (i = 0; i < 8; i++) {
         /* Check for non-zero values */
@@ -134,7 +134,7 @@ static always_inline void idct(uint8_t *dst, int stride, int16_t *input, int typ
 
         ip += 8;            /* next row */
     }
-    
+
     ip = input;
 
     for ( i = 0; i < 8; i++) {
@@ -224,49 +224,49 @@ static always_inline void idct(uint8_t *dst, int stride, int16_t *input, int typ
             if(type==0){
                 ip[0*8] = (_Gd + _Cd )  >> 4;
                 ip[7*8] = (_Gd - _Cd )  >> 4;
-    
+
                 ip[1*8] = (_Add + _Hd ) >> 4;
                 ip[2*8] = (_Add - _Hd ) >> 4;
-    
+
                 ip[3*8] = (_Ed + _Dd )  >> 4;
                 ip[4*8] = (_Ed - _Dd )  >> 4;
-    
+
                 ip[5*8] = (_Fd + _Bdd ) >> 4;
                 ip[6*8] = (_Fd - _Bdd ) >> 4;
             }else if(type==1){
                 dst[0*stride] = cm[(_Gd + _Cd )  >> 4];
                 dst[7*stride] = cm[(_Gd - _Cd )  >> 4];
-    
+
                 dst[1*stride] = cm[(_Add + _Hd ) >> 4];
                 dst[2*stride] = cm[(_Add - _Hd ) >> 4];
-    
+
                 dst[3*stride] = cm[(_Ed + _Dd )  >> 4];
                 dst[4*stride] = cm[(_Ed - _Dd )  >> 4];
-    
+
                 dst[5*stride] = cm[(_Fd + _Bdd ) >> 4];
                 dst[6*stride] = cm[(_Fd - _Bdd ) >> 4];
             }else{
                 dst[0*stride] = cm[dst[0*stride] + ((_Gd + _Cd )  >> 4)];
                 dst[7*stride] = cm[dst[7*stride] + ((_Gd - _Cd )  >> 4)];
-    
+
                 dst[1*stride] = cm[dst[1*stride] + ((_Add + _Hd ) >> 4)];
                 dst[2*stride] = cm[dst[2*stride] + ((_Add - _Hd ) >> 4)];
-    
+
                 dst[3*stride] = cm[dst[3*stride] + ((_Ed + _Dd )  >> 4)];
                 dst[4*stride] = cm[dst[4*stride] + ((_Ed - _Dd )  >> 4)];
-    
+
                 dst[5*stride] = cm[dst[5*stride] + ((_Fd + _Bdd ) >> 4)];
                 dst[6*stride] = cm[dst[6*stride] + ((_Fd - _Bdd ) >> 4)];
             }
 
         } else {
             if(type==0){
-                ip[0*8] = 
-                ip[1*8] = 
-                ip[2*8] = 
-                ip[3*8] = 
-                ip[4*8] = 
-                ip[5*8] = 
+                ip[0*8] =
+                ip[1*8] =
+                ip[2*8] =
+                ip[3*8] =
+                ip[4*8] =
+                ip[5*8] =
                 ip[6*8] =
                 ip[7*8] = ((xC4S4 * ip[0*8] + (IdctAdjustBeforeShift<<16))>>20);
             }else if(type==1){
@@ -301,7 +301,7 @@ static always_inline void idct(uint8_t *dst, int stride, int16_t *input, int typ
 void ff_vp3_idct_c(DCTELEM *block/* align 16*/){
     idct(NULL, 0, block, 0);
 }
-    
+
 void ff_vp3_idct_put_c(uint8_t *dest/*align 8*/, int line_size, DCTELEM *block/*align 16*/){
     idct(dest, line_size, block, 1);
 }

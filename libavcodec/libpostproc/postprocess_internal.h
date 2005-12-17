@@ -114,7 +114,7 @@ typedef struct PPContext{
 	uint8_t *tempBlocks; ///<used for the horizontal code
 
 	/**
-	 * luma histogram.         
+	 * luma histogram.
 	 * we need 64bit here otherwise we'll going to have a problem
 	 * after watching a black picture for 5 hours
 	 */
@@ -147,12 +147,12 @@ typedef struct PPContext{
 	int nonBQP;
 
 	int frameNum;
-	
+
 	int cpuCaps;
-        
+
 	int qpStride; ///<size of qp buffers (needed to realloc them if needed)
 	int stride;   ///<size of some buffers (needed to realloc them if needed)
-        
+
 	int hChromaSubSample;
 	int vChromaSubSample;
 

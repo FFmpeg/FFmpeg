@@ -40,7 +40,7 @@ static const char ws_adpcm_4bit[] = {
 static int ws_snd_decode_init(AVCodecContext * avctx)
 {
 //    WSSNDContext *c = avctx->priv_data;
-    
+
     return 0;
 }
 
@@ -49,12 +49,12 @@ static int ws_snd_decode_frame(AVCodecContext *avctx,
                 uint8_t *buf, int buf_size)
 {
 //    WSSNDContext *c = avctx->priv_data;
-    
+
     int in_size, out_size;
     int sample = 0;
     int i;
     short *samples = data;
-    
+
     if (!buf_size)
         return 0;
 
@@ -62,13 +62,13 @@ static int ws_snd_decode_frame(AVCodecContext *avctx,
     *data_size = out_size * 2;
     in_size = LE_16(&buf[2]);
     buf += 4;
-    
+
     if (in_size == out_size) {
         for (i = 0; i < out_size; i++)
             *samples++ = (*buf++ - 0x80) << 8;
         return buf_size;
     }
-    
+
     while (out_size > 0) {
         int code;
         uint8_t count;
@@ -129,7 +129,7 @@ static int ws_snd_decode_frame(AVCodecContext *avctx,
             }
         }
     }
-    
+
     return buf_size;
 }
 

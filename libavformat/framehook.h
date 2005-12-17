@@ -2,7 +2,7 @@
 #define _FRAMEHOOK_H
 
 /*
- * Prototypes for interface to .so that implement a video processing hook 
+ * Prototypes for interface to .so that implement a video processing hook
  */
 
 #include "avcodec.h"

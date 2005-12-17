@@ -6,7 +6,7 @@ if [ $? -eq 0 ]; then
 else
   diff_cmd="diff"
 fi
-    
+
 # Make sure that the data directory exists
 mkdir -p data
 
@@ -32,7 +32,7 @@ sleep 2
             wget $WGET_OPTIONS --output-document=- http://localhost:9999/$file?date=19700101T000000Z | dd bs=1 count=100000 > ff-$file 2>/dev/null &
         fi
         MDFILES="$MDFILES ff-$file"
-    done    
+    done
     wait
     # the status page is always different
     md5sum $MDFILES | grep -v html > ffserver.regression
@@ -40,11 +40,11 @@ sleep 2
 kill $FFSERVER_PID
 wait > /dev/null 2>&1
 if $diff_cmd data/ffserver.regression $1 ; then
-    echo 
+    echo
     echo Server regression test succeeded.
     exit 0
 else
-    echo 
+    echo
     echo Server regression test: Error.
     exit 1
 fi

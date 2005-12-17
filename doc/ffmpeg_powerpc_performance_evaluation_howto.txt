@@ -158,6 +158,6 @@ V) Enabling the PMC on Linux
 
 I don't know how to do it, sorry :-) Any idea very much welcome.
 
--- 
+--
 Romain Dolbeau
 <romain@dolbeau.org>

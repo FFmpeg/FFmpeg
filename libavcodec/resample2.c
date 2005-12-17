@@ -17,7 +17,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
- 
+
 /**
  * @file resample2.c
  * audio resampling
@@ -66,7 +66,7 @@ double bessel(double x){
     double v=1;
     double t=1;
     int i;
-    
+
     for(i=1; i<50; i++){
         t *= i;
         v += pow(x*x/4, i)/(t*t);
@@ -134,7 +134,7 @@ AVResampleContext *av_resample_init(int out_rate, int in_rate, int filter_size, 
     AVResampleContext *c= av_mallocz(sizeof(AVResampleContext));
     double factor= FFMIN(out_rate * cutoff / in_rate, 1.0);
     int phase_count= 1<<phase_shift;
-    
+
     c->phase_shift= phase_shift;
     c->phase_mask= phase_count-1;
     c->linear= linear;
@@ -166,7 +166,7 @@ void av_resample_close(AVResampleContext *c){
  * example: av_resample_compensate(c, 10, 500)
  * here instead of 510 samples only 500 samples would be output
  *
- * note, due to rounding the actual compensation might be slightly different, 
+ * note, due to rounding the actual compensation might be slightly different,
  * especially if the compensation_distance is large and the in_rate used during init is small
  */
 void av_resample_compensate(AVResampleContext *c, int sample_delta, int compensation_distance){
@@ -196,7 +196,7 @@ int av_resample(AVResampleContext *c, short *dst, short *src, int *consumed, int
         int64_t index2= ((int64_t)index)<<32;
         int64_t incr= (1LL<<32) * c->dst_incr / c->src_incr;
         dst_size= FFMIN(dst_size, (src_size-1-index) * (int64_t)c->src_incr / c->dst_incr);
-        
+
         for(dst_index=0; dst_index < dst_size; dst_index++){
             dst[dst_index] = src[index2>>32];
             index2 += incr;
@@ -210,7 +210,7 @@ int av_resample(AVResampleContext *c, short *dst, short *src, int *consumed, int
         FELEM *filter= c->filter_bank + c->filter_length*(index & c->phase_mask);
         int sample_index= index >> c->phase_shift;
         FELEM2 val=0;
-                
+
         if(sample_index < 0){
             for(i=0; i<c->filter_length; i++)
                 val += src[ABS(sample_index + i) % src_size] * filter[i];
@@ -260,13 +260,13 @@ int av_resample(AVResampleContext *c, short *dst, short *src, int *consumed, int
         c->dst_incr= dst_incr_frac + c->src_incr*dst_incr;
         c->compensation_distance= compensation_distance;
     }
-#if 0    
+#if 0
     if(update_ctx && !c->compensation_distance){
 #undef rand
         av_resample_compensate(c, rand() % (8000*2) - 8000, 8000*2);
 av_log(NULL, AV_LOG_DEBUG, "%d %d %d\n", c->dst_incr, c->ideal_dst_incr, c->compensation_distance);
     }
 #endif
-    
+
     return dst_index;
 }

@@ -56,7 +56,7 @@ typedef struct {
 /* we use the standard 216 color palette */
 
 /* this script was used to create the palette:
- * for r in 00 33 66 99 cc ff; do for g in 00 33 66 99 cc ff; do echo -n "    "; for b in 00 33 66 99 cc ff; do 
+ * for r in 00 33 66 99 cc ff; do for g in 00 33 66 99 cc ff; do echo -n "    "; for b in 00 33 66 99 cc ff; do
  *   echo -n "{ 0x$r, 0x$g, 0x$b }, "; done; echo ""; done; done
  */
 
@@ -129,12 +129,12 @@ static void gif_put_bits_rev(PutBitContext *s, int n, unsigned int value)
         bit_cnt+=n;
     } else {
         bit_buf |= value << (bit_cnt);
-        
+
         *s->buf_ptr = bit_buf & 0xff;
         s->buf_ptr[1] = (bit_buf >> 8) & 0xff;
         s->buf_ptr[2] = (bit_buf >> 16) & 0xff;
         s->buf_ptr[3] = (bit_buf >> 24) & 0xff;
-        
+
         //printf("bitbuf = %08x\n", bit_buf);
         s->buf_ptr+=4;
         if (s->buf_ptr >= s->buf_end)
@@ -169,7 +169,7 @@ static void gif_flush_put_bits_rev(PutBitContext *s)
 /* !RevPutBitContext */
 
 /* GIF header */
-static int gif_image_write_header(ByteIOContext *pb, 
+static int gif_image_write_header(ByteIOContext *pb,
                                   int width, int height, int loop_count,
                                   uint32_t *palette)
 {
@@ -204,16 +204,16 @@ static int gif_image_write_header(ByteIOContext *pb,
 
 		byte   1       : 33 (hex 0x21) GIF Extension code
 		byte   2       : 255 (hex 0xFF) Application Extension Label
-		byte   3       : 11 (hex (0x0B) Length of Application Block 
+		byte   3       : 11 (hex (0x0B) Length of Application Block
 					 (eleven bytes of data to follow)
 		bytes  4 to 11 : "NETSCAPE"
 		bytes 12 to 14 : "2.0"
-		byte  15       : 3 (hex 0x03) Length of Data Sub-Block 
+		byte  15       : 3 (hex 0x03) Length of Data Sub-Block
 					 (three bytes of data to follow)
 		byte  16       : 1 (hex 0x01)
-		bytes 17 to 18 : 0 to 65535, an unsigned integer in 
-					 lo-hi byte format. This indicate the 
-					 number of iterations the loop should 
+		bytes 17 to 18 : 0 to 65535, an unsigned integer in
+					 lo-hi byte format. This indicate the
+					 number of iterations the loop should
 					 be executed.
 		bytes 19       : 0 (hex 0x00) a Data Sub-block Terminator
 	*/
@@ -241,7 +241,7 @@ static inline unsigned char gif_clut_index(uint8_t r, uint8_t g, uint8_t b)
 }
 
 
-static int gif_image_write_image(ByteIOContext *pb, 
+static int gif_image_write_image(ByteIOContext *pb,
                                  int x1, int y1, int width, int height,
                                  const uint8_t *buf, int linesize, int pix_fmt)
 {
@@ -302,7 +302,7 @@ static int gif_image_write_image(ByteIOContext *pb,
         left-=GIF_CHUNKS;
     }
     put_byte(pb, 0x00); /* end of image block */
-    
+
     return 0;
 }
 
@@ -351,7 +351,7 @@ static int gif_write_header(AVFormatContext *s)
     return 0;
 }
 
-static int gif_write_video(AVFormatContext *s, 
+static int gif_write_video(AVFormatContext *s,
                            AVCodecContext *enc, const uint8_t *buf, int size)
 {
     ByteIOContext *pb = &s->pb;
@@ -364,7 +364,7 @@ static int gif_write_video(AVFormatContext *s,
     put_byte(pb, 0xf9);
     put_byte(pb, 0x04); /* block size */
     put_byte(pb, 0x04); /* flags */
-    
+
     /* 1 jiffy is 1/70 s */
     /* the delay_time field indicates the number of jiffies - 1 */
     delay = gif->file_time - gif->time;
@@ -407,10 +407,10 @@ static int gif_write_trailer(AVFormatContext *s)
 /* better than nothing gif image writer */
 int gif_write(ByteIOContext *pb, AVImageInfo *info)
 {
-    gif_image_write_header(pb, info->width, info->height, AVFMT_NOOUTPUTLOOP, 
+    gif_image_write_header(pb, info->width, info->height, AVFMT_NOOUTPUTLOOP,
                            (uint32_t *)info->pict.data[1]);
-    gif_image_write_image(pb, 0, 0, info->width, info->height, 
-                          info->pict.data[0], info->pict.linesize[0], 
+    gif_image_write_image(pb, 0, 0, info->width, info->height,
+                          info->pict.data[0], info->pict.linesize[0],
                           PIX_FMT_PAL8);
     put_byte(pb, 0x3b);
     put_flush_packet(pb);

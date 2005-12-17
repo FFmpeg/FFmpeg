@@ -255,7 +255,7 @@ static void apply_motion_8x8(RoqContext *ri, int x, int y,
                 pa[2] = avg2(pb[2], pb[3]);
                 pa[3] = avg2(pb[3], pb[4]);
                 break;
- 
+
             case 2:
                 pa[0] = avg2(pb[0], pb[hw]);
                 pa[1] = avg2(pb[1], pb[hw+1]);
@@ -362,7 +362,7 @@ static void roqvideo_decode_frame(RoqContext *ri)
                             apply_motion_4x4(ri, x, y, 0, 8, 8);
                             break;
                         case RoQ_ID_FCC:
-                            apply_motion_4x4(ri, x, y, buf[bpos++], 
+                            apply_motion_4x4(ri, x, y, buf[bpos++],
                                 chunk_arg >> 8, chunk_arg & 0xff);
                             break;
                         case RoQ_ID_SLD:

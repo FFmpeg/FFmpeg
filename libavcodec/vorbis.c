@@ -366,7 +366,7 @@ static int vorbis_parse_setup_hdr_codebooks(vorbis_context *vc) {
         else                                       codebook_setup->nb_bits=V_NB_BITS;
 
         codebook_setup->maxdepth=(codebook_setup->maxdepth+codebook_setup->nb_bits-1)/codebook_setup->nb_bits;
-        
+
         if (init_vlc(&codebook_setup->vlc, codebook_setup->nb_bits, entries, tmp_vlc_bits, sizeof(*tmp_vlc_bits), sizeof(*tmp_vlc_bits), tmp_vlc_codes, sizeof(*tmp_vlc_codes), sizeof(*tmp_vlc_codes), INIT_VLC_LE)) {
             av_log(vc->avccontext, AV_LOG_ERROR, " Error generating vlc tables. \n");
             goto error;

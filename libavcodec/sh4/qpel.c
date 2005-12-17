@@ -1,4 +1,4 @@
-/* 
+/*
 	this is optimized for sh, which have post increment addressing (*p++)
 	some cpu may be index (p[n]) faster than post increment (*p++)
 */
@@ -398,12 +398,12 @@ static void gmc1_c(uint8_t *dst, uint8_t *src, int stride, int h, int x16, int y
     }while(--h);
 }
 
-static void gmc_c(uint8_t *dst, uint8_t *src, int stride, int h, int ox, int oy, 
+static void gmc_c(uint8_t *dst, uint8_t *src, int stride, int h, int ox, int oy,
                   int dxx, int dxy, int dyx, int dyy, int shift, int r, int width, int height)
 {
     int y, vx, vy;
     const int s= 1<<shift;
-    
+
     width--;
     height--;
 
@@ -421,7 +421,7 @@ static void gmc_c(uint8_t *dst, uint8_t *src, int stride, int h, int ox, int oy,
             frac_y= src_y&(s-1);
             src_x>>=shift;
             src_y>>=shift;
-  
+
             if((unsigned)src_x < width){
                 if((unsigned)src_y < height){
                     index= src_x + src_y*stride;
@@ -431,23 +431,23 @@ static void gmc_c(uint8_t *dst, uint8_t *src, int stride, int h, int ox, int oy,
                                            + src[index+stride+1]*   frac_x )*   frac_y
                                         + r)>>(shift*2);
                 }else{
-                    index= src_x + clip(src_y, 0, height)*stride;                    
-                    dst[y*stride + x]= ( (  src[index         ]*(s-frac_x) 
+                    index= src_x + clip(src_y, 0, height)*stride;
+                    dst[y*stride + x]= ( (  src[index         ]*(s-frac_x)
                                           + src[index       +1]*   frac_x )*s
                                         + r)>>(shift*2);
                 }
             }else{
                 if((unsigned)src_y < height){
-                    index= clip(src_x, 0, width) + src_y*stride;                    
-                    dst[y*stride + x]= (  (  src[index         ]*(s-frac_y) 
+                    index= clip(src_x, 0, width) + src_y*stride;
+                    dst[y*stride + x]= (  (  src[index         ]*(s-frac_y)
                                            + src[index+stride  ]*   frac_y )*s
                                         + r)>>(shift*2);
                 }else{
-                    index= clip(src_x, 0, width) + clip(src_y, 0, height)*stride;                    
+                    index= clip(src_x, 0, width) + clip(src_y, 0, height)*stride;
                     dst[y*stride + x]=    src[index         ];
                 }
             }
-            
+
             vx+= dxx;
             vy+= dyx;
         }
@@ -1566,7 +1566,7 @@ static void wmv2_mspel8_h_lowpass(uint8_t *dst, uint8_t *src, int dstStride, int
         src9 = *s++;
         dst[7]= cm[(9*(src7 + src8) - (src6 + src9) + 8)>>4];
         dst+=dstStride;
-        src+=srcStride;        
+        src+=srcStride;
     }while(--h);
 }
 

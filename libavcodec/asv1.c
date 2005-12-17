@@ -16,12 +16,12 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
- 
+
 /**
  * @file asv1.c
  * ASUS V1/V2 codec.
  */
- 
+
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mpegvideo.h"
@@ -31,7 +31,7 @@
 
 #define VLC_BITS 6
 #define ASV2_LEVEL_VLC_BITS 10
- 
+
 typedef struct ASV1Context{
     AVCodecContext *avctx;
     DSPContext dsp;
@@ -66,7 +66,7 @@ static const uint8_t scantab[64]={
 static const uint8_t ccp_tab[17][2]={
     {0x2,2}, {0x7,5}, {0xB,5}, {0x3,5},
     {0xD,5}, {0x5,5}, {0x9,5}, {0x1,5},
-    {0xE,5}, {0x6,5}, {0xA,5}, {0x2,5}, 
+    {0xE,5}, {0x6,5}, {0xA,5}, {0x2,5},
     {0xC,5}, {0x4,5}, {0x8,5}, {0x3,2},
     {0xF,5}, //EOB
 };
@@ -116,19 +116,19 @@ static void init_vlcs(ASV1Context *a){
     if (!done) {
         done = 1;
 
-        init_vlc(&ccp_vlc, VLC_BITS, 17, 
+        init_vlc(&ccp_vlc, VLC_BITS, 17,
                  &ccp_tab[0][1], 2, 1,
                  &ccp_tab[0][0], 2, 1, 1);
-        init_vlc(&dc_ccp_vlc, VLC_BITS, 8, 
+        init_vlc(&dc_ccp_vlc, VLC_BITS, 8,
                  &dc_ccp_tab[0][1], 2, 1,
                  &dc_ccp_tab[0][0], 2, 1, 1);
-        init_vlc(&ac_ccp_vlc, VLC_BITS, 16, 
+        init_vlc(&ac_ccp_vlc, VLC_BITS, 16,
                  &ac_ccp_tab[0][1], 2, 1,
                  &ac_ccp_tab[0][0], 2, 1, 1);
-        init_vlc(&level_vlc,  VLC_BITS, 7, 
+        init_vlc(&level_vlc,  VLC_BITS, 7,
                  &level_tab[0][1], 2, 1,
                  &level_tab[0][0], 2, 1, 1);
-        init_vlc(&asv2_level_vlc, ASV2_LEVEL_VLC_BITS, 63, 
+        init_vlc(&asv2_level_vlc, ASV2_LEVEL_VLC_BITS, 63,
                  &asv2_level_tab[0][1], 2, 1,
                  &asv2_level_tab[0][0], 2, 1, 1);
     }
@@ -181,7 +181,7 @@ static inline int asv1_decode_block(ASV1Context *a, DCTELEM block[64]){
     int i;
 
     block[0]= 8*get_bits(&a->gb, 8);
-    
+
     for(i=0; i<11; i++){
         const int ccp= get_vlc2(&a->gb, ccp_vlc.table, VLC_BITS, 1);
 
@@ -206,9 +206,9 @@ static inline int asv2_decode_block(ASV1Context *a, DCTELEM block[64]){
     int i, count, ccp;
 
     count= asv2_get_bits(&a->gb, 4);
-    
+
     block[0]= 8*asv2_get_bits(&a->gb, 8);
-    
+
     ccp= get_vlc2(&a->gb, dc_ccp_vlc.table, VLC_BITS, 1);
     if(ccp){
         if(ccp&4) block[a->scantable.permutated[1]]= (asv2_get_level(&a->gb) * a->intra_matrix[1])>>4;
@@ -226,17 +226,17 @@ static inline int asv2_decode_block(ASV1Context *a, DCTELEM block[64]){
             if(ccp&1) block[a->scantable.permutated[4*i+3]]= (asv2_get_level(&a->gb) * a->intra_matrix[4*i+3])>>4;
         }
     }
-    
+
     return 0;
 }
 
 static inline void asv1_encode_block(ASV1Context *a, DCTELEM block[64]){
     int i;
     int nc_count=0;
-    
+
     put_bits(&a->pb, 8, (block[0] + 32)>>6);
     block[0]= 0;
-    
+
     for(i=0; i<10; i++){
         const int index= scantab[4*i];
         int ccp=0;
@@ -247,11 +247,11 @@ static inline void asv1_encode_block(ASV1Context *a, DCTELEM block[64]){
         if( (block[index + 9] = (block[index + 9]*a->q_intra_matrix[index + 9] + (1<<15))>>16) ) ccp |= 1;
 
         if(ccp){
-            for(;nc_count; nc_count--) 
+            for(;nc_count; nc_count--)
                 put_bits(&a->pb, ccp_tab[0][1], ccp_tab[0][0]);
 
             put_bits(&a->pb, ccp_tab[ccp][1], ccp_tab[ccp][0]);
-            
+
             if(ccp&8) asv1_put_level(&a->pb, block[index + 0]);
             if(ccp&4) asv1_put_level(&a->pb, block[index + 8]);
             if(ccp&2) asv1_put_level(&a->pb, block[index + 1]);
@@ -266,20 +266,20 @@ static inline void asv1_encode_block(ASV1Context *a, DCTELEM block[64]){
 static inline void asv2_encode_block(ASV1Context *a, DCTELEM block[64]){
     int i;
     int count=0;
-    
+
     for(count=63; count>3; count--){
         const int index= scantab[count];
 
-        if( (block[index]*a->q_intra_matrix[index] + (1<<15))>>16 ) 
+        if( (block[index]*a->q_intra_matrix[index] + (1<<15))>>16 )
             break;
     }
-    
+
     count >>= 2;
 
     asv2_put_bits(&a->pb, 4, count);
     asv2_put_bits(&a->pb, 8, (block[0] + 32)>>6);
     block[0]= 0;
-    
+
     for(i=0; i<=count; i++){
         const int index= scantab[4*i];
         int ccp=0;
@@ -305,15 +305,15 @@ static inline int decode_mb(ASV1Context *a, DCTELEM block[6][64]){
     int i;
 
     a->dsp.clear_blocks(block[0]);
-    
+
     if(a->avctx->codec_id == CODEC_ID_ASV1){
         for(i=0; i<6; i++){
-            if( asv1_decode_block(a, block[i]) < 0) 
+            if( asv1_decode_block(a, block[i]) < 0)
                 return -1;
         }
     }else{
         for(i=0; i<6; i++){
-            if( asv2_decode_block(a, block[i]) < 0) 
+            if( asv2_decode_block(a, block[i]) < 0)
                 return -1;
         }
     }
@@ -322,7 +322,7 @@ static inline int decode_mb(ASV1Context *a, DCTELEM block[6][64]){
 
 static inline int encode_mb(ASV1Context *a, DCTELEM block[6][64]){
     int i;
-    
+
     if(a->pb.buf_end - a->pb.buf - (put_bits_count(&a->pb)>>3) < 30*16*16*3/2/8){
         av_log(a->avctx, AV_LOG_ERROR, "encoded frame too large\n");
         return -1;
@@ -341,7 +341,7 @@ static inline int encode_mb(ASV1Context *a, DCTELEM block[6][64]){
 static inline void idct_put(ASV1Context *a, int mb_x, int mb_y){
     DCTELEM (*block)[64]= a->block;
     int linesize= a->picture.linesize[0];
-    
+
     uint8_t *dest_y  = a->picture.data[0] + (mb_y * 16* linesize              ) + mb_x * 16;
     uint8_t *dest_cb = a->picture.data[1] + (mb_y * 8 * a->picture.linesize[1]) + mb_x * 8;
     uint8_t *dest_cr = a->picture.data[2] + (mb_y * 8 * a->picture.linesize[2]) + mb_x * 8;
@@ -361,7 +361,7 @@ static inline void dct_get(ASV1Context *a, int mb_x, int mb_y){
     DCTELEM (*block)[64]= a->block;
     int linesize= a->picture.linesize[0];
     int i;
-    
+
     uint8_t *ptr_y  = a->picture.data[0] + (mb_y * 16* linesize              ) + mb_x * 16;
     uint8_t *ptr_cb = a->picture.data[1] + (mb_y * 8 * a->picture.linesize[1]) + mb_x * 8;
     uint8_t *ptr_cr = a->picture.data[2] + (mb_y * 8 * a->picture.linesize[2]) + mb_x * 8;
@@ -372,7 +372,7 @@ static inline void dct_get(ASV1Context *a, int mb_x, int mb_y){
     a->dsp.get_pixels(block[3], ptr_y + 8*linesize + 8, linesize);
     for(i=0; i<4; i++)
         a->dsp.fdct(block[i]);
-    
+
     if(!(a->avctx->flags&CODEC_FLAG_GRAY)){
         a->dsp.get_pixels(block[4], ptr_cb, a->picture.linesize[1]);
         a->dsp.get_pixels(block[5], ptr_cr, a->picture.linesize[2]);
@@ -381,7 +381,7 @@ static inline void dct_get(ASV1Context *a, int mb_x, int mb_y){
     }
 }
 
-static int decode_frame(AVCodecContext *avctx, 
+static int decode_frame(AVCodecContext *avctx,
                         void *data, int *data_size,
                         uint8_t *buf, int buf_size)
 {
@@ -402,7 +402,7 @@ static int decode_frame(AVCodecContext *avctx,
     p->key_frame= 1;
 
     a->bitstream_buffer= av_fast_realloc(a->bitstream_buffer, &a->bitstream_buffer_size, buf_size + FF_INPUT_BUFFER_PADDING_SIZE);
-    
+
     if(avctx->codec_id == CODEC_ID_ASV1)
         a->dsp.bswap_buf((uint32_t*)a->bitstream_buffer, (uint32_t*)buf, buf_size/4);
     else{
@@ -417,7 +417,7 @@ static int decode_frame(AVCodecContext *avctx,
         for(mb_x=0; mb_x<a->mb_width2; mb_x++){
             if( decode_mb(a, a->block) <0)
                 return -1;
-             
+
             idct_put(a, mb_x, mb_y);
         }
     }
@@ -427,7 +427,7 @@ static int decode_frame(AVCodecContext *avctx,
         for(mb_y=0; mb_y<a->mb_height2; mb_y++){
             if( decode_mb(a, a->block) <0)
                 return -1;
-             
+
             idct_put(a, mb_x, mb_y);
         }
     }
@@ -437,11 +437,11 @@ static int decode_frame(AVCodecContext *avctx,
         for(mb_x=0; mb_x<a->mb_width; mb_x++){
             if( decode_mb(a, a->block) <0)
                 return -1;
-             
+
             idct_put(a, mb_x, mb_y);
         }
     }
-#if 0    
+#if 0
 int i;
 printf("%d %d\n", 8*buf_size, get_bits_count(&a->gb));
 for(i=get_bits_count(&a->gb); i<8*buf_size; i++){
@@ -457,7 +457,7 @@ for(i=0; i<s->avctx->extradata_size; i++){
     *data_size = sizeof(AVPicture);
 
     emms_c();
-    
+
     return (get_bits_count(&a->gb)+31)/32*4;
 }
 
@@ -469,7 +469,7 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
     int mb_x, mb_y;
 
     init_put_bits(&a->pb, buf, buf_size);
-    
+
     *p = *pict;
     p->pict_type= I_TYPE;
     p->key_frame= 1;
@@ -497,13 +497,13 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
         }
     }
     emms_c();
-    
+
     align_put_bits(&a->pb);
     while(put_bits_count(&a->pb)&31)
         put_bits(&a->pb, 8, 0);
-    
+
     size= put_bits_count(&a->pb)/32;
-    
+
     if(avctx->codec_id == CODEC_ID_ASV1)
         a->dsp.bswap_buf((uint32_t*)buf, (uint32_t*)buf, size);
     else{
@@ -511,7 +511,7 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
         for(i=0; i<4*size; i++)
             buf[i]= ff_reverse[ buf[i] ];
     }
-    
+
     return size*4;
 }
 
@@ -534,7 +534,7 @@ static int decode_init(AVCodecContext *avctx){
     AVFrame *p= (AVFrame*)&a->picture;
     int i;
     const int scale= avctx->codec_id == CODEC_ID_ASV1 ? 1 : 2;
- 
+
     common_init(avctx);
     init_vlcs(a);
     ff_init_scantable(a->dsp.idct_permutation, &a->scantable, scantab);
@@ -569,16 +569,16 @@ static int encode_init(AVCodecContext *avctx){
     const int scale= avctx->codec_id == CODEC_ID_ASV1 ? 1 : 2;
 
     common_init(avctx);
-    
+
     if(avctx->global_quality == 0) avctx->global_quality= 4*FF_QUALITY_SCALE;
 
     a->inv_qscale= (32*scale*FF_QUALITY_SCALE +  avctx->global_quality/2) / avctx->global_quality;
-    
+
     avctx->extradata= av_mallocz(8);
     avctx->extradata_size=8;
     ((uint32_t*)avctx->extradata)[0]= le2me_32(a->inv_qscale);
     ((uint32_t*)avctx->extradata)[1]= le2me_32(ff_get_fourcc("ASUS"));
-    
+
     for(i=0; i<64; i++){
         int q= 32*scale*ff_mpeg1_default_intra_matrix[i];
         a->q_intra_matrix[i]= ((a->inv_qscale<<16) + q/2) / q;
@@ -593,7 +593,7 @@ static int decode_end(AVCodecContext *avctx){
     av_freep(&a->bitstream_buffer);
     av_freep(&a->picture.qscale_table);
     a->bitstream_buffer_size=0;
-    
+
     return 0;
 }
 

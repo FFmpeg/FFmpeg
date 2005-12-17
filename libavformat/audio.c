@@ -87,7 +87,7 @@ static int audio_open(AudioData *s, int is_output, const char *audio_device)
 
     /* select format : favour native format */
     err = ioctl(audio_fd, SNDCTL_DSP_GETFMTS, &tmp);
-    
+
 #ifdef WORDS_BIGENDIAN
     if (tmp & AFMT_S16_BE) {
         tmp = AFMT_S16_BE;
@@ -123,7 +123,7 @@ static int audio_open(AudioData *s, int is_output, const char *audio_device)
         perror("SNDCTL_DSP_SETFMT");
         goto fail;
     }
-    
+
     tmp = (s->channels == 2);
     err = ioctl(audio_fd, SNDCTL_DSP_STEREO, &tmp);
     if (err < 0) {
@@ -132,7 +132,7 @@ static int audio_open(AudioData *s, int is_output, const char *audio_device)
     }
     if (tmp)
         s->channels = 2;
-    
+
     tmp = s->sample_rate;
     err = ioctl(audio_fd, SNDCTL_DSP_SPEED, &tmp);
     if (err < 0) {
@@ -249,7 +249,7 @@ static int audio_read_packet(AVFormatContext *s1, AVPacket *pkt)
     int ret, bdelay;
     int64_t cur_time;
     struct audio_buf_info abufi;
-    
+
     if (av_new_packet(pkt, s->frame_size) < 0)
         return AVERROR_IO;
     for(;;) {

@@ -37,7 +37,7 @@ void* tmp;
 	a52_resample=tmp;
 	return tmp;
     }
-    
+
     av_log(NULL, AV_LOG_ERROR, "Unimplemented resampler for mode 0x%X -> %d channels conversion - Contact MPlayer developers!\n", flags, chans);
     return NULL;
 }

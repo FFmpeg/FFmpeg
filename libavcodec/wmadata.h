@@ -1389,24 +1389,24 @@ static const uint16_t levels5[40] = {
   1,  1,  1,  1,  1,  1,  1,  1,
   1,  1,  1,  1,  1,  1,  1,  1,
 };
-    
+
 static const CoefVLCTable coef_vlcs[6] = {
-    { 
+    {
         sizeof(coef0_huffbits), coef0_huffcodes, coef0_huffbits, levels0,
     },
-    { 
+    {
         sizeof(coef1_huffbits), coef1_huffcodes, coef1_huffbits, levels1,
     },
-    { 
+    {
         sizeof(coef2_huffbits), coef2_huffcodes, coef2_huffbits, levels2,
     },
-    { 
+    {
         sizeof(coef3_huffbits), coef3_huffcodes, coef3_huffbits, levels3,
     },
-    { 
+    {
         sizeof(coef4_huffbits), coef4_huffcodes, coef4_huffbits, levels4,
     },
-    { 
+    {
         sizeof(coef5_huffbits), coef5_huffcodes, coef5_huffbits, levels5,
     },
 };

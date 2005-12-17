@@ -28,7 +28,7 @@
 
 /* table ids */
 #define PAT_TID   0x00
-#define PMT_TID   0x02 
+#define PMT_TID   0x02
 #define SDT_TID   0x42
 
 /* descriptor ids */

@@ -28,13 +28,13 @@ typedef struct AVOption {
      * @fixme what about other languages
      */
     const char *help;
-    int offset;             ///< offset to context structure where the parsed value should be stored 
+    int offset;             ///< offset to context structure where the parsed value should be stored
     enum AVOptionType type;
-    
+
     double default_val;
     double min;
     double max;
-    
+
     int flags;
 #define AV_OPT_FLAG_ENCODING_PARAM  1   ///< a generic parameter which can be set by the user for muxing or encoding
 #define AV_OPT_FLAG_DECODING_PARAM  2   ///< a generic parameter which can be set by the user for demuxing or decoding

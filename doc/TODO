@@ -5,13 +5,13 @@ Fabrice's TODO list: (unordered)
 -------------------
 Short term:
 
-- av_read_frame() API 
+- av_read_frame() API
 - seeking API and example in ffplay
 - parse_only mode
 - use AVFMTCTX_DISCARD_PKT in ffplay so that DV has a chance to work
 - add RTSP regression test (both client and server)
 - make ffserver allocate AVFormatContext
-- clean up (incompatible change, for 0.5.0): 
+- clean up (incompatible change, for 0.5.0):
     * AVStream -> AVComponent
     * AVFormatContext -> AVInputStream/AVOutputStream
     * suppress rate_emu from AVCodecContext
@@ -54,7 +54,7 @@ Francois' TODO list: (unordered, without any timeframe)
 Philip'a TODO list: (alphabetically ordered) (please help)
 ------------------
 - Add a multi-ffm filetype so that feeds can be recorded into multiple files rather
-  than one big file. 
+  than one big file.
 - Authenticated users support -- where the authentication is in the URL
 - Change ASF files so that the embedded timestamp in the frames is right rather
   than being an offset from the start of the stream

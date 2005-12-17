@@ -122,7 +122,7 @@ void check_diff(float *tab1, float *tab2, int n)
 
     for(i=0;i<n;i++) {
         if (fabsf(tab1[i] - tab2[i]) >= 1e-3) {
-            av_log(NULL, AV_LOG_ERROR, "ERROR %d: %f %f\n", 
+            av_log(NULL, AV_LOG_ERROR, "ERROR %d: %f %f\n",
                    i, tab1[i], tab2[i]);
         }
     }
@@ -220,7 +220,7 @@ int main(int argc, char **argv)
             check_diff((float *)tab_ref, tab2, fft_size);
         } else {
             mdct_ref((float *)tab_ref, (float *)tab1, fft_size);
-            
+
             ff_mdct_calc(m, tab2, (float *)tab1, tabtmp);
 
             check_diff((float *)tab_ref, tab2, fft_size / 2);
@@ -229,7 +229,7 @@ int main(int argc, char **argv)
         memcpy(tab, tab1, fft_size * sizeof(FFTComplex));
         ff_fft_permute(s, tab);
         ff_fft_calc(s, tab);
-        
+
         fft_ref(tab_ref, tab1, fft_nbits);
         check_diff((float *)tab_ref, (float *)tab, fft_size * 2);
     }
@@ -262,12 +262,12 @@ int main(int argc, char **argv)
                 break;
             nb_its *= 2;
         }
-        av_log(NULL, AV_LOG_INFO,"time: %0.1f us/transform [total time=%0.2f s its=%d]\n", 
-               (double)duration / nb_its, 
+        av_log(NULL, AV_LOG_INFO,"time: %0.1f us/transform [total time=%0.2f s its=%d]\n",
+               (double)duration / nb_its,
                (double)duration / 1000000.0,
                nb_its);
     }
-    
+
     if (do_mdct) {
         ff_mdct_end(m);
     } else {

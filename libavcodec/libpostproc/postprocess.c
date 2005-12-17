@@ -22,7 +22,7 @@
  * @file postprocess.c
  * postprocessing.
  */
- 
+
 /*
 			C	MMX	MMX2	3DNow	AltiVec
 isVertDC		Ec	Ec			Ec
@@ -267,7 +267,7 @@ static inline int isHorizMinMaxOk_C(uint8_t src[], int stride, int QP)
 		if((unsigned)(src[6] - src[3] + 2*QP) > 4*QP) return 0;
 		src += stride;
 	}
-#else        
+#else
 	for(i=0; i<8; i++){
 		if((unsigned)(src[0] - src[7] + 2*QP) > 4*QP) return 0;
 		src += stride;
@@ -503,7 +503,7 @@ static always_inline void do_a_deblock_C(uint8_t *src, int step, int stride, PPC
 		if(((unsigned)(src[ 7*step] - src[8*step] + dcOffset)) < dcThreshold) numEq++;
 		if(numEq > c->ppMode.flatnessThreshold){
 			int min, max, x;
-			
+
 			if(src[0] > src[step]){
 			    max= src[0];
 			    min= src[step];
@@ -523,7 +523,7 @@ static always_inline void do_a_deblock_C(uint8_t *src, int step, int stride, PPC
 			if(max-min < 2*QP){
 				const int first= ABS(src[-1*step] - src[0]) < QP ? src[-1*step] : src[0];
 				const int last= ABS(src[8*step] - src[7*step]) < QP ? src[8*step] : src[7*step];
-				
+
 				int sums[10];
 				sums[0] = 4*first + src[0*step] + src[1*step] + src[2*step] + 4;
 				sums[1] = sums[0] - first       + src[3*step];
@@ -556,10 +556,10 @@ static always_inline void do_a_deblock_C(uint8_t *src, int step, int stride, PPC
 
 				int d= ABS(middleEnergy) - MIN( ABS(leftEnergy), ABS(rightEnergy) );
 				d= MAX(d, 0);
-	
+
 				d= (5*d + 32) >> 6;
 				d*= SIGN(-middleEnergy);
-	
+
 				if(q>0)
 				{
 					d= d<0 ? 0 : d;
@@ -570,7 +570,7 @@ static always_inline void do_a_deblock_C(uint8_t *src, int step, int stride, PPC
 					d= d>0 ? 0 : d;
 					d= d<q ? q : d;
 				}
-	
+
 				src[3*step]-= d;
 				src[4*step]+= d;
 			}
@@ -771,7 +771,7 @@ pp_mode_t *pp_get_mode_by_name_and_quality(char *name, int quality)
 	char *filterToken;
 
 	ppMode= memalign(8, sizeof(PPMode));
-	
+
 	ppMode->lumMode= 0;
 	ppMode->chromMode= 0;
 	ppMode->maxTmpNoise[0]= 700;
@@ -907,7 +907,7 @@ pp_mode_t *pp_get_mode_by_name_and_quality(char *name, int quality)
 						}
 					}
 				}
-				else if(filters[i].mask == V_DEBLOCK   || filters[i].mask == H_DEBLOCK 
+				else if(filters[i].mask == V_DEBLOCK   || filters[i].mask == H_DEBLOCK
 				     || filters[i].mask == V_A_DEBLOCK || filters[i].mask == H_A_DEBLOCK)
 				{
 					int o;
@@ -1004,7 +1004,7 @@ pp_context_t *pp_get_context(int width, int height, int cpuCaps){
 	PPContext *c= memalign(32, sizeof(PPContext));
 	int stride= (width+15)&(~15); //assumed / will realloc if needed
 	int qpStride= (width+15)/16 + 2; //assumed / will realloc if needed
-        
+
 	global_init();
 
 	memset(c, 0, sizeof(PPContext));
@@ -1018,7 +1018,7 @@ pp_context_t *pp_get_context(int width, int height, int cpuCaps){
 	}
 
 	reallocBuffers(c, width, height, stride, qpStride);
-        
+
 	c->frameNum=-1;
 
 	return c;
@@ -1027,10 +1027,10 @@ pp_context_t *pp_get_context(int width, int height, int cpuCaps){
 void pp_free_context(void *vc){
 	PPContext *c = (PPContext*)vc;
 	int i;
-	
+
 	for(i=0; i<3; i++) free(c->tempBlured[i]);
 	for(i=0; i<3; i++) free(c->tempBluredPast[i]);
-	
+
 	free(c->tempBlocks);
 	free(c->yHistogram);
 	free(c->tempDst);
@@ -1039,7 +1039,7 @@ void pp_free_context(void *vc){
 	free(c->stdQPTable);
 	free(c->nonBQPTable);
 	free(c->forcedQPTable);
-        
+
 	memset(c, 0, sizeof(PPContext));
 
 	free(c);
@@ -1060,11 +1060,11 @@ void  pp_postprocess(uint8_t * src[3], int srcStride[3],
 
 	// c->stride and c->QPStride are always positive
 	if(c->stride < minStride || c->qpStride < absQPStride)
-		reallocBuffers(c, width, height, 
-				MAX(minStride, c->stride), 
+		reallocBuffers(c, width, height,
+				MAX(minStride, c->stride),
 				MAX(c->qpStride, absQPStride));
 
-	if(QP_store==NULL || (mode->lumMode & FORCE_QUANT)) 
+	if(QP_store==NULL || (mode->lumMode & FORCE_QUANT))
 	{
 		int i;
 		QP_store= c->forcedQPTable;
@@ -1086,7 +1086,7 @@ void  pp_postprocess(uint8_t * src[3], int srcStride[3],
 			c->stdQPTable[i] = QP_store[i]>>1;
 		}
                 QP_store= c->stdQPTable;
-		QPStride= absQPStride;		
+		QPStride= absQPStride;
 	}
 
 if(0){

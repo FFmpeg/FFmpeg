@@ -79,14 +79,14 @@ const uint8_t ff_h264_norm_shift[256]= {
  1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
  1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
  1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
- 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 
- 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 
- 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 
- 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 
- 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 
- 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 
- 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 
- 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 
+ 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+ 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+ 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+ 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+ 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+ 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+ 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+ 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 };
 
 /**
@@ -102,7 +102,7 @@ void ff_init_cabac_encoder(CABACContext *c, uint8_t *buf, int buf_size){
 #ifdef STRICT_LIMITS
     c->sym_count =0;
 #endif
-    
+
     c->pb.bit_left++; //avoids firstBitFlag
 }
 
@@ -111,7 +111,7 @@ void ff_init_cabac_encoder(CABACContext *c, uint8_t *buf, int buf_size){
  * @param buf_size size of buf in bits
  */
 void ff_init_cabac_decoder(CABACContext *c, const uint8_t *buf, int buf_size){
-    c->bytestream_start= 
+    c->bytestream_start=
     c->bytestream= buf;
     c->bytestream_end= buf + buf_size;
 
@@ -125,10 +125,10 @@ void ff_init_cabac_decoder(CABACContext *c, const uint8_t *buf, int buf_size){
     c->range= 0x1FE<<(CABAC_BITS + 1);
 }
 
-void ff_init_cabac_states(CABACContext *c, uint8_t const (*lps_range)[4], 
+void ff_init_cabac_states(CABACContext *c, uint8_t const (*lps_range)[4],
                           uint8_t const *mps_state, uint8_t const *lps_state, int state_count){
     int i, j;
-    
+
     for(i=0; i<state_count; i++){
         for(j=0; j<4; j++){ //FIXME check if this is worth the 1 shift we save
             c->lps_range[2*i+0][j+4]=
@@ -159,20 +159,20 @@ int main(){
     uint8_t r[9*SIZE];
     int i;
     uint8_t state[10]= {0};
-    
+
     ff_init_cabac_encoder(&c, b, SIZE);
     ff_init_cabac_states(&c, ff_h264_lps_range, ff_h264_mps_state, ff_h264_lps_state, 64);
-    
+
     for(i=0; i<SIZE; i++){
         r[i]= random()%7;
     }
-    
+
     for(i=0; i<SIZE; i++){
 START_TIMER
         put_cabac_bypass(&c, r[i]&1);
 STOP_TIMER("put_cabac_bypass")
     }
-    
+
     for(i=0; i<SIZE; i++){
 START_TIMER
         put_cabac(&c, state, r[i]&1);
@@ -183,27 +183,27 @@ STOP_TIMER("put_cabac")
 START_TIMER
         put_cabac_u(&c, state, r[i], 6, 3, i&1);
 STOP_TIMER("put_cabac_u")
-    }    
+    }
 
     for(i=0; i<SIZE; i++){
 START_TIMER
         put_cabac_ueg(&c, state, r[i], 3, 0, 1, 2);
 STOP_TIMER("put_cabac_ueg")
-    }    
-   
+    }
+
     put_cabac_terminate(&c, 1);
-    
+
     ff_init_cabac_decoder(&c, b, SIZE);
-    
+
     memset(state, 0, sizeof(state));
-    
+
     for(i=0; i<SIZE; i++){
 START_TIMER
         if( (r[i]&1) != get_cabac_bypass(&c) )
             av_log(NULL, AV_LOG_ERROR, "CABAC bypass failure at %d\n", i);
 STOP_TIMER("get_cabac_bypass")
     }
-    
+
     for(i=0; i<SIZE; i++){
 START_TIMER
         if( (r[i]&1) != get_cabac(&c, state) )
@@ -227,7 +227,7 @@ STOP_TIMER("get_cabac_ueg")
 #endif
     if(!get_cabac_terminate(&c))
         av_log(NULL, AV_LOG_ERROR, "where's the Terminator?\n");
-    
+
     return 0;
 }
 

@@ -34,7 +34,7 @@
  * @file jfdctfst.c
  * Independent JPEG Group's fast AAN dct.
  */
- 
+
 #include <stdlib.h>
 #include <stdio.h>
 #include "common.h"
@@ -132,21 +132,21 @@ static always_inline void row_fdct(DCTELEM * data){
     tmp5 = dataptr[2] - dataptr[5];
     tmp3 = dataptr[3] + dataptr[4];
     tmp4 = dataptr[3] - dataptr[4];
-    
+
     /* Even part */
-    
+
     tmp10 = tmp0 + tmp3;	/* phase 2 */
     tmp13 = tmp0 - tmp3;
     tmp11 = tmp1 + tmp2;
     tmp12 = tmp1 - tmp2;
-    
+
     dataptr[0] = tmp10 + tmp11; /* phase 3 */
     dataptr[4] = tmp10 - tmp11;
-    
+
     z1 = MULTIPLY(tmp12 + tmp13, FIX_0_707106781); /* c4 */
     dataptr[2] = tmp13 + z1;	/* phase 5 */
     dataptr[6] = tmp13 - z1;
-    
+
     /* Odd part */
 
     tmp10 = tmp4 + tmp5;	/* phase 2 */
@@ -186,7 +186,7 @@ fdct_ifast (DCTELEM * data)
   SHIFT_TEMPS
 
   row_fdct(data);
-  
+
   /* Pass 2: process columns. */
 
   dataptr = data;
@@ -199,21 +199,21 @@ fdct_ifast (DCTELEM * data)
     tmp5 = dataptr[DCTSIZE*2] - dataptr[DCTSIZE*5];
     tmp3 = dataptr[DCTSIZE*3] + dataptr[DCTSIZE*4];
     tmp4 = dataptr[DCTSIZE*3] - dataptr[DCTSIZE*4];
-    
+
     /* Even part */
-    
+
     tmp10 = tmp0 + tmp3;	/* phase 2 */
     tmp13 = tmp0 - tmp3;
     tmp11 = tmp1 + tmp2;
     tmp12 = tmp1 - tmp2;
-    
+
     dataptr[DCTSIZE*0] = tmp10 + tmp11; /* phase 3 */
     dataptr[DCTSIZE*4] = tmp10 - tmp11;
-    
+
     z1 = MULTIPLY(tmp12 + tmp13, FIX_0_707106781); /* c4 */
     dataptr[DCTSIZE*2] = tmp13 + z1; /* phase 5 */
     dataptr[DCTSIZE*6] = tmp13 - z1;
-    
+
     /* Odd part */
 
     tmp10 = tmp4 + tmp5;	/* phase 2 */
@@ -253,7 +253,7 @@ fdct_ifast248 (DCTELEM * data)
   SHIFT_TEMPS
 
   row_fdct(data);
-   
+
   /* Pass 2: process columns. */
 
   dataptr = data;
@@ -268,15 +268,15 @@ fdct_ifast248 (DCTELEM * data)
     tmp7 = dataptr[DCTSIZE*6] - dataptr[DCTSIZE*7];
 
     /* Even part */
-    
+
     tmp10 = tmp0 + tmp3;
     tmp11 = tmp1 + tmp2;
     tmp12 = tmp1 - tmp2;
     tmp13 = tmp0 - tmp3;
-    
+
     dataptr[DCTSIZE*0] = tmp10 + tmp11;
     dataptr[DCTSIZE*4] = tmp10 - tmp11;
-    
+
     z1 = MULTIPLY(tmp12 + tmp13, FIX_0_707106781);
     dataptr[DCTSIZE*2] = tmp13 + z1;
     dataptr[DCTSIZE*6] = tmp13 - z1;
@@ -285,14 +285,14 @@ fdct_ifast248 (DCTELEM * data)
     tmp11 = tmp5 + tmp6;
     tmp12 = tmp5 - tmp6;
     tmp13 = tmp4 - tmp7;
-    
+
     dataptr[DCTSIZE*1] = tmp10 + tmp11;
     dataptr[DCTSIZE*5] = tmp10 - tmp11;
-    
+
     z1 = MULTIPLY(tmp12 + tmp13, FIX_0_707106781);
     dataptr[DCTSIZE*3] = tmp13 + z1;
     dataptr[DCTSIZE*7] = tmp13 - z1;
-    
+
     dataptr++;			/* advance pointer to next column */
   }
 }

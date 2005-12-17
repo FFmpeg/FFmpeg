@@ -78,19 +78,19 @@ static int roq_read_header(AVFormatContext *s,
     unsigned int chunk_type;
 
     /* get the main header */
-    if (get_buffer(pb, preamble, RoQ_CHUNK_PREAMBLE_SIZE) != 
+    if (get_buffer(pb, preamble, RoQ_CHUNK_PREAMBLE_SIZE) !=
         RoQ_CHUNK_PREAMBLE_SIZE)
         return AVERROR_IO;
     roq->framerate = LE_16(&preamble[6]);
     roq->frame_pts_inc = 90000 / roq->framerate;
 
     /* init private context parameters */
-    roq->width = roq->height = roq->audio_channels = roq->video_pts = 
+    roq->width = roq->height = roq->audio_channels = roq->video_pts =
     roq->audio_frame_count = 0;
 
     /* scan the first n chunks searching for A/V parameters */
     for (i = 0; i < RoQ_CHUNKS_TO_SCAN; i++) {
-        if (get_buffer(pb, preamble, RoQ_CHUNK_PREAMBLE_SIZE) != 
+        if (get_buffer(pb, preamble, RoQ_CHUNK_PREAMBLE_SIZE) !=
             RoQ_CHUNK_PREAMBLE_SIZE)
             return AVERROR_IO;
 
@@ -101,7 +101,7 @@ static int roq_read_header(AVFormatContext *s,
 
         case RoQ_INFO:
             /* fetch the width and height; reuse the preamble bytes */
-            if (get_buffer(pb, preamble, RoQ_CHUNK_PREAMBLE_SIZE) != 
+            if (get_buffer(pb, preamble, RoQ_CHUNK_PREAMBLE_SIZE) !=
                 RoQ_CHUNK_PREAMBLE_SIZE)
                 return AVERROR_IO;
             roq->width = LE_16(&preamble[0]);
@@ -190,7 +190,7 @@ static int roq_read_packet(AVFormatContext *s,
             return AVERROR_IO;
 
         /* get the next chunk preamble */
-        if ((ret = get_buffer(pb, preamble, RoQ_CHUNK_PREAMBLE_SIZE)) != 
+        if ((ret = get_buffer(pb, preamble, RoQ_CHUNK_PREAMBLE_SIZE)) !=
             RoQ_CHUNK_PREAMBLE_SIZE)
             return AVERROR_IO;
 
@@ -211,10 +211,10 @@ static int roq_read_packet(AVFormatContext *s,
             codebook_offset = url_ftell(pb) - RoQ_CHUNK_PREAMBLE_SIZE;
             codebook_size = chunk_size;
             url_fseek(pb, codebook_size, SEEK_CUR);
-            if (get_buffer(pb, preamble, RoQ_CHUNK_PREAMBLE_SIZE) != 
+            if (get_buffer(pb, preamble, RoQ_CHUNK_PREAMBLE_SIZE) !=
                 RoQ_CHUNK_PREAMBLE_SIZE)
                 return AVERROR_IO;
-            chunk_size = LE_32(&preamble[2]) + RoQ_CHUNK_PREAMBLE_SIZE * 2 + 
+            chunk_size = LE_32(&preamble[2]) + RoQ_CHUNK_PREAMBLE_SIZE * 2 +
                 codebook_size;
 
             /* rewind */

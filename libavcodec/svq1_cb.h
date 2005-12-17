@@ -1,8 +1,8 @@
 /*
- * 
+ *
  * Copyright (C) 2002 the xine project
  * Copyright (C) 2002 the ffmpeg project
- * 
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -26,7 +26,7 @@
  * @file svq1_cb.h
  * svq1 code books.
  */
- 
+
 /* 6x16-entry codebook for inter-coded 4x2 vectors */
 static const int8_t svq1_inter_codebook_4x2[768] = {
     7,  2, -6, -7,  7,  3, -3, -4, -7, -2,  7,  8, -8, -4,  3,  4,

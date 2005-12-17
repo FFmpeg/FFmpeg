@@ -657,7 +657,7 @@ static void fill_tone_level_array (QDM2Context *q, int flag)
  * c is built with data from subpacket 11
  * Most of this function is used only if superblock_type_2_3 == 0, never seen it in samples
  *
- * @param tone_level_idx           
+ * @param tone_level_idx
  * @param tone_level_idx_temp
  * @param coding_method        q->coding_method[0][0][0]
  * @param nb_channels          number of channels
@@ -916,7 +916,7 @@ static void synthfilt_build_sb_samples (QDM2Context *q, GetBitContext *gb, int l
                             samples[0] = type30_dequant[qdm2_get_vlc(gb, &vlc_tab_type30, 0, 1)];
                         else
                             samples[0] = SB_DITHERING_NOISE(sb,q->noise_idx);
-                        
+
                         run = 1;
                         break;
 
@@ -995,10 +995,10 @@ static void init_quantized_coeffs_elem0 (int8_t *quantized_coeffs, GetBitContext
         if (BITS_LEFT(length,gb) < 16)
             break;
         diff = qdm2_get_se_vlc(&vlc_tab_diff, gb, 2);
-    
+
         for (k = 1; k <= run; k++)
             quantized_coeffs[i + k] = (level + ((k * diff) / run));
-    
+
         level += diff;
         i += run;
     }
@@ -1737,7 +1737,7 @@ static void dump_context(QDM2Context *q)
     for (i = q->fft_tone_start; i < q->fft_tone_end; i++)
     {
     FFTTone *t = &q->fft_tones[i];
-    
+
     av_log(NULL,AV_LOG_DEBUG,"Tone (%d) dump:\n", i);
     av_log(NULL,AV_LOG_DEBUG,"  level = %f\n", t->level);
 //  PRINT(" level", t->level);
@@ -1764,20 +1764,20 @@ static int qdm2_decode_init(AVCodecContext *avctx)
     int tmp_val, tmp, size;
     int i;
     float alpha;
-    
+
     /* extradata parsing
-    
+
     Structure:
     wave {
         frma (QDM2)
         QDCA
         QDCP
     }
-    
+
     32  size (including this field)
     32  tag (=frma)
     32  type (=QDM2 or QDMC)
-    
+
     32  size (including this field, in bytes)
     32  tag (=QDCA) // maybe mandatory parameters
     32  unknown (=1)
@@ -1787,7 +1787,7 @@ static int qdm2_decode_init(AVCodecContext *avctx)
     32  block size (=4096)
     32  frame size (=256) (for one channel)
     32  packet size (=1300)
-    
+
     32  size (including this field, in bytes)
     32  tag (=QDCP) // maybe some tuneable parameters
     32  float1 (=1.0)
@@ -1878,7 +1878,7 @@ static int qdm2_decode_init(AVCodecContext *avctx)
 
     s->sub_sampling = s->fft_order - 7;
     s->frequency_range = 255 / (1 << (2 - s->sub_sampling));
-    
+
     switch ((s->sub_sampling * 2 + s->channels - 1)) {
         case 0: tmp = 40; break;
         case 1: tmp = 48; break;
@@ -1926,7 +1926,7 @@ static int qdm2_decode_init(AVCodecContext *avctx)
     }
 
     qdm2_init(s);
-    
+
 //    dump_context(s);
     return 0;
 }
@@ -1937,7 +1937,7 @@ static int qdm2_decode_close(AVCodecContext *avctx)
     QDM2Context *s = avctx->priv_data;
 
     ff_fft_end(&s->fft_ctx);
-    
+
     return 0;
 }
 
@@ -1946,7 +1946,7 @@ void qdm2_decode (QDM2Context *q, uint8_t *in, int16_t *out)
 {
     int ch, i;
     const int frame_size = (q->frame_size * q->channels);
-  
+
     /* select input buffer */
     q->compressed_data = in;
     q->compressed_size = q->checksum_size;

@@ -57,7 +57,7 @@
    To set the DV output parameters (e.g. whether you want NTSC or PAL
    video), use the DV1394_INIT ioctl, passing in the parameters you
    want in a struct dv1394_init.
- 
+
    Example 1:
          To play a raw .DV file:   cat foo.DV > /dev/dv1394
 	 (cat will use write() internally)
@@ -80,9 +80,9 @@
    2)
 
    For more control over buffering, and to avoid unnecessary copies
-   of the DV data, you can use the more sophisticated the mmap() interface. 
-   First, call the DV1394_INIT ioctl to specify your parameters, 
-   including the number of frames in the ringbuffer. Then, calling mmap() 
+   of the DV data, you can use the more sophisticated the mmap() interface.
+   First, call the DV1394_INIT ioctl to specify your parameters,
+   including the number of frames in the ringbuffer. Then, calling mmap()
    on the dv1394 device will give you direct access to the ringbuffer
    from which the DV card reads your frame data.
 
@@ -107,7 +107,7 @@
 	*--------------------------------------*
         | CLEAR   | DV data | DV data | CLEAR  |
         *--------------------------------------*
-                   <ACTIVE> 
+                   <ACTIVE>
 
 	transmission goes in this direction --->>>
 
@@ -118,10 +118,10 @@
    will continue to transmit frame 2, and will increase the dropped_frames
    counter each time it repeats the transmission).
 
- 
+
    If you called DV1394_GET_STATUS at this instant, you would
    receive the following values:
-   
+
                   n_frames          = 4
 		  active_frame      = 1
 		  first_clear_frame = 3
@@ -152,9 +152,9 @@
 
    (checks of system call return values omitted for brevity; always
    check return values in your code!)
-   
+
    while( frames left ) {
-   
+
     struct pollfd *pfd = ...;
 
     pfd->fd = dv1394_fd;
@@ -162,12 +162,12 @@
     pfd->events = POLLOUT | POLLIN; (OUT for transmit, IN for receive)
 
     (add other sources of I/O here)
-    
+
     poll(pfd, 1, -1); (or select(); add a timeout if you want)
 
     if(pfd->revents) {
          struct dv1394_status status;
-	 
+
          ioctl(dv1394_fd, DV1394_GET_STATUS, &status);
 
 	 if(status.dropped_frames > 0) {
@@ -191,7 +191,7 @@
    should close the dv1394 file descriptor (and munmap() all
    ringbuffer mappings, if you are using them), then re-open the
    dv1394 device (and re-map the ringbuffer).
-   
+
 */
 
 
@@ -264,7 +264,7 @@ enum pal_or_ntsc {
 struct dv1394_init {
 	/* DV1394_API_VERSION */
 	unsigned int api_version;
-	
+
 	/* isochronous transmission channel to use */
 	unsigned int channel;
 
@@ -276,7 +276,7 @@ struct dv1394_init {
 	enum pal_or_ntsc format;
 
 	/* the following are used only for transmission */
- 
+
 	/* set these to zero unless you want a
 	   non-default empty packet rate (see below) */
 	unsigned long cip_n;
@@ -293,7 +293,7 @@ struct dv1394_init {
    would imply a different size for the ringbuffer). If you need a
    different buffer size, simply close and re-open the device, then
    initialize it with your new settings. */
-   
+
 /* Q: What are cip_n and cip_d? */
 
 /*
@@ -310,13 +310,13 @@ struct dv1394_init {
   The default empty packet insertion rate seems to work for many people; if
   your DV output is stable, you can simply ignore this discussion. However,
   we have exposed the empty packet rate as a parameter to support devices that
-  do not work with the default rate. 
+  do not work with the default rate.
 
   The decision to insert an empty packet is made with a numerator/denominator
   algorithm. Empty packets are produced at an average rate of CIP_N / CIP_D.
   You can alter the empty packet rate by passing non-zero values for cip_n
   and cip_d to the INIT ioctl.
-  
+
  */
 
 

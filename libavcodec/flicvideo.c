@@ -87,7 +87,7 @@ static int flic_decode_init(AVCodecContext *avctx)
 
     s->fli_type = LE_16(&fli_header[4]); /* Might be overridden if a Magic Carpet FLC */
     depth       = LE_16(&fli_header[12]);
-    
+
     if (depth == 0) {
       depth = 8; /* Some FLC generators set depth to zero, when they mean 8Bpp. Fix up here */
     }
@@ -115,7 +115,7 @@ static int flic_decode_init(AVCodecContext *avctx)
         default :
                   av_log(avctx, AV_LOG_ERROR, "Unkown FLC/FLX depth of %d Bpp is unsupported.\n",depth);
                   return -1;
-    }             
+    }
 
     s->frame.data[0] = NULL;
     s->new_palette = 0;
@@ -159,7 +159,7 @@ static int flic_decode_frame_8BPP(AVCodecContext *avctx,
     int pixel_countdown;
     unsigned char *pixels;
     int pixel_limit;
-    
+
     s->frame.reference = 1;
     s->frame.buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_PRESERVE | FF_BUFFER_HINTS_REUSABLE;
     if (avctx->reget_buffer(avctx, &s->frame) < 0) {
@@ -190,8 +190,8 @@ static int flic_decode_frame_8BPP(AVCodecContext *avctx,
             stream_ptr_after_color_chunk = stream_ptr + chunk_size - 6;
             s->new_palette = 1;
 
-            /* check special case: If this file is from the Magic Carpet 
-             * game and uses 6-bit colors even though it reports 256-color 
+            /* check special case: If this file is from the Magic Carpet
+             * game and uses 6-bit colors even though it reports 256-color
              * chunks in a 0xAF12-type file (fli_type is set to 0xAF13 during
              * initialization) */
             if ((chunk_type == FLI_256_COLOR) && (s->fli_type != FLC_MAGIC_CARPET_SYNTHETIC_TYPE_CODE))
@@ -543,7 +543,7 @@ int flic_decode_frame_15_16BPP(AVCodecContext *avctx,
                  * pixels on a row */
                 stream_ptr++;
                 pixel_countdown = (s->avctx->width * 2);
-                
+
                 while (pixel_countdown > 0) {
                     byte_run = buf[stream_ptr++];
                     if (byte_run > 0) {
@@ -572,10 +572,10 @@ int flic_decode_frame_15_16BPP(AVCodecContext *avctx,
 
                 /* Now FLX is strange, in that it is "byte" as opposed to "pixel" run length compressed.
                  * This doesnt give us any good oportunity to perform word endian conversion
-                 * during decompression. So if its requried (ie, this isnt a LE target, we do 
+                 * during decompression. So if its requried (ie, this isnt a LE target, we do
                  * a second pass over the line here, swapping the bytes.
                  */
-                pixel = 0xFF00; 
+                pixel = 0xFF00;
                 if (0xFF00 != LE_16(&pixel)) /* Check if its not an LE Target */
                 {
                   pixel_ptr = y_ptr;
@@ -584,7 +584,7 @@ int flic_decode_frame_15_16BPP(AVCodecContext *avctx,
                     *((signed short*)(&pixels[pixel_ptr])) = LE_16(&buf[pixel_ptr]);
                     pixel_ptr += 2;
                   }
-                }  
+                }
                 y_ptr += s->frame.linesize[0];
             }
             break;
@@ -597,7 +597,7 @@ int flic_decode_frame_15_16BPP(AVCodecContext *avctx,
                  * pixels on a row */
                 stream_ptr++;
                 pixel_countdown = s->avctx->width; /* Width is in pixels, not bytes */
-                
+
                 while (pixel_countdown > 0) {
                     byte_run = buf[stream_ptr++];
                     if (byte_run > 0) {
@@ -606,7 +606,7 @@ int flic_decode_frame_15_16BPP(AVCodecContext *avctx,
                         CHECK_PIXEL_PTR(byte_run);
                         for (j = 0; j < byte_run; j++) {
                             *((signed short*)(&pixels[pixel_ptr])) = pixel;
-                            pixel_ptr += 2;                            
+                            pixel_ptr += 2;
                             pixel_countdown--;
                             if (pixel_countdown < 0)
                                 av_log(avctx, AV_LOG_ERROR, "pixel_countdown < 0 (%d)\n",
@@ -639,7 +639,7 @@ int flic_decode_frame_15_16BPP(AVCodecContext *avctx,
                        "bigger than image, skipping chunk\n", chunk_size - 6);
                 stream_ptr += chunk_size - 6;
             } else {
-                
+
                 for (y_ptr = 0; y_ptr < s->frame.linesize[0] * s->avctx->height;
                      y_ptr += s->frame.linesize[0]) {
 
@@ -649,7 +649,7 @@ int flic_decode_frame_15_16BPP(AVCodecContext *avctx,
                       *((signed short*)(&pixels[y_ptr + pixel_ptr])) = LE_16(&buf[stream_ptr+pixel_ptr]);
                       pixel_ptr += 2;
                       pixel_countdown--;
-                    }  
+                    }
                     stream_ptr += s->avctx->width*2;
                 }
             }
@@ -702,7 +702,7 @@ static int flic_decode_frame(AVCodecContext *avctx,
              (avctx->pix_fmt == PIX_FMT_RGB565)) {
       return flic_decode_frame_15_16BPP(avctx, data, data_size,
                                         buf, buf_size);
-    }                                        
+    }
     else if (avctx->pix_fmt == PIX_FMT_BGR24) {
       return flic_decode_frame_24BPP(avctx, data, data_size,
                                      buf, buf_size);
@@ -711,10 +711,10 @@ static int flic_decode_frame(AVCodecContext *avctx,
     /* Shouldnt get  here, ever as the pix_fmt is processed */
     /* in flic_decode_init and the above if should deal with */
     /* the finite set of possibilites allowable by here. */
-    /* but in case we do, just error out. */    
+    /* but in case we do, just error out. */
     av_log(avctx, AV_LOG_ERROR, "Unknown Format of FLC. My Science cant explain how this happened\n");
     return -1;
-}                             
+}
 
 
 static int flic_decode_end(AVCodecContext *avctx)

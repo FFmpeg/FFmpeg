@@ -70,7 +70,7 @@ static int file_write(URLContext *h, unsigned char *buf, int size)
 static offset_t file_seek(URLContext *h, offset_t pos, int whence)
 {
     int fd = (size_t)h->priv_data;
-#if defined(CONFIG_WIN32) && !defined(__CYGWIN__) 
+#if defined(CONFIG_WIN32) && !defined(__CYGWIN__)
     return _lseeki64(fd, pos, whence);
 #else
     return lseek(fd, pos, whence);

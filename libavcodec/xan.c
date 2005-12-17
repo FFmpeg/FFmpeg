@@ -61,7 +61,7 @@ static int xan_decode_init(AVCodecContext *avctx)
     s->avctx = avctx;
     s->frame_size = 0;
 
-    if ((avctx->codec->id == CODEC_ID_XAN_WC3) && 
+    if ((avctx->codec->id == CODEC_ID_XAN_WC3) &&
         (s->avctx->palctrl == NULL)) {
         av_log(avctx, AV_LOG_ERROR, " WC3 Xan video: palette expected.\n");
         return -1;
@@ -72,7 +72,7 @@ static int xan_decode_init(AVCodecContext *avctx)
 
     if(avcodec_check_dimensions(avctx, avctx->width, avctx->height))
         return -1;
-    
+
     s->buffer1_size = avctx->width * avctx->height;
     s->buffer1 = av_malloc(s->buffer1_size);
     s->buffer2_size = avctx->width * avctx->height;
@@ -83,7 +83,7 @@ static int xan_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-/* This function is used in lieu of memcpy(). This decoder can not use 
+/* This function is used in lieu of memcpy(). This decoder can not use
  * memcpy because the memory locations often overlap and
  * memcpy doesn't like that; it's not uncommon, for example, for
  * dest = src+1, to turn byte A into  pattern AAAAAAAA.
@@ -96,7 +96,7 @@ static inline void bytecopy(unsigned char *dest, unsigned char *src, int count)
         dest[i] = src[i];
 }
 
-static int xan_huffman_decode(unsigned char *dest, unsigned char *src, 
+static int xan_huffman_decode(unsigned char *dest, unsigned char *src,
     int dest_len)
 {
     unsigned char byte = *src++;
@@ -206,7 +206,7 @@ static void xan_unpack(unsigned char *dest, unsigned char *src, int dest_len)
     bytecopy(dest, src, size);  dest += size;  src += size;
 }
 
-static void inline xan_wc3_output_pixel_run(XanContext *s, 
+static void inline xan_wc3_output_pixel_run(XanContext *s,
     unsigned char *pixel_buffer, int x, int y, int pixel_count)
 {
     int stride;
@@ -235,7 +235,7 @@ static void inline xan_wc3_output_pixel_run(XanContext *s,
     }
 }
 
-static void inline xan_wc3_copy_pixel_run(XanContext *s, 
+static void inline xan_wc3_copy_pixel_run(XanContext *s,
     int x, int y, int pixel_count, int motion_x, int motion_y)
 {
     int stride;
@@ -255,7 +255,7 @@ static void inline xan_wc3_copy_pixel_run(XanContext *s,
     prevframe_x = x + motion_x;
     while((pixel_count--) && (curframe_index < s->frame_size)) {
 
-        palette_plane[curframe_index++] = 
+        palette_plane[curframe_index++] =
             prev_palette_plane[prevframe_index++];
 
         curframe_x++;
@@ -302,7 +302,7 @@ static void xan_wc3_decode_frame(XanContext *s) {
     xan_huffman_decode(opcode_buffer, huffman_segment, opcode_buffer_size);
 
     if (imagedata_segment[0] == 2)
-        xan_unpack(imagedata_buffer, &imagedata_segment[1], 
+        xan_unpack(imagedata_buffer, &imagedata_segment[1],
             imagedata_buffer_size);
     else
         imagedata_buffer = &imagedata_segment[1];
@@ -423,7 +423,7 @@ static int xan_decode_frame(AVCodecContext *avctx,
         s->frame_size = s->current_frame.linesize[0] * s->avctx->height;
 
     palette_control->palette_changed = 0;
-    memcpy(s->current_frame.data[1], palette_control->palette, 
+    memcpy(s->current_frame.data[1], palette_control->palette,
         AVPALETTE_SIZE);
     s->current_frame.palette_has_changed = 1;
 

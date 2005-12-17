@@ -66,7 +66,7 @@ static void flush_packet(AVFormatContext *s)
     fill_size = ffm->packet_end - ffm->packet_ptr;
     memset(ffm->packet_ptr, 0, fill_size);
 
-    if (url_ftell(pb) % ffm->packet_size) 
+    if (url_ftell(pb) % ffm->packet_size)
         av_abort();
 
     /* put header */
@@ -403,7 +403,7 @@ static void adjust_write_index(AVFormatContext *s)
 
     pts = get_pts(s, pos_max);
 
-    if (pts - 100000 > pts_start) 
+    if (pts - 100000 > pts_start)
         goto end;
 
     ffm->write_index = FFM_PACKET_SIZE;
@@ -481,9 +481,9 @@ static int ffm_read_header(AVFormatContext *s, AVFormatParameters *ap)
         if (!fst)
             goto fail;
         s->streams[i] = st;
-            
+
         av_set_pts_info(st, 64, 1, 1000000);
-            
+
         st->priv_data = fst;
 
         codec = st->codec;
@@ -581,7 +581,7 @@ static int ffm_read_packet(AVFormatContext *s, AVPacket *pkt)
         printf("pos=%08Lx spos=%Lx, write_index=%Lx size=%Lx\n",
                url_ftell(&s->pb), s->pb.pos, ffm->write_index, ffm->file_size);
 #endif
-        if (ffm_read_data(s, ffm->header, FRAME_HEADER_SIZE, 1) != 
+        if (ffm_read_data(s, ffm->header, FRAME_HEADER_SIZE, 1) !=
             FRAME_HEADER_SIZE)
             return -EAGAIN;
 #if 0
@@ -604,7 +604,7 @@ static int ffm_read_packet(AVFormatContext *s, AVPacket *pkt)
 
         av_new_packet(pkt, size);
         pkt->stream_index = ffm->header[0];
-        pkt->pos = url_ftell(&s->pb); 
+        pkt->pos = url_ftell(&s->pb);
         if (ffm->header[1] & FLAG_KEY_FRAME)
             pkt->flags |= PKT_FLAG_KEY;
 
@@ -747,7 +747,7 @@ static int ffm_read_close(AVFormatContext *s)
 static int ffm_probe(AVProbeData *p)
 {
     if (p->buf_size >= 4 &&
-        p->buf[0] == 'F' && p->buf[1] == 'F' && p->buf[2] == 'M' && 
+        p->buf[0] == 'F' && p->buf[1] == 'F' && p->buf[2] == 'M' &&
         p->buf[3] == '1')
         return AVPROBE_SCORE_MAX + 1;
     return 0;

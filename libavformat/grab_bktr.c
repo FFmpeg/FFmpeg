@@ -174,7 +174,7 @@ static int bktr_init(const char *video_device, int width, int height,
 
     video_buf_size = width * height * 12 / 8;
 
-    video_buf = (uint8_t *)mmap((caddr_t)0, video_buf_size, 
+    video_buf = (uint8_t *)mmap((caddr_t)0, video_buf_size,
         PROT_READ, MAP_SHARED, *video_fd, (off_t)0);
     if (video_buf == MAP_FAILED) {
         perror("mmap");
@@ -182,7 +182,7 @@ static int bktr_init(const char *video_device, int width, int height,
     }
 
     if (frequency != 0.0) {
-        ioctl_frequency  = (unsigned long)(frequency*16); 
+        ioctl_frequency  = (unsigned long)(frequency*16);
         if (ioctl(*tuner_fd, TVTUNER_SETFREQ, &ioctl_frequency) < 0)
             perror("TVTUNER_SETFREQ");
     }

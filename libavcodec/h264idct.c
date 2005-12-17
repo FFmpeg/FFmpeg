@@ -17,13 +17,13 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
- 
+
 /**
  * @file h264-idct.c
  * H.264 IDCT.
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
- 
+
 #include "dsputil.h"
 
 static always_inline void idct_internal(uint8_t *dst, DCTELEM *block, int stride, int block_stride, int shift, int add){

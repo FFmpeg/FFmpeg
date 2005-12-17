@@ -60,19 +60,19 @@ static const int16_t __attribute__((aligned(8))) coeffs[]= {
 
  C4,  C4,  C4,  C4,
  C4, -C4,  C4, -C4,
- 
+
  C2,  C6,  C2,  C6,
  C6, -C2,  C6, -C2,
- 
+
  C1,  C3,  C1,  C3,
  C5,  C7,  C5,  C7,
- 
+
  C3, -C7,  C3, -C7,
 -C1, -C5, -C1, -C5,
- 
+
  C5, -C1,  C5, -C1,
  C7,  C3,  C7,  C3,
- 
+
  C7, -C5,  C7, -C5,
  C3, -C1,  C3, -C1
 };
@@ -357,7 +357,7 @@ static inline void idct(int16_t *block)
 	"movd %%mm4, 64+" #dst "		\n\t"\
 	"movd %%mm5, 80+" #dst "		\n\t"\
 
-	
+
 #define DC_COND_ROW_IDCT(src0, src4, src1, src5, dst, rounder, shift) \
 	"movq " #src0 ", %%mm0			\n\t" /* R4	R0	r4	r0 */\
 	"movq " #src4 ", %%mm1			\n\t" /* R6	R2	r6	r2 */\
@@ -857,7 +857,7 @@ Z_COND_IDCT(  96(%0),104(%0),112(%0),120(%0), 96(%1),paddd (%2), 11, 5f)
 	"packssdw %%mm5, %%mm5			\n\t" /* A2-B2	a2-b2 */\
 	"movd %%mm6, 48+" #dst "		\n\t"\
 	"movd %%mm1, 64+" #dst "		\n\t"\
-	"movd %%mm5, 80+" #dst "		\n\t"	
+	"movd %%mm5, 80+" #dst "		\n\t"
 
 //IDCT(  src0,   src4,   src1,    src5,    dst, rounder, shift)
 IDCT(    (%1), 64(%1), 32(%1),  96(%1),  0(%0),/nop, 20)
@@ -924,7 +924,7 @@ Z_COND_IDCT(  96(%0),104(%0),112(%0),120(%0), 96(%1),paddd (%2), 11, 7f)
 	"packssdw %%mm5, %%mm5			\n\t" /* A2-B2	a2-b2 */\
 	"movd %%mm6, 48+" #dst "		\n\t"\
 	"movd %%mm1, 64+" #dst "		\n\t"\
-	"movd %%mm5, 80+" #dst "		\n\t"	
+	"movd %%mm5, 80+" #dst "		\n\t"
 
 
 //IDCT(  src0,   src4,   src1,    src5,    dst, rounder, shift)
@@ -1137,8 +1137,8 @@ IDCT(  24(%1), 88(%1), 56(%1), 120(%1), 12(%0),/nop, 20)
 	"packssdw %%mm1, %%mm6			\n\t" /* A3+B3	a3+b3 */\
 	"movq %%mm6, 48+" #dst "		\n\t"\
 	"movq %%mm6, 64+" #dst "		\n\t"\
-	"movq %%mm5, 80+" #dst "		\n\t"	
-	
+	"movq %%mm5, 80+" #dst "		\n\t"
+
 
 //IDCT(  src0,   src4,   src1,    src5,    dst, rounder, shift)
 IDCT(    0(%1), 64(%1), 32(%1),  96(%1),  0(%0),/nop, 20)
@@ -1214,7 +1214,7 @@ IDCT(  16(%1), 80(%1), 48(%1), 112(%1),  8(%0),/nop, 20)
 	"packssdw %%mm5, %%mm5			\n\t" /* A2-B2	a2-b2 */\
 	"movd %%mm4, 64+" #dst "		\n\t"\
 	"movd %%mm5, 80+" #dst "		\n\t"
-	
+
 
 //IDCT(  src0,   src4,   src1,    src5,    dst, rounder, shift)
 IDCT(    (%1), 64(%1), 32(%1),  96(%1),  0(%0),/nop, 20)
@@ -1256,7 +1256,7 @@ IDCT(  24(%1), 88(%1), 56(%1), 120(%1), 12(%0),/nop, 20)
 	"movq %%mm0, 32+" #dst "		\n\t"\
 	"movq %%mm4, 48+" #dst "		\n\t"\
 	"movq %%mm4, 64+" #dst "		\n\t"\
-	"movq %%mm0, 80+" #dst "		\n\t"	
+	"movq %%mm0, 80+" #dst "		\n\t"
 
 //IDCT(  src0,   src4,   src1,    src5,    dst, rounder, shift)
 IDCT(   0(%1), 64(%1), 32(%1),  96(%1),  0(%0),/nop, 20)
@@ -1277,7 +1277,7 @@ Input
  12 32 16 36 52 72 56 76
  05 45 07 47 25 65 27 67
  15 35 17 37 55 75 57 77
-  
+
 Temp
  00 04 10 14 20 24 30 34
  40 44 50 54 60 64 70 74

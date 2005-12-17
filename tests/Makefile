@@ -55,7 +55,7 @@ audiogen: audiogen.c
 
 tiny_psnr: tiny_psnr.c
 	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $<
-        
+
 DSPDEPS = $(SRC_PATH)/libavcodec/i386/dsputil_mmx.c \
  $(SRC_PATH)/libavcodec/i386/dsputil_mmx_avg.h \
  $(SRC_PATH)/libavcodec/i386/dsputil_mmx_rnd.h \
@@ -74,4 +74,4 @@ dsptest: dsptest.c $(DSPDEPS)
 
 clean:
 	rm -rf vsynth1 vsynth2 data
-	rm -f asynth1.sw *~ audiogen videogen rotozoom tiny_psnr 
+	rm -f asynth1.sw *~ audiogen videogen rotozoom tiny_psnr

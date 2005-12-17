@@ -7,7 +7,7 @@ include config.mak
 VPATH=$(SRC_PATH)
 
 CFLAGS=$(OPTFLAGS) -I. -I$(SRC_PATH) -I$(SRC_PATH)/libavutil -I$(SRC_PATH)/libavcodec -I$(SRC_PATH)/libavformat -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_GNU_SOURCE
-LDFLAGS+= -g 
+LDFLAGS+= -g
 
 ifeq ($(TARGET_GPROF),yes)
 CFLAGS+=-p
@@ -75,7 +75,7 @@ ffmpeg$(EXESUF): ffmpeg_g$(EXESUF)
 	$(STRIP) $@
 
 ffserver$(EXESUF): ffserver.o .libs
-	$(CC) $(LDFLAGS) $(FFSLDFLAGS) -o $@ ffserver.o $(FFLIBS) $(EXTRALIBS) 
+	$(CC) $(LDFLAGS) $(FFSLDFLAGS) -o $@ ffserver.o $(FFLIBS) $(EXTRALIBS)
 
 ffplay_g$(EXESUF): ffplay.o cmdutils.o .libs
 	$(CC) $(LDFLAGS) -o $@ ffplay.o cmdutils.o $(FFLIBS) $(EXTRALIBS) $(SDL_LIBS)
@@ -94,10 +94,10 @@ cws2fws$(EXESUF): cws2fws.c
 	$(CC) $(SRC_PATH)/cws2fws.c -o cws2fws$(EXESUF) -lz
 
 ffplay.o: ffplay.c
-	$(CC) $(CFLAGS) $(SDL_CFLAGS) -c -o $@ $< 
+	$(CC) $(CFLAGS) $(SDL_CFLAGS) -c -o $@ $<
 
 %.o: %.c
-	$(CC) $(CFLAGS) -c -o $@ $< 
+	$(CC) $(CFLAGS) -c -o $@ $<
 
 videohook: .libs
 	$(MAKE) -C vhook all

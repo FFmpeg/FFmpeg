@@ -385,7 +385,7 @@ static void ff_idct_put_mlib(uint8_t *dest, int line_size, DCTELEM *data)
     uint8_t *cm = cropTbl + MAX_NEG_CROP;
 
     mlib_VideoIDCT8x8_S16_S16 (data, data);
-    
+
     for(i=0;i<8;i++) {
         dest[0] = cm[data[0]];
         dest[1] = cm[data[1]];

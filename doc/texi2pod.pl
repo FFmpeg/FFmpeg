@@ -229,7 +229,7 @@ while(<$inf>) {
 	$inf = gensym();
 
 	# Try cwd and $ibase.
-	open($inf, "<" . $1) 
+	open($inf, "<" . $1)
 	    or open($inf, "<" . $ibase . "/" . $1)
 		or die "cannot open $1 or $ibase/$1: $!\n";
 	next;

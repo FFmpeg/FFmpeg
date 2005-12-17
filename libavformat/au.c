@@ -1,4 +1,4 @@
-/* 
+/*
  * AU encoder and decoder
  * Copyright (c) 2001 Fabrice Bellard.
  *
@@ -127,11 +127,11 @@ static int au_read_header(AVFormatContext *s,
         return -1;
     size = get_be32(pb); /* header size */
     get_be32(pb); /* data size */
-    
+
     id = get_be32(pb);
     rate = get_be32(pb);
     channels = get_be32(pb);
-    
+
     codec = codec_get_id(codec_au_tags, id);
 
     if (size >= 24) {

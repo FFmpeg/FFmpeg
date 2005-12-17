@@ -17,12 +17,12 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
- 
+
 /**
  * @file wnv1.c
  * Winnov WNV1 codec.
  */
- 
+
 #include "avcodec.h"
 #include "common.h"
 #include "bitstream.h"
@@ -38,7 +38,7 @@ typedef struct WNV1Context{
 
 static uint16_t code_tab[16][2]={
 {0x1FD,9}, {0xFD,8}, {0x7D,7}, {0x3D,6}, {0x1D,5}, {0x0D,4}, {0x005,3},
-{0x000,1}, 
+{0x000,1},
 {0x004,3}, {0x0C,4}, {0x1C,5}, {0x3C,6}, {0x7C,7}, {0xFC,8}, {0x1FC,9}, {0xFF,8}
 };
 
@@ -56,7 +56,7 @@ static inline int wnv1_get_code(WNV1Context *w, int base_value)
         return base_value + ((v - 7)<<w->shift);
 }
 
-static int decode_frame(AVCodecContext *avctx, 
+static int decode_frame(AVCodecContext *avctx,
                         void *data, int *data_size,
                         uint8_t *buf, int buf_size)
 {
@@ -93,7 +93,7 @@ static int decode_frame(AVCodecContext *avctx,
             l->shift = 1;
         }
     }
-    
+
     Y = p->data[0];
     U = p->data[1];
     V = p->data[2];
@@ -109,10 +109,10 @@ static int decode_frame(AVCodecContext *avctx,
         V += p->linesize[2];
     }
 
-    
+
     *data_size = sizeof(AVFrame);
     *(AVFrame*)data = l->pic;
-    
+
     return buf_size;
 }
 

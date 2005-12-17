@@ -52,7 +52,7 @@ static int get_audio_flags(AVCodecContext *enc){
     if (enc->channels > 1) {
         flags |= 0x01;
     }
-    
+
     switch(enc->codec_id){
     case CODEC_ID_MP3:
         flags |= 0x20 | 0x2;
@@ -75,7 +75,7 @@ static int get_audio_flags(AVCodecContext *enc){
         av_log(enc, AV_LOG_ERROR, "codec not compatible with flv\n");
         return -1;
     }
-    
+
     return flags;
 }
 
@@ -93,7 +93,7 @@ static int flv_write_header(AVFormatContext *s)
     put_byte(pb,0); // delayed write
     put_be32(pb,9);
     put_be32(pb,0);
-    
+
     for(i=0; i<s->nb_streams; i++){
         AVCodecContext *enc = s->streams[i]->codec;
         av_set_pts_info(s->streams[i], 24, 1, 1000); /* 24 bit pts in ms */
@@ -138,7 +138,7 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
     int flags;
 
 //    av_log(s, AV_LOG_DEBUG, "type:%d pts: %lld size:%d\n", enc->codec_type, timestamp, size);
-    
+
     if (enc->codec_type == CODEC_TYPE_VIDEO) {
         put_byte(pb, 9);
         flags = 2; // choose h263
@@ -147,7 +147,7 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
     } else {
         assert(enc->codec_type == CODEC_TYPE_AUDIO);
         flags = get_audio_flags(enc);
-        
+
         assert(size);
 
         put_byte(pb, 8);
@@ -162,7 +162,7 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
     put_byte(pb,flags);
     put_buffer(pb, pkt->data, size);
     put_be32(pb,size+1+11); // previous tag size
-    
+
     put_flush_packet(pb);
     return 0;
 }

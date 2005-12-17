@@ -12,7 +12,7 @@
 
 FFmpeg is a very fast video and audio converter. It can also grab from
 a live audio/video source.
-  
+
 The command line interface is designed to be intuitive, in the sense
 that FFmpeg tries to figure out all parameters that can possibly be
 derived automatically. You usually only have to specify the target
@@ -30,7 +30,7 @@ FFmpeg can use a video4linux compatible video source and any Open Sound
 System audio source:
 
 @example
-ffmpeg /tmp/out.mpg 
+ffmpeg /tmp/out.mpg
 @end example
 
 Note that you must activate the right video source and channel before
@@ -48,10 +48,10 @@ Examples:
 * You can use YUV files as input:
 
 @example
-ffmpeg -i /tmp/test%d.Y /tmp/out.mpg 
+ffmpeg -i /tmp/test%d.Y /tmp/out.mpg
 @end example
 
-It will use the files: 
+It will use the files:
 @example
 /tmp/test0.Y, /tmp/test0.U, /tmp/test0.V,
 /tmp/test1.Y, /tmp/test1.U, /tmp/test1.V, etc...
@@ -130,7 +130,7 @@ NOTE: To see the supported input formats, use @code{ffmpeg -formats}.
 
 The generic syntax is:
 
-@example 
+@example
 @c man begin SYNOPSIS
 ffmpeg [[infile options][@option{-i} @var{infile}]]... @{[outfile options] @var{outfile}@}...
 @c man end
@@ -161,16 +161,16 @@ Show help.
 @item -formats
 Show available formats, codecs, protocols, ...
 
-@item -f fmt              
+@item -f fmt
 Force format.
 
-@item -i filename         
+@item -i filename
 input filename
 
-@item -y                  
+@item -y
 Overwrite output files.
 
-@item -t duration         
+@item -t duration
 Set the recording time in seconds.
 @code{hh:mm:ss[.xxx]} syntax is also supported.
 
@@ -178,16 +178,16 @@ Set the recording time in seconds.
 Seek to given time position in seconds.
 @code{hh:mm:ss[.xxx]} syntax is also supported.
 
-@item -title string       
+@item -title string
 Set the title.
 
-@item -author string      
+@item -author string
 Set the author.
 
-@item -copyright string   
+@item -copyright string
 Set the copyright.
 
-@item -comment string     
+@item -comment string
 Set the comment.
 
 @item -target type
@@ -224,9 +224,9 @@ streams are delayed by 'offset' seconds.
 @table @option
 @item -b bitrate
 Set the video bitrate in kbit/s (default = 200 kb/s).
-@item -r fps           
+@item -r fps
 Set frame rate (default = 25).
-@item -s size             
+@item -s size
 Set frame size. The format is @samp{wxh} (default = 160x128).
 The following abbreviations are recognized:
 @table @samp
@@ -265,7 +265,7 @@ represent red, the middle two digits green and last two digits
 blue (default = 000000 (black)).
 @item -vn
 Disable video recording.
-@item -bt tolerance       
+@item -bt tolerance
 Set video bitrate tolerance (in kbit/s).
 @item -maxrate bitrate
 Set max video bitrate tolerance (in kbit/s).
@@ -273,19 +273,19 @@ Set max video bitrate tolerance (in kbit/s).
 Set min video bitrate tolerance (in kbit/s).
 @item -bufsize size
 Set rate control buffer size (in kbit).
-@item -vcodec codec       
+@item -vcodec codec
 Force video codec to @var{codec}. Use the @code{copy} special value to
 tell that the raw codec data must be copied as is.
 @item -sameq
 Use same video quality as source (implies VBR).
 
-@item -pass n  
+@item -pass n
 Select the pass number (1 or 2). It is useful to do two pass
 encoding. The statistics of the video are recorded in the first
 pass and the video is generated at the exact requested bitrate
 in the second pass.
 
-@item -passlogfile file   
+@item -passlogfile file
 Set two pass logfile name to @var{file}.
 
 @end table
@@ -293,21 +293,21 @@ Set two pass logfile name to @var{file}.
 @section Advanced Video Options
 
 @table @option
-@item -g gop_size         
+@item -g gop_size
 Set the group of pictures size.
-@item -intra              
+@item -intra
 Use only intra frames.
-@item -qscale q           
+@item -qscale q
 Use fixed video quantiser scale (VBR).
-@item -qmin q             
+@item -qmin q
 minimum video quantiser scale (VBR)
-@item -qmax q             
+@item -qmax q
 maximum video quantiser scale (VBR)
-@item -qdiff q            
+@item -qdiff q
 maximum difference between the quantiser scales (VBR)
-@item -qblur blur         
+@item -qblur blur
 video quantiser scale blur (VBR)
-@item -qcomp compression  
+@item -qcomp compression
 video quantiser scale compression (VBR)
 
 @item -rc_init_cplx complexity
@@ -363,31 +363,31 @@ Set IDCT algorithm to @var{algo}. Available values are:
 @item 0
 FF_IDCT_AUTO (default)
 @item 1
-FF_IDCT_INT          
+FF_IDCT_INT
 @item 2
-FF_IDCT_SIMPLE       
+FF_IDCT_SIMPLE
 @item 3
-FF_IDCT_SIMPLEMMX    
+FF_IDCT_SIMPLEMMX
 @item 4
-FF_IDCT_LIBMPEG2MMX  
+FF_IDCT_LIBMPEG2MMX
 @item 5
-FF_IDCT_PS2          
+FF_IDCT_PS2
 @item 6
-FF_IDCT_MLIB         
+FF_IDCT_MLIB
 @item 7
-FF_IDCT_ARM          
+FF_IDCT_ARM
 @item 8
-FF_IDCT_ALTIVEC      
+FF_IDCT_ALTIVEC
 @item 9
-FF_IDCT_SH4          
+FF_IDCT_SH4
 @item 10
-FF_IDCT_SIMPLEARM    
+FF_IDCT_SIMPLEARM
 @end table
 
 @item -er n
 Set error resilience to @var{n}.
 @table @samp
-@item 1 
+@item 1
 FF_ER_CAREFUL (default)
 @item 2
 FF_ER_COMPLIANT
@@ -453,9 +453,9 @@ name and its parameters separated by spaces.
 @section Audio Options
 
 @table @option
-@item -ar freq    
+@item -ar freq
 Set the audio sampling frequency (default = 44100 Hz).
-@item -ab bitrate 
+@item -ab bitrate
 Set the audio bitrate in kbit/s (default = 64).
 @item -ac channels
 Set the number of audio channels (default = 1).
@@ -484,13 +484,13 @@ Set audio device (e.g. @file{/dev/dsp}).
 @section Advanced options
 
 @table @option
-@item -map file:stream    
+@item -map file:stream
 Set input stream mapping.
 @item -debug
 Print specific debug info.
-@item -benchmark          
+@item -benchmark
 Add timings for benchmarking.
-@item -hex                
+@item -hex
 Dump each input packet.
 @item -bitexact
 Only use bit exact algorithms (for codec testing).
@@ -510,7 +510,7 @@ Repeatedly loop output for formats that support looping such as animated GIF
 @section FFmpeg formula evaluator
 
 When evaluating a rate control string, FFmpeg uses an internal formula
-evaluator. 
+evaluator.
 
 The following binary operators are available: @code{+}, @code{-},
 @code{*}, @code{/}, @code{^}.
@@ -650,26 +650,26 @@ library:
 @tab also known as @code{VOB} file
 @item MPEG-2 TS @tab    @tab  X
 @tab also known as DVB Transport Stream
-@item ASF@tab X @tab X 
-@item AVI@tab X @tab X 
-@item WAV@tab X @tab X 
+@item ASF@tab X @tab X
+@item AVI@tab X @tab X
+@item WAV@tab X @tab X
 @item Macromedia Flash@tab X @tab X
 @tab Only embedded audio is decoded.
 @item FLV              @tab  X @tab X
 @tab Macromedia Flash video files
-@item Real Audio and Video @tab X @tab X 
-@item Raw AC3 @tab X  @tab  X 
-@item Raw MJPEG @tab X  @tab  X 
-@item Raw MPEG video @tab X  @tab  X 
-@item Raw PCM8/16 bits, mulaw/Alaw@tab X  @tab  X 
-@item Raw CRI ADX audio @tab X  @tab  X 
-@item Raw Shorten audio @tab    @tab  X 
-@item SUN AU format @tab X  @tab  X 
+@item Real Audio and Video @tab X @tab X
+@item Raw AC3 @tab X  @tab  X
+@item Raw MJPEG @tab X  @tab  X
+@item Raw MPEG video @tab X  @tab  X
+@item Raw PCM8/16 bits, mulaw/Alaw@tab X  @tab  X
+@item Raw CRI ADX audio @tab X  @tab  X
+@item Raw Shorten audio @tab    @tab  X
+@item SUN AU format @tab X  @tab  X
 @item NUT @tab X @tab X @tab NUT Open Container Format
-@item QuickTime        @tab X @tab  X 
+@item QuickTime        @tab X @tab  X
 @item MPEG-4           @tab X @tab  X
 @tab MPEG-4 is a variant of QuickTime.
-@item Raw MPEG4 video  @tab  X @tab  X 
+@item Raw MPEG4 video  @tab  X @tab  X
 @item DV               @tab  X @tab  X
 @item 4xm              @tab    @tab X
 @tab 4X Technologies format, used in some games.
@@ -707,7 +707,7 @@ following image formats are supported:
 
 @multitable @columnfractions .4 .1 .1 .4
 @item Supported Image Format @tab Encoding @tab Decoding @tab Comments
-@item PGM, PPM     @tab X @tab X 
+@item PGM, PPM     @tab X @tab X
 @item PAM          @tab X @tab X @tab PAM is a PNM extension with alpha support.
 @item PGMYUV       @tab X @tab X @tab PGM with U and V components in YUV 4:2:0
 @item JPEG         @tab X @tab X @tab Progressive JPEG is not supported.
@@ -734,11 +734,11 @@ following image formats are supported:
 @item H.261                  @tab  X  @tab  X
 @item H.263(+)               @tab  X  @tab  X @tab also known as RealVideo 1.0
 @item H.264                  @tab     @tab  X
-@item MJPEG                  @tab  X  @tab  X 
+@item MJPEG                  @tab  X  @tab  X
 @item lossless MJPEG         @tab  X  @tab  X
 @item Apple MJPEG-B          @tab     @tab  X
 @item Sunplus MJPEG          @tab     @tab  X @tab fourcc: SP5X
-@item DV                     @tab  X  @tab  X 
+@item DV                     @tab  X  @tab  X
 @item HuffYUV                @tab  X  @tab  X
 @item FFmpeg Video 1         @tab  X  @tab  X @tab experimental lossless codec (fourcc: FFV1)
 @item FFmpeg Snow            @tab  X  @tab  X @tab experimental wavelet codec (fourcc: SNOW)
@@ -755,7 +755,7 @@ following image formats are supported:
 @item ATI VCR2               @tab     @tab  X @tab fourcc: VCR2
 @item Cirrus Logic AccuPak   @tab     @tab  X @tab fourcc: CLJR
 @item 4X Video               @tab     @tab  X @tab Used in certain computer games.
-@item Sony Playstation MDEC  @tab     @tab  X 
+@item Sony Playstation MDEC  @tab     @tab  X
 @item Id RoQ                 @tab     @tab  X @tab Used in Quake III, Jedi Knight 2, other computer games.
 @item Xan/WC3                @tab     @tab  X @tab Used in Wing Commander III .MVE files.
 @item Interplay Video        @tab     @tab  X @tab Used in Interplay .MVE files.
@@ -779,10 +779,10 @@ following image formats are supported:
 @item IBM Ultimotion         @tab     @tab  X @tab fourcc: ULTI
 @item Miro VideoXL           @tab     @tab  X @tab fourcc: VIXL
 @item QPEG                   @tab     @tab  X @tab fourccs: QPEG, Q1.0, Q1.1
-@item LOCO                   @tab     @tab  X @tab 
-@item Winnov WNV1            @tab     @tab  X @tab 
+@item LOCO                   @tab     @tab  X @tab
+@item Winnov WNV1            @tab     @tab  X @tab
 @item Autodesk Animator Studio Codec  @tab     @tab  X @tab fourcc: AASC
-@item Fraps FPS1             @tab     @tab  X @tab 
+@item Fraps FPS1             @tab     @tab  X @tab
 @end multitable
 
 @code{X} means that encoding (resp. decoding) is supported.
@@ -795,7 +795,7 @@ other implementations.
 
 @multitable @columnfractions .4 .1 .1 .1 .7
 @item Supported Codec @tab Encoding @tab Decoding @tab Comments
-@item MPEG audio layer 2     @tab  IX  @tab  IX 
+@item MPEG audio layer 2     @tab  IX  @tab  IX
 @item MPEG audio layer 1/3   @tab IX   @tab  IX
 @tab MP3 encoding is supported through the external library LAME.
 @item AC3                    @tab  IX  @tab  IX
@@ -890,7 +890,7 @@ directory. Edit the @file{sdl-config} script so that it gives the
 correct SDL directory when invoked.
 
 @item Extract the current version of FFmpeg.
- 
+
 @item Start the MSYS shell (file @file{msys.bat}).
 
 @item Change to the FFmpeg directory and follow
@@ -905,7 +905,7 @@ you launch @file{ffplay} from.
 
 @end itemize
 
-Notes: 
+Notes:
 @itemize
 
 @item The target @file{make wininstaller} can be used to create a
@@ -916,7 +916,7 @@ installer.
 @item By using @code{./configure --enable-shared} when configuring FFmpeg,
 you can build @file{avcodec.dll} and @file{avformat.dll}. With
 @code{make install} you install the FFmpeg DLLs and the associated
-headers in @file{Program Files/FFmpeg}. 
+headers in @file{Program Files/FFmpeg}.
 
 @item Visual C++ compatibility: If you used @code{./configure --enable-shared}
 when configuring FFmpeg, FFmpeg tries to use the Microsoft Visual
@@ -1068,13 +1068,13 @@ Old stuff:
 
 François Revol - revol at free dot fr - April 2002
 
-The configure script should guess the configuration itself, 
+The configure script should guess the configuration itself,
 however I still didn't test building on the net_server version of BeOS.
 
 FFserver is broken (needs poll() implementation).
 
 There are still issues with errno codes, which are negative in BeOS, and
-that FFmpeg negates when returning. This ends up turning errors into 
+that FFmpeg negates when returning. This ends up turning errors into
 valid results, then crashes.
 (To be fixed)
 
@@ -1180,33 +1180,33 @@ int myfunc(int my_parameter)
 ...
 @end example
 
-fprintf and printf are forbidden in libavformat and libavcodec, 
+fprintf and printf are forbidden in libavformat and libavcodec,
 please use av_log() instead.
 
 @node CVS Policy
 @section CVS Policy
 
 @enumerate
-@item 
+@item
    You must not commit code which breaks FFmpeg! (Meaning unfinished but
    enabled code which breaks compilation or compiles but does not work or
    breaks the regression tests)
    You can commit unfinished stuff (for testing etc), but it must be disabled
    (#ifdef etc) by default so it does not interfere with other developers'
    work.
-@item 
+@item
    You don't have to over-test things. If it works for you, and you think it
    should work for others, then commit. If your code has problems
    (portability, triggers compiler bugs, unusual environment etc) they will be
    reported and eventually fixed.
-@item 
+@item
    Do not commit unrelated changes together, split them into self-contained
    pieces.
 @item
    Do not change behavior of the program (renaming options etc) without
    first discussing it on the ffmpeg-devel mailing list. Do not remove
    functionality from the code. Just improve!
-   
+
    Note: Redundant code can be removed.
 @item
    Do not commit changes to the build system (Makefiles, configure script)
@@ -1227,7 +1227,7 @@ please use av_log() instead.
    changes.
 
    NOTE: If you had to put if()@{ .. @} over a large (> 5 lines) chunk of code,
-   then either do NOT change the indentation of the inner part within (don't 
+   then either do NOT change the indentation of the inner part within (don't
    move it to the right)! or do so in a separate commit
 @item
    Always fill out the commit log message. Describe in a few lines what you
@@ -1281,7 +1281,7 @@ When you submit your patch, try to send a unified diff (diff '-up'
 option). I cannot read other diffs :-)
 
 Also please do not submit patches which contain several unrelated changes.
-Split them into individual self-contained patches; this makes reviewing 
+Split them into individual self-contained patches; this makes reviewing
 them much easier.
 
 Run the regression tests before submitting a patch so that you can
@@ -1289,7 +1289,7 @@ verify that there are no big problems.
 
 Patches should be posted as base64 encoded attachments (or any other
 encoding which ensures that the patch won't be trashed during
-transmission) to the ffmpeg-devel mailing list, see 
+transmission) to the ffmpeg-devel mailing list, see
 @url{http://www1.mplayerhq.hu/mailman/listinfo/ffmpeg-devel}
 
 It also helps quite a bit if you tell us what the patch does (for example

@@ -46,7 +46,7 @@ typedef struct GifState {
     int gce_disposal;
     /* delay during which the frame is shown */
     int gce_delay;
-    
+
     /* LZW compatible decoder */
     ByteIOContext *f;
     int eob_reached;
@@ -312,7 +312,7 @@ static int gif_read_image(GifState *s)
         palette = s->global_palette;
         bits_per_pixel = s->bits_per_pixel;
     }
-    
+
     /* verify that all the image is inside the screen dimensions */
     if (left + width > s->screen_width ||
         top + height > s->screen_height)
@@ -327,7 +327,7 @@ static int gif_read_image(GifState *s)
         n = (1 << bits_per_pixel);
         spal = palette;
         for(i = 0; i < n; i++) {
-            s->image_palette[i] = (0xff << 24) | 
+            s->image_palette[i] = (0xff << 24) |
                 (spal[0] << 16) | (spal[1] << 8) | (spal[2]);
             spal += 3;
         }
@@ -376,7 +376,7 @@ static int gif_read_image(GifState *s)
                 ptr += linesize * 8;
                 if (y1 >= height) {
                     y1 = 4;
-                    if (pass == 0) 
+                    if (pass == 0)
                         ptr = ptr1 + linesize * 4;
                     else
                         ptr = ptr1 + linesize * 2;
@@ -402,7 +402,7 @@ static int gif_read_image(GifState *s)
         }
     }
     av_free(line);
-    
+
     /* read the garbage data until end marker is found */
     while (!s->eob_reached)
         GetCode(s);
@@ -434,14 +434,14 @@ static int gif_read_extension(GifState *s)
             s->transparent_color_index = -1;
         s->gce_disposal = (gce_flags >> 2) & 0x7;
 #ifdef DEBUG
-        printf("gif: gce_flags=%x delay=%d tcolor=%d disposal=%d\n", 
-               gce_flags, s->gce_delay, 
+        printf("gif: gce_flags=%x delay=%d tcolor=%d disposal=%d\n",
+               gce_flags, s->gce_delay,
                s->transparent_color_index, s->gce_disposal);
 #endif
         ext_len = get_byte(f);
         break;
     }
-        
+
     /* NOTE: many extension blocks can come after */
  discard_ext:
     while (ext_len != 0) {
@@ -474,11 +474,11 @@ static int gif_read_header1(GifState *s)
     s->transparent_color_index = -1;
     s->screen_width = get_le16(f);
     s->screen_height = get_le16(f);
-    if(   (unsigned)s->screen_width  > 32767 
+    if(   (unsigned)s->screen_width  > 32767
        || (unsigned)s->screen_height > 32767){
         av_log(NULL, AV_LOG_ERROR, "picture size too large\n");
         return -1;
-    } 
+    }
 
     v = get_byte(f);
     s->color_resolution = ((v & 0x70) >> 4) + 1;
@@ -543,7 +543,7 @@ static int gif_read_header(AVFormatContext * s1,
     s->f = f;
     if (gif_read_header1(s) < 0)
         return -1;
-    
+
     /* allocate image buffer */
     s->image_linesize = s->screen_width * 3;
     s->image_buf = av_malloc(s->screen_height * s->image_linesize);
@@ -593,7 +593,7 @@ static int gif_read_close(AVFormatContext *s1)
 }
 
 /* read gif as image */
-static int gif_read(ByteIOContext *f, 
+static int gif_read(ByteIOContext *f,
                     int (*alloc_cb)(void *opaque, AVImageInfo *info), void *opaque)
 {
     GifState s1, *s = &s1;

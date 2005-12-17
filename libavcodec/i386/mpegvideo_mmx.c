@@ -40,7 +40,7 @@ static void dct_unquantize_h263_intra_mmx(MpegEncContext *s,
     qmul = qscale << 1;
 
     assert(s->block_last_index[n]>=0 || s->h263_aic);
-        
+
     if (!s->h263_aic) {
         if (n < 4)
             level = block[0] * s->y_dc_scale;
@@ -116,7 +116,7 @@ static void dct_unquantize_h263_inter_mmx(MpegEncContext *s,
     qadd = (qscale - 1) | 1;
 
     assert(s->block_last_index[n]>=0 || s->h263_aic);
-        
+
     nCoeffs= s->inter_scantable.raster_end[ s->block_last_index[n] ];
 //printf("%d %d  ", qmul, qadd);
 asm volatile(
@@ -209,7 +209,7 @@ static void dct_unquantize_mpeg1_intra_mmx(MpegEncContext *s,
 
     nCoeffs= s->intra_scantable.raster_end[ s->block_last_index[n] ]+1;
 
-    if (n < 4) 
+    if (n < 4)
         block0 = block[0] * s->y_dc_scale;
     else
         block0 = block[0] * s->c_dc_scale;
@@ -263,7 +263,7 @@ asm volatile(
 		"js 1b				\n\t"
 		::"r" (block+nCoeffs), "r"(quant_matrix+nCoeffs), "g" (qscale), "g" (-2*nCoeffs)
 		: "%"REG_a, "memory"
-	);    
+	);
     block[0]= block0;
 }
 
@@ -339,13 +339,13 @@ static void dct_unquantize_mpeg2_intra_mmx(MpegEncContext *s,
     long nCoeffs;
     const uint16_t *quant_matrix;
     int block0;
-    
+
     assert(s->block_last_index[n]>=0);
 
     if(s->alternate_scan) nCoeffs= 63; //FIXME
     else nCoeffs= s->intra_scantable.raster_end[ s->block_last_index[n] ];
 
-    if (n < 4) 
+    if (n < 4)
         block0 = block[0] * s->y_dc_scale;
     else
         block0 = block[0] * s->c_dc_scale;
@@ -394,7 +394,7 @@ asm volatile(
 		"jng 1b				\n\t"
 		::"r" (block+nCoeffs), "r"(quant_matrix+nCoeffs), "g" (qscale), "g" (-2*nCoeffs)
 		: "%"REG_a, "memory"
-	);    
+	);
     block[0]= block0;
         //Note, we dont do mismatch control for intra as errors cannot accumulate
 }
@@ -404,7 +404,7 @@ static void dct_unquantize_mpeg2_inter_mmx(MpegEncContext *s,
 {
     long nCoeffs;
     const uint16_t *quant_matrix;
-    
+
     assert(s->block_last_index[n]>=0);
 
     if(s->alternate_scan) nCoeffs= 63; //FIXME
@@ -470,13 +470,13 @@ asm volatile(
                 "psrlq $15, %%mm7		\n\t"
                 "pxor %%mm7, %%mm0		\n\t"
                 "movd %%mm0, 124(%0, %3)	\n\t"
-                
+
 		::"r" (block+nCoeffs), "r"(quant_matrix+nCoeffs), "g" (qscale), "r" (-2*nCoeffs)
 		: "%"REG_a, "memory"
 	);
 }
 
-/* draw the edges of width 'w' of an image of size width, height 
+/* draw the edges of width 'w' of an image of size width, height
    this mmx version can only handle w==8 || w==16 */
 static void draw_edges_mmx(uint8_t *buf, int wrap, int width, int height, int w)
 {
@@ -491,7 +491,7 @@ static void draw_edges_mmx(uint8_t *buf, int wrap, int width, int height, int w)
 	asm volatile(
 		"1:				\n\t"
 		"movd (%0), %%mm0		\n\t"
-		"punpcklbw %%mm0, %%mm0		\n\t" 
+		"punpcklbw %%mm0, %%mm0		\n\t"
 		"punpcklwd %%mm0, %%mm0		\n\t"
 		"punpckldq %%mm0, %%mm0		\n\t"
 		"movq %%mm0, -8(%0)		\n\t"
@@ -512,7 +512,7 @@ static void draw_edges_mmx(uint8_t *buf, int wrap, int width, int height, int w)
 	asm volatile(
 		"1:				\n\t"
 		"movd (%0), %%mm0		\n\t"
-		"punpcklbw %%mm0, %%mm0		\n\t" 
+		"punpcklbw %%mm0, %%mm0		\n\t"
 		"punpcklwd %%mm0, %%mm0		\n\t"
 		"punpckldq %%mm0, %%mm0		\n\t"
 		"movq %%mm0, -8(%0)		\n\t"
@@ -525,12 +525,12 @@ static void draw_edges_mmx(uint8_t *buf, int wrap, int width, int height, int w)
 		"movq %%mm1, 8(%0, %2)		\n\t"
 		"add %1, %0			\n\t"
 		"cmp %3, %0			\n\t"
-		" jb 1b				\n\t"		
+		" jb 1b				\n\t"
 		: "+r" (ptr)
 		: "r" ((long)wrap), "r" ((long)width), "r" (ptr + wrap*height)
 	);
     }
-    
+
     for(i=0;i<w;i+=4) {
         /* top and bottom (and hopefully also the corners) */
 	ptr= buf - (i + 1) * wrap - w;
@@ -694,7 +694,7 @@ void MPV_common_init_mmx(MpegEncContext *s)
 {
     if (mm_flags & MM_MMX) {
         const int dct_algo = s->avctx->dct_algo;
-        
+
         s->dct_unquantize_h263_intra = dct_unquantize_h263_intra_mmx;
         s->dct_unquantize_h263_inter = dct_unquantize_h263_inter_mmx;
         s->dct_unquantize_mpeg1_intra = dct_unquantize_mpeg1_intra_mmx;
@@ -703,7 +703,7 @@ void MPV_common_init_mmx(MpegEncContext *s)
         s->dct_unquantize_mpeg2_inter = dct_unquantize_mpeg2_inter_mmx;
 
         draw_edges = draw_edges_mmx;
-        
+
         if (mm_flags & MM_SSE2) {
 	    s->denoise_dct= denoise_dct_sse2;
 	} else {

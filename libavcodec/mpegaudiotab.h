@@ -1,30 +1,30 @@
 /*
  * mpeg audio layer 2 tables. Most of them come from the mpeg audio
  * specification.
- * 
+ *
  * Copyright (c) 2000, 2001 Fabrice Bellard.
  *
  * The licence of this code is contained in file LICENCE found in the
- * same archive 
+ * same archive
  */
 
 /**
  * @file mpegaudiotab.h
- * mpeg audio layer 2 tables. 
+ * mpeg audio layer 2 tables.
  * Most of them come from the mpeg audio specification.
  */
- 
+
 #define SQRT2 1.41421356237309514547
 
 static const int costab32[30] = {
     FIX(0.54119610014619701222),
     FIX(1.3065629648763763537),
-    
+
     FIX(0.50979557910415917998),
     FIX(2.5629154477415054814),
     FIX(0.89997622313641556513),
     FIX(0.60134488693504528634),
-    
+
     FIX(0.5024192861881556782),
     FIX(5.1011486186891552563),
     FIX(0.78815462345125020249),
@@ -33,7 +33,7 @@ static const int costab32[30] = {
     FIX(1.0606776859903470633),
     FIX(1.7224470982383341955),
     FIX(0.52249861493968885462),
-    
+
     FIX(10.19000812354803287),
     FIX(0.674808341455005678),
     FIX(1.1694399334328846596),
@@ -75,13 +75,13 @@ static unsigned char scale_diff_table[128];
 static unsigned short total_quant_bits[17];
 
 /* signal to noise ratio of each quantification step (could be
-   computed from quant_steps[]). The values are dB multiplied by 10 
+   computed from quant_steps[]). The values are dB multiplied by 10
 */
-static const unsigned short quant_snr[17] = { 
+static const unsigned short quant_snr[17] = {
      70, 110, 160, 208,
     253, 316, 378, 439,
-    499, 559, 620, 680, 
-    740, 800, 861, 920, 
+    499, 559, 620, 680,
+    740, 800, 861, 920,
     980
 };
 

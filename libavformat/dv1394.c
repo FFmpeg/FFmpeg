@@ -46,9 +46,9 @@ struct dv1394_data {
     DVDemuxContext* dv_demux; /* Generic DV muxing/demuxing context */
 };
 
-/* 
+/*
  * The trick here is to kludge around well known problem with kernel Ooopsing
- * when you try to capture PAL on a device node configure for NTSC. That's 
+ * when you try to capture PAL on a device node configure for NTSC. That's
  * why we have to configure the device node for PAL, and then read only NTSC
  * amount of data.
  */
@@ -148,9 +148,9 @@ static int dv1394_read_packet(AVFormatContext *context, AVPacket *pkt)
                 /* This usually means that ring buffer overflowed.
                  * We have to reset :(.
                  */
-  
+
                 av_log(context, AV_LOG_ERROR, "DV1394: Ring buffer overflow. Reseting ..\n");
- 
+
                 dv1394_reset(dv);
                 dv1394_start(dv);
             }
@@ -200,12 +200,12 @@ restart_poll:
             dv->done);
 #endif
 
-    size = dv_produce_packet(dv->dv_demux, pkt, 
-                             dv->ring + (dv->index * DV1394_PAL_FRAME_SIZE), 
+    size = dv_produce_packet(dv->dv_demux, pkt,
+                             dv->ring + (dv->index * DV1394_PAL_FRAME_SIZE),
 			     DV1394_PAL_FRAME_SIZE);
     dv->index = (dv->index + 1) % DV1394_RING_FRAMES;
     dv->done++; dv->avail--;
-    
+
     return size;
 }
 

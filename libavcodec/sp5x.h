@@ -70,7 +70,7 @@ static const uint8_t sp5x_data_dqt[] =
     0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22
 };
 
-static const uint8_t sp5x_data_dht[] = {   
+static const uint8_t sp5x_data_dht[] = {
     0xFF, 0xC4,	/* DHT */
     0x01, 0xA2,	/* len */
     0x00, 0x00, 0x01, 0x05, 0x01, 0x01, 0x01, 0x01,
@@ -233,7 +233,7 @@ static const uint8_t sp5x_quant_table[20][64]=
 
 #if 0
 /* 4NF-M, not ZigZag */
-static const uint8_t sp5x_quant_table_orig[18][64] = 
+static const uint8_t sp5x_quant_table_orig[18][64] =
 {
     /* index 0, Q50 */
     {  16, 11, 10, 16, 24, 40, 51, 61, 12, 12, 14, 19, 26, 58, 60, 55,

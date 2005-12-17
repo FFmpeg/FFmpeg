@@ -19,7 +19,7 @@
 #include "avformat.h"
 
 /* in ms */
-#define BUFFER_DURATION 0 
+#define BUFFER_DURATION 0
 
 typedef struct {
     int nb_packets;
@@ -69,7 +69,7 @@ static void put_str8(ByteIOContext *s, const char *tag)
     }
 }
 
-static void rv10_write_header(AVFormatContext *ctx, 
+static void rv10_write_header(AVFormatContext *ctx,
                               int data_size, int index_pos)
 {
     RMContext *rm = ctx->priv_data;
@@ -128,11 +128,11 @@ static void rv10_write_header(AVFormatContext *ctx,
     if (url_is_streamed(s))
         flags |= 4; /* live broadcast */
     put_be16(s, flags);
-    
+
     /* comments */
 
     put_tag(s,"CONT");
-    size = strlen(ctx->title) + strlen(ctx->author) + strlen(ctx->copyright) + 
+    size = strlen(ctx->title) + strlen(ctx->author) + strlen(ctx->copyright) +
         strlen(ctx->comment) + 4 * 2 + 10;
     put_be32(s,size);
     put_be16(s,0);
@@ -140,12 +140,12 @@ static void rv10_write_header(AVFormatContext *ctx,
     put_str(s, ctx->author);
     put_str(s, ctx->copyright);
     put_str(s, ctx->comment);
-    
+
     for(i=0;i<ctx->nb_streams;i++) {
         int codec_data_size;
 
         stream = &rm->streams[i];
-        
+
         if (stream->enc->codec_type == CODEC_TYPE_AUDIO) {
             desc = "The Audio Stream";
             mimetype = "audio/x-pn-realaudio";
@@ -166,7 +166,7 @@ static void rv10_write_header(AVFormatContext *ctx,
         put_be32(s, stream->bit_rate); /* avg bit rate */
         put_be32(s, stream->packet_max_size);        /* max packet size */
         if (stream->nb_packets > 0)
-            packet_avg_size = stream->packet_total_size / 
+            packet_avg_size = stream->packet_total_size /
                 stream->nb_packets;
         else
             packet_avg_size = 0;
@@ -181,11 +181,11 @@ static void rv10_write_header(AVFormatContext *ctx,
         put_str8(s, desc);
         put_str8(s, mimetype);
         put_be32(s, codec_data_size);
-        
+
         if (stream->enc->codec_type == CODEC_TYPE_AUDIO) {
             int coded_frame_size, fscode, sample_rate;
             sample_rate = stream->enc->sample_rate;
-            coded_frame_size = (stream->enc->bit_rate * 
+            coded_frame_size = (stream->enc->bit_rate *
                                 stream->enc->frame_size) / (8 * sample_rate);
             /* audio codec info */
             put_tag(s, ".ra");
@@ -224,7 +224,7 @@ static void rv10_write_header(AVFormatContext *ctx,
             put_be32(s, 0x249f0); /* unknown */
             put_be16(s, 0x01);
             /* frame length : seems to be very important */
-            put_be16(s, coded_frame_size); 
+            put_be16(s, coded_frame_size);
             put_be32(s, 0); /* unknown */
             put_be16(s, stream->enc->sample_rate); /* sample rate */
             put_be32(s, 0x10); /* unknown */
@@ -253,10 +253,10 @@ static void rv10_write_header(AVFormatContext *ctx,
                versions seems to add a diffential DC coding as in
                MPEG... nothing new under the sun */
             if(stream->enc->codec_id == CODEC_ID_RV10)
-                put_be32(s,0x10000000); 
+                put_be32(s,0x10000000);
             else
-                put_be32(s,0x20103001); 
-            //put_be32(s,0x10003000); 
+                put_be32(s,0x20103001);
+            //put_be32(s,0x10003000);
         }
     }
 
@@ -267,7 +267,7 @@ static void rv10_write_header(AVFormatContext *ctx,
     data_offset_ptr[1] = data_pos >> 16;
     data_offset_ptr[2] = data_pos >> 8;
     data_offset_ptr[3] = data_pos;
-    
+
     /* data stream */
     put_tag(s,"DATA");
     put_be32(s,data_size + 10 + 8);
@@ -277,7 +277,7 @@ static void rv10_write_header(AVFormatContext *ctx,
     put_be32(s,0); /* next data header */
 }
 
-static void write_packet_header(AVFormatContext *ctx, StreamInfo *stream, 
+static void write_packet_header(AVFormatContext *ctx, StreamInfo *stream,
                                 int length, int key_frame)
 {
     int timestamp;
@@ -350,9 +350,9 @@ static int rm_write_audio(AVFormatContext *s, const uint8_t *buf, int size, int 
 
     /* XXX: suppress this malloc */
     buf1= (uint8_t*) av_malloc( size * sizeof(uint8_t) );
-    
+
     write_packet_header(s, stream, size, !!(flags & PKT_FLAG_KEY));
-    
+
     /* for AC3, the words seems to be reversed */
     for(i=0;i<size;i+=2) {
         buf1[i] = buf[i+1];
@@ -379,25 +379,25 @@ static int rm_write_video(AVFormatContext *s, const uint8_t *buf, int size, int 
 #if 1
     write_packet_header(s, stream, size + 7, key_frame);
     /* bit 7: '1' if final packet of a frame converted in several packets */
-    put_byte(pb, 0x81); 
+    put_byte(pb, 0x81);
     /* bit 7: '1' if I frame. bits 6..0 : sequence number in current
        frame starting from 1 */
     if (key_frame) {
-        put_byte(pb, 0x81); 
+        put_byte(pb, 0x81);
     } else {
-        put_byte(pb, 0x01); 
+        put_byte(pb, 0x01);
     }
     put_be16(pb, 0x4000 + (size)); /* total frame size */
     put_be16(pb, 0x4000 + (size));              /* offset from the start or the end */
 #else
     /* full frame */
     write_packet_header(s, size + 6);
-    put_byte(pb, 0xc0); 
+    put_byte(pb, 0xc0);
     put_be16(pb, 0x4000 + size); /* total frame size */
     put_be16(pb, 0x4000 + packet_number * 126); /* position in stream */
 #endif
-    put_byte(pb, stream->nb_frames & 0xff); 
-    
+    put_byte(pb, stream->nb_frames & 0xff);
+
     put_buffer(pb, buf, size);
     put_flush_packet(pb);
 
@@ -407,13 +407,13 @@ static int rm_write_video(AVFormatContext *s, const uint8_t *buf, int size, int 
 
 static int rm_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    if (s->streams[pkt->stream_index]->codec->codec_type == 
+    if (s->streams[pkt->stream_index]->codec->codec_type ==
         CODEC_TYPE_AUDIO)
         return rm_write_audio(s, pkt->data, pkt->size, pkt->flags);
     else
         return rm_write_video(s, pkt->data, pkt->size, pkt->flags);
 }
-        
+
 static int rm_write_trailer(AVFormatContext *s)
 {
     RMContext *rm = s->priv_data;
@@ -429,7 +429,7 @@ static int rm_write_trailer(AVFormatContext *s)
         put_tag(pb, "INDX");
         put_be32(pb, 10 + 10 * s->nb_streams);
         put_be16(pb, 0);
-        
+
         for(i=0;i<s->nb_streams;i++) {
             put_be32(pb, 0); /* zero indices */
             put_be16(pb, i); /* stream number */
@@ -438,7 +438,7 @@ static int rm_write_trailer(AVFormatContext *s)
         /* undocumented end header */
         put_be32(pb, 0);
         put_be32(pb, 0);
-        
+
         url_fseek(pb, 0, SEEK_SET);
         for(i=0;i<s->nb_streams;i++)
             rm->streams[i].total_frames = rm->streams[i].nb_frames;
@@ -483,7 +483,7 @@ static void get_str8(ByteIOContext *pb, char *buf, int buf_size)
     *q = '\0';
 }
 
-static void rm_read_audio_stream_info(AVFormatContext *s, AVStream *st, 
+static void rm_read_audio_stream_info(AVFormatContext *s, AVStream *st,
                                       int read_all)
 {
     RMContext *rm = s->priv_data;
@@ -520,7 +520,7 @@ static void rm_read_audio_stream_info(AVFormatContext *s, AVStream *st,
         get_be32(pb); /* ??? */
         get_be32(pb); /* ??? */
         get_be32(pb); /* ??? */
-        rm->sub_packet_h = sub_packet_h = get_be16(pb); /* 1 */ 
+        rm->sub_packet_h = sub_packet_h = get_be16(pb); /* 1 */
         st->codec->block_align= get_be16(pb); /* frame size */
         rm->sub_packet_size = sub_packet_size = get_be16(pb); /* sub packet size */
         get_be16(pb); /* ??? */
@@ -572,7 +572,7 @@ static void rm_read_audio_stream_info(AVFormatContext *s, AVStream *st,
             get_byte(pb);
             get_byte(pb);
             get_byte(pb);
-            
+
             get_str8(pb, s->title, sizeof(s->title));
             get_str8(pb, s->author, sizeof(s->author));
             get_str8(pb, s->copyright, sizeof(s->copyright));
@@ -620,7 +620,7 @@ static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
     get_be16(pb);
     get_be32(pb);
     get_be32(pb); /* number of headers */
-    
+
     for(;;) {
         if (url_feof(pb))
             goto fail;
@@ -628,7 +628,7 @@ static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
         tag_size = get_be32(pb);
         get_be16(pb);
 #if 0
-        printf("tag=%c%c%c%c (%08x) size=%d\n", 
+        printf("tag=%c%c%c%c (%08x) size=%d\n",
                (tag) & 0xff,
                (tag >> 8) & 0xff,
                (tag >> 16) & 0xff,
@@ -706,11 +706,11 @@ static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 get_be32(pb);
                 fps2= get_be16(pb);
                 get_be16(pb);
-                
+
                 st->codec->extradata_size= codec_data_size - (url_ftell(pb) - codec_pos);
                 st->codec->extradata= av_mallocz(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
                 get_buffer(pb, st->codec->extradata, st->codec->extradata_size);
-                
+
 //                av_log(NULL, AV_LOG_DEBUG, "fps= %d fps2= %d\n", fps, fps2);
                 st->codec->time_base.den = fps * st->codec->time_base.num;
                 /* modification of h263 codec version (!) */
@@ -789,14 +789,14 @@ static int sync(AVFormatContext *s, int64_t *timestamp, int *flags, int *stream_
             *flags= 0;
         }else{
             state= (state<<8) + get_byte(pb);
-            
+
             if(state == MKBETAG('I', 'N', 'D', 'X')){
                 len = get_be16(pb) - 6;
                 if(len<0)
                     continue;
                 goto skip;
             }
-            
+
             if(state > (unsigned)0xFFFF || state < 12)
                 continue;
             len=state;
@@ -807,7 +807,7 @@ static int sync(AVFormatContext *s, int64_t *timestamp, int *flags, int *stream_
             res= get_byte(pb); /* reserved */
             *flags = get_byte(pb); /* flags */
 
-            
+
             len -= 12;
         }
         for(i=0;i<s->nb_streams;i++) {
@@ -823,7 +823,7 @@ skip:
             continue;
         }
         *stream_index= i;
-        
+
         return len;
     }
     return -1;
@@ -940,7 +940,7 @@ resync:
             av_free_packet(pkt);
             goto resync;
         }
-        
+
         pkt->stream_index = i;
 
 #if 0
@@ -999,7 +999,7 @@ static int rm_probe(AVProbeData *p)
         return 0;
 }
 
-static int64_t rm_read_dts(AVFormatContext *s, int stream_index, 
+static int64_t rm_read_dts(AVFormatContext *s, int stream_index,
                                int64_t *ppos, int64_t pos_limit)
 {
     RMContext *rm = s->priv_data;
@@ -1007,7 +1007,7 @@ static int64_t rm_read_dts(AVFormatContext *s, int stream_index,
     int stream_index2, flags, len, h;
 
     pos = *ppos;
-    
+
     if(rm->old_format)
         return AV_NOPTS_VALUE;
 
@@ -1028,7 +1028,7 @@ static int64_t rm_read_dts(AVFormatContext *s, int stream_index,
                 seq = get_byte(&s->pb); len--;
             }
         }
-            
+
         if((flags&2) && (seq&0x7F) == 1){
 //            av_log(s, AV_LOG_DEBUG, "%d %d-%d %Ld %d\n", flags, stream_index2, stream_index, dts, seq);
             av_add_index_entry(st, pos, dts, 0, AVINDEX_KEYFRAME);

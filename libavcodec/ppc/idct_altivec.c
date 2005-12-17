@@ -86,7 +86,7 @@
     vy3 = vec_adds (t2, t6);				\
     vy4 = vec_subs (t2, t6);
 
-	
+
 #define IDCT								\
     vector_s16_t vx0, vx1, vx2, vx3, vx4, vx5, vx6, vx7;		\
     vector_s16_t vy0, vy1, vy2, vy3, vy4, vy5, vy6, vy7;		\

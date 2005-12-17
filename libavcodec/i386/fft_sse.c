@@ -23,13 +23,13 @@
 
 #include <xmmintrin.h>
 
-static const float p1p1p1m1[4] __attribute__((aligned(16))) = 
+static const float p1p1p1m1[4] __attribute__((aligned(16))) =
     { 1.0, 1.0, 1.0, -1.0 };
 
-static const float p1p1m1p1[4] __attribute__((aligned(16))) = 
+static const float p1p1m1p1[4] __attribute__((aligned(16))) =
     { 1.0, 1.0, -1.0, 1.0 };
 
-static const float p1p1m1m1[4] __attribute__((aligned(16))) = 
+static const float p1p1m1m1[4] __attribute__((aligned(16))) =
     { 1.0, 1.0, -1.0, -1.0 };
 
 #if 0
@@ -107,27 +107,27 @@ void ff_fft_calc_sse(FFTContext *s, FFTComplex *z)
 
                 a = *(__m128 *)p;
                 b = *(__m128 *)q;
-                
+
                 /* complex mul */
                 c = *(__m128 *)cptr;
                 /*  cre*re cim*re */
-                t1 = _mm_mul_ps(c, 
-                                _mm_shuffle_ps(b, b, _MM_SHUFFLE(2, 2, 0, 0))); 
+                t1 = _mm_mul_ps(c,
+                                _mm_shuffle_ps(b, b, _MM_SHUFFLE(2, 2, 0, 0)));
                 c = *(__m128 *)(cptr + 2);
                 /*  -cim*im cre*im */
                 t2 = _mm_mul_ps(c,
-                                _mm_shuffle_ps(b, b, _MM_SHUFFLE(3, 3, 1, 1))); 
+                                _mm_shuffle_ps(b, b, _MM_SHUFFLE(3, 3, 1, 1)));
                 b = _mm_add_ps(t1, t2);
-                
+
                 /* butterfly */
                 *(__m128 *)p = _mm_add_ps(a, b);
                 *(__m128 *)q = _mm_sub_ps(a, b);
-                
+
                 p += 2;
                 q += 2;
                 cptr += 4;
             } while (--k);
-        
+
             p += nloops;
             q += nloops;
         } while (--j);

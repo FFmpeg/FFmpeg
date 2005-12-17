@@ -1,4 +1,4 @@
-/* 
+/*
  * WAV encoder and decoder
  * Copyright (c) 2001, 2002 Fabrice Bellard.
  *
@@ -78,7 +78,7 @@ int put_wav_header(ByteIOContext *pb, AVCodecContext *enc)
     } else {
         bps = 16;
     }
-    
+
     if (enc->codec_id == CODEC_ID_MP2 || enc->codec_id == CODEC_ID_MP3) {
         blkalign = enc->frame_size; //this is wrong, but seems many demuxers dont work if this is set correctly
         //blkalign = 144 * enc->bit_rate/enc->sample_rate;
@@ -145,7 +145,7 @@ int put_wav_header(ByteIOContext *pb, AVCodecContext *enc)
  * WAVEFORMATEX adds 'WORD  cbSize' and basically makes itself
  * an openended structure.
  */
-void get_wav_header(ByteIOContext *pb, AVCodecContext *codec, int size) 
+void get_wav_header(ByteIOContext *pb, AVCodecContext *codec, int size)
 {
     int id;
 
@@ -161,7 +161,7 @@ void get_wav_header(ByteIOContext *pb, AVCodecContext *codec, int size)
     }else
         codec->bits_per_sample = get_le16(pb);
     codec->codec_id = wav_codec_get_id(id, codec->bits_per_sample);
-    
+
     if (size > 16) {  /* We're obviously dealing with WAVEFORMATEX */
 	codec->extradata_size = get_le16(pb);
 	if (codec->extradata_size > 0) {
@@ -171,7 +171,7 @@ void get_wav_header(ByteIOContext *pb, AVCodecContext *codec, int size)
             get_buffer(pb, codec->extradata, codec->extradata_size);
         } else
 	    codec->extradata_size = 0;
-	
+
 	/* It is possible for the chunk to contain garbage at the end */
 	if (size - codec->extradata_size - 18 > 0)
 	    url_fskip(pb, size - codec->extradata_size - 18);
@@ -222,7 +222,7 @@ static int wav_write_header(AVFormatContext *s)
 
     /* data header */
     wav->data = start_tag(pb, "data");
-    
+
     put_flush_packet(pb);
 
     return 0;
@@ -309,7 +309,7 @@ static int wav_read_header(AVFormatContext *s,
     tag = get_le32(pb);
     if (tag != MKTAG('W', 'A', 'V', 'E'))
         return -1;
-    
+
     /* parse fmt header */
     size = find_tag(pb, MKTAG('f', 'm', 't', ' '));
     if (size < 0)
@@ -365,7 +365,7 @@ static int wav_read_close(AVFormatContext *s)
     return 0;
 }
 
-static int wav_read_seek(AVFormatContext *s, 
+static int wav_read_seek(AVFormatContext *s,
                          int stream_index, int64_t timestamp, int flags)
 {
     AVStream *st;

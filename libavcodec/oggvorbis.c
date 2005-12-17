@@ -69,7 +69,7 @@ static int oggvorbis_encode_init(AVCodecContext *avccontext) {
 
     vorbis_analysis_headerout(&context->vd, &context->vc, &header,
                                 &header_comm, &header_code);
-    
+
     len = header.bytes + header_comm.bytes +  header_code.bytes;
     avccontext->extradata_size= 64 + len + len/255;
     p = avccontext->extradata= av_mallocz(avccontext->extradata_size);
@@ -85,17 +85,17 @@ static int oggvorbis_encode_init(AVCodecContext *avccontext) {
     offset += header_code.bytes;
     avccontext->extradata_size = offset;
     avccontext->extradata= av_realloc(avccontext->extradata, avccontext->extradata_size);
-                                
+
 /*    vorbis_block_clear(&context->vb);
     vorbis_dsp_clear(&context->vd);
     vorbis_info_clear(&context->vi);*/
     vorbis_comment_clear(&context->vc);
-       
+
     avccontext->frame_size = OGGVORBIS_FRAME_SIZE ;
- 
+
     avccontext->coded_frame= avcodec_alloc_frame();
     avccontext->coded_frame->key_frame= 1;
-    
+
     return 0 ;
 }
 
@@ -121,8 +121,8 @@ static int oggvorbis_encode_frame(AVCodecContext *avccontext,
 	    buffer[1][l]=audio[l*2+1]/32768.f;
 	}
     }
-    
-    vorbis_analysis_wrote(&context->vd, samples) ; 
+
+    vorbis_analysis_wrote(&context->vd, samples) ;
 
     while(vorbis_analysis_blockout(&context->vd, &context->vb) == 1) {
 	vorbis_analysis(&context->vb, NULL);
@@ -161,7 +161,7 @@ static int oggvorbis_encode_frame(AVCodecContext *avccontext,
 static int oggvorbis_encode_close(AVCodecContext *avccontext) {
     OggVorbisContext *context = avccontext->priv_data ;
 /*  ogg_packet op ; */
-    
+
     vorbis_analysis_wrote(&context->vd, 0) ; /* notify vorbisenc this is EOF */
 
     vorbis_block_clear(&context->vb);
@@ -170,7 +170,7 @@ static int oggvorbis_encode_close(AVCodecContext *avccontext) {
 
     av_freep(&avccontext->coded_frame);
     av_freep(&avccontext->extradata);
-  
+
     return 0 ;
 }
 
@@ -256,7 +256,7 @@ static int oggvorbis_decode_init(AVCodecContext *avccontext) {
     avccontext->time_base= (AVRational){1, avccontext->sample_rate};
 
     vorbis_synthesis_init(&context->vd, &context->vi);
-    vorbis_block_init(&context->vd, &context->vb); 
+    vorbis_block_init(&context->vd, &context->vb);
 
     return 0 ;
 }
@@ -266,53 +266,53 @@ static inline int conv(int samples, float **pcm, char *buf, int channels) {
     int i, j, val ;
     ogg_int16_t *ptr, *data = (ogg_int16_t*)buf ;
     float *mono ;
- 
+
     for(i = 0 ; i < channels ; i++){
 	ptr = &data[i];
 	mono = pcm[i] ;
-	
+
 	for(j = 0 ; j < samples ; j++) {
-	    
+
 	    val = mono[j] * 32767.f;
-	    
+
 	    if(val > 32767) val = 32767 ;
 	    if(val < -32768) val = -32768 ;
-	   	    
+
 	    *ptr = val ;
 	    ptr += channels;
 	}
     }
-    
+
     return 0 ;
 }
-	   
-	
+
+
 static int oggvorbis_decode_frame(AVCodecContext *avccontext,
                         void *data, int *data_size,
                         uint8_t *buf, int buf_size)
 {
     OggVorbisContext *context = avccontext->priv_data ;
     float **pcm ;
-    ogg_packet *op= &context->op;    
+    ogg_packet *op= &context->op;
     int samples, total_samples, total_bytes;
- 
+
     if(!buf_size){
     //FIXME flush
         return 0;
     }
-    
+
     op->packet = buf;
     op->bytes  = buf_size;
 
 //    av_log(avccontext, AV_LOG_DEBUG, "%d %d %d %lld %lld %d %d\n", op->bytes, op->b_o_s, op->e_o_s, op->granulepos, op->packetno, buf_size, context->vi.rate);
-    
+
 /*    for(i=0; i<op->bytes; i++)
       av_log(avccontext, AV_LOG_DEBUG, "%02X ", op->packet[i]);
     av_log(avccontext, AV_LOG_DEBUG, "\n");*/
 
     if(vorbis_synthesis(&context->vb, op) == 0)
 	vorbis_synthesis_blockin(&context->vd, &context->vb) ;
-    
+
     total_samples = 0 ;
     total_bytes = 0 ;
 
@@ -323,14 +323,14 @@ static int oggvorbis_decode_frame(AVCodecContext *avccontext,
         vorbis_synthesis_read(&context->vd, samples) ;
     }
 
-    *data_size = total_bytes ;   
+    *data_size = total_bytes ;
     return buf_size ;
 }
 
 
 static int oggvorbis_decode_close(AVCodecContext *avccontext) {
     OggVorbisContext *context = avccontext->priv_data ;
-   
+
     vorbis_info_clear(&context->vi) ;
     vorbis_comment_clear(&context->vc) ;
 

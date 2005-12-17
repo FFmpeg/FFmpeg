@@ -99,7 +99,7 @@ static enum CodecID av_str2id(const IdStrMap *tags, const char *str)
 }
 
 /* return -1 if no image found */
-static int find_image_range(int *pfirst_index, int *plast_index, 
+static int find_image_range(int *pfirst_index, int *plast_index,
                             const char *path)
 {
     char buf[1024];
@@ -108,7 +108,7 @@ static int find_image_range(int *pfirst_index, int *plast_index,
     /* find the first image */
     for(first_index = 0; first_index < 5; first_index++) {
         if (get_frame_filename(buf, sizeof(buf), path, first_index) < 0){
-            *pfirst_index = 
+            *pfirst_index =
             *plast_index = 1;
             return 0;
         }
@@ -117,7 +117,7 @@ static int find_image_range(int *pfirst_index, int *plast_index,
     }
     if (first_index == 5)
         goto fail;
-    
+
     /* find the last image */
     last_index = first_index;
     for(;;) {
@@ -127,7 +127,7 @@ static int find_image_range(int *pfirst_index, int *plast_index,
                 range1 = 1;
             else
                 range1 = 2 * range;
-            if (get_frame_filename(buf, sizeof(buf), path, 
+            if (get_frame_filename(buf, sizeof(buf), path,
                                    last_index + range1) < 0)
                 goto fail;
             if (!url_exist(buf))
@@ -178,7 +178,7 @@ static int img_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     pstrcpy(s->path, sizeof(s->path), s1->filename);
     s->img_number = 0;
     s->img_count = 0;
-    
+
     /* find format */
     if (s1->iformat->flags & AVFMT_NOFILE)
         s->is_pipe = 0;
@@ -186,18 +186,18 @@ static int img_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         s->is_pipe = 1;
         st->need_parsing= 1;
     }
-        
+
     if (!ap || !ap->time_base.num) {
         av_set_pts_info(st, 60, 1, 25);
     } else {
         av_set_pts_info(st, 60, ap->time_base.num, ap->time_base.den);
     }
-    
+
     if(ap && ap->width && ap->height){
         st->codec->width = ap->width;
         st->codec->height= ap->height;
     }
-    
+
     if (!s->is_pipe) {
         if (find_image_range(&first_index, &last_index, s->path) < 0)
             return AVERROR_IO;
@@ -208,7 +208,7 @@ static int img_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         st->start_time = 0;
         st->duration = last_index - first_index + 1;
     }
-    
+
     if(ap->video_codec_id){
         st->codec->codec_type = CODEC_TYPE_VIDEO;
         st->codec->codec_id = ap->video_codec_id;
@@ -246,12 +246,12 @@ static int img_read_packet(AVFormatContext *s1, AVPacket *pkt)
             if (url_fopen(f[i], filename, URL_RDONLY) < 0)
                 return AVERROR_IO;
             size[i]= url_fsize(f[i]);
-            
+
             if(codec->codec_id != CODEC_ID_RAWVIDEO)
                 break;
             filename[ strlen(filename) - 1 ]= 'U' + i;
         }
-        
+
         if(codec->codec_id == CODEC_ID_RAWVIDEO && !codec->width)
             infer_size(&codec->width, &codec->height, size[0]);
     } else {
@@ -306,7 +306,7 @@ static int img_write_header(AVFormatContext *s)
         img->is_pipe = 0;
     else
         img->is_pipe = 1;
-        
+
     return 0;
 }
 
@@ -319,13 +319,13 @@ static int img_write_packet(AVFormatContext *s, AVPacket *pkt)
     int i;
 
     if (!img->is_pipe) {
-        if (get_frame_filename(filename, sizeof(filename), 
+        if (get_frame_filename(filename, sizeof(filename),
                                img->path, img->img_number) < 0 && img->img_number>1)
             return AVERROR_IO;
         for(i=0; i<3; i++){
             if (url_fopen(pb[i], filename, URL_WRONLY) < 0)
                 return AVERROR_IO;
-        
+
             if(codec->codec_id != CODEC_ID_RAWVIDEO)
                 break;
             filename[ strlen(filename) - 1 ]= 'U' + i;
@@ -333,7 +333,7 @@ static int img_write_packet(AVFormatContext *s, AVPacket *pkt)
     } else {
         pb[0] = &s->pb;
     }
-    
+
     if(codec->codec_id == CODEC_ID_RAWVIDEO){
         int ysize = codec->width * codec->height;
         put_buffer(pb[0], pkt->data        , ysize);
@@ -423,6 +423,6 @@ int img2_init(void)
 
     av_register_input_format(&image2pipe_iformat);
     av_register_output_format(&image2pipe_oformat);
-    
+
     return 0;
 }

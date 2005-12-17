@@ -17,12 +17,12 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
- 
+
 /**
  * @file cljr.c
  * Cirrus Logic AccuPak codec.
  */
- 
+
 #include "avcodec.h"
 #include "mpegvideo.h"
 
@@ -34,7 +34,7 @@ typedef struct CLJRContext{
     GetBitContext gb;
 } CLJRContext;
 
-static int decode_frame(AVCodecContext *avctx, 
+static int decode_frame(AVCodecContext *avctx,
                         void *data, int *data_size,
                         uint8_t *buf, int buf_size)
 {
@@ -75,7 +75,7 @@ static int decode_frame(AVCodecContext *avctx,
     *data_size = sizeof(AVPicture);
 
     emms_c();
-    
+
     return buf_size;
 }
 
@@ -92,13 +92,13 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
     p->key_frame= 1;
 
     emms_c();
-    
+
     align_put_bits(&a->pb);
     while(get_bit_count(&a->pb)&31)
         put_bits(&a->pb, 8, 0);
-    
+
     size= get_bit_count(&a->pb)/32;
-    
+
     return size*4;
 }
 #endif
@@ -113,7 +113,7 @@ static void common_init(AVCodecContext *avctx){
 static int decode_init(AVCodecContext *avctx){
 
     common_init(avctx);
-    
+
     avctx->pix_fmt= PIX_FMT_YUV411P;
 
     return 0;
@@ -123,7 +123,7 @@ static int decode_init(AVCodecContext *avctx){
 static int encode_init(AVCodecContext *avctx){
 
     common_init(avctx);
-    
+
     return 0;
 }
 #endif

@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2004 Roman Shaposhnik.
- * 
+ *
  * Many thanks to Steven M. Schultz for providing clever ideas and
  * to Michael Niedermayer <michaelni@gmx.at> for writing initial
  * implementation.
@@ -34,7 +34,7 @@ typedef struct ThreadContext {
     int *rets;
     int rets_count;
     int job_count;
-    
+
     pthread_cond_t last_job_cond;
     pthread_cond_t current_job_cond;
     pthread_mutex_t current_job_lock;
@@ -42,7 +42,7 @@ typedef struct ThreadContext {
     int done;
 } ThreadContext;
 
-static void* worker(void *v) 
+static void* worker(void *v)
 {
     AVCodecContext *avctx = v;
     ThreadContext *c = avctx->thread_opaque;
@@ -52,23 +52,23 @@ static void* worker(void *v)
 
     pthread_mutex_lock(&c->current_job_lock);
     self_id = c->current_job++;
-    for (;;){ 
+    for (;;){
 	while (our_job >= c->job_count) {
 	    if (c->current_job == thread_count + c->job_count)
 	        pthread_cond_signal(&c->last_job_cond);
-            
+
 	    pthread_cond_wait(&c->current_job_cond, &c->current_job_lock);
             our_job = self_id;
-	    
+
 	    if (c->done) {
 	        pthread_mutex_unlock(&c->current_job_lock);
 		return NULL;
 	    }
 	}
 	pthread_mutex_unlock(&c->current_job_lock);
-	
+
 	c->rets[our_job%c->rets_count] = c->func(avctx, c->args[our_job]);
-	
+
 	pthread_mutex_lock(&c->current_job_lock);
 	our_job = c->current_job++;
     }
@@ -80,11 +80,11 @@ static always_inline void avcodec_thread_park_workers(ThreadContext *c, int thre
     pthread_mutex_unlock(&c->current_job_lock);
 }
 
-void avcodec_thread_free(AVCodecContext *avctx) 
+void avcodec_thread_free(AVCodecContext *avctx)
 {
     ThreadContext *c = avctx->thread_opaque;
     int i;
-    
+
     pthread_mutex_lock(&c->current_job_lock);
     c->done = 1;
     pthread_cond_broadcast(&c->current_job_cond);
@@ -100,14 +100,14 @@ void avcodec_thread_free(AVCodecContext *avctx)
     av_free(c);
 }
 
-int avcodec_thread_execute(AVCodecContext *avctx, action_t* func, void **arg, int *ret, int job_count) 
+int avcodec_thread_execute(AVCodecContext *avctx, action_t* func, void **arg, int *ret, int job_count)
 {
     ThreadContext *c= avctx->thread_opaque;
     int dummy_ret;
-   
+
     if (job_count <= 0)
         return 0;
-    
+
     pthread_mutex_lock(&c->current_job_lock);
 
     c->current_job = avctx->thread_count;
@@ -117,18 +117,18 @@ int avcodec_thread_execute(AVCodecContext *avctx, action_t* func, void **arg, in
     if (ret) {
         c->rets = ret;
 	c->rets_count = job_count;
-    } else { 
+    } else {
         c->rets = &dummy_ret;
 	c->rets_count = 1;
     }
     pthread_cond_broadcast(&c->current_job_cond);
 
     avcodec_thread_park_workers(c, avctx->thread_count);
-    
+
     return 0;
 }
 
-int avcodec_thread_init(AVCodecContext *avctx, int thread_count) 
+int avcodec_thread_init(AVCodecContext *avctx, int thread_count)
 {
     int i;
     ThreadContext *c;
@@ -136,7 +136,7 @@ int avcodec_thread_init(AVCodecContext *avctx, int thread_count)
     c = av_mallocz(sizeof(ThreadContext));
     if (!c)
         return -1;
-	
+
     c->workers = av_mallocz(sizeof(pthread_t)*thread_count);
     if (!c->workers) {
         av_free(c);
@@ -148,11 +148,11 @@ int avcodec_thread_init(AVCodecContext *avctx, int thread_count)
     c->current_job = 0;
     c->job_count = 0;
     c->done = 0;
-    pthread_cond_init(&c->current_job_cond, NULL); 
+    pthread_cond_init(&c->current_job_cond, NULL);
     pthread_cond_init(&c->last_job_cond, NULL);
     pthread_mutex_init(&c->current_job_lock, NULL);
     pthread_mutex_lock(&c->current_job_lock);
-    for (i=0; i<thread_count; i++) { 
+    for (i=0; i<thread_count; i++) {
         if(pthread_create(&c->workers[i], NULL, worker, avctx)) {
 	   avctx->thread_count = i;
 	   pthread_mutex_unlock(&c->current_job_lock);
@@ -160,9 +160,9 @@ int avcodec_thread_init(AVCodecContext *avctx, int thread_count)
            return -1;
         }
     }
-    
+
     avcodec_thread_park_workers(c, thread_count);
-    
+
     avctx->execute = avcodec_thread_execute;
     return 0;
 }

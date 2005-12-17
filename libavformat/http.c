@@ -73,13 +73,13 @@ static int http_open(URLContext *h, const char *uri, int flags)
     h->priv_data = s;
 
     proxy_path = getenv("http_proxy");
-    use_proxy = (proxy_path != NULL) && !getenv("no_proxy") && 
+    use_proxy = (proxy_path != NULL) && !getenv("no_proxy") &&
         strstart(proxy_path, "http://", NULL);
 
     /* fill the dest addr */
  redo:
     /* needed in any case to build the host string */
-    url_split(NULL, 0, auth, sizeof(auth), hostname, sizeof(hostname), &port, 
+    url_split(NULL, 0, auth, sizeof(auth), hostname, sizeof(hostname), &port,
               path1, sizeof(path1), uri);
     if (port > 0) {
         snprintf(hoststr, sizeof(hoststr), "%s:%d", hostname, port);
@@ -88,7 +88,7 @@ static int http_open(URLContext *h, const char *uri, int flags)
     }
 
     if (use_proxy) {
-        url_split(NULL, 0, auth, sizeof(auth), hostname, sizeof(hostname), &port, 
+        url_split(NULL, 0, auth, sizeof(auth), hostname, sizeof(hostname), &port,
                   NULL, 0, proxy_path);
         path = uri;
     } else {
@@ -142,7 +142,7 @@ static int http_getc(HTTPContext *s)
 static int process_line(HTTPContext *s, char *line, int line_count)
 {
     char *tag, *p;
-    
+
     /* end of header */
     if (line[0] == '\0')
         return 0;
@@ -160,9 +160,9 @@ static int process_line(HTTPContext *s, char *line, int line_count)
     } else {
         while (*p != '\0' && *p != ':')
             p++;
-        if (*p != ':') 
+        if (*p != ':')
             return 1;
-        
+
         *p = '\0';
         tag = line;
         p++;
@@ -198,10 +198,10 @@ static int http_connect(URLContext *h, const char *path, const char *hoststr,
              LIBAVFORMAT_IDENT,
              hoststr,
              b64_encode(auth));
-    
+
     if (http_write(h, s->buffer, strlen(s->buffer)) < 0)
         return AVERROR_IO;
-        
+
     /* init input buffer */
     s->buf_ptr = s->buffer;
     s->buf_end = s->buffer;
@@ -211,7 +211,7 @@ static int http_connect(URLContext *h, const char *path, const char *hoststr,
         sleep(1);
         return 0;
     }
-    
+
     /* wait for header */
     q = line;
     for(;;) {
@@ -286,7 +286,7 @@ URLProtocol http_protocol = {
 /*****************************************************************************
  * b64_encode: stolen from VLC's http.c
  *****************************************************************************/
-                                                                                
+
 static char *b64_encode( const unsigned char *src )
 {
     static const char b64[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
@@ -317,16 +317,16 @@ static char *b64_encode( const unsigned char *src )
             *dst++ = '=';
             break;
         }
-                                                                                
+
         while( i_shift >= 6 )
         {
             i_shift -= 6;
             *dst++ = b64[(i_bits >> i_shift)&0x3f];
         }
     }
-                                                                                
+
     *dst++ = '\0';
-                                                                                
+
     return ret;
 }
 

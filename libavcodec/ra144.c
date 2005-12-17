@@ -107,10 +107,10 @@ static void do_voice(int *a1, int *a2)
   int *b1,*b2;
   int x,y;
   int *ptr,*tmp;
-  
+
   b1=buffer;
   b2=a2;
-  
+
   for (x=0;x<10;x++) {
     b1[x]=(*a1)<<4;
 
@@ -123,7 +123,7 @@ static void do_voice(int *a1, int *a2)
     b1=b2;
     b2=tmp;
     a1++;
-  }  
+  }
   ptr=a2+10;
   while (ptr>a2) (*a2++)>>=4;
 }
@@ -190,7 +190,7 @@ static void add_wav(Real144_internal *glob, int n, int f, int m1, int m2, int m3
   ptr=glob->wavtable1+n*9;
   ptr2=glob->wavtable2+n*9;
   if (f!=0) {
-    a=((*ptr)*m1)>>((*ptr2)+1); 
+    a=((*ptr)*m1)>>((*ptr2)+1);
   } else {
     a=0;
   }
@@ -299,7 +299,7 @@ static void unpack_input(unsigned char *input, unsigned int *output)
     *(output++)=ptr[x];
     *(output++)=ptr[x+2];
     *(output++)=ptr[x+3];
-    *(output++)=ptr[x+1];    
+    *(output++)=ptr[x+1];
   }
 }
 
@@ -438,10 +438,10 @@ static int ra144_decode_frame(AVCodecContext * avctx,
 
   if(buf_size==0)
       return 0;
-  
+
   datao = data;
   unpack_input(buf,glob->unpacked);
-  
+
   glob->iptr=glob->unpacked;
   glob->val=decodetable[0][(*(glob->iptr++))<<1];
 

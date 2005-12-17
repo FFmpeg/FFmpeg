@@ -35,13 +35,13 @@ typedef   struct{
 
   unsigned int picture_structure;//top/bottom fields or frame  !
   unsigned int flags;//XVMC_SECOND_FIELD - 1'st or 2'd field in the sequence
-  unsigned int display_flags; //1,2 or 1+2 fields for XvMCPutSurface, 
+  unsigned int display_flags; //1,2 or 1+2 fields for XvMCPutSurface,
 
 //these are internal communication one
   int state;//0-free,1 Waiting to Display,2 Waiting for prediction
   int start_mv_blocks_num;//offset in the array for the current slice,updated by vo
   int filled_mv_blocks_num;//processed mv block in this slice,change by decoder
-  
+
   int next_free_data_block_num;//used in add_mv_block, pointer to next free block
 
 } xvmc_render_state_t;

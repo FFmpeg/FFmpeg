@@ -45,7 +45,7 @@ else
 endif
 
 %.o: %.c
-	$(CC) $(CFLAGS) $(LIBOBJFLAGS) -c -o $@ $< 
+	$(CC) $(CFLAGS) $(LIBOBJFLAGS) -c -o $@ $<
 
 depend: $(SRCS)
 	$(CC) -MM $(CFLAGS) $^ 1>.depend

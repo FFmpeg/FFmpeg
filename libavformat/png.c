@@ -64,7 +64,7 @@ typedef struct PNGDecodeState {
     int channels;
     int bits_per_pixel;
     int bpp;
-    
+
     uint8_t *image_buf;
     int image_linesize;
     uint32_t palette[256];
@@ -107,7 +107,7 @@ static const uint8_t png_pass_mask[NB_PASSES] = {
 };
 
 /* Mask to determine which pixels to overwrite while displaying */
-static const uint8_t png_pass_dsp_mask[NB_PASSES] = { 
+static const uint8_t png_pass_dsp_mask[NB_PASSES] = {
     0xff, 0x0f, 0xff, 0x33, 0xff, 0x55, 0xff
 };
 
@@ -158,14 +158,14 @@ static int png_pass_row_size(int pass, int bits_per_pixel, int width)
 /* NOTE: we try to construct a good looking image at each pass. width
    is the original image width. We also do pixel format convertion at
    this stage */
-static void png_put_interlaced_row(uint8_t *dst, int width, 
-                                   int bits_per_pixel, int pass, 
+static void png_put_interlaced_row(uint8_t *dst, int width,
+                                   int bits_per_pixel, int pass,
                                    int color_type, const uint8_t *src)
 {
     int x, mask, dsp_mask, j, src_x, b, bpp;
     uint8_t *d;
     const uint8_t *s;
-    
+
     mask = png_pass_mask[pass];
     dsp_mask = png_pass_dsp_mask[pass];
     switch(bits_per_pixel) {
@@ -213,8 +213,8 @@ static void png_put_interlaced_row(uint8_t *dst, int width,
     }
 }
 
-static void png_get_interlaced_row(uint8_t *dst, int row_size, 
-                                   int bits_per_pixel, int pass, 
+static void png_get_interlaced_row(uint8_t *dst, int row_size,
+                                   int bits_per_pixel, int pass,
                                    const uint8_t *src, int width)
 {
     int x, mask, dst_x, j, b, bpp;
@@ -253,7 +253,7 @@ static void png_get_interlaced_row(uint8_t *dst, int row_size,
 
 /* XXX: optimize */
 /* NOTE: 'dst' can be equal to 'last' */
-static void png_filter_row(uint8_t *dst, int filter_type, 
+static void png_filter_row(uint8_t *dst, int filter_type,
                            uint8_t *src, uint8_t *last, int size, int bpp)
 {
     int i, p;
@@ -323,7 +323,7 @@ static void convert_from_rgba32(uint8_t *dst, const uint8_t *src, int width)
     uint8_t *d;
     int j;
     unsigned int v;
-    
+
     d = dst;
     for(j = 0; j < width; j++) {
         v = ((uint32_t *)src)[j];
@@ -356,12 +356,12 @@ static void png_handle_row(PNGDecodeState *s)
 {
     uint8_t *ptr, *last_row;
     int got_line;
-    
+
     if (!s->interlace_type) {
         ptr = s->image_buf + s->image_linesize * s->y;
         /* need to swap bytes correctly for RGB_ALPHA */
         if (s->color_type == PNG_COLOR_TYPE_RGB_ALPHA) {
-            png_filter_row(s->tmp_row, s->crow_buf[0], s->crow_buf + 1, 
+            png_filter_row(s->tmp_row, s->crow_buf[0], s->crow_buf + 1,
                            s->last_row, s->row_size, s->bpp);
             memcpy(s->last_row, s->tmp_row, s->row_size);
             convert_to_rgba32(ptr, s->tmp_row, s->width);
@@ -371,8 +371,8 @@ static void png_handle_row(PNGDecodeState *s)
                 last_row = s->last_row;
             else
                 last_row = ptr - s->image_linesize;
-            
-            png_filter_row(ptr, s->crow_buf[0], s->crow_buf + 1, 
+
+            png_filter_row(ptr, s->crow_buf[0], s->crow_buf + 1,
                            last_row, s->row_size, s->bpp);
         }
         s->y++;
@@ -388,14 +388,14 @@ static void png_handle_row(PNGDecodeState *s)
                    wait for the next one */
                 if (got_line)
                     break;
-                png_filter_row(s->tmp_row, s->crow_buf[0], s->crow_buf + 1, 
+                png_filter_row(s->tmp_row, s->crow_buf[0], s->crow_buf + 1,
                                s->last_row, s->pass_row_size, s->bpp);
                 memcpy(s->last_row, s->tmp_row, s->pass_row_size);
                 got_line = 1;
             }
             if ((png_pass_dsp_ymask[s->pass] << (s->y & 7)) & 0x80) {
                 /* NOTE: rgba32 is handled directly in png_put_interlaced_row */
-                png_put_interlaced_row(ptr, s->width, s->bits_per_pixel, s->pass, 
+                png_put_interlaced_row(ptr, s->width, s->bits_per_pixel, s->pass,
                                        s->color_type, s->last_row);
             }
             s->y++;
@@ -407,8 +407,8 @@ static void png_handle_row(PNGDecodeState *s)
                     } else {
                         s->pass++;
                         s->y = 0;
-                        s->pass_row_size = png_pass_row_size(s->pass, 
-                                                             s->bits_per_pixel, 
+                        s->pass_row_size = png_pass_row_size(s->pass,
+                                                             s->bits_per_pixel,
                                                              s->width);
                         s->crow_size = s->pass_row_size + 1;
                         if (s->pass_row_size != 0)
@@ -456,7 +456,7 @@ static int png_decode_idat(PNGDecodeState *s, ByteIOContext *f, int length)
     return 0;
 }
 
-static int png_read(ByteIOContext *f, 
+static int png_read(ByteIOContext *f,
                     int (*alloc_cb)(void *opaque, AVImageInfo *info), void *opaque)
 {
     AVImageInfo info1, *info = &info1;
@@ -487,7 +487,7 @@ static int png_read(ByteIOContext *f,
             goto fail;
         tag = get_le32(f);
 #ifdef DEBUG
-        printf("png: tag=%c%c%c%c length=%u\n", 
+        printf("png: tag=%c%c%c%c length=%u\n",
                (tag & 0xff),
                ((tag >> 8) & 0xff),
                ((tag >> 16) & 0xff),
@@ -507,8 +507,8 @@ static int png_read(ByteIOContext *f,
             crc = get_be32(f);
             s->state |= PNG_IHDR;
 #ifdef DEBUG
-            printf("width=%d height=%d depth=%d color_type=%d compression_type=%d filter_type=%d interlace_type=%d\n", 
-                   s->width, s->height, s->bit_depth, s->color_type, 
+            printf("width=%d height=%d depth=%d color_type=%d compression_type=%d filter_type=%d interlace_type=%d\n",
+                   s->width, s->height, s->bit_depth, s->color_type,
                    s->compression_type, s->filter_type, s->interlace_type);
 #endif
             break;
@@ -526,16 +526,16 @@ static int png_read(ByteIOContext *f,
                 s->bpp = (s->bits_per_pixel + 7) >> 3;
                 s->row_size = (info->width * s->bits_per_pixel + 7) >> 3;
 
-                if (s->bit_depth == 8 && 
+                if (s->bit_depth == 8 &&
                     s->color_type == PNG_COLOR_TYPE_RGB) {
                     info->pix_fmt = PIX_FMT_RGB24;
-                } else if (s->bit_depth == 8 && 
+                } else if (s->bit_depth == 8 &&
                            s->color_type == PNG_COLOR_TYPE_RGB_ALPHA) {
                     info->pix_fmt = PIX_FMT_RGBA32;
-                } else if (s->bit_depth == 8 && 
+                } else if (s->bit_depth == 8 &&
                            s->color_type == PNG_COLOR_TYPE_GRAY) {
                     info->pix_fmt = PIX_FMT_GRAY8;
-                } else if (s->bit_depth == 1 && 
+                } else if (s->bit_depth == 1 &&
                            s->color_type == PNG_COLOR_TYPE_GRAY) {
                     info->pix_fmt = PIX_FMT_MONOBLACK;
                 } else if (s->color_type == PNG_COLOR_TYPE_PALETTE) {
@@ -544,7 +544,7 @@ static int png_read(ByteIOContext *f,
                     goto fail;
                 }
                 ret = alloc_cb(opaque, info);
-                if (ret) 
+                if (ret)
                     goto the_end;
 
                 /* compute the compressed row size */
@@ -552,13 +552,13 @@ static int png_read(ByteIOContext *f,
                     s->crow_size = s->row_size + 1;
                 } else {
                     s->pass = 0;
-                    s->pass_row_size = png_pass_row_size(s->pass, 
-                                                         s->bits_per_pixel, 
+                    s->pass_row_size = png_pass_row_size(s->pass,
+                                                         s->bits_per_pixel,
                                                          s->width);
                     s->crow_size = s->pass_row_size + 1;
                 }
 #ifdef DEBUG
-                printf("row_size=%d crow_size =%d\n", 
+                printf("row_size=%d crow_size =%d\n",
                        s->row_size, s->crow_size);
 #endif
                 s->image_buf = info->pict.data[0];
@@ -592,7 +592,7 @@ static int png_read(ByteIOContext *f,
         case MKTAG('P', 'L', 'T', 'E'):
             {
                 int n, i, r, g, b;
-                
+
                 if ((length % 3) != 0 || length > 256 * 3)
                     goto skip_tag;
                 /* read the palette */
@@ -716,7 +716,7 @@ static int png_write(ByteIOContext *f, AVImageInfo *info)
     uint8_t *ptr;
     uint8_t *crow_buf = NULL;
     uint8_t *tmp_buf = NULL;
-    
+
     s->f = f;
     is_progressive = info->interleaved;
     switch(info->pix_fmt) {
@@ -764,7 +764,7 @@ static int png_write(ByteIOContext *f, AVImageInfo *info)
 
     /* write png header */
     put_buffer(f, pngsig, 8);
-    
+
     to_be32(s->buf, info->width);
     to_be32(s->buf + 4, info->height);
     s->buf[8] = bit_depth;
@@ -772,7 +772,7 @@ static int png_write(ByteIOContext *f, AVImageInfo *info)
     s->buf[10] = 0; /* compression type */
     s->buf[11] = 0; /* filter type */
     s->buf[12] = is_progressive; /* interlace type */
-    
+
     png_write_chunk(f, MKTAG('I', 'H', 'D', 'R'), s->buf, 13);
 
     /* put the palette if needed */
@@ -781,7 +781,7 @@ static int png_write(ByteIOContext *f, AVImageInfo *info)
         unsigned int v;
         uint32_t *palette;
         uint8_t *alpha_ptr;
-        
+
         palette = (uint32_t *)info->pict.data[1];
         ptr = s->buf;
         alpha_ptr = s->buf + 256 * 3;
@@ -824,8 +824,8 @@ static int png_write(ByteIOContext *f, AVImageInfo *info)
                         } else {
                             ptr1 = ptr;
                         }
-                        png_get_interlaced_row(crow_buf + 1, pass_row_size, 
-                                               bits_per_pixel, pass, 
+                        png_get_interlaced_row(crow_buf + 1, pass_row_size,
+                                               bits_per_pixel, pass,
                                                ptr1, info->width);
                         crow_buf[0] = PNG_FILTER_VALUE_NONE;
                         png_write_row(s, crow_buf, pass_row_size + 1);
@@ -879,7 +879,7 @@ AVImageFormat png_image_format = {
     "png",
     png_probe,
     png_read,
-    (1 << PIX_FMT_RGBA32) | (1 << PIX_FMT_RGB24) | (1 << PIX_FMT_GRAY8) | 
+    (1 << PIX_FMT_RGBA32) | (1 << PIX_FMT_RGB24) | (1 << PIX_FMT_GRAY8) |
     (1 << PIX_FMT_MONOBLACK) | (1 << PIX_FMT_PAL8),
     png_write,
     AVIMAGE_INTERLEAVED,

@@ -1,4 +1,4 @@
-/* 
+/*
  * MP3 encoder and decoder
  * Copyright (c) 2003 Fabrice Bellard.
  *
@@ -166,7 +166,7 @@ static int id3_match(const uint8_t *buf)
             (buf[9] & 0x80) == 0);
 }
 
-static void id3_get_string(char *str, int str_size, 
+static void id3_get_string(char *str, int str_size,
                            const uint8_t *buf, int buf_size)
 {
     int i, c;
@@ -189,7 +189,7 @@ static int id3_parse_tag(AVFormatContext *s, const uint8_t *buf)
 {
     char str[5];
     int genre;
-    
+
     if (!(buf[0] == 'T' &&
           buf[1] == 'A' &&
           buf[2] == 'G'))
@@ -254,7 +254,7 @@ static int mp3_read_header(AVFormatContext *s,
     st->codec->codec_type = CODEC_TYPE_AUDIO;
     st->codec->codec_id = CODEC_ID_MP3;
     st->need_parsing = 1;
-    
+
     /* try to get the TAG */
     if (!url_is_streamed(&s->pb)) {
         /* XXX: change that */
@@ -294,7 +294,7 @@ static int mp3_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     int ret, size;
     //    AVStream *st = s->streams[0];
-    
+
     size= MP3_PACKET_SIZE;
 
     ret= av_get_packet(&s->pb, pkt, size);
@@ -394,7 +394,7 @@ int mp3_init(void)
     av_register_output_format(&mp2_oformat);
 #ifdef CONFIG_MP3LAME
     av_register_output_format(&mp3_oformat);
-#endif    
+#endif
 #endif //CONFIG_MUXERS
     return 0;
 }

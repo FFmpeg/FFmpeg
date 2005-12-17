@@ -1,4 +1,4 @@
-/* 
+/*
  * Yamaha SMAF format
  * Copyright (c) 2005 Vidar Madsen
  *
@@ -66,7 +66,7 @@ static int mmf_write_header(AVFormatContext *s)
         av_log(s, AV_LOG_ERROR, "Unsupported sample rate %d\n", s->streams[0]->codec->sample_rate);
         return -1;
     }
-    
+
     put_tag(pb, "MMMD");
     put_be32(pb, 0);
     pos = start_tag(pb, "CNTI");
@@ -270,7 +270,7 @@ static int mmf_read_packet(AVFormatContext *s,
 
     if(!size)
         return AVERROR_IO;
-    
+
     if (av_new_packet(pkt, size))
         return AVERROR_IO;
     pkt->stream_index = 0;
@@ -290,7 +290,7 @@ static int mmf_read_close(AVFormatContext *s)
     return 0;
 }
 
-static int mmf_read_seek(AVFormatContext *s, 
+static int mmf_read_seek(AVFormatContext *s,
                          int stream_index, int64_t timestamp, int flags)
 {
     return pcm_read_seek(s, stream_index, timestamp, flags);

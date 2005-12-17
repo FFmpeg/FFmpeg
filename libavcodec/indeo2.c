@@ -17,7 +17,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
- 
+
 /**
  * @file indeo2.c
  * Intel Indeo 2 decoder.
@@ -51,7 +51,7 @@ static int ir2_decode_plane(Ir2Context *ctx, int width, int height, uint8_t *dst
     int out = 0;
     int c;
     int t;
-    
+
     if(width&1)
         return -1;
 
@@ -70,7 +70,7 @@ static int ir2_decode_plane(Ir2Context *ctx, int width, int height, uint8_t *dst
         }
     }
     dst += stride;
-    
+
     for (j = 1; j < height; j++){
         out = 0;
         while (out < width){
@@ -133,7 +133,7 @@ static int ir2_decode_plane_inter(Ir2Context *ctx, int width, int height, uint8_
     return 0;
 }
 
-static int ir2_decode_frame(AVCodecContext *avctx, 
+static int ir2_decode_frame(AVCodecContext *avctx,
                         void *data, int *data_size,
                         uint8_t *buf, int buf_size)
 {
@@ -153,9 +153,9 @@ static int ir2_decode_frame(AVCodecContext *avctx,
     }
 
     s->decode_delta = buf[18];
-    
+
     /* decide whether frame uses deltas or not */
-#ifndef ALT_BITSTREAM_READER_LE  
+#ifndef ALT_BITSTREAM_READER_LE
     for (i = 0; i < buf_size; i++)
         buf[i] = ff_reverse[buf[i]];
 #endif
@@ -193,16 +193,16 @@ static int ir2_decode_init(AVCodecContext *avctx){
     ic->avctx = avctx;
 
     avctx->pix_fmt= PIX_FMT_YUV410P;
-    
+
     if (!ir2_vlc.table)
         init_vlc(&ir2_vlc, CODE_VLC_BITS, IR2_CODES,
                  &ir2_codes[0][1], 4, 2,
 #ifdef ALT_BITSTREAM_READER_LE
-                 &ir2_codes[0][0], 4, 2, INIT_VLC_USE_STATIC | INIT_VLC_LE);    
+                 &ir2_codes[0][0], 4, 2, INIT_VLC_USE_STATIC | INIT_VLC_LE);
 #else
-                 &ir2_codes[0][0], 4, 2, INIT_VLC_USE_STATIC);    
+                 &ir2_codes[0][0], 4, 2, INIT_VLC_USE_STATIC);
 #endif
-                 
+
     return 0;
 }
 

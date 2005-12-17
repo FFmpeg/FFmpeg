@@ -68,7 +68,7 @@ theora_header (AVFormatContext * s, int idx)
         skip_bits(&gb, 64);
         st->codec->time_base.den = get_bits(&gb, 32);
         st->codec->time_base.num = get_bits(&gb, 32);
-        
+
         st->codec->sample_aspect_ratio.num = get_bits(&gb, 24);
         st->codec->sample_aspect_ratio.den = get_bits(&gb, 24);
 

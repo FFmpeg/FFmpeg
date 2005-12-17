@@ -141,7 +141,7 @@ short *block;
       tmp[8*i+j] = partial_product;
     }
 
-  /* Transpose operation is integrated into address mapping by switching 
+  /* Transpose operation is integrated into address mapping by switching
      loop order of i and j */
 
   for (j=0; j<8; j++)

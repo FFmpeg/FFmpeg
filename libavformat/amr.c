@@ -1,4 +1,4 @@
-/* 
+/*
  * amr file format
  * Copyright (c) 2001 ffmpeg project
  *
@@ -65,8 +65,8 @@ static int amr_write_trailer(AVFormatContext *s)
 
 static int amr_probe(AVProbeData *p)
 {
-    //Only check for "#!AMR" which could be amr-wb, amr-nb. 
-    //This will also trigger multichannel files: "#!AMR_MC1.0\n" and 
+    //Only check for "#!AMR" which could be amr-wb, amr-nb.
+    //This will also trigger multichannel files: "#!AMR_MC1.0\n" and
     //"#!AMR-WB_MC1.0\n" (not supported)
 
     if (p->buf_size < 5)
@@ -99,7 +99,7 @@ static int amr_read_header(AVFormatContext *s,
         {
             return AVERROR_NOMEM;
         }
-    
+
         st->codec->codec_type = CODEC_TYPE_AUDIO;
         st->codec->codec_tag = MKTAG('s', 'a', 'w', 'b');
         st->codec->codec_id = CODEC_ID_AMR_WB;
@@ -113,7 +113,7 @@ static int amr_read_header(AVFormatContext *s,
         {
             return AVERROR_NOMEM;
         }
-    
+
         st->codec->codec_type = CODEC_TYPE_AUDIO;
         st->codec->codec_tag = MKTAG('s', 'a', 'm', 'r');
         st->codec->codec_id = CODEC_ID_AMR_NB;
@@ -137,18 +137,18 @@ static int amr_read_packet(AVFormatContext *s,
         uint8_t toc, q, ft;
         int read;
         int size;
-    
+
         if (url_feof(&s->pb))
         {
             return AVERROR_IO;
         }
-    
+
         toc=get_byte(&s->pb);
         q  = (toc >> 2) & 0x01;
         ft = (toc >> 3) & 0x0F;
-    
+
         size=packed_size[ft];
-    
+
         if (av_new_packet(pkt, size+1))
         {
             return AVERROR_IO;
@@ -156,15 +156,15 @@ static int amr_read_packet(AVFormatContext *s,
         pkt->stream_index = 0;
         pkt->pos= url_ftell(&s->pb);
         pkt->data[0]=toc;
-    
+
         read = get_buffer(&s->pb, pkt->data+1, size);
-    
+
         if (read != size)
         {
             av_free_packet(pkt);
             return AVERROR_IO;
         }
-    
+
         return 0;
     }
     else if(enc->codec_id == CODEC_ID_AMR_WB)
@@ -173,33 +173,33 @@ static int amr_read_packet(AVFormatContext *s,
         uint8_t toc, mode;
         int read;
         int size;
-    
+
         if (url_feof(&s->pb))
         {
             return AVERROR_IO;
         }
-    
+
         toc=get_byte(&s->pb);
         mode = (uint8_t)((toc >> 3) & 0x0F);
         size = packed_size[mode];
-    
+
         if ( (size==0) || av_new_packet(pkt, size))
         {
             return AVERROR_IO;
         }
-    
+
         pkt->stream_index = 0;
         pkt->pos= url_ftell(&s->pb);
         pkt->data[0]=toc;
-    
+
         read = get_buffer(&s->pb, pkt->data+1, size-1);
-    
+
         if (read != (size-1))
         {
             av_free_packet(pkt);
             return AVERROR_IO;
         }
-    
+
         return 0;
     }
     else

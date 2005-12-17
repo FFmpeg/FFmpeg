@@ -25,7 +25,7 @@
 #include <assert.h>
 
 #define FRAME_HEADER_SIZE 17
-// Fix Me! FRAME_HEADER_SIZE may be different. 
+// Fix Me! FRAME_HEADER_SIZE may be different.
 
 static const GUID index_guid = {
     0x33000890, 0xe5b1, 0x11cf, { 0x89, 0xf4, 0x00, 0xa0, 0xc9, 0x03, 0x49, 0xcb },
@@ -198,7 +198,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 goto fail;
             st->priv_data = asf_st;
             st->start_time = asf->hdr.preroll;
-            st->duration = asf->hdr.send_time / 
+            st->duration = asf->hdr.send_time /
                 (10000000 / 1000) - st->start_time;
             get_guid(pb, &g);
             if (!memcmp(&g, &audio_stream, sizeof(GUID))) {
@@ -424,9 +424,9 @@ static int asf_get_packet(AVFormatContext *s)
     uint32_t packet_length, padsize;
     int rsize = 9;
     int c;
-    
+
     assert((url_ftell(&s->pb) - s->data_offset) % asf->packet_size == 0);
-    
+
     c = get_byte(pb);
     if (c != 0x82) {
         if (!url_feof(pb))
@@ -607,12 +607,12 @@ static int asf_read_packet(AVFormatContext *s, AVPacket *pkt)
 	    asf_st->seq = asf->packet_seq;
 	    asf_st->pkt.pts = asf->packet_frag_timestamp;
 	    asf_st->pkt.stream_index = asf->stream_index;
-            asf_st->pkt.pos = 
-            asf_st->packet_pos= asf->packet_pos;            
-//printf("new packet: stream:%d key:%d packet_key:%d audio:%d size:%d\n", 
+            asf_st->pkt.pos =
+            asf_st->packet_pos= asf->packet_pos;
+//printf("new packet: stream:%d key:%d packet_key:%d audio:%d size:%d\n",
 //asf->stream_index, asf->packet_key_frame, asf_st->pkt.flags & PKT_FLAG_KEY,
 //s->streams[asf->stream_index]->codec->codec_type == CODEC_TYPE_AUDIO, asf->packet_obj_size);
-	    if (s->streams[asf->stream_index]->codec->codec_type == CODEC_TYPE_AUDIO) 
+	    if (s->streams[asf->stream_index]->codec->codec_type == CODEC_TYPE_AUDIO)
 		asf->packet_key_frame = 1;
 	    if (asf->packet_key_frame)
 		asf_st->pkt.flags |= PKT_FLAG_KEY;
@@ -705,7 +705,7 @@ static void asf_reset_header(AVFormatContext *s)
     asf->packet_obj_size = 0;
     asf->packet_time_delta = 0;
     asf->packet_time_start = 0;
-    
+
     for(i=0; i<s->nb_streams; i++){
         asf_st= s->streams[i]->priv_data;
         av_free_packet(&asf_st->pkt);
@@ -724,15 +724,15 @@ static int64_t asf_read_pts(AVFormatContext *s, int stream_index, int64_t *ppos,
     int64_t pos= *ppos;
     int i;
     int64_t start_pos[s->nb_streams];
-    
+
     for(i=0; i<s->nb_streams; i++){
         start_pos[i]= pos;
     }
-    
+
     pos= (pos+asf->packet_size-1-s->data_offset)/asf->packet_size*asf->packet_size+ s->data_offset;
     *ppos= pos;
     url_fseek(&s->pb, pos, SEEK_SET);
-    
+
 //printf("asf_read_pts\n");
     asf_reset_header(s);
     for(;;){
@@ -740,7 +740,7 @@ static int64_t asf_read_pts(AVFormatContext *s, int stream_index, int64_t *ppos,
             av_log(s, AV_LOG_INFO, "seek failed\n");
     	    return AV_NOPTS_VALUE;
         }
-        
+
         pts= pkt->pts * 1000 / AV_TIME_BASE;
 
         av_free_packet(pkt);
@@ -754,7 +754,7 @@ static int64_t asf_read_pts(AVFormatContext *s, int stream_index, int64_t *ppos,
 
             av_add_index_entry(s->streams[i], pos, pts, pos - start_pos[i] + 1, AVINDEX_KEYFRAME);
             start_pos[i]= asf_st->packet_pos + 1;
-            
+
             if(pkt->stream_index == stream_index)
                break;
         }
@@ -769,7 +769,7 @@ static int64_t asf_read_pts(AVFormatContext *s, int stream_index, int64_t *ppos,
 static int asf_read_seek(AVFormatContext *s, int stream_index, int64_t pts, int flags)
 {
     ASFContext *asf = s->priv_data;
-    
+
     if (asf->packet_size <= 0)
         return -1;
 

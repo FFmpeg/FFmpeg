@@ -93,7 +93,7 @@ int main(int argc, char **argv)
                "generate a test raw 16 bit stereo audio stream\n", argv[0]);
         exit(1);
     }
-    
+
     outfile = fopen(argv[1], "wb");
     if (!outfile) {
         perror(argv[1]);
@@ -118,7 +118,7 @@ int main(int argc, char **argv)
         f = 100 + (((10000 - 100) * i) / FE);
         a += (f * FRAC_ONE) / FE;
     }
-    
+
     /* 0.5 second of low amplitude white noise */
     for(i=0;i<FE / 2;i++) {
         v = myrnd(&seed, 20000) - 10000;
@@ -147,7 +147,7 @@ int main(int argc, char **argv)
             taba[j] += (f * FRAC_ONE) / FE;
         }
     }
-    
+
     /* stereo 500 Hz with varying volume */
     a = 0;
     ampa = 0;

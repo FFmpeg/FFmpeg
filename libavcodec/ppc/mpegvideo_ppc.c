@@ -15,7 +15,7 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
- 
+
 #include "../dsputil.h"
 #include "../mpegvideo.h"
 #include <time.h>
@@ -24,7 +24,7 @@
 #include "dsputil_altivec.h"
 #endif
 
-extern int dct_quantize_altivec(MpegEncContext *s,  
+extern int dct_quantize_altivec(MpegEncContext *s,
         DCTELEM *block, int n,
         int qscale, int *overflow);
 extern void dct_unquantize_h263_altivec(MpegEncContext *s,

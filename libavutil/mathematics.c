@@ -15,7 +15,7 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
- 
+
 /**
  * @file mathematics.c
  * Miscellaneous math routines and tables.
@@ -54,9 +54,9 @@ int64_t av_rescale_rnd(int64_t a, int64_t b, int64_t c, enum AVRounding rnd){
     assert(c > 0);
     assert(b >=0);
     assert(rnd >=0 && rnd<=5 && rnd!=4);
-    
-    if(a<0 && a != INT64_MIN) return -av_rescale_rnd(-a, b, c, rnd ^ ((rnd>>1)&1)); 
-    
+
+    if(a<0 && a != INT64_MIN) return -av_rescale_rnd(-a, b, c, rnd ^ ((rnd>>1)&1));
+
     if(rnd==AV_ROUND_NEAR_INF) r= c/2;
     else if(rnd&1)             r= c-1;
 
@@ -66,10 +66,10 @@ int64_t av_rescale_rnd(int64_t a, int64_t b, int64_t c, enum AVRounding rnd){
         else
             return a/c*b + (a%c*b + r)/c;
     }
-    
+
     ai= av_mul_i(av_int2i(a), av_int2i(b));
     ai= av_add_i(ai, av_int2i(r));
-    
+
     return av_i2int(av_div_i(ai, av_int2i(c)));
 }
 

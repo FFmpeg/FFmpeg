@@ -21,7 +21,7 @@
  * @file mace.c
  * MACE decoder.
  */
- 
+
 #include "avcodec.h"
 
 /*

@@ -55,7 +55,7 @@ typedef struct RTSPHeader {
     enum RTSPStatusCode status_code; /* response code from server */
     int nb_transports;
     /* in AV_TIME_BASE unit, AV_NOPTS_VALUE if not used */
-    int64_t range_start, range_end; 
+    int64_t range_start, range_end;
     RTSPTransportField transports[RTSP_MAX_TRANSPORTS];
     int seq; /* sequence number */
     char session_id[512];
@@ -74,7 +74,7 @@ typedef struct RTSPActionServerSetup {
     char transport_option[512];
 } RTSPActionServerSetup;
 
-typedef int FFRTSPCallback(enum RTSPCallbackAction action, 
+typedef int FFRTSPCallback(enum RTSPCallbackAction action,
                            const char *session_id,
                            char *buf, int buf_size,
                            void *arg);

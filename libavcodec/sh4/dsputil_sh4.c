@@ -59,7 +59,7 @@ static void memzero_align8(void *dst,size_t size)
 
 static void clear_blocks_sh4(DCTELEM *blocks)
 {
-//	if (((int)blocks&7)==0) 
+//	if (((int)blocks&7)==0)
 	memzero_align8(blocks,sizeof(DCTELEM)*6*64);
 }
 
@@ -109,7 +109,7 @@ void dsputil_init_sh4(DSPContext* c, AVCodecContext *avctx)
 	dsputil_init_align(c,avctx);
 
 	c->clear_blocks = clear_blocks_sh4;
-	if(idct_algo==FF_IDCT_AUTO || idct_algo==FF_IDCT_SH4){        
+	if(idct_algo==FF_IDCT_AUTO || idct_algo==FF_IDCT_SH4){
 		c->idct_put = idct_put;
 		c->idct_add = idct_add;
                c->idct     = idct_sh4;

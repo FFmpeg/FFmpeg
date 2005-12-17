@@ -38,7 +38,7 @@ int get_nibble(const uint8_t *buf, int nibble_offset)
     return (buf[nibble_offset >> 1] >> ((1 - (nibble_offset & 1)) << 2)) & 0xf;
 }
 
-static int decode_rle(uint8_t *bitmap, int linesize, int w, int h, 
+static int decode_rle(uint8_t *bitmap, int linesize, int w, int h,
                       const uint8_t *buf, int nibble_offset, int buf_size)
 {
     unsigned int v;
@@ -91,7 +91,7 @@ static void guess_palette(uint32_t *rgba_palette,
 {
     uint8_t color_used[16];
     int nb_opaque_colors, i, level, j, r, g, b;
-    
+
     for(i = 0; i < 4; i++)
         rgba_palette[i] = 0;
 
@@ -103,10 +103,10 @@ static void guess_palette(uint32_t *rgba_palette,
             nb_opaque_colors++;
         }
     }
-    
+
     if (nb_opaque_colors == 0)
         return;
-    
+
     j = nb_opaque_colors;
     memset(color_used, 0, 16);
     for(i = 0; i < 4; i++) {
@@ -127,7 +127,7 @@ static void guess_palette(uint32_t *rgba_palette,
     }
 }
 
-static int decode_dvd_subtitles(AVSubtitle *sub_header, 
+static int decode_dvd_subtitles(AVSubtitle *sub_header,
                                 const uint8_t *buf, int buf_size)
 {
     int cmd_pos, pos, cmd, x1, y1, x2, y2, offset1, offset2, next_cmd_pos;
@@ -135,7 +135,7 @@ static int decode_dvd_subtitles(AVSubtitle *sub_header,
     int date;
     int i;
     int is_menu = 0;
-    
+
     if (buf_size < 4)
         return -1;
     sub_header->rects = NULL;
@@ -148,7 +148,7 @@ static int decode_dvd_subtitles(AVSubtitle *sub_header,
         date = getbe16(buf + cmd_pos);
         next_cmd_pos = getbe16(buf + cmd_pos + 2);
 #ifdef DEBUG
-        av_log(NULL, AV_LOG_INFO, "cmd_pos=0x%04x next=0x%04x date=%d\n", 
+        av_log(NULL, AV_LOG_INFO, "cmd_pos=0x%04x next=0x%04x date=%d\n",
                cmd_pos, next_cmd_pos, date);
 #endif
         pos = cmd_pos + 4;
@@ -228,7 +228,7 @@ static int decode_dvd_subtitles(AVSubtitle *sub_header,
         if (offset1 >= 0) {
             int w, h;
             uint8_t *bitmap;
-            
+
             /* decode the bitmap */
             w = x2 - x1 + 1;
             if (w < 0)
@@ -275,7 +275,7 @@ static int decode_dvd_subtitles(AVSubtitle *sub_header,
     return -1;
 }
 
-static int is_transp(const uint8_t *buf, int pitch, int n, 
+static int is_transp(const uint8_t *buf, int pitch, int n,
                      const uint8_t *transp_color)
 {
     int i;
@@ -395,7 +395,7 @@ static int dvdsub_decode(AVCodecContext *avctx,
         goto no_subtitle;
 
 #if defined(DEBUG)
-    av_log(NULL, AV_LOG_INFO, "start=%d ms end =%d ms\n", 
+    av_log(NULL, AV_LOG_INFO, "start=%d ms end =%d ms\n",
            sub->start_display_time,
            sub->end_display_time);
     ppm_save("/tmp/a.ppm", sub->rects[0].bitmap,
@@ -431,11 +431,11 @@ static int dvdsub_parse_init(AVCodecParserContext *s)
 
 static int dvdsub_parse(AVCodecParserContext *s,
                         AVCodecContext *avctx,
-                        uint8_t **poutbuf, int *poutbuf_size, 
+                        uint8_t **poutbuf, int *poutbuf_size,
                         const uint8_t *buf, int buf_size)
 {
     DVDSubParseContext *pc = s->priv_data;
-    
+
     if (pc->packet_index == 0) {
         if (buf_size < 2)
             return 0;

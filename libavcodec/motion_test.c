@@ -78,10 +78,10 @@ void test_motion(const char *name,
 
         fill_random(img1, WIDTH * HEIGHT);
         fill_random(img2, WIDTH * HEIGHT);
-        
+
         for(y=0;y<HEIGHT-17;y++) {
             for(x=0;x<WIDTH-17;x++) {
-                ptr = img2 + y * WIDTH + x; 
+                ptr = img2 + y * WIDTH + x;
                 d1 = test_func(img1, ptr, WIDTH);
                 d2 = ref_func(img1, ptr, WIDTH);
                 if (d1 != d2) {
@@ -91,14 +91,14 @@ void test_motion(const char *name,
         }
     }
     emms();
-    
+
     /* speed test */
     ti = gettime();
     d1 = 0;
     for(it=0;it<NB_ITS;it++) {
         for(y=0;y<HEIGHT-17;y++) {
             for(x=0;x<WIDTH-17;x++) {
-                ptr = img2 + y * WIDTH + x; 
+                ptr = img2 + y * WIDTH + x;
                 d1 += test_func(img1, ptr, WIDTH);
             }
         }
@@ -106,9 +106,9 @@ void test_motion(const char *name,
     emms();
     dummy = d1; /* avoid optimisation */
     ti = gettime() - ti;
-    
-    printf("  %0.0f kop/s\n", 
-           (double)NB_ITS * (WIDTH - 16) * (HEIGHT - 16) / 
+
+    printf("  %0.0f kop/s\n",
+           (double)NB_ITS * (WIDTH - 16) * (HEIGHT - 16) /
            (double)(ti / 1000.0));
 }
 
@@ -116,7 +116,7 @@ void test_motion(const char *name,
 int main(int argc, char **argv)
 {
     int c;
-    
+
     for(;;) {
         c = getopt(argc, argv, "h");
         if (c == -1)
@@ -127,7 +127,7 @@ int main(int argc, char **argv)
             break;
         }
     }
-               
+
     printf("ffmpeg motion test\n");
 
     test_motion("mmx", pix_abs16x16_mmx, pix_abs16x16_c);

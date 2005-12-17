@@ -17,12 +17,12 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
- 
+
 /**
  * @file xl.c
  * Miro VideoXL codec.
  */
- 
+
 #include "avcodec.h"
 #include "mpegvideo.h"
 
@@ -37,7 +37,7 @@ const int xl_table[32] = {
   64,  82,  94, 103, 108, 113, 116, 119,
  120, 121, 122, 123, 124, 125, 126, 127};
 
-static int decode_frame(AVCodecContext *avctx, 
+static int decode_frame(AVCodecContext *avctx,
                         void *data, int *data_size,
                         uint8_t *buf, int buf_size)
 {
@@ -63,18 +63,18 @@ static int decode_frame(AVCodecContext *avctx,
     Y = a->pic.data[0];
     U = a->pic.data[1];
     V = a->pic.data[2];
-    
+
     stride = avctx->width - 4;
     for (i = 0; i < avctx->height; i++) {
         /* lines are stored in reversed order */
         buf += stride;
-        
+
         for (j = 0; j < avctx->width; j += 4) {
             /* value is stored in LE dword with word swapped */
             val = LE_32(buf);
             buf -= 4;
             val = ((val >> 16) & 0xFFFF) | ((val & 0xFFFF) << 16);
-    
+
             if(!j)
                 y0 = (val & 0x1F) << 2;
             else
@@ -95,16 +95,16 @@ static int decode_frame(AVCodecContext *avctx,
                 c1 = (val & 0x1F) << 2;
             else
                 c1 += xl_table[val & 0x1F];
-            
+
             Y[j + 0] = y0 << 1;
             Y[j + 1] = y1 << 1;
             Y[j + 2] = y2 << 1;
             Y[j + 3] = y3 << 1;
-            
+
             U[j >> 2] = c0 << 1;
             V[j >> 2] = c1 << 1;
         }
-        
+
         buf += avctx->width + 4;
         Y += a->pic.linesize[0];
         U += a->pic.linesize[1];
@@ -113,7 +113,7 @@ static int decode_frame(AVCodecContext *avctx,
 
     *data_size = sizeof(AVFrame);
     *(AVFrame*)data = a->pic;
-    
+
     return buf_size;
 }
 

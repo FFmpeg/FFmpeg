@@ -69,7 +69,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
 	unsigned int px_inc;
 	unsigned int planes = c->planes;
 	unsigned char *planemap = c->planemap;
-  
+
 	if(c->pic.data[0])
 		avctx->release_buffer(avctx, &c->pic);
 

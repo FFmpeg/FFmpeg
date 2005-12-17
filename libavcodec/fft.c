@@ -26,13 +26,13 @@
 
 /**
  * The size of the FFT is 2^nbits. If inverse is TRUE, inverse FFT is
- * done 
+ * done
  */
 int ff_fft_init(FFTContext *s, int nbits, int inverse)
 {
     int i, j, m, n;
     float alpha, c1, s1, s2;
-    
+
     s->nbits = nbits;
     n = 1 << nbits;
 
@@ -45,7 +45,7 @@ int ff_fft_init(FFTContext *s, int nbits, int inverse)
     s->inverse = inverse;
 
     s2 = inverse ? 1.0 : -1.0;
-        
+
     for(i=0;i<(n/2);i++) {
         alpha = 2 * M_PI * (float)i / (float)n;
         c1 = cos(alpha);
@@ -70,7 +70,7 @@ int ff_fft_init(FFTContext *s, int nbits, int inverse)
         if (has_vectors) {
             int np, nblocks, np2, l;
             FFTComplex *q;
-            
+
             np = 1 << nbits;
             nblocks = np >> 3;
             np2 = np >> 1;
@@ -144,7 +144,7 @@ int ff_fft_init(FFTContext *s, int nbits, int inverse)
 /**
  * Do a complex FFT with the parameters defined in ff_fft_init(). The
  * input data must be permuted before with s->revtab table. No
- * 1.0/sqrt(n) normalization is done.  
+ * 1.0/sqrt(n) normalization is done.
  */
 void ff_fft_calc_c(FFTContext *s, FFTComplex *z)
 {
@@ -163,29 +163,29 @@ void ff_fft_calc_c(FFTContext *s, FFTComplex *z)
     p=&z[0];
     j=(np >> 1);
     do {
-        BF(p[0].re, p[0].im, p[1].re, p[1].im, 
+        BF(p[0].re, p[0].im, p[1].re, p[1].im,
            p[0].re, p[0].im, p[1].re, p[1].im);
         p+=2;
     } while (--j != 0);
 
     /* pass 1 */
 
-    
+
     p=&z[0];
     j=np >> 2;
     if (s->inverse) {
         do {
-            BF(p[0].re, p[0].im, p[2].re, p[2].im, 
+            BF(p[0].re, p[0].im, p[2].re, p[2].im,
                p[0].re, p[0].im, p[2].re, p[2].im);
-            BF(p[1].re, p[1].im, p[3].re, p[3].im, 
+            BF(p[1].re, p[1].im, p[3].re, p[3].im,
                p[1].re, p[1].im, -p[3].im, p[3].re);
             p+=4;
         } while (--j != 0);
     } else {
         do {
-            BF(p[0].re, p[0].im, p[2].re, p[2].im, 
+            BF(p[0].re, p[0].im, p[2].re, p[2].im,
                p[0].re, p[0].im, p[2].re, p[2].im);
-            BF(p[1].re, p[1].im, p[3].re, p[3].im, 
+            BF(p[1].re, p[1].im, p[3].re, p[3].im,
                p[1].re, p[1].im, p[3].im, -p[3].re);
             p+=4;
         } while (--j != 0);
@@ -201,7 +201,7 @@ void ff_fft_calc_c(FFTContext *s, FFTComplex *z)
         for (j = 0; j < nblocks; ++j) {
             BF(p->re, p->im, q->re, q->im,
                p->re, p->im, q->re, q->im);
-            
+
             p++;
             q++;
             for(l = nblocks; l < np2; l += nblocks) {
@@ -228,7 +228,7 @@ void ff_fft_permute(FFTContext *s, FFTComplex *z)
     int j, k, np;
     FFTComplex tmp;
     const uint16_t *revtab = s->revtab;
-    
+
     /* reverse */
     np = 1 << s->nbits;
     for(j=0;j<np;j++) {

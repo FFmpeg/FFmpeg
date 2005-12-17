@@ -16,7 +16,7 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
- 
+
 /**
  * @file mp3lameaudio.c
  * Interface to libmp3lame for mp3 encoding.
@@ -63,7 +63,7 @@ static int MP3lame_encode_init(AVCodecContext *avctx)
 		goto err_close;
 
 	avctx->frame_size = lame_get_framesize(s->gfp);
-    
+
         avctx->coded_frame= avcodec_alloc_frame();
         avctx->coded_frame->key_frame= 1;
 
@@ -119,7 +119,7 @@ static int mp3len(void *data, int *samplesPerFrame, int *sampleRate)
     if ( (( header >> 21 ) & 0x7ff) != 0x7ff || mode == 3 || layerID==3 || sampleRateID==3) {
         return -1;
     }
-    
+
     if(!samplesPerFrame) samplesPerFrame= &temp0;
     if(!sampleRate     ) sampleRate     = &temp1;
 
@@ -129,7 +129,7 @@ static int mp3len(void *data, int *samplesPerFrame, int *sampleRate)
     bitRate = sBitRates[mpeg_id][layerID][bitRateID] * 1000;
     *samplesPerFrame = sSamplesPerFrame[mpeg_id][layerID];
 //av_log(NULL, AV_LOG_DEBUG, "sr:%d br:%d spf:%d l:%d m:%d\n", *sampleRate, bitRate, *samplesPerFrame, layerID, mode);
-    
+
     return *samplesPerFrame * bitRate / (bitsPerSlot * *sampleRate) + isPadded;
 }
 
@@ -145,26 +145,26 @@ int MP3lame_encode_frame(AVCodecContext *avctx,
     if(data){
         if (s->stereo) {
             lame_result = lame_encode_buffer_interleaved(
-                s->gfp, 
+                s->gfp,
                 data,
-                avctx->frame_size, 
-                s->buffer + s->buffer_index, 
+                avctx->frame_size,
+                s->buffer + s->buffer_index,
                 BUFFER_SIZE - s->buffer_index
                 );
         } else {
             lame_result = lame_encode_buffer(
-                s->gfp, 
-                data, 
-                data, 
+                s->gfp,
+                data,
+                data,
                 avctx->frame_size,
-                s->buffer + s->buffer_index, 
+                s->buffer + s->buffer_index,
                 BUFFER_SIZE - s->buffer_index
                 );
         }
     }else{
         lame_result= lame_encode_flush(
-                s->gfp, 
-                s->buffer + s->buffer_index, 
+                s->gfp,
+                s->buffer + s->buffer_index,
                 BUFFER_SIZE - s->buffer_index
                 );
     }
@@ -199,7 +199,7 @@ int MP3lame_encode_frame(AVCodecContext *avctx,
 int MP3lame_encode_close(AVCodecContext *avctx)
 {
 	Mp3AudioContext *s = avctx->priv_data;
-    
+
         av_freep(&avctx->coded_frame);
 
 	lame_close(s->gfp);

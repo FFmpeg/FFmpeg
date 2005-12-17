@@ -21,7 +21,7 @@
  * mostly rewritten by Michael Niedermayer <michaelni@gmx.at>
  * and improved by Zdenek Kabelac <kabi@users.sf.net>
  */
- 
+
 /* XXX: we use explicit registers to avoid a gcc 2.95.2 register asm
    clobber bug - now it will work with 2.95.2 and also with -fPIC
  */
@@ -100,7 +100,7 @@ static void DEF(put_pixels4_l2)(uint8_t *dst, uint8_t *src1, uint8_t *src2, int 
 	:"+b"(h), "+a"(src1), "+c"(src2), "+d"(dst)
 #endif
 	:"S"((long)src1Stride), "D"((long)dstStride)
-	:"memory"); 
+	:"memory");
 }
 
 
@@ -147,7 +147,7 @@ static void DEF(put_pixels8_l2)(uint8_t *dst, uint8_t *src1, uint8_t *src2, int 
 	:"+b"(h), "+a"(src1), "+c"(src2), "+d"(dst)
 #endif
 	:"S"((long)src1Stride), "D"((long)dstStride)
-	:"memory"); 
+	:"memory");
 //the following should be used, though better not with gcc ...
 /*	:"+g"(h), "+r"(src1), "+r"(src2), "+r"(dst)
 	:"r"(src1Stride), "r"(dstStride)
@@ -217,7 +217,7 @@ static void DEF(put_no_rnd_pixels8_l2)(uint8_t *dst, uint8_t *src1, uint8_t *src
 	:"+b"(h), "+a"(src1), "+c"(src2), "+d"(dst)
 #endif
 	:"S"((long)src1Stride), "D"((long)dstStride)
-	:"memory"); 
+	:"memory");
 //the following should be used, though better not with gcc ...
 /*	:"+g"(h), "+r"(src1), "+r"(src2), "+r"(dst)
 	:"r"(src1Stride), "r"(dstStride)
@@ -272,7 +272,7 @@ static void DEF(avg_pixels4_l2)(uint8_t *dst, uint8_t *src1, uint8_t *src2, int 
 	:"+b"(h), "+a"(src1), "+c"(src2), "+d"(dst)
 #endif
 	:"S"((long)src1Stride), "D"((long)dstStride)
-	:"memory"); 
+	:"memory");
 }
 
 
@@ -324,7 +324,7 @@ static void DEF(avg_pixels8_l2)(uint8_t *dst, uint8_t *src1, uint8_t *src2, int 
 	:"+b"(h), "+a"(src1), "+c"(src2), "+d"(dst)
 #endif
 	:"S"((long)src1Stride), "D"((long)dstStride)
-	:"memory"); 
+	:"memory");
 //the following should be used, though better not with gcc ...
 /*	:"+g"(h), "+r"(src1), "+r"(src2), "+r"(dst)
 	:"r"(src1Stride), "r"(dstStride)
@@ -412,7 +412,7 @@ static void DEF(put_pixels16_l2)(uint8_t *dst, uint8_t *src1, uint8_t *src2, int
 	:"+b"(h), "+a"(src1), "+c"(src2), "+d"(dst)
 #endif
 	:"S"((long)src1Stride), "D"((long)dstStride)
-	:"memory"); 
+	:"memory");
 //the following should be used, though better not with gcc ...
 /*	:"+g"(h), "+r"(src1), "+r"(src2), "+r"(dst)
 	:"r"(src1Stride), "r"(dstStride)
@@ -466,7 +466,7 @@ static void DEF(avg_pixels16_l2)(uint8_t *dst, uint8_t *src1, uint8_t *src2, int
 	:"+b"(h), "+a"(src1), "+c"(src2), "+d"(dst)
 #endif
 	:"S"((long)src1Stride), "D"((long)dstStride)
-	:"memory"); 
+	:"memory");
 //the following should be used, though better not with gcc ...
 /*	:"+g"(h), "+r"(src1), "+r"(src2), "+r"(dst)
 	:"r"(src1Stride), "r"(dstStride)
@@ -539,13 +539,13 @@ static void DEF(put_no_rnd_pixels16_l2)(uint8_t *dst, uint8_t *src1, uint8_t *sr
 	:"+b"(h), "+a"(src1), "+c"(src2), "+d"(dst)
 #endif
 	:"S"((long)src1Stride), "D"((long)dstStride)
-	:"memory"); 
+	:"memory");
 //the following should be used, though better not with gcc ...
 /*	:"+g"(h), "+r"(src1), "+r"(src2), "+r"(dst)
 	:"r"(src1Stride), "r"(dstStride)
 	:"memory");*/
 }
- 
+
 /* GL: this function does incorrect rounding if overflow */
 static void DEF(put_no_rnd_pixels8_x2)(uint8_t *block, const uint8_t *pixels, int line_size, int h)
 {
@@ -746,7 +746,7 @@ static void DEF(avg_pixels8_y2)(uint8_t *block, const uint8_t *pixels, int line_
 	:"%"REG_a, "memory");
 }
 
-// Note this is not correctly rounded, but this function is only used for b frames so it doesnt matter 
+// Note this is not correctly rounded, but this function is only used for b frames so it doesnt matter
 static void DEF(avg_pixels8_xy2)(uint8_t *block, const uint8_t *pixels, int line_size, int h)
 {
     MOVQ_BONE(mm6);

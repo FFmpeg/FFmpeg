@@ -160,7 +160,7 @@ static int film_read_header(AVFormatContext *s,
         st->codec->sample_rate = film->audio_samplerate;
         st->codec->bit_rate = st->codec->channels * st->codec->sample_rate *
             st->codec->bits_per_sample;
-        st->codec->block_align = st->codec->channels * 
+        st->codec->block_align = st->codec->channels *
             st->codec->bits_per_sample / 8;
     }
 
@@ -174,10 +174,10 @@ static int film_read_header(AVFormatContext *s,
     if(film->sample_count >= UINT_MAX / sizeof(film_sample_t))
         return -1;
     film->sample_table = av_malloc(film->sample_count * sizeof(film_sample_t));
-    
+
     for(i=0; i<s->nb_streams; i++)
         av_set_pts_info(s->streams[i], 33, 1, film->base_clock);
-    
+
     audio_frame_counter = 0;
     for (i = 0; i < film->sample_count; i++) {
         /* load the next sample record and transfer it to an internal struct */
@@ -185,7 +185,7 @@ static int film_read_header(AVFormatContext *s,
             av_free(film->sample_table);
             return AVERROR_IO;
         }
-        film->sample_table[i].sample_offset = 
+        film->sample_table[i].sample_offset =
             data_offset + BE_32(&scratch[0]);
         film->sample_table[i].sample_size = BE_32(&scratch[4]);
         if (BE_32(&scratch[8]) == 0xFFFFFFFF) {
@@ -227,7 +227,7 @@ static int film_read_packet(AVFormatContext *s,
     url_fseek(pb, sample->sample_offset, SEEK_SET);
 
     /* do a special song and dance when loading FILM Cinepak chunks */
-    if ((sample->stream == film->video_stream_index) && 
+    if ((sample->stream == film->video_stream_index) &&
         (film->video_type == CODEC_ID_CINEPAK)) {
         if (av_new_packet(pkt, sample->sample_size - film->cvid_extra_bytes))
             return AVERROR_NOMEM;
@@ -237,7 +237,7 @@ static int film_read_packet(AVFormatContext *s,
         ret = get_buffer(pb, pkt->data, 10);
         /* skip the non-spec CVID bytes */
         url_fseek(pb, film->cvid_extra_bytes, SEEK_CUR);
-        ret += get_buffer(pb, pkt->data + 10, 
+        ret += get_buffer(pb, pkt->data + 10,
             sample->sample_size - 10 - film->cvid_extra_bytes);
         if (ret != sample->sample_size - film->cvid_extra_bytes)
             ret = AVERROR_IO;

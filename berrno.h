@@ -8,37 +8,37 @@
 
 #ifdef ENOENT
 #undef ENOENT
-#endif 
+#endif
 #define ENOENT 2
 
 #ifdef EINTR
 #undef EINTR
-#endif 
+#endif
 #define EINTR  4
 
 #ifdef EIO
 #undef EIO
-#endif 
+#endif
 #define EIO    5
 
 #ifdef EAGAIN
 #undef EAGAIN
-#endif 
+#endif
 #define EAGAIN 11
 
 #ifdef ENOMEM
 #undef ENOMEM
-#endif 
+#endif
 #define ENOMEM 12
 
 #ifdef EINVAL
 #undef EINVAL
-#endif 
+#endif
 #define EINVAL 22
 
 #ifdef EPIPE
 #undef EPIPE
-#endif 
+#endif
 #define EPIPE  32
 
 #endif /* BERRNO_H */

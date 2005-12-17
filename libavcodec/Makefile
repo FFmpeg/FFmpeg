@@ -380,7 +380,7 @@ endif
 ifeq ($(TARGET_ARCH_SPARC),yes)
 OBJS+=sparc/dsputil_vis.o
 sparc/%.o: sparc/%.c
-	$(CC) -mcpu=ultrasparc -mtune=ultrasparc $(CFLAGS) -c -o $@ $< 
+	$(CC) -mcpu=ultrasparc -mtune=ultrasparc $(CFLAGS) -c -o $@ $<
 endif
 ifeq ($(TARGET_ARCH_SPARC64),yes)
 CFLAGS+= -mcpu=ultrasparc -mtune=ultrasparc
@@ -430,7 +430,7 @@ libpostproc/libpostproc.a:
 	$(MAKE) -C libpostproc
 
 %.o: %.c
-	$(CC) $(CFLAGS) $(LIBOBJFLAGS) -c -o $@ $< 
+	$(CC) $(CFLAGS) $(LIBOBJFLAGS) -c -o $@ $<
 
 %.o: %.S
 	$(CC) $(CFLAGS) $(LIBOBJFLAGS) -c -o $@ $<

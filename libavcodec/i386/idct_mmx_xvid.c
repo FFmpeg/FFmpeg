@@ -72,13 +72,13 @@
 //-----------------------------------------------------------------------------
 
 
-static const int16_t tg_1_16[4*4] attribute_used __attribute__ ((aligned(8))) = { 
+static const int16_t tg_1_16[4*4] attribute_used __attribute__ ((aligned(8))) = {
   13036,13036,13036,13036,        // tg * (2<<16) + 0.5
   27146,27146,27146,27146,        // tg * (2<<16) + 0.5
   -21746,-21746,-21746,-21746,    // tg * (2<<16) + 0.5
   23170,23170,23170,23170};       // cos * (2<<15) + 0.5
 
-static const int32_t rounder_0[2*8] attribute_used __attribute__ ((aligned(8))) = { 
+static const int32_t rounder_0[2*8] attribute_used __attribute__ ((aligned(8))) = {
   65536,65536,
   3597,3597,
   2260,2260,
@@ -148,7 +148,7 @@ static const int32_t rounder_0[2*8] attribute_used __attribute__ ((aligned(8))) 
 //-----------------------------------------------------------------------------
 
 // Table for rows 0,4 - constants are multiplied by cos_4_16
-static const int16_t tab_i_04_mmx[32*4] attribute_used __attribute__ ((aligned(8))) = { 
+static const int16_t tab_i_04_mmx[32*4] attribute_used __attribute__ ((aligned(8))) = {
   16384,16384,16384,-16384,       // movq-> w06 w04 w02 w00
   21407,8867,8867,-21407,         // w07 w05 w03 w01
   16384,-16384,16384,16384,       // w14 w12 w10 w08
@@ -190,7 +190,7 @@ static const int16_t tab_i_04_mmx[32*4] attribute_used __attribute__ ((aligned(8
 //-----------------------------------------------------------------------------
 
 // %3 for rows 0,4 - constants are multiplied by cos_4_16
-static const int16_t tab_i_04_xmm[32*4] attribute_used __attribute__ ((aligned(8))) = { 
+static const int16_t tab_i_04_xmm[32*4] attribute_used __attribute__ ((aligned(8))) = {
   16384,21407,16384,8867,      // movq-> w05 w04 w01 w00
   16384,8867,-16384,-21407,    // w07 w06 w03 w02
   16384,-8867,16384,-21407,    // w13 w12 w09 w08
@@ -501,7 +501,7 @@ asm volatile(
     DCT_8_INV_ROW_MMX(5*16(%0), 5*16(%0), 64*3(%2), 8*5(%1))
     DCT_8_INV_ROW_MMX(6*16(%0), 6*16(%0), 64*2(%2), 8*6(%1))
     DCT_8_INV_ROW_MMX(7*16(%0), 7*16(%0), 64*1(%2), 8*7(%1))
-    
+
             //# Process the columns (4 at a time)
     DCT_8_INV_COL(0(%0), 0(%0))
     DCT_8_INV_COL(8(%0), 8(%0))
@@ -524,7 +524,7 @@ asm volatile(
     DCT_8_INV_ROW_XMM(5*16(%0), 5*16(%0), 64*3(%2), 8*5(%1))
     DCT_8_INV_ROW_XMM(6*16(%0), 6*16(%0), 64*2(%2), 8*6(%1))
     DCT_8_INV_ROW_XMM(7*16(%0), 7*16(%0), 64*1(%2), 8*7(%1))
-    
+
             //# Process the columns (4 at a time)
     DCT_8_INV_COL(0(%0), 0(%0))
     DCT_8_INV_COL(8(%0), 8(%0))

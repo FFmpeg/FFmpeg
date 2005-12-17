@@ -190,7 +190,7 @@ static int encode_dvd_subtitles(uint8_t *outbuf, int outbuf_size,
         *q++ = h->rects[object_id].y >> 4;
         *q++ = (h->rects[object_id].y << 4) | ((y2 >> 8) & 0xf);
         *q++ = y2;
-        
+
         *q++ = 0x06;
         // offset1, offset2
         putbe16(&q, offset1[object_id]);
@@ -207,7 +207,7 @@ static int encode_dvd_subtitles(uint8_t *outbuf, int outbuf_size,
 
     qq = outbuf;
     putbe16(&qq, q - outbuf);
-    
+
     av_log(NULL, AV_LOG_DEBUG, "subtitle_packet size=%td\n", q - outbuf);
     return q - outbuf;
 }

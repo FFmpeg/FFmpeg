@@ -1,7 +1,7 @@
 /*
- * imlib2 based hook 
+ * imlib2 based hook
  * Copyright (c) 2002 Philip Gladstone
- * 
+ *
  * This module implements a text overlay for a video image. Currently it
  * supports a fixed overlay or reading the text from a file. The string
  * is passed through strftime so that it is easy to imprint the date and
@@ -19,13 +19,13 @@
  * This module is very much intended as an example of what could be done.
  * For example, you could overlay an image (even semi-transparent) like
  * TV stations do. You can manipulate the image using imlib2 functions
- * in any way. 
+ * in any way.
  *
  * One caution is that this is an expensive process -- in particular the
  * conversion of the image into RGB and back is time consuming. For some
  * special cases -- e.g. painting black text -- it would be faster to paint
  * the text into a bitmap and then combine it directly into the YUV
- * image. However, this code is fast enough to handle 10 fps of 320x240 on a 
+ * image. However, this code is fast enough to handle 10 fps of 320x240 on a
  * 900MHz Duron in maybe 15% of the CPU.
  *
  * This library is free software; you can redistribute it and/or
@@ -55,7 +55,7 @@
 #include <sys/time.h>
 #include <time.h>
 #include <X11/Xlib.h>
-#include <Imlib2.h>                                                             
+#include <Imlib2.h>
 
 typedef struct {
     int dummy;
@@ -138,7 +138,7 @@ int Configure(void **ctxp, int argc, char *argv[])
         return -1;
     }
     imlib_context_set_font(ci->fn);
-    imlib_context_set_direction(IMLIB_TEXT_TO_RIGHT);                           
+    imlib_context_set_direction(IMLIB_TEXT_TO_RIGHT);
 
     if (color) {
         char buff[256];
@@ -215,18 +215,18 @@ void Process(void *ctx, AVPicture *picture, enum PixelFormat pix_fmt, int width,
 
         avpicture_fill(&picture1, (uint8_t *) data, PIX_FMT_RGBA32, width, height);
     if (pix_fmt != PIX_FMT_RGBA32) {
-        if (img_convert(&picture1, PIX_FMT_RGBA32, 
+        if (img_convert(&picture1, PIX_FMT_RGBA32,
                         picture, pix_fmt, width, height) < 0) {
             goto done;
         }
     } else {
-        img_copy(&picture1, picture, PIX_FMT_RGBA32, width, height); 
+        img_copy(&picture1, picture, PIX_FMT_RGBA32, width, height);
     }
 
     imlib_image_set_has_alpha(0);
 
     {
-        int wid, hig, h_a, v_a;                                                   
+        int wid, hig, h_a, v_a;
         char buff[1000];
         char tbuff[1000];
         char *tbp = ci->text;
@@ -268,11 +268,11 @@ void Process(void *ctx, AVPicture *picture, enum PixelFormat pix_fmt, int width,
     }
 
     if (pix_fmt != PIX_FMT_RGBA32) {
-        if (img_convert(picture, pix_fmt, 
+        if (img_convert(picture, pix_fmt,
                         &picture1, PIX_FMT_RGBA32, width, height) < 0) {
         }
     } else {
-        img_copy(picture, &picture1, PIX_FMT_RGBA32, width, height); 
+        img_copy(picture, &picture1, PIX_FMT_RGBA32, width, height);
     }
 
 done:

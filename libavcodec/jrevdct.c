@@ -16,7 +16,7 @@
  * The advantage of this method is that no data path contains more than one
  * multiplication; this allows a very simple and accurate implementation in
  * scaled fixed-point arithmetic, with a minimal number of shifts.
- * 
+ *
  * I've made lots of modifications to attempt to take advantage of the
  * sparse nature of the DCT matrices we're getting.  Although the logic
  * is cumbersome, it's straightforward and the resulting code is much
@@ -25,12 +25,12 @@
  * A better way to do this would be to pass in the DCT block as a sparse
  * matrix, perhaps with the difference cases encoded.
  */
- 
+
 /**
  * @file jrevdct.c
  * Independent JPEG Group's LLM idct.
  */
- 
+
 #include "common.h"
 #include "dsputil.h"
 
@@ -109,7 +109,7 @@ typedef DCTELEM DCTBLOCK[DCTSIZE2];
  */
 
 /* Actually FIX is no longer used, we precomputed them all */
-#define FIX(x)	((int32_t) ((x) * CONST_SCALE + 0.5)) 
+#define FIX(x)	((int32_t) ((x) * CONST_SCALE + 0.5))
 
 /* Descale and correctly round an int32_t value that's scaled by N bits.
  * We assume RIGHT_SHIFT rounds towards minus infinity, so adding
@@ -143,9 +143,9 @@ typedef DCTELEM DCTBLOCK[DCTSIZE2];
 #endif
 
 
-/* 
+/*
   Unlike our decoder where we approximate the FIXes, we need to use exact
-ones here or successive P-frames will drift too much with Reference frame coding 
+ones here or successive P-frames will drift too much with Reference frame coding
 */
 #define FIX_0_211164243 1730
 #define FIX_0_275899380 2260
@@ -184,7 +184,7 @@ void j_rev_dct(DCTBLOCK data)
   int32_t d0, d1, d2, d3, d4, d5, d6, d7;
   register DCTELEM *dataptr;
   int rowctr;
-   
+
   /* Pass 1: process rows. */
   /* Note results are scaled up by sqrt(8) compared to a true IDCT; */
   /* furthermore, we scale the results by 2**PASS1_BITS. */
@@ -220,13 +220,13 @@ void j_rev_dct(DCTBLOCK data)
 	  /* Compute a 32 bit value to assign. */
 	  DCTELEM dcval = (DCTELEM) (d0 << PASS1_BITS);
 	  register int v = (dcval & 0xffff) | ((dcval << 16) & 0xffff0000);
-	  
+
 	  idataptr[0] = v;
 	  idataptr[1] = v;
 	  idataptr[2] = v;
 	  idataptr[3] = v;
       }
-      
+
       dataptr += DCTSIZE;	/* advance pointer to next row */
       continue;
     }
@@ -295,8 +295,8 @@ void j_rev_dct(DCTBLOCK data)
 		    z3 = d7 + d3;
 		    z4 = d5 + d1;
 		    z5 = MULTIPLY(z3 + z4, FIX_1_175875602);
-		    
-		    tmp0 = MULTIPLY(d7, FIX_0_298631336); 
+
+		    tmp0 = MULTIPLY(d7, FIX_0_298631336);
 		    tmp1 = MULTIPLY(d5, FIX_2_053119869);
 		    tmp2 = MULTIPLY(d3, FIX_3_072711026);
 		    tmp3 = MULTIPLY(d1, FIX_1_501321110);
@@ -304,10 +304,10 @@ void j_rev_dct(DCTBLOCK data)
 		    z2 = MULTIPLY(-z2, FIX_2_562915447);
 		    z3 = MULTIPLY(-z3, FIX_1_961570560);
 		    z4 = MULTIPLY(-z4, FIX_0_390180644);
-		    
+
 		    z3 += z5;
 		    z4 += z5;
-		    
+
 		    tmp0 += z1 + z3;
 		    tmp1 += z2 + z4;
 		    tmp2 += z2 + z3;
@@ -317,18 +317,18 @@ void j_rev_dct(DCTBLOCK data)
 		    z2 = d5 + d3;
 		    z3 = d7 + d3;
 		    z5 = MULTIPLY(z3 + d5, FIX_1_175875602);
-		    
-		    tmp0 = MULTIPLY(d7, FIX_0_298631336); 
+
+		    tmp0 = MULTIPLY(d7, FIX_0_298631336);
 		    tmp1 = MULTIPLY(d5, FIX_2_053119869);
 		    tmp2 = MULTIPLY(d3, FIX_3_072711026);
 		    z1 = MULTIPLY(-d7, FIX_0_899976223);
 		    z2 = MULTIPLY(-z2, FIX_2_562915447);
 		    z3 = MULTIPLY(-z3, FIX_1_961570560);
 		    z4 = MULTIPLY(-d5, FIX_0_390180644);
-		    
+
 		    z3 += z5;
 		    z4 += z5;
-		    
+
 		    tmp0 += z1 + z3;
 		    tmp1 += z2 + z4;
 		    tmp2 += z2 + z3;
@@ -340,35 +340,35 @@ void j_rev_dct(DCTBLOCK data)
 		    z1 = d7 + d1;
 		    z4 = d5 + d1;
 		    z5 = MULTIPLY(d7 + z4, FIX_1_175875602);
-		    
-		    tmp0 = MULTIPLY(d7, FIX_0_298631336); 
+
+		    tmp0 = MULTIPLY(d7, FIX_0_298631336);
 		    tmp1 = MULTIPLY(d5, FIX_2_053119869);
 		    tmp3 = MULTIPLY(d1, FIX_1_501321110);
 		    z1 = MULTIPLY(-z1, FIX_0_899976223);
 		    z2 = MULTIPLY(-d5, FIX_2_562915447);
 		    z3 = MULTIPLY(-d7, FIX_1_961570560);
 		    z4 = MULTIPLY(-z4, FIX_0_390180644);
-		    
+
 		    z3 += z5;
 		    z4 += z5;
-		    
+
 		    tmp0 += z1 + z3;
 		    tmp1 += z2 + z4;
 		    tmp2 = z2 + z3;
 		    tmp3 += z1 + z4;
 		} else {
 		    /* d1 == 0, d3 == 0, d5 != 0, d7 != 0 */
-		    tmp0 = MULTIPLY(-d7, FIX_0_601344887); 
+		    tmp0 = MULTIPLY(-d7, FIX_0_601344887);
 		    z1 = MULTIPLY(-d7, FIX_0_899976223);
 		    z3 = MULTIPLY(-d7, FIX_1_961570560);
 		    tmp1 = MULTIPLY(-d5, FIX_0_509795579);
 		    z2 = MULTIPLY(-d5, FIX_2_562915447);
 		    z4 = MULTIPLY(-d5, FIX_0_390180644);
 		    z5 = MULTIPLY(d5 + d7, FIX_1_175875602);
-		    
+
 		    z3 += z5;
 		    z4 += z5;
-		    
+
 		    tmp0 += z3;
 		    tmp1 += z4;
 		    tmp2 = z2 + z3;
@@ -382,18 +382,18 @@ void j_rev_dct(DCTBLOCK data)
 		    z1 = d7 + d1;
 		    z3 = d7 + d3;
 		    z5 = MULTIPLY(z3 + d1, FIX_1_175875602);
-		    
-		    tmp0 = MULTIPLY(d7, FIX_0_298631336); 
+
+		    tmp0 = MULTIPLY(d7, FIX_0_298631336);
 		    tmp2 = MULTIPLY(d3, FIX_3_072711026);
 		    tmp3 = MULTIPLY(d1, FIX_1_501321110);
 		    z1 = MULTIPLY(-z1, FIX_0_899976223);
 		    z2 = MULTIPLY(-d3, FIX_2_562915447);
 		    z3 = MULTIPLY(-z3, FIX_1_961570560);
 		    z4 = MULTIPLY(-d1, FIX_0_390180644);
-		    
+
 		    z3 += z5;
 		    z4 += z5;
-		    
+
 		    tmp0 += z1 + z3;
 		    tmp1 = z2 + z4;
 		    tmp2 += z2 + z3;
@@ -401,14 +401,14 @@ void j_rev_dct(DCTBLOCK data)
 		} else {
 		    /* d1 == 0, d3 != 0, d5 == 0, d7 != 0 */
 		    z3 = d7 + d3;
-		    
-		    tmp0 = MULTIPLY(-d7, FIX_0_601344887); 
+
+		    tmp0 = MULTIPLY(-d7, FIX_0_601344887);
 		    z1 = MULTIPLY(-d7, FIX_0_899976223);
 		    tmp2 = MULTIPLY(d3, FIX_0_509795579);
 		    z2 = MULTIPLY(-d3, FIX_2_562915447);
 		    z5 = MULTIPLY(z3, FIX_1_175875602);
 		    z3 = MULTIPLY(-z3, FIX_0_785694958);
-		    
+
 		    tmp0 += z3;
 		    tmp1 = z2 + z5;
 		    tmp2 += z3;
@@ -422,7 +422,7 @@ void j_rev_dct(DCTBLOCK data)
 
 		    z1 = MULTIPLY(z1, FIX_0_275899380);
 		    z3 = MULTIPLY(-d7, FIX_1_961570560);
-		    tmp0 = MULTIPLY(-d7, FIX_1_662939225); 
+		    tmp0 = MULTIPLY(-d7, FIX_1_662939225);
 		    z4 = MULTIPLY(-d1, FIX_0_390180644);
 		    tmp3 = MULTIPLY(d1, FIX_1_111140466);
 
@@ -447,7 +447,7 @@ void j_rev_dct(DCTBLOCK data)
 		    z2 = d5 + d3;
 		    z4 = d5 + d1;
 		    z5 = MULTIPLY(d3 + z4, FIX_1_175875602);
-		    
+
 		    tmp1 = MULTIPLY(d5, FIX_2_053119869);
 		    tmp2 = MULTIPLY(d3, FIX_3_072711026);
 		    tmp3 = MULTIPLY(d1, FIX_1_501321110);
@@ -455,10 +455,10 @@ void j_rev_dct(DCTBLOCK data)
 		    z2 = MULTIPLY(-z2, FIX_2_562915447);
 		    z3 = MULTIPLY(-d3, FIX_1_961570560);
 		    z4 = MULTIPLY(-z4, FIX_0_390180644);
-		    
+
 		    z3 += z5;
 		    z4 += z5;
-		    
+
 		    tmp0 = z1 + z3;
 		    tmp1 += z2 + z4;
 		    tmp2 += z2 + z3;
@@ -466,14 +466,14 @@ void j_rev_dct(DCTBLOCK data)
 		} else {
 		    /* d1 == 0, d3 != 0, d5 != 0, d7 == 0 */
 		    z2 = d5 + d3;
-		    
+
 		    z5 = MULTIPLY(z2, FIX_1_175875602);
 		    tmp1 = MULTIPLY(d5, FIX_1_662939225);
 		    z4 = MULTIPLY(-d5, FIX_0_390180644);
 		    z2 = MULTIPLY(-z2, FIX_1_387039845);
 		    tmp2 = MULTIPLY(d3, FIX_1_111140466);
 		    z3 = MULTIPLY(-d3, FIX_1_961570560);
-		    
+
 		    tmp0 = z3 + z5;
 		    tmp1 += z2;
 		    tmp2 += z2;
@@ -483,14 +483,14 @@ void j_rev_dct(DCTBLOCK data)
 		if (d1) {
 		    /* d1 != 0, d3 == 0, d5 != 0, d7 == 0 */
 		    z4 = d5 + d1;
-		    
+
 		    z5 = MULTIPLY(z4, FIX_1_175875602);
 		    z1 = MULTIPLY(-d1, FIX_0_899976223);
 		    tmp3 = MULTIPLY(d1, FIX_0_601344887);
 		    tmp1 = MULTIPLY(-d5, FIX_0_509795579);
 		    z2 = MULTIPLY(-d5, FIX_2_562915447);
 		    z4 = MULTIPLY(z4, FIX_0_785694958);
-		    
+
 		    tmp0 = z1 + z5;
 		    tmp1 += z4;
 		    tmp2 = z2 + z5;
@@ -514,7 +514,7 @@ void j_rev_dct(DCTBLOCK data)
 		    z2 = MULTIPLY(-d3, FIX_2_172734803);
 		    z4 = MULTIPLY(z5, FIX_0_785694958);
 		    z5 = MULTIPLY(z5, FIX_1_175875602);
-		    
+
 		    tmp0 = z1 - z4;
 		    tmp1 = z2 + z4;
 		    tmp2 += z5;
@@ -640,8 +640,8 @@ void j_rev_dct(DCTBLOCK data)
 		    z3 = d7 + d3;
 		    z4 = d5 + d1;
 		    z5 = MULTIPLY(z3 + z4, FIX_1_175875602);
-		    
-		    tmp0 = MULTIPLY(d7, FIX_0_298631336); 
+
+		    tmp0 = MULTIPLY(d7, FIX_0_298631336);
 		    tmp1 = MULTIPLY(d5, FIX_2_053119869);
 		    tmp2 = MULTIPLY(d3, FIX_3_072711026);
 		    tmp3 = MULTIPLY(d1, FIX_1_501321110);
@@ -649,10 +649,10 @@ void j_rev_dct(DCTBLOCK data)
 		    z2 = MULTIPLY(-z2, FIX_2_562915447);
 		    z3 = MULTIPLY(-z3, FIX_1_961570560);
 		    z4 = MULTIPLY(-z4, FIX_0_390180644);
-		    
+
 		    z3 += z5;
 		    z4 += z5;
-		    
+
 		    tmp0 += z1 + z3;
 		    tmp1 += z2 + z4;
 		    tmp2 += z2 + z3;
@@ -663,18 +663,18 @@ void j_rev_dct(DCTBLOCK data)
 		    z2 = d5 + d3;
 		    z3 = d7 + d3;
 		    z5 = MULTIPLY(z3 + d5, FIX_1_175875602);
-		    
-		    tmp0 = MULTIPLY(d7, FIX_0_298631336); 
+
+		    tmp0 = MULTIPLY(d7, FIX_0_298631336);
 		    tmp1 = MULTIPLY(d5, FIX_2_053119869);
 		    tmp2 = MULTIPLY(d3, FIX_3_072711026);
 		    z1 = MULTIPLY(-d7, FIX_0_899976223);
 		    z2 = MULTIPLY(-z2, FIX_2_562915447);
 		    z3 = MULTIPLY(-z3, FIX_1_961570560);
 		    z4 = MULTIPLY(-d5, FIX_0_390180644);
-		    
+
 		    z3 += z5;
 		    z4 += z5;
-		    
+
 		    tmp0 += z1 + z3;
 		    tmp1 += z2 + z4;
 		    tmp2 += z2 + z3;
@@ -688,35 +688,35 @@ void j_rev_dct(DCTBLOCK data)
 		    z3 = d7;
 		    z4 = d5 + d1;
 		    z5 = MULTIPLY(z3 + z4, FIX_1_175875602);
-		    
-		    tmp0 = MULTIPLY(d7, FIX_0_298631336); 
+
+		    tmp0 = MULTIPLY(d7, FIX_0_298631336);
 		    tmp1 = MULTIPLY(d5, FIX_2_053119869);
 		    tmp3 = MULTIPLY(d1, FIX_1_501321110);
 		    z1 = MULTIPLY(-z1, FIX_0_899976223);
 		    z2 = MULTIPLY(-d5, FIX_2_562915447);
 		    z3 = MULTIPLY(-d7, FIX_1_961570560);
 		    z4 = MULTIPLY(-z4, FIX_0_390180644);
-		    
+
 		    z3 += z5;
 		    z4 += z5;
-		    
+
 		    tmp0 += z1 + z3;
 		    tmp1 += z2 + z4;
 		    tmp2 = z2 + z3;
 		    tmp3 += z1 + z4;
 		} else {
 		    /* d1 == 0, d3 == 0, d5 != 0, d7 != 0 */
-		    tmp0 = MULTIPLY(-d7, FIX_0_601344887); 
+		    tmp0 = MULTIPLY(-d7, FIX_0_601344887);
 		    z1 = MULTIPLY(-d7, FIX_0_899976223);
 		    z3 = MULTIPLY(-d7, FIX_1_961570560);
 		    tmp1 = MULTIPLY(-d5, FIX_0_509795579);
 		    z2 = MULTIPLY(-d5, FIX_2_562915447);
 		    z4 = MULTIPLY(-d5, FIX_0_390180644);
 		    z5 = MULTIPLY(d5 + d7, FIX_1_175875602);
-		    
+
 		    z3 += z5;
 		    z4 += z5;
-		    
+
 		    tmp0 += z3;
 		    tmp1 += z4;
 		    tmp2 = z2 + z3;
@@ -730,18 +730,18 @@ void j_rev_dct(DCTBLOCK data)
 		    z1 = d7 + d1;
 		    z3 = d7 + d3;
 		    z5 = MULTIPLY(z3 + d1, FIX_1_175875602);
-		    
-		    tmp0 = MULTIPLY(d7, FIX_0_298631336); 
+
+		    tmp0 = MULTIPLY(d7, FIX_0_298631336);
 		    tmp2 = MULTIPLY(d3, FIX_3_072711026);
 		    tmp3 = MULTIPLY(d1, FIX_1_501321110);
 		    z1 = MULTIPLY(-z1, FIX_0_899976223);
 		    z2 = MULTIPLY(-d3, FIX_2_562915447);
 		    z3 = MULTIPLY(-z3, FIX_1_961570560);
 		    z4 = MULTIPLY(-d1, FIX_0_390180644);
-		    
+
 		    z3 += z5;
 		    z4 += z5;
-		    
+
 		    tmp0 += z1 + z3;
 		    tmp1 = z2 + z4;
 		    tmp2 += z2 + z3;
@@ -749,14 +749,14 @@ void j_rev_dct(DCTBLOCK data)
 		} else {
 		    /* d1 == 0, d3 != 0, d5 == 0, d7 != 0 */
 		    z3 = d7 + d3;
-		    
-		    tmp0 = MULTIPLY(-d7, FIX_0_601344887); 
+
+		    tmp0 = MULTIPLY(-d7, FIX_0_601344887);
 		    z1 = MULTIPLY(-d7, FIX_0_899976223);
 		    tmp2 = MULTIPLY(d3, FIX_0_509795579);
 		    z2 = MULTIPLY(-d3, FIX_2_562915447);
 		    z5 = MULTIPLY(z3, FIX_1_175875602);
 		    z3 = MULTIPLY(-z3, FIX_0_785694958);
-		    
+
 		    tmp0 += z3;
 		    tmp1 = z2 + z5;
 		    tmp2 += z3;
@@ -770,7 +770,7 @@ void j_rev_dct(DCTBLOCK data)
 
 		    z1 = MULTIPLY(z1, FIX_0_275899380);
 		    z3 = MULTIPLY(-d7, FIX_1_961570560);
-		    tmp0 = MULTIPLY(-d7, FIX_1_662939225); 
+		    tmp0 = MULTIPLY(-d7, FIX_1_662939225);
 		    z4 = MULTIPLY(-d1, FIX_0_390180644);
 		    tmp3 = MULTIPLY(d1, FIX_1_111140466);
 
@@ -795,7 +795,7 @@ void j_rev_dct(DCTBLOCK data)
 		    z2 = d5 + d3;
 		    z4 = d5 + d1;
 		    z5 = MULTIPLY(d3 + z4, FIX_1_175875602);
-		    
+
 		    tmp1 = MULTIPLY(d5, FIX_2_053119869);
 		    tmp2 = MULTIPLY(d3, FIX_3_072711026);
 		    tmp3 = MULTIPLY(d1, FIX_1_501321110);
@@ -803,10 +803,10 @@ void j_rev_dct(DCTBLOCK data)
 		    z2 = MULTIPLY(-z2, FIX_2_562915447);
 		    z3 = MULTIPLY(-d3, FIX_1_961570560);
 		    z4 = MULTIPLY(-z4, FIX_0_390180644);
-		    
+
 		    z3 += z5;
 		    z4 += z5;
-		    
+
 		    tmp0 = z1 + z3;
 		    tmp1 += z2 + z4;
 		    tmp2 += z2 + z3;
@@ -814,14 +814,14 @@ void j_rev_dct(DCTBLOCK data)
 		} else {
 		    /* d1 == 0, d3 != 0, d5 != 0, d7 == 0 */
 		    z2 = d5 + d3;
-		    
+
 		    z5 = MULTIPLY(z2, FIX_1_175875602);
 		    tmp1 = MULTIPLY(d5, FIX_1_662939225);
 		    z4 = MULTIPLY(-d5, FIX_0_390180644);
 		    z2 = MULTIPLY(-z2, FIX_1_387039845);
 		    tmp2 = MULTIPLY(d3, FIX_1_111140466);
 		    z3 = MULTIPLY(-d3, FIX_1_961570560);
-		    
+
 		    tmp0 = z3 + z5;
 		    tmp1 += z2;
 		    tmp2 += z2;
@@ -831,14 +831,14 @@ void j_rev_dct(DCTBLOCK data)
 		if (d1) {
 		    /* d1 != 0, d3 == 0, d5 != 0, d7 == 0 */
 		    z4 = d5 + d1;
-		    
+
 		    z5 = MULTIPLY(z4, FIX_1_175875602);
 		    z1 = MULTIPLY(-d1, FIX_0_899976223);
 		    tmp3 = MULTIPLY(d1, FIX_0_601344887);
 		    tmp1 = MULTIPLY(-d5, FIX_0_509795579);
 		    z2 = MULTIPLY(-d5, FIX_2_562915447);
 		    z4 = MULTIPLY(z4, FIX_0_785694958);
-		    
+
 		    tmp0 = z1 + z5;
 		    tmp1 += z4;
 		    tmp2 = z2 + z5;
@@ -862,7 +862,7 @@ void j_rev_dct(DCTBLOCK data)
 		    z2 = MULTIPLY(-d3, FIX_2_172734803);
 		    z4 = MULTIPLY(z5, FIX_0_785694958);
 		    z5 = MULTIPLY(z5, FIX_1_175875602);
-		    
+
 		    tmp0 = z1 - z4;
 		    tmp1 = z2 + z4;
 		    tmp2 += z5;
@@ -907,7 +907,7 @@ void j_rev_dct(DCTBLOCK data)
 					   CONST_BITS+PASS1_BITS+3);
     dataptr[DCTSIZE*4] = (DCTELEM) DESCALE(tmp13 - tmp0,
 					   CONST_BITS+PASS1_BITS+3);
-    
+
     dataptr++;			/* advance pointer to next column */
   }
 }
@@ -930,7 +930,7 @@ void j_rev_dct4(DCTBLOCK data)
   /* furthermore, we scale the results by 2**PASS1_BITS. */
 
   data[0] += 4;
-  
+
   dataptr = data;
 
   for (rowctr = DCTSIZE-1; rowctr >= 0; rowctr--) {
@@ -956,15 +956,15 @@ void j_rev_dct4(DCTBLOCK data)
 	  /* Compute a 32 bit value to assign. */
 	  DCTELEM dcval = (DCTELEM) (d0 << PASS1_BITS);
 	  register int v = (dcval & 0xffff) | ((dcval << 16) & 0xffff0000);
-	  
+
 	  idataptr[0] = v;
 	  idataptr[1] = v;
       }
-      
+
       dataptr += DCTSTRIDE;	/* advance pointer to next row */
       continue;
     }
-    
+
     /* Even part: reverse the even part of the forward DCT. */
     /* The rotator is sqrt(2)*c(-6). */
     if (d6) {
@@ -1098,7 +1098,7 @@ void j_rev_dct4(DCTBLOCK data)
     dataptr[DCTSTRIDE*1] = tmp11 >> (CONST_BITS+PASS1_BITS+3);
     dataptr[DCTSTRIDE*2] = tmp12 >> (CONST_BITS+PASS1_BITS+3);
     dataptr[DCTSTRIDE*3] = tmp13 >> (CONST_BITS+PASS1_BITS+3);
-    
+
     dataptr++;			/* advance pointer to next column */
   }
 }
@@ -1111,7 +1111,7 @@ void j_rev_dct2(DCTBLOCK data){
   d01 = data[0+0*DCTSTRIDE] - data[1+0*DCTSTRIDE];
   d10 = data[0+1*DCTSTRIDE] + data[1+1*DCTSTRIDE];
   d11 = data[0+1*DCTSTRIDE] - data[1+1*DCTSTRIDE];
- 
+
   data[0+0*DCTSTRIDE]= (d00 + d10)>>3;
   data[1+0*DCTSTRIDE]= (d01 + d11)>>3;
   data[0+1*DCTSTRIDE]= (d00 - d10)>>3;

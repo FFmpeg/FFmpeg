@@ -16,7 +16,7 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
- 
+
 /**
  * @file libgsm.c
  * Interface to libgsm for gsm encoding/decoding
@@ -37,10 +37,10 @@ static int libgsm_init(AVCodecContext *avctx) {
     avctx->block_align = GSM_BLOCK_SIZE;
 
     avctx->priv_data = gsm_create();
-    
+
     avctx->coded_frame= avcodec_alloc_frame();
     avctx->coded_frame->key_frame= 1;
-    
+
     return 0;
 }
 

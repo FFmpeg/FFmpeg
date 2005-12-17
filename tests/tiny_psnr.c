@@ -69,7 +69,7 @@ static int64_t log16(uint64_t a){
     if(a < 1<<16)
         return -log16((1LL<<32) / a);
     a<<=16;
-    
+
     for(i=20;i>=0;i--){
         int64_t b= exp16_table[i];
         if(a<(b<<16)) continue;
@@ -106,12 +106,12 @@ int main(int argc,char* argv[]){
     int len= argc<4 ? 1 : atoi(argv[3]);
     int64_t max= (1<<(8*len))-1;
     int shift= argc<5 ? 0 : atoi(argv[4]);
-    
+
     if(argc<3){
         printf("tiny_psnr <file1> <file2> [<elem size> [<shift>]]\n");
         return -1;
     }
-    
+
     f[0]= fopen(argv[1], "rb");
     f[1]= fopen(argv[2], "rb");
     fseek(f[shift<0], shift < 0 ? -shift : shift, SEEK_SET);
@@ -119,7 +119,7 @@ int main(int argc,char* argv[]){
     for(i=0;;){
         if( fread(buf[0], SIZE, 1, f[0]) != 1) break;
         if( fread(buf[1], SIZE, 1, f[1]) != 1) break;
-        
+
         for(j=0; j<SIZE; i++,j++){
             int64_t a= buf[0][j];
             int64_t b= buf[1][j];
@@ -130,16 +130,16 @@ int main(int argc,char* argv[]){
             sse += (a-b) * (a-b);
         }
     }
-    
+
     if(!i) i=1;
     dev= int_sqrt( ((sse/i)*F*F) + (((sse%i)*F*F) + i/2)/i );
     if(sse)
         psnr= ((2*log16(max<<16) + log16(i) - log16(sse))*284619LL*F + (1<<31)) / (1LL<<32);
     else
         psnr= 100*F-1; //floating point free infinity :)
-    
-    printf("stddev:%3d.%02d PSNR:%2d.%02d bytes:%d\n", 
-        (int)(dev/F), (int)(dev%F), 
+
+    printf("stddev:%3d.%02d PSNR:%2d.%02d bytes:%d\n",
+        (int)(dev/F), (int)(dev%F),
         (int)(psnr/F), (int)(psnr%F),
         i);
     return 0;

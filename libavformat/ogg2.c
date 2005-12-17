@@ -2,7 +2,7 @@
  * Ogg bitstream support
  * Luca Barbato <lu_zero@gentoo.org>
  * Based on tcvp implementation
- * 
+ *
  */
 
 /**
@@ -503,7 +503,7 @@ ogg_read_packet (AVFormatContext * s, AVPacket * pkt)
     ogg_stream_t *os;
     int idx = -1;
 
-    //Get an ogg packet 
+    //Get an ogg packet
     do{
         if (ogg_packet (s, &idx) < 0)
             return AVERROR_IO;
@@ -643,7 +643,7 @@ static AVInputFormat ogg_iformat = {
     ogg_read_packet,
     ogg_read_close,
     ogg_read_seek,
-// ogg_read_timestamp, 
+// ogg_read_timestamp,
     .extensions = "ogg",
 };
 

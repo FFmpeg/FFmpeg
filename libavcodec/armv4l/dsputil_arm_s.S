@@ -637,15 +637,15 @@ put_pixels8_xy2_arm:
         .align 8
 2:
         RND_XY2_EXPAND 1, 1
-        
+
         .align 8
 3:
         RND_XY2_EXPAND 2, 1
-        
+
         .align 8
 4:
         RND_XY2_EXPAND 3, 1
-        
+
 5:
         .word 0x03030303
         .word 2b
@@ -674,15 +674,15 @@ put_no_rnd_pixels8_xy2_arm:
         .align 8
 2:
         RND_XY2_EXPAND 1, 0
-        
+
         .align 8
 3:
         RND_XY2_EXPAND 2, 0
-        
+
         .align 8
 4:
         RND_XY2_EXPAND 3, 0
-        
+
 5:
         .word 0x03030303
         .word 2b

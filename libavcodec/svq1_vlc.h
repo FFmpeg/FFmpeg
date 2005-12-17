@@ -5,7 +5,7 @@
 static const uint8_t svq1_block_type_vlc[4][2] = {
  /* { code, length } */
     { 0x1, 1 },  { 0x1, 2 },  { 0x1, 3 },  { 0x0, 3 }
-    
+
 };
 
 /* values in this table range from -1..6; adjust retrieved value by -1 */

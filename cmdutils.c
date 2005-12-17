@@ -64,7 +64,7 @@ void parse_options(int argc, char **argv, const OptionDef *options)
     optindex = 1;
     while (optindex < argc) {
         opt = argv[optindex++];
-        
+
         if (opt[0] == '-' && opt[1] != '\0') {
             po= find_option(options, opt + 1);
             if (!po->name)
@@ -111,7 +111,7 @@ void print_error(const char *filename, int err)
         fprintf(stderr, "%s: Incorrect image filename syntax.\n"
                 "Use '%%d' to specify the image number:\n"
                 "  for img1.jpg, img2.jpg, ..., use 'img%%d.jpg';\n"
-                "  for img001.jpg, img002.jpg, ..., use 'img%%03d.jpg'.\n", 
+                "  for img001.jpg, img002.jpg, ..., use 'img%%03d.jpg'.\n",
                 filename);
         break;
     case AVERROR_INVALIDDATA:

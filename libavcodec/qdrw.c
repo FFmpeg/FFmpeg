@@ -17,12 +17,12 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
- 
+
 /**
  * @file qdrw.c
  * Apple QuickDraw codec.
  */
- 
+
 #include "avcodec.h"
 #include "mpegvideo.h"
 
@@ -32,7 +32,7 @@ typedef struct QdrawContext{
     uint8_t palette[256*3];
 } QdrawContext;
 
-static int decode_frame(AVCodecContext *avctx, 
+static int decode_frame(AVCodecContext *avctx,
                         void *data, int *data_size,
                         uint8_t *buf, int buf_size)
 {
@@ -41,7 +41,7 @@ static int decode_frame(AVCodecContext *avctx,
     uint8_t* outdata;
     int colors;
     int i;
-    
+
     if(p->data[0])
         avctx->release_buffer(avctx, p);
 
@@ -54,21 +54,21 @@ static int decode_frame(AVCodecContext *avctx,
     p->key_frame= 1;
 
     outdata = a->pic.data[0];
-    
+
     buf += 0x68; /* jump to palette */
     colors = BE_32(buf);
     buf += 4;
-    
+
     if(colors < 0 || colors > 256) {
         av_log(avctx, AV_LOG_ERROR, "Error color count - %i(0x%X)\n", colors, colors);
         return -1;
     }
-    
+
     for (i = 0; i <= colors; i++) {
         unsigned int idx;
         idx = BE_16(buf); /* color index */
         buf += 2;
-        
+
         if (idx > 255) {
             av_log(avctx, AV_LOG_ERROR, "Palette index out of range: %u\n", idx);
             buf += 6;
@@ -88,7 +88,7 @@ static int decode_frame(AVCodecContext *avctx,
         uint8_t *next;
         uint8_t *out;
         int tsize = 0;
-        
+
         /* decode line */
         out = outdata;
         size = BE_16(buf); /* size of packed line */
@@ -129,7 +129,7 @@ static int decode_frame(AVCodecContext *avctx,
 
     *data_size = sizeof(AVFrame);
     *(AVFrame*)data = a->pic;
-    
+
     return buf_size;
 }
 

@@ -555,7 +555,7 @@ for opt do
   --enable-amr_nb-fixed) amr_nb_fixed="yes"
   ;;
   --enable-amr_wb) amr_wb="yes"
-  ;; 
+  ;;
   --enable-amr_if2) amr_if2="yes"
   ;;
   --enable-sunmlib) sunmlib="yes"
@@ -629,13 +629,13 @@ if test "$gpl" != "yes"; then
         echo "libdts is under GPL and --enable-gpl is not specified."
         fail="yes"
     fi
-    
+
     if test "$faad" != "no" -o "$faadbin" != "no"; then
         cat > $TMPC << EOF
             #include <faad.h>
             int main( void ) { return 0; }
 EOF
-    
+
         if $cc $CFLAGS -o $TMPE $TMPC 2> /dev/null ; then
             cat > $TMPC << EOF
                 #include <faad.h>
@@ -654,7 +654,7 @@ EOF
             echo "FAAD test failed."
         fi
     fi
-   
+
 
     if test "$fail" = "yes"; then
         exit 1
@@ -673,7 +673,7 @@ fi
 # check iwmmxt support
 if test $iwmmxt = "default" -a $cpu = "armv4l"; then
     cat > $TMPC << EOF
-        int main(void) { 
+        int main(void) {
         __asm__ __volatile__ ("wunpckelub wr6, wr4");
         }
 EOF
@@ -692,7 +692,7 @@ if test $targetos = Darwin; then
     else
 	gcc_version="`$cc -v 2>&1 | grep version | cut -d ' ' -f3-`"
 	case "$gcc_version" in
-	    *2.95*) 
+	    *2.95*)
 		CFLAGS="$CFLAGS -no-cpp-precomp -pipe -fomit-frame-pointer"
 		;;
 	    *[34].*)
@@ -784,7 +784,7 @@ if test $tune != "generic"; then
     esac
 fi
 
-# AltiVec flags: The FSF version of GCC differs from the Apple version 
+# AltiVec flags: The FSF version of GCC differs from the Apple version
 if test $cpu = "powerpc"; then
     if test $altivec = "yes"; then
         if test -n "`$cc -v 2>&1 | grep version | grep Apple`"; then
@@ -1009,7 +1009,7 @@ done
 # currently only used on i386 for MMX builtins
 cat > $TMPC << EOF
 #include <xmmintrin.h>
-int main(void) { 
+int main(void) {
 #if __GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 2)
 return 0;
 #else
@@ -1812,7 +1812,7 @@ includedir=\${prefix}/include
 Name: libavutil
 Description: FFmpeg utility library
 Version: $lavu_version
-Requires: 
+Requires:
 Conflicts:
 Libs: -L\${libdir} -lavutil
 Cflags: -I\${includedir} -I\${includedir}/ffmpeg
@@ -1827,7 +1827,7 @@ includedir=\${pcfiledir}/libavutil
 Name: libavutil
 Description: FFmpeg utility library
 Version: $lavu_version
-Requires: 
+Requires:
 Conflicts:
 Libs: \${libdir}/${LIBPREF}avutil${LIBSUF}
 Cflags: -I\${includedir}
@@ -1906,7 +1906,7 @@ includedir=\${prefix}/include
 Name: libpostproc
 Description: FFmpeg post processing library
 Version: $lavc_version
-Requires: 
+Requires:
 Conflicts:
 Libs: -L\${libdir} -lpostproc
 Cflags: -I\${includedir} -I\${includedir}/postproc
@@ -1921,7 +1921,7 @@ includedir=\${pcfiledir}/libavcodec/libpostproc
 Name: libpostproc
 Description: FFmpeg post processing library
 Version: $lavc_version
-Requires: 
+Requires:
 Conflicts:
 Libs: \${libdir}/${LIBPREF}postproc${LIBSUF}
 Cflags: -I\${includedir}

@@ -34,7 +34,7 @@
 #define tf a4
 #define tg a3
 #define th v0
-                
+
         .set noat
         .set noreorder
         .arch pca56
@@ -132,13 +132,13 @@ $aligned:
 
 	stq	t2, 0(t5)
 	stq	t3, 0(t6)
-	
+
 	bne     a3, $aligned
         ret
         .end put_pixels_axp_asm
 
 /************************************************************************
- * void put_pixels_clamped_mvi_asm(const DCTELEM *block, uint8_t *pixels, 
+ * void put_pixels_clamped_mvi_asm(const DCTELEM *block, uint8_t *pixels,
  *                                 int line_size)
  */
         .align 6
@@ -172,17 +172,17 @@ put_pixels_clamped_mvi_asm:
         addq    a1, a2, ta
         maxsw4  t3, zero, t3
         minsw4  t0, t8, t0
-        
+
         minsw4  t1, t8, t1
         minsw4  t2, t8, t2
         minsw4  t3, t8, t3
         pkwb    t0, t0
-        
+
         pkwb    t1, t1
         pkwb    t2, t2
         pkwb    t3, t3
         stl     t0, 0(a1)
-        
+
         stl     t1, 4(a1)
         addq    ta, a2, a1
         stl     t2, 0(ta)
@@ -193,7 +193,7 @@ put_pixels_clamped_mvi_asm:
         .end put_pixels_clamped_mvi_asm
 
 /************************************************************************
- * void add_pixels_clamped_mvi_asm(const DCTELEM *block, uint8_t *pixels, 
+ * void add_pixels_clamped_mvi_asm(const DCTELEM *block, uint8_t *pixels,
  *                                 int line_size)
  */
         .align 6
@@ -236,18 +236,18 @@ add_pixels_clamped_mvi_asm:
         bic     t0, tg, t0      # 0 2
         unpkbw  t7, t7          # 2 0
         and     t3, tg, t5      # 1 1
-        addq    t0, t1, t0      # 0 3 
+        addq    t0, t1, t0      # 0 3
 
         xor     t0, t2, t0      # 0 4
         unpkbw  ta, ta          # 3 0
         and     t6, tg, t8      # 2 1
         maxsw4  t0, zero, t0    # 0 5
-        
+
         bic     t3, tg, t3      # 1 2
         bic     t6, tg, t6      # 2 2
         minsw4  t0, tf, t0      # 0 6
         addq    t3, t4, t3      # 1 3
-        
+
         pkwb    t0, t0          # 0 7
         xor     t3, t5, t3      # 1 4
         maxsw4  t3, zero, t3    # 1 5
@@ -260,14 +260,14 @@ add_pixels_clamped_mvi_asm:
 
         maxsw4  t6, zero, t6    # 2 5
         addq    t9, ta, t9      # 3 3
-        stl     t0, 0(a1)       # 0 8   
+        stl     t0, 0(a1)       # 0 8
         minsw4  t6, tf, t6      # 2 6
 
         xor     t9, tb, t9      # 3 4
         maxsw4  t9, zero, t9    # 3 5
         lda     a0, 32(a0)      # block += 16;
         pkwb    t3, t3          # 1 7
-        
+
         minsw4  t9, tf, t9      # 3 6
         subq    th, 2, th
         pkwb    t6, t6          # 2 7
@@ -279,5 +279,5 @@ add_pixels_clamped_mvi_asm:
         stl     t9, 4(te)       # 3 8
 
         bne     th, 1b
-        ret     
+        ret
         .end add_pixels_clamped_mvi_asm

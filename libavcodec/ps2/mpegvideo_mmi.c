@@ -17,25 +17,25 @@
  *
  * MMI optimization by Leon van Stuivenberg
  */
- 
+
 #include "../dsputil.h"
 #include "../mpegvideo.h"
 #include "../avcodec.h"
 
-static void dct_unquantize_h263_mmi(MpegEncContext *s, 
+static void dct_unquantize_h263_mmi(MpegEncContext *s,
                                   DCTELEM *block, int n, int qscale)
 {
     int level=0, qmul, qadd;
     int nCoeffs;
-    
+
     assert(s->block_last_index[n]>=0);
-    
+
     qadd = (qscale - 1) | 1;
     qmul = qscale << 1;
-    
+
     if (s->mb_intra) {
         if (!s->h263_aic) {
-            if (n < 4) 
+            if (n < 4)
                 level = block[0] * s->y_dc_scale;
             else
                 level = block[0] * s->c_dc_scale;
@@ -43,16 +43,16 @@ static void dct_unquantize_h263_mmi(MpegEncContext *s,
             qadd = 0;
 	    level = block[0];
         }
-        nCoeffs= 63; //does not allways use zigzag table 
+        nCoeffs= 63; //does not allways use zigzag table
     } else {
         nCoeffs= s->intra_scantable.raster_end[ s->block_last_index[n] ];
     }
 
     asm volatile(
         "add    $14, $0, %3	\n\t"
-        "pcpyld $8, %0, %0	\n\t"	
+        "pcpyld $8, %0, %0	\n\t"
         "pcpyh  $8, $8		\n\t"   //r8 = qmul
-        "pcpyld $9, %1, %1	\n\t"	
+        "pcpyld $9, %1, %1	\n\t"
         "pcpyh  $9, $9		\n\t"   //r9 = qadd
         ".p2align 2             \n\t"
         "1:			\n\t"
@@ -62,7 +62,7 @@ static void dct_unquantize_h263_mmi(MpegEncContext *s,
         "pcgth  $11, $0, $10	\n\t"   //r11 = level < 0 ? -1 : 0
         "pcgth  $12, $10, $0	\n\t"   //r12 = level > 0 ? -1 : 0
         "por    $12, $11, $12	\n\t"
-        "pmulth $10, $10, $8	\n\t"	
+        "pmulth $10, $10, $8	\n\t"
         "paddh  $13, $9, $11	\n\t"
         "pxor   $13, $13, $11   \n\t"   //r13 = level < 0 ? -qadd : qadd
         "pmfhl.uw $11		\n\t"
@@ -80,7 +80,7 @@ static void dct_unquantize_h263_mmi(MpegEncContext *s,
 
 void MPV_common_init_mmi(MpegEncContext *s)
 {
-    s->dct_unquantize_h263_intra = 
+    s->dct_unquantize_h263_intra =
     s->dct_unquantize_h263_inter = dct_unquantize_h263_mmi;
 }
 

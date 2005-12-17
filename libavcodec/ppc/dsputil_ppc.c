@@ -227,7 +227,7 @@ long check_dcbzl_effect(void)
   }
 
   av_free(fakedata);
-  
+
   return count;
 }
 #else
@@ -257,10 +257,10 @@ void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx)
 
 #ifdef HAVE_ALTIVEC
   dsputil_h264_init_ppc(c, avctx);
-  
+
     if (has_altivec()) {
         mm_flags |= MM_ALTIVEC;
-        
+
         // Altivec specific optimisations
         c->pix_abs[0][1] = sad16_x2_altivec;
         c->pix_abs[0][2] = sad16_y2_altivec;
@@ -289,7 +289,7 @@ void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx)
         c->put_no_rnd_pixels_tab[1][3] = put_no_rnd_pixels8_xy2_altivec;
         c->put_pixels_tab[0][3] = put_pixels16_xy2_altivec;
         c->put_no_rnd_pixels_tab[0][3] = put_no_rnd_pixels16_xy2_altivec;
-        
+
 	c->gmc1 = gmc1_altivec;
 
 #ifdef CONFIG_DARWIN // ATM gcc-3.3 and gcc-3.4 fail to compile these in linux...
@@ -319,7 +319,7 @@ void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx)
 #endif /* ALTIVEC_USE_REFERENCE_C_CODE */
         }
       }
-        
+
 #ifdef POWERPC_PERFORMANCE_REPORT
         {
           int i, j;

@@ -1,6 +1,6 @@
 /**
  * @file dct-test.c
- * DCT test. (c) 2001 Fabrice Bellard. 
+ * DCT test. (c) 2001 Fabrice Bellard.
  * Started from sample code by Juan J. Sierralta P.
  */
 
@@ -65,13 +65,13 @@ int64_t gettime(void)
 static short idct_mmx_perm[64];
 
 static short idct_simple_mmx_perm[64]={
-	0x00, 0x08, 0x04, 0x09, 0x01, 0x0C, 0x05, 0x0D, 
-	0x10, 0x18, 0x14, 0x19, 0x11, 0x1C, 0x15, 0x1D, 
-	0x20, 0x28, 0x24, 0x29, 0x21, 0x2C, 0x25, 0x2D, 
-	0x12, 0x1A, 0x16, 0x1B, 0x13, 0x1E, 0x17, 0x1F, 
-	0x02, 0x0A, 0x06, 0x0B, 0x03, 0x0E, 0x07, 0x0F, 
-	0x30, 0x38, 0x34, 0x39, 0x31, 0x3C, 0x35, 0x3D, 
-	0x22, 0x2A, 0x26, 0x2B, 0x23, 0x2E, 0x27, 0x2F, 
+	0x00, 0x08, 0x04, 0x09, 0x01, 0x0C, 0x05, 0x0D,
+	0x10, 0x18, 0x14, 0x19, 0x11, 0x1C, 0x15, 0x1D,
+	0x20, 0x28, 0x24, 0x29, 0x21, 0x2C, 0x25, 0x2D,
+	0x12, 0x1A, 0x16, 0x1B, 0x13, 0x1E, 0x17, 0x1F,
+	0x02, 0x0A, 0x06, 0x0B, 0x03, 0x0E, 0x07, 0x0F,
+	0x30, 0x38, 0x34, 0x39, 0x31, 0x3C, 0x35, 0x3D,
+	0x22, 0x2A, 0x26, 0x2B, 0x23, 0x2E, 0x27, 0x2F,
 	0x32, 0x3A, 0x36, 0x3B, 0x33, 0x3E, 0x37, 0x3F,
 };
 
@@ -110,7 +110,7 @@ void dct_error(const char *name, int is_idct,
         for(i=0;i<64;i++)
             block1[i] = 0;
         switch(test){
-        case 0: 
+        case 0:
             for(i=0;i<64;i++)
                 block1[i] = (random() % 512) -256;
             if (is_idct){
@@ -136,7 +136,7 @@ void dct_error(const char *name, int is_idct,
         for(i=0;i<64;i++)
            sum+=block1[i];
 
-        if((sum&1)==0) block1[63]^=1; 
+        if((sum&1)==0) block1[63]^=1;
 }
 #endif
 
@@ -160,15 +160,15 @@ void dct_error(const char *name, int is_idct,
         for(i=0;i<64;i++)
            sum+=block[i];
 
-        if((sum&1)==0) block[63]^=1; 
+        if((sum&1)==0) block[63]^=1;
 }
 #endif
 
         fdct_func(block);
         emms(); /* for ff_mmx_idct */
 
-        if (fdct_func == fdct_ifast 
-#ifndef FAAN_POSTSCALE        
+        if (fdct_func == fdct_ifast
+#ifndef FAAN_POSTSCALE
             || fdct_func == ff_faandct
 #endif
             ) {
@@ -206,7 +206,7 @@ void dct_error(const char *name, int is_idct,
 #endif
     }
     for(i=0; i<64; i++) sysErrMax= MAX(sysErrMax, ABS(sysErr[i]));
-    
+
 #if 1 // dump systematic errors
     for(i=0; i<64; i++){
 	if(i%8==0) printf("\n");
@@ -214,7 +214,7 @@ void dct_error(const char *name, int is_idct,
     }
     printf("\n");
 #endif
-    
+
     printf("%s %s: err_inf=%d err2=%0.8f syserr=%0.8f maxout=%d blockSumErr=%d\n",
            is_idct ? "IDCT" : "DCT",
            name, err_inf, (double)err2 / NB_ITS / 64.0, (double)sysErrMax / NB_ITS, maxout, blockSumErrMax);
@@ -223,7 +223,7 @@ void dct_error(const char *name, int is_idct,
     for(i=0;i<64;i++)
         block1[i] = 0;
     switch(test){
-    case 0: 
+    case 0:
         for(i=0;i<64;i++)
             block1[i] = (random() % 512) -256;
         if (is_idct){
@@ -298,7 +298,7 @@ void idct248_ref(uint8_t *dest, int linesize, int16_t *block)
                 sum += c8[i][j] * c8[i][j];
             }
         }
-        
+
         for(i=0;i<4;i++) {
             sum = 0;
             for(j=0;j<4;j++) {
@@ -358,18 +358,18 @@ void idct248_ref(uint8_t *dest, int linesize, int16_t *block)
     }
 }
 
-void idct248_error(const char *name, 
+void idct248_error(const char *name,
                     void (*idct248_put)(uint8_t *dest, int line_size, int16_t *block))
 {
     int it, i, it1, ti, ti1, err_max, v;
 
     srandom(0);
-    
+
     /* just one test to see if code is correct (precision is less
        important here) */
     err_max = 0;
     for(it=0;it<NB_ITS;it++) {
-        
+
         /* XXX: use forward transform to generate values */
         for(i=0;i<64;i++)
             block1[i] = (random() % 256) - 128;
@@ -378,11 +378,11 @@ void idct248_error(const char *name,
         for(i=0; i<64; i++)
             block[i]= block1[i];
         idct248_ref(img_dest1, 8, block);
-        
+
         for(i=0; i<64; i++)
             block[i]= block1[i];
         idct248_put(img_dest, 8, block);
-        
+
         for(i=0;i<64;i++) {
             v = abs((int)img_dest[i] - (int)img_dest1[i]);
             if (v == 255)
@@ -399,7 +399,7 @@ void idct248_error(const char *name,
             }
             printf("\n");
         }
-        
+
         printf("out=\n");
         for(i=0;i<8;i++) {
             int j;
@@ -459,7 +459,7 @@ int main(int argc, char **argv)
         cropTbl[i] = 0;
         cropTbl[i + MAX_NEG_CROP + 256] = 255;
     }
-    
+
     for(;;) {
         c = getopt(argc, argv, "ih4");
         if (c == -1)
@@ -477,9 +477,9 @@ int main(int argc, char **argv)
             break;
         }
     }
-    
+
     if(optind <argc) test= atoi(argv[optind]);
-               
+
     printf("ffmpeg DCT/IDCT test\n");
 
     if (test_248_dct) {

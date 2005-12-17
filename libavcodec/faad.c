@@ -88,10 +88,10 @@ typedef struct {
 								 unsigned long buffer_size);
 	char* FAADAPI (*faacDecGetErrorMessage)(unsigned char errcode);
 #endif
-    
+
     void FAADAPI (*faacDecClose)(faacDecHandle hDecoder);
-    
-    
+
+
 } FAACContext;
 
 static const unsigned long faac_srates[] =
@@ -143,10 +143,10 @@ static int faac_decode_frame(AVCodecContext *avctx,
     if(buf_size == 0)
 	return 0;
 #ifndef FAAD2_VERSION
-    out = s->faacDecDecode(s->faac_handle, 
-                           (unsigned char*)buf, 
-                           &bytesconsumed, 
-                           data, 
+    out = s->faacDecDecode(s->faac_handle,
+                           (unsigned char*)buf,
+                           &bytesconsumed,
+                           data,
                            &samples);
     samples *= s->sample_size;
     if (data_size)
@@ -154,7 +154,7 @@ static int faac_decode_frame(AVCodecContext *avctx,
     return (buf_size < (int)bytesconsumed)
 	? buf_size : (int)bytesconsumed;
 #else
-	
+
     out = s->faacDecDecode(s->faac_handle, &frame_info, (unsigned char*)buf, (unsigned long)buf_size);
 
     if (frame_info.error > 0) {

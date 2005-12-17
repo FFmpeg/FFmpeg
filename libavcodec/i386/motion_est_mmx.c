@@ -393,7 +393,7 @@ void dsputil_init_pix_mmx(DSPContext* c, AVCodecContext *avctx)
 
 	c->sad[0]= sad16_mmx2;
 	c->sad[1]= sad8_mmx2;
-        
+
         if(!(avctx->flags & CODEC_FLAG_BITEXACT)){
             c->pix_abs[0][1] = sad16_x2_mmx2;
             c->pix_abs[0][2] = sad16_y2_mmx2;

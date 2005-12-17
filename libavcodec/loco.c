@@ -17,12 +17,12 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
- 
+
 /**
  * @file loco.c
  * LOCO codec.
  */
- 
+
 #include "avcodec.h"
 #include "common.h"
 #include "bitstream.h"
@@ -49,12 +49,12 @@ static int loco_get_rice_param(RICEContext *r)
 {
     int cnt = 0;
     int val = r->count;
-    
+
     while(r->sum > val && cnt < 9) {
         val <<= 1;
         cnt++;
     }
-    
+
     return cnt;
 }
 
@@ -62,7 +62,7 @@ static inline void loco_update_rice_param(RICEContext *r, int val)
 {
     r->sum += val;
     r->count++;
-    
+
     if(r->count == 16) {
         r->sum >>= 1;
         r->count >>= 1;
@@ -99,7 +99,7 @@ static inline int loco_get_rice(RICEContext *r)
             r->run2 = 0;
         }
     }
-    
+
     return v;
 }
 
@@ -107,11 +107,11 @@ static inline int loco_get_rice(RICEContext *r)
 static inline int loco_predict(uint8_t* data, int stride, int step)
 {
     int a, b, c;
-    
+
     a = data[-stride];
     b = data[-step];
     c = data[-stride - step];
-    
+
     return mid_pred(a, a + b - c, b);
 }
 
@@ -121,16 +121,16 @@ static int loco_decode_plane(LOCOContext *l, uint8_t *data, int width, int heigh
     RICEContext rc;
     int val;
     int i, j;
-    
+
     init_get_bits(&rc.gb, buf, buf_size*8);
     rc.save = 0;
     rc.run = 0;
     rc.run2 = 0;
-    rc.lossy = l->lossy; 
-    
+    rc.lossy = l->lossy;
+
     rc.sum = 8;
     rc.count = 1;
-    
+
     /* restore top left pixel */
     val = loco_get_rice(&rc);
     data[0] = 128 + val;
@@ -151,11 +151,11 @@ static int loco_decode_plane(LOCOContext *l, uint8_t *data, int width, int heigh
         }
         data += stride;
     }
-    
+
     return ((get_bits_count(&rc.gb) + 7) >> 3);
 }
 
-static int decode_frame(AVCodecContext *avctx, 
+static int decode_frame(AVCodecContext *avctx,
                         void *data, int *data_size,
                         uint8_t *buf, int buf_size)
 {
@@ -221,7 +221,7 @@ static int decode_frame(AVCodecContext *avctx,
 
     *data_size = sizeof(AVFrame);
     *(AVFrame*)data = l->pic;
-    
+
     return buf_size;
 }
 
@@ -247,7 +247,7 @@ static int decode_init(AVCodecContext *avctx){
         l->lossy = LE_32(avctx->extradata + 8);
         av_log(avctx, AV_LOG_INFO, "This is LOCO codec version %i, please upload file for study\n", version);
     }
-    
+
     l->mode = LE_32(avctx->extradata + 4);
     switch(l->mode) {
     case LOCO_CYUY2: case LOCO_YUY2: case LOCO_UYVY:

@@ -25,7 +25,7 @@
 #include "../mpegvideo.h"
 
 #include "gcc_fixes.h"
- 
+
 #include "dsputil_altivec.h"
 
 // Swaps two variables (used for altivec registers)
@@ -103,7 +103,7 @@ do { \
 // slower, for dumb non-apple GCC
 #define FOUROF(a) {a,a,a,a}
 #endif
-int dct_quantize_altivec(MpegEncContext* s, 
+int dct_quantize_altivec(MpegEncContext* s,
                         DCTELEM* data, int n,
                         int qscale, int* overflow)
 {
@@ -273,7 +273,7 @@ int dct_quantize_altivec(MpegEncContext* s,
             if (whichPass == 1)
             {
                 // transpose the data for the second pass
-                 
+
                 // First, block transpose the upper right with lower left.
                 SWAP(row4, alt0);
                 SWAP(row5, alt1);
@@ -380,7 +380,7 @@ int dct_quantize_altivec(MpegEncContext* s,
                     vec_cmpgt(alt7, zero));
         }
 
- 
+
     }
 
     // Store the data back into the original block
@@ -469,7 +469,7 @@ int dct_quantize_altivec(MpegEncContext* s,
         vec_ste(scanIndices_01, 0, &lastNonZeroChar);
 
         lastNonZero = lastNonZeroChar;
-        
+
         // While the data is still in vectors we check for the transpose IDCT permute
         // and handle it using the vector unit if we can.  This is the permute used
         // by the altivec idct, so it is common when using the altivec dct.
@@ -523,30 +523,30 @@ int dct_quantize_altivec(MpegEncContext* s,
   AltiVec version of dct_unquantize_h263
   this code assumes `block' is 16 bytes-aligned
 */
-void dct_unquantize_h263_altivec(MpegEncContext *s, 
+void dct_unquantize_h263_altivec(MpegEncContext *s,
                                  DCTELEM *block, int n, int qscale)
 {
 POWERPC_PERF_DECLARE(altivec_dct_unquantize_h263_num, 1);
     int i, level, qmul, qadd;
     int nCoeffs;
-    
+
     assert(s->block_last_index[n]>=0);
 
 POWERPC_PERF_START_COUNT(altivec_dct_unquantize_h263_num, 1);
-    
+
     qadd = (qscale - 1) | 1;
     qmul = qscale << 1;
-    
+
     if (s->mb_intra) {
         if (!s->h263_aic) {
-            if (n < 4) 
+            if (n < 4)
                 block[0] = block[0] * s->y_dc_scale;
             else
                 block[0] = block[0] * s->c_dc_scale;
         }else
             qadd = 0;
         i = 1;
-        nCoeffs= 63; //does not allways use zigzag table 
+        nCoeffs= 63; //does not allways use zigzag table
     } else {
         i = 0;
         nCoeffs= s->intra_scantable.raster_end[ s->block_last_index[n] ];
@@ -586,7 +586,7 @@ POWERPC_PERF_START_COUNT(altivec_dct_unquantize_h263_num, 1);
       register vector bool short blockv_null, blockv_neg;
       register short backup_0 = block[0];
       register int j = 0;
-      
+
       qmulv = vec_ld(0, qmul8);
       qaddv = vec_ld(0, qadd8);
       nqaddv = vec_ld(0, nqadd8);
@@ -605,7 +605,7 @@ POWERPC_PERF_START_COUNT(altivec_dct_unquantize_h263_num, 1);
         }
       }
 #endif
-      
+
       // vectorize all the 16 bytes-aligned blocks
       // of 8 elements
       for(; (j + 7) <= nCoeffs ; j+=8)
@@ -637,7 +637,7 @@ POWERPC_PERF_START_COUNT(altivec_dct_unquantize_h263_num, 1);
             block[j] = level;
         }
       }
-      
+
       if (i == 1)
       { // cheat. this avoid special-casing the first iteration
         block[0] = backup_0;

@@ -43,10 +43,10 @@
 
 typedef struct SonicContext {
     int lossless, decorrelation;
-    
+
     int num_taps, downsampling;
     double quantization;
-    
+
     int channels, samplerate, block_align, frame_size;
 
     int *tap_quant;
@@ -104,7 +104,7 @@ static inline int intlist_write(PutBitContext *pb, int *buf, int entries, int ba
 static inline int intlist_read(GetBitContext *gb, int *buf, int entries, int base_2_part)
 {
     int i;
-    
+
     for (i = 0; i < entries; i++)
 	buf[i] = get_se_golomb(gb);
 
@@ -118,7 +118,7 @@ static inline int intlist_read(GetBitContext *gb, int *buf, int entries, int bas
 static int bits_to_store(uint64_t x)
 {
     int res = 0;
-    
+
     while(x)
     {
 	res++;
@@ -146,7 +146,7 @@ static void write_uint_max(PutBitContext *pb, unsigned int value, unsigned int m
 static unsigned int read_uint_max(GetBitContext *gb, int max)
 {
     int i, bits, value = 0;
-    
+
     if (!max)
 	return 0;
 
@@ -172,21 +172,21 @@ static int intlist_write(PutBitContext *pb, int *buf, int entries, int base_2_pa
     copy = av_mallocz(4* entries);
     if (!copy)
 	return -1;
-    
+
     if (base_2_part)
     {
 	int energy = 0;
-	
+
 	for (i = 0; i < entries; i++)
 	    energy += abs(buf[i]);
-	
+
 	low_bits = bits_to_store(energy / (entries * 2));
 	if (low_bits > 15)
 	    low_bits = 15;
-	
+
 	put_bits(pb, 4, low_bits);
     }
-    
+
     for (i = 0; i < entries; i++)
     {
 	put_bits(pb, low_bits, abs(buf[i]));
@@ -201,7 +201,7 @@ static int intlist_write(PutBitContext *pb, int *buf, int entries, int base_2_pa
 //	av_free(copy);
 	return -1;
     }
-    
+
     for (i = 0; i <= max; i++)
     {
 	for (j = 0; j < entries; j++)
@@ -213,16 +213,16 @@ static int intlist_write(PutBitContext *pb, int *buf, int entries, int base_2_pa
     while (pos < x)
     {
 	int steplet = step >> 8;
-	
+
 	if (pos + steplet > x)
 	    steplet = x - pos;
-	
+
 	for (i = 0; i < steplet; i++)
 	    if (bits[i+pos] != dominant)
 		any = 1;
-	
+
 	put_bits(pb, 1, any);
-	
+
 	if (!any)
 	{
 	    pos += steplet;
@@ -231,24 +231,24 @@ static int intlist_write(PutBitContext *pb, int *buf, int entries, int base_2_pa
 	else
 	{
 	    int interloper = 0;
-	    
+
 	    while (((pos + interloper) < x) && (bits[pos + interloper] == dominant))
 		interloper++;
 
 	    // note change
-	    write_uint_max(pb, interloper, (step >> 8) - 1);	
-	    
+	    write_uint_max(pb, interloper, (step >> 8) - 1);
+
 	    pos += interloper + 1;
 	    step -= step / ADAPT_LEVEL;
 	}
-	
+
 	if (step < 256)
 	{
 	    step = 65536 / step;
 	    dominant = !dominant;
 	}
     }
-    
+
     // store signs
     for (i = 0; i < entries; i++)
 	if (buf[i])
@@ -269,7 +269,7 @@ static int intlist_read(GetBitContext *gb, int *buf, int entries, int base_2_par
 
     if (!bits)
 	return -1;
-    
+
     if (base_2_part)
     {
 	low_bits = get_bits(gb, 4);
@@ -284,43 +284,43 @@ static int intlist_read(GetBitContext *gb, int *buf, int entries, int base_2_par
     while (n_zeros < entries)
     {
 	int steplet = step >> 8;
-	
+
 	if (!get_bits1(gb))
 	{
 	    for (i = 0; i < steplet; i++)
 		bits[x++] = dominant;
-	
+
 	    if (!dominant)
 		n_zeros += steplet;
-	    
+
 	    step += step / ADAPT_LEVEL;
 	}
 	else
 	{
 	    int actual_run = read_uint_max(gb, steplet-1);
-	    
+
 //	    av_log(NULL, AV_LOG_INFO, "actual run: %d\n", actual_run);
-	    
+
 	    for (i = 0; i < actual_run; i++)
 		bits[x++] = dominant;
-	    
+
 	    bits[x++] = !dominant;
-	    
+
 	    if (!dominant)
 		n_zeros += actual_run;
 	    else
 		n_zeros++;
-	
+
 	    step -= step / ADAPT_LEVEL;
 	}
-	
+
 	if (step < 256)
 	{
 	    step = 65536 / step;
 	    dominant = !dominant;
 	}
     }
-    
+
     // reconstruct unsigned values
     n_zeros = 0;
     for (i = 0; n_zeros < entries; i++)
@@ -332,22 +332,22 @@ static int intlist_read(GetBitContext *gb, int *buf, int entries, int base_2_par
 		pos = 0;
 		level += 1 << low_bits;
 	    }
-	    
+
 	    if (buf[pos] >= level)
 		break;
-	    
+
 	    pos++;
 	}
-	
+
 	if (bits[i])
 	    buf[pos] += 1 << low_bits;
 	else
 	    n_zeros++;
-	
+
 	pos++;
     }
 //    av_free(bits);
-    
+
     // read signs
     for (i = 0; i < entries; i++)
 	if (buf[i] && get_bits1(gb))
@@ -397,7 +397,7 @@ static int predictor_calc_error(int *k, int *state, int order, int error)
     }
 #endif
 
-    // don't drift too far, to avoid overflows 
+    // don't drift too far, to avoid overflows
     if (x >  (SAMPLE_FACTOR<<16)) x =  (SAMPLE_FACTOR<<16);
     if (x < -(SAMPLE_FACTOR<<16)) x = -(SAMPLE_FACTOR<<16);
 
@@ -415,9 +415,9 @@ static void modified_levinson_durbin(int *window, int window_entries,
 {
     int i;
     int *state = av_mallocz(4* window_entries);
-    
+
     memcpy(state, window, 4* window_entries);
-    
+
     for (i = 0; i < out_entries; i++)
     {
 	int step = (i+1)*channels, k, j;
@@ -445,12 +445,12 @@ static void modified_levinson_durbin(int *window, int window_entries,
 	    k = 0;
 	else
 	    k = (int)(floor(-xy/xx * (double)LATTICE_FACTOR / (double)(tap_quant[i]) + 0.5));
-	
+
 	if (k > (LATTICE_FACTOR/tap_quant[i]))
 	    k = LATTICE_FACTOR/tap_quant[i];
 	if (-k > (LATTICE_FACTOR/tap_quant[i]))
 	    k = -(LATTICE_FACTOR/tap_quant[i]);
-	
+
 	out[i] = k;
 	k *= tap_quant[i];
 
@@ -464,7 +464,7 @@ static void modified_levinson_durbin(int *window, int window_entries,
 	    *x_ptr = x_value + shift_down(k*state_value,LATTICE_SHIFT);
 	    *state_ptr = state_value + shift_down(k*x_value, LATTICE_SHIFT);
 	}
-#else	
+#else
 	for (j=0; j <= (window_entries - step); j++)
 	{
 	    int stepval = window[step+j], stateval=state[j];
@@ -473,7 +473,7 @@ static void modified_levinson_durbin(int *window, int window_entries,
 	}
 #endif
     }
-    
+
     av_free(state);
 }
 
@@ -562,7 +562,7 @@ static int sonic_encode_init(AVCodecContext *avctx)
 	if (!s->coded_samples[i])
 	    return -1;
     }
-    
+
     s->int_samples = av_mallocz(4* s->frame_size);
 
     s->window_size = ((2*s->tail_size)+s->frame_size);
@@ -661,13 +661,13 @@ static int sonic_encode_frame(AVCodecContext *avctx,
     }
 
     memset(s->window, 0, 4* s->window_size);
-    
+
     for (i = 0; i < s->tail_size; i++)
 	s->window[x++] = s->tail[i];
 
     for (i = 0; i < s->frame_size; i++)
 	s->window[x++] = s->int_samples[i];
-    
+
     for (i = 0; i < s->tail_size; i++)
 	s->window[x++] = 0;
 
@@ -691,8 +691,8 @@ static int sonic_encode_frame(AVCodecContext *avctx,
 	    s->coded_samples[ch][i] = sum;
 	}
     }
-    
-    // simple rate control code    
+
+    // simple rate control code
     if (!s->lossless)
     {
 	double energy1 = 0.0, energy2 = 0.0;
@@ -705,16 +705,16 @@ static int sonic_encode_frame(AVCodecContext *avctx,
 		energy1 += fabs(sample);
 	    }
 	}
-	
+
 	energy2 = sqrt(energy2/(s->channels*s->block_align));
 	energy1 = sqrt(2.0)*energy1/(s->channels*s->block_align);
-	
+
 	// increase bitrate when samples are like a gaussian distribution
 	// reduce bitrate when samples are like a two-tailed exponential distribution
-	
+
 	if (energy2 > energy1)
 	    energy2 += (energy2-energy1)*RATE_VARIATION;
-	
+
 	quant = (int)(BASE_QUANT*s->quantization*energy2/SAMPLE_FACTOR);
 //	av_log(avctx, AV_LOG_DEBUG, "quant: %d energy: %f / %f\n", quant, energy1, energy2);
 
@@ -722,9 +722,9 @@ static int sonic_encode_frame(AVCodecContext *avctx,
 	    quant = 1;
 	if (quant > 65535)
 	    quant = 65535;
-	
+
 	set_ue_golomb(&pb, quant);
-	
+
 	quant *= SAMPLE_FACTOR;
     }
 
@@ -751,18 +751,18 @@ static int sonic_decode_init(AVCodecContext *avctx)
     SonicContext *s = avctx->priv_data;
     GetBitContext gb;
     int i, version;
-    
+
     s->channels = avctx->channels;
     s->samplerate = avctx->sample_rate;
-    
+
     if (!avctx->extradata)
     {
 	av_log(avctx, AV_LOG_ERROR, "No mandatory headers present\n");
 	return -1;
     }
-    
+
     init_get_bits(&gb, avctx->extradata, avctx->extradata_size);
-    
+
     version = get_bits(&gb, 2);
     if (version > 1)
     {
@@ -793,7 +793,7 @@ static int sonic_decode_init(AVCodecContext *avctx)
     s->num_taps = (get_bits(&gb, 5)+1)<<5;
     if (get_bits1(&gb)) // XXX FIXME
 	av_log(avctx, AV_LOG_INFO, "Custom quant table\n");
-    
+
     s->block_align = (int)(2048.0*(s->samplerate/44100))/s->downsampling;
     s->frame_size = s->channels*s->block_align*s->downsampling;
 //    avctx->frame_size = s->block_align;
@@ -805,9 +805,9 @@ static int sonic_decode_init(AVCodecContext *avctx)
     s->tap_quant = av_mallocz(4* s->num_taps);
     for (i = 0; i < s->num_taps; i++)
 	s->tap_quant[i] = (int)(sqrt(i+1));
-    
+
     s->predictor_k = av_mallocz(4* s->num_taps);
-    
+
     for (i = 0; i < s->channels; i++)
     {
 	s->predictor_state[i] = av_mallocz(4* s->num_taps);
@@ -830,17 +830,17 @@ static int sonic_decode_close(AVCodecContext *avctx)
 {
     SonicContext *s = avctx->priv_data;
     int i;
-    
+
     av_free(s->int_samples);
     av_free(s->tap_quant);
     av_free(s->predictor_k);
-    
+
     for (i = 0; i < s->channels; i++)
     {
 	av_free(s->predictor_state[i]);
 	av_free(s->coded_samples[i]);
     }
-    
+
     return 0;
 }
 
@@ -856,9 +856,9 @@ static int sonic_decode_frame(AVCodecContext *avctx,
     if (buf_size == 0) return 0;
 
 //    av_log(NULL, AV_LOG_INFO, "buf_size: %d\n", buf_size);
-    
+
     init_get_bits(&gb, buf, buf_size*8);
-    
+
     intlist_read(&gb, s->predictor_k, s->num_taps, 0);
 
     // dequantize
@@ -877,7 +877,7 @@ static int sonic_decode_frame(AVCodecContext *avctx,
 	int x = ch;
 
 	predictor_init_state(s->predictor_k, s->predictor_state[ch], s->num_taps);
-	
+
 	intlist_read(&gb, s->coded_samples[ch], s->block_align, 1);
 
 	for (i = 0; i < s->block_align; i++)
@@ -887,7 +887,7 @@ static int sonic_decode_frame(AVCodecContext *avctx,
 		s->int_samples[x] = predictor_calc_error(s->predictor_k, s->predictor_state[ch], s->num_taps, 0);
 		x += s->channels;
 	    }
-	    
+
 	    s->int_samples[x] = predictor_calc_error(s->predictor_k, s->predictor_state[ch], s->num_taps, s->coded_samples[ch][i] * quant);
 	    x += s->channels;
 	}
@@ -895,7 +895,7 @@ static int sonic_decode_frame(AVCodecContext *avctx,
 	for (i = 0; i < s->num_taps; i++)
 	    s->predictor_state[ch][i] = s->int_samples[s->frame_size - s->channels + ch - i*s->channels];
     }
-    
+
     switch(s->decorrelation)
     {
 	case MID_SIDE:

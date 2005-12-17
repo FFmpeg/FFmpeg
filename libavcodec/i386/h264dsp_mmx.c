@@ -384,7 +384,7 @@ static void h264_h_loop_filter_chroma_intra_mmx2(uint8_t *pix, int stride, int a
         "psraw $5, %%mm6		\n\t"\
         "packuswb %%mm6, %%mm6		\n\t"\
         OP(%%mm6, (%1), A, d)\
-        "add %3, %1			\n\t"     
+        "add %3, %1			\n\t"
 
 #define QPEL_H264HV(A,B,C,D,E,F,OF)\
         "movd (%0), "#F"		\n\t"\
@@ -399,7 +399,7 @@ static void h264_h_loop_filter_chroma_intra_mmx2(uint8_t *pix, int stride, int a
         "paddw "#F", "#A"		\n\t"\
         "paddw "#A", %%mm6		\n\t"\
         "movq %%mm6, "#OF"(%1)		\n\t"
-        
+
 #define QPEL_H264(OPNAME, OP, MMX)\
 static void OPNAME ## h264_qpel4_h_lowpass_ ## MMX(uint8_t *dst, uint8_t *src, int dstStride, int srcStride){\
     int h=4;\

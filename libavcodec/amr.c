@@ -24,13 +24,13 @@
     atleast on a P4 1.5GHz (0.9s instead of 9.9s on a 30s audio clip at MR102).
     Both float and fixed point is supported for amr-nb, but only float for
     amr-wb.
-    
+
     --AMR-NB--
     The fixed-point (TS26.073) can be downloaded from:
     http://www.3gpp.org/ftp/Specs/archive/26_series/26.073/26073-510.zip
     Extract the soure into ffmpeg/libavcodec/amr
     To use the fixed version run "./configure" with "--enable-amr_nb-fixed"
-    
+
     The float version (default) can be downloaded from:
     http://www.3gpp.org/ftp/Specs/archive/26_series/26.104/26104-510.zip
     Extract the soure into ffmpeg/libavcodec/amr_float
@@ -38,19 +38,19 @@
     The specification for amr-nb can be found in TS 26.071
     (http://www.3gpp.org/ftp/Specs/html-info/26071.htm) and some other
     info at http://www.3gpp.org/ftp/Specs/html-info/26-series.htm
-    
+
     --AMR-WB--
     The reference code can be downloaded from:
     http://www.3gpp.org/ftp/Specs/archive/26_series/26.204/26204-510.zip
     It should be extracted to "libavcodec/amrwb_float". Enable it with
     "--enable-amr_wb".
-    
+
     The specification for amr-wb can be downloaded from:
     http://www.3gpp.org/ftp/Specs/archive/26_series/26.171/26171-500.zip
-    
+
     If someone want to use the fixed point version it can be downloaded
     from: http://www.3gpp.org/ftp/Specs/archive/26_series/26.173/26173-571.zip
- 
+
  */
 
 #include "avcodec.h"
@@ -77,7 +77,7 @@ typedef struct AMR_bitrates
     int startrate;
     int stoprate;
     enum Mode mode;
-    
+
 } AMR_bitrates;
 
 /* Match desired bitrate with closest one*/
@@ -93,7 +93,7 @@ static enum Mode getBitrateMode(int bitrate)
                            {7950,9999,MR795},//9
                            {10000,11999,MR102},//10
                            {12000,64000,MR122},//12
-                           
+
                          };
     int i;
     for(i=0;i<8;i++)
@@ -124,7 +124,7 @@ typedef struct AMRContext {
     Speech_Encode_FrameState *enstate;
     sid_syncState *sidstate;
     enum TXFrameType tx_frametype;
-    
+
 
 } AMRContext;
 
@@ -137,7 +137,7 @@ static int amr_nb_decode_init(AVCodecContext * avctx)
     s->mode= (enum Mode)0;
     s->reset_flag=0;
     s->reset_flag_old=1;
-    
+
     if(Speech_Decode_Frame_init(&s->speech_decoder_state, "Decoder"))
     {
         av_log(avctx, AV_LOG_ERROR, "Speech_Decode_Frame_init error\n");
@@ -155,7 +155,7 @@ static int amr_nb_encode_init(AVCodecContext * avctx)
     s->mode= (enum Mode)0;
     s->reset_flag=0;
     s->reset_flag_old=1;
-    
+
     if(avctx->sample_rate!=8000)
     {
         if(avctx->debug)
@@ -217,7 +217,7 @@ static int amr_nb_decode_frame(AVCodecContext * avctx,
     int offset=0;
 
     UWord8 toc, q, ft;
-    
+
     Word16 serial[SERIAL_FRAMESIZE];   /* coded bits */
     Word16 *synth;
     UWord8 *packed_bits;
@@ -250,14 +250,14 @@ static int amr_nb_decode_frame(AVCodecContext * avctx,
         //We have a new frame
         s->frameCount++;
 
-        if (s->rx_type == RX_NO_DATA) 
+        if (s->rx_type == RX_NO_DATA)
         {
             s->mode = s->speech_decoder_state->prev_mode;
         }
         else {
             s->speech_decoder_state->prev_mode = s->mode;
         }
-        
+
         /* if homed: check if this frame is another homing frame */
         if (s->reset_flag_old == 1)
         {
@@ -273,7 +273,7 @@ static int amr_nb_decode_frame(AVCodecContext * avctx,
             }
         }
         else
-        {     
+        {
             /* decode frame */
             Speech_Decode_Frame(s->speech_decoder_state, s->mode, &serial[1], s->rx_type, synth);
         }
@@ -281,7 +281,7 @@ static int amr_nb_decode_frame(AVCodecContext * avctx,
         //Each AMR-frame results in 160 16-bit samples
         *data_size+=160*2;
         synth+=160;
-        
+
         /* if not homed: check whether current frame is a homing frame */
         if (s->reset_flag_old == 0)
         {
@@ -294,7 +294,7 @@ static int amr_nb_decode_frame(AVCodecContext * avctx,
             Speech_Decode_Frame_reset(s->speech_decoder_state);
         }
         s->reset_flag_old = s->reset_flag;
-        
+
     }
     return offset;
 }
@@ -307,16 +307,16 @@ static int amr_nb_encode_frame(AVCodecContext *avctx,
 
     AMRContext *s = avctx->priv_data;
     int written;
-   
+
     s->reset_flag = encoder_homing_frame_test(data);
-    
-    Speech_Encode_Frame(s->enstate, s->enc_bitrate, data, &serial_data[1], &s->mode); 
-    
+
+    Speech_Encode_Frame(s->enstate, s->enc_bitrate, data, &serial_data[1], &s->mode);
+
     /* add frame type and mode */
     sid_sync (s->sidstate, s->mode, &s->tx_frametype);
-    
+
     written = PackBits(s->mode, s->enc_bitrate, s->tx_frametype, &serial_data[1], frame);
-    
+
     if (s->reset_flag != 0)
     {
         Speech_Encode_Frame_reset(s->enstate);
@@ -352,7 +352,7 @@ static int amr_nb_encode_init(AVCodecContext * avctx)
 {
     AMRContext *s = avctx->priv_data;
     s->frameCount=0;
-    
+
     if(avctx->sample_rate!=8000)
     {
         if(avctx->debug)
@@ -416,7 +416,7 @@ static int amr_nb_decode_frame(AVCodecContext * avctx,
     int packet_size;
 
     /* av_log(NULL,AV_LOG_DEBUG,"amr_decode_frame buf=%p buf_size=%d frameCount=%d!!\n",buf,buf_size,s->frameCount); */
-    
+
     if(buf_size==0) {
         /* nothing to do */
         return 0;
@@ -429,13 +429,13 @@ static int amr_nb_decode_frame(AVCodecContext * avctx,
         av_log(avctx, AV_LOG_ERROR, "amr frame too short (%u, should be %u)\n", buf_size, packet_size);
         return -1;
     }
-    
+
     s->frameCount++;
     /* av_log(NULL,AV_LOG_DEBUG,"packet_size=%d amrData= 0x%X %X %X %X\n",packet_size,amrData[0],amrData[1],amrData[2],amrData[3]); */
     /* call decoder */
     Decoder_Interface_Decode(s->decState, amrData, data, 0);
     *data_size=160*2;
-   
+
     return packet_size;
 }
 
@@ -445,10 +445,10 @@ static int amr_nb_encode_frame(AVCodecContext *avctx,
     AMRContext *s = (AMRContext*)avctx->priv_data;
     int written;
 
-    written = Encoder_Interface_Encode(s->enstate, 
-        s->enc_bitrate, 
-        data, 
-        frame, 
+    written = Encoder_Interface_Encode(s->enstate,
+        s->enc_bitrate,
+        data,
+        frame,
         0);
     /* av_log(NULL,AV_LOG_DEBUG,"amr_nb_encode_frame encoded %u bytes, bitrate %u, first byte was %#02x\n",written, s->enc_bitrate, frame[0] ); */
 
@@ -502,7 +502,7 @@ typedef struct AMRWB_bitrates
     int startrate;
     int stoprate;
     int mode;
-    
+
 } AMRWB_bitrates;
 
 static int getWBBitrateMode(int bitrate)
@@ -518,7 +518,7 @@ static int getWBBitrateMode(int bitrate)
                            {18001,22000,6},//19.85
                            {22001,23000,7},//23.05
                            {23001,24000,8},//23.85
-                           
+
                          };
     int i;
 
@@ -545,7 +545,7 @@ static int amr_wb_encode_init(AVCodecContext * avctx)
 {
     AMRWBContext *s = (AMRWBContext*)avctx->priv_data;
     s->frameCount=0;
-    
+
     if(avctx->sample_rate!=16000)
     {
         if(avctx->debug)
@@ -623,7 +623,7 @@ static int amr_wb_decode_frame(AVCodecContext * avctx,
         av_log(avctx, AV_LOG_ERROR, "amr frame too short (%u, should be %u)\n", buf_size, packet_size+1);
         return -1;
     }
-    
+
     s->frameCount++;
     D_IF_decode( s->state, amrData, data, _good_frame);
     *data_size=320*2;

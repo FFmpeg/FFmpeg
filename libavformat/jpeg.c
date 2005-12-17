@@ -68,7 +68,7 @@ static int jpeg_get_buffer(AVCodecContext *c, AVFrame *picture)
     }
 }
 
-static void jpeg_img_copy(uint8_t *dst, int dst_wrap, 
+static void jpeg_img_copy(uint8_t *dst, int dst_wrap,
                      uint8_t *src, int src_wrap,
                      int width, int height)
 {
@@ -82,7 +82,7 @@ static void jpeg_img_copy(uint8_t *dst, int dst_wrap,
 /* XXX: libavcodec is broken for truncated jpegs! */
 #define IO_BUF_SIZE (1024*1024)
 
-static int jpeg_read(ByteIOContext *f, 
+static int jpeg_read(ByteIOContext *f,
                      int (*alloc_cb)(void *opaque, AVImageInfo *info), void *opaque)
 {
     AVCodecContext *c;
@@ -94,7 +94,7 @@ static int jpeg_read(ByteIOContext *f,
     jctx.alloc_cb = alloc_cb;
     jctx.opaque = opaque;
     jctx.ret_code = -1; /* default return code is error */
-    
+
     c = avcodec_alloc_context();
     if (!c)
         return -1;
@@ -114,7 +114,7 @@ static int jpeg_read(ByteIOContext *f,
             break;
         inbuf_ptr = inbuf;
         while (size > 0) {
-            len = avcodec_decode_video(c, &picture1, &got_picture, 
+            len = avcodec_decode_video(c, &picture1, &got_picture,
                                        inbuf_ptr, size);
             if (len < 0)
                 goto fail;
@@ -198,10 +198,10 @@ static int jpeg_write(ByteIOContext *pb, AVImageInfo *info)
     /* set the quality */
     picture->quality = 3; /* XXX: a parameter should be used */
     c->flags |= CODEC_FLAG_QSCALE;
-    
+
     if (avcodec_open(c, &mjpeg_encoder) < 0)
         goto fail1;
-    
+
     /* XXX: needs to sort out that size problem */
     outbuf_size = 1000000;
     outbuf = av_malloc(outbuf_size);

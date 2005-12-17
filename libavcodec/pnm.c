@@ -26,16 +26,16 @@ typedef struct PNMContext {
     AVFrame picture;
 } PNMContext;
 
-static inline int pnm_space(int c)  
+static inline int pnm_space(int c)
 {
     return (c == ' ' || c == '\n' || c == '\r' || c == '\t');
 }
 
-static void pnm_get(PNMContext *sc, char *str, int buf_size) 
+static void pnm_get(PNMContext *sc, char *str, int buf_size)
 {
     char *s;
     int c;
-    
+
     /* skip spaces and comments */
     for(;;) {
         c = *sc->bytestream++;
@@ -47,7 +47,7 @@ static void pnm_get(PNMContext *sc, char *str, int buf_size)
             break;
         }
     }
-    
+
     s = str;
     while (sc->bytestream < sc->bytestream_end && !pnm_space(c)) {
         if ((s - str)  < buf_size - 1)
@@ -74,7 +74,7 @@ static int pnm_decode_header(AVCodecContext *avctx, PNMContext * const s){
     if (!strcmp(buf1, "P4")) {
         avctx->pix_fmt = PIX_FMT_MONOWHITE;
     } else if (!strcmp(buf1, "P5")) {
-        if (avctx->codec_id == CODEC_ID_PGMYUV) 
+        if (avctx->codec_id == CODEC_ID_PGMYUV)
             avctx->pix_fmt = PIX_FMT_YUV420P;
         else
             avctx->pix_fmt = PIX_FMT_GRAY8;
@@ -111,13 +111,13 @@ static int pnm_decode_header(AVCodecContext *avctx, PNMContext * const s){
         /* check that all tags are present */
         if (w <= 0 || h <= 0 || maxval <= 0 || depth <= 0 || tuple_type[0] == '\0' || avcodec_check_dimensions(avctx, w, h))
             return -1;
-                   
+
         avctx->width = w;
         avctx->height = h;
         if (depth == 1) {
             if (maxval == 1)
                 avctx->pix_fmt = PIX_FMT_MONOWHITE;
-            else 
+            else
                 avctx->pix_fmt = PIX_FMT_GRAY8;
         } else if (depth == 3) {
             avctx->pix_fmt = PIX_FMT_RGB24;
@@ -155,7 +155,7 @@ static int pnm_decode_header(AVCodecContext *avctx, PNMContext * const s){
     return 0;
 }
 
-static int pnm_decode_frame(AVCodecContext *avctx, 
+static int pnm_decode_frame(AVCodecContext *avctx,
                         void *data, int *data_size,
                         uint8_t *buf, int buf_size)
 {
@@ -168,10 +168,10 @@ static int pnm_decode_frame(AVCodecContext *avctx,
     s->bytestream_start=
     s->bytestream= buf;
     s->bytestream_end= buf + buf_size;
-    
+
     if(pnm_decode_header(avctx, s) < 0)
         return -1;
-    
+
     if(p->data[0])
         avctx->release_buffer(avctx, p);
 
@@ -182,7 +182,7 @@ static int pnm_decode_frame(AVCodecContext *avctx,
     }
     p->pict_type= FF_I_TYPE;
     p->key_frame= 1;
-    
+
     switch(avctx->pix_fmt) {
     default:
         return -1;
@@ -274,7 +274,7 @@ static int pnm_encode_frame(AVCodecContext *avctx, unsigned char *outbuf, int bu
     *p = *pict;
     p->pict_type= FF_I_TYPE;
     p->key_frame= 1;
-    
+
     s->bytestream_start=
     s->bytestream= outbuf;
     s->bytestream_end= outbuf+buf_size;
@@ -302,12 +302,12 @@ static int pnm_encode_frame(AVCodecContext *avctx, unsigned char *outbuf, int bu
     default:
         return -1;
     }
-    snprintf(s->bytestream, s->bytestream_end - s->bytestream, 
+    snprintf(s->bytestream, s->bytestream_end - s->bytestream,
              "P%c\n%d %d\n",
              c, avctx->width, h1);
     s->bytestream += strlen(s->bytestream);
     if (avctx->pix_fmt != PIX_FMT_MONOWHITE) {
-        snprintf(s->bytestream, s->bytestream_end - s->bytestream, 
+        snprintf(s->bytestream, s->bytestream_end - s->bytestream,
                  "%d\n", 255);
         s->bytestream += strlen(s->bytestream);
     }
@@ -319,7 +319,7 @@ static int pnm_encode_frame(AVCodecContext *avctx, unsigned char *outbuf, int bu
         s->bytestream += n;
         ptr += linesize;
     }
-    
+
     if (avctx->pix_fmt == PIX_FMT_YUV420P) {
         h >>= 1;
         n >>= 1;
@@ -353,7 +353,7 @@ static int pam_encode_frame(AVCodecContext *avctx, unsigned char *outbuf, int bu
     *p = *pict;
     p->pict_type= FF_I_TYPE;
     p->key_frame= 1;
-    
+
     s->bytestream_start=
     s->bytestream= outbuf;
     s->bytestream_end= outbuf+buf_size;
@@ -388,14 +388,14 @@ static int pam_encode_frame(AVCodecContext *avctx, unsigned char *outbuf, int bu
     default:
         return -1;
     }
-    snprintf(s->bytestream, s->bytestream_end - s->bytestream, 
+    snprintf(s->bytestream, s->bytestream_end - s->bytestream,
              "P7\nWIDTH %d\nHEIGHT %d\nDEPTH %d\nMAXVAL %d\nTUPLETYPE %s\nENDHDR\n",
              w, h, depth, maxval, tuple_type);
     s->bytestream += strlen(s->bytestream);
-    
+
     ptr = p->data[0];
     linesize = p->linesize[0];
-    
+
     if (avctx->pix_fmt == PIX_FMT_RGBA32) {
         int j;
         unsigned int v;
@@ -456,7 +456,7 @@ static int pam_probe(AVProbeData *pd)
 
 static int pnm_parse(AVCodecParserContext *s,
                            AVCodecContext *avctx,
-                           uint8_t **poutbuf, int *poutbuf_size, 
+                           uint8_t **poutbuf, int *poutbuf_size,
                            const uint8_t *buf, int buf_size)
 {
     ParseContext *pc = s->priv_data;
@@ -497,14 +497,14 @@ retry:
 #endif
         next= END_NOT_FOUND;
     }else{
-        next= pnmctx.bytestream - pnmctx.bytestream_start 
+        next= pnmctx.bytestream - pnmctx.bytestream_start
             + avpicture_get_size(avctx->pix_fmt, avctx->width, avctx->height);
         if(pnmctx.bytestream_start!=buf)
             next-= pc->index;
         if(next > buf_size)
             next= END_NOT_FOUND;
     }
-    
+
     if(ff_combine_frame(pc, next, (uint8_t **)&buf, &buf_size)<0){
         *poutbuf = NULL;
         *poutbuf_size = 0;
@@ -533,7 +533,7 @@ AVCodec pgm_encoder = {
     pnm_encode_frame,
     NULL, //encode_end,
     pnm_decode_frame,
-    .pix_fmts= (enum PixelFormat[]){PIX_FMT_GRAY8, -1}, 
+    .pix_fmts= (enum PixelFormat[]){PIX_FMT_GRAY8, -1},
 };
 #endif // CONFIG_PGM_ENCODER
 
@@ -547,7 +547,7 @@ AVCodec pgmyuv_encoder = {
     pnm_encode_frame,
     NULL, //encode_end,
     pnm_decode_frame,
-    .pix_fmts= (enum PixelFormat[]){PIX_FMT_YUV420P, -1}, 
+    .pix_fmts= (enum PixelFormat[]){PIX_FMT_YUV420P, -1},
 };
 #endif // CONFIG_PGMYUV_ENCODER
 
@@ -561,7 +561,7 @@ AVCodec ppm_encoder = {
     pnm_encode_frame,
     NULL, //encode_end,
     pnm_decode_frame,
-    .pix_fmts= (enum PixelFormat[]){PIX_FMT_RGB24, -1}, 
+    .pix_fmts= (enum PixelFormat[]){PIX_FMT_RGB24, -1},
 };
 #endif // CONFIG_PPM_ENCODER
 
@@ -575,7 +575,7 @@ AVCodec pbm_encoder = {
     pnm_encode_frame,
     NULL, //encode_end,
     pnm_decode_frame,
-    .pix_fmts= (enum PixelFormat[]){PIX_FMT_MONOWHITE, -1}, 
+    .pix_fmts= (enum PixelFormat[]){PIX_FMT_MONOWHITE, -1},
 };
 #endif // CONFIG_PBM_ENCODER
 
@@ -589,6 +589,6 @@ AVCodec pam_encoder = {
     pam_encode_frame,
     NULL, //encode_end,
     pnm_decode_frame,
-    .pix_fmts= (enum PixelFormat[]){PIX_FMT_RGB24, PIX_FMT_RGBA32, PIX_FMT_GRAY8, PIX_FMT_MONOWHITE, -1}, 
+    .pix_fmts= (enum PixelFormat[]){PIX_FMT_RGB24, PIX_FMT_RGBA32, PIX_FMT_GRAY8, PIX_FMT_MONOWHITE, -1},
 };
 #endif // CONFIG_PAM_ENCODER

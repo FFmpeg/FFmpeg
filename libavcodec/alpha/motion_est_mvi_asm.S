@@ -29,7 +29,7 @@
 #define tf a4
 #define tg a3
 #define th v0
-        
+
         .set noat
         .set noreorder
         .arch pca56
@@ -91,7 +91,7 @@ $unaligned:
         ldq     t4, 8(a0)       # ref right
         addq    a0, a2, a0      # pix1
         addq    a1, a2, a1      # pix2
-        /* load line 1 */        
+        /* load line 1 */
         ldq_u   t5, 0(a1)       # left_u
         ldq_u   t6, 8(a1)       # mid
         ldq_u   t7, 16(a1)      # right_u

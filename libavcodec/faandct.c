@@ -21,7 +21,7 @@
 
 /**
  * @file faandct.c
- * @brief 
+ * @brief
  *     Floating point AAN DCT
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
@@ -84,19 +84,19 @@ static always_inline void row_fdct(FLOAT temp[64], DCTELEM * data)
         tmp5= data[2 + i] - data[5 + i];
         tmp3= data[3 + i] + data[4 + i];
         tmp4= data[3 + i] - data[4 + i];
-        
+
         tmp10= tmp0 + tmp3;
         tmp13= tmp0 - tmp3;
         tmp11= tmp1 + tmp2;
         tmp12= tmp1 - tmp2;
-        
+
         temp[0 + i]= tmp10 + tmp11;
         temp[4 + i]= tmp10 - tmp11;
-        
+
         z1= (tmp12 + tmp13)*A1;
         temp[2 + i]= tmp13 + z1;
         temp[6 + i]= tmp13 - z1;
-        
+
         tmp10= tmp4 + tmp5;
         tmp11= tmp5 + tmp6;
         tmp12= tmp6 + tmp7;
@@ -113,7 +113,7 @@ static always_inline void row_fdct(FLOAT temp[64], DCTELEM * data)
         temp[3 + i]= z13 - z2;
         temp[1 + i]= z11 + z4;
         temp[7 + i]= z11 - z4;
-    }    
+    }
 }
 
 void ff_faandct(DCTELEM * data)
@@ -137,19 +137,19 @@ void ff_faandct(DCTELEM * data)
         tmp5= temp[8*2 + i] - temp[8*5 + i];
         tmp3= temp[8*3 + i] + temp[8*4 + i];
         tmp4= temp[8*3 + i] - temp[8*4 + i];
-        
+
         tmp10= tmp0 + tmp3;
         tmp13= tmp0 - tmp3;
         tmp11= tmp1 + tmp2;
         tmp12= tmp1 - tmp2;
-        
+
         data[8*0 + i]= lrintf(SCALE(8*0 + i) * (tmp10 + tmp11));
         data[8*4 + i]= lrintf(SCALE(8*4 + i) * (tmp10 - tmp11));
-        
+
         z1= (tmp12 + tmp13)* A1;
         data[8*2 + i]= lrintf(SCALE(8*2 + i) * (tmp13 + z1));
         data[8*6 + i]= lrintf(SCALE(8*6 + i) * (tmp13 - z1));
-        
+
         tmp10= tmp4 + tmp5;
         tmp11= tmp5 + tmp6;
         tmp12= tmp6 + tmp7;
@@ -190,19 +190,19 @@ void ff_faandct248(DCTELEM * data)
         tmp5 = temp[8*2 + i] - temp[8*3 + i];
         tmp6 = temp[8*4 + i] - temp[8*5 + i];
         tmp7 = temp[8*6 + i] - temp[8*7 + i];
-        
+
         tmp10 = tmp0 + tmp3;
         tmp11 = tmp1 + tmp2;
         tmp12 = tmp1 - tmp2;
         tmp13 = tmp0 - tmp3;
-        
+
         data[8*0 + i] = lrintf(SCALE(8*0 + i) * (tmp10 + tmp11));
         data[8*4 + i] = lrintf(SCALE(8*4 + i) * (tmp10 - tmp11));
-        
+
         z1 = (tmp12 + tmp13)* A1;
         data[8*2 + i] = lrintf(SCALE(8*2 + i) * (tmp13 + z1));
         data[8*6 + i] = lrintf(SCALE(8*6 + i) * (tmp13 - z1));
-        
+
         tmp10 = tmp4 + tmp7;
 	tmp11 = tmp5 + tmp6;
 	tmp12 = tmp5 - tmp6;

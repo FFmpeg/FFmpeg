@@ -156,8 +156,8 @@ static void msvideo1_decode_8bit(Msvideo1Context *s)
 
                 for (pixel_y = 0; pixel_y < 4; pixel_y++) {
                     for (pixel_x = 0; pixel_x < 4; pixel_x++, flags >>= 1)
-                        pixels[pixel_ptr++] = 
-                            colors[((pixel_y & 0x2) << 1) + 
+                        pixels[pixel_ptr++] =
+                            colors[((pixel_y & 0x2) << 1) +
                                 (pixel_x & 0x2) + ((flags & 0x1) ^ 1)];
                     pixel_ptr -= row_dec;
                 }
@@ -266,8 +266,8 @@ static void msvideo1_decode_16bit(Msvideo1Context *s)
 
                     for (pixel_y = 0; pixel_y < 4; pixel_y++) {
                         for (pixel_x = 0; pixel_x < 4; pixel_x++, flags >>= 1)
-                            pixels[pixel_ptr++] = 
-                                colors[((pixel_y & 0x2) << 1) + 
+                            pixels[pixel_ptr++] =
+                                colors[((pixel_y & 0x2) << 1) +
                                     (pixel_x & 0x2) + ((flags & 0x1) ^ 1)];
                         pixel_ptr -= row_dec;
                     }

@@ -86,7 +86,7 @@ vorbis_comment (AVFormatContext * as, char *buf, int size)
             memcpy (ct, v, vl);
             ct[vl] = 0;
 
-            // took from Vorbis_I_spec 
+            // took from Vorbis_I_spec
             if (!strcmp (tt, "AUTHOR"))
                 strncpy (as->author, ct, FFMIN(sizeof (as->author), vl));
             else if (!strcmp (tt, "TITLE"))
@@ -117,7 +117,7 @@ vorbis_comment (AVFormatContext * as, char *buf, int size)
  * Vorbis Identification header from Vorbis_I_spec.html#vorbis-spec-codec
  * [vorbis_version] = read 32 bits as unsigned integer | Not used
  * [audio_channels] = read 8 bit integer as unsigned | Used
- * [audio_sample_rate] = read 32 bits as unsigned integer | Used 
+ * [audio_sample_rate] = read 32 bits as unsigned integer | Used
  * [bitrate_maximum] = read 32 bits as signed integer | Not used yet
  * [bitrate_nominal] = read 32 bits as signed integer | Not used yet
  * [bitrate_minimum] = read 32 bits as signed integer | Used as bitrate

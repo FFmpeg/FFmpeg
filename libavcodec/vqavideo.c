@@ -456,7 +456,7 @@ static void vqa_decode_chunk(VqaContext *s)
         index_shift = 4;
     else
         index_shift = 3;
-    for (y = 0; y < s->frame.linesize[0] * s->height; 
+    for (y = 0; y < s->frame.linesize[0] * s->height;
         y += s->frame.linesize[0] * s->vector_height) {
 
         for (x = y; x < y + s->width; x += 4, lobytes++, hibytes++) {
@@ -467,7 +467,7 @@ static void vqa_decode_chunk(VqaContext *s)
             switch (s->vqa_version) {
 
             case 1:
-/* still need sample media for this case (only one game, "Legend of 
+/* still need sample media for this case (only one game, "Legend of
  * Kyrandia III : Malcolm's Revenge", is known to use this version) */
                 lines = 0;
                 break;
@@ -517,7 +517,7 @@ static void vqa_decode_chunk(VqaContext *s)
         if (s->partial_countdown == 0) {
 
             /* time to replace codebook */
-            memcpy(s->codebook, s->next_codebook_buffer, 
+            memcpy(s->codebook, s->next_codebook_buffer,
                 s->next_codebook_buffer_index);
 
             /* reset accounting */
@@ -540,8 +540,8 @@ static void vqa_decode_chunk(VqaContext *s)
         if (s->partial_countdown == 0) {
 
             /* decompress codebook */
-            decode_format80(s->next_codebook_buffer, 
-                s->next_codebook_buffer_index, 
+            decode_format80(s->next_codebook_buffer,
+                s->next_codebook_buffer_index,
                 s->codebook, s->codebook_size, 0);
 
             /* reset accounting */

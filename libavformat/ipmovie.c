@@ -118,7 +118,7 @@ typedef struct IPMVEContext {
 
 } IPMVEContext;
 
-static int load_ipmovie_packet(IPMVEContext *s, ByteIOContext *pb, 
+static int load_ipmovie_packet(IPMVEContext *s, ByteIOContext *pb,
     AVPacket *pkt) {
 
     int chunk_type;
@@ -170,7 +170,7 @@ static int load_ipmovie_packet(IPMVEContext *s, ByteIOContext *pb,
         url_fseek(pb, s->decode_map_chunk_offset, SEEK_SET);
         s->decode_map_chunk_offset = 0;
 
-        if (get_buffer(pb, pkt->data, s->decode_map_chunk_size) != 
+        if (get_buffer(pb, pkt->data, s->decode_map_chunk_size) !=
             s->decode_map_chunk_size) {
             av_free_packet(pkt);
             return CHUNK_EOF;
@@ -207,7 +207,7 @@ static int load_ipmovie_packet(IPMVEContext *s, ByteIOContext *pb,
 
 /* This function loads and processes a single chunk in an IP movie file.
  * It returns the type of chunk that was processed. */
-static int process_ipmovie_chunk(IPMVEContext *s, ByteIOContext *pb, 
+static int process_ipmovie_chunk(IPMVEContext *s, ByteIOContext *pb,
     AVPacket *pkt)
 {
     unsigned char chunk_preamble[CHUNK_PREAMBLE_SIZE];
@@ -358,7 +358,7 @@ static int process_ipmovie_chunk(IPMVEContext *s, ByteIOContext *pb,
                 s->audio_bits,
                 s->audio_sample_rate,
                 (s->audio_channels == 2) ? "stereo" : "mono",
-                (s->audio_type == CODEC_ID_INTERPLAY_DPCM) ? 
+                (s->audio_type == CODEC_ID_INTERPLAY_DPCM) ?
                 "Interplay audio" : "PCM");
             break;
 

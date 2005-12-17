@@ -53,7 +53,7 @@ Use @file{-} as filename.
 @section Why does ffmpeg not decode audio in VOB files ?
 
 The audio is AC3 (a.k.a. A/52). AC3 decoding is an optional component in ffmpeg
-as the component that handles AC3 decoding (liba52) is currently released under 
+as the component that handles AC3 decoding (liba52) is currently released under
 the GPL. If you have liba52 installed on your system, enable AC3 decoding
 with @code{./configure --enable-a52}. Take care: by
 enabling AC3, you automatically change the license of libavcodec from
@@ -61,7 +61,7 @@ LGPL to GPL.
 
 @section Which codecs are supported by Windows ?
 
-Windows does not support standard formats like MPEG very well, unless you 
+Windows does not support standard formats like MPEG very well, unless you
 install some additional codecs
 
 The following list of video codecs should work on most Windows systems:
@@ -79,8 +79,8 @@ only if you have some MPEG-4 codec installed like ffdshow or XviD
 @item mpeg1
 .mpg only
 @end table
-Note, ASF files often have .wmv or .wma extensions in Windows. It should also 
-be mentioned that Microsoft claims a patent on the ASF format, and may sue 
+Note, ASF files often have .wmv or .wma extensions in Windows. It should also
+be mentioned that Microsoft claims a patent on the ASF format, and may sue
 or threaten users who create ASF files with non-Microsoft software. It is
 strongly advised to avoid ASF where possible.
 
@@ -95,7 +95,7 @@ if some MP3 codec like LAME is installed
 
 @section Why does the chrominance data seem to be sampled at a different time from the luminance data on bt8x8 captures on Linux?
 
-This is a well-known bug in the bt8x8 driver. For 2.4.26 there is a patch at 
+This is a well-known bug in the bt8x8 driver. For 2.4.26 there is a patch at
 (@url{http://www.mplayerhq.hu/~michael/bttv-420-2.4.26.patch}). This may also
 apply cleanly to other 2.4-series kernels.
 
@@ -132,8 +132,8 @@ Both XviD and DivX (version 4+) are implementations of the ISO MPEG-4
 standard (note that there are many other coding formats that use this
 same standard). Thus, use '-vcodec mpeg4' to encode these formats. The
 default fourcc stored in an MPEG-4-coded file will be 'FMP4'. If you want
-a different fourcc, use the '-vtag' option. E.g., '-vtag xvid' will 
-force the fourcc 'xvid' to be stored as the video fourcc rather than the 
+a different fourcc, use the '-vtag' option. E.g., '-vtag xvid' will
+force the fourcc 'xvid' to be stored as the video fourcc rather than the
 default.
 
 @chapter Development
@@ -149,7 +149,7 @@ it implemented is to undertake the task yourself.
 @section Are there examples illustrating how to use the FFmpeg libraries, particularly libavcodec and libavformat ?
 
 Yes. Read the Developers Guide of the FFmpeg documentation. Alternatively,
-examine the source code for one of the many open source projects that 
+examine the source code for one of the many open source projects that
 already incorporate ffmpeg at (@url{projects.php}).
 
 @section Can you support my C compiler XXX ?
@@ -174,7 +174,7 @@ terms of portability.
 @section Why not rewrite ffmpeg in object-oriented C++ ?
 
 ffmpeg is already organized in a highly modular manner and does not need to
-be rewritten in a formal object language. Further, many of the developers 
+be rewritten in a formal object language. Further, many of the developers
 favor straight C; it works for them. For more arguments on this matter,
 read "Programming Religion" at (@url{http://lkml.org/faq/lkmlfaq-15.html}).
 

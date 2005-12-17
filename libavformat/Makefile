@@ -33,8 +33,8 @@ OBJS+= $(AMROBJS)
 # image formats
 OBJS+= pnm.o yuv.o png.o jpeg.o gifdec.o sgi.o
 # file I/O
-OBJS+= avio.o aviobuf.o file.o 
-OBJS+= framehook.o 
+OBJS+= avio.o aviobuf.o file.o
+OBJS+= framehook.o
 
 ifeq ($(CONFIG_VIDEO4LINUX),yes)
 OBJS+= grab.o
@@ -53,7 +53,7 @@ OBJS+= dc1394.o
 endif
 
 ifeq ($(CONFIG_AUDIO_OSS),yes)
-OBJS+= audio.o 
+OBJS+= audio.o
 endif
 
 EXTRALIBS += -L../libavutil -lavutil$(BUILDSUF)
@@ -135,13 +135,13 @@ install-headers:
 	install -m 644 ../libavformat.pc "$(libdir)/pkgconfig"
 
 %.o: %.c
-	$(CC) $(CFLAGS) $(LIBOBJFLAGS) -c -o $@ $< 
+	$(CC) $(CFLAGS) $(LIBOBJFLAGS) -c -o $@ $<
 
 # BeOS: remove -Wall to get rid of all the "multibyte constant" warnings
 %.o: %.cpp
-	g++ $(subst -Wall,,$(CFLAGS)) -c -o $@ $< 
+	g++ $(subst -Wall,,$(CFLAGS)) -c -o $@ $<
 
-distclean clean: 
+distclean clean:
 	rm -f *.o *.d .depend *~ *.a *$(SLIBSUF) $(LIB)
 
 #

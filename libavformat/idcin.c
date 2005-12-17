@@ -255,7 +255,7 @@ static int idcin_read_packet(AVFormatContext *s,
         /* skip the number of decoded bytes (always equal to width * height) */
         url_fseek(pb, 4, SEEK_CUR);
         chunk_size -= 4;
-        ret= av_get_packet(pb, pkt, chunk_size); 
+        ret= av_get_packet(pb, pkt, chunk_size);
         if (ret != chunk_size)
             return AVERROR_IO;
         pkt->stream_index = idcin->video_stream_index;

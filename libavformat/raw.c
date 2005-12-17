@@ -1,4 +1,4 @@
-/* 
+/*
  * RAW encoder and decoder
  * Copyright (c) 2001 Fabrice Bellard.
  * Copyright (c) 2005 Alex Beregszaszi
@@ -86,7 +86,7 @@ static int raw_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     int ret, size;
     //    AVStream *st = s->streams[0];
-    
+
     size= RAW_PACKET_SIZE;
 
     ret= av_get_packet(&s->pb, pkt, size);
@@ -109,7 +109,7 @@ static int raw_read_partial_packet(AVFormatContext *s, AVPacket *pkt)
 
     if (av_new_packet(pkt, size) < 0)
         return AVERROR_IO;
-    
+
     pkt->pos= url_ftell(&s->pb);
     pkt->stream_index = 0;
     ret = get_partial_buffer(&s->pb, pkt->data, size);
@@ -125,21 +125,21 @@ static int raw_read_partial_packet(AVFormatContext *s, AVPacket *pkt)
 static int ingenient_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     int ret, size, w, h, unk1, unk2;
-    
+
     if (get_le32(&s->pb) != MKTAG('M', 'J', 'P', 'G'))
 	return AVERROR_IO; // FIXME
 
     size = get_le32(&s->pb);
-    
+
     w = get_le16(&s->pb);
     h = get_le16(&s->pb);
-    
+
     url_fskip(&s->pb, 8); // zero + size (padded?)
     url_fskip(&s->pb, 2);
     unk1 = get_le16(&s->pb);
     unk2 = get_le16(&s->pb);
     url_fskip(&s->pb, 22); // ascii timestamp
-    
+
     av_log(NULL, AV_LOG_DEBUG, "Ingenient packet: size=%d, width=%d, height=%d, unk1=%d unk2=%d\n",
 	size, w, h, unk1, unk2);
 
@@ -162,7 +162,7 @@ static int raw_read_close(AVFormatContext *s)
     return 0;
 }
 
-int pcm_read_seek(AVFormatContext *s, 
+int pcm_read_seek(AVFormatContext *s,
                   int stream_index, int64_t timestamp, int flags)
 {
     AVStream *st;
@@ -190,13 +190,13 @@ int pcm_read_seek(AVFormatContext *s,
         byte_rate = st->codec->bit_rate / 8;
         break;
     }
-    
+
     if (block_align <= 0 || byte_rate <= 0)
         return -1;
 
     /* compute the position by aligning it to block_align */
-    pos = av_rescale_rnd(timestamp * byte_rate, 
-                         st->time_base.num, 
+    pos = av_rescale_rnd(timestamp * byte_rate,
+                         st->time_base.num,
                          st->time_base.den * (int64_t)block_align,
                          (flags & AVSEEK_FLAG_BACKWARD) ? AV_ROUND_DOWN : AV_ROUND_UP);
     pos *= block_align;
@@ -274,7 +274,7 @@ static int video_read_header(AVFormatContext *s,
     /* for mpeg4 specify it too (most mpeg4 streams dont have the fixed_vop_rate set ...)*/
     if (ap && ap->time_base.num) {
         av_set_pts_info(st, 64, ap->time_base.num, ap->time_base.den);
-    } else if ( st->codec->codec_id == CODEC_ID_MJPEG || 
+    } else if ( st->codec->codec_id == CODEC_ID_MJPEG ||
                 st->codec->codec_id == CODEC_ID_MPEG4 ||
                 st->codec->codec_id == CODEC_ID_H264) {
         av_set_pts_info(st, 64, 1, 25);
@@ -370,7 +370,7 @@ AVInputFormat ac3_iformat = {
 AVOutputFormat ac3_oformat = {
     "ac3",
     "raw ac3",
-    "audio/x-ac3", 
+    "audio/x-ac3",
     "ac3",
     0,
     CODEC_ID_AC3,
@@ -629,28 +629,28 @@ AVOutputFormat pcm_ ## name ## _oformat = {\
 #endif
 
 
-PCMDEF(s16le, "pcm signed 16 bit little endian format", 
+PCMDEF(s16le, "pcm signed 16 bit little endian format",
        LE_DEF("sw"), CODEC_ID_PCM_S16LE)
 
-PCMDEF(s16be, "pcm signed 16 bit big endian format", 
+PCMDEF(s16be, "pcm signed 16 bit big endian format",
        BE_DEF("sw"), CODEC_ID_PCM_S16BE)
 
-PCMDEF(u16le, "pcm unsigned 16 bit little endian format", 
+PCMDEF(u16le, "pcm unsigned 16 bit little endian format",
        LE_DEF("uw"), CODEC_ID_PCM_U16LE)
 
-PCMDEF(u16be, "pcm unsigned 16 bit big endian format", 
+PCMDEF(u16be, "pcm unsigned 16 bit big endian format",
        BE_DEF("uw"), CODEC_ID_PCM_U16BE)
 
-PCMDEF(s8, "pcm signed 8 bit format", 
+PCMDEF(s8, "pcm signed 8 bit format",
        "sb", CODEC_ID_PCM_S8)
 
-PCMDEF(u8, "pcm unsigned 8 bit format", 
+PCMDEF(u8, "pcm unsigned 8 bit format",
        "ub", CODEC_ID_PCM_U8)
 
-PCMDEF(mulaw, "pcm mu law format", 
+PCMDEF(mulaw, "pcm mu law format",
        "ul", CODEC_ID_PCM_MULAW)
 
-PCMDEF(alaw, "pcm A law format", 
+PCMDEF(alaw, "pcm A law format",
        "al", CODEC_ID_PCM_ALAW)
 
 static int rawvideo_read_packet(AVFormatContext *s, AVPacket *pkt)
@@ -749,10 +749,10 @@ int raw_init(void)
 
     av_register_input_format(&h263_iformat);
     av_register_output_format(&h263_oformat);
-    
+
     av_register_input_format(&m4v_iformat);
     av_register_output_format(&m4v_oformat);
-    
+
     av_register_input_format(&h264_iformat);
     av_register_output_format(&h264_oformat);
 
@@ -763,7 +763,7 @@ int raw_init(void)
 
     av_register_input_format(&mjpeg_iformat);
     av_register_output_format(&mjpeg_oformat);
-    
+
     av_register_input_format(&ingenient_iformat);
 
     av_register_input_format(&pcm_s16le_iformat);

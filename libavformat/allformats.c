@@ -27,7 +27,7 @@
 void av_register_all(void)
 {
     static int inited = 0;
-    
+
     if (inited != 0)
         return;
     inited = 1;
@@ -126,7 +126,7 @@ void av_register_all(void)
 #endif
     av_register_image_format(&jpeg_image_format);
 #endif
-    av_register_image_format(&gif_image_format);  
+    av_register_image_format(&gif_image_format);
 //    av_register_image_format(&sgi_image_format); heap corruption, dont enable
 #endif //CONFIG_MUXERS
 

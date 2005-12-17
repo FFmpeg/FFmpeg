@@ -74,7 +74,7 @@ int stristart(const char *str, const char *val, const char **ptr)
  * 1 then it is clamped to buf_size - 1.
  * NOTE: this function does what strncpy should have done to be
  * useful. NEVER use strncpy.
- * 
+ *
  * @param buf destination buffer
  * @param buf_size size of destination buffer
  * @param str source string
@@ -101,7 +101,7 @@ char *pstrcat(char *buf, int buf_size, const char *s)
 {
     int len;
     len = strlen(buf);
-    if (len < buf_size) 
+    if (len < buf_size)
         pstrcpy(buf + len, buf_size - len, s);
     return buf;
 }
@@ -139,7 +139,7 @@ time_t mktimegm(struct tm *tm)
         y--;
     }
 
-    t = 86400 * 
+    t = 86400 *
         (d + (153 * m - 457) / 5 + 365 * y + y / 4 - y / 100 + y / 400 - 719469);
 
     t += 3600 * tm->tm_hour + 60 * tm->tm_min + tm->tm_sec;
@@ -150,10 +150,10 @@ time_t mktimegm(struct tm *tm)
 #define ISLEAP(y) (((y) % 4 == 0) && (((y) % 100) != 0 || ((y) % 400) == 0))
 #define LEAPS_COUNT(y) ((y)/4 - (y)/100 + (y)/400)
 
-/* this is our own gmtime_r. it differs from its POSIX counterpart in a 
+/* this is our own gmtime_r. it differs from its POSIX counterpart in a
    couple of places, though. */
 struct tm *brktimegm(time_t secs, struct tm *tm)
-{   
+{
     int days, y, ny, m;
     int md[] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
 
@@ -208,7 +208,7 @@ static int date_get_num(const char **pp,
 }
 
 /* small strptime for ffmpeg */
-const char *small_strptime(const char *p, const char *fmt, 
+const char *small_strptime(const char *p, const char *fmt,
                            struct tm *dt)
 {
     int c, val;

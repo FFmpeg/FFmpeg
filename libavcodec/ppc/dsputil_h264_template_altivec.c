@@ -47,7 +47,7 @@ void PREFIX_h264_chroma_mc8_altivec(uint8_t * dst, uint8_t * src, int stride, in
 
     register int loadSecond = (((unsigned long)src) % 16) <= 7 ? 0 : 1;
     register int reallyBadAlign = (((unsigned long)src) % 16) == 15 ? 1 : 0;
-    
+
     vector unsigned char vsrcAuc;
     vector unsigned char vsrcBuc;
     vector unsigned char vsrcperm0;
@@ -57,7 +57,7 @@ void PREFIX_h264_chroma_mc8_altivec(uint8_t * dst, uint8_t * src, int stride, in
       vsrcBuc = vec_ld(16, src);
     vsrcperm0 = vec_lvsl(0, src);
     vsrcperm1 = vec_lvsl(1, src);
-    
+
     vector unsigned char vsrc0uc;
     vector unsigned char vsrc1uc;
     vsrc0uc = vec_perm(vsrcAuc, vsrcBuc, vsrcperm0);
@@ -65,7 +65,7 @@ void PREFIX_h264_chroma_mc8_altivec(uint8_t * dst, uint8_t * src, int stride, in
       vsrc1uc = vsrcBuc;
     else
       vsrc1uc = vec_perm(vsrcAuc, vsrcBuc, vsrcperm1);
-    
+
     vector signed short vsrc0ssH = (vector signed short)vec_mergeh((vector unsigned char)vzero, (vector unsigned char)vsrc0uc);
     vector signed short vsrc1ssH = (vector signed short)vec_mergeh((vector unsigned char)vzero, (vector unsigned char)vsrc1uc);
 
@@ -73,37 +73,37 @@ void PREFIX_h264_chroma_mc8_altivec(uint8_t * dst, uint8_t * src, int stride, in
       for (i = 0 ; i < h ; i++) {
         vector unsigned char vsrcCuc;
         vsrcCuc = vec_ld(stride + 0, src);
-        
+
         vector unsigned char vsrc2uc;
         vector unsigned char vsrc3uc;
         vsrc2uc = vec_perm(vsrcCuc, vsrcCuc, vsrcperm0);
         vsrc3uc = vec_perm(vsrcCuc, vsrcCuc, vsrcperm1);
-        
+
         vector signed short vsrc2ssH = (vector signed short)vec_mergeh((vector unsigned char)vzero, (vector unsigned char)vsrc2uc);
         vector signed short vsrc3ssH = (vector signed short)vec_mergeh((vector unsigned char)vzero, (vector unsigned char)vsrc3uc);
-        
+
         vector signed short psum;
-        
+
         psum = vec_mladd(vA, vsrc0ssH, vec_splat_s16(0));
         psum = vec_mladd(vB, vsrc1ssH, psum);
         psum = vec_mladd(vC, vsrc2ssH, psum);
         psum = vec_mladd(vD, vsrc3ssH, psum);
         psum = vec_add(v32ss, psum);
         psum = vec_sra(psum, v6us);
-        
+
         vector unsigned char vdst = vec_ld(0, dst);
         vector unsigned char ppsum = (vector unsigned char)vec_packsu(psum, psum);
-        
+
         vector unsigned char vfdst = vec_perm(vdst, ppsum, fperm);
         vector unsigned char fsum;
-        
+
         OP_U8_ALTIVEC(fsum, vfdst, vdst);
 
         vec_st(fsum, 0, dst);
-        
+
         vsrc0ssH = vsrc2ssH;
         vsrc1ssH = vsrc3ssH;
-        
+
         dst += stride;
         src += stride;
       }
@@ -113,7 +113,7 @@ void PREFIX_h264_chroma_mc8_altivec(uint8_t * dst, uint8_t * src, int stride, in
         vector unsigned char vsrcDuc;
         vsrcCuc = vec_ld(stride + 0, src);
         vsrcDuc = vec_ld(stride + 16, src);
-        
+
         vector unsigned char vsrc2uc;
         vector unsigned char vsrc3uc;
         vsrc2uc = vec_perm(vsrcCuc, vsrcDuc, vsrcperm0);
@@ -121,32 +121,32 @@ void PREFIX_h264_chroma_mc8_altivec(uint8_t * dst, uint8_t * src, int stride, in
           vsrc3uc = vsrcDuc;
         else
           vsrc3uc = vec_perm(vsrcCuc, vsrcDuc, vsrcperm1);
-        
+
         vector signed short vsrc2ssH = (vector signed short)vec_mergeh((vector unsigned char)vzero, (vector unsigned char)vsrc2uc);
         vector signed short vsrc3ssH = (vector signed short)vec_mergeh((vector unsigned char)vzero, (vector unsigned char)vsrc3uc);
-        
+
         vector signed short psum;
-      
+
         psum = vec_mladd(vA, vsrc0ssH, vec_splat_s16(0));
         psum = vec_mladd(vB, vsrc1ssH, psum);
         psum = vec_mladd(vC, vsrc2ssH, psum);
         psum = vec_mladd(vD, vsrc3ssH, psum);
         psum = vec_add(v32ss, psum);
         psum = vec_sr(psum, v6us);
-        
+
         vector unsigned char vdst = vec_ld(0, dst);
-        vector unsigned char ppsum = (vector unsigned char)vec_pack(psum, psum); 
-        
+        vector unsigned char ppsum = (vector unsigned char)vec_pack(psum, psum);
+
         vector unsigned char vfdst = vec_perm(vdst, ppsum, fperm);
         vector unsigned char fsum;
-        
+
         OP_U8_ALTIVEC(fsum, vfdst, vdst);
 
         vec_st(fsum, 0, dst);
-        
+
         vsrc0ssH = vsrc2ssH;
         vsrc1ssH = vsrc3ssH;
-        
+
         dst += stride;
         src += stride;
       }
@@ -159,7 +159,7 @@ static void PREFIX_h264_qpel16_h_lowpass_altivec(uint8_t * dst, uint8_t * src, i
   POWERPC_PERF_DECLARE(PREFIX_h264_qpel16_h_lowpass_num, 1);
   POWERPC_PERF_START_COUNT(PREFIX_h264_qpel16_h_lowpass_num, 1);
   register int i;
-  
+
   const vector signed int vzero = vec_splat_s32(0);
   const vector unsigned char permM2 = vec_lvsl(-2, src);
   const vector unsigned char permM1 = vec_lvsl(-1, src);
@@ -258,13 +258,13 @@ static void PREFIX_h264_qpel16_h_lowpass_altivec(uint8_t * dst, uint8_t * src, i
     const vector signed short sum2B = vec_adds(srcM1B, srcP2B);
     const vector signed short sum3A = vec_adds(srcM2A, srcP3A);
     const vector signed short sum3B = vec_adds(srcM2B, srcP3B);
-    
+
     const vector signed short pp1A = vec_mladd(sum1A, v20ss, v16ss);
     const vector signed short pp1B = vec_mladd(sum1B, v20ss, v16ss);
 
     const vector signed short pp2A = vec_mladd(sum2A, v5ss, (vector signed short)vzero);
     const vector signed short pp2B = vec_mladd(sum2B, v5ss, (vector signed short)vzero);
-    
+
     const vector signed short pp3A = vec_add(sum3A, pp1A);
     const vector signed short pp3B = vec_add(sum3B, pp1B);
 
@@ -300,7 +300,7 @@ POWERPC_PERF_STOP_COUNT(PREFIX_h264_qpel16_h_lowpass_num, 1);
 static void PREFIX_h264_qpel16_v_lowpass_altivec(uint8_t * dst, uint8_t * src, int dstStride, int srcStride) {
   POWERPC_PERF_DECLARE(PREFIX_h264_qpel16_v_lowpass_num, 1);
   POWERPC_PERF_START_COUNT(PREFIX_h264_qpel16_v_lowpass_num, 1);
-  
+
   register int i;
 
   const vector signed int vzero = vec_splat_s32(0);
@@ -312,7 +312,7 @@ static void PREFIX_h264_qpel16_v_lowpass_altivec(uint8_t * dst, uint8_t * src, i
   const vector unsigned char dstperm = vec_lvsr(0, dst);
   const vector unsigned char neg1 = (const vector unsigned char)vec_splat_s8(-1);
   const vector unsigned char dstmask = vec_perm((const vector unsigned char)vzero, neg1, dstperm);
-  
+
   uint8_t *srcbis = src - (srcStride * 2);
 
   const vector unsigned char srcM2a = vec_ld(0, srcbis);
@@ -372,13 +372,13 @@ static void PREFIX_h264_qpel16_v_lowpass_altivec(uint8_t * dst, uint8_t * src, i
     srcP1ssB = srcP2ssB;
     srcP2ssA = srcP3ssA;
     srcP2ssB = srcP3ssB;
-    
+
     const vector signed short pp1A = vec_mladd(sum1A, v20ss, v16ss);
     const vector signed short pp1B = vec_mladd(sum1B, v20ss, v16ss);
 
     const vector signed short pp2A = vec_mladd(sum2A, v5ss, (vector signed short)vzero);
     const vector signed short pp2B = vec_mladd(sum2B, v5ss, (vector signed short)vzero);
-    
+
     const vector signed short pp3A = vec_add(sum3A, pp1A);
     const vector signed short pp3B = vec_add(sum3B, pp1B);
 
@@ -513,7 +513,7 @@ static void PREFIX_h264_qpel16_hv_lowpass_altivec(uint8_t * dst, int16_t * tmp, 
     const vector signed short sum2B = vec_adds(srcM1B, srcP2B);
     const vector signed short sum3A = vec_adds(srcM2A, srcP3A);
     const vector signed short sum3B = vec_adds(srcM2B, srcP3B);
-    
+
     const vector signed short pp1A = vec_mladd(sum1A, v20ss, sum3A);
     const vector signed short pp1B = vec_mladd(sum1B, v20ss, sum3B);
 
@@ -525,18 +525,18 @@ static void PREFIX_h264_qpel16_hv_lowpass_altivec(uint8_t * dst, int16_t * tmp, 
 
     vec_st(psumA, 0, tmp);
     vec_st(psumB, 16, tmp);
-    
+
     src += srcStride;
     tmp += tmpStride; /* int16_t*, and stride is 16, so it's OK here */
   }
-  
+
   const vector unsigned char dstperm = vec_lvsr(0, dst);
   const vector unsigned char neg1 = (const vector unsigned char)vec_splat_s8(-1);
   const vector unsigned char dstmask = vec_perm((const vector unsigned char)vzero, neg1, dstperm);
   const vector unsigned char mperm = (const vector unsigned char)
     AVV(0x00, 0x08, 0x01, 0x09, 0x02, 0x0A, 0x03, 0x0B,
         0x04, 0x0C, 0x05, 0x0D, 0x06, 0x0E, 0x07, 0x0F);
-  
+
   int16_t *tmpbis = tmp - (tmpStride * 21);
 
   vector signed short tmpM2ssA = vec_ld(0, tmpbis);
@@ -607,7 +607,7 @@ static void PREFIX_h264_qpel16_hv_lowpass_altivec(uint8_t * dst, int16_t * tmp, 
     const vector signed int sumAo = vec_add(pp1cAo, pp32Ao);
     const vector signed int sumBe = vec_add(pp1cBe, pp32Be);
     const vector signed int sumBo = vec_add(pp1cBo, pp32Bo);
-    
+
     const vector signed int ssumAe = vec_sra(sumAe, v10ui);
     const vector signed int ssumAo = vec_sra(sumAo, v10ui);
     const vector signed int ssumBe = vec_sra(sumBe, v10ui);

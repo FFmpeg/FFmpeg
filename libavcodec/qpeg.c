@@ -17,12 +17,12 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
- 
+
 /**
  * @file qpeg.c
  * QPEG codec.
  */
- 
+
 #include "avcodec.h"
 #include "mpegvideo.h"
 
@@ -41,11 +41,11 @@ static void qpeg_decode_intra(uint8_t *src, uint8_t *dst, int size,
     int run, copy;
     int filled = 0;
     int rows_to_go;
-    
+
     rows_to_go = height;
     height--;
     dst = dst + height * stride;
-    
+
     while((size > 0) && (rows_to_go > 0)) {
 	code = *src++;
 	size--;
@@ -75,11 +75,11 @@ static void qpeg_decode_intra(uint8_t *src, uint8_t *dst, int size,
 	} else { /* short copy */
 	    copy = code + 1;
 	}
-	
+
 	/* perform actual run or copy */
 	if(run) {
 	    int p;
-	    
+
 	    p = *src++;
 	    size--;
 	    for(i = 0; i < run; i++) {
@@ -108,11 +108,11 @@ static void qpeg_decode_intra(uint8_t *src, uint8_t *dst, int size,
     }
 }
 
-static int qpeg_table_h[16] = 
+static int qpeg_table_h[16] =
  { 0x00, 0x20, 0x20, 0x20, 0x18, 0x10, 0x10, 0x20, 0x10, 0x08, 0x18, 0x08, 0x08, 0x18, 0x10, 0x04};
 static int qpeg_table_w[16] =
  { 0x00, 0x20, 0x18, 0x08, 0x18, 0x10, 0x20, 0x10, 0x08, 0x10, 0x20, 0x20, 0x08, 0x10, 0x18, 0x04};
- 
+
 /* Decodes delta frames */
 static void qpeg_decode_inter(uint8_t *src, uint8_t *dst, int size,
 			    int stride, int width, int height,
@@ -123,11 +123,11 @@ static void qpeg_decode_inter(uint8_t *src, uint8_t *dst, int size,
     int filled = 0;
     int orig_height;
     uint8_t *blkdata;
-    
+
     /* copy prev frame */
     for(i = 0; i < height; i++)
 	memcpy(refdata + (i * width), dst + (i * stride), width);
-    
+
     orig_height = height;
     blkdata = src - 0x86;
     height--;
@@ -136,7 +136,7 @@ static void qpeg_decode_inter(uint8_t *src, uint8_t *dst, int size,
     while((size > 0) && (height >= 0)) {
 	code = *src++;
 	size--;
-	
+
 	if(delta) {
 	    /* motion compensation */
 	    while((code & 0xF0) == 0xF0) {
@@ -145,12 +145,12 @@ static void qpeg_decode_inter(uint8_t *src, uint8_t *dst, int size,
 		    int me_w, me_h, me_x, me_y;
 		    uint8_t *me_plane;
 		    int corr, val;
-		    
+
 		    /* get block size by index */
 		    me_idx = code & 0xF;
 		    me_w = qpeg_table_w[me_idx];
 		    me_h = qpeg_table_h[me_idx];
-		    
+
 		    /* extract motion vector */
 		    corr = *src++;
 		    size--;
@@ -159,12 +159,12 @@ static void qpeg_decode_inter(uint8_t *src, uint8_t *dst, int size,
 		    if(val > 7)
 			val -= 16;
 		    me_x = val;
-		    
+
 		    val = corr & 0xF;
 		    if(val > 7)
 			val -= 16;
 		    me_y = val;
-		    
+
                     /* check motion vector */
                     if ((me_x + filled < 0) || (me_x + me_w + filled > width) ||
                        (height - me_y - me_h < 0) || (height - me_y > orig_height) ||
@@ -184,7 +184,7 @@ static void qpeg_decode_inter(uint8_t *src, uint8_t *dst, int size,
 		size--;
 	    }
 	}
-	
+
 	if(code == 0xE0) /* end-of-picture code */
 	    break;
 	if(code > 0xE0) { /* run code: 0xE1..0xFF */
@@ -203,7 +203,7 @@ static void qpeg_decode_inter(uint8_t *src, uint8_t *dst, int size,
 	    }
 	} else if(code >= 0xC0) { /* copy code: 0xC0..0xDF */
 	    code &= 0x1F;
-	    
+
 	    for(i = 0; i <= code; i++) {
 		dst[filled++] = *src++;
 		if(filled >= width) {
@@ -215,7 +215,7 @@ static void qpeg_decode_inter(uint8_t *src, uint8_t *dst, int size,
 	    size -= code + 1;
 	} else if(code >= 0x80) { /* skip code: 0x80..0xBF */
 	    int skip;
-	    
+
 	    code &= 0x3F;
 	    /* codes 0x80 and 0x81 are actually escape codes,
 	       skip value minus constant is in the next byte */
@@ -248,7 +248,7 @@ static void qpeg_decode_inter(uint8_t *src, uint8_t *dst, int size,
     }
 }
 
-static int decode_frame(AVCodecContext *avctx, 
+static int decode_frame(AVCodecContext *avctx,
                         void *data, int *data_size,
                         uint8_t *buf, int buf_size)
 {
@@ -256,7 +256,7 @@ static int decode_frame(AVCodecContext *avctx,
     AVFrame * const p= (AVFrame*)&a->pic;
     uint8_t* outdata;
     int delta;
-    
+
     if(p->data[0])
         avctx->release_buffer(avctx, p);
 
@@ -282,13 +282,13 @@ static int decode_frame(AVCodecContext *avctx,
 
     *data_size = sizeof(AVFrame);
     *(AVFrame*)data = a->pic;
-    
+
     return buf_size;
 }
 
 static int decode_init(AVCodecContext *avctx){
     QpegContext * const a = avctx->priv_data;
-    
+
     a->avctx = avctx;
     avctx->pix_fmt= PIX_FMT_PAL8;
     avctx->has_b_frames = 0;
@@ -301,7 +301,7 @@ static int decode_init(AVCodecContext *avctx){
 static int decode_end(AVCodecContext *avctx){
     QpegContext * const a = avctx->priv_data;
     AVFrame * const p= (AVFrame*)&a->pic;
-    
+
     if(p->data[0])
         avctx->release_buffer(avctx, p);
 

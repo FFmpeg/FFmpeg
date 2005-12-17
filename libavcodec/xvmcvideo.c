@@ -162,7 +162,7 @@ const int mb_xy = s->mb_y * s->mb_stride + s->mb_x;
     assert(render->mv_blocks);
 
     //take the next free macroblock
-    mv_block = &render->mv_blocks[render->start_mv_blocks_num + 
+    mv_block = &render->mv_blocks[render->start_mv_blocks_num +
                                    render->filled_mv_blocks_num ];
 
 // memset(mv_block,0,sizeof(XvMCMacroBlock));
@@ -258,7 +258,7 @@ const int mb_xy = s->mb_y * s->mb_stride + s->mb_x;
         if(s->block_last_index[i] >= 0)
             cbp++;
     }
-    
+
     if(s->flags & CODEC_FLAG_GRAY){
         if(s->mb_intra){//intra frames are alwasy full chroma block
             for(i=4; i<blocks_per_mb; i++){
@@ -292,7 +292,7 @@ const int mb_xy = s->mb_y * s->mb_stride + s->mb_x;
 /*              if(s->pblocks[i] != &render->data_blocks[
                         (render->next_free_data_block_num)*64]){
                    printf("ERROR mb(%d,%d) s->pblocks[i]=%p data_block[]=%p\n",
-                   s->mb_x,s->mb_y, s->pblocks[i], 
+                   s->mb_x,s->mb_y, s->pblocks[i],
                    &render->data_blocks[(render->next_free_data_block_num)*64]);
                 }*/
             }

@@ -75,7 +75,7 @@ static double evalPrimary(Parser *p){
         p->s= next;
         return d;
     }
-    
+
     /* named constants */
     for(i=0; p->const_name && p->const_name[i]; i++){
         if(strmatch(p->s, p->const_name[i])){
@@ -83,7 +83,7 @@ static double evalPrimary(Parser *p){
             return p->const_value[i];
         }
     }
-    
+
     p->s= strchr(p->s, '(');
     if(p->s==NULL){
         av_log(NULL, AV_LOG_ERROR, "Parser: missing ( in \"%s\"\n", next);
@@ -100,7 +100,7 @@ static double evalPrimary(Parser *p){
         return NAN;
     }
     p->s++; // ")"
-    
+
          if( strmatch(next, "sinh"  ) ) d= sinh(d);
     else if( strmatch(next, "cosh"  ) ) d= cosh(d);
     else if( strmatch(next, "tanh"  ) ) d= tanh(d);
@@ -140,7 +140,7 @@ static double evalPrimary(Parser *p){
     }
 
     return d;
-}      
+}
 
 static double evalPow(Parser *p){
     int sign= (*p->s == '+') - (*p->s == '-');
@@ -187,7 +187,7 @@ double ff_eval(char *s, double *const_value, const char **const_name,
                double (**func2)(void *, double, double), char **func2_name,
                void *opaque){
     Parser p;
-    
+
     p.stack_index=100;
     p.s= s;
     p.const_value= const_value;
@@ -197,12 +197,12 @@ double ff_eval(char *s, double *const_value, const char **const_name,
     p.func2      = func2;
     p.func2_name = func2_name;
     p.opaque     = opaque;
-    
+
     return evalExpression(&p);
 }
 
 #ifdef TEST
-#undef printf 
+#undef printf
 static double const_values[]={
     M_PI,
     M_E,
@@ -216,7 +216,7 @@ static const char *const_names[]={
 main(){
     int i;
     printf("%f == 12.7\n", ff_eval("1+(5-2)^(3-1)+1/2+sin(PI)-max(-2.2,-3.1)", const_values, const_names, NULL, NULL, NULL, NULL, NULL));
-    
+
     for(i=0; i<1050; i++){
         START_TIMER
             ff_eval("1+(5-2)^(3-1)+1/2+sin(PI)-max(-2.2,-3.1)", const_values, const_names, NULL, NULL, NULL, NULL, NULL);

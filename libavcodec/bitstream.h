@@ -13,7 +13,7 @@
 //#define LIBMPEG2_BITSTREAM_READER
 //#define A32_BITSTREAM_READER
 #define LIBMPEG2_BITSTREAM_READER_HACK //add BERO
- 
+
 extern const uint8_t ff_reverse[256];
 
 #if defined(ARCH_X86) || defined(ARCH_X86_64)
@@ -173,7 +173,7 @@ static inline void put_bits(PutBitContext *s, int n, unsigned int value)
 #endif
     //    printf("put_bits=%d %x\n", n, value);
     assert(n == 32 || value < (1U << n));
-    
+
     bit_buf = s->bit_buf;
     bit_left = s->bit_left;
 
@@ -231,9 +231,9 @@ static inline void put_bits(PutBitContext *s, int n, unsigned int value)
 #        else
     int index= s->index;
     uint32_t *ptr= ((uint32_t *)s->buf)+(index>>5);
-    
-    value<<= 32-n; 
-    
+
+    value<<= 32-n;
+
     ptr[0] |= be2me_32(value>>(index&31));
     ptr[1]  = be2me_32(value<<(32-(index&31)));
 //if(n>24) printf("%d %d\n", n, value);
@@ -261,7 +261,7 @@ static inline void put_bits(PutBitContext *s, int n, unsigned int value)
 #        else
     int index= s->index;
     uint32_t *ptr= (uint32_t*)(((uint8_t *)s->buf)+(index>>3));
-    
+
     ptr[0] |= be2me_32(value<<(32-n-(index&7) ));
     ptr[1] = 0;
 //if(n>24) printf("%d %d\n", n, value);
@@ -294,7 +294,7 @@ static inline void skip_put_bytes(PutBitContext *s, int n){
 #else
         assert(s->bit_left==32);
 	s->buf_ptr += n;
-#endif    
+#endif
 }
 
 /**
@@ -308,7 +308,7 @@ static inline void skip_put_bits(PutBitContext *s, int n){
     s->bit_left -= n;
     s->buf_ptr-= s->bit_left>>5;
     s->bit_left &= 31;
-#endif        
+#endif
 }
 
 /**
@@ -569,9 +569,9 @@ static inline int get_bits_count(GetBitContext *s){
 
 /**
  * read mpeg1 dc style vlc (sign bit + mantisse with no MSB).
- * if MSB not set it is negative 
+ * if MSB not set it is negative
  * @param n length in bits
- * @author BERO  
+ * @author BERO
  */
 static inline int get_xbits(GetBitContext *s, int n){
     register int tmp;
@@ -795,11 +795,11 @@ static inline int get_vlc(GetBitContext *s, VLC *vlc)
 {
     int code;
     VLC_TYPE (*table)[2]= vlc->table;
-    
+
     OPEN_READER(re, s)
     UPDATE_CACHE(re, s)
 
-    GET_VLC(code, re, s, table, vlc->bits, 3)    
+    GET_VLC(code, re, s, table, vlc->bits, 3)
 
     CLOSE_READER(re, s)
     return code;
@@ -807,17 +807,17 @@ static inline int get_vlc(GetBitContext *s, VLC *vlc)
 
 /**
  * parses a vlc code, faster then get_vlc()
- * @param bits is the number of bits which will be read at once, must be 
+ * @param bits is the number of bits which will be read at once, must be
  *             identical to nb_bits in init_vlc()
  * @param max_depth is the number of times bits bits must be readed to completly
- *                  read the longest vlc code 
+ *                  read the longest vlc code
  *                  = (max_vlc_length + bits - 1) / bits
  */
 static always_inline int get_vlc2(GetBitContext *s, VLC_TYPE (*table)[2],
                                   int bits, int max_depth)
 {
     int code;
-    
+
     OPEN_READER(re, s)
     UPDATE_CACHE(re, s)
 
@@ -833,7 +833,7 @@ static always_inline int get_vlc2(GetBitContext *s, VLC_TYPE (*table)[2],
 #include "avcodec.h"
 static inline void print_bin(int bits, int n){
     int i;
-    
+
     for(i=n-1; i>=0; i--){
         av_log(NULL, AV_LOG_DEBUG, "%d", (bits>>i)&1);
     }
@@ -843,7 +843,7 @@ static inline void print_bin(int bits, int n){
 
 static inline int get_bits_trace(GetBitContext *s, int n, char *file, const char *func, int line){
     int r= get_bits(s, n);
-    
+
     print_bin(r, n);
     av_log(NULL, AV_LOG_DEBUG, "%5d %2d %3d bit @%5d in %s %s:%d\n", r, n, r, get_bits_count(s)-n, file, func, line);
     return r;
@@ -854,16 +854,16 @@ static inline int get_vlc_trace(GetBitContext *s, VLC_TYPE (*table)[2], int bits
     int r= get_vlc2(s, table, bits, max_depth);
     int len= get_bits_count(s) - pos;
     int bits2= show>>(24-len);
-    
+
     print_bin(bits2, len);
-    
+
     av_log(NULL, AV_LOG_DEBUG, "%5d %2d %3d vlc @%5d in %s %s:%d\n", bits2, len, r, pos, file, func, line);
     return r;
 }
 static inline int get_xbits_trace(GetBitContext *s, int n, char *file, const char *func, int line){
     int show= show_bits(s, n);
     int r= get_xbits(s, n);
-    
+
     print_bin(show, n);
     av_log(NULL, AV_LOG_DEBUG, "%5d %2d %3d xbt @%5d in %s %s:%d\n", show, n, r, get_bits_count(s)-n, file, func, line);
     return r;

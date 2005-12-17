@@ -1,6 +1,6 @@
 /*
  * gcc fixes for altivec.
- * Used to workaround broken gcc (FSF gcc-3 pre gcc-3.3) 
+ * Used to workaround broken gcc (FSF gcc-3 pre gcc-3.3)
  * and to stay somewhat compatible with Darwin.
  */
 
@@ -19,7 +19,7 @@
 # endif
 #else
 #define AVV(x...) {x}
-#if (__GNUC__ * 100 + __GNUC_MINOR__ < 303)  
+#if (__GNUC__ * 100 + __GNUC_MINOR__ < 303)
 
 /* This code was provided to me by Bartosch Pixa
  * as a separate header file (broken_mergel.h).
@@ -58,9 +58,9 @@ static inline vector signed int ff_vmrglw (vector signed int const A,
     };
     return vec_perm (A, B, lowword);
 }
-/*#define ff_vmrglb ff_vmrglb 
-#define ff_vmrglh ff_vmrglh 
-#define ff_vmrglw ff_vmrglw 
+/*#define ff_vmrglb ff_vmrglb
+#define ff_vmrglh ff_vmrglh
+#define ff_vmrglw ff_vmrglw
 */
 #undef vec_mergel
 

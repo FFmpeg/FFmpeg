@@ -24,10 +24,10 @@
  */
 
 /**
- * @file cyuv.c 
+ * @file cyuv.c
  * Creative YUV (CYUV) Video Decoder.
  */
- 
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -61,7 +61,7 @@ static int cyuv_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int cyuv_decode_frame(AVCodecContext *avctx, 
+static int cyuv_decode_frame(AVCodecContext *avctx,
                              void *data, int *data_size,
                              uint8_t *buf, int buf_size)
 {
@@ -114,7 +114,7 @@ static int cyuv_decode_frame(AVCodecContext *avctx,
 
     /* iterate through each line in the height */
     for (y_ptr = 0, u_ptr = 0, v_ptr = 0;
-         y_ptr < (s->height * s->frame.linesize[0]); 
+         y_ptr < (s->height * s->frame.linesize[0]);
          y_ptr += s->frame.linesize[0] - s->width,
          u_ptr += s->frame.linesize[1] - s->width / 4,
          v_ptr += s->frame.linesize[2] - s->width / 4) {

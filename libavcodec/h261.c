@@ -103,22 +103,22 @@ void ff_h261_encode_picture_header(MpegEncContext * s, int picture_number){
 
     put_bits(&s->pb, 20, 0x10); /* PSC */
 
-    temp_ref= s->picture_number * (int64_t)30000 * s->avctx->time_base.num / 
+    temp_ref= s->picture_number * (int64_t)30000 * s->avctx->time_base.num /
                          (1001 * (int64_t)s->avctx->time_base.den); //FIXME maybe this should use a timestamp
     put_bits(&s->pb, 5, temp_ref & 0x1f); /* TemporalReference */
 
     put_bits(&s->pb, 1, 0); /* split screen off */
     put_bits(&s->pb, 1, 0); /* camera  off */
     put_bits(&s->pb, 1, 0); /* freeze picture release off */
-    
+
     format = ff_h261_get_picture_format(s->width, s->height);
-    
+
     put_bits(&s->pb, 1, format); /* 0 == QCIF, 1 == CIF */
 
     put_bits(&s->pb, 1, 0); /* still image mode */
     put_bits(&s->pb, 1, 0); /* reserved */
 
-    put_bits(&s->pb, 1, 0); /* no PEI */    
+    put_bits(&s->pb, 1, 0); /* no PEI */
     if(format == 0)
         h->gob_number = -1;
     else
@@ -160,7 +160,7 @@ void ff_h261_reorder_mb_index(MpegEncContext* s){
         s->mb_y =     index %  3 ; index /=  3;
         s->mb_x+= 11*(index %  2); index /=  2;
         s->mb_y+=  3*index;
-        
+
         ff_init_block_index(s);
         ff_update_block_index(s);
     }
@@ -172,14 +172,14 @@ static void h261_encode_motion(H261Context * h, int val){
     if(val==0){
         code = 0;
         put_bits(&s->pb,h261_mv_tab[code][1],h261_mv_tab[code][0]);
-    } 
+    }
     else{
         if(val > 15)
             val -=32;
         if(val < -16)
             val+=32;
         sign = val < 0;
-        code = sign ? -val : val; 
+        code = sign ? -val : val;
         put_bits(&s->pb,h261_mv_tab[code][1],h261_mv_tab[code][0]);
         put_bits(&s->pb,1,sign);
     }
@@ -204,14 +204,14 @@ void ff_h261_encode_mb(MpegEncContext * s,
     int mvd, mv_diff_x, mv_diff_y, i, cbp;
     cbp = 63; // avoid warning
     mvd = 0;
- 
+
     h->current_mba++;
     h->mtype = 0;
- 
+
     if (!s->mb_intra){
         /* compute cbp */
         cbp= get_cbp(s, block);
-   
+
         /* mvd indicates if this block is motion compensated */
         mvd = motion_x | motion_y;
 
@@ -226,11 +226,11 @@ void ff_h261_encode_mb(MpegEncContext * s,
 
     /* MB is not skipped, encode MBA */
     put_bits(&s->pb, h261_mba_bits[(h->current_mba-h->previous_mba)-1], h261_mba_code[(h->current_mba-h->previous_mba)-1]);
- 
+
     /* calculate MTYPE */
     if(!s->mb_intra){
         h->mtype++;
-        
+
         if(mvd || s->loop_filter)
             h->mtype+=3;
         if(s->loop_filter)
@@ -240,18 +240,18 @@ void ff_h261_encode_mb(MpegEncContext * s,
         assert(h->mtype > 1);
     }
 
-    if(s->dquant) 
+    if(s->dquant)
         h->mtype++;
 
     put_bits(&s->pb, h261_mtype_bits[h->mtype], h261_mtype_code[h->mtype]);
- 
+
     h->mtype = h261_mtype_map[h->mtype];
- 
+
     if(IS_QUANT(h->mtype)){
         ff_set_qscale(s,s->qscale+s->dquant);
         put_bits(&s->pb, 5, s->qscale);
     }
- 
+
     if(IS_16X16(h->mtype)){
         mv_diff_x = (motion_x >> 1) - h->current_mv_x;
         mv_diff_y = (motion_y >> 1) - h->current_mv_y;
@@ -260,11 +260,11 @@ void ff_h261_encode_mb(MpegEncContext * s,
         h261_encode_motion(h,mv_diff_x);
         h261_encode_motion(h,mv_diff_y);
     }
- 
+
     h->previous_mba = h->current_mba;
- 
+
     if(HAS_CBP(h->mtype)){
-        put_bits(&s->pb,h261_cbp_tab[cbp-1][1],h261_cbp_tab[cbp-1][0]); 
+        put_bits(&s->pb,h261_cbp_tab[cbp-1][1],h261_cbp_tab[cbp-1][0]);
     }
     for(i=0; i<6; i++) {
         /* encode each block */
@@ -279,7 +279,7 @@ void ff_h261_encode_mb(MpegEncContext * s,
 
 void ff_h261_encode_init(MpegEncContext *s){
     static int done = 0;
-    
+
     if (!done) {
         done = 1;
         init_rl(&h261_rl_tcoeff, 1);
@@ -328,7 +328,7 @@ static void h261_encode_block(H261Context * h, DCTELEM * block, int n){
     } else {
         i = 0;
     }
-   
+
     /* AC coefs */
     last_index = s->block_last_index[n];
     last_non_zero = i - 1;
@@ -417,7 +417,7 @@ static int h261_decode_init(AVCodecContext *avctx){
     h261_decode_init_vlc(h);
 
     h->gob_start_code_skipped = 0;
-    
+
     return 0;
 }
 
@@ -428,7 +428,7 @@ static int h261_decode_init(AVCodecContext *avctx){
 static int h261_decode_gob_header(H261Context *h){
     unsigned int val;
     MpegEncContext * const s = &h->s;
-    
+
     if ( !h->gob_start_code_skipped ){
         /* Check for GOB Start Code */
         val = show_bits(&s->gb, 15);
@@ -520,7 +520,7 @@ static int h261_decode_mb_skipped(H261Context *h, int mba1, int mba2 )
 {
     MpegEncContext * const s = &h->s;
     int i;
-    
+
     s->mb_intra = 0;
 
     for(i=mba1; i<mba2; i++){
@@ -560,7 +560,7 @@ static int decode_mv_component(GetBitContext *gb, int v){
 
     if(mv_diff && !get_bits1(gb))
         mv_diff= -mv_diff;
-    
+
     v += mv_diff;
     if     (v <=-16) v+= 32;
     else if(v >= 16) v-= 32;
@@ -599,7 +599,7 @@ static int h261_decode_mb(H261Context *h){
 
     if ( h->current_mba > MBA_STUFFING )
         return SLICE_ERROR;
-    
+
     s->mb_x= ((h->gob_number-1) % 2) * 11 + ((h->current_mba-1) % 11);
     s->mb_y= ((h->gob_number-1) / 2) * 3 + ((h->current_mba-1) / 11);
     xy = s->mb_x + s->mb_y * s->mb_stride;
@@ -687,7 +687,7 @@ static int h261_decode_block(H261Context * h, DCTELEM * block,
     int code, level, i, j, run;
     RLTable *rl = &h261_rl_tcoeff;
     const uint8_t *scan_table;
-    
+
     // For the variable length encoding there are two code tables, one being used for
     // the first transmitted LEVEL in INTER, INTER+MC and INTER+MC+FIL blocks, the second
     // for all other LEVELs except the first one in INTRA blocks which is fixed length
@@ -812,7 +812,7 @@ int h261_decode_picture_header(H261Context *h){
         skip_bits(&s->gb, 8);
     }
 
-    // h261 has no I-FRAMES, but if we pass I_TYPE for the first frame, the codec crashes if it does 
+    // h261 has no I-FRAMES, but if we pass I_TYPE for the first frame, the codec crashes if it does
     // not contain all I-blocks (e.g. when a packet is lost)
     s->pict_type = P_TYPE;
 
@@ -822,7 +822,7 @@ int h261_decode_picture_header(H261Context *h){
 
 static int h261_decode_gob(H261Context *h){
     MpegEncContext * const s = &h->s;
-    
+
     ff_set_qscale(s, s->qscale);
 
     /* decode mb's */
@@ -833,16 +833,16 @@ static int h261_decode_gob(H261Context *h){
         ret= h261_decode_mb(h);
         if(ret<0){
             if(ret==SLICE_END){
-                h261_decode_mb_skipped(h, h->current_mba, 33);                
+                h261_decode_mb_skipped(h, h->current_mba, 33);
                 return 0;
             }
             av_log(s->avctx, AV_LOG_ERROR, "Error at MB: %d\n", s->mb_x + s->mb_y*s->mb_stride);
             return -1;
         }
-        
+
         h261_decode_mb_skipped(h, h->current_mba-h->mba_diff, h->current_mba-1);
     }
-    
+
     return -1;
 }
 
@@ -852,7 +852,7 @@ static int h261_find_frame_end(ParseContext *pc, AVCodecContext* avctx, const ui
 
     vop_found= pc->frame_start_found;
     state= pc->state;
-   
+
     for(i=0; i<buf_size && !vop_found; i++){
         state= (state<<8) | buf[i];
         for(j=0; j<8; j++){
@@ -883,12 +883,12 @@ static int h261_find_frame_end(ParseContext *pc, AVCodecContext* avctx, const ui
 
 static int h261_parse(AVCodecParserContext *s,
                       AVCodecContext *avctx,
-                      uint8_t **poutbuf, int *poutbuf_size, 
+                      uint8_t **poutbuf, int *poutbuf_size,
                       const uint8_t *buf, int buf_size)
 {
     ParseContext *pc = s->priv_data;
     int next;
-    
+
     next= h261_find_frame_end(pc,avctx, buf, buf_size);
     if (ff_combine_frame(pc, next, (uint8_t **)&buf, &buf_size) < 0) {
         *poutbuf = NULL;

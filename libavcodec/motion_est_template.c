@@ -1,5 +1,5 @@
 /*
- * Motion estimation 
+ * Motion estimation
  * Copyright (c) 2002-2004 Michael Niedermayer
  *
  * This library is free software; you can redistribute it and/or
@@ -17,7 +17,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
- 
+
 /**
  * @file motion_est_template.c
  * Motion estimation template.
@@ -46,7 +46,7 @@
 #if 0
 static int hpel_motion_search)(MpegEncContext * s,
 				  int *mx_ptr, int *my_ptr, int dmin,
-                                  uint8_t *ref_data[3], 
+                                  uint8_t *ref_data[3],
                                   int size)
 {
     const int xx = 16 * s->mb_x + 8*(n&1);
@@ -54,9 +54,9 @@ static int hpel_motion_search)(MpegEncContext * s,
     const int mx = *mx_ptr;
     const int my = *my_ptr;
     const int penalty_factor= c->sub_penalty_factor;
-    
+
     LOAD_COMMON
-    
+
  //   INIT;
  //FIXME factorize
     me_cmp_func cmp, chroma_cmp, cmp_sub, chroma_cmp_sub;
@@ -78,25 +78,25 @@ static int hpel_motion_search)(MpegEncContext * s,
         *my_ptr = 0;
         return dmin;
     }
-        
+
     if(c->avctx->me_cmp != c->avctx->me_sub_cmp){
         CMP_HPEL(dmin, 0, 0, mx, my, size);
         if(mx || my)
             dmin += (mv_penalty[2*mx - pred_x] + mv_penalty[2*my - pred_y])*penalty_factor;
     }
-        
-    if (mx > xmin && mx < xmax && 
+
+    if (mx > xmin && mx < xmax &&
         my > ymin && my < ymax) {
         int bx=2*mx, by=2*my;
         int d= dmin;
-        
+
         CHECK_HALF_MV(1, 1, mx-1, my-1)
-        CHECK_HALF_MV(0, 1, mx  , my-1)        
+        CHECK_HALF_MV(0, 1, mx  , my-1)
         CHECK_HALF_MV(1, 1, mx  , my-1)
         CHECK_HALF_MV(1, 0, mx-1, my  )
         CHECK_HALF_MV(1, 0, mx  , my  )
         CHECK_HALF_MV(1, 1, mx-1, my  )
-        CHECK_HALF_MV(0, 1, mx  , my  )        
+        CHECK_HALF_MV(0, 1, mx  , my  )
         CHECK_HALF_MV(1, 1, mx  , my  )
 
         assert(bx >= xmin*2 || bx <= xmax*2 || by >= ymin*2 || by <= ymax*2);
@@ -119,14 +119,14 @@ static int hpel_motion_search(MpegEncContext * s,
 {
     MotionEstContext * const c= &s->me;
     const int mx = *mx_ptr;
-    const int my = *my_ptr;   
+    const int my = *my_ptr;
     const int penalty_factor= c->sub_penalty_factor;
     me_cmp_func cmp_sub, chroma_cmp_sub;
     int bx=2*mx, by=2*my;
 
     LOAD_COMMON
     int flags= c->sub_flags;
-    
+
  //FIXME factorize
 
     cmp_sub= s->dsp.me_sub_cmp[size];
@@ -137,18 +137,18 @@ static int hpel_motion_search(MpegEncContext * s,
         *my_ptr = 0;
         return dmin;
     }
-        
+
     if(c->avctx->me_cmp != c->avctx->me_sub_cmp){
         dmin= cmp(s, mx, my, 0, 0, size, h, ref_index, src_index, cmp_sub, chroma_cmp_sub, flags);
         if(mx || my || size>0)
             dmin += (mv_penalty[2*mx - pred_x] + mv_penalty[2*my - pred_y])*penalty_factor;
     }
-        
-    if (mx > xmin && mx < xmax && 
+
+    if (mx > xmin && mx < xmax &&
         my > ymin && my < ymax) {
         int d= dmin;
         const int index= (my<<ME_MAP_SHIFT) + mx;
-        const int t= score_map[(index-(1<<ME_MAP_SHIFT))&(ME_MAP_SIZE-1)] 
+        const int t= score_map[(index-(1<<ME_MAP_SHIFT))&(ME_MAP_SIZE-1)]
                      + (mv_penalty[bx   - pred_x] + mv_penalty[by-2 - pred_y])*c->penalty_factor;
         const int l= score_map[(index- 1               )&(ME_MAP_SIZE-1)]
                      + (mv_penalty[bx-2 - pred_x] + mv_penalty[by   - pred_y])*c->penalty_factor;
@@ -156,7 +156,7 @@ static int hpel_motion_search(MpegEncContext * s,
                      + (mv_penalty[bx+2 - pred_x] + mv_penalty[by   - pred_y])*c->penalty_factor;
         const int b= score_map[(index+(1<<ME_MAP_SHIFT))&(ME_MAP_SIZE-1)]
                      + (mv_penalty[bx   - pred_x] + mv_penalty[by+2 - pred_y])*c->penalty_factor;
-    
+
 #if 1
         int key;
         int map_generation= c->map_generation;
@@ -171,7 +171,7 @@ static int hpel_motion_search(MpegEncContext * s,
         assert(map[(index+1)&(ME_MAP_SIZE-1)] == key);
         key= ((my)<<ME_MAP_MV_BITS) + (mx-1) + map_generation;
         assert(map[(index-1)&(ME_MAP_SIZE-1)] == key);
-#endif                
+#endif
         if(t<=b){
             CHECK_HALF_MV(0, 1, mx  ,my-1)
             if(l<=r){
@@ -216,7 +216,7 @@ static int hpel_motion_search(MpegEncContext * s,
 
     *mx_ptr = bx;
     *my_ptr = by;
-    
+
     return dmin;
 }
 #endif
@@ -244,12 +244,12 @@ int inline ff_get_mb_score(MpegEncContext * s, int mx, int my, int src_index,
     int d;
 
     LOAD_COMMON
-    
+
  //FIXME factorize
 
     cmp_sub= s->dsp.mb_cmp[size];
     chroma_cmp_sub= s->dsp.mb_cmp[size+1];
-    
+
 //    assert(!c->skip);
 //    assert(c->avctx->me_sub_cmp != c->avctx->mb_cmp);
 
@@ -257,7 +257,7 @@ int inline ff_get_mb_score(MpegEncContext * s, int mx, int my, int src_index,
     //FIXME check cbp before adding penalty for (0,0) vector
     if(add_rate && (mx || my || size>0))
         d += (mv_penalty[mx - pred_x] + mv_penalty[my - pred_y])*penalty_factor;
-        
+
     return d;
 }
 
@@ -272,12 +272,12 @@ int inline ff_get_mb_score(MpegEncContext * s, int mx, int my, int src_index,
 
 static int qpel_motion_search(MpegEncContext * s,
 				  int *mx_ptr, int *my_ptr, int dmin,
-                                  int src_index, int ref_index,                                  
+                                  int src_index, int ref_index,
                                   int size, int h)
 {
     MotionEstContext * const c= &s->me;
     const int mx = *mx_ptr;
-    const int my = *my_ptr;   
+    const int my = *my_ptr;
     const int penalty_factor= c->sub_penalty_factor;
     const int map_generation= c->map_generation;
     const int subpel_quality= c->avctx->me_subpel_quality;
@@ -287,7 +287,7 @@ static int qpel_motion_search(MpegEncContext * s,
 
     LOAD_COMMON
     int flags= c->sub_flags;
-    
+
     cmpf= s->dsp.me_cmp[size];
     chroma_cmpf= s->dsp.me_cmp[size+1]; //factorize FIXME
  //FIXME factorize
@@ -300,14 +300,14 @@ static int qpel_motion_search(MpegEncContext * s,
         *my_ptr = 0;
         return dmin;
     }
-        
+
     if(c->avctx->me_cmp != c->avctx->me_sub_cmp){
         dmin= cmp(s, mx, my, 0, 0, size, h, ref_index, src_index, cmp_sub, chroma_cmp_sub, flags);
         if(mx || my || size>0)
             dmin += (mv_penalty[4*mx - pred_x] + mv_penalty[4*my - pred_y])*penalty_factor;
     }
-        
-    if (mx > xmin && mx < xmax && 
+
+    if (mx > xmin && mx < xmax &&
         my > ymin && my < ymax) {
         int bx=4*mx, by=4*my;
         int d= dmin;
@@ -320,10 +320,10 @@ static int qpel_motion_search(MpegEncContext * s,
         const int c= score_map[(index                    )&(ME_MAP_SIZE-1)];
         int best[8];
         int best_pos[8][2];
-        
+
         memset(best, 64, sizeof(int)*8);
 #if 1
-        if(s->me.dia_size>=2){        
+        if(s->me.dia_size>=2){
             const int tl= score_map[(index-(1<<ME_MAP_SHIFT)-1)&(ME_MAP_SIZE-1)];
             const int bl= score_map[(index+(1<<ME_MAP_SHIFT)-1)&(ME_MAP_SIZE-1)];
             const int tr= score_map[(index-(1<<ME_MAP_SHIFT)+1)&(ME_MAP_SIZE-1)];
@@ -337,14 +337,14 @@ static int qpel_motion_search(MpegEncContext * s,
                     const int64_t b2= nx*nx*(br + bl - 2*b) + 4*nx*(br-bl) + 32*b;
                     int score= (ny*ny*(b2 + t2 - 2*c2) + 4*ny*(b2 - t2) + 32*c2 + 512)>>10;
                     int i;
-                    
+
                     if((nx&3)==0 && (ny&3)==0) continue;
-                    
+
                     score += (mv_penalty[4*mx + nx - pred_x] + mv_penalty[4*my + ny - pred_y])*penalty_factor;
-                    
+
 //                    if(nx&1) score-=1024*c->penalty_factor;
 //                    if(ny&1) score-=1024*c->penalty_factor;
-                    
+
                     for(i=0; i<8; i++){
                         if(score < best[i]){
                             memmove(&best[i+1], &best[i], sizeof(int)*(7-i));
@@ -361,37 +361,37 @@ static int qpel_motion_search(MpegEncContext * s,
             int tl;
             //FIXME this could overflow (unlikely though)
             const int cx = 4*(r - l);
-            const int cx2= r + l - 2*c; 
+            const int cx2= r + l - 2*c;
             const int cy = 4*(b - t);
             const int cy2= b + t - 2*c;
             int cxy;
-              
+
             if(map[(index-(1<<ME_MAP_SHIFT)-1)&(ME_MAP_SIZE-1)] == (my<<ME_MAP_MV_BITS) + mx + map_generation && 0){ //FIXME
                 tl= score_map[(index-(1<<ME_MAP_SHIFT)-1)&(ME_MAP_SIZE-1)];
             }else{
                 tl= cmp(s, mx-1, my-1, 0, 0, size, h, ref_index, src_index, cmpf, chroma_cmpf, flags);//FIXME wrong if chroma me is different
             }
-            
-            cxy= 2*tl + (cx + cy)/4 - (cx2 + cy2) - 2*c; 
-           
+
+            cxy= 2*tl + (cx + cy)/4 - (cx2 + cy2) - 2*c;
+
             assert(16*cx2 + 4*cx + 32*c == 32*r);
             assert(16*cx2 - 4*cx + 32*c == 32*l);
             assert(16*cy2 + 4*cy + 32*c == 32*b);
             assert(16*cy2 - 4*cy + 32*c == 32*t);
             assert(16*cxy + 16*cy2 + 16*cx2 - 4*cy - 4*cx + 32*c == 32*tl);
-            
+
             for(ny= -3; ny <= 3; ny++){
                 for(nx= -3; nx <= 3; nx++){
                     //FIXME this could overflow (unlikely though)
                     int score= ny*nx*cxy + nx*nx*cx2 + ny*ny*cy2 + nx*cx + ny*cy + 32*c; //FIXME factor
                     int i;
-                    
+
                     if((nx&3)==0 && (ny&3)==0) continue;
-                
+
                     score += 32*(mv_penalty[4*mx + nx - pred_x] + mv_penalty[4*my + ny - pred_y])*penalty_factor;
 //                    if(nx&1) score-=32*c->penalty_factor;
   //                  if(ny&1) score-=32*c->penalty_factor;
-                    
+
                     for(i=0; i<8; i++){
                         if(score < best[i]){
                             memmove(&best[i+1], &best[i], sizeof(int)*(7-i));
@@ -403,7 +403,7 @@ static int qpel_motion_search(MpegEncContext * s,
                         }
                     }
                 }
-            }            
+            }
         }
         for(i=0; i<subpel_quality; i++){
             nx= best_pos[i][0];
@@ -421,7 +421,7 @@ static int qpel_motion_search(MpegEncContext * s,
 
 //            nx= FFMAX(4*mx - bx, bx - 4*mx);
 //            ny= FFMAX(4*my - by, by - 4*my);
-            
+
             static int stats[7][7], count;
             count++;
             stats[4*mx - bx + 3][4*my - by + 3]++;
@@ -437,17 +437,17 @@ static int qpel_motion_search(MpegEncContext * s,
 #else
 
         CHECK_QUARTER_MV(2, 2, mx-1, my-1)
-        CHECK_QUARTER_MV(0, 2, mx  , my-1)        
+        CHECK_QUARTER_MV(0, 2, mx  , my-1)
         CHECK_QUARTER_MV(2, 2, mx  , my-1)
         CHECK_QUARTER_MV(2, 0, mx  , my  )
         CHECK_QUARTER_MV(2, 2, mx  , my  )
         CHECK_QUARTER_MV(0, 2, mx  , my  )
         CHECK_QUARTER_MV(2, 2, mx-1, my  )
         CHECK_QUARTER_MV(2, 0, mx-1, my  )
-        
+
         nx= bx;
         ny= by;
-        
+
         for(i=0; i<8; i++){
             int ox[8]= {0, 1, 1, 1, 0,-1,-1,-1};
             int oy[8]= {1, 1, 0,-1,-1,-1, 0, 1};
@@ -563,7 +563,7 @@ static always_inline int small_diamond_search(MpegEncContext * s, int *best, int
     LOAD_COMMON
     LOAD_COMMON2
     int map_generation= c->map_generation;
-    
+
     cmpf= s->dsp.me_cmp[size];
     chroma_cmpf= s->dsp.me_cmp[size+1];
 
@@ -605,7 +605,7 @@ static int funny_diamond_search(MpegEncContext * s, int *best, int dmin,
     LOAD_COMMON
     LOAD_COMMON2
     int map_generation= c->map_generation;
-    
+
     cmpf= s->dsp.me_cmp[size];
     chroma_cmpf= s->dsp.me_cmp[size+1];
 
@@ -613,7 +613,7 @@ static int funny_diamond_search(MpegEncContext * s, int *best, int dmin,
         int dir;
         const int x= best[0];
         const int y= best[1];
-        
+
         if(dia_size&(dia_size-1)) continue;
 
         if(   x + dia_size > xmax
@@ -621,7 +621,7 @@ static int funny_diamond_search(MpegEncContext * s, int *best, int dmin,
            || y + dia_size > ymax
            || y - dia_size < ymin)
            continue;
-        
+
         for(dir= 0; dir<dia_size; dir+=2){
             int d;
 
@@ -653,7 +653,7 @@ if(256*256*256*64 % (stats[0]+1)==0){
 }
 #endif
     }
-    return dmin;    
+    return dmin;
 }
 
 #define SAB_CHECK_MV(ax,ay)\
@@ -698,19 +698,19 @@ static int sab_diamond_search(MpegEncContext * s, int *best, int dmin,
     LOAD_COMMON
     LOAD_COMMON2
     int map_generation= c->map_generation;
-    
+
     cmpf= s->dsp.me_cmp[size];
     chroma_cmpf= s->dsp.me_cmp[size+1];
-    
+
     for(j=i=0; i<ME_MAP_SIZE; i++){
         uint32_t key= map[i];
 
         key += (1<<(ME_MAP_MV_BITS-1)) + (1<<(2*ME_MAP_MV_BITS-1));
-        
+
         if((key&((-1)<<(2*ME_MAP_MV_BITS))) != map_generation) continue;
-        
+
         assert(j<MAX_SAB_SIZE); //max j = number of predictors
-        
+
         minima[j].height= score_map[i];
         minima[j].x= key & ((1<<ME_MAP_MV_BITS)-1); key>>=ME_MAP_MV_BITS;
         minima[j].y= key & ((1<<ME_MAP_MV_BITS)-1);
@@ -719,25 +719,25 @@ static int sab_diamond_search(MpegEncContext * s, int *best, int dmin,
         minima[j].checked=0;
         if(minima[j].x || minima[j].y)
             minima[j].height+= (mv_penalty[((minima[j].x)<<shift)-pred_x] + mv_penalty[((minima[j].y)<<shift)-pred_y])*penalty_factor;
-        
+
         j++;
     }
-    
+
     qsort(minima, j, sizeof(Minima), minima_cmp);
-    
+
     for(; j<minima_count; j++){
         minima[j].height=256*256*256*64;
         minima[j].checked=0;
         minima[j].x= minima[j].y=0;
     }
-    
+
     for(i=0; i<minima_count; i++){
         const int x= minima[i].x;
         const int y= minima[i].y;
         int d;
-        
+
         if(minima[i].checked) continue;
-        
+
         if(   x >= xmax || x <= xmin
            || y >= ymax || y <= ymin)
            continue;
@@ -746,14 +746,14 @@ static int sab_diamond_search(MpegEncContext * s, int *best, int dmin,
         SAB_CHECK_MV(x+1, y)
         SAB_CHECK_MV(x  , y-1)
         SAB_CHECK_MV(x  , y+1)
-        
+
         minima[i].checked= 1;
     }
-    
+
     best[0]= minima[0].x;
     best[1]= minima[0].y;
     dmin= minima[0].height;
-    
+
     if(   best[0] < xmax && best[0] > xmin
        && best[1] < ymax && best[1] > ymin){
         int d;
@@ -763,7 +763,7 @@ static int sab_diamond_search(MpegEncContext * s, int *best, int dmin,
         CHECK_MV(best[0], best[1]-1)
         CHECK_MV(best[0], best[1]+1)
     }
-    return dmin;    
+    return dmin;
 }
 
 static int var_diamond_search(MpegEncContext * s, int *best, int dmin,
@@ -776,7 +776,7 @@ static int var_diamond_search(MpegEncContext * s, int *best, int dmin,
     LOAD_COMMON
     LOAD_COMMON2
     int map_generation= c->map_generation;
-    
+
     cmpf= s->dsp.me_cmp[size];
     chroma_cmpf= s->dsp.me_cmp[size+1];
 
@@ -840,7 +840,7 @@ if(256*256*256*64 % (stats[0]+1)==0){
 }
 #endif
     }
-    return dmin;    
+    return dmin;
 }
 
 static always_inline int diamond_search(MpegEncContext * s, int *best, int dmin,
@@ -858,7 +858,7 @@ static always_inline int diamond_search(MpegEncContext * s, int *best, int dmin,
 }
 
 static always_inline int epzs_motion_search_internal(MpegEncContext * s, int *mx_ptr, int *my_ptr,
-                             int P[10][2], int src_index, int ref_index, int16_t (*last_mv)[2], 
+                             int P[10][2], int src_index, int ref_index, int16_t (*last_mv)[2],
                              int ref_mv_scale, int flags, int size, int h)
 {
     MotionEstContext * const c= &s->me;
@@ -869,10 +869,10 @@ static always_inline int epzs_motion_search_internal(MpegEncContext * s, int *mx
     const int ref_mv_stride= s->mb_stride; //pass as arg  FIXME
     const int ref_mv_xy= s->mb_x + s->mb_y*ref_mv_stride; //add to last_mv beforepassing FIXME
     me_cmp_func cmpf, chroma_cmpf;
-    
+
     LOAD_COMMON
     LOAD_COMMON2
-    
+
     if(c->pre_pass){
         penalty_factor= c->pre_penalty_factor;
         cmpf= s->dsp.me_pre_cmp[size];
@@ -882,7 +882,7 @@ static always_inline int epzs_motion_search_internal(MpegEncContext * s, int *mx
         cmpf= s->dsp.me_cmp[size];
         chroma_cmpf= s->dsp.me_cmp[size+1];
     }
-    
+
     map_generation= update_map_generation(c);
 
     assert(cmpf);
@@ -893,7 +893,7 @@ static always_inline int epzs_motion_search_internal(MpegEncContext * s, int *mx
     /* first line */
     if (s->first_slice_line) {
         CHECK_MV(P_LEFT[0]>>shift, P_LEFT[1]>>shift)
-        CHECK_CLIPED_MV((last_mv[ref_mv_xy][0]*ref_mv_scale + (1<<15))>>16, 
+        CHECK_CLIPED_MV((last_mv[ref_mv_xy][0]*ref_mv_scale + (1<<15))>>16,
                         (last_mv[ref_mv_xy][1]*ref_mv_scale + (1<<15))>>16)
     }else{
         if(dmin<h*h && ( P_LEFT[0]    |P_LEFT[1]
@@ -906,7 +906,7 @@ static always_inline int epzs_motion_search_internal(MpegEncContext * s, int *mx
         }
         CHECK_MV(P_MEDIAN[0]>>shift, P_MEDIAN[1]>>shift)
         if(dmin>h*h*2){
-            CHECK_CLIPED_MV((last_mv[ref_mv_xy][0]*ref_mv_scale + (1<<15))>>16, 
+            CHECK_CLIPED_MV((last_mv[ref_mv_xy][0]*ref_mv_scale + (1<<15))>>16,
                             (last_mv[ref_mv_xy][1]*ref_mv_scale + (1<<15))>>16)
             CHECK_MV(P_LEFT[0]    >>shift, P_LEFT[1]    >>shift)
             CHECK_MV(P_TOP[0]     >>shift, P_TOP[1]     >>shift)
@@ -915,16 +915,16 @@ static always_inline int epzs_motion_search_internal(MpegEncContext * s, int *mx
     }
     if(dmin>h*h*4){
         if(c->pre_pass){
-            CHECK_CLIPED_MV((last_mv[ref_mv_xy-1][0]*ref_mv_scale + (1<<15))>>16, 
+            CHECK_CLIPED_MV((last_mv[ref_mv_xy-1][0]*ref_mv_scale + (1<<15))>>16,
                             (last_mv[ref_mv_xy-1][1]*ref_mv_scale + (1<<15))>>16)
             if(!s->first_slice_line)
-                CHECK_CLIPED_MV((last_mv[ref_mv_xy-ref_mv_stride][0]*ref_mv_scale + (1<<15))>>16, 
+                CHECK_CLIPED_MV((last_mv[ref_mv_xy-ref_mv_stride][0]*ref_mv_scale + (1<<15))>>16,
                                 (last_mv[ref_mv_xy-ref_mv_stride][1]*ref_mv_scale + (1<<15))>>16)
         }else{
-            CHECK_CLIPED_MV((last_mv[ref_mv_xy+1][0]*ref_mv_scale + (1<<15))>>16, 
+            CHECK_CLIPED_MV((last_mv[ref_mv_xy+1][0]*ref_mv_scale + (1<<15))>>16,
                             (last_mv[ref_mv_xy+1][1]*ref_mv_scale + (1<<15))>>16)
             if(s->mb_y+1<s->end_mb_y)  //FIXME replace at least with last_slice_line
-                CHECK_CLIPED_MV((last_mv[ref_mv_xy+ref_mv_stride][0]*ref_mv_scale + (1<<15))>>16, 
+                CHECK_CLIPED_MV((last_mv[ref_mv_xy+ref_mv_stride][0]*ref_mv_scale + (1<<15))>>16,
                                 (last_mv[ref_mv_xy+ref_mv_stride][1]*ref_mv_scale + (1<<15))>>16)
         }
     }
@@ -955,7 +955,7 @@ static always_inline int epzs_motion_search_internal(MpegEncContext * s, int *mx
 
 //check(best[0],best[1],0, b1)
     *mx_ptr= best[0];
-    *my_ptr= best[1];    
+    *my_ptr= best[1];
 
 //    printf("%d %d %d \n", best[0], best[1], dmin);
     return dmin;
@@ -963,7 +963,7 @@ static always_inline int epzs_motion_search_internal(MpegEncContext * s, int *mx
 
 //this function is dedicated to the braindamaged gcc
 inline int ff_epzs_motion_search(MpegEncContext * s, int *mx_ptr, int *my_ptr,
-                             int P[10][2], int src_index, int ref_index, int16_t (*last_mv)[2], 
+                             int P[10][2], int src_index, int ref_index, int16_t (*last_mv)[2],
                              int ref_mv_scale, int size, int h)
 {
     MotionEstContext * const c= &s->me;
@@ -979,12 +979,12 @@ inline int ff_epzs_motion_search(MpegEncContext * s, int *mx_ptr, int *my_ptr,
 
 static int epzs_motion_search4(MpegEncContext * s,
                              int *mx_ptr, int *my_ptr, int P[10][2],
-                             int src_index, int ref_index, int16_t (*last_mv)[2], 
+                             int src_index, int ref_index, int16_t (*last_mv)[2],
                              int ref_mv_scale)
 {
     MotionEstContext * const c= &s->me;
     int best[2]={0, 0};
-    int d, dmin; 
+    int d, dmin;
     int map_generation;
     const int penalty_factor= c->penalty_factor;
     const int size=1;
@@ -995,18 +995,18 @@ static int epzs_motion_search4(MpegEncContext * s,
     LOAD_COMMON
     int flags= c->flags;
     LOAD_COMMON2
-    
+
     cmpf= s->dsp.me_cmp[size];
     chroma_cmpf= s->dsp.me_cmp[size+1];
 
     map_generation= update_map_generation(c);
 
     dmin = 1000000;
-//printf("%d %d %d %d //",xmin, ymin, xmax, ymax); 
+//printf("%d %d %d %d //",xmin, ymin, xmax, ymax);
     /* first line */
     if (s->first_slice_line) {
 	CHECK_MV(P_LEFT[0]>>shift, P_LEFT[1]>>shift)
-        CHECK_CLIPED_MV((last_mv[ref_mv_xy][0]*ref_mv_scale + (1<<15))>>16, 
+        CHECK_CLIPED_MV((last_mv[ref_mv_xy][0]*ref_mv_scale + (1<<15))>>16,
                         (last_mv[ref_mv_xy][1]*ref_mv_scale + (1<<15))>>16)
         CHECK_MV(P_MV1[0]>>shift, P_MV1[1]>>shift)
     }else{
@@ -1017,22 +1017,22 @@ static int epzs_motion_search4(MpegEncContext * s,
             CHECK_MV(P_LEFT[0]>>shift, P_LEFT[1]>>shift)
             CHECK_MV(P_TOP[0]>>shift, P_TOP[1]>>shift)
             CHECK_MV(P_TOPRIGHT[0]>>shift, P_TOPRIGHT[1]>>shift)
-            CHECK_CLIPED_MV((last_mv[ref_mv_xy][0]*ref_mv_scale + (1<<15))>>16, 
+            CHECK_CLIPED_MV((last_mv[ref_mv_xy][0]*ref_mv_scale + (1<<15))>>16,
                             (last_mv[ref_mv_xy][1]*ref_mv_scale + (1<<15))>>16)
         }
     }
     if(dmin>64*4){
-        CHECK_CLIPED_MV((last_mv[ref_mv_xy+1][0]*ref_mv_scale + (1<<15))>>16, 
+        CHECK_CLIPED_MV((last_mv[ref_mv_xy+1][0]*ref_mv_scale + (1<<15))>>16,
                         (last_mv[ref_mv_xy+1][1]*ref_mv_scale + (1<<15))>>16)
         if(s->mb_y+1<s->end_mb_y)  //FIXME replace at least with last_slice_line
-            CHECK_CLIPED_MV((last_mv[ref_mv_xy+ref_mv_stride][0]*ref_mv_scale + (1<<15))>>16, 
+            CHECK_CLIPED_MV((last_mv[ref_mv_xy+ref_mv_stride][0]*ref_mv_scale + (1<<15))>>16,
                             (last_mv[ref_mv_xy+ref_mv_stride][1]*ref_mv_scale + (1<<15))>>16)
     }
 
     dmin= diamond_search(s, best, dmin, src_index, ref_index, penalty_factor, size, h, flags);
 
     *mx_ptr= best[0];
-    *my_ptr= best[1];    
+    *my_ptr= best[1];
 
 //    printf("%d %d %d \n", best[0], best[1], dmin);
     return dmin;
@@ -1041,12 +1041,12 @@ static int epzs_motion_search4(MpegEncContext * s,
 //try to merge with above FIXME (needs PSNR test)
 static int epzs_motion_search2(MpegEncContext * s,
                              int *mx_ptr, int *my_ptr, int P[10][2],
-                             int src_index, int ref_index, int16_t (*last_mv)[2], 
+                             int src_index, int ref_index, int16_t (*last_mv)[2],
                              int ref_mv_scale)
 {
     MotionEstContext * const c= &s->me;
     int best[2]={0, 0};
-    int d, dmin; 
+    int d, dmin;
     int map_generation;
     const int penalty_factor= c->penalty_factor;
     const int size=0; //FIXME pass as arg
@@ -1057,18 +1057,18 @@ static int epzs_motion_search2(MpegEncContext * s,
     LOAD_COMMON
     int flags= c->flags;
     LOAD_COMMON2
-    
+
     cmpf= s->dsp.me_cmp[size];
     chroma_cmpf= s->dsp.me_cmp[size+1];
 
     map_generation= update_map_generation(c);
 
     dmin = 1000000;
-//printf("%d %d %d %d //",xmin, ymin, xmax, ymax); 
+//printf("%d %d %d %d //",xmin, ymin, xmax, ymax);
     /* first line */
     if (s->first_slice_line) {
 	CHECK_MV(P_LEFT[0]>>shift, P_LEFT[1]>>shift)
-        CHECK_CLIPED_MV((last_mv[ref_mv_xy][0]*ref_mv_scale + (1<<15))>>16, 
+        CHECK_CLIPED_MV((last_mv[ref_mv_xy][0]*ref_mv_scale + (1<<15))>>16,
                         (last_mv[ref_mv_xy][1]*ref_mv_scale + (1<<15))>>16)
         CHECK_MV(P_MV1[0]>>shift, P_MV1[1]>>shift)
     }else{
@@ -1079,22 +1079,22 @@ static int epzs_motion_search2(MpegEncContext * s,
             CHECK_MV(P_LEFT[0]>>shift, P_LEFT[1]>>shift)
             CHECK_MV(P_TOP[0]>>shift, P_TOP[1]>>shift)
             CHECK_MV(P_TOPRIGHT[0]>>shift, P_TOPRIGHT[1]>>shift)
-            CHECK_CLIPED_MV((last_mv[ref_mv_xy][0]*ref_mv_scale + (1<<15))>>16, 
+            CHECK_CLIPED_MV((last_mv[ref_mv_xy][0]*ref_mv_scale + (1<<15))>>16,
                             (last_mv[ref_mv_xy][1]*ref_mv_scale + (1<<15))>>16)
         }
     }
     if(dmin>64*4){
-        CHECK_CLIPED_MV((last_mv[ref_mv_xy+1][0]*ref_mv_scale + (1<<15))>>16, 
+        CHECK_CLIPED_MV((last_mv[ref_mv_xy+1][0]*ref_mv_scale + (1<<15))>>16,
                         (last_mv[ref_mv_xy+1][1]*ref_mv_scale + (1<<15))>>16)
         if(s->mb_y+1<s->end_mb_y)  //FIXME replace at least with last_slice_line
-            CHECK_CLIPED_MV((last_mv[ref_mv_xy+ref_mv_stride][0]*ref_mv_scale + (1<<15))>>16, 
+            CHECK_CLIPED_MV((last_mv[ref_mv_xy+ref_mv_stride][0]*ref_mv_scale + (1<<15))>>16,
                             (last_mv[ref_mv_xy+ref_mv_stride][1]*ref_mv_scale + (1<<15))>>16)
     }
 
     dmin= diamond_search(s, best, dmin, src_index, ref_index, penalty_factor, size, h, flags);
 
     *mx_ptr= best[0];
-    *my_ptr= best[1];    
+    *my_ptr= best[1];
 
 //    printf("%d %d %d \n", best[0], best[1], dmin);
     return dmin;

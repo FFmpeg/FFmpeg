@@ -126,7 +126,7 @@ struct unaligned_long { uint64_t l; } __attribute__((packed));
 #define minsw4	__builtin_alpha_minsw4
 #define maxub8	__builtin_alpha_maxub8
 #define maxsb8	__builtin_alpha_maxsb8
-#define maxuw4	__builtin_alpha_maxuw4	
+#define maxuw4	__builtin_alpha_maxuw4
 #define maxsw4	__builtin_alpha_maxsw4
 #define perr	__builtin_alpha_perr
 #define pklb	__builtin_alpha_pklb

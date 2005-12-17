@@ -17,12 +17,12 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
- 
+
 /**
  * @file intfloat_readwrite.c
  * Portable IEEE float/double read/write functions.
  */
- 
+
 #include "common.h"
 
 double av_int2dbl(int64_t v){

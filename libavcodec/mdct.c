@@ -74,7 +74,7 @@ int ff_mdct_init(MDCTContext *s, int nbits, int inverse)
  * @param input N/2 samples
  * @param tmp N/2 samples
  */
-void ff_imdct_calc(MDCTContext *s, FFTSample *output, 
+void ff_imdct_calc(MDCTContext *s, FFTSample *output,
                    const FFTSample *input, FFTSample *tmp)
 {
     int k, n8, n4, n2, n, j;
@@ -126,7 +126,7 @@ void ff_imdct_calc(MDCTContext *s, FFTSample *output,
  * @param out N/2 samples
  * @param tmp temporary storage of N/2 samples
  */
-void ff_mdct_calc(MDCTContext *s, FFTSample *out, 
+void ff_mdct_calc(MDCTContext *s, FFTSample *out,
                   const FFTSample *input, FFTSample *tmp)
 {
     int i, j, n, n8, n4, n2, n3;
@@ -156,7 +156,7 @@ void ff_mdct_calc(MDCTContext *s, FFTSample *out,
     }
 
     ff_fft_calc(&s->fft, x);
-  
+
     /* post rotation */
     for(i=0;i<n4;i++) {
         re = x[i].re;

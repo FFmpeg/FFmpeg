@@ -29,28 +29,28 @@ int mm_support(void)
     int eax, ebx, ecx, edx;
     int max_std_level, max_ext_level, std_caps=0, ext_caps=0;
     long a, c;
-    
+
     __asm__ __volatile__ (
                           /* See if CPUID instruction is supported ... */
                           /* ... Get copies of EFLAGS into eax and ecx */
                           "pushf\n\t"
                           "pop %0\n\t"
                           "mov %0, %1\n\t"
-                          
+
                           /* ... Toggle the ID bit in one copy and store */
                           /*     to the EFLAGS reg */
                           "xor $0x200000, %0\n\t"
                           "push %0\n\t"
                           "popf\n\t"
-                          
+
                           /* ... Get the (hopefully modified) EFLAGS */
                           "pushf\n\t"
                           "pop %0\n\t"
                           : "=a" (a), "=c" (c)
                           :
-                          : "cc" 
+                          : "cc"
                           );
-    
+
     if (a == c)
         return 0; /* CPUID not supported */
 
@@ -60,9 +60,9 @@ int mm_support(void)
         cpuid(1, eax, ebx, ecx, std_caps);
         if (std_caps & (1<<23))
             rval |= MM_MMX;
-        if (std_caps & (1<<25)) 
+        if (std_caps & (1<<25))
             rval |= MM_MMXEXT | MM_SSE;
-        if (std_caps & (1<<26)) 
+        if (std_caps & (1<<26))
             rval |= MM_SSE2;
     }
 
@@ -103,18 +103,18 @@ int mm_support(void)
            According to the table, the only CPU which supports level
            2 is also the only one which supports extended CPUID levels.
         */
-        if (eax < 2) 
+        if (eax < 2)
             return rval;
         if (ext_caps & (1<<24))
             rval |= MM_MMXEXT;
     }
 #if 0
-    av_log(NULL, AV_LOG_DEBUG, "%s%s%s%s%s%s\n", 
-        (rval&MM_MMX) ? "MMX ":"", 
-        (rval&MM_MMXEXT) ? "MMX2 ":"", 
-        (rval&MM_SSE) ? "SSE ":"", 
-        (rval&MM_SSE2) ? "SSE2 ":"", 
-        (rval&MM_3DNOW) ? "3DNow ":"", 
+    av_log(NULL, AV_LOG_DEBUG, "%s%s%s%s%s%s\n",
+        (rval&MM_MMX) ? "MMX ":"",
+        (rval&MM_MMXEXT) ? "MMX2 ":"",
+        (rval&MM_SSE) ? "SSE ":"",
+        (rval&MM_SSE2) ? "SSE2 ":"",
+        (rval&MM_3DNOW) ? "3DNow ":"",
         (rval&MM_3DNOWEXT) ? "3DNowExt ":"");
 #endif
     return rval;

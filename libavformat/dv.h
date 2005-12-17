@@ -1,5 +1,5 @@
-/* 
- * General DV muxer/demuxer 
+/*
+ * General DV muxer/demuxer
  * Copyright (c) 2003 Roman Shaposhnick
  *
  * Many thanks to Dan Dennedy <dan@dennedy.org> for providing wealth

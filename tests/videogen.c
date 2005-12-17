@@ -28,7 +28,7 @@ static void rgb24_to_yuv420p(uint8_t *lum, uint8_t *cb, uint8_t *cr,
             r1 = r;
             g1 = g;
             b1 = b;
-            lum[0] = (FIX(0.29900) * r + FIX(0.58700) * g + 
+            lum[0] = (FIX(0.29900) * r + FIX(0.58700) * g +
                       FIX(0.11400) * b + ONE_HALF) >> SCALEBITS;
             r = p[3];
             g = p[4];
@@ -36,7 +36,7 @@ static void rgb24_to_yuv420p(uint8_t *lum, uint8_t *cb, uint8_t *cr,
             r1 += r;
             g1 += g;
             b1 += b;
-            lum[1] = (FIX(0.29900) * r + FIX(0.58700) * g + 
+            lum[1] = (FIX(0.29900) * r + FIX(0.58700) * g +
                       FIX(0.11400) * b + ONE_HALF) >> SCALEBITS;
             p += wrap3;
             lum += wrap;
@@ -47,7 +47,7 @@ static void rgb24_to_yuv420p(uint8_t *lum, uint8_t *cb, uint8_t *cr,
             r1 += r;
             g1 += g;
             b1 += b;
-            lum[0] = (FIX(0.29900) * r + FIX(0.58700) * g + 
+            lum[0] = (FIX(0.29900) * r + FIX(0.58700) * g +
                       FIX(0.11400) * b + ONE_HALF) >> SCALEBITS;
             r = p[3];
             g = p[4];
@@ -55,12 +55,12 @@ static void rgb24_to_yuv420p(uint8_t *lum, uint8_t *cb, uint8_t *cr,
             r1 += r;
             g1 += g;
             b1 += b;
-            lum[1] = (FIX(0.29900) * r + FIX(0.58700) * g + 
+            lum[1] = (FIX(0.29900) * r + FIX(0.58700) * g +
                       FIX(0.11400) * b + ONE_HALF) >> SCALEBITS;
-            
-            cb[0] = ((- FIX(0.16874) * r1 - FIX(0.33126) * g1 + 
+
+            cb[0] = ((- FIX(0.16874) * r1 - FIX(0.33126) * g1 +
                       FIX(0.50000) * b1 + 4 * ONE_HALF - 1) >> (SCALEBITS + 2)) + 128;
-            cr[0] = ((FIX(0.50000) * r1 - FIX(0.41869) * g1 - 
+            cr[0] = ((FIX(0.50000) * r1 - FIX(0.41869) * g1 -
                      FIX(0.08131) * b1 + 4 * ONE_HALF - 1) >> (SCALEBITS + 2)) + 128;
 
             cb++;
@@ -221,7 +221,7 @@ void gen_image(int num, int w, int h)
             put_pixel(x + NOISE_X, y + NOISE_Y, r, g, b);
         }
     }
-    
+
     /* then moving objects */
     for(i=0;i<NB_OBJS;i++) {
         VObj *p = &objs[i];
@@ -272,7 +272,7 @@ int main(int argc, char **argv)
         gen_image(i, w, h);
         pgmyuv_save(buf, w, h, rgb_tab);
     }
-    
+
     free(rgb_tab);
     return 0;
 }

@@ -16,12 +16,12 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
- 
+
 /**
  * @file mem.c
  * default memory allocator for libavcodec.
  */
- 
+
 #include "avcodec.h"
 
 /* here we can use OS dependant allocation functions */
@@ -37,7 +37,7 @@
    memory allocator. You do not need to suppress this file because the
    linker will do it automatically */
 
-/** 
+/**
  * Memory allocation of size byte with alignment suitable for all
  * memory accesses (including vectors if available on the
  * CPU). av_malloc(0) must return a non NULL pointer.
@@ -52,15 +52,15 @@ void *av_malloc(unsigned int size)
     /* lets disallow possible ambiguous cases */
     if(size > INT_MAX)
         return NULL;
-    
+
 #ifdef MEMALIGN_HACK
     ptr = malloc(size+16+1);
     diff= ((-(int)ptr - 1)&15) + 1;
     ptr += diff;
     ((char*)ptr)[-1]= diff;
-#elif defined (HAVE_MEMALIGN) 
+#elif defined (HAVE_MEMALIGN)
     ptr = memalign(16,size);
-    /* Why 64? 
+    /* Why 64?
        Indeed, we should align it:
          on 4 for 386
          on 16 for 486
@@ -83,7 +83,7 @@ void *av_malloc(unsigned int size)
         memalign(64)+16		2543,2572,2563
         memalign(64)+32		2546,2545,2571
         memalign(64)+64		2570,2533,2558
-        
+
         btw, malloc seems to do 8 byte alignment by default here
      */
 #else
@@ -95,7 +95,7 @@ void *av_malloc(unsigned int size)
 /**
  * av_realloc semantics (same as glibc): if ptr is NULL and size > 0,
  * identical to malloc(size). If size is zero, it is identical to
- * free(ptr) and NULL is returned.  
+ * free(ptr) and NULL is returned.
  */
 void *av_realloc(void *ptr, unsigned int size)
 {

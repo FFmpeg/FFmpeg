@@ -70,7 +70,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 
     if (!ap || ap->width <= 0 || ap->height <= 0 || ap->time_base.den <= 0)
         return -1;
-    
+
     width = ap->width;
     height = ap->height;
     frame_rate      = ap->time_base.den;
@@ -78,7 +78,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 
     if((unsigned)width > 32767 || (unsigned)height > 32767)
         return -1;
-    
+
     st = av_new_stream(s1, 0);
     if (!st)
         return -ENOMEM;
@@ -97,7 +97,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         perror(video_device);
         goto fail;
     }
-    
+
     if (ioctl(video_fd,VIDIOCGCAP, &s->video_cap) < 0) {
         perror("VIDIOCGCAP");
         goto fail;
@@ -115,7 +115,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         desired_palette = VIDEO_PALETTE_YUV422;
     } else if (st->codec->pix_fmt == PIX_FMT_BGR24) {
         desired_palette = VIDEO_PALETTE_RGB24;
-    }    
+    }
 
     /* set tv standard */
     if (ap->standard && !ioctl(video_fd, VIDIOCGTUNER, &tuner)) {
@@ -127,7 +127,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 	    tuner.mode = VIDEO_MODE_NTSC;
 	ioctl(video_fd, VIDIOCSTUNER, &tuner);
     }
-    
+
     /* unmute audio */
     audio.audio = 0;
     ioctl(video_fd, VIDIOCGAUDIO, &audio);
@@ -159,7 +159,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
                pict.brightness,
                pict.contrast,
                pict.whiteness);
-#endif        
+#endif
         /* try to choose a suitable video format */
         pict.palette = desired_palette;
         if (desired_palette == -1 || (ret = ioctl(video_fd, VIDIOCSPICT, &pict)) < 0) {
@@ -171,7 +171,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
                 if (ret < 0) {
                     pict.palette=VIDEO_PALETTE_RGB24;
                     ret = ioctl(video_fd, VIDIOCSPICT, &pict);
-                    if (ret < 0) 
+                    if (ret < 0)
                         goto fail1;
                 }
             }
@@ -184,7 +184,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 
         s->time_frame = av_gettime() * s->frame_rate / s->frame_rate_base;
         s->use_mmap = 0;
-        
+
         /* ATI All In Wonder automatic activation */
         if (!strcmp(s->video_cap.name, "Km")) {
             if (aiw_init(s) < 0)
@@ -202,7 +202,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         }
         s->gb_frame = 0;
         s->time_frame = av_gettime() * s->frame_rate / s->frame_rate_base;
-        
+
         /* start to grab the first frame */
         s->gb_buf.frame = s->gb_frame % s->gb_buffers.frames;
         s->gb_buf.height = height;
@@ -211,12 +211,12 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 
         if (desired_palette == -1 || (ret = ioctl(video_fd, VIDIOCMCAPTURE, &s->gb_buf)) < 0) {
             s->gb_buf.format = VIDEO_PALETTE_YUV420P;
-            
+
             ret = ioctl(video_fd, VIDIOCMCAPTURE, &s->gb_buf);
             if (ret < 0 && errno != EAGAIN) {
                 /* try YUV422 */
                 s->gb_buf.format = VIDEO_PALETTE_YUV422;
-                
+
                 ret = ioctl(video_fd, VIDIOCMCAPTURE, &s->gb_buf);
                 if (ret < 0 && errno != EAGAIN) {
                     /* try RGB24 */
@@ -260,7 +260,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     }
     s->fd = video_fd;
     s->frame_size = frame_size;
-    
+
     st->codec->codec_type = CODEC_TYPE_VIDEO;
     st->codec->codec_id = CODEC_ID_RAWVIDEO;
     st->codec->width = width;
@@ -322,7 +322,7 @@ static int grab_read_packet(AVFormatContext *s1, AVPacket *pkt)
                 s->time_frame += int64_t_C(1000000);
             }
             break;
-        }    
+        }
         ts.tv_sec = delay / 1000000;
         ts.tv_nsec = (delay % 1000000) * 1000;
         nanosleep(&ts, NULL);
@@ -388,7 +388,7 @@ static int aiw_init(VideoData *s)
     if ((width == s->video_cap.maxwidth && height == s->video_cap.maxheight) ||
         (width == s->video_cap.maxwidth && height == s->video_cap.maxheight*2) ||
         (width == s->video_cap.maxwidth/2 && height == s->video_cap.maxheight)) {
-        
+
         s->deint=0;
         s->halfw=0;
         if (height == s->video_cap.maxheight*2) s->deint=1;
@@ -609,7 +609,7 @@ static int aiw_init(VideoData *s)
                     sum=(ptr[24]+ptr[26]+1) >> 1;lum[6]=sum; \
                     sum=(ptr[28]+ptr[30]+1) >> 1;lum[7]=sum; \
                     sum=(ptr[25]+ptr[29]+1) >> 1;cb[3]=sum; \
-                    sum=(ptr[27]+ptr[31]+1) >> 1;cr[3]=sum; 
+                    sum=(ptr[27]+ptr[31]+1) >> 1;cr[3]=sum;
 
 #define LINE_NOUV_AVG \
                     sum=(ptr[0]+ptr[2]+1) >> 1;lum[0]=sum; \
@@ -619,7 +619,7 @@ static int aiw_init(VideoData *s)
                     sum=(ptr[16]+ptr[18]+1) >> 1;lum[4]=sum; \
                     sum=(ptr[20]+ptr[22]+1) >> 1;lum[5]=sum; \
                     sum=(ptr[24]+ptr[26]+1) >> 1;lum[6]=sum; \
-                    sum=(ptr[28]+ptr[30]+1) >> 1;lum[7]=sum; 
+                    sum=(ptr[28]+ptr[30]+1) >> 1;lum[7]=sum;
 
 #define DEINT_LINE_LUM(ptroff) \
                     sum=(-lum_m4[(ptroff)]+(lum_m3[(ptroff)]<<2)+(lum_m2[(ptroff)]<<1)+(lum_m1[(ptroff)]<<2)-lum[(ptroff)]); \

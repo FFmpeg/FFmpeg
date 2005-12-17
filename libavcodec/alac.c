@@ -169,9 +169,9 @@ void bastardized_rice_decompress(ALACContext *alac,
             /* read k, that is bits as is */
             k = 31 - rice_kmodifier - count_leading_zeros((history >> 9) + 3);
 
-            if (k < 0) 
+            if (k < 0)
                 k += rice_kmodifier;
-            else 
+            else
                 k = rice_kmodifier;
 
             if (k != 1) {
@@ -444,7 +444,7 @@ static int alac_decode_frame(AVCodecContext *avctx,
     /* initialize from the extradata */
     if (!alac->context_initialized) {
         if (alac->avctx->extradata_size != ALAC_EXTRADATA_SIZE) {
-            av_log(NULL, AV_LOG_ERROR, "alac: expected %d extradata bytes\n", 
+            av_log(NULL, AV_LOG_ERROR, "alac: expected %d extradata bytes\n",
                 ALAC_EXTRADATA_SIZE);
             return input_buffer_size;
         }
@@ -728,7 +728,7 @@ static int alac_decode_frame(AVCodecContext *avctx,
             } else {
                 av_log(NULL, AV_LOG_ERROR, "FIXME: unhandled prediction type: %i\n", prediction_type_b);
             }
-        } else { 
+        } else {
          /* not compressed, easy case */
             if (alac->setinfo_sample_size <= 16) {
                 int i;

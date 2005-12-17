@@ -42,7 +42,7 @@ static int bmp_decode_init(AVCodecContext *avctx){
     return 0;
 }
 
-static int bmp_decode_frame(AVCodecContext *avctx, 
+static int bmp_decode_frame(AVCodecContext *avctx,
                             void *data, int *data_size,
                             uint8_t *buf, int buf_size)
 {

@@ -197,7 +197,7 @@ static void attribute_unused DEF(put, pixels16_l2)(uint8_t *dst, uint8_t *src1, 
 	:"+b"(h), "+a"(src1), "+c"(src2), "+d"(dst)
 #endif
 	:"S"((long)src1Stride), "D"((long)dstStride)
-	:"memory"); 
+	:"memory");
 }
 
 static void DEF(put, pixels8_y2)(uint8_t *block, const uint8_t *pixels, int line_size, int h)

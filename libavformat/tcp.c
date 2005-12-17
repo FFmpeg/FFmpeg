@@ -68,15 +68,15 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
       &port, path, sizeof(path), uri);  // PETR: use url_split
     if (strcmp(proto,"tcp")) goto fail; // PETR: check protocol
     if ((q = strchr(hostname,'@'))) { strcpy(tmp,q+1); strcpy(hostname,tmp); } // PETR: take only the part after '@' for tcp protocol
-    
+
     s = av_malloc(sizeof(TCPContext));
     if (!s)
         return -ENOMEM;
     h->priv_data = s;
-    
+
     if (port <= 0 || port >= 65536)
         goto fail;
-    
+
     dest_addr.sin_family = AF_INET;
     dest_addr.sin_port = htons(port);
     if (resolve_host(&dest_addr.sin_addr, hostname) < 0)
@@ -86,9 +86,9 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     if (fd < 0)
         goto fail;
     fcntl(fd, F_SETFL, O_NONBLOCK);
-    
+
  redo:
-    ret = connect(fd, (struct sockaddr *)&dest_addr, 
+    ret = connect(fd, (struct sockaddr *)&dest_addr,
                   sizeof(dest_addr));
     if (ret < 0) {
         if (errno == EINTR)
@@ -111,7 +111,7 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
             if (ret > 0 && FD_ISSET(fd, &wfds))
                 break;
         }
-        
+
         /* test error */
         optlen = sizeof(ret);
         getsockopt (fd, SOL_SOCKET, SO_ERROR, &ret, &optlen);

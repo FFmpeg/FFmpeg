@@ -84,7 +84,7 @@ int32_t a52_bitstream_get_bh_2 (a52_state_t * state, uint32_t num_bits)
 
     if (num_bits != 0)
 	result = (result << num_bits) | (state->current_word >> (32 - num_bits));
-	
+
     state->bits_left = 32 - num_bits;
 
     return result;

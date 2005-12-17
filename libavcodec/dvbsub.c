@@ -44,12 +44,12 @@ static void dvb_encode_rle2(uint8_t **pq,
     int x, y, len, x1, v, color;
 
     q = *pq;
-    
+
     for(y = 0; y < h; y++) {
         *q++ = 0x10;
         bitbuf = 0;
         bitcnt = 6;
-        
+
         x = 0;
         while (x < w) {
             x1 = x;
@@ -132,12 +132,12 @@ static void dvb_encode_rle4(uint8_t **pq,
     int x, y, len, x1, v, color;
 
     q = *pq;
-    
+
     for(y = 0; y < h; y++) {
         *q++ = 0x11;
         bitbuf = 0;
         bitcnt = 4;
-        
+
         x = 0;
         while (x < w) {
             x1 = x;
@@ -215,7 +215,7 @@ static inline void putbe16(uint8_t **pq, uint16_t v)
     *pq = q;
 }
 
-static int encode_dvb_subtitles(DVBSubtitleContext *s, 
+static int encode_dvb_subtitles(DVBSubtitleContext *s,
                                 uint8_t *outbuf, AVSubtitle *h)
 {
     uint8_t *q, *pseg_len;
@@ -244,7 +244,7 @@ static int encode_dvb_subtitles(DVBSubtitleContext *s,
     else
         page_state = 2; /* mode change */
     /* page_version = 0 + page_state */
-    *q++ = s->object_version | (page_state << 2) | 3; 
+    *q++ = s->object_version | (page_state << 2) | 3;
 
     for (region_id = 0; region_id < h->num_rects; region_id++) {
         *q++ = region_id;
@@ -302,7 +302,7 @@ static int encode_dvb_subtitles(DVBSubtitleContext *s,
     for (region_id = 0; region_id < h->num_rects; region_id++) {
 
         /* region composition segment */
-        
+
         if (h->rects[region_id].nb_colors <= 4) {
             /* 2 bpp, some decoders do not support it correctly */
             bpp_index = 0;
@@ -339,7 +339,7 @@ static int encode_dvb_subtitles(DVBSubtitleContext *s,
     }
 
     if (!s->hide_state) {
-        
+
         for (object_id = 0; object_id < h->num_rects; object_id++) {
             /* Object Data segment */
 

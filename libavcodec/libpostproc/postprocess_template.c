@@ -80,11 +80,11 @@ static inline int RENAME(vertClassify)(uint8_t src[], int stride, PPContext *c){
 	int numEq= 0, dcOk;
 	src+= stride*4; // src points to begin of the 8x8 Block
 asm volatile(
-		"movq %0, %%mm7					\n\t" 
-		"movq %1, %%mm6					\n\t" 
+		"movq %0, %%mm7					\n\t"
+		"movq %1, %%mm6					\n\t"
                 : : "m" (c->mmxDcOffset[c->nonBQP]),  "m" (c->mmxDcThreshold[c->nonBQP])
                 );
-                
+
 asm volatile(
 		"lea (%2, %3), %%"REG_a"			\n\t"
 //	0	1	2	3	4	5	6	7	8	9
@@ -115,7 +115,7 @@ asm volatile(
 		"paddb %%mm7, %%mm2				\n\t"
 		"pcmpgtb %%mm6, %%mm2				\n\t"
 		"paddb %%mm2, %%mm0				\n\t"
-		
+
 		"lea (%%"REG_a", %3, 4), %%"REG_a"		\n\t"
 
 		"movq (%2, %3, 4), %%mm2			\n\t"
@@ -1195,7 +1195,7 @@ static inline void RENAME(dering)(uint8_t src[], int stride, PPContext *c)
 
 		"lea (%0, %1), %%"REG_a"			\n\t"
 		"lea (%%"REG_a", %1, 4), %%"REG_d"		\n\t"
-		
+
 //	0	1	2	3	4	5	6	7	8	9
 //	%0	eax	eax+%1	eax+2%1	%0+4%1	edx	edx+%1	edx+2%1	%0+8%1	edx+4%1
 
@@ -1276,7 +1276,7 @@ FIND_MIN_MAX((%0, %1, 8))
 		"cmpb "MANGLE(deringThreshold)", %%cl		\n\t"
 		" jb 1f						\n\t"
 		"lea -24(%%"REG_SP"), %%"REG_c"			\n\t"
-		"and "ALIGN_MASK", %%"REG_c"			\n\t" 
+		"and "ALIGN_MASK", %%"REG_c"			\n\t"
 		PAVGB(%%mm0, %%mm7)				      // a=(max + min)/2
 		"punpcklbw %%mm7, %%mm7				\n\t"
 		"punpcklbw %%mm7, %%mm7				\n\t"
@@ -1444,12 +1444,12 @@ DERING_CORE((%0, %1, 8),(%%REGd, %1, 4) ,%%mm2,%%mm4,%%mm0,%%mm3,%%mm5,%%mm1,%%m
 		if(src[stride*y + 7] > avg) t+= 128;
 		if(src[stride*y + 8] > avg) t+= 256;
 		if(src[stride*y + 9] > avg) t+= 512;
-		
+
 		t |= (~t)<<16;
 		t &= (t<<1) & (t>>1);
 		s[y] = t;
 	}
-	
+
 	for(y=1; y<9; y++)
 	{
 		int t = s[y-1] & s[y] & s[y+1];
@@ -1796,7 +1796,7 @@ DEINT_L5(%%mm0, %%mm1, (%0)           , (%%REGa)       , (%%REGa, %1)   )
 DEINT_L5(%%mm1, %%mm0, (%%REGa)       , (%%REGa, %1)   , (%%REGa, %1, 2))
 DEINT_L5(%%mm0, %%mm1, (%%REGa, %1)   , (%%REGa, %1, 2), (%0, %1, 4)   )
 DEINT_L5(%%mm1, %%mm0, (%%REGa, %1, 2), (%0, %1, 4)    , (%%REGd)       )
-DEINT_L5(%%mm0, %%mm1, (%0, %1, 4)    , (%%REGd)       , (%%REGd, %1)   )  
+DEINT_L5(%%mm0, %%mm1, (%0, %1, 4)    , (%%REGd)       , (%%REGd, %1)   )
 DEINT_L5(%%mm1, %%mm0, (%%REGd)       , (%%REGd, %1)   , (%%REGd, %1, 2))
 DEINT_L5(%%mm0, %%mm1, (%%REGd, %1)   , (%%REGd, %1, 2), (%0, %1, 8)   )
 DEINT_L5(%%mm1, %%mm0, (%%REGd, %1, 2), (%0, %1, 8)    , (%%REGd, %1, 4))
@@ -2111,7 +2111,7 @@ static inline void RENAME(transpose1)(uint8_t *dst1, uint8_t *dst2, uint8_t *src
 		"movd %%mm1, 112(%3)		\n\t"
 
 		"lea (%%"REG_a", %1, 4), %%"REG_a"	\n\t"
-		
+
 		"movq (%0, %1, 4), %%mm0	\n\t" // 12345678
 		"movq (%%"REG_a"), %%mm1	\n\t" // abcdefgh
 		"movq %%mm0, %%mm2		\n\t" // 12345678
@@ -2242,7 +2242,7 @@ static inline void RENAME(tempNoiseReducer)(uint8_t *src, int stride,
 	tempBluredPast[127]= maxNoise[0];
 	tempBluredPast[128]= maxNoise[1];
 	tempBluredPast[129]= maxNoise[2];
-        
+
 #define FAST_L2_DIFF
 //#define L1_DIFF //u should change the thresholds too if u try that one
 #if defined (HAVE_MMX2) || defined (HAVE_3DNOW)
@@ -2651,11 +2651,11 @@ static always_inline void RENAME(do_a_deblock)(uint8_t *src, int step, int strid
 	src+= step*3; // src points to begin of the 8x8 Block
 //START_TIMER
 asm volatile(
-		"movq %0, %%mm7					\n\t" 
-		"movq %1, %%mm6					\n\t" 
+		"movq %0, %%mm7					\n\t"
+		"movq %1, %%mm6					\n\t"
                 : : "m" (c->mmxDcOffset[c->nonBQP]),  "m" (c->mmxDcThreshold[c->nonBQP])
                 );
-                
+
 asm volatile(
 		"lea (%2, %3), %%"REG_a"			\n\t"
 //	0	1	2	3	4	5	6	7	8	9
@@ -2684,7 +2684,7 @@ asm volatile(
 		"paddb %%mm7, %%mm2				\n\t"
 		"pcmpgtb %%mm6, %%mm2				\n\t"
 		"paddb %%mm2, %%mm0				\n\t"
-		
+
 		"lea (%%"REG_a", %3, 4), %%"REG_a"		\n\t"
 
 		"movq (%2, %3, 4), %%mm2			\n\t"
@@ -2795,7 +2795,7 @@ asm volatile(
 		"pxor %%mm7, %%mm1				\n\t"
 		"pand %%mm0, %%mm1				\n\t"
 		"pxor %%mm1, %%mm7				\n\t"
-		
+
 		"movq %%mm6, %%mm5				\n\t"
 		"punpckhbw %%mm4, %%mm6				\n\t"
 		"punpcklbw %%mm4, %%mm5				\n\t"
@@ -2826,7 +2826,7 @@ asm volatile(
 		"psubw %%mm2, %%mm0				\n\t"\
 		"psubw %%mm3, %%mm1				\n\t"
 
-				
+
 		NEXT //0
 		NEXT //1
 		NEXT //2
@@ -2860,7 +2860,7 @@ asm volatile(
 		"movq %%mm7, %%mm6				\n\t"
 		"punpckhbw %%mm4, %%mm7				\n\t"
 		"punpcklbw %%mm4, %%mm6				\n\t"
-		
+
 		NEXT //7
 		"mov %4, %0					\n\t"
 		"add %1, %0					\n\t"
@@ -2873,7 +2873,7 @@ asm volatile(
 		"paddw %%mm7, %%mm1				\n\t"
 		"movq %%mm0, 96(%3)				\n\t"
 		"movq %%mm1, 104(%3)				\n\t"
-		
+
 		PREV //2
 		"paddw %%mm6, %%mm0				\n\t"
 		"paddw %%mm7, %%mm1				\n\t"
@@ -3449,7 +3449,7 @@ static void RENAME(postProcess)(uint8_t src[], int srcStride, uint8_t dst[], int
 
 		c.packedYScale|= c.packedYScale<<32;
 		c.packedYScale|= c.packedYScale<<16;
-		
+
 		if(mode & LEVEL_FIX)	QPCorrecture= (int)(scale*256*256 + 0.5);
 		else			QPCorrecture= 256*256;
 	}
@@ -3612,7 +3612,7 @@ static void RENAME(postProcess)(uint8_t src[], int srcStride, uint8_t dst[], int
 				"packuswb %%mm7, %%mm7				\n\t" // 0,QP, 0, QP, 0,QP, 0, QP
 				"packuswb %%mm7, %%mm7				\n\t" // QP,..., QP
 				"movq %%mm7, %0			\n\t"
-				: "=m" (c.pQPb) 
+				: "=m" (c.pQPb)
 				: "r" (QP)
 			);
 #endif

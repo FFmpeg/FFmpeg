@@ -153,7 +153,7 @@ static int vmd_read_header(AVFormatContext *s,
         st->codec->codec_tag = 0;  /* no codec tag */
         st->codec->channels = (vmd->vmd_header[811] & 0x80) ? 2 : 1;
         st->codec->sample_rate = vmd->sample_rate;
-        st->codec->block_align = vmd->audio_block_align = 
+        st->codec->block_align = vmd->audio_block_align =
             LE_16(&vmd->vmd_header[806]);
         if (st->codec->block_align & 0x8000) {
             st->codec->bits_per_sample = 16;
@@ -161,11 +161,11 @@ static int vmd_read_header(AVFormatContext *s,
         } else
             st->codec->bits_per_sample = 16;
 //            st->codec->bits_per_sample = 8;
-        st->codec->bit_rate = st->codec->sample_rate * 
+        st->codec->bit_rate = st->codec->sample_rate *
             st->codec->bits_per_sample * st->codec->channels;
 
         /* for calculating pts */
-        vmd->audio_frame_divisor = st->codec->bits_per_sample / 8 / 
+        vmd->audio_frame_divisor = st->codec->bits_per_sample / 8 /
             st->codec->channels;
 
         video_pts_inc = 90000;
@@ -176,8 +176,8 @@ static int vmd_read_header(AVFormatContext *s,
         video_pts_inc = 90000 / 10;
     }
 
-    /* skip over the offset table and load the table of contents; don't 
-     * care about the offset table since demuxer will calculate those 
+    /* skip over the offset table and load the table of contents; don't
+     * care about the offset table since demuxer will calculate those
      * independently */
     toc_offset = LE_32(&vmd->vmd_header[812]);
     vmd->frame_count = LE_16(&vmd->vmd_header[6]);
@@ -197,7 +197,7 @@ static int vmd_read_header(AVFormatContext *s,
         av_free(vmd->frame_table);
         return AVERROR_NOMEM;
     }
-    if (get_buffer(pb, raw_frame_table, raw_frame_table_size) != 
+    if (get_buffer(pb, raw_frame_table, raw_frame_table_size) !=
         raw_frame_table_size) {
         av_free(raw_frame_table);
         av_free(vmd->frame_table);
@@ -213,7 +213,7 @@ static int vmd_read_header(AVFormatContext *s,
         /* if the frame size is 0, do not count the frame and bring the
          * total frame count down */
         // note, we limit the size to 1Gb to ensure that we dont end up overflowing the size integer used to allocate the memory
-        vmd->frame_table[i].frame_size = LE_32(&current_frame_record[2]) & 0x3FFFFFFF; 
+        vmd->frame_table[i].frame_size = LE_32(&current_frame_record[2]) & 0x3FFFFFFF;
 
         /* this logic is present so that 0-length audio chunks are not
          * accounted */
@@ -271,7 +271,7 @@ static int vmd_read_packet(AVFormatContext *s,
         return AVERROR_NOMEM;
     pkt->pos= url_ftell(pb);
     memcpy(pkt->data, frame->frame_record, BYTES_PER_FRAME_RECORD);
-    ret = get_buffer(pb, pkt->data + BYTES_PER_FRAME_RECORD, 
+    ret = get_buffer(pb, pkt->data + BYTES_PER_FRAME_RECORD,
         frame->frame_size);
 
     if (ret != frame->frame_size) {

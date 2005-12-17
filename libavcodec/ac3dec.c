@@ -78,7 +78,7 @@ static inline void float_to_int (float * _f, int16_t * s16, int nchannels)
 
 #define HEADER_SIZE 7
 
-static int ac3_decode_frame(AVCodecContext *avctx, 
+static int ac3_decode_frame(AVCodecContext *avctx,
                             void *data, int *data_size,
                             uint8_t *buf, int buf_size)
 {

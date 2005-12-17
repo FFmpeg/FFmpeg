@@ -248,7 +248,7 @@ void a52_imdct_512 (sample_t * data, sample_t * delay, sample_t bias)
     sample_t t_r, t_i, a_r, a_i, b_r, b_i, w_1, w_2;
     const sample_t * window = a52_imdct_window;
     complex_t buf[128];
-	
+
     for (i = 0; i < 128; i++) {
 	k = fftorder[i];
 	t_r = pre1[i].real;
@@ -301,7 +301,7 @@ void a52_imdct_256 (sample_t * data, sample_t * delay, sample_t bias)
     /* Post IFFT complex multiply */
     /* Window and convert to real valued signal */
     for (i = 0; i < 32; i++) {
-	/* y1[n] = z1[n] * (xcos2[n] + j * xs in2[n]) ; */ 
+	/* y1[n] = z1[n] * (xcos2[n] + j * xs in2[n]) ; */
 	t_r = post2[i].real;
 	t_i = post2[i].imag;
 	BUTTERFLY_0 (a_r, a_i, t_i, t_r, buf1[i].imag, buf1[i].real);

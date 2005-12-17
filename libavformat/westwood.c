@@ -101,7 +101,7 @@ static int wsaud_probe(AVProbeData *p)
     if ((field < 8000) || (field > 48000))
         return 0;
 
-    /* note: only check for WS IMA (type 99) right now since there is no 
+    /* note: only check for WS IMA (type 99) right now since there is no
      * support for type 1 */
     if (p->buf[11] != 99)
         return 0;
@@ -332,7 +332,7 @@ static int wsvqa_read_packet(AVFormatContext *s,
             pkt->pts /= wsvqa->audio_samplerate;
 
             /* 2 samples/byte, 1 or 2 samples per frame depending on stereo */
-            wsvqa->audio_frame_counter += (chunk_size * 2) / 
+            wsvqa->audio_frame_counter += (chunk_size * 2) /
                 wsvqa->audio_channels;
         } else {
             pkt->stream_index = wsvqa->video_stream_index;

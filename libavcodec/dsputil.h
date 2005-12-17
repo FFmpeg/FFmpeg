@@ -156,7 +156,7 @@ typedef struct DSPContext {
     int (*pix_sum)(uint8_t * pix, int line_size);
     int (*pix_norm1)(uint8_t * pix, int line_size);
 // 16x16 8x8 4x4 2x2 16x8 8x4 4x2 8x16 4x8 2x4
-    
+
     me_cmp_func sad[5]; /* identical to pix_absAxA except additional void * */
     me_cmp_func sse[5];
     me_cmp_func hadamard8_diff[5];
@@ -180,7 +180,7 @@ typedef struct DSPContext {
 
     /**
      * Halfpel motion compensation with rounding (a+b+1)>>1.
-     * this is an array[4][4] of motion compensation funcions for 4 
+     * this is an array[4][4] of motion compensation funcions for 4
      * horizontal blocksizes (8,16) and the 4 halfpel positions<br>
      * *pixels_tab[ 0->16xH 1->8xH ][ xhalfpel + 2*yhalfpel ]
      * @param block destination where the result is stored
@@ -192,7 +192,7 @@ typedef struct DSPContext {
 
     /**
      * Halfpel motion compensation with rounding (a+b+1)>>1.
-     * This is an array[4][4] of motion compensation functions for 4 
+     * This is an array[4][4] of motion compensation functions for 4
      * horizontal blocksizes (8,16) and the 4 halfpel positions<br>
      * *pixels_tab[ 0->16xH 1->8xH ][ xhalfpel + 2*yhalfpel ]
      * @param block destination into which the result is averaged (a+b+1)>>1
@@ -204,7 +204,7 @@ typedef struct DSPContext {
 
     /**
      * Halfpel motion compensation with no rounding (a+b)>>1.
-     * this is an array[2][4] of motion compensation funcions for 2 
+     * this is an array[2][4] of motion compensation funcions for 2
      * horizontal blocksizes (8,16) and the 4 halfpel positions<br>
      * *pixels_tab[ 0->16xH 1->8xH ][ xhalfpel + 2*yhalfpel ]
      * @param block destination where the result is stored
@@ -216,7 +216,7 @@ typedef struct DSPContext {
 
     /**
      * Halfpel motion compensation with no rounding (a+b)>>1.
-     * this is an array[2][4] of motion compensation funcions for 2 
+     * this is an array[2][4] of motion compensation funcions for 2
      * horizontal blocksizes (8,16) and the 4 halfpel positions<br>
      * *pixels_tab[ 0->16xH 1->8xH ][ xhalfpel + 2*yhalfpel ]
      * @param block destination into which the result is averaged (a+b)>>1
@@ -225,9 +225,9 @@ typedef struct DSPContext {
      * @param h height
      */
     op_pixels_func avg_no_rnd_pixels_tab[4][4];
-    
+
     void (*put_no_rnd_pixels_l2[2])(uint8_t *block/*align width (8 or 16)*/, const uint8_t *a/*align 1*/, const uint8_t *b/*align 1*/, int line_size, int h);
-    
+
     /**
      * Thirdpel motion compensation with rounding (a+b+1)>>1.
      * this is an array[12] of motion compensation funcions for the 9 thirdpel positions<br>
@@ -245,7 +245,7 @@ typedef struct DSPContext {
     qpel_mc_func put_no_rnd_qpel_pixels_tab[2][16];
     qpel_mc_func avg_no_rnd_qpel_pixels_tab[2][16];
     qpel_mc_func put_mspel_pixels_tab[8];
-    
+
     /**
      * h264 Chram MC
      */
@@ -254,12 +254,12 @@ typedef struct DSPContext {
 
     qpel_mc_func put_h264_qpel_pixels_tab[3][16];
     qpel_mc_func avg_h264_qpel_pixels_tab[3][16];
-    
+
     h264_weight_func weight_h264_pixels_tab[10];
     h264_biweight_func biweight_h264_pixels_tab[10];
-    
+
     me_cmp_func pix_abs[2][4];
-    
+
     /* huffyuv specific */
     void (*add_bytes)(uint8_t *dst/*align 16*/, uint8_t *src/*align 16*/, int w);
     void (*diff_bytes)(uint8_t *dst/*align 16*/, uint8_t *src1/*align 16*/, uint8_t *src2/*align 1*/,int w);
@@ -276,7 +276,7 @@ typedef struct DSPContext {
     void (*h264_h_loop_filter_chroma)(uint8_t *pix, int stride, int alpha, int beta, int8_t *tc0);
     void (*h264_v_loop_filter_chroma_intra)(uint8_t *pix, int stride, int alpha, int beta);
     void (*h264_h_loop_filter_chroma_intra)(uint8_t *pix, int stride, int alpha, int beta);
-    
+
     void (*h263_v_loop_filter)(uint8_t *src, int stride, int qscale);
     void (*h263_h_loop_filter)(uint8_t *src, int stride, int qscale);
 
@@ -285,23 +285,23 @@ typedef struct DSPContext {
     /* (I)DCT */
     void (*fdct)(DCTELEM *block/* align 16*/);
     void (*fdct248)(DCTELEM *block/* align 16*/);
-    
+
     /* IDCT really*/
     void (*idct)(DCTELEM *block/* align 16*/);
-    
+
     /**
      * block -> idct -> clip to unsigned 8 bit -> dest.
      * (-1392, 0, 0, ...) -> idct -> (-174, -174, ...) -> put -> (0, 0, ...)
      * @param line_size size in bytes of a horizotal line of dest
      */
     void (*idct_put)(uint8_t *dest/*align 8*/, int line_size, DCTELEM *block/*align 16*/);
-    
+
     /**
      * block -> idct -> add dest -> clip to unsigned 8 bit -> dest.
      * @param line_size size in bytes of a horizotal line of dest
      */
     void (*idct_add)(uint8_t *dest/*align 8*/, int line_size, DCTELEM *block/*align 16*/);
-    
+
     /**
      * idct input permutation.
      * several optimized IDCTs need a permutated input (relative to the normal order of the reference
@@ -326,7 +326,7 @@ typedef struct DSPContext {
     void (*add_8x8basis)(int16_t rem[64], int16_t basis[64], int scale);
 #define BASIS_SHIFT 16
 #define RECON_SHIFT 6
- 
+
     void (*h264_idct_add)(uint8_t *dst, DCTELEM *block, int stride);
     void (*h264_idct8_add)(uint8_t *dst, DCTELEM *block, int stride);
 } DSPContext;
