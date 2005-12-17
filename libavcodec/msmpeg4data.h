@@ -576,11 +576,11 @@ extern const uint8_t DCtab_chrom[13][2];
 extern const uint8_t cbpy_tab[16][2];
 extern const uint8_t mvtab[33][2];
 
-extern const uint8_t intra_MCBPC_code[8];
-extern const uint8_t intra_MCBPC_bits[8];
+extern const uint8_t intra_MCBPC_code[9];
+extern const uint8_t intra_MCBPC_bits[9];
 
-extern const uint8_t inter_MCBPC_code[25];
-extern const uint8_t inter_MCBPC_bits[25];
+extern const uint8_t inter_MCBPC_code[28];
+extern const uint8_t inter_MCBPC_bits[28];
 
 #define NB_RL_TABLES  6
 
