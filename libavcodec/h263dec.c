@@ -640,6 +640,8 @@ retry:
     if(s->codec_id == CODEC_ID_MPEG4 && s->xvid_build && avctx->idct_algo == FF_IDCT_AUTO && (mm_flags & MM_MMX) && !(s->flags&CODEC_FLAG_BITEXACT)){
         avctx->idct_algo= FF_IDCT_XVIDMMX;
         avctx->coded_width= 0; // force reinit
+//        dsputil_init(&s->dsp, avctx);
+        s->picture_number=0;
     }
 #endif
 
