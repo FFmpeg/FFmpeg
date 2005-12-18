@@ -5369,7 +5369,8 @@ static void encode_picture(MpegEncContext *s, int picture_number)
     }
 
     if (!s->fixed_qscale)
-        s->current_picture.quality = ff_rate_estimate_qscale(s); //FIXME pic_ptr
+        s->current_picture_ptr->quality=
+        s->current_picture.quality = ff_rate_estimate_qscale(s);
 
     if(s->adaptive_quant){
         switch(s->codec_id){
