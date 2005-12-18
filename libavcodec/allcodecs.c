@@ -131,6 +131,9 @@ void avcodec_register_all(void)
 #ifdef CONFIG_LJPEG_ENCODER
     register_avcodec(&ljpeg_encoder);
 #endif //CONFIG_LJPEG_ENCODER
+#ifdef CONFIG_JPEGLS_ENCODER
+    register_avcodec(&jpegls_encoder);
+#endif //CONFIG_JPEGLS_ENCODER
 #ifdef CONFIG_ZLIB
 #ifdef CONFIG_PNG_ENCODER
     register_avcodec(&png_encoder);

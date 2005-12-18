@@ -44,6 +44,7 @@ enum CodecID {
     CODEC_ID_MJPEGB,
     CODEC_ID_LJPEG,
     CODEC_ID_SP5X,
+    CODEC_ID_JPEGLS,
     CODEC_ID_MPEG4,
     CODEC_ID_RAWVIDEO,
     CODEC_ID_MSMPEG4V1,
@@ -1532,6 +1533,14 @@ typedef struct AVCodecContext {
      * - decoding: unused
      */
     int context_model;
+#if 0
+    /**
+     *
+     * - encoding: unused
+     * - decoding: set by user.
+     */
+    uint8_t * (*realloc)(struct AVCodecContext *s, uint8_t *buf, int buf_size);
+#endif
 
     /**
      * slice flags
@@ -1944,6 +1953,7 @@ extern AVCodec rv20_encoder;
 extern AVCodec dvvideo_encoder;
 extern AVCodec mjpeg_encoder;
 extern AVCodec ljpeg_encoder;
+extern AVCodec jpegls_encoder;
 extern AVCodec png_encoder;
 extern AVCodec ppm_encoder;
 extern AVCodec pgm_encoder;

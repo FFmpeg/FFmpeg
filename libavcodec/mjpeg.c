@@ -118,8 +118,8 @@ typedef enum {
     JPG4  = 0xf4,
     JPG5  = 0xf5,
     JPG6  = 0xf6,
-    JPG7  = 0xf7,
-    JPG8  = 0xf8,
+    SOF48 = 0xf7,        ///< JPEG-LS
+    LSE   = 0xf8,        ///< JPEG-LS extension parameters
     JPG9  = 0xf9,
     JPG10 = 0xfa,
     JPG11 = 0xfb,
@@ -417,7 +417,10 @@ static void jpeg_put_comments(MpegEncContext *s)
 
 void mjpeg_picture_header(MpegEncContext *s)
 {
-    const int lossless= s->avctx->codec_id == CODEC_ID_LJPEG;
+    const int lossless= s->avctx->codec_id != CODEC_ID_MJPEG;
+    const int ls      = s->avctx->codec_id == CODEC_ID_JPEGLS;
+
+    assert(!(ls && s->mjpeg_write_tables));
 
     put_marker(&s->pb, SOI);
 
@@ -427,7 +430,12 @@ void mjpeg_picture_header(MpegEncContext *s)
 
     if (s->mjpeg_write_tables) jpeg_table_header(s);
 
-    put_marker(&s->pb, lossless ? SOF3 : SOF0);
+    switch(s->avctx->codec_id){
+    case CODEC_ID_MJPEG:  put_marker(&s->pb, SOF0 ); break;
+    case CODEC_ID_LJPEG:  put_marker(&s->pb, SOF3 ); break;
+    case CODEC_ID_JPEGLS: put_marker(&s->pb, SOF48); break;
+    default: assert(0);
+    }
 
     put_bits(&s->pb, 16, 17);
     if(lossless && s->avctx->pix_fmt == PIX_FMT_RGBA32)
@@ -485,9 +493,18 @@ void mjpeg_picture_header(MpegEncContext *s)
     put_bits(&s->pb, 4, 1); /* DC huffman table index */
     put_bits(&s->pb, 4, lossless ? 0 : 1); /* AC huffman table index */
 
-    put_bits(&s->pb, 8, lossless ? s->avctx->prediction_method+1 : 0); /* Ss (not used) */
-    put_bits(&s->pb, 8, lossless ? 0 : 63); /* Se (not used) */
+    put_bits(&s->pb, 8, (lossless && !ls) ? s->avctx->prediction_method+1 : 0); /* Ss (not used) */
+
+    switch(s->avctx->codec_id){
+    case CODEC_ID_MJPEG:  put_bits(&s->pb, 8, 63); break; /* Se (not used) */
+    case CODEC_ID_LJPEG:  put_bits(&s->pb, 8,  0); break; /* not used */
+    case CODEC_ID_JPEGLS: put_bits(&s->pb, 8,  1); break; /* ILV = line interleaved */
+    default: assert(0);
+    }
+
     put_bits(&s->pb, 8, 0); /* Ah/Al (not used) */
+
+    //FIXME DC/AC entropy table selectors stuff in jpegls
 }
 
 static void escape_FF(MpegEncContext *s, int start)
@@ -827,10 +844,16 @@ typedef struct MJpegDecodeContext {
     int interlaced;     /* true if interlaced */
     int bottom_field;   /* true if bottom field */
     int lossless;
+    int ls;
     int rgb;
     int rct;            /* standard rct */
     int pegasus_rct;    /* pegasus reversible colorspace transform */
     int bits;           /* bits per component */
+
+    int maxval;
+    int near;         ///< near lossless bound (si 0 for lossless)
+    int t1,t2,t3;
+    int reset;        ///< context halfing intervall ?rename
 
     int width, height;
     int mb_width, mb_height;
@@ -863,6 +886,8 @@ typedef struct MJpegDecodeContext {
 
     int mjpb_skiptosod;
 } MJpegDecodeContext;
+
+#include "jpeg_ls.c" //FIXME make jpeg-ls more independant
 
 static int mjpeg_decode_dht(MJpegDecodeContext *s);
 
@@ -1521,8 +1546,8 @@ static int mjpeg_decode_sos(MJpegDecodeContext *s)
 #endif
     }
 
-    predictor= get_bits(&s->gb, 8); /* lossless predictor or start of spectral (Ss) */
-    skip_bits(&s->gb, 8); /* Se */
+    predictor= get_bits(&s->gb, 8); /* JPEG Ss / lossless JPEG predictor /JPEG-LS NEAR */
+    int ilv= get_bits(&s->gb, 8);    /* JPEG Se / JPEG-LS ILV */
     skip_bits(&s->gb, 4); /* Ah */
     point_transform= get_bits(&s->gb, 4); /* Al */
 
@@ -1544,13 +1569,19 @@ static int mjpeg_decode_sos(MJpegDecodeContext *s)
     }
 
     if(s->avctx->debug & FF_DEBUG_PICT_INFO)
-        av_log(s->avctx, AV_LOG_DEBUG, "%s %s p:%d >>:%d\n", s->lossless ? "lossless" : "sequencial DCT", s->rgb ? "RGB" : "", predictor, point_transform);
+        av_log(s->avctx, AV_LOG_DEBUG, "%s %s p:%d >>:%d ilv:%d bits:%d %s\n", s->lossless ? "lossless" : "sequencial DCT", s->rgb ? "RGB" : "",
+               predictor, point_transform, ilv, s->bits,
+               s->pegasus_rct ? "PRCT" : (s->rct ? "RCT" : ""));
+
 
     /* mjpeg-b can have padding bytes between sos and image data, skip them */
     for (i = s->mjpb_skiptosod; i > 0; i--)
         skip_bits(&s->gb, 8);
 
     if(s->lossless){
+        if(s->ls){
+//            for(){
+        }else{
             if(s->rgb){
                 if(ljpeg_decode_rgb_scan(s, predictor, point_transform) < 0)
                     return -1;
@@ -1558,6 +1589,7 @@ static int mjpeg_decode_sos(MJpegDecodeContext *s)
                 if(ljpeg_decode_yuv_scan(s, predictor, point_transform) < 0)
                     return -1;
             }
+        }
     }else{
         if(mjpeg_decode_scan(s) < 0)
             return -1;
@@ -1894,6 +1926,8 @@ static int mjpeg_decode_frame(AVCodecContext *avctx,
                 switch(start_code) {
                 case SOI:
 		    s->restart_interval = 0;
+                    reset_ls_coding_parameters(s, 1);
+
 		    s->restart_count = 0;
                     /* nothing to do on SOI */
                     break;
@@ -1915,6 +1949,16 @@ static int mjpeg_decode_frame(AVCodecContext *avctx,
                     s->lossless=1;
                     if (mjpeg_decode_sof(s) < 0)
 			return -1;
+                    break;
+                case SOF48:
+                    s->lossless=1;
+                    s->ls=1;
+                    if (mjpeg_decode_sof(s) < 0)
+                        return -1;
+                    break;
+                case LSE:
+                    if (decode_lse(s) < 0)
+                        return -1;
                     break;
 		case EOI:
 		    if ((s->buggy_avid && !s->interlaced) || s->restart_interval)
