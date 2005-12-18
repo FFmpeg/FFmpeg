@@ -162,6 +162,7 @@ static int frame_skip_exp= 0;
 extern int loop_input; /* currently a hack */
 static int loop_output = AVFMT_NOOUTPUTLOOP;
 static int genpts = 0;
+static int qp_hist = 0;
 
 static int gop_size = 12;
 static int intra_only = 0;
@@ -1054,6 +1055,7 @@ static void print_report(AVFormatContext **output_files,
     int frame_number, vid, i;
     double bitrate, ti1, pts;
     static int64_t last_time = -1;
+    static int qp_histogram[52];
 
     if (!is_last_report) {
         int64_t cur_time;
@@ -1086,10 +1088,18 @@ static void print_report(AVFormatContext **output_files,
         }
         if (!vid && enc->codec_type == CODEC_TYPE_VIDEO) {
             frame_number = ost->frame_number;
-            snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "frame=%5d q=%2.1f ",
-                    frame_number, enc->coded_frame ? enc->coded_frame->quality/(float)FF_QP2LAMBDA : 0);
+            snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "frame=%5d q=%3.1f ",
+                    frame_number, enc->coded_frame ? enc->coded_frame->quality/(float)FF_QP2LAMBDA : -1);
             if(is_last_report)
                 snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "L");
+            if(qp_hist && enc->coded_frame){
+                int j;
+                int qp= lrintf(enc->coded_frame->quality/(float)FF_QP2LAMBDA);
+                if(qp>=0 && qp<sizeof(qp_histogram)/sizeof(int))
+                    qp_histogram[qp]++;
+                for(j=0; j<32; j++)
+                    snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "%X", (int)lrintf(log(qp_histogram[j]+1)/log(2)));
+            }
             if (enc->flags&CODEC_FLAG_PSNR){
                 int j;
                 double error, error_sum=0;
@@ -4097,6 +4107,7 @@ const OptionDef options[] = {
     { "skip_exp", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&frame_skip_exp}, "frame skip exponent", "exponent" },
     { "newvideo", OPT_VIDEO, {(void*)opt_new_video_stream}, "add a new video stream to the current output stream" },
     { "genpts", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, { (void *)&genpts }, "generate pts" },
+    { "qphist", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, { (void *)&qp_hist }, "show QP histogram" },
 
     /* audio options */
     { "ab", HAS_ARG | OPT_AUDIO, {(void*)opt_audio_bitrate}, "set audio bitrate (in kbit/s)", "bitrate", },
