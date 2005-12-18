@@ -648,6 +648,7 @@ typedef struct AVPanScan{
 
 #define FF_QSCALE_TYPE_MPEG1	0
 #define FF_QSCALE_TYPE_MPEG2	1
+#define FF_QSCALE_TYPE_H264	2
 
 #define FF_BUFFER_TYPE_INTERNAL 1
 #define FF_BUFFER_TYPE_USER     2 ///< Direct rendering buffers (image is (de)allocated by user)

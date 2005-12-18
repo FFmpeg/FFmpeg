@@ -7552,6 +7552,7 @@ static int decode_nal_units(H264Context *h, uint8_t *buf, int buf_size){
 
     if(!s->current_picture_ptr) return buf_index; //no frame
 
+    s->current_picture_ptr->qscale_type= FF_QSCALE_TYPE_H264;
     s->current_picture_ptr->pict_type= s->pict_type;
     s->current_picture_ptr->key_frame= s->pict_type == I_TYPE && h->nal_unit_type == NAL_IDR_SLICE;
 
