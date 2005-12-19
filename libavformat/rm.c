@@ -488,13 +488,14 @@ static void rm_read_audio_stream_info(AVFormatContext *s, AVStream *st,
 {
     RMContext *rm = s->priv_data;
     ByteIOContext *pb = &s->pb;
-    char buf[128];
+    char buf[256];
     uint32_t version;
     int i;
 
     /* ra type header */
     version = get_be32(pb); /* version */
     if (((version >> 16) & 0xff) == 3) {
+        int64_t startpos = url_ftell(pb);
         /* very old version */
         for(i = 0; i < 14; i++)
             get_byte(pb);
@@ -502,8 +503,14 @@ static void rm_read_audio_stream_info(AVFormatContext *s, AVStream *st,
         get_str8(pb, s->author, sizeof(s->author));
         get_str8(pb, s->copyright, sizeof(s->copyright));
         get_str8(pb, s->comment, sizeof(s->comment));
+        if ((startpos + (version & 0xffff)) >= url_ftell(pb) + 2) {
+        // fourcc (should always be "lpcJ")
         get_byte(pb);
         get_str8(pb, buf, sizeof(buf));
+        }
+        // Skip extra header crap (this should never happen)
+        if ((startpos + (version & 0xffff)) > url_ftell(pb))
+            url_fskip(pb, (version & 0xffff) + startpos - url_ftell(pb));
         st->codec->sample_rate = 8000;
         st->codec->channels = 1;
         st->codec->codec_type = CODEC_TYPE_AUDIO;
