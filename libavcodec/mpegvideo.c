@@ -1115,10 +1115,11 @@ int MPV_encode_init(AVCodecContext *avctx)
         s->rtp_mode= 1;
         break;
     case CODEC_ID_LJPEG:
+    case CODEC_ID_JPEGLS:
     case CODEC_ID_MJPEG:
         s->out_format = FMT_MJPEG;
         s->intra_only = 1; /* force intra only for jpeg */
-        s->mjpeg_write_tables = 1; /* write all tables */
+        s->mjpeg_write_tables = avctx->codec->id != CODEC_ID_JPEGLS;
 	s->mjpeg_data_only_frames = 0; /* write all the needed headers */
         s->mjpeg_vsample[0] = 1<<chroma_v_shift;
         s->mjpeg_vsample[1] = 1;
