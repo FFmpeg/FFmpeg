@@ -609,7 +609,7 @@ static void adaptive_quantization(MpegEncContext *s, double q){
 }
 //FIXME rd or at least approx for dquant
 
-float ff_rate_estimate_qscale(MpegEncContext *s)
+float ff_rate_estimate_qscale(MpegEncContext *s, int dry_run)
 {
     float q;
     int qmin, qmax;
@@ -634,7 +634,7 @@ float ff_rate_estimate_qscale(MpegEncContext *s)
     fps= 1/av_q2d(s->avctx->time_base);
 //printf("input_pic_num:%d pic_num:%d frame_rate:%d\n", s->input_picture_number, s->picture_number, s->frame_rate);
         /* update predictors */
-    if(picture_number>2){
+    if(picture_number>2 && !dry_run){
         const int last_var= s->last_pict_type == I_TYPE ? rcc->last_mb_var_sum : rcc->last_mc_mb_var_sum;
         update_predictor(&rcc->pred[s->last_pict_type], rcc->last_qscale, sqrt(last_var), s->frame_bits);
     }
@@ -735,9 +735,11 @@ float ff_rate_estimate_qscale(MpegEncContext *s)
     else
         q= (int)(q + 0.5);
 
-    rcc->last_qscale= q;
-    rcc->last_mc_mb_var_sum= pic->mc_mb_var_sum;
-    rcc->last_mb_var_sum= pic->mb_var_sum;
+    if(!dry_run){
+        rcc->last_qscale= q;
+        rcc->last_mc_mb_var_sum= pic->mc_mb_var_sum;
+        rcc->last_mb_var_sum= pic->mb_var_sum;
+    }
 #if 0
 {
     static int mvsum=0, texsum=0;

@@ -5245,6 +5245,31 @@ static void merge_context_after_encode(MpegEncContext *dst, MpegEncContext *src)
     flush_put_bits(&dst->pb);
 }
 
+static void estimate_qp(MpegEncContext *s, int dry_run){
+    if (!s->fixed_qscale)
+        s->current_picture_ptr->quality=
+        s->current_picture.quality = ff_rate_estimate_qscale(s, dry_run);
+
+    if(s->adaptive_quant){
+        switch(s->codec_id){
+        case CODEC_ID_MPEG4:
+            ff_clean_mpeg4_qscales(s);
+            break;
+        case CODEC_ID_H263:
+        case CODEC_ID_H263P:
+        case CODEC_ID_FLV1:
+            ff_clean_h263_qscales(s);
+            break;
+        }
+
+        s->lambda= s->lambda_table[0];
+        //FIXME broken
+    }else
+        s->lambda= s->current_picture.quality;
+//printf("%d %d\n", s->avctx->global_quality, s->current_picture.quality);
+    update_qscale(s);
+}
+
 static void encode_picture(MpegEncContext *s, int picture_number)
 {
     int i;
@@ -5272,6 +5297,10 @@ static void encode_picture(MpegEncContext *s, int picture_number)
         if(s->flipflop_rounding || s->codec_id == CODEC_ID_H263P || s->codec_id == CODEC_ID_MPEG4)
             s->no_rounding ^= 1;
     }
+
+    if(s->flags & CODEC_FLAG_PASS2)
+        estimate_qp(s, 1);
+
 
     s->mb_intra=0; //for the rate distortion & bit compare functions
     for(i=1; i<s->avctx->thread_count; i++){
@@ -5369,28 +5398,7 @@ static void encode_picture(MpegEncContext *s, int picture_number)
         }
     }
 
-    if (!s->fixed_qscale)
-        s->current_picture_ptr->quality=
-        s->current_picture.quality = ff_rate_estimate_qscale(s);
-
-    if(s->adaptive_quant){
-        switch(s->codec_id){
-        case CODEC_ID_MPEG4:
-            ff_clean_mpeg4_qscales(s);
-            break;
-        case CODEC_ID_H263:
-        case CODEC_ID_H263P:
-        case CODEC_ID_FLV1:
-            ff_clean_h263_qscales(s);
-            break;
-        }
-
-        s->lambda= s->lambda_table[0];
-        //FIXME broken
-    }else
-        s->lambda= s->current_picture.quality;
-//printf("%d %d\n", s->avctx->global_quality, s->current_picture.quality);
-    update_qscale(s);
+    estimate_qp(s, 0);
 
     if(s->qscale < 3 && s->max_qcoeff<=128 && s->pict_type==I_TYPE && !(s->flags & CODEC_FLAG_QSCALE))
         s->qscale= 3; //reduce clipping problems

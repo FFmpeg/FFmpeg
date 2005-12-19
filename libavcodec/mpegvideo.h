@@ -972,7 +972,7 @@ void ff_mjpeg_stuffing(PutBitContext * pbc);
 
 /* rate control */
 int ff_rate_control_init(MpegEncContext *s);
-float ff_rate_estimate_qscale(MpegEncContext *s);
+float ff_rate_estimate_qscale(MpegEncContext *s, int dry_run);
 void ff_write_pass1_stats(MpegEncContext *s);
 void ff_rate_control_uninit(MpegEncContext *s);
 double ff_eval(char *s, double *const_value, const char **const_name,
