@@ -1484,6 +1484,7 @@ static int mjpeg_decode_sos(MJpegDecodeContext *s)
     int len, nb_components, i, h, v, predictor, point_transform;
     int vmax, hmax, index, id;
     const int block_size= s->lossless ? 1 : 8;
+    int ilv;
 
     /* XXX: verify len field validity */
     len = get_bits(&s->gb, 16);
@@ -1547,7 +1548,7 @@ static int mjpeg_decode_sos(MJpegDecodeContext *s)
     }
 
     predictor= get_bits(&s->gb, 8); /* JPEG Ss / lossless JPEG predictor /JPEG-LS NEAR */
-    int ilv= get_bits(&s->gb, 8);    /* JPEG Se / JPEG-LS ILV */
+    ilv= get_bits(&s->gb, 8);    /* JPEG Se / JPEG-LS ILV */
     skip_bits(&s->gb, 4); /* Ah */
     point_transform= get_bits(&s->gb, 4); /* Al */
 
