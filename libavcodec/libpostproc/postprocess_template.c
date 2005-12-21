@@ -186,7 +186,7 @@ asm volatile(
             return 2;
         }
 }
-#endif
+#endif //HAVE_MMX
 
 /**
  * Do a vertical low pass filter on the 8x16 block (only write to the 8x8 block in the middle)
@@ -322,7 +322,7 @@ static inline void RENAME(doVertLowPass)(uint8_t *src, int stride, PPContext *c)
 		: "r" (src), "r" ((long)stride), "m" (c->pQPb)
 		: "%"REG_a, "%"REG_c
 	);
-#else
+#else //defined (HAVE_MMX2) || defined (HAVE_3DNOW)
 	const int l1= stride;
 	const int l2= stride + l1;
 	const int l3= stride + l2;
@@ -362,7 +362,7 @@ static inline void RENAME(doVertLowPass)(uint8_t *src, int stride, PPContext *c)
 
 		src++;
 	}
-#endif
+#endif //defined (HAVE_MMX2) || defined (HAVE_3DNOW)
 }
 #endif //HAVE_ALTIVEC
 
@@ -442,7 +442,7 @@ static inline void RENAME(vertRK1Filter)(uint8_t *src, int stride, int QP)
 		: "r" (src), "r" ((long)stride)
 		: "%"REG_a, "%"REG_c
 	);
-#else
+#else //defined (HAVE_MMX2) || defined (HAVE_3DNOW)
  	const int l1= stride;
 	const int l2= stride + l1;
 	const int l3= stride + l2;
@@ -468,9 +468,9 @@ static inline void RENAME(vertRK1Filter)(uint8_t *src, int stride, int QP)
 		}
 	}
 
-#endif
+#endif //defined (HAVE_MMX2) || defined (HAVE_3DNOW)
 }
-#endif
+#endif //0
 
 /**
  * Experimental Filter 1
@@ -567,7 +567,7 @@ static inline void RENAME(vertX1Filter)(uint8_t *src, int stride, PPContext *co)
 		: "r" (src), "r" ((long)stride), "m" (co->pQPb)
 		: "%"REG_a, "%"REG_c
 	);
-#else
+#else //defined (HAVE_MMX2) || defined (HAVE_3DNOW)
 
  	const int l1= stride;
 	const int l2= stride + l1;
@@ -604,7 +604,7 @@ static inline void RENAME(vertX1Filter)(uint8_t *src, int stride, PPContext *co)
 		}
 		src++;
 	}
-#endif
+#endif //defined (HAVE_MMX2) || defined (HAVE_3DNOW)
 }
 
 #ifndef HAVE_ALTIVEC
@@ -733,7 +733,7 @@ static inline void RENAME(doVertDefFilter)(uint8_t src[], int stride, PPContext 
 		"pxor %%mm6, %%mm2				\n\t"
 		"movq %%mm0, (%%"REG_a", %1, 2)			\n\t"
 		"movq %%mm2, (%0, %1, 4)			\n\t"
-#endif
+#endif //0
 
 		"lea (%0, %1), %%"REG_a"			\n\t"
 		"pcmpeqb %%mm6, %%mm6				\n\t" // -1
@@ -1132,7 +1132,7 @@ src-=8;
 		: "r" ((long)stride), "m" (c->pQPb)
 		: "%"REG_a, "%"REG_c
 	);
-#else
+#else //defined (HAVE_MMX2) || defined (HAVE_3DNOW)
 	const int l1= stride;
 	const int l2= stride + l1;
 	const int l3= stride + l2;
@@ -1175,7 +1175,7 @@ src-=8;
 		}
 		src++;
 	}
-#endif
+#endif //defined (HAVE_MMX2) || defined (HAVE_3DNOW)
 }
 #endif //HAVE_ALTIVEC
 
@@ -1406,7 +1406,7 @@ DERING_CORE((%0, %1, 8),(%%REGd, %1, 4) ,%%mm2,%%mm4,%%mm0,%%mm3,%%mm5,%%mm1,%%m
 		: : "r" (src), "r" ((long)stride), "m" (c->pQPb), "m"(c->pQPb2)
 		: "%"REG_a, "%"REG_d, "%"REG_c
 	);
-#else
+#else //defined (HAVE_MMX2) || defined (HAVE_3DNOW)
 	int y;
 	int min=255;
 	int max=0;
@@ -1536,7 +1536,7 @@ DERING_CORE((%0, %1, 8),(%%REGd, %1, 4) ,%%mm2,%%mm4,%%mm0,%%mm3,%%mm5,%%mm1,%%m
 //		src[0] = src[7]=src[stride*7]=src[stride*7 + 7]=255;
 	}
 #endif
-#endif
+#endif //defined (HAVE_MMX2) || defined (HAVE_3DNOW)
 }
 #endif //HAVE_ALTIVEC
 
@@ -1643,7 +1643,7 @@ DEINT_CUBIC((%%REGd, %1), (%0, %1, 8), (%%REGd, %1, 4), (%%REGc), (%%REGc, %1, 2
 		: : "r" (src), "r" ((long)stride)
 		: "%"REG_a, "%"REG_d, "%"REG_c
 	);
-#else
+#else //defined (HAVE_MMX2) || defined (HAVE_3DNOW)
 	int x;
 	src+= stride*3;
 	for(x=0; x<8; x++)
@@ -1654,7 +1654,7 @@ DEINT_CUBIC((%%REGd, %1), (%0, %1, 8), (%%REGd, %1, 4), (%%REGc), (%%REGc, %1, 2
 		src[stride*9] = CLIP((-src[stride*6] + 9*src[stride*8] + 9*src[stride*10] - src[stride*12])>>4);
 		src++;
 	}
-#endif
+#endif //defined (HAVE_MMX2) || defined (HAVE_3DNOW)
 }
 
 /**
@@ -1715,7 +1715,7 @@ DEINT_FF((%%REGd, %1), (%%REGd, %1, 2), (%0, %1, 8),  (%%REGd, %1, 4))
 		: : "r" (src), "r" ((long)stride), "r"(tmp)
 		: "%"REG_a, "%"REG_d
 	);
-#else
+#else //defined (HAVE_MMX2) || defined (HAVE_3DNOW)
 	int x;
 	src+= stride*4;
 	for(x=0; x<8; x++)
@@ -1734,7 +1734,7 @@ DEINT_FF((%%REGd, %1), (%%REGd, %1, 2), (%0, %1, 8),  (%%REGd, %1, 4))
 
 		src++;
 	}
-#endif
+#endif //defined (HAVE_MMX2) || defined (HAVE_3DNOW)
 }
 
 /**
@@ -1806,7 +1806,7 @@ DEINT_L5(%%mm1, %%mm0, (%%REGd, %1, 2), (%0, %1, 8)    , (%%REGd, %1, 4))
 		: : "r" (src), "r" ((long)stride), "r"(tmp), "r"(tmp2)
 		: "%"REG_a, "%"REG_d
 	);
-#else
+#else //defined (HAVE_MMX2) || defined (HAVE_3DNOW)
 	int x;
 	src+= stride*4;
 	for(x=0; x<8; x++)
@@ -1836,7 +1836,7 @@ DEINT_L5(%%mm1, %%mm0, (%%REGd, %1, 2), (%0, %1, 8)    , (%%REGd, %1, 4))
 
 		src++;
 	}
-#endif
+#endif //defined (HAVE_MMX2) || defined (HAVE_3DNOW)
 }
 
 /**
@@ -1895,7 +1895,7 @@ static inline void RENAME(deInterlaceBlendLinear)(uint8_t src[], int stride, uin
 		: : "r" (src), "r" ((long)stride), "r" (tmp)
 		: "%"REG_a, "%"REG_d
 	);
-#else
+#else //defined (HAVE_MMX2) || defined (HAVE_3DNOW)
 	int a, b, c, x;
 	src+= 4*stride;
 
@@ -1938,7 +1938,7 @@ static inline void RENAME(deInterlaceBlendLinear)(uint8_t src[], int stride, uin
 		src += 4;
 		tmp += 4;
 	}
-#endif
+#endif //defined (HAVE_MMX2) || defined (HAVE_3DNOW)
 }
 
 /**
@@ -2041,8 +2041,8 @@ MEDIAN((%%REGd, %1), (%%REGd, %1, 2), (%0, %1, 8))
 		: : "r" (src), "r" ((long)stride)
 		: "%"REG_a, "%"REG_d
 	);
-#endif // MMX
-#else
+#endif //HAVE_MMX2
+#else //HAVE_MMX
 	int x, y;
 	src+= 4*stride;
 	// FIXME - there should be a way to do a few columns in parallel like w/mmx
@@ -2063,7 +2063,7 @@ MEDIAN((%%REGd, %1), (%%REGd, %1, 2), (%0, %1, 8))
 		}
 		src++;
 	}
-#endif
+#endif //HAVE_MMX
 }
 
 #ifdef HAVE_MMX
@@ -2231,7 +2231,7 @@ static inline void RENAME(transpose2)(uint8_t *dst, int dstStride, uint8_t *src)
 	: "%"REG_a, "%"REG_d
 	);
 }
-#endif
+#endif //HAVE_MMX
 //static long test=0;
 
 #ifndef HAVE_ALTIVEC
@@ -2278,7 +2278,7 @@ static inline void RENAME(tempNoiseReducer)(uint8_t *src, int stride,
 		"paddw %%mm5, %%mm6				\n\t"
 		"paddw %%mm7, %%mm6				\n\t"
 		"paddw %%mm6, %%mm0				\n\t"
-#else
+#else //L1_DIFF
 #if defined (FAST_L2_DIFF)
 		"pcmpeqb %%mm7, %%mm7				\n\t"
 		"movq "MANGLE(b80)", %%mm6			\n\t"
@@ -2297,7 +2297,7 @@ static inline void RENAME(tempNoiseReducer)(uint8_t *src, int stride,
 		"psrld $14, %%mm5				\n\t"\
 		"paddd %%mm5, %%mm0				\n\t"
 
-#else
+#else //defined (FAST_L2_DIFF)
 		"pxor %%mm7, %%mm7				\n\t"
 		"pxor %%mm0, %%mm0				\n\t"
 #define REAL_L2_DIFF_CORE(a, b)\
@@ -2316,7 +2316,7 @@ static inline void RENAME(tempNoiseReducer)(uint8_t *src, int stride,
 		"paddd %%mm1, %%mm5				\n\t"\
 		"paddd %%mm5, %%mm0				\n\t"
 
-#endif
+#endif //defined (FAST_L2_DIFF)
 
 #define L2_DIFF_CORE(a, b)  REAL_L2_DIFF_CORE(a, b)
 
@@ -2329,7 +2329,7 @@ L2_DIFF_CORE((%0, %%REGd), (%1, %%REGd))
 L2_DIFF_CORE((%0, %%REGa,2), (%1, %%REGa,2))
 L2_DIFF_CORE((%0, %%REGc), (%1, %%REGc))
 
-#endif
+#endif //L1_DIFF
 
 		"movq %%mm0, %%mm4				\n\t"
 		"psrlq $32, %%mm0				\n\t"
@@ -2534,7 +2534,7 @@ L2_DIFF_CORE((%0, %%REGc), (%1, %%REGc))
 		: "%"REG_a, "%"REG_d, "%"REG_c, "memory"
 		);
 //printf("%d\n", test);
-#else
+#else //defined (HAVE_MMX2) || defined (HAVE_3DNOW)
 {
 	int y;
 	int d=0;
@@ -2637,7 +2637,7 @@ Switch between
 		}
 	}
 }
-#endif
+#endif //defined (HAVE_MMX2) || defined (HAVE_3DNOW)
 }
 #endif //HAVE_ALTIVEC
 
@@ -3253,7 +3253,7 @@ static inline void RENAME(blockCopy)(uint8_t dst[], int dstStride, uint8_t src[]
 						"movq %%mm0, " #dst1 "	\n\t"\
 						"movq %%mm1, " #dst2 "	\n\t"\
 
-#endif //!HAVE_MMX2
+#endif //HAVE_MMX2
 #define SCALED_CPY(src1, src2, dst1, dst2)\
    REAL_SCALED_CPY(src1, src2, dst1, dst2)
 
@@ -3273,11 +3273,11 @@ SCALED_CPY((%%REGa, %4), (%%REGa, %4, 2), (%%REGd, %5), (%%REGd, %5, 2))
 						"r" ((long)dstStride)
 						: "%"REG_d
 					);
-#else
+#else //HAVE_MMX
 				for(i=0; i<8; i++)
 					memcpy(	&(dst[dstStride*i]),
 						&(src[srcStride*i]), BLOCK_SIZE);
-#endif
+#endif //HAVE_MMX
 	}
 	else
 	{
@@ -3308,11 +3308,11 @@ SIMPLE_CPY((%%REGa, %2), (%%REGa, %2, 2), (%%REGd, %3), (%%REGd, %3, 2))
 						"r" ((long)dstStride)
 						: "%"REG_a, "%"REG_d
 					);
-#else
+#else //HAVE_MMX
 				for(i=0; i<8; i++)
 					memcpy(	&(dst[dstStride*i]),
 						&(src[srcStride*i]), BLOCK_SIZE);
-#endif
+#endif //HAVE_MMX
 	}
 }
 
@@ -3744,7 +3744,7 @@ static void RENAME(postProcess)(uint8_t src[], int srcStride, uint8_t dst[], int
 				}else if(mode & H_A_DEBLOCK){
 					RENAME(do_a_deblock)(dstBlock-8, 1, stride, &c);
 				}
-#endif
+#endif //HAVE_MMX
 				if(mode & DERING)
 				{
 				//FIXME filter first line
