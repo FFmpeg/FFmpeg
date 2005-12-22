@@ -607,6 +607,17 @@ static void adaptive_quantization(MpegEncContext *s, double q){
         s->lambda_table[mb_xy]= intq;
     }
 }
+
+void ff_get_2pass_fcode(MpegEncContext *s){
+    RateControlContext *rcc= &s->rc_context;
+    int picture_number= s->picture_number;
+    RateControlEntry *rce;
+
+    rce= &rcc->entry[picture_number];
+    s->f_code= rce->f_code;
+    s->b_code= rce->b_code;
+}
+
 //FIXME rd or at least approx for dquant
 
 float ff_rate_estimate_qscale(MpegEncContext *s, int dry_run)

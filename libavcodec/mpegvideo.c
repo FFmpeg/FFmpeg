@@ -5298,9 +5298,10 @@ static void encode_picture(MpegEncContext *s, int picture_number)
             s->no_rounding ^= 1;
     }
 
-    if(s->flags & CODEC_FLAG_PASS2)
+    if(s->flags & CODEC_FLAG_PASS2){
         estimate_qp(s, 1);
-    else if(!(s->flags & CODEC_FLAG_QSCALE)){
+        ff_get_2pass_fcode(s);
+    }else if(!(s->flags & CODEC_FLAG_QSCALE)){
         RateControlContext *rcc= &s->rc_context;
 
         if(s->pict_type==B_TYPE)
