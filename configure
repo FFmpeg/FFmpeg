@@ -350,7 +350,7 @@ CYGWIN*)
 v4l="no"
 audio_oss="yes"
 dv1394="no"
-ffserver="no"
+vhook="no"
 extralibs=""
 cygwin="yes"
 EXESUF=".exe"
