@@ -110,10 +110,10 @@ static int decode_rle(CamtasiaContext *c, unsigned int srcsize)
             for(i = 0; i < p2 * (c->bpp / 8); i++) {
                 *output++ = *src++;
             }
-	    // RLE8 copy is actually padded - and runs are not!
-	    if(c->bpp == 8 && (p2 & 1)) {
-		src++;
-	    }
+            // RLE8 copy is actually padded - and runs are not!
+            if(c->bpp == 8 && (p2 & 1)) {
+                src++;
+            }
             pos += p2;
         } else { //Run of pixels
             int pix[4]; //original pixel

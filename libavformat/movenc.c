@@ -287,7 +287,7 @@ static int mov_write_audio_tag(ByteIOContext *pb, MOVTrack* track)
     // if no mac fcc found, try with Microsoft tags
     if (!tag)
     {
-	int tmp = codec_get_tag(codec_wav_tags, track->enc->codec_id);
+        int tmp = codec_get_tag(codec_wav_tags, track->enc->codec_id);
         tag = MKTAG('m', 's', ((tmp >> 8) & 0xff), (tmp & 0xff));
     }
     put_le32(pb, tag); // store it byteswapped
@@ -515,7 +515,7 @@ static int mov_write_video_tag(ByteIOContext *pb, MOVTrack* track)
     tag = codec_get_tag(codec_movvideo_tags, track->enc->codec_id);
     // if no mac fcc found, try with Microsoft tags
     if (!tag)
-	tag = codec_get_tag(codec_bmp_tags, track->enc->codec_id);
+        tag = codec_get_tag(codec_bmp_tags, track->enc->codec_id);
     put_le32(pb, tag); // store it byteswapped
 
     put_be32(pb, 0); /* Reserved */
@@ -649,18 +649,18 @@ static int mov_write_hdlr_tag(ByteIOContext *pb, MOVTrack* track)
     int pos = url_ftell(pb);
 
     if (!track) { /* no media --> data handler */
-	hdlr = "dhlr";
-	hdlr_type = "url ";
-	descr = "DataHandler";
+        hdlr = "dhlr";
+        hdlr_type = "url ";
+        descr = "DataHandler";
     } else {
-	hdlr = (track->mode == MODE_MOV) ? "mhlr" : "\0\0\0\0";
-	if (track->enc->codec_type == CODEC_TYPE_VIDEO) {
-	    hdlr_type = "vide";
-	    descr = "VideoHandler";
-	} else {
-	    hdlr_type = "soun";
-	    descr = "SoundHandler";
-	}
+        hdlr = (track->mode == MODE_MOV) ? "mhlr" : "\0\0\0\0";
+        if (track->enc->codec_type == CODEC_TYPE_VIDEO) {
+            hdlr_type = "vide";
+            descr = "VideoHandler";
+        } else {
+            hdlr_type = "soun";
+            descr = "SoundHandler";
+        }
     }
 
     put_be32(pb, 0); /* size */
@@ -1394,8 +1394,8 @@ static int mov_write_packet(AVFormatContext *s, AVPacket *pkt)
         else if(enc->codec_id == CODEC_ID_PCM_ALAW) {
             samplesInChunk = size/enc->channels;
         }
-	else if(enc->codec_id == CODEC_ID_PCM_S16BE || enc->codec_id == CODEC_ID_PCM_S16LE) {
-	    samplesInChunk = size/(2*enc->channels);
+        else if(enc->codec_id == CODEC_ID_PCM_S16BE || enc->codec_id == CODEC_ID_PCM_S16LE) {
+            samplesInChunk = size/(2*enc->channels);
         }
         else {
             samplesInChunk = 1;

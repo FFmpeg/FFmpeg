@@ -821,7 +821,7 @@ static void glue(RGB_NAME, _to_pal8)(AVPicture *dst, const AVPicture *src,
 #ifdef RGBA_IN
 
 static int glue(get_alpha_info_, RGB_NAME)(const AVPicture *src,
-					   int width, int height)
+                                           int width, int height)
 {
     const unsigned char *p;
     int src_wrap, ret, x, y;

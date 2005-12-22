@@ -116,7 +116,7 @@ int pix_abs8x8_mvi(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
     return result;
 }
 
-#if 0				/* now done in assembly */
+#if 0                           /* now done in assembly */
 int pix_abs16x16_mvi(uint8_t *pix1, uint8_t *pix2, int line_size)
 {
     int result = 0;

@@ -257,13 +257,13 @@ enum PixelFormat avcodec_get_pix_fmt(const char* name)
 
     for (i=0; i < PIX_FMT_NB; i++)
          if (!strcmp(pix_fmt_info[i].name, name))
-	     break;
+             break;
     return i;
 }
 
 /* Picture field are filled with 'ptr' addresses. Also return size */
 int avpicture_fill(AVPicture *picture, uint8_t *ptr,
-		   int pix_fmt, int width, int height)
+                   int pix_fmt, int width, int height)
 {
     int size, w2, h2, size2;
     PixFmtInfo *pinfo;
@@ -373,36 +373,36 @@ int avpicture_layout(const AVPicture* src, int pix_fmt, int width, int height,
             pix_fmt == PIX_FMT_RGB565 ||
             pix_fmt == PIX_FMT_RGB555)
             w = width * 2;
-	else if (pix_fmt == PIX_FMT_UYVY411)
-	  w = width + width/2;
-	else if (pix_fmt == PIX_FMT_PAL8)
-	  w = width;
-	else
-	  w = width * (pf->depth * pf->nb_channels / 8);
+        else if (pix_fmt == PIX_FMT_UYVY411)
+          w = width + width/2;
+        else if (pix_fmt == PIX_FMT_PAL8)
+          w = width;
+        else
+          w = width * (pf->depth * pf->nb_channels / 8);
 
-	data_planes = 1;
-	h = height;
+        data_planes = 1;
+        h = height;
     } else {
         data_planes = pf->nb_channels;
-	w = (width*pf->depth + 7)/8;
-	h = height;
+        w = (width*pf->depth + 7)/8;
+        h = height;
     }
 
     for (i=0; i<data_planes; i++) {
          if (i == 1) {
-	     w = width >> pf->x_chroma_shift;
-	     h = height >> pf->y_chroma_shift;
-	 }
+             w = width >> pf->x_chroma_shift;
+             h = height >> pf->y_chroma_shift;
+         }
          s = src->data[i];
-	 for(j=0; j<h; j++) {
-	     memcpy(dest, s, w);
-	     dest += w;
-	     s += src->linesize[i];
-	 }
+         for(j=0; j<h; j++) {
+             memcpy(dest, s, w);
+             dest += w;
+             s += src->linesize[i];
+         }
     }
 
     if (pf->pixel_type == FF_PIXEL_PALETTE)
-	memcpy((unsigned char *)(((size_t)dest + 3) & ~3), src->data[1], 256 * 4);
+        memcpy((unsigned char *)(((size_t)dest + 3) & ~3), src->data[1], 256 * 4);
 
     return size;
 }
@@ -486,9 +486,9 @@ static int avg_bits_per_pixel(int pix_fmt)
         case PIX_FMT_RGB555:
             bits = 16;
             break;
-	case PIX_FMT_UYVY411:
-	    bits = 12;
-	    break;
+        case PIX_FMT_UYVY411:
+            bits = 12;
+            break;
         default:
             bits = pf->depth * pf->nb_channels;
             break;
@@ -604,9 +604,9 @@ void img_copy(AVPicture *dst, const AVPicture *src,
         case PIX_FMT_RGB555:
             bits = 16;
             break;
-	case PIX_FMT_UYVY411:
-	    bits = 12;
-	    break;
+        case PIX_FMT_UYVY411:
+            bits = 12;
+            break;
         default:
             bits = pf->depth * pf->nb_channels;
             break;
@@ -910,11 +910,11 @@ static void uyvy411_to_yuv411p(AVPicture *dst, const AVPicture *src,
         cr = cr1;
         for(w = width; w >= 4; w -= 4) {
             cb[0] = p[0];
-	    lum[0] = p[1];
+            lum[0] = p[1];
             lum[1] = p[2];
             cr[0] = p[3];
-	    lum[2] = p[4];
-	    lum[3] = p[5];
+            lum[2] = p[4];
+            lum[3] = p[5];
             p += 6;
             lum += 4;
             cb++;
@@ -996,7 +996,7 @@ static void yuv420p_to_uyvy422(AVPicture *dst, const AVPicture *src,
 
 #define SCALEBITS 10
 #define ONE_HALF  (1 << (SCALEBITS - 1))
-#define FIX(x)	  ((int) ((x) * (1<<SCALEBITS) + 0.5))
+#define FIX(x)    ((int) ((x) * (1<<SCALEBITS) + 0.5))
 
 #define YUV_TO_RGB1_CCIR(cb1, cr1)\
 {\
@@ -1046,7 +1046,7 @@ static void yuv420p_to_uyvy422(AVPicture *dst, const AVPicture *src,
 static inline int C_JPEG_TO_CCIR(int y) {
     y = (((y - 128) * FIX(112.0/127.0) + (ONE_HALF + (128 << SCALEBITS))) >> SCALEBITS);
     if (y < 16)
-	y = 16;
+        y = 16;
     return y;
 }
 
@@ -1681,7 +1681,7 @@ static void gray_to_monoblack(AVPicture *dst, const AVPicture *src,
 
 typedef struct ConvertEntry {
     void (*convert)(AVPicture *dst,
-		    const AVPicture *src, int width, int height);
+                    const AVPicture *src, int width, int height);
 } ConvertEntry;
 
 /* Add each new convertion function in this table. In order to be able
@@ -1721,7 +1721,7 @@ static ConvertEntry convert_table[PIX_FMT_NB][PIX_FMT_NB] = {
         [PIX_FMT_RGBA32] = {
             .convert = yuv420p_to_rgba32
         },
-	[PIX_FMT_UYVY422] = {
+        [PIX_FMT_UYVY422] = {
             .convert = yuv420p_to_uyvy422,
         },
     },
@@ -2224,7 +2224,7 @@ static int get_alpha_info_pal8(const AVPicture *src, int width, int height)
  * @return ored mask of FF_ALPHA_xxx constants
  */
 int img_get_alpha_info(const AVPicture *src,
-		       int pix_fmt, int width, int height)
+                       int pix_fmt, int width, int height)
 {
     PixFmtInfo *pf = &pix_fmt_info[pix_fmt];
     int ret;
@@ -2300,10 +2300,10 @@ int img_get_alpha_info(const AVPicture *src,
 
 /* filter parameters: [-1 4 2 4 -1] // 8 */
 static void deinterlace_line(uint8_t *dst,
-			     const uint8_t *lum_m4, const uint8_t *lum_m3,
-			     const uint8_t *lum_m2, const uint8_t *lum_m1,
-			     const uint8_t *lum,
-			     int size)
+                             const uint8_t *lum_m4, const uint8_t *lum_m3,
+                             const uint8_t *lum_m2, const uint8_t *lum_m1,
+                             const uint8_t *lum,
+                             int size)
 {
 #ifndef HAVE_MMX
     uint8_t *cm = cropTbl + MAX_NEG_CROP;
@@ -2421,7 +2421,7 @@ static void deinterlace_bottom_field(uint8_t *dst, int dst_wrap,
 }
 
 static void deinterlace_bottom_field_inplace(uint8_t *src1, int src_wrap,
-					     int width, int height)
+                                             int width, int height)
 {
     uint8_t *src_m1, *src_0, *src_p1, *src_p2;
     int y;
@@ -2455,7 +2455,7 @@ int avpicture_deinterlace(AVPicture *dst, const AVPicture *src,
     if (pix_fmt != PIX_FMT_YUV420P &&
         pix_fmt != PIX_FMT_YUV422P &&
         pix_fmt != PIX_FMT_YUV444P &&
-	pix_fmt != PIX_FMT_YUV411P)
+        pix_fmt != PIX_FMT_YUV411P)
         return -1;
     if ((width & 3) != 0 || (height & 3) != 0)
         return -1;

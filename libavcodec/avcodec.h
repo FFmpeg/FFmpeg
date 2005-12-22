@@ -15,21 +15,21 @@ extern "C" {
 #include <sys/types.h> /* size_t */
 
 //FIXME the following 2 really dont belong in here
-#define FFMPEG_VERSION_INT     0x000409
-#define FFMPEG_VERSION         "CVS"
+#define FFMPEG_VERSION_INT      0x000409
+#define FFMPEG_VERSION          "CVS"
 
-#define AV_STRINGIFY(s)	AV_TOSTRING(s)
+#define AV_STRINGIFY(s)         AV_TOSTRING(s)
 #define AV_TOSTRING(s) #s
 
-#define LIBAVCODEC_VERSION_INT ((51<<16)+(0<<8)+0)
-#define LIBAVCODEC_VERSION     51.0.0
-#define LIBAVCODEC_BUILD       LIBAVCODEC_VERSION_INT
+#define LIBAVCODEC_VERSION_INT  ((51<<16)+(0<<8)+0)
+#define LIBAVCODEC_VERSION      51.0.0
+#define LIBAVCODEC_BUILD        LIBAVCODEC_VERSION_INT
 
-#define LIBAVCODEC_IDENT       "Lavc" AV_STRINGIFY(LIBAVCODEC_VERSION)
+#define LIBAVCODEC_IDENT        "Lavc" AV_STRINGIFY(LIBAVCODEC_VERSION)
 
-#define AV_NOPTS_VALUE int64_t_C(0x8000000000000000)
-#define AV_TIME_BASE 1000000
-#define AV_TIME_BASE_Q (AVRational){1, AV_TIME_BASE}
+#define AV_NOPTS_VALUE          int64_t_C(0x8000000000000000)
+#define AV_TIME_BASE            1000000
+#define AV_TIME_BASE_Q          (AVRational){1, AV_TIME_BASE}
 
 enum CodecID {
     CODEC_ID_NONE,
@@ -362,9 +362,9 @@ extern int motion_estimation_method;
 #define CODEC_FLAG2_LOCAL_HEADER  0x00000008 ///< place global headers at every keyframe instead of in extradata
 
 /* Unsupported options :
- * 		Syntax Arithmetic coding (SAC)
- * 		Reference Picture Selection
- * 		Independant Segment Decoding */
+ *              Syntax Arithmetic coding (SAC)
+ *              Reference Picture Selection
+ *              Independant Segment Decoding */
 /* /Fx */
 /* codec capabilities */
 
@@ -646,9 +646,9 @@ typedef struct AVPanScan{
      */\
     int8_t *ref_index[2];
 
-#define FF_QSCALE_TYPE_MPEG1	0
-#define FF_QSCALE_TYPE_MPEG2	1
-#define FF_QSCALE_TYPE_H264	2
+#define FF_QSCALE_TYPE_MPEG1 0
+#define FF_QSCALE_TYPE_MPEG2 1
+#define FF_QSCALE_TYPE_H264  2
 
 #define FF_BUFFER_TYPE_INTERNAL 1
 #define FF_BUFFER_TYPE_USER     2 ///< Direct rendering buffers (image is (de)allocated by user)
@@ -684,9 +684,9 @@ typedef struct AVCLASS AVClass;
 struct AVCLASS {
     const char* class_name;
     const char* (*item_name)(void*); /* actually passing a pointer to an AVCodecContext
-					or AVFormatContext, which begin with an AVClass.
-					Needed because av_log is in libavcodec and has no visibility
-					of AVIn/OutputFormat */
+                                        or AVFormatContext, which begin with an AVClass.
+                                        Needed because av_log is in libavcodec and has no visibility
+                                        of AVIn/OutputFormat */
     struct AVOption *option;
 };
 
@@ -1252,18 +1252,18 @@ typedef struct AVCodecContext {
      * result into program crash)
      */
     unsigned dsp_mask;
-#define FF_MM_FORCE	0x80000000 /* force usage of selected flags (OR) */
+#define FF_MM_FORCE    0x80000000 /* force usage of selected flags (OR) */
     /* lower 16 bits - CPU features */
 #ifdef HAVE_MMX
-#define FF_MM_MMX	0x0001 /* standard MMX */
-#define FF_MM_3DNOW	0x0004 /* AMD 3DNOW */
-#define FF_MM_MMXEXT	0x0002 /* SSE integer functions or AMD MMX ext */
-#define FF_MM_SSE	0x0008 /* SSE functions */
-#define FF_MM_SSE2	0x0010 /* PIV SSE2 functions */
-#define FF_MM_3DNOWEXT	0x0020 /* AMD 3DNowExt */
+#define FF_MM_MMX      0x0001 /* standard MMX */
+#define FF_MM_3DNOW    0x0004 /* AMD 3DNOW */
+#define FF_MM_MMXEXT   0x0002 /* SSE integer functions or AMD MMX ext */
+#define FF_MM_SSE      0x0008 /* SSE functions */
+#define FF_MM_SSE2     0x0010 /* PIV SSE2 functions */
+#define FF_MM_3DNOWEXT 0x0020 /* AMD 3DNowExt */
 #endif /* HAVE_MMX */
 #ifdef HAVE_IWMMXT
-#define FF_MM_IWMMXT	0x0100 /* XScale IWMMXT */
+#define FF_MM_IWMMXT   0x0100 /* XScale IWMMXT */
 #endif /* HAVE_IWMMXT */
 
     /**
@@ -2223,7 +2223,7 @@ int avcodec_find_best_pix_fmt(int pix_fmt_mask, int src_pix_fmt,
 #define FF_ALPHA_TRANSP       0x0001 /* image has some totally transparent pixels */
 #define FF_ALPHA_SEMI_TRANSP  0x0002 /* image has some transparent pixels */
 int img_get_alpha_info(const AVPicture *src,
-		       int pix_fmt, int width, int height);
+                       int pix_fmt, int width, int height);
 
 /* convert among pixel formats */
 int img_convert(AVPicture *dst, int dst_pix_fmt,

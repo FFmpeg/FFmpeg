@@ -301,7 +301,7 @@ static int amr_nb_decode_frame(AVCodecContext * avctx,
 
 
 static int amr_nb_encode_frame(AVCodecContext *avctx,
-			    unsigned char *frame/*out*/, int buf_size, void *data/*in*/)
+                            unsigned char *frame/*out*/, int buf_size, void *data/*in*/)
 {
     short serial_data[250] = {0};
 
@@ -440,7 +440,7 @@ static int amr_nb_decode_frame(AVCodecContext * avctx,
 }
 
 static int amr_nb_encode_frame(AVCodecContext *avctx,
-			    unsigned char *frame/*out*/, int buf_size, void *data/*in*/)
+                            unsigned char *frame/*out*/, int buf_size, void *data/*in*/)
 {
     AMRContext *s = (AMRContext*)avctx->priv_data;
     int written;
@@ -584,7 +584,7 @@ static int amr_wb_encode_close(AVCodecContext * avctx)
 }
 
 static int amr_wb_encode_frame(AVCodecContext *avctx,
-			    unsigned char *frame/*out*/, int buf_size, void *data/*in*/)
+                            unsigned char *frame/*out*/, int buf_size, void *data/*in*/)
 {
     AMRWBContext *s = (AMRWBContext*) avctx->priv_data;
     int size = E_IF_encode(s->state, s->mode, data, frame, s->allow_dtx);

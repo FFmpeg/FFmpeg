@@ -153,13 +153,13 @@ static inline uint16_t dv_audio_12to16(uint16_t sample)
     shift = (sample & 0xf00) >> 8;
 
     if (shift < 0x2 || shift > 0xd) {
-	result = sample;
+        result = sample;
     } else if (shift < 0x8) {
         shift--;
-	result = (sample - (256 * shift)) << shift;
+        result = (sample - (256 * shift)) << shift;
     } else {
-	shift = 0xe - shift;
-	result = ((sample + ((256 * shift) + 1)) << shift) - 1;
+        shift = 0xe - shift;
+        result = ((sample + ((256 * shift) + 1)) << shift) - 1;
     }
 
     return result;
@@ -168,7 +168,7 @@ static inline uint16_t dv_audio_12to16(uint16_t sample)
 static int dv_audio_frame_size(const DVprofile* sys, int frame)
 {
     return sys->audio_samples_dist[frame % (sizeof(sys->audio_samples_dist)/
-		                            sizeof(sys->audio_samples_dist[0]))];
+                                            sizeof(sys->audio_samples_dist[0]))];
 }
 
 static int dv_write_pack(enum dv_pack_type pack_id, DVMuxContext *c, uint8_t* buf)
@@ -182,17 +182,17 @@ static int dv_write_pack(enum dv_pack_type pack_id, DVMuxContext *c, uint8_t* bu
     case dv_header525: /* I can't imagine why these two weren't defined as real */
     case dv_header625: /* packs in SMPTE314M -- they definitely look like ones */
           buf[1] = 0xf8 |               /* reserved -- always 1 */
-	           (0 & 0x07);          /* APT: Track application ID */
+                   (0 & 0x07);          /* APT: Track application ID */
           buf[2] = (0 << 7)    | /* TF1: audio data is 0 - valid; 1 - invalid */
-	           (0x0f << 3) | /* reserved -- always 1 */
-		   (0 & 0x07);   /* AP1: Audio application ID */
+                   (0x0f << 3) | /* reserved -- always 1 */
+                   (0 & 0x07);   /* AP1: Audio application ID */
           buf[3] = (0 << 7)    | /* TF2: video data is 0 - valid; 1 - invalid */
-	           (0x0f << 3) | /* reserved -- always 1 */
-		   (0 & 0x07);   /* AP2: Video application ID */
+                   (0x0f << 3) | /* reserved -- always 1 */
+                   (0 & 0x07);   /* AP2: Video application ID */
           buf[4] = (0 << 7)    | /* TF3: subcode(SSYB) is 0 - valid; 1 - invalid */
-	           (0x0f << 3) | /* reserved -- always 1 */
-		   (0 & 0x07);   /* AP3: Subcode application ID */
-	  break;
+                   (0x0f << 3) | /* reserved -- always 1 */
+                   (0 & 0x07);   /* AP3: Subcode application ID */
+          break;
     case dv_timecode:
           ct = (time_t)(c->frames / ((float)c->sys->frame_rate /
                                      (float)c->sys->frame_rate_base));
@@ -202,109 +202,109 @@ static int dv_write_pack(enum dv_pack_type pack_id, DVMuxContext *c, uint8_t* bu
            * minute, unless it is exactly divisible by 10
            */
           ltc_frame = (c->frames + 2*ct/60 - 2*ct/600) % c->sys->ltc_divisor;
-	  buf[1] = (0 << 7) | /* Color fame: 0 - unsync; 1 - sync mode */
-		   (1 << 6) | /* Drop frame timecode: 0 - nondrop; 1 - drop */
-		   ((ltc_frame / 10) << 4) | /* Tens of frames */
-		   (ltc_frame % 10);         /* Units of frames */
-	  buf[2] = (1 << 7) | /* Biphase mark polarity correction: 0 - even; 1 - odd */
-		   ((tc.tm_sec / 10) << 4) | /* Tens of seconds */
-		   (tc.tm_sec % 10);         /* Units of seconds */
-	  buf[3] = (1 << 7) | /* Binary group flag BGF0 */
-		   ((tc.tm_min / 10) << 4) | /* Tens of minutes */
-		   (tc.tm_min % 10);         /* Units of minutes */
-	  buf[4] = (1 << 7) | /* Binary group flag BGF2 */
-		   (1 << 6) | /* Binary group flag BGF1 */
-	           ((tc.tm_hour / 10) << 4) | /* Tens of hours */
-		   (tc.tm_hour % 10);         /* Units of hours */
+          buf[1] = (0 << 7) | /* Color fame: 0 - unsync; 1 - sync mode */
+                   (1 << 6) | /* Drop frame timecode: 0 - nondrop; 1 - drop */
+                   ((ltc_frame / 10) << 4) | /* Tens of frames */
+                   (ltc_frame % 10);         /* Units of frames */
+          buf[2] = (1 << 7) | /* Biphase mark polarity correction: 0 - even; 1 - odd */
+                   ((tc.tm_sec / 10) << 4) | /* Tens of seconds */
+                   (tc.tm_sec % 10);         /* Units of seconds */
+          buf[3] = (1 << 7) | /* Binary group flag BGF0 */
+                   ((tc.tm_min / 10) << 4) | /* Tens of minutes */
+                   (tc.tm_min % 10);         /* Units of minutes */
+          buf[4] = (1 << 7) | /* Binary group flag BGF2 */
+                   (1 << 6) | /* Binary group flag BGF1 */
+                   ((tc.tm_hour / 10) << 4) | /* Tens of hours */
+                   (tc.tm_hour % 10);         /* Units of hours */
           break;
     case dv_audio_source:  /* AAUX source pack */
           buf[1] = (0 << 7) | /* locked mode       */
                    (1 << 6) | /* reserved -- always 1 */
-	           (dv_audio_frame_size(c->sys, c->frames) -
-		    c->sys->audio_min_samples[0]);
-	                      /* # of samples      */
+                   (dv_audio_frame_size(c->sys, c->frames) -
+                    c->sys->audio_min_samples[0]);
+                              /* # of samples      */
           buf[2] = (0 << 7) | /* multi-stereo      */
                    (0 << 5) | /* #of audio channels per block: 0 -- 1 channel */
                    (0 << 4) | /* pair bit: 0 -- one pair of channels */
-	            0;        /* audio mode        */
+                    0;        /* audio mode        */
           buf[3] = (1 << 7) | /* res               */
                    (1 << 6) | /* multi-language flag */
-	           (c->sys->dsf << 5) | /*  system: 60fields/50fields */
-	            0;        /* definition: 0 -- SD (525/625) */
+                   (c->sys->dsf << 5) | /*  system: 60fields/50fields */
+                    0;        /* definition: 0 -- SD (525/625) */
           buf[4] = (1 << 7) | /* emphasis: 1 -- off */
                    (0 << 6) | /* emphasis time constant: 0 -- reserved */
-	           (0 << 3) | /* frequency: 0 -- 48Khz, 1 -- 44,1Khz, 2 -- 32Khz */
+                   (0 << 3) | /* frequency: 0 -- 48Khz, 1 -- 44,1Khz, 2 -- 32Khz */
                     0;        /* quantization: 0 -- 16bit linear, 1 -- 12bit nonlinear */
           break;
     case dv_audio_control:
           buf[1] = (0 << 6) | /* copy protection: 0 -- unrestricted */
                    (1 << 4) | /* input source: 1 -- digital input */
-	           (3 << 2) | /* compression: 3 -- no information */
-	            0;        /* misc. info/SMPTE emphasis off */
+                   (3 << 2) | /* compression: 3 -- no information */
+                    0;        /* misc. info/SMPTE emphasis off */
           buf[2] = (1 << 7) | /* recording start point: 1 -- no */
                    (1 << 6) | /* recording end point: 1 -- no */
-	           (1 << 3) | /* recording mode: 1 -- original */
-	            7;
+                   (1 << 3) | /* recording mode: 1 -- original */
+                    7;
           buf[3] = (1 << 7) | /* direction: 1 -- forward */
                     0x20;     /* speed */
           buf[4] = (1 << 7) | /* reserved -- always 1 */
                     0x7f;     /* genre category */
-	  break;
+          break;
     case dv_audio_recdate:
     case dv_video_recdate:  /* VAUX recording date */
           ct = c->start_time + (time_t)(c->frames /
-	       ((float)c->sys->frame_rate / (float)c->sys->frame_rate_base));
+               ((float)c->sys->frame_rate / (float)c->sys->frame_rate_base));
           brktimegm(ct, &tc);
-	  buf[1] = 0xff; /* ds, tm, tens of time zone, units of time zone */
-	                 /* 0xff is very likely to be "unknown" */
-	  buf[2] = (3 << 6) | /* reserved -- always 1 */
-		   ((tc.tm_mday / 10) << 4) | /* Tens of day */
-		   (tc.tm_mday % 10);         /* Units of day */
-	  buf[3] = /* we set high 4 bits to 0, shouldn't we set them to week? */
-	           ((tc.tm_mon / 10) << 4) |    /* Tens of month */
-		   (tc.tm_mon  % 10);           /* Units of month */
-	  buf[4] = (((tc.tm_year % 100) / 10) << 4) | /* Tens of year */
-		   (tc.tm_year % 10);                 /* Units of year */
+          buf[1] = 0xff; /* ds, tm, tens of time zone, units of time zone */
+                         /* 0xff is very likely to be "unknown" */
+          buf[2] = (3 << 6) | /* reserved -- always 1 */
+                   ((tc.tm_mday / 10) << 4) | /* Tens of day */
+                   (tc.tm_mday % 10);         /* Units of day */
+          buf[3] = /* we set high 4 bits to 0, shouldn't we set them to week? */
+                   ((tc.tm_mon / 10) << 4) |    /* Tens of month */
+                   (tc.tm_mon  % 10);           /* Units of month */
+          buf[4] = (((tc.tm_year % 100) / 10) << 4) | /* Tens of year */
+                   (tc.tm_year % 10);                 /* Units of year */
           break;
     case dv_audio_rectime:  /* AAUX recording time */
     case dv_video_rectime:  /* VAUX recording time */
           ct = c->start_time + (time_t)(c->frames /
-	       ((float)c->sys->frame_rate / (float)c->sys->frame_rate_base));
-	  brktimegm(ct, &tc);
-	  buf[1] = (3 << 6) | /* reserved -- always 1 */
-		   0x3f; /* tens of frame, units of frame: 0x3f - "unknown" ? */
-	  buf[2] = (1 << 7) | /* reserved -- always 1 */
-		   ((tc.tm_sec / 10) << 4) | /* Tens of seconds */
-		   (tc.tm_sec % 10);         /* Units of seconds */
-	  buf[3] = (1 << 7) | /* reserved -- always 1 */
-		   ((tc.tm_min / 10) << 4) | /* Tens of minutes */
-		   (tc.tm_min % 10);         /* Units of minutes */
-	  buf[4] = (3 << 6) | /* reserved -- always 1 */
-	           ((tc.tm_hour / 10) << 4) | /* Tens of hours */
-		   (tc.tm_hour % 10);         /* Units of hours */
-	  break;
+               ((float)c->sys->frame_rate / (float)c->sys->frame_rate_base));
+          brktimegm(ct, &tc);
+          buf[1] = (3 << 6) | /* reserved -- always 1 */
+                   0x3f; /* tens of frame, units of frame: 0x3f - "unknown" ? */
+          buf[2] = (1 << 7) | /* reserved -- always 1 */
+                   ((tc.tm_sec / 10) << 4) | /* Tens of seconds */
+                   (tc.tm_sec % 10);         /* Units of seconds */
+          buf[3] = (1 << 7) | /* reserved -- always 1 */
+                   ((tc.tm_min / 10) << 4) | /* Tens of minutes */
+                   (tc.tm_min % 10);         /* Units of minutes */
+          buf[4] = (3 << 6) | /* reserved -- always 1 */
+                   ((tc.tm_hour / 10) << 4) | /* Tens of hours */
+                   (tc.tm_hour % 10);         /* Units of hours */
+          break;
     case dv_video_source:
-	  buf[1] = 0xff; /* reserved -- always 1 */
-	  buf[2] = (1 << 7) | /* B/W: 0 - b/w, 1 - color */
-		   (1 << 6) | /* following CLF is valid - 0, invalid - 1 */
-		   (3 << 4) | /* CLF: color frames id (see ITU-R BT.470-4) */
-		   0xf; /* reserved -- always 1 */
-	  buf[3] = (3 << 6) | /* reserved -- always 1 */
-		   (c->sys->dsf << 5) | /*  system: 60fields/50fields */
-		   0; /* signal type video compression */
-	  buf[4] = 0xff; /* VISC: 0xff -- no information */
+          buf[1] = 0xff; /* reserved -- always 1 */
+          buf[2] = (1 << 7) | /* B/W: 0 - b/w, 1 - color */
+                   (1 << 6) | /* following CLF is valid - 0, invalid - 1 */
+                   (3 << 4) | /* CLF: color frames id (see ITU-R BT.470-4) */
+                   0xf; /* reserved -- always 1 */
+          buf[3] = (3 << 6) | /* reserved -- always 1 */
+                   (c->sys->dsf << 5) | /*  system: 60fields/50fields */
+                   0; /* signal type video compression */
+          buf[4] = 0xff; /* VISC: 0xff -- no information */
           break;
     case dv_video_control:
-	  buf[1] = (0 << 6) | /* Copy generation management (CGMS) 0 -- free */
-		   0x3f; /* reserved -- always 1 */
-	  buf[2] = 0xc8 | /* reserved -- always b11001xxx */
-		   c->aspect;
-	  buf[3] = (1 << 7) | /* Frame/field flag 1 -- frame, 0 -- field */
-		   (1 << 6) | /* First/second field flag 0 -- field 2, 1 -- field 1 */
-		   (1 << 5) | /* Frame change flag 0 -- same picture as before, 1 -- different */
-		   (1 << 4) | /* 1 - interlaced, 0 - noninterlaced */
-		   0xc; /* reserved -- always b1100 */
-	  buf[4] = 0xff; /* reserved -- always 1 */
+          buf[1] = (0 << 6) | /* Copy generation management (CGMS) 0 -- free */
+                   0x3f; /* reserved -- always 1 */
+          buf[2] = 0xc8 | /* reserved -- always b11001xxx */
+                   c->aspect;
+          buf[3] = (1 << 7) | /* Frame/field flag 1 -- frame, 0 -- field */
+                   (1 << 6) | /* First/second field flag 0 -- field 2, 1 -- field 1 */
+                   (1 << 5) | /* Frame change flag 0 -- same picture as before, 1 -- different */
+                   (1 << 4) | /* 1 - interlaced, 0 - noninterlaced */
+                   0xc; /* reserved -- always b1100 */
+          buf[4] = 0xff; /* reserved -- always 1 */
           break;
     default:
           buf[1] = buf[2] = buf[3] = buf[4] = 0xff;
@@ -317,8 +317,8 @@ static inline int dv_write_dif_id(enum dv_section_type t, uint8_t seq_num,
 {
     buf[0] = (uint8_t)t;    /* Section type */
     buf[1] = (seq_num<<4) | /* DIF seq number 0-9 for 525/60; 0-11 for 625/50 */
-	     (0 << 3) |     /* FSC: for 50Mb/s 0 - first channel; 1 - second */
-	     7;             /* reserved -- always 1 */
+             (0 << 3) |     /* FSC: for 50Mb/s 0 - first channel; 1 - second */
+             7;             /* reserved -- always 1 */
     buf[2] = dif_num;       /* DIF block number Video: 0-134, Audio: 0-8 */
     return 3;
 }
@@ -326,18 +326,18 @@ static inline int dv_write_dif_id(enum dv_section_type t, uint8_t seq_num,
 static inline int dv_write_ssyb_id(uint8_t syb_num, uint8_t fr, uint8_t* buf)
 {
     if (syb_num == 0 || syb_num == 6) {
-	buf[0] = (fr<<7) | /* FR ID 1 - first half of each channel; 0 - second */
-		 (0<<4)  | /* AP3 (Subcode application ID) */
-		 0x0f;     /* reserved -- always 1 */
+        buf[0] = (fr<<7) | /* FR ID 1 - first half of each channel; 0 - second */
+                 (0<<4)  | /* AP3 (Subcode application ID) */
+                 0x0f;     /* reserved -- always 1 */
     }
     else if (syb_num == 11) {
-	buf[0] = (fr<<7) | /* FR ID 1 - first half of each channel; 0 - second */
+        buf[0] = (fr<<7) | /* FR ID 1 - first half of each channel; 0 - second */
                  0x7f;     /* reserved -- always 1 */
     }
     else {
-	buf[0] = (fr<<7) | /* FR ID 1 - first half of each channel; 0 - second */
+        buf[0] = (fr<<7) | /* FR ID 1 - first half of each channel; 0 - second */
                  (0<<4)  | /* APT (Track application ID) */
-		 0x0f;     /* reserved -- always 1 */
+                 0x0f;     /* reserved -- always 1 */
     }
     buf[1] = 0xf0 |            /* reserved -- always 1 */
              (syb_num & 0x0f); /* SSYB number 0 - 11   */
@@ -360,33 +360,33 @@ static void dv_format_frame(DVMuxContext *c, uint8_t* buf)
        /* DV subcode: 2DIFs */
        for (j = 0; j < 2; j++) {
           buf += dv_write_dif_id( dv_sect_subcode, i, j, buf);
-	  for (k = 0; k < 6; k++) {
-	     buf += dv_write_ssyb_id(k, (i < c->sys->difseg_size/2), buf);
-	     buf += dv_write_pack(dv_ssyb_packs_dist[i][k], c, buf);
-	  }
-	  buf += 29; /* unused bytes */
+          for (k = 0; k < 6; k++) {
+             buf += dv_write_ssyb_id(k, (i < c->sys->difseg_size/2), buf);
+             buf += dv_write_pack(dv_ssyb_packs_dist[i][k], c, buf);
+          }
+          buf += 29; /* unused bytes */
        }
 
        /* DV VAUX: 3DIFs */
        for (j = 0; j < 3; j++) {
-	  buf += dv_write_dif_id(dv_sect_vaux, i, j, buf);
-	  for (k = 0; k < 15 ; k++)
-	     buf += dv_write_pack(dv_vaux_packs_dist[i][k], c, buf);
-	  buf += 2; /* unused bytes */
+          buf += dv_write_dif_id(dv_sect_vaux, i, j, buf);
+          for (k = 0; k < 15 ; k++)
+             buf += dv_write_pack(dv_vaux_packs_dist[i][k], c, buf);
+          buf += 2; /* unused bytes */
        }
 
        /* DV Audio/Video: 135 Video DIFs + 9 Audio DIFs */
        for (j = 0; j < 135; j++) {
             if (j%15 == 0) {
-	        memset(buf, 0xff, 80);
-	        buf += dv_write_dif_id(dv_sect_audio, i, j/15, buf);
+                memset(buf, 0xff, 80);
+                buf += dv_write_dif_id(dv_sect_audio, i, j/15, buf);
                 buf += 77; /* audio control & shuffled PCM audio */
-	    }
-	    buf += dv_write_dif_id(dv_sect_video, i, j, buf);
-	    buf += 77; /* 1 video macro block: 1 bytes control
-			                       4 * 14 bytes Y 8x8 data
-			                           10 bytes Cr 8x8 data
-						   10 bytes Cb 8x8 data */
+            }
+            buf += dv_write_dif_id(dv_sect_video, i, j, buf);
+            buf += 77; /* 1 video macro block: 1 bytes control
+                                               4 * 14 bytes Y 8x8 data
+                                                   10 bytes Cr 8x8 data
+                                                   10 bytes Cb 8x8 data */
        }
     }
 }
@@ -398,14 +398,14 @@ static void dv_inject_audio(DVMuxContext *c, const uint8_t* pcm, uint8_t* frame_
     for (i = 0; i < c->sys->difseg_size; i++) {
        frame_ptr += 6 * 80; /* skip DIF segment header */
        for (j = 0; j < 9; j++) {
-	  dv_write_pack(dv_aaux_packs_dist[i][j], c, &frame_ptr[3]);
+          dv_write_pack(dv_aaux_packs_dist[i][j], c, &frame_ptr[3]);
           for (d = 8; d < 80; d+=2) {
-	     of = c->sys->audio_shuffle[i][j] + (d - 8)/2 * c->sys->audio_stride;
-	     if (of*2 >= size)
-	         continue;
+             of = c->sys->audio_shuffle[i][j] + (d - 8)/2 * c->sys->audio_stride;
+             if (of*2 >= size)
+                 continue;
 
-	     frame_ptr[d] = pcm[of*2+1]; // FIXME: may be we have to admit
-	     frame_ptr[d+1] = pcm[of*2]; //        that DV is a big endian PCM
+             frame_ptr[d] = pcm[of*2+1]; // FIXME: may be we have to admit
+             frame_ptr[d+1] = pcm[of*2]; //        that DV is a big endian PCM
           }
           frame_ptr += 16 * 80; /* 15 Video DIFs + 1 Audio DIF */
        }
@@ -421,10 +421,10 @@ static void dv_inject_video(DVMuxContext *c, const uint8_t* video_data, uint8_t*
        ptr += 6 * 80; /* skip DIF segment header */
        for (j = 0; j < 135; j++) {
             if (j%15 == 0)
-	        ptr += 80; /* skip Audio DIF */
-	    ptr += 3;
-	    memcpy(frame_ptr + ptr, video_data + ptr, 77);
-	    ptr += 77;
+                ptr += 80; /* skip Audio DIF */
+            ptr += 3;
+            memcpy(frame_ptr + ptr, video_data + ptr, 77);
+            ptr += 77;
        }
     }
 }
@@ -441,10 +441,10 @@ static const uint8_t* dv_extract_pack(uint8_t* frame, enum dv_pack_type t)
     switch (t) {
     case dv_audio_source:
           offs = (80*6 + 80*16*3 + 3);
-	  break;
+          break;
     case dv_audio_control:
           offs = (80*6 + 80*16*4 + 3);
-	  break;
+          break;
     case dv_video_control:
           offs = (80*5 + 48 + 5);
           break;
@@ -472,7 +472,7 @@ static int dv_extract_audio(uint8_t* frame, uint8_t* pcm, uint8_t* pcm2)
 
     as_pack = dv_extract_pack(frame, dv_audio_source);
     if (!as_pack)    /* No audio ? */
-	return 0;
+        return 0;
 
     sys = dv_frame_profile(frame);
     smpls = as_pack[1] & 0x3f; /* samples in this frame - min. samples */
@@ -480,7 +480,7 @@ static int dv_extract_audio(uint8_t* frame, uint8_t* pcm, uint8_t* pcm2)
     quant = as_pack[4] & 0x07; /* 0 - 16bit linear, 1 - 12bit nonlinear */
 
     if (quant > 1)
-	return -1; /* Unsupported quantization */
+        return -1; /* Unsupported quantization */
 
     size = (sys->audio_min_samples[freq] + smpls) * 4; /* 2ch, 2bytes */
     half_ch = sys->difseg_size/2;
@@ -497,38 +497,38 @@ static int dv_extract_audio(uint8_t* frame, uint8_t* pcm, uint8_t* pcm2)
 
        for (j = 0; j < 9; j++) {
           for (d = 8; d < 80; d += 2) {
-	     if (quant == 0) {  /* 16bit quantization */
-		 of = sys->audio_shuffle[i][j] + (d - 8)/2 * sys->audio_stride;
+             if (quant == 0) {  /* 16bit quantization */
+                 of = sys->audio_shuffle[i][j] + (d - 8)/2 * sys->audio_stride;
                  if (of*2 >= size)
-		     continue;
+                     continue;
 
-		 pcm[of*2] = frame[d+1]; // FIXME: may be we have to admit
-		 pcm[of*2+1] = frame[d]; //        that DV is a big endian PCM
-		 if (pcm[of*2+1] == 0x80 && pcm[of*2] == 0x00)
-		     pcm[of*2+1] = 0;
-	      } else {           /* 12bit quantization */
-		 lc = ((uint16_t)frame[d] << 4) |
-		      ((uint16_t)frame[d+2] >> 4);
-		 rc = ((uint16_t)frame[d+1] << 4) |
-	              ((uint16_t)frame[d+2] & 0x0f);
-		 lc = (lc == 0x800 ? 0 : dv_audio_12to16(lc));
-		 rc = (rc == 0x800 ? 0 : dv_audio_12to16(rc));
+                 pcm[of*2] = frame[d+1]; // FIXME: may be we have to admit
+                 pcm[of*2+1] = frame[d]; //        that DV is a big endian PCM
+                 if (pcm[of*2+1] == 0x80 && pcm[of*2] == 0x00)
+                     pcm[of*2+1] = 0;
+              } else {           /* 12bit quantization */
+                 lc = ((uint16_t)frame[d] << 4) |
+                      ((uint16_t)frame[d+2] >> 4);
+                 rc = ((uint16_t)frame[d+1] << 4) |
+                      ((uint16_t)frame[d+2] & 0x0f);
+                 lc = (lc == 0x800 ? 0 : dv_audio_12to16(lc));
+                 rc = (rc == 0x800 ? 0 : dv_audio_12to16(rc));
 
-		 of = sys->audio_shuffle[i%half_ch][j] + (d - 8)/3 * sys->audio_stride;
+                 of = sys->audio_shuffle[i%half_ch][j] + (d - 8)/3 * sys->audio_stride;
                  if (of*2 >= size)
-		     continue;
+                     continue;
 
-		 pcm[of*2] = lc & 0xff; // FIXME: may be we have to admit
-		 pcm[of*2+1] = lc >> 8; //        that DV is a big endian PCM
-		 of = sys->audio_shuffle[i%half_ch+half_ch][j] +
-		      (d - 8)/3 * sys->audio_stride;
-		 pcm[of*2] = rc & 0xff; // FIXME: may be we have to admit
-		 pcm[of*2+1] = rc >> 8; //        that DV is a big endian PCM
-		 ++d;
-	      }
-	  }
+                 pcm[of*2] = lc & 0xff; // FIXME: may be we have to admit
+                 pcm[of*2+1] = lc >> 8; //        that DV is a big endian PCM
+                 of = sys->audio_shuffle[i%half_ch+half_ch][j] +
+                      (d - 8)/3 * sys->audio_stride;
+                 pcm[of*2] = rc & 0xff; // FIXME: may be we have to admit
+                 pcm[of*2+1] = rc >> 8; //        that DV is a big endian PCM
+                 ++d;
+              }
+          }
 
-	  frame += 16 * 80; /* 15 Video DIFs + 1 Audio DIF */
+          frame += 16 * 80; /* 15 Video DIFs + 1 Audio DIF */
         }
     }
 
@@ -545,7 +545,7 @@ static int dv_extract_audio_info(DVDemuxContext* c, uint8_t* frame)
     as_pack = dv_extract_pack(frame, dv_audio_source);
     if (!as_pack || !sys) {    /* No audio ? */
         c->ach = 0;
-	return 0;
+        return 0;
     }
 
     smpls = as_pack[1] & 0x3f; /* samples in this frame - min. samples */
@@ -557,11 +557,11 @@ static int dv_extract_audio_info(DVDemuxContext* c, uint8_t* frame)
     for (i=0; i<ach; i++) {
        if (!c->ast[i]) {
            c->ast[i] = av_new_stream(c->fctx, 0);
-	   if (!c->ast[i])
-	       break;
-	   av_set_pts_info(c->ast[i], 64, 1, 30000);
-	   c->ast[i]->codec->codec_type = CODEC_TYPE_AUDIO;
-	   c->ast[i]->codec->codec_id = CODEC_ID_PCM_S16LE;
+           if (!c->ast[i])
+               break;
+           av_set_pts_info(c->ast[i], 64, 1, 30000);
+           c->ast[i]->codec->codec_type = CODEC_TYPE_AUDIO;
+           c->ast[i]->codec->codec_id = CODEC_ID_PCM_S16LE;
 
            av_init_packet(&c->audio_pkt[i]);
            c->audio_pkt[i].size     = 0;
@@ -599,14 +599,14 @@ static int dv_extract_video_info(DVDemuxContext *c, uint8_t* frame)
         }
         avctx->pix_fmt = sys->pix_fmt;
 
-	/* finding out SAR is a little bit messy */
-	vsc_pack = dv_extract_pack(frame, dv_video_control);
+        /* finding out SAR is a little bit messy */
+        vsc_pack = dv_extract_pack(frame, dv_video_control);
         apt = frame[4] & 0x07;
-	is16_9 = (vsc_pack && ((vsc_pack[2] & 0x07) == 0x02 ||
-	                       (!apt && (vsc_pack[2] & 0x07) == 0x07)));
-	avctx->sample_aspect_ratio = sys->sar[is16_9];
+        is16_9 = (vsc_pack && ((vsc_pack[2] & 0x07) == 0x02 ||
+                               (!apt && (vsc_pack[2] & 0x07) == 0x07)));
+        avctx->sample_aspect_ratio = sys->sar[is16_9];
 
-	size = sys->frame_size;
+        size = sys->frame_size;
     }
     return size;
 }
@@ -624,44 +624,44 @@ int dv_assemble_frame(DVMuxContext *c, AVStream* st,
     *frame = &c->frame_buf[0];
     if (c->has_audio && c->has_video) {  /* must be a stale frame */
         dv_format_frame(c, *frame);
-	c->frames++;
-	if (c->has_audio > 0)
-	    c->has_audio = 0;
-	c->has_video = 0;
+        c->frames++;
+        if (c->has_audio > 0)
+            c->has_audio = 0;
+        c->has_video = 0;
     }
 
     if (st->codec->codec_type == CODEC_TYPE_VIDEO) {
         /* FIXME: we have to have more sensible approach than this one */
-	if (c->has_video)
-	    av_log(st->codec, AV_LOG_ERROR, "Can't process DV frame #%d. Insufficient audio data or severe sync problem.\n", c->frames);
+        if (c->has_video)
+            av_log(st->codec, AV_LOG_ERROR, "Can't process DV frame #%d. Insufficient audio data or severe sync problem.\n", c->frames);
 
         dv_inject_video(c, data, *frame);
-	c->has_video = 1;
-	data_size = 0;
-	if (c->has_audio < 0)
-	    goto out;
+        c->has_video = 1;
+        data_size = 0;
+        if (c->has_audio < 0)
+            goto out;
     }
 
     reqasize = 4 * dv_audio_frame_size(c->sys, c->frames);
     fsize = fifo_size(&c->audio_data, c->audio_data.rptr);
     if (st->codec->codec_type == CODEC_TYPE_AUDIO || (c->has_video && fsize >= reqasize)) {
-	if (fsize + data_size >= reqasize && !c->has_audio) {
+        if (fsize + data_size >= reqasize && !c->has_audio) {
             if (fsize >= reqasize) {
-	        fifo_read(&c->audio_data, &pcm[0], reqasize, &c->audio_data.rptr);
+                fifo_read(&c->audio_data, &pcm[0], reqasize, &c->audio_data.rptr);
             } else {
-	        fifo_read(&c->audio_data, &pcm[0], fsize, &c->audio_data.rptr);
+                fifo_read(&c->audio_data, &pcm[0], fsize, &c->audio_data.rptr);
                 memcpy(&pcm[fsize], &data[0], reqasize - fsize);
-		data += reqasize - fsize;
-		data_size -= reqasize - fsize;
-	    }
-	    dv_inject_audio(c, &pcm[0], *frame);
-	    c->has_audio = 1;
-	}
+                data += reqasize - fsize;
+                data_size -= reqasize - fsize;
+            }
+            dv_inject_audio(c, &pcm[0], *frame);
+            c->has_audio = 1;
+        }
 
         /* FIXME: we have to have more sensible approach than this one */
         if (fifo_size(&c->audio_data, c->audio_data.rptr) + data_size >= 100*AVCODEC_MAX_AUDIO_FRAME_SIZE)
-	    av_log(st->codec, AV_LOG_ERROR, "Can't process DV frame #%d. Insufficient video data or severe sync problem.\n", c->frames);
-	fifo_write(&c->audio_data, (uint8_t *)data, data_size, &c->audio_data.wptr);
+            av_log(st->codec, AV_LOG_ERROR, "Can't process DV frame #%d. Insufficient video data or severe sync problem.\n", c->frames);
+        fifo_write(&c->audio_data, (uint8_t *)data, data_size, &c->audio_data.wptr);
     }
 
 out:
@@ -685,27 +685,27 @@ DVMuxContext* dv_init_mux(AVFormatContext* s)
     /* We have to sort out where audio and where video stream is */
     for (i=0; i<s->nb_streams; i++) {
          switch (s->streams[i]->codec->codec_type) {
-	 case CODEC_TYPE_VIDEO:
-	       vst = s->streams[i];
-	       break;
-	 case CODEC_TYPE_AUDIO:
-	       ast = s->streams[i];
-	       break;
-	 default:
-	       goto bail_out;
-	 }
+         case CODEC_TYPE_VIDEO:
+               vst = s->streams[i];
+               break;
+         case CODEC_TYPE_AUDIO:
+               ast = s->streams[i];
+               break;
+         default:
+               goto bail_out;
+         }
     }
 
     /* Some checks -- DV format is very picky about its incoming streams */
     if (!vst || vst->codec->codec_id != CODEC_ID_DVVIDEO)
         goto bail_out;
     if (ast  && (ast->codec->codec_id != CODEC_ID_PCM_S16LE ||
-	         ast->codec->sample_rate != 48000 ||
-	         ast->codec->channels != 2))
-	goto bail_out;
+                 ast->codec->sample_rate != 48000 ||
+                 ast->codec->channels != 2))
+        goto bail_out;
     c->sys = dv_codec_profile(vst->codec);
     if (!c->sys)
-	goto bail_out;
+        goto bail_out;
 
     /* Ok, everything seems to be in working order */
     c->frames = 0;
@@ -769,9 +769,9 @@ int dv_get_packet(DVDemuxContext *c, AVPacket *pkt)
     for (i=0; i<c->ach; i++) {
        if (c->ast[i] && c->audio_pkt[i].size) {
            *pkt = c->audio_pkt[i];
-	   c->audio_pkt[i].size = 0;
-	   size = pkt->size;
-	   break;
+           c->audio_pkt[i].size = 0;
+           size = pkt->size;
+           break;
        }
     }
 
@@ -874,9 +874,9 @@ static int dv_read_packet(AVFormatContext *s, AVPacket *pkt)
 
         size = dv_frame_profile(c->buf)->frame_size;
         if (get_buffer(&s->pb, c->buf + 4, size - 4) <= 0)
-	    return AVERROR_IO;
+            return AVERROR_IO;
 
-	size = dv_produce_packet(c->dv_demux, pkt, c->buf, size);
+        size = dv_produce_packet(c->dv_demux, pkt, c->buf, size);
     }
 
     return size;
@@ -912,9 +912,9 @@ static int dv_write_header(AVFormatContext *s)
     s->priv_data = dv_init_mux(s);
     if (!s->priv_data) {
         av_log(s, AV_LOG_ERROR, "Can't initialize DV format!\n"
-		    "Make sure that you supply exactly two streams:\n"
-		    "     video: 25fps or 29.97fps, audio: 2ch/48Khz/PCM\n");
-	return -1;
+                    "Make sure that you supply exactly two streams:\n"
+                    "     video: 25fps or 29.97fps, audio: 2ch/48Khz/PCM\n");
+        return -1;
     }
     return 0;
 }

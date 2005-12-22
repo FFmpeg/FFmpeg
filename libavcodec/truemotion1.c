@@ -334,14 +334,14 @@ static int truemotion1_decode_header(TrueMotion1Context *s)
     header.header_size = ((s->buf[0] >> 5) | (s->buf[0] << 3)) & 0x7f;
     if (s->buf[0] < 0x10)
     {
-	av_log(s->avctx, AV_LOG_ERROR, "invalid header size (%d)\n", s->buf[0]);
+        av_log(s->avctx, AV_LOG_ERROR, "invalid header size (%d)\n", s->buf[0]);
         return -1;
     }
 
     /* unscramble the header bytes with a XOR operation */
     memset(header_buffer, 0, 128);
     for (i = 1; i < header.header_size; i++)
-	header_buffer[i - 1] = s->buf[i] ^ s->buf[i + 1];
+        header_buffer[i - 1] = s->buf[i] ^ s->buf[i + 1];
 
     header.compression = header_buffer[0];
     header.deltaset = header_buffer[1];
@@ -371,7 +371,7 @@ static int truemotion1_decode_header(TrueMotion1Context *s)
         s->flags = FLAG_KEYFRAME;
 
     if (s->flags & FLAG_SPRITE) {
-	av_log(s->avctx, AV_LOG_INFO, "SPRITE frame found, please report the sample to the developers\n");
+        av_log(s->avctx, AV_LOG_INFO, "SPRITE frame found, please report the sample to the developers\n");
         s->w = header.width;
         s->h = header.height;
         s->x = header.xoffset;
@@ -381,10 +381,10 @@ static int truemotion1_decode_header(TrueMotion1Context *s)
         s->h = header.ysize;
         if (header.header_type < 2) {
             if ((s->w < 213) && (s->h >= 176))
-	    {
+            {
                 s->flags |= FLAG_INTERPOLATED;
-	        av_log(s->avctx, AV_LOG_INFO, "INTERPOLATION selected, please report the sample to the developers\n");
-	    }
+                av_log(s->avctx, AV_LOG_INFO, "INTERPOLATION selected, please report the sample to the developers\n");
+            }
         }
     }
 
@@ -412,16 +412,16 @@ static int truemotion1_decode_header(TrueMotion1Context *s)
     if (compression_types[header.compression].algorithm == ALGO_RGB24H)
         s->avctx->pix_fmt = PIX_FMT_RGBA32;
     else
-	s->avctx->pix_fmt = PIX_FMT_RGB555; // RGB565 is supported aswell
+        s->avctx->pix_fmt = PIX_FMT_RGB555; // RGB565 is supported aswell
 
     if ((header.deltaset != s->last_deltaset) || (header.vectable != s->last_vectable))
     {
         if (compression_types[header.compression].algorithm == ALGO_RGB24H)
             gen_vector_table24(s, sel_vector_table);
         else
-	if (s->avctx->pix_fmt == PIX_FMT_RGB555)
+        if (s->avctx->pix_fmt == PIX_FMT_RGB555)
             gen_vector_table15(s, sel_vector_table);
-	else
+        else
             gen_vector_table16(s, sel_vector_table);
     }
 
@@ -445,13 +445,13 @@ static int truemotion1_decode_header(TrueMotion1Context *s)
     s->block_type = compression_types[header.compression].block_type;
 
     if (s->avctx->debug & FF_DEBUG_PICT_INFO)
-	av_log(s->avctx, AV_LOG_INFO, "tables: %d / %d c:%d %dx%d t:%d %s%s%s%s\n",
-	    s->last_deltaset, s->last_vectable, s->compression, s->block_width,
-	    s->block_height, s->block_type,
-	    s->flags & FLAG_KEYFRAME ? " KEY" : "",
-	    s->flags & FLAG_INTERFRAME ? " INTER" : "",
-	    s->flags & FLAG_SPRITE ? " SPRITE" : "",
-	    s->flags & FLAG_INTERPOLATED ? " INTERPOL" : "");
+        av_log(s->avctx, AV_LOG_INFO, "tables: %d / %d c:%d %dx%d t:%d %s%s%s%s\n",
+            s->last_deltaset, s->last_vectable, s->compression, s->block_width,
+            s->block_height, s->block_type,
+            s->flags & FLAG_KEYFRAME ? " KEY" : "",
+            s->flags & FLAG_INTERFRAME ? " INTER" : "",
+            s->flags & FLAG_SPRITE ? " SPRITE" : "",
+            s->flags & FLAG_INTERPOLATED ? " INTERPOL" : "");
 
     return header.header_size;
 }
@@ -464,9 +464,9 @@ static int truemotion1_decode_init(AVCodecContext *avctx)
 
     // FIXME: it may change ?
 //    if (avctx->bits_per_sample == 24)
-//	avctx->pix_fmt = PIX_FMT_RGB24;
+//        avctx->pix_fmt = PIX_FMT_RGB24;
 //    else
-//	avctx->pix_fmt = PIX_FMT_RGB555;
+//        avctx->pix_fmt = PIX_FMT_RGB555;
 
     avctx->has_b_frames = 0;
     s->frame.data[0] = s->prev_frame.data[0] = NULL;

@@ -65,14 +65,14 @@ int64_t gettime(void)
 static short idct_mmx_perm[64];
 
 static short idct_simple_mmx_perm[64]={
-	0x00, 0x08, 0x04, 0x09, 0x01, 0x0C, 0x05, 0x0D,
-	0x10, 0x18, 0x14, 0x19, 0x11, 0x1C, 0x15, 0x1D,
-	0x20, 0x28, 0x24, 0x29, 0x21, 0x2C, 0x25, 0x2D,
-	0x12, 0x1A, 0x16, 0x1B, 0x13, 0x1E, 0x17, 0x1F,
-	0x02, 0x0A, 0x06, 0x0B, 0x03, 0x0E, 0x07, 0x0F,
-	0x30, 0x38, 0x34, 0x39, 0x31, 0x3C, 0x35, 0x3D,
-	0x22, 0x2A, 0x26, 0x2B, 0x23, 0x2E, 0x27, 0x2F,
-	0x32, 0x3A, 0x36, 0x3B, 0x33, 0x3E, 0x37, 0x3F,
+        0x00, 0x08, 0x04, 0x09, 0x01, 0x0C, 0x05, 0x0D,
+        0x10, 0x18, 0x14, 0x19, 0x11, 0x1C, 0x15, 0x1D,
+        0x20, 0x28, 0x24, 0x29, 0x21, 0x2C, 0x25, 0x2D,
+        0x12, 0x1A, 0x16, 0x1B, 0x13, 0x1E, 0x17, 0x1F,
+        0x02, 0x0A, 0x06, 0x0B, 0x03, 0x0E, 0x07, 0x0F,
+        0x30, 0x38, 0x34, 0x39, 0x31, 0x3C, 0x35, 0x3D,
+        0x22, 0x2A, 0x26, 0x2B, 0x23, 0x2E, 0x27, 0x2F,
+        0x32, 0x3A, 0x36, 0x3B, 0x33, 0x3E, 0x37, 0x3F,
 };
 
 void idct_mmx_init(void)
@@ -81,8 +81,8 @@ void idct_mmx_init(void)
 
     /* the mmx/mmxext idct uses a reordered input, so we patch scan tables */
     for (i = 0; i < 64; i++) {
-	idct_mmx_perm[i] = (i & 0x38) | ((i & 6) >> 1) | ((i & 1) << 2);
-//	idct_simple_mmx_perm[i] = simple_block_permute_op(i);
+        idct_mmx_perm[i] = (i & 0x38) | ((i & 6) >> 1) | ((i & 1) << 2);
+//        idct_simple_mmx_perm[i] = simple_block_permute_op(i);
     }
 }
 
@@ -151,7 +151,7 @@ void dct_error(const char *name, int is_idct,
             for(i=0;i<64;i++)
                 block[idct_simple_mmx_perm[i]] = block1[i];
 
-	} else {
+        } else {
             for(i=0; i<64; i++)
                 block[i]= block1[i];
         }
@@ -186,9 +186,9 @@ void dct_error(const char *name, int is_idct,
             if (v > err_inf)
                 err_inf = v;
             err2 += v * v;
-	    sysErr[i] += block[i] - block1[i];
-	    blockSumErr += v;
-	    if( abs(block[i])>maxout) maxout=abs(block[i]);
+            sysErr[i] += block[i] - block1[i];
+            blockSumErr += v;
+            if( abs(block[i])>maxout) maxout=abs(block[i]);
         }
         if(blockSumErrMax < blockSumErr) blockSumErrMax= blockSumErr;
 #if 0 // print different matrix pairs
@@ -209,7 +209,7 @@ void dct_error(const char *name, int is_idct,
 
 #if 1 // dump systematic errors
     for(i=0; i<64; i++){
-	if(i%8==0) printf("\n");
+        if(i%8==0) printf("\n");
         printf("%5d ", (int)sysErr[i]);
     }
     printf("\n");
@@ -503,7 +503,7 @@ int main(int argc, char **argv)
             dct_error("XVID-MMX2", 1, ff_idct_xvid_mmx2, idct, test);
             //        dct_error("ODIVX-C", 1, odivx_idct_c, idct);
             //printf(" test against odivx idct\n");
-            //	dct_error("REF", 1, idct, odivx_idct_c);
+            //        dct_error("REF", 1, idct, odivx_idct_c);
             //        dct_error("INT", 1, j_rev_dct, odivx_idct_c);
             //        dct_error("MMX", 1, ff_mmx_idct, odivx_idct_c);
             //        dct_error("MMXEXT", 1, ff_mmxext_idct, odivx_idct_c);

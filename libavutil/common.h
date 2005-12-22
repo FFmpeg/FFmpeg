@@ -453,11 +453,11 @@ static inline int ff_get_fourcc(const char *s){
 #if defined(ARCH_X86) || defined(ARCH_X86_64)
 #define MASK_ABS(mask, level)\
             asm volatile(\
-		"cdq			\n\t"\
-		"xorl %1, %0		\n\t"\
-		"subl %1, %0		\n\t"\
-		: "+a" (level), "=&d" (mask)\
-	    );
+                "cdq                    \n\t"\
+                "xorl %1, %0            \n\t"\
+                "subl %1, %0            \n\t"\
+                : "+a" (level), "=&d" (mask)\
+            );
 #else
 #define MASK_ABS(mask, level)\
             mask= level>>31;\
@@ -468,10 +468,10 @@ static inline int ff_get_fourcc(const char *s){
 #if __CPU__ >= 686 && !defined(RUNTIME_CPUDETECT)
 #define COPY3_IF_LT(x,y,a,b,c,d)\
 asm volatile (\
-    "cmpl %0, %3	\n\t"\
-    "cmovl %3, %0	\n\t"\
-    "cmovl %4, %1	\n\t"\
-    "cmovl %5, %2	\n\t"\
+    "cmpl %0, %3        \n\t"\
+    "cmovl %3, %0       \n\t"\
+    "cmovl %4, %1       \n\t"\
+    "cmovl %5, %2       \n\t"\
     : "+r" (x), "+r" (a), "+r" (c)\
     : "r" (y), "r" (b), "r" (d)\
 );
@@ -488,20 +488,20 @@ if((y)<(x)){\
 #if defined(ARCH_X86_64)
 static inline uint64_t read_time(void)
 {
-	uint64_t a, d;
-	asm volatile(	"rdtsc\n\t"
-		: "=a" (a), "=d" (d)
-	);
-	return (d << 32) | (a & 0xffffffff);
+        uint64_t a, d;
+        asm volatile(   "rdtsc\n\t"
+                : "=a" (a), "=d" (d)
+        );
+        return (d << 32) | (a & 0xffffffff);
 }
 #elif defined(ARCH_X86)
 static inline long long read_time(void)
 {
-	long long l;
-	asm volatile(	"rdtsc\n\t"
-		: "=A" (l)
-	);
-	return l;
+        long long l;
+        asm volatile(   "rdtsc\n\t"
+                : "=A" (l)
+        );
+        return l;
 }
 #else //FIXME check ppc64
 static inline uint64_t read_time(void)

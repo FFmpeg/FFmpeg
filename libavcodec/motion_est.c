@@ -45,7 +45,7 @@
 #define P_MV1 P[9]
 
 static inline int sad_hpel_motion_search(MpegEncContext * s,
-				  int *mx_ptr, int *my_ptr, int dmin,
+                                  int *mx_ptr, int *my_ptr, int dmin,
                                   int src_index, int ref_index,
                                   int size, int h);
 
@@ -293,25 +293,25 @@ static int pix_dev(uint8_t * pix, int line_size, int mean)
 
     s = 0;
     for (i = 0; i < 16; i++) {
-	for (j = 0; j < 16; j += 8) {
-	    s += ABS(pix[0]-mean);
-	    s += ABS(pix[1]-mean);
-	    s += ABS(pix[2]-mean);
-	    s += ABS(pix[3]-mean);
-	    s += ABS(pix[4]-mean);
-	    s += ABS(pix[5]-mean);
-	    s += ABS(pix[6]-mean);
-	    s += ABS(pix[7]-mean);
-	    pix += 8;
-	}
-	pix += line_size - 16;
+        for (j = 0; j < 16; j += 8) {
+            s += ABS(pix[0]-mean);
+            s += ABS(pix[1]-mean);
+            s += ABS(pix[2]-mean);
+            s += ABS(pix[3]-mean);
+            s += ABS(pix[4]-mean);
+            s += ABS(pix[5]-mean);
+            s += ABS(pix[6]-mean);
+            s += ABS(pix[7]-mean);
+            pix += 8;
+        }
+        pix += line_size - 16;
     }
     return s;
 }
 #endif
 
 static inline void no_motion_search(MpegEncContext * s,
-				    int *mx_ptr, int *my_ptr)
+                                    int *mx_ptr, int *my_ptr)
 {
     *mx_ptr = 16 * s->mb_x;
     *my_ptr = 16 * s->mb_y;
@@ -328,35 +328,35 @@ static int full_motion_search(MpegEncContext * s,
 
     xx = 16 * s->mb_x;
     yy = 16 * s->mb_y;
-    x1 = xx - range + 1;	/* we loose one pixel to avoid boundary pb with half pixel pred */
+    x1 = xx - range + 1;        /* we loose one pixel to avoid boundary pb with half pixel pred */
     if (x1 < xmin)
-	x1 = xmin;
+        x1 = xmin;
     x2 = xx + range - 1;
     if (x2 > xmax)
-	x2 = xmax;
+        x2 = xmax;
     y1 = yy - range + 1;
     if (y1 < ymin)
-	y1 = ymin;
+        y1 = ymin;
     y2 = yy + range - 1;
     if (y2 > ymax)
-	y2 = ymax;
+        y2 = ymax;
     pix = s->new_picture.data[0] + (yy * s->linesize) + xx;
     dmin = 0x7fffffff;
     mx = 0;
     my = 0;
     for (y = y1; y <= y2; y++) {
-	for (x = x1; x <= x2; x++) {
-	    d = s->dsp.pix_abs[0][0](NULL, pix, ref_picture + (y * s->linesize) + x,
-			     s->linesize, 16);
-	    if (d < dmin ||
-		(d == dmin &&
-		 (abs(x - xx) + abs(y - yy)) <
-		 (abs(mx - xx) + abs(my - yy)))) {
-		dmin = d;
-		mx = x;
-		my = y;
-	    }
-	}
+        for (x = x1; x <= x2; x++) {
+            d = s->dsp.pix_abs[0][0](NULL, pix, ref_picture + (y * s->linesize) + x,
+                             s->linesize, 16);
+            if (d < dmin ||
+                (d == dmin &&
+                 (abs(x - xx) + abs(y - yy)) <
+                 (abs(mx - xx) + abs(my - yy)))) {
+                dmin = d;
+                mx = x;
+                my = y;
+            }
+        }
     }
 
     *mx_ptr = mx;
@@ -364,8 +364,8 @@ static int full_motion_search(MpegEncContext * s,
 
 #if 0
     if (*mx_ptr < -(2 * range) || *mx_ptr >= (2 * range) ||
-	*my_ptr < -(2 * range) || *my_ptr >= (2 * range)) {
-	fprintf(stderr, "error %d %d\n", *mx_ptr, *my_ptr);
+        *my_ptr < -(2 * range) || *my_ptr >= (2 * range)) {
+        fprintf(stderr, "error %d %d\n", *mx_ptr, *my_ptr);
     }
 #endif
     return dmin;
@@ -386,22 +386,22 @@ static int log_motion_search(MpegEncContext * s,
     /* Left limit */
     x1 = xx - range;
     if (x1 < xmin)
-	x1 = xmin;
+        x1 = xmin;
 
     /* Right limit */
     x2 = xx + range;
     if (x2 > xmax)
-	x2 = xmax;
+        x2 = xmax;
 
     /* Upper limit */
     y1 = yy - range;
     if (y1 < ymin)
-	y1 = ymin;
+        y1 = ymin;
 
     /* Lower limit */
     y2 = yy + range;
     if (y2 > ymax)
-	y2 = ymax;
+        y2 = ymax;
 
     pix = s->new_picture.data[0] + (yy * s->linesize) + xx;
     dmin = 0x7fffffff;
@@ -409,34 +409,34 @@ static int log_motion_search(MpegEncContext * s,
     my = 0;
 
     do {
-	for (y = y1; y <= y2; y += range) {
-	    for (x = x1; x <= x2; x += range) {
-		d = s->dsp.pix_abs[0][0](NULL, pix, ref_picture + (y * s->linesize) + x, s->linesize, 16);
-		if (d < dmin || (d == dmin && (abs(x - xx) + abs(y - yy)) < (abs(mx - xx) + abs(my - yy)))) {
-		    dmin = d;
-		    mx = x;
-		    my = y;
-		}
-	    }
-	}
+        for (y = y1; y <= y2; y += range) {
+            for (x = x1; x <= x2; x += range) {
+                d = s->dsp.pix_abs[0][0](NULL, pix, ref_picture + (y * s->linesize) + x, s->linesize, 16);
+                if (d < dmin || (d == dmin && (abs(x - xx) + abs(y - yy)) < (abs(mx - xx) + abs(my - yy)))) {
+                    dmin = d;
+                    mx = x;
+                    my = y;
+                }
+            }
+        }
 
-	range = range >> 1;
+        range = range >> 1;
 
-	x1 = mx - range;
-	if (x1 < xmin)
-	    x1 = xmin;
+        x1 = mx - range;
+        if (x1 < xmin)
+            x1 = xmin;
 
-	x2 = mx + range;
-	if (x2 > xmax)
-	    x2 = xmax;
+        x2 = mx + range;
+        if (x2 > xmax)
+            x2 = xmax;
 
-	y1 = my - range;
-	if (y1 < ymin)
-	    y1 = ymin;
+        y1 = my - range;
+        if (y1 < ymin)
+            y1 = ymin;
 
-	y2 = my + range;
-	if (y2 > ymax)
-	    y2 = ymax;
+        y2 = my + range;
+        if (y2 > ymax)
+            y2 = ymax;
 
     } while (range >= 1);
 
@@ -462,22 +462,22 @@ static int phods_motion_search(MpegEncContext * s,
     /* Left limit */
     x1 = xx - range;
     if (x1 < xmin)
-	x1 = xmin;
+        x1 = xmin;
 
     /* Right limit */
     x2 = xx + range;
     if (x2 > xmax)
-	x2 = xmax;
+        x2 = xmax;
 
     /* Upper limit */
     y1 = yy - range;
     if (y1 < ymin)
-	y1 = ymin;
+        y1 = ymin;
 
     /* Lower limit */
     y2 = yy + range;
     if (y2 > ymax)
-	y2 = ymax;
+        y2 = ymax;
 
     pix = s->new_picture.data[0] + (yy * s->linesize) + xx;
     mx = 0;
@@ -489,43 +489,43 @@ static int phods_motion_search(MpegEncContext * s,
         dminx = 0x7fffffff;
         dminy = 0x7fffffff;
 
-	lastx = x;
-	for (x = x1; x <= x2; x += range) {
-	    d = s->dsp.pix_abs[0][0](NULL, pix, ref_picture + (y * s->linesize) + x, s->linesize, 16);
-	    if (d < dminx || (d == dminx && (abs(x - xx) + abs(y - yy)) < (abs(mx - xx) + abs(my - yy)))) {
-		dminx = d;
-		mx = x;
-	    }
-	}
+        lastx = x;
+        for (x = x1; x <= x2; x += range) {
+            d = s->dsp.pix_abs[0][0](NULL, pix, ref_picture + (y * s->linesize) + x, s->linesize, 16);
+            if (d < dminx || (d == dminx && (abs(x - xx) + abs(y - yy)) < (abs(mx - xx) + abs(my - yy)))) {
+                dminx = d;
+                mx = x;
+            }
+        }
 
-	x = lastx;
-	for (y = y1; y <= y2; y += range) {
-	    d = s->dsp.pix_abs[0][0](NULL, pix, ref_picture + (y * s->linesize) + x, s->linesize, 16);
-	    if (d < dminy || (d == dminy && (abs(x - xx) + abs(y - yy)) < (abs(mx - xx) + abs(my - yy)))) {
-		dminy = d;
-		my = y;
-	    }
-	}
+        x = lastx;
+        for (y = y1; y <= y2; y += range) {
+            d = s->dsp.pix_abs[0][0](NULL, pix, ref_picture + (y * s->linesize) + x, s->linesize, 16);
+            if (d < dminy || (d == dminy && (abs(x - xx) + abs(y - yy)) < (abs(mx - xx) + abs(my - yy)))) {
+                dminy = d;
+                my = y;
+            }
+        }
 
-	range = range >> 1;
+        range = range >> 1;
 
-	x = mx;
-	y = my;
-	x1 = mx - range;
-	if (x1 < xmin)
-	    x1 = xmin;
+        x = mx;
+        y = my;
+        x1 = mx - range;
+        if (x1 < xmin)
+            x1 = xmin;
 
-	x2 = mx + range;
-	if (x2 > xmax)
-	    x2 = xmax;
+        x2 = mx + range;
+        if (x2 > xmax)
+            x2 = xmax;
 
-	y1 = my - range;
-	if (y1 < ymin)
-	    y1 = ymin;
+        y1 = my - range;
+        if (y1 < ymin)
+            y1 = ymin;
 
-	y2 = my + range;
-	if (y2 > ymax)
-	    y2 = ymax;
+        y2 = my + range;
+        if (y2 > ymax)
+            y2 = ymax;
 
     } while (range >= 1);
 
@@ -550,7 +550,7 @@ static int phods_motion_search(MpegEncContext * s,
 }
 
 static inline int sad_hpel_motion_search(MpegEncContext * s,
-				  int *mx_ptr, int *my_ptr, int dmin,
+                                  int *mx_ptr, int *my_ptr, int dmin,
                                   int src_index, int ref_index,
                                   int size, int h)
 {
@@ -1190,24 +1190,24 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
     switch(s->me_method) {
     case ME_ZERO:
     default:
-	no_motion_search(s, &mx, &my);
+        no_motion_search(s, &mx, &my);
         mx-= mb_x*16;
         my-= mb_y*16;
         dmin = 0;
         break;
 #if 0
     case ME_FULL:
-	dmin = full_motion_search(s, &mx, &my, range, ref_picture);
+        dmin = full_motion_search(s, &mx, &my, range, ref_picture);
         mx-= mb_x*16;
         my-= mb_y*16;
         break;
     case ME_LOG:
-	dmin = log_motion_search(s, &mx, &my, range / 2, ref_picture);
+        dmin = log_motion_search(s, &mx, &my, range / 2, ref_picture);
         mx-= mb_x*16;
         my-= mb_y*16;
         break;
     case ME_PHODS:
-	dmin = phods_motion_search(s, &mx, &my, range / 2, ref_picture);
+        dmin = phods_motion_search(s, &mx, &my, range / 2, ref_picture);
         mx-= mb_x*16;
         my-= mb_y*16;
         break;
@@ -1264,7 +1264,7 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
 
 #if 0
     printf("varc=%4d avg_var=%4d (sum=%4d) vard=%4d mx=%2d my=%2d\n",
-	   varc, s->avg_mb_var, sum, vard, mx - xx, my - yy);
+           varc, s->avg_mb_var, sum, vard, mx - xx, my - yy);
 #endif
     if(mb_type){
         if (vard <= 64 || vard < varc)
@@ -1479,24 +1479,24 @@ static int ff_estimate_motion_b(MpegEncContext * s,
     switch(s->me_method) {
     case ME_ZERO:
     default:
-	no_motion_search(s, &mx, &my);
+        no_motion_search(s, &mx, &my);
         dmin = 0;
         mx-= mb_x*16;
         my-= mb_y*16;
         break;
 #if 0
     case ME_FULL:
-	dmin = full_motion_search(s, &mx, &my, range, ref_picture);
+        dmin = full_motion_search(s, &mx, &my, range, ref_picture);
         mx-= mb_x*16;
         my-= mb_y*16;
         break;
     case ME_LOG:
-	dmin = log_motion_search(s, &mx, &my, range / 2, ref_picture);
+        dmin = log_motion_search(s, &mx, &my, range / 2, ref_picture);
         mx-= mb_x*16;
         my-= mb_y*16;
         break;
     case ME_PHODS:
-	dmin = phods_motion_search(s, &mx, &my, range / 2, ref_picture);
+        dmin = phods_motion_search(s, &mx, &my, range / 2, ref_picture);
         mx-= mb_x*16;
         my-= mb_y*16;
         break;

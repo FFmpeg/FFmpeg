@@ -55,7 +55,7 @@ int l2_select_table(int bitrate, int nb_channels, int freq, int lsf);
 int mpa_decode_header(AVCodecContext *avctx, uint32_t head);
 void ff_mpa_synth_init(MPA_INT *window);
 void ff_mpa_synth_filter(MPA_INT *synth_buf_ptr, int *synth_buf_offset,
-			 MPA_INT *window, int *dither_state,
+                         MPA_INT *window, int *dither_state,
                          OUT_INT *samples, int incr,
                          int32_t sb_samples[SBLIMIT]);
 

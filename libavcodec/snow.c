@@ -566,9 +566,9 @@ static void slice_buffer_destroy(slice_buffer * buf)
     av_free(buf->line);
 }
 
-#ifdef	__sgi
+#ifdef __sgi
 // Avoid a name clash on SGI IRIX
-#undef	qexp
+#undef qexp
 #endif
 #define QEXPSHIFT (7-FRAC_BITS+8) //FIXME try to change this to 0
 static uint8_t qexp[QROOT];

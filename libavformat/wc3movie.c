@@ -360,7 +360,7 @@ static int wc3_read_packet(AVFormatContext *s,
             break;
 
         default:
-	    av_log (s, AV_LOG_ERROR, "  unrecognized WC3 chunk: %c%c%c%c (0x%02X%02X%02X%02X)\n",
+            av_log (s, AV_LOG_ERROR, "  unrecognized WC3 chunk: %c%c%c%c (0x%02X%02X%02X%02X)\n",
                 preamble[0], preamble[1], preamble[2], preamble[3],
                 preamble[0], preamble[1], preamble[2], preamble[3]);
             ret = AVERROR_INVALIDDATA;

@@ -88,9 +88,9 @@ static int dv1394_read_header(AVFormatContext * context, AVFormatParameters * ap
         goto failed;
 
     if (ap->standard && !strcasecmp(ap->standard, "pal"))
-	dv->format = DV1394_PAL;
+        dv->format = DV1394_PAL;
     else
-	dv->format = DV1394_NTSC;
+        dv->format = DV1394_NTSC;
 
     if (ap->channel)
         dv->channel = ap->channel;
@@ -202,7 +202,7 @@ restart_poll:
 
     size = dv_produce_packet(dv->dv_demux, pkt,
                              dv->ring + (dv->index * DV1394_PAL_FRAME_SIZE),
-			     DV1394_PAL_FRAME_SIZE);
+                             DV1394_PAL_FRAME_SIZE);
     dv->index = (dv->index + 1) % DV1394_RING_FRAMES;
     dv->done++; dv->avail--;
 

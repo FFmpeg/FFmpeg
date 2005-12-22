@@ -54,23 +54,23 @@ stream_samples_t samples;
 static inline int blah (int32_t i)
 {
     if (i > 0x43c07fff)
-	return 32767;
+        return 32767;
     else if (i < 0x43bf8000)
-	return -32768;
+        return -32768;
     else
-	return i - 0x43c00000;
+        return i - 0x43c00000;
 }
 
 static inline void float_to_int (float * _f, int16_t * s16, int nchannels)
 {
     int i, j, c;
-    int32_t * f = (int32_t *) _f;	// XXX assumes IEEE float format
+    int32_t * f = (int32_t *) _f;       // XXX assumes IEEE float format
 
     j = 0;
     nchannels *= 256;
     for (i = 0; i < 256; i++) {
-	for (c = 0; c < nchannels; c += 256)
-	    s16[j++] = blah (f[i + c]);
+        for (c = 0; c < nchannels; c += 256)
+            s16[j++] = blah (f[i + c]);
     }
 }
 
@@ -89,7 +89,7 @@ static int ac3_decode_frame(AVCodecContext *avctx,
     short *out_samples = data;
     float level;
     static const int ac3_channels[8] = {
-	2, 1, 2, 3, 3, 4, 4, 5
+        2, 1, 2, 3, 3, 4, 4, 5
     };
 
     buf_ptr = buf;
@@ -111,20 +111,20 @@ static int ac3_decode_frame(AVCodecContext *avctx,
                     memcpy(s->inbuf, s->inbuf + 1, HEADER_SIZE - 1);
                     s->inbuf_ptr--;
                 } else {
-		    s->frame_size = len;
+                    s->frame_size = len;
                     /* update codec info */
                     avctx->sample_rate = sample_rate;
                     s->channels = ac3_channels[s->flags & 7];
                     if (s->flags & AC3_LFE)
-			s->channels++;
-		    if (avctx->channels == 0)
-			/* No specific number of channel requested */
-			avctx->channels = s->channels;
-		    else if (s->channels < avctx->channels) {
+                        s->channels++;
+                    if (avctx->channels == 0)
+                        /* No specific number of channel requested */
+                        avctx->channels = s->channels;
+                    else if (s->channels < avctx->channels) {
                         av_log( avctx, AV_LOG_INFO, "ac3dec: AC3 Source channels are less than specified: output to %d channels.. (frmsize: %d)\n", s->channels, len);
-			avctx->channels = s->channels;
-		    }
-		    avctx->bit_rate = bit_rate;
+                        avctx->channels = s->channels;
+                    }
+                    avctx->bit_rate = bit_rate;
                 }
             }
         } else if (len < s->frame_size) {

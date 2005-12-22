@@ -83,10 +83,10 @@
  */
 
 #if CONST_BITS == 8
-#define FIX_0_382683433  ((int32_t)   98)		/* FIX(0.382683433) */
-#define FIX_0_541196100  ((int32_t)  139)		/* FIX(0.541196100) */
-#define FIX_0_707106781  ((int32_t)  181)		/* FIX(0.707106781) */
-#define FIX_1_306562965  ((int32_t)  334)		/* FIX(1.306562965) */
+#define FIX_0_382683433  ((int32_t)   98)       /* FIX(0.382683433) */
+#define FIX_0_541196100  ((int32_t)  139)       /* FIX(0.541196100) */
+#define FIX_0_707106781  ((int32_t)  181)       /* FIX(0.707106781) */
+#define FIX_1_306562965  ((int32_t)  334)       /* FIX(1.306562965) */
 #else
 #define FIX_0_382683433  FIX(0.382683433)
 #define FIX_0_541196100  FIX(0.541196100)
@@ -135,7 +135,7 @@ static always_inline void row_fdct(DCTELEM * data){
 
     /* Even part */
 
-    tmp10 = tmp0 + tmp3;	/* phase 2 */
+    tmp10 = tmp0 + tmp3;        /* phase 2 */
     tmp13 = tmp0 - tmp3;
     tmp11 = tmp1 + tmp2;
     tmp12 = tmp1 - tmp2;
@@ -144,30 +144,30 @@ static always_inline void row_fdct(DCTELEM * data){
     dataptr[4] = tmp10 - tmp11;
 
     z1 = MULTIPLY(tmp12 + tmp13, FIX_0_707106781); /* c4 */
-    dataptr[2] = tmp13 + z1;	/* phase 5 */
+    dataptr[2] = tmp13 + z1;    /* phase 5 */
     dataptr[6] = tmp13 - z1;
 
     /* Odd part */
 
-    tmp10 = tmp4 + tmp5;	/* phase 2 */
+    tmp10 = tmp4 + tmp5;        /* phase 2 */
     tmp11 = tmp5 + tmp6;
     tmp12 = tmp6 + tmp7;
 
     /* The rotator is modified from fig 4-8 to avoid extra negations. */
     z5 = MULTIPLY(tmp10 - tmp12, FIX_0_382683433); /* c6 */
-    z2 = MULTIPLY(tmp10, FIX_0_541196100) + z5; /* c2-c6 */
-    z4 = MULTIPLY(tmp12, FIX_1_306562965) + z5; /* c2+c6 */
-    z3 = MULTIPLY(tmp11, FIX_0_707106781); /* c4 */
+    z2 = MULTIPLY(tmp10, FIX_0_541196100) + z5;    /* c2-c6 */
+    z4 = MULTIPLY(tmp12, FIX_1_306562965) + z5;    /* c2+c6 */
+    z3 = MULTIPLY(tmp11, FIX_0_707106781);         /* c4 */
 
-    z11 = tmp7 + z3;		/* phase 5 */
+    z11 = tmp7 + z3;            /* phase 5 */
     z13 = tmp7 - z3;
 
-    dataptr[5] = z13 + z2;	/* phase 6 */
+    dataptr[5] = z13 + z2;      /* phase 6 */
     dataptr[3] = z13 - z2;
     dataptr[1] = z11 + z4;
     dataptr[7] = z11 - z4;
 
-    dataptr += DCTSIZE;		/* advance pointer to next row */
+    dataptr += DCTSIZE;         /* advance pointer to next row */
   }
 }
 
@@ -202,7 +202,7 @@ fdct_ifast (DCTELEM * data)
 
     /* Even part */
 
-    tmp10 = tmp0 + tmp3;	/* phase 2 */
+    tmp10 = tmp0 + tmp3;        /* phase 2 */
     tmp13 = tmp0 - tmp3;
     tmp11 = tmp1 + tmp2;
     tmp12 = tmp1 - tmp2;
@@ -216,7 +216,7 @@ fdct_ifast (DCTELEM * data)
 
     /* Odd part */
 
-    tmp10 = tmp4 + tmp5;	/* phase 2 */
+    tmp10 = tmp4 + tmp5;        /* phase 2 */
     tmp11 = tmp5 + tmp6;
     tmp12 = tmp6 + tmp7;
 
@@ -226,7 +226,7 @@ fdct_ifast (DCTELEM * data)
     z4 = MULTIPLY(tmp12, FIX_1_306562965) + z5; /* c2+c6 */
     z3 = MULTIPLY(tmp11, FIX_0_707106781); /* c4 */
 
-    z11 = tmp7 + z3;		/* phase 5 */
+    z11 = tmp7 + z3;            /* phase 5 */
     z13 = tmp7 - z3;
 
     dataptr[DCTSIZE*5] = z13 + z2; /* phase 6 */
@@ -234,7 +234,7 @@ fdct_ifast (DCTELEM * data)
     dataptr[DCTSIZE*1] = z11 + z4;
     dataptr[DCTSIZE*7] = z11 - z4;
 
-    dataptr++;			/* advance pointer to next column */
+    dataptr++;                  /* advance pointer to next column */
   }
 }
 
@@ -293,7 +293,7 @@ fdct_ifast248 (DCTELEM * data)
     dataptr[DCTSIZE*3] = tmp13 + z1;
     dataptr[DCTSIZE*7] = tmp13 - z1;
 
-    dataptr++;			/* advance pointer to next column */
+    dataptr++;                        /* advance pointer to next column */
   }
 }
 

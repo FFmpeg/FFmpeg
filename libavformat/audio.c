@@ -54,7 +54,7 @@ static int audio_open(AudioData *s, int is_output, const char *audio_device)
     /* open linux audio device */
     if (!audio_device)
 #ifdef __OpenBSD__
-	audio_device = "/dev/sound";
+        audio_device = "/dev/sound";
 #else
         audio_device = "/dev/dsp";
 #endif

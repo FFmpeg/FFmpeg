@@ -434,7 +434,7 @@ ogg_gptopts (AVFormatContext * s, int i, uint64_t gp)
     uint64_t pts = AV_NOPTS_VALUE;
 
     if(os->codec->gptopts){
-	pts = os->codec->gptopts(s, i, gp);
+        pts = os->codec->gptopts(s, i, gp);
     } else if (codec->codec_type == CODEC_TYPE_AUDIO){
         pts = gp * 1000000LL / codec->sample_rate;
     }else if (codec->codec_type == CODEC_TYPE_VIDEO){

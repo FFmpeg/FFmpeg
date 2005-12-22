@@ -64,8 +64,8 @@ static inline int get_phase(int pos)
 
 /* This function must be optimized */
 static void h_resample_fast(uint8_t *dst, int dst_width, const uint8_t *src,
-			    int src_width, int src_start, int src_incr,
-			    int16_t *filters)
+                            int src_width, int src_start, int src_incr,
+                            int16_t *filters)
 {
     int src_pos, phase, sum, i;
     const uint8_t *s;
@@ -108,7 +108,7 @@ static void h_resample_fast(uint8_t *dst, int dst_width, const uint8_t *src,
 
 /* This function must be optimized */
 static void v_resample(uint8_t *dst, int dst_width, const uint8_t *src,
-		       int wrap, int16_t *filter)
+                       int wrap, int16_t *filter)
 {
     int sum, i;
     const uint8_t *s;
@@ -167,7 +167,7 @@ static void v_resample(uint8_t *dst, int dst_width, const uint8_t *src,
 
 /* XXX: do four pixels at a time */
 static void h_resample_fast4_mmx(uint8_t *dst, int dst_width,
-				 const uint8_t *src, int src_width,
+                                 const uint8_t *src, int src_width,
                                  int src_start, int src_incr, int16_t *filters)
 {
     int src_pos, phase;
@@ -212,7 +212,7 @@ static void h_resample_fast4_mmx(uint8_t *dst, int dst_width,
 }
 
 static void v_resample4_mmx(uint8_t *dst, int dst_width, const uint8_t *src,
-			    int wrap, int16_t *filter)
+                            int wrap, int16_t *filter)
 {
     int sum, i, v;
     const uint8_t *s;
@@ -277,18 +277,18 @@ static void v_resample4_mmx(uint8_t *dst, int dst_width, const uint8_t *src,
 #endif
 
 #ifdef HAVE_ALTIVEC
-typedef	union {
+typedef         union {
     vector unsigned char v;
     unsigned char c[16];
 } vec_uc_t;
 
-typedef	union {
+typedef         union {
     vector signed short v;
     signed short s[8];
 } vec_ss_t;
 
 void v_resample16_altivec(uint8_t *dst, int dst_width, const uint8_t *src,
-			  int wrap, int16_t *filter)
+                          int wrap, int16_t *filter)
 {
     int sum, i;
     const uint8_t *s;
@@ -405,7 +405,7 @@ void v_resample16_altivec(uint8_t *dst, int dst_width, const uint8_t *src,
 
 /* slow version to handle limit cases. Does not need optimisation */
 static void h_resample_slow(uint8_t *dst, int dst_width,
-			    const uint8_t *src, int src_width,
+                            const uint8_t *src, int src_width,
                             int src_start, int src_incr, int16_t *filters)
 {
     int src_pos, phase, sum, j, v, i;
@@ -441,8 +441,8 @@ static void h_resample_slow(uint8_t *dst, int dst_width,
 }
 
 static void h_resample(uint8_t *dst, int dst_width, const uint8_t *src,
-		       int src_width, int src_start, int src_incr,
-		       int16_t *filters)
+                       int src_width, int src_start, int src_incr,
+                       int16_t *filters)
 {
     int n, src_end;
 
@@ -559,7 +559,7 @@ ImgReSampleContext *img_resample_full_init(int owidth, int oheight,
     ImgReSampleContext *s;
 
     if (!owidth || !oheight || !iwidth || !iheight)
-	return NULL;
+        return NULL;
 
     s = av_mallocz(sizeof(ImgReSampleContext));
     if (!s)

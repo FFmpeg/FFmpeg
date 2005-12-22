@@ -92,23 +92,23 @@ typedef struct {
 } NUTContext;
 
 static char *info_table[][2]={
-	{NULL			,  NULL }, // end
-	{NULL			,  NULL },
-	{NULL			, "UTF8"},
-	{NULL			, "v"},
-	{NULL			, "s"},
-	{"StreamId"		, "v"},
-	{"SegmentId"		, "v"},
-	{"StartTimestamp"	, "v"},
-	{"EndTimestamp"		, "v"},
-	{"Author"		, "UTF8"},
-	{"Title"		, "UTF8"},
-	{"Description"		, "UTF8"},
-	{"Copyright"		, "UTF8"},
-	{"Encoder"		, "UTF8"},
-	{"Keyword"		, "UTF8"},
-	{"Cover"		, "JPEG"},
-	{"Cover"		, "PNG"},
+        {NULL                   ,  NULL }, // end
+        {NULL                   ,  NULL },
+        {NULL                   , "UTF8"},
+        {NULL                   , "v"},
+        {NULL                   , "s"},
+        {"StreamId"             , "v"},
+        {"SegmentId"            , "v"},
+        {"StartTimestamp"       , "v"},
+        {"EndTimestamp"         , "v"},
+        {"Author"               , "UTF8"},
+        {"Title"                , "UTF8"},
+        {"Description"          , "UTF8"},
+        {"Copyright"            , "UTF8"},
+        {"Encoder"              , "UTF8"},
+        {"Keyword"              , "UTF8"},
+        {"Cover"                , "JPEG"},
+        {"Cover"                , "PNG"},
 };
 
 void ff_parse_specific_params(AVCodecContext *stream, int *au_rate, int *au_ssize, int *au_scale);
@@ -244,13 +244,13 @@ static uint64_t get_v(ByteIOContext *bc)
 
     for(;;)
     {
-	int tmp = get_byte(bc);
+        int tmp = get_byte(bc);
 
-	if (tmp&0x80)
-	    val= (val<<7) + tmp - 0x80;
-	else{
+        if (tmp&0x80)
+            val= (val<<7) + tmp - 0x80;
+        else{
 //av_log(NULL, AV_LOG_DEBUG, "get_v()= %lld\n", (val<<7) + tmp);
-	    return (val<<7) + tmp;
+            return (val<<7) + tmp;
         }
     }
     return -1;
@@ -405,7 +405,7 @@ static void put_v(ByteIOContext *bc, uint64_t val)
     i= get_length(val);
 
     for (i-=7; i>0; i-=7){
-	put_byte(bc, 0x80 | (val>>i));
+        put_byte(bc, 0x80 | (val>>i));
     }
 
     put_byte(bc, val&0x7f);
@@ -516,7 +516,7 @@ static int nut_write_header(AVFormatContext *s)
     nut->avf= s;
 
     nut->stream =
-	av_mallocz(sizeof(StreamContext)*s->nb_streams);
+        av_mallocz(sizeof(StreamContext)*s->nb_streams);
 
 
     put_buffer(bc, ID_STRING, strlen(ID_STRING));
@@ -580,13 +580,13 @@ static int nut_write_header(AVFormatContext *s)
     /* stream headers */
     for (i = 0; i < s->nb_streams; i++)
     {
-	int nom, denom, ssize;
+        int nom, denom, ssize;
 
-	codec = s->streams[i]->codec;
+        codec = s->streams[i]->codec;
 
-	put_be64(bc, STREAM_STARTCODE);
-	put_packetheader(nut, bc, 120 + codec->extradata_size, 1);
-	put_v(bc, i /*s->streams[i]->index*/);
+        put_be64(bc, STREAM_STARTCODE);
+        put_packetheader(nut, bc, 120 + codec->extradata_size, 1);
+        put_v(bc, i /*s->streams[i]->index*/);
         switch(codec->codec_type){
         case CODEC_TYPE_VIDEO: put_v(bc, 0); break;
         case CODEC_TYPE_AUDIO: put_v(bc, 1); break;
@@ -594,16 +594,16 @@ static int nut_write_header(AVFormatContext *s)
         case CODEC_TYPE_DATA : put_v(bc, 3); break;
         default: return -1;
         }
-	if (codec->codec_tag)
-	    put_vb(bc, codec->codec_tag);
-	else if (codec->codec_type == CODEC_TYPE_VIDEO)
-	{
-	    put_vb(bc, codec_get_bmp_tag(codec->codec_id));
-	}
-	else if (codec->codec_type == CODEC_TYPE_AUDIO)
-	{
-	    put_vb(bc, codec_get_wav_tag(codec->codec_id));
-	}
+        if (codec->codec_tag)
+            put_vb(bc, codec->codec_tag);
+        else if (codec->codec_type == CODEC_TYPE_VIDEO)
+        {
+            put_vb(bc, codec_get_bmp_tag(codec->codec_id));
+        }
+        else if (codec->codec_type == CODEC_TYPE_AUDIO)
+        {
+            put_vb(bc, codec_get_wav_tag(codec->codec_id));
+        }
         else
             put_vb(bc, 0);
 
@@ -613,42 +613,42 @@ static int nut_write_header(AVFormatContext *s)
         nut->stream[i].rate_den= denom;
         av_set_pts_info(s->streams[i], 60, denom, nom);
 
-	put_v(bc, codec->bit_rate);
-	put_vb(bc, 0); /* no language code */
-	put_v(bc, nom);
-	put_v(bc, denom);
+        put_v(bc, codec->bit_rate);
+        put_vb(bc, 0); /* no language code */
+        put_v(bc, nom);
+        put_v(bc, denom);
         if(nom / denom < 1000)
-	    nut->stream[i].msb_timestamp_shift = 7;
+            nut->stream[i].msb_timestamp_shift = 7;
         else
-	    nut->stream[i].msb_timestamp_shift = 14;
-	put_v(bc, nut->stream[i].msb_timestamp_shift);
+            nut->stream[i].msb_timestamp_shift = 14;
+        put_v(bc, nut->stream[i].msb_timestamp_shift);
         put_v(bc, codec->has_b_frames);
-	put_byte(bc, 0); /* flags: 0x1 - fixed_fps, 0x2 - index_present */
+        put_byte(bc, 0); /* flags: 0x1 - fixed_fps, 0x2 - index_present */
 
         if(codec->extradata_size){
             put_v(bc, 1);
             put_v(bc, codec->extradata_size);
             put_buffer(bc, codec->extradata, codec->extradata_size);
         }
-	put_v(bc, 0); /* end of codec specific headers */
+        put_v(bc, 0); /* end of codec specific headers */
 
-	switch(codec->codec_type)
-	{
-	    case CODEC_TYPE_AUDIO:
-		put_v(bc, codec->sample_rate);
-		put_v(bc, 1);
-		put_v(bc, codec->channels);
-		break;
-	    case CODEC_TYPE_VIDEO:
-		put_v(bc, codec->width);
-		put_v(bc, codec->height);
-		put_v(bc, codec->sample_aspect_ratio.num);
-		put_v(bc, codec->sample_aspect_ratio.den);
-		put_v(bc, 0); /* csp type -- unknown */
-		break;
+        switch(codec->codec_type)
+        {
+            case CODEC_TYPE_AUDIO:
+                put_v(bc, codec->sample_rate);
+                put_v(bc, 1);
+                put_v(bc, codec->channels);
+                break;
+            case CODEC_TYPE_VIDEO:
+                put_v(bc, codec->width);
+                put_v(bc, codec->height);
+                put_v(bc, codec->sample_aspect_ratio.num);
+                put_v(bc, codec->sample_aspect_ratio.den);
+                put_v(bc, 0); /* csp type -- unknown */
+                break;
             default:
                 break;
-	}
+        }
         update_packetheader(nut, bc, 0, 1);
     }
 
@@ -722,7 +722,7 @@ static int nut_write_packet(AVFormatContext *s, AVPacket *pkt)
     if(frame_type>1){
         int64_t global_ts= av_rescale(pts, stream->rate_den*(int64_t)nut->rate_num, stream->rate_num*(int64_t)nut->rate_den);
         reset(s, global_ts);
-	put_be64(bc, KEYFRAME_STARTCODE);
+        put_be64(bc, KEYFRAME_STARTCODE);
         put_v(bc, global_ts);
     }
     assert(stream->last_pts != AV_NOPTS_VALUE);
@@ -829,10 +829,10 @@ static int nut_write_trailer(AVFormatContext *s)
 
     for (i = 0; s->nb_streams; i++)
     {
-	put_be64(bc, INDEX_STARTCODE);
-	put_packetheader(nut, bc, 64, 1);
-	put_v(bc, s->streams[i]->id);
-	put_v(bc, ...);
+        put_be64(bc, INDEX_STARTCODE);
+        put_packetheader(nut, bc, 64, 1);
+        put_v(bc, s->streams[i]->id);
+        put_v(bc, ...);
         update_packetheader(nut, bc, 0, 1);
     }
 #endif
@@ -868,7 +868,7 @@ static int decode_main_header(NUTContext *nut){
 
     tmp = get_v(bc);
     if (tmp != 2){
-	av_log(s, AV_LOG_ERROR, "bad version (%"PRId64")\n", tmp);
+        av_log(s, AV_LOG_ERROR, "bad version (%"PRId64")\n", tmp);
         return -1;
     }
 
@@ -883,7 +883,7 @@ static int decode_main_header(NUTContext *nut){
     nut->rate_den= get_v(bc);
     nut->short_startcode= get_v(bc);
     if(nut->short_startcode>>16 != 'N'){
-	av_log(s, AV_LOG_ERROR, "invalid short startcode %X\n", nut->short_startcode);
+        av_log(s, AV_LOG_ERROR, "invalid short startcode %X\n", nut->short_startcode);
         return -1;
     }
 
@@ -994,7 +994,7 @@ static int decode_stream_header(NUTContext *nut){
             return -1;
         st->codec->extradata= av_mallocz(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
         get_buffer(bc, st->codec->extradata, st->codec->extradata_size);
-//	    url_fskip(bc, get_v(bc));
+//            url_fskip(bc, get_v(bc));
     }
 
     if (st->codec->codec_type == CODEC_TYPE_VIDEO) /* VIDEO */
@@ -1242,7 +1242,7 @@ static int decode_frame(NUTContext *nut, AVPacket *pkt, int frame_code, int fram
     av_get_packet(bc, pkt, size);
     pkt->stream_index = stream_id;
     if (key_frame)
-	pkt->flags |= PKT_FLAG_KEY;
+        pkt->flags |= PKT_FLAG_KEY;
     pkt->pts = pts;
 
     return 0;

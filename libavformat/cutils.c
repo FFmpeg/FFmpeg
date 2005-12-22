@@ -59,7 +59,7 @@ int stristart(const char *str, const char *val, const char **ptr)
     p = str;
     q = val;
     while (*q != '\0') {
-	if (toupper(*(const unsigned char *)p) != toupper(*(const unsigned char *)q))
+        if (toupper(*(const unsigned char *)p) != toupper(*(const unsigned char *)q))
             return 0;
         p++;
         q++;
@@ -166,13 +166,13 @@ struct tm *brktimegm(time_t secs, struct tm *tm)
     /* oh well, may be someone some day will invent a formula for this stuff */
     y = 1970; /* start "guessing" */
     while (days >= (ISLEAP(y)?366:365)) {
-	ny = (y + days/366);
-	days -= (ny - y) * 365 + LEAPS_COUNT(ny - 1) - LEAPS_COUNT(y - 1);
-	y = ny;
+        ny = (y + days/366);
+        days -= (ny - y) * 365 + LEAPS_COUNT(ny - 1) - LEAPS_COUNT(y - 1);
+        y = ny;
     }
     md[1] = ISLEAP(y)?29:28;
     for (m=0; days >= md[m]; m++)
-	 days -= md[m];
+         days -= md[m];
 
     tm->tm_year = y;  /* unlike gmtime_r we store complete year here */
     tm->tm_mon = m+1; /* unlike gmtime_r tm_mon is from 1 to 12 */

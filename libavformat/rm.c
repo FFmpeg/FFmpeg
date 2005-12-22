@@ -538,15 +538,15 @@ static void rm_read_audio_stream_info(AVFormatContext *s, AVStream *st,
         st->codec->channels = get_be16(pb);
         if (((version >> 16) & 0xff) == 5) {
             get_be32(pb);
-	    buf[0] = get_byte(pb);
-	    buf[1] = get_byte(pb);
-	    buf[2] = get_byte(pb);
-	    buf[3] = get_byte(pb);
-	    buf[4] = 0;
-	} else {
+            buf[0] = get_byte(pb);
+            buf[1] = get_byte(pb);
+            buf[2] = get_byte(pb);
+            buf[3] = get_byte(pb);
+            buf[4] = 0;
+        } else {
         get_str8(pb, buf, sizeof(buf)); /* desc */
         get_str8(pb, buf, sizeof(buf)); /* desc */
-	}
+        }
         st->codec->codec_type = CODEC_TYPE_AUDIO;
         if (!strcmp(buf, "dnet")) {
             st->codec->codec_id = CODEC_ID_AC3;

@@ -69,16 +69,16 @@ static int dc1394_read_header(AVFormatContext *c, AVFormatParameters * ap)
 
     for (fmt = dc1394_frame_formats; fmt->width; fmt++)
          if (fmt->pix_fmt == ap->pix_fmt && fmt->width == ap->width && fmt->height == ap->height)
-	     break;
+             break;
 
     for (fps = dc1394_frame_rates; fps->frame_rate; fps++)
          if (fps->frame_rate == av_rescale(1000, ap->time_base.den, ap->time_base.num))
-	     break;
+             break;
 
     /* create a video stream */
     vst = av_new_stream(c, 0);
     if (!vst)
-	return -1;
+        return -1;
     av_set_pts_info(vst, 64, 1, 1000);
     vst->codec->codec_type = CODEC_TYPE_VIDEO;
     vst->codec->codec_id = CODEC_ID_RAWVIDEO;
@@ -102,7 +102,7 @@ static int dc1394_read_header(AVFormatContext *c, AVFormatParameters * ap)
     /* Now lets prep the hardware */
     dc1394->handle = dc1394_create_handle(0); /* FIXME: gotta have ap->port */
     if (!dc1394->handle) {
-	av_log(c, AV_LOG_ERROR, "Can't acquire dc1394 handle on port %d\n", 0 /* ap->port */);
+        av_log(c, AV_LOG_ERROR, "Can't acquire dc1394 handle on port %d\n", 0 /* ap->port */);
         goto out;
     }
     camera_nodes = dc1394_get_camera_nodes(dc1394->handle, &res, 1);
@@ -111,23 +111,23 @@ static int dc1394_read_header(AVFormatContext *c, AVFormatParameters * ap)
         goto out_handle;
     }
     res = dc1394_dma_setup_capture(dc1394->handle, camera_nodes[ap->channel],
-	                           0,
-			           FORMAT_VGA_NONCOMPRESSED,
-			           fmt->frame_size_id,
-			           SPEED_400,
-			           fps->frame_rate_id, 8, 1,
-			           ap->device,
-			           &dc1394->camera);
+                                   0,
+                                   FORMAT_VGA_NONCOMPRESSED,
+                                   fmt->frame_size_id,
+                                   SPEED_400,
+                                   fps->frame_rate_id, 8, 1,
+                                   ap->device,
+                                   &dc1394->camera);
     dc1394_free_camera_nodes(camera_nodes);
     if (res != DC1394_SUCCESS) {
         av_log(c, AV_LOG_ERROR, "Can't prepare camera for the DMA capture\n");
-	goto out_handle;
+        goto out_handle;
     }
 
     res = dc1394_start_iso_transmission(dc1394->handle, dc1394->camera.node);
     if (res != DC1394_SUCCESS) {
         av_log(c, AV_LOG_ERROR, "Can't start isochronous transmission\n");
-	goto out_handle_dma;
+        goto out_handle_dma;
     }
 
     return 0;
@@ -148,7 +148,7 @@ static int dc1394_read_packet(AVFormatContext *c, AVPacket *pkt)
 
     /* discard stale frame */
     if (dc1394->current_frame++) {
-	if (dc1394_dma_done_with_buffer(&dc1394->camera) != DC1394_SUCCESS)
+        if (dc1394_dma_done_with_buffer(&dc1394->camera) != DC1394_SUCCESS)
             av_log(c, AV_LOG_ERROR, "failed to release %d frame\n", dc1394->current_frame);
     }
 
@@ -157,7 +157,7 @@ static int dc1394_read_packet(AVFormatContext *c, AVPacket *pkt)
     if (res == DC1394_SUCCESS) {
         dc1394->packet.data = (uint8_t *)(dc1394->camera.capture_buffer);
         dc1394->packet.pts = (dc1394->current_frame * 1000000) / dc1394->fps;
-	res = dc1394->packet.size;
+        res = dc1394->packet.size;
     } else {
         av_log(c, AV_LOG_ERROR, "DMA capture failed\n");
         dc1394->packet.data = NULL;

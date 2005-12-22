@@ -19,8 +19,8 @@
 #if defined(ARCH_X86) || defined(ARCH_X86_64)
 static always_inline uint16_t bswap_16(uint16_t x)
 {
-  __asm("rorw $8, %0"	:
-        LEGACY_REGS (x)	:
+  __asm("rorw $8, %0"   :
+        LEGACY_REGS (x) :
         "0" (x));
     return x;
 }
@@ -28,13 +28,13 @@ static always_inline uint16_t bswap_16(uint16_t x)
 static always_inline uint32_t bswap_32(uint32_t x)
 {
 #if __CPU__ > 386
- __asm("bswap	%0":
+ __asm("bswap   %0":
       "=r" (x)     :
 #else
- __asm("xchgb	%b0,%h0\n"
-      "	rorl	$16,%0\n"
-      "	xchgb	%b0,%h0":
-      LEGACY_REGS (x)		:
+ __asm("xchgb   %b0,%h0\n"
+      "         rorl    $16,%0\n"
+      "         xchgb   %b0,%h0":
+      LEGACY_REGS (x)                :
 #endif
       "0" (x));
   return x;
@@ -43,8 +43,8 @@ static always_inline uint32_t bswap_32(uint32_t x)
 static inline uint64_t bswap_64(uint64_t x)
 {
 #ifdef ARCH_X86_64
-  __asm("bswap	%0":
-        "=r" (x)     :
+  __asm("bswap  %0":
+        "=r" (x)   :
         "0" (x));
   return x;
 #else
@@ -63,17 +63,17 @@ static inline uint64_t bswap_64(uint64_t x)
 #elif defined(ARCH_SH4)
 
 static always_inline uint16_t bswap_16(uint16_t x) {
-	__asm__("swap.b %0,%0":"=r"(x):"0"(x));
-	return x;
+        __asm__("swap.b %0,%0":"=r"(x):"0"(x));
+        return x;
 }
 
 static always_inline uint32_t bswap_32(uint32_t x) {
-	__asm__(
-	"swap.b %0,%0\n"
-	"swap.w %0,%0\n"
-	"swap.b %0,%0\n"
-	:"=r"(x):"0"(x));
-	return x;
+        __asm__(
+        "swap.b %0,%0\n"
+        "swap.w %0,%0\n"
+        "swap.b %0,%0\n"
+        :"=r"(x):"0"(x));
+        return x;
 }
 
 static inline uint64_t bswap_64(uint64_t x)
@@ -129,9 +129,9 @@ static inline uint64_t bswap_64(uint64_t x)
     return r.ll;
 #endif
 }
-#endif	/* !ARCH_X86 */
+#endif  /* !ARCH_X86 */
 
-#endif	/* !HAVE_BYTESWAP_H */
+#endif  /* !HAVE_BYTESWAP_H */
 
 // be2me ... BigEndian to MachineEndian
 // le2me ... LittleEndian to MachineEndian

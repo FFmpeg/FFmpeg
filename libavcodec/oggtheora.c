@@ -45,7 +45,7 @@ Theora_decode_frame(AVCodecContext *ctx, void *outdata, int *outdata_size,
     thc->op.bytes = buf_size;
 
     if(theora_decode_packetin(&thc->state, &thc->op))
-	return -1;
+        return -1;
 
     theora_decode_YUVout(&thc->state, &yuv);
 
@@ -78,7 +78,7 @@ Theora_decode_init(AVCodecContext *ctx)
     uint8_t *cdp;
 
     if(ctx->extradata_size < 6)
-	return -1;
+        return -1;
 
     theora_info_init(&thc->info);
 
@@ -87,25 +87,25 @@ Theora_decode_init(AVCodecContext *ctx)
     size = ctx->extradata_size;
 
     for(i = 0; i < 3; i++){
-	hs = *cdp++ << 8;
-	hs += *cdp++;
-	size -= 2;
+        hs = *cdp++ << 8;
+        hs += *cdp++;
+        size -= 2;
 
-	if(hs > size){
-	    av_log(ctx, AV_LOG_ERROR, "extradata too small: %i > %i\n",
+        if(hs > size){
+            av_log(ctx, AV_LOG_ERROR, "extradata too small: %i > %i\n",
                    hs, size);
-	    return -1;
-	}
+            return -1;
+        }
 
-	op.packet = cdp;
-	op.bytes = hs;
-	op.b_o_s = !i;
-	if(theora_decode_header(&thc->info, &thc->comment, &op))
-	    return -1;
-	op.packetno++;
+        op.packet = cdp;
+        op.bytes = hs;
+        op.b_o_s = !i;
+        if(theora_decode_header(&thc->info, &thc->comment, &op))
+            return -1;
+        op.packetno++;
 
-	cdp += hs;
-	size -= hs;
+        cdp += hs;
+        size -= hs;
     }
 
     theora_decode_init(&thc->state, &thc->info);

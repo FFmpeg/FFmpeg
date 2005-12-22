@@ -35,7 +35,7 @@
 #define TAG_JPEG2         21
 #define TAG_PLACEOBJECT2  26
 #define TAG_STREAMHEAD2   45
-#define TAG_VIDEOSTREAM	  60
+#define TAG_VIDEOSTREAM   60
 #define TAG_VIDEOFRAME    61
 
 #define TAG_LONG         0x100
@@ -45,7 +45,7 @@
 #define FLAG_SETFILL0    0x02
 #define FLAG_SETFILL1    0x04
 
-#define SWF_VIDEO_CODEC_FLV1	0x02
+#define SWF_VIDEO_CODEC_FLV1    0x02
 
 #define AUDIO_FIFO_SIZE 65536
 
@@ -749,7 +749,7 @@ static int swf_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
     if (tag == MKBETAG('C', 'W', 'S', 0))
     {
-	av_log(s, AV_LOG_ERROR, "Compressed SWF format not supported\n");
+        av_log(s, AV_LOG_ERROR, "Compressed SWF format not supported\n");
         return AVERROR_IO;
     }
     if (tag != MKBETAG('F', 'W', 'S', 0))
@@ -862,7 +862,7 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
             return AVERROR_IO;
         if (tag == TAG_VIDEOFRAME) {
             for( i=0; i<s->nb_streams; i++ ) {
-        	st = s->streams[i];
+                st = s->streams[i];
                 if (st->id == 0) {
                     if ( get_le16(pb) == swf->ch_id ) {
                         frame = get_le16(pb);
@@ -879,7 +879,7 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
             url_fskip(pb, len);
         } else if (tag == TAG_STREAMBLOCK) {
             for( i=0; i<s->nb_streams; i++ ) {
-        	st = s->streams[i];
+                st = s->streams[i];
                 if (st->id == 1) {
                     av_get_packet(pb, pkt, len);
                     pkt->stream_index = st->index;

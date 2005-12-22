@@ -155,25 +155,25 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
             else
                 st->codec->sample_rate = (44100<<((flags>>2)&3))>>3;
             switch(flags >> 4){/* 0: uncompressed 1: ADPCM 2: mp3 5: Nellymoser 8kHz mono 6: Nellymoser*/
-	    case 0: if (flags&2) st->codec->codec_id = CODEC_ID_PCM_S16BE;
-		    else st->codec->codec_id = CODEC_ID_PCM_S8; break;
-	    case 1: st->codec->codec_id = CODEC_ID_ADPCM_SWF; break;
+            case 0: if (flags&2) st->codec->codec_id = CODEC_ID_PCM_S16BE;
+                    else st->codec->codec_id = CODEC_ID_PCM_S8; break;
+            case 1: st->codec->codec_id = CODEC_ID_ADPCM_SWF; break;
             case 2: st->codec->codec_id = CODEC_ID_MP3; break;
-	    // this is not listed at FLV but at SWF, strange...
-	    case 3: if (flags&2) st->codec->codec_id = CODEC_ID_PCM_S16LE;
-		    else st->codec->codec_id = CODEC_ID_PCM_S8; break;
+            // this is not listed at FLV but at SWF, strange...
+            case 3: if (flags&2) st->codec->codec_id = CODEC_ID_PCM_S16LE;
+                    else st->codec->codec_id = CODEC_ID_PCM_S8; break;
             default:
-    		av_log(s, AV_LOG_INFO, "Unsupported audio codec (%x)\n", flags >> 4);
+                    av_log(s, AV_LOG_INFO, "Unsupported audio codec (%x)\n", flags >> 4);
                 st->codec->codec_tag= (flags >> 4);
             }
-	    st->codec->bits_per_sample = (flags & 2) ? 16 : 8;
+            st->codec->bits_per_sample = (flags & 2) ? 16 : 8;
         }
     }else{
             st->codec->codec_type = CODEC_TYPE_VIDEO;
             switch(flags & 0xF){
             case 2: st->codec->codec_id = CODEC_ID_FLV1; break;
             default:
-    		av_log(s, AV_LOG_INFO, "Unsupported video codec (%x)\n", flags & 0xf);
+                    av_log(s, AV_LOG_INFO, "Unsupported video codec (%x)\n", flags & 0xf);
                 st->codec->codec_tag= flags & 0xF;
             }
     }
@@ -189,7 +189,7 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
     pkt->stream_index = st->index;
 
     if (is_audio || ((flags >> 4)==1))
-	pkt->flags |= PKT_FLAG_KEY;
+        pkt->flags |= PKT_FLAG_KEY;
 
     return ret;
 }

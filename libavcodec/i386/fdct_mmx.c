@@ -30,21 +30,21 @@
 //
 //////////////////////////////////////////////////////////////////////
 
-#define BITS_FRW_ACC	3 //; 2 or 3 for accuracy
-#define SHIFT_FRW_COL	BITS_FRW_ACC
-#define SHIFT_FRW_ROW	(BITS_FRW_ACC + 17 - 3)
-#define RND_FRW_ROW		(1 << (SHIFT_FRW_ROW-1))
-//#define RND_FRW_COL		(1 << (SHIFT_FRW_COL-1))
+#define BITS_FRW_ACC   3 //; 2 or 3 for accuracy
+#define SHIFT_FRW_COL  BITS_FRW_ACC
+#define SHIFT_FRW_ROW  (BITS_FRW_ACC + 17 - 3)
+#define RND_FRW_ROW    (1 << (SHIFT_FRW_ROW-1))
+//#define RND_FRW_COL    (1 << (SHIFT_FRW_COL-1))
 
 //concatenated table, for forward DCT transformation
 static const int16_t fdct_tg_all_16[] ATTR_ALIGN(8) = {
-    13036, 13036, 13036, 13036,		// tg * (2<<16) + 0.5
-    27146, 27146, 27146, 27146,		// tg * (2<<16) + 0.5
-    -21746, -21746, -21746, -21746,	// tg * (2<<16) + 0.5
+    13036,  13036,  13036,  13036,        // tg * (2<<16) + 0.5
+    27146,  27146,  27146,  27146,        // tg * (2<<16) + 0.5
+   -21746, -21746, -21746, -21746,        // tg * (2<<16) + 0.5
 };
 
 static const int16_t ocos_4_16[4] ATTR_ALIGN(8) = {
-    23170, 23170, 23170, 23170,	//cos * (2<<15) + 0.5
+    23170, 23170, 23170, 23170,           //cos * (2<<15) + 0.5
 };
 
 static const int64_t fdct_one_corr ATTR_ALIGN(8) = 0x0001000100010001LL;
@@ -351,62 +351,62 @@ static always_inline void fdct_col(const int16_t *in, int16_t *out, int offset)
 static always_inline void fdct_row_sse2(const int16_t *in, int16_t *out)
 {
     asm volatile(
-        ".macro FDCT_ROW_SSE2_H1 i t   \n\t"
-	"movq      \\i(%0), %%xmm2     \n\t"
-	"movq      \\i+8(%0), %%xmm0   \n\t"
-	"movdqa    \\t+32(%1), %%xmm3  \n\t"
-	"movdqa    \\t+48(%1), %%xmm7  \n\t"
-	"movdqa    \\t(%1), %%xmm4     \n\t"
-	"movdqa    \\t+16(%1), %%xmm5  \n\t"
-	".endm                         \n\t"
-        ".macro FDCT_ROW_SSE2_H2 i t   \n\t"
-	"movq      \\i(%0), %%xmm2     \n\t"
-	"movq      \\i+8(%0), %%xmm0   \n\t"
-	"movdqa    \\t+32(%1), %%xmm3  \n\t"
-	"movdqa    \\t+48(%1), %%xmm7  \n\t"
-	".endm                         \n\t"
-	".macro FDCT_ROW_SSE2 i        \n\t"
-	"movq      %%xmm2, %%xmm1      \n\t"
-	"pshuflw   $27, %%xmm0, %%xmm0 \n\t"
-	"paddsw    %%xmm0, %%xmm1      \n\t"
-	"psubsw    %%xmm0, %%xmm2      \n\t"
-	"punpckldq %%xmm2, %%xmm1      \n\t"
-	"pshufd    $78, %%xmm1, %%xmm2 \n\t"
-	"pmaddwd   %%xmm2, %%xmm3      \n\t"
-	"pmaddwd   %%xmm1, %%xmm7      \n\t"
-	"pmaddwd   %%xmm5, %%xmm2      \n\t"
-	"pmaddwd   %%xmm4, %%xmm1      \n\t"
-	"paddd     %%xmm7, %%xmm3      \n\t"
-	"paddd     %%xmm2, %%xmm1      \n\t"
-	"paddd     %%xmm6, %%xmm3      \n\t"
-	"paddd     %%xmm6, %%xmm1      \n\t"
-	"psrad     %3, %%xmm3          \n\t"
-	"psrad     %3, %%xmm1          \n\t"
-	"packssdw  %%xmm3, %%xmm1      \n\t"
-	"movdqa    %%xmm1, \\i(%4)     \n\t"
-	".endm                         \n\t"
-	"movdqa    (%2), %%xmm6        \n\t"
-	"FDCT_ROW_SSE2_H1 0 0 \n\t"
-	"FDCT_ROW_SSE2 0 \n\t"
-	"FDCT_ROW_SSE2_H2 64 0 \n\t"
-	"FDCT_ROW_SSE2 64 \n\t"
+        ".macro FDCT_ROW_SSE2_H1 i t    \n\t"
+        "movq      \\i(%0), %%xmm2      \n\t"
+        "movq      \\i+8(%0), %%xmm0    \n\t"
+        "movdqa    \\t+32(%1), %%xmm3   \n\t"
+        "movdqa    \\t+48(%1), %%xmm7   \n\t"
+        "movdqa    \\t(%1), %%xmm4      \n\t"
+        "movdqa    \\t+16(%1), %%xmm5   \n\t"
+        ".endm                          \n\t"
+        ".macro FDCT_ROW_SSE2_H2 i t    \n\t"
+        "movq      \\i(%0), %%xmm2      \n\t"
+        "movq      \\i+8(%0), %%xmm0    \n\t"
+        "movdqa    \\t+32(%1), %%xmm3   \n\t"
+        "movdqa    \\t+48(%1), %%xmm7   \n\t"
+        ".endm                          \n\t"
+        ".macro FDCT_ROW_SSE2 i         \n\t"
+        "movq      %%xmm2, %%xmm1       \n\t"
+        "pshuflw   $27, %%xmm0, %%xmm0  \n\t"
+        "paddsw    %%xmm0, %%xmm1       \n\t"
+        "psubsw    %%xmm0, %%xmm2       \n\t"
+        "punpckldq %%xmm2, %%xmm1       \n\t"
+        "pshufd    $78, %%xmm1, %%xmm2  \n\t"
+        "pmaddwd   %%xmm2, %%xmm3       \n\t"
+        "pmaddwd   %%xmm1, %%xmm7       \n\t"
+        "pmaddwd   %%xmm5, %%xmm2       \n\t"
+        "pmaddwd   %%xmm4, %%xmm1       \n\t"
+        "paddd     %%xmm7, %%xmm3       \n\t"
+        "paddd     %%xmm2, %%xmm1       \n\t"
+        "paddd     %%xmm6, %%xmm3       \n\t"
+        "paddd     %%xmm6, %%xmm1       \n\t"
+        "psrad     %3, %%xmm3           \n\t"
+        "psrad     %3, %%xmm1           \n\t"
+        "packssdw  %%xmm3, %%xmm1       \n\t"
+        "movdqa    %%xmm1, \\i(%4)      \n\t"
+        ".endm                          \n\t"
+        "movdqa    (%2), %%xmm6         \n\t"
+        "FDCT_ROW_SSE2_H1 0 0           \n\t"
+        "FDCT_ROW_SSE2 0                \n\t"
+        "FDCT_ROW_SSE2_H2 64 0          \n\t"
+        "FDCT_ROW_SSE2 64               \n\t"
 
-	"FDCT_ROW_SSE2_H1 16 64 \n\t"
-	"FDCT_ROW_SSE2 16 \n\t"
-	"FDCT_ROW_SSE2_H2 112 64 \n\t"
-	"FDCT_ROW_SSE2 112 \n\t"
+        "FDCT_ROW_SSE2_H1 16 64         \n\t"
+        "FDCT_ROW_SSE2 16               \n\t"
+        "FDCT_ROW_SSE2_H2 112 64        \n\t"
+        "FDCT_ROW_SSE2 112              \n\t"
 
-	"FDCT_ROW_SSE2_H1 32 128 \n\t"
-	"FDCT_ROW_SSE2 32 \n\t"
-	"FDCT_ROW_SSE2_H2 96 128 \n\t"
-	"FDCT_ROW_SSE2 96 \n\t"
+        "FDCT_ROW_SSE2_H1 32 128        \n\t"
+        "FDCT_ROW_SSE2 32               \n\t"
+        "FDCT_ROW_SSE2_H2 96 128        \n\t"
+        "FDCT_ROW_SSE2 96               \n\t"
 
-	"FDCT_ROW_SSE2_H1 48 192 \n\t"
-	"FDCT_ROW_SSE2 48 \n\t"
-	"FDCT_ROW_SSE2_H2 80 192 \n\t"
-	"FDCT_ROW_SSE2 80 \n\t"
-	:
-	: "r" (in), "r" (tab_frw_01234567_sse2.tab_frw_01234567_sse2), "r" (fdct_r_row_sse2.fdct_r_row_sse2), "i" (SHIFT_FRW_ROW), "r" (out)
+        "FDCT_ROW_SSE2_H1 48 192        \n\t"
+        "FDCT_ROW_SSE2 48               \n\t"
+        "FDCT_ROW_SSE2_H2 80 192        \n\t"
+        "FDCT_ROW_SSE2 80               \n\t"
+        :
+        : "r" (in), "r" (tab_frw_01234567_sse2.tab_frw_01234567_sse2), "r" (fdct_r_row_sse2.fdct_r_row_sse2), "i" (SHIFT_FRW_ROW), "r" (out)
     );
 }
 

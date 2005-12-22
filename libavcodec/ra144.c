@@ -20,72 +20,72 @@
 #include "avcodec.h"
 #include "ra144.h"
 
-#define DATABLOCK1	20			/* size of 14.4 input block in bytes */
-#define DATACHUNK1	1440			/* size of 14.4 input chunk in bytes */
-#define AUDIOBLOCK	160			/* size of output block in 16-bit words (320 bytes) */
-#define AUDIOBUFFER	12288			/* size of output buffer in 16-bit words (24576 bytes) */
+#define DATABLOCK1      20      /* size of 14.4 input block in bytes */
+#define DATACHUNK1      1440    /* size of 14.4 input chunk in bytes */
+#define AUDIOBLOCK      160     /* size of output block in 16-bit words (320 bytes) */
+#define AUDIOBUFFER     12288   /* size of output buffer in 16-bit words (24576 bytes) */
 /* consts */
-#define NBLOCKS		4				/* number of segments within a block */
-#define BLOCKSIZE	40				/* (quarter) block size in 16-bit words (80 bytes) */
-#define HALFBLOCK	20				/* BLOCKSIZE/2 */
-#define BUFFERSIZE	146				/* for do_output */
+#define NBLOCKS         4       /* number of segments within a block */
+#define BLOCKSIZE       40      /* (quarter) block size in 16-bit words (80 bytes) */
+#define HALFBLOCK       20      /* BLOCKSIZE/2 */
+#define BUFFERSIZE      146     /* for do_output */
 
 
 /* internal globals */
 typedef struct {
-	unsigned int	 resetflag, val, oldval;
-	unsigned int	 unpacked[28];		/* buffer for unpacked input */
-	unsigned int	*iptr;				/* pointer to current input (from unpacked) */
-	unsigned int	 gval;
-	unsigned short	*gsp;
-	unsigned int	 gbuf1[8];
-	unsigned short	 gbuf2[120];
-	signed   short	 output_buffer[40];
-	unsigned int	*decptr;			/* decoder ptr */
-	signed   short	*decsp;
+        unsigned int     resetflag, val, oldval;
+        unsigned int     unpacked[28];          /* buffer for unpacked input */
+        unsigned int    *iptr;                  /* pointer to current input (from unpacked) */
+        unsigned int     gval;
+        unsigned short  *gsp;
+        unsigned int     gbuf1[8];
+        unsigned short   gbuf2[120];
+        signed   short   output_buffer[40];
+        unsigned int    *decptr;                /* decoder ptr */
+        signed   short  *decsp;
 
-	/* the swapped buffers */
-	unsigned int	 swapb1a[10];
-	unsigned int	 swapb2a[10];
-	unsigned int	 swapb1b[10];
-	unsigned int	 swapb2b[10];
-	unsigned int	*swapbuf1;
-	unsigned int	*swapbuf2;
-	unsigned int	*swapbuf1alt;
-	unsigned int	*swapbuf2alt;
+        /* the swapped buffers */
+        unsigned int     swapb1a[10];
+        unsigned int     swapb2a[10];
+        unsigned int     swapb1b[10];
+        unsigned int     swapb2b[10];
+        unsigned int    *swapbuf1;
+        unsigned int    *swapbuf2;
+        unsigned int    *swapbuf1alt;
+        unsigned int    *swapbuf2alt;
 
-	unsigned int buffer[5];
-	unsigned short int buffer_2[148];
-	unsigned short int buffer_a[40];
-	unsigned short int buffer_b[40];
-	unsigned short int buffer_c[40];
-	unsigned short int buffer_d[40];
+        unsigned int buffer[5];
+        unsigned short int buffer_2[148];
+        unsigned short int buffer_a[40];
+        unsigned short int buffer_b[40];
+        unsigned short int buffer_c[40];
+        unsigned short int buffer_d[40];
 
-	unsigned short int work[50];
-	unsigned short *sptr;
+        unsigned short int work[50];
+        unsigned short *sptr;
 
-	int buffer1[10];
-	int buffer2[10];
+        int buffer1[10];
+        int buffer2[10];
 
-	signed short wavtable1[2304];
-	unsigned short wavtable2[2304];
+        signed short wavtable1[2304];
+        unsigned short wavtable2[2304];
 } Real144_internal;
 
 static int ra144_decode_init(AVCodecContext * avctx)
 {
-	Real144_internal *glob=avctx->priv_data;
+        Real144_internal *glob=avctx->priv_data;
 
-	memset(glob,0,sizeof(Real144_internal));
-	glob->resetflag=1;
-	glob->swapbuf1=glob->swapb1a;
-	glob->swapbuf2=glob->swapb2a;
-	glob->swapbuf1alt=glob->swapb1b;
-	glob->swapbuf2alt=glob->swapb2b;
+        memset(glob,0,sizeof(Real144_internal));
+        glob->resetflag=1;
+        glob->swapbuf1=glob->swapb1a;
+        glob->swapbuf2=glob->swapb2a;
+        glob->swapbuf1alt=glob->swapb1b;
+        glob->swapbuf2alt=glob->swapb2b;
 
-	memcpy(glob->wavtable1,wavtable1,sizeof(wavtable1));
-	memcpy(glob->wavtable2,wavtable2,sizeof(wavtable2));
+        memcpy(glob->wavtable1,wavtable1,sizeof(wavtable1));
+        memcpy(glob->wavtable2,wavtable2,sizeof(wavtable2));
 
-	return 0;
+        return 0;
 }
 
 static void final(Real144_internal *glob, short *i1, short *i2, void *out, int *statbuf, int len);

@@ -192,7 +192,7 @@ static void dvb_encode_rle4(uint8_t **pq,
 
 #define SCALEBITS 10
 #define ONE_HALF  (1 << (SCALEBITS - 1))
-#define FIX(x)	  ((int) ((x) * (1<<SCALEBITS) + 0.5))
+#define FIX(x)    ((int) ((x) * (1<<SCALEBITS) + 0.5))
 
 #define RGB_TO_Y_CCIR(r, g, b) \
 ((FIX(0.29900*219.0/255.0) * (r) + FIX(0.58700*219.0/255.0) * (g) + \

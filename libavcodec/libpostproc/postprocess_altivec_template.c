@@ -26,35 +26,35 @@
 #endif
 
 #define ALTIVEC_TRANSPOSE_8x8_SHORT(src_a,src_b,src_c,src_d,src_e,src_f,src_g,src_h) \
-  do {									\
-    __typeof__(src_a) tempA1, tempB1, tempC1, tempD1;			\
-    __typeof__(src_a) tempE1, tempF1, tempG1, tempH1;			\
-    __typeof__(src_a) tempA2, tempB2, tempC2, tempD2;			\
-    __typeof__(src_a) tempE2, tempF2, tempG2, tempH2;			\
-    tempA1 = vec_mergeh (src_a, src_e);					\
-    tempB1 = vec_mergel (src_a, src_e);					\
-    tempC1 = vec_mergeh (src_b, src_f);					\
-    tempD1 = vec_mergel (src_b, src_f);					\
-    tempE1 = vec_mergeh (src_c, src_g);					\
-    tempF1 = vec_mergel (src_c, src_g);					\
-    tempG1 = vec_mergeh (src_d, src_h);					\
-    tempH1 = vec_mergel (src_d, src_h);					\
-    tempA2 = vec_mergeh (tempA1, tempE1);				\
-    tempB2 = vec_mergel (tempA1, tempE1);				\
-    tempC2 = vec_mergeh (tempB1, tempF1);				\
-    tempD2 = vec_mergel (tempB1, tempF1);				\
-    tempE2 = vec_mergeh (tempC1, tempG1);				\
-    tempF2 = vec_mergel (tempC1, tempG1);				\
-    tempG2 = vec_mergeh (tempD1, tempH1);				\
-    tempH2 = vec_mergel (tempD1, tempH1);				\
-    src_a = vec_mergeh (tempA2, tempE2);				\
-    src_b = vec_mergel (tempA2, tempE2);				\
-    src_c = vec_mergeh (tempB2, tempF2);				\
-    src_d = vec_mergel (tempB2, tempF2);				\
-    src_e = vec_mergeh (tempC2, tempG2);				\
-    src_f = vec_mergel (tempC2, tempG2);				\
-    src_g = vec_mergeh (tempD2, tempH2);				\
-    src_h = vec_mergel (tempD2, tempH2);				\
+  do {                                                                  \
+    __typeof__(src_a) tempA1, tempB1, tempC1, tempD1;                   \
+    __typeof__(src_a) tempE1, tempF1, tempG1, tempH1;                   \
+    __typeof__(src_a) tempA2, tempB2, tempC2, tempD2;                   \
+    __typeof__(src_a) tempE2, tempF2, tempG2, tempH2;                   \
+    tempA1 = vec_mergeh (src_a, src_e);                                 \
+    tempB1 = vec_mergel (src_a, src_e);                                 \
+    tempC1 = vec_mergeh (src_b, src_f);                                 \
+    tempD1 = vec_mergel (src_b, src_f);                                 \
+    tempE1 = vec_mergeh (src_c, src_g);                                 \
+    tempF1 = vec_mergel (src_c, src_g);                                 \
+    tempG1 = vec_mergeh (src_d, src_h);                                 \
+    tempH1 = vec_mergel (src_d, src_h);                                 \
+    tempA2 = vec_mergeh (tempA1, tempE1);                               \
+    tempB2 = vec_mergel (tempA1, tempE1);                               \
+    tempC2 = vec_mergeh (tempB1, tempF1);                               \
+    tempD2 = vec_mergel (tempB1, tempF1);                               \
+    tempE2 = vec_mergeh (tempC1, tempG1);                               \
+    tempF2 = vec_mergel (tempC1, tempG1);                               \
+    tempG2 = vec_mergeh (tempD1, tempH1);                               \
+    tempH2 = vec_mergel (tempD1, tempH1);                               \
+    src_a = vec_mergeh (tempA2, tempE2);                                \
+    src_b = vec_mergel (tempA2, tempE2);                                \
+    src_c = vec_mergeh (tempB2, tempF2);                                \
+    src_d = vec_mergel (tempB2, tempF2);                                \
+    src_e = vec_mergeh (tempC2, tempG2);                                \
+    src_f = vec_mergel (tempC2, tempG2);                                \
+    src_g = vec_mergeh (tempD2, tempH2);                                \
+    src_h = vec_mergel (tempD2, tempH2);                                \
   } while (0)
 
 
@@ -94,25 +94,25 @@ static inline int vertClassify_altivec(uint8_t src[], int stride, PPContext *c) 
 
   vector signed short v_srcAss0, v_srcAss1, v_srcAss2, v_srcAss3, v_srcAss4, v_srcAss5, v_srcAss6, v_srcAss7;
 
-#define LOAD_LINE(i)							\
-  register int j##i = i * stride;					\
-  vector unsigned char perm##i = vec_lvsl(j##i, src2);			\
-  const vector unsigned char v_srcA1##i = vec_ld(j##i, src2);		\
-  vector unsigned char v_srcA2##i;					\
-  if (two_vectors)							\
-    v_srcA2##i = vec_ld(j##i + 16, src2);				\
-  const vector unsigned char v_srcA##i =				\
-    vec_perm(v_srcA1##i, v_srcA2##i, perm##i);				\
+#define LOAD_LINE(i)                                                    \
+  register int j##i = i * stride;                                       \
+  vector unsigned char perm##i = vec_lvsl(j##i, src2);                  \
+  const vector unsigned char v_srcA1##i = vec_ld(j##i, src2);           \
+  vector unsigned char v_srcA2##i;                                      \
+  if (two_vectors)                                                      \
+    v_srcA2##i = vec_ld(j##i + 16, src2);                               \
+  const vector unsigned char v_srcA##i =                                \
+    vec_perm(v_srcA1##i, v_srcA2##i, perm##i);                          \
   v_srcAss##i =                                                         \
-    (vector signed short)vec_mergeh((vector signed char)zero,		\
-				    (vector signed char)v_srcA##i)
+    (vector signed short)vec_mergeh((vector signed char)zero,           \
+                                    (vector signed char)v_srcA##i)
 
 #define LOAD_LINE_ALIGNED(i)                                            \
   register int j##i = i * stride;                                       \
   const vector unsigned char v_srcA##i = vec_ld(j##i, src2);            \
   v_srcAss##i =                                                         \
-    (vector signed short)vec_mergeh((vector signed char)zero,		\
-				    (vector signed char)v_srcA##i)
+    (vector signed short)vec_mergeh((vector signed char)zero,           \
+                                    (vector signed char)v_srcA##i)
 
     // special casing the aligned case is worthwhile, as all call from
     // the (transposed) horizontable deblocks will be aligned, i naddition
@@ -139,15 +139,15 @@ static inline int vertClassify_altivec(uint8_t src[], int stride, PPContext *c) 
 #undef LOAD_LINE
 #undef LOAD_LINE_ALIGNED
 
-#define ITER(i, j)							\
-  const vector signed short v_diff##i =					\
-    vec_sub(v_srcAss##i, v_srcAss##j);					\
-  const vector signed short v_sum##i =					\
-    vec_add(v_diff##i, v_dcOffset);					\
-  const vector signed short v_comp##i =					\
-    (vector signed short)vec_cmplt((vector unsigned short)v_sum##i,	\
-				   v_dcThreshold);			\
-  const vector signed short v_part##i = vec_and(mask, v_comp##i);	\
+#define ITER(i, j)                                                      \
+  const vector signed short v_diff##i =                                 \
+    vec_sub(v_srcAss##i, v_srcAss##j);                                  \
+  const vector signed short v_sum##i =                                  \
+    vec_add(v_diff##i, v_dcOffset);                                     \
+  const vector signed short v_comp##i =                                 \
+    (vector signed short)vec_cmplt((vector unsigned short)v_sum##i,     \
+                                   v_dcThreshold);                      \
+  const vector signed short v_part##i = vec_and(mask, v_comp##i);       \
   v_numEq = vec_sum4s(v_part##i, v_numEq);
 
   ITER(0, 1);
@@ -167,13 +167,13 @@ static inline int vertClassify_altivec(uint8_t src[], int stride, PPContext *c) 
   if (numEq > c->ppMode.flatnessThreshold)
     {
       const vector unsigned char mmoP1 = (const vector unsigned char)
-	AVV(0x1f, 0x1f, 0x1f, 0x1f, 0x1f, 0x1f, 0x1f, 0x1f,
-	    0x00, 0x01, 0x12, 0x13, 0x08, 0x09, 0x1A, 0x1B);
+        AVV(0x1f, 0x1f, 0x1f, 0x1f, 0x1f, 0x1f, 0x1f, 0x1f,
+            0x00, 0x01, 0x12, 0x13, 0x08, 0x09, 0x1A, 0x1B);
       const vector unsigned char mmoP2 = (const vector unsigned char)
-	AVV(0x04, 0x05, 0x16, 0x17, 0x0C, 0x0D, 0x1E, 0x1F,
-	    0x1f, 0x1f, 0x1f, 0x1f, 0x1f, 0x1f, 0x1f, 0x1f);
+        AVV(0x04, 0x05, 0x16, 0x17, 0x0C, 0x0D, 0x1E, 0x1F,
+            0x1f, 0x1f, 0x1f, 0x1f, 0x1f, 0x1f, 0x1f, 0x1f);
       const vector unsigned char mmoP = (const vector unsigned char)
-	vec_lvsl(8, (unsigned char*)0);
+        vec_lvsl(8, (unsigned char*)0);
 
       vector signed short mmoL1 = vec_perm(v_srcAss0, v_srcAss2, mmoP1);
       vector signed short mmoL2 = vec_perm(v_srcAss4, v_srcAss6, mmoP2);
@@ -185,9 +185,9 @@ static inline int vertClassify_altivec(uint8_t src[], int stride, PPContext *c) 
       vector unsigned short mmoSum = (vector unsigned short)vec_add(mmoDiff, v2QP);
 
       if (vec_any_gt(mmoSum, v4QP))
-	return 0;
+        return 0;
       else
-	return 1;
+        return 1;
     }
   else return 2;
 }
@@ -218,21 +218,21 @@ static inline void doVertLowPass_altivec(uint8_t *src, int stride, PPContext *c)
   vector unsigned char vbT0, vbT1, vbT2, vbT3, vbT4, vbT5, vbT6, vbT7, vbT8, vbT9;
 
 #define LOAD_LINE(i)                                                    \
-  const vector unsigned char perml##i =					\
-    vec_lvsl(i * stride, src2);						\
+  const vector unsigned char perml##i =                                 \
+    vec_lvsl(i * stride, src2);                                         \
   vbA##i = vec_ld(i * stride, src2);                                    \
   vbB##i = vec_ld(i * stride + 16, src2);                               \
   vbT##i = vec_perm(vbA##i, vbB##i, perml##i);                          \
   vb##i =                                                               \
-    (vector signed short)vec_mergeh((vector unsigned char)zero,		\
-				    (vector unsigned char)vbT##i)
+    (vector signed short)vec_mergeh((vector unsigned char)zero,         \
+                                    (vector unsigned char)vbT##i)
 
 #define LOAD_LINE_ALIGNED(i)                                            \
   register int j##i = i * stride;                                       \
   vbT##i = vec_ld(j##i, src2);                                          \
   vb##i =                                                               \
-    (vector signed short)vec_mergeh((vector signed char)zero,		\
-				    (vector signed char)vbT##i)
+    (vector signed short)vec_mergeh((vector signed char)zero,           \
+                                    (vector signed char)vbT##i)
 
     // special casing the aligned case is worthwhile, as all call from
     // the (transposed) horizontable deblocks will be aligned, in addition
@@ -308,11 +308,11 @@ static inline void doVertLowPass_altivec(uint8_t *src, int stride, PPContext *c)
   const vector signed short temp91 = vec_sub(v_sumsB8, vb5);
   const vector signed short v_sumsB9 = vec_add(temp91, v_last);
 
-#define COMPUTE_VR(i, j, k)						\
-  const vector signed short temps1##i =					\
-    vec_add(v_sumsB##i, v_sumsB##k);					\
-  const vector signed short temps2##i =					\
-    vec_mladd(vb##j, (vector signed short)v_2, temps1##i);		\
+#define COMPUTE_VR(i, j, k)                                             \
+  const vector signed short temps1##i =                                 \
+    vec_add(v_sumsB##i, v_sumsB##k);                                    \
+  const vector signed short temps2##i =                                 \
+    vec_mladd(vb##j, (vector signed short)v_2, temps1##i);              \
   const vector signed short  vr##j = vec_sra(temps2##i, v_4)
 
   COMPUTE_VR(0, 1, 2);
@@ -326,31 +326,31 @@ static inline void doVertLowPass_altivec(uint8_t *src, int stride, PPContext *c)
 
   const vector signed char neg1 = vec_splat_s8(-1);
   const vector unsigned char permHH = (const vector unsigned char)AVV(0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
-								      0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F);
+                                                                      0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F);
 
-#define PACK_AND_STORE(i)					\
-  const vector unsigned char perms##i =				\
-    vec_lvsr(i * stride, src2);					\
-  const vector unsigned char vf##i =				\
-    vec_packsu(vr##i, (vector signed short)zero);		\
-  const vector unsigned char vg##i =				\
-    vec_perm(vf##i, vbT##i, permHH);				\
-  const vector unsigned char mask##i =				\
-    vec_perm((vector unsigned char)zero, (vector unsigned char)neg1, perms##i);	\
-  const vector unsigned char vg2##i =				\
-    vec_perm(vg##i, vg##i, perms##i);				\
-  const vector unsigned char svA##i =				\
-    vec_sel(vbA##i, vg2##i, mask##i);				\
-  const vector unsigned char svB##i =				\
-    vec_sel(vg2##i, vbB##i, mask##i);				\
-  vec_st(svA##i, i * stride, src2);				\
+#define PACK_AND_STORE(i)                                       \
+  const vector unsigned char perms##i =                         \
+    vec_lvsr(i * stride, src2);                                 \
+  const vector unsigned char vf##i =                            \
+    vec_packsu(vr##i, (vector signed short)zero);               \
+  const vector unsigned char vg##i =                            \
+    vec_perm(vf##i, vbT##i, permHH);                            \
+  const vector unsigned char mask##i =                          \
+    vec_perm((vector unsigned char)zero, (vector unsigned char)neg1, perms##i); \
+  const vector unsigned char vg2##i =                           \
+    vec_perm(vg##i, vg##i, perms##i);                           \
+  const vector unsigned char svA##i =                           \
+    vec_sel(vbA##i, vg2##i, mask##i);                           \
+  const vector unsigned char svB##i =                           \
+    vec_sel(vg2##i, vbB##i, mask##i);                           \
+  vec_st(svA##i, i * stride, src2);                             \
   vec_st(svB##i, i * stride + 16, src2)
 
-#define PACK_AND_STORE_ALIGNED(i)				\
-  const vector unsigned char vf##i =				\
-    vec_packsu(vr##i, (vector signed short)zero);		\
-  const vector unsigned char vg##i =				\
-    vec_perm(vf##i, vbT##i, permHH);				\
+#define PACK_AND_STORE_ALIGNED(i)                               \
+  const vector unsigned char vf##i =                            \
+    vec_packsu(vr##i, (vector signed short)zero);               \
+  const vector unsigned char vg##i =                            \
+    vec_perm(vf##i, vbT##i, permHH);                            \
   vec_st(vg##i, i * stride, src2)
 
   // special casing the aligned case is worthwhile, as all call from
@@ -398,17 +398,17 @@ static inline void doVertDefFilter_altivec(uint8_t src[], int stride, PPContext 
   vqp = vec_splat(vqp, 0);
 
 #define LOAD_LINE(i)                                                    \
-  const vector unsigned char perm##i =					\
-    vec_lvsl(i * stride, src2);						\
-  const vector unsigned char vbA##i =					\
-    vec_ld(i * stride, src2);						\
-  const vector unsigned char vbB##i =					\
-    vec_ld(i * stride + 16, src2);					\
-  const vector unsigned char vbT##i =					\
-    vec_perm(vbA##i, vbB##i, perm##i);					\
-  const vector signed short vb##i =					\
-    (vector signed short)vec_mergeh((vector unsigned char)zero,		\
-				    (vector unsigned char)vbT##i)
+  const vector unsigned char perm##i =                                  \
+    vec_lvsl(i * stride, src2);                                         \
+  const vector unsigned char vbA##i =                                   \
+    vec_ld(i * stride, src2);                                           \
+  const vector unsigned char vbB##i =                                   \
+    vec_ld(i * stride + 16, src2);                                      \
+  const vector unsigned char vbT##i =                                   \
+    vec_perm(vbA##i, vbB##i, perm##i);                                  \
+  const vector signed short vb##i =                                     \
+    (vector signed short)vec_mergeh((vector unsigned char)zero,         \
+                                    (vector unsigned char)vbT##i)
 
   src2 += stride*3;
 
@@ -426,7 +426,7 @@ static inline void doVertDefFilter_altivec(uint8_t src[], int stride, PPContext 
   const vector signed short v_2 = vec_splat_s16(2);
   const vector signed short v_5 = vec_splat_s16(5);
   const vector signed short v_32 = vec_sl(v_1,
-					  (vector unsigned short)v_5);
+                                          (vector unsigned short)v_5);
   /* middle energy */
   const vector signed short l3minusl6 = vec_sub(vb3, vb6);
   const vector signed short l5minusl4 = vec_sub(vb5, vb4);
@@ -483,22 +483,22 @@ static inline void doVertDefFilter_altivec(uint8_t src[], int stride, PPContext 
 
   const vector signed char neg1 = vec_splat_s8(-1);
   const vector unsigned char permHH = (const vector unsigned char)AVV(0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
-								      0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F);
+                                                                      0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F);
 
-#define STORE(i)						\
-  const vector unsigned char perms##i =				\
-    vec_lvsr(i * stride, src2);					\
-  const vector unsigned char vg##i =				\
-    vec_perm(st##i, vbT##i, permHH);				\
-  const vector unsigned char mask##i =				\
-    vec_perm((vector unsigned char)zero, (vector unsigned char)neg1, perms##i);	\
-  const vector unsigned char vg2##i =				\
-    vec_perm(vg##i, vg##i, perms##i);				\
-  const vector unsigned char svA##i =				\
-    vec_sel(vbA##i, vg2##i, mask##i);				\
-  const vector unsigned char svB##i =				\
-    vec_sel(vg2##i, vbB##i, mask##i);				\
-  vec_st(svA##i, i * stride, src2);				\
+#define STORE(i)                                                \
+  const vector unsigned char perms##i =                         \
+    vec_lvsr(i * stride, src2);                                 \
+  const vector unsigned char vg##i =                            \
+    vec_perm(st##i, vbT##i, permHH);                            \
+  const vector unsigned char mask##i =                          \
+    vec_perm((vector unsigned char)zero, (vector unsigned char)neg1, perms##i); \
+  const vector unsigned char vg2##i =                           \
+    vec_perm(vg##i, vg##i, perms##i);                           \
+  const vector unsigned char svA##i =                           \
+    vec_sel(vbA##i, vg2##i, mask##i);                           \
+  const vector unsigned char svB##i =                           \
+    vec_sel(vg2##i, vbB##i, mask##i);                           \
+  vec_st(svA##i, i * stride, src2);                             \
   vec_st(svB##i, i * stride + 16, src2)
 
   STORE(4);
@@ -522,11 +522,11 @@ static inline void dering_altivec(uint8_t src[], int stride, PPContext *c) {
   dt[0] = deringThreshold;
   v_dt = vec_splat(vec_ld(0, dt), 0);
 
-#define LOAD_LINE(i)							\
-  const vector unsigned char perm##i =					\
-    vec_lvsl(i * stride, srcCopy);					\
-  vector unsigned char sA##i = vec_ld(i * stride, srcCopy);		\
-  vector unsigned char sB##i = vec_ld(i * stride + 16, srcCopy);	\
+#define LOAD_LINE(i)                                                    \
+  const vector unsigned char perm##i =                                  \
+    vec_lvsl(i * stride, srcCopy);                                      \
+  vector unsigned char sA##i = vec_ld(i * stride, srcCopy);             \
+  vector unsigned char sB##i = vec_ld(i * stride + 16, srcCopy);        \
   vector unsigned char src##i = vec_perm(sA##i, sB##i, perm##i)
 
   LOAD_LINE(0);
@@ -545,13 +545,13 @@ static inline void dering_altivec(uint8_t src[], int stride, PPContext *c) {
   {
     const vector unsigned char trunc_perm = (vector unsigned char)
       AVV(0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
-	  0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18);
+          0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18);
     const vector unsigned char trunc_src12 = vec_perm(src1, src2, trunc_perm);
     const vector unsigned char trunc_src34 = vec_perm(src3, src4, trunc_perm);
     const vector unsigned char trunc_src56 = vec_perm(src5, src6, trunc_perm);
     const vector unsigned char trunc_src78 = vec_perm(src7, src8, trunc_perm);
 
-#define EXTRACT(op) do {						\
+#define EXTRACT(op) do {                                                \
       const vector unsigned char s##op##_1 = vec_##op(trunc_src12, trunc_src34); \
       const vector unsigned char s##op##_2 = vec_##op(trunc_src56, trunc_src78); \
       const vector unsigned char s##op##_6 = vec_##op(s##op##_1, s##op##_2); \
@@ -584,29 +584,29 @@ static inline void dering_altivec(uint8_t src[], int stride, PPContext *c) {
   {
     const vector unsigned short mask1 = (vector unsigned short)
       AVV(0x0001, 0x0002, 0x0004, 0x0008,
-	  0x0010, 0x0020, 0x0040, 0x0080);
+          0x0010, 0x0020, 0x0040, 0x0080);
     const vector unsigned short mask2 = (vector unsigned short)
       AVV(0x0100, 0x0200, 0x0000, 0x0000,
-	  0x0000, 0x0000, 0x0000, 0x0000);
+          0x0000, 0x0000, 0x0000, 0x0000);
 
     const vector unsigned int vuint32_16 = vec_sl(vec_splat_u32(1), vec_splat_u32(4));
     const vector unsigned int vuint32_1 = vec_splat_u32(1);
 
-#define COMPARE(i)							\
-    vector signed int sum##i;						\
-    do {								\
-      const vector unsigned char cmp##i =				\
-	(vector unsigned char)vec_cmpgt(src##i, v_avg);			\
-      const vector unsigned short cmpHi##i =				\
-	(vector unsigned short)vec_mergeh(cmp##i, cmp##i);		\
-      const vector unsigned short cmpLi##i =				\
-	(vector unsigned short)vec_mergel(cmp##i, cmp##i);		\
-      const vector signed short cmpHf##i =				\
-	(vector signed short)vec_and(cmpHi##i, mask1);			\
-      const vector signed short cmpLf##i =				\
-	(vector signed short)vec_and(cmpLi##i, mask2);			\
-      const vector signed int sump##i = vec_sum4s(cmpHf##i, zero);	\
-      const vector signed int sumq##i = vec_sum4s(cmpLf##i, sump##i);	\
+#define COMPARE(i)                                                      \
+    vector signed int sum##i;                                           \
+    do {                                                                \
+      const vector unsigned char cmp##i =                               \
+        (vector unsigned char)vec_cmpgt(src##i, v_avg);                 \
+      const vector unsigned short cmpHi##i =                            \
+        (vector unsigned short)vec_mergeh(cmp##i, cmp##i);              \
+      const vector unsigned short cmpLi##i =                            \
+        (vector unsigned short)vec_mergel(cmp##i, cmp##i);              \
+      const vector signed short cmpHf##i =                              \
+        (vector signed short)vec_and(cmpHi##i, mask1);                  \
+      const vector signed short cmpLf##i =                              \
+        (vector signed short)vec_and(cmpLi##i, mask2);                  \
+      const vector signed int sump##i = vec_sum4s(cmpHf##i, zero);      \
+      const vector signed int sumq##i = vec_sum4s(cmpLf##i, sump##i);   \
       sum##i  = vec_sums(sumq##i, zero); } while (0)
 
     COMPARE(0);
@@ -643,11 +643,11 @@ static inline void dering_altivec(uint8_t src[], int stride, PPContext *c) {
       const vector signed int t2B = vec_or(sumB, tB);
       const vector signed int t2C = vec_or(sumC, tC);
       const vector signed int t3A = vec_and(vec_sra(t2A, vuint32_1),
-					    vec_sl(t2A, vuint32_1));
+                                            vec_sl(t2A, vuint32_1));
       const vector signed int t3B = vec_and(vec_sra(t2B, vuint32_1),
-					    vec_sl(t2B, vuint32_1));
+                                            vec_sl(t2B, vuint32_1));
       const vector signed int t3C = vec_and(vec_sra(t2C, vuint32_1),
-					    vec_sl(t2C, vuint32_1));
+                                            vec_sl(t2C, vuint32_1));
       const vector signed int yA = vec_and(t2A, t3A);
       const vector signed int yB = vec_and(t2B, t3B);
       const vector signed int yC = vec_and(t2C, t3C);
@@ -659,15 +659,15 @@ static inline void dering_altivec(uint8_t src[], int stride, PPContext *c) {
       const vector signed int sumBd4 = vec_perm(yB, yC, strangeperm1);
       const vector signed int sumBd8 = vec_perm(yB, yC, strangeperm2);
       const vector signed int sumAp = vec_and(yA,
-					      vec_and(sumAd4,sumAd8));
+                                              vec_and(sumAd4,sumAd8));
       const vector signed int sumBp = vec_and(yB,
-					      vec_and(sumBd4,sumBd8));
+                                              vec_and(sumBd4,sumBd8));
       sumA2 = vec_or(sumAp,
-		     vec_sra(sumAp,
-			     vuint32_16));
+                     vec_sra(sumAp,
+                             vuint32_16));
       sumB2  = vec_or(sumBp,
-		      vec_sra(sumBp,
-			      vuint32_16));
+                      vec_sra(sumBp,
+                              vuint32_16));
     }
     vec_st(sumA2, 0, S);
     vec_st(sumB2, 16, S);
@@ -686,84 +686,84 @@ static inline void dering_altivec(uint8_t src[], int stride, PPContext *c) {
 
   const vector unsigned char permA1 = (vector unsigned char)
     AVV(0x00, 0x01, 0x02, 0x10, 0x11, 0x12, 0x1F, 0x1F,
-	0x1F, 0x1F, 0x1F, 0x1F, 0x1F, 0x1F, 0x1F, 0x1F);
+        0x1F, 0x1F, 0x1F, 0x1F, 0x1F, 0x1F, 0x1F, 0x1F);
   const vector unsigned char permA2 = (vector unsigned char)
     AVV(0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x10, 0x11,
-	0x12, 0x1F, 0x1F, 0x1F, 0x1F, 0x1F, 0x1F, 0x1F);
+        0x12, 0x1F, 0x1F, 0x1F, 0x1F, 0x1F, 0x1F, 0x1F);
   const vector unsigned char permA1inc = (vector unsigned char)
     AVV(0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x00, 0x00,
-	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
   const vector unsigned char permA2inc = (vector unsigned char)
     AVV(0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x01,
-	0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
+        0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
   const vector unsigned char magic = (vector unsigned char)
     AVV(0x01, 0x02, 0x01, 0x02, 0x04, 0x02, 0x01, 0x02,
-	0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
+        0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
   const vector unsigned char extractPerm = (vector unsigned char)
     AVV(0x10, 0x10, 0x10, 0x01, 0x10, 0x10, 0x10, 0x01,
-	0x10, 0x10, 0x10, 0x01, 0x10, 0x10, 0x10, 0x01);
+        0x10, 0x10, 0x10, 0x01, 0x10, 0x10, 0x10, 0x01);
   const vector unsigned char extractPermInc = (vector unsigned char)
     AVV(0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
-	0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01);
+        0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01);
   const vector unsigned char identity = vec_lvsl(0,(unsigned char *)0);
   const vector unsigned char tenRight = (vector unsigned char)
     AVV(0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
   const vector unsigned char eightLeft = (vector unsigned char)
     AVV(0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x08);
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x08);
 
 
-#define F_INIT(i)					\
-  vector unsigned char tenRightM##i = tenRight;		\
-  vector unsigned char permA1M##i = permA1;		\
-  vector unsigned char permA2M##i = permA2;		\
+#define F_INIT(i)                                       \
+  vector unsigned char tenRightM##i = tenRight;         \
+  vector unsigned char permA1M##i = permA1;             \
+  vector unsigned char permA2M##i = permA2;             \
   vector unsigned char extractPermM##i = extractPerm
 
-#define F2(i, j, k, l)							\
-  if (S[i] & (1 << (l+1))) {						\
-    const vector unsigned char a_##j##_A##l =				\
-      vec_perm(src##i, src##j, permA1M##i);				\
-    const vector unsigned char a_##j##_B##l =				\
-      vec_perm(a_##j##_A##l, src##k, permA2M##i);			\
-    const vector signed int a_##j##_sump##l =				\
-      (vector signed int)vec_msum(a_##j##_B##l, magic,			\
-				  (vector unsigned int)zero);		\
-    vector signed int F_##j##_##l =					\
-      vec_sr(vec_sums(a_##j##_sump##l, vsint32_8), vuint32_4);		\
-    F_##j##_##l = vec_splat(F_##j##_##l, 3);				\
-    const vector signed int p_##j##_##l =				\
-      (vector signed int)vec_perm(src##j,				\
-				  (vector unsigned char)zero,		\
-				  extractPermM##i);			\
-    const vector signed int sum_##j##_##l = vec_add( p_##j##_##l, vQP2); \
-    const vector signed int diff_##j##_##l = vec_sub( p_##j##_##l, vQP2); \
-    vector signed int newpm_##j##_##l;					\
-    if (vec_all_lt(sum_##j##_##l, F_##j##_##l))				\
-      newpm_##j##_##l = sum_##j##_##l;					\
-    else if (vec_all_gt(diff_##j##_##l, F_##j##_##l))			\
-      newpm_##j##_##l = diff_##j##_##l;					\
-    else newpm_##j##_##l = F_##j##_##l;					\
-    const vector unsigned char newpm2_##j##_##l =			\
-      vec_splat((vector unsigned char)newpm_##j##_##l, 15);		\
-    const vector unsigned char mask##j##l = vec_add(identity,		\
-						    tenRightM##i);	\
-    src##j = vec_perm(src##j, newpm2_##j##_##l, mask##j##l);		\
-  }									\
-  permA1M##i = vec_add(permA1M##i, permA1inc);				\
-  permA2M##i = vec_add(permA2M##i, permA2inc);				\
-  tenRightM##i = vec_sro(tenRightM##i, eightLeft);			\
+#define F2(i, j, k, l)                                                  \
+  if (S[i] & (1 << (l+1))) {                                            \
+    const vector unsigned char a_##j##_A##l =                           \
+      vec_perm(src##i, src##j, permA1M##i);                             \
+    const vector unsigned char a_##j##_B##l =                           \
+      vec_perm(a_##j##_A##l, src##k, permA2M##i);                       \
+    const vector signed int a_##j##_sump##l =                           \
+      (vector signed int)vec_msum(a_##j##_B##l, magic,                  \
+                                  (vector unsigned int)zero);           \
+    vector signed int F_##j##_##l =                                     \
+      vec_sr(vec_sums(a_##j##_sump##l, vsint32_8), vuint32_4);          \
+    F_##j##_##l = vec_splat(F_##j##_##l, 3);                            \
+    const vector signed int p_##j##_##l =                               \
+      (vector signed int)vec_perm(src##j,                               \
+                                  (vector unsigned char)zero,           \
+                                  extractPermM##i);                     \
+    const vector signed int sum_##j##_##l = vec_add( p_##j##_##l, vQP2);\
+    const vector signed int diff_##j##_##l = vec_sub( p_##j##_##l, vQP2);\
+    vector signed int newpm_##j##_##l;                                  \
+    if (vec_all_lt(sum_##j##_##l, F_##j##_##l))                         \
+      newpm_##j##_##l = sum_##j##_##l;                                  \
+    else if (vec_all_gt(diff_##j##_##l, F_##j##_##l))                   \
+      newpm_##j##_##l = diff_##j##_##l;                                 \
+    else newpm_##j##_##l = F_##j##_##l;                                 \
+    const vector unsigned char newpm2_##j##_##l =                       \
+      vec_splat((vector unsigned char)newpm_##j##_##l, 15);             \
+    const vector unsigned char mask##j##l = vec_add(identity,           \
+                                                    tenRightM##i);      \
+    src##j = vec_perm(src##j, newpm2_##j##_##l, mask##j##l);            \
+  }                                                                     \
+  permA1M##i = vec_add(permA1M##i, permA1inc);                          \
+  permA2M##i = vec_add(permA2M##i, permA2inc);                          \
+  tenRightM##i = vec_sro(tenRightM##i, eightLeft);                      \
   extractPermM##i = vec_add(extractPermM##i, extractPermInc)
 
-#define ITER(i, j, k)				\
-  F_INIT(i);					\
-  F2(i, j, k, 0);				\
-  F2(i, j, k, 1);				\
-  F2(i, j, k, 2);				\
-  F2(i, j, k, 3);				\
-  F2(i, j, k, 4);				\
-  F2(i, j, k, 5);				\
-  F2(i, j, k, 6);				\
+#define ITER(i, j, k)                           \
+  F_INIT(i);                                    \
+  F2(i, j, k, 0);                               \
+  F2(i, j, k, 1);                               \
+  F2(i, j, k, 2);                               \
+  F2(i, j, k, 3);                               \
+  F2(i, j, k, 4);                               \
+  F2(i, j, k, 5);                               \
+  F2(i, j, k, 6);                               \
   F2(i, j, k, 7)
 
   ITER(0, 1, 2);
@@ -777,16 +777,16 @@ static inline void dering_altivec(uint8_t src[], int stride, PPContext *c) {
 
   const vector signed char neg1 = vec_splat_s8(-1);
 
-#define STORE_LINE(i)					\
-  const vector unsigned char permST##i =		\
-    vec_lvsr(i * stride, srcCopy);			\
-  const vector unsigned char maskST##i =		\
-    vec_perm((vector unsigned char)zero,		\
-	     (vector unsigned char)neg1, permST##i);	\
-  src##i = vec_perm(src##i ,src##i, permST##i);		\
-  sA##i= vec_sel(sA##i, src##i, maskST##i);		\
-  sB##i= vec_sel(src##i, sB##i, maskST##i);		\
-  vec_st(sA##i, i * stride, srcCopy);			\
+#define STORE_LINE(i)                                   \
+  const vector unsigned char permST##i =                \
+    vec_lvsr(i * stride, srcCopy);                      \
+  const vector unsigned char maskST##i =                \
+    vec_perm((vector unsigned char)zero,                \
+             (vector unsigned char)neg1, permST##i);    \
+  src##i = vec_perm(src##i ,src##i, permST##i);         \
+  sA##i= vec_sel(sA##i, src##i, maskST##i);             \
+  sB##i= vec_sel(src##i, sB##i, maskST##i);             \
+  vec_st(sA##i, i * stride, srcCopy);                   \
   vec_st(sB##i, i * stride + 16, srcCopy)
 
   STORE_LINE(1);
@@ -808,7 +808,7 @@ static inline void dering_altivec(uint8_t src[], int stride, PPContext *c) {
 #define do_a_deblock_altivec(a...) do_a_deblock_C(a)
 
 static inline void RENAME(tempNoiseReducer)(uint8_t *src, int stride,
-				    uint8_t *tempBlured, uint32_t *tempBluredPast, int *maxNoise)
+                                    uint8_t *tempBlured, uint32_t *tempBluredPast, int *maxNoise)
 {
   const vector signed int zero = vec_splat_s32(0);
   const vector signed short vsint16_1 = vec_splat_s16(1);
@@ -820,16 +820,16 @@ static inline void RENAME(tempNoiseReducer)(uint8_t *src, int stride,
   tempBluredPast[128]= maxNoise[1];
   tempBluredPast[129]= maxNoise[2];
 
-#define LOAD_LINE(src, i)						\
-  register int j##src##i = i * stride;					\
-  vector unsigned char perm##src##i = vec_lvsl(j##src##i, src);		\
-  const vector unsigned char v_##src##A1##i = vec_ld(j##src##i, src);	\
+#define LOAD_LINE(src, i)                                               \
+  register int j##src##i = i * stride;                                  \
+  vector unsigned char perm##src##i = vec_lvsl(j##src##i, src);         \
+  const vector unsigned char v_##src##A1##i = vec_ld(j##src##i, src);   \
   const vector unsigned char v_##src##A2##i = vec_ld(j##src##i + 16, src); \
-  const vector unsigned char v_##src##A##i =				\
-    vec_perm(v_##src##A1##i, v_##src##A2##i, perm##src##i);		\
-  vector signed short v_##src##Ass##i =					\
-    (vector signed short)vec_mergeh((vector signed char)zero,		\
-				    (vector signed char)v_##src##A##i)
+  const vector unsigned char v_##src##A##i =                            \
+    vec_perm(v_##src##A1##i, v_##src##A2##i, perm##src##i);             \
+  vector signed short v_##src##Ass##i =                                 \
+    (vector signed short)vec_mergeh((vector signed char)zero,           \
+                                    (vector signed char)v_##src##A##i)
 
   LOAD_LINE(src, 0);
   LOAD_LINE(src, 1);
@@ -850,10 +850,10 @@ static inline void RENAME(tempNoiseReducer)(uint8_t *src, int stride,
   LOAD_LINE(tempBlured, 7);
 #undef LOAD_LINE
 
-#define ACCUMULATE_DIFFS(i)					\
-  vector signed short v_d##i = vec_sub(v_tempBluredAss##i,	\
-				       v_srcAss##i);		\
-  v_dp = vec_msums(v_d##i, v_d##i, v_dp);			\
+#define ACCUMULATE_DIFFS(i)                                     \
+  vector signed short v_d##i = vec_sub(v_tempBluredAss##i,      \
+                                       v_srcAss##i);            \
+  v_dp = vec_msums(v_d##i, v_d##i, v_dp);                       \
   v_sysdp = vec_msums(v_d##i, vsint16_1, v_sysdp)
 
   ACCUMULATE_DIFFS(0);
@@ -916,12 +916,12 @@ static inline void RENAME(tempNoiseReducer)(uint8_t *src, int stride,
       const vector signed short vsint16_4 = vec_splat_s16(4);
       const vector unsigned short vuint16_3 = vec_splat_u16(3);
 
-#define OP(i)								\
-      const vector signed short v_temp##i =				\
-	vec_mladd(v_tempBluredAss##i,					\
-		  vsint16_7, v_srcAss##i);				\
-      const vector signed short v_temp2##i =				\
-	vec_add(v_temp##i, vsint16_4);					\
+#define OP(i)                                                   \
+      const vector signed short v_temp##i =                     \
+        vec_mladd(v_tempBluredAss##i,                           \
+                  vsint16_7, v_srcAss##i);                      \
+      const vector signed short v_temp2##i =                    \
+        vec_add(v_temp##i, vsint16_4);                          \
       v_tempBluredAss##i = vec_sr(v_temp2##i, vuint16_3)
 
       OP(0);
@@ -937,12 +937,12 @@ static inline void RENAME(tempNoiseReducer)(uint8_t *src, int stride,
       const vector signed short vsint16_3 = vec_splat_s16(3);
       const vector signed short vsint16_2 = vec_splat_s16(2);
 
-#define OP(i)								\
-      const vector signed short v_temp##i =				\
-	vec_mladd(v_tempBluredAss##i,					\
-		  vsint16_3, v_srcAss##i);				\
-      const vector signed short v_temp2##i =				\
-	vec_add(v_temp##i, vsint16_2);					\
+#define OP(i)                                                   \
+      const vector signed short v_temp##i =                     \
+        vec_mladd(v_tempBluredAss##i,                           \
+                  vsint16_3, v_srcAss##i);                      \
+      const vector signed short v_temp2##i =                    \
+        vec_add(v_temp##i, vsint16_2);                          \
       v_tempBluredAss##i = vec_sr(v_temp2##i, (vector unsigned short)vsint16_2)
 
       OP(0);
@@ -959,24 +959,24 @@ static inline void RENAME(tempNoiseReducer)(uint8_t *src, int stride,
 
   const vector signed char neg1 = vec_splat_s8(-1);
   const vector unsigned char permHH = (const vector unsigned char)AVV(0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
-								      0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F);
+                                                                      0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F);
 
-#define PACK_AND_STORE(src, i)						\
-  const vector unsigned char perms##src##i =				\
-    vec_lvsr(i * stride, src);						\
-  const vector unsigned char vf##src##i =				\
-    vec_packsu(v_tempBluredAss##i, (vector signed short)zero);		\
-  const vector unsigned char vg##src##i =				\
-    vec_perm(vf##src##i, v_##src##A##i, permHH);			\
-  const vector unsigned char mask##src##i =				\
+#define PACK_AND_STORE(src, i)                                  \
+  const vector unsigned char perms##src##i =                    \
+    vec_lvsr(i * stride, src);                                  \
+  const vector unsigned char vf##src##i =                       \
+    vec_packsu(v_tempBluredAss##i, (vector signed short)zero);  \
+  const vector unsigned char vg##src##i =                       \
+    vec_perm(vf##src##i, v_##src##A##i, permHH);                \
+  const vector unsigned char mask##src##i =                     \
     vec_perm((vector unsigned char)zero, (vector unsigned char)neg1, perms##src##i); \
-  const vector unsigned char vg2##src##i =				\
-    vec_perm(vg##src##i, vg##src##i, perms##src##i);			\
-  const vector unsigned char svA##src##i =				\
-    vec_sel(v_##src##A1##i, vg2##src##i, mask##src##i);			\
-  const vector unsigned char svB##src##i =				\
-    vec_sel(vg2##src##i, v_##src##A2##i, mask##src##i);			\
-  vec_st(svA##src##i, i * stride, src);					\
+  const vector unsigned char vg2##src##i =                      \
+    vec_perm(vg##src##i, vg##src##i, perms##src##i);            \
+  const vector unsigned char svA##src##i =                      \
+    vec_sel(v_##src##A1##i, vg2##src##i, mask##src##i);         \
+  const vector unsigned char svB##src##i =                      \
+    vec_sel(vg2##src##i, v_##src##A2##i, mask##src##i);         \
+  vec_st(svA##src##i, i * stride, src);                         \
   vec_st(svB##src##i, i * stride + 16, src)
 
   PACK_AND_STORE(src, 0);
@@ -1001,14 +1001,14 @@ static inline void RENAME(tempNoiseReducer)(uint8_t *src, int stride,
 static inline void transpose_16x8_char_toPackedAlign_altivec(unsigned char* dst, unsigned char* src, int stride) {
   const vector unsigned char zero = vec_splat_u8(0);
 
-#define LOAD_DOUBLE_LINE(i, j)						\
-  vector unsigned char perm1##i = vec_lvsl(i * stride, src);		\
-  vector unsigned char perm2##i = vec_lvsl(j * stride, src);		\
-  vector unsigned char srcA##i = vec_ld(i * stride, src);		\
+#define LOAD_DOUBLE_LINE(i, j)                                          \
+  vector unsigned char perm1##i = vec_lvsl(i * stride, src);            \
+  vector unsigned char perm2##i = vec_lvsl(j * stride, src);            \
+  vector unsigned char srcA##i = vec_ld(i * stride, src);               \
   vector unsigned char srcB##i = vec_ld(i * stride + 16, src);          \
-  vector unsigned char srcC##i = vec_ld(j * stride, src);		\
+  vector unsigned char srcC##i = vec_ld(j * stride, src);               \
   vector unsigned char srcD##i = vec_ld(j * stride+ 16, src);           \
-  vector unsigned char src##i = vec_perm(srcA##i, srcB##i, perm1##i);	\
+  vector unsigned char src##i = vec_perm(srcA##i, srcB##i, perm1##i);   \
   vector unsigned char src##j = vec_perm(srcC##i, srcD##i, perm2##i)
 
   LOAD_DOUBLE_LINE(0, 1);
@@ -1107,10 +1107,10 @@ static inline void transpose_8x16_char_fromPackedAlign_altivec(unsigned char* ds
   const vector unsigned char zero = vec_splat_u8(0);
   const vector unsigned char magic_perm = (const vector unsigned char)
     AVV(0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
-	0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F);
+        0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F);
 
-#define LOAD_DOUBLE_LINE(i, j)			    		\
-  vector unsigned char src##i = vec_ld(i * 16, src);		\
+#define LOAD_DOUBLE_LINE(i, j)                                  \
+  vector unsigned char src##i = vec_ld(i * 16, src);            \
   vector unsigned char src##j = vec_ld(j * 16, src)
 
   LOAD_DOUBLE_LINE(0, 1);
@@ -1169,24 +1169,24 @@ static inline void transpose_8x16_char_fromPackedAlign_altivec(unsigned char* ds
 
 
   const vector signed char neg1 = vec_splat_s8(-1);
-#define STORE_DOUBLE_LINE(i, j)						\
-  vector unsigned char dstA##i = vec_ld(i * stride, dst);		\
-  vector unsigned char dstB##i = vec_ld(i * stride + 16, dst);		\
-  vector unsigned char dstA##j = vec_ld(j * stride, dst);		\
-  vector unsigned char dstB##j = vec_ld(j * stride+ 16, dst);		\
-  vector unsigned char align##i = vec_lvsr(i * stride, dst);		\
-  vector unsigned char align##j = vec_lvsr(j * stride, dst);		\
-  vector unsigned char mask##i = vec_perm(zero, (vector unsigned char)neg1, align##i);	\
-  vector unsigned char mask##j = vec_perm(zero, (vector unsigned char)neg1, align##j);	\
-  vector unsigned char dstR##i = vec_perm(temp##i, temp##i, align##i);	\
-  vector unsigned char dstR##j = vec_perm(temp##j, temp##j, align##j);	\
-  vector unsigned char dstAF##i = vec_sel(dstA##i, dstR##i, mask##i);	\
-  vector unsigned char dstBF##i = vec_sel(dstR##i, dstB##i, mask##i);	\
-  vector unsigned char dstAF##j = vec_sel(dstA##j, dstR##j, mask##j);	\
-  vector unsigned char dstBF##j = vec_sel(dstR##j, dstB##j, mask##j);	\
-  vec_st(dstAF##i, i * stride, dst);					\
-  vec_st(dstBF##i, i * stride + 16, dst);				\
-  vec_st(dstAF##j, j * stride, dst);					\
+#define STORE_DOUBLE_LINE(i, j)                                         \
+  vector unsigned char dstA##i = vec_ld(i * stride, dst);               \
+  vector unsigned char dstB##i = vec_ld(i * stride + 16, dst);          \
+  vector unsigned char dstA##j = vec_ld(j * stride, dst);               \
+  vector unsigned char dstB##j = vec_ld(j * stride+ 16, dst);           \
+  vector unsigned char align##i = vec_lvsr(i * stride, dst);            \
+  vector unsigned char align##j = vec_lvsr(j * stride, dst);            \
+  vector unsigned char mask##i = vec_perm(zero, (vector unsigned char)neg1, align##i); \
+  vector unsigned char mask##j = vec_perm(zero, (vector unsigned char)neg1, align##j); \
+  vector unsigned char dstR##i = vec_perm(temp##i, temp##i, align##i);  \
+  vector unsigned char dstR##j = vec_perm(temp##j, temp##j, align##j);  \
+  vector unsigned char dstAF##i = vec_sel(dstA##i, dstR##i, mask##i);   \
+  vector unsigned char dstBF##i = vec_sel(dstR##i, dstB##i, mask##i);   \
+  vector unsigned char dstAF##j = vec_sel(dstA##j, dstR##j, mask##j);   \
+  vector unsigned char dstBF##j = vec_sel(dstR##j, dstB##j, mask##j);   \
+  vec_st(dstAF##i, i * stride, dst);                                    \
+  vec_st(dstBF##i, i * stride + 16, dst);                               \
+  vec_st(dstAF##j, j * stride, dst);                                    \
   vec_st(dstBF##j, j * stride + 16, dst)
 
   STORE_DOUBLE_LINE(0,1);

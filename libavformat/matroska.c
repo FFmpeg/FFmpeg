@@ -597,8 +597,8 @@ ebml_read_sint (MatroskaDemuxContext *matroska,
 
 static int
 ebml_read_float (MatroskaDemuxContext *matroska,
-		 uint32_t             *id,
-		 double               *num)
+                 uint32_t             *id,
+                 double               *num)
 {
     ByteIOContext *pb = &matroska->ctx->pb;
     int size, res;
@@ -905,7 +905,7 @@ ebml_read_header (MatroskaDemuxContext *matroska,
                 if (num > sizeof(uint32_t)) {
                     av_log(matroska->ctx, AV_LOG_ERROR,
                            "IDs of size %"PRIu64" (> %zu) not supported\n",
-			    num, sizeof(uint32_t));
+                            num, sizeof(uint32_t));
                     return AVERROR_INVALIDDATA;
                 }
                 break;

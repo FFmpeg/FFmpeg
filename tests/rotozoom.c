@@ -33,7 +33,7 @@ static int64_t int_sin(int64_t a){
 
 #define SCALEBITS 8
 #define ONE_HALF  (1 << (SCALEBITS - 1))
-#define FIX(x)		((int) ((x) * (1L<<SCALEBITS) + 0.5))
+#define FIX(x)    ((int) ((x) * (1L<<SCALEBITS) + 0.5))
 typedef unsigned char UINT8;
 
 static void rgb24_to_yuv420p(UINT8 *lum, UINT8 *cb, UINT8 *cr,
@@ -241,9 +241,9 @@ void init_demo(const char *filename) {
   for (i=0;i<H;i++) {
     fread(line,1,3*W,fichier);
     for (j=0;j<W;j++) {
-	  tab_r[W*i+j] = line[3*j    ];
-	  tab_g[W*i+j] = line[3*j + 1];
-	  tab_b[W*i+j] = line[3*j + 2];
+          tab_r[W*i+j] = line[3*j    ];
+          tab_g[W*i+j] = line[3*j + 1];
+          tab_b[W*i+j] = line[3*j + 2];
     }
   }
   fclose(fichier);

@@ -25,37 +25,37 @@ main(int argc, char *argv[])
 
     if (argc < 3)
     {
-	printf("Usage: %s <infile.swf> <outfile.swf>\n", argv[0]);
-	exit(1);
+        printf("Usage: %s <infile.swf> <outfile.swf>\n", argv[0]);
+        exit(1);
     }
 
     fd_in = open(argv[1], O_RDONLY);
     if (fd_in < 0)
     {
-	perror("Error while opening: ");
-	exit(1);
+        perror("Error while opening: ");
+        exit(1);
     }
 
     fd_out = open(argv[2], O_WRONLY|O_CREAT, 00644);
     if (fd_out < 0)
     {
-	perror("Error while opening: ");
-	close(fd_in);
-	exit(1);
+        perror("Error while opening: ");
+        close(fd_in);
+        exit(1);
     }
 
     if (read(fd_in, &buf_in, 8) != 8)
     {
-	printf("Header error\n");
-	close(fd_in);
-	close(fd_out);
-	exit(1);
+        printf("Header error\n");
+        close(fd_in);
+        close(fd_out);
+        exit(1);
     }
 
     if (buf_in[0] != 'C' || buf_in[1] != 'W' || buf_in[2] != 'S')
     {
-	printf("Not a compressed flash file\n");
-	exit(1);
+        printf("Not a compressed flash file\n");
+        exit(1);
     }
 
     fstat(fd_in, &statbuf);
@@ -75,48 +75,48 @@ main(int argc, char *argv[])
 
     for (i = 0; i < comp_len-4;)
     {
-	int ret, len = read(fd_in, &buf_in, 1024);
+        int ret, len = read(fd_in, &buf_in, 1024);
 
-	dbgprintf("read %d bytes\n", len);
+        dbgprintf("read %d bytes\n", len);
 
-	last_out = zstream.total_out;
+        last_out = zstream.total_out;
 
-	zstream.next_in = &buf_in[0];
-	zstream.avail_in = len;
-	zstream.next_out = &buf_out[0];
-	zstream.avail_out = 1024;
+        zstream.next_in = &buf_in[0];
+        zstream.avail_in = len;
+        zstream.next_out = &buf_out[0];
+        zstream.avail_out = 1024;
 
-	ret = inflate(&zstream, Z_SYNC_FLUSH);
-	if (ret == Z_STREAM_END || ret == Z_BUF_ERROR)
-	    break;
-	if (ret != Z_OK)
-	{
-	    printf("Error while decompressing: %d\n", ret);
-	    inflateEnd(&zstream);
-	    exit(1);
-	}
+        ret = inflate(&zstream, Z_SYNC_FLUSH);
+        if (ret == Z_STREAM_END || ret == Z_BUF_ERROR)
+            break;
+        if (ret != Z_OK)
+        {
+            printf("Error while decompressing: %d\n", ret);
+            inflateEnd(&zstream);
+            exit(1);
+        }
 
-	dbgprintf("a_in: %d t_in: %d a_out: %d t_out: %d -- %d out\n",
-	    zstream.avail_in, zstream.total_in, zstream.avail_out, zstream.total_out,
-	    zstream.total_out-last_out);
+        dbgprintf("a_in: %d t_in: %d a_out: %d t_out: %d -- %d out\n",
+            zstream.avail_in, zstream.total_in, zstream.avail_out, zstream.total_out,
+            zstream.total_out-last_out);
 
-	write(fd_out, &buf_out, zstream.total_out-last_out);
+        write(fd_out, &buf_out, zstream.total_out-last_out);
 
-	i += len;
+        i += len;
     }
 
     if (zstream.total_out != uncomp_len-8)
     {
-	printf("Size mismatch (%d != %d), updating header...\n",
-	    zstream.total_out, uncomp_len-8);
+        printf("Size mismatch (%d != %d), updating header...\n",
+            zstream.total_out, uncomp_len-8);
 
-	buf_in[0] = (zstream.total_out+8) & 0xff;
-	buf_in[1] = (zstream.total_out+8 >> 8) & 0xff;
-	buf_in[2] = (zstream.total_out+8 >> 16) & 0xff;
-	buf_in[3] = (zstream.total_out+8 >> 24) & 0xff;
+        buf_in[0] = (zstream.total_out+8) & 0xff;
+        buf_in[1] = (zstream.total_out+8 >> 8) & 0xff;
+        buf_in[2] = (zstream.total_out+8 >> 16) & 0xff;
+        buf_in[3] = (zstream.total_out+8 >> 24) & 0xff;
 
-	lseek(fd_out, 4, SEEK_SET);
-	write(fd_out, &buf_in, 4);
+        lseek(fd_out, 4, SEEK_SET);
+        write(fd_out, &buf_in, 4);
     }
 
     inflateEnd(&zstream);

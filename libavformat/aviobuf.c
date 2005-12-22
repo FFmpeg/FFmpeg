@@ -470,7 +470,7 @@ static int url_write_packet(void *opaque, uint8_t *buf, int buf_size)
     return url_write(h, buf, buf_size);
 }
 #else
-#define	url_write_packet NULL
+#define         url_write_packet NULL
 #endif //CONFIG_MUXERS
 
 static int url_read_packet(void *opaque, uint8_t *buf, int buf_size)

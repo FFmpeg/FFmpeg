@@ -1204,7 +1204,7 @@ static int http_parse_request(HTTPContext *c)
     pstrcpy(c->protocol, sizeof(c->protocol), protocol);
 
     if (ffserver_debug)
-	http_log("New connection: %s %s\n", cmd, url);
+        http_log("New connection: %s %s\n", cmd, url);
 
     /* find the filename and the optional info string in the request */
     p = url;
@@ -2001,7 +2001,7 @@ static int http_prepare_data(HTTPContext *c)
         c->fmt_ctx.nb_streams = c->stream->nb_streams;
         for(i=0;i<c->fmt_ctx.nb_streams;i++) {
             AVStream *st;
-	    AVStream *src;
+            AVStream *src;
             st = av_mallocz(sizeof(AVStream));
             st->codec= avcodec_alloc_context();
             c->fmt_ctx.streams[i] = st;
@@ -2012,8 +2012,8 @@ static int http_prepare_data(HTTPContext *c)
             else
                 src = c->stream->feed->streams[c->stream->feed_streams[i]];
 
-	    *st = *src;
-	    st->priv_data = 0;
+            *st = *src;
+            st->priv_data = 0;
             st->codec->frame_number = 0; /* XXX: should be done in
                                            AVStream, not in codec */
             /* I'm pretty sure that this is not correct...
@@ -2452,8 +2452,8 @@ static int http_receive_data(HTTPContext *c)
                 s.priv_data = av_mallocz(fmt_in->priv_data_size);
                 if (!s.priv_data)
                     goto fail;
-	    } else
-	        s.priv_data = NULL;
+            } else
+                s.priv_data = NULL;
 
             if (fmt_in->read_header(&s, 0) < 0) {
                 av_freep(&s.priv_data);
@@ -3868,20 +3868,20 @@ static int parse_ffconfig(const char *filename)
 
                 feed->child_argv[i] = av_malloc(30 + strlen(feed->filename));
 
-		snprintf(feed->child_argv[i], 30+strlen(feed->filename),
-		    "http://%s:%d/%s",
-            	    (my_http_addr.sin_addr.s_addr == INADDR_ANY) ? "127.0.0.1" :
-		    inet_ntoa(my_http_addr.sin_addr),
-		    ntohs(my_http_addr.sin_port), feed->filename);
+                snprintf(feed->child_argv[i], 30+strlen(feed->filename),
+                    "http://%s:%d/%s",
+                        (my_http_addr.sin_addr.s_addr == INADDR_ANY) ? "127.0.0.1" :
+                    inet_ntoa(my_http_addr.sin_addr),
+                    ntohs(my_http_addr.sin_port), feed->filename);
 
-		if (ffserver_debug)
-		{
-		    int j;
-		    fprintf(stdout, "Launch commandline: ");
-		    for (j = 0; j <= i; j++)
-			fprintf(stdout, "%s ", feed->child_argv[j]);
-		    fprintf(stdout, "\n");
-		}
+                if (ffserver_debug)
+                {
+                    int j;
+                    fprintf(stdout, "Launch commandline: ");
+                    for (j = 0; j <= i; j++)
+                        fprintf(stdout, "%s ", feed->child_argv[j]);
+                    fprintf(stdout, "\n");
+                }
             }
         } else if (!strcasecmp(cmd, "ReadOnlyFile")) {
             if (feed) {
@@ -4074,8 +4074,8 @@ static int parse_ffconfig(const char *filename)
             if (stream) {
                 audio_enc.sample_rate = atoi(arg);
             }
-	} else if (!strcasecmp(cmd, "AudioQuality")) {
-	    get_arg(arg, sizeof(arg), &p);
+        } else if (!strcasecmp(cmd, "AudioQuality")) {
+            get_arg(arg, sizeof(arg), &p);
             if (stream) {
 //                audio_enc.quality = atof(arg) * 1000;
             }

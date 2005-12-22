@@ -296,7 +296,7 @@ static void sdp_parse_fmtp(AVStream *st, const char *p)
         get_word_sep(value, sizeof(value), ";", &p);
         if (*p == ';')
             p++;
-	/* grab the codec extra_data from the config parameter of the fmtp line */
+        /* grab the codec extra_data from the config parameter of the fmtp line */
         sdp_parse_fmtp_config(codec, attr, value);
         /* Looking for a known attribute */
         for (i = 0; attr_names[i].str; ++i) {
@@ -305,7 +305,7 @@ static void sdp_parse_fmtp(AVStream *st, const char *p)
                     *(int *)((char *)rtp_payload_data + attr_names[i].offset) = atoi(value);
                 else if (attr_names[i].type == ATTR_NAME_TYPE_STR)
                     *(char **)((char *)rtp_payload_data + attr_names[i].offset) = av_strdup(value);
-	    }
+            }
         }
     }
 }

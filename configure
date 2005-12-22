@@ -688,26 +688,26 @@ fi
 needmdynamicnopic="no"
 if test $targetos = Darwin; then
     if test -n "`$cc -v 2>&1 | grep xlc`"; then
-	CFLAGS="$CFLAGS -qpdf2 -qlanglvl=extc99 -qmaxmem=-1 -qarch=auto -qtune=auto"
+        CFLAGS="$CFLAGS -qpdf2 -qlanglvl=extc99 -qmaxmem=-1 -qarch=auto -qtune=auto"
     else
-	gcc_version="`$cc -v 2>&1 | grep version | cut -d ' ' -f3-`"
-	case "$gcc_version" in
-	    *2.95*)
-		CFLAGS="$CFLAGS -no-cpp-precomp -pipe -fomit-frame-pointer"
-		;;
-	    *[34].*)
-		CFLAGS="$CFLAGS -no-cpp-precomp -pipe -fomit-frame-pointer -force_cpusubtype_ALL -Wno-sign-compare"
-		if test "$lshared" = no; then
-		   needmdynamicnopic="yes"
-		fi
-		;;
-	    *)
-		CFLAGS="$CFLAGS -no-cpp-precomp -pipe -fomit-frame-pointer"
-		if test "$lshared" = no; then
-		   needmdynamicnopic="yes"
-		fi
-		;;
-	esac
+        gcc_version="`$cc -v 2>&1 | grep version | cut -d ' ' -f3-`"
+        case "$gcc_version" in
+            *2.95*)
+                CFLAGS="$CFLAGS -no-cpp-precomp -pipe -fomit-frame-pointer"
+                ;;
+            *[34].*)
+                CFLAGS="$CFLAGS -no-cpp-precomp -pipe -fomit-frame-pointer -force_cpusubtype_ALL -Wno-sign-compare"
+                if test "$lshared" = no; then
+                   needmdynamicnopic="yes"
+                fi
+                ;;
+            *)
+                CFLAGS="$CFLAGS -no-cpp-precomp -pipe -fomit-frame-pointer"
+                if test "$lshared" = no; then
+                   needmdynamicnopic="yes"
+                fi
+                ;;
+        esac
     fi
 fi
 
@@ -725,62 +725,62 @@ TUNECPU="generic"
 POWERPCMODE="32bits"
 if test $tune != "generic"; then
     case $tune in
-	601|ppc601|PowerPC601)
-	    CFLAGS="$CFLAGS -mcpu=601"
-	    if test $altivec = "yes"; then
-		echo "WARNING: Tuning for PPC601 but AltiVec enabled!";
-	    fi
-	    TUNECPU=ppc601
-	;;
-	603*|ppc603*|PowerPC603*)
-	    CFLAGS="$CFLAGS -mcpu=603"
-	    if test $altivec = "yes"; then
-		echo "WARNING: Tuning for PPC603 but AltiVec enabled!";
-	    fi
-	    TUNECPU=ppc603
-	;;
-	604*|ppc604*|PowerPC604*)
-	    CFLAGS="$CFLAGS -mcpu=604"
-	    if test $altivec = "yes"; then
-		echo "WARNING: Tuning for PPC604 but AltiVec enabled!";
-	    fi
-	    TUNECPU=ppc604
-	;;
-	G3|g3|75*|ppc75*|PowerPC75*)
-	    CFLAGS="$CFLAGS -mcpu=750 -mtune=750 -mpowerpc-gfxopt"
-	    if test $altivec = "yes"; then
-		echo "WARNING: Tuning for PPC75x but AltiVec enabled!";
-	    fi
-	    TUNECPU=ppc750
-	;;
-	G4|g4|745*|ppc745*|PowerPC745*)
-	    CFLAGS="$CFLAGS -mcpu=7450 -mtune=7450 -mpowerpc-gfxopt"
-	    if test $altivec = "no"; then
-		echo "WARNING: Tuning for PPC745x but AltiVec disabled!";
-	    fi
-	    TUNECPU=ppc7450
-	;;
-	74*|ppc74*|PowerPC74*)
-	    CFLAGS="$CFLAGS -mcpu=7400 -mtune=7400 -mpowerpc-gfxopt"
-	    if test $altivec = "no"; then
-		echo "WARNING: Tuning for PPC74xx but AltiVec disabled!";
-	    fi
-	    TUNECPU=ppc7400
-	;;
-	G5|g5|970|ppc970|PowerPC970|power4*|Power4*)
-	    CFLAGS="$CFLAGS -mcpu=970 -mtune=970 -mpowerpc-gfxopt -mpowerpc64"
-	    if test $altivec = "no"; then
-		echo "WARNING: Tuning for PPC970 but AltiVec disabled!";
-	    fi
-	    TUNECPU=ppc970
+        601|ppc601|PowerPC601)
+            CFLAGS="$CFLAGS -mcpu=601"
+            if test $altivec = "yes"; then
+                echo "WARNING: Tuning for PPC601 but AltiVec enabled!";
+            fi
+            TUNECPU=ppc601
+        ;;
+        603*|ppc603*|PowerPC603*)
+            CFLAGS="$CFLAGS -mcpu=603"
+            if test $altivec = "yes"; then
+                echo "WARNING: Tuning for PPC603 but AltiVec enabled!";
+            fi
+            TUNECPU=ppc603
+        ;;
+        604*|ppc604*|PowerPC604*)
+            CFLAGS="$CFLAGS -mcpu=604"
+            if test $altivec = "yes"; then
+                echo "WARNING: Tuning for PPC604 but AltiVec enabled!";
+            fi
+            TUNECPU=ppc604
+        ;;
+        G3|g3|75*|ppc75*|PowerPC75*)
+            CFLAGS="$CFLAGS -mcpu=750 -mtune=750 -mpowerpc-gfxopt"
+            if test $altivec = "yes"; then
+                echo "WARNING: Tuning for PPC75x but AltiVec enabled!";
+            fi
+            TUNECPU=ppc750
+        ;;
+        G4|g4|745*|ppc745*|PowerPC745*)
+            CFLAGS="$CFLAGS -mcpu=7450 -mtune=7450 -mpowerpc-gfxopt"
+            if test $altivec = "no"; then
+                echo "WARNING: Tuning for PPC745x but AltiVec disabled!";
+            fi
+            TUNECPU=ppc7450
+        ;;
+        74*|ppc74*|PowerPC74*)
+            CFLAGS="$CFLAGS -mcpu=7400 -mtune=7400 -mpowerpc-gfxopt"
+            if test $altivec = "no"; then
+                echo "WARNING: Tuning for PPC74xx but AltiVec disabled!";
+            fi
+            TUNECPU=ppc7400
+        ;;
+        G5|g5|970|ppc970|PowerPC970|power4*|Power4*)
+            CFLAGS="$CFLAGS -mcpu=970 -mtune=970 -mpowerpc-gfxopt -mpowerpc64"
+            if test $altivec = "no"; then
+                echo "WARNING: Tuning for PPC970 but AltiVec disabled!";
+            fi
+            TUNECPU=ppc970
             POWERPCMODE="64bits"
-	;;
-	i[3456]86|pentium|pentiumpro|pentium-mmx|pentium[234]|prescott|k6|k6-[23]|athlon|athlon-tbird|athlon-4|athlon-[mx]p|winchip-c6|winchip2|c3|nocona|athlon64|k8|opteron|athlon-fx)
-	    CFLAGS="$CFLAGS -march=$tune"
-	;;
-	*)
-	echo "WARNING: Unknown CPU \"$tune\", ignored."
-	;;
+        ;;
+        i[3456]86|pentium|pentiumpro|pentium-mmx|pentium[234]|prescott|k6|k6-[23]|athlon|athlon-tbird|athlon-4|athlon-[mx]p|winchip-c6|winchip2|c3|nocona|athlon64|k8|opteron|athlon-fx)
+            CFLAGS="$CFLAGS -march=$tune"
+        ;;
+        *)
+        echo "WARNING: Unknown CPU \"$tune\", ignored."
+        ;;
     esac
 fi
 
@@ -876,8 +876,8 @@ if test -z "$cross_prefix" ; then
 cat > $TMPC << EOF
 #include <inttypes.h>
 int main(int argc, char ** argv){
-	volatile uint32_t i=0x01234567;
-	return (*((uint8_t*)(&i))) == 0x67;
+        volatile uint32_t i=0x01234567;
+        return (*((uint8_t*)(&i))) == 0x67;
 }
 EOF
 
@@ -912,8 +912,8 @@ $cc -o $TMPE $TMPC 2>/dev/null || inttypes="no"
 cat > $TMPC << EOF
 #include <inttypes.h>
 int main(int argc, char ** argv){
-	volatile uint_fast64_t i=0x01234567;
-	return 0;
+        volatile uint_fast64_t i=0x01234567;
+        return 0;
 }
 EOF
 
@@ -1152,10 +1152,10 @@ fi
 
 case "`$cc -v 2>&1 | grep version`" in
     *gcc*)
-	CFLAGS="-Wall -Wno-switch $CFLAGS"
-	;;
+        CFLAGS="-Wall -Wno-switch $CFLAGS"
+        ;;
     *)
-	;;
+        ;;
 esac
 
 if test "$sdl" = "no" ; then
@@ -1163,7 +1163,7 @@ if test "$sdl" = "no" ; then
 fi
 
 if test "$debug" = "yes"; then
-	CFLAGS="-g $CFLAGS"
+        CFLAGS="-g $CFLAGS"
 fi
 
 if test "$optimize" = "small"; then
@@ -1173,10 +1173,10 @@ fi
 
 if test "$optimize" = "yes"; then
     if test -n "`$cc -v 2>&1 | grep xlc`"; then
-	CFLAGS="$CFLAGS -O5"
-	LDFLAGS="$LDFLAGS -O5"
+        CFLAGS="$CFLAGS -O5"
+        LDFLAGS="$LDFLAGS -O5"
     else
-	CFLAGS="-O3 $CFLAGS"
+        CFLAGS="-O3 $CFLAGS"
     fi
 fi
 
@@ -1793,9 +1793,9 @@ done
 
 diff $TMPH config.h >/dev/null 2>&1
 if test $? -ne 0 ; then
-	mv -f $TMPH config.h
+        mv -f $TMPH config.h
 else
-	echo "config.h is unchanged"
+        echo "config.h is unchanged"
 fi
 
 rm -f $TMPO $TMPC $TMPE $TMPS $TMPH

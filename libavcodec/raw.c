@@ -70,8 +70,8 @@ unsigned int avcodec_pix_fmt_to_codec_tag(enum PixelFormat fmt)
     const PixelFormatTag * tags = pixelFormatTags;
     while (tags->pix_fmt >= 0) {
         if (tags->pix_fmt == fmt)
-	    return tags->fourcc;
-	tags++;
+            return tags->fourcc;
+        tags++;
     }
     return 0;
 }
@@ -115,8 +115,8 @@ static void flip(AVCodecContext *avctx, AVPicture * picture){
 }
 
 static int raw_decode(AVCodecContext *avctx,
-			    void *data, int *data_size,
-			    uint8_t *buf, int buf_size)
+                            void *data, int *data_size,
+                            uint8_t *buf, int buf_size)
 {
     RawVideoContext *context = avctx->priv_data;
     int bytesNeeded;
@@ -167,7 +167,7 @@ static int raw_init_encoder(AVCodecContext *avctx)
 }
 
 static int raw_encode(AVCodecContext *avctx,
-			    unsigned char *frame, int buf_size, void *data)
+                            unsigned char *frame, int buf_size, void *data)
 {
     return avpicture_layout((AVPicture *)data, avctx->pix_fmt, avctx->width,
                                                avctx->height, frame, buf_size);

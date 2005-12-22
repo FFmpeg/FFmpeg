@@ -26,14 +26,14 @@
 #ifdef CONFIG_MUXERS
 
 
-#define ASF_INDEXED_INTERVAL 10000000
-#define ASF_INDEX_BLOCK  600
+#define ASF_INDEXED_INTERVAL    10000000
+#define ASF_INDEX_BLOCK         600
 
 #define ASF_PACKET_ERROR_CORRECTION_DATA_SIZE 0x2
 #define ASF_PACKET_ERROR_CORRECTION_FLAGS (\
-                                        ASF_PACKET_FLAG_ERROR_CORRECTION_PRESENT | \
-                                        ASF_PACKET_ERROR_CORRECTION_DATA_SIZE\
-                                        )
+                ASF_PACKET_FLAG_ERROR_CORRECTION_PRESENT | \
+                ASF_PACKET_ERROR_CORRECTION_DATA_SIZE\
+                )
 
 #if (ASF_PACKET_ERROR_CORRECTION_FLAGS != 0)
 #   define ASF_PACKET_ERROR_CORRECTION_FLAGS_FIELD_SIZE 1
@@ -42,11 +42,11 @@
 #endif
 
 #define ASF_PPI_PROPERTY_FLAGS (\
-                        ASF_PL_FLAG_REPLICATED_DATA_LENGTH_FIELD_IS_BYTE | \
-                        ASF_PL_FLAG_OFFSET_INTO_MEDIA_OBJECT_LENGTH_FIELD_IS_DWORD | \
-                        ASF_PL_FLAG_MEDIA_OBJECT_NUMBER_LENGTH_FIELD_IS_BYTE | \
-                        ASF_PL_FLAG_STREAM_NUMBER_LENGTH_FIELD_IS_BYTE \
-                        )
+                ASF_PL_FLAG_REPLICATED_DATA_LENGTH_FIELD_IS_BYTE | \
+                ASF_PL_FLAG_OFFSET_INTO_MEDIA_OBJECT_LENGTH_FIELD_IS_DWORD | \
+                ASF_PL_FLAG_MEDIA_OBJECT_NUMBER_LENGTH_FIELD_IS_BYTE | \
+                ASF_PL_FLAG_STREAM_NUMBER_LENGTH_FIELD_IS_BYTE \
+                )
 
 #define ASF_PPI_LENGTH_TYPE_FLAGS 0
 
@@ -142,50 +142,50 @@
 #endif
 
 #define PACKET_HEADER_MIN_SIZE (\
-                        ASF_PACKET_ERROR_CORRECTION_FLAGS_FIELD_SIZE + \
-                        ASF_PACKET_ERROR_CORRECTION_DATA_SIZE + \
-                        1 + /*Length Type Flags*/ \
-                        1 + /*Property Flags*/ \
-                        ASF_PPI_PACKET_LENGTH_FIELD_SIZE + \
-                        ASF_PPI_SEQUENCE_FIELD_SIZE + \
-                        ASF_PPI_PADDING_LENGTH_FIELD_SIZE + \
-                        4 + /*Send Time Field*/ \
-                        2   /*Duration Field*/ \
-                        )
+                ASF_PACKET_ERROR_CORRECTION_FLAGS_FIELD_SIZE + \
+                ASF_PACKET_ERROR_CORRECTION_DATA_SIZE + \
+                1 + /*Length Type Flags*/ \
+                1 + /*Property Flags*/ \
+                ASF_PPI_PACKET_LENGTH_FIELD_SIZE + \
+                ASF_PPI_SEQUENCE_FIELD_SIZE + \
+                ASF_PPI_PADDING_LENGTH_FIELD_SIZE + \
+                4 + /*Send Time Field*/ \
+                2   /*Duration Field*/ \
+                )
 
 
 // Replicated Data shall be at least 8 bytes long.
 #define ASF_PAYLOAD_REPLICATED_DATA_LENGTH 0x08
 
 #define PAYLOAD_HEADER_SIZE_SINGLE_PAYLOAD (\
-                        1 + /*Stream Number*/ \
-                        ASF_PAYLOAD_MEDIA_OBJECT_NUMBER_FIELD_SIZE + \
-                        ASF_PAYLOAD_OFFSET_INTO_MEDIA_OBJECT_FIELD_SIZE + \
-                        ASF_PAYLOAD_REPLICATED_DATA_LENGTH_FIELD_SIZE + \
-                        ASF_PAYLOAD_REPLICATED_DATA_LENGTH \
-                        )
+                1 + /*Stream Number*/ \
+                ASF_PAYLOAD_MEDIA_OBJECT_NUMBER_FIELD_SIZE + \
+                ASF_PAYLOAD_OFFSET_INTO_MEDIA_OBJECT_FIELD_SIZE + \
+                ASF_PAYLOAD_REPLICATED_DATA_LENGTH_FIELD_SIZE + \
+                ASF_PAYLOAD_REPLICATED_DATA_LENGTH \
+                )
 
 #define PAYLOAD_HEADER_SIZE_MULTIPLE_PAYLOADS (\
-                        1 + /*Stream Number*/ \
-                        ASF_PAYLOAD_MEDIA_OBJECT_NUMBER_FIELD_SIZE + \
-                        ASF_PAYLOAD_OFFSET_INTO_MEDIA_OBJECT_FIELD_SIZE + \
-                        ASF_PAYLOAD_REPLICATED_DATA_LENGTH_FIELD_SIZE + \
-                        ASF_PAYLOAD_REPLICATED_DATA_LENGTH + \
-                        ASF_PAYLOAD_LENGTH_FIELD_SIZE \
-                        )
+                1 + /*Stream Number*/ \
+                ASF_PAYLOAD_MEDIA_OBJECT_NUMBER_FIELD_SIZE + \
+                ASF_PAYLOAD_OFFSET_INTO_MEDIA_OBJECT_FIELD_SIZE + \
+                ASF_PAYLOAD_REPLICATED_DATA_LENGTH_FIELD_SIZE + \
+                ASF_PAYLOAD_REPLICATED_DATA_LENGTH + \
+                ASF_PAYLOAD_LENGTH_FIELD_SIZE \
+                )
 
 #define SINGLE_PAYLOAD_DATA_LENGTH (\
-                        PACKET_SIZE - \
-                        PACKET_HEADER_MIN_SIZE - \
-                        PAYLOAD_HEADER_SIZE_SINGLE_PAYLOAD \
-                        )
+                PACKET_SIZE - \
+                PACKET_HEADER_MIN_SIZE - \
+                PAYLOAD_HEADER_SIZE_SINGLE_PAYLOAD \
+                )
 
 #define MULTI_PAYLOAD_CONSTANT (\
-                        PACKET_SIZE - \
-                        PACKET_HEADER_MIN_SIZE - \
-                        1 - /*Payload Flags*/ \
-                        2*PAYLOAD_HEADER_SIZE_MULTIPLE_PAYLOADS \
-                        )
+                PACKET_SIZE - \
+                PACKET_HEADER_MIN_SIZE - \
+                1 - /*Payload Flags*/ \
+                2*PAYLOAD_HEADER_SIZE_MULTIPLE_PAYLOADS \
+                )
 
 static int preroll_time = 2000;
 
@@ -653,11 +653,11 @@ static void put_payload_header(
 static void put_frame(
                     AVFormatContext *s,
                     ASFStream       *stream,
-		    int             timestamp,
+                    int             timestamp,
                     const uint8_t   *buf,
-		    int             m_obj_size,
+                    int             m_obj_size,
                     int             flags
-		)
+                )
 {
     ASFContext *asf = s->priv_data;
     int m_obj_offset, payload_len, frag_len1;

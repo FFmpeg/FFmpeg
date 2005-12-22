@@ -65,7 +65,7 @@ const int mb_block_count = 4+(1<<s->chroma_format);
         }else{
            s->pblocks[i] = NULL;
         }
-	cbp+=cbp;
+        cbp+=cbp;
 //        printf("s->pblocks[%d]=%p ,s->block=%p cbp=%d\n",i,s->pblocks[i],s->block,cbp);
     }
 }

@@ -131,15 +131,15 @@ ReSampleContext *audio_resample_init(int output_channels, int input_channels,
 
     if ( input_channels > 2)
       {
-	av_log(NULL, AV_LOG_ERROR, "Resampling with input channels greater than 2 unsupported.");
-	return NULL;
+        av_log(NULL, AV_LOG_ERROR, "Resampling with input channels greater than 2 unsupported.");
+        return NULL;
       }
 
     s = av_mallocz(sizeof(ReSampleContext));
     if (!s)
       {
-	av_log(NULL, AV_LOG_ERROR, "Can't allocate memory for resample context.");
-	return NULL;
+        av_log(NULL, AV_LOG_ERROR, "Can't allocate memory for resample context.");
+        return NULL;
       }
 
     s->ratio = (float)output_rate / (float)input_rate;

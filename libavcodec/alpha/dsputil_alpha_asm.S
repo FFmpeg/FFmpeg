@@ -71,7 +71,7 @@ $unaligned:
         addq    a1, a2, a1
         nop
 
-	ldq_u   t4, 0(a1)
+        ldq_u   t4, 0(a1)
         ldq_u   t5, 8(a1)
         addq    a1, a2, a1
         nop
@@ -120,20 +120,20 @@ $aligned:
         addq    a1, a2, a1
         ldq     t3, 0(a1)
 
-	addq	a0, a2, t4
-	addq    a1, a2, a1
-	addq	t4, a2, t5
-	subq    a3, 4, a3
+        addq    a0, a2, t4
+        addq    a1, a2, a1
+        addq    t4, a2, t5
+        subq    a3, 4, a3
 
-	stq	t0, 0(a0)
-	addq	t5, a2, t6
-	stq	t1, 0(t4)
-	addq	t6, a2, a0
+        stq     t0, 0(a0)
+        addq    t5, a2, t6
+        stq     t1, 0(t4)
+        addq    t6, a2, a0
 
-	stq	t2, 0(t5)
-	stq	t3, 0(t6)
+        stq     t2, 0(t5)
+        stq     t3, 0(t6)
 
-	bne     a3, $aligned
+        bne     a3, $aligned
         ret
         .end put_pixels_axp_asm
 

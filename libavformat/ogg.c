@@ -73,7 +73,7 @@ static int ogg_write_header(AVFormatContext *avfcontext)
             op->packetno++; //FIXME multiple streams
         }
 
-	context->header_handled = 0 ;
+        context->header_handled = 0 ;
     }
 
     return 0 ;
@@ -94,12 +94,12 @@ static int ogg_write_packet(AVFormatContext *avfcontext, AVPacket *pkt)
     /* flush header packets so audio starts on a new page */
 
     if(!context->header_handled) {
-	while(ogg_stream_flush(&context->os, &og)) {
-	    put_buffer(&avfcontext->pb, og.header, og.header_len) ;
-	    put_buffer(&avfcontext->pb, og.body, og.body_len) ;
-	    put_flush_packet(&avfcontext->pb);
-	}
-	context->header_handled = 1 ;
+        while(ogg_stream_flush(&context->os, &og)) {
+            put_buffer(&avfcontext->pb, og.header, og.header_len) ;
+            put_buffer(&avfcontext->pb, og.body, og.body_len) ;
+            put_flush_packet(&avfcontext->pb);
+        }
+        context->header_handled = 1 ;
     }
 
     op->packet = (uint8_t*) pkt->data;
@@ -113,8 +113,8 @@ static int ogg_write_packet(AVFormatContext *avfcontext, AVPacket *pkt)
 
     while(ogg_stream_pageout(&context->os, &og)) {
         put_buffer(&avfcontext->pb, og.header, og.header_len);
-	put_buffer(&avfcontext->pb, og.body, og.body_len);
-	put_flush_packet(&avfcontext->pb);
+        put_buffer(&avfcontext->pb, og.body, og.body_len);
+        put_flush_packet(&avfcontext->pb);
     }
     op->packetno++;
 
@@ -127,9 +127,9 @@ static int ogg_write_trailer(AVFormatContext *avfcontext) {
     ogg_page og ;
 
     while(ogg_stream_flush(&context->os, &og)) {
-	put_buffer(&avfcontext->pb, og.header, og.header_len) ;
-	put_buffer(&avfcontext->pb, og.body, og.body_len) ;
-	put_flush_packet(&avfcontext->pb);
+        put_buffer(&avfcontext->pb, og.header, og.header_len) ;
+        put_buffer(&avfcontext->pb, og.body, og.body_len) ;
+        put_flush_packet(&avfcontext->pb);
     }
 
     ogg_stream_clear(&context->os) ;
@@ -159,17 +159,17 @@ static int next_packet(AVFormatContext *avfcontext, ogg_packet *op) {
 
     while(ogg_stream_packetout(&context->os, op) != 1) {
 
-	/* while no pages are available, read in more data to the sync */
-	while(ogg_sync_pageout(&context->oy, &og) != 1) {
-	    buf = ogg_sync_buffer(&context->oy, DECODER_BUFFER_SIZE) ;
-	    if(get_buffer(&avfcontext->pb, buf, DECODER_BUFFER_SIZE) <= 0)
-		return 1 ;
-	    ogg_sync_wrote(&context->oy, DECODER_BUFFER_SIZE) ;
-	}
+        /* while no pages are available, read in more data to the sync */
+        while(ogg_sync_pageout(&context->oy, &og) != 1) {
+            buf = ogg_sync_buffer(&context->oy, DECODER_BUFFER_SIZE) ;
+            if(get_buffer(&avfcontext->pb, buf, DECODER_BUFFER_SIZE) <= 0)
+                return 1 ;
+            ogg_sync_wrote(&context->oy, DECODER_BUFFER_SIZE) ;
+        }
 
-	/* got a page. Feed it into the stream and get the packet */
-	if(ogg_stream_pagein(&context->os, &og) != 0)
-	    return 1 ;
+        /* got a page. Feed it into the stream and get the packet */
+        if(ogg_stream_pagein(&context->os, &og) != 0)
+            return 1 ;
     }
 
     return 0 ;
@@ -191,7 +191,7 @@ static int ogg_read_header(AVFormatContext *avfcontext, AVFormatParameters *ap)
     buf = ogg_sync_buffer(&context->oy, DECODER_BUFFER_SIZE) ;
 
     if(get_buffer(&avfcontext->pb, buf, DECODER_BUFFER_SIZE) <= 0)
-	return AVERROR_IO ;
+        return AVERROR_IO ;
 
     ogg_sync_wrote(&context->oy, DECODER_BUFFER_SIZE) ;
     ogg_sync_pageout(&context->oy, &og) ;
@@ -202,7 +202,7 @@ static int ogg_read_header(AVFormatContext *avfcontext, AVFormatParameters *ap)
 
     ast = av_new_stream(avfcontext, 0) ;
     if(!ast)
-	return AVERROR_NOMEM ;
+        return AVERROR_NOMEM ;
     av_set_pts_info(ast, 60, 1, AV_TIME_BASE);
 
     codec= &ast->codec;
@@ -231,9 +231,9 @@ static int ogg_read_packet(AVFormatContext *avfcontext, AVPacket *pkt) {
     ogg_packet op ;
 
     if(next_packet(avfcontext, &op))
-	return AVERROR_IO ;
+        return AVERROR_IO ;
     if(av_new_packet(pkt, op.bytes) < 0)
-	return AVERROR_IO ;
+        return AVERROR_IO ;
     pkt->stream_index = 0 ;
     memcpy(pkt->data, op.packet, op.bytes);
     if(avfcontext->streams[0]->codec.sample_rate && op.granulepos!=-1)

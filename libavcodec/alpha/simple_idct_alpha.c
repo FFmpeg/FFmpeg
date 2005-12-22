@@ -285,7 +285,7 @@ void simple_idct_axp(DCTELEM *block)
             stq(v, block + 1 * 4);
             stq(w, block + 2 * 4);
             stq(w, block + 3 * 4);
-	    block += 4 * 4;
+            block += 4 * 4;
         }
     } else {
         for (i = 0; i < 8; i++)

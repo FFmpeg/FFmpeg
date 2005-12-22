@@ -64,51 +64,51 @@ void init_fdct()
 void fdct(block)
 short *block;
 {
-	register int i, j;
-	double s;
-	double tmp[64];
+        register int i, j;
+        double s;
+        double tmp[64];
 
-	for(i = 0; i < 8; i++)
-    	for(j = 0; j < 8; j++)
-    	{
-    		s = 0.0;
-
-/*
- *     		for(k = 0; k < 8; k++)
- *         		s += c[j][k] * block[8 * i + k];
- */
-        	s += c[j][0] * block[8 * i + 0];
-        	s += c[j][1] * block[8 * i + 1];
-        	s += c[j][2] * block[8 * i + 2];
-        	s += c[j][3] * block[8 * i + 3];
-        	s += c[j][4] * block[8 * i + 4];
-        	s += c[j][5] * block[8 * i + 5];
-        	s += c[j][6] * block[8 * i + 6];
-        	s += c[j][7] * block[8 * i + 7];
-
-    		tmp[8 * i + j] = s;
-    	}
-
-	for(j = 0; j < 8; j++)
-    	for(i = 0; i < 8; i++)
-    	{
-    		s = 0.0;
+        for(i = 0; i < 8; i++)
+            for(j = 0; j < 8; j++)
+            {
+                    s = 0.0;
 
 /*
- *     	  	for(k = 0; k < 8; k++)
- *        	    s += c[i][k] * tmp[8 * k + j];
+ *                     for(k = 0; k < 8; k++)
+ *                         s += c[j][k] * block[8 * i + k];
  */
-        	s += c[i][0] * tmp[8 * 0 + j];
-        	s += c[i][1] * tmp[8 * 1 + j];
-        	s += c[i][2] * tmp[8 * 2 + j];
-        	s += c[i][3] * tmp[8 * 3 + j];
-        	s += c[i][4] * tmp[8 * 4 + j];
-        	s += c[i][5] * tmp[8 * 5 + j];
-        	s += c[i][6] * tmp[8 * 6 + j];
-        	s += c[i][7] * tmp[8 * 7 + j];
-		s*=8.0;
+                s += c[j][0] * block[8 * i + 0];
+                s += c[j][1] * block[8 * i + 1];
+                s += c[j][2] * block[8 * i + 2];
+                s += c[j][3] * block[8 * i + 3];
+                s += c[j][4] * block[8 * i + 4];
+                s += c[j][5] * block[8 * i + 5];
+                s += c[j][6] * block[8 * i + 6];
+                s += c[j][7] * block[8 * i + 7];
 
-    		block[8 * i + j] = (short)floor(s + 0.499999);
+                    tmp[8 * i + j] = s;
+            }
+
+        for(j = 0; j < 8; j++)
+            for(i = 0; i < 8; i++)
+            {
+                    s = 0.0;
+
+/*
+ *                       for(k = 0; k < 8; k++)
+ *                    s += c[i][k] * tmp[8 * k + j];
+ */
+                s += c[i][0] * tmp[8 * 0 + j];
+                s += c[i][1] * tmp[8 * 1 + j];
+                s += c[i][2] * tmp[8 * 2 + j];
+                s += c[i][3] * tmp[8 * 3 + j];
+                s += c[i][4] * tmp[8 * 4 + j];
+                s += c[i][5] * tmp[8 * 5 + j];
+                s += c[i][6] * tmp[8 * 6 + j];
+                s += c[i][7] * tmp[8 * 7 + j];
+                s*=8.0;
+
+                    block[8 * i + j] = (short)floor(s + 0.499999);
 /*
  * reason for adding 0.499999 instead of 0.5:
  * s is quite often x.5 (at least for i and/or j = 0 or 4)

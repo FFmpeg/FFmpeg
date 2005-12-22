@@ -96,7 +96,7 @@ unknown_opt:
                 if(po->u.func2_arg(opt+1, arg)<0)
                     goto unknown_opt;
             } else {
-		po->u.func_arg(arg);
+                po->u.func_arg(arg);
             }
         } else {
             parse_arg_file(opt);
@@ -122,8 +122,8 @@ void print_error(const char *filename, int err)
         break;
     case AVERROR_IO:
         fprintf(stderr, "%s: I/O error occured\n"
-	        "Usually that means that input file is truncated and/or corrupted.\n",
-		filename);
+                "Usually that means that input file is truncated and/or corrupted.\n",
+                filename);
         break;
     case AVERROR_NOMEM:
         fprintf(stderr, "%s: memory allocation error occured\n", filename);

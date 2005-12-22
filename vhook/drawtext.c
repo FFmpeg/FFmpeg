@@ -170,90 +170,90 @@ int Configure(void **ctxp, int argc, char *argv[])
     while ((c = getopt(argc, argv, "f:t:T:x:y:s:c:C:bo")) > 0) {
       switch (c) {
       case 'f':
-	font = optarg;
-	break;
+        font = optarg;
+        break;
       case 't':
-	ci->text = av_strdup(optarg);
-	break;
+        ci->text = av_strdup(optarg);
+        break;
       case 'T':
-	ci->file = av_strdup(optarg);
-	break;
+        ci->file = av_strdup(optarg);
+        break;
       case 'x':
-	ci->x = (unsigned int) atoi(optarg);
-	break;
+        ci->x = (unsigned int) atoi(optarg);
+        break;
       case 'y':
-	ci->y = (unsigned int) atoi(optarg);
-	break;
+        ci->y = (unsigned int) atoi(optarg);
+        break;
       case 's':
-	size = (unsigned int) atoi(optarg);
-	break;
+        size = (unsigned int) atoi(optarg);
+        break;
       case 'c':
-	if (ParseColor(optarg, ci->fgcolor) == -1)
-	  {
-	    fprintf(stderr, "ERROR: Invalid foreground color: '%s'. You must specify the color in the internet way(packaged hex): #RRGGBB, ie: -c #ffffff (for white foreground)\n",optarg);
-	    return -1;
-	  }
-	break;
+        if (ParseColor(optarg, ci->fgcolor) == -1)
+          {
+            fprintf(stderr, "ERROR: Invalid foreground color: '%s'. You must specify the color in the internet way(packaged hex): #RRGGBB, ie: -c #ffffff (for white foreground)\n",optarg);
+            return -1;
+          }
+        break;
       case 'C':
-	if (ParseColor(optarg, ci->bgcolor) == -1)
-	  {
-	    fprintf(stderr, "ERROR: Invalid foreground color: '%s'. You must specify the color in the internet way(packaged hex): #RRGGBB, ie: -c #ffffff (for white foreground)\n",optarg);
-	    return -1;
-	  }
-	break;
+        if (ParseColor(optarg, ci->bgcolor) == -1)
+          {
+            fprintf(stderr, "ERROR: Invalid foreground color: '%s'. You must specify the color in the internet way(packaged hex): #RRGGBB, ie: -c #ffffff (for white foreground)\n",optarg);
+            return -1;
+          }
+        break;
       case 'b':
-	ci->bg=1;
-	break;
+        ci->bg=1;
+        break;
       case 'o':
-	ci->outline=1;
-	break;
+        ci->outline=1;
+        break;
       case '?':
-	fprintf(stderr, "ERROR: Unrecognized argument '%s'\n", argv[optind]);
-	return -1;
+        fprintf(stderr, "ERROR: Unrecognized argument '%s'\n", argv[optind]);
+        return -1;
       }
     }
 
     if (!ci->text)
       {
-	fprintf(stderr,"ERROR: No text provided (-t text)\n");
-	return -1;
+        fprintf(stderr,"ERROR: No text provided (-t text)\n");
+        return -1;
       }
 
     if (ci->file)
       {
-	FILE *fp;
-	if ((fp=fopen(ci->file, "r")) == NULL)
-	  {
-	    perror("WARNING: the file could not be opened. Using text provided with -t switch. ");
-	  }
-	else
-	  {
-	    fclose(fp);
-	  }
+        FILE *fp;
+        if ((fp=fopen(ci->file, "r")) == NULL)
+          {
+            perror("WARNING: the file could not be opened. Using text provided with -t switch. ");
+          }
+        else
+          {
+            fclose(fp);
+          }
       }
 
     if (!font)
       {
-	fprintf(stderr,"ERROR: No font file provided! (-f filename)\n");
-	return -1;
+        fprintf(stderr,"ERROR: No font file provided! (-f filename)\n");
+        return -1;
       }
 
     if ((error = FT_Init_FreeType(&(ci->library))) != 0)
       {
-	fprintf(stderr,"ERROR: Could not load FreeType (error# %d)\n",error);
-	return -1;
+        fprintf(stderr,"ERROR: Could not load FreeType (error# %d)\n",error);
+        return -1;
       }
 
     if ((error = FT_New_Face( ci->library, font, 0, &(ci->face) )) != 0)
       {
-	fprintf(stderr,"ERROR: Could not load face: %s  (error# %d)\n",font, error);
-	return -1;
+        fprintf(stderr,"ERROR: Could not load face: %s  (error# %d)\n",font, error);
+        return -1;
       }
 
     if ((error = FT_Set_Pixel_Sizes( ci->face, 0, size)) != 0)
       {
-	fprintf(stderr,"ERROR: Could not set font size to %d pixels (error# %d)\n",size, error);
-	return -1;
+        fprintf(stderr,"ERROR: Could not set font size to %d pixels (error# %d)\n",size, error);
+        return -1;
       }
 
     ci->use_kerning = FT_HAS_KERNING(ci->face);
@@ -263,31 +263,31 @@ int Configure(void **ctxp, int argc, char *argv[])
     yMin =  32000;
     for (c=0; c < 256; c++)
       {
-	/* Load char */
-	error = FT_Load_Char( ci->face, (unsigned char) c, FT_LOAD_RENDER | FT_LOAD_MONOCHROME );
-	if (error) continue;  /* ignore errors */
+        /* Load char */
+        error = FT_Load_Char( ci->face, (unsigned char) c, FT_LOAD_RENDER | FT_LOAD_MONOCHROME );
+        if (error) continue;  /* ignore errors */
 
-	/* Save bitmap */
-	ci->bitmaps[c] = ci->face->glyph->bitmap;
-	/* Save bitmap left */
-	ci->bitmap_left[c] = ci->face->glyph->bitmap_left;
-	/* Save bitmap top */
-	ci->bitmap_top[c] = ci->face->glyph->bitmap_top;
+        /* Save bitmap */
+        ci->bitmaps[c] = ci->face->glyph->bitmap;
+        /* Save bitmap left */
+        ci->bitmap_left[c] = ci->face->glyph->bitmap_left;
+        /* Save bitmap top */
+        ci->bitmap_top[c] = ci->face->glyph->bitmap_top;
 
-	/* Save advance */
-	ci->advance[c] = ci->face->glyph->advance.x >> 6;
+        /* Save advance */
+        ci->advance[c] = ci->face->glyph->advance.x >> 6;
 
-	/* Save glyph */
-	error = FT_Get_Glyph( ci->face->glyph, &(ci->glyphs[c]) );
-	/* Save glyph index */
-	ci->glyphs_index[c] = FT_Get_Char_Index( ci->face, (unsigned char) c );
+        /* Save glyph */
+        error = FT_Get_Glyph( ci->face->glyph, &(ci->glyphs[c]) );
+        /* Save glyph index */
+        ci->glyphs_index[c] = FT_Get_Char_Index( ci->face, (unsigned char) c );
 
-	/* Measure text height to calculate text_height (or the maximum text height) */
-	FT_Glyph_Get_CBox( ci->glyphs[ c ], ft_glyph_bbox_pixels, &bbox );
-	if (bbox.yMax > yMax)
-	  yMax = bbox.yMax;
-	if (bbox.yMin < yMin)
-	  yMin = bbox.yMin;
+        /* Measure text height to calculate text_height (or the maximum text height) */
+        FT_Glyph_Get_CBox( ci->glyphs[ c ], ft_glyph_bbox_pixels, &bbox );
+        if (bbox.yMax > yMax)
+          yMax = bbox.yMax;
+        if (bbox.yMin < yMin)
+          yMin = bbox.yMin;
 
       }
 
@@ -309,56 +309,56 @@ inline void draw_glyph(AVPicture *picture, FT_Bitmap *bitmap, unsigned int x, un
     {
       in_glyph = 0;
       for (r=0; (r < bitmap->rows) && (r+y < height); r++)
-	{
-	  for (c=0; (c < bitmap->width) && (c+x < width); c++)
-	    {
-	      /* pixel in the picture (destination) */
-	      GET_PIXEL(picture, dpixel, (c+x), (y+r));
+        {
+          for (c=0; (c < bitmap->width) && (c+x < width); c++)
+            {
+              /* pixel in the picture (destination) */
+              GET_PIXEL(picture, dpixel, (c+x), (y+r));
 
-	      /* pixel in the glyph bitmap (source) */
-	      spixel = bitmap->buffer[r*bitmap->pitch +c/8] & (0x80>>(c%8));
+              /* pixel in the glyph bitmap (source) */
+              spixel = bitmap->buffer[r*bitmap->pitch +c/8] & (0x80>>(c%8));
 
-	      if (spixel)
-		COPY_3(dpixel, yuv_fgcolor);
+              if (spixel)
+                COPY_3(dpixel, yuv_fgcolor);
 
-	      if (outline)
-		{
-		  /* border detection: */
-		  if ( (!in_glyph) && (spixel) )
-		    /* left border detected */
-		    {
-		      in_glyph = 1;
-		      /* draw left pixel border */
-		      if (c-1 >= 0)
-			SET_PIXEL(picture, yuv_bgcolor, (c+x-1), (y+r));
-		    }
-		  else if ( (in_glyph) && (!spixel) )
-		    /* right border detected */
-		    {
-		      in_glyph = 0;
-		      /* 'draw' right pixel border */
-		      COPY_3(dpixel, yuv_bgcolor);
-		    }
+              if (outline)
+                {
+                  /* border detection: */
+                  if ( (!in_glyph) && (spixel) )
+                    /* left border detected */
+                    {
+                      in_glyph = 1;
+                      /* draw left pixel border */
+                      if (c-1 >= 0)
+                        SET_PIXEL(picture, yuv_bgcolor, (c+x-1), (y+r));
+                    }
+                  else if ( (in_glyph) && (!spixel) )
+                    /* right border detected */
+                    {
+                      in_glyph = 0;
+                      /* 'draw' right pixel border */
+                      COPY_3(dpixel, yuv_bgcolor);
+                    }
 
-		  if (in_glyph)
-		    /* see if we have a top/bottom border */
-		    {
-		      /* top */
-		      if ( (r-1 >= 0) && (! bitmap->buffer[(r-1)*bitmap->pitch +c/8] & (0x80>>(c%8))) )
-			/* we have a top border */
-			SET_PIXEL(picture, yuv_bgcolor, (c+x), (y+r-1));
+                  if (in_glyph)
+                    /* see if we have a top/bottom border */
+                    {
+                      /* top */
+                      if ( (r-1 >= 0) && (! bitmap->buffer[(r-1)*bitmap->pitch +c/8] & (0x80>>(c%8))) )
+                        /* we have a top border */
+                        SET_PIXEL(picture, yuv_bgcolor, (c+x), (y+r-1));
 
-		      /* bottom */
-		      if ( (r+1 < height) && (! bitmap->buffer[(r+1)*bitmap->pitch +c/8] & (0x80>>(c%8))) )
-			/* we have a bottom border */
-			SET_PIXEL(picture, yuv_bgcolor, (c+x), (y+r+1));
+                      /* bottom */
+                      if ( (r+1 < height) && (! bitmap->buffer[(r+1)*bitmap->pitch +c/8] & (0x80>>(c%8))) )
+                        /* we have a bottom border */
+                        SET_PIXEL(picture, yuv_bgcolor, (c+x), (y+r+1));
 
-		    }
-		}
+                    }
+                }
 
-	      SET_PIXEL(picture, dpixel, (c+x), (y+r));
-	    }
-	}
+              SET_PIXEL(picture, dpixel, (c+x), (y+r));
+            }
+        }
     }
 }
 
@@ -370,7 +370,7 @@ inline void draw_box(AVPicture *picture, unsigned int x, unsigned int y, unsigne
   for (j = 0; (j < height); j++)
     for (i = 0; (i < width); i++)
       {
-	SET_PIXEL(picture, yuv_color, (i+x), (y+j));
+        SET_PIXEL(picture, yuv_color, (i+x), (y+j));
       }
 
 }
@@ -398,26 +398,26 @@ void Process(void *ctx, AVPicture *picture, enum PixelFormat pix_fmt, int width,
       int fd = open(ci->file, O_RDONLY);
 
       if (fd < 0)
-	{
-	  text = ci->text;
-	  perror("WARNING: the file could not be opened. Using text provided with -t switch. ");
-	}
+        {
+          text = ci->text;
+          perror("WARNING: the file could not be opened. Using text provided with -t switch. ");
+        }
       else
-	{
-	  int l = read(fd, tbuff, sizeof(tbuff) - 1);
+        {
+          int l = read(fd, tbuff, sizeof(tbuff) - 1);
 
-	  if (l >= 0)
-	    {
-	      tbuff[l] = 0;
-	      text = tbuff;
-	    }
-	  else
-	    {
-	      text = ci->text;
-	      perror("WARNING: the file could not be opened. Using text provided with -t switch. ");
-	    }
-	  close(fd);
-	}
+          if (l >= 0)
+            {
+              tbuff[l] = 0;
+              text = tbuff;
+            }
+          else
+            {
+              text = ci->text;
+              perror("WARNING: the file could not be opened. Using text provided with -t switch. ");
+            }
+          close(fd);
+        }
     }
   else
     {
@@ -443,23 +443,23 @@ void Process(void *ctx, AVPicture *picture, enum PixelFormat pix_fmt, int width,
 
       /* kerning */
       if ( (ci->use_kerning) && (i > 0) && (ci->glyphs_index[c]) )
-	{
-	  FT_Get_Kerning( ci->face,
-			  ci->glyphs_index[ text[i-1] ],
-			  ci->glyphs_index[c],
-			  ft_kerning_default,
-			  &delta );
+        {
+          FT_Get_Kerning( ci->face,
+                          ci->glyphs_index[ text[i-1] ],
+                          ci->glyphs_index[c],
+                          ft_kerning_default,
+                          &delta );
 
-	  x += delta.x >> 6;
-	}
+          x += delta.x >> 6;
+        }
 
       if (( (x + ci->advance[ c ]) >= width ) || ( c == '\n' ))
-	{
-	  str_w = width - ci->x - 1;
+        {
+          str_w = width - ci->x - 1;
 
-	  y += ci->text_height;
-	  x = ci->x;
-	}
+          y += ci->text_height;
+          x = ci->x;
+        }
 
 
       /* save position */
@@ -471,7 +471,7 @@ void Process(void *ctx, AVPicture *picture, enum PixelFormat pix_fmt, int width,
 
 
       if (str_w > str_w_max)
-	str_w_max = str_w;
+        str_w_max = str_w;
 
     }
 
@@ -482,9 +482,9 @@ void Process(void *ctx, AVPicture *picture, enum PixelFormat pix_fmt, int width,
     {
       /* Check if it doesn't pass the limits */
       if ( str_w_max + ci->x >= width )
-	str_w_max = width - ci->x - 1;
+        str_w_max = width - ci->x - 1;
       if ( y >= height )
-	y = height - 1 - 2*ci->y;
+        y = height - 1 - 2*ci->y;
 
       /* Draw Background */
       draw_box( picture, ci->x, ci->y, str_w_max, y - ci->y, ci->bgcolor );
@@ -498,23 +498,23 @@ void Process(void *ctx, AVPicture *picture, enum PixelFormat pix_fmt, int width,
       c = text[i];
 
       if (
-	  ( (c == '_') && (text == ci->text) ) || /* skip '_' (consider as space)
-						     IF text was specified in cmd line
-						     (which doesn't like neasted quotes)  */
-	  ( c == '\n' ) /* Skip new line char, just go to new line */
-	  )
-	continue;
+          ( (c == '_') && (text == ci->text) ) || /* skip '_' (consider as space)
+                                                     IF text was specified in cmd line
+                                                     (which doesn't like neasted quotes)  */
+          ( c == '\n' ) /* Skip new line char, just go to new line */
+          )
+        continue;
 
-	/* now, draw to our target surface */
-	draw_glyph( picture,
-		    &(ci->bitmaps[ c ]),
-		    pos[i].x,
-		    pos[i].y,
-		    width,
-		    height,
-		    ci->fgcolor,
-		    ci->bgcolor,
-		    ci->outline );
+        /* now, draw to our target surface */
+        draw_glyph( picture,
+                    &(ci->bitmaps[ c ]),
+                    pos[i].x,
+                    pos[i].y,
+                    width,
+                    height,
+                    ci->fgcolor,
+                    ci->bgcolor,
+                    ci->outline );
 
       /* increment pen position */
       x += slot->advance.x >> 6;

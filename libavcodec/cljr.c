@@ -61,13 +61,13 @@ static int decode_frame(AVCodecContext *avctx,
         uint8_t *cb= &a->picture.data[1][ y*a->picture.linesize[1] ];
         uint8_t *cr= &a->picture.data[2][ y*a->picture.linesize[2] ];
         for(x=0; x<avctx->width; x+=4){
-    	    luma[3] = get_bits(&a->gb, 5) << 3;
-	    luma[2] = get_bits(&a->gb, 5) << 3;
-	    luma[1] = get_bits(&a->gb, 5) << 3;
-	    luma[0] = get_bits(&a->gb, 5) << 3;
-	    luma+= 4;
-	    *(cb++) = get_bits(&a->gb, 6) << 2;
-	    *(cr++) = get_bits(&a->gb, 6) << 2;
+                luma[3] = get_bits(&a->gb, 5) << 3;
+            luma[2] = get_bits(&a->gb, 5) << 3;
+            luma[1] = get_bits(&a->gb, 5) << 3;
+            luma[0] = get_bits(&a->gb, 5) << 3;
+            luma+= 4;
+            *(cb++) = get_bits(&a->gb, 6) << 2;
+            *(cr++) = get_bits(&a->gb, 6) << 2;
         }
     }
 

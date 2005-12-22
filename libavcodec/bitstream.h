@@ -146,7 +146,7 @@ typedef struct RL_VLC_ELEM {
 #    ifdef __GNUC__
 static inline uint32_t unaligned32(const void *v) {
     struct Unaligned {
-	uint32_t i;
+        uint32_t i;
     } __attribute__((packed));
 
     return ((const struct Unaligned *) v)->i;
@@ -183,7 +183,7 @@ static inline void put_bits(PutBitContext *s, int n, unsigned int value)
         bit_buf = (bit_buf<<n) | value;
         bit_left-=n;
     } else {
-	bit_buf<<=bit_left;
+        bit_buf<<=bit_left;
         bit_buf |= value >> (n - bit_left);
 #ifdef UNALIGNED_STORES_ARE_BAD
         if (3 & (intptr_t) s->buf_ptr) {
@@ -196,7 +196,7 @@ static inline void put_bits(PutBitContext *s, int n, unsigned int value)
         *(uint32_t *)s->buf_ptr = be2me_32(bit_buf);
         //printf("bitbuf = %08x\n", bit_buf);
         s->buf_ptr+=4;
-	bit_left+=32 - n;
+        bit_left+=32 - n;
         bit_buf = value;
     }
 
@@ -212,21 +212,21 @@ static inline void put_bits(PutBitContext *s, int n, unsigned int value)
 #    ifdef ALIGNED_BITSTREAM_WRITER
 #        if defined(ARCH_X86) || defined(ARCH_X86_64)
     asm volatile(
-	"movl %0, %%ecx			\n\t"
-	"xorl %%eax, %%eax		\n\t"
-	"shrdl %%cl, %1, %%eax		\n\t"
-	"shrl %%cl, %1			\n\t"
-	"movl %0, %%ecx			\n\t"
-	"shrl $3, %%ecx			\n\t"
-	"andl $0xFFFFFFFC, %%ecx	\n\t"
-	"bswapl %1			\n\t"
-	"orl %1, (%2, %%ecx)		\n\t"
-	"bswapl %%eax			\n\t"
-	"addl %3, %0			\n\t"
-	"movl %%eax, 4(%2, %%ecx)	\n\t"
-	: "=&r" (s->index), "=&r" (value)
-	: "r" (s->buf), "r" (n), "0" (s->index), "1" (value<<(-n))
-	: "%eax", "%ecx"
+        "movl %0, %%ecx                 \n\t"
+        "xorl %%eax, %%eax              \n\t"
+        "shrdl %%cl, %1, %%eax          \n\t"
+        "shrl %%cl, %1                  \n\t"
+        "movl %0, %%ecx                 \n\t"
+        "shrl $3, %%ecx                 \n\t"
+        "andl $0xFFFFFFFC, %%ecx        \n\t"
+        "bswapl %1                      \n\t"
+        "orl %1, (%2, %%ecx)            \n\t"
+        "bswapl %%eax                   \n\t"
+        "addl %3, %0                    \n\t"
+        "movl %%eax, 4(%2, %%ecx)       \n\t"
+        : "=&r" (s->index), "=&r" (value)
+        : "r" (s->buf), "r" (n), "0" (s->index), "1" (value<<(-n))
+        : "%eax", "%ecx"
     );
 #        else
     int index= s->index;
@@ -243,20 +243,20 @@ static inline void put_bits(PutBitContext *s, int n, unsigned int value)
 #    else //ALIGNED_BITSTREAM_WRITER
 #        if defined(ARCH_X86) || defined(ARCH_X86_64)
     asm volatile(
-	"movl $7, %%ecx			\n\t"
-	"andl %0, %%ecx			\n\t"
-	"addl %3, %%ecx			\n\t"
-	"negl %%ecx			\n\t"
-	"shll %%cl, %1			\n\t"
-	"bswapl %1			\n\t"
-	"movl %0, %%ecx			\n\t"
-	"shrl $3, %%ecx			\n\t"
-	"orl %1, (%%ecx, %2)		\n\t"
-	"addl %3, %0			\n\t"
-	"movl $0, 4(%%ecx, %2)		\n\t"
-	: "=&r" (s->index), "=&r" (value)
-	: "r" (s->buf), "r" (n), "0" (s->index), "1" (value)
-	: "%ecx"
+        "movl $7, %%ecx                 \n\t"
+        "andl %0, %%ecx                 \n\t"
+        "addl %3, %%ecx                 \n\t"
+        "negl %%ecx                     \n\t"
+        "shll %%cl, %1                  \n\t"
+        "bswapl %1                      \n\t"
+        "movl %0, %%ecx                 \n\t"
+        "shrl $3, %%ecx                 \n\t"
+        "orl %1, (%%ecx, %2)            \n\t"
+        "addl %3, %0                    \n\t"
+        "movl $0, 4(%%ecx, %2)          \n\t"
+        : "=&r" (s->index), "=&r" (value)
+        : "r" (s->buf), "r" (n), "0" (s->index), "1" (value)
+        : "%ecx"
     );
 #        else
     int index= s->index;
@@ -276,9 +276,9 @@ static inline void put_bits(PutBitContext *s, int n, unsigned int value)
 static inline uint8_t* pbBufPtr(PutBitContext *s)
 {
 #ifdef ALT_BITSTREAM_WRITER
-	return s->buf + (s->index>>3);
+        return s->buf + (s->index>>3);
 #else
-	return s->buf_ptr;
+        return s->buf_ptr;
 #endif
 }
 
@@ -290,10 +290,10 @@ static inline void skip_put_bytes(PutBitContext *s, int n){
         assert((put_bits_count(s)&7)==0);
 #ifdef ALT_BITSTREAM_WRITER
         FIXME may need some cleaning of the buffer
-	s->index += n<<3;
+        s->index += n<<3;
 #else
         assert(s->bit_left==32);
-	s->buf_ptr += n;
+        s->buf_ptr += n;
 #endif
 }
 
@@ -366,10 +366,10 @@ for examples see get_bits, show_bits, skip_bits, get_vlc
 static inline int unaligned32_be(const void *v)
 {
 #ifdef CONFIG_ALIGN
-	const uint8_t *p=v;
-	return (((p[0]<<8) | p[1])<<16) | (p[2]<<8) | (p[3]);
+        const uint8_t *p=v;
+        return (((p[0]<<8) | p[1])<<16) | (p[2]<<8) | (p[3]);
 #else
-	return be2me_32( unaligned32(v)); //original
+        return be2me_32( unaligned32(v)); //original
 #endif
 }
 
@@ -528,8 +528,8 @@ static inline int get_bits_count(GetBitContext *s){
 #if defined(ARCH_X86) || defined(ARCH_X86_64)
 #   define SKIP_CACHE(name, gb, num)\
         asm(\
-            "shldl %2, %1, %0		\n\t"\
-            "shll %2, %1		\n\t"\
+            "shldl %2, %1, %0          \n\t"\
+            "shll %2, %1               \n\t"\
             : "+r" (name##_cache0), "+r" (name##_cache1)\
             : "Ic" ((uint8_t)num)\
            );

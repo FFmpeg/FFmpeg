@@ -199,24 +199,24 @@ static int gif_image_write_header(ByteIOContext *pb,
         }
     }
 
-	/*	update: this is the 'NETSCAPE EXTENSION' that allows for looped animated gif
-		see http://members.aol.com/royalef/gifabout.htm#net-extension
+        /*        update: this is the 'NETSCAPE EXTENSION' that allows for looped animated gif
+                see http://members.aol.com/royalef/gifabout.htm#net-extension
 
-		byte   1       : 33 (hex 0x21) GIF Extension code
-		byte   2       : 255 (hex 0xFF) Application Extension Label
-		byte   3       : 11 (hex (0x0B) Length of Application Block
-					 (eleven bytes of data to follow)
-		bytes  4 to 11 : "NETSCAPE"
-		bytes 12 to 14 : "2.0"
-		byte  15       : 3 (hex 0x03) Length of Data Sub-Block
-					 (three bytes of data to follow)
-		byte  16       : 1 (hex 0x01)
-		bytes 17 to 18 : 0 to 65535, an unsigned integer in
-					 lo-hi byte format. This indicate the
-					 number of iterations the loop should
-					 be executed.
-		bytes 19       : 0 (hex 0x00) a Data Sub-block Terminator
-	*/
+                byte   1       : 33 (hex 0x21) GIF Extension code
+                byte   2       : 255 (hex 0xFF) Application Extension Label
+                byte   3       : 11 (hex (0x0B) Length of Application Block
+                                         (eleven bytes of data to follow)
+                bytes  4 to 11 : "NETSCAPE"
+                bytes 12 to 14 : "2.0"
+                byte  15       : 3 (hex 0x03) Length of Data Sub-Block
+                                         (three bytes of data to follow)
+                byte  16       : 1 (hex 0x01)
+                bytes 17 to 18 : 0 to 65535, an unsigned integer in
+                                         lo-hi byte format. This indicate the
+                                         number of iterations the loop should
+                                         be executed.
+                bytes 19       : 0 (hex 0x00) a Data Sub-block Terminator
+        */
 
     /* application extension header */
 #ifdef GIF_ADD_APP_HEADER

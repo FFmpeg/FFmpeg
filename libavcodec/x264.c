@@ -32,14 +32,14 @@ static void
 X264_log(void *p, int level, const char *fmt, va_list args)
 {
     static const int level_map[] = {
-	[X264_LOG_ERROR]   = AV_LOG_ERROR,
-	[X264_LOG_WARNING] = AV_LOG_ERROR,
-	[X264_LOG_INFO]    = AV_LOG_INFO,
-	[X264_LOG_DEBUG]   = AV_LOG_DEBUG
+        [X264_LOG_ERROR]   = AV_LOG_ERROR,
+        [X264_LOG_WARNING] = AV_LOG_ERROR,
+        [X264_LOG_INFO]    = AV_LOG_INFO,
+        [X264_LOG_DEBUG]   = AV_LOG_DEBUG
     };
 
     if(level < 0 || level > X264_LOG_DEBUG)
-	return;
+        return;
 
     av_vlog(p, level_map[level], fmt, args);
 }
@@ -52,10 +52,10 @@ encode_nals(uint8_t *buf, int size, x264_nal_t *nals, int nnal)
     int i;
 
     for(i = 0; i < nnal; i++){
-	int s = x264_nal_encode(p, &size, 1, nals + i);
-	if(s < 0)
-	    return -1;
-	p += s;
+        int s = x264_nal_encode(p, &size, 1, nals + i);
+        if(s < 0)
+            return -1;
+        p += s;
     }
 
     return p - buf;
@@ -74,19 +74,19 @@ X264_frame(AVCodecContext *ctx, uint8_t *buf, int bufsize, void *data)
     x4->pic.img.i_plane = 3;
 
     for(i = 0; i < 3; i++){
-	x4->pic.img.plane[i] = frame->data[i];
-	x4->pic.img.i_stride[i] = frame->linesize[i];
+        x4->pic.img.plane[i] = frame->data[i];
+        x4->pic.img.i_stride[i] = frame->linesize[i];
     }
 
     x4->pic.i_pts = frame->pts;
     x4->pic.i_type = X264_TYPE_AUTO;
 
     if(x264_encoder_encode(x4->enc, &nal, &nnal, &x4->pic, &pic_out))
-	return -1;
+        return -1;
 
     bufsize = encode_nals(buf, bufsize, nal, nnal);
     if(bufsize < 0)
-	return -1;
+        return -1;
 
     /* FIXME: dts */
     x4->out_pic.pts = pic_out.i_pts;
@@ -117,7 +117,7 @@ X264_close(AVCodecContext *avctx)
     X264Context *x4 = avctx->priv_data;
 
     if(x4->enc)
-	x264_encoder_close(x4->enc);
+        x264_encoder_close(x4->enc);
 
     return 0;
 }

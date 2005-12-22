@@ -149,8 +149,8 @@ int ff_fft_init(FFTContext *s, int nbits, int inverse)
 void ff_fft_calc_c(FFTContext *s, FFTComplex *z)
 {
     int ln = s->nbits;
-    int	j, np, np2;
-    int	nblocks, nloops;
+    int j, np, np2;
+    int nblocks, nloops;
     register FFTComplex *p, *q;
     FFTComplex *exptab = s->exptab;
     int l;

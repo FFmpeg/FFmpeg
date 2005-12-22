@@ -686,7 +686,7 @@ do_ffmpeg_crc $file -i $file
 # pix_fmt conversions
 conversions="yuv420p yuv422p yuv444p yuv422 yuv410p yuv411p yuvj420p \
              yuvj422p yuvj444p rgb24 bgr24 rgba32 rgb565 rgb555 gray monow \
-	     monob pal8"
+             monob pal8"
 for pix_fmt in $conversions ; do
     file=${outfile}libav-${pix_fmt}.yuv
     do_ffmpeg_nocheck $file -r 1 -t 1 -y -f pgmyuv -i $raw_src \

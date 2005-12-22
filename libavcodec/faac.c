@@ -46,7 +46,7 @@ static int Faac_encode_init(AVCodecContext *avctx)
     /* check faac version */
     faac_cfg = faacEncGetCurrentConfiguration(s->faac_handle);
     if (faac_cfg->version != FAAC_CFG_VERSION) {
-	av_log(avctx, AV_LOG_ERROR, "wrong libfaac version (compiled for: %d, using %d)\n", FAAC_CFG_VERSION, faac_cfg->version);
+        av_log(avctx, AV_LOG_ERROR, "wrong libfaac version (compiled for: %d, using %d)\n", FAAC_CFG_VERSION, faac_cfg->version);
         faacEncClose(s->faac_handle);
         return -1;
     }

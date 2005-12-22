@@ -236,31 +236,31 @@ void rv10_encode_picture_header(MpegEncContext *s, int picture_number)
 
     align_put_bits(&s->pb);
 
-    put_bits(&s->pb, 1, 1);	/* marker */
+    put_bits(&s->pb, 1, 1);     /* marker */
 
     put_bits(&s->pb, 1, (s->pict_type == P_TYPE));
 
-    put_bits(&s->pb, 1, 0);	/* not PB frame */
+    put_bits(&s->pb, 1, 0);     /* not PB frame */
 
     put_bits(&s->pb, 5, s->qscale);
 
     if (s->pict_type == I_TYPE) {
-	/* specific MPEG like DC coding not used */
+        /* specific MPEG like DC coding not used */
     }
     /* if multiple packets per frame are sent, the position at which
        to display the macro blocks is coded here */
     if(!full_frame){
-        put_bits(&s->pb, 6, 0);	/* mb_x */
-        put_bits(&s->pb, 6, 0);	/* mb_y */
+        put_bits(&s->pb, 6, 0); /* mb_x */
+        put_bits(&s->pb, 6, 0); /* mb_y */
         put_bits(&s->pb, 12, s->mb_width * s->mb_height);
     }
 
-    put_bits(&s->pb, 3, 0);	/* ignored */
+    put_bits(&s->pb, 3, 0);     /* ignored */
 }
 
 void rv20_encode_picture_header(MpegEncContext *s, int picture_number){
     put_bits(&s->pb, 2, s->pict_type); //I 0 vs. 1 ?
-    put_bits(&s->pb, 1, 0);	/* unknown bit */
+    put_bits(&s->pb, 1, 0);     /* unknown bit */
     put_bits(&s->pb, 5, s->qscale);
 
     put_bits(&s->pb, 8, picture_number&0xFF); //FIXME wrong, but correct is not known
@@ -354,15 +354,15 @@ static int rv10_decode_picture_header(MpegEncContext *s)
 
     mb_xy= s->mb_x + s->mb_y*s->mb_width;
     if(show_bits(&s->gb, 12)==0 || (mb_xy && mb_xy < s->mb_num)){
-        s->mb_x = get_bits(&s->gb, 6);	/* mb_x */
-        s->mb_y = get_bits(&s->gb, 6);	/* mb_y */
+        s->mb_x = get_bits(&s->gb, 6); /* mb_x */
+        s->mb_y = get_bits(&s->gb, 6); /* mb_y */
         mb_count = get_bits(&s->gb, 12);
     } else {
         s->mb_x = 0;
         s->mb_y = 0;
         mb_count = s->mb_width * s->mb_height;
     }
-    unk= get_bits(&s->gb, 3);	/* ignored */
+    unk= get_bits(&s->gb, 3);   /* ignored */
 //printf("%d\n", unk);
     s->f_code = 1;
     s->unrestricted_mv = 1;

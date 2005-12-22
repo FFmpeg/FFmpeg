@@ -133,15 +133,15 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
             }
             break;
         case MKTAG('d', 'm', 'l', 'h'):
-	    avi->is_odml = 1;
-	    url_fskip(pb, size + (size & 1));
-	    break;
+            avi->is_odml = 1;
+            url_fskip(pb, size + (size & 1));
+            break;
         case MKTAG('a', 'v', 'i', 'h'):
-	    /* avi header */
+            /* avi header */
             /* using frame_period is bad idea */
             frame_period = get_le32(pb);
             bit_rate = get_le32(pb) * 8;
-	    url_fskip(pb, 4 * 4);
+            url_fskip(pb, 4 * 4);
             n = get_le32(pb);
             for(i=0;i<n;i++) {
                 AVIStream *ast;
@@ -153,7 +153,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 if (!ast)
                     goto fail;
                 st->priv_data = ast;
-	    }
+            }
             url_fskip(pb, size - 7 * 4);
             break;
         case MKTAG('s', 't', 'r', 'h'):
@@ -166,30 +166,30 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
 #endif
             if(tag1 == MKTAG('i', 'a', 'v', 's') || tag1 == MKTAG('i', 'v', 'a', 's')){
                 /*
-	         * After some consideration -- I don't think we
-	         * have to support anything but DV in a type1 AVIs.
-	         */
-	        if (s->nb_streams != 1)
-		    goto fail;
+                 * After some consideration -- I don't think we
+                 * have to support anything but DV in a type1 AVIs.
+                 */
+                if (s->nb_streams != 1)
+                    goto fail;
 
-		if (handler != MKTAG('d', 'v', 's', 'd') &&
-	            handler != MKTAG('d', 'v', 'h', 'd') &&
-		    handler != MKTAG('d', 'v', 's', 'l'))
-	           goto fail;
+                if (handler != MKTAG('d', 'v', 's', 'd') &&
+                    handler != MKTAG('d', 'v', 'h', 'd') &&
+                    handler != MKTAG('d', 'v', 's', 'l'))
+                   goto fail;
 
-		ast = s->streams[0]->priv_data;
-		av_freep(&s->streams[0]->codec->extradata);
-		av_freep(&s->streams[0]);
-		s->nb_streams = 0;
-	        avi->dv_demux = dv_init_demux(s);
-		if (!avi->dv_demux)
-		    goto fail;
-		s->streams[0]->priv_data = ast;
-		url_fskip(pb, 3 * 4);
-		ast->scale = get_le32(pb);
-		ast->rate = get_le32(pb);
-	        stream_index = s->nb_streams - 1;
-		url_fskip(pb, size - 7*4);
+                ast = s->streams[0]->priv_data;
+                av_freep(&s->streams[0]->codec->extradata);
+                av_freep(&s->streams[0]);
+                s->nb_streams = 0;
+                avi->dv_demux = dv_init_demux(s);
+                if (!avi->dv_demux)
+                    goto fail;
+                s->streams[0]->priv_data = ast;
+                url_fskip(pb, 3 * 4);
+                ast->scale = get_le32(pb);
+                ast->rate = get_le32(pb);
+                stream_index = s->nb_streams - 1;
+                url_fskip(pb, size - 7*4);
                 break;
             }
 
@@ -228,7 +228,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
 //            av_log(NULL, AV_LOG_DEBUG, "%d %d %d %d\n", ast->rate, ast->scale, ast->start, ast->sample_size);
 
             switch(tag1) {
-	    case MKTAG('v', 'i', 'd', 's'):
+            case MKTAG('v', 'i', 'd', 's'):
                 codec_type = CODEC_TYPE_VIDEO;
 
                 ast->sample_size = 0;
@@ -361,8 +361,8 @@ static int avi_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     if (avi->dv_demux) {
         size = dv_get_packet(avi->dv_demux, pkt);
-	if (size >= 0)
-	    return size;
+        if (size >= 0)
+            return size;
     }
 
     if(avi->non_interleaved){
@@ -483,13 +483,13 @@ resync:
     for(i=sync=url_ftell(pb); !url_feof(pb); i++) {
         int j;
 
-	if (i >= avi->movi_end) {
-	    if (avi->is_odml) {
-		url_fskip(pb, avi->riff_end - i);
-	        avi->riff_end = avi->movi_end = url_fsize(pb);
-	    } else
-	        break;
-	}
+        if (i >= avi->movi_end) {
+            if (avi->is_odml) {
+                url_fskip(pb, avi->riff_end - i);
+                avi->riff_end = avi->movi_end = url_fsize(pb);
+            } else
+                break;
+        }
 
         for(j=0; j<7; j++)
             d[j]= d[j+1];
@@ -509,7 +509,7 @@ resync:
 
         //parse ix##
         if(  (d[0] == 'i' && d[1] == 'x' && n < s->nb_streams)
-	//parse JUNK
+        //parse JUNK
            ||(d[0] == 'J' && d[1] == 'U' && d[2] == 'N' && d[3] == 'K')){
             url_fskip(pb, size);
 //av_log(NULL, AV_LOG_DEBUG, "SKIP\n");
@@ -542,7 +542,7 @@ resync:
           if(   ((ast->prefix_count<5 || sync+9 > i) && d[2]<128 && d[3]<128) ||
                 d[2]*256+d[3] == ast->prefix /*||
                 (d[2] == 'd' && d[3] == 'c') ||
-	        (d[2] == 'w' && d[3] == 'b')*/) {
+                (d[2] == 'w' && d[3] == 'b')*/) {
 
 //av_log(NULL, AV_LOG_DEBUG, "OK\n");
             if(d[2]*256+d[3] == ast->prefix)
@@ -571,8 +571,8 @@ resync:
 
             first = get_byte(pb);
             clr = get_byte(pb);
-	    if(!clr) /* all 256 colors used */
-		clr = 256;
+            if(!clr) /* all 256 colors used */
+                clr = 256;
             flags = get_le16(pb);
             p = 4;
             for (k = first; k < clr + first; k++) {

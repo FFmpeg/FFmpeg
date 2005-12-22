@@ -194,7 +194,7 @@ channels_multi (int flags)
 {
   if (flags & DTS_LFE)
     return 6;
-  else if (flags & 1)	/* center channel */
+  else if (flags & 1)   /* center channel */
     return 5;
   else if ((flags & DTS_CHANNEL_MASK) == DTS_2F2R)
     return 4;

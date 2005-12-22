@@ -147,15 +147,15 @@ typedef struct H264Context{
     MpegEncContext s;
     int nal_ref_idc;
     int nal_unit_type;
-#define NAL_SLICE		1
-#define NAL_DPA			2
-#define NAL_DPB			3
-#define NAL_DPC			4
-#define NAL_IDR_SLICE		5
-#define NAL_SEI			6
-#define NAL_SPS			7
-#define NAL_PPS			8
-#define NAL_AUD                 9
+#define NAL_SLICE                1
+#define NAL_DPA                  2
+#define NAL_DPB                  3
+#define NAL_DPC                  4
+#define NAL_IDR_SLICE            5
+#define NAL_SEI                  6
+#define NAL_SPS                  7
+#define NAL_PPS                  8
+#define NAL_AUD                  9
 #define NAL_END_SEQUENCE        10
 #define NAL_END_STREAM          11
 #define NAL_FILLER_DATA         12
@@ -1461,7 +1461,7 @@ static uint8_t *decode_nal(H264Context *h, uint8_t *src, int *dst_length, int *c
     int i, si, di;
     uint8_t *dst;
 
-//    src[0]&0x80;		//forbidden bit
+//    src[0]&0x80;                //forbidden bit
     h->nal_ref_idc= src[0]>>5;
     h->nal_unit_type= src[0]&0x1F;
 
@@ -7545,8 +7545,8 @@ static int decode_nal_units(H264Context *h, uint8_t *buf, int buf_size){
         case NAL_SPS_EXT:
         case NAL_AUXILIARY_SLICE:
             break;
-	default:
-	    av_log(avctx, AV_LOG_ERROR, "Unknown NAL code: %d\n", h->nal_unit_type);
+        default:
+            av_log(avctx, AV_LOG_ERROR, "Unknown NAL code: %d\n", h->nal_unit_type);
         }
     }
 

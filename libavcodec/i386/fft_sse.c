@@ -45,8 +45,8 @@ static void print_v4sf(const char *str, __m128 a)
 void ff_fft_calc_sse(FFTContext *s, FFTComplex *z)
 {
     int ln = s->nbits;
-    int	j, np, np2;
-    int	nblocks, nloops;
+    int         j, np, np2;
+    int         nblocks, nloops;
     register FFTComplex *p, *q;
     FFTComplex *cptr, *cptr1;
     int k;

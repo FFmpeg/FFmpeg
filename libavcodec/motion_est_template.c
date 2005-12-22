@@ -45,7 +45,7 @@
 
 #if 0
 static int hpel_motion_search)(MpegEncContext * s,
-				  int *mx_ptr, int *my_ptr, int dmin,
+                                  int *mx_ptr, int *my_ptr, int dmin,
                                   uint8_t *ref_data[3],
                                   int size)
 {
@@ -113,7 +113,7 @@ static int hpel_motion_search)(MpegEncContext * s,
 
 #else
 static int hpel_motion_search(MpegEncContext * s,
-				  int *mx_ptr, int *my_ptr, int dmin,
+                                  int *mx_ptr, int *my_ptr, int dmin,
                                   int src_index, int ref_index,
                                   int size, int h)
 {
@@ -271,7 +271,7 @@ int inline ff_get_mb_score(MpegEncContext * s, int mx, int my, int src_index,
 }
 
 static int qpel_motion_search(MpegEncContext * s,
-				  int *mx_ptr, int *my_ptr, int dmin,
+                                  int *mx_ptr, int *my_ptr, int dmin,
                                   int src_index, int ref_index,
                                   int size, int h)
 {
@@ -1005,7 +1005,7 @@ static int epzs_motion_search4(MpegEncContext * s,
 //printf("%d %d %d %d //",xmin, ymin, xmax, ymax);
     /* first line */
     if (s->first_slice_line) {
-	CHECK_MV(P_LEFT[0]>>shift, P_LEFT[1]>>shift)
+        CHECK_MV(P_LEFT[0]>>shift, P_LEFT[1]>>shift)
         CHECK_CLIPED_MV((last_mv[ref_mv_xy][0]*ref_mv_scale + (1<<15))>>16,
                         (last_mv[ref_mv_xy][1]*ref_mv_scale + (1<<15))>>16)
         CHECK_MV(P_MV1[0]>>shift, P_MV1[1]>>shift)
@@ -1067,7 +1067,7 @@ static int epzs_motion_search2(MpegEncContext * s,
 //printf("%d %d %d %d //",xmin, ymin, xmax, ymax);
     /* first line */
     if (s->first_slice_line) {
-	CHECK_MV(P_LEFT[0]>>shift, P_LEFT[1]>>shift)
+        CHECK_MV(P_LEFT[0]>>shift, P_LEFT[1]>>shift)
         CHECK_CLIPED_MV((last_mv[ref_mv_xy][0]*ref_mv_scale + (1<<15))>>16,
                         (last_mv[ref_mv_xy][1]*ref_mv_scale + (1<<15))>>16)
         CHECK_MV(P_MV1[0]>>shift, P_MV1[1]>>shift)

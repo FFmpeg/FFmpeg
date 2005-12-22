@@ -84,24 +84,24 @@ static inline uint64_t WORD_VEC(uint64_t x)
         } *) (p))->__l) = l;                                            \
     } while (0)
 struct unaligned_long { uint64_t l; } __attribute__((packed));
-#define ldq_u(p)     (*(const uint64_t *) (((uint64_t) (p)) & ~7ul))
-#define uldq(a)	     (((const struct unaligned_long *) (a))->l)
+#define ldq_u(p)        (*(const uint64_t *) (((uint64_t) (p)) & ~7ul))
+#define uldq(a)         (((const struct unaligned_long *) (a))->l)
 
 #if GNUC_PREREQ(3,3)
 #define prefetch(p)     __builtin_prefetch((p), 0, 1)
 #define prefetch_en(p)  __builtin_prefetch((p), 0, 0)
 #define prefetch_m(p)   __builtin_prefetch((p), 1, 1)
 #define prefetch_men(p) __builtin_prefetch((p), 1, 0)
-#define cmpbge	__builtin_alpha_cmpbge
+#define cmpbge          __builtin_alpha_cmpbge
 /* Avoid warnings.  */
-#define extql(a, b)	__builtin_alpha_extql(a, (uint64_t) (b))
-#define extwl(a, b)	__builtin_alpha_extwl(a, (uint64_t) (b))
-#define extqh(a, b)	__builtin_alpha_extqh(a, (uint64_t) (b))
-#define zap	__builtin_alpha_zap
-#define zapnot	__builtin_alpha_zapnot
-#define amask	__builtin_alpha_amask
-#define implver	__builtin_alpha_implver
-#define rpcc	__builtin_alpha_rpcc
+#define extql(a, b)     __builtin_alpha_extql(a, (uint64_t) (b))
+#define extwl(a, b)     __builtin_alpha_extwl(a, (uint64_t) (b))
+#define extqh(a, b)     __builtin_alpha_extqh(a, (uint64_t) (b))
+#define zap             __builtin_alpha_zap
+#define zapnot          __builtin_alpha_zapnot
+#define amask           __builtin_alpha_amask
+#define implver         __builtin_alpha_implver
+#define rpcc            __builtin_alpha_rpcc
 #else
 #define prefetch(p)     asm volatile("ldl $31,%0"  : : "m"(*(const char *) (p)) : "memory")
 #define prefetch_en(p)  asm volatile("ldq $31,%0"  : : "m"(*(const char *) (p)) : "memory")
@@ -113,26 +113,26 @@ struct unaligned_long { uint64_t l; } __attribute__((packed));
 #define extqh(a, b)  ({ uint64_t __r; asm ("extqh   %r1,%2,%0"  : "=r" (__r) : "rJ"  (a), "rI" (b)); __r; })
 #define zap(a, b)    ({ uint64_t __r; asm ("zap     %r1,%2,%0"  : "=r" (__r) : "rJ"  (a), "rI" (b)); __r; })
 #define zapnot(a, b) ({ uint64_t __r; asm ("zapnot  %r1,%2,%0"  : "=r" (__r) : "rJ"  (a), "rI" (b)); __r; })
-#define amask(a)     ({ uint64_t __r; asm ("amask   %1,%0"      : "=r" (__r) : "rI"  (a));	     __r; })
-#define implver()    ({ uint64_t __r; asm ("implver %0"         : "=r" (__r));			     __r; })
-#define rpcc()	     ({ uint64_t __r; asm volatile ("rpcc %0"   : "=r" (__r));			     __r; })
+#define amask(a)     ({ uint64_t __r; asm ("amask   %1,%0"      : "=r" (__r) : "rI"  (a));           __r; })
+#define implver()    ({ uint64_t __r; asm ("implver %0"         : "=r" (__r));                       __r; })
+#define rpcc()       ({ uint64_t __r; asm volatile ("rpcc %0"   : "=r" (__r));                       __r; })
 #endif
 #define wh64(p) asm volatile("wh64 (%0)" : : "r"(p) : "memory")
 
 #if GNUC_PREREQ(3,3) && defined(__alpha_max__)
-#define minub8	__builtin_alpha_minub8
-#define minsb8	__builtin_alpha_minsb8
-#define minuw4	__builtin_alpha_minuw4
-#define minsw4	__builtin_alpha_minsw4
-#define maxub8	__builtin_alpha_maxub8
-#define maxsb8	__builtin_alpha_maxsb8
-#define maxuw4	__builtin_alpha_maxuw4
-#define maxsw4	__builtin_alpha_maxsw4
-#define perr	__builtin_alpha_perr
-#define pklb	__builtin_alpha_pklb
-#define pkwb	__builtin_alpha_pkwb
-#define unpkbl	__builtin_alpha_unpkbl
-#define unpkbw	__builtin_alpha_unpkbw
+#define minub8  __builtin_alpha_minub8
+#define minsb8  __builtin_alpha_minsb8
+#define minuw4  __builtin_alpha_minuw4
+#define minsw4  __builtin_alpha_minsw4
+#define maxub8  __builtin_alpha_maxub8
+#define maxsb8  __builtin_alpha_maxsb8
+#define maxuw4  __builtin_alpha_maxuw4
+#define maxsw4  __builtin_alpha_maxsw4
+#define perr    __builtin_alpha_perr
+#define pklb    __builtin_alpha_pklb
+#define pkwb    __builtin_alpha_pkwb
+#define unpkbl  __builtin_alpha_unpkbl
+#define unpkbw  __builtin_alpha_unpkbw
 #else
 #define minub8(a, b) ({ uint64_t __r; asm (".arch ev6; minub8  %r1,%2,%0"  : "=r" (__r) : "%rJ" (a), "rI" (b)); __r; })
 #define minsb8(a, b) ({ uint64_t __r; asm (".arch ev6; minsb8  %r1,%2,%0"  : "=r" (__r) : "%rJ" (a), "rI" (b)); __r; })
@@ -143,13 +143,13 @@ struct unaligned_long { uint64_t l; } __attribute__((packed));
 #define maxuw4(a, b) ({ uint64_t __r; asm (".arch ev6; maxuw4  %r1,%2,%0"  : "=r" (__r) : "%rJ" (a), "rI" (b)); __r; })
 #define maxsw4(a, b) ({ uint64_t __r; asm (".arch ev6; maxsw4  %r1,%2,%0"  : "=r" (__r) : "%rJ" (a), "rI" (b)); __r; })
 #define perr(a, b)   ({ uint64_t __r; asm (".arch ev6; perr    %r1,%r2,%0" : "=r" (__r) : "%rJ" (a), "rJ" (b)); __r; })
-#define pklb(a)      ({ uint64_t __r; asm (".arch ev6; pklb    %r1,%0"     : "=r" (__r) : "rJ"  (a));	     __r; })
-#define pkwb(a)      ({ uint64_t __r; asm (".arch ev6; pkwb    %r1,%0"     : "=r" (__r) : "rJ"  (a));	     __r; })
-#define unpkbl(a)    ({ uint64_t __r; asm (".arch ev6; unpkbl  %r1,%0"     : "=r" (__r) : "rJ"  (a));	     __r; })
-#define unpkbw(a)    ({ uint64_t __r; asm (".arch ev6; unpkbw  %r1,%0"     : "=r" (__r) : "rJ"  (a));	     __r; })
+#define pklb(a)      ({ uint64_t __r; asm (".arch ev6; pklb    %r1,%0"     : "=r" (__r) : "rJ"  (a));           __r; })
+#define pkwb(a)      ({ uint64_t __r; asm (".arch ev6; pkwb    %r1,%0"     : "=r" (__r) : "rJ"  (a));           __r; })
+#define unpkbl(a)    ({ uint64_t __r; asm (".arch ev6; unpkbl  %r1,%0"     : "=r" (__r) : "rJ"  (a));           __r; })
+#define unpkbw(a)    ({ uint64_t __r; asm (".arch ev6; unpkbw  %r1,%0"     : "=r" (__r) : "rJ"  (a));           __r; })
 #endif
 
-#elif defined(__DECC)		/* Digital/Compaq/hp "ccc" compiler */
+#elif defined(__DECC)           /* Digital/Compaq/hp "ccc" compiler */
 
 #include <c_asm.h>
 #define ldq(p) (*(const uint64_t *) (p))
@@ -157,7 +157,7 @@ struct unaligned_long { uint64_t l; } __attribute__((packed));
 #define stq(l, p) do { *(uint64_t *) (p) = (l); } while (0)
 #define stl(l, p) do { *(int32_t *)  (p) = (l); } while (0)
 #define ldq_u(a)     asm ("ldq_u   %v0,0(%a0)", a)
-#define uldq(a)	     (*(const __unaligned uint64_t *) (a))
+#define uldq(a)      (*(const __unaligned uint64_t *) (a))
 #define cmpbge(a, b) asm ("cmpbge  %a0,%a1,%v0", a, b)
 #define extql(a, b)  asm ("extql   %a0,%a1,%v0", a, b)
 #define extwl(a, b)  asm ("extwl   %a0,%a1,%v0", a, b)
@@ -166,7 +166,7 @@ struct unaligned_long { uint64_t l; } __attribute__((packed));
 #define zapnot(a, b) asm ("zapnot  %a0,%a1,%v0", a, b)
 #define amask(a)     asm ("amask   %a0,%v0", a)
 #define implver()    asm ("implver %v0")
-#define rpcc()	     asm ("rpcc	   %v0")
+#define rpcc()       asm ("rpcc           %v0")
 #define minub8(a, b) asm ("minub8  %a0,%a1,%v0", a, b)
 #define minsb8(a, b) asm ("minsb8  %a0,%a1,%v0", a, b)
 #define minuw4(a, b) asm ("minuw4  %a0,%a1,%v0", a, b)

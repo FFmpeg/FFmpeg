@@ -35,20 +35,20 @@ typedef struct ThreadContext{
 
 // it's odd Be never patented that :D
 struct benaphore {
-	vint32 atom;
-	sem_id sem;
+        vint32 atom;
+        sem_id sem;
 };
 static inline int lock_ben(struct benaphore *ben)
 {
-	if (atomic_add(&ben->atom, 1) > 0)
-		return acquire_sem(ben->sem);
-	return B_OK;
+        if (atomic_add(&ben->atom, 1) > 0)
+                return acquire_sem(ben->sem);
+        return B_OK;
 }
 static inline int unlock_ben(struct benaphore *ben)
 {
-	if (atomic_add(&ben->atom, -1) > 1)
-		return release_sem(ben->sem);
-	return B_OK;
+        if (atomic_add(&ben->atom, -1) > 1)
+                return release_sem(ben->sem);
+        return B_OK;
 }
 
 static struct benaphore av_thread_lib_ben;
@@ -155,25 +155,25 @@ fail:
 
 int avcodec_thread_lock_lib(void)
 {
-	return lock_ben(&av_thread_lib_ben);
+        return lock_ben(&av_thread_lib_ben);
 }
 
 int avcodec_thread_unlock_lib(void)
 {
-	return unlock_ben(&av_thread_lib_ben);
+        return unlock_ben(&av_thread_lib_ben);
 }
 
 /* our versions of _init and _fini (which are called by those actually from crt.o) */
 
 void initialize_after(void)
 {
-	av_thread_lib_ben.atom = 0;
-	av_thread_lib_ben.sem = create_sem(0, "libavcodec benaphore");
+        av_thread_lib_ben.atom = 0;
+        av_thread_lib_ben.sem = create_sem(0, "libavcodec benaphore");
 }
 
 void uninitialize_before(void)
 {
-	delete_sem(av_thread_lib_ben.sem);
+        delete_sem(av_thread_lib_ben.sem);
 }
 
 

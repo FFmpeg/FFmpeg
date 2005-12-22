@@ -195,7 +195,7 @@ static void smc_decode_stream(SmcContext *s)
 
             /* sanity check */
             if ((row_ptr == 0) && (pixel_ptr < 2 * 4)) {
-        	av_log(s->avctx, AV_LOG_INFO, "encountered repeat block opcode (%02X) but not enough blocks rendered yet\n",
+                av_log(s->avctx, AV_LOG_INFO, "encountered repeat block opcode (%02X) but not enough blocks rendered yet\n",
                     opcode & 0xF0);
                 break;
             }

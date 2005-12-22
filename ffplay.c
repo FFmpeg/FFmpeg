@@ -1649,7 +1649,7 @@ static int stream_component_open(VideoState *is, int stream_index)
 
         memset(&is->audio_pkt, 0, sizeof(is->audio_pkt));
         packet_queue_init(&is->audioq);
-	SDL_PauseAudio(0);
+        SDL_PauseAudio(0);
         break;
     case CODEC_TYPE_VIDEO:
         is->video_stream = stream_index;
@@ -1937,11 +1937,11 @@ static int decode_thread(void *arg)
         }
         ret = av_read_frame(ic, pkt);
         if (ret < 0) {
-	    if (url_ferror(&ic->pb) == 0) {
+            if (url_ferror(&ic->pb) == 0) {
                 SDL_Delay(100); /* wait for user event */
-		continue;
-	    } else
-	        break;
+                continue;
+            } else
+                break;
         }
         if (pkt->stream_index == is->audio_stream) {
             packet_queue_put(&is->audioq, pkt);
@@ -2224,23 +2224,23 @@ void event_loop(void)
             }
             break;
         case SDL_MOUSEBUTTONDOWN:
-	    if (cur_stream) {
-		int ns, hh, mm, ss;
-		int tns, thh, tmm, tss;
-		tns = cur_stream->ic->duration/1000000LL;
-		thh = tns/3600;
-		tmm = (tns%3600)/60;
-		tss = (tns%60);
-		frac = (double)event.button.x/(double)cur_stream->width;
-		ns = frac*tns;
-		hh = ns/3600;
-		mm = (ns%3600)/60;
-		ss = (ns%60);
-		fprintf(stderr, "Seek to %2.0f%% (%2d:%02d:%02d) of total duration (%2d:%02d:%02d)       \n", frac*100,
-			hh, mm, ss, thh, tmm, tss);
-		stream_seek(cur_stream, (int64_t)(cur_stream->ic->start_time+frac*cur_stream->ic->duration), 0);
-	    }
-	    break;
+            if (cur_stream) {
+                int ns, hh, mm, ss;
+                int tns, thh, tmm, tss;
+                tns = cur_stream->ic->duration/1000000LL;
+                thh = tns/3600;
+                tmm = (tns%3600)/60;
+                tss = (tns%60);
+                frac = (double)event.button.x/(double)cur_stream->width;
+                ns = frac*tns;
+                hh = ns/3600;
+                mm = (ns%3600)/60;
+                ss = (ns%60);
+                fprintf(stderr, "Seek to %2.0f%% (%2d:%02d:%02d) of total duration (%2d:%02d:%02d)       \n", frac*100,
+                        hh, mm, ss, thh, tmm, tss);
+                stream_seek(cur_stream, (int64_t)(cur_stream->ic->start_time+frac*cur_stream->ic->duration), 0);
+            }
+            break;
         case SDL_VIDEORESIZE:
             if (cur_stream) {
                 screen = SDL_SetVideoMode(event.resize.w, event.resize.h, 0,
@@ -2452,7 +2452,7 @@ int main(int argc, char **argv)
             if (dpy) {
                 fs_screen_width = DisplayWidth(dpy, DefaultScreen(dpy));
                 fs_screen_height = DisplayHeight(dpy, DefaultScreen(dpy));
-		XCloseDisplay(dpy);
+                XCloseDisplay(dpy);
             }
         }
 #endif

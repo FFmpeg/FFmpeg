@@ -58,11 +58,11 @@ typedef struct AC3DecodeState {
     a52_state_t* (*a52_init)(uint32_t mm_accel);
     sample_t* (*a52_samples)(a52_state_t * state);
     int (*a52_syncinfo)(uint8_t * buf, int * flags,
-			  int * sample_rate, int * bit_rate);
+                          int * sample_rate, int * bit_rate);
     int (*a52_frame)(a52_state_t * state, uint8_t * buf, int * flags,
-		       sample_t * level, sample_t bias);
+                       sample_t * level, sample_t bias);
     void (*a52_dynrng)(a52_state_t * state,
-			 sample_t (* call) (sample_t, void *), void * data);
+                         sample_t (* call) (sample_t, void *), void * data);
     int (*a52_block)(a52_state_t * state);
     void (*a52_free)(a52_state_t * state);
 
@@ -105,7 +105,7 @@ static int a52_decode_init(AVCodecContext *avctx)
     if (!s->a52_init || !s->a52_samples || !s->a52_syncinfo
         || !s->a52_frame || !s->a52_block || !s->a52_free)
     {
-	dlclose(s->handle);
+        dlclose(s->handle);
         return -1;
     }
 #else
@@ -130,22 +130,22 @@ static int a52_decode_init(AVCodecContext *avctx)
 static inline int blah (int32_t i)
 {
     if (i > 0x43c07fff)
-	return 32767;
+        return 32767;
     else if (i < 0x43bf8000)
-	return -32768;
+        return -32768;
     return i - 0x43c00000;
 }
 
 static inline void float_to_int (float * _f, int16_t * s16, int nchannels)
 {
     int i, j, c;
-    int32_t * f = (int32_t *) _f;	// XXX assumes IEEE float format
+    int32_t * f = (int32_t *) _f;       // XXX assumes IEEE float format
 
     j = 0;
     nchannels *= 256;
     for (i = 0; i < 256; i++) {
-	for (c = 0; c < nchannels; c += 256)
-	    s16[j++] = blah (f[i + c]);
+        for (c = 0; c < nchannels; c += 256)
+            s16[j++] = blah (f[i + c]);
     }
 }
 
@@ -164,7 +164,7 @@ static int a52_decode_frame(AVCodecContext *avctx,
     short *out_samples = data;
     float level;
     static const int ac3_channels[8] = {
-	2, 1, 2, 3, 3, 4, 4, 5
+        2, 1, 2, 3, 3, 4, 4, 5
     };
 
     buf_ptr = buf;
@@ -186,20 +186,20 @@ static int a52_decode_frame(AVCodecContext *avctx,
                     memcpy(s->inbuf, s->inbuf + 1, HEADER_SIZE - 1);
                     s->inbuf_ptr--;
                 } else {
-		    s->frame_size = len;
+                    s->frame_size = len;
                     /* update codec info */
                     avctx->sample_rate = sample_rate;
                     s->channels = ac3_channels[s->flags & 7];
                     if (s->flags & A52_LFE)
-			s->channels++;
-		    if (avctx->channels == 0)
-			/* No specific number of channel requested */
-			avctx->channels = s->channels;
-		    else if (s->channels < avctx->channels) {
-			av_log(avctx, AV_LOG_ERROR, "ac3dec: AC3 Source channels are less than specified: output to %d channels.. (frmsize: %d)\n", s->channels, len);
-			avctx->channels = s->channels;
-		    }
-		    avctx->bit_rate = bit_rate;
+                        s->channels++;
+                    if (avctx->channels == 0)
+                        /* No specific number of channel requested */
+                        avctx->channels = s->channels;
+                    else if (s->channels < avctx->channels) {
+                        av_log(avctx, AV_LOG_ERROR, "ac3dec: AC3 Source channels are less than specified: output to %d channels.. (frmsize: %d)\n", s->channels, len);
+                        avctx->channels = s->channels;
+                    }
+                    avctx->bit_rate = bit_rate;
                 }
             }
         } else if (len < s->frame_size) {

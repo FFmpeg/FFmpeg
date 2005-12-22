@@ -163,18 +163,18 @@ void get_wav_header(ByteIOContext *pb, AVCodecContext *codec, int size)
     codec->codec_id = wav_codec_get_id(id, codec->bits_per_sample);
 
     if (size > 16) {  /* We're obviously dealing with WAVEFORMATEX */
-	codec->extradata_size = get_le16(pb);
-	if (codec->extradata_size > 0) {
-	    if (codec->extradata_size > size - 18)
-	        codec->extradata_size = size - 18;
+        codec->extradata_size = get_le16(pb);
+        if (codec->extradata_size > 0) {
+            if (codec->extradata_size > size - 18)
+                codec->extradata_size = size - 18;
             codec->extradata = av_mallocz(codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
             get_buffer(pb, codec->extradata, codec->extradata_size);
         } else
-	    codec->extradata_size = 0;
+            codec->extradata_size = 0;
 
-	/* It is possible for the chunk to contain garbage at the end */
-	if (size - codec->extradata_size - 18 > 0)
-	    url_fskip(pb, size - codec->extradata_size - 18);
+        /* It is possible for the chunk to contain garbage at the end */
+        if (size - codec->extradata_size - 18 > 0)
+            url_fskip(pb, size - codec->extradata_size - 18);
     }
 }
 

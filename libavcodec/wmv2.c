@@ -206,13 +206,13 @@ void ff_wmv2_encode_mb(MpegEncContext * s,
     handle_slices(s);
 
     if (!s->mb_intra) {
-	/* compute cbp */
+        /* compute cbp */
         set_stat(ST_INTER_MB);
-	cbp = 0;
-	for (i = 0; i < 6; i++) {
-	    if (s->block_last_index[i] >= 0)
-		cbp |= 1 << (5 - i);
-	}
+        cbp = 0;
+        for (i = 0; i < 6; i++) {
+            if (s->block_last_index[i] >= 0)
+                cbp |= 1 << (5 - i);
+        }
 
         put_bits(&s->pb,
                  wmv2_inter_table[w->cbp_table_index][cbp + 64][1],
@@ -223,10 +223,10 @@ void ff_wmv2_encode_mb(MpegEncContext * s,
         msmpeg4_encode_motion(s, motion_x - pred_x,
                               motion_y - pred_y);
     } else {
-	/* compute cbp */
-	cbp = 0;
+        /* compute cbp */
+        cbp = 0;
         coded_cbp = 0;
-	for (i = 0; i < 6; i++) {
+        for (i = 0; i < 6; i++) {
             int val, pred;
             val = (s->block_last_index[i] >= 1);
             cbp |= val << (5 - i);
@@ -237,7 +237,7 @@ void ff_wmv2_encode_mb(MpegEncContext * s,
                 val = val ^ pred;
             }
             coded_cbp |= val << (5 - i);
-	}
+        }
 #if 0
         if (coded_cbp)
             printf("cbp=%x %x\n", cbp, coded_cbp);
@@ -253,7 +253,7 @@ void ff_wmv2_encode_mb(MpegEncContext * s,
                      wmv2_inter_table[w->cbp_table_index][cbp][0]);
         }
         set_stat(ST_INTRA_MB);
-        put_bits(&s->pb, 1, 0);	/* no AC prediction yet */
+        put_bits(&s->pb, 1, 0);         /* no AC prediction yet */
         if(s->inter_intra_pred){
             s->h263_aic_dir=0;
             put_bits(&s->pb, table_inter_intra[s->h263_aic_dir][1], table_inter_intra[s->h263_aic_dir][0]);
@@ -400,11 +400,11 @@ int ff_wmv2_decode_secondary_picture_header(MpegEncContext * s)
         s->inter_intra_pred= 0;
         s->no_rounding = 1;
         if(s->avctx->debug&FF_DEBUG_PICT_INFO){
-	    av_log(s->avctx, AV_LOG_DEBUG, "qscale:%d rlc:%d rl:%d dc:%d mbrl:%d j_type:%d \n",
-		s->qscale,
-		s->rl_chroma_table_index,
-		s->rl_table_index,
-		s->dc_table_index,
+            av_log(s->avctx, AV_LOG_DEBUG, "qscale:%d rlc:%d rl:%d dc:%d mbrl:%d j_type:%d \n",
+                s->qscale,
+                s->rl_chroma_table_index,
+                s->rl_table_index,
+                s->dc_table_index,
                 s->per_mb_rl_table,
                 w->j_type);
         }
@@ -451,10 +451,10 @@ int ff_wmv2_decode_secondary_picture_header(MpegEncContext * s)
 
         if(s->avctx->debug&FF_DEBUG_PICT_INFO){
             av_log(s->avctx, AV_LOG_DEBUG, "rl:%d rlc:%d dc:%d mv:%d mbrl:%d qp:%d mspel:%d per_mb_abt:%d abt_type:%d cbp:%d ii:%d\n",
-		s->rl_table_index,
-		s->rl_chroma_table_index,
-		s->dc_table_index,
-		s->mv_table_index,
+                s->rl_table_index,
+                s->rl_chroma_table_index,
+                s->dc_table_index,
+                s->mv_table_index,
                 s->per_mb_rl_table,
                 s->qscale,
                 s->mspel,
@@ -734,7 +734,7 @@ static int wmv2_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
         code = get_vlc2(&s->gb, mb_non_intra_vlc[w->cbp_table_index].table, MB_NON_INTRA_VLC_BITS, 3);
         if (code < 0)
             return -1;
-	s->mb_intra = (~code & 0x40) >> 6;
+        s->mb_intra = (~code & 0x40) >> 6;
 
         cbp = code & 0x3f;
     } else {
@@ -787,10 +787,10 @@ static int wmv2_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
 
         for (i = 0; i < 6; i++) {
             if (wmv2_decode_inter_block(w, block[i], i, (cbp >> (5 - i)) & 1) < 0)
-	    {
-	        av_log(s->avctx, AV_LOG_ERROR, "\nerror while decoding inter block: %d x %d (%d)\n", s->mb_x, s->mb_y, i);
-	        return -1;
-	    }
+            {
+                av_log(s->avctx, AV_LOG_ERROR, "\nerror while decoding inter block: %d x %d (%d)\n", s->mb_x, s->mb_y, i);
+                return -1;
+            }
         }
     } else {
 //if(s->pict_type==P_TYPE)
@@ -809,10 +809,10 @@ static int wmv2_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
         s->dsp.clear_blocks(s->block[0]);
         for (i = 0; i < 6; i++) {
             if (msmpeg4_decode_block(s, block[i], i, (cbp >> (5 - i)) & 1, NULL) < 0)
-	    {
-	        av_log(s->avctx, AV_LOG_ERROR, "\nerror while decoding intra block: %d x %d (%d)\n", s->mb_x, s->mb_y, i);
-	        return -1;
-	    }
+            {
+                av_log(s->avctx, AV_LOG_ERROR, "\nerror while decoding intra block: %d x %d (%d)\n", s->mb_x, s->mb_y, i);
+                return -1;
+            }
         }
     }
 

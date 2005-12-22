@@ -663,7 +663,7 @@ static int nsv_read_packet(AVFormatContext *s, AVPacket *pkt)
     /* now pick one of the plates */
     for (i = 0; i < 2; i++) {
         if (nsv->ahead[i].data) {
-        	PRINT(("%s: using cached packet[%d]\n", __FUNCTION__, i));
+                PRINT(("%s: using cached packet[%d]\n", __FUNCTION__, i));
             /* avoid the cost of new_packet + memcpy(->data) */
             memcpy(pkt, &nsv->ahead[i], sizeof(AVPacket));
             nsv->ahead[i].data = NULL; /* we ate that one */

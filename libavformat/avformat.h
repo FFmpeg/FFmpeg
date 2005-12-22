@@ -68,7 +68,7 @@ int av_dup_packet(AVPacket *pkt);
 static inline void av_free_packet(AVPacket *pkt)
 {
     if (pkt && pkt->destruct) {
-	pkt->destruct(pkt);
+        pkt->destruct(pkt);
     }
 }
 

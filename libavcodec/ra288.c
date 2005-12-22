@@ -21,23 +21,23 @@
 #include "ra288.h"
 
 typedef struct {
-	float	history[8];
-	float	output[40];
-	float	pr1[36];
-	float	pr2[10];
-	int	phase, phasep;
+        float   history[8];
+        float   output[40];
+        float   pr1[36];
+        float   pr2[10];
+        int     phase, phasep;
 
-	float st1a[111],st1b[37],st1[37];
-	float st2a[38],st2b[11],st2[11];
-	float sb[41];
-	float lhist[10];
+        float   st1a[111],st1b[37],st1[37];
+        float   st2a[38],st2b[11],st2[11];
+        float   sb[41];
+        float   lhist[10];
 } Real288_internal;
 
 static int ra288_decode_init(AVCodecContext * avctx)
 {
-	Real288_internal *glob=avctx->priv_data;
-	memset(glob,0,sizeof(Real288_internal));
-	return 0;
+        Real288_internal *glob=avctx->priv_data;
+        memset(glob,0,sizeof(Real288_internal));
+        return 0;
 }
 
 static void prodsum(float *tgt, float *src, int len, int n);
@@ -109,7 +109,7 @@ static void decode(Real288_internal *glob, unsigned int input)
   for (sum=32,x=10;x--;sum-=glob->pr2[x]*glob->lhist[x]);
   if (sum<0) sum=0; else if (sum>60) sum=60;
 
-  sumsum=exp(sum*0.1151292546497)*f;	/* pow(10.0,sum/20)*f */
+  sumsum=exp(sum*0.1151292546497)*f;    /* pow(10.0,sum/20)*f */
   for (sum=0,x=5;x--;) { buffer[x]=table[x]*sumsum; sum+=buffer[x]*buffer[x]; }
   if ((sum/=5)<1) sum=1;
 
@@ -232,8 +232,8 @@ static int ra288_decode_frame(AVCodecContext * avctx,
 
     if (buf_size < avctx->block_align)
     {
-	av_log(avctx, AV_LOG_ERROR, "ffra288: Error! Input buffer is too small [%d<%d]\n",buf_size,avctx->block_align);
-	return 0;
+        av_log(avctx, AV_LOG_ERROR, "ffra288: Error! Input buffer is too small [%d<%d]\n",buf_size,avctx->block_align);
+        return 0;
     }
 
     datao = data;

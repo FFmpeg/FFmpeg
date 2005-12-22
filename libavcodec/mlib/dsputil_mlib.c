@@ -61,7 +61,7 @@ static void add_pixels_clamped_mlib(const DCTELEM *block, uint8_t *pixels, int l
 /* put block, width 16 pixel, height 8/16 */
 
 static void put_pixels16_mlib (uint8_t * dest, const uint8_t * ref,
-			       int stride, int height)
+                               int stride, int height)
 {
   switch (height) {
     case 8:
@@ -78,7 +78,7 @@ static void put_pixels16_mlib (uint8_t * dest, const uint8_t * ref,
 }
 
 static void put_pixels16_x2_mlib (uint8_t * dest, const uint8_t * ref,
-				  int stride, int height)
+                                  int stride, int height)
 {
   switch (height) {
     case 8:
@@ -95,7 +95,7 @@ static void put_pixels16_x2_mlib (uint8_t * dest, const uint8_t * ref,
 }
 
 static void put_pixels16_y2_mlib (uint8_t * dest, const uint8_t * ref,
-				  int stride, int height)
+                                  int stride, int height)
 {
   switch (height) {
     case 8:
@@ -112,7 +112,7 @@ static void put_pixels16_y2_mlib (uint8_t * dest, const uint8_t * ref,
 }
 
 static void put_pixels16_xy2_mlib(uint8_t * dest, const uint8_t * ref,
-				  int stride, int height)
+                                  int stride, int height)
 {
   switch (height) {
     case 8:
@@ -131,7 +131,7 @@ static void put_pixels16_xy2_mlib(uint8_t * dest, const uint8_t * ref,
 /* put block, width 8 pixel, height 4/8/16 */
 
 static void put_pixels8_mlib (uint8_t * dest, const uint8_t * ref,
-			       int stride, int height)
+                               int stride, int height)
 {
   switch (height) {
     case 4:
@@ -152,7 +152,7 @@ static void put_pixels8_mlib (uint8_t * dest, const uint8_t * ref,
 }
 
 static void put_pixels8_x2_mlib (uint8_t * dest, const uint8_t * ref,
-				  int stride, int height)
+                                  int stride, int height)
 {
   switch (height) {
     case 4:
@@ -173,7 +173,7 @@ static void put_pixels8_x2_mlib (uint8_t * dest, const uint8_t * ref,
 }
 
 static void put_pixels8_y2_mlib (uint8_t * dest, const uint8_t * ref,
-				  int stride, int height)
+                                  int stride, int height)
 {
   switch (height) {
     case 4:
@@ -194,7 +194,7 @@ static void put_pixels8_y2_mlib (uint8_t * dest, const uint8_t * ref,
 }
 
 static void put_pixels8_xy2_mlib(uint8_t * dest, const uint8_t * ref,
-				  int stride, int height)
+                                  int stride, int height)
 {
   switch (height) {
     case 4:
@@ -217,7 +217,7 @@ static void put_pixels8_xy2_mlib(uint8_t * dest, const uint8_t * ref,
 /* average block, width 16 pixel, height 8/16 */
 
 static void avg_pixels16_mlib (uint8_t * dest, const uint8_t * ref,
-			       int stride, int height)
+                               int stride, int height)
 {
   switch (height) {
     case 8:
@@ -234,7 +234,7 @@ static void avg_pixels16_mlib (uint8_t * dest, const uint8_t * ref,
 }
 
 static void avg_pixels16_x2_mlib (uint8_t * dest, const uint8_t * ref,
-				  int stride, int height)
+                                  int stride, int height)
 {
   switch (height) {
     case 8:
@@ -251,7 +251,7 @@ static void avg_pixels16_x2_mlib (uint8_t * dest, const uint8_t * ref,
 }
 
 static void avg_pixels16_y2_mlib (uint8_t * dest, const uint8_t * ref,
-				  int stride, int height)
+                                  int stride, int height)
 {
   switch (height) {
     case 8:
@@ -268,7 +268,7 @@ static void avg_pixels16_y2_mlib (uint8_t * dest, const uint8_t * ref,
 }
 
 static void avg_pixels16_xy2_mlib(uint8_t * dest, const uint8_t * ref,
-				  int stride, int height)
+                                  int stride, int height)
 {
   switch (height) {
     case 8:
@@ -287,7 +287,7 @@ static void avg_pixels16_xy2_mlib(uint8_t * dest, const uint8_t * ref,
 /* average block, width 8 pixel, height 4/8/16 */
 
 static void avg_pixels8_mlib (uint8_t * dest, const uint8_t * ref,
-			       int stride, int height)
+                               int stride, int height)
 {
   switch (height) {
     case 4:
@@ -308,7 +308,7 @@ static void avg_pixels8_mlib (uint8_t * dest, const uint8_t * ref,
 }
 
 static void avg_pixels8_x2_mlib (uint8_t * dest, const uint8_t * ref,
-				  int stride, int height)
+                                  int stride, int height)
 {
   switch (height) {
     case 4:
@@ -329,7 +329,7 @@ static void avg_pixels8_x2_mlib (uint8_t * dest, const uint8_t * ref,
 }
 
 static void avg_pixels8_y2_mlib (uint8_t * dest, const uint8_t * ref,
-				  int stride, int height)
+                                  int stride, int height)
 {
   switch (height) {
     case 4:
@@ -350,7 +350,7 @@ static void avg_pixels8_y2_mlib (uint8_t * dest, const uint8_t * ref,
 }
 
 static void avg_pixels8_xy2_mlib(uint8_t * dest, const uint8_t * ref,
-				  int stride, int height)
+                                  int stride, int height)
 {
   switch (height) {
     case 4:
@@ -450,7 +450,7 @@ void dsputil_init_mlib(DSPContext* c, AVCodecContext *avctx)
 void MPV_common_init_mlib(MpegEncContext *s)
 {
     if(s->avctx->dct_algo==FF_DCT_AUTO || s->avctx->dct_algo==FF_DCT_MLIB){
-	s->dsp.fdct = ff_fdct_mlib;
+        s->dsp.fdct = ff_fdct_mlib;
     }
 
     if(s->avctx->idct_algo==FF_IDCT_AUTO || s->avctx->idct_algo==FF_IDCT_MLIB){

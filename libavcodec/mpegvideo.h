@@ -126,7 +126,7 @@ typedef struct ScanTable{
     uint8_t permutated[64];
     uint8_t raster_end[64];
 #ifdef ARCH_POWERPC
-		/** Used by dct_quantise_alitvec to find last-non-zero */
+                /** Used by dct_quantise_alitvec to find last-non-zero */
     uint8_t __align8 inverse[64];
 #endif
 } ScanTable;
@@ -181,7 +181,7 @@ typedef struct Picture{
     uint16_t *mb_var;           ///< Table for MB variances
     uint16_t *mc_mb_var;        ///< Table for motion compensated MB variances
     uint8_t *mb_mean;           ///< Table for MB luminance
-    int32_t *mb_cmp_score;	///< Table for MB cmp scores, for mb decision FIXME remove
+    int32_t *mb_cmp_score;      ///< Table for MB cmp scores, for mb decision FIXME remove
     int b_frame_score;          /* */
 } Picture;
 
@@ -245,7 +245,7 @@ typedef struct MotionEstContext{
     uint8_t (*mv_penalty)[MAX_MV*2+1];  ///< amount of bits needed to encode a MV
     uint8_t *current_mv_penalty;
     int (*sub_motion_search)(struct MpegEncContext * s,
-				  int *mx_ptr, int *my_ptr, int dmin,
+                                  int *mx_ptr, int *my_ptr, int dmin,
                                   int src_index, int ref_index,
                                   int size, int h);
 }MotionEstContext;

@@ -65,8 +65,8 @@ void ff_fft_calc_altivec(FFTContext *s, FFTComplex *z)
 POWERPC_PERF_DECLARE(altivec_fft_num, s->nbits >= 6);
 #ifdef ALTIVEC_USE_REFERENCE_C_CODE
     int ln = s->nbits;
-    int	j, np, np2;
-    int	nblocks, nloops;
+    int j, np, np2;
+    int nblocks, nloops;
     register FFTComplex *p, *q;
     FFTComplex *exptab = s->exptab;
     int l;
@@ -147,8 +147,8 @@ POWERPC_PERF_STOP_COUNT(altivec_fft_num, s->nbits >= 6);
 #endif
 
     int ln = s->nbits;
-    int	j, np, np2;
-    int	nblocks, nloops;
+    int j, np, np2;
+    int nblocks, nloops;
     register FFTComplex *p, *q;
     FFTComplex *cptr, *cptr1;
     int k;

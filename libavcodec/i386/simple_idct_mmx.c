@@ -40,8 +40,8 @@
 #define C4 16383 //cos(i*M_PI/16)*sqrt(2)*(1<<14) - 0.5
 #endif
 #define C5 12873 //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5
-#define C6 8867 //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5
-#define C7 4520 //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5
+#define C6 8867  //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5
+#define C7 4520  //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5
 
 #define ROW_SHIFT 11
 #define COL_SHIFT 20 // 6
@@ -50,13 +50,13 @@ static const uint64_t attribute_used __attribute__((aligned(8))) wm1010= 0xFFFF0
 static const uint64_t attribute_used __attribute__((aligned(8))) d40000= 0x0000000000040000ULL;
 
 static const int16_t __attribute__((aligned(8))) coeffs[]= {
-	1<<(ROW_SHIFT-1), 0, 1<<(ROW_SHIFT-1), 0,
-//	1<<(COL_SHIFT-1), 0, 1<<(COL_SHIFT-1), 0,
-//	0, 1<<(COL_SHIFT-1-16), 0, 1<<(COL_SHIFT-1-16),
-	1<<(ROW_SHIFT-1), 1, 1<<(ROW_SHIFT-1), 0,
-	// the 1 = ((1<<(COL_SHIFT-1))/C4)<<ROW_SHIFT :)
-//	0, 0, 0, 0,
-//	0, 0, 0, 0,
+        1<<(ROW_SHIFT-1), 0, 1<<(ROW_SHIFT-1), 0,
+//        1<<(COL_SHIFT-1), 0, 1<<(COL_SHIFT-1), 0,
+//        0, 1<<(COL_SHIFT-1-16), 0, 1<<(COL_SHIFT-1-16),
+        1<<(ROW_SHIFT-1), 1, 1<<(ROW_SHIFT-1), 0,
+        // the 1 = ((1<<(COL_SHIFT-1))/C4)<<ROW_SHIFT :)
+//        0, 0, 0, 0,
+//        0, 0, 0, 0,
 
  C4,  C4,  C4,  C4,
  C4, -C4,  C4, -C4,
@@ -79,8 +79,8 @@ static const int16_t __attribute__((aligned(8))) coeffs[]= {
 
 #if 0
 static void unused_var_killer(){
-	int a= wm1010 + d40000;
-	temp[0]=a;
+        int a= wm1010 + d40000;
+        temp[0]=a;
 }
 
 static void inline idctCol (int16_t * col, int16_t *input)
@@ -93,21 +93,21 @@ static void inline idctCol (int16_t * col, int16_t *input)
 #undef C5
 #undef C6
 #undef C7
-	int a0, a1, a2, a3, b0, b1, b2, b3;
-	const int C0 = 23170; //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5
-	const int C1 = 22725; //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5
-	const int C2 = 21407; //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5
-	const int C3 = 19266; //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5
-	const int C4 = 16383; //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5
-	const int C5 = 12873; //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5
-	const int C6 = 8867; //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5
-	const int C7 = 4520; //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5
+        int a0, a1, a2, a3, b0, b1, b2, b3;
+        const int C0 = 23170; //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5
+        const int C1 = 22725; //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5
+        const int C2 = 21407; //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5
+        const int C3 = 19266; //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5
+        const int C4 = 16383; //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5
+        const int C5 = 12873; //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5
+        const int C6 = 8867;  //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5
+        const int C7 = 4520;  //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5
 /*
-	if( !(col[8*1] | col[8*2] |col[8*3] |col[8*4] |col[8*5] |col[8*6] | col[8*7])) {
-		col[8*0] = col[8*1] = col[8*2] = col[8*3] = col[8*4] =
-			col[8*5] = col[8*6] = col[8*7] = col[8*0]<<3;
-		return;
-	}*/
+        if( !(col[8*1] | col[8*2] |col[8*3] |col[8*4] |col[8*5] |col[8*6] | col[8*7])) {
+                col[8*0] = col[8*1] = col[8*2] = col[8*3] = col[8*4] =
+                        col[8*5] = col[8*6] = col[8*7] = col[8*0]<<3;
+                return;
+        }*/
 
 col[8*0] = input[8*0 + 0];
 col[8*1] = input[8*2 + 0];
@@ -118,39 +118,39 @@ col[8*5] = input[8*6 + 0];
 col[8*6] = input[8*4 + 1];
 col[8*7] = input[8*6 + 1];
 
-	a0 = C4*col[8*0] + C2*col[8*2] + C4*col[8*4] + C6*col[8*6] + (1<<(COL_SHIFT-1));
-	a1 = C4*col[8*0] + C6*col[8*2] - C4*col[8*4] - C2*col[8*6] + (1<<(COL_SHIFT-1));
-	a2 = C4*col[8*0] - C6*col[8*2] - C4*col[8*4] + C2*col[8*6] + (1<<(COL_SHIFT-1));
-	a3 = C4*col[8*0] - C2*col[8*2] + C4*col[8*4] - C6*col[8*6] + (1<<(COL_SHIFT-1));
+        a0 = C4*col[8*0] + C2*col[8*2] + C4*col[8*4] + C6*col[8*6] + (1<<(COL_SHIFT-1));
+        a1 = C4*col[8*0] + C6*col[8*2] - C4*col[8*4] - C2*col[8*6] + (1<<(COL_SHIFT-1));
+        a2 = C4*col[8*0] - C6*col[8*2] - C4*col[8*4] + C2*col[8*6] + (1<<(COL_SHIFT-1));
+        a3 = C4*col[8*0] - C2*col[8*2] + C4*col[8*4] - C6*col[8*6] + (1<<(COL_SHIFT-1));
 
-	b0 = C1*col[8*1] + C3*col[8*3] + C5*col[8*5] + C7*col[8*7];
-	b1 = C3*col[8*1] - C7*col[8*3] - C1*col[8*5] - C5*col[8*7];
-	b2 = C5*col[8*1] - C1*col[8*3] + C7*col[8*5] + C3*col[8*7];
-	b3 = C7*col[8*1] - C5*col[8*3] + C3*col[8*5] - C1*col[8*7];
+        b0 = C1*col[8*1] + C3*col[8*3] + C5*col[8*5] + C7*col[8*7];
+        b1 = C3*col[8*1] - C7*col[8*3] - C1*col[8*5] - C5*col[8*7];
+        b2 = C5*col[8*1] - C1*col[8*3] + C7*col[8*5] + C3*col[8*7];
+        b3 = C7*col[8*1] - C5*col[8*3] + C3*col[8*5] - C1*col[8*7];
 
-	col[8*0] = (a0 + b0) >> COL_SHIFT;
-	col[8*1] = (a1 + b1) >> COL_SHIFT;
-	col[8*2] = (a2 + b2) >> COL_SHIFT;
-	col[8*3] = (a3 + b3) >> COL_SHIFT;
-	col[8*4] = (a3 - b3) >> COL_SHIFT;
-	col[8*5] = (a2 - b2) >> COL_SHIFT;
-	col[8*6] = (a1 - b1) >> COL_SHIFT;
-	col[8*7] = (a0 - b0) >> COL_SHIFT;
+        col[8*0] = (a0 + b0) >> COL_SHIFT;
+        col[8*1] = (a1 + b1) >> COL_SHIFT;
+        col[8*2] = (a2 + b2) >> COL_SHIFT;
+        col[8*3] = (a3 + b3) >> COL_SHIFT;
+        col[8*4] = (a3 - b3) >> COL_SHIFT;
+        col[8*5] = (a2 - b2) >> COL_SHIFT;
+        col[8*6] = (a1 - b1) >> COL_SHIFT;
+        col[8*7] = (a0 - b0) >> COL_SHIFT;
 }
 
 static void inline idctRow (int16_t * output, int16_t * input)
 {
-	int16_t row[8];
+        int16_t row[8];
 
-	int a0, a1, a2, a3, b0, b1, b2, b3;
-	const int C0 = 23170; //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5
-	const int C1 = 22725; //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5
-	const int C2 = 21407; //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5
-	const int C3 = 19266; //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5
-	const int C4 = 16383; //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5
-	const int C5 = 12873; //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5
-	const int C6 = 8867; //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5
-	const int C7 = 4520; //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5
+        int a0, a1, a2, a3, b0, b1, b2, b3;
+        const int C0 = 23170; //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5
+        const int C1 = 22725; //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5
+        const int C2 = 21407; //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5
+        const int C3 = 19266; //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5
+        const int C4 = 16383; //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5
+        const int C5 = 12873; //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5
+        const int C6 = 8867;  //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5
+        const int C7 = 4520;  //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5
 
 row[0] = input[0];
 row[2] = input[1];
@@ -161,290 +161,290 @@ row[3] = input[9];
 row[5] = input[12];
 row[7] = input[13];
 
-	if( !(row[1] | row[2] |row[3] |row[4] |row[5] |row[6] | row[7]) ) {
-		row[0] = row[1] = row[2] = row[3] = row[4] =
-			row[5] = row[6] = row[7] = row[0]<<3;
-	output[0] = row[0];
-	output[2] = row[1];
-	output[4] = row[2];
-	output[6] = row[3];
-	output[8] = row[4];
-	output[10] = row[5];
-	output[12] = row[6];
-	output[14] = row[7];
-		return;
-	}
+        if( !(row[1] | row[2] |row[3] |row[4] |row[5] |row[6] | row[7]) ) {
+                row[0] = row[1] = row[2] = row[3] = row[4] =
+                        row[5] = row[6] = row[7] = row[0]<<3;
+        output[0]  = row[0];
+        output[2]  = row[1];
+        output[4]  = row[2];
+        output[6]  = row[3];
+        output[8]  = row[4];
+        output[10] = row[5];
+        output[12] = row[6];
+        output[14] = row[7];
+                return;
+        }
 
-	a0 = C4*row[0] + C2*row[2] + C4*row[4] + C6*row[6] + (1<<(ROW_SHIFT-1));
-	a1 = C4*row[0] + C6*row[2] - C4*row[4] - C2*row[6] + (1<<(ROW_SHIFT-1));
-	a2 = C4*row[0] - C6*row[2] - C4*row[4] + C2*row[6] + (1<<(ROW_SHIFT-1));
-	a3 = C4*row[0] - C2*row[2] + C4*row[4] - C6*row[6] + (1<<(ROW_SHIFT-1));
+        a0 = C4*row[0] + C2*row[2] + C4*row[4] + C6*row[6] + (1<<(ROW_SHIFT-1));
+        a1 = C4*row[0] + C6*row[2] - C4*row[4] - C2*row[6] + (1<<(ROW_SHIFT-1));
+        a2 = C4*row[0] - C6*row[2] - C4*row[4] + C2*row[6] + (1<<(ROW_SHIFT-1));
+        a3 = C4*row[0] - C2*row[2] + C4*row[4] - C6*row[6] + (1<<(ROW_SHIFT-1));
 
-	b0 = C1*row[1] + C3*row[3] + C5*row[5] + C7*row[7];
-	b1 = C3*row[1] - C7*row[3] - C1*row[5] - C5*row[7];
-	b2 = C5*row[1] - C1*row[3] + C7*row[5] + C3*row[7];
-	b3 = C7*row[1] - C5*row[3] + C3*row[5] - C1*row[7];
+        b0 = C1*row[1] + C3*row[3] + C5*row[5] + C7*row[7];
+        b1 = C3*row[1] - C7*row[3] - C1*row[5] - C5*row[7];
+        b2 = C5*row[1] - C1*row[3] + C7*row[5] + C3*row[7];
+        b3 = C7*row[1] - C5*row[3] + C3*row[5] - C1*row[7];
 
-	row[0] = (a0 + b0) >> ROW_SHIFT;
-	row[1] = (a1 + b1) >> ROW_SHIFT;
-	row[2] = (a2 + b2) >> ROW_SHIFT;
-	row[3] = (a3 + b3) >> ROW_SHIFT;
-	row[4] = (a3 - b3) >> ROW_SHIFT;
-	row[5] = (a2 - b2) >> ROW_SHIFT;
-	row[6] = (a1 - b1) >> ROW_SHIFT;
-	row[7] = (a0 - b0) >> ROW_SHIFT;
+        row[0] = (a0 + b0) >> ROW_SHIFT;
+        row[1] = (a1 + b1) >> ROW_SHIFT;
+        row[2] = (a2 + b2) >> ROW_SHIFT;
+        row[3] = (a3 + b3) >> ROW_SHIFT;
+        row[4] = (a3 - b3) >> ROW_SHIFT;
+        row[5] = (a2 - b2) >> ROW_SHIFT;
+        row[6] = (a1 - b1) >> ROW_SHIFT;
+        row[7] = (a0 - b0) >> ROW_SHIFT;
 
-	output[0] = row[0];
-	output[2] = row[1];
-	output[4] = row[2];
-	output[6] = row[3];
-	output[8] = row[4];
-	output[10] = row[5];
-	output[12] = row[6];
-	output[14] = row[7];
+        output[0]  = row[0];
+        output[2]  = row[1];
+        output[4]  = row[2];
+        output[6]  = row[3];
+        output[8]  = row[4];
+        output[10] = row[5];
+        output[12] = row[6];
+        output[14] = row[7];
 }
 #endif
 
 static inline void idct(int16_t *block)
 {
-	int64_t __attribute__((aligned(8))) align_tmp[16];
-	int16_t * const temp= (int16_t*)align_tmp;
+        int64_t __attribute__((aligned(8))) align_tmp[16];
+        int16_t * const temp= (int16_t*)align_tmp;
 
-	asm volatile(
+        asm volatile(
 #if 0 //Alternative, simpler variant
 
 #define ROW_IDCT(src0, src4, src1, src5, dst, rounder, shift) \
-	"movq " #src0 ", %%mm0			\n\t" /* R4	R0	r4	r0 */\
-	"movq " #src4 ", %%mm1			\n\t" /* R6	R2	r6	r2 */\
-	"movq " #src1 ", %%mm2			\n\t" /* R3	R1	r3	r1 */\
-	"movq " #src5 ", %%mm3			\n\t" /* R7	R5	r7	r5 */\
-	"movq 16(%2), %%mm4			\n\t" /* C4	C4	C4	C4 */\
-	"pmaddwd %%mm0, %%mm4			\n\t" /* C4R4+C4R0	C4r4+C4r0 */\
-	"movq 24(%2), %%mm5			\n\t" /* -C4	C4	-C4	C4 */\
-	"pmaddwd %%mm5, %%mm0			\n\t" /* -C4R4+C4R0	-C4r4+C4r0 */\
-	"movq 32(%2), %%mm5			\n\t" /* C6	C2	C6	C2 */\
-	"pmaddwd %%mm1, %%mm5			\n\t" /* C6R6+C2R2	C6r6+C2r2 */\
-	"movq 40(%2), %%mm6			\n\t" /* -C2	C6	-C2	C6 */\
-	"pmaddwd %%mm6, %%mm1			\n\t" /* -C2R6+C6R2	-C2r6+C6r2 */\
-	"movq 48(%2), %%mm7			\n\t" /* C3	C1	C3	C1 */\
-	"pmaddwd %%mm2, %%mm7			\n\t" /* C3R3+C1R1	C3r3+C1r1 */\
-	#rounder ", %%mm4			\n\t"\
-	"movq %%mm4, %%mm6			\n\t" /* C4R4+C4R0	C4r4+C4r0 */\
-	"paddd %%mm5, %%mm4			\n\t" /* A0		a0 */\
-	"psubd %%mm5, %%mm6			\n\t" /* A3		a3 */\
-	"movq 56(%2), %%mm5			\n\t" /* C7	C5	C7	C5 */\
-	"pmaddwd %%mm3, %%mm5			\n\t" /* C7R7+C5R5	C7r7+C5r5 */\
-	#rounder ", %%mm0			\n\t"\
-	"paddd %%mm0, %%mm1			\n\t" /* A1		a1 */\
-	"paddd %%mm0, %%mm0			\n\t" \
-	"psubd %%mm1, %%mm0			\n\t" /* A2		a2 */\
-	"pmaddwd 64(%2), %%mm2			\n\t" /* -C7R3+C3R1	-C7r3+C3r1 */\
-	"paddd %%mm5, %%mm7			\n\t" /* B0		b0 */\
-	"movq 72(%2), %%mm5			\n\t" /* -C5	-C1	-C5	-C1 */\
-	"pmaddwd %%mm3, %%mm5			\n\t" /* -C5R7-C1R5	-C5r7-C1r5 */\
-	"paddd %%mm4, %%mm7			\n\t" /* A0+B0		a0+b0 */\
-	"paddd %%mm4, %%mm4			\n\t" /* 2A0		2a0 */\
-	"psubd %%mm7, %%mm4			\n\t" /* A0-B0		a0-b0 */\
-	"paddd %%mm2, %%mm5			\n\t" /* B1		b1 */\
-	"psrad $" #shift ", %%mm7		\n\t"\
-	"psrad $" #shift ", %%mm4		\n\t"\
-	"movq %%mm1, %%mm2			\n\t" /* A1		a1 */\
-	"paddd %%mm5, %%mm1			\n\t" /* A1+B1		a1+b1 */\
-	"psubd %%mm5, %%mm2			\n\t" /* A1-B1		a1-b1 */\
-	"psrad $" #shift ", %%mm1		\n\t"\
-	"psrad $" #shift ", %%mm2		\n\t"\
-	"packssdw %%mm1, %%mm7			\n\t" /* A1+B1	a1+b1	A0+B0	a0+b0 */\
-	"packssdw %%mm4, %%mm2			\n\t" /* A0-B0	a0-b0	A1-B1	a1-b1 */\
-	"movq %%mm7, " #dst "			\n\t"\
-	"movq " #src1 ", %%mm1			\n\t" /* R3	R1	r3	r1 */\
-	"movq 80(%2), %%mm4			\n\t" /* -C1	C5	-C1 	C5 */\
-	"movq %%mm2, 24+" #dst "		\n\t"\
-	"pmaddwd %%mm1, %%mm4			\n\t" /* -C1R3+C5R1	-C1r3+C5r1 */\
-	"movq 88(%2), %%mm7			\n\t" /* C3	C7	C3 	C7 */\
-	"pmaddwd 96(%2), %%mm1			\n\t" /* -C5R3+C7R1	-C5r3+C7r1 */\
-	"pmaddwd %%mm3, %%mm7			\n\t" /* C3R7+C7R5	C3r7+C7r5 */\
-	"movq %%mm0, %%mm2			\n\t" /* A2		a2 */\
-	"pmaddwd 104(%2), %%mm3			\n\t" /* -C1R7+C3R5	-C1r7+C3r5 */\
-	"paddd %%mm7, %%mm4			\n\t" /* B2		b2 */\
-	"paddd %%mm4, %%mm2			\n\t" /* A2+B2		a2+b2 */\
-	"psubd %%mm4, %%mm0			\n\t" /* a2-B2		a2-b2 */\
-	"psrad $" #shift ", %%mm2		\n\t"\
-	"psrad $" #shift ", %%mm0		\n\t"\
-	"movq %%mm6, %%mm4			\n\t" /* A3		a3 */\
-	"paddd %%mm1, %%mm3			\n\t" /* B3		b3 */\
-	"paddd %%mm3, %%mm6			\n\t" /* A3+B3		a3+b3 */\
-	"psubd %%mm3, %%mm4			\n\t" /* a3-B3		a3-b3 */\
-	"psrad $" #shift ", %%mm6		\n\t"\
-	"packssdw %%mm6, %%mm2			\n\t" /* A3+B3	a3+b3	A2+B2	a2+b2 */\
-	"movq %%mm2, 8+" #dst "			\n\t"\
-	"psrad $" #shift ", %%mm4		\n\t"\
-	"packssdw %%mm0, %%mm4			\n\t" /* A2-B2	a2-b2	A3-B3	a3-b3 */\
-	"movq %%mm4, 16+" #dst "		\n\t"\
+        "movq " #src0 ", %%mm0          \n\t" /* R4     R0      r4      r0 */\
+        "movq " #src4 ", %%mm1          \n\t" /* R6     R2      r6      r2 */\
+        "movq " #src1 ", %%mm2          \n\t" /* R3     R1      r3      r1 */\
+        "movq " #src5 ", %%mm3          \n\t" /* R7     R5      r7      r5 */\
+        "movq 16(%2), %%mm4             \n\t" /* C4     C4      C4      C4 */\
+        "pmaddwd %%mm0, %%mm4           \n\t" /* C4R4+C4R0      C4r4+C4r0 */\
+        "movq 24(%2), %%mm5             \n\t" /* -C4    C4      -C4     C4 */\
+        "pmaddwd %%mm5, %%mm0           \n\t" /* -C4R4+C4R0     -C4r4+C4r0 */\
+        "movq 32(%2), %%mm5             \n\t" /* C6     C2      C6      C2 */\
+        "pmaddwd %%mm1, %%mm5           \n\t" /* C6R6+C2R2      C6r6+C2r2 */\
+        "movq 40(%2), %%mm6             \n\t" /* -C2    C6      -C2     C6 */\
+        "pmaddwd %%mm6, %%mm1           \n\t" /* -C2R6+C6R2     -C2r6+C6r2 */\
+        "movq 48(%2), %%mm7             \n\t" /* C3     C1      C3      C1 */\
+        "pmaddwd %%mm2, %%mm7           \n\t" /* C3R3+C1R1      C3r3+C1r1 */\
+        #rounder ", %%mm4               \n\t"\
+        "movq %%mm4, %%mm6              \n\t" /* C4R4+C4R0      C4r4+C4r0 */\
+        "paddd %%mm5, %%mm4             \n\t" /* A0             a0 */\
+        "psubd %%mm5, %%mm6             \n\t" /* A3             a3 */\
+        "movq 56(%2), %%mm5             \n\t" /* C7     C5      C7      C5 */\
+        "pmaddwd %%mm3, %%mm5           \n\t" /* C7R7+C5R5      C7r7+C5r5 */\
+        #rounder ", %%mm0               \n\t"\
+        "paddd %%mm0, %%mm1             \n\t" /* A1             a1 */\
+        "paddd %%mm0, %%mm0             \n\t" \
+        "psubd %%mm1, %%mm0             \n\t" /* A2             a2 */\
+        "pmaddwd 64(%2), %%mm2          \n\t" /* -C7R3+C3R1     -C7r3+C3r1 */\
+        "paddd %%mm5, %%mm7             \n\t" /* B0             b0 */\
+        "movq 72(%2), %%mm5             \n\t" /* -C5    -C1     -C5     -C1 */\
+        "pmaddwd %%mm3, %%mm5           \n\t" /* -C5R7-C1R5     -C5r7-C1r5 */\
+        "paddd %%mm4, %%mm7             \n\t" /* A0+B0          a0+b0 */\
+        "paddd %%mm4, %%mm4             \n\t" /* 2A0            2a0 */\
+        "psubd %%mm7, %%mm4             \n\t" /* A0-B0          a0-b0 */\
+        "paddd %%mm2, %%mm5             \n\t" /* B1             b1 */\
+        "psrad $" #shift ", %%mm7       \n\t"\
+        "psrad $" #shift ", %%mm4       \n\t"\
+        "movq %%mm1, %%mm2              \n\t" /* A1             a1 */\
+        "paddd %%mm5, %%mm1             \n\t" /* A1+B1          a1+b1 */\
+        "psubd %%mm5, %%mm2             \n\t" /* A1-B1          a1-b1 */\
+        "psrad $" #shift ", %%mm1       \n\t"\
+        "psrad $" #shift ", %%mm2       \n\t"\
+        "packssdw %%mm1, %%mm7          \n\t" /* A1+B1  a1+b1   A0+B0   a0+b0 */\
+        "packssdw %%mm4, %%mm2          \n\t" /* A0-B0  a0-b0   A1-B1   a1-b1 */\
+        "movq %%mm7, " #dst "           \n\t"\
+        "movq " #src1 ", %%mm1          \n\t" /* R3     R1      r3      r1 */\
+        "movq 80(%2), %%mm4             \n\t" /* -C1    C5      -C1     C5 */\
+        "movq %%mm2, 24+" #dst "        \n\t"\
+        "pmaddwd %%mm1, %%mm4           \n\t" /* -C1R3+C5R1     -C1r3+C5r1 */\
+        "movq 88(%2), %%mm7             \n\t" /* C3     C7      C3      C7 */\
+        "pmaddwd 96(%2), %%mm1          \n\t" /* -C5R3+C7R1     -C5r3+C7r1 */\
+        "pmaddwd %%mm3, %%mm7           \n\t" /* C3R7+C7R5      C3r7+C7r5 */\
+        "movq %%mm0, %%mm2              \n\t" /* A2             a2 */\
+        "pmaddwd 104(%2), %%mm3         \n\t" /* -C1R7+C3R5     -C1r7+C3r5 */\
+        "paddd %%mm7, %%mm4             \n\t" /* B2             b2 */\
+        "paddd %%mm4, %%mm2             \n\t" /* A2+B2          a2+b2 */\
+        "psubd %%mm4, %%mm0             \n\t" /* a2-B2          a2-b2 */\
+        "psrad $" #shift ", %%mm2       \n\t"\
+        "psrad $" #shift ", %%mm0       \n\t"\
+        "movq %%mm6, %%mm4              \n\t" /* A3             a3 */\
+        "paddd %%mm1, %%mm3             \n\t" /* B3             b3 */\
+        "paddd %%mm3, %%mm6             \n\t" /* A3+B3          a3+b3 */\
+        "psubd %%mm3, %%mm4             \n\t" /* a3-B3          a3-b3 */\
+        "psrad $" #shift ", %%mm6       \n\t"\
+        "packssdw %%mm6, %%mm2          \n\t" /* A3+B3  a3+b3   A2+B2   a2+b2 */\
+        "movq %%mm2, 8+" #dst "         \n\t"\
+        "psrad $" #shift ", %%mm4       \n\t"\
+        "packssdw %%mm0, %%mm4          \n\t" /* A2-B2  a2-b2   A3-B3   a3-b3 */\
+        "movq %%mm4, 16+" #dst "        \n\t"\
 
 #define COL_IDCT(src0, src4, src1, src5, dst, rounder, shift) \
-	"movq " #src0 ", %%mm0			\n\t" /* R4	R0	r4	r0 */\
-	"movq " #src4 ", %%mm1			\n\t" /* R6	R2	r6	r2 */\
-	"movq " #src1 ", %%mm2			\n\t" /* R3	R1	r3	r1 */\
-	"movq " #src5 ", %%mm3			\n\t" /* R7	R5	r7	r5 */\
-	"movq 16(%2), %%mm4			\n\t" /* C4	C4	C4	C4 */\
-	"pmaddwd %%mm0, %%mm4			\n\t" /* C4R4+C4R0	C4r4+C4r0 */\
-	"movq 24(%2), %%mm5			\n\t" /* -C4	C4	-C4	C4 */\
-	"pmaddwd %%mm5, %%mm0			\n\t" /* -C4R4+C4R0	-C4r4+C4r0 */\
-	"movq 32(%2), %%mm5			\n\t" /* C6	C2	C6	C2 */\
-	"pmaddwd %%mm1, %%mm5			\n\t" /* C6R6+C2R2	C6r6+C2r2 */\
-	"movq 40(%2), %%mm6			\n\t" /* -C2	C6	-C2	C6 */\
-	"pmaddwd %%mm6, %%mm1			\n\t" /* -C2R6+C6R2	-C2r6+C6r2 */\
-	#rounder ", %%mm4			\n\t"\
-	"movq %%mm4, %%mm6			\n\t" /* C4R4+C4R0	C4r4+C4r0 */\
-	"movq 48(%2), %%mm7			\n\t" /* C3	C1	C3	C1 */\
-	#rounder ", %%mm0			\n\t"\
-	"pmaddwd %%mm2, %%mm7			\n\t" /* C3R3+C1R1	C3r3+C1r1 */\
-	"paddd %%mm5, %%mm4			\n\t" /* A0		a0 */\
-	"psubd %%mm5, %%mm6			\n\t" /* A3		a3 */\
-	"movq %%mm0, %%mm5			\n\t" /* -C4R4+C4R0	-C4r4+C4r0 */\
-	"paddd %%mm1, %%mm0			\n\t" /* A1		a1 */\
-	"psubd %%mm1, %%mm5			\n\t" /* A2		a2 */\
-	"movq 56(%2), %%mm1			\n\t" /* C7	C5	C7	C5 */\
-	"pmaddwd %%mm3, %%mm1			\n\t" /* C7R7+C5R5	C7r7+C5r5 */\
-	"pmaddwd 64(%2), %%mm2			\n\t" /* -C7R3+C3R1	-C7r3+C3r1 */\
-	"paddd %%mm1, %%mm7			\n\t" /* B0		b0 */\
-	"movq 72(%2), %%mm1			\n\t" /* -C5	-C1	-C5	-C1 */\
-	"pmaddwd %%mm3, %%mm1			\n\t" /* -C5R7-C1R5	-C5r7-C1r5 */\
-	"paddd %%mm4, %%mm7			\n\t" /* A0+B0		a0+b0 */\
-	"paddd %%mm4, %%mm4			\n\t" /* 2A0		2a0 */\
-	"psubd %%mm7, %%mm4			\n\t" /* A0-B0		a0-b0 */\
-	"paddd %%mm2, %%mm1			\n\t" /* B1		b1 */\
-	"psrad $" #shift ", %%mm7		\n\t"\
-	"psrad $" #shift ", %%mm4		\n\t"\
-	"movq %%mm0, %%mm2			\n\t" /* A1		a1 */\
-	"paddd %%mm1, %%mm0			\n\t" /* A1+B1		a1+b1 */\
-	"psubd %%mm1, %%mm2			\n\t" /* A1-B1		a1-b1 */\
-	"psrad $" #shift ", %%mm0		\n\t"\
-	"psrad $" #shift ", %%mm2		\n\t"\
-	"packssdw %%mm7, %%mm7			\n\t" /* A0+B0	a0+b0 */\
-	"movd %%mm7, " #dst "			\n\t"\
-	"packssdw %%mm0, %%mm0			\n\t" /* A1+B1	a1+b1 */\
-	"movd %%mm0, 16+" #dst "		\n\t"\
-	"packssdw %%mm2, %%mm2			\n\t" /* A1-B1	a1-b1 */\
-	"movd %%mm2, 96+" #dst "		\n\t"\
-	"packssdw %%mm4, %%mm4			\n\t" /* A0-B0	a0-b0 */\
-	"movd %%mm4, 112+" #dst "		\n\t"\
-	"movq " #src1 ", %%mm0			\n\t" /* R3	R1	r3	r1 */\
-	"movq 80(%2), %%mm4			\n\t" /* -C1	C5	-C1 	C5 */\
-	"pmaddwd %%mm0, %%mm4			\n\t" /* -C1R3+C5R1	-C1r3+C5r1 */\
-	"movq 88(%2), %%mm7			\n\t" /* C3	C7	C3 	C7 */\
-	"pmaddwd 96(%2), %%mm0			\n\t" /* -C5R3+C7R1	-C5r3+C7r1 */\
-	"pmaddwd %%mm3, %%mm7			\n\t" /* C3R7+C7R5	C3r7+C7r5 */\
-	"movq %%mm5, %%mm2			\n\t" /* A2		a2 */\
-	"pmaddwd 104(%2), %%mm3			\n\t" /* -C1R7+C3R5	-C1r7+C3r5 */\
-	"paddd %%mm7, %%mm4			\n\t" /* B2		b2 */\
-	"paddd %%mm4, %%mm2			\n\t" /* A2+B2		a2+b2 */\
-	"psubd %%mm4, %%mm5			\n\t" /* a2-B2		a2-b2 */\
-	"psrad $" #shift ", %%mm2		\n\t"\
-	"psrad $" #shift ", %%mm5		\n\t"\
-	"movq %%mm6, %%mm4			\n\t" /* A3		a3 */\
-	"paddd %%mm0, %%mm3			\n\t" /* B3		b3 */\
-	"paddd %%mm3, %%mm6			\n\t" /* A3+B3		a3+b3 */\
-	"psubd %%mm3, %%mm4			\n\t" /* a3-B3		a3-b3 */\
-	"psrad $" #shift ", %%mm6		\n\t"\
-	"psrad $" #shift ", %%mm4		\n\t"\
-	"packssdw %%mm2, %%mm2			\n\t" /* A2+B2	a2+b2 */\
-	"packssdw %%mm6, %%mm6			\n\t" /* A3+B3	a3+b3 */\
-	"movd %%mm2, 32+" #dst "		\n\t"\
-	"packssdw %%mm4, %%mm4			\n\t" /* A3-B3	a3-b3 */\
-	"packssdw %%mm5, %%mm5			\n\t" /* A2-B2	a2-b2 */\
-	"movd %%mm6, 48+" #dst "		\n\t"\
-	"movd %%mm4, 64+" #dst "		\n\t"\
-	"movd %%mm5, 80+" #dst "		\n\t"\
+        "movq " #src0 ", %%mm0          \n\t" /* R4     R0      r4      r0 */\
+        "movq " #src4 ", %%mm1          \n\t" /* R6     R2      r6      r2 */\
+        "movq " #src1 ", %%mm2          \n\t" /* R3     R1      r3      r1 */\
+        "movq " #src5 ", %%mm3          \n\t" /* R7     R5      r7      r5 */\
+        "movq 16(%2), %%mm4             \n\t" /* C4     C4      C4      C4 */\
+        "pmaddwd %%mm0, %%mm4           \n\t" /* C4R4+C4R0      C4r4+C4r0 */\
+        "movq 24(%2), %%mm5             \n\t" /* -C4    C4      -C4     C4 */\
+        "pmaddwd %%mm5, %%mm0           \n\t" /* -C4R4+C4R0     -C4r4+C4r0 */\
+        "movq 32(%2), %%mm5             \n\t" /* C6     C2      C6      C2 */\
+        "pmaddwd %%mm1, %%mm5           \n\t" /* C6R6+C2R2      C6r6+C2r2 */\
+        "movq 40(%2), %%mm6             \n\t" /* -C2    C6      -C2     C6 */\
+        "pmaddwd %%mm6, %%mm1           \n\t" /* -C2R6+C6R2     -C2r6+C6r2 */\
+        #rounder ", %%mm4               \n\t"\
+        "movq %%mm4, %%mm6              \n\t" /* C4R4+C4R0      C4r4+C4r0 */\
+        "movq 48(%2), %%mm7             \n\t" /* C3     C1      C3      C1 */\
+        #rounder ", %%mm0               \n\t"\
+        "pmaddwd %%mm2, %%mm7           \n\t" /* C3R3+C1R1      C3r3+C1r1 */\
+        "paddd %%mm5, %%mm4             \n\t" /* A0             a0 */\
+        "psubd %%mm5, %%mm6             \n\t" /* A3             a3 */\
+        "movq %%mm0, %%mm5              \n\t" /* -C4R4+C4R0     -C4r4+C4r0 */\
+        "paddd %%mm1, %%mm0             \n\t" /* A1             a1 */\
+        "psubd %%mm1, %%mm5             \n\t" /* A2             a2 */\
+        "movq 56(%2), %%mm1             \n\t" /* C7     C5      C7      C5 */\
+        "pmaddwd %%mm3, %%mm1           \n\t" /* C7R7+C5R5      C7r7+C5r5 */\
+        "pmaddwd 64(%2), %%mm2          \n\t" /* -C7R3+C3R1     -C7r3+C3r1 */\
+        "paddd %%mm1, %%mm7             \n\t" /* B0             b0 */\
+        "movq 72(%2), %%mm1             \n\t" /* -C5    -C1     -C5     -C1 */\
+        "pmaddwd %%mm3, %%mm1           \n\t" /* -C5R7-C1R5     -C5r7-C1r5 */\
+        "paddd %%mm4, %%mm7             \n\t" /* A0+B0          a0+b0 */\
+        "paddd %%mm4, %%mm4             \n\t" /* 2A0            2a0 */\
+        "psubd %%mm7, %%mm4             \n\t" /* A0-B0          a0-b0 */\
+        "paddd %%mm2, %%mm1             \n\t" /* B1             b1 */\
+        "psrad $" #shift ", %%mm7       \n\t"\
+        "psrad $" #shift ", %%mm4       \n\t"\
+        "movq %%mm0, %%mm2              \n\t" /* A1             a1 */\
+        "paddd %%mm1, %%mm0             \n\t" /* A1+B1          a1+b1 */\
+        "psubd %%mm1, %%mm2             \n\t" /* A1-B1          a1-b1 */\
+        "psrad $" #shift ", %%mm0       \n\t"\
+        "psrad $" #shift ", %%mm2       \n\t"\
+        "packssdw %%mm7, %%mm7          \n\t" /* A0+B0  a0+b0 */\
+        "movd %%mm7, " #dst "           \n\t"\
+        "packssdw %%mm0, %%mm0          \n\t" /* A1+B1  a1+b1 */\
+        "movd %%mm0, 16+" #dst "        \n\t"\
+        "packssdw %%mm2, %%mm2          \n\t" /* A1-B1  a1-b1 */\
+        "movd %%mm2, 96+" #dst "        \n\t"\
+        "packssdw %%mm4, %%mm4          \n\t" /* A0-B0  a0-b0 */\
+        "movd %%mm4, 112+" #dst "       \n\t"\
+        "movq " #src1 ", %%mm0          \n\t" /* R3     R1      r3      r1 */\
+        "movq 80(%2), %%mm4             \n\t" /* -C1    C5      -C1     C5 */\
+        "pmaddwd %%mm0, %%mm4           \n\t" /* -C1R3+C5R1     -C1r3+C5r1 */\
+        "movq 88(%2), %%mm7             \n\t" /* C3     C7      C3      C7 */\
+        "pmaddwd 96(%2), %%mm0          \n\t" /* -C5R3+C7R1     -C5r3+C7r1 */\
+        "pmaddwd %%mm3, %%mm7           \n\t" /* C3R7+C7R5      C3r7+C7r5 */\
+        "movq %%mm5, %%mm2              \n\t" /* A2             a2 */\
+        "pmaddwd 104(%2), %%mm3         \n\t" /* -C1R7+C3R5     -C1r7+C3r5 */\
+        "paddd %%mm7, %%mm4             \n\t" /* B2             b2 */\
+        "paddd %%mm4, %%mm2             \n\t" /* A2+B2          a2+b2 */\
+        "psubd %%mm4, %%mm5             \n\t" /* a2-B2          a2-b2 */\
+        "psrad $" #shift ", %%mm2       \n\t"\
+        "psrad $" #shift ", %%mm5       \n\t"\
+        "movq %%mm6, %%mm4              \n\t" /* A3             a3 */\
+        "paddd %%mm0, %%mm3             \n\t" /* B3             b3 */\
+        "paddd %%mm3, %%mm6             \n\t" /* A3+B3          a3+b3 */\
+        "psubd %%mm3, %%mm4             \n\t" /* a3-B3          a3-b3 */\
+        "psrad $" #shift ", %%mm6       \n\t"\
+        "psrad $" #shift ", %%mm4       \n\t"\
+        "packssdw %%mm2, %%mm2          \n\t" /* A2+B2  a2+b2 */\
+        "packssdw %%mm6, %%mm6          \n\t" /* A3+B3  a3+b3 */\
+        "movd %%mm2, 32+" #dst "        \n\t"\
+        "packssdw %%mm4, %%mm4          \n\t" /* A3-B3  a3-b3 */\
+        "packssdw %%mm5, %%mm5          \n\t" /* A2-B2  a2-b2 */\
+        "movd %%mm6, 48+" #dst "        \n\t"\
+        "movd %%mm4, 64+" #dst "        \n\t"\
+        "movd %%mm5, 80+" #dst "        \n\t"\
 
 
 #define DC_COND_ROW_IDCT(src0, src4, src1, src5, dst, rounder, shift) \
-	"movq " #src0 ", %%mm0			\n\t" /* R4	R0	r4	r0 */\
-	"movq " #src4 ", %%mm1			\n\t" /* R6	R2	r6	r2 */\
-	"movq " #src1 ", %%mm2			\n\t" /* R3	R1	r3	r1 */\
-	"movq " #src5 ", %%mm3			\n\t" /* R7	R5	r7	r5 */\
-	"movq "MANGLE(wm1010)", %%mm4		\n\t"\
-	"pand %%mm0, %%mm4			\n\t"\
-	"por %%mm1, %%mm4			\n\t"\
-	"por %%mm2, %%mm4			\n\t"\
-	"por %%mm3, %%mm4			\n\t"\
-	"packssdw %%mm4,%%mm4			\n\t"\
-	"movd %%mm4, %%eax			\n\t"\
-	"orl %%eax, %%eax			\n\t"\
-	"jz 1f					\n\t"\
-	"movq 16(%2), %%mm4			\n\t" /* C4	C4	C4	C4 */\
-	"pmaddwd %%mm0, %%mm4			\n\t" /* C4R4+C4R0	C4r4+C4r0 */\
-	"movq 24(%2), %%mm5			\n\t" /* -C4	C4	-C4	C4 */\
-	"pmaddwd %%mm5, %%mm0			\n\t" /* -C4R4+C4R0	-C4r4+C4r0 */\
-	"movq 32(%2), %%mm5			\n\t" /* C6	C2	C6	C2 */\
-	"pmaddwd %%mm1, %%mm5			\n\t" /* C6R6+C2R2	C6r6+C2r2 */\
-	"movq 40(%2), %%mm6			\n\t" /* -C2	C6	-C2	C6 */\
-	"pmaddwd %%mm6, %%mm1			\n\t" /* -C2R6+C6R2	-C2r6+C6r2 */\
-	"movq 48(%2), %%mm7			\n\t" /* C3	C1	C3	C1 */\
-	"pmaddwd %%mm2, %%mm7			\n\t" /* C3R3+C1R1	C3r3+C1r1 */\
-	#rounder ", %%mm4			\n\t"\
-	"movq %%mm4, %%mm6			\n\t" /* C4R4+C4R0	C4r4+C4r0 */\
-	"paddd %%mm5, %%mm4			\n\t" /* A0		a0 */\
-	"psubd %%mm5, %%mm6			\n\t" /* A3		a3 */\
-	"movq 56(%2), %%mm5			\n\t" /* C7	C5	C7	C5 */\
-	"pmaddwd %%mm3, %%mm5			\n\t" /* C7R7+C5R5	C7r7+C5r5 */\
-	#rounder ", %%mm0			\n\t"\
-	"paddd %%mm0, %%mm1			\n\t" /* A1		a1 */\
-	"paddd %%mm0, %%mm0			\n\t" \
-	"psubd %%mm1, %%mm0			\n\t" /* A2		a2 */\
-	"pmaddwd 64(%2), %%mm2			\n\t" /* -C7R3+C3R1	-C7r3+C3r1 */\
-	"paddd %%mm5, %%mm7			\n\t" /* B0		b0 */\
-	"movq 72(%2), %%mm5			\n\t" /* -C5	-C1	-C5	-C1 */\
-	"pmaddwd %%mm3, %%mm5			\n\t" /* -C5R7-C1R5	-C5r7-C1r5 */\
-	"paddd %%mm4, %%mm7			\n\t" /* A0+B0		a0+b0 */\
-	"paddd %%mm4, %%mm4			\n\t" /* 2A0		2a0 */\
-	"psubd %%mm7, %%mm4			\n\t" /* A0-B0		a0-b0 */\
-	"paddd %%mm2, %%mm5			\n\t" /* B1		b1 */\
-	"psrad $" #shift ", %%mm7		\n\t"\
-	"psrad $" #shift ", %%mm4		\n\t"\
-	"movq %%mm1, %%mm2			\n\t" /* A1		a1 */\
-	"paddd %%mm5, %%mm1			\n\t" /* A1+B1		a1+b1 */\
-	"psubd %%mm5, %%mm2			\n\t" /* A1-B1		a1-b1 */\
-	"psrad $" #shift ", %%mm1		\n\t"\
-	"psrad $" #shift ", %%mm2		\n\t"\
-	"packssdw %%mm1, %%mm7			\n\t" /* A1+B1	a1+b1	A0+B0	a0+b0 */\
-	"packssdw %%mm4, %%mm2			\n\t" /* A0-B0	a0-b0	A1-B1	a1-b1 */\
-	"movq %%mm7, " #dst "			\n\t"\
-	"movq " #src1 ", %%mm1			\n\t" /* R3	R1	r3	r1 */\
-	"movq 80(%2), %%mm4			\n\t" /* -C1	C5	-C1 	C5 */\
-	"movq %%mm2, 24+" #dst "		\n\t"\
-	"pmaddwd %%mm1, %%mm4			\n\t" /* -C1R3+C5R1	-C1r3+C5r1 */\
-	"movq 88(%2), %%mm7			\n\t" /* C3	C7	C3 	C7 */\
-	"pmaddwd 96(%2), %%mm1			\n\t" /* -C5R3+C7R1	-C5r3+C7r1 */\
-	"pmaddwd %%mm3, %%mm7			\n\t" /* C3R7+C7R5	C3r7+C7r5 */\
-	"movq %%mm0, %%mm2			\n\t" /* A2		a2 */\
-	"pmaddwd 104(%2), %%mm3			\n\t" /* -C1R7+C3R5	-C1r7+C3r5 */\
-	"paddd %%mm7, %%mm4			\n\t" /* B2		b2 */\
-	"paddd %%mm4, %%mm2			\n\t" /* A2+B2		a2+b2 */\
-	"psubd %%mm4, %%mm0			\n\t" /* a2-B2		a2-b2 */\
-	"psrad $" #shift ", %%mm2		\n\t"\
-	"psrad $" #shift ", %%mm0		\n\t"\
-	"movq %%mm6, %%mm4			\n\t" /* A3		a3 */\
-	"paddd %%mm1, %%mm3			\n\t" /* B3		b3 */\
-	"paddd %%mm3, %%mm6			\n\t" /* A3+B3		a3+b3 */\
-	"psubd %%mm3, %%mm4			\n\t" /* a3-B3		a3-b3 */\
-	"psrad $" #shift ", %%mm6		\n\t"\
-	"packssdw %%mm6, %%mm2			\n\t" /* A3+B3	a3+b3	A2+B2	a2+b2 */\
-	"movq %%mm2, 8+" #dst "			\n\t"\
-	"psrad $" #shift ", %%mm4		\n\t"\
-	"packssdw %%mm0, %%mm4			\n\t" /* A2-B2	a2-b2	A3-B3	a3-b3 */\
-	"movq %%mm4, 16+" #dst "		\n\t"\
-	"jmp 2f					\n\t"\
-	"1:					\n\t"\
-	"pslld $16, %%mm0			\n\t"\
-	"#paddd "MANGLE(d40000)", %%mm0		\n\t"\
-	"psrad $13, %%mm0			\n\t"\
-	"packssdw %%mm0, %%mm0			\n\t"\
-	"movq %%mm0, " #dst "			\n\t"\
-	"movq %%mm0, 8+" #dst "			\n\t"\
-	"movq %%mm0, 16+" #dst "		\n\t"\
-	"movq %%mm0, 24+" #dst "		\n\t"\
-	"2:					\n\t"
+        "movq " #src0 ", %%mm0          \n\t" /* R4     R0      r4      r0 */\
+        "movq " #src4 ", %%mm1          \n\t" /* R6     R2      r6      r2 */\
+        "movq " #src1 ", %%mm2          \n\t" /* R3     R1      r3      r1 */\
+        "movq " #src5 ", %%mm3          \n\t" /* R7     R5      r7      r5 */\
+        "movq "MANGLE(wm1010)", %%mm4   \n\t"\
+        "pand %%mm0, %%mm4              \n\t"\
+        "por %%mm1, %%mm4               \n\t"\
+        "por %%mm2, %%mm4               \n\t"\
+        "por %%mm3, %%mm4               \n\t"\
+        "packssdw %%mm4,%%mm4           \n\t"\
+        "movd %%mm4, %%eax              \n\t"\
+        "orl %%eax, %%eax               \n\t"\
+        "jz 1f                          \n\t"\
+        "movq 16(%2), %%mm4             \n\t" /* C4     C4      C4      C4 */\
+        "pmaddwd %%mm0, %%mm4           \n\t" /* C4R4+C4R0      C4r4+C4r0 */\
+        "movq 24(%2), %%mm5             \n\t" /* -C4    C4      -C4     C4 */\
+        "pmaddwd %%mm5, %%mm0           \n\t" /* -C4R4+C4R0     -C4r4+C4r0 */\
+        "movq 32(%2), %%mm5             \n\t" /* C6     C2      C6      C2 */\
+        "pmaddwd %%mm1, %%mm5           \n\t" /* C6R6+C2R2      C6r6+C2r2 */\
+        "movq 40(%2), %%mm6             \n\t" /* -C2    C6      -C2     C6 */\
+        "pmaddwd %%mm6, %%mm1           \n\t" /* -C2R6+C6R2     -C2r6+C6r2 */\
+        "movq 48(%2), %%mm7             \n\t" /* C3     C1      C3      C1 */\
+        "pmaddwd %%mm2, %%mm7           \n\t" /* C3R3+C1R1      C3r3+C1r1 */\
+        #rounder ", %%mm4               \n\t"\
+        "movq %%mm4, %%mm6              \n\t" /* C4R4+C4R0      C4r4+C4r0 */\
+        "paddd %%mm5, %%mm4             \n\t" /* A0             a0 */\
+        "psubd %%mm5, %%mm6             \n\t" /* A3             a3 */\
+        "movq 56(%2), %%mm5             \n\t" /* C7     C5      C7      C5 */\
+        "pmaddwd %%mm3, %%mm5           \n\t" /* C7R7+C5R5      C7r7+C5r5 */\
+        #rounder ", %%mm0               \n\t"\
+        "paddd %%mm0, %%mm1             \n\t" /* A1             a1 */\
+        "paddd %%mm0, %%mm0             \n\t" \
+        "psubd %%mm1, %%mm0             \n\t" /* A2             a2 */\
+        "pmaddwd 64(%2), %%mm2          \n\t" /* -C7R3+C3R1     -C7r3+C3r1 */\
+        "paddd %%mm5, %%mm7             \n\t" /* B0             b0 */\
+        "movq 72(%2), %%mm5             \n\t" /* -C5    -C1     -C5     -C1 */\
+        "pmaddwd %%mm3, %%mm5           \n\t" /* -C5R7-C1R5     -C5r7-C1r5 */\
+        "paddd %%mm4, %%mm7             \n\t" /* A0+B0          a0+b0 */\
+        "paddd %%mm4, %%mm4             \n\t" /* 2A0            2a0 */\
+        "psubd %%mm7, %%mm4             \n\t" /* A0-B0          a0-b0 */\
+        "paddd %%mm2, %%mm5             \n\t" /* B1             b1 */\
+        "psrad $" #shift ", %%mm7       \n\t"\
+        "psrad $" #shift ", %%mm4       \n\t"\
+        "movq %%mm1, %%mm2              \n\t" /* A1             a1 */\
+        "paddd %%mm5, %%mm1             \n\t" /* A1+B1          a1+b1 */\
+        "psubd %%mm5, %%mm2             \n\t" /* A1-B1          a1-b1 */\
+        "psrad $" #shift ", %%mm1       \n\t"\
+        "psrad $" #shift ", %%mm2       \n\t"\
+        "packssdw %%mm1, %%mm7          \n\t" /* A1+B1  a1+b1   A0+B0   a0+b0 */\
+        "packssdw %%mm4, %%mm2          \n\t" /* A0-B0  a0-b0   A1-B1   a1-b1 */\
+        "movq %%mm7, " #dst "           \n\t"\
+        "movq " #src1 ", %%mm1          \n\t" /* R3     R1      r3      r1 */\
+        "movq 80(%2), %%mm4             \n\t" /* -C1    C5      -C1     C5 */\
+        "movq %%mm2, 24+" #dst "        \n\t"\
+        "pmaddwd %%mm1, %%mm4           \n\t" /* -C1R3+C5R1     -C1r3+C5r1 */\
+        "movq 88(%2), %%mm7             \n\t" /* C3     C7      C3      C7 */\
+        "pmaddwd 96(%2), %%mm1          \n\t" /* -C5R3+C7R1     -C5r3+C7r1 */\
+        "pmaddwd %%mm3, %%mm7           \n\t" /* C3R7+C7R5      C3r7+C7r5 */\
+        "movq %%mm0, %%mm2              \n\t" /* A2             a2 */\
+        "pmaddwd 104(%2), %%mm3         \n\t" /* -C1R7+C3R5     -C1r7+C3r5 */\
+        "paddd %%mm7, %%mm4             \n\t" /* B2             b2 */\
+        "paddd %%mm4, %%mm2             \n\t" /* A2+B2          a2+b2 */\
+        "psubd %%mm4, %%mm0             \n\t" /* a2-B2          a2-b2 */\
+        "psrad $" #shift ", %%mm2       \n\t"\
+        "psrad $" #shift ", %%mm0       \n\t"\
+        "movq %%mm6, %%mm4              \n\t" /* A3             a3 */\
+        "paddd %%mm1, %%mm3             \n\t" /* B3             b3 */\
+        "paddd %%mm3, %%mm6             \n\t" /* A3+B3          a3+b3 */\
+        "psubd %%mm3, %%mm4             \n\t" /* a3-B3          a3-b3 */\
+        "psrad $" #shift ", %%mm6       \n\t"\
+        "packssdw %%mm6, %%mm2          \n\t" /* A3+B3  a3+b3   A2+B2   a2+b2 */\
+        "movq %%mm2, 8+" #dst "         \n\t"\
+        "psrad $" #shift ", %%mm4       \n\t"\
+        "packssdw %%mm0, %%mm4          \n\t" /* A2-B2  a2-b2   A3-B3   a3-b3 */\
+        "movq %%mm4, 16+" #dst "        \n\t"\
+        "jmp 2f                         \n\t"\
+        "1:                             \n\t"\
+        "pslld $16, %%mm0               \n\t"\
+        "#paddd "MANGLE(d40000)", %%mm0 \n\t"\
+        "psrad $13, %%mm0               \n\t"\
+        "packssdw %%mm0, %%mm0          \n\t"\
+        "movq %%mm0, " #dst "           \n\t"\
+        "movq %%mm0, 8+" #dst "         \n\t"\
+        "movq %%mm0, 16+" #dst "        \n\t"\
+        "movq %%mm0, 24+" #dst "        \n\t"\
+        "2:                             \n\t"
 
 
 //IDCT(      src0,   src4,   src1,   src5,    dst,    rounder, shift)
@@ -467,236 +467,236 @@ COL_IDCT(  24(%1), 88(%1), 56(%1), 120(%1), 12(%0),/nop, 20)
 #else
 
 #define DC_COND_IDCT(src0, src4, src1, src5, dst, rounder, shift) \
-	"movq " #src0 ", %%mm0			\n\t" /* R4	R0	r4	r0 */\
-	"movq " #src4 ", %%mm1			\n\t" /* R6	R2	r6	r2 */\
-	"movq " #src1 ", %%mm2			\n\t" /* R3	R1	r3	r1 */\
-	"movq " #src5 ", %%mm3			\n\t" /* R7	R5	r7	r5 */\
-	"movq "MANGLE(wm1010)", %%mm4		\n\t"\
-	"pand %%mm0, %%mm4			\n\t"\
-	"por %%mm1, %%mm4			\n\t"\
-	"por %%mm2, %%mm4			\n\t"\
-	"por %%mm3, %%mm4			\n\t"\
-	"packssdw %%mm4,%%mm4			\n\t"\
-	"movd %%mm4, %%eax			\n\t"\
-	"orl %%eax, %%eax			\n\t"\
-	"jz 1f					\n\t"\
-	"movq 16(%2), %%mm4			\n\t" /* C4	C4	C4	C4 */\
-	"pmaddwd %%mm0, %%mm4			\n\t" /* C4R4+C4R0	C4r4+C4r0 */\
-	"movq 24(%2), %%mm5			\n\t" /* -C4	C4	-C4	C4 */\
-	"pmaddwd %%mm5, %%mm0			\n\t" /* -C4R4+C4R0	-C4r4+C4r0 */\
-	"movq 32(%2), %%mm5			\n\t" /* C6	C2	C6	C2 */\
-	"pmaddwd %%mm1, %%mm5			\n\t" /* C6R6+C2R2	C6r6+C2r2 */\
-	"movq 40(%2), %%mm6			\n\t" /* -C2	C6	-C2	C6 */\
-	"pmaddwd %%mm6, %%mm1			\n\t" /* -C2R6+C6R2	-C2r6+C6r2 */\
-	"movq 48(%2), %%mm7			\n\t" /* C3	C1	C3	C1 */\
-	"pmaddwd %%mm2, %%mm7			\n\t" /* C3R3+C1R1	C3r3+C1r1 */\
-	#rounder ", %%mm4			\n\t"\
-	"movq %%mm4, %%mm6			\n\t" /* C4R4+C4R0	C4r4+C4r0 */\
-	"paddd %%mm5, %%mm4			\n\t" /* A0		a0 */\
-	"psubd %%mm5, %%mm6			\n\t" /* A3		a3 */\
-	"movq 56(%2), %%mm5			\n\t" /* C7	C5	C7	C5 */\
-	"pmaddwd %%mm3, %%mm5			\n\t" /* C7R7+C5R5	C7r7+C5r5 */\
-	#rounder ", %%mm0			\n\t"\
-	"paddd %%mm0, %%mm1			\n\t" /* A1		a1 */\
-	"paddd %%mm0, %%mm0			\n\t" \
-	"psubd %%mm1, %%mm0			\n\t" /* A2		a2 */\
-	"pmaddwd 64(%2), %%mm2			\n\t" /* -C7R3+C3R1	-C7r3+C3r1 */\
-	"paddd %%mm5, %%mm7			\n\t" /* B0		b0 */\
-	"movq 72(%2), %%mm5			\n\t" /* -C5	-C1	-C5	-C1 */\
-	"pmaddwd %%mm3, %%mm5			\n\t" /* -C5R7-C1R5	-C5r7-C1r5 */\
-	"paddd %%mm4, %%mm7			\n\t" /* A0+B0		a0+b0 */\
-	"paddd %%mm4, %%mm4			\n\t" /* 2A0		2a0 */\
-	"psubd %%mm7, %%mm4			\n\t" /* A0-B0		a0-b0 */\
-	"paddd %%mm2, %%mm5			\n\t" /* B1		b1 */\
-	"psrad $" #shift ", %%mm7		\n\t"\
-	"psrad $" #shift ", %%mm4		\n\t"\
-	"movq %%mm1, %%mm2			\n\t" /* A1		a1 */\
-	"paddd %%mm5, %%mm1			\n\t" /* A1+B1		a1+b1 */\
-	"psubd %%mm5, %%mm2			\n\t" /* A1-B1		a1-b1 */\
-	"psrad $" #shift ", %%mm1		\n\t"\
-	"psrad $" #shift ", %%mm2		\n\t"\
-	"packssdw %%mm1, %%mm7			\n\t" /* A1+B1	a1+b1	A0+B0	a0+b0 */\
-	"packssdw %%mm4, %%mm2			\n\t" /* A0-B0	a0-b0	A1-B1	a1-b1 */\
-	"movq %%mm7, " #dst "			\n\t"\
-	"movq " #src1 ", %%mm1			\n\t" /* R3	R1	r3	r1 */\
-	"movq 80(%2), %%mm4			\n\t" /* -C1	C5	-C1 	C5 */\
-	"movq %%mm2, 24+" #dst "		\n\t"\
-	"pmaddwd %%mm1, %%mm4			\n\t" /* -C1R3+C5R1	-C1r3+C5r1 */\
-	"movq 88(%2), %%mm7			\n\t" /* C3	C7	C3 	C7 */\
-	"pmaddwd 96(%2), %%mm1			\n\t" /* -C5R3+C7R1	-C5r3+C7r1 */\
-	"pmaddwd %%mm3, %%mm7			\n\t" /* C3R7+C7R5	C3r7+C7r5 */\
-	"movq %%mm0, %%mm2			\n\t" /* A2		a2 */\
-	"pmaddwd 104(%2), %%mm3			\n\t" /* -C1R7+C3R5	-C1r7+C3r5 */\
-	"paddd %%mm7, %%mm4			\n\t" /* B2		b2 */\
-	"paddd %%mm4, %%mm2			\n\t" /* A2+B2		a2+b2 */\
-	"psubd %%mm4, %%mm0			\n\t" /* a2-B2		a2-b2 */\
-	"psrad $" #shift ", %%mm2		\n\t"\
-	"psrad $" #shift ", %%mm0		\n\t"\
-	"movq %%mm6, %%mm4			\n\t" /* A3		a3 */\
-	"paddd %%mm1, %%mm3			\n\t" /* B3		b3 */\
-	"paddd %%mm3, %%mm6			\n\t" /* A3+B3		a3+b3 */\
-	"psubd %%mm3, %%mm4			\n\t" /* a3-B3		a3-b3 */\
-	"psrad $" #shift ", %%mm6		\n\t"\
-	"packssdw %%mm6, %%mm2			\n\t" /* A3+B3	a3+b3	A2+B2	a2+b2 */\
-	"movq %%mm2, 8+" #dst "			\n\t"\
-	"psrad $" #shift ", %%mm4		\n\t"\
-	"packssdw %%mm0, %%mm4			\n\t" /* A2-B2	a2-b2	A3-B3	a3-b3 */\
-	"movq %%mm4, 16+" #dst "		\n\t"\
-	"jmp 2f					\n\t"\
-	"1:					\n\t"\
-	"pslld $16, %%mm0			\n\t"\
-	"paddd "MANGLE(d40000)", %%mm0		\n\t"\
-	"psrad $13, %%mm0			\n\t"\
-	"packssdw %%mm0, %%mm0			\n\t"\
-	"movq %%mm0, " #dst "			\n\t"\
-	"movq %%mm0, 8+" #dst "			\n\t"\
-	"movq %%mm0, 16+" #dst "		\n\t"\
-	"movq %%mm0, 24+" #dst "		\n\t"\
-	"2:					\n\t"
+        "movq " #src0 ", %%mm0          \n\t" /* R4     R0      r4      r0 */\
+        "movq " #src4 ", %%mm1          \n\t" /* R6     R2      r6      r2 */\
+        "movq " #src1 ", %%mm2          \n\t" /* R3     R1      r3      r1 */\
+        "movq " #src5 ", %%mm3          \n\t" /* R7     R5      r7      r5 */\
+        "movq "MANGLE(wm1010)", %%mm4   \n\t"\
+        "pand %%mm0, %%mm4              \n\t"\
+        "por %%mm1, %%mm4               \n\t"\
+        "por %%mm2, %%mm4               \n\t"\
+        "por %%mm3, %%mm4               \n\t"\
+        "packssdw %%mm4,%%mm4           \n\t"\
+        "movd %%mm4, %%eax              \n\t"\
+        "orl %%eax, %%eax               \n\t"\
+        "jz 1f                          \n\t"\
+        "movq 16(%2), %%mm4             \n\t" /* C4     C4      C4      C4 */\
+        "pmaddwd %%mm0, %%mm4           \n\t" /* C4R4+C4R0      C4r4+C4r0 */\
+        "movq 24(%2), %%mm5             \n\t" /* -C4    C4      -C4     C4 */\
+        "pmaddwd %%mm5, %%mm0           \n\t" /* -C4R4+C4R0     -C4r4+C4r0 */\
+        "movq 32(%2), %%mm5             \n\t" /* C6     C2      C6      C2 */\
+        "pmaddwd %%mm1, %%mm5           \n\t" /* C6R6+C2R2      C6r6+C2r2 */\
+        "movq 40(%2), %%mm6             \n\t" /* -C2    C6      -C2     C6 */\
+        "pmaddwd %%mm6, %%mm1           \n\t" /* -C2R6+C6R2     -C2r6+C6r2 */\
+        "movq 48(%2), %%mm7             \n\t" /* C3     C1      C3      C1 */\
+        "pmaddwd %%mm2, %%mm7           \n\t" /* C3R3+C1R1      C3r3+C1r1 */\
+        #rounder ", %%mm4               \n\t"\
+        "movq %%mm4, %%mm6              \n\t" /* C4R4+C4R0      C4r4+C4r0 */\
+        "paddd %%mm5, %%mm4             \n\t" /* A0             a0 */\
+        "psubd %%mm5, %%mm6             \n\t" /* A3             a3 */\
+        "movq 56(%2), %%mm5             \n\t" /* C7     C5      C7      C5 */\
+        "pmaddwd %%mm3, %%mm5           \n\t" /* C7R7+C5R5      C7r7+C5r5 */\
+        #rounder ", %%mm0               \n\t"\
+        "paddd %%mm0, %%mm1             \n\t" /* A1             a1 */\
+        "paddd %%mm0, %%mm0             \n\t" \
+        "psubd %%mm1, %%mm0             \n\t" /* A2             a2 */\
+        "pmaddwd 64(%2), %%mm2          \n\t" /* -C7R3+C3R1     -C7r3+C3r1 */\
+        "paddd %%mm5, %%mm7             \n\t" /* B0             b0 */\
+        "movq 72(%2), %%mm5             \n\t" /* -C5    -C1     -C5     -C1 */\
+        "pmaddwd %%mm3, %%mm5           \n\t" /* -C5R7-C1R5     -C5r7-C1r5 */\
+        "paddd %%mm4, %%mm7             \n\t" /* A0+B0          a0+b0 */\
+        "paddd %%mm4, %%mm4             \n\t" /* 2A0            2a0 */\
+        "psubd %%mm7, %%mm4             \n\t" /* A0-B0          a0-b0 */\
+        "paddd %%mm2, %%mm5             \n\t" /* B1             b1 */\
+        "psrad $" #shift ", %%mm7       \n\t"\
+        "psrad $" #shift ", %%mm4       \n\t"\
+        "movq %%mm1, %%mm2              \n\t" /* A1             a1 */\
+        "paddd %%mm5, %%mm1             \n\t" /* A1+B1          a1+b1 */\
+        "psubd %%mm5, %%mm2             \n\t" /* A1-B1          a1-b1 */\
+        "psrad $" #shift ", %%mm1       \n\t"\
+        "psrad $" #shift ", %%mm2       \n\t"\
+        "packssdw %%mm1, %%mm7          \n\t" /* A1+B1  a1+b1   A0+B0   a0+b0 */\
+        "packssdw %%mm4, %%mm2          \n\t" /* A0-B0  a0-b0   A1-B1   a1-b1 */\
+        "movq %%mm7, " #dst "           \n\t"\
+        "movq " #src1 ", %%mm1          \n\t" /* R3     R1      r3      r1 */\
+        "movq 80(%2), %%mm4             \n\t" /* -C1    C5      -C1     C5 */\
+        "movq %%mm2, 24+" #dst "        \n\t"\
+        "pmaddwd %%mm1, %%mm4           \n\t" /* -C1R3+C5R1     -C1r3+C5r1 */\
+        "movq 88(%2), %%mm7             \n\t" /* C3     C7      C3      C7 */\
+        "pmaddwd 96(%2), %%mm1          \n\t" /* -C5R3+C7R1     -C5r3+C7r1 */\
+        "pmaddwd %%mm3, %%mm7           \n\t" /* C3R7+C7R5      C3r7+C7r5 */\
+        "movq %%mm0, %%mm2              \n\t" /* A2             a2 */\
+        "pmaddwd 104(%2), %%mm3         \n\t" /* -C1R7+C3R5     -C1r7+C3r5 */\
+        "paddd %%mm7, %%mm4             \n\t" /* B2             b2 */\
+        "paddd %%mm4, %%mm2             \n\t" /* A2+B2          a2+b2 */\
+        "psubd %%mm4, %%mm0             \n\t" /* a2-B2          a2-b2 */\
+        "psrad $" #shift ", %%mm2       \n\t"\
+        "psrad $" #shift ", %%mm0       \n\t"\
+        "movq %%mm6, %%mm4              \n\t" /* A3             a3 */\
+        "paddd %%mm1, %%mm3             \n\t" /* B3             b3 */\
+        "paddd %%mm3, %%mm6             \n\t" /* A3+B3          a3+b3 */\
+        "psubd %%mm3, %%mm4             \n\t" /* a3-B3          a3-b3 */\
+        "psrad $" #shift ", %%mm6       \n\t"\
+        "packssdw %%mm6, %%mm2          \n\t" /* A3+B3  a3+b3   A2+B2   a2+b2 */\
+        "movq %%mm2, 8+" #dst "         \n\t"\
+        "psrad $" #shift ", %%mm4       \n\t"\
+        "packssdw %%mm0, %%mm4          \n\t" /* A2-B2  a2-b2   A3-B3   a3-b3 */\
+        "movq %%mm4, 16+" #dst "        \n\t"\
+        "jmp 2f                         \n\t"\
+        "1:                             \n\t"\
+        "pslld $16, %%mm0               \n\t"\
+        "paddd "MANGLE(d40000)", %%mm0  \n\t"\
+        "psrad $13, %%mm0               \n\t"\
+        "packssdw %%mm0, %%mm0          \n\t"\
+        "movq %%mm0, " #dst "           \n\t"\
+        "movq %%mm0, 8+" #dst "         \n\t"\
+        "movq %%mm0, 16+" #dst "        \n\t"\
+        "movq %%mm0, 24+" #dst "        \n\t"\
+        "2:                             \n\t"
 
 #define Z_COND_IDCT(src0, src4, src1, src5, dst, rounder, shift, bt) \
-	"movq " #src0 ", %%mm0			\n\t" /* R4	R0	r4	r0 */\
-	"movq " #src4 ", %%mm1			\n\t" /* R6	R2	r6	r2 */\
-	"movq " #src1 ", %%mm2			\n\t" /* R3	R1	r3	r1 */\
-	"movq " #src5 ", %%mm3			\n\t" /* R7	R5	r7	r5 */\
-	"movq %%mm0, %%mm4			\n\t"\
-	"por %%mm1, %%mm4			\n\t"\
-	"por %%mm2, %%mm4			\n\t"\
-	"por %%mm3, %%mm4			\n\t"\
-	"packssdw %%mm4,%%mm4			\n\t"\
-	"movd %%mm4, %%eax			\n\t"\
-	"orl %%eax, %%eax			\n\t"\
-	"jz " #bt "				\n\t"\
-	"movq 16(%2), %%mm4			\n\t" /* C4	C4	C4	C4 */\
-	"pmaddwd %%mm0, %%mm4			\n\t" /* C4R4+C4R0	C4r4+C4r0 */\
-	"movq 24(%2), %%mm5			\n\t" /* -C4	C4	-C4	C4 */\
-	"pmaddwd %%mm5, %%mm0			\n\t" /* -C4R4+C4R0	-C4r4+C4r0 */\
-	"movq 32(%2), %%mm5			\n\t" /* C6	C2	C6	C2 */\
-	"pmaddwd %%mm1, %%mm5			\n\t" /* C6R6+C2R2	C6r6+C2r2 */\
-	"movq 40(%2), %%mm6			\n\t" /* -C2	C6	-C2	C6 */\
-	"pmaddwd %%mm6, %%mm1			\n\t" /* -C2R6+C6R2	-C2r6+C6r2 */\
-	"movq 48(%2), %%mm7			\n\t" /* C3	C1	C3	C1 */\
-	"pmaddwd %%mm2, %%mm7			\n\t" /* C3R3+C1R1	C3r3+C1r1 */\
-	#rounder ", %%mm4			\n\t"\
-	"movq %%mm4, %%mm6			\n\t" /* C4R4+C4R0	C4r4+C4r0 */\
-	"paddd %%mm5, %%mm4			\n\t" /* A0		a0 */\
-	"psubd %%mm5, %%mm6			\n\t" /* A3		a3 */\
-	"movq 56(%2), %%mm5			\n\t" /* C7	C5	C7	C5 */\
-	"pmaddwd %%mm3, %%mm5			\n\t" /* C7R7+C5R5	C7r7+C5r5 */\
-	#rounder ", %%mm0			\n\t"\
-	"paddd %%mm0, %%mm1			\n\t" /* A1		a1 */\
-	"paddd %%mm0, %%mm0			\n\t" \
-	"psubd %%mm1, %%mm0			\n\t" /* A2		a2 */\
-	"pmaddwd 64(%2), %%mm2			\n\t" /* -C7R3+C3R1	-C7r3+C3r1 */\
-	"paddd %%mm5, %%mm7			\n\t" /* B0		b0 */\
-	"movq 72(%2), %%mm5			\n\t" /* -C5	-C1	-C5	-C1 */\
-	"pmaddwd %%mm3, %%mm5			\n\t" /* -C5R7-C1R5	-C5r7-C1r5 */\
-	"paddd %%mm4, %%mm7			\n\t" /* A0+B0		a0+b0 */\
-	"paddd %%mm4, %%mm4			\n\t" /* 2A0		2a0 */\
-	"psubd %%mm7, %%mm4			\n\t" /* A0-B0		a0-b0 */\
-	"paddd %%mm2, %%mm5			\n\t" /* B1		b1 */\
-	"psrad $" #shift ", %%mm7		\n\t"\
-	"psrad $" #shift ", %%mm4		\n\t"\
-	"movq %%mm1, %%mm2			\n\t" /* A1		a1 */\
-	"paddd %%mm5, %%mm1			\n\t" /* A1+B1		a1+b1 */\
-	"psubd %%mm5, %%mm2			\n\t" /* A1-B1		a1-b1 */\
-	"psrad $" #shift ", %%mm1		\n\t"\
-	"psrad $" #shift ", %%mm2		\n\t"\
-	"packssdw %%mm1, %%mm7			\n\t" /* A1+B1	a1+b1	A0+B0	a0+b0 */\
-	"packssdw %%mm4, %%mm2			\n\t" /* A0-B0	a0-b0	A1-B1	a1-b1 */\
-	"movq %%mm7, " #dst "			\n\t"\
-	"movq " #src1 ", %%mm1			\n\t" /* R3	R1	r3	r1 */\
-	"movq 80(%2), %%mm4			\n\t" /* -C1	C5	-C1 	C5 */\
-	"movq %%mm2, 24+" #dst "		\n\t"\
-	"pmaddwd %%mm1, %%mm4			\n\t" /* -C1R3+C5R1	-C1r3+C5r1 */\
-	"movq 88(%2), %%mm7			\n\t" /* C3	C7	C3 	C7 */\
-	"pmaddwd 96(%2), %%mm1			\n\t" /* -C5R3+C7R1	-C5r3+C7r1 */\
-	"pmaddwd %%mm3, %%mm7			\n\t" /* C3R7+C7R5	C3r7+C7r5 */\
-	"movq %%mm0, %%mm2			\n\t" /* A2		a2 */\
-	"pmaddwd 104(%2), %%mm3			\n\t" /* -C1R7+C3R5	-C1r7+C3r5 */\
-	"paddd %%mm7, %%mm4			\n\t" /* B2		b2 */\
-	"paddd %%mm4, %%mm2			\n\t" /* A2+B2		a2+b2 */\
-	"psubd %%mm4, %%mm0			\n\t" /* a2-B2		a2-b2 */\
-	"psrad $" #shift ", %%mm2		\n\t"\
-	"psrad $" #shift ", %%mm0		\n\t"\
-	"movq %%mm6, %%mm4			\n\t" /* A3		a3 */\
-	"paddd %%mm1, %%mm3			\n\t" /* B3		b3 */\
-	"paddd %%mm3, %%mm6			\n\t" /* A3+B3		a3+b3 */\
-	"psubd %%mm3, %%mm4			\n\t" /* a3-B3		a3-b3 */\
-	"psrad $" #shift ", %%mm6		\n\t"\
-	"packssdw %%mm6, %%mm2			\n\t" /* A3+B3	a3+b3	A2+B2	a2+b2 */\
-	"movq %%mm2, 8+" #dst "			\n\t"\
-	"psrad $" #shift ", %%mm4		\n\t"\
-	"packssdw %%mm0, %%mm4			\n\t" /* A2-B2	a2-b2	A3-B3	a3-b3 */\
-	"movq %%mm4, 16+" #dst "		\n\t"\
+        "movq " #src0 ", %%mm0          \n\t" /* R4     R0      r4      r0 */\
+        "movq " #src4 ", %%mm1          \n\t" /* R6     R2      r6      r2 */\
+        "movq " #src1 ", %%mm2          \n\t" /* R3     R1      r3      r1 */\
+        "movq " #src5 ", %%mm3          \n\t" /* R7     R5      r7      r5 */\
+        "movq %%mm0, %%mm4              \n\t"\
+        "por %%mm1, %%mm4               \n\t"\
+        "por %%mm2, %%mm4               \n\t"\
+        "por %%mm3, %%mm4               \n\t"\
+        "packssdw %%mm4,%%mm4           \n\t"\
+        "movd %%mm4, %%eax              \n\t"\
+        "orl %%eax, %%eax               \n\t"\
+        "jz " #bt "                     \n\t"\
+        "movq 16(%2), %%mm4             \n\t" /* C4     C4      C4      C4 */\
+        "pmaddwd %%mm0, %%mm4           \n\t" /* C4R4+C4R0      C4r4+C4r0 */\
+        "movq 24(%2), %%mm5             \n\t" /* -C4    C4      -C4     C4 */\
+        "pmaddwd %%mm5, %%mm0           \n\t" /* -C4R4+C4R0     -C4r4+C4r0 */\
+        "movq 32(%2), %%mm5             \n\t" /* C6     C2      C6      C2 */\
+        "pmaddwd %%mm1, %%mm5           \n\t" /* C6R6+C2R2      C6r6+C2r2 */\
+        "movq 40(%2), %%mm6             \n\t" /* -C2    C6      -C2     C6 */\
+        "pmaddwd %%mm6, %%mm1           \n\t" /* -C2R6+C6R2     -C2r6+C6r2 */\
+        "movq 48(%2), %%mm7             \n\t" /* C3     C1      C3      C1 */\
+        "pmaddwd %%mm2, %%mm7           \n\t" /* C3R3+C1R1      C3r3+C1r1 */\
+        #rounder ", %%mm4               \n\t"\
+        "movq %%mm4, %%mm6              \n\t" /* C4R4+C4R0      C4r4+C4r0 */\
+        "paddd %%mm5, %%mm4             \n\t" /* A0             a0 */\
+        "psubd %%mm5, %%mm6             \n\t" /* A3             a3 */\
+        "movq 56(%2), %%mm5             \n\t" /* C7     C5      C7      C5 */\
+        "pmaddwd %%mm3, %%mm5           \n\t" /* C7R7+C5R5      C7r7+C5r5 */\
+        #rounder ", %%mm0               \n\t"\
+        "paddd %%mm0, %%mm1             \n\t" /* A1             a1 */\
+        "paddd %%mm0, %%mm0             \n\t" \
+        "psubd %%mm1, %%mm0             \n\t" /* A2             a2 */\
+        "pmaddwd 64(%2), %%mm2          \n\t" /* -C7R3+C3R1     -C7r3+C3r1 */\
+        "paddd %%mm5, %%mm7             \n\t" /* B0             b0 */\
+        "movq 72(%2), %%mm5             \n\t" /* -C5    -C1     -C5     -C1 */\
+        "pmaddwd %%mm3, %%mm5           \n\t" /* -C5R7-C1R5     -C5r7-C1r5 */\
+        "paddd %%mm4, %%mm7             \n\t" /* A0+B0          a0+b0 */\
+        "paddd %%mm4, %%mm4             \n\t" /* 2A0            2a0 */\
+        "psubd %%mm7, %%mm4             \n\t" /* A0-B0          a0-b0 */\
+        "paddd %%mm2, %%mm5             \n\t" /* B1             b1 */\
+        "psrad $" #shift ", %%mm7       \n\t"\
+        "psrad $" #shift ", %%mm4       \n\t"\
+        "movq %%mm1, %%mm2              \n\t" /* A1             a1 */\
+        "paddd %%mm5, %%mm1             \n\t" /* A1+B1          a1+b1 */\
+        "psubd %%mm5, %%mm2             \n\t" /* A1-B1          a1-b1 */\
+        "psrad $" #shift ", %%mm1       \n\t"\
+        "psrad $" #shift ", %%mm2       \n\t"\
+        "packssdw %%mm1, %%mm7          \n\t" /* A1+B1  a1+b1   A0+B0   a0+b0 */\
+        "packssdw %%mm4, %%mm2          \n\t" /* A0-B0  a0-b0   A1-B1   a1-b1 */\
+        "movq %%mm7, " #dst "           \n\t"\
+        "movq " #src1 ", %%mm1          \n\t" /* R3     R1      r3      r1 */\
+        "movq 80(%2), %%mm4             \n\t" /* -C1    C5      -C1     C5 */\
+        "movq %%mm2, 24+" #dst "        \n\t"\
+        "pmaddwd %%mm1, %%mm4           \n\t" /* -C1R3+C5R1     -C1r3+C5r1 */\
+        "movq 88(%2), %%mm7             \n\t" /* C3     C7      C3      C7 */\
+        "pmaddwd 96(%2), %%mm1          \n\t" /* -C5R3+C7R1     -C5r3+C7r1 */\
+        "pmaddwd %%mm3, %%mm7           \n\t" /* C3R7+C7R5      C3r7+C7r5 */\
+        "movq %%mm0, %%mm2              \n\t" /* A2             a2 */\
+        "pmaddwd 104(%2), %%mm3         \n\t" /* -C1R7+C3R5     -C1r7+C3r5 */\
+        "paddd %%mm7, %%mm4             \n\t" /* B2             b2 */\
+        "paddd %%mm4, %%mm2             \n\t" /* A2+B2          a2+b2 */\
+        "psubd %%mm4, %%mm0             \n\t" /* a2-B2          a2-b2 */\
+        "psrad $" #shift ", %%mm2       \n\t"\
+        "psrad $" #shift ", %%mm0       \n\t"\
+        "movq %%mm6, %%mm4              \n\t" /* A3             a3 */\
+        "paddd %%mm1, %%mm3             \n\t" /* B3             b3 */\
+        "paddd %%mm3, %%mm6             \n\t" /* A3+B3          a3+b3 */\
+        "psubd %%mm3, %%mm4             \n\t" /* a3-B3          a3-b3 */\
+        "psrad $" #shift ", %%mm6       \n\t"\
+        "packssdw %%mm6, %%mm2          \n\t" /* A3+B3  a3+b3   A2+B2   a2+b2 */\
+        "movq %%mm2, 8+" #dst "         \n\t"\
+        "psrad $" #shift ", %%mm4       \n\t"\
+        "packssdw %%mm0, %%mm4          \n\t" /* A2-B2  a2-b2   A3-B3   a3-b3 */\
+        "movq %%mm4, 16+" #dst "        \n\t"\
 
 #define ROW_IDCT(src0, src4, src1, src5, dst, rounder, shift) \
-	"movq " #src0 ", %%mm0			\n\t" /* R4	R0	r4	r0 */\
-	"movq " #src4 ", %%mm1			\n\t" /* R6	R2	r6	r2 */\
-	"movq " #src1 ", %%mm2			\n\t" /* R3	R1	r3	r1 */\
-	"movq " #src5 ", %%mm3			\n\t" /* R7	R5	r7	r5 */\
-	"movq 16(%2), %%mm4			\n\t" /* C4	C4	C4	C4 */\
-	"pmaddwd %%mm0, %%mm4			\n\t" /* C4R4+C4R0	C4r4+C4r0 */\
-	"movq 24(%2), %%mm5			\n\t" /* -C4	C4	-C4	C4 */\
-	"pmaddwd %%mm5, %%mm0			\n\t" /* -C4R4+C4R0	-C4r4+C4r0 */\
-	"movq 32(%2), %%mm5			\n\t" /* C6	C2	C6	C2 */\
-	"pmaddwd %%mm1, %%mm5			\n\t" /* C6R6+C2R2	C6r6+C2r2 */\
-	"movq 40(%2), %%mm6			\n\t" /* -C2	C6	-C2	C6 */\
-	"pmaddwd %%mm6, %%mm1			\n\t" /* -C2R6+C6R2	-C2r6+C6r2 */\
-	"movq 48(%2), %%mm7			\n\t" /* C3	C1	C3	C1 */\
-	"pmaddwd %%mm2, %%mm7			\n\t" /* C3R3+C1R1	C3r3+C1r1 */\
-	#rounder ", %%mm4			\n\t"\
-	"movq %%mm4, %%mm6			\n\t" /* C4R4+C4R0	C4r4+C4r0 */\
-	"paddd %%mm5, %%mm4			\n\t" /* A0		a0 */\
-	"psubd %%mm5, %%mm6			\n\t" /* A3		a3 */\
-	"movq 56(%2), %%mm5			\n\t" /* C7	C5	C7	C5 */\
-	"pmaddwd %%mm3, %%mm5			\n\t" /* C7R7+C5R5	C7r7+C5r5 */\
-	#rounder ", %%mm0			\n\t"\
-	"paddd %%mm0, %%mm1			\n\t" /* A1		a1 */\
-	"paddd %%mm0, %%mm0			\n\t" \
-	"psubd %%mm1, %%mm0			\n\t" /* A2		a2 */\
-	"pmaddwd 64(%2), %%mm2			\n\t" /* -C7R3+C3R1	-C7r3+C3r1 */\
-	"paddd %%mm5, %%mm7			\n\t" /* B0		b0 */\
-	"movq 72(%2), %%mm5			\n\t" /* -C5	-C1	-C5	-C1 */\
-	"pmaddwd %%mm3, %%mm5			\n\t" /* -C5R7-C1R5	-C5r7-C1r5 */\
-	"paddd %%mm4, %%mm7			\n\t" /* A0+B0		a0+b0 */\
-	"paddd %%mm4, %%mm4			\n\t" /* 2A0		2a0 */\
-	"psubd %%mm7, %%mm4			\n\t" /* A0-B0		a0-b0 */\
-	"paddd %%mm2, %%mm5			\n\t" /* B1		b1 */\
-	"psrad $" #shift ", %%mm7		\n\t"\
-	"psrad $" #shift ", %%mm4		\n\t"\
-	"movq %%mm1, %%mm2			\n\t" /* A1		a1 */\
-	"paddd %%mm5, %%mm1			\n\t" /* A1+B1		a1+b1 */\
-	"psubd %%mm5, %%mm2			\n\t" /* A1-B1		a1-b1 */\
-	"psrad $" #shift ", %%mm1		\n\t"\
-	"psrad $" #shift ", %%mm2		\n\t"\
-	"packssdw %%mm1, %%mm7			\n\t" /* A1+B1	a1+b1	A0+B0	a0+b0 */\
-	"packssdw %%mm4, %%mm2			\n\t" /* A0-B0	a0-b0	A1-B1	a1-b1 */\
-	"movq %%mm7, " #dst "			\n\t"\
-	"movq " #src1 ", %%mm1			\n\t" /* R3	R1	r3	r1 */\
-	"movq 80(%2), %%mm4			\n\t" /* -C1	C5	-C1 	C5 */\
-	"movq %%mm2, 24+" #dst "		\n\t"\
-	"pmaddwd %%mm1, %%mm4			\n\t" /* -C1R3+C5R1	-C1r3+C5r1 */\
-	"movq 88(%2), %%mm7			\n\t" /* C3	C7	C3 	C7 */\
-	"pmaddwd 96(%2), %%mm1			\n\t" /* -C5R3+C7R1	-C5r3+C7r1 */\
-	"pmaddwd %%mm3, %%mm7			\n\t" /* C3R7+C7R5	C3r7+C7r5 */\
-	"movq %%mm0, %%mm2			\n\t" /* A2		a2 */\
-	"pmaddwd 104(%2), %%mm3			\n\t" /* -C1R7+C3R5	-C1r7+C3r5 */\
-	"paddd %%mm7, %%mm4			\n\t" /* B2		b2 */\
-	"paddd %%mm4, %%mm2			\n\t" /* A2+B2		a2+b2 */\
-	"psubd %%mm4, %%mm0			\n\t" /* a2-B2		a2-b2 */\
-	"psrad $" #shift ", %%mm2		\n\t"\
-	"psrad $" #shift ", %%mm0		\n\t"\
-	"movq %%mm6, %%mm4			\n\t" /* A3		a3 */\
-	"paddd %%mm1, %%mm3			\n\t" /* B3		b3 */\
-	"paddd %%mm3, %%mm6			\n\t" /* A3+B3		a3+b3 */\
-	"psubd %%mm3, %%mm4			\n\t" /* a3-B3		a3-b3 */\
-	"psrad $" #shift ", %%mm6		\n\t"\
-	"packssdw %%mm6, %%mm2			\n\t" /* A3+B3	a3+b3	A2+B2	a2+b2 */\
-	"movq %%mm2, 8+" #dst "			\n\t"\
-	"psrad $" #shift ", %%mm4		\n\t"\
-	"packssdw %%mm0, %%mm4			\n\t" /* A2-B2	a2-b2	A3-B3	a3-b3 */\
-	"movq %%mm4, 16+" #dst "		\n\t"\
+        "movq " #src0 ", %%mm0          \n\t" /* R4     R0      r4      r0 */\
+        "movq " #src4 ", %%mm1          \n\t" /* R6     R2      r6      r2 */\
+        "movq " #src1 ", %%mm2          \n\t" /* R3     R1      r3      r1 */\
+        "movq " #src5 ", %%mm3          \n\t" /* R7     R5      r7      r5 */\
+        "movq 16(%2), %%mm4             \n\t" /* C4     C4      C4      C4 */\
+        "pmaddwd %%mm0, %%mm4           \n\t" /* C4R4+C4R0      C4r4+C4r0 */\
+        "movq 24(%2), %%mm5             \n\t" /* -C4    C4      -C4     C4 */\
+        "pmaddwd %%mm5, %%mm0           \n\t" /* -C4R4+C4R0     -C4r4+C4r0 */\
+        "movq 32(%2), %%mm5             \n\t" /* C6     C2      C6      C2 */\
+        "pmaddwd %%mm1, %%mm5           \n\t" /* C6R6+C2R2      C6r6+C2r2 */\
+        "movq 40(%2), %%mm6             \n\t" /* -C2    C6      -C2     C6 */\
+        "pmaddwd %%mm6, %%mm1           \n\t" /* -C2R6+C6R2     -C2r6+C6r2 */\
+        "movq 48(%2), %%mm7             \n\t" /* C3     C1      C3      C1 */\
+        "pmaddwd %%mm2, %%mm7           \n\t" /* C3R3+C1R1      C3r3+C1r1 */\
+        #rounder ", %%mm4               \n\t"\
+        "movq %%mm4, %%mm6              \n\t" /* C4R4+C4R0      C4r4+C4r0 */\
+        "paddd %%mm5, %%mm4             \n\t" /* A0             a0 */\
+        "psubd %%mm5, %%mm6             \n\t" /* A3             a3 */\
+        "movq 56(%2), %%mm5             \n\t" /* C7     C5      C7      C5 */\
+        "pmaddwd %%mm3, %%mm5           \n\t" /* C7R7+C5R5      C7r7+C5r5 */\
+        #rounder ", %%mm0               \n\t"\
+        "paddd %%mm0, %%mm1             \n\t" /* A1             a1 */\
+        "paddd %%mm0, %%mm0             \n\t" \
+        "psubd %%mm1, %%mm0             \n\t" /* A2             a2 */\
+        "pmaddwd 64(%2), %%mm2          \n\t" /* -C7R3+C3R1     -C7r3+C3r1 */\
+        "paddd %%mm5, %%mm7             \n\t" /* B0             b0 */\
+        "movq 72(%2), %%mm5             \n\t" /* -C5    -C1     -C5     -C1 */\
+        "pmaddwd %%mm3, %%mm5           \n\t" /* -C5R7-C1R5     -C5r7-C1r5 */\
+        "paddd %%mm4, %%mm7             \n\t" /* A0+B0          a0+b0 */\
+        "paddd %%mm4, %%mm4             \n\t" /* 2A0            2a0 */\
+        "psubd %%mm7, %%mm4             \n\t" /* A0-B0          a0-b0 */\
+        "paddd %%mm2, %%mm5             \n\t" /* B1             b1 */\
+        "psrad $" #shift ", %%mm7       \n\t"\
+        "psrad $" #shift ", %%mm4       \n\t"\
+        "movq %%mm1, %%mm2              \n\t" /* A1             a1 */\
+        "paddd %%mm5, %%mm1             \n\t" /* A1+B1          a1+b1 */\
+        "psubd %%mm5, %%mm2             \n\t" /* A1-B1          a1-b1 */\
+        "psrad $" #shift ", %%mm1       \n\t"\
+        "psrad $" #shift ", %%mm2       \n\t"\
+        "packssdw %%mm1, %%mm7          \n\t" /* A1+B1  a1+b1   A0+B0   a0+b0 */\
+        "packssdw %%mm4, %%mm2          \n\t" /* A0-B0  a0-b0   A1-B1   a1-b1 */\
+        "movq %%mm7, " #dst "           \n\t"\
+        "movq " #src1 ", %%mm1          \n\t" /* R3     R1      r3      r1 */\
+        "movq 80(%2), %%mm4             \n\t" /* -C1    C5      -C1     C5 */\
+        "movq %%mm2, 24+" #dst "        \n\t"\
+        "pmaddwd %%mm1, %%mm4           \n\t" /* -C1R3+C5R1     -C1r3+C5r1 */\
+        "movq 88(%2), %%mm7             \n\t" /* C3     C7      C3      C7 */\
+        "pmaddwd 96(%2), %%mm1          \n\t" /* -C5R3+C7R1     -C5r3+C7r1 */\
+        "pmaddwd %%mm3, %%mm7           \n\t" /* C3R7+C7R5      C3r7+C7r5 */\
+        "movq %%mm0, %%mm2              \n\t" /* A2             a2 */\
+        "pmaddwd 104(%2), %%mm3         \n\t" /* -C1R7+C3R5     -C1r7+C3r5 */\
+        "paddd %%mm7, %%mm4             \n\t" /* B2             b2 */\
+        "paddd %%mm4, %%mm2             \n\t" /* A2+B2          a2+b2 */\
+        "psubd %%mm4, %%mm0             \n\t" /* a2-B2          a2-b2 */\
+        "psrad $" #shift ", %%mm2       \n\t"\
+        "psrad $" #shift ", %%mm0       \n\t"\
+        "movq %%mm6, %%mm4              \n\t" /* A3             a3 */\
+        "paddd %%mm1, %%mm3             \n\t" /* B3             b3 */\
+        "paddd %%mm3, %%mm6             \n\t" /* A3+B3          a3+b3 */\
+        "psubd %%mm3, %%mm4             \n\t" /* a3-B3          a3-b3 */\
+        "psrad $" #shift ", %%mm6       \n\t"\
+        "packssdw %%mm6, %%mm2          \n\t" /* A3+B3  a3+b3   A2+B2   a2+b2 */\
+        "movq %%mm2, 8+" #dst "         \n\t"\
+        "psrad $" #shift ", %%mm4       \n\t"\
+        "packssdw %%mm0, %%mm4          \n\t" /* A2-B2  a2-b2   A3-B3   a3-b3 */\
+        "movq %%mm4, 16+" #dst "        \n\t"\
 
 //IDCT(         src0,   src4,   src1,   src5,    dst,   rounder, shift)
 DC_COND_IDCT(  0(%0),  8(%0), 16(%0), 24(%0),  0(%1),paddd 8(%2), 11)
@@ -706,80 +706,80 @@ Z_COND_IDCT(  96(%0),104(%0),112(%0),120(%0), 96(%1),paddd (%2), 11, 1f)
 
 #undef IDCT
 #define IDCT(src0, src4, src1, src5, dst, rounder, shift) \
-	"movq " #src0 ", %%mm0			\n\t" /* R4	R0	r4	r0 */\
-	"movq " #src4 ", %%mm1			\n\t" /* R6	R2	r6	r2 */\
-	"movq " #src1 ", %%mm2			\n\t" /* R3	R1	r3	r1 */\
-	"movq " #src5 ", %%mm3			\n\t" /* R7	R5	r7	r5 */\
-	"movq 16(%2), %%mm4			\n\t" /* C4	C4	C4	C4 */\
-	"pmaddwd %%mm0, %%mm4			\n\t" /* C4R4+C4R0	C4r4+C4r0 */\
-	"movq 24(%2), %%mm5			\n\t" /* -C4	C4	-C4	C4 */\
-	"pmaddwd %%mm5, %%mm0			\n\t" /* -C4R4+C4R0	-C4r4+C4r0 */\
-	"movq 32(%2), %%mm5			\n\t" /* C6	C2	C6	C2 */\
-	"pmaddwd %%mm1, %%mm5			\n\t" /* C6R6+C2R2	C6r6+C2r2 */\
-	"movq 40(%2), %%mm6			\n\t" /* -C2	C6	-C2	C6 */\
-	"pmaddwd %%mm6, %%mm1			\n\t" /* -C2R6+C6R2	-C2r6+C6r2 */\
-	#rounder ", %%mm4			\n\t"\
-	"movq %%mm4, %%mm6			\n\t" /* C4R4+C4R0	C4r4+C4r0 */\
-	"movq 48(%2), %%mm7			\n\t" /* C3	C1	C3	C1 */\
-	#rounder ", %%mm0			\n\t"\
-	"pmaddwd %%mm2, %%mm7			\n\t" /* C3R3+C1R1	C3r3+C1r1 */\
-	"paddd %%mm5, %%mm4			\n\t" /* A0		a0 */\
-	"psubd %%mm5, %%mm6			\n\t" /* A3		a3 */\
-	"movq %%mm0, %%mm5			\n\t" /* -C4R4+C4R0	-C4r4+C4r0 */\
-	"paddd %%mm1, %%mm0			\n\t" /* A1		a1 */\
-	"psubd %%mm1, %%mm5			\n\t" /* A2		a2 */\
-	"movq 56(%2), %%mm1			\n\t" /* C7	C5	C7	C5 */\
-	"pmaddwd %%mm3, %%mm1			\n\t" /* C7R7+C5R5	C7r7+C5r5 */\
-	"pmaddwd 64(%2), %%mm2			\n\t" /* -C7R3+C3R1	-C7r3+C3r1 */\
-	"paddd %%mm1, %%mm7			\n\t" /* B0		b0 */\
-	"movq 72(%2), %%mm1			\n\t" /* -C5	-C1	-C5	-C1 */\
-	"pmaddwd %%mm3, %%mm1			\n\t" /* -C5R7-C1R5	-C5r7-C1r5 */\
-	"paddd %%mm4, %%mm7			\n\t" /* A0+B0		a0+b0 */\
-	"paddd %%mm4, %%mm4			\n\t" /* 2A0		2a0 */\
-	"psubd %%mm7, %%mm4			\n\t" /* A0-B0		a0-b0 */\
-	"paddd %%mm2, %%mm1			\n\t" /* B1		b1 */\
-	"psrad $" #shift ", %%mm7		\n\t"\
-	"psrad $" #shift ", %%mm4		\n\t"\
-	"movq %%mm0, %%mm2			\n\t" /* A1		a1 */\
-	"paddd %%mm1, %%mm0			\n\t" /* A1+B1		a1+b1 */\
-	"psubd %%mm1, %%mm2			\n\t" /* A1-B1		a1-b1 */\
-	"psrad $" #shift ", %%mm0		\n\t"\
-	"psrad $" #shift ", %%mm2		\n\t"\
-	"packssdw %%mm7, %%mm7			\n\t" /* A0+B0	a0+b0 */\
-	"movd %%mm7, " #dst "			\n\t"\
-	"packssdw %%mm0, %%mm0			\n\t" /* A1+B1	a1+b1 */\
-	"movd %%mm0, 16+" #dst "		\n\t"\
-	"packssdw %%mm2, %%mm2			\n\t" /* A1-B1	a1-b1 */\
-	"movd %%mm2, 96+" #dst "		\n\t"\
-	"packssdw %%mm4, %%mm4			\n\t" /* A0-B0	a0-b0 */\
-	"movd %%mm4, 112+" #dst "		\n\t"\
-	"movq " #src1 ", %%mm0			\n\t" /* R3	R1	r3	r1 */\
-	"movq 80(%2), %%mm4			\n\t" /* -C1	C5	-C1 	C5 */\
-	"pmaddwd %%mm0, %%mm4			\n\t" /* -C1R3+C5R1	-C1r3+C5r1 */\
-	"movq 88(%2), %%mm7			\n\t" /* C3	C7	C3 	C7 */\
-	"pmaddwd 96(%2), %%mm0			\n\t" /* -C5R3+C7R1	-C5r3+C7r1 */\
-	"pmaddwd %%mm3, %%mm7			\n\t" /* C3R7+C7R5	C3r7+C7r5 */\
-	"movq %%mm5, %%mm2			\n\t" /* A2		a2 */\
-	"pmaddwd 104(%2), %%mm3			\n\t" /* -C1R7+C3R5	-C1r7+C3r5 */\
-	"paddd %%mm7, %%mm4			\n\t" /* B2		b2 */\
-	"paddd %%mm4, %%mm2			\n\t" /* A2+B2		a2+b2 */\
-	"psubd %%mm4, %%mm5			\n\t" /* a2-B2		a2-b2 */\
-	"psrad $" #shift ", %%mm2		\n\t"\
-	"psrad $" #shift ", %%mm5		\n\t"\
-	"movq %%mm6, %%mm4			\n\t" /* A3		a3 */\
-	"paddd %%mm0, %%mm3			\n\t" /* B3		b3 */\
-	"paddd %%mm3, %%mm6			\n\t" /* A3+B3		a3+b3 */\
-	"psubd %%mm3, %%mm4			\n\t" /* a3-B3		a3-b3 */\
-	"psrad $" #shift ", %%mm6		\n\t"\
-	"psrad $" #shift ", %%mm4		\n\t"\
-	"packssdw %%mm2, %%mm2			\n\t" /* A2+B2	a2+b2 */\
-	"packssdw %%mm6, %%mm6			\n\t" /* A3+B3	a3+b3 */\
-	"movd %%mm2, 32+" #dst "		\n\t"\
-	"packssdw %%mm4, %%mm4			\n\t" /* A3-B3	a3-b3 */\
-	"packssdw %%mm5, %%mm5			\n\t" /* A2-B2	a2-b2 */\
-	"movd %%mm6, 48+" #dst "		\n\t"\
-	"movd %%mm4, 64+" #dst "		\n\t"\
-	"movd %%mm5, 80+" #dst "		\n\t"
+        "movq " #src0 ", %%mm0          \n\t" /* R4     R0      r4      r0 */\
+        "movq " #src4 ", %%mm1          \n\t" /* R6     R2      r6      r2 */\
+        "movq " #src1 ", %%mm2          \n\t" /* R3     R1      r3      r1 */\
+        "movq " #src5 ", %%mm3          \n\t" /* R7     R5      r7      r5 */\
+        "movq 16(%2), %%mm4             \n\t" /* C4     C4      C4      C4 */\
+        "pmaddwd %%mm0, %%mm4           \n\t" /* C4R4+C4R0      C4r4+C4r0 */\
+        "movq 24(%2), %%mm5             \n\t" /* -C4    C4      -C4     C4 */\
+        "pmaddwd %%mm5, %%mm0           \n\t" /* -C4R4+C4R0     -C4r4+C4r0 */\
+        "movq 32(%2), %%mm5             \n\t" /* C6     C2      C6      C2 */\
+        "pmaddwd %%mm1, %%mm5           \n\t" /* C6R6+C2R2      C6r6+C2r2 */\
+        "movq 40(%2), %%mm6             \n\t" /* -C2    C6      -C2     C6 */\
+        "pmaddwd %%mm6, %%mm1           \n\t" /* -C2R6+C6R2     -C2r6+C6r2 */\
+        #rounder ", %%mm4               \n\t"\
+        "movq %%mm4, %%mm6              \n\t" /* C4R4+C4R0      C4r4+C4r0 */\
+        "movq 48(%2), %%mm7             \n\t" /* C3     C1      C3      C1 */\
+        #rounder ", %%mm0               \n\t"\
+        "pmaddwd %%mm2, %%mm7           \n\t" /* C3R3+C1R1      C3r3+C1r1 */\
+        "paddd %%mm5, %%mm4             \n\t" /* A0             a0 */\
+        "psubd %%mm5, %%mm6             \n\t" /* A3             a3 */\
+        "movq %%mm0, %%mm5              \n\t" /* -C4R4+C4R0     -C4r4+C4r0 */\
+        "paddd %%mm1, %%mm0             \n\t" /* A1             a1 */\
+        "psubd %%mm1, %%mm5             \n\t" /* A2             a2 */\
+        "movq 56(%2), %%mm1             \n\t" /* C7     C5      C7      C5 */\
+        "pmaddwd %%mm3, %%mm1           \n\t" /* C7R7+C5R5      C7r7+C5r5 */\
+        "pmaddwd 64(%2), %%mm2          \n\t" /* -C7R3+C3R1     -C7r3+C3r1 */\
+        "paddd %%mm1, %%mm7             \n\t" /* B0             b0 */\
+        "movq 72(%2), %%mm1             \n\t" /* -C5    -C1     -C5     -C1 */\
+        "pmaddwd %%mm3, %%mm1           \n\t" /* -C5R7-C1R5     -C5r7-C1r5 */\
+        "paddd %%mm4, %%mm7             \n\t" /* A0+B0          a0+b0 */\
+        "paddd %%mm4, %%mm4             \n\t" /* 2A0            2a0 */\
+        "psubd %%mm7, %%mm4             \n\t" /* A0-B0          a0-b0 */\
+        "paddd %%mm2, %%mm1             \n\t" /* B1             b1 */\
+        "psrad $" #shift ", %%mm7       \n\t"\
+        "psrad $" #shift ", %%mm4       \n\t"\
+        "movq %%mm0, %%mm2              \n\t" /* A1             a1 */\
+        "paddd %%mm1, %%mm0             \n\t" /* A1+B1          a1+b1 */\
+        "psubd %%mm1, %%mm2             \n\t" /* A1-B1          a1-b1 */\
+        "psrad $" #shift ", %%mm0       \n\t"\
+        "psrad $" #shift ", %%mm2       \n\t"\
+        "packssdw %%mm7, %%mm7          \n\t" /* A0+B0  a0+b0 */\
+        "movd %%mm7, " #dst "           \n\t"\
+        "packssdw %%mm0, %%mm0          \n\t" /* A1+B1  a1+b1 */\
+        "movd %%mm0, 16+" #dst "        \n\t"\
+        "packssdw %%mm2, %%mm2          \n\t" /* A1-B1  a1-b1 */\
+        "movd %%mm2, 96+" #dst "        \n\t"\
+        "packssdw %%mm4, %%mm4          \n\t" /* A0-B0  a0-b0 */\
+        "movd %%mm4, 112+" #dst "       \n\t"\
+        "movq " #src1 ", %%mm0          \n\t" /* R3     R1      r3      r1 */\
+        "movq 80(%2), %%mm4             \n\t" /* -C1    C5      -C1     C5 */\
+        "pmaddwd %%mm0, %%mm4           \n\t" /* -C1R3+C5R1     -C1r3+C5r1 */\
+        "movq 88(%2), %%mm7             \n\t" /* C3     C7      C3      C7 */\
+        "pmaddwd 96(%2), %%mm0          \n\t" /* -C5R3+C7R1     -C5r3+C7r1 */\
+        "pmaddwd %%mm3, %%mm7           \n\t" /* C3R7+C7R5      C3r7+C7r5 */\
+        "movq %%mm5, %%mm2              \n\t" /* A2             a2 */\
+        "pmaddwd 104(%2), %%mm3         \n\t" /* -C1R7+C3R5     -C1r7+C3r5 */\
+        "paddd %%mm7, %%mm4             \n\t" /* B2             b2 */\
+        "paddd %%mm4, %%mm2             \n\t" /* A2+B2          a2+b2 */\
+        "psubd %%mm4, %%mm5             \n\t" /* a2-B2          a2-b2 */\
+        "psrad $" #shift ", %%mm2       \n\t"\
+        "psrad $" #shift ", %%mm5       \n\t"\
+        "movq %%mm6, %%mm4              \n\t" /* A3             a3 */\
+        "paddd %%mm0, %%mm3             \n\t" /* B3             b3 */\
+        "paddd %%mm3, %%mm6             \n\t" /* A3+B3          a3+b3 */\
+        "psubd %%mm3, %%mm4             \n\t" /* a3-B3          a3-b3 */\
+        "psrad $" #shift ", %%mm6       \n\t"\
+        "psrad $" #shift ", %%mm4       \n\t"\
+        "packssdw %%mm2, %%mm2          \n\t" /* A2+B2  a2+b2 */\
+        "packssdw %%mm6, %%mm6          \n\t" /* A3+B3  a3+b3 */\
+        "movd %%mm2, 32+" #dst "        \n\t"\
+        "packssdw %%mm4, %%mm4          \n\t" /* A3-B3  a3-b3 */\
+        "packssdw %%mm5, %%mm5          \n\t" /* A2-B2  a2-b2 */\
+        "movd %%mm6, 48+" #dst "        \n\t"\
+        "movd %%mm4, 64+" #dst "        \n\t"\
+        "movd %%mm5, 80+" #dst "        \n\t"
 
 
 //IDCT(  src0,   src4,   src1,    src5,    dst, rounder, shift)
@@ -787,144 +787,144 @@ IDCT(    (%1), 64(%1), 32(%1),  96(%1),  0(%0),/nop, 20)
 IDCT(   8(%1), 72(%1), 40(%1), 104(%1),  4(%0),/nop, 20)
 IDCT(  16(%1), 80(%1), 48(%1), 112(%1),  8(%0),/nop, 20)
 IDCT(  24(%1), 88(%1), 56(%1), 120(%1), 12(%0),/nop, 20)
-	"jmp 9f					\n\t"
+        "jmp 9f                         \n\t"
 
-	"#.balign 16				\n\t"\
-	"4:					\n\t"
+        "#.balign 16                    \n\t"\
+        "4:                             \n\t"
 Z_COND_IDCT(  64(%0), 72(%0), 80(%0), 88(%0), 64(%1),paddd (%2), 11, 6f)
 Z_COND_IDCT(  96(%0),104(%0),112(%0),120(%0), 96(%1),paddd (%2), 11, 5f)
 
 #undef IDCT
 #define IDCT(src0, src4, src1, src5, dst, rounder, shift) \
-	"movq " #src0 ", %%mm0			\n\t" /* R4	R0	r4	r0 */\
-	"movq " #src4 ", %%mm1			\n\t" /* R6	R2	r6	r2 */\
-	"movq " #src5 ", %%mm3			\n\t" /* R7	R5	r7	r5 */\
-	"movq 16(%2), %%mm4			\n\t" /* C4	C4	C4	C4 */\
-	"pmaddwd %%mm0, %%mm4			\n\t" /* C4R4+C4R0	C4r4+C4r0 */\
-	"movq 24(%2), %%mm5			\n\t" /* -C4	C4	-C4	C4 */\
-	"pmaddwd %%mm5, %%mm0			\n\t" /* -C4R4+C4R0	-C4r4+C4r0 */\
-	"movq 32(%2), %%mm5			\n\t" /* C6	C2	C6	C2 */\
-	"pmaddwd %%mm1, %%mm5			\n\t" /* C6R6+C2R2	C6r6+C2r2 */\
-	"movq 40(%2), %%mm6			\n\t" /* -C2	C6	-C2	C6 */\
-	"pmaddwd %%mm6, %%mm1			\n\t" /* -C2R6+C6R2	-C2r6+C6r2 */\
-	#rounder ", %%mm4			\n\t"\
-	"movq %%mm4, %%mm6			\n\t" /* C4R4+C4R0	C4r4+C4r0 */\
-	#rounder ", %%mm0			\n\t"\
-	"paddd %%mm5, %%mm4			\n\t" /* A0		a0 */\
-	"psubd %%mm5, %%mm6			\n\t" /* A3		a3 */\
-	"movq %%mm0, %%mm5			\n\t" /* -C4R4+C4R0	-C4r4+C4r0 */\
-	"paddd %%mm1, %%mm0			\n\t" /* A1		a1 */\
-	"psubd %%mm1, %%mm5			\n\t" /* A2		a2 */\
-	"movq 56(%2), %%mm1			\n\t" /* C7	C5	C7	C5 */\
-	"pmaddwd %%mm3, %%mm1			\n\t" /* C7R7+C5R5	C7r7+C5r5 */\
-	"movq 72(%2), %%mm7			\n\t" /* -C5	-C1	-C5	-C1 */\
-	"pmaddwd %%mm3, %%mm7			\n\t" /* -C5R7-C1R5	-C5r7-C1r5 */\
-	"paddd %%mm4, %%mm1			\n\t" /* A0+B0		a0+b0 */\
-	"paddd %%mm4, %%mm4			\n\t" /* 2A0		2a0 */\
-	"psubd %%mm1, %%mm4			\n\t" /* A0-B0		a0-b0 */\
-	"psrad $" #shift ", %%mm1		\n\t"\
-	"psrad $" #shift ", %%mm4		\n\t"\
-	"movq %%mm0, %%mm2			\n\t" /* A1		a1 */\
-	"paddd %%mm7, %%mm0			\n\t" /* A1+B1		a1+b1 */\
-	"psubd %%mm7, %%mm2			\n\t" /* A1-B1		a1-b1 */\
-	"psrad $" #shift ", %%mm0		\n\t"\
-	"psrad $" #shift ", %%mm2		\n\t"\
-	"packssdw %%mm1, %%mm1			\n\t" /* A0+B0	a0+b0 */\
-	"movd %%mm1, " #dst "			\n\t"\
-	"packssdw %%mm0, %%mm0			\n\t" /* A1+B1	a1+b1 */\
-	"movd %%mm0, 16+" #dst "		\n\t"\
-	"packssdw %%mm2, %%mm2			\n\t" /* A1-B1	a1-b1 */\
-	"movd %%mm2, 96+" #dst "		\n\t"\
-	"packssdw %%mm4, %%mm4			\n\t" /* A0-B0	a0-b0 */\
-	"movd %%mm4, 112+" #dst "		\n\t"\
-	"movq 88(%2), %%mm1			\n\t" /* C3	C7	C3 	C7 */\
-	"pmaddwd %%mm3, %%mm1			\n\t" /* C3R7+C7R5	C3r7+C7r5 */\
-	"movq %%mm5, %%mm2			\n\t" /* A2		a2 */\
-	"pmaddwd 104(%2), %%mm3			\n\t" /* -C1R7+C3R5	-C1r7+C3r5 */\
-	"paddd %%mm1, %%mm2			\n\t" /* A2+B2		a2+b2 */\
-	"psubd %%mm1, %%mm5			\n\t" /* a2-B2		a2-b2 */\
-	"psrad $" #shift ", %%mm2		\n\t"\
-	"psrad $" #shift ", %%mm5		\n\t"\
-	"movq %%mm6, %%mm1			\n\t" /* A3		a3 */\
-	"paddd %%mm3, %%mm6			\n\t" /* A3+B3		a3+b3 */\
-	"psubd %%mm3, %%mm1			\n\t" /* a3-B3		a3-b3 */\
-	"psrad $" #shift ", %%mm6		\n\t"\
-	"psrad $" #shift ", %%mm1		\n\t"\
-	"packssdw %%mm2, %%mm2			\n\t" /* A2+B2	a2+b2 */\
-	"packssdw %%mm6, %%mm6			\n\t" /* A3+B3	a3+b3 */\
-	"movd %%mm2, 32+" #dst "		\n\t"\
-	"packssdw %%mm1, %%mm1			\n\t" /* A3-B3	a3-b3 */\
-	"packssdw %%mm5, %%mm5			\n\t" /* A2-B2	a2-b2 */\
-	"movd %%mm6, 48+" #dst "		\n\t"\
-	"movd %%mm1, 64+" #dst "		\n\t"\
-	"movd %%mm5, 80+" #dst "		\n\t"
+        "movq " #src0 ", %%mm0          \n\t" /* R4     R0      r4      r0 */\
+        "movq " #src4 ", %%mm1          \n\t" /* R6     R2      r6      r2 */\
+        "movq " #src5 ", %%mm3          \n\t" /* R7     R5      r7      r5 */\
+        "movq 16(%2), %%mm4             \n\t" /* C4     C4      C4      C4 */\
+        "pmaddwd %%mm0, %%mm4           \n\t" /* C4R4+C4R0      C4r4+C4r0 */\
+        "movq 24(%2), %%mm5             \n\t" /* -C4    C4      -C4     C4 */\
+        "pmaddwd %%mm5, %%mm0           \n\t" /* -C4R4+C4R0     -C4r4+C4r0 */\
+        "movq 32(%2), %%mm5             \n\t" /* C6     C2      C6      C2 */\
+        "pmaddwd %%mm1, %%mm5           \n\t" /* C6R6+C2R2      C6r6+C2r2 */\
+        "movq 40(%2), %%mm6             \n\t" /* -C2    C6      -C2     C6 */\
+        "pmaddwd %%mm6, %%mm1           \n\t" /* -C2R6+C6R2     -C2r6+C6r2 */\
+        #rounder ", %%mm4               \n\t"\
+        "movq %%mm4, %%mm6              \n\t" /* C4R4+C4R0      C4r4+C4r0 */\
+        #rounder ", %%mm0               \n\t"\
+        "paddd %%mm5, %%mm4             \n\t" /* A0             a0 */\
+        "psubd %%mm5, %%mm6             \n\t" /* A3             a3 */\
+        "movq %%mm0, %%mm5              \n\t" /* -C4R4+C4R0     -C4r4+C4r0 */\
+        "paddd %%mm1, %%mm0             \n\t" /* A1             a1 */\
+        "psubd %%mm1, %%mm5             \n\t" /* A2             a2 */\
+        "movq 56(%2), %%mm1             \n\t" /* C7     C5      C7      C5 */\
+        "pmaddwd %%mm3, %%mm1           \n\t" /* C7R7+C5R5      C7r7+C5r5 */\
+        "movq 72(%2), %%mm7             \n\t" /* -C5    -C1     -C5     -C1 */\
+        "pmaddwd %%mm3, %%mm7           \n\t" /* -C5R7-C1R5     -C5r7-C1r5 */\
+        "paddd %%mm4, %%mm1             \n\t" /* A0+B0          a0+b0 */\
+        "paddd %%mm4, %%mm4             \n\t" /* 2A0            2a0 */\
+        "psubd %%mm1, %%mm4             \n\t" /* A0-B0          a0-b0 */\
+        "psrad $" #shift ", %%mm1       \n\t"\
+        "psrad $" #shift ", %%mm4       \n\t"\
+        "movq %%mm0, %%mm2              \n\t" /* A1             a1 */\
+        "paddd %%mm7, %%mm0             \n\t" /* A1+B1          a1+b1 */\
+        "psubd %%mm7, %%mm2             \n\t" /* A1-B1          a1-b1 */\
+        "psrad $" #shift ", %%mm0       \n\t"\
+        "psrad $" #shift ", %%mm2       \n\t"\
+        "packssdw %%mm1, %%mm1          \n\t" /* A0+B0  a0+b0 */\
+        "movd %%mm1, " #dst "           \n\t"\
+        "packssdw %%mm0, %%mm0          \n\t" /* A1+B1  a1+b1 */\
+        "movd %%mm0, 16+" #dst "        \n\t"\
+        "packssdw %%mm2, %%mm2          \n\t" /* A1-B1  a1-b1 */\
+        "movd %%mm2, 96+" #dst "        \n\t"\
+        "packssdw %%mm4, %%mm4          \n\t" /* A0-B0  a0-b0 */\
+        "movd %%mm4, 112+" #dst "       \n\t"\
+        "movq 88(%2), %%mm1             \n\t" /* C3     C7      C3      C7 */\
+        "pmaddwd %%mm3, %%mm1           \n\t" /* C3R7+C7R5      C3r7+C7r5 */\
+        "movq %%mm5, %%mm2              \n\t" /* A2             a2 */\
+        "pmaddwd 104(%2), %%mm3         \n\t" /* -C1R7+C3R5     -C1r7+C3r5 */\
+        "paddd %%mm1, %%mm2             \n\t" /* A2+B2          a2+b2 */\
+        "psubd %%mm1, %%mm5             \n\t" /* a2-B2          a2-b2 */\
+        "psrad $" #shift ", %%mm2       \n\t"\
+        "psrad $" #shift ", %%mm5       \n\t"\
+        "movq %%mm6, %%mm1              \n\t" /* A3             a3 */\
+        "paddd %%mm3, %%mm6             \n\t" /* A3+B3          a3+b3 */\
+        "psubd %%mm3, %%mm1             \n\t" /* a3-B3          a3-b3 */\
+        "psrad $" #shift ", %%mm6       \n\t"\
+        "psrad $" #shift ", %%mm1       \n\t"\
+        "packssdw %%mm2, %%mm2          \n\t" /* A2+B2  a2+b2 */\
+        "packssdw %%mm6, %%mm6          \n\t" /* A3+B3  a3+b3 */\
+        "movd %%mm2, 32+" #dst "        \n\t"\
+        "packssdw %%mm1, %%mm1          \n\t" /* A3-B3  a3-b3 */\
+        "packssdw %%mm5, %%mm5          \n\t" /* A2-B2  a2-b2 */\
+        "movd %%mm6, 48+" #dst "        \n\t"\
+        "movd %%mm1, 64+" #dst "        \n\t"\
+        "movd %%mm5, 80+" #dst "        \n\t"
 
 //IDCT(  src0,   src4,   src1,    src5,    dst, rounder, shift)
 IDCT(    (%1), 64(%1), 32(%1),  96(%1),  0(%0),/nop, 20)
 IDCT(   8(%1), 72(%1), 40(%1), 104(%1),  4(%0),/nop, 20)
 IDCT(  16(%1), 80(%1), 48(%1), 112(%1),  8(%0),/nop, 20)
 IDCT(  24(%1), 88(%1), 56(%1), 120(%1), 12(%0),/nop, 20)
-	"jmp 9f					\n\t"
+        "jmp 9f                         \n\t"
 
-	"#.balign 16				\n\t"\
-	"6:					\n\t"
+        "#.balign 16                    \n\t"\
+        "6:                             \n\t"
 Z_COND_IDCT(  96(%0),104(%0),112(%0),120(%0), 96(%1),paddd (%2), 11, 7f)
 
 #undef IDCT
 #define IDCT(src0, src4, src1, src5, dst, rounder, shift) \
-	"movq " #src0 ", %%mm0			\n\t" /* R4	R0	r4	r0 */\
-	"movq " #src5 ", %%mm3			\n\t" /* R7	R5	r7	r5 */\
-	"movq 16(%2), %%mm4			\n\t" /* C4	C4	C4	C4 */\
-	"pmaddwd %%mm0, %%mm4			\n\t" /* C4R4+C4R0	C4r4+C4r0 */\
-	"movq 24(%2), %%mm5			\n\t" /* -C4	C4	-C4	C4 */\
-	"pmaddwd %%mm5, %%mm0			\n\t" /* -C4R4+C4R0	-C4r4+C4r0 */\
-	#rounder ", %%mm4			\n\t"\
-	"movq %%mm4, %%mm6			\n\t" /* C4R4+C4R0	C4r4+C4r0 */\
-	#rounder ", %%mm0			\n\t"\
-	"movq %%mm0, %%mm5			\n\t" /* -C4R4+C4R0	-C4r4+C4r0 */\
-	"movq 56(%2), %%mm1			\n\t" /* C7	C5	C7	C5 */\
-	"pmaddwd %%mm3, %%mm1			\n\t" /* C7R7+C5R5	C7r7+C5r5 */\
-	"movq 72(%2), %%mm7			\n\t" /* -C5	-C1	-C5	-C1 */\
-	"pmaddwd %%mm3, %%mm7			\n\t" /* -C5R7-C1R5	-C5r7-C1r5 */\
-	"paddd %%mm4, %%mm1			\n\t" /* A0+B0		a0+b0 */\
-	"paddd %%mm4, %%mm4			\n\t" /* 2A0		2a0 */\
-	"psubd %%mm1, %%mm4			\n\t" /* A0-B0		a0-b0 */\
-	"psrad $" #shift ", %%mm1		\n\t"\
-	"psrad $" #shift ", %%mm4		\n\t"\
-	"movq %%mm0, %%mm2			\n\t" /* A1		a1 */\
-	"paddd %%mm7, %%mm0			\n\t" /* A1+B1		a1+b1 */\
-	"psubd %%mm7, %%mm2			\n\t" /* A1-B1		a1-b1 */\
-	"psrad $" #shift ", %%mm0		\n\t"\
-	"psrad $" #shift ", %%mm2		\n\t"\
-	"packssdw %%mm1, %%mm1			\n\t" /* A0+B0	a0+b0 */\
-	"movd %%mm1, " #dst "			\n\t"\
-	"packssdw %%mm0, %%mm0			\n\t" /* A1+B1	a1+b1 */\
-	"movd %%mm0, 16+" #dst "		\n\t"\
-	"packssdw %%mm2, %%mm2			\n\t" /* A1-B1	a1-b1 */\
-	"movd %%mm2, 96+" #dst "		\n\t"\
-	"packssdw %%mm4, %%mm4			\n\t" /* A0-B0	a0-b0 */\
-	"movd %%mm4, 112+" #dst "		\n\t"\
-	"movq 88(%2), %%mm1			\n\t" /* C3	C7	C3 	C7 */\
-	"pmaddwd %%mm3, %%mm1			\n\t" /* C3R7+C7R5	C3r7+C7r5 */\
-	"movq %%mm5, %%mm2			\n\t" /* A2		a2 */\
-	"pmaddwd 104(%2), %%mm3			\n\t" /* -C1R7+C3R5	-C1r7+C3r5 */\
-	"paddd %%mm1, %%mm2			\n\t" /* A2+B2		a2+b2 */\
-	"psubd %%mm1, %%mm5			\n\t" /* a2-B2		a2-b2 */\
-	"psrad $" #shift ", %%mm2		\n\t"\
-	"psrad $" #shift ", %%mm5		\n\t"\
-	"movq %%mm6, %%mm1			\n\t" /* A3		a3 */\
-	"paddd %%mm3, %%mm6			\n\t" /* A3+B3		a3+b3 */\
-	"psubd %%mm3, %%mm1			\n\t" /* a3-B3		a3-b3 */\
-	"psrad $" #shift ", %%mm6		\n\t"\
-	"psrad $" #shift ", %%mm1		\n\t"\
-	"packssdw %%mm2, %%mm2			\n\t" /* A2+B2	a2+b2 */\
-	"packssdw %%mm6, %%mm6			\n\t" /* A3+B3	a3+b3 */\
-	"movd %%mm2, 32+" #dst "		\n\t"\
-	"packssdw %%mm1, %%mm1			\n\t" /* A3-B3	a3-b3 */\
-	"packssdw %%mm5, %%mm5			\n\t" /* A2-B2	a2-b2 */\
-	"movd %%mm6, 48+" #dst "		\n\t"\
-	"movd %%mm1, 64+" #dst "		\n\t"\
-	"movd %%mm5, 80+" #dst "		\n\t"
+        "movq " #src0 ", %%mm0          \n\t" /* R4     R0      r4      r0 */\
+        "movq " #src5 ", %%mm3          \n\t" /* R7     R5      r7      r5 */\
+        "movq 16(%2), %%mm4             \n\t" /* C4     C4      C4      C4 */\
+        "pmaddwd %%mm0, %%mm4           \n\t" /* C4R4+C4R0      C4r4+C4r0 */\
+        "movq 24(%2), %%mm5             \n\t" /* -C4    C4      -C4     C4 */\
+        "pmaddwd %%mm5, %%mm0           \n\t" /* -C4R4+C4R0     -C4r4+C4r0 */\
+        #rounder ", %%mm4               \n\t"\
+        "movq %%mm4, %%mm6              \n\t" /* C4R4+C4R0      C4r4+C4r0 */\
+        #rounder ", %%mm0               \n\t"\
+        "movq %%mm0, %%mm5              \n\t" /* -C4R4+C4R0     -C4r4+C4r0 */\
+        "movq 56(%2), %%mm1             \n\t" /* C7     C5      C7      C5 */\
+        "pmaddwd %%mm3, %%mm1           \n\t" /* C7R7+C5R5      C7r7+C5r5 */\
+        "movq 72(%2), %%mm7             \n\t" /* -C5    -C1     -C5     -C1 */\
+        "pmaddwd %%mm3, %%mm7           \n\t" /* -C5R7-C1R5     -C5r7-C1r5 */\
+        "paddd %%mm4, %%mm1             \n\t" /* A0+B0          a0+b0 */\
+        "paddd %%mm4, %%mm4             \n\t" /* 2A0            2a0 */\
+        "psubd %%mm1, %%mm4             \n\t" /* A0-B0          a0-b0 */\
+        "psrad $" #shift ", %%mm1       \n\t"\
+        "psrad $" #shift ", %%mm4       \n\t"\
+        "movq %%mm0, %%mm2              \n\t" /* A1             a1 */\
+        "paddd %%mm7, %%mm0             \n\t" /* A1+B1          a1+b1 */\
+        "psubd %%mm7, %%mm2             \n\t" /* A1-B1          a1-b1 */\
+        "psrad $" #shift ", %%mm0       \n\t"\
+        "psrad $" #shift ", %%mm2       \n\t"\
+        "packssdw %%mm1, %%mm1          \n\t" /* A0+B0  a0+b0 */\
+        "movd %%mm1, " #dst "           \n\t"\
+        "packssdw %%mm0, %%mm0          \n\t" /* A1+B1  a1+b1 */\
+        "movd %%mm0, 16+" #dst "        \n\t"\
+        "packssdw %%mm2, %%mm2          \n\t" /* A1-B1  a1-b1 */\
+        "movd %%mm2, 96+" #dst "        \n\t"\
+        "packssdw %%mm4, %%mm4          \n\t" /* A0-B0  a0-b0 */\
+        "movd %%mm4, 112+" #dst "       \n\t"\
+        "movq 88(%2), %%mm1             \n\t" /* C3     C7      C3      C7 */\
+        "pmaddwd %%mm3, %%mm1           \n\t" /* C3R7+C7R5      C3r7+C7r5 */\
+        "movq %%mm5, %%mm2              \n\t" /* A2             a2 */\
+        "pmaddwd 104(%2), %%mm3         \n\t" /* -C1R7+C3R5     -C1r7+C3r5 */\
+        "paddd %%mm1, %%mm2             \n\t" /* A2+B2          a2+b2 */\
+        "psubd %%mm1, %%mm5             \n\t" /* a2-B2          a2-b2 */\
+        "psrad $" #shift ", %%mm2       \n\t"\
+        "psrad $" #shift ", %%mm5       \n\t"\
+        "movq %%mm6, %%mm1              \n\t" /* A3             a3 */\
+        "paddd %%mm3, %%mm6             \n\t" /* A3+B3          a3+b3 */\
+        "psubd %%mm3, %%mm1             \n\t" /* a3-B3          a3-b3 */\
+        "psrad $" #shift ", %%mm6       \n\t"\
+        "psrad $" #shift ", %%mm1       \n\t"\
+        "packssdw %%mm2, %%mm2          \n\t" /* A2+B2  a2+b2 */\
+        "packssdw %%mm6, %%mm6          \n\t" /* A3+B3  a3+b3 */\
+        "movd %%mm2, 32+" #dst "        \n\t"\
+        "packssdw %%mm1, %%mm1          \n\t" /* A3-B3  a3-b3 */\
+        "packssdw %%mm5, %%mm5          \n\t" /* A2-B2  a2-b2 */\
+        "movd %%mm6, 48+" #dst "        \n\t"\
+        "movd %%mm1, 64+" #dst "        \n\t"\
+        "movd %%mm5, 80+" #dst "        \n\t"
 
 
 //IDCT(  src0,   src4,   src1,    src5,    dst, rounder, shift)
@@ -932,144 +932,144 @@ IDCT(    (%1), 64(%1), 32(%1),  96(%1),  0(%0),/nop, 20)
 IDCT(   8(%1), 72(%1), 40(%1), 104(%1),  4(%0),/nop, 20)
 IDCT(  16(%1), 80(%1), 48(%1), 112(%1),  8(%0),/nop, 20)
 IDCT(  24(%1), 88(%1), 56(%1), 120(%1), 12(%0),/nop, 20)
-	"jmp 9f					\n\t"
+        "jmp 9f                         \n\t"
 
-	"#.balign 16				\n\t"\
-	"2:					\n\t"
+        "#.balign 16                    \n\t"\
+        "2:                             \n\t"
 Z_COND_IDCT(  96(%0),104(%0),112(%0),120(%0), 96(%1),paddd (%2), 11, 3f)
 
 #undef IDCT
 #define IDCT(src0, src4, src1, src5, dst, rounder, shift) \
-	"movq " #src0 ", %%mm0			\n\t" /* R4	R0	r4	r0 */\
-	"movq " #src1 ", %%mm2			\n\t" /* R3	R1	r3	r1 */\
-	"movq " #src5 ", %%mm3			\n\t" /* R7	R5	r7	r5 */\
-	"movq 16(%2), %%mm4			\n\t" /* C4	C4	C4	C4 */\
-	"pmaddwd %%mm0, %%mm4			\n\t" /* C4R4+C4R0	C4r4+C4r0 */\
-	"movq 24(%2), %%mm5			\n\t" /* -C4	C4	-C4	C4 */\
-	"pmaddwd %%mm5, %%mm0			\n\t" /* -C4R4+C4R0	-C4r4+C4r0 */\
-	#rounder ", %%mm4			\n\t"\
-	"movq %%mm4, %%mm6			\n\t" /* C4R4+C4R0	C4r4+C4r0 */\
-	"movq 48(%2), %%mm7			\n\t" /* C3	C1	C3	C1 */\
-	#rounder ", %%mm0			\n\t"\
-	"pmaddwd %%mm2, %%mm7			\n\t" /* C3R3+C1R1	C3r3+C1r1 */\
-	"movq %%mm0, %%mm5			\n\t" /* -C4R4+C4R0	-C4r4+C4r0 */\
-	"movq 56(%2), %%mm1			\n\t" /* C7	C5	C7	C5 */\
-	"pmaddwd %%mm3, %%mm1			\n\t" /* C7R7+C5R5	C7r7+C5r5 */\
-	"pmaddwd 64(%2), %%mm2			\n\t" /* -C7R3+C3R1	-C7r3+C3r1 */\
-	"paddd %%mm1, %%mm7			\n\t" /* B0		b0 */\
-	"movq 72(%2), %%mm1			\n\t" /* -C5	-C1	-C5	-C1 */\
-	"pmaddwd %%mm3, %%mm1			\n\t" /* -C5R7-C1R5	-C5r7-C1r5 */\
-	"paddd %%mm4, %%mm7			\n\t" /* A0+B0		a0+b0 */\
-	"paddd %%mm4, %%mm4			\n\t" /* 2A0		2a0 */\
-	"psubd %%mm7, %%mm4			\n\t" /* A0-B0		a0-b0 */\
-	"paddd %%mm2, %%mm1			\n\t" /* B1		b1 */\
-	"psrad $" #shift ", %%mm7		\n\t"\
-	"psrad $" #shift ", %%mm4		\n\t"\
-	"movq %%mm0, %%mm2			\n\t" /* A1		a1 */\
-	"paddd %%mm1, %%mm0			\n\t" /* A1+B1		a1+b1 */\
-	"psubd %%mm1, %%mm2			\n\t" /* A1-B1		a1-b1 */\
-	"psrad $" #shift ", %%mm0		\n\t"\
-	"psrad $" #shift ", %%mm2		\n\t"\
-	"packssdw %%mm7, %%mm7			\n\t" /* A0+B0	a0+b0 */\
-	"movd %%mm7, " #dst "			\n\t"\
-	"packssdw %%mm0, %%mm0			\n\t" /* A1+B1	a1+b1 */\
-	"movd %%mm0, 16+" #dst "		\n\t"\
-	"packssdw %%mm2, %%mm2			\n\t" /* A1-B1	a1-b1 */\
-	"movd %%mm2, 96+" #dst "		\n\t"\
-	"packssdw %%mm4, %%mm4			\n\t" /* A0-B0	a0-b0 */\
-	"movd %%mm4, 112+" #dst "		\n\t"\
-	"movq " #src1 ", %%mm0			\n\t" /* R3	R1	r3	r1 */\
-	"movq 80(%2), %%mm4			\n\t" /* -C1	C5	-C1 	C5 */\
-	"pmaddwd %%mm0, %%mm4			\n\t" /* -C1R3+C5R1	-C1r3+C5r1 */\
-	"movq 88(%2), %%mm7			\n\t" /* C3	C7	C3 	C7 */\
-	"pmaddwd 96(%2), %%mm0			\n\t" /* -C5R3+C7R1	-C5r3+C7r1 */\
-	"pmaddwd %%mm3, %%mm7			\n\t" /* C3R7+C7R5	C3r7+C7r5 */\
-	"movq %%mm5, %%mm2			\n\t" /* A2		a2 */\
-	"pmaddwd 104(%2), %%mm3			\n\t" /* -C1R7+C3R5	-C1r7+C3r5 */\
-	"paddd %%mm7, %%mm4			\n\t" /* B2		b2 */\
-	"paddd %%mm4, %%mm2			\n\t" /* A2+B2		a2+b2 */\
-	"psubd %%mm4, %%mm5			\n\t" /* a2-B2		a2-b2 */\
-	"psrad $" #shift ", %%mm2		\n\t"\
-	"psrad $" #shift ", %%mm5		\n\t"\
-	"movq %%mm6, %%mm4			\n\t" /* A3		a3 */\
-	"paddd %%mm0, %%mm3			\n\t" /* B3		b3 */\
-	"paddd %%mm3, %%mm6			\n\t" /* A3+B3		a3+b3 */\
-	"psubd %%mm3, %%mm4			\n\t" /* a3-B3		a3-b3 */\
-	"psrad $" #shift ", %%mm6		\n\t"\
-	"psrad $" #shift ", %%mm4		\n\t"\
-	"packssdw %%mm2, %%mm2			\n\t" /* A2+B2	a2+b2 */\
-	"packssdw %%mm6, %%mm6			\n\t" /* A3+B3	a3+b3 */\
-	"movd %%mm2, 32+" #dst "		\n\t"\
-	"packssdw %%mm4, %%mm4			\n\t" /* A3-B3	a3-b3 */\
-	"packssdw %%mm5, %%mm5			\n\t" /* A2-B2	a2-b2 */\
-	"movd %%mm6, 48+" #dst "		\n\t"\
-	"movd %%mm4, 64+" #dst "		\n\t"\
-	"movd %%mm5, 80+" #dst "		\n\t"
+        "movq " #src0 ", %%mm0          \n\t" /* R4     R0      r4      r0 */\
+        "movq " #src1 ", %%mm2          \n\t" /* R3     R1      r3      r1 */\
+        "movq " #src5 ", %%mm3          \n\t" /* R7     R5      r7      r5 */\
+        "movq 16(%2), %%mm4             \n\t" /* C4     C4      C4      C4 */\
+        "pmaddwd %%mm0, %%mm4           \n\t" /* C4R4+C4R0      C4r4+C4r0 */\
+        "movq 24(%2), %%mm5             \n\t" /* -C4    C4      -C4     C4 */\
+        "pmaddwd %%mm5, %%mm0           \n\t" /* -C4R4+C4R0     -C4r4+C4r0 */\
+        #rounder ", %%mm4               \n\t"\
+        "movq %%mm4, %%mm6              \n\t" /* C4R4+C4R0      C4r4+C4r0 */\
+        "movq 48(%2), %%mm7             \n\t" /* C3     C1      C3      C1 */\
+        #rounder ", %%mm0               \n\t"\
+        "pmaddwd %%mm2, %%mm7           \n\t" /* C3R3+C1R1      C3r3+C1r1 */\
+        "movq %%mm0, %%mm5              \n\t" /* -C4R4+C4R0     -C4r4+C4r0 */\
+        "movq 56(%2), %%mm1             \n\t" /* C7     C5      C7      C5 */\
+        "pmaddwd %%mm3, %%mm1           \n\t" /* C7R7+C5R5      C7r7+C5r5 */\
+        "pmaddwd 64(%2), %%mm2          \n\t" /* -C7R3+C3R1     -C7r3+C3r1 */\
+        "paddd %%mm1, %%mm7             \n\t" /* B0             b0 */\
+        "movq 72(%2), %%mm1             \n\t" /* -C5    -C1     -C5     -C1 */\
+        "pmaddwd %%mm3, %%mm1           \n\t" /* -C5R7-C1R5     -C5r7-C1r5 */\
+        "paddd %%mm4, %%mm7             \n\t" /* A0+B0          a0+b0 */\
+        "paddd %%mm4, %%mm4             \n\t" /* 2A0            2a0 */\
+        "psubd %%mm7, %%mm4             \n\t" /* A0-B0          a0-b0 */\
+        "paddd %%mm2, %%mm1             \n\t" /* B1             b1 */\
+        "psrad $" #shift ", %%mm7       \n\t"\
+        "psrad $" #shift ", %%mm4       \n\t"\
+        "movq %%mm0, %%mm2              \n\t" /* A1             a1 */\
+        "paddd %%mm1, %%mm0             \n\t" /* A1+B1          a1+b1 */\
+        "psubd %%mm1, %%mm2             \n\t" /* A1-B1          a1-b1 */\
+        "psrad $" #shift ", %%mm0       \n\t"\
+        "psrad $" #shift ", %%mm2       \n\t"\
+        "packssdw %%mm7, %%mm7          \n\t" /* A0+B0  a0+b0 */\
+        "movd %%mm7, " #dst "           \n\t"\
+        "packssdw %%mm0, %%mm0          \n\t" /* A1+B1  a1+b1 */\
+        "movd %%mm0, 16+" #dst "        \n\t"\
+        "packssdw %%mm2, %%mm2          \n\t" /* A1-B1  a1-b1 */\
+        "movd %%mm2, 96+" #dst "        \n\t"\
+        "packssdw %%mm4, %%mm4          \n\t" /* A0-B0  a0-b0 */\
+        "movd %%mm4, 112+" #dst "       \n\t"\
+        "movq " #src1 ", %%mm0          \n\t" /* R3     R1      r3      r1 */\
+        "movq 80(%2), %%mm4             \n\t" /* -C1    C5      -C1     C5 */\
+        "pmaddwd %%mm0, %%mm4           \n\t" /* -C1R3+C5R1     -C1r3+C5r1 */\
+        "movq 88(%2), %%mm7             \n\t" /* C3     C7      C3      C7 */\
+        "pmaddwd 96(%2), %%mm0          \n\t" /* -C5R3+C7R1     -C5r3+C7r1 */\
+        "pmaddwd %%mm3, %%mm7           \n\t" /* C3R7+C7R5      C3r7+C7r5 */\
+        "movq %%mm5, %%mm2              \n\t" /* A2             a2 */\
+        "pmaddwd 104(%2), %%mm3         \n\t" /* -C1R7+C3R5     -C1r7+C3r5 */\
+        "paddd %%mm7, %%mm4             \n\t" /* B2             b2 */\
+        "paddd %%mm4, %%mm2             \n\t" /* A2+B2          a2+b2 */\
+        "psubd %%mm4, %%mm5             \n\t" /* a2-B2          a2-b2 */\
+        "psrad $" #shift ", %%mm2       \n\t"\
+        "psrad $" #shift ", %%mm5       \n\t"\
+        "movq %%mm6, %%mm4              \n\t" /* A3             a3 */\
+        "paddd %%mm0, %%mm3             \n\t" /* B3             b3 */\
+        "paddd %%mm3, %%mm6             \n\t" /* A3+B3          a3+b3 */\
+        "psubd %%mm3, %%mm4             \n\t" /* a3-B3          a3-b3 */\
+        "psrad $" #shift ", %%mm6       \n\t"\
+        "psrad $" #shift ", %%mm4       \n\t"\
+        "packssdw %%mm2, %%mm2          \n\t" /* A2+B2  a2+b2 */\
+        "packssdw %%mm6, %%mm6          \n\t" /* A3+B3  a3+b3 */\
+        "movd %%mm2, 32+" #dst "        \n\t"\
+        "packssdw %%mm4, %%mm4          \n\t" /* A3-B3  a3-b3 */\
+        "packssdw %%mm5, %%mm5          \n\t" /* A2-B2  a2-b2 */\
+        "movd %%mm6, 48+" #dst "        \n\t"\
+        "movd %%mm4, 64+" #dst "        \n\t"\
+        "movd %%mm5, 80+" #dst "        \n\t"
 
 //IDCT(  src0,   src4,   src1,    src5,    dst, rounder, shift)
 IDCT(    (%1), 64(%1), 32(%1),  96(%1),  0(%0),/nop, 20)
 IDCT(   8(%1), 72(%1), 40(%1), 104(%1),  4(%0),/nop, 20)
 IDCT(  16(%1), 80(%1), 48(%1), 112(%1),  8(%0),/nop, 20)
 IDCT(  24(%1), 88(%1), 56(%1), 120(%1), 12(%0),/nop, 20)
-	"jmp 9f					\n\t"
+        "jmp 9f                         \n\t"
 
-	"#.balign 16				\n\t"\
-	"3:					\n\t"
+        "#.balign 16                    \n\t"\
+        "3:                             \n\t"
 #undef IDCT
 #define IDCT(src0, src4, src1, src5, dst, rounder, shift) \
-	"movq " #src0 ", %%mm0			\n\t" /* R4	R0	r4	r0 */\
-	"movq " #src1 ", %%mm2			\n\t" /* R3	R1	r3	r1 */\
-	"movq 16(%2), %%mm4			\n\t" /* C4	C4	C4	C4 */\
-	"pmaddwd %%mm0, %%mm4			\n\t" /* C4R4+C4R0	C4r4+C4r0 */\
-	"movq 24(%2), %%mm5			\n\t" /* -C4	C4	-C4	C4 */\
-	"pmaddwd %%mm5, %%mm0			\n\t" /* -C4R4+C4R0	-C4r4+C4r0 */\
-	#rounder ", %%mm4			\n\t"\
-	"movq %%mm4, %%mm6			\n\t" /* C4R4+C4R0	C4r4+C4r0 */\
-	"movq 48(%2), %%mm7			\n\t" /* C3	C1	C3	C1 */\
-	#rounder ", %%mm0			\n\t"\
-	"pmaddwd %%mm2, %%mm7			\n\t" /* C3R3+C1R1	C3r3+C1r1 */\
-	"movq %%mm0, %%mm5			\n\t" /* -C4R4+C4R0	-C4r4+C4r0 */\
-	"movq 64(%2), %%mm3			\n\t"\
-	"pmaddwd %%mm2, %%mm3			\n\t" /* -C7R3+C3R1	-C7r3+C3r1 */\
-	"paddd %%mm4, %%mm7			\n\t" /* A0+B0		a0+b0 */\
-	"paddd %%mm4, %%mm4			\n\t" /* 2A0		2a0 */\
-	"psubd %%mm7, %%mm4			\n\t" /* A0-B0		a0-b0 */\
-	"psrad $" #shift ", %%mm7		\n\t"\
-	"psrad $" #shift ", %%mm4		\n\t"\
-	"movq %%mm0, %%mm1			\n\t" /* A1		a1 */\
-	"paddd %%mm3, %%mm0			\n\t" /* A1+B1		a1+b1 */\
-	"psubd %%mm3, %%mm1			\n\t" /* A1-B1		a1-b1 */\
-	"psrad $" #shift ", %%mm0		\n\t"\
-	"psrad $" #shift ", %%mm1		\n\t"\
-	"packssdw %%mm7, %%mm7			\n\t" /* A0+B0	a0+b0 */\
-	"movd %%mm7, " #dst "			\n\t"\
-	"packssdw %%mm0, %%mm0			\n\t" /* A1+B1	a1+b1 */\
-	"movd %%mm0, 16+" #dst "		\n\t"\
-	"packssdw %%mm1, %%mm1			\n\t" /* A1-B1	a1-b1 */\
-	"movd %%mm1, 96+" #dst "		\n\t"\
-	"packssdw %%mm4, %%mm4			\n\t" /* A0-B0	a0-b0 */\
-	"movd %%mm4, 112+" #dst "		\n\t"\
-	"movq 80(%2), %%mm4			\n\t" /* -C1	C5	-C1 	C5 */\
-	"pmaddwd %%mm2, %%mm4			\n\t" /* -C1R3+C5R1	-C1r3+C5r1 */\
-	"pmaddwd 96(%2), %%mm2			\n\t" /* -C5R3+C7R1	-C5r3+C7r1 */\
-	"movq %%mm5, %%mm1			\n\t" /* A2		a2 */\
-	"paddd %%mm4, %%mm1			\n\t" /* A2+B2		a2+b2 */\
-	"psubd %%mm4, %%mm5			\n\t" /* a2-B2		a2-b2 */\
-	"psrad $" #shift ", %%mm1		\n\t"\
-	"psrad $" #shift ", %%mm5		\n\t"\
-	"movq %%mm6, %%mm4			\n\t" /* A3		a3 */\
-	"paddd %%mm2, %%mm6			\n\t" /* A3+B3		a3+b3 */\
-	"psubd %%mm2, %%mm4			\n\t" /* a3-B3		a3-b3 */\
-	"psrad $" #shift ", %%mm6		\n\t"\
-	"psrad $" #shift ", %%mm4		\n\t"\
-	"packssdw %%mm1, %%mm1			\n\t" /* A2+B2	a2+b2 */\
-	"packssdw %%mm6, %%mm6			\n\t" /* A3+B3	a3+b3 */\
-	"movd %%mm1, 32+" #dst "		\n\t"\
-	"packssdw %%mm4, %%mm4			\n\t" /* A3-B3	a3-b3 */\
-	"packssdw %%mm5, %%mm5			\n\t" /* A2-B2	a2-b2 */\
-	"movd %%mm6, 48+" #dst "		\n\t"\
-	"movd %%mm4, 64+" #dst "		\n\t"\
-	"movd %%mm5, 80+" #dst "		\n\t"
+        "movq " #src0 ", %%mm0          \n\t" /* R4     R0      r4      r0 */\
+        "movq " #src1 ", %%mm2          \n\t" /* R3     R1      r3      r1 */\
+        "movq 16(%2), %%mm4             \n\t" /* C4     C4      C4      C4 */\
+        "pmaddwd %%mm0, %%mm4           \n\t" /* C4R4+C4R0      C4r4+C4r0 */\
+        "movq 24(%2), %%mm5             \n\t" /* -C4    C4      -C4     C4 */\
+        "pmaddwd %%mm5, %%mm0           \n\t" /* -C4R4+C4R0     -C4r4+C4r0 */\
+        #rounder ", %%mm4               \n\t"\
+        "movq %%mm4, %%mm6              \n\t" /* C4R4+C4R0      C4r4+C4r0 */\
+        "movq 48(%2), %%mm7             \n\t" /* C3     C1      C3      C1 */\
+        #rounder ", %%mm0               \n\t"\
+        "pmaddwd %%mm2, %%mm7           \n\t" /* C3R3+C1R1      C3r3+C1r1 */\
+        "movq %%mm0, %%mm5              \n\t" /* -C4R4+C4R0     -C4r4+C4r0 */\
+        "movq 64(%2), %%mm3             \n\t"\
+        "pmaddwd %%mm2, %%mm3           \n\t" /* -C7R3+C3R1     -C7r3+C3r1 */\
+        "paddd %%mm4, %%mm7             \n\t" /* A0+B0          a0+b0 */\
+        "paddd %%mm4, %%mm4             \n\t" /* 2A0            2a0 */\
+        "psubd %%mm7, %%mm4             \n\t" /* A0-B0          a0-b0 */\
+        "psrad $" #shift ", %%mm7       \n\t"\
+        "psrad $" #shift ", %%mm4       \n\t"\
+        "movq %%mm0, %%mm1              \n\t" /* A1             a1 */\
+        "paddd %%mm3, %%mm0             \n\t" /* A1+B1          a1+b1 */\
+        "psubd %%mm3, %%mm1             \n\t" /* A1-B1          a1-b1 */\
+        "psrad $" #shift ", %%mm0       \n\t"\
+        "psrad $" #shift ", %%mm1       \n\t"\
+        "packssdw %%mm7, %%mm7          \n\t" /* A0+B0  a0+b0 */\
+        "movd %%mm7, " #dst "           \n\t"\
+        "packssdw %%mm0, %%mm0          \n\t" /* A1+B1  a1+b1 */\
+        "movd %%mm0, 16+" #dst "        \n\t"\
+        "packssdw %%mm1, %%mm1          \n\t" /* A1-B1  a1-b1 */\
+        "movd %%mm1, 96+" #dst "        \n\t"\
+        "packssdw %%mm4, %%mm4          \n\t" /* A0-B0  a0-b0 */\
+        "movd %%mm4, 112+" #dst "       \n\t"\
+        "movq 80(%2), %%mm4             \n\t" /* -C1    C5      -C1     C5 */\
+        "pmaddwd %%mm2, %%mm4           \n\t" /* -C1R3+C5R1     -C1r3+C5r1 */\
+        "pmaddwd 96(%2), %%mm2          \n\t" /* -C5R3+C7R1     -C5r3+C7r1 */\
+        "movq %%mm5, %%mm1              \n\t" /* A2             a2 */\
+        "paddd %%mm4, %%mm1             \n\t" /* A2+B2          a2+b2 */\
+        "psubd %%mm4, %%mm5             \n\t" /* a2-B2          a2-b2 */\
+        "psrad $" #shift ", %%mm1       \n\t"\
+        "psrad $" #shift ", %%mm5       \n\t"\
+        "movq %%mm6, %%mm4              \n\t" /* A3             a3 */\
+        "paddd %%mm2, %%mm6             \n\t" /* A3+B3          a3+b3 */\
+        "psubd %%mm2, %%mm4             \n\t" /* a3-B3          a3-b3 */\
+        "psrad $" #shift ", %%mm6       \n\t"\
+        "psrad $" #shift ", %%mm4       \n\t"\
+        "packssdw %%mm1, %%mm1          \n\t" /* A2+B2  a2+b2 */\
+        "packssdw %%mm6, %%mm6          \n\t" /* A3+B3  a3+b3 */\
+        "movd %%mm1, 32+" #dst "        \n\t"\
+        "packssdw %%mm4, %%mm4          \n\t" /* A3-B3  a3-b3 */\
+        "packssdw %%mm5, %%mm5          \n\t" /* A2-B2  a2-b2 */\
+        "movd %%mm6, 48+" #dst "        \n\t"\
+        "movd %%mm4, 64+" #dst "        \n\t"\
+        "movd %%mm5, 80+" #dst "        \n\t"
 
 
 //IDCT(  src0,   src4,   src1,    src5,    dst, rounder, shift)
@@ -1077,67 +1077,67 @@ IDCT(    (%1), 64(%1), 32(%1),  96(%1),  0(%0),/nop, 20)
 IDCT(   8(%1), 72(%1), 40(%1), 104(%1),  4(%0),/nop, 20)
 IDCT(  16(%1), 80(%1), 48(%1), 112(%1),  8(%0),/nop, 20)
 IDCT(  24(%1), 88(%1), 56(%1), 120(%1), 12(%0),/nop, 20)
-	"jmp 9f					\n\t"
+        "jmp 9f                         \n\t"
 
-	"#.balign 16				\n\t"\
-	"5:					\n\t"
+        "#.balign 16                    \n\t"\
+        "5:                             \n\t"
 #undef IDCT
 #define IDCT(src0, src4, src1, src5, dst, rounder, shift) \
-	"movq " #src0 ", %%mm0			\n\t" /* R4	R0	r4	r0 */\
-	"movq " #src4 ", %%mm1			\n\t" /* R6	R2	r6	r2 */\
-	"movq 16(%2), %%mm4			\n\t" /* C4	C4	C4	C4 */\
-	"pmaddwd %%mm0, %%mm4			\n\t" /* C4R4+C4R0	C4r4+C4r0 */\
-	"movq 24(%2), %%mm5			\n\t" /* -C4	C4	-C4	C4 */\
-	"pmaddwd %%mm5, %%mm0			\n\t" /* -C4R4+C4R0	-C4r4+C4r0 */\
-	"movq 32(%2), %%mm5			\n\t" /* C6	C2	C6	C2 */\
-	"pmaddwd %%mm1, %%mm5			\n\t" /* C6R6+C2R2	C6r6+C2r2 */\
-	"movq 40(%2), %%mm6			\n\t" /* -C2	C6	-C2	C6 */\
-	"pmaddwd %%mm6, %%mm1			\n\t" /* -C2R6+C6R2	-C2r6+C6r2 */\
-	#rounder ", %%mm4			\n\t"\
-	"movq %%mm4, %%mm6			\n\t" /* C4R4+C4R0	C4r4+C4r0 */\
-	"paddd %%mm5, %%mm4			\n\t" /* A0		a0 */\
-	#rounder ", %%mm0			\n\t"\
-	"psubd %%mm5, %%mm6			\n\t" /* A3		a3 */\
-	"movq %%mm0, %%mm5			\n\t" /* -C4R4+C4R0	-C4r4+C4r0 */\
-	"paddd %%mm1, %%mm0			\n\t" /* A1		a1 */\
-	"psubd %%mm1, %%mm5			\n\t" /* A2		a2 */\
-	"movq 8+" #src0 ", %%mm2		\n\t" /* R4	R0	r4	r0 */\
-	"movq 8+" #src4 ", %%mm3		\n\t" /* R6	R2	r6	r2 */\
-	"movq 16(%2), %%mm1			\n\t" /* C4	C4	C4	C4 */\
-	"pmaddwd %%mm2, %%mm1			\n\t" /* C4R4+C4R0	C4r4+C4r0 */\
-	"movq 24(%2), %%mm7			\n\t" /* -C4	C4	-C4	C4 */\
-	"pmaddwd %%mm7, %%mm2			\n\t" /* -C4R4+C4R0	-C4r4+C4r0 */\
-	"movq 32(%2), %%mm7			\n\t" /* C6	C2	C6	C2 */\
-	"pmaddwd %%mm3, %%mm7			\n\t" /* C6R6+C2R2	C6r6+C2r2 */\
-	"pmaddwd 40(%2), %%mm3			\n\t" /* -C2R6+C6R2	-C2r6+C6r2 */\
-	#rounder ", %%mm1			\n\t"\
-	"paddd %%mm1, %%mm7			\n\t" /* A0		a0 */\
-	"paddd %%mm1, %%mm1			\n\t" /* 2C0		2c0 */\
-	#rounder ", %%mm2			\n\t"\
-	"psubd %%mm7, %%mm1			\n\t" /* A3		a3 */\
-	"paddd %%mm2, %%mm3			\n\t" /* A1		a1 */\
-	"paddd %%mm2, %%mm2			\n\t" /* 2C1		2c1 */\
-	"psubd %%mm3, %%mm2			\n\t" /* A2		a2 */\
-	"psrad $" #shift ", %%mm4		\n\t"\
-	"psrad $" #shift ", %%mm7		\n\t"\
-	"psrad $" #shift ", %%mm3		\n\t"\
-	"packssdw %%mm7, %%mm4			\n\t" /* A0	a0 */\
-	"movq %%mm4, " #dst "			\n\t"\
-	"psrad $" #shift ", %%mm0		\n\t"\
-	"packssdw %%mm3, %%mm0			\n\t" /* A1	a1 */\
-	"movq %%mm0, 16+" #dst "		\n\t"\
-	"movq %%mm0, 96+" #dst "		\n\t"\
-	"movq %%mm4, 112+" #dst "		\n\t"\
-	"psrad $" #shift ", %%mm5		\n\t"\
-	"psrad $" #shift ", %%mm6		\n\t"\
-	"psrad $" #shift ", %%mm2		\n\t"\
-	"packssdw %%mm2, %%mm5			\n\t" /* A2-B2	a2-b2 */\
-	"movq %%mm5, 32+" #dst "		\n\t"\
-	"psrad $" #shift ", %%mm1		\n\t"\
-	"packssdw %%mm1, %%mm6			\n\t" /* A3+B3	a3+b3 */\
-	"movq %%mm6, 48+" #dst "		\n\t"\
-	"movq %%mm6, 64+" #dst "		\n\t"\
-	"movq %%mm5, 80+" #dst "		\n\t"
+        "movq " #src0 ", %%mm0          \n\t" /* R4     R0      r4      r0 */\
+        "movq " #src4 ", %%mm1          \n\t" /* R6     R2      r6      r2 */\
+        "movq 16(%2), %%mm4             \n\t" /* C4     C4      C4      C4 */\
+        "pmaddwd %%mm0, %%mm4           \n\t" /* C4R4+C4R0      C4r4+C4r0 */\
+        "movq 24(%2), %%mm5             \n\t" /* -C4    C4      -C4     C4 */\
+        "pmaddwd %%mm5, %%mm0           \n\t" /* -C4R4+C4R0     -C4r4+C4r0 */\
+        "movq 32(%2), %%mm5             \n\t" /* C6     C2      C6      C2 */\
+        "pmaddwd %%mm1, %%mm5           \n\t" /* C6R6+C2R2      C6r6+C2r2 */\
+        "movq 40(%2), %%mm6             \n\t" /* -C2    C6      -C2     C6 */\
+        "pmaddwd %%mm6, %%mm1           \n\t" /* -C2R6+C6R2     -C2r6+C6r2 */\
+        #rounder ", %%mm4               \n\t"\
+        "movq %%mm4, %%mm6              \n\t" /* C4R4+C4R0      C4r4+C4r0 */\
+        "paddd %%mm5, %%mm4             \n\t" /* A0             a0 */\
+        #rounder ", %%mm0               \n\t"\
+        "psubd %%mm5, %%mm6             \n\t" /* A3             a3 */\
+        "movq %%mm0, %%mm5              \n\t" /* -C4R4+C4R0     -C4r4+C4r0 */\
+        "paddd %%mm1, %%mm0             \n\t" /* A1             a1 */\
+        "psubd %%mm1, %%mm5             \n\t" /* A2             a2 */\
+        "movq 8+" #src0 ", %%mm2        \n\t" /* R4     R0      r4      r0 */\
+        "movq 8+" #src4 ", %%mm3        \n\t" /* R6     R2      r6      r2 */\
+        "movq 16(%2), %%mm1             \n\t" /* C4     C4      C4      C4 */\
+        "pmaddwd %%mm2, %%mm1           \n\t" /* C4R4+C4R0      C4r4+C4r0 */\
+        "movq 24(%2), %%mm7             \n\t" /* -C4    C4      -C4     C4 */\
+        "pmaddwd %%mm7, %%mm2           \n\t" /* -C4R4+C4R0     -C4r4+C4r0 */\
+        "movq 32(%2), %%mm7             \n\t" /* C6     C2      C6      C2 */\
+        "pmaddwd %%mm3, %%mm7           \n\t" /* C6R6+C2R2      C6r6+C2r2 */\
+        "pmaddwd 40(%2), %%mm3          \n\t" /* -C2R6+C6R2     -C2r6+C6r2 */\
+        #rounder ", %%mm1               \n\t"\
+        "paddd %%mm1, %%mm7             \n\t" /* A0             a0 */\
+        "paddd %%mm1, %%mm1             \n\t" /* 2C0            2c0 */\
+        #rounder ", %%mm2               \n\t"\
+        "psubd %%mm7, %%mm1             \n\t" /* A3             a3 */\
+        "paddd %%mm2, %%mm3             \n\t" /* A1             a1 */\
+        "paddd %%mm2, %%mm2             \n\t" /* 2C1            2c1 */\
+        "psubd %%mm3, %%mm2             \n\t" /* A2             a2 */\
+        "psrad $" #shift ", %%mm4       \n\t"\
+        "psrad $" #shift ", %%mm7       \n\t"\
+        "psrad $" #shift ", %%mm3       \n\t"\
+        "packssdw %%mm7, %%mm4          \n\t" /* A0     a0 */\
+        "movq %%mm4, " #dst "           \n\t"\
+        "psrad $" #shift ", %%mm0       \n\t"\
+        "packssdw %%mm3, %%mm0          \n\t" /* A1     a1 */\
+        "movq %%mm0, 16+" #dst "        \n\t"\
+        "movq %%mm0, 96+" #dst "        \n\t"\
+        "movq %%mm4, 112+" #dst "       \n\t"\
+        "psrad $" #shift ", %%mm5       \n\t"\
+        "psrad $" #shift ", %%mm6       \n\t"\
+        "psrad $" #shift ", %%mm2       \n\t"\
+        "packssdw %%mm2, %%mm5          \n\t" /* A2-B2  a2-b2 */\
+        "movq %%mm5, 32+" #dst "        \n\t"\
+        "psrad $" #shift ", %%mm1       \n\t"\
+        "packssdw %%mm1, %%mm6          \n\t" /* A3+B3  a3+b3 */\
+        "movq %%mm6, 48+" #dst "        \n\t"\
+        "movq %%mm6, 64+" #dst "        \n\t"\
+        "movq %%mm5, 80+" #dst "        \n\t"
 
 
 //IDCT(  src0,   src4,   src1,    src5,    dst, rounder, shift)
@@ -1145,75 +1145,75 @@ IDCT(    0(%1), 64(%1), 32(%1),  96(%1),  0(%0),/nop, 20)
 //IDCT(   8(%1), 72(%1), 40(%1), 104(%1),  4(%0),/nop, 20)
 IDCT(  16(%1), 80(%1), 48(%1), 112(%1),  8(%0),/nop, 20)
 //IDCT(  24(%1), 88(%1), 56(%1), 120(%1), 12(%0),/nop, 20)
-	"jmp 9f					\n\t"
+        "jmp 9f                         \n\t"
 
 
-	"#.balign 16				\n\t"\
-	"1:					\n\t"
+        "#.balign 16                    \n\t"\
+        "1:                             \n\t"
 #undef IDCT
 #define IDCT(src0, src4, src1, src5, dst, rounder, shift) \
-	"movq " #src0 ", %%mm0			\n\t" /* R4	R0	r4	r0 */\
-	"movq " #src4 ", %%mm1			\n\t" /* R6	R2	r6	r2 */\
-	"movq " #src1 ", %%mm2			\n\t" /* R3	R1	r3	r1 */\
-	"movq 16(%2), %%mm4			\n\t" /* C4	C4	C4	C4 */\
-	"pmaddwd %%mm0, %%mm4			\n\t" /* C4R4+C4R0	C4r4+C4r0 */\
-	"movq 24(%2), %%mm5			\n\t" /* -C4	C4	-C4	C4 */\
-	"pmaddwd %%mm5, %%mm0			\n\t" /* -C4R4+C4R0	-C4r4+C4r0 */\
-	"movq 32(%2), %%mm5			\n\t" /* C6	C2	C6	C2 */\
-	"pmaddwd %%mm1, %%mm5			\n\t" /* C6R6+C2R2	C6r6+C2r2 */\
-	"movq 40(%2), %%mm6			\n\t" /* -C2	C6	-C2	C6 */\
-	"pmaddwd %%mm6, %%mm1			\n\t" /* -C2R6+C6R2	-C2r6+C6r2 */\
-	#rounder ", %%mm4			\n\t"\
-	"movq %%mm4, %%mm6			\n\t" /* C4R4+C4R0	C4r4+C4r0 */\
-	"movq 48(%2), %%mm7			\n\t" /* C3	C1	C3	C1 */\
-	#rounder ", %%mm0			\n\t"\
-	"pmaddwd %%mm2, %%mm7			\n\t" /* C3R3+C1R1	C3r3+C1r1 */\
-	"paddd %%mm5, %%mm4			\n\t" /* A0		a0 */\
-	"psubd %%mm5, %%mm6			\n\t" /* A3		a3 */\
-	"movq %%mm0, %%mm5			\n\t" /* -C4R4+C4R0	-C4r4+C4r0 */\
-	"paddd %%mm1, %%mm0			\n\t" /* A1		a1 */\
-	"psubd %%mm1, %%mm5			\n\t" /* A2		a2 */\
-	"movq 64(%2), %%mm1			\n\t"\
-	"pmaddwd %%mm2, %%mm1			\n\t" /* -C7R3+C3R1	-C7r3+C3r1 */\
-	"paddd %%mm4, %%mm7			\n\t" /* A0+B0		a0+b0 */\
-	"paddd %%mm4, %%mm4			\n\t" /* 2A0		2a0 */\
-	"psubd %%mm7, %%mm4			\n\t" /* A0-B0		a0-b0 */\
-	"psrad $" #shift ", %%mm7		\n\t"\
-	"psrad $" #shift ", %%mm4		\n\t"\
-	"movq %%mm0, %%mm3			\n\t" /* A1		a1 */\
-	"paddd %%mm1, %%mm0			\n\t" /* A1+B1		a1+b1 */\
-	"psubd %%mm1, %%mm3			\n\t" /* A1-B1		a1-b1 */\
-	"psrad $" #shift ", %%mm0		\n\t"\
-	"psrad $" #shift ", %%mm3		\n\t"\
-	"packssdw %%mm7, %%mm7			\n\t" /* A0+B0	a0+b0 */\
-	"movd %%mm7, " #dst "			\n\t"\
-	"packssdw %%mm0, %%mm0			\n\t" /* A1+B1	a1+b1 */\
-	"movd %%mm0, 16+" #dst "		\n\t"\
-	"packssdw %%mm3, %%mm3			\n\t" /* A1-B1	a1-b1 */\
-	"movd %%mm3, 96+" #dst "		\n\t"\
-	"packssdw %%mm4, %%mm4			\n\t" /* A0-B0	a0-b0 */\
-	"movd %%mm4, 112+" #dst "		\n\t"\
-	"movq 80(%2), %%mm4			\n\t" /* -C1	C5	-C1 	C5 */\
-	"pmaddwd %%mm2, %%mm4			\n\t" /* -C1R3+C5R1	-C1r3+C5r1 */\
-	"pmaddwd 96(%2), %%mm2			\n\t" /* -C5R3+C7R1	-C5r3+C7r1 */\
-	"movq %%mm5, %%mm3			\n\t" /* A2		a2 */\
-	"paddd %%mm4, %%mm3			\n\t" /* A2+B2		a2+b2 */\
-	"psubd %%mm4, %%mm5			\n\t" /* a2-B2		a2-b2 */\
-	"psrad $" #shift ", %%mm3		\n\t"\
-	"psrad $" #shift ", %%mm5		\n\t"\
-	"movq %%mm6, %%mm4			\n\t" /* A3		a3 */\
-	"paddd %%mm2, %%mm6			\n\t" /* A3+B3		a3+b3 */\
-	"psubd %%mm2, %%mm4			\n\t" /* a3-B3		a3-b3 */\
-	"psrad $" #shift ", %%mm6		\n\t"\
-	"packssdw %%mm3, %%mm3			\n\t" /* A2+B2	a2+b2 */\
-	"movd %%mm3, 32+" #dst "		\n\t"\
-	"psrad $" #shift ", %%mm4		\n\t"\
-	"packssdw %%mm6, %%mm6			\n\t" /* A3+B3	a3+b3 */\
-	"movd %%mm6, 48+" #dst "		\n\t"\
-	"packssdw %%mm4, %%mm4			\n\t" /* A3-B3	a3-b3 */\
-	"packssdw %%mm5, %%mm5			\n\t" /* A2-B2	a2-b2 */\
-	"movd %%mm4, 64+" #dst "		\n\t"\
-	"movd %%mm5, 80+" #dst "		\n\t"
+        "movq " #src0 ", %%mm0          \n\t" /* R4     R0      r4      r0 */\
+        "movq " #src4 ", %%mm1          \n\t" /* R6     R2      r6      r2 */\
+        "movq " #src1 ", %%mm2          \n\t" /* R3     R1      r3      r1 */\
+        "movq 16(%2), %%mm4             \n\t" /* C4     C4      C4      C4 */\
+        "pmaddwd %%mm0, %%mm4           \n\t" /* C4R4+C4R0      C4r4+C4r0 */\
+        "movq 24(%2), %%mm5             \n\t" /* -C4    C4      -C4     C4 */\
+        "pmaddwd %%mm5, %%mm0           \n\t" /* -C4R4+C4R0     -C4r4+C4r0 */\
+        "movq 32(%2), %%mm5             \n\t" /* C6     C2      C6      C2 */\
+        "pmaddwd %%mm1, %%mm5           \n\t" /* C6R6+C2R2      C6r6+C2r2 */\
+        "movq 40(%2), %%mm6             \n\t" /* -C2    C6      -C2     C6 */\
+        "pmaddwd %%mm6, %%mm1           \n\t" /* -C2R6+C6R2     -C2r6+C6r2 */\
+        #rounder ", %%mm4               \n\t"\
+        "movq %%mm4, %%mm6              \n\t" /* C4R4+C4R0      C4r4+C4r0 */\
+        "movq 48(%2), %%mm7             \n\t" /* C3     C1      C3      C1 */\
+        #rounder ", %%mm0               \n\t"\
+        "pmaddwd %%mm2, %%mm7           \n\t" /* C3R3+C1R1      C3r3+C1r1 */\
+        "paddd %%mm5, %%mm4             \n\t" /* A0             a0 */\
+        "psubd %%mm5, %%mm6             \n\t" /* A3             a3 */\
+        "movq %%mm0, %%mm5              \n\t" /* -C4R4+C4R0     -C4r4+C4r0 */\
+        "paddd %%mm1, %%mm0             \n\t" /* A1             a1 */\
+        "psubd %%mm1, %%mm5             \n\t" /* A2             a2 */\
+        "movq 64(%2), %%mm1             \n\t"\
+        "pmaddwd %%mm2, %%mm1           \n\t" /* -C7R3+C3R1     -C7r3+C3r1 */\
+        "paddd %%mm4, %%mm7             \n\t" /* A0+B0          a0+b0 */\
+        "paddd %%mm4, %%mm4             \n\t" /* 2A0            2a0 */\
+        "psubd %%mm7, %%mm4             \n\t" /* A0-B0          a0-b0 */\
+        "psrad $" #shift ", %%mm7       \n\t"\
+        "psrad $" #shift ", %%mm4       \n\t"\
+        "movq %%mm0, %%mm3              \n\t" /* A1             a1 */\
+        "paddd %%mm1, %%mm0             \n\t" /* A1+B1          a1+b1 */\
+        "psubd %%mm1, %%mm3             \n\t" /* A1-B1          a1-b1 */\
+        "psrad $" #shift ", %%mm0       \n\t"\
+        "psrad $" #shift ", %%mm3       \n\t"\
+        "packssdw %%mm7, %%mm7          \n\t" /* A0+B0  a0+b0 */\
+        "movd %%mm7, " #dst "           \n\t"\
+        "packssdw %%mm0, %%mm0          \n\t" /* A1+B1  a1+b1 */\
+        "movd %%mm0, 16+" #dst "        \n\t"\
+        "packssdw %%mm3, %%mm3          \n\t" /* A1-B1  a1-b1 */\
+        "movd %%mm3, 96+" #dst "        \n\t"\
+        "packssdw %%mm4, %%mm4          \n\t" /* A0-B0  a0-b0 */\
+        "movd %%mm4, 112+" #dst "       \n\t"\
+        "movq 80(%2), %%mm4             \n\t" /* -C1    C5      -C1     C5 */\
+        "pmaddwd %%mm2, %%mm4           \n\t" /* -C1R3+C5R1     -C1r3+C5r1 */\
+        "pmaddwd 96(%2), %%mm2          \n\t" /* -C5R3+C7R1     -C5r3+C7r1 */\
+        "movq %%mm5, %%mm3              \n\t" /* A2             a2 */\
+        "paddd %%mm4, %%mm3             \n\t" /* A2+B2          a2+b2 */\
+        "psubd %%mm4, %%mm5             \n\t" /* a2-B2          a2-b2 */\
+        "psrad $" #shift ", %%mm3       \n\t"\
+        "psrad $" #shift ", %%mm5       \n\t"\
+        "movq %%mm6, %%mm4              \n\t" /* A3             a3 */\
+        "paddd %%mm2, %%mm6             \n\t" /* A3+B3          a3+b3 */\
+        "psubd %%mm2, %%mm4             \n\t" /* a3-B3          a3-b3 */\
+        "psrad $" #shift ", %%mm6       \n\t"\
+        "packssdw %%mm3, %%mm3          \n\t" /* A2+B2  a2+b2 */\
+        "movd %%mm3, 32+" #dst "        \n\t"\
+        "psrad $" #shift ", %%mm4       \n\t"\
+        "packssdw %%mm6, %%mm6          \n\t" /* A3+B3  a3+b3 */\
+        "movd %%mm6, 48+" #dst "        \n\t"\
+        "packssdw %%mm4, %%mm4          \n\t" /* A3-B3  a3-b3 */\
+        "packssdw %%mm5, %%mm5          \n\t" /* A2-B2  a2-b2 */\
+        "movd %%mm4, 64+" #dst "        \n\t"\
+        "movd %%mm5, 80+" #dst "        \n\t"
 
 
 //IDCT(  src0,   src4,   src1,    src5,    dst, rounder, shift)
@@ -1221,42 +1221,42 @@ IDCT(    (%1), 64(%1), 32(%1),  96(%1),  0(%0),/nop, 20)
 IDCT(   8(%1), 72(%1), 40(%1), 104(%1),  4(%0),/nop, 20)
 IDCT(  16(%1), 80(%1), 48(%1), 112(%1),  8(%0),/nop, 20)
 IDCT(  24(%1), 88(%1), 56(%1), 120(%1), 12(%0),/nop, 20)
-	"jmp 9f					\n\t"
+        "jmp 9f                         \n\t"
 
 
-	"#.balign 16				\n\t"
-	"7:					\n\t"
+        "#.balign 16                    \n\t"
+        "7:                             \n\t"
 #undef IDCT
 #define IDCT(src0, src4, src1, src5, dst, rounder, shift) \
-	"movq " #src0 ", %%mm0			\n\t" /* R4	R0	r4	r0 */\
-	"movq 16(%2), %%mm4			\n\t" /* C4	C4	C4	C4 */\
-	"pmaddwd %%mm0, %%mm4			\n\t" /* C4R4+C4R0	C4r4+C4r0 */\
-	"movq 24(%2), %%mm5			\n\t" /* -C4	C4	-C4	C4 */\
-	"pmaddwd %%mm5, %%mm0			\n\t" /* -C4R4+C4R0	-C4r4+C4r0 */\
-	#rounder ", %%mm4			\n\t"\
-	#rounder ", %%mm0			\n\t"\
-	"psrad $" #shift ", %%mm4		\n\t"\
-	"psrad $" #shift ", %%mm0		\n\t"\
-	"movq 8+" #src0 ", %%mm2		\n\t" /* R4	R0	r4	r0 */\
-	"movq 16(%2), %%mm1			\n\t" /* C4	C4	C4	C4 */\
-	"pmaddwd %%mm2, %%mm1			\n\t" /* C4R4+C4R0	C4r4+C4r0 */\
-	"movq 24(%2), %%mm7			\n\t" /* -C4	C4	-C4	C4 */\
-	"pmaddwd %%mm7, %%mm2			\n\t" /* -C4R4+C4R0	-C4r4+C4r0 */\
-	"movq 32(%2), %%mm7			\n\t" /* C6	C2	C6	C2 */\
-	#rounder ", %%mm1			\n\t"\
-	#rounder ", %%mm2			\n\t"\
-	"psrad $" #shift ", %%mm1		\n\t"\
-	"packssdw %%mm1, %%mm4			\n\t" /* A0	a0 */\
-	"movq %%mm4, " #dst "			\n\t"\
-	"psrad $" #shift ", %%mm2		\n\t"\
-	"packssdw %%mm2, %%mm0			\n\t" /* A1	a1 */\
-	"movq %%mm0, 16+" #dst "		\n\t"\
-	"movq %%mm0, 96+" #dst "		\n\t"\
-	"movq %%mm4, 112+" #dst "		\n\t"\
-	"movq %%mm0, 32+" #dst "		\n\t"\
-	"movq %%mm4, 48+" #dst "		\n\t"\
-	"movq %%mm4, 64+" #dst "		\n\t"\
-	"movq %%mm0, 80+" #dst "		\n\t"
+        "movq " #src0 ", %%mm0          \n\t" /* R4     R0      r4      r0 */\
+        "movq 16(%2), %%mm4             \n\t" /* C4     C4      C4      C4 */\
+        "pmaddwd %%mm0, %%mm4           \n\t" /* C4R4+C4R0      C4r4+C4r0 */\
+        "movq 24(%2), %%mm5             \n\t" /* -C4    C4      -C4     C4 */\
+        "pmaddwd %%mm5, %%mm0           \n\t" /* -C4R4+C4R0     -C4r4+C4r0 */\
+        #rounder ", %%mm4               \n\t"\
+        #rounder ", %%mm0               \n\t"\
+        "psrad $" #shift ", %%mm4       \n\t"\
+        "psrad $" #shift ", %%mm0       \n\t"\
+        "movq 8+" #src0 ", %%mm2        \n\t" /* R4     R0      r4      r0 */\
+        "movq 16(%2), %%mm1             \n\t" /* C4     C4      C4      C4 */\
+        "pmaddwd %%mm2, %%mm1           \n\t" /* C4R4+C4R0      C4r4+C4r0 */\
+        "movq 24(%2), %%mm7             \n\t" /* -C4    C4      -C4     C4 */\
+        "pmaddwd %%mm7, %%mm2           \n\t" /* -C4R4+C4R0     -C4r4+C4r0 */\
+        "movq 32(%2), %%mm7             \n\t" /* C6     C2      C6      C2 */\
+        #rounder ", %%mm1               \n\t"\
+        #rounder ", %%mm2               \n\t"\
+        "psrad $" #shift ", %%mm1       \n\t"\
+        "packssdw %%mm1, %%mm4          \n\t" /* A0     a0 */\
+        "movq %%mm4, " #dst "           \n\t"\
+        "psrad $" #shift ", %%mm2       \n\t"\
+        "packssdw %%mm2, %%mm0          \n\t" /* A1     a1 */\
+        "movq %%mm0, 16+" #dst "        \n\t"\
+        "movq %%mm0, 96+" #dst "        \n\t"\
+        "movq %%mm4, 112+" #dst "       \n\t"\
+        "movq %%mm0, 32+" #dst "        \n\t"\
+        "movq %%mm4, 48+" #dst "        \n\t"\
+        "movq %%mm4, 64+" #dst "        \n\t"\
+        "movq %%mm0, 80+" #dst "        \n\t"
 
 //IDCT(  src0,   src4,   src1,    src5,    dst, rounder, shift)
 IDCT(   0(%1), 64(%1), 32(%1),  96(%1),  0(%0),/nop, 20)
@@ -1290,9 +1290,9 @@ Temp
 */
 
 "9: \n\t"
-		:: "r" (block), "r" (temp), "r" (coeffs)
-		: "%eax"
-	);
+                :: "r" (block), "r" (temp), "r" (coeffs)
+                : "%eax"
+        );
 }
 
 void ff_simple_idct_mmx(int16_t *block)

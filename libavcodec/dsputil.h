@@ -151,7 +151,7 @@ typedef struct DSPContext {
      * global motion compensation.
      */
     void (*gmc )(uint8_t *dst/*align 8*/, uint8_t *src/*align 1*/, int stride, int h, int ox, int oy,
-		    int dxx, int dxy, int dyx, int dyy, int shift, int r, int width, int height);
+                    int dxx, int dxy, int dyx, int dyy, int shift, int r, int width, int height);
     void (*clear_blocks)(DCTELEM *blocks/*align 16*/);
     int (*pix_sum)(uint8_t * pix, int line_size);
     int (*pix_norm1)(uint8_t * pix, int line_size);
@@ -342,7 +342,7 @@ void ff_block_permute(DCTELEM *block, uint8_t *permutation, const uint8_t *scant
 
 void ff_set_cmp(DSPContext* c, me_cmp_func *cmp, int type);
 
-#define	BYTE_VEC32(c)	((c)*0x01010101UL)
+#define         BYTE_VEC32(c)   ((c)*0x01010101UL)
 
 static inline uint32_t rnd_avg32(uint32_t a, uint32_t b)
 {

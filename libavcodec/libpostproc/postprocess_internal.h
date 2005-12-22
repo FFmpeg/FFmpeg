@@ -21,42 +21,42 @@
  * internal api header.
  */
 
-#define V_DEBLOCK	0x01
-#define H_DEBLOCK	0x02
-#define DERING		0x04
-#define LEVEL_FIX	0x08 ///< Brightness & Contrast
+#define V_DEBLOCK       0x01
+#define H_DEBLOCK       0x02
+#define DERING          0x04
+#define LEVEL_FIX       0x08 ///< Brightness & Contrast
 
-#define LUM_V_DEBLOCK	V_DEBLOCK		//   1
-#define LUM_H_DEBLOCK	H_DEBLOCK		//   2
-#define CHROM_V_DEBLOCK	(V_DEBLOCK<<4)		//  16
-#define CHROM_H_DEBLOCK	(H_DEBLOCK<<4)		//  32
-#define LUM_DERING	DERING			//   4
-#define CHROM_DERING	(DERING<<4)		//  64
-#define LUM_LEVEL_FIX	LEVEL_FIX		//   8
-#define CHROM_LEVEL_FIX	(LEVEL_FIX<<4)		// 128 (not implemented yet)
+#define LUM_V_DEBLOCK   V_DEBLOCK               //   1
+#define LUM_H_DEBLOCK   H_DEBLOCK               //   2
+#define CHROM_V_DEBLOCK (V_DEBLOCK<<4)          //  16
+#define CHROM_H_DEBLOCK (H_DEBLOCK<<4)          //  32
+#define LUM_DERING      DERING                  //   4
+#define CHROM_DERING    (DERING<<4)             //  64
+#define LUM_LEVEL_FIX   LEVEL_FIX               //   8
+#define CHROM_LEVEL_FIX (LEVEL_FIX<<4)          // 128 (not implemented yet)
 
 // Experimental vertical filters
-#define V_X1_FILTER	0x0200			// 512
-#define V_A_DEBLOCK	0x0400
+#define V_X1_FILTER     0x0200                  // 512
+#define V_A_DEBLOCK     0x0400
 
 // Experimental horizontal filters
-#define H_X1_FILTER	0x2000			// 8192
-#define H_A_DEBLOCK	0x4000
+#define H_X1_FILTER     0x2000                  // 8192
+#define H_A_DEBLOCK     0x4000
 
 /// select between full y range (255-0) or standart one (234-16)
-#define FULL_Y_RANGE	0x8000			// 32768
+#define FULL_Y_RANGE    0x8000                  // 32768
 
 //Deinterlacing Filters
-#define	LINEAR_IPOL_DEINT_FILTER	0x10000	// 65536
-#define	LINEAR_BLEND_DEINT_FILTER	0x20000	// 131072
-#define	CUBIC_BLEND_DEINT_FILTER	0x8000	// (not implemented yet)
-#define	CUBIC_IPOL_DEINT_FILTER		0x40000	// 262144
-#define	MEDIAN_DEINT_FILTER		0x80000	// 524288
-#define	FFMPEG_DEINT_FILTER		0x400000
-#define	LOWPASS5_DEINT_FILTER		0x800000
+#define        LINEAR_IPOL_DEINT_FILTER         0x10000 // 65536
+#define        LINEAR_BLEND_DEINT_FILTER        0x20000 // 131072
+#define        CUBIC_BLEND_DEINT_FILTER         0x8000  // (not implemented yet)
+#define        CUBIC_IPOL_DEINT_FILTER          0x40000 // 262144
+#define        MEDIAN_DEINT_FILTER              0x80000 // 524288
+#define        FFMPEG_DEINT_FILTER              0x400000
+#define        LOWPASS5_DEINT_FILTER            0x800000
 
-#define TEMP_NOISE_FILTER		0x100000
-#define FORCE_QUANT			0x200000
+#define TEMP_NOISE_FILTER               0x100000
+#define FORCE_QUANT                     0x200000
 
 //use if u want a faster postprocessing code
 //cant differentiate between chroma & luma filters (both on or both off)
@@ -66,8 +66,8 @@
 
 #if 1
 static inline int CLIP(int a){
-	if(a&256) return ((a)>>31)^(-1);
-	else      return a;
+        if(a&256) return ((a)>>31)^(-1);
+        else      return a;
 }
 //#define CLIP(a) (((a)&256) ? ((a)>>31)^(-1) : (a))
 #elif 0
@@ -79,92 +79,92 @@ static inline int CLIP(int a){
  * Postprocessng filter.
  */
 struct PPFilter{
-	char *shortName;
-	char *longName;
-	int chromDefault; 	///< is chrominance filtering on by default if this filter is manually activated
-	int minLumQuality; 	///< minimum quality to turn luminance filtering on
-	int minChromQuality;	///< minimum quality to turn chrominance filtering on
-	int mask; 		///< Bitmask to turn this filter on
+        char *shortName;
+        char *longName;
+        int chromDefault;       ///< is chrominance filtering on by default if this filter is manually activated
+        int minLumQuality;      ///< minimum quality to turn luminance filtering on
+        int minChromQuality;    ///< minimum quality to turn chrominance filtering on
+        int mask;               ///< Bitmask to turn this filter on
 };
 
 /**
  * Postprocessng mode.
  */
 typedef struct PPMode{
-	int lumMode; 			///< acivates filters for luminance
-	int chromMode; 			///< acivates filters for chrominance
-	int error; 			///< non zero on error
+        int lumMode;                    ///< acivates filters for luminance
+        int chromMode;                  ///< acivates filters for chrominance
+        int error;                      ///< non zero on error
 
-	int minAllowedY; 		///< for brigtness correction
-	int maxAllowedY; 		///< for brihtness correction
-	float maxClippedThreshold;	///< amount of "black" u r willing to loose to get a brightness corrected picture
+        int minAllowedY;                ///< for brigtness correction
+        int maxAllowedY;                ///< for brihtness correction
+        float maxClippedThreshold;      ///< amount of "black" u r willing to loose to get a brightness corrected picture
 
-	int maxTmpNoise[3]; 		///< for Temporal Noise Reducing filter (Maximal sum of abs differences)
+        int maxTmpNoise[3];             ///< for Temporal Noise Reducing filter (Maximal sum of abs differences)
 
-	int baseDcDiff;
-	int flatnessThreshold;
+        int baseDcDiff;
+        int flatnessThreshold;
 
-	int forcedQuant; 		///< quantizer if FORCE_QUANT is used
+        int forcedQuant;                ///< quantizer if FORCE_QUANT is used
 } PPMode;
 
 /**
  * postprocess context.
  */
 typedef struct PPContext{
-	uint8_t *tempBlocks; ///<used for the horizontal code
+        uint8_t *tempBlocks; ///<used for the horizontal code
 
-	/**
-	 * luma histogram.
-	 * we need 64bit here otherwise we'll going to have a problem
-	 * after watching a black picture for 5 hours
-	 */
-	uint64_t *yHistogram;
+        /**
+         * luma histogram.
+         * we need 64bit here otherwise we'll going to have a problem
+         * after watching a black picture for 5 hours
+         */
+        uint64_t *yHistogram;
 
-	uint64_t __attribute__((aligned(8))) packedYOffset;
-	uint64_t __attribute__((aligned(8))) packedYScale;
+        uint64_t __attribute__((aligned(8))) packedYOffset;
+        uint64_t __attribute__((aligned(8))) packedYScale;
 
-	/** Temporal noise reducing buffers */
-	uint8_t *tempBlured[3];
-	int32_t *tempBluredPast[3];
+        /** Temporal noise reducing buffers */
+        uint8_t *tempBlured[3];
+        int32_t *tempBluredPast[3];
 
-	/** Temporary buffers for handling the last row(s) */
-	uint8_t *tempDst;
-	uint8_t *tempSrc;
+        /** Temporary buffers for handling the last row(s) */
+        uint8_t *tempDst;
+        uint8_t *tempSrc;
 
-	uint8_t *deintTemp;
+        uint8_t *deintTemp;
 
-	uint64_t __attribute__((aligned(8))) pQPb;
-	uint64_t __attribute__((aligned(8))) pQPb2;
+        uint64_t __attribute__((aligned(8))) pQPb;
+        uint64_t __attribute__((aligned(8))) pQPb2;
 
-	uint64_t __attribute__((aligned(8))) mmxDcOffset[64];
-	uint64_t __attribute__((aligned(8))) mmxDcThreshold[64];
+        uint64_t __attribute__((aligned(8))) mmxDcOffset[64];
+        uint64_t __attribute__((aligned(8))) mmxDcThreshold[64];
 
-	QP_STORE_T *stdQPTable;       ///< used to fix MPEG2 style qscale
-	QP_STORE_T *nonBQPTable;
-	QP_STORE_T *forcedQPTable;
+        QP_STORE_T *stdQPTable;       ///< used to fix MPEG2 style qscale
+        QP_STORE_T *nonBQPTable;
+        QP_STORE_T *forcedQPTable;
 
-	int QP;
-	int nonBQP;
+        int QP;
+        int nonBQP;
 
-	int frameNum;
+        int frameNum;
 
-	int cpuCaps;
+        int cpuCaps;
 
-	int qpStride; ///<size of qp buffers (needed to realloc them if needed)
-	int stride;   ///<size of some buffers (needed to realloc them if needed)
+        int qpStride; ///<size of qp buffers (needed to realloc them if needed)
+        int stride;   ///<size of some buffers (needed to realloc them if needed)
 
-	int hChromaSubSample;
-	int vChromaSubSample;
+        int hChromaSubSample;
+        int vChromaSubSample;
 
-	PPMode ppMode;
+        PPMode ppMode;
 } PPContext;
 
 
 static inline void linecpy(void *dest, void *src, int lines, int stride)
 {
-	if (stride > 0) {
-		memcpy(dest, src, lines*stride);
-	} else {
-		memcpy(dest+(lines-1)*stride, src+(lines-1)*stride, -lines*stride);
-	}
+        if (stride > 0) {
+                memcpy(dest, src, lines*stride);
+        } else {
+                memcpy(dest+(lines-1)*stride, src+(lines-1)*stride, -lines*stride);
+        }
 }

@@ -204,15 +204,15 @@ void ff_faandct248(DCTELEM * data)
         data[8*6 + i] = lrintf(SCALE(8*6 + i) * (tmp13 - z1));
 
         tmp10 = tmp4 + tmp7;
-	tmp11 = tmp5 + tmp6;
-	tmp12 = tmp5 - tmp6;
-	tmp13 = tmp4 - tmp7;
+        tmp11 = tmp5 + tmp6;
+        tmp12 = tmp5 - tmp6;
+        tmp13 = tmp4 - tmp7;
 
-	data[8*1 + i] = lrintf(SCALE(8*0 + i) * (tmp10 + tmp11));
-	data[8*5 + i] = lrintf(SCALE(8*4 + i) * (tmp10 - tmp11));
+        data[8*1 + i] = lrintf(SCALE(8*0 + i) * (tmp10 + tmp11));
+        data[8*5 + i] = lrintf(SCALE(8*4 + i) * (tmp10 - tmp11));
 
-	z1 = (tmp12 + tmp13)* A1;
-	data[8*3 + i] = lrintf(SCALE(8*2 + i) * (tmp13 + z1));
-	data[8*7 + i] = lrintf(SCALE(8*6 + i) * (tmp13 - z1));
+        z1 = (tmp12 + tmp13)* A1;
+        data[8*3 + i] = lrintf(SCALE(8*2 + i) * (tmp13 + z1));
+        data[8*7 + i] = lrintf(SCALE(8*6 + i) * (tmp13 - z1));
     }
 }

@@ -431,7 +431,7 @@ static int vmdaudio_decode_init(AVCodecContext *avctx)
     s->block_align = avctx->block_align;
 
     av_log(s->avctx, AV_LOG_DEBUG, "%d channels, %d bits/sample, block align = %d, sample rate = %d\n",
-	    s->channels, s->bits, s->block_align, avctx->sample_rate);
+            s->channels, s->bits, s->block_align, avctx->sample_rate);
 
     /* set up the steps8 and steps16 tables */
     for (i = 0; i < 8; i++) {
@@ -489,7 +489,7 @@ static int vmdaudio_loadsound(VmdAudioContext *s, unsigned char *data,
     int i;
 
     if (silence)
-	av_log(s->avctx, AV_LOG_INFO, "silent block!\n");
+        av_log(s->avctx, AV_LOG_INFO, "silent block!\n");
     if (s->channels == 2) {
 
         /* stereo handling */

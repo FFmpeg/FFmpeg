@@ -1188,7 +1188,7 @@ void avcodec_init(void)
     static int inited = 0;
 
     if (inited != 0)
-	return;
+        return;
     inited = 1;
 
     dsputil_static_init();
@@ -1241,10 +1241,10 @@ static void av_log_default_callback(void* ptr, int level, const char* fmt, va_li
     static int print_prefix=1;
     AVClass* avc= ptr ? *(AVClass**)ptr : NULL;
     if(level>av_log_level)
-	return;
+        return;
 #undef fprintf
     if(print_prefix && avc) {
-	    fprintf(stderr, "[%s @ %p]", avc->item_name(ptr), avc);
+            fprintf(stderr, "[%s @ %p]", avc->item_name(ptr), avc);
     }
 #define fprintf please_use_av_log
 

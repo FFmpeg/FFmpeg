@@ -104,7 +104,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     }
 
     if (!(s->video_cap.type & VID_TYPE_CAPTURE)) {
-	av_log(s1, AV_LOG_ERROR, "Fatal: grab device does not handle capture\n");
+        av_log(s1, AV_LOG_ERROR, "Fatal: grab device does not handle capture\n");
         goto fail;
     }
 
@@ -119,13 +119,13 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 
     /* set tv standard */
     if (ap->standard && !ioctl(video_fd, VIDIOCGTUNER, &tuner)) {
-	if (!strcasecmp(ap->standard, "pal"))
-	    tuner.mode = VIDEO_MODE_PAL;
-	else if (!strcasecmp(ap->standard, "secam"))
-	    tuner.mode = VIDEO_MODE_SECAM;
-	else
-	    tuner.mode = VIDEO_MODE_NTSC;
-	ioctl(video_fd, VIDIOCSTUNER, &tuner);
+        if (!strcasecmp(ap->standard, "pal"))
+            tuner.mode = VIDEO_MODE_PAL;
+        else if (!strcasecmp(ap->standard, "secam"))
+            tuner.mode = VIDEO_MODE_SECAM;
+        else
+            tuner.mode = VIDEO_MODE_NTSC;
+        ioctl(video_fd, VIDIOCSTUNER, &tuner);
     }
 
     /* unmute audio */
@@ -234,10 +234,10 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
             }
             goto fail;
         }
-	for (j = 1; j < s->gb_buffers.frames; j++) {
-	  s->gb_buf.frame = j;
-	  ioctl(video_fd, VIDIOCMCAPTURE, &s->gb_buf);
-	}
+        for (j = 1; j < s->gb_buffers.frames; j++) {
+          s->gb_buf.frame = j;
+          ioctl(video_fd, VIDIOCMCAPTURE, &s->gb_buf);
+        }
         s->frame_format = s->gb_buf.format;
         s->use_mmap = 1;
     }

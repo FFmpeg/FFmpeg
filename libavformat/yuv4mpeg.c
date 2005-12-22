@@ -96,12 +96,12 @@ static int yuv4_write_packet(AVFormatContext *s, AVPacket *pkt)
     /* for the first packet we have to output the header as well */
     if (*first_pkt) {
         *first_pkt = 0;
-	if (yuv4_generate_header(s, buf2) < 0) {
-	    av_log(s, AV_LOG_ERROR, "Error. YUV4MPEG stream header write failed.\n");
-	    return AVERROR_IO;
-	} else {
-	    put_buffer(pb, buf2, strlen(buf2));
-	}
+        if (yuv4_generate_header(s, buf2) < 0) {
+            av_log(s, AV_LOG_ERROR, "Error. YUV4MPEG stream header write failed.\n");
+            return AVERROR_IO;
+        } else {
+            put_buffer(pb, buf2, strlen(buf2));
+        }
     }
 
     /* construct frame header */
@@ -126,11 +126,11 @@ static int yuv4_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     ptr1 = picture->data[1];
     ptr2 = picture->data[2];
-    for(i=0;i<height;i++) {		/* Cb */
+    for(i=0;i<height;i++) {     /* Cb */
         put_buffer(pb, ptr1, width);
         ptr1 += picture->linesize[1];
     }
-    for(i=0;i<height;i++) {	/* Cr */
+    for(i=0;i<height;i++) {     /* Cr */
         put_buffer(pb, ptr2, width);
             ptr2 += picture->linesize[2];
     }
@@ -154,7 +154,7 @@ static int yuv4_write_header(AVFormatContext *s)
              (s->streams[0]->codec->pix_fmt != PIX_FMT_GRAY8) &&
              (s->streams[0]->codec->pix_fmt != PIX_FMT_YUV444P)) {
         av_log(s, AV_LOG_ERROR, "ERROR: yuv4mpeg only handles yuv444p, yuv422p, yuv420p, yuv411p and gray pixel formats. Use -pix_fmt to select one.\n");
-	return AVERROR_IO;
+        return AVERROR_IO;
     }
 
     *first_pkt = 1;
@@ -197,11 +197,11 @@ static int yuv4_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
     for (i=0; i<MAX_YUV4_HEADER; i++) {
         header[i] = get_byte(pb);
-	if (header[i] == '\n') {
-	    header[i+1] = 0x20;  // Add a space after last option. Makes parsing "444" vs "444alpha" easier.
-	    header[i+2] = 0;
-	    break;
-	}
+        if (header[i] == '\n') {
+            header[i+1] = 0x20;  // Add a space after last option. Makes parsing "444" vs "444alpha" easier.
+            header[i+2] = 0;
+            break;
+        }
     }
     if (i == MAX_YUV4_HEADER) return -1;
     if (strncmp(header, Y4M_MAGIC, strlen(Y4M_MAGIC))) return -1;
@@ -341,10 +341,10 @@ static int yuv4_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     for (i=0; i<MAX_FRAME_HEADER; i++) {
         header[i] = get_byte(&s->pb);
-	if (header[i] == '\n') {
-	    header[i+1] = 0;
-	    break;
-	}
+        if (header[i] == '\n') {
+            header[i+1] = 0;
+            break;
+        }
     }
     if (i == MAX_FRAME_HEADER) return -1;
     if (strncmp(header, Y4M_FRAME_MAGIC, strlen(Y4M_FRAME_MAGIC))) return -1;

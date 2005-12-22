@@ -15,7 +15,7 @@
 /* ebx saving is necessary for PIC. gcc seems unable to see it alone */
 #define cpuid(index,eax,ebx,ecx,edx)\
     __asm __volatile\
-	("mov %%"REG_b", %%"REG_S"\n\t"\
+        ("mov %%"REG_b", %%"REG_S"\n\t"\
          "cpuid\n\t"\
          "xchg %%"REG_b", %%"REG_S\
          : "=a" (eax), "=S" (ebx),\
@@ -89,8 +89,8 @@ int mm_support(void)
                edx == 0x48727561 &&
                ecx == 0x736c7561) {  /*  "CentaurHauls" */
         /* VIA C3 */
-	if(ext_caps & (1<<24))
-	  rval |= MM_MMXEXT;
+        if(ext_caps & (1<<24))
+          rval |= MM_MMXEXT;
     } else if (ebx == 0x69727943 &&
                edx == 0x736e4978 &&
                ecx == 0x64616574) {

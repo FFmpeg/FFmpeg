@@ -127,7 +127,7 @@ static int ingenient_read_packet(AVFormatContext *s, AVPacket *pkt)
     int ret, size, w, h, unk1, unk2;
 
     if (get_le32(&s->pb) != MKTAG('M', 'J', 'P', 'G'))
-	return AVERROR_IO; // FIXME
+        return AVERROR_IO; // FIXME
 
     size = get_le32(&s->pb);
 
@@ -141,7 +141,7 @@ static int ingenient_read_packet(AVFormatContext *s, AVPacket *pkt)
     url_fskip(&s->pb, 22); // ascii timestamp
 
     av_log(NULL, AV_LOG_DEBUG, "Ingenient packet: size=%d, width=%d, height=%d, unk1=%d unk2=%d\n",
-	size, w, h, unk1, unk2);
+        size, w, h, unk1, unk2);
 
     if (av_new_packet(pkt, size) < 0)
         return AVERROR_IO;
@@ -283,9 +283,9 @@ static int video_read_header(AVFormatContext *s,
     return 0;
 }
 
-#define SEQ_START_CODE		0x000001b3
-#define GOP_START_CODE		0x000001b8
-#define PICTURE_START_CODE	0x00000100
+#define SEQ_START_CODE          0x000001b3
+#define GOP_START_CODE          0x000001b8
+#define PICTURE_START_CODE      0x00000100
 
 /* XXX: improve that by looking at several start codes */
 static int mpegvideo_probe(AVProbeData *p)

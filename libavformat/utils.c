@@ -2696,10 +2696,10 @@ int parse_frame_rate(int *frame_rate, int *frame_rate_base, const char *arg)
     /* First, we check our abbreviation table */
     for (i = 0; i < sizeof(frame_abvs)/sizeof(*frame_abvs); ++i)
          if (!strcmp(frame_abvs[i].abv, arg)) {
-	     *frame_rate = frame_abvs[i].frame_rate;
-	     *frame_rate_base = frame_abvs[i].frame_rate_base;
-	     return 0;
-	 }
+             *frame_rate = frame_abvs[i].frame_rate;
+             *frame_rate_base = frame_abvs[i].frame_rate_base;
+             return 0;
+         }
 
     /* Then, we try to parse it as fraction */
     cp = strchr(arg, '/');
@@ -2707,11 +2707,11 @@ int parse_frame_rate(int *frame_rate, int *frame_rate_base, const char *arg)
         cp = strchr(arg, ':');
     if (cp) {
         char* cpp;
-	*frame_rate = strtol(arg, &cpp, 10);
-	if (cpp != arg || cpp == cp)
-	    *frame_rate_base = strtol(cp+1, &cpp, 10);
-	else
-	   *frame_rate = 0;
+        *frame_rate = strtol(arg, &cpp, 10);
+        if (cpp != arg || cpp == cp)
+            *frame_rate_base = strtol(cp+1, &cpp, 10);
+        else
+           *frame_rate = 0;
     }
     else {
         /* Finally we give up and parse it as double */
@@ -2801,10 +2801,10 @@ int64_t parse_date(const char *datestr, int duration)
             }
         }
     } else {
-	if (p[0] == '-') {
-	    negative = 1;
-	    ++p;
-	}
+        if (p[0] == '-') {
+            negative = 1;
+            ++p;
+        }
         q = small_strptime(p, time_fmt[0], &dt);
         if (!q) {
             dt.tm_sec = strtol(p, (char **)&q, 10);

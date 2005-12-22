@@ -67,7 +67,7 @@ int sad16_x2_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h
         /*
            Read unaligned pixels into our vectors. The vectors are as follows:
            pix1v: pix1[0]-pix1[15]
-           pix2v: pix2[0]-pix2[15]	pix2iv: pix2[1]-pix2[16]
+           pix2v: pix2[0]-pix2[15]      pix2iv: pix2[1]-pix2[16]
         */
         tv = (vector unsigned char *) pix1;
         pix1v = vec_perm(tv[0], tv[1], vec_lvsl(0, pix1));
@@ -184,7 +184,7 @@ int sad16_xy2_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int 
        fact to avoid a potentially expensive unaligned read, as well
        as some splitting, and vector addition each time around the loop.
        Read unaligned pixels into our vectors. The vectors are as follows:
-       pix2v: pix2[0]-pix2[15]	pix2iv: pix2[1]-pix2[16]
+       pix2v: pix2[0]-pix2[15]  pix2iv: pix2[1]-pix2[16]
        Split the pixel vectors into shorts
     */
     tv = (vector unsigned char *) &pix2[0];
@@ -204,7 +204,7 @@ int sad16_xy2_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int 
         /*
            Read unaligned pixels into our vectors. The vectors are as follows:
            pix1v: pix1[0]-pix1[15]
-           pix3v: pix3[0]-pix3[15]	pix3iv: pix3[1]-pix3[16]
+           pix3v: pix3[0]-pix3[15]      pix3iv: pix3[1]-pix3[16]
         */
         tv = (vector unsigned char *) pix1;
         pix1v = vec_perm(tv[0], tv[1], vec_lvsl(0, pix1));
@@ -273,7 +273,7 @@ int sad16_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
 
 
     for(i=0;i<h;i++) {
-	/* Read potentially unaligned pixels into t1 and t2 */
+        /* Read potentially unaligned pixels into t1 and t2 */
         perm1 = vec_lvsl(0, pix1);
         pix1v = (vector unsigned char *) pix1;
         perm2 = vec_lvsl(0, pix2);
@@ -281,12 +281,12 @@ int sad16_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
         t1 = vec_perm(pix1v[0], pix1v[1], perm1);
         t2 = vec_perm(pix2v[0], pix2v[1], perm2);
 
-	/* Calculate a sum of abs differences vector */
+        /* Calculate a sum of abs differences vector */
         t3 = vec_max(t1, t2);
         t4 = vec_min(t1, t2);
         t5 = vec_sub(t3, t4);
 
-	/* Add each 4 pixel group together and put 4 results into sad */
+        /* Add each 4 pixel group together and put 4 results into sad */
         sad = vec_sum4s(t5, sad);
 
         pix1 += line_size;
@@ -316,9 +316,9 @@ int sad8_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
     permclear = (vector unsigned char)AVV(255,255,255,255,255,255,255,255,0,0,0,0,0,0,0,0);
 
     for(i=0;i<h;i++) {
-	/* Read potentially unaligned pixels into t1 and t2
-	   Since we're reading 16 pixels, and actually only want 8,
-	   mask out the last 8 pixels. The 0s don't change the sum. */
+        /* Read potentially unaligned pixels into t1 and t2
+           Since we're reading 16 pixels, and actually only want 8,
+           mask out the last 8 pixels. The 0s don't change the sum. */
         perm1 = vec_lvsl(0, pix1);
         pix1v = (vector unsigned char *) pix1;
         perm2 = vec_lvsl(0, pix2);
@@ -326,12 +326,12 @@ int sad8_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
         t1 = vec_and(vec_perm(pix1v[0], pix1v[1], perm1), permclear);
         t2 = vec_and(vec_perm(pix2v[0], pix2v[1], perm2), permclear);
 
-	/* Calculate a sum of abs differences vector */
+        /* Calculate a sum of abs differences vector */
         t3 = vec_max(t1, t2);
         t4 = vec_min(t1, t2);
         t5 = vec_sub(t3, t4);
 
-	/* Add each 4 pixel group together and put 4 results into sad */
+        /* Add each 4 pixel group together and put 4 results into sad */
         sad = vec_sum4s(t5, sad);
 
         pix1 += line_size;
@@ -398,9 +398,9 @@ int sse8_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
 
 
     for(i=0;i<h;i++) {
-	/* Read potentially unaligned pixels into t1 and t2
-	   Since we're reading 16 pixels, and actually only want 8,
-	   mask out the last 8 pixels. The 0s don't change the sum. */
+        /* Read potentially unaligned pixels into t1 and t2
+           Since we're reading 16 pixels, and actually only want 8,
+           mask out the last 8 pixels. The 0s don't change the sum. */
         perm1 = vec_lvsl(0, pix1);
         pix1v = (vector unsigned char *) pix1;
         perm2 = vec_lvsl(0, pix2);
@@ -413,7 +413,7 @@ int sse8_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
           of the fact that abs(a-b)^2 = (a-b)^2.
         */
 
-	/* Calculate abs differences vector */
+        /* Calculate abs differences vector */
         t3 = vec_max(t1, t2);
         t4 = vec_min(t1, t2);
         t5 = vec_sub(t3, t4);
@@ -451,7 +451,7 @@ int sse16_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
     sum = (vector unsigned int)vec_splat_u32(0);
 
     for(i=0;i<h;i++) {
-	/* Read potentially unaligned pixels into t1 and t2 */
+        /* Read potentially unaligned pixels into t1 and t2 */
         perm1 = vec_lvsl(0, pix1);
         pix1v = (vector unsigned char *) pix1;
         perm2 = vec_lvsl(0, pix2);
@@ -464,7 +464,7 @@ int sse16_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
           of the fact that abs(a-b)^2 = (a-b)^2.
         */
 
-	/* Calculate abs differences vector */
+        /* Calculate abs differences vector */
         t3 = vec_max(t1, t2);
         t4 = vec_min(t1, t2);
         t5 = vec_sub(t3, t4);
@@ -498,12 +498,12 @@ int pix_sum_altivec(uint8_t * pix, int line_size)
     sad = (vector unsigned int)vec_splat_u32(0);
 
     for (i = 0; i < 16; i++) {
-	/* Read the potentially unaligned 16 pixels into t1 */
+        /* Read the potentially unaligned 16 pixels into t1 */
         perm = vec_lvsl(0, pix);
         pixv = (vector unsigned char *) pix;
         t1 = vec_perm(pixv[0], pixv[1], perm);
 
-	/* Add each 4 pixel group together and put 4 results into sad */
+        /* Add each 4 pixel group together and put 4 results into sad */
         sad = vec_sum4s(t1, sad);
 
         pix += line_size;
@@ -1335,32 +1335,32 @@ POWERPC_PERF_START_COUNT(altivec_hadamard8_diff8x8_num, 1);
        0x00, 0x01, 0x02, 0x03,
        0x04, 0x05, 0x06, 0x07);
 
-#define ONEITERBUTTERFLY(i, res)					\
-    {									\
-      register vector unsigned char src1, src2, srcO;		       	\
-      register vector unsigned char dst1, dst2, dstO;		       	\
-      src1 = vec_ld(stride * i, src);					\
-      if ((((stride * i) + (unsigned long)src) & 0x0000000F) > 8)	\
-	src2 = vec_ld((stride * i) + 16, src);				\
-      srcO = vec_perm(src1, src2, vec_lvsl(stride * i, src));		\
-      dst1 = vec_ld(stride * i, dst);					\
-      if ((((stride * i) + (unsigned long)dst) & 0x0000000F) > 8)	\
-	dst2 = vec_ld((stride * i) + 16, dst);				\
-      dstO = vec_perm(dst1, dst2, vec_lvsl(stride * i, dst));		\
-      /* promote the unsigned chars to signed shorts */			\
-      /* we're in the 8x8 function, we only care for the first 8 */	\
-      register vector signed short srcV =			       	\
-	(vector signed short)vec_mergeh((vector signed char)vzero, (vector signed char)srcO); \
-      register vector signed short dstV =			       	\
-	(vector signed short)vec_mergeh((vector signed char)vzero, (vector signed char)dstO); \
-      /* substractions inside the first butterfly */			\
-      register vector signed short but0 = vec_sub(srcV, dstV);	       	\
-      register vector signed short op1 = vec_perm(but0, but0, perm1);  	\
-      register vector signed short but1 = vec_mladd(but0, vprod1, op1);	\
-      register vector signed short op2 = vec_perm(but1, but1, perm2);  	\
-      register vector signed short but2 = vec_mladd(but1, vprod2, op2);	\
-      register vector signed short op3 = vec_perm(but2, but2, perm3);  	\
-      res = vec_mladd(but2, vprod3, op3);				\
+#define ONEITERBUTTERFLY(i, res)                                        \
+    {                                                                   \
+      register vector unsigned char src1, src2, srcO;                   \
+      register vector unsigned char dst1, dst2, dstO;                   \
+      src1 = vec_ld(stride * i, src);                                   \
+      if ((((stride * i) + (unsigned long)src) & 0x0000000F) > 8)       \
+        src2 = vec_ld((stride * i) + 16, src);                          \
+      srcO = vec_perm(src1, src2, vec_lvsl(stride * i, src));           \
+      dst1 = vec_ld(stride * i, dst);                                   \
+      if ((((stride * i) + (unsigned long)dst) & 0x0000000F) > 8)       \
+        dst2 = vec_ld((stride * i) + 16, dst);                          \
+      dstO = vec_perm(dst1, dst2, vec_lvsl(stride * i, dst));           \
+      /* promote the unsigned chars to signed shorts */                 \
+      /* we're in the 8x8 function, we only care for the first 8 */     \
+      register vector signed short srcV =                               \
+        (vector signed short)vec_mergeh((vector signed char)vzero, (vector signed char)srcO); \
+      register vector signed short dstV =                               \
+        (vector signed short)vec_mergeh((vector signed char)vzero, (vector signed char)dstO); \
+      /* substractions inside the first butterfly */                    \
+      register vector signed short but0 = vec_sub(srcV, dstV);          \
+      register vector signed short op1 = vec_perm(but0, but0, perm1);   \
+      register vector signed short but1 = vec_mladd(but0, vprod1, op1); \
+      register vector signed short op2 = vec_perm(but1, but1, perm2);   \
+      register vector signed short but2 = vec_mladd(but1, vprod2, op2); \
+      register vector signed short op3 = vec_perm(but2, but2, perm3);   \
+      res = vec_mladd(but2, vprod3, op3);                               \
     }
     ONEITERBUTTERFLY(0, temp0);
     ONEITERBUTTERFLY(1, temp1);
@@ -1480,26 +1480,26 @@ static int hadamard8_diff16x8_altivec(/*MpegEncContext*/ void *s, uint8_t *dst, 
        0x00, 0x01, 0x02, 0x03,
        0x04, 0x05, 0x06, 0x07);
 
-#define ONEITERBUTTERFLY(i, res1, res2)					\
-    {									\
+#define ONEITERBUTTERFLY(i, res1, res2)                                 \
+    {                                                                   \
       register vector unsigned char src1 asm ("v22"), src2 asm ("v23"); \
       register vector unsigned char dst1 asm ("v24"), dst2 asm ("v25"); \
-      src1 = vec_ld(stride * i, src);					\
-      src2 = vec_ld((stride * i) + 16, src);				\
+      src1 = vec_ld(stride * i, src);                                   \
+      src2 = vec_ld((stride * i) + 16, src);                            \
       register vector unsigned char srcO asm ("v22") = vec_perm(src1, src2, vec_lvsl(stride * i, src)); \
-      dst1 = vec_ld(stride * i, dst);					\
-      dst2 = vec_ld((stride * i) + 16, dst);				\
+      dst1 = vec_ld(stride * i, dst);                                   \
+      dst2 = vec_ld((stride * i) + 16, dst);                            \
       register vector unsigned char dstO asm ("v23") = vec_perm(dst1, dst2, vec_lvsl(stride * i, dst)); \
-      /* promote the unsigned chars to signed shorts */			\
+      /* promote the unsigned chars to signed shorts */                 \
       register vector signed short srcV asm ("v24") =                   \
-	(vector signed short)vec_mergeh((vector signed char)vzero, (vector signed char)srcO); \
+        (vector signed short)vec_mergeh((vector signed char)vzero, (vector signed char)srcO); \
       register vector signed short dstV asm ("v25") =                   \
-	(vector signed short)vec_mergeh((vector signed char)vzero, (vector signed char)dstO); \
+        (vector signed short)vec_mergeh((vector signed char)vzero, (vector signed char)dstO); \
       register vector signed short srcW asm ("v26") =                   \
-	(vector signed short)vec_mergel((vector signed char)vzero, (vector signed char)srcO); \
+        (vector signed short)vec_mergel((vector signed char)vzero, (vector signed char)srcO); \
       register vector signed short dstW asm ("v27") =                   \
-	(vector signed short)vec_mergel((vector signed char)vzero, (vector signed char)dstO); \
-      /* substractions inside the first butterfly */			\
+        (vector signed short)vec_mergel((vector signed char)vzero, (vector signed char)dstO); \
+      /* substractions inside the first butterfly */                    \
       register vector signed short but0 asm ("v28") = vec_sub(srcV, dstV); \
       register vector signed short but0S asm ("v29") = vec_sub(srcW, dstW); \
       register vector signed short op1 asm ("v30") = vec_perm(but0, but0, perm1); \
@@ -1511,9 +1511,9 @@ static int hadamard8_diff16x8_altivec(/*MpegEncContext*/ void *s, uint8_t *dst, 
       register vector signed short op2S asm ("v27") = vec_perm(but1S, but1S, perm2); \
       register vector signed short but2S asm ("v28") = vec_mladd(but1S, vprod2, op2S); \
       register vector signed short op3 asm ("v29") = vec_perm(but2, but2, perm3); \
-      res1 = vec_mladd(but2, vprod3, op3);				\
+      res1 = vec_mladd(but2, vprod3, op3);                              \
       register vector signed short op3S asm ("v30") = vec_perm(but2S, but2S, perm3); \
-      res2 = vec_mladd(but2S, vprod3, op3S);				\
+      res2 = vec_mladd(but2S, vprod3, op3S);                            \
     }
     ONEITERBUTTERFLY(0, temp0, temp0S);
     ONEITERBUTTERFLY(1, temp1, temp1S);
@@ -1623,12 +1623,12 @@ POWERPC_PERF_STOP_COUNT(altivec_hadamard8_diff16_num, 1);
 int has_altivec(void)
 {
 #ifdef __AMIGAOS4__
-	ULONG result = 0;
-	extern struct ExecIFace *IExec;
+        ULONG result = 0;
+        extern struct ExecIFace *IExec;
 
-	IExec->GetCPUInfoTags(GCIT_VectorUnit, &result, TAG_DONE);
-	if (result == VECTORTYPE_ALTIVEC) return 1;
-	return 0;
+        IExec->GetCPUInfoTags(GCIT_VectorUnit, &result, TAG_DONE);
+        if (result == VECTORTYPE_ALTIVEC) return 1;
+        return 0;
 #else /* __AMIGAOS4__ */
 
 #ifdef CONFIG_DARWIN

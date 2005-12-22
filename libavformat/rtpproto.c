@@ -87,8 +87,8 @@ static void url_add_option(char *buf, int buf_size, const char *fmt, ...)
 }
 
 static void build_udp_url(char *buf, int buf_size,
-			  const char *hostname, int port,
-			  int local_port, int multicast, int ttl)
+                          const char *hostname, int port,
+                          int local_port, int multicast, int ttl)
 {
     snprintf(buf, buf_size, "udp://%s:%d", hostname, port);
     if (local_port >= 0)

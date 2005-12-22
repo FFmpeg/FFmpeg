@@ -579,7 +579,7 @@ static void do_audio_out(AVFormatContext *s,
             break;
         }
         ret = avcodec_encode_audio(enc, audio_out, size_out,
-				   (short *)buftmp);
+                                   (short *)buftmp);
         audio_size += ret;
         pkt.stream_index= ost->index;
         pkt.data= audio_out;
@@ -821,10 +821,10 @@ static void do_video_out(AVFormatContext *s,
                     padcolor);
         }
 
-	if (enc->pix_fmt != PIX_FMT_YUV420P) {
+        if (enc->pix_fmt != PIX_FMT_YUV420P) {
             int size;
 
-	    av_free(buf);
+            av_free(buf);
             /* create temporary picture */
             size = avpicture_get_size(enc->pix_fmt, enc->width, enc->height);
             buf = av_malloc(size);
@@ -842,7 +842,7 @@ static void do_video_out(AVFormatContext *s,
 
                 goto the_end;
             }
-	}
+        }
     } else if (ost->video_crop) {
         picture_crop_temp.data[0] = formatted_picture->data[0] +
                 (ost->topBand * formatted_picture->linesize[0]) + ost->leftBand;
@@ -921,7 +921,7 @@ static void do_video_out(AVFormatContext *s,
                avoid any copies. We support temorarily the older
                method. */
             AVFrame* old_frame = enc->coded_frame;
-	    enc->coded_frame = dec->coded_frame; //FIXME/XXX remove this hack
+            enc->coded_frame = dec->coded_frame; //FIXME/XXX remove this hack
             pkt.data= (uint8_t *)final_picture;
             pkt.size=  sizeof(AVPicture);
             if(dec->coded_frame && enc->coded_frame->pts != AV_NOPTS_VALUE)
@@ -930,7 +930,7 @@ static void do_video_out(AVFormatContext *s,
                 pkt.flags |= PKT_FLAG_KEY;
 
             av_interleaved_write_frame(s, &pkt);
-	    enc->coded_frame = old_frame;
+            enc->coded_frame = old_frame;
         } else {
             AVFrame big_picture;
 
@@ -1044,8 +1044,8 @@ static void do_video_stats(AVFormatContext *os, AVOutputStream *ost,
 }
 
 static void print_report(AVFormatContext **output_files,
-			 AVOutputStream **ost_table, int nb_ostreams,
-			 int is_last_report)
+                         AVOutputStream **ost_table, int nb_ostreams,
+                         int is_last_report)
 {
     char buf[1024];
     AVOutputStream *ost;
@@ -1138,9 +1138,9 @@ static void print_report(AVFormatContext **output_files,
             "size=%8.0fkB time=%0.1f bitrate=%6.1fkbits/s",
             (double)total_size / 1024, ti1, bitrate);
 
-	if (verbose > 1)
-	  snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), " dup=%d drop=%d",
-		  nb_frames_dup, nb_frames_drop);
+        if (verbose > 1)
+          snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), " dup=%d drop=%d",
+                  nb_frames_dup, nb_frames_drop);
 
         if (verbose >= 0)
             fprintf(stderr, "%s    \r", buf);
@@ -1323,7 +1323,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
             }
 #endif
             /* if output time reached then transcode raw format,
-	       encode packets and output them */
+               encode packets and output them */
             if (start_time == 0 || ist->pts >= start_time)
                 for(i=0;i<nb_ostreams;i++) {
                     int frame_size;
@@ -1898,7 +1898,7 @@ static int av_encode(AVFormatContext **output_files,
     /* init pts */
     for(i=0;i<nb_istreams;i++) {
         ist = ist_table[i];
-	is = input_files[ist->file_index];
+        is = input_files[ist->file_index];
         ist->pts = 0;
         ist->next_pts = av_rescale_q(ist->st->start_time, ist->st->time_base, AV_TIME_BASE_Q);
         if(ist->st->start_time == AV_NOPTS_VALUE)
@@ -2273,7 +2273,7 @@ static void opt_frame_rate(const char *arg)
 {
     if (parse_frame_rate(&frame_rate, &frame_rate_base, arg) < 0) {
         fprintf(stderr, "Incorrect frame rate\n");
-	exit(1);
+        exit(1);
     }
 }
 
@@ -2289,7 +2289,7 @@ static void opt_frame_crop_top(const char *arg)
         exit(1);
     }
     if ((frame_topBand) >= frame_height){
-    	fprintf(stderr, "Vertical crop dimensions are outside the range of the original image.\nRemember to crop first and scale second.\n");
+        fprintf(stderr, "Vertical crop dimensions are outside the range of the original image.\nRemember to crop first and scale second.\n");
         exit(1);
     }
     frame_height -= frame_topBand;
@@ -2307,7 +2307,7 @@ static void opt_frame_crop_bottom(const char *arg)
         exit(1);
     }
     if ((frame_bottomBand) >= frame_height){
-    	fprintf(stderr, "Vertical crop dimensions are outside the range of the original image.\nRemember to crop first and scale second.\n");
+        fprintf(stderr, "Vertical crop dimensions are outside the range of the original image.\nRemember to crop first and scale second.\n");
         exit(1);
     }
     frame_height -= frame_bottomBand;
@@ -2325,7 +2325,7 @@ static void opt_frame_crop_left(const char *arg)
         exit(1);
     }
     if ((frame_leftBand) >= frame_width){
-    	fprintf(stderr, "Horizontal crop dimensions are outside the range of the original image.\nRemember to crop first and scale second.\n");
+        fprintf(stderr, "Horizontal crop dimensions are outside the range of the original image.\nRemember to crop first and scale second.\n");
         exit(1);
     }
     frame_width -= frame_leftBand;
@@ -2343,7 +2343,7 @@ static void opt_frame_crop_right(const char *arg)
         exit(1);
     }
     if ((frame_rightBand) >= frame_width){
-    	fprintf(stderr, "Horizontal crop dimensions are outside the range of the original image.\nRemember to crop first and scale second.\n");
+        fprintf(stderr, "Horizontal crop dimensions are outside the range of the original image.\nRemember to crop first and scale second.\n");
         exit(1);
     }
     frame_width -= frame_rightBand;
@@ -2364,7 +2364,7 @@ static void opt_frame_size(const char *arg)
 
 #define SCALEBITS 10
 #define ONE_HALF  (1 << (SCALEBITS - 1))
-#define FIX(x)	  ((int) ((x) * (1<<SCALEBITS) + 0.5))
+#define FIX(x)    ((int) ((x) * (1<<SCALEBITS) + 0.5))
 
 #define RGB_TO_Y(r, g, b) \
 ((FIX(0.29900) * (r) + FIX(0.58700) * (g) + \
@@ -2462,16 +2462,16 @@ static void opt_frame_aspect_ratio(const char *arg)
     p = strchr(arg, ':');
     if (p) {
         x = strtol(arg, (char **)&arg, 10);
-	if (arg == p)
-	    y = strtol(arg+1, (char **)&arg, 10);
-	if (x > 0 && y > 0)
-	    ar = (double)x / (double)y;
+        if (arg == p)
+            y = strtol(arg+1, (char **)&arg, 10);
+        if (x > 0 && y > 0)
+            ar = (double)x / (double)y;
     } else
         ar = strtod(arg, (char **)&arg);
 
     if (!ar) {
         fprintf(stderr, "Incorrect aspect ratio specification.\n");
-	exit(1);
+        exit(1);
     }
     frame_aspect_ratio = ar;
 }
@@ -2957,8 +2957,8 @@ static void opt_input_file(const char *filename)
             }
             frame_height = enc->height;
             frame_width = enc->width;
-	    frame_aspect_ratio = av_q2d(enc->sample_aspect_ratio) * enc->width / enc->height;
-	    frame_pix_fmt = enc->pix_fmt;
+            frame_aspect_ratio = av_q2d(enc->sample_aspect_ratio) * enc->width / enc->height;
+            frame_pix_fmt = enc->pix_fmt;
             rfps      = ic->streams[i]->r_frame_rate.num;
             rfps_base = ic->streams[i]->r_frame_rate.den;
             enc->workaround_bugs = workaround_bugs;
@@ -3454,7 +3454,7 @@ static void opt_output_file(const char *filename)
 
         oc->timestamp = rec_timestamp;
 
-	if (str_title)
+        if (str_title)
             pstrcpy(oc->title, sizeof(oc->title), str_title);
         if (str_author)
             pstrcpy(oc->author, sizeof(oc->author), str_author);
@@ -3490,11 +3490,11 @@ static void opt_output_file(const char *filename)
                         fprintf(stderr, "Not overwriting - exiting\n");
                         exit(1);
                     }
-				}
-				else {
+                                }
+                                else {
                     fprintf(stderr,"File '%s' already exists. Exiting.\n", filename);
                     exit(1);
-				}
+                                }
             }
         }
 
@@ -3579,14 +3579,14 @@ static void prepare_grab(void)
         fmt1 = av_find_input_format(video_grab_format);
         vp->device  = video_device;
         vp->channel = video_channel;
-	vp->standard = video_standard;
+        vp->standard = video_standard;
         if (av_open_input_file(&ic, "", fmt1, 0, vp) < 0) {
             fprintf(stderr, "Could not find video grab device\n");
             exit(1);
         }
         /* If not enough info to get the stream parameters, we decode the
            first frames to get it. */
-	if ((ic->ctx_flags & AVFMTCTX_NOHEADER) && av_find_stream_info(ic) < 0) {
+        if ((ic->ctx_flags & AVFMTCTX_NOHEADER) && av_find_stream_info(ic) < 0) {
             fprintf(stderr, "Could not find video grab parameters\n");
             exit(1);
         }
@@ -4276,11 +4276,11 @@ int main(int argc, char **argv)
     for(i=0;i<nb_output_files;i++) {
         /* maybe av_close_output_file ??? */
         AVFormatContext *s = output_files[i];
-	int j;
+        int j;
         if (!(s->oformat->flags & AVFMT_NOFILE))
-	    url_fclose(&s->pb);
-	for(j=0;j<s->nb_streams;j++)
-	    av_free(s->streams[j]);
+            url_fclose(&s->pb);
+        for(j=0;j<s->nb_streams;j++)
+            av_free(s->streams[j]);
         av_free(s);
     }
     for(i=0;i<nb_input_files;i++)

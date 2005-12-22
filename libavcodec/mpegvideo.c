@@ -354,7 +354,7 @@ static int alloc_picture(MpegEncContext *s, Picture *pic, int shared){
         r= s->avctx->get_buffer(s->avctx, (AVFrame*)pic);
 
         if(r<0 || !pic->age || !pic->type || !pic->data[0]){
-	    av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed (%d %d %d %p)\n", r, pic->age, pic->type, pic->data[0]);
+            av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed (%d %d %d %p)\n", r, pic->age, pic->type, pic->data[0]);
             return -1;
         }
 
@@ -913,7 +913,7 @@ int MPV_encode_init(AVCodecContext *avctx)
     s->width = avctx->width;
     s->height = avctx->height;
     if(avctx->gop_size > 600){
-	av_log(avctx, AV_LOG_ERROR, "Warning keyframe interval too large! reducing it ...\n");
+        av_log(avctx, AV_LOG_ERROR, "Warning keyframe interval too large! reducing it ...\n");
         avctx->gop_size=600;
     }
     s->gop_size = avctx->gop_size;
@@ -1120,7 +1120,7 @@ int MPV_encode_init(AVCodecContext *avctx)
         s->out_format = FMT_MJPEG;
         s->intra_only = 1; /* force intra only for jpeg */
         s->mjpeg_write_tables = avctx->codec->id != CODEC_ID_JPEGLS;
-	s->mjpeg_data_only_frames = 0; /* write all the needed headers */
+        s->mjpeg_data_only_frames = 0; /* write all the needed headers */
         s->mjpeg_vsample[0] = 1<<chroma_v_shift;
         s->mjpeg_vsample[1] = 1;
         s->mjpeg_vsample[2] = 1;
@@ -1143,24 +1143,24 @@ int MPV_encode_init(AVCodecContext *avctx)
             return -1;
         }
         s->out_format = FMT_H263;
-	s->obmc= (avctx->flags & CODEC_FLAG_OBMC) ? 1:0;
+        s->obmc= (avctx->flags & CODEC_FLAG_OBMC) ? 1:0;
         avctx->delay=0;
         s->low_delay=1;
         break;
     case CODEC_ID_H263P:
         s->out_format = FMT_H263;
         s->h263_plus = 1;
-	/* Fx */
+        /* Fx */
         s->umvplus = (avctx->flags & CODEC_FLAG_H263P_UMV) ? 1:0;
-	s->h263_aic= (avctx->flags & CODEC_FLAG_H263P_AIC) ? 1:0;
-	s->modified_quant= s->h263_aic;
-	s->alt_inter_vlc= (avctx->flags & CODEC_FLAG_H263P_AIV) ? 1:0;
-	s->obmc= (avctx->flags & CODEC_FLAG_OBMC) ? 1:0;
-	s->loop_filter= (avctx->flags & CODEC_FLAG_LOOP_FILTER) ? 1:0;
-	s->unrestricted_mv= s->obmc || s->loop_filter || s->umvplus;
+        s->h263_aic= (avctx->flags & CODEC_FLAG_H263P_AIC) ? 1:0;
+        s->modified_quant= s->h263_aic;
+        s->alt_inter_vlc= (avctx->flags & CODEC_FLAG_H263P_AIV) ? 1:0;
+        s->obmc= (avctx->flags & CODEC_FLAG_OBMC) ? 1:0;
+        s->loop_filter= (avctx->flags & CODEC_FLAG_LOOP_FILTER) ? 1:0;
+        s->unrestricted_mv= s->obmc || s->loop_filter || s->umvplus;
         s->h263_slice_structured= (s->flags & CODEC_FLAG_H263P_SLICE_STRUCT) ? 1:0;
 
-	/* /Fx */
+        /* /Fx */
         /* These are just to be sure */
         avctx->delay=0;
         s->low_delay=1;
@@ -2473,7 +2473,7 @@ static inline void gmc1_motion(MpegEncContext *s,
 
         dxy= ((motion_x>>3)&1) | ((motion_y>>2)&2);
         if (s->no_rounding){
-	    s->dsp.put_no_rnd_pixels_tab[0][dxy](dest_y, ptr, linesize, 16);
+            s->dsp.put_no_rnd_pixels_tab[0][dxy](dest_y, ptr, linesize, 16);
         }else{
             s->dsp.put_pixels_tab       [0][dxy](dest_y, ptr, linesize, 16);
         }
@@ -4148,7 +4148,7 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
             }
         }
 
-	s->dsp.get_pixels(s->block[0], ptr_y                 , wrap_y);
+        s->dsp.get_pixels(s->block[0], ptr_y                 , wrap_y);
         s->dsp.get_pixels(s->block[1], ptr_y              + 8, wrap_y);
         s->dsp.get_pixels(s->block[2], ptr_y + dct_offset    , wrap_y);
         s->dsp.get_pixels(s->block[3], ptr_y + dct_offset + 8, wrap_y);
@@ -4157,7 +4157,7 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
             skip_dct[4]= 1;
             skip_dct[5]= 1;
         }else{
-	    s->dsp.get_pixels(s->block[4], ptr_cb, wrap_c);
+            s->dsp.get_pixels(s->block[4], ptr_cb, wrap_c);
             s->dsp.get_pixels(s->block[5], ptr_cr, wrap_c);
         }
     }else{
@@ -4170,7 +4170,7 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
         dest_cr = s->dest[2];
 
         if ((!s->no_rounding) || s->pict_type==B_TYPE){
-	    op_pix = s->dsp.put_pixels_tab;
+            op_pix = s->dsp.put_pixels_tab;
             op_qpix= s->dsp.put_qpel_pixels_tab;
         }else{
             op_pix = s->dsp.put_no_rnd_pixels_tab;
@@ -4208,7 +4208,7 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
             }
         }
 
-	s->dsp.diff_pixels(s->block[0], ptr_y                 , dest_y                 , wrap_y);
+        s->dsp.diff_pixels(s->block[0], ptr_y                 , dest_y                 , wrap_y);
         s->dsp.diff_pixels(s->block[1], ptr_y              + 8, dest_y              + 8, wrap_y);
         s->dsp.diff_pixels(s->block[2], ptr_y + dct_offset    , dest_y + dct_offset    , wrap_y);
         s->dsp.diff_pixels(s->block[3], ptr_y + dct_offset + 8, dest_y + dct_offset + 8, wrap_y);
@@ -4223,7 +4223,7 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
         /* pre quantization */
         if(s->current_picture.mc_mb_var[s->mb_stride*mb_y+ mb_x]<2*s->qscale*s->qscale){
             //FIXME optimize
-	    if(s->dsp.sad[1](NULL, ptr_y               , dest_y               , wrap_y, 8) < 20*s->qscale) skip_dct[0]= 1;
+            if(s->dsp.sad[1](NULL, ptr_y               , dest_y               , wrap_y, 8) < 20*s->qscale) skip_dct[0]= 1;
             if(s->dsp.sad[1](NULL, ptr_y            + 8, dest_y            + 8, wrap_y, 8) < 20*s->qscale) skip_dct[1]= 1;
             if(s->dsp.sad[1](NULL, ptr_y +dct_offset   , dest_y +dct_offset   , wrap_y, 8) < 20*s->qscale) skip_dct[2]= 1;
             if(s->dsp.sad[1](NULL, ptr_y +dct_offset+ 8, dest_y +dct_offset+ 8, wrap_y, 8) < 20*s->qscale) skip_dct[3]= 1;
@@ -6265,7 +6265,7 @@ static int dct_quantize_c(MpegEncContext *s,
 
     /* we need this permutation so that we correct the IDCT, we only permute the !=0 elements */
     if (s->dsp.idct_permutation_type != FF_NO_IDCT_PERM)
-	ff_block_permute(block, s->dsp.idct_permutation, scantable, last_non_zero);
+        ff_block_permute(block, s->dsp.idct_permutation, scantable, last_non_zero);
 
     return last_non_zero;
 }

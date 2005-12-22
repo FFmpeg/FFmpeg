@@ -748,7 +748,7 @@ static void encode_frame(MpegAudioContext *s,
 }
 
 static int MPA_encode_frame(AVCodecContext *avctx,
-			    unsigned char *frame, int buf_size, void *data)
+                            unsigned char *frame, int buf_size, void *data)
 {
     MpegAudioContext *s = avctx->priv_data;
     short *samples = data;

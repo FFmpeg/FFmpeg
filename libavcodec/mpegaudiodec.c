@@ -64,7 +64,7 @@ static always_inline int MULH(int a, int b){
 struct GranuleDef;
 
 typedef struct MPADecodeContext {
-    uint8_t inbuf1[2][MPA_MAX_CODED_FRAME_SIZE + BACKSTEP_SIZE];	/* input buffer */
+    uint8_t inbuf1[2][MPA_MAX_CODED_FRAME_SIZE + BACKSTEP_SIZE];        /* input buffer */
     int inbuf_index;
     uint8_t *inbuf_ptr, *inbuf;
     int frame_size;
@@ -340,13 +340,13 @@ static int decode_init(AVCodecContext * avctx)
                     scale_factor_mult[i][2]);
         }
 
-	ff_mpa_synth_init(window);
+        ff_mpa_synth_init(window);
 
         /* huffman decode tables */
         huff_code_table[0] = NULL;
         for(i=1;i<16;i++) {
             const HuffTable *h = &mpa_huff_tables[i];
-	    int xsize, x, y;
+            int xsize, x, y;
             unsigned int n;
             uint8_t *code_table;
 
@@ -378,11 +378,11 @@ static int decode_init(AVCodecContext * avctx)
             band_index_long[i][22] = k;
         }
 
-	/* compute n ^ (4/3) and store it in mantissa/exp format */
-	table_4_3_exp= av_mallocz_static(TABLE_4_3_SIZE * sizeof(table_4_3_exp[0]));
+        /* compute n ^ (4/3) and store it in mantissa/exp format */
+        table_4_3_exp= av_mallocz_static(TABLE_4_3_SIZE * sizeof(table_4_3_exp[0]));
         if(!table_4_3_exp)
-	    return -1;
-	table_4_3_value= av_mallocz_static(TABLE_4_3_SIZE * sizeof(table_4_3_value[0]));
+            return -1;
+        table_4_3_value= av_mallocz_static(TABLE_4_3_SIZE * sizeof(table_4_3_value[0]));
         if(!table_4_3_value)
             return -1;
 
@@ -844,7 +844,7 @@ void ff_mpa_synth_init(MPA_INT *window)
    32 samples. */
 /* XXX: optimize by avoiding ring buffer usage */
 void ff_mpa_synth_filter(MPA_INT *synth_buf_ptr, int *synth_buf_offset,
-			 MPA_INT *window, int *dither_state,
+                         MPA_INT *window, int *dither_state,
                          OUT_INT *samples, int incr,
                          int32_t sb_samples[SBLIMIT])
 {
@@ -2440,8 +2440,8 @@ static int mp_decode_frame(MPADecodeContext *s,
         samples_ptr = samples + ch;
         for(i=0;i<nb_frames;i++) {
             ff_mpa_synth_filter(s->synth_buf[ch], &(s->synth_buf_offset[ch]),
-			 window, &s->dither_state,
-			 samples_ptr, s->nb_channels,
+                         window, &s->dither_state,
+                         samples_ptr, s->nb_channels,
                          s->sb_samples[ch][i]);
             samples_ptr += 32 * s->nb_channels;
         }
@@ -2453,8 +2453,8 @@ static int mp_decode_frame(MPADecodeContext *s,
 }
 
 static int decode_frame(AVCodecContext * avctx,
-			void *data, int *data_size,
-			uint8_t * buf, int buf_size)
+                        void *data, int *data_size,
+                        uint8_t * buf, int buf_size)
 {
     MPADecodeContext *s = avctx->priv_data;
     uint32_t header;
@@ -2464,8 +2464,8 @@ static int decode_frame(AVCodecContext * avctx,
 
     buf_ptr = buf;
     while (buf_size > 0) {
-	len = s->inbuf_ptr - s->inbuf;
-	if (s->frame_size == 0) {
+        len = s->inbuf_ptr - s->inbuf;
+        if (s->frame_size == 0) {
             /* special case for next header for first frame in free
                format case (XXX: find a simpler method) */
             if (s->free_format_next_header != 0) {
@@ -2477,34 +2477,34 @@ static int decode_frame(AVCodecContext * avctx,
                 s->free_format_next_header = 0;
                 goto got_header;
             }
-	    /* no header seen : find one. We need at least HEADER_SIZE
+            /* no header seen : find one. We need at least HEADER_SIZE
                bytes to parse it */
-	    len = HEADER_SIZE - len;
-	    if (len > buf_size)
-		len = buf_size;
-	    if (len > 0) {
-		memcpy(s->inbuf_ptr, buf_ptr, len);
-		buf_ptr += len;
-		buf_size -= len;
-		s->inbuf_ptr += len;
-	    }
-	    if ((s->inbuf_ptr - s->inbuf) >= HEADER_SIZE) {
+            len = HEADER_SIZE - len;
+            if (len > buf_size)
+                len = buf_size;
+            if (len > 0) {
+                memcpy(s->inbuf_ptr, buf_ptr, len);
+                buf_ptr += len;
+                buf_size -= len;
+                s->inbuf_ptr += len;
+            }
+            if ((s->inbuf_ptr - s->inbuf) >= HEADER_SIZE) {
             got_header:
-		header = (s->inbuf[0] << 24) | (s->inbuf[1] << 16) |
-		    (s->inbuf[2] << 8) | s->inbuf[3];
+                header = (s->inbuf[0] << 24) | (s->inbuf[1] << 16) |
+                    (s->inbuf[2] << 8) | s->inbuf[3];
 
-		if (ff_mpa_check_header(header) < 0) {
-		    /* no sync found : move by one byte (inefficient, but simple!) */
-		    memmove(s->inbuf, s->inbuf + 1, s->inbuf_ptr - s->inbuf - 1);
-		    s->inbuf_ptr--;
+                if (ff_mpa_check_header(header) < 0) {
+                    /* no sync found : move by one byte (inefficient, but simple!) */
+                    memmove(s->inbuf, s->inbuf + 1, s->inbuf_ptr - s->inbuf - 1);
+                    s->inbuf_ptr--;
                     dprintf("skip %x\n", header);
                     /* reset free format frame size to give a chance
                        to get a new bitrate */
                     s->free_format_frame_size = 0;
-		} else {
-		    if (decode_header(s, header) == 1) {
+                } else {
+                    if (decode_header(s, header) == 1) {
                         /* free format: prepare to compute frame size */
-			s->frame_size = -1;
+                        s->frame_size = -1;
                     }
                     /* update codec info */
                     avctx->sample_rate = s->sample_rate;
@@ -2525,18 +2525,18 @@ static int decode_frame(AVCodecContext * avctx,
                             avctx->frame_size = 1152;
                         break;
                     }
-		}
-	    }
+                }
+            }
         } else if (s->frame_size == -1) {
             /* free format : find next sync to compute frame size */
-	    len = MPA_MAX_CODED_FRAME_SIZE - len;
-	    if (len > buf_size)
-		len = buf_size;
+            len = MPA_MAX_CODED_FRAME_SIZE - len;
+            if (len > buf_size)
+                len = buf_size;
             if (len == 0) {
-		/* frame too long: resync */
+                /* frame too long: resync */
                 s->frame_size = 0;
-		memmove(s->inbuf, s->inbuf + 1, s->inbuf_ptr - s->inbuf - 1);
-		s->inbuf_ptr--;
+                memmove(s->inbuf, s->inbuf + 1, s->inbuf_ptr - s->inbuf - 1);
+                s->inbuf_ptr--;
             } else {
                 uint8_t *p, *pend;
                 uint32_t header1;
@@ -2580,17 +2580,17 @@ static int decode_frame(AVCodecContext * avctx,
                 s->inbuf_ptr += len;
                 buf_size -= len;
             }
-	} else if (len < s->frame_size) {
+        } else if (len < s->frame_size) {
             if (s->frame_size > MPA_MAX_CODED_FRAME_SIZE)
                 s->frame_size = MPA_MAX_CODED_FRAME_SIZE;
-	    len = s->frame_size - len;
-	    if (len > buf_size)
-		len = buf_size;
-	    memcpy(s->inbuf_ptr, buf_ptr, len);
-	    buf_ptr += len;
-	    s->inbuf_ptr += len;
-	    buf_size -= len;
-	}
+            len = s->frame_size - len;
+            if (len > buf_size)
+                len = buf_size;
+            memcpy(s->inbuf_ptr, buf_ptr, len);
+            buf_ptr += len;
+            s->inbuf_ptr += len;
+            buf_size -= len;
+        }
     next_data:
         if (s->frame_size > 0 &&
             (s->inbuf_ptr - s->inbuf) >= s->frame_size) {
@@ -2601,22 +2601,22 @@ static int decode_frame(AVCodecContext * avctx,
             } else {
                 out_size = mp_decode_frame(s, out_samples);
             }
-	    s->inbuf_ptr = s->inbuf;
-	    s->frame_size = 0;
+            s->inbuf_ptr = s->inbuf;
+            s->frame_size = 0;
             if(out_size>=0)
-	        *data_size = out_size;
+                *data_size = out_size;
             else
                 av_log(avctx, AV_LOG_DEBUG, "Error while decoding mpeg audio frame\n"); //FIXME return -1 / but also return the number of bytes consumed
-	    break;
-	}
+            break;
+        }
     }
     return buf_ptr - buf;
 }
 
 
 static int decode_frame_adu(AVCodecContext * avctx,
-			void *data, int *data_size,
-			uint8_t * buf, int buf_size)
+                        void *data, int *data_size,
+                        uint8_t * buf, int buf_size)
 {
     MPADecodeContext *s = avctx->priv_data;
     uint32_t header;
@@ -2747,8 +2747,8 @@ static int decode_close_mp3on4(AVCodecContext * avctx)
 
 
 static int decode_frame_mp3on4(AVCodecContext * avctx,
-			void *data, int *data_size,
-			uint8_t * buf, int buf_size)
+                        void *data, int *data_size,
+                        uint8_t * buf, int buf_size)
 {
     MP3On4DecodeContext *s = avctx->priv_data;
     MPADecodeContext *m;

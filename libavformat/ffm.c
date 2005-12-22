@@ -159,7 +159,7 @@ static int ffm_write_header(AVFormatContext *s)
         put_be32(pb, codec->codec_id);
         put_byte(pb, codec->codec_type);
         put_be32(pb, codec->bit_rate);
-	put_be32(pb, st->quality);
+        put_be32(pb, st->quality);
         put_be32(pb, codec->flags);
         put_be32(pb, codec->flags2);
         put_be32(pb, codec->debug);

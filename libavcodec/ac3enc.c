@@ -337,8 +337,8 @@ static void fft_init(int ln)
 /* do a 2^n point complex fft on 2^ln points. */
 static void fft(IComplex *z, int ln)
 {
-    int	j, l, np, np2;
-    int	nblocks, nloops;
+    int        j, l, np, np2;
+    int        nblocks, nloops;
     register IComplex *p,*q;
     int tmp_re, tmp_im;
 
@@ -472,7 +472,7 @@ static void compute_exp_strategy(uint8_t exp_strategy[NB_BLOCKS][AC3_MAX_CHANNEL
             exp_strategy[i][ch] = EXP_REUSE;
     }
     if (is_lfe)
-	return;
+        return;
 
     /* now select the encoding strategy type : if exponents are often
        recoded, we use a coarse encoding */
@@ -493,7 +493,7 @@ static void compute_exp_strategy(uint8_t exp_strategy[NB_BLOCKS][AC3_MAX_CHANNEL
             exp_strategy[i][ch] = EXP_D15;
             break;
         }
-	i = j;
+        i = j;
     }
 }
 
@@ -553,9 +553,9 @@ static int encode_exp(uint8_t encoded_exp[N/2],
     /* Decrease the delta between each groups to within 2
      * so that they can be differentially encoded */
     for (i=1;i<=nb_groups;i++)
-	exp1[i] = FFMIN(exp1[i], exp1[i-1] + 2);
+        exp1[i] = FFMIN(exp1[i], exp1[i-1] + 2);
     for (i=nb_groups-1;i>=0;i--)
-	exp1[i] = FFMIN(exp1[i], exp1[i+1] + 2);
+        exp1[i] = FFMIN(exp1[i], exp1[i+1] + 2);
 
     /* now we have the exponent values the decoder will see */
     encoded_exp[0] = exp1[0];
@@ -708,8 +708,8 @@ static int compute_bit_allocation(AC3EncodeContext *s,
             if(i==0) frame_bits += 4;
         }
         frame_bits += 2 * s->nb_channels; /* chexpstr[2] * c */
-	if (s->lfe)
-	    frame_bits++; /* lfeexpstr */
+        if (s->lfe)
+            frame_bits++; /* lfeexpstr */
         for(ch=0;ch<s->nb_channels;ch++) {
             if (exp_strategy[i][ch] != EXP_REUSE)
                 frame_bits += 6 + 2; /* chbwcod[6], gainrng[2] */
@@ -736,11 +736,11 @@ static int compute_bit_allocation(AC3EncodeContext *s,
 
     csnroffst = s->csnroffst;
     while (csnroffst >= 0 &&
-	   bit_alloc(s, bap, encoded_exp, exp_strategy, frame_bits, csnroffst, 0) < 0)
-	csnroffst -= SNR_INC1;
+           bit_alloc(s, bap, encoded_exp, exp_strategy, frame_bits, csnroffst, 0) < 0)
+        csnroffst -= SNR_INC1;
     if (csnroffst < 0) {
-	av_log(NULL, AV_LOG_ERROR, "Yack, Error !!!\n");
-	return -1;
+        av_log(NULL, AV_LOG_ERROR, "Yack, Error !!!\n");
+        return -1;
     }
     while ((csnroffst + SNR_INC1) <= 63 &&
            bit_alloc(s, bap1, encoded_exp, exp_strategy, frame_bits,
@@ -815,19 +815,19 @@ static int AC3_encode_init(AVCodecContext *avctx)
     int i, j, ch;
     float alpha;
     static const uint8_t acmod_defs[6] = {
-	0x01, /* C */
-	0x02, /* L R */
-	0x03, /* L C R */
-	0x06, /* L R SL SR */
-	0x07, /* L C R SL SR */
-	0x07, /* L C R SL SR (+LFE) */
+        0x01, /* C */
+        0x02, /* L R */
+        0x03, /* L C R */
+        0x06, /* L R SL SR */
+        0x07, /* L C R SL SR */
+        0x07, /* L C R SL SR (+LFE) */
     };
 
     avctx->frame_size = AC3_FRAME_SIZE;
 
     /* number of channels */
     if (channels < 1 || channels > 6)
-	return -1;
+        return -1;
     s->acmod = acmod_defs[channels - 1];
     s->lfe = (channels == 6) ? 1 : 0;
     s->nb_all_channels = channels;
@@ -871,7 +871,7 @@ static int AC3_encode_init(AVCodecContext *avctx)
         s->nb_coefs[ch] = ((s->chbwcod[ch] + 12) * 3) + 37;
     }
     if (s->lfe) {
-	s->nb_coefs[s->lfe_channel] = 7; /* fixed */
+        s->nb_coefs[s->lfe_channel] = 7; /* fixed */
     }
     /* initial snr offset */
     s->csnroffst = 40;
@@ -907,9 +907,9 @@ static void output_frame_header(AC3EncodeContext *s, unsigned char *frame)
     put_bits(&s->pb, 3, s->bsmod);
     put_bits(&s->pb, 3, s->acmod);
     if ((s->acmod & 0x01) && s->acmod != 0x01)
-	put_bits(&s->pb, 2, 1); /* XXX -4.5 dB */
+        put_bits(&s->pb, 2, 1); /* XXX -4.5 dB */
     if (s->acmod & 0x04)
-	put_bits(&s->pb, 2, 1); /* XXX -6 dB */
+        put_bits(&s->pb, 2, 1); /* XXX -6 dB */
     if (s->acmod == 0x02)
         put_bits(&s->pb, 2, 0); /* surround not indicated */
     put_bits(&s->pb, 1, s->lfe); /* LFE */
@@ -995,20 +995,20 @@ static void output_audio_block(AC3EncodeContext *s,
 
     if (s->acmod == 2)
       {
-	if(block_num==0)
-	  {
-	    /* first block must define rematrixing (rematstr)  */
-	    put_bits(&s->pb, 1, 1);
+        if(block_num==0)
+          {
+            /* first block must define rematrixing (rematstr)  */
+            put_bits(&s->pb, 1, 1);
 
-	    /* dummy rematrixing rematflg(1:4)=0 */
-	    for (rbnd=0;rbnd<4;rbnd++)
-	      put_bits(&s->pb, 1, 0);
-	  }
-	else
-	  {
-	    /* no matrixing (but should be used in the future) */
-	    put_bits(&s->pb, 1, 0);
-	  }
+            /* dummy rematrixing rematflg(1:4)=0 */
+            for (rbnd=0;rbnd<4;rbnd++)
+              put_bits(&s->pb, 1, 0);
+          }
+        else
+          {
+            /* no matrixing (but should be used in the future) */
+            put_bits(&s->pb, 1, 0);
+          }
       }
 
 #if defined(DEBUG)
@@ -1023,7 +1023,7 @@ static void output_audio_block(AC3EncodeContext *s,
     }
 
     if (s->lfe) {
-	put_bits(&s->pb, 1, exp_strategy[s->lfe_channel]);
+        put_bits(&s->pb, 1, exp_strategy[s->lfe_channel]);
     }
 
     for(ch=0;ch<s->nb_channels;ch++) {
@@ -1047,7 +1047,7 @@ static void output_audio_block(AC3EncodeContext *s,
             group_size = 4;
             break;
         }
-	nb_groups = (s->nb_coefs[ch] + (group_size * 3) - 4) / (3 * group_size);
+        nb_groups = (s->nb_coefs[ch] + (group_size * 3) - 4) / (3 * group_size);
         p = encoded_exp[ch];
 
         /* first exponent */
@@ -1075,8 +1075,8 @@ static void output_audio_block(AC3EncodeContext *s,
             put_bits(&s->pb, 7, ((delta0 * 5 + delta1) * 5) + delta2);
         }
 
-	if (ch != s->lfe_channel)
-	    put_bits(&s->pb, 2, 0); /* no gain range info */
+        if (ch != s->lfe_channel)
+            put_bits(&s->pb, 2, 0); /* no gain range info */
     }
 
     /* bit allocation info */
