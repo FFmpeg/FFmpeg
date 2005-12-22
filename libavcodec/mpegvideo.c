@@ -5300,7 +5300,15 @@ static void encode_picture(MpegEncContext *s, int picture_number)
 
     if(s->flags & CODEC_FLAG_PASS2)
         estimate_qp(s, 1);
+    else if(!(s->flags & CODEC_FLAG_QSCALE)){
+        RateControlContext *rcc= &s->rc_context;
 
+        if(s->pict_type==B_TYPE)
+            s->lambda= rcc->last_qscale_for[s->pict_type];
+        else
+            s->lambda= rcc->last_qscale_for[rcc->last_non_b_pict_type];
+        update_qscale(s);
+    }
 
     s->mb_intra=0; //for the rate distortion & bit compare functions
     for(i=1; i<s->avctx->thread_count; i++){
