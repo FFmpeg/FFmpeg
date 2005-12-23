@@ -1617,6 +1617,7 @@ static inline int check_bidir_mv(MpegEncContext * s,
 /* refine the bidir vectors in hq mode and return the score in both lq & hq mode*/
 static inline int bidir_refine(MpegEncContext * s, int mb_x, int mb_y)
 {
+    MotionEstContext * const c= &s->me;
     const int mot_stride = s->mb_stride;
     const int xy = mb_y *mot_stride + mb_x;
     int fbmin;
@@ -1628,8 +1629,13 @@ static inline int bidir_refine(MpegEncContext * s, int mb_x, int mb_y)
     int motion_fy= s->b_bidir_forw_mv_table[xy][1]= s->b_forw_mv_table[xy][1];
     int motion_bx= s->b_bidir_back_mv_table[xy][0]= s->b_back_mv_table[xy][0];
     int motion_by= s->b_bidir_back_mv_table[xy][1]= s->b_back_mv_table[xy][1];
-
-    //FIXME do refinement and add flag
+    const int flags= c->sub_flags;
+    const int qpel= flags&FLAG_QPEL;
+    const int shift= 1+qpel;
+    const int xmin= c->xmin<<shift;
+    const int ymin= c->ymin<<shift;
+    const int xmax= c->xmax<<shift;
+    const int ymax= c->ymax<<shift;
 
     fbmin= check_bidir_mv(s, motion_fx, motion_fy,
                           motion_bx, motion_by,
@@ -1637,7 +1643,61 @@ static inline int bidir_refine(MpegEncContext * s, int mb_x, int mb_y)
                           pred_bx, pred_by,
                           0, 16);
 
-   return fbmin;
+    if(s->avctx->bidir_refine){
+        int score, end;
+#define CHECK_BIDIR(fx,fy,bx,by)\
+    score= check_bidir_mv(s, motion_fx+fx, motion_fy+fy, motion_bx+bx, motion_by+by, pred_fx, pred_fy, pred_bx, pred_by, 0, 16);\
+    if(score < fbmin){\
+        fbmin= score;\
+        motion_fx+=fx;\
+        motion_fy+=fy;\
+        motion_bx+=bx;\
+        motion_by+=by;\
+        end=0;\
+    }
+#define CHECK_BIDIR2(a,b,c,d)\
+CHECK_BIDIR(a,b,c,d)\
+CHECK_BIDIR(-a,-b,-c,-d)
+
+#define CHECK_BIDIRR(a,b,c,d)\
+CHECK_BIDIR2(a,b,c,d)\
+CHECK_BIDIR2(b,c,d,a)\
+CHECK_BIDIR2(c,d,a,b)\
+CHECK_BIDIR2(d,a,b,c)
+
+        do{
+            end=1;
+
+            if(   motion_fx >= xmax || motion_bx >= xmax || motion_fx <= xmin || motion_bx <= xmin
+               || motion_fy >= ymax || motion_by >= ymax || motion_fy <= ymin || motion_by <= ymin)
+                break;
+
+            CHECK_BIDIRR( 0, 0, 0, 1)
+            if(s->avctx->bidir_refine > 1){
+                CHECK_BIDIRR( 0, 0, 1, 1)
+                CHECK_BIDIR2( 0, 1, 0, 1)
+                CHECK_BIDIR2( 1, 0, 1, 0)
+                CHECK_BIDIRR( 0, 0,-1, 1)
+                CHECK_BIDIR2( 0,-1, 0, 1)
+                CHECK_BIDIR2(-1, 0, 1, 0)
+                if(s->avctx->bidir_refine > 2){
+                    CHECK_BIDIRR( 0, 1, 1, 1)
+                    CHECK_BIDIRR( 0,-1, 1, 1)
+                    CHECK_BIDIRR( 0, 1,-1, 1)
+                    CHECK_BIDIRR( 0, 1, 1,-1)
+                    if(s->avctx->bidir_refine > 3){
+                        CHECK_BIDIR2( 1, 1, 1, 1)
+                        CHECK_BIDIRR( 1, 1, 1,-1)
+                        CHECK_BIDIR2( 1, 1,-1,-1)
+                        CHECK_BIDIR2( 1,-1,-1, 1)
+                        CHECK_BIDIR2( 1,-1, 1,-1)
+                    }
+                }
+            }
+        }while(!end);
+    }
+
+    return fbmin;
 }
 
 static inline int direct_search(MpegEncContext * s, int mb_x, int mb_y)

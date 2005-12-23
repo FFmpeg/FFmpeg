@@ -707,6 +707,7 @@ static AVOption options[]={
 {"mb_lmin", NULL, OFFSET(mb_lmin), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX, V|E},
 {"mb_lmax", NULL, OFFSET(mb_lmax), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX, V|E},
 {"me_penalty_compensation", NULL, OFFSET(me_penalty_compensation), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX, V|E},
+{"bidir_refine", NULL, OFFSET(bidir_refine), FF_OPT_TYPE_INT, DEFAULT, 0, 4, V|E},
 {NULL},
 };
 

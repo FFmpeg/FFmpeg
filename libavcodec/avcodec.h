@@ -1862,6 +1862,13 @@ typedef struct AVCodecContext {
      * - decoding: set by user.
      */
     enum AVDiscard skip_frame;
+
+    /**
+     *
+     * - encoding: set by user.
+     * - decoding: unused
+     */
+    int bidir_refine;
 } AVCodecContext;
 
 /**
