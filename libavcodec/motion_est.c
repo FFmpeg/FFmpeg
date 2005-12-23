@@ -1646,14 +1646,17 @@ static inline int bidir_refine(MpegEncContext * s, int mb_x, int mb_y)
     if(s->avctx->bidir_refine){
         int score, end;
 #define CHECK_BIDIR(fx,fy,bx,by)\
-    score= check_bidir_mv(s, motion_fx+fx, motion_fy+fy, motion_bx+bx, motion_by+by, pred_fx, pred_fy, pred_bx, pred_by, 0, 16);\
-    if(score < fbmin){\
-        fbmin= score;\
-        motion_fx+=fx;\
-        motion_fy+=fy;\
-        motion_bx+=bx;\
-        motion_by+=by;\
-        end=0;\
+    if(  (fx<=0 || motion_fx+fx<=xmax) && (fy<=0 || motion_fy+fy<=ymax) && (bx<=0 || motion_bx+bx<=xmax) && (by<=0 || motion_by+by<=ymax)\
+       &&(fx>=0 || motion_fx+fx>=xmin) && (fy>=0 || motion_fy+fy>=ymin) && (bx>=0 || motion_bx+bx>=xmin) && (by>=0 || motion_by+by>=ymin)){\
+        score= check_bidir_mv(s, motion_fx+fx, motion_fy+fy, motion_bx+bx, motion_by+by, pred_fx, pred_fy, pred_bx, pred_by, 0, 16);\
+        if(score < fbmin){\
+            fbmin= score;\
+            motion_fx+=fx;\
+            motion_fy+=fy;\
+            motion_bx+=bx;\
+            motion_by+=by;\
+            end=0;\
+        }\
     }
 #define CHECK_BIDIR2(a,b,c,d)\
 CHECK_BIDIR(a,b,c,d)\
@@ -1667,10 +1670,6 @@ CHECK_BIDIR2(d,a,b,c)
 
         do{
             end=1;
-
-            if(   motion_fx >= xmax || motion_bx >= xmax || motion_fx <= xmin || motion_bx <= xmin
-               || motion_fy >= ymax || motion_by >= ymax || motion_fy <= ymin || motion_by <= ymin)
-                break;
 
             CHECK_BIDIRR( 0, 0, 0, 1)
             if(s->avctx->bidir_refine > 1){
