@@ -15,13 +15,13 @@ stddev:  7.69 PSNR:30.40 bytes:7602176
 754366 ./data/a-mpeg2i.mpg
 ddf889858529d09c8fe31c701deacd16 *./data/out.yuv
 stddev:  7.71 PSNR:30.37 bytes:7602176
-781531fff6e20c986a3bcc189fc34e98 *./data/a-mpeg2thread.mpg
-816506 ./data/a-mpeg2thread.mpg
-9db3aca554bb8ee337a109a3b8629575 *./data/out.yuv
+d0830d912bc594eeec4d3ec60d727d15 *./data/a-mpeg2thread.mpg
+816727 ./data/a-mpeg2thread.mpg
+664c5ac9185522238813c476b7b0570a *./data/out.yuv
 stddev:  7.64 PSNR:30.45 bytes:7602176
-6e51bb9da148f9128fde429089349c43 *./data/a-mpeg2reuse.mpg
-2115703 ./data/a-mpeg2reuse.mpg
-526e6e6818296a1b63d91fc165e0bda8 *./data/out.yuv
+d948e29c0be5a78b75c0c7f3ecd8d29d *./data/a-mpeg2reuse.mpg
+2114000 ./data/a-mpeg2reuse.mpg
+55e78a12330b374db6910447db78ad46 *./data/out.yuv
 stddev:  7.68 PSNR:30.41 bytes:7602176
 09086e7b020e9425a8f7e05372dbcfcd *./data/a-msmpeg4v2.avi
 642666 ./data/a-msmpeg4v2.avi
@@ -59,9 +59,9 @@ stddev:  7.99 PSNR:30.06 bytes:7602176
 7932708 ./data/a-huffyuv.avi
 799d3db687f6cdd7a837ec156efc171f *./data/out.yuv
 stddev:  0.00 PSNR:99.99 bytes:7602176
-fc4c71c330fd3f95e05c398c6a7584de *./data/a-mpeg4-rc.avi
-824306 ./data/a-mpeg4-rc.avi
-fb0a9af6dd83b2f1a3ba752b848038f7 *./data/out.yuv
+cd541209c9ef0c1824ac340d5087f0e0 *./data/a-mpeg4-rc.avi
+824336 ./data/a-mpeg4-rc.avi
+6656c0be50eba458b5ab91bfe6bf3077 *./data/out.yuv
 stddev: 10.41 PSNR:27.77 bytes:7602176
 81078d7852dfd6041ff17b5dc8ed0ffc *./data/a-mpeg4-adv.avi
 600240 ./data/a-mpeg4-adv.avi
@@ -83,9 +83,9 @@ adf36cbca712f8202d474cf1f99bdcd0 *./data/a-mpeg4-nr.avi
 689772 ./data/a-mpeg4-nr.avi
 79f4e8263e40822c0cbf35725f375b24 *./data/out.yuv
 stddev:  7.03 PSNR:31.18 bytes:7602176
-6aebee12c0ff95756e11d32f305d7e11 *./data/a-mpeg1b.mpg
-1037657 ./data/a-mpeg1b.mpg
-09a77de112e144c562bc1398b111b61b *./data/out.yuv
+9060d865a32d5c760ab51df013c0aece *./data/a-mpeg1b.mpg
+1037617 ./data/a-mpeg1b.mpg
+cb5b972265599c17f01b96737947b482 *./data/out.yuv
 stddev:  6.35 PSNR:32.06 bytes:7602176
 f7562207c0e7490e570c91c2900b73f6 *./data/a-mjpeg.avi
 1566544 ./data/a-mjpeg.avi

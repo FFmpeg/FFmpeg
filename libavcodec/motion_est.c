@@ -1561,7 +1561,8 @@ static inline int check_bidir_mv(MpegEncContext * s,
     //FIXME better f_code prediction (max mv & distance)
     //FIXME pointers
     MotionEstContext * const c= &s->me;
-    uint8_t * const mv_penalty= c->mv_penalty[s->f_code] + MAX_MV; // f_code of the prev frame
+    uint8_t * const mv_penalty_f= c->mv_penalty[s->f_code] + MAX_MV; // f_code of the prev frame
+    uint8_t * const mv_penalty_b= c->mv_penalty[s->b_code] + MAX_MV; // f_code of the prev frame
     int stride= c->stride;
     uint8_t *dest_y = c->scratchpad;
     uint8_t *ptr;
@@ -1602,8 +1603,8 @@ static inline int check_bidir_mv(MpegEncContext * s,
         s->dsp.avg_pixels_tab[size][dxy](dest_y    , ptr    , stride, h);
     }
 
-    fbmin = (mv_penalty[motion_fx-pred_fx] + mv_penalty[motion_fy-pred_fy])*c->mb_penalty_factor
-           +(mv_penalty[motion_bx-pred_bx] + mv_penalty[motion_by-pred_by])*c->mb_penalty_factor
+    fbmin = (mv_penalty_f[motion_fx-pred_fx] + mv_penalty_f[motion_fy-pred_fy])*c->mb_penalty_factor
+           +(mv_penalty_b[motion_bx-pred_bx] + mv_penalty_b[motion_by-pred_by])*c->mb_penalty_factor
            + s->dsp.mb_cmp[size](s, src_data[0], dest_y, stride, h); //FIXME new_pic
 
     if(c->avctx->mb_cmp&FF_CMP_CHROMA){
