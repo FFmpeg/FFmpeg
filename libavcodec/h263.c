@@ -1763,7 +1763,7 @@ static void init_mv_penalty_and_fcode(MpegEncContext *s)
                 if(code<33){
                     len= mvtab[code][1] + 1 + bit_size;
                 }else{
-                    len= mvtab[32][1] + 2 + bit_size;
+                    len= mvtab[32][1] + av_log2(code>>5) + 2 + bit_size;
                 }
             }
 
