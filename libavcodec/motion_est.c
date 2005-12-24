@@ -1177,7 +1177,7 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
             pic->mc_mb_var[s->mb_stride * mb_y + mb_x] = vard;
             c->mc_mb_var_sum_temp += vard;
             if (vard <= 64 || vard < varc) { //FIXME
-                c->scene_change_score+= ff_sqrt(vard) - ff_sqrt(varc);
+                c->scene_change_score+= ff_sqrt(vard<<8) - ff_sqrt(varc<<8);
             }else{
                 c->scene_change_score+= s->qscale;
             }
@@ -1268,7 +1268,7 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
 #endif
     if(mb_type){
         if (vard <= 64 || vard < varc)
-            c->scene_change_score+= ff_sqrt(vard) - ff_sqrt(varc);
+            c->scene_change_score+= ff_sqrt(vard<<8) - ff_sqrt(varc<<8);
         else
             c->scene_change_score+= s->qscale;
 
@@ -1289,7 +1289,7 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
         }
     }else if(c->avctx->mb_decision > FF_MB_DECISION_SIMPLE){
         if (vard <= 64 || vard < varc)
-            c->scene_change_score+= ff_sqrt(vard) - ff_sqrt(varc);
+            c->scene_change_score+= ff_sqrt(vard<<8) - ff_sqrt(varc<<8);
         else
             c->scene_change_score+= s->qscale;
 
@@ -1395,7 +1395,7 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
             s->current_picture.mb_type[mb_y*s->mb_stride + mb_x]= 0;
 
         if (vard <= 64 || vard < varc) { //FIXME
-            c->scene_change_score+= ff_sqrt(vard) - ff_sqrt(varc);
+            c->scene_change_score+= ff_sqrt(vard<<8) - ff_sqrt(varc<<8);
         }else{
             c->scene_change_score+= s->qscale;
         }
@@ -1828,7 +1828,7 @@ void ff_estimate_b_frame_motion(MpegEncContext * s,
             c->mb_var_sum_temp    += varc;*/
             c->mc_mb_var_sum_temp += vard;
 /*            if (vard <= 64 || vard < varc) {
-                c->scene_change_score+= ff_sqrt(vard) - ff_sqrt(varc);
+                c->scene_change_score+= ff_sqrt(vard<<8) - ff_sqrt(varc<<8);
             }else{
                 c->scene_change_score+= s->qscale;
             }*/
