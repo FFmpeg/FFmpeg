@@ -1164,26 +1164,26 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
     /* intra / predictive decision */
     pix = c->src[0][0];
     sum = s->dsp.pix_sum(pix, s->linesize);
-    varc = (s->dsp.pix_norm1(pix, s->linesize) - (((unsigned)(sum*sum))>>8) + 500 + 128)>>8;
+    varc = s->dsp.pix_norm1(pix, s->linesize) - (((unsigned)(sum*sum))>>8) + 500;
 
     pic->mb_mean[s->mb_stride * mb_y + mb_x] = (sum+128)>>8;
-    pic->mb_var [s->mb_stride * mb_y + mb_x] = varc;
-    c->mb_var_sum_temp += varc;
+    pic->mb_var [s->mb_stride * mb_y + mb_x] = (varc+128)>>8;
+    c->mb_var_sum_temp += (varc+128)>>8;
 
     if(c->avctx->me_threshold){
-        vard= (check_input_motion(s, mb_x, mb_y, 1)+128)>>8;
+        vard= check_input_motion(s, mb_x, mb_y, 1);
 
-        if(vard<c->avctx->me_threshold){
-            pic->mc_mb_var[s->mb_stride * mb_y + mb_x] = vard;
-            c->mc_mb_var_sum_temp += vard;
-            if (vard <= 64 || vard < varc) { //FIXME
-                c->scene_change_score+= ff_sqrt(vard<<8) - ff_sqrt(varc<<8);
+        if((vard+128)>>8 < c->avctx->me_threshold){
+            pic->mc_mb_var[s->mb_stride * mb_y + mb_x] = (vard+128)>>8;
+            c->mc_mb_var_sum_temp += (vard+128)>>8;
+            if (vard <= 64<<8 || vard < varc) { //FIXME
+                c->scene_change_score+= ff_sqrt(vard) - ff_sqrt(varc);
             }else{
                 c->scene_change_score+= s->qscale;
             }
             return;
         }
-        if(vard<c->avctx->mb_threshold)
+        if((vard+128)>>8 < c->avctx->mb_threshold)
             mb_type= s->mb_type[mb_x + mb_y*s->mb_stride];
     }
 
@@ -1256,19 +1256,19 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
     /* At this point (mx,my) are full-pell and the relative displacement */
     ppix = c->ref[0][0] + (my * s->linesize) + mx;
 
-    vard = (s->dsp.sse[0](NULL, pix, ppix, s->linesize, 16)+128)>>8;
+    vard = s->dsp.sse[0](NULL, pix, ppix, s->linesize, 16);
 
-    pic->mc_mb_var[s->mb_stride * mb_y + mb_x] = vard;
+    pic->mc_mb_var[s->mb_stride * mb_y + mb_x] = (vard+128)>>8;
 //    pic->mb_cmp_score[s->mb_stride * mb_y + mb_x] = dmin;
-    c->mc_mb_var_sum_temp += vard;
+    c->mc_mb_var_sum_temp += (vard+128)>>8;
 
 #if 0
     printf("varc=%4d avg_var=%4d (sum=%4d) vard=%4d mx=%2d my=%2d\n",
            varc, s->avg_mb_var, sum, vard, mx - xx, my - yy);
 #endif
     if(mb_type){
-        if (vard <= 64 || vard < varc)
-            c->scene_change_score+= ff_sqrt(vard<<8) - ff_sqrt(varc<<8);
+        if (vard <= 64<<8 || vard < varc)
+            c->scene_change_score+= ff_sqrt(vard) - ff_sqrt(varc);
         else
             c->scene_change_score+= s->qscale;
 
@@ -1288,14 +1288,14 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
             interlaced_search(s, 0, s->p_field_mv_table, s->p_field_select_table, mx, my, 1);
         }
     }else if(c->avctx->mb_decision > FF_MB_DECISION_SIMPLE){
-        if (vard <= 64 || vard < varc)
-            c->scene_change_score+= ff_sqrt(vard<<8) - ff_sqrt(varc<<8);
+        if (vard <= 64<<8 || vard < varc)
+            c->scene_change_score+= ff_sqrt(vard) - ff_sqrt(varc);
         else
             c->scene_change_score+= s->qscale;
 
-        if (vard*2 + 200 > varc)
+        if (vard*2 + 200*256 > varc)
             mb_type|= CANDIDATE_MB_TYPE_INTRA;
-        if (varc*2 + 200 > vard){
+        if (varc*2 + 200*256 > vard){
             mb_type|= CANDIDATE_MB_TYPE_INTER;
             c->sub_motion_search(s, &mx, &my, dmin, 0, 0, 0, 16);
             if(s->flags&CODEC_FLAG_MV0)
@@ -1306,7 +1306,7 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
             my <<=shift;
         }
         if((s->flags&CODEC_FLAG_4MV)
-           && !c->skip && varc>50 && vard>10){
+           && !c->skip && varc>50<<8 && vard>10<<8){
             if(h263_mv4_search(s, mx, my, shift) < INT_MAX)
                 mb_type|=CANDIDATE_MB_TYPE_INTER4V;
 
@@ -1327,7 +1327,7 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
             dmin= ff_get_mb_score(s, mx, my, 0, 0, 0, 16, 1);
 
         if((s->flags&CODEC_FLAG_4MV)
-           && !c->skip && varc>50 && vard>10){
+           && !c->skip && varc>50<<8 && vard>10<<8){
             int dmin4= h263_mv4_search(s, mx, my, shift);
             if(dmin4 < dmin){
                 mb_type= CANDIDATE_MB_TYPE_INTER4V;
@@ -1348,7 +1348,7 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
 
         /* get intra luma score */
         if((c->avctx->mb_cmp&0xFF)==FF_CMP_SSE){
-            intra_score= (varc<<8) - 500; //FIXME dont scale it down so we dont have to fix it
+            intra_score= varc - 500;
         }else{
             int mean= (sum+128)>>8;
             mean*= 0x01010101;
@@ -1394,8 +1394,8 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
         }else
             s->current_picture.mb_type[mb_y*s->mb_stride + mb_x]= 0;
 
-        if (vard <= 64 || vard < varc) { //FIXME
-            c->scene_change_score+= ff_sqrt(vard<<8) - ff_sqrt(varc<<8);
+        if (vard <= 64<<8 || vard < varc) { //FIXME
+            c->scene_change_score+= ff_sqrt(vard) - ff_sqrt(varc);
         }else{
             c->scene_change_score+= s->qscale;
         }
@@ -1815,26 +1815,26 @@ void ff_estimate_b_frame_motion(MpegEncContext * s,
 
     c->skip=0;
     if(c->avctx->me_threshold){
-        int vard= (check_input_motion(s, mb_x, mb_y, 0)+128)>>8;
+        int vard= check_input_motion(s, mb_x, mb_y, 0);
 
-        if(vard<c->avctx->me_threshold){
+        if((vard+128)>>8 < c->avctx->me_threshold){
 //            pix = c->src[0][0];
 //            sum = s->dsp.pix_sum(pix, s->linesize);
-//            varc = (s->dsp.pix_norm1(pix, s->linesize) - (((unsigned)(sum*sum))>>8) + 500 + 128)>>8;
+//            varc = s->dsp.pix_norm1(pix, s->linesize) - (((unsigned)(sum*sum))>>8) + 500;
 
-//            pic->mb_var   [s->mb_stride * mb_y + mb_x] = varc;
-             s->current_picture.mc_mb_var[s->mb_stride * mb_y + mb_x] = vard;
+//            pic->mb_var   [s->mb_stride * mb_y + mb_x] = (varc+128)>>8;
+             s->current_picture.mc_mb_var[s->mb_stride * mb_y + mb_x] = (vard+128)>>8;
 /*            pic->mb_mean  [s->mb_stride * mb_y + mb_x] = (sum+128)>>8;
-            c->mb_var_sum_temp    += varc;*/
-            c->mc_mb_var_sum_temp += vard;
-/*            if (vard <= 64 || vard < varc) {
-                c->scene_change_score+= ff_sqrt(vard<<8) - ff_sqrt(varc<<8);
+            c->mb_var_sum_temp    += (varc+128)>>8;*/
+            c->mc_mb_var_sum_temp += (vard+128)>>8;
+/*            if (vard <= 64<<8 || vard < varc) {
+                c->scene_change_score+= ff_sqrt(vard) - ff_sqrt(varc);
             }else{
                 c->scene_change_score+= s->qscale;
             }*/
             return;
         }
-        if(vard<c->avctx->mb_threshold){
+        if((vard+128)>>8 < c->avctx->mb_threshold){
             type= s->mb_type[mb_y*s->mb_stride + mb_x];
             if(type == CANDIDATE_MB_TYPE_DIRECT){
                 direct_search(s, mb_x, mb_y);
