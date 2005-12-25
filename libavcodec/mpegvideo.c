@@ -2141,6 +2141,99 @@ static int skip_check(MpegEncContext *s, Picture *p, Picture *ref){
     return 0;
 }
 
+static int estimate_best_b_count(MpegEncContext *s){
+    AVCodec *codec= avcodec_find_encoder(s->avctx->codec_id);
+    AVCodecContext *c= avcodec_alloc_context();
+    AVFrame input[FF_MAX_B_FRAMES+2];
+    const int scale= 0;
+    int i, j, out_size;
+    int outbuf_size= (s->width * s->height) >> (2*scale); //FIXME
+    uint8_t *outbuf= av_malloc(outbuf_size);
+    ImgReSampleContext *resample;
+    int64_t best_rd= INT64_MAX;
+    int best_b_count= -1;
+    const int lambda2= s->lambda2;
+
+    c->width = s->width >> scale;
+    c->height= s->height>> scale;
+    c->flags= CODEC_FLAG_QSCALE | CODEC_FLAG_PSNR | CODEC_FLAG_INPUT_PRESERVED /*| CODEC_FLAG_EMU_EDGE*/;
+    c->flags|= s->avctx->flags & CODEC_FLAG_QPEL;
+    c->mb_decision= s->avctx->mb_decision;
+    c->me_cmp= s->avctx->me_cmp;
+    c->mb_cmp= s->avctx->mb_cmp;
+    c->me_sub_cmp= s->avctx->me_sub_cmp;
+    c->pix_fmt = PIX_FMT_YUV420P;
+    c->time_base= s->avctx->time_base;
+    c->max_b_frames= s->max_b_frames;
+
+    if (avcodec_open(c, codec) < 0)
+        return -1;
+
+    resample= img_resample_init(c->width, c->height, s->width, s->height); //FIXME use sws
+
+    for(i=0; i<s->max_b_frames+2; i++){
+        int ysize= c->width*c->height;
+        int csize= (c->width/2)*(c->height/2);
+
+        avcodec_get_frame_defaults(&input[i]);
+        input[i].data[0]= av_malloc(ysize + 2*csize);
+        input[i].data[1]= input[i].data[0] + ysize;
+        input[i].data[2]= input[i].data[1] + csize;
+        input[i].linesize[0]= c->width;
+        input[i].linesize[1]=
+        input[i].linesize[2]= c->width/2;
+
+        if(!i || s->input_picture[i-1])
+            img_resample(resample, &input[i], i ? s->input_picture[i-1] : s->next_picture_ptr);
+    }
+
+    for(j=0; j<s->max_b_frames+1; j++){
+        int64_t rd=0;
+
+        if(!s->input_picture[j])
+            break;
+
+        c->error[0]= c->error[1]= c->error[2]= 0;
+
+        input[0].pict_type= I_TYPE;
+        input[0].quality= 2 * FF_QP2LAMBDA;
+        out_size = avcodec_encode_video(c, outbuf, outbuf_size, &input[0]);
+
+        for(i=0; i<s->max_b_frames+1; i++){
+            int is_p= i % (j+1) == j || i==s->max_b_frames;
+
+            input[i+1].pict_type= is_p ? P_TYPE : B_TYPE;
+            input[i+1].quality= s->rc_context.last_qscale_for[input[i+1].pict_type];
+            out_size = avcodec_encode_video(c, outbuf, outbuf_size, &input[i+1]);
+            rd += (out_size * lambda2) >> FF_LAMBDA_SHIFT;
+        }
+
+        /* get the delayed frames */
+        while(out_size){
+            out_size = avcodec_encode_video(c, outbuf, outbuf_size, NULL);
+            rd += (out_size * lambda2) >> FF_LAMBDA_SHIFT;
+        }
+
+        rd += c->error[0] + c->error[1] + c->error[2];
+
+        if(rd < best_rd){
+            best_rd= rd;
+            best_b_count= j;
+        }
+    }
+
+    av_freep(&outbuf);
+    avcodec_close(c);
+    av_freep(&c);
+    img_resample_close(resample);
+
+    for(i=0; i<s->max_b_frames+2; i++){
+        av_freep(&input[i].data[0]);
+    }
+
+    return best_b_count;
+}
+
 static void select_input_picture(MpegEncContext *s){
     int i;
 
@@ -2217,6 +2310,8 @@ static void select_input_picture(MpegEncContext *s){
                 for(i=0; i<b_frames+1; i++){
                     s->input_picture[i]->b_frame_score=0;
                 }
+            }else if(s->avctx->b_frame_strategy==2){
+                b_frames= estimate_best_b_count(s);
             }else{
                 av_log(s->avctx, AV_LOG_ERROR, "illegal b frame strategy\n");
                 b_frames=0;
