@@ -846,17 +846,7 @@ static int rm_read_packet(AVFormatContext *s, AVPacket *pkt)
     uint8_t *ptr;
     int flags;
 
-    if (rm->old_format) {
-        /* just read raw bytes */
-        len = RAW_PACKET_SIZE;
-        len= av_get_packet(pb, pkt, len);
-        pkt->stream_index = 0;
-        if (len <= 0) {
-            return AVERROR_IO;
-        }
-        pkt->size = len;
-        st = s->streams[0];
-    } else if (rm->audio_pkt_cnt) {
+    if (rm->audio_pkt_cnt) {
         // If there are queued audio packet return them first
         st = s->streams[rm->audio_stream_num];
         av_new_packet(pkt, st->codec->block_align);
@@ -866,6 +856,32 @@ static int rm_read_packet(AVFormatContext *s, AVPacket *pkt)
         rm->audio_pkt_cnt--;
         pkt->flags = 0;
         pkt->stream_index = rm->audio_stream_num;
+    } else if (rm->old_format) {
+        st = s->streams[0];
+        if (st->codec->codec_id == CODEC_ID_RA_288) {
+            int x, y;
+
+            for (y = 0; y < rm->sub_packet_h; y++)
+                for (x = 0; x < rm->sub_packet_h/2; x++)
+                    if (get_buffer(pb, rm->audiobuf+x*2*rm->audio_framesize+y*rm->coded_framesize, rm->coded_framesize) <= 0)
+                        return AVERROR_IO;
+            rm->audio_stream_num = 0;
+            rm->audio_pkt_cnt = rm->sub_packet_h * rm->audio_framesize / st->codec->block_align - 1;
+            // Release first audio packet
+            av_new_packet(pkt, st->codec->block_align);
+            memcpy(pkt->data, rm->audiobuf, st->codec->block_align);
+            pkt->flags |= PKT_FLAG_KEY; // Mark first packet as keyframe
+            pkt->stream_index = 0;
+        } else {
+            /* just read raw bytes */
+            len = RAW_PACKET_SIZE;
+            len= av_get_packet(pb, pkt, len);
+            pkt->stream_index = 0;
+            if (len <= 0) {
+                return AVERROR_IO;
+            }
+            pkt->size = len;
+        }
     } else {
         int seq=1;
 resync:
