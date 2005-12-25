@@ -49,6 +49,9 @@ typedef struct DVVideoContext {
     void (*get_pixels)(DCTELEM *block, const uint8_t *pixels, int line_size);
     void (*fdct[2])(DCTELEM *block);
     void (*idct_put[2])(uint8_t *dest, int line_size, DCTELEM *block);
+
+    /* MultiThreading */
+    uint8_t** dv_anchor;
 } DVVideoContext;
 
 #define TEX_VLC_BITS 9
@@ -60,9 +63,6 @@ typedef struct DVVideoContext {
 #define DV_VLC_MAP_RUN_SIZE  64
 #define DV_VLC_MAP_LEV_SIZE 512 //FIXME sign was removed so this should be /2 but needs check
 #endif
-
-/* MultiThreading */
-static uint8_t** dv_anchor;
 
 /* XXX: also include quantization */
 static RL_VLC_ELEM *dv_rl_vlc;
@@ -118,12 +118,12 @@ static int dvvideo_init(AVCodecContext *avctx)
             return -ENOMEM;
 
         /* dv_anchor lets each thread know its Id */
-        dv_anchor = av_malloc(12*27*sizeof(void*));
-        if (!dv_anchor) {
+        s->dv_anchor = av_malloc(12*27*sizeof(void*));
+        if (!s->dv_anchor) {
             return -ENOMEM;
         }
         for (i=0; i<12*27; i++)
-            dv_anchor[i] = (void*)(size_t)i;
+            s->dv_anchor[i] = (void*)(size_t)i;
 
         /* it's faster to include sign bit in a generic VLC parsing scheme */
         for (i=0, j=0; i<NB_DV_VLC; i++, j++) {
@@ -149,9 +149,9 @@ static int dvvideo_init(AVCodecContext *avctx)
         init_vlc(&dv_vlc, TEX_VLC_BITS, j,
                  new_dv_vlc_len, 1, 1, new_dv_vlc_bits, 2, 2, 0);
 
-        dv_rl_vlc = av_malloc(dv_vlc.table_size * sizeof(RL_VLC_ELEM));
+        dv_rl_vlc = av_mallocz_static(dv_vlc.table_size * sizeof(RL_VLC_ELEM));
         if (!dv_rl_vlc) {
-            av_free(dv_anchor);
+            av_free(s->dv_anchor);
             return -ENOMEM;
         }
         for(i = 0; i < dv_vlc.table_size; i++){
@@ -939,7 +939,7 @@ static int dvvideo_decode_frame(AVCodecContext *avctx,
     s->picture.top_field_first = 0;
 
     s->buf = buf;
-    avctx->execute(avctx, dv_decode_mt, (void**)&dv_anchor[0], NULL,
+    avctx->execute(avctx, dv_decode_mt, (void**)&s->dv_anchor[0], NULL,
                    s->sys->difseg_size * 27);
 
     emms_c();
@@ -968,12 +968,22 @@ static int dvvideo_encode_frame(AVCodecContext *c, uint8_t *buf, int buf_size,
     s->picture.pict_type = FF_I_TYPE;
 
     s->buf = buf;
-    c->execute(c, dv_encode_mt, (void**)&dv_anchor[0], NULL,
+    c->execute(c, dv_encode_mt, (void**)&s->dv_anchor[0], NULL,
                s->sys->difseg_size * 27);
 
     emms_c();
     return s->sys->frame_size;
 }
+
+static int dvvideo_close(AVCodecContext *c)
+{
+    DVVideoContext *s = c->priv_data;
+
+    av_free(s->dv_anchor);
+
+    return 0;
+}
+
 
 #ifdef CONFIG_DVVIDEO_ENCODER
 AVCodec dvvideo_encoder = {
@@ -983,7 +993,7 @@ AVCodec dvvideo_encoder = {
     sizeof(DVVideoContext),
     dvvideo_init,
     dvvideo_encode_frame,
-    NULL,
+    dvvideo_close,
     NULL,
     CODEC_CAP_DR1,
     NULL
@@ -997,7 +1007,7 @@ AVCodec dvvideo_decoder = {
     sizeof(DVVideoContext),
     dvvideo_init,
     NULL,
-    NULL,
+    dvvideo_close,
     dvvideo_decode_frame,
     CODEC_CAP_DR1,
     NULL
