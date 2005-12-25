@@ -143,7 +143,6 @@ static int video_codec_id = CODEC_ID_NONE;
 static int video_codec_tag = 0;
 static int same_quality = 0;
 static int b_frames = 0;
-static int b_strategy = 0;
 static int pre_me = 0;
 static int do_deinterlace = 0;
 static int workaround_bugs = FF_BUG_AUTODETECT;
@@ -3157,7 +3156,6 @@ static void new_video_stream(AVFormatContext *oc)
 
         if (b_frames) {
             video_enc->max_b_frames = b_frames;
-            video_enc->b_frame_strategy = b_strategy;
             video_enc->b_quant_factor = 2.0;
         }
         video_enc->qmin = video_qmin;
@@ -4067,7 +4065,6 @@ const OptionDef options[] = {
     { "i_qoffset", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_i_qoffset}, "qp offset between p and i frames", "offset" },
     { "ibias", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_ibias}, "intra quant bias", "bias" },
     { "pbias", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_pbias}, "inter quant bias", "bias" },
-    { "b_strategy", HAS_ARG | OPT_INT | OPT_EXPERT, {(void*)&b_strategy}, "dynamic b frame selection strategy", "strategy" },
     { "rc_eq", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_video_rc_eq}, "set rate control equation", "equation" },
     { "rc_override", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_video_rc_override_string}, "rate control override for specific intervals", "override" },
     { "bt", HAS_ARG | OPT_VIDEO, {(void*)opt_video_bitrate_tolerance}, "set video bitrate tolerance (in kbit/s)", "tolerance" },
