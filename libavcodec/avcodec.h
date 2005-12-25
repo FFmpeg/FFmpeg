@@ -1869,6 +1869,13 @@ typedef struct AVCodecContext {
      * - decoding: unused
      */
     int bidir_refine;
+
+    /**
+     *
+     * - encoding: set by user.
+     * - decoding: unused
+     */
+    int brd_scale;
 } AVCodecContext;
 
 /**

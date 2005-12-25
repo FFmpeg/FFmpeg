@@ -2145,9 +2145,9 @@ static int estimate_best_b_count(MpegEncContext *s){
     AVCodec *codec= avcodec_find_encoder(s->avctx->codec_id);
     AVCodecContext *c= avcodec_alloc_context();
     AVFrame input[FF_MAX_B_FRAMES+2];
-    const int scale= 0;
+    const int scale= s->avctx->brd_scale;
     int i, j, out_size;
-    int outbuf_size= (s->width * s->height) >> (2*scale); //FIXME
+    int outbuf_size= s->width * s->height; //FIXME
     uint8_t *outbuf= av_malloc(outbuf_size);
     ImgReSampleContext *resample;
     int64_t best_rd= INT64_MAX;
@@ -2198,6 +2198,7 @@ static int estimate_best_b_count(MpegEncContext *s){
         input[0].pict_type= I_TYPE;
         input[0].quality= 2 * FF_QP2LAMBDA;
         out_size = avcodec_encode_video(c, outbuf, outbuf_size, &input[0]);
+        rd += (out_size * lambda2) >> FF_LAMBDA_SHIFT;
 
         for(i=0; i<s->max_b_frames+1; i++){
             int is_p= i % (j+1) == j || i==s->max_b_frames;
