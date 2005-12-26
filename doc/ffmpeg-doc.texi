@@ -1263,6 +1263,16 @@ please use av_log() instead.
     Never write to unallocated memory, never write over the end of arrays,
     always check values read from some untrusted source before using them
     as array index or other risky things.
+@item
+    Remember to check if you need to bump versions for the specific libav
+    parts (libavutil,libavcodec,libavformat) you are changing. You need
+    to change the version integer and the version string.
+    Incrementing the first component means no backward compatibility to
+    previous version (e.g. removal of a function).
+    Incrementing the second component means backward compatible change
+    (e.g. addition of a function).
+    Incrementing the third component means a noteworthy binary compatible
+    change (e.g. encoder bug fix that matters for the decoder).
 @end enumerate
 
 We think our rules are not too hard. If you have comments, contact us.
