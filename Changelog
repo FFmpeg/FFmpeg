@@ -26,6 +26,7 @@ version <next>
 - ffserver fixed, it should now be usable again
 - QDM2 audio decoder
 - cook decoder
+- wma2 fixed, now all files should be decodeable
 
 version 0.4.9-pre1:
 
