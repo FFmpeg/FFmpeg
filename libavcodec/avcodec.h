@@ -289,7 +289,10 @@ enum Motion_Est_ID {
     ME_LOG,
     ME_PHODS,
     ME_EPZS,
-    ME_X1
+    ME_X1,
+    ME_HEX,
+    ME_UMH,
+    ME_ITER,
 };
 
 enum AVDiscard{

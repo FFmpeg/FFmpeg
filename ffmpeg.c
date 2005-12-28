@@ -2770,6 +2770,9 @@ const char *motion_str[] = {
     "phods",
     "epzs",
     "x1",
+    "hex",
+    "umh",
+    "iter",
     NULL,
 };
 
