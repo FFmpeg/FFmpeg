@@ -3103,7 +3103,7 @@ static always_inline int check_block(SnowContext *s, int mb_x, int mb_y, int p[3
     int rd, index, value;
 
     assert(mb_x>=0 && mb_y>=0);
-    assert(mb_y<b_stride);
+    assert(mb_x<b_stride);
 
     if(intra){
         block->color[0] = p[0];
