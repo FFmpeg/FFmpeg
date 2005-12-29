@@ -2294,14 +2294,14 @@ static void encode_q_branch2(SnowContext *s, int level, int x, int y){
 
     if(level!=s->block_max_depth){
         if(same_block(b,b+1) && same_block(b,b+w) && same_block(b,b+w+1)){
+            put_rac(&s->c, &s->block_state[4 + s_context], 1);
+        }else{
             put_rac(&s->c, &s->block_state[4 + s_context], 0);
             encode_q_branch2(s, level+1, 2*x+0, 2*y+0);
             encode_q_branch2(s, level+1, 2*x+1, 2*y+0);
             encode_q_branch2(s, level+1, 2*x+0, 2*y+1);
             encode_q_branch2(s, level+1, 2*x+1, 2*y+1);
             return;
-        }else{
-            put_rac(&s->c, &s->block_state[4 + s_context], 1);
         }
     }
     if(b->type & BLOCK_INTRA){
