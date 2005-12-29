@@ -16,18 +16,18 @@ version <next>
 - Autodesk Animator Studio Codec (AASC) decoder
 - Indeo 2 video decoder
 - Fraps FPS1 video decoder
-- SNOW video encoder/decoder
+- Snow video encoder/decoder
 - Sonic audio encoder/decoder
-- Vorbis decoder
+- Vorbis audio decoder
 - Macromedia ADPCM decoder
-- Duck TrueMotion 2 decoder
-- Support for decoding FLX and DTA extensions in FLIC files
+- Duck TrueMotion 2 video decoder
+- support for decoding FLX and DTA extensions in FLIC files
 - H.264 custom quantization matrices support
 - ffserver fixed, it should now be usable again
 - QDM2 audio decoder
 - cook audio decoder
 - wma2 audio decoder fixed, now all files should play correctly
-- jpeg-ls decoder (unfinished)
+- JPEG-LS decoder (unfinished)
 - build system improvements
 - tabs and trailing whitespace removed from the codebase
 
@@ -51,71 +51,71 @@ version 0.4.9-pre1:
 - MSZH and ZLIB decoder support
 - SVQ1 video encoder
 - AMR-WB support
-- PPC optimisations
+- PPC optimizations
 - rate distortion optimal cbp support
-- rate distorted optimal ac prediction for mpeg4
+- rate distorted optimal ac prediction for MPEG-4
 - rate distorted optimal lambda->qp support
 - AAC encoding with libfaac
 - Sunplus JPEG codec (SP5X) support
-- use lagrange multipler instead of qp for ratecontrol
-- theora/VP3 decoding support
+- use Lagrange multipler instead of QP for ratecontrol
+- Theora/VP3 decoding support
 - XA and ADX ADPCM codecs
-- export mpeg2 active display area / pan scan
+- export MPEG-2 active display area / pan scan
 - Add support for configuring with IBM XLC
 - floating point AAN DCT
-- initial support for zygovideo (not complete)
-- rgb ffv1 support
+- initial support for zygo video (not complete)
+- RGB ffv1 support
 - new audio/video parser API
 - av_log() system
 - av_read_frame() and av_seek_frame() support
 - missing last frame fixes
 - seek by mouse in ffplay
-- noise reduction of dct coefficients
-- h263 OBMC & 4MV support
-- h263 alternative inter vlc support
-- h263 loop filter
-- h263 slice structured mode
-- interlaced DCT support for MPEG2 encoding
+- noise reduction of DCT coefficients
+- H.263 OBMC & 4MV support
+- H.263 alternative inter vlc support
+- H.263 loop filter
+- H.263 slice structured mode
+- interlaced DCT support for MPEG-2 encoding
 - stuffing to stay above min_bitrate
-- mb type & qp vissualization
+- MB type & QP visualization
 - frame stepping for ffplay
 - interlaced motion estimation
 - alternate scantable support
 - SVCD scan offset support
-- closed gop support
-- SSE2 fdct
+- closed GOP support
+- SSE2 FDCT
 - quantizer noise shaping
 - G.726 ADPCM audio codec
 - MS ADPCM encoding
 - multithreaded/SMP motion estimation
-- multithreaded/SMP encoding for MPEG1/MPEG2/MPEG4/H263
-- multithreaded/SMP decoding for MPEG2
+- multithreaded/SMP encoding for MPEG-1/MPEG-2/MPEG-4/H.263
+- multithreaded/SMP decoding for MPEG-2
 - FLAC decoder
 - Metrowerks CodeWarrior suppport
-- h263+ custom pcf support
+- H.263+ custom pcf support
 - nicer output for 'ffmpeg -formats'
-- matroska demuxer
+- Matroska demuxer
 - SGI image format, encoding and decoding
-- h264 loop filter support
-- h264 CABAC support
+- H.264 loop filter support
+- H.264 CABAC support
 - nicer looking arrows for the motion vector vissualization
 - improved VCD support
 - audio timestamp drift compensation
-- mpeg2 YUV 422/444 support
+- MPEG-2 YUV 422/444 support
 - polyphase kaiser windowed sinc and blackman nuttall windowed sinc audio resample
 - better image scaling
-- h261 support
+- H.261 support
 - correctly interleave packets during encoding
 - VIS optimized motion compensation
-- intra_dc_precission>0 encoding support
-- support reuse of motion vectors/mb types/field select values of the source video
+- intra_dc_precision>0 encoding support
+- support reuse of motion vectors/MB types/field select values of the source video
 - more accurate deblock filter
 - padding support
 - many optimizations and bugfixes
 
 version 0.4.8:
 
-- MPEG2 video encoding (Michael)
+- MPEG-2 video encoding (Michael)
 - Id RoQ playback subsystem (Mike Melanson and Tim Ferguson)
 - Wing Commander III Movie (.mve) file playback subsystem (Mike Melanson
   and Mario Brito)
@@ -125,230 +125,229 @@ version 0.4.8:
 
 version 0.4.7:
 
-- RealAudio 1.0 (14_4) and 2.0 (28_8) native decoders. Author unknown, code from a mplayerhq
+- RealAudio 1.0 (14_4) and 2.0 (28_8) native decoders. Author unknown, code from mplayerhq
   (originally from public domain player for Amiga at http://www.honeypot.net/audio)
-- Current version now also compiles with older GCC (Fabrice)
+- current version now also compiles with older GCC (Fabrice)
 - 4X multimedia playback system including 4xm file demuxer (Mike
   Melanson), and 4X video and audio codecs (Michael)
 - Creative YUV (CYUV) decoder (Mike Melanson)
 - FFV1 codec (our very simple lossless intra only codec, compresses much better
-  then huffyuv) (Michael)
-- ASV1 (Asus), H.264, Intel indeo3 codecs has been added (Various)
-- Tiny PNG encoder and decoder, tiny GIF decoder, PAM decoder (PPM with
+  than HuffYUV) (Michael)
+- ASV1 (Asus), H.264, Intel indeo3 codecs have been added (various)
+- tiny PNG encoder and decoder, tiny GIF decoder, PAM decoder (PPM with
   alpha support), JPEG YUV colorspace support. (Fabrice Bellard)
 - ffplay has been replaced with a newer version which uses SDL (optionally)
-  for multi platform support (fabrice)
+  for multiplatform support (Fabrice)
 - Sorenson Version 3 codec (SVQ3) support has been added (decoding only) - donated
   by anonymous
 - AMR format has been added (Johannes Carlsson)
-- 3gp support has been added (Johannes Carlsson)
+- 3GP support has been added (Johannes Carlsson)
 - VP3 codec has been added (Mike Melanson)
 - more MPEG-1/2 fixes
-- Better Multi platform support, MS Visual Studio fixes (various)
-- Altivec optimizations (Magnus Damn and others)
+- better multiplatform support, MS Visual Studio fixes (various)
+- AltiVec optimizations (Magnus Damn and others)
 - SH4 processor support has been added (BERO)
-- New public interfaces (avcodec_get_pix_fmt) (Roman Shaposhnick)
-- VOB Streaming support (Brian Foley)
-- Better MP3 Autodetection (Andriy Rysin)
+- new public interfaces (avcodec_get_pix_fmt) (Roman Shaposhnick)
+- VOB streaming support (Brian Foley)
+- better MP3 autodetection (Andriy Rysin)
 - qpel encoding (Michael)
 - 4mv+b frames encoding finally fixed (Michael)
 - chroma ME (Michael)
-- 5 comparission functions for ME (Michael)
-- b frame encoding speedup (Michael)
-- wmv2 codec (unfinished - Michael)
+- 5 comparison functions for ME (Michael)
+- B-frame encoding speedup (Michael)
+- WMV2 codec (unfinished - Michael)
 - user specified diamond size for EPZS (Michael)
 - Playstation STR playback subsystem, still experimental (Mike and Michael)
 - ASV2 codec (Michael)
 - CLJR decoder (Alex)
 
-.. And lots more new enhances and fixes.
+.. And lots more new enhancements and fixes.
 
 version 0.4.6:
 
-- completely new integer only mpeg audio layer 1/2/3 decoder rewritten
-  from scratch.
-- recoded dct and motion vector search with gcc (no longer depends on
-  nasm).
-- fix quantization bug in AC3 encoder.
-- added PCM codecs and format. Corrected wav/avi/asf pcm issues.
-- added prototype ffplay program.
-- added GOB header parsing on H.263/H.263+ decoder. (Juanjo)
-- bug fix on MCBPC tables of H.263. (Juanjo)
-- bug fix on DC coefficients of H.263. (Juanjo)
-- added Advanced Prediction Mode on H.263/H.263+ decoder. (Juanjo)
-- now we can decode H.263 streams found on QuickTime files. (Juanjo)
-- now we can decode H.263 streams found on VIVO v1 files.(Juanjo)
+- completely new integer only MPEG audio layer 1/2/3 decoder rewritten
+  from scratch
+- Recoded DCT and motion vector search with gcc (no longer depends on nasm)
+- fix quantization bug in AC3 encoder
+- added PCM codecs and format. Corrected WAV/AVI/ASF PCM issues
+- added prototype ffplay program
+- added GOB header parsing on H.263/H.263+ decoder (Juanjo)
+- bug fix on MCBPC tables of H.263 (Juanjo)
+- bug fix on DC coefficients of H.263 (Juanjo)
+- added Advanced Prediction Mode on H.263/H.263+ decoder (Juanjo)
+- now we can decode H.263 streams found in QuickTime files (Juanjo)
+- now we can decode H.263 streams found in VIVO v1 files(Juanjo)
 - preliminary RTP "friendly" mode for H.263/H.263+ coding. (Juanjo)
-- added GOB header for H.263/H.263+ coding on RTP mode. (Juanjo)
-- now H.263 picture size is returned on the first decoded frame. (Juanjo)
+- added GOB header for H.263/H.263+ coding on RTP mode (Juanjo)
+- now H.263 picture size is returned on the first decoded frame (Juanjo)
 - added first regression tests
-- added MPEG2 TS demux
+- added MPEG-2 TS demuxer
 - new demux API for libav
 - more accurate and faster IDCT (Michael)
-- faster and entropy controlled motion search (Michael)
+- faster and entropy-controlled motion search (Michael)
 - two pass video encoding (Michael)
 - new video rate control (Michael)
 - added MSMPEG4V1, MSMPEGV2 and WMV1 support (Michael)
 - great performance improvement of video encoders and decoders (Michael)
 - new and faster bit readers and vlc parsers (Michael)
-- high quality encoding mode : tries all macroblock/VLC types (Michael)
+- high quality encoding mode: tries all macroblock/VLC types (Michael)
 - added DV video decoder
 - preliminary RTP/RTSP support in ffserver and libavformat
-- H.263+ AIC decoding/encoding support. (Juanjo)
-- VCD MPEG-PS mode. (Juanjo)
-- PSNR stuff. (Juanjo)
-- Simple stats output. (Juanjo)
-- 16-bit and 15-bit rgb/bgr/gbr support (Bisqwit)
+- H.263+ AIC decoding/encoding support (Juanjo)
+- VCD MPEG-PS mode (Juanjo)
+- PSNR stuff (Juanjo)
+- simple stats output (Juanjo)
+- 16-bit and 15-bit RGB/BGR/GBR support (Bisqwit)
 
 version 0.4.5:
 
-- some header fixes (Zdenek Kabelac &lt;kabi@informatics.muni.cz&gt;).
-- many MMX optimizations (Nick Kurshev &lt;nickols_k@mail.ru&gt;).
-- added configure system (actually a small shell script).
-- added mpeg audio layer 1/2/3 decoding using LGPL'ed mpglib by
+- some header fixes (Zdenek Kabelac <kabi@informatics.muni.cz>)
+- many MMX optimizations (Nick Kurshev <nickols_k@mail.ru>)
+- added configure system (actually a small shell script)
+- added MPEG audio layer 1/2/3 decoding using LGPL'ed mpglib by
   Michael Hipp (temporary solution - waiting for integer only
-  decoder).
-- fixed VIDIOCSYNC interrupt.
-- added Intel H263 decoding support ('I263' avi fourCC)
-- added Real Video 1.0 decoding (needs further testing).
+  decoder)
+- fixed VIDIOCSYNC interrupt
+- added Intel H.263 decoding support ('I263' AVI fourCC)
+- added Real Video 1.0 decoding (needs further testing)
 - simplified image formats again. Added PGM format (=grey
   pgm). Renamed old PGM to PGMYUV.
-- fixed msmpeg4 slice issues (tell me if you still find problems).
-- fixed opendivx bugs with newer versions (added VOL header decoding).
-- added support for mplayer interface.
-- added macroblock skip optimization.
-- added MJPEG decoder.
-- added mmx/mmxext idct from libmpeg2.
+- fixed msmpeg4 slice issues (tell me if you still find problems)
+- fixed OpenDivX bugs with newer versions (added VOL header decoding)
+- added support for MPlayer interface
+- added macroblock skip optimization
+- added MJPEG decoder
+- added mmx/mmxext IDCT from libmpeg2
 - added pgmyuvpipe, ppm, and ppm_pipe formats (original patch by Celer
-  &lt;celer@shell.scrypt.net&gt;).
-- added pixel format convertion layer (e.g. for MJPEG or PPM).
-- added deinterlacing option.
-- mpeg1/2 fixes.
-- mpeg4 vol header fixes (Jonathan Marsden &lt;snmjbm@pacbell.net&gt;).
-- ARM optimizations (Lionel Ulmer &lt;lionel.ulmer@free.fr&gt;).
-- Windows porting of file converter.
-- added MJPEG raw format (input/ouput).
-- added JPEG image format support (input/output).
+  <celer@shell.scrypt.net>)
+- added pixel format conversion layer (e.g. for MJPEG or PPM)
+- added deinterlacing option
+- MPEG-1/2 fixes
+- MPEG-4 vol header fixes (Jonathan Marsden <snmjbm@pacbell.net>)
+- ARM optimizations (Lionel Ulmer <lionel.ulmer@free.fr>).
+- Windows porting of file converter
+- added MJPEG raw format (input/ouput)
+- added JPEG image format support (input/output)
 
 version 0.4.4:
 
 - fixed some std header definitions (Bjorn Lindgren
-  &lt;bjorn.e.lindgren@telia.com&gt;).
-- added mpeg demux (mpeg 1 and 2 compatible).
-- added ASF demux.
-- added prototype RM demux.
-- added AC3 decoding (done with libac3 by Aaron Holtzman).
-- added decoding codec parameter guessing (.e.g. for mpeg, because the
-  header does not include them).
-- fixed header generation in mpeg1, AVI and ASF mux : wmplayer can now
-  play them (only tested video).
-- fixed h263 white bug.
-- fixed phase rounding in img resample filter.
-- add mmx code for polyphase img resample filter.
-- added CPU autodetect.
-- added generic title/author/copyright/comment string handling (ASF and RM use them).
+  <bjorn.e.lindgren@telia.com>).
+- added MPEG demuxer (MPEG-1 and 2 compatible).
+- added ASF demuxer
+- added prototype RM demuxer
+- added AC3 decoding (done with libac3 by Aaron Holtzman)
+- added decoding codec parameter guessing (.e.g. for MPEG, because the
+  header does not include them)
+- fixed header generation in MPEG-1, AVI and ASF muxer: wmplayer can now
+  play them (only tested video)
+- fixed H.263 white bug
+- fixed phase rounding in img resample filter
+- add MMX code for polyphase img resample filter
+- added CPU autodetection
+- added generic title/author/copyright/comment string handling (ASF and RM
+  use them)
 - added SWF demux to extract MP3 track (not usable yet because no MP3
-  decoder).
-- added fractional frame rate support.
+  decoder)
+- added fractional frame rate support
 - codecs are no longer searched by read_header() (should fix ffserver
-  segfault).
+  segfault)
 
 version 0.4.3:
 
-- BGR24 patch (initial patch by Jeroen Vreeken &lt;pe1rxq@amsat.org&gt;).
-- fixed raw yuv output.
-- added motion rounding support in MPEG4.
-- fixed motion bug rounding in MSMPEG4.
-- added B frame handling in video core.
-- added full MPEG1 decoding support.
-- added partial (frame only) MPEG2 support.
+- BGR24 patch (initial patch by Jeroen Vreeken <pe1rxq@amsat.org>)
+- fixed raw yuv output
+- added motion rounding support in MPEG-4
+- fixed motion bug rounding in MSMPEG4
+- added B-frame handling in video core
+- added full MPEG-1 decoding support
+- added partial (frame only) MPEG-2 support
 - changed the FOURCC code for H.263 to "U263" to be able to see the
-+AVI/H.263 file with the UB Video H.263+ decoder. MPlayer works with
-this +codec ;) (JuanJo).
-- Halfpel motion estimation after mb type selection (JuanJo).
-- added pgm and .Y.U.V output format.
+  +AVI/H.263 file with the UB Video H.263+ decoder. MPlayer works with
+  this +codec ;) (JuanJo).
+- Halfpel motion estimation after MB type selection (JuanJo)
+- added pgm and .Y.U.V output format
 - suppressed 'img:' protocol. Simply use: /tmp/test%d.[pgm|Y] as input or
   output.
 - added pgmpipe I/O format (original patch from Martin Aumueller
-  &lt;lists@reserv.at&gt;, but changed completely since we use a format
-  instead of a protocol).
+  <lists@reserv.at>, but changed completely since we use a format
+  instead of a protocol)
 
 version 0.4.2:
 
-- added H263/MPEG4/MSMPEG4 decoding support. MPEG4 decoding support
-  (for openDIVX) is almost complete: 8x8 MVs and rounding are
+- added H.263/MPEG-4/MSMPEG4 decoding support. MPEG-4 decoding support
+  (for OpenDivX) is almost complete: 8x8 MVs and rounding are
   missing. MSMPEG4 support is complete.
-- added prototype MPEG1 decoder. Only I and P frames handled yet (it
-  can decode ffmpeg mpegs :-)).
+- added prototype MPEG-1 decoder. Only I- and P-frames handled yet (it
+  can decode ffmpeg MPEGs :-)).
 - added libavcodec API documentation (see apiexample.c).
 - fixed image polyphase bug (the bottom of some images could be
-  greenish).
+  greenish)
 - added support for non clipped motion vectors (decoding only)
-  and image sizes non multiple of 16.
-- added support for AC prediction (decoding only).
-- added file overwrite confirmation (can be disabled with -y).
-- Added custom size picture to H.263 using H.263+ (Juanjo).
+  and image sizes non-multiple of 16
+- added support for AC prediction (decoding only)
+- added file overwrite confirmation (can be disabled with -y)
+- added custom size picture to H.263 using H.263+ (Juanjo)
 
 version 0.4.1:
 
-- added MSMPEG4 (aka DIVX) compatible encoder. Changed default codec
-  of avi and asf to DIV3.
+- added MSMPEG4 (aka DivX) compatible encoder. Changed default codec
+  of AVI and ASF to DIV3.
 - added -me option to set motion estimation method
   (default=log). suppressed redundant -hq option.
 - added options -acodec and -vcodec to force a given codec (useful for
-  AVI for example).
-- fixed -an option.
-- improved dct_quantize speed.
-- factorized some motion estimation code.
+  AVI for example)
+- fixed -an option
+- improved dct_quantize speed
+- factorized some motion estimation code
 
 version 0.4.0:
 
-- removing grab code from ffserver and moved it to ffmpeg. Added multi
-  stream support to ffmpeg.
+- removing grab code from ffserver and moved it to ffmpeg. Added
+  multistream support to ffmpeg.
 - added timeshifting support for live feeds (option ?date=xxx in the
-  URL).
+  URL)
 - added high quality image resize code with polyphase filter (need
   mmx/see optimisation). Enable multiple image size support in ffserver.
-- added multi live feed support in ffserver.
+- added multi live feed support in ffserver
 - suppressed master feature from ffserver (it should be done with an
   external program which opens the .ffm url and writes it to another
-  ffserver).
-- added preliminary support for video stream parsing (wav and avi half
-  done). Added proper support for audio/video file convertion in
+  ffserver)
+- added preliminary support for video stream parsing (WAV and AVI half
+  done). Added proper support for audio/video file conversion in
   ffmpeg.
-- added preliminary support for video file sending from ffserver.
-- redesigning I/O subsystem : now using URL based input and output
-  (see avio.h).
-- added wav format support.
-- added "tty user interface" to ffmpeg to stop grabbing gracefully.
-- added MMX/SSE optimizations to SAD (Sums of Absolutes Diferences)
-  (Juan J. Sierralta P. a.k.a. "Juanjo" &lt;juanjo@atmlab.utfsm.cl&gt;).
-- added MMX DCT from mpeg2_movie 1.5 (Juanjo).
-- added new motion estimation algorithms, log and phods (Juanjo).
-- changed directories : libav for format handling, libavcodec for
-  codecs.
+- added preliminary support for video file sending from ffserver
+- redesigning I/O subsystem: now using URL based input and output
+  (see avio.h)
+- added WAV format support
+- added "tty user interface" to ffmpeg to stop grabbing gracefully
+- added MMX/SSE optimizations to SAD (Sums of Absolutes Differences)
+  (Juan J. Sierralta P. a.k.a. "Juanjo" <juanjo@atmlab.utfsm.cl>)
+- added MMX DCT from mpeg2_movie 1.5 (Juanjo)
+- added new motion estimation algorithms, log and phods (Juanjo)
+- changed directories: libav for format handling, libavcodec for
+  codecs
 
 version 0.3.4:
 
-- added stereo in mpeg audio encoder.
+- added stereo in MPEG audio encoder
 
 version 0.3.3:
 
 - added 'high quality' mode which use motion vectors. It can be used in
   real time at low resolution.
 - fixed rounding problems which caused quality problems at high
-  bitrates and large gop size.
+  bitrates and large GOP size
 
 version 0.3.2: small fixes
 
-- asf fixes
+- ASF fixes
 - put_seek bug fix
 
 version 0.3.1: added avi/divx support
 
-- added avi support
-- added mpeg4 codec compatible with open divx. It is based on the h263
-  codec.
+- added AVI support
+- added MPEG-4 codec compatible with OpenDivX. It is based on the H.263 codec
 - added sound for flash format (not tested)
 
 version 0.3: initial public release
