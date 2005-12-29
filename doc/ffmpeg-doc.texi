@@ -1265,10 +1265,10 @@ please use av_log() instead.
     as array index or other risky things.
 @item
     Remember to check if you need to bump versions for the specific libav
-    parts (libavutil,libavcodec,libavformat) you are changing. You need
+    parts (libavutil, libavcodec, libavformat) you are changing. You need
     to change the version integer and the version string.
     Incrementing the first component means no backward compatibility to
-    previous version (e.g. removal of a function).
+    previous versions (e.g. removal of a function).
     Incrementing the second component means backward compatible change
     (e.g. addition of a function).
     Incrementing the third component means a noteworthy binary compatible
