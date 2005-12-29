@@ -679,7 +679,7 @@ static AVOption options[]={
 {"nr", "noise reduction", OFFSET(noise_reduction), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX, V|E},
 {"rc_init_occupancy", NULL, OFFSET(rc_initial_buffer_occupancy), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX, V|E},
 {"inter_threshold", NULL, OFFSET(inter_threshold), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX, V|E},
-{"flags2", NULL, OFFSET(flags2), FF_OPT_TYPE_FLAGS, DEFAULT, INT_MIN, INT_MAX},
+{"flags2", NULL, OFFSET(flags2), FF_OPT_TYPE_FLAGS, DEFAULT, INT_MIN, INT_MAX, V|A|E|D, "flags2"},
 {"error_rate", NULL, OFFSET(error_rate), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX},
 {"antialias", NULL, OFFSET(antialias_algo), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX, V|D, "aa"},
 {"auto", NULL, 0, FF_OPT_TYPE_CONST, FF_AA_AUTO, INT_MIN, INT_MAX, V|D, "aa"},
@@ -709,6 +709,30 @@ static AVOption options[]={
 {"me_penalty_compensation", NULL, OFFSET(me_penalty_compensation), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX, V|E},
 {"bidir_refine", NULL, OFFSET(bidir_refine), FF_OPT_TYPE_INT, DEFAULT, 0, 4, V|E},
 {"brd_scale", NULL, OFFSET(brd_scale), FF_OPT_TYPE_INT, DEFAULT, 0, 10, V|E},
+{"crf", NULL, OFFSET(crf), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX, V|E},
+{"cqp", NULL, OFFSET(cqp), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX, V|E},
+{"keyint_min", NULL, OFFSET(keyint_min), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX, V|E},
+{"refs", NULL, OFFSET(refs), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX, V|E},
+{"chromaoffset", NULL, OFFSET(chromaoffset), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX, V|E},
+{"bframebias", NULL, OFFSET(bframebias), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX, V|E},
+{"trellis", NULL, OFFSET(trellis), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX, V|E},
+{"directpred", NULL, OFFSET(directpred), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX, V|E},
+{"bpyramid", NULL, 0, FF_OPT_TYPE_CONST, CODEC_FLAG2_BPYRAMID, INT_MIN, INT_MAX, V|E, "flags2"},
+{"wpred", NULL, 0, FF_OPT_TYPE_CONST, CODEC_FLAG2_WPRED, INT_MIN, INT_MAX, V|E, "flags2"},
+{"mixed_refs", NULL, 0, FF_OPT_TYPE_CONST, CODEC_FLAG2_MIXED_REFS, INT_MIN, INT_MAX, V|E, "flags2"},
+{"8x8dct", NULL, 0, FF_OPT_TYPE_CONST, CODEC_FLAG2_8X8DCT, INT_MIN, INT_MAX, V|E, "flags2"},
+{"fastpskip", NULL, 0, FF_OPT_TYPE_CONST, CODEC_FLAG2_FASTPSKIP, INT_MIN, INT_MAX, V|E, "flags2"},
+{"aud", NULL, 0, FF_OPT_TYPE_CONST, CODEC_FLAG2_AUD, INT_MIN, INT_MAX, V|E, "flags2"},
+{"brdo", NULL, 0, FF_OPT_TYPE_CONST, CODEC_FLAG2_BRDO, INT_MIN, INT_MAX, V|E, "flags2"},
+{"complexityblur", NULL, OFFSET(complexityblur), FF_OPT_TYPE_FLOAT, DEFAULT, FLT_MIN, FLT_MAX, V|E},
+{"deblockalpha", NULL, OFFSET(deblockalpha), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX, V|E},
+{"deblockbeta", NULL, OFFSET(deblockbeta), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX, V|E},
+{"partitions", NULL, OFFSET(partitions), FF_OPT_TYPE_FLAGS, DEFAULT, INT_MIN, INT_MAX, V|E, "partitions"},
+{"parti4x4", NULL, 0, FF_OPT_TYPE_CONST, X264_PART_I4X4, INT_MIN, INT_MAX, V|E, "partitions"},
+{"parti8x8", NULL, 0, FF_OPT_TYPE_CONST, X264_PART_I8X8, INT_MIN, INT_MAX, V|E, "partitions"},
+{"partp4x4", NULL, 0, FF_OPT_TYPE_CONST, X264_PART_P4X4, INT_MIN, INT_MAX, V|E, "partitions"},
+{"partp8x8", NULL, 0, FF_OPT_TYPE_CONST, X264_PART_P8X8, INT_MIN, INT_MAX, V|E, "partitions"},
+{"partb8x8", NULL, 0, FF_OPT_TYPE_CONST, X264_PART_B8X8, INT_MIN, INT_MAX, V|E, "partitions"},
 {NULL},
 };
 
@@ -728,7 +752,13 @@ void avcodec_get_context_defaults(AVCodecContext *s){
     s->mb_lmin= FF_QP2LAMBDA * 2;
     s->mb_lmax= FF_QP2LAMBDA * 31;
     s->rc_eq= "tex^qComp";
+    s->cqp = -1;
+    s->refs = 1;
+    s->directpred = 2;
     s->qcompress= 0.5;
+    s->complexityblur = 20.0;
+    s->keyint_min = 25;
+    s->flags2 = CODEC_FLAG2_FASTPSKIP;
     s->max_qdiff= 3;
     s->b_quant_factor=1.25;
     s->b_quant_offset=1.25;

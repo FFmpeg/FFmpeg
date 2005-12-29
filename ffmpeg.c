@@ -2531,8 +2531,8 @@ static void opt_qmin(const char *arg)
 {
     video_qmin = atoi(arg);
     if (video_qmin < 1 ||
-        video_qmin > 31) {
-        fprintf(stderr, "qmin must be >= 1 and <= 31\n");
+        video_qmin > 51) {
+        fprintf(stderr, "qmin must be >= 1 and <= 51\n");
         exit(1);
     }
 }
@@ -2541,8 +2541,8 @@ static void opt_qmax(const char *arg)
 {
     video_qmax = atoi(arg);
     if (video_qmax < 1 ||
-        video_qmax > 31) {
-        fprintf(stderr, "qmax must be >= 1 and <= 31\n");
+        video_qmax > 51) {
+        fprintf(stderr, "qmax must be >= 1 and <= 51\n");
         exit(1);
     }
 }

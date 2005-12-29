@@ -363,6 +363,13 @@ extern int motion_estimation_method;
 #define CODEC_FLAG2_STRICT_GOP    0x00000002 ///< strictly enforce GOP size
 #define CODEC_FLAG2_NO_OUTPUT     0x00000004 ///< skip bitstream encoding
 #define CODEC_FLAG2_LOCAL_HEADER  0x00000008 ///< place global headers at every keyframe instead of in extradata
+#define CODEC_FLAG2_BPYRAMID      0x00000010 ///< H.264 allow b-frames to be used as references
+#define CODEC_FLAG2_WPRED         0x00000020 ///< H.264 weighted biprediction for b-frames
+#define CODEC_FLAG2_MIXED_REFS    0x00000040 ///< H.264 multiple references per partition
+#define CODEC_FLAG2_8X8DCT        0x00000080 ///< H.264 high profile 8x8 transform
+#define CODEC_FLAG2_FASTPSKIP     0x00000100 ///< H.264 fast pskip
+#define CODEC_FLAG2_AUD           0x00000200 ///< H.264 access unit delimiters
+#define CODEC_FLAG2_BRDO          0x00000400 ///< b-frame rate-distortion optimization
 
 /* Unsupported options :
  *              Syntax Arithmetic coding (SAC)
@@ -733,6 +740,8 @@ typedef struct AVCodecContext {
 
     /**
      * motion estimation algorithm used for video coding.
+     * 1 (zero), 2 (full), 3 (log), 4 (phods), 5 (epzs), 6 (x1), 7 (hex),
+     * 8 (umh), 9 (iter) [7, 8 are x264 specific, 9 is snow specific]
      * - encoding: MUST be set by user.
      * - decoding: unused
      */
@@ -1879,6 +1888,97 @@ typedef struct AVCodecContext {
      * - decoding: unused
      */
     int brd_scale;
+
+    /**
+     * constant rate factor - quality-based VBR - values ~correspond to qps
+     * - encoding: set by user.
+     * - decoding: unused
+     */
+    int crf;
+
+    /**
+     * constant quantization parameter rate control method
+     * - encoding: set by user.
+     * - decoding: unused
+     */
+    int cqp;
+
+    /**
+     * minimum gop size
+     * - encoding: set by user.
+     * - decoding: unused
+     */
+    int keyint_min;
+
+    /**
+     * number of reference frames
+     * - encoding: set by user.
+     * - decoding: unused
+     */
+    int refs;
+
+    /**
+     * chroma qp offset from luma
+     * - encoding: set by user.
+     * - decoding: unused
+     */
+    int chromaoffset;
+
+    /**
+     * influences how often b-frames are used
+     * - encoding: set by user.
+     * - decoding: unused
+     */
+    int bframebias;
+
+    /**
+     * trellis RD quantization
+     * - encoding: set by user.
+     * - decoding: unused
+     */
+    int trellis;
+
+    /**
+     * reduce fluctuations in qp (before curve compression)
+     * - encoding: set by user.
+     * - decoding: unused
+     */
+    float complexityblur;
+
+    /**
+     * in-loop deblocking filter alphac0 parameter
+     * alpha is in the range -6...6
+     * - encoding: set by user.
+     * - decoding: unused
+     */
+    int deblockalpha;
+
+    /**
+     * in-loop deblocking filter beta parameter
+     * beta is in the range -6...6
+     * - encoding: set by user.
+     * - decoding: unused
+     */
+    int deblockbeta;
+
+    /**
+     * macroblock subpartition sizes to consider - p8x8, p4x4, b8x8, i8x8, i4x4
+     * - encoding: set by user.
+     * - decoding: unused
+     */
+    int partitions;
+#define X264_PART_I4X4 0x001  /* Analyse i4x4 */
+#define X264_PART_I8X8 0x002  /* Analyse i8x8 (requires 8x8 transform) */
+#define X264_PART_P8X8 0x010  /* Analyse p16x8, p8x16 and p8x8 */
+#define X264_PART_P4X4 0x020  /* Analyse p8x4, p4x8, p4x4 */
+#define X264_PART_B8X8 0x100  /* Analyse b16x8, b8x16 and b8x8 */
+
+    /**
+     * direct mv prediction mode - 0 (none), 1 (spatial), 2 (temporal)
+     * - encoding: set by user.
+     * - decoding: unused
+     */
+    int directpred;
 } AVCodecContext;
 
 /**
