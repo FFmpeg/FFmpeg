@@ -1594,6 +1594,7 @@ void MPV_frame_end(MpegEncContext *s)
     emms_c();
 
     s->last_pict_type    = s->pict_type;
+    s->last_lambda_for[s->pict_type]= s->current_picture_ptr->quality;
     if(s->pict_type!=B_TYPE){
         s->last_non_b_pict_type= s->pict_type;
     }
@@ -2204,7 +2205,7 @@ static int estimate_best_b_count(MpegEncContext *s){
             int is_p= i % (j+1) == j || i==s->max_b_frames;
 
             input[i+1].pict_type= is_p ? P_TYPE : B_TYPE;
-            input[i+1].quality= s->rc_context.last_qscale_for[input[i+1].pict_type];
+            input[i+1].quality= s->last_lambda_for[input[i+1].pict_type];
             out_size = avcodec_encode_video(c, outbuf, outbuf_size, &input[i+1]);
             rd += (out_size * lambda2) >> FF_LAMBDA_SHIFT;
         }
@@ -5398,12 +5399,10 @@ static void encode_picture(MpegEncContext *s, int picture_number)
         estimate_qp(s, 1);
         ff_get_2pass_fcode(s);
     }else if(!(s->flags & CODEC_FLAG_QSCALE)){
-        RateControlContext *rcc= &s->rc_context;
-
         if(s->pict_type==B_TYPE)
-            s->lambda= rcc->last_qscale_for[s->pict_type];
+            s->lambda= s->last_lambda_for[s->pict_type];
         else
-            s->lambda= rcc->last_qscale_for[rcc->last_non_b_pict_type];
+            s->lambda= s->last_lambda_for[s->last_non_b_pict_type];
         update_qscale(s);
     }
 

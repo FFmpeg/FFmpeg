@@ -374,6 +374,7 @@ typedef struct MpegEncContext {
     int last_non_b_pict_type;   ///< used for mpeg4 gmc b-frames & ratecontrol
     int dropable;
     int frame_rate_index;
+    int last_lambda_for[5];     ///< last lambda for a specific pict type
 
     /* motion compensation */
     int unrestricted_mv;        ///< mv can point outside of the coded picture
