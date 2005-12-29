@@ -25,8 +25,11 @@ version <next>
 - H.264 custom quantization matrices support
 - ffserver fixed, it should now be usable again
 - QDM2 audio decoder
-- cook decoder
-- wma2 fixed, now all files should be decodeable
+- cook audio decoder
+- wma2 audio decoder fixed, now all files should play correctly
+- jpeg-ls decoder (unfinished)
+- build system improvements
+- tabs and trailing whitespace removed from the codebase
 
 version 0.4.9-pre1:
 
