@@ -149,6 +149,30 @@ static const CodecTag mov_audio_tags[] = {
     { CODEC_ID_NONE, 0 },
 };
 
+/* map numeric codes from mdhd atom to ISO 639 */
+/* cf. QTFileFormat.pdf p253, qtff.pdf p205 */
+static const char *mov_mdhd_language_map[] = { 
+/* 0-9 */
+"eng", "fra", "ger", "ita", "dut", "sve", "spa", "dan", "por", "nor", 
+"heb", "jpn", "ara", "fin", "gre", "ice", "mlt", "tur", "hr "/*scr*/, "chi"/*ace?*/, 
+"urd", "hin", "tha", "kor", "lit", "pol", "hun", "est", "lav",  NULL, 
+"fo ",  NULL, "rus", "chi",  NULL, "iri", "alb", "ron", "ces", "slk", 
+"slv", "yid", "sr ", "mac", "bul", "ukr", "bel", "uzb", "kaz", "aze",
+/*?*/ 
+"aze", "arm", "geo", "mol", "kir", "tgk", "tuk", "mon",  NULL, "pus",
+"kur", "kas", "snd", "tib", "nep", "san", "mar", "ben", "asm", "guj",
+"pa ", "ori", "mal", "kan", "tam", "tel",  NULL, "bur", "khm", "lao",
+/*                   roman? arabic? */
+"vie", "ind", "tgl", "may", "may", "amh", "tir", "orm", "som", "swa",
+/*==rundi?*/
+ NULL, "run",  NULL, "mlg", "epo",  NULL,  NULL,  NULL,  NULL,  NULL, 
+/* 100 */
+ NULL,  NULL,  NULL,  NULL,  NULL,  NULL,  NULL,  NULL,  NULL,  NULL, 
+ NULL,  NULL,  NULL,  NULL,  NULL,  NULL,  NULL,  NULL,  NULL,  NULL, 
+ NULL,  NULL,  NULL,  NULL,  NULL,  NULL,  NULL,  NULL, "wel", "baq",
+"cat", "lat", "que", "grn", "aym", "tat", "uig", "dzo", "jav"
+};
+
 /* the QuickTime file format is quite convoluted...
  * it has lots of index tables, each indexing something in another one...
  * Here we just use what is needed to read the chunks
@@ -329,6 +353,25 @@ void print_atom(const char *str, MOV_atom_t atom)
 #define print_atom(a,b)
 #endif
 
+const char *ff_mov_lang_to_iso639(int code)
+{
+    if (code >= (sizeof(mov_mdhd_language_map)/sizeof(char *)))
+        return NULL;
+    if (!mov_mdhd_language_map[code])
+        return NULL;
+    return mov_mdhd_language_map[code];
+}
+
+extern int ff_mov_iso639_to_lang(const char *lang); /* for movenc.c */
+int ff_mov_iso639_to_lang(const char *lang)
+{
+    int i;
+    for (i = 0; i < (sizeof(mov_mdhd_language_map)/sizeof(char *)); i++) {
+        if (mov_mdhd_language_map[i] && !strcmp(lang, mov_mdhd_language_map[i]))
+            return i;
+    }
+    return -1;
+}
 
 static int mov_read_leaf(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
@@ -630,15 +673,20 @@ static int mov_read_moov(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 
 static int mov_read_mdhd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
+    int version;
+    int lang;
+    const char *iso639;
     print_atom("mdhd", atom);
 
-    get_byte(pb); /* version */
+    version = get_byte(pb); /* version */
+    if (version > 1)
+        return 1; /* unsupported */
 
     get_byte(pb); get_byte(pb);
     get_byte(pb); /* flags */
 
-    get_be32(pb); /* creation time */
-    get_be32(pb); /* modification time */
+    (version==1)?get_be64(pb):get_be32(pb); /* creation time */
+    (version==1)?get_be64(pb):get_be32(pb); /* modification time */
 
     c->streams[c->fc->nb_streams-1]->time_scale = get_be32(pb);
     av_set_pts_info(c->fc->streams[c->fc->nb_streams-1], 64, 1, c->streams[c->fc->nb_streams-1]->time_scale);
@@ -646,9 +694,12 @@ static int mov_read_mdhd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 #ifdef DEBUG
     av_log(NULL, AV_LOG_DEBUG, "track[%i].time_scale = %i\n", c->fc->nb_streams-1, c->streams[c->fc->nb_streams-1]->time_scale); /* time scale */
 #endif
-    c->fc->streams[c->fc->nb_streams-1]->duration= get_be32(pb); /* duration */
+    c->fc->streams[c->fc->nb_streams-1]->duration = (version==1)?get_be64(pb):get_be32(pb); /* duration */
 
-    get_be16(pb); /* language */
+    lang = get_be16(pb); /* language */
+    iso639 = ff_mov_lang_to_iso639(lang);
+    if (iso639)
+        strncpy(c->fc->streams[c->fc->nb_streams-1]->language, iso639, 4);
     get_be16(pb); /* quality */
 
     return 0;
