@@ -3136,6 +3136,12 @@ static always_inline int check_block(SnowContext *s, int mb_x, int mb_y, int p[3
     }
 }
 
+/* special case for int[2] args we discard afterward, fixes compilation prob with gcc 2.95 */
+static always_inline int check_block_2p(SnowContext *s, int mb_x, int mb_y, int p0, int p1, int intra, int *best_rd){
+    int p[2] = {p0, p1};
+    return check_block(s, mb_x, mb_y, p, intra, best_rd);
+}
+
 static void iterative_me(SnowContext *s){
     int pass, mb_x, mb_y;
     const int b_width = s->b_width  << s->block_max_depth;
@@ -3173,12 +3179,12 @@ static void iterative_me(SnowContext *s){
                 s->me_cache_generation += 1<<22;
 
                 // get previous score (cant be cached due to OBMC)
-                check_block(s, mb_x, mb_y, (int[2]){block->mx, block->my}, 0, &best_rd);
-                check_block(s, mb_x, mb_y, (int[2]){0, 0}, 0, &best_rd);
-                check_block(s, mb_x, mb_y, (int[2]){tb->mx, tb->my}, 0, &best_rd);
-                check_block(s, mb_x, mb_y, (int[2]){lb->mx, lb->my}, 0, &best_rd);
-                check_block(s, mb_x, mb_y, (int[2]){rb->mx, rb->my}, 0, &best_rd);
-                check_block(s, mb_x, mb_y, (int[2]){bb->mx, bb->my}, 0, &best_rd);
+                check_block_2p(s, mb_x, mb_y, block->mx, block->my, 0, &best_rd);
+                check_block_2p(s, mb_x, mb_y, 0, 0, 0, &best_rd);
+                check_block_2p(s, mb_x, mb_y, tb->mx, tb->my, 0, &best_rd);
+                check_block_2p(s, mb_x, mb_y, lb->mx, lb->my, 0, &best_rd);
+                check_block_2p(s, mb_x, mb_y, rb->mx, rb->my, 0, &best_rd);
+                check_block_2p(s, mb_x, mb_y, bb->mx, bb->my, 0, &best_rd);
 
                 /* fullpel ME */
                 //FIXME avoid subpel interpol / round to nearest integer
@@ -3186,10 +3192,10 @@ static void iterative_me(SnowContext *s){
                     dia_change=0;
                     for(i=0; i<FFMAX(s->avctx->dia_size, 1); i++){
                         for(j=0; j<i; j++){
-                            dia_change |= check_block(s, mb_x, mb_y, (int[2]){block->mx+4*(i-j), block->my+(4*j)}, 0, &best_rd);
-                            dia_change |= check_block(s, mb_x, mb_y, (int[2]){block->mx-4*(i-j), block->my-(4*j)}, 0, &best_rd);
-                            dia_change |= check_block(s, mb_x, mb_y, (int[2]){block->mx+4*(i-j), block->my-(4*j)}, 0, &best_rd);
-                            dia_change |= check_block(s, mb_x, mb_y, (int[2]){block->mx-4*(i-j), block->my+(4*j)}, 0, &best_rd);
+                            dia_change |= check_block_2p(s, mb_x, mb_y, block->mx+4*(i-j), block->my+(4*j), 0, &best_rd);
+                            dia_change |= check_block_2p(s, mb_x, mb_y, block->mx-4*(i-j), block->my-(4*j), 0, &best_rd);
+                            dia_change |= check_block_2p(s, mb_x, mb_y, block->mx+4*(i-j), block->my-(4*j), 0, &best_rd);
+                            dia_change |= check_block_2p(s, mb_x, mb_y, block->mx-4*(i-j), block->my+(4*j), 0, &best_rd);
                         }
                     }
                 }while(dia_change);
@@ -3198,7 +3204,7 @@ static void iterative_me(SnowContext *s){
                     static const int square[8][2]= {{+1, 0},{-1, 0},{ 0,+1},{ 0,-1},{+1,+1},{-1,-1},{+1,-1},{-1,+1},};
                     dia_change=0;
                     for(i=0; i<8; i++)
-                        dia_change |= check_block(s, mb_x, mb_y, (int[2]){block->mx+square[i][0], block->my+square[i][1]}, 0, &best_rd);
+                        dia_change |= check_block_2p(s, mb_x, mb_y, block->mx+square[i][0], block->my+square[i][1], 0, &best_rd);
                 }while(dia_change);
                 //FIXME or try the standard 2 pass qpel or similar
 #if 1
