@@ -518,9 +518,9 @@ static void OPNAME ## h264_qpel4_hv_lowpass_ ## MMX(uint8_t *dst, int16_t *tmp, 
         "psraw $2, %%mm0            \n\t"/*(a-b)/4 */\
         "psubw %%mm1, %%mm0         \n\t"/*(a-b)/4-b */\
         "paddsw %%mm2, %%mm0        \n\t"\
-        "psraw $2, %%mm0            \n\t"/*((a-b)/4-b)/4 */\
+        "psraw $2, %%mm0            \n\t"/*((a-b)/4-b+c)/4 */\
         "paddw %%mm6, %%mm2         \n\t"\
-        "paddw %%mm2, %%mm0         \n\t"\
+        "paddw %%mm2, %%mm0         \n\t"/*(a-5*b+20*c)/16 +32 */\
         "psraw $6, %%mm0            \n\t"\
         "packuswb %%mm0, %%mm0      \n\t"\
         OP(%%mm0, (%1),%%mm7, d)\
@@ -955,8 +955,8 @@ static inline void ff_h264_weight_WxH_mmx2(uint8_t *dst, int stride, int log2_de
                 "punpcklbw %%mm7, %%mm1 \n\t"
                 "pmullw    %%mm4, %%mm0 \n\t"
                 "pmullw    %%mm4, %%mm1 \n\t"
-                "paddw     %%mm5, %%mm0 \n\t"
-                "paddw     %%mm5, %%mm1 \n\t"
+                "paddsw    %%mm5, %%mm0 \n\t"
+                "paddsw    %%mm5, %%mm1 \n\t"
                 "psraw     %%mm6, %%mm0 \n\t"
                 "psraw     %%mm6, %%mm1 \n\t"
                 "packuswb  %%mm7, %%mm0 \n\t"
@@ -995,8 +995,8 @@ static inline void ff_h264_biweight_WxH_mmx2(uint8_t *dst, uint8_t *src, int str
                 "punpcklbw %%mm7, %%mm1 \n\t"
                 "pmullw    %%mm3, %%mm0 \n\t"
                 "pmullw    %%mm4, %%mm1 \n\t"
-                "paddw     %%mm5, %%mm0 \n\t"
-                "paddw     %%mm1, %%mm0 \n\t"
+                "paddsw    %%mm1, %%mm0 \n\t"
+                "paddsw    %%mm5, %%mm0 \n\t"
                 "psraw     %%mm6, %%mm0 \n\t"
                 "packuswb  %%mm0, %%mm0 \n\t"
                 "movd      %%mm0, %0    \n\t"
