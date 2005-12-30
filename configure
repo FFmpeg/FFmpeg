@@ -79,8 +79,10 @@ echo "  --disable-ffplay         disable ffplay build"
 echo "  --enable-small           optimize for size instead of speed"
 echo "  --enable-memalign-hack   emulate memalign, interferes with memory debuggers"
 echo "  --disable-strip          disable stripping of executables and shared libraries"
-echo "  --enable-codec=CODEC     enables CODEC"
-echo "  --disable-codec=CODEC    disables CODEC"
+echo "  --disable-encoder=NAME   disables encoder NAME"
+echo "  --enable-encoder=NAME    enables encoder NAME"
+echo "  --disable-decoder=NAME   disables decoder NAME"
+echo "  --enable-decoder=NAME    enables decoder NAME"
 echo "  --disable-encoders       disables all encoders"
 echo "  --disable-decoders       disables all decoders"
 echo "  --disable-muxers         disables all muxers"
@@ -568,9 +570,13 @@ for opt do
   ;;
   --disable-strip) dostrip="no"
   ;;
-  --enable-codec=*) CODEC_LIST="$CODEC_LIST ${opt#--enable-codec=}"
+  --enable-encoder=*) CODEC_LIST="$CODEC_LIST ${opt#--enable-encoder=}_encoder"
   ;;
-  --disable-codec=*) CODEC_LIST="`echo $CODEC_LIST | sed -e \"s#${opt#--disable-codec=}##\"`"
+  --enable-decoder=*) CODEC_LIST="$CODEC_LIST ${opt#--enable-decoder=}_decoder"
+  ;;
+  --disable-encoder=*) CODEC_LIST="`echo $CODEC_LIST | sed -e \"s#${opt#--disable-encoder=}_encoder##\"`"
+  ;;
+  --disable-decoder=*) CODEC_LIST="`echo $CODEC_LIST | sed -e \"s#${opt#--disable-decoder=}_decoder##\"`"
   ;;
   --disable-encoders) CODEC_LIST="`echo $CODEC_LIST | sed 's/[-_a-zA-Z0-9]*encoder//g'`"
   ;;
