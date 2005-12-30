@@ -589,9 +589,11 @@ static void slice_buffer_destroy(slice_buffer * buf)
 static uint8_t qexp[QROOT];
 
 static inline int mirror(int v, int m){
-    if     (v<0) return -v;
-    else if(v>m) return 2*m-v;
-    else         return v;
+    while((unsigned)v > (unsigned)m){
+        v=-v;
+        if(v<0) v+= 2*m;
+    }
+    return v;
 }
 
 static inline void put_symbol(RangeCoder *c, uint8_t *state, int v, int is_signed){
@@ -1095,13 +1097,13 @@ static void spatial_decompose53i(DWTELEM *buffer, int width, int height, int str
         DWTELEM *b3= buffer + mirror(y+2, height-1)*stride;
 
 {START_TIMER
-        if(b1 <= b3)     horizontal_decompose53i(b2, width);
-        if(y+2 < height) horizontal_decompose53i(b3, width);
+        if(y+1<(unsigned)height) horizontal_decompose53i(b2, width);
+        if(y+2<(unsigned)height) horizontal_decompose53i(b3, width);
 STOP_TIMER("horizontal_decompose53i")}
 
 {START_TIMER
-        if(b1 <= b3) vertical_decompose53iH0(b1, b2, b3, width);
-        if(b0 <= b2) vertical_decompose53iL0(b0, b1, b2, width);
+        if(y+1<(unsigned)height) vertical_decompose53iH0(b1, b2, b3, width);
+        if(y+0<(unsigned)height) vertical_decompose53iL0(b0, b1, b2, width);
 STOP_TIMER("vertical_decompose53i*")}
 
         b0=b2;
@@ -1245,17 +1247,17 @@ static void spatial_decompose97i(DWTELEM *buffer, int width, int height, int str
         DWTELEM *b5= buffer + mirror(y+4, height-1)*stride;
 
 {START_TIMER
-        if(b3 <= b5)     horizontal_decompose97i(b4, width);
-        if(y+4 < height) horizontal_decompose97i(b5, width);
+        if(y+3<(unsigned)height) horizontal_decompose97i(b4, width);
+        if(y+4<(unsigned)height) horizontal_decompose97i(b5, width);
 if(width>400){
 STOP_TIMER("horizontal_decompose97i")
 }}
 
 {START_TIMER
-        if(b3 <= b5) vertical_decompose97iH0(b3, b4, b5, width);
-        if(b2 <= b4) vertical_decompose97iL0(b2, b3, b4, width);
-        if(b1 <= b3) vertical_decompose97iH1(b1, b2, b3, width);
-        if(b0 <= b2) vertical_decompose97iL1(b0, b1, b2, width);
+        if(y+3<(unsigned)height) vertical_decompose97iH0(b3, b4, b5, width);
+        if(y+2<(unsigned)height) vertical_decompose97iL0(b2, b3, b4, width);
+        if(y+1<(unsigned)height) vertical_decompose97iH1(b1, b2, b3, width);
+        if(y+0<(unsigned)height) vertical_decompose97iL1(b0, b1, b2, width);
 
 if(width>400){
 STOP_TIMER("vertical_decompose97i")
@@ -1368,13 +1370,13 @@ static void spatial_compose53i_dy_buffered(dwt_compose_t *cs, slice_buffer * sb,
     DWTELEM *b3= slice_buffer_get_line(sb, mirror3 * stride_line);
 
 {START_TIMER
-        if(mirror1 <= mirror3) vertical_compose53iL0(b1, b2, b3, width);
-        if(mirror0 <= mirror2) vertical_compose53iH0(b0, b1, b2, width);
+        if(y+1<(unsigned)height) vertical_compose53iL0(b1, b2, b3, width);
+        if(y+0<(unsigned)height) vertical_compose53iH0(b0, b1, b2, width);
 STOP_TIMER("vertical_compose53i*")}
 
 {START_TIMER
-        if(y-1 >= 0) horizontal_compose53i(b0, width);
-        if(mirror0 <= mirror2) horizontal_compose53i(b1, width);
+        if(y-1<(unsigned)height) horizontal_compose53i(b0, width);
+        if(y+0<(unsigned)height) horizontal_compose53i(b1, width);
 STOP_TIMER("horizontal_compose53i")}
 
     cs->b0 = b2;
@@ -1390,13 +1392,13 @@ static void spatial_compose53i_dy(dwt_compose_t *cs, DWTELEM *buffer, int width,
     DWTELEM *b3= buffer + mirror(y+2, height-1)*stride;
 
 {START_TIMER
-        if(b1 <= b3) vertical_compose53iL0(b1, b2, b3, width);
-        if(b0 <= b2) vertical_compose53iH0(b0, b1, b2, width);
+        if(y+1<(unsigned)height) vertical_compose53iL0(b1, b2, b3, width);
+        if(y+0<(unsigned)height) vertical_compose53iH0(b0, b1, b2, width);
 STOP_TIMER("vertical_compose53i*")}
 
 {START_TIMER
-        if(y-1 >= 0) horizontal_compose53i(b0, width);
-        if(b0 <= b2) horizontal_compose53i(b1, width);
+        if(y-1<(unsigned)height) horizontal_compose53i(b0, width);
+        if(y+0<(unsigned)height) horizontal_compose53i(b1, width);
 STOP_TIMER("horizontal_compose53i")}
 
     cs->b0 = b2;
@@ -1526,17 +1528,17 @@ static void spatial_compose97i_dy_buffered(dwt_compose_t *cs, slice_buffer * sb,
     if(y>0 && y+4<height){
         vertical_compose97i(b0, b1, b2, b3, b4, b5, width);
     }else{
-        if(mirror3 <= mirror5) vertical_compose97iL1(b3, b4, b5, width);
-        if(mirror2 <= mirror4) vertical_compose97iH1(b2, b3, b4, width);
-        if(mirror1 <= mirror3) vertical_compose97iL0(b1, b2, b3, width);
-        if(mirror0 <= mirror2) vertical_compose97iH0(b0, b1, b2, width);
+        if(y+3<(unsigned)height) vertical_compose97iL1(b3, b4, b5, width);
+        if(y+2<(unsigned)height) vertical_compose97iH1(b2, b3, b4, width);
+        if(y+1<(unsigned)height) vertical_compose97iL0(b1, b2, b3, width);
+        if(y+0<(unsigned)height) vertical_compose97iH0(b0, b1, b2, width);
     }
 if(width>400){
 STOP_TIMER("vertical_compose97i")}}
 
 {START_TIMER
-        if(y-1>=  0) horizontal_compose97i(b0, width);
-        if(mirror0 <= mirror2) horizontal_compose97i(b1, width);
+        if(y-1<(unsigned)height) horizontal_compose97i(b0, width);
+        if(y+0<(unsigned)height) horizontal_compose97i(b1, width);
 if(width>400 && mirror0 <= mirror2){
 STOP_TIMER("horizontal_compose97i")}}
 
@@ -1565,16 +1567,16 @@ static void spatial_compose97i_dy(dwt_compose_t *cs, DWTELEM *buffer, int width,
         }
 
 {START_TIMER
-        if(b3 <= b5) vertical_compose97iL1(b3, b4, b5, width);
-        if(b2 <= b4) vertical_compose97iH1(b2, b3, b4, width);
-        if(b1 <= b3) vertical_compose97iL0(b1, b2, b3, width);
-        if(b0 <= b2) vertical_compose97iH0(b0, b1, b2, width);
+        if(y+3<(unsigned)height) vertical_compose97iL1(b3, b4, b5, width);
+        if(y+2<(unsigned)height) vertical_compose97iH1(b2, b3, b4, width);
+        if(y+1<(unsigned)height) vertical_compose97iL0(b1, b2, b3, width);
+        if(y+0<(unsigned)height) vertical_compose97iH0(b0, b1, b2, width);
 if(width>400){
 STOP_TIMER("vertical_compose97i")}}
 
 {START_TIMER
-        if(y-1>=  0) horizontal_compose97i(b0, width);
-        if(b0 <= b2) horizontal_compose97i(b1, width);
+        if(y-1<(unsigned)height) horizontal_compose97i(b0, width);
+        if(y+0<(unsigned)height) horizontal_compose97i(b1, width);
 if(width>400 && b0 <= b2){
 STOP_TIMER("horizontal_compose97i")}}
 
@@ -3199,13 +3201,13 @@ static void iterative_me(SnowContext *s){
                         dia_change |= check_block(s, mb_x, mb_y, (int[2]){block->mx+square[i][0], block->my+square[i][1]}, 0, &best_rd);
                 }while(dia_change);
                 //FIXME or try the standard 2 pass qpel or similar
-
+#if 1
                 for(i=0; i<3; i++){
                     color[i]= get_dc(s, mb_x, mb_y, i);
                 }
                 check_block(s, mb_x, mb_y, color, 1, &best_rd);
                 //FIXME RD style color selection
-
+#endif
                 if(!same_block(block, &backup)){
                     if(tb != &null_block) tb ->type &= ~BLOCK_OPT;
                     if(lb != &null_block) lb ->type &= ~BLOCK_OPT;
