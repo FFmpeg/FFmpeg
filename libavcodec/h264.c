@@ -7112,18 +7112,19 @@ static inline int decode_vui_parameters(H264Context *h, SPS *sps){
     return 0;
 }
 
-static void decode_scaling_list(H264Context *h, uint8_t *factors, int size, const uint8_t *default_list){
+static void decode_scaling_list(H264Context *h, uint8_t *factors, int size,
+                                const uint8_t *jvt_list, const uint8_t *fallback_list){
     MpegEncContext * const s = &h->s;
     int i, last = 8, next = 8;
     const uint8_t *scan = size == 16 ? zigzag_scan : zigzag_scan8x8;
-    if(!get_bits1(&s->gb)) /* matrix not written, we use the default one */
-        memcpy(factors, default_list, size*sizeof(uint8_t));
+    if(!get_bits1(&s->gb)) /* matrix not written, we use the predicted one */
+        memcpy(factors, fallback_list, size*sizeof(uint8_t));
     else
     for(i=0;i<size;i++){
         if(next)
             next = (last + get_se_golomb(&s->gb)) & 0xff;
-        if(!i && !next){ /* matrix not written, we use the default one */
-            memcpy(factors, default_list, size*sizeof(uint8_t));
+        if(!i && !next){ /* matrix not written, we use the preset one */
+            memcpy(factors, jvt_list, size*sizeof(uint8_t));
             break;
         }
         last = factors[scan[i]] = next ? next : last;
@@ -7142,15 +7143,15 @@ static void decode_scaling_matrices(H264Context *h, SPS *sps, PPS *pps, int is_s
     };
     if(get_bits1(&s->gb)){
         sps->scaling_matrix_present |= is_sps;
-        decode_scaling_list(h,scaling_matrix4[0],16,fallback[0]); // Intra, Y
-        decode_scaling_list(h,scaling_matrix4[1],16,scaling_matrix4[0]); // Intra, Cr
-        decode_scaling_list(h,scaling_matrix4[2],16,scaling_matrix4[1]); // Intra, Cb
-        decode_scaling_list(h,scaling_matrix4[3],16,fallback[1]); // Inter, Y
-        decode_scaling_list(h,scaling_matrix4[4],16,scaling_matrix4[3]); // Inter, Cr
-        decode_scaling_list(h,scaling_matrix4[5],16,scaling_matrix4[4]); // Inter, Cb
+        decode_scaling_list(h,scaling_matrix4[0],16,default_scaling4[0],fallback[0]); // Intra, Y
+        decode_scaling_list(h,scaling_matrix4[1],16,default_scaling4[0],scaling_matrix4[0]); // Intra, Cr
+        decode_scaling_list(h,scaling_matrix4[2],16,default_scaling4[0],scaling_matrix4[1]); // Intra, Cb
+        decode_scaling_list(h,scaling_matrix4[3],16,default_scaling4[1],fallback[1]); // Inter, Y
+        decode_scaling_list(h,scaling_matrix4[4],16,default_scaling4[1],scaling_matrix4[3]); // Inter, Cr
+        decode_scaling_list(h,scaling_matrix4[5],16,default_scaling4[1],scaling_matrix4[4]); // Inter, Cb
         if(is_sps || pps->transform_8x8_mode){
-            decode_scaling_list(h,scaling_matrix8[0],64,fallback[2]);  // Intra, Y
-            decode_scaling_list(h,scaling_matrix8[1],64,fallback[3]);  // Inter, Y
+            decode_scaling_list(h,scaling_matrix8[0],64,default_scaling8[0],fallback[2]);  // Intra, Y
+            decode_scaling_list(h,scaling_matrix8[1],64,default_scaling8[1],fallback[3]);  // Inter, Y
         }
     } else if(fallback_sps) {
         memcpy(scaling_matrix4, sps->scaling_matrix4, 6*16*sizeof(uint8_t));
