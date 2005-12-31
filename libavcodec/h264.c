@@ -4872,8 +4872,13 @@ decode_intra_mb:
                 h->sub_mb_type[i]=      b_sub_mb_type_info[ h->sub_mb_type[i] ].type;
             }
             if(   IS_DIRECT(h->sub_mb_type[0]) || IS_DIRECT(h->sub_mb_type[1])
-               || IS_DIRECT(h->sub_mb_type[2]) || IS_DIRECT(h->sub_mb_type[3]))
+               || IS_DIRECT(h->sub_mb_type[2]) || IS_DIRECT(h->sub_mb_type[3])) {
                 pred_direct_motion(h, &mb_type);
+                h->ref_cache[0][scan8[4]] =
+                h->ref_cache[1][scan8[4]] =
+                h->ref_cache[0][scan8[12]] =
+                h->ref_cache[1][scan8[12]] = PART_NOT_AVAILABLE;
+            }
         }else{
             assert(h->slice_type == P_TYPE || h->slice_type == SP_TYPE); //FIXME SP correct ?
             for(i=0; i<4; i++){
@@ -4912,7 +4917,10 @@ decode_intra_mb:
             if(ref_count == 0) continue;
 
             for(i=0; i<4; i++){
-                if(IS_DIRECT(h->sub_mb_type[i])) continue;
+                if(IS_DIRECT(h->sub_mb_type[i])) {
+                    h->ref_cache[list][ scan8[4*i] ] = h->ref_cache[list][ scan8[4*i]+1 ];
+                    continue;
+                }
                 h->ref_cache[list][ scan8[4*i]   ]=h->ref_cache[list][ scan8[4*i]+1 ]=
                 h->ref_cache[list][ scan8[4*i]+8 ]=h->ref_cache[list][ scan8[4*i]+9 ]= ref[list][i];
 
