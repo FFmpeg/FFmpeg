@@ -1323,6 +1323,15 @@ static inline void pred_direct_motion(H264Context * const h, int *mb_type){
                                               || (l1ref0[x8 + y8*h->b8_stride] < 0 && l1ref1[x8 + y8*h->b8_stride] == 0
                                                   && (h->x264_build>33 || !h->x264_build)))){
                     const int16_t (*l1mv)[2]= l1ref0[x8 + y8*h->b8_stride] == 0 ? l1mv0 : l1mv1;
+                    if(IS_SUB_8X8(sub_mb_type)){
+                        const int16_t *mv_col = l1mv[x8*3 + y8*3*h->b_stride];
+                        if(ABS(mv_col[0]) <= 1 && ABS(mv_col[1]) <= 1){
+                            if(ref[0] == 0)
+                                fill_rectangle(&h->mv_cache[0][scan8[i8*4]], 2, 2, 8, 0, 4);
+                            if(ref[1] == 0)
+                                fill_rectangle(&h->mv_cache[1][scan8[i8*4]], 2, 2, 8, 0, 4);
+                        }
+                    }else
                     for(i4=0; i4<4; i4++){
                         const int16_t *mv_col = l1mv[x8*2 + (i4&1) + (y8*2 + (i4>>1))*h->b_stride];
                         if(ABS(mv_col[0]) <= 1 && ABS(mv_col[1]) <= 1){
@@ -1383,6 +1392,13 @@ static inline void pred_direct_motion(H264Context * const h, int *mb_type){
 
                 fill_rectangle(&h->ref_cache[0][scan8[i8*4]], 2, 2, 8, ref0, 1);
                 fill_rectangle(&h->ref_cache[1][scan8[i8*4]], 2, 2, 8, 0, 1);
+                if(IS_SUB_8X8(sub_mb_type)){
+                    const int16_t *mv_col = l1mv[x8*3 + y8*3*h->b_stride];
+                    int mx = (dist_scale_factor * mv_col[0] + 128) >> 8;
+                    int my = (dist_scale_factor * mv_col[1] + 128) >> 8;
+                    fill_rectangle(&h->mv_cache[0][scan8[i8*4]], 2, 2, 8, pack16to32(mx,my), 4);
+                    fill_rectangle(&h->mv_cache[1][scan8[i8*4]], 2, 2, 8, pack16to32(mx-mv_col[0],my-mv_col[1]), 4);
+                }else
                 for(i4=0; i4<4; i4++){
                     const int16_t *mv_col = l1mv[x8*2 + (i4&1) + (y8*2 + (i4>>1))*h->b_stride];
                     int16_t *mv_l0 = h->mv_cache[0][scan8[i8*4+i4]];
