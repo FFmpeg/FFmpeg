@@ -138,6 +138,15 @@ default.
 
 @chapter Development
 
+@section When will the next FFmpeg version be released? / Why are FFmpeg releases so few and far between?
+
+Like most open source projects FFmpeg suffers from a certain lack of
+manpower. For this reason the developers have to prioritize the work
+they do and putting out releases is not at the top of the list, fixing
+bugs and reviewing patches takes precedence. Please don't complain or
+request more timely and/or frequent releases unless you are willing to
+help out creating them.
+
 @section Why doesn't FFmpeg support feature [xyz]?
 
 Because no one has taken on that task yet. FFmpeg development is
