@@ -1183,6 +1183,7 @@ static int mpegts_read_header(AVFormatContext *s,
     ts->stream = s;
     ts->auto_guess = 0;
 
+goto_auto_guess:
     if (!ts->mpeg2ts_raw) {
         /* normal demux */
 
@@ -1235,8 +1236,15 @@ static int mpegts_read_header(AVFormatContext *s,
             }
             /* if could not find service, exit */
 
-            if (ts->set_service_ret != 0)
-                return -1;
+            if (ts->set_service_ret != 0) {
+                if(ts->auto_guess)
+                  return -1;
+                else {
+                  //let's retry with auto_guess set
+                 ts->auto_guess = 1;
+                 goto goto_auto_guess;
+                }
+            }
 
 #ifdef DEBUG_SI
             printf("tuning done\n");
