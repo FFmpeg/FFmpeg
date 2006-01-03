@@ -1029,6 +1029,17 @@ if $cc -msse -o $TMPO $TMPC 2> /dev/null ; then
   builtin_vector=yes
 fi
 
+# Probe for -Wdeclaration-after-statement
+if test "$cc" == "gcc"; then
+  cat > $TMPC << EOF
+  int main( void ) { return 0; }
+EOF
+
+  if $cc -Wdeclaration-after-statement -Werror -o $TMPE $TMPC 2> /dev/null ; then
+    CFLAGS="$CFLAGS -Wdeclaration-after-statement"
+  fi
+fi
+
 # dlopen/dlfcn.h probing
 
 cat > $TMPC << EOF
