@@ -1030,7 +1030,7 @@ if $cc -msse -o $TMPO $TMPC 2> /dev/null ; then
 fi
 
 # Probe for -Wdeclaration-after-statement
-if test "$cc" == "gcc"; then
+if test "$cc" = "gcc"; then
   cat > $TMPC << EOF
   int main( void ) { return 0; }
 EOF
