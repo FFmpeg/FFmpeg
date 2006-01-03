@@ -44,6 +44,7 @@ const CodecTag codec_wav_tags[] = {
     { CODEC_ID_SONIC_LS, 0x2048 },
     { CODEC_ID_ADPCM_CT, 0x200 },
     { CODEC_ID_ADPCM_SWF, ('S'<<8)+'F' },
+    { CODEC_ID_TRUESPEECH, 0x22 },
     { 0, 0 },
 };
 

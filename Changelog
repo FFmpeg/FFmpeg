@@ -26,6 +26,7 @@ version <next>
 - ffserver fixed, it should now be usable again
 - QDM2 audio decoder
 - cook audio decoder
+- TrueSpeech audio decoder
 - wma2 audio decoder fixed, now all files should play correctly
 - JPEG-LS decoder (unfinished)
 - build system improvements

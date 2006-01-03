@@ -161,6 +161,9 @@ endif
 ifeq ($(CONFIG_TRUEMOTION2_DECODER),yes)
     OBJS+= truemotion2.o
 endif
+ifeq ($(CONFIG_TRUESPEECH_DECODER),yes)
+    OBJS+= truespeech.o
+endif
 ifeq ($(CONFIG_TSCC_DECODER),yes)
     OBJS+= tscc.o
 endif

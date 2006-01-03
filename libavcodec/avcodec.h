@@ -189,6 +189,7 @@ enum CodecID {
     CODEC_ID_GSM,
     CODEC_ID_QDM2,
     CODEC_ID_COOK,
+    CODEC_ID_TRUESPEECH,
 
     CODEC_ID_OGGTHEORA= 0x16000,
 
@@ -2134,6 +2135,7 @@ extern AVCodec mp3adu_decoder;
 extern AVCodec mp3on4_decoder;
 extern AVCodec qdm2_decoder;
 extern AVCodec cook_decoder;
+extern AVCodec truespeech_decoder;
 extern AVCodec mace3_decoder;
 extern AVCodec mace6_decoder;
 extern AVCodec huffyuv_decoder;

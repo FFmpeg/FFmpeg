@@ -497,6 +497,9 @@ void avcodec_register_all(void)
 #ifdef CONFIG_COOK_DECODER
     register_avcodec(&cook_decoder);
 #endif //CONFIG_COOK_DECODER
+#ifdef CONFIG_TRUESPEECH_DECODER
+    register_avcodec(&truespeech_decoder);
+#endif //CONFIG_TRUESPEECH_DECODER
 #ifdef CONFIG_RAWVIDEO_DECODER
     register_avcodec(&rawvideo_decoder);
 #endif //CONFIG_RAWVIDEO_DECODER
