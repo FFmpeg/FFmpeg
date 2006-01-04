@@ -1359,15 +1359,11 @@ static void spatial_compose53i_init(dwt_compose_t *cs, DWTELEM *buffer, int heig
 
 static void spatial_compose53i_dy_buffered(dwt_compose_t *cs, slice_buffer * sb, int width, int height, int stride_line){
     int y= cs->y;
-    int mirror0 = mirror(y-1, height-1);
-    int mirror1 = mirror(y  , height-1);
-    int mirror2 = mirror(y+1, height-1);
-    int mirror3 = mirror(y+2, height-1);
 
     DWTELEM *b0= cs->b0;
     DWTELEM *b1= cs->b1;
-    DWTELEM *b2= slice_buffer_get_line(sb, mirror2 * stride_line);
-    DWTELEM *b3= slice_buffer_get_line(sb, mirror3 * stride_line);
+    DWTELEM *b2= slice_buffer_get_line(sb, mirror(y+1, height-1) * stride_line);
+    DWTELEM *b3= slice_buffer_get_line(sb, mirror(y+2, height-1) * stride_line);
 
 {START_TIMER
         if(y+1<(unsigned)height) vertical_compose53iL0(b1, b2, b3, width);
@@ -1511,18 +1507,12 @@ static void spatial_compose97i_init(dwt_compose_t *cs, DWTELEM *buffer, int heig
 static void spatial_compose97i_dy_buffered(dwt_compose_t *cs, slice_buffer * sb, int width, int height, int stride_line){
     int y = cs->y;
 
-    int mirror0 = mirror(y - 1, height - 1);
-    int mirror1 = mirror(y + 0, height - 1);
-    int mirror2 = mirror(y + 1, height - 1);
-    int mirror3 = mirror(y + 2, height - 1);
-    int mirror4 = mirror(y + 3, height - 1);
-    int mirror5 = mirror(y + 4, height - 1);
     DWTELEM *b0= cs->b0;
     DWTELEM *b1= cs->b1;
     DWTELEM *b2= cs->b2;
     DWTELEM *b3= cs->b3;
-    DWTELEM *b4= slice_buffer_get_line(sb, mirror4 * stride_line);
-    DWTELEM *b5= slice_buffer_get_line(sb, mirror5 * stride_line);
+    DWTELEM *b4= slice_buffer_get_line(sb, mirror(y + 3, height - 1) * stride_line);
+    DWTELEM *b5= slice_buffer_get_line(sb, mirror(y + 4, height - 1) * stride_line);
 
 {START_TIMER
     if(y>0 && y+4<height){
@@ -1539,7 +1529,7 @@ STOP_TIMER("vertical_compose97i")}}
 {START_TIMER
         if(y-1<(unsigned)height) horizontal_compose97i(b0, width);
         if(y+0<(unsigned)height) horizontal_compose97i(b1, width);
-if(width>400 && mirror0 <= mirror2){
+if(width>400 && y+0<(unsigned)height){
 STOP_TIMER("horizontal_compose97i")}}
 
     cs->b0=b2;
@@ -1557,14 +1547,6 @@ static void spatial_compose97i_dy(dwt_compose_t *cs, DWTELEM *buffer, int width,
     DWTELEM *b3= cs->b3;
     DWTELEM *b4= buffer + mirror(y+3, height-1)*stride;
     DWTELEM *b5= buffer + mirror(y+4, height-1)*stride;
-
-        if(stride == width && y+4 < height && 0){
-            int x;
-            for(x=0; x<width/2; x++)
-                b5[x] += 64*2;
-            for(; x<width; x++)
-                b5[x] += 169*2;
-        }
 
 {START_TIMER
         if(y+3<(unsigned)height) vertical_compose97iL1(b3, b4, b5, width);
@@ -4103,8 +4085,9 @@ if(s->avctx->debug&2048){
                 int end_y;
                 int our_mb_start = mb_y;
                 int our_mb_end = (mb_y + 1);
-                start_y = (mb_y ? ((block_w * our_mb_start) >> (s->spatial_decomposition_count - level)) + s->spatial_decomposition_count - level + 2: 0);
-                end_y = (((block_w * our_mb_end) >> (s->spatial_decomposition_count - level)) + s->spatial_decomposition_count - level + 2);
+                const int extra= 3;
+                start_y = (mb_y ? ((block_w * our_mb_start) >> (s->spatial_decomposition_count - level)) + s->spatial_decomposition_count - level + extra: 0);
+                end_y = (((block_w * our_mb_end) >> (s->spatial_decomposition_count - level)) + s->spatial_decomposition_count - level + extra);
                 if (!(s->keyframe || s->avctx->debug&512)){
                     start_y = FFMAX(0, start_y - (block_w >> (1+s->spatial_decomposition_count - level)));
                     end_y = FFMAX(0, end_y - (block_w >> (1+s->spatial_decomposition_count - level)));
