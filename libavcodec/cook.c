@@ -131,11 +131,6 @@ typedef struct {
     float               rootpow2tab[127];
 
     /* data buffers */
-    uint8_t*            frame_reorder_buffer;
-    int*                frame_reorder_index;
-    int                 frame_reorder_counter;
-    int                 frame_reorder_complete;
-    int                 frame_reorder_index_size;
 
     uint8_t*            decoded_bytes_buffer;
     float               mono_mdct_output[2048] __attribute__((aligned(16)));
@@ -325,8 +320,6 @@ static int cook_decode_close(AVCodecContext *avctx)
     av_free(q->mlt_precos);
     av_free(q->mlt_presin);
     av_free(q->mlt_postcos);
-    av_free(q->frame_reorder_index);
-    av_free(q->frame_reorder_buffer);
     av_free(q->decoded_bytes_buffer);
 
     /* Free the transform. */
@@ -915,7 +908,7 @@ static void joint_decode(COOKContext *q, float* mlt_buffer1,
                          float* mlt_buffer2) {
     int i,j;
     int decouple_tab[SUBBAND_SIZE];
-    float decode_buffer[2048];  //Only 1060 might be needed.
+    float decode_buffer[1060];
     int idx, cpl_tmp,tmp_idx;
     float f1,f2;
     float* cplscale;
@@ -940,20 +933,18 @@ static void joint_decode(COOKContext *q, float* mlt_buffer1,
     /* When we reach js_subband_start (the higher frequencies)
        the coefficients are stored in a coupling scheme. */
     idx = (1 << q->js_vlc_bits) - 1;
-    if (q->js_subband_start < q->subbands) {
-        for (i=0 ; i<q->subbands ; i++) {
-            cpl_tmp = cplband[i + q->js_subband_start];
-            idx -=decouple_tab[cpl_tmp];
-            cplscale = (float*)cplscales[q->js_vlc_bits-2];  //choose decoupler table
-            f1 = cplscale[decouple_tab[cpl_tmp]];
-            f2 = cplscale[idx-1];
-            for (j=0 ; j<SUBBAND_SIZE ; j++) {
-                tmp_idx = ((2*q->js_subband_start + i)*20)+j;
-                mlt_buffer1[20*(i+q->js_subband_start) + j] = f1 * decode_buffer[tmp_idx];
-                mlt_buffer2[20*(i+q->js_subband_start) + j] = f2 * decode_buffer[tmp_idx];
-            }
-            idx = (1 << q->js_vlc_bits) - 1;
+    for (i=q->js_subband_start ; i<q->subbands ; i++) {
+        cpl_tmp = cplband[i];
+        idx -=decouple_tab[cpl_tmp];
+        cplscale = (float*)cplscales[q->js_vlc_bits-2];  //choose decoupler table
+        f1 = cplscale[decouple_tab[cpl_tmp]];
+        f2 = cplscale[idx-1];
+        for (j=0 ; j<SUBBAND_SIZE ; j++) {
+            tmp_idx = ((q->js_subband_start + i)*20)+j;
+            mlt_buffer1[20*i + j] = f1 * decode_buffer[tmp_idx];
+            mlt_buffer2[20*i + j] = f2 * decode_buffer[tmp_idx];
         }
+        idx = (1 << q->js_vlc_bits) - 1;
     }
 }
 
@@ -1159,8 +1150,6 @@ static void dump_cook_context(COOKContext *q, COOKextradata *e)
     PRINT("numvector_bits",q->numvector_bits);
     PRINT("numvector_size",q->numvector_size);
     PRINT("total_subbands",q->total_subbands);
-    PRINT("frame_reorder_counter",q->frame_reorder_counter);
-    PRINT("frame_reorder_index_size",q->frame_reorder_index_size);
 }
 #endif
 /**
@@ -1293,8 +1282,9 @@ static int cook_decode_init(AVCodecContext *avctx)
     /* Initialize transform. */
     if ( init_cook_mlt(q) == 0 )
         return -1;
-
-    //dump_cook_context(q,e);
+#ifdef COOKDEBUG
+    dump_cook_context(q,e);
+#endif
     return 0;
 }
 
