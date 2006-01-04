@@ -170,6 +170,7 @@ typedef struct DSPContext {
     me_cmp_func w53[5];
     me_cmp_func w97[5];
     me_cmp_func dct_max[5];
+    me_cmp_func dct264_sad[5];
 
     me_cmp_func me_pre_cmp[5];
     me_cmp_func me_cmp[5];
@@ -366,6 +367,7 @@ static inline int get_penalty_factor(int lambda, int lambda2, int type){
     case FF_CMP_W97:
         return (2*lambda)>>(FF_LAMBDA_SHIFT);
     case FF_CMP_SATD:
+    case FF_CMP_DCT264:
         return (2*lambda)>>FF_LAMBDA_SHIFT;
     case FF_CMP_RD:
     case FF_CMP_PSNR:

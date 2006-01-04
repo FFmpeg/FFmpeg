@@ -1402,6 +1402,7 @@ typedef struct AVCodecContext {
 #define FF_CMP_W53  11
 #define FF_CMP_W97  12
 #define FF_CMP_DCTMAX 13
+#define FF_CMP_DCT264 14
 #define FF_CMP_CHROMA 256
 
     /**

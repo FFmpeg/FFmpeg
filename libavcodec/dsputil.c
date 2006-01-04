@@ -3115,6 +3115,9 @@ void ff_set_cmp(DSPContext* c, me_cmp_func *cmp, int type){
         case FF_CMP_DCT:
             cmp[i]= c->dct_sad[i];
             break;
+        case FF_CMP_DCT264:
+            cmp[i]= c->dct264_sad[i];
+            break;
         case FF_CMP_DCTMAX:
             cmp[i]= c->dct_max[i];
             break;
@@ -3340,6 +3343,59 @@ static int dct_sad8x8_c(/*MpegEncContext*/ void *c, uint8_t *src1, uint8_t *src2
 
     return sum;
 }
+
+#ifdef CONFIG_GPL
+#define DCT8_1D {\
+    const int s07 = SRC(0) + SRC(7);\
+    const int s16 = SRC(1) + SRC(6);\
+    const int s25 = SRC(2) + SRC(5);\
+    const int s34 = SRC(3) + SRC(4);\
+    const int a0 = s07 + s34;\
+    const int a1 = s16 + s25;\
+    const int a2 = s07 - s34;\
+    const int a3 = s16 - s25;\
+    const int d07 = SRC(0) - SRC(7);\
+    const int d16 = SRC(1) - SRC(6);\
+    const int d25 = SRC(2) - SRC(5);\
+    const int d34 = SRC(3) - SRC(4);\
+    const int a4 = d16 + d25 + (d07 + (d07>>1));\
+    const int a5 = d07 - d34 - (d25 + (d25>>1));\
+    const int a6 = d07 + d34 - (d16 + (d16>>1));\
+    const int a7 = d16 - d25 + (d34 + (d34>>1));\
+    DST(0,  a0 + a1     ) ;\
+    DST(1,  a4 + (a7>>2)) ;\
+    DST(2,  a2 + (a3>>1)) ;\
+    DST(3,  a5 + (a6>>2)) ;\
+    DST(4,  a0 - a1     ) ;\
+    DST(5,  a6 - (a5>>2)) ;\
+    DST(6, (a2>>1) - a3 ) ;\
+    DST(7, (a4>>2) - a7 ) ;\
+}
+
+static int dct264_sad8x8_c(/*MpegEncContext*/ void *c, uint8_t *src1, uint8_t *src2, int stride, int h){
+    MpegEncContext * const s= (MpegEncContext *)c;
+    int16_t dct[8][8];
+    int i;
+    int sum=0;
+
+    s->dsp.diff_pixels(dct, src1, src2, stride);
+
+#define SRC(x) dct[i][x]
+#define DST(x,v) dct[i][x]= v
+    for( i = 0; i < 8; i++ )
+        DCT8_1D
+#undef SRC
+#undef DST
+
+#define SRC(x) dct[x][i]
+#define DST(x,v) sum += ABS(v)
+    for( i = 0; i < 8; i++ )
+        DCT8_1D
+#undef SRC
+#undef DST
+    return sum;
+}
+#endif
 
 static int dct_max8x8_c(/*MpegEncContext*/ void *c, uint8_t *src1, uint8_t *src2, int stride, int h){
     MpegEncContext * const s= (MpegEncContext *)c;
@@ -3587,6 +3643,7 @@ static int vsse16_c(/*MpegEncContext*/ void *c, uint8_t *s1, uint8_t *s2, int st
 WARPER8_16_SQ(hadamard8_diff8x8_c, hadamard8_diff16_c)
 WARPER8_16_SQ(hadamard8_intra8x8_c, hadamard8_intra16_c)
 WARPER8_16_SQ(dct_sad8x8_c, dct_sad16_c)
+WARPER8_16_SQ(dct264_sad8x8_c, dct264_sad16_c)
 WARPER8_16_SQ(dct_max8x8_c, dct_max16_c)
 WARPER8_16_SQ(quant_psnr8x8_c, quant_psnr16_c)
 WARPER8_16_SQ(rd8x8_c, rd16_c)
@@ -3870,6 +3927,7 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     c->hadamard8_diff[4]= hadamard8_intra16_c;
     SET_CMP_FUNC(dct_sad)
     SET_CMP_FUNC(dct_max)
+    SET_CMP_FUNC(dct264_sad)
     c->sad[0]= pix_abs16_c;
     c->sad[1]= pix_abs8_c;
     c->sse[0]= sse16_c;
