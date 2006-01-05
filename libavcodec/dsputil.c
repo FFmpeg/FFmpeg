@@ -3643,7 +3643,9 @@ static int vsse16_c(/*MpegEncContext*/ void *c, uint8_t *s1, uint8_t *s2, int st
 WARPER8_16_SQ(hadamard8_diff8x8_c, hadamard8_diff16_c)
 WARPER8_16_SQ(hadamard8_intra8x8_c, hadamard8_intra16_c)
 WARPER8_16_SQ(dct_sad8x8_c, dct_sad16_c)
+#ifdef CONFIG_GPL
 WARPER8_16_SQ(dct264_sad8x8_c, dct264_sad16_c)
+#endif
 WARPER8_16_SQ(dct_max8x8_c, dct_max16_c)
 WARPER8_16_SQ(quant_psnr8x8_c, quant_psnr16_c)
 WARPER8_16_SQ(rd8x8_c, rd16_c)
@@ -3927,7 +3929,9 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     c->hadamard8_diff[4]= hadamard8_intra16_c;
     SET_CMP_FUNC(dct_sad)
     SET_CMP_FUNC(dct_max)
+#ifdef CONFIG_GPL
     SET_CMP_FUNC(dct264_sad)
+#endif
     c->sad[0]= pix_abs16_c;
     c->sad[1]= pix_abs8_c;
     c->sse[0]= sse16_c;
