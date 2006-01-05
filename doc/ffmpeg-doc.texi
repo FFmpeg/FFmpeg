@@ -734,6 +734,8 @@ following image formats are supported:
 @item H.261                  @tab  X  @tab  X
 @item H.263(+)               @tab  X  @tab  X @tab also known as RealVideo 1.0
 @item H.264                  @tab     @tab  X
+@item RealVideo 1.0          @tab  X  @tab  X
+@item RealVideo 2.0          @tab  X  @tab  X
 @item MJPEG                  @tab  X  @tab  X
 @item lossless MJPEG         @tab  X  @tab  X
 @item Apple MJPEG-B          @tab     @tab  X
@@ -855,6 +857,7 @@ other implementations.
 @tab there are still some distortions
 @item Real COOK              @tab      @tab X
 @tab All versions except 5.1 are supported
+@item DSP Group TrueSpeech   @tab      @tab X
 @end multitable
 
 @code{X} means that encoding (resp. decoding) is supported.
