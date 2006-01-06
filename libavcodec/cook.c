@@ -113,10 +113,11 @@ typedef struct {
     /* gain buffers */
     COOKgain*           gain_now_ptr;
     COOKgain*           gain_previous_ptr;
-    COOKgain            gain_copy;
     COOKgain            gain_current;
     COOKgain            gain_now;
     COOKgain            gain_previous;
+    COOKgain            gain_channel1[2];
+    COOKgain            gain_channel2[2];
 
     /* VLC data */
     int                 js_vlc_bits;
@@ -138,6 +139,7 @@ typedef struct {
     float               mono_previous_buffer1[1024];
     float               mono_previous_buffer2[1024];
     float*              decode_buf_ptr[4];
+    float*              decode_buf_ptr2[2];
     float               decode_buffer_1[1024];
     float               decode_buffer_2[1024];
     float               decode_buffer_3[1024];
@@ -206,10 +208,6 @@ static void init_gain_table(COOKContext *q) {
         q->gain_table[i] = pow((double)q->pow2tab[i+52] ,
                                (1.0/(double)q->gain_size_factor));
     }
-    memset(&q->gain_copy, 0, sizeof(COOKgain));
-    memset(&q->gain_current, 0, sizeof(COOKgain));
-    memset(&q->gain_now, 0, sizeof(COOKgain));
-    memset(&q->gain_previous, 0, sizeof(COOKgain));
 }
 
 
@@ -975,7 +973,6 @@ static int decode_subpacket(COOKContext *q, uint8_t *inbuffer,
     decode_bytes(inbuffer, q->decoded_bytes_buffer, sub_packet_size);
     init_get_bits(&q->gb, q->decoded_bytes_buffer, sub_packet_size*8);
     decode_gain_info(&q->gb, &q->gain_current);
-    memcpy(&q->gain_copy, &q->gain_current ,sizeof(COOKgain));  //This copy does not seem to be used. FIXME
 
     if(q->nb_channels==2 && q->joint_stereo==1){
         joint_decode(q, q->decode_buf_ptr[0], q->decode_buf_ptr[2]);
@@ -1017,24 +1014,22 @@ static int decode_subpacket(COOKContext *q, uint8_t *inbuffer,
 
     } else if (q->nb_channels==2 && q->joint_stereo==0) {
             /* channel 0 */
-            mono_decode(q, q->decode_buf_ptr[0]);
+            mono_decode(q, q->decode_buf_ptr2[0]);
 
-            tmp_ptr = q->decode_buf_ptr[0];
-            q->decode_buf_ptr[0] = q->decode_buf_ptr[1];
-            q->decode_buf_ptr[1] = q->decode_buf_ptr[2];
-            q->decode_buf_ptr[2] = q->decode_buf_ptr[3];
-            q->decode_buf_ptr[3] = tmp_ptr;
+            tmp_ptr = q->decode_buf_ptr2[0];
+            q->decode_buf_ptr2[0] = q->decode_buf_ptr2[1];
+            q->decode_buf_ptr2[1] = tmp_ptr;
 
-            q->gain_now_ptr = &q->gain_now;
-            q->gain_previous_ptr = &q->gain_previous;
+            memcpy(&q->gain_channel1[0], &q->gain_current ,sizeof(COOKgain));
+            q->gain_now_ptr = &q->gain_channel1[0];
+            q->gain_previous_ptr = &q->gain_channel1[1];
 
-            cook_imlt(q, q->decode_buf_ptr[0], q->mono_mdct_output,q->mlt_tmp);
+            cook_imlt(q, q->decode_buf_ptr2[0], q->mono_mdct_output,q->mlt_tmp);
             gain_compensate(q, q->mono_mdct_output, q->gain_now_ptr,
-                            q->gain_previous_ptr, q->previous_buffer_ptr[0]);
-            /* Swap out the previous buffer. */
-            tmp_ptr = q->previous_buffer_ptr[0];
-            q->previous_buffer_ptr[0] = q->previous_buffer_ptr[1];
-            q->previous_buffer_ptr[1] = tmp_ptr;
+                            q->gain_previous_ptr, q->mono_previous_buffer1);
+
+            memcpy(&q->gain_channel1[1], &q->gain_channel1[0],sizeof(COOKgain));
+
 
             for (j=0 ; j<q->samples_per_frame ; j++){
                 value = lrintf(q->mono_mdct_output[j]);
@@ -1046,24 +1041,27 @@ static int decode_subpacket(COOKContext *q, uint8_t *inbuffer,
             /* channel 1 */
             //av_log(NULL,AV_LOG_ERROR,"bits = %d\n",get_bits_count(&q->gb));
             init_get_bits(&q->gb, q->decoded_bytes_buffer, sub_packet_size*8+q->bits_per_subpacket);
-            decode_gain_info(&q->gb, &q->gain_current);
-            //memcpy(&q->gain_copy, &q->gain_current ,sizeof(COOKgain));
-            mono_decode(q, q->decode_buf_ptr[0]);
-            tmp_ptr = q->decode_buf_ptr[0];
-            q->decode_buf_ptr[1] = q->decode_buf_ptr[2];
-            q->decode_buf_ptr[2] = q->decode_buf_ptr[3];
-            q->decode_buf_ptr[3] = tmp_ptr;
 
-            q->gain_now_ptr = &q->gain_now;
-            q->gain_previous_ptr = &q->gain_previous;
+            q->gain_now_ptr = &q->gain_channel2[0];
+            q->gain_previous_ptr = &q->gain_channel2[1];
+
+            decode_gain_info(&q->gb, &q->gain_channel2[0]);
+            mono_decode(q, q->decode_buf_ptr[0]);
+
+            tmp_ptr = q->decode_buf_ptr[0];
+            q->decode_buf_ptr[0] = q->decode_buf_ptr[1];
+            q->decode_buf_ptr[1] = tmp_ptr;
 
             cook_imlt(q, q->decode_buf_ptr[0], q->mono_mdct_output,q->mlt_tmp);
-            gain_compensate(q, q->mono_mdct_output, q->gain_now_ptr, q->gain_previous_ptr, q->previous_buffer_ptr[0]);
+            gain_compensate(q, q->mono_mdct_output, q->gain_now_ptr,
+                            q->gain_previous_ptr, q->mono_previous_buffer2);
 
             /* Swap out the previous buffer. */
             tmp_ptr = q->previous_buffer_ptr[0];
             q->previous_buffer_ptr[0] = q->previous_buffer_ptr[1];
             q->previous_buffer_ptr[1] = tmp_ptr;
+
+            memcpy(&q->gain_channel2[1], &q->gain_channel2[0] ,sizeof(COOKgain));
 
             for (j=0 ; j<q->samples_per_frame ; j++){
                 value = lrintf(q->mono_mdct_output[j]);
@@ -1071,11 +1069,6 @@ static int decode_subpacket(COOKContext *q, uint8_t *inbuffer,
                 else if(value > 32767) value = 32767;
                 outbuffer[2*j] = value;
             }
-
-
-            /* Swap out the previous buffer. */
-            memcpy(&q->gain_now, &q->gain_previous, sizeof(COOKgain));
-            memcpy(&q->gain_previous, &q->gain_current, sizeof(COOKgain));
 
     } else {
         mono_decode(q, q->decode_buf_ptr[0]);
@@ -1214,9 +1207,7 @@ static int cook_decode_init(AVCodecContext *avctx)
         case MONO_COOK2:
             if (q->nb_channels != 1) {
                 q->joint_stereo = 0;
-                av_log(NULL,AV_LOG_ERROR,"Non-joint-stereo files are decoded with wrong gain at the moment!\n");
                 q->bits_per_subpacket = q->bits_per_subpacket/2;
-
             }
             av_log(NULL,AV_LOG_DEBUG,"MONO_COOK2\n");
             break;
@@ -1271,17 +1262,30 @@ static int cook_decode_init(AVCodecContext *avctx)
     q->decode_buf_ptr[2] = q->decode_buffer_3;
     q->decode_buf_ptr[3] = q->decode_buffer_4;
 
+    q->decode_buf_ptr2[0] = q->decode_buffer_3;
+    q->decode_buf_ptr2[1] = q->decode_buffer_4;
+
     q->previous_buffer_ptr[0] = q->mono_previous_buffer1;
     q->previous_buffer_ptr[1] = q->mono_previous_buffer2;
-
-    memset(q->decode_buffer_1,0,1024*sizeof(float));
-    memset(q->decode_buffer_2,0,1024*sizeof(float));
-    memset(q->decode_buffer_3,0,1024*sizeof(float));
-    memset(q->decode_buffer_4,0,1024*sizeof(float));
 
     /* Initialize transform. */
     if ( init_cook_mlt(q) == 0 )
         return -1;
+
+    /* Try to catch some obviously faulty streams, othervise it might be exploitable */
+    if (q->total_subbands > 53) {
+        av_log(NULL,AV_LOG_ERROR,"total_subbands > 53, report sample!\n");
+        return -1;
+    }
+    if (((q->subbands > 34) || (q->js_subband_start > 19)) && (q->joint_stereo)) {
+        av_log(NULL,AV_LOG_ERROR,"subbands > 34 or js_subband_start > 19, report sample!\n");
+        return -1;
+    }
+    if (q->subbands > 50) {
+        av_log(NULL,AV_LOG_ERROR,"subbands > 50, report sample!\n");
+        return -1;
+    }
+
 #ifdef COOKDEBUG
     dump_cook_context(q,e);
 #endif
