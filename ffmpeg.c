@@ -4147,12 +4147,13 @@ const OptionDef options[] = {
 
 static void show_banner(void)
 {
-    fprintf(stderr, "ffmpeg version " FFMPEG_VERSION ", build %d, Copyright (c) 2000-2004 Fabrice Bellard\n",
-        LIBAVCODEC_BUILD);
-    fprintf(stderr, "  configuration: %s\n", FFMPEG_CONFIGURATION);
+    fprintf(stderr, "FFmpeg version " FFMPEG_VERSION ", Copyright (c) 2000-2004 Fabrice Bellard\n");
+    fprintf(stderr, "  configuration: " FFMPEG_CONFIGURATION "\n");
+    fprintf(stderr, "  libavcodec version: " AV_STRINGIFY(LIBAVCODEC_VERSION) "\n");
+    fprintf(stderr, "  libavformat version: " AV_STRINGIFY(LIBAVFORMAT_VERSION) "\n");
     fprintf(stderr, "  built on " __DATE__ " " __TIME__);
 #ifdef __GNUC__
-    fprintf(stderr, ", gcc: %s\n", __VERSION__);
+    fprintf(stderr, ", gcc: " __VERSION__ "\n");
 #else
     fprintf(stderr, ", using a non-gcc compiler\n");
 #endif
