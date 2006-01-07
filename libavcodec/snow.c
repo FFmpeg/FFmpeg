@@ -2469,10 +2469,29 @@ mca( 8, 8,8)
 static void pred_block(SnowContext *s, uint8_t *dst, uint8_t *src, uint8_t *tmp, int stride, int sx, int sy, int b_w, int b_h, BlockNode *block, int plane_index, int w, int h){
     if(block->type & BLOCK_INTRA){
         int x, y;
-        const int color= block->color[plane_index];
-        for(y=0; y < b_h; y++){
-            for(x=0; x < b_w; x++){
-                dst[x + y*stride]= color;
+        const int color = block->color[plane_index];
+        const int color4= color*0x01010101;
+        if(b_w==16){
+            for(y=0; y < b_h; y++){
+                *(uint32_t*)&dst[0 + y*stride]= color4;
+                *(uint32_t*)&dst[4 + y*stride]= color4;
+                *(uint32_t*)&dst[8 + y*stride]= color4;
+                *(uint32_t*)&dst[12+ y*stride]= color4;
+            }
+        }else if(b_w==8){
+            for(y=0; y < b_h; y++){
+                *(uint32_t*)&dst[0 + y*stride]= color4;
+                *(uint32_t*)&dst[4 + y*stride]= color4;
+            }
+        }else if(b_w==4){
+            for(y=0; y < b_h; y++){
+                *(uint32_t*)&dst[0 + y*stride]= color4;
+            }
+        }else{
+            for(y=0; y < b_h; y++){
+                for(x=0; x < b_w; x++){
+                    dst[x + y*stride]= color;
+                }
             }
         }
     }else{
@@ -2489,10 +2508,21 @@ static void pred_block(SnowContext *s, uint8_t *dst, uint8_t *src, uint8_t *tmp,
             ff_emulated_edge_mc(tmp + MB_SIZE, src, stride, b_w+5, b_h+5, sx, sy, w, h);
             src= tmp + MB_SIZE;
         }
-        if((dx&3) || (dy&3) || b_w!=b_h || (b_w!=4 && b_w!=8 && b_w!=16))
+        assert(b_w == b_h || 2*b_w == b_h || b_w == 2*b_h);
+        assert(!(b_w&(b_w-1)));
+        assert(b_w>1 && b_h>1);
+        if((dx&3) || (dy&3) || b_w==2 || b_h==2)
             mc_block(dst, src, tmp, stride, b_w, b_h, dx, dy);
-        else
+        else if(b_w==b_h)
             s->dsp.put_h264_qpel_pixels_tab[2-(b_w>>3)][dy+(dx>>2)](dst,src + 2 + 2*stride,stride);
+        else if(b_w==2*b_h){
+            s->dsp.put_h264_qpel_pixels_tab[2-(b_h>>3)][dy+(dx>>2)](dst    ,src + 2       + 2*stride,stride);
+            s->dsp.put_h264_qpel_pixels_tab[2-(b_h>>3)][dy+(dx>>2)](dst+b_h,src + 2 + b_h + 2*stride,stride);
+        }else{
+            assert(2*b_w==b_h);
+            s->dsp.put_h264_qpel_pixels_tab[2-(b_w>>3)][dy+(dx>>2)](dst           ,src + 2 + 2*stride           ,stride);
+            s->dsp.put_h264_qpel_pixels_tab[2-(b_w>>3)][dy+(dx>>2)](dst+b_w*stride,src + 2 + 2*stride+b_w*stride,stride);
+        }
     }
 }
 
