@@ -1277,10 +1277,6 @@ static int cook_decode_init(AVCodecContext *avctx)
         av_log(NULL,AV_LOG_ERROR,"total_subbands > 53, report sample!\n");
         return -1;
     }
-    if (((q->subbands > 34) || (q->js_subband_start > 19)) && (q->joint_stereo)) {
-        av_log(NULL,AV_LOG_ERROR,"subbands > 34 or js_subband_start > 19, report sample!\n");
-        return -1;
-    }
     if (q->subbands > 50) {
         av_log(NULL,AV_LOG_ERROR,"subbands > 50, report sample!\n");
         return -1;
