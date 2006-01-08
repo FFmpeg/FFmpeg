@@ -1650,7 +1650,7 @@ static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
             if (get_bits_count(&s->gb) >= end_pos)
                 break;
             if (code_table) {
-                code = get_vlc(&s->gb, vlc);
+                code = get_vlc2(&s->gb, vlc->table, 8, 2);
                 if (code < 0)
                     return -1;
                 y = code_table[code];
@@ -1701,7 +1701,7 @@ static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
         }
         last_gb= s->gb;
 
-        code = get_vlc(&s->gb, vlc);
+        code = get_vlc2(&s->gb, vlc->table, vlc->bits, 2);
         dprintf("t=%d code=%d\n", g->count1table_select, code);
         if (code < 0)
             return -1;
