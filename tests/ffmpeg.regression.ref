@@ -123,8 +123,8 @@ stddev:  0.00 PSNR:99.99 bytes:7602176
 1197138 ./data/a-snow.avi
 e7c746171b092266b0cf55bb5de2a40a *./data/out.yuv
 stddev:  2.89 PSNR:38.87 bytes:7602176
-94bedf8929178a8202ae3b5dbcdb84dd *./data/a-snow53.avi
-3533696 ./data/a-snow53.avi
+11fd61ee7e67ef7a7b2a3df973691305 *./data/a-snow53.avi
+3533710 ./data/a-snow53.avi
 799d3db687f6cdd7a837ec156efc171f *./data/out.yuv
 stddev:  0.00 PSNR:99.99 bytes:7602176
 e1da20e3f52f4d2aa18e9486986161fc *./data/a-dv.dv

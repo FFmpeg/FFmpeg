@@ -2500,6 +2500,7 @@ static void pred_block(SnowContext *s, uint8_t *dst, uint8_t *src, uint8_t *tmp,
         int my= block->my*scale;
         const int dx= mx&15;
         const int dy= my&15;
+        const int tab_index= 3 - (b_w>>2) + (b_w>>4);
         sx += (mx>>4) - 2;
         sy += (my>>4) - 2;
         src += sx + sy*stride;
@@ -2511,17 +2512,18 @@ static void pred_block(SnowContext *s, uint8_t *dst, uint8_t *src, uint8_t *tmp,
         assert(b_w == b_h || 2*b_w == b_h || b_w == 2*b_h);
         assert(!(b_w&(b_w-1)));
         assert(b_w>1 && b_h>1);
-        if((dx&3) || (dy&3) || b_w==2 || b_h==2)
+        assert(tab_index>=0 && tab_index<4);
+        if((dx&3) || (dy&3))
             mc_block(dst, src, tmp, stride, b_w, b_h, dx, dy);
         else if(b_w==b_h)
-            s->dsp.put_h264_qpel_pixels_tab[2-(b_w>>3)][dy+(dx>>2)](dst,src + 2 + 2*stride,stride);
+            s->dsp.put_h264_qpel_pixels_tab[tab_index  ][dy+(dx>>2)](dst,src + 2 + 2*stride,stride);
         else if(b_w==2*b_h){
-            s->dsp.put_h264_qpel_pixels_tab[2-(b_h>>3)][dy+(dx>>2)](dst    ,src + 2       + 2*stride,stride);
-            s->dsp.put_h264_qpel_pixels_tab[2-(b_h>>3)][dy+(dx>>2)](dst+b_h,src + 2 + b_h + 2*stride,stride);
+            s->dsp.put_h264_qpel_pixels_tab[tab_index+1][dy+(dx>>2)](dst    ,src + 2       + 2*stride,stride);
+            s->dsp.put_h264_qpel_pixels_tab[tab_index+1][dy+(dx>>2)](dst+b_h,src + 2 + b_h + 2*stride,stride);
         }else{
             assert(2*b_w==b_h);
-            s->dsp.put_h264_qpel_pixels_tab[2-(b_w>>3)][dy+(dx>>2)](dst           ,src + 2 + 2*stride           ,stride);
-            s->dsp.put_h264_qpel_pixels_tab[2-(b_w>>3)][dy+(dx>>2)](dst+b_w*stride,src + 2 + 2*stride+b_w*stride,stride);
+            s->dsp.put_h264_qpel_pixels_tab[tab_index  ][dy+(dx>>2)](dst           ,src + 2 + 2*stride           ,stride);
+            s->dsp.put_h264_qpel_pixels_tab[tab_index  ][dy+(dx>>2)](dst+b_w*stride,src + 2 + 2*stride+b_w*stride,stride);
         }
     }
 }

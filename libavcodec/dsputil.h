@@ -253,8 +253,8 @@ typedef struct DSPContext {
     h264_chroma_mc_func put_h264_chroma_pixels_tab[3];
     h264_chroma_mc_func avg_h264_chroma_pixels_tab[3];
 
-    qpel_mc_func put_h264_qpel_pixels_tab[3][16];
-    qpel_mc_func avg_h264_qpel_pixels_tab[3][16];
+    qpel_mc_func put_h264_qpel_pixels_tab[4][16];
+    qpel_mc_func avg_h264_qpel_pixels_tab[4][16];
 
     h264_weight_func weight_h264_pixels_tab[10];
     h264_biweight_func biweight_h264_pixels_tab[10];
@@ -510,6 +510,7 @@ struct unaligned_16 { uint16_t l; } __attribute__((packed));
 #define LD32(a) (((const struct unaligned_32 *) (a))->l)
 #define LD64(a) (((const struct unaligned_64 *) (a))->l)
 
+#define ST16(a, b) (((struct unaligned_16 *) (a))->l) = (b)
 #define ST32(a, b) (((struct unaligned_32 *) (a))->l) = (b)
 
 #else /* __GNUC__ */
