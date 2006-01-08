@@ -5278,13 +5278,13 @@ static void mpeg4_decode_sprite_trajectory(MpegEncContext * s, GetBitContext *gb
         int length;
         int x=0, y=0;
 
-        length= get_vlc(gb, &sprite_trajectory);
+        length= get_vlc2(gb, sprite_trajectory.table, SPRITE_TRAJ_VLC_BITS, 3);
         if(length){
             x= get_xbits(gb, length);
         }
         if(!(s->divx_version==500 && s->divx_build==413)) skip_bits1(gb); /* marker bit */
 
-        length= get_vlc(gb, &sprite_trajectory);
+        length= get_vlc2(gb, sprite_trajectory.table, SPRITE_TRAJ_VLC_BITS, 3);
         if(length){
             y=get_xbits(gb, length);
         }
