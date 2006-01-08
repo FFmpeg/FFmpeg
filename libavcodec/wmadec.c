@@ -56,6 +56,8 @@
 
 #define LSP_POW_BITS 7
 
+#define VLCBITS 9
+
 typedef struct WMADecodeContext {
     GetBitContext gb;
     int sample_rate;
@@ -679,7 +681,7 @@ static int decode_exp_vlc(WMADecodeContext *s, int ch)
     }
     last_exp = 36;
     while (q < q_end) {
-        code = get_vlc(&s->gb, &s->exp_vlc);
+        code = get_vlc2(&s->gb, s->exp_vlc.table, VLCBITS, 2);
         if (code < 0)
             return -1;
         /* NOTE: this offset is the same as MPEG4 AAC ! */
@@ -820,7 +822,7 @@ static int wma_decode_block(WMADecodeContext *s)
                         if (val == (int)0x80000000) {
                             val = get_bits(&s->gb, 7) - 19;
                         } else {
-                            code = get_vlc(&s->gb, &s->hgain_vlc);
+                            code = get_vlc2(&s->gb, s->hgain_vlc.table, VLCBITS, 2);
                             if (code < 0)
                                 return -1;
                             val += code - 18;
@@ -877,7 +879,7 @@ static int wma_decode_block(WMADecodeContext *s)
             eptr = ptr + nb_coefs[ch];
             memset(ptr, 0, s->block_len * sizeof(int16_t));
             for(;;) {
-                code = get_vlc(&s->gb, coef_vlc);
+                code = get_vlc2(&s->gb, coef_vlc->table, VLCBITS, 3);
                 if (code < 0)
                     return -1;
                 if (code == 1) {
