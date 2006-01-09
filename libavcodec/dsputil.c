@@ -2489,7 +2489,7 @@ H264_MC(avg_, 16)
 #define op_scale2(x)  dst[x] = clip_uint8( (src[x]*weights + dst[x]*weightd + offset) >> (log2_denom+1))
 #define H264_WEIGHT(W,H) \
 static void weight_h264_pixels ## W ## x ## H ## _c(uint8_t *block, int stride, int log2_denom, int weight, int offset){ \
-    int attribute_unused x, y; \
+    int y; \
     offset <<= log2_denom; \
     if(log2_denom) offset += 1<<(log2_denom-1); \
     for(y=0; y<H; y++, block += stride){ \
@@ -2514,10 +2514,9 @@ static void weight_h264_pixels ## W ## x ## H ## _c(uint8_t *block, int stride, 
         op_scale1(15); \
     } \
 } \
-static void biweight_h264_pixels ## W ## x ## H ## _c(uint8_t *dst, uint8_t *src, int stride, int log2_denom, int weightd, int weights, int offsetd, int offsets){ \
-    int attribute_unused x, y; \
-    int offset = (offsets + offsetd + 1) >> 1; \
-    offset = ((offset << 1) + 1) << log2_denom; \
+static void biweight_h264_pixels ## W ## x ## H ## _c(uint8_t *dst, uint8_t *src, int stride, int log2_denom, int weightd, int weights, int offset){ \
+    int y; \
+    offset = ((offset + 1) | 1) << log2_denom; \
     for(y=0; y<H; y++, dst += stride, src += stride){ \
         op_scale2(0); \
         op_scale2(1); \

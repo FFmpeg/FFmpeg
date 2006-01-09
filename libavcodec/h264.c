@@ -2709,19 +2709,19 @@ static inline void mc_part_weighted(H264Context *h, int n, int square, int chrom
         if(h->use_weight == 2){
             int weight0 = h->implicit_weight[refn0][refn1];
             int weight1 = 64 - weight0;
-            luma_weight_avg(  dest_y,  tmp_y,  s->  linesize, 5, weight0, weight1, 0, 0);
-            chroma_weight_avg(dest_cb, tmp_cb, s->uvlinesize, 5, weight0, weight1, 0, 0);
-            chroma_weight_avg(dest_cr, tmp_cr, s->uvlinesize, 5, weight0, weight1, 0, 0);
+            luma_weight_avg(  dest_y,  tmp_y,  s->  linesize, 5, weight0, weight1, 0);
+            chroma_weight_avg(dest_cb, tmp_cb, s->uvlinesize, 5, weight0, weight1, 0);
+            chroma_weight_avg(dest_cr, tmp_cr, s->uvlinesize, 5, weight0, weight1, 0);
         }else{
             luma_weight_avg(dest_y, tmp_y, s->linesize, h->luma_log2_weight_denom,
                             h->luma_weight[0][refn0], h->luma_weight[1][refn1],
-                            h->luma_offset[0][refn0], h->luma_offset[1][refn1]);
+                            h->luma_offset[0][refn0] + h->luma_offset[1][refn1]);
             chroma_weight_avg(dest_cb, tmp_cb, s->uvlinesize, h->chroma_log2_weight_denom,
                             h->chroma_weight[0][refn0][0], h->chroma_weight[1][refn1][0],
-                            h->chroma_offset[0][refn0][0], h->chroma_offset[1][refn1][0]);
+                            h->chroma_offset[0][refn0][0] + h->chroma_offset[1][refn1][0]);
             chroma_weight_avg(dest_cr, tmp_cr, s->uvlinesize, h->chroma_log2_weight_denom,
                             h->chroma_weight[0][refn0][1], h->chroma_weight[1][refn1][1],
-                            h->chroma_offset[0][refn0][1], h->chroma_offset[1][refn1][1]);
+                            h->chroma_offset[0][refn0][1] + h->chroma_offset[1][refn1][1]);
         }
     }else{
         int list = list1 ? 1 : 0;

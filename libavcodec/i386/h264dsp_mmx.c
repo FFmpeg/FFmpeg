@@ -971,10 +971,10 @@ static inline void ff_h264_weight_WxH_mmx2(uint8_t *dst, int stride, int log2_de
     }
 }
 
-static inline void ff_h264_biweight_WxH_mmx2(uint8_t *dst, uint8_t *src, int stride, int log2_denom, int weightd, int weights, int offsetd, int offsets, int w, int h)
+static inline void ff_h264_biweight_WxH_mmx2(uint8_t *dst, uint8_t *src, int stride, int log2_denom, int weightd, int weights, int offset, int w, int h)
 {
     int x, y;
-    int offset = ((offsets + offsetd + 1) | 1) << log2_denom;
+    offset = ((offset + 1) | 1) << log2_denom;
     asm volatile(
         "movd    %0, %%mm3        \n\t"
         "movd    %1, %%mm4        \n\t"
@@ -1010,8 +1010,8 @@ static inline void ff_h264_biweight_WxH_mmx2(uint8_t *dst, uint8_t *src, int str
 }
 
 #define H264_WEIGHT(W,H) \
-static void ff_h264_biweight_ ## W ## x ## H ## _mmx2(uint8_t *dst, uint8_t *src, int stride, int log2_denom, int weightd, int weights, int offsetd, int offsets){ \
-    ff_h264_biweight_WxH_mmx2(dst, src, stride, log2_denom, weightd, weights, offsetd, offsets, W, H); \
+static void ff_h264_biweight_ ## W ## x ## H ## _mmx2(uint8_t *dst, uint8_t *src, int stride, int log2_denom, int weightd, int weights, int offset){ \
+    ff_h264_biweight_WxH_mmx2(dst, src, stride, log2_denom, weightd, weights, offset, W, H); \
 } \
 static void ff_h264_weight_ ## W ## x ## H ## _mmx2(uint8_t *dst, int stride, int log2_denom, int weight, int offset){ \
     ff_h264_weight_WxH_mmx2(dst, stride, log2_denom, weight, offset, W, H); \
