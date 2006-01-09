@@ -12,7 +12,7 @@ SHFLAGS += -Wl,-install_name,$(libdir)/$(SPPLIBNAME),-current_version,$(SPPVERSI
 else
 SPPLIBMAJOR = $(SPPLIBNAME).$(SPPMAJOR)
 SPPLIB = $(SPPLIBNAME).$(SPPVERSION)
-SHFLAGS = -shared -Wl,-soname,$(SPPLIB)
+LIBVERSION = $(SPPLIB)
 endif
 endif
 PPLIB = $(LIBPREF)postproc$(LIBSUF)
