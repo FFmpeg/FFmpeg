@@ -494,7 +494,7 @@ for opt do
   ;;
   --enable-pp) pp="yes"
   ;;
-  --enable-shared-pp) shared_pp="yes"
+  --enable-shared-pp) pp="yes"; shared_pp="yes"
   ;;
   --enable-libgsm) libgsm="yes"
     extralibs="$extralibs -lgsm"
