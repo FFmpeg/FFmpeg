@@ -377,7 +377,7 @@ static void svq3_luma_dc_dequant_idct_c(DCTELEM *block, int qp);
 static void svq3_add_idct_c(uint8_t *dst, DCTELEM *block, int stride, int qp, int dc);
 static void filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint8_t *img_cb, uint8_t *img_cr, unsigned int linesize, unsigned int uvlinesize);
 
-static inline uint32_t pack16to32(int a, int b){
+static always_inline uint32_t pack16to32(int a, int b){
 #ifdef WORDS_BIGENDIAN
    return (b&0xFFFF) + (a<<16);
 #else
@@ -391,7 +391,7 @@ static inline uint32_t pack16to32(int a, int b){
  * @param w width of the rectangle, should be a constant
  * @param size the size of val (1 or 4), should be a constant
  */
-static inline void fill_rectangle(void *vp, int w, int h, int stride, uint32_t val, int size){ //FIXME ensure this IS inlined
+static always_inline void fill_rectangle(void *vp, int w, int h, int stride, uint32_t val, int size){
     uint8_t *p= (uint8_t*)vp;
     assert(size==1 || size==4);
 
@@ -450,7 +450,7 @@ static inline void fill_rectangle(void *vp, int w, int h, int stride, uint32_t v
         assert(0);
 }
 
-static inline void fill_caches(H264Context *h, int mb_type, int for_deblock){
+static void fill_caches(H264Context *h, int mb_type, int for_deblock){
     MpegEncContext * const s = &h->s;
     const int mb_xy= s->mb_x + s->mb_y*s->mb_stride;
     int topleft_xy, top_xy, topright_xy, left_xy[2];
@@ -5592,7 +5592,7 @@ static int inline get_cabac_cbf_ctx( H264Context *h, int cat, int idx ) {
     return ctx + 4 * cat;
 }
 
-static int inline decode_cabac_residual( H264Context *h, DCTELEM *block, int cat, int n, const uint8_t *scantable, const uint32_t *qmul, int max_coeff) {
+static int decode_cabac_residual( H264Context *h, DCTELEM *block, int cat, int n, const uint8_t *scantable, const uint32_t *qmul, int max_coeff) {
     const int mb_xy  = h->s.mb_x + h->s.mb_y*h->s.mb_stride;
     static const int significant_coeff_flag_field_offset[2] = { 105, 277 };
     static const int last_significant_coeff_flag_field_offset[2] = { 166, 338 };
