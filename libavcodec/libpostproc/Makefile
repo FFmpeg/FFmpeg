@@ -5,14 +5,13 @@ VPATH=$(SRC_PATH)/libavcodec/libpostproc
 
 ifeq ($(SHARED_PP),yes)
 SPPLIBNAME = $(SLIBPREF)postproc$(SLIBSUF)
+SPPLIBMAJOR = $(SPPLIBNAME).$(SPPMAJOR)
+SPPLIB = $(SPPLIBNAME).$(SPPVERSION)
+LIBVERSION = $(SPPLIB)
 ifeq ($(CONFIG_DARWIN),yes)
 SPPLIBMAJOR = $(SLIBPREF)postproc.$(SPPMAJOR)$(SLIBSUF)
 SPPLIB = $(SLIBPREF)postproc.$(SPPVERSION)$(SLIBSUF)
 SHFLAGS += -Wl,-install_name,$(libdir)/$(SPPLIBNAME),-current_version,$(SPPVERSION),-compatibility_version,$(SPPVERSION)
-else
-SPPLIBMAJOR = $(SPPLIBNAME).$(SPPMAJOR)
-SPPLIB = $(SPPLIBNAME).$(SPPVERSION)
-LIBVERSION = $(SPPLIB)
 endif
 endif
 PPLIB = $(LIBPREF)postproc$(LIBSUF)
