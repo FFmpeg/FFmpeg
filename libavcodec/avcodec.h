@@ -114,6 +114,7 @@ enum CodecID {
     CODEC_ID_FRAPS,
     CODEC_ID_TRUEMOTION2,
     CODEC_ID_BMP,
+    CODEC_ID_CSCD,
 
     /* various pcm "codecs" */
     CODEC_ID_PCM_S16LE= 0x10000,
@@ -2190,6 +2191,7 @@ extern AVCodec sonic_decoder;
 extern AVCodec qtrle_decoder;
 extern AVCodec flac_decoder;
 extern AVCodec tscc_decoder;
+extern AVCodec cscd_decoder;
 extern AVCodec ulti_decoder;
 extern AVCodec qdraw_decoder;
 extern AVCodec xl_decoder;

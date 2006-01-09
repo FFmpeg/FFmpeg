@@ -264,6 +264,9 @@ void avcodec_register_all(void)
 #ifdef CONFIG_TSCC_DECODER
     register_avcodec(&tscc_decoder);
 #endif //CONFIG_TSCC_DECODER
+#ifdef CONFIG_CSCD_DECODER
+    register_avcodec(&cscd_decoder);
+#endif //CONFIG_CSCD_DECODER
 #ifdef CONFIG_ULTI_DECODER
     register_avcodec(&ulti_decoder);
 #endif //CONFIG_ULTI_DECODER
