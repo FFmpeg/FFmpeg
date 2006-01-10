@@ -57,6 +57,7 @@ static int Faac_encode_init(AVCodecContext *avctx)
     faac_cfg->useTns = 0;
     faac_cfg->allowMidside = 1;
     faac_cfg->bitRate = avctx->bit_rate / avctx->channels;
+    faac_cfg->bandWidth = avctx->cutoff;
     if(avctx->flags & CODEC_FLAG_QSCALE) {
         faac_cfg->bitRate = 0;
         faac_cfg->quantqual = avctx->global_quality / FF_QP2LAMBDA;
