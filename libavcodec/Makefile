@@ -169,6 +169,7 @@ ifeq ($(CONFIG_TSCC_DECODER),yes)
 endif
 ifeq ($(CONFIG_CSCD_DECODER),yes)
     OBJS+= cscd.o
+    OBJS+= lzo.o
 endif
 ifeq ($(CONFIG_ULTI_DECODER),yes)
     OBJS+= ulti.o

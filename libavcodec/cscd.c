@@ -25,9 +25,7 @@
 #ifdef CONFIG_ZLIB
 #include <zlib.h>
 #endif
-#ifdef CONFIG_LZO
-#include <lzo1x.h>
-#endif
+#include "lzo.h"
 
 typedef struct {
     AVFrame pic;
@@ -158,16 +156,10 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     // decompress data
     switch ((buf[0] >> 1) & 7) {
         case 0: { // lzo compression
-#ifdef CONFIG_LZO
-            unsigned int dlen = c->decomp_size;
-            if (lzo1x_decompress_safe(&buf[2], buf_size - 2,
-                       c->decomp_buf, &dlen, NULL) != LZO_E_OK)
+            int outlen = c->decomp_size, inlen = buf_size - 2;
+            if (lzo1x_decode(c->decomp_buf, &outlen, &buf[2], &inlen))
                 av_log(avctx, AV_LOG_ERROR, "error during lzo decompression\n");
             break;
-#else
-            av_log(avctx, AV_LOG_ERROR, "compiled without lzo (GPL) support\n");
-            return -1;
-#endif
         }
         case 1: { // zlib compression
 #ifdef CONFIG_ZLIB
