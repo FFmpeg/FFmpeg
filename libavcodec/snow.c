@@ -3116,13 +3116,14 @@ static int get_block_rd(SnowContext *s, int mb_x, int mb_y, int plane_index, con
             BlockNode *top   = y ? &s->block[index-b_stride] : &null_block;
             BlockNode *tl    = y && x ? &s->block[index-b_stride-1] : left;
             BlockNode *tr    = y && x+1<b_stride ? &s->block[index-b_stride+1] : tl;
-            int dmx= b->mx - mid_pred(left->mx, top->mx, tr->mx);
-            int dmy= b->my - mid_pred(left->my, top->my, tr->my);
+            int dmx, dmy;
 //        int mx_context= av_log2(2*ABS(left->mx - top->mx));
 //        int my_context= av_log2(2*ABS(left->my - top->my));
 
             if(x<0 || x>=b_stride || y>=b_height)
                 continue;
+            dmx= b->mx - mid_pred(left->mx, top->mx, tr->mx);
+            dmy= b->my - mid_pred(left->my, top->my, tr->my);
 /*
 1            0      0
 01X          1-2    1
@@ -3206,14 +3207,14 @@ static void iterative_me(SnowContext *s){
                 BlockNode backup;
                 const int index= mb_x + mb_y * b_stride;
                 BlockNode *block= &s->block[index];
-                BlockNode *tb =                 mb_y          ? &s->block[index-b_stride  ] : &null_block;
-                BlockNode *lb = mb_x                          ? &s->block[index         -1] : &null_block;
-                BlockNode *rb = mb_x<b_width                  ? &s->block[index         +1] : &null_block;
-                BlockNode *bb =                 mb_y<b_height ? &s->block[index+b_stride  ] : &null_block;
-                BlockNode *tlb= mb_x         && mb_y          ? &s->block[index-b_stride-1] : &null_block;
-                BlockNode *trb= mb_x<b_width && mb_y          ? &s->block[index-b_stride+1] : &null_block;
-                BlockNode *blb= mb_x         && mb_y<b_height ? &s->block[index+b_stride-1] : &null_block;
-                BlockNode *brb= mb_x<b_width && mb_y<b_height ? &s->block[index+b_stride+1] : &null_block;
+                BlockNode *tb =                   mb_y            ? &s->block[index-b_stride  ] : &null_block;
+                BlockNode *lb = mb_x                              ? &s->block[index         -1] : &null_block;
+                BlockNode *rb = mb_x+1<b_width                    ? &s->block[index         +1] : &null_block;
+                BlockNode *bb =                   mb_y+1<b_height ? &s->block[index+b_stride  ] : &null_block;
+                BlockNode *tlb= mb_x           && mb_y            ? &s->block[index-b_stride-1] : &null_block;
+                BlockNode *trb= mb_x+1<b_width && mb_y            ? &s->block[index-b_stride+1] : &null_block;
+                BlockNode *blb= mb_x           && mb_y+1<b_height ? &s->block[index+b_stride-1] : &null_block;
+                BlockNode *brb= mb_x+1<b_width && mb_y+1<b_height ? &s->block[index+b_stride+1] : &null_block;
                 const int b_w= (MB_SIZE >> s->block_max_depth);
                 uint8_t obmc_edged[b_w*2][b_w*2];
 
