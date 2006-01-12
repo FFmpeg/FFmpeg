@@ -1,3 +1,4 @@
+#FIXME: This Makefile differs from all the others for no good reason...
 
 include ../../config.mak
 
@@ -8,11 +9,7 @@ SPPLIBNAME = $(SLIBPREF)postproc$(SLIBSUF)
 SPPLIBMAJOR = $(SPPLIBNAME).$(SPPMAJOR)
 SPPLIB = $(SPPLIBNAME).$(SPPVERSION)
 LIBVERSION = $(SPPLIB)
-ifeq ($(CONFIG_DARWIN),yes)
-SPPLIBMAJOR = $(SLIBPREF)postproc.$(SPPMAJOR)$(SLIBSUF)
-SPPLIB = $(SLIBPREF)postproc.$(SPPVERSION)$(SLIBSUF)
-SHFLAGS += -Wl,-install_name,$(libdir)/$(SPPLIBNAME),-current_version,$(SPPVERSION),-compatibility_version,$(SPPVERSION)
-endif
+SLIBNAME = $(SLIBPREF)postproc$(SLIBSUF)
 endif
 PPLIB = $(LIBPREF)postproc$(LIBSUF)
 

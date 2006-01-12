@@ -83,9 +83,6 @@ ifeq ($(BUILD_SHARED),yes)
 LIBVERSION=$(LAVFMAJOR)
 SLIBNAME= $(SLIBPREF)avformat$(SLIBSUF)
 AVCLIBS+=-lavcodec$(BUILDSUF) -L../libavcodec -lavutil$(BUILDSUF) -L../libavutil
-ifeq ($(CONFIG_DARWIN),yes)
-SHFLAGS += -Wl,-install_name,$(libdir)/$(SLIBNAME),-current_version,$(SPPVERSION),-compatibility_version,$(SPPVERSION)
-endif
 endif
 
 SRCS := $(OBJS:.o=.c) $(PPOBJS:.o=.cpp)

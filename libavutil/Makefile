@@ -24,9 +24,6 @@ LIB= $(LIBPREF)avutil$(LIBSUF)
 ifeq ($(BUILD_SHARED),yes)
 LIBVERSION=$(LAVUMAJOR)
 SLIBNAME= $(SLIBPREF)avutil$(SLIBSUF)
-ifeq ($(CONFIG_DARWIN),yes)
-SHFLAGS += -Wl,-install_name,$(libdir)/$(SLIBNAME),-current_version,$(SPPVERSION),-compatibility_version,$(SPPVERSION)
-endif
 endif
 
 all: $(LIB) $(SLIBNAME)

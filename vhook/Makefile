@@ -4,8 +4,9 @@ VPATH=$(SRC_PATH)/vhook
 
 CFLAGS=-fPIC $(SHCFLAGS) -I.. -I$(SRC_PATH) -I$(SRC_PATH)/libavformat -I$(SRC_PATH)/libavcodec -I$(SRC_PATH)/libavutil -DHAVE_AV_CONFIG_H
 
+#FIXME: This needs to be in configure/config.mak
 ifeq ($(CONFIG_DARWIN),yes)
-	SHFLAGS += -flat_namespace -undefined suppress
+	SHFLAGS = -dynamiclib -Wl,-single_module -flat_namespace -undefined suppress -Wl,-install_name,$(libdir)/vhook/$@
 endif
 HOOKS=null$(SLIBSUF) fish$(SLIBSUF) ppm$(SLIBSUF) watermark$(SLIBSUF)
 
@@ -36,11 +37,7 @@ drawtext$(SLIBSUF): drawtext.o
 	$(CC) $(LDFLAGS) -g -o $@ $(SHFLAGS) $< `freetype-config --libs`
 
 %$(SLIBSUF): %.o
-ifeq ($(CONFIG_DARWIN),yes)
-	$(CC) $(LDFLAGS) $(SHFLAGS) -Wl,-install_name,$(libdir)/vhook/$@ -g -o $@ $<
-else
 	$(CC) $(LDFLAGS) -g -o $@ $(SHFLAGS) $<
-endif
 
 clean:
 	rm -f *.o *.d .depend *$(SLIBSUF) *~

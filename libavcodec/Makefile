@@ -392,11 +392,6 @@ ifeq ($(TARGET_ARCH_SPARC64),yes)
 CFLAGS+= -mcpu=ultrasparc -mtune=ultrasparc
 endif
 
-# Darwin specific stuff
-ifeq ($(CONFIG_DARWIN),yes)
-SHFLAGS += -Wl,-install_name,$(libdir)/$(SLIBPREF)avcodec$(SLIBSUF),-current_version,$(SPPVERSION),-compatibility_version,$(SPPVERSION)
-endif
-
 SRCS := $(OBJS:.o=.c) $(ASM_OBJS:.o=.S)
 OBJS := $(OBJS) $(ASM_OBJS)
 
