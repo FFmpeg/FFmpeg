@@ -497,7 +497,7 @@ ifeq ($(CONFIG_WIN32),yes)
 else
 	install -d $(libdir)
 	install $(INSTALLSTRIP) -m 755 $(SLIBNAME) $(libdir)/libavcodec-$(VERSION)$(SLIBSUF)
-	ln -sf libavcodec-$(VERSION)$(SLIBSUF) $(libdir)/libavcodec$(SLIBSUF)
+	ln -sf $(SLIBPREF)avcodec-$(VERSION)$(SLIBSUF) $(libdir)/$(SLIBNAME)
 	$(LDCONFIG) || true
 endif
 ifeq ($(CONFIG_PP),yes)
