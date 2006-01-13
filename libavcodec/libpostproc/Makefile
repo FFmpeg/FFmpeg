@@ -1,20 +1,15 @@
-#FIXME: This Makefile differs from all the others for no good reason...
 
 include ../../config.mak
 
 VPATH=$(SRC_PATH)/libavcodec/libpostproc
 
+LIB = $(LIBPREF)postproc$(LIBSUF)
 ifeq ($(SHARED_PP),yes)
-SPPLIBNAME = $(SLIBPREF)postproc$(SLIBSUF)
-SPPLIBMAJOR = $(SPPLIBNAME).$(SPPMAJOR)
-SPPLIB = $(SPPLIBNAME).$(SPPVERSION)
-LIBVERSION = $(SPPLIB)
 SLIBNAME = $(SLIBPREF)postproc$(SLIBSUF)
 endif
-PPLIB = $(LIBPREF)postproc$(LIBSUF)
 
-PPOBJS=postprocess.o
-SPPOBJS=postprocess_pic.o
+OBJS=postprocess.o
+SOBJS=postprocess_pic.o
 
 CFLAGS  = $(OPTFLAGS) $(MLIB_INC) -I. -I.. $(EXTRA_INC)
 # -I/usr/X11R6/include/
@@ -26,10 +21,10 @@ CFLAGS  = $(OPTFLAGS) $(MLIB_INC) -I. -I.. $(EXTRA_INC)
 .c.o:
 	$(CC) -c $(CFLAGS) $(LIBOBJFLAGS) -I$(SRC_PATH)/libavcodec -I../.. -o $@ $<
 
-all:    $(SWSLIB) $(PPLIB) $(SPPLIBNAME)
+all:    $(SWSLIB) $(LIB) $(SLIBNAME)
 
 clean:
-	rm -f *.o *.a *~ *$(SLIBSUF) $(PPLIB) $(SPPLIBNAME)
+	rm -f *.o *.a *~ *$(SLIBSUF) $(LIB) $(SLIBNAME)
 
 distclean:
 	rm -f Makefile.bak *.o *.a *~ *$(SLIBSUF) .depend
@@ -43,31 +38,30 @@ ifeq ($(SHARED_PP),yes)
 postprocess_pic.o: postprocess.c
 	$(CC) -c $(CFLAGS) -fomit-frame-pointer -fPIC -DPIC -I.. -I../.. -o $@ $<
 
-$(SPPLIBNAME): $(SPPOBJS)
-	$(CC) $(SHFLAGS) -o $(SPPLIBNAME) $(SPPOBJS)
+$(SLIBNAME): $(SOBJS)
+	$(CC) $(SHFLAGS) -o $(SLIBNAME) $(SOBJS)
 endif
 
-$(PPLIB): $(PPOBJS)
+$(LIB): $(OBJS)
 	rm -f $@
-	$(AR) rc $@ $(PPOBJS)
+	$(AR) rc $@ $(OBJS)
 	$(RANLIB) $@
 
 install: all
 ifeq ($(SHARED_PP),yes)
 ifeq ($(CONFIG_WIN32),yes)
-	install $(INSTALLSTRIP) -m 755 $(SPPLIBNAME) "$(prefix)"
+	install $(INSTALLSTRIP) -m 755 $(SLIBNAME) "$(prefix)"
 else
 	install -d $(libdir)
-	install $(INSTALLSTRIP) -m 755 $(SPPLIBNAME) $(libdir)/$(SPPLIB)
-	ln -sf $(SPPLIB) $(libdir)/$(SPPLIBNAME)
-	ln -sf $(SPPLIB) $(libdir)/$(SPPLIBMAJOR)
-	install -d $(libdir)/pkgconfig
-	install -m 644 ../../libpostproc.pc $(libdir)/pkgconfig
+	install $(INSTALLSTRIP) -m 755 $(SLIBNAME) $(libdir)/libpostproc-$(VERSION)$(SLIBSUF)
+	ln -sf $(SLIBPREF)postproc-$(VERSION)$(SLIBSUF) $(libdir)/$(SLIBNAME)
 	$(LDCONFIG) || true
 endif
 endif
 	mkdir -p $(prefix)/include/postproc
 	install -m 644 $(SRC_PATH)/libavcodec/libpostproc/postprocess.h $(prefix)/include/postproc/postprocess.h
+	install -d $(libdir)/pkgconfig
+	install -m 644 ../../libpostproc.pc $(libdir)/pkgconfig
 
 
 #
