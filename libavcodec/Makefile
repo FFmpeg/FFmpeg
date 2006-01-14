@@ -290,7 +290,7 @@ OBJS+= x264.o
 endif
 
 ifeq ($(CONFIG_PP),yes)
-ifeq ($(SHARED_PP),yes)
+ifeq ($(BUILD_SHARED),yes)
 EXTRALIBS += -Llibpostproc -lpostproc$(BUILDSUF)
 else
 # LIBS += libpostproc/libpostproc.a ... should be fixed

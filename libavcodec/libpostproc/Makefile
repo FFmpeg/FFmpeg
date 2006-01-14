@@ -4,7 +4,7 @@ include ../../config.mak
 VPATH=$(SRC_PATH)/libavcodec/libpostproc
 
 NAME=postproc
-ifeq ($(SHARED_PP),yes)
+ifeq ($(BUILD_SHARED),yes)
 LIBVERSION=$(SPPVERSION)
 LIBMAJOR=$(SPPMAJOR)
 endif
@@ -35,7 +35,7 @@ dep:    depend
 depend:
 	$(CC) -MM $(CFLAGS) postprocess.c 1>.depend
 
-ifeq ($(SHARED_PP),yes)
+ifeq ($(BUILD_SHARED),yes)
 postprocess_pic.o: postprocess.c
 	$(CC) -c $(CFLAGS) -fomit-frame-pointer -fPIC -DPIC -I.. -I../.. -o $@ $<
 
@@ -49,7 +49,7 @@ $(LIB): $(OBJS)
 	$(RANLIB) $@
 
 install: all
-ifeq ($(SHARED_PP),yes)
+ifeq ($(BUILD_SHARED),yes)
 ifeq ($(CONFIG_WIN32),yes)
 	install $(INSTALLSTRIP) -m 755 $(SLIBNAME) "$(prefix)"
 else

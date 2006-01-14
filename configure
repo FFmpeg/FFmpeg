@@ -30,7 +30,6 @@ echo "  --enable-a52             enable GPLed A52 support [default=no]"
 echo "  --enable-a52bin          open liba52.so.0 at runtime [default=no]"
 echo "  --enable-dts             enable GPLed DTS support [default=no]"
 echo "  --enable-pp              enable GPLed postprocessing support [default=no]"
-echo "  --enable-shared-pp       use libpostproc.so [default=no]"
 echo "  --enable-shared          build shared libraries [default=no]"
 echo "  --enable-amr_nb          enable amr_nb float audio codec"
 echo "  --enable-amr_nb-fixed    use fixed point for amr-nb codec"
@@ -201,7 +200,6 @@ a52="no"
 a52bin="no"
 dts="no"
 pp="no"
-shared_pp="no"
 mingw32="no"
 cygwin="no"
 os2="no"
@@ -504,8 +502,6 @@ for opt do
   ;;
   --enable-pp) pp="yes"
   ;;
-  --enable-shared-pp) pp="yes"; shared_pp="yes"
-  ;;
   --enable-libgsm) libgsm="yes"
     extralibs="$extralibs -lgsm"
   ;;
@@ -621,7 +617,7 @@ if test "$vorbis" = "yes" ; then
 fi
 
 if test "$gpl" != "yes"; then
-    if test "$pp" != "no" -o "$shared_pp" != "no"; then
+    if test "$pp" != "no"; then
         echo "The Postprocessing code is under GPL and --enable-gpl is not specified."
         fail="yes"
     fi
@@ -1290,7 +1286,7 @@ echo "pp support       $pp"
 echo "debug symbols    $debug"
 echo "strip symbols    $dostrip"
 echo "optimize         $optimize"
-echo "shared pp        $shared_pp"
+echo "shared           $shared"
 echo "video hooking    $vhook"
 echo "SDL support      $sdl"
 if test $sdl_too_old = "yes"; then
@@ -1560,11 +1556,6 @@ fi
 if test "$pp" = "yes" ; then
   echo "#define CONFIG_PP 1" >> $TMPH
   echo "CONFIG_PP=yes" >> config.mak
-
-  if test "$shared_pp" = "yes" ; then
-    echo "#define SHARED_PP 1" >> $TMPH
-    echo "SHARED_PP=yes" >> config.mak
-  fi
 fi
 
 # MPEG audio high precision mode
