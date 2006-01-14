@@ -3,12 +3,10 @@ include ../../config.mak
 
 VPATH=$(SRC_PATH)/libavcodec/libpostproc
 
-LIB = $(LIBPREF)postproc$(LIBSUF)
+NAME=postproc
 ifeq ($(SHARED_PP),yes)
 LIBVERSION=$(SPPVERSION)
 LIBMAJOR=$(SPPMAJOR)
-NAME=postproc
-SLIBNAME = $(SLIBPREF)postproc$(SLIBSUF)
 endif
 
 OBJS=postprocess.o

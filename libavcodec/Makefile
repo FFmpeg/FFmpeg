@@ -396,13 +396,11 @@ endif
 SRCS := $(OBJS:.o=.c) $(ASM_OBJS:.o=.S)
 OBJS := $(OBJS) $(ASM_OBJS)
 
-LIB= $(LIBPREF)avcodec$(LIBSUF)
+NAME=avcodec
 LIBAVUTIL= $(SRC_PATH)/libavutil/$(LIBPREF)avutil$(LIBSUF)
 ifeq ($(BUILD_SHARED),yes)
 LIBVERSION=$(LAVCVERSION)
 LIBMAJOR=$(LAVCMAJOR)
-NAME=avcodec
-SLIBNAME= $(SLIBPREF)avcodec$(SLIBSUF)
 endif
 TESTS= imgresample-test dct-test motion-test fft-test
 

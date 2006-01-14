@@ -78,12 +78,10 @@ ifeq ($(TARGET_ARCH_SPARC64),yes)
 CFLAGS+= -mcpu=ultrasparc -mtune=ultrasparc
 endif
 
-LIB= $(LIBPREF)avformat$(LIBSUF)
+NAME=avformat
 ifeq ($(BUILD_SHARED),yes)
 LIBVERSION=$(LAVFVERSION)
 LIBMAJOR=$(LAVFMAJOR)
-NAME=avformat
-SLIBNAME= $(SLIBPREF)avformat$(SLIBSUF)
 AVCLIBS+=-lavcodec$(BUILDSUF) -L../libavcodec -lavutil$(BUILDSUF) -L../libavutil
 endif
 

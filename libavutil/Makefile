@@ -20,12 +20,10 @@ endif
 
 SRCS := $(OBJS:.o=.c)
 
-LIB= $(LIBPREF)avutil$(LIBSUF)
+NAME=avutil
 ifeq ($(BUILD_SHARED),yes)
 LIBVERSION=$(LAVUVERSION)
 LIBMAJOR=$(LAVUMAJOR)
-NAME=avutil
-SLIBNAME= $(SLIBPREF)avutil$(SLIBSUF)
 endif
 
 all: $(LIB) $(SLIBNAME)
