@@ -1490,6 +1490,7 @@ if test "$vhook" = "yes" ; then
   echo "#define HAVE_VHOOK 1" >> $TMPH
 fi
 
+pp_version=`grep '#define LIBPOSTPROC_VERSION ' "$source_path/libavcodec/libpostproc/postprocess.h" | sed 's/[^0-9\.]//g'`
 lavc_version=`grep '#define LIBAVCODEC_VERSION ' "$source_path/libavcodec/avcodec.h" | sed 's/[^0-9\.]//g'`
 lavf_version=`grep '#define LIBAVFORMAT_VERSION ' "$source_path/libavformat/avformat.h" | sed 's/[^0-9\.]//g'`
 lavu_version=`grep '#define LIBAVUTIL_VERSION ' "$source_path/libavutil/avutil.h" | sed 's/[^0-9\.]//g'`

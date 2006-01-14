@@ -29,6 +29,12 @@
 extern "C" {
 #endif
 
+#define LIBPOSTPROC_VERSION_INT ((51<<16)+(1<<8)+0)
+#define LIBPOSTPROC_VERSION     51.1.0
+#define LIBPOSTPROC_BUILD       LIBPOSTPROC_VERSION_INT
+
+#define LIBPOSTPROC_IDENT       "postproc" AV_STRINGIFY(LIBPOSTPROC_VERSION)
+
 #define PP_QUALITY_MAX 6
 
 #define QP_STORE_T int8_t
