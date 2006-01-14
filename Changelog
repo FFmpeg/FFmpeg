@@ -29,6 +29,7 @@ version <next>
 - TrueSpeech audio decoder
 - wma2 audio decoder fixed, now all files should play correctly
 - JPEG-LS decoder (unfinished)
+- CamStudio video decoder
 - build system improvements
 - tabs and trailing whitespace removed from the codebase
 
