@@ -118,7 +118,6 @@ int lzo1x_decode(void *out, int *outlen, void *in, int *inlen) {
     while (!c.error) {
         int cnt, back;
         if (x >> 4) {
-            state = BACKPTR;
             if (x >> 6) {
                 cnt = (x >> 5) - 1;
                 back = (get_byte(&c) << 3) + ((x >> 2) & 7) + 1;
@@ -155,10 +154,9 @@ int lzo1x_decode(void *out, int *outlen, void *in, int *inlen) {
         }
         copy_backptr(&c, back, cnt + 2);
         cnt = x & 3;
+        state = cnt ? BACKPTR : COPY;
         if (cnt)
             copy(&c, cnt);
-        else
-            state = (state == COPY) ? BACKPTR : COPY;
         x = get_byte(&c);
     }
     *inlen = c.in_end - c.in;
