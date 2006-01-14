@@ -22,7 +22,9 @@ SRCS := $(OBJS:.o=.c)
 
 LIB= $(LIBPREF)avutil$(LIBSUF)
 ifeq ($(BUILD_SHARED),yes)
-LIBVERSION=$(LAVUMAJOR)
+LIBVERSION=$(LAVUVERSION)
+LIBMAJOR=$(LAVUMAJOR)
+NAME=avutil
 SLIBNAME= $(SLIBPREF)avutil$(SLIBSUF)
 endif
 
@@ -62,8 +64,12 @@ ifeq ($(CONFIG_WIN32),yes)
 	install $(INSTALLSTRIP) -m 755 $(SLIBNAME) "$(prefix)"
 else
 	install -d $(libdir)
-	install $(INSTALLSTRIP) -m 755 $(SLIBNAME) $(libdir)/libavutil-$(VERSION)$(SLIBSUF)
-	ln -sf libavutil-$(VERSION)$(SLIBSUF) $(libdir)/$(SLIBNAME)
+	install $(INSTALLSTRIP) -m 755 $(SLIBNAME) \
+		$(libdir)/$(SLIBNAME_WITH_VERSION)
+	ln -sf $(SLIBNAME_WITH_VERSION) \
+		$(libdir)/$(SLIBNAME_WITH_MAJOR)
+	ln -sf $(SLIBNAME_WITH_VERSION) \
+		$(libdir)/$(SLIBNAME)
 	$(LDCONFIG) || true
 endif
 else

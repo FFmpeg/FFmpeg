@@ -80,7 +80,9 @@ endif
 
 LIB= $(LIBPREF)avformat$(LIBSUF)
 ifeq ($(BUILD_SHARED),yes)
-LIBVERSION=$(LAVFMAJOR)
+LIBVERSION=$(LAVFVERSION)
+LIBMAJOR=$(LAVFMAJOR)
+NAME=avformat
 SLIBNAME= $(SLIBPREF)avformat$(SLIBSUF)
 AVCLIBS+=-lavcodec$(BUILDSUF) -L../libavcodec -lavutil$(BUILDSUF) -L../libavutil
 endif
@@ -111,8 +113,12 @@ ifeq ($(CONFIG_WIN32),yes)
 	install $(INSTALLSTRIP) -m 755 $(SLIBNAME) "$(prefix)"
 else
 	install -d $(libdir)
-	install $(INSTALLSTRIP) -m 755 $(SLIBNAME) $(libdir)/$(SLIBPREF)avformat-$(VERSION)$(SLIBSUF)
-	ln -sf $(SLIBPREF)avformat-$(VERSION)$(SLIBSUF) $(libdir)/$(SLIBNAME)
+	install $(INSTALLSTRIP) -m 755 $(SLIBNAME) \
+		$(libdir)/$(SLIBNAME_WITH_VERSION)
+	ln -sf $(SLIBNAME_WITH_VERSION) \
+		$(libdir)/$(SLIBNAME_WITH_MAJOR)
+	ln -sf $(SLIBNAME_WITH_VERSION) \
+		$(libdir)/$(SLIBNAME)
 	$(LDCONFIG) || true
 endif
 else

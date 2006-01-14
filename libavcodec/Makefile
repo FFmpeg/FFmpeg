@@ -399,6 +399,9 @@ OBJS := $(OBJS) $(ASM_OBJS)
 LIB= $(LIBPREF)avcodec$(LIBSUF)
 LIBAVUTIL= $(SRC_PATH)/libavutil/$(LIBPREF)avutil$(LIBSUF)
 ifeq ($(BUILD_SHARED),yes)
+LIBVERSION=$(LAVCVERSION)
+LIBMAJOR=$(LAVCMAJOR)
+NAME=avcodec
 SLIBNAME= $(SLIBPREF)avcodec$(SLIBSUF)
 endif
 TESTS= imgresample-test dct-test motion-test fft-test
@@ -490,14 +493,17 @@ fft-test: fft-test.o $(LIB)
 	$(CC) -o $@ $^ $(LIBAVUTIL) -lm
 
 ifeq ($(BUILD_SHARED),yes)
-LIBVERSION=$(LAVCMAJOR)
 install: all install-headers
 ifeq ($(CONFIG_WIN32),yes)
 	install $(INSTALLSTRIP) -m 755 $(SLIBNAME) "$(prefix)"
 else
 	install -d $(libdir)
-	install $(INSTALLSTRIP) -m 755 $(SLIBNAME) $(libdir)/libavcodec-$(VERSION)$(SLIBSUF)
-	ln -sf $(SLIBPREF)avcodec-$(VERSION)$(SLIBSUF) $(libdir)/$(SLIBNAME)
+	install $(INSTALLSTRIP) -m 755 $(SLIBNAME) \
+		$(libdir)/$(SLIBNAME_WITH_VERSION)
+	ln -sf $(SLIBNAME_WITH_VERSION) \
+		$(libdir)/$(SLIBNAME_WITH_MAJOR)
+	ln -sf $(SLIBNAME_WITH_VERSION) \
+		$(libdir)/$(SLIBNAME)
 	$(LDCONFIG) || true
 endif
 ifeq ($(CONFIG_PP),yes)
