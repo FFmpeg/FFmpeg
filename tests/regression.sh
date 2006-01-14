@@ -38,6 +38,8 @@ elif [ "$1" = "mpeg2thread" ] ; then
     do_mpeg2thread=y
 elif [ "$1" = "snow" ] ; then
     do_snow=y
+elif [ "$1" = "snowll" ] ; then
+    do_snowll=y
 elif [ "$1" = "libavtest" ] ; then
     do_libav=y
     logfile="$datadir/libav.regression"
@@ -76,6 +78,7 @@ else
     do_error=y
     do_svq1=y
     do_snow=y
+    do_snowll=y
     do_adpcm_yam=y
     do_dv=y
 fi
@@ -453,7 +456,10 @@ do_ffmpeg $file -y -strict -2 -f pgmyuv -i $raw_src -an -vcodec snow -qscale 2 -
 
 # snow decoding
 do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst
+fi
 
+###################################
+if [ -n "$do_snowll" ] ; then
 # snow encoding
 file=${outfile}snow53.avi
 do_ffmpeg $file -y -strict -2 -f pgmyuv -i $raw_src -an -vcodec snow -pred 1 -flags +mv4+qpel $file
