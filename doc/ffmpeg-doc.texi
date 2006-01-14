@@ -1277,6 +1277,9 @@ please use av_log() instead.
     (e.g. addition of a function).
     Incrementing the third component means a noteworthy binary compatible
     change (e.g. encoder bug fix that matters for the decoder).
+@item
+    If you add a new codec, remember to update the changelog, add it to the
+    supported codecs table and bump the version number appropriately.
 @end enumerate
 
 We think our rules are not too hard. If you have comments, contact us.
