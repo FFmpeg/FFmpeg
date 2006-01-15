@@ -19,7 +19,7 @@
 main(int argc, char *argv[])
 {
     int fd_in, fd_out, comp_len, uncomp_len, tag, i, last_out;
-    char buf_in[1024], buf_out[1024];
+    char buf_in[1024], buf_out[65536];
     z_stream zstream;
     struct stat statbuf;
 
@@ -73,7 +73,7 @@ main(int argc, char *argv[])
     zstream.opaque = NULL;
     inflateInit(&zstream);
 
-    for (i = 0; i < comp_len-4;)
+    for (i = 0; i < comp_len-8;)
     {
         int ret, len = read(fd_in, &buf_in, 1024);
 
@@ -84,12 +84,10 @@ main(int argc, char *argv[])
         zstream.next_in = &buf_in[0];
         zstream.avail_in = len;
         zstream.next_out = &buf_out[0];
-        zstream.avail_out = 1024;
+        zstream.avail_out = 65536;
 
         ret = inflate(&zstream, Z_SYNC_FLUSH);
-        if (ret == Z_STREAM_END || ret == Z_BUF_ERROR)
-            break;
-        if (ret != Z_OK)
+        if (ret != Z_STREAM_END && ret != Z_OK)
         {
             printf("Error while decompressing: %d\n", ret);
             inflateEnd(&zstream);
@@ -103,6 +101,9 @@ main(int argc, char *argv[])
         write(fd_out, &buf_out, zstream.total_out-last_out);
 
         i += len;
+
+        if (ret == Z_STREAM_END || ret == Z_BUF_ERROR)
+            break;
     }
 
     if (zstream.total_out != uncomp_len-8)
