@@ -50,7 +50,7 @@ depend: $(SRCS)
 dep:	depend
 
 clean:
-	rm -f *.o *.d *~ .depend $(LIB) $(SLIBNAME) *$(SLIBSUF)
+	rm -f *.o *.d *~ *.a *.lib *.so *.dylib *.dll
 
 distclean: clean
 	rm -f Makefile.bak .depend

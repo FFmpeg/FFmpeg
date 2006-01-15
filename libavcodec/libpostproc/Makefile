@@ -25,10 +25,10 @@ CFLAGS  = $(OPTFLAGS) $(MLIB_INC) -I. -I.. $(EXTRA_INC)
 all:    $(SWSLIB) $(LIB) $(SLIBNAME)
 
 clean:
-	rm -f *.o *.a *~ *$(SLIBSUF) $(LIB) $(SLIBNAME)
+	rm -f *.o *.d *~ *.a *.lib *.so *.dylib *.dll
 
-distclean:
-	rm -f Makefile.bak *.o *.a *~ *$(SLIBSUF) .depend
+distclean: clean
+	rm -f Makefile.bak .depend
 
 dep:    depend
 

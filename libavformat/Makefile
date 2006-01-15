@@ -143,7 +143,7 @@ install-headers:
 	g++ $(subst -Wall,,$(CFLAGS)) -c -o $@ $<
 
 distclean clean:
-	rm -f *.o *.d .depend *~ *.a *$(SLIBSUF) $(LIB)
+	rm -f *.o *.d *~ .depend *.a *.lib *.so *.dylib *.dll
 
 #
 # include dependency files if they exist

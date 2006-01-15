@@ -40,7 +40,7 @@ drawtext$(SLIBSUF): drawtext.o
 	$(CC) $(LDFLAGS) -g -o $@ $(SHFLAGS) $<
 
 clean:
-	rm -f *.o *.d .depend *$(SLIBSUF) *~
+	rm -f *.o *.d *~ .depend *.a *.lib *.so *.dylib *.dll
 
 ifneq ($(wildcard .depend),)
 include .depend
