@@ -43,7 +43,6 @@ endif
 ifeq ($(BUILD_VHOOK),yes)
 VHOOK=videohook
 INSTALLVHOOK=install-vhook
-CLEANVHOOK=clean-vhook
 endif
 
 ifeq ($(TARGET_OS), SunOS)
@@ -151,21 +150,23 @@ endif
 	@test -f .libs || touch .libs
 	@for i in $(DEP_LIBS) ; do if $(TEST) $$i -nt .libs ; then touch .libs; fi ; done
 
-clean: $(CLEANVHOOK)
+clean:
 	$(MAKE) -C libavutil clean
 	$(MAKE) -C libavcodec clean
 	$(MAKE) -C libavformat clean
 	$(MAKE) -C tests clean
-	rm -f *.o *.d *~ .libs .depend gmon.out TAGS ffmpeg_g$(EXESUF) \
-	   ffplay_g$(EXESUF) $(PROG) $(PROGTEST) $(QTFASTSTART)
-
-clean-vhook:
 	$(MAKE) -C vhook clean
+	rm -f *.o *.d *~ .libs gmon.out TAGS \
+	   $(PROG) $(PROGTEST) $(QTFASTSTART)
 
 # Note well: config.log is NOT removed.
 distclean: clean
-	$(MAKE) -C libavcodec distclean
-	rm -f config.mak config.h *.pc
+	$(MAKE) -C libavutil   distclean
+	$(MAKE) -C libavcodec  distclean
+	$(MAKE) -C libavformat distclean
+	$(MAKE) -C tests       distclean
+	$(MAKE) -C vhook       distclean
+	rm -f Makefile.bak .depend config.mak config.h *.pc
 
 TAGS:
 	etags *.[ch] libavformat/*.[ch] libavcodec/*.[ch]

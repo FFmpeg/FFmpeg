@@ -72,6 +72,6 @@ dsptestpic: dsptest.c $(DSPDEPS)
 dsptest: dsptest.c $(DSPDEPS)
 	$(CC) -O4 -fomit-frame-pointer -DHAVE_AV_CONFIG_H -I.. -I$(SRC_PATH)/libavcodec/i386 -I$(SRC_PATH)/libavcodec/ -o $@ $< -lm
 
-clean:
+distclean clean:
 	rm -rf vsynth1 vsynth2 data
 	rm -f asynth1.sw *~ audiogen videogen rotozoom tiny_psnr

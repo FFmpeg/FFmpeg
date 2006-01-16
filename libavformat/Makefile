@@ -142,8 +142,11 @@ install-headers:
 %.o: %.cpp
 	g++ $(subst -Wall,,$(CFLAGS)) -c -o $@ $<
 
-distclean clean:
-	rm -f *.o *.d *~ .depend *.a *.lib *.so *.dylib *.dll
+clean:
+	rm -f *.o *.d *~ *.a *.lib *.so *.dylib *.dll
+
+distclean: clean
+	rm -f Makefile.bak .depend
 
 #
 # include dependency files if they exist

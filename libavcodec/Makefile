@@ -444,8 +444,8 @@ depend: $(SRCS)
 dep:	depend
 
 clean: $(CLEANAMR)
-	rm -f *.o *.d *~ i386/*.o i386/*~ \
-	   *.a *.lib *.so *.dylib *.dll \
+	rm -f *.o *.d *~ *.a *.lib *.so *.dylib *.dll \
+	   i386/*.o i386/*~ \
 	   armv4l/*.o armv4l/*~ \
 	   mlib/*.o mlib/*~ \
 	   alpha/*.o alpha/*~ \
@@ -459,6 +459,7 @@ clean: $(CLEANAMR)
 
 distclean: clean
 	rm -f Makefile.bak .depend
+	$(MAKE) -C libpostproc distclean
 
 cleanamr:
 	$(MAKE) -C amr clean

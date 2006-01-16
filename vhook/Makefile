@@ -40,7 +40,10 @@ drawtext$(SLIBSUF): drawtext.o
 	$(CC) $(LDFLAGS) -g -o $@ $(SHFLAGS) $<
 
 clean:
-	rm -f *.o *.d *~ .depend *.a *.lib *.so *.dylib *.dll
+	rm -f *.o *.d *~ *.a *.lib *.so *.dylib *.dll
+
+distclean: clean
+	rm -f Makefile.bak .depend
 
 ifneq ($(wildcard .depend),)
 include .depend
