@@ -483,7 +483,6 @@ for opt do
   --disable-audio-oss) audio_oss="no"
   ;;
   --disable-audio-beos) audio_beos="no"
-    extralibs="$extralibs -lbe -lmedia"
   ;;
   --disable-dv1394) dv1394="no"
   ;;
