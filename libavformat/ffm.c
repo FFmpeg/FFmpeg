@@ -44,6 +44,7 @@ typedef struct FFMContext {
 
     /* read and write */
     int first_packet; /* true if first packet, needed to set the discontinuity tag */
+    int first_frame_in_packet; /* true if first frame in packet, needed to know if PTS information is valid */
     int packet_size;
     int frame_offset;
     int64_t pts;
@@ -347,6 +348,7 @@ static int ffm_read_data(AVFormatContext *s,
             get_be16(pb); /* PACKET_ID */
             fill_size = get_be16(pb);
             ffm->pts = get_be64(pb);
+            ffm->first_frame_in_packet = 1;
             frame_offset = get_be16(pb);
             get_buffer(pb, ffm->packet, ffm->packet_size - FFM_HEADER_SIZE);
             ffm->packet_end = ffm->packet + (ffm->packet_size - FFM_HEADER_SIZE - fill_size);
@@ -614,7 +616,11 @@ static int ffm_read_packet(AVFormatContext *s, AVPacket *pkt)
             av_free_packet(pkt);
             return -EAGAIN;
         }
-        pkt->pts = ffm->pts;
+        if (ffm->first_frame_in_packet)
+        {
+            pkt->pts = ffm->pts;
+            ffm->first_frame_in_packet = 0;
+        }
         pkt->duration = duration;
         break;
     }
