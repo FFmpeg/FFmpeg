@@ -1285,7 +1285,7 @@ echo "pp support       $pp"
 echo "debug symbols    $debug"
 echo "strip symbols    $dostrip"
 echo "optimize         $optimize"
-echo "shared           $shared"
+echo "shared           $lshared"
 echo "video hooking    $vhook"
 echo "SDL support      $sdl"
 if test $sdl_too_old = "yes"; then
