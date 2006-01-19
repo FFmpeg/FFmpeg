@@ -291,6 +291,7 @@ static int img_read_close(AVFormatContext *s1)
     return 0;
 }
 
+#ifdef CONFIG_MUXERS
 /******************************************************/
 /* image output */
 
@@ -360,6 +361,8 @@ static int img_write_trailer(AVFormatContext *s)
     return 0;
 }
 
+#endif /* CONFIG_MUXERS */
+
 /* input */
 
 static AVInputFormat image2_iformat = {
@@ -387,6 +390,7 @@ static AVInputFormat image2pipe_iformat = {
 };
 
 
+#ifdef CONFIG_MUXERS
 /* output */
 
 static AVOutputFormat image2_oformat = {
@@ -415,14 +419,17 @@ static AVOutputFormat image2pipe_oformat = {
     img_write_packet,
     img_write_trailer,
 };
+#endif /* CONFIG_MUXERS */
 
 int img2_init(void)
 {
     av_register_input_format(&image2_iformat);
-    av_register_output_format(&image2_oformat);
-
     av_register_input_format(&image2pipe_iformat);
+
+#ifdef CONFIG_MUXERS
+    av_register_output_format(&image2_oformat);
     av_register_output_format(&image2pipe_oformat);
+#endif
 
     return 0;
 }

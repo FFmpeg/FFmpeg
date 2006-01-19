@@ -56,6 +56,7 @@ unsigned long update_adler32(unsigned long adler, const uint8_t *buf, unsigned i
     }
     return (s2 << 16) | s1;
 }
+#ifdef CONFIG_MUXERS
 
 typedef struct CRCState {
     uint32_t crcval;
@@ -132,3 +133,4 @@ int crc_init(void)
     av_register_output_format(&framecrc_format);
     return 0;
 }
+#endif /* CONFIG_MUXERS */

@@ -907,6 +907,7 @@ static int dv_read_close(AVFormatContext *s)
     return 0;
 }
 
+#ifdef CONFIG_MUXERS
 static int dv_write_header(AVFormatContext *s)
 {
     s->priv_data = dv_init_mux(s);
@@ -944,6 +945,7 @@ static int dv_write_trailer(struct AVFormatContext *s)
     dv_delete_mux((DVMuxContext *)s->priv_data);
     return 0;
 }
+#endif /* CONFIG_MUXERS */
 
 static AVInputFormat dv_iformat = {
     "dv",
@@ -957,6 +959,7 @@ static AVInputFormat dv_iformat = {
     .extensions = "dv,dif",
 };
 
+#ifdef CONFIG_MUXERS
 static AVOutputFormat dv_oformat = {
     "dv",
     "DV video format",
@@ -969,10 +972,13 @@ static AVOutputFormat dv_oformat = {
     dv_write_packet,
     dv_write_trailer,
 };
+#endif
 
 int ff_dv_init(void)
 {
     av_register_input_format(&dv_iformat);
+#ifdef CONFIG_MUXERS
     av_register_output_format(&dv_oformat);
+#endif
     return 0;
 }
