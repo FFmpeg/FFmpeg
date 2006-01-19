@@ -394,6 +394,12 @@ static int64_t find_startcode(ByteIOContext *bc, uint64_t code, int64_t pos){
     }
 }
 
+static int64_t lsb2full(StreamContext *stream, int64_t lsb){
+    int64_t mask = (1<<stream->msb_timestamp_shift)-1;
+    int64_t delta= stream->last_pts - mask/2;
+    return  ((lsb - delta)&mask) + delta;
+}
+
 #ifdef CONFIG_MUXERS
 
 static void put_v(ByteIOContext *bc, uint64_t val)
@@ -688,12 +694,6 @@ static int nut_write_header(AVFormatContext *s)
     put_flush_packet(bc);
 
     return 0;
-}
-
-static int64_t lsb2full(StreamContext *stream, int64_t lsb){
-    int64_t mask = (1<<stream->msb_timestamp_shift)-1;
-    int64_t delta= stream->last_pts - mask/2;
-    return  ((lsb - delta)&mask) + delta;
 }
 
 static int nut_write_packet(AVFormatContext *s, AVPacket *pkt)

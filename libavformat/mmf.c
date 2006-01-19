@@ -24,7 +24,6 @@ typedef struct {
     offset_t data_size;
 } MMFContext;
 
-#ifdef CONFIG_MUXERS
 static int mmf_rates[] = { 4000, 8000, 11025, 22050, 44100 };
 
 static int mmf_rate_code(int rate)
@@ -43,6 +42,7 @@ static int mmf_rate(int code)
     return mmf_rates[code];
 }
 
+#ifdef CONFIG_MUXERS
 /* Copy of end_tag() from avienc.c, but for big-endian chunk size */
 static void end_tag_be(ByteIOContext *pb, offset_t start)
 {

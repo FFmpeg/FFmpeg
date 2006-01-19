@@ -79,6 +79,7 @@ unsigned int mpegts_crc32(const uint8_t *data, int len)
     return crc;
 }
 
+#ifdef CONFIG_MUXERS
 /*********************************************/
 /* mpegts section writer */
 
@@ -729,3 +730,4 @@ AVOutputFormat mpegts_mux = {
     mpegts_write_packet,
     mpegts_write_end,
 };
+#endif // CONFIG_MUXERS
