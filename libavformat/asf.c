@@ -60,6 +60,10 @@ static void print_guid(const GUID *g)
     else PRINT_IF_GUID(g, head1_guid);
     else PRINT_IF_GUID(g, head2_guid);
     else PRINT_IF_GUID(g, my_guid);
+    else PRINT_IF_GUID(g, ext_stream_header);
+    else PRINT_IF_GUID(g, extended_content_header);
+    else PRINT_IF_GUID(g, ext_stream_embed_stream_header);
+    else PRINT_IF_GUID(g, ext_stream_audio_stream);
     else
         printf("(GUID: unknown) ");
     printf("0x%08x, 0x%04x, 0x%04x, {", g->v1, g->v2, g->v3);
@@ -186,6 +190,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             int type, total_size, type_specific_size, sizeX;
             unsigned int tag1;
             int64_t pos1, pos2;
+            int test_for_ext_stream_audio;
 
             pos1 = url_ftell(pb);
 
@@ -201,11 +206,16 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             st->duration = asf->hdr.send_time /
                 (10000000 / 1000) - st->start_time;
             get_guid(pb, &g);
+
+            test_for_ext_stream_audio = 0;
             if (!memcmp(&g, &audio_stream, sizeof(GUID))) {
                 type = CODEC_TYPE_AUDIO;
             } else if (!memcmp(&g, &video_stream, sizeof(GUID))) {
                 type = CODEC_TYPE_VIDEO;
             } else if (!memcmp(&g, &command_stream, sizeof(GUID))) {
+                type = CODEC_TYPE_UNKNOWN;
+            } else if (!memcmp(&g, &ext_stream_embed_stream_header, sizeof(GUID))) {
+                test_for_ext_stream_audio = 1;
                 type = CODEC_TYPE_UNKNOWN;
             } else {
                 goto fail;
@@ -219,6 +229,20 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             asf->asfid2avid[st->id] = s->nb_streams - 1;
 
             get_le32(pb);
+
+            if (test_for_ext_stream_audio) {
+                get_guid(pb, &g);
+                if (!memcmp(&g, &ext_stream_audio_stream, sizeof(GUID))) {
+                    type = CODEC_TYPE_AUDIO;
+                    get_guid(pb, &g);
+                    get_le32(pb);
+                    get_le32(pb);
+                    get_le32(pb);
+                    get_guid(pb, &g);
+                    get_le32(pb);
+                }
+            }
+
             st->codec->codec_type = type;
             if (type == CODEC_TYPE_AUDIO) {
                 get_wav_header(pb, st->codec, type_specific_size);
@@ -259,7 +283,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     st->codec->frame_size = 1;
                     break;
                 }
-            } else {
+            } else if (type == CODEC_TYPE_VIDEO) {
                 get_le32(pb);
                 get_le32(pb);
                 get_byte(pb);
@@ -349,12 +373,49 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                         }
                         av_free(name);
                 }
-#if 0
+        } else if (!memcmp(&g, &ext_stream_header, sizeof(GUID))) {
+            int ext_len, payload_ext_ct, stream_ct;
+            uint32_t ext_d;
+            int64_t pos_ex_st, pos_curr;
+            pos_ex_st = url_ftell(pb);
+
+            get_le64(pb);
+            get_le64(pb);
+            get_le32(pb);
+            get_le32(pb);
+            get_le32(pb);
+            get_le32(pb);
+            get_le32(pb);
+            get_le32(pb);
+            get_le32(pb);
+            get_le32(pb);
+            get_le16(pb);
+            get_le16(pb);
+            get_le64(pb);
+            stream_ct = get_le16(pb);
+            payload_ext_ct = get_le16(pb);
+
+            for (i=0; i<stream_ct; i++){
+                get_le16(pb);
+                ext_len = get_le16(pb);
+                url_fseek(pb, ext_len, SEEK_CUR);
+            }
+
+            for (i=0; i<payload_ext_ct; i++){
+                get_guid(pb, &g);
+                ext_d=get_le16(pb);
+                ext_len=get_le32(pb);
+                url_fseek(pb, ext_len, SEEK_CUR);
+            }
+
+            // there could be a optional stream properties object to follow
+            // if so the next iteration will pick it up
         } else if (!memcmp(&g, &head1_guid, sizeof(GUID))) {
             int v1, v2;
             get_guid(pb, &g);
             v1 = get_le32(pb);
             v2 = get_le16(pb);
+#if 0
         } else if (!memcmp(&g, &codec_comment_header, sizeof(GUID))) {
             int len, v1, n, num;
             char str[256], *q;
