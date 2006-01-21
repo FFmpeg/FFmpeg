@@ -3145,6 +3145,8 @@ static int get_block_rd(SnowContext *s, int mb_x, int mb_y, int plane_index, con
  */
             rate += get_block_bits(s, mb_x + (i&1) - (i>>1), mb_y + (i>>1), 1);
         }
+        if(mb_x == b_stride-2)
+            rate += get_block_bits(s, mb_x + 1, mb_y + 1, 1);
     }
     return distortion + rate*penalty_factor;
 }
@@ -3389,7 +3391,12 @@ static void iterative_me(SnowContext *s){
                     color[i]= get_dc(s, mb_x, mb_y, i);
 
                 // get previous score (cant be cached due to OBMC)
-                check_block_inter(s, mb_x, mb_y, block->mx, block->my, 0, *obmc_edged, &best_rd);
+                if(pass > 0 && (block->type&BLOCK_INTRA)){
+                    int color0[3]= {block->color[0], block->color[1], block->color[2]};
+                    check_block(s, mb_x, mb_y, color0, 1, *obmc_edged, &best_rd);
+                }else
+                    check_block_inter(s, mb_x, mb_y, block->mx, block->my, 0, *obmc_edged, &best_rd);
+
                 check_block_inter(s, mb_x, mb_y, 0, 0, 0, *obmc_edged, &best_rd);
                 check_block_inter(s, mb_x, mb_y, tb->mx, tb->my, 0, *obmc_edged, &best_rd);
                 check_block_inter(s, mb_x, mb_y, lb->mx, lb->my, 0, *obmc_edged, &best_rd);
