@@ -25,8 +25,6 @@
 
 #include "mpegvideo.h"
 
-#include <zlib.h>
-
 #undef NDEBUG
 #include <assert.h>
 
@@ -3303,8 +3301,6 @@ static void iterative_me(SnowContext *s){
     const int b_height= s->b_height << s->block_max_depth;
     const int b_stride= b_width;
     int color[3];
-    const int first_crc_pass= 12;
-    uint32_t crcs[50];
 
     for(pass=0; pass<50; pass++){
         int change= 0;
@@ -3439,18 +3435,6 @@ static void iterative_me(SnowContext *s){
             }
         }
         av_log(NULL, AV_LOG_ERROR, "pass:%d changed:%d\n", pass, change);
-
-        if(pass >= first_crc_pass){
-            int i;
-            //FIXME can we hash just the blocks that were analysed?
-            crcs[pass]= crc32(crc32(0,NULL,0), (void*)s->block, b_stride*b_height*sizeof(BlockNode));
-            for(i=pass-1; i>=first_crc_pass; i--){
-                if(crcs[i] == crcs[pass]){
-                    change= 0;
-                    break;
-                }
-            }
-        }
         if(!change)
             break;
     }
