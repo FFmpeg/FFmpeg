@@ -29,25 +29,35 @@ typedef struct OggVorbisContext {
 
 
 static int oggvorbis_init_encoder(vorbis_info *vi, AVCodecContext *avccontext) {
+    double cfreq;
 
     if(avccontext->flags & CODEC_FLAG_QSCALE) {
-        return vorbis_encode_init_vbr(vi, avccontext->channels,
+        /* variable bitrate */
+        if(vorbis_encode_setup_vbr(vi, avccontext->channels,
                 avccontext->sample_rate,
-                avccontext->global_quality / (float)FF_QP2LAMBDA);
-    }
+                avccontext->global_quality / (float)FF_QP2LAMBDA))
+            return -1;
+    } else {
+        /* constant bitrate */
+        if(vorbis_encode_setup_managed(vi, avccontext->channels,
+                avccontext->sample_rate, -1, avccontext->bit_rate, -1))
+            return -1;
+
 #ifdef OGGVORBIS_VBR_BY_ESTIMATE
-    /* variable bitrate by estimate */
-
-    return (vorbis_encode_setup_managed(vi, avccontext->channels,
-              avccontext->sample_rate, -1, avccontext->bit_rate, -1) ||
-            vorbis_encode_ctl(vi, OV_ECTL_RATEMANAGE_AVG, NULL) ||
-            vorbis_encode_setup_init(vi)) ;
-#else
-    /* constant bitrate */
-
-    return vorbis_encode_init(vi, avccontext->channels,
-                  avccontext->sample_rate, -1, avccontext->bit_rate, -1) ;
+        /* variable bitrate by estimate */
+        if(vorbis_encode_ctl(vi, OV_ECTL_RATEMANAGE_AVG, NULL))
+            return -1;
 #endif
+    }
+
+    /* cutoff frequency */
+    if(avccontext->cutoff > 0) {
+        cfreq = avccontext->cutoff / 1000.0;
+        if(vorbis_encode_ctl(vi, OV_ECTL_LOWPASS_SET, &cfreq))
+            return -1;
+    }
+
+    return vorbis_encode_setup_init(vi);
 }
 
 static int oggvorbis_encode_init(AVCodecContext *avccontext) {
