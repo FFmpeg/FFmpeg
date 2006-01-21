@@ -614,9 +614,7 @@ PCM_CODEC(CODEC_ID_ADPCM_YAMAHA, adpcm_yamaha);
     av_register_codec_parser(&pnm_parser);
 
     av_register_codec_parser(&mpegaudio_parser);
-#ifdef CONFIG_AC3
     av_register_codec_parser(&ac3_parser);
-#endif
 
 #ifdef CONFIG_DVDSUB_DECODER
     av_register_codec_parser(&dvdsub_parser);
