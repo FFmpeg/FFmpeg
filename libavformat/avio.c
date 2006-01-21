@@ -100,7 +100,7 @@ int url_read(URLContext *h, unsigned char *buf, int size)
     return ret;
 }
 
-#ifdef CONFIG_MUXERS
+#if defined(CONFIG_MUXERS) || defined(CONFIG_PROTOCOLS)
 int url_write(URLContext *h, unsigned char *buf, int size)
 {
     int ret;
@@ -112,7 +112,7 @@ int url_write(URLContext *h, unsigned char *buf, int size)
     ret = h->prot->url_write(h, buf, size);
     return ret;
 }
-#endif //CONFIG_MUXERS
+#endif //CONFIG_MUXERS || CONFIG_PROTOCOLS
 
 offset_t url_seek(URLContext *h, offset_t pos, int whence)
 {

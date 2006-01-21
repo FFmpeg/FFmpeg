@@ -706,6 +706,7 @@ static int ffm_seek(AVFormatContext *s, int stream_index, int64_t wanted_pts, in
     return 0;
 }
 
+#ifdef CONFIG_FFSERVER
 offset_t ffm_read_write_index(int fd)
 {
     uint8_t buf[8];
@@ -737,6 +738,7 @@ void ffm_set_write_index(AVFormatContext *s, offset_t pos, offset_t file_size)
     ffm->write_index = pos;
     ffm->file_size = file_size;
 }
+#endif // CONFIG_FFSERVER
 
 static int ffm_read_close(AVFormatContext *s)
 {

@@ -130,6 +130,7 @@ void av_register_all(void)
 //    av_register_image_format(&sgi_image_format); heap corruption, dont enable
 #endif //CONFIG_MUXERS
 
+#ifdef CONFIG_PROTOCOLS
     /* file protocols */
     register_protocol(&file_protocol);
     register_protocol(&pipe_protocol);
@@ -140,5 +141,6 @@ void av_register_all(void)
     register_protocol(&rtp_protocol);
     register_protocol(&tcp_protocol);
     register_protocol(&http_protocol);
+#endif
 #endif
 }

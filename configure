@@ -74,6 +74,7 @@ echo "  --disable-debug          disable debugging symbols"
 echo "  --disable-opts           disable compiler optimizations"
 echo "  --disable-mpegaudio-hp   faster (but less accurate)"
 echo "                           MPEG audio decoding [default=no]"
+echo "  --disable-protocols      disable I/O protocols support [default=no]"
 echo "  --disable-ffserver       disable ffserver build"
 echo "  --disable-ffplay         disable ffplay build"
 echo "  --enable-small           optimize for size instead of speed"
@@ -220,6 +221,7 @@ mpegaudio_hp="yes"
 SHFLAGS='-shared -Wl,-soname,$@.$(LIBMAJOR)'
 netserver="no"
 need_inet_aton="no"
+protocols="yes"
 ffserver="yes"
 ffplay="yes"
 LIBOBJFLAGS=""
@@ -551,6 +553,8 @@ for opt do
   ;;
   --disable-mpegaudio-hp) mpegaudio_hp="no"
   ;;
+  --disable-protocols) protocols="no"; network="no"; ffserver="no"
+  ;;
   --disable-ffserver) ffserver="no"
   ;;
   --disable-ffplay) ffplay="no"
@@ -587,7 +591,7 @@ for opt do
   ;;
   --disable-decoders) CODEC_LIST="`echo $CODEC_LIST | sed 's/[-_a-zA-Z0-9]*decoder//g'`"
   ;;
-  --disable-muxers) muxers="no"
+  --disable-muxers) muxers="no"; ffserver="no"
   ;;
   --disable-demuxers) demuxers="no"
   ;;
@@ -1729,6 +1733,11 @@ fi
 
 if test "$simpleidct" = "yes" ; then
   echo "#define SIMPLE_IDCT 1" >> $TMPH
+fi
+
+if test "$protocols" = "yes" ; then
+  echo "#define CONFIG_PROTOCOLS 1" >> $TMPH
+  echo "CONFIG_PROTOCOLS=yes" >> config.mak
 fi
 
 if test "$ffserver" = "yes" ; then

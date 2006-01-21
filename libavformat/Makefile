@@ -11,13 +11,20 @@ CFLAGS=$(OPTFLAGS) -I.. -I$(SRC_PATH) -I$(SRC_PATH)/libavutil -I$(SRC_PATH)/liba
 OBJS= utils.o cutils.o os_support.o allformats.o
 PPOBJS=
 
-# mux and demuxes
+# demuxers
 OBJS+=mpeg.o mpegts.o mpegtsenc.o ffm.o crc.o img.o img2.o raw.o rm.o \
       avienc.o avidec.o wav.o mmf.o swf.o au.o gif.o mov.o mpjpeg.o dv.o \
-      yuv4mpeg.o 4xm.o flvenc.o flvdec.o movenc.o psxstr.o idroq.o ipmovie.o \
+      yuv4mpeg.o 4xm.o flvdec.o psxstr.o idroq.o ipmovie.o \
       nut.o wc3movie.o mp3.o westwood.o segafilm.o idcin.o flic.o \
-      sierravmd.o matroska.o sol.o electronicarts.o nsvdec.o asf.o asf-enc.o \
+      sierravmd.o matroska.o sol.o electronicarts.o nsvdec.o asf.o \
       ogg2.o oggparsevorbis.o oggparsetheora.o oggparseflac.o daud.o
+
+# muxers
+ifeq ($(CONFIG_MUXERS),yes)
+OBJS+= flvenc.o movenc.o asf-enc.o
+endif
+
+
 AMROBJS=
 ifeq ($(AMR_NB),yes)
 AMROBJS= amr.o
@@ -32,8 +39,6 @@ OBJS+= $(AMROBJS)
 
 # image formats
 OBJS+= pnm.o yuv.o png.o jpeg.o gifdec.o sgi.o
-# file I/O
-OBJS+= avio.o aviobuf.o file.o
 OBJS+= framehook.o
 
 ifeq ($(CONFIG_VIDEO4LINUX),yes)
@@ -62,11 +67,17 @@ ifeq ($(CONFIG_AUDIO_BEOS),yes)
 PPOBJS+= beosaudio.o
 endif
 
+# protocols I/O
+OBJS+= avio.o aviobuf.o
+
+ifeq ($(CONFIG_PROTOCOLS),yes)
+OBJS+= file.o
 ifeq ($(CONFIG_NETWORK),yes)
 OBJS+= udp.o tcp.o http.o rtsp.o rtp.o rtpproto.o
 # BeOS and Darwin network stuff
 ifeq ($(NEED_INET_ATON),yes)
 OBJS+= barpainet.o
+endif
 endif
 endif
 
