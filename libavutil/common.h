@@ -200,6 +200,11 @@ static inline float floorf(float f) {
 
 #        define snprintf _snprintf
 #        define vsnprintf _vsnprintf
+
+#        ifdef CONFIG_WINCE
+#            define perror(a)
+#        endif
+
 #    endif
 
 /* CONFIG_WIN32 end */
@@ -281,6 +286,9 @@ inline void dprintf(const char* fmt,...) {}
 #        endif
 
 #    endif /* !CONFIG_WIN32 */
+#    ifdef CONFIG_WINCE
+#            define abort()
+#    endif
 
 #    define av_abort()      do { av_log(NULL, AV_LOG_ERROR, "Abort at %s:%d\n", __FILE__, __LINE__); abort(); } while (0)
 

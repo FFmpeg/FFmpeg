@@ -18,7 +18,7 @@
  */
 #include "config.h"
 #include "avformat.h"
-#ifdef CONFIG_WIN32
+#if defined(CONFIG_WIN32) && !defined(CONFIG_WINCE)
 #include <sys/types.h>
 #include <sys/timeb.h>
 #elif defined(CONFIG_OS2)
@@ -36,7 +36,9 @@
  */
 int64_t av_gettime(void)
 {
-#ifdef CONFIG_WIN32
+#if defined(CONFIG_WINCE)
+    return timeGetTime() * int64_t_C(1000);
+#elif defined(CONFIG_WIN32)
     struct timeb tb;
     _ftime(&tb);
     return ((int64_t)tb.time * int64_t_C(1000) + (int64_t)tb.millitm) * int64_t_C(1000);
@@ -47,6 +49,7 @@ int64_t av_gettime(void)
 #endif
 }
 
+#if !defined(CONFIG_WINCE)
 #if !defined(HAVE_LOCALTIME_R)
 struct tm *localtime_r(const time_t *t, struct tm *tp)
 {
@@ -59,3 +62,4 @@ struct tm *localtime_r(const time_t *t, struct tm *tp)
     return tp;
 }
 #endif /* !defined(HAVE_LOCALTIME_R) */
+#endif /* !defined(CONFIG_WINCE) */

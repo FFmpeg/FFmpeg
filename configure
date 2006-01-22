@@ -26,6 +26,7 @@ echo "  --enable-libgsm          enable GSM support via libgsm [default=no]"
 echo "  --enable-xvid            enable XviD support via xvidcore [default=no]"
 echo "  --enable-x264            enable H.264 encoding via x264 [default=no]"
 echo "  --enable-mingw32         enable MinGW native/cross Windows compile"
+echo "  --enable-mingwce         enable MinGW native/cross WinCE compile"
 echo "  --enable-a52             enable GPLed A52 support [default=no]"
 echo "  --enable-a52bin          open liba52.so.0 at runtime [default=no]"
 echo "  --enable-dts             enable GPLed DTS support [default=no]"
@@ -202,6 +203,7 @@ a52bin="no"
 dts="no"
 pp="no"
 mingw32="no"
+mingwce="no"
 cygwin="no"
 os2="no"
 lshared="no"
@@ -545,6 +547,8 @@ for opt do
   ;;
   --enable-mingw32) mingw32="yes"
   ;;
+  --enable-mingwce) mingwce="yes"
+  ;;
   --enable-shared) lshared="yes"
   ;;
   --disable-debug) debug="no"
@@ -864,7 +868,7 @@ EOF
 $cc -o $TMPE $TMPC 2> /dev/null || mmi="no"
 fi
 
-if test "$mingw32" = "yes" ; then
+if test "$mingw32" = "yes" -o "$mingwce" = "yes"; then
     v4l="no"
     bktr="no"
     audio_oss="no"
@@ -872,6 +876,9 @@ if test "$mingw32" = "yes" ; then
     dc1394="no"
     ffserver="no"
     network="no"
+if test "$mingw32" = "yes"; then
+    protocols="no"
+fi
     SLIBPREF=""
     SLIBSUF=".dll"
     EXESUF=".exe"
@@ -1680,6 +1687,16 @@ if test "$mingw32" = "yes" ; then
   echo "HAVE_W32THREADS=yes" >> config.mak
   echo "#define HAVE_W32THREADS 1" >> $TMPH
   echo "#define HAVE_THREADS 1" >> $TMPH
+  echo "#ifndef __MINGW32__" >> $TMPH
+  echo "#define __MINGW32__ 1" >> $TMPH
+  echo "#endif" >> $TMPH
+fi
+
+if test "$mingwce" = "yes" ; then
+  echo "#define CONFIG_WIN32 1" >> $TMPH
+  echo "CONFIG_WIN32=yes" >> config.mak
+  echo "#define CONFIG_WINCE 1" >> $TMPH
+  echo "CONFIG_WINCE=yes" >> config.mak
   echo "#ifndef __MINGW32__" >> $TMPH
   echo "#define __MINGW32__ 1" >> $TMPH
   echo "#endif" >> $TMPH

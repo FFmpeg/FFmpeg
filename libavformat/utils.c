@@ -2739,6 +2739,7 @@ int parse_frame_rate(int *frame_rate, int *frame_rate_base, const char *arg)
  *  S+[.m...]
  * @endcode
  */
+#ifndef CONFIG_WINCE
 int64_t parse_date(const char *datestr, int duration)
 {
     const char *p;
@@ -2846,6 +2847,7 @@ int64_t parse_date(const char *datestr, int duration)
     }
     return negative ? -t : t;
 }
+#endif /* CONFIG_WINCE */
 
 /**
  * Attempts to find a specific tag in a URL.
