@@ -1989,6 +1989,13 @@ typedef struct AVCodecContext {
      * - decoding: unused
      */
     int cutoff;
+
+    /**
+     * multiplied by qscale for each frame and added to scene_change_score
+     * - encoding: set by user.
+     * - decoding: unused
+     */
+    int scenechange_factor;
 } AVCodecContext;
 
 /**

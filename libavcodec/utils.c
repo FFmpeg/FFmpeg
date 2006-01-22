@@ -734,6 +734,7 @@ static AVOption options[]={
 {"partp4x4", NULL, 0, FF_OPT_TYPE_CONST, X264_PART_P4X4, INT_MIN, INT_MAX, V|E, "partitions"},
 {"partp8x8", NULL, 0, FF_OPT_TYPE_CONST, X264_PART_P8X8, INT_MIN, INT_MAX, V|E, "partitions"},
 {"partb8x8", NULL, 0, FF_OPT_TYPE_CONST, X264_PART_B8X8, INT_MIN, INT_MAX, V|E, "partitions"},
+{"sc_factor", NULL, OFFSET(scenechange_factor), FF_OPT_TYPE_INT, 6, 0, INT_MAX, V|E},
 {NULL},
 };
 

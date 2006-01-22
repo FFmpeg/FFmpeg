@@ -1179,7 +1179,7 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
             if (vard <= 64<<8 || vard < varc) { //FIXME
                 c->scene_change_score+= ff_sqrt(vard) - ff_sqrt(varc);
             }else{
-                c->scene_change_score+= s->qscale;
+                c->scene_change_score+= s->qscale * s->avctx->scenechange_factor;
             }
             return;
         }
@@ -1270,7 +1270,7 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
         if (vard <= 64<<8 || vard < varc)
             c->scene_change_score+= ff_sqrt(vard) - ff_sqrt(varc);
         else
-            c->scene_change_score+= s->qscale;
+            c->scene_change_score+= s->qscale * s->avctx->scenechange_factor;
 
         if(mb_type == CANDIDATE_MB_TYPE_INTER){
             c->sub_motion_search(s, &mx, &my, dmin, 0, 0, 0, 16);
@@ -1291,7 +1291,7 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
         if (vard <= 64<<8 || vard < varc)
             c->scene_change_score+= ff_sqrt(vard) - ff_sqrt(varc);
         else
-            c->scene_change_score+= s->qscale;
+            c->scene_change_score+= s->qscale * s->avctx->scenechange_factor;
 
         if (vard*2 + 200*256 > varc)
             mb_type|= CANDIDATE_MB_TYPE_INTRA;
@@ -1397,7 +1397,7 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
         if (vard <= 64<<8 || vard < varc) { //FIXME
             c->scene_change_score+= ff_sqrt(vard) - ff_sqrt(varc);
         }else{
-            c->scene_change_score+= s->qscale;
+            c->scene_change_score+= s->qscale * s->avctx->scenechange_factor;
         }
     }
 
@@ -1843,7 +1843,7 @@ void ff_estimate_b_frame_motion(MpegEncContext * s,
 /*            if (vard <= 64<<8 || vard < varc) {
                 c->scene_change_score+= ff_sqrt(vard) - ff_sqrt(varc);
             }else{
-                c->scene_change_score+= s->qscale;
+                c->scene_change_score+= s->qscale * s->avctx->scenechange_factor;
             }*/
             return;
         }
