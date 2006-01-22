@@ -17,12 +17,18 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 #include "common.h"
+//! avoid e.g. MPlayers fast_memcpy, it slows things down here
+#undef memcpy
+#include <string.h>
 #include "lzo.h"
 
+//! define if we may write up to 12 bytes beyond the output buffer
+#define OUTBUF_PADDED 1
+//! define if we may read up to 4 bytes beyond the input buffer
+#define INBUF_PADDED 1
 typedef struct LZOContext {
     uint8_t *in, *in_end;
-    uint8_t *out, *out_end;
-    int out_size;
+    uint8_t *out_start, *out, *out_end;
     int error;
 } LZOContext;
 
@@ -57,17 +63,29 @@ static inline int get_len(LZOContext *c, int x, int mask) {
  * \param cnt number of bytes to copy, must be > 0
  */
 static inline void copy(LZOContext *c, int cnt) {
-    if (c->in + cnt > c->in_end) {
-        cnt = c->in_end - c->in;
+    register uint8_t *src = c->in;
+    register uint8_t *dst = c->out;
+    if (src + cnt > c->in_end) {
+        cnt = c->in_end - src;
         c->error |= LZO_INPUT_DEPLETED;
     }
-    if (c->out + cnt > c->out_end) {
-        cnt = c->out_end - c->out;
+    if (dst + cnt > c->out_end) {
+        cnt = c->out_end - dst;
         c->error |= LZO_OUTPUT_FULL;
     }
-    do {
-        *c->out++ = *c->in++;
-    } while (--cnt);
+#if defined(INBUF_PADDED) && defined(OUTBUF_PADDED)
+    dst[0] = src[0];
+    dst[1] = src[1];
+    dst[2] = src[2];
+    dst[3] = src[3];
+    src += 4;
+    dst += 4;
+    cnt -= 4;
+    if (cnt > 0)
+#endif
+        memcpy(dst, src, cnt);
+    c->in = src + cnt;
+    c->out = dst + cnt;
 }
 
 /**
@@ -75,20 +93,59 @@ static inline void copy(LZOContext *c, int cnt) {
  * \param back how many bytes back we start
  * \param cnt number of bytes to copy, must be > 0
  *
- * cnt > back is valid, this will copy the bytes we just copied.
+ * cnt > back is valid, this will copy the bytes we just copied,
+ * thus creating a repeating pattern with a period length of back.
  */
 static inline void copy_backptr(LZOContext *c, int back, int cnt) {
-    if (c->out - back < c->out_end - c->out_size) {
+    register uint8_t *src = &c->out[-back];
+    register uint8_t *dst = c->out;
+    if (src < c->out_start) {
         c->error |= LZO_INVALID_BACKPTR;
         return;
     }
-    if (c->out + cnt > c->out_end) {
-        cnt = c->out_end - c->out;
+    if (dst + cnt > c->out_end) {
+        cnt = c->out_end - dst;
         c->error |= LZO_OUTPUT_FULL;
     }
-    do {
-        *c->out++ = c->out[-back];
-    } while (--cnt);
+    if (back == 1) {
+        memset(dst, *src, cnt);
+        dst += cnt;
+    } else {
+#ifdef OUTBUF_PADDED
+        dst[0] = src[0];
+        dst[1] = src[1];
+        dst[2] = src[2];
+        dst[3] = src[3];
+        src += 4;
+        dst += 4;
+        cnt -= 4;
+        if (cnt > 0) {
+            dst[0] = src[0];
+            dst[1] = src[1];
+            dst[2] = src[2];
+            dst[3] = src[3];
+            dst[4] = src[4];
+            dst[5] = src[5];
+            dst[6] = src[6];
+            dst[7] = src[7];
+            src += 8;
+            dst += 8;
+            cnt -= 8;
+        }
+#endif
+        if (cnt > 0) {
+            int blocklen = back;
+            while (cnt > blocklen) {
+                memcpy(dst, src, blocklen);
+                dst += blocklen;
+                cnt -= blocklen;
+                blocklen <<= 1;
+            }
+            memcpy(dst, src, cnt);
+        }
+        dst += cnt;
+    }
+    c->out = dst;
 }
 
 /**
@@ -98,6 +155,9 @@ static inline void copy_backptr(LZOContext *c, int back, int cnt) {
  * \param in input buffer
  * \param inlen size of input buffer, number of bytes left are returned here
  * \return 0 on success, otherwise error flags, see lzo.h
+ *
+ * make sure all buffers are appropriately padded, in must provide
+ * LZO_INPUT_PADDING, out must provide LZO_OUTPUT_PADDING additional bytes
  */
 int lzo1x_decode(void *out, int *outlen, void *in, int *inlen) {
     enum {COPY, BACKPTR} state = COPY;
@@ -105,9 +165,8 @@ int lzo1x_decode(void *out, int *outlen, void *in, int *inlen) {
     LZOContext c;
     c.in = in;
     c.in_end = in + *inlen;
-    c.out = out;
+    c.out = c.out_start = out;
     c.out_end = out + * outlen;
-    c.out_size = *outlen;
     c.error = 0;
     x = get_byte(&c);
     if (x > 17) {

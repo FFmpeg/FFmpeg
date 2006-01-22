@@ -232,7 +232,7 @@ static int decode_init(AVCodecContext *avctx) {
     c->linelen = avctx->width * avctx->bits_per_sample / 8;
     c->height = avctx->height;
     c->decomp_size = c->height * c->linelen;
-    c->decomp_buf = av_malloc(c->decomp_size);
+    c->decomp_buf = av_malloc(c->decomp_size + LZO_OUTPUT_PADDING);
     if (!c->decomp_buf) {
         av_log(avctx, AV_LOG_ERROR, "Can't allocate decompression buffer.\n");
         return 1;
