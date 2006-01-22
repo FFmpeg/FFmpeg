@@ -28,6 +28,7 @@ Only mono files are supported.
 static const unsigned char AMR_header [] = "#!AMR\n";
 static const unsigned char AMRWB_header [] = "#!AMR-WB\n";
 
+#ifdef CONFIG_MUXERS
 static int amr_write_header(AVFormatContext *s)
 {
     ByteIOContext *pb = &s->pb;
@@ -62,6 +63,7 @@ static int amr_write_trailer(AVFormatContext *s)
 {
     return 0;
 }
+#endif /* CONFIG_MUXERS */
 
 static int amr_probe(AVProbeData *p)
 {
@@ -223,6 +225,7 @@ static AVInputFormat amr_iformat = {
     amr_read_close,
 };
 
+#ifdef CONFIG_MUXERS
 static AVOutputFormat amr_oformat = {
     "amr",
     "3gpp amr file format",
@@ -235,10 +238,13 @@ static AVOutputFormat amr_oformat = {
     amr_write_packet,
     amr_write_trailer,
 };
+#endif
 
 int amr_init(void)
 {
     av_register_input_format(&amr_iformat);
+#ifdef CONFIG_MUXERS
     av_register_output_format(&amr_oformat);
+#endif
     return 0;
 }
