@@ -452,10 +452,10 @@ fi
 if [ -n "$do_snow" ] ; then
 # snow encoding
 file=${outfile}snow.avi
-do_ffmpeg $file -y -strict -2 -f pgmyuv -i $raw_src -an -vcodec snow -qscale 2 -flags +qpel -me iter -dia_size 2 -cmp 12 -subcmp 12 $file
+do_ffmpeg $file -y -strict -2 -f pgmyuv -i $raw_src -an -vcodec snow -qscale 2 -flags +qpel -me iter -dia_size 2 -cmp 12 -subcmp 12 -s 128x64 $file
 
 # snow decoding
-do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst
+do_ffmpeg $raw_dst -y -i $file -f rawvideo -s 352x288 $raw_dst
 fi
 
 ###################################
