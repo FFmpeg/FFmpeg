@@ -35,7 +35,8 @@
 #define MODE_3G2 4
 
 typedef struct MOVIentry {
-    unsigned int flags, pos, size;
+    unsigned int flags, size;
+    uint64_t     pos;
     unsigned int samplesInChunk;
     char         key_frame;
     unsigned int entries;
@@ -44,7 +45,7 @@ typedef struct MOVIentry {
 typedef struct MOVIndex {
     int         mode;
     int         entry;
-    int         mdat_size;
+    uint64_t    mdat_size;
     int         ents_allocated;
     long        timescale;
     long        time;
@@ -97,9 +98,9 @@ const CodecTag ff_mov_obj_type[] = {
 };
 
 //FIXME supprt 64bit varaint with wide placeholders
-static int updateSize (ByteIOContext *pb, int pos)
+static offset_t updateSize (ByteIOContext *pb, offset_t pos)
 {
-    long curpos = url_ftell(pb);
+    offset_t curpos = url_ftell(pb);
     url_fseek(pb, pos, SEEK_SET);
     put_be32(pb, curpos - pos); /* rewrite size */
     url_fseek(pb, curpos, SEEK_SET);
@@ -111,15 +112,23 @@ static int updateSize (ByteIOContext *pb, int pos)
 static int mov_write_stco_tag(ByteIOContext *pb, MOVTrack* track)
 {
     int i;
-    int pos = url_ftell(pb);
+    offset_t pos = url_ftell(pb);
     put_be32(pb, 0); /* size */
-    put_tag(pb, "stco");
+    int mode64 = 0; //   use 32 bit size variant if possible
+    if (pos > UINT32_MAX) {
+        mode64 = 1;
+        put_tag(pb, "co64");
+    } else
+        put_tag(pb, "stco");
     put_be32(pb, 0); /* version & flags */
     put_be32(pb, track->entry); /* entry count */
     for (i=0; i<track->entry; i++) {
         int cl = i / MOV_INDEX_CLUSTER_SIZE;
         int id = i % MOV_INDEX_CLUSTER_SIZE;
-        put_be32(pb, track->cluster[cl][id].pos);
+        if(mode64 == 1)
+            put_be64(pb, track->cluster[cl][id].pos);
+        else
+            put_be32(pb, track->cluster[cl][id].pos);
     }
     return updateSize (pb, pos);
 }
@@ -130,7 +139,7 @@ static int mov_write_stsz_tag(ByteIOContext *pb, MOVTrack* track)
     int equalChunks = 1;
     int i, j, entries = 0, tst = -1, oldtst = -1;
 
-    int pos = url_ftell(pb);
+    offset_t pos = url_ftell(pb);
     put_be32(pb, 0); /* size */
     put_tag(pb, "stsz");
     put_be32(pb, 0); /* version & flags */
@@ -168,9 +177,10 @@ static int mov_write_stsz_tag(ByteIOContext *pb, MOVTrack* track)
 /* Sample to chunk atom */
 static int mov_write_stsc_tag(ByteIOContext *pb, MOVTrack* track)
 {
-    int index = 0, oldval = -1, i, entryPos, curpos;
+    int index = 0, oldval = -1, i;
+    offset_t entryPos, curpos;
 
-    int pos = url_ftell(pb);
+    offset_t pos = url_ftell(pb);
     put_be32(pb, 0); /* size */
     put_tag(pb, "stsc");
     put_be32(pb, 0); // version & flags
@@ -199,9 +209,9 @@ static int mov_write_stsc_tag(ByteIOContext *pb, MOVTrack* track)
 /* Sync sample atom */
 static int mov_write_stss_tag(ByteIOContext *pb, MOVTrack* track)
 {
-    long curpos;
-    int i, index = 0, entryPos;
-    int pos = url_ftell(pb);
+    offset_t curpos, entryPos;
+    int i, index = 0;
+    offset_t pos = url_ftell(pb);
     put_be32(pb, 0); // size
     put_tag(pb, "stss");
     put_be32(pb, 0); // version & flags
@@ -238,7 +248,7 @@ static int mov_write_damr_tag(ByteIOContext *pb)
 
 static int mov_write_wave_tag(ByteIOContext *pb, MOVTrack* track)
 {
-    int pos = url_ftell(pb);
+    offset_t pos = url_ftell(pb);
 
     put_be32(pb, 0);     /* size */
     put_tag(pb, "wave");
@@ -280,7 +290,7 @@ static const CodecTag codec_movaudio_tags[] = {
 
 static int mov_write_audio_tag(ByteIOContext *pb, MOVTrack* track)
 {
-    int pos = url_ftell(pb);
+    offset_t pos = url_ftell(pb);
     int tag;
 
     put_be32(pb, 0); /* size */
@@ -422,7 +432,7 @@ static void putDescr(ByteIOContext *pb, int tag, int size)
 static int mov_write_esds_tag(ByteIOContext *pb, MOVTrack* track) // Basic
 {
     int decoderSpecificInfoLen;
-    int pos = url_ftell(pb);
+    offset_t pos = url_ftell(pb);
     void *vosDataBackup=track->vosData;
     int vosLenBackup=track->vosLen;
 
@@ -508,7 +518,7 @@ static const CodecTag codec_movvideo_tags[] = {
 
 static int mov_write_video_tag(ByteIOContext *pb, MOVTrack* track)
 {
-    int pos = url_ftell(pb);
+    offset_t pos = url_ftell(pb);
     char compressor_name[32];
     int tag;
 
@@ -563,7 +573,7 @@ static int mov_write_video_tag(ByteIOContext *pb, MOVTrack* track)
 
 static int mov_write_stsd_tag(ByteIOContext *pb, MOVTrack* track)
 {
-    int pos = url_ftell(pb);
+    offset_t pos = url_ftell(pb);
     put_be32(pb, 0); /* size */
     put_tag(pb, "stsd");
     put_be32(pb, 0); /* version & flags */
@@ -605,7 +615,7 @@ static int mov_write_dref_tag(ByteIOContext *pb)
 
 static int mov_write_stbl_tag(ByteIOContext *pb, MOVTrack* track)
 {
-    int pos = url_ftell(pb);
+    offset_t pos = url_ftell(pb);
     put_be32(pb, 0); /* size */
     put_tag(pb, "stbl");
     mov_write_stsd_tag(pb, track);
@@ -621,7 +631,7 @@ static int mov_write_stbl_tag(ByteIOContext *pb, MOVTrack* track)
 
 static int mov_write_dinf_tag(ByteIOContext *pb)
 {
-    int pos = url_ftell(pb);
+    offset_t pos = url_ftell(pb);
     put_be32(pb, 0); /* size */
     put_tag(pb, "dinf");
     mov_write_dref_tag(pb);
@@ -650,7 +660,7 @@ static int mov_write_vmhd_tag(ByteIOContext *pb)
 static int mov_write_hdlr_tag(ByteIOContext *pb, MOVTrack* track)
 {
     char *descr, *hdlr, *hdlr_type;
-    int pos = url_ftell(pb);
+    offset_t pos = url_ftell(pb);
 
     if (!track) { /* no media --> data handler */
         hdlr = "dhlr";
@@ -682,7 +692,7 @@ static int mov_write_hdlr_tag(ByteIOContext *pb, MOVTrack* track)
 
 static int mov_write_minf_tag(ByteIOContext *pb, MOVTrack* track)
 {
-    int pos = url_ftell(pb);
+    offset_t pos = url_ftell(pb);
     put_be32(pb, 0); /* size */
     put_tag(pb, "minf");
     if(track->enc->codec_type == CODEC_TYPE_VIDEO)
@@ -712,7 +722,7 @@ static int mov_write_mdhd_tag(ByteIOContext *pb, MOVTrack* track)
 
 static int mov_write_mdia_tag(ByteIOContext *pb, MOVTrack* track)
 {
-    int pos = url_ftell(pb);
+    offset_t pos = url_ftell(pb);
     put_be32(pb, 0); /* size */
     put_tag(pb, "mdia");
     mov_write_mdhd_tag(pb, track);
@@ -805,7 +815,7 @@ static int mov_write_uuid_tag_psp(ByteIOContext *pb, MOVTrack *mov)
 
 static int mov_write_trak_tag(ByteIOContext *pb, MOVTrack* track)
 {
-    int pos = url_ftell(pb);
+    offset_t pos = url_ftell(pb);
     put_be32(pb, 0); /* size */
     put_tag(pb, "trak");
     mov_write_tkhd_tag(pb, track);
@@ -835,8 +845,8 @@ static int mov_write_iods_tag(ByteIOContext *pb, MOVContext *mov)
 
 static int mov_write_mvhd_tag(ByteIOContext *pb, MOVContext *mov)
 {
-    int maxTrackID = 1, maxTrackLen = 0, i;
-    int64_t maxTrackLenTemp;
+    int maxTrackID = 1, i;
+    int64_t maxTrackLenTemp, maxTrackLen = 0;
 
     put_be32(pb, 0x6c); /* size (always 0x6c) */
     put_tag(pb, "mvhd");
@@ -885,7 +895,7 @@ static int mov_write_mvhd_tag(ByteIOContext *pb, MOVContext *mov)
 static int mov_write_itunes_hdlr_tag(ByteIOContext *pb, MOVContext* mov,
                                      AVFormatContext *s)
 {
-    int pos = url_ftell(pb);
+    offset_t pos = url_ftell(pb);
     put_be32(pb, 0); /* size */
     put_tag(pb, "hdlr");
     put_be32(pb, 0);
@@ -902,7 +912,7 @@ static int mov_write_itunes_hdlr_tag(ByteIOContext *pb, MOVContext* mov,
 static int mov_write_string_data_tag(ByteIOContext *pb, MOVContext* mov,
                                      AVFormatContext *s, const char *data)
 {
-    int pos = url_ftell(pb);
+    offset_t pos = url_ftell(pb);
     put_be32(pb, 0); /* size */
     put_tag(pb, "data");
     put_be32(pb, 1);
@@ -917,7 +927,7 @@ static int mov_write_nam_tag(ByteIOContext *pb, MOVContext* mov,
 {
     int size = 0;
     if ( s->title[0] ) {
-        int pos = url_ftell(pb);
+        offset_t pos = url_ftell(pb);
         put_be32(pb, 0); /* size */
         put_tag(pb, "\251nam");
         mov_write_string_data_tag(pb, mov, s, s->title);
@@ -932,7 +942,7 @@ static int mov_write_ART_tag(ByteIOContext *pb, MOVContext* mov,
 {
     int size = 0;
     if ( s->author[0] ) {
-        int pos = url_ftell(pb);
+        offset_t pos = url_ftell(pb);
         put_be32(pb, 0); /* size */
         put_tag(pb, "\251ART");
         // we use the author here as this is the only thing that we have...
@@ -948,7 +958,7 @@ static int mov_write_wrt_tag(ByteIOContext *pb, MOVContext* mov,
 {
     int size = 0;
     if ( s->author[0] ) {
-        int pos = url_ftell(pb);
+        offset_t pos = url_ftell(pb);
         put_be32(pb, 0); /* size */
         put_tag(pb, "\251wrt");
         mov_write_string_data_tag(pb, mov, s, s->author);
@@ -963,7 +973,7 @@ static int mov_write_alb_tag(ByteIOContext *pb, MOVContext* mov,
 {
     int size = 0;
     if ( s->album[0] ) {
-        int pos = url_ftell(pb);
+        offset_t pos = url_ftell(pb);
         put_be32(pb, 0); /* size */
         put_tag(pb, "\251alb");
         mov_write_string_data_tag(pb, mov, s, s->album);
@@ -979,7 +989,7 @@ static int mov_write_day_tag(ByteIOContext *pb, MOVContext* mov,
     char year[5];
     int size = 0;
     if ( s->year ) {
-        int pos = url_ftell(pb);
+        offset_t pos = url_ftell(pb);
         put_be32(pb, 0); /* size */
         put_tag(pb, "\251day");
         snprintf(year, 5, "%04d", s->year);
@@ -993,7 +1003,7 @@ static int mov_write_day_tag(ByteIOContext *pb, MOVContext* mov,
 static int mov_write_too_tag(ByteIOContext *pb, MOVContext* mov,
                              AVFormatContext *s)
 {
-    int pos = url_ftell(pb);
+    offset_t pos = url_ftell(pb);
     put_be32(pb, 0); /* size */
     put_tag(pb, "\251too");
     mov_write_string_data_tag(pb, mov, s, LIBAVFORMAT_IDENT);
@@ -1006,7 +1016,7 @@ static int mov_write_cmt_tag(ByteIOContext *pb, MOVContext* mov,
 {
     int size = 0;
     if ( s->comment[0] ) {
-        int pos = url_ftell(pb);
+        offset_t pos = url_ftell(pb);
         put_be32(pb, 0); /* size */
         put_tag(pb, "\251cmt");
         mov_write_string_data_tag(pb, mov, s, s->comment);
@@ -1021,7 +1031,7 @@ static int mov_write_gen_tag(ByteIOContext *pb, MOVContext* mov,
 {
     int size = 0;
     if ( s->genre[0] ) {
-        int pos = url_ftell(pb);
+        offset_t pos = url_ftell(pb);
         put_be32(pb, 0); /* size */
         put_tag(pb, "\251gen");
         mov_write_string_data_tag(pb, mov, s, s->genre);
@@ -1036,11 +1046,11 @@ static int mov_write_trkn_tag(ByteIOContext *pb, MOVContext* mov,
 {
     int size = 0;
     if ( s->track ) {
-        int pos = url_ftell(pb);
+        offset_t pos = url_ftell(pb);
         put_be32(pb, 0); /* size */
         put_tag(pb, "trkn");
         {
-            int pos = url_ftell(pb);
+            offset_t pos = url_ftell(pb);
             put_be32(pb, 0); /* size */
             put_tag(pb, "data");
             put_be32(pb, 0);        // 8 bytes empty
@@ -1060,7 +1070,7 @@ static int mov_write_trkn_tag(ByteIOContext *pb, MOVContext* mov,
 static int mov_write_ilst_tag(ByteIOContext *pb, MOVContext* mov,
                               AVFormatContext *s)
 {
-    int pos = url_ftell(pb);
+    offset_t pos = url_ftell(pb);
     put_be32(pb, 0); /* size */
     put_tag(pb, "ilst");
     mov_write_nam_tag(pb, mov, s);
@@ -1084,7 +1094,7 @@ static int mov_write_meta_tag(ByteIOContext *pb, MOVContext* mov,
     // only save meta tag if required
     if ( s->title[0] || s->author[0] || s->album[0] || s->year ||
          s->comment[0] || s->genre[0] || s->track ) {
-        int pos = url_ftell(pb);
+        offset_t pos = url_ftell(pb);
         put_be32(pb, 0); /* size */
         put_tag(pb, "meta");
         put_be32(pb, 0);
@@ -1098,7 +1108,7 @@ static int mov_write_meta_tag(ByteIOContext *pb, MOVContext* mov,
 static int mov_write_udta_tag(ByteIOContext *pb, MOVContext* mov,
                               AVFormatContext *s)
 {
-    int pos = url_ftell(pb);
+    offset_t pos = url_ftell(pb);
     int i;
 
     put_be32(pb, 0); /* size */
@@ -1112,7 +1122,7 @@ static int mov_write_udta_tag(ByteIOContext *pb, MOVContext* mov,
         if(mov->tracks[i].entry <= 0) continue;
         if (mov->tracks[i].enc->codec_id == CODEC_ID_AAC ||
             mov->tracks[i].enc->codec_id == CODEC_ID_MPEG4) {
-            int pos = url_ftell(pb);
+            offset_t pos = url_ftell(pb);
             put_be32(pb, 0); /* size */
             put_tag(pb, "\251req");
             put_be16(pb, sizeof("QuickTime 6.0 or greater") - 1);
@@ -1127,7 +1137,7 @@ static int mov_write_udta_tag(ByteIOContext *pb, MOVContext* mov,
     /* Encoder */
     if(mov->tracks[0].enc && !(mov->tracks[0].enc->flags & CODEC_FLAG_BITEXACT))
     {
-        int pos = url_ftell(pb);
+        offset_t pos = url_ftell(pb);
         put_be32(pb, 0); /* size */
         put_tag(pb, "\251enc");
         put_be16(pb, sizeof(LIBAVFORMAT_IDENT) - 1); /* string length */
@@ -1138,7 +1148,7 @@ static int mov_write_udta_tag(ByteIOContext *pb, MOVContext* mov,
 
     if( s->title[0] )
     {
-        int pos = url_ftell(pb);
+        offset_t pos = url_ftell(pb);
         put_be32(pb, 0); /* size */
         put_tag(pb, "\251nam");
         put_be16(pb, strlen(s->title)); /* string length */
@@ -1149,7 +1159,7 @@ static int mov_write_udta_tag(ByteIOContext *pb, MOVContext* mov,
 
     if( s->author[0] )
     {
-        int pos = url_ftell(pb);
+        offset_t pos = url_ftell(pb);
         put_be32(pb, 0); /* size */
         put_tag(pb, /*"\251aut"*/ "\251day" );
         put_be16(pb, strlen(s->author)); /* string length */
@@ -1160,7 +1170,7 @@ static int mov_write_udta_tag(ByteIOContext *pb, MOVContext* mov,
 
     if( s->comment[0] )
     {
-        int pos = url_ftell(pb);
+        offset_t pos = url_ftell(pb);
         put_be32(pb, 0); /* size */
         put_tag(pb, "\251des");
         put_be16(pb, strlen(s->comment)); /* string length */
@@ -1175,8 +1185,8 @@ static int mov_write_udta_tag(ByteIOContext *pb, MOVContext* mov,
 static int mov_write_moov_tag(ByteIOContext *pb, MOVContext *mov,
                               AVFormatContext *s)
 {
-    int pos, i;
-    pos = url_ftell(pb);
+    int i;
+    offset_t pos = url_ftell(pb);
     put_be32(pb, 0); /* size placeholder*/
     put_tag(pb, "moov");
     mov->timescale = globalTimescale;
@@ -1221,6 +1231,9 @@ static int mov_write_moov_tag(ByteIOContext *pb, MOVContext *mov,
 
 int mov_write_mdat_tag(ByteIOContext *pb, MOVContext* mov)
 {
+    put_be32(pb, 8);    // placeholder for extended size field (64 bit)
+    put_tag(pb, "wide");
+
     mov->mdat_pos = url_ftell(pb);
     put_be32(pb, 0); /* size placeholder*/
     put_tag(pb, "mdat");
@@ -1460,7 +1473,8 @@ static int mov_write_trailer(AVFormatContext *s)
     MOVContext *mov = s->priv_data;
     ByteIOContext *pb = &s->pb;
     int res = 0;
-    int i, j;
+    int i;
+    uint64_t j;
 
     offset_t moov_pos = url_ftell(pb);
 
@@ -1470,8 +1484,16 @@ static int mov_write_trailer(AVFormatContext *s)
             j += mov->tracks[i].mdat_size;
         }
     }
-    url_fseek(pb, mov->mdat_pos, SEEK_SET);
-    put_be32(pb, j+8);
+    if (j+8 <= UINT32_MAX) {
+        url_fseek(pb, mov->mdat_pos, SEEK_SET);
+        put_be32(pb, j+8);
+    } else {
+        /* overwrite 'wide' placeholder atom */
+        url_fseek(pb, mov->mdat_pos - 8, SEEK_SET);
+        put_be32(pb, 1); /* special value: real atom size will be 64 bit value after tag field */
+        put_tag(pb, "mdat");
+        put_be64(pb, j+16);
+    }
     url_fseek(pb, moov_pos, SEEK_SET);
 
     mov_write_moov_tag(pb, mov, s);
