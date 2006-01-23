@@ -1144,7 +1144,6 @@ static int mjpeg_decode_sof(MJpegDecodeContext *s)
 
         s->width = width;
         s->height = height;
-        avcodec_set_dimensions(s->avctx, width, height);
 
         /* test interlaced mode */
         if (s->first_picture &&
@@ -1153,8 +1152,10 @@ static int mjpeg_decode_sof(MJpegDecodeContext *s)
             s->interlaced = 1;
 //            s->bottom_field = (s->interlace_polarity) ? 1 : 0;
             s->bottom_field = 0;
-            s->avctx->height *= 2;
+            height *= 2;
         }
+
+        avcodec_set_dimensions(s->avctx, width, height);
 
         s->qscale_table= av_mallocz((s->width+15)/16);
 
