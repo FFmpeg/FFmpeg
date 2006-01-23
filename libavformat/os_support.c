@@ -18,7 +18,9 @@
  */
 #include "config.h"
 #include "avformat.h"
-#if defined(CONFIG_WIN32) && !defined(CONFIG_WINCE)
+#if defined(CONFIG_WINCE)
+/* Skip includes on WinCE. */
+#elif defined(CONFIG_WIN32)
 #include <sys/types.h>
 #include <sys/timeb.h>
 #elif defined(CONFIG_OS2)
