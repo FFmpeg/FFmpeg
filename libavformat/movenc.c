@@ -112,9 +112,9 @@ static offset_t updateSize (ByteIOContext *pb, offset_t pos)
 static int mov_write_stco_tag(ByteIOContext *pb, MOVTrack* track)
 {
     int i;
+    int mode64 = 0; //   use 32 bit size variant if possible
     offset_t pos = url_ftell(pb);
     put_be32(pb, 0); /* size */
-    int mode64 = 0; //   use 32 bit size variant if possible
     if (pos > UINT32_MAX) {
         mode64 = 1;
         put_tag(pb, "co64");
