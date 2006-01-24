@@ -15,7 +15,8 @@ LDFLAGS+=-p
 endif
 
 MANPAGE=doc/ffmpeg.1
-PROG=ffmpeg$(EXESUF)
+PROG_G+=ffmpeg_g$(EXESUF)
+PROG+=ffmpeg$(EXESUF)
 PROGTEST=output_example$(EXESUF)
 QTFASTSTART=qt-faststart$(EXESUF)
 
@@ -26,6 +27,7 @@ endif
 
 ifeq ($(CONFIG_FFPLAY),yes)
 MANPAGE+=doc/ffplay.1
+PROG_G+=ffplay_g$(EXESUF)
 PROG+=ffplay$(EXESUF)
 FFPLAY_O=ffplay.o
 endif
@@ -59,7 +61,7 @@ OBJS = ffmpeg.o ffserver.o cmdutils.o $(FFPLAY_O)
 SRCS = $(OBJS:.o=.c) $(ASM_OBJS:.o=.s)
 FFLIBS = -L./libavformat -lavformat$(BUILDSUF) -L./libavcodec -lavcodec$(BUILDSUF) -L./libavutil -lavutil$(BUILDSUF)
 
-all: lib $(PROG) $(PROGTEST) $(VHOOK) $(QTFASTSTART) $(DOC)
+all: lib $(PROG_G) $(PROG) $(PROGTEST) $(VHOOK) $(QTFASTSTART) $(DOC)
 
 lib:
 	$(MAKE) -C libavutil all
@@ -157,7 +159,7 @@ clean:
 	$(MAKE) -C tests clean
 	$(MAKE) -C vhook clean
 	rm -f *.o *.d *~ .libs gmon.out TAGS \
-	   $(PROG) $(PROGTEST) $(QTFASTSTART)
+	   $(PROG) $(PROG_G) $(PROGTEST) $(QTFASTSTART)
 
 # Note well: config.log is NOT removed.
 distclean: clean
