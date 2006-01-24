@@ -433,28 +433,6 @@ static int mov_write_esds_tag(ByteIOContext *pb, MOVTrack* track) // Basic
 {
     int decoderSpecificInfoLen;
     offset_t pos = url_ftell(pb);
-    void *vosDataBackup=track->vosData;
-    int vosLenBackup=track->vosLen;
-
-    // we should be able to have these passed in, via vosData, then we wouldn't need to attack this routine at all
-    static const char PSPAACData[]={0x13,0x10};
-    static const char PSPMP4Data[]={0x00,0x00,0x01,0xB0,0x03,0x00,0x00,0x01,0xB5,0x09,0x00,0x00,0x01,0x00,0x00,0x00,0x01,0x20,0x00,0x84,0x5D,0x4C,0x28,0x50,0x20,0xF0,0xA3,0x1F };
-
-
-    if (track->mode == MODE_PSP)  // fails on psp if this is not here
-    {
-        if (track->enc->codec_id == CODEC_ID_AAC)
-        {
-            track->vosLen = 2;
-            track->vosData = (uint8_t *) PSPAACData;
-        }
-
-        if (track->enc->codec_id == CODEC_ID_MPEG4)
-        {
-            track->vosLen = 28;
-            track->vosData = (uint8_t *) PSPMP4Data;
-        }
-    }
 
     decoderSpecificInfoLen = track->vosLen ? descrLength(track->vosLen):0;
 
@@ -497,8 +475,6 @@ static int mov_write_esds_tag(ByteIOContext *pb, MOVTrack* track) // Basic
         put_buffer(pb, track->vosData, track->vosLen);
     }
 
-    track->vosData = vosDataBackup;
-    track->vosLen = vosLenBackup;
 
     // SL descriptor
     putDescr(pb, 0x06, 1);
@@ -1182,6 +1158,68 @@ static int mov_write_udta_tag(ByteIOContext *pb, MOVContext* mov,
     return updateSize(pb, pos);
 }
 
+
+static size_t ascii_to_wc (ByteIOContext *pb, char *b, size_t n)
+{
+    size_t i;
+    unsigned char c;
+    for (i = 0; i < n - 1; i++) {
+        c = b[i];
+        if (! (0x20 <= c && c <= 0x7f ))
+            c = 0x3f;  /* '?' */
+        put_be16(pb, c);
+    }
+    put_be16(pb, 0x00);
+    return 2*n;
+}
+
+static uint16_t language_code (char *str)
+{
+    return ((((str[0]-'a') & 0x1F)<<10) + (((str[1]-'a') & 0x1F)<<5) + ((str[2]-'a') & 0x1F));
+}
+
+static int mov_write_uuidusmt_tag (ByteIOContext *pb, AVFormatContext *s)
+{
+    size_t len, size;
+    offset_t pos, curpos;
+
+    size = 0;
+    if (s->title[0]) {
+        pos = url_ftell(pb);
+        put_be32(pb, 0); /* size placeholder*/
+        put_tag(pb, "uuid");
+        put_tag(pb, "USMT");
+        put_be32(pb, 0x21d24fce ); /* 96 bit UUID */
+        put_be32(pb, 0xbb88695c );
+        put_be32(pb, 0xfac9c740 );
+        size += 24;
+
+        put_be32(pb, 0); /* size placeholder*/
+        put_tag(pb, "MTDT");
+        put_be16(pb, 1);
+        size += 10;
+
+        // Title
+        len = strlen(s->title)+1;
+        put_be16(pb, len*2+10);             /* size */
+        put_be32(pb, 0x01);                 /* type */
+        put_be16(pb, language_code("und")); /* language */
+        put_be16(pb, 0x01);                 /* ? */
+        ascii_to_wc (pb, s->title, len);
+        size += len*2+10;
+
+        // size
+        curpos = url_ftell(pb);
+        url_fseek(pb, pos, SEEK_SET);
+        put_be32(pb, size);
+        url_fseek(pb, pos+24, SEEK_SET);
+        put_be32(pb, size-24);
+        url_fseek(pb, curpos, SEEK_SET);
+    }
+
+    return size;
+}
+
 static int mov_write_moov_tag(ByteIOContext *pb, MOVContext *mov,
                               AVFormatContext *s)
 {
@@ -1224,6 +1262,9 @@ static int mov_write_moov_tag(ByteIOContext *pb, MOVContext *mov,
         }
     }
 
+    if (mov->mode == MODE_PSP)
+        mov_write_uuidusmt_tag(pb, s);
+    else
     mov_write_udta_tag(pb, mov, s);
 
     return updateSize(pb, pos);
@@ -1241,7 +1282,7 @@ int mov_write_mdat_tag(ByteIOContext *pb, MOVContext* mov)
 }
 
 /* TODO: This needs to be more general */
-int mov_write_ftyp_tag(ByteIOContext *pb, AVFormatContext *s)
+static void mov_write_ftyp_tag (ByteIOContext *pb, AVFormatContext *s)
 {
     MOVContext *mov = s->priv_data;
 
@@ -1267,17 +1308,14 @@ int mov_write_ftyp_tag(ByteIOContext *pb, AVFormatContext *s)
         put_tag(pb, "MSNV");
     else
         put_tag(pb, "mp41");
-
-    return 0x14;
 }
 
 static void mov_write_uuidprof_tag(ByteIOContext *pb, AVFormatContext *s)
 {
-    int AudioRate = s->streams[1]->codec->sample_rate;
-    int FrameRate = ((s->streams[0]->codec->time_base.den) * (0x10000))/ (s->streams[0]->codec->time_base.num);
-
-    //printf("audiorate = %d\n",AudioRate);
-    //printf("framerate = %d / %d = 0x%x\n",s->streams[0]->codec->time_base.den,s->streams[0]->codec->time_base.num,FrameRate);
+    AVCodecContext *VideoCodec = s->streams[0]->codec;
+    AVCodecContext *AudioCodec = s->streams[1]->codec;
+    int AudioRate = AudioCodec->sample_rate;
+    int FrameRate = ((VideoCodec->time_base.den) * (0x10000))/ (VideoCodec->time_base.num);
 
     put_be32(pb, 0x94 ); /* size */
     put_tag(pb, "uuid");
@@ -1299,29 +1337,29 @@ static void mov_write_uuidprof_tag(ByteIOContext *pb, AVFormatContext *s)
     put_be32(pb, 0x2c );  /* size */
     put_tag(pb, "APRF");   /* audio */
     put_be32(pb, 0x0 );
-    put_be32(pb, 0x2 );
+    put_be32(pb, 0x2 );   /* TrackID */
     put_tag(pb, "mp4a");
     put_be32(pb, 0x20f );
     put_be32(pb, 0x0 );
-    put_be32(pb, 0x40 );
-    put_be32(pb, 0x40 );
-    put_be32(pb, AudioRate ); //24000   ... audio rate?
-    put_be32(pb, 0x2 );
+    put_be32(pb, AudioCodec->bit_rate / 1000);
+    put_be32(pb, AudioCodec->bit_rate / 1000);
+    put_be32(pb, AudioRate );
+    put_be32(pb, AudioCodec->channels );
 
     put_be32(pb, 0x34 );  /* size */
     put_tag(pb, "VPRF");   /* video */
     put_be32(pb, 0x0 );
-    put_be32(pb, 0x1 );
+    put_be32(pb, 0x1 );    /* TrackID */
     put_tag(pb, "mp4v");
     put_be32(pb, 0x103 );
     put_be32(pb, 0x0 );
-    put_be32(pb, 0xc0 );
-    put_be32(pb, 0xc0 );
-    put_be32(pb, FrameRate);  // was 0xefc29
-    put_be32(pb, FrameRate );  // was 0xefc29
-    put_be16(pb, s->streams[0]->codec->width);
-    put_be16(pb, s->streams[0]->codec->height);
-    put_be32(pb, 0x010001 );
+    put_be32(pb, VideoCodec->bit_rate / 1000);
+    put_be32(pb, VideoCodec->bit_rate / 1000);
+    put_be32(pb, FrameRate);
+    put_be32(pb, FrameRate);
+    put_be16(pb, VideoCodec->width);
+    put_be16(pb, VideoCodec->height);
+    put_be32(pb, 0x010001); /* ? */
 }
 
 static int mov_write_header(AVFormatContext *s)
@@ -1567,7 +1605,7 @@ static AVOutputFormat psp_oformat = {
     mov_write_header,
     mov_write_packet,
     mov_write_trailer,
-//    .flags = AVFMT_GLOBALHEADER,
+    .flags = AVFMT_GLOBALHEADER,
 };
 
 static AVOutputFormat _3g2_oformat = {

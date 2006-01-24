@@ -56,6 +56,7 @@ else
     do_h263=y
     do_h263p=y
     do_mpeg4=y
+    do_mp4psp=y
     do_huffyuv=y
     do_mjpeg=y
     do_ljpeg=y
@@ -336,6 +337,13 @@ do_ffmpeg $file -y -qscale 7 -flags +mv4+qpel -mbd 2 -bf 2 -cmp 1 -subcmp 2 -f p
 
 # mpeg4 decoding
 do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst
+fi
+
+###################################
+if [ -n "$do_mp4psp" ] ; then
+# mp4 PSP style
+file=${outfile}mpeg4-PSP.mp4
+do_ffmpeg $file -y -b 768 -s 320x240 -f psp -ar 24000 -ab 32 -i $raw_src $file
 fi
 
 ###################################
