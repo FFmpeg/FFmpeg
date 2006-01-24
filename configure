@@ -876,7 +876,7 @@ if test "$mingw32" = "yes" -o "$mingwce" = "yes"; then
     dc1394="no"
     ffserver="no"
     network="no"
-if test "$mingw32" = "yes"; then
+if test "$mingwce" = "yes"; then
     protocols="no"
 fi
     SLIBPREF=""
