@@ -83,12 +83,14 @@ typedef struct RateControlEntry{
     int i_tex_bits;
     int p_tex_bits;
     int misc_bits;
+    int header_bits;
     uint64_t expected_bits;
     int new_pict_type;
     float new_qscale;
     int mc_mb_var_sum;
     int mb_var_sum;
     int i_count;
+    int skip_count;
     int f_code;
     int b_code;
 }RateControlEntry;
@@ -116,6 +118,9 @@ typedef struct RateControlContext{
     uint64_t qscale_sum[5];
     int frame_count[5];
     int last_non_b_pict_type;
+
+    void *non_lavc_opaque;        ///< context for non lavc rc code (for example xvid)
+    float dry_run_qscale;         ///< for xvid rc
 }RateControlContext;
 
 /**
@@ -982,5 +987,9 @@ double ff_eval(char *s, double *const_value, const char **const_name,
                void *opaque);
 int ff_vbv_update(MpegEncContext *s, int frame_size);
 void ff_get_2pass_fcode(MpegEncContext *s);
+
+int ff_xvid_rate_control_init(MpegEncContext *s);
+void ff_xvid_rate_control_uninit(MpegEncContext *s);
+float ff_xvid_rate_estimate_qscale(MpegEncContext *s, int dry_run);
 
 #endif /* AVCODEC_MPEGVIDEO_H */

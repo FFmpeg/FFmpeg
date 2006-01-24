@@ -283,6 +283,7 @@ endif
 
 ifeq ($(CONFIG_XVID),yes)
 OBJS+= xvidff.o
+OBJS+= xvid_rc.o
 endif
 
 ifeq ($(CONFIG_X264),yes)

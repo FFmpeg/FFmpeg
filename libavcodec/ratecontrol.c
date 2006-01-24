@@ -38,10 +38,10 @@ static int init_pass2(MpegEncContext *s);
 static double get_qscale(MpegEncContext *s, RateControlEntry *rce, double rate_factor, int frame_num);
 
 void ff_write_pass1_stats(MpegEncContext *s){
-    snprintf(s->avctx->stats_out, 256, "in:%d out:%d type:%d q:%d itex:%d ptex:%d mv:%d misc:%d fcode:%d bcode:%d mc-var:%d var:%d icount:%d;\n",
+    snprintf(s->avctx->stats_out, 256, "in:%d out:%d type:%d q:%d itex:%d ptex:%d mv:%d misc:%d fcode:%d bcode:%d mc-var:%d var:%d icount:%d skipcount:%d hbits:%d;\n",
             s->current_picture_ptr->display_picture_number, s->current_picture_ptr->coded_picture_number, s->pict_type,
             s->current_picture.quality, s->i_tex_bits, s->p_tex_bits, s->mv_bits, s->misc_bits,
-            s->f_code, s->b_code, s->current_picture.mc_mb_var_sum, s->current_picture.mb_var_sum, s->i_count);
+            s->f_code, s->b_code, s->current_picture.mc_mb_var_sum, s->current_picture.mb_var_sum, s->i_count, s->skip_count, s->header_bits);
 }
 
 int ff_rate_control_init(MpegEncContext *s)
@@ -107,15 +107,20 @@ int ff_rate_control_init(MpegEncContext *s)
             assert(picture_number < rcc->num_entries);
             rce= &rcc->entry[picture_number];
 
-            e+=sscanf(p, " in:%*d out:%*d type:%d q:%f itex:%d ptex:%d mv:%d misc:%d fcode:%d bcode:%d mc-var:%d var:%d icount:%d",
+            e+=sscanf(p, " in:%*d out:%*d type:%d q:%f itex:%d ptex:%d mv:%d misc:%d fcode:%d bcode:%d mc-var:%d var:%d icount:%d skipcount:%d hbits:%d",
                    &rce->pict_type, &rce->qscale, &rce->i_tex_bits, &rce->p_tex_bits, &rce->mv_bits, &rce->misc_bits,
-                   &rce->f_code, &rce->b_code, &rce->mc_mb_var_sum, &rce->mb_var_sum, &rce->i_count);
-            if(e!=12){
+                   &rce->f_code, &rce->b_code, &rce->mc_mb_var_sum, &rce->mb_var_sum, &rce->i_count, &rce->skip_count, &rce->header_bits);
+            if(e!=14){
                 av_log(s->avctx, AV_LOG_ERROR, "statistics are damaged at line %d, parser out=%d\n", i, e);
                 return -1;
             }
+
             p= next;
         }
+
+        //FIXME maybe move to end
+        if((s->flags&CODEC_FLAG_PASS2) && s->avctx->rc_strategy == FF_RC_STRATEGY_XVID)
+            return ff_xvid_rate_control_init(s);
 
         if(init_pass2(s) < 0) return -1;
     }
@@ -181,6 +186,9 @@ void ff_rate_control_uninit(MpegEncContext *s)
     emms_c();
 
     av_freep(&rcc->entry);
+
+    if((s->flags&CODEC_FLAG_PASS2) && s->avctx->rc_strategy == FF_RC_STRATEGY_XVID)
+        ff_xvid_rate_control_uninit(s);
 }
 
 static inline double qp2bits(RateControlEntry *rce, double qp){
@@ -639,6 +647,9 @@ float ff_rate_estimate_qscale(MpegEncContext *s, int dry_run)
     const int pict_type= s->pict_type;
     Picture * const pic= &s->current_picture;
     emms_c();
+
+    if((s->flags&CODEC_FLAG_PASS2) && s->avctx->rc_strategy == FF_RC_STRATEGY_XVID)
+        return ff_xvid_rate_estimate_qscale(s, dry_run);
 
     get_qminmax(&qmin, &qmax, s, pict_type);
 
