@@ -153,24 +153,24 @@ static const CodecTag mov_audio_tags[] = {
 /* cf. QTFileFormat.pdf p253, qtff.pdf p205 */
 /* http://developer.apple.com/documentation/mac/Text/Text-368.html */
 /* deprecated by putting the code as 3*5bit ascii */
-static const char *mov_mdhd_language_map[] = { 
+static const char *mov_mdhd_language_map[] = {
 /* 0-9 */
-"eng", "fra", "ger", "ita", "dut", "sve", "spa", "dan", "por", "nor", 
-"heb", "jpn", "ara", "fin", "gre", "ice", "mlt", "tur", "hr "/*scr*/, "chi"/*ace?*/, 
-"urd", "hin", "tha", "kor", "lit", "pol", "hun", "est", "lav",  NULL, 
-"fo ",  NULL, "rus", "chi",  NULL, "iri", "alb", "ron", "ces", "slk", 
+"eng", "fra", "ger", "ita", "dut", "sve", "spa", "dan", "por", "nor",
+"heb", "jpn", "ara", "fin", "gre", "ice", "mlt", "tur", "hr "/*scr*/, "chi"/*ace?*/,
+"urd", "hin", "tha", "kor", "lit", "pol", "hun", "est", "lav",  NULL,
+"fo ",  NULL, "rus", "chi",  NULL, "iri", "alb", "ron", "ces", "slk",
 "slv", "yid", "sr ", "mac", "bul", "ukr", "bel", "uzb", "kaz", "aze",
-/*?*/ 
+/*?*/
 "aze", "arm", "geo", "mol", "kir", "tgk", "tuk", "mon",  NULL, "pus",
 "kur", "kas", "snd", "tib", "nep", "san", "mar", "ben", "asm", "guj",
 "pa ", "ori", "mal", "kan", "tam", "tel",  NULL, "bur", "khm", "lao",
 /*                   roman? arabic? */
 "vie", "ind", "tgl", "may", "may", "amh", "tir", "orm", "som", "swa",
 /*==rundi?*/
- NULL, "run",  NULL, "mlg", "epo",  NULL,  NULL,  NULL,  NULL,  NULL, 
+ NULL, "run",  NULL, "mlg", "epo",  NULL,  NULL,  NULL,  NULL,  NULL,
 /* 100 */
- NULL,  NULL,  NULL,  NULL,  NULL,  NULL,  NULL,  NULL,  NULL,  NULL, 
- NULL,  NULL,  NULL,  NULL,  NULL,  NULL,  NULL,  NULL,  NULL,  NULL, 
+ NULL,  NULL,  NULL,  NULL,  NULL,  NULL,  NULL,  NULL,  NULL,  NULL,
+ NULL,  NULL,  NULL,  NULL,  NULL,  NULL,  NULL,  NULL,  NULL,  NULL,
  NULL,  NULL,  NULL,  NULL,  NULL,  NULL,  NULL,  NULL, "wel", "baq",
 "cat", "lat", "que", "grn", "aym", "tat", "uig", "dzo", "jav"
 };
@@ -380,7 +380,7 @@ extern int ff_mov_iso639_to_lang(const char *lang, int mp4); /* for movenc.c */
 int ff_mov_iso639_to_lang(const char *lang, int mp4)
 {
     int i, code = 0;
-    
+
     /* old way, only for QT? */
     for (i = 0; !mp4 && (i < (sizeof(mov_mdhd_language_map)/sizeof(char *))); i++) {
         if (mov_mdhd_language_map[i] && !strcmp(lang, mov_mdhd_language_map[i]))

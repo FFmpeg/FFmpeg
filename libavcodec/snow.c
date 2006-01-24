@@ -3021,7 +3021,7 @@ static int get_dc(SnowContext *s, int mb_x, int mb_y, int plane_index){
         int x= block_w*mb_x2 + block_w/2;
         int y= block_w*mb_y2 + block_w/2;
 
-        add_yblock(s, dst + ((i&1)+(i>>1)*obmc_stride)*block_w, NULL, ref, obmc, 
+        add_yblock(s, dst + ((i&1)+(i>>1)*obmc_stride)*block_w, NULL, ref, obmc,
                     x, y, block_w, block_w, w, h, obmc_stride, ref_stride, obmc_stride, mb_x2, mb_y2, 0, 0, plane_index);
 
         for(y2= FFMAX(y, 0); y2<FFMIN(h, y+block_w); y2++){
@@ -3177,7 +3177,7 @@ static int get_4block_rd(SnowContext *s, int mb_x, int mb_y, int plane_index){
         int x= block_w*mb_x2 + block_w/2;
         int y= block_w*mb_y2 + block_w/2;
 
-        add_yblock(s, zero_dst, dst, ref, obmc, 
+        add_yblock(s, zero_dst, dst, ref, obmc,
                    x, y, block_w, block_w, w, h, /*dst_stride*/0, ref_stride, obmc_stride, mb_x2, mb_y2, 1, 1, plane_index);
 
         //FIXME find a cleaner/simpler way to skip the outside stuff

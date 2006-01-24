@@ -225,7 +225,7 @@ X264_init(AVCodecContext *avctx)
 
     if(avctx->level > 0) x4->params.i_level_idc = avctx->level;
 
-    x4->params.rc.f_rate_tolerance = 
+    x4->params.rc.f_rate_tolerance =
         (float)avctx->bit_rate_tolerance/avctx->bit_rate;
 
     if((avctx->rc_buffer_size != 0) &&
@@ -258,14 +258,14 @@ X264_init(AVCodecContext *avctx)
     avctx->coded_frame = &x4->out_pic;
 
     if(avctx->flags & CODEC_FLAG_GLOBAL_HEADER){
-	x264_nal_t *nal;
-	int nnal, i, s = 0;
+        x264_nal_t *nal;
+        int nnal, i, s = 0;
 
-	x264_encoder_headers(x4->enc, &nal, &nnal);
+        x264_encoder_headers(x4->enc, &nal, &nnal);
 
-	/* 5 bytes NAL header + worst case escaping */
-	for(i = 0; i < nnal; i++)
-	    s += 5 + nal[i].i_payload * 4 / 3;
+        /* 5 bytes NAL header + worst case escaping */
+        for(i = 0; i < nnal; i++)
+            s += 5 + nal[i].i_payload * 4 / 3;
 
         avctx->extradata = av_malloc(s);
         avctx->extradata_size = encode_nals(avctx->extradata, s, nal, nnal);

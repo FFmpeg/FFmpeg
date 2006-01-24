@@ -72,7 +72,7 @@ static void reset_ls_coding_parameters(MJpegDecodeContext *s, int reset_all){
     int factor;
 
     if(s->maxval==0 || reset_all) s->maxval= (1<<s->bits) - 1;
-    
+
     if(s->maxval >=128){
         factor= (FFMIN(s->maxval, 4096) + 128)>>8;
 
@@ -103,7 +103,7 @@ static int decode_lse(MJpegDecodeContext *s)
     /* XXX: verify len field validity */
     len = get_bits(&s->gb, 16);
     id = get_bits(&s->gb, 8);
-    
+
     switch(id){
     case 1:
         s->maxval= get_bits(&s->gb, 16);
@@ -111,7 +111,7 @@ static int decode_lse(MJpegDecodeContext *s)
         s->t2= get_bits(&s->gb, 16);
         s->t3= get_bits(&s->gb, 16);
         s->reset= get_bits(&s->gb, 16);
-        
+
         reset_ls_coding_parameters(s, 0);
         //FIXME quant table?
     break;
@@ -145,15 +145,15 @@ static inline void update_vlc_state(VlcState * const state, const int v, int hal
 
     if(drift <= -count){
         if(state->bias > -128) state->bias--;
-        
+
         drift += count;
         if(drift <= -count)
             drift= -count + 1;
     }else if(drift > 0){
         if(state->bias <  127) state->bias++;
-        
+
         drift -= count;
-        if(drift > 0) 
+        if(drift > 0)
             drift= 0;
     }
 
@@ -169,7 +169,7 @@ static inline int ls_decode_line(MJpegDecodeContext *s, void *lastv, void *dstv,
 
     for(x=0; x < w; x++){
         int l, t, lt, rt;
-    
+
         t= R(last, 0);
         if(x){
             l = t;
@@ -181,11 +181,11 @@ static inline int ls_decode_line(MJpegDecodeContext *s, void *lastv, void *dstv,
 
         if(x<w-1) rt= R(last, x+1);
         else      rt= t;
-        
+
         hr_gradient= rt - t;
         hl_gradient= t - lt;
          v_gradient= lt - l;
-            
+
         context= quantize(s, v_gradient) + 9*(quantize(s, hl_gradient) + 9*quantize(s, hr_gradient));
 
         if(context){
@@ -206,7 +206,7 @@ static inline int ls_decode_line(MJpegDecodeContext *s, void *lastv, void *dstv,
                 k++;
                 i += i;
             }
-            
+
             v= get_ur_golomb_jpegls(gb, k, LIMIT-qbpp, qbpp);
 #if 1
     v++;
@@ -222,9 +222,9 @@ static inline int ls_decode_line(MJpegDecodeContext *s, void *lastv, void *dstv,
 
 #endif
             update_vlc_state(state, v, half_count);
-            
+
             if(sign) v= -v;
-            
+
             if(is_uint8) ((uint8_t *)dst)[x]= (pred + v) & maxval;
             else         ((uint16_t*)dst)[x]= (pred + v) & maxval;
         }else{
@@ -234,28 +234,28 @@ static inline int ls_decode_line(MJpegDecodeContext *s, void *lastv, void *dstv,
                 run_count = 1<<log2_run[run_index];
                 if(x + run_count > w) run_count= w - x;
                 else                  run_index++;
-                
+
                 for(; run_count; run_count--){
                     if(is_uint8) ((uint8_t *)dst)[x++]= l;
                     else         ((uint16_t*)dst)[x++]= l;
                 }
-                
-                if(x >= w) return 0; 
+
+                if(x >= w) return 0;
             }
-            
+
             run_count= get_bits(&s->gb, log2_run[run_index]);
 
             for(; run_count; run_count--){
                 if(is_uint8) ((uint8_t *)dst)[x++]= l;
                 else         ((uint16_t*)dst)[x++]= l;
             }
-            
+
             if(run_index) run_index--;
-            
+
             if(x >= w) return 0;
 
             t= R(last, 0);
-            
+
             RItype= (l==t);
             if(l==t){
                 state= 366;
@@ -264,21 +264,21 @@ static inline int ls_decode_line(MJpegDecodeContext *s, void *lastv, void *dstv,
                 state= 365;
                 temp= state->error_sum;
             }
-            
+
             pred= t;
             sign= l > t;
-            
+
             i= state->count;
             k=0;
             while(i < temp){ //FIXME optimize
                 k++;
                 i += i;
             }
-            
+
             assert(Errval != 0);
-            map = (k==0 && 2*Nn < state->count) == (Errval>0); 
-            
-            
+            map = (k==0 && 2*Nn < state->count) == (Errval>0);
+
+
                     if(run_count==0 && run_mode==1){
                         if(get_bits1(&s->gb)){
                             run_count = 1<<log2_run[run_index];
@@ -298,7 +298,7 @@ static inline int ls_decode_line(MJpegDecodeContext *s, void *lastv, void *dstv,
                         if(diff>=0) diff++;
                     }else
                         diff=0;
-        
+
         }
     }
 
@@ -316,7 +316,7 @@ static inline int ls_decode_line(MJpegDecodeContext *s, void *lastv, void *dstv,
                     x = 0;
                     y = 0;
                     linesize= s->linesize[c];
-                    
+
                     for(j=0; j<n; j++) {
                         int pred;
 
@@ -334,7 +334,7 @@ static inline int ls_decode_line(MJpegDecodeContext *s, void *lastv, void *dstv,
                                 PREDICT(pred, ptr[-linesize-1], ptr[-linesize], ptr[-1], predictor);
                             }
                         }
-                        
+
                         if (s->interlaced && s->bottom_field)
                             ptr += linesize >> 1;
                         *ptr= pred + (mjpeg_decode_dc(s, s->dc_index[i]) << point_transform);
@@ -356,7 +356,7 @@ static inline int ls_decode_line(MJpegDecodeContext *s, void *lastv, void *dstv,
                     x = 0;
                     y = 0;
                     linesize= s->linesize[c];
-                    
+
                     for(j=0; j<n; j++) {
                         int pred;
 

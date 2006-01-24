@@ -761,38 +761,38 @@ static const int ac3_sample_rates[4] = {
 };
 
 static const int ac3_frame_sizes[64][3] = {
-    { 64,   69,   96   },  
-    { 64,   70,   96   },  
-    { 80,   87,   120  },  
-    { 80,   88,   120  },  
-    { 96,   104,  144  },  
-    { 96,   105,  144  },  
-    { 112,  121,  168  }, 
-    { 112,  122,  168  }, 
-    { 128,  139,  192  }, 
-    { 128,  140,  192  }, 
-    { 160,  174,  240  }, 
-    { 160,  175,  240  }, 
-    { 192,  208,  288  }, 
-    { 192,  209,  288  }, 
-    { 224,  243,  336  }, 
-    { 224,  244,  336  }, 
-    { 256,  278,  384  }, 
-    { 256,  279,  384  }, 
-    { 320,  348,  480  }, 
-    { 320,  349,  480  }, 
-    { 384,  417,  576  }, 
-    { 384,  418,  576  }, 
-    { 448,  487,  672  }, 
-    { 448,  488,  672  }, 
-    { 512,  557,  768  }, 
-    { 512,  558,  768  }, 
-    { 640,  696,  960  }, 
-    { 640,  697,  960  }, 
-    { 768,  835,  1152 }, 
-    { 768,  836,  1152 }, 
-    { 896,  975,  1344 }, 
-    { 896,  976,  1344 }, 
+    { 64,   69,   96   },
+    { 64,   70,   96   },
+    { 80,   87,   120  },
+    { 80,   88,   120  },
+    { 96,   104,  144  },
+    { 96,   105,  144  },
+    { 112,  121,  168  },
+    { 112,  122,  168  },
+    { 128,  139,  192  },
+    { 128,  140,  192  },
+    { 160,  174,  240  },
+    { 160,  175,  240  },
+    { 192,  208,  288  },
+    { 192,  209,  288  },
+    { 224,  243,  336  },
+    { 224,  244,  336  },
+    { 256,  278,  384  },
+    { 256,  279,  384  },
+    { 320,  348,  480  },
+    { 320,  349,  480  },
+    { 384,  417,  576  },
+    { 384,  418,  576  },
+    { 448,  487,  672  },
+    { 448,  488,  672  },
+    { 512,  557,  768  },
+    { 512,  558,  768  },
+    { 640,  696,  960  },
+    { 640,  697,  960  },
+    { 768,  835,  1152 },
+    { 768,  836,  1152 },
+    { 896,  975,  1344 },
+    { 896,  976,  1344 },
     { 1024, 1114, 1536 },
     { 1024, 1115, 1536 },
     { 1152, 1253, 1728 },
@@ -812,7 +812,7 @@ static const int ac3_channels[8] = {
 };
 
 static int ac3_sync(const uint8_t *buf, int *channels, int *sample_rate,
-		    int *bit_rate)
+                    int *bit_rate)
 {
     unsigned int fscod, frmsizecod, acmod, bsid, lfeon;
     GetBitContext bits;
@@ -820,26 +820,26 @@ static int ac3_sync(const uint8_t *buf, int *channels, int *sample_rate,
     init_get_bits(&bits, buf, AC3_HEADER_SIZE * 8);
 
     if(get_bits(&bits, 16) != 0x0b77)
-	return 0;
+        return 0;
 
-    get_bits(&bits, 16);	/* crc */
+    get_bits(&bits, 16);    /* crc */
     fscod = get_bits(&bits, 2);
     frmsizecod = get_bits(&bits, 6);
 
     if(!ac3_sample_rates[fscod])
-	return 0;
+        return 0;
 
     bsid = get_bits(&bits, 5);
     if(bsid > 8)
-	return 0;
-    get_bits(&bits, 3);	/* bsmod */
+        return 0;
+    get_bits(&bits, 3);     /* bsmod */
     acmod = get_bits(&bits, 3);
     if(acmod & 1 && acmod != 1)
-	get_bits(&bits, 2); /* cmixlev */
+        get_bits(&bits, 2); /* cmixlev */
     if(acmod & 4)
-	get_bits(&bits, 2); /* surmixlev */
+        get_bits(&bits, 2); /* surmixlev */
     if(acmod & 2)
-	get_bits(&bits, 2); /* dsurmod */
+        get_bits(&bits, 2); /* dsurmod */
     lfeon = get_bits(&bits, 1);
 
     *sample_rate = ac3_sample_rates[fscod];
@@ -881,7 +881,7 @@ static int ac3_parse(AVCodecParserContext *s1,
             s->inbuf_ptr += len;
             buf_size -= len;
             if ((s->inbuf_ptr - s->inbuf) == AC3_HEADER_SIZE) {
-		len = ac3_sync(s->inbuf, &channels, &sample_rate, &bit_rate);
+                len = ac3_sync(s->inbuf, &channels, &sample_rate, &bit_rate);
                 if (len == 0) {
                     /* no sync found : move by one byte (inefficient, but simple!) */
                     memmove(s->inbuf, s->inbuf + 1, AC3_HEADER_SIZE - 1);
@@ -892,7 +892,7 @@ static int ac3_parse(AVCodecParserContext *s1,
                     avctx->sample_rate = sample_rate;
                     /* set channels,except if the user explicitly requests 1 or 2 channels, XXX/FIXME this is a bit ugly */
                     if(avctx->channels!=1 && avctx->channels!=2){
-			avctx->channels = channels;
+                        avctx->channels = channels;
                     }
                     avctx->bit_rate = bit_rate;
                     avctx->frame_size = 6 * 256;
