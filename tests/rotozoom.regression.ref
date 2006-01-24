@@ -75,8 +75,8 @@ bb7f7889f0694a1c499041f3ee5e234d *./data/a-mpeg4-Q.avi
 164998 ./data/a-mpeg4-Q.avi
 b078f22c66083f0537bd3581509684d8 *./data/out.yuv
 stddev:  4.01 PSNR:36.05 bytes:7602176
-5eb32583799d9ea27d364e381f19f022 *./data/a-mpeg4-PSP.mp4
-321946 ./data/a-mpeg4-PSP.mov
+1a3e5c4b097c7609415248e235f39967 *./data/a-mpeg4-PSP.mp4
+321922 ./data/a-mpeg4-PSP.mp4
 74b9ddde044f90c8ee25042e9faaef68 *./data/a-error-mpeg4-adv.avi
 177212 ./data/a-error-mpeg4-adv.avi
 9fa0943825f364d6fb700dc75cf5d8bb *./data/out.yuv
