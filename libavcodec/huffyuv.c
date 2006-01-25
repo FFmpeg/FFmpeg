@@ -72,7 +72,7 @@ typedef struct HYuvContext{
     VLC vlc[3];
     AVFrame picture;
     uint8_t *bitstream_buffer;
-    int bitstream_buffer_size;
+    unsigned int bitstream_buffer_size;
     DSPContext dsp;
 }HYuvContext;
 

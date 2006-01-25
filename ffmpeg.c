@@ -1172,7 +1172,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
     int data_size, got_picture;
     AVFrame picture;
     void *buffer_to_free;
-    static int samples_size= 0;
+    static unsigned int samples_size= 0;
     static short *samples= NULL;
     AVSubtitle subtitle, *subtitle_to_free;
     int got_subtitle;

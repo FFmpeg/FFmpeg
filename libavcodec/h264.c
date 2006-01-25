@@ -162,7 +162,7 @@ typedef struct H264Context{
 #define NAL_SPS_EXT             13
 #define NAL_AUXILIARY_SLICE     19
     uint8_t *rbsp_buffer;
-    int rbsp_buffer_size;
+    unsigned int rbsp_buffer_size;
 
     /**
       * Used to parse AVC variant of h264

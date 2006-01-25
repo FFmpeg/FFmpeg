@@ -48,7 +48,7 @@ typedef struct ASV1Context{
     uint16_t __align8 intra_matrix[64];
     int __align8 q_intra_matrix[64];
     uint8_t *bitstream_buffer;
-    int bitstream_buffer_size;
+    unsigned int bitstream_buffer_size;
 } ASV1Context;
 
 static const uint8_t scantab[64]={

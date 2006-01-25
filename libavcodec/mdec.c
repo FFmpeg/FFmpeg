@@ -49,7 +49,7 @@ typedef struct MDECContext{
     uint16_t __align8 intra_matrix[64];
     int __align8 q_intra_matrix[64];
     uint8_t *bitstream_buffer;
-    int bitstream_buffer_size;
+    unsigned int bitstream_buffer_size;
     int block_last_index[6];
 } MDECContext;
 

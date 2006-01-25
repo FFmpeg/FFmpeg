@@ -84,7 +84,7 @@ typedef struct ShortenContext {
     uint8_t *bitstream;
     int bitstream_size;
     int bitstream_index;
-    int allocated_bitstream_size;
+    unsigned int allocated_bitstream_size;
     int header_size;
     uint8_t header[OUT_BUFFER_SIZE];
     int version;

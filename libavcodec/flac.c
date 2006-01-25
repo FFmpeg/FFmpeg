@@ -66,7 +66,7 @@ typedef struct FLACContext {
     uint8_t *bitstream;
     int bitstream_size;
     int bitstream_index;
-    int allocated_bitstream_size;
+    unsigned int allocated_bitstream_size;
 } FLACContext;
 
 #define METADATA_TYPE_STREAMINFO 0
