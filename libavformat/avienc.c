@@ -613,8 +613,8 @@ static int avi_write_idx1(AVFormatContext *s)
                 url_fseek(pb, avi->frames_hdr_strm[n], SEEK_SET);
                 ff_parse_specific_params(stream, &au_byterate, &au_ssize, &au_scale);
                 if (au_ssize == 0) {
-                    put_le32(pb, stream->frame_number);
-                    nb_frames += stream->frame_number;
+                    put_le32(pb, avi->packet_count[n]);
+                    nb_frames += avi->packet_count[n];
                 } else {
                     put_le32(pb, avi->audio_strm_length[n] / au_ssize);
                 }
@@ -730,11 +730,11 @@ static int avi_write_trailer(AVFormatContext *s)
         for (n=nb_frames=0;n<s->nb_streams;n++) {
              AVCodecContext *stream = s->streams[n]->codec;
              if (stream->codec_type == CODEC_TYPE_VIDEO) {
-                 if (nb_frames < stream->frame_number)
-                     nb_frames = stream->frame_number;
+                 if (nb_frames < avi->packet_count[n])
+                     nb_frames = avi->packet_count[n];
              } else {
                  if (stream->codec_id == CODEC_ID_MP2 || stream->codec_id == CODEC_ID_MP3) {
-                     nb_frames += stream->frame_number;
+                     nb_frames += avi->packet_count[n];
                 }
             }
         }
