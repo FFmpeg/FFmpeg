@@ -919,6 +919,8 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 
         /* for MPEG4: set codec type by looking for it */
         id = codec_get_id(mov_video_tags, format);
+        if(id <= 0)
+            id = codec_get_id(codec_bmp_tags, format);
         if (id >= 0) {
             AVCodec *codec;
             codec = avcodec_find_decoder(id);
