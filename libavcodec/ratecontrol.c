@@ -117,10 +117,11 @@ int ff_rate_control_init(MpegEncContext *s)
 
             p= next;
         }
-
+#ifdef CONFIG_XVID
         //FIXME maybe move to end
         if((s->flags&CODEC_FLAG_PASS2) && s->avctx->rc_strategy == FF_RC_STRATEGY_XVID)
             return ff_xvid_rate_control_init(s);
+#endif
 
         if(init_pass2(s) < 0) return -1;
     }
@@ -187,8 +188,10 @@ void ff_rate_control_uninit(MpegEncContext *s)
 
     av_freep(&rcc->entry);
 
+#ifdef CONFIG_XVID
     if((s->flags&CODEC_FLAG_PASS2) && s->avctx->rc_strategy == FF_RC_STRATEGY_XVID)
         ff_xvid_rate_control_uninit(s);
+#endif
 }
 
 static inline double qp2bits(RateControlEntry *rce, double qp){
@@ -648,8 +651,10 @@ float ff_rate_estimate_qscale(MpegEncContext *s, int dry_run)
     Picture * const pic= &s->current_picture;
     emms_c();
 
+#ifdef CONFIG_XVID
     if((s->flags&CODEC_FLAG_PASS2) && s->avctx->rc_strategy == FF_RC_STRATEGY_XVID)
         return ff_xvid_rate_estimate_qscale(s, dry_run);
+#endif
 
     get_qminmax(&qmin, &qmax, s, pict_type);
 
