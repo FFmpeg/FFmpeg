@@ -3581,6 +3581,7 @@ static void prepare_grab(void)
         vp->device  = video_device;
         vp->channel = video_channel;
         vp->standard = video_standard;
+        vp->pix_fmt = frame_pix_fmt;
         if (av_open_input_file(&ic, "", fmt1, 0, vp) < 0) {
             fprintf(stderr, "Could not find video grab device\n");
             exit(1);
