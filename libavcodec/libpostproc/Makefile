@@ -28,7 +28,7 @@ clean:
 	rm -f *.o *.d *~ *.a *.lib *.so *.dylib *.dll
 
 distclean: clean
-	rm -f Makefile.bak .depend
+	rm -f .depend
 
 dep:    depend
 

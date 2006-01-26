@@ -168,7 +168,7 @@ distclean: clean
 	$(MAKE) -C libavformat distclean
 	$(MAKE) -C tests       distclean
 	$(MAKE) -C vhook       distclean
-	rm -f Makefile.bak .depend config.mak config.h *.pc
+	rm -f .depend config.mak config.h *.pc
 
 TAGS:
 	etags *.[ch] libavformat/*.[ch] libavcodec/*.[ch]

@@ -459,7 +459,7 @@ clean: $(CLEANAMR)
 	$(MAKE) -C libpostproc clean
 
 distclean: clean
-	rm -f Makefile.bak .depend
+	rm -f .depend
 	$(MAKE) -C libpostproc distclean
 
 cleanamr:
