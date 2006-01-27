@@ -30,8 +30,8 @@ $(SWSLIB):     $(SWSOBJS)
 clean:
 	rm -f *.o *.a *~ *.so cs_test swscale-example
 
-distclean:
-	rm -f Makefile.bak *.o *.a *~ *.so .depend cs_test swscale-example
+distclean: clean
+	rm -f .depend
 
 dep:    depend
 
