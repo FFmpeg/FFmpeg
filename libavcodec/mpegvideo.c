@@ -1066,7 +1066,7 @@ int MPV_encode_init(AVCodecContext *avctx)
     }
 
     if(avctx->b_frame_strategy && (avctx->flags&CODEC_FLAG_PASS2)){
-        av_log(avctx, AV_LOG_ERROR, "b_frame_strategy must be 0 on the second pass");
+        av_log(avctx, AV_LOG_ERROR, "b_frame_strategy must be 0 on the second pass\n");
         return -1;
     }
 
