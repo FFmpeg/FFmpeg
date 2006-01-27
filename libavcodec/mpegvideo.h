@@ -70,6 +70,8 @@ enum OutputFormat {
 
 #define MAX_MB_BYTES (30*16*16*3/8 + 120)
 
+#define INPLACE_OFFSET 16
+
 typedef struct Predictor{
     double coeff;
     double count;

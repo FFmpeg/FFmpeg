@@ -2058,7 +2058,6 @@ static int load_input_picture(MpegEncContext *s, AVFrame *pic_arg){
         }
         alloc_picture(s, (Picture*)pic, 1);
     }else{
-        int offset= 16;
         i= ff_find_unused_picture(s, 0);
 
         pic= (AVFrame*)&s->picture[i];
@@ -2066,9 +2065,9 @@ static int load_input_picture(MpegEncContext *s, AVFrame *pic_arg){
 
         alloc_picture(s, (Picture*)pic, 0);
 
-        if(   pic->data[0] + offset == pic_arg->data[0]
-           && pic->data[1] + offset == pic_arg->data[1]
-           && pic->data[2] + offset == pic_arg->data[2]){
+        if(   pic->data[0] + INPLACE_OFFSET == pic_arg->data[0]
+           && pic->data[1] + INPLACE_OFFSET == pic_arg->data[1]
+           && pic->data[2] + INPLACE_OFFSET == pic_arg->data[2]){
        // empty
         }else{
             int h_chroma_shift, v_chroma_shift;
@@ -2082,7 +2081,7 @@ static int load_input_picture(MpegEncContext *s, AVFrame *pic_arg){
                 int w= s->width >>h_shift;
                 int h= s->height>>v_shift;
                 uint8_t *src= pic_arg->data[i];
-                uint8_t *dst= pic->data[i] + offset;
+                uint8_t *dst= pic->data[i] + INPLACE_OFFSET;
 
                 if(src_stride==dst_stride)
                     memcpy(dst, src, src_stride*h);
@@ -2147,13 +2146,18 @@ static int estimate_best_b_count(MpegEncContext *s){
     AVCodecContext *c= avcodec_alloc_context();
     AVFrame input[FF_MAX_B_FRAMES+2];
     const int scale= s->avctx->brd_scale;
-    int i, j, out_size;
+    int i, j, out_size, p_lambda, b_lambda, lambda2;
     int outbuf_size= s->width * s->height; //FIXME
     uint8_t *outbuf= av_malloc(outbuf_size);
     ImgReSampleContext *resample;
     int64_t best_rd= INT64_MAX;
     int best_b_count= -1;
-    const int lambda2= s->lambda2;
+
+//    emms_c();
+    p_lambda= s->last_lambda_for[P_TYPE]; //s->next_picture_ptr->quality;
+    b_lambda= s->last_lambda_for[B_TYPE]; //p_lambda *ABS(s->avctx->b_quant_factor) + s->avctx->b_quant_offset;
+    if(!b_lambda) b_lambda= p_lambda; //FIXME we should do this somewhere else
+    lambda2= (b_lambda*b_lambda + (1<<FF_LAMBDA_SHIFT)/2 ) >> FF_LAMBDA_SHIFT;
 
     c->width = s->width >> scale;
     c->height= s->height>> scale;
@@ -2175,6 +2179,16 @@ static int estimate_best_b_count(MpegEncContext *s){
     for(i=0; i<s->max_b_frames+2; i++){
         int ysize= c->width*c->height;
         int csize= (c->width/2)*(c->height/2);
+        Picture pre_input, *pre_input_ptr= i ? s->input_picture[i-1] : s->next_picture_ptr;
+
+        if(pre_input_ptr)
+            pre_input= *pre_input_ptr;
+
+        if(pre_input.type != FF_BUFFER_TYPE_SHARED && i){
+            pre_input.data[0]+=INPLACE_OFFSET;
+            pre_input.data[1]+=INPLACE_OFFSET;
+            pre_input.data[2]+=INPLACE_OFFSET;
+        }
 
         avcodec_get_frame_defaults(&input[i]);
         input[i].data[0]= av_malloc(ysize + 2*csize);
@@ -2185,7 +2199,7 @@ static int estimate_best_b_count(MpegEncContext *s){
         input[i].linesize[2]= c->width/2;
 
         if(!i || s->input_picture[i-1])
-            img_resample(resample, &input[i], i ? s->input_picture[i-1] : s->next_picture_ptr);
+            img_resample(resample, &input[i], &pre_input);
     }
 
     for(j=0; j<s->max_b_frames+1; j++){
@@ -2197,23 +2211,23 @@ static int estimate_best_b_count(MpegEncContext *s){
         c->error[0]= c->error[1]= c->error[2]= 0;
 
         input[0].pict_type= I_TYPE;
-        input[0].quality= 2 * FF_QP2LAMBDA;
+        input[0].quality= 1 * FF_QP2LAMBDA;
         out_size = avcodec_encode_video(c, outbuf, outbuf_size, &input[0]);
-        rd += (out_size * lambda2) >> FF_LAMBDA_SHIFT;
+//        rd += (out_size * lambda2) >> FF_LAMBDA_SHIFT;
 
         for(i=0; i<s->max_b_frames+1; i++){
             int is_p= i % (j+1) == j || i==s->max_b_frames;
 
             input[i+1].pict_type= is_p ? P_TYPE : B_TYPE;
-            input[i+1].quality= s->last_lambda_for[input[i+1].pict_type];
+            input[i+1].quality= is_p ? p_lambda : b_lambda;
             out_size = avcodec_encode_video(c, outbuf, outbuf_size, &input[i+1]);
-            rd += (out_size * lambda2) >> FF_LAMBDA_SHIFT;
+            rd += (out_size * lambda2) >> (FF_LAMBDA_SHIFT - 3);
         }
 
         /* get the delayed frames */
         while(out_size){
             out_size = avcodec_encode_video(c, outbuf, outbuf_size, NULL);
-            rd += (out_size * lambda2) >> FF_LAMBDA_SHIFT;
+            rd += (out_size * lambda2) >> (FF_LAMBDA_SHIFT - 3);
         }
 
         rd += c->error[0] + c->error[1] + c->error[2];
@@ -2391,7 +2405,7 @@ no_output_pic:
 
             s->current_picture_ptr= s->reordered_input_picture[0];
             for(i=0; i<4; i++){
-                s->new_picture.data[i]+=16;
+                s->new_picture.data[i]+= INPLACE_OFFSET;
             }
         }
         copy_picture(&s->current_picture, s->current_picture_ptr);
