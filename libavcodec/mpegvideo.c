@@ -613,7 +613,9 @@ int MPV_common_init(MpegEncContext *s)
 {
     int y_size, c_size, yc_size, i, mb_array_size, mv_table_size, x, y;
 
-    if(s->avctx->thread_count > MAX_THREADS || (16*s->avctx->thread_count > s->height && s->height)){
+    s->mb_height = (s->height + 15) / 16;
+
+    if(s->avctx->thread_count > MAX_THREADS || (s->avctx->thread_count > s->mb_height && s->mb_height)){
         av_log(s->avctx, AV_LOG_ERROR, "too many threads\n");
         return -1;
     }
@@ -628,7 +630,6 @@ int MPV_common_init(MpegEncContext *s)
     s->flags2= s->avctx->flags2;
 
     s->mb_width  = (s->width  + 15) / 16;
-    s->mb_height = (s->height + 15) / 16;
     s->mb_stride = s->mb_width + 1;
     s->b8_stride = s->mb_width*2 + 1;
     s->b4_stride = s->mb_width*4 + 1;
