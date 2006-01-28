@@ -415,7 +415,7 @@ static int flic_decode_frame_8BPP(AVCodecContext *avctx,
     return buf_size;
 }
 
-int flic_decode_frame_15_16BPP(AVCodecContext *avctx,
+static int flic_decode_frame_15_16BPP(AVCodecContext *avctx,
                                       void *data, int *data_size,
                                       uint8_t *buf, int buf_size)
 {

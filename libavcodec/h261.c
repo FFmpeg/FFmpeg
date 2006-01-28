@@ -762,7 +762,7 @@ static int h261_decode_block(H261Context * h, DCTELEM * block,
  * decodes the H261 picture header.
  * @return <0 if no startcode found
  */
-int h261_decode_picture_header(H261Context *h){
+static int h261_decode_picture_header(H261Context *h){
     MpegEncContext * const s = &h->s;
     int format, i;
     uint32_t startcode= 0;

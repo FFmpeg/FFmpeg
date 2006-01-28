@@ -84,7 +84,7 @@ static void allocate_buffers(ALACContext *alac)
     alac->outputsamples_buffer_b = av_malloc(alac->setinfo_max_samples_per_frame * 4);
 }
 
-void alac_set_info(ALACContext *alac)
+static void alac_set_info(ALACContext *alac)
 {
     unsigned char *ptr = alac->avctx->extradata;
 
@@ -125,7 +125,7 @@ static int count_leading_zeros(int32_t input)
     return i;
 }
 
-void bastardized_rice_decompress(ALACContext *alac,
+static void bastardized_rice_decompress(ALACContext *alac,
                                  int32_t *output_buffer,
                                  int output_size,
                                  int readsamplesize, /* arg_10 */

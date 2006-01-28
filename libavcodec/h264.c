@@ -5741,7 +5741,7 @@ static int decode_cabac_residual( H264Context *h, DCTELEM *block, int cat, int n
     return 0;
 }
 
-void inline compute_mb_neighboors(H264Context *h)
+static void inline compute_mb_neighboors(H264Context *h)
 {
     MpegEncContext * const s = &h->s;
     const int mb_xy  = s->mb_x + s->mb_y*s->mb_stride;
