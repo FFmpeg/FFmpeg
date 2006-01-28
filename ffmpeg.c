@@ -3963,10 +3963,12 @@ static void opt_target(const char *arg)
 
 static void show_version(void)
 {
+    /* TODO: add function interface to avutil and avformat */
     fprintf(stderr, "ffmpeg      " FFMPEG_VERSION "\n"
+           "libavutil   %d\n"
            "libavcodec  %d\n"
            "libavformat %d\n",
-           avcodec_build(), LIBAVFORMAT_BUILD);
+           LIBAVUTIL_BUILD, avcodec_build(), LIBAVFORMAT_BUILD);
     exit(1);
 }
 
@@ -4150,6 +4152,7 @@ static void show_banner(void)
 {
     fprintf(stderr, "FFmpeg version " FFMPEG_VERSION ", Copyright (c) 2000-2004 Fabrice Bellard\n");
     fprintf(stderr, "  configuration: " FFMPEG_CONFIGURATION "\n");
+    fprintf(stderr, "  libavutil version: " AV_STRINGIFY(LIBAVUTIL_VERSION) "\n");
     fprintf(stderr, "  libavcodec version: " AV_STRINGIFY(LIBAVCODEC_VERSION) "\n");
     fprintf(stderr, "  libavformat version: " AV_STRINGIFY(LIBAVFORMAT_VERSION) "\n");
     fprintf(stderr, "  built on " __DATE__ " " __TIME__);
