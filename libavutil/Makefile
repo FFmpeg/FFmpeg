@@ -8,6 +8,11 @@ VPATH=$(SRC_PATH)/libavutil
 # NOTE: -I.. is needed to include config.h
 CFLAGS=$(OPTFLAGS) -DHAVE_AV_CONFIG_H -I.. -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_GNU_SOURCE
 
+#FIXME: This should be in configure/config.mak
+ifeq ($(CONFIG_WIN32),yes)
+    LDFLAGS=-Wl,--output-def,$(@:.dll=.def)
+endif
+
 OBJS= mathematics.o \
       integer.o \
       rational.o \
@@ -34,11 +39,9 @@ $(LIB): $(OBJS)
 	$(RANLIB) $@
 
 $(SLIBNAME): $(OBJS)
-ifeq ($(CONFIG_WIN32),yes)
-	$(CC) $(SHFLAGS) -Wl,--output-def,$(@:.dll=.def) -o $@ $(OBJS) $(EXTRALIBS) $(AMREXTRALIBS)
-	-lib /machine:i386 /def:$(@:.dll=.def)
-else
 	$(CC) $(SHFLAGS) $(LDFLAGS) -o $@ $(OBJS) $(EXTRALIBS) $(AMREXTRALIBS)
+ifeq ($(CONFIG_WIN32),yes)
+	-lib /machine:i386 /def:$(@:.dll=.def)
 endif
 
 %.o: %.c

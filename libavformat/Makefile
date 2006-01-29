@@ -8,6 +8,11 @@ VPATH=$(SRC_PATH)/libavformat
 
 CFLAGS=$(OPTFLAGS) -I.. -I$(SRC_PATH) -I$(SRC_PATH)/libavutil -I$(SRC_PATH)/libavcodec -DHAVE_AV_CONFIG_H -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_GNU_SOURCE
 
+#FIXME: This should be in configure/config.mak
+ifeq ($(CONFIG_WIN32),yes)
+    LDFLAGS=-Wl,--output-def,$(@:.dll=.def)
+endif
+
 OBJS= utils.o cutils.o os_support.o allformats.o
 PPOBJS=
 
@@ -106,11 +111,9 @@ $(LIB): $(OBJS) $(PPOBJS)
 	$(RANLIB) $@
 
 $(SLIBNAME): $(OBJS)
-ifeq ($(CONFIG_WIN32),yes)
-	$(CC) $(SHFLAGS) -Wl,--output-def,$(@:.dll=.def) -o $@ $(OBJS) $(PPOBJS) $(AVCLIBS) $(EXTRALIBS)
-	-lib /machine:i386 /def:$(@:.dll=.def)
-else
 	$(CC) $(SHFLAGS) $(LDFLAGS) -o $@ $(OBJS) $(PPOBJS) $(AVCLIBS) $(EXTRALIBS)
+ifeq ($(CONFIG_WIN32),yes)
+	-lib /machine:i386 /def:$(@:.dll=.def)
 endif
 
 depend: $(SRCS)
