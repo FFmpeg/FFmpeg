@@ -1576,7 +1576,7 @@ static void spatial_compose97i(DWTELEM *buffer, int width, int height, int strid
         spatial_compose97i_dy(&cs, buffer, width, height, stride);
 }
 
-void ff_spatial_idwt_buffered_init(dwt_compose_t *cs, slice_buffer * sb, int width, int height, int stride_line, int type, int decomposition_count){
+static void ff_spatial_idwt_buffered_init(dwt_compose_t *cs, slice_buffer * sb, int width, int height, int stride_line, int type, int decomposition_count){
     int level;
     for(level=decomposition_count-1; level>=0; level--){
         switch(type){
@@ -1589,7 +1589,7 @@ void ff_spatial_idwt_buffered_init(dwt_compose_t *cs, slice_buffer * sb, int wid
     }
 }
 
-void ff_spatial_idwt_init(dwt_compose_t *cs, DWTELEM *buffer, int width, int height, int stride, int type, int decomposition_count){
+static void ff_spatial_idwt_init(dwt_compose_t *cs, DWTELEM *buffer, int width, int height, int stride, int type, int decomposition_count){
     int level;
     for(level=decomposition_count-1; level>=0; level--){
         switch(type){
@@ -1601,7 +1601,7 @@ void ff_spatial_idwt_init(dwt_compose_t *cs, DWTELEM *buffer, int width, int hei
     }
 }
 
-void ff_spatial_idwt_slice(dwt_compose_t *cs, DWTELEM *buffer, int width, int height, int stride, int type, int decomposition_count, int y){
+static void ff_spatial_idwt_slice(dwt_compose_t *cs, DWTELEM *buffer, int width, int height, int stride, int type, int decomposition_count, int y){
     const int support = type==1 ? 3 : 5;
     int level;
     if(type==2) return;
@@ -1619,7 +1619,7 @@ void ff_spatial_idwt_slice(dwt_compose_t *cs, DWTELEM *buffer, int width, int he
     }
 }
 
-void ff_spatial_idwt_buffered_slice(dwt_compose_t *cs, slice_buffer * slice_buf, int width, int height, int stride_line, int type, int decomposition_count, int y){
+static void ff_spatial_idwt_buffered_slice(dwt_compose_t *cs, slice_buffer * slice_buf, int width, int height, int stride_line, int type, int decomposition_count, int y){
     const int support = type==1 ? 3 : 5;
     int level;
     if(type==2) return;
@@ -1637,7 +1637,7 @@ void ff_spatial_idwt_buffered_slice(dwt_compose_t *cs, slice_buffer * slice_buf,
     }
 }
 
-void ff_spatial_idwt(DWTELEM *buffer, int width, int height, int stride, int type, int decomposition_count){
+static void ff_spatial_idwt(DWTELEM *buffer, int width, int height, int stride, int type, int decomposition_count){
     if(type==2){
         int level;
         for(level=decomposition_count-1; level>=0; level--)
@@ -3776,7 +3776,7 @@ static int decode_header(SnowContext *s){
     return 0;
 }
 
-static void init_qexp(){
+static void init_qexp(void){
     int i;
     double v=128;
 

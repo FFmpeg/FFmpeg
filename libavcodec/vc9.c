@@ -929,7 +929,7 @@ static int advanced_entry_point_process(AVCodecContext *avctx, GetBitContext *gb
  * @todo TODO: Take into account stride
  * @todo TODO: Allow use of external buffers ?
  */
-int alloc_bitplane(BitPlane *bp, int width, int height)
+static int alloc_bitplane(BitPlane *bp, int width, int height)
 {
     if (!bp || bp->width<0 || bp->height<0) return -1;
     bp->data = (uint8_t*)av_malloc(width*height);
@@ -942,7 +942,7 @@ int alloc_bitplane(BitPlane *bp, int width, int height)
 /** Free the bitplane's buffer
  * @param bp Bitplane which buffer is to free
  */
-void free_bitplane(BitPlane *bp)
+static void free_bitplane(BitPlane *bp)
 {
     bp->width = bp->stride = bp->height = 0;
     if (bp->data) av_freep(&bp->data);
@@ -1832,7 +1832,7 @@ static inline int vc9_pred_dc(MpegEncContext *s, int n,
  * @todo TODO: Process the blocks
  * @todo TODO: Use M$ MPEG-4 cbp prediction
  */
-int vc9_decode_block(VC9Context *v, DCTELEM block[64], int n, int coded, int mquant)
+static int vc9_decode_block(VC9Context *v, DCTELEM block[64], int n, int coded, int mquant)
 {
     GetBitContext *gb = &v->s.gb;
     MpegEncContext *s = &v->s;
@@ -1979,7 +1979,7 @@ static inline int vc9_coded_block_pred(MpegEncContext * s, int n, uint8_t **code
 /** Decode one I-frame MB (in Simple/Main profile)
  * @todo TODO: Extend to AP
  */
-int vc9_decode_i_mb(VC9Context *v, DCTELEM block[6][64])
+static int vc9_decode_i_mb(VC9Context *v, DCTELEM block[6][64])
 {
     int i, cbp, val;
     uint8_t *coded_val;
@@ -2013,7 +2013,7 @@ int vc9_decode_i_mb(VC9Context *v, DCTELEM block[6][64])
  * @todo TODO: Extend to AP
  * @fixme FIXME: DC value for inter blocks not set
  */
-int vc9_decode_p_mb(VC9Context *v, DCTELEM block[6][64])
+static int vc9_decode_p_mb(VC9Context *v, DCTELEM block[6][64])
 {
     MpegEncContext *s = &v->s;
     GetBitContext *gb = &s->gb;
@@ -2160,7 +2160,7 @@ int vc9_decode_p_mb(VC9Context *v, DCTELEM block[6][64])
  * @warning XXX: Used for decoding BI MBs
  * @fixme FIXME: DC value for inter blocks not set
  */
-int vc9_decode_b_mb(VC9Context *v, DCTELEM block[6][64])
+static int vc9_decode_b_mb(VC9Context *v, DCTELEM block[6][64])
 {
     MpegEncContext *s = &v->s;
     GetBitContext *gb = &v->s.gb;

@@ -46,7 +46,7 @@
 /**
  *  reads 0-32 bits when using the ALT_BITSTREAM_READER_LE bitstream reader
  */
-unsigned int get_bits_long_le(GetBitContext *s, int n){
+static unsigned int get_bits_long_le(GetBitContext *s, int n){
     if(n<=17) return get_bits(s, n);
     else{
         int ret= get_bits(s, 16);

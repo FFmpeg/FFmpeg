@@ -3790,7 +3790,7 @@ static void show_formats(void)
     exit(1);
 }
 
-void parse_matrix_coeffs(uint16_t *dest, const char *str)
+static void parse_matrix_coeffs(uint16_t *dest, const char *str)
 {
     int i;
     const char *p = str;
@@ -3807,13 +3807,13 @@ void parse_matrix_coeffs(uint16_t *dest, const char *str)
     }
 }
 
-void opt_inter_matrix(const char *arg)
+static void opt_inter_matrix(const char *arg)
 {
     inter_matrix = av_mallocz(sizeof(uint16_t) * 64);
     parse_matrix_coeffs(inter_matrix, arg);
 }
 
-void opt_intra_matrix(const char *arg)
+static void opt_intra_matrix(const char *arg)
 {
     intra_matrix = av_mallocz(sizeof(uint16_t) * 64);
     parse_matrix_coeffs(intra_matrix, arg);

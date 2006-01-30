@@ -28,12 +28,12 @@ static int dvdsub_init_decoder(AVCodecContext *avctx)
     return 0;
 }
 
-uint16_t getbe16(const uint8_t *p)
+static uint16_t getbe16(const uint8_t *p)
 {
     return (p[0] << 8) | p[1];
 }
 
-int get_nibble(const uint8_t *buf, int nibble_offset)
+static int get_nibble(const uint8_t *buf, int nibble_offset)
 {
     return (buf[nibble_offset >> 1] >> ((1 - (nibble_offset & 1)) << 2)) & 0xf;
 }

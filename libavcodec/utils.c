@@ -149,9 +149,9 @@ void av_free_static(void)
  * Call av_free_static automatically before it's too late
  */
 
-static void do_free() __attribute__ ((destructor));
+static void do_free(void) __attribute__ ((destructor));
 
-static void do_free()
+static void do_free(void)
 {
     av_free_static();
 }

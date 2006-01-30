@@ -51,7 +51,7 @@ int audio_input_frame_size;
 /*
  * add an audio output stream
  */
-AVStream *add_audio_stream(AVFormatContext *oc, int codec_id)
+static AVStream *add_audio_stream(AVFormatContext *oc, int codec_id)
 {
     AVCodecContext *c;
     AVStream *st;
@@ -73,7 +73,7 @@ AVStream *add_audio_stream(AVFormatContext *oc, int codec_id)
     return st;
 }
 
-void open_audio(AVFormatContext *oc, AVStream *st)
+static void open_audio(AVFormatContext *oc, AVStream *st)
 {
     AVCodecContext *c;
     AVCodec *codec;
@@ -124,7 +124,7 @@ void open_audio(AVFormatContext *oc, AVStream *st)
 
 /* prepare a 16 bit dummy audio frame of 'frame_size' samples and
    'nb_channels' channels */
-void get_audio_frame(int16_t *samples, int frame_size, int nb_channels)
+static void get_audio_frame(int16_t *samples, int frame_size, int nb_channels)
 {
     int j, i, v;
     int16_t *q;
@@ -139,7 +139,7 @@ void get_audio_frame(int16_t *samples, int frame_size, int nb_channels)
     }
 }
 
-void write_audio_frame(AVFormatContext *oc, AVStream *st)
+static void write_audio_frame(AVFormatContext *oc, AVStream *st)
 {
     AVCodecContext *c;
     AVPacket pkt;
@@ -163,7 +163,7 @@ void write_audio_frame(AVFormatContext *oc, AVStream *st)
     }
 }
 
-void close_audio(AVFormatContext *oc, AVStream *st)
+static void close_audio(AVFormatContext *oc, AVStream *st)
 {
     avcodec_close(st->codec);
 
@@ -179,7 +179,7 @@ uint8_t *video_outbuf;
 int frame_count, video_outbuf_size;
 
 /* add a video output stream */
-AVStream *add_video_stream(AVFormatContext *oc, int codec_id)
+static AVStream *add_video_stream(AVFormatContext *oc, int codec_id)
 {
     AVCodecContext *c;
     AVStream *st;
@@ -224,7 +224,7 @@ AVStream *add_video_stream(AVFormatContext *oc, int codec_id)
     return st;
 }
 
-AVFrame *alloc_picture(int pix_fmt, int width, int height)
+static AVFrame *alloc_picture(int pix_fmt, int width, int height)
 {
     AVFrame *picture;
     uint8_t *picture_buf;
@@ -244,7 +244,7 @@ AVFrame *alloc_picture(int pix_fmt, int width, int height)
     return picture;
 }
 
-void open_video(AVFormatContext *oc, AVStream *st)
+static void open_video(AVFormatContext *oc, AVStream *st)
 {
     AVCodec *codec;
     AVCodecContext *c;
@@ -293,7 +293,7 @@ void open_video(AVFormatContext *oc, AVStream *st)
 }
 
 /* prepare a dummy image */
-void fill_yuv_image(AVFrame *pict, int frame_index, int width, int height)
+static void fill_yuv_image(AVFrame *pict, int frame_index, int width, int height)
 {
     int x, y, i;
 
@@ -315,7 +315,7 @@ void fill_yuv_image(AVFrame *pict, int frame_index, int width, int height)
     }
 }
 
-void write_video_frame(AVFormatContext *oc, AVStream *st)
+static void write_video_frame(AVFormatContext *oc, AVStream *st)
 {
     int out_size, ret;
     AVCodecContext *c;
@@ -380,7 +380,7 @@ void write_video_frame(AVFormatContext *oc, AVStream *st)
     frame_count++;
 }
 
-void close_video(AVFormatContext *oc, AVStream *st)
+static void close_video(AVFormatContext *oc, AVStream *st)
 {
     avcodec_close(st->codec);
     av_free(picture->data[0]);

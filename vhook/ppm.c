@@ -40,7 +40,7 @@ rwpipe;
 /** Create a bidirectional pipe for the given command.
 */
 
-rwpipe *rwpipe_open( int argc, char *argv[] )
+static rwpipe *rwpipe_open( int argc, char *argv[] )
 {
     rwpipe *this = av_mallocz( sizeof( rwpipe ) );
 
@@ -94,7 +94,7 @@ rwpipe *rwpipe_open( int argc, char *argv[] )
 /** Read data from the pipe.
 */
 
-FILE *rwpipe_reader( rwpipe *this )
+static FILE *rwpipe_reader( rwpipe *this )
 {
     if ( this != NULL )
         return this->reader;
@@ -105,7 +105,7 @@ FILE *rwpipe_reader( rwpipe *this )
 /** Write data to the pipe.
 */
 
-FILE *rwpipe_writer( rwpipe *this )
+static FILE *rwpipe_writer( rwpipe *this )
 {
     if ( this != NULL )
         return this->writer;
@@ -116,7 +116,7 @@ FILE *rwpipe_writer( rwpipe *this )
 /* Read a number from the pipe - assumes PNM style headers.
 */
 
-int rwpipe_read_number( rwpipe *rw )
+static int rwpipe_read_number( rwpipe *rw )
 {
     int value = 0;
     int c = 0;
@@ -147,7 +147,7 @@ int rwpipe_read_number( rwpipe *rw )
 /** Read a PPM P6 header.
 */
 
-int rwpipe_read_ppm_header( rwpipe *rw, int *width, int *height )
+static int rwpipe_read_ppm_header( rwpipe *rw, int *width, int *height )
 {
     char line[ 3 ];
     FILE *in = rwpipe_reader( rw );
@@ -167,7 +167,7 @@ int rwpipe_read_ppm_header( rwpipe *rw, int *width, int *height )
 /** Close the pipe and process.
 */
 
-void rwpipe_close( rwpipe *this )
+static void rwpipe_close( rwpipe *this )
 {
     if ( this != NULL )
     {
