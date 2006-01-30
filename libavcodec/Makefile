@@ -11,7 +11,7 @@ CFLAGS=$(OPTFLAGS) -DHAVE_AV_CONFIG_H -I.. -I$(SRC_PATH)/libavutil -D_FILE_OFFSE
 
 #FIXME: This should be in configure/config.mak
 ifeq ($(CONFIG_WIN32),yes)
-    LDFLAGS=-Wl,--output-def,$(@:.dll=.def)
+    LDFLAGS=-Wl,--output-def,$(@:.dll=.def),--out-implib,lib$(SLIBNAME:$(SLIBSUF)=.dll.a)
 endif
 
 OBJS= bitstream.o utils.o mem.o allcodecs.o \
@@ -449,6 +449,7 @@ dep:	depend
 
 clean: $(CLEANAMR)
 	rm -f *.o *.d *~ *.a *.lib *.so *.dylib *.dll \
+	   *.dll.a *.def *.exp \
 	   i386/*.o i386/*~ \
 	   armv4l/*.o armv4l/*~ \
 	   mlib/*.o mlib/*~ \

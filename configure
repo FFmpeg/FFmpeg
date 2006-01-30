@@ -31,7 +31,10 @@ echo "  --enable-a52             enable GPLed A52 support [default=no]"
 echo "  --enable-a52bin          open liba52.so.0 at runtime [default=no]"
 echo "  --enable-dts             enable GPLed DTS support [default=no]"
 echo "  --enable-pp              enable GPLed postprocessing support [default=no]"
+echo "  --enable-static          build static libraries [default=yes]"
+echo "  --disable-static         do not build static libraries [default=no]"
 echo "  --enable-shared          build shared libraries [default=no]"
+echo "  --disable-shared         do not build shared libraries [default=yes]"
 echo "  --enable-amr_nb          enable amr_nb float audio codec"
 echo "  --enable-amr_nb-fixed    use fixed point for amr-nb codec"
 echo "  --enable-amr_wb          enable amr_wb float audio codec"
@@ -206,6 +209,7 @@ mingw32="no"
 mingwce="no"
 cygwin="no"
 os2="no"
+lstatic="yes"
 lshared="no"
 optimize="yes"
 debug="yes"
@@ -549,7 +553,13 @@ for opt do
   ;;
   --enable-mingwce) mingwce="yes"
   ;;
+  --enable-static) lstatic="yes"
+  ;;
+  --disable-static) lstatic="no"
+  ;;
   --enable-shared) lshared="yes"
+  ;;
+  --disable-shared) lshared="no"
   ;;
   --disable-debug) debug="no"
   ;;
@@ -606,6 +616,17 @@ for opt do
   ;;
   esac
 done
+
+# we need to build at least one lib type
+if test "$lstatic" = "no" && test "$lshared" = "no" ; then
+    cat <<EOF
+At least one library type must be built.
+Specify --enable-static to build the static libraries or --enable-shared to
+build the shared libraries as well. To only build the shared libraries specify
+--disable-static in addition to --enable-shared.
+EOF
+    exit 1;
+fi
 
 if test "$theora" = "yes" ; then
     if test "$libogg" = "no"; then
@@ -869,6 +890,15 @@ $cc -o $TMPE $TMPC 2> /dev/null || mmi="no"
 fi
 
 if test "$mingw32" = "yes" -o "$mingwce" = "yes"; then
+    if test "$lshared" = "yes" && test "$lstatic" = "yes" ; then
+        cat <<EOF
+You can only build one library type at once on MinGW.
+Specify --disable-static --enable-shared to only build
+the shared libraries. To build only the static libraries
+you don't need to pass additional options.
+EOF
+        exit 1
+    fi
     v4l="no"
     bktr="no"
     audio_oss="no"
@@ -1296,6 +1326,7 @@ echo "pp support       $pp"
 echo "debug symbols    $debug"
 echo "strip symbols    $dostrip"
 echo "optimize         $optimize"
+echo "static           $lstatic"
 echo "shared           $lshared"
 echo "video hooking    $vhook"
 echo "SDL support      $sdl"
@@ -1364,7 +1395,9 @@ echo "LIBOBJFLAGS=$LIBOBJFLAGS" >> config.mak
 echo "BUILDSUF=$BUILDSUF" >> config.mak
 echo "LIBPREF=$LIBPREF" >> config.mak
 echo "LIBSUF=\${BUILDSUF}$LIBSUF" >> config.mak
-echo "LIB=$LIB" >> config.mak
+if test "$lstatic" = "yes" ; then
+  echo "LIB=$LIB" >> config.mak
+fi
 echo "SLIBPREF=$SLIBPREF" >> config.mak
 echo "SLIBSUF=\${BUILDSUF}$SLIBSUF" >> config.mak
 echo "EXESUF=\${BUILDSUF}$EXESUF" >> config.mak
@@ -1508,6 +1541,7 @@ lavu_version=`grep '#define LIBAVUTIL_VERSION ' "$source_path/libavutil/avutil.h
 
 
 if test "$lshared" = "yes" ; then
+  echo "#define BUILD_SHARED_AV 1" >> $TMPH
   echo "BUILD_SHARED=yes" >> config.mak
   echo "PIC=-fPIC -DPIC" >> config.mak
   echo "SPPMAJOR=${lavc_version%%.*}" >> config.mak

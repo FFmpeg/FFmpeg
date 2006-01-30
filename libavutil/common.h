@@ -247,6 +247,13 @@ static inline float floorf(float f) {
 
 #ifdef HAVE_AV_CONFIG_H
 
+#if defined(__MINGW32__) && !defined(BUILD_AVUTIL) && defined(BUILD_SHARED_AV)
+#  define FF_IMPORT_ATTR __declspec(dllimport)
+#else
+#  define FF_IMPORT_ATTR
+#endif
+
+
 #    include "bswap.h"
 
 // Use rip-relative addressing if compiling PIC code on x86-64.
@@ -345,7 +352,7 @@ void print_stats(void);
 #endif
 
 /* misc math functions */
-extern const uint8_t ff_log2_tab[256];
+extern FF_IMPORT_ATTR const uint8_t ff_log2_tab[256];
 
 static inline int av_log2(unsigned int v)
 {
@@ -423,7 +430,7 @@ static inline int clip_uint8(int a)
 }
 
 /* math */
-extern const uint8_t ff_sqrt_tab[128];
+extern FF_IMPORT_ATTR const uint8_t ff_sqrt_tab[128];
 
 int64_t ff_gcd(int64_t a, int64_t b);
 

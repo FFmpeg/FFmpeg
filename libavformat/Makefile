@@ -10,7 +10,7 @@ CFLAGS=$(OPTFLAGS) -I.. -I$(SRC_PATH) -I$(SRC_PATH)/libavutil -I$(SRC_PATH)/liba
 
 #FIXME: This should be in configure/config.mak
 ifeq ($(CONFIG_WIN32),yes)
-    LDFLAGS=-Wl,--output-def,$(@:.dll=.def)
+    LDFLAGS=-Wl,--output-def,$(@:.dll=.def),--out-implib,lib$(SLIBNAME:$(SLIBSUF)=.dll.a)
 endif
 
 OBJS= utils.o cutils.o os_support.o allformats.o
@@ -157,7 +157,8 @@ install-headers:
 	g++ $(subst -Wall,,$(CFLAGS)) -c -o $@ $<
 
 clean:
-	rm -f *.o *.d *~ *.a *.lib *.so *.dylib *.dll
+	rm -f *.o *.d *~ *.a *.lib *.so *.dylib *.dll \
+	      *.lib *.def *.dll.a *.exp
 
 distclean: clean
 	rm -f .depend
