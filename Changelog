@@ -27,7 +27,8 @@ version <next>
 - QDM2 audio decoder
 - cook audio decoder
 - TrueSpeech audio decoder
-- wma2 audio decoder fixed, now all files should play correctly
+- WMA2 audio decoder fixed, now all files should play correctly
+- RealAudio 14.4 and 28.8 decoders fixed
 - JPEG-LS decoder (unfinished)
 - CamStudio video decoder
 - build system improvements
