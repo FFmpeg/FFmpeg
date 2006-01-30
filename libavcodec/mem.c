@@ -46,7 +46,7 @@ void *av_malloc(unsigned int size)
 {
     void *ptr;
 #ifdef MEMALIGN_HACK
-    int diff;
+    long diff;
 #endif
 
     /* lets disallow possible ambiguous cases */
@@ -55,7 +55,7 @@ void *av_malloc(unsigned int size)
 
 #ifdef MEMALIGN_HACK
     ptr = malloc(size+16+1);
-    diff= ((-(int)ptr - 1)&15) + 1;
+    diff= ((-(long)ptr - 1)&15) + 1;
     ptr += diff;
     ((char*)ptr)[-1]= diff;
 #elif defined (HAVE_MEMALIGN)
