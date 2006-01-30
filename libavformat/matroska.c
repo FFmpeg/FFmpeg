@@ -29,6 +29,7 @@
 #include "avformat.h"
 /* For codec_get_bmp_id and codec_get_wav_id. */
 #include "avi.h"
+#include "intfloat_readwrite.h"
 
 /* EBML version supported */
 #define EBML_VERSION 1

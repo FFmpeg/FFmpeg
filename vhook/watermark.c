@@ -46,6 +46,7 @@
 #include "avformat.h"
 
 #include "framehook.h"
+#include "cmdutils.h"
 
 typedef struct {
     char            filename[2000];

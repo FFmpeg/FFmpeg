@@ -24,6 +24,7 @@
  */
 
 #include "common.h"
+#include "intfloat_readwrite.h"
 
 double av_int2dbl(int64_t v){
     if(v+v > 0xFFELLU<<52)
