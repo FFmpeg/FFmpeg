@@ -116,7 +116,7 @@ void Release(void *ctx)
 }
 
 
-int ParseColor(char *text, unsigned char yuv_color[3])
+static int ParseColor(char *text, unsigned char yuv_color[3])
 {
   char tmp[3];
   unsigned char rgb_color[3];
@@ -300,7 +300,7 @@ int Configure(void **ctxp, int argc, char *argv[])
 
 
 
-inline void draw_glyph(AVPicture *picture, FT_Bitmap *bitmap, unsigned int x, unsigned int y, unsigned int width, unsigned int height, unsigned char yuv_fgcolor[3], unsigned char yuv_bgcolor[3], int outline)
+static inline void draw_glyph(AVPicture *picture, FT_Bitmap *bitmap, unsigned int x, unsigned int y, unsigned int width, unsigned int height, unsigned char yuv_fgcolor[3], unsigned char yuv_bgcolor[3], int outline)
 {
   int r, c;
   int spixel, dpixel[3], in_glyph=0;
@@ -363,7 +363,7 @@ inline void draw_glyph(AVPicture *picture, FT_Bitmap *bitmap, unsigned int x, un
 }
 
 
-inline void draw_box(AVPicture *picture, unsigned int x, unsigned int y, unsigned int width, unsigned int height, unsigned char yuv_color[3])
+static inline void draw_box(AVPicture *picture, unsigned int x, unsigned int y, unsigned int width, unsigned int height, unsigned char yuv_color[3])
 {
   int i, j;
 

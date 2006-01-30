@@ -230,7 +230,7 @@ static float noise_samples[128];
 static MPA_INT mpa_window[512] __attribute__((aligned(16)));
 
 
-static void softclip_table_init() {
+static void softclip_table_init(void) {
     int i;
     double dfl = SOFTCLIP_THRESHOLD - 32767;
     float delta = 1.0 / -dfl;
@@ -240,7 +240,7 @@ static void softclip_table_init() {
 
 
 // random generated table
-static void rnd_table_init() {
+static void rnd_table_init(void) {
     int i,j;
     uint32_t ldw,hdw;
     uint64_t tmp64_1;
@@ -276,7 +276,7 @@ static void rnd_table_init() {
 }
 
 
-static void init_noise_samples() {
+static void init_noise_samples(void) {
     int i;
     int random_seed = 0;
     float delta = 1.0 / 16384.0;
@@ -287,7 +287,7 @@ static void init_noise_samples() {
 }
 
 
-static void qdm2_init_vlc()
+static void qdm2_init_vlc(void)
 {
     init_vlc (&vlc_tab_level, 8, 24,
         vlc_tab_level_huffbits, 1, 1,
@@ -525,7 +525,7 @@ static void build_sb_samples_from_noise (QDM2Context *q, int sb)
  * @param channels         number of channels
  * @param coding_method    q->coding_method[0][0][0]
  */
- void fix_coding_method_array (int sb, int channels, sb_int8_array coding_method)
+static void fix_coding_method_array (int sb, int channels, sb_int8_array coding_method)
 {
     int j,k;
     int ch;
@@ -1690,7 +1690,7 @@ static void qdm2_synthesis_filter (QDM2Context *q, int index)
  *
  * @param q    context
  */
-void qdm2_init(QDM2Context *q) {
+static void qdm2_init(QDM2Context *q) {
     static int inited = 0;
 
     if (inited != 0)
@@ -1942,7 +1942,7 @@ static int qdm2_decode_close(AVCodecContext *avctx)
 }
 
 
-void qdm2_decode (QDM2Context *q, uint8_t *in, int16_t *out)
+static void qdm2_decode (QDM2Context *q, uint8_t *in, int16_t *out)
 {
     int ch, i;
     const int frame_size = (q->frame_size * q->channels);
