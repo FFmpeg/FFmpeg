@@ -31,7 +31,7 @@ typedef struct RawVideoContext {
     AVFrame pic;             ///< AVCodecContext.coded_frame
 } RawVideoContext;
 
-typedef struct PixleFormatTag {
+typedef struct PixelFormatTag {
     int pix_fmt;
     unsigned int fourcc;
 } PixelFormatTag;

@@ -5741,7 +5741,7 @@ static int decode_cabac_residual( H264Context *h, DCTELEM *block, int cat, int n
     return 0;
 }
 
-static void inline compute_mb_neighboors(H264Context *h)
+static void inline compute_mb_neighbors(H264Context *h)
 {
     MpegEncContext * const s = &h->s;
     const int mb_xy  = s->mb_x + s->mb_y*s->mb_stride;
@@ -5801,7 +5801,7 @@ static int decode_mb_cabac(H264Context *h) {
 
     h->prev_mb_skipped = 0;
 
-    compute_mb_neighboors(h);
+    compute_mb_neighbors(h);
     if( ( mb_type = decode_cabac_mb_type( h ) ) < 0 ) {
         av_log( h->s.avctx, AV_LOG_ERROR, "decode_cabac_mb_type failed\n" );
         return -1;
