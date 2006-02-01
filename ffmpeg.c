@@ -213,7 +213,11 @@ static int rate_emu = 0;
 #ifdef CONFIG_BKTR
 static char *video_grab_format = "bktr";
 #else
+#ifdef CONFIG_VIDEO4LINUX2
+static char *video_grab_format = "video4linux2";
+#else
 static char *video_grab_format = "video4linux";
+#endif
 #endif
 static char *video_device = NULL;
 static char *grab_device = NULL;

@@ -50,6 +50,10 @@ ifeq ($(CONFIG_VIDEO4LINUX),yes)
 OBJS+= grab.o
 endif
 
+ifeq ($(CONFIG_VIDEO4LINUX2),yes)
+OBJS+= v4l2.o
+endif
+
 ifeq ($(CONFIG_BKTR),yes)
 OBJS+= grab_bktr.o
 endif

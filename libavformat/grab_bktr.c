@@ -229,7 +229,7 @@ static int grab_read_packet(AVFormatContext *s1, AVPacket *pkt)
 
     bktr_getframe(s->per_frame);
 
-    pkt->pts = av_gettime() & ((1LL << 48) - 1);
+    pkt->pts = av_gettime();
     memcpy(pkt->data, video_buf, video_buf_size);
 
     return video_buf_size;
@@ -260,7 +260,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     st = av_new_stream(s1, 0);
     if (!st)
         return -ENOMEM;
-    av_set_pts_info(st, 48, 1, 1000000); /* 48 bits pts in use */
+    av_set_pts_info(st, 64, 1, 1000000); /* 64 bits pts in use */
 
     s->width = width;
     s->height = height;

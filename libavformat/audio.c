@@ -239,7 +239,7 @@ static int audio_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     st->codec->sample_rate = s->sample_rate;
     st->codec->channels = s->channels;
 
-    av_set_pts_info(st, 48, 1, 1000000);  /* 48 bits pts in us */
+    av_set_pts_info(st, 64, 1, 1000000);  /* 64 bits pts in us */
     return 0;
 }
 
@@ -271,7 +271,7 @@ static int audio_read_packet(AVFormatContext *s1, AVPacket *pkt)
         if (ret == -1 && (errno == EAGAIN || errno == EINTR)) {
             av_free_packet(pkt);
             pkt->size = 0;
-            pkt->pts = av_gettime() & ((1LL << 48) - 1);
+            pkt->pts = av_gettime();
             return 0;
         }
         if (!(ret == 0 || (ret == -1 && (errno == EAGAIN || errno == EINTR)))) {
@@ -291,7 +291,7 @@ static int audio_read_packet(AVFormatContext *s1, AVPacket *pkt)
     cur_time -= (bdelay * 1000000LL) / (s->sample_rate * s->channels);
 
     /* convert to wanted units */
-    pkt->pts = cur_time & ((1LL << 48) - 1);
+    pkt->pts = cur_time;
 
     if (s->flip_left && s->channels == 2) {
         int i;

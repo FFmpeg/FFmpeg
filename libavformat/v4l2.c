@@ -1,0 +1,520 @@
+/*
+ * Video4Linux2 grab interface
+ * Copyright (c) 2000,2001 Fabrice Bellard.
+ * Copyright (c) 2006 Luca Abeni.
+ *
+ * Part of this file is based on the V4L2 video capture example
+ * (http://v4l2spec.bytesex.org/v4l2spec/capture.c)
+ *
+ * Thanks to Michael Niedermayer for providing the mapping between
+ * V4L2_PIX_FMT_* and PIX_FMT_*
+ *
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ */
+#include "avformat.h"
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/ioctl.h>
+#include <sys/mman.h>
+#include <sys/time.h>
+#define _LINUX_TIME_H 1
+#include <linux/videodev.h>
+#include <time.h>
+
+static const int desired_video_buffers = 256;
+
+enum io_method {
+    io_read,
+    io_mmap,
+    io_userptr
+};
+
+struct video_data {
+    int fd;
+    int frame_format; /* V4L2_PIX_FMT_* */
+    enum io_method io_method;
+    int width, height;
+    int frame_rate;
+    int frame_rate_base;
+    int frame_size;
+    int top_field_first;
+
+    int buffers;
+    void **buf_start;
+    unsigned int *buf_len;
+};
+
+struct fmt_map {
+    enum PixelFormat ff_fmt;
+    int32_t v4l2_fmt;
+};
+
+static struct fmt_map fmt_conversion_table[] = {
+    {
+        .ff_fmt = PIX_FMT_YUV420P,
+        .v4l2_fmt = V4L2_PIX_FMT_YUV420,
+    },
+    {
+        .ff_fmt = PIX_FMT_YUV422P,
+        .v4l2_fmt = V4L2_PIX_FMT_YUV422P,
+    },
+    {
+        .ff_fmt = PIX_FMT_YUV422,
+        .v4l2_fmt = V4L2_PIX_FMT_YUYV,
+    },
+    {
+        .ff_fmt = PIX_FMT_UYVY422,
+        .v4l2_fmt = V4L2_PIX_FMT_UYVY,
+    },
+    {
+        .ff_fmt = PIX_FMT_YUV411P,
+        .v4l2_fmt = V4L2_PIX_FMT_YUV411P,
+    },
+    {
+        .ff_fmt = PIX_FMT_YUV410P,
+        .v4l2_fmt = V4L2_PIX_FMT_YUV410,
+    },
+    {
+        .ff_fmt = PIX_FMT_BGR24,
+        .v4l2_fmt = V4L2_PIX_FMT_BGR24,
+    },
+    {
+        .ff_fmt = PIX_FMT_RGB24,
+        .v4l2_fmt = V4L2_PIX_FMT_RGB24,
+    },
+    /*
+    {
+        .ff_fmt = PIX_FMT_RGBA32,
+        .v4l2_fmt = V4L2_PIX_FMT_BGR32,
+    },
+    */
+    {
+        .ff_fmt = PIX_FMT_GRAY8,
+        .v4l2_fmt = V4L2_PIX_FMT_GREY,
+    },
+};
+
+static int device_open(const char *devname, uint32_t *capabilities)
+{
+    struct v4l2_capability cap;
+    int fd;
+    int res;
+
+    fd = open(devname, O_RDWR /*| O_NONBLOCK*/, 0);
+    if (fd < 0) {
+        av_log(NULL, AV_LOG_ERROR, "Cannot open video device %s : %s\n",
+                 devname, strerror(errno));
+
+        return -1;
+    }
+
+    res = ioctl(fd, VIDIOC_QUERYCAP, &cap);
+    if (res < 0) {
+        av_log(NULL, AV_LOG_ERROR, "ioctl(VIDIOC_QUERYCAP): %s\n",
+                 strerror(errno));
+
+        return -1;
+    }
+    if ((cap.capabilities & V4L2_CAP_VIDEO_CAPTURE) == 0) {
+        av_log(NULL, AV_LOG_ERROR, "Not a video capture device\n");
+
+        return -1;
+    }
+    *capabilities = cap.capabilities;
+
+    return fd;
+}
+
+static int device_init(int fd, int width, int height, int pix_fmt)
+{
+    struct v4l2_format fmt;
+
+    memset(&fmt, 0, sizeof(struct v4l2_format));
+    fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+    fmt.fmt.pix.width = width;
+    fmt.fmt.pix.height = height;
+    fmt.fmt.pix.pixelformat = pix_fmt;
+    fmt.fmt.pix.field = V4L2_FIELD_INTERLACED;
+    return ioctl (fd, VIDIOC_S_FMT, &fmt);
+}
+
+static int first_field(int fd)
+{
+    int res;
+    v4l2_std_id std;
+
+    res = ioctl(fd, VIDIOC_G_STD, &std);
+    if (res < 0) {
+        return 0;
+    }
+    if (std & V4L2_STD_NTSC) {
+        return 0;
+    }
+
+    return 1;
+}
+
+static uint32_t fmt_ff2v4l(enum PixelFormat pix_fmt)
+{
+    int i;
+
+    for (i = 0; i < sizeof(fmt_conversion_table) / sizeof(struct fmt_map); i++) {
+        if (fmt_conversion_table[i].ff_fmt == pix_fmt) {
+            return fmt_conversion_table[i].v4l2_fmt;
+        }
+    }
+
+    return 0;
+}
+
+static enum PixelFormat fmt_v4l2ff(uint32_t pix_fmt)
+{
+    int i;
+
+    for (i = 0; i < sizeof(fmt_conversion_table) / sizeof(struct fmt_map); i++) {
+        if (fmt_conversion_table[i].v4l2_fmt == pix_fmt) {
+            return fmt_conversion_table[i].ff_fmt;
+        }
+    }
+
+    return -1;
+}
+
+static int mmap_init(struct video_data *s)
+{
+    struct v4l2_requestbuffers req;
+    int i, res;
+
+    memset(&req, 0, sizeof(struct v4l2_requestbuffers));
+    req.count = desired_video_buffers;
+    req.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+    req.memory = V4L2_MEMORY_MMAP;
+    res = ioctl (s->fd, VIDIOC_REQBUFS, &req);
+    if (res < 0) {
+        if (errno == EINVAL) {
+            av_log(NULL, AV_LOG_ERROR, "Device does not support mmap\n");
+        } else {
+            av_log(NULL, AV_LOG_ERROR, "ioctl(VIDIOC_REQBUFS)\n");
+        }
+
+        return -1;
+    }
+
+    if (req.count < 2) {
+        av_log(NULL, AV_LOG_ERROR, "Insufficient buffer memory\n");
+
+        return -1;
+    }
+    s->buffers = req.count;
+    s->buf_start = av_malloc(sizeof(void *) * s->buffers);
+    if (s->buf_start == NULL) {
+        av_log(NULL, AV_LOG_ERROR, "Cannot allocate buffer pointers\n");
+
+        return -1;
+    }
+    s->buf_len = av_malloc(sizeof(unsigned int) * s->buffers);
+    if (s->buf_len == NULL) {
+        av_log(NULL, AV_LOG_ERROR, "Cannot allocate buffer sizes\n");
+        av_free(s->buf_start);
+
+        return -1;
+    }
+
+    for (i = 0; i < req.count; i++) {
+        struct v4l2_buffer buf;
+
+        memset(&buf, 0, sizeof(struct v4l2_buffer));
+        buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+        buf.memory = V4L2_MEMORY_MMAP;
+        buf.index = i;
+        res = ioctl (s->fd, VIDIOC_QUERYBUF, &buf);
+        if (res < 0) {
+            av_log(NULL, AV_LOG_ERROR, "ioctl(VIDIOC_QUERYBUF)\n");
+
+            return -1;
+        }
+
+        s->buf_len[i] = buf.length;
+        if (s->buf_len[i] < s->frame_size) {
+            av_log(NULL, AV_LOG_ERROR, "Buffer len [%d] = %d != %d\n", i, s->buf_len[i], s->frame_size);
+
+            return -1;
+        }
+        s->buf_start[i] = mmap (NULL, buf.length,
+                        PROT_READ | PROT_WRITE, MAP_SHARED, s->fd, buf.m.offset);
+        if (s->buf_start[i] == MAP_FAILED) {
+            av_log(NULL, AV_LOG_ERROR, "mmap: %s\n", strerror(errno));
+
+            return -1;
+        }
+    }
+
+    return 0;
+}
+
+static int read_init(struct video_data *s)
+{
+    return -1;
+}
+
+static int mmap_read_frame(struct video_data *s, void *frame, int64_t *ts)
+{
+    struct v4l2_buffer buf;
+    int res;
+
+    memset(&buf, 0, sizeof(struct v4l2_buffer));
+    buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+    buf.memory = V4L2_MEMORY_MMAP;
+
+    /* FIXME: Some special treatment might be needed in case of loss of signal... */
+    while ((res = ioctl(s->fd, VIDIOC_DQBUF, &buf)) < 0 &&
+           ((errno == EAGAIN) || (errno == EINTR)));
+    if (res < 0) {
+        av_log(NULL, AV_LOG_ERROR, "ioctl(VIDIOC_DQBUF): %s\n", strerror(errno));
+
+        return -1;
+    }
+    assert (buf.index < s->buffers);
+    assert(buf.bytesused == s->frame_size);
+    /* Image is at s->buff_start[buf.index] */
+    memcpy(frame, s->buf_start[buf.index], buf.bytesused);
+    *ts = buf.timestamp.tv_sec * int64_t_C(1000000) + buf.timestamp.tv_usec;
+
+    res = ioctl (s->fd, VIDIOC_QBUF, &buf);
+    if (res < 0) {
+        av_log(NULL, AV_LOG_ERROR, "ioctl(VIDIOC_QBUF)\n");
+
+        return -1;
+    }
+
+    return s->buf_len[buf.index];
+}
+
+static int read_frame(struct video_data *s, void *frame, int64_t *ts)
+{
+    return -1;
+}
+
+static int mmap_start(struct video_data *s)
+{
+    enum v4l2_buf_type type;
+    int i, res;
+
+    for (i = 0; i < s->buffers; i++) {
+        struct v4l2_buffer buf;
+
+        memset(&buf, 0, sizeof(struct v4l2_buffer));
+        buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+        buf.memory = V4L2_MEMORY_MMAP;
+        buf.index  = i;
+
+        res = ioctl (s->fd, VIDIOC_QBUF, &buf);
+        if (res < 0) {
+            av_log(NULL, AV_LOG_ERROR, "ioctl(VIDIOC_QBUF): %s\n", strerror(errno));
+
+            return -1;
+        }
+    }
+
+    type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+    res = ioctl (s->fd, VIDIOC_STREAMON, &type);
+    if (res < 0) {
+        av_log(NULL, AV_LOG_ERROR, "ioctl(VIDIOC_STREAMON): %s\n", strerror(errno));
+
+        return -1;
+    }
+
+    return 0;
+}
+
+static void mmap_close(struct video_data *s)
+{
+    enum v4l2_buf_type type;
+    int i;
+
+    type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+    /* We do not check for the result, because we could
+     * not do anything about it anyway...
+     */
+    ioctl(s->fd, VIDIOC_STREAMOFF, &type);
+    for (i = 0; i < s->buffers; i++) {
+        munmap(s->buf_start[i], s->buf_len[i]);
+    }
+    av_free(s->buf_start);
+    av_free(s->buf_len);
+}
+
+static int v4l2_read_header(AVFormatContext *s1, AVFormatParameters *ap)
+{
+    struct video_data *s = s1->priv_data;
+    AVStream *st;
+    int width, height;
+    int res, frame_rate, frame_rate_base;
+    uint32_t desired_format, capabilities;
+    const char *video_device;
+
+    if (!ap || ap->width <= 0 || ap->height <= 0 || ap->time_base.den <= 0) {
+        av_log(s1, AV_LOG_ERROR, "Missing/Wrong parameters\n");
+
+        return -1;
+    }
+
+    width = ap->width;
+    height = ap->height;
+    frame_rate = ap->time_base.den;
+    frame_rate_base = ap->time_base.num;
+
+    if((unsigned)width > 32767 || (unsigned)height > 32767) {
+        av_log(s1, AV_LOG_ERROR, "Wrong size %dx%d\n", width, height);
+
+        return -1;
+    }
+
+    st = av_new_stream(s1, 0);
+    if (!st) {
+        return -ENOMEM;
+    }
+    av_set_pts_info(st, 64, 1, 1000000); /* 64 bits pts in us */
+
+    s->width = width;
+    s->height = height;
+    s->frame_rate      = frame_rate;
+    s->frame_rate_base = frame_rate_base;
+
+    video_device = ap->device;
+    if (!video_device) {
+        video_device = "/dev/video";
+    }
+    capabilities = 0;
+    s->fd = device_open(video_device, &capabilities);
+    if (s->fd < 0) {
+        av_free(st);
+
+        return AVERROR_IO;
+    }
+    av_log(s1, AV_LOG_ERROR, "[%d]Capabilities: %x\n", s->fd, capabilities);
+
+    desired_format = fmt_ff2v4l(ap->pix_fmt);
+    if (desired_format == 0 || (device_init(s->fd, width, height, desired_format) < 0)) {
+        int i, done;
+
+        done = 0; i = 0;
+        while (!done) {
+            desired_format = fmt_conversion_table[i].v4l2_fmt;
+            if (device_init(s->fd, width, height, desired_format) < 0) {
+                desired_format = 0;
+                i++;
+            } else {
+               done = 1;
+            }
+            if (i == sizeof(fmt_conversion_table) / sizeof(struct fmt_map)) {
+               done = 1;
+            }
+        }
+    }
+    if (desired_format == 0) {
+        av_log(s1, AV_LOG_ERROR, "Cannot find a proper format.\n");
+        close(s->fd);
+        av_free(st);
+
+        return AVERROR_IO;
+    }
+    s->frame_format = desired_format;
+
+    st->codec->pix_fmt = fmt_v4l2ff(desired_format);
+    s->frame_size = avpicture_get_size(st->codec->pix_fmt, width, height);
+    if (capabilities & V4L2_CAP_STREAMING) {
+        s->io_method = io_mmap;
+        res = mmap_init(s);
+        res = mmap_start(s);
+    } else {
+        s->io_method = io_read;
+        res = read_init(s);
+    }
+    if (res < 0) {
+        close(s->fd);
+        av_free(st);
+
+        return AVERROR_IO;
+    }
+    s->top_field_first = first_field(s->fd);
+
+    st->codec->codec_type = CODEC_TYPE_VIDEO;
+    st->codec->codec_id = CODEC_ID_RAWVIDEO;
+    st->codec->width = width;
+    st->codec->height = height;
+    st->codec->time_base.den = frame_rate;
+    st->codec->time_base.num = frame_rate_base;
+    st->codec->bit_rate = s->frame_size * 1/av_q2d(st->codec->time_base) * 8;
+
+    return 0;
+}
+
+static int v4l2_read_packet(AVFormatContext *s1, AVPacket *pkt)
+{
+    struct video_data *s = s1->priv_data;
+    int res;
+
+    if (av_new_packet(pkt, s->frame_size) < 0)
+        return AVERROR_IO;
+
+    if (s->io_method == io_mmap) {
+        res = mmap_read_frame(s, pkt->data, &pkt->pts);
+    } else if (s->io_method == io_read) {
+        res = read_frame(s, pkt->data, &pkt->pts);
+    } else {
+        return AVERROR_IO;
+    }
+    if (res < 0) {
+        return AVERROR_IO;
+    }
+
+    if (s1->streams[0]->codec->coded_frame) {
+        s1->streams[0]->codec->coded_frame->interlaced_frame = 1;
+        s1->streams[0]->codec->coded_frame->top_field_first = s->top_field_first;
+    }
+
+    return s->frame_size;
+}
+
+static int v4l2_read_close(AVFormatContext *s1)
+{
+    struct video_data *s = s1->priv_data;
+
+    if (s->io_method == io_mmap) {
+        mmap_close(s);
+    }
+
+    close(s->fd);
+    return 0;
+}
+
+static AVInputFormat v4l2_format = {
+    "video4linux2",
+    "video grab",
+    sizeof(struct video_data),
+    NULL,
+    v4l2_read_header,
+    v4l2_read_packet,
+    v4l2_read_close,
+    .flags = AVFMT_NOFILE,
+};
+
+int v4l2_init(void)
+{
+    av_register_input_format(&v4l2_format);
+    return 0;
+}

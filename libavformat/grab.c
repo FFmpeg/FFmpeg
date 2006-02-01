@@ -82,7 +82,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     st = av_new_stream(s1, 0);
     if (!st)
         return -ENOMEM;
-    av_set_pts_info(st, 48, 1, 1000000); /* 48 bits pts in us */
+    av_set_pts_info(st, 64, 1, 1000000); /* 64 bits pts in us */
 
     s->width = width;
     s->height = height;
@@ -331,7 +331,7 @@ static int grab_read_packet(AVFormatContext *s1, AVPacket *pkt)
     if (av_new_packet(pkt, s->frame_size) < 0)
         return AVERROR_IO;
 
-    pkt->pts = curtime & ((1LL << 48) - 1);
+    pkt->pts = curtime;
 
     /* read one frame */
     if (s->aiw_enabled) {
