@@ -838,5 +838,6 @@ AVCodec jpegls_encoder = { //FIXME avoid MPV_* lossless jpeg shouldnt need them
     encode_init_ls,
     encode_picture_ls,
     NULL,
+    .pix_fmts= (enum PixelFormat[]){PIX_FMT_BGR24, PIX_FMT_RGB24, PIX_FMT_GRAY8, -1},
 };
 #endif
