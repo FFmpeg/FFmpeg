@@ -508,7 +508,8 @@ int av_open_input_stream(AVFormatContext **ic_ptr,
 }
 
 /** Size of probe buffer, for guessing file type from file contents. */
-#define PROBE_BUF_SIZE 2048
+#define PROBE_BUF_MIN 2048
+#define PROBE_BUF_MAX 131072
 
 /**
  * Open a media file as input. The codec are not opened. Only the file
@@ -526,8 +527,7 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
                        int buf_size,
                        AVFormatParameters *ap)
 {
-    int err, must_open_file, file_opened;
-    uint8_t buf[PROBE_BUF_SIZE];
+    int err, must_open_file, file_opened, probe_size;
     AVProbeData probe_data, *pd = &probe_data;
     ByteIOContext pb1, *pb = &pb1;
 
@@ -535,7 +535,7 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
     pd->filename = "";
     if (filename)
         pd->filename = filename;
-    pd->buf = buf;
+    pd->buf = NULL;
     pd->buf_size = 0;
 
     if (!fmt) {
@@ -561,9 +561,11 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
         if (buf_size > 0) {
             url_setbufsize(pb, buf_size);
         }
-        if (!fmt) {
+
+        for(probe_size= PROBE_BUF_MIN; probe_size<=PROBE_BUF_MAX && !fmt; probe_size<<=1){
             /* read probe data */
-            pd->buf_size = get_buffer(pb, buf, PROBE_BUF_SIZE);
+            pd->buf= av_realloc(pd->buf, probe_size);
+            pd->buf_size = get_buffer(pb, pd->buf, probe_size);
             if (url_fseek(pb, 0, SEEK_SET) == (offset_t)-EPIPE) {
                 url_fclose(pb);
                 if (url_fopen(pb, filename, URL_RDONLY) < 0) {
@@ -571,12 +573,10 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
                     goto fail;
                 }
             }
+            /* guess file format */
+            fmt = av_probe_input_format(pd, 1);
         }
-    }
-
-    /* guess file format */
-    if (!fmt) {
-        fmt = av_probe_input_format(pd, 1);
+        av_freep(&pd->buf);
     }
 
     /* if still no format found, error */
@@ -606,6 +606,7 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
         goto fail;
     return 0;
  fail:
+    av_freep(&pd->buf);
     if (file_opened)
         url_fclose(pb);
     *ic_ptr = NULL;
@@ -3223,7 +3224,7 @@ int av_read_image(ByteIOContext *pb, const char *filename,
                   AVImageFormat *fmt,
                   int (*alloc_cb)(void *, AVImageInfo *info), void *opaque)
 {
-    uint8_t buf[PROBE_BUF_SIZE];
+    uint8_t buf[PROBE_BUF_MIN];
     AVProbeData probe_data, *pd = &probe_data;
     offset_t pos;
     int ret;
@@ -3232,7 +3233,7 @@ int av_read_image(ByteIOContext *pb, const char *filename,
         pd->filename = filename;
         pd->buf = buf;
         pos = url_ftell(pb);
-        pd->buf_size = get_buffer(pb, buf, PROBE_BUF_SIZE);
+        pd->buf_size = get_buffer(pb, buf, PROBE_BUF_MIN);
         url_fseek(pb, pos, SEEK_SET);
         fmt = av_probe_image_format(pd);
     }
