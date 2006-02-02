@@ -38,6 +38,23 @@ float av_int2flt(int32_t v){
     return ldexp(((v&0x7FFFFF) + (1<<23)) * (v>>31|1), (v>>23&0xFF)-150);
 }
 
+double av_ext2dbl(const AVExtFloat ext){
+    uint64_t m = 0;
+    int e, i;
+
+    for (i = 0; i < 8; i++)
+        m |= (uint64_t)ext.mantissa[i]<<(56-(i<<3));
+    e = (((int)ext.exponent[0]&0x7f)<<8) | ext.exponent[1];
+    if (e == 0x7fff && m)
+        return 0.0/0.0;
+    e -= 16383 + 63;        /* In IEEE 80 bits, the whole (i.e. 1.xxxx)
+                             * mantissa bit is written as opposed to the
+                             * single and double precision formats */
+    if (ext.exponent[0]&0x80)
+        return ldexp(-m, e);
+    return ldexp(m, e);
+}
+
 int64_t av_dbl2int(double d){
     int e;
     if     ( !d) return 0;
@@ -53,3 +70,29 @@ int32_t av_flt2int(float d){
     d= frexp(d, &e);
     return (d<0)<<31 | (e+126)<<23 | (int64_t)((fabs(d)-0.5)*(1<<24));
 }
+
+AVExtFloat av_dbl2ext(double d){
+    struct AVExtFloat ext;
+    int e, i; double f; uint64_t m;
+
+    f = fabs(frexp(d, &e));
+    if (f >= 0.5 && f < 1) {
+        e += 16382;
+        ext.exponent[0] = e>>8;
+        ext.exponent[1] = e;
+        m = (uint64_t)ldexp(f, 64);
+        for (i=0; i < 8; i++)
+            ext.mantissa[i] = m>>(56-(i<<3));
+    } else if (f == 0.0) {
+        memset (&ext, 0, 10);
+    } else {
+        ext.exponent[0] = 0x7f; ext.exponent[1] = 0xff;
+        memset (&ext.mantissa, 0, 8);
+        if (f != 1/0.0)
+            ext.mantissa[0] = ~0;
+    }
+    if (d < 0)
+        ext.exponent[0] |= 0x80;
+    return ext;
+}
+

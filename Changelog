@@ -33,6 +33,7 @@ version <next>
 - CamStudio video decoder
 - build system improvements
 - tabs and trailing whitespace removed from the codebase
+- AIFF/AIFF-C audio format, encoding and decoding
 
 version 0.4.9-pre1:
 

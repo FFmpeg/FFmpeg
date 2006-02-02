@@ -62,6 +62,9 @@ e2a6d6fae17394dfe87cb5bb8ae11837 *./data/b-libav.al
 20f9fa55b3c5bebe3520f5667ee4928b *./data/b-libav.mmf
   22609 ./data/b-libav.mmf
 ./data/b-libav.mmf CRC=0x7e78cffe
+a324baee6d76c53ab7c74616cfc31616 *./data/b-libav.aif
+  89168 ./data/b-libav.aif
+./data/b-libav.aif CRC=0x2a09519c
 ce356ce2708cb6033ab5d762da93cfd4 *./data/b-libav-yuv420p.yuv
  304128 ./data/b-libav-yuv420p.yuv
 ce356ce2708cb6033ab5d762da93cfd4 *./data/b-libav-yuv422p.yuv

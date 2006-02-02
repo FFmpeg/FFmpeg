@@ -549,6 +549,9 @@ int nsvdec_init(void);
 /* daud.c */
 int daud_init(void);
 
+/* aiff.c */
+int ff_aiff_init(void);
+
 #include "rtp.h"
 
 #include "rtsp.h"
