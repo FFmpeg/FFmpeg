@@ -885,6 +885,8 @@ typedef struct MJpegDecodeContext {
     int interlace_polarity;
 
     int mjpb_skiptosod;
+
+    int cur_scan; /* current scan, used by JPEG-LS */
 } MJpegDecodeContext;
 
 #include "jpeg_ls.c" //FIXME make jpeg-ls more independant
@@ -1104,6 +1106,11 @@ static int mjpeg_decode_sof(MJpegDecodeContext *s)
         av_log(s->avctx, AV_LOG_ERROR, "only 8 bits/component accepted\n");
         return -1;
     }
+    if (s->bits > 8 && s->ls){
+        av_log(s->avctx, AV_LOG_ERROR, "only <= 8 bits/component accepted for JPEG-LS\n");
+        return -1;
+    }
+
     height = get_bits(&s->gb, 16);
     width = get_bits(&s->gb, 16);
 
@@ -1133,6 +1140,11 @@ static int mjpeg_decode_sof(MJpegDecodeContext *s)
             return -1;
         dprintf("component %d %d:%d id: %d quant:%d\n", i, s->h_count[i],
             s->v_count[i], s->component_id[i], s->quant_index[i]);
+    }
+
+    if(s->ls && (s->h_max > 1 || s->v_max > 1)) {
+        av_log(s->avctx, AV_LOG_ERROR, "Subsampling in JPEG-LS is not supported.\n");
+        return -1;
     }
 
     if(s->v_max==1 && s->h_max==1 && s->lossless==1) s->rgb=1;
@@ -1182,6 +1194,12 @@ static int mjpeg_decode_sof(MJpegDecodeContext *s)
     case 0x22:
         s->avctx->pix_fmt = s->cs_itu601 ? PIX_FMT_YUV420P : PIX_FMT_YUVJ420P;
         break;
+    }
+    if(s->ls){
+        if(s->nb_components > 1)
+            s->avctx->pix_fmt = PIX_FMT_RGB24;
+        else
+            s->avctx->pix_fmt = PIX_FMT_GRAY8;
     }
 
     if(s->picture.data[0])
@@ -1496,7 +1514,7 @@ static int mjpeg_decode_sos(MJpegDecodeContext *s)
         return -1;
     }
     /* XXX: only interleaved scan accepted */
-    if (nb_components != s->nb_components)
+    if ((nb_components != s->nb_components) && !s->ls)
     {
         dprintf("decode_sos: components(%d) mismatch\n", nb_components);
         return -1;
@@ -1560,7 +1578,7 @@ static int mjpeg_decode_sos(MJpegDecodeContext *s)
         /* interleaved stream */
         s->mb_width  = (s->width  + s->h_max * block_size - 1) / (s->h_max * block_size);
         s->mb_height = (s->height + s->v_max * block_size - 1) / (s->v_max * block_size);
-    } else {
+    } else if(!s->ls) { /* skip this for JPEG-LS */
         h = s->h_max / s->h_scount[s->comp_index[0]];
         v = s->v_max / s->v_scount[s->comp_index[0]];
         s->mb_width  = (s->width  + h * block_size - 1) / (h * block_size);
@@ -1583,6 +1601,9 @@ static int mjpeg_decode_sos(MJpegDecodeContext *s)
     if(s->lossless){
         if(s->ls){
 //            for(){
+//            reset_ls_coding_parameters(s, 0);
+
+            ls_decode_picture(s, predictor, point_transform, ilv);
         }else{
             if(s->rgb){
                 if(ljpeg_decode_rgb_scan(s, predictor, point_transform) < 0)
@@ -1879,8 +1900,8 @@ static int mjpeg_decode_frame(AVCodecContext *avctx,
                         s->buffer_size);
                 }
 
-                /* unescape buffer of SOS */
-                if (start_code == SOS)
+                /* unescape buffer of SOS, use special treatment for JPEG-LS */
+                if (start_code == SOS && !s->ls)
                 {
                     uint8_t *src = buf_ptr;
                     uint8_t *dst = s->buffer;
@@ -1906,6 +1927,45 @@ static int mjpeg_decode_frame(AVCodecContext *avctx,
                     dprintf("escaping removed %d bytes\n",
                         (buf_end - buf_ptr) - (dst - s->buffer));
                 }
+                else if(start_code == SOS && s->ls){
+                    uint8_t *src = buf_ptr;
+                    uint8_t *dst = s->buffer;
+                    int bit_count = 0;
+                    int t = 0, b = 0;
+                    PutBitContext pb;
+
+                    s->cur_scan++;
+
+                    /* find marker */
+                    while (src + t < buf_end){
+                        uint8_t x = src[t++];
+                        if (x == 0xff){
+                            while((src + t < buf_end) && x == 0xff)
+                                x = src[t++];
+                            if (x & 0x80) {
+                                t -= 2;
+                                break;
+                            }
+                        }
+                    }
+                    bit_count = t * 8;
+
+                    init_put_bits(&pb, dst, t);
+
+                    /* unescape bitstream */
+                    while(b < t){
+                        uint8_t x = src[b++];
+                        put_bits(&pb, 8, x);
+                        if(x == 0xFF){
+                            x = src[b++];
+                            put_bits(&pb, 7, x);
+                            bit_count--;
+                        }
+                    }
+                    flush_put_bits(&pb);
+
+                    init_get_bits(&s->gb, dst, bit_count);
+                }
                 else
                     init_get_bits(&s->gb, buf_ptr, (buf_end - buf_ptr)*8);
 
@@ -1928,7 +1988,6 @@ static int mjpeg_decode_frame(AVCodecContext *avctx,
                 switch(start_code) {
                 case SOI:
                     s->restart_interval = 0;
-                    reset_ls_coding_parameters(s, 1);
 
                     s->restart_count = 0;
                     /* nothing to do on SOI */
