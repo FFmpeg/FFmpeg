@@ -60,6 +60,7 @@ else
     do_huffyuv=y
     do_mjpeg=y
     do_ljpeg=y
+    do_jpegls=y
     do_rv10=y
     do_rv20=y
     do_mp2=y
@@ -394,6 +395,16 @@ do_ffmpeg $file -y -f pgmyuv -i $raw_src -an -vcodec ljpeg -strict -1 $file
 
 # ljpeg decoding
 do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst
+fi
+
+###################################
+if [ -n "$do_jpegls" ] ; then
+# jpeg ls
+file=${outfile}jpegls.avi
+do_ffmpeg $file -y -f pgmyuv -i $raw_src -an -vcodec jpegls -vtag MJPG $file
+
+# jpeg ls decoding
+do_ffmpeg $raw_dst -y -i $file -f rawvideo -pix_fmt yuv420p $raw_dst
 fi
 
 ###################################

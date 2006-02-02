@@ -97,6 +97,10 @@ stddev:  4.38 PSNR:35.28 bytes:7602176
 4765522 ./data/a-ljpeg.avi
 dde5895817ad9d219f79a52d0bdfb001 *./data/out.yuv
 stddev:  0.00 PSNR:99.99 bytes:7602176
+315493c7e63139c47f0197831475c4da *./data/a-jpegls.avi
+8333472 ./data/a-jpegls.avi
+a63d4e3ea1f0b0c0d44821da9e09b8f4 *./data/out.yuv
+stddev:  0.67 PSNR:51.57 bytes:7602176
 2123b30d786e6e6e25caf337f24e7834 *./data/a-rv10.rm
 154850 ./data/a-rv10.rm
 7ec66fb7dd4e5dddd3820c668d6636aa *./data/out.yuv
