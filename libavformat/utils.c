@@ -1852,7 +1852,7 @@ static int try_decode_frame(AVStream *st, const uint8_t *data, int size)
  */
 int av_find_stream_info(AVFormatContext *ic)
 {
-    int i, count, ret, read_size;
+    int i, count, ret, read_size, j;
     AVStream *st;
     AVPacket pkt1, *pkt;
     AVPacketList *pktl=NULL, **ppktl;
@@ -1892,7 +1892,7 @@ int av_find_stream_info(AVFormatContext *ic)
             if (!has_codec_parameters(st->codec))
                 break;
             /* variable fps and no guess at the real fps */
-            if(   st->codec->time_base.den >= 1000LL*st->codec->time_base.num
+            if(   st->codec->time_base.den >= 101LL*st->codec->time_base.num
                && duration_count[i]<20 && st->codec->codec_type == CODEC_TYPE_VIDEO)
                 break;
             if(st->parser && st->parser->parser->split && !st->codec->extradata)
@@ -2024,19 +2024,27 @@ int av_find_stream_info(AVFormatContext *ic)
             if(st->codec->codec_id == CODEC_ID_RAWVIDEO && !st->codec->codec_tag && !st->codec->bits_per_sample)
                 st->codec->codec_tag= avcodec_pix_fmt_to_codec_tag(st->codec->pix_fmt);
 
-            if(duration_count[i] && st->codec->time_base.num*1000LL <= st->codec->time_base.den &&
-               st->time_base.num*duration_sum[i]/duration_count[i]*1000LL > st->time_base.den){
-                AVRational fps1;
-                int64_t num, den;
+            if(duration_count[i] && st->codec->time_base.num*101LL <= st->codec->time_base.den &&
+               st->time_base.num*duration_sum[i]/duration_count[i]*101LL > st->time_base.den){
+                int64_t num, den, error, best_error;
 
                 num= st->time_base.den*duration_count[i];
                 den= st->time_base.num*duration_sum[i];
 
-                av_reduce(&fps1.num, &fps1.den, num*1001, den*1000, FFMAX(st->time_base.den, st->time_base.num)/4);
-                av_reduce(&st->r_frame_rate.num, &st->r_frame_rate.den, num, den, FFMAX(st->time_base.den, st->time_base.num)/4);
-                if(fps1.num < st->r_frame_rate.num && fps1.den == 1 && (fps1.num==24 || fps1.num==30)){ //FIXME better decission
-                    st->r_frame_rate.num= fps1.num*1000;
-                    st->r_frame_rate.den= fps1.den*1001;
+                best_error= INT64_MAX;
+                for(j=1; j<60*12; j++){
+                    error= ABS(1001*12*num - 1001*j*den);
+                    if(error < best_error){
+                        best_error= error;
+                        av_reduce(&st->r_frame_rate.num, &st->r_frame_rate.den, j, 12, INT_MAX);
+                    }
+                }
+                for(j=24; j<=30; j+=6){
+                    error= ABS(1001*12*num - 1000*12*j*den);
+                    if(error < best_error){
+                        best_error= error;
+                        av_reduce(&st->r_frame_rate.num, &st->r_frame_rate.den, j*1000, 1001, INT_MAX);
+                    }
                 }
             }
 
