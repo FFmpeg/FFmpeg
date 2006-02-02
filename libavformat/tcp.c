@@ -21,7 +21,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#if defined(__BEOS__)
+#if defined(__BEOS__) || defined(__INNOTEK_LIBC__)
 typedef int socklen_t;
 #endif
 #ifndef __BEOS__

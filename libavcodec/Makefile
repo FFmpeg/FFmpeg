@@ -238,6 +238,11 @@ ifeq ($(HAVE_W32THREADS),yes)
 OBJS+= w32thread.o
 endif
 
+ifeq ($(HAVE_OS2THREADS),yes)
+OBJS+= os2thread.o
+endif
+
+
 ifeq ($(HAVE_BEOSTHREADS),yes)
 OBJS+= beosthread.o
 endif
