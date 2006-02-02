@@ -1348,6 +1348,12 @@ int av_seek_frame_binary(AVFormatContext *s, int stream_index, int64_t target_ts
         pos_limit= pos_max;
     }
 
+    if(ts_min > ts_max){
+        return -1;
+    }else if(ts_min == ts_max){
+        pos_limit= pos_min;
+    }
+
     no_change=0;
     while (pos_min < pos_limit) {
 #ifdef DEBUG_SEEK
