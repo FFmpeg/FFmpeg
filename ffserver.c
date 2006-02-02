@@ -359,14 +359,6 @@ static int compute_datarate(DataRateData *drd, int64_t count)
     return ((count - drd->count1) * 1000) / (cur_time - drd->time1);
 }
 
-static int get_longterm_datarate(DataRateData *drd, int64_t count)
-{
-    /* You get the first 3 seconds flat out */
-    if (cur_time - drd->time1 < 3000)
-        return 0;
-    return compute_datarate(drd, count);
-}
-
 
 static void start_children(FFStream *feed)
 {
