@@ -873,9 +873,8 @@ static int ac3_parse(AVCodecParserContext *s1,
         len = s->inbuf_ptr - s->inbuf;
         if (s->frame_size == 0) {
             /* no header seen : find one. We need at least 7 bytes to parse it */
-            len = AC3_HEADER_SIZE - len;
-            if (len > buf_size)
-                len = buf_size;
+            len = FFMIN(AC3_HEADER_SIZE - len, buf_size);
+
             memcpy(s->inbuf_ptr, buf_ptr, len);
             buf_ptr += len;
             s->inbuf_ptr += len;
@@ -898,21 +897,21 @@ static int ac3_parse(AVCodecParserContext *s1,
                     avctx->frame_size = 6 * 256;
                 }
             }
-        } else if (len < s->frame_size) {
-            len = s->frame_size - len;
-            if (len > buf_size)
-                len = buf_size;
+        } else {
+            len = FFMIN(s->frame_size - len, buf_size);
 
             memcpy(s->inbuf_ptr, buf_ptr, len);
             buf_ptr += len;
             s->inbuf_ptr += len;
             buf_size -= len;
-        } else {
-            *poutbuf = s->inbuf;
-            *poutbuf_size = s->frame_size;
-            s->inbuf_ptr = s->inbuf;
-            s->frame_size = 0;
-            break;
+
+            if(s->inbuf_ptr - s->inbuf == s->frame_size){
+                *poutbuf = s->inbuf;
+                *poutbuf_size = s->frame_size;
+                s->inbuf_ptr = s->inbuf;
+                s->frame_size = 0;
+                break;
+            }
         }
     }
     return buf_ptr - buf;
