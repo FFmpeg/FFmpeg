@@ -63,6 +63,9 @@
 #include "qtpalette.h"
 
 
+#undef NDEBUG
+#include <assert.h>
+
 /* Allows seeking (MOV_SPLIT_CHUNKS should also be defined) */
 #define MOV_SEEK
 
@@ -279,6 +282,7 @@ typedef struct MOVStreamContext {
     long keyframe_count;
     long *keyframes;
     int time_scale;
+    int time_rate;
     long current_sample;
     long left_in_chunk; /* how many samples before next chunk */
     MOV_esds_t esds;
@@ -720,7 +724,6 @@ static int mov_read_mdhd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     (version==1)?get_be64(pb):get_be32(pb); /* modification time */
 
     c->streams[c->fc->nb_streams-1]->time_scale = get_be32(pb);
-    av_set_pts_info(c->fc->streams[c->fc->nb_streams-1], 64, 1, c->streams[c->fc->nb_streams-1]->time_scale);
 
 #ifdef DEBUG
     av_log(NULL, AV_LOG_DEBUG, "track[%i].time_scale = %i\n", c->fc->nb_streams-1, c->streams[c->fc->nb_streams-1]->time_scale); /* time scale */
@@ -1415,7 +1418,7 @@ static int mov_read_stsz(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 static int mov_read_stts(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
     AVStream *st = c->fc->streams[c->fc->nb_streams-1];
-    //MOVStreamContext *sc = (MOVStreamContext *)st->priv_data;
+    MOVStreamContext *sc = (MOVStreamContext *)st->priv_data;
     unsigned int i, entries;
     int64_t duration=0;
     int64_t total_sample_count=0;
@@ -1428,20 +1431,25 @@ static int mov_read_stts(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     if(entries >= UINT_MAX / sizeof(Time2Sample))
         return -1;
 
-    c->streams[c->fc->nb_streams-1]->stts_count = entries;
-    c->streams[c->fc->nb_streams-1]->stts_data = av_malloc(entries * sizeof(Time2Sample));
+    sc->stts_count = entries;
+    sc->stts_data = av_malloc(entries * sizeof(Time2Sample));
 
 #ifdef DEBUG
 av_log(NULL, AV_LOG_DEBUG, "track[%i].stts.entries = %i\n", c->fc->nb_streams-1, entries);
 #endif
+
+    sc->time_rate=0;
+
     for(i=0; i<entries; i++) {
         int sample_duration;
         int sample_count;
 
         sample_count=get_be32(pb);
         sample_duration = get_be32(pb);
-        c->streams[c->fc->nb_streams - 1]->stts_data[i].count= sample_count;
-        c->streams[c->fc->nb_streams - 1]->stts_data[i].duration= sample_duration;
+        sc->stts_data[i].count= sample_count;
+        sc->stts_data[i].duration= sample_duration;
+
+        sc->time_rate= ff_gcd(sc->time_rate, sample_duration);
 
 #ifdef DEBUG
         av_log(NULL, AV_LOG_DEBUG, "sample_count=%d, sample_duration=%d\n",sample_count,sample_duration);
@@ -1864,8 +1872,15 @@ static int mov_read_header(AVFormatContext *s, AVFormatParameters *ap)
             i++;
     }
     for(i=0; i<s->nb_streams;i++) {
-        MOVStreamContext *sc;
-        sc = (MOVStreamContext *)s->streams[i]->priv_data;
+        MOVStreamContext *sc = (MOVStreamContext *)s->streams[i]->priv_data;
+
+        if(!sc->time_rate)
+            sc->time_rate=1;
+        av_set_pts_info(s->streams[i], 64, sc->time_rate, sc->time_scale);
+
+        assert(s->streams[i]->duration % sc->time_rate == 0);
+        s->streams[i]->duration /= sc->time_rate;
+
         sc->ffindex = i;
         sc->is_ff_stream = 1;
     }
@@ -1882,6 +1897,7 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     MOVContext *mov = (MOVContext *) s->priv_data;
     MOVStreamContext *sc;
+    AVStream *st;
     int64_t offset = INT64_MAX;
     int64_t best_dts = INT64_MAX;
     int i, a, b, m;
@@ -2109,8 +2125,13 @@ readchunk:
             pts = dts + duration;
         }else
             pts = dts;
-        pkt->pts = pts;
-        pkt->dts = dts;
+
+        st= s->streams[ sc->ffindex ];
+        assert(pts % st->time_base.num == 0);
+        assert(dts % st->time_base.num == 0);
+
+        pkt->pts = pts / st->time_base.num;
+        pkt->dts = dts / st->time_base.num;
 #ifdef DEBUG
     av_log(NULL, AV_LOG_DEBUG, "stream #%d smp #%ld dts = %lld pts = %lld (smp:%ld time:%lld idx:%d ent:%d count:%d dur:%d)\n"
       , pkt->stream_index, sc->current_sample-1, pkt->dts, pkt->pts
@@ -2160,8 +2181,10 @@ static int mov_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
     }
     sc = mov->streams[mov_idx];
 
+    sample_time *= s->streams[stream_index]->time_base.num;
+
     // Step 1. Find the edit that contains the requested time (elst)
-    if (sc->edit_count) {
+    if (sc->edit_count && 0) {
         // FIXME should handle edit list
         av_log(s, AV_LOG_ERROR, "mov: does not handle seeking in files that contain edit list (c:%d)\n", sc->edit_count);
         return -1;
