@@ -121,7 +121,11 @@ static int raw_decode(AVCodecContext *avctx,
     RawVideoContext *context = avctx->priv_data;
     int bytesNeeded;
 
+    AVFrame * frame = (AVFrame *) data;
     AVPicture * picture = (AVPicture *) data;
+
+    frame->interlaced_frame = avctx->coded_frame->interlaced_frame;
+    frame->top_field_first = avctx->coded_frame->top_field_first;
 
     /* Early out without copy if packet size == frame size */
     if (buf_size == context->length  &&  context->p == context->buffer) {
