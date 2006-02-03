@@ -973,8 +973,9 @@ create Visual-C++-compatible import libraries.
 @item Extract the current version of FFmpeg and change to the FFmpeg directory.
 
 @item Type the command
-@code{./configure --enable-shared --enable-memalign-hack} to configure and,
-if that didn't produce any errors, type @code{make} to build FFmpeg.
+@code{./configure --enable-shared --disable-static --enable-memalign-hack}
+to configure and, if that didn't produce any errors,
+type @code{make} to build FFmpeg.
 
 @item The subdirectories @file{libavformat}, @file{libavcodec}, and
 @file{libavutil} should now contain the files @file{avformat.dll},
