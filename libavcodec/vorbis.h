@@ -39,19 +39,19 @@ typedef struct {
         } t0;
         struct vorbis_floor1_s
         {
-    uint_fast8_t partitions;
-    uint_fast8_t maximum_class;
-    uint_fast8_t partition_class[32];
-    uint_fast8_t class_dimensions[16];
-    uint_fast8_t class_subclasses[16];
-    uint_fast8_t class_masterbook[16];
-    int_fast16_t subclass_books[16][8];
-    uint_fast8_t multiplier;
-    uint_fast16_t x_list_dim;
-    uint_fast16_t *x_list;
-    uint_fast16_t *x_list_order;
-    uint_fast16_t *low_neighbour;
-    uint_fast16_t *high_neighbour;
+            uint_fast8_t partitions;
+            uint_fast8_t maximum_class;
+            uint_fast8_t partition_class[32];
+            uint_fast8_t class_dimensions[16];
+            uint_fast8_t class_subclasses[16];
+            uint_fast8_t class_masterbook[16];
+            int_fast16_t subclass_books[16][8];
+            uint_fast8_t multiplier;
+            uint_fast16_t x_list_dim;
+            uint_fast16_t *x_list;
+            uint_fast16_t *x_list_order;
+            uint_fast16_t *low_neighbour;
+            uint_fast16_t *high_neighbour;
         } t1;
     } data;
 } vorbis_floor;
