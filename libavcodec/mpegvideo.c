@@ -237,20 +237,18 @@ const uint8_t *ff_find_start_code(const uint8_t * restrict p, const uint8_t *end
         if(tmp == 0x100 || p==end)
             return p;
     }
-    p--;   // need to recheck or might miss one
-    end--; // we need the byte after 00 00 01 too
 
     while(p<end){
-        if     (p[ 0] > 1) p+= 3;
-        else if(p[-1]    ) p+= 2;
-        else if(p[-2]|(p[0]-1)) p++;
+        if     (p[-1] > 1      ) p+= 3;
+        else if(p[-2]          ) p+= 2;
+        else if(p[-3]|(p[-1]-1)) p++;
         else{
             p++;
             break;
         }
     }
 
-    p= FFMIN(p, end)-3;
+    p= FFMIN(p, end)-4;
     *state=  be2me_32(unaligned32(p));
 
     return p+4;
