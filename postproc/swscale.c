@@ -2346,24 +2346,20 @@ SwsFilter *sws_getDefaultFilter(float lumaGBlur, float chromaGBlur,
 	}
 
 	if(chromaSharpen!=0.0){
-		SwsVector *g= sws_getConstVec(-1.0, 3);
-		SwsVector *id= sws_getConstVec(10.0/chromaSharpen, 1);
-		g->coeff[1]=2.0;
-		sws_addVec(id, g);
-		sws_convVec(filter->chrH, id);
-		sws_convVec(filter->chrV, id);
-		sws_freeVec(g);
+		SwsVector *id= sws_getIdentityVec();
+                sws_scaleVec(filter->chrH, -chromaSharpen);
+                sws_scaleVec(filter->chrV, -chromaSharpen);
+		sws_addVec(filter->chrH, id);
+		sws_addVec(filter->chrV, id);
 		sws_freeVec(id);
 	}
 
 	if(lumaSharpen!=0.0){
-		SwsVector *g= sws_getConstVec(-1.0, 3);
-		SwsVector *id= sws_getConstVec(10.0/lumaSharpen, 1);
-		g->coeff[1]=2.0;
-		sws_addVec(id, g);
-		sws_convVec(filter->lumH, id);
-		sws_convVec(filter->lumV, id);
-		sws_freeVec(g);
+		SwsVector *id= sws_getIdentityVec();
+                sws_scaleVec(filter->lumH, -lumaSharpen);
+                sws_scaleVec(filter->lumV, -lumaSharpen);
+		sws_addVec(filter->lumH, id);
+		sws_addVec(filter->lumV, id);
 		sws_freeVec(id);
 	}
 
@@ -2425,28 +2421,17 @@ SwsVector *sws_getConstVec(double c, int length){
 
 
 SwsVector *sws_getIdentityVec(void){
-	double *coeff= memalign(sizeof(double), sizeof(double));
-	SwsVector *vec= malloc(sizeof(SwsVector));
-	coeff[0]= 1.0;
-
-	vec->coeff= coeff;
-	vec->length= 1;
-
-	return vec;
+        return sws_getConstVec(1.0, 1);
 }
 
-void sws_normalizeVec(SwsVector *a, double height){
+double sws_dcVec(SwsVector *a){
 	int i;
-	double sum=0;
-	double inv;
+        double sum=0;
 
 	for(i=0; i<a->length; i++)
 		sum+= a->coeff[i];
 
-	inv= height/sum;
-
-	for(i=0; i<a->length; i++)
-		a->coeff[i]*= inv;
+        return sum;
 }
 
 void sws_scaleVec(SwsVector *a, double scalar){
@@ -2454,6 +2439,10 @@ void sws_scaleVec(SwsVector *a, double scalar){
 
 	for(i=0; i<a->length; i++)
 		a->coeff[i]*= scalar;
+}
+
+void sws_normalizeVec(SwsVector *a, double height){
+        sws_scaleVec(a, height/sws_dcVec(a));
 }
 
 static SwsVector *sws_getConvVec(SwsVector *a, SwsVector *b){
