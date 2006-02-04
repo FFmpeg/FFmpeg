@@ -228,6 +228,34 @@ void ff_write_quant_matrix(PutBitContext *pb, int16_t *matrix){
 }
 #endif //CONFIG_ENCODERS
 
+const uint8_t *ff_find_start_code(const uint8_t * restrict p, const uint8_t *end, uint32_t * restrict state){
+    int i;
+
+    for(i=0; i<3; i++){
+        uint32_t tmp= *state << 8;
+        *state= tmp + *(p++);
+        if(tmp == 0x100 || p==end)
+            return p;
+    }
+    p--;   // need to recheck or might miss one
+    end--; // we need the byte after 00 00 01 too
+
+    while(p<end){
+        if     (p[ 0] > 1) p+= 3;
+        else if(p[-1]    ) p+= 2;
+        else if(p[-2]|(p[0]-1)) p++;
+        else{
+            p++;
+            break;
+        }
+    }
+
+    p= FFMIN(p, end)-3;
+    *state=  be2me_32(unaligned32(p));
+
+    return p+4;
+}
+
 /* init common dct for both encoder and decoder */
 int DCT_common_init(MpegEncContext *s)
 {

@@ -2171,33 +2171,6 @@ static int mpeg_decode_postinit(AVCodecContext *avctx){
     return 0;
 }
 
-/* return the 8 bit start code value and update the search
-   state. Return -1 if no start code found */
-static int find_start_code(const uint8_t **pbuf_ptr, const uint8_t *buf_end)
-{
-    const uint8_t *buf_ptr= *pbuf_ptr;
-
-    buf_ptr++; //gurantees that -1 is within the array
-    buf_end -= 3; // gurantees that +3 is within the array
-
-    while (buf_ptr < buf_end) {
-        if(*buf_ptr==0){
-            while(buf_ptr < buf_end && buf_ptr[1]==0)
-                buf_ptr++;
-
-            if(buf_ptr[-1] == 0 && buf_ptr[1] == 1){
-                *pbuf_ptr = buf_ptr+3;
-                return buf_ptr[2] + 0x100;
-            }
-        }
-        buf_ptr += 2;
-    }
-    buf_end += 3; //undo the hack above
-
-    *pbuf_ptr = buf_end;
-    return -1;
-}
-
 static int mpeg1_decode_picture(AVCodecContext *avctx,
                                 const uint8_t *buf, int buf_size)
 {
@@ -2715,7 +2688,8 @@ static int slice_decode_thread(AVCodecContext *c, void *arg){
         if(s->mb_y == s->end_mb_y)
             return 0;
 
-        start_code = find_start_code(&buf, s->gb.buffer_end);
+        start_code= -1;
+        buf = ff_find_start_code(buf, s->gb.buffer_end, &start_code);
         mb_y= start_code - SLICE_MIN_START_CODE;
         if(mb_y < 0 || mb_y >= s->end_mb_y)
             return -1;
@@ -2995,14 +2969,12 @@ static void mpeg_decode_gop(AVCodecContext *avctx,
 int ff_mpeg1_find_frame_end(ParseContext *pc, const uint8_t *buf, int buf_size)
 {
     int i;
-    uint32_t state;
-
-    state= pc->state;
+    uint32_t state= pc->state;
 
     i=0;
     if(!pc->frame_start_found){
         for(i=0; i<buf_size; i++){
-            state= (state<<8) | buf[i];
+            i= ff_find_start_code(buf+i, buf+buf_size, &state) - buf - 1;
             if(state >= SLICE_MIN_START_CODE && state <= SLICE_MAX_START_CODE){
                 i++;
                 pc->frame_start_found=1;
@@ -3016,7 +2988,7 @@ int ff_mpeg1_find_frame_end(ParseContext *pc, const uint8_t *buf, int buf_size)
         if (buf_size == 0)
             return 0;
         for(; i<buf_size; i++){
-            state= (state<<8) | buf[i];
+            i= ff_find_start_code(buf+i, buf+buf_size, &state) - buf - 1;
             if((state&0xFFFFFF00) == 0x100){
                 if(state < SLICE_MIN_START_CODE || state > SLICE_MAX_START_CODE){
                     pc->frame_start_found=0;
@@ -3083,7 +3055,8 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
 
     for(;;) {
         /* find start next code */
-        start_code = find_start_code(&buf_ptr, buf_end);
+        start_code = -1;
+        buf_ptr = ff_find_start_code(buf_ptr,buf_end, &start_code);
         if (start_code < 0){
             if(s2->pict_type != B_TYPE || avctx->skip_frame <= AVDISCARD_DEFAULT){
                 if(avctx->thread_count > 1){

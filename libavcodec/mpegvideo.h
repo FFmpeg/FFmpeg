@@ -773,6 +773,7 @@ void ff_write_quant_matrix(PutBitContext *pb, int16_t *matrix);
 int ff_find_unused_picture(MpegEncContext *s, int shared);
 void ff_denoise_dct(MpegEncContext *s, DCTELEM *block);
 void ff_update_duplicate_context(MpegEncContext *dst, MpegEncContext *src);
+const uint8_t *ff_find_start_code(const uint8_t *p, const uint8_t *end, uint32_t *state);
 
 void ff_er_frame_start(MpegEncContext *s);
 void ff_er_frame_end(MpegEncContext *s);

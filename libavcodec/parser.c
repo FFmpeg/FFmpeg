@@ -272,28 +272,6 @@ int ff_combine_frame(ParseContext *pc, int next, uint8_t **buf, int *buf_size)
     return 0;
 }
 
-static int find_start_code(const uint8_t **pbuf_ptr, const uint8_t *buf_end)
-{
-    const uint8_t *buf_ptr;
-    unsigned int state=0xFFFFFFFF, v;
-    int val;
-
-    buf_ptr = *pbuf_ptr;
-    while (buf_ptr < buf_end) {
-        v = *buf_ptr++;
-        if (state == 0x000001) {
-            state = ((state << 8) | v) & 0xffffff;
-            val = state;
-            goto found;
-        }
-        state = ((state << 8) | v) & 0xffffff;
-    }
-    val = -1;
- found:
-    *pbuf_ptr = buf_ptr;
-    return val;
-}
-
 /* XXX: merge with libavcodec ? */
 #define MPEG1_FRAME_RATE_BASE 1001
 
@@ -335,7 +313,8 @@ static void mpegvideo_extract_headers(AVCodecParserContext *s,
     s->repeat_pict = 0;
     buf_end = buf + buf_size;
     while (buf < buf_end) {
-        start_code = find_start_code(&buf, buf_end);
+        start_code= -1;
+        buf= ff_find_start_code(buf, buf_end, &start_code);
         bytes_left = buf_end - buf;
         switch(start_code) {
         case PICTURE_START_CODE:
