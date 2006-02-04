@@ -876,6 +876,9 @@ features only found in GCC 3.2.
 
 @section BSD
 
+BSD make will not build FFmpeg, you need to install and use GNU Make
+(@file{gmake}).
+
 @section Windows
 
 @subsection Native Windows compilation
