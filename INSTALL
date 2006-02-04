@@ -7,7 +7,8 @@ sources to put the objects at that place. In that case, use an
 absolute path when launching 'configure',
 e.g. /ffmpegdir/ffmpeg/configure.
 
-2) Then type 'make' to build ffmpeg.
+2) Then type 'make' to build ffmpeg. On BSD systems, type 'gmake'
+instead of 'make'. You may need to install GNU make first.
 
 3) Type 'make install' to install ffmpeg and ffserver in
 /usr/local/bin.
