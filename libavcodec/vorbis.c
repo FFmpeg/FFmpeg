@@ -545,6 +545,13 @@ static int vorbis_parse_setup_hdr_floors(vorbis_context *vc) {
             floor_setup->data.t0.rate=get_bits(gb, 16);
             floor_setup->data.t0.bark_map_size=get_bits(gb, 16);
             floor_setup->data.t0.amplitude_bits=get_bits(gb, 6);
+            /* zero would result in a div by zero later *
+             * 2^0 - 1 == 0                             */
+            if (floor_setup->data.t0.amplitude_bits == 0) {
+              av_log(vc->avccontext, AV_LOG_ERROR,
+                     "Floor 0 amplitude bits is 0.\n");
+              return 1;
+            }
             floor_setup->data.t0.amplitude_offset=get_bits(gb, 8);
             floor_setup->data.t0.num_books=get_bits(gb, 4)+1;
 
@@ -574,7 +581,7 @@ static int vorbis_parse_setup_hdr_floors(vorbis_context *vc) {
                 floor_setup->data.t0.lsp=
                     av_malloc((floor_setup->data.t0.order+1 + max_codebook_dim)
                               * sizeof(float));
-                if(!floor_setup->data.t0.book_list) { return 1; }
+                if(!floor_setup->data.t0.lsp) { return 1; }
             }
 
 #ifdef V_DEBUG /* debug output parsed headers */
@@ -1067,14 +1074,9 @@ static uint_fast8_t vorbis_floor0_decode(vorbis_context *vc,
 
                 /* calculate linear floor value */
                 {
-                    int_fast32_t pow_of_two=2, exponent=vf->amplitude_bits;
-                    if ( vf->amplitude_bits ) {
-                        while ( --exponent ) { pow_of_two <<= 1; }
-                    }
-                    else { pow_of_two=1; }
                     q=exp( (
                              ( (amplitude*vf->amplitude_offset)/
-                               ((pow_of_two-1) * sqrt(p+q)) )
+                               (((1<<vf->amplitude_bits)-1) * sqrt(p+q)) )
                              - vf->amplitude_offset ) * .11512925f
                          );
                 }
