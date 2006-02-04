@@ -306,7 +306,7 @@ static int mpegvideo_probe(AVProbeData *p)
             }
         }
     }
-    if(seq && pic && slice && seq<pic && (ABS(pic-slice)-1)*10 < pic && !pspack)
+    if(seq && pic && slice && seq<pic && !pspack)
         return AVPROBE_SCORE_MAX/2+1; // +1 for .mpg
     return 0;
 }
