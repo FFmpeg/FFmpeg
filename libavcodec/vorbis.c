@@ -56,6 +56,9 @@ static unsigned int get_bits_long_le(GetBitContext *s, int n){
 
 #define ilog(i) av_log2(2*(i))
 
+#define BARK(x) \
+    (13.1f*atan(0.00074f*(x))+2.24f*atan(1.85e-8f*(x)*(x))+1e-4f*(x))
+
 static unsigned int nth_root(unsigned int x, unsigned int n) {   // x^(1/n)
     unsigned int ret=0, i, j;
 
@@ -166,10 +169,17 @@ static void vorbis_free(vorbis_context *vc) {
     av_freep(&vc->codebooks);
 
     for(i=0;i<vc->floor_count;++i) {
-        av_free(vc->floors[i].x_list);
-        av_free(vc->floors[i].x_list_order);
-        av_free(vc->floors[i].low_neighbour);
-        av_free(vc->floors[i].high_neighbour);
+        if(vc->floors[i].floor_type==0) {
+            av_free(vc->floors[i].data.t0.map);
+            av_free(vc->floors[i].data.t0.book_list);
+            av_free(vc->floors[i].data.t0.lsp);
+        }
+        else {
+            av_free(vc->floors[i].data.t1.x_list);
+            av_free(vc->floors[i].data.t1.x_list_order);
+            av_free(vc->floors[i].data.t1.low_neighbour);
+            av_free(vc->floors[i].data.t1.high_neighbour);
+        }
     }
     av_freep(&vc->floors);
 
@@ -404,8 +414,12 @@ static int vorbis_parse_setup_hdr_tdtransforms(vorbis_context *vc) {
     return 0;
 }
 
-// Process floors part - only floor type 1 is supported
+// Process floors part
 
+static uint_fast8_t vorbis_floor0_decode(vorbis_context *vc,
+                                         vorbis_floor_data *vfu, float *vec);
+static uint_fast8_t vorbis_floor1_decode(vorbis_context *vc,
+                                         vorbis_floor_data *vfu, float *vec);
 static int vorbis_parse_setup_hdr_floors(vorbis_context *vc) {
     GetBitContext *gb=&vc->gb;
     uint_fast16_t i,j,k;
@@ -426,102 +440,168 @@ static int vorbis_parse_setup_hdr_floors(vorbis_context *vc) {
             uint_fast8_t rangebits;
             uint_fast16_t floor1_values=2;
 
-            floor_setup->partitions=get_bits(gb, 5);
+            floor_setup->decode=vorbis_floor1_decode;
 
-            AV_DEBUG(" %d.floor: %d partitions \n", i, floor_setup->partitions);
+            floor_setup->data.t1.partitions=get_bits(gb, 5);
 
-            for(j=0;j<floor_setup->partitions;++j) {
-                floor_setup->partition_class[j]=get_bits(gb, 4);
-                if (floor_setup->partition_class[j]>maximum_class) maximum_class=floor_setup->partition_class[j];
+            AV_DEBUG(" %d.floor: %d partitions \n", i, floor_setup->data.t1.partitions);
 
-                AV_DEBUG(" %d. floor %d partition class %d \n", i, j, floor_setup->partition_class[j]);
+            for(j=0;j<floor_setup->data.t1.partitions;++j) {
+                floor_setup->data.t1.partition_class[j]=get_bits(gb, 4);
+                if (floor_setup->data.t1.partition_class[j]>maximum_class) maximum_class=floor_setup->data.t1.partition_class[j];
+
+                AV_DEBUG(" %d. floor %d partition class %d \n", i, j, floor_setup->data.t1.partition_class[j]);
 
             }
 
             AV_DEBUG(" maximum class %d \n", maximum_class);
 
-            floor_setup->maximum_class=maximum_class;
+            floor_setup->data.t1.maximum_class=maximum_class;
 
             for(j=0;j<=maximum_class;++j) {
-                floor_setup->class_dimensions[j]=get_bits(gb, 3)+1;
-                floor_setup->class_subclasses[j]=get_bits(gb, 2);
+                floor_setup->data.t1.class_dimensions[j]=get_bits(gb, 3)+1;
+                floor_setup->data.t1.class_subclasses[j]=get_bits(gb, 2);
 
-                AV_DEBUG(" %d floor %d class dim: %d subclasses %d \n", i, j, floor_setup->class_dimensions[j], floor_setup->class_subclasses[j]);
+                AV_DEBUG(" %d floor %d class dim: %d subclasses %d \n", i, j, floor_setup->data.t1.class_dimensions[j], floor_setup->data.t1.class_subclasses[j]);
 
-                if (floor_setup->class_subclasses[j]) {
-                    floor_setup->class_masterbook[j]=get_bits(gb, 8);
+                if (floor_setup->data.t1.class_subclasses[j]) {
+                    floor_setup->data.t1.class_masterbook[j]=get_bits(gb, 8);
 
-                    AV_DEBUG("   masterbook: %d \n", floor_setup->class_masterbook[j]);
+                    AV_DEBUG("   masterbook: %d \n", floor_setup->data.t1.class_masterbook[j]);
                 }
 
-                for(k=0;k<(1<<floor_setup->class_subclasses[j]);++k) {
-                    floor_setup->subclass_books[j][k]=get_bits(gb, 8)-1;
+                for(k=0;k<(1<<floor_setup->data.t1.class_subclasses[j]);++k) {
+                    floor_setup->data.t1.subclass_books[j][k]=get_bits(gb, 8)-1;
 
-                    AV_DEBUG("    book %d. : %d \n", k, floor_setup->subclass_books[j][k]);
+                    AV_DEBUG("    book %d. : %d \n", k, floor_setup->data.t1.subclass_books[j][k]);
                 }
             }
 
-            floor_setup->multiplier=get_bits(gb, 2)+1;
-            floor_setup->x_list_dim=2;
+            floor_setup->data.t1.multiplier=get_bits(gb, 2)+1;
+            floor_setup->data.t1.x_list_dim=2;
 
-            for(j=0;j<floor_setup->partitions;++j) {
-                floor_setup->x_list_dim+=floor_setup->class_dimensions[floor_setup->partition_class[j]];
+            for(j=0;j<floor_setup->data.t1.partitions;++j) {
+                floor_setup->data.t1.x_list_dim+=floor_setup->data.t1.class_dimensions[floor_setup->data.t1.partition_class[j]];
             }
 
-            floor_setup->x_list=(uint_fast16_t *)av_mallocz(floor_setup->x_list_dim * sizeof(uint_fast16_t));
-            floor_setup->x_list_order=(uint_fast16_t *)av_mallocz(floor_setup->x_list_dim * sizeof(uint_fast16_t));
-            floor_setup->low_neighbour=(uint_fast16_t *)av_mallocz(floor_setup->x_list_dim * sizeof(uint_fast16_t));
-            floor_setup->high_neighbour=(uint_fast16_t *)av_mallocz(floor_setup->x_list_dim * sizeof(uint_fast16_t));
+            floor_setup->data.t1.x_list=(uint_fast16_t *)av_mallocz(floor_setup->data.t1.x_list_dim * sizeof(uint_fast16_t));
+            floor_setup->data.t1.x_list_order=(uint_fast16_t *)av_mallocz(floor_setup->data.t1.x_list_dim * sizeof(uint_fast16_t));
+            floor_setup->data.t1.low_neighbour=(uint_fast16_t *)av_mallocz(floor_setup->data.t1.x_list_dim * sizeof(uint_fast16_t));
+            floor_setup->data.t1.high_neighbour=(uint_fast16_t *)av_mallocz(floor_setup->data.t1.x_list_dim * sizeof(uint_fast16_t));
 
 
             rangebits=get_bits(gb, 4);
-            floor_setup->x_list[0] = 0;
-            floor_setup->x_list[1] = (1<<rangebits);
+            floor_setup->data.t1.x_list[0] = 0;
+            floor_setup->data.t1.x_list[1] = (1<<rangebits);
 
-            for(j=0;j<floor_setup->partitions;++j) {
-                for(k=0;k<floor_setup->class_dimensions[floor_setup->partition_class[j]];++k,++floor1_values) {
-                    floor_setup->x_list[floor1_values]=get_bits(gb, rangebits);
+            for(j=0;j<floor_setup->data.t1.partitions;++j) {
+                for(k=0;k<floor_setup->data.t1.class_dimensions[floor_setup->data.t1.partition_class[j]];++k,++floor1_values) {
+                    floor_setup->data.t1.x_list[floor1_values]=get_bits(gb, rangebits);
 
-                    AV_DEBUG(" %d. floor1 Y coord. %d \n", floor1_values, floor_setup->x_list[floor1_values]);
+                    AV_DEBUG(" %d. floor1 Y coord. %d \n", floor1_values, floor_setup->data.t1.x_list[floor1_values]);
                 }
             }
 
 // Precalculate order of x coordinates - needed for decode
 
-            for(k=0;k<floor_setup->x_list_dim;++k) {
-                floor_setup->x_list_order[k]=k;
+            for(k=0;k<floor_setup->data.t1.x_list_dim;++k) {
+                floor_setup->data.t1.x_list_order[k]=k;
             }
 
-            for(k=0;k<floor_setup->x_list_dim-1;++k) {   // FIXME optimize sorting ?
-                for(j=k+1;j<floor_setup->x_list_dim;++j) {
-                    if(floor_setup->x_list[floor_setup->x_list_order[k]]>floor_setup->x_list[floor_setup->x_list_order[j]]) {
-                        uint_fast16_t tmp=floor_setup->x_list_order[k];
-                        floor_setup->x_list_order[k]=floor_setup->x_list_order[j];
-                        floor_setup->x_list_order[j]=tmp;
+            for(k=0;k<floor_setup->data.t1.x_list_dim-1;++k) {   // FIXME optimize sorting ?
+                for(j=k+1;j<floor_setup->data.t1.x_list_dim;++j) {
+                    if(floor_setup->data.t1.x_list[floor_setup->data.t1.x_list_order[k]]>floor_setup->data.t1.x_list[floor_setup->data.t1.x_list_order[j]]) {
+                        uint_fast16_t tmp=floor_setup->data.t1.x_list_order[k];
+                        floor_setup->data.t1.x_list_order[k]=floor_setup->data.t1.x_list_order[j];
+                        floor_setup->data.t1.x_list_order[j]=tmp;
                     }
                 }
             }
 
 // Precalculate low and high neighbours
 
-            for(k=2;k<floor_setup->x_list_dim;++k) {
-                floor_setup->low_neighbour[k]=0;
-                floor_setup->high_neighbour[k]=1;  // correct according to SPEC requirements
+            for(k=2;k<floor_setup->data.t1.x_list_dim;++k) {
+                floor_setup->data.t1.low_neighbour[k]=0;
+                floor_setup->data.t1.high_neighbour[k]=1;  // correct according to SPEC requirements
 
                 for (j=0;j<k;++j) {
-                    if ((floor_setup->x_list[j]<floor_setup->x_list[k]) &&
-                      (floor_setup->x_list[j]>floor_setup->x_list[floor_setup->low_neighbour[k]])) {
-                        floor_setup->low_neighbour[k]=j;
+                    if ((floor_setup->data.t1.x_list[j]<floor_setup->data.t1.x_list[k]) &&
+                      (floor_setup->data.t1.x_list[j]>floor_setup->data.t1.x_list[floor_setup->data.t1.low_neighbour[k]])) {
+                        floor_setup->data.t1.low_neighbour[k]=j;
                     }
-                    if ((floor_setup->x_list[j]>floor_setup->x_list[k]) &&
-                      (floor_setup->x_list[j]<floor_setup->x_list[floor_setup->high_neighbour[k]])) {
-                        floor_setup->high_neighbour[k]=j;
+                    if ((floor_setup->data.t1.x_list[j]>floor_setup->data.t1.x_list[k]) &&
+                      (floor_setup->data.t1.x_list[j]<floor_setup->data.t1.x_list[floor_setup->data.t1.high_neighbour[k]])) {
+                        floor_setup->data.t1.high_neighbour[k]=j;
                     }
                 }
             }
         }
+        else if(floor_setup->floor_type==0) {
+            uint_fast8_t max_codebook_dim=0;
+
+            floor_setup->decode=vorbis_floor0_decode;
+
+            floor_setup->data.t0.order=get_bits(gb, 8);
+            floor_setup->data.t0.rate=get_bits(gb, 16);
+            floor_setup->data.t0.bark_map_size=get_bits(gb, 16);
+            floor_setup->data.t0.amplitude_bits=get_bits(gb, 6);
+            floor_setup->data.t0.amplitude_offset=get_bits(gb, 8);
+            floor_setup->data.t0.num_books=get_bits(gb, 4)+1;
+
+            /* allocate mem for booklist */
+            floor_setup->data.t0.book_list=
+                av_malloc(floor_setup->data.t0.num_books);
+            if(!floor_setup->data.t0.book_list) { return 1; }
+            /* read book indexes */
+            {
+                int idx;
+                uint_fast8_t book_idx;
+                for (idx=0;idx<floor_setup->data.t0.num_books;++idx) {
+                    book_idx=get_bits(gb, 8);
+                    floor_setup->data.t0.book_list[idx]=book_idx;
+                    if (vc->codebooks[book_idx].dimensions > max_codebook_dim)
+                        max_codebook_dim=vc->codebooks[book_idx].dimensions;
+
+                    if (floor_setup->data.t0.book_list[idx]>vc->codebook_count)
+                        return 1;
+                }
+            }
+
+            /* allocate mem for lsp coefficients */
+            {
+                /* codebook dim is for padding if codebook dim doesn't *
+                 * divide order+1 then we need to read more data       */
+                floor_setup->data.t0.lsp=
+                    av_malloc((floor_setup->data.t0.order+1 + max_codebook_dim)
+                              * sizeof(float));
+                if(!floor_setup->data.t0.book_list) { return 1; }
+            }
+
+#ifdef V_DEBUG /* debug output parsed headers */
+            AV_DEBUG("floor0 order: %u\n", floor_setup->data.t0.order);
+            AV_DEBUG("floor0 rate: %u\n", floor_setup->data.t0.rate);
+            AV_DEBUG("floor0 bark map size: %u\n",
+              floor_setup->data.t0.bark_map_size);
+            AV_DEBUG("floor0 amplitude bits: %u\n",
+              floor_setup->data.t0.amplitude_bits);
+            AV_DEBUG("floor0 amplitude offset: %u\n",
+              floor_setup->data.t0.amplitude_offset);
+            AV_DEBUG("floor0 number of books: %u\n",
+              floor_setup->data.t0.num_books);
+            AV_DEBUG("floor0 book list pointer: %p\n",
+              floor_setup->data.t0.book_list);
+            {
+              int idx;
+              for (idx=0;idx<floor_setup->data.t0.num_books;++idx) {
+                AV_DEBUG( "  Book %d: %u\n",
+                  idx+1,
+                  floor_setup->data.t0.book_list[idx] );
+              }
+            }
+#endif
+        }
         else {
-            av_log(vc->avccontext, AV_LOG_ERROR, "Only floor type 1 supported. \n");
+            av_log(vc->avccontext, AV_LOG_ERROR, "Invalid floor type!\n");
             return 1;
         }
     }
@@ -653,6 +733,41 @@ static int vorbis_parse_setup_hdr_mappings(vorbis_context *vc) {
 
 // Process modes part
 
+static void create_map( vorbis_context * vc, uint_fast8_t mode_number )
+{
+    vorbis_floor * floors=vc->floors;
+    vorbis_floor0 * vf;
+    int idx;
+    int_fast32_t * map;
+    int_fast32_t n; //TODO: could theoretically be smaller?
+
+    n=(vc->modes[mode_number].blockflag ?
+       vc->blocksize_1 : vc->blocksize_0) / 2;
+    floors[mode_number].data.t0.map=
+        av_malloc((n+1) * sizeof(int_fast32_t)); // n+sentinel
+
+    map=floors[mode_number].data.t0.map;
+    vf=&floors[mode_number].data.t0;
+
+    for (idx=0; idx<n;++idx) {
+        map[idx]=floor( BARK((vf->rate*idx)/(2.0f*n)) *
+                              ((vf->bark_map_size)/
+                               BARK(vf->rate/2.0f )) );
+        if (vf->bark_map_size-1 < map[idx]) {
+            map[idx]=vf->bark_map_size-1;
+        }
+    }
+    map[n]=-1;
+    vf->map_size=n;
+
+#   ifdef V_DEBUG
+    for(idx=0;idx<=n;++idx) {
+        AV_DEBUG("floor0 map: map at pos %d is %d\n",
+                 idx, map[idx]);
+    }
+#   endif
+}
+
 static int vorbis_parse_setup_hdr_modes(vorbis_context *vc) {
     GetBitContext *gb=&vc->gb;
     uint_fast8_t i;
@@ -671,6 +786,8 @@ static int vorbis_parse_setup_hdr_modes(vorbis_context *vc) {
         mode_setup->mapping=get_bits(gb, 8); //FIXME check
 
         AV_DEBUG(" %d mode: blockflag %d, windowtype %d, transformtype %d, mapping %d \n", i, mode_setup->blockflag, mode_setup->windowtype, mode_setup->transformtype, mode_setup->mapping);
+
+        if (vc->floors[i].floor_type == 0) { create_map( vc, i ); }
     }
     return 0;
 }
@@ -859,9 +976,125 @@ static int vorbis_decode_init(AVCodecContext *avccontext) {
 
 // Decode audiopackets -------------------------------------------------
 
-// Read and decode floor (type 1 only)
+// Read and decode floor
 
-static uint_fast8_t vorbis_floor1_decode(vorbis_context *vc, vorbis_floor *vf, float *vec) {
+static uint_fast8_t vorbis_floor0_decode(vorbis_context *vc,
+                                         vorbis_floor_data *vfu, float *vec) {
+    vorbis_floor0 * vf=&vfu->t0;
+    float * lsp=vf->lsp;
+    uint_fast32_t amplitude;
+    uint_fast32_t book_idx;
+
+    amplitude=get_bits(&vc->gb, vf->amplitude_bits);
+    if (amplitude>0) {
+        float last = 0;
+        uint_fast16_t lsp_len = 0;
+        uint_fast16_t idx;
+        vorbis_codebook codebook;
+
+        book_idx=get_bits(&vc->gb, ilog(vf->num_books));
+        if ( book_idx >= vf->num_books ) {
+            av_log( vc->avccontext, AV_LOG_ERROR,
+                    "floor0 dec: booknumber too high!\n" );
+            //FIXME: look above
+        }
+        AV_DEBUG( "floor0 dec: booknumber: %u\n", book_idx );
+        codebook=vc->codebooks[vf->book_list[book_idx]];
+
+        while (lsp_len<vf->order) {
+            int vec_off;
+
+            AV_DEBUG( "floor0 dec: book dimension: %d\n", codebook.dimensions );
+            AV_DEBUG( "floor0 dec: maximum depth: %d\n", codebook.maxdepth );
+            /* read temp vector */
+            vec_off=get_vlc2(&vc->gb,
+                             codebook.vlc.table,
+                             codebook.nb_bits,
+                             codebook.maxdepth ) *
+                             codebook.dimensions;
+            AV_DEBUG( "floor0 dec: vector offset: %d\n", vec_off );
+            /* copy each vector component and add last to it */
+            for (idx=0; idx<codebook.dimensions; ++idx) {
+                lsp[lsp_len+idx]=codebook.codevectors[vec_off+idx]+last;
+            }
+            last=lsp[lsp_len+idx-1]; /* set last to last vector component */
+
+            lsp_len += codebook.dimensions;
+        }
+#ifdef V_DEBUG
+        /* DEBUG: output lsp coeffs */
+        {
+            int idx;
+            for ( idx = 0; idx < lsp_len; ++idx )
+                AV_DEBUG("floor0 dec: coeff at %d is %f\n", idx, lsp[idx] );
+        }
+#endif
+
+        /* synthesize floor output vector */
+        {
+            int i;
+            int order=vf->order;
+            float wstep=M_PI/vf->bark_map_size;
+
+            for(i=0;i<order;i++) { lsp[i]=2.0f*cos(lsp[i]); }
+
+            AV_DEBUG("floor0 synth: map_size=%d; m=%d; wstep=%f\n",
+                     vf->map_size, order, wstep);
+
+            i=0;
+            while(i<vf->map_size) {
+                int j, iter_cond=vf->map[i];
+                float p=0.5f;
+                float q=0.5f;
+                float two_cos_w=2.0f*cos(wstep*iter_cond); // needed all times
+
+                /* similar part for the q and p products */
+                for(j=0;j<order;j+=2) {
+                    q *= lsp[j]  -two_cos_w;
+                    p *= lsp[j+1]-two_cos_w;
+                }
+                if(j==order) { // even order
+                    p *= p*(2.0f-two_cos_w);
+                    q *= q*(2.0f+two_cos_w);
+                }
+                else { // odd order
+                    q *= two_cos_w-lsp[j]; // one more time for q
+
+                    /* final step and square */
+                    p *= p*(4.f-two_cos_w*two_cos_w);
+                    q *= q;
+                }
+
+                /* calculate linear floor value */
+                {
+                    int_fast32_t pow_of_two=2, exponent=vf->amplitude_bits;
+                    if ( vf->amplitude_bits ) {
+                        while ( --exponent ) { pow_of_two <<= 1; }
+                    }
+                    else { pow_of_two=1; }
+                    q=exp( (
+                             ( (amplitude*vf->amplitude_offset)/
+                               ((pow_of_two-1) * sqrt(p+q)) )
+                             - vf->amplitude_offset ) * .11512925f
+                         );
+                }
+
+                /* fill vector */
+                do { vec[i]=q; ++i; }while(vf->map[i]==iter_cond);
+            }
+        }
+    }
+    else {
+        /* this channel is unused */
+        return 1;
+    }
+
+    AV_DEBUG(" Floor0 decoded\n");
+
+    return 0;
+}
+static uint_fast8_t vorbis_floor1_decode(vorbis_context *vc, vorbis_floor_data *vfu, float *vec) {
+    vorbis_floor1 * vf=&vfu->t1;
     GetBitContext *gb=&vc->gb;
     uint_fast16_t range_v[4]={ 256, 128, 86, 64 };
     uint_fast16_t range=range_v[vf->multiplier-1];
@@ -1234,7 +1467,7 @@ static int vorbis_parse_audio_packet(vorbis_context *vc) {
     memset(ch_res_ptr, 0, sizeof(float)*vc->audio_channels*blocksize/2); //FIXME can this be removed ?
     memset(ch_floor_ptr, 0, sizeof(float)*vc->audio_channels*blocksize/2); //FIXME can this be removed ?
 
-// Decode floor(1)
+// Decode floor
 
     for(i=0;i<vc->audio_channels;++i) {
         vorbis_floor *floor;
@@ -1244,7 +1477,7 @@ static int vorbis_parse_audio_packet(vorbis_context *vc) {
             floor=&vc->floors[mapping->submap_floor[0]];
         }
 
-        no_residue[i]=vorbis_floor1_decode(vc, floor, ch_floor_ptr);
+        no_residue[i]=floor->decode(vc, &floor->data, ch_floor_ptr);
         ch_floor_ptr+=blocksize/2;
     }
 
