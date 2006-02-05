@@ -303,7 +303,7 @@ void put_pixels_clamped_mmx(const DCTELEM *block, uint8_t *pixels, int line_size
             :"memory");
 }
 
-static const unsigned char __align8 vector128[8] =
+static DECLARE_ALIGNED_8(const unsigned char, vector128[8]) =
   { 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80 };
 
 void put_signed_pixels_clamped_mmx(const DCTELEM *block, uint8_t *pixels, int line_size)
@@ -1546,7 +1546,7 @@ static void sub_hfyu_median_prediction_mmx2(uint8_t *dst, uint8_t *src1, uint8_t
         "movq "#d", "#o"+48(%1)       \n\t"\
 
 static int hadamard8_diff_mmx(void *s, uint8_t *src1, uint8_t *src2, int stride, int h){
-    uint64_t temp[16] __align8;
+    DECLARE_ALIGNED_8(uint64_t, temp[16]);
     int sum=0;
 
     assert(h==8);
@@ -1633,7 +1633,7 @@ static int hadamard8_diff_mmx(void *s, uint8_t *src1, uint8_t *src2, int stride,
 }
 
 static int hadamard8_diff_mmx2(void *s, uint8_t *src1, uint8_t *src2, int stride, int h){
-    uint64_t temp[16] __align8;
+    DECLARE_ALIGNED_8(uint64_t, temp[16]);
     int sum=0;
 
     assert(h==8);

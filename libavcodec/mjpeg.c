@@ -873,7 +873,7 @@ typedef struct MJpegDecodeContext {
     AVFrame picture; /* picture structure */
     int linesize[MAX_COMPONENTS];                   ///< linesize << interlaced
     int8_t *qscale_table;
-    DCTELEM block[64] __align8;
+    DECLARE_ALIGNED_8(DCTELEM, block[64]);
     ScanTable scantable;
     void (*idct_put)(uint8_t *dest/*align 8*/, int line_size, DCTELEM *block/*align 16*/);
 

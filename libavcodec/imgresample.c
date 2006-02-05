@@ -50,8 +50,8 @@ struct ImgReSampleContext {
     int padtop, padbottom, padleft, padright;
     int pad_owidth, pad_oheight;
     int h_incr, v_incr;
-    int16_t h_filters[NB_PHASES][NB_TAPS] __align8; /* horizontal filters */
-    int16_t v_filters[NB_PHASES][NB_TAPS] __align8; /* vertical filters */
+    DECLARE_ALIGNED_8(int16_t, h_filters[NB_PHASES][NB_TAPS]); /* horizontal filters */
+    DECLARE_ALIGNED_8(int16_t, v_filters[NB_PHASES][NB_TAPS]); /* vertical filters */
     uint8_t *line_buf;
 };
 

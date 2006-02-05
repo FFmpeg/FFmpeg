@@ -25,8 +25,8 @@
  */
 static void H264_CHROMA_MC8_TMPL(uint8_t *dst/*align 8*/, uint8_t *src/*align 1*/, int stride, int h, int x, int y)
 {
-    uint64_t AA __align8;
-    uint64_t DD __align8;
+    DECLARE_ALIGNED_8(uint64_t, AA);
+    DECLARE_ALIGNED_8(uint64_t, DD);
     int i;
 
     if(y==0 && x==0) {
@@ -242,8 +242,8 @@ static void H264_CHROMA_MC8_TMPL(uint8_t *dst/*align 8*/, uint8_t *src/*align 1*
 
 static void H264_CHROMA_MC4_TMPL(uint8_t *dst/*align 8*/, uint8_t *src/*align 1*/, int stride, int h, int x, int y)
 {
-    uint64_t AA __align8;
-    uint64_t DD __align8;
+    DECLARE_ALIGNED_8(uint64_t, AA);
+    DECLARE_ALIGNED_8(uint64_t, DD);
     int i;
 
     /* no special case for mv=(0,0) in 4x*, since it's much less common than in 8x*.

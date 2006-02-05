@@ -49,7 +49,7 @@ typedef struct Wmv2Context{
     int hshift;
 
     ScanTable abt_scantable[2];
-    DCTELEM abt_block2[6][64] __align8;
+    DECLARE_ALIGNED_8(DCTELEM, abt_block2[6][64]);
 }Wmv2Context;
 
 static void wmv2_common_init(Wmv2Context * w){

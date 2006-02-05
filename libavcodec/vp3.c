@@ -285,9 +285,9 @@ typedef struct Vp3DecodeContext {
 
     /* these arrays need to be on 16-byte boundaries since SSE2 operations
      * index into them */
-    int16_t __align16 intra_y_dequant[64];
-    int16_t __align16 intra_c_dequant[64];
-    int16_t __align16 inter_dequant[64];
+    DECLARE_ALIGNED_16(int16_t, intra_y_dequant[64]);
+    DECLARE_ALIGNED_16(int16_t, intra_c_dequant[64]);
+    DECLARE_ALIGNED_16(int16_t, inter_dequant[64]);
 
     /* This table contains superblock_count * 16 entries. Each set of 16
      * numbers corresponds to the fragment indices 0..15 of the superblock.
@@ -1711,7 +1711,7 @@ static void render_slice(Vp3DecodeContext *s, int slice)
     int m, n;
     int i;  /* indicates current fragment */
     int16_t *dequantizer;
-    DCTELEM __align16 block[64];
+    DECLARE_ALIGNED_16(DCTELEM, block[64]);
     unsigned char *output_plane;
     unsigned char *last_plane;
     unsigned char *golden_plane;

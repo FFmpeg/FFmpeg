@@ -51,7 +51,7 @@ static int RENAME(dct_quantize)(MpegEncContext *s,
     long last_non_zero_p1;
     int level=0, q; //=0 is cuz gcc says uninitalized ...
     const uint16_t *qmat, *bias;
-    __align8 int16_t temp_block[64];
+    DECLARE_ALIGNED_8(int16_t, temp_block[64]);
 
     assert((7&(int)(&temp_block[0])) == 0); //did gcc align it correctly?
 

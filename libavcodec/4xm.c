@@ -121,7 +121,7 @@ typedef struct FourXContext{
     int mv[256];
     VLC pre_vlc;
     int last_dc;
-    DCTELEM __align8 block[6][64];
+    DECLARE_ALIGNED_8(DCTELEM, block[6][64]);
     uint8_t *bitstream_buffer;
     unsigned int bitstream_buffer_size;
     CFrameBuffer cfrm[CFRAME_BUFFER_COUNT];

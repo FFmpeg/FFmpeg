@@ -45,9 +45,9 @@ typedef struct MDECContext{
     int mb_width;
     int mb_height;
     int mb_x, mb_y;
-    DCTELEM __align8 block[6][64];
-    uint16_t __align8 intra_matrix[64];
-    int __align8 q_intra_matrix[64];
+    DECLARE_ALIGNED_8(DCTELEM, block[6][64]);
+    DECLARE_ALIGNED_8(uint16_t, intra_matrix[64]);
+    DECLARE_ALIGNED_8(int, q_intra_matrix[64]);
     uint8_t *bitstream_buffer;
     unsigned int bitstream_buffer_size;
     int block_last_index[6];

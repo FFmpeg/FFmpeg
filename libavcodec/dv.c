@@ -379,9 +379,9 @@ static inline void dv_decode_video_segment(DVVideoContext *s,
     PutBitContext pb, vs_pb;
     GetBitContext gb;
     BlockInfo mb_data[5 * 6], *mb, *mb1;
-    DCTELEM sblock[5*6][64] __align8;
-    uint8_t mb_bit_buffer[80 + 4] __align8; /* allow some slack */
-    uint8_t vs_bit_buffer[5 * 80 + 4] __align8; /* allow some slack */
+    DECLARE_ALIGNED_8(DCTELEM, sblock[5*6][64]);
+    DECLARE_ALIGNED_8(uint8_t, mb_bit_buffer[80 + 4]); /* allow some slack */
+    DECLARE_ALIGNED_8(uint8_t, vs_bit_buffer[5 * 80 + 4]); /* allow some slack */
     const int log2_blocksize= 3-s->avctx->lowres;
 
     assert((((int)mb_bit_buffer)&7)==0);
@@ -779,7 +779,7 @@ static inline void dv_encode_video_segment(DVVideoContext *s,
     uint8_t*  data;
     uint8_t*  ptr;
     int       do_edge_wrap;
-    DCTELEM   block[64] __align8;
+    DECLARE_ALIGNED_8(DCTELEM, block[64]);
     EncBlockInfo  enc_blks[5*6];
     PutBitContext pbs[5*6];
     PutBitContext* pb;
