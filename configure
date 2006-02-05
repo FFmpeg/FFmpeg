@@ -1234,7 +1234,7 @@ int main( void ) {
   struct ipv6_mreq mreq6;
   getaddrinfo(0,0,0,0);
   getnameinfo(0,0,0,0,0,0,0);
-  IN6_IS_ADDR_MULTICAST(0);
+  IN6_IS_ADDR_MULTICAST((const struct in6_addr *)0);
 }
 EOF
 
