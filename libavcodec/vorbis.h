@@ -29,8 +29,8 @@ typedef struct {
             uint_fast8_t order;
             uint_fast16_t rate;
             uint_fast16_t bark_map_size;
-            int_fast32_t * map;
-            uint_fast32_t map_size;
+            int_fast32_t * map[2];
+            uint_fast32_t map_size[2];
             uint_fast8_t amplitude_bits;
             uint_fast8_t amplitude_offset;
             uint_fast8_t num_books;
@@ -111,6 +111,7 @@ typedef struct vorbis_context_s {
     vorbis_mapping *mappings;
     uint_fast8_t mode_count;
     vorbis_mode *modes;
+    uint_fast8_t mode_number; // mode number for the current packet
     float *channel_residues;
     float *channel_floors;
     float *saved;

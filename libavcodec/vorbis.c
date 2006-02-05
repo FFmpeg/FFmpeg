@@ -170,7 +170,8 @@ static void vorbis_free(vorbis_context *vc) {
 
     for(i=0;i<vc->floor_count;++i) {
         if(vc->floors[i].floor_type==0) {
-            av_free(vc->floors[i].data.t0.map);
+            av_free(vc->floors[i].data.t0.map[0]);
+            av_free(vc->floors[i].data.t0.map[1]);
             av_free(vc->floors[i].data.t0.book_list);
             av_free(vc->floors[i].data.t0.lsp);
         }
@@ -418,6 +419,7 @@ static int vorbis_parse_setup_hdr_tdtransforms(vorbis_context *vc) {
 
 static uint_fast8_t vorbis_floor0_decode(vorbis_context *vc,
                                          vorbis_floor_data *vfu, float *vec);
+static void create_map( vorbis_context * vc, uint_fast8_t floor_number );
 static uint_fast8_t vorbis_floor1_decode(vorbis_context *vc,
                                          vorbis_floor_data *vfu, float *vec);
 static int vorbis_parse_setup_hdr_floors(vorbis_context *vc) {
@@ -573,6 +575,8 @@ static int vorbis_parse_setup_hdr_floors(vorbis_context *vc) {
                         return 1;
                 }
             }
+
+            create_map( vc, i );
 
             /* allocate mem for lsp coefficients */
             {
@@ -740,21 +744,23 @@ static int vorbis_parse_setup_hdr_mappings(vorbis_context *vc) {
 
 // Process modes part
 
-static void create_map( vorbis_context * vc, uint_fast8_t mode_number )
+static void create_map( vorbis_context * vc, uint_fast8_t floor_number )
 {
     vorbis_floor * floors=vc->floors;
     vorbis_floor0 * vf;
     int idx;
+    int_fast8_t blockflag;
     int_fast32_t * map;
     int_fast32_t n; //TODO: could theoretically be smaller?
 
-    n=(vc->modes[mode_number].blockflag ?
-       vc->blocksize_1 : vc->blocksize_0) / 2;
-    floors[mode_number].data.t0.map=
+    for (blockflag=0;blockflag<2;++blockflag)
+    {
+    n=(blockflag ? vc->blocksize_1 : vc->blocksize_0) / 2;
+    floors[floor_number].data.t0.map[blockflag]=
         av_malloc((n+1) * sizeof(int_fast32_t)); // n+sentinel
 
-    map=floors[mode_number].data.t0.map;
-    vf=&floors[mode_number].data.t0;
+    map=floors[floor_number].data.t0.map[blockflag];
+    vf=&floors[floor_number].data.t0;
 
     for (idx=0; idx<n;++idx) {
         map[idx]=floor( BARK((vf->rate*idx)/(2.0f*n)) *
@@ -765,7 +771,8 @@ static void create_map( vorbis_context * vc, uint_fast8_t mode_number )
         }
     }
     map[n]=-1;
-    vf->map_size=n;
+    vf->map_size[blockflag]=n;
+    }
 
 #   ifdef V_DEBUG
     for(idx=0;idx<=n;++idx) {
@@ -793,8 +800,6 @@ static int vorbis_parse_setup_hdr_modes(vorbis_context *vc) {
         mode_setup->mapping=get_bits(gb, 8); //FIXME check
 
         AV_DEBUG(" %d mode: blockflag %d, windowtype %d, transformtype %d, mapping %d \n", i, mode_setup->blockflag, mode_setup->windowtype, mode_setup->transformtype, mode_setup->mapping);
-
-        if (vc->floors[i].floor_type == 0) { create_map( vc, i ); }
     }
     return 0;
 }
@@ -991,6 +996,7 @@ static uint_fast8_t vorbis_floor0_decode(vorbis_context *vc,
     float * lsp=vf->lsp;
     uint_fast32_t amplitude;
     uint_fast32_t book_idx;
+    uint_fast8_t blockflag=vc->modes[vc->mode_number].blockflag;
 
     amplitude=get_bits(&vc->gb, vf->amplitude_bits);
     if (amplitude>0) {
@@ -1049,8 +1055,8 @@ static uint_fast8_t vorbis_floor0_decode(vorbis_context *vc,
                      vf->map_size, order, wstep);
 
             i=0;
-            while(i<vf->map_size) {
-                int j, iter_cond=vf->map[i];
+            while(i<vf->map_size[blockflag]) {
+                int j, iter_cond=vf->map[blockflag][i];
                 float p=0.5f;
                 float q=0.5f;
                 float two_cos_w=2.0f*cos(wstep*iter_cond); // needed all times
@@ -1082,7 +1088,7 @@ static uint_fast8_t vorbis_floor0_decode(vorbis_context *vc,
                 }
 
                 /* fill vector */
-                do { vec[i]=q; ++i; }while(vf->map[i]==iter_cond);
+                do { vec[i]=q; ++i; }while(vf->map[blockflag][i]==iter_cond);
             }
         }
     }
@@ -1456,6 +1462,7 @@ static int vorbis_parse_audio_packet(vorbis_context *vc) {
     } else {
         mode_number=get_bits(gb, ilog(vc->mode_count-1));
     }
+    vc->mode_number=mode_number;
     mapping=&vc->mappings[vc->modes[mode_number].mapping];
 
     AV_DEBUG(" Mode number: %d , mapping: %d , blocktype %d \n", mode_number, vc->modes[mode_number].mapping, vc->modes[mode_number].blockflag);
