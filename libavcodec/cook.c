@@ -1225,10 +1225,10 @@ static int cook_decode_init(AVCodecContext *avctx)
                 q->js_vlc_bits = e->js_vlc_bits;
             }
             if (q->samples_per_channel > 256) {
-                q->log2_numvector_size  = 6
+                q->log2_numvector_size  = 6;
             }
             if (q->samples_per_channel > 512) {
-                q->log2_numvector_size  = 7
+                q->log2_numvector_size  = 7;
             }
             break;
         case MC_COOK:
@@ -1280,6 +1280,11 @@ static int cook_decode_init(AVCodecContext *avctx)
     }
     if (q->subbands > 50) {
         av_log(NULL,AV_LOG_ERROR,"subbands > 50, report sample!\n");
+        return -1;
+    }
+    if ((q->samples_per_channel == 256) || (q->samples_per_channel == 512) || (q->samples_per_channel == 1024)) {
+    } else {
+        av_log(NULL,AV_LOG_ERROR,"unknown amount of samples_per_channel = %d, report sample!\n",q->samples_per_channel);
         return -1;
     }
 
