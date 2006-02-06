@@ -1411,6 +1411,8 @@ echo "LIBPREF=$LIBPREF" >> config.mak
 echo "LIBSUF=\${BUILDSUF}$LIBSUF" >> config.mak
 if test "$lstatic" = "yes" ; then
   echo "LIB=$LIB" >> config.mak
+else # Some Make complain if this variable does not exist.
+  echo "LIB=" >> config.mak
 fi
 echo "SLIBPREF=$SLIBPREF" >> config.mak
 echo "SLIBSUF=\${BUILDSUF}$SLIBSUF" >> config.mak
