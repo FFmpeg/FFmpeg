@@ -512,6 +512,7 @@ int main(int argc, char **argv)
 
     /* free the streams */
     for(i = 0; i < oc->nb_streams; i++) {
+        av_freep(&oc->streams[i]->codec);
         av_freep(&oc->streams[i]);
     }
 
