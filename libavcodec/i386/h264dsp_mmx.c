@@ -809,7 +809,7 @@ static void OPNAME ## pixels4_l2_shift5_ ## MMX(uint8_t *dst, int16_t *src16, ui
         OP(%%mm0, (%2),    %%mm4, d)\
         OP(%%mm1, (%2,%4), %%mm5, d)\
         :"+a"(src8), "+c"(src16), "+d"(dst)\
-        :"S"(src8Stride), "D"(dstStride), "m"(ff_pw_16)\
+        :"S"((long)src8Stride), "D"((long)dstStride), "m"(ff_pw_16)\
         :"memory");\
 }\
 static void OPNAME ## pixels8_l2_shift5_ ## MMX(uint8_t *dst, int16_t *src16, uint8_t *src8, int dstStride, int src8Stride, int h)\
