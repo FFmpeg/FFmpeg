@@ -6547,6 +6547,18 @@ static void filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint8
      * frame numbers, not indices. */
     static const int ref2frm[18] = {-1,-1,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
 
+    //for sufficiently low qp, filtering wouldn't do anything
+    //this is a conservative estimate: could also check beta_offset and more accurate chroma_qp
+    if(!h->mb_aff_frame){
+        int qp_thresh = 15 - h->slice_alpha_c0_offset - FFMAX(0, h->pps.chroma_qp_index_offset);
+        int qp = s->current_picture.qscale_table[mb_xy];
+        if(qp <= qp_thresh
+           && (mb_x == 0 || ((qp + s->current_picture.qscale_table[mb_xy-1] + 1)>>1) <= qp_thresh)
+           && (mb_y == 0 || ((qp + s->current_picture.qscale_table[h->top_mb_xy] + 1)>>1) <= qp_thresh)){
+            return;
+        }
+    }
+
     if (h->mb_aff_frame
             // left mb is in picture
             && h->slice_table[mb_xy-1] != 255
@@ -6617,8 +6629,8 @@ static void filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint8
         const int mbm_type = s->current_picture.mb_type[mbm_xy];
         int start = h->slice_table[mbm_xy] == 255 ? 1 : 0;
 
-        const int edges = ((mb_type & mbm_type) & (MB_TYPE_16x16|MB_TYPE_SKIP))
-                                               == (MB_TYPE_16x16|MB_TYPE_SKIP) ? 1 : 4;
+        const int edges = (mb_type & (MB_TYPE_16x16|MB_TYPE_SKIP))
+                                  == (MB_TYPE_16x16|MB_TYPE_SKIP) ? 1 : 4;
         // how often to recheck mv-based bS when iterating between edges
         const int mask_edge = (mb_type & (MB_TYPE_16x16 | (MB_TYPE_16x8 << dir))) ? 3 :
                               (mb_type & (MB_TYPE_8x16 >> dir)) ? 1 : 0;
