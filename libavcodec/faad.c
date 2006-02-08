@@ -49,9 +49,8 @@ static const char* libfaadname = "libfaad.so.0";
 typedef struct {
     void* handle;               /* dlopen handle */
     void* faac_handle;          /* FAAD library handle */
-    int frame_size;
     int sample_size;
-    int flags;
+    int init;
 
     /* faad calls */
     faacDecHandle FAADAPI (*faacDecOpen)(void);
@@ -111,17 +110,20 @@ static int faac_init_mp4(AVCodecContext *avctx)
 #endif
     int r = 0;
 
-    if (avctx->extradata)
+    if (avctx->extradata){
         r = s->faacDecInit2(s->faac_handle, (uint8_t*) avctx->extradata,
                             avctx->extradata_size,
                             &samplerate, &channels);
-    // else r = s->faacDecInit(s->faac_handle ... );
-
-    if (r < 0)
-        av_log(avctx, AV_LOG_ERROR, "faacDecInit2 failed r:%d   sr:%ld  ch:%ld  s:%d\n",
-                r, samplerate, (long)channels, avctx->extradata_size);
-    avctx->sample_rate = samplerate;
-    avctx->channels = channels;
+        if (r < 0){
+            av_log(avctx, AV_LOG_ERROR,
+                   "faacDecInit2 failed r:%d   sr:%ld  ch:%ld  s:%d\n",
+                   r, samplerate, (long)channels, avctx->extradata_size);
+        } else {
+            avctx->sample_rate = samplerate;
+            avctx->channels = channels;
+            s->init = 1;
+        }
+    }
 
     return r;
 }
@@ -154,6 +156,20 @@ static int faac_decode_frame(AVCodecContext *avctx,
     return (buf_size < (int)bytesconsumed)
         ? buf_size : (int)bytesconsumed;
 #else
+
+    if(!s->init){
+        unsigned long srate;
+        unsigned char channels;
+        int r = faacDecInit(s->faac_handle, buf, buf_size, &srate, &channels);
+        if(r < 0){
+            av_log(avctx, AV_LOG_ERROR, "faac: codec init failed: %s\n",
+                   s->faacDecGetErrorMessage(frame_info.error));
+            return 0;
+        }
+        avctx->sample_rate = srate;
+        avctx->channels = channels;
+        s->init = 1;
+    }
 
     out = s->faacDecDecode(s->faac_handle, &frame_info, (unsigned char*)buf, (unsigned long)buf_size);
 
