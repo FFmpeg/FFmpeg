@@ -788,17 +788,17 @@ altivec_yuv2packedX (SwsContext *c,
 
   vector signed short *YCoeffs, *CCoeffs;
 
-  vYCoeffsBank = malloc (sizeof (vector signed short)*lumFilterSize*dstW);
-  vCCoeffsBank = malloc (sizeof (vector signed short)*chrFilterSize*dstW);
+  vYCoeffsBank = malloc (sizeof (vector signed short)*lumFilterSize*c->dstH);
+  vCCoeffsBank = malloc (sizeof (vector signed short)*chrFilterSize*c->dstH);
 
-  for (i=0;i<lumFilterSize*dstW;i++) {
+  for (i=0;i<lumFilterSize*c->dstH;i++) {
     tmp = c->vLumFilter[i];
     p = &vYCoeffsBank[i];
     for (j=0;j<8;j++)
       p[j] = tmp;
   }
 
-  for (i=0;i<chrFilterSize*dstW;i++) {
+  for (i=0;i<chrFilterSize*c->dstH;i++) {
     tmp = c->vChrFilter[i];
     p = &vCCoeffsBank[i];
     for (j=0;j<8;j++)
