@@ -22,12 +22,12 @@
 #define Y4M_FRAME_MAGIC "FRAME"
 #define Y4M_LINE_MAX 256
 
-#ifdef CONFIG_MUXERS
-
 struct frame_attributes {
     int interlaced_frame;
     int top_field_first;
 };
+
+#ifdef CONFIG_MUXERS
 
 static int yuv4_generate_header(AVFormatContext *s, char* buf)
 {
