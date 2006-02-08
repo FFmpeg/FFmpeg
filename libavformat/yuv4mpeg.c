@@ -24,6 +24,11 @@
 
 #ifdef CONFIG_MUXERS
 
+struct frame_attributes {
+    int interlaced_frame;
+    int top_field_first;
+};
+
 static int yuv4_generate_header(AVFormatContext *s, char* buf)
 {
     AVStream *st;
@@ -191,9 +196,10 @@ static int yuv4_read_header(AVFormatContext *s, AVFormatParameters *ap)
     char *tokstart,*tokend,*header_end;
     int i;
     ByteIOContext *pb = &s->pb;
-    int width=-1, height=-1, raten=0, rated=0, aspectn=0, aspectd=0,interlaced_frame=0,top_field_first=0;
+    int width=-1, height=-1, raten=0, rated=0, aspectn=0, aspectd=0;
     enum PixelFormat pix_fmt=PIX_FMT_NONE,alt_pix_fmt=PIX_FMT_NONE;
     AVStream *st;
+    struct frame_attributes *s1 = s->priv_data;
 
     for (i=0; i<MAX_YUV4_HEADER; i++) {
         header[i] = get_byte(pb);
@@ -206,6 +212,8 @@ static int yuv4_read_header(AVFormatContext *s, AVFormatParameters *ap)
     if (i == MAX_YUV4_HEADER) return -1;
     if (strncmp(header, Y4M_MAGIC, strlen(Y4M_MAGIC))) return -1;
 
+    s1->interlaced_frame = 0;
+    s1->top_field_first = 0;
     header_end = &header[i+1]; // Include space
     for(tokstart = &header[strlen(Y4M_MAGIC) + 1]; tokstart < header_end; tokstart++) {
         if (*tokstart==0x20) continue;
@@ -247,15 +255,15 @@ static int yuv4_read_header(AVFormatContext *s, AVFormatParameters *ap)
             case '?':
                 break;
             case 'p':
-                interlaced_frame=0;
+                s1->interlaced_frame=0;
                 break;
             case 't':
-                interlaced_frame=1;
-                top_field_first=1;
+                s1->interlaced_frame=1;
+                s1->top_field_first=1;
                 break;
             case 'b':
-                interlaced_frame=1;
-                top_field_first=0;
+                s1->interlaced_frame=1;
+                s1->top_field_first=0;
                 break;
             case 'm':
                 av_log(s, AV_LOG_ERROR, "YUV4MPEG stream contains mixed interlaced and non-interlaced frames.\n");
@@ -338,6 +346,7 @@ static int yuv4_read_packet(AVFormatContext *s, AVPacket *pkt)
     char header[MAX_FRAME_HEADER+1];
     int packet_size, width, height;
     AVStream *st = s->streams[0];
+    struct frame_attributes *s1 = s->priv_data;
 
     for (i=0; i<MAX_FRAME_HEADER; i++) {
         header[i] = get_byte(&s->pb);
@@ -358,6 +367,11 @@ static int yuv4_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     if (av_get_packet(&s->pb, pkt, packet_size) != packet_size)
         return AVERROR_IO;
+
+    if (s->streams[0]->codec->coded_frame) {
+        s->streams[0]->codec->coded_frame->interlaced_frame = s1->interlaced_frame;
+        s->streams[0]->codec->coded_frame->top_field_first = s1->top_field_first;
+    }
 
     pkt->stream_index = 0;
     return 0;
@@ -382,7 +396,7 @@ static int yuv4_probe(AVProbeData *pd)
 AVInputFormat yuv4mpegpipe_iformat = {
     "yuv4mpegpipe",
     "YUV4MPEG pipe format",
-    0,
+    sizeof(struct frame_attributes),
     yuv4_probe,
     yuv4_read_header,
     yuv4_read_packet,
