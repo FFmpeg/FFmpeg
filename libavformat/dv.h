@@ -1,6 +1,6 @@
 /*
  * General DV muxer/demuxer
- * Copyright (c) 2003 Roman Shaposhnick
+ * Copyright (c) 2003 Roman Shaposhnik
  *
  * Many thanks to Dan Dennedy <dan@dennedy.org> for providing wealth
  * of DV technical info.
