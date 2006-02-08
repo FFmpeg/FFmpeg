@@ -34,6 +34,7 @@ version <next>
 - build system improvements
 - tabs and trailing whitespace removed from the codebase
 - AIFF/AIFF-C audio format, encoding and decoding
+- ADTS AAC file reading and writing
 
 version 0.4.9-pre1:
 
