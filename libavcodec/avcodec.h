@@ -2516,6 +2516,7 @@ extern AVCodecParser mpegaudio_parser;
 extern AVCodecParser ac3_parser;
 extern AVCodecParser dvdsub_parser;
 extern AVCodecParser dvbsub_parser;
+extern AVCodecParser aac_parser;
 
 /* memory */
 void *av_malloc(unsigned int size);

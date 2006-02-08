@@ -622,5 +622,6 @@ PCM_CODEC(CODEC_ID_ADPCM_YAMAHA, adpcm_yamaha);
 #ifdef CONFIG_DVBSUB_DECODER
     av_register_codec_parser(&dvbsub_parser);
 #endif
+    av_register_codec_parser(&aac_parser);
 }
 
