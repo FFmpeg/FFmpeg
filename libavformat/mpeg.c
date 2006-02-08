@@ -1262,32 +1262,21 @@ static int mpeg_mux_end(AVFormatContext *ctx)
 
 static int mpegps_probe(AVProbeData *p)
 {
+    uint32_t code= -1;
+    int sys=0, pspack=0;
     int i;
-    int size= FFMIN(20, p->buf_size);
-    uint32_t code=0xFF;
 
-    /* we search the first start code. If it is a packet start code,
-       then we decide it is mpeg ps. We do not send highest value to
-       give a chance to mpegts */
-    /* NOTE: the search range was restricted to avoid too many false
-       detections */
-
-    for (i = 0; i < size; i++) {
-        code = (code << 8) | p->buf[i];
+    for(i=0; i<p->buf_size; i++){
+        code = (code<<8) + p->buf[i];
         if ((code & 0xffffff00) == 0x100) {
-            if (code == PACK_START_CODE ||
-                code == SYSTEM_HEADER_START_CODE ||
-                (code >= 0x1e0 && code <= 0x1ef) ||
-                (code >= 0x1c0 && code <= 0x1df) ||
-                code == PRIVATE_STREAM_2 ||
-                code == PROGRAM_STREAM_MAP ||
-                code == PRIVATE_STREAM_1 ||
-                code == PADDING_STREAM)
-                return AVPROBE_SCORE_MAX - 2;
-            else
-                return 0;
+            switch(code){
+            case SYSTEM_HEADER_START_CODE:    sys++; break;
+            case          PACK_START_CODE: pspack++; break;
+            }
         }
     }
+    if(sys && sys*9 <= pspack*10)
+        return AVPROBE_SCORE_MAX/2+2; // +1 for .mpg
     return 0;
 }
 
