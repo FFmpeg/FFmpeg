@@ -62,13 +62,8 @@ static int Faac_encode_init(AVCodecContext *avctx)
         faac_cfg->bitRate = 0;
         faac_cfg->quantqual = avctx->global_quality / FF_QP2LAMBDA;
     }
-    faac_cfg->outputFormat = 0;
+    faac_cfg->outputFormat = 1;
     faac_cfg->inputFormat = FAAC_INPUT_16BIT;
-
-    if (!faacEncSetConfiguration(s->faac_handle, faac_cfg)) {
-        av_log(avctx, AV_LOG_ERROR, "libfaac doesn't support this output format!\n");
-        return -1;
-    }
 
     avctx->frame_size = samples_input / avctx->channels;
 
@@ -86,7 +81,13 @@ static int Faac_encode_init(AVCodecContext *avctx)
                                            &decoder_specific_info_size)) {
             avctx->extradata = buffer;
             avctx->extradata_size = decoder_specific_info_size;
+            faac_cfg->outputFormat = 0;
         }
+    }
+
+    if (!faacEncSetConfiguration(s->faac_handle, faac_cfg)) {
+        av_log(avctx, AV_LOG_ERROR, "libfaac doesn't support this output format!\n");
+        return -1;
     }
 
     return 0;
