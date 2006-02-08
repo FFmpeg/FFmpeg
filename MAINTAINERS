@@ -1,0 +1,197 @@
+FFmpeg maintainers
+==================
+
+Below is a list of the people maintaining different parts of the
+FFmpeg code.
+
+
+Project Leader
+==============
+
+Michael Niedermayer
+  final design decisions
+
+
+Applications
+============
+
+ffmpeg:
+  ffmpeg.c                              Michael Niedermayer
+
+  Video Hooks:
+    vhook
+    vhook/watermark.c
+    vhook/ppm.c
+    vhook/drawtext.c
+    vhook/fish.c
+    vhook/null.c
+    vhook/imlib2.c
+
+ffplay:
+  ffplay.c
+
+ffserver:
+  ffserver.c, ffserver.h
+
+Commandline utility code:
+  cmdutils.c, cmdutils.h
+
+QuickTime faststart:
+  qt-faststart.c                        Mike Melanson
+
+
+Miscellaneous Areas
+===================
+
+documentation                           Mike Melanson, Diego Biurrun
+website                                 Mike Melanson, Diego Biurrun
+build system (configure,Makefiles)      Diego Biurrun
+
+
+libavutil
+=========
+
+External Interfaces:
+  libavutil/avutil.h
+Internal Interfaces:
+  libavutil/common.h
+
+Other:
+  intfloat*                             Michael Niedermayer
+  rational.c, rational.h                Michael Niedermayer
+  mathematics.c, mathematics.h          Michael Niedermayer
+  integer.c, integer.h                  Michael Niedermayer
+  bswap.h
+
+
+libavcodec
+==========
+
+Generic Parts:
+  External Interfaces:
+    avcodec.h                           Michael Niedermayer
+  utility code:
+    utils.c
+    mem.c
+    opt.c, opt.h
+  arithmetic expression evaluator:
+    eval.c                              Michael Niedermayer
+  audio and video frame extraction:
+    parser.c
+  bitsream reading:
+    bitstream.c, bitstream.h            Michael Niedermayer
+  CABAC:
+    cabac.h, cabac.c                    Michael Niedermayer
+  DSP utilities:
+    dsputils.c, dsputils.h              Michael Niedermayer
+  entropy coding:
+    rangecoder.c, rangecoder.h          Michael Niedermayer
+  floating point AAN DCT:
+    faandct.c, faandct.h                Michael Niedermayer
+  Golomb coding:
+    golomb.c, golomb.h                  Michael Niedermayer
+  motion estimation:
+    motion*                             Michael Niedermayer
+  rate control:
+    ratecontrol.c
+    xvid_rc.c                           Michael Niedermayer
+  simple IDCT:
+    simple_idct.c, simple_idct.h        Michael Niedermayer
+  postprocessing:
+    libpostproc/*                       Michael Niedermayer
+
+Codecs:
+  4xm.c                                 Michael Niedermayer
+  8bps.c                                Roberto Togni
+  asv*                                  Michael Niedermayer
+  bmp.c                                 Mans Rullgard
+  cinepak.c                             Roberto Togni
+  cljr                                  Alex Beregszaszi
+  cook.c, cookdata.h                    Benjamin Larsson
+  cscd.c                                Reimar Doeffinger
+  dpcm.c                                Mike Melanson
+  dv.c                                  Roman Shaposhnik
+  ffv1.c                                Michael Niedermayer
+  flac.c                                Alex Beregszaszi
+  flicvideo.c                           Mike Melanson
+  g726.c                                Roman Shaposhnik
+  h264*                                 Loren Merritt, Michael Niedermayer
+  h261*                                 Michael Niedermayer
+  h263*                                 Michael Niedermayer
+  huffyuv.c                             Michael Niedermayer
+  idcinvideo.c                          Mike Melanson
+  interplayvideo.c                      Mike Melanson
+  lcl.c                                 Roberto Togni
+  lzo.h, lzo.c                          Reimar Doeffinger
+  mdec.c                                Michael Niedermayer
+  mjpeg.c                               Michael Niedermayer
+  mpeg12.c, mpeg12data.h                Michael Niedermayer
+  mpegvideo.c, mpegvideo.h              Michael Niedermayer
+  msmpeg4.c, msmpeg4data.h              Michael Niedermayer
+  msrle.c                               Mike Melanson
+  msvideo1.c                            Mike Melanson
+  oggtheora.c                           Mans Rullgard
+  qdm2.c, qdm2data.h                    Roberto Togni
+  qtrle.c                               Mike Melanson
+  ra144.c, ra144.h, ra288.c, ra288.h    Roberto Togni
+  resample2.c                           Michael Niedermayer
+  rpza.c                                Roberto Togni
+  rv10.c                                Michael Niedermayer
+  smc.c                                 Mike Melanson
+  snow.c                                Michael Niedermayer, Loren Merritt
+  sonic.c                               Alex Beregszaszi
+  svq3.c                                Michael Niedermayer
+  truemotion*                           Mike Melanson
+  vcr1.c                                Michael Niedermayer
+  vp3*                                  Mike Melanson
+  vqavideo.c                            Mike Melanson
+  wmv2.c                                Michael Niedermayer
+  x264.c                                Mans Rullgard
+  xan.c                                 Mike Melanson
+  xvmcvideo.c                           Ivan Kalvachev
+
+
+libavformat
+===========
+
+Generic parts:
+  External Interface:
+    libavcodec/avcodec.h
+  Utility Code:
+    libavcodec/utils.c
+
+
+Muxers/Demuxers:
+  4xm.c                                 Mike Melanson
+  avi*                                  Michael Niedermayer
+  crc.c                                 Michael Niedermayer
+  daud.c                                Reimar Doeffinger
+  dc1394.c, dv.c                        Roman Shaposhnik
+  flic.c                                Mike Melanson
+  flvdec.c, flvenc.c                    Michael Niedermayer
+  idcin.c                               Mike Melanson
+  idroq.c                               Mike Melanson
+  ipmovie.c                             Mike Melanson
+  img2.c                                Michael Niedermayer
+  mov.c                                 Francois Revol, Michael Niedermayer
+  mpegts*                               Mans Rullgard
+  nsvdec.c                              Francois Revol
+  nut.c                                 Alex Beregszaszi
+  ogg2.c, ogg2.h                        Mans Rullgard
+  oggparsevorbis.c                      Mans Rullgard
+  psxstr.c                              Mike Melanson
+  raw.c                                 Michael Niedermayer
+  rm.c                                  Roberto Togni
+  segafilm.c                            Mike Melanson
+  wav.c                                 Michael Niedermayer
+  wc3movie.c                            Mike Melanson
+  westwood.c                            Mike Melanson
+
+
+Operating systems / CPU architectures
+=====================================
+
+Alpha                                   Mans Rullgard, Falk Hueffner
+BeOS                                    Francois Revol
+i386                                    Michael Niedermayer
+PowerPC                                 Romain Dolbeau
