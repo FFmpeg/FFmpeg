@@ -68,6 +68,9 @@
 #include <inttypes.h>
 #include <assert.h>
 #include "config.h"
+#ifdef HAVE_MALLOC_H
+#include <malloc.h>
+#endif
 #include "rgb2rgb.h"
 #include "swscale.h"
 #include "swscale_internal.h"
@@ -788,8 +791,8 @@ altivec_yuv2packedX (SwsContext *c,
 
   vector signed short *YCoeffs, *CCoeffs;
 
-  vYCoeffsBank = malloc (sizeof (vector signed short)*lumFilterSize*c->dstH);
-  vCCoeffsBank = malloc (sizeof (vector signed short)*chrFilterSize*c->dstH);
+  vYCoeffsBank = memalign (16, sizeof (vector signed short)*lumFilterSize*c->dstH);
+  vCCoeffsBank = memalign (16, sizeof (vector signed short)*chrFilterSize*c->dstH);
 
   for (i=0;i<lumFilterSize*c->dstH;i++) {
     tmp = c->vLumFilter[i];
