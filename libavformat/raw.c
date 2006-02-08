@@ -256,6 +256,23 @@ static int dts_read_header(AVFormatContext *s,
     return 0;
 }
 
+/* aac read */
+static int aac_read_header(AVFormatContext *s,
+                           AVFormatParameters *ap)
+{
+    AVStream *st;
+
+    st = av_new_stream(s, 0);
+    if (!st)
+        return AVERROR_NOMEM;
+
+    st->codec->codec_type = CODEC_TYPE_AUDIO;
+    st->codec->codec_id = CODEC_ID_AAC;
+    st->need_parsing = 1;
+    /* the parameters will be extracted from the compressed bitstream */
+    return 0;
+}
+
 /* mpeg1/h263 input */
 static int video_read_header(AVFormatContext *s,
                              AVFormatParameters *ap)
@@ -388,6 +405,32 @@ AVInputFormat dts_iformat = {
     raw_read_close,
     .extensions = "dts",
 };
+
+AVInputFormat aac_iformat = {
+    "aac",
+    "ADTS AAC",
+    0,
+    NULL,
+    aac_read_header,
+    raw_read_partial_packet,
+    raw_read_close,
+    .extensions = "aac",
+};
+
+#ifdef CONFIG_MUXERS
+AVOutputFormat aac_oformat = {
+    "aac",
+    "ADTS AAC",
+    "audio/aac",
+    "aac",
+    0,
+    CODEC_ID_AAC,
+    0,
+    raw_write_header,
+    raw_write_packet,
+    raw_write_trailer,
+};
+#endif
 
 AVInputFormat h261_iformat = {
     "h261",
@@ -738,6 +781,9 @@ int raw_init(void)
 
     av_register_input_format(&ac3_iformat);
     av_register_output_format(&ac3_oformat);
+
+    av_register_input_format(&aac_iformat);
+    av_register_output_format(&aac_oformat);
 
     av_register_input_format(&dts_iformat);
 
