@@ -867,7 +867,25 @@ altivec_yuv2packedX (SwsContext *c,
     G  = vec_packclp (G0,G1);
     B  = vec_packclp (B0,B1);
 
-    out_rgba (R,G,B,out);
+    switch(c->dstFormat) {
+      case IMGFMT_ABGR: out_abgr (R,G,B,out); break;
+      case IMGFMT_BGRA: out_bgra (R,G,B,out); break;
+      case IMGFMT_RGBA: out_rgba (R,G,B,out); break;
+      case IMGFMT_ARGB: out_argb (R,G,B,out); break;
+      case IMGFMT_RGB24: out_rgb24 (R,G,B,out); break;
+      case IMGFMT_BGR24: out_bgr24 (R,G,B,out); break;
+      default:
+        {
+          /* FIXME: either write more out_* macros or punt to yuv2packedXinC */
+          static int printed_error_message;
+          if(!printed_error_message) {
+            MSG_ERR("altivec_yuv2packedX doesn't support %s output\n",
+                    vo_format_name(c->dstFormat));
+            printed_error_message=1;
+          }
+          return;
+        }
+    }
   }
 
   if (i < dstW) {
@@ -927,7 +945,19 @@ altivec_yuv2packedX (SwsContext *c,
     B  = vec_packclp (B0,B1);
 
     nout = (vector unsigned char *)scratch;
-    out_rgba (R,G,B,nout);
+    switch(c->dstFormat) {
+      case IMGFMT_ABGR: out_abgr (R,G,B,nout); break;
+      case IMGFMT_BGRA: out_bgra (R,G,B,nout); break;
+      case IMGFMT_RGBA: out_rgba (R,G,B,nout); break;
+      case IMGFMT_ARGB: out_argb (R,G,B,nout); break;
+      case IMGFMT_RGB24: out_rgb24 (R,G,B,nout); break;
+      case IMGFMT_BGR24: out_bgr24 (R,G,B,nout); break;
+      default:
+        /* Unreachable, I think. */
+        MSG_ERR("altivec_yuv2packedX doesn't support %s output\n",
+                vo_format_name(c->dstFormat));
+        return;
+    }
 
     memcpy (&((uint32_t*)dest)[i], scratch, (dstW-i)/4);
   }
