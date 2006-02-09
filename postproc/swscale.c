@@ -1375,7 +1375,7 @@ static void initMMX2HScaler(int dstW, int xInc, uint8_t *funnyCode, int16_t *fil
 }
 #endif // ARCH_X86 || ARCH_X86_64
 
-static void globalInit(){
+static void globalInit(void){
     // generating tables:
     int i;
     for(i=0; i<768; i++){
