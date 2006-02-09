@@ -142,7 +142,7 @@ do {					 \
       y2 = vec_perm (o3,o2,perm_rgb_3);	 \
 } while(0)
 
-#define vec_mstrgb24(x0,x1,x2,ptr)        \
+#define vec_mstbgr24(x0,x1,x2,ptr)        \
 do {					 \
   typeof(x0) _0,_1,_2;			 \
   vec_merge3 (x0,x1,x2,_0,_1,_2);	 \
@@ -151,7 +151,7 @@ do {					 \
   vec_st (_2, 0, ptr++);		 \
 }  while (0);
 
-#define vec_mstbgr24(x0,x1,x2,ptr)       \
+#define vec_mstrgb24(x0,x1,x2,ptr)       \
 do {					 \
   typeof(x0) _0,_1,_2;			 \
   vec_merge3 (x2,x1,x0,_0,_1,_2);	 \
@@ -417,7 +417,7 @@ static int altivec_##name (SwsContext *c,                                  \
 #define out_rgba(a,b,c,ptr)  vec_mstrgb32(typeof(a),a,b,c,((typeof (a))AVV(0)),ptr)
 #define out_argb(a,b,c,ptr)  vec_mstrgb32(typeof(a),((typeof (a))AVV(0)),a,b,c,ptr)
 #define out_rgb24(a,b,c,ptr) vec_mstrgb24(a,b,c,ptr)
-#define out_bgr24(a,b,c,ptr) vec_mstbgr24(c,b,a,ptr)
+#define out_bgr24(a,b,c,ptr) vec_mstbgr24(a,b,c,ptr)
 
 DEFCSP420_CVT (yuv2_abgr32, out_abgr)
 #if 1
