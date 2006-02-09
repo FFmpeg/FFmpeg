@@ -782,8 +782,8 @@ static void OPNAME ## pixels4_l2_shift5_ ## MMX(uint8_t *dst, int16_t *src16, ui
         "movq    24(%1), %%mm1          \n\t"\
         "paddw    %%mm6, %%mm0          \n\t"\
         "paddw    %%mm6, %%mm1          \n\t"\
-        "psrlw      $5,  %%mm0          \n\t"\
-        "psrlw      $5,  %%mm1          \n\t"\
+        "psraw      $5,  %%mm0          \n\t"\
+        "psraw      $5,  %%mm1          \n\t"\
         "pmaxsw   %%mm7, %%mm0          \n\t"\
         "pmaxsw   %%mm7, %%mm1          \n\t"\
         "packuswb %%mm7, %%mm0          \n\t"\
@@ -798,8 +798,8 @@ static void OPNAME ## pixels4_l2_shift5_ ## MMX(uint8_t *dst, int16_t *src16, ui
         "movq    72(%1), %%mm1          \n\t"\
         "paddw    %%mm6, %%mm0          \n\t"\
         "paddw    %%mm6, %%mm1          \n\t"\
-        "psrlw      $5,  %%mm0          \n\t"\
-        "psrlw      $5,  %%mm1          \n\t"\
+        "psraw      $5,  %%mm0          \n\t"\
+        "psraw      $5,  %%mm1          \n\t"\
         "pmaxsw   %%mm7, %%mm0          \n\t"\
         "pmaxsw   %%mm7, %%mm1          \n\t"\
         "packuswb %%mm7, %%mm0          \n\t"\
@@ -825,8 +825,8 @@ static void OPNAME ## pixels8_l2_shift5_ ## MMX(uint8_t *dst, int16_t *src16, ui
         "movq     8(%1), %%mm1          \n\t"\
         "paddw    %%mm6, %%mm0          \n\t"\
         "paddw    %%mm6, %%mm1          \n\t"\
-        "psrlw      $5,  %%mm0          \n\t"\
-        "psrlw      $5,  %%mm1          \n\t"\
+        "psraw      $5,  %%mm0          \n\t"\
+        "psraw      $5,  %%mm1          \n\t"\
         "pmaxsw   %%mm7, %%mm0          \n\t"\
         "pmaxsw   %%mm7, %%mm1          \n\t"\
         "packuswb %%mm1, %%mm0          \n\t"\
