@@ -959,11 +959,14 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
     p->pict_type= FF_I_TYPE; //FIXME I vs. P
     if(get_rac(c, &keystate)){
         p->key_frame= 1;
-        read_header(f);
+        if(read_header(f) < 0)
+            return -1;
         clear_state(f);
     }else{
         p->key_frame= 0;
     }
+    if(!f->plane[0].state && !f->plane[0].vlc_state)
+        return -1;
 
     p->reference= 0;
     if(avctx->get_buffer(avctx, p) < 0){
