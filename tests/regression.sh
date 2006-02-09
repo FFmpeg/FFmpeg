@@ -712,6 +712,11 @@ file=${outfile}libav.aif
 do_ffmpeg $file -t 1 -y -qscale 10 -f s16le -i $pcm_src $file
 do_ffmpeg_crc $file -i $file
 
+# voc
+file=${outfile}libav.voc
+do_ffmpeg $file -t 1 -y -qscale 10 -f s16le -i $pcm_src $file
+do_ffmpeg_crc $file -i $file
+
 ####################
 # pix_fmt conversions
 conversions="yuv420p yuv422p yuv444p yuv422 yuv410p yuv411p yuvj420p \

@@ -239,6 +239,12 @@ void put_be16(ByteIOContext *s, unsigned int val)
     put_byte(s, val);
 }
 
+void put_le24(ByteIOContext *s, unsigned int val)
+{
+    put_le16(s, val & 0xffff);
+    put_byte(s, val >> 16);
+}
+
 void put_be24(ByteIOContext *s, unsigned int val)
 {
     put_be16(s, val >> 8);
@@ -393,6 +399,14 @@ unsigned int get_le16(ByteIOContext *s)
     unsigned int val;
     val = get_byte(s);
     val |= get_byte(s) << 8;
+    return val;
+}
+
+unsigned int get_le24(ByteIOContext *s)
+{
+    unsigned int val;
+    val = get_le16(s);
+    val |= get_byte(s) << 16;
     return val;
 }
 
