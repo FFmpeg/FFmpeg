@@ -738,7 +738,7 @@ typedef struct AC3ParseContext {
 } AC3ParseContext;
 
 #define AC3_HEADER_SIZE 7
-#define AAC_HEADER_SIZE 8
+#define AAC_HEADER_SIZE 7
 
 static const int ac3_sample_rates[4] = {
     48000, 44100, 32000, 0
@@ -815,7 +815,7 @@ static int ac3_sync(const uint8_t *buf, int *channels, int *sample_rate,
     if(get_bits(&bits, 16) != 0x0b77)
         return 0;
 
-    get_bits(&bits, 16);    /* crc */
+    skip_bits(&bits, 16);       /* crc */
     fscod = get_bits(&bits, 2);
     frmsizecod = get_bits(&bits, 6);
 
@@ -825,15 +825,15 @@ static int ac3_sync(const uint8_t *buf, int *channels, int *sample_rate,
     bsid = get_bits(&bits, 5);
     if(bsid > 8)
         return 0;
-    get_bits(&bits, 3);     /* bsmod */
+    skip_bits(&bits, 3);        /* bsmod */
     acmod = get_bits(&bits, 3);
     if(acmod & 1 && acmod != 1)
-        get_bits(&bits, 2); /* cmixlev */
+        skip_bits(&bits, 2);    /* cmixlev */
     if(acmod & 4)
-        get_bits(&bits, 2); /* surmixlev */
+        skip_bits(&bits, 2);    /* surmixlev */
     if(acmod & 2)
-        get_bits(&bits, 2); /* dsurmod */
-    lfeon = get_bits(&bits, 1);
+        skip_bits(&bits, 2);    /* dsurmod */
+    lfeon = get_bits1(&bits);
 
     *sample_rate = ac3_sample_rates[fscod];
     *bit_rate = ac3_bitrates[frmsizecod] * 1000;
@@ -854,26 +854,26 @@ static int aac_sync(const uint8_t *buf, int *channels, int *sample_rate,
     if(get_bits(&bits, 12) != 0xfff)
         return 0;
 
-    get_bits(&bits, 1);
-    get_bits(&bits, 2);
-    get_bits(&bits, 1);         /* protection_absent */
-    get_bits(&bits, 2);
-    sr = get_bits(&bits, 4);
+    skip_bits1(&bits);          /* id */
+    skip_bits(&bits, 2);        /* layer */
+    skip_bits1(&bits);          /* protection_absent */
+    skip_bits(&bits, 2);        /* profile_objecttype */
+    sr = get_bits(&bits, 4);    /* sample_frequency_index */
     if(!aac_sample_rates[sr])
         return 0;
-    get_bits(&bits, 1);         /* private_bit */
-    ch = get_bits(&bits, 3);
+    skip_bits1(&bits);          /* private_bit */
+    ch = get_bits(&bits, 3);    /* channel_configuration */
     if(!aac_channels[ch])
         return 0;
-    get_bits(&bits, 1);         /* original/copy */
-    get_bits(&bits, 1);         /* home */
+    skip_bits1(&bits);          /* original/copy */
+    skip_bits1(&bits);          /* home */
 
     /* adts_variable_header */
-    get_bits(&bits, 1);         /* copyright_identification_bit */
-    get_bits(&bits, 1);         /* copyright_identification_start */
-    size = get_bits(&bits, 13);
-    get_bits(&bits, 11);        /* adts_buffer_fullness */
-    rdb = get_bits(&bits, 2);
+    skip_bits1(&bits);          /* copyright_identification_bit */
+    skip_bits1(&bits);          /* copyright_identification_start */
+    size = get_bits(&bits, 13); /* aac_frame_length */
+    skip_bits(&bits, 11);       /* adts_buffer_fullness */
+    rdb = get_bits(&bits, 2);   /* number_of_raw_data_blocks_in_frame */
 
     *channels = aac_channels[ch];
     *sample_rate = aac_sample_rates[sr];
