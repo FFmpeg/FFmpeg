@@ -417,21 +417,6 @@ AVInputFormat aac_iformat = {
     .extensions = "aac",
 };
 
-#ifdef CONFIG_MUXERS
-AVOutputFormat aac_oformat = {
-    "aac",
-    "ADTS AAC",
-    "audio/aac",
-    "aac",
-    0,
-    CODEC_ID_AAC,
-    0,
-    raw_write_header,
-    raw_write_packet,
-    raw_write_trailer,
-};
-#endif
-
 AVInputFormat h261_iformat = {
     "h261",
     "raw h261",
@@ -783,7 +768,6 @@ int raw_init(void)
     av_register_output_format(&ac3_oformat);
 
     av_register_input_format(&aac_iformat);
-    av_register_output_format(&aac_oformat);
 
     av_register_input_format(&dts_iformat);
 

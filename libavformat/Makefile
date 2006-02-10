@@ -27,7 +27,7 @@ OBJS+=mpeg.o mpegts.o mpegtsenc.o ffm.o crc.o img.o img2.o raw.o rm.o \
 
 # muxers
 ifeq ($(CONFIG_MUXERS),yes)
-OBJS+= flvenc.o movenc.o asf-enc.o
+OBJS+= flvenc.o movenc.o asf-enc.o adtsenc.o
 endif
 
 

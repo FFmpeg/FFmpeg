@@ -55,6 +55,7 @@ void av_register_all(void)
     swf_init();
     au_init();
     ff_aiff_init();
+    ff_adts_init();
 #ifdef CONFIG_MUXERS
     gif_init();
 #endif //CONFIG_MUXERS
