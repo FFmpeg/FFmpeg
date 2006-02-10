@@ -3314,6 +3314,7 @@ static void hl_decode_mb(H264Context *h){
     const unsigned int bottom = mb_y & 1;
     const int transform_bypass = (s->qscale == 0 && h->sps.transform_bypass);
     void (*idct_add)(uint8_t *dst, DCTELEM *block, int stride);
+    void (*idct_dc_add)(uint8_t *dst, DCTELEM *block, int stride);
 
     if(!s->decode)
         return;
@@ -3337,9 +3338,16 @@ static void hl_decode_mb(H264Context *h){
 //        dct_offset = s->linesize * 16;
     }
 
-    idct_add = transform_bypass
-             ? IS_8x8DCT(mb_type) ? s->dsp.add_pixels8 : s->dsp.add_pixels4
-             : IS_8x8DCT(mb_type) ? s->dsp.h264_idct8_add : s->dsp.h264_idct_add;
+    if(transform_bypass){
+        idct_dc_add =
+        idct_add = IS_8x8DCT(mb_type) ? s->dsp.add_pixels8 : s->dsp.add_pixels4;
+    }else if(IS_8x8DCT(mb_type)){
+        idct_dc_add = s->dsp.h264_idct8_dc_add;
+        idct_add = s->dsp.h264_idct8_add;
+    }else{
+        idct_dc_add = s->dsp.h264_idct_dc_add;
+        idct_add = s->dsp.h264_idct_add;
+    }
 
     if (IS_INTRA_PCM(mb_type)) {
         unsigned int x, y;
@@ -3389,17 +3397,22 @@ static void hl_decode_mb(H264Context *h){
                         for(i=0; i<16; i+=4){
                             uint8_t * const ptr= dest_y + block_offset[i];
                             const int dir= h->intra4x4_pred_mode_cache[ scan8[i] ];
+                            const int nnz = h->non_zero_count_cache[ scan8[i] ];
                             h->pred8x8l[ dir ](ptr, (h->topleft_samples_available<<i)&0x8000,
                                                    (h->topright_samples_available<<(i+1))&0x8000, linesize);
-                            if(h->non_zero_count_cache[ scan8[i] ])
-                                idct_add(ptr, h->mb + i*16, linesize);
+                            if(nnz){
+                                if(nnz == 1 && h->mb[i*16])
+                                    idct_dc_add(ptr, h->mb + i*16, linesize);
+                                else
+                                    idct_add(ptr, h->mb + i*16, linesize);
+                            }
                         }
                     }else
                     for(i=0; i<16; i++){
                         uint8_t * const ptr= dest_y + block_offset[i];
                         uint8_t *topright;
                         const int dir= h->intra4x4_pred_mode_cache[ scan8[i] ];
-                        int tr;
+                        int nnz, tr;
 
                         if(dir == DIAG_DOWN_LEFT_PRED || dir == VERT_LEFT_PRED){
                             const int topright_avail= (h->topright_samples_available<<i)&0x8000;
@@ -3413,10 +3426,14 @@ static void hl_decode_mb(H264Context *h){
                             topright= NULL;
 
                         h->pred4x4[ dir ](ptr, topright, linesize);
-                        if(h->non_zero_count_cache[ scan8[i] ]){
-                            if(s->codec_id == CODEC_ID_H264)
-                                idct_add(ptr, h->mb + i*16, linesize);
-                            else
+                        nnz = h->non_zero_count_cache[ scan8[i] ];
+                        if(nnz){
+                            if(s->codec_id == CODEC_ID_H264){
+                                if(nnz == 1 && h->mb[i*16])
+                                    idct_dc_add(ptr, h->mb + i*16, linesize);
+                                else
+                                    idct_add(ptr, h->mb + i*16, linesize);
+                            }else
                                 svq3_add_idct_c(ptr, h->mb + i*16, linesize, s->qscale, 0);
                         }
                     }
@@ -3453,11 +3470,23 @@ static void hl_decode_mb(H264Context *h){
 
         if(!IS_INTRA4x4(mb_type)){
             if(s->codec_id == CODEC_ID_H264){
-                const int di = IS_8x8DCT(mb_type) ? 4 : 1;
-                for(i=0; i<16; i+=di){
-                    if(h->non_zero_count_cache[ scan8[i] ] || h->mb[i*16]){ //FIXME benchmark weird rule, & below
-                        uint8_t * const ptr= dest_y + block_offset[i];
-                        idct_add(ptr, h->mb + i*16, linesize);
+                if(IS_INTRA16x16(mb_type)){
+                    for(i=0; i<16; i++){
+                        if(h->non_zero_count_cache[ scan8[i] ])
+                            idct_add(dest_y + block_offset[i], h->mb + i*16, linesize);
+                        else if(h->mb[i*16])
+                            idct_dc_add(dest_y + block_offset[i], h->mb + i*16, linesize);
+                    }
+                }else{
+                    const int di = IS_8x8DCT(mb_type) ? 4 : 1;
+                    for(i=0; i<16; i+=di){
+                        int nnz = h->non_zero_count_cache[ scan8[i] ];
+                        if(nnz){
+                            if(nnz==1 && h->mb[i*16])
+                                idct_dc_add(dest_y + block_offset[i], h->mb + i*16, linesize);
+                            else
+                                idct_add(dest_y + block_offset[i], h->mb + i*16, linesize);
+                        }
                     }
                 }
             }else{
@@ -3471,34 +3500,26 @@ static void hl_decode_mb(H264Context *h){
         }
 
         if(!(s->flags&CODEC_FLAG_GRAY)){
-            idct_add = transform_bypass ? s->dsp.add_pixels4 : s->dsp.h264_idct_add;
-            if(!transform_bypass){
+            uint8_t *dest[2] = {dest_cb, dest_cr};
+            if(transform_bypass){
+                idct_add = idct_dc_add = s->dsp.add_pixels4;
+            }else{
+                idct_add = s->dsp.h264_idct_add;
+                idct_dc_add = s->dsp.h264_idct_dc_add;
                 chroma_dc_dequant_idct_c(h->mb + 16*16, h->chroma_qp, h->dequant4_coeff[IS_INTRA(mb_type) ? 1:4][h->chroma_qp][0]);
                 chroma_dc_dequant_idct_c(h->mb + 16*16+4*16, h->chroma_qp, h->dequant4_coeff[IS_INTRA(mb_type) ? 2:5][h->chroma_qp][0]);
             }
             if(s->codec_id == CODEC_ID_H264){
-                for(i=16; i<16+4; i++){
-                    if(h->non_zero_count_cache[ scan8[i] ] || h->mb[i*16]){
-                        uint8_t * const ptr= dest_cb + block_offset[i];
-                        idct_add(ptr, h->mb + i*16, uvlinesize);
-                    }
-                }
-                for(i=20; i<20+4; i++){
-                    if(h->non_zero_count_cache[ scan8[i] ] || h->mb[i*16]){
-                        uint8_t * const ptr= dest_cr + block_offset[i];
-                        idct_add(ptr, h->mb + i*16, uvlinesize);
-                    }
+                for(i=16; i<16+8; i++){
+                    if(h->non_zero_count_cache[ scan8[i] ])
+                        idct_add(dest[(i&4)>>2] + block_offset[i], h->mb + i*16, uvlinesize);
+                    else if(h->mb[i*16])
+                        idct_dc_add(dest[(i&4)>>2] + block_offset[i], h->mb + i*16, uvlinesize);
                 }
             }else{
-                for(i=16; i<16+4; i++){
+                for(i=16; i<16+8; i++){
                     if(h->non_zero_count_cache[ scan8[i] ] || h->mb[i*16]){
-                        uint8_t * const ptr= dest_cb + block_offset[i];
-                        svq3_add_idct_c(ptr, h->mb + i*16, uvlinesize, chroma_qp[s->qscale + 12] - 12, 2);
-                    }
-                }
-                for(i=20; i<20+4; i++){
-                    if(h->non_zero_count_cache[ scan8[i] ] || h->mb[i*16]){
-                        uint8_t * const ptr= dest_cr + block_offset[i];
+                        uint8_t * const ptr= dest[(i&4)>>2] + block_offset[i];
                         svq3_add_idct_c(ptr, h->mb + i*16, uvlinesize, chroma_qp[s->qscale + 12] - 12, 2);
                     }
                 }
@@ -5131,7 +5152,7 @@ decode_intra_mb:
                                 return -1;
                         }
                         nnz= &h->non_zero_count_cache[ scan8[4*i8x8] ];
-                        nnz[0] |= nnz[1] | nnz[8] | nnz[9];
+                        nnz[0] += nnz[1] + nnz[8] + nnz[9];
                     }else{
                         for(i4x4=0; i4x4<4; i4x4++){
                             const int index= i4x4 + 4*i8x8;
@@ -5690,7 +5711,7 @@ static int decode_cabac_residual( H264Context *h, DCTELEM *block, int cat, int n
         h->non_zero_count_cache[scan8[16+n]] = coeff_count;
     else {
         assert( cat == 5 );
-        fill_rectangle(&h->non_zero_count_cache[scan8[n]], 2, 2, 8, 1, 1);
+        fill_rectangle(&h->non_zero_count_cache[scan8[n]], 2, 2, 8, coeff_count, 1);
     }
 
     for( i = coeff_count - 1; i >= 0; i-- ) {

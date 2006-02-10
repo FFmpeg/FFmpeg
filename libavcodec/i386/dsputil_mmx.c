@@ -2754,6 +2754,8 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
 #endif //CONFIG_ENCODERS
 
             c->h264_idct_add= ff_h264_idct_add_mmx2;
+            c->h264_idct_dc_add= ff_h264_idct_dc_add_mmx2;
+            c->h264_idct8_dc_add= ff_h264_idct8_dc_add_mmx2;
 
             if(!(avctx->flags & CODEC_FLAG_BITEXACT)){
                 c->put_no_rnd_pixels_tab[0][1] = put_no_rnd_pixels16_x2_mmx2;
