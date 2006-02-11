@@ -113,7 +113,7 @@ install: all install-progs install-man $(INSTALLVHOOK)
 	$(MAKE) -C libavcodec install
 	$(MAKE) -C libavformat install
 
-install-progs:
+install-progs: $(PROG)
 	install -d "$(bindir)"
 	install -c $(INSTALLSTRIP) -m 755 $(PROG) "$(bindir)"
 
