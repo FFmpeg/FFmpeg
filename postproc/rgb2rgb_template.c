@@ -104,10 +104,12 @@ static inline void RENAME(rgb24to32)(const uint8_t *src,uint8_t *dst,long src_si
   while(s < end)
   {
 #ifdef WORDS_BIGENDIAN
+    /* RGB24 (= R,G,B) -> RGB32 (= A,B,G,R) */
     *dest++ = 0;
-    *dest++ = *s++;
-    *dest++ = *s++;
-    *dest++ = *s++;
+    *dest++ = s[2];
+    *dest++ = s[1];
+    *dest++ = s[0];
+    s+=3;
 #else
     *dest++ = *s++;
     *dest++ = *s++;
@@ -188,10 +190,12 @@ static inline void RENAME(rgb32to24)(const uint8_t *src,uint8_t *dst,long src_si
   while(s < end)
   {
 #ifdef WORDS_BIGENDIAN
+    /* RGB32 (= A,B,G,R) -> RGB24 (= R,G,B) */
     s++;
-    *dest++ = *s++;
-    *dest++ = *s++;
-    *dest++ = *s++;
+    dest[2] = *s++;
+    dest[1] = *s++;
+    dest[0] = *s++;
+    dest += 3;
 #else
     *dest++ = *s++;
     *dest++ = *s++;
@@ -465,6 +469,7 @@ static inline void RENAME(rgb32tobgr16)(const uint8_t *src, uint8_t *dst, long s
 	while(s < end)
 	{
 		// FIXME on bigendian
+		/* Looks bigendian-OK to me. --Pac. */
 		const int src= *s; s += 4;
 		*d++ = ((src&0xF8)<<8) + ((src&0xFC00)>>5) + ((src&0xF80000)>>19);
 	}
@@ -562,6 +567,7 @@ static inline void RENAME(rgb32to15)(const uint8_t *src, uint8_t *dst, long src_
 	while(s < end)
 	{
 		// FIXME on bigendian
+		/* Looks bigendian-OK to me. --Pac. */
 		const int src= *s; s += 4;
 		*d++ = ((src&0xFF)>>3) + ((src&0xF800)>>6) + ((src&0xF80000)>>9);
 	}
@@ -624,6 +630,7 @@ static inline void RENAME(rgb32tobgr15)(const uint8_t *src, uint8_t *dst, long s
 	while(s < end)
 	{
 		// FIXME on bigendian
+		/* Looks bigendian-OK to me. --Pac. */
 		const int src= *s; s += 4;
 		*d++ = ((src&0xF8)<<7) + ((src&0xF800)>>6) + ((src&0xF80000)>>19);
 	}
@@ -1247,14 +1254,13 @@ static inline void RENAME(rgb15to32)(const uint8_t *src, uint8_t *dst, long src_
 		int bgr= *s++;
 		*((uint32_t*)d)++ = ((bgr&0x1F)<<3) + ((bgr&0x3E0)<<6) + ((bgr&0x7C00)<<9);
 #else
-//FIXME this is very likely wrong for bigendian (and the following converters too)
 		register uint16_t bgr;
 		bgr = *s++;
 #ifdef WORDS_BIGENDIAN
 		*d++ = 0;
-		*d++ = (bgr&0x1F)<<3;
-		*d++ = (bgr&0x3E0)>>2;
 		*d++ = (bgr&0x7C00)>>7;
+		*d++ = (bgr&0x3E0)>>2;
+		*d++ = (bgr&0x1F)<<3;
 #else
 		*d++ = (bgr&0x1F)<<3;
 		*d++ = (bgr&0x3E0)>>2;
@@ -1326,9 +1332,9 @@ static inline void RENAME(rgb16to32)(const uint8_t *src, uint8_t *dst, long src_
 		bgr = *s++;
 #ifdef WORDS_BIGENDIAN
 		*d++ = 0;
-		*d++ = (bgr&0x1F)<<3;
-		*d++ = (bgr&0x7E0)>>3;
 		*d++ = (bgr&0xF800)>>8;
+		*d++ = (bgr&0x7E0)>>3;
+		*d++ = (bgr&0x1F)<<3;
 #else
 		*d++ = (bgr&0x1F)<<3;
 		*d++ = (bgr&0x7E0)>>3;

@@ -446,9 +446,16 @@ void rgb32tobgr24(const uint8_t *src, uint8_t *dst, long src_size)
 	long num_pixels = src_size >> 2;
 	for(i=0; i<num_pixels; i++)
 	{
+		#ifdef WORDS_BIGENDIAN
+		/* RGB32 (= A,B,G,R) -> BGR24 (= B,G,R) */
+		dst[3*i + 0] = src[4*i + 1];
+		dst[3*i + 1] = src[4*i + 2];
+		dst[3*i + 2] = src[4*i + 3];
+		#else
 		dst[3*i + 0] = src[4*i + 2];
 		dst[3*i + 1] = src[4*i + 1];
 		dst[3*i + 2] = src[4*i + 0];
+		#endif
 	}
 }
 
@@ -457,10 +464,18 @@ void rgb24tobgr32(const uint8_t *src, uint8_t *dst, long src_size)
 	long i;
 	for(i=0; 3*i<src_size; i++)
 	{
+		#ifdef WORDS_BIGENDIAN
+		/* RGB24 (= R,G,B) -> BGR32 (= A,R,G,B) */
+		dst[4*i + 0] = 0;
+		dst[4*i + 1] = src[3*i + 0];
+		dst[4*i + 2] = src[3*i + 1];
+		dst[4*i + 3] = src[3*i + 2];
+		#else
 		dst[4*i + 0] = src[3*i + 2];
 		dst[4*i + 1] = src[3*i + 1];
 		dst[4*i + 2] = src[3*i + 0];
 		dst[4*i + 3] = 0;
+		#endif
 	}
 }
 
@@ -474,10 +489,17 @@ void rgb16tobgr32(const uint8_t *src, uint8_t *dst, long src_size)
 	{
 		register uint16_t bgr;
 		bgr = *s++;
+		#ifdef WORDS_BIGENDIAN
+		*d++ = 0;
+		*d++ = (bgr&0x1F)<<3;
+		*d++ = (bgr&0x7E0)>>3;
+		*d++ = (bgr&0xF800)>>8;
+		#else
 		*d++ = (bgr&0xF800)>>8;
 		*d++ = (bgr&0x7E0)>>3;
 		*d++ = (bgr&0x1F)<<3;
 		*d++ = 0;
+		#endif
 	}
 }
 
@@ -541,10 +563,17 @@ void rgb15tobgr32(const uint8_t *src, uint8_t *dst, long src_size)
 	{
 		register uint16_t bgr;
 		bgr = *s++;
+		#ifdef WORDS_BIGENDIAN
+		*d++ = 0;
+		*d++ = (bgr&0x1F)<<3;
+		*d++ = (bgr&0x3E0)>>2;
+		*d++ = (bgr&0x7C00)>>7;
+		#else
 		*d++ = (bgr&0x7C00)>>7;
 		*d++ = (bgr&0x3E0)>>2;
 		*d++ = (bgr&0x1F)<<3;
 		*d++ = 0;
+		#endif
 	}
 }
 
