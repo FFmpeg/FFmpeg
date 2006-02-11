@@ -21,6 +21,7 @@
 
 #include "avformat.h"
 #include "avi.h"
+#include "mov.h"
 
 #ifdef CONFIG_ZLIB
 #include <zlib.h>
@@ -81,6 +82,35 @@
 /* so we first list them as this, then clean up the list of streams we give back, */
 /* getting rid of these */
 #define CODEC_TYPE_MOV_OTHER    (enum CodecType) 2
+
+/* http://gpac.sourceforge.net/tutorial/mediatypes.htm */
+const CodecTag ff_mov_obj_type[] = {
+    { CODEC_ID_MPEG4     ,  32 },
+    { CODEC_ID_H264      ,  33 },
+    { CODEC_ID_AAC       ,  64 },
+    { CODEC_ID_MPEG2VIDEO,  96 }, /* MPEG2 Simple */
+    { CODEC_ID_MPEG2VIDEO,  97 }, /* MPEG2 Main */
+    { CODEC_ID_MPEG2VIDEO,  98 }, /* MPEG2 SNR */
+    { CODEC_ID_MPEG2VIDEO,  99 }, /* MPEG2 Spatial */
+    { CODEC_ID_MPEG2VIDEO, 100 }, /* MPEG2 High */
+    { CODEC_ID_MPEG2VIDEO, 101 }, /* MPEG2 422 */
+    { CODEC_ID_AAC       , 102 }, /* MPEG2 AAC Main */
+    { CODEC_ID_AAC       , 103 }, /* MPEG2 AAC Low */
+    { CODEC_ID_AAC       , 104 }, /* MPEG2 AAC SSR */
+    { CODEC_ID_MP3       , 105 },
+    { CODEC_ID_MPEG1VIDEO, 106 },
+    { CODEC_ID_MP2       , 107 },
+    { CODEC_ID_MJPEG     , 108 },
+    { CODEC_ID_PCM_S16LE , 224 },
+    { CODEC_ID_VORBIS    , 225 },
+    { CODEC_ID_AC3       , 226 },
+    { CODEC_ID_PCM_ALAW  , 227 },
+    { CODEC_ID_PCM_MULAW , 228 },
+    { CODEC_ID_PCM_S16BE , 230 },
+    { CODEC_ID_H263      , 242 },
+    { CODEC_ID_H261      , 243 },
+    { 0, 0 },
+};
 
 static const CodecTag mov_video_tags[] = {
 /*  { CODEC_ID_, MKTAG('c', 'v', 'i', 'd') }, *//* Cinepak */
@@ -656,6 +686,7 @@ static int mov_read_esds(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
         sc->esds.max_bitrate = get_be32(pb);
         sc->esds.avg_bitrate = get_be32(pb);
 
+        st->codec->codec_id= codec_get_id(ff_mov_obj_type, sc->esds.object_type_id);
         len = mov_mp4_read_descr(pb, &tag);
         //av_log(NULL, AV_LOG_DEBUG, "LEN %d  TAG %d  m:%d a:%d\n", len, tag, sc->esds.max_bitrate, sc->esds.avg_bitrate);
         if (tag == MP4DecSpecificDescrTag) {
