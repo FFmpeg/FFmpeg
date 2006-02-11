@@ -569,6 +569,7 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
             if (url_fseek(pb, 0, SEEK_SET) == (offset_t)-EPIPE) {
                 url_fclose(pb);
                 if (url_fopen(pb, filename, URL_RDONLY) < 0) {
+                    file_opened = 0;
                     err = AVERROR_IO;
                     goto fail;
                 }
