@@ -1306,7 +1306,7 @@ libdir="${prefix}/lib"
 fi
 
 if test x"$incdir" = x""; then
-libdir="${prefix}/include/ffmpeg"
+incdir="${prefix}/include/ffmpeg"
 fi
 
 if test x"$mandir" = x""; then
