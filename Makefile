@@ -149,6 +149,8 @@ ifeq ($(BUILD_STATIC),yes)
 endif
 
 install-headers:
+	install -d "$(incdir)"
+	install -d "$(libdir)/pkgconfig"
 	$(MAKE) -C libavutil   install-headers
 	$(MAKE) -C libavcodec  install-headers
 	$(MAKE) -C libavformat install-headers

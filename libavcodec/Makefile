@@ -525,13 +525,8 @@ ifeq ($(CONFIG_PP),yes)
 endif
 
 install-headers:
-	mkdir -p "$(prefix)/include/ffmpeg"
-	install -m 644 $(SRC_PATH)/libavcodec/avcodec.h \
-                "$(prefix)/include/ffmpeg"
-	install -m 644 $(SRC_PATH)/libavcodec/dsputil.h \
-                "$(prefix)/include/ffmpeg"
-	install -d "$(libdir)/pkgconfig"
-	install -m 644 ../libavcodec.pc "$(libdir)/pkgconfig"
+	install -m 644 avcodec.h dsputil.h "$(incdir)"
+	install -m 644 $(SRC_PATH)/libavcodec.pc "$(libdir)/pkgconfig"
 ifeq ($(CONFIG_PP),yes)
 	$(MAKE) -C libpostproc $@
 endif

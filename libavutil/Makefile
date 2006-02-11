@@ -76,16 +76,9 @@ install-lib-static: $(LIB)
 	install -m 644 $(LIB) "$(libdir)"
 
 install-headers:
-	mkdir -p "$(prefix)/include/ffmpeg"
-	install -m 644 $(SRC_PATH)/libavutil/avutil.h \
-	               $(SRC_PATH)/libavutil/common.h \
-	               $(SRC_PATH)/libavutil/mathematics.h \
-	               $(SRC_PATH)/libavutil/integer.h \
-	               $(SRC_PATH)/libavutil/rational.h \
-	               $(SRC_PATH)/libavutil/intfloat_readwrite.h \
-                "$(prefix)/include/ffmpeg"
-	install -d "$(libdir)/pkgconfig"
-	install -m 644 ../libavutil.pc "$(libdir)/pkgconfig"
+	install -m 644 avutil.h common.h mathematics.h integer.h \
+	               rational.h intfloat_readwrite.h "$(incdir)"
+	install -m 644 $(SRC_PATH)/libavutil.pc "$(libdir)/pkgconfig"
 
 #
 # include dependency files if they exist

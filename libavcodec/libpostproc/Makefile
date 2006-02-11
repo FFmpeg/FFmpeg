@@ -65,10 +65,8 @@ install-lib-static: $(LIB)
 	install -m 644 $(LIB) "$(libdir)"
 
 install-headers:
-	mkdir -p $(prefix)/include/postproc
-	install -m 644 $(SRC_PATH)/libavcodec/libpostproc/postprocess.h $(prefix)/include/postproc/postprocess.h
-	install -d $(libdir)/pkgconfig
-	install -m 644 ../../libpostproc.pc $(libdir)/pkgconfig
+	install -m 644 $postprocess.h $(prefix)/include/postproc/postprocess.h
+	install -m 644 $(SRC_PATH)/libpostproc.pc $(libdir)/pkgconfig
 
 
 #
