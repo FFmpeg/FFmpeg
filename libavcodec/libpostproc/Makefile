@@ -48,7 +48,7 @@ $(LIB): $(OBJS)
 	$(AR) rc $@ $(OBJS)
 	$(RANLIB) $@
 
-install: all install-headers
+install: all
 ifeq ($(BUILD_SHARED),yes)
 ifeq ($(CONFIG_WIN32),yes)
 	install $(INSTALLSTRIP) -m 755 $(SLIBNAME) "$(prefix)"
@@ -64,7 +64,7 @@ else
 endif
 endif
 
-installlib: all install-headers
+installlib: all
 	install -m 644 $(LIB) "$(libdir)"
 
 install-headers:

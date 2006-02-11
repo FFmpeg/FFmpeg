@@ -108,7 +108,7 @@ documentation:
 
 .PHONY: install
 
-install: all install-progs install-man $(INSTALLVHOOK)
+install: all install-progs install-headers install-man $(INSTALLVHOOK)
 	$(MAKE) -C libavutil install
 	$(MAKE) -C libavcodec install
 	$(MAKE) -C libavformat install
@@ -137,6 +137,11 @@ installlib:
 	$(MAKE) -C libavutil installlib
 	$(MAKE) -C libavcodec installlib
 	$(MAKE) -C libavformat installlib
+
+install-headers:
+	$(MAKE) -C libavutil   install-headers
+	$(MAKE) -C libavcodec  install-headers
+	$(MAKE) -C libavformat install-headers
 
 dep:	depend
 

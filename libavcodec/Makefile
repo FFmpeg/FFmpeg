@@ -503,7 +503,7 @@ fft-test: fft-test.o $(LIB)
 	$(CC) -o $@ $^ $(LIBAVUTIL) -lm
 
 ifeq ($(BUILD_SHARED),yes)
-install: all install-headers
+install: all
 ifeq ($(CONFIG_WIN32),yes)
 	install $(INSTALLSTRIP) -m 755 $(SLIBNAME) "$(prefix)"
 else
@@ -523,7 +523,7 @@ else
 install:
 endif
 
-installlib: all install-headers
+installlib: all
 	install -m 644 $(LIB) "$(libdir)"
 ifeq ($(CONFIG_PP),yes)
 	$(MAKE) -C libpostproc $@
