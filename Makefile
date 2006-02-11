@@ -110,7 +110,11 @@ documentation:
 
 install: install-progs install-libs install-headers install-man $(INSTALLVHOOK)
 
+ifeq ($(BUILD_SHARED),yes)
+install-progs: $(PROG) install-libs
+else
 install-progs: $(PROG)
+endif
 	install -d "$(bindir)"
 	install -c $(INSTALLSTRIP) -m 755 $(PROG) "$(bindir)"
 
