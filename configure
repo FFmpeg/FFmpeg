@@ -14,6 +14,7 @@ echo "Standard options:"
 echo "  --help                   print this message"
 echo "  --prefix=PREFIX          install in PREFIX [$prefix]"
 echo "  --libdir=DIR             install libs in DIR [PREFIX/lib]"
+echo "  --incdir=DIR             install includes in DIR [PREFIX/include/ffmpeg]"
 echo "  --mandir=DIR             install man page in DIR [PREFIX/man]"
 echo "  --enable-mp3lame         enable MP3 encoding via libmp3lame [default=no]"
 echo "  --enable-libogg          enable Ogg support via libogg [default=no]"
@@ -116,6 +117,7 @@ TMPH="${TMPDIR1}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.h"
 # default parameters
 prefix="/usr/local"
 libdir=""
+incdir=""
 mandir=""
 bindir=""
 cross_prefix=""
@@ -462,6 +464,8 @@ for opt do
   --prefix=*) prefix=`echo $opt | cut -d '=' -f 2`; force_prefix=yes
   ;;
   --libdir=*) libdir=`echo $opt | cut -d '=' -f 2`; force_libdir=yes
+  ;;
+  --incdir=*) incdir=`echo $opt | cut -d '=' -f 2`;
   ;;
   --mandir=*) mandir=`echo $opt | cut -d '=' -f 2`
   ;;
@@ -1301,6 +1305,10 @@ if test x"$libdir" = x""; then
 libdir="${prefix}/lib"
 fi
 
+if test x"$incdir" = x""; then
+libdir="${prefix}/include/ffmpeg"
+fi
+
 if test x"$mandir" = x""; then
 mandir="${prefix}/man"
 fi
@@ -1387,6 +1395,7 @@ echo "#define FFMPEG_CONFIGURATION "'"'"$FFMPEG_CONFIGURATION"'"' >> $TMPH
 
 echo "prefix=\$(DESTDIR)$prefix" >> config.mak
 echo "libdir=\$(DESTDIR)$libdir" >> config.mak
+echo "incdir=\$(DESTDIR)$incdir" >> config.mak
 echo "bindir=\$(DESTDIR)$bindir" >> config.mak
 echo "mandir=\$(DESTDIR)$mandir" >> config.mak
 echo "MAKE=$make" >> config.mak
