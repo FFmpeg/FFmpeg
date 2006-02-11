@@ -208,7 +208,7 @@ TAGS:
 
 # regression tests
 
-libavtest test mpeg4 mpeg test-server fulltest: ffmpeg$(EXESUF)
+libavtest test mpeg4 mpeg test-server fulltest: $(PROG)
 	$(MAKE) -C tests $@
 
 # tar release (use 'make -k tar' on a checkouted tree)
