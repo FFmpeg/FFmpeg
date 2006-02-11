@@ -525,6 +525,9 @@ endif
 
 installlib: all install-headers
 	install -m 644 $(LIB) "$(libdir)"
+ifeq ($(CONFIG_PP),yes)
+	$(MAKE) -C libpostproc $@
+endif
 
 install-headers:
 	mkdir -p "$(prefix)/include/ffmpeg"
