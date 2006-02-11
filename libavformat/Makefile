@@ -141,7 +141,7 @@ install-lib-static: $(LIB)
 	install -m 644 $(LIB) "$(libdir)"
 
 install-headers:
-	install -m 644 avformat.h avio.h rtp.h rtsp.h rtspcodes.h "$(prefix)/include/ffmpeg"
+	install -m 644 avformat.h avio.h rtp.h rtsp.h rtspcodes.h "$(incdir)"
 	install -m 644 $(SRC_PATH)/libavformat.pc "$(libdir)/pkgconfig"
 
 %.o: %.c
