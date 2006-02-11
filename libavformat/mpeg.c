@@ -1263,7 +1263,7 @@ static int mpeg_mux_end(AVFormatContext *ctx)
 static int mpegps_probe(AVProbeData *p)
 {
     uint32_t code= -1;
-    int sys=0, pspack=0;
+    int sys=0, pspack=0, priv1=0, vid=0;
     int i;
 
     for(i=0; i<p->buf_size; i++){
@@ -1271,11 +1271,15 @@ static int mpegps_probe(AVProbeData *p)
         if ((code & 0xffffff00) == 0x100) {
             switch(code){
             case SYSTEM_HEADER_START_CODE:    sys++; break;
+            case         PRIVATE_STREAM_1:  priv1++; break;
             case          PACK_START_CODE: pspack++; break;
+            case       (VIDEO_ID + 0x100):    vid++; break;
             }
         }
     }
     if(sys && sys*9 <= pspack*10)
+        return AVPROBE_SCORE_MAX/2+2; // +1 for .mpg
+    if((priv1 || vid) && (priv1+vid)*9 <= pspack*10)
         return AVPROBE_SCORE_MAX/2+2; // +1 for .mpg
     return 0;
 }
