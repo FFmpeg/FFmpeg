@@ -108,10 +108,12 @@ documentation:
 
 .PHONY: install
 
-install: all install-man $(INSTALLVHOOK)
+install: all install-progs install-man $(INSTALLVHOOK)
 	$(MAKE) -C libavutil install
 	$(MAKE) -C libavcodec install
 	$(MAKE) -C libavformat install
+
+install-progs:
 	install -d "$(bindir)"
 	install -c $(INSTALLSTRIP) -m 755 $(PROG) "$(bindir)"
 
