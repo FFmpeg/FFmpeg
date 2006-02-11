@@ -2110,6 +2110,25 @@ SwsContext *sws_getContext(int srcW, int srcH, int origSrcFormat, int dstW, int 
 				c->chrSrcH, c->chrDstH, filterAlign, (1<<12)-4,
 				(flags&SWS_BICUBLIN) ? (flags|SWS_BILINEAR) : flags,
 				srcFilter->chrV, dstFilter->chrV, c->param);
+
+#ifdef HAVE_ALTIVEC
+		c->vYCoeffsBank = memalign (16, sizeof (vector signed short)*c->vLumFilterSize*c->dstH);
+		c->vCCoeffsBank = memalign (16, sizeof (vector signed short)*c->vChrFilterSize*c->dstH);
+
+		for (i=0;i<c->vLumFilterSize*c->dstH;i++) {
+                  int j;
+		  short *p = (short *)&c->vYCoeffsBank[i];
+		  for (j=0;j<8;j++)
+		    p[j] = c->vLumFilter[i];
+		}
+
+		for (i=0;i<c->vChrFilterSize*c->dstH;i++) {
+                  int j;
+		  short *p = (short *)&c->vCCoeffsBank[i];
+		  for (j=0;j<8;j++)
+		    p[j] = c->vChrFilter[i];
+		}
+#endif
 	}
 
 	// Calculate Buffer Sizes so that they won't run out while handling these damn slices
@@ -2644,6 +2663,12 @@ void sws_freeContext(SwsContext *c){
 	c->hLumFilter = NULL;
 	if(c->hChrFilter) free(c->hChrFilter);
 	c->hChrFilter = NULL;
+#ifdef HAVE_ALTIVEC
+	if(c->vYCoeffsBank) free(c->vYCoeffsBank);
+	c->vYCoeffsBank = NULL;
+	if(c->vCCoeffsBank) free(c->vCCoeffsBank);
+	c->vCCoeffsBank = NULL;
+#endif
 
 	if(c->vLumFilterPos) free(c->vLumFilterPos);
 	c->vLumFilterPos = NULL;

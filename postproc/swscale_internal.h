@@ -154,6 +154,7 @@ typedef struct SwsContext{
   vector signed short   CGV;
   vector signed short   OY;
   vector unsigned short CSHIFT;
+  vector signed short *vYCoeffsBank, *vCCoeffsBank;
 
 #endif
 

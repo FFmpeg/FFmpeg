@@ -774,8 +774,6 @@ altivec_yuv2packedX (SwsContext *c,
 		       uint8_t *dest, int dstW, int dstY)
 {
   int i,j;
-  short tmp __attribute__((aligned (16)));
-  int16_t *p;
   short *f;
   vector signed short X,X0,X1,Y0,U0,V0,Y1,U1,V1,U,V;
   vector signed short R0,G0,B0,R1,G1,B1;
@@ -787,29 +785,10 @@ altivec_yuv2packedX (SwsContext *c,
   vector unsigned short SCL = vec_splat((vector unsigned short)AVV(4),0);
   unsigned long scratch[16] __attribute__ ((aligned (16)));
 
-  vector signed short *vYCoeffsBank, *vCCoeffsBank;
-
   vector signed short *YCoeffs, *CCoeffs;
 
-  vYCoeffsBank = memalign (16, sizeof (vector signed short)*lumFilterSize*c->dstH);
-  vCCoeffsBank = memalign (16, sizeof (vector signed short)*chrFilterSize*c->dstH);
-
-  for (i=0;i<lumFilterSize*c->dstH;i++) {
-    tmp = c->vLumFilter[i];
-    p = &vYCoeffsBank[i];
-    for (j=0;j<8;j++)
-      p[j] = tmp;
-  }
-
-  for (i=0;i<chrFilterSize*c->dstH;i++) {
-    tmp = c->vChrFilter[i];
-    p = &vCCoeffsBank[i];
-    for (j=0;j<8;j++)
-      p[j] = tmp;
-  }
-
-  YCoeffs = vYCoeffsBank+dstY*lumFilterSize;
-  CCoeffs = vCCoeffsBank+dstY*chrFilterSize;
+  YCoeffs = c->vYCoeffsBank+dstY*lumFilterSize;
+  CCoeffs = c->vCCoeffsBank+dstY*chrFilterSize;
 
   out = (vector unsigned char *)dest;
 
@@ -961,8 +940,5 @@ altivec_yuv2packedX (SwsContext *c,
 
     memcpy (&((uint32_t*)dest)[i], scratch, (dstW-i)/4);
   }
-
-  if (vYCoeffsBank) free (vYCoeffsBank);
-  if (vCCoeffsBank) free (vCCoeffsBank);
 
 }
