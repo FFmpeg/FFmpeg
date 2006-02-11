@@ -534,6 +534,9 @@ install-headers:
                 "$(prefix)/include/ffmpeg"
 	install -d "$(libdir)/pkgconfig"
 	install -m 644 ../libavcodec.pc "$(libdir)/pkgconfig"
+ifeq ($(CONFIG_PP),yes)
+	$(MAKE) -C libpostproc $@
+endif
 
 #
 # include dependency files if they exist
