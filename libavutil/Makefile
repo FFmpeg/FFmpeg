@@ -60,25 +60,19 @@ distclean: clean
 	rm -f .depend
 
 
-ifeq ($(BUILD_SHARED),yes)
-install: all
+install-lib-shared: $(SLIBNAME)
 ifeq ($(CONFIG_WIN32),yes)
 	install $(INSTALLSTRIP) -m 755 $(SLIBNAME) "$(prefix)"
 else
-	install -d $(libdir)
 	install $(INSTALLSTRIP) -m 755 $(SLIBNAME) \
 		$(libdir)/$(SLIBNAME_WITH_VERSION)
 	ln -sf $(SLIBNAME_WITH_VERSION) \
 		$(libdir)/$(SLIBNAME_WITH_MAJOR)
 	ln -sf $(SLIBNAME_WITH_VERSION) \
 		$(libdir)/$(SLIBNAME)
-	$(LDCONFIG) || true
-endif
-else
-install:
 endif
 
-installlib: all
+install-lib-static: $(LIB)
 	install -m 644 $(LIB) "$(libdir)"
 
 install-headers:

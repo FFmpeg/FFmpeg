@@ -108,10 +108,7 @@ documentation:
 
 .PHONY: install
 
-install: all install-progs install-headers install-man $(INSTALLVHOOK)
-	$(MAKE) -C libavutil install
-	$(MAKE) -C libavcodec install
-	$(MAKE) -C libavformat install
+install: install-progs install-libs install-headers install-man $(INSTALLVHOOK)
 
 install-progs: $(PROG)
 	install -d "$(bindir)"
@@ -133,10 +130,19 @@ endif
 install-vhook:
 	$(MAKE) -C vhook install
 
-installlib:
-	$(MAKE) -C libavutil installlib
-	$(MAKE) -C libavcodec installlib
-	$(MAKE) -C libavformat installlib
+install-libs:
+	install -d $(libdir)
+ifeq ($(BUILD_SHARED),yes)
+	$(MAKE) -C libavutil   install-lib-shared
+	$(MAKE) -C libavcodec  install-lib-shared
+	$(MAKE) -C libavformat install-lib-shared
+	$(LDCONFIG) || true
+endif
+ifeq ($(BUILD_STATIC),yes)
+	$(MAKE) -C libavutil   install-lib-static
+	$(MAKE) -C libavcodec  install-lib-static
+	$(MAKE) -C libavformat install-lib-static
+endif
 
 install-headers:
 	$(MAKE) -C libavutil   install-headers

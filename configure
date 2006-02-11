@@ -1415,6 +1415,7 @@ echo "LDCONFIG=$LDCONFIG" >> config.mak
 echo "FFSLDFLAGS=$FFSLDFLAGS" >> config.mak
 echo "SHFLAGS=$SHFLAGS" >> config.mak
 echo "LIBOBJFLAGS=$LIBOBJFLAGS" >> config.mak
+echo "BUILD_STATIC=$lstatic" >> config.mak
 echo "BUILDSUF=$BUILDSUF" >> config.mak
 echo "LIBPREF=$LIBPREF" >> config.mak
 echo "LIBSUF=\${BUILDSUF}$LIBSUF" >> config.mak
