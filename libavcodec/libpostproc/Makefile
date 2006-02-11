@@ -65,7 +65,7 @@ install-lib-static: $(LIB)
 	install -m 644 $(LIB) "$(libdir)"
 
 install-headers:
-	install -m 644 $postprocess.h $(prefix)/include/postproc/postprocess.h
+	install -m 644 postprocess.h $(prefix)/include/postproc/postprocess.h
 	install -m 644 $(SRC_PATH)/libpostproc.pc $(libdir)/pkgconfig
 
 
