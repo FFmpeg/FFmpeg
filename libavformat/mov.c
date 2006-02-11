@@ -831,17 +831,21 @@ static int mov_read_wave(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     if((uint64_t)atom.size > (1<<30))
         return -1;
 
-    // pass all frma atom to codec, needed at least for QDM2
-    av_free(st->codec->extradata);
-    st->codec->extradata_size = atom.size;
-    st->codec->extradata = (uint8_t*) av_mallocz(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
+    if (st->codec->codec_id == CODEC_ID_QDM2) {
+        // pass all frma atom to codec, needed at least for QDM2
+        av_free(st->codec->extradata);
+        st->codec->extradata_size = atom.size;
+        st->codec->extradata = (uint8_t*) av_mallocz(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
 
-    if (st->codec->extradata) {
-        get_buffer(pb, st->codec->extradata, atom.size);
-        //av_log(NULL, AV_LOG_DEBUG, "Reading frma %Ld  %s\n", atom.size, (char*)st->codec->extradata);
-    } else
+        if (st->codec->extradata) {
+            get_buffer(pb, st->codec->extradata, atom.size);
+            //av_log(NULL, AV_LOG_DEBUG, "Reading frma %Ld  %s\n", atom.size, (char*)st->codec->extradata);
+        } else
+            url_fskip(pb, atom.size);
+    } else if (atom.size > 8) { /* to read frma, esds atoms */
+        mov_read_default(c, pb, atom);
+    } else if (atom.size > 0)
         url_fskip(pb, atom.size);
-
     return 0;
 }
 
@@ -944,6 +948,7 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 
     while(entries--) { //Parsing Sample description table
         enum CodecID id;
+        offset_t start_pos = url_ftell(pb);
         int size = get_be32(pb); /* size */
         format = get_le32(pb); /* data format */
 
@@ -1006,7 +1011,6 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
             st->codec->time_base.den      = 25;
             st->codec->time_base.num = 1;
 */
-            size -= (16+8*4+2+32+2*2);
 #if 0
             while (size >= 8) {
                 MOV_atom_t a;
@@ -1147,8 +1151,11 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
             } else
                 st->codec->palctrl = NULL;
 
-            a.size = size;
-            mov_read_default(c, pb, a);
+            a.size = size - (url_ftell(pb) - start_pos);
+            if (a.size > 8)
+                mov_read_default(c, pb, a);
+            else if (a.size > 0)
+                url_fskip(pb, a.size);
 #endif
         } else {
             st->codec->codec_id = codec_get_id(mov_audio_tags, format);
