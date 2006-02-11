@@ -48,7 +48,7 @@ $(LIB): $(OBJS)
 	$(AR) rc $@ $(OBJS)
 	$(RANLIB) $@
 
-install: all
+install: all install-headers
 ifeq ($(BUILD_SHARED),yes)
 ifeq ($(CONFIG_WIN32),yes)
 	install $(INSTALLSTRIP) -m 755 $(SLIBNAME) "$(prefix)"
@@ -63,6 +63,11 @@ else
 	$(LDCONFIG) || true
 endif
 endif
+
+installlib: all install-headers
+	install -m 644 $(LIB) "$(libdir)"
+
+install-headers:
 	mkdir -p $(prefix)/include/postproc
 	install -m 644 $(SRC_PATH)/libavcodec/libpostproc/postprocess.h $(prefix)/include/postproc/postprocess.h
 	install -d $(libdir)/pkgconfig
