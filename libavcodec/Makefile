@@ -300,15 +300,6 @@ ifeq ($(CONFIG_X264),yes)
 OBJS+= x264.o
 endif
 
-ifeq ($(CONFIG_PP),yes)
-ifeq ($(BUILD_SHARED),yes)
-EXTRALIBS += -Llibpostproc -lpostproc$(BUILDSUF)
-else
-# LIBS += libpostproc/libpostproc.a ... should be fixed
-OBJS += libpostproc/postprocess.o
-endif
-endif
-
 ifeq ($(CONFIG_MP3LAME),yes)
 OBJS += mp3lameaudio.o
 endif
@@ -428,18 +419,12 @@ $(LIB): $(OBJS) $(AMRLIBS)
 	$(RANLIB) $@
 
 $(SLIBNAME): $(OBJS)
-ifeq ($(CONFIG_PP),yes)
-	$(MAKE) -C libpostproc
-endif
 	$(CC) $(SHFLAGS) $(LDFLAGS) -o $@ $(OBJS) $(EXTRALIBS) $(AMREXTRALIBS)
 ifeq ($(CONFIG_WIN32),yes)
 	-lib /machine:i386 /def:$(@:.dll=.def)
 endif
 
 dsputil.o: dsputil.c dsputil.h
-
-libpostproc/libpostproc.a:
-	$(MAKE) -C libpostproc
 
 %.o: %.c
 	$(CC) $(CFLAGS) $(LIBOBJFLAGS) -c -o $@ $<
@@ -465,11 +450,9 @@ clean: $(CLEANAMR)
 	   sparc/*.o sparc/*~ \
 	   liba52/*.o liba52/*~ \
 	   apiexample $(TESTS)
-	$(MAKE) -C libpostproc clean
 
 distclean: clean
 	rm -f .depend
-	$(MAKE) -C libpostproc distclean
 
 cleanamr:
 	$(MAKE) -C amr clean
@@ -514,22 +497,13 @@ else
 	ln -sf $(SLIBNAME_WITH_VERSION) \
 		$(libdir)/$(SLIBNAME)
 endif
-ifeq ($(CONFIG_PP),yes)
-	$(MAKE) -C libpostproc $@
-endif
 
 install-lib-static: $(LIB)
 	install -m 644 $(LIB) "$(libdir)"
-ifeq ($(CONFIG_PP),yes)
-	$(MAKE) -C libpostproc $@
-endif
 
 install-headers:
 	install -m 644 avcodec.h dsputil.h "$(incdir)"
 	install -m 644 $(SRC_PATH)/libavcodec.pc "$(libdir)/pkgconfig"
-ifeq ($(CONFIG_PP),yes)
-	$(MAKE) -C libpostproc $@
-endif
 
 #
 # include dependency files if they exist

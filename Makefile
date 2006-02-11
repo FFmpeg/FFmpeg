@@ -67,6 +67,9 @@ lib:
 	$(MAKE) -C libavutil all
 	$(MAKE) -C libavcodec all
 	$(MAKE) -C libavformat all
+ifeq ($(CONFIG_PP),yes)
+	$(MAKE) -C libavcodec/libpostproc all
+endif
 
 ffmpeg_g$(EXESUF): ffmpeg.o cmdutils.o .libs
 	$(CC) $(LDFLAGS) -o $@ ffmpeg.o cmdutils.o $(FFLIBS) $(EXTRALIBS)
@@ -140,12 +143,18 @@ ifeq ($(BUILD_SHARED),yes)
 	$(MAKE) -C libavutil   install-lib-shared
 	$(MAKE) -C libavcodec  install-lib-shared
 	$(MAKE) -C libavformat install-lib-shared
+ifeq ($(CONFIG_PP),yes)
+	$(MAKE) -C libavcodec/libpostproc install-lib-shared
+endif
 	$(LDCONFIG) || true
 endif
 ifeq ($(BUILD_STATIC),yes)
 	$(MAKE) -C libavutil   install-lib-static
 	$(MAKE) -C libavcodec  install-lib-static
 	$(MAKE) -C libavformat install-lib-static
+ifeq ($(CONFIG_PP),yes)
+	$(MAKE) -C libavcodec/libpostproc install-lib-static
+endif
 endif
 
 install-headers:
@@ -154,6 +163,9 @@ install-headers:
 	$(MAKE) -C libavutil   install-headers
 	$(MAKE) -C libavcodec  install-headers
 	$(MAKE) -C libavformat install-headers
+ifeq ($(CONFIG_PP),yes)
+	$(MAKE) -C libavcodec/libpostproc install-headers
+endif
 
 dep:	depend
 
@@ -175,6 +187,7 @@ clean:
 	$(MAKE) -C libavutil clean
 	$(MAKE) -C libavcodec clean
 	$(MAKE) -C libavformat clean
+	$(MAKE) -C libavcodec/libpostproc clean
 	$(MAKE) -C tests clean
 	$(MAKE) -C vhook clean
 	rm -f *.o *.d *~ .libs gmon.out TAGS \
@@ -185,6 +198,7 @@ distclean: clean
 	$(MAKE) -C libavutil   distclean
 	$(MAKE) -C libavcodec  distclean
 	$(MAKE) -C libavformat distclean
+	$(MAKE) -C libavcodec/libpostproc distclean
 	$(MAKE) -C tests       distclean
 	$(MAKE) -C vhook       distclean
 	rm -f .depend config.mak config.h *.pc
