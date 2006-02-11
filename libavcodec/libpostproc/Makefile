@@ -3,6 +3,9 @@ include ../../config.mak
 
 VPATH=$(SRC_PATH)/libavcodec/libpostproc
 
+# Overload incdir, postproc include files go in a different directory.
+incdir=$(prefix)/include/postproc
+
 NAME=postproc
 ifeq ($(BUILD_SHARED),yes)
 LIBVERSION=$(SPPVERSION)
@@ -65,7 +68,8 @@ install-lib-static: $(LIB)
 	install -m 644 $(LIB) "$(libdir)"
 
 install-headers:
-	install -m 644 postprocess.h $(prefix)/include/postproc/postprocess.h
+	install -d $(incdir)
+	install -m 644 postprocess.h $(incdir)/postprocess.h
 	install -m 644 $(SRC_PATH)/libpostproc.pc $(libdir)/pkgconfig
 
 
