@@ -25,7 +25,7 @@ version <next>
 - H.264 custom quantization matrices support
 - ffserver fixed, it should now be usable again
 - QDM2 audio decoder
-- cook audio decoder
+- Real Cooker audio decoder
 - TrueSpeech audio decoder
 - WMA2 audio decoder fixed, now all files should play correctly
 - RealAudio 14.4 and 28.8 decoders fixed
@@ -38,6 +38,8 @@ version <next>
 - Creative VOC file reading and writing
 - American Laser Games multimedia (*.mm) playback system
 - Zip Blocks Motion Video decoder
+- Improved Theora/VP3 decoder
+- True Audio (TTA) decoder
 
 version 0.4.9-pre1:
 
