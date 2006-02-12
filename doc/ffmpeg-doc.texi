@@ -865,6 +865,7 @@ other implementations.
 @item Real COOK              @tab      @tab X
 @tab All versions except 5.1 are supported
 @item DSP Group TrueSpeech   @tab      @tab X
+@item True Audio (TTA)       @tab      @tab X
 @end multitable
 
 @code{X} means that encoding (resp. decoding) is supported.
