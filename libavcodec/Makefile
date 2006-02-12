@@ -169,6 +169,9 @@ endif
 ifeq ($(CONFIG_TRUESPEECH_DECODER),yes)
     OBJS+= truespeech.o
 endif
+ifeq ($(CONFIG_TTA_DECODER),yes)
+    OBJS+= tta.o
+endif
 ifeq ($(CONFIG_TSCC_DECODER),yes)
     OBJS+= tscc.o
 endif
