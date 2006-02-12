@@ -298,11 +298,16 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
             av_log(avctx, AV_LOG_ERROR, "Unsupported (for now) format %i\n", c->fmt);
             return -1;
         }
+#ifdef CONFIG_ZLIB
         zret = inflateReset(&c->zstream);
         if (zret != Z_OK) {
             av_log(avctx, AV_LOG_ERROR, "Inflate reset error: %d\n", zret);
             return -1;
         }
+#else
+        av_log(avctx, AV_LOG_ERROR, "BUG! Zlib support not compiled in frame decoder.\n");
+        return -1;
+#endif  /* CONFIG_ZLIB */
         if(c->fmt == ZMBV_FMT_8BPP) {
             c->bpp = 8;
             c->decode_intra = zmbv_decode_intra;
