@@ -1251,6 +1251,7 @@ fi
 if test "$v4l2" = "yes"; then
 # check for video4linux2 --- V4L2_PIX_FMT_YUV420
 cat > $TMPC << EOF
+#include <sys/time.h>
 #include <linux/videodev.h>
 int dummy = V4L2_PIX_FMT_YUV420;
 EOF
