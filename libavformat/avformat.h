@@ -555,6 +555,9 @@ int ff_aiff_init(void);
 /* voc.c */
 int voc_init(void);
 
+/* tta.c */
+int tta_init(void);
+
 /* adts.c */
 int ff_adts_init(void);
 

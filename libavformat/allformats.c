@@ -116,6 +116,7 @@ void av_register_all(void)
     nsvdec_init();
     daud_init();
     voc_init();
+    tta_init();
 
 #ifdef CONFIG_MUXERS
     /* image formats */
