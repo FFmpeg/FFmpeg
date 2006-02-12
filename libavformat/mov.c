@@ -63,12 +63,8 @@
 #undef NDEBUG
 #include <assert.h>
 
-/* Allows seeking (MOV_SPLIT_CHUNKS should also be defined) */
+/* Allows seeking */
 #define MOV_SEEK
-
-/* allows chunk splitting - should work now... */
-/* in case you can't read a file, try commenting */
-#define MOV_SPLIT_CHUNKS
 
 /* Special handling for movies created with Minolta Dimaxe Xi*/
 /* this fix should not interfere with other .mov files, but just in case*/
@@ -1750,7 +1746,6 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
     int idx;
     size = 0x0FFFFFFF;
 
-#ifdef MOV_SPLIT_CHUNKS
     if (mov->partial) {
         sc = mov->partial;
         idx = sc->sample_to_chunk_index;
@@ -1772,7 +1767,6 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
 
         goto readchunk;
     }
-#endif
 
 again:
     sc = 0;
@@ -1869,7 +1863,6 @@ again:
     if (idx + 1 < sc->sample_to_chunk_sz && sc->next_chunk >= sc->sample_to_chunk[idx + 1].first)
         idx++;
     sc->sample_to_chunk_index = idx;
-#ifdef MOV_SPLIT_CHUNKS
     /* split chunks into samples */
     if (sc->sample_size == 0 || sc->sample_size > 100) {
         if (idx >= 0 && sc->sample_to_chunk[idx].count != 1) {
@@ -1883,7 +1876,6 @@ again:
     }else if(idx + 1 < sc->sample_to_chunk_sz){
         sc->current_sample += sc->sample_size * sc->sample_to_chunk[idx].count;
     }
-#endif
 
 readchunk:
     dprintf("chunk: %lli -> %lli (%i)\n", offset, offset + size, size);
@@ -1967,7 +1959,7 @@ readchunk:
     return 0;
 }
 
-#if defined(MOV_SPLIT_CHUNKS) && defined(MOV_SEEK)
+#if defined(MOV_SEEK)
 /**
  * Seek method based on the one described in the Appendix C of QTFileFormat.pdf
  */
@@ -2186,7 +2178,7 @@ static AVInputFormat mov_iformat = {
     mov_read_header,
     mov_read_packet,
     mov_read_close,
-#if defined(MOV_SPLIT_CHUNKS) && defined(MOV_SEEK)
+#if defined(MOV_SEEK)
     mov_read_seek,
 #endif
 };
