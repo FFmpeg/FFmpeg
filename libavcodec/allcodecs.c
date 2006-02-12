@@ -444,6 +444,9 @@ void avcodec_register_all(void)
 #ifdef CONFIG_ZLIB_DECODER
     register_avcodec(&zlib_decoder);
 #endif //CONFIG_ZLIB_DECODER
+#ifdef CONFIG_ZMBV_DECODER
+    register_avcodec(&zmbv_decoder);
+#endif //CONFIG_ZMBV_DECODER
 #ifdef CONFIG_SONIC_DECODER
     register_avcodec(&sonic_decoder);
 #endif //CONFIG_SONIC_DECODER

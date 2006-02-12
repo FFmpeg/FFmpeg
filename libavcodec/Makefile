@@ -221,6 +221,9 @@ endif
 ifeq ($(CONFIG_MMVIDEO_DECODER),yes)
 	OBJS+= mmvideo.o
 endif
+ifeq ($(CONFIG_ZMBV_DECODER),yes)
+	OBJS+= zmbv.o
+endif
 
 AMROBJS=
 ifeq ($(AMR_NB),yes)

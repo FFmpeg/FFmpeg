@@ -37,6 +37,7 @@ version <next>
 - ADTS AAC file reading and writing
 - Creative VOC file reading and writing
 - American Laser Games multimedia (*.mm) playback system
+- Zip Blocks Motion Video decoder
 
 version 0.4.9-pre1:
 
