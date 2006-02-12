@@ -1892,7 +1892,7 @@ if test "$source_path_used" = "yes" ; then
     done
     echo "SRC_PATH=$source_path" >> config.mak
 else
-    echo "SRC_PATH='$source_path'" >> config.mak
+    echo "SRC_PATH=$source_path" >> config.mak
 fi
 
 if test "$amr_wb" = "yes" ; then
