@@ -1890,10 +1890,8 @@ if test "$source_path_used" = "yes" ; then
     for f in $FILES ; do
         ln -sf "$source_path/$f" $f
     done
-    echo "SRC_PATH=$source_path" >> config.mak
-else
-    echo "SRC_PATH=$source_path" >> config.mak
 fi
+echo "SRC_PATH=$source_path" >> config.mak
 
 if test "$amr_wb" = "yes" ; then
   echo "#define AMR_WB 1" >> $TMPH
