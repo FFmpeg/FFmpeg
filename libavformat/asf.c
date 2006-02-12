@@ -71,7 +71,7 @@ static void print_guid(const GUID *g)
         printf(" 0x%02x,", g->v4[i]);
     printf("}\n");
 }
-#undef PRINT_IF_GUID(g,cmp)
+#undef PRINT_IF_GUID
 #endif
 
 static void get_guid(ByteIOContext *s, GUID *g)

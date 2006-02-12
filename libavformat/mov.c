@@ -2230,7 +2230,7 @@ static int mov_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
 
     // Step 2. Find the corresponding sample using the Time-to-sample atom (stts) */
 #ifdef DEBUG
-  av_log(s, AV_LOG_DEBUG, "Searching for time %li in stream #%i (time_scale=%i)\n", (long)timestamp, mov_idx, sc->time_scale);
+  av_log(s, AV_LOG_DEBUG, "Searching for time %li in stream #%i (time_scale=%i)\n", (long)sample_time, mov_idx, sc->time_scale);
 #endif
     start_time = 0; // FIXME use elst atom
     sample = 1; // sample are 0 based in table
