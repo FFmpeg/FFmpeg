@@ -36,6 +36,7 @@ version <next>
 - AIFF/AIFF-C audio format, encoding and decoding
 - ADTS AAC file reading and writing
 - Creative VOC file reading and writing
+- American Laser Games multimedia (*.mm) playback system
 
 version 0.4.9-pre1:
 

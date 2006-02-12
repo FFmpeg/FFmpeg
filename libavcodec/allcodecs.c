@@ -539,6 +539,10 @@ void avcodec_register_all(void)
     register_avcodec(&bmp_decoder);
 #endif
 
+#if CONFIG_MMVIDEO_DECODER
+    register_avcodec(&mmvideo_decoder);
+#endif //CONFIG_MMVIDEO_DECODER
+
     /* pcm codecs */
 #if defined (CONFIG_ENCODERS) && defined (CONFIG_DECODERS)
     #define PCM_CODEC(id, name) \

@@ -218,6 +218,9 @@ endif
 ifeq ($(CONFIG_BMP_DECODER),yes)
 	OBJS+= bmp.o
 endif
+ifeq ($(CONFIG_MMVIDEO_DECODER),yes)
+	OBJS+= mmvideo.o
+endif
 
 AMROBJS=
 ifeq ($(AMR_NB),yes)

@@ -561,6 +561,9 @@ int tta_init(void);
 /* adts.c */
 int ff_adts_init(void);
 
+/* mm.c */
+int mm_init(void);
+
 #include "rtp.h"
 
 #include "rtsp.h"

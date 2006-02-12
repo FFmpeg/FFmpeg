@@ -79,6 +79,7 @@ void av_register_all(void)
     idcin_init();
     flic_init();
     vmd_init();
+    mm_init();
 
 #if defined(AMR_NB) || defined(AMR_NB_FIXED) || defined(AMR_WB)
     amr_init();

@@ -115,6 +115,7 @@ enum CodecID {
     CODEC_ID_TRUEMOTION2,
     CODEC_ID_BMP,
     CODEC_ID_CSCD,
+    CODEC_ID_MMVIDEO,
 
     /* various pcm "codecs" */
     CODEC_ID_PCM_S16LE= 0x10000,
@@ -2226,6 +2227,7 @@ extern AVCodec fraps_decoder;
 extern AVCodec libgsm_encoder;
 extern AVCodec libgsm_decoder;
 extern AVCodec bmp_decoder;
+extern AVCodec mmvideo_decoder;
 
 /* pcm codecs */
 #define PCM_CODEC(id, name) \
