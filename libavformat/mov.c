@@ -19,6 +19,8 @@
 
 #include <limits.h>
 
+//#define DEBUG
+
 #include "avformat.h"
 #include "avi.h"
 #include "mov.h"
@@ -54,12 +56,6 @@
  *  http://developer.apple.com/documentation/QuickTime/QTFF/qtff.pdf
  * QuickTime is a trademark of Apple (AFAIK :))
  */
-
-//#define DEBUG
-#ifdef DEBUG
-#include <stdio.h>
-#include <fcntl.h>
-#endif
 
 #include "qtpalette.h"
 
@@ -361,34 +357,6 @@ typedef struct MOVParseTableEntry {
     mov_parse_function func;
 } MOVParseTableEntry;
 
-#ifdef DEBUG
-/*
- * XXX: static sux, even more in a multithreaded environment...
- * Avoid them. This is here just to help debugging.
- */
-static int debug_indent = 0;
-void print_atom(const char *str, MOV_atom_t atom)
-{
-    unsigned int tag, i;
-    tag = (unsigned int) atom.type;
-    i=debug_indent;
-    if(tag == 0) tag = MKTAG('N', 'U', 'L', 'L');
-    while(i--)
-        av_log(NULL, AV_LOG_DEBUG, "|");
-    av_log(NULL, AV_LOG_DEBUG, "parse:");
-    av_log(NULL, AV_LOG_DEBUG, " %s: tag=%c%c%c%c offset=0x%x size=0x%x\n",
-           str, tag & 0xff,
-           (tag >> 8) & 0xff,
-           (tag >> 16) & 0xff,
-           (tag >> 24) & 0xff,
-           (unsigned int)atom.offset,
-           (unsigned int)atom.size);
-    assert((unsigned int)atom.size < 0x7fffffff);// catching errors
-}
-#else
-#define print_atom(a,b)
-#endif
-
 static int ff_mov_lang_to_iso639(int code, char *to)
 {
     int i;
@@ -441,8 +409,6 @@ int ff_mov_iso639_to_lang(const char *lang, int mp4)
 
 static int mov_read_leaf(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
-    print_atom("leaf", atom);
-
     if (atom.size>1)
         url_fskip(pb, atom.size);
 /*        url_seek(pb, atom_offset+atom.size, SEEK_SET); */
@@ -455,11 +421,6 @@ static int mov_read_default(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     MOV_atom_t a;
     int i;
     int err = 0;
-
-#ifdef DEBUG
-    print_atom("default", atom);
-    debug_indent++;
-#endif
 
     a.offset = atom.offset;
 
@@ -474,7 +435,7 @@ static int mov_read_default(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
         }
         total_size += 8;
         a.offset += 8;
-        //av_log(NULL, AV_LOG_DEBUG, "type: %08x  %.4s  sz: %Lx  %Lx   %Lx\n", type, (char*)&type, size, atom.size, total_size);
+        dprintf("type: %08x  %.4s  sz: %Lx  %Lx   %Lx\n", a.type, (char*)&a.type, a.size, atom.size, total_size);
         if (a.size == 1) { /* 64 bit extended size */
             a.size = get_be64(pb) - 8;
             a.offset += 8;
@@ -494,18 +455,9 @@ static int mov_read_default(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
         if(a.size < 0)
             break;
 
-//        av_log(NULL, AV_LOG_DEBUG, " i=%ld\n", i);
         if (c->parse_table[i].type == 0) { /* skip leaf atoms data */
-//            url_seek(pb, atom.offset+atom.size, SEEK_SET);
-#ifdef DEBUG
-            print_atom("unknown", a);
-#endif
             url_fskip(pb, a.size);
         } else {
-#ifdef DEBUG
-            //char b[5] = { type & 0xff, (type >> 8) & 0xff, (type >> 16) & 0xff, (type >> 24) & 0xff, 0 };
-            //print_atom(b, type, offset, size);
-#endif
             err = (c->parse_table[i].func)(c, pb, a);
         }
 
@@ -514,13 +466,9 @@ static int mov_read_default(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     }
 
     if (!err && total_size < atom.size && atom.size < 0x7ffff) {
-        //av_log(NULL, AV_LOG_DEBUG, "RESET  %Ld  %Ld  err:%d\n", atom.size, total_size, err);
         url_fskip(pb, atom.size - total_size);
     }
 
-#ifdef DEBUG
-    debug_indent--;
-#endif
     return err;
 }
 
@@ -555,8 +503,6 @@ static int mov_read_hdlr(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     uint32_t type;
     uint32_t ctype;
 
-    print_atom("hdlr", atom);
-
     get_byte(pb); /* version */
     get_byte(pb); get_byte(pb); get_byte(pb); /* flags */
 
@@ -564,29 +510,8 @@ static int mov_read_hdlr(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     ctype = get_le32(pb);
     type = get_le32(pb); /* component subtype */
 
-#ifdef DEBUG
-    av_log(NULL, AV_LOG_DEBUG, "ctype= %c%c%c%c (0x%08lx)\n", *((char *)&ctype), ((char *)&ctype)[1], ((char *)&ctype)[2], ((char *)&ctype)[3], (long) ctype);
-    av_log(NULL, AV_LOG_DEBUG, "stype= %c%c%c%c\n", *((char *)&type), ((char *)&type)[1], ((char *)&type)[2], ((char *)&type)[3]);
-#endif
-#ifdef DEBUG
-/* XXX: yeah this is ugly... */
-    if(ctype == MKTAG('m', 'h', 'l', 'r')) { /* MOV */
-        if(type == MKTAG('v', 'i', 'd', 'e'))
-            puts("hdlr: vide");
-        else if(type == MKTAG('s', 'o', 'u', 'n'))
-            puts("hdlr: soun");
-    } else if(ctype == 0) { /* MP4 */
-        if(type == MKTAG('v', 'i', 'd', 'e'))
-            puts("hdlr: vide");
-        else if(type == MKTAG('s', 'o', 'u', 'n'))
-            puts("hdlr: soun");
-        else if(type == MKTAG('o', 'd', 's', 'm'))
-            puts("hdlr: odsm");
-        else if(type == MKTAG('s', 'd', 's', 'm'))
-            puts("hdlr: sdsm");
-    } else puts("hdlr: meta");
-#endif
-
+    dprintf("ctype= %c%c%c%c (0x%08lx)\n", *((char *)&ctype), ((char *)&ctype)[1], ((char *)&ctype)[2], ((char *)&ctype)[3], (long) ctype);
+    dprintf("stype= %c%c%c%c\n", *((char *)&type), ((char *)&type)[1], ((char *)&type)[2], ((char *)&type)[3]);
     if(ctype == MKTAG('m', 'h', 'l', 'r')) { /* MOV */
         /* helps parsing the string hereafter... */
         c->mp4 = 0;
@@ -616,20 +541,8 @@ static int mov_read_hdlr(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
         while(get_byte(pb) && (++len < (atom.size - 24)));
     } else {
         /* .mov: PASCAL string */
-#ifdef DEBUG
-        char* buf;
-#endif
         len = get_byte(pb);
-#ifdef DEBUG
-        buf = (uint8_t*) av_malloc(len+1);
-        if (buf) {
-            get_buffer(pb, buf, len);
-            buf[len] = '\0';
-            av_log(NULL, AV_LOG_DEBUG, "**buf='%s'\n", buf);
-            av_free(buf);
-        } else
-#endif
-            url_fskip(pb, len);
+        url_fskip(pb, len);
     }
 
     url_fskip(pb, atom.size - (url_ftell(pb) - atom.offset));
@@ -654,9 +567,7 @@ static int mov_mp4_read_descr(ByteIOContext *pb, int *tag)
     int len;
     *tag = get_byte(pb);
     len = mov_mp4_read_descr_len(pb);
-#ifdef DEBUG
-    av_log(NULL, AV_LOG_DEBUG, "MPEG4 description: tag=0x%02x len=%d\n", *tag, len);
-#endif
+    dprintf("MPEG4 description: tag=0x%02x len=%d\n", *tag, len);
     return len;
 }
 
@@ -666,8 +577,6 @@ static int mov_read_esds(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     MOVStreamContext *sc = (MOVStreamContext *)st->priv_data;
     int64_t start_pos = url_ftell(pb);
     int tag, len;
-
-    print_atom("esds", atom);
 
     /* Well, broken but suffisant for some MP4 streams */
     get_be32(pb); /* version + flags */
@@ -688,11 +597,8 @@ static int mov_read_esds(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 
         st->codec->codec_id= codec_get_id(ff_mov_obj_type, sc->esds.object_type_id);
         len = mov_mp4_read_descr(pb, &tag);
-        //av_log(NULL, AV_LOG_DEBUG, "LEN %d  TAG %d  m:%d a:%d\n", len, tag, sc->esds.max_bitrate, sc->esds.avg_bitrate);
         if (tag == MP4DecSpecificDescrTag) {
-#ifdef DEBUG
-            av_log(NULL, AV_LOG_DEBUG, "Specific MPEG4 header len=%d\n", len);
-#endif
+            dprintf("Specific MPEG4 header len=%d\n", len);
             st->codec->extradata = (uint8_t*) av_mallocz(len + FF_INPUT_BUFFER_PADDING_SIZE);
             if (st->codec->extradata) {
                 get_buffer(pb, st->codec->extradata, len);
@@ -708,8 +614,6 @@ static int mov_read_esds(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 /* this atom contains actual media data */
 static int mov_read_mdat(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
-    print_atom("mdat", atom);
-
     if(atom.size == 0) /* wrong one (MP4) */
         return 0;
     c->found_mdat=1;
@@ -726,8 +630,6 @@ static int mov_read_moov(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
     int err;
 
-    print_atom("moov", atom);
-
     err = mov_read_default(c, pb, atom);
     /* we parsed the 'moov' atom, we can terminate the parsing as soon as we find the 'mdat' */
     /* so we don't parse the whole file if over a network */
@@ -742,7 +644,6 @@ static int mov_read_mdhd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
     int version;
     int lang;
-    print_atom("mdhd", atom);
 
     version = get_byte(pb); /* version */
     if (version > 1)
@@ -755,10 +656,6 @@ static int mov_read_mdhd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     (version==1)?get_be64(pb):get_be32(pb); /* modification time */
 
     c->streams[c->fc->nb_streams-1]->time_scale = get_be32(pb);
-
-#ifdef DEBUG
-    av_log(NULL, AV_LOG_DEBUG, "track[%i].time_scale = %i\n", c->fc->nb_streams-1, c->streams[c->fc->nb_streams-1]->time_scale); /* time scale */
-#endif
     c->fc->streams[c->fc->nb_streams-1]->duration = (version==1)?get_be64(pb):get_be32(pb); /* duration */
 
     lang = get_be16(pb); /* language */
@@ -770,8 +667,6 @@ static int mov_read_mdhd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 
 static int mov_read_mvhd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
-    print_atom("mvhd", atom);
-
     get_byte(pb); /* version */
     get_byte(pb); get_byte(pb); get_byte(pb); /* flags */
 
@@ -817,7 +712,7 @@ static int mov_read_smi(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     if (st->codec->extradata) {
         strcpy(st->codec->extradata, "SVQ3"); // fake
         get_buffer(pb, st->codec->extradata + 0x5a, atom.size);
-        //av_log(NULL, AV_LOG_DEBUG, "Reading SMI %Ld  %s\n", atom.size, (char*)st->codec->extradata + 0x5a);
+        dprintf("Reading SMI %Ld  %s\n", atom.size, (char*)st->codec->extradata + 0x5a);
     } else
         url_fskip(pb, atom.size);
 
@@ -839,7 +734,6 @@ static int mov_read_wave(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 
         if (st->codec->extradata) {
             get_buffer(pb, st->codec->extradata, atom.size);
-            //av_log(NULL, AV_LOG_DEBUG, "Reading frma %Ld  %s\n", atom.size, (char*)st->codec->extradata);
         } else
             url_fskip(pb, atom.size);
     } else if (atom.size > 8) { /* to read frma, esds atoms */
@@ -875,8 +769,6 @@ static int mov_read_stco(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     MOVStreamContext *sc = (MOVStreamContext *)st->priv_data;
     unsigned int i, entries;
 
-    print_atom("stco", atom);
-
     get_byte(pb); /* version */
     get_byte(pb); get_byte(pb); get_byte(pb); /* flags */
 
@@ -909,13 +801,6 @@ static int mov_read_stco(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
                 c->ni=1;
         }
     }
-#ifdef DEBUG
-/*
-    for(i=0; i<entries; i++) {
-        av_log(NULL, AV_LOG_DEBUG, "chunk offset=0x%Lx\n", sc->chunk_offsets[i]);
-    }
-*/
-#endif
     return 0;
 }
 
@@ -938,8 +823,6 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     unsigned char *color_table;
     int j;
     unsigned char r, g, b;
-
-    print_atom("stsd", atom);
 
     get_byte(pb); /* version */
     get_byte(pb); get_byte(pb); get_byte(pb); /* flags */
@@ -966,15 +849,10 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
             if (codec)
                 st->codec->codec_type = codec->type;
         }
-#ifdef DEBUG
-        av_log(NULL, AV_LOG_DEBUG, "size=%d 4CC= %c%c%c%c codec_type=%d\n",
-               size,
-               (format >> 0) & 0xff,
-               (format >> 8) & 0xff,
-               (format >> 16) & 0xff,
-               (format >> 24) & 0xff,
-               st->codec->codec_type);
-#endif
+        dprintf("size=%d 4CC= %c%c%c%c codec_type=%d\n",
+                size,
+                (format >> 0) & 0xff, (format >> 8) & 0xff, (format >> 16) & 0xff, (format >> 24) & 0xff,
+                st->codec->codec_type);
         st->codec->codec_tag = format;
         if(st->codec->codec_type==CODEC_TYPE_VIDEO) {
             MOV_atom_t a = { 0, 0, 0 };
@@ -1052,9 +930,6 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
                             if (tag != 0x05)
                                 goto fail;
                             /* MP4DecSpecificDescrTag */
-#ifdef DEBUG
-                            av_log(NULL, AV_LOG_DEBUG, "Specific MPEG4 header len=%d\n", len);
-#endif
                             sc->header_data = av_mallocz(len);
                             if (sc->header_data) {
                                 get_buffer(pb, sc->header_data, len);
@@ -1068,7 +943,7 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
                     break;
                 }
             fail:
-                av_log(NULL, AV_LOG_DEBUG, "ATOMENEWSIZE %Ld   %d\n", atom.size, url_ftell(pb) - start_pos);
+                dprintf("ATOMENEWSIZE %Ld   %d\n", atom.size, url_ftell(pb) - start_pos);
                 if (atom.size > 8) {
                     url_fskip(pb, (atom.size - 8) -
                               ((url_ftell(pb) - start_pos)));
@@ -1161,9 +1036,7 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
             st->codec->codec_id = codec_get_id(mov_audio_tags, format);
             if(st->codec->codec_id==CODEC_ID_AMR_NB || st->codec->codec_id==CODEC_ID_AMR_WB) //from TS26.244
             {
-#ifdef DEBUG
-               av_log(NULL, AV_LOG_DEBUG, "AMR-NB or AMR-WB audio identified!!\n");
-#endif
+               dprintf("AMR audio identified %d!!\n", st->codec->codec_id);
                get_be32(pb);get_be32(pb); //Reserved_8
                get_be16(pb);//Reserved_2
                get_be16(pb);//Reserved_2
@@ -1269,9 +1142,6 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
             else if(size>=(16+20))
             {//16 bytes read, reading atleast 20 more
                 uint16_t version;
-#ifdef DEBUG
-                av_log(NULL, AV_LOG_DEBUG, "audio size=0x%X\n",size);
-#endif
                 version = get_be16(pb); /* version */
                 get_be16(pb); /* revision level */
                 get_be32(pb); /* vendor */
@@ -1284,7 +1154,6 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
                 get_be16(pb); /* packet size = 0 */
 
                 st->codec->sample_rate = ((get_be32(pb) >> 16));
-                //av_log(NULL, AV_LOG_DEBUG, "CODECID %d  %d  %.4s\n", st->codec->codec_id, CODEC_ID_PCM_S16BE, (char*)&format);
 
                 switch (st->codec->codec_id) {
                 case CODEC_ID_PCM_S16BE:
@@ -1299,10 +1168,7 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
                 }
 
                 //Read QT version 1 fields. In version 0 theese dont exist
-#ifdef DEBUG
-                av_log(NULL, AV_LOG_DEBUG, "version =%d mp4=%d\n",version,c->mp4);
-                av_log(NULL, AV_LOG_DEBUG, "size-(16+20+16)=%d\n",size-(16+20+16));
-#endif
+                dprintf("version =%d mp4=%d\n",version,c->mp4);
                 if((version==1) && size>=(16+20+16))
                 {
                     get_be32(pb); /* samples per packet */
@@ -1313,13 +1179,6 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
                     {
                         //Optional, additional atom-based fields
                         MOV_atom_t a = { format, url_ftell(pb), size - (16 + 20 + 16 + 8) };
-#ifdef DEBUG
-                        av_log(NULL, AV_LOG_DEBUG, "offest=0x%X, sizeleft=%d=0x%x,format=%c%c%c%c\n",(int)url_ftell(pb),size - (16 + 20 + 16 ),size - (16 + 20 + 16 ),
-                            (format >> 0) & 0xff,
-                            (format >> 8) & 0xff,
-                            (format >> 16) & 0xff,
-                            (format >> 24) & 0xff);
-#endif
                         mov_read_default(c, pb, a);
                     }
                 }
@@ -1327,20 +1186,17 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
                 {
                     //We should be down to 0 bytes here, but lets make sure.
                     size-=(16+20);
-#ifdef DEBUG
-                    if(size>0)
-                        av_log(NULL, AV_LOG_DEBUG, "skipping 0x%X bytes\n",size-(16+20));
-#endif
-                    url_fskip(pb, size);
+                    if(size>0) {
+                        dprintf("skipping 0x%X bytes\n",size-(16+20));
+                        url_fskip(pb, size);
+                    }
                 }
             }
             else
             {
                 size-=16;
                 //Unknown size, but lets do our best and skip the rest.
-#ifdef DEBUG
-                av_log(NULL, AV_LOG_DEBUG, "Strange size, skipping 0x%X bytes\n",size);
-#endif
+                dprintf("Strange size, skipping 0x%X bytes\n",size);
                 url_fskip(pb, size);
             }
         }
@@ -1358,8 +1214,6 @@ static int mov_read_stsc(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     AVStream *st = c->fc->streams[c->fc->nb_streams-1];
     MOVStreamContext *sc = (MOVStreamContext *)st->priv_data;
     unsigned int i, entries;
-
-    print_atom("stsc", atom);
 
     get_byte(pb); /* version */
     get_byte(pb); get_byte(pb); get_byte(pb); /* flags */
@@ -1380,9 +1234,6 @@ av_log(NULL, AV_LOG_DEBUG, "track[%i].stsc.entries = %i\n", c->fc->nb_streams-1,
         sc->sample_to_chunk[i].first = get_be32(pb);
         sc->sample_to_chunk[i].count = get_be32(pb);
         sc->sample_to_chunk[i].id = get_be32(pb);
-#ifdef DEBUG
-/*        av_log(NULL, AV_LOG_DEBUG, "sample_to_chunk first=%ld count=%ld, id=%ld\n", sc->sample_to_chunk[i].first, sc->sample_to_chunk[i].count, sc->sample_to_chunk[i].id); */
-#endif
     }
     return 0;
 }
@@ -1392,8 +1243,6 @@ static int mov_read_stss(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     AVStream *st = c->fc->streams[c->fc->nb_streams-1];
     MOVStreamContext *sc = (MOVStreamContext *)st->priv_data;
     unsigned int i, entries;
-
-    print_atom("stss", atom);
 
     get_byte(pb); /* version */
     get_byte(pb); get_byte(pb); get_byte(pb); /* flags */
@@ -1424,8 +1273,6 @@ static int mov_read_stsz(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     AVStream *st = c->fc->streams[c->fc->nb_streams-1];
     MOVStreamContext *sc = (MOVStreamContext *)st->priv_data;
     unsigned int i, entries;
-
-    print_atom("stsz", atom);
 
     get_byte(pb); /* version */
     get_byte(pb); get_byte(pb); get_byte(pb); /* flags */
@@ -1461,8 +1308,6 @@ static int mov_read_stts(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     int64_t duration=0;
     int64_t total_sample_count=0;
 
-    print_atom("stts", atom);
-
     get_byte(pb); /* version */
     get_byte(pb); get_byte(pb); get_byte(pb); /* flags */
     entries = get_be32(pb);
@@ -1489,9 +1334,8 @@ av_log(NULL, AV_LOG_DEBUG, "track[%i].stts.entries = %i\n", c->fc->nb_streams-1,
 
         sc->time_rate= ff_gcd(sc->time_rate, sample_duration);
 
-#ifdef DEBUG
-        av_log(NULL, AV_LOG_DEBUG, "sample_count=%d, sample_duration=%d\n",sample_count,sample_duration);
-#endif
+        dprintf("sample_count=%d, sample_duration=%d\n",sample_count,sample_duration);
+
         duration+=sample_duration*sample_count;
         total_sample_count+=sample_count;
     }
@@ -1504,11 +1348,7 @@ av_log(NULL, AV_LOG_DEBUG, "track[%i].stts.entries = %i\n", c->fc->nb_streams-1,
 
 static int mov_read_ctts(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
-//    AVStream *st = c->fc->streams[c->fc->nb_streams-1];
-    //MOVStreamContext *sc = (MOVStreamContext *)st->priv_data;
     unsigned int i, entries;
-
-    print_atom("ctts", atom);
 
     get_byte(pb); /* version */
     get_byte(pb); get_byte(pb); get_byte(pb); /* flags */
@@ -1519,9 +1359,8 @@ static int mov_read_ctts(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     c->streams[c->fc->nb_streams-1]->ctts_count = entries;
     c->streams[c->fc->nb_streams-1]->ctts_data = av_malloc(entries * sizeof(Time2Sample));
 
-// #ifdef DEBUG
-av_log(NULL, AV_LOG_DEBUG, "track[%i].ctts.entries = %i\n", c->fc->nb_streams-1, entries);
-// #endif
+    dprintf("track[%i].ctts.entries = %i\n", c->fc->nb_streams-1, entries);
+
     for(i=0; i<entries; i++) {
         c->streams[c->fc->nb_streams - 1]->ctts_data[i].count= get_be32(pb);
         c->streams[c->fc->nb_streams - 1]->ctts_data[i].duration= get_be32(pb);
@@ -1533,8 +1372,6 @@ static int mov_read_trak(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
     AVStream *st;
     MOVStreamContext *sc;
-
-    print_atom("trak", atom);
 
     st = av_new_stream(c->fc, c->fc->nb_streams);
     if (!st) return -2;
@@ -1556,8 +1393,6 @@ static int mov_read_trak(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 static int mov_read_tkhd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
     AVStream *st;
-
-    print_atom("tkhd", atom);
 
     st = c->fc->streams[c->fc->nb_streams-1];
 
@@ -1602,10 +1437,6 @@ static int mov_read_wide(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
     int err;
 
-#ifdef DEBUG
-    print_atom("wide", atom);
-    debug_indent++;
-#endif
     if (atom.size < 8)
         return 0; /* continue */
     if (get_be32(pb) != 0) { /* 0 sized mdat atom... use the 'wide' atom size */
@@ -1620,9 +1451,6 @@ static int mov_read_wide(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
         return 0;
     }
     err = mov_read_mdat(c, pb, atom);
-#ifdef DEBUG
-    debug_indent--;
-#endif
     return err;
 }
 
@@ -1641,13 +1469,11 @@ static int mov_read_cmov(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     long cmov_len, moov_len;
     int ret;
 
-    print_atom("cmov", atom);
-
     get_be32(pb); /* dcom atom */
     if (get_le32(pb) != MKTAG( 'd', 'c', 'o', 'm' ))
         return -1;
     if (get_le32(pb) != MKTAG( 'z', 'l', 'i', 'b' )) {
-        av_log(NULL, AV_LOG_DEBUG, "unknown compression for cmov atom !");
+        av_log(NULL, AV_LOG_ERROR, "unknown compression for cmov atom !");
         return -1;
     }
     get_be32(pb); /* cmvd atom */
@@ -1688,7 +1514,6 @@ static int mov_read_cmov(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 static int mov_read_elst(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
   int i, edit_count;
-  print_atom("elst", atom);
 
   get_byte(pb); /* version */
   get_byte(pb); get_byte(pb); get_byte(pb); /* flags */
@@ -1699,9 +1524,7 @@ static int mov_read_elst(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     get_be32(pb); /* Media time */
     get_be32(pb); /* Media rate */
   }
-#ifdef DEBUG
-  av_log(NULL, AV_LOG_DEBUG, "track[%i].edit_count = %i\n", c->fc->nb_streams-1, c->streams[c->fc->nb_streams-1]->edit_count);
-#endif
+  dprintf("track[%i].edit_count = %i\n", c->fc->nb_streams-1, c->streams[c->fc->nb_streams-1]->edit_count);
   return 0;
 }
 
@@ -1870,10 +1693,6 @@ static int mov_read_header(AVFormatContext *s, AVFormatParameters *ap)
     else
         atom.size = 0x7FFFFFFFFFFFFFFFLL;
 
-#ifdef DEBUG
-    av_log(NULL, AV_LOG_DEBUG, "filesz=%Ld\n", atom.size);
-#endif
-
     /* check MOV header */
     err = mov_read_default(mov, pb, atom);
     if (err<0 || (!mov->found_moov && !mov->found_mdat)) {
@@ -1881,22 +1700,13 @@ static int mov_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 err, mov->found_moov, mov->found_mdat, url_ftell(pb));
         return -1;
     }
-#ifdef DEBUG
-    av_log(NULL, AV_LOG_DEBUG, "on_parse_exit_offset=%d\n", (int) url_ftell(pb));
-#endif
+    dprintf("on_parse_exit_offset=%d\n", (int) url_ftell(pb));
+
     /* some cleanup : make sure we are on the mdat atom */
     if(!url_is_streamed(pb) && (url_ftell(pb) != mov->mdat_offset))
         url_fseek(pb, mov->mdat_offset, SEEK_SET);
 
     mov->next_chunk_offset = mov->mdat_offset; /* initialise reading */
-
-#ifdef DEBUG
-    av_log(NULL, AV_LOG_DEBUG, "mdat_reset_offset=%d\n", (int) url_ftell(pb));
-#endif
-
-#ifdef DEBUG
-    av_log(NULL, AV_LOG_DEBUG, "streams= %d\n", s->nb_streams);
-#endif
     mov->total_streams = nb = s->nb_streams;
 
 #if 1
@@ -1923,9 +1733,6 @@ static int mov_read_header(AVFormatContext *s, AVFormatParameters *ap)
         sc->is_ff_stream = 1;
     }
 #endif
-#ifdef DEBUG
-    av_log(NULL, AV_LOG_DEBUG, "real streams= %d\n", s->nb_streams);
-#endif
     return 0;
 }
 
@@ -1949,9 +1756,7 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
         idx = sc->sample_to_chunk_index;
 
         if (idx < 0) return 0;
-#ifdef DEBUG
-        fprintf(stderr, "sc[ffid %d]->sample_size = %d\n", sc->ffindex, sc->sample_size);
-#endif
+        dprintf("sc[ffid %d]->sample_size = %ld\n", sc->ffindex, sc->sample_size);
         //size = sc->sample_sizes[sc->current_sample];
         // that ain't working...
         //size = (sc->sample_size)?sc->sample_size:sc->sample_sizes[sc->current_sample];
@@ -1992,18 +1797,16 @@ again:
                 }
                 dts = time + (msc->current_sample-1 - sample) * (int64_t)duration;
                 dts = av_rescale(dts, AV_TIME_BASE, msc->time_scale);
-//                av_log(NULL, AV_LOG_DEBUG, "%d %Ld %Ld %Ld \n", i, dts, best_dts, offset);
+                dprintf("stream: %d dts: %Ld best_dts: %Ld offset: %Ld \n", i, dts, best_dts, offset);
                 if(dts < best_dts){
                     best_dts= dts;
                     sc = msc;
                     offset = msc->chunk_offsets[msc->next_chunk];
                 }
             }else{
-            //av_log(NULL, AV_LOG_DEBUG, "MOCHUNK %ld  %d   %p  pos:%Ld\n", mov->streams[i]->next_chunk, mov->total_streams, mov->streams[i], url_ftell(&s->pb));
                 if ((msc->chunk_offsets[msc->next_chunk] < offset)) {
                     sc = msc;
                     offset = msc->chunk_offsets[msc->next_chunk];
-                    //av_log(NULL, AV_LOG_DEBUG, "SELETED  %Ld  i:%d\n", offset, i);
                 }
             }
         }
@@ -2018,7 +1821,6 @@ again:
         mov->next_chunk_offset = offset;
     }
 
-//av_log(NULL, AV_LOG_DEBUG, "chunk: [%i] %lli -> %lli\n", st_id, mov->next_chunk_offset, offset);
     if(!sc->is_ff_stream || (s->streams[sc->ffindex]->discard >= AVDISCARD_ALL)) {
         url_fskip(&s->pb, (offset - mov->next_chunk_offset));
         mov->next_chunk_offset = offset;
@@ -2054,15 +1856,10 @@ again:
                 else
                     foundsize=sc->sample_to_chunk[i].count*sc->sample_size;
             }
-#ifdef DEBUG
-            av_log(NULL, AV_LOG_DEBUG, "sample_to_chunk first=%ld count=%ld, id=%ld\n", sc->sample_to_chunk[i].first, sc->sample_to_chunk[i].count, sc->sample_to_chunk[i].id);
-#endif
+            dprintf("sample_to_chunk first=%ld count=%ld, id=%ld\n", sc->sample_to_chunk[i].first, sc->sample_to_chunk[i].count, sc->sample_to_chunk[i].id);
         }
         if( (foundsize>0) && (foundsize<size) )
         {
-#ifdef DEBUG
-            /*av_log(NULL, AV_LOG_DEBUG, "this size should actually be %d\n",foundsize);*/
-#endif
             size=foundsize;
         }
     }
@@ -2089,9 +1886,7 @@ again:
 #endif
 
 readchunk:
-#ifdef DEBUG
-    av_log(NULL, AV_LOG_DEBUG, "chunk: %lli -> %lli (%i)\n", offset, offset + size, size);
-#endif
+    dprintf("chunk: %lli -> %lli (%i)\n", offset, offset + size, size);
     if(size == 0x0FFFFFFF)
         size = mov->mdat_size + mov->mdat_offset - offset;
     if(size < 0)
@@ -2123,17 +1918,6 @@ readchunk:
     }
     else
         pkt->flags |= PKT_FLAG_KEY;
-
-#ifdef DEBUG
-/*
-    av_log(NULL, AV_LOG_DEBUG, "Packet (%d, %ld) ", pkt->stream_index, pkt->size);
-    for(i=0; i<8; i++)
-        av_log(NULL, AV_LOG_DEBUG, "%02x ", pkt->data[i]);
-    for(i=0; i<8; i++)
-        av_log(NULL, AV_LOG_DEBUG, "%c ", (pkt->data[i]) & 0x7F);
-    av_log(NULL, AV_LOG_DEBUG, "\n");
-*/
-#endif
 
     mov->next_chunk_offset = offset + size;
 
@@ -2170,16 +1954,14 @@ readchunk:
 
         pkt->pts = pts / st->time_base.num;
         pkt->dts = dts / st->time_base.num;
-#ifdef DEBUG
-    av_log(NULL, AV_LOG_DEBUG, "stream #%d smp #%ld dts = %lld pts = %lld (smp:%ld time:%lld idx:%d ent:%d count:%d dur:%d)\n"
-      , pkt->stream_index, sc->current_sample-1, pkt->dts, pkt->pts
-      , sc->sample_to_time_sample
-      , sc->sample_to_time_time
-      , sc->sample_to_time_index
-      , sc->stts_count
-      , count
-      , duration);
-#endif
+        dprintf("stream #%d smp #%ld dts = %lld pts = %lld (smp:%ld time:%lld idx:%d ent:%d count:%d dur:%d)\n"
+                , pkt->stream_index, sc->current_sample-1, pkt->dts, pkt->pts
+                , sc->sample_to_time_sample
+                , sc->sample_to_time_time
+                , sc->sample_to_time_index
+                , sc->stts_count
+                , count
+                , duration);
     }
 
     return 0;
@@ -2229,19 +2011,13 @@ static int mov_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
     }
 
     // Step 2. Find the corresponding sample using the Time-to-sample atom (stts) */
-#ifdef DEBUG
-  av_log(s, AV_LOG_DEBUG, "Searching for time %li in stream #%i (time_scale=%i)\n", (long)sample_time, mov_idx, sc->time_scale);
-#endif
+    dprintf("Searching for time %li in stream #%i (time_scale=%i)\n", (long)sample_time, mov_idx, sc->time_scale);
     start_time = 0; // FIXME use elst atom
     sample = 1; // sample are 0 based in table
-#ifdef DEBUG
-    av_log(s, AV_LOG_DEBUG, "Searching for sample_time %li \n", (long)sample_time);
-#endif
+
     for (i = 0; i < sc->stts_count; i++) {
         count = sc->stts_data[i].count;
         duration = sc->stts_data[i].duration;
-//av_log(s, AV_LOG_DEBUG, "> sample_time %lli \n", (long)sample_time);
-//av_log(s, AV_LOG_DEBUG, "> count=%i duration=%i\n", count, duration);
         if ((start_time + count*duration) > sample_time) {
             sample_to_time_time = start_time;
             sample_to_time_index = i;
@@ -2257,9 +2033,7 @@ static int mov_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
     /* NOTE: despite what qt doc say, the dt value (Display Time in qt vocabulary) computed with the stts atom
        is a decoding time stamp (dts) not a presentation time stamp. And as usual dts != pts for stream with b frames */
 
-#ifdef DEBUG
-    av_log(s, AV_LOG_DEBUG, "Found time %li at sample #%u\n", (long)sample_time, sample);
-#endif
+    dprintf("Found time %li at sample #%u\n", (long)sample_time, sample);
     if (sample > sc->sample_count) {
         av_log(s, AV_LOG_ERROR, "mov: sample pos is too high, unable to seek (req. sample=%i, sample count=%ld)\n", sample, sc->sample_count);
         return -1;
@@ -2276,9 +2050,6 @@ static int mov_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
             } else {
                 a = m;
             }
-#ifdef DEBUG
-         // av_log(s, AV_LOG_DEBUG, "a=%i (%i) b=%i (%i) m=%i (%i) stream #%i\n", a, sc->keyframes[a], b, sc->keyframes[b], m, sc->keyframes[m], mov_idx);
-#endif
         }
         // for low latency prob: always use the previous keyframe, just uncomment the next line
         // if (a) a--;
@@ -2286,9 +2057,7 @@ static int mov_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
     }
     else
         seek_sample = sample; // else all samples are key frames
-#ifdef DEBUG
-    av_log(s, AV_LOG_DEBUG, "Found nearest keyframe at sample #%i \n", seek_sample);
-#endif
+    dprintf("Found nearest keyframe at sample #%i \n", seek_sample);
 
     // Step 4. Find the chunk of the sample using the Sample-to-chunk-atom (stsc)
     for (first_chunk_sample = 1, i = 0; i < (sc->sample_to_chunk_sz - 1); i++) {
@@ -2301,9 +2070,7 @@ static int mov_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
     left_in_chunk = sc->sample_to_chunk[i].count - (seek_sample - first_chunk_sample) % sc->sample_to_chunk[i].count;
     first_chunk_sample += ((seek_sample - first_chunk_sample) / sc->sample_to_chunk[i].count) * sc->sample_to_chunk[i].count;
     sample_to_chunk_idx = i;
-#ifdef DEBUG
-    av_log(s, AV_LOG_DEBUG, "Sample was found in chunk #%i at sample offset %i (idx %i)\n", chunk, seek_sample - first_chunk_sample, sample_to_chunk_idx);
-#endif
+    dprintf("Sample was found in chunk #%i at sample offset %i (idx %i)\n", chunk, seek_sample - first_chunk_sample, sample_to_chunk_idx);
 
     // Step 5. Find the offset of the chunk using the chunk offset atom
     if (!sc->chunk_offsets) {
@@ -2315,9 +2082,7 @@ static int mov_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
         return -1;
     }
     chunk_file_offset = sc->chunk_offsets[chunk - 1];
-#ifdef DEBUG
-    av_log(s, AV_LOG_DEBUG, "Chunk file offset is #%llu \n", chunk_file_offset);
-#endif
+    dprintf("Chunk file offset is #%llu \n", chunk_file_offset);
 
     // Step 6. Find the byte offset within the chunk using the sample size atom
     sample_file_offset = chunk_file_offset;
@@ -2328,9 +2093,7 @@ static int mov_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
         sample_file_offset += sc->sample_sizes[first_chunk_sample + i - 1];
         }
     }
-#ifdef DEBUG
-    av_log(s, AV_LOG_DEBUG, "Sample file offset is #%llu \n", sample_file_offset);
-#endif
+    dprintf("Sample file offset is #%llu \n", sample_file_offset);
 
     // Step 6. Update the parser
     mov->partial = sc;
@@ -2356,17 +2119,12 @@ static int mov_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
             } else {
                 a = m;
             }
-#ifdef DEBUG
-/*            av_log(s, AV_LOG_DEBUG, "a=%i (%li) b=%i (%li) m=%i (%li) stream #%i\n"
-            , a, (long)msc->chunk_offsets[a], b, (long)msc->chunk_offsets[b], m, (long)msc->chunk_offsets[m],  i); */
-#endif
         }
         msc->next_chunk = a;
         if (msc->chunk_offsets[a] < chunk_file_offset && a < (msc->chunk_count-1))
             msc->next_chunk ++;
-#ifdef DEBUG
-        av_log(s, AV_LOG_DEBUG, "Nearest next chunk for stream #%i is #%i @%lli\n", i, msc->next_chunk+1, msc->chunk_offsets[msc->next_chunk]);
-#endif
+        dprintf("Nearest next chunk for stream #%i is #%li @%lli\n", i, msc->next_chunk+1, msc->chunk_offsets[msc->next_chunk]);
+
         // Compute sample count and index in the sample_to_chunk table (what a pity)
         msc->sample_to_chunk_index = 0;
         msc->current_sample = 0;
@@ -2401,9 +2159,7 @@ static int mov_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
             }
             sample += count;
         }
-#ifdef DEBUG
-        av_log(s, AV_LOG_DEBUG, "Next Sample for stream #%i is #%i @%i\n", i, msc->current_sample + 1, msc->sample_to_chunk_index + 1);
-#endif
+        dprintf("Next Sample for stream #%i is #%li @%li\n", i, msc->current_sample + 1, msc->sample_to_chunk_index + 1);
     }
     return 0;
 }
