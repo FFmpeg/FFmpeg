@@ -1722,8 +1722,10 @@ static int mov_read_header(AVFormatContext *s, AVFormatParameters *ap)
             sc->time_rate=1;
         av_set_pts_info(s->streams[i], 64, sc->time_rate, sc->time_scale);
 
-        assert(s->streams[i]->duration % sc->time_rate == 0);
-        s->streams[i]->duration /= sc->time_rate;
+        if(s->streams[i]->duration != AV_NOPTS_VALUE){
+            assert(s->streams[i]->duration % sc->time_rate == 0);
+            s->streams[i]->duration /= sc->time_rate;
+        }
 
         sc->ffindex = i;
         sc->is_ff_stream = 1;
