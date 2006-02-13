@@ -1941,7 +1941,7 @@ done
 
 # Do not overwrite config.h if unchanged to avoid superfluous rebuilds.
 diff $TMPH config.h >/dev/null 2>&1
-if test $? -ne 0 ; then
+if test "$?" != "0" ; then
         mv -f $TMPH config.h
 else
         echo "config.h is unchanged"
