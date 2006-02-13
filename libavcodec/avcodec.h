@@ -21,8 +21,8 @@ extern "C" {
 #define AV_STRINGIFY(s)         AV_TOSTRING(s)
 #define AV_TOSTRING(s) #s
 
-#define LIBAVCODEC_VERSION_INT  ((51<<16)+(4<<8)+0)
-#define LIBAVCODEC_VERSION      51.4.0
+#define LIBAVCODEC_VERSION_INT  ((51<<16)+(5<<8)+0)
+#define LIBAVCODEC_VERSION      51.5.0
 #define LIBAVCODEC_BUILD        LIBAVCODEC_VERSION_INT
 
 #define LIBAVCODEC_IDENT        "Lavc" AV_STRINGIFY(LIBAVCODEC_VERSION)
@@ -270,7 +270,7 @@ enum SampleFormat {
 };
 
 /* in bytes */
-#define AVCODEC_MAX_AUDIO_FRAME_SIZE 131072
+#define AVCODEC_MAX_AUDIO_FRAME_SIZE 192000 // 1 second of 48khz 32bit audio
 
 /**
  * Required number of additionally allocated bytes at the end of the input bitstream for decoding.
