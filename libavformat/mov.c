@@ -885,72 +885,6 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
             st->codec->time_base.den      = 25;
             st->codec->time_base.num = 1;
 */
-#if 0
-            while (size >= 8) {
-                MOV_atom_t a;
-                int64_t start_pos;
-
-                a.size = get_be32(pb);
-                a.type = get_le32(pb);
-                size -= 8;
-#ifdef DEBUG
-                av_log(NULL, AV_LOG_DEBUG, "VIDEO: atom_type=%c%c%c%c atom.size=%Ld size_left=%d\n",
-                       (a.type >> 0) & 0xff,
-                       (a.type >> 8) & 0xff,
-                       (a.type >> 16) & 0xff,
-                       (a.type >> 24) & 0xff,
-                       a.size, size);
-#endif
-                start_pos = url_ftell(pb);
-
-                switch(a.type) {
-                case MKTAG('e', 's', 'd', 's'):
-                    {
-                        int tag, len;
-                        /* Well, broken but suffisant for some MP4 streams */
-                        get_be32(pb); /* version + flags */
-                        len = mov_mp4_read_descr(pb, &tag);
-                        if (tag == 0x03) {
-                            /* MP4ESDescrTag */
-                            get_be16(pb); /* ID */
-                            get_byte(pb); /* priority */
-                            len = mov_mp4_read_descr(pb, &tag);
-                            if (tag != 0x04)
-                                goto fail;
-                            /* MP4DecConfigDescrTag */
-                            get_byte(pb); /* objectTypeId */
-                            get_be32(pb); /* streamType + buffer size */
-                            get_be32(pb); /* max bit rate */
-                            get_be32(pb); /* avg bit rate */
-                            len = mov_mp4_read_descr(pb, &tag);
-                            if (tag != 0x05)
-                                goto fail;
-                            /* MP4DecSpecificDescrTag */
-                            sc->header_data = av_mallocz(len);
-                            if (sc->header_data) {
-                                get_buffer(pb, sc->header_data, len);
-                                sc->header_len = len;
-                            }
-                        }
-                        /* in any case, skip garbage */
-                    }
-                    break;
-                default:
-                    break;
-                }
-            fail:
-                dprintf("ATOMENEWSIZE %Ld   %d\n", atom.size, url_ftell(pb) - start_pos);
-                if (atom.size > 8) {
-                    url_fskip(pb, (atom.size - 8) -
-                              ((url_ftell(pb) - start_pos)));
-                    size -= atom.size - 8;
-                }
-            }
-            if (size > 0) {
-                /* unknown extension */
-                url_fskip(pb, size);
-            }
-#else
 
             /* figure out the palette situation */
             color_depth = st->codec->bits_per_sample & 0x1F;
@@ -1027,7 +961,6 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
                 mov_read_default(c, pb, a);
             else if (a.size > 0)
                 url_fskip(pb, a.size);
-#endif
         } else {
             st->codec->codec_id = codec_get_id(mov_audio_tags, format);
             if(st->codec->codec_id==CODEC_ID_AMR_NB || st->codec->codec_id==CODEC_ID_AMR_WB) //from TS26.244
@@ -1679,11 +1612,7 @@ static int mov_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
     mov->fc = s;
     mov->parse_table = mov_default_parse_table;
-#if 0
-    /* XXX: I think we should auto detect */
-    if(s->iformat->name[1] == 'p')
-        mov->mp4 = 1;
-#endif
+
     if(!url_is_streamed(pb)) /* .mov and .mp4 aren't streamable anyway (only progressive download if moov is before mdat) */
         atom.size = url_fsize(pb);
     else
