@@ -3,8 +3,6 @@
 #
 include ../config.mak
 
-VPATH=$(SRC_PATH)/libavutil
-
 # NOTE: -I.. is needed to include config.h
 CFLAGS=$(OPTFLAGS) -DHAVE_AV_CONFIG_H -DBUILD_AVUTIL -I.. -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_GNU_SOURCE
 
@@ -18,71 +16,18 @@ OBJS= mathematics.o \
       rational.o \
       intfloat_readwrite.o \
 
+HEADERS = avutil.h common.h mathematics.h integer.h rational.h \
+          intfloat_readwrite.h
 
 ifeq ($(TARGET_ARCH_SPARC64),yes)
 CFLAGS+= -mcpu=ultrasparc -mtune=ultrasparc
 endif
 
-SRCS := $(OBJS:.o=.c)
-
 NAME=avutil
+SUBDIR = libavutil
 ifeq ($(BUILD_SHARED),yes)
 LIBVERSION=$(LAVUVERSION)
 LIBMAJOR=$(LAVUMAJOR)
 endif
 
-all: $(LIB) $(SLIBNAME)
-
-$(LIB): $(OBJS)
-	rm -f $@
-	$(AR) rc $@ $(OBJS)
-	$(RANLIB) $@
-
-$(SLIBNAME): $(OBJS)
-	$(CC) $(SHFLAGS) $(LDFLAGS) -o $@ $(OBJS) $(EXTRALIBS) $(AMREXTRALIBS)
-ifeq ($(CONFIG_WIN32),yes)
-	-lib /machine:i386 /def:$(@:.dll=.def)
-endif
-
-%.o: %.c
-	$(CC) $(CFLAGS) $(LIBOBJFLAGS) -c -o $@ $<
-
-depend: $(SRCS)
-	$(CC) -MM $(CFLAGS) $^ 1>.depend
-
-dep:	depend
-
-clean:
-	rm -f *.o *.d *~ *.a *.lib *.so *.dylib *.dll \
-	      *.lib *.def *.dll.a *.exp
-
-distclean: clean
-	rm -f .depend
-
-
-install-lib-shared: $(SLIBNAME)
-ifeq ($(CONFIG_WIN32),yes)
-	install $(INSTALLSTRIP) -m 755 $(SLIBNAME) "$(prefix)"
-else
-	install $(INSTALLSTRIP) -m 755 $(SLIBNAME) \
-		$(libdir)/$(SLIBNAME_WITH_VERSION)
-	ln -sf $(SLIBNAME_WITH_VERSION) \
-		$(libdir)/$(SLIBNAME_WITH_MAJOR)
-	ln -sf $(SLIBNAME_WITH_VERSION) \
-		$(libdir)/$(SLIBNAME)
-endif
-
-install-lib-static: $(LIB)
-	install -m 644 $(LIB) "$(libdir)"
-
-install-headers:
-	install -m 644 avutil.h common.h mathematics.h integer.h \
-	               rational.h intfloat_readwrite.h "$(incdir)"
-	install -m 644 $(SRC_PATH)/libavutil.pc "$(libdir)/pkgconfig"
-
-#
-# include dependency files if they exist
-#
-ifneq ($(wildcard .depend),)
-include .depend
-endif
+include $(SRC_PATH)/common.mak

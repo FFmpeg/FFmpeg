@@ -1892,6 +1892,7 @@ if test "$source_path_used" = "yes" ; then
     done
 fi
 echo "SRC_PATH=$source_path" >> config.mak
+echo "BUILD_ROOT=$PWD" >> config.mak
 
 if test "$amr_wb" = "yes" ; then
   echo "#define AMR_WB 1" >> $TMPH

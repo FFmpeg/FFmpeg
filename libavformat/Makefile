@@ -4,17 +4,12 @@
 #
 include ../config.mak
 
-VPATH=$(SRC_PATH)/libavformat
-
 CFLAGS=$(OPTFLAGS) -I.. -I$(SRC_PATH) -I$(SRC_PATH)/libavutil -I$(SRC_PATH)/libavcodec -DHAVE_AV_CONFIG_H -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_GNU_SOURCE
 
-#FIXME: This should be in configure/config.mak
-ifeq ($(CONFIG_WIN32),yes)
-    LDFLAGS=-Wl,--output-def,$(@:.dll=.def),--out-implib,lib$(SLIBNAME:$(SLIBSUF)=.dll.a)
-endif
-
 OBJS= utils.o cutils.o os_support.o allformats.o
-PPOBJS=
+CPPOBJS=
+
+HEADERS = avformat.h avio.h rtp.h rtsp.h rtspcodes.h
 
 # demuxers
 OBJS+=mpeg.o mpegts.o mpegtsenc.o ffm.o crc.o img.o img2.o raw.o rm.o \
@@ -71,10 +66,10 @@ ifeq ($(CONFIG_AUDIO_OSS),yes)
 OBJS+= audio.o
 endif
 
-EXTRALIBS += -L../libavutil -lavutil$(BUILDSUF)
+EXTRALIBS += -L../libavutil -lavutil$(BUILDSUF) -lavcodec$(BUILDSUF) -L../libavcodec
 
 ifeq ($(CONFIG_AUDIO_BEOS),yes)
-PPOBJS+= beosaudio.o
+CPPOBJS+= beosaudio.o
 endif
 
 # protocols I/O
@@ -95,72 +90,11 @@ ifeq ($(CONFIG_LIBOGG),yes)
 OBJS+= ogg.o
 endif
 
-ifeq ($(TARGET_ARCH_SPARC64),yes)
-CFLAGS+= -mcpu=ultrasparc -mtune=ultrasparc
-endif
-
 NAME=avformat
+SUBDIR=libavformat
 ifeq ($(BUILD_SHARED),yes)
 LIBVERSION=$(LAVFVERSION)
 LIBMAJOR=$(LAVFMAJOR)
-AVCLIBS+=-lavcodec$(BUILDSUF) -L../libavcodec -lavutil$(BUILDSUF) -L../libavutil
 endif
 
-SRCS := $(OBJS:.o=.c) $(PPOBJS:.o=.cpp)
-
-all: $(LIB) $(SLIBNAME)
-
-$(LIB): $(OBJS) $(PPOBJS)
-	rm -f $@
-	$(AR) rc $@ $(OBJS) $(PPOBJS)
-	$(RANLIB) $@
-
-$(SLIBNAME): $(OBJS)
-	$(CC) $(SHFLAGS) $(LDFLAGS) -o $@ $(OBJS) $(PPOBJS) $(AVCLIBS) $(EXTRALIBS)
-ifeq ($(CONFIG_WIN32),yes)
-	-lib /machine:i386 /def:$(@:.dll=.def)
-endif
-
-depend: $(SRCS)
-	$(CC) -MM $(CFLAGS) $^ 1>.depend
-
-
-install-lib-shared: $(SLIBNAME)
-ifeq ($(CONFIG_WIN32),yes)
-	install $(INSTALLSTRIP) -m 755 $(SLIBNAME) "$(prefix)"
-else
-	install $(INSTALLSTRIP) -m 755 $(SLIBNAME) \
-		$(libdir)/$(SLIBNAME_WITH_VERSION)
-	ln -sf $(SLIBNAME_WITH_VERSION) \
-		$(libdir)/$(SLIBNAME_WITH_MAJOR)
-	ln -sf $(SLIBNAME_WITH_VERSION) \
-		$(libdir)/$(SLIBNAME)
-endif
-
-install-lib-static: $(LIB)
-	install -m 644 $(LIB) "$(libdir)"
-
-install-headers:
-	install -m 644 avformat.h avio.h rtp.h rtsp.h rtspcodes.h "$(incdir)"
-	install -m 644 $(SRC_PATH)/libavformat.pc "$(libdir)/pkgconfig"
-
-%.o: %.c
-	$(CC) $(CFLAGS) $(LIBOBJFLAGS) -c -o $@ $<
-
-# BeOS: remove -Wall to get rid of all the "multibyte constant" warnings
-%.o: %.cpp
-	g++ $(subst -Wall,,$(CFLAGS)) -c -o $@ $<
-
-clean:
-	rm -f *.o *.d *~ *.a *.lib *.so *.dylib *.dll \
-	      *.lib *.def *.dll.a *.exp
-
-distclean: clean
-	rm -f .depend
-
-#
-# include dependency files if they exist
-#
-ifneq ($(wildcard .depend),)
-include .depend
-endif
+include $(SRC_PATH)/common.mak

@@ -4,15 +4,8 @@
 #
 include ../config.mak
 
-VPATH=$(SRC_PATH)/libavcodec
-
 # NOTE: -I.. is needed to include config.h
 CFLAGS=$(OPTFLAGS) -DHAVE_AV_CONFIG_H -I.. -I$(SRC_PATH)/libavutil -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_GNU_SOURCE $(AMR_CFLAGS)
-
-#FIXME: This should be in configure/config.mak
-ifeq ($(CONFIG_WIN32),yes)
-    LDFLAGS=-Wl,--output-def,$(@:.dll=.def),--out-implib,lib$(SLIBNAME:$(SLIBSUF)=.dll.a)
-endif
 
 OBJS= bitstream.o utils.o mem.o allcodecs.o \
       mpegvideo.o jrevdct.o jfdctfst.o jfdctint.o\
@@ -24,6 +17,8 @@ OBJS= bitstream.o utils.o mem.o allcodecs.o \
       dpcm.o adx.o faandct.o parser.o g726.o \
       vp3dsp.o h264idct.o rangecoder.o pnm.o h263.o msmpeg4.o h263dec.o \
       opt.o
+
+HEADERS = avcodec.h dsputil.h
 
 ifeq ($(CONFIG_AASC_DECODER),yes)
     OBJS+= aasc.o
@@ -326,11 +321,6 @@ ifeq ($(CONFIG_LIBGSM),yes)
 OBJS += libgsm.o
 endif
 
-ifeq ($(TARGET_GPROF),yes)
-CFLAGS+=-p
-LDFLAGS+=-p
-endif
-
 # i386 mmx specific stuff
 ifeq ($(TARGET_MMX),yes)
 OBJS += i386/fdct_mmx.o i386/cputest.o \
@@ -400,14 +390,9 @@ OBJS+=sparc/dsputil_vis.o
 sparc/%.o: sparc/%.c
 	$(CC) -mcpu=ultrasparc -mtune=ultrasparc $(CFLAGS) -c -o $@ $<
 endif
-ifeq ($(TARGET_ARCH_SPARC64),yes)
-CFLAGS+= -mcpu=ultrasparc -mtune=ultrasparc
-endif
-
-SRCS := $(OBJS:.o=.c) $(ASM_OBJS:.o=.S)
-OBJS := $(OBJS) $(ASM_OBJS)
 
 NAME=avcodec
+SUBDIR=libavcodec
 LIBAVUTIL= $(SRC_PATH)/libavutil/$(LIBPREF)avutil$(LIBSUF)
 ifeq ($(BUILD_SHARED),yes)
 LIBVERSION=$(LAVCVERSION)
@@ -415,40 +400,21 @@ LIBMAJOR=$(LAVCMAJOR)
 endif
 TESTS= imgresample-test dct-test motion-test fft-test
 
-all: $(LIB) $(SLIBNAME)
+EXTRAOBJS = $(AMREXTRALIBS)
+
+include $(SRC_PATH)/common.mak
+
+$(LIB): $(AMRLIBS)
 
 amrlibs:
 	$(MAKE) -C amr spclib fipoplib
 
 tests: apiexample cpuid_test $(TESTS)
 
-$(LIB): $(OBJS) $(AMRLIBS)
-	rm -f $@
-	$(AR) rc $@ $(OBJS) $(AMREXTRALIBS)
-	$(RANLIB) $@
-
-$(SLIBNAME): $(OBJS)
-	$(CC) $(SHFLAGS) $(LDFLAGS) -o $@ $(OBJS) $(EXTRALIBS) $(AMREXTRALIBS)
-ifeq ($(CONFIG_WIN32),yes)
-	-lib /machine:i386 /def:$(@:.dll=.def)
-endif
-
 dsputil.o: dsputil.c dsputil.h
 
-%.o: %.c
-	$(CC) $(CFLAGS) $(LIBOBJFLAGS) -c -o $@ $<
-
-%.o: %.S
-	$(CC) $(CFLAGS) $(LIBOBJFLAGS) -c -o $@ $<
-
-depend: $(SRCS)
-	$(CC) -MM $(CFLAGS) $^ 1>.depend
-
-dep:	depend
-
-clean: $(CLEANAMR)
-	rm -f *.o *.d *~ *.a *.lib *.so *.dylib *.dll \
-	   *.dll.a *.def *.exp \
+clean:: $(CLEANAMR)
+	rm -f \
 	   i386/*.o i386/*~ \
 	   armv4l/*.o armv4l/*~ \
 	   mlib/*.o mlib/*~ \
@@ -459,9 +425,6 @@ clean: $(CLEANAMR)
 	   sparc/*.o sparc/*~ \
 	   liba52/*.o liba52/*~ \
 	   apiexample $(TESTS)
-
-distclean: clean
-	rm -f .depend
 
 cleanamr:
 	$(MAKE) -C amr clean
@@ -493,30 +456,3 @@ motion-test: motion_test.o $(LIB)
 
 fft-test: fft-test.o $(LIB)
 	$(CC) -o $@ $^ $(LIBAVUTIL) -lm
-
-
-install-lib-shared: $(SLIBNAME)
-ifeq ($(CONFIG_WIN32),yes)
-	install $(INSTALLSTRIP) -m 755 $(SLIBNAME) "$(prefix)"
-else
-	install $(INSTALLSTRIP) -m 755 $(SLIBNAME) \
-		$(libdir)/$(SLIBNAME_WITH_VERSION)
-	ln -sf $(SLIBNAME_WITH_VERSION) \
-		$(libdir)/$(SLIBNAME_WITH_MAJOR)
-	ln -sf $(SLIBNAME_WITH_VERSION) \
-		$(libdir)/$(SLIBNAME)
-endif
-
-install-lib-static: $(LIB)
-	install -m 644 $(LIB) "$(libdir)"
-
-install-headers:
-	install -m 644 avcodec.h dsputil.h "$(incdir)"
-	install -m 644 $(SRC_PATH)/libavcodec.pc "$(libdir)/pkgconfig"
-
-#
-# include dependency files if they exist
-#
-ifneq ($(wildcard .depend),)
-include .depend
-endif

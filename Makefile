@@ -139,22 +139,14 @@ install-vhook:
 
 install-libs:
 	install -d $(libdir)
+	$(MAKE) -C libavutil   install-libs
+	$(MAKE) -C libavcodec  install-libs
+	$(MAKE) -C libavformat install-libs
+ifeq ($(CONFIG_PP),yes)
+	$(MAKE) -C libavcodec/libpostproc install-libs
+endif
 ifeq ($(BUILD_SHARED),yes)
-	$(MAKE) -C libavutil   install-lib-shared
-	$(MAKE) -C libavcodec  install-lib-shared
-	$(MAKE) -C libavformat install-lib-shared
-ifeq ($(CONFIG_PP),yes)
-	$(MAKE) -C libavcodec/libpostproc install-lib-shared
-endif
 	$(LDCONFIG) || true
-endif
-ifeq ($(BUILD_STATIC),yes)
-	$(MAKE) -C libavutil   install-lib-static
-	$(MAKE) -C libavcodec  install-lib-static
-	$(MAKE) -C libavformat install-lib-static
-ifeq ($(CONFIG_PP),yes)
-	$(MAKE) -C libavcodec/libpostproc install-lib-static
-endif
 endif
 
 install-headers:
