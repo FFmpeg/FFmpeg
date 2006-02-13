@@ -76,7 +76,7 @@ static int tta_read_header(AVFormatContext *s, AVFormatParameters *ap)
     st->codec->bits_per_sample = bps;
 
     st->codec->extradata_size = url_ftell(&s->pb) - start;
-    st->codec->extradata = av_mallocz(st->codec->extradata_size);
+    st->codec->extradata = av_mallocz(st->codec->extradata_size+FF_INPUT_BUFFER_PADDING_SIZE);
     url_fseek(&s->pb, start, SEEK_SET); // or SEEK_CUR and -size ? :)
     get_buffer(&s->pb, st->codec->extradata, st->codec->extradata_size);
 
