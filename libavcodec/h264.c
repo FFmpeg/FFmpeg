@@ -1202,7 +1202,7 @@ static inline void direct_ref_list_init(H264Context * const h){
     for(list=0; list<2; list++){
         for(i=0; i<ref1->ref_count[list]; i++){
             const int poc = ref1->ref_poc[list][i];
-            h->map_col_to_list0[list][i] = PART_NOT_AVAILABLE;
+            h->map_col_to_list0[list][i] = 0; /* bogus; fills in for missing frames */
             for(j=0; j<h->ref_count[list]; j++)
                 if(h->ref_list[list][j].poc == poc){
                     h->map_col_to_list0[list][i] = j;
@@ -2607,7 +2607,8 @@ static inline void mc_dir_part(H264Context *h, Picture *pic, int n, int square, 
     const int pic_width  = 16*s->mb_width;
     const int pic_height = 16*s->mb_height;
 
-    assert(pic->data[0]);
+    if(!pic->data[0])
+        return;
 
     if(mx&7) extra_width -= 3;
     if(my&7) extra_height -= 3;
@@ -7774,7 +7775,9 @@ static int decode_frame(AVCodecContext *avctx,
             }
 
         out_of_order = !cross_idr && prev && out->poc < prev->poc;
-        if(prev && pics <= s->avctx->has_b_frames)
+        if(h->sps.bitstream_restriction_flag && s->avctx->has_b_frames >= h->sps.num_reorder_frames)
+            { }
+        else if(prev && pics <= s->avctx->has_b_frames)
             out = prev;
         else if((out_of_order && pics-1 == s->avctx->has_b_frames && pics < 15)
            || (s->low_delay &&
