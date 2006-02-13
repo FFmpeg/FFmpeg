@@ -468,8 +468,6 @@ static inline void RENAME(rgb32tobgr16)(const uint8_t *src, uint8_t *dst, long s
 #endif
 	while(s < end)
 	{
-		// FIXME on bigendian
-		/* Looks bigendian-OK to me. --Pac. */
 		const int src= *s; s += 4;
 		*d++ = ((src&0xF8)<<8) + ((src&0xFC00)>>5) + ((src&0xF80000)>>19);
 	}
@@ -566,8 +564,6 @@ static inline void RENAME(rgb32to15)(const uint8_t *src, uint8_t *dst, long src_
 #endif
 	while(s < end)
 	{
-		// FIXME on bigendian
-		/* Looks bigendian-OK to me. --Pac. */
 		const int src= *s; s += 4;
 		*d++ = ((src&0xFF)>>3) + ((src&0xF800)>>6) + ((src&0xF80000)>>9);
 	}
@@ -629,8 +625,6 @@ static inline void RENAME(rgb32tobgr15)(const uint8_t *src, uint8_t *dst, long s
 #endif
 	while(s < end)
 	{
-		// FIXME on bigendian
-		/* Looks bigendian-OK to me. --Pac. */
 		const int src= *s; s += 4;
 		*d++ = ((src&0xF8)<<7) + ((src&0xF800)>>6) + ((src&0xF80000)>>19);
 	}
