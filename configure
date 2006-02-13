@@ -1939,12 +1939,7 @@ for codec in $CODEC_LIST ; do
     echo "CONFIG_`echo $codec | tr a-z A-Z`=yes" >> config.mak
 done
 
-diff $TMPH config.h >/dev/null 2>&1
-if test $? -ne 0 ; then
-        mv -f $TMPH config.h
-else
-        echo "config.h is unchanged"
-fi
+mv -f $TMPH config.h
 
 rm -f $TMPO $TMPC $TMPE $TMPS $TMPH
 
