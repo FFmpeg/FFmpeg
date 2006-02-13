@@ -138,7 +138,7 @@ install-vhook:
 	$(MAKE) -C vhook install
 
 install-libs:
-	install -d $(libdir)
+	install -d "$(libdir)"
 	$(MAKE) -C libavutil   install-libs
 	$(MAKE) -C libavcodec  install-libs
 	$(MAKE) -C libavformat install-libs
