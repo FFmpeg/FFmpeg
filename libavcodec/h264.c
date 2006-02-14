@@ -7507,6 +7507,15 @@ static int decode_nal_units(H264Context *h, uint8_t *buf, int buf_size){
         nalsize = 0;
         for(i = 0; i < h->nal_length_size; i++)
             nalsize = (nalsize << 8) | buf[buf_index++];
+        if(nalsize <= 1){
+            if(nalsize == 1){
+                buf_index++;
+                continue;
+            }else{
+                av_log(h->s.avctx, AV_LOG_ERROR, "AVC: nal size %d\n", nalsize);
+                break;
+            }
+        }
       } else {
         // start code prefix search
         for(; buf_index + 3 < buf_size; buf_index++){
