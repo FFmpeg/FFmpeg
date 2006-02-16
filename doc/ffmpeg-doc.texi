@@ -833,6 +833,7 @@ other implementations.
 @item Electronic Arts ADPCM  @tab      @tab X
 @tab Used in various EA titles.
 @item Creative ADPCM         @tab      @tab X
+@tab 16 -> 4, 8 -> 4, 8 -> 3, 8 -> 2
 @item RA144                  @tab      @tab X
 @tab Real 14400 bit/s codec
 @item RA288                  @tab      @tab X

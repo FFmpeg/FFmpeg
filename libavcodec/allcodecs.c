@@ -593,6 +593,9 @@ PCM_CODEC(CODEC_ID_ADPCM_G726, adpcm_g726);
 PCM_CODEC(CODEC_ID_ADPCM_CT, adpcm_ct);
 PCM_CODEC(CODEC_ID_ADPCM_SWF, adpcm_swf);
 PCM_CODEC(CODEC_ID_ADPCM_YAMAHA, adpcm_yamaha);
+PCM_CODEC(CODEC_ID_ADPCM_SBPRO_4, adpcm_sbpro_4);
+PCM_CODEC(CODEC_ID_ADPCM_SBPRO_3, adpcm_sbpro_3);
+PCM_CODEC(CODEC_ID_ADPCM_SBPRO_2, adpcm_sbpro_2);
 #undef PCM_CODEC
 
     /* subtitles */

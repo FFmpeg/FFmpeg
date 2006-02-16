@@ -514,6 +514,34 @@ static inline short adpcm_ct_expand_nibble(ADPCMChannelStatus *c, char nibble)
     return (short)predictor;
 }
 
+static inline short adpcm_sbpro_expand_nibble(ADPCMChannelStatus *c, char nibble, int size, int shift)
+{
+    int sign, delta, diff;
+
+    sign = nibble & (1<<(size-1));
+    delta = nibble & ((1<<(size-1))-1);
+    diff = delta << (7 + c->step + shift);
+
+    if (sign)
+        c->predictor -= diff;
+    else
+        c->predictor += diff;
+
+    /* clamp result */
+    if (c->predictor > 16256)
+        c->predictor = 16256;
+    else if (c->predictor < -16384)
+        c->predictor = -16384;
+
+    /* calculate new step */
+    if (delta >= (2*size - 3) && c->step < 3)
+        c->step++;
+    else if (delta == 0 && c->step > 0)
+        c->step--;
+
+    return (short) c->predictor;
+}
+
 static inline short adpcm_yamaha_expand_nibble(ADPCMChannelStatus *c, unsigned char nibble)
 {
     if(!c->step) {
@@ -644,7 +672,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
     samples = data;
     src = buf;
 
-    st = avctx->channels == 2;
+    st = avctx->channels == 2 ? 1 : 0;
 
     switch(avctx->codec->id) {
     case CODEC_ID_ADPCM_IMA_QT:
@@ -973,6 +1001,48 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
             src++;
         }
         break;
+    case CODEC_ID_ADPCM_SBPRO_4:
+    case CODEC_ID_ADPCM_SBPRO_3:
+    case CODEC_ID_ADPCM_SBPRO_2:
+        if (!c->status[0].step_index) {
+            /* the first byte is a raw sample */
+            *samples++ = 128 * (*src++ - 0x80);
+            if (st)
+              *samples++ = 128 * (*src++ - 0x80);
+            c->status[0].step_index = 1;
+        }
+        if (avctx->codec->id == CODEC_ID_ADPCM_SBPRO_4) {
+            while (src < buf + buf_size) {
+                *samples++ = adpcm_sbpro_expand_nibble(&c->status[0],
+                    (src[0] >> 4) & 0x0F, 4, 0);
+                *samples++ = adpcm_sbpro_expand_nibble(&c->status[st],
+                    src[0] & 0x0F, 4, 0);
+                src++;
+            }
+        } else if (avctx->codec->id == CODEC_ID_ADPCM_SBPRO_3) {
+            while (src < buf + buf_size) {
+                *samples++ = adpcm_sbpro_expand_nibble(&c->status[0],
+                    (src[0] >> 5) & 0x07, 3, 0);
+                *samples++ = adpcm_sbpro_expand_nibble(&c->status[0],
+                    (src[0] >> 2) & 0x07, 3, 0);
+                *samples++ = adpcm_sbpro_expand_nibble(&c->status[0],
+                    src[0] & 0x03, 2, 0);
+                src++;
+            }
+        } else {
+            while (src < buf + buf_size) {
+                *samples++ = adpcm_sbpro_expand_nibble(&c->status[0],
+                    (src[0] >> 6) & 0x03, 2, 2);
+                *samples++ = adpcm_sbpro_expand_nibble(&c->status[st],
+                    (src[0] >> 4) & 0x03, 2, 2);
+                *samples++ = adpcm_sbpro_expand_nibble(&c->status[0],
+                    (src[0] >> 2) & 0x03, 2, 2);
+                *samples++ = adpcm_sbpro_expand_nibble(&c->status[st],
+                    src[0] & 0x03, 2, 2);
+                src++;
+            }
+        }
+        break;
     case CODEC_ID_ADPCM_SWF:
     {
         GetBitContext gb;
@@ -1117,5 +1187,8 @@ ADPCM_CODEC(CODEC_ID_ADPCM_EA, adpcm_ea);
 ADPCM_CODEC(CODEC_ID_ADPCM_CT, adpcm_ct);
 ADPCM_CODEC(CODEC_ID_ADPCM_SWF, adpcm_swf);
 ADPCM_CODEC(CODEC_ID_ADPCM_YAMAHA, adpcm_yamaha);
+ADPCM_CODEC(CODEC_ID_ADPCM_SBPRO_4, adpcm_sbpro_4);
+ADPCM_CODEC(CODEC_ID_ADPCM_SBPRO_3, adpcm_sbpro_3);
+ADPCM_CODEC(CODEC_ID_ADPCM_SBPRO_2, adpcm_sbpro_2);
 
 #undef ADPCM_CODEC
