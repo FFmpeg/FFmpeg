@@ -1156,7 +1156,7 @@ GCC statement expressions (@samp{(x = (@{ int y = 4; y; @})}).
 @end itemize
 
 Indent size is 4.
-The presentation is the one specified by 'indent -i4 -kr'.
+The presentation is the one specified by 'indent -i4 -kr -nut'.
 The TAB character is forbidden outside of Makefiles as is any
 form of trailing whitespace. Commits containing either will be
 rejected by the CVS repository.
