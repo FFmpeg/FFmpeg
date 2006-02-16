@@ -5484,7 +5484,7 @@ static int decode_cabac_mb_dqp( H264Context *h) {
         else
             ctx = 3;
         val++;
-        if(val > 52) //prevent infinite loop
+        if(val > 102) //prevent infinite loop
             return INT_MIN;
     }
 
