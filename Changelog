@@ -3,7 +3,7 @@ version <next>
 - IBM Ultimotion (ULTI) video decoder
 - Sierra Online audio file demuxer and decoder
 - Apple QuickDraw (qdrw) video decoder
-- Creative ADPCM audio decoder
+- Creative ADPCM audio decoder (16 bits as well as 8 bits schemes)
 - Electronic Arts Multimedia (WVE/UV2/etc.) file demuxer
 - Miro VideoXL (VIXL) video decoder
 - H.261 video encoder
