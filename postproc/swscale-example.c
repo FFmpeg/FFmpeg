@@ -90,9 +90,9 @@ static void doTest(uint8_t *ref[3], int refStride[3], int w, int h, int srcForma
 		out[i]= (uint8_t*) malloc(refStride[i]*h);
 	}
 
-	srcContext= sws_getContext(w, h, IMGFMT_YV12, srcW, srcH, srcFormat, flags, NULL, NULL);
-	dstContext= sws_getContext(srcW, srcH, srcFormat, dstW, dstH, dstFormat, flags, NULL, NULL);
-	outContext= sws_getContext(dstW, dstH, dstFormat, w, h, IMGFMT_YV12, flags, NULL, NULL);
+	srcContext= sws_getContext(w, h, IMGFMT_YV12, srcW, srcH, srcFormat, flags, NULL, NULL, NULL);
+	dstContext= sws_getContext(srcW, srcH, srcFormat, dstW, dstH, dstFormat, flags, NULL, NULL, NULL);
+	outContext= sws_getContext(dstW, dstH, dstFormat, w, h, IMGFMT_YV12, flags, NULL, NULL, NULL);
 	if(srcContext==NULL ||dstContext==NULL ||outContext==NULL){
 		printf("Failed allocating swsContext\n");
 		goto end;
@@ -139,7 +139,7 @@ static void doTest(uint8_t *ref[3], int refStride[3], int w, int h, int srcForma
 	}
 }
 
-void mp_msg_c( int x, const char *format, ... ){
+void mp_msg( int x, int y, const char *format, ... ){
     va_list va;
     va_start(va, format);
     vfprintf(stderr, format, va);
@@ -192,7 +192,7 @@ int main(int argc, char **argv){
 	int x, y;
 	struct SwsContext *sws;
 
-	sws= sws_getContext(W/12, H/12, IMGFMT_BGR32, W, H, IMGFMT_YV12, 2, NULL, NULL);
+	sws= sws_getContext(W/12, H/12, IMGFMT_BGR32, W, H, IMGFMT_YV12, 2, NULL, NULL, NULL);
         
 	for(y=0; y<H; y++){
 		for(x=0; x<W*4; x++){
