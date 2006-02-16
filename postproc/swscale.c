@@ -2113,7 +2113,7 @@ SwsContext *sws_getContext(int srcW, int srcH, int origSrcFormat, int dstW, int 
 
 #ifdef HAVE_ALTIVEC
 		c->vYCoeffsBank = memalign (16, sizeof (vector signed short)*c->vLumFilterSize*c->dstH);
-		c->vCCoeffsBank = memalign (16, sizeof (vector signed short)*c->vChrFilterSize*c->dstH);
+		c->vCCoeffsBank = memalign (16, sizeof (vector signed short)*c->vChrFilterSize*c->chrDstH);
 
 		for (i=0;i<c->vLumFilterSize*c->dstH;i++) {
                   int j;
@@ -2122,7 +2122,7 @@ SwsContext *sws_getContext(int srcW, int srcH, int origSrcFormat, int dstW, int 
 		    p[j] = c->vLumFilter[i];
 		}
 
-		for (i=0;i<c->vChrFilterSize*c->dstH;i++) {
+		for (i=0;i<c->vChrFilterSize*c->chrDstH;i++) {
                   int j;
 		  short *p = (short *)&c->vCCoeffsBank[i];
 		  for (j=0;j<8;j++)
