@@ -511,6 +511,9 @@ void avcodec_register_all(void)
 #ifdef CONFIG_TTA_DECODER
     register_avcodec(&tta_decoder);
 #endif //CONFIG_TTA_DECODER
+#ifdef CONFIG_AVS_DECODER
+    register_avcodec(&avs_decoder);
+#endif //CONFIG_AVS_DECODER
 #ifdef CONFIG_RAWVIDEO_DECODER
     register_avcodec(&rawvideo_decoder);
 #endif //CONFIG_RAWVIDEO_DECODER

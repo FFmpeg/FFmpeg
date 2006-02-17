@@ -700,6 +700,8 @@ library:
 @item Creative VOC @tab X @tab X @tab Created for the Sound Blaster Pro.
 @item American Laser Games MM  @tab    @tab X
 @tab Multimedia format used in games like Mad Dog McCree
+@item AVS @tab    @tab X
+@tab Multimedia format used by the Creature Shock game.
 @end multitable
 
 @code{X} means that encoding (resp. decoding) is supported.
@@ -792,6 +794,7 @@ following image formats are supported:
 @item CamStudio              @tab     @tab  X @tab fourcc: CSCD
 @item American Laser Games Video  @tab    @tab X @tab Used in games like Mad Dog McCree
 @item ZMBV                   @tab     @tab  X @tab
+@item AVS Video              @tab     @tab  X @tab Video encoding used by the Creature Shock game.
 @end multitable
 
 @code{X} means that encoding (resp. decoding) is supported.

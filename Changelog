@@ -40,6 +40,7 @@ version <next>
 - Zip Blocks Motion Video decoder
 - Improved Theora/VP3 decoder
 - True Audio (TTA) decoder
+- AVS demuxer and video decoder
 
 version 0.4.9-pre1:
 

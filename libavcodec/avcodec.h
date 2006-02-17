@@ -21,8 +21,8 @@ extern "C" {
 #define AV_STRINGIFY(s)         AV_TOSTRING(s)
 #define AV_TOSTRING(s) #s
 
-#define LIBAVCODEC_VERSION_INT  ((51<<16)+(6<<8)+0)
-#define LIBAVCODEC_VERSION      51.6.0
+#define LIBAVCODEC_VERSION_INT  ((51<<16)+(7<<8)+0)
+#define LIBAVCODEC_VERSION      51.7.0
 #define LIBAVCODEC_BUILD        LIBAVCODEC_VERSION_INT
 
 #define LIBAVCODEC_IDENT        "Lavc" AV_STRINGIFY(LIBAVCODEC_VERSION)
@@ -117,6 +117,7 @@ enum CodecID {
     CODEC_ID_CSCD,
     CODEC_ID_MMVIDEO,
     CODEC_ID_ZMBV,
+    CODEC_ID_AVS,
 
     /* various pcm "codecs" */
     CODEC_ID_PCM_S16LE= 0x10000,
@@ -2233,6 +2234,7 @@ extern AVCodec libgsm_decoder;
 extern AVCodec bmp_decoder;
 extern AVCodec mmvideo_decoder;
 extern AVCodec zmbv_decoder;
+extern AVCodec avs_decoder;
 
 /* pcm codecs */
 #define PCM_CODEC(id, name) \

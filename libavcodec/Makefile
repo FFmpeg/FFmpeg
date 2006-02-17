@@ -29,6 +29,9 @@ endif
 ifneq ($(CONFIG_ASV1_DECODER)$(CONFIG_ASV1_ENCODER)$(CONFIG_ASV2_DECODER)$(CONFIG_ASV2_ENCODER),)
     OBJS+= asv1.o
 endif
+ifeq ($(CONFIG_AVS_DECODER),yes)
+    OBJS+= avs.o
+endif
 ifeq ($(CONFIG_CINEPAK_DECODER),yes)
     OBJS+= cinepak.o
 endif
