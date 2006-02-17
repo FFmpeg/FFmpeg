@@ -210,11 +210,9 @@ do {										       \
              (vector unsigned char)AVV(0x10,0x08,0x10,0x09,0x10,0x0A,0x10,0x0B,\
                                     0x10,0x0C,0x10,0x0D,0x10,0x0E,0x10,0x0F))
 
-#define vec_clip(x) \
-  vec_max (vec_min (x, (typeof(x))AVV(235)), (typeof(x))AVV(16))
-
-#define vec_packclp_a(x,y) \
-  (vector unsigned char)vec_pack (vec_clip (x), vec_clip (y))
+#define vec_clip_s16(x) \
+  vec_max (vec_min (x, (vector signed short)AVV(235,235,235,235,235,235,235,235)),\
+                       (vector signed short)AVV(16, 16, 16, 16, 16, 16, 16, 16 ))
 
 #define vec_packclp(x,y) \
   (vector unsigned char)vec_packs \
@@ -747,7 +745,7 @@ void yuv2rgb_altivec_init_tables (SwsContext *c, const int inv_table[4],int brig
   buf.tmp[5] = -((inv_table[3]>>1)*(contrast>>16)*(saturation>>16));	//cgv
 
 
-  c->CSHIFT = (vector unsigned short)vec_splat((vector unsigned short)AVV(2),0);
+  c->CSHIFT = (vector unsigned short)vec_splat_u16(2);
   c->CY  = vec_splat ((vector signed short)buf.vec, 0);
   c->OY  = vec_splat ((vector signed short)buf.vec, 1);
   c->CRV  = vec_splat ((vector signed short)buf.vec, 2);
@@ -781,8 +779,8 @@ altivec_yuv2packedX (SwsContext *c,
   vector unsigned char R,G,B,pels[3];
   vector unsigned char *out,*nout;
 
-  vector signed short   RND = vec_splat((vector signed short)AVV(1<<3),0);
-  vector unsigned short SCL = vec_splat((vector unsigned short)AVV(4),0);
+  vector signed short   RND = vec_splat_s16(1<<3);
+  vector unsigned short SCL = vec_splat_u16(4);
   unsigned long scratch[16] __attribute__ ((aligned (16)));
 
   vector signed short *YCoeffs, *CCoeffs;
@@ -819,10 +817,10 @@ altivec_yuv2packedX (SwsContext *c,
     U  = vec_sra (U,  SCL);
     V  = vec_sra (V,  SCL);
 
-    Y0 = vec_clip (Y0);
-    Y1 = vec_clip (Y1);
-    U  = vec_clip (U);
-    V  = vec_clip (V);
+    Y0 = vec_clip_s16 (Y0);
+    Y1 = vec_clip_s16 (Y1);
+    U  = vec_clip_s16 (U);
+    V  = vec_clip_s16 (V);
 
     /* now we have
       Y0= y0 y1 y2 y3 y4 y5 y6 y7     Y1= y8 y9 y10 y11 y12 y13 y14 y15
@@ -896,10 +894,10 @@ altivec_yuv2packedX (SwsContext *c,
     U  = vec_sra (U,  SCL);
     V  = vec_sra (V,  SCL);
 
-    Y0 = vec_clip (Y0);
-    Y1 = vec_clip (Y1);
-    U  = vec_clip (U);
-    V  = vec_clip (V);
+    Y0 = vec_clip_s16 (Y0);
+    Y1 = vec_clip_s16 (Y1);
+    U  = vec_clip_s16 (U);
+    V  = vec_clip_s16 (V);
 
     /* now we have
        Y0= y0 y1 y2 y3 y4 y5 y6 y7     Y1= y8 y9 y10 y11 y12 y13 y14 y15
