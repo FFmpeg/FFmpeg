@@ -517,21 +517,14 @@ static int mov_read_hdlr(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 
     dprintf("ctype= %c%c%c%c (0x%08lx)\n", *((char *)&ctype), ((char *)&ctype)[1], ((char *)&ctype)[2], ((char *)&ctype)[3], (long) ctype);
     dprintf("stype= %c%c%c%c\n", *((char *)&type), ((char *)&type)[1], ((char *)&type)[2], ((char *)&type)[3]);
-    if(ctype == MKTAG('m', 'h', 'l', 'r')) { /* MOV */
-        /* helps parsing the string hereafter... */
+    if(ctype == MKTAG('m', 'h', 'l', 'r')) /* MOV */
         c->mp4 = 0;
-        if(type == MKTAG('v', 'i', 'd', 'e'))
-            st->codec->codec_type = CODEC_TYPE_VIDEO;
-        else if(type == MKTAG('s', 'o', 'u', 'n'))
-            st->codec->codec_type = CODEC_TYPE_AUDIO;
-    } else if(ctype == 0) { /* MP4 */
-        /* helps parsing the string hereafter... */
+    else if(ctype == 0)
         c->mp4 = 1;
-        if(type == MKTAG('v', 'i', 'd', 'e'))
-            st->codec->codec_type = CODEC_TYPE_VIDEO;
-        else if(type == MKTAG('s', 'o', 'u', 'n'))
-            st->codec->codec_type = CODEC_TYPE_AUDIO;
-    }
+    if(type == MKTAG('v', 'i', 'd', 'e'))
+        st->codec->codec_type = CODEC_TYPE_VIDEO;
+    else if(type == MKTAG('s', 'o', 'u', 'n'))
+        st->codec->codec_type = CODEC_TYPE_AUDIO;
     get_be32(pb); /* component  manufacture */
     get_be32(pb); /* component flags */
     get_be32(pb); /* component flags mask */
