@@ -853,7 +853,8 @@ altivec_yuv2packedX (SwsContext *c,
       case IMGFMT_BGR24: out_bgr24 (R,G,B,out); break;
       default:
         {
-          /* FIXME: either write more out_* macros or punt to yuv2packedXinC */
+          /* If this is reached, the caller should have called yuv2packedXinC
+             instead. */
           static int printed_error_message;
           if(!printed_error_message) {
             MSG_ERR("altivec_yuv2packedX doesn't support %s output\n",
