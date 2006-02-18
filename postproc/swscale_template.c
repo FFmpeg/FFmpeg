@@ -967,14 +967,19 @@ static inline void RENAME(yuv2packedX)(SwsContext *c, int16_t *lumFilter, int16_
 #endif
 	default:
 #ifdef HAVE_ALTIVEC
-		altivec_yuv2packedX (c, lumFilter, lumSrc, lumFilterSize,
-			    chrFilter, chrSrc, chrFilterSize,
-			    dest, dstW, dstY);
-#else
-		yuv2packedXinC(c, lumFilter, lumSrc, lumFilterSize,
-			    chrFilter, chrSrc, chrFilterSize,
-			    dest, dstW, dstY);
+		/* The following list of supported dstFormat values should
+		   match what's found in the body of altivec_yuv2packedX() */
+		if(c->dstFormat==IMGFMT_ABGR  || c->dstFormat==IMGFMT_BGRA  ||
+		   c->dstFormat==IMGFMT_BGR24 || c->dstFormat==IMGFMT_RGB24 ||
+		   c->dstFormat==IMGFMT_RGBA  || c->dstFormat==IMGFMT_ARGB)
+			altivec_yuv2packedX (c, lumFilter, lumSrc, lumFilterSize,
+				    chrFilter, chrSrc, chrFilterSize,
+				    dest, dstW, dstY);
+		else
 #endif
+			yuv2packedXinC(c, lumFilter, lumSrc, lumFilterSize,
+				    chrFilter, chrSrc, chrFilterSize,
+				    dest, dstW, dstY);
 		break;
 	}
 }
