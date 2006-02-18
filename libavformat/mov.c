@@ -629,6 +629,33 @@ static int mov_read_mdat(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     return 0; /* now go for moov */
 }
 
+static int mov_read_ftyp(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
+{
+    uint32_t type = get_le32(pb);
+
+    /* from mplayer */
+    switch (type) {
+    case MKTAG('i', 's', 'o', 'm'):
+    case MKTAG('m', 'p', '4', '1'):
+    case MKTAG('m', 'p', '4', '2'):
+    case MKTAG('3', 'g', 'p', '1'):
+    case MKTAG('3', 'g', 'p', '2'):
+    case MKTAG('3', 'g', '2', 'a'):
+    case MKTAG('3', 'g', 'p', '3'):
+    case MKTAG('3', 'g', 'p', '4'):
+    case MKTAG('3', 'g', 'p', '5'):
+    case MKTAG('m', 'm', 'p', '4'): /* Mobile MP4 */
+    case MKTAG('M', '4', 'A', ' '): /* Apple iTunes AAC-LC Audio */
+    case MKTAG('M', '4', 'P', ' '): /* Apple iTunes AAC-LC Protected Audio */
+        c->mp4 = 1;
+    case MKTAG('q', 't', ' ', ' '):
+        av_log(c->fc, AV_LOG_DEBUG, "ISO: File Type Major Brand: %.4s\n",(char *)&type);
+    }
+    get_be32(pb); /* minor version */
+    url_fskip(pb, atom.size - 8);
+    return 0;
+}
+
 /* this atom should contain all header atoms */
 static int mov_read_moov(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
@@ -1477,6 +1504,7 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG( 'e', 'd', 't', 's' ), mov_read_default },
 { MKTAG( 'e', 'l', 's', 't' ), mov_read_elst },
 { MKTAG( 'f', 'r', 'e', 'e' ), mov_read_leaf },
+{ MKTAG( 'f', 't', 'y', 'p' ), mov_read_ftyp },
 { MKTAG( 'h', 'd', 'l', 'r' ), mov_read_hdlr },
 { MKTAG( 'h', 'i', 'n', 't' ), mov_read_leaf },
 { MKTAG( 'h', 'm', 'h', 'd' ), mov_read_leaf },
