@@ -744,8 +744,49 @@ static int mov_read_smi(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     return 0;
 }
 
+static int mov_read_enda(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
+{
+    AVStream *st = c->fc->streams[c->fc->nb_streams-1];
+    int little_endian = get_be16(pb);
+
+    if (little_endian) {
+        switch (st->codec->codec_id) {
+        case CODEC_ID_PCM_S24BE:
+            st->codec->codec_id = CODEC_ID_PCM_S24LE;
+            break;
+        case CODEC_ID_PCM_S32BE:
+            st->codec->codec_id = CODEC_ID_PCM_S32LE;
+            break;
+        default:
+            break;
+        }
+    }
+    return 0;
+}
+
+static int mov_read_alac(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
+{
+    AVStream *st = c->fc->streams[c->fc->nb_streams-1];
+
+    // currently ALAC decoder expect full atom header - so let's fake it
+    // this should be fixed and just ALAC header should be passed
+
+    av_free(st->codec->extradata);
+    st->codec->extradata_size = 36;
+    st->codec->extradata = (uint8_t*) av_mallocz(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
+
+    if (st->codec->extradata) {
+        strcpy(st->codec->extradata + 4, "alac"); // fake
+        get_buffer(pb, st->codec->extradata + 8, 36 - 8);
+        dprintf("Reading alac %Ld  %s\n", st->codec->extradata_size, (char*)st->codec->extradata);
+    } else
+        url_fskip(pb, atom.size);
+    return 0;
+}
+
 static int mov_read_wave(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
+    offset_t start_pos = url_ftell(pb);
     AVStream *st = c->fc->streams[c->fc->nb_streams-1];
 
     if((uint64_t)atom.size > (1<<30))
@@ -765,6 +806,8 @@ static int mov_read_wave(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
         mov_read_default(c, pb, atom);
     } else if (atom.size > 0)
         url_fskip(pb, atom.size);
+    /* in any case, skip garbage */
+    url_fskip(pb, atom.size - ((url_ftell(pb) - start_pos)));
     return 0;
 }
 
@@ -856,6 +899,7 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 
     while(entries--) { //Parsing Sample description table
         enum CodecID id;
+        MOV_atom_t a = { 0, 0, 0 };
         offset_t start_pos = url_ftell(pb);
         int size = get_be32(pb); /* size */
         format = get_le32(pb); /* data format */
@@ -864,23 +908,17 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
         get_be16(pb); /* reserved */
         get_be16(pb); /* index */
 
-        /* for MPEG4: set codec type by looking for it */
-        id = codec_get_id(mov_video_tags, format);
-        if(id <= 0)
-            id = codec_get_id(codec_bmp_tags, format);
-        if (id >= 0) {
-            AVCodec *codec;
-            codec = avcodec_find_decoder(id);
-            if (codec)
-                st->codec->codec_type = codec->type;
-        }
         dprintf("size=%d 4CC= %c%c%c%c codec_type=%d\n",
                 size,
                 (format >> 0) & 0xff, (format >> 8) & 0xff, (format >> 16) & 0xff, (format >> 24) & 0xff,
                 st->codec->codec_type);
         st->codec->codec_tag = format;
+        /* codec_type is set earlier by read_hdlr */
         if(st->codec->codec_type==CODEC_TYPE_VIDEO) {
-            MOV_atom_t a = { 0, 0, 0 };
+            /* for MPEG4: set codec type by looking for it */
+            id = codec_get_id(mov_video_tags, format);
+            if(id <= 0)
+                id = codec_get_id(codec_bmp_tags, format);
             st->codec->codec_id = id;
             get_be16(pb); /* version */
             get_be16(pb); /* revision level */
@@ -984,180 +1022,63 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
                 st->codec->palctrl->palette_changed = 1;
             } else
                 st->codec->palctrl = NULL;
+        } else if(st->codec->codec_type==CODEC_TYPE_AUDIO) {
+            uint16_t version = get_be16(pb);
 
-            a.size = size - (url_ftell(pb) - start_pos);
-            if (a.size > 8)
-                mov_read_default(c, pb, a);
-            else if (a.size > 0)
-                url_fskip(pb, a.size);
-        } else {
             st->codec->codec_id = codec_get_id(mov_audio_tags, format);
-            if(st->codec->codec_id==CODEC_ID_AMR_NB || st->codec->codec_id==CODEC_ID_AMR_WB) //from TS26.244
-            {
-               dprintf("AMR audio identified %d!!\n", st->codec->codec_id);
-               get_be32(pb);get_be32(pb); //Reserved_8
-               get_be16(pb);//Reserved_2
-               get_be16(pb);//Reserved_2
-               get_be32(pb);//Reserved_4
-               get_be16(pb);//TimeScale
-               get_be16(pb);//Reserved_2
+            get_be16(pb); /* revision level */
+            get_be32(pb); /* vendor */
 
-                //AMRSpecificBox.(10 bytes)
+            st->codec->channels = get_be16(pb);             /* channel count */
+            st->codec->bits_per_sample = get_be16(pb);      /* sample size */
+            /* do we need to force to 16 for AMR ? */
 
-               get_be32(pb); //size
-               get_be32(pb); //type=='damr'
-               get_be32(pb); //vendor
-               get_byte(pb); //decoder version
-               get_be16(pb); //mode_set
-               get_byte(pb); //mode_change_period
-               get_byte(pb); //frames_per_sample
+            /* handle specific s8 codec */
+            get_be16(pb); /* compression id = 0*/
+            get_be16(pb); /* packet size = 0 */
 
-               st->duration = AV_NOPTS_VALUE;//Not possible to get from this info, must count number of AMR frames
-               if(st->codec->codec_id==CODEC_ID_AMR_NB)
-               {
-                   st->codec->sample_rate=8000;
-                   st->codec->channels=1;
-               }
-               else //AMR-WB
-               {
-                   st->codec->sample_rate=16000;
-                   st->codec->channels=1;
-               }
-               st->codec->bits_per_sample=16;
-               st->codec->bit_rate=0; /*It is not possible to tell this before we have
-                                       an audio frame and even then every frame can be different*/
+            st->codec->sample_rate = ((get_be32(pb) >> 16));
+
+            switch (st->codec->codec_id) {
+            case CODEC_ID_PCM_S16BE:
+                if (st->codec->bits_per_sample == 8)
+                    st->codec->codec_id = CODEC_ID_PCM_S8;
+                /* fall */
+            case CODEC_ID_PCM_U8:
+                if (st->codec->bits_per_sample == 16)
+                    st->codec->codec_id = CODEC_ID_PCM_S16BE;
+                st->codec->bit_rate = st->codec->sample_rate * 8;
+                break;
+            case CODEC_ID_AMR_WB:
+                st->codec->sample_rate = 16000; /* should really we ? */
+                st->codec->channels=1; /* really needed */
+                break;
+            case CODEC_ID_AMR_NB:
+                st->codec->sample_rate = 8000; /* should really we ? */
+                st->codec->channels=1; /* really needed */
+                break;
+            default:
+                break;
             }
-            else if( st->codec->codec_tag == MKTAG( 'm', 'p', '4', 's' ))
-            {
-                //This is some stuff for the hint track, lets ignore it!
-                //Do some mp4 auto detect.
-                c->mp4=1;
-                size-=(16);
-                url_fskip(pb, size); /* The mp4s atom also contians a esds atom that we can skip*/
+
+            //Read QT version 1 fields. In version 0 theese dont exist
+            dprintf("version =%d mp4=%d\n",version,c->mp4);
+            if(version==1) {
+                get_be32(pb); /* samples per packet */
+                get_be32(pb); /* bytes per packet */
+                get_be32(pb); /* bytes per frame */
+                get_be32(pb); /* bytes per sample */
             }
-            else if( st->codec->codec_tag == MKTAG( 'm', 'p', '4', 'a' ))
-            {
-                MOV_atom_t a;
-                int mp4_version;
-
-                /* Handle mp4 audio tag */
-                mp4_version=get_be16(pb);/*version*/
-                get_be16(pb); /*revesion*/
-                get_be32(pb);
-                st->codec->channels = get_be16(pb); /* channels */
-                st->codec->bits_per_sample = get_be16(pb); /* bits per sample */
-                get_be32(pb);
-                st->codec->sample_rate = get_be16(pb); /* sample rate, not always correct */
-                if(st->codec->sample_rate == 1) //nonsese rate? -> ignore
-                    st->codec->sample_rate= 0;
-
-                get_be16(pb);
-                c->mp4=1;
-
-                if(mp4_version==1)
-                {
-                    url_fskip(pb,16);
-                    a.size=size-(16+20+16);
-                }
-                else
-                    a.size=size-(16+20);
-
-                a.offset=url_ftell(pb);
-
-                mov_read_default(c, pb, a);
-
-                /* Get correct sample rate from extradata */
-                if(st->codec->extradata_size) {
-                   const int samplerate_table[] = {
-                     96000, 88200, 64000, 48000, 44100, 32000,
-                     24000, 22050, 16000, 12000, 11025, 8000,
-                     7350, 0, 0, 0
-                   };
-                   unsigned char *px = st->codec->extradata;
-                   // 5 bits objectTypeIndex, 4 bits sampleRateIndex, 4 bits channels
-                   int samplerate_index = ((px[0] & 7) << 1) + ((px[1] >> 7) & 1);
-                   st->codec->sample_rate = samplerate_table[samplerate_index];
-                   st->codec->channels = (px[1] >> 3) & 15;
-                }
-            }
-            else if( st->codec->codec_tag == MKTAG( 'a', 'l', 'a', 'c' ))
-            {
-                /* Handle alac audio tag + special extradata */
-                get_be32(pb); /* version */
-                get_be32(pb);
-                st->codec->channels = get_be16(pb); /* channels */
-                st->codec->bits_per_sample = get_be16(pb); /* bits per sample */
-                get_be32(pb);
-                st->codec->sample_rate = get_be16(pb);
-                get_be16(pb);
-
-                /* fetch the 36-byte extradata needed for alac decoding */
-                st->codec->extradata_size = 36;
-                st->codec->extradata = (uint8_t*)
-                    av_mallocz(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
-                get_buffer(pb, st->codec->extradata, st->codec->extradata_size);
-            }
-            else if(size>=(16+20))
-            {//16 bytes read, reading atleast 20 more
-                uint16_t version;
-                version = get_be16(pb); /* version */
-                get_be16(pb); /* revision level */
-                get_be32(pb); /* vendor */
-
-                st->codec->channels = get_be16(pb);             /* channel count */
-                st->codec->bits_per_sample = get_be16(pb);      /* sample size */
-
-                /* handle specific s8 codec */
-                get_be16(pb); /* compression id = 0*/
-                get_be16(pb); /* packet size = 0 */
-
-                st->codec->sample_rate = ((get_be32(pb) >> 16));
-
-                switch (st->codec->codec_id) {
-                case CODEC_ID_PCM_S16BE:
-                    if (st->codec->bits_per_sample == 8)
-                        st->codec->codec_id = CODEC_ID_PCM_S8;
-                    /* fall */
-                case CODEC_ID_PCM_U8:
-                    st->codec->bit_rate = st->codec->sample_rate * 8;
-                    break;
-                default:
-                    ;
-                }
-
-                //Read QT version 1 fields. In version 0 theese dont exist
-                dprintf("version =%d mp4=%d\n",version,c->mp4);
-                if((version==1) && size>=(16+20+16))
-                {
-                    get_be32(pb); /* samples per packet */
-                    get_be32(pb); /* bytes per packet */
-                    get_be32(pb); /* bytes per frame */
-                    get_be32(pb); /* bytes per sample */
-                    if(size>(16+20+16))
-                    {
-                        //Optional, additional atom-based fields
-                        MOV_atom_t a = { format, url_ftell(pb), size - (16 + 20 + 16 + 8) };
-                        mov_read_default(c, pb, a);
-                    }
-                }
-                else
-                {
-                    //We should be down to 0 bytes here, but lets make sure.
-                    size-=(16+20);
-                    if(size>0) {
-                        dprintf("skipping 0x%X bytes\n",size-(16+20));
-                        url_fskip(pb, size);
-                    }
-                }
-            }
-            else
-            {
-                size-=16;
-                //Unknown size, but lets do our best and skip the rest.
-                dprintf("Strange size, skipping 0x%X bytes\n",size);
-                url_fskip(pb, size);
-            }
+        } else {
+            /* other codec type, just skip (rtp, mp4s, tmcd ...) */
+            url_fskip(pb, size - (url_ftell(pb) - start_pos));
         }
+        /* this will read extra atoms at the end (wave, alac, damr, avcC, SMI ...) */
+        a.size = size - (url_ftell(pb) - start_pos);
+        if (a.size > 8)
+            mov_read_default(c, pb, a);
+        else if (a.size > 0)
+            url_fskip(pb, a.size);
     }
 
     if(st->codec->codec_type==CODEC_TYPE_AUDIO && st->codec->sample_rate==0 && sc->time_scale>1) {
@@ -1497,6 +1418,7 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG( 'd', 'r', 'e', 'f' ), mov_read_leaf },
 { MKTAG( 'e', 'd', 't', 's' ), mov_read_default },
 { MKTAG( 'e', 'l', 's', 't' ), mov_read_elst },
+{ MKTAG( 'e', 'n', 'd', 'a' ), mov_read_enda },
 { MKTAG( 'f', 'r', 'e', 'e' ), mov_read_leaf },
 { MKTAG( 'f', 't', 'y', 'p' ), mov_read_ftyp },
 { MKTAG( 'h', 'd', 'l', 'r' ), mov_read_hdlr },
@@ -1519,6 +1441,7 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG( 's', 'k', 'i', 'p' ), mov_read_leaf },
 { MKTAG( 's', 'm', 'h', 'd' ), mov_read_leaf }, /* sound media info header */
 { MKTAG( 'S', 'M', 'I', ' ' ), mov_read_smi }, /* Sorenson extension ??? */
+{ MKTAG( 'a', 'l', 'a', 'c' ), mov_read_alac }, /* alac specific atom */
 { MKTAG( 'a', 'v', 'c', 'C' ), mov_read_avcC },
 { MKTAG( 's', 't', 'b', 'l' ), mov_read_default },
 { MKTAG( 's', 't', 'c', 'o' ), mov_read_stco },
