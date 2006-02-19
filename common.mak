@@ -71,6 +71,7 @@ install: install-libs install-headers
 install-libs: $(INSTLIBTARGETS)
 
 install-lib-shared: $(SLIBNAME)
+	install -d "$(libdir)"
 ifeq ($(CONFIG_WIN32),yes)
 	install $(INSTALLSTRIP) -m 755 $(SLIBNAME) "$(prefix)"
 else
@@ -83,9 +84,12 @@ else
 endif
 
 install-lib-static: $(LIB)
+	install -d "$(libdir)"
 	install -m 644 $(LIB) "$(libdir)"
 
 install-headers:
+	install -d "$(incdir)"
+	install -d "$(libdir)/pkgconfig"
 	install -m 644 $(addprefix "$(SRC_DIR)"/,$(HEADERS)) "$(incdir)"
 	install -m 644 $(BUILD_ROOT)/lib$(NAME).pc "$(libdir)/pkgconfig"
 

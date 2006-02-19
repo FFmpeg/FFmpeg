@@ -138,7 +138,6 @@ install-vhook:
 	$(MAKE) -C vhook install
 
 install-libs:
-	install -d "$(libdir)"
 	$(MAKE) -C libavutil   install-libs
 	$(MAKE) -C libavcodec  install-libs
 	$(MAKE) -C libavformat install-libs
@@ -150,8 +149,6 @@ ifeq ($(BUILD_SHARED),yes)
 endif
 
 install-headers:
-	install -d "$(incdir)"
-	install -d "$(libdir)/pkgconfig"
 	$(MAKE) -C libavutil   install-headers
 	$(MAKE) -C libavcodec  install-headers
 	$(MAKE) -C libavformat install-headers
