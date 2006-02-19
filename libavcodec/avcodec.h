@@ -324,7 +324,7 @@ typedef struct RcOverride{
 /* only for ME compatiblity with old apps */
 extern int motion_estimation_method;
 
-#define FF_MAX_B_FRAMES 8
+#define FF_MAX_B_FRAMES 16
 
 /* encoding support
    these flags can be passed in AVCodecContext.flags before initing
