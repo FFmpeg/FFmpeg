@@ -108,6 +108,8 @@ const CodecTag codec_bmp_tags[] = {
     { CODEC_ID_MPEG4, MKTAG('W', 'V', '1', 'F') },
     { CODEC_ID_MPEG4, MKTAG('S', 'E', 'D', 'G') },
 
+    { CODEC_ID_MPEG4, MKTAG('R', 'M', 'P', '4') },
+
     { CODEC_ID_MSMPEG4V3, MKTAG('D', 'I', 'V', '3'), .invalid_asf = 1 }, /* default signature when using MSMPEG4 */
     { CODEC_ID_MSMPEG4V3, MKTAG('M', 'P', '4', '3') },
 

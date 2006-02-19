@@ -514,7 +514,8 @@ retry:
 
     if(s->xvid_build==0 && s->divx_version==0 && s->lavc_build==0){
         if(s->avctx->stream_codec_tag == ff_get_fourcc("XVID") ||
-           s->avctx->codec_tag == ff_get_fourcc("XVID") || s->avctx->codec_tag == ff_get_fourcc("XVIX"))
+           s->avctx->codec_tag == ff_get_fourcc("XVID") || s->avctx->codec_tag == ff_get_fourcc("XVIX") ||
+           s->avctx->codec_tag == ff_get_fourcc("RMP4"))
             s->xvid_build= -1;
 #if 0
         if(s->avctx->codec_tag == ff_get_fourcc("DIVX") && s->vo_type==0 && s->vol_control_parameters==1
