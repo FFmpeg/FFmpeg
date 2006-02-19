@@ -1835,7 +1835,7 @@ again:
 
         sc->current_sample++;
     }else if(idx + 1 < sc->sample_to_chunk_sz){
-        sc->current_sample += sc->sample_size * sc->sample_to_chunk[idx].count;
+        sc->current_sample += sc->sample_to_chunk[idx].count;
     }
 
 readchunk:
