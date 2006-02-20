@@ -222,6 +222,7 @@ X264_init(AVCodecContext *avctx)
     x4->params.analyse.b_fast_pskip = (avctx->flags2 & CODEC_FLAG2_FASTPSKIP);
 
     x4->params.analyse.i_trellis = avctx->trellis;
+    x4->params.analyse.i_noise_reduction = avctx->noise_reduction;
 
     if(avctx->level > 0) x4->params.i_level_idc = avctx->level;
 
