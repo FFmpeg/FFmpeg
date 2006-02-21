@@ -788,6 +788,7 @@ void avcodec_get_context_defaults(AVCodecContext *s){
     s->pix_fmt= PIX_FMT_NONE;
     s->frame_skip_cmp= FF_CMP_DCTMAX;
     s->nsse_weight= 8;
+    s->sample_fmt= SAMPLE_FMT_S16; // FIXME: set to NONE
 
     s->intra_quant_bias= FF_DEFAULT_QUANT_BIAS;
     s->inter_quant_bias= FF_DEFAULT_QUANT_BIAS;
