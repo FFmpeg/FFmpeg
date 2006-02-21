@@ -199,12 +199,12 @@ const CodecTag codec_bmp_tags[] = {
     { CODEC_ID_CSCD, MKTAG('C', 'S', 'C', 'D') },
     { CODEC_ID_ZMBV, MKTAG('Z', 'M', 'B', 'V') },
     { CODEC_ID_RAWVIDEO, 0 },
-    { 0, 0 },
+    { CODEC_ID_NONE, 0 },
 };
 
 unsigned int codec_get_tag(const CodecTag *tags, int id)
 {
-    while (tags->id != 0) {
+    while (tags->id != CODEC_ID_NONE) {
         if (tags->id == id)
             return tags->tag;
         tags++;
@@ -214,7 +214,7 @@ unsigned int codec_get_tag(const CodecTag *tags, int id)
 
 static unsigned int codec_get_asf_tag(const CodecTag *tags, unsigned int id)
 {
-    while (tags->id != 0) {
+    while (tags->id != CODEC_ID_NONE) {
         if (!tags->invalid_asf && tags->id == id)
             return tags->tag;
         tags++;
@@ -224,7 +224,7 @@ static unsigned int codec_get_asf_tag(const CodecTag *tags, unsigned int id)
 
 enum CodecID codec_get_id(const CodecTag *tags, unsigned int tag)
 {
-    while (tags->id != 0) {
+    while (tags->id != CODEC_ID_NONE) {
         if(   toupper((tag >> 0)&0xFF) == toupper((tags->tag >> 0)&0xFF)
            && toupper((tag >> 8)&0xFF) == toupper((tags->tag >> 8)&0xFF)
            && toupper((tag >>16)&0xFF) == toupper((tags->tag >>16)&0xFF)
