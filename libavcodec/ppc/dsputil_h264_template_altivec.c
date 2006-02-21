@@ -32,7 +32,7 @@ void PREFIX_h264_chroma_mc8_altivec(uint8_t * dst, uint8_t * src, int stride, in
     const vector signed short vC = vec_splat((vector signed short)vABCD, 5);
     const vector signed short vD = vec_splat((vector signed short)vABCD, 7);
     const vector signed int vzero = vec_splat_s32(0);
-    const vector signed short v32ss = (const vector signed short)AVV(32);
+    const vector signed short v32ss = vec_sl(vec_splat_s16(1),vec_splat_u16(5));
     const vector unsigned short v6us = vec_splat_u16(6);
 
     vector unsigned char fperm;
@@ -167,10 +167,10 @@ static void PREFIX_h264_qpel16_h_lowpass_altivec(uint8_t * dst, uint8_t * src, i
   const vector unsigned char permP1 = vec_lvsl(+1, src);
   const vector unsigned char permP2 = vec_lvsl(+2, src);
   const vector unsigned char permP3 = vec_lvsl(+3, src);
-  const vector signed short v20ss = (const vector signed short)AVV(20);
-  const vector unsigned short v5us = vec_splat_u16(5);
   const vector signed short v5ss = vec_splat_s16(5);
-  const vector signed short v16ss = (const vector signed short)AVV(16);
+  const vector unsigned short v5us = vec_splat_u16(5);
+  const vector signed short v20ss = vec_sl(vec_splat_s16(5),vec_splat_u16(2));
+  const vector signed short v16ss = vec_sl(vec_splat_s16(1),vec_splat_u16(4));
   const vector unsigned char dstperm = vec_lvsr(0, dst);
   const vector unsigned char neg1 = (const vector unsigned char)vec_splat_s8(-1);
   const vector unsigned char dstmask = vec_perm((const vector unsigned char)vzero, neg1, dstperm);
@@ -305,10 +305,10 @@ static void PREFIX_h264_qpel16_v_lowpass_altivec(uint8_t * dst, uint8_t * src, i
 
   const vector signed int vzero = vec_splat_s32(0);
   const vector unsigned char perm = vec_lvsl(0, src);
-  const vector signed short v20ss = (const vector signed short)AVV(20);
+  const vector signed short v20ss = vec_sl(vec_splat_s16(5),vec_splat_u16(2));
   const vector unsigned short v5us = vec_splat_u16(5);
   const vector signed short v5ss = vec_splat_s16(5);
-  const vector signed short v16ss = (const vector signed short)AVV(16);
+  const vector signed short v16ss = vec_sl(vec_splat_s16(1),vec_splat_u16(4));
   const vector unsigned char dstperm = vec_lvsr(0, dst);
   const vector unsigned char neg1 = (const vector unsigned char)vec_splat_s8(-1);
   const vector unsigned char dstmask = vec_perm((const vector unsigned char)vzero, neg1, dstperm);
@@ -421,12 +421,12 @@ static void PREFIX_h264_qpel16_hv_lowpass_altivec(uint8_t * dst, int16_t * tmp, 
   const vector unsigned char permP1 = vec_lvsl(+1, src);
   const vector unsigned char permP2 = vec_lvsl(+2, src);
   const vector unsigned char permP3 = vec_lvsl(+3, src);
-  const vector signed short v20ss = (const vector signed short)AVV(20);
+  const vector signed short v20ss = vec_sl(vec_splat_s16(5),vec_splat_u16(2));
   const vector unsigned int v10ui = vec_splat_u32(10);
   const vector signed short v5ss = vec_splat_s16(5);
   const vector signed short v1ss = vec_splat_s16(1);
-  const vector signed int v512si = (const vector signed int)AVV(512);
-  const vector unsigned int v16ui = (const vector unsigned int)AVV(16);
+  const vector signed int v512si = vec_sl(vec_splat_s32(1),vec_splat_u32(9));
+  const vector unsigned int v16ui = vec_sl(vec_splat_u16(1),vec_splat_u16(4));
 
   register int align = ((((unsigned long)src) - 2) % 16);
 
