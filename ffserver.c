@@ -232,10 +232,10 @@ typedef struct FeedData {
 struct sockaddr_in my_http_addr;
 struct sockaddr_in my_rtsp_addr;
 
-char logfilename[1024];
-HTTPContext *first_http_ctx;
-FFStream *first_feed;   /* contains only feeds */
-FFStream *first_stream; /* contains all streams, including feeds */
+static char logfilename[1024];
+static HTTPContext *first_http_ctx;
+static FFStream *first_feed;   /* contains only feeds */
+static FFStream *first_stream; /* contains all streams, including feeds */
 
 static void new_connection(int server_fd, int is_rtsp);
 static void close_connection(HTTPContext *c);
@@ -278,11 +278,11 @@ static int ffserver_daemon;
 static int no_launch;
 static int need_to_start_children;
 
-int nb_max_connections;
-int nb_connections;
+static int nb_max_connections;
+static int nb_connections;
 
-int max_bandwidth;
-int current_bandwidth;
+static int max_bandwidth;
+static int current_bandwidth;
 
 static long cur_time;           // Making this global saves on passing it around everywhere
 
@@ -1298,8 +1298,8 @@ static int http_parse_request(HTTPContext *c)
         q += snprintf(q, q - (char *) c->buffer + c->buffer_size, "Content-type: text/html\r\n");
         q += snprintf(q, q - (char *) c->buffer + c->buffer_size, "\r\n");
         q += snprintf(q, q - (char *) c->buffer + c->buffer_size, "<html><head><title>Too busy</title></head><body>\r\n");
-        q += snprintf(q, q - (char *) c->buffer + c->buffer_size, "The server is too busy to serve your request at this time.<p>\r\n");
-        q += snprintf(q, q - (char *) c->buffer + c->buffer_size, "The bandwidth being served (including your stream) is %dkbit/sec, and this exceeds the limit of %dkbit/sec\r\n",
+        q += snprintf(q, q - (char *) c->buffer + c->buffer_size, "<p>The server is too busy to serve your request at this time.</p>\r\n");
+        q += snprintf(q, q - (char *) c->buffer + c->buffer_size, "<p>The bandwidth being served (including your stream) is %dkbit/sec, and this exceeds the limit of %dkbit/sec.</p>\r\n",
             current_bandwidth, max_bandwidth);
         q += snprintf(q, q - (char *) c->buffer + c->buffer_size, "</body></html>\r\n");
 
