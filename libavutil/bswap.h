@@ -27,7 +27,7 @@ static always_inline uint16_t bswap_16(uint16_t x)
 
 static always_inline uint32_t bswap_32(uint32_t x)
 {
-#if __CPU__ > 386
+#if __CPU__ != 386
  __asm("bswap   %0":
       "=r" (x)     :
 #else
