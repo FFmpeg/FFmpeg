@@ -799,7 +799,7 @@ following image formats are supported:
 
 @code{X} means that encoding (resp. decoding) is supported.
 
-See @url{http://www.mplayerhq.hu/~michael/codec-features.html} to
+See @url{http://mplayerhq.hu/~michael/codec-features.html} to
 get a precise comparison of the FFmpeg MPEG-4 codec compared to
 other implementations.
 

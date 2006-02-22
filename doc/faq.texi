@@ -96,14 +96,14 @@ if some MP3 codec like LAME is installed
 @section Why does the chrominance data seem to be sampled at a different time from the luminance data on bt8x8 captures on Linux?
 
 This is a well-known bug in the bt8x8 driver. For 2.4.26 there is a patch at
-(@url{http://www.mplayerhq.hu/~michael/bttv-420-2.4.26.patch}). This may also
+(@url{http://mplayerhq.hu/~michael/bttv-420-2.4.26.patch}). This may also
 apply cleanly to other 2.4-series kernels.
 
 @section How do I avoid the ugly aliasing artifacts in bt8x8 captures on Linux?
 
 Pass 'combfilter=1 lumafilter=1' to the bttv driver. Note though that 'combfilter=1'
-will cause somewhat too strong filtering. A fix is to apply (@url{http://www.mplayerhq.hu/~michael/bttv-comb-2.4.26.patch})
-or (@url{http://www.mplayerhq.hu/~michael/bttv-comb-2.6.6.patch})
+will cause somewhat too strong filtering. A fix is to apply (@url{http://mplayerhq.hu/~michael/bttv-comb-2.4.26.patch})
+or (@url{http://mplayerhq.hu/~michael/bttv-comb-2.6.6.patch})
 and pass 'combfilter=2'.
 
 @section I have a problem with an old version of ffmpeg; where should I report it?
