@@ -283,11 +283,6 @@ typedef struct {
 
 struct MOVParseTableEntry;
 
-typedef struct Time2Sample{
-    int count;
-    int duration;
-}Time2Sample;
-
 typedef struct MOVStreamContext {
     int ffindex; /* the ffmpeg stream id */
     int is_ff_stream; /* Is this stream presented to ffmpeg ? i.e. is this an audio or video stream ? */

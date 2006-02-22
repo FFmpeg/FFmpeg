@@ -41,6 +41,7 @@ typedef struct MOVIentry {
     unsigned int samplesInChunk;
     char         key_frame;
     unsigned int entries;
+    int64_t      cts;
 } MOVIentry;
 
 typedef struct MOVIndex {
@@ -54,6 +55,7 @@ typedef struct MOVIndex {
     long        sampleCount;
     long        sampleDuration;
     int         hasKeyframes;
+    int         hasBframes;
     int         language;
     int         trackID;
     AVCodecContext *enc;
@@ -542,6 +544,41 @@ static int mov_write_stsd_tag(ByteIOContext *pb, MOVTrack* track)
     return updateSize(pb, pos);
 }
 
+static int mov_write_ctts_tag(ByteIOContext *pb, MOVTrack* track)
+{
+    Time2Sample *ctts_entries;
+    uint32_t entries = 0;
+    uint32_t atom_size;
+    int i;
+
+    ctts_entries = av_malloc((track->entry + 1) * sizeof(*ctts_entries)); /* worst case */
+    ctts_entries[0].count = 1;
+    ctts_entries[0].duration = track->cluster[0][0].cts;
+    for (i=1; i<track->entry; i++) {
+        int cl = i / MOV_INDEX_CLUSTER_SIZE;
+        int id = i % MOV_INDEX_CLUSTER_SIZE;
+        if (track->cluster[cl][id].cts == ctts_entries[entries].duration) {
+            ctts_entries[entries].count++; /* compress */
+        } else {
+            entries++;
+            ctts_entries[entries].duration = track->cluster[cl][id].cts;
+            ctts_entries[entries].count = 1;
+        }
+    }
+    entries++; /* last one */
+    atom_size = 16 + (entries * 8);
+    put_be32(pb, atom_size); /* size */
+    put_tag(pb, "ctts");
+    put_be32(pb, 0); /* version & flags */
+    put_be32(pb, entries); /* entry count */
+    for (i=0; i<entries; i++) {
+        put_be32(pb, ctts_entries[i].count);
+        put_be32(pb, ctts_entries[i].duration);
+    }
+    av_free(ctts_entries);
+    return atom_size;
+}
+
 /* TODO: */
 /* Time to sample atom */
 static int mov_write_stts_tag(ByteIOContext *pb, MOVTrack* track)
@@ -580,6 +617,9 @@ static int mov_write_stbl_tag(ByteIOContext *pb, MOVTrack* track)
     if (track->enc->codec_type == CODEC_TYPE_VIDEO &&
         track->hasKeyframes)
         mov_write_stss_tag(pb, track);
+    if (track->enc->codec_type == CODEC_TYPE_VIDEO &&
+        track->hasBframes)
+        mov_write_ctts_tag(pb, track);
     mov_write_stsc_tag(pb, track);
     mov_write_stsz_tag(pb, track);
     mov_write_stco_tag(pb, track);
@@ -1352,7 +1392,8 @@ static int mov_write_header(AVFormatContext *s)
     for(i=0; i<s->nb_streams; i++){
         AVCodecContext *c= s->streams[i]->codec;
 
-        if      (c->codec_type == CODEC_TYPE_VIDEO){
+        if(c->codec_type == CODEC_TYPE_VIDEO){
+            av_set_pts_info(s->streams[i], 64, 1, c->time_base.den);
             if (!codec_get_tag(codec_movvideo_tags, c->codec_id)){
                 if(!codec_get_tag(codec_bmp_tags, c->codec_id))
                     return -1;
@@ -1360,6 +1401,7 @@ static int mov_write_header(AVFormatContext *s)
                     av_log(s, AV_LOG_INFO, "Warning, using MS style video codec tag, the file may be unplayable!\n");
             }
         }else if(c->codec_type == CODEC_TYPE_AUDIO){
+            av_set_pts_info(s->streams[i], 64, 1, c->sample_rate);
             if (!codec_get_tag(codec_movaudio_tags, c->codec_id)){
                 if(!codec_get_tag(codec_wav_tags, c->codec_id))
                     return -1;
@@ -1472,6 +1514,9 @@ static int mov_write_packet(AVFormatContext *s, AVPacket *pkt)
     trk->cluster[cl][id].size = size;
     trk->cluster[cl][id].entries = samplesInChunk;
     if(enc->codec_type == CODEC_TYPE_VIDEO) {
+        if (pkt->dts != pkt->pts)
+            trk->hasBframes = 1;
+        trk->cluster[cl][id].cts = pkt->pts - pkt->dts;
         trk->cluster[cl][id].key_frame = !!(pkt->flags & PKT_FLAG_KEY);
         if(trk->cluster[cl][id].key_frame)
             trk->hasKeyframes = 1;
