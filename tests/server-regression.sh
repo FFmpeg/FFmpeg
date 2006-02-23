@@ -14,7 +14,7 @@ cp "$2" data/test.conf
 #perl -e 'chomp($wd = `pwd`); print map { s!data/!!; "<Stream $_>\nFile $wd/data/$_\n</Stream>\n\n" } @ARGV' data/a* >> data/test.conf
 #perl -e 'chomp($wd = `pwd`); print map { s!data/!!; "<Stream $_.asf>\nFile $wd/data/$_\n</Stream>\n\n" } @ARGV' data/a* >> data/test.conf
 
-FILES=`perl -n -e 'print \$1, "\n" if /<stream\\s+(\\S+)>/i' data/test.conf | sort`
+FILES=`sed -n 's/.*<Stream \(.*\)>.*/\1/p' data/test.conf | grep -v html`
 
 rm -f /tmp/feed.ffm
 ../ffserver -d -f data/test.conf 2> /dev/null &
@@ -35,7 +35,7 @@ sleep 2
     done
     wait
     # the status page is always different
-    md5sum $MDFILES | grep -v html > ffserver.regression
+    md5sum $MDFILES > ffserver.regression
 )
 kill $FFSERVER_PID
 wait > /dev/null 2>&1
