@@ -728,7 +728,7 @@ static always_inline int dv_guess_dct_mode(DCTELEM *blk) {
 static inline void dv_guess_qnos(EncBlockInfo* blks, int* qnos)
 {
     int size[5];
-    int i, j, k, a, prev;
+    int i, j, k, a, prev, a2;
     EncBlockInfo* b;
 
     do {
@@ -751,6 +751,13 @@ static inline void dv_guess_qnos(EncBlockInfo* blks, int* qnos)
                            b->bit_size[a] += dv_rl2vlc_size(k - prev - 1, b->mb[k]);
                            prev= k;
                        } else {
+                           if(b->next[k] >= mb_area_start[a+1] && b->next[k]<64){
+                                for(a2=a+1; b->next[k] >= mb_area_start[a2+1]; a2++);
+                                assert(a2<4);
+                                assert(b->mb[b->next[k]]);
+                                b->bit_size[a2] += dv_rl2vlc_size(b->next[k] - prev - 1, b->mb[b->next[k]])
+                                                  -dv_rl2vlc_size(b->next[k] -    k - 1, b->mb[b->next[k]]);
+                           }
                            b->next[prev] = b->next[k];
                        }
                     }
@@ -760,8 +767,26 @@ static inline void dv_guess_qnos(EncBlockInfo* blks, int* qnos)
              }
           }
        }
-    } while ((vs_total_ac_bits < size[0] + size[1] + size[2] + size[3] + size[4]) &&
-             (qnos[0]|qnos[1]|qnos[2]|qnos[3]|qnos[4]));
+       if(vs_total_ac_bits >= size[0] + size[1] + size[2] + size[3] + size[4])
+            return;
+    } while (qnos[0]|qnos[1]|qnos[2]|qnos[3]|qnos[4]);
+
+
+    for(a=2; a==2 || vs_total_ac_bits < size[0]; a+=a){
+        b = blks;
+        size[0] = 0;
+        for (j=0; j<6*5; j++, b++) {
+            prev= b->prev[0];
+            for (k= b->next[prev]; k<64; k= b->next[k]) {
+                if(b->mb[k] < a && b->mb[k] > -a){
+                    b->next[prev] = b->next[k];
+                }else{
+                    size[0] += dv_rl2vlc_size(k - prev - 1, b->mb[k]);
+                    prev= k;
+                }
+            }
+        }
+    }
 }
 
 /*
