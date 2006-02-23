@@ -886,6 +886,8 @@ static inline void dv_encode_video_segment(DVVideoContext *s,
     for (j=0; j<5*6; j++) {
        if (enc_blks[j].partial_bit_count)
            pb=dv_encode_ac(&enc_blks[j], pb, &pbs[6*5]);
+       if (enc_blks[j].partial_bit_count)
+            av_log(NULL, AV_LOG_ERROR, "ac bitstream overflow\n");
     }
 
     for (j=0; j<5*6; j++)
