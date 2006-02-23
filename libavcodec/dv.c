@@ -731,6 +731,7 @@ static inline void dv_guess_qnos(EncBlockInfo* blks, int* qnos)
     int i, j, k, a, prev, a2;
     EncBlockInfo* b;
 
+    size[4]= 1<<24;
     do {
        b = blks;
        for (i=0; i<5; i++) {
@@ -766,9 +767,9 @@ static inline void dv_guess_qnos(EncBlockInfo* blks, int* qnos)
                 size[i] += b->bit_size[a];
              }
           }
+          if(vs_total_ac_bits >= size[0] + size[1] + size[2] + size[3] + size[4])
+                return;
        }
-       if(vs_total_ac_bits >= size[0] + size[1] + size[2] + size[3] + size[4])
-            return;
     } while (qnos[0]|qnos[1]|qnos[2]|qnos[3]|qnos[4]);
 
 
