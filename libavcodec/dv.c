@@ -775,7 +775,7 @@ static inline void dv_guess_qnos(EncBlockInfo* blks, int* qnos)
 
     for(a=2; a==2 || vs_total_ac_bits < size[0]; a+=a){
         b = blks;
-        size[0] = 0;
+        size[0] = 5*6*4; //EOB
         for (j=0; j<6*5; j++, b++) {
             prev= b->prev[0];
             for (k= b->next[prev]; k<64; k= b->next[k]) {
