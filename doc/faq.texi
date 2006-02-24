@@ -16,11 +16,6 @@ Even if ffmpeg can read the file format, it may not support all its
 codecs. Please consult the supported codec list in the ffmpeg
 documentation.
 
-@section I get audio/video synchronization problems when grabbing.
-
-Currently, the grabbing stuff does not handle synchronisation
-correctly. You are free to correct it. A fix is planned.
-
 @section How do I encode JPEGs to another format ?
 
 If the JPEGs are named img1.jpg, img2.jpg, img3.jpg,..., use:
