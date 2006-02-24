@@ -26,7 +26,7 @@ sleep 2
     rm -f ff-*;
     WGET_OPTIONS="--user-agent=NSPlayer -q --proxy=off -e verbose=off -e server_response=off"
     for file in $FILES; do
-        if [ `expr match $file "a-*"` -ne 0 ]; then
+        if [ `expr $file : "a-*"` != 0 ]; then
             wget $WGET_OPTIONS --output-document=- http://localhost:9999/$file > ff-$file &
         else
             wget $WGET_OPTIONS --output-document=- http://localhost:9999/$file?date=19700101T000000Z | dd bs=1 count=100000 > ff-$file 2>/dev/null &
