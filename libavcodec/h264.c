@@ -3909,8 +3909,13 @@ static void idr(H264Context *h){
 static void flush_dpb(AVCodecContext *avctx){
     H264Context *h= avctx->priv_data;
     int i;
-    for(i=0; i<16; i++)
+    for(i=0; i<16; i++) {
+        if(h->delayed_pic[i])
+            h->delayed_pic[i]->reference= 0;
         h->delayed_pic[i]= NULL;
+    }
+    if(h->delayed_output_pic)
+        h->delayed_output_pic->reference= 0;
     h->delayed_output_pic= NULL;
     idr(h);
     if(h->s.current_picture_ptr)
