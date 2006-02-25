@@ -2230,7 +2230,8 @@ static int estimate_best_b_count(MpegEncContext *s){
         input[i].linesize[2]= c->width/2;
 
         if(!i || s->input_picture[i-1])
-            img_resample(resample, &input[i], &pre_input);
+            img_resample(resample, (AVPicture*)&input[i],
+                         (AVPicture*)&pre_input);
     }
 
     for(j=0; j<s->max_b_frames+1; j++){

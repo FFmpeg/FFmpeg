@@ -376,7 +376,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
         } else if (!memcmp(&g, &ext_stream_header, sizeof(GUID))) {
             int ext_len, payload_ext_ct, stream_ct;
             uint32_t ext_d;
-            int64_t pos_ex_st, pos_curr;
+            int64_t pos_ex_st;
             pos_ex_st = url_ftell(pb);
 
             get_le64(pb);

@@ -1345,7 +1345,7 @@ static int vorbis_residue_decode(vorbis_context *vc, vorbis_residue *vr, uint_fa
 
                         AV_DEBUG("Classword: %d \n", temp);
 
-                        assert(vr->classifications > 1 && vr->classifications<256 && temp<=65536); //needed for inverse[]
+                        assert(vr->classifications > 1 && temp<=65536); //needed for inverse[]
                         for(i=0;i<c_p_c;++i) {
                             uint_fast32_t temp2;
 

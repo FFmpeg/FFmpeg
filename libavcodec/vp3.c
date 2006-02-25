@@ -328,7 +328,6 @@ typedef struct Vp3DecodeContext {
     int bounding_values_array[256];
 } Vp3DecodeContext;
 
-static int theora_decode_comments(AVCodecContext *avctx, GetBitContext gb);
 static int theora_decode_tables(AVCodecContext *avctx, GetBitContext gb);
 
 /************************************************************************
@@ -2735,46 +2734,6 @@ static inline int theora_get_32bit(GetBitContext gb)
     ret += get_bits(&gb, 8) << 24;
 
     return ret;
-}
-
-static int theora_decode_comments(AVCodecContext *avctx, GetBitContext gb)
-{
-    Vp3DecodeContext *s = avctx->priv_data;
-    int len;
-
-    if (s->theora <= 0x030200)
-    {
-        int i, comments;
-
-        // vendor string
-        len = get_bits_long(&gb, 32);
-        len = le2me_32(len);
-        while(len--)
-            skip_bits(&gb, 8);
-
-        // user comments
-        comments = get_bits_long(&gb, 32);
-        comments = le2me_32(comments);
-        for (i = 0; i < comments; i++)
-        {
-            len = get_bits_long(&gb, 32);
-            len = be2me_32(len);
-            while(len--)
-                skip_bits(&gb, 8);
-        }
-    }
-    else
-    {
-        do {
-            len = get_bits_long(&gb, 32);
-            len = le2me_32(len);
-            if (len <= 0)
-                break;
-            while (len--)
-                skip_bits(&gb, 8);
-        } while (1);
-    }
-    return 0;
 }
 
 static int theora_decode_tables(AVCodecContext *avctx, GetBitContext gb)

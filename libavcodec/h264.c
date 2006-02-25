@@ -5388,8 +5388,6 @@ static const uint8_t block_idx_xy[4][4] = {
 };
 
 static int decode_cabac_mb_cbp_luma( H264Context *h) {
-    MpegEncContext * const s = &h->s;
-
     int cbp = 0;
     int cbp_b = -1;
     int i8x8;
