@@ -133,9 +133,9 @@ stddev: 23.20 PSNR:20.81 bytes:7602176
 3533710 ./data/a-snow53.avi
 799d3db687f6cdd7a837ec156efc171f *./data/out.yuv
 stddev:  0.00 PSNR:99.99 bytes:7602176
-229e5f8d1f386d0cf84f629be7d74955 *./data/a-dv.dv
+a071e3aa523e0f91fce08bdba0d47199 *./data/a-dv.dv
 7200000 ./data/a-dv.dv
-0ac51c62d3c2a4bacf216ea73050485e *./data/out.yuv
+a99de8648a78970065b834219d9fa27a *./data/out.yuv
 stddev:  9.10 PSNR:28.94 bytes:7602176
 bd0db310a36ad94bcd4448abe0a88368 *./data/a-svq1.mov
 1379827 ./data/a-svq1.mov

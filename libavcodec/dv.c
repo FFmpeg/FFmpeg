@@ -731,7 +731,7 @@ static inline void dv_guess_qnos(EncBlockInfo* blks, int* qnos)
     int i, j, k, a, prev, a2;
     EncBlockInfo* b;
 
-    size[4]= 1<<24;
+    size[0] = size[1] = size[2] = size[3] = size[4] = 1<<24;
     do {
        b = blks;
        for (i=0; i<5; i++) {
@@ -753,11 +753,14 @@ static inline void dv_guess_qnos(EncBlockInfo* blks, int* qnos)
                            prev= k;
                        } else {
                            if(b->next[k] >= mb_area_start[a+1] && b->next[k]<64){
-                                for(a2=a+1; b->next[k] >= mb_area_start[a2+1]; a2++);
+                                for(a2=a+1; b->next[k] >= mb_area_start[a2+1]; a2++)
+                                    b->prev[a2] = prev;
                                 assert(a2<4);
                                 assert(b->mb[b->next[k]]);
                                 b->bit_size[a2] += dv_rl2vlc_size(b->next[k] - prev - 1, b->mb[b->next[k]])
                                                   -dv_rl2vlc_size(b->next[k] -    k - 1, b->mb[b->next[k]]);
+                                for(; (b->prev[a2]==k) && (a2<4); a2++)
+                                        b->prev[a2] = prev;
                            }
                            b->next[prev] = b->next[k];
                        }
