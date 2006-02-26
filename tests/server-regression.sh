@@ -14,7 +14,7 @@ cp "$2" data/test.conf
 #perl -e 'chomp($wd = `pwd`); print map { s!data/!!; "<Stream $_>\nFile $wd/data/$_\n</Stream>\n\n" } @ARGV' data/a* >> data/test.conf
 #perl -e 'chomp($wd = `pwd`); print map { s!data/!!; "<Stream $_.asf>\nFile $wd/data/$_\n</Stream>\n\n" } @ARGV' data/a* >> data/test.conf
 
-FILES=`sed -n 's/.*<Stream \(.*\)>.*/\1/p' data/test.conf | grep -v html`
+FILES=`sed -n 's/^[^#]*<Stream \(.*\)>.*/\1/p' data/test.conf | grep -v html`
 
 rm -f /tmp/feed.ffm
 ../ffserver -d -f data/test.conf 2> /dev/null &
