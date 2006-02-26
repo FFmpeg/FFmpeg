@@ -122,6 +122,13 @@ static int device_open(const char *devname, uint32_t *capabilities)
     }
 
     res = ioctl(fd, VIDIOC_QUERYCAP, &cap);
+    // ENOIOCTLCMD definition only availble on __KERNEL__
+    if (res < 0 && errno == 515)
+    {
+        av_log(NULL, AV_LOG_ERROR, "QUERYCAP not implemented, probably V4L device but not supporting V4L2\n");
+
+        return -1;
+    }
     if (res < 0) {
         av_log(NULL, AV_LOG_ERROR, "ioctl(VIDIOC_QUERYCAP): %s\n",
                  strerror(errno));
