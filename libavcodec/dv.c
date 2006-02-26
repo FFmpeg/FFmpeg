@@ -342,7 +342,6 @@ static void dv_decode_ac(GetBitContext *gb, BlockInfo *mb, DCTELEM *block)
         if (pos >= 64)
             break;
 
-        assert(level);
         pos1 = scan_table[pos];
         block[pos1] = level << shift_table[pos1];
 
