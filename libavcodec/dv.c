@@ -746,6 +746,7 @@ static inline void dv_guess_qnos(EncBlockInfo* blks, int* qnos)
                     b->bit_size[a] = 1; // 4 areas 4 bits for EOB :)
                     b->area_q[a]++;
                     prev= b->prev[a];
+                    assert(b->next[prev] >= mb_area_start[a+1] || b->mb[prev]);
                     for (k= b->next[prev] ; k<mb_area_start[a+1]; k= b->next[k]) {
                        b->mb[k] >>= 1;
                        if (b->mb[k]) {
@@ -759,8 +760,8 @@ static inline void dv_guess_qnos(EncBlockInfo* blks, int* qnos)
                                 assert(b->mb[b->next[k]]);
                                 b->bit_size[a2] += dv_rl2vlc_size(b->next[k] - prev - 1, b->mb[b->next[k]])
                                                   -dv_rl2vlc_size(b->next[k] -    k - 1, b->mb[b->next[k]]);
-                                for(; (b->prev[a2]==k) && (a2<4); a2++)
-                                        b->prev[a2] = prev;
+                                assert(b->prev[a2]==k && (a2+1 >= 4 || b->prev[a2+1]!=k));
+                                b->prev[a2] = prev;
                            }
                            b->next[prev] = b->next[k];
                        }
