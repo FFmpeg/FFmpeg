@@ -253,6 +253,7 @@ static int dvvideo_init(AVCodecContext *avctx)
 typedef struct BlockInfo {
     const uint8_t *shift_table;
     const uint8_t *scan_table;
+    const int *iweight_table;
     uint8_t pos; /* position in block */
     uint8_t dct_mode;
     uint8_t partial_bit_count;
@@ -295,6 +296,7 @@ static void dv_decode_ac(GetBitContext *gb, BlockInfo *mb, DCTELEM *block)
     int last_index = get_bits_size(gb);
     const uint8_t *scan_table = mb->scan_table;
     const uint8_t *shift_table = mb->shift_table;
+    const int *iweight_table = mb->iweight_table;
     int pos = mb->pos;
     int partial_bit_count = mb->partial_bit_count;
     int level, pos1, run, vlc_len, index;
@@ -343,7 +345,12 @@ static void dv_decode_ac(GetBitContext *gb, BlockInfo *mb, DCTELEM *block)
             break;
 
         pos1 = scan_table[pos];
-        block[pos1] = level << shift_table[pos1];
+        level <<= shift_table[pos1];
+
+        /* unweigh, round, and shift down */
+        level = (level*iweight_table[pos] + (1 << (dv_iweight_bits-1))) >> dv_iweight_bits;
+
+        block[pos1] = level;
 
         UPDATE_CACHE(re, gb);
     }
@@ -409,6 +416,7 @@ static inline void dv_decode_video_segment(DVVideoContext *s,
             dct_mode = get_bits1(&gb);
             mb->dct_mode = dct_mode;
             mb->scan_table = s->dv_zigzag[dct_mode];
+            mb->iweight_table = dct_mode ? dv_iweight_248 : dv_iweight_88;
             class1 = get_bits(&gb, 2);
             mb->shift_table = s->dv_idct_shift[class1 == 3][dct_mode]
                 [quant + dv_quant_offset[class1]];
@@ -647,7 +655,7 @@ static always_inline PutBitContext* dv_encode_ac(EncBlockInfo* bi, PutBitContext
 }
 
 static always_inline void dv_set_class_number(DCTELEM* blk, EncBlockInfo* bi,
-                                              const uint8_t* zigzag_scan, int bias)
+                                              const uint8_t* zigzag_scan, const int *weight, int bias)
 {
     int i, area;
     static const int classes[] = {12, 24, 36, 0xffff};
@@ -664,7 +672,11 @@ static always_inline void dv_set_class_number(DCTELEM* blk, EncBlockInfo* bi,
 
           if (level+15 > 30U) {
               bi->sign[i] = (level>>31)&1;
-              bi->mb[i] = level= ABS(level)>>4;
+              /* weigh it and and shift down into range, adding for rounding */
+              /* the extra division by a factor of 2^4 reverses the 8x expansion of the DCT
+                 AND the 2x doubling of the weights */
+              level = (ABS(level) * weight[i] + (1<<(dv_weight_bits+3))) >> (dv_weight_bits+4);
+              bi->mb[i] = level;
               if(level>max) max= level;
               bi->bit_size[area] += dv_rl2vlc_size(i - prev  - 1, level);
               bi->next[prev]= i;
@@ -875,7 +887,9 @@ static inline void dv_encode_video_segment(DVVideoContext *s,
             s->fdct[enc_blk->dct_mode](block);
 
             dv_set_class_number(block, enc_blk,
-                                enc_blk->dct_mode ? ff_zigzag248_direct : ff_zigzag_direct, j/4);
+                                enc_blk->dct_mode ? ff_zigzag248_direct : ff_zigzag_direct,
+                                enc_blk->dct_mode ? dv_weight_248 : dv_weight_88,
+                                j/4);
 
             init_put_bits(pb, ptr, block_sizes[j]/8);
             put_bits(pb, 9, (uint16_t)(((enc_blk->mb[0] >> 3) - 1024 + 2) >> 2));
