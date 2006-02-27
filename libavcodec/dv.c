@@ -805,11 +805,6 @@ static inline void dv_guess_qnos(EncBlockInfo* blks, int* qnos)
     }
 }
 
-/*
- * This is a very rough initial implementaion. The performance is
- * horrible and the weighting is missing. But it's missing from the
- * decoding step also -- so at least we're on the same page with decoder ;-)
- */
 static inline void dv_encode_video_segment(DVVideoContext *s,
                                            uint8_t *dif,
                                            const uint16_t *mb_pos_ptr)
