@@ -41,7 +41,7 @@ typedef struct TTAContext {
     int flags, channels, bps, is_float, data_length;
     int frame_length, last_frame_length, total_frames;
 
-    long *decode_buffer;
+    int32_t *decode_buffer;
 } TTAContext;
 
 #if 0
@@ -61,7 +61,7 @@ static inline int shift_16(int i)
         return 0x80000000; // 16 << 27
 }
 #else
-static const unsigned long shift_1[] = {
+static const uint32_t shift_1[] = {
     0x00000001, 0x00000002, 0x00000004, 0x00000008,
     0x00000010, 0x00000020, 0x00000040, 0x00000080,
     0x00000100, 0x00000200, 0x00000400, 0x00000800,
@@ -74,25 +74,25 @@ static const unsigned long shift_1[] = {
     0x80000000, 0x80000000, 0x80000000, 0x80000000
 };
 
-static const unsigned long *shift_16 = shift_1 + 4;
+static const uint32_t *shift_16 = shift_1 + 4;
 #endif
 
 #define MAX_ORDER 16
 typedef struct TTAFilter {
-    long shift, round, error, mode;
-    long qm[MAX_ORDER];
-    long dx[MAX_ORDER];
-    long dl[MAX_ORDER];
+    int32_t shift, round, error, mode;
+    int32_t qm[MAX_ORDER];
+    int32_t dx[MAX_ORDER];
+    int32_t dl[MAX_ORDER];
 } TTAFilter;
 
-static long ttafilter_configs[4][2] = {
+static int32_t ttafilter_configs[4][2] = {
     {10, 1},
     {9, 1},
     {10, 1},
     {12, 0}
 };
 
-static void ttafilter_init(TTAFilter *c, long shift, long mode) {
+static void ttafilter_init(TTAFilter *c, int32_t shift, int32_t mode) {
     memset(c, 0, sizeof(TTAFilter));
     c->shift = shift;
    c->round = shift_1[shift-1];
@@ -101,7 +101,7 @@ static void ttafilter_init(TTAFilter *c, long shift, long mode) {
 }
 
 // FIXME: copy paste from original
-static inline void memshl(register long *a, register long *b) {
+static inline void memshl(register int32_t *a, register int32_t *b) {
     *a++ = *b++;
     *a++ = *b++;
     *a++ = *b++;
@@ -114,8 +114,8 @@ static inline void memshl(register long *a, register long *b) {
 
 // FIXME: copy paste from original
 // mode=1 encoder, mode=0 decoder
-static inline void ttafilter_process(TTAFilter *c, long *in, long mode) {
-    register long *dl = c->dl, *qm = c->qm, *dx = c->dx, sum = c->round;
+static inline void ttafilter_process(TTAFilter *c, int32_t *in, int32_t mode) {
+    register int32_t *dl = c->dl, *qm = c->qm, *dx = c->dx, sum = c->round;
 
     if (!c->error) {
         sum += *dl++ * *qm, qm++;
@@ -174,10 +174,10 @@ static inline void ttafilter_process(TTAFilter *c, long *in, long mode) {
 }
 
 typedef struct TTARice {
-    unsigned long k0, k1, sum0, sum1;
+    uint32_t k0, k1, sum0, sum1;
 } TTARice;
 
-static void rice_init(TTARice *c, unsigned long k0, unsigned long k1)
+static void rice_init(TTARice *c, uint32_t k0, uint32_t k1)
 {
     c->k0 = k0;
     c->k1 = k1;
@@ -276,7 +276,7 @@ static int tta_decode_init(AVCodecContext * avctx)
             skip_bits(&s->gb, 32);
         skip_bits(&s->gb, 32); // CRC32 of seektable
 
-        s->decode_buffer = av_mallocz(sizeof(long)*s->frame_length*s->channels);
+        s->decode_buffer = av_mallocz(sizeof(int32_t)*s->frame_length*s->channels);
     } else {
         av_log(avctx, AV_LOG_ERROR, "Wrong extradata present\n");
         return -1;
@@ -294,11 +294,11 @@ static int tta_decode_frame(AVCodecContext *avctx,
 
     init_get_bits(&s->gb, buf, buf_size*8);
     {
-        long predictors[s->channels];
+        int32_t predictors[s->channels];
         TTAFilter filters[s->channels];
         TTARice rices[s->channels];
         int cur_chan = 0, framelen = s->frame_length;
-        long *p;
+        int32_t *p;
 
         // FIXME: seeking
         s->total_frames--;
@@ -313,11 +313,11 @@ static int tta_decode_frame(AVCodecContext *avctx,
         }
 
         for (p = s->decode_buffer; p < s->decode_buffer + (framelen * s->channels); p++) {
-            long *predictor = &(predictors[cur_chan]);
+            int32_t *predictor = &(predictors[cur_chan]);
             TTAFilter *filter = &(filters[cur_chan]);
             TTARice *rice = &(rices[cur_chan]);
-            unsigned long unary, depth, k;
-            long value;
+            uint32_t unary, depth, k;
+            int32_t value;
 
             unary = tta_get_unary(&s->gb);
 
@@ -360,7 +360,7 @@ static int tta_decode_frame(AVCodecContext *avctx,
             ttafilter_process(filter, p, 0);
 
             // fixed order prediction
-#define PRED(x, k) (long)((((uint64_t)x << k) - x) >> k)
+#define PRED(x, k) (int32_t)((((uint64_t)x << k) - x) >> k)
             switch (s->bps) {
                 case 1: *p += PRED(*predictor, 4); break;
                 case 2:
@@ -372,9 +372,9 @@ static int tta_decode_frame(AVCodecContext *avctx,
 #if 0
             // extract 32bit float from last two int samples
             if (s->is_float && ((p - data) & 1)) {
-                unsigned long neg = *p & 0x80000000;
-                unsigned long hi = *(p - 1);
-                unsigned long lo = abs(*p) - 1;
+                uint32_t neg = *p & 0x80000000;
+                uint32_t hi = *(p - 1);
+                uint32_t lo = abs(*p) - 1;
 
                 hi += (hi || lo) ? 0x3f80 : 0;
                 // SWAP16: swap all the 16 bits
@@ -394,7 +394,7 @@ static int tta_decode_frame(AVCodecContext *avctx,
             else {
                 // decorrelate in case of stereo integer
                 if (!s->is_float && (s->channels > 1)) {
-                    long *r = p - 1;
+                    int32_t *r = p - 1;
                     for (*p += *r / 2; r > p - s->channels; r--)
                         *r = *(r + 1) - *r;
                 }
