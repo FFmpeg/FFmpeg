@@ -426,7 +426,7 @@ static void PREFIX_h264_qpel16_hv_lowpass_altivec(uint8_t * dst, int16_t * tmp, 
   const vector signed short v5ss = vec_splat_s16(5);
   const vector signed short v1ss = vec_splat_s16(1);
   const vector signed int v512si = vec_sl(vec_splat_s32(1),vec_splat_u32(9));
-  const vector unsigned int v16ui = vec_sl(vec_splat_u16(1),vec_splat_u16(4));
+  const vector unsigned int v16ui = vec_sl(vec_splat_u32(1),vec_splat_u32(4));
 
   register int align = ((((unsigned long)src) - 2) % 16);
 
