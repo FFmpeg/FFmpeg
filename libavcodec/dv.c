@@ -658,8 +658,22 @@ static always_inline void dv_set_class_number(DCTELEM* blk, EncBlockInfo* bi,
                                               const uint8_t* zigzag_scan, const int *weight, int bias)
 {
     int i, area;
+    /* We offer two different methods for class number assignment: the
+       method suggested in SMPTE 314M Table 22, and an improved
+       method. The SMPTE method is very conservative; it assigns class
+       3 (i.e. severe quantization) to any block where the largest AC
+       component is greater than 36. ffmpeg's DV encoder tracks AC bit
+       consumption precisely, so there is no need to bias most blocks
+       towards strongly lossy compression. Instead, we assign class 2
+       to most blocks, and use class 3 only when strictly necessary
+       (for blocks whose largest AC component exceeds 255). */
+
+#if 0 /* SMPTE spec method */
     static const int classes[] = {12, 24, 36, 0xffff};
-    int max=12;
+#else /* improved ffmpeg method */
+    static const int classes[] = {-1, -1, 255, 0xffff};
+#endif
+    int max=classes[0];
     int prev=0;
 
     bi->mb[0] = blk[0];
