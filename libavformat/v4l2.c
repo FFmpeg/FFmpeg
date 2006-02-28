@@ -148,17 +148,25 @@ static int device_open(const char *devname, uint32_t *capabilities)
     return fd;
 }
 
-static int device_init(int fd, int width, int height, int pix_fmt)
+static int device_init(int fd, int *width, int *height, int pix_fmt)
 {
     struct v4l2_format fmt;
+    int res;
 
     memset(&fmt, 0, sizeof(struct v4l2_format));
     fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-    fmt.fmt.pix.width = width;
-    fmt.fmt.pix.height = height;
+    fmt.fmt.pix.width = *width;
+    fmt.fmt.pix.height = *height;
     fmt.fmt.pix.pixelformat = pix_fmt;
     fmt.fmt.pix.field = V4L2_FIELD_INTERLACED;
-    return ioctl (fd, VIDIOC_S_FMT, &fmt);
+    res = ioctl(fd, VIDIOC_S_FMT, &fmt);
+    if ((*width != fmt.fmt.pix.width) || (*height != fmt.fmt.pix.height)) {
+        av_log(NULL, AV_LOG_INFO, "The V4L2 driver changed the video from %dx%d to %dx%d\n", *width, *height, fmt.fmt.pix.width, fmt.fmt.pix.height);
+        *width = fmt.fmt.pix.width;
+        *height = fmt.fmt.pix.height;
+    }
+
+    return res;
 }
 
 static int first_field(int fd)
@@ -418,13 +426,13 @@ static int v4l2_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     av_log(s1, AV_LOG_ERROR, "[%d]Capabilities: %x\n", s->fd, capabilities);
 
     desired_format = fmt_ff2v4l(ap->pix_fmt);
-    if (desired_format == 0 || (device_init(s->fd, width, height, desired_format) < 0)) {
+    if (desired_format == 0 || (device_init(s->fd, &width, &height, desired_format) < 0)) {
         int i, done;
 
         done = 0; i = 0;
         while (!done) {
             desired_format = fmt_conversion_table[i].v4l2_fmt;
-            if (device_init(s->fd, width, height, desired_format) < 0) {
+            if (device_init(s->fd, &width, &height, desired_format) < 0) {
                 desired_format = 0;
                 i++;
             } else {
