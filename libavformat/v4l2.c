@@ -126,17 +126,20 @@ static int device_open(const char *devname, uint32_t *capabilities)
     if (res < 0 && errno == 515)
     {
         av_log(NULL, AV_LOG_ERROR, "QUERYCAP not implemented, probably V4L device but not supporting V4L2\n");
+        close(fd);
 
         return -1;
     }
     if (res < 0) {
         av_log(NULL, AV_LOG_ERROR, "ioctl(VIDIOC_QUERYCAP): %s\n",
                  strerror(errno));
+        close(fd);
 
         return -1;
     }
     if ((cap.capabilities & V4L2_CAP_VIDEO_CAPTURE) == 0) {
         av_log(NULL, AV_LOG_ERROR, "Not a video capture device\n");
+        close(fd);
 
         return -1;
     }
