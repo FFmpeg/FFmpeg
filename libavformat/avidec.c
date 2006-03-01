@@ -34,7 +34,7 @@ typedef struct AVIStream {
 
     int scale;
     int rate;
-    int sample_size; /* audio only data */
+    int sample_size; /* size of one sample (or packet) (in the rate/scale sense) in bytes */
     int start;
 
     int64_t cum_len; /* temporary storage (used during seek) */
@@ -474,8 +474,11 @@ static int avi_read_packet(AVFormatContext *s, AVPacket *pkt)
             url_fseek(&s->pb, pos + 8, SEEK_SET);
 //        av_log(NULL, AV_LOG_DEBUG, "pos=%Ld\n", pos);
 
+            assert(best_ast->remaining <= best_ast->packet_size);
+
             avi->stream_index= best_stream_index;
             if(!best_ast->remaining)
+                best_ast->packet_size=
                 best_ast->remaining= best_st->index_entries[i].size;
         }
     }
@@ -509,7 +512,7 @@ resync:
 //                pkt->dts += ast->start;
             if(ast->sample_size)
                 pkt->dts /= ast->sample_size;
-//av_log(NULL, AV_LOG_DEBUG, "dts:%Ld offset:%d %d/%d smpl_siz:%d base:%d st:%d size:%d\n", pkt->dts, ast->frame_offset, ast->scale, ast->rate, ast->sample_size, AV_TIME_BASE, n, size);
+//av_log(NULL, AV_LOG_DEBUG, "dts:%Ld offset:%Ld %d/%d smpl_siz:%d base:%d st:%d size:%d\n", pkt->dts, ast->frame_offset, ast->scale, ast->rate, ast->sample_size, AV_TIME_BASE, avi->stream_index, size);
             pkt->stream_index = avi->stream_index;
 
             if (st->codec->codec_type == CODEC_TYPE_VIDEO) {
