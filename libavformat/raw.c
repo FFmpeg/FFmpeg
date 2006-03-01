@@ -305,11 +305,13 @@ static int video_read_header(AVFormatContext *s,
 #define PICTURE_START_CODE      0x00000100
 #define SLICE_START_CODE        0x00000101
 #define PACK_START_CODE         0x000001ba
+#define VIDEO_ID                0x000001e0
+#define AUDIO_ID                0x000001c0
 
 static int mpegvideo_probe(AVProbeData *p)
 {
     uint32_t code= -1;
-    int pic=0, seq=0, slice=0, pspack=0;
+    int pic=0, seq=0, slice=0, pspack=0, pes=0;
     int i;
 
     for(i=0; i<p->buf_size; i++){
@@ -320,10 +322,12 @@ static int mpegvideo_probe(AVProbeData *p)
             case PICTURE_START_CODE:   pic++; break;
             case   SLICE_START_CODE: slice++; break;
             case    PACK_START_CODE: pspack++; break;
+            case           VIDEO_ID:
+            case           AUDIO_ID:   pes++; break;
             }
         }
     }
-    if(seq && seq*9<=pic*10 && pic*9<=slice*10 && !pspack)
+    if(seq && seq*9<=pic*10 && pic*9<=slice*10 && !pspack && !pes)
         return AVPROBE_SCORE_MAX/2+1; // +1 for .mpg
     return 0;
 }
