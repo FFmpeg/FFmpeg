@@ -467,7 +467,7 @@ static int avi_read_packet(AVFormatContext *s, AVPacket *pkt)
 //        av_log(NULL, AV_LOG_DEBUG, "%d\n", i);
         if(i>=0){
             int64_t pos= best_st->index_entries[i].pos;
-            pos += avi->movi_list + best_ast->packet_size - best_ast->remaining;
+            pos += best_ast->packet_size - best_ast->remaining;
             url_fseek(&s->pb, pos, SEEK_SET);
 //        av_log(NULL, AV_LOG_DEBUG, "pos=%Ld\n", pos);
 
@@ -689,6 +689,7 @@ static int avi_read_idx1(AVFormatContext *s, int size)
 #endif
         if(i==0 && pos > avi->movi_list)
             avi->movi_list= 0; //FIXME better check
+        pos += avi->movi_list;
 
         index = ((tag & 0xff) - '0') * 10;
         index += ((tag >> 8) & 0xff) - '0';
@@ -838,7 +839,6 @@ static int avi_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
     if (avi->dv_demux)
         dv_flush_audio_packets(avi->dv_demux);
     /* do the seek */
-    pos += avi->movi_list;
     url_fseek(&s->pb, pos, SEEK_SET);
     avi->stream_index= -1;
     return 0;
