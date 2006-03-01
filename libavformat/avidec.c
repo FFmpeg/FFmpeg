@@ -87,6 +87,7 @@ static int get_riff(AVIContext *avi, ByteIOContext *pb)
 }
 
 static int read_braindead_odml_indx(AVFormatContext *s, int frame_num){
+    AVIContext *avi = s->priv_data;
     ByteIOContext *pb = &s->pb;
     int longs_pre_entry= get_le16(pb);
     int index_sub_type = get_byte(pb);
@@ -98,6 +99,7 @@ static int read_braindead_odml_indx(AVFormatContext *s, int frame_num){
     AVStream *st;
     AVIStream *ast;
     int i;
+    int64_t last_pos= -1;
 
 //    av_log(s, AV_LOG_ERROR, "longs_pre_entry:%d index_type:%d entries_in_use:%d chunk_id:%X base:%Ld\n",
 //        longs_pre_entry,index_type, entries_in_use, chunk_id, base);
@@ -125,12 +127,16 @@ static int read_braindead_odml_indx(AVFormatContext *s, int frame_num){
             len &= 0x7FFFFFFF;
 
 //av_log(s, AV_LOG_ERROR, "pos:%Ld, len:%X\n", pos, len);
-            av_add_index_entry(st, pos, ast->cum_len, len, 0, key ? AVINDEX_KEYFRAME : 0);
+            if(last_pos == pos || pos == base - 8)
+                avi->non_interleaved= 1;
+            else
+                av_add_index_entry(st, pos, ast->cum_len, len, 0, key ? AVINDEX_KEYFRAME : 0);
 
             if(ast->sample_size)
                 ast->cum_len += len / ast->sample_size;
             else
                 ast->cum_len ++;
+            last_pos= pos;
         }else{
             int64_t offset= get_le64(pb);
             int size      = get_le32(pb);
