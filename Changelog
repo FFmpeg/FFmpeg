@@ -29,7 +29,7 @@ version <next>
 - TrueSpeech audio decoder
 - WMA2 audio decoder fixed, now all files should play correctly
 - RealAudio 14.4 and 28.8 decoders fixed
-- JPEG-LS decoder
+- JPEG-LS encoder and decoder
 - CamStudio video decoder
 - build system improvements
 - tabs and trailing whitespace removed from the codebase

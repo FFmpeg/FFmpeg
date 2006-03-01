@@ -744,6 +744,7 @@ following image formats are supported:
 @item RealVideo 2.0          @tab  X  @tab  X
 @item MJPEG                  @tab  X  @tab  X
 @item lossless MJPEG         @tab  X  @tab  X
+@item JPEG-LS                @tab  X  @tab  X @tab fourcc: MJLS, lossless and near-lossless is supported
 @item Apple MJPEG-B          @tab     @tab  X
 @item Sunplus MJPEG          @tab     @tab  X @tab fourcc: SP5X
 @item DV                     @tab  X  @tab  X
