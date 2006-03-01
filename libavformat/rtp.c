@@ -402,9 +402,11 @@ int rtp_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
     /* NOTE: we can handle only one payload type */
     if (s->payload_type != payload_type)
         return -1;
+
+    st = s->st;
 #if defined(DEBUG) || 1
     if (seq != ((s->seq + 1) & 0xffff)) {
-        av_log(s->st->codec, AV_LOG_ERROR, "RTP: PT=%02x: bad cseq %04x expected=%04x\n",
+        av_log(st?st->codec:NULL, AV_LOG_ERROR, "RTP: PT=%02x: bad cseq %04x expected=%04x\n",
                payload_type, seq, ((s->seq + 1) & 0xffff));
     }
 #endif
@@ -412,7 +414,6 @@ int rtp_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
     len -= 12;
     buf += 12;
 
-    st = s->st;
     if (!st) {
         /* specific MPEG2TS demux support */
         ret = mpegts_parse_packet(s->ts, pkt, buf, len);
