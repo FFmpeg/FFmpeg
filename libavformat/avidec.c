@@ -147,6 +147,31 @@ static int read_braindead_odml_indx(AVFormatContext *s, int frame_num){
     return 0;
 }
 
+static void clean_index(AVFormatContext *s){
+    int i, j;
+
+    for(i=0; i<s->nb_streams; i++){
+        AVStream *st = s->streams[i];
+        AVIStream *ast = st->priv_data;
+        int n= st->nb_index_entries;
+        int max= ast->sample_size;
+        int64_t pos, size, ts;
+
+        if(n != 1 || ast->sample_size==0)
+            continue;
+
+        while(max < 1024) max+=max;
+
+        pos= st->index_entries[0].pos;
+        size= st->index_entries[0].size;
+        ts= st->index_entries[0].timestamp;
+
+        for(j=0; j<size; j+=max){
+            av_add_index_entry(st, pos+j, ts + j/ast->sample_size, FFMIN(max, size-j), 0, AVINDEX_KEYFRAME);
+        }
+    }
+}
+
 static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     AVIContext *avi = s->priv_data;
@@ -419,6 +444,8 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
         avi_load_index(s);
     avi->index_loaded = 1;
     avi->non_interleaved |= guess_ni_flag(s);
+    if(avi->non_interleaved)
+        clean_index(s);
 
     return 0;
 }
