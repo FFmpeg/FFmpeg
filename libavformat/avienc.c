@@ -517,8 +517,7 @@ static int avi_write_ix(AVFormatContext *s)
     unsigned char ix_tag[] = "ix00";
     int i, j;
 
-    if (url_is_streamed(pb))
-        return -1;
+    assert(!url_is_streamed(pb));
 
     if (avi->riff_id > AVI_MASTER_INDEX_SIZE)
         return -1;
