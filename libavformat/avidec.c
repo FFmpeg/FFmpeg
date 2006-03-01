@@ -37,7 +37,7 @@ typedef struct AVIStream {
     int sample_size; /* audio only data */
     int start;
 
-    int cum_len; /* temporary storage (used during seek) */
+    int64_t cum_len; /* temporary storage (used during seek) */
 
     int prefix;                       ///< normally 'd'<<8 + 'c' or 'w'<<8 + 'b'
     int prefix_count;
@@ -82,6 +82,65 @@ static int get_riff(AVIContext *avi, ByteIOContext *pb)
     if (tag != MKTAG('A', 'V', 'I', ' ') && tag != MKTAG('A', 'V', 'I', 'X'))
         return -1;
 
+    return 0;
+}
+
+static int read_braindead_odml_indx(AVFormatContext *s, int frame_num){
+    ByteIOContext *pb = &s->pb;
+    int longs_pre_entry= get_le16(pb);
+    int index_sub_type = get_byte(pb);
+    int index_type     = get_byte(pb);
+    int entries_in_use = get_le32(pb);
+    int chunk_id       = get_le32(pb);
+    int64_t base       = get_le64(pb);
+    int stream_id= 10*((chunk_id&0xFF) - '0') + (((chunk_id>>8)&0xFF) - '0');
+    AVStream *st;
+    AVIStream *ast;
+    int i;
+
+//    av_log(s, AV_LOG_ERROR, "longs_pre_entry:%d index_type:%d entries_in_use:%d chunk_id:%X base:%Ld\n",
+//        longs_pre_entry,index_type, entries_in_use, chunk_id, base);
+
+    if(stream_id > s->nb_streams || stream_id < 0)
+        return -1;
+    st= s->streams[stream_id];
+    ast = st->priv_data;
+
+    if(index_sub_type)
+        return -1;
+
+    get_le32(pb);
+
+    if(index_type && longs_pre_entry != 2)
+        return -1;
+    if(index_type>1)
+        return -1;
+
+    for(i=0; i<entries_in_use; i++){
+        if(index_type){
+            int64_t pos= get_le32(pb) + base;
+            int len    = get_le32(pb);
+
+            av_add_index_entry(st, pos, ast->cum_len, 0, (len<0) ? 0 : AVINDEX_KEYFRAME);
+            len &= 0x7FFFFFFF;
+
+            if(ast->sample_size)
+                ast->cum_len += len / ast->sample_size;
+            else
+                ast->cum_len ++;
+        }else{
+            int64_t offset= get_le64(pb);
+            int size      = get_le32(pb);
+            int duration  = get_le32(pb);
+            int64_t pos= url_ftell(pb);
+
+            url_fseek(pb, offset+8, SEEK_SET);
+            read_braindead_odml_indx(s, frame_num);
+            frame_num += duration;
+
+            url_fseek(pb, pos, SEEK_SET);
+        }
+    }
     return 0;
 }
 
@@ -326,6 +385,12 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 }
             }
             break;
+        case MKTAG('i', 'n', 'd', 'x'):
+            i= url_ftell(pb);
+            read_braindead_odml_indx(s, 0);
+            avi->index_loaded=1;
+            url_fseek(pb, i+size, SEEK_SET);
+            break;
         default:
             /* skip tag */
             size += (size & 1);
@@ -344,8 +409,8 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
         return -1;
     }
 
-    assert(!avi->index_loaded);
-    avi_load_index(s);
+    if(!avi->index_loaded)
+        avi_load_index(s);
     avi->index_loaded = 1;
 
     return 0;
