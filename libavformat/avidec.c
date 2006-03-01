@@ -55,6 +55,7 @@ typedef struct {
 } AVIContext;
 
 static int avi_load_index(AVFormatContext *s);
+static int guess_ni_flag(AVFormatContext *s);
 
 #ifdef DEBUG
 static void print_tag(const char *str, unsigned int tag, int size)
@@ -118,11 +119,13 @@ static int read_braindead_odml_indx(AVFormatContext *s, int frame_num){
 
     for(i=0; i<entries_in_use; i++){
         if(index_type){
-            int64_t pos= get_le32(pb) + base;
+            int64_t pos= get_le32(pb) + base - 8;
             int len    = get_le32(pb);
-
-            av_add_index_entry(st, pos, ast->cum_len, 0, (len<0) ? 0 : AVINDEX_KEYFRAME);
+            int key= len >= 0;
             len &= 0x7FFFFFFF;
+
+//av_log(s, AV_LOG_ERROR, "pos:%Ld, len:%X\n", pos, len);
+            av_add_index_entry(st, pos, ast->cum_len, len, 0, key ? AVINDEX_KEYFRAME : 0);
 
             if(ast->sample_size)
                 ast->cum_len += len / ast->sample_size;
@@ -412,6 +415,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
     if(!avi->index_loaded)
         avi_load_index(s);
     avi->index_loaded = 1;
+    avi->non_interleaved |= guess_ni_flag(s);
 
     return 0;
 }
@@ -699,7 +703,7 @@ static int avi_read_idx1(AVFormatContext *s, int size)
         if(last_pos == pos)
             avi->non_interleaved= 1;
         else
-            av_add_index_entry(st, pos, ast->cum_len, 0, (flags&AVIIF_INDEX) ? AVINDEX_KEYFRAME : 0);
+            av_add_index_entry(st, pos, ast->cum_len, len, 0, (flags&AVIIF_INDEX) ? AVINDEX_KEYFRAME : 0);
         if(ast->sample_size)
             ast->cum_len += len / ast->sample_size;
         else
@@ -768,7 +772,6 @@ static int avi_load_index(AVFormatContext *s)
         }
     }
  the_end:
-    avi->non_interleaved |= guess_ni_flag(s);
     url_fseek(pb, pos, SEEK_SET);
     return 0;
 }

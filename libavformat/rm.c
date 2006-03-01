@@ -982,7 +982,7 @@ resync:
         if(flags&2){
             pkt->flags |= PKT_FLAG_KEY;
             if((seq&0x7F) == 1)
-                av_add_index_entry(st, pos, timestamp, 0, AVINDEX_KEYFRAME);
+                av_add_index_entry(st, pos, timestamp, 0, 0, AVINDEX_KEYFRAME);
         }
     }
 
@@ -1054,7 +1054,7 @@ static int64_t rm_read_dts(AVFormatContext *s, int stream_index,
 
         if((flags&2) && (seq&0x7F) == 1){
 //            av_log(s, AV_LOG_DEBUG, "%d %d-%d %Ld %d\n", flags, stream_index2, stream_index, dts, seq);
-            av_add_index_entry(st, pos, dts, 0, AVINDEX_KEYFRAME);
+            av_add_index_entry(st, pos, dts, 0, 0, AVINDEX_KEYFRAME);
             if(stream_index2 == stream_index)
                 break;
         }

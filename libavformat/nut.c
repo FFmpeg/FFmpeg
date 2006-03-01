@@ -1192,6 +1192,7 @@ static int decode_frame_header(NUTContext *nut, int *key_frame_ret, int64_t *pts
             s->streams[stream_id],
             frame_start,
             pts,
+            0,
             frame_start - nut->stream[stream_id].last_sync_pos,
             AVINDEX_KEYFRAME);
         nut->stream[stream_id].last_sync_pos= frame_start;

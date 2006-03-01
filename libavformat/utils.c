@@ -1131,7 +1131,7 @@ static void av_update_cur_dts(AVFormatContext *s, AVStream *ref_st, int64_t time
  * @param timestamp timestamp in the timebase of the given stream
  */
 int av_add_index_entry(AVStream *st,
-                            int64_t pos, int64_t timestamp, int distance, int flags)
+                            int64_t pos, int64_t timestamp, int size, int distance, int flags)
 {
     AVIndexEntry *entries, *ie;
     int index;
@@ -1168,6 +1168,7 @@ int av_add_index_entry(AVStream *st,
     ie->pos = pos;
     ie->timestamp = timestamp;
     ie->min_distance= distance;
+    ie->size= size;
     ie->flags = flags;
 
     return index;
@@ -1193,7 +1194,7 @@ static void av_build_index_raw(AVFormatContext *s)
         if (pkt->stream_index == 0 && st->parser &&
             (pkt->flags & PKT_FLAG_KEY)) {
             av_add_index_entry(st, st->parser->frame_offset, pkt->dts,
-                            0, AVINDEX_KEYFRAME);
+                            0, 0, AVINDEX_KEYFRAME);
         }
         av_free_packet(pkt);
     }
