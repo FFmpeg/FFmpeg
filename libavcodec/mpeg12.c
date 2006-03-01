@@ -3114,7 +3114,7 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
                         /* skip b frames if we dont have reference frames */
                             if(s2->pict_type==B_TYPE) break;
                         /* skip P frames if we dont have reference frame no valid header */
-                            if(s2->pict_type==P_TYPE && !s2->first_slice) break;
+//                            if(s2->pict_type==P_TYPE && s2->first_field && !s2->first_slice) break;
                         }
                         /* skip b frames if we are in a hurry */
                         if(avctx->hurry_up && s2->pict_type==B_TYPE) break;
