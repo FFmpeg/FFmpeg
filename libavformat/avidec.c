@@ -203,7 +203,10 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
             /* using frame_period is bad idea */
             frame_period = get_le32(pb);
             bit_rate = get_le32(pb) * 8;
-            url_fskip(pb, 4 * 4);
+            get_le32(pb);
+            avi->non_interleaved |= get_le32(pb) & AVIF_MUSTUSEINDEX;
+
+            url_fskip(pb, 2 * 4);
             n = get_le32(pb);
             for(i=0;i<n;i++) {
                 AVIStream *ast;
@@ -468,13 +471,12 @@ static int avi_read_packet(AVFormatContext *s, AVPacket *pkt)
         if(i>=0){
             int64_t pos= best_st->index_entries[i].pos;
             pos += best_ast->packet_size - best_ast->remaining;
-            url_fseek(&s->pb, pos, SEEK_SET);
+            url_fseek(&s->pb, pos + 8, SEEK_SET);
 //        av_log(NULL, AV_LOG_DEBUG, "pos=%Ld\n", pos);
 
-            if(best_ast->remaining)
-                avi->stream_index= best_stream_index;
-            else
-                avi->stream_index= -1;
+            avi->stream_index= best_stream_index;
+            if(!best_ast->remaining)
+                best_ast->remaining= best_st->index_entries[i].size;
         }
     }
 
