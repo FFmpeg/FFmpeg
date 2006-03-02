@@ -2008,8 +2008,10 @@ static int qdm2_decode_frame(AVCodecContext *avctx,
 {
     QDM2Context *s = avctx->priv_data;
 
-    if((buf == NULL) || (buf_size < s->checksum_size))
+    if(!buf)
         return 0;
+    if(buf_size < s->checksum_size)
+        return -1;
 
     *data_size = s->channels * s->frame_size * sizeof(int16_t);
 
