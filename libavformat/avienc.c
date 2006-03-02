@@ -378,8 +378,8 @@ static int avi_write_header(AVFormatContext *s)
     put_le32(pb, s->nb_streams); /* nb streams */
     put_le32(pb, 1024 * 1024); /* suggested buffer size */
     if(video_enc){
-    put_le32(pb, video_enc->width);
-    put_le32(pb, video_enc->height);
+        put_le32(pb, video_enc->width);
+        put_le32(pb, video_enc->height);
     } else {
         put_le32(pb, 0);
         put_le32(pb, 0);
