@@ -35,7 +35,6 @@ typedef struct AVIStream {
     int scale;
     int rate;
     int sample_size; /* size of one sample (or packet) (in the rate/scale sense) in bytes */
-    int start;
 
     int64_t cum_len; /* temporary storage (used during seek) */
 
@@ -313,7 +312,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
             }
             av_set_pts_info(st, 64, ast->scale, ast->rate);
 
-            ast->start= get_le32(pb); /* start */
+            ast->cum_len=get_le32(pb); /* start */
             nb_frames = get_le32(pb);
 
             st->start_time = 0;
@@ -344,6 +343,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 av_log(s, AV_LOG_ERROR, "unknown stream type %X\n", tag1);
                 goto fail;
             }
+            ast->frame_offset= ast->cum_len * FFMAX(ast->sample_size, 1);
             url_fskip(pb, size - 12 * 4);
             break;
         case MKTAG('s', 't', 'r', 'f'):
