@@ -403,6 +403,8 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     break;
                 case CODEC_TYPE_AUDIO:
                     get_wav_header(pb, st->codec, size);
+                    if(ast->sample_size && st->codec->block_align && ast->sample_size % st->codec->block_align)
+                        av_log(s, AV_LOG_DEBUG, "invalid sample size or block align detected\n");
                     if (size%2) /* 2-aligned (fix for Stargate SG-1 - 3x18 - Shades of Grey.avi) */
                         url_fskip(pb, 1);
                     /* special case time: To support Xan DPCM, hardcode
@@ -522,7 +524,7 @@ resync:
         AVIStream *ast= st->priv_data;
         int size;
 
-        if(ast->sample_size == 0)
+        if(ast->sample_size <= 1) // minorityreport.AVI block_align=1024 sample_size=1 IMA-ADPCM
             size= INT_MAX;
         else if(ast->sample_size < 32)
             size= 64*ast->sample_size;
@@ -850,7 +852,7 @@ static int avi_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
         if (st2->nb_index_entries <= 0)
             continue;
 
-//        assert(st2->codec.block_align);
+//        assert(st2->codec->block_align);
         assert(st2->time_base.den == ast2->rate);
         assert(st2->time_base.num == ast2->scale);
         index = av_index_search_timestamp(
