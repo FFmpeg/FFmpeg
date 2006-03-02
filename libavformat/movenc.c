@@ -1316,8 +1316,10 @@ static void mov_write_ftyp_tag (ByteIOContext *pb, AVFormatContext *s)
         put_tag(pb, "3g2a");
     else if ( mov->mode == MODE_PSP )
         put_tag(pb, "MSNV");
-    else
+    else if ( mov->mode == MODE_MP4 )
         put_tag(pb, "isom");
+    else
+        put_tag(pb, "qt  ");
 
     put_be32(pb, 0x200 );
 
@@ -1327,8 +1329,10 @@ static void mov_write_ftyp_tag (ByteIOContext *pb, AVFormatContext *s)
         put_tag(pb, "3g2a");
     else if ( mov->mode == MODE_PSP )
         put_tag(pb, "MSNV");
-    else
+    else if ( mov->mode == MODE_MP4 )
         put_tag(pb, "mp41");
+    else
+        put_tag(pb, "qt  ");
 }
 
 static void mov_write_uuidprof_tag(ByteIOContext *pb, AVFormatContext *s)
@@ -1398,9 +1402,7 @@ static int mov_write_header(AVFormatContext *s)
         else if (!strcmp("mov", s->oformat->name)) mov->mode = MODE_MOV;
         else if (!strcmp("psp", s->oformat->name)) mov->mode = MODE_PSP;
 
-        if ( mov->mode == MODE_3GP || mov->mode == MODE_3G2 ||
-             mov->mode == MODE_MP4 || mov->mode == MODE_PSP )
-            mov_write_ftyp_tag(pb,s);
+        mov_write_ftyp_tag(pb,s);
         if ( mov->mode == MODE_PSP ) {
             if ( s->nb_streams != 2 ) {
                 av_log(s, AV_LOG_ERROR, "PSP mode need one video and one audio stream\n");
