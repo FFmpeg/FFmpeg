@@ -1389,6 +1389,27 @@ static int mov_write_header(AVFormatContext *s)
     MOVContext *mov = s->priv_data;
     int i;
 
+    /* Default mode == MP4 */
+    mov->mode = MODE_MP4;
+
+    if (s->oformat != NULL) {
+        if (!strcmp("3gp", s->oformat->name)) mov->mode = MODE_3GP;
+        else if (!strcmp("3g2", s->oformat->name)) mov->mode = MODE_3G2;
+        else if (!strcmp("mov", s->oformat->name)) mov->mode = MODE_MOV;
+        else if (!strcmp("psp", s->oformat->name)) mov->mode = MODE_PSP;
+
+        if ( mov->mode == MODE_3GP || mov->mode == MODE_3G2 ||
+             mov->mode == MODE_MP4 || mov->mode == MODE_PSP )
+            mov_write_ftyp_tag(pb,s);
+        if ( mov->mode == MODE_PSP ) {
+            if ( s->nb_streams != 2 ) {
+                av_log(s, AV_LOG_ERROR, "PSP mode need one video and one audio stream\n");
+                return -1;
+            }
+            mov_write_uuidprof_tag(pb,s);
+        }
+    }
+
     for(i=0; i<s->nb_streams; i++){
         AVCodecContext *c= s->streams[i]->codec;
 
@@ -1409,29 +1430,7 @@ static int mov_write_header(AVFormatContext *s)
                     av_log(s, AV_LOG_INFO, "Warning, using MS style audio codec tag, the file may be unplayable!\n");
             }
         }
-        /* don't know yet if mp4 or not */
-        mov->tracks[i].language = ff_mov_iso639_to_lang(s->streams[i]->language, 1);
-    }
-
-    /* Default mode == MP4 */
-    mov->mode = MODE_MP4;
-
-    if (s->oformat != NULL) {
-        if (!strcmp("3gp", s->oformat->name)) mov->mode = MODE_3GP;
-        else if (!strcmp("3g2", s->oformat->name)) mov->mode = MODE_3G2;
-        else if (!strcmp("mov", s->oformat->name)) mov->mode = MODE_MOV;
-        else if (!strcmp("psp", s->oformat->name)) mov->mode = MODE_PSP;
-
-        if ( mov->mode == MODE_3GP || mov->mode == MODE_3G2 ||
-             mov->mode == MODE_MP4 || mov->mode == MODE_PSP )
-            mov_write_ftyp_tag(pb,s);
-        if ( mov->mode == MODE_PSP ) {
-            if ( s->nb_streams != 2 ) {
-                av_log(s, AV_LOG_ERROR, "PSP mode need one video and one audio stream\n");
-                return -1;
-            }
-            mov_write_uuidprof_tag(pb,s);
-        }
+        mov->tracks[i].language = ff_mov_iso639_to_lang(s->streams[i]->language, mov->mode != MODE_MOV);
     }
 
     for (i=0; i<MAX_STREAMS; i++) {
