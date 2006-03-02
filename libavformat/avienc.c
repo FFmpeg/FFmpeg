@@ -613,22 +613,21 @@ static int avi_write_idx1(AVFormatContext *s)
         file_size = url_ftell(pb);
         nb_frames = 0;
         for(n=0;n<s->nb_streams;n++) {
-            if (avi->frames_hdr_strm[n] != 0) {
+            assert(avi->frames_hdr_strm[n]);
                 stream = s->streams[n]->codec;
                 url_fseek(pb, avi->frames_hdr_strm[n], SEEK_SET);
                 ff_parse_specific_params(stream, &au_byterate, &au_ssize, &au_scale);
                 if (au_ssize == 0) {
                     put_le32(pb, avi->packet_count[n]);
-                    nb_frames += avi->packet_count[n];
                 } else {
                     put_le32(pb, avi->audio_strm_length[n] / au_ssize);
                 }
-            }
+            if(stream->codec_type == CODEC_TYPE_VIDEO)
+                nb_frames = FFMAX(nb_frames, avi->packet_count[n]);
        }
-       if (avi->frames_hdr_all != 0) {
-           url_fseek(pb, avi->frames_hdr_all, SEEK_SET);
-           put_le32(pb, nb_frames);
-       }
+        assert(avi->frames_hdr_all);
+        url_fseek(pb, avi->frames_hdr_all, SEEK_SET);
+        put_le32(pb, nb_frames);
        url_fseek(pb, file_size, SEEK_SET);
     }
     return 0;
