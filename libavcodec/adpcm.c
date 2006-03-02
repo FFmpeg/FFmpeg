@@ -694,8 +694,10 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
 
         cs->step_index = (*src++) & 0x7F;
 
-        if (cs->step_index > 88) av_log(avctx, AV_LOG_ERROR, "ERROR: step_index = %i\n", cs->step_index);
-        if (cs->step_index > 88) cs->step_index = 88;
+        if (cs->step_index > 88){
+            av_log(avctx, AV_LOG_ERROR, "ERROR: step_index = %i\n", cs->step_index);
+            cs->step_index = 88;
+        }
 
         cs->step = step_table[cs->step_index];
 
@@ -721,35 +723,32 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
         if (avctx->block_align != 0 && buf_size > avctx->block_align)
             buf_size = avctx->block_align;
 
+//        samples_per_block= (block_align-4*chanels)*8 / (bits_per_sample * chanels) + 1;
+
         for(i=0; i<avctx->channels; i++){
             cs = &(c->status[i]);
-            cs->predictor = *src++;
-            cs->predictor |= (*src++) << 8;
-            if(cs->predictor & 0x8000)
-                cs->predictor -= 0x10000;
-            CLAMP_TO_SHORT(cs->predictor);
+            cs->predictor = (int16_t)(src[0] + (src[1]<<8));
+            src+=2;
 
         // XXX: is this correct ??: *samples++ = cs->predictor;
 
             cs->step_index = *src++;
-            if (cs->step_index < 0) cs->step_index = 0;
-            if (cs->step_index > 88) cs->step_index = 88;
-            if (*src++) av_log(avctx, AV_LOG_ERROR, "unused byte should be null !!\n"); /* unused */
+            if (cs->step_index > 88){
+                av_log(avctx, AV_LOG_ERROR, "ERROR: step_index = %i\n", cs->step_index);
+                cs->step_index = 88;
+            }
+            if (*src++) av_log(avctx, AV_LOG_ERROR, "unused byte should be null but is %d!!\n", src[-1]); /* unused */
         }
 
-        for(m=4; src < (buf + buf_size);) {
-            *samples++ = adpcm_ima_expand_nibble(&c->status[0], src[0] & 0x0F, 3);
-            if (st)
-                *samples++ = adpcm_ima_expand_nibble(&c->status[1], src[4] & 0x0F, 3);
-            *samples++ = adpcm_ima_expand_nibble(&c->status[0], (src[0] >> 4) & 0x0F, 3);
-            if (st) {
-                *samples++ = adpcm_ima_expand_nibble(&c->status[1], (src[4] >> 4) & 0x0F, 3);
-                if (!--m) {
-                    m=4;
-                    src+=4;
-                }
+        while(src < buf + buf_size){
+            for(m=0; m<4; m++){
+                for(i=0; i<=st; i++)
+                    *samples++ = adpcm_ima_expand_nibble(&c->status[i], src[4*i] & 0x0F, 3);
+                for(i=0; i<=st; i++)
+                    *samples++ = adpcm_ima_expand_nibble(&c->status[i], src[4*i] >> 4  , 3);
+                src++;
             }
-            src++;
+            src += 4*st;
         }
         break;
     case CODEC_ID_ADPCM_4XM:
