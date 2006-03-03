@@ -103,6 +103,7 @@ Generic Parts:
 Codecs:
   4xm.c                                 Michael Niedermayer
   8bps.c                                Roberto Togni
+  aasc.c                                Kostya Shishkov
   asv*                                  Michael Niedermayer
   bmp.c                                 Mans Rullgard
   cinepak.c                             Roberto Togni
@@ -120,8 +121,11 @@ Codecs:
   h263*                                 Michael Niedermayer
   huffyuv.c                             Michael Niedermayer
   idcinvideo.c                          Mike Melanson
+  indeo2*                               Kostya Shishkov
   interplayvideo.c                      Mike Melanson
+  jpeg_ls.c                             Kostya Shishkov
   lcl.c                                 Roberto Togni
+  loco.c                                Kostya Shishkov
   lzo.h, lzo.c                          Reimar Doeffinger
   mdec.c                                Michael Niedermayer
   mjpeg.c                               Michael Niedermayer
@@ -132,6 +136,8 @@ Codecs:
   msvideo1.c                            Mike Melanson
   oggtheora.c                           Mans Rullgard
   qdm2.c, qdm2data.h                    Roberto Togni
+  qdrw.c                                Kostya Shishkov
+  qpeg.c                                Kostya Shishkov
   qtrle.c                               Mike Melanson
   ra144.c, ra144.h, ra288.c, ra288.h    Roberto Togni
   resample2.c                           Michael Niedermayer
@@ -141,14 +147,21 @@ Codecs:
   snow.c                                Michael Niedermayer, Loren Merritt
   sonic.c                               Alex Beregszaszi
   svq3.c                                Michael Niedermayer
-  truemotion*                           Mike Melanson
+  truemotion1*                          Mike Melanson
+  truemotion2*                          Kostya Shishkov
+  truespeech.c                          Kostya Shishkov
+  tscc.c                                Kostya Shishkov
+  ulti*                                 Kostya Shishkov
   vcr1.c                                Michael Niedermayer
   vp3*                                  Mike Melanson
   vqavideo.c                            Mike Melanson
   wmv2.c                                Michael Niedermayer
+  wnv1.c                                Kostya Shishkov
   x264.c                                Mans Rullgard
   xan.c                                 Mike Melanson
+  xl.c                                  Kostya Shishkov
   xvmcvideo.c                           Ivan Kalvachev
+  zmbv.c                                Kostya Shishkov
 
 
 libavformat
