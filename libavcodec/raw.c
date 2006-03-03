@@ -26,7 +26,6 @@
 
 typedef struct RawVideoContext {
     unsigned char * buffer;  /* block of memory for holding one frame */
-    unsigned char * p;       /* current position in buffer */
     int             length;  /* number of bytes in buffer */
     AVFrame pic;             ///< AVCodecContext.coded_frame
 } RawVideoContext;
@@ -86,6 +85,7 @@ static int raw_init_decoder(AVCodecContext *avctx)
         avctx->pix_fmt = findPixelFormat(avctx->codec_tag);
     else if (avctx->bits_per_sample){
         switch(avctx->bits_per_sample){
+        case  8: avctx->pix_fmt= PIX_FMT_PAL8  ; break;
         case 15: avctx->pix_fmt= PIX_FMT_RGB555; break;
         case 16: avctx->pix_fmt= PIX_FMT_RGB565; break;
         case 24: avctx->pix_fmt= PIX_FMT_BGR24 ; break;
@@ -95,7 +95,6 @@ static int raw_init_decoder(AVCodecContext *avctx)
 
     context->length = avpicture_get_size(avctx->pix_fmt, avctx->width, avctx->height);
     context->buffer = av_malloc(context->length);
-    context->p      = context->buffer;
     context->pic.pict_type = FF_I_TYPE;
     context->pic.key_frame = 1;
 
@@ -108,7 +107,7 @@ static int raw_init_decoder(AVCodecContext *avctx)
 }
 
 static void flip(AVCodecContext *avctx, AVPicture * picture){
-    if(!avctx->codec_tag && avctx->bits_per_sample && picture->linesize[1]==0){
+    if(!avctx->codec_tag && avctx->bits_per_sample && picture->linesize[2]==0){
         picture->data[0] += picture->linesize[0] * (avctx->height-1);
         picture->linesize[0] *= -1;
     }
@@ -119,7 +118,6 @@ static int raw_decode(AVCodecContext *avctx,
                             uint8_t *buf, int buf_size)
 {
     RawVideoContext *context = avctx->priv_data;
-    int bytesNeeded;
 
     AVFrame * frame = (AVFrame *) data;
     AVPicture * picture = (AVPicture *) data;
@@ -127,27 +125,21 @@ static int raw_decode(AVCodecContext *avctx,
     frame->interlaced_frame = avctx->coded_frame->interlaced_frame;
     frame->top_field_first = avctx->coded_frame->top_field_first;
 
-    /* Early out without copy if packet size == frame size */
-    if (buf_size == context->length  &&  context->p == context->buffer) {
-        avpicture_fill(picture, buf, avctx->pix_fmt, avctx->width, avctx->height);
-        flip(avctx, picture);
-        *data_size = sizeof(AVPicture);
-        return buf_size;
+    if(buf_size < context->length - (avctx->pix_fmt==PIX_FMT_PAL8 ? 256*4 : 0))
+        return -1;
+
+    avpicture_fill(picture, buf, avctx->pix_fmt, avctx->width, avctx->height);
+    if(avctx->pix_fmt==PIX_FMT_PAL8 && buf_size < context->length){
+        frame->data[1]= context->buffer;
+    }
+    if (avctx->palctrl && avctx->palctrl->palette_changed) {
+        memcpy(frame->data[1], avctx->palctrl->palette, AVPALETTE_SIZE);
+        avctx->palctrl->palette_changed = 0;
     }
 
-    bytesNeeded = context->length - (context->p - context->buffer);
-    if (buf_size < bytesNeeded) {
-        memcpy(context->p, buf, buf_size);
-        context->p += buf_size;
-        return buf_size;
-    }
-
-    memcpy(context->p, buf, bytesNeeded);
-    context->p = context->buffer;
-    avpicture_fill(picture, context->buffer, avctx->pix_fmt, avctx->width, avctx->height);
     flip(avctx, picture);
     *data_size = sizeof(AVPicture);
-    return bytesNeeded;
+    return buf_size;
 }
 
 static int raw_close_decoder(AVCodecContext *avctx)
