@@ -109,12 +109,9 @@ void ff_h264_idct_dc_add_mmx2(uint8_t *dst, int16_t *block, int stride)
     int dc = (block[0] + 32) >> 6;
     asm volatile(
         "movd          %0, %%mm0 \n\t"
-        "pxor       %%mm7, %%mm7 \n\t"
         "pshufw $0, %%mm0, %%mm0 \n\t"
         "pxor       %%mm1, %%mm1 \n\t"
         "psubw      %%mm0, %%mm1 \n\t"
-        "pmaxsw     %%mm7, %%mm0 \n\t"
-        "pmaxsw     %%mm7, %%mm1 \n\t"
         "packuswb   %%mm0, %%mm0 \n\t"
         "packuswb   %%mm1, %%mm1 \n\t"
         ::"r"(dc)
@@ -149,12 +146,9 @@ void ff_h264_idct8_dc_add_mmx2(uint8_t *dst, int16_t *block, int stride)
     int y;
     asm volatile(
         "movd          %0, %%mm0 \n\t"
-        "pxor       %%mm7, %%mm7 \n\t"
         "pshufw $0, %%mm0, %%mm0 \n\t"
         "pxor       %%mm1, %%mm1 \n\t"
         "psubw      %%mm0, %%mm1 \n\t"
-        "pmaxsw     %%mm7, %%mm0 \n\t"
-        "pmaxsw     %%mm7, %%mm1 \n\t"
         "packuswb   %%mm0, %%mm0 \n\t"
         "packuswb   %%mm1, %%mm1 \n\t"
         ::"r"(dc)
@@ -972,7 +966,6 @@ static void OPNAME ## h264_qpel16_hv_lowpass_ ## MMX(uint8_t *dst, int16_t *tmp,
 static void OPNAME ## pixels4_l2_shift5_ ## MMX(uint8_t *dst, int16_t *src16, uint8_t *src8, int dstStride, int src8Stride, int h)\
 {\
     asm volatile(\
-        "pxor     %%mm7, %%mm7          \n\t"\
         "movq       %5,  %%mm6          \n\t"\
         "movq      (%1), %%mm0          \n\t"\
         "movq    24(%1), %%mm1          \n\t"\
@@ -980,10 +973,8 @@ static void OPNAME ## pixels4_l2_shift5_ ## MMX(uint8_t *dst, int16_t *src16, ui
         "paddw    %%mm6, %%mm1          \n\t"\
         "psraw      $5,  %%mm0          \n\t"\
         "psraw      $5,  %%mm1          \n\t"\
-        "pmaxsw   %%mm7, %%mm0          \n\t"\
-        "pmaxsw   %%mm7, %%mm1          \n\t"\
-        "packuswb %%mm7, %%mm0          \n\t"\
-        "packuswb %%mm7, %%mm1          \n\t"\
+        "packuswb %%mm0, %%mm0          \n\t"\
+        "packuswb %%mm1, %%mm1          \n\t"\
         PAVGB"     (%0), %%mm0          \n\t"\
         PAVGB"  (%0,%3), %%mm1          \n\t"\
         OP(%%mm0, (%2),    %%mm4, d)\
@@ -996,10 +987,8 @@ static void OPNAME ## pixels4_l2_shift5_ ## MMX(uint8_t *dst, int16_t *src16, ui
         "paddw    %%mm6, %%mm1          \n\t"\
         "psraw      $5,  %%mm0          \n\t"\
         "psraw      $5,  %%mm1          \n\t"\
-        "pmaxsw   %%mm7, %%mm0          \n\t"\
-        "pmaxsw   %%mm7, %%mm1          \n\t"\
-        "packuswb %%mm7, %%mm0          \n\t"\
-        "packuswb %%mm7, %%mm1          \n\t"\
+        "packuswb %%mm0, %%mm0          \n\t"\
+        "packuswb %%mm1, %%mm1          \n\t"\
         PAVGB"     (%0), %%mm0          \n\t"\
         PAVGB"  (%0,%3), %%mm1          \n\t"\
         OP(%%mm0, (%2),    %%mm4, d)\
@@ -1011,7 +1000,6 @@ static void OPNAME ## pixels4_l2_shift5_ ## MMX(uint8_t *dst, int16_t *src16, ui
 static void OPNAME ## pixels8_l2_shift5_ ## MMX(uint8_t *dst, int16_t *src16, uint8_t *src8, int dstStride, int src8Stride, int h)\
 {\
     asm volatile(\
-        "pxor     %%mm7, %%mm7          \n\t"\
         "movq       %0,  %%mm6          \n\t"\
         ::"m"(ff_pw_16)\
         );\
@@ -1023,8 +1011,6 @@ static void OPNAME ## pixels8_l2_shift5_ ## MMX(uint8_t *dst, int16_t *src16, ui
         "paddw    %%mm6, %%mm1          \n\t"\
         "psraw      $5,  %%mm0          \n\t"\
         "psraw      $5,  %%mm1          \n\t"\
-        "pmaxsw   %%mm7, %%mm0          \n\t"\
-        "pmaxsw   %%mm7, %%mm1          \n\t"\
         "packuswb %%mm1, %%mm0          \n\t"\
         PAVGB"     (%0), %%mm0          \n\t"\
         OP(%%mm0, (%2), %%mm5, q)\
