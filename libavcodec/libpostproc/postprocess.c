@@ -759,6 +759,7 @@ char *pp_help=
 "vb:a/hb:a/lb                                   de,-vb\n"
 "more examples:\n"
 "tn:64:128:256\n"
+"\n"
 ;
 
 pp_mode_t *pp_get_mode_by_name_and_quality(char *name, int quality)
