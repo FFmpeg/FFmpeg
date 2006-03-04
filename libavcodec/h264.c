@@ -7548,6 +7548,7 @@ static int decode_nal_units(H264Context *h, uint8_t *buf, int buf_size){
                 av_log(h->s.avctx, AV_LOG_ERROR, "decode_slice_header error\n");
                 break;
             }
+            s->current_picture_ptr->key_frame= (h->nal_unit_type == NAL_IDR_SLICE);
             if(h->redundant_pic_count==0 && s->hurry_up < 5
                && (avctx->skip_frame < AVDISCARD_NONREF || h->nal_ref_idc)
                && (avctx->skip_frame < AVDISCARD_BIDIR  || h->slice_type!=B_TYPE)
@@ -7617,7 +7618,6 @@ static int decode_nal_units(H264Context *h, uint8_t *buf, int buf_size){
 
     s->current_picture_ptr->qscale_type= FF_QSCALE_TYPE_H264;
     s->current_picture_ptr->pict_type= s->pict_type;
-    s->current_picture_ptr->key_frame= s->pict_type == I_TYPE && h->nal_unit_type == NAL_IDR_SLICE;
 
     h->prev_frame_num_offset= h->frame_num_offset;
     h->prev_frame_num= h->frame_num;
