@@ -1063,6 +1063,15 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
                 get_be32(pb); /* bytes per packet */
                 get_be32(pb); /* bytes per frame */
                 get_be32(pb); /* bytes per sample */
+            } else if(version==2) {
+                get_be32(pb); /* sizeof struct only */
+                st->codec->sample_rate = av_int2dbl(get_be64(pb)); /* float 64 */
+                st->codec->channels = get_be32(pb);
+                get_be32(pb); /* always 0x7F000000 */
+                get_be32(pb); /* bits per channel if sound is uncompressed */
+                get_be32(pb); /* lcpm format specific flag */
+                get_be32(pb); /* bytes per audio packet if constant */
+                get_be32(pb); /* lpcm frames per audio packet if constant */
             }
         } else {
             /* other codec type, just skip (rtp, mp4s, tmcd ...) */
