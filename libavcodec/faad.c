@@ -164,7 +164,7 @@ static int faac_decode_frame(AVCodecContext *avctx,
         if(r < 0){
             av_log(avctx, AV_LOG_ERROR, "faac: codec init failed: %s\n",
                    s->faacDecGetErrorMessage(frame_info.error));
-            return 0;
+            return -1;
         }
         avctx->sample_rate = srate;
         avctx->channels = channels;
@@ -176,7 +176,7 @@ static int faac_decode_frame(AVCodecContext *avctx,
     if (frame_info.error > 0) {
         av_log(avctx, AV_LOG_ERROR, "faac: frame decoding failed: %s\n",
                 s->faacDecGetErrorMessage(frame_info.error));
-        return 0;
+        return -1;
     }
 
     frame_info.samples *= s->sample_size;
