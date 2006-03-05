@@ -23,14 +23,14 @@
 
 #include <xmmintrin.h>
 
-static const float p1p1p1m1[4] __attribute__((aligned(16))) =
-    { 1.0, 1.0, 1.0, -1.0 };
+static const int p1p1p1m1[4] __attribute__((aligned(16))) =
+    { 0, 0, 0, 1 << 31 };
 
-static const float p1p1m1p1[4] __attribute__((aligned(16))) =
-    { 1.0, 1.0, -1.0, 1.0 };
+static const int p1p1m1p1[4] __attribute__((aligned(16))) =
+    { 0, 0, 1 << 31, 0 };
 
-static const float p1p1m1m1[4] __attribute__((aligned(16))) =
-    { 1.0, 1.0, -1.0, -1.0 };
+static const int p1p1m1m1[4] __attribute__((aligned(16))) =
+    { 0, 0, 1 << 31, 1 << 31 };
 
 #if 0
 static void print_v4sf(const char *str, __m128 a)
@@ -58,7 +58,6 @@ void ff_fft_calc_sse(FFTContext *s, FFTComplex *z)
 
         r = (__m128 *)&z[0];
         c1 = *(__m128 *)p1p1m1m1;
-        c2 = *(__m128 *)p1p1p1m1;
         if (s->inverse)
             c2 = *(__m128 *)p1p1m1p1;
         else
@@ -68,19 +67,20 @@ void ff_fft_calc_sse(FFTContext *s, FFTComplex *z)
         do {
             a = r[0];
             b = _mm_shuffle_ps(a, a, _MM_SHUFFLE(1, 0, 3, 2));
-            a = _mm_mul_ps(a, c1);
+            a = _mm_xor_ps(a, c1);
             /* do the pass 0 butterfly */
             a = _mm_add_ps(a, b);
 
             a1 = r[1];
             b = _mm_shuffle_ps(a1, a1, _MM_SHUFFLE(1, 0, 3, 2));
-            a1 = _mm_mul_ps(a1, c1);
+            a1 = _mm_xor_ps(a1, c1);
             /* do the pass 0 butterfly */
             b = _mm_add_ps(a1, b);
 
             /* multiply third by -i */
+            /* by toggling the sign bit */
             b = _mm_shuffle_ps(b, b, _MM_SHUFFLE(2, 3, 1, 0));
-            b = _mm_mul_ps(b, c2);
+            b = _mm_xor_ps(b, c2);
 
             /* do the pass 1 butterfly */
             r[0] = _mm_add_ps(a, b);
