@@ -267,6 +267,8 @@ static inline float floorf(float f) {
 #    else
 #        if defined(ARCH_X86_64) && defined(PIC)
 #            define MANGLE(a) #a"(%%rip)"
+#        elif defined(CONFIG_DARWIN)
+#            define MANGLE(a) "_" #a
 #        else
 #            define MANGLE(a) #a
 #        endif
