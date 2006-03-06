@@ -1222,8 +1222,10 @@ unsigned avcodec_build( void )
 static void init_crcs(void){
     av_crc04C11DB7= av_mallocz_static(sizeof(AVCRC) * 257);
     av_crc8005    = av_mallocz_static(sizeof(AVCRC) * 257);
+    av_crc07      = av_mallocz_static(sizeof(AVCRC) * 257);
     av_crc_init(av_crc04C11DB7, 0, 32, 0x04c11db7, sizeof(AVCRC)*257);
     av_crc_init(av_crc8005    , 0, 16, 0x8005    , sizeof(AVCRC)*257);
+    av_crc_init(av_crc07      , 0,  8, 0x07      , sizeof(AVCRC)*257);
 }
 
 /* must be called before any other functions */
