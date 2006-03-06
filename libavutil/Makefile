@@ -15,6 +15,7 @@ OBJS= mathematics.o \
       integer.o \
       rational.o \
       intfloat_readwrite.o \
+      crc.o \
 
 HEADERS = avutil.h common.h mathematics.h integer.h rational.h \
           intfloat_readwrite.h
