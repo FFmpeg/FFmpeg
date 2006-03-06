@@ -182,5 +182,3 @@ static int16_t sintab[64];
 static int16_t fft_rev[512];
 static int16_t xcos1[128];
 static int16_t xsin1[128];
-
-static uint16_t crc_table[256];
