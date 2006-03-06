@@ -241,16 +241,6 @@ static int dvvideo_init(AVCodecContext *avctx)
     /* XXX: do it only for constant case */
     dv_build_unquantize_tables(s, dsp.idct_permutation);
 
-    /* FIXME: I really don't think this should be here */
-    s->sys = dv_codec_profile(avctx);
-    if(!s->sys) {
-        av_log(avctx, AV_LOG_ERROR, "Cannot determine type of DV output stream\n");
-        return -EINVAL;
-    }
-    avctx->pix_fmt = s->sys->pix_fmt;
-    avctx->bit_rate = av_rescale(s->sys->frame_size * 8,
-                                 s->sys->frame_rate,
-                                 s->sys->frame_rate_base);
     avctx->coded_frame = &s->picture;
     s->avctx= avctx;
 
