@@ -137,6 +137,10 @@ stddev:  0.00 PSNR:99.99 bytes:7602176
 7200000 ./data/a-dv.dv
 c2082cd8adf417c4ebc32654e446cba1 *./data/out.yuv
 stddev:  8.86 PSNR:29.17 bytes:7602176
+ff5eb084624f9a2846840a215b95a112 *./data/a-dv.dv
+14400000 ./data/a-dv.dv
+fc866b8879a34f5b440647e5135e4bfb *./data/out.yuv
+stddev:  8.45 PSNR:29.58 bytes:7602176
 979057a09f280acd2fba3b29de6125d1 *./data/a-svq1.mov
 1379847 ./data/a-svq1.mov
 bbff871d1475e1eee4231a08e075de2c *./data/out.yuv

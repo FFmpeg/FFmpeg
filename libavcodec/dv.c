@@ -6,6 +6,9 @@
  * DV encoder
  * Copyright (c) 2003 Roman Shaposhnik.
  *
+ * 50 Mbps (DVCPRO50) support
+ * Copyright (c) 2006 Daniel Maas <dmaas@maasdigital.com>
+ *
  * Many thanks to Dan Dennedy <dan@dennedy.org> for providing wealth
  * of DV technical info.
  *
@@ -51,8 +54,12 @@ typedef struct DVVideoContext {
     void (*idct_put[2])(uint8_t *dest, int line_size, DCTELEM *block);
 } DVVideoContext;
 
-/* MultiThreading - applies to entire DV codec, not just the avcontext */
-uint8_t** dv_anchor;
+/* MultiThreading - dv_anchor applies to entire DV codec, not just the avcontext */
+/* one element is needed for each video segment in a DV frame */
+/* at most there are 2 DIF channels * 12 DIF sequences * 27 video segments (PAL 50Mbps) */
+#define DV_ANCHOR_SIZE (2*12*27)
+
+static void* dv_anchor[DV_ANCHOR_SIZE];
 
 #define TEX_VLC_BITS 9
 
@@ -118,11 +125,7 @@ static int dvvideo_init(AVCodecContext *avctx)
             return -ENOMEM;
 
         /* dv_anchor lets each thread know its Id */
-        dv_anchor = av_malloc(12*27*sizeof(void*));
-        if (!dv_anchor) {
-            return -ENOMEM;
-        }
-        for (i=0; i<12*27; i++)
+        for (i=0; i<DV_ANCHOR_SIZE; i++)
             dv_anchor[i] = (void*)(size_t)i;
 
         /* it's faster to include sign bit in a generic VLC parsing scheme */
@@ -239,8 +242,15 @@ static int dvvideo_init(AVCodecContext *avctx)
     dv_build_unquantize_tables(s, dsp.idct_permutation);
 
     /* FIXME: I really don't think this should be here */
-    if (dv_codec_profile(avctx))
-        avctx->pix_fmt = dv_codec_profile(avctx)->pix_fmt;
+    s->sys = dv_codec_profile(avctx);
+    if(!s->sys) {
+        av_log(avctx, AV_LOG_ERROR, "Cannot determine type of DV output stream\n");
+        return -EINVAL;
+    }
+    avctx->pix_fmt = s->sys->pix_fmt;
+    avctx->bit_rate = av_rescale(s->sys->frame_size * 8,
+                                 s->sys->frame_rate,
+                                 s->sys->frame_rate_base);
     avctx->coded_frame = &s->picture;
     s->avctx= avctx;
 
@@ -495,45 +505,63 @@ static inline void dv_decode_video_segment(DVVideoContext *s,
         v = *mb_pos_ptr++;
         mb_x = v & 0xff;
         mb_y = v >> 8;
-        y_ptr = s->picture.data[0] + ((mb_y * s->picture.linesize[0] + mb_x)<<log2_blocksize);
-        if (s->sys->pix_fmt == PIX_FMT_YUV411P)
+        if (s->sys->pix_fmt == PIX_FMT_YUV422P) {
+            y_ptr = s->picture.data[0] + ((mb_y * s->picture.linesize[0] + (mb_x>>1))<<log2_blocksize);
             c_offset = ((mb_y * s->picture.linesize[1] + (mb_x >> 2))<<log2_blocksize);
-        else
-            c_offset = (((mb_y >> 1) * s->picture.linesize[1] + (mb_x >> 1))<<log2_blocksize);
+        } else { /* 4:1:1 or 4:2:0 */
+            y_ptr = s->picture.data[0] + ((mb_y * s->picture.linesize[0] + mb_x)<<log2_blocksize);
+            if (s->sys->pix_fmt == PIX_FMT_YUV411P)
+                c_offset = ((mb_y * s->picture.linesize[1] + (mb_x >> 2))<<log2_blocksize);
+            else /* 4:2:0 */
+                c_offset = (((mb_y >> 1) * s->picture.linesize[1] + (mb_x >> 1))<<log2_blocksize);
+        }
         for(j = 0;j < 6; j++) {
             idct_put = s->idct_put[mb->dct_mode && log2_blocksize==3];
-            if (j < 4) {
-                if (s->sys->pix_fmt == PIX_FMT_YUV411P && mb_x < (704 / 8)) {
-                    /* NOTE: at end of line, the macroblock is handled as 420 */
-                    idct_put(y_ptr + (j<<log2_blocksize), s->picture.linesize[0], block);
-                } else {
-                    idct_put(y_ptr + (((j & 1) + (j >> 1) * s->picture.linesize[0])<<log2_blocksize),
+            if (s->sys->pix_fmt == PIX_FMT_YUV422P) { /* 4:2:2 */
+                if (j == 0 || j == 2) {
+                    /* Y0 Y1 */
+                    idct_put(y_ptr + ((j >> 1)<<log2_blocksize),
                              s->picture.linesize[0], block);
-                }
-            } else {
-                if (s->sys->pix_fmt == PIX_FMT_YUV411P && mb_x >= (704 / 8)) {
-                    uint64_t aligned_pixels[64/8];
-                    uint8_t *pixels= (uint8_t*)aligned_pixels;
-                    uint8_t *c_ptr, *c_ptr1, *ptr, *ptr1;
-                    int x, y, linesize;
-                    /* NOTE: at end of line, the macroblock is handled as 420 */
-                    idct_put(pixels, 8, block);
-                    linesize = s->picture.linesize[6 - j];
-                    c_ptr = s->picture.data[6 - j] + c_offset;
-                    ptr = pixels;
-                    for(y = 0;y < (1<<log2_blocksize); y++) {
-                        ptr1= ptr + (1<<(log2_blocksize-1));
-                        c_ptr1 = c_ptr + (linesize<<log2_blocksize);
-                        for(x=0; x < (1<<(log2_blocksize-1)); x++){
-                            c_ptr[x]= ptr[x]; c_ptr1[x]= ptr1[x];
-                        }
-                        c_ptr += linesize;
-                        ptr += 8;
-                    }
-                } else {
-                    /* don't ask me why they inverted Cb and Cr ! */
+                } else if(j > 3) {
+                    /* Cr Cb */
                     idct_put(s->picture.data[6 - j] + c_offset,
                              s->picture.linesize[6 - j], block);
+                }
+                /* note: j=1 and j=3 are "dummy" blocks in 4:2:2 */
+            } else { /* 4:1:1 or 4:2:0 */
+                if (j < 4) {
+                    if (s->sys->pix_fmt == PIX_FMT_YUV411P && mb_x < (704 / 8)) {
+                        /* NOTE: at end of line, the macroblock is handled as 420 */
+                        idct_put(y_ptr + (j<<log2_blocksize), s->picture.linesize[0], block);
+                    } else {
+                        idct_put(y_ptr + (((j & 1) + (j >> 1) * s->picture.linesize[0])<<log2_blocksize),
+                                 s->picture.linesize[0], block);
+                    }
+                } else {
+                    if (s->sys->pix_fmt == PIX_FMT_YUV411P && mb_x >= (704 / 8)) {
+                        uint64_t aligned_pixels[64/8];
+                        uint8_t *pixels= (uint8_t*)aligned_pixels;
+                        uint8_t *c_ptr, *c_ptr1, *ptr, *ptr1;
+                        int x, y, linesize;
+                        /* NOTE: at end of line, the macroblock is handled as 420 */
+                        idct_put(pixels, 8, block);
+                        linesize = s->picture.linesize[6 - j];
+                        c_ptr = s->picture.data[6 - j] + c_offset;
+                        ptr = pixels;
+                        for(y = 0;y < (1<<log2_blocksize); y++) {
+                            ptr1= ptr + (1<<(log2_blocksize-1));
+                            c_ptr1 = c_ptr + (linesize<<log2_blocksize);
+                            for(x=0; x < (1<<(log2_blocksize-1)); x++){
+                                c_ptr[x]= ptr[x]; c_ptr1[x]= ptr1[x];
+                            }
+                            c_ptr += linesize;
+                            ptr += 8;
+                        }
+                    } else {
+                        /* don't ask me why they inverted Cb and Cr ! */
+                        idct_put(s->picture.data[6 - j] + c_offset,
+                                 s->picture.linesize[6 - j], block);
+                    }
                 }
             }
             block += 64;
@@ -845,28 +873,52 @@ static inline void dv_encode_video_segment(DVVideoContext *s,
         v = *mb_pos_ptr++;
         mb_x = v & 0xff;
         mb_y = v >> 8;
-        y_ptr = s->picture.data[0] + (mb_y * s->picture.linesize[0] * 8) + (mb_x * 8);
-        c_offset = (s->sys->pix_fmt == PIX_FMT_YUV411P) ?
-                   ((mb_y * s->picture.linesize[1] * 8) + ((mb_x >> 2) * 8)) :
-                   (((mb_y >> 1) * s->picture.linesize[1] * 8) + ((mb_x >> 1) * 8));
+        if (s->sys->pix_fmt == PIX_FMT_YUV422P) {
+            y_ptr = s->picture.data[0] + (mb_y * s->picture.linesize[0] * 8) + (mb_x * 4);
+        } else { /* 4:1:1 */
+            y_ptr = s->picture.data[0] + (mb_y * s->picture.linesize[0] * 8) + (mb_x * 8);
+        }
+        if (s->sys->pix_fmt == PIX_FMT_YUV420P) {
+            c_offset = (((mb_y >> 1) * s->picture.linesize[1] * 8) + ((mb_x >> 1) * 8));
+        } else { /* 4:2:2 or 4:1:1 */
+            c_offset = ((mb_y * s->picture.linesize[1] * 8) + ((mb_x >> 2) * 8));
+        }
         do_edge_wrap = 0;
         qnos[mb_index] = 15; /* No quantization */
         ptr = dif + mb_index*80 + 4;
         for(j = 0;j < 6; j++) {
-            if (j < 4) {  /* Four Y blocks */
-                /* NOTE: at end of line, the macroblock is handled as 420 */
-                if (s->sys->pix_fmt == PIX_FMT_YUV411P && mb_x < (704 / 8)) {
-                    data = y_ptr + (j * 8);
+            int dummy = 0;
+            if (s->sys->pix_fmt == PIX_FMT_YUV422P) { /* 4:2:2 */
+                if (j == 0 || j == 2) {
+                    /* Y0 Y1 */
+                    data = y_ptr + ((j>>1) * 8);
+                    linesize = s->picture.linesize[0];
+                } else if (j > 3) {
+                    /* Cr Cb */
+                    data = s->picture.data[6 - j] + c_offset;
+                    linesize = s->picture.linesize[6 - j];
                 } else {
-                    data = y_ptr + ((j & 1) * 8) + ((j >> 1) * 8 * s->picture.linesize[0]);
+                    /* j=1 and j=3 are "dummy" blocks, used for AC data only */
+                    data = 0;
+                    linesize = 0;
+                    dummy = 1;
                 }
-                linesize = s->picture.linesize[0];
-            } else {      /* Cr and Cb blocks */
-                /* don't ask Fabrice why they inverted Cb and Cr ! */
-                data = s->picture.data[6 - j] + c_offset;
-                linesize = s->picture.linesize[6 - j];
-                if (s->sys->pix_fmt == PIX_FMT_YUV411P && mb_x >= (704 / 8))
-                    do_edge_wrap = 1;
+            } else { /* 4:1:1 or 4:2:0 */
+                if (j < 4) {  /* Four Y blocks */
+                    /* NOTE: at end of line, the macroblock is handled as 420 */
+                    if (s->sys->pix_fmt == PIX_FMT_YUV411P && mb_x < (704 / 8)) {
+                        data = y_ptr + (j * 8);
+                    } else {
+                        data = y_ptr + ((j & 1) * 8) + ((j >> 1) * 8 * s->picture.linesize[0]);
+                    }
+                    linesize = s->picture.linesize[0];
+                } else {      /* Cr and Cb blocks */
+                    /* don't ask Fabrice why they inverted Cb and Cr ! */
+                    data = s->picture.data[6 - j] + c_offset;
+                    linesize = s->picture.linesize[6 - j];
+                    if (s->sys->pix_fmt == PIX_FMT_YUV411P && mb_x >= (704 / 8))
+                        do_edge_wrap = 1;
+                }
             }
 
             /* Everything is set up -- now just copy data -> DCT block */
@@ -881,7 +933,8 @@ static inline void dv_encode_video_segment(DVVideoContext *s,
                    b += 8;
                 }
             } else {             /* Simple copy: 8x8 -> 8x8 */
-                s->get_pixels(block, data, linesize);
+                if (!dummy)
+                    s->get_pixels(block, data, linesize);
             }
 
             if(s->avctx->flags & CODEC_FLAG_INTERLACED_DCT)
@@ -893,7 +946,13 @@ static inline void dv_encode_video_segment(DVVideoContext *s,
             enc_blk->partial_bit_buffer = 0;
             enc_blk->cur_ac = 0;
 
-            s->fdct[enc_blk->dct_mode](block);
+            if (dummy) {
+                /* We rely on the fact that encoding all zeros leads to an immediate EOB,
+                   which is precisely what the spec calls for in the "dummy" blocks. */
+                memset(block, 0, sizeof(block));
+            } else {
+                s->fdct[enc_blk->dct_mode](block);
+            }
 
             dv_set_class_number(block, enc_blk,
                                 enc_blk->dct_mode ? ff_zigzag248_direct : ff_zigzag_direct,
@@ -950,7 +1009,17 @@ static int dv_decode_mt(AVCodecContext *avctx, void* sl)
 {
     DVVideoContext *s = avctx->priv_data;
     int slice = (size_t)sl;
-    dv_decode_video_segment(s, &s->buf[((slice/27)*6+(slice/3)+slice*5+7)*80],
+
+    /* which DIF channel is this? */
+    int chan = slice / (s->sys->difseg_size * 27);
+
+    /* slice within the DIF channel */
+    int chan_slice = slice % (s->sys->difseg_size * 27);
+
+    /* byte offset of this channel's data */
+    int chan_offset = chan * s->sys->difseg_size * 150 * 80;
+
+    dv_decode_video_segment(s, &s->buf[((chan_slice/27)*6+(chan_slice/3)+chan_slice*5+7)*80 + chan_offset],
                             &s->sys->video_place[slice*5]);
     return 0;
 }
@@ -959,13 +1028,23 @@ static int dv_encode_mt(AVCodecContext *avctx, void* sl)
 {
     DVVideoContext *s = avctx->priv_data;
     int slice = (size_t)sl;
-    dv_encode_video_segment(s, &s->buf[((slice/27)*6+(slice/3)+slice*5+7)*80],
+
+    /* which DIF channel is this? */
+    int chan = slice / (s->sys->difseg_size * 27);
+
+    /* slice within the DIF channel */
+    int chan_slice = slice % (s->sys->difseg_size * 27);
+
+    /* byte offset of this channel's data */
+    int chan_offset = chan * s->sys->difseg_size * 150 * 80;
+
+    dv_encode_video_segment(s, &s->buf[((chan_slice/27)*6+(chan_slice/3)+chan_slice*5+7)*80 + chan_offset],
                             &s->sys->video_place[slice*5]);
     return 0;
 }
 
 /* NOTE: exactly one frame must be given (120000 bytes for NTSC,
-   144000 bytes for PAL) */
+   144000 bytes for PAL - or twice those for 50Mbps) */
 static int dvvideo_decode_frame(AVCodecContext *avctx,
                                  void *data, int *data_size,
                                  uint8_t *buf, int buf_size)
@@ -993,7 +1072,7 @@ static int dvvideo_decode_frame(AVCodecContext *avctx,
 
     s->buf = buf;
     avctx->execute(avctx, dv_decode_mt, (void**)&dv_anchor[0], NULL,
-                   s->sys->difseg_size * 27);
+                   s->sys->n_difchan * s->sys->difseg_size * 27);
 
     emms_c();
 
@@ -1022,9 +1101,23 @@ static int dvvideo_encode_frame(AVCodecContext *c, uint8_t *buf, int buf_size,
 
     s->buf = buf;
     c->execute(c, dv_encode_mt, (void**)&dv_anchor[0], NULL,
-               s->sys->difseg_size * 27);
+               s->sys->n_difchan * s->sys->difseg_size * 27);
 
     emms_c();
+
+    /* Fill in just enough of the header for dv_frame_profile() to
+       return the correct result, so that the frame can be decoded
+       correctly. The rest of the metadata is filled in by the dvvideo
+       avformat. (this should probably change so that encode_frame()
+       fills in ALL of the metadata - e.g. for Quicktime-wrapped DV
+       streams) */
+
+    /* NTSC/PAL format */
+    buf[3] = s->sys->dsf ? 0x80 : 0x00;
+
+    /* 25Mbps or 50Mbps */
+    buf[80*5 + 48 + 3] = (s->sys->pix_fmt == PIX_FMT_YUV422P) ? 0x4 : 0x0;
+
     return s->sys->frame_size;
 }
 

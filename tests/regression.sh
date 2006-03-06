@@ -83,6 +83,7 @@ else
     do_snowll=y
     do_adpcm_yam=y
     do_dv=y
+    do_dv50=y
 fi
 
 
@@ -496,6 +497,17 @@ do_ffmpeg $file -dct int -y -f pgmyuv -i $raw_src -s pal -an $file
 # dv decoding
 do_ffmpeg $raw_dst -y -i $file -f rawvideo -s cif $raw_dst
 fi
+
+###################################
+if [ -n "$do_dv50" ] ; then
+# dv50 encoding
+file=${outfile}dv.dv
+do_ffmpeg $file -dct int -y -f pgmyuv -i $raw_src -s pal -pix_fmt yuv422p -an $file
+
+# dv50 decoding
+do_ffmpeg $raw_dst -y -i $file -f rawvideo -s cif -pix_fmt yuv420p $raw_dst
+fi
+
 
 ###################################
 if [ -n "$do_svq1" ] ; then
