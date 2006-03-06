@@ -636,8 +636,10 @@ static int mov_read_ftyp(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     case MKTAG('m', 'm', 'p', '4'): /* Mobile MP4 */
     case MKTAG('M', '4', 'A', ' '): /* Apple iTunes AAC-LC Audio */
     case MKTAG('M', '4', 'P', ' '): /* Apple iTunes AAC-LC Protected Audio */
+    case MKTAG('m', 'j', 'p', '2'): /* Motion Jpeg 2000 */
         c->mp4 = 1;
     case MKTAG('q', 't', ' ', ' '):
+    default:
         av_log(c->fc, AV_LOG_DEBUG, "ISO: File Type Major Brand: %.4s\n",(char *)&type);
     }
     get_be32(pb); /* minor version */
@@ -803,6 +805,27 @@ static int mov_read_wave(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
         url_fskip(pb, atom.size);
     /* in any case, skip garbage */
     url_fskip(pb, atom.size - ((url_ftell(pb) - start_pos)));
+    return 0;
+}
+
+static int mov_read_jp2h(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
+{
+    AVStream *st = c->fc->streams[c->fc->nb_streams-1];
+
+    if((uint64_t)atom.size > (1<<30))
+        return -1;
+
+    av_free(st->codec->extradata);
+
+    st->codec->extradata_size = atom.size + 8;
+    st->codec->extradata = (uint8_t*) av_mallocz(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
+
+    /* pass all jp2h atom to codec */
+    if (st->codec->extradata) {
+        strcpy(st->codec->extradata + 4, "jp2h");
+        get_buffer(pb, st->codec->extradata + 8, atom.size);
+    } else
+        url_fskip(pb, atom.size);
     return 0;
 }
 
@@ -1429,6 +1452,7 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG( 'h', 'i', 'n', 't' ), mov_read_leaf },
 { MKTAG( 'h', 'm', 'h', 'd' ), mov_read_leaf },
 { MKTAG( 'i', 'o', 'd', 's' ), mov_read_leaf },
+{ MKTAG( 'j', 'p', '2', 'h' ), mov_read_jp2h },
 { MKTAG( 'm', 'd', 'a', 't' ), mov_read_mdat },
 { MKTAG( 'm', 'd', 'h', 'd' ), mov_read_mdhd },
 { MKTAG( 'm', 'd', 'i', 'a' ), mov_read_default },
@@ -1534,6 +1558,7 @@ static int mov_probe(AVProbeData *p)
         tag = mov_to_tag(p->buf + offset + 4);
         switch(tag) {
         /* check for obvious tags */
+        case MKTAG( 'j', 'P', ' ', ' ' ): /* jpeg 2000 signature */
         case MKTAG( 'm', 'o', 'o', 'v' ):
         case MKTAG( 'm', 'd', 'a', 't' ):
         case MKTAG( 'p', 'n', 'o', 't' ): /* detect movs with preview pics like ew.mov and april.mov */
@@ -2059,8 +2084,8 @@ static int mov_read_close(AVFormatContext *s)
 }
 
 static AVInputFormat mov_iformat = {
-    "mov,mp4,m4a,3gp,3g2",
-    "QuickTime/MPEG4 format",
+    "mov,mp4,m4a,3gp,3g2,mj2",
+    "QuickTime/MPEG4/Motion JPEG 2000 format",
     sizeof(MOVContext),
     mov_probe,
     mov_read_header,
