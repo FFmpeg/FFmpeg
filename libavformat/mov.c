@@ -1635,6 +1635,8 @@ static int mov_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
         if(!sc->time_rate)
             sc->time_rate=1;
+        if(!sc->time_scale)
+            sc->time_scale= mov->time_scale;
         av_set_pts_info(s->streams[i], 64, sc->time_rate, sc->time_scale);
 
         if(s->streams[i]->duration != AV_NOPTS_VALUE){
