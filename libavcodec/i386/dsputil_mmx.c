@@ -2734,6 +2734,8 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
 
         c->h264_idct_dc_add=
         c->h264_idct_add= ff_h264_idct_add_mmx;
+        c->h264_idct8_dc_add=
+        c->h264_idct8_add= ff_h264_idct8_add_mmx;
 
         if (mm_flags & MM_MMXEXT) {
             c->put_pixels_tab[0][1] = put_pixels16_x2_mmx2;

@@ -358,8 +358,12 @@ typedef struct H264Context{
 
     uint8_t zigzag_scan[16];
     uint8_t field_scan[16];
+    uint8_t zigzag_scan8x8[64];
+    uint8_t zigzag_scan8x8_cavlc[64];
     const uint8_t *zigzag_scan_q0;
     const uint8_t *field_scan_q0;
+    const uint8_t *zigzag_scan8x8_q0;
+    const uint8_t *zigzag_scan8x8_cavlc_q0;
 
     int x264_build;
 }H264Context;
@@ -2953,6 +2957,7 @@ static void free_tables(H264Context *h){
 
 static void init_dequant8_coeff_table(H264Context *h){
     int i,q,x;
+    const int transpose = (h->s.dsp.h264_idct8_add != ff_h264_idct8_add_c); //FIXME ugly
     h->dequant8_coeff[0] = h->dequant8_buffer[0];
     h->dequant8_coeff[1] = h->dequant8_buffer[1];
 
@@ -2966,8 +2971,9 @@ static void init_dequant8_coeff_table(H264Context *h){
             int shift = div6[q];
             int idx = rem6[q];
             for(x=0; x<64; x++)
-                h->dequant8_coeff[i][q][x] = ((uint32_t)dequant8_coeff_init[idx][
-                    dequant8_coeff_init_scan[((x>>1)&12) | (x&3)] ] * h->pps.scaling_matrix8[i][x]) << shift;
+                h->dequant8_coeff[i][q][transpose ? (x>>3)|((x&7)<<3) : x] =
+                    ((uint32_t)dequant8_coeff_init[idx][ dequant8_coeff_init_scan[((x>>1)&12) | (x&3)] ] *
+                    h->pps.scaling_matrix8[i][x]) << shift;
         }
     }
 }
@@ -4317,14 +4323,31 @@ static int decode_slice_header(H264Context *h){
 #define T(x) (x>>2) | ((x<<2) & 0xF)
                 h->zigzag_scan[i] = T(zigzag_scan[i]);
                 h-> field_scan[i] = T( field_scan[i]);
+#undef T
+            }
+        }
+        if(s->dsp.h264_idct8_add == ff_h264_idct8_add_c){
+            memcpy(h->zigzag_scan8x8, zigzag_scan8x8, 64*sizeof(uint8_t));
+            memcpy(h->zigzag_scan8x8_cavlc, zigzag_scan8x8_cavlc, 64*sizeof(uint8_t));
+        }else{
+            int i;
+            for(i=0; i<64; i++){
+#define T(x) (x>>3) | ((x&7)<<3)
+                h->zigzag_scan8x8[i] = T(zigzag_scan8x8[i]);
+                h->zigzag_scan8x8_cavlc[i] = T(zigzag_scan8x8_cavlc[i]);
+#undef T
             }
         }
         if(h->sps.transform_bypass){ //FIXME same ugly
             h->zigzag_scan_q0 = zigzag_scan;
             h->field_scan_q0 = field_scan;
+            h->zigzag_scan8x8_q0 = zigzag_scan8x8;
+            h->zigzag_scan8x8_cavlc_q0 = zigzag_scan8x8_cavlc;
         }else{
             h->zigzag_scan_q0 = h->zigzag_scan;
             h->field_scan_q0 = h->field_scan;
+            h->zigzag_scan8x8_q0 = h->zigzag_scan8x8;
+            h->zigzag_scan8x8_cavlc_q0 = h->zigzag_scan8x8_cavlc;
         }
 
         alloc_tables(h);
@@ -5101,7 +5124,7 @@ decode_intra_mb:
         int i8x8, i4x4, chroma_idx;
         int chroma_qp, dquant;
         GetBitContext *gb= IS_INTRA(mb_type) ? h->intra_gb_ptr : h->inter_gb_ptr;
-        const uint8_t *scan, *dc_scan;
+        const uint8_t *scan, *scan8x8, *dc_scan;
 
 //        fill_non_zero_count_cache(h);
 
@@ -5112,6 +5135,7 @@ decode_intra_mb:
             scan= s->qscale ? h->zigzag_scan : h->zigzag_scan_q0;
             dc_scan= luma_dc_zigzag_scan;
         }
+        scan8x8= s->qscale ? h->zigzag_scan8x8_cavlc : h->zigzag_scan8x8_cavlc_q0;
 
         dquant= get_se_golomb(&s->gb);
 
@@ -5153,7 +5177,7 @@ decode_intra_mb:
                         DCTELEM *buf = &h->mb[64*i8x8];
                         uint8_t *nnz;
                         for(i4x4=0; i4x4<4; i4x4++){
-                            if( decode_residual(h, gb, buf, i4x4+4*i8x8, zigzag_scan8x8_cavlc+16*i4x4,
+                            if( decode_residual(h, gb, buf, i4x4+4*i8x8, scan8x8+16*i4x4,
                                                 h->dequant8_coeff[IS_INTRA( mb_type ) ? 0:1][s->qscale], 16) <0 )
                                 return -1;
                         }
@@ -6144,7 +6168,7 @@ decode_intra_mb:
     s->current_picture.mb_type[mb_xy]= mb_type;
 
     if( cbp || IS_INTRA16x16( mb_type ) ) {
-        const uint8_t *scan, *dc_scan;
+        const uint8_t *scan, *scan8x8, *dc_scan;
         int dqp;
 
         if(IS_INTERLACED(mb_type)){
@@ -6154,6 +6178,7 @@ decode_intra_mb:
             scan= s->qscale ? h->zigzag_scan : h->zigzag_scan_q0;
             dc_scan= luma_dc_zigzag_scan;
         }
+        scan8x8= s->qscale ? h->zigzag_scan8x8 : h->zigzag_scan8x8_q0;
 
         h->last_qscale_diff = dqp = decode_cabac_mb_dqp( h );
         if( dqp == INT_MIN ){
@@ -6187,7 +6212,7 @@ decode_intra_mb:
                 if( cbp & (1<<i8x8) ) {
                     if( IS_8x8DCT(mb_type) ) {
                         if( decode_cabac_residual(h, h->mb + 64*i8x8, 5, 4*i8x8,
-                                zigzag_scan8x8, h->dequant8_coeff[IS_INTRA( mb_type ) ? 0:1][s->qscale], 64) < 0 )
+                            scan8x8, h->dequant8_coeff[IS_INTRA( mb_type ) ? 0:1][s->qscale], 64) < 0 )
                             return -1;
                     } else
                     for( i4x4 = 0; i4x4 < 4; i4x4++ ) {

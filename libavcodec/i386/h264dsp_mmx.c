@@ -104,6 +104,133 @@ static void ff_h264_idct_add_mmx(uint8_t *dst, int16_t *block, int stride)
     );
 }
 
+static inline void h264_idct8_1d(int16_t *block)
+{
+    asm volatile(
+        "movq 112(%0), %%mm7  \n\t"
+        "movq  80(%0), %%mm5  \n\t"
+        "movq  48(%0), %%mm3  \n\t"
+        "movq  16(%0), %%mm1  \n\t"
+
+        "movq   %%mm7, %%mm4  \n\t"
+        "movq   %%mm3, %%mm6  \n\t"
+        "movq   %%mm5, %%mm0  \n\t"
+        "movq   %%mm7, %%mm2  \n\t"
+        "psraw  $1,    %%mm4  \n\t"
+        "psraw  $1,    %%mm6  \n\t"
+        "psubw  %%mm7, %%mm0  \n\t"
+        "psubw  %%mm6, %%mm2  \n\t"
+        "psubw  %%mm4, %%mm0  \n\t"
+        "psubw  %%mm3, %%mm2  \n\t"
+        "psubw  %%mm3, %%mm0  \n\t"
+        "paddw  %%mm1, %%mm2  \n\t"
+
+        "movq   %%mm5, %%mm4  \n\t"
+        "movq   %%mm1, %%mm6  \n\t"
+        "psraw  $1,    %%mm4  \n\t"
+        "psraw  $1,    %%mm6  \n\t"
+        "paddw  %%mm5, %%mm4  \n\t"
+        "paddw  %%mm1, %%mm6  \n\t"
+        "paddw  %%mm7, %%mm4  \n\t"
+        "paddw  %%mm5, %%mm6  \n\t"
+        "psubw  %%mm1, %%mm4  \n\t"
+        "paddw  %%mm3, %%mm6  \n\t"
+
+        "movq   %%mm0, %%mm1  \n\t"
+        "movq   %%mm4, %%mm3  \n\t"
+        "movq   %%mm2, %%mm5  \n\t"
+        "movq   %%mm6, %%mm7  \n\t"
+        "psraw  $2,    %%mm6  \n\t"
+        "psraw  $2,    %%mm3  \n\t"
+        "psraw  $2,    %%mm5  \n\t"
+        "psraw  $2,    %%mm0  \n\t"
+        "paddw  %%mm6, %%mm1  \n\t"
+        "paddw  %%mm2, %%mm3  \n\t"
+        "psubw  %%mm4, %%mm5  \n\t"
+        "psubw  %%mm0, %%mm7  \n\t"
+
+        "movq  32(%0), %%mm2  \n\t"
+        "movq  96(%0), %%mm6  \n\t"
+        "movq   %%mm2, %%mm4  \n\t"
+        "movq   %%mm6, %%mm0  \n\t"
+        "psraw  $1,    %%mm4  \n\t"
+        "psraw  $1,    %%mm6  \n\t"
+        "psubw  %%mm0, %%mm4  \n\t"
+        "paddw  %%mm2, %%mm6  \n\t"
+
+        "movq    (%0), %%mm2  \n\t"
+        "movq  64(%0), %%mm0  \n\t"
+        SUMSUB_BA( %%mm0, %%mm2 )
+        SUMSUB_BA( %%mm6, %%mm0 )
+        SUMSUB_BA( %%mm4, %%mm2 )
+        SUMSUB_BA( %%mm7, %%mm6 )
+        SUMSUB_BA( %%mm5, %%mm4 )
+        SUMSUB_BA( %%mm3, %%mm2 )
+        SUMSUB_BA( %%mm1, %%mm0 )
+        :: "r"(block)
+    );
+}
+
+static void ff_h264_idct8_add_mmx(uint8_t *dst, int16_t *block, int stride)
+{
+    int i;
+    int16_t __attribute__ ((aligned(8))) b2[64];
+
+    block[0] += 32;
+
+    for(i=0; i<2; i++){
+        uint64_t tmp;
+
+        h264_idct8_1d(block+4*i);
+
+        asm volatile(
+            "movq   %%mm7,    %0   \n\t"
+            TRANSPOSE4( %%mm0, %%mm2, %%mm4, %%mm6, %%mm7 )
+            "movq   %%mm0,  8(%1)  \n\t"
+            "movq   %%mm6, 24(%1)  \n\t"
+            "movq   %%mm7, 40(%1)  \n\t"
+            "movq   %%mm4, 56(%1)  \n\t"
+            "movq    %0,    %%mm7  \n\t"
+            TRANSPOSE4( %%mm7, %%mm5, %%mm3, %%mm1, %%mm0 )
+            "movq   %%mm7,   (%1)  \n\t"
+            "movq   %%mm1, 16(%1)  \n\t"
+            "movq   %%mm0, 32(%1)  \n\t"
+            "movq   %%mm3, 48(%1)  \n\t"
+            : "=m"(tmp)
+            : "r"(b2+32*i)
+            : "memory"
+        );
+    }
+
+    for(i=0; i<2; i++){
+        h264_idct8_1d(b2+4*i);
+
+        asm volatile(
+            "psraw     $6, %%mm7  \n\t"
+            "psraw     $6, %%mm6  \n\t"
+            "psraw     $6, %%mm5  \n\t"
+            "psraw     $6, %%mm4  \n\t"
+            "psraw     $6, %%mm3  \n\t"
+            "psraw     $6, %%mm2  \n\t"
+            "psraw     $6, %%mm1  \n\t"
+            "psraw     $6, %%mm0  \n\t"
+
+            "movq   %%mm7,    (%0)  \n\t"
+            "movq   %%mm5,  16(%0)  \n\t"
+            "movq   %%mm3,  32(%0)  \n\t"
+            "movq   %%mm1,  48(%0)  \n\t"
+            "movq   %%mm0,  64(%0)  \n\t"
+            "movq   %%mm2,  80(%0)  \n\t"
+            "movq   %%mm4,  96(%0)  \n\t"
+            "movq   %%mm6, 112(%0)  \n\t"
+            :: "r"(b2+4*i)
+            : "memory"
+        );
+    }
+
+    add_pixels_clamped_mmx(b2, dst, stride);
+}
+
 static void ff_h264_idct_dc_add_mmx2(uint8_t *dst, int16_t *block, int stride)
 {
     int dc = (block[0] + 32) >> 6;
