@@ -65,7 +65,7 @@
     "packuswb  "#z",    "#p" \n\t"\
     "movd      "#p",    (%0) \n\t"
 
-void ff_h264_idct_add_mmx2(uint8_t *dst, int16_t *block, int stride)
+static void ff_h264_idct_add_mmx(uint8_t *dst, int16_t *block, int stride)
 {
     /* Load dct coeffs */
     asm volatile(
@@ -104,7 +104,7 @@ void ff_h264_idct_add_mmx2(uint8_t *dst, int16_t *block, int stride)
     );
 }
 
-void ff_h264_idct_dc_add_mmx2(uint8_t *dst, int16_t *block, int stride)
+static void ff_h264_idct_dc_add_mmx2(uint8_t *dst, int16_t *block, int stride)
 {
     int dc = (block[0] + 32) >> 6;
     asm volatile(
@@ -140,7 +140,7 @@ void ff_h264_idct_dc_add_mmx2(uint8_t *dst, int16_t *block, int stride)
     );
 }
 
-void ff_h264_idct8_dc_add_mmx2(uint8_t *dst, int16_t *block, int stride)
+static void ff_h264_idct8_dc_add_mmx2(uint8_t *dst, int16_t *block, int stride)
 {
     int dc = (block[0] + 32) >> 6;
     int y;

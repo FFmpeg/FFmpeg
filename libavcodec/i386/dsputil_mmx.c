@@ -2732,6 +2732,9 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
         c->put_h264_chroma_pixels_tab[0]= put_h264_chroma_mc8_mmx;
         c->put_h264_chroma_pixels_tab[1]= put_h264_chroma_mc4_mmx;
 
+        c->h264_idct_dc_add=
+        c->h264_idct_add= ff_h264_idct_add_mmx;
+
         if (mm_flags & MM_MMXEXT) {
             c->put_pixels_tab[0][1] = put_pixels16_x2_mmx2;
             c->put_pixels_tab[0][2] = put_pixels16_y2_mmx2;
@@ -2753,7 +2756,6 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             c->vsad[4]= vsad_intra16_mmx2;
 #endif //CONFIG_ENCODERS
 
-            c->h264_idct_add= ff_h264_idct_add_mmx2;
             c->h264_idct_dc_add= ff_h264_idct_dc_add_mmx2;
             c->h264_idct8_dc_add= ff_h264_idct8_dc_add_mmx2;
 
