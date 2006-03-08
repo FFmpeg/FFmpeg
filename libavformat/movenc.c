@@ -268,7 +268,7 @@ static const CodecTag codec_movaudio_tags[] = {
     { CODEC_ID_PCM_S16BE, MKTAG('t', 'w', 'o', 's') },
     { CODEC_ID_PCM_S16LE, MKTAG('s', 'o', 'w', 't') },
     { CODEC_ID_MP3, MKTAG('.', 'm', 'p', '3') },
-    { 0, 0 },
+    { CODEC_ID_NONE, 0 },
 };
 
 static int mov_write_audio_tag(ByteIOContext *pb, MOVTrack* track)
@@ -471,9 +471,45 @@ static const CodecTag codec_movvideo_tags[] = {
     { CODEC_ID_MPEG4, MKTAG('m', 'p', '4', 'v') },
     { CODEC_ID_H263, MKTAG('s', '2', '6', '3') },
     { CODEC_ID_H264, MKTAG('a', 'v', 'c', '1') },
-    { CODEC_ID_DVVIDEO, MKTAG('d', 'v', 'c', ' ') },
-    { 0, 0 },
+    /* special handling in mov_find_video_codec_tag */
+    { CODEC_ID_DVVIDEO, MKTAG('d', 'v', 'c', ' ') }, /* DV NTSC */
+    { CODEC_ID_DVVIDEO, MKTAG('d', 'v', 'c', 'p') }, /* DV PAL */
+    { CODEC_ID_DVVIDEO, MKTAG('d', 'v', 'p', 'p') }, /* DVCPRO PAL */
+    { CODEC_ID_DVVIDEO, MKTAG('d', 'v', '5', 'n') }, /* DVCPRO50 NTSC */
+    { CODEC_ID_DVVIDEO, MKTAG('d', 'v', '5', 'p') }, /* DVCPRO50 PAL */
+    { CODEC_ID_NONE, 0 },
 };
+
+static int mov_find_video_codec_tag(MOVTrack* track)
+{
+    int tag;
+
+    tag = track->enc->codec_tag;
+    if (!tag) {
+        if (track->enc->codec_id == CODEC_ID_DVVIDEO) {
+            if (track->enc->height == 480) { /* NTSC */
+                if (track->enc->pix_fmt == PIX_FMT_YUV422P)
+                    tag = MKTAG('d', 'v', '5', 'n');
+                else
+                    tag = MKTAG('d', 'v', 'c', ' ');
+            } else { /* assume PAL */
+                if (track->enc->pix_fmt == PIX_FMT_YUV422P)
+                    tag = MKTAG('d', 'v', '5', 'p');
+                else if (track->enc->pix_fmt == PIX_FMT_YUV420P)
+                    tag = MKTAG('d', 'v', 'p', 'p');
+                else
+                    tag = MKTAG('d', 'v', 'c', 'p');
+            }
+        } else {
+            tag = codec_get_tag(codec_movvideo_tags, track->enc->codec_id);
+        }
+    }
+    // if no mac fcc found, try with Microsoft tags
+    if (!tag)
+        tag = codec_get_tag(codec_bmp_tags, track->enc->codec_id);
+    assert(tag);
+    return tag;
+}
 
 static int mov_write_video_tag(ByteIOContext *pb, MOVTrack* track)
 {
@@ -483,12 +519,7 @@ static int mov_write_video_tag(ByteIOContext *pb, MOVTrack* track)
 
     put_be32(pb, 0); /* size */
 
-    tag = track->enc->codec_tag;
-    if (!tag)
-    tag = codec_get_tag(codec_movvideo_tags, track->enc->codec_id);
-    // if no mac fcc found, try with Microsoft tags
-    if (!tag)
-        tag = codec_get_tag(codec_bmp_tags, track->enc->codec_id);
+    tag = mov_find_video_codec_tag(track);
     put_le32(pb, tag); // store it byteswapped
 
     put_be32(pb, 0); /* Reserved */
