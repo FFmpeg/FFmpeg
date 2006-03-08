@@ -57,12 +57,12 @@ int ff_fft_init(FFTContext *s, int nbits, int inverse)
     s->exptab1 = NULL;
 
     /* compute constant table for HAVE_SSE version */
-#if (defined(HAVE_MMX) && defined(HAVE_BUILTIN_VECTOR)) || defined(HAVE_ALTIVEC)
+#if (defined(HAVE_MMX) && (defined(HAVE_BUILTIN_VECTOR) || defined(HAVE_MM3DNOW))) || defined(HAVE_ALTIVEC)
     {
         int has_vectors = 0;
 
 #if defined(HAVE_MMX)
-        has_vectors = mm_support() & MM_SSE;
+        has_vectors = mm_support() & (MM_3DNOW | MM_3DNOWEXT | MM_SSE | MM_SSE2);
 #endif
 #if defined(HAVE_ALTIVEC) && !defined(ALTIVEC_USE_REFERENCE_C_CODE)
         has_vectors = mm_support() & MM_ALTIVEC;
@@ -94,8 +94,24 @@ int ff_fft_init(FFTContext *s, int nbits, int inverse)
             } while (nblocks != 0);
             av_freep(&s->exptab);
 #if defined(HAVE_MMX)
-            s->fft_calc = ff_fft_calc_sse;
-#else
+#ifdef HAVE_MM3DNOW
+            if (has_vectors & MM_3DNOWEXT)
+                /* 3DNowEx for Athlon(XP) */
+                s->fft_calc = ff_fft_calc_3dn2;
+            else if (has_vectors & MM_3DNOW)
+                /* 3DNow! for K6-2/3 */
+                s->fft_calc = ff_fft_calc_3dn;
+#endif
+#ifdef HAVE_BUILTIN_VECTOR
+            if (has_vectors & MM_SSE2)
+                /* SSE for P4/K8 */
+                s->fft_calc = ff_fft_calc_sse;
+            else if ((has_vectors & MM_SSE) &&
+                     s->fft_calc == ff_fft_calc_c)
+                /* SSE for P3 */
+                s->fft_calc = ff_fft_calc_sse;
+#endif
+#else /* HAVE_MMX */
             s->fft_calc = ff_fft_calc_altivec;
 #endif
         }

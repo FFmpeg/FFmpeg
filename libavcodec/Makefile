@@ -330,13 +330,17 @@ OBJS += i386/fdct_mmx.o i386/cputest.o \
 	i386/dsputil_mmx.o i386/mpegvideo_mmx.o \
 	i386/idct_mmx.o i386/motion_est_mmx.o \
 	i386/simple_idct_mmx.o i386/fft_sse.o i386/vp3dsp_mmx.o \
-	i386/vp3dsp_sse2.o
+	i386/vp3dsp_sse2.o i386/fft_3dn.o i386/fft_3dn2.o
 ifeq ($(CONFIG_GPL),yes)
 OBJS += i386/idct_mmx_xvid.o
 endif
 ifdef TARGET_BUILTIN_VECTOR
 i386/fft_sse.o: CFLAGS+= -msse
 depend: CFLAGS+= -msse
+endif
+ifdef TARGET_BUILTIN_3DNOW
+i386/fft_3dn.o: CFLAGS+= -m3dnow
+i386/fft_3dn2.o: CFLAGS+= -march=athlon
 endif
 endif
 

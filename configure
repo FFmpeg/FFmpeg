@@ -1110,6 +1110,19 @@ if $cc -msse -o $TMPO $TMPC 2> /dev/null ; then
   builtin_vector=yes
 fi
 
+# test for mm3dnow.h
+cat > $TMPC << EOF
+#include <mm3dnow.h>
+int main(void) {
+return 0;
+}
+EOF
+
+mm3dnow=no
+if $cc -march=athlon -o $TMPO $TMPC 2> /dev/null ; then
+  mm3dnow=yes
+fi
+
 # Probe for -Wdeclaration-after-statement
 if test "$cc" = "gcc"; then
   cat > $TMPC << EOF
@@ -1328,6 +1341,7 @@ echo "broken inttypes.h $emu_fast_int"
 if test $cpu = "x86" -o $cpu = "x86_64"; then
 echo "MMX enabled      $mmx"
 echo "Vector Builtins  $builtin_vector"
+echo "3DNow! Builtins  $mm3dnow"
 fi
 if test $cpu = "armv4l"; then
 echo "IWMMXT enabled   $iwmmxt"
@@ -1507,6 +1521,10 @@ fi
 if test "$builtin_vector" = "yes" ; then
   echo "TARGET_BUILTIN_VECTOR=yes" >> config.mak
   echo "#define HAVE_BUILTIN_VECTOR 1" >> $TMPH
+fi
+if test "$mm3dnow" = "yes" ; then
+  echo "TARGET_BUILTIN_3DNOW=yes" >> config.mak
+  echo "#define HAVE_MM3DNOW 1" >> $TMPH
 fi
 if test "$iwmmxt" = "yes" ; then
   echo "TARGET_IWMMXT=yes" >> config.mak
