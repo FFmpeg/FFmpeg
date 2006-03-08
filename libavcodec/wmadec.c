@@ -130,6 +130,9 @@ typedef struct WMADecodeContext {
     float lsp_pow_e_table[256];
     float lsp_pow_m_table1[(1 << LSP_POW_BITS)];
     float lsp_pow_m_table2[(1 << LSP_POW_BITS)];
+    /* pow tables */
+    float pow_005_10[121];
+    float pow_00625_10[121];
 
 #ifdef TRACE
     int frame_count;
@@ -218,8 +221,8 @@ static int wma_decode_init(AVCodecContext * avctx)
     int i, flags1, flags2;
     float *window;
     uint8_t *extradata;
-    float bps1, high_freq;
-    volatile float bps;
+    float bps, bps1;
+    volatile float high_freq_factor;
     int sample_rate1;
     int coef_vlc_table;
 
@@ -275,7 +278,6 @@ static int wma_decode_init(AVCodecContext * avctx)
 
     /* init rate dependant parameters */
     s->use_noise_coding = 1;
-    high_freq = s->sample_rate * 0.5;
 
     /* if version 2, then the rates are normalized */
     sample_rate1 = s->sample_rate;
@@ -304,44 +306,44 @@ static int wma_decode_init(AVCodecContext * avctx)
         if (bps1 >= 0.61)
             s->use_noise_coding = 0;
         else
-            high_freq = high_freq * 0.4;
+            high_freq_factor = 0.4;
     } else if (sample_rate1 == 22050) {
         if (bps1 >= 1.16)
             s->use_noise_coding = 0;
         else if (bps1 >= 0.72)
-            high_freq = high_freq * 0.7;
+            high_freq_factor = 0.7;
         else
-            high_freq = high_freq * 0.6;
+            high_freq_factor = 0.6;
     } else if (sample_rate1 == 16000) {
         if (bps > 0.5)
-            high_freq = high_freq * 0.5;
+            high_freq_factor = 0.5;
         else
-            high_freq = high_freq * 0.3;
+            high_freq_factor = 0.3;
     } else if (sample_rate1 == 11025) {
-        high_freq = high_freq * 0.7;
+        high_freq_factor = 0.7;
     } else if (sample_rate1 == 8000) {
         if (bps <= 0.625) {
-            high_freq = high_freq * 0.5;
+            high_freq_factor = 0.5;
         } else if (bps > 0.75) {
             s->use_noise_coding = 0;
         } else {
-            high_freq = high_freq * 0.65;
+            high_freq_factor = 0.65;
         }
     } else {
         if (bps >= 0.8) {
-            high_freq = high_freq * 0.75;
+            high_freq_factor = 0.75;
         } else if (bps >= 0.6) {
-            high_freq = high_freq * 0.6;
+            high_freq_factor = 0.6;
         } else {
-            high_freq = high_freq * 0.5;
+            high_freq_factor = 0.5;
         }
     }
     dprintf("flags1=0x%x flags2=0x%x\n", flags1, flags2);
     dprintf("version=%d channels=%d sample_rate=%d bitrate=%d block_align=%d\n",
            s->version, s->nb_channels, s->sample_rate, s->bit_rate,
            s->block_align);
-    dprintf("bps=%f bps1=%f high_freq=%f bitoffset=%d\n",
-           bps, bps1, high_freq, s->byte_offset_bits);
+    dprintf("bps=%f bps1=%f bitoffset=%d\n",
+           bps, bps1, s->byte_offset_bits);
     dprintf("use_noise_coding=%d use_exp_vlc=%d nb_block_sizes=%d\n",
            s->use_noise_coding, s->use_exp_vlc, s->nb_block_sizes);
 
@@ -414,8 +416,8 @@ static int wma_decode_init(AVCodecContext * avctx)
             /* max number of coefs */
             s->coefs_end[k] = (s->frame_len - ((s->frame_len * 9) / 100)) >> k;
             /* high freq computation */
-            s->high_band_start[k] = (int)((block_len * 2 * high_freq) /
-                                          s->sample_rate + 0.5);
+            s->high_band_start[k] = (int)((block_len * high_freq_factor) + 0.5);
+
             n = s->exponent_sizes[k];
             j = 0;
             pos = 0;
@@ -527,6 +529,13 @@ static int wma_decode_init(AVCodecContext * avctx)
                   &coef_vlcs[coef_vlc_table * 2]);
     init_coef_vlc(&s->coef_vlc[1], &s->run_table[1], &s->level_table[1],
                   &coef_vlcs[coef_vlc_table * 2 + 1]);
+
+    /* init pow tables */
+    for (i=0 ; i<121 ; i++) {
+        s->pow_005_10[i] = pow(10, i * 0.05);
+        s->pow_00625_10[i] = pow(10, i * (1.0 / 16.0));
+    }
+
     return 0;
 }
 
@@ -678,8 +687,7 @@ static int decode_exp_vlc(WMADecodeContext *s, int ch)
     max_scale = 0;
     if (s->version == 1) {
         last_exp = get_bits(&s->gb, 5) + 10;
-        /* XXX: use a table */
-        v = pow(10, last_exp * (1.0 / 16.0));
+        v = s->pow_00625_10[last_exp];
         max_scale = v;
         n = *ptr++;
         do {
@@ -693,8 +701,7 @@ static int decode_exp_vlc(WMADecodeContext *s, int ch)
             return -1;
         /* NOTE: this offset is the same as MPEG4 AAC ! */
         last_exp += code - 60;
-        /* XXX: use a table */
-        v = pow(10, last_exp * (1.0 / 16.0));
+        v = s->pow_00625_10[last_exp];
         if (v > max_scale)
             max_scale = v;
         n = *ptr++;
@@ -939,7 +946,7 @@ static int wma_decode_block(WMADecodeContext *s)
 
             coefs1 = s->coefs1[ch];
             exponents = s->exponents[ch];
-            mult = pow(10, total_gain * 0.05) / s->max_exponent[ch];
+            mult = s->pow_005_10[total_gain] / s->max_exponent[ch];
             mult *= mdct_norm;
             coefs = s->coefs[ch];
             if (s->use_noise_coding) {
@@ -986,8 +993,7 @@ static int wma_decode_block(WMADecodeContext *s)
                     if (j >= 0 && s->high_band_coded[ch][j]) {
                         /* use noise with specified power */
                         mult1 = sqrt(exp_power[j] / exp_power[last_high_band]);
-                        /* XXX: use a table */
-                        mult1 = mult1 * pow(10, s->high_band_values[ch][j] * 0.05);
+                        mult1 = mult1 * s->pow_005_10[s->high_band_values[ch][j]];
                         mult1 = mult1 / (s->max_exponent[ch] * s->noise_mult);
                         mult1 *= mdct_norm;
                         for(i = 0;i < n; i++) {
