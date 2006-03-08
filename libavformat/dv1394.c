@@ -173,7 +173,7 @@ restart_poll:
             return AVERROR_IO;
         }
 #ifdef DV1394_DEBUG
-        av_log(context, AV_LOG_ERROR, "DV1394: status\n"
+        av_log(context, AV_LOG_DEBUG, "DV1394: status\n"
                 "\tactive_frame\t%d\n"
                 "\tfirst_clear_frame\t%d\n"
                 "\tn_clear_frames\t%d\n"
@@ -196,7 +196,7 @@ restart_poll:
     }
 
 #ifdef DV1394_DEBUG
-    av_log(context, AV_LOG_ERROR, "index %d, avail %d, done %d\n", dv->index, dv->avail,
+    av_log(context, AV_LOG_DEBUG, "index %d, avail %d, done %d\n", dv->index, dv->avail,
             dv->done);
 #endif
 
