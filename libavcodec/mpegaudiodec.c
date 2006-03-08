@@ -489,10 +489,10 @@ static int decode_init(AVCodecContext * avctx)
 
 #if defined(DEBUG)
         for(j=0;j<8;j++) {
-            printf("win%d=\n", j);
+            av_log(avctx, AV_LOG_DEBUG, "win%d=\n", j);
             for(i=0;i<36;i++)
-                printf("%f, ", (double)mdct_win[j][i] / FRAC_ONE);
-            printf("\n");
+                av_log(avctx, AV_LOG_DEBUG, "%f, ", (double)mdct_win[j][i] / FRAC_ONE);
+            av_log(avctx, AV_LOG_DEBUG, "\n");
         }
 #endif
         init = 1;
@@ -1179,20 +1179,20 @@ static int decode_header(MPADecodeContext *s, uint32_t header)
     }
 
 #if defined(DEBUG)
-    printf("layer%d, %d Hz, %d kbits/s, ",
+    dprintf("layer%d, %d Hz, %d kbits/s, ",
            s->layer, s->sample_rate, s->bit_rate);
     if (s->nb_channels == 2) {
         if (s->layer == 3) {
             if (s->mode_ext & MODE_EXT_MS_STEREO)
-                printf("ms-");
+                dprintf("ms-");
             if (s->mode_ext & MODE_EXT_I_STEREO)
-                printf("i-");
+                dprintf("i-");
         }
-        printf("stereo");
+        dprintf("stereo");
     } else {
-        printf("mono");
+        dprintf("mono");
     }
-    printf("\n");
+    dprintf("\n");
 #endif
     return 0;
 }
@@ -1370,8 +1370,8 @@ static int mp_decode_layer2(MPADecodeContext *s)
     {
         for(ch=0;ch<s->nb_channels;ch++) {
             for(i=0;i<sblimit;i++)
-                printf(" %d", bit_alloc[ch][i]);
-            printf("\n");
+                dprintf(" %d", bit_alloc[ch][i]);
+            dprintf("\n");
         }
     }
 #endif
@@ -1421,12 +1421,12 @@ static int mp_decode_layer2(MPADecodeContext *s)
         for(i=0;i<sblimit;i++) {
             if (bit_alloc[ch][i]) {
                 sf = scale_factors[ch][i];
-                printf(" %d %d %d", sf[0], sf[1], sf[2]);
+                dprintf(" %d %d %d", sf[0], sf[1], sf[2]);
             } else {
-                printf(" -");
+                dprintf(" -");
             }
         }
-        printf("\n");
+        dprintf("\n");
     }
 #endif
 
@@ -2285,11 +2285,11 @@ static int mp_decode_layer3(MPADecodeContext *s)
                 }
 #if defined(DEBUG)
                 {
-                    printf("scfsi=%x gr=%d ch=%d scale_factors:\n",
+                    dprintf("scfsi=%x gr=%d ch=%d scale_factors:\n",
                            g->scfsi, gr, ch);
                     for(i=0;i<j;i++)
-                        printf(" %d", g->scale_factors[i]);
-                    printf("\n");
+                        dprintf(" %d", g->scale_factors[i]);
+                    dprintf("\n");
                 }
 #endif
             } else {
@@ -2342,11 +2342,11 @@ static int mp_decode_layer3(MPADecodeContext *s)
                     g->scale_factors[j] = 0;
 #if defined(DEBUG)
                 {
-                    printf("gr=%d ch=%d scale_factors:\n",
+                    dprintf("gr=%d ch=%d scale_factors:\n",
                            gr, ch);
                     for(i=0;i<40;i++)
-                        printf(" %d", g->scale_factors[i]);
-                    printf("\n");
+                        dprintf(" %d", g->scale_factors[i]);
+                    dprintf("\n");
                 }
 #endif
             }
@@ -2428,10 +2428,10 @@ static int mp_decode_frame(MPADecodeContext *s,
     for(i=0;i<nb_frames;i++) {
         for(ch=0;ch<s->nb_channels;ch++) {
             int j;
-            printf("%d-%d:", i, ch);
+            dprintf("%d-%d:", i, ch);
             for(j=0;j<SBLIMIT;j++)
-                printf(" %0.6f", (double)s->sb_samples[ch][i][j] / FRAC_ONE);
-            printf("\n");
+                dprintf(" %0.6f", (double)s->sb_samples[ch][i][j] / FRAC_ONE);
+            dprintf("\n");
         }
     }
 #endif

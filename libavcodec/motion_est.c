@@ -365,7 +365,7 @@ static int full_motion_search(MpegEncContext * s,
 #if 0
     if (*mx_ptr < -(2 * range) || *mx_ptr >= (2 * range) ||
         *my_ptr < -(2 * range) || *my_ptr >= (2 * range)) {
-        fprintf(stderr, "error %d %d\n", *mx_ptr, *my_ptr);
+        av_log(NULL, AV_LOG_ERROR, "error %d %d\n", *mx_ptr, *my_ptr);
     }
 #endif
     return dmin;

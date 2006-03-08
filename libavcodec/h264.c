@@ -6977,7 +6977,7 @@ static int decode_slice(H264Context *h){
             hl_decode_mb(h);
 
             if(ret<0){
-                fprintf(stderr, "error while decoding MB %d %d\n", s->mb_x, s->mb_y);
+                av_log(s->avctx, AV_LOG_ERROR, "error while decoding MB %d %d\n", s->mb_x, s->mb_y);
                 ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x, s->mb_y, (AC_ERROR|DC_ERROR|MV_ERROR)&part_mask);
 
                 return -1;

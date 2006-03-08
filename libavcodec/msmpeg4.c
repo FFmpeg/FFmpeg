@@ -434,7 +434,7 @@ void msmpeg4_encode_picture_header(MpegEncContext * s, int picture_number)
 
 #ifdef DEBUG
     intra_count = 0;
-    printf("*****frame %d:\n", frame_count++);
+    av_log(s->avctx, AV_LOG_DEBUG, "*****frame %d:\n", frame_count++);
 #endif
 }
 
@@ -504,7 +504,7 @@ static void msmpeg4_encode_motion(MpegEncContext * s,
 #if 0
     if ((unsigned)mx >= 64 ||
         (unsigned)my >= 64)
-        fprintf(stderr, "error mx=%d my=%d\n", mx, my);
+        av_log(s->avctx, AV_LOG_ERROR, "error mx=%d my=%d\n", mx, my);
 #endif
     mv = &mv_tables[s->mv_table_index];
 
@@ -1214,9 +1214,9 @@ int msmpeg4_decode_picture_header(MpegEncContext * s)
 {
 int i;
 for(i=0; i<s->gb.size_in_bits; i++)
-    printf("%d", get_bits1(&s->gb));
+    av_log(s->avctx, AV_LOG_DEBUG, "%d", get_bits1(&s->gb));
 //    get_bits1(&s->gb);
-printf("END\n");
+av_log(s->avctx, AV_LOG_DEBUG, "END\n");
 return -1;
 }
 #endif
@@ -1370,7 +1370,7 @@ return -1;
     s->esc3_run_length= 0;
 
 #ifdef DEBUG
-    printf("*****frame %d:\n", frame_count++);
+    av_log(s->avctx, AV_LOG_DEBUG, "*****frame %d:\n", frame_count++);
 #endif
     return 0;
 }
@@ -1794,15 +1794,15 @@ static inline int msmpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
                         const int run1= run - rl->max_run[last][abs_level] - run_diff;
                         if(abs_level<=MAX_LEVEL && run<=MAX_RUN){
                             if(abs_level <= rl->max_level[last][run]){
-                                fprintf(stderr, "illegal 3. esc, vlc encoding possible\n");
+                                av_log(s->avctx, AV_LOG_ERROR, "illegal 3. esc, vlc encoding possible\n");
                                 return DECODING_AC_LOST;
                             }
                             if(abs_level <= rl->max_level[last][run]*2){
-                                fprintf(stderr, "illegal 3. esc, esc 1 encoding possible\n");
+                                av_log(s->avctx, AV_LOG_ERROR, "illegal 3. esc, esc 1 encoding possible\n");
                                 return DECODING_AC_LOST;
                             }
                             if(run1>=0 && abs_level <= rl->max_level[last][run1]){
-                                fprintf(stderr, "illegal 3. esc, esc 2 encoding possible\n");
+                                av_log(s->avctx, AV_LOG_ERROR, "illegal 3. esc, esc 2 encoding possible\n");
                                 return DECODING_AC_LOST;
                             }
                         }
@@ -1813,7 +1813,7 @@ static inline int msmpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
                     else         level= level * qmul - qadd;
 #if 0 // waste of time too :(
                     if(level>2048 || level<-2048){
-                        fprintf(stderr, "|level| overflow in 3. esc\n");
+                        av_log(s->avctx, AV_LOG_ERROR, "|level| overflow in 3. esc\n");
                         return DECODING_AC_LOST;
                     }
 #endif

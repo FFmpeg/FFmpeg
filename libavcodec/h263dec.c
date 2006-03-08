@@ -694,7 +694,7 @@ retry:
         return -1;
 
 #ifdef DEBUG
-    printf("qscale=%d\n", s->qscale);
+    av_log(avctx, AV_LOG_DEBUG, "qscale=%d\n", s->qscale);
 #endif
 
     ff_er_frame_start(s);
@@ -783,7 +783,7 @@ assert(s->current_picture.pict_type == s->pict_type);
     if(s->last_picture_ptr || s->low_delay)
         *data_size = sizeof(AVFrame);
 #ifdef PRINT_FRAME_TIME
-printf("%Ld\n", rdtsc()-time);
+av_log(avctx, AV_LOG_DEBUG, "%Ld\n", rdtsc()-time);
 #endif
 
     return get_consumed_bytes(s, buf_size);

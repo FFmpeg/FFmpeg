@@ -343,7 +343,7 @@ static int read_old_huffman_tables(HYuvContext *s){
 
     return 0;
 #else
-    fprintf(stderr, "v1 huffyuv is not supported \n");
+    av_log(s->avctx, AV_LOG_DEBUG, "v1 huffyuv is not supported \n");
     return -1;
 #endif
 }
