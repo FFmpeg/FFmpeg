@@ -1729,8 +1729,8 @@ static int av_encode(AVFormatContext **output_files,
                 } else if ((codec->width == icodec->width -
                                 (frame_leftBand + frame_rightBand)) &&
                         (codec->height == icodec->height -
-                                (frame_topBand  + frame_bottomBand)))
-                {
+                                (frame_topBand  + frame_bottomBand)) &&
+                                (frame_rightBand + frame_leftBand + frame_topBand + frame_bottomBand)) {
                     ost->video_resample = 0;
                     ost->video_crop = 1;
                     ost->topBand = frame_topBand;
@@ -1738,7 +1738,8 @@ static int av_encode(AVFormatContext **output_files,
                 } else if ((codec->width == icodec->width +
                                 (frame_padleft + frame_padright)) &&
                         (codec->height == icodec->height +
-                                (frame_padtop + frame_padbottom))) {
+                                (frame_padtop + frame_padbottom)) &&
+                                (frame_padright + frame_padleft + frame_padtop + frame_padbottom)) {
                     ost->video_resample = 0;
                     ost->video_crop = 0;
                     ost->video_pad = 1;
