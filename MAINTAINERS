@@ -20,7 +20,7 @@ ffmpeg:
 
   Video Hooks:
     vhook
-    vhook/watermark.c
+    vhook/watermark.c                   Marcus Engene
     vhook/ppm.c
     vhook/drawtext.c
     vhook/fish.c
