@@ -4296,8 +4296,8 @@ static int decode_slice_header(H264Context *h){
     s->mb_width= h->sps.mb_width;
     s->mb_height= h->sps.mb_height * (2 - h->sps.frame_mbs_only_flag);
 
-    h->b_stride=  s->mb_width*4 + 1;
-    h->b8_stride= s->mb_width*2 + 1;
+    h->b_stride=  s->mb_width*4;
+    h->b8_stride= s->mb_width*2;
 
     s->width = 16*s->mb_width - 2*(h->sps.crop_left + h->sps.crop_right );
     if(h->sps.frame_mbs_only_flag)
