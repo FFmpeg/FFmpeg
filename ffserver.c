@@ -4146,6 +4146,24 @@ static int parse_ffconfig(const char *filename)
                 video_enc.mb_decision = FF_MB_DECISION_BITS; //FIXME remove
                 video_enc.flags |= CODEC_FLAG_4MV;
             }
+        } else if (!strcasecmp(cmd, "BitExact")) {
+            if (stream) {
+                video_enc.flags |= CODEC_FLAG_BITEXACT;
+            }
+        } else if (!strcasecmp(cmd, "DctFastint")) {
+            if (stream) {
+                video_enc.dct_algo  = FF_DCT_FASTINT;
+            }
+        } else if (!strcasecmp(cmd, "IdctSimple")) {
+            if (stream) {
+                video_enc.idct_algo = FF_IDCT_SIMPLE;
+            }
+        } else if (!strcasecmp(cmd, "Qscale")) {
+            get_arg(arg, sizeof(arg), &p);
+            if (stream) {
+                video_enc.flags |= CODEC_FLAG_QSCALE;
+                video_enc.global_quality = FF_QP2LAMBDA * atoi(arg);
+            }
         } else if (!strcasecmp(cmd, "VideoQDiff")) {
             get_arg(arg, sizeof(arg), &p);
             if (stream) {
