@@ -2555,6 +2555,9 @@ int is_adx(const unsigned char *buf,size_t bufsize);
 void img_copy(AVPicture *dst, const AVPicture *src,
               int pix_fmt, int width, int height);
 
+int img_crop(AVPicture *dst, const AVPicture *src,
+             int pix_fmt, int top_band, int left_band);
+
 /* av_log API */
 
 #include <stdarg.h>

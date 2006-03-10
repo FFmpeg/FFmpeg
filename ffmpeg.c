@@ -847,20 +847,10 @@ static void do_video_out(AVFormatContext *s,
             }
         }
     } else if (ost->video_crop) {
-        picture_crop_temp.data[0] = formatted_picture->data[0] +
-                (ost->topBand * formatted_picture->linesize[0]) + ost->leftBand;
-
-        picture_crop_temp.data[1] = formatted_picture->data[1] +
-                ((ost->topBand >> 1) * formatted_picture->linesize[1]) +
-                (ost->leftBand >> 1);
-
-        picture_crop_temp.data[2] = formatted_picture->data[2] +
-                ((ost->topBand >> 1) * formatted_picture->linesize[2]) +
-                (ost->leftBand >> 1);
-
-        picture_crop_temp.linesize[0] = formatted_picture->linesize[0];
-        picture_crop_temp.linesize[1] = formatted_picture->linesize[1];
-        picture_crop_temp.linesize[2] = formatted_picture->linesize[2];
+        if (img_crop((AVPicture *)&picture_crop_temp, (AVPicture *)formatted_picture, enc->pix_fmt, ost->topBand, ost->leftBand) < 0) {
+            av_log(NULL, AV_LOG_ERROR, "error cropping picture\n");
+            goto the_end;
+        }
         final_picture = &picture_crop_temp;
     } else if (ost->video_pad) {
         final_picture = &ost->pict_tmp;
