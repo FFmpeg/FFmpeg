@@ -741,15 +741,16 @@ static int rv10_decode_frame(AVCodecContext *avctx,
         ff_er_frame_end(s);
         MPV_frame_end(s);
 
-        if(s->pict_type==B_TYPE || s->low_delay){
-            *pict= *(AVFrame*)&s->current_picture;
-            ff_print_debug_info(s, pict);
-        } else {
-            *pict= *(AVFrame*)&s->last_picture;
+        if (s->pict_type == B_TYPE || s->low_delay) {
+            *pict= *(AVFrame*)s->current_picture_ptr;
+        } else if (s->last_picture_ptr != NULL) {
+            *pict= *(AVFrame*)s->last_picture_ptr;
+        }
+
+        if(s->last_picture_ptr || s->low_delay){
+            *data_size = sizeof(AVFrame);
             ff_print_debug_info(s, pict);
         }
-        if(s->last_picture_ptr || s->low_delay)
-            *data_size = sizeof(AVFrame);
         s->current_picture_ptr= NULL; //so we can detect if frame_end wasnt called (find some nicer solution...)
     }
 

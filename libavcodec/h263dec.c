@@ -766,22 +766,21 @@ retry:
 
 assert(s->current_picture.pict_type == s->current_picture_ptr->pict_type);
 assert(s->current_picture.pict_type == s->pict_type);
-    if(s->pict_type==B_TYPE || s->low_delay){
-        *pict= *(AVFrame*)&s->current_picture;
+    if (s->pict_type == B_TYPE || s->low_delay) {
+        *pict= *(AVFrame*)s->current_picture_ptr;
+    } else if (s->last_picture_ptr != NULL) {
+        *pict= *(AVFrame*)s->last_picture_ptr;
+    }
+
+    if(s->last_picture_ptr || s->low_delay){
+        *data_size = sizeof(AVFrame);
         ff_print_debug_info(s, pict);
-    } else {
-        *pict= *(AVFrame*)&s->last_picture;
-        if(pict)
-            ff_print_debug_info(s, pict);
     }
 
     /* Return the Picture timestamp as the frame number */
     /* we substract 1 because it is added on utils.c    */
     avctx->frame_number = s->picture_number - 1;
 
-    /* don't output the last pic after seeking */
-    if(s->last_picture_ptr || s->low_delay)
-        *data_size = sizeof(AVFrame);
 #ifdef PRINT_FRAME_TIME
 av_log(avctx, AV_LOG_DEBUG, "%Ld\n", rdtsc()-time);
 #endif
