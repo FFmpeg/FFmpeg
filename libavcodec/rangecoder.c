@@ -110,7 +110,7 @@ void ff_build_rac_states(RangeCoder *c, int factor, int max_p){
         c->one_state[    i]=     p8;
     }
 
-    for(i=0; i<256; i++)
+    for(i=1; i<255; i++)
         c->zero_state[i]= 256-c->one_state[256-i];
 #if 0
     for(i=0; i<256; i++)
