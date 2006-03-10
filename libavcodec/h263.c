@@ -4756,6 +4756,7 @@ static inline int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
         i = 0;
       }else{
             i = -1;
+            ff_mpeg4_pred_dc(s, n, 0, &dc_pred_dir, 0);
       }
         if (!coded)
             goto not_coded;
