@@ -1480,7 +1480,7 @@ void ff_h263_loop_filter(MpegEncContext * s){
 static int h263_pred_dc(MpegEncContext * s, int n, uint16_t **dc_val_ptr)
 {
     int x, y, wrap, a, c, pred_dc, scale;
-    int16_t *dc_val, *ac_val;
+    int16_t *dc_val;
 
     /* find prediction */
     if (n < 4) {
@@ -1488,14 +1488,12 @@ static int h263_pred_dc(MpegEncContext * s, int n, uint16_t **dc_val_ptr)
         y = 2 * s->mb_y + ((n & 2) >> 1);
         wrap = s->b8_stride;
         dc_val = s->dc_val[0];
-        ac_val = s->ac_val[0][0];
         scale = s->y_dc_scale;
     } else {
         x = s->mb_x;
         y = s->mb_y;
         wrap = s->mb_stride;
         dc_val = s->dc_val[n - 4 + 1];
-        ac_val = s->ac_val[n - 4 + 1][0];
         scale = s->c_dc_scale;
     }
     /* B C
