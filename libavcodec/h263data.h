@@ -274,8 +274,8 @@ const uint16_t ff_mba_max[6]={
      47,  98, 395,1583,6335,9215
 };
 
-const uint8_t ff_mba_length[6]={
-      6,   7,   9,  11,  13,  14
+const uint8_t ff_mba_length[7]={
+      6,   7,   9,  11,  13,  14,  14
 };
 
 const uint8_t ff_h263_loop_filter_strength[32]={
