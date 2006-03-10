@@ -4966,7 +4966,7 @@ static inline int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
         if(s->qscale >= s->intra_dc_threshold){
             block[0] = ff_mpeg4_pred_dc(s, n, block[0], &dc_pred_dir, 0);
 
-            if(i == -1) i=0;
+            i -= i>>31; //if(i == -1) i=0;
         }
 
         mpeg4_pred_ac(s, block, n, dc_pred_dir);
