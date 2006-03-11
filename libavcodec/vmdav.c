@@ -414,16 +414,28 @@ typedef struct VmdAudioContext {
     int channels;
     int bits;
     int block_align;
-    unsigned char steps8[16];
-    unsigned short steps16[16];
-    unsigned short steps128[256];
-    short predictors[2];
+    int predictors[2];
 } VmdAudioContext;
+
+static uint16_t vmdaudio_table[128] = {
+    0x000, 0x008, 0x010, 0x020, 0x030, 0x040, 0x050, 0x060, 0x070, 0x080,
+    0x090, 0x0A0, 0x0B0, 0x0C0, 0x0D0, 0x0E0, 0x0F0, 0x100, 0x110, 0x120,
+    0x130, 0x140, 0x150, 0x160, 0x170, 0x180, 0x190, 0x1A0, 0x1B0, 0x1C0,
+    0x1D0, 0x1E0, 0x1F0, 0x200, 0x208, 0x210, 0x218, 0x220, 0x228, 0x230,
+    0x238, 0x240, 0x248, 0x250, 0x258, 0x260, 0x268, 0x270, 0x278, 0x280,
+    0x288, 0x290, 0x298, 0x2A0, 0x2A8, 0x2B0, 0x2B8, 0x2C0, 0x2C8, 0x2D0,
+    0x2D8, 0x2E0, 0x2E8, 0x2F0, 0x2F8, 0x300, 0x308, 0x310, 0x318, 0x320,
+    0x328, 0x330, 0x338, 0x340, 0x348, 0x350, 0x358, 0x360, 0x368, 0x370,
+    0x378, 0x380, 0x388, 0x390, 0x398, 0x3A0, 0x3A8, 0x3B0, 0x3B8, 0x3C0,
+    0x3C8, 0x3D0, 0x3D8, 0x3E0, 0x3E8, 0x3F0, 0x3F8, 0x400, 0x440, 0x480,
+    0x4C0, 0x500, 0x540, 0x580, 0x5C0, 0x600, 0x640, 0x680, 0x6C0, 0x700,
+    0x740, 0x780, 0x7C0, 0x800, 0x900, 0xA00, 0xB00, 0xC00, 0xD00, 0xE00,
+    0xF00, 0x1000, 0x1400, 0x1800, 0x1C00, 0x2000, 0x3000, 0x4000
+};
 
 static int vmdaudio_decode_init(AVCodecContext *avctx)
 {
     VmdAudioContext *s = (VmdAudioContext *)avctx->priv_data;
-    int i;
 
     s->avctx = avctx;
     s->channels = avctx->channels;
@@ -433,53 +445,25 @@ static int vmdaudio_decode_init(AVCodecContext *avctx)
     av_log(s->avctx, AV_LOG_DEBUG, "%d channels, %d bits/sample, block align = %d, sample rate = %d\n",
             s->channels, s->bits, s->block_align, avctx->sample_rate);
 
-    /* set up the steps8 and steps16 tables */
-    for (i = 0; i < 8; i++) {
-        if (i < 4)
-            s->steps8[i] = i;
-        else
-            s->steps8[i] = s->steps8[i - 1] + i - 1;
-
-        if (i == 0)
-            s->steps16[i] = 0;
-        else if (i == 1)
-            s->steps16[i] = 4;
-        else if (i == 2)
-            s->steps16[i] = 16;
-        else
-            s->steps16[i] = 1 << (i + 4);
-    }
-
-    /* set up the step128 table */
-    s->steps128[0] = 0;
-    s->steps128[1] = 8;
-    for (i = 0x02; i <= 0x20; i++)
-        s->steps128[i] = (i - 1) << 4;
-    for (i = 0x21; i <= 0x60; i++)
-        s->steps128[i] = (i + 0x1F) << 3;
-    for (i = 0x61; i <= 0x70; i++)
-        s->steps128[i] = (i - 0x51) << 6;
-    for (i = 0x71; i <= 0x78; i++)
-        s->steps128[i] = (i - 0x69) << 8;
-    for (i = 0x79; i <= 0x7D; i++)
-        s->steps128[i] = (i - 0x75) << 10;
-    s->steps128[0x7E] = 0x3000;
-    s->steps128[0x7F] = 0x4000;
-
-    /* set up the negative half of each table */
-    for (i = 0; i < 8; i++) {
-        s->steps8[i + 8] = -s->steps8[i];
-        s->steps16[i + 8] = -s->steps16[i];
-    }
-    for (i = 0; i < 128; i++)
-      s->steps128[i + 128] = -s->steps128[i];
-
     return 0;
 }
 
 static void vmdaudio_decode_audio(VmdAudioContext *s, unsigned char *data,
-    uint8_t *buf, int ratio) {
+    uint8_t *buf, int stereo)
+{
+    int i;
+    int chan = 0;
+    int16_t *out = (int16_t*)data;
 
+    for(i = 0; i < s->block_align; i++) {
+        if(buf[i] & 0x80)
+            s->predictors[chan] -= vmdaudio_table[buf[i] & 0x7F];
+        else
+            s->predictors[chan] += vmdaudio_table[buf[i]];
+        s->predictors[chan] = clip(s->predictors[chan], -32768, 32767);
+        out[i] = s->predictors[chan];
+        chan ^= stereo;
+    }
 }
 
 static int vmdaudio_loadsound(VmdAudioContext *s, unsigned char *data,
@@ -488,44 +472,39 @@ static int vmdaudio_loadsound(VmdAudioContext *s, unsigned char *data,
     int bytes_decoded = 0;
     int i;
 
-    if (silence)
-        av_log(s->avctx, AV_LOG_INFO, "silent block!\n");
+//    if (silence)
+//        av_log(s->avctx, AV_LOG_INFO, "silent block!\n");
     if (s->channels == 2) {
 
         /* stereo handling */
-        if ((s->block_align & 0x01) == 0) {
-            if (silence)
-                memset(data, 0, s->block_align * 2);
-            else
-                vmdaudio_decode_audio(s, data, buf, 1);
+        if (silence) {
+            memset(data, 0, s->block_align * 2);
         } else {
-            if (silence)
-                memset(data, 0, s->block_align * 2);
-            else
+            if (s->bits == 16)
                 vmdaudio_decode_audio(s, data, buf, 1);
+            else
+                /* copy the data but convert it to signed */
+                for (i = 0; i < s->block_align; i++)
+                    data[i * 2 + 1] = buf[i] + 0x80;
         }
     } else {
+        bytes_decoded = s->block_align * 2;
 
         /* mono handling */
         if (silence) {
-            if (s->bits == 16) {
-                memset(data, 0, s->block_align * 2);
-                bytes_decoded = s->block_align * 2;
-            } else {
-//                memset(data, 0x00, s->block_align);
-//                bytes_decoded = s->block_align;
-memset(data, 0x00, s->block_align * 2);
-bytes_decoded = s->block_align * 2;
-            }
+            memset(data, 0, s->block_align * 2);
         } else {
-            /* copy the data but convert it to signed */
-            for (i = 0; i < s->block_align; i++)
-                data[i * 2 + 1] = buf[i] + 0x80;
-            bytes_decoded = s->block_align * 2;
+            if (s->bits == 16) {
+                vmdaudio_decode_audio(s, data, buf, 0);
+            } else {
+                /* copy the data but convert it to signed */
+                for (i = 0; i < s->block_align; i++)
+                    data[i * 2 + 1] = buf[i] + 0x80;
+            }
         }
     }
 
-    return bytes_decoded;
+    return s->block_align * 2;
 }
 
 static int vmdaudio_decode_frame(AVCodecContext *avctx,
