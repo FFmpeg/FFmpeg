@@ -360,6 +360,116 @@ static int mov_write_svq3_tag(ByteIOContext *pb)
     return 0x15;
 }
 
+static uint8_t *avc_find_startcode( uint8_t *p, uint8_t *end )
+{
+    uint8_t *a = p + 4 - ((int)p & 3);
+
+    for( end -= 3; p < a && p < end; p++ ) {
+        if( p[0] == 0 && p[1] == 0 && p[2] == 1 )
+            return p;
+    }
+
+    for( end -= 3; p < end; p += 4 ) {
+        uint32_t x = *(uint32_t*)p;
+//      if( (x - 0x01000100) & (~x) & 0x80008000 ) // little endian
+//      if( (x - 0x00010001) & (~x) & 0x00800080 ) // big endian
+        if( (x - 0x01010101) & (~x) & 0x80808080 ) { // generic
+            if( p[1] == 0 ) {
+                if( p[0] == 0 && p[2] == 1 )
+                    return p;
+                if( p[2] == 0 && p[3] == 1 )
+                    return p+1;
+            }
+            if( p[3] == 0 ) {
+                if( p[2] == 0 && p[4] == 1 )
+                    return p+2;
+                if( p[4] == 0 && p[5] == 1 )
+                    return p+3;
+            }
+        }
+    }
+
+    for( end += 3; p < end; p++ ) {
+        if( p[0] == 0 && p[1] == 0 && p[2] == 1 )
+            return p;
+    }
+
+    return end + 3;
+}
+
+static void avc_parse_nal_units(uint8_t **buf, int *size)
+{
+    ByteIOContext pb;
+    uint8_t *p = *buf;
+    uint8_t *end = p + *size;
+    uint8_t *nal_start, *nal_end;
+
+    url_open_dyn_buf(&pb);
+    nal_start = avc_find_startcode(p, end);
+    while (nal_start < end) {
+        while(!*(nal_start++));
+        nal_end = avc_find_startcode(nal_start, end);
+        put_be32(&pb, nal_end - nal_start);
+        put_buffer(&pb, nal_start, nal_end - nal_start);
+        nal_start = nal_end;
+    }
+    av_freep(buf);
+    *size = url_close_dyn_buf(&pb, buf);
+}
+
+static int mov_write_avcc_tag(ByteIOContext *pb, MOVTrack *track)
+{
+    offset_t pos = url_ftell(pb);
+
+    put_be32(pb, 0);
+    put_tag(pb, "avcC");
+    if (track->vosLen > 6) {
+        /* check for h264 start code */
+        if (BE_32(track->vosData) == 0x00000001) {
+            uint8_t *buf, *end;
+            uint32_t sps_size=0, pps_size=0;
+            uint8_t *sps=0, *pps=0;
+
+            avc_parse_nal_units(&track->vosData, &track->vosLen);
+            buf = track->vosData;
+            end = track->vosData + track->vosLen;
+
+            put_byte(pb, 1); /* version */
+            put_byte(pb, 77); /* profile */
+            put_byte(pb, 64); /* profile compat */
+            put_byte(pb, 30); /* level */
+            put_byte(pb, 0xff); /* 6 bits reserved (111111) + 2 bits nal size length - 1 (11) */
+            put_byte(pb, 0xe1); /* 3 bits reserved (111) + 5 bits number of sps (00001) */
+
+            /* look for sps and pps */
+            while (buf < end) {
+                unsigned int size;
+                uint8_t nal_type;
+                size = BE_32(buf);
+                nal_type = buf[4] & 0x1f;
+                if (nal_type == 7) { /* SPS */
+                    sps = buf + 4;
+                    sps_size = size;
+                } else if (nal_type == 8) { /* PPS */
+                    pps = buf + 4;
+                    pps_size = size;
+                }
+                buf += size + 4;
+            }
+            assert(sps);
+            assert(pps);
+            put_be16(pb, sps_size);
+            put_buffer(pb, sps, sps_size);
+            put_byte(pb, 1); /* number of pps */
+            put_be16(pb, pps_size);
+            put_buffer(pb, pps, pps_size);
+        } else {
+            put_buffer(pb, track->vosData, track->vosLen);
+        }
+    }
+    return updateSize(pb, pos);
+}
+
 static unsigned int descrLength(unsigned int len)
 {
     if (len < 0x00000080)
@@ -557,6 +667,8 @@ static int mov_write_video_tag(ByteIOContext *pb, MOVTrack* track)
         mov_write_d263_tag(pb);
     else if(track->enc->codec_id == CODEC_ID_SVQ3)
         mov_write_svq3_tag(pb);
+    else if(track->enc->codec_id == CODEC_ID_H264)
+        mov_write_avcc_tag(pb, track);
 
     return updateSize (pb, pos);
 }
@@ -1521,6 +1633,22 @@ static int mov_write_packet(AVFormatContext *s, AVPacket *pkt)
         trk->vosLen = enc->extradata_size;
         trk->vosData = av_malloc(trk->vosLen);
         memcpy(trk->vosData, enc->extradata, trk->vosLen);
+    }
+
+    if (enc->codec_id == CODEC_ID_H264) {
+        if (trk->vosLen == 0) {
+            /* copy extradata */
+            trk->vosLen = enc->extradata_size;
+            trk->vosData = av_malloc(trk->vosLen);
+            memcpy(trk->vosData, enc->extradata, trk->vosLen);
+        }
+        if (*(uint8_t *)trk->vosData != 1) {
+            /* from x264 or from bytestream h264 */
+            /* nal reformating needed */
+            avc_parse_nal_units(&pkt->data, &pkt->size);
+            assert(pkt->size);
+            size = pkt->size;
+        }
     }
 
     cl = trk->entry / MOV_INDEX_CLUSTER_SIZE;
