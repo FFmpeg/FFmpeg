@@ -573,12 +573,12 @@ static void slice_buffer_destroy(slice_buffer * buf)
     for (i = buf->data_count - 1; i >= 0; i--)
     {
         assert(buf->data_stack[i]);
-        av_free(buf->data_stack[i]);
+        av_freep(&buf->data_stack[i]);
     }
     assert(buf->data_stack);
-    av_free(buf->data_stack);
+    av_freep(&buf->data_stack);
     assert(buf->line);
-    av_free(buf->line);
+    av_freep(&buf->line);
 }
 
 #ifdef __sgi
