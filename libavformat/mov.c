@@ -1258,6 +1258,8 @@ av_log(NULL, AV_LOG_DEBUG, "track[%i].stts.entries = %i\n", c->fc->nb_streams-1,
 
 static int mov_read_ctts(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
+    AVStream *st = c->fc->streams[c->fc->nb_streams-1];
+    MOVStreamContext *sc = (MOVStreamContext *)st->priv_data;
     unsigned int i, entries;
 
     get_byte(pb); /* version */
@@ -1266,14 +1268,19 @@ static int mov_read_ctts(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     if(entries >= UINT_MAX / sizeof(Time2Sample))
         return -1;
 
-    c->streams[c->fc->nb_streams-1]->ctts_count = entries;
-    c->streams[c->fc->nb_streams-1]->ctts_data = av_malloc(entries * sizeof(Time2Sample));
+    sc->ctts_count = entries;
+    sc->ctts_data = av_malloc(entries * sizeof(Time2Sample));
 
     dprintf("track[%i].ctts.entries = %i\n", c->fc->nb_streams-1, entries);
 
     for(i=0; i<entries; i++) {
-        c->streams[c->fc->nb_streams - 1]->ctts_data[i].count= get_be32(pb);
-        c->streams[c->fc->nb_streams - 1]->ctts_data[i].duration= get_be32(pb);
+        int count    =get_be32(pb);
+        int duration =get_be32(pb);
+
+        sc->ctts_data[i].count   = count;
+        sc->ctts_data[i].duration= duration;
+
+        sc->time_rate= ff_gcd(sc->time_rate, duration);
     }
     return 0;
 }
