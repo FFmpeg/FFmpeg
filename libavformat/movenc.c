@@ -929,7 +929,7 @@ static int mov_write_edts_tag(ByteIOContext *pb, MOVTrack *track)
 
     put_be32(pb, av_rescale_rnd(track->trackDuration, globalTimescale, track->timescale, AV_ROUND_UP)); /* duration   ... doesn't seem to effect psp */
 
-    put_be32(pb, 0x0);
+    put_be32(pb, track->sampleDuration);
     put_be32(pb, 0x00010000);
     return 0x24;
 }
@@ -959,7 +959,7 @@ static int mov_write_trak_tag(ByteIOContext *pb, MOVTrack* track)
     put_be32(pb, 0); /* size */
     put_tag(pb, "trak");
     mov_write_tkhd_tag(pb, track);
-    if (track->mode == MODE_PSP)
+    if (track->mode == MODE_PSP || track->hasBframes)
         mov_write_edts_tag(pb, track);  // PSP Movies require edts box
     mov_write_mdia_tag(pb, track);
     if (track->mode == MODE_PSP)
