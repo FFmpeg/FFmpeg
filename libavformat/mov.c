@@ -779,7 +779,7 @@ static int mov_read_alac(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     if (st->codec->extradata) {
         strcpy(st->codec->extradata + 4, "alac"); // fake
         get_buffer(pb, st->codec->extradata + 8, 36 - 8);
-        dprintf("Reading alac %Ld  %s\n", st->codec->extradata_size, (char*)st->codec->extradata);
+        dprintf("Reading alac %d  %s\n", st->codec->extradata_size, (char*)st->codec->extradata);
     } else
         url_fskip(pb, atom.size);
     return 0;
