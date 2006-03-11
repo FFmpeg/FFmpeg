@@ -187,13 +187,13 @@ static int img_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         st->need_parsing= 1;
     }
 
-    if (!ap || !ap->time_base.num) {
+    if (!ap->time_base.num) {
         av_set_pts_info(st, 60, 1, 25);
     } else {
         av_set_pts_info(st, 60, ap->time_base.num, ap->time_base.den);
     }
 
-    if(ap && ap->width && ap->height){
+    if(ap->width && ap->height){
         st->codec->width = ap->width;
         st->codec->height= ap->height;
     }

@@ -217,7 +217,7 @@ static int audio_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     AVStream *st;
     int ret;
 
-    if (!ap || ap->sample_rate <= 0 || ap->channels <= 0)
+    if (ap->sample_rate <= 0 || ap->channels <= 0)
         return -1;
 
     st = av_new_stream(s1, 0);

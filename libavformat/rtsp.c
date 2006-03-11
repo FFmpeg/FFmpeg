@@ -994,7 +994,7 @@ static int rtsp_read_header(AVFormatContext *s,
     rt->state = RTSP_STATE_IDLE;
     rt->seek_timestamp = 0; /* default is to start stream at position
                                zero */
-    if (ap && ap->initial_pause) {
+    if (ap->initial_pause) {
         /* do not start immediately */
     } else {
         if (rtsp_read_play(s) < 0) {

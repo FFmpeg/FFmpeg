@@ -48,7 +48,7 @@ static int raw_read_header(AVFormatContext *s, AVFormatParameters *ap)
     st = av_new_stream(s, 0);
     if (!st)
         return AVERROR_NOMEM;
-    if (ap) {
+
         id = s->iformat->value;
         if (id == CODEC_ID_RAWVIDEO) {
             st->codec->codec_type = CODEC_TYPE_VIDEO;
@@ -74,9 +74,6 @@ static int raw_read_header(AVFormatContext *s, AVFormatParameters *ap)
         default:
             return -1;
         }
-    } else {
-        return -1;
-    }
     return 0;
 }
 
@@ -289,7 +286,7 @@ static int video_read_header(AVFormatContext *s,
 
     /* for mjpeg, specify frame rate */
     /* for mpeg4 specify it too (most mpeg4 streams dont have the fixed_vop_rate set ...)*/
-    if (ap && ap->time_base.num) {
+    if (ap->time_base.num) {
         av_set_pts_info(st, 64, ap->time_base.num, ap->time_base.den);
     } else if ( st->codec->codec_id == CODEC_ID_MJPEG ||
                 st->codec->codec_id == CODEC_ID_MPEG4 ||

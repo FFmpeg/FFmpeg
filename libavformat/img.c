@@ -120,7 +120,7 @@ static int img_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         return -ENOMEM;
     }
 
-    if (ap && ap->image_format)
+    if (ap->image_format)
         s->img_fmt = ap->image_format;
 
     pstrcpy(s->path, sizeof(s->path), s1->filename);
@@ -133,7 +133,7 @@ static int img_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     else
         s->is_pipe = 1;
 
-    if (!ap || !ap->time_base.num) {
+    if (!ap->time_base.num) {
         st->codec->time_base= (AVRational){1,25};
     } else {
         st->codec->time_base= ap->time_base;
@@ -255,7 +255,7 @@ static int img_set_parameters(AVFormatContext *s, AVFormatParameters *ap)
     int i;
 
     /* find output image format */
-    if (ap && ap->image_format) {
+    if (ap->image_format) {
         img_fmt = ap->image_format;
     } else {
         img_fmt = guess_image_format(s->filename);

@@ -68,7 +68,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     const char *video_device;
     int j;
 
-    if (!ap || ap->width <= 0 || ap->height <= 0 || ap->time_base.den <= 0)
+    if (ap->width <= 0 || ap->height <= 0 || ap->time_base.den <= 0)
         return -1;
 
     width = ap->width;
