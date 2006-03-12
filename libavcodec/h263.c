@@ -5574,6 +5574,7 @@ static int decode_vol_header(MpegEncContext *s, GetBitContext *gb){
 
         s->progressive_sequence=
         s->progressive_frame= get_bits1(gb)^1;
+        s->interlaced_dct=0;
         if(!get_bits1(gb) && (s->avctx->debug & FF_DEBUG_PICT_INFO))
             av_log(s->avctx, AV_LOG_INFO, "MPEG4 OBMC not supported (very likely buggy encoder)\n");   /* OBMC Disable */
         if (vo_ver_id == 1) {
