@@ -439,7 +439,7 @@ static int mov_read_default(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
         }
         total_size += 8;
         a.offset += 8;
-        dprintf("type: %08x  %.4s  sz: %Lx  %Lx   %Lx\n", a.type, (char*)&a.type, a.size, atom.size, total_size);
+        dprintf("type: %08x  %.4s  sz: %PRIx64  %PRIx64   %PRIx64\n", a.type, (char*)&a.type, a.size, atom.size, total_size);
         if (a.size == 1) { /* 64 bit extended size */
             a.size = get_be64(pb) - 8;
             a.offset += 8;
@@ -738,7 +738,7 @@ static int mov_read_smi(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     if (st->codec->extradata) {
         strcpy(st->codec->extradata, "SVQ3"); // fake
         get_buffer(pb, st->codec->extradata + 0x5a, atom.size);
-        dprintf("Reading SMI %Ld  %s\n", atom.size, (char*)st->codec->extradata + 0x5a);
+        dprintf("Reading SMI %PRId64  %s\n", atom.size, (char*)st->codec->extradata + 0x5a);
     } else
         url_fskip(pb, atom.size);
 
@@ -1717,7 +1717,7 @@ again:
                 }
                 dts = time + (msc->current_sample-1 - sample) * (int64_t)duration;
                 dts = av_rescale(dts, AV_TIME_BASE, msc->time_scale);
-                dprintf("stream: %d dts: %Ld best_dts: %Ld offset: %Ld \n", i, dts, best_dts, offset);
+                dprintf("stream: %d dts: %PRId64 best_dts: %PRId64 offset: %PRId64 \n", i, dts, best_dts, offset);
                 if(dts < best_dts){
                     best_dts= dts;
                     sc = msc;
