@@ -439,7 +439,7 @@ static int mov_read_default(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
         }
         total_size += 8;
         a.offset += 8;
-        dprintf("type: %08x  %.4s  sz: %PRIx64  %PRIx64   %PRIx64\n", a.type, (char*)&a.type, a.size, atom.size, total_size);
+        dprintf("type: %08x  %.4s  sz: %"PRIx64"  %"PRIx64"   %"PRIx64"\n", a.type, (char*)&a.type, a.size, atom.size, total_size);
         if (a.size == 1) { /* 64 bit extended size */
             a.size = get_be64(pb) - 8;
             a.offset += 8;
@@ -738,7 +738,7 @@ static int mov_read_smi(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     if (st->codec->extradata) {
         strcpy(st->codec->extradata, "SVQ3"); // fake
         get_buffer(pb, st->codec->extradata + 0x5a, atom.size);
-        dprintf("Reading SMI %PRId64  %s\n", atom.size, (char*)st->codec->extradata + 0x5a);
+        dprintf("Reading SMI %"PRId64"  %s\n", atom.size, (char*)st->codec->extradata + 0x5a);
     } else
         url_fskip(pb, atom.size);
 
@@ -1717,7 +1717,7 @@ again:
                 }
                 dts = time + (msc->current_sample-1 - sample) * (int64_t)duration;
                 dts = av_rescale(dts, AV_TIME_BASE, msc->time_scale);
-                dprintf("stream: %d dts: %PRId64 best_dts: %PRId64 offset: %PRId64 \n", i, dts, best_dts, offset);
+                dprintf("stream: %d dts: %"PRId64" best_dts: %"PRId64" offset: %"PRId64"\n", i, dts, best_dts, offset);
                 if(dts < best_dts){
                     best_dts= dts;
                     sc = msc;
@@ -1804,7 +1804,7 @@ again:
     }
 
 readchunk:
-    dprintf("chunk: %lli -> %lli (%i)\n", offset, offset + size, size);
+    dprintf("chunk: %"PRId64" -> %"PRId64" (%i)\n", offset, offset + size, size);
     if(size == 0x0FFFFFFF)
         size = mov->mdat_size + mov->mdat_offset - offset;
     if(size < 0)
@@ -1872,7 +1872,7 @@ readchunk:
 
         pkt->pts = pts / st->time_base.num;
         pkt->dts = dts / st->time_base.num;
-        dprintf("stream #%d smp #%ld dts = %lld pts = %lld (smp:%ld time:%lld idx:%d ent:%d count:%d dur:%d)\n"
+        dprintf("stream #%d smp #%ld dts = %"PRId64" pts = %"PRId64" (smp:%ld time:%"PRId64" idx:%d ent:%d count:%d dur:%d)\n"
                 , pkt->stream_index, sc->current_sample-1, pkt->dts, pkt->pts
                 , sc->sample_to_time_sample
                 , sc->sample_to_time_time
@@ -2000,7 +2000,7 @@ static int mov_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
         return -1;
     }
     chunk_file_offset = sc->chunk_offsets[chunk - 1];
-    dprintf("Chunk file offset is #%llu \n", chunk_file_offset);
+    dprintf("Chunk file offset is #%"PRIu64"\n", chunk_file_offset);
 
     // Step 6. Find the byte offset within the chunk using the sample size atom
     sample_file_offset = chunk_file_offset;
@@ -2011,7 +2011,7 @@ static int mov_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
         sample_file_offset += sc->sample_sizes[first_chunk_sample + i - 1];
         }
     }
-    dprintf("Sample file offset is #%llu \n", sample_file_offset);
+    dprintf("Sample file offset is #%"PRIu64"\n", sample_file_offset);
 
     // Step 6. Update the parser
     mov->partial = sc;
@@ -2041,7 +2041,7 @@ static int mov_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
         msc->next_chunk = a;
         if (msc->chunk_offsets[a] < chunk_file_offset && a < (msc->chunk_count-1))
             msc->next_chunk ++;
-        dprintf("Nearest next chunk for stream #%i is #%li @%lli\n", i, msc->next_chunk+1, msc->chunk_offsets[msc->next_chunk]);
+        dprintf("Nearest next chunk for stream #%i is #%li @%"PRId64"\n", i, msc->next_chunk+1, msc->chunk_offsets[msc->next_chunk]);
 
         // Compute sample count and index in the sample_to_chunk table (what a pity)
         msc->sample_to_chunk_index = 0;
