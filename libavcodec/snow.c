@@ -3304,6 +3304,17 @@ static void iterative_me(SnowContext *s){
     const int b_stride= b_width;
     int color[3];
 
+    {
+        RangeCoder r = s->c;
+        uint8_t state[sizeof(s->block_state)];
+        memcpy(state, s->block_state, sizeof(s->block_state));
+        for(mb_y= 0; mb_y<s->b_height; mb_y++)
+            for(mb_x= 0; mb_x<s->b_width; mb_x++)
+                encode_q_branch(s, 0, mb_x, mb_y);
+        s->c = r;
+        memcpy(s->block_state, state, sizeof(s->block_state));
+    }
+
     for(pass=0; pass<50; pass++){
         int change= 0;
 
