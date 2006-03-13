@@ -7104,7 +7104,7 @@ static inline int decode_vui_parameters(H264Context *h, SPS *sps){
         if( aspect_ratio_idc == EXTENDED_SAR ) {
             sps->sar.num= get_bits(&s->gb, 16);
             sps->sar.den= get_bits(&s->gb, 16);
-        }else if(aspect_ratio_idc < 16){
+        }else if(aspect_ratio_idc < 14){
             sps->sar=  pixel_aspect[aspect_ratio_idc];
         }else{
             av_log(h->s.avctx, AV_LOG_ERROR, "illegal aspect ratio\n");
