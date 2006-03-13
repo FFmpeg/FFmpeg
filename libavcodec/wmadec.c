@@ -222,7 +222,7 @@ static int wma_decode_init(AVCodecContext * avctx)
     float *window;
     uint8_t *extradata;
     float bps, bps1;
-    volatile float high_freq_factor;
+    volatile float high_freq_factor= 0; //initial value should not matter as the tables build from this are unused if !use_noise_coding
     int sample_rate1;
     int coef_vlc_table;
 
