@@ -4053,7 +4053,8 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
         pict->pict_type= s->m.rc_context.entry[avctx->frame_number].new_pict_type;
         s->keyframe= pict->pict_type==FF_I_TYPE;
         s->m.picture_number= avctx->frame_number;
-        pict->quality= ff_rate_estimate_qscale(&s->m, 0);
+        if(!(avctx->flags&CODEC_FLAG_QSCALE))
+            pict->quality= ff_rate_estimate_qscale(&s->m, 0);
     }else{
         s->keyframe= avctx->gop_size==0 || avctx->frame_number % avctx->gop_size == 0;
         pict->pict_type= s->keyframe ? FF_I_TYPE : FF_P_TYPE;
