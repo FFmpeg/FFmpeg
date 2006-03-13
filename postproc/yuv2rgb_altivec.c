@@ -417,9 +417,9 @@ static int altivec_##name (SwsContext *c,                                  \
 #define out_rgb24(a,b,c,ptr) vec_mstrgb24(a,b,c,ptr)
 #define out_bgr24(a,b,c,ptr) vec_mstbgr24(a,b,c,ptr)
 
-DEFCSP420_CVT (yuv2_abgr32, out_abgr)
+DEFCSP420_CVT (yuv2_abgr, out_abgr)
 #if 1
-DEFCSP420_CVT (yuv2_bgra32, out_argb)
+DEFCSP420_CVT (yuv2_bgra, out_bgra)
 #else
 static int altivec_yuv2_bgra32 (SwsContext *c,                                  
 				unsigned char **in, int *instrides,	   
@@ -571,8 +571,8 @@ static int altivec_yuv2_bgra32 (SwsContext *c,
 #endif
 
 
-DEFCSP420_CVT (yuv2_rgba32, out_rgba)
-DEFCSP420_CVT (yuv2_argb32, out_argb)
+DEFCSP420_CVT (yuv2_rgba, out_rgba)
+DEFCSP420_CVT (yuv2_argb, out_argb)
 DEFCSP420_CVT (yuv2_rgb24,  out_rgb24)
 DEFCSP420_CVT (yuv2_bgr24,  out_bgr24)
 
@@ -698,14 +698,18 @@ SwsFunc yuv2rgb_init_altivec (SwsContext *c)
     case IMGFMT_BGR24:
       MSG_WARN("ALTIVEC: Color Space BGR24\n");
       return altivec_yuv2_bgr24;
-    case IMGFMT_RGB32:
-      MSG_WARN("ALTIVEC: Color Space ARGB32\n");
-      return altivec_yuv2_argb32;
-    case IMGFMT_BGR32:
-      MSG_WARN("ALTIVEC: Color Space BGRA32\n");
-      //      return profile_altivec_bgra32;
-
-      return altivec_yuv2_bgra32;
+    case IMGFMT_ARGB:
+      MSG_WARN("ALTIVEC: Color Space ARGB\n");
+      return altivec_yuv2_argb;
+    case IMGFMT_ABGR:
+      MSG_WARN("ALTIVEC: Color Space ABGR\n");
+      return altivec_yuv2_abgr;
+    case IMGFMT_RGBA:
+      MSG_WARN("ALTIVEC: Color Space RGBA\n");
+      return altivec_yuv2_rgba;
+    case IMGFMT_BGRA:
+      MSG_WARN("ALTIVEC: Color Space BGRA\n");
+      return altivec_yuv2_bgra;
     default: return NULL;
     }
     break;
