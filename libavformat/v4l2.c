@@ -423,7 +423,7 @@ static int v4l2_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 
         return AVERROR_IO;
     }
-    av_log(s1, AV_LOG_ERROR, "[%d]Capabilities: %x\n", s->fd, capabilities);
+    av_log(s1, AV_LOG_INFO, "[%d]Capabilities: %x\n", s->fd, capabilities);
 
     desired_format = fmt_ff2v4l(ap->pix_fmt);
     if (desired_format == 0 || (device_init(s->fd, &width, &height, desired_format) < 0)) {
