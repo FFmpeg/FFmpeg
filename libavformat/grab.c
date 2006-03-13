@@ -68,16 +68,24 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     const char *video_device;
     int j;
 
-    if (ap->width <= 0 || ap->height <= 0 || ap->time_base.den <= 0)
+    if (ap->width <= 0 || ap->height <= 0 || ap->time_base.den <= 0) {
+        av_log(s1, AV_LOG_ERROR, "Bad capture size (%dx%d) or wrong time base (%d)\n",
+            ap->width, ap->height, ap->time_base.den);
+
         return -1;
+    }
 
     width = ap->width;
     height = ap->height;
     frame_rate      = ap->time_base.den;
     frame_rate_base = ap->time_base.num;
 
-    if((unsigned)width > 32767 || (unsigned)height > 32767)
+    if((unsigned)width > 32767 || (unsigned)height > 32767) {
+        av_log(s1, AV_LOG_ERROR, "Capture size is out of range: %dx%d\n",
+            width, height);
+
         return -1;
+    }
 
     st = av_new_stream(s1, 0);
     if (!st)
