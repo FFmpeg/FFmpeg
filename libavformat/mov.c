@@ -1196,8 +1196,33 @@ static int mov_read_stsz(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 #ifdef DEBUG
     av_log(NULL, AV_LOG_DEBUG, "sample_size = %ld sample_count = %ld\n", sc->sample_size, sc->sample_count);
 #endif
-    if(sc->sample_size)
+    if(sc->sample_size) {
+        /* override sample size for uncompressed sound */
+        switch (st->codec->codec_id) {
+        case CODEC_ID_PCM_S32BE:
+        case CODEC_ID_PCM_S32LE:
+            sc->sample_size = 4 * st->codec->channels;
+            break;
+        case CODEC_ID_PCM_S24BE:
+        case CODEC_ID_PCM_S24LE:
+            sc->sample_size = 3 * st->codec->channels;
+            break;
+        case CODEC_ID_PCM_S16BE:
+        case CODEC_ID_PCM_S16LE:
+            sc->sample_size = 2 * st->codec->channels;
+            break;
+        case CODEC_ID_PCM_MULAW:
+        case CODEC_ID_PCM_ALAW:
+        case CODEC_ID_PCM_S8:
+        case CODEC_ID_PCM_U8:
+            sc->sample_size = 1 * st->codec->channels;
+            break;
+        default:
+            break;
+        }
+        assert(sc->sample_size);
         return 0; /* there isn't any table following */
+    }
     sc->sample_sizes = (long*) av_malloc(entries * sizeof(long));
     if (!sc->sample_sizes)
         return -1;
@@ -1768,13 +1793,7 @@ again:
         for(i=0; i<(sc->sample_to_chunk_sz); i++) {
             if( (sc->sample_to_chunk[i].first)<=(sc->next_chunk) )
             {
-                // I can't figure out why for PCM audio sample_size is always 1
-                // (it should actually be channels*bits_per_second/8) but it is.
-                AVCodecContext* cod = s->streams[sc->ffindex]->codec;
-                if (sc->sample_size == 1 && (cod->codec_id == CODEC_ID_PCM_S16BE || cod->codec_id == CODEC_ID_PCM_S16LE))
-                    foundsize=(sc->sample_to_chunk[i].count*cod->channels*cod->bits_per_sample)/8;
-                else
-                    foundsize=sc->sample_to_chunk[i].count*sc->sample_size;
+                foundsize=sc->sample_to_chunk[i].count*sc->sample_size;
             }
             dprintf("sample_to_chunk first=%ld count=%ld, id=%ld\n", sc->sample_to_chunk[i].first, sc->sample_to_chunk[i].count, sc->sample_to_chunk[i].id);
         }
