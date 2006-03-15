@@ -243,6 +243,7 @@ static int input_sync;
 static int limit_filesize = 0; //
 
 static int pgmyuv_compatibility_hack=0;
+static int dts_delta_threshold = 10;
 
 const char **opt_names=NULL;
 int opt_name_count=0;
@@ -2047,7 +2048,7 @@ static int av_encode(AVFormatContext **output_files,
 //        fprintf(stderr, "next:%lld dts:%lld off:%lld %d\n", ist->next_pts, pkt.dts, input_files_ts_offset[ist->file_index], ist->st->codec->codec_type);
         if (pkt.dts != AV_NOPTS_VALUE && ist->next_pts != AV_NOPTS_VALUE) {
             int64_t delta= av_rescale_q(pkt.dts, ist->st->time_base, AV_TIME_BASE_Q) - ist->next_pts;
-            if(ABS(delta) > 10LL*AV_TIME_BASE && !copy_ts){
+            if(ABS(delta) > 1LL*dts_delta_threshold*AV_TIME_BASE && !copy_ts){
                 input_files_ts_offset[ist->file_index]-= delta;
                 if (verbose > 2)
                     fprintf(stderr, "timestamp discontinuity %"PRId64", new offset= %"PRId64"\n", delta, input_files_ts_offset[ist->file_index]);
@@ -4026,6 +4027,7 @@ const OptionDef options[] = {
     { "vglobal", HAS_ARG | OPT_INT | OPT_EXPERT, {(void*)&video_global_header}, "video global header storage type", "" },
     { "copyts", OPT_BOOL | OPT_EXPERT, {(void*)&copy_ts}, "copy timestamps" },
     { "shortest", OPT_BOOL | OPT_EXPERT, {(void*)&opt_shortest}, "finish encoding within shortest input" }, //
+    { "dts_delta_threshold", HAS_ARG | OPT_INT | OPT_EXPERT, {(void*)&dts_delta_threshold}, "timestamp discontinuity delta threshold", "" },
 
     /* video options */
     { "b", HAS_ARG | OPT_VIDEO, {(void*)opt_video_bitrate}, "set video bitrate (in kbit/s)", "bitrate" },
