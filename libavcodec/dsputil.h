@@ -35,6 +35,7 @@
 //#define DEBUG
 /* dct code */
 typedef short DCTELEM;
+typedef int DWTELEM;
 
 void fdct_ifast (DCTELEM *data);
 void fdct_ifast248 (DCTELEM *data);
@@ -132,6 +133,9 @@ static void a(uint8_t *block, const uint8_t *pixels, int line_size, int h){\
 // allthough currently h<4 is not used as functions with width <8 are not used and neither implemented
 typedef int (*me_cmp_func)(void /*MpegEncContext*/ *s, uint8_t *blk1/*align width (8 or 16)*/, uint8_t *blk2/*align 1*/, int line_size, int h)/* __attribute__ ((const))*/;
 
+
+// for snow slices
+typedef struct slice_buffer_s slice_buffer;
 
 /**
  * DSPContext.
@@ -334,6 +338,11 @@ typedef struct DSPContext {
     void (*h264_idct8_add)(uint8_t *dst, DCTELEM *block, int stride);
     void (*h264_idct_dc_add)(uint8_t *dst, DCTELEM *block, int stride);
     void (*h264_idct8_dc_add)(uint8_t *dst, DCTELEM *block, int stride);
+
+    /* snow wavelet */
+    void (*vertical_compose97i)(DWTELEM *b0, DWTELEM *b1, DWTELEM *b2, DWTELEM *b3, DWTELEM *b4, DWTELEM *b5, int width);
+    void (*horizontal_compose97i)(DWTELEM *b, int width);
+    void (*inner_add_yblock)(uint8_t *obmc, const int obmc_stride, uint8_t * * block, int b_w, int b_h, int src_x, int src_y, int src_stride, slice_buffer * sb, int add, uint8_t * dst8);
 } DSPContext;
 
 void dsputil_static_init(void);

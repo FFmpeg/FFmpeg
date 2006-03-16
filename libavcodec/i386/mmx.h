@@ -12,6 +12,7 @@
 #  define REG_d "rdx"
 #  define REG_D "rdi"
 #  define REG_S "rsi"
+#  define PTR_SIZE "8"
 #else
 #  define REG_a "eax"
 #  define REG_b "ebx"
@@ -19,6 +20,7 @@
 #  define REG_d "edx"
 #  define REG_D "edi"
 #  define REG_S "esi"
+#  define PTR_SIZE "4"
 #endif
 
 /*
