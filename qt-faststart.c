@@ -99,7 +99,7 @@ int main(int argc, char *argv[])
         if (fread(atom_bytes, ATOM_PREAMBLE_SIZE, 1, infile) != 1) {
             break;
         }
-        atom_size = BE_32(&atom_bytes[0]);
+        atom_size = (uint32_t)BE_32(&atom_bytes[0]);
         atom_type = BE_32(&atom_bytes[4]);
 
         if ((atom_type != FREE_ATOM) &&
