@@ -34,7 +34,7 @@ static int flv_probe(AVProbeData *p)
 static int flv_read_header(AVFormatContext *s,
                            AVFormatParameters *ap)
 {
-    int offset, flags;
+    int offset, flags, size;
 
     s->ctx_flags |= AVFMTCTX_NOHEADER; //ok we have a header but theres no fps, codec type, sample_rate, ...
 
@@ -42,6 +42,17 @@ static int flv_read_header(AVFormatContext *s,
     flags = get_byte(&s->pb);
 
     offset = get_be32(&s->pb);
+
+    if(!url_is_streamed(&s->pb)){
+        const int fsize= url_fsize(&s->pb);
+        url_fseek(&s->pb, fsize-4, SEEK_SET);
+        size= get_be32(&s->pb);
+        url_fseek(&s->pb, fsize-3-size, SEEK_SET);
+        if(size == get_be24(&s->pb) + 11){
+            s->duration= get_be24(&s->pb) * (int64_t)AV_TIME_BASE / 1000;
+        }
+    }
+
     url_fseek(&s->pb, offset, SEEK_SET);
 
     return 0;
