@@ -72,10 +72,13 @@ int main(int argc, char *argv[])
     uint64_t atom_size = 0;
     uint64_t last_offset;
     unsigned char *moov_atom;
+    unsigned char *ftyp_atom = 0;
     uint64_t moov_atom_size;
+    uint64_t ftyp_atom_size = 0;
     uint64_t i, j;
     uint32_t offset_count;
     uint64_t current_offset;
+    uint64_t start_offset = 0;
     unsigned char copy_buffer[COPY_BUFFER_SIZE];
     int bytes_to_copy;
 
@@ -110,6 +113,27 @@ int main(int argc, char *argv[])
             (atom_type != FTYP_ATOM)) {
             printf ("encountered non-QT top-level atom (is this a Quicktime file?)\n");
             break;
+        }
+
+        /* keep ftyp atom */
+        if (atom_type == FTYP_ATOM) {
+            ftyp_atom_size = atom_size;
+            ftyp_atom = malloc(ftyp_atom_size);
+            if (!ftyp_atom) {
+                printf ("could not allocate 0x%llX byte for ftyp atom\n",
+                        atom_size);
+                fclose(infile);
+                return 1;
+            }
+            fseeko(infile, -ATOM_PREAMBLE_SIZE, SEEK_CUR);
+            if (fread(ftyp_atom, atom_size, 1, infile) != 1) {
+                perror(argv[1]);
+                free(ftyp_atom);
+                fclose(infile);
+                return 1;
+            }
+            start_offset = ftello(infile);
+            continue;
         }
 
         /* 64-bit special case */
@@ -214,12 +238,24 @@ int main(int argc, char *argv[])
         free(moov_atom);
         return 1;
     }
+    /* seek after ftyp atom if needed */
+    fseeko(infile, start_offset, SEEK_SET);
+
     outfile = fopen(argv[2], "wb");
     if (!outfile) {
         perror(argv[2]);
         fclose(outfile);
         free(moov_atom);
         return 1;
+    }
+
+    /* dump the same ftyp atom */
+    if (ftyp_atom_size > 0) {
+        printf (" writing ftyp atom...\n");
+        if (fwrite(ftyp_atom, ftyp_atom_size, 1, outfile) != 1) {
+            perror(argv[2]);
+            goto error_out;
+        }
     }
 
     /* dump the new moov atom */
