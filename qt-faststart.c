@@ -118,9 +118,9 @@ int main(int argc, char *argv[])
                 break;
             }
             atom_size = BE_64(&atom_bytes[0]);
-            fseek(infile, atom_size - ATOM_PREAMBLE_SIZE * 2, SEEK_CUR);
+            fseeko(infile, atom_size - ATOM_PREAMBLE_SIZE * 2, SEEK_CUR);
         } else {
-            fseek(infile, atom_size - ATOM_PREAMBLE_SIZE, SEEK_CUR);
+            fseeko(infile, atom_size - ATOM_PREAMBLE_SIZE, SEEK_CUR);
         }
     }
 
@@ -132,8 +132,8 @@ int main(int argc, char *argv[])
 
     /* moov atom was, in fact, the last atom in the chunk; load the whole
      * moov atom */
-    fseek(infile, -atom_size, SEEK_END);
-    last_offset = (uint64_t)ftell(infile);
+    fseeko(infile, -atom_size, SEEK_END);
+    last_offset = ftello(infile);
     moov_atom_size = atom_size;
     moov_atom = malloc(moov_atom_size);
     if (!moov_atom) {
