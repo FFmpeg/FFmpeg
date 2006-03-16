@@ -69,7 +69,7 @@ int main(int argc, char *argv[])
     FILE *outfile;
     unsigned char atom_bytes[ATOM_PREAMBLE_SIZE];
     uint32_t atom_type = 0;
-    uint64_t atom_size;
+    uint64_t atom_size = 0;
     uint64_t last_offset;
     unsigned char *moov_atom;
     uint64_t moov_atom_size;
