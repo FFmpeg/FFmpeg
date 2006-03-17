@@ -110,9 +110,7 @@ void av_register_all(void)
     dc1394_init();
 #endif
 
-    /* Reenable when the (de)muxer has been synced with the specification.
     nut_init();
-    */
     matroska_init();
     sol_init();
     ea_init();
