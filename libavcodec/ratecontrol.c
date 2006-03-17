@@ -117,11 +117,15 @@ int ff_rate_control_init(MpegEncContext *s)
 
             p= next;
         }
-#ifdef CONFIG_XVID
         //FIXME maybe move to end
-        if((s->flags&CODEC_FLAG_PASS2) && s->avctx->rc_strategy == FF_RC_STRATEGY_XVID)
+        if((s->flags&CODEC_FLAG_PASS2) && s->avctx->rc_strategy == FF_RC_STRATEGY_XVID) {
+#ifdef CONFIG_XVID
             return ff_xvid_rate_control_init(s);
+#else
+            av_log(s->avctx, AV_LOG_ERROR, "XviD ratecontrol requires libavcodec compiled with XviD support\n");
+            return -1;
 #endif
+        }
 
         if(init_pass2(s) < 0) return -1;
     }
