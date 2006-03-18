@@ -94,7 +94,7 @@ float ff_xvid_rate_estimate_qscale(MpegEncContext *s, int dry_run){
     xvid_plg_data.max_quant[0]= s->avctx->qmax;
     xvid_plg_data.max_quant[1]= s->avctx->qmax;
     xvid_plg_data.max_quant[2]= s->avctx->qmax; //FIXME i/b factor & offset
-    xvid_plg_data.bquant_offset = s->avctx->b_quant_offset;
+    xvid_plg_data.bquant_offset = 100 * s->avctx->b_quant_offset;
     xvid_plg_data.bquant_ratio = 100 * s->avctx->b_quant_factor;
 
 #if 0

@@ -372,7 +372,7 @@ int ff_xvid_encode_init(AVCodecContext *avctx)  {
 
     /* Bframes */
     xvid_enc_create.max_bframes = avctx->max_b_frames;
-    xvid_enc_create.bquant_offset = avctx->b_quant_offset;
+    xvid_enc_create.bquant_offset = 100 * avctx->b_quant_offset;
     xvid_enc_create.bquant_ratio = 100 * avctx->b_quant_factor;
     if( avctx->max_b_frames > 0  && !x->quicktime_format ) xvid_enc_create.global |= XVID_GLOBAL_PACKED;
 
