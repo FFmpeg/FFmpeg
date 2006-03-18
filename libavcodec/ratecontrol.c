@@ -117,6 +117,9 @@ int ff_rate_control_init(MpegEncContext *s)
 
             p= next;
         }
+
+        if(init_pass2(s) < 0) return -1;
+
         //FIXME maybe move to end
         if((s->flags&CODEC_FLAG_PASS2) && s->avctx->rc_strategy == FF_RC_STRATEGY_XVID) {
 #ifdef CONFIG_XVID
@@ -126,8 +129,6 @@ int ff_rate_control_init(MpegEncContext *s)
             return -1;
 #endif
         }
-
-        if(init_pass2(s) < 0) return -1;
     }
 
     if(!(s->flags&CODEC_FLAG_PASS2)){
