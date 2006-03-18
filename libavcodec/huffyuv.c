@@ -808,6 +808,9 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
             return -1;
     }
 
+    if((unsigned)(buf_size-table_size) >= INT_MAX/8)
+        return -1;
+
     init_get_bits(&s->gb, s->bitstream_buffer+table_size, (buf_size-table_size)*8);
 
     fake_ystride= s->interlaced ? p->linesize[0]*2  : p->linesize[0];
