@@ -44,7 +44,7 @@ int ff_xvid_rate_control_init(MpegEncContext *s){
         fd = mkstemp(tmp_name);
     }
 
-    for(i=0; i<s->rc_context.num_entries - s->max_b_frames; i++){
+    for(i=0; i<s->rc_context.num_entries; i++){
         static const char *frame_types = " ipbs";
         char tmp[256];
         RateControlEntry *rce;
@@ -53,8 +53,9 @@ int ff_xvid_rate_control_init(MpegEncContext *s){
 
         snprintf(tmp, sizeof(tmp), "%c %d %d %d %d %d %d\n",
             frame_types[rce->pict_type], (int)lrintf(rce->qscale / FF_QP2LAMBDA), rce->i_count, s->mb_num - rce->i_count - rce->skip_count,
-            rce->skip_count, (rce->i_tex_bits + rce->p_tex_bits + rce->mv_bits + rce->misc_bits+7)/8, (rce->header_bits+7)/8);
+            rce->skip_count, (rce->i_tex_bits + rce->p_tex_bits + rce->misc_bits+7)/8, (rce->header_bits+rce->mv_bits+7)/8);
 
+//av_log(NULL, AV_LOG_ERROR, "%s\n", tmp);
         write(fd, tmp, strlen(tmp));
     }
 
@@ -74,7 +75,11 @@ int ff_xvid_rate_control_init(MpegEncContext *s){
     xvid_plg_create.fincr= s->avctx->time_base.num;
     xvid_plg_create.param= &xvid_2pass2;
 
-    return xvid_plugin_2pass2(NULL, XVID_PLG_CREATE, &xvid_plg_create, &s->rc_context.non_lavc_opaque);
+    if(xvid_plugin_2pass2(NULL, XVID_PLG_CREATE, &xvid_plg_create, &s->rc_context.non_lavc_opaque)<0){
+        av_log(NULL, AV_LOG_ERROR, "xvid_plugin_2pass2 failed\n");
+        return -1;
+    }
+    return 0;
 }
 
 float ff_xvid_rate_estimate_qscale(MpegEncContext *s, int dry_run){
@@ -94,8 +99,8 @@ float ff_xvid_rate_estimate_qscale(MpegEncContext *s, int dry_run){
     xvid_plg_data.max_quant[0]= s->avctx->qmax;
     xvid_plg_data.max_quant[1]= s->avctx->qmax;
     xvid_plg_data.max_quant[2]= s->avctx->qmax; //FIXME i/b factor & offset
-    xvid_plg_data.bquant_offset = 100 * s->avctx->b_quant_offset;
-    xvid_plg_data.bquant_ratio = 100 * s->avctx->b_quant_factor;
+    xvid_plg_data.bquant_offset = 0; //  100 * s->avctx->b_quant_offset;
+    xvid_plg_data.bquant_ratio = 100; // * s->avctx->b_quant_factor;
 
 #if 0
     xvid_plg_data.stats.hlength= X
@@ -105,7 +110,7 @@ float ff_xvid_rate_estimate_qscale(MpegEncContext *s, int dry_run){
         if(s->picture_number){
             xvid_plg_data.length=
             xvid_plg_data.stats.length= (s->frame_bits + 7)/8;
-            xvid_plg_data.frame_num= s->picture_number - 1;
+            xvid_plg_data.frame_num= s->rc_context.last_picture_number;
             xvid_plg_data.quant= s->qscale;
 
             xvid_plg_data.type= s->last_pict_type;
@@ -114,6 +119,7 @@ float ff_xvid_rate_estimate_qscale(MpegEncContext *s, int dry_run){
                 return -1;
             }
         }
+        s->rc_context.last_picture_number=
         xvid_plg_data.frame_num= s->picture_number;
         xvid_plg_data.quant= 0;
         if(xvid_plugin_2pass2(s->rc_context.non_lavc_opaque, XVID_PLG_BEFORE, &xvid_plg_data, NULL)){
@@ -126,7 +132,10 @@ float ff_xvid_rate_estimate_qscale(MpegEncContext *s, int dry_run){
     if(!dry_run)
         s->rc_context.dry_run_qscale= 0;
 
-    return xvid_plg_data.quant * FF_QP2LAMBDA;
+    if(s->pict_type == B_TYPE) //FIXME this is not exactly identical to xvid
+        return xvid_plg_data.quant * FF_QP2LAMBDA * s->avctx->b_quant_factor + s->avctx->b_quant_offset;
+    else
+        return xvid_plg_data.quant * FF_QP2LAMBDA;
 }
 
 void ff_xvid_rate_control_uninit(MpegEncContext *s){
