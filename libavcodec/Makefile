@@ -18,7 +18,7 @@ OBJS= bitstream.o utils.o mem.o allcodecs.o \
       vp3dsp.o h264idct.o rangecoder.o pnm.o h263.o msmpeg4.o h263dec.o \
       opt.o
 
-HEADERS = avcodec.h dsputil.h
+HEADERS = avcodec.h
 
 ifeq ($(CONFIG_AASC_DECODER),yes)
     OBJS+= aasc.o
