@@ -31,7 +31,7 @@
 #define LOSSLESS_QLOG -128
 #define FRAC_BITS 8
 
-#define LOG2_OBMC_MAX 6
+#define LOG2_OBMC_MAX 8
 #define OBMC_MAX (1<<(LOG2_OBMC_MAX))
 
 /** Used to minimize the amount of memory used in order to optimize cache performance. **/
