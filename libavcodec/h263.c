@@ -582,6 +582,8 @@ int ff_mpeg4_set_direct_mv(MpegEncContext *s, int mx, int my){
         s->mv_type = MV_TYPE_FIELD;
         for(i=0; i<2; i++){
             int field_select= s->next_picture.ref_index[0][s->block_index[2*i]];
+            s->field_select[0][i]= field_select;
+            s->field_select[1][i]= i;
             if(s->top_field_first){
                 time_pp= s->pp_field_time - field_select + i;
                 time_pb= s->pb_field_time - field_select + i;
