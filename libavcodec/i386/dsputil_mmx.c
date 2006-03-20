@@ -2564,6 +2564,9 @@ static void ff_idct_xvid_mmx2_add(uint8_t *dest, int line_size, DCTELEM *block)
 }
 #endif
 
+extern void ff_snow_vertical_compose97i_sse2(DWTELEM *b0, DWTELEM *b1, DWTELEM *b2, DWTELEM *b3, DWTELEM *b4, DWTELEM *b5, int width);
+extern void ff_snow_vertical_compose97i_mmx(DWTELEM *b0, DWTELEM *b1, DWTELEM *b2, DWTELEM *b3, DWTELEM *b4, DWTELEM *b5, int width);
+
 void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
 {
     mm_flags = mm_support();
@@ -2950,6 +2953,15 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             c->avg_h264_chroma_pixels_tab[0]= avg_h264_chroma_mc8_3dnow;
             c->avg_h264_chroma_pixels_tab[1]= avg_h264_chroma_mc4_3dnow;
         }
+
+#ifdef CONFIG_SNOW_ENCODER
+        if(mm_flags & MM_SSE2){
+            c->vertical_compose97i = ff_snow_vertical_compose97i_sse2;
+        }
+        else{
+            c->vertical_compose97i = ff_snow_vertical_compose97i_mmx;
+        }
+#endif
     }
 
 #ifdef CONFIG_ENCODERS
