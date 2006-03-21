@@ -1693,6 +1693,7 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
     int64_t offset = INT64_MAX;
     int64_t best_dts = INT64_MAX;
     int i, a, b, m;
+    int next_sample= -99;
     int size;
     int idx;
     size = 0x0FFFFFFF;
@@ -1708,7 +1709,8 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
         //size = (sc->sample_size)?sc->sample_size:sc->sample_sizes[sc->current_sample];
         size = (sc->sample_size > 1)?sc->sample_size:sc->sample_sizes[sc->current_sample];
 
-        sc->current_sample++;
+        next_sample= sc->current_sample+1;
+
         sc->left_in_chunk--;
 
         if (sc->left_in_chunk <= 0)
@@ -1734,13 +1736,13 @@ again:
                 int time= msc->sample_to_time_time;
                 int duration = msc->stts_data[index].duration;
                 int count = msc->stts_data[index].count;
-                if (sample + count < msc->current_sample) {
+                if (sample + count <= msc->current_sample) {
                     sample += count;
                     time   += count*duration;
                     index ++;
                     duration = msc->stts_data[index].duration;
                 }
-                dts = time + (msc->current_sample-1 - sample) * (int64_t)duration;
+                dts = time + (msc->current_sample - sample) * (int64_t)duration;
                 dts = av_rescale(dts, AV_TIME_BASE, msc->time_scale);
                 dprintf("stream: %d dts: %"PRId64" best_dts: %"PRId64" offset: %"PRId64"\n", i, dts, best_dts, offset);
                 if(dts < best_dts){
@@ -1817,10 +1819,11 @@ again:
             size = (sc->sample_size > 1)?sc->sample_size:sc->sample_sizes[sc->current_sample];
         }
 
-        sc->current_sample++;
-    }else if(idx + 1 < sc->sample_to_chunk_sz){
-        sc->current_sample += sc->sample_to_chunk[idx].count;
-    }
+        next_sample= sc->current_sample+1;
+    }else if(idx < sc->sample_to_chunk_sz){
+        next_sample= sc->current_sample + sc->sample_to_chunk[idx].count;
+    }else
+        next_sample= sc->current_sample;
 
 readchunk:
     dprintf("chunk: %"PRId64" -> %"PRId64" (%i)\n", offset, offset + size, size);
@@ -1864,19 +1867,19 @@ readchunk:
       uint64_t dts, pts;
       unsigned int duration = sc->stts_data[sc->sample_to_time_index].duration;
       count = sc->stts_data[sc->sample_to_time_index].count;
-      if ((sc->sample_to_time_sample + count) < sc->current_sample) {
+      if ((sc->sample_to_time_sample + count) <= sc->current_sample) {
         sc->sample_to_time_sample += count;
         sc->sample_to_time_time   += count*duration;
         sc->sample_to_time_index ++;
         duration = sc->stts_data[sc->sample_to_time_index].duration;
       }
-      dts = sc->sample_to_time_time + (sc->current_sample-1 - sc->sample_to_time_sample) * (int64_t)duration;
+      dts = sc->sample_to_time_time + (sc->current_sample - sc->sample_to_time_sample) * (int64_t)duration;
         /* find the corresponding pts */
         if (sc->sample_to_ctime_index < sc->ctts_count) {
             int duration = sc->ctts_data[sc->sample_to_ctime_index].duration;
             int count = sc->ctts_data[sc->sample_to_ctime_index].count;
 
-            if ((sc->sample_to_ctime_sample + count) < sc->current_sample) {
+            if ((sc->sample_to_ctime_sample + count) <= sc->current_sample) {
                 sc->sample_to_ctime_sample += count;
                 sc->sample_to_ctime_index ++;
                 duration = sc->ctts_data[sc->sample_to_ctime_index].duration;
@@ -1900,6 +1903,9 @@ readchunk:
                 , count
                 , duration);
     }
+
+    assert(next_sample>=0);
+    sc->current_sample= next_sample;
 
     return 0;
 }
