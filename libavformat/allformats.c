@@ -80,6 +80,7 @@ void av_register_all(void)
     flic_init();
     vmd_init();
     mm_init();
+    smacker_init();
 
 #if defined(AMR_NB) || defined(AMR_NB_FIXED) || defined(AMR_WB)
     amr_init();

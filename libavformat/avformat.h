@@ -5,8 +5,8 @@
 extern "C" {
 #endif
 
-#define LIBAVFORMAT_VERSION_INT ((50<<16)+(3<<8)+0)
-#define LIBAVFORMAT_VERSION     50.3.0
+#define LIBAVFORMAT_VERSION_INT ((50<<16)+(4<<8)+0)
+#define LIBAVFORMAT_VERSION     50.4.0
 #define LIBAVFORMAT_BUILD       LIBAVFORMAT_VERSION_INT
 
 #define LIBAVFORMAT_IDENT       "Lavf" AV_STRINGIFY(LIBAVFORMAT_VERSION)
@@ -566,6 +566,9 @@ int mm_init(void);
 
 /* avs.c */
 int avs_init(void);
+
+/* smacker.c */
+int smacker_init(void);
 
 #include "rtp.h"
 

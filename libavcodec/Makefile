@@ -146,6 +146,9 @@ endif
 ifeq ($(CONFIG_SHORTEN_DECODER),yes)
     OBJS+= shorten.o
 endif
+ifneq ($(CONFIG_SMACKER_DECODER)$(CONFIG_SMACKAUD_DECODER),)
+    OBJS+= smacker.o
+endif
 ifeq ($(CONFIG_SMC_DECODER),yes)
     OBJS+= smc.o
 endif
