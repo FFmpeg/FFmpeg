@@ -376,7 +376,7 @@ static void H264_CHROMA_MC2_TMPL(uint8_t *dst/*align 2*/, uint8_t *src/*align 1*
              * ok because partitions are processed from left to right. */
             H264_CHROMA_OP4(%0, %%mm1, %%mm3)
             "movd %%mm1, %0\n\t"
-            : "=m" (dst[0]) : "m" (ff_pw_32) : "eax");
+            : "=m" (dst[0]) : "m" (ff_pw_32));
         dst += stride;
     }
 }
