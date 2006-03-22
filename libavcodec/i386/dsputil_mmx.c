@@ -2569,6 +2569,10 @@ extern void ff_snow_horizontal_compose97i_sse2(DWTELEM *b, int width);
 extern void ff_snow_horizontal_compose97i_mmx(DWTELEM *b, int width);
 extern void ff_snow_vertical_compose97i_sse2(DWTELEM *b0, DWTELEM *b1, DWTELEM *b2, DWTELEM *b3, DWTELEM *b4, DWTELEM *b5, int width);
 extern void ff_snow_vertical_compose97i_mmx(DWTELEM *b0, DWTELEM *b1, DWTELEM *b2, DWTELEM *b3, DWTELEM *b4, DWTELEM *b5, int width);
+extern void ff_snow_inner_add_yblock_sse2(uint8_t *obmc, const int obmc_stride, uint8_t * * block, int b_w, int b_h,
+                           int src_x, int src_y, int src_stride, slice_buffer * sb, int add, uint8_t * dst8);
+extern void ff_snow_inner_add_yblock_mmx(uint8_t *obmc, const int obmc_stride, uint8_t * * block, int b_w, int b_h,
+                          int src_x, int src_y, int src_stride, slice_buffer * sb, int add, uint8_t * dst8);
 #endif
 
 void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
@@ -2962,10 +2966,12 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
         if(mm_flags & MM_SSE2){
             c->horizontal_compose97i = ff_snow_horizontal_compose97i_sse2;
             c->vertical_compose97i = ff_snow_vertical_compose97i_sse2;
+            c->inner_add_yblock = ff_snow_inner_add_yblock_sse2;
         }
         else{
             c->horizontal_compose97i = ff_snow_horizontal_compose97i_mmx;
             c->vertical_compose97i = ff_snow_vertical_compose97i_mmx;
+            c->inner_add_yblock = ff_snow_inner_add_yblock_mmx;
         }
 #endif
     }
