@@ -2848,6 +2848,8 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
 
             c->avg_h264_chroma_pixels_tab[0]= avg_h264_chroma_mc8_mmx2;
             c->avg_h264_chroma_pixels_tab[1]= avg_h264_chroma_mc4_mmx2;
+            c->avg_h264_chroma_pixels_tab[2]= avg_h264_chroma_mc2_mmx2;
+            c->put_h264_chroma_pixels_tab[2]= put_h264_chroma_mc2_mmx2;
             c->h264_v_loop_filter_luma= h264_v_loop_filter_luma_mmx2;
             c->h264_h_loop_filter_luma= h264_h_loop_filter_luma_mmx2;
             c->h264_v_loop_filter_chroma= h264_v_loop_filter_chroma_mmx2;

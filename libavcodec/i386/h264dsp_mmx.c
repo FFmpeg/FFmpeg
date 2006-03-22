@@ -1296,12 +1296,14 @@ H264_MC(avg_, 16,mmx2)
 #define H264_CHROMA_OP4(S,D,T)
 #define H264_CHROMA_MC8_TMPL put_h264_chroma_mc8_mmx
 #define H264_CHROMA_MC4_TMPL put_h264_chroma_mc4_mmx
+#define H264_CHROMA_MC2_TMPL put_h264_chroma_mc2_mmx2
 #define H264_CHROMA_MC8_MV0 put_pixels8_mmx
 #include "dsputil_h264_template_mmx.c"
 #undef H264_CHROMA_OP
 #undef H264_CHROMA_OP4
 #undef H264_CHROMA_MC8_TMPL
 #undef H264_CHROMA_MC4_TMPL
+#undef H264_CHROMA_MC2_TMPL
 #undef H264_CHROMA_MC8_MV0
 
 #define H264_CHROMA_OP(S,D) "pavgb " #S ", " #D " \n\t"
@@ -1309,12 +1311,14 @@ H264_MC(avg_, 16,mmx2)
                                "pavgb " #T ", " #D " \n\t"
 #define H264_CHROMA_MC8_TMPL avg_h264_chroma_mc8_mmx2
 #define H264_CHROMA_MC4_TMPL avg_h264_chroma_mc4_mmx2
+#define H264_CHROMA_MC2_TMPL avg_h264_chroma_mc2_mmx2
 #define H264_CHROMA_MC8_MV0 avg_pixels8_mmx2
 #include "dsputil_h264_template_mmx.c"
 #undef H264_CHROMA_OP
 #undef H264_CHROMA_OP4
 #undef H264_CHROMA_MC8_TMPL
 #undef H264_CHROMA_MC4_TMPL
+#undef H264_CHROMA_MC2_TMPL
 #undef H264_CHROMA_MC8_MV0
 
 #define H264_CHROMA_OP(S,D) "pavgusb " #S ", " #D " \n\t"
