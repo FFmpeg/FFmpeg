@@ -2272,18 +2272,14 @@ matroska_read_header (AVFormatContext    *s,
                 st->codec->width = videotrack->pixel_width;
                 st->codec->height = videotrack->pixel_height;
                 if (videotrack->display_width == 0)
-                    st->codec->sample_aspect_ratio.num =
-                        videotrack->pixel_width;
-                else
-                    st->codec->sample_aspect_ratio.num =
-                        videotrack->display_width;
+                    videotrack->display_width= videotrack->pixel_width;
                 if (videotrack->display_height == 0)
-                    st->codec->sample_aspect_ratio.num =
-                        videotrack->pixel_height;
-                else
-                    st->codec->sample_aspect_ratio.num =
-                        videotrack->display_height;
-
+                    videotrack->display_height= videotrack->pixel_height;
+                av_reduce(&st->codec->sample_aspect_ratio.num,
+                          &st->codec->sample_aspect_ratio.den,
+                          st->codec->height * videotrack->display_width,
+                          st->codec-> width * videotrack->display_height,
+                          255);
             } else if (track->type == MATROSKA_TRACK_TYPE_AUDIO) {
                 MatroskaAudioTrack *audiotrack = (MatroskaAudioTrack *)track;
 
