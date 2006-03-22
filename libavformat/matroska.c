@@ -305,9 +305,8 @@ typedef struct MatroskaDemuxContext {
     /* timescale in the file */
     int64_t time_scale;
 
-    /* length, position (time, ns) */
-    int64_t duration,
-        pos;
+    /* position (time, ns) */
+    int64_t pos;
 
     /* num_streams is the number of streams that av_new_stream() was called
      * for ( = that are available to the calling program). */
@@ -1094,7 +1093,7 @@ matroska_parse_info (MatroskaDemuxContext *matroska)
                 double num;
                 if ((res = ebml_read_float(matroska, &id, &num)) < 0)
                     break;
-                matroska->duration = num * matroska->time_scale;
+                matroska->ctx->duration = num * matroska->time_scale * 1000 / AV_TIME_BASE;
                 break;
             }
 
@@ -2245,6 +2244,8 @@ matroska_read_header (AVFormatContext    *s,
                 st->codec->codec_type = CODEC_TYPE_AUDIO;
                 st->codec->sample_rate = audiotrack->samplerate;
                 st->codec->channels = audiotrack->channels;
+            } else if (track->type == MATROSKA_TRACK_TYPE_SUBTITLE) {
+                st->codec->codec_type = CODEC_TYPE_SUBTITLE;
             }
 
             /* What do we do with private data? E.g. for Vorbis. */
