@@ -668,24 +668,30 @@ static int mov_read_moov(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 
 static int mov_read_mdhd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
-    int version;
+    AVStream *st = c->fc->streams[c->fc->nb_streams-1];
+    MOVStreamContext *sc = (MOVStreamContext *)st->priv_data;
+    int version = get_byte(pb);
     int lang;
 
-    version = get_byte(pb); /* version */
     if (version > 1)
         return 1; /* unsupported */
 
     get_byte(pb); get_byte(pb);
     get_byte(pb); /* flags */
 
-    (version==1)?get_be64(pb):get_be32(pb); /* creation time */
-    (version==1)?get_be64(pb):get_be32(pb); /* modification time */
+    if (version == 1) {
+        get_be64(pb);
+        get_be64(pb);
+    } else {
+        get_be32(pb); /* creation time */
+        get_be32(pb); /* modification time */
+    }
 
-    c->streams[c->fc->nb_streams-1]->time_scale = get_be32(pb);
-    c->fc->streams[c->fc->nb_streams-1]->duration = (version==1)?get_be64(pb):get_be32(pb); /* duration */
+    sc->time_scale = get_be32(pb);
+    st->duration = (version == 1) ? get_be64(pb) : get_be32(pb); /* duration */
 
     lang = get_be16(pb); /* language */
-    ff_mov_lang_to_iso639(lang, c->fc->streams[c->fc->nb_streams-1]->language);
+    ff_mov_lang_to_iso639(lang, st->language);
     get_be16(pb); /* quality */
 
     return 0;
@@ -1339,12 +1345,8 @@ static int mov_read_trak(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 
 static int mov_read_tkhd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
-    AVStream *st;
-    int version;
-
-    st = c->fc->streams[c->fc->nb_streams-1];
-
-    version = get_byte(pb); /* version */
+    AVStream *st = c->fc->streams[c->fc->nb_streams-1];
+    int version = get_byte(pb);
 
     get_byte(pb); get_byte(pb);
     get_byte(pb); /* flags */
