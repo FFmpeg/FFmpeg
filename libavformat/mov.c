@@ -693,16 +693,21 @@ static int mov_read_mdhd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 
 static int mov_read_mvhd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
-    get_byte(pb); /* version */
+    int version = get_byte(pb); /* version */
     get_byte(pb); get_byte(pb); get_byte(pb); /* flags */
 
-    get_be32(pb); /* creation time */
-    get_be32(pb); /* modification time */
+    if (version == 1) {
+        get_be64(pb);
+        get_be64(pb);
+    } else {
+        get_be32(pb); /* creation time */
+        get_be32(pb); /* modification time */
+    }
     c->time_scale = get_be32(pb); /* time scale */
 #ifdef DEBUG
     av_log(NULL, AV_LOG_DEBUG, "time scale = %i\n", c->time_scale);
 #endif
-    c->duration = get_be32(pb); /* duration */
+    c->duration = (version == 1) ? get_be64(pb) : get_be32(pb); /* duration */
     get_be32(pb); /* preferred scale */
 
     get_be16(pb); /* preferred volume */
@@ -1335,10 +1340,11 @@ static int mov_read_trak(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 static int mov_read_tkhd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
     AVStream *st;
+    int version;
 
     st = c->fc->streams[c->fc->nb_streams-1];
 
-    get_byte(pb); /* version */
+    version = get_byte(pb); /* version */
 
     get_byte(pb); get_byte(pb);
     get_byte(pb); /* flags */
@@ -1349,12 +1355,17 @@ static int mov_read_tkhd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     MOV_TRACK_IN_POSTER 0x0008
     */
 
-    get_be32(pb); /* creation time */
-    get_be32(pb); /* modification time */
+    if (version == 1) {
+        get_be64(pb);
+        get_be64(pb);
+    } else {
+        get_be32(pb); /* creation time */
+        get_be32(pb); /* modification time */
+    }
     st->id = (int)get_be32(pb); /* track id (NOT 0 !)*/
     get_be32(pb); /* reserved */
     st->start_time = 0; /* check */
-    get_be32(pb); /* highlevel (considering edits) duration in movie timebase */
+    (version == 1) ? get_be64(pb) : get_be32(pb); /* highlevel (considering edits) duration in movie timebase */
     get_be32(pb); /* reserved */
     get_be32(pb); /* reserved */
 
