@@ -606,9 +606,9 @@ static int mov_find_video_codec_tag(MOVTrack* track)
                 if (track->enc->pix_fmt == PIX_FMT_YUV422P)
                     tag = MKTAG('d', 'v', '5', 'p');
                 else if (track->enc->pix_fmt == PIX_FMT_YUV420P)
-                    tag = MKTAG('d', 'v', 'p', 'p');
-                else
                     tag = MKTAG('d', 'v', 'c', 'p');
+                else
+                    tag = MKTAG('d', 'v', 'p', 'p');
             }
         } else {
             tag = codec_get_tag(codec_movvideo_tags, track->enc->codec_id);
