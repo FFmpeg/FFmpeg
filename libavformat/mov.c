@@ -322,7 +322,7 @@ typedef struct MOVContext {
     int mp4; /* set to 1 as soon as we are sure that the file is an .mp4 file (even some header parsing depends on this) */
     AVFormatContext *fc;
     int time_scale;
-    int duration; /* duration of the longest track */
+    int64_t duration; /* duration of the longest track */
     int found_moov; /* when both 'moov' and 'mdat' sections has been found */
     int found_mdat; /* we suppose we have enough data to read the file */
     int64_t mdat_size;
@@ -1282,7 +1282,7 @@ av_log(NULL, AV_LOG_DEBUG, "track[%i].stts.entries = %i\n", c->fc->nb_streams-1,
 
         dprintf("sample_count=%d, sample_duration=%d\n",sample_count,sample_duration);
 
-        duration+=sample_duration*sample_count;
+        duration+=(int64_t)sample_duration*sample_count;
         total_sample_count+=sample_count;
     }
 
