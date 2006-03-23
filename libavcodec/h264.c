@@ -2752,6 +2752,22 @@ static inline void mc_part(H264Context *h, int n, int square, int chroma_height,
                     x_offset, y_offset, qpix_put, chroma_put, qpix_avg, chroma_avg, list0, list1);
 }
 
+static inline void prefetch_motion(H264Context *h, int list){
+    /* fetch pixels for estimated mv 4 macroblocks ahead
+     * optimized for 64byte cache lines */
+    MpegEncContext * const s = &h->s;
+    const int refn = h->ref_cache[list][scan8[0]];
+    if(refn >= 0){
+        const int mx= (h->mv_cache[list][scan8[0]][0]>>2) + 16*s->mb_x + 8;
+        const int my= (h->mv_cache[list][scan8[0]][1]>>2) + 16*s->mb_y;
+        uint8_t **src= h->ref_list[list][refn].data;
+        int off= mx + (my + (s->mb_x&3)*4)*s->linesize + 64;
+        s->dsp.prefetch(src[0]+off, s->linesize, 4);
+        off= (mx>>1) + ((my>>1) + (s->mb_x&7))*s->uvlinesize + 64;
+        s->dsp.prefetch(src[1]+off, src[2]-src[1], 2);
+    }
+}
+
 static void hl_motion(H264Context *h, uint8_t *dest_y, uint8_t *dest_cb, uint8_t *dest_cr,
                       qpel_mc_func (*qpix_put)[16], h264_chroma_mc_func (*chroma_put),
                       qpel_mc_func (*qpix_avg)[16], h264_chroma_mc_func (*chroma_avg),
@@ -2761,6 +2777,8 @@ static void hl_motion(H264Context *h, uint8_t *dest_y, uint8_t *dest_cb, uint8_t
     const int mb_type= s->current_picture.mb_type[mb_xy];
 
     assert(IS_INTER(mb_type));
+
+    prefetch_motion(h, 0);
 
     if(IS_16X16(mb_type)){
         mc_part(h, 0, 1, 8, 0, dest_y, dest_cb, dest_cr, 0, 0,
@@ -2833,6 +2851,8 @@ static void hl_motion(H264Context *h, uint8_t *dest_y, uint8_t *dest_cb, uint8_t
             }
         }
     }
+
+    prefetch_motion(h, 1);
 }
 
 static void decode_init_vlc(H264Context *h){

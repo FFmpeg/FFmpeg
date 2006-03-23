@@ -2489,6 +2489,18 @@ static void add_8x8basis_mmx(int16_t rem[64], int16_t basis[64], int scale){
     }
 }
 
+#define PREFETCH(name, op) \
+void name(void *mem, int stride, int h){\
+    const uint8_t *p= mem;\
+    do{\
+        asm volatile(#op" %0" :: "m"(*p));\
+        p+= stride;\
+    }while(--h);\
+}
+PREFETCH(prefetch_mmx2,  prefetcht0)
+PREFETCH(prefetch_3dnow, prefetch)
+#undef PREFETCH
+
 #include "h264dsp_mmx.c"
 
 /* external functions, from idct_mmx.c */
@@ -2749,6 +2761,8 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
         c->h264_idct8_add= ff_h264_idct8_add_mmx;
 
         if (mm_flags & MM_MMXEXT) {
+            c->prefetch = prefetch_mmx2;
+
             c->put_pixels_tab[0][1] = put_pixels16_x2_mmx2;
             c->put_pixels_tab[0][2] = put_pixels16_y2_mmx2;
 
@@ -2879,6 +2893,8 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             c->sub_hfyu_median_prediction= sub_hfyu_median_prediction_mmx2;
 #endif //CONFIG_ENCODERS
         } else if (mm_flags & MM_3DNOW) {
+            c->prefetch = prefetch_3dnow;
+
             c->put_pixels_tab[0][1] = put_pixels16_x2_3dnow;
             c->put_pixels_tab[0][2] = put_pixels16_y2_3dnow;
 
