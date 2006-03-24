@@ -1073,6 +1073,7 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
             st->codec->sample_rate = ((get_be32(pb) >> 16));
 
             switch (st->codec->codec_id) {
+            case CODEC_ID_PCM_S16LE:
             case CODEC_ID_PCM_S16BE:
                 if (st->codec->bits_per_sample == 8)
                     st->codec->codec_id = CODEC_ID_PCM_S8;
