@@ -946,12 +946,18 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
                 (format >> 0) & 0xff, (format >> 8) & 0xff, (format >> 16) & 0xff, (format >> 24) & 0xff,
                 st->codec->codec_type);
         st->codec->codec_tag = format;
-        /* codec_type is set earlier by read_hdlr */
-        if(st->codec->codec_type==CODEC_TYPE_VIDEO) {
-            /* for MPEG4: set codec type by looking for it */
+        id = codec_get_id(mov_audio_tags, format);
+        if (id > 0) {
+            st->codec->codec_type = CODEC_TYPE_AUDIO;
+        } else if (format != MKTAG('m', 'p', '4', 's')) { /* skip old asf mpeg4 tag */
             id = codec_get_id(mov_video_tags, format);
-            if(id <= 0)
+            if (id <= 0)
                 id = codec_get_id(codec_bmp_tags, format);
+            if (id > 0)
+                st->codec->codec_type = CODEC_TYPE_VIDEO;
+        }
+
+        if(st->codec->codec_type==CODEC_TYPE_VIDEO) {
             st->codec->codec_id = id;
             get_be16(pb); /* version */
             get_be16(pb); /* revision level */
@@ -1058,7 +1064,7 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
         } else if(st->codec->codec_type==CODEC_TYPE_AUDIO) {
             uint16_t version = get_be16(pb);
 
-            st->codec->codec_id = codec_get_id(mov_audio_tags, format);
+            st->codec->codec_id = id;
             get_be16(pb); /* revision level */
             get_be32(pb); /* vendor */
 
