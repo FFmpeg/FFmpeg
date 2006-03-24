@@ -1134,6 +1134,11 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     if(st->codec->codec_type==CODEC_TYPE_AUDIO && st->codec->sample_rate==0 && sc->time_scale>1) {
         st->codec->sample_rate= sc->time_scale;
     }
+#ifdef CONFIG_FAAD
+    if(st->codec->codec_id ==CODEC_ID_AAC) {
+        st->codec->sample_rate= 0; /* let faad init parameters properly */
+    }
+#endif
 
     return 0;
 }
