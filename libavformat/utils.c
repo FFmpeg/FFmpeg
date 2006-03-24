@@ -2742,8 +2742,9 @@ int parse_frame_rate(int *frame_rate, int *frame_rate_base, const char *arg)
     }
     else {
         /* Finally we give up and parse it as double */
-        *frame_rate_base = DEFAULT_FRAME_RATE_BASE; //FIXME use av_d2q()
-        *frame_rate = (int)(strtod(arg, 0) * (*frame_rate_base) + 0.5);
+        AVRational time_base = av_d2q(strtod(arg, 0), DEFAULT_FRAME_RATE_BASE);
+        *frame_rate_base = time_base.den;
+        *frame_rate = time_base.num;
     }
     if (!*frame_rate || !*frame_rate_base)
         return -1;
