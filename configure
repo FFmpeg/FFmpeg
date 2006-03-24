@@ -1073,7 +1073,7 @@ int main( void ) { return (lrintf(3.999f) > 0)?0:1; }
 EOF
 
 have_lrintf="no"
-if $cc $CFLAGS $LDFLAGS $extralibs -o $TMPE $TMPC 2> /dev/null ; then
+if $cc $CFLAGS $LDFLAGS -o $TMPE $TMPC $extralibs 2> /dev/null ; then
   have_lrintf="yes"
   # allanc@chickenandporn.com: cannot execute cross-compiled
   # code on the host.  Only execute if not cross-compiling.
