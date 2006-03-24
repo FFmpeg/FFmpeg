@@ -543,6 +543,7 @@ struct unaligned_16 { uint16_t l; } __attribute__((packed));
 #define LD32(a) (*((uint32_t*)(a)))
 #define LD64(a) (*((uint64_t*)(a)))
 
+#define ST16(a, b) *((uint16_t*)(a)) = (b)
 #define ST32(a, b) *((uint32_t*)(a)) = (b)
 
 #endif /* !__GNUC__ */
