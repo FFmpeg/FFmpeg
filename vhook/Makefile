@@ -26,7 +26,7 @@ SRCS := $(HOOKS:$(SLIBSUF)=.c)
 depend: $(SRCS)
 	$(CC) -MM $(CFLAGS) $^ 1>.depend
 
-install:
+install: $(HOOKS)
 	install -d "$(libdir)/vhook"
 	install -m 755 $(HOOKS) "$(libdir)/vhook"
 
