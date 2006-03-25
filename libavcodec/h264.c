@@ -1422,6 +1422,9 @@ static inline void write_back_motion(H264Context *h, int mb_type){
     const int b8_xy= 2*s->mb_x + 2*s->mb_y*h->b8_stride;
     int list;
 
+    if(!USES_LIST(mb_type, 0))
+        fill_rectangle(&s->current_picture.ref_index[0][b8_xy], 2, 2, h->b8_stride, (uint8_t)LIST_NOT_USED, 1);
+
     for(list=0; list<2; list++){
         int y;
         if(!USES_LIST(mb_type, list))
