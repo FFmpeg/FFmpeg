@@ -606,44 +606,75 @@ static int smka_decode_frame(AVCodecContext *avctx, void *data, int *data_size, 
         get_bits1(&gb);
         smacker_decode_tree(&gb, &h[i], 0, 0);
         get_bits1(&gb);
-        res = init_vlc(&vlc[i], SMKTREE_BITS, h[i].length,
+        if(h[i].current > 1) {
+            res = init_vlc(&vlc[i], SMKTREE_BITS, h[i].length,
                     h[i].lengths, sizeof(int), sizeof(int),
                     h[i].bits, sizeof(uint32_t), sizeof(uint32_t), INIT_VLC_LE);
-        if(res < 0) {
-            av_log(avctx, AV_LOG_ERROR, "Cannot build VLC table\n");
-            return -1;
+            if(res < 0) {
+                av_log(avctx, AV_LOG_ERROR, "Cannot build VLC table\n");
+                return -1;
+            }
         }
     }
     if(bits) { //decode 16-bit data
         pred[0]  = get_bits(&gb, 8);
         pred[0] |= get_bits(&gb, 8);
+        *samples++ = pred[0];
         if(stereo) {
             pred[1]  = get_bits(&gb, 8);
             pred[1] |= get_bits(&gb, 8);
+            *samples++ = pred[1];
         }
         for(i = 0; i < unp_size / 2; i++) {
             if(i & stereo) {
-                val  = h[2].values[get_vlc2(&gb, vlc[2].table, SMKTREE_BITS, 3)];
-                val |= (int8_t)h[3].values[get_vlc2(&gb, vlc[3].table, SMKTREE_BITS, 3)] << 8;
-                pred[1] += val;
+                if(vlc[2].table)
+                    res = get_vlc2(&gb, vlc[2].table, SMKTREE_BITS, 3);
+                else
+                    res = 0;
+                val  = h[2].values[res];
+                if(vlc[3].table)
+                    res = get_vlc2(&gb, vlc[3].table, SMKTREE_BITS, 3);
+                else
+                    res = 0;
+                val |= h[3].values[res] << 8;
+                pred[1] += (int16_t)val;
                 *samples++ = pred[1];
             } else {
-                val  = h[0].values[get_vlc2(&gb, vlc[0].table, SMKTREE_BITS, 3)];
-                val |= (int8_t)h[1].values[get_vlc2(&gb, vlc[1].table, SMKTREE_BITS, 3)] << 8;
+                if(vlc[0].table)
+                    res = get_vlc2(&gb, vlc[0].table, SMKTREE_BITS, 3);
+                else
+                    res = 0;
+                val  = h[0].values[res];
+                if(vlc[1].table)
+                    res = get_vlc2(&gb, vlc[1].table, SMKTREE_BITS, 3);
+                else
+                    res = 0;
+                val |= h[1].values[res] << 8;
                 pred[0] += val;
                 *samples++ = pred[0];
             }
         }
     } else { //8-bit data
         pred[0] = get_bits(&gb, 8);
-        if(stereo)
+        *samples++ = (pred[0] - 0x80) << 8;
+        if(stereo) {
             pred[1] = get_bits(&gb, 8);
+            *samples++ = (pred[1] - 0x80) << 8;
+        }
         for(i = 0; i < unp_size; i++) {
             if(i & stereo){
-                pred[1] += (int8_t)h[1].values[get_vlc2(&gb, vlc[1].table, SMKTREE_BITS, 3)];
+                if(vlc[1].table)
+                    res = get_vlc2(&gb, vlc[1].table, SMKTREE_BITS, 3);
+                else
+                    res = 0;
+                pred[1] += (int8_t)h[1].values[res];
                 *samples++ = (pred[1] - 0x80) << 8;
             } else {
-                pred[0] += (int8_t)h[0].values[get_vlc2(&gb, vlc[0].table, SMKTREE_BITS, 3)];
+                if(vlc[0].table)
+                    res = get_vlc2(&gb, vlc[0].table, SMKTREE_BITS, 3);
+                else
+                    res = 0;
+                pred[0] += (int8_t)h[0].values[res];
                 *samples++ = (pred[0] - 0x80) << 8;
             }
         }
