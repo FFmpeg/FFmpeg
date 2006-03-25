@@ -2417,7 +2417,7 @@ matroska_parse_blockgroup (MatroskaDemuxContext *matroska,
 
                 if (res == 0) {
                     for (n = 0; n < laces; n++) {
-                        uint64_t timecode = 0;
+                        uint64_t timecode = AV_NOPTS_VALUE;
 
                         pkt = av_mallocz(sizeof(AVPacket));
                         /* XXX: prevent data copy... */
@@ -2425,10 +2425,8 @@ matroska_parse_blockgroup (MatroskaDemuxContext *matroska,
                             res = AVERROR_NOMEM;
                             break;
                         }
-                        if (cluster_time != (uint64_t)-1) {
-                            if (block_time < 0 && (-block_time) > cluster_time)
-                                timecode = cluster_time;
-                            else
+                        if (cluster_time != (uint64_t)-1 && n == 0) {
+                            if (cluster_time + block_time >= 0)
                                 timecode = cluster_time + block_time;
                         }
                         /* FIXME: duration */
