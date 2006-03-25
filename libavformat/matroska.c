@@ -2295,7 +2295,7 @@ matroska_parse_blockgroup (MatroskaDemuxContext *matroska,
             case MATROSKA_ID_BLOCK: {
                 uint8_t *data, *origdata;
                 int size;
-                uint64_t time;
+                uint64_t block_time;
                 uint32_t *lace_size = NULL;
                 int n, track, flags, laces = 0;
                 uint64_t num;
@@ -2328,8 +2328,8 @@ matroska_parse_blockgroup (MatroskaDemuxContext *matroska,
                     break;
                 }
 
-                /* time (relative to cluster time) */
-                time = ((data[0] << 8) | data[1]) * matroska->time_scale;
+                /* block_time (relative to cluster time) */
+                block_time = ((data[0] << 8) | data[1]) * matroska->time_scale;
                 data += 2;
                 size -= 2;
                 flags = *data;
@@ -2426,10 +2426,10 @@ matroska_parse_blockgroup (MatroskaDemuxContext *matroska,
                             break;
                         }
                         if (cluster_time != (uint64_t)-1) {
-                            if (time < 0 && (-time) > cluster_time)
+                            if (block_time < 0 && (-block_time) > cluster_time)
                                 timecode = cluster_time;
                             else
-                                timecode = cluster_time + time;
+                                timecode = cluster_time + block_time;
                         }
                         /* FIXME: duration */
 
