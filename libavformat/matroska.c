@@ -2206,7 +2206,7 @@ matroska_read_header (AVFormatContext    *s,
             st = av_new_stream(s, track->stream_index);
             if (st == NULL)
                 return AVERROR_NOMEM;
-            av_set_pts_info(st, 24, 1, 1000); /* 24 bit pts in ms */
+            av_set_pts_info(st, 64, matroska->time_scale, 1000*1000*1000); /* 64 bit pts in ns */
 
             st->codec->codec_id = codec_id;
 
@@ -2295,7 +2295,7 @@ matroska_parse_blockgroup (MatroskaDemuxContext *matroska,
             case MATROSKA_ID_BLOCK: {
                 uint8_t *data, *origdata;
                 int size;
-                uint64_t block_time;
+                int16_t block_time;
                 uint32_t *lace_size = NULL;
                 int n, track, flags, laces = 0;
                 uint64_t num;
@@ -2329,7 +2329,7 @@ matroska_parse_blockgroup (MatroskaDemuxContext *matroska,
                 }
 
                 /* block_time (relative to cluster time) */
-                block_time = ((data[0] << 8) | data[1]) * matroska->time_scale;
+                block_time = (data[0] << 8) | data[1];
                 data += 2;
                 size -= 2;
                 flags = *data;
@@ -2440,7 +2440,7 @@ matroska_parse_blockgroup (MatroskaDemuxContext *matroska,
                         pkt->stream_index =
                             matroska->tracks[track]->stream_index;
 
-                        pkt->pts = timecode / 1000000; /* ns to ms */
+                        pkt->pts = timecode;
                         pkt->pos= pos;
 
                         matroska_queue_packet(matroska, pkt);
@@ -2514,7 +2514,7 @@ matroska_parse_cluster (MatroskaDemuxContext *matroska)
                 uint64_t num;
                 if ((res = ebml_read_uint(matroska, &id, &num)) < 0)
                     break;
-                cluster_time = num * matroska->time_scale;
+                cluster_time = num;
                 break;
             }
 
