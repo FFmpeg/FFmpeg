@@ -51,7 +51,7 @@ typedef struct MOVIndex {
     int         ents_allocated;
     long        timescale;
     long        time;
-    long        trackDuration;
+    int64_t     trackDuration;
     long        sampleCount;
     long        sampleDuration;
     int         hasKeyframes;
@@ -67,7 +67,7 @@ typedef struct MOVIndex {
 
 typedef struct MOVContext {
     int     mode;
-    long    time;
+    int64_t time;
     int     nb_streams;
     int     mdat_written;
     offset_t mdat_pos;
@@ -848,13 +848,21 @@ static int mov_write_minf_tag(ByteIOContext *pb, MOVTrack* track)
 
 static int mov_write_mdhd_tag(ByteIOContext *pb, MOVTrack* track)
 {
-    put_be32(pb, 32); /* size */
+    int version = track->trackDuration < INT32_MAX ? 0 : 1;
+
+    (version == 1) ? put_be32(pb, 44) : put_be32(pb, 32); /* size */
     put_tag(pb, "mdhd");
-    put_be32(pb, 0); /* Version & flags */
-    put_be32(pb, track->time); /* creation time */
-    put_be32(pb, track->time); /* modification time */
+    put_byte(pb, version);
+    put_be24(pb, 0); /* flags */
+    if (version == 1) {
+        put_be64(pb, track->time);
+        put_be64(pb, track->time);
+    } else {
+        put_be32(pb, track->time); /* creation time */
+        put_be32(pb, track->time); /* modification time */
+    }
     put_be32(pb, track->timescale); /* time scale (sample rate for audio) */
-    put_be32(pb, track->trackDuration); /* duration */
+    (version == 1) ? put_be64(pb, track->trackDuration) : put_be32(pb, track->trackDuration); /* duration */
     put_be16(pb, track->language); /* language */
     put_be16(pb, 0); /* reserved (quality) */
     return 32;
@@ -873,14 +881,23 @@ static int mov_write_mdia_tag(ByteIOContext *pb, MOVTrack* track)
 
 static int mov_write_tkhd_tag(ByteIOContext *pb, MOVTrack* track)
 {
-    put_be32(pb, 0x5c); /* size (always 0x5c) */
+    int64_t duration = av_rescale_rnd(track->trackDuration, globalTimescale, track->timescale, AV_ROUND_UP);
+    int version = duration < INT32_MAX ? 0 : 1;
+
+    (version == 1) ? put_be32(pb, 104) : put_be32(pb, 92); /* size */
     put_tag(pb, "tkhd");
-    put_be32(pb, 0xf); /* version & flags (track enabled) */
-    put_be32(pb, track->time); /* creation time */
-    put_be32(pb, track->time); /* modification time */
+    put_byte(pb, version);
+    put_be24(pb, 0xf); /* flags (track enabled) */
+    if (version == 1) {
+        put_be64(pb, track->time);
+        put_be64(pb, track->time);
+    } else {
+        put_be32(pb, track->time); /* creation time */
+        put_be32(pb, track->time); /* modification time */
+    }
     put_be32(pb, track->trackID); /* track-id */
     put_be32(pb, 0); /* reserved */
-    put_be32(pb, av_rescale_rnd(track->trackDuration, globalTimescale, track->timescale, AV_ROUND_UP)); /* duration */
+    (version == 1) ? put_be64(pb, duration) : put_be32(pb, duration);
 
     put_be32(pb, 0); /* reserved */
     put_be32(pb, 0); /* reserved */
@@ -987,13 +1004,8 @@ static int mov_write_mvhd_tag(ByteIOContext *pb, MOVContext *mov)
 {
     int maxTrackID = 1, i;
     int64_t maxTrackLenTemp, maxTrackLen = 0;
+    int version;
 
-    put_be32(pb, 0x6c); /* size (always 0x6c) */
-    put_tag(pb, "mvhd");
-    put_be32(pb, 0); /* version & flags */
-    put_be32(pb, mov->time); /* creation time */
-    put_be32(pb, mov->time); /* modification time */
-    put_be32(pb, mov->timescale); /* timescale */
     for (i=0; i<MAX_STREAMS; i++) {
         if(mov->tracks[i].entry > 0) {
             maxTrackLenTemp = av_rescale_rnd(mov->tracks[i].trackDuration, globalTimescale, mov->tracks[i].timescale, AV_ROUND_UP);
@@ -1003,7 +1015,21 @@ static int mov_write_mvhd_tag(ByteIOContext *pb, MOVContext *mov)
                 maxTrackID = mov->tracks[i].trackID;
         }
     }
-    put_be32(pb, maxTrackLen); /* duration of longest track */
+
+    version = maxTrackLen < UINT32_MAX ? 0 : 1;
+    (version == 1) ? put_be32(pb, 120) : put_be32(pb, 108); /* size */
+    put_tag(pb, "mvhd");
+    put_byte(pb, version);
+    put_be24(pb, 0); /* flags */
+    if (version == 1) {
+        put_be64(pb, mov->time);
+        put_be64(pb, mov->time);
+    } else {
+        put_be32(pb, mov->time); /* creation time */
+        put_be32(pb, mov->time); /* modification time */
+    }
+    put_be32(pb, mov->timescale); /* timescale */
+    (version == 1) ? put_be64(pb, maxTrackLen) : put_be32(pb, maxTrackLen); /* duration of longest track */
 
     put_be32(pb, 0x00010000); /* reserved (preferred rate) 1.0 = normal */
     put_be16(pb, 0x0100); /* reserved (preferred volume) 1.0 = normal */
@@ -1413,7 +1439,7 @@ static int mov_write_moov_tag(ByteIOContext *pb, MOVContext *mov,
         }
 
         mov->tracks[i].trackDuration =
-            mov->tracks[i].sampleCount * mov->tracks[i].sampleDuration;
+            (int64_t)mov->tracks[i].sampleCount * mov->tracks[i].sampleDuration;
         mov->tracks[i].time = mov->time;
         mov->tracks[i].trackID = i+1;
     }
