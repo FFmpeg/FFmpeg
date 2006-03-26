@@ -145,7 +145,7 @@ ifeq ($(CONFIG_PP),yes)
 	$(MAKE) -C libavcodec/libpostproc install-libs
 endif
 ifeq ($(BUILD_SHARED),yes)
-	$(LDCONFIG) || true
+	-$(LDCONFIG)
 endif
 
 install-headers:
