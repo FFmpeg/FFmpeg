@@ -600,6 +600,10 @@ static int mov_read_esds(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
             if (st->codec->extradata) {
                 get_buffer(pb, st->codec->extradata, len);
                 st->codec->extradata_size = len;
+                /* from mplayer */
+                if ((*(uint8_t *)st->codec->extradata >> 3) == 29) {
+                    st->codec->codec_id = CODEC_ID_MP3ON4;
+                }
             }
         }
     }
@@ -1134,11 +1138,17 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     if(st->codec->codec_type==CODEC_TYPE_AUDIO && st->codec->sample_rate==0 && sc->time_scale>1) {
         st->codec->sample_rate= sc->time_scale;
     }
+
+    switch (st->codec->codec_id) {
 #ifdef CONFIG_FAAD
-    if(st->codec->codec_id ==CODEC_ID_AAC) {
-        st->codec->sample_rate= 0; /* let faad init parameters properly */
-    }
+    case CODEC_ID_AAC:
 #endif
+    case CODEC_ID_MP3ON4:
+        st->codec->sample_rate= 0; /* let decoder init parameters properly */
+        break;
+    default:
+        break;
+    }
 
     return 0;
 }
