@@ -1143,6 +1143,9 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 #ifdef CONFIG_FAAD
     case CODEC_ID_AAC:
 #endif
+#ifdef CONFIG_VORBIS_DECODER
+    case CODEC_ID_VORBIS:
+#endif
     case CODEC_ID_MP3ON4:
         st->codec->sample_rate= 0; /* let decoder init parameters properly */
         break;
