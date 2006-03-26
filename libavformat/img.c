@@ -116,7 +116,6 @@ static int img_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 
     st = av_new_stream(s1, 0);
     if (!st) {
-        av_free(s);
         return -ENOMEM;
     }
 
@@ -178,7 +177,6 @@ static int img_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     if (!s->is_pipe)
         url_fclose(f);
  fail:
-    av_free(s);
     return AVERROR_IO;
 }
 
