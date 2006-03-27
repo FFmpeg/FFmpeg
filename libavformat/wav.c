@@ -45,6 +45,10 @@ const CodecTag codec_wav_tags[] = {
     { CODEC_ID_ADPCM_CT, 0x200 },
     { CODEC_ID_ADPCM_SWF, ('S'<<8)+'F' },
     { CODEC_ID_TRUESPEECH, 0x22 },
+
+    // for NuppelVideo (nuv.c)
+    { CODEC_ID_PCM_S16LE, MKTAG('R', 'A', 'W', 'A') },
+    { CODEC_ID_MP3, MKTAG('L', 'A', 'M', 'E') },
     { 0, 0 },
 };
 

@@ -120,6 +120,7 @@ void av_register_all(void)
     voc_init();
     tta_init();
     avs_init();
+    nuv_init();
 
 #ifdef CONFIG_MUXERS
     /* image formats */

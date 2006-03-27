@@ -134,6 +134,7 @@ Codecs:
   msmpeg4.c, msmpeg4data.h              Michael Niedermayer
   msrle.c                               Mike Melanson
   msvideo1.c                            Mike Melanson
+  nuv.c                                 Reimar Doeffinger
   oggtheora.c                           Mans Rullgard
   qdm2.c, qdm2data.h                    Roberto Togni
   qdrw.c                                Kostya Shishkov
@@ -142,6 +143,7 @@ Codecs:
   ra144.c, ra144.h, ra288.c, ra288.h    Roberto Togni
   resample2.c                           Michael Niedermayer
   rpza.c                                Roberto Togni
+  rtjpeg.c, rtjpeg.h                    Reimar Doeffinger
   rv10.c                                Michael Niedermayer
   smc.c                                 Mike Melanson
   snow.c                                Michael Niedermayer, Loren Merritt
@@ -191,6 +193,7 @@ Muxers/Demuxers:
   mpegts*                               Mans Rullgard
   nsvdec.c                              Francois Revol
   nut.c                                 Alex Beregszaszi
+  nuv.c                                 Reimar Doeffinger
   ogg2.c, ogg2.h                        Mans Rullgard
   oggparsevorbis.c                      Mans Rullgard
   psxstr.c                              Mike Melanson

@@ -119,6 +119,7 @@ enum CodecID {
     CODEC_ID_ZMBV,
     CODEC_ID_AVS,
     CODEC_ID_SMACKVIDEO,
+    CODEC_ID_NUV,
 
     /* various pcm "codecs" */
     CODEC_ID_PCM_S16LE= 0x10000,
@@ -2221,6 +2222,7 @@ extern AVCodec qtrle_decoder;
 extern AVCodec flac_decoder;
 extern AVCodec tscc_decoder;
 extern AVCodec cscd_decoder;
+extern AVCodec nuv_decoder;
 extern AVCodec ulti_decoder;
 extern AVCodec qdraw_decoder;
 extern AVCodec xl_decoder;
