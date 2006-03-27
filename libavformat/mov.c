@@ -1339,6 +1339,12 @@ static int mov_read_ctts(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
         int count    =get_be32(pb);
         int duration =get_be32(pb);
 
+        if (duration < 0) {
+            av_log(c->fc, AV_LOG_ERROR, "negative ctts, ignoring\n");
+            sc->ctts_count = 0;
+            url_fskip(pb, 8 * (entries - i - 1));
+            break;
+        }
         sc->ctts_data[i].count   = count;
         sc->ctts_data[i].duration= duration;
 
