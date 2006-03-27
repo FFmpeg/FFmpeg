@@ -100,6 +100,7 @@ static int adts_write_packet(AVFormatContext *s, AVPacket *pkt)
     if(adts->write_adts)
         adts_write_frame_header(s, pkt->size);
     put_buffer(pb, pkt->data, pkt->size);
+    put_flush_packet(pb);
 
     return 0;
 }
