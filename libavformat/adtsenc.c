@@ -97,6 +97,8 @@ static int adts_write_packet(AVFormatContext *s, AVPacket *pkt)
     ADTSContext *adts = s->priv_data;
     ByteIOContext *pb = &s->pb;
 
+    if (!pkt->size)
+        return 0;
     if(adts->write_adts)
         adts_write_frame_header(s, pkt->size);
     put_buffer(pb, pkt->data, pkt->size);
