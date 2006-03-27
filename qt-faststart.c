@@ -24,6 +24,11 @@
 #include <stdlib.h>
 #include <inttypes.h>
 
+#ifdef __MINGW32__
+#define fseeko(x,y,z)  fseeko64(x,y,z)
+#define ftello(x)      ftello64(x)
+#endif
+
 #define BE_16(x) ((((uint8_t*)(x))[0] << 8) | ((uint8_t*)(x))[1])
 #define BE_32(x) ((((uint8_t*)(x))[0] << 24) | \
                   (((uint8_t*)(x))[1] << 16) | \
