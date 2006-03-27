@@ -120,4 +120,43 @@ extern void ff_snow_vertical_compose97i(DWTELEM *b0, DWTELEM *b1, DWTELEM *b2, D
 extern void ff_snow_horizontal_compose97i(DWTELEM *b, int width);
 extern void ff_snow_inner_add_yblock(uint8_t *obmc, const int obmc_stride, uint8_t * * block, int b_w, int b_h, int src_x, int src_y, int src_stride, slice_buffer * sb, int add, uint8_t * dst8);
 
+
+/* C bits used by mmx/sse2/altivec */
+
+static always_inline void snow_interleave_line_header(int * i, int width, DWTELEM * low, DWTELEM * high){
+    (*i) = (width) - 2;
+
+    if (width & 1){
+        low[(*i)+1] = low[((*i)+1)>>1];
+        (*i)--;
+    }
+}
+
+static always_inline void snow_interleave_line_footer(int * i, DWTELEM * low, DWTELEM * high){
+    for (; (*i)>=0; (*i)-=2){
+        low[(*i)+1] = high[(*i)>>1];
+        low[*i] = low[(*i)>>1];
+    }
+}
+
+static always_inline void snow_horizontal_compose_lift_lead_out(int i, DWTELEM * dst, DWTELEM * src, DWTELEM * ref, int width, int w, int lift_high, int mul, int add, int shift){
+    for(; i<w; i++){
+        dst[i] = src[i] - ((mul * (ref[i] + ref[i + 1]) + add) >> shift);
+    }
+
+    if((width^lift_high)&1){
+        dst[w] = src[w] - ((mul * 2 * ref[w] + add) >> shift);
+    }
+}
+
+static always_inline void snow_horizontal_compose_liftS_lead_out(int i, DWTELEM * dst, DWTELEM * src, DWTELEM * ref, int width, int w){
+        for(; i<w; i++){
+            dst[i] = src[i] - (((-(ref[i] + ref[(i+1)])+W_BO) - 4 * src[i]) >> W_BS);
+        }
+
+        if(width&1){
+            dst[w] = src[w] - (((-2 * ref[w] + W_BO) - 4 * src[w]) >> W_BS);
+        }
+}
+
 #endif

@@ -388,7 +388,7 @@ endif
 ifeq ($(TARGET_ALTIVEC),yes)
 OBJS += ppc/dsputil_altivec.o ppc/mpegvideo_altivec.o ppc/idct_altivec.o \
         ppc/fft_altivec.o ppc/gmc_altivec.o ppc/fdct_altivec.o \
-        ppc/dsputil_h264_altivec.o
+        ppc/dsputil_h264_altivec.o ppc/dsputil_snow_altivec.o
 endif
 
 ifeq ($(TARGET_ARCH_SH4),yes)

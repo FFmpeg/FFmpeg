@@ -30,6 +30,17 @@ extern void fdct_altivec(int16_t *block);
 extern void idct_put_altivec(uint8_t *dest, int line_size, int16_t *block);
 extern void idct_add_altivec(uint8_t *dest, int line_size, int16_t *block);
 
+extern void ff_snow_horizontal_compose97i_altivec(DWTELEM *b, int width);
+extern void ff_snow_vertical_compose97i_altivec(DWTELEM *b0, DWTELEM *b1,
+                                                DWTELEM *b2, DWTELEM *b3,
+                                                DWTELEM *b4, DWTELEM *b5,
+                                                int width);
+extern void ff_snow_inner_add_yblock_altivec(uint8_t *obmc, const int obmc_stride,
+                                          uint8_t * * block, int b_w, int b_h,
+                                          int src_x, int src_y, int src_stride,
+                                          slice_buffer * sb, int add,
+                                          uint8_t * dst8);
+
 int mm_flags = 0;
 
 int mm_support(void)
@@ -296,6 +307,11 @@ void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx)
         c->hadamard8_diff[0] = hadamard8_diff16_altivec;
         c->hadamard8_diff[1] = hadamard8_diff8x8_altivec;
 #endif
+
+
+        c->horizontal_compose97i = ff_snow_horizontal_compose97i_altivec;
+        c->vertical_compose97i = ff_snow_vertical_compose97i_altivec;
+        c->inner_add_yblock = ff_snow_inner_add_yblock_altivec;
 
 #ifdef CONFIG_ENCODERS
         if (avctx->dct_algo == FF_DCT_AUTO ||
