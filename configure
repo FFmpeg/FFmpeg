@@ -911,7 +911,7 @@ if test "$mingw32" = "yes" -o "$mingwce" = "yes"; then
 You can only build one library type at once on MinGW.
 Specify --disable-static --enable-shared to only build
 the shared libraries. To build only the static libraries
-you don't need to pass additional options.
+you do not need to pass additional options.
 EOF
         exit 1
     fi
