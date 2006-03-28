@@ -1217,9 +1217,10 @@ EOF
 
 sdl_too_old=no
 sdl=no
-if (sdl-config --version) >/dev/null 2>&1 ; then
-if $cc -o $TMPE `sdl-config --cflags` $TMPC `sdl-config --libs`  > /dev/null 2>&1  ; then
-_sdlversion=`sdl-config --version | sed 's/[^0-9]//g'`
+SDL_CONFIG="${cross_prefix}sdl-config"
+if ("${SDL_CONFIG}" --version) >/dev/null 2>&1 ; then
+if $cc -o $TMPE `"${SDL_CONFIG}" --cflags` $TMPC `"${SDL_CONFIG}" --libs`  > /dev/null 2>&1  ; then
+_sdlversion=`"${SDL_CONFIG}" --version | sed 's/[^0-9]//g'`
 if test "$_sdlversion" -lt 121 ; then
 sdl_too_old=yes
 else
@@ -1572,8 +1573,8 @@ if test "$pthreads" = "yes" ; then
 fi
 if test "$sdl" = "yes" ; then
   echo "CONFIG_SDL=yes" >> config.mak
-  echo "SDL_LIBS=`sdl-config --libs`" >> config.mak
-  echo "SDL_CFLAGS=`sdl-config --cflags`" >> config.mak
+  echo "SDL_LIBS=`"${SDL_CONFIG}" --libs`" >> config.mak
+  echo "SDL_CFLAGS=`"${SDL_CONFIG}" --cflags`" >> config.mak
 fi
 if test "$texi2html" = "yes"; then
   echo "BUILD_DOC=yes" >> config.mak
