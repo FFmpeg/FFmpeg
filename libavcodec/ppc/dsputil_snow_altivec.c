@@ -510,35 +510,39 @@ static void inner_add_yblock_bw_8_obmc_16_altivec(uint8_t *obmc,
             tmp2 = vec_ld(15, obmc4);
 
             ob4 = vec_perm(tmp1,tmp2,align);
-            h1 = vec_mergeh(ob1, ob2); /*h1 <- [ a,b,a,b, a,b,a,b,
+            h1 = (vector unsigned short)
+                 vec_mergeh(ob1, ob2); /*h1 <- [ a,b,a,b, a,b,a,b,
                                                  a,b,a,b, a,b,a,b ] */
-            h2 = vec_mergeh(ob3, ob4); /*h2 <- [ c,d,c,d, c,d,c,d,
+            h2 = (vector unsigned short)
+                 vec_mergeh(ob3, ob4); /*h2 <- [ c,d,c,d, c,d,c,d,
                                                  c,d,c,d, c,d,c,d ] */
 
-            ih = vec_mergeh(h1,h2); /* ih <- [ a,b,c,d,a,b,c,d,a,b,c,d,a,b,c,d ]*/
+            ih = (vector unsigned char)
+                 vec_mergeh(h1,h2);    /*ih <- [ a,b,c,d, a,b,c,d,
+                                                 a,b,c,d, a,b,c,d ]*/
 
-            l1 = vec_mergeh(b3, b2);
+            l1 = (vector unsigned short) vec_mergeh(b3, b2);
 
-            l2 = vec_mergeh(b1, b0);
+            l2 = (vector unsigned short) vec_mergeh(b1, b0);
 
-            il = vec_mergeh(l1,l2);
+            il = (vector unsigned char) vec_mergeh(l1, l2);
 
-            v[0] = vec_msum(ih, il, vec_splat_u32(0));
+            v[0] = (vector signed int) vec_msum(ih, il, vec_splat_u32(0));
 //step1
 
-            h1 = vec_mergeh(ob1, ob2);
+            h1 = (vector unsigned short) vec_mergeh(ob1, ob2);
 
-            h2 = vec_mergeh(ob3, ob4);
+            h2 = (vector unsigned short) vec_mergeh(ob3, ob4);
 
-            ih = vec_mergel(h1,h2);
+            ih = (vector unsigned char) vec_mergel(h1, h2);
 
-            l1 = vec_mergeh(b3, b2);
+            l1 = (vector unsigned short) vec_mergeh(b3, b2);
 
-            l2 = vec_mergeh(b1, b0);
+            l2 = (vector unsigned short) vec_mergeh(b1, b0);
 
-            il = vec_mergel(l1,l2);
+            il = (vector unsigned char) vec_mergel(l1, l2);
 
-            v[1] = vec_msum(ih, il, vec_splat_u32(0));
+            v[1] = (vector signed int) vec_msum(ih, il, vec_splat_u32(0));
 
 
 #endif
@@ -664,69 +668,75 @@ static void inner_add_yblock_bw_16_obmc_32_altivec(uint8_t *obmc,
             ob4 = vec_perm(tmp1,tmp2,align);
 
 //step0
-            h1 = vec_mergeh(ob1, ob2); /*h1 <- [ a,b,a,b,
-                                                             a,b,a,b,
-                                                             a,b,a,b,
-                                                             a,b,a,b ] */
-            h2 = vec_mergeh(ob3, ob4); /*h2 <- [ c,d,c,d,
-                                                             c,d,c,d,
-                                                             c,d,c,d,
-                                                             c,d,c,d ] */
+            h1 = (vector unsigned short)
+                 vec_mergeh(ob1, ob2); /*h1 <- [ a,b,a,b,
+                                                 a,b,a,b,
+                                                 a,b,a,b,
+                                                 a,b,a,b ] */
+            h2 = (vector unsigned short)
+                 vec_mergeh(ob3, ob4); /*h2 <- [ c,d,c,d,
+                                                 c,d,c,d,
+                                                 c,d,c,d,
+                                                 c,d,c,d ] */
 
-            ih = vec_mergeh(h1,h2); /* ih <- [ a,b,c,d,a,b,c,d,a,b,c,d,a,b,c,d ]*/
+            ih = (vector unsigned char)
+                 vec_mergeh(h1,h2);    /*ih <- [ a,b,c,d,
+                                                 a,b,c,d,
+                                                 a,b,c,d,
+                                                 a,b,c,d ]*/
 
-            l1 = vec_mergeh(b3, b2);
+            l1 = (vector unsigned short) vec_mergeh(b3, b2);
 
-            l2 = vec_mergeh(b1, b0);
+            l2 = (vector unsigned short) vec_mergeh(b1, b0);
 
-            il = vec_mergeh(l1,l2);
+            il = (vector unsigned char) vec_mergeh(l1,l2);
 
-            v[0] = vec_msum(ih, il, vec_splat_u32(0));
+            v[0] = (vector signed int) vec_msum(ih, il, vec_splat_u32(0));
 //step1
 
-            h1 = vec_mergeh(ob1, ob2);
+            h1 = (vector unsigned short) vec_mergeh(ob1, ob2);
 
-            h2 = vec_mergeh(ob3, ob4);
+            h2 = (vector unsigned short) vec_mergeh(ob3, ob4);
 
-            ih = vec_mergel(h1,h2);
+            ih = (vector unsigned char) vec_mergel(h1,h2);
 
-            l1 = vec_mergeh(b3, b2);
+            l1 = (vector unsigned short) vec_mergeh(b3, b2);
 
-            l2 = vec_mergeh(b1, b0);
+            l2 = (vector unsigned short) vec_mergeh(b1, b0);
 
-            il = vec_mergel(l1,l2);
+            il = (vector unsigned char) vec_mergel(l1,l2);
 
-            v[1] = vec_msum(ih, il, vec_splat_u32(0));
+            v[1] = (vector signed int) vec_msum(ih, il, vec_splat_u32(0));
 
 //step2
-            h1 = vec_mergel(ob1, ob2);
+            h1 = (vector unsigned short) vec_mergel(ob1, ob2);
 
-            h2 = vec_mergel(ob3, ob4);
+            h2 = (vector unsigned short) vec_mergel(ob3, ob4);
 
-            ih = vec_mergeh(h1,h2);
+            ih = (vector unsigned char) vec_mergeh(h1,h2);
 
-            l1 = vec_mergel(b3, b2);
+            l1 = (vector unsigned short) vec_mergel(b3, b2);
 
-            l2 = vec_mergel(b1, b0);
+            l2 = (vector unsigned short) vec_mergel(b1, b0);
 
-            il = vec_mergeh(l1,l2);
+            il = (vector unsigned char) vec_mergeh(l1,l2);
 
-            v[2] = vec_msum(ih, il, vec_splat_u32(0));
+            v[2] = (vector signed int) vec_msum(ih, il, vec_splat_u32(0));
 
 //step3
-            h1 = vec_mergel(ob1, ob2);
+            h1 = (vector unsigned short) vec_mergel(ob1, ob2);
 
-            h2 = vec_mergel(ob3, ob4);
+            h2 = (vector unsigned short) vec_mergel(ob3, ob4);
 
-            ih = vec_mergel(h1,h2);
+            ih = (vector unsigned char) vec_mergel(h1,h2);
 
-            l1 = vec_mergel(b3, b2);
+            l1 = (vector unsigned short) vec_mergel(b3, b2);
 
-            l2 = vec_mergel(b1, b0);
+            l2 = (vector unsigned short) vec_mergel(b1, b0);
 
-            il = vec_mergel(l1,l2);
+            il = (vector unsigned char) vec_mergel(l1,l2);
 
-            v[3] = vec_msum(ih, il, vec_splat_u32(0));
+            v[3] = (vector signed int) vec_msum(ih, il, vec_splat_u32(0));
 #if 1
         for(x=0; x<b_w; x++)
             if(add){
