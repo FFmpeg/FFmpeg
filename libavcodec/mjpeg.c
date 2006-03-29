@@ -1273,7 +1273,7 @@ static int decode_block(MJpegDecodeContext *s, DCTELEM *block,
     /* AC coefs */
     ac_vlc = &s->vlcs[1][ac_index];
     i = 0;
-    OPEN_READER(re, &s->gb)
+    {OPEN_READER(re, &s->gb)
     for(;;) {
         UPDATE_CACHE(re, &s->gb);
         GET_VLC(code, re, &s->gb, s->vlcs[1][ac_index].table, 9, 2)
@@ -1310,7 +1310,7 @@ static int decode_block(MJpegDecodeContext *s, DCTELEM *block,
             block[j] = level * quant_matrix[j];
         }
     }
-    CLOSE_READER(re, &s->gb)
+    CLOSE_READER(re, &s->gb)}
 
     return 0;
 }
