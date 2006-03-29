@@ -1268,17 +1268,13 @@ static int decode_block(MJpegDecodeContext *s, DCTELEM *block,
         UPDATE_CACHE(re, &s->gb);
         GET_VLC(code, re, &s->gb, s->vlcs[1][ac_index].table, 9, 2)
 
-        if (code < 0) {
-            dprintf("error ac\n");
-            return -1;
-        }
         /* EOB */
         if (code == 0)
             break;
         if (code == 0xf0) {
             i += 16;
         } else {
-            i += code >> 4;
+            i += ((unsigned)code) >> 4;
             code &= 0xf;
 
             UPDATE_CACHE(re, &s->gb)
@@ -1289,7 +1285,7 @@ static int decode_block(MJpegDecodeContext *s, DCTELEM *block,
                 level = - NEG_USR32(~GET_CACHE(re,&s->gb),code);
             }
 
-            SKIP_BITS(re, &s->gb, code)
+            LAST_SKIP_BITS(re, &s->gb, code)
 
             if (i >= 64) {
                 dprintf("error count: %d\n", i);
