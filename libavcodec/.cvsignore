@@ -2,3 +2,5 @@ Makefile.*
 .depend
 amr
 amr*_float
+apiexample
+*-test
