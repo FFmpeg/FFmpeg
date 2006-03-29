@@ -452,7 +452,7 @@ cleanamrwbfloat:
 
 # api example program
 apiexample: apiexample.c $(LIB)
-	$(CC) $(CFLAGS) -o $@ $< $(LIB) $(LIBAVUTIL) $(EXTRALIBS) -lm
+	$(CC) $(CFLAGS) -o $@ $< $(LIB) $(LIBAVUTIL) $(EXTRALIBS)
 
 # cpuid test
 cpuid_test: i386/cputest.c
