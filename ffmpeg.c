@@ -626,13 +626,7 @@ static void pre_process_video_frame(AVInputStream *ist, AVPicture *picture, void
                 picture2 = picture;
             }
         } else {
-            if (img_convert(picture2, dec->pix_fmt, picture,
-                            dec->pix_fmt, dec->width, dec->height) < 0) {
-                /* if error, do not copy */
-                av_free(buf);
-                buf = NULL;
-                picture2 = picture;
-            }
+            img_copy(picture2, picture, dec->pix_fmt, dec->width, dec->height);
         }
     } else {
         picture2 = picture;
