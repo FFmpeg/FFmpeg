@@ -1246,11 +1246,10 @@ static inline int mjpeg_decode_dc(MJpegDecodeContext *s, int dc_index)
 
 /* decode block and dequantize */
 static int decode_block(MJpegDecodeContext *s, DCTELEM *block,
-                        int component, int dc_index, int ac_index, int quant_index)
+                        int component, int dc_index, int ac_index, int16_t *quant_matrix)
 {
     int code, i, j, level, val;
     VLC *ac_vlc;
-    int16_t *quant_matrix;
 
     /* DC coef */
     val = mjpeg_decode_dc(s, dc_index);
@@ -1258,15 +1257,16 @@ static int decode_block(MJpegDecodeContext *s, DCTELEM *block,
         dprintf("error dc\n");
         return -1;
     }
-    quant_matrix = s->quant_matrixes[quant_index];
     val = val * quant_matrix[0] + s->last_dc[component];
     s->last_dc[component] = val;
     block[0] = val;
     /* AC coefs */
     ac_vlc = &s->vlcs[1][ac_index];
     i = 1;
+    OPEN_READER(re, &s->gb)
     for(;;) {
-        code = get_vlc2(&s->gb, s->vlcs[1][ac_index].table, 9, 2);
+        UPDATE_CACHE(re, &s->gb);
+        GET_VLC(code, re, &s->gb, s->vlcs[1][ac_index].table, 9, 2)
 
         if (code < 0) {
             dprintf("error ac\n");
@@ -1278,8 +1278,19 @@ static int decode_block(MJpegDecodeContext *s, DCTELEM *block,
         if (code == 0xf0) {
             i += 16;
         } else {
-            level = get_xbits(&s->gb, code & 0xf);
             i += code >> 4;
+            code &= 0xf;
+
+            UPDATE_CACHE(re, &s->gb)
+
+            if ((int32_t)GET_CACHE(re,&s->gb)<0) { //MSB=1
+                level =   NEG_USR32( GET_CACHE(re,&s->gb),code);
+            } else {
+                level = - NEG_USR32(~GET_CACHE(re,&s->gb),code);
+            }
+
+            SKIP_BITS(re, &s->gb, code)
+
             if (i >= 64) {
                 dprintf("error count: %d\n", i);
                 return -1;
@@ -1291,6 +1302,8 @@ static int decode_block(MJpegDecodeContext *s, DCTELEM *block,
                 break;
         }
     }
+    CLOSE_READER(re, &s->gb)
+
     return 0;
 }
 
@@ -1467,7 +1480,7 @@ static int mjpeg_decode_scan(MJpegDecodeContext *s){
                     memset(s->block, 0, sizeof(s->block));
                     if (decode_block(s, s->block, i,
                                      s->dc_index[i], s->ac_index[i],
-                                     s->quant_index[c]) < 0) {
+                                     s->quant_matrixes[ s->quant_index[c] ]) < 0) {
                         dprintf("error y=%d x=%d\n", mb_y, mb_x);
                         return -1;
                     }
