@@ -21,6 +21,7 @@
 #include <xvid.h>
 #include <unistd.h>
 #include "avcodec.h"
+#include "internal.h"
 //#include "dsputil.h"
 #include "mpegvideo.h"
 
@@ -37,11 +38,10 @@ int ff_xvid_rate_control_init(MpegEncContext *s){
 
 //xvid_debug=-1;
 
-    tmp_name= av_strdup("/tmp/xvidrc.XXXXXX");
-    fd = mkstemp(tmp_name);
-    if(fd < 0){
-        strcpy(tmp_name, "./xvidrc.XXXXXX");
-        fd = mkstemp(tmp_name);
+    fd=av_tempfile("xvidrc.", &tmp_name);
+    if (fd == -1) {
+        av_log(NULL, AV_LOG_ERROR, "Can't create temporary pass2 file.\n");
+        return -1;
     }
 
     for(i=0; i<s->rc_context.num_entries; i++){
