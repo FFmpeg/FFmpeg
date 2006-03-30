@@ -1015,7 +1015,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
     *picture= *p;
     *data_size = sizeof(AVFrame);
 
-    return (get_bits_count(&s->gb)+31)/32*4;
+    return (get_bits_count(&s->gb)+31)/32*4 + table_size;
 }
 
 static int common_end(HYuvContext *s){
