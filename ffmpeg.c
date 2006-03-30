@@ -3936,11 +3936,13 @@ static void opt_target(const char *arg)
         audio_bit_rate = 448000;
         audio_sample_rate = 48000;
 
-    } else if(!strcmp(arg, "dv")) {
+    } else if(!strncmp(arg, "dv", 2)) {
 
         opt_format("dv");
 
         opt_frame_size(norm ? "720x480" : "720x576");
+        opt_frame_pix_fmt(!strncmp(arg, "dv50", 4) ? "yuv422p" :
+                                             (norm ? "yuv411p" : "yuv420p"));
         opt_frame_rate(frame_rates[norm]);
 
         audio_sample_rate = 48000;
@@ -4014,7 +4016,7 @@ const OptionDef options[] = {
     { "loop_input", OPT_BOOL | OPT_EXPERT, {(void*)&loop_input}, "loop (current only works with images)" },
     { "loop_output", HAS_ARG | OPT_INT | OPT_EXPERT, {(void*)&loop_output}, "number of times to loop output in formats that support looping (0 loops forever)", "" },
     { "v", HAS_ARG, {(void*)opt_verbose}, "control amount of logging", "verbose" },
-    { "target", HAS_ARG, {(void*)opt_target}, "specify target file type (\"vcd\", \"svcd\", \"dvd\", \"dv\", \"pal-vcd\", \"ntsc-svcd\", ...)", "type" },
+    { "target", HAS_ARG, {(void*)opt_target}, "specify target file type (\"vcd\", \"svcd\", \"dvd\", \"dv\", \"dv50\", \"pal-vcd\", \"ntsc-svcd\", ...)", "type" },
     { "threads", HAS_ARG | OPT_EXPERT, {(void*)opt_thread_count}, "thread count", "count" },
     { "vsync", HAS_ARG | OPT_INT | OPT_EXPERT, {(void*)&video_sync_method}, "video sync method", "" },
     { "async", HAS_ARG | OPT_INT | OPT_EXPERT, {(void*)&audio_sync_method}, "audio sync method", "" },
