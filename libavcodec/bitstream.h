@@ -574,21 +574,15 @@ static inline int get_bits_count(GetBitContext *s){
  * @author BERO
  */
 static inline int get_xbits(GetBitContext *s, int n){
-    register int tmp;
+    register int sign;
     register int32_t cache;
     OPEN_READER(re, s)
     UPDATE_CACHE(re, s)
     cache = GET_CACHE(re,s);
-    if ((int32_t)cache<0) { //MSB=1
-        tmp = NEG_USR32(cache,n);
-    } else {
-    //   tmp = (-1<<n) | NEG_USR32(cache,n) + 1; mpeg12.c algo
-    //   tmp = - (NEG_USR32(cache,n) ^ ((1 << n) - 1)); h263.c algo
-        tmp = - NEG_USR32(~cache,n);
-    }
+    sign=(~cache)>>31;
     LAST_SKIP_BITS(re, s, n)
     CLOSE_READER(re, s)
-    return tmp;
+    return (NEG_USR32(sign ^ cache, n) ^ sign) - sign;
 }
 
 static inline int get_sbits(GetBitContext *s, int n){
