@@ -1281,16 +1281,14 @@ static int decode_block(MJpegDecodeContext *s, DCTELEM *block,
         /* EOB */
         if (code == 0x10)
             break;
-        if (code == 0x100) {
-            i += 16;
-        } else {
-            i += ((unsigned)code) >> 4;
+        i += ((unsigned)code) >> 4;
+        if(code != 0x100){
             code &= 0xf;
             if(code > MIN_CACHE_BITS - 16){
                 UPDATE_CACHE(re, &s->gb)
             }
             {
-                int cache=GET_CACHE(re,gb);
+                int cache=GET_CACHE(re,&s->gb);
                 int sign=(~cache)>>31;
                 level = (NEG_USR32(sign ^ cache,code) ^ sign) - sign;
             }
