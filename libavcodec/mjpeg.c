@@ -1288,11 +1288,10 @@ static int decode_block(MJpegDecodeContext *s, DCTELEM *block,
             code &= 0xf;
 
             UPDATE_CACHE(re, &s->gb)
-
-            if ((int32_t)GET_CACHE(re,&s->gb)<0) { //MSB=1
-                level =   NEG_USR32( GET_CACHE(re,&s->gb),code);
-            } else {
-                level = - NEG_USR32(~GET_CACHE(re,&s->gb),code);
+            {
+                int cache=GET_CACHE(re,gb);
+                int sign=(~cache)>>31;
+                level = (NEG_USR32(sign ^ cache,code) ^ sign) + (sign&1) ;
             }
 
             LAST_SKIP_BITS(re, &s->gb, code)
