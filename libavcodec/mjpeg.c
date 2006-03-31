@@ -1286,8 +1286,9 @@ static int decode_block(MJpegDecodeContext *s, DCTELEM *block,
         } else {
             i += ((unsigned)code) >> 4;
             code &= 0xf;
-
-            UPDATE_CACHE(re, &s->gb)
+            if(code > MIN_CACHE_BITS - 16){
+                UPDATE_CACHE(re, &s->gb)
+            }
             {
                 int cache=GET_CACHE(re,gb);
                 int sign=(~cache)>>31;
