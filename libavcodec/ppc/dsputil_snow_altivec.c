@@ -556,12 +556,14 @@ static void inner_add_yblock_bw_8_obmc_16_altivec(uint8_t *obmc,
                                                 vec_splat_u32(7))),
                                 vec_splat_u32(8));
 
-                mask = vec_sl((vector signed int) vec_cmpeq(v[x],v[x]),
+                mask = (vector bool int)
+                        vec_sl((vector signed int) vec_cmpeq(v[x],v[x]),
                                                         vec_splat_u32(8));
-                mask = vec_and(v[x],vec_nor(mask,mask));
+                mask = (vector bool int)
+                        vec_and(v[x],vec_nor(mask,mask));
 
-                mask = (vector signed int) vec_cmpeq((vector signed int)mask,
-                                        (vector signed int)vec_splat_u32(0));
+                mask = (vector bool int)
+                        vec_cmpeq((vector signed int)mask, vec_splat_s32(0));
 
                 vs = vec_sra(v[x],vec_splat_u32(8));
                 vs = vec_sra(v[x],vec_splat_u32(8));
