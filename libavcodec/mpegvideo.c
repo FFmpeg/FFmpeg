@@ -2180,9 +2180,10 @@ static int estimate_best_b_count(MpegEncContext *s){
     int i, j, out_size, p_lambda, b_lambda, lambda2;
     int outbuf_size= s->width * s->height; //FIXME
     uint8_t *outbuf= av_malloc(outbuf_size);
-    ImgReSampleContext *resample;
     int64_t best_rd= INT64_MAX;
     int best_b_count= -1;
+
+    assert(scale>=0 && scale <=3);
 
 //    emms_c();
     p_lambda= s->last_lambda_for[P_TYPE]; //s->next_picture_ptr->quality;
@@ -2204,8 +2205,6 @@ static int estimate_best_b_count(MpegEncContext *s){
 
     if (avcodec_open(c, codec) < 0)
         return -1;
-
-    resample= img_resample_init(c->width, c->height, s->width, s->height); //FIXME use sws
 
     for(i=0; i<s->max_b_frames+2; i++){
         int ysize= c->width*c->height;
@@ -2229,9 +2228,11 @@ static int estimate_best_b_count(MpegEncContext *s){
         input[i].linesize[1]=
         input[i].linesize[2]= c->width/2;
 
-        if(!i || s->input_picture[i-1])
-            img_resample(resample, (AVPicture*)&input[i],
-                         (AVPicture*)&pre_input);
+        if(!i || s->input_picture[i-1]){
+            s->dsp.shrink[scale](input[i].data[0], input[i].linesize[0], pre_input.data[0], pre_input.linesize[0], c->width, c->height);
+            s->dsp.shrink[scale](input[i].data[1], input[i].linesize[1], pre_input.data[1], pre_input.linesize[1], c->width>>1, c->height>>1);
+            s->dsp.shrink[scale](input[i].data[2], input[i].linesize[2], pre_input.data[2], pre_input.linesize[2], c->width>>1, c->height>>1);
+        }
     }
 
     for(j=0; j<s->max_b_frames+1; j++){
@@ -2273,7 +2274,6 @@ static int estimate_best_b_count(MpegEncContext *s){
     av_freep(&outbuf);
     avcodec_close(c);
     av_freep(&c);
-    img_resample_close(resample);
 
     for(i=0; i<s->max_b_frames+2; i++){
         av_freep(&input[i].data[0]);

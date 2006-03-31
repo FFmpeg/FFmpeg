@@ -76,6 +76,12 @@ void ff_vp3_idct_c(DCTELEM *block/* align 16*/);
 void ff_vp3_idct_put_c(uint8_t *dest/*align 8*/, int line_size, DCTELEM *block/*align 16*/);
 void ff_vp3_idct_add_c(uint8_t *dest/*align 8*/, int line_size, DCTELEM *block/*align 16*/);
 
+/* 1/2^n downscaling functions from imgconvert.c */
+void ff_img_copy_plane(uint8_t *dst, int dst_wrap, const uint8_t *src, int src_wrap, int width, int height);
+void ff_shrink22(uint8_t *dst, int dst_wrap, const uint8_t *src, int src_wrap, int width, int height);
+void ff_shrink44(uint8_t *dst, int dst_wrap, const uint8_t *src, int src_wrap, int width, int height);
+void ff_shrink88(uint8_t *dst, int dst_wrap, const uint8_t *src, int src_wrap, int width, int height);
+
 /* minimum alignment rules ;)
 if u notice errors in the align stuff, need more alignment for some asm code for some cpu
 or need to use a function with less aligned data then send a mail to the ffmpeg-dev list, ...
@@ -345,6 +351,8 @@ typedef struct DSPContext {
     void (*inner_add_yblock)(uint8_t *obmc, const int obmc_stride, uint8_t * * block, int b_w, int b_h, int src_x, int src_y, int src_stride, slice_buffer * sb, int add, uint8_t * dst8);
 
     void (*prefetch)(void *mem, int stride, int h);
+
+    void (*shrink[4])(uint8_t *dst, int dst_wrap, const uint8_t *src, int src_wrap, int width, int height);
 } DSPContext;
 
 void dsputil_static_init(void);

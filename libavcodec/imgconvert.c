@@ -572,7 +572,7 @@ int avcodec_find_best_pix_fmt(int pix_fmt_mask, int src_pix_fmt,
     return dst_pix_fmt;
 }
 
-static void img_copy_plane(uint8_t *dst, int dst_wrap,
+void ff_img_copy_plane(uint8_t *dst, int dst_wrap,
                            const uint8_t *src, int src_wrap,
                            int width, int height)
 {
@@ -612,7 +612,7 @@ void img_copy(AVPicture *dst, const AVPicture *src,
             break;
         }
         bwidth = (width * bits + 7) >> 3;
-        img_copy_plane(dst->data[0], dst->linesize[0],
+        ff_img_copy_plane(dst->data[0], dst->linesize[0],
                        src->data[0], src->linesize[0],
                        bwidth, height);
         break;
@@ -626,17 +626,17 @@ void img_copy(AVPicture *dst, const AVPicture *src,
                 h >>= pf->y_chroma_shift;
             }
             bwidth = (w * pf->depth + 7) >> 3;
-            img_copy_plane(dst->data[i], dst->linesize[i],
+            ff_img_copy_plane(dst->data[i], dst->linesize[i],
                            src->data[i], src->linesize[i],
                            bwidth, h);
         }
         break;
     case FF_PIXEL_PALETTE:
-        img_copy_plane(dst->data[0], dst->linesize[0],
+        ff_img_copy_plane(dst->data[0], dst->linesize[0],
                        src->data[0], src->linesize[0],
                        width, height);
         /* copy the palette */
-        img_copy_plane(dst->data[1], dst->linesize[1],
+        ff_img_copy_plane(dst->data[1], dst->linesize[1],
                        src->data[1], src->linesize[1],
                        4, 256);
         break;
@@ -1210,7 +1210,7 @@ static void shrink12(uint8_t *dst, int dst_wrap,
 }
 
 /* 2x2 -> 1x1 */
-static void shrink22(uint8_t *dst, int dst_wrap,
+void ff_shrink22(uint8_t *dst, int dst_wrap,
                      const uint8_t *src, int src_wrap,
                      int width, int height)
 {
@@ -1243,7 +1243,7 @@ static void shrink22(uint8_t *dst, int dst_wrap,
 }
 
 /* 4x4 -> 1x1 */
-static void shrink44(uint8_t *dst, int dst_wrap,
+void ff_shrink44(uint8_t *dst, int dst_wrap,
                      const uint8_t *src, int src_wrap,
                      int width, int height)
 {
@@ -1270,6 +1270,28 @@ static void shrink44(uint8_t *dst, int dst_wrap,
         }
         src += 4 * src_wrap;
         dst += dst_wrap;
+    }
+}
+
+/* 8x8 -> 1x1 */
+void ff_shrink88(uint8_t *dst, int dst_wrap,
+                     const uint8_t *src, int src_wrap,
+                     int width, int height)
+{
+    int w, i;
+
+    for(;height > 0; height--) {
+        for(w = width;w > 0; w--) {
+            int tmp=0;
+            for(i=0; i<8; i++){
+                tmp += src[0] + src[1] + src[2] + src[3] + src[4] + src[5] + src[6] + src[7];
+                src += src_wrap;
+            }
+            *(dst++) = (tmp + 32)>>6;
+            src += 8 - 8*src_wrap;
+        }
+        src += 8*src_wrap - 8*width;
+        dst += dst_wrap - width;
     }
 }
 
@@ -2023,7 +2045,7 @@ int img_convert(AVPicture *dst, int dst_pix_fmt,
         uint8_t *d;
 
         if (dst_pix->color_type == FF_COLOR_YUV_JPEG) {
-            img_copy_plane(dst->data[0], dst->linesize[0],
+            ff_img_copy_plane(dst->data[0], dst->linesize[0],
                      src->data[0], src->linesize[0],
                      dst_width, dst_height);
         } else {
@@ -2051,7 +2073,7 @@ int img_convert(AVPicture *dst, int dst_pix_fmt,
     if (is_yuv_planar(src_pix) &&
         dst_pix_fmt == PIX_FMT_GRAY8) {
         if (src_pix->color_type == FF_COLOR_YUV_JPEG) {
-            img_copy_plane(dst->data[0], dst->linesize[0],
+            ff_img_copy_plane(dst->data[0], dst->linesize[0],
                      src->data[0], src->linesize[0],
                      dst_width, dst_height);
         } else {
@@ -2089,7 +2111,7 @@ int img_convert(AVPicture *dst, int dst_pix_fmt,
            YUV444 format */
         switch(xy_shift) {
         case 0x00:
-            resize_func = img_copy_plane;
+            resize_func = ff_img_copy_plane;
             break;
         case 0x10:
             resize_func = shrink21;
@@ -2101,10 +2123,10 @@ int img_convert(AVPicture *dst, int dst_pix_fmt,
             resize_func = shrink12;
             break;
         case 0x11:
-            resize_func = shrink22;
+            resize_func = ff_shrink22;
             break;
         case 0x22:
-            resize_func = shrink44;
+            resize_func = ff_shrink44;
             break;
         case 0xf0:
             resize_func = grow21;
@@ -2126,7 +2148,7 @@ int img_convert(AVPicture *dst, int dst_pix_fmt,
             goto no_chroma_filter;
         }
 
-        img_copy_plane(dst->data[0], dst->linesize[0],
+        ff_img_copy_plane(dst->data[0], dst->linesize[0],
                        src->data[0], src->linesize[0],
                        dst_width, dst_height);
 

@@ -4056,6 +4056,11 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     c->inner_add_yblock = ff_snow_inner_add_yblock;
 #endif
 
+    c->shrink[0]= ff_img_copy_plane;
+    c->shrink[1]= ff_shrink22;
+    c->shrink[2]= ff_shrink44;
+    c->shrink[3]= ff_shrink88;
+
     c->prefetch= just_return;
 
 #ifdef HAVE_MMX
