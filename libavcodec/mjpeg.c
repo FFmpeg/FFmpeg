@@ -1259,7 +1259,6 @@ static int decode_block(MJpegDecodeContext *s, DCTELEM *block,
                         int component, int dc_index, int ac_index, int16_t *quant_matrix)
 {
     int code, i, j, level, val;
-    VLC *ac_vlc;
 
     /* DC coef */
     val = mjpeg_decode_dc(s, dc_index);
@@ -1271,7 +1270,6 @@ static int decode_block(MJpegDecodeContext *s, DCTELEM *block,
     s->last_dc[component] = val;
     block[0] = val;
     /* AC coefs */
-    ac_vlc = &s->vlcs[1][ac_index];
     i = 0;
     {OPEN_READER(re, &s->gb)
     for(;;) {
