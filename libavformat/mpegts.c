@@ -1374,6 +1374,14 @@ static int mpegts_read_close(AVFormatContext *s)
     int i;
     for(i=0;i<NB_PID_MAX;i++)
         if (ts->pids[i]) mpegts_close_filter(ts, ts->pids[i]);
+
+    for(i = 0; i < ts->nb_services; i++){
+        av_free(ts->services[i]->provider_name);
+        av_free(ts->services[i]->name);
+        av_free(ts->services[i]);
+    }
+    av_freep(&ts->services);
+
     return 0;
 }
 
