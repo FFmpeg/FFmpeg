@@ -834,8 +834,11 @@ int dv_produce_packet(DVDemuxContext *c, AVPacket *pkt,
 {
     int size, i;
 
-    if (buf_size < 4 || buf_size < c->sys->frame_size)
-        return -1;   /* Broken frame, or not enough data */
+    if (buf_size < DV_PROFILE_BYTES ||
+        !(c->sys = dv_frame_profile(buf)) ||
+        buf_size < c->sys->frame_size) {
+          return -1;   /* Broken frame, or not enough data */
+    }
 
     /* Queueing audio packet */
     /* FIXME: in case of no audio/bad audio we have to do something */
