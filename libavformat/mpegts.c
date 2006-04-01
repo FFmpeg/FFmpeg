@@ -427,6 +427,11 @@ static void pmt_cb(void *opaque, const uint8_t *section, int section_len)
             desc_tag = get8(&p, desc_list_end);
             if (desc_tag < 0)
                 break;
+            if (stream_type == STREAM_TYPE_PRIVATE_DATA &&
+                ((desc_tag == 0x6A) || (desc_tag == 0x7A))) {
+                    /*assume DVB AC-3 Audio*/
+                    stream_type = STREAM_TYPE_AUDIO_AC3;
+            }
             desc_len = get8(&p, desc_list_end);
             desc_end = p + desc_len;
             if (desc_end > desc_list_end)
