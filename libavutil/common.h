@@ -140,6 +140,18 @@
 #define INT16_MAX       0x7fff
 #endif
 
+#ifndef INT32_MIN
+#define INT32_MIN       (-0x7fffffff-1)
+#endif
+
+#ifndef INT32_MAX
+#define INT32_MAX       0x7fffffff
+#endif
+
+#ifndef UINT32_MAX
+#define UINT32_MAX      0xffffffff
+#endif
+
 #ifndef INT64_MIN
 #define INT64_MIN       (-0x7fffffffffffffffLL-1)
 #endif
