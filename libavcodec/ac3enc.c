@@ -38,6 +38,8 @@ typedef struct AC3EncodeContext {
     unsigned int bsid;
     unsigned int frame_size_min; /* minimum frame size in case rounding is necessary */
     unsigned int frame_size; /* current frame size in words */
+    unsigned int bits_written;
+    unsigned int samples_written;
     int halfratecod;
     unsigned int frmsizecod;
     unsigned int fscod; /* frequency */
@@ -859,7 +861,8 @@ static int AC3_encode_init(AVCodecContext *avctx)
     s->bit_rate = bitrate;
     s->frmsizecod = i << 1;
     s->frame_size_min = (bitrate * 1000 * AC3_FRAME_SIZE) / (freq * 16);
-    /* for now we do not handle fractional sizes */
+    s->bits_written = 0;
+    s->samples_written = 0;
     s->frame_size = s->frame_size_min;
 
     /* bit allocation init */
@@ -1421,6 +1424,15 @@ static int AC3_encode_frame(AVCodecContext *avctx,
             i = j;
         }
     }
+
+    /* adjust for fractional frame sizes */
+    while(s->bits_written >= s->bit_rate*1000 && s->samples_written >= s->sample_rate) {
+        s->bits_written -= s->bit_rate*1000;
+        s->samples_written -= s->sample_rate;
+    }
+    s->frame_size = s->frame_size_min + (s->bits_written * s->sample_rate < s->samples_written * s->bit_rate*1000);
+    s->bits_written += s->frame_size * 16;
+    s->samples_written += AC3_FRAME_SIZE;
 
     compute_bit_allocation(s, bap, encoded_exp, exp_strategy, frame_bits);
     /* everything is known... let's output the frame */
