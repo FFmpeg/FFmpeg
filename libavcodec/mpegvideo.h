@@ -430,6 +430,7 @@ typedef struct MpegEncContext {
     int field_select[2][2];
     int last_mv[2][2][2];             ///< last MV, used for MV prediction in MPEG1 & B-frame MPEG4
     uint8_t *fcode_tab;               ///< smallest fcode needed for each MV
+    int16_t direct_scale_mv[2][64];   ///< precomputed to avoid divisions in ff_mpeg4_set_direct_mv
 
     MotionEstContext me;
 

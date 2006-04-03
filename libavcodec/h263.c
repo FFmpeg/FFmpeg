@@ -552,6 +552,49 @@ void ff_clean_mpeg4_qscales(MpegEncContext *s){
 }
 
 #endif //CONFIG_ENCODERS
+
+static void ff_mpeg4_init_direct_mv(MpegEncContext *s){
+    //FIXME table is stored in MpegEncContext for thread-safety,
+    // but a static array would be faster
+    static const int tab_size = sizeof(s->direct_scale_mv[0])/sizeof(int16_t);
+    static const int tab_bias = (tab_size/2);
+    int i;
+    for(i=0; i<tab_size; i++){
+        s->direct_scale_mv[0][i] = (i-tab_bias)*s->pb_time/s->pp_time;
+        s->direct_scale_mv[1][i] = (i-tab_bias)*(s->pb_time-s->pp_time)/s->pp_time;
+    }
+}
+
+static inline void ff_mpeg4_set_one_direct_mv(MpegEncContext *s, int mx, int my, int i){
+    static const int tab_size = sizeof(s->direct_scale_mv[0])/sizeof(int16_t);
+    static const int tab_bias = (tab_size/2);
+    int xy= s->block_index[i];
+    uint16_t time_pp= s->pp_time;
+    uint16_t time_pb= s->pb_time;
+    int p_mx, p_my;
+
+    p_mx= s->next_picture.motion_val[0][xy][0];
+    if((unsigned)(p_mx + tab_bias) < tab_size){
+        s->mv[0][i][0] = s->direct_scale_mv[0][p_mx + tab_bias] + mx;
+        s->mv[1][i][0] = mx ? s->mv[0][i][0] - p_mx
+                            : s->direct_scale_mv[1][p_mx + tab_bias];
+    }else{
+        s->mv[0][i][0] = p_mx*time_pb/time_pp + mx;
+        s->mv[1][i][0] = mx ? s->mv[0][i][0] - p_mx
+                            : p_mx*(time_pb - time_pp)/time_pp;
+    }
+    p_my= s->next_picture.motion_val[0][xy][1];
+    if((unsigned)(p_my + tab_bias) < tab_size){
+        s->mv[0][i][1] = s->direct_scale_mv[0][p_my + tab_bias] + my;
+        s->mv[1][i][1] = my ? s->mv[0][i][1] - p_my
+                            : s->direct_scale_mv[1][p_my + tab_bias];
+    }else{
+        s->mv[0][i][1] = p_my*time_pb/time_pp + my;
+        s->mv[1][i][1] = my ? s->mv[0][i][1] - p_my
+                            : p_my*(time_pb - time_pp)/time_pp;
+    }
+}
+
 /**
  *
  * @return the mb_type
@@ -559,23 +602,17 @@ void ff_clean_mpeg4_qscales(MpegEncContext *s){
 int ff_mpeg4_set_direct_mv(MpegEncContext *s, int mx, int my){
     const int mb_index= s->mb_x + s->mb_y*s->mb_stride;
     const int colocated_mb_type= s->next_picture.mb_type[mb_index];
-    int xy= s->block_index[0];
     uint16_t time_pp= s->pp_time;
     uint16_t time_pb= s->pb_time;
     int i;
 
     //FIXME avoid divides
+    // try special case with shifts for 1 and 3 B-frames?
 
     if(IS_8X8(colocated_mb_type)){
         s->mv_type = MV_TYPE_8X8;
         for(i=0; i<4; i++){
-            xy= s->block_index[i];
-            s->mv[0][i][0] = s->next_picture.motion_val[0][xy][0]*time_pb/time_pp + mx;
-            s->mv[0][i][1] = s->next_picture.motion_val[0][xy][1]*time_pb/time_pp + my;
-            s->mv[1][i][0] = mx ? s->mv[0][i][0] - s->next_picture.motion_val[0][xy][0]
-                                : s->next_picture.motion_val[0][xy][0]*(time_pb - time_pp)/time_pp;
-            s->mv[1][i][1] = my ? s->mv[0][i][1] - s->next_picture.motion_val[0][xy][1]
-                                : s->next_picture.motion_val[0][xy][1]*(time_pb - time_pp)/time_pp;
+            ff_mpeg4_set_one_direct_mv(s, mx, my, i);
         }
         return MB_TYPE_DIRECT2 | MB_TYPE_8x8 | MB_TYPE_L0L1;
     } else if(IS_INTERLACED(colocated_mb_type)){
@@ -600,12 +637,11 @@ int ff_mpeg4_set_direct_mv(MpegEncContext *s, int mx, int my){
         }
         return MB_TYPE_DIRECT2 | MB_TYPE_16x8 | MB_TYPE_L0L1 | MB_TYPE_INTERLACED;
     }else{
-        s->mv[0][0][0] = s->mv[0][1][0] = s->mv[0][2][0] = s->mv[0][3][0] = s->next_picture.motion_val[0][xy][0]*time_pb/time_pp + mx;
-        s->mv[0][0][1] = s->mv[0][1][1] = s->mv[0][2][1] = s->mv[0][3][1] = s->next_picture.motion_val[0][xy][1]*time_pb/time_pp + my;
-        s->mv[1][0][0] = s->mv[1][1][0] = s->mv[1][2][0] = s->mv[1][3][0] = mx ? s->mv[0][0][0] - s->next_picture.motion_val[0][xy][0]
-                            : s->next_picture.motion_val[0][xy][0]*(time_pb - time_pp)/time_pp;
-        s->mv[1][0][1] = s->mv[1][1][1] = s->mv[1][2][1] = s->mv[1][3][1] = my ? s->mv[0][0][1] - s->next_picture.motion_val[0][xy][1]
-                            : s->next_picture.motion_val[0][xy][1]*(time_pb - time_pp)/time_pp;
+        ff_mpeg4_set_one_direct_mv(s, mx, my, 0);
+        s->mv[0][1][0] = s->mv[0][2][0] = s->mv[0][3][0] = s->mv[0][0][0];
+        s->mv[0][1][1] = s->mv[0][2][1] = s->mv[0][3][1] = s->mv[0][0][1];
+        s->mv[1][1][0] = s->mv[1][2][0] = s->mv[1][3][0] = s->mv[1][0][0];
+        s->mv[1][1][1] = s->mv[1][2][1] = s->mv[1][3][1] = s->mv[1][0][1];
         if((s->avctx->workaround_bugs & FF_BUG_DIRECT_BLOCKSIZE) || !s->quarter_sample)
             s->mv_type= MV_TYPE_16X16;
         else
@@ -2219,6 +2255,7 @@ void ff_set_mpeg4_time(MpegEncContext * s, int picture_number){
     if(s->pict_type==B_TYPE){
         s->pb_time= s->pp_time - (s->last_non_b_time - s->time);
         assert(s->pb_time > 0 && s->pb_time < s->pp_time);
+        ff_mpeg4_init_direct_mv(s);
     }else{
         s->last_time_base= s->time_base;
         s->time_base= time_div;
@@ -5851,6 +5888,7 @@ static int decode_vop_header(MpegEncContext *s, GetBitContext *gb){
 //            printf("messed up order, maybe after seeking? skipping current b frame\n");
             return FRAME_SKIPPED;
         }
+        ff_mpeg4_init_direct_mv(s);
 
         if(s->t_frame==0) s->t_frame= s->pb_time;
         if(s->t_frame==0) s->t_frame=1; // 1/0 protection
