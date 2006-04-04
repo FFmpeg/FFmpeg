@@ -1546,8 +1546,15 @@ static void mov_write_uuidprof_tag(ByteIOContext *pb, AVFormatContext *s)
     put_tag(pb, "VPRF");   /* video */
     put_be32(pb, 0x0 );
     put_be32(pb, 0x1 );    /* TrackID */
-    put_tag(pb, "mp4v");
-    put_be32(pb, 0x103 );
+    if (VideoCodec->codec_id == CODEC_ID_H264) {
+        put_tag(pb, "avc1");
+        put_be16(pb, 0x014D );
+        put_be16(pb, 0x0015 );
+    } else {
+        put_tag(pb, "mp4v");
+        put_be16(pb, 0x0000 );
+        put_be16(pb, 0x0103 );
+    }
     put_be32(pb, 0x0 );
     put_be32(pb, video_kbitrate);
     put_be32(pb, video_kbitrate);
