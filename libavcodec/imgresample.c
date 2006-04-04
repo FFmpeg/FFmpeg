@@ -23,6 +23,7 @@
  */
 
 #include "avcodec.h"
+#include "swscale.h"
 #include "dsputil.h"
 
 #ifdef USE_FASTMEMCPY
@@ -629,6 +630,140 @@ void img_resample_close(ImgReSampleContext *s)
     av_free(s->line_buf);
     av_free(s);
 }
+
+struct SwsContext *sws_getContext(int srcW, int srcH, int srcFormat,
+                                  int dstW, int dstH, int dstFormat,
+                                  int flags, SwsFilter *srcFilter,
+                                  SwsFilter *dstFilter, double *param)
+{
+    struct SwsContext *ctx;
+
+    ctx = av_malloc(sizeof(struct SwsContext));
+    if (ctx == NULL) {
+        av_log(NULL, AV_LOG_ERROR, "Cannot allocate a resampling context!\n");
+
+        return NULL;
+    }
+
+    if ((srcH != dstH) || (srcW != dstW)) {
+        if ((srcFormat != PIX_FMT_YUV420P) || (dstFormat != PIX_FMT_YUV420P)) {
+            av_log(NULL, AV_LOG_INFO, "PIX_FMT_YUV420P will be used as an intermediate format for rescaling\n");
+        }
+        ctx->resampling_ctx = img_resample_init(dstW, dstH, srcW, srcH);
+    } else {
+        ctx->resampling_ctx = av_malloc(sizeof(ImgReSampleContext));
+        ctx->resampling_ctx->iheight = srcH;
+        ctx->resampling_ctx->iwidth = srcW;
+        ctx->resampling_ctx->oheight = dstH;
+        ctx->resampling_ctx->owidth = dstW;
+    }
+    ctx->src_pix_fmt = srcFormat;
+    ctx->dst_pix_fmt = dstFormat;
+
+    return ctx;
+}
+
+void sws_freeContext(struct SwsContext *ctx)
+{
+    if ((ctx->resampling_ctx->iwidth != ctx->resampling_ctx->owidth) ||
+        (ctx->resampling_ctx->iheight != ctx->resampling_ctx->oheight)) {
+        img_resample_close(ctx->resampling_ctx);
+    } else {
+        av_free(ctx->resampling_ctx);
+    }
+    av_free(ctx);
+}
+
+int sws_scale(struct SwsContext *ctx, uint8_t* src[], int srcStride[],
+              int srcSliceY, int srcSliceH, uint8_t* dst[], int dstStride[])
+{
+    AVPicture src_pict, dst_pict;
+    int i, res = 0;
+    AVPicture picture_format_temp;
+    AVPicture picture_resample_temp, *formatted_picture, *resampled_picture;
+    uint8_t *buf1 = NULL, *buf2 = NULL;
+    enum PixelFormat current_pix_fmt;
+
+    for (i = 0; i < 3; i++) {
+        src_pict.data[i] = src[i];
+        src_pict.linesize[i] = srcStride[i];
+        dst_pict.data[i] = dst[i];
+        dst_pict.linesize[i] = dstStride[i];
+    }
+    if ((ctx->resampling_ctx->iwidth != ctx->resampling_ctx->owidth) ||
+        (ctx->resampling_ctx->iheight != ctx->resampling_ctx->oheight)) {
+        /* We have to rescale the picture, but only YUV420P rescaling is supported... */
+
+        if (ctx->src_pix_fmt != PIX_FMT_YUV420P) {
+            int size;
+
+            /* create temporary picture for rescaling input*/
+            size = avpicture_get_size(PIX_FMT_YUV420P, ctx->resampling_ctx->iwidth, ctx->resampling_ctx->iheight);
+            buf1 = av_malloc(size);
+            if (!buf1) {
+                res = -1;
+                goto the_end;
+            }
+            formatted_picture = &picture_format_temp;
+            avpicture_fill((AVPicture*)formatted_picture, buf1,
+                           PIX_FMT_YUV420P, ctx->resampling_ctx->iwidth, ctx->resampling_ctx->iheight);
+
+            if (img_convert((AVPicture*)formatted_picture, PIX_FMT_YUV420P,
+                            &src_pict, ctx->src_pix_fmt,
+                            ctx->resampling_ctx->iwidth, ctx->resampling_ctx->iheight) < 0) {
+
+                av_log(NULL, AV_LOG_ERROR, "pixel format conversion not handled\n");
+                res = -1;
+                goto the_end;
+            }
+        } else {
+            formatted_picture = &src_pict;
+        }
+
+        if (ctx->dst_pix_fmt != PIX_FMT_YUV420P) {
+            int size;
+
+            /* create temporary picture for rescaling output*/
+            size = avpicture_get_size(PIX_FMT_YUV420P, ctx->resampling_ctx->owidth, ctx->resampling_ctx->oheight);
+            buf2 = av_malloc(size);
+            if (!buf2) {
+                res = -1;
+                goto the_end;
+            }
+            resampled_picture = &picture_resample_temp;
+            avpicture_fill((AVPicture*)resampled_picture, buf2,
+                           PIX_FMT_YUV420P, ctx->resampling_ctx->owidth, ctx->resampling_ctx->oheight);
+
+        } else {
+            resampled_picture = &dst_pict;
+        }
+
+        /* ...and finally rescale!!! */
+        img_resample(ctx->resampling_ctx, resampled_picture, formatted_picture);
+        current_pix_fmt = PIX_FMT_YUV420P;
+    } else {
+        resampled_picture = &src_pict;
+        current_pix_fmt = ctx->src_pix_fmt;
+    }
+
+    if (current_pix_fmt != ctx->dst_pix_fmt) {
+        if (img_convert(&dst_pict, ctx->dst_pix_fmt,
+                        resampled_picture, current_pix_fmt,
+                        ctx->resampling_ctx->owidth, ctx->resampling_ctx->oheight) < 0) {
+
+            av_log(NULL, AV_LOG_ERROR, "pixel format conversion not handled\n");
+
+            res = -1;
+            goto the_end;
+        }
+    }
+
+the_end:
+    av_free(buf1);
+    av_free(buf2);
+    return res;
+}
+
 
 #ifdef TEST
 #include <stdio.h>
