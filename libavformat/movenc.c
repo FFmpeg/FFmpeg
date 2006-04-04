@@ -1510,6 +1510,8 @@ static void mov_write_uuidprof_tag(ByteIOContext *pb, AVFormatContext *s)
     AVCodecContext *AudioCodec = s->streams[1]->codec;
     int AudioRate = AudioCodec->sample_rate;
     int FrameRate = ((VideoCodec->time_base.den) * (0x10000))/ (VideoCodec->time_base.num);
+    int audio_kbitrate= AudioCodec->bit_rate / 1000;
+    int video_kbitrate= FFMIN(VideoCodec->bit_rate / 1000, 800 - audio_kbitrate);
 
     put_be32(pb, 0x94 ); /* size */
     put_tag(pb, "uuid");
@@ -1535,8 +1537,8 @@ static void mov_write_uuidprof_tag(ByteIOContext *pb, AVFormatContext *s)
     put_tag(pb, "mp4a");
     put_be32(pb, 0x20f );
     put_be32(pb, 0x0 );
-    put_be32(pb, AudioCodec->bit_rate / 1000);
-    put_be32(pb, AudioCodec->bit_rate / 1000);
+    put_be32(pb, audio_kbitrate);
+    put_be32(pb, audio_kbitrate);
     put_be32(pb, AudioRate );
     put_be32(pb, AudioCodec->channels );
 
@@ -1547,8 +1549,8 @@ static void mov_write_uuidprof_tag(ByteIOContext *pb, AVFormatContext *s)
     put_tag(pb, "mp4v");
     put_be32(pb, 0x103 );
     put_be32(pb, 0x0 );
-    put_be32(pb, VideoCodec->bit_rate / 1000);
-    put_be32(pb, VideoCodec->bit_rate / 1000);
+    put_be32(pb, video_kbitrate);
+    put_be32(pb, video_kbitrate);
     put_be32(pb, FrameRate);
     put_be32(pb, FrameRate);
     put_be16(pb, VideoCodec->width);
