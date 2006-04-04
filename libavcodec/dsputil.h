@@ -82,6 +82,9 @@ void ff_shrink22(uint8_t *dst, int dst_wrap, const uint8_t *src, int src_wrap, i
 void ff_shrink44(uint8_t *dst, int dst_wrap, const uint8_t *src, int src_wrap, int width, int height);
 void ff_shrink88(uint8_t *dst, int dst_wrap, const uint8_t *src, int src_wrap, int width, int height);
 
+void ff_gmc_c(uint8_t *dst, uint8_t *src, int stride, int h, int ox, int oy,
+              int dxx, int dxy, int dyx, int dyy, int shift, int r, int width, int height);
+
 /* minimum alignment rules ;)
 if u notice errors in the align stuff, need more alignment for some asm code for some cpu
 or need to use a function with less aligned data then send a mail to the ffmpeg-dev list, ...

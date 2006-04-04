@@ -1144,7 +1144,7 @@ static void gmc1_c(uint8_t *dst, uint8_t *src, int stride, int h, int x16, int y
     }
 }
 
-static void gmc_c(uint8_t *dst, uint8_t *src, int stride, int h, int ox, int oy,
+void ff_gmc_c(uint8_t *dst, uint8_t *src, int stride, int h, int ox, int oy,
                   int dxx, int dxy, int dyx, int dyy, int shift, int r, int width, int height)
 {
     int y, vx, vy;
@@ -3865,7 +3865,7 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     c->add_pixels8 = add_pixels8_c;
     c->add_pixels4 = add_pixels4_c;
     c->gmc1 = gmc1_c;
-    c->gmc = gmc_c;
+    c->gmc = ff_gmc_c;
     c->clear_blocks = clear_blocks_c;
     c->pix_sum = pix_sum_c;
     c->pix_norm1 = pix_norm1_c;
