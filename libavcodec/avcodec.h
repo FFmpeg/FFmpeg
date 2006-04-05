@@ -226,7 +226,7 @@ enum CodecType {
 /* currently unused, may be used if 24/32 bits samples ever supported */
 /* all in native endian */
 enum SampleFormat {
-    SAMPLT_FMT_NONE = -1,
+    SAMPLE_FMT_NONE = -1,
     SAMPLE_FMT_U8,              ///< unsigned 8 bits
     SAMPLE_FMT_S16,             ///< signed 16 bits
     SAMPLE_FMT_S24,             ///< signed 24 bits
