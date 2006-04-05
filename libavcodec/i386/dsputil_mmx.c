@@ -2406,7 +2406,6 @@ static void just_return() { return; }
 static void gmc_mmx(uint8_t *dst, uint8_t *src, int stride, int h, int ox, int oy,
                     int dxx, int dxy, int dyx, int dyy, int shift, int r, int width, int height){
     const int w = 8;
-    const int s = 1<<shift;
     const int ix = ox>>(16+shift);
     const int iy = oy>>(16+shift);
     const int oxs = ox>>4;
@@ -2437,14 +2436,21 @@ static void gmc_mmx(uint8_t *dst, uint8_t *src, int stride, int h, int ox, int o
         return;
     }
 
+    src += ix + iy*stride;
     if( (unsigned)ix >= width-w ||
         (unsigned)iy >= height-h )
     {
-        ff_emulated_edge_mc(edge_buf, src+ix+iy*stride, stride, w+1, h+1, ix, iy, width, height);
+        ff_emulated_edge_mc(edge_buf, src, stride, w+1, h+1, ix, iy, width, height);
         src = edge_buf;
     }
-    else
-        src += ix + iy*stride;
+
+    asm volatile(
+        "movd         %0, %%mm6 \n\t"
+        "pxor      %%mm7, %%mm7 \n\t"
+        "punpcklwd %%mm6, %%mm6 \n\t"
+        "punpcklwd %%mm6, %%mm6 \n\t"
+        :: "r"(1<<shift)
+    );
 
     for(x=0; x<w; x+=4){
         uint16_t dx4[4] = { oxs - dxys + dxxs*(x+0),
@@ -2455,14 +2461,6 @@ static void gmc_mmx(uint8_t *dst, uint8_t *src, int stride, int h, int ox, int o
                             oys - dyys + dyxs*(x+1),
                             oys - dyys + dyxs*(x+2),
                             oys - dyys + dyxs*(x+3) };
-
-        asm volatile(
-            "movd         %0, %%mm6 \n\t"
-            "pxor      %%mm7, %%mm7 \n\t"
-            "punpcklwd %%mm6, %%mm6 \n\t"
-            "punpcklwd %%mm6, %%mm6 \n\t"
-            :: "g"(s)
-        );
 
         for(y=0; y<h; y++){
             asm volatile(
@@ -2503,10 +2501,10 @@ static void gmc_mmx(uint8_t *dst, uint8_t *src, int stride, int h, int ox, int o
                 "punpcklbw %%mm7, %%mm4 \n\t"
                 "pmullw %%mm5, %%mm1 \n\t" // src[1,0] * dx*(s-dy)
                 "pmullw %%mm4, %%mm0 \n\t" // src[0,0] * (s-dx)*(s-dy)
+                "paddw  %5,    %%mm1 \n\t"
                 "paddw  %%mm3, %%mm2 \n\t"
                 "paddw  %%mm1, %%mm0 \n\t"
                 "paddw  %%mm2, %%mm0 \n\t"
-                "paddw  %5,    %%mm0 \n\t"
 
                 "psrlw    %6,    %%mm0 \n\t"
                 "packuswb %%mm0, %%mm0 \n\t"
