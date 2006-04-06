@@ -290,6 +290,9 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
             if (stream_index >= s->nb_streams) {
                 url_fskip(pb, size - 8);
+                /* ignore padding stream */
+                if (tag1 == MKTAG('p', 'a', 'd', 's'))
+                    stream_index--;
                 break;
             }
             st = s->streams[stream_index];
