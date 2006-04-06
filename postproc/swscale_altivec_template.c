@@ -26,14 +26,13 @@
 #define AVV(x...) {x}
 #endif
 
-static const vector signed int vzero =
-  (const vector signed int)AVV(0, 0, 0, 0);
-static const vector unsigned int altivec_vectorShiftInt19 =
-  (const vector unsigned int)AVV(19, 19, 19, 19);
+#define vzero vec_splat_s32(0)
 
 static inline void
 altivec_packIntArrayToCharArray(int *val, uint8_t* dest, int dstW) {
   register int i;
+  vector unsigned int altivec_vectorShiftInt19 =
+    vec_add(vec_splat_u32(10),vec_splat_u32(9));
   if ((unsigned long)dest % 16) {
     /* badly aligned store, we force store alignement */
     /* and will handle load misalignement on val w/ vec_perm */
