@@ -2200,6 +2200,7 @@ extern AVCodec zmbv_decoder;
 extern AVCodec avs_decoder;
 extern AVCodec smacker_decoder;
 extern AVCodec smackaud_decoder;
+extern AVCodec kmvc_decoder;
 
 /* pcm codecs */
 #define PCM_CODEC(id, name) \
