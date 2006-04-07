@@ -200,6 +200,7 @@ const CodecTag codec_bmp_tags[] = {
     { CODEC_ID_TRUEMOTION2, MKTAG('T', 'M', '2', '0') },
     { CODEC_ID_CSCD, MKTAG('C', 'S', 'C', 'D') },
     { CODEC_ID_ZMBV, MKTAG('Z', 'M', 'B', 'V') },
+    { CODEC_ID_KMVC, MKTAG('K', 'M', 'V', 'C') },
     { CODEC_ID_RAWVIDEO, 0 },
     { CODEC_ID_NONE, 0 },
 };

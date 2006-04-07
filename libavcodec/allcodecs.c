@@ -289,6 +289,9 @@ void avcodec_register_all(void)
 #ifdef CONFIG_LOCO_DECODER
     register_avcodec(&loco_decoder);
 #endif //CONFIG_LOCO_DECODER
+#ifdef CONFIG_KMVC_DECODER
+    register_avcodec(&kmvc_decoder);
+#endif //CONFIG_KMVC_DECODER
 #ifdef CONFIG_WNV1_DECODER
     register_avcodec(&wnv1_decoder);
 #endif //CONFIG_WNV1_DECODER

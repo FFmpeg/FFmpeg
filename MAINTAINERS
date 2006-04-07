@@ -124,6 +124,7 @@ Codecs:
   indeo2*                               Kostya Shishkov
   interplayvideo.c                      Mike Melanson
   jpeg_ls.c                             Kostya Shishkov
+  kmvc.c                                Kostya Shishkov
   lcl.c                                 Roberto Togni
   loco.c                                Kostya Shishkov
   lzo.h, lzo.c                          Reimar Doeffinger

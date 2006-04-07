@@ -800,6 +800,7 @@ following image formats are supported:
 @item AVS Video              @tab     @tab  X @tab Video encoding used by the Creature Shock game.
 @item Smacker Video          @tab     @tab  X @tab Video encoding used in Smacker.
 @item RTjpeg                 @tab     @tab  X @tab Video encoding used in NuppelVideo files.
+@item KMVC                   @tab     @tab  X @tab Codec used in Worms games.
 @end multitable
 
 @code{X} means that encoding (resp. decoding) is supported.

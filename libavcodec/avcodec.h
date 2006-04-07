@@ -21,8 +21,8 @@ extern "C" {
 #define AV_STRINGIFY(s)         AV_TOSTRING(s)
 #define AV_TOSTRING(s) #s
 
-#define LIBAVCODEC_VERSION_INT  ((51<<16)+(8<<8)+0)
-#define LIBAVCODEC_VERSION      51.8.0
+#define LIBAVCODEC_VERSION_INT  ((51<<16)+(9<<8)+0)
+#define LIBAVCODEC_VERSION      51.9.0
 #define LIBAVCODEC_BUILD        LIBAVCODEC_VERSION_INT
 
 #define LIBAVCODEC_IDENT        "Lavc" AV_STRINGIFY(LIBAVCODEC_VERSION)
@@ -120,6 +120,7 @@ enum CodecID {
     CODEC_ID_AVS,
     CODEC_ID_SMACKVIDEO,
     CODEC_ID_NUV,
+    CODEC_ID_KMVC,
 
     /* various pcm "codecs" */
     CODEC_ID_PCM_S16LE= 0x10000,

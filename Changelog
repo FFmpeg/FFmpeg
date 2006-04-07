@@ -44,6 +44,7 @@ version <next>
 - AVS demuxer and video decoder
 - Smacker demuxer and decoder
 - NuppelVideo/MythTV demuxer and RTjpeg decoder
+- KMVC decoder
 
 version 0.4.9-pre1:
 

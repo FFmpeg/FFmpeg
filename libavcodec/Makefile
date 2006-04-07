@@ -98,6 +98,9 @@ endif
 ifeq ($(CONFIG_INTERPLAY_VIDEO_DECODER),yes)
     OBJS+= interplayvideo.o
 endif
+ifeq ($(CONFIG_KMVC_DECODER),yes)
+    OBJS+= kmvc.o
+endif
 ifneq ($(CONFIG_MSZH_DECODER)$(CONFIG_ZLIB_DECODER)$(CONFIG_ZLIB_ENCODER),)
     OBJS+= lcl.o
 endif
