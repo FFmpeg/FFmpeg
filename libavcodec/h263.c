@@ -553,11 +553,10 @@ void ff_clean_mpeg4_qscales(MpegEncContext *s){
 
 #endif //CONFIG_ENCODERS
 
+#define tab_size (sizeof(s->direct_scale_mv[0])/sizeof(int16_t))
+#define tab_bias (tab_size/2)
+
 static void ff_mpeg4_init_direct_mv(MpegEncContext *s){
-    //FIXME table is stored in MpegEncContext for thread-safety,
-    // but a static array would be faster
-    static const int tab_size = sizeof(s->direct_scale_mv[0])/sizeof(int16_t);
-    static const int tab_bias = (tab_size/2);
     int i;
     for(i=0; i<tab_size; i++){
         s->direct_scale_mv[0][i] = (i-tab_bias)*s->pb_time/s->pp_time;
@@ -566,8 +565,6 @@ static void ff_mpeg4_init_direct_mv(MpegEncContext *s){
 }
 
 static inline void ff_mpeg4_set_one_direct_mv(MpegEncContext *s, int mx, int my, int i){
-    static const int tab_size = sizeof(s->direct_scale_mv[0])/sizeof(int16_t);
-    static const int tab_bias = (tab_size/2);
     int xy= s->block_index[i];
     uint16_t time_pp= s->pp_time;
     uint16_t time_pb= s->pb_time;
@@ -594,6 +591,9 @@ static inline void ff_mpeg4_set_one_direct_mv(MpegEncContext *s, int mx, int my,
                             : p_my*(time_pb - time_pp)/time_pp;
     }
 }
+
+#undef tab_size
+#undef tab_bias
 
 /**
  *
