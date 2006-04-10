@@ -642,39 +642,6 @@ static void pre_process_video_frame(AVInputStream *ist, AVPicture *picture, void
 /* we begin to correct av delay at this threshold */
 #define AV_DELAY_MAX 0.100
 
-
-/* Expects img to be yuv420 */
-static void fill_pad_region(AVPicture* img, int height, int width,
-        int padtop, int padbottom, int padleft, int padright, int *color) {
-
-    int i, y, shift;
-    uint8_t *optr;
-
-    for (i = 0; i < 3; i++) {
-        shift = (i == 0) ? 0 : 1;
-
-        if (padtop || padleft) {
-            memset(img->data[i], color[i], (((img->linesize[i] * padtop) +
-                            padleft) >> shift));
-        }
-
-        if (padleft || padright) {
-            optr = img->data[i] + (img->linesize[i] * (padtop >> shift)) +
-                (img->linesize[i] - (padright >> shift));
-
-            for (y = 0; y < ((height - (padtop + padbottom) - 1) >> shift); y++) {
-                memset(optr, color[i], (padleft + padright) >> shift);
-                optr += img->linesize[i];
-            }
-        }
-
-        if (padbottom || padright) {
-            optr = img->data[i] + (((img->linesize[i] * (height - padbottom)) - padright) >> shift);
-            memset(optr, color[i], (((img->linesize[i] * padbottom) + padright) >> shift));
-        }
-    }
-}
-
 static void do_subtitle_out(AVFormatContext *s,
                             AVOutputStream *ost,
                             AVInputStream *ist,
@@ -780,8 +747,7 @@ static void do_video_out(AVFormatContext *s,
         return;
 
     /* convert pixel format if needed */
-    target_pixfmt = ost->video_resample || ost->video_pad
-        ? PIX_FMT_YUV420P : enc->pix_fmt;
+    target_pixfmt = ost->video_resample ? PIX_FMT_YUV420P : enc->pix_fmt;
     if (dec->pix_fmt != target_pixfmt) {
         int size;
 
@@ -813,12 +779,6 @@ static void do_video_out(AVFormatContext *s,
         final_picture = &ost->pict_tmp;
         img_resample(ost->img_resample_ctx, (AVPicture*)final_picture, (AVPicture*)formatted_picture);
 
-        if (ost->padtop || ost->padbottom || ost->padleft || ost->padright) {
-            fill_pad_region((AVPicture*)final_picture, enc->height, enc->width,
-                    ost->padtop, ost->padbottom, ost->padleft, ost->padright,
-                    padcolor);
-        }
-
         if (enc->pix_fmt != PIX_FMT_YUV420P) {
             int size;
 
@@ -841,6 +801,11 @@ static void do_video_out(AVFormatContext *s,
                 goto the_end;
             }
         }
+        if (ost->padtop || ost->padbottom || ost->padleft || ost->padright) {
+            img_pad((AVPicture*)final_picture, NULL, enc->height, enc->width, enc->pix_fmt,
+                    ost->padtop, ost->padbottom, ost->padleft, ost->padright,
+                    padcolor);
+        }
     } else if (ost->video_crop) {
         if (img_crop((AVPicture *)&picture_crop_temp, (AVPicture *)formatted_picture, enc->pix_fmt, ost->topBand, ost->leftBand) < 0) {
             av_log(NULL, AV_LOG_ERROR, "error cropping picture\n");
@@ -849,51 +814,11 @@ static void do_video_out(AVFormatContext *s,
         final_picture = &picture_crop_temp;
     } else if (ost->video_pad) {
         final_picture = &ost->pict_tmp;
-
-        for (i = 0; i < 3; i++) {
-            uint8_t *optr, *iptr;
-            int shift = (i == 0) ? 0 : 1;
-            int y, yheight;
-
-            /* set offset to start writing image into */
-            optr = final_picture->data[i] + (((final_picture->linesize[i] *
-                            ost->padtop) + ost->padleft) >> shift);
-            iptr = formatted_picture->data[i];
-
-            yheight = (enc->height - ost->padtop - ost->padbottom) >> shift;
-            for (y = 0; y < yheight; y++) {
-                /* copy unpadded image row into padded image row */
-                memcpy(optr, iptr, formatted_picture->linesize[i]);
-                optr += final_picture->linesize[i];
-                iptr += formatted_picture->linesize[i];
-            }
-        }
-
-        fill_pad_region((AVPicture*)final_picture, enc->height, enc->width,
-                ost->padtop, ost->padbottom, ost->padleft, ost->padright,
-                padcolor);
-
-        if (enc->pix_fmt != PIX_FMT_YUV420P) {
-            int size;
-
-            av_free(buf);
-            /* create temporary picture */
-            size = avpicture_get_size(enc->pix_fmt, enc->width, enc->height);
-            buf = av_malloc(size);
-            if (!buf)
-                return;
-            final_picture = &picture_format_temp;
-            avpicture_fill((AVPicture*)final_picture, buf, enc->pix_fmt, enc->width, enc->height);
-
-            if (img_convert((AVPicture*)final_picture, enc->pix_fmt,
-                        (AVPicture*)&ost->pict_tmp, PIX_FMT_YUV420P,
-                        enc->width, enc->height) < 0) {
-
-                if (verbose >= 0)
-                    fprintf(stderr, "pixel format conversion not handled\n");
-
-                goto the_end;
-            }
+        if (img_pad((AVPicture*)final_picture, (AVPicture*)formatted_picture,
+                    enc->height, enc->width, enc->pix_fmt,
+                    ost->padtop, ost->padbottom, ost->padleft, ost->padright, padcolor) < 0) {
+            av_log(NULL, AV_LOG_ERROR, "error padding picture\n");
+            goto the_end;
         }
     } else {
         final_picture = formatted_picture;
@@ -1733,7 +1658,7 @@ static int av_encode(AVFormatContext **output_files,
                     ost->padbottom = frame_padbottom;
                     ost->padright = frame_padright;
                     avcodec_get_frame_defaults(&ost->pict_tmp);
-                    if( avpicture_alloc( (AVPicture*)&ost->pict_tmp, PIX_FMT_YUV420P,
+                    if( avpicture_alloc( (AVPicture*)&ost->pict_tmp, codec->pix_fmt,
                                 codec->width, codec->height ) )
                         goto fail;
                 } else {

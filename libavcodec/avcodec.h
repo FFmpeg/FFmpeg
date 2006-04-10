@@ -2521,6 +2521,9 @@ void img_copy(AVPicture *dst, const AVPicture *src,
 int img_crop(AVPicture *dst, const AVPicture *src,
              int pix_fmt, int top_band, int left_band);
 
+int img_pad(AVPicture *dst, const AVPicture *src, int height, int width, int pix_fmt,
+            int padtop, int padbottom, int padleft, int padright, int *color);
+
 /* av_log API */
 
 #include <stdarg.h>
