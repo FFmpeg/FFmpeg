@@ -267,15 +267,15 @@ typedef struct AVOutputStream {
     struct AVInputStream *sync_ist; /* input stream to sync against */
     int64_t sync_opts;       /* output frame counter, could be changed to some true timestamp */ //FIXME look at frame_number
     /* video only */
-    int video_resample;      /* video_resample and video_crop are mutually exclusive */
+    int video_resample;
     AVFrame pict_tmp;      /* temporary image for resampling */
     ImgReSampleContext *img_resample_ctx; /* for image resampling */
 
-    int video_crop;          /* video_resample and video_crop are mutually exclusive */
+    int video_crop;
     int topBand;             /* cropping area sizes */
     int leftBand;
 
-    int video_pad;           /* video_resample and video_pad are mutually exclusive */
+    int video_pad;
     int padtop;              /* padding area sizes */
     int padbottom;
     int padleft;
@@ -704,14 +704,15 @@ static void do_video_out(AVFormatContext *s,
                          int *frame_size)
 {
     int nb_frames, i, ret;
-    AVFrame *final_picture, *formatted_picture;
-    AVFrame picture_format_temp, picture_crop_temp;
+    AVFrame *final_picture, *formatted_picture, *resampling_dst, *padding_src;
+    AVFrame picture_format_temp, picture_crop_temp, picture_pad_temp;
     uint8_t *buf = NULL, *buf1 = NULL;
     AVCodecContext *enc, *dec;
     enum PixelFormat target_pixfmt;
 
     avcodec_get_frame_defaults(&picture_format_temp);
     avcodec_get_frame_defaults(&picture_crop_temp);
+    avcodec_get_frame_defaults(&picture_pad_temp);
 
     enc = ost->st->codec;
     dec = ist->st->codec;
@@ -772,14 +773,38 @@ static void do_video_out(AVFormatContext *s,
         formatted_picture = in_picture;
     }
 
+    if (ost->video_crop) {
+        if (img_crop((AVPicture *)&picture_crop_temp, (AVPicture *)formatted_picture, target_pixfmt, ost->topBand, ost->leftBand) < 0) {
+            av_log(NULL, AV_LOG_ERROR, "error cropping picture\n");
+            goto the_end;
+        }
+        formatted_picture = &picture_crop_temp;
+    }
+
+    final_picture = formatted_picture;
+    padding_src = formatted_picture;
+    resampling_dst = &ost->pict_tmp;
+    if (ost->video_pad) {
+        final_picture = &ost->pict_tmp;
+        if (ost->video_resample) {
+            if (img_crop((AVPicture *)&picture_pad_temp, (AVPicture *)final_picture, target_pixfmt, ost->padtop, ost->padleft) < 0) {
+                av_log(NULL, AV_LOG_ERROR, "error padding picture\n");
+                goto the_end;
+            }
+            resampling_dst = &picture_pad_temp;
+        }
+    }
+
     /* XXX: resampling could be done before raw format conversion in
        some cases to go faster */
     /* XXX: only works for YUV420P */
     if (ost->video_resample) {
+        padding_src = NULL;
         final_picture = &ost->pict_tmp;
-        img_resample(ost->img_resample_ctx, (AVPicture*)final_picture, (AVPicture*)formatted_picture);
+        img_resample(ost->img_resample_ctx, (AVPicture *)resampling_dst, (AVPicture*)formatted_picture);
+    }
 
-        if (enc->pix_fmt != PIX_FMT_YUV420P) {
+        if (enc->pix_fmt != target_pixfmt) {
             int size;
 
             av_free(buf);
@@ -792,7 +817,7 @@ static void do_video_out(AVFormatContext *s,
             avpicture_fill((AVPicture*)final_picture, buf, enc->pix_fmt, enc->width, enc->height);
 
             if (img_convert((AVPicture*)final_picture, enc->pix_fmt,
-                            (AVPicture*)&ost->pict_tmp, PIX_FMT_YUV420P,
+                            (AVPicture*)&ost->pict_tmp, target_pixfmt,
                             enc->width, enc->height) < 0) {
 
                 if (verbose >= 0)
@@ -801,28 +826,13 @@ static void do_video_out(AVFormatContext *s,
                 goto the_end;
             }
         }
-        if (ost->padtop || ost->padbottom || ost->padleft || ost->padright) {
-            img_pad((AVPicture*)final_picture, NULL, enc->height, enc->width, enc->pix_fmt,
-                    ost->padtop, ost->padbottom, ost->padleft, ost->padright,
-                    padcolor);
-        }
-    } else if (ost->video_crop) {
-        if (img_crop((AVPicture *)&picture_crop_temp, (AVPicture *)formatted_picture, enc->pix_fmt, ost->topBand, ost->leftBand) < 0) {
-            av_log(NULL, AV_LOG_ERROR, "error cropping picture\n");
-            goto the_end;
-        }
-        final_picture = &picture_crop_temp;
-    } else if (ost->video_pad) {
-        final_picture = &ost->pict_tmp;
-        if (img_pad((AVPicture*)final_picture, (AVPicture*)formatted_picture,
-                    enc->height, enc->width, enc->pix_fmt,
-                    ost->padtop, ost->padbottom, ost->padleft, ost->padright, padcolor) < 0) {
-            av_log(NULL, AV_LOG_ERROR, "error padding picture\n");
-            goto the_end;
-        }
-    } else {
-        final_picture = formatted_picture;
+
+    if (ost->video_pad) {
+        img_pad((AVPicture*)final_picture, (AVPicture *)padding_src,
+                enc->height, enc->width, enc->pix_fmt,
+                ost->padtop, ost->padbottom, ost->padleft, ost->padright, padcolor);
     }
+
     /* duplicates frame if needed */
     for(i=0;i<nb_frames;i++) {
         AVPacket pkt;
@@ -1663,25 +1673,25 @@ static int av_encode(AVFormatContext **output_files,
                         goto fail;
                 } else {
                     ost->video_resample = 1;
-                    ost->video_crop = 0; // cropping is handled as part of resample
+                    ost->video_crop = ((frame_leftBand + frame_rightBand + frame_topBand + frame_bottomBand) != 0);
+                    ost->video_pad = ((frame_padleft + frame_padright + frame_padtop + frame_padbottom) != 0);
                     avcodec_get_frame_defaults(&ost->pict_tmp);
                     if( avpicture_alloc( (AVPicture*)&ost->pict_tmp, PIX_FMT_YUV420P,
                                          codec->width, codec->height ) )
                         goto fail;
 
-                    ost->img_resample_ctx = img_resample_full_init(
-                                      codec->width, codec->height,
-                                      icodec->width, icodec->height,
-                                      frame_topBand, frame_bottomBand,
-                            frame_leftBand, frame_rightBand,
-                            frame_padtop, frame_padbottom,
-                            frame_padleft, frame_padright);
+                    ost->img_resample_ctx = img_resample_init(
+                            codec->width - (frame_padleft + frame_padright),
+                            codec->height - (frame_padtop + frame_padbottom),
+                            icodec->width - (frame_leftBand + frame_rightBand),
+                            icodec->height - (frame_topBand + frame_bottomBand));
 
                     ost->padtop = frame_padtop;
                     ost->padleft = frame_padleft;
                     ost->padbottom = frame_padbottom;
                     ost->padright = frame_padright;
-
+                    ost->topBand = frame_topBand;
+                    ost->leftBand = frame_leftBand;
                 }
                 ost->encoding_needed = 1;
                 ist->decoding_needed = 1;
