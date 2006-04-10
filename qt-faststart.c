@@ -243,8 +243,11 @@ int main(int argc, char *argv[])
         free(moov_atom);
         return 1;
     }
-    /* seek after ftyp atom if needed */
-    fseeko(infile, start_offset, SEEK_SET);
+
+    if (start_offset > 0) { /* seek after ftyp atom */
+        fseeko(infile, start_offset, SEEK_SET);
+        last_offset -= start_offset;
+    }
 
     outfile = fopen(argv[2], "wb");
     if (!outfile) {
