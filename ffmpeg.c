@@ -804,28 +804,28 @@ static void do_video_out(AVFormatContext *s,
         img_resample(ost->img_resample_ctx, (AVPicture *)resampling_dst, (AVPicture*)formatted_picture);
     }
 
-        if (enc->pix_fmt != target_pixfmt) {
-            int size;
+    if (enc->pix_fmt != target_pixfmt) {
+        int size;
 
-            av_free(buf);
-            /* create temporary picture */
-            size = avpicture_get_size(enc->pix_fmt, enc->width, enc->height);
-            buf = av_malloc(size);
-            if (!buf)
-                return;
-            final_picture = &picture_format_temp;
-            avpicture_fill((AVPicture*)final_picture, buf, enc->pix_fmt, enc->width, enc->height);
+        av_free(buf);
+        /* create temporary picture */
+        size = avpicture_get_size(enc->pix_fmt, enc->width, enc->height);
+        buf = av_malloc(size);
+        if (!buf)
+            return;
+        final_picture = &picture_format_temp;
+        avpicture_fill((AVPicture*)final_picture, buf, enc->pix_fmt, enc->width, enc->height);
 
-            if (img_convert((AVPicture*)final_picture, enc->pix_fmt,
-                            (AVPicture*)&ost->pict_tmp, target_pixfmt,
-                            enc->width, enc->height) < 0) {
+        if (img_convert((AVPicture*)final_picture, enc->pix_fmt,
+                        (AVPicture*)&ost->pict_tmp, target_pixfmt,
+                        enc->width, enc->height) < 0) {
 
-                if (verbose >= 0)
-                    fprintf(stderr, "pixel format conversion not handled\n");
+            if (verbose >= 0)
+                fprintf(stderr, "pixel format conversion not handled\n");
 
-                goto the_end;
-            }
+            goto the_end;
         }
+    }
 
     if (ost->video_pad) {
         img_pad((AVPicture*)final_picture, (AVPicture *)padding_src,
