@@ -758,7 +758,7 @@ static int mov_write_stbl_tag(ByteIOContext *pb, MOVTrack* track)
     mov_write_stsd_tag(pb, track);
     mov_write_stts_tag(pb, track);
     if (track->enc->codec_type == CODEC_TYPE_VIDEO &&
-        track->hasKeyframes)
+        track->hasKeyframes < track->entry)
         mov_write_stss_tag(pb, track);
     if (track->enc->codec_type == CODEC_TYPE_VIDEO &&
         track->hasBframes)
@@ -1717,7 +1717,7 @@ static int mov_write_packet(AVFormatContext *s, AVPacket *pkt)
         trk->cluster[cl][id].cts = pkt->pts - pkt->dts;
         trk->cluster[cl][id].key_frame = !!(pkt->flags & PKT_FLAG_KEY);
         if(trk->cluster[cl][id].key_frame)
-            trk->hasKeyframes = 1;
+            trk->hasKeyframes++;
     }
     trk->enc = enc;
     trk->entry++;
