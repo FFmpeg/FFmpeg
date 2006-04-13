@@ -69,7 +69,6 @@ typedef struct MOVContext {
     int     mode;
     int64_t time;
     int     nb_streams;
-    int     mdat_written;
     offset_t mdat_pos;
     long    timescale;
     MOVTrack tracks[MAX_STREAMS];
@@ -1620,6 +1619,9 @@ static int mov_write_header(AVFormatContext *s)
         mov->tracks[i].mode = mov->mode;
     }
 
+    mov_write_mdat_tag(pb, mov);
+    mov->time = s->timestamp + 0x7C25B080; //1970 based -> 1904 based
+
     put_flush_packet(pb);
 
     return 0;
@@ -1700,11 +1702,6 @@ static int mov_write_packet(AVFormatContext *s, AVPacket *pkt)
         if (!trk->cluster[cl])
             return -1;
         trk->ents_allocated += MOV_INDEX_CLUSTER_SIZE;
-    }
-    if (mov->mdat_written == 0) {
-        mov_write_mdat_tag(pb, mov);
-        mov->mdat_written = 1;
-        mov->time = s->timestamp + 0x7C25B080; //1970 based -> 1904 based
     }
 
     trk->cluster[cl][id].pos = url_ftell(pb);
