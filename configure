@@ -1267,6 +1267,7 @@ cat > $TMPC << EOF
 #include <sys/time.h>
 #include <linux/videodev.h>
 int dummy = V4L2_PIX_FMT_YUV420;
+struct v4l2_buffer dummy1;
 EOF
 $cc -c -o $TMPE $TMPC 2> /dev/null || v4l2="no"
 fi
