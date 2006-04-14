@@ -1641,55 +1641,47 @@ static int mov_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (url_is_streamed(&s->pb)) return 0; /* Can't handle that */
     if (!size) return 0; /* Discard 0 sized packets */
 
-    if (enc->codec_type == CODEC_TYPE_VIDEO ) {
-        samplesInChunk = 1;
-    }
-    else if (enc->codec_type == CODEC_TYPE_AUDIO ) {
-        if( enc->codec_id == CODEC_ID_AMR_NB) {
-            /* We must find out how many AMR blocks there are in one packet */
-            static uint16_t packed_size[16] =
-                {13, 14, 16, 18, 20, 21, 27, 32, 6, 0, 0, 0, 0, 0, 0, 0};
-            int len = 0;
+    if (enc->codec_type == CODEC_TYPE_AUDIO) {
+        switch (enc->codec_id) {
+        case CODEC_ID_AMR_NB:
+            { /* We must find out how many AMR blocks there are in one packet */
+                static uint16_t packed_size[16] =
+                    {13, 14, 16, 18, 20, 21, 27, 32, 6, 0, 0, 0, 0, 0, 0, 0};
+                int len = 0;
 
-            while (len < size && samplesInChunk < 100) {
-                len += packed_size[(pkt->data[len] >> 3) & 0x0F];
-                samplesInChunk++;
+                while (len < size && samplesInChunk < 100) {
+                    len += packed_size[(pkt->data[len] >> 3) & 0x0F];
+                    samplesInChunk++;
+                }
             }
-        }
-        else if(enc->codec_id == CODEC_ID_PCM_ALAW) {
+            break;
+        case CODEC_ID_PCM_ALAW:
             samplesInChunk = size/enc->channels;
-        }
-        else if(enc->codec_id == CODEC_ID_PCM_S16BE || enc->codec_id == CODEC_ID_PCM_S16LE) {
+            break;
+        case CODEC_ID_PCM_S16BE:
+        case CODEC_ID_PCM_S16LE:
             samplesInChunk = size/(2*enc->channels);
-        }
-        else {
+            break;
+        default:
             samplesInChunk = 1;
         }
+    } else {
+        samplesInChunk = 1;
     }
 
-    if ((enc->codec_id == CODEC_ID_MPEG4 || enc->codec_id == CODEC_ID_AAC)
-        && trk->vosLen == 0) {
-//        assert(enc->extradata_size);
-
+    /* copy extradata if it exists */
+    if (trk->vosLen == 0 && enc->extradata_size > 0) {
         trk->vosLen = enc->extradata_size;
         trk->vosData = av_malloc(trk->vosLen);
         memcpy(trk->vosData, enc->extradata, trk->vosLen);
     }
 
-    if (enc->codec_id == CODEC_ID_H264) {
-        if (trk->vosLen == 0) {
-            /* copy extradata */
-            trk->vosLen = enc->extradata_size;
-            trk->vosData = av_malloc(trk->vosLen);
-            memcpy(trk->vosData, enc->extradata, trk->vosLen);
-        }
-        if (*(uint8_t *)trk->vosData != 1) {
-            /* from x264 or from bytestream h264 */
-            /* nal reformating needed */
-            avc_parse_nal_units(&pkt->data, &pkt->size);
-            assert(pkt->size);
-            size = pkt->size;
-        }
+    if (enc->codec_id == CODEC_ID_H264 && trk->vosLen > 0 && *(uint8_t *)trk->vosData != 1) {
+        /* from x264 or from bytestream h264 */
+        /* nal reformating needed */
+        avc_parse_nal_units(&pkt->data, &pkt->size);
+        assert(pkt->size);
+        size = pkt->size;
     }
 
     cl = trk->entry / MOV_INDEX_CLUSTER_SIZE;
