@@ -1931,6 +1931,7 @@ if test "$amr_nb" = "yes" ; then
 if test "$amr_nb_fixed" = "yes" ; then
   echo "AMR_NB_FIXED=yes" >> config.mak
   echo "#define AMR_NB_FIXED 1" >> $TMPH
+  echo
   echo "AMR NB FIXED POINT NOTICE! Make sure you have downloaded TS26.073 "
   echo "REL-5 version 5.1.0 from "
   echo "http://www.3gpp.org/ftp/Specs/latest/Rel-5/26_series/26073-5??.zip"
@@ -1943,7 +1944,7 @@ else
   echo "REL-5 V5.1.0 from "
   echo "http://www.3gpp.org/ftp/Specs/latest/Rel-5/26_series/26104-5??.zip"
   echo "and extracted the source to libavcodec/amr_float"
-  echo "and if u try this on an alpha, u may need to change Word32 to int in amr/typedef.h"
+  echo "If you try this on alpha, you may need to change Word32 to int in amr/typedef.h"
   echo
 fi
 
