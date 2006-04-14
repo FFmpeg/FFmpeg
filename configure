@@ -265,7 +265,7 @@ case $targetos in
 BeOS)
 prefix="/boot/home/config"
 # helps building libavcodec
-CFLAGS="-DPIC -fomit-frame-pointer"
+CFLAGS="$CFLAGS -DPIC -fomit-frame-pointer"
 # 3 gcc releases known for BeOS, each with ugly bugs
 gcc_version="`$cc -v 2>&1 | grep version | cut -d ' ' -f3-`"
 case "$gcc_version" in
@@ -336,7 +336,7 @@ bktr="yes"
 audio_oss="yes"
 dv1394="no"
 make="gmake"
-CFLAGS="-pthread"
+CFLAGS="$CFLAGS -pthread"
 LDFLAGS="$LDFLAGS -export-dynamic -pthread"
 ;;
 BSD/OS)
@@ -397,7 +397,7 @@ TMPE=$TMPE".exe"
 ar="emxomfar -p128"
 ranlib="echo ignoring ranlib"
 strip="echo ignoring strip"
-CFLAGS="-Zomf"
+CFLAGS="$CFLAGS -Zomf"
 LDFLAGS="-Zomf -Zstack 16384 -s"
 SHFLAGS="-Zdll -Zomf"
 FFSLDFLAGS=""
