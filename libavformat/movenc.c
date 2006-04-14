@@ -433,13 +433,6 @@ static int mov_write_avcc_tag(ByteIOContext *pb, MOVTrack *track)
             buf = track->vosData;
             end = track->vosData + track->vosLen;
 
-            put_byte(pb, 1); /* version */
-            put_byte(pb, 77); /* profile */
-            put_byte(pb, 64); /* profile compat */
-            put_byte(pb, 30); /* level */
-            put_byte(pb, 0xff); /* 6 bits reserved (111111) + 2 bits nal size length - 1 (11) */
-            put_byte(pb, 0xe1); /* 3 bits reserved (111) + 5 bits number of sps (00001) */
-
             /* look for sps and pps */
             while (buf < end) {
                 unsigned int size;
@@ -457,6 +450,14 @@ static int mov_write_avcc_tag(ByteIOContext *pb, MOVTrack *track)
             }
             assert(sps);
             assert(pps);
+
+            put_byte(pb, 1); /* version */
+            put_byte(pb, sps[1]); /* profile */
+            put_byte(pb, sps[2]); /* profile compat */
+            put_byte(pb, sps[3]); /* level */
+            put_byte(pb, 0xff); /* 6 bits reserved (111111) + 2 bits nal size length - 1 (11) */
+            put_byte(pb, 0xe1); /* 3 bits reserved (111) + 5 bits number of sps (00001) */
+
             put_be16(pb, sps_size);
             put_buffer(pb, sps, sps_size);
             put_byte(pb, 1); /* number of pps */
