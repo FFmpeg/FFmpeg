@@ -550,12 +550,6 @@ static int encode_init(AVCodecContext *avctx)
     FFV1Context *s = avctx->priv_data;
     int i;
 
-    if(avctx->strict_std_compliance >FF_COMPLIANCE_EXPERIMENTAL){
-        av_log(avctx, AV_LOG_ERROR, "this codec is under development, files encoded with it may not be decodeable with future versions!!!\n"
-               "use vstrict=-2 / -strict -2 to use it anyway\n");
-        return -1;
-    }
-
     common_init(avctx);
 
     s->version=0;
