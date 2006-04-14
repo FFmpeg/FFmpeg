@@ -639,9 +639,9 @@ static int rv10_decode_packet(AVCodecContext *avctx,
         if(s->mb_y==0) s->first_slice_line=1;
     }else{
         s->first_slice_line=1;
-        s->resync_mb_x= s->mb_x;
-        s->resync_mb_y= s->mb_y;
     }
+    s->resync_mb_x= s->mb_x;
+    s->resync_mb_y= s->mb_y;
     if(s->h263_aic){
         s->y_dc_scale_table=
         s->c_dc_scale_table= ff_aic_dc_scale_table;
