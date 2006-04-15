@@ -12,6 +12,8 @@
 #include <stddef.h>
 #include <inttypes.h> /* for __WORDSIZE */
 
+#include "asmalign.h"
+
 #ifndef __WORDSIZE
 // #warning You have misconfigured system and probably will lose performance!
 #define __WORDSIZE MP_WORDSIZE
@@ -40,8 +42,13 @@
 #define PREFETCHW "prefetcht0"
 #define PAVGB	  "pavgb"
 #else
+#ifdef __APPLE__
+#define PREFETCH "#"
+#define PREFETCHW "#"
+#elif
 #define PREFETCH "/nop"
 #define PREFETCHW "/nop"
+#endif
 #endif
 
 #ifdef HAVE_3DNOW
@@ -56,7 +63,11 @@
 #define SFENCE "sfence"
 #else
 #define MOVNTQ "movq"
+#ifdef __APPLE__
+#define SFENCE "#"
+#elif
 #define SFENCE "/nop"
+#endif
 #endif
 
 static inline void RENAME(rgb24to32)(const uint8_t *src,uint8_t *dst,long src_size)
@@ -332,7 +343,7 @@ static inline void RENAME(rgb32to16)(const uint8_t *src, uint8_t *dst, long src_
 		"movq %3, %%mm5			\n\t"
 		"movq %4, %%mm6			\n\t"
 		"movq %5, %%mm7			\n\t"
-		".balign 16			\n\t"
+		ASMALIGN16
 		"1:				\n\t"
 		PREFETCH" 32(%1)		\n\t"
 		"movd	(%1), %%mm0		\n\t"
@@ -489,7 +500,7 @@ static inline void RENAME(rgb32to15)(const uint8_t *src, uint8_t *dst, long src_
 		"movq %3, %%mm5			\n\t"
 		"movq %4, %%mm6			\n\t"
 		"movq %5, %%mm7			\n\t"
-		".balign 16			\n\t"
+		ASMALIGN16
 		"1:				\n\t"
 		PREFETCH" 32(%1)		\n\t"
 		"movd	(%1), %%mm0		\n\t"
@@ -1344,7 +1355,7 @@ static inline void RENAME(rgb32tobgr32)(const uint8_t *src, uint8_t *dst, long s
 /* TODO: unroll this loop */
 	asm volatile (
 		"xor %%"REG_a", %%"REG_a"	\n\t"
-		".balign 16			\n\t"
+		ASMALIGN16
 		"1:				\n\t"
 		PREFETCH" 32(%0, %%"REG_a")	\n\t"
 		"movq (%0, %%"REG_a"), %%mm0	\n\t"
@@ -1394,7 +1405,7 @@ static inline void RENAME(rgb24tobgr24)(const uint8_t *src, uint8_t *dst, long s
 		"movq "MANGLE(mask24r)", %%mm5	\n\t"
 		"movq "MANGLE(mask24g)", %%mm6	\n\t"
 		"movq "MANGLE(mask24b)", %%mm7	\n\t"
-		".balign 16			\n\t"
+		ASMALIGN16
 		"1:				\n\t"
 		PREFETCH" 32(%1, %%"REG_a")	\n\t"
 		"movq   (%1, %%"REG_a"), %%mm0	\n\t" // BGR BGR BG
@@ -1464,7 +1475,7 @@ static inline void RENAME(yuvPlanartoyuy2)(const uint8_t *ysrc, const uint8_t *u
 //FIXME handle 2 lines a once (fewer prefetch, reuse some chrom, but very likely limited by mem anyway)
 		asm volatile(
 			"xor %%"REG_a", %%"REG_a"	\n\t"
-			".balign 16			\n\t"
+			ASMALIGN16
 			"1:				\n\t"
 			PREFETCH" 32(%1, %%"REG_a", 2)	\n\t"
 			PREFETCH" 32(%2, %%"REG_a")	\n\t"
@@ -1617,7 +1628,7 @@ static inline void RENAME(yuvPlanartouyvy)(const uint8_t *ysrc, const uint8_t *u
 //FIXME handle 2 lines a once (fewer prefetch, reuse some chrom, but very likely limited by mem anyway)
 		asm volatile(
 			"xor %%"REG_a", %%"REG_a"	\n\t"
-			".balign 16			\n\t"
+			ASMALIGN16
 			"1:				\n\t"
 			PREFETCH" 32(%1, %%"REG_a", 2)	\n\t"
 			PREFETCH" 32(%2, %%"REG_a")	\n\t"
@@ -1741,7 +1752,7 @@ static inline void RENAME(yuy2toyv12)(const uint8_t *src, uint8_t *ydst, uint8_t
 			"xor %%"REG_a", %%"REG_a"	\n\t"
 			"pcmpeqw %%mm7, %%mm7		\n\t"
 			"psrlw $8, %%mm7		\n\t" // FF,00,FF,00...
-			".balign 16			\n\t"
+			ASMALIGN16
 			"1:				\n\t"
 			PREFETCH" 64(%0, %%"REG_a", 4)	\n\t"
 			"movq (%0, %%"REG_a", 4), %%mm0	\n\t" // YUYV YUYV(0)
@@ -1794,7 +1805,7 @@ static inline void RENAME(yuy2toyv12)(const uint8_t *src, uint8_t *ydst, uint8_t
 
 		asm volatile(
 			"xor %%"REG_a", %%"REG_a"	\n\t"
-			".balign 16			\n\t"
+			ASMALIGN16
 			"1:				\n\t"
 			PREFETCH" 64(%0, %%"REG_a", 4)	\n\t"
 			"movq (%0, %%"REG_a", 4), %%mm0	\n\t" // YUYV YUYV(0)
@@ -1979,7 +1990,7 @@ static inline void RENAME(uyvytoyv12)(const uint8_t *src, uint8_t *ydst, uint8_t
 			"xorl %%eax, %%eax		\n\t"
 			"pcmpeqw %%mm7, %%mm7		\n\t"
 			"psrlw $8, %%mm7		\n\t" // FF,00,FF,00...
-			".balign 16			\n\t"
+			ASMALIGN16
 			"1:				\n\t"
 			PREFETCH" 64(%0, %%eax, 4)	\n\t"
 			"movq (%0, %%eax, 4), %%mm0	\n\t" // UYVY UYVY(0)
@@ -2032,7 +2043,7 @@ static inline void RENAME(uyvytoyv12)(const uint8_t *src, uint8_t *ydst, uint8_t
 
 		asm volatile(
 			"xorl %%eax, %%eax		\n\t"
-			".balign 16			\n\t"
+			ASMALIGN16
 			"1:				\n\t"
 			PREFETCH" 64(%0, %%eax, 4)	\n\t"
 			"movq (%0, %%eax, 4), %%mm0	\n\t" // YUYV YUYV(0)
@@ -2110,7 +2121,7 @@ static inline void RENAME(rgb24toyv12)(const uint8_t *src, uint8_t *ydst, uint8_
 				"movq "MANGLE(w1111)", %%mm5		\n\t"
 				"pxor %%mm7, %%mm7		\n\t"
 				"lea (%%"REG_a", %%"REG_a", 2), %%"REG_b"\n\t"
-				".balign 16			\n\t"
+				ASMALIGN16
 				"1:				\n\t"
 				PREFETCH" 64(%0, %%"REG_b")	\n\t"
 				"movd (%0, %%"REG_b"), %%mm0	\n\t"
@@ -2184,7 +2195,7 @@ static inline void RENAME(rgb24toyv12)(const uint8_t *src, uint8_t *ydst, uint8_
 			"pxor %%mm7, %%mm7		\n\t"
 			"lea (%%"REG_a", %%"REG_a", 2), %%"REG_b"\n\t"
 			"add %%"REG_b", %%"REG_b"	\n\t"
-			".balign 16			\n\t"
+			ASMALIGN16
 			"1:				\n\t"
 			PREFETCH" 64(%0, %%"REG_b")	\n\t"
 			PREFETCH" 64(%1, %%"REG_b")	\n\t"

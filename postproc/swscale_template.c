@@ -16,6 +16,8 @@
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 */
 
+#include "asmalign.h"
+
 #undef REAL_MOVNTQ
 #undef MOVNTQ
 #undef PAVGB
@@ -71,7 +73,7 @@
 			"movq %%mm3, %%mm4		\n\t"\
 			"lea " offset "(%0), %%"REG_d"	\n\t"\
 			"mov (%%"REG_d"), %%"REG_S"	\n\t"\
-			".balign 16			\n\t" /* FIXME Unroll? */\
+			ASMALIGN16 /* FIXME Unroll? */\
 			"1:				\n\t"\
 			"movq 8(%%"REG_d"), %%mm0	\n\t" /* filterCoeff */\
 			"movq " #x "(%%"REG_S", %%"REG_a", 2), %%mm2\n\t" /* srcData */\
@@ -98,7 +100,7 @@
 
 #define YSCALEYUV2YV121 \
 			"mov %2, %%"REG_a"		\n\t"\
-			".balign 16			\n\t" /* FIXME Unroll? */\
+			ASMALIGN16 /* FIXME Unroll? */\
 			"1:				\n\t"\
 			"movq (%0, %%"REG_a", 2), %%mm0	\n\t"\
 			"movq 8(%0, %%"REG_a", 2), %%mm1\n\t"\
@@ -118,14 +120,14 @@
 */
 #define YSCALEYUV2PACKEDX \
 		"xor %%"REG_a", %%"REG_a"	\n\t"\
-		".balign 16			\n\t"\
+		ASMALIGN16\
 		"nop				\n\t"\
 		"1:				\n\t"\
 		"lea "CHR_MMX_FILTER_OFFSET"(%0), %%"REG_d"\n\t"\
 		"mov (%%"REG_d"), %%"REG_S"	\n\t"\
 		"movq "VROUNDER_OFFSET"(%0), %%mm3\n\t"\
 		"movq %%mm3, %%mm4		\n\t"\
-		".balign 16			\n\t"\
+		ASMALIGN16\
 		"2:				\n\t"\
 		"movq 8(%%"REG_d"), %%mm0	\n\t" /* filterCoeff */\
 		"movq (%%"REG_S", %%"REG_a"), %%mm2	\n\t" /* UsrcData */\
@@ -143,7 +145,7 @@
 		"mov (%%"REG_d"), %%"REG_S"	\n\t"\
 		"movq "VROUNDER_OFFSET"(%0), %%mm1\n\t"\
 		"movq %%mm1, %%mm7		\n\t"\
-		".balign 16			\n\t"\
+		ASMALIGN16\
 		"2:				\n\t"\
 		"movq 8(%%"REG_d"), %%mm0	\n\t" /* filterCoeff */\
 		"movq (%%"REG_S", %%"REG_a", 2), %%mm2	\n\t" /* Y1srcData */\
@@ -205,7 +207,7 @@
 		"punpcklwd %%mm5, %%mm5		\n\t"\
 		"punpcklwd %%mm5, %%mm5		\n\t"\
 		"xor %%"REG_a", %%"REG_a"		\n\t"\
-		".balign 16			\n\t"\
+		ASMALIGN16\
 		"1:				\n\t"\
 		"movq (%0, %%"REG_a", 2), %%mm0	\n\t" /*buf0[eax]*/\
 		"movq (%1, %%"REG_a", 2), %%mm1	\n\t" /*buf1[eax]*/\
@@ -258,7 +260,7 @@
 		"movq %%mm0, "CHR_MMX_FILTER_OFFSET"+8("#c")\n\t"\
 		"movq %%mm1, "LUM_MMX_FILTER_OFFSET"+8("#c")\n\t"\
 		"xor "#index", "#index"		\n\t"\
-		".balign 16			\n\t"\
+		ASMALIGN16\
 		"1:				\n\t"\
 		"movq (%2, "#index"), %%mm2	\n\t" /* uvbuf0[eax]*/\
 		"movq (%3, "#index"), %%mm3	\n\t" /* uvbuf1[eax]*/\
@@ -290,7 +292,7 @@
                 
 #define REAL_YSCALEYUV2RGB(index, c) \
 		"xor "#index", "#index"	\n\t"\
-		".balign 16			\n\t"\
+		ASMALIGN16\
 		"1:				\n\t"\
 		"movq (%2, "#index"), %%mm2	\n\t" /* uvbuf0[eax]*/\
 		"movq (%3, "#index"), %%mm3	\n\t" /* uvbuf1[eax]*/\
@@ -356,7 +358,7 @@
                 
 #define REAL_YSCALEYUV2PACKED1(index, c) \
 		"xor "#index", "#index"		\n\t"\
-		".balign 16			\n\t"\
+		ASMALIGN16\
 		"1:				\n\t"\
 		"movq (%2, "#index"), %%mm3	\n\t" /* uvbuf0[eax]*/\
 		"movq 4096(%2, "#index"), %%mm4	\n\t" /* uvbuf0[eax+2048]*/\
@@ -371,7 +373,7 @@
                 
 #define REAL_YSCALEYUV2RGB1(index, c) \
 		"xor "#index", "#index"	\n\t"\
-		".balign 16			\n\t"\
+		ASMALIGN16\
 		"1:				\n\t"\
 		"movq (%2, "#index"), %%mm3	\n\t" /* uvbuf0[eax]*/\
 		"movq 4096(%2, "#index"), %%mm4	\n\t" /* uvbuf0[eax+2048]*/\
@@ -420,7 +422,7 @@
 
 #define REAL_YSCALEYUV2PACKED1b(index, c) \
 		"xor "#index", "#index"		\n\t"\
-		".balign 16			\n\t"\
+		ASMALIGN16\
 		"1:				\n\t"\
 		"movq (%2, "#index"), %%mm2	\n\t" /* uvbuf0[eax]*/\
 		"movq (%3, "#index"), %%mm3	\n\t" /* uvbuf1[eax]*/\
@@ -439,7 +441,7 @@
 // do vertical chrominance interpolation
 #define REAL_YSCALEYUV2RGB1b(index, c) \
 		"xor "#index", "#index"		\n\t"\
-		".balign 16			\n\t"\
+		ASMALIGN16\
 		"1:				\n\t"\
 		"movq (%2, "#index"), %%mm2	\n\t" /* uvbuf0[eax]*/\
 		"movq (%3, "#index"), %%mm3	\n\t" /* uvbuf1[eax]*/\
@@ -1662,7 +1664,7 @@ static inline void RENAME(bgr24ToY)(uint8_t *dst, uint8_t *src, long width)
 		"movq "MANGLE(w1111)", %%mm5		\n\t"
 		"pxor %%mm7, %%mm7		\n\t"
 		"lea (%%"REG_a", %%"REG_a", 2), %%"REG_b"\n\t"
-		".balign 16			\n\t"
+		ASMALIGN16
 		"1:				\n\t"
 		PREFETCH" 64(%0, %%"REG_b")	\n\t"
 		"movd (%0, %%"REG_b"), %%mm0	\n\t"
@@ -1748,7 +1750,7 @@ static inline void RENAME(bgr24ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1
 		"pxor %%mm7, %%mm7		\n\t"
 		"lea (%%"REG_a", %%"REG_a", 2), %%"REG_b"	\n\t"
 		"add %%"REG_b", %%"REG_b"	\n\t"
-		".balign 16			\n\t"
+		ASMALIGN16
 		"1:				\n\t"
 		PREFETCH" 64(%0, %%"REG_b")	\n\t"
 		PREFETCH" 64(%1, %%"REG_b")	\n\t"
@@ -2055,7 +2057,7 @@ static inline void RENAME(hScale)(int16_t *dst, int dstW, uint8_t *src, int srcW
 			"movq "MANGLE(w02)", %%mm6	\n\t"
 			"push %%"REG_BP"		\n\t" // we use 7 regs here ...
 			"mov %%"REG_a", %%"REG_BP"	\n\t"
-			".balign 16			\n\t"
+			ASMALIGN16
 			"1:				\n\t"
 			"movzwl (%2, %%"REG_BP"), %%eax	\n\t"
 			"movzwl 2(%2, %%"REG_BP"), %%ebx\n\t"
@@ -2093,7 +2095,7 @@ static inline void RENAME(hScale)(int16_t *dst, int dstW, uint8_t *src, int srcW
 			"movq "MANGLE(w02)", %%mm6	\n\t"
 			"push %%"REG_BP"		\n\t" // we use 7 regs here ...
 			"mov %%"REG_a", %%"REG_BP"	\n\t"
-			".balign 16			\n\t"
+			ASMALIGN16
 			"1:				\n\t"
 			"movzwl (%2, %%"REG_BP"), %%eax	\n\t"
 			"movzwl 2(%2, %%"REG_BP"), %%ebx\n\t"
@@ -2142,7 +2144,7 @@ static inline void RENAME(hScale)(int16_t *dst, int dstW, uint8_t *src, int srcW
 		asm volatile(
 			"pxor %%mm7, %%mm7		\n\t"
 			"movq "MANGLE(w02)", %%mm6	\n\t"
-			".balign 16			\n\t"
+			ASMALIGN16
 			"1:				\n\t"
 			"mov %2, %%"REG_c"		\n\t"
 			"movzwl (%%"REG_c", %0), %%eax	\n\t"
@@ -2326,7 +2328,7 @@ FUNNY_Y_CODE
 		"xor %%"REG_a", %%"REG_a"	\n\t" // i
 		"xor %%"REG_b", %%"REG_b"	\n\t" // xx
 		"xorl %%ecx, %%ecx		\n\t" // 2*xalpha
-		".balign 16			\n\t"
+		ASMALIGN16
 		"1:				\n\t"
 		"movzbl  (%0, %%"REG_b"), %%edi	\n\t" //src[xx]
 		"movzbl 1(%0, %%"REG_b"), %%esi	\n\t" //src[xx+1]
@@ -2523,7 +2525,7 @@ FUNNY_UV_CODE
 		"xor %%"REG_a", %%"REG_a"	\n\t" // i
 		"xor %%"REG_b", %%"REG_b"		\n\t" // xx
 		"xorl %%ecx, %%ecx		\n\t" // 2*xalpha
-		".balign 16			\n\t"
+		ASMALIGN16
 		"1:				\n\t"
 		"mov %0, %%"REG_S"		\n\t"
 		"movzbl  (%%"REG_S", %%"REG_b"), %%edi	\n\t" //src[xx]
