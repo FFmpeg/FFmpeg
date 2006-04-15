@@ -66,7 +66,7 @@ ifeq ($(CONFIG_AUDIO_OSS),yes)
 OBJS+= audio.o
 endif
 
-EXTRALIBS += -L../libavutil -lavutil$(BUILDSUF) -lavcodec$(BUILDSUF) -L../libavcodec
+EXTRALIBS := -L../libavutil -lavutil$(BUILDSUF) -lavcodec$(BUILDSUF) -L../libavcodec $(EXTRALIBS)
 
 ifeq ($(CONFIG_AUDIO_BEOS),yes)
 CPPOBJS+= beosaudio.o
