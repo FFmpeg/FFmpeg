@@ -46,6 +46,7 @@ Miscellaneous Areas
 documentation                           Mike Melanson, Diego Biurrun
 website                                 Mike Melanson, Diego Biurrun
 build system (configure,Makefiles)      Diego Biurrun
+project server                          Diego Biurrun, Mans Rullgard
 
 
 libavutil
