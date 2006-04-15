@@ -34,10 +34,6 @@ void avcodec_register_all(void)
 {
     static int inited = 0;
 
-#ifdef CONFIG_WIN32
-    av_log(NULL, AV_LOG_INFO, "Use a real OS!\n");
-#endif
-
     if (inited != 0)
         return;
     inited = 1;
