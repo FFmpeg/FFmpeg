@@ -737,7 +737,7 @@ static int rv10_decode_frame(AVCodecContext *avctx,
         rv10_decode_packet(avctx, buf, buf_size);
     }
 
-    if(s->mb_y>=s->mb_height){
+    if(s->current_picture_ptr != NULL && s->mb_y>=s->mb_height){
         ff_er_frame_end(s);
         MPV_frame_end(s);
 
