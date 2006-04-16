@@ -23,9 +23,9 @@
 #define AVV(x...) {x}
 
 #if (__GNUC__ < 4)
-# define REG_v(a) asm ( #a )
-#else
 # define REG_v(a)
+#else
+# define REG_v(a) asm ( #a )
 #endif
 
 #if (__GNUC__ * 100 + __GNUC_MINOR__ < 303)
