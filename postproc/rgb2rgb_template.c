@@ -45,7 +45,7 @@
 #ifdef __APPLE__
 #define PREFETCH "#"
 #define PREFETCHW "#"
-#elif
+#else
 #define PREFETCH "/nop"
 #define PREFETCHW "/nop"
 #endif
@@ -65,7 +65,7 @@
 #define MOVNTQ "movq"
 #ifdef __APPLE__
 #define SFENCE "#"
-#elif
+#else
 #define SFENCE "/nop"
 #endif
 #endif
