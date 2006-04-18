@@ -688,7 +688,7 @@ void ff_snow_vertical_compose97i_mmx(DWTELEM *b0, DWTELEM *b1, DWTELEM *b2, DWTE
              "jnz 1b                         \n\t"\
              :"+m"(dst8),"+m"(dst_array)\
              :\
-             "rm"((long)(src_x<<2)),"m"(obmc),"a"(block),"m"((long)b_h),"rm"((long)src_stride):\
+             "rm"((long)(src_x<<2)),"m"(obmc),"a"(block),"m"((long)b_h),"m"((long)src_stride):\
              "%"REG_b"","%"REG_c"","%"REG_S"","%"REG_D"","%"REG_d"");
 
 #define snow_inner_add_yblock_sse2_end_8\
@@ -861,7 +861,7 @@ snow_inner_add_yblock_sse2_end_16
              "jnz 1b                         \n\t"\
              :"+m"(dst8),"+m"(dst_array)\
              :\
-             "rm"((long)(src_x<<2)),"m"(obmc),"a"(block),"m"((long)b_h),"rm"((long)src_stride):\
+             "rm"((long)(src_x<<2)),"m"(obmc),"a"(block),"m"((long)b_h),"m"((long)src_stride):\
              "%"REG_b"","%"REG_c"","%"REG_S"","%"REG_D"","%"REG_d"");
 
 static void inner_add_yblock_bw_8_obmc_16_mmx(uint8_t *obmc, const long obmc_stride, uint8_t * * block, int b_w, long b_h,
