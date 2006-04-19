@@ -76,9 +76,6 @@ typedef struct MOVContext {
 
 static int mov_write_esds_tag(ByteIOContext *pb, MOVTrack* track);
 
-/* output language code from iso639 language name */
-extern int ff_mov_iso639_to_lang(const char *lang, int mp4);
-
 //FIXME supprt 64bit varaint with wide placeholders
 static offset_t updateSize (ByteIOContext *pb, offset_t pos)
 {

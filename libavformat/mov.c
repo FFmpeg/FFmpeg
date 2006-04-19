@@ -382,7 +382,6 @@ static int ff_mov_lang_to_iso639(int code, char *to)
     return 1;
 }
 
-extern int ff_mov_iso639_to_lang(const char *lang, int mp4); /* for movenc.c */
 int ff_mov_iso639_to_lang(const char *lang, int mp4)
 {
     int i, code = 0;
