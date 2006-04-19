@@ -1498,19 +1498,19 @@ static int mov_read_cmov(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 /* edit list atom */
 static int mov_read_elst(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
-  int i, edit_count;
+    int i, edit_count;
 
-  get_byte(pb); /* version */
-  get_byte(pb); get_byte(pb); get_byte(pb); /* flags */
-  edit_count= c->streams[c->fc->nb_streams-1]->edit_count = get_be32(pb);     /* entries */
+    get_byte(pb); /* version */
+    get_byte(pb); get_byte(pb); get_byte(pb); /* flags */
+    edit_count= c->streams[c->fc->nb_streams-1]->edit_count = get_be32(pb);     /* entries */
 
-  for(i=0; i<edit_count; i++){
-    get_be32(pb); /* Track duration */
-    get_be32(pb); /* Media time */
-    get_be32(pb); /* Media rate */
-  }
-  dprintf("track[%i].edit_count = %i\n", c->fc->nb_streams-1, c->streams[c->fc->nb_streams-1]->edit_count);
-  return 0;
+    for(i=0; i<edit_count; i++){
+        get_be32(pb); /* Track duration */
+        get_be32(pb); /* Media time */
+        get_be32(pb); /* Media rate */
+    }
+    dprintf("track[%i].edit_count = %i\n", c->fc->nb_streams-1, c->streams[c->fc->nb_streams-1]->edit_count);
+    return 0;
 }
 
 static const MOVParseTableEntry mov_default_parse_table[] = {
