@@ -461,7 +461,12 @@ static int mov_read_default(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
         if (c->parse_table[i].type == 0) { /* skip leaf atoms data */
             url_fskip(pb, a.size);
         } else {
+            offset_t start_pos = url_ftell(pb);
+            int64_t left;
             err = (c->parse_table[i].func)(c, pb, a);
+            left = a.size - url_ftell(pb) + start_pos;
+            if (left > 0) /* skip garbage at atom end */
+                url_fskip(pb, left);
         }
 
         a.offset += a.size;
@@ -571,7 +576,6 @@ static int mov_read_esds(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
     AVStream *st = c->fc->streams[c->fc->nb_streams-1];
     MOVStreamContext *sc = (MOVStreamContext *)st->priv_data;
-    int64_t start_pos = url_ftell(pb);
     int tag, len;
 
     /* Well, broken but suffisant for some MP4 streams */
@@ -606,8 +610,6 @@ static int mov_read_esds(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
             }
         }
     }
-    /* in any case, skip garbage */
-    url_fskip(pb, atom.size - ((url_ftell(pb) - start_pos)));
     return 0;
 }
 
@@ -801,7 +803,6 @@ static int mov_read_alac(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 
 static int mov_read_wave(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
-    offset_t start_pos = url_ftell(pb);
     AVStream *st = c->fc->streams[c->fc->nb_streams-1];
 
     if((uint64_t)atom.size > (1<<30))
@@ -819,10 +820,8 @@ static int mov_read_wave(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
             url_fskip(pb, atom.size);
     } else if (atom.size > 8) { /* to read frma, esds atoms */
         mov_read_default(c, pb, atom);
-    } else if (atom.size > 0)
+    } else
         url_fskip(pb, atom.size);
-    /* in any case, skip garbage */
-    url_fskip(pb, atom.size - ((url_ftell(pb) - start_pos)));
     return 0;
 }
 
