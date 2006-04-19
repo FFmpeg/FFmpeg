@@ -1944,7 +1944,7 @@ static ConvertEntry convert_table[PIX_FMT_NB][PIX_FMT_NB] = {
 int avpicture_alloc(AVPicture *picture,
                            int pix_fmt, int width, int height)
 {
-    unsigned int size;
+    int size;
     void *ptr;
 
     size = avpicture_get_size(pix_fmt, width, height);
