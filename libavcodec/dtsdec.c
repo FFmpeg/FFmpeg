@@ -33,8 +33,7 @@
 #include <malloc.h>
 #endif
 
-#define INBUF_SIZE 4096
-#define BUFFER_SIZE 4096
+#define BUFFER_SIZE 18726
 #define HEADER_SIZE 14
 
 #ifdef LIBDTS_FIXED
@@ -231,9 +230,11 @@ dts_decode_frame (AVCodecContext *avctx, void *data, int *data_size,
       memcpy (bufptr, start, len);
       bufptr += len;
       start += len;
-      if (bufptr == bufpos)
-        {
-          if (bufpos == buf + HEADER_SIZE)
+      if (bufptr != bufpos)
+          return start - buff;
+      if (bufpos != buf + HEADER_SIZE)
+          break;
+
             {
               int length;
 
@@ -248,7 +249,8 @@ dts_decode_frame (AVCodecContext *avctx, void *data, int *data_size,
                 }
               bufpos = buf + length;
             }
-          else
+    }
+
             {
               level_t level;
               sample_t bias;
@@ -280,16 +282,14 @@ dts_decode_frame (AVCodecContext *avctx, void *data, int *data_size,
                 }
               bufptr = buf;
               bufpos = buf + HEADER_SIZE;
-              continue;
+              return start-buff;
             error:
               av_log (NULL, AV_LOG_ERROR, "error\n");
               bufptr = buf;
               bufpos = buf + HEADER_SIZE;
             }
-        }
-    }
 
-  return buff_size;
+  return start-buff;
 }
 
 static int
@@ -297,7 +297,7 @@ dts_decode_init (AVCodecContext *avctx)
 {
   avctx->priv_data = dts_init (0);
   if (avctx->priv_data == NULL)
-    return 1;
+    return -1;
 
   return 0;
 }
