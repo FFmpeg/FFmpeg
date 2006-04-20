@@ -65,7 +65,7 @@ static int get_codec_data(ByteIOContext *pb, AVStream *vst,
                 subtype = get_byte(pb);
                 url_fskip(pb, 6);
                 size = PKTSIZE(get_le32(pb));
-                if (subtype == 'R') {
+                if (vst && subtype == 'R') {
                     vst->codec->extradata_size = size;
                     vst->codec->extradata = av_malloc(size);
                     get_buffer(pb, vst->codec->extradata, size);
