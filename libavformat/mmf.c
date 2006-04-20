@@ -202,6 +202,10 @@ static int mmf_read_header(AVFormatContext *s,
     }
 
     /* Tag = "ATRx", where "x" = track number */
+    if ((tag & 0xffffff) == MKTAG('M', 'T', 'R', 0)) {
+        av_log(s, AV_LOG_ERROR, "MIDI like format found, unsupported\n");
+        return -1;
+    }
     if ((tag & 0xffffff) != MKTAG('A', 'T', 'R', 0)) {
         av_log(s, AV_LOG_ERROR, "Unsupported SMAF chunk %08x\n", tag);
         return -1;
