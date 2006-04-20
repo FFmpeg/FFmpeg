@@ -1632,49 +1632,31 @@ static int av_encode(AVFormatContext **output_files,
                 ost->encoding_needed = 1;
                 break;
             case CODEC_TYPE_VIDEO:
-                if (codec->width == icodec->width &&
-                    codec->height == icodec->height &&
-                    frame_topBand == 0 &&
-                    frame_bottomBand == 0 &&
-                    frame_leftBand == 0 &&
-                    frame_rightBand == 0 &&
-                    frame_padtop == 0 &&
-                    frame_padbottom == 0 &&
-                    frame_padleft == 0 &&
-                    frame_padright == 0)
-                {
-                    ost->video_resample = 0;
-                    ost->video_crop = 0;
-                    ost->video_pad = 0;
-                } else if ((codec->width == icodec->width -
-                                (frame_leftBand + frame_rightBand)) &&
-                        (codec->height == icodec->height -
-                                (frame_topBand  + frame_bottomBand)) &&
-                                (frame_rightBand + frame_leftBand + frame_topBand + frame_bottomBand)) {
-                    ost->video_resample = 0;
-                    ost->video_crop = 1;
+                ost->video_crop = ((frame_leftBand + frame_rightBand + frame_topBand + frame_bottomBand) != 0);
+                ost->video_pad = ((frame_padleft + frame_padright + frame_padtop + frame_padbottom) != 0);
+                ost->video_resample = ((codec->width != icodec->width -
+                                (frame_leftBand + frame_rightBand) +
+                                (frame_padleft + frame_padright)) ||
+                        (codec->height != icodec->height -
+                                (frame_topBand  + frame_bottomBand) +
+                                (frame_padtop + frame_padbottom)));
+                if (ost->video_crop) {
                     ost->topBand = frame_topBand;
                     ost->leftBand = frame_leftBand;
-                } else if ((codec->width == icodec->width +
-                                (frame_padleft + frame_padright)) &&
-                        (codec->height == icodec->height +
-                                (frame_padtop + frame_padbottom)) &&
-                                (frame_padright + frame_padleft + frame_padtop + frame_padbottom)) {
-                    ost->video_resample = 0;
-                    ost->video_crop = 0;
-                    ost->video_pad = 1;
+                }
+                if (ost->video_pad) {
                     ost->padtop = frame_padtop;
                     ost->padleft = frame_padleft;
                     ost->padbottom = frame_padbottom;
                     ost->padright = frame_padright;
-                    avcodec_get_frame_defaults(&ost->pict_tmp);
-                    if( avpicture_alloc( (AVPicture*)&ost->pict_tmp, codec->pix_fmt,
-                                codec->width, codec->height ) )
-                        goto fail;
-                } else {
-                    ost->video_resample = 1;
-                    ost->video_crop = ((frame_leftBand + frame_rightBand + frame_topBand + frame_bottomBand) != 0);
-                    ost->video_pad = ((frame_padleft + frame_padright + frame_padtop + frame_padbottom) != 0);
+                    if (!ost->video_resample) {
+                        avcodec_get_frame_defaults(&ost->pict_tmp);
+                        if( avpicture_alloc( (AVPicture*)&ost->pict_tmp, codec->pix_fmt,
+                                         codec->width, codec->height ) )
+                            goto fail;
+                    }
+                }
+                if (ost->video_resample) {
                     avcodec_get_frame_defaults(&ost->pict_tmp);
                     if( avpicture_alloc( (AVPicture*)&ost->pict_tmp, PIX_FMT_YUV420P,
                                          codec->width, codec->height ) )
@@ -1686,12 +1668,6 @@ static int av_encode(AVFormatContext **output_files,
                             icodec->width - (frame_leftBand + frame_rightBand),
                             icodec->height - (frame_topBand + frame_bottomBand));
 
-                    ost->padtop = frame_padtop;
-                    ost->padleft = frame_padleft;
-                    ost->padbottom = frame_padbottom;
-                    ost->padright = frame_padright;
-                    ost->topBand = frame_topBand;
-                    ost->leftBand = frame_leftBand;
                 }
                 ost->encoding_needed = 1;
                 ist->decoding_needed = 1;
