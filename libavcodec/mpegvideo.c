@@ -1831,7 +1831,7 @@ void ff_print_debug_info(MpegEncContext *s, AVFrame *pict){
         const int width = s->avctx->width;
         const int height= s->avctx->height;
         const int mv_sample_log2= 4 - pict->motion_subsample_log2;
-        const int mv_stride= (s->mb_width << mv_sample_log2) + 1;
+        const int mv_stride= (s->mb_width << mv_sample_log2) + (s->codec_id == CODEC_ID_H264 ? 0 : 1);
         s->low_delay=0; //needed to see the vectors without trashing the buffers
 
         avcodec_get_chroma_sub_sample(s->avctx->pix_fmt, &h_chroma_shift, &v_chroma_shift);
