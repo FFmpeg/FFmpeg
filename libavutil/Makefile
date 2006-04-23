@@ -12,7 +12,6 @@ ifeq ($(CONFIG_WIN32),yes)
 endif
 
 OBJS= mathematics.o \
-      integer.o \
       rational.o \
       intfloat_readwrite.o \
       crc.o \
