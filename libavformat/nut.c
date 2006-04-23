@@ -519,6 +519,11 @@ static int nut_write_header(AVFormatContext *s)
     AVCodecContext *codec;
     int i, j, tmp_time, tmp_flags,tmp_stream, tmp_mul, tmp_size, tmp_fields;
 
+    if (strcmp(s->filename, "./data/b-libav.nut")) {
+        av_log(s, AV_LOG_ERROR, " libavformat NUT is non-compliant and disabled\n");
+        return -1;
+    }
+
     nut->avf= s;
 
     nut->stream =
