@@ -872,9 +872,16 @@ static int vorbis_parse_id_hdr(vorbis_context *vc){
     bl1=get_bits(gb, 4);
     vc->blocksize_0=(1<<bl0);
     vc->blocksize_1=(1<<bl1);
-    if (bl0>13 || bl0<6 || bl1>13 || bl1<6) {
+    if (bl0>13 || bl0<6 || bl1>13 || bl1<6 || bl1<bl0) {
         av_log(vc->avccontext, AV_LOG_ERROR, " Vorbis id header packet corrupt (illegal blocksize). \n");
         return 3;
+    }
+    // output format int16
+    if (vc->blocksize_1/2 * vc->audio_channels * 2 >
+                                             AVCODEC_MAX_AUDIO_FRAME_SIZE) {
+        av_log(vc->avccontext, AV_LOG_ERROR, "Vorbis channel count makes "
+               "output packets too large.\n");
+        return 4;
     }
     vc->swin=vwin[bl0-6];
     vc->lwin=vwin[bl1-6];
