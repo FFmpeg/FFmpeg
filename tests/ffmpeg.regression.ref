@@ -148,23 +148,23 @@ stddev: 10.99 PSNR:27.30 bytes:7602176
 21f8ff9f1daacd9133683bb4ea0f50a4 *./data/a-mp2.mp2
 95712 ./data/a-mp2.mp2
 6956f2c5185c4edbae648c614992a14b *./data/out.wav
-stddev:9330.70 PSNR:16.92 bytes:527360
-stddev:4396.13 PSNR:23.46 bytes:526336
+stddev:9330.70 PSNR:16.92 bytes:1054720
+stddev:4396.13 PSNR:23.46 bytes:1052672
 aefe11ab5067621a1c674859d6413891 *./data/a-ac3.rm
 98203 ./data/a-ac3.rm
 9e6e66847a568ef4f1f229b0939d2aae *./data/a-g726.wav
 24268 ./data/a-g726.wav
 a719ab6d47d8d601520edb13bf6136b4 *./data/out.wav
-stddev:8459.88 PSNR:17.77 bytes:48128
+stddev:8459.88 PSNR:17.77 bytes:96256
 bdc512b78e2ccb1d815aec08794650eb *./data/a-adpcm_ima.wav
 266288 ./data/a-adpcm_ima.wav
 1316b03da3bdc8df9785c7995e3c9b2a *./data/out.wav
-stddev:13585.76 PSNR:13.66 bytes:527360
+stddev:13585.76 PSNR:13.66 bytes:1054720
 d2eee867856d2bdb6d08e936d4ceec0c *./data/a-adpcm_ms.wav
 267308 ./data/a-adpcm_ms.wav
 91a84bb4f319a3a0bf0c0441b3d3a529 *./data/out.wav
-stddev:1050.18 PSNR:35.89 bytes:527360
+stddev:1050.18 PSNR:35.89 bytes:1054720
 5d99e12e911b0f96d44a5792db23dbe2 *./data/a-adpcm_yam.wav
 264236 ./data/a-adpcm_yam.wav
 1b3ad9196ca3e97bfe17259b2e2db470 *./data/out.wav
-stddev:18866.39 PSNR:10.81 bytes:528384
+stddev:18866.39 PSNR:10.81 bytes:1056768

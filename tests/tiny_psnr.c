@@ -141,7 +141,7 @@ int main(int argc,char* argv[]){
     printf("stddev:%3d.%02d PSNR:%2d.%02d bytes:%d\n",
         (int)(dev/F), (int)(dev%F),
         (int)(psnr/F), (int)(psnr%F),
-        i);
+        i*len);
     return 0;
 }
 
