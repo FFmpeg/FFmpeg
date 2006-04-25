@@ -423,8 +423,8 @@ static void inner_add_yblock_bw_8_obmc_16_altivec(uint8_t *obmc,
 {
     int y, x;
     DWTELEM * dst;
-    vector bool int mask;
-    vector signed int vs;
+//    vector bool int mask;
+//    vector signed int vs;
     vector unsigned short h1, h2, l1, l2;
     vector unsigned char ih, il, tmp1, tmp2, align;
     vector unsigned char b0,b1,b2,b3;
@@ -546,6 +546,18 @@ static void inner_add_yblock_bw_8_obmc_16_altivec(uint8_t *obmc,
 
 
 #endif
+
+#if 1
+        for(x=0; x<b_w; x++)
+            if(add){
+                vbuf[x] += dst[x + src_x];
+                vbuf[x] = (vbuf[x] + (1<<(FRAC_BITS-1))) >> FRAC_BITS;
+                if(vbuf[x]&(~255)) vbuf[x]= ~(vbuf[x]>>31);
+                dst8[x + y*src_stride] = vbuf[x];
+            }else{
+                dst[x + src_x] -= vbuf[x];
+        }
+#else
         if(add)
         {
             for(x=0; x<b_w/4; x++)
@@ -579,7 +591,7 @@ static void inner_add_yblock_bw_8_obmc_16_altivec(uint8_t *obmc,
          else
             for(x=0; x<b_w/4; x++)
                 d[x] = vec_sub(d[x], v[x]);
-
+#endif
        }
 
 
@@ -792,11 +804,12 @@ void ff_snow_inner_add_yblock_altivec(uint8_t *obmc, const int obmc_stride,
                                       slice_buffer * sb, int add,
                                       uint8_t * dst8)
 {
+//FIXME implement src_x&15 cases later
     if (b_w == 16)
         inner_add_yblock_bw_16_obmc_32_altivec(obmc, obmc_stride, block, b_w,
                                                b_h, src_x, src_y, src_stride,
                                                sb, add, dst8);
-    else if (b_w == 8 && ! src_x&15 )
+    else if (b_w == 8)
         inner_add_yblock_bw_8_obmc_16_altivec(obmc, obmc_stride, block,
                                                  b_w, b_h, src_x, src_y,
                                                  src_stride, sb, add, dst8);
