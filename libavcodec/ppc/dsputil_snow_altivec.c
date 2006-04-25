@@ -413,6 +413,96 @@ void ff_snow_vertical_compose97i_altivec(DWTELEM *b0, DWTELEM *b1, DWTELEM *b2, 
     }
 }
 
+#define LOAD_BLOCKS \
+            tmp1 = vec_ld(0, &block[3][y*src_stride]);\
+            align = vec_lvsl(0, &block[3][y*src_stride]);\
+            tmp2 = vec_ld(15, &block[3][y*src_stride]);\
+\
+            b3 = vec_perm(tmp1,tmp2,align);\
+\
+            tmp1 = vec_ld(0, &block[2][y*src_stride]);\
+            align = vec_lvsl(0, &block[2][y*src_stride]);\
+            tmp2 = vec_ld(15, &block[2][y*src_stride]);\
+\
+            b2 = vec_perm(tmp1,tmp2,align);\
+\
+            tmp1 = vec_ld(0, &block[1][y*src_stride]);\
+            align = vec_lvsl(0, &block[1][y*src_stride]);\
+            tmp2 = vec_ld(15, &block[1][y*src_stride]);\
+\
+            b1 = vec_perm(tmp1,tmp2,align);\
+\
+            tmp1 = vec_ld(0, &block[0][y*src_stride]);\
+            align = vec_lvsl(0, &block[0][y*src_stride]);\
+            tmp2 = vec_ld(15, &block[0][y*src_stride]);\
+\
+            b0 = vec_perm(tmp1,tmp2,align);
+
+#define LOAD_OBMCS \
+            tmp1 = vec_ld(0, obmc1);\
+            align = vec_lvsl(0, obmc1);\
+            tmp2 = vec_ld(15, obmc1);\
+\
+            ob1 = vec_perm(tmp1,tmp2,align);\
+\
+            tmp1 = vec_ld(0, obmc2);\
+            align = vec_lvsl(0, obmc2);\
+            tmp2 = vec_ld(15, obmc2);\
+\
+            ob2 = vec_perm(tmp1,tmp2,align);\
+\
+            tmp1 = vec_ld(0, obmc3);\
+            align = vec_lvsl(0, obmc3);\
+            tmp2 = vec_ld(15, obmc3);\
+\
+            ob3 = vec_perm(tmp1,tmp2,align);\
+\
+            tmp1 = vec_ld(0, obmc4);\
+            align = vec_lvsl(0, obmc4);\
+            tmp2 = vec_ld(15, obmc4);\
+\
+            ob4 = vec_perm(tmp1,tmp2,align);
+
+/* interleave logic
+ * h1 <- [ a,b,a,b, a,b,a,b, a,b,a,b, a,b,a,b ]
+ * h2 <- [ c,d,c,d, c,d,c,d, c,d,c,d, c,d,c,d ]
+ * h  <- [ a,b,c,d, a,b,c,d, a,b,c,d, a,b,c,d ]
+ */
+
+#define STEPS_0_1\
+            h1 = (vector unsigned short)\
+                 vec_mergeh(ob1, ob2);\
+\
+            h2 = (vector unsigned short)\
+                 vec_mergeh(ob3, ob4);\
+\
+            ih = (vector unsigned char)\
+                 vec_mergeh(h1,h2);\
+\
+            l1 = (vector unsigned short) vec_mergeh(b3, b2);\
+\
+            ih1 = (vector unsigned char) vec_mergel(h1, h2);\
+\
+            l2 = (vector unsigned short) vec_mergeh(b1, b0);\
+\
+            il = (vector unsigned char) vec_mergeh(l1, l2);\
+\
+            v[0] = (vector signed int) vec_msum(ih, il, vec_splat_u32(0));\
+\
+            il1 = (vector unsigned char) vec_mergel(l1, l2);\
+\
+            v[1] = (vector signed int) vec_msum(ih1, il1, vec_splat_u32(0));
+
+#define FINAL_STEP_SCALAR\
+        for(x=0; x<b_w; x++)\
+            if(add){\
+                vbuf[x] += dst[x + src_x];\
+                vbuf[x] = (vbuf[x] + (1<<(FRAC_BITS-1))) >> FRAC_BITS;\
+                if(vbuf[x]&(~255)) vbuf[x]= ~(vbuf[x]>>31);\
+                dst8[x + y*src_stride] = vbuf[x];\
+            }else{\
+                dst[x + src_x] -= vbuf[x];\
+            }
 
 static void inner_add_yblock_bw_8_obmc_16_altivec(uint8_t *obmc,
                                              const int obmc_stride,
@@ -423,11 +513,13 @@ static void inner_add_yblock_bw_8_obmc_16_altivec(uint8_t *obmc,
 {
     int y, x;
     DWTELEM * dst;
-//    vector bool int mask;
-//    vector signed int vs;
     vector unsigned short h1, h2, l1, l2;
-    vector unsigned char ih, il, tmp1, tmp2, align;
+    vector unsigned char ih, il, ih1, il1, tmp1, tmp2, align;
     vector unsigned char b0,b1,b2,b3;
+    vector unsigned char ob1,ob2,ob3,ob4;
+
+    DECLARE_ALIGNED_16(int, vbuf[16]);
+    vector signed int *v = (vector signed int *)vbuf, *d;
 
     for(y=0; y<b_h; y++){
         //FIXME ugly missue of obmc_stride
@@ -436,166 +528,48 @@ static void inner_add_yblock_bw_8_obmc_16_altivec(uint8_t *obmc,
         uint8_t *obmc2= obmc1+ (obmc_stride>>1);
         uint8_t *obmc3= obmc1+ obmc_stride*(obmc_stride>>1);
         uint8_t *obmc4= obmc3+ (obmc_stride>>1);
-#if 1
-        vector unsigned char ob1;
-        vector unsigned char ob2;
-        vector unsigned char ob3;
-        vector unsigned char ob4;
-
-#endif
-        DECLARE_ALIGNED_16(int, vbuf[16]);
-        vector signed int *v = (vector signed int *)vbuf, *d;
 
         dst = slice_buffer_get_line(sb, src_y + y);
         d = (vector signed int *)(dst + src_x);
 
-#if 0
-        for(x=0; x<b_w; x++){
-            vbuf[x] =  obmc1[x] * block[3][x + y*src_stride]
-                    +obmc2[x] * block[2][x + y*src_stride]
-                    +obmc3[x] * block[1][x + y*src_stride]
-                    +obmc4[x] * block[0][x + y*src_stride];
-        }
-#else
+//FIXME i could avoid some loads!
 
+        // load blocks
+        LOAD_BLOCKS
 
-// load blocks
-            //FIXME i could avoid some loads!
-            tmp1 = vec_ld(0, &block[3][y*src_stride]);
-            align = vec_lvsl(0, &block[3][y*src_stride]);
-            tmp2 = vec_ld(15, &block[3][y*src_stride]);
+        // load obmcs
+        LOAD_OBMCS
 
-            b3 = vec_perm(tmp1,tmp2,align);
+        // steps 0 1
+        STEPS_0_1
 
-            tmp1 = vec_ld(0, &block[2][y*src_stride]);
-            align = vec_lvsl(0, &block[2][y*src_stride]);
-            tmp2 = vec_ld(15, &block[2][y*src_stride]);
+        FINAL_STEP_SCALAR
 
-            b2 = vec_perm(tmp1,tmp2,align);
-
-            tmp1 = vec_ld(0, &block[1][y*src_stride]);
-            align = vec_lvsl(0, &block[1][y*src_stride]);
-            tmp2 = vec_ld(15, &block[1][y*src_stride]);
-
-            b1 = vec_perm(tmp1,tmp2,align);
-
-            tmp1 = vec_ld(0, &block[0][y*src_stride]);
-            align = vec_lvsl(0, &block[0][y*src_stride]);
-            tmp2 = vec_ld(15, &block[0][y*src_stride]);
-
-            b0 = vec_perm(tmp1,tmp2,align);
-
-    // load obmcs
-
-            tmp1 = vec_ld(0, obmc1);
-            align = vec_lvsl(0, obmc1);
-            tmp2 = vec_ld(15, obmc1);
-
-            ob1 = vec_perm(tmp1,tmp2,align);
-
-            tmp1 = vec_ld(0, obmc2);
-            align = vec_lvsl(0, obmc2);
-            tmp2 = vec_ld(15, obmc2);
-
-            ob2 = vec_perm(tmp1,tmp2,align);
-
-            tmp1 = vec_ld(0, obmc3);
-            align = vec_lvsl(0, obmc3);
-            tmp2 = vec_ld(15, obmc3);
-
-            ob3 = vec_perm(tmp1,tmp2,align);
-
-            tmp1 = vec_ld(0, obmc4);
-            align = vec_lvsl(0, obmc4);
-            tmp2 = vec_ld(15, obmc4);
-
-            ob4 = vec_perm(tmp1,tmp2,align);
-            h1 = (vector unsigned short)
-                 vec_mergeh(ob1, ob2); /*h1 <- [ a,b,a,b, a,b,a,b,
-                                                 a,b,a,b, a,b,a,b ] */
-            h2 = (vector unsigned short)
-                 vec_mergeh(ob3, ob4); /*h2 <- [ c,d,c,d, c,d,c,d,
-                                                 c,d,c,d, c,d,c,d ] */
-
-            ih = (vector unsigned char)
-                 vec_mergeh(h1,h2);    /*ih <- [ a,b,c,d, a,b,c,d,
-                                                 a,b,c,d, a,b,c,d ]*/
-
-            l1 = (vector unsigned short) vec_mergeh(b3, b2);
-
-            l2 = (vector unsigned short) vec_mergeh(b1, b0);
-
-            il = (vector unsigned char) vec_mergeh(l1, l2);
-
-            v[0] = (vector signed int) vec_msum(ih, il, vec_splat_u32(0));
-//step1
-
-            h1 = (vector unsigned short) vec_mergeh(ob1, ob2);
-
-            h2 = (vector unsigned short) vec_mergeh(ob3, ob4);
-
-            ih = (vector unsigned char) vec_mergel(h1, h2);
-
-            l1 = (vector unsigned short) vec_mergeh(b3, b2);
-
-            l2 = (vector unsigned short) vec_mergeh(b1, b0);
-
-            il = (vector unsigned char) vec_mergel(l1, l2);
-
-            v[1] = (vector signed int) vec_msum(ih, il, vec_splat_u32(0));
-
-
-#endif
-
-#if 1
-        for(x=0; x<b_w; x++)
-            if(add){
-                vbuf[x] += dst[x + src_x];
-                vbuf[x] = (vbuf[x] + (1<<(FRAC_BITS-1))) >> FRAC_BITS;
-                if(vbuf[x]&(~255)) vbuf[x]= ~(vbuf[x]>>31);
-                dst8[x + y*src_stride] = vbuf[x];
-            }else{
-                dst[x + src_x] -= vbuf[x];
-        }
-#else
-        if(add)
-        {
-            for(x=0; x<b_w/4; x++)
-            {
-                v[x] = vec_add(v[x], d[x]);
-                v[x] = vec_sra(vec_add(v[x],
-                                        vec_sl( vec_splat_s32(1),
-                                                vec_splat_u32(7))),
-                                vec_splat_u32(8));
-
-                mask = (vector bool int)
-                        vec_sl((vector signed int) vec_cmpeq(v[x],v[x]),
-                                                        vec_splat_u32(8));
-                mask = (vector bool int)
-                        vec_and(v[x],vec_nor(mask,mask));
-
-                mask = (vector bool int)
-                        vec_cmpeq((vector signed int)mask, vec_splat_s32(0));
-
-                vs = vec_sra(v[x],vec_splat_u32(8));
-                vs = vec_sra(v[x],vec_splat_u32(8));
-                vs = vec_sra(v[x],vec_splat_u32(15));
-
-                vs = vec_nor(vs,vs);
-
-                v[x]= vec_sel(v[x],vs,mask);
-            }
-        for(x=0; x<b_w; x++)
-                dst8[x + y*src_stride] = vbuf[x];
-        }
-         else
-            for(x=0; x<b_w/4; x++)
-                d[x] = vec_sub(d[x], v[x]);
-#endif
        }
 
-
 }
+
+#define STEPS_2_3\
+            h1 = (vector unsigned short) vec_mergel(ob1, ob2);\
+\
+            h2 = (vector unsigned short) vec_mergel(ob3, ob4);\
+\
+            ih = (vector unsigned char) vec_mergeh(h1,h2);\
+\
+            l1 = (vector unsigned short) vec_mergel(b3, b2);\
+\
+            l2 = (vector unsigned short) vec_mergel(b1, b0);\
+\
+            ih1 = (vector unsigned char) vec_mergel(h1,h2);\
+\
+            il = (vector unsigned char) vec_mergeh(l1,l2);\
+\
+            v[2] = (vector signed int) vec_msum(ih, il, vec_splat_u32(0));\
+\
+            il1 = (vector unsigned char) vec_mergel(l1,l2);\
+\
+            v[3] = (vector signed int) vec_msum(ih1, il1, vec_splat_u32(0));
+
 
 static void inner_add_yblock_bw_16_obmc_32_altivec(uint8_t *obmc,
                                              const int obmc_stride,
@@ -607,8 +581,11 @@ static void inner_add_yblock_bw_16_obmc_32_altivec(uint8_t *obmc,
     int y, x;
     DWTELEM * dst;
     vector unsigned short h1, h2, l1, l2;
-    vector unsigned char ih, il, tmp1, tmp2, align;
+    vector unsigned char ih, il, ih1, il1, tmp1, tmp2, align;
     vector unsigned char b0,b1,b2,b3;
+    vector unsigned char ob1,ob2,ob3,ob4;
+    DECLARE_ALIGNED_16(int, vbuf[b_w]);
+    vector signed int *v = (vector signed int *)vbuf, *d;
 
     for(y=0; y<b_h; y++){
         //FIXME ugly missue of obmc_stride
@@ -618,183 +595,152 @@ static void inner_add_yblock_bw_16_obmc_32_altivec(uint8_t *obmc,
         uint8_t *obmc3= obmc1+ obmc_stride*(obmc_stride>>1);
         uint8_t *obmc4= obmc3+ (obmc_stride>>1);
 
-        vector unsigned char ob1;
-        vector unsigned char ob2;
-        vector unsigned char ob3;
-        vector unsigned char ob4;
+        dst = slice_buffer_get_line(sb, src_y + y);
+        d = (vector signed int *)(dst + src_x);
 
-        DECLARE_ALIGNED_16(int, vbuf[b_w]);
-        vector signed int *v = (vector signed int *)vbuf, *d;
+        // load blocks
+        LOAD_BLOCKS
+
+        // load obmcs
+        LOAD_OBMCS
+
+        // steps 0 1 2 3
+        STEPS_0_1
+
+        STEPS_2_3
+
+        FINAL_STEP_SCALAR
+
+    }
+}
+
+#define FINAL_STEP_VEC \
+\
+    if(add)\
+        {\
+            for(x=0; x<b_w/4; x++)\
+            {\
+                v[x] = vec_add(v[x], d[x]);\
+                v[x] = vec_sra(vec_add(v[x],\
+                                       vec_sl( vec_splat_s32(1),\
+                                               vec_splat_u32(7))),\
+                               vec_splat_u32(8));\
+\
+                mask = vec_sl((vector signed int)\
+                        vec_cmpeq(v[x],v[x]),vec_splat_u32(8));\
+                mask = vec_and(v[x],vec_nor(mask,mask));\
+\
+                mask = (vector signed int)\
+                        vec_cmpeq((vector signed int)mask,\
+                                  (vector signed int)vec_splat_u32(0));\
+\
+                vs = vec_sra(v[x],vec_splat_u32(8));\
+                vs = vec_sra(v[x],vec_splat_u32(8));\
+                vs = vec_sra(v[x],vec_splat_u32(15));\
+\
+                vs = vec_nor(vs,vs);\
+\
+                v[x]= vec_sel(v[x],vs,mask);\
+            }\
+\
+            for(x=0; x<b_w; x++)\
+                dst8[x + y*src_stride] = vbuf[x];\
+\
+        }\
+         else\
+            for(x=0; x<b_w/4; x++)\
+                d[x] = vec_sub(d[x], v[x]);
+
+static void inner_add_yblock_a_bw_8_obmc_16_altivec(uint8_t *obmc,
+                                             const int obmc_stride,
+                                             uint8_t * * block, int b_w,
+                                             int b_h, int src_x, int src_y,
+                                             int src_stride, slice_buffer * sb,
+                                             int add, uint8_t * dst8)
+{
+    int y, x;
+    DWTELEM * dst;
+    vector bool int mask;
+    vector signed int vs;
+    vector unsigned short h1, h2, l1, l2;
+    vector unsigned char ih, il, ih1, il1, tmp1, tmp2, align;
+    vector unsigned char b0,b1,b2,b3;
+    vector unsigned char ob1,ob2,ob3,ob4;
+
+    DECLARE_ALIGNED_16(int, vbuf[16]);
+    vector signed int *v = (vector signed int *)vbuf, *d;
+
+    for(y=0; y<b_h; y++){
+        //FIXME ugly missue of obmc_stride
+
+        uint8_t *obmc1= obmc + y*obmc_stride;
+        uint8_t *obmc2= obmc1+ (obmc_stride>>1);
+        uint8_t *obmc3= obmc1+ obmc_stride*(obmc_stride>>1);
+        uint8_t *obmc4= obmc3+ (obmc_stride>>1);
+
+        dst = slice_buffer_get_line(sb, src_y + y);
+        d = (vector signed int *)(dst + src_x);
+
+//FIXME i could avoid some loads!
+
+        // load blocks
+        LOAD_BLOCKS
+
+        // load obmcs
+        LOAD_OBMCS
+
+        // steps 0 1
+        STEPS_0_1
+
+        FINAL_STEP_VEC
+
+       }
+
+}
+
+static void inner_add_yblock_a_bw_16_obmc_32_altivec(uint8_t *obmc,
+                                             const int obmc_stride,
+                                             uint8_t * * block, int b_w,
+                                             int b_h, int src_x, int src_y,
+                                             int src_stride, slice_buffer * sb,
+                                             int add, uint8_t * dst8)
+{
+    int y, x;
+    DWTELEM * dst;
+    vector bool int mask;
+    vector signed int vs;
+    vector unsigned short h1, h2, l1, l2;
+    vector unsigned char ih, il, ih1, il1, tmp1, tmp2, align;
+    vector unsigned char b0,b1,b2,b3;
+    vector unsigned char ob1,ob2,ob3,ob4;
+    DECLARE_ALIGNED_16(int, vbuf[b_w]);
+    vector signed int *v = (vector signed int *)vbuf, *d;
+
+    for(y=0; y<b_h; y++){
+        //FIXME ugly missue of obmc_stride
+
+        uint8_t *obmc1= obmc + y*obmc_stride;
+        uint8_t *obmc2= obmc1+ (obmc_stride>>1);
+        uint8_t *obmc3= obmc1+ obmc_stride*(obmc_stride>>1);
+        uint8_t *obmc4= obmc3+ (obmc_stride>>1);
 
         dst = slice_buffer_get_line(sb, src_y + y);
         d = (vector signed int *)(dst + src_x);
 
         // load blocks
+        LOAD_BLOCKS
 
-            tmp1 = vec_ld(0, &block[3][y*src_stride]);
-            align = vec_lvsl(0, &block[3][y*src_stride]);
-            tmp2 = vec_ld(15, &block[3][y*src_stride]);
+        // load obmcs
+        LOAD_OBMCS
 
-            b3 = vec_perm(tmp1,tmp2,align);
+        // steps 0 1 2 3
+        STEPS_0_1
 
-            tmp1 = vec_ld(0, &block[2][y*src_stride]);
-            align = vec_lvsl(0, &block[2][y*src_stride]);
-            tmp2 = vec_ld(15, &block[2][y*src_stride]);
+        STEPS_2_3
 
-            b2 = vec_perm(tmp1,tmp2,align);
+        FINAL_STEP_VEC
 
-            tmp1 = vec_ld(0, &block[1][y*src_stride]);
-            align = vec_lvsl(0, &block[1][y*src_stride]);
-            tmp2 = vec_ld(15, &block[1][y*src_stride]);
-
-            b1 = vec_perm(tmp1,tmp2,align);
-
-            tmp1 = vec_ld(0, &block[0][y*src_stride]);
-            align = vec_lvsl(0, &block[0][y*src_stride]);
-            tmp2 = vec_ld(15, &block[0][y*src_stride]);
-
-            b0 = vec_perm(tmp1,tmp2,align);
-
-    // load obmcs
-
-            tmp1 = vec_ld(0, obmc1);
-            align = vec_lvsl(0, obmc1);
-            tmp2 = vec_ld(15, obmc1);
-
-            ob1 = vec_perm(tmp1,tmp2,align);
-
-            tmp1 = vec_ld(0, obmc2);
-            align = vec_lvsl(0, obmc2);
-            tmp2 = vec_ld(15, obmc2);
-
-            ob2 = vec_perm(tmp1,tmp2,align);
-
-            tmp1 = vec_ld(0, obmc3);
-            align = vec_lvsl(0, obmc3);
-            tmp2 = vec_ld(15, obmc3);
-
-            ob3 = vec_perm(tmp1,tmp2,align);
-
-            tmp1 = vec_ld(0, obmc4);
-            align = vec_lvsl(0, obmc4);
-            tmp2 = vec_ld(15, obmc4);
-
-            ob4 = vec_perm(tmp1,tmp2,align);
-
-//step0
-            h1 = (vector unsigned short)
-                 vec_mergeh(ob1, ob2); /*h1 <- [ a,b,a,b,
-                                                 a,b,a,b,
-                                                 a,b,a,b,
-                                                 a,b,a,b ] */
-            h2 = (vector unsigned short)
-                 vec_mergeh(ob3, ob4); /*h2 <- [ c,d,c,d,
-                                                 c,d,c,d,
-                                                 c,d,c,d,
-                                                 c,d,c,d ] */
-
-            ih = (vector unsigned char)
-                 vec_mergeh(h1,h2);    /*ih <- [ a,b,c,d,
-                                                 a,b,c,d,
-                                                 a,b,c,d,
-                                                 a,b,c,d ]*/
-
-            l1 = (vector unsigned short) vec_mergeh(b3, b2);
-
-            l2 = (vector unsigned short) vec_mergeh(b1, b0);
-
-            il = (vector unsigned char) vec_mergeh(l1,l2);
-
-            v[0] = (vector signed int) vec_msum(ih, il, vec_splat_u32(0));
-//step1
-
-            h1 = (vector unsigned short) vec_mergeh(ob1, ob2);
-
-            h2 = (vector unsigned short) vec_mergeh(ob3, ob4);
-
-            ih = (vector unsigned char) vec_mergel(h1,h2);
-
-            l1 = (vector unsigned short) vec_mergeh(b3, b2);
-
-            l2 = (vector unsigned short) vec_mergeh(b1, b0);
-
-            il = (vector unsigned char) vec_mergel(l1,l2);
-
-            v[1] = (vector signed int) vec_msum(ih, il, vec_splat_u32(0));
-
-//step2
-            h1 = (vector unsigned short) vec_mergel(ob1, ob2);
-
-            h2 = (vector unsigned short) vec_mergel(ob3, ob4);
-
-            ih = (vector unsigned char) vec_mergeh(h1,h2);
-
-            l1 = (vector unsigned short) vec_mergel(b3, b2);
-
-            l2 = (vector unsigned short) vec_mergel(b1, b0);
-
-            il = (vector unsigned char) vec_mergeh(l1,l2);
-
-            v[2] = (vector signed int) vec_msum(ih, il, vec_splat_u32(0));
-
-//step3
-            h1 = (vector unsigned short) vec_mergel(ob1, ob2);
-
-            h2 = (vector unsigned short) vec_mergel(ob3, ob4);
-
-            ih = (vector unsigned char) vec_mergel(h1,h2);
-
-            l1 = (vector unsigned short) vec_mergel(b3, b2);
-
-            l2 = (vector unsigned short) vec_mergel(b1, b0);
-
-            il = (vector unsigned char) vec_mergel(l1,l2);
-
-            v[3] = (vector signed int) vec_msum(ih, il, vec_splat_u32(0));
-#if 1
-        for(x=0; x<b_w; x++)
-            if(add){
-                vbuf[x] += dst[x + src_x];
-                vbuf[x] = (vbuf[x] + (1<<(FRAC_BITS-1))) >> FRAC_BITS;
-                if(vbuf[x]&(~255)) vbuf[x]= ~(vbuf[x]>>31);
-                dst8[x + y*src_stride] = vbuf[x];
-            }else{
-                dst[x + src_x] -= vbuf[x];
-            }
-#else
-        if(add)
-        {
-            for(x=0; x<b_w/4; x++)
-            {
-                v[x] = vec_add(v[x], d[x]);
-                v[x] = vec_sra(vec_add(v[x],
-                                       vec_sl( vec_splat_s32(1),
-                                               vec_splat_u32(7))),
-                               vec_splat_u32(8));
-
-                mask = vec_sl((vector signed int) vec_cmpeq(v[x],v[x]),vec_splat_u32(8));
-                mask = vec_and(v[x],vec_nor(mask,mask));
-
-                mask = (vector signed int) vec_cmpeq((vector signed int)mask,(vector signed int)vec_splat_u32(0));
-
-                vs = vec_sra(v[x],vec_splat_u32(8));
-                vs = vec_sra(v[x],vec_splat_u32(8));
-                vs = vec_sra(v[x],vec_splat_u32(15));
-
-                vs = vec_nor(vs,vs);
-
-                v[x]= vec_sel(v[x],vs,mask);
-            }
-
-            for(x=0; x<b_w; x++)
-                dst8[x + y*src_stride] = vbuf[x];
-
-        }
-         else
-            for(x=0; x<b_w/4; x++)
-                d[x] = vec_sub(d[x], v[x]);
-#endif
-       }
+    }
 }
 
 
@@ -804,17 +750,29 @@ void ff_snow_inner_add_yblock_altivec(uint8_t *obmc, const int obmc_stride,
                                       slice_buffer * sb, int add,
                                       uint8_t * dst8)
 {
-//FIXME implement src_x&15 cases later
-    if (b_w == 16)
-        inner_add_yblock_bw_16_obmc_32_altivec(obmc, obmc_stride, block, b_w,
-                                               b_h, src_x, src_y, src_stride,
-                                               sb, add, dst8);
-    else if (b_w == 8)
-        inner_add_yblock_bw_8_obmc_16_altivec(obmc, obmc_stride, block,
-                                                 b_w, b_h, src_x, src_y,
-                                                 src_stride, sb, add, dst8);
-    else
-
-        ff_snow_inner_add_yblock(obmc, obmc_stride, block, b_w, b_h, src_x,
-                                 src_y, src_stride, sb, add, dst8);
+    if (src_x&15) {
+        if (b_w == 16)
+            inner_add_yblock_bw_16_obmc_32_altivec(obmc, obmc_stride, block,
+                                                   b_w, b_h, src_x, src_y,
+                                                   src_stride, sb, add, dst8);
+        else if (b_w == 8)
+            inner_add_yblock_bw_8_obmc_16_altivec(obmc, obmc_stride, block,
+                                                  b_w, b_h, src_x, src_y,
+                                                  src_stride, sb, add, dst8);
+        else
+            ff_snow_inner_add_yblock(obmc, obmc_stride, block, b_w, b_h, src_x,
+                                     src_y, src_stride, sb, add, dst8);
+    } else {
+        if (b_w == 16)
+            inner_add_yblock_a_bw_16_obmc_32_altivec(obmc, obmc_stride, block,
+                                                     b_w, b_h, src_x, src_y,
+                                                     src_stride, sb, add, dst8);
+        else if (b_w == 8)
+            inner_add_yblock_a_bw_8_obmc_16_altivec(obmc, obmc_stride, block,
+                                                    b_w, b_h, src_x, src_y,
+                                                    src_stride, sb, add, dst8);
+        else
+            ff_snow_inner_add_yblock(obmc, obmc_stride, block, b_w, b_h, src_x,
+                                     src_y, src_stride, sb, add, dst8);
+    }
 }
