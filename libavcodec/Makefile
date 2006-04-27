@@ -273,9 +273,9 @@ OBJS+= amrwb_float/dec_acelp.o amrwb_float/dec_dtx.o amrwb_float/dec_gain.o \
 		amrwb_float/enc_dtx.o amrwb_float/enc_gain.o amrwb_float/enc_if.o \
 		amrwb_float/enc_lpc.o amrwb_float/enc_main.o amrwb_float/enc_rom.o \
 		amrwb_float/enc_util.o amrwb_float/if_rom.o
+CLEANAMR=cleanamrwbfloat
 endif
 OBJS+= $(AMROBJS)
-CLEANAMR=cleanamrwbfloat
 ASM_OBJS=
 
 ifeq ($(HAVE_XVMC_ACCEL),yes)
