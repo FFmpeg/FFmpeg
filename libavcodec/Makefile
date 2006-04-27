@@ -238,16 +238,16 @@ endif
 AMROBJS=
 
 ifeq ($(AMR_NB),yes)
+AMROBJS= amr.o
+OBJS+= amr_float/sp_dec.o amr_float/sp_enc.o amr_float/interf_dec.o amr_float/interf_enc.o
+CLEANAMR=cleanamrfloat
+endif
+
 ifeq ($(AMR_NB_FIXED),yes)
 AMROBJS= amr.o
 AMREXTRALIBS+= amr/*.o
 AMRLIBS=amrlibs
 CLEANAMR=cleanamr
-else
-AMROBJS= amr.o
-OBJS+= amr_float/sp_dec.o amr_float/sp_enc.o amr_float/interf_dec.o amr_float/interf_enc.o
-CLEANAMR=cleanamrfloat
-endif
 endif
 
 ifeq ($(AMR_WB),yes)
