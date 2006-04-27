@@ -591,9 +591,9 @@ for opt do
   ;;
   --enable-small) optimize="small"
   ;;
-  --enable-amr_nb) amr_nb="yes"
+  --enable-amr_nb) amr_nb="yes"; amr_nb_fixed="no"
   ;;
-  --enable-amr_nb-fixed) amr_nb_fixed="yes"
+  --enable-amr_nb-fixed) amr_nb_fixed="yes"; amr_nb="no"
   ;;
   --enable-amr_wb) amr_wb="yes"
   ;;
