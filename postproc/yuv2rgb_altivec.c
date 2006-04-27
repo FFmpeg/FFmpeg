@@ -278,7 +278,7 @@ static int altivec_##name (SwsContext *c,                                  \
   vector signed short R1,G1,B1;						   \
   vector unsigned char R,G,B;						   \
 									   \
-  vector unsigned char *uivP, *vivP;			   		   \
+  vector unsigned char *y1ivP, *y2ivP, *uivP, *vivP;			   \
   vector unsigned char align_perm;					   \
 									   \
   vector signed short 							   \
@@ -292,7 +292,7 @@ static int altivec_##name (SwsContext *c,                                  \
   vector unsigned short lCSHIFT = c->CSHIFT;				   \
 									   \
   ubyte *y1i   = in[0];							   \
-  ubyte *y2i   = in[0]+w;						   \
+  ubyte *y2i   = in[0]+instrides[0];					   \
   ubyte *ui    = in[1];							   \
   ubyte *vi    = in[2];							   \
 									   \
@@ -304,7 +304,7 @@ static int altivec_##name (SwsContext *c,                                  \
         (oplanes[0]+srcSliceY*outstrides[0]+outstrides[0]);		   \
 									   \
 									   \
-  instrides_scl[0] = instrides[0];					   \
+  instrides_scl[0] = instrides[0]*2-w;  /* the loop moves y{1,2}i by w */  \
   instrides_scl[1] = instrides[1]-w/2;  /* the loop moves ui by w/2 */	   \
   instrides_scl[2] = instrides[2]-w/2;  /* the loop moves vi by w/2 */	   \
 									   \
@@ -315,10 +315,16 @@ static int altivec_##name (SwsContext *c,                                  \
 									   \
     for (j=0;j<w/16;j++) {						   \
 									   \
-      y0 = vec_ldl (0,y1i);						   \
-      y1 = vec_ldl (0,y2i);						   \
+      y1ivP = (vector unsigned char *)y1i;				   \
+      y2ivP = (vector unsigned char *)y2i;				   \
       uivP = (vector unsigned char *)ui;				   \
       vivP = (vector unsigned char *)vi;				   \
+									   \
+      align_perm = vec_lvsl (0, y1i);					   \
+      y0 = (vector unsigned char)vec_perm (y1ivP[0], y1ivP[1], align_perm);\
+									   \
+      align_perm = vec_lvsl (0, y2i);					   \
+      y1 = (vector unsigned char)vec_perm (y2ivP[0], y2ivP[1], align_perm);\
 									   \
       align_perm = vec_lvsl (0, ui);					   \
       u = (vector signed char)vec_perm (uivP[0], uivP[1], align_perm);	   \
