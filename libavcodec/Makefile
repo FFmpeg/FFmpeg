@@ -245,8 +245,8 @@ endif
 
 ifeq ($(AMR_NB_FIXED),yes)
 AMROBJS= amr.o
-AMREXTRALIBS+= amr/*.o
-AMRLIBS=amrlibs
+EXTRAOBJS += amr/*.o
+EXTRADEPS=amrlibs
 CLEANAMR=cleanamr
 endif
 
@@ -423,11 +423,7 @@ LIBMAJOR=$(LAVCMAJOR)
 endif
 TESTS= imgresample-test dct-test motion-test fft-test
 
-EXTRAOBJS = $(AMREXTRALIBS)
-
 include $(SRC_PATH)/common.mak
-
-$(LIB): $(AMRLIBS)
 
 amrlibs:
 	$(MAKE) -C amr spclib fipoplib
