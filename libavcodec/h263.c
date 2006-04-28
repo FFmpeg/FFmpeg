@@ -3748,6 +3748,8 @@ static int mpeg4_decode_partitioned_mb(MpegEncContext *s, DCTELEM block[6][64])
     mb_type= s->current_picture.mb_type[xy];
     cbp = s->cbp_table[xy];
 
+    s->use_intra_dc_vlc= s->qscale < s->intra_dc_threshold;
+
     if(s->current_picture.qscale_table[xy] != s->qscale){
         ff_set_qscale(s, s->current_picture.qscale_table[xy] );
     }
@@ -4484,6 +4486,9 @@ intra:
             return -1;
         }
         cbp = (cbpc & 3) | (cbpy << 2);
+
+        s->use_intra_dc_vlc= s->qscale < s->intra_dc_threshold;
+
         if (dquant) {
             ff_set_qscale(s, s->qscale + quant_tab[get_bits(&s->gb, 2)]);
         }
@@ -4779,7 +4784,7 @@ static inline int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
     //Note intra & rvlc should be optimized away if this is inlined
 
     if(intra) {
-      if(s->qscale < s->intra_dc_threshold){
+      if(s->use_intra_dc_vlc){
         /* DC coef */
         if(s->partitioned_frame){
             level = s->dc_val[0][ s->block_index[n] ];
@@ -5003,7 +5008,7 @@ static inline int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
   }
  not_coded:
     if (intra) {
-        if(s->qscale >= s->intra_dc_threshold){
+        if(!s->use_intra_dc_vlc){
             block[0] = ff_mpeg4_pred_dc(s, n, block[0], &dc_pred_dir, 0);
 
             i -= i>>31; //if(i == -1) i=0;

@@ -602,6 +602,7 @@ typedef struct MpegEncContext {
     int vo_type;
     int vol_control_parameters;      ///< does the stream contain the low_delay flag, used to workaround buggy encoders
     int intra_dc_threshold;          ///< QP above whch the ac VLC should be used for intra dc
+    int use_intra_dc_vlc;
     PutBitContext tex_pb;            ///< used for data partitioned VOPs
     PutBitContext pb2;               ///< used for data partitioned VOPs
     int mpeg_quant;
