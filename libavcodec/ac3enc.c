@@ -81,51 +81,6 @@ static inline int16_t fix15(float a)
     return v;
 }
 
-
-/**
- * Generate a Kaiser Window.
- */
-static void k_window_init(int alpha, double *window, int n, int iter)
-{
-    int j, k;
-    double a, x;
-    a = alpha * M_PI / n;
-    a = a*a;
-    for(k=0; k<n; k++) {
-        x = k * (n - k) * a;
-        window[k] = 1.0;
-        for(j=iter; j>0; j--) {
-            window[k] = (window[k] * x / (j*j)) + 1.0;
-        }
-    }
-}
-
-/**
- * Generate a Kaiser-Bessel Derived Window.
- * @param alpha  determines window shape
- * @param window array to fill with window values
- * @param iter   number of iterations to use in BesselI0
- */
-
-static void kbd_window_init(int alpha, int16_t *out_window, int iter)
-{
-    int k, n2;
-    double kwindow[256];
-    double window[256];
-
-    n2 = 256;
-    k_window_init(alpha, kwindow, n2, iter);
-    window[0] = kwindow[0];
-    for(k=1; k<n2; k++) {
-        window[k] = window[k-1] + kwindow[k];
-    }
-    for(k=0; k<n2; k++) {
-        window[k] = sqrt(window[k] / (window[n2-1]+1));
-        //out_window[k] = round(window[k]*((1<<15)-1)); //enable this for a rounded window
-        out_window[k] = fix15(window[k]);
-    }
-}
-
 static inline int calc_lowcomp1(int a, int b0, int b1)
 {
     if ((b0 + 256) == b1) {
@@ -927,8 +882,6 @@ static int AC3_encode_init(AVCodecContext *avctx)
     ac3_common_init();
 
     /* mdct init */
-    kbd_window_init(5.0, ac3_window, 50);
-
     fft_init(MDCT_NBITS - 2);
     for(i=0;i<N/4;i++) {
         alpha = 2 * M_PI * (i + 1.0 / 8.0) / (float)N;
