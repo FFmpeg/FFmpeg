@@ -64,6 +64,8 @@ int mm_support(void)
             rval |= MM_MMXEXT | MM_SSE;
         if (std_caps & (1<<26))
             rval |= MM_SSE2;
+        if (ecx & 1)
+            rval |= MM_SSE3;
     }
 
     cpuid(0x80000000, max_ext_level, ebx, ecx, edx);
@@ -76,38 +78,10 @@ int mm_support(void)
             rval |= MM_3DNOWEXT;
         if (ext_caps & (1<<23))
             rval |= MM_MMX;
+        if (ext_caps & (1<<22))
+            rval |= MM_MMXEXT;
     }
 
-    cpuid(0, eax, ebx, ecx, edx);
-    if (       ebx == 0x68747541 &&
-               edx == 0x69746e65 &&
-               ecx == 0x444d4163) {
-        /* AMD */
-        if(ext_caps & (1<<22))
-            rval |= MM_MMXEXT;
-    } else if (ebx == 0x746e6543 &&
-               edx == 0x48727561 &&
-               ecx == 0x736c7561) {  /*  "CentaurHauls" */
-        /* VIA C3 */
-        if(ext_caps & (1<<24))
-          rval |= MM_MMXEXT;
-    } else if (ebx == 0x69727943 &&
-               edx == 0x736e4978 &&
-               ecx == 0x64616574) {
-        /* Cyrix Section */
-        /* See if extended CPUID level 80000001 is supported */
-        /* The value of CPUID/80000001 for the 6x86MX is undefined
-           according to the Cyrix CPU Detection Guide (Preliminary
-           Rev. 1.01 table 1), so we'll check the value of eax for
-           CPUID/0 to see if standard CPUID level 2 is supported.
-           According to the table, the only CPU which supports level
-           2 is also the only one which supports extended CPUID levels.
-        */
-        if (eax < 2)
-            return rval;
-        if (ext_caps & (1<<24))
-            rval |= MM_MMXEXT;
-    }
 #if 0
     av_log(NULL, AV_LOG_DEBUG, "%s%s%s%s%s%s\n",
         (rval&MM_MMX) ? "MMX ":"",
