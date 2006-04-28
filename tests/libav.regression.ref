@@ -10,9 +10,9 @@ ffmpeg regression test
 90784a1b9589095f20fc6bcc0cc23cc4 *./data/b-libav.mpg
  387072 ./data/b-libav.mpg
 ./data/b-libav.mpg CRC=0x8b644837
-c9050b51f6d6636cdda3160d43463bc3 *./data/b-libav.ts
- 479400 ./data/b-libav.ts
-./data/b-libav.ts CRC=0x7968c81f
+2933a367c996b49f4b7e66a481fb334e *./data/b-libav.ts
+476768 ./data/b-libav.ts
+./data/b-libav.ts CRC=0x0dd7fc5f
 57a8dfc7926802bb337a9d8918de94a8 *./data/b-libav.swf
   41816 ./data/b-libav.swf
 ./data/b-libav.swf CRC=0x2b273fea

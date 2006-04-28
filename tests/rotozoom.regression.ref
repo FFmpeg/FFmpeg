@@ -3,26 +3,26 @@ ffmpeg regression test
 193481 ./data/a-mpeg1.mpg
 ce245faede79604bb268f93689a490d6 *./data/out.yuv
 stddev:  4.96 PSNR:34.21 bytes:7602176
-a59a2a0d04768b9dcd51ab13f751f0ef *./data/a-mpeg2.mpg
-199231 ./data/a-mpeg2.mpg
-bccb76fc30fca87cc401e41f4c0ef154 *./data/out.yuv
+f0310ea9b9a4f37c1a4dd0d4985a3f81 *./data/a-mpeg2.mpg
+199396 ./data/a-mpeg2.mpg
+94581e9516461557b194aeefaaba3835 *./data/out.yuv
 stddev:  4.97 PSNR:34.18 bytes:7602176
-eba2bff497863dbe8dad4a771fe14910 *./data/a-mpeg2.mpg
-198404 ./data/a-mpeg2.mpg
-107af0aac7f32378988469bd6eae9c31 *./data/out.yuv
-stddev:  4.98 PSNR:34.17 bytes:7602176
-8d0a7f9b0b4cb5a7e4980051994e1390 *./data/a-mpeg2i.mpg
-205006 ./data/a-mpeg2i.mpg
-d215d0f3cbbfb687a929ccf2dd1a034a *./data/out.yuv
-stddev:  4.99 PSNR:34.16 bytes:7602176
-20f7d29ae2d7eed5742b22c9d2ed5281 *./data/a-mpeg2thread.mpg
-184113 ./data/a-mpeg2thread.mpg
-b6cc35f5619c6f44c1c2bfbf01e55aec *./data/out.yuv
+374bd257b96328935926b350b0c5cada *./data/a-mpeg2.mpg
+198338 ./data/a-mpeg2.mpg
+f464b420ae24c1e453df8d3e5ef9140d *./data/out.yuv
+stddev:  4.98 PSNR:34.18 bytes:7602176
+611f1707acde262e615511eab55d9f74 *./data/a-mpeg2i.mpg
+205165 ./data/a-mpeg2i.mpg
+8577a8f6bc2ad86fe93e0d1ded6df70a *./data/out.yuv
+stddev:  4.98 PSNR:34.16 bytes:7602176
+6a23281e0e268db8df62e9e9957ee583 *./data/a-mpeg2thread.mpg
+183955 ./data/a-mpeg2thread.mpg
+38441603e2201ddb01632ba3411a6bb8 *./data/out.yuv
 stddev:  4.76 PSNR:34.56 bytes:7602176
-57bc4a05ff7053dc988530714e91f6c2 *./data/a-mpeg2reuse.mpg
-397335 ./data/a-mpeg2reuse.mpg
-4f6b4006112516a6f939d61876f78eca *./data/out.yuv
-stddev:  4.77 PSNR:34.54 bytes:7602176
+c9f6617461caee57ccb6d438761527c8 *./data/a-mpeg2reuse.mpg
+396729 ./data/a-mpeg2reuse.mpg
+b10aec71132301cad001070e8ad46b7d *./data/out.yuv
+stddev:  4.77 PSNR:34.55 bytes:7602176
 dc68a5115d1bf1bb2eb2ce9bb237bd79 *./data/a-msmpeg4v2.avi
 129504 ./data/a-msmpeg4v2.avi
 25b5ba0b024fcd4028e707ffbeb80f55 *./data/out.yuv
