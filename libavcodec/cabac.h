@@ -24,7 +24,7 @@
  */
 
 
-#undef NDEBUG
+//#undef NDEBUG
 #include <assert.h>
 
 #define CABAC_BITS 8

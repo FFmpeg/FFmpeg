@@ -33,7 +33,7 @@
 
 #include "cabac.h"
 
-#undef NDEBUG
+//#undef NDEBUG
 #include <assert.h>
 
 #define interlaced_dct interlaced_dct_is_a_bad_name
