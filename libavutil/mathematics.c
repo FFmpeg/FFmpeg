@@ -113,9 +113,9 @@ int64_t av_rescale_q(int64_t a, AVRational bq, AVRational cq){
 main(){
     int64_t a,b,c,d,e;
 
-    for(a=7; a<256LL*256*256*256*128; a=(a*3)+1){
-        for(b=3; b<256LL*256*256*256*128; b=(b*5)/4+1){
-            for(c=9; c<256LL*256*256*256*128; c=(c*7)/5+3 ){
+    for(a=7; a<(1LL<<60); a=(a*3)+1){
+        for(b=3; b<(1LL<<60); b=(b*5)/4+1){
+            for(c=9; c<(1LL<<60); c=(c*7)/5+3){
                 int64_t r= c/2;
                 AVInteger ai;
                 ai= av_mul_i(av_int2i(a), av_int2i(b));
