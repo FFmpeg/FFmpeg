@@ -82,7 +82,7 @@ int64_t av_rescale_rnd(int64_t a, int64_t b, int64_t c, enum AVRounding rnd){
 //            int o= a1 & 0x8000000000000000ULL;
             a1+= a1 + ((a0>>i)&1);
             t1+=t1;
-            if(/*o || */c >= a1){
+            if(/*o || */c <= a1){
                 a1 -= c;
                 t1++;
             }
@@ -109,12 +109,13 @@ int64_t av_rescale_q(int64_t a, AVRational bq, AVRational cq){
     return av_rescale_rnd(a, b, c, AV_ROUND_NEAR_INF);
 }
 #if 0
+#undef printf
 main(){
     int64_t a,b,c,d,e;
 
-    for(a=7; a<256*256*256*128LL; a=(a*3)+1){
-        for(b=3; b<256*256*256*128LL; b=(b*5)/4+1){
-            for(c=9; c<256*256*256*128LL; c=(c*7)/5+3 ){
+    for(a=7; a<256LL*256*256*256*128; a=(a*3)+1){
+        for(b=3; b<256LL*256*256*256*128; b=(b*5)/4+1){
+            for(c=9; c<256LL*256*256*256*128; c=(c*7)/5+3 ){
                 int64_t r= c/2;
                 AVInteger ai;
                 ai= av_mul_i(av_int2i(a), av_int2i(b));
@@ -124,7 +125,10 @@ main(){
 
                 e= av_rescale(a,b,c);
 
-                if(d!=e) printf("%Ld*%Ld/%Ld= %Ld=%Ld\n"L, a, b, c, d, e);
+                if((double)a * (double)b / (double)c > (1LL<<63))
+                    continue;
+
+                if(d!=e) printf("%Ld*%Ld/%Ld= %Ld=%Ld\n", a, b, c, d, e);
             }
         }
     }
