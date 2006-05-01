@@ -944,21 +944,22 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
         get_be16(pb); /* reserved */
         get_be16(pb); /* index */
 
-        dprintf("size=%d 4CC= %c%c%c%c codec_type=%d\n",
-                size,
-                (format >> 0) & 0xff, (format >> 8) & 0xff, (format >> 16) & 0xff, (format >> 24) & 0xff,
-                st->codec->codec_type);
         st->codec->codec_tag = format;
         id = codec_get_id(mov_audio_tags, format);
         if (id > 0) {
             st->codec->codec_type = CODEC_TYPE_AUDIO;
-        } else if (format != MKTAG('m', 'p', '4', 's')) { /* skip old asf mpeg4 tag */
+        } else if (format && format != MKTAG('m', 'p', '4', 's')) { /* skip old asf mpeg4 tag */
             id = codec_get_id(mov_video_tags, format);
             if (id <= 0)
                 id = codec_get_id(codec_bmp_tags, format);
             if (id > 0)
                 st->codec->codec_type = CODEC_TYPE_VIDEO;
         }
+
+        dprintf("size=%d 4CC= %c%c%c%c codec_type=%d\n",
+                size,
+                (format >> 0) & 0xff, (format >> 8) & 0xff, (format >> 16) & 0xff, (format >> 24) & 0xff,
+                st->codec->codec_type);
 
         if(st->codec->codec_type==CODEC_TYPE_VIDEO) {
             st->codec->codec_id = id;
