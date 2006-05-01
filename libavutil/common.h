@@ -427,6 +427,13 @@ static inline int mid_pred(int a, int b, int c)
 #endif
 }
 
+/**
+ * clip a signed integer value into the amin-amax range
+ * @param a value to clip
+ * @param amin minimum value of the clip range
+ * @param amax maximum value of the clip range
+ * @return cliped value
+ */
 static inline int clip(int a, int amin, int amax)
 {
     if (a < amin)
@@ -437,6 +444,11 @@ static inline int clip(int a, int amin, int amax)
         return a;
 }
 
+/**
+ * clip a signed integer value into the 0-255 range
+ * @param a value to clip
+ * @return cliped value
+ */
 static inline uint8_t clip_uint8(int a)
 {
     if (a&(~255)) return (-a)>>31;
