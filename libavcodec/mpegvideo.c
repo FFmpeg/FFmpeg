@@ -5577,7 +5577,7 @@ static void encode_picture(MpegEncContext *s, int picture_number)
         for(i=1;i<64;i++){
             int j= s->dsp.idct_permutation[i];
 
-            s->intra_matrix[j] = clip_uint8((ff_mpeg1_default_intra_matrix[i] * s->qscale) >> 3) & 0xFF;
+            s->intra_matrix[j] = clip_uint8((ff_mpeg1_default_intra_matrix[i] * s->qscale) >> 3);
         }
         convert_matrix(&s->dsp, s->q_intra_matrix, s->q_intra_matrix16,
                        s->intra_matrix, s->intra_quant_bias, 8, 8, 1);
