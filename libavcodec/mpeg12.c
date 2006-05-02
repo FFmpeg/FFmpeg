@@ -2618,10 +2618,13 @@ static int mpeg_decode_slice(Mpeg1Context *s1, int mb_y,
 
             if(s->mb_y<<field_pic >= s->mb_height){
                 int left= s->gb.size_in_bits - get_bits_count(&s->gb);
+                int is_d10= s->chroma_format==2 && s->pict_type==I_TYPE && avctx->profile==0 && avctx->level==5
+                            && s->intra_dc_precision == 2 && s->q_scale_type == 1 && s->alternate_scan == 0
+                            && s->progressive_frame == 0 /* vbv_delay == 0xBBB || 0xE10*/;
 
-                if(left < 0 || (left && show_bits(&s->gb, FFMIN(left, 23)))
+                if(left < 0 || (left && show_bits(&s->gb, FFMIN(left, 23)) && !is_d10)
                    || (avctx->error_resilience >= FF_ER_AGGRESSIVE && left>8)){
-                    av_log(avctx, AV_LOG_ERROR, "end mismatch left=%d\n", left);
+                    av_log(avctx, AV_LOG_ERROR, "end mismatch left=%d %0X\n", left, show_bits(&s->gb, FFMIN(left, 23)));
                     return -1;
                 }else
                     goto eos;
