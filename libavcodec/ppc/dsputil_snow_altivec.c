@@ -626,11 +626,11 @@ static void inner_add_yblock_bw_16_obmc_32_altivec(uint8_t *obmc,
                                                vec_splat_u32(7))),\
                                vec_splat_u32(8));\
 \
-                mask = vec_sl((vector signed int)\
+                mask = (vector bool int) vec_sl((vector signed int)\
                         vec_cmpeq(v[x],v[x]),vec_splat_u32(8));\
-                mask = vec_and(v[x],vec_nor(mask,mask));\
+                mask = (vector bool int) vec_and(v[x],vec_nor(mask,mask));\
 \
-                mask = (vector signed int)\
+                mask = (vector bool int)\
                         vec_cmpeq((vector signed int)mask,\
                                   (vector signed int)vec_splat_u32(0));\
 \
