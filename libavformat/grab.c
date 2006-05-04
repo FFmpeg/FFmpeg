@@ -65,6 +65,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     int desired_palette;
     struct video_tuner tuner;
     struct video_audio audio;
+    struct video_picture pict;
     const char *video_device;
     int j;
 
@@ -143,11 +144,36 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     audio.flags &= ~VIDEO_AUDIO_MUTE;
     ioctl(video_fd, VIDIOCSAUDIO, &audio);
 
+    ioctl(video_fd, VIDIOCGPICT, &pict);
+#if 0
+    printf("v4l: colour=%d hue=%d brightness=%d constrast=%d whiteness=%d\n",
+           pict.colour,
+           pict.hue,
+           pict.brightness,
+           pict.contrast,
+           pict.whiteness);
+#endif
+    /* try to choose a suitable video format */
+    pict.palette = desired_palette;
+    if (desired_palette == -1 || (ret = ioctl(video_fd, VIDIOCSPICT, &pict)) < 0) {
+        pict.palette=VIDEO_PALETTE_YUV420P;
+        ret = ioctl(video_fd, VIDIOCSPICT, &pict);
+        if (ret < 0) {
+            pict.palette=VIDEO_PALETTE_YUV422;
+            ret = ioctl(video_fd, VIDIOCSPICT, &pict);
+            if (ret < 0) {
+                pict.palette=VIDEO_PALETTE_RGB24;
+                ret = ioctl(video_fd, VIDIOCSPICT, &pict);
+                if (ret < 0)
+                    goto fail1;
+            }
+        }
+    }
+
     ret = ioctl(video_fd,VIDIOCGMBUF,&s->gb_buffers);
     if (ret < 0) {
         /* try to use read based access */
         struct video_window win;
-        struct video_picture pict;
         int val;
 
         win.x = 0;
@@ -158,32 +184,6 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         win.flags = 0;
 
         ioctl(video_fd, VIDIOCSWIN, &win);
-
-        ioctl(video_fd, VIDIOCGPICT, &pict);
-#if 0
-        printf("v4l: colour=%d hue=%d brightness=%d constrast=%d whiteness=%d\n",
-               pict.colour,
-               pict.hue,
-               pict.brightness,
-               pict.contrast,
-               pict.whiteness);
-#endif
-        /* try to choose a suitable video format */
-        pict.palette = desired_palette;
-        if (desired_palette == -1 || (ret = ioctl(video_fd, VIDIOCSPICT, &pict)) < 0) {
-            pict.palette=VIDEO_PALETTE_YUV420P;
-            ret = ioctl(video_fd, VIDIOCSPICT, &pict);
-            if (ret < 0) {
-                pict.palette=VIDEO_PALETTE_YUV422;
-                ret = ioctl(video_fd, VIDIOCSPICT, &pict);
-                if (ret < 0) {
-                    pict.palette=VIDEO_PALETTE_RGB24;
-                    ret = ioctl(video_fd, VIDIOCSPICT, &pict);
-                    if (ret < 0)
-                        goto fail1;
-                }
-            }
-        }
 
         s->frame_format = pict.palette;
 
@@ -215,24 +215,9 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         s->gb_buf.frame = s->gb_frame % s->gb_buffers.frames;
         s->gb_buf.height = height;
         s->gb_buf.width = width;
-        s->gb_buf.format = desired_palette;
+        s->gb_buf.format = pict.palette;
 
-        if (desired_palette == -1 || (ret = ioctl(video_fd, VIDIOCMCAPTURE, &s->gb_buf)) < 0) {
-            s->gb_buf.format = VIDEO_PALETTE_YUV420P;
-
-            ret = ioctl(video_fd, VIDIOCMCAPTURE, &s->gb_buf);
-            if (ret < 0 && errno != EAGAIN) {
-                /* try YUV422 */
-                s->gb_buf.format = VIDEO_PALETTE_YUV422;
-
-                ret = ioctl(video_fd, VIDIOCMCAPTURE, &s->gb_buf);
-                if (ret < 0 && errno != EAGAIN) {
-                    /* try RGB24 */
-                    s->gb_buf.format = VIDEO_PALETTE_RGB24;
-                    ret = ioctl(video_fd, VIDIOCMCAPTURE, &s->gb_buf);
-                }
-            }
-        }
+        ret = ioctl(video_fd, VIDIOCMCAPTURE, &s->gb_buf);
         if (ret < 0) {
             if (errno != EAGAIN) {
             fail1:
