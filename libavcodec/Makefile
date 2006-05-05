@@ -240,14 +240,12 @@ AMROBJS=
 ifeq ($(AMR_NB),yes)
 AMROBJS= amr.o
 OBJS+= amr_float/sp_dec.o amr_float/sp_enc.o amr_float/interf_dec.o amr_float/interf_enc.o
-CLEANAMR=cleanamrfloat
 endif
 
 ifeq ($(AMR_NB_FIXED),yes)
 AMROBJS= amr.o
 EXTRAOBJS += amr/*.o
 EXTRADEPS=amrlibs
-CLEANAMR=cleanamr
 endif
 
 ifeq ($(AMR_WB),yes)
@@ -258,7 +256,6 @@ OBJS+= amrwb_float/dec_acelp.o amrwb_float/dec_dtx.o  amrwb_float/dec_gain.o  \
        amrwb_float/enc_dtx.o   amrwb_float/enc_gain.o amrwb_float/enc_if.o    \
        amrwb_float/enc_lpc.o   amrwb_float/enc_main.o amrwb_float/enc_rom.o   \
        amrwb_float/enc_util.o  amrwb_float/if_rom.o
-CLEANAMR=cleanamrwbfloat
 endif
 
 OBJS+= $(AMROBJS)
@@ -432,7 +429,7 @@ tests: apiexample cpuid_test $(TESTS)
 
 dsputil.o: dsputil.c dsputil.h
 
-clean:: $(CLEANAMR)
+clean::
 	rm -f \
 	   i386/*.o i386/*~ \
 	   armv4l/*.o armv4l/*~ \
@@ -443,15 +440,9 @@ clean:: $(CLEANAMR)
 	   sh4/*.o sh4/*~ \
 	   sparc/*.o sparc/*~ \
 	   liba52/*.o liba52/*~ \
+	   amr_float/*.o \
 	   apiexample $(TESTS)
-
-cleanamr:
 	$(MAKE) -C amr clean
-
-cleanamrfloat:
-	rm -f amr_float/*.o
-
-cleanamrwbfloat:
 	$(MAKE) -C amrwb_float -f makefile.gcc clean
 
 # api example program
