@@ -7390,6 +7390,8 @@ static inline int decode_picture_parameter_set(H264Context *h, int bit_length){
     pps->constrained_intra_pred= get_bits1(&s->gb);
     pps->redundant_pic_cnt_present = get_bits1(&s->gb);
 
+    pps->transform_8x8_mode= 0;
+    h->dequant_coeff_pps= -1; //contents of sps/pps can change even if id doesn't, so reinit
     memset(pps->scaling_matrix4, 16, 6*16*sizeof(uint8_t));
     memset(pps->scaling_matrix8, 16, 2*64*sizeof(uint8_t));
 
