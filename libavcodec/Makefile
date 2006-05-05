@@ -442,8 +442,8 @@ clean::
 	   liba52/*.o liba52/*~ \
 	   amr_float/*.o \
 	   apiexample $(TESTS)
-	$(MAKE) -C amr clean
-	$(MAKE) -C amrwb_float -f makefile.gcc clean
+	-$(MAKE) -C amr clean
+	-$(MAKE) -C amrwb_float -f makefile.gcc clean
 
 # api example program
 apiexample: apiexample.c $(LIB)
