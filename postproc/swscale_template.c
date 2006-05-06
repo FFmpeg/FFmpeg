@@ -1218,34 +1218,37 @@ FULL_YSCALEYUV2RGB
 //Note 8280 == DSTW_OFFSET but the preprocessor can't handle that there :(
 	case IMGFMT_BGR32:
 			asm volatile(
-				"mov %%"REG_SP", "ESP_OFFSET"(%5)	\n\t"
-				"mov %4, %%"REG_SP"			\n\t"
-				YSCALEYUV2RGB(%%REGa, %5)
-				WRITEBGR32(%%REGSP, 8280(%5), %%REGa)
-				"mov "ESP_OFFSET"(%5), %%"REG_SP"	\n\t"
+				"mov %%"REG_b", "ESP_OFFSET"(%5)	\n\t"
+				"mov %4, %%"REG_b"			\n\t"
+                                "push %%"REG_BP"                        \n\t"
+				YSCALEYUV2RGB(%%REGBP, %5)
+				WRITEBGR32(%%REGb, 8280(%5), %%REGBP)
+                                "pop %%"REG_BP"                         \n\t"
+				"mov "ESP_OFFSET"(%5), %%"REG_b"	\n\t"
 
-			:: "r" (buf0), "r" (buf1), "r" (uvbuf0), "r" (uvbuf1), "m" (dest),
-			"r" (&c->redDither)
-			: "%"REG_a
+			:: "c" (buf0), "d" (buf1), "S" (uvbuf0), "D" (uvbuf1), "m" (dest),
+			"a" (&c->redDither)
 			);
 			return;
 	case IMGFMT_BGR24:
 			asm volatile(
-				"mov %%"REG_SP", "ESP_OFFSET"(%5)	\n\t"
-				"mov %4, %%"REG_SP"			\n\t"
-				YSCALEYUV2RGB(%%REGa, %5)
-				WRITEBGR24(%%REGSP, 8280(%5), %%REGa)
-				"mov "ESP_OFFSET"(%5), %%"REG_SP"	\n\t"
-			:: "r" (buf0), "r" (buf1), "r" (uvbuf0), "r" (uvbuf1), "m" (dest),
-			"r" (&c->redDither)
-			: "%"REG_a
+				"mov %%"REG_b", "ESP_OFFSET"(%5)	\n\t"
+				"mov %4, %%"REG_b"			\n\t"
+                                "push %%"REG_BP"                        \n\t"
+				YSCALEYUV2RGB(%%REGBP, %5)
+				WRITEBGR24(%%REGb, 8280(%5), %%REGBP)
+                                "pop %%"REG_BP"                         \n\t"
+				"mov "ESP_OFFSET"(%5), %%"REG_b"	\n\t"
+			:: "c" (buf0), "d" (buf1), "S" (uvbuf0), "D" (uvbuf1), "m" (dest),
+			"a" (&c->redDither)
 			);
 			return;
 	case IMGFMT_BGR15:
 			asm volatile(
-				"mov %%"REG_SP", "ESP_OFFSET"(%5)	\n\t"
-				"mov %4, %%"REG_SP"			\n\t"
-				YSCALEYUV2RGB(%%REGa, %5)
+				"mov %%"REG_b", "ESP_OFFSET"(%5)	\n\t"
+				"mov %4, %%"REG_b"			\n\t"
+                                "push %%"REG_BP"                        \n\t"
+				YSCALEYUV2RGB(%%REGBP, %5)
 		/* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
 #ifdef DITHER1XBPP
 				"paddusb "MANGLE(b5Dither)", %%mm2\n\t"
@@ -1253,19 +1256,20 @@ FULL_YSCALEYUV2RGB
 				"paddusb "MANGLE(r5Dither)", %%mm5\n\t"
 #endif
 
-				WRITEBGR15(%%REGSP, 8280(%5), %%REGa)
-				"mov "ESP_OFFSET"(%5), %%"REG_SP"	\n\t"
+				WRITEBGR15(%%REGb, 8280(%5), %%REGBP)
+                                "pop %%"REG_BP"                         \n\t"
+				"mov "ESP_OFFSET"(%5), %%"REG_b"	\n\t"
 
-			:: "r" (buf0), "r" (buf1), "r" (uvbuf0), "r" (uvbuf1), "m" (dest),
-			"r" (&c->redDither)
-			: "%"REG_a
+			:: "c" (buf0), "d" (buf1), "S" (uvbuf0), "D" (uvbuf1), "m" (dest),
+			"a" (&c->redDither)
 			);
 			return;
 	case IMGFMT_BGR16:
 			asm volatile(
-				"mov %%"REG_SP", "ESP_OFFSET"(%5)	\n\t"
-				"mov %4, %%"REG_SP"			\n\t"
-				YSCALEYUV2RGB(%%REGa, %5)
+				"mov %%"REG_b", "ESP_OFFSET"(%5)	\n\t"
+				"mov %4, %%"REG_b"			\n\t"
+                                "push %%"REG_BP"                        \n\t"
+				YSCALEYUV2RGB(%%REGBP, %5)
 		/* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
 #ifdef DITHER1XBPP
 				"paddusb "MANGLE(b5Dither)", %%mm2\n\t"
@@ -1273,23 +1277,24 @@ FULL_YSCALEYUV2RGB
 				"paddusb "MANGLE(r5Dither)", %%mm5\n\t"
 #endif
 
-				WRITEBGR16(%%REGSP, 8280(%5), %%REGa)
-				"mov "ESP_OFFSET"(%5), %%"REG_SP"	\n\t"
-			:: "r" (buf0), "r" (buf1), "r" (uvbuf0), "r" (uvbuf1), "m" (dest),
-			"r" (&c->redDither)
-			: "%"REG_a
+				WRITEBGR16(%%REGb, 8280(%5), %%REGBP)
+                                "pop %%"REG_BP"                         \n\t"
+				"mov "ESP_OFFSET"(%5), %%"REG_b"	\n\t"
+			:: "c" (buf0), "d" (buf1), "S" (uvbuf0), "D" (uvbuf1), "m" (dest),
+			"a" (&c->redDither)
 			);
 			return;
 	case IMGFMT_YUY2:
 			asm volatile(
-				"mov %%"REG_SP", "ESP_OFFSET"(%5)	\n\t"
-				"mov %4, %%"REG_SP"			\n\t"
-				YSCALEYUV2PACKED(%%REGa, %5)
-				WRITEYUY2(%%REGSP, 8280(%5), %%REGa)
-				"mov "ESP_OFFSET"(%5), %%"REG_SP"	\n\t"
-			:: "r" (buf0), "r" (buf1), "r" (uvbuf0), "r" (uvbuf1), "m" (dest),
-			"r" (&c->redDither)
-			: "%"REG_a
+				"mov %%"REG_b", "ESP_OFFSET"(%5)	\n\t"
+				"mov %4, %%"REG_b"			\n\t"
+                                "push %%"REG_BP"                        \n\t"
+				YSCALEYUV2PACKED(%%REGBP, %5)
+				WRITEYUY2(%%REGb, 8280(%5), %%REGBP)
+                                "pop %%"REG_BP"                         \n\t"
+				"mov "ESP_OFFSET"(%5), %%"REG_b"	\n\t"
+			:: "c" (buf0), "d" (buf1), "S" (uvbuf0), "D" (uvbuf1), "m" (dest),
+			"a" (&c->redDither)
 			);
 			return;
 	default: break;
@@ -1323,54 +1328,58 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, uint16_t *buf0, uint16_t *
 		{
 		case IMGFMT_BGR32:
 			asm volatile(
-				"mov %%"REG_SP", "ESP_OFFSET"(%5)	\n\t"
-				"mov %4, %%"REG_SP"			\n\t"
-				YSCALEYUV2RGB1(%%REGa, %5)
-				WRITEBGR32(%%REGSP, 8280(%5), %%REGa)
-				"mov "ESP_OFFSET"(%5), %%"REG_SP"	\n\t"
+				"mov %%"REG_b", "ESP_OFFSET"(%5)	\n\t"
+				"mov %4, %%"REG_b"			\n\t"
+                                "push %%"REG_BP"                        \n\t"
+				YSCALEYUV2RGB1(%%REGBP, %5)
+				WRITEBGR32(%%REGb, 8280(%5), %%REGBP)
+                                "pop %%"REG_BP"                         \n\t"
+				"mov "ESP_OFFSET"(%5), %%"REG_b"	\n\t"
 
-			:: "r" (buf0), "r" (buf1), "r" (uvbuf0), "r" (uvbuf1), "m" (dest),
-			"r" (&c->redDither)
-			: "%"REG_a
+			:: "c" (buf0), "d" (buf1), "S" (uvbuf0), "D" (uvbuf1), "m" (dest),
+			"a" (&c->redDither)
 			);
 			return;
 		case IMGFMT_BGR24:
 			asm volatile(
-				"mov %%"REG_SP", "ESP_OFFSET"(%5)	\n\t"
-				"mov %4, %%"REG_SP"			\n\t"
-				YSCALEYUV2RGB1(%%REGa, %5)
-				WRITEBGR24(%%REGSP, 8280(%5), %%REGa)
-				"mov "ESP_OFFSET"(%5), %%"REG_SP"	\n\t"
+				"mov %%"REG_b", "ESP_OFFSET"(%5)	\n\t"
+				"mov %4, %%"REG_b"			\n\t"
+                                "push %%"REG_BP"                        \n\t"
+				YSCALEYUV2RGB1(%%REGBP, %5)
+				WRITEBGR24(%%REGb, 8280(%5), %%REGBP)
+                                "pop %%"REG_BP"                         \n\t"
+				"mov "ESP_OFFSET"(%5), %%"REG_b"	\n\t"
 
-			:: "r" (buf0), "r" (buf1), "r" (uvbuf0), "r" (uvbuf1), "m" (dest),
-			"r" (&c->redDither)
-			: "%"REG_a
+			:: "c" (buf0), "d" (buf1), "S" (uvbuf0), "D" (uvbuf1), "m" (dest),
+			"a" (&c->redDither)
 			);
 			return;
 		case IMGFMT_BGR15:
 			asm volatile(
-				"mov %%"REG_SP", "ESP_OFFSET"(%5)	\n\t"
-				"mov %4, %%"REG_SP"			\n\t"
-				YSCALEYUV2RGB1(%%REGa, %5)
+				"mov %%"REG_b", "ESP_OFFSET"(%5)	\n\t"
+				"mov %4, %%"REG_b"			\n\t"
+                                "push %%"REG_BP"                        \n\t"
+				YSCALEYUV2RGB1(%%REGBP, %5)
 		/* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
 #ifdef DITHER1XBPP
 				"paddusb "MANGLE(b5Dither)", %%mm2\n\t"
 				"paddusb "MANGLE(g5Dither)", %%mm4\n\t"
 				"paddusb "MANGLE(r5Dither)", %%mm5\n\t"
 #endif
-				WRITEBGR15(%%REGSP, 8280(%5), %%REGa)
-				"mov "ESP_OFFSET"(%5), %%"REG_SP"	\n\t"
+				WRITEBGR15(%%REGb, 8280(%5), %%REGBP)
+                                "pop %%"REG_BP"                         \n\t"
+				"mov "ESP_OFFSET"(%5), %%"REG_b"	\n\t"
 
-			:: "r" (buf0), "r" (buf1), "r" (uvbuf0), "r" (uvbuf1), "m" (dest),
-			"r" (&c->redDither)
-			: "%"REG_a
+			:: "c" (buf0), "d" (buf1), "S" (uvbuf0), "D" (uvbuf1), "m" (dest),
+			"a" (&c->redDither)
 			);
 			return;
 		case IMGFMT_BGR16:
 			asm volatile(
-				"mov %%"REG_SP", "ESP_OFFSET"(%5)	\n\t"
-				"mov %4, %%"REG_SP"			\n\t"
-				YSCALEYUV2RGB1(%%REGa, %5)
+				"mov %%"REG_b", "ESP_OFFSET"(%5)	\n\t"
+				"mov %4, %%"REG_b"			\n\t"
+                                "push %%"REG_BP"                        \n\t"
+				YSCALEYUV2RGB1(%%REGBP, %5)
 		/* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
 #ifdef DITHER1XBPP
 				"paddusb "MANGLE(b5Dither)", %%mm2\n\t"
@@ -1378,25 +1387,26 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, uint16_t *buf0, uint16_t *
 				"paddusb "MANGLE(r5Dither)", %%mm5\n\t"
 #endif
 
-				WRITEBGR16(%%REGSP, 8280(%5), %%REGa)
-				"mov "ESP_OFFSET"(%5), %%"REG_SP"	\n\t"
+				WRITEBGR16(%%REGb, 8280(%5), %%REGBP)
+                                "pop %%"REG_BP"                         \n\t"
+				"mov "ESP_OFFSET"(%5), %%"REG_b"	\n\t"
 
-			:: "r" (buf0), "r" (buf1), "r" (uvbuf0), "r" (uvbuf1), "m" (dest),
-			"r" (&c->redDither)
-			: "%"REG_a
+			:: "c" (buf0), "d" (buf1), "S" (uvbuf0), "D" (uvbuf1), "m" (dest),
+			"a" (&c->redDither)
 			);
 			return;
 		case IMGFMT_YUY2:
 			asm volatile(
-				"mov %%"REG_SP", "ESP_OFFSET"(%5)	\n\t"
-				"mov %4, %%"REG_SP"			\n\t"
-				YSCALEYUV2PACKED1(%%REGa, %5)
-				WRITEYUY2(%%REGSP, 8280(%5), %%REGa)
-				"mov "ESP_OFFSET"(%5), %%"REG_SP"	\n\t"
+				"mov %%"REG_b", "ESP_OFFSET"(%5)	\n\t"
+				"mov %4, %%"REG_b"			\n\t"
+                                "push %%"REG_BP"                        \n\t"
+				YSCALEYUV2PACKED1(%%REGBP, %5)
+				WRITEYUY2(%%REGb, 8280(%5), %%REGBP)
+                                "pop %%"REG_BP"                         \n\t"
+				"mov "ESP_OFFSET"(%5), %%"REG_b"	\n\t"
 
-			:: "r" (buf0), "r" (buf1), "r" (uvbuf0), "r" (uvbuf1), "m" (dest),
-			"r" (&c->redDither)
-			: "%"REG_a
+			:: "c" (buf0), "d" (buf1), "S" (uvbuf0), "D" (uvbuf1), "m" (dest),
+			"a" (&c->redDither)
 			);
 			return;
 		}
@@ -1407,54 +1417,58 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, uint16_t *buf0, uint16_t *
 		{
 		case IMGFMT_BGR32:
 			asm volatile(
-				"mov %%"REG_SP", "ESP_OFFSET"(%5)	\n\t"
-				"mov %4, %%"REG_SP"			\n\t"
-				YSCALEYUV2RGB1b(%%REGa, %5)
-				WRITEBGR32(%%REGSP, 8280(%5), %%REGa)
-				"mov "ESP_OFFSET"(%5), %%"REG_SP"	\n\t"
+				"mov %%"REG_b", "ESP_OFFSET"(%5)	\n\t"
+				"mov %4, %%"REG_b"			\n\t"
+                                "push %%"REG_BP"                        \n\t"
+				YSCALEYUV2RGB1b(%%REGBP, %5)
+				WRITEBGR32(%%REGb, 8280(%5), %%REGBP)
+                                "pop %%"REG_BP"                         \n\t"
+				"mov "ESP_OFFSET"(%5), %%"REG_b"	\n\t"
 
-			:: "r" (buf0), "r" (buf1), "r" (uvbuf0), "r" (uvbuf1), "m" (dest),
-			"r" (&c->redDither)
-			: "%"REG_a
+			:: "c" (buf0), "d" (buf1), "S" (uvbuf0), "D" (uvbuf1), "m" (dest),
+			"a" (&c->redDither)
 			);
 			return;
 		case IMGFMT_BGR24:
 			asm volatile(
-				"mov %%"REG_SP", "ESP_OFFSET"(%5)	\n\t"
-				"mov %4, %%"REG_SP"			\n\t"
-				YSCALEYUV2RGB1b(%%REGa, %5)
-				WRITEBGR24(%%REGSP, 8280(%5), %%REGa)
-				"mov "ESP_OFFSET"(%5), %%"REG_SP"	\n\t"
+				"mov %%"REG_b", "ESP_OFFSET"(%5)	\n\t"
+				"mov %4, %%"REG_b"			\n\t"
+                                "push %%"REG_BP"                        \n\t"
+				YSCALEYUV2RGB1b(%%REGBP, %5)
+				WRITEBGR24(%%REGb, 8280(%5), %%REGBP)
+                                "pop %%"REG_BP"                         \n\t"
+				"mov "ESP_OFFSET"(%5), %%"REG_b"	\n\t"
 
-			:: "r" (buf0), "r" (buf1), "r" (uvbuf0), "r" (uvbuf1), "m" (dest),
-			"r" (&c->redDither)
-			: "%"REG_a
+			:: "c" (buf0), "d" (buf1), "S" (uvbuf0), "D" (uvbuf1), "m" (dest),
+			"a" (&c->redDither)
 			);
 			return;
 		case IMGFMT_BGR15:
 			asm volatile(
-				"mov %%"REG_SP", "ESP_OFFSET"(%5)	\n\t"
-				"mov %4, %%"REG_SP"			\n\t"
-				YSCALEYUV2RGB1b(%%REGa, %5)
+				"mov %%"REG_b", "ESP_OFFSET"(%5)	\n\t"
+				"mov %4, %%"REG_b"			\n\t"
+                                "push %%"REG_BP"                        \n\t"
+				YSCALEYUV2RGB1b(%%REGBP, %5)
 		/* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
 #ifdef DITHER1XBPP
 				"paddusb "MANGLE(b5Dither)", %%mm2\n\t"
 				"paddusb "MANGLE(g5Dither)", %%mm4\n\t"
 				"paddusb "MANGLE(r5Dither)", %%mm5\n\t"
 #endif
-				WRITEBGR15(%%REGSP, 8280(%5), %%REGa)
-				"mov "ESP_OFFSET"(%5), %%"REG_SP"	\n\t"
+				WRITEBGR15(%%REGb, 8280(%5), %%REGBP)
+                                "pop %%"REG_BP"                         \n\t"
+				"mov "ESP_OFFSET"(%5), %%"REG_b"	\n\t"
 
-			:: "r" (buf0), "r" (buf1), "r" (uvbuf0), "r" (uvbuf1), "m" (dest),
-			"r" (&c->redDither)
-			: "%"REG_a
+			:: "c" (buf0), "d" (buf1), "S" (uvbuf0), "D" (uvbuf1), "m" (dest),
+			"a" (&c->redDither)
 			);
 			return;
 		case IMGFMT_BGR16:
 			asm volatile(
-				"mov %%"REG_SP", "ESP_OFFSET"(%5)	\n\t"
-				"mov %4, %%"REG_SP"			\n\t"
-				YSCALEYUV2RGB1b(%%REGa, %5)
+				"mov %%"REG_b", "ESP_OFFSET"(%5)	\n\t"
+				"mov %4, %%"REG_b"			\n\t"
+                                "push %%"REG_BP"                        \n\t"
+				YSCALEYUV2RGB1b(%%REGBP, %5)
 		/* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
 #ifdef DITHER1XBPP
 				"paddusb "MANGLE(b5Dither)", %%mm2\n\t"
@@ -1462,25 +1476,26 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, uint16_t *buf0, uint16_t *
 				"paddusb "MANGLE(r5Dither)", %%mm5\n\t"
 #endif
 
-				WRITEBGR16(%%REGSP, 8280(%5), %%REGa)
-				"mov "ESP_OFFSET"(%5), %%"REG_SP"	\n\t"
+				WRITEBGR16(%%REGb, 8280(%5), %%REGBP)
+                                "pop %%"REG_BP"                         \n\t"
+				"mov "ESP_OFFSET"(%5), %%"REG_b"	\n\t"
 
-			:: "r" (buf0), "r" (buf1), "r" (uvbuf0), "r" (uvbuf1), "m" (dest),
-			"r" (&c->redDither)
-			: "%"REG_a
+			:: "c" (buf0), "d" (buf1), "S" (uvbuf0), "D" (uvbuf1), "m" (dest),
+			"a" (&c->redDither)
 			);
 			return;
 		case IMGFMT_YUY2:
 			asm volatile(
-				"mov %%"REG_SP", "ESP_OFFSET"(%5)	\n\t"
-				"mov %4, %%"REG_SP"			\n\t"
-				YSCALEYUV2PACKED1b(%%REGa, %5)
-				WRITEYUY2(%%REGSP, 8280(%5), %%REGa)
-				"mov "ESP_OFFSET"(%5), %%"REG_SP"	\n\t"
+				"mov %%"REG_b", "ESP_OFFSET"(%5)	\n\t"
+				"mov %4, %%"REG_b"			\n\t"
+                                "push %%"REG_BP"                        \n\t"
+				YSCALEYUV2PACKED1b(%%REGBP, %5)
+				WRITEYUY2(%%REGb, 8280(%5), %%REGBP)
+                                "pop %%"REG_BP"                         \n\t"
+				"mov "ESP_OFFSET"(%5), %%"REG_b"	\n\t"
 
-			:: "r" (buf0), "r" (buf1), "r" (uvbuf0), "r" (uvbuf1), "m" (dest),
-			"r" (&c->redDither)
-			: "%"REG_a
+			:: "c" (buf0), "d" (buf1), "S" (uvbuf0), "D" (uvbuf1), "m" (dest),
+			"a" (&c->redDither)
 			);
 			return;
 		}
