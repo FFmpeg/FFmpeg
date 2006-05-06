@@ -26,17 +26,9 @@ OBJS+= flvenc.o movenc.o asf-enc.o adtsenc.o
 endif
 
 
-AMROBJS=
-ifeq ($(AMR_NB),yes)
-AMROBJS= amr.o
+ifeq ($(AMR),yes)
+OBJS+= amr.o
 endif
-ifeq ($(AMR_NB_FIXED),yes)
-AMROBJS= amr.o
-endif
-ifeq ($(AMR_WB),yes)
-AMROBJS= amr.o
-endif
-OBJS+= $(AMROBJS)
 
 # image formats
 OBJS+= pnm.o yuv.o png.o jpeg.o gifdec.o sgi.o

@@ -591,13 +591,13 @@ for opt do
   ;;
   --enable-small) optimize="small"
   ;;
-  --enable-amr_nb) amr_nb="yes"; amr_nb_fixed="no"
+  --enable-amr_nb) amr="yes"; amr_nb="yes"; amr_nb_fixed="no"
   ;;
-  --enable-amr_nb-fixed) amr_nb_fixed="yes"; amr_nb="no"
+  --enable-amr_nb-fixed) amr="yes"; amr_nb_fixed="yes"; amr_nb="no"
   ;;
-  --enable-amr_wb) amr_wb="yes"
+  --enable-amr_wb) amr="yes"; amr_wb="yes"
   ;;
-  --enable-amr_if2) amr_if2="yes"
+  --enable-amr_if2) amr="yes"; amr_if2="yes"
   ;;
   --enable-sunmlib) sunmlib="yes"
   ;;
@@ -1912,6 +1912,11 @@ if test "$source_path_used" = "yes" ; then
 fi
 echo "SRC_PATH=$source_path" >> config.mak
 echo "BUILD_ROOT=$PWD" >> config.mak
+
+if test "$amr" = "yes" ; then
+  echo "#define AMR 1" >> $TMPH
+  echo "AMR=yes" >> config.mak
+fi
 
 if test "$amr_wb" = "yes" ; then
   echo "#define AMR_WB 1" >> $TMPH
