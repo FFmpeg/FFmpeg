@@ -1967,6 +1967,14 @@ typedef struct AVCodecContext {
      * - decoding: unused
      */
     int scenechange_factor;
+
+    /**
+     *
+     * note: value depends upon the compare functin used for fullpel ME
+     * - encoding: set by user.
+     * - decoding: unused
+     */
+    int mv0_threshold;
 } AVCodecContext;
 
 /**

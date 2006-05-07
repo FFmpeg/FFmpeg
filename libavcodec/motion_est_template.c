@@ -896,7 +896,8 @@ static always_inline int epzs_motion_search_internal(MpegEncContext * s, int *mx
         CHECK_CLIPED_MV((last_mv[ref_mv_xy][0]*ref_mv_scale + (1<<15))>>16,
                         (last_mv[ref_mv_xy][1]*ref_mv_scale + (1<<15))>>16)
     }else{
-        if(dmin<h*h && ( P_LEFT[0]    |P_LEFT[1]
+        if(dmin<((h*h*s->avctx->mv0_threshold)>>8)
+                    && ( P_LEFT[0]    |P_LEFT[1]
                         |P_TOP[0]     |P_TOP[1]
                         |P_TOPRIGHT[0]|P_TOPRIGHT[1])==0){
             *mx_ptr= 0;
