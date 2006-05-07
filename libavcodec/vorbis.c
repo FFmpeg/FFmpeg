@@ -1357,7 +1357,9 @@ static int vorbis_residue_decode(vorbis_context *vc, vorbis_residue *vr, uint_fa
                             uint_fast32_t temp2;
 
                             temp2=(((uint_fast64_t)temp) * inverse[vr->classifications])>>32;
-                            classifs[j_times_ptns_to_read+partition_count+c_p_c-1-i]=temp-temp2*vr->classifications;
+                            if (partition_count+c_p_c-1-i < ptns_to_read) {
+                                classifs[j_times_ptns_to_read+partition_count+c_p_c-1-i]=temp-temp2*vr->classifications;
+                            }
                             temp=temp2;
                         }
                     }
