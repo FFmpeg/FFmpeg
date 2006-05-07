@@ -124,8 +124,8 @@ typedef struct SwsContext{
 #define LUM_MMX_FILTER_OFFSET "11*8"
 #define CHR_MMX_FILTER_OFFSET "11*8+4*4*256"
 #define DSTW_OFFSET  "11*8+4*4*256*2" //do not change, its hardcoded in the asm
-#define ESP_OFFSET  "11*8+4*4*256*2+4"
-#define VROUNDER_OFFSET "11*8+4*4*256*2+8"
+#define ESP_OFFSET  "11*8+4*4*256*2+8"
+#define VROUNDER_OFFSET "11*8+4*4*256*2+16"
                   
 	uint64_t redDither   __attribute__((aligned(8)));
 	uint64_t greenDither __attribute__((aligned(8)));
@@ -142,7 +142,7 @@ typedef struct SwsContext{
 	int32_t  lumMmxFilter[4*MAX_FILTER_SIZE];
 	int32_t  chrMmxFilter[4*MAX_FILTER_SIZE];
 	int dstW;
-	int esp;
+	uint64_t esp __attribute__((aligned(8)));
 	uint64_t vRounder     __attribute__((aligned(8)));
 
 #ifdef HAVE_ALTIVEC
