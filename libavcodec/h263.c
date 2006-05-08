@@ -4516,6 +4516,12 @@ end:
 
         /* per-MB end of slice check */
     if(s->codec_id==CODEC_ID_MPEG4){
+#if 0 //http://standards.iso.org/ittf/PubliclyAvailableStandards/ISO_IEC_14496-4_2004_Conformance_Testing/video_conformance/version_1/simple/ERROR.ZIP/mit025.m4v needs this but its unclear if the mpeg4 standard allows this at all (MN)
+        if(s->pict_type != B_TYPE){
+            while(show_bits(&s->gb, 9 + (s->pict_type == P_TYPE)) == 1)
+                skip_bits(&s->gb, 9 + (s->pict_type == P_TYPE));
+        }
+#endif
         if(mpeg4_is_resync(s)){
             const int delta= s->mb_x + 1 == s->mb_width ? 2 : 1;
             if(s->pict_type==B_TYPE && s->next_picture.mbskip_table[xy + delta])
