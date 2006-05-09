@@ -19,7 +19,7 @@
 
 #include <limits.h>
 
-#define DEBUG
+//#define DEBUG
 
 #include "avformat.h"
 #include "avi.h"
