@@ -947,7 +947,7 @@ int MPV_encode_init(AVCodecContext *avctx)
     s->bit_rate = avctx->bit_rate;
     s->width = avctx->width;
     s->height = avctx->height;
-    if(avctx->gop_size > 600){
+    if(avctx->gop_size > 600 && avctx->strict_std_compliance>FF_COMPLIANCE_EXPERIMENTAL){
         av_log(avctx, AV_LOG_ERROR, "Warning keyframe interval too large! reducing it ...\n");
         avctx->gop_size=600;
     }
