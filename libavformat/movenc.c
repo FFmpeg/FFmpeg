@@ -1425,17 +1425,9 @@ static int mov_write_moov_tag(ByteIOContext *pb, MOVContext *mov,
         if(mov->tracks[i].enc->codec_type == CODEC_TYPE_VIDEO) {
             mov->tracks[i].timescale = mov->tracks[i].enc->time_base.den;
             mov->tracks[i].sampleDuration = mov->tracks[i].enc->time_base.num;
-        }
-        else if(mov->tracks[i].enc->codec_type == CODEC_TYPE_AUDIO) {
-            /* If AMR, track timescale = 8000, AMR_WB = 16000 */
-            if(mov->tracks[i].enc->codec_id == CODEC_ID_AMR_NB) {
-                mov->tracks[i].sampleDuration = 160;  // Bytes per chunk
-                mov->tracks[i].timescale = 8000;
-            }
-            else {
-                mov->tracks[i].timescale = mov->tracks[i].enc->sample_rate;
-                mov->tracks[i].sampleDuration = mov->tracks[i].enc->frame_size;
-            }
+        } else if(mov->tracks[i].enc->codec_type == CODEC_TYPE_AUDIO) {
+            mov->tracks[i].timescale = mov->tracks[i].enc->sample_rate;
+            mov->tracks[i].sampleDuration = mov->tracks[i].enc->frame_size;
         }
 
         mov->tracks[i].trackDuration =
