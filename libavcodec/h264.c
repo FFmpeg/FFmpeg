@@ -7782,11 +7782,7 @@ static int decode_frame(AVCodecContext *avctx,
         /* Sort B-frames into display order */
         Picture *cur = s->current_picture_ptr;
         Picture *prev = h->delayed_output_pic;
-        int out_idx = 0;
-        int pics = 0;
-        int out_of_order;
-        int cross_idr = 0;
-        int i;
+        int i, pics, cross_idr, out_of_order, out_idx;
 
         if(h->sps.bitstream_restriction_flag
            && s->avctx->has_b_frames < h->sps.num_reorder_frames){
@@ -7794,16 +7790,19 @@ static int decode_frame(AVCodecContext *avctx,
             s->low_delay = 0;
         }
 
+        pics = 0;
         while(h->delayed_pic[pics]) pics++;
         h->delayed_pic[pics++] = cur;
         if(cur->reference == 0)
             cur->reference = 1;
 
+        cross_idr = 0;
         for(i=0; h->delayed_pic[i]; i++)
             if(h->delayed_pic[i]->key_frame || h->delayed_pic[i]->poc==0)
                 cross_idr = 1;
 
         out = h->delayed_pic[0];
+        out_idx = 0;
         for(i=1; h->delayed_pic[i] && !h->delayed_pic[i]->key_frame; i++)
             if(h->delayed_pic[i]->poc < out->poc){
                 out = h->delayed_pic[i];
