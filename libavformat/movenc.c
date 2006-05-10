@@ -218,10 +218,10 @@ static int mov_write_damr_tag(ByteIOContext *pb)
     put_tag(pb, "FFMP");
     put_byte(pb, 0);
 
-    put_be16(pb, 0x80); /* Mode set (all modes for AMR_NB) */
-    put_be16(pb, 0xa); /* Mode change period (no restriction) */
-    //put_be16(pb, 0x81ff); /* Mode set (all modes for AMR_NB) */
-    //put_be16(pb, 1); /* Mode change period (no restriction) */
+    //put_be16(pb, 0x80); /* Mode set (all modes for AMR_NB) */
+    //put_be16(pb, 0xa); /* Mode change period (no restriction) */
+    put_be16(pb, 0x81ff); /* Mode set (all modes for AMR_NB) */
+    put_be16(pb, 1); /* Mode change period (no restriction) */
     return 0x11;
 }
 
