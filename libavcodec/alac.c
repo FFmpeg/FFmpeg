@@ -602,7 +602,6 @@ static int alac_decode_frame(AVCodecContext *avctx,
             int i;
             for (i = 0; i < outputsamples; i++) {
                 int16_t sample = alac->outputsamples_buffer_a[i];
-                sample = be2me_16(sample);
                 ((int16_t*)outbuffer)[i * alac->numchannels] = sample;
             }
             break;
