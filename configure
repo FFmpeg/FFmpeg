@@ -312,10 +312,7 @@ audio_oss="yes"
 dv1394="no"
 make="gmake"
 LDFLAGS="$LDFLAGS -export-dynamic"
-case `uname -r` in
-2.*) extralibs="$extralibs -lossaudio"
-;;
-esac
+extralibs="$extralibs -lossaudio"
 ;;
 OpenBSD)
 v4l="no"
