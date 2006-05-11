@@ -20,6 +20,8 @@
  */
 
 #undef V_DEBUG
+//#define V_DEBUG
+//#define AV_DEBUG(...) av_log(NULL, AV_LOG_INFO, __VA_ARGS__)
 
 #include <math.h>
 
