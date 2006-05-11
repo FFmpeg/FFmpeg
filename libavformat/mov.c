@@ -66,10 +66,6 @@
 /* Allows seeking */
 #define MOV_SEEK
 
-/* Special handling for movies created with Minolta Dimaxe Xi*/
-/* this fix should not interfere with other .mov files, but just in case*/
-#define MOV_MINOLTA_FIX
-
 /* some streams in QT (and in MP4 mostly) aren't either video nor audio */
 /* so we first list them as this, then clean up the list of streams we give back, */
 /* getting rid of these */
@@ -1817,37 +1813,6 @@ again:
         goto again;
     }
 
-    /* now get the chunk size... */
-
-    for(i=0; i<mov->total_streams; i++) {
-        MOVStreamContext *msc = mov->streams[i];
-        if ((msc->next_chunk < msc->chunk_count)
-            && msc->chunk_offsets[msc->next_chunk] - offset < size
-            && msc->chunk_offsets[msc->next_chunk] > offset)
-            size = msc->chunk_offsets[msc->next_chunk] - offset;
-    }
-
-#ifdef MOV_MINOLTA_FIX
-    //Make sure that size is according to sample_size (Needed by .mov files
-    //created on a Minolta Dimage Xi where audio chunks contains waste data in the end)
-    //Maybe we should really not only check sc->sample_size, but also sc->sample_sizes
-    //but I have no such movies
-    if (sc->sample_size > 0) {
-        int foundsize=0;
-        for(i=0; i<(sc->sample_to_chunk_sz); i++) {
-            if( (sc->sample_to_chunk[i].first)<=(sc->next_chunk) )
-            {
-                foundsize=sc->sample_to_chunk[i].count*sc->sample_size;
-            }
-            dprintf("sample_to_chunk first=%ld count=%ld, id=%ld\n", sc->sample_to_chunk[i].first, sc->sample_to_chunk[i].count, sc->sample_to_chunk[i].id);
-        }
-        if( (foundsize>0) && (foundsize<size) )
-        {
-            size=foundsize;
-        }
-    }
-#endif //MOV_MINOLTA_FIX
-
     idx = sc->sample_to_chunk_index;
     if (idx + 1 < sc->sample_to_chunk_sz && sc->next_chunk >= sc->sample_to_chunk[idx + 1].first)
         idx++;
@@ -1858,14 +1823,33 @@ again:
             mov->partial = sc;
             /* we'll have to get those samples before next chunk */
             sc->left_in_chunk = sc->sample_to_chunk[idx].count - 1;
-            size = (sc->sample_size > 1)?sc->sample_size:sc->sample_sizes[sc->current_sample];
         }
-
+        size = (sc->sample_size > 1)?sc->sample_size:sc->sample_sizes[sc->current_sample];
         next_sample= sc->current_sample+1;
-    }else if(idx < sc->sample_to_chunk_sz){
-        next_sample= sc->current_sample + sc->sample_to_chunk[idx].count;
-    }else
-        next_sample= sc->current_sample;
+    }else{
+        int adjusted= 0;
+        /* get the chunk size... */
+        for(i=0; i<mov->total_streams; i++) {
+            MOVStreamContext *msc = mov->streams[i];
+            if ((msc->next_chunk < msc->chunk_count)
+                && msc->chunk_offsets[msc->next_chunk] - offset < size
+                && msc->chunk_offsets[msc->next_chunk] > offset)
+                size = msc->chunk_offsets[msc->next_chunk] - offset;
+        }
+        //Make sure that size is according to sample_size (Needed by .mov files
+        //created on a Minolta Dimage Xi where audio chunks contains waste data in the end)
+        //needed for 'raw '
+        //sample_size is already adjusted in read_stsz
+        adjusted= sc->sample_to_chunk[idx].count * sc->sample_size;
+        if (adjusted < size) {
+            dprintf("adjusted %d, size %d, sample count %ld\n", adjusted, size, sc->sample_to_chunk[idx].count);
+            size = adjusted;
+        }
+        if(idx < sc->sample_to_chunk_sz){
+            next_sample= sc->current_sample + sc->sample_to_chunk[idx].count;
+        }else
+            next_sample= sc->current_sample;
+    }
 
 readchunk:
     dprintf("chunk: %"PRId64" -> %"PRId64" (%i)\n", offset, offset + size, size);
