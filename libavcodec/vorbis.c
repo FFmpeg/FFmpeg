@@ -473,7 +473,7 @@ static int vorbis_parse_setup_hdr_floors(vorbis_context *vc) {
                 }
 
                 for(k=0;k<(1<<floor_setup->data.t1.class_subclasses[j]);++k) {
-                    floor_setup->data.t1.subclass_books[j][k]=get_bits(gb, 8)-1;
+                    floor_setup->data.t1.subclass_books[j][k]=(int16_t)get_bits(gb, 8)-1;
 
                     AV_DEBUG("    book %d. : %d \n", k, floor_setup->data.t1.subclass_books[j][k]);
                 }
