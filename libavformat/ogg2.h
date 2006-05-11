@@ -76,11 +76,9 @@ typedef struct ogg {
 extern ogg_codec_t vorbis_codec;
 extern ogg_codec_t theora_codec;
 extern ogg_codec_t flac_codec;
-#if 0
 extern ogg_codec_t ogm_video_codec;
 extern ogg_codec_t ogm_audio_codec;
 extern ogg_codec_t ogm_old_codec;
-#endif
 
 extern int vorbis_comment(AVFormatContext *ms, char *buf, int size);
 
