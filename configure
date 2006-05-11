@@ -228,7 +228,7 @@ vhook="default"
 dlfcn="no"
 dlopen="no"
 mpegaudio_hp="yes"
-SHFLAGS='-shared -Wl,-soname,$@.$(LIBMAJOR)'
+SHFLAGS='-shared -Wl,-soname,$@'
 netserver="no"
 need_inet_aton="no"
 protocols="yes"
@@ -383,7 +383,7 @@ cygwin="yes"
 EXESUF=".exe"
 ;;
 Linux)
-LDFLAGS="$LDFLAGS -rdynamic"
+LDFLAGS="$LDFLAGS -rdynamic -Wl,--as-needed -Wl,-rpath-link,\$(BUILD_ROOT)/libavcodec -Wl,-rpath-link,\$(BUILD_ROOT)/libavformat -Wl,-rpath-link,\$(BUILD_ROOT)/libavutil"
 ;;
 IRIX*)
 ranlib="echo ignoring ranlib"

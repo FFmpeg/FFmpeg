@@ -31,7 +31,10 @@ $(LIB): $(STATIC_OBJS)
 	$(AR) rc $@ $^ $(EXTRAOBJS)
 	$(RANLIB) $@
 
-$(SLIBNAME): $(SHARED_OBJS)
+$(SLIBNAME): $(SLIBNAME_WITH_MAJOR)
+	ln -sf $^ $@
+
+$(SLIBNAME_WITH_MAJOR): $(SHARED_OBJS)
 	$(CC) $(SHFLAGS) $(LDFLAGS) -o $@ $^ $(EXTRALIBS) $(EXTRAOBJS)
 ifeq ($(CONFIG_WIN32),yes)
 	-lib /machine:i386 /def:$(@:.dll=.def)
