@@ -48,9 +48,12 @@ ogm_header(AVFormatContext *s, int idx)
     p++;
 
     if(*p == 'v'){
+        int tag;
         st->codec->codec_type = CODEC_TYPE_VIDEO;
         p += 8;
-        st->codec->codec_id = codec_get_bmp_id(le2me_32(unaligned32(p)));
+        tag = le2me_32(unaligned32(p));
+        st->codec->codec_id = codec_get_bmp_id(tag);
+        st->codec->codec_tag = tag;
     } else {
         int cid;
         st->codec->codec_type = CODEC_TYPE_AUDIO;
@@ -85,6 +88,8 @@ ogm_header(AVFormatContext *s, int idx)
         p += 2;                 /* block_align */
         st->codec->bit_rate = le2me_32(unaligned32(p)) * 8;
         st->codec->sample_rate = spu * 10000000 / time_unit;
+        st->time_base.num = 1;
+        st->time_base.den = st->codec->sample_rate;
     }
 
     return 1;

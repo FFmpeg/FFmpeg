@@ -63,6 +63,9 @@ flac_header (AVFormatContext * s, int idx)
         memcpy (st->codec->extradata, os->buf + os->pstart + 5 + 4 + 4 + 4,
                 FLAC_STREAMINFO_SIZE);
         st->codec->extradata_size = FLAC_STREAMINFO_SIZE;
+
+        st->time_base.num = 1;
+        st->time_base.den = st->codec->sample_rate;
     } else if (mdt == 4) {
         vorbis_comment (s, os->buf + os->pstart + 4, os->psize - 4);
     }

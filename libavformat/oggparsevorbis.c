@@ -186,6 +186,8 @@ vorbis_header (AVFormatContext * s, int idx)
         st->codec->codec_type = CODEC_TYPE_AUDIO;
         st->codec->codec_id = CODEC_ID_VORBIS;
 
+        st->time_base.num = 1;
+        st->time_base.den = st->codec->sample_rate;
     } else if (os->buf[os->pstart] == 3) {
         vorbis_comment (s, os->buf + os->pstart + 7, os->psize - 8);
     } else {

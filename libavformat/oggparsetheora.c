@@ -79,6 +79,7 @@ theora_header (AVFormatContext * s, int idx)
             skip_bits(&gb, 64);
         st->codec->time_base.den = get_bits(&gb, 32);
         st->codec->time_base.num = get_bits(&gb, 32);
+        st->time_base = st->codec->time_base;
 
         st->codec->sample_aspect_ratio.num = get_bits(&gb, 24);
         st->codec->sample_aspect_ratio.den = get_bits(&gb, 24);
@@ -111,15 +112,13 @@ theora_header (AVFormatContext * s, int idx)
 static uint64_t
 theora_gptopts(AVFormatContext *ctx, int idx, uint64_t gp)
 {
-    AVStream *st = ctx->streams[idx];
     ogg_t *ogg = ctx->priv_data;
     ogg_stream_t *os = ogg->streams + idx;
     theora_params_t *thp = os->private;
     uint64_t iframe = gp >> thp->gpshift;
     uint64_t pframe = gp & thp->gpmask;
 
-    return (iframe + pframe) * AV_TIME_BASE * st->codec->time_base.num /
-        st->codec->time_base.den;
+    return iframe + pframe;
 }
 
 ogg_codec_t theora_codec = {
