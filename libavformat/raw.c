@@ -26,6 +26,20 @@ static int raw_write_header(struct AVFormatContext *s)
     return 0;
 }
 
+static int flac_write_header(struct AVFormatContext *s)
+{
+    static const uint8_t header[8] = {
+        0x66, 0x4C, 0x61, 0x43, 0x80, 0x00, 0x00, 0x22
+    };
+    uint8_t *streaminfo = s->streams[0]->codec->extradata;
+    int len = s->streams[0]->codec->extradata_size;
+    if(streaminfo != NULL && len > 0) {
+        put_buffer(&s->pb, header, 8);
+        put_buffer(&s->pb, streaminfo, len);
+    }
+    return 0;
+}
+
 static int raw_write_packet(struct AVFormatContext *s, AVPacket *pkt)
 {
     put_buffer(&s->pb, pkt->data, pkt->size);
@@ -396,6 +410,21 @@ AVInputFormat flac_iformat = {
     raw_read_close,
     .extensions = "flac",
 };
+
+#ifdef CONFIG_MUXERS
+AVOutputFormat flac_oformat = {
+    "flac",
+    "raw flac",
+    "audio/x-flac",
+    "flac",
+    0,
+    CODEC_ID_FLAC,
+    0,
+    flac_write_header,
+    raw_write_packet,
+    raw_write_trailer,
+};
+#endif //CONFIG_MUXERS
 
 AVInputFormat ac3_iformat = {
     "ac3",
@@ -792,6 +821,7 @@ int raw_init(void)
 
     av_register_input_format(&shorten_iformat);
     av_register_input_format(&flac_iformat);
+    av_register_output_format(&flac_oformat);
 
     av_register_input_format(&ac3_iformat);
     av_register_output_format(&ac3_oformat);
