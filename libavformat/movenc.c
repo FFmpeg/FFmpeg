@@ -226,54 +226,18 @@ static int mov_write_damr_tag(ByteIOContext *pb)
 
 static unsigned int descrLength(unsigned int len)
 {
-    if (len < 0x00000080)
-        return 2 + len;
-    else if (len < 0x00004000)
-        return 3 + len;
-    else if(len < 0x00200000)
-        return 4 + len;
-    else
-        return 5 + len;
+    int i;
+    for(i=1; len>>(7*i); i++);
+    return len + 1 + i;
 }
 
-static void putDescr(ByteIOContext *pb, int tag, int size)
+static void putDescr(ByteIOContext *pb, int tag, unsigned int size)
 {
-    uint32_t len;
-    uint8_t  vals[4];
-
-    len = size;
-    vals[3] = (uint8_t)(len & 0x7f);
-    len >>= 7;
-    vals[2] = (uint8_t)((len & 0x7f) | 0x80);
-    len >>= 7;
-    vals[1] = (uint8_t)((len & 0x7f) | 0x80);
-    len >>= 7;
-    vals[0] = (uint8_t)((len & 0x7f) | 0x80);
-
-    put_byte(pb, tag); // DescriptorTag
-
-    if (size < 0x00000080)
-    {
-        put_byte(pb, vals[3]);
-    }
-    else if (size < 0x00004000)
-    {
-        put_byte(pb, vals[2]);
-        put_byte(pb, vals[3]);
-    }
-    else if (size < 0x00200000)
-    {
-        put_byte(pb, vals[1]);
-        put_byte(pb, vals[2]);
-        put_byte(pb, vals[3]);
-    }
-    else if (size < 0x10000000)
-    {
-        put_byte(pb, vals[0]);
-        put_byte(pb, vals[1]);
-        put_byte(pb, vals[2]);
-        put_byte(pb, vals[3]);
-    }
+    int i= descrLength(size) - size - 2;
+    put_byte(pb, tag);
+    for(; i>0; i--)
+        put_byte(pb, (size>>(7*i)) | 0x80);
+    put_byte(pb, size & 0x7F);
 }
 
 static int mov_write_esds_tag(ByteIOContext *pb, MOVTrack* track) // Basic
