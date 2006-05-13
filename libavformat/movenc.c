@@ -1624,6 +1624,7 @@ static int mov_write_packet(AVFormatContext *s, AVPacket *pkt)
                 }
             }
             break;
+        case CODEC_ID_PCM_MULAW:
         case CODEC_ID_PCM_ALAW:
             samplesInChunk = size/enc->channels;
             break;
