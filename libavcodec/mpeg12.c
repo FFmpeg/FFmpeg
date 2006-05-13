@@ -94,7 +94,6 @@ const enum PixelFormat pixfmt_xvmc_mpg2_420[] = {
 static uint8_t (*mv_penalty)[MAX_MV*2+1]= NULL;
 static uint8_t fcode_tab[MAX_MV*2+1];
 
-static uint32_t uni_mpeg1_ac_vlc_bits[64*64*2];
 static uint8_t  uni_mpeg1_ac_vlc_len [64*64*2];
 
 /* simple include everything table for dc, first byte is bits number next 3 are code*/
@@ -148,7 +147,7 @@ static void init_2d_vlc_rl(RLTable *rl, int use_static)
 }
 
 #ifdef CONFIG_ENCODERS
-static void init_uni_ac_vlc(RLTable *rl, uint32_t *uni_ac_vlc_bits, uint8_t *uni_ac_vlc_len){
+static void init_uni_ac_vlc(RLTable *rl, uint8_t *uni_ac_vlc_len){
     int i;
 
     for(i=0; i<128; i++){
@@ -188,7 +187,6 @@ static void init_uni_ac_vlc(RLTable *rl, uint32_t *uni_ac_vlc_bits, uint8_t *uni
                 }
             }
 
-            uni_ac_vlc_bits[UNI_AC_ENC_INDEX(run, i)]= bits;
             uni_ac_vlc_len [UNI_AC_ENC_INDEX(run, i)]= len;
         }
     }
@@ -775,7 +773,7 @@ void ff_mpeg1_encode_init(MpegEncContext *s)
                 mpeg1_index_run[0][i]= rl_mpeg1.index_run[0][i];
         }
 
-        init_uni_ac_vlc(&rl_mpeg1, uni_mpeg1_ac_vlc_bits, uni_mpeg1_ac_vlc_len);
+        init_uni_ac_vlc(&rl_mpeg1, uni_mpeg1_ac_vlc_len);
 
         /* build unified dc encoding tables */
         for(i=-255; i<256; i++)
