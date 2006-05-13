@@ -179,6 +179,13 @@ do_ffmpeg $file -y -qscale 10 -f pgmyuv -i $raw_src -vcodec mpeg2video -f mpeg1v
 # mpeg2 decoding
 do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst
 
+# mpeg2 encoding using intra vlc
+file=${outfile}mpeg2ivlc.mpg
+do_ffmpeg $file -y -qscale 10 -f pgmyuv -i $raw_src -vcodec mpeg2video -f mpeg1video -flags2 +ivlc $file
+
+# mpeg2 decoding
+do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst
+
 # mpeg2 encoding
 file=${outfile}mpeg2.mpg
 do_ffmpeg $file -y -qscale 10 -f pgmyuv -i $raw_src -vcodec mpeg2video -idct int -dct int -f mpeg1video $file
@@ -199,6 +206,13 @@ if [ -n "$do_mpeg2thread" ] ; then
 # mpeg2 encoding interlaced
 file=${outfile}mpeg2thread.mpg
 do_ffmpeg $file -y -qscale 10 -f pgmyuv -i $raw_src -vcodec mpeg2video -f mpeg1video -bf 2 -flags +ildct+ilme -threads 2 $file
+
+# mpeg2 decoding
+do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst
+
+# mpeg2 encoding interlaced using intra vlc
+file=${outfile}mpeg2threadivlc.mpg
+do_ffmpeg $file -y -qscale 10 -f pgmyuv -i $raw_src -vcodec mpeg2video -f mpeg1video -bf 2 -flags +ildct+ilme -flags2 +ivlc -threads 2 $file
 
 # mpeg2 decoding
 do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst

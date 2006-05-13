@@ -95,6 +95,7 @@ static uint8_t (*mv_penalty)[MAX_MV*2+1]= NULL;
 static uint8_t fcode_tab[MAX_MV*2+1];
 
 static uint8_t  uni_mpeg1_ac_vlc_len [64*64*2];
+static uint8_t  uni_mpeg2_ac_vlc_len [64*64*2];
 
 /* simple include everything table for dc, first byte is bits number next 3 are code*/
 static uint32_t mpeg1_lum_dc_uni[512];
@@ -166,11 +167,11 @@ static void init_uni_ac_vlc(RLTable *rl, uint8_t *uni_ac_vlc_len){
 
             if (code < 111 /* rl->n */) {
                 /* store the vlc & sign at once */
-                len=   mpeg1_vlc[code][1]+1;
-                bits= (mpeg1_vlc[code][0]<<1) + sign;
+                len=   rl->table_vlc[code][1]+1;
+                bits= (rl->table_vlc[code][0]<<1) + sign;
             } else {
-                len=  mpeg1_vlc[111/*rl->n*/][1]+6;
-                bits= mpeg1_vlc[111/*rl->n*/][0]<<6;
+                len=  rl->table_vlc[111/*rl->n*/][1]+6;
+                bits= rl->table_vlc[111/*rl->n*/][0]<<6;
 
                 bits|= run;
                 if (alevel < 128) {
@@ -766,6 +767,8 @@ void ff_mpeg1_encode_init(MpegEncContext *s)
 
         done=1;
         init_rl(&rl_mpeg1, 1);
+        if(s->intra_vlc_format)
+            init_rl(&rl_mpeg2, 1);
 
         for(i=0; i<64; i++)
         {
@@ -774,6 +777,8 @@ void ff_mpeg1_encode_init(MpegEncContext *s)
         }
 
         init_uni_ac_vlc(&rl_mpeg1, uni_mpeg1_ac_vlc_len);
+        if(s->intra_vlc_format)
+            init_uni_ac_vlc(&rl_mpeg2, uni_mpeg2_ac_vlc_len);
 
         /* build unified dc encoding tables */
         for(i=-255; i<256; i++)
@@ -840,9 +845,14 @@ void ff_mpeg1_encode_init(MpegEncContext *s)
         s->min_qcoeff=-2047;
         s->max_qcoeff= 2047;
     }
-    s->intra_ac_vlc_length=
+    if (s->intra_vlc_format) {
+        s->intra_ac_vlc_length=
+        s->intra_ac_vlc_last_length= uni_mpeg2_ac_vlc_len;
+    } else {
+        s->intra_ac_vlc_length=
+        s->intra_ac_vlc_last_length= uni_mpeg1_ac_vlc_len;
+    }
     s->inter_ac_vlc_length=
-    s->intra_ac_vlc_last_length=
     s->inter_ac_vlc_last_length= uni_mpeg1_ac_vlc_len;
 }
 
@@ -889,7 +899,7 @@ static void mpeg1_encode_block(MpegEncContext *s,
 {
     int alevel, level, last_non_zero, dc, diff, i, j, run, last_index, sign;
     int code, component;
-//    RLTable *rl = &rl_mpeg1;
+    const uint16_t (*table_vlc)[2] = rl_mpeg1.table_vlc;
 
     last_index = s->block_last_index[n];
 
@@ -901,12 +911,8 @@ static void mpeg1_encode_block(MpegEncContext *s,
         encode_dc(s, diff, component);
         s->last_dc[component] = dc;
         i = 1;
-/*
         if (s->intra_vlc_format)
-            rl = &rl_mpeg2;
-        else
-            rl = &rl_mpeg1;
-*/
+            table_vlc = rl_mpeg2.table_vlc;
     } else {
         /* encode the first coefficient : needs to be done here because
            it is handled slightly differently */
@@ -941,14 +947,13 @@ static void mpeg1_encode_block(MpegEncContext *s,
             MASK_ABS(sign, alevel)
             sign&=1;
 
-//            code = get_rl_index(rl, 0, run, alevel);
             if (alevel <= mpeg1_max_level[0][run]){
                 code= mpeg1_index_run[0][run] + alevel - 1;
                 /* store the vlc & sign at once */
-                put_bits(&s->pb, mpeg1_vlc[code][1]+1, (mpeg1_vlc[code][0]<<1) + sign);
+                put_bits(&s->pb, table_vlc[code][1]+1, (table_vlc[code][0]<<1) + sign);
             } else {
                 /* escape seems to be pretty rare <5% so i dont optimize it */
-                put_bits(&s->pb, mpeg1_vlc[111/*rl->n*/][1], mpeg1_vlc[111/*rl->n*/][0]);
+                put_bits(&s->pb, table_vlc[111][1], table_vlc[111][0]);
                 /* escape: only clip in this case */
                 put_bits(&s->pb, 6, run);
                 if(s->codec_id == CODEC_ID_MPEG1VIDEO){
@@ -969,7 +974,7 @@ static void mpeg1_encode_block(MpegEncContext *s,
         }
     }
     /* end of block */
-    put_bits(&s->pb, 2, 0x2);
+    put_bits(&s->pb, table_vlc[112][1], table_vlc[112][0]);
 }
 #endif //CONFIG_ENCODERS
 

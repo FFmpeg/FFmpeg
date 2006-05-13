@@ -991,6 +991,7 @@ int MPV_encode_init(AVCodecContext *avctx)
     s->obmc= !!(s->flags & CODEC_FLAG_OBMC);
     s->loop_filter= !!(s->flags & CODEC_FLAG_LOOP_FILTER);
     s->alternate_scan= !!(s->flags & CODEC_FLAG_ALT_SCAN);
+    s->intra_vlc_format= !!(s->flags2 & CODEC_FLAG2_INTRA_VLC);
 
     if(avctx->rc_max_rate && !avctx->rc_buffer_size){
         av_log(avctx, AV_LOG_ERROR, "a vbv buffer size is needed, for encoding with a maximum bitrate\n");
@@ -1072,6 +1073,11 @@ int MPV_encode_init(AVCodecContext *avctx)
 
     if(s->avctx->scenechange_threshold < 1000000000 && (s->flags & CODEC_FLAG_CLOSED_GOP)){
         av_log(avctx, AV_LOG_ERROR, "closed gop with scene change detection arent supported yet\n");
+        return -1;
+    }
+
+    if((s->flags2 & CODEC_FLAG2_INTRA_VLC) && s->codec_id != CODEC_ID_MPEG2VIDEO){
+        av_log(avctx, AV_LOG_ERROR, "intra vlc table not supported by codec\n");
         return -1;
     }
 
