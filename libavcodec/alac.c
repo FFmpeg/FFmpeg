@@ -100,7 +100,7 @@ static void allocate_buffers(ALACContext *alac)
     alac->outputsamples_buffer_b = av_malloc(alac->setinfo_max_samples_per_frame * 4);
 }
 
-static void alac_set_info(ALACContext *alac)
+static int alac_set_info(ALACContext *alac)
 {
     unsigned char *ptr = alac->avctx->extradata;
 
@@ -108,6 +108,10 @@ static void alac_set_info(ALACContext *alac)
     ptr += 4; /* alac */
     ptr += 4; /* 0 ? */
 
+    if(BE_32(ptr) >= UINT_MAX/4){
+        av_log(alac->avctx, AV_LOG_ERROR, "setinfo_max_samples_per_frame too large\n");
+        return -1;
+    }
     alac->setinfo_max_samples_per_frame = BE_32(ptr); /* buffer size / 2 ? */
     ptr += 4;
     alac->setinfo_7a = *ptr++;
@@ -126,6 +130,8 @@ static void alac_set_info(ALACContext *alac)
     ptr += 4;
 
     allocate_buffers(alac);
+
+    return 0;
 }
 
 /* hideously inefficient. could use a bitmask search,

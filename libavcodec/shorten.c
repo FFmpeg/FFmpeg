@@ -106,18 +106,27 @@ static int shorten_decode_init(AVCodecContext * avctx)
     return 0;
 }
 
-static void allocate_buffers(ShortenContext *s)
+static int allocate_buffers(ShortenContext *s)
 {
     int i, chan;
     for (chan=0; chan<s->channels; chan++) {
+        if(FFMAX(1, s->nmean) >= UINT_MAX/sizeof(int32_t)){
+            av_log(s->avctx, AV_LOG_ERROR, "nmean too large\n");
+            return -1;
+        }
+        if(s->blocksize + s->nwrap >= UINT_MAX/sizeof(int32_t) || s->blocksize + s->nwrap <= (unsigned)s->nwrap){
+            av_log(s->avctx, AV_LOG_ERROR, "s->blocksize + s->nwrap too large\n");
+            return -1;
+        }
+
         s->offset[chan] = av_realloc(s->offset[chan], sizeof(int32_t)*FFMAX(1, s->nmean));
 
         s->decoded[chan] = av_realloc(s->decoded[chan], sizeof(int32_t)*(s->blocksize + s->nwrap));
         for (i=0; i<s->nwrap; i++)
             s->decoded[chan][i] = 0;
         s->decoded[chan] += s->nwrap;
-
     }
+    return 0;
 }
 
 

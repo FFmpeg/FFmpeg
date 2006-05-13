@@ -1253,6 +1253,10 @@ static int cook_decode_init(AVCodecContext *avctx)
     if (init_cook_vlc_tables(q) != 0)
         return -1;
 
+
+    if(avctx->block_align >= UINT_MAX/2)
+        return -1;
+
     /* Pad the databuffer with FF_INPUT_BUFFER_PADDING_SIZE,
        this is for the bitstreamreader. */
     if ((q->decoded_bytes_buffer = av_mallocz((avctx->block_align+(4-avctx->block_align%4) + FF_INPUT_BUFFER_PADDING_SIZE)*sizeof(uint8_t)))  == NULL)

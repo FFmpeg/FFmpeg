@@ -238,6 +238,10 @@ static int tta_decode_init(AVCodecContext * avctx)
         avctx->bits_per_sample = get_le16(&s->gb);
         s->bps = (avctx->bits_per_sample + 7) / 8;
         avctx->sample_rate = get_le32(&s->gb);
+        if(avctx->sample_rate > 1000000){ //prevent FRAME_TIME * avctx->sample_rate from overflowing and sanity check
+            av_log(avctx, AV_LOG_ERROR, "sample_rate too large\n");
+            return -1;
+        }
         s->data_length = get_le32(&s->gb);
         skip_bits(&s->gb, 32); // CRC32 of header
 
@@ -275,6 +279,11 @@ static int tta_decode_init(AVCodecContext * avctx)
         for (i = 0; i < s->total_frames; i++)
             skip_bits(&s->gb, 32);
         skip_bits(&s->gb, 32); // CRC32 of seektable
+
+        if(s->frame_length >= UINT_MAX / (s->channels * sizeof(int32_t))){
+            av_log(avctx, AV_LOG_ERROR, "frame_length too large\n");
+            return -1;
+        }
 
         s->decode_buffer = av_mallocz(sizeof(int32_t)*s->frame_length*s->channels);
     } else {

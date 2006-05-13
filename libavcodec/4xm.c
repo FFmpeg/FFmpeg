@@ -606,7 +606,7 @@ static int decode_frame(AVCodecContext *avctx,
     int i, frame_4cc, frame_size;
 
     frame_4cc= get32(buf);
-    if(buf_size != get32(buf+4)+8){
+    if(buf_size != get32(buf+4)+8 || buf_size < 20){
         av_log(f->avctx, AV_LOG_ERROR, "size mismatch %d %d\n", buf_size, get32(buf+4));
     }
 
@@ -634,6 +634,10 @@ static int decode_frame(AVCodecContext *avctx,
         cfrm= &f->cfrm[i];
 
         cfrm->data= av_fast_realloc(cfrm->data, &cfrm->allocated_size, cfrm->size + data_size + FF_INPUT_BUFFER_PADDING_SIZE);
+        if(!cfrm->data){ //explicit check needed as memcpy below might not catch a NULL
+            av_log(f->avctx, AV_LOG_ERROR, "realloc falure");
+            return -1;
+        }
 
         memcpy(cfrm->data + cfrm->size, buf+20, data_size);
         cfrm->size += data_size;

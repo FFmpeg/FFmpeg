@@ -3712,7 +3712,7 @@ static int decode_header(SnowContext *s){
     s->mv_scale= get_symbol(&s->c, s->header_state, 0);
     s->qbias= get_symbol(&s->c, s->header_state, 1);
     s->block_max_depth= get_symbol(&s->c, s->header_state, 0);
-    if(s->block_max_depth > 1){
+    if(s->block_max_depth > 1 || s->block_max_depth < 0){
         av_log(s->avctx, AV_LOG_ERROR, "block_max_depth= %d is too large", s->block_max_depth);
         s->block_max_depth= 0;
         return -1;
