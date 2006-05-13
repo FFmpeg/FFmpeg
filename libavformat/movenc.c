@@ -224,6 +224,14 @@ static int mov_write_damr_tag(ByteIOContext *pb)
     return 0x11;
 }
 
+static int mov_write_enda_tag(ByteIOContext *pb)
+{
+    put_be32(pb, 10);
+    put_tag(pb, "enda");
+    put_be16(pb, 1); /* little endian */
+    return 10;
+}
+
 static unsigned int descrLength(unsigned int len)
 {
     int i;
@@ -242,10 +250,8 @@ static void putDescr(ByteIOContext *pb, int tag, unsigned int size)
 
 static int mov_write_esds_tag(ByteIOContext *pb, MOVTrack* track) // Basic
 {
-    int decoderSpecificInfoLen;
     offset_t pos = url_ftell(pb);
-
-    decoderSpecificInfoLen = track->vosLen ? descrLength(track->vosLen):0;
+    int decoderSpecificInfoLen = track->vosLen ? descrLength(track->vosLen):0;
 
     put_be32(pb, 0);               // size
     put_tag(pb, "esds");
@@ -302,17 +308,18 @@ static int mov_write_wave_tag(ByteIOContext *pb, MOVTrack* track)
 
     put_be32(pb, 12);    /* size */
     put_tag(pb, "frma");
-    put_tag(pb, "mp4a");
+    put_le32(pb, track->tag);
 
-    put_be32(pb, 12);    /* size */
-    put_tag(pb, "mp4a");
-    put_be32(pb, 0);
+    if (track->enc->codec_id == CODEC_ID_AAC) {
+        put_be32(pb, 12);    /* size */
+        put_tag(pb, "mp4a");
+        put_be32(pb, 0);
 
-    mov_write_esds_tag(pb, track);
-
-    put_be32(pb, 12);    /* size */
-    put_tag(pb, "srcq");
-    put_be32(pb, 0x40);
+        mov_write_esds_tag(pb, track);
+    } else if (track->enc->codec_id == CODEC_ID_PCM_S24LE ||
+               track->enc->codec_id == CODEC_ID_PCM_S32LE) {
+        mov_write_enda_tag(pb);
+    }
 
     put_be32(pb, 8);     /* size */
     put_be32(pb, 0);     /* null tag */
@@ -331,6 +338,10 @@ static const CodecTag codec_movaudio_tags[] = {
     { CODEC_ID_AMR_WB, MKTAG('s', 'a', 'w', 'b') },
     { CODEC_ID_PCM_S16BE, MKTAG('t', 'w', 'o', 's') },
     { CODEC_ID_PCM_S16LE, MKTAG('s', 'o', 'w', 't') },
+    { CODEC_ID_PCM_S24BE, MKTAG('i', 'n', '2', '4') },
+    { CODEC_ID_PCM_S24LE, MKTAG('i', 'n', '2', '4') },
+    { CODEC_ID_PCM_S32BE, MKTAG('i', 'n', '3', '2') },
+    { CODEC_ID_PCM_S32LE, MKTAG('i', 'n', '3', '2') },
     { CODEC_ID_MP3, MKTAG('.', 'm', 'p', '3') },
     { CODEC_ID_NONE, 0 },
 };
@@ -338,6 +349,10 @@ static const CodecTag codec_movaudio_tags[] = {
 static int mov_write_audio_tag(ByteIOContext *pb, MOVTrack* track)
 {
     offset_t pos = url_ftell(pb);
+    int version = track->mode == MODE_MOV &&
+        (track->enc->codec_id == CODEC_ID_AAC ||
+         track->enc->codec_id == CODEC_ID_PCM_S32LE ||
+         track->enc->codec_id == CODEC_ID_PCM_S24LE);
 
     put_be32(pb, 0); /* size */
     put_le32(pb, track->tag); // store it byteswapped
@@ -346,10 +361,7 @@ static int mov_write_audio_tag(ByteIOContext *pb, MOVTrack* track)
     put_be16(pb, 1); /* Data-reference index, XXX  == 1 */
 
     /* SoundDescription */
-    if(track->mode == MODE_MOV && track->enc->codec_id == CODEC_ID_AAC)
-        put_be16(pb, 1); /* Version 1 */
-    else
-        put_be16(pb, 0); /* Version 0 */
+    put_be16(pb, version); /* Version */
     put_be16(pb, 0); /* Revision level */
     put_be32(pb, 0); /* Reserved */
 
@@ -369,20 +381,23 @@ static int mov_write_audio_tag(ByteIOContext *pb, MOVTrack* track)
     put_be16(pb, track->timescale); /* Time scale */
     put_be16(pb, 0); /* Reserved */
 
-    if(track->mode == MODE_MOV && track->enc->codec_id == CODEC_ID_AAC) {
+    if(version == 1) {
         /* SoundDescription V1 extended info */
         put_be32(pb, track->enc->frame_size); /* Samples per packet  */
-        put_be32(pb, 1536); /* Bytes per packet */
-        put_be32(pb, 2); /* Bytes per frame */
+        put_be32(pb, track->sampleDuration); /* Bytes per frame */
+        put_be32(pb, 8); /* Bytes per sample */
         put_be32(pb, 2); /* Bytes per sample */
     }
 
     if(track->enc->codec_id == CODEC_ID_AAC) {
-        if( track->mode == MODE_MOV ) mov_write_wave_tag(pb, track);
-        else mov_write_esds_tag(pb, track);
-    }
-    if(track->enc->codec_id == CODEC_ID_AMR_NB)
+        if (track->mode == MODE_MOV) mov_write_wave_tag(pb, track);
+        else                         mov_write_esds_tag(pb, track);
+    } else if(track->enc->codec_id == CODEC_ID_AMR_NB) {
         mov_write_damr_tag(pb);
+    } else if(track->enc->codec_id == CODEC_ID_PCM_S24LE ||
+              track->enc->codec_id == CODEC_ID_PCM_S32LE) {
+        mov_write_wave_tag(pb, track);
+    }
     return updateSize (pb, pos);
 }
 
@@ -1603,6 +1618,14 @@ static int mov_write_packet(AVFormatContext *s, AVPacket *pkt)
         case CODEC_ID_PCM_S16BE:
         case CODEC_ID_PCM_S16LE:
             samplesInChunk = size/(2*enc->channels);
+            break;
+        case CODEC_ID_PCM_S24BE:
+        case CODEC_ID_PCM_S24LE:
+            samplesInChunk = size/(3*enc->channels);
+            break;
+        case CODEC_ID_PCM_S32BE:
+        case CODEC_ID_PCM_S32LE:
+            samplesInChunk = size/(4*enc->channels);
             break;
         default:
             samplesInChunk = 1;
