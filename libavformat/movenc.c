@@ -399,7 +399,11 @@ static int mov_write_audio_tag(ByteIOContext *pb, MOVTrack* track)
         put_be32(pb, 2);
     }
 
-    if(track->mode == MODE_MOV)
+    if(track->mode == MODE_MOV &&
+       (track->enc->codec_id == CODEC_ID_AAC ||
+        track->enc->codec_id == CODEC_ID_AMR_NB ||
+        track->enc->codec_id == CODEC_ID_PCM_S24LE ||
+        track->enc->codec_id == CODEC_ID_PCM_S32LE))
         mov_write_wave_tag(pb, track);
     else if(track->enc->codec_id == CODEC_ID_AAC)
         mov_write_esds_tag(pb, track);
