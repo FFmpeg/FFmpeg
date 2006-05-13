@@ -196,6 +196,10 @@ static int vmd_read_header(AVFormatContext *s,
     vmd->frame_table = NULL;
     raw_frame_table_size = vmd->frame_count * 6;
     raw_frame_table = av_malloc(raw_frame_table_size);
+    if(vmd->frame_count * vmd->frames_per_block  >= UINT_MAX / sizeof(vmd_frame_t)){
+        av_log(s, AV_LOG_ERROR, "vmd->frame_count * vmd->frames_per_block too large\n");
+        return -1;
+    }
     vmd->frame_table = av_malloc(vmd->frame_count * vmd->frames_per_block * sizeof(vmd_frame_t));
     if (!raw_frame_table || !vmd->frame_table) {
         av_free(raw_frame_table);

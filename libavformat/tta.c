@@ -50,13 +50,27 @@ static int tta_read_header(AVFormatContext *s, AVFormatParameters *ap)
     channels = get_le16(&s->pb);
     bps = get_le16(&s->pb);
     samplerate = get_le32(&s->pb);
+    if(samplerate <= 0 || samplerate > 1000000){
+        av_log(s, AV_LOG_ERROR, "nonsense samplerate\n");
+        return -1;
+    }
+
     datalen = get_le32(&s->pb);
+    if(datalen < 0){
+        av_log(s, AV_LOG_ERROR, "nonsense datalen\n");
+        return -1;
+    }
+
     url_fskip(&s->pb, 4); // header crc
 
     framelen = 1.04489795918367346939 * samplerate;
     c->totalframes = datalen / framelen + ((datalen % framelen) ? 1 : 0);
     c->currentframe = 0;
 
+    if(c->totalframes >= UINT_MAX/sizeof(uint32_t)){
+        av_log(s, AV_LOG_ERROR, "totalframes too large\n");
+        return -1;
+    }
     c->seektable = av_mallocz(sizeof(uint32_t)*c->totalframes);
     if (!c->seektable)
         return AVERROR_NOMEM;
@@ -76,6 +90,11 @@ static int tta_read_header(AVFormatContext *s, AVFormatParameters *ap)
     st->codec->bits_per_sample = bps;
 
     st->codec->extradata_size = url_ftell(&s->pb) - start;
+    if(st->codec->extradata_size+FF_INPUT_BUFFER_PADDING_SIZE <= (unsigned)st->codec->extradata_size){
+        //this check is redundant as get_buffer should fail
+        av_log(s, AV_LOG_ERROR, "extradata_size too large\n");
+        return -1;
+    }
     st->codec->extradata = av_mallocz(st->codec->extradata_size+FF_INPUT_BUFFER_PADDING_SIZE);
     url_fseek(&s->pb, start, SEEK_SET); // or SEEK_CUR and -size ? :)
     get_buffer(&s->pb, st->codec->extradata, st->codec->extradata_size);

@@ -114,6 +114,13 @@ static int smacker_read_header(AVFormatContext *s, AVFormatParameters *ap)
     for(i = 0; i < 7; i++)
         smk->audio[i] = get_le32(pb);
     smk->treesize = get_le32(pb);
+
+    if(smk->treesize >= UINT_MAX/4){ // smk->treesize + 16 must not overflow (this check is probably redundant)
+        av_log(s, AV_LOG_ERROR, "treesize too large\n");
+        return -1;
+    }
+
+//FIXME remove extradata "rebuilding"
     smk->mmap_size = get_le32(pb);
     smk->mclr_size = get_le32(pb);
     smk->full_size = get_le32(pb);

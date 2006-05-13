@@ -555,6 +555,12 @@ static void rm_read_audio_stream_info(AVFormatContext *s, AVStream *st,
             st->codec->extradata_size= 0;
             rm->audio_framesize = st->codec->block_align;
             st->codec->block_align = coded_framesize;
+
+            if(rm->audio_framesize >= UINT_MAX / sub_packet_h){
+                av_log(s, AV_LOG_ERROR, "rm->audio_framesize * sub_packet_h too large\n");
+                return -1;
+            }
+
             rm->audiobuf = av_malloc(rm->audio_framesize * sub_packet_h);
         } else if (!strcmp(buf, "cook")) {
             int codecdata_length, i;
@@ -562,6 +568,11 @@ static void rm_read_audio_stream_info(AVFormatContext *s, AVStream *st,
             if (((version >> 16) & 0xff) == 5)
                 get_byte(pb);
             codecdata_length = get_be32(pb);
+            if(codecdata_length + FF_INPUT_BUFFER_PADDING_SIZE <= (unsigned)codecdata_length){
+                av_log(s, AV_LOG_ERROR, "codecdata_length too large\n");
+                return -1;
+            }
+
             st->codec->codec_id = CODEC_ID_COOK;
             st->codec->extradata_size= codecdata_length;
             st->codec->extradata= av_mallocz(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
@@ -569,6 +580,12 @@ static void rm_read_audio_stream_info(AVFormatContext *s, AVStream *st,
                 ((uint8_t*)st->codec->extradata)[i] = get_byte(pb);
             rm->audio_framesize = st->codec->block_align;
             st->codec->block_align = rm->sub_packet_size;
+
+            if(rm->audio_framesize >= UINT_MAX / sub_packet_h){
+                av_log(s, AV_LOG_ERROR, "rm->audio_framesize * sub_packet_h too large\n");
+                return -1;
+            }
+
             rm->audiobuf = av_malloc(rm->audio_framesize * sub_packet_h);
         } else {
             st->codec->codec_id = CODEC_ID_NONE;
@@ -715,6 +732,12 @@ static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 get_be16(pb);
 
                 st->codec->extradata_size= codec_data_size - (url_ftell(pb) - codec_pos);
+
+                if(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE <= (unsigned)st->codec->extradata_size){
+                    //check is redundant as get_buffer() will catch this
+                    av_log(s, AV_LOG_ERROR, "st->codec->extradata_size too large\n");
+                    return -1;
+                }
                 st->codec->extradata= av_mallocz(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
                 get_buffer(pb, st->codec->extradata, st->codec->extradata_size);
 
