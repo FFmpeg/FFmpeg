@@ -1115,7 +1115,7 @@ return 0;
 EOF
 
 mm3dnow=no
-if $cc -march=athlon -o $TMPO $TMPC 2> /dev/null ; then
+if $cc -m3dnow -o $TMPO $TMPC 2> /dev/null ; then
   mm3dnow=yes
 fi
 
