@@ -50,6 +50,9 @@ const PixelFormatTag pixelFormatTags[] = {
     { PIX_FMT_UYVY422, MKTAG('U', 'Y', 'V', 'Y') },
     { PIX_FMT_GRAY8,   MKTAG('G', 'R', 'E', 'Y') },
 
+    /* quicktime */
+    { PIX_FMT_UYVY422, MKTAG('2', 'v', 'u', 'y') },
+
     { -1, 0 },
 };
 
