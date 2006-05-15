@@ -399,37 +399,20 @@ got_sound:
 static int aiff_read_packet(AVFormatContext *s,
                             AVPacket *pkt)
 {
-    offset_t pos;
-    int res, size;
+    AVStream *st = s->streams[0];
+    int res;
 
     /* End of stream may be reached */
     if (url_feof(&s->pb))
         return AVERROR_IO;
 
-    /* Need to know if reached the end sound data */
-    size = MAX_SIZE;
-    if (s->file_size) {
-        pos = url_ftell (&s->pb) - s->file_size;
-        if (pos >= s->file_size)
-            size = 0;
-        else if (pos + MAX_SIZE >= s->file_size)
-            size = s->file_size - pos;
-    }
-
     /* Now for that packet */
-    res = av_get_packet (&s->pb, pkt, MAX_SIZE);
+    res = av_get_packet(&s->pb, pkt, (MAX_SIZE / st->codec->block_align) * st->codec->block_align);
     if (res < 0)
         return res;
 
     /* Only one stream in an AIFF file */
     pkt->stream_index = 0;
-
-    /* Finaly fix the read to a block */
-    if (size <= res)
-        pkt->size = size - (size % s->streams[0]->codec->block_align);
-    else
-        pkt->size = res - (res % s->streams[0]->codec->block_align);
-
     return 0;
 }
 
