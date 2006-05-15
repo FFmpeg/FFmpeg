@@ -1110,6 +1110,7 @@ fi
 cat > $TMPC << EOF
 #include <mm3dnow.h>
 int main(void) {
+_m_femms();
 return 0;
 }
 EOF
