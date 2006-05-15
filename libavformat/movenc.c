@@ -452,15 +452,15 @@ static uint8_t *avc_find_startcode( uint8_t *p, uint8_t *end )
         if( (x - 0x01010101) & (~x) & 0x80808080 ) { // generic
             if( p[1] == 0 ) {
                 if( p[0] == 0 && p[2] == 1 )
-                    return p;
+                    return p-1;
                 if( p[2] == 0 && p[3] == 1 )
-                    return p+1;
+                    return p;
             }
             if( p[3] == 0 ) {
                 if( p[2] == 0 && p[4] == 1 )
-                    return p+2;
+                    return p+1;
                 if( p[4] == 0 && p[5] == 1 )
-                    return p+3;
+                    return p+2;
             }
         }
     }
