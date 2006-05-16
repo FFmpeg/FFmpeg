@@ -1114,13 +1114,19 @@ fi
 cat > $TMPC << EOF
 #include <mm3dnow.h>
 int main(void) {
+__m64 b1;
+b1 = _m_pswapd(b1);
 _m_femms();
 return 0;
 }
 EOF
 
 mm3dnow=no
-if $cc -m3dnow -o $TMPO $TMPC 2> /dev/null ; then
+march=athlon
+if test "$cpu" = "x86_64"; then
+  march=k8
+fi
+if $cc -march=$march -o $TMPO $TMPC 2> /dev/null ; then
   mm3dnow=yes
 fi
 

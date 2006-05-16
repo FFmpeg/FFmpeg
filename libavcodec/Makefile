@@ -350,7 +350,12 @@ depend: CFLAGS+= -msse
 endif
 ifdef TARGET_BUILTIN_3DNOW
 i386/fft_3dn.o: CFLAGS+= -m3dnow
-i386/fft_3dn2.o: CFLAGS+= -m3dnow
+ifeq ($(TARGET_ARCH_X86),yes)
+i386/fft_3dn2.o: CFLAGS+= -march=athlon
+endif
+ifeq ($(TARGET_ARCH_X86_64),yes)
+i386/fft_3dn2.o: CFLAGS+= -march=k8
+endif
 endif
 endif
 
