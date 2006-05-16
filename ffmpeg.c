@@ -3463,6 +3463,10 @@ static void prepare_grab(void)
 
                 if (vp->time_base.num*(int64_t)enc->time_base.den > enc->time_base.num*(int64_t)vp->time_base.den){
                     vp->time_base = enc->time_base;
+                    vp->width += frame_leftBand + frame_rightBand;
+                    vp->width -= (frame_padleft + frame_padright);
+                    vp->height += frame_topBand + frame_bottomBand;
+                    vp->height -= (frame_padtop + frame_padbottom);
                 }
                 has_video = 1;
                 break;
