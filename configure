@@ -235,7 +235,7 @@ protocols="yes"
 ffserver="yes"
 ffplay="yes"
 LIBOBJFLAGS=""
-LDFLAGS=-Wl,--warn-common
+FFLDFLAGS=-Wl,--warn-common
 FFSLDFLAGS=-Wl,-E
 LDCONFIG="ldconfig"
 LIBPREF="lib"
@@ -299,7 +299,7 @@ v4l2="no"
 audio_oss="no"
 dv1394="no"
 make="gmake"
-LDFLAGS=""
+FFLDFLAGS=""
 FFSLDFLAGS=""
 need_inet_aton="yes"
 extralibs="$extralibs -lsocket -lnsl"
@@ -311,7 +311,7 @@ bktr="yes"
 audio_oss="yes"
 dv1394="no"
 make="gmake"
-LDFLAGS="$LDFLAGS -export-dynamic"
+FFLDFLAGS="$FFLDFLAGS -export-dynamic"
 extralibs="$extralibs -lossaudio"
 ;;
 OpenBSD)
@@ -322,7 +322,7 @@ audio_oss="yes"
 dv1394="no"
 make="gmake"
 LIBOBJFLAGS="\$(PIC)"
-LDFLAGS="$LDFLAGS -export-dynamic -pthread"
+FFLDFLAGS="$FFLDFLAGS -export-dynamic -pthread"
 LDCONFIG="ldconfig -m \$(libdir)"
 extralibs="$extralibs -lossaudio"
 ;;
@@ -334,7 +334,7 @@ audio_oss="yes"
 dv1394="no"
 make="gmake"
 CFLAGS="$CFLAGS -pthread"
-LDFLAGS="$LDFLAGS -export-dynamic -pthread"
+FFLDFLAGS="$FFLDFLAGS -export-dynamic -pthread"
 ;;
 BSD/OS)
 v4l="no"
@@ -358,7 +358,7 @@ extralibs=""
 darwin="yes"
 strip="strip -x"
 installstrip=""
-LDFLAGS="-Wl,-dynamic,-search_paths_first"
+FFLDFLAGS="-Wl,-dynamic,-search_paths_first"
 SLIBSUF=".dylib"
 SLIBNAME_WITH_FULLVERSION='$(SLIBPREF)$(NAME).$(LIBVERSION)$(SLIBSUF)'
 SLIBNAME_WITH_MAJOR='$(SLIBPREF)$(NAME).$(LIBMAJOR)$(SLIBSUF)'
@@ -380,7 +380,7 @@ cygwin="yes"
 EXESUF=".exe"
 ;;
 Linux)
-LDFLAGS="$LDFLAGS -rdynamic -Wl,--as-needed -Wl,-rpath-link,\$(BUILD_ROOT)/libavcodec -Wl,-rpath-link,\$(BUILD_ROOT)/libavformat -Wl,-rpath-link,\$(BUILD_ROOT)/libavutil"
+FFLDFLAGS="$FFLDFLAGS -rdynamic -Wl,--as-needed -Wl,-rpath-link,\$(BUILD_ROOT)/libavcodec -Wl,-rpath-link,\$(BUILD_ROOT)/libavformat -Wl,-rpath-link,\$(BUILD_ROOT)/libavutil"
 ;;
 IRIX*)
 ranlib="echo ignoring ranlib"
@@ -395,7 +395,7 @@ ar="emxomfar -p128"
 ranlib="echo ignoring ranlib"
 strip="echo ignoring strip"
 CFLAGS="$CFLAGS -Zomf"
-LDFLAGS="-Zomf -Zstack 16384 -s"
+FFLDFLAGS="-Zomf -Zstack 16384 -s"
 SHFLAGS="-Zdll -Zomf"
 FFSLDFLAGS=""
 LIBPREF=""
@@ -475,7 +475,7 @@ for opt do
   ;;
   --extra-cflags=*) CFLAGS="$CFLAGS ${opt#--extra-cflags=}"
   ;;
-  --extra-ldflags=*) LDFLAGS="$LDFLAGS ${opt#--extra-ldflags=}"
+  --extra-ldflags=*) FFLDFLAGS="$FFLDFLAGS ${opt#--extra-ldflags=}"
   ;;
   --extra-libs=*) extralibs=${opt#--extra-libs=}
   ;;
@@ -629,6 +629,10 @@ for opt do
   ;;
   esac
 done
+
+
+# Combine FFLDFLAGS and the LDFLAGS environment variable
+LDFLAGS="$FFLDFLAGS $LDFLAGS"
 
 # we need to build at least one lib type
 if test "$lstatic" = "no" && test "$lshared" = "no" ; then
