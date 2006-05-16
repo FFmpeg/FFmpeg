@@ -45,6 +45,8 @@ version <next>
 - Smacker demuxer and decoder
 - NuppelVideo/MythTV demuxer and RTjpeg decoder
 - KMVC decoder
+- MPEG-2 intra vlc support
+- MPEG-2 4:2:2 encoder
 
 version 0.4.9-pre1:
 
