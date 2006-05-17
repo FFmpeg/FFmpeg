@@ -156,7 +156,7 @@ static int smacker_read_header(AVFormatContext *s, AVFormatParameters *ap)
     st->codec->pix_fmt = PIX_FMT_PAL8;
     st->codec->codec_type = CODEC_TYPE_VIDEO;
     st->codec->codec_id = CODEC_ID_SMACKVIDEO;
-    st->codec->codec_tag = smk->is_ver4;
+    st->codec->codec_tag = smk->magic;
     /* Smacker uses 100000 as internal timebase */
     if(smk->pts_inc < 0)
         smk->pts_inc = -smk->pts_inc;
@@ -174,7 +174,7 @@ static int smacker_read_header(AVFormatContext *s, AVFormatParameters *ap)
             av_set_pts_info(ast[i], 33, smk->pts_inc, tbase);
             ast[i]->codec->codec_type = CODEC_TYPE_AUDIO;
             ast[i]->codec->codec_id = (smk->rates[i] & SMK_AUD_PACKED) ? CODEC_ID_SMACKAUDIO : CODEC_ID_PCM_U8;
-            ast[i]->codec->codec_tag = 0;
+            ast[i]->codec->codec_tag = MKTAG('S', 'M', 'K', 'A');
             ast[i]->codec->channels = (smk->rates[i] & SMK_AUD_STEREO) ? 2 : 1;
             ast[i]->codec->sample_rate = smk->rates[i] & 0xFFFFFF;
             ast[i]->codec->bits_per_sample = (smk->rates[i] & SMK_AUD_16BITS) ? 16 : 8;

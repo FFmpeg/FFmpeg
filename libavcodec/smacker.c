@@ -425,7 +425,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
             break;
         case SMK_BLK_FULL:
             mode = 0;
-            if(avctx->codec_tag != 0) { // In case of Smacker v4 we have three modes
+            if(avctx->codec_tag == MKTAG('S', 'M', 'K', '4')) { // In case of Smacker v4 we have three modes
                 if(get_bits1(&gb)) mode = 1;
                 else if(get_bits1(&gb)) mode = 2;
             }
