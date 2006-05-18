@@ -1185,6 +1185,7 @@ static int mov_write_udta_tag(ByteIOContext *pb, MOVContext* mov,
     /* iTunes meta data */
     mov_write_meta_tag(pb, mov, s);
 
+  if(mov->mode == MODE_MOV){ // the title field breaks gtkpod with mp4 and my suspicion is that stuff isnt valid in mp4
     /* Requirements */
     for (i=0; i<MAX_STREAMS; i++) {
         if(mov->tracks[i].entry <= 0) continue;
@@ -1203,6 +1204,7 @@ static int mov_write_udta_tag(ByteIOContext *pb, MOVContext* mov,
         mov_write_string_tag(pb, "\251enc", LIBAVFORMAT_IDENT, 0);
     mov_write_string_tag(pb, "\251des", s->comment       , 0);
     mov_write_string_tag(pb, "\251gen", s->genre         , 0);
+  }
 
     return updateSize(pb, pos);
 }
