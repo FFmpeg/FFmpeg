@@ -217,4 +217,9 @@ since MinGW does the job perfectly adequately. None of the core developers
 work with Visual C++ and thus this item is low priority. Should you find
 the silver bullet that solves this problem, feel free to shoot it at us.
 
+@section I have a file in memory / a API different from *open/*read/ libc how do i use it with libavformat ?
+
+You have to implement a URLProtocol, see libavformat/file.c in ffmpeg cvs
+and libmpdemux/demux_lavf.c in mplayer cvs
+
 @bye
