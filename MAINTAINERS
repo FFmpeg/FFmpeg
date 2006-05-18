@@ -198,6 +198,7 @@ Muxers/Demuxers:
   nuv.c                                 Reimar Doeffinger
   ogg2.c, ogg2.h                        Mans Rullgard
   oggparsevorbis.c                      Mans Rullgard
+  oggparseogm.c                         Mans Rullgard
   psxstr.c                              Mike Melanson
   raw.c                                 Michael Niedermayer
   rm.c                                  Roberto Togni
