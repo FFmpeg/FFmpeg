@@ -32,6 +32,11 @@ PROGS+=ffplay$(EXESUF)
 FFPLAY_O=ffplay.o
 endif
 
+BASENAMES=ffmpeg ffplay ffserver
+ALLPROGS=$(addsuffix $(EXESUF), $(BASENAMES))
+ALLPROGS_G=$(addsuffix _g$(EXESUF), $(BASENAMES))
+ALLMANPAGES=$(addsuffix .1, $(BASENAMES))
+
 ifeq ($(CONFIG_AUDIO_BEOS),yes)
 EXTRALIBS+=-lmedia -lbe
 endif
@@ -158,11 +163,9 @@ endif
 
 uninstall: uninstall-progs uninstall-libs uninstall-headers uninstall-man uninstall-vhook
 
-ALLPROGS=ffmpeg ffplay ffserver
 uninstall-progs:
 	rm -f $(addprefix $(bindir)/, $(ALLPROGS))
 
-ALLMANPAGES=$(addsuffix .1, $(ALLPROGS))
 uninstall-man:
 ifneq ($(CONFIG_WIN32),yes)
 	rm -f $(addprefix $(mandir)/man1/,$(ALLMANPAGES))
@@ -209,7 +212,7 @@ clean:
 	$(MAKE) -C tests       clean
 	$(MAKE) -C vhook       clean
 	rm -f *.o *.d *~ .libs gmon.out TAGS \
-	   $(PROGS) $(PROGS_G) $(PROGTEST) $(QTFASTSTART)
+	   $(ALLPROGS) $(ALLPROGS_G) $(PROGTEST) $(QTFASTSTART)
 
 # Note well: config.log is NOT removed.
 distclean: clean
