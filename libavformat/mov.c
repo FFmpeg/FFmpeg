@@ -1867,7 +1867,7 @@ readchunk:
 
     // If the keyframes table exists, mark any samples that are in the table as key frames.
     // If no table exists, treat very sample as a key frame.
-    if (sc->keyframes) {
+    if (sc->keyframe_count) {
         a = 0;
         b = sc->keyframe_count - 1;
 
@@ -2010,7 +2010,7 @@ static int mov_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
     }
 
     // Step 3. Find the prior sync. sample using the Sync sample atom (stss)
-    if (sc->keyframes) {
+    if (sc->keyframe_count) {
         a = 0;
         b = sc->keyframe_count - 1;
         while (a < b) {
