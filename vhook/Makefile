@@ -12,11 +12,13 @@ HOOKS=null$(SLIBSUF) fish$(SLIBSUF) ppm$(SLIBSUF) watermark$(SLIBSUF)
 
 ifeq ($(HAVE_IMLIB2),yes)
     HOOKS += imlib2$(SLIBSUF)
+    LDFLAGS += -lImlib2
 endif
 
 ifeq ($(HAVE_FREETYPE2),yes)
     HOOKS += drawtext$(SLIBSUF)
     CFLAGS += `freetype-config --cflags`
+    LDFLAGS += `freetype-config --libs`
 endif
 
 all: $(HOOKS)
@@ -29,12 +31,6 @@ depend: $(SRCS)
 install: $(HOOKS)
 	install -d "$(libdir)/vhook"
 	install -m 755 $(HOOKS) "$(libdir)/vhook"
-
-imlib2$(SLIBSUF): imlib2.o
-	$(CC) $(LDFLAGS) -g -o $@ $(SHFLAGS) $< -lImlib2
-
-drawtext$(SLIBSUF): drawtext.o
-	$(CC) $(LDFLAGS) -g -o $@ $(SHFLAGS) $< `freetype-config --libs`
 
 %$(SLIBSUF): %.o
 	$(CC) $(LDFLAGS) -g -o $@ $(SHFLAGS) $<
