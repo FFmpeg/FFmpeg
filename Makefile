@@ -64,8 +64,8 @@ FFLIBS = -L./libavformat -lavformat$(BUILDSUF) -L./libavcodec -lavcodec$(BUILDSU
 all: lib $(PROG_G) $(PROG) $(PROGTEST) $(VHOOK) $(QTFASTSTART) $(DOC)
 
 lib:
-	$(MAKE) -C libavutil all
-	$(MAKE) -C libavcodec all
+	$(MAKE) -C libavutil   all
+	$(MAKE) -C libavcodec  all
 	$(MAKE) -C libavformat all
 ifeq ($(CONFIG_PP),yes)
 	$(MAKE) -C libavcodec/libpostproc all
@@ -159,10 +159,10 @@ endif
 dep:	depend
 
 depend: .depend
-	$(MAKE) -C libavcodec depend
+	$(MAKE) -C libavcodec  depend
 	$(MAKE) -C libavformat depend
 ifeq ($(BUILD_VHOOK),yes)
-	$(MAKE) -C vhook depend
+	$(MAKE) -C vhook       depend
 endif
 
 .depend: $(SRCS)
@@ -173,12 +173,12 @@ endif
 	@for i in $(DEP_LIBS) ; do if $(TEST) $$i -nt .libs ; then touch .libs; fi ; done
 
 clean:
-	$(MAKE) -C libavutil clean
-	$(MAKE) -C libavcodec clean
+	$(MAKE) -C libavutil   clean
+	$(MAKE) -C libavcodec  clean
 	$(MAKE) -C libavformat clean
 	$(MAKE) -C libavcodec/libpostproc clean
-	$(MAKE) -C tests clean
-	$(MAKE) -C vhook clean
+	$(MAKE) -C tests       clean
+	$(MAKE) -C vhook       clean
 	rm -f *.o *.d *~ .libs gmon.out TAGS \
 	   $(PROG) $(PROG_G) $(PROGTEST) $(QTFASTSTART)
 
