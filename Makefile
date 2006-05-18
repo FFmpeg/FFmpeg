@@ -156,6 +156,35 @@ ifeq ($(CONFIG_PP),yes)
 	$(MAKE) -C libavcodec/libpostproc install-headers
 endif
 
+uninstall: uninstall-progs uninstall-libs uninstall-headers uninstall-man uninstall-vhook
+
+ALLPROGS=ffmpeg ffplay ffserver
+uninstall-progs:
+	rm -f $(addprefix $(bindir)/, $(ALLPROGS))
+
+ALLMANPAGES=$(addsuffix .1, $(ALLPROGS))
+uninstall-man:
+ifneq ($(CONFIG_WIN32),yes)
+	rm -f $(addprefix $(mandir)/man1/,$(ALLMANPAGES))
+endif
+
+uninstall-vhook:
+	$(MAKE) -C vhook uninstall
+
+uninstall-libs:
+	$(MAKE) -C libavutil   uninstall-libs
+	$(MAKE) -C libavcodec  uninstall-libs
+	$(MAKE) -C libavformat uninstall-libs
+	$(MAKE) -C libavcodec/libpostproc uninstall-libs
+
+uninstall-headers:
+	$(MAKE) -C libavutil   uninstall-headers
+	$(MAKE) -C libavcodec  uninstall-headers
+	$(MAKE) -C libavformat uninstall-headers
+	$(MAKE) -C libavcodec/libpostproc uninstall-headers
+	-rmdir "$(incdir)"
+	-rmdir "$(prefix)/include/postproc"
+
 dep:	depend
 
 depend: .depend

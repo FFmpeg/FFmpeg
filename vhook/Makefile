@@ -32,6 +32,11 @@ install: $(HOOKS)
 	install -d "$(libdir)/vhook"
 	install -m 755 $(HOOKS) "$(libdir)/vhook"
 
+ALLHOOKS=$(HOOKS) imlib2$(SLIBSUF) drawtext$(SLIBSUF)
+uninstall:
+	rm -f $(addprefix $(libdir)/vhook/,$(ALLHOOKS))
+	-rmdir "$(libdir)/vhook/"
+
 %$(SLIBSUF): %.o
 	$(CC) $(LDFLAGS) -g -o $@ $(SHFLAGS) $<
 

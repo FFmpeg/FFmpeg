@@ -96,6 +96,22 @@ install-headers:
 	install -m 644 $(addprefix "$(SRC_DIR)"/,$(HEADERS)) "$(incdir)"
 	install -m 644 $(BUILD_ROOT)/lib$(NAME).pc "$(libdir)/pkgconfig"
 
+uninstall: uninstall-libs uninstall-headers
+
+uninstall-libs:
+ifeq ($(CONFIG_WIN32),yes)
+	-rm -f $(prefix)/$(SLIBNAME)
+else
+	-rm -f $(libdir)/$(SLIBNAME_WITH_MAJOR) \
+	      $(libdir)/$(SLIBNAME)            \
+	      $(libdir)/$(SLIBNAME_WITH_VERSION)
+endif
+	-rm -f $(libdir)/$(LIB)
+
+uninstall-headers:
+	rm -f $(addprefix $(incdir)/,$(HEADERS))
+	rm -f $(libdir)/pkgconfig/lib$(NAME).pc
+
 #
 # include dependency files if they exist
 #
