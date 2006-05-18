@@ -219,7 +219,7 @@ the silver bullet that solves this problem, feel free to shoot it at us.
 
 @section I have a file in memory / a API different from *open/*read/ libc how do i use it with libavformat ?
 
-You have to implement a URLProtocol, see libavformat/file.c in ffmpeg cvs
-and libmpdemux/demux_lavf.c in mplayer cvs
+You have to implement a URLProtocol, see libavformat/file.c in FFmpeg CVS
+and libmpdemux/demux_lavf.c in MPlayer CVS.
 
 @bye
