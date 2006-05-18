@@ -2103,7 +2103,7 @@ static int mov_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
             msc->current_sample += (msc->sample_to_chunk[msc->sample_to_chunk_index + 1].first - msc->sample_to_chunk[msc->sample_to_chunk_index].first) \
             * msc->sample_to_chunk[msc->sample_to_chunk_index].count;
         }
-        msc->current_sample += (msc->next_chunk - (msc->sample_to_chunk[msc->sample_to_chunk_index].first - 1)) * sc->sample_to_chunk[msc->sample_to_chunk_index].count;
+        msc->current_sample += (msc->next_chunk - (msc->sample_to_chunk[msc->sample_to_chunk_index].first - 1)) * msc->sample_to_chunk[msc->sample_to_chunk_index].count;
         msc->left_in_chunk = msc->sample_to_chunk[msc->sample_to_chunk_index].count - 1;
         // Find corresponding position in stts (used later to compute dts)
         sample = 0;
