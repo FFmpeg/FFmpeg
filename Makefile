@@ -14,21 +14,21 @@ CFLAGS+=-p
 LDFLAGS+=-p
 endif
 
-MANPAGE=doc/ffmpeg.1
-PROG_G+=ffmpeg_g$(EXESUF)
-PROG+=ffmpeg$(EXESUF)
+MANPAGES=doc/ffmpeg.1
+PROGS_G+=ffmpeg_g$(EXESUF)
+PROGS+=ffmpeg$(EXESUF)
 PROGTEST=output_example$(EXESUF)
 QTFASTSTART=qt-faststart$(EXESUF)
 
 ifeq ($(CONFIG_FFSERVER),yes)
-MANPAGE+=doc/ffserver.1
-PROG+=ffserver$(EXESUF)
+MANPAGES+=doc/ffserver.1
+PROGS+=ffserver$(EXESUF)
 endif
 
 ifeq ($(CONFIG_FFPLAY),yes)
-MANPAGE+=doc/ffplay.1
-PROG_G+=ffplay_g$(EXESUF)
-PROG+=ffplay$(EXESUF)
+MANPAGES+=doc/ffplay.1
+PROGS_G+=ffplay_g$(EXESUF)
+PROGS+=ffplay$(EXESUF)
 FFPLAY_O=ffplay.o
 endif
 
@@ -61,7 +61,7 @@ OBJS = ffmpeg.o ffserver.o cmdutils.o $(FFPLAY_O)
 SRCS = $(OBJS:.o=.c) $(ASM_OBJS:.o=.s)
 FFLIBS = -L./libavformat -lavformat$(BUILDSUF) -L./libavcodec -lavcodec$(BUILDSUF) -L./libavutil -lavutil$(BUILDSUF)
 
-all: lib $(PROG_G) $(PROG) $(PROGTEST) $(VHOOK) $(QTFASTSTART) $(DOC)
+all: lib $(PROGS_G) $(PROGS) $(PROGTEST) $(VHOOK) $(QTFASTSTART) $(DOC)
 
 lib:
 	$(MAKE) -C libavutil   all
@@ -114,12 +114,12 @@ documentation:
 install: install-progs install-libs install-headers install-man $(INSTALLVHOOK)
 
 ifeq ($(BUILD_SHARED),yes)
-install-progs: $(PROG) install-libs
+install-progs: $(PROGS) install-libs
 else
-install-progs: $(PROG)
+install-progs: $(PROGS)
 endif
 	install -d "$(bindir)"
-	install -c $(INSTALLSTRIP) -m 755 $(PROG) "$(bindir)"
+	install -c $(INSTALLSTRIP) -m 755 $(PROGS) "$(bindir)"
 
 # create the window installer
 wininstaller: all install
@@ -130,7 +130,7 @@ install-man:
 ifneq ($(CONFIG_WIN32),yes)
 	if [ -f doc/ffmpeg.1 ] ; then \
 	    install -d "$(mandir)/man1" ; \
-	    install -m 644 $(MANPAGE) "$(mandir)/man1" ; \
+	    install -m 644 $(MANPAGES) "$(mandir)/man1" ; \
 	fi
 endif
 
@@ -209,7 +209,7 @@ clean:
 	$(MAKE) -C tests       clean
 	$(MAKE) -C vhook       clean
 	rm -f *.o *.d *~ .libs gmon.out TAGS \
-	   $(PROG) $(PROG_G) $(PROGTEST) $(QTFASTSTART)
+	   $(PROGS) $(PROGS_G) $(PROGTEST) $(QTFASTSTART)
 
 # Note well: config.log is NOT removed.
 distclean: clean
@@ -226,7 +226,7 @@ TAGS:
 
 # regression tests
 
-libavtest test mpeg4 mpeg test-server fulltest: $(PROG)
+libavtest test mpeg4 mpeg test-server fulltest: $(PROGS)
 	$(MAKE) -C tests $@
 
 # tar release (use 'make -k tar' on a checkouted tree)
