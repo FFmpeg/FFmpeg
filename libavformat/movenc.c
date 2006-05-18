@@ -1066,135 +1066,45 @@ static int mov_write_itunes_hdlr_tag(ByteIOContext *pb, MOVContext* mov,
 }
 
 /* helper function to write a data tag with the specified string as data */
-static int mov_write_string_data_tag(ByteIOContext *pb, MOVContext* mov,
-                                     AVFormatContext *s, const char *data)
+static int mov_write_string_data_tag(ByteIOContext *pb, const char *data, int long_style)
 {
-    offset_t pos = url_ftell(pb);
-    put_be32(pb, 0); /* size */
-    put_tag(pb, "data");
-    put_be32(pb, 1);
-    put_be32(pb, 0);
-    put_buffer(pb, data, strlen(data));
-    return updateSize(pb, pos);
-}
-
-/* iTunes name of the song/movie */
-static int mov_write_nam_tag(ByteIOContext *pb, MOVContext* mov,
-                             AVFormatContext *s)
-{
-    int size = 0;
-    if ( s->title[0] ) {
+    if(long_style){
         offset_t pos = url_ftell(pb);
         put_be32(pb, 0); /* size */
-        put_tag(pb, "\251nam");
-        mov_write_string_data_tag(pb, mov, s, s->title);
-        size = updateSize(pb, pos);
+        put_tag(pb, "data");
+        put_be32(pb, 1);
+        put_be32(pb, 0);
+        put_buffer(pb, data, strlen(data));
+        return updateSize(pb, pos);
+    }else{
+        put_be16(pb, strlen(data)); /* string length */
+        put_be16(pb, 0);
+        put_buffer(pb, data, strlen(data));
+        return strlen(data) + 4;
     }
-    return size;
 }
 
-/* iTunes name of the artist/performer */
-static int mov_write_ART_tag(ByteIOContext *pb, MOVContext* mov,
-                             AVFormatContext *s)
-{
+static int mov_write_string_tag(ByteIOContext *pb, char *name, char *value, int long_style){
     int size = 0;
-    if ( s->author[0] ) {
+    if ( value && value[0] ) {
         offset_t pos = url_ftell(pb);
         put_be32(pb, 0); /* size */
-        put_tag(pb, "\251ART");
-        // we use the author here as this is the only thing that we have...
-        mov_write_string_data_tag(pb, mov, s, s->author);
-        size = updateSize(pb, pos);
-    }
-    return size;
-}
-
-/* iTunes name of the writer */
-static int mov_write_wrt_tag(ByteIOContext *pb, MOVContext* mov,
-                             AVFormatContext *s)
-{
-    int size = 0;
-    if ( s->author[0] ) {
-        offset_t pos = url_ftell(pb);
-        put_be32(pb, 0); /* size */
-        put_tag(pb, "\251wrt");
-        mov_write_string_data_tag(pb, mov, s, s->author);
-        size = updateSize(pb, pos);
-    }
-    return size;
-}
-
-/* iTunes name of the album */
-static int mov_write_alb_tag(ByteIOContext *pb, MOVContext* mov,
-                             AVFormatContext *s)
-{
-    int size = 0;
-    if ( s->album[0] ) {
-        offset_t pos = url_ftell(pb);
-        put_be32(pb, 0); /* size */
-        put_tag(pb, "\251alb");
-        mov_write_string_data_tag(pb, mov, s, s->album);
-        size = updateSize(pb, pos);
+        put_tag(pb, name);
+        mov_write_string_data_tag(pb, value, long_style);
+        size= updateSize(pb, pos);
     }
     return size;
 }
 
 /* iTunes year */
-static int mov_write_day_tag(ByteIOContext *pb, MOVContext* mov,
-                             AVFormatContext *s)
+static int mov_write_day_tag(ByteIOContext *pb, int year, int long_style)
 {
-    char year[5];
-    int size = 0;
-    if ( s->year ) {
-        offset_t pos = url_ftell(pb);
-        put_be32(pb, 0); /* size */
-        put_tag(pb, "\251day");
-        snprintf(year, 5, "%04d", s->year);
-        mov_write_string_data_tag(pb, mov, s, year);
-        size = updateSize(pb, pos);
-    }
-    return size;
-}
-
-/* iTunes tool used to create the file */
-static int mov_write_too_tag(ByteIOContext *pb, MOVContext* mov,
-                             AVFormatContext *s)
-{
-    offset_t pos = url_ftell(pb);
-    put_be32(pb, 0); /* size */
-    put_tag(pb, "\251too");
-    mov_write_string_data_tag(pb, mov, s, LIBAVFORMAT_IDENT);
-    return updateSize(pb, pos);
-}
-
-/* iTunes comment */
-static int mov_write_cmt_tag(ByteIOContext *pb, MOVContext* mov,
-                             AVFormatContext *s)
-{
-    int size = 0;
-    if ( s->comment[0] ) {
-        offset_t pos = url_ftell(pb);
-        put_be32(pb, 0); /* size */
-        put_tag(pb, "\251cmt");
-        mov_write_string_data_tag(pb, mov, s, s->comment);
-        size = updateSize(pb, pos);
-    }
-    return size;
-}
-
-/* iTunes custom genre */
-static int mov_write_gen_tag(ByteIOContext *pb, MOVContext* mov,
-                             AVFormatContext *s)
-{
-    int size = 0;
-    if ( s->genre[0] ) {
-        offset_t pos = url_ftell(pb);
-        put_be32(pb, 0); /* size */
-        put_tag(pb, "\251gen");
-        mov_write_string_data_tag(pb, mov, s, s->genre);
-        size = updateSize(pb, pos);
-    }
-    return size;
+    if(year){
+        char year_str[5];
+        snprintf(year_str, sizeof(year_str), "%04d", year);
+        return mov_write_string_tag(pb, "\251day", year_str, long_style);
+    }else
+        return 0;
 }
 
 /* iTunes track number */
@@ -1230,14 +1140,14 @@ static int mov_write_ilst_tag(ByteIOContext *pb, MOVContext* mov,
     offset_t pos = url_ftell(pb);
     put_be32(pb, 0); /* size */
     put_tag(pb, "ilst");
-    mov_write_nam_tag(pb, mov, s);
-    mov_write_ART_tag(pb, mov, s);
-    mov_write_wrt_tag(pb, mov, s);
-    mov_write_alb_tag(pb, mov, s);
-    mov_write_day_tag(pb, mov, s);
-    mov_write_too_tag(pb, mov, s);
-    mov_write_cmt_tag(pb, mov, s);
-    mov_write_gen_tag(pb, mov, s);
+    mov_write_string_tag(pb, "\251nam", s->title         , 1);
+    mov_write_string_tag(pb, "\251ART", s->author        , 1);
+    mov_write_string_tag(pb, "\251wrt", s->author        , 1);
+    mov_write_string_tag(pb, "\251alb", s->album         , 1);
+    mov_write_day_tag(pb, s->year ,1);
+    mov_write_string_tag(pb, "\251too", LIBAVFORMAT_IDENT, 1);
+    mov_write_string_tag(pb, "\251cmt", s->comment       , 1);
+    mov_write_string_tag(pb, "\251gen", s->genre         , 1);
     mov_write_trkn_tag(pb, mov, s);
     return updateSize(pb, pos);
 }
@@ -1279,62 +1189,19 @@ static int mov_write_udta_tag(ByteIOContext *pb, MOVContext* mov,
         if(mov->tracks[i].entry <= 0) continue;
         if (mov->tracks[i].enc->codec_id == CODEC_ID_AAC ||
             mov->tracks[i].enc->codec_id == CODEC_ID_MPEG4) {
-            offset_t pos = url_ftell(pb);
-            put_be32(pb, 0); /* size */
-            put_tag(pb, "\251req");
-            put_be16(pb, sizeof("QuickTime 6.0 or greater") - 1);
-            put_be16(pb, 0);
-            put_buffer(pb, "QuickTime 6.0 or greater",
-                       sizeof("QuickTime 6.0 or greater") - 1);
-            updateSize(pb, pos);
+            mov_write_string_tag(pb, "\251req", "QuickTime 6.0 or greater", 0);
             break;
         }
     }
 
-    /* Encoder */
+    mov_write_string_tag(pb, "\251nam", s->title         , 0);
+    mov_write_string_tag(pb, "\251aut", s->author        , 0);
+    mov_write_string_tag(pb, "\251alb", s->album         , 0);
+    mov_write_day_tag(pb, s->year, 0);
     if(mov->tracks[0].enc && !(mov->tracks[0].enc->flags & CODEC_FLAG_BITEXACT))
-    {
-        offset_t pos = url_ftell(pb);
-        put_be32(pb, 0); /* size */
-        put_tag(pb, "\251enc");
-        put_be16(pb, sizeof(LIBAVFORMAT_IDENT) - 1); /* string length */
-        put_be16(pb, 0);
-        put_buffer(pb, LIBAVFORMAT_IDENT, sizeof(LIBAVFORMAT_IDENT) - 1);
-        updateSize(pb, pos);
-    }
-
-    if( s->title[0] )
-    {
-        offset_t pos = url_ftell(pb);
-        put_be32(pb, 0); /* size */
-        put_tag(pb, "\251nam");
-        put_be16(pb, strlen(s->title)); /* string length */
-        put_be16(pb, 0);
-        put_buffer(pb, s->title, strlen(s->title));
-        updateSize(pb, pos);
-    }
-
-    if( s->author[0] )
-    {
-        offset_t pos = url_ftell(pb);
-        put_be32(pb, 0); /* size */
-        put_tag(pb, /*"\251aut"*/ "\251day" );
-        put_be16(pb, strlen(s->author)); /* string length */
-        put_be16(pb, 0);
-        put_buffer(pb, s->author, strlen(s->author));
-        updateSize(pb, pos);
-    }
-
-    if( s->comment[0] )
-    {
-        offset_t pos = url_ftell(pb);
-        put_be32(pb, 0); /* size */
-        put_tag(pb, "\251des");
-        put_be16(pb, strlen(s->comment)); /* string length */
-        put_be16(pb, 0);
-        put_buffer(pb, s->comment, strlen(s->comment));
-        updateSize(pb, pos);
-    }
+        mov_write_string_tag(pb, "\251enc", LIBAVFORMAT_IDENT, 0);
+    mov_write_string_tag(pb, "\251des", s->comment       , 0);
+    mov_write_string_tag(pb, "\251gen", s->genre         , 0);
 
     return updateSize(pb, pos);
 }
