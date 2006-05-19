@@ -131,6 +131,32 @@ a different fourcc, use the '-vtag' option. E.g., '-vtag xvid' will
 force the fourcc 'xvid' to be stored as the video fourcc rather than the
 default.
 
+@section How do I encode Videos which play on the ipod?
+
+@table @option
+@item stuff needed
+-acodec aac -vcodec mpeg4 width<=320 height<=240
+@item stuff working
+4mv, title
+@item stuff not working
+b frames
+@item example command line
+ffmpeg -i input -acodec aac -ab 128 -vcodec mpeg4 -b 1200 -mbd 2 -flags +4mv+trell -aic 2 -cmp 2 -subcmp 2 -s 320x180 -title X output.mp4
+@end table
+
+@section How do I encode Videos which play on the psp?
+
+@table @option
+@item stuff needed
+-acodec aac -vcodec mpeg4 width*height<=76800 width%16=0 height%16=0 -ar 24000 -r 30000/1001 or 15000/1001 -f psp
+@item stuff working
+4mv, title
+@item stuff not working
+b frames
+@item example command line
+ffmpeg -i input -acodec aac -ab 128 -vcodec mpeg4 -b 1200 -ar 24000 -mbd 2 -flags +4mv+trell -aic 2 -cmp 2 -subcmp 2 -s 368x192 -r 30000/1001 -title X -f psp output.mp4
+@end table
+
 @chapter Development
 
 @section When will the next FFmpeg version be released? / Why are FFmpeg releases so few and far between?
