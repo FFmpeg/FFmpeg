@@ -1226,7 +1226,7 @@ static size_t ascii_to_wc (ByteIOContext *pb, char *b, size_t n)
 
 static uint16_t language_code (char *str)
 {
-    return ((((str[0]-'a') & 0x1F)<<10) + (((str[1]-'a') & 0x1F)<<5) + ((str[2]-'a') & 0x1F));
+    return ((((str[0]-0x60) & 0x1F)<<10) + (((str[1]-0x60) & 0x1F)<<5) + ((str[2]-0x60) & 0x1F));
 }
 
 static int mov_write_uuidusmt_tag (ByteIOContext *pb, AVFormatContext *s)
@@ -1247,16 +1247,43 @@ static int mov_write_uuidusmt_tag (ByteIOContext *pb, AVFormatContext *s)
 
         put_be32(pb, 0); /* size placeholder*/
         put_tag(pb, "MTDT");
-        put_be16(pb, 1);
+        put_be16(pb, 4);
         size += 10;
+
+        // ?
+        put_be16(pb, 0x0C);                 /* size */
+        put_be32(pb, 0x0B);                 /* type */
+        put_be16(pb, language_code("und")); /* language */
+        put_be16(pb, 0x0);                  /* ? */
+        put_be16(pb, 0x021C);               /* data */
+        size += 12;
+
+        // Encoder
+        len = strlen(LIBAVCODEC_IDENT)+1;
+        put_be16(pb, len*2+10);             /* size */
+        put_be32(pb, 0x04);                 /* type */
+        put_be16(pb, language_code("eng")); /* language */
+        put_be16(pb, 0x01);                 /* ? */
+        ascii_to_wc(pb, LIBAVCODEC_IDENT, len);
+        size += len*2+10;
 
         // Title
         len = strlen(s->title)+1;
         put_be16(pb, len*2+10);             /* size */
         put_be32(pb, 0x01);                 /* type */
-        put_be16(pb, language_code("und")); /* language */
+        put_be16(pb, language_code("eng")); /* language */
         put_be16(pb, 0x01);                 /* ? */
         ascii_to_wc (pb, s->title, len);
+        size += len*2+10;
+
+        // Date
+//        snprintf(dt,32,"%04d/%02d/%02d %02d:%02d:%02d",t_st->tm_year+1900,t_st->tm_mon+1,t_st->tm_mday,t_st->tm_hour,t_st->tm_min,t_st->tm_sec);
+        len = strlen("2006/04/01 11:11:11")+1;
+        put_be16(pb, len*2+10);    /* size */
+        put_be32(pb, 0x03);        /* type */
+        put_be16(pb, language_code("und")); /* language */
+        put_be16(pb, 0x01);        /* ? */
+        ascii_to_wc (pb, "2006/04/01 11:11:11", len);
         size += len*2+10;
 
         // size
