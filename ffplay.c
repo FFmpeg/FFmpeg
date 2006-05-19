@@ -2434,8 +2434,8 @@ int main(int argc, char **argv)
         video_disable = 1;
     }
     flags = SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER;
-#ifndef CONFIG_WIN32
-    flags |= SDL_INIT_EVENTTHREAD; /* Not supported on win32 */
+#if !defined(CONFIG_WIN32) && !defined(CONFIG_DARWIN)
+    flags |= SDL_INIT_EVENTTHREAD; /* Not supported on win32 or darwin */
 #endif
     if (SDL_Init (flags)) {
         fprintf(stderr, "Could not initialize SDL - %s\n", SDL_GetError());
@@ -2466,7 +2466,12 @@ int main(int argc, char **argv)
             h = screen_height;
             flags |= SDL_RESIZABLE;
         }
+#ifndef CONFIG_DARWIN
         screen = SDL_SetVideoMode(w, h, 0, flags);
+#else
+        /* setting bits_per_pixel = 0 or 32 causes blank video on OS X */
+        screen = SDL_SetVideoMode(w, h, 24, flags);
+#endif
         if (!screen) {
             fprintf(stderr, "SDL: could not set video mode - exiting\n");
             exit(1);
