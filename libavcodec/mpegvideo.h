@@ -699,7 +699,7 @@ typedef struct MpegEncContext {
     short * pblocks[12];
 
     DCTELEM (*block)[64]; ///< points to one of the following blocks
-    DCTELEM (*blocks)[6][64]; // for HQ mode we need to keep the best block
+    DCTELEM (*blocks)[8][64]; // for HQ mode we need to keep the best block
     int (*decode_mb)(struct MpegEncContext *s, DCTELEM block[6][64]); // used by some codecs to avoid a switch()
 #define SLICE_OK         0
 #define SLICE_ERROR     -1
