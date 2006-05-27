@@ -532,6 +532,7 @@ static int rtp_write_header(AVFormatContext *s1)
         payload_type = RTP_PT_PRIVATE; /* private payload type */
     s->payload_type = payload_type;
 
+// following 2 FIXMies could be set based on the current time, theres normaly no info leak, as rtp will likely be transmitted immedeatly
     s->base_timestamp = 0; /* FIXME: was random(), what should this be? */
     s->timestamp = s->base_timestamp;
     s->ssrc = 0; /* FIXME: was random(), what should this be? */
