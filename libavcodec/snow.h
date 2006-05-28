@@ -30,6 +30,7 @@
 #define QROOT (1<<QSHIFT)
 #define LOSSLESS_QLOG -128
 #define FRAC_BITS 8
+#define MAX_REF_FRAMES 8
 
 #define LOG2_OBMC_MAX 8
 #define OBMC_MAX (1<<(LOG2_OBMC_MAX))
