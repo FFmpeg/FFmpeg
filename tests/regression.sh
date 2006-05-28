@@ -496,7 +496,7 @@ fi
 if [ -n "$do_snowll" ] ; then
 # snow encoding
 file=${outfile}snow53.avi
-do_ffmpeg $file -y -strict -2 -f pgmyuv -i $raw_src -an -vcodec snow -pred 1 -flags +mv4+qpel $file
+do_ffmpeg $file -y -strict -2 -f pgmyuv -i $raw_src -an -vcodec snow -qscale .001 -pred 1 -flags +mv4+qpel $file
 
 # snow decoding
 do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst

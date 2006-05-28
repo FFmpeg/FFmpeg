@@ -444,6 +444,7 @@ typedef struct SnowContext{
     int qlog;
     int lambda;
     int lambda2;
+    int pass1_rc;
     int mv_scale;
     int qbias;
 #define QBIAS_SHIFT 3
@@ -3852,6 +3853,50 @@ static int common_init(AVCodecContext *avctx){
     return 0;
 }
 
+static void ratecontrol_1pass(SnowContext *s, AVFrame *pict)
+{
+    /* estimate the frame's complexity as a sum of weighted dwt coefs.
+     * FIXME we know exact mv bits at this point,
+     * but ratecontrol isn't set up to include them. */
+    uint32_t coef_sum= 0;
+    int level, orientation;
+
+    for(level=0; level<s->spatial_decomposition_count; level++){
+        for(orientation=level ? 1 : 0; orientation<4; orientation++){
+            SubBand *b= &s->plane[0].band[level][orientation];
+            DWTELEM *buf= b->buf;
+            const int w= b->width;
+            const int h= b->height;
+            const int stride= b->stride;
+            const int qlog= clip(2*QROOT + b->qlog, 0, QROOT*16);
+            const int qmul= qexp[qlog&(QROOT-1)]<<(qlog>>QSHIFT);
+            const int qdiv= (1<<16)/qmul;
+            int x, y;
+            if(orientation==0)
+                decorrelate(s, b, buf, stride, 1, 0);
+            for(y=0; y<h; y++)
+                for(x=0; x<w; x++)
+                    coef_sum+= abs(buf[x+y*stride]) * qdiv >> 16;
+            if(orientation==0)
+                correlate(s, b, buf, stride, 1, 0);
+        }
+    }
+
+    /* ugly, ratecontrol just takes a sqrt again */
+    coef_sum = (uint64_t)coef_sum * coef_sum >> 16;
+    assert(coef_sum < INT_MAX);
+
+    if(pict->pict_type == I_TYPE){
+        s->m.current_picture.mb_var_sum= coef_sum;
+        s->m.current_picture.mc_mb_var_sum= 0;
+    }else{
+        s->m.current_picture.mc_mb_var_sum= coef_sum;
+        s->m.current_picture.mb_var_sum= 0;
+    }
+
+    pict->quality= ff_rate_estimate_qscale(&s->m, 1);
+    s->lambda= pict->quality * 3/2;
+}
 
 static void calculate_vissual_weight(SnowContext *s, Plane *p){
     int width = p->width;
@@ -3910,10 +3955,11 @@ static int encode_init(AVCodecContext *avctx)
         if(!avctx->stats_out)
             avctx->stats_out = av_mallocz(256);
     }
-    if(avctx->flags&CODEC_FLAG_PASS2){
+    if(!(avctx->flags&CODEC_FLAG_QSCALE)){
         if(ff_rate_control_init(&s->m) < 0)
             return -1;
     }
+    s->pass1_rc= !(avctx->flags & (CODEC_FLAG_QSCALE|CODEC_FLAG_PASS2));
 
     for(plane_index=0; plane_index<3; plane_index++){
         calculate_vissual_weight(s, &s->plane[plane_index]);
@@ -3993,25 +4039,31 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
     }
     s->new_picture = *pict;
 
+    s->m.picture_number= avctx->frame_number;
     if(avctx->flags&CODEC_FLAG_PASS2){
         s->m.pict_type =
         pict->pict_type= s->m.rc_context.entry[avctx->frame_number].new_pict_type;
         s->keyframe= pict->pict_type==FF_I_TYPE;
-        s->m.picture_number= avctx->frame_number;
         if(!(avctx->flags&CODEC_FLAG_QSCALE))
             pict->quality= ff_rate_estimate_qscale(&s->m, 0);
     }else{
         s->keyframe= avctx->gop_size==0 || avctx->frame_number % avctx->gop_size == 0;
+        s->m.pict_type=
         pict->pict_type= s->keyframe ? FF_I_TYPE : FF_P_TYPE;
     }
 
+    if(s->pass1_rc && avctx->frame_number == 0)
+        pict->quality= 2*FF_QP2LAMBDA;
     if(pict->quality){
         s->qlog= rint(QROOT*log(pict->quality / (float)FF_QP2LAMBDA)/log(2));
         //<64 >60
         s->qlog += 61*QROOT/8;
-    }else{
-        s->qlog= LOSSLESS_QLOG;
+        s->lambda = pict->quality * 3/2;
     }
+    if(s->qlog < 0 || (!pict->quality && (avctx->flags & CODEC_FLAG_QSCALE))){
+        s->qlog= LOSSLESS_QLOG;
+        s->lambda = 0;
+    }//else keep previous frame's qlog until after motion est
 
     frame_start(s);
     s->current_picture.key_frame= s->keyframe;
@@ -4050,7 +4102,7 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
         s->m.out_format= FMT_H263;
         s->m.unrestricted_mv= 1;
 
-        s->lambda = s->m.lambda= pict->quality * 3/2; //FIXME bug somewhere else
+        s->m.lambda = s->lambda;
         s->m.qscale= (s->m.lambda*139 + FF_LAMBDA_SCALE*64) >> (FF_LAMBDA_SHIFT + 7);
         s->lambda2= s->m.lambda2= (s->m.lambda*s->m.lambda + FF_LAMBDA_SCALE/2) >> FF_LAMBDA_SHIFT;
 
@@ -4061,6 +4113,7 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
 
 redo_frame:
 
+    s->m.pict_type = pict->pict_type;
     s->qbias= pict->pict_type == P_TYPE ? 2 : 0;
 
     encode_header(s);
@@ -4086,6 +4139,7 @@ redo_frame:
 
         if(   plane_index==0
            && pict->pict_type == P_TYPE
+           && !(avctx->flags&CODEC_FLAG_PASS2)
            && s->m.me.scene_change_score > s->avctx->scenechange_threshold){
             ff_init_range_encoder(c, buf, buf_size);
             ff_build_rac_states(c, 0.05*(1LL<<32), 256-8);
@@ -4104,6 +4158,9 @@ redo_frame:
         }
 
         ff_spatial_dwt(s->spatial_dwt_buffer, w, h, w, s->spatial_decomposition_type, s->spatial_decomposition_count);
+
+        if(s->pass1_rc && plane_index==0)
+            ratecontrol_1pass(s, pict);
 
         for(level=0; level<s->spatial_decomposition_count; level++){
             for(orientation=level ? 1 : 0; orientation<4; orientation++){
@@ -4160,17 +4217,17 @@ STOP_TIMER("pred-conv")}
     s->current_picture.coded_picture_number = avctx->frame_number;
     s->current_picture.pict_type = pict->pict_type;
     s->current_picture.quality = pict->quality;
-    if(avctx->flags&CODEC_FLAG_PASS1){
-        s->m.p_tex_bits = 8*(s->c.bytestream - s->c.bytestream_start) - s->m.misc_bits - s->m.mv_bits;
-        s->m.current_picture.display_picture_number =
-        s->m.current_picture.coded_picture_number = avctx->frame_number;
-        s->m.pict_type = pict->pict_type;
-        s->m.current_picture.quality = pict->quality;
+    s->m.frame_bits = 8*(s->c.bytestream - s->c.bytestream_start);
+    s->m.p_tex_bits = s->m.frame_bits - s->m.misc_bits - s->m.mv_bits;
+    s->m.current_picture.display_picture_number =
+    s->m.current_picture.coded_picture_number = avctx->frame_number;
+    s->m.current_picture.quality = pict->quality;
+    s->m.total_bits += 8*(s->c.bytestream - s->c.bytestream_start);
+    if(s->pass1_rc)
+        ff_rate_estimate_qscale(&s->m, 0);
+    if(avctx->flags&CODEC_FLAG_PASS1)
         ff_write_pass1_stats(&s->m);
-    }
-    if(avctx->flags&CODEC_FLAG_PASS2){
-        s->m.total_bits += 8*(s->c.bytestream - s->c.bytestream_start);
-    }
+    s->m.last_pict_type = s->m.pict_type;
 
     emms_c();
 

@@ -2402,9 +2402,9 @@ static void opt_pre_me(const char *arg)
 static void opt_qscale(const char *arg)
 {
     video_qscale = atof(arg);
-    if (video_qscale < 0.01 ||
+    if (video_qscale <= 0 ||
         video_qscale > 255) {
-        fprintf(stderr, "qscale must be >= 0.01 and <= 255\n");
+        fprintf(stderr, "qscale must be > 0.0 and <= 255\n");
         exit(1);
     }
 }
