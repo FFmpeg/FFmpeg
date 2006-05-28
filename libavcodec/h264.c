@@ -398,60 +398,83 @@ static always_inline uint32_t pack16to32(int a, int b){
 static always_inline void fill_rectangle(void *vp, int w, int h, int stride, uint32_t val, int size){
     uint8_t *p= (uint8_t*)vp;
     assert(size==1 || size==4);
+    assert(w<=4);
 
     w      *= size;
     stride *= size;
 
     assert((((long)vp)&(FFMIN(w, STRIDE_ALIGN)-1)) == 0);
     assert((stride&(w-1))==0);
-//FIXME check what gcc generates for 64 bit on x86 and possibly write a 32 bit ver of it
-    if(w==2 && h==2){
-        *(uint16_t*)(p + 0)=
-        *(uint16_t*)(p + stride)= size==4 ? val : val*0x0101;
-    }else if(w==2 && h==4){
-        *(uint16_t*)(p + 0*stride)=
-        *(uint16_t*)(p + 1*stride)=
+    if(w==2){
+        const uint16_t v= size==4 ? val : val*0x0101;
+        *(uint16_t*)(p + 0*stride)= v;
+        if(h==1) return;
+        *(uint16_t*)(p + 1*stride)= v;
+        if(h==2) return;
         *(uint16_t*)(p + 2*stride)=
-        *(uint16_t*)(p + 3*stride)= size==4 ? val : val*0x0101;
-    }else if(w==4 && h==1){
-        *(uint32_t*)(p + 0*stride)= size==4 ? val : val*0x01010101;
-    }else if(w==4 && h==2){
-        *(uint32_t*)(p + 0*stride)=
-        *(uint32_t*)(p + 1*stride)= size==4 ? val : val*0x01010101;
-    }else if(w==4 && h==4){
-        *(uint32_t*)(p + 0*stride)=
-        *(uint32_t*)(p + 1*stride)=
+        *(uint16_t*)(p + 3*stride)= v;
+    }else if(w==4){
+        const uint32_t v= size==4 ? val : val*0x01010101;
+        *(uint32_t*)(p + 0*stride)= v;
+        if(h==1) return;
+        *(uint32_t*)(p + 1*stride)= v;
+        if(h==2) return;
         *(uint32_t*)(p + 2*stride)=
-        *(uint32_t*)(p + 3*stride)= size==4 ? val : val*0x01010101;
-    }else if(w==8 && h==1){
-        *(uint32_t*)(p + 0)=
-        *(uint32_t*)(p + 4)= size==4 ? val : val*0x01010101;
-    }else if(w==8 && h==2){
-        *(uint32_t*)(p + 0 + 0*stride)=
-        *(uint32_t*)(p + 4 + 0*stride)=
-        *(uint32_t*)(p + 0 + 1*stride)=
-        *(uint32_t*)(p + 4 + 1*stride)=  size==4 ? val : val*0x01010101;
-    }else if(w==8 && h==4){
-        *(uint64_t*)(p + 0*stride)=
-        *(uint64_t*)(p + 1*stride)=
+        *(uint32_t*)(p + 3*stride)= v;
+    }else if(w==8){
+    //gcc can't optimize 64bit math on x86_32
+#if defined(ARCH_X86_64) || (defined(MP_WORDSIZE) && MP_WORDSIZE >= 64)
+        const uint64_t v= val*0x0100000001ULL;
+        *(uint64_t*)(p + 0*stride)= v;
+        if(h==1) return;
+        *(uint64_t*)(p + 1*stride)= v;
+        if(h==2) return;
         *(uint64_t*)(p + 2*stride)=
-        *(uint64_t*)(p + 3*stride)= size==4 ? val*0x0100000001ULL : val*0x0101010101010101ULL;
-    }else if(w==16 && h==2){
+        *(uint64_t*)(p + 3*stride)= v;
+    }else if(w==16){
+        const uint64_t v= val*0x0100000001ULL;
         *(uint64_t*)(p + 0+0*stride)=
         *(uint64_t*)(p + 8+0*stride)=
         *(uint64_t*)(p + 0+1*stride)=
-        *(uint64_t*)(p + 8+1*stride)= size==4 ? val*0x0100000001ULL : val*0x0101010101010101ULL;
-    }else if(w==16 && h==4){
-        *(uint64_t*)(p + 0+0*stride)=
-        *(uint64_t*)(p + 8+0*stride)=
-        *(uint64_t*)(p + 0+1*stride)=
-        *(uint64_t*)(p + 8+1*stride)=
+        *(uint64_t*)(p + 8+1*stride)= v;
+        if(h==2) return;
         *(uint64_t*)(p + 0+2*stride)=
         *(uint64_t*)(p + 8+2*stride)=
         *(uint64_t*)(p + 0+3*stride)=
-        *(uint64_t*)(p + 8+3*stride)= size==4 ? val*0x0100000001ULL : val*0x0101010101010101ULL;
+        *(uint64_t*)(p + 8+3*stride)= v;
+#else
+        *(uint32_t*)(p + 0+0*stride)=
+        *(uint32_t*)(p + 4+0*stride)= val;
+        if(h==1) return;
+        *(uint32_t*)(p + 0+1*stride)=
+        *(uint32_t*)(p + 4+1*stride)= val;
+        if(h==2) return;
+        *(uint32_t*)(p + 0+2*stride)=
+        *(uint32_t*)(p + 4+2*stride)=
+        *(uint32_t*)(p + 0+3*stride)=
+        *(uint32_t*)(p + 4+3*stride)= val;
+    }else if(w==16){
+        *(uint32_t*)(p + 0+0*stride)=
+        *(uint32_t*)(p + 4+0*stride)=
+        *(uint32_t*)(p + 8+0*stride)=
+        *(uint32_t*)(p +12+0*stride)=
+        *(uint32_t*)(p + 0+1*stride)=
+        *(uint32_t*)(p + 4+1*stride)=
+        *(uint32_t*)(p + 8+1*stride)=
+        *(uint32_t*)(p +12+1*stride)= val;
+        if(h==2) return;
+        *(uint32_t*)(p + 0+2*stride)=
+        *(uint32_t*)(p + 4+2*stride)=
+        *(uint32_t*)(p + 8+2*stride)=
+        *(uint32_t*)(p +12+2*stride)=
+        *(uint32_t*)(p + 0+3*stride)=
+        *(uint32_t*)(p + 4+3*stride)=
+        *(uint32_t*)(p + 8+3*stride)=
+        *(uint32_t*)(p +12+3*stride)= val;
+#endif
     }else
         assert(0);
+    assert(h==4);
 }
 
 static void fill_caches(H264Context *h, int mb_type, int for_deblock){
