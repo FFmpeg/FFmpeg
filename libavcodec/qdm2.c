@@ -1470,13 +1470,13 @@ static void qdm2_decode_fft_packets (QDM2Context *q)
             if (duration >= 0 && duration < 4)
                 qdm2_fft_decode_tones(q, duration, &gb, unknown_flag);
         } else if (type == 31) {
-            for (i=0; i < 4; i++)
-                qdm2_fft_decode_tones(q, i, &gb, unknown_flag);
+            for (j=0; j < 4; j++)
+                qdm2_fft_decode_tones(q, j, &gb, unknown_flag);
         } else if (type == 46) {
-            for (i=0; i < 6; i++)
-                q->fft_level_exp[i] = get_bits(&gb, 6);
-            for (i=0; i < 4; i++)
-            qdm2_fft_decode_tones(q, i, &gb, unknown_flag);
+            for (j=0; j < 6; j++)
+                q->fft_level_exp[j] = get_bits(&gb, 6);
+            for (j=0; j < 4; j++)
+            qdm2_fft_decode_tones(q, j, &gb, unknown_flag);
         }
     } // Loop on B packets
 
