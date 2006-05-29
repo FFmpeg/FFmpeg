@@ -7481,7 +7481,7 @@ static int decode_sei(H264Context *h){
 
         switch(type){
         case 5:
-            if(decode_unregistered_user_data(h, size) < 0);
+            if(decode_unregistered_user_data(h, size) < 0)
                 return -1;
             break;
         default:
