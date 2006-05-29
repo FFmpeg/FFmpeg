@@ -264,6 +264,7 @@ void ff_h261_encode_mb(MpegEncContext * s,
     h->previous_mba = h->current_mba;
 
     if(HAS_CBP(h->mtype)){
+        assert(cbp>0);
         put_bits(&s->pb,h261_cbp_tab[cbp-1][1],h261_cbp_tab[cbp-1][0]);
     }
     for(i=0; i<6; i++) {
