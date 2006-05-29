@@ -911,7 +911,7 @@ static int init_pass2(MpegEncContext *s)
     av_free(qscale);
     av_free(blured_qscale);
 
-    if(abs(expected_bits/all_available_bits - 1.0) > 0.01 ){
+    if(fabs(expected_bits/all_available_bits - 1.0) > 0.01 ){
         av_log(s->avctx, AV_LOG_ERROR, "Error: 2pass curve failed to converge\n");
         return -1;
     }
