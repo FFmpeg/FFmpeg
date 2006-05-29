@@ -109,13 +109,14 @@ int64_t av_rescale_q(int64_t a, AVRational bq, AVRational cq){
     return av_rescale_rnd(a, b, c, AV_ROUND_NEAR_INF);
 }
 #if 0
+#include "integer.h"
 #undef printf
 main(){
     int64_t a,b,c,d,e;
 
-    for(a=7; a<(1LL<<60); a=(a*3)+1){
-        for(b=3; b<(1LL<<60); b=(b*5)/4+1){
-            for(c=9; c<(1LL<<60); c=(c*7)/5+3){
+    for(a=7; a<(1LL<<62); a+=a/3+1){
+        for(b=3; b<(1LL<<62); b+=b/4+1){
+            for(c=9; c<(1LL<<62); c+=(c*2)/5+3){
                 int64_t r= c/2;
                 AVInteger ai;
                 ai= av_mul_i(av_int2i(a), av_int2i(b));
