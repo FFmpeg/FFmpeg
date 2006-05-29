@@ -1123,8 +1123,8 @@ int MPV_encode_init(AVCodecContext *avctx)
     }
 
     if(avctx->b_frame_strategy && (avctx->flags&CODEC_FLAG_PASS2)){
-        av_log(avctx, AV_LOG_ERROR, "b_frame_strategy must be 0 on the second pass\n");
-        return -1;
+        av_log(avctx, AV_LOG_INFO, "notice: b_frame_strategy only affects the first pass\n");
+        avctx->b_frame_strategy = 0;
     }
 
     i= ff_gcd(avctx->time_base.den, avctx->time_base.num);
