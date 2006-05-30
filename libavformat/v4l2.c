@@ -30,8 +30,8 @@
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <sys/time.h>
-#define _LINUX_TIME_H 1
-#include <linux/videodev.h>
+#include <asm/types.h>
+#include <linux/videodev2.h>
 #include <time.h>
 
 static const int desired_video_buffers = 256;
