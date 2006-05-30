@@ -1197,9 +1197,9 @@ void ff_spatial_dwt(DWTELEM *buffer, int width, int height, int stride, int type
 
     for(level=0; level<decomposition_count; level++){
         switch(type){
-        case 0: spatial_decompose97i(buffer, width>>level, height>>level, stride<<level); break;
-        case 1: spatial_decompose53i(buffer, width>>level, height>>level, stride<<level); break;
-        case 2: spatial_decomposeX  (buffer, width>>level, height>>level, stride<<level); break;
+        case DWT_97: spatial_decompose97i(buffer, width>>level, height>>level, stride<<level); break;
+        case DWT_53: spatial_decompose53i(buffer, width>>level, height>>level, stride<<level); break;
+        case DWT_X: spatial_decomposeX  (buffer, width>>level, height>>level, stride<<level); break;
         }
     }
 }
@@ -1502,10 +1502,10 @@ static void ff_spatial_idwt_buffered_init(dwt_compose_t *cs, slice_buffer * sb, 
     int level;
     for(level=decomposition_count-1; level>=0; level--){
         switch(type){
-        case 0: spatial_compose97i_buffered_init(cs+level, sb, height>>level, stride_line<<level); break;
-        case 1: spatial_compose53i_buffered_init(cs+level, sb, height>>level, stride_line<<level); break;
+        case DWT_97: spatial_compose97i_buffered_init(cs+level, sb, height>>level, stride_line<<level); break;
+        case DWT_53: spatial_compose53i_buffered_init(cs+level, sb, height>>level, stride_line<<level); break;
         /* not slicified yet */
-        case 2: /*spatial_composeX(buffer, width>>level, height>>level, stride<<level); break;*/
+        case DWT_X: /*spatial_composeX(buffer, width>>level, height>>level, stride<<level); break;*/
           av_log(NULL, AV_LOG_ERROR, "spatial_composeX neither buffered nor slicified yet.\n"); break;
         }
     }
@@ -1515,10 +1515,10 @@ static void ff_spatial_idwt_init(dwt_compose_t *cs, DWTELEM *buffer, int width, 
     int level;
     for(level=decomposition_count-1; level>=0; level--){
         switch(type){
-        case 0: spatial_compose97i_init(cs+level, buffer, height>>level, stride<<level); break;
-        case 1: spatial_compose53i_init(cs+level, buffer, height>>level, stride<<level); break;
+        case DWT_97: spatial_compose97i_init(cs+level, buffer, height>>level, stride<<level); break;
+        case DWT_53: spatial_compose53i_init(cs+level, buffer, height>>level, stride<<level); break;
         /* not slicified yet */
-        case 2: spatial_composeX(buffer, width>>level, height>>level, stride<<level); break;
+        case DWT_X: spatial_composeX(buffer, width>>level, height>>level, stride<<level); break;
         }
     }
 }
@@ -1531,11 +1531,11 @@ static void ff_spatial_idwt_slice(dwt_compose_t *cs, DWTELEM *buffer, int width,
     for(level=decomposition_count-1; level>=0; level--){
         while(cs[level].y <= FFMIN((y>>level)+support, height>>level)){
             switch(type){
-            case 0: spatial_compose97i_dy(cs+level, buffer, width>>level, height>>level, stride<<level);
+            case DWT_97: spatial_compose97i_dy(cs+level, buffer, width>>level, height>>level, stride<<level);
                     break;
-            case 1: spatial_compose53i_dy(cs+level, buffer, width>>level, height>>level, stride<<level);
+            case DWT_53: spatial_compose53i_dy(cs+level, buffer, width>>level, height>>level, stride<<level);
                     break;
-            case 2: break;
+            case DWT_X: break;
             }
         }
     }
@@ -1549,11 +1549,11 @@ static void ff_spatial_idwt_buffered_slice(DSPContext *dsp, dwt_compose_t *cs, s
     for(level=decomposition_count-1; level>=0; level--){
         while(cs[level].y <= FFMIN((y>>level)+support, height>>level)){
             switch(type){
-            case 0: spatial_compose97i_dy_buffered(dsp, cs+level, slice_buf, width>>level, height>>level, stride_line<<level);
+            case DWT_97: spatial_compose97i_dy_buffered(dsp, cs+level, slice_buf, width>>level, height>>level, stride_line<<level);
                     break;
-            case 1: spatial_compose53i_dy_buffered(cs+level, slice_buf, width>>level, height>>level, stride_line<<level);
+            case DWT_53: spatial_compose53i_dy_buffered(cs+level, slice_buf, width>>level, height>>level, stride_line<<level);
                     break;
-            case 2: break;
+            case DWT_X: break;
             }
         }
     }

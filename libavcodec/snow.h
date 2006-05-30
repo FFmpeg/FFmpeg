@@ -35,6 +35,10 @@
 #define LOG2_OBMC_MAX 8
 #define OBMC_MAX (1<<(LOG2_OBMC_MAX))
 
+#define DWT_97 0
+#define DWT_53 1
+#define DWT_X  2
+
 /** Used to minimize the amount of memory used in order to optimize cache performance. **/
 struct slice_buffer_s {
     DWTELEM * * line; ///< For use by idwt and predict_slices.
