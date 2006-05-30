@@ -2659,7 +2659,7 @@ assert(src_stride > 2*MB_SIZE + 5);
 }
 
 //FIXME name clenup (b_w, block_w, b_width stuff)
-static always_inline void add_yblock(SnowContext *s, DWTELEM *dst, uint8_t *dst8, uint8_t *obmc, int src_x, int src_y, int b_w, int b_h, int w, int h, int dst_stride, int src_stride, int obmc_stride, int b_x, int b_y, int add, int offset_dst, int plane_index){
+static always_inline void add_yblock(SnowContext *s, DWTELEM *dst, uint8_t *dst8, const uint8_t *obmc, int src_x, int src_y, int b_w, int b_h, int w, int h, int dst_stride, int src_stride, int obmc_stride, int b_x, int b_y, int add, int offset_dst, int plane_index){
     const int b_width = s->b_width  << s->block_max_depth;
     const int b_height= s->b_height << s->block_max_depth;
     const int b_stride= b_width;
@@ -3303,14 +3303,14 @@ static void iterative_me(SnowContext *s){
                 BlockNode backup, ref_b;
                 const int index= mb_x + mb_y * b_stride;
                 BlockNode *block= &s->block[index];
-                BlockNode *tb =                   mb_y            ? &s->block[index-b_stride  ] : &null_block;
-                BlockNode *lb = mb_x                              ? &s->block[index         -1] : &null_block;
-                BlockNode *rb = mb_x+1<b_width                    ? &s->block[index         +1] : &null_block;
-                BlockNode *bb =                   mb_y+1<b_height ? &s->block[index+b_stride  ] : &null_block;
-                BlockNode *tlb= mb_x           && mb_y            ? &s->block[index-b_stride-1] : &null_block;
-                BlockNode *trb= mb_x+1<b_width && mb_y            ? &s->block[index-b_stride+1] : &null_block;
-                BlockNode *blb= mb_x           && mb_y+1<b_height ? &s->block[index+b_stride-1] : &null_block;
-                BlockNode *brb= mb_x+1<b_width && mb_y+1<b_height ? &s->block[index+b_stride+1] : &null_block;
+                BlockNode *tb =                   mb_y            ? &s->block[index-b_stride  ] : NULL;
+                BlockNode *lb = mb_x                              ? &s->block[index         -1] : NULL;
+                BlockNode *rb = mb_x+1<b_width                    ? &s->block[index         +1] : NULL;
+                BlockNode *bb =                   mb_y+1<b_height ? &s->block[index+b_stride  ] : NULL;
+                BlockNode *tlb= mb_x           && mb_y            ? &s->block[index-b_stride-1] : NULL;
+                BlockNode *trb= mb_x+1<b_width && mb_y            ? &s->block[index-b_stride+1] : NULL;
+                BlockNode *blb= mb_x           && mb_y+1<b_height ? &s->block[index+b_stride-1] : NULL;
+                BlockNode *brb= mb_x+1<b_width && mb_y+1<b_height ? &s->block[index+b_stride+1] : NULL;
                 const int b_w= (MB_SIZE >> s->block_max_depth);
                 uint8_t obmc_edged[b_w*2][b_w*2];
 
@@ -3397,13 +3397,13 @@ static void iterative_me(SnowContext *s){
 
                     check_block_inter(s, mb_x, mb_y, mvr[0][0], mvr[0][1], *obmc_edged, &best_rd);
                     check_block_inter(s, mb_x, mb_y, 0, 0, *obmc_edged, &best_rd);
-                    if(tb!=&null_block)
+                    if(tb)
                         check_block_inter(s, mb_x, mb_y, mvr[-b_stride][0], mvr[-b_stride][1], *obmc_edged, &best_rd);
-                    if(lb!=&null_block)
+                    if(lb)
                         check_block_inter(s, mb_x, mb_y, mvr[-1][0], mvr[-1][1], *obmc_edged, &best_rd);
-                    if(rb!=&null_block)
+                    if(rb)
                         check_block_inter(s, mb_x, mb_y, mvr[1][0], mvr[1][1], *obmc_edged, &best_rd);
-                    if(bb!=&null_block)
+                    if(bb)
                         check_block_inter(s, mb_x, mb_y, mvr[b_stride][0], mvr[b_stride][1], *obmc_edged, &best_rd);
 
                     /* fullpel ME */
@@ -3442,14 +3442,14 @@ static void iterative_me(SnowContext *s){
                 //FIXME RD style color selection
 #endif
                 if(!same_block(block, &backup)){
-                    if(tb != &null_block) tb ->type &= ~BLOCK_OPT;
-                    if(lb != &null_block) lb ->type &= ~BLOCK_OPT;
-                    if(rb != &null_block) rb ->type &= ~BLOCK_OPT;
-                    if(bb != &null_block) bb ->type &= ~BLOCK_OPT;
-                    if(tlb!= &null_block) tlb->type &= ~BLOCK_OPT;
-                    if(trb!= &null_block) trb->type &= ~BLOCK_OPT;
-                    if(blb!= &null_block) blb->type &= ~BLOCK_OPT;
-                    if(brb!= &null_block) brb->type &= ~BLOCK_OPT;
+                    if(tb ) tb ->type &= ~BLOCK_OPT;
+                    if(lb ) lb ->type &= ~BLOCK_OPT;
+                    if(rb ) rb ->type &= ~BLOCK_OPT;
+                    if(bb ) bb ->type &= ~BLOCK_OPT;
+                    if(tlb) tlb->type &= ~BLOCK_OPT;
+                    if(trb) trb->type &= ~BLOCK_OPT;
+                    if(blb) blb->type &= ~BLOCK_OPT;
+                    if(brb) brb->type &= ~BLOCK_OPT;
                     change ++;
                 }
             }
@@ -3463,7 +3463,7 @@ static void iterative_me(SnowContext *s){
         int change= 0;
         for(mb_y= 0; mb_y<b_height; mb_y+=2){
             for(mb_x= 0; mb_x<b_width; mb_x+=2){
-                int dia_change, i, j;
+                int i;
                 int best_rd, init_rd;
                 const int index= mb_x + mb_y * b_stride;
                 BlockNode *b[4];
