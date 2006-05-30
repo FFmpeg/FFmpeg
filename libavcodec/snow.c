@@ -4041,6 +4041,13 @@ static int encode_init(AVCodecContext *avctx)
         return -1;
     }
 
+    if(avctx->prediction_method == DWT_97
+       && (avctx->flags & CODEC_FLAG_QSCALE)
+       && avctx->global_quality == 0){
+        av_log(avctx, AV_LOG_ERROR, "the 9/7 wavelet is incompatible with lossless mode\n");
+        return -1;
+    }
+
     common_init(avctx);
     alloc_blocks(s);
 
