@@ -293,34 +293,33 @@ static int sse16_c(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
 
 
 static inline int w_c(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, int w, int h, int type){
-#ifdef CONFIG_SNOW_ENCODER //idwt is in snow.c
+#ifdef CONFIG_SNOW_ENCODER //dwt is in snow.c
     int s, i, j;
     const int dec_count= w==8 ? 3 : 4;
-    int tmp[16*16];
-#if 0
+    int tmp[32*32];
     int level, ori;
     static const int scale[2][2][4][4]={
       {
         {
-            //8x8 dec=3
+            // 9/7 8x8 dec=3
             {268, 239, 239, 213},
             {  0, 224, 224, 152},
             {  0, 135, 135, 110},
         },{
-            //16x16 dec=4
+            // 9/7 16x16 or 32x32 dec=4
             {344, 310, 310, 280},
             {  0, 320, 320, 228},
             {  0, 175, 175, 136},
             {  0, 129, 129, 102},
         }
       },{
-        {//FIXME 5/3
-            //8x8 dec=3
+        {
+            // 5/3 8x8 dec=3
             {275, 245, 245, 218},
             {  0, 230, 230, 156},
             {  0, 138, 138, 113},
         },{
-            //16x16 dec=4
+            // 5/3 16x16 or 32x32 dec=4
             {352, 317, 317, 286},
             {  0, 328, 328, 233},
             {  0, 180, 180, 140},
@@ -328,29 +327,28 @@ static inline int w_c(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, in
         }
       }
     };
-#endif
 
     for (i = 0; i < h; i++) {
         for (j = 0; j < w; j+=4) {
-            tmp[16*i+j+0] = (pix1[j+0] - pix2[j+0])<<4;
-            tmp[16*i+j+1] = (pix1[j+1] - pix2[j+1])<<4;
-            tmp[16*i+j+2] = (pix1[j+2] - pix2[j+2])<<4;
-            tmp[16*i+j+3] = (pix1[j+3] - pix2[j+3])<<4;
+            tmp[32*i+j+0] = (pix1[j+0] - pix2[j+0])<<4;
+            tmp[32*i+j+1] = (pix1[j+1] - pix2[j+1])<<4;
+            tmp[32*i+j+2] = (pix1[j+2] - pix2[j+2])<<4;
+            tmp[32*i+j+3] = (pix1[j+3] - pix2[j+3])<<4;
         }
         pix1 += line_size;
         pix2 += line_size;
     }
 
-    ff_spatial_dwt(tmp, w, h, 16, type, dec_count);
+    ff_spatial_dwt(tmp, w, h, 32, type, dec_count);
 
     s=0;
-#if 0
+    assert(w==h);
     for(level=0; level<dec_count; level++){
         for(ori= level ? 1 : 0; ori<4; ori++){
-            int sx= (ori&1) ? 1<<level: 0;
-            int stride= 16<<(dec_count-level);
+            int size= w>>(dec_count-level);
+            int sx= (ori&1) ? size : 0;
+            int stride= 32<<(dec_count-level);
             int sy= (ori&2) ? stride>>1 : 0;
-            int size= 1<<level;
 
             for(i=0; i<size; i++){
                 for(j=0; j<size; j++){
@@ -360,18 +358,8 @@ static inline int w_c(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, in
             }
         }
     }
-#endif
-    for (i = 0; i < h; i++) {
-        for (j = 0; j < w; j+=4) {
-            s+= ABS(tmp[16*i+j+0]);
-            s+= ABS(tmp[16*i+j+1]);
-            s+= ABS(tmp[16*i+j+2]);
-            s+= ABS(tmp[16*i+j+3]);
-        }
-    }
     assert(s>=0);
-
-    return s>>2;
+    return s>>9;
 #endif
 }
 
@@ -389,6 +377,14 @@ static int w53_16_c(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, int 
 
 static int w97_16_c(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, int h){
     return w_c(v, pix1, pix2, line_size, 16, h, 0);
+}
+
+int w53_32_c(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, int h){
+    return w_c(v, pix1, pix2, line_size, 32, h, 1);
+}
+
+int w97_32_c(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, int h){
+    return w_c(v, pix1, pix2, line_size, 32, h, 0);
 }
 
 static void get_pixels_c(DCTELEM *restrict block, const uint8_t *pixels, int line_size)

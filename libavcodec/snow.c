@@ -3092,12 +3092,23 @@ static int get_block_rd(SnowContext *s, int mb_x, int mb_y, int plane_index, con
             memcpy(dst + sx+x0 + (sy+y)*ref_stride, cur + x0 + y*ref_stride, x1-x0);
     }
 
-    //FIXME sad/ssd can be broken up, but wavelet cmp should be one 32x32 block
     if(block_w==16){
-        distortion = 0;
-        for(i=0; i<4; i++){
-            int off = sx+16*(i&1) + (sy+16*(i>>1))*ref_stride;
-            distortion += s->dsp.me_cmp[0](&s->m, src + off, dst + off, ref_stride, 16);
+        /* FIXME rearrange dsputil to fit 32x32 cmp functions */
+        /* FIXME check alignment of the cmp wavelet vs the encoding wavelet */
+        /* FIXME cmps overlap but don't cover the wavelet's whole support,
+         * so improving the score of one block is not strictly guaranteed to
+         * improve the score of the whole frame, so iterative motion est
+         * doesn't always converge. */
+        if(s->avctx->me_cmp == FF_CMP_W97)
+            distortion = w97_32_c(&s->m, src + sx + sy*ref_stride, dst + sx + sy*ref_stride, ref_stride, 32);
+        else if(s->avctx->me_cmp == FF_CMP_W53)
+            distortion = w53_32_c(&s->m, src + sx + sy*ref_stride, dst + sx + sy*ref_stride, ref_stride, 32);
+        else{
+            distortion = 0;
+            for(i=0; i<4; i++){
+                int off = sx+16*(i&1) + (sy+16*(i>>1))*ref_stride;
+                distortion += s->dsp.me_cmp[0](&s->m, src + off, dst + off, ref_stride, 16);
+            }
         }
     }else{
         assert(block_w==8);
@@ -3282,7 +3293,7 @@ static void iterative_me(SnowContext *s){
         memcpy(s->block_state, state, sizeof(s->block_state));
     }
 
-    for(pass=0; pass<50; pass++){
+    for(pass=0; pass<25; pass++){
         int change= 0;
 
         for(mb_y= 0; mb_y<b_height; mb_y++){
