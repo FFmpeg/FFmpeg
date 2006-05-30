@@ -366,6 +366,8 @@ static const uint8_t *obmc_tab[4]={
     obmc32, obmc16, obmc8, obmc4
 };
 
+static int scale_mv_ref[MAX_REF_FRAMES][MAX_REF_FRAMES];
+
 typedef struct BlockNode{
     int16_t mx;
     int16_t my;
@@ -1949,6 +1951,22 @@ static inline void init_ref(MotionEstContext *c, uint8_t *src[3], uint8_t *ref[3
     assert(!ref_index);
 }
 
+static inline void pred_mv(SnowContext *s, int *mx, int *my, int ref,
+                           BlockNode *left, BlockNode *top, BlockNode *tr){
+    if(s->ref_frames == 1){
+        *mx = mid_pred(left->mx, top->mx, tr->mx);
+        *my = mid_pred(left->my, top->my, tr->my);
+    }else{
+        const int *scale = scale_mv_ref[ref];
+        *mx = mid_pred(left->mx * scale[left->ref] + 128 >>8,
+                       top ->mx * scale[top ->ref] + 128 >>8,
+                       tr  ->mx * scale[tr  ->ref] + 128 >>8);
+        *my = mid_pred(left->my * scale[left->ref] + 128 >>8,
+                       top ->my * scale[top ->ref] + 128 >>8,
+                       tr  ->my * scale[tr  ->ref] + 128 >>8);
+    }
+}
+
 //FIXME copy&paste
 #define P_LEFT P[1]
 #define P_TOP P[2]
@@ -1982,8 +2000,7 @@ static int encode_q_branch(SnowContext *s, int level, int x, int y){
     int pl = left->color[0];
     int pcb= left->color[1];
     int pcr= left->color[2];
-    int pmx= mid_pred(left->mx, top->mx, tr->mx);
-    int pmy= mid_pred(left->my, top->my, tr->my);
+    int pmx, pmy;
     int mx=0, my=0;
     int l,cr,cb;
     const int stride= s->current_picture.linesize[0];
@@ -2004,7 +2021,7 @@ static int encode_q_branch(SnowContext *s, int level, int x, int y){
 
     assert(sizeof(s->block_state) >= 256);
     if(s->keyframe){
-        set_blocks(s, level, x, y, pl, pcb, pcr, pmx, pmy, 0, BLOCK_INTRA);
+        set_blocks(s, level, x, y, pl, pcb, pcr, 0, 0, 0, BLOCK_INTRA);
         return 0;
     }
 
@@ -2102,6 +2119,7 @@ static int encode_q_branch(SnowContext *s, int level, int x, int y){
     put_rac(&pc, &p_state[1 + left->type + top->type], 0);
     if(s->ref_frames > 1)
         put_symbol(&pc, &p_state[128 + 1024 + 32*ref_context], best_ref, 0);
+    pred_mv(s, &pmx, &pmy, best_ref, left, top, tr);
     put_symbol(&pc, &p_state[128 + 32*(mx_context + 16*!!best_ref)], mx - pmx, 1);
     put_symbol(&pc, &p_state[128 + 32*(my_context + 16*!!best_ref)], my - pmy, 1);
     p_len= pc.bytestream - pc.bytestream_start;
@@ -2167,6 +2185,7 @@ static int encode_q_branch(SnowContext *s, int level, int x, int y){
     }
 
     if(iscore < score){
+        pred_mv(s, &pmx, &pmy, 0, left, top, tr);
         memcpy(pbbak, i_buffer, i_len);
         s->c= ic;
         s->c.bytestream_start= pbbak_start;
@@ -2206,15 +2225,14 @@ static void encode_q_branch2(SnowContext *s, int level, int x, int y){
     int pl = left->color[0];
     int pcb= left->color[1];
     int pcr= left->color[2];
-    int pmx= mid_pred(left->mx, top->mx, tr->mx);
-    int pmy= mid_pred(left->my, top->my, tr->my);
+    int pmx, pmy;
     int ref_context= av_log2(2*left->ref) + av_log2(2*top->ref);
     int mx_context= av_log2(2*ABS(left->mx - top->mx)) + 16*!!b->ref;
     int my_context= av_log2(2*ABS(left->my - top->my)) + 16*!!b->ref;
     int s_context= 2*left->level + 2*top->level + tl->level + tr->level;
 
     if(s->keyframe){
-        set_blocks(s, level, x, y, pl, pcb, pcr, pmx, pmy, 0, BLOCK_INTRA);
+        set_blocks(s, level, x, y, pl, pcb, pcr, 0, 0, 0, BLOCK_INTRA);
         return;
     }
 
@@ -2231,12 +2249,14 @@ static void encode_q_branch2(SnowContext *s, int level, int x, int y){
         }
     }
     if(b->type & BLOCK_INTRA){
+        pred_mv(s, &pmx, &pmy, 0, left, top, tr);
         put_rac(&s->c, &s->block_state[1 + (left->type&1) + (top->type&1)], 1);
         put_symbol(&s->c, &s->block_state[32], b->color[0]-pl , 1);
         put_symbol(&s->c, &s->block_state[64], b->color[1]-pcb, 1);
         put_symbol(&s->c, &s->block_state[96], b->color[2]-pcr, 1);
         set_blocks(s, level, x, y, b->color[0], b->color[1], b->color[2], pmx, pmy, 0, BLOCK_INTRA);
     }else{
+        pred_mv(s, &pmx, &pmy, b->ref, left, top, tr);
         put_rac(&s->c, &s->block_state[1 + (left->type&1) + (top->type&1)], 0);
         if(s->ref_frames > 1)
             put_symbol(&s->c, &s->block_state[128 + 1024 + 32*ref_context], b->ref, 0);
@@ -2277,12 +2297,14 @@ static void decode_q_branch(SnowContext *s, int level, int x, int y){
         type= get_rac(&s->c, &s->block_state[1 + left->type + top->type]) ? BLOCK_INTRA : 0;
 
         if(type){
+            pred_mv(s, &mx, &my, 0, left, top, tr);
             l += get_symbol(&s->c, &s->block_state[32], 1);
             cb+= get_symbol(&s->c, &s->block_state[64], 1);
             cr+= get_symbol(&s->c, &s->block_state[96], 1);
         }else{
             if(s->ref_frames > 1)
                 ref= get_symbol(&s->c, &s->block_state[128 + 1024 + 32*ref_context], 0);
+            pred_mv(s, &mx, &my, ref, left, top, tr);
             mx+= get_symbol(&s->c, &s->block_state[128 + 32*(mx_context + 16*!!ref)], 1);
             my+= get_symbol(&s->c, &s->block_state[128 + 32*(my_context + 16*!!ref)], 1);
         }
@@ -3013,8 +3035,6 @@ static inline int get_block_bits(SnowContext *s, int x, int y, int w){
 
     if(x<0 || x>=b_stride || y>=b_height)
         return 0;
-    dmx= b->mx - mid_pred(left->mx, top->mx, tr->mx);
-    dmy= b->my - mid_pred(left->my, top->my, tr->my);
 /*
 1            0      0
 01X          1-2    1
@@ -3028,10 +3048,14 @@ static inline int get_block_bits(SnowContext *s, int x, int y, int w){
         return 3+2*( av_log2(2*ABS(left->color[0] - b->color[0]))
                    + av_log2(2*ABS(left->color[1] - b->color[1]))
                    + av_log2(2*ABS(left->color[2] - b->color[2])));
-    }else
+    }else{
+        pred_mv(s, &dmx, &dmy, b->ref, left, top, tr);
+        dmx-= b->mx;
+        dmy-= b->my;
         return 2*(1 + av_log2(2*ABS(dmx)) //FIXME kill the 2* can be merged in lambda
                     + av_log2(2*ABS(dmy))
                     + av_log2(2*b->ref));
+    }
 }
 
 static int get_block_rd(SnowContext *s, int mb_x, int mb_y, int plane_index, const uint8_t *obmc_edged){
@@ -3806,6 +3830,7 @@ static int common_init(AVCodecContext *avctx){
     SnowContext *s = avctx->priv_data;
     int width, height;
     int level, orientation, plane_index, dec;
+    int i, j;
 
     s->avctx= avctx;
 
@@ -3910,6 +3935,10 @@ static int common_init(AVCodecContext *avctx){
             h= (h+1)>>1;
         }
     }
+
+    for(i=0; i<MAX_REF_FRAMES; i++)
+        for(j=0; j<MAX_REF_FRAMES; j++)
+            scale_mv_ref[i][j] = 256*(i+1)/(j+1);
 
     reset_contexts(s);
 /*
