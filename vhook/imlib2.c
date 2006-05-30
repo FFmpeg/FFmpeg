@@ -144,7 +144,9 @@ int Configure(void **ctxp, int argc, char *argv[])
         char buff[256];
         int done = 0;
 
-        f = fopen("/usr/lib/X11/rgb.txt", "r");
+        f = fopen("/usr/share/X11/rgb.txt", "r");
+        if (!f)
+            f = fopen("/usr/lib/X11/rgb.txt", "r");
         if (!f) {
             fprintf(stderr, "Failed to find rgb.txt\n");
             return -1;
