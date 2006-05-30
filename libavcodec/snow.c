@@ -3912,6 +3912,11 @@ static int common_init(AVCodecContext *avctx){
     return 0;
 }
 
+static int qscale2qlog(int qscale){
+    return rint(QROOT*log(qscale / (float)FF_QP2LAMBDA)/log(2))
+           + 61*QROOT/8; //<64 >60
+}
+
 static void ratecontrol_1pass(SnowContext *s, AVFrame *pict)
 {
     /* estimate the frame's complexity as a sum of weighted dwt coefs.
@@ -3955,6 +3960,7 @@ static void ratecontrol_1pass(SnowContext *s, AVFrame *pict)
 
     pict->quality= ff_rate_estimate_qscale(&s->m, 1);
     s->lambda= pict->quality * 3/2;
+    s->qlog= qscale2qlog(pict->quality);
 }
 
 static void calculate_vissual_weight(SnowContext *s, Plane *p){
@@ -4016,7 +4022,7 @@ static int encode_init(AVCodecContext *avctx)
         if(!avctx->stats_out)
             avctx->stats_out = av_mallocz(256);
     }
-    if(!(avctx->flags&CODEC_FLAG_QSCALE)){
+    if((avctx->flags&CODEC_FLAG_PASS2) || !(avctx->flags&CODEC_FLAG_QSCALE)){
         if(ff_rate_control_init(&s->m) < 0)
             return -1;
     }
@@ -4138,9 +4144,7 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
     if(s->pass1_rc && avctx->frame_number == 0)
         pict->quality= 2*FF_QP2LAMBDA;
     if(pict->quality){
-        s->qlog= rint(QROOT*log(pict->quality / (float)FF_QP2LAMBDA)/log(2));
-        //<64 >60
-        s->qlog += 61*QROOT/8;
+        s->qlog= qscale2qlog(pict->quality);
         s->lambda = pict->quality * 3/2;
     }
     if(s->qlog < 0 || (!pict->quality && (avctx->flags & CODEC_FLAG_QSCALE))){
