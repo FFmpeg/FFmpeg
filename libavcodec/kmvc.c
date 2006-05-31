@@ -242,8 +242,17 @@ static int decode_frame(AVCodecContext * avctx, void *data, int *data_size, uint
         return -1;
     }
 
-    header = buf[0];
-    buf++;
+    header = *buf++;
+
+    /* blocksize 127 is really palette change event */
+    if (buf[0] == 127) {
+        buf += 3;
+        for (i = 0; i < 127; i++) {
+            ctx->pal[i + (header & 0x81)] = (buf[0] << 16) | (buf[1] << 8) | buf[2];
+            buf += 4;
+        }
+        buf -= 127 * 4 + 3;
+    }
 
     if (header & KMVC_KEYFRAME) {
         ctx->pic.key_frame = 1;
@@ -251,6 +260,13 @@ static int decode_frame(AVCodecContext * avctx, void *data, int *data_size, uint
     } else {
         ctx->pic.key_frame = 0;
         ctx->pic.pict_type = FF_P_TYPE;
+    }
+
+    /* if palette has been changed, copy it from palctrl */
+    if (ctx->avctx->palctrl && ctx->avctx->palctrl->palette_changed) {
+        memcpy(ctx->pal, ctx->avctx->palctrl->palette, AVPALETTE_SIZE);
+        ctx->setpal = 1;
+        ctx->avctx->palctrl->palette_changed = 0;
     }
 
     if (header & KMVC_PALETTE) {
@@ -272,12 +288,16 @@ static int decode_frame(AVCodecContext * avctx, void *data, int *data_size, uint
 
     blocksize = *buf++;
 
-    if (blocksize != 8) {
+    if (blocksize != 8 && blocksize != 127) {
         av_log(avctx, AV_LOG_ERROR, "Block size = %i\n", blocksize);
         return -1;
     }
     memset(ctx->cur, 0, 320 * 200);
     switch (header & KMVC_METHOD) {
+    case 0:
+    case 1: // used in palette changed event
+        memcpy(ctx->cur, ctx->prev, 320 * 200);
+        break;
     case 3:
         kmvc_decode_intra_8x8(ctx, buf, avctx->width, avctx->height);
         break;
@@ -351,11 +371,14 @@ static int decode_init(AVCodecContext * avctx)
 
     if (avctx->extradata_size == 1036) {        // palette in extradata
         uint8_t *src = avctx->extradata + 12;
-        for (i = 0; i < c->palsize; i++) {
+        for (i = 0; i < 256; i++) {
             c->pal[i] = LE_32(src);
             src += 4;
         }
         c->setpal = 1;
+        if (c->avctx->palctrl) {
+            c->avctx->palctrl->palette_changed = 0;
+        }
     }
 
     avctx->pix_fmt = PIX_FMT_PAL8;
