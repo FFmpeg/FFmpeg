@@ -34,7 +34,6 @@ Michael's TODO list: (unordered) (if anyone wanna help with sth, just ask)
 - simper rate control
 - split h263.c
 - reverse engeneer RV30/RV40
-- finish NUT implementation
 
 Francois' TODO list: (unordered, without any timeframe)
 -------------------
@@ -55,10 +54,25 @@ Philip'a TODO list: (alphabetically ordered) (please help)
 - Make ffm files more resilient to changes in the codec structures so that you
   can play old ffm files.
 
-unassigned TODO: (stuff which should/must be done but noone seems to do it)
+unassigned TODO: (unordered)
 ---------------
 - use AVFrame for audio codecs too
 - rework aviobuf.c buffering strategy and fix url_fskip
 - generate optimal huffman tables for mjpeg encoding
 - fix ffserver regression tests
+- support xvids motion estimation
+- support x264s motion estimation
+- support x264s rate control
+- SNOW: non translational motion compensation
+- SNOW: more optimal quantization
+- SNOW: 4x4 block support
+- SNOW: 1/8 pel motion compensation support
+- SNOW: iterative motion estimation based on subsampled images
+- ADPCM: viterbi/trellis based optimal encoder
+- FLAC: lossy encoding (viterbi and naive scalar quantization)
+- libavfilter
+- JPEG2000 decoder & encoder
+- MPEG4 GMC encoding support
+- macroblock based pixel format (better cache locality, somewhat complex, one paper claimed it faster for high res)
+- finish NUT implementation
 
