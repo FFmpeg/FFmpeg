@@ -5,9 +5,7 @@ Fabrice's TODO list: (unordered)
 -------------------
 Short term:
 
-- av_read_frame() API
 - seeking API and example in ffplay
-- parse_only mode
 - use AVFMTCTX_DISCARD_PKT in ffplay so that DV has a chance to work
 - add RTSP regression test (both client and server)
 - make ffserver allocate AVFormatContext
@@ -15,7 +13,6 @@ Short term:
     * AVStream -> AVComponent
     * AVFormatContext -> AVInputStream/AVOutputStream
     * suppress rate_emu from AVCodecContext
-- add av_log() in libavcodec and suppress all printf
 - add new float/integer audio filterting and conversion : suppress
   CODEC_ID_PCM_xxc and use CODEC_ID_RAWAUDIO.
 - fix telecine and frame rate conversion
@@ -25,14 +22,12 @@ Long term (ask me if you want to help):
 - commit new imgconvert API and new PIX_FMT_xxx alpha formats
 - commit new LGPL'ed float and integer-only AC3 decoder
 - add WMA integer-only decoder
-- integrate custom Vorbis Tremor based integer and float decoder
 - add new MPEG4-AAC audio decoder (both integer-only and float version)
 
 Michael's TODO list: (unordered) (if anyone wanna help with sth, just ask)
 -------------------
 - finish implementation of WMV2 j-picture
 - H264 encoder
-- H264 B frames
 - optimize H264 CABAC
 - per MB ratecontrol (so VCD and such do work better)
 - more optimizations
@@ -44,7 +39,6 @@ Michael's TODO list: (unordered) (if anyone wanna help with sth, just ask)
 Francois' TODO list: (unordered, without any timeframe)
 -------------------
 - test MACE decoder against the openquicktime one as suggested by A'rpi
-- mov/mp4 muxer
 - BeOS audio input grabbing backend
 - BeOS video input grabbing backend
 - have a REAL BeOS errno fix (return MKERROR(EXXX);), not a hack
@@ -64,11 +58,7 @@ Philip'a TODO list: (alphabetically ordered) (please help)
 unassigned TODO: (stuff which should/must be done but noone seems to do it)
 ---------------
 - use AVFrame for audio codecs too
-- H264 interlacing
 - rework aviobuf.c buffering strategy and fix url_fskip
-- do audio resampling with bandlimited interpolation:
-  http://ccrma-www.stanford.edu/~jos/resample/resample.html
-- add seeking support to the command line
 - generate optimal huffman tables for mjpeg encoding
 - fix ffserver regression tests
 
