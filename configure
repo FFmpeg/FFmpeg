@@ -932,12 +932,12 @@ check_header altivec.h && _altivec_h=yes || _altivec_h=no
 
 # check if our compiler supports Motorola AltiVec C API
 if test $altivec = "yes"; then
-if test $_altivec_h = "yes"; then
-    inc_altivec_h="#include <altivec.h>"
-else
-    inc_altivec_h=
-fi
-check_cc <<EOF || altivec=no
+    if test $_altivec_h = "yes"; then
+        inc_altivec_h="#include <altivec.h>"
+    else
+        inc_altivec_h=
+    fi
+    check_cc <<EOF || altivec=no
 $inc_altivec_h
 int main(void) {
     vector signed int v1, v2, v3;
@@ -958,7 +958,7 @@ fi
 
 # check if our compiler supports mmi
 if test $mmi = "yes"; then
-check_cc <<EOF || mmi="no"
+    check_cc <<EOF || mmi="no"
 int main(void) {
     __asm__ ("lq \$2, 0(\$2)");
     return 0;
@@ -984,9 +984,9 @@ EOF
     dc1394="no"
     ffserver="no"
     network="no"
-if test "$mingwce" = "yes"; then
-    protocols="no"
-fi
+    if test "$mingwce" = "yes"; then
+        protocols="no"
+    fi
     SLIBPREF=""
     SLIBSUF=".dll"
     EXESUF=".exe"
@@ -995,10 +995,9 @@ fi
 fi
 
 if test -z "$cross_prefix" ; then
-
-# ---
-# big/little-endian test
-check_ld <<EOF
+    # ---
+    # big/little-endian test
+    check_ld <<EOF
 #include <inttypes.h>
 int main(int argc, char ** argv){
         volatile uint32_t i=0x01234567;
@@ -1006,19 +1005,16 @@ int main(int argc, char ** argv){
 }
 EOF
 
-if test $? = 0 ; then
-    $TMPE && bigendian="yes"
+    if test $? = 0 ; then
+        $TMPE && bigendian="yes"
+    else
+        echo big/little test failed
+    fi
 else
-    echo big/little test failed
-fi
-
-else
-
-# programs cannot be launched if cross compiling, so make a static guess
-if test "$cpu" = "powerpc" -o "$cpu" = "mips" ; then
-    bigendian="yes"
-fi
-
+    # programs cannot be launched if cross compiling, so make a static guess
+    if test "$cpu" = "powerpc" -o "$cpu" = "mips" ; then
+        bigendian="yes"
+    fi
 fi
 
 # ---
@@ -1135,12 +1131,12 @@ if check_func dlopen; then
     ldl=
 fi
 
-if test "$vhook" = "default" ; then
-  vhook="$dlopen"
+if test "$vhook" = "default"; then
+    vhook="$dlopen"
 fi
 
 if test "$vhook" = "yes" -o "$a52bin" = "yes" -o "$faadbin" = "yes"; then
-  extralibs="$extralibs $ldl"
+    extralibs="$extralibs $ldl"
 fi
 
 
@@ -1233,8 +1229,8 @@ EOF
 check_cflags -Wall
 check_cflags -Wno-switch
 
-if test "$sdl" = "no" ; then
-   ffplay=no
+if test "$sdl" = "no"; then
+    ffplay=no
 fi
 
 if test "$debug" = "yes"; then
@@ -1257,28 +1253,28 @@ fi
 
 # PIC flags for shared library objects where they are needed
 if test "$lshared" = "yes" ; then
-  # LIBOBJFLAGS may have already been set in the OS configuration
-  if test -z "$LIBOBJFLAGS" ; then
-    if test "$cpu" = "x86_64" -o "$cpu" = "ia64" -o "$cpu" = "alpha" ; then
-      LIBOBJFLAGS="\$(PIC)"
+    # LIBOBJFLAGS may have already been set in the OS configuration
+    if test -z "$LIBOBJFLAGS" ; then
+        if test "$cpu" = "x86_64" -o "$cpu" = "ia64" -o "$cpu" = "alpha" ; then
+            LIBOBJFLAGS="\$(PIC)"
+        fi
     fi
-  fi
 fi
 
 if test x"$bindir" = x""; then
-bindir="${prefix}/bin"
+    bindir="${prefix}/bin"
 fi
 
 if test x"$libdir" = x""; then
-libdir="${prefix}/lib"
+    libdir="${prefix}/lib"
 fi
 
 if test x"$incdir" = x""; then
-incdir="${prefix}/include/ffmpeg"
+    incdir="${prefix}/include/ffmpeg"
 fi
 
 if test x"$mandir" = x""; then
-mandir="${prefix}/man"
+    mandir="${prefix}/man"
 fi
 
 echo "install prefix   $prefix"
@@ -1287,24 +1283,24 @@ echo "C compiler       $cc"
 echo "make             $make"
 echo "CPU              $cpu ($tune)"
 if test "$BUILDSUF" != ""; then
-echo "build suffix     $BUILDSUF"
+    echo "build suffix     $BUILDSUF"
 fi
 echo "big-endian       $bigendian"
 echo "inttypes.h       $inttypes"
 echo "broken inttypes.h $emu_fast_int"
 if test $cpu = "x86" -o $cpu = "x86_64"; then
-echo "MMX enabled      $mmx"
-echo "Vector Builtins  $builtin_vector"
-echo "3DNow! Builtins  $mm3dnow"
+    echo "MMX enabled      $mmx"
+    echo "Vector Builtins  $builtin_vector"
+    echo "3DNow! Builtins  $mm3dnow"
 fi
 if test $cpu = "armv4l"; then
-echo "IWMMXT enabled   $iwmmxt"
+    echo "IWMMXT enabled   $iwmmxt"
 fi
 if test $cpu = "mips"; then
-echo "MMI enabled      $mmi"
+    echo "MMI enabled      $mmi"
 fi
 if test $cpu = "powerpc"; then
-echo "AltiVec enabled  $altivec"
+    echo "AltiVec enabled  $altivec"
 fi
 echo "gprof enabled    $gprof"
 echo "zlib enabled     $zlib"
@@ -1331,12 +1327,12 @@ echo "shared           $lshared"
 echo "video hooking    $vhook"
 echo "SDL support      $sdl"
 if test $sdl_too_old = "yes"; then
-echo "-> Your SDL version is too old - please upgrade to have FFplay/SDL support."
+    echo "-> Your SDL version is too old - please upgrade to have FFplay/SDL support."
 fi
 
-if test "$vhook" = "yes" ; then
-echo "Imlib2 support   $imlib2"
-echo "FreeType support $freetype2"
+if test "$vhook" = "yes"; then
+    echo "Imlib2 support   $imlib2"
+    echo "FreeType support $freetype2"
 fi
 echo "Sun medialib support"  $sunmlib
 echo "pthreads support"      $pthreads
@@ -1346,12 +1342,12 @@ echo "AMR-WB float support"  $amr_wb
 echo "AMR-WB IF2 support"    $amr_if2
 echo "network support      $network"
 if test "$network" = "yes" ; then
-echo "IPv6 support         $ipv6"
+    echo "IPv6 support         $ipv6"
 fi
 if test "$gpl" = "no" ; then
-echo "License: LGPL"
+    echo "License: LGPL"
 else
-echo "License: GPL"
+    echo "License: GPL"
 fi
 
 echo "Creating config.mak and config.h..."
@@ -1372,11 +1368,11 @@ echo "CC=$cc" >> config.mak
 echo "AR=$ar" >> config.mak
 echo "RANLIB=$ranlib" >> config.mak
 if test "$dostrip" = "yes" ; then
-echo "STRIP=$strip" >> config.mak
-echo "INSTALLSTRIP=$installstrip" >> config.mak
+    echo "STRIP=$strip" >> config.mak
+    echo "INSTALLSTRIP=$installstrip" >> config.mak
 else
-echo "STRIP=echo ignoring strip" >> config.mak
-echo "INSTALLSTRIP=" >> config.mak
+    echo "STRIP=echo ignoring strip" >> config.mak
+    echo "INSTALLSTRIP=" >> config.mak
 fi
 
 # SHCFLAGS is a copy of CFLAGS without -mdynamic-no-pic, used when building
