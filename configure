@@ -714,6 +714,11 @@ done
 # Combine FFLDFLAGS and the LDFLAGS environment variable
 LDFLAGS="$FFLDFLAGS $LDFLAGS"
 
+cc="${cross_prefix}${cc}"
+ar="${cross_prefix}${ar}"
+ranlib="${cross_prefix}${ranlib}"
+strip="${cross_prefix}${strip}"
+
 # we need to build at least one lib type
 if test "$lstatic" = "no" && test "$lshared" = "no" ; then
     cat <<EOF
@@ -988,11 +993,6 @@ fi
     if test "$force_prefix" != yes; then prefix="/c/Program Files/FFmpeg"; fi
     if test "$force_libdir" != yes; then bindir="$prefix"; fi
 fi
-
-cc="${cross_prefix}${cc}"
-ar="${cross_prefix}${ar}"
-ranlib="${cross_prefix}${ranlib}"
-strip="${cross_prefix}${strip}"
 
 if test -z "$cross_prefix" ; then
 
