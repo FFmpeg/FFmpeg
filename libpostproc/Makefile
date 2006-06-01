@@ -1,5 +1,5 @@
 
-include ../../config.mak
+include ../config.mak
 
 # Overload incdir, postproc include files go in a different directory.
 incdir=$(prefix)/include/postproc

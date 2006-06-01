@@ -73,7 +73,7 @@ lib:
 	$(MAKE) -C libavcodec  all
 	$(MAKE) -C libavformat all
 ifeq ($(CONFIG_PP),yes)
-	$(MAKE) -C libavcodec/libpostproc all
+	$(MAKE) -C libpostproc all
 endif
 
 ffmpeg_g$(EXESUF): ffmpeg.o cmdutils.o .libs
@@ -147,7 +147,7 @@ install-libs:
 	$(MAKE) -C libavcodec  install-libs
 	$(MAKE) -C libavformat install-libs
 ifeq ($(CONFIG_PP),yes)
-	$(MAKE) -C libavcodec/libpostproc install-libs
+	$(MAKE) -C libpostproc install-libs
 endif
 ifeq ($(BUILD_SHARED),yes)
 	-$(LDCONFIG)
@@ -158,7 +158,7 @@ install-headers:
 	$(MAKE) -C libavcodec  install-headers
 	$(MAKE) -C libavformat install-headers
 ifeq ($(CONFIG_PP),yes)
-	$(MAKE) -C libavcodec/libpostproc install-headers
+	$(MAKE) -C libpostproc install-headers
 endif
 
 uninstall: uninstall-progs uninstall-libs uninstall-headers uninstall-man uninstall-vhook
@@ -178,13 +178,13 @@ uninstall-libs:
 	$(MAKE) -C libavutil   uninstall-libs
 	$(MAKE) -C libavcodec  uninstall-libs
 	$(MAKE) -C libavformat uninstall-libs
-	$(MAKE) -C libavcodec/libpostproc uninstall-libs
+	$(MAKE) -C libpostproc uninstall-libs
 
 uninstall-headers:
 	$(MAKE) -C libavutil   uninstall-headers
 	$(MAKE) -C libavcodec  uninstall-headers
 	$(MAKE) -C libavformat uninstall-headers
-	$(MAKE) -C libavcodec/libpostproc uninstall-headers
+	$(MAKE) -C libpostproc uninstall-headers
 	-rmdir "$(incdir)"
 	-rmdir "$(prefix)/include/postproc"
 
@@ -208,7 +208,7 @@ clean:
 	$(MAKE) -C libavutil   clean
 	$(MAKE) -C libavcodec  clean
 	$(MAKE) -C libavformat clean
-	$(MAKE) -C libavcodec/libpostproc clean
+	$(MAKE) -C libpostproc clean
 	$(MAKE) -C tests       clean
 	$(MAKE) -C vhook       clean
 	rm -f *.o *.d *~ .libs gmon.out TAGS \
@@ -219,7 +219,7 @@ distclean: clean
 	$(MAKE) -C libavutil   distclean
 	$(MAKE) -C libavcodec  distclean
 	$(MAKE) -C libavformat distclean
-	$(MAKE) -C libavcodec/libpostproc distclean
+	$(MAKE) -C libpostproc distclean
 	$(MAKE) -C tests       distclean
 	$(MAKE) -C vhook       distclean
 	rm -f .depend config.mak config.h *.pc

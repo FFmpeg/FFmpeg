@@ -7,7 +7,7 @@
 #include "a52.h"
 #include "mm_accel.h"
 #include "config.h"
-#include "../libpostproc/mangle.h"
+#include "../../libpostproc/mangle.h"
 
 int (* a52_resample) (float * _f, int16_t * s16)=NULL;
 

@@ -1541,7 +1541,7 @@ if test "$vhook" = "yes" ; then
   echo "#define HAVE_VHOOK 1" >> $TMPH
 fi
 
-pp_version=`grep '#define LIBPOSTPROC_VERSION ' "$source_path/libavcodec/libpostproc/postprocess.h" | sed 's/[^0-9\.]//g'`
+pp_version=`grep '#define LIBPOSTPROC_VERSION ' "$source_path/libpostproc/postprocess.h" | sed 's/[^0-9\.]//g'`
 lavc_version=`grep '#define LIBAVCODEC_VERSION ' "$source_path/libavcodec/avcodec.h" | sed 's/[^0-9\.]//g'`
 lavf_version=`grep '#define LIBAVFORMAT_VERSION ' "$source_path/libavformat/avformat.h" | sed 's/[^0-9\.]//g'`
 lavu_version=`grep '#define LIBAVUTIL_VERSION ' "$source_path/libavutil/avutil.h" | sed 's/[^0-9\.]//g'`
@@ -1840,7 +1840,7 @@ if test "$source_path_used" = "yes" ; then
          libavcodec/mlib \
          libavcodec/ppc \
          libavcodec/liba52 \
-         libavcodec/libpostproc \
+         libpostproc \
          libavutil \
          tests \
          vhook \
@@ -1849,7 +1849,7 @@ if test "$source_path_used" = "yes" ; then
           Makefile \
           libavformat/Makefile \
           libavcodec/Makefile \
-          libavcodec/libpostproc/Makefile \
+          libpostproc/Makefile \
           libavutil/Makefile \
           tests/Makefile \
           vhook/Makefile \
@@ -2039,8 +2039,8 @@ EOF
 cat <<EOF >libpostproc-uninstalled.pc
 prefix=
 exec_prefix=
-libdir=\${pcfiledir}/libavcodec/libpostproc
-includedir=\${pcfiledir}/libavcodec/libpostproc
+libdir=\${pcfiledir}/libpostproc
+includedir=\${pcfiledir}/libpostproc
 
 Name: libpostproc
 Description: FFmpeg post processing library
