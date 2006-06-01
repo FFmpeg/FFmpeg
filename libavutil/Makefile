@@ -15,7 +15,6 @@ HEADERS = avutil.h common.h mathematics.h integer.h rational.h \
           intfloat_readwrite.h
 
 NAME=avutil
-SUBDIR = libavutil
 ifeq ($(BUILD_SHARED),yes)
 LIBVERSION=$(LAVUVERSION)
 LIBMAJOR=$(LAVUMAJOR)

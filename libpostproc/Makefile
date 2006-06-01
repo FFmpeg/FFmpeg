@@ -5,7 +5,6 @@ include ../config.mak
 incdir=$(prefix)/include/postproc
 
 NAME=postproc
-SUBDIR=libpostproc
 ifeq ($(BUILD_SHARED),yes)
 LIBVERSION=$(SPPVERSION)
 LIBMAJOR=$(SPPMAJOR)

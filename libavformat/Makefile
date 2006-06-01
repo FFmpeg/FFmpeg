@@ -83,7 +83,6 @@ OBJS+= ogg.o
 endif
 
 NAME=avformat
-SUBDIR=libavformat
 ifeq ($(BUILD_SHARED),yes)
 LIBVERSION=$(LAVFVERSION)
 LIBMAJOR=$(LAVFMAJOR)

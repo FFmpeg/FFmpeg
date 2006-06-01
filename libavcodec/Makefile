@@ -417,7 +417,6 @@ sparc/%.o: sparc/%.c
 endif
 
 NAME=avcodec
-SUBDIR=libavcodec
 LIBAVUTIL= $(SRC_PATH)/libavutil/$(LIBPREF)avutil$(LIBSUF)
 ifeq ($(BUILD_SHARED),yes)
 LIBVERSION=$(LAVCVERSION)

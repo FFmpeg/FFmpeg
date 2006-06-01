@@ -2,7 +2,7 @@
 # common bits used by all libraries
 #
 
-SRC_DIR = $(SRC_PATH)/$(SUBDIR)
+SRC_DIR = $(SRC_PATH)/lib$(NAME)
 VPATH = $(SRC_DIR)
 
 #FIXME: This should be in configure/config.mak
