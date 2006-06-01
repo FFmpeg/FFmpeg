@@ -191,6 +191,7 @@ uninstall-headers:
 dep:	depend
 
 depend: .depend
+	$(MAKE) -C libavutil   depend
 	$(MAKE) -C libavcodec  depend
 	$(MAKE) -C libavformat depend
 ifeq ($(BUILD_VHOOK),yes)
