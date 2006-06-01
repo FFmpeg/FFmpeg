@@ -96,6 +96,83 @@ show_help(){
   exit 1
 }
 
+save_flags(){
+    (:${SAVE_CFLAGS?}) 2>/dev/null && return
+    SAVE_CFLAGS="$CFLAGS"
+    SAVE_LDFLAGS="$LDFLAGS"
+    SAVE_extralibs="$extralibs"
+}
+
+restore_flags(){
+    CFLAGS="$SAVE_CFLAGS"
+    LDFLAGS="$SAVE_LDFLAGS"
+    extralibs="$SAVE_extralibs"
+    unset SAVE_CFLAGS
+    unset SAVE_LDFLAGS
+    unset SAVE_extralibs
+}
+
+temp_cflags(){
+    save_flags
+    CFLAGS="$CFLAGS $*"
+}
+
+temp_ldflags(){
+    save_flags
+    LDFLAGS="$LDFLAGS $*"
+}
+
+temp_extralibs(){
+    save_flags
+    extralibs="$extralibs $*"
+}
+
+check_cc(){
+    cat >$TMPC
+    ${cross_prefix}$cc $CFLAGS "$@" -c -o $TMPO $TMPC >/dev/null 2>&1
+}
+
+check_ld(){
+    cat >$TMPC
+    ${cross_prefix}$cc $CFLAGS $LDFLAGS "$@" -o $TMPE $TMPC $extralibs >/dev/null 2>&1
+}
+
+check_cflags(){
+    check_cc "$@" <<EOF && CFLAGS="$CFLAGS $*"
+int x;
+EOF
+}
+
+check_ldflags(){
+    check_ld "$@" <<EOF && LDFLAGS="$LDFLAGS $*"
+int x;
+EOF
+}
+
+check_header(){
+    header=$1
+    shift
+    check_cc "$@" <<EOF
+#include <$header>
+int x;
+EOF
+}
+
+check_func(){
+    func=$1
+    shift
+    check_ld "$@" <<EOF
+extern int $func();
+int main(){
+    $func();
+}
+EOF
+}
+
+check_exec(){
+    check_ld "$@" && (test -z "$cross_prefix" && $TMPE || true)
+}
+
 if test x"$1" = x"-h" -o x"$1" = x"--help" ; then
     show_help
 fi
@@ -691,20 +768,15 @@ if test "$gpl" != "yes"; then
     fi
 
     if test "$faad" != "no" -o "$faadbin" != "no"; then
-        cat > $TMPC << EOF
-            #include <faad.h>
-            int main( void ) { return 0; }
-EOF
-
-        if $cc $CFLAGS -o $TMPE $TMPC 2> /dev/null ; then
-            cat > $TMPC << EOF
+        if check_header faad.h; then
+            check_cc << EOF
                 #include <faad.h>
                 #ifndef FAAD2_VERSION
                 ok faad1
                 #endif
                 int main( void ) { return 0; }
 EOF
-            if $cc $CFLAGS -o $TMPE $TMPC 2> /dev/null ; then
+            if test $? = 0 ; then
                 echo "FAAD2 is under GPL and --enable-gpl is not specified."
                 fail="yes"
             fi
@@ -732,16 +804,12 @@ fi
 
 # check iwmmxt support
 if test $iwmmxt = "default" -a $cpu = "armv4l"; then
-    cat > $TMPC << EOF
+    iwmmxt=no
+    check_cc <<EOF && iwmmxt=yes
         int main(void) {
         __asm__ __volatile__ ("wunpckelub wr6, wr4");
         }
 EOF
-
-    iwmmxt=no
-    if ${cross_prefix}${cc} -o $TMPO $TMPC 2> /dev/null ; then
-        iwmmxt=yes
-    fi
 fi
 
 #Darwin CC versions
@@ -855,38 +923,23 @@ if test $cpu = "powerpc"; then
     fi
 fi
 
-# check if we have <altivec.h>
-cat > $TMPC << EOF
-#include <altivec.h>
-int main( void ) { return 0; }
-EOF
-
-_altivec_h="no"
-if $cc $CFLAGS -o $TMPE $TMPC 2> /dev/null ; then
-_altivec_h="yes"
-fi
+check_header altivec.h && _altivec_h=yes || _altivec_h=no
 
 # check if our compiler supports Motorola AltiVec C API
 if test $altivec = "yes"; then
 if test $_altivec_h = "yes"; then
-cat > $TMPC << EOF
-#include <altivec.h>
-int main(void) {
-    vector signed int v1, v2, v3;
-    v1 = vec_add(v2,v3);
-    return 0;
-}
-EOF
+    inc_altivec_h="#include <altivec.h>"
 else
-cat > $TMPC << EOF
+    inc_altivec_h=
+fi
+check_cc <<EOF || altivec=no
+$inc_altivec_h
 int main(void) {
     vector signed int v1, v2, v3;
     v1 = vec_add(v2,v3);
     return 0;
 }
 EOF
-fi
-$cc $CFLAGS -o $TMPE $TMPC 2> /dev/null || altivec="no"
 fi
 
 # mmi only available on mips
@@ -900,13 +953,12 @@ fi
 
 # check if our compiler supports mmi
 if test $mmi = "yes"; then
-cat > $TMPC << EOF
+check_cc <<EOF || mmi="no"
 int main(void) {
     __asm__ ("lq \$2, 0(\$2)");
     return 0;
 }
 EOF
-$cc -o $TMPE $TMPC 2> /dev/null || mmi="no"
 fi
 
 if test "$mingw32" = "yes" -o "$mingwce" = "yes"; then
@@ -946,7 +998,7 @@ if test -z "$cross_prefix" ; then
 
 # ---
 # big/little-endian test
-cat > $TMPC << EOF
+check_ld <<EOF
 #include <inttypes.h>
 int main(int argc, char ** argv){
         volatile uint32_t i=0x01234567;
@@ -954,10 +1006,10 @@ int main(int argc, char ** argv){
 }
 EOF
 
-if $cc -o $TMPE $TMPC 2>/dev/null ; then
-$TMPE && bigendian="yes"
+if test $? = 0 ; then
+    $TMPE && bigendian="yes"
 else
-echo big/little test failed
+    echo big/little test failed
 fi
 
 else
@@ -971,18 +1023,11 @@ fi
 
 # ---
 # *inttypes.h* test
-cat > $TMPC << EOF
-#include <inttypes.h>
-int main(int argc, char ** argv){
-    return 0;
-}
-EOF
-
-$cc -o $TMPE $TMPC 2>/dev/null || inttypes="no"
+check_header inttypes.h || inttypes=no
 
 # ---
 # *int_fast* test
-cat > $TMPC << EOF
+check_cc <<EOF || emu_fast_int=yes
 #include <inttypes.h>
 int main(int argc, char ** argv){
         volatile uint_fast64_t i=0x01234567;
@@ -990,32 +1035,15 @@ int main(int argc, char ** argv){
 }
 EOF
 
-$cc -o $TMPE $TMPC 2>/dev/null || emu_fast_int="yes"
-
 # ---
 # check availability of some header files
 
-cat > $TMPC << EOF
-#include <malloc.h>
-int main( void ) { return 0; }
-EOF
-
 _memalign=no
 _malloc_h=no
-if $cc -o $TMPE $TMPC 2> /dev/null ; then
-_malloc_h=yes
-_memalign=yes
-# check for memalign - atmos
-cat > $TMPC << EOF
-#include <stdio.h>
-#include <malloc.h>
-int main ( void ) {
-char *string = NULL;
-string = memalign(64, sizeof(char));
-return 0;
-}
-EOF
-$cc -o $TMPE $TMPC 2> /dev/null || _memalign=no
+if check_header malloc.h; then
+    _malloc_h=yes
+    _memalign=yes
+    check_func memalign || _memalign="no"
 fi
 
 if test "$_memalign" = "no" -a "$mmx" = "yes" -a "$memalignhack" != "yes"; then
@@ -1023,81 +1051,50 @@ if test "$_memalign" = "no" -a "$mmx" = "yes" -a "$memalignhack" != "yes"; then
     exit 1
 fi
 
-cat > $TMPC << EOF
-#include <time.h>
-int main( void ) { localtime_r(NULL, NULL); }
-EOF
-
-localtime_r=no
-if $cc -o $TMPE $TMPC 2> /dev/null ; then
-  localtime_r=yes
-fi
+check_func localtime_r && localtime_r=yes || localtime_r=no
 
 if test "$zlib" = "yes"; then
-# check for zlib - mmu_man
-cat > $TMPC << EOF
-#include <zlib.h>
-int main ( void ) {
-if (zlibVersion() != ZLIB_VERSION)
-   puts("zlib version differs !!!");
-   return 1;
-return 0;
-}
-EOF
-$cc $CFLAGS $LDFLAGS -o $TMPE $TMPC -lz 2> /dev/null || zlib="no"
-# $TMPE 2> /dev/null > /dev/null || zlib="no"
-# XXX: more tests needed - runtime test
+    temp_extralibs -lz
+    check_header zlib.h && check_func zlibVersion || zlib="no"
+    # XXX: more tests needed - runtime test
+    restore_flags
 fi
 if test "$zlib" = "yes"; then
-extralibs="$extralibs -lz"
+    extralibs="$extralibs -lz"
 fi
 
 if test "$lzo" = "yes" -a "$gpl" = "yes"; then
-# check for liblzo
-cat > $TMPC << EOF
-#include <lzo1x.h>
-int main ( void ) {
-lzo_init();
-return 0;
-}
-EOF
-$cc $CFLAGS $LDFLAGS -o $TMPE $TMPC -llzo 2> /dev/null || lzo="no"
+    temp_extralibs -llzo
+    check_header lzo1x.h && check_func lzo_version || lzo="no"
+    restore_flags
 else
-lzo="no"
+    lzo="no"
 fi
 if test "$lzo" = "yes"; then
-extralibs="$extralibs -llzo"
+    extralibs="$extralibs -llzo"
 fi
 
 # test for lrintf in math.h
-cat > $TMPC << EOF
+check_exec <<EOF && have_lrintf=yes || have_lrintf=no
 #define _ISOC9X_SOURCE  1
 #include <math.h>
 int main( void ) { return (lrintf(3.999f) > 0)?0:1; }
 EOF
 
-have_lrintf="no"
-if $cc $CFLAGS $LDFLAGS -o $TMPE $TMPC $extralibs 2> /dev/null ; then
-  have_lrintf="yes"
-  # allanc@chickenandporn.com: cannot execute cross-compiled
-  # code on the host.  Only execute if not cross-compiling.
-  if test -z "$cross_prefix" ; then
-    $TMPE 2> /dev/null > /dev/null || have_lrintf="no"
-  fi
-fi
-
 _restrict=
 for restrict_keyword in restrict __restrict__ __restrict; do
-  echo "void foo(char * $restrict_keyword p);" > $TMPC
-  if $cc -c -o $TMPO $TMPC 2> /dev/null; then
-    _restrict=$restrict_keyword
-    break;
-  fi
+    check_cc <<EOF
+void foo(char * $restrict_keyword p);
+EOF
+    if test $? = 0; then
+        _restrict=$restrict_keyword
+        break;
+    fi
 done
 
 # test gcc version to see if vector builtins can be used
 # currently only used on i386 for MMX builtins
-cat > $TMPC << EOF
+check_cc -msse <<EOF && builtin_vector=yes || builtin_vector=no
 #include <xmmintrin.h>
 int main(void) {
 #if __GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 2)
@@ -1108,13 +1105,9 @@ return 0;
 }
 EOF
 
-builtin_vector=no
-if $cc -msse -o $TMPO $TMPC 2> /dev/null ; then
-  builtin_vector=yes
-fi
-
 # test for mm3dnow.h
-cat > $TMPC << EOF
+test "$cpu" = "x86_64" && march=k8 || march=athlon
+check_cc -march=$march <<EOF && mm3dnow=yes || mm3dnow=no
 #include <mm3dnow.h>
 int main(void) {
 __m64 b1;
@@ -1124,57 +1117,22 @@ return 0;
 }
 EOF
 
-mm3dnow=no
-march=athlon
-if test "$cpu" = "x86_64"; then
-  march=k8
-fi
-if $cc -march=$march -o $TMPO $TMPC 2> /dev/null ; then
-  mm3dnow=yes
-fi
-
-# Probe for -Wdeclaration-after-statement
-if test "$cc" = "gcc"; then
-  cat > $TMPC << EOF
-  int main( void ) { return 0; }
-EOF
-
-  if $cc -Wdeclaration-after-statement -Werror -o $TMPE $TMPC 2> /dev/null ; then
-    CFLAGS="$CFLAGS -Wdeclaration-after-statement"
-  fi
-fi
+check_cflags -Wdeclaration-after-statement
 
 # dlopen/dlfcn.h probing
 
-cat > $TMPC << EOF
-#include <dlfcn.h>
-int main( void ) { return (int) dlopen("foo", 0); }
-EOF
+check_header dlfcn.h && dlfcn=yes
 
-ldl=-ldl
-
-if $cc $CFLAGS $LDFLAGS -o $TMPE $TMPC -ldl > /dev/null 2>&1 ; then
-dlfcn=yes
-dlopen=yes
+temp_extralibs -ldl
+if check_func dlopen; then
+    dlopen=yes
+    ldl=-ldl
 fi
+restore_flags
 
-if $cc $CFLAGS $LDFLAGS -o $TMPE $TMPC > /dev/null 2>&1 ; then
-dlfcn=yes
-dlopen=yes
-ldl=""
-fi
-
-cat > $TMPC << EOF
-int main( void ) { return (int) dlopen("foo", 0); }
-EOF
-
-if $cc $CFLAGS $LDFLAGS -o $TMPE $TMPC -ldl > /dev/null 2>&1  ; then
-dlopen=yes
-fi
-
-if $cc $CFLAGS $LDFLAGS -o $TMPE $TMPC > /dev/null 2>&1  ; then
-dlopen=yes
-ldl=""
+if check_func dlopen; then
+    dlopen=yes
+    ldl=
 fi
 
 if test "$vhook" = "default" ; then
@@ -1189,55 +1147,53 @@ fi
 ##########################################
 # imlib check
 
-cat > $TMPC << EOF
+temp_extralibs -lImlib2
+check_ld <<EOF && imlib2=yes || imlib2=no
 #include <X11/Xlib.h>
 #include <Imlib2.h>
 int main( void ) { return (int) imlib_load_font("foo"); }
 EOF
-
-imlib2=no
-if $cc $CFLAGS $LDFLAGS -o $TMPE $TMPC -lImlib2 -lm > /dev/null 2>&1  ; then
-imlib2=yes
-fi
+restore_flags
 
 ##########################################
 # FreeType check
 
-cat > $TMPC << EOF
-#include <ft2build.h>
-int main( void ) { return (int) FT_Init_FreeType(0); }
-EOF
-
 freetype2=no
 if test "x$targetos" != "xBeOS"; then
   if (freetype-config --version) >/dev/null 2>&1 ; then
-    if $cc -o $TMPE $TMPC `freetype-config --cflags` `freetype-config --libs`  > /dev/null 2>&1 ; then
-      freetype2=yes
-    fi
+      temp_cflags `freetype-config --cflags`
+      temp_extralibs `freetype-config --libs`
+      check_ld <<EOF && freetype2=yes
+#include <ft2build.h>
+int main( void ) { return (int) FT_Init_FreeType(0); }
+EOF
+      restore_flags
   fi
 fi
 
 ##########################################
 # SDL check
 
-cat > $TMPC << EOF
-#include <SDL.h>
-#undef main /* We don't want SDL to override our main() */
-int main( void ) { return SDL_Init (SDL_INIT_VIDEO); }
-EOF
-
 sdl_too_old=no
 sdl=no
 SDL_CONFIG="${cross_prefix}sdl-config"
 if ("${SDL_CONFIG}" --version) >/dev/null 2>&1 ; then
-if $cc -o $TMPE `"${SDL_CONFIG}" --cflags` $TMPC `"${SDL_CONFIG}" --libs`  > /dev/null 2>&1  ; then
-_sdlversion=`"${SDL_CONFIG}" --version | sed 's/[^0-9]//g'`
-if test "$_sdlversion" -lt 121 ; then
-sdl_too_old=yes
-else
-sdl=yes
-fi
-fi
+    temp_cflags `"${SDL_CONFIG}" --cflags`
+    temp_extralibs `"${SDL_CONFIG}" --libs`
+    check_ld <<EOF
+#include <SDL.h>
+#undef main /* We don't want SDL to override our main() */
+int main( void ) { return SDL_Init (SDL_INIT_VIDEO); }
+EOF
+    restore_flags
+    if test $? = 0; then
+        _sdlversion=`"${SDL_CONFIG}" --version | sed 's/[^0-9]//g'`
+        if test "$_sdlversion" -lt 121 ; then
+            sdl_too_old=yes
+        else
+            sdl=yes
+        fi
+    fi
 fi
 
 ##########################################
@@ -1248,11 +1204,10 @@ if (texi2html -version) >/dev/null 2>&1; then
 texi2html=yes
 fi
 
-if test "$network" = "yes" ; then
 ##########################################
 # IPv6 check
 
-cat > $TMPC << EOF
+test "$network" = "yes" && check_ld <<EOF && ipv6=yes || ipv6=no
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -1266,43 +1221,29 @@ int main( void ) {
 }
 EOF
 
-ipv6=no
-if $cc -o $TMPE $TMPC > /dev/null 2>&1  ; then
-ipv6=yes
-fi
-fi
-
-if test "$v4l2" = "yes"; then
 # check for video4linux2 --- V4L2_PIX_FMT_YUV420
-cat > $TMPC << EOF
+test "$v4l2" = "yes" && check_cc <<EOF || v4l2="no"
 #include <sys/time.h>
 #include <asm/types.h>
 #include <linux/videodev2.h>
 int dummy = V4L2_PIX_FMT_YUV420;
 struct v4l2_buffer dummy1;
 EOF
-$cc -c -o $TMPE $TMPC 2> /dev/null || v4l2="no"
-fi
 
-case "`$cc -v 2>&1 | grep version`" in
-    *gcc*)
-        CFLAGS="-Wall -Wno-switch $CFLAGS"
-        ;;
-    *)
-        ;;
-esac
+check_cflags -Wall
+check_cflags -Wno-switch
 
 if test "$sdl" = "no" ; then
    ffplay=no
 fi
 
 if test "$debug" = "yes"; then
-        CFLAGS="-g $CFLAGS"
+    CFLAGS="-g $CFLAGS"
 fi
 
 if test "$optimize" = "small"; then
 #  CFLAGS=${CFLAGS//-O3/-Os}
-  CFLAGS="$CFLAGS -Os"
+    CFLAGS="$CFLAGS -Os"
 fi
 
 if test "$optimize" = "yes"; then
