@@ -233,6 +233,9 @@ endif
 ifeq ($(CONFIG_ZMBV_DECODER),yes)
 	OBJS+= zmbv.o
 endif
+ifeq ($(CONFIG_FLASHSV_DECODER),yes)
+	OBJS+= flashsv.o
+endif
 
 
 ifeq ($(AMR),yes)

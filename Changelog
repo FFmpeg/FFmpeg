@@ -47,6 +47,7 @@ version <next>
 - KMVC decoder
 - MPEG-2 intra vlc support
 - MPEG-2 4:2:2 encoder
+- Flash Screen Video decoder
 
 version 0.4.9-pre1:
 

@@ -183,6 +183,7 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
             st->codec->codec_type = CODEC_TYPE_VIDEO;
             switch(flags & 0xF){
             case 2: st->codec->codec_id = CODEC_ID_FLV1; break;
+            case 3: st->codec->codec_id = CODEC_ID_FLASHSV; break;
             default:
                     av_log(s, AV_LOG_INFO, "Unsupported video codec (%x)\n", flags & 0xf);
                 st->codec->codec_tag= flags & 0xF;

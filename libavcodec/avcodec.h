@@ -121,6 +121,7 @@ enum CodecID {
     CODEC_ID_SMACKVIDEO,
     CODEC_ID_NUV,
     CODEC_ID_KMVC,
+    CODEC_ID_FLASHSV,
 
     /* various pcm "codecs" */
     CODEC_ID_PCM_S16LE= 0x10000,
@@ -2210,6 +2211,7 @@ extern AVCodec avs_decoder;
 extern AVCodec smacker_decoder;
 extern AVCodec smackaud_decoder;
 extern AVCodec kmvc_decoder;
+extern AVCodec flashsv_decoder;
 
 /* pcm codecs */
 #define PCM_CODEC(id, name) \
