@@ -538,7 +538,7 @@ static void fix_coding_method_array (int sb, int channels, sb_int8_array coding_
                 run = 1;
                 case_val = 8;
             } else {
-                switch (switchtable[coding_method[ch][sb][j]]) {
+                switch (switchtable[coding_method[ch][sb][j]-8]) {
                     case 0: run = 10; case_val = 10; break;
                     case 1: run = 1; case_val = 16; break;
                     case 2: run = 5; case_val = 24; break;
