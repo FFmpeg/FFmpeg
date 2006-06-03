@@ -2375,7 +2375,7 @@ static void select_input_picture(MpegEncContext *s){
                     }
                 }
                 for(i=0; i<s->max_b_frames+1; i++){
-                    if(s->input_picture[i]==NULL || s->input_picture[i]->b_frame_score - 1 > s->mb_num/40) break;
+                    if(s->input_picture[i]==NULL || s->input_picture[i]->b_frame_score - 1 > s->mb_num/s->avctx->b_sensitivity) break;
                 }
 
                 b_frames= FFMAX(0, i-1);

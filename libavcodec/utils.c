@@ -741,6 +741,7 @@ static AVOption options[]={
 {"sc_factor", NULL, OFFSET(scenechange_factor), FF_OPT_TYPE_INT, 6, 0, INT_MAX, V|E},
 {"mv0_threshold", NULL, OFFSET(mv0_threshold), FF_OPT_TYPE_INT, 256, 0, INT_MAX, V|E},
 {"ivlc", "intra vlc table", 0, FF_OPT_TYPE_CONST, CODEC_FLAG2_INTRA_VLC, INT_MIN, INT_MAX, V|E, "flags2"},
+{"b_sensitivity", NULL, OFFSET(b_sensitivity), FF_OPT_TYPE_INT, 40, 1, INT_MAX, V|E},
 {NULL},
 };
 
@@ -796,6 +797,7 @@ void avcodec_get_context_defaults(AVCodecContext *s){
     s->nsse_weight= 8;
     s->sample_fmt= SAMPLE_FMT_S16; // FIXME: set to NONE
     s->mv0_threshold= 256;
+    s->b_sensitivity= 40;
 
     s->intra_quant_bias= FF_DEFAULT_QUANT_BIAS;
     s->inter_quant_bias= FF_DEFAULT_QUANT_BIAS;

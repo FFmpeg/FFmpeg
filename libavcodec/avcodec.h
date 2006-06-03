@@ -1977,6 +1977,13 @@ typedef struct AVCodecContext {
      * - decoding: unused
      */
     int mv0_threshold;
+
+    /**
+     * adjusts sensitivity of b_frame_strategy 1
+     * - encoding: set by user.
+     * - decoding: unused
+     */
+    int b_sensitivity;
 } AVCodecContext;
 
 /**
