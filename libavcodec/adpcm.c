@@ -203,49 +203,11 @@ static int adpcm_encode_close(AVCodecContext *avctx)
 
 static inline unsigned char adpcm_ima_compress_sample(ADPCMChannelStatus *c, short sample)
 {
-    int step_index;
-    unsigned char nibble;
-
-    int sign = 0; /* sign bit of the nibble (MSB) */
-    int delta, predicted_delta;
-
-    delta = sample - c->prev_sample;
-
-    if (delta < 0) {
-        sign = 1;
-        delta = -delta;
-    }
-
-    step_index = c->step_index;
-
-    /* nibble = 4 * delta / step_table[step_index]; */
-    nibble = (delta << 2) / step_table[step_index];
-
-    if (nibble > 7)
-        nibble = 7;
-
-    step_index += index_table[nibble];
-    if (step_index < 0)
-        step_index = 0;
-    if (step_index > 88)
-        step_index = 88;
-
-    /* what the decoder will find */
-    predicted_delta = ((step_table[step_index] * nibble) / 4) + (step_table[step_index] / 8);
-
-    if (sign)
-        c->prev_sample -= predicted_delta;
-    else
-        c->prev_sample += predicted_delta;
-
+    int delta = sample - c->prev_sample;
+    int nibble = FFMIN(7, abs(delta)*4/step_table[c->step_index]) + (delta<0)*8;
+    c->prev_sample = c->prev_sample + ((step_table[c->step_index] * yamaha_difflookup[nibble]) / 8);
     CLAMP_TO_SHORT(c->prev_sample);
-
-
-    nibble += sign << 3; /* sign * 8 */
-
-    /* save back */
-    c->step_index = step_index;
-
+    c->step_index = clip(c->step_index + index_table[nibble], 0, 88);
     return nibble;
 }
 
@@ -276,27 +238,23 @@ static inline unsigned char adpcm_ms_compress_sample(ADPCMChannelStatus *c, shor
 
 static inline unsigned char adpcm_yamaha_compress_sample(ADPCMChannelStatus *c, short sample)
 {
-    int i1 = 0, j1;
+    int nibble, delta;
 
     if(!c->step) {
         c->predictor = 0;
         c->step = 127;
     }
-    j1 = sample - c->predictor;
 
-    j1 = (j1 * 8) / c->step;
-    i1 = abs(j1) / 2;
-    if (i1 > 7)
-        i1 = 7;
-    if (j1 < 0)
-        i1 += 8;
+    delta = sample - c->predictor;
 
-    c->predictor = c->predictor + ((c->step * yamaha_difflookup[i1]) / 8);
+    nibble = FFMIN(7, abs(delta)*4/c->step) + (delta<0)*8;
+
+    c->predictor = c->predictor + ((c->step * yamaha_difflookup[nibble]) / 8);
     CLAMP_TO_SHORT(c->predictor);
-    c->step = (c->step * yamaha_indexscale[i1]) >> 8;
+    c->step = (c->step * yamaha_indexscale[nibble]) >> 8;
     c->step = clip(c->step, 127, 24567);
 
-    return i1;
+    return nibble;
 }
 
 static int adpcm_encode_frame(AVCodecContext *avctx,
