@@ -188,44 +188,97 @@ static void OPNAME ## h264_qpel ## SIZE ## _mc32_ ## CODETYPE(uint8_t *dst, uint
     OPNAME ## pixels ## SIZE ## _l2_ ## CODETYPE(dst, halfV, halfHV, stride, SIZE, SIZE);\
 }\
 
+static inline void put_pixels16_l2_altivec( uint8_t * dst, const uint8_t * src1,
+                                    const uint8_t * src2, int dst_stride,
+                                    int src_stride1, int h)
+{
+    int i;
+    vector unsigned char a, b, d, tmp1, tmp2, mask, mask_, edges, align;
 
-/* from dsputil.c */
-static inline void put_pixels8_l2(uint8_t * dst, const uint8_t * src1, const uint8_t * src2, int dst_stride, int src_stride1, int src_stride2, int h) {
-        int             i;
-        for (i = 0; i < h; i++) {
-                uint32_t        a, b;
-                a = (((const struct unaligned_32 *) (&src1[i * src_stride1]))->l);
-                b = (((const struct unaligned_32 *) (&src2[i * src_stride2]))->l);
-                *((uint32_t *) & dst[i * dst_stride]) = rnd_avg32(a, b);
-                a = (((const struct unaligned_32 *) (&src1[i * src_stride1 + 4]))->l);
-                b = (((const struct unaligned_32 *) (&src2[i * src_stride2 + 4]))->l);
-                *((uint32_t *) & dst[i * dst_stride + 4]) = rnd_avg32(a, b);
-        }
-} static inline void avg_pixels8_l2(uint8_t * dst, const uint8_t * src1, const uint8_t * src2, int dst_stride, int src_stride1, int src_stride2, int h) {
-        int             i;
-        for (i = 0; i < h; i++) {
-                uint32_t        a, b;
-                a = (((const struct unaligned_32 *) (&src1[i * src_stride1]))->l);
-                b = (((const struct unaligned_32 *) (&src2[i * src_stride2]))->l);
-                *((uint32_t *) & dst[i * dst_stride]) = rnd_avg32(*((uint32_t *) & dst[i * dst_stride]), rnd_avg32(a, b));
-                a = (((const struct unaligned_32 *) (&src1[i * src_stride1 + 4]))->l);
-                b = (((const struct unaligned_32 *) (&src2[i * src_stride2 + 4]))->l);
-                *((uint32_t *) & dst[i * dst_stride + 4]) = rnd_avg32(*((uint32_t *) & dst[i * dst_stride + 4]), rnd_avg32(a, b));
-        }
-} static inline void put_pixels16_l2(uint8_t * dst, const uint8_t * src1, const uint8_t * src2, int dst_stride, int src_stride1, int src_stride2, int h) {
-        put_pixels8_l2(dst, src1, src2, dst_stride, src_stride1, src_stride2, h);
-        put_pixels8_l2(dst + 8, src1 + 8, src2 + 8, dst_stride, src_stride1, src_stride2, h);
-} static inline void avg_pixels16_l2(uint8_t * dst, const uint8_t * src1, const uint8_t * src2, int dst_stride, int src_stride1, int src_stride2, int h) {
-        avg_pixels8_l2(dst, src1, src2, dst_stride, src_stride1, src_stride2, h);
-        avg_pixels8_l2(dst + 8, src1 + 8, src2 + 8, dst_stride, src_stride1, src_stride2, h);
+    mask_ = vec_lvsl(0, src2);
+
+    for (i = 0; i < h; i++) {
+
+        tmp1 = vec_ld(i * src_stride1, src1);
+        mask = vec_lvsl(i * src_stride1, src1);
+        tmp2 = vec_ld(i * src_stride1 + 15, src1);
+
+        a = vec_perm(tmp1, tmp2, mask);
+
+        tmp1 = vec_ld(i * 16, src2);
+        tmp2 = vec_ld(i * 16 + 15, src2);
+
+        b = vec_perm(tmp1, tmp2, mask_);
+
+        tmp1 = vec_ld(0, dst);
+        mask = vec_lvsl(0, dst);
+        tmp2 = vec_ld(15, dst);
+
+        d = vec_avg(a, b);
+
+        edges = vec_perm(tmp2, tmp1, mask);
+
+        align = vec_lvsr(0, dst);
+
+        tmp1 = vec_perm(edges, d, align);
+        tmp2 = vec_perm(d, edges, align);
+
+        vec_st(tmp2, 15, dst);
+        vec_st(tmp1, 0 , dst);
+
+        dst += dst_stride;
+    }
 }
 
-/* UNIMPLEMENTED YET !! */
+static inline void avg_pixels16_l2_altivec( uint8_t * dst, const uint8_t * src1,
+                                    const uint8_t * src2, int dst_stride,
+                                    int src_stride1, int h)
+{
+    int i;
+    vector unsigned char a, b, d, tmp1, tmp2, mask, mask_, edges, align;
+
+    mask_ = vec_lvsl(0, src2);
+
+    for (i = 0; i < h; i++) {
+
+        tmp1 = vec_ld(i * src_stride1, src1);
+        mask = vec_lvsl(i * src_stride1, src1);
+        tmp2 = vec_ld(i * src_stride1 + 15, src1);
+
+        a = vec_perm(tmp1, tmp2, mask);
+
+        tmp1 = vec_ld(i * 16, src2);
+        tmp2 = vec_ld(i * 16 + 15, src2);
+
+        b = vec_perm(tmp1, tmp2, mask_);
+
+        tmp1 = vec_ld(0, dst);
+        mask = vec_lvsl(0, dst);
+        tmp2 = vec_ld(15, dst);
+
+        d = vec_avg(vec_perm(tmp1, tmp2, mask), vec_avg(a, b));
+
+        edges = vec_perm(tmp2, tmp1, mask);
+
+        align = vec_lvsr(0, dst);
+
+        tmp1 = vec_perm(edges, d, align);
+        tmp2 = vec_perm(d, edges, align);
+
+        vec_st(tmp2, 15, dst);
+        vec_st(tmp1, 0 , dst);
+
+        dst += dst_stride;
+    }
+}
+
+/* Implemented but could be faster
 #define put_pixels16_l2_altivec(d,s1,s2,ds,s1s,h) put_pixels16_l2(d,s1,s2,ds,s1s,16,h)
 #define avg_pixels16_l2_altivec(d,s1,s2,ds,s1s,h) avg_pixels16_l2(d,s1,s2,ds,s1s,16,h)
+ */
 
-H264_MC(put_, 16, altivec)
-     H264_MC(avg_, 16, altivec)
+  H264_MC(put_, 16, altivec)
+  H264_MC(avg_, 16, altivec)
 
 void dsputil_h264_init_ppc(DSPContext* c, AVCodecContext *avctx) {
 
