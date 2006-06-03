@@ -720,7 +720,7 @@ static AVOption options[]={
 {"refs", NULL, OFFSET(refs), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX, V|E},
 {"chromaoffset", NULL, OFFSET(chromaoffset), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX, V|E},
 {"bframebias", NULL, OFFSET(bframebias), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX, V|E},
-{"trellis", NULL, OFFSET(trellis), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX, V|E},
+{"trellis", NULL, OFFSET(trellis), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX, V|A|E},
 {"directpred", NULL, OFFSET(directpred), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX, V|E},
 {"bpyramid", NULL, 0, FF_OPT_TYPE_CONST, CODEC_FLAG2_BPYRAMID, INT_MIN, INT_MAX, V|E, "flags2"},
 {"wpred", NULL, 0, FF_OPT_TYPE_CONST, CODEC_FLAG2_WPRED, INT_MIN, INT_MAX, V|E, "flags2"},

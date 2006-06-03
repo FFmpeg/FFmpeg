@@ -257,6 +257,177 @@ static inline unsigned char adpcm_yamaha_compress_sample(ADPCMChannelStatus *c, 
     return nibble;
 }
 
+typedef struct TrellisPath {
+    int nibble;
+    int prev;
+} TrellisPath;
+
+typedef struct TrellisNode {
+    uint32_t ssd;
+    int path;
+    int sample1;
+    int sample2;
+    int step;
+} TrellisNode;
+
+static void adpcm_compress_trellis(AVCodecContext *avctx, const short *samples,
+                                   uint8_t *dst, ADPCMChannelStatus *c, int n)
+{
+#define FREEZE_INTERVAL 128
+    //FIXME 6% faster if frontier is a compile-time constant
+    const int frontier = 1 << avctx->trellis;
+    const int stride = avctx->channels;
+    const int version = avctx->codec->id;
+    const int max_paths = frontier*FREEZE_INTERVAL;
+    TrellisPath paths[max_paths], *p;
+    TrellisNode node_buf[2][frontier];
+    TrellisNode *nodep_buf[2][frontier];
+    TrellisNode **nodes = nodep_buf[0]; // nodes[] is always sorted by .ssd
+    TrellisNode **nodes_next = nodep_buf[1];
+    int pathn = 0, froze = -1, i, j, k;
+
+    assert(!(max_paths&(max_paths-1)));
+
+    memset(nodep_buf, 0, sizeof(nodep_buf));
+    nodes[0] = &node_buf[1][0];
+    nodes[0]->ssd = 0;
+    nodes[0]->path = 0;
+    nodes[0]->step = c->step_index;
+    nodes[0]->sample1 = c->sample1;
+    nodes[0]->sample2 = c->sample2;
+    if(version == CODEC_ID_ADPCM_IMA_WAV)
+        nodes[0]->sample1 = c->prev_sample;
+    if(version == CODEC_ID_ADPCM_MS)
+        nodes[0]->step = c->idelta;
+    if(version == CODEC_ID_ADPCM_YAMAHA) {
+        if(c->step == 0) {
+            nodes[0]->step = 127;
+            nodes[0]->sample1 = 0;
+        } else {
+            nodes[0]->step = c->step;
+            nodes[0]->sample1 = c->predictor;
+        }
+    }
+
+    for(i=0; i<n; i++) {
+        TrellisNode *t = node_buf[i&1];
+        TrellisNode **u;
+        int sample = samples[i*stride];
+        memset(nodes_next, 0, frontier*sizeof(TrellisNode*));
+        for(j=0; j<frontier && nodes[j]; j++) {
+            // higher j have higher ssd already, so they're unlikely to use a suboptimal next sample too
+            const int range = (j < frontier/2) ? 1 : 0;
+            const int step = nodes[j]->step;
+            int nidx;
+            if(version == CODEC_ID_ADPCM_MS) {
+                const int predictor = ((nodes[j]->sample1 * c->coeff1) + (nodes[j]->sample2 * c->coeff2)) / 256;
+                const int div = (sample - predictor) / step;
+                const int nmin = clip(div-range, -8, 6);
+                const int nmax = clip(div+range, -7, 7);
+                for(nidx=nmin; nidx<=nmax; nidx++) {
+                    const int nibble = nidx & 0xf;
+                    int dec_sample = predictor + nidx * step;
+#define STORE_NODE(NAME, STEP_INDEX)\
+                    int d;\
+                    uint32_t ssd;\
+                    CLAMP_TO_SHORT(dec_sample);\
+                    d = sample - dec_sample;\
+                    ssd = nodes[j]->ssd + d*d;\
+                    if(nodes_next[frontier-1] && ssd >= nodes_next[frontier-1]->ssd)\
+                        continue;\
+                    /* Collapse any two states with the same previous sample value. \
+                     * One could also distinguish states by step and by 2nd to last
+                     * sample, but the effects of that are negligible. */\
+                    for(k=0; k<frontier && nodes_next[k]; k++) {\
+                        if(dec_sample == nodes_next[k]->sample1) {\
+                            assert(ssd >= nodes_next[k]->ssd);\
+                            goto next_##NAME;\
+                        }\
+                    }\
+                    for(k=0; k<frontier; k++) {\
+                        if(!nodes_next[k] || ssd < nodes_next[k]->ssd) {\
+                            TrellisNode *u = nodes_next[frontier-1];\
+                            if(!u) {\
+                                assert(pathn < max_paths);\
+                                u = t++;\
+                                u->path = pathn++;\
+                            }\
+                            u->ssd = ssd;\
+                            u->step = STEP_INDEX;\
+                            u->sample2 = nodes[j]->sample1;\
+                            u->sample1 = dec_sample;\
+                            paths[u->path].nibble = nibble;\
+                            paths[u->path].prev = nodes[j]->path;\
+                            memmove(&nodes_next[k+1], &nodes_next[k], (frontier-k-1)*sizeof(TrellisNode*));\
+                            nodes_next[k] = u;\
+                            break;\
+                        }\
+                    }\
+                    next_##NAME:;
+                    STORE_NODE(ms, FFMAX(16, (AdaptationTable[nibble] * step) >> 8));
+                }
+            } else if(version == CODEC_ID_ADPCM_IMA_WAV) {
+#define LOOP_NODES(NAME, STEP_TABLE, STEP_INDEX)\
+                const int predictor = nodes[j]->sample1;\
+                const int div = (sample - predictor) * 4 / STEP_TABLE;\
+                int nmin = clip(div-range, -7, 6);\
+                int nmax = clip(div+range, -6, 7);\
+                if(nmin<=0) nmin--; /* distinguish -0 from +0 */\
+                if(nmax<0) nmax--;\
+                for(nidx=nmin; nidx<=nmax; nidx++) {\
+                    const int nibble = nidx<0 ? 7-nidx : nidx;\
+                    int dec_sample = predictor + (STEP_TABLE * yamaha_difflookup[nibble]) / 8;\
+                    STORE_NODE(NAME, STEP_INDEX);\
+                }
+                LOOP_NODES(ima, step_table[step], clip(step + index_table[nibble], 0, 88));
+            } else { //CODEC_ID_ADPCM_YAMAHA
+                LOOP_NODES(yamaha, step, clip((step * yamaha_indexscale[nibble]) >> 8, 127, 24567));
+#undef LOOP_NODES
+#undef STORE_NODE
+            }
+        }
+
+        u = nodes;
+        nodes = nodes_next;
+        nodes_next = u;
+
+        // prevent overflow
+        if(nodes[0]->ssd > (1<<28)) {
+            for(j=1; j<frontier && nodes[j]; j++)
+                nodes[j]->ssd -= nodes[0]->ssd;
+            nodes[0]->ssd = 0;
+        }
+
+        // merge old paths to save memory
+        if(i == froze + FREEZE_INTERVAL) {
+            p = &paths[nodes[0]->path];
+            for(k=i; k>froze; k--) {
+                dst[k] = p->nibble;
+                p = &paths[p->prev];
+            }
+            froze = i;
+            pathn = 0;
+            // other nodes might use paths that don't coincide with the frozen one.
+            // checking which nodes do so is too slow, so just kill them all.
+            // this also slightly improves quality, but I don't know why.
+            memset(nodes+1, 0, (frontier-1)*sizeof(TrellisNode*));
+        }
+    }
+
+    p = &paths[nodes[0]->path];
+    for(i=n-1; i>froze; i--) {
+        dst[i] = p->nibble;
+        p = &paths[p->prev];
+    }
+
+    c->predictor = nodes[0]->sample1;
+    c->sample1 = nodes[0]->sample1;
+    c->sample2 = nodes[0]->sample2;
+    c->step_index = nodes[0]->step;
+    c->step = nodes[0]->step;
+    c->idelta = nodes[0]->step;
+}
+
 static int adpcm_encode_frame(AVCodecContext *avctx,
                             unsigned char *frame, int buf_size, void *data)
 {
@@ -293,6 +464,24 @@ static int adpcm_encode_frame(AVCodecContext *avctx,
             }
 
             /* stereo: 4 bytes (8 samples) for left, 4 bytes for right, 4 bytes left, ... */
+            if(avctx->trellis > 0) {
+                uint8_t buf[2][n*8];
+                adpcm_compress_trellis(avctx, samples, buf[0], &c->status[0], n*8);
+                if(avctx->channels == 2)
+                    adpcm_compress_trellis(avctx, samples+1, buf[1], &c->status[1], n*8);
+                for(i=0; i<n; i++) {
+                    *dst++ = buf[0][8*i+0] | (buf[0][8*i+1] << 4);
+                    *dst++ = buf[0][8*i+2] | (buf[0][8*i+3] << 4);
+                    *dst++ = buf[0][8*i+4] | (buf[0][8*i+5] << 4);
+                    *dst++ = buf[0][8*i+6] | (buf[0][8*i+7] << 4);
+                    if (avctx->channels == 2) {
+                        *dst++ = buf[1][8*i+0] | (buf[1][8*i+1] << 4);
+                        *dst++ = buf[1][8*i+2] | (buf[1][8*i+3] << 4);
+                        *dst++ = buf[1][8*i+4] | (buf[1][8*i+5] << 4);
+                        *dst++ = buf[1][8*i+6] | (buf[1][8*i+7] << 4);
+                    }
+                }
+            } else
             for (; n>0; n--) {
                 *dst = adpcm_ima_compress_sample(&c->status[0], samples[0]) & 0x0F;
                 *dst |= (adpcm_ima_compress_sample(&c->status[0], samples[avctx->channels]) << 4) & 0xF0;
@@ -352,6 +541,21 @@ static int adpcm_encode_frame(AVCodecContext *avctx,
             *dst++ = c->status[i].sample2 >> 8;
         }
 
+        if(avctx->trellis > 0) {
+            int n = avctx->block_align - 7*avctx->channels;
+            uint8_t buf[2][n];
+            if(avctx->channels == 1) {
+                n *= 2;
+                adpcm_compress_trellis(avctx, samples, buf[0], &c->status[0], n);
+                for(i=0; i<n; i+=2)
+                    *dst++ = (buf[0][i] << 4) | buf[0][i+1];
+            } else {
+                adpcm_compress_trellis(avctx, samples, buf[0], &c->status[0], n);
+                adpcm_compress_trellis(avctx, samples+1, buf[1], &c->status[1], n);
+                for(i=0; i<n; i++)
+                    *dst++ = (buf[0][i] << 4) | buf[1][i];
+            }
+        } else
         for(i=7*avctx->channels; i<avctx->block_align; i++) {
             int nibble;
             nibble = adpcm_ms_compress_sample(&c->status[ 0], *samples++)<<4;
@@ -361,6 +565,20 @@ static int adpcm_encode_frame(AVCodecContext *avctx,
         break;
     case CODEC_ID_ADPCM_YAMAHA:
         n = avctx->frame_size / 2;
+        if(avctx->trellis > 0) {
+            uint8_t buf[2][n*2];
+            n *= 2;
+            if(avctx->channels == 1) {
+                adpcm_compress_trellis(avctx, samples, buf[0], &c->status[0], n);
+                for(i=0; i<n; i+=2)
+                    *dst++ = buf[0][i] | (buf[0][i+1] << 4);
+            } else {
+                adpcm_compress_trellis(avctx, samples, buf[0], &c->status[0], n);
+                adpcm_compress_trellis(avctx, samples+1, buf[1], &c->status[1], n);
+                for(i=0; i<n; i++)
+                    *dst++ = buf[0][i] | (buf[1][i] << 4);
+            }
+        } else
         for (; n>0; n--) {
             for(i = 0; i < avctx->channels; i++) {
                 int nibble;
