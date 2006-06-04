@@ -449,6 +449,7 @@ ogg_get_length (AVFormatContext * s)
 {
     ogg_t *ogg = s->priv_data;
     int idx = -1, i;
+    offset_t size, end;
 
     if(s->pb.is_streamed)
         return 0;
@@ -457,8 +458,13 @@ ogg_get_length (AVFormatContext * s)
     if (s->duration != AV_NOPTS_VALUE)
         return 0;
 
+    size = url_fsize(&s->pb);
+    if(size < 0)
+        return 0;
+    end = size > MAX_PAGE_SIZE? size - MAX_PAGE_SIZE: size;
+
     ogg_save (s);
-    url_fseek (&s->pb, -MAX_PAGE_SIZE, SEEK_END);
+    url_fseek (&s->pb, end, SEEK_SET);
 
     while (!ogg_read_page (s, &i)){
         if (ogg->streams[i].granule != -1 && ogg->streams[i].granule != 0)
@@ -470,7 +476,7 @@ ogg_get_length (AVFormatContext * s)
             ogg_gptopts (s, idx, ogg->streams[idx].granule);
     }
 
-    ogg->size = url_fsize(&s->pb);
+    ogg->size = size;
     ogg_restore (s, 0);
 
     return 0;
@@ -547,10 +553,11 @@ static int
 ogg_read_seek (AVFormatContext * s, int stream_index, int64_t target_ts,
                int flags)
 {
+    AVStream *st = s->streams[stream_index];
     ogg_t *ogg = s->priv_data;
     ByteIOContext *bc = &s->pb;
     uint64_t min = 0, max = ogg->size;
-    uint64_t tmin = 0, tmax = s->duration;
+    uint64_t tmin = 0, tmax = st->duration;
     int64_t pts = AV_NOPTS_VALUE;
 
     ogg_save (s);
@@ -562,7 +569,8 @@ ogg_read_seek (AVFormatContext * s, int stream_index, int64_t target_ts,
         url_fseek (bc, p, SEEK_SET);
 
         while (!ogg_read_page (s, &i)){
-            if (ogg->streams[i].granule != 0 && ogg->streams[i].granule != -1)
+            if (i == stream_index && ogg->streams[i].granule != 0 &&
+                ogg->streams[i].granule != -1)
                 break;
         }
 
@@ -572,7 +580,7 @@ ogg_read_seek (AVFormatContext * s, int stream_index, int64_t target_ts,
         pts = ogg_gptopts (s, i, ogg->streams[i].granule);
         p = url_ftell (bc);
 
-        if (ABS (pts - target_ts) < 1000000LL)
+        if (ABS (pts - target_ts) * st->time_base.num < st->time_base.den)
             break;
 
         if (pts > target_ts){
@@ -584,7 +592,7 @@ ogg_read_seek (AVFormatContext * s, int stream_index, int64_t target_ts,
         }
     }
 
-    if (ABS (pts - target_ts) < 1000000LL){
+    if (ABS (pts - target_ts) * st->time_base.num < st->time_base.den){
         ogg_restore (s, 1);
         ogg_reset (ogg);
     }else{
