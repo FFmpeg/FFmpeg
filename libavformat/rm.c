@@ -484,7 +484,7 @@ static void get_str8(ByteIOContext *pb, char *buf, int buf_size)
     *q = '\0';
 }
 
-static void rm_read_audio_stream_info(AVFormatContext *s, AVStream *st,
+static int rm_read_audio_stream_info(AVFormatContext *s, AVStream *st,
                                       int read_all)
 {
     RMContext *rm = s->priv_data;
@@ -595,6 +595,10 @@ static void rm_read_audio_stream_info(AVFormatContext *s, AVStream *st,
                 get_byte(pb);
             st->codec->codec_id = CODEC_ID_AAC;
             codecdata_length = get_be32(pb);
+            if(codecdata_length + FF_INPUT_BUFFER_PADDING_SIZE <= (unsigned)codecdata_length){
+                av_log(s, AV_LOG_ERROR, "codecdata_length too large\n");
+                return -1;
+            }
             if (codecdata_length >= 1) {
                 st->codec->extradata_size = codecdata_length - 1;
                 st->codec->extradata = av_mallocz(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
@@ -618,6 +622,7 @@ static void rm_read_audio_stream_info(AVFormatContext *s, AVStream *st,
             get_str8(pb, s->comment, sizeof(s->comment));
         }
     }
+    return 0;
 }
 
 static int rm_read_header_old(AVFormatContext *s, AVFormatParameters *ap)
@@ -628,11 +633,8 @@ static int rm_read_header_old(AVFormatContext *s, AVFormatParameters *ap)
     rm->old_format = 1;
     st = av_new_stream(s, 0);
     if (!st)
-        goto fail;
-    rm_read_audio_stream_info(s, st, 1);
-    return 0;
- fail:
-    return -1;
+        return -1;
+    return rm_read_audio_stream_info(s, st, 1);
 }
 
 static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
@@ -722,7 +724,8 @@ static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
             v = get_be32(pb);
             if (v == MKTAG(0xfd, 'a', 'r', '.')) {
                 /* ra type header */
-                rm_read_audio_stream_info(s, st, 0);
+                if (rm_read_audio_stream_info(s, st, 0))
+                    return -1;
             } else {
                 int fps, fps2;
                 if (get_le32(pb) != MKTAG('V', 'I', 'D', 'O')) {
