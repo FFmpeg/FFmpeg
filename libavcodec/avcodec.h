@@ -343,6 +343,7 @@ extern int motion_estimation_method;
 #define CODEC_FLAG2_AUD           0x00000200 ///< H.264 access unit delimiters
 #define CODEC_FLAG2_BRDO          0x00000400 ///< b-frame rate-distortion optimization
 #define CODEC_FLAG2_INTRA_VLC     0x00000800 ///< use MPEG-2 intra VLC table
+#define CODEC_FLAG2_MEMC_ONLY     0x00001000 ///< only do ME/MC (I frames -> ref, P frame -> ME+MC)
 
 /* Unsupported options :
  *              Syntax Arithmetic coding (SAC)
