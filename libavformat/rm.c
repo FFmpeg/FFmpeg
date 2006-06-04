@@ -50,6 +50,7 @@ typedef struct {
     int audio_stream_num; ///< Stream number for audio packets
     int audio_pkt_cnt; ///< Output packet counter
     int audio_framesize; /// Audio frame size from container
+    int sub_packet_lengths[16]; /// Length of each aac subpacket
 } RMContext;
 
 #ifdef CONFIG_MUXERS
@@ -587,6 +588,20 @@ static void rm_read_audio_stream_info(AVFormatContext *s, AVStream *st,
             }
 
             rm->audiobuf = av_malloc(rm->audio_framesize * sub_packet_h);
+        } else if (!strcmp(buf, "raac") || !strcmp(buf, "racp")) {
+            int codecdata_length, i;
+            get_be16(pb); get_byte(pb);
+            if (((version >> 16) & 0xff) == 5)
+                get_byte(pb);
+            st->codec->codec_id = CODEC_ID_AAC;
+            codecdata_length = get_be32(pb);
+            if (codecdata_length >= 1) {
+                st->codec->extradata_size = codecdata_length - 1;
+                st->codec->extradata = av_mallocz(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
+                get_byte(pb);
+                for(i = 0; i < st->codec->extradata_size; i++)
+                    ((uint8_t*)st->codec->extradata)[i] = get_byte(pb);
+            }
         } else {
             st->codec->codec_id = CODEC_ID_NONE;
             pstrcpy(st->codec->codec_name, sizeof(st->codec->codec_name),
@@ -872,10 +887,14 @@ static int rm_read_packet(AVFormatContext *s, AVPacket *pkt)
     if (rm->audio_pkt_cnt) {
         // If there are queued audio packet return them first
         st = s->streams[rm->audio_stream_num];
+        if (st->codec->codec_id == CODEC_ID_AAC)
+            av_get_packet(pb, pkt, rm->sub_packet_lengths[rm->sub_packet_cnt - rm->audio_pkt_cnt]);
+        else {
         av_new_packet(pkt, st->codec->block_align);
         memcpy(pkt->data, rm->audiobuf + st->codec->block_align *
                (rm->sub_packet_h * rm->audio_framesize / st->codec->block_align - rm->audio_pkt_cnt),
                st->codec->block_align);
+        }
         rm->audio_pkt_cnt--;
         pkt->flags = 0;
         pkt->stream_index = rm->audio_stream_num;
@@ -975,6 +994,18 @@ resync:
                     av_new_packet(pkt, st->codec->block_align);
                     memcpy(pkt->data, rm->audiobuf, st->codec->block_align);
                     timestamp = rm->audiotimestamp;
+                    flags = 2; // Mark first packet as keyframe
+                }
+            } else if (st->codec->codec_id == CODEC_ID_AAC) {
+                int x;
+                rm->audio_stream_num = i;
+                rm->sub_packet_cnt = (get_be16(pb) & 0xf0) >> 4;
+                if (rm->sub_packet_cnt) {
+                    for (x = 0; x < rm->sub_packet_cnt; x++)
+                        rm->sub_packet_lengths[x] = get_be16(pb);
+                    // Release first audio packet
+                    rm->audio_pkt_cnt = rm->sub_packet_cnt - 1;
+                    av_get_packet(pb, pkt, rm->sub_packet_lengths[0]);
                     flags = 2; // Mark first packet as keyframe
                 }
             } else
