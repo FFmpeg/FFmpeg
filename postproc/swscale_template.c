@@ -873,9 +873,9 @@ static inline void RENAME(yuv2yuv1)(int16_t *lumSrc, int16_t *chrSrc,
  */
 static inline void RENAME(yuv2packedX)(SwsContext *c, int16_t *lumFilter, int16_t **lumSrc, int lumFilterSize,
 				    int16_t *chrFilter, int16_t **chrSrc, int chrFilterSize,
-			    uint8_t *dest, int dstW, int dstY)
+			    uint8_t *dest, long dstW, long dstY)
 {
-	int dummy=0;
+	long dummy=0;
 	switch(c->dstFormat)
 	{
 #ifdef HAVE_MMX
@@ -2223,7 +2223,7 @@ static inline void RENAME(hScale)(int16_t *dst, int dstW, uint8_t *src, int srcW
 #endif
 }
       // *** horizontal scale Y line to temp buffer
-static inline void RENAME(hyscale)(uint16_t *dst, int dstWidth, uint8_t *src, int srcW, int xInc,
+static inline void RENAME(hyscale)(uint16_t *dst, long dstWidth, uint8_t *src, int srcW, int xInc,
 				   int flags, int canMMX2BeUsed, int16_t *hLumFilter,
 				   int16_t *hLumFilterPos, int hLumFilterSize, void *funnyYCode, 
 				   int srcFormat, uint8_t *formatConvBuffer, int16_t *mmx2Filter,
@@ -2336,8 +2336,8 @@ FUNNY_Y_CODE
 	else
 	{
 #endif
-	int xInc_shr16 = xInc >> 16;
-	int xInc_mask = xInc & 0xffff;
+	long xInc_shr16 = xInc >> 16;
+	uint16_t xInc_mask = xInc & 0xffff;
 	//NO MMX just normal asm ...
 	asm volatile(
 		"xor %%"REG_a", %%"REG_a"	\n\t" // i
@@ -2535,7 +2535,7 @@ FUNNY_UV_CODE
 	{
 #endif
 	long xInc_shr16 = (long) (xInc >> 16);
-	int xInc_mask = xInc & 0xffff; 
+	uint16_t xInc_mask = xInc & 0xffff; 
 	asm volatile(
 		"xor %%"REG_a", %%"REG_a"	\n\t" // i
 		"xor %%"REG_b", %%"REG_b"		\n\t" // xx
