@@ -240,6 +240,32 @@ static void id3_create_tag(AVFormatContext *s, uint8_t *buf)
 }
 
 /* mp3 read */
+
+static int mp3_read_probe(AVProbeData *p)
+{
+    int d;
+
+    if(p->buf_size < 4)
+        return 0;
+
+    if(p->buf[0] == 'I' && p->buf[1] == 'D' && p->buf[2] == '3' &&
+       p->buf[3] < 5)
+        return AVPROBE_SCORE_MAX;
+
+    if(p->buf[0] != 0xff)
+        return 0;
+
+    d = p->buf[1];
+    if((d & 0xe0) != 0xe0 || ((d & 0x18) == 0x08 || (d & 0x06) == 0))
+        return 0;
+
+    d = p->buf[2];
+    if((d & 0xf0) == 0xf0 || (d & 0x0c) == 0x0c)
+        return 0;
+
+    return AVPROBE_SCORE_MAX;
+}
+
 static int mp3_read_header(AVFormatContext *s,
                            AVFormatParameters *ap)
 {
@@ -346,7 +372,7 @@ AVInputFormat mp3_iformat = {
     "mp3",
     "MPEG audio",
     0,
-    NULL,
+    mp3_read_probe,
     mp3_read_header,
     mp3_read_packet,
     mp3_read_close,
