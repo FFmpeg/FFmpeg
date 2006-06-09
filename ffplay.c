@@ -45,14 +45,6 @@
  }
 #endif
 
-#if defined(__linux__)
-#define HAVE_X11
-#endif
-
-#ifdef HAVE_X11
-#include <X11/Xlib.h>
-#endif
-
 //#define DEBUG_SYNC
 
 #define MAX_VIDEOQ_SIZE (5 * 256 * 1024)
@@ -2104,25 +2096,19 @@ void toggle_full_screen(void)
 {
     int w, h, flags;
     is_full_screen = !is_full_screen;
-    if (!fs_screen_width) {
-        /* use default SDL method */
-        SDL_WM_ToggleFullScreen(screen);
+    flags = SDL_HWSURFACE|SDL_ASYNCBLIT|SDL_HWACCEL;
+    if (is_full_screen) {
+        w = fs_screen_width;
+        h = fs_screen_height;
+        flags |= SDL_FULLSCREEN;
     } else {
-        /* use the recorded resolution */
-        flags = SDL_HWSURFACE|SDL_ASYNCBLIT|SDL_HWACCEL;
-        if (is_full_screen) {
-            w = fs_screen_width;
-            h = fs_screen_height;
-            flags |= SDL_FULLSCREEN;
-        } else {
-            w = screen_width;
-            h = screen_height;
-            flags |= SDL_RESIZABLE;
-        }
-        screen = SDL_SetVideoMode(w, h, 0, flags);
-        cur_stream->width = w;
-        cur_stream->height = h;
+        w = screen_width;
+        h = screen_height;
+        flags |= SDL_RESIZABLE;
     }
+    screen = SDL_SetVideoMode(w, h, 0, flags);
+    cur_stream->width = w;
+    cur_stream->height = h;
 }
 
 void toggle_pause(void)
@@ -2346,10 +2332,7 @@ const OptionDef options[] = {
     { "h", 0, {(void*)show_help}, "show help" },
     { "x", HAS_ARG, {(void*)opt_width}, "force displayed width", "width" },
     { "y", HAS_ARG, {(void*)opt_height}, "force displayed height", "height" },
-#if 0
-    /* disabled as SDL/X11 does not support it correctly on application launch */
     { "fs", OPT_BOOL, {(void*)&is_full_screen}, "force full screen" },
-#endif
     { "an", OPT_BOOL, {(void*)&audio_disable}, "disable audio" },
     { "vn", OPT_BOOL, {(void*)&video_disable}, "disable video" },
     { "ss", HAS_ARG, {(void*)&opt_seek}, "seek to a given position in seconds", "pos" },
@@ -2443,19 +2426,10 @@ int main(int argc, char **argv)
     }
 
     if (!display_disable) {
-#ifdef HAVE_X11
-        /* save the screen resolution... SDL should allow full screen
-           by resizing the window */
-        {
-            Display *dpy;
-            dpy = XOpenDisplay(NULL);
-            if (dpy) {
-                fs_screen_width = DisplayWidth(dpy, DefaultScreen(dpy));
-                fs_screen_height = DisplayHeight(dpy, DefaultScreen(dpy));
-                XCloseDisplay(dpy);
-            }
-        }
-#endif
+        const SDL_VideoInfo *vi = SDL_GetVideoInfo();
+        fs_screen_width = vi->current_w;
+        fs_screen_height = vi->current_h;
+
         flags = SDL_HWSURFACE|SDL_ASYNCBLIT|SDL_HWACCEL;
         if (is_full_screen && fs_screen_width) {
             w = fs_screen_width;

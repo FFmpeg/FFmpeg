@@ -1184,7 +1184,7 @@ EOF
     restore_flags
     if test $? = 0; then
         _sdlversion=`"${SDL_CONFIG}" --version | sed 's/[^0-9]//g'`
-        if test "$_sdlversion" -lt 121 ; then
+        if test "$_sdlversion" -lt 130 ; then
             sdl_too_old=yes
         else
             sdl=yes
