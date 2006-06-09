@@ -21,7 +21,7 @@ comprehend the instructions, it could help understanding the functions
 and how they can be optimized.
 
 NOTE: If you still don't understand some function, ask at our mailing list!!!
-(http://www1.mplayerhq.hu/mailman/listinfo/ffmpeg-devel)
+(http://lists.mplayerhq.hu/mailman/listinfo/ffmpeg-devel)
 
 
 
