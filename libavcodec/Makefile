@@ -347,11 +347,11 @@ OBJS += i386/fdct_mmx.o i386/cputest.o \
 ifeq ($(CONFIG_GPL),yes)
 OBJS += i386/idct_mmx_xvid.o
 endif
-ifdef TARGET_BUILTIN_VECTOR
+ifeq ($(TARGET_BUILTIN_VECTOR),yes)
 i386/fft_sse.o: CFLAGS+= -msse
 depend: CFLAGS+= -msse
 endif
-ifdef TARGET_BUILTIN_3DNOW
+ifeq ($(TARGET_BUILTIN_3DNOW),yes)
 i386/fft_3dn.o: CFLAGS+= -m3dnow
 ifeq ($(TARGET_ARCH_X86),yes)
 i386/fft_3dn2.o: CFLAGS+= -march=athlon
