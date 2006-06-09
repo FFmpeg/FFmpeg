@@ -69,7 +69,7 @@ try to unroll inner for(x=0 ... loop to avoid these damn if(x ... checks
 ...
 */
 
-//Changelog: use the CVS log
+//Changelog: use the Subversion log
 
 #include "config.h"
 #include <inttypes.h>

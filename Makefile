@@ -240,7 +240,7 @@ FILE=ffmpeg-$(shell grep "\#define FFMPEG_VERSION " libavcodec/avcodec.h | \
 tar:
 	rm -rf /tmp/$(FILE)
 	cp -r . /tmp/$(FILE)
-	( cd /tmp ; tar zcvf ~/$(FILE).tar.gz $(FILE) --exclude CVS )
+	( cd /tmp ; tar zcvf ~/$(FILE).tar.gz $(FILE) --exclude .svn )
 	rm -rf /tmp/$(FILE)
 
 .PHONY: lib
