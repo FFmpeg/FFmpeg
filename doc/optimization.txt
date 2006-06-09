@@ -13,8 +13,8 @@ Understanding these overoptimized functions:
 As many functions tend to be a bit difficult to understand because
 of optimizations, it can be hard to optimize them further, or write
 architecture-specific versions. It is recommened to look at older
-CVS versions of the interesting files (just use ViewCVS at
-http://www1.mplayerhq.hu/cgi-bin/cvsweb.cgi/ffmpeg/?cvsroot=FFMpeg).
+revisions of the interesting files (for a web frontend try ViewVC at
+http://svn.mplayerhq.hu/ffmpeg/trunk/).
 Alternatively, look into the other architecture-specific versions in
 the i386/, ppc/, alpha/ subdirectories. Even if you don't exactly
 comprehend the instructions, it could help understanding the functions

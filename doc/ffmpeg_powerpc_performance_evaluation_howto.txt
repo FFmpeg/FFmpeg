@@ -43,10 +43,10 @@ This needs to be done by hand. First, you need to configure FFmpeg as
 usual, but add the "--powerpc-perf-enable" option. For instance:
 
 #####
-./configure --prefix=/usr/local/ffmpeg-cvs --cc=gcc-3.3 --tune=7450 --powerpc-perf-enable
+./configure --prefix=/usr/local/ffmpeg-svn --cc=gcc-3.3 --tune=7450 --powerpc-perf-enable
 #####
 
-This will configure FFmpeg to install inside /usr/local/ffmpeg-cvs,
+This will configure FFmpeg to install inside /usr/local/ffmpeg-svn,
 compiling with gcc-3.3 (you should try to use this one or a newer
 gcc), and tuning for the PowerPC 7450 (i.e. the newer G4; as a rule of
 thumb, those at 550Mhz and more). It will also enable the PMC.

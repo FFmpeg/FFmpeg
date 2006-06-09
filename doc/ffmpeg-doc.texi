@@ -1170,7 +1170,7 @@ Indent size is 4.
 The presentation is the one specified by 'indent -i4 -kr -nut'.
 The TAB character is forbidden outside of Makefiles as is any
 form of trailing whitespace. Commits containing either will be
-rejected by the CVS repository.
+rejected by the Subversion repository.
 
 Main priority in FFmpeg is simplicity and small code size (=less
 bugs).
@@ -1213,8 +1213,8 @@ int myfunc(int my_parameter)
 fprintf and printf are forbidden in libavformat and libavcodec,
 please use av_log() instead.
 
-@node CVS Policy
-@section CVS Policy
+@node Development Policy
+@section Development Policy
 
 @enumerate
 @item
@@ -1265,7 +1265,7 @@ please use av_log() instead.
    particular bug. Comments such as "fixed!" or "Changed it." are unacceptable.
 @item
    If you apply a patch by someone else, include the name and email address in
-   the CVS log message. Since the ffmpeg-cvslog mailing list is publicly
+   the log message. Since the ffmpeg-cvslog mailing list is publicly
    archived you should add some SPAM protection to the email address. Send an
    answer to ffmpeg-devel (or wherever you got the patch from) saying that
    you applied the patch.
@@ -1273,7 +1273,7 @@ please use av_log() instead.
    Do NOT commit to code actively maintained by others without permission. Send
    a patch to ffmpeg-devel instead.
 @item
-    Subscribe to the ffmpeg-cvslog mailing list. The diffs of all CVS commits
+    Subscribe to the ffmpeg-cvslog mailing list. The diffs of all commits
     are sent there and reviewed by all the other developers. Bugs and possible
     improvements or general questions regarding commits are discussed there. We
     expect you to react if problems with your code are uncovered.
@@ -1281,14 +1281,6 @@ please use av_log() instead.
     Update the documentation if you change behavior or add features. If you are
     unsure how best to do this, send a patch to ffmpeg-devel, the documentation
     maintainer(s) will review and commit your stuff.
-@item
-    Revert a commit ONLY in case of a big blunder like committing something not
-    intended to be committed or committing a wrong file, the wrong version of a
-    patch, CVS policy violation or broken code and you are going to recommit the
-    right thing immediately.
-
-    Never revert changes made a long time ago or buggy code. Fix it in the
-    normal way instead.
 @item
     Never write to unallocated memory, never write over the end of arrays,
     always check values read from some untrusted source before using them
@@ -1347,7 +1339,7 @@ explanation why, but sometimes we are quite busy so it can take a week or two.
 
 @section Regression tests
 
-Before submitting a patch (or committing to CVS), you should at least
+Before submitting a patch (or committing to the repository), you should at least
 test that you did not break anything.
 
 The regression tests build a synthetic video stream and a synthetic

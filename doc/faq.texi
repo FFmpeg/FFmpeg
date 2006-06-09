@@ -103,9 +103,9 @@ and pass 'combfilter=2'.
 
 @section I have a problem with an old version of ffmpeg; where should I report it?
 Nowhere. Upgrade to the latest release or if there is no recent release upgrade
-to CVS. You could also try to report it. Maybe you will get lucky and
+to Subversion HEAD. You could also try to report it. Maybe you will get lucky and
 become the first person in history to get an answer different from "upgrade
-to CVS".
+to Subversion HEAD".
 
 @section -f jpeg doesn't work.
 
@@ -253,7 +253,7 @@ the silver bullet that solves this problem, feel free to shoot it at us.
 
 @section I have a file in memory / a API different from *open/*read/ libc how do i use it with libavformat ?
 
-You have to implement a URLProtocol, see libavformat/file.c in FFmpeg CVS
-and libmpdemux/demux_lavf.c in MPlayer CVS.
+You have to implement a URLProtocol, see libavformat/file.c in FFmpeg
+and libmpdemux/demux_lavf.c in MPlayer sources.
 
 @bye
