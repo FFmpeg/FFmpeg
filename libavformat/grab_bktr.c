@@ -30,6 +30,9 @@
 #  include <machine/ioctl_meteor.h>
 #  include <machine/ioctl_bt848.h>
 # endif
+#elif defined(__FreeBSD_kernel__)
+# include <dev/bktr/ioctl_meteor.h>
+# include <dev/bktr/ioctl_bt848.h>
 #elif defined(__DragonFly__)
 # include <dev/video/meteor/ioctl_meteor.h>
 # include <dev/video/bktr/ioctl_bt848.h>

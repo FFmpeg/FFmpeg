@@ -414,6 +414,15 @@ make="gmake"
 CFLAGS="$CFLAGS -pthread"
 FFLDFLAGS="$FFLDFLAGS -export-dynamic -pthread"
 ;;
+GNU/kFreeBSD)
+v4l="no"
+v4l2="no"
+bktr="yes"
+audio_oss="yes"
+dv1394="no"
+CFLAGS="$CFLAGS -pthread"
+LDFLAGS="$LDFLAGS -rdynamic"
+;;
 BSD/OS)
 v4l="no"
 v4l2="no"
