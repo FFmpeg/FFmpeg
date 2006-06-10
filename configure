@@ -129,12 +129,12 @@ temp_extralibs(){
 
 check_cc(){
     cat >$TMPC
-    ${cross_prefix}$cc $CFLAGS "$@" -c -o $TMPO $TMPC >/dev/null 2>&1
+    $cc $CFLAGS "$@" -c -o $TMPO $TMPC >/dev/null 2>&1
 }
 
 check_ld(){
     cat >$TMPC
-    ${cross_prefix}$cc $CFLAGS $LDFLAGS "$@" -o $TMPE $TMPC $extralibs >/dev/null 2>&1
+    $cc $CFLAGS $LDFLAGS "$@" -o $TMPE $TMPC $extralibs >/dev/null 2>&1
 }
 
 check_cflags(){
