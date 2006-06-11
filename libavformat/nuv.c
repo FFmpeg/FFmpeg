@@ -186,7 +186,7 @@ static int nuv_packet(AVFormatContext *s, AVPacket *pkt) {
     while (!url_feof(pb)) {
         ret = get_buffer(pb, hdr, HDRSIZE);
         if (ret <= 0)
-            return ret;
+            return ret ? ret : -1;
         frametype = hdr[0];
         size = PKTSIZE(LE_32(&hdr[8]));
         switch (frametype) {
