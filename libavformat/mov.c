@@ -287,7 +287,6 @@ struct MOVParseTableEntry;
 
 typedef struct MOVStreamContext {
     int ffindex; /* the ffmpeg stream id */
-    int is_ff_stream; /* Is this stream presented to ffmpeg ? i.e. is this an audio or video stream ? */
     long next_chunk;
     long chunk_count;
     int64_t *chunk_offsets;
@@ -1664,7 +1663,7 @@ static int mov_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     MOVContext *mov = (MOVContext *) s->priv_data;
     ByteIOContext *pb = &s->pb;
-    int i, j, nb, err;
+    int i, j, err;
     MOV_atom_t atom = { 0, 0, 0 };
 
     mov->fc = s;
@@ -1689,36 +1688,35 @@ static int mov_read_header(AVFormatContext *s, AVFormatParameters *ap)
         url_fseek(pb, mov->mdat_offset, SEEK_SET);
 
     mov->next_chunk_offset = mov->mdat_offset; /* initialise reading */
-    mov->total_streams = nb = s->nb_streams;
 
-#if 1
     for(i=0; i<s->nb_streams;) {
-        if(s->streams[i]->codec->codec_type == CODEC_TYPE_MOV_OTHER) {/* not audio, not video, delete */
-            av_free(s->streams[i]);
-            for(j=i+1; j<s->nb_streams; j++)
-                s->streams[j-1] = s->streams[j];
-            s->nb_streams--;
-        } else
-            i++;
-    }
-    for(i=0; i<s->nb_streams;i++) {
         MOVStreamContext *sc = (MOVStreamContext *)s->streams[i]->priv_data;
 
-        if(!sc->time_rate)
-            sc->time_rate=1;
-        if(!sc->time_scale)
-            sc->time_scale= mov->time_scale;
-        av_set_pts_info(s->streams[i], 64, sc->time_rate, sc->time_scale);
+        if(s->streams[i]->codec->codec_type == CODEC_TYPE_MOV_OTHER) {/* not audio, not video, delete */
+            av_free(s->streams[i]);
+            mov_free_stream_context(sc);
+            for(j=i+1; j<s->nb_streams; j++) {
+                s->streams[j-1] = s->streams[j];
+                mov->streams[j-1] = mov->streams[j];
+            }
+            s->nb_streams--;
+        } else {
+            if(!sc->time_rate)
+                sc->time_rate=1;
+            if(!sc->time_scale)
+                sc->time_scale= mov->time_scale;
+            av_set_pts_info(s->streams[i], 64, sc->time_rate, sc->time_scale);
 
-        if(s->streams[i]->duration != AV_NOPTS_VALUE){
-            assert(s->streams[i]->duration % sc->time_rate == 0);
-            s->streams[i]->duration /= sc->time_rate;
+            if(s->streams[i]->duration != AV_NOPTS_VALUE){
+                assert(s->streams[i]->duration % sc->time_rate == 0);
+                s->streams[i]->duration /= sc->time_rate;
+            }
+            sc->ffindex = i;
+            i++;
         }
-
-        sc->ffindex = i;
-        sc->is_ff_stream = 1;
     }
-#endif
+    mov->total_streams = s->nb_streams;
+
     return 0;
 }
 
@@ -1807,7 +1805,7 @@ again:
         mov->next_chunk_offset = offset;
     }
 
-    if(!sc->is_ff_stream || (s->streams[sc->ffindex]->discard >= AVDISCARD_ALL)) {
+    if(s->streams[sc->ffindex]->discard >= AVDISCARD_ALL) {
         url_fskip(&s->pb, (offset - mov->next_chunk_offset));
         mov->next_chunk_offset = offset;
         offset = INT64_MAX;
