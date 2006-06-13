@@ -156,8 +156,13 @@ documented by Apple, it's not my subject.
 
 V) Enabling the PMC on Linux
 
-I don't know how to do it, sorry :-) Any idea very much welcome.
+On linux you may use oprofile from http://oprofile.sf.net, depending on the
+version and the cpu you may need to apply a patch[1] to access a set of the
+possibile counters from the userspace application. You can always define them
+using the kernel interface /dev/oprofile/* .
+
+[1] http://dev.gentoo.org/~lu_zero/development/oprofile-g4-20060423.patch
 
 --
-Romain Dolbeau
-<romain@dolbeau.org>
+Romain Dolbeau <romain@dolbeau.org>
+Luca Barbato <lu_zero@gentoo.org>
