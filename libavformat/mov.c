@@ -1404,8 +1404,8 @@ static int mov_read_tkhd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     url_fskip(pb, 36); /* display matrix */
 
     /* those are fixed-point */
-    /*st->codec->width =*/ get_be32(pb) >> 16; /* track width */
-    /*st->codec->height =*/ get_be32(pb) >> 16; /* track height */
+    get_be32(pb); /* track width */
+    get_be32(pb); /* track height */
 
     return 0;
 }
