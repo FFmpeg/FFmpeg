@@ -515,7 +515,7 @@ int av_open_input_stream(AVFormatContext **ic_ptr,
 
 /** Size of probe buffer, for guessing file type from file contents. */
 #define PROBE_BUF_MIN 2048
-#define PROBE_BUF_MAX 131072
+#define PROBE_BUF_MAX (1<<20)
 
 /**
  * Open a media file as input. The codec are not opened. Only the file
