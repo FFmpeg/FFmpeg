@@ -361,6 +361,7 @@ static int mov_write_audio_tag(ByteIOContext *pb, MOVTrack* track)
     offset_t pos = url_ftell(pb);
     int version = track->mode == MODE_MOV &&
         (track->enc->codec_id == CODEC_ID_AAC ||
+         track->enc->codec_id == CODEC_ID_MP3 ||
          track->enc->codec_id == CODEC_ID_PCM_S32LE ||
          track->enc->codec_id == CODEC_ID_PCM_S24LE);
 
