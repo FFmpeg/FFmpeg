@@ -1733,6 +1733,7 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
     int next_sample= -99;
     int size;
     int idx;
+    int ret;
     size = 0x0FFFFFFF;
 
     if (mov->partial) {
@@ -1858,8 +1859,9 @@ readchunk:
         return -1;
     if(size == 0)
         return -1;
-    url_fseek(&s->pb, offset, SEEK_SET);
-
+    ret = url_fseek(&s->pb, offset, SEEK_SET);
+    if (ret < 0)
+        return ret;
     av_get_packet(&s->pb, pkt, size);
     pkt->stream_index = sc->ffindex;
 
