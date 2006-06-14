@@ -429,8 +429,10 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
             break;
         case MKTAG('i', 'n', 'd', 'x'):
             i= url_ftell(pb);
-            read_braindead_odml_indx(s, 0);
-            avi->index_loaded=1;
+            if(!url_is_streamed(pb)){
+                read_braindead_odml_indx(s, 0);
+                avi->index_loaded=1;
+            }
             url_fseek(pb, i+size, SEEK_SET);
             break;
         default:
@@ -451,7 +453,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
         return -1;
     }
 
-    if(!avi->index_loaded)
+    if(!avi->index_loaded && !url_is_streamed(pb))
         avi_load_index(s);
     avi->index_loaded = 1;
     avi->non_interleaved |= guess_ni_flag(s);
