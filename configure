@@ -1190,15 +1190,23 @@ if ("${SDL_CONFIG}" --version) >/dev/null 2>&1 ; then
 #undef main /* We don't want SDL to override our main() */
 int main( void ) { return SDL_Init (SDL_INIT_VIDEO); }
 EOF
-    restore_flags
     if test $? = 0; then
         _sdlversion=`"${SDL_CONFIG}" --version | sed 's/[^0-9]//g'`
-        if test "$_sdlversion" -lt 130 ; then
+        if test "$_sdlversion" -lt 121 ; then
             sdl_too_old=yes
         else
             sdl=yes
+            check_cc <<EOF && sdl_video_size=yes || sdl_video_size=no
+#include <SDL.h>
+int main(void){
+    const SDL_VideoInfo *vi = SDL_GetVideoInfo();
+    int w = vi->current_w;
+    return 0;
+}
+EOF
         fi
     fi
+    restore_flags
 fi
 
 ##########################################
@@ -1534,6 +1542,9 @@ if test "$sdl" = "yes" ; then
   echo "CONFIG_SDL=yes" >> config.mak
   echo "SDL_LIBS=`"${SDL_CONFIG}" --libs`" >> config.mak
   echo "SDL_CFLAGS=`"${SDL_CONFIG}" --cflags`" >> config.mak
+  if test "$sdl_video_size" = "yes"; then
+    echo "#define HAVE_SDL_VIDEO_SIZE 1" >> $TMPH
+  fi
 fi
 if test "$texi2html" = "yes"; then
   echo "BUILD_DOC=yes" >> config.mak

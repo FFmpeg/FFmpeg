@@ -2096,19 +2096,25 @@ void toggle_full_screen(void)
 {
     int w, h, flags;
     is_full_screen = !is_full_screen;
-    flags = SDL_HWSURFACE|SDL_ASYNCBLIT|SDL_HWACCEL;
-    if (is_full_screen) {
-        w = fs_screen_width;
-        h = fs_screen_height;
-        flags |= SDL_FULLSCREEN;
+    if (!fs_screen_width) {
+        /* use default SDL method */
+        SDL_WM_ToggleFullScreen(screen);
     } else {
-        w = screen_width;
-        h = screen_height;
-        flags |= SDL_RESIZABLE;
+        /* use the recorded resolution */
+        flags = SDL_HWSURFACE|SDL_ASYNCBLIT|SDL_HWACCEL;
+        if (is_full_screen) {
+            w = fs_screen_width;
+            h = fs_screen_height;
+            flags |= SDL_FULLSCREEN;
+        } else {
+            w = screen_width;
+            h = screen_height;
+            flags |= SDL_RESIZABLE;
+        }
+        screen = SDL_SetVideoMode(w, h, 0, flags);
+        cur_stream->width = w;
+        cur_stream->height = h;
     }
-    screen = SDL_SetVideoMode(w, h, 0, flags);
-    cur_stream->width = w;
-    cur_stream->height = h;
 }
 
 void toggle_pause(void)
@@ -2426,10 +2432,11 @@ int main(int argc, char **argv)
     }
 
     if (!display_disable) {
+#ifdef HAVE_SDL_VIDEO_SIZE
         const SDL_VideoInfo *vi = SDL_GetVideoInfo();
         fs_screen_width = vi->current_w;
         fs_screen_height = vi->current_h;
-
+#endif
         flags = SDL_HWSURFACE|SDL_ASYNCBLIT|SDL_HWACCEL;
         if (is_full_screen && fs_screen_width) {
             w = fs_screen_width;
