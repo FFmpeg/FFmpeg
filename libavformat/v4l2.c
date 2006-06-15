@@ -457,7 +457,9 @@ static int v4l2_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     if (capabilities & V4L2_CAP_STREAMING) {
         s->io_method = io_mmap;
         res = mmap_init(s);
-        res = mmap_start(s);
+        if (res == 0) {
+            res = mmap_start(s);
+        }
     } else {
         s->io_method = io_read;
         res = read_init(s);
