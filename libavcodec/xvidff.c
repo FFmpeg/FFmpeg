@@ -760,5 +760,6 @@ AVCodec xvid_encoder = {
     sizeof(xvid_context_t),
     ff_xvid_encode_init,
     ff_xvid_encode_frame,
-    ff_xvid_encode_close
+    ff_xvid_encode_close,
+    .pix_fmts= (enum PixelFormat[]){PIX_FMT_YUV420P, -1},
 };
