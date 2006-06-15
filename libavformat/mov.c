@@ -66,11 +66,6 @@
 /* Allows seeking */
 #define MOV_SEEK
 
-/* some streams in QT (and in MP4 mostly) aren't either video nor audio */
-/* so we first list them as this, then clean up the list of streams we give back, */
-/* getting rid of these */
-#define CODEC_TYPE_MOV_OTHER    (enum CodecType) 2
-
 /* http://gpac.sourceforge.net/tutorial/mediatypes.htm */
 const CodecTag ff_mov_obj_type[] = {
     { CODEC_ID_MPEG4     ,  32 },
@@ -1361,7 +1356,7 @@ static int mov_read_trak(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 
     sc->sample_to_chunk_index = -1;
     st->priv_data = sc;
-    st->codec->codec_type = CODEC_TYPE_MOV_OTHER;
+    st->codec->codec_type = CODEC_TYPE_DATA;
     st->start_time = 0; /* XXX: check */
     c->streams[c->fc->nb_streams-1] = sc;
 
@@ -1663,7 +1658,7 @@ static int mov_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     MOVContext *mov = (MOVContext *) s->priv_data;
     ByteIOContext *pb = &s->pb;
-    int i, j, err;
+    int i, err;
     MOV_atom_t atom = { 0, 0, 0 };
 
     mov->fc = s;
@@ -1688,34 +1683,23 @@ static int mov_read_header(AVFormatContext *s, AVFormatParameters *ap)
         url_fseek(pb, mov->mdat_offset, SEEK_SET);
 
     mov->next_chunk_offset = mov->mdat_offset; /* initialise reading */
-
-    for(i=0; i<s->nb_streams;) {
-        MOVStreamContext *sc = (MOVStreamContext *)s->streams[i]->priv_data;
-
-        if(s->streams[i]->codec->codec_type == CODEC_TYPE_MOV_OTHER) {/* not audio, not video, delete */
-            av_free(s->streams[i]);
-            mov_free_stream_context(sc);
-            for(j=i+1; j<s->nb_streams; j++) {
-                s->streams[j-1] = s->streams[j];
-                mov->streams[j-1] = mov->streams[j];
-            }
-            s->nb_streams--;
-        } else {
-            if(!sc->time_rate)
-                sc->time_rate=1;
-            if(!sc->time_scale)
-                sc->time_scale= mov->time_scale;
-            av_set_pts_info(s->streams[i], 64, sc->time_rate, sc->time_scale);
-
-            if(s->streams[i]->duration != AV_NOPTS_VALUE){
-                assert(s->streams[i]->duration % sc->time_rate == 0);
-                s->streams[i]->duration /= sc->time_rate;
-            }
-            sc->ffindex = i;
-            i++;
-        }
-    }
     mov->total_streams = s->nb_streams;
+
+    for(i=0; i<mov->total_streams; i++) {
+        MOVStreamContext *sc = mov->streams[i];
+
+        if(!sc->time_rate)
+            sc->time_rate=1;
+        if(!sc->time_scale)
+            sc->time_scale= mov->time_scale;
+        av_set_pts_info(s->streams[i], 64, sc->time_rate, sc->time_scale);
+
+        if(s->streams[i]->duration != AV_NOPTS_VALUE){
+            assert(s->streams[i]->duration % sc->time_rate == 0);
+            s->streams[i]->duration /= sc->time_rate;
+        }
+        sc->ffindex = i;
+    }
 
     return 0;
 }
