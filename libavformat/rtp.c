@@ -218,7 +218,7 @@ int rtp_get_codec_info(AVCodecContext *codec, int payload_type)
 {
     if (AVRtpPayloadTypes[payload_type].codec_id != CODEC_ID_NONE) {
         codec->codec_type = AVRtpPayloadTypes[payload_type].codec_type;
-        codec->codec_id = AVRtpPayloadTypes[payload_type].codec_type;
+        codec->codec_id = AVRtpPayloadTypes[payload_type].codec_id;
         if (AVRtpPayloadTypes[payload_type].audio_channels > 0)
             codec->channels = AVRtpPayloadTypes[payload_type].audio_channels;
         if (AVRtpPayloadTypes[payload_type].clock_rate > 0)
