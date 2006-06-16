@@ -1415,9 +1415,6 @@ static int nut_read_close(AVFormatContext *s)
     NUTContext *nut = s->priv_data;
     int i;
 
-    for(i=0;i<s->nb_streams;i++) {
-        av_freep(&s->streams[i]->codec->extradata);
-    }
     av_freep(&nut->stream);
 
     return 0;

@@ -705,7 +705,6 @@ static int nsv_read_close(AVFormatContext *s)
             av_free(ast->index_entries);
             av_free(ast);
         }
-        av_free(st->codec->extradata);
         av_free(st->codec->palctrl);
     }
 

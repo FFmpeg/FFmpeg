@@ -898,7 +898,6 @@ static int avi_read_close(AVFormatContext *s)
         AVStream *st = s->streams[i];
         AVIStream *ast = st->priv_data;
         av_free(ast);
-        av_free(st->codec->extradata);
         av_free(st->codec->palctrl);
     }
 

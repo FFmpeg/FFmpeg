@@ -2630,10 +2630,6 @@ matroska_read_close (AVFormatContext *s)
         av_free(track);
     }
 
-    for (n = 0; n < s->nb_streams; n++) {
-        av_free(s->streams[n]->codec->extradata);
-    }
-
     memset(matroska, 0, sizeof(MatroskaDemuxContext));
 
     return 0;

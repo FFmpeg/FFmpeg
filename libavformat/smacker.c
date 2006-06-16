@@ -329,11 +329,6 @@ static int smacker_read_close(AVFormatContext *s)
     if(smk->frm_flags)
         av_free(smk->frm_flags);
 
-    for(i=0;i<s->nb_streams;i++) {
-        AVStream *st = s->streams[i];
-        if(st->codec->extradata)
-            av_free(st->codec->extradata);
-    }
     return 0;
 }
 

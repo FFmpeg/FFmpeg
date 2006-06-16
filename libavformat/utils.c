@@ -2167,6 +2167,7 @@ void av_close_input_file(AVFormatContext *s)
             av_parser_close(st->parser);
         }
         av_free(st->index_entries);
+        av_free(st->codec->extradata);
         av_free(st->codec);
         av_free(st);
     }

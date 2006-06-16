@@ -542,7 +542,6 @@ ogg_read_close (AVFormatContext * s)
     for (i = 0; i < ogg->nstreams; i++){
         av_free (ogg->streams[i].buf);
         av_free (ogg->streams[i].private);
-        av_freep (&s->streams[i]->codec->extradata);
     }
     av_free (ogg->streams);
     return 0;

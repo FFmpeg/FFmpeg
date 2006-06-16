@@ -249,7 +249,6 @@ static int ogg_read_close(AVFormatContext *avfcontext) {
 
     ogg_stream_clear(&context->os) ;
     ogg_sync_clear(&context->oy) ;
-    av_freep(&avfcontext->streams[0]->codec.extradata);
 
     return 0 ;
 }
