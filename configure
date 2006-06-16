@@ -9,6 +9,7 @@ show_help(){
   echo
   echo "Standard options:"
   echo "  --help                   print this message"
+  echo "  --log                    log tests and output to config.err"
   echo "  --prefix=PREFIX          install in PREFIX [$prefix]"
   echo "  --libdir=DIR             install libs in DIR [PREFIX/lib]"
   echo "  --incdir=DIR             install includes in DIR [PREFIX/include/ffmpeg]"
@@ -96,8 +97,26 @@ show_help(){
   exit 1
 }
 
+log(){
+    echo "$@" >>$logfile
+}
+
+die(){
+    echo "$@"
+    rm -f $TMPC $TMPO $TMPE $TMPS $TMPH
+    exit 1
+}
+
+enabled(){
+    eval test "\$$1" = "yes"
+}
+
+flags_saved(){
+    (: ${SAVE_CFLAGS?}) 2>/dev/null
+}
+
 save_flags(){
-    (:${SAVE_CFLAGS?}) 2>/dev/null && return
+    flags_saved && return
     SAVE_CFLAGS="$CFLAGS"
     SAVE_LDFLAGS="$LDFLAGS"
     SAVE_extralibs="$extralibs"
@@ -127,38 +146,74 @@ temp_extralibs(){
     extralibs="$extralibs $*"
 }
 
+append(){
+    var=$1
+    shift
+    flags_saved && eval "SAVE_$var=\"\$SAVE_$var $*\""
+    eval "$var=\"\$$var $*\""
+}
+
+add_cflags(){
+    append CFLAGS "$@"
+}
+
+add_ldflags(){
+    append LDFLAGS "$@"
+}
+
+add_extralibs(){
+    append extralibs "$@"
+}
+
 check_cc(){
+    log check_cc "$@"
     cat >$TMPC
-    $cc $CFLAGS "$@" -c -o $TMPO $TMPC >/dev/null 2>&1
+    log $cc $CFLAGS "$@" -c -o $TMPO $TMPC
+    $cc $CFLAGS "$@" -c -o $TMPO $TMPC >>$logfile 2>&1
+}
+
+check_cpp(){
+    log check_cpp "$@"
+    cat >$TMPC
+    log $cc $CFLAGS "$@" -E -o $TMPO $TMPC
+    $cc $CFLAGS "$@" -E -o $TMPO $TMPC >>$logfile 2>&1
 }
 
 check_ld(){
+    log check_ld "$@"
     cat >$TMPC
-    $cc $CFLAGS $LDFLAGS "$@" -o $TMPE $TMPC $extralibs >/dev/null 2>&1
+    log $cc $CFLAGS $LDFLAGS "$@" -o $TMPE $TMPC $extralibs
+    $cc $CFLAGS $LDFLAGS "$@" -o $TMPE $TMPC $extralibs >>/dev/null 2>&1
 }
 
 check_cflags(){
-    check_cc "$@" <<EOF && CFLAGS="$CFLAGS $*"
+    log check_cflags "$@"
+    check_cc "$@" <<EOF && add_cflags "$@"
 int x;
 EOF
 }
 
 check_ldflags(){
-    check_ld "$@" <<EOF && LDFLAGS="$LDFLAGS $*"
-int x;
+    log check_ldflags "$@"
+    check_ld "$@" <<EOF && add_ldflags "$@"
+int main(){
+    return 0;
+}
 EOF
 }
 
 check_header(){
+    log check_header "$@"
     header=$1
     shift
-    check_cc "$@" <<EOF
+    check_cpp "$@" <<EOF
 #include <$header>
 int x;
 EOF
 }
 
 check_func(){
+    log check_func "$@"
     func=$1
     shift
     check_ld "$@" <<EOF
@@ -169,8 +224,28 @@ int main(){
 EOF
 }
 
+check_lib(){
+    log check_lib "$@"
+    header="$1"
+    func="$2"
+    shift 2
+    temp_extralibs "$@"
+    check_header $header && check_func $func && add_extralibs "$@"
+    err=$?
+    restore_flags
+    return $err
+}
+
 check_exec(){
-    check_ld "$@" && (test -z "$cross_prefix" && $TMPE || true)
+    check_ld "$@" && { test -n "$cross_prefix" || $TMPE; }
+}
+
+require(){
+    name="$1"
+    header="$2"
+    func="$3"
+    shift 3
+    check_lib $header $func "$@" || die "ERROR: $name not found"
 }
 
 if test x"$1" = x"-h" -o x"$1" = x"--help" ; then
@@ -193,6 +268,8 @@ TMPS="${TMPDIR1}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.S"
 TMPH="${TMPDIR1}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.h"
 
 # default parameters
+log="no"
+logfile="/dev/null"
 prefix="/usr/local"
 libdir=""
 incdir=""
@@ -467,7 +544,7 @@ cygwin="yes"
 EXESUF=".exe"
 ;;
 Linux)
-FFLDFLAGS="$FFLDFLAGS -rdynamic -Wl,--as-needed -Wl,-rpath-link,\$(BUILD_ROOT)/libavcodec -Wl,-rpath-link,\$(BUILD_ROOT)/libavformat -Wl,-rpath-link,\$(BUILD_ROOT)/libavutil"
+FFLDFLAGS="$FFLDFLAGS -rdynamic"
 ;;
 IRIX*)
 ranlib="echo ignoring ranlib"
@@ -544,6 +621,8 @@ CODEC_LIST=`grep 'register_avcodec(&[a-z]' $source_path/libavcodec/allcodecs.c  
 
 for opt do
   case "$opt" in
+  --log) log=yes
+  ;;
   --prefix=*) prefix=`echo $opt | cut -d '=' -f 2`; force_prefix=yes
   ;;
   --libdir=*) libdir=`echo $opt | cut -d '=' -f 2`; force_libdir=yes
@@ -605,44 +684,33 @@ for opt do
   --enable-a52bin) a52bin="yes"
   ;;
   --enable-dts) dts="yes"
-    extralibs="$extralibs -ldts"
   ;;
   --enable-pp) pp="yes"
   ;;
   --enable-libgsm) libgsm="yes"
-    extralibs="$extralibs -lgsm"
   ;;
   --enable-mp3lame) mp3lame="yes"
-    extralibs="$extralibs -lmp3lame"
   ;;
   --enable-libogg) libogg="yes"
-    extralibs="$extralibs -logg"
     pkg_requires="$pkg_requires ogg >= 1.1"
   ;;
   --enable-vorbis) vorbis="yes"
-    extralibs="$extralibs -lvorbis -lvorbisenc"
     pkg_requires="$pkg_requires vorbis vorbisenc"
   ;;
   --enable-theora) theora="yes"
-    extralibs="$extralibs -ltheora"
     pkg_requires="$pkg_requires theora"
   ;;
   --enable-faad) faad="yes"
-    extralibs="$extralibs -lfaad"
   ;;
   --enable-faadbin) faadbin="yes"
   ;;
   --enable-faac) faac="yes"
-    extralibs="$extralibs -lfaac"
   ;;
   --enable-xvid) xvid="yes"
-    extralibs="$extralibs -lxvidcore"
   ;;
   --enable-x264) x264="yes"
-    extralibs="$extralibs -lx264"
   ;;
   --enable-dc1394) dc1394="yes"
-    extralibs="$extralibs -ldc1394_control -lraw1394"
     pkg_requires="$pkg_requires libraw1394"
   ;;
   --disable-vhook) vhook="no"
@@ -719,6 +787,11 @@ for opt do
   esac
 done
 
+if enabled log; then
+    logfile=config.err
+    echo "# $0 $@" >$logfile
+    set >>$logfile
+fi
 
 # Combine FFLDFLAGS and the LDFLAGS environment variable
 LDFLAGS="$FFLDFLAGS $LDFLAGS"
@@ -926,6 +999,8 @@ if test $tune != "generic"; then
     esac
 fi
 
+# check for SIMD availability
+
 # AltiVec flags: The FSF version of GCC differs from the Apple version
 if test $cpu = "powerpc"; then
     if test $altivec = "yes"; then
@@ -966,14 +1041,37 @@ if test $mmi = "default"; then
 fi
 
 # check if our compiler supports mmi
-if test $mmi = "yes"; then
-    check_cc <<EOF || mmi="no"
+enabled mmi && check_cc <<EOF || mmi="no"
 int main(void) {
     __asm__ ("lq \$2, 0(\$2)");
     return 0;
 }
 EOF
-fi
+
+# test gcc version to see if vector builtins can be used
+# currently only used on i386 for MMX builtins
+check_cc -msse <<EOF && builtin_vector=yes || builtin_vector=no
+#include <xmmintrin.h>
+int main(void) {
+#if __GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 2)
+return 0;
+#else
+#error no vector builtins
+#endif
+}
+EOF
+
+# test for mm3dnow.h
+test "$cpu" = "x86_64" && march=k8 || march=athlon
+check_cc -march=$march <<EOF && mm3dnow=yes || mm3dnow=no
+#include <mm3dnow.h>
+int main(void) {
+__m64 b1;
+b1 = _m_pswapd(b1);
+_m_femms();
+return 0;
+}
+EOF
 
 if test "$mingw32" = "yes" -o "$mingwce" = "yes"; then
     if test "$lshared" = "yes" && test "$lstatic" = "yes" ; then
@@ -1003,22 +1101,16 @@ EOF
     if test "$force_libdir" != yes; then bindir="$prefix"; fi
 fi
 
+# ---
+# big/little-endian test
 if test -z "$cross_prefix" ; then
-    # ---
-    # big/little-endian test
-    check_ld <<EOF
+    check_ld <<EOF || die "endian test failed" && $TMPE && bigendian="yes"
 #include <inttypes.h>
 int main(int argc, char ** argv){
         volatile uint32_t i=0x01234567;
         return (*((uint8_t*)(&i))) == 0x67;
 }
 EOF
-
-    if test $? = 0 ; then
-        $TMPE && bigendian="yes"
-    else
-        echo big/little test failed
-    fi
 else
     # programs cannot be launched if cross compiling, so make a static guess
     if test "$cpu" = "powerpc" -o "$cpu" = "mips" ; then
@@ -1052,32 +1144,36 @@ if check_header malloc.h; then
 fi
 
 if test "$_memalign" = "no" -a "$mmx" = "yes" -a "$memalignhack" != "yes"; then
-    echo "Error, no memalign() but SSE enabled, disable it or use --enable-memalign-hack."
-    exit 1
+    die "Error, no memalign() but SSE enabled, disable it or use --enable-memalign-hack."
 fi
 
 check_func localtime_r && localtime_r=yes || localtime_r=no
+enabled zlib && check_lib zlib.h zlibVersion -lz || zlib="no"
+enabled lzo && enabled gpl && check_lib lzo1x.h lzo_version -llzo || lzo="no"
 
-if test "$zlib" = "yes"; then
-    temp_extralibs -lz
-    check_header zlib.h && check_func zlibVersion || zlib="no"
-    # XXX: more tests needed - runtime test
-    restore_flags
-fi
-if test "$zlib" = "yes"; then
-    extralibs="$extralibs -lz"
+# check for some common methods of building with pthread support
+# do this before the optional library checks as some of them require pthreads
+if enabled pthreads; then
+    { check_cflags -pthread && check_ldflags -pthread; } ||
+    { check_cflags -pthreads && check_ldflags -pthreads; } ||
+    check_lib pthread.h pthread_create -lpthread ||
+    check_func pthread_create ||
+    die "ERROR: can't find pthreads library"
 fi
 
-if test "$lzo" = "yes" -a "$gpl" = "yes"; then
-    temp_extralibs -llzo
-    check_header lzo1x.h && check_func lzo_version || lzo="no"
-    restore_flags
-else
-    lzo="no"
-fi
-if test "$lzo" = "yes"; then
-    extralibs="$extralibs -llzo"
-fi
+# these are off by default, so fail if requested and not available
+enabled dts     && require libdts dts.h dts_init -ldts
+enabled libgsm  && require libgsm gsm.h gsm_create -lgsm
+enabled mp3lame && require LAME lame/lame.h lame_init -lmp3lame
+enabled libogg  && require libogg ogg/ogg.h ogg_sync_init -logg
+enabled vorbis  && require libvorbis vorbis/vorbisenc.h vorbis_info_init -lvorbis -lvorbisenc
+enabled theora  && require libtheora theora/theora.h theora_info_init -ltheora
+enabled faac    && require libfaac faac.h faacEncOpen -lfaac
+enabled faad    && require libfaad faad.h faacDecOpen -lfaad
+enabled xvid    && require XviD xvid.h xvid_global -lxvidcore
+enabled x264    && require x264 x264.h x264_encoder_open -lx264
+enabled dc1394  && require libdc1394 libdc1394/dc1394_control.h dc1394_create_handle -ldc1394_control -lraw1394
+enabled sunmlib && require mediaLib mlib_types.h mlib_VectorSub_S16_U8_Mod -lmlib
 
 # test for lrintf in math.h
 check_exec <<EOF && have_lrintf=yes || have_lrintf=no
@@ -1088,41 +1184,10 @@ EOF
 
 _restrict=
 for restrict_keyword in restrict __restrict__ __restrict; do
-    check_cc <<EOF
+    check_cc <<EOF && _restrict=$restrict_keyword && break
 void foo(char * $restrict_keyword p);
 EOF
-    if test $? = 0; then
-        _restrict=$restrict_keyword
-        break;
-    fi
 done
-
-# test gcc version to see if vector builtins can be used
-# currently only used on i386 for MMX builtins
-check_cc -msse <<EOF && builtin_vector=yes || builtin_vector=no
-#include <xmmintrin.h>
-int main(void) {
-#if __GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 2)
-return 0;
-#else
-#error no vector builtins
-#endif
-}
-EOF
-
-# test for mm3dnow.h
-test "$cpu" = "x86_64" && march=k8 || march=athlon
-check_cc -march=$march <<EOF && mm3dnow=yes || mm3dnow=no
-#include <mm3dnow.h>
-int main(void) {
-__m64 b1;
-b1 = _m_pswapd(b1);
-_m_femms();
-return 0;
-}
-EOF
-
-check_cflags -Wdeclaration-after-statement
 
 # dlopen/dlfcn.h probing
 
@@ -1145,7 +1210,7 @@ if test "$vhook" = "default"; then
 fi
 
 if test "$vhook" = "yes" -o "$a52bin" = "yes" -o "$faadbin" = "yes"; then
-    extralibs="$extralibs $ldl"
+    add_extralibs $ldl
 fi
 
 
@@ -1209,6 +1274,8 @@ EOF
     restore_flags
 fi
 
+enabled sdl || ffplay=no
+
 ##########################################
 # texi2html check
 
@@ -1220,7 +1287,7 @@ fi
 ##########################################
 # IPv6 check
 
-test "$network" = "yes" && check_ld <<EOF && ipv6=yes || ipv6=no
+enabled network && check_ld <<EOF && ipv6=yes || ipv6=no
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -1235,7 +1302,7 @@ int main( void ) {
 EOF
 
 # check for video4linux2 --- V4L2_PIX_FMT_YUV420
-test "$v4l2" = "yes" && check_cc <<EOF || v4l2="no"
+enabled v4l2 && check_cc <<EOF || v4l2="no"
 #include <sys/time.h>
 #include <asm/types.h>
 #include <linux/videodev2.h>
@@ -1243,23 +1310,20 @@ int dummy = V4L2_PIX_FMT_YUV420;
 struct v4l2_buffer dummy1;
 EOF
 
+enabled debug && add_cflags -g
+
+# add some useful compiler flags if supported
+check_cflags -Wdeclaration-after-statement
 check_cflags -Wall
 check_cflags -Wno-switch
 
-if test "$sdl" = "no"; then
-    ffplay=no
-fi
+# add some linker flags
+check_ldflags '-Wl,--as-needed' '-Wl,-rpath-link,\$(BUILD_ROOT)/libavcodec' '-Wl,-rpath-link,\$(BUILD_ROOT)/libavformat' '-Wl,-rpath-link,\$(BUILD_ROOT)/libavutil'
 
-if test "$debug" = "yes"; then
-    CFLAGS="-g $CFLAGS"
-fi
+# not all compilers support -Os
+test "$optimize" = "small" && check_cflags -Os
 
-if test "$optimize" = "small"; then
-#  CFLAGS=${CFLAGS//-O3/-Os}
-    CFLAGS="$CFLAGS -Os"
-fi
-
-if test "$optimize" = "yes"; then
+if enabled optimize; then
     if test -n "`$cc -v 2>&1 | grep xlc`"; then
         CFLAGS="$CFLAGS -O5"
         LDFLAGS="$LDFLAGS -O5"
@@ -1394,10 +1458,8 @@ fi
 
 # SHCFLAGS is a copy of CFLAGS without -mdynamic-no-pic, used when building
 # shared modules on OS/X (vhook/Makefile).
-SHCFLAGS=$CFLAGS
-if test "$needmdynamicnopic" = yes; then
-   CFLAGS="$CFLAGS -mdynamic-no-pic"
-fi
+SHCFLAGS="$CFLAGS"
+test "$needmdynamicnopic" = yes && add_cflags -mdynamic-no-pic
 
 echo "OPTFLAGS=$CFLAGS" >> config.mak
 echo "SHCFLAGS=$SHCFLAGS">>config.mak
@@ -1528,15 +1590,11 @@ fi
 if test "$sunmlib" = "yes" ; then
   echo "HAVE_MLIB=yes" >> config.mak
   echo "#define HAVE_MLIB 1" >> $TMPH
-  extralibs="$extralibs -lmlib"
 fi
 if test "$pthreads" = "yes" ; then
   echo "HAVE_PTHREADS=yes" >> config.mak
   echo "#define HAVE_PTHREADS 1" >> $TMPH
   echo "#define HAVE_THREADS 1" >> $TMPH
-  if test $targetos != FreeBSD -a $targetos != OpenBSD ; then
-     extralibs="$extralibs -lpthread"
-  fi
 fi
 if test "$sdl" = "yes" ; then
   echo "CONFIG_SDL=yes" >> config.mak
