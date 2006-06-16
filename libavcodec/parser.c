@@ -729,12 +729,12 @@ static int mpegaudio_parse(AVCodecParserContext *s1,
 
 /* also used for ADTS AAC */
 typedef struct AC3ParseContext {
-    uint8_t inbuf[4096]; /* input buffer */
     uint8_t *inbuf_ptr;
     int frame_size;
     int header_size;
     int (*sync)(const uint8_t *buf, int *channels, int *sample_rate,
                 int *bit_rate, int *samples);
+    uint8_t inbuf[8192]; /* input buffer */
 } AC3ParseContext;
 
 #define AC3_HEADER_SIZE 7
