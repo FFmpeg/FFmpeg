@@ -678,16 +678,7 @@ AVInputFormat pcm_ ## name ## _iformat = {\
     .value = codec,\
 };
 
-#if !defined(CONFIG_MUXERS) && defined(CONFIG_DEMUXERS)
-
-#define PCMDEF(name, long_name, ext, codec) \
-    PCMINPUTDEF(name, long_name, ext, codec)
-
-#else
-
-#define PCMDEF(name, long_name, ext, codec) \
-    PCMINPUTDEF(name, long_name, ext, codec)\
-\
+#define PCMOUTPUTDEF(name, long_name, ext, codec) \
 AVOutputFormat pcm_ ## name ## _oformat = {\
     #name,\
     long_name,\
@@ -700,7 +691,21 @@ AVOutputFormat pcm_ ## name ## _oformat = {\
     raw_write_packet,\
     raw_write_trailer,\
 };
-#endif //CONFIG_MUXERS
+
+
+#if !defined(CONFIG_MUXERS) && defined(CONFIG_DEMUXERS)
+#define PCMDEF(name, long_name, ext, codec) \
+        PCMINPUTDEF(name, long_name, ext, codec)
+#elif defined(CONFIG_MUXERS) && !defined(CONFIG_DEMUXERS)
+#define PCMDEF(name, long_name, ext, codec) \
+        PCMOUTPUTDEF(name, long_name, ext, codec)
+#elif defined(CONFIG_MUXERS) && defined(CONFIG_DEMUXERS)
+#define PCMDEF(name, long_name, ext, codec) \
+        PCMINPUTDEF(name, long_name, ext, codec)\
+        PCMOUTPUTDEF(name, long_name, ext, codec)
+#else
+#define PCMDEF(name, long_name, ext, codec)
+#endif
 
 #ifdef WORDS_BIGENDIAN
 #define BE_DEF(s) s
