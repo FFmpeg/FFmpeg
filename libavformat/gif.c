@@ -187,7 +187,7 @@ static int gif_image_write_header(ByteIOContext *pb,
 
     /* the global palette */
     if (!palette) {
-        put_buffer(pb, (unsigned char *)gif_clut, 216*3);
+        put_buffer(pb, (const unsigned char *)gif_clut, 216*3);
         for(i=0;i<((256-216)*3);i++)
             put_byte(pb, 0);
     } else {

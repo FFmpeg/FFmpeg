@@ -692,7 +692,7 @@ int dv_assemble_frame(DVMuxContext *c, AVStream* st,
             /* FIXME: we have to have more sensible approach than this one */
             if (fifo_size(&c->audio_data[i], c->audio_data[i].rptr) + data_size >= 100*AVCODEC_MAX_AUDIO_FRAME_SIZE)
                 av_log(st->codec, AV_LOG_ERROR, "Can't process DV frame #%d. Insufficient video data or severe sync problem.\n", c->frames);
-            fifo_write(&c->audio_data[i], (uint8_t *)data, data_size, &c->audio_data[i].wptr);
+            fifo_write(&c->audio_data[i], data, data_size, &c->audio_data[i].wptr);
         }
     }
 out:

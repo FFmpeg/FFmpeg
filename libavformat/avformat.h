@@ -604,7 +604,7 @@ int fifo_init(FifoBuffer *f, int size);
 void fifo_free(FifoBuffer *f);
 int fifo_size(FifoBuffer *f, uint8_t *rptr);
 int fifo_read(FifoBuffer *f, uint8_t *buf, int buf_size, uint8_t **rptr_ptr);
-void fifo_write(FifoBuffer *f, uint8_t *buf, int size, uint8_t **wptr_ptr);
+void fifo_write(FifoBuffer *f, const uint8_t *buf, int size, uint8_t **wptr_ptr);
 int put_fifo(ByteIOContext *pb, FifoBuffer *f, int buf_size, uint8_t **rptr_ptr);
 void fifo_realloc(FifoBuffer *f, unsigned int size);
 

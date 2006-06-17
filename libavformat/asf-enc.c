@@ -349,7 +349,7 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size, int64_t data
     /* stream headers */
     for(n=0;n<s->nb_streams;n++) {
         int64_t es_pos;
-        uint8_t *er_spr = NULL;
+        const uint8_t *er_spr = NULL;
         int er_spr_len = 0;
         //        ASFStream *stream = &asf->streams[n];
 
@@ -360,7 +360,7 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size, int64_t data
 
         if (enc->codec_type == CODEC_TYPE_AUDIO) {
             if (enc->codec_id == CODEC_ID_ADPCM_G726) {
-                er_spr     = (uint8_t *)error_spread_ADPCM_G726;
+                er_spr     = error_spread_ADPCM_G726;
                 er_spr_len = sizeof(error_spread_ADPCM_G726);
             }
         }

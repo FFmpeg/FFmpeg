@@ -35,7 +35,7 @@ static int yuv4_generate_header(AVFormatContext *s, char* buf)
     int width, height;
     int raten, rated, aspectn, aspectd, n;
     char inter;
-    char *colorspace = "";
+    const char *colorspace = "";
 
     st = s->streams[0];
     width = st->codec->width;

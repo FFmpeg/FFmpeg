@@ -326,7 +326,7 @@ static void convert_from_rgba32(uint8_t *dst, const uint8_t *src, int width)
 
     d = dst;
     for(j = 0; j < width; j++) {
-        v = ((uint32_t *)src)[j];
+        v = ((const uint32_t *)src)[j];
         d[0] = v >> 16;
         d[1] = v >> 8;
         d[2] = v;

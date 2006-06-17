@@ -220,10 +220,10 @@ static int aiff_write_header(AVFormatContext *s)
     put_le32(pb, enc->codec_tag);
     if (coder_len & 1) {
         put_byte(pb, coder_len);
-        put_buffer(pb, (uint8_t*)enc->codec->name, coder_len);
+        put_buffer(pb, (const uint8_t*)enc->codec->name, coder_len);
     } else {
         put_byte(pb, coder_len+1);
-        put_buffer(pb, (uint8_t*)enc->codec->name, coder_len);
+        put_buffer(pb, (const uint8_t*)enc->codec->name, coder_len);
         put_byte(pb, 0);
     }
 

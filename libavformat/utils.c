@@ -342,7 +342,7 @@ void fifo_realloc(FifoBuffer *f, unsigned int new_size){
     }
 }
 
-void fifo_write(FifoBuffer *f, uint8_t *buf, int size, uint8_t **wptr_ptr)
+void fifo_write(FifoBuffer *f, const uint8_t *buf, int size, uint8_t **wptr_ptr)
 {
     int len;
     uint8_t *wptr;

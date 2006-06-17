@@ -788,7 +788,7 @@ static int mov_write_vmhd_tag(ByteIOContext *pb)
 
 static int mov_write_hdlr_tag(ByteIOContext *pb, MOVTrack* track)
 {
-    char *descr, *hdlr, *hdlr_type;
+    const char *descr, *hdlr, *hdlr_type;
     offset_t pos = url_ftell(pb);
 
     if (!track) { /* no media --> data handler */
@@ -1085,7 +1085,7 @@ static int mov_write_string_data_tag(ByteIOContext *pb, const char *data, int lo
     }
 }
 
-static int mov_write_string_tag(ByteIOContext *pb, char *name, char *value, int long_style){
+static int mov_write_string_tag(ByteIOContext *pb, const char *name, const char *value, int long_style){
     int size = 0;
     if ( value && value[0] ) {
         offset_t pos = url_ftell(pb);
@@ -1225,7 +1225,7 @@ static size_t ascii_to_wc (ByteIOContext *pb, char *b, size_t n)
     return 2*n;
 }
 
-static uint16_t language_code (char *str)
+static uint16_t language_code (const char *str)
 {
     return ((((str[0]-0x60) & 0x1F)<<10) + (((str[1]-0x60) & 0x1F)<<5) + ((str[2]-0x60) & 0x1F));
 }

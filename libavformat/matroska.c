@@ -183,14 +183,14 @@ typedef enum {
  */
 
 typedef struct CodecTags{
-    char *str;
+    const char *str;
     enum CodecID id;
 }CodecTags;
 
 #define MATROSKA_CODEC_ID_VIDEO_VFW_FOURCC   "V_MS/VFW/FOURCC"
 #define MATROSKA_CODEC_ID_AUDIO_ACM          "A_MS/ACM"
 
-CodecTags codec_tags[]={
+static CodecTags codec_tags[]={
 //    {"V_MS/VFW/FOURCC"  , CODEC_ID_NONE},
     {"V_UNCOMPRESSED"   , CODEC_ID_RAWVIDEO},
     {"V_MPEG4/ISO/SP"   , CODEC_ID_MPEG4},
