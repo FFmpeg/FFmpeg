@@ -101,7 +101,14 @@ log(){
     echo "$@" >>$logfile
 }
 
+logfile(){
+    log BEGIN $1
+    cat -n $1 >>$logfile
+    log END $1
+}
+
 die(){
+    log "$@"
     echo "$@"
     rm -f $TMPC $TMPO $TMPE $TMPS $TMPH
     exit 1
@@ -168,6 +175,7 @@ add_extralibs(){
 check_cc(){
     log check_cc "$@"
     cat >$TMPC
+    logfile $TMPC
     log $cc $CFLAGS "$@" -c -o $TMPO $TMPC
     $cc $CFLAGS "$@" -c -o $TMPO $TMPC >>$logfile 2>&1
 }
@@ -175,6 +183,7 @@ check_cc(){
 check_cpp(){
     log check_cpp "$@"
     cat >$TMPC
+    logfile $TMPC
     log $cc $CFLAGS "$@" -E -o $TMPO $TMPC
     $cc $CFLAGS "$@" -E -o $TMPO $TMPC >>$logfile 2>&1
 }
@@ -182,8 +191,9 @@ check_cpp(){
 check_ld(){
     log check_ld "$@"
     cat >$TMPC
+    logfile $TMPC
     log $cc $CFLAGS $LDFLAGS "$@" -o $TMPE $TMPC $extralibs
-    $cc $CFLAGS $LDFLAGS "$@" -o $TMPE $TMPC $extralibs >>/dev/null 2>&1
+    $cc $CFLAGS $LDFLAGS "$@" -o $TMPE $TMPC $extralibs >>$logfile 2>&1
 }
 
 check_cflags(){
