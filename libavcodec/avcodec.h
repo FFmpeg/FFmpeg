@@ -16,7 +16,7 @@ extern "C" {
 
 //FIXME the following 2 really dont belong in here
 #define FFMPEG_VERSION_INT      0x000409
-#define FFMPEG_VERSION          "CVS"
+#define FFMPEG_VERSION          "HEAD"
 
 #define AV_STRINGIFY(s)         AV_TOSTRING(s)
 #define AV_TOSTRING(s) #s
