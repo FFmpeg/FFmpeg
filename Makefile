@@ -64,7 +64,8 @@ endif
 
 OBJS = ffmpeg.o ffserver.o cmdutils.o $(FFPLAY_O)
 SRCS = $(OBJS:.o=.c) $(ASM_OBJS:.o=.s)
-FFLIBS = -L./libavformat -lavformat$(BUILDSUF) -L./libavcodec -lavcodec$(BUILDSUF) -L./libavutil -lavutil$(BUILDSUF)
+FFLIBDIRS = -L./libavformat -L./libavcodec -L./libavutil
+FFLIBS = -lavformat$(BUILDSUF) -lavcodec$(BUILDSUF) -lavutil$(BUILDSUF)
 
 all: lib $(PROGS_G) $(PROGS) $(PROGTEST) $(VHOOK) $(QTFASTSTART) $(DOC)
 
@@ -77,24 +78,24 @@ ifeq ($(CONFIG_PP),yes)
 endif
 
 ffmpeg_g$(EXESUF): ffmpeg.o cmdutils.o .libs
-	$(CC) $(LDFLAGS) -o $@ ffmpeg.o cmdutils.o $(FFLIBS) $(EXTRALIBS)
+	$(CC) $(FFLIBDIRS) $(LDFLAGS) -o $@ ffmpeg.o cmdutils.o $(FFLIBS) $(EXTRALIBS)
 
 ffmpeg$(EXESUF): ffmpeg_g$(EXESUF)
 	cp -p $< $@
 	$(STRIP) $@
 
 ffserver$(EXESUF): ffserver.o .libs
-	$(CC) $(LDFLAGS) $(FFSLDFLAGS) -o $@ ffserver.o $(FFLIBS) $(EXTRALIBS)
+	$(CC) $(FFLIBDIRS) $(LDFLAGS) $(FFSLDFLAGS) -o $@ ffserver.o $(FFLIBS) $(EXTRALIBS)
 
 ffplay_g$(EXESUF): ffplay.o cmdutils.o .libs
-	$(CC) $(LDFLAGS) -o $@ ffplay.o cmdutils.o $(FFLIBS) $(EXTRALIBS) $(SDL_LIBS)
+	$(CC) $(FFLIBDIRS) $(LDFLAGS) -o $@ ffplay.o cmdutils.o $(FFLIBS) $(EXTRALIBS) $(SDL_LIBS)
 
 ffplay$(EXESUF): ffplay_g$(EXESUF)
 	cp -p $< $@
 	$(STRIP) $@
 
 output_example$(EXESUF): output_example.o .libs
-	$(CC) $(LDFLAGS) -o $@ output_example.o $(FFLIBS) $(EXTRALIBS)
+	$(CC) $(FFLIBDIRS) $(LDFLAGS) -o $@ output_example.o $(FFLIBS) $(EXTRALIBS)
 
 qt-faststart$(EXESUF): qt-faststart.c
 	$(CC) $(CFLAGS) $(SRC_PATH)/qt-faststart.c -o qt-faststart$(EXESUF)
