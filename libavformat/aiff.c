@@ -110,7 +110,7 @@ static int fix_bps(int codec_id)
 }
 
 /* Returns the number of sound data frames or negative on error */
-unsigned int get_aiff_header(ByteIOContext *pb, AVCodecContext *codec,
+static unsigned int get_aiff_header(ByteIOContext *pb, AVCodecContext *codec,
                              int size, unsigned version)
 {
     AVExtFloat ext;

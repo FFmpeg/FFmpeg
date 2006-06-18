@@ -211,12 +211,12 @@ static int video_global_header = 0;
 static int rate_emu = 0;
 
 #ifdef CONFIG_BKTR
-static char *video_grab_format = "bktr";
+static const char *video_grab_format = "bktr";
 #else
 #ifdef CONFIG_VIDEO4LINUX2
-static char *video_grab_format = "video4linux2";
+static const char *video_grab_format = "video4linux2";
 #else
-static char *video_grab_format = "video4linux";
+static const char *video_grab_format = "video4linux";
 #endif
 #endif
 static char *video_device = NULL;
@@ -224,7 +224,7 @@ static char *grab_device = NULL;
 static int  video_channel = 0;
 static char *video_standard = "ntsc";
 
-static char *audio_grab_format = "audio_device";
+static const char *audio_grab_format = "audio_device";
 static char *audio_device = NULL;
 static int audio_volume = 256;
 

@@ -79,8 +79,8 @@ static inline int CLIP(int a){
  * Postprocessng filter.
  */
 struct PPFilter{
-        char *shortName;
-        char *longName;
+        const char *shortName;
+        const char *longName;
         int chromDefault;       ///< is chrominance filtering on by default if this filter is manually activated
         int minLumQuality;      ///< minimum quality to turn luminance filtering on
         int minChromQuality;    ///< minimum quality to turn chrominance filtering on

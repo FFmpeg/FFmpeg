@@ -3704,7 +3704,7 @@ static int opt_video_codec(const char *arg)
 /* simplistic plugin support */
 
 #ifdef CONFIG_HAVE_DLOPEN
-void load_module(const char *filename)
+static void load_module(const char *filename)
 {
     void *dll;
     void (*init_func)(void);

@@ -1735,7 +1735,7 @@ static void stream_component_close(VideoState *is, int stream_index)
     }
 }
 
-void dump_stream_info(AVFormatContext *s)
+static void dump_stream_info(const AVFormatContext *s)
 {
     if (s->track != 0)
         fprintf(stderr, "Track: %d\n", s->track);
@@ -2042,7 +2042,7 @@ static void stream_close(VideoState *is)
     SDL_DestroyMutex(is->video_decoder_mutex);
 }
 
-void stream_cycle_channel(VideoState *is, int codec_type)
+static void stream_cycle_channel(VideoState *is, int codec_type)
 {
     AVFormatContext *ic = is->ic;
     int start_index, stream_index;
@@ -2092,7 +2092,7 @@ void stream_cycle_channel(VideoState *is, int codec_type)
 }
 
 
-void toggle_full_screen(void)
+static void toggle_full_screen(void)
 {
     int w, h, flags;
     is_full_screen = !is_full_screen;
@@ -2117,14 +2117,14 @@ void toggle_full_screen(void)
     }
 }
 
-void toggle_pause(void)
+static void toggle_pause(void)
 {
     if (cur_stream)
         stream_pause(cur_stream);
     step = 0;
 }
 
-void step_to_next_frame(void)
+static void step_to_next_frame(void)
 {
     if (cur_stream) {
         if (cur_stream->paused)
@@ -2134,7 +2134,7 @@ void step_to_next_frame(void)
     step = 1;
 }
 
-void do_exit(void)
+static void do_exit(void)
 {
     if (cur_stream) {
         stream_close(cur_stream);
@@ -2146,7 +2146,7 @@ void do_exit(void)
     exit(0);
 }
 
-void toggle_audio_display(void)
+static void toggle_audio_display(void)
 {
     if (cur_stream) {
         cur_stream->show_audio = !cur_stream->show_audio;
@@ -2154,7 +2154,7 @@ void toggle_audio_display(void)
 }
 
 /* handle an event sent by the GUI */
-void event_loop(void)
+static void event_loop(void)
 {
     SDL_Event event;
     double incr, pos, frac;

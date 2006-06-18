@@ -51,7 +51,7 @@ typedef struct {
 
 #ifdef CONFIG_IPV6
 
-int udp_ipv6_is_multicast_address(const struct sockaddr *addr) {
+static int udp_ipv6_is_multicast_address(const struct sockaddr *addr) {
     if (addr->sa_family == AF_INET)
         return IN_MULTICAST(ntohl(((struct sockaddr_in *)addr)->sin_addr.s_addr));
     if (addr->sa_family == AF_INET6)
@@ -59,7 +59,7 @@ int udp_ipv6_is_multicast_address(const struct sockaddr *addr) {
     return -1;
 }
 
-int udp_ipv6_set_multicast_ttl(int sockfd, int mcastTTL, struct sockaddr *addr) {
+static int udp_ipv6_set_multicast_ttl(int sockfd, int mcastTTL, struct sockaddr *addr) {
     if (addr->sa_family == AF_INET) {
         if (setsockopt(sockfd, IPPROTO_IP, IP_MULTICAST_TTL, &mcastTTL, sizeof(mcastTTL)) < 0) {
             perror("setsockopt(IP_MULTICAST_TTL)");
@@ -75,7 +75,7 @@ int udp_ipv6_set_multicast_ttl(int sockfd, int mcastTTL, struct sockaddr *addr) 
     return 0;
 }
 
-int udp_ipv6_join_multicast_group(int sockfd, struct sockaddr *addr) {
+static int udp_ipv6_join_multicast_group(int sockfd, struct sockaddr *addr) {
     struct ip_mreq   mreq;
     struct ipv6_mreq mreq6;
     if (addr->sa_family == AF_INET) {
@@ -97,7 +97,7 @@ int udp_ipv6_join_multicast_group(int sockfd, struct sockaddr *addr) {
     return 0;
 }
 
-int udp_ipv6_leave_multicast_group(int sockfd, struct sockaddr *addr) {
+static int udp_ipv6_leave_multicast_group(int sockfd, struct sockaddr *addr) {
     struct ip_mreq   mreq;
     struct ipv6_mreq mreq6;
     if (addr->sa_family == AF_INET) {
@@ -119,7 +119,7 @@ int udp_ipv6_leave_multicast_group(int sockfd, struct sockaddr *addr) {
     return 0;
 }
 
-struct addrinfo* udp_ipv6_resolve_host(const char *hostname, int port, int type, int family, int flags) {
+static struct addrinfo* udp_ipv6_resolve_host(const char *hostname, int port, int type, int family, int flags) {
     struct addrinfo hints, *res = 0;
     int error;
     char sport[16];
@@ -144,7 +144,7 @@ struct addrinfo* udp_ipv6_resolve_host(const char *hostname, int port, int type,
     return res;
 }
 
-int udp_ipv6_set_remote_url(URLContext *h, const char *uri) {
+static int udp_ipv6_set_remote_url(URLContext *h, const char *uri) {
     UDPContext *s = h->priv_data;
     char hostname[256];
     int port;
@@ -158,7 +158,7 @@ int udp_ipv6_set_remote_url(URLContext *h, const char *uri) {
     return 0;
 }
 
-int udp_ipv6_set_local(URLContext *h) {
+static int udp_ipv6_set_local(URLContext *h) {
     UDPContext *s = h->priv_data;
     int udp_fd = -1;
     struct sockaddr_storage clientaddr;

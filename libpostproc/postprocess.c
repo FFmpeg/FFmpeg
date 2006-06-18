@@ -161,7 +161,7 @@ static struct PPFilter filters[]=
         {NULL, NULL,0,0,0,0} //End Marker
 };
 
-static char *replaceTable[]=
+static const char *replaceTable[]=
 {
         "default",      "hdeblock:a,vdeblock:a,dering:a",
         "de",           "hdeblock:a,vdeblock:a,dering:a",
@@ -766,8 +766,8 @@ pp_mode_t *pp_get_mode_by_name_and_quality(char *name, int quality)
 {
         char temp[GET_MODE_BUFFER_SIZE];
         char *p= temp;
-        char *filterDelimiters= ",/";
-        char *optionDelimiters= ":";
+        const char *filterDelimiters= ",/";
+        const char *optionDelimiters= ":";
         struct PPMode *ppMode;
         char *filterToken;
 

@@ -62,7 +62,7 @@ typedef struct AVResampleContext{
 /**
  * 0th order modified bessel function of the first kind.
  */
-double bessel(double x){
+static double bessel(double x){
     double v=1;
     double t=1;
     int i;

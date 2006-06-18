@@ -1341,7 +1341,7 @@ static int mov_write_moov_tag(ByteIOContext *pb, MOVContext *mov,
     return updateSize(pb, pos);
 }
 
-int mov_write_mdat_tag(ByteIOContext *pb, MOVContext* mov)
+static int mov_write_mdat_tag(ByteIOContext *pb, MOVContext* mov)
 {
     put_be32(pb, 8);    // placeholder for extended size field (64 bit)
     put_tag(pb, "wide");

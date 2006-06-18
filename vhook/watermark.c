@@ -164,7 +164,7 @@ int Configure(void **ctxp, int argc, char *argv[])
 /****************************************************************************
  * For mode 0 (the original one)
  ****************************************************************************/
-void Process0(void *ctx,
+static void Process0(void *ctx,
               AVPicture *picture,
               enum PixelFormat pix_fmt,
               int src_width,
@@ -276,7 +276,7 @@ void Process0(void *ctx,
 /****************************************************************************
  * For mode 1 (the original one)
  ****************************************************************************/
-void Process1(void *ctx,
+static void Process1(void *ctx,
               AVPicture *picture,
               enum PixelFormat pix_fmt,
               int src_width,
