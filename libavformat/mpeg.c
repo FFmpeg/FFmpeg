@@ -1490,10 +1490,12 @@ static int mpegps_read_pes_header(AVFormatContext *s,
         len -= 9;
     } else if ((c & 0xc0) == 0x80) {
         /* mpeg 2 PES */
+#if 0 /* some streams have this field set for no apparent reason */
         if ((c & 0x30) != 0) {
             /* Encrypted multiplex not handled */
             goto redo;
         }
+#endif
         flags = get_byte(&s->pb);
         header_len = get_byte(&s->pb);
         len -= 2;
