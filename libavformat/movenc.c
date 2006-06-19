@@ -323,6 +323,10 @@ static int mov_write_wave_tag(ByteIOContext *pb, MOVTrack* track)
     put_le32(pb, track->tag);
 
     if (track->enc->codec_id == CODEC_ID_AAC) {
+        /* useless atom needed by mplayer, ipod, not needed by quicktime */
+        put_be32(pb, 12); /* size */
+        put_tag(pb, "mp4a");
+        put_be32(pb, 0);
         mov_write_esds_tag(pb, track);
     } else if (track->enc->codec_id == CODEC_ID_PCM_S24LE ||
                track->enc->codec_id == CODEC_ID_PCM_S32LE) {
@@ -394,10 +398,14 @@ static int mov_write_audio_tag(ByteIOContext *pb, MOVTrack* track)
 
     if(version == 1) {
         /* SoundDescription V1 extended info */
-        put_be32(pb, track->enc->frame_size); /* Samples per packet  */
-        put_be32(pb, track->sampleDuration); /* Bytes per frame */
-        put_be32(pb, 8); /* Bytes per sample */
-        put_be32(pb, 2);
+        put_be32(pb, track->enc->frame_size); /* Samples per packet */
+        /* Parameters tested on quicktime 6.5, 7 */
+        put_be32(pb, 1); /* Bytes per packet */
+        /* FIXME not correct */
+        /* 8 is the min value needed for in32 to work with quicktime 6.5 */
+        /* Value ignored by other codecs currently supported (others might need it) */
+        put_be32(pb, 8); /* Bytes per frame */
+        put_be32(pb, 2); /* Bytes per sample */
     }
 
     if(track->mode == MODE_MOV &&
