@@ -39,6 +39,7 @@
 #include <dlfcn.h>
 #endif
 
+#include "version.h"
 #include "ffserver.h"
 
 /* maximum number of simultaneous HTTP connections */

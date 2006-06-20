@@ -67,7 +67,7 @@ SRCS = $(OBJS:.o=.c) $(ASM_OBJS:.o=.s)
 FFLIBDIRS = -L./libavformat -L./libavcodec -L./libavutil
 FFLIBS = -lavformat$(BUILDSUF) -lavcodec$(BUILDSUF) -lavutil$(BUILDSUF)
 
-all: lib $(PROGS_G) $(PROGS) $(PROGTEST) $(VHOOK) $(QTFASTSTART) $(DOC)
+all: version.h lib $(PROGS_G) $(PROGS) $(PROGTEST) $(VHOOK) $(QTFASTSTART) $(DOC)
 
 lib:
 	$(MAKE) -C libavutil   all
@@ -89,6 +89,10 @@ ffplay_g$(EXESUF): ffplay.o cmdutils.o .libs
 %$(EXESUF): %_g$(EXESUF)
 	cp -p $< $@
 	$(STRIP) $@
+
+.PHONY: version.h
+version.h:
+	$(SRC_PATH)/version.sh
 
 output_example$(EXESUF): output_example.o .libs
 	$(CC) $(FFLIBDIRS) $(LDFLAGS) -o $@ output_example.o $(FFLIBS) $(EXTRALIBS)
@@ -220,7 +224,7 @@ distclean: clean
 	$(MAKE) -C libpostproc distclean
 	$(MAKE) -C tests       distclean
 	$(MAKE) -C vhook       distclean
-	rm -f .depend config.mak config.h *.pc
+	rm -f .depend config.mak config.h version.h *.pc
 
 TAGS:
 	etags *.[ch] libavformat/*.[ch] libavcodec/*.[ch]

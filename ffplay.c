@@ -19,6 +19,7 @@
 #define HAVE_AV_CONFIG_H
 #include "avformat.h"
 
+#include "version.h"
 #include "cmdutils.h"
 
 #include <SDL.h>
