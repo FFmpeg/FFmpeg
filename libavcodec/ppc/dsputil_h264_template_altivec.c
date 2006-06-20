@@ -252,20 +252,32 @@ static void PREFIX_h264_qpel16_h_lowpass_altivec(uint8_t * dst, uint8_t * src, i
     } break;
     }
 
-    srcP0A = vec_mergeh((vector unsigned char)vzero, srcP0);
-    srcP0B = vec_mergel((vector unsigned char)vzero, srcP0);
-    srcP1A = vec_mergeh((vector unsigned char)vzero, srcP1);
-    srcP1B = vec_mergel((vector unsigned char)vzero, srcP1);
+    srcP0A = (vector signed short)
+                vec_mergeh((vector unsigned char)vzero, srcP0);
+    srcP0B = (vector signed short)
+                vec_mergel((vector unsigned char)vzero, srcP0);
+    srcP1A = (vector signed short)
+                vec_mergeh((vector unsigned char)vzero, srcP1);
+    srcP1B = (vector signed short)
+                vec_mergel((vector unsigned char)vzero, srcP1);
 
-    srcP2A = vec_mergeh((vector unsigned char)vzero, srcP2);
-    srcP2B = vec_mergel((vector unsigned char)vzero, srcP2);
-    srcP3A = vec_mergeh((vector unsigned char)vzero, srcP3);
-    srcP3B = vec_mergel((vector unsigned char)vzero, srcP3);
+    srcP2A = (vector signed short)
+                vec_mergeh((vector unsigned char)vzero, srcP2);
+    srcP2B = (vector signed short)
+                vec_mergel((vector unsigned char)vzero, srcP2);
+    srcP3A = (vector signed short)
+                vec_mergeh((vector unsigned char)vzero, srcP3);
+    srcP3B = (vector signed short)
+                vec_mergel((vector unsigned char)vzero, srcP3);
 
-    srcM1A = vec_mergeh((vector unsigned char)vzero, srcM1);
-    srcM1B = vec_mergel((vector unsigned char)vzero, srcM1);
-    srcM2A = vec_mergeh((vector unsigned char)vzero, srcM2);
-    srcM2B = vec_mergel((vector unsigned char)vzero, srcM2);
+    srcM1A = (vector signed short)
+                vec_mergeh((vector unsigned char)vzero, srcM1);
+    srcM1B = (vector signed short)
+                vec_mergel((vector unsigned char)vzero, srcM1);
+    srcM2A = (vector signed short)
+                vec_mergeh((vector unsigned char)vzero, srcM2);
+    srcM2B = (vector signed short)
+                vec_mergel((vector unsigned char)vzero, srcM2);
 
     sum1A = vec_adds(srcP0A, srcP1A);
     sum1B = vec_adds(srcP0B, srcP1B);
