@@ -1846,7 +1846,7 @@ static int try_decode_frame(AVStream *st, const uint8_t *data, int size)
 #define MAX_READ_SIZE        5000000
 
 /* maximum duration until we stop analysing the stream */
-#define MAX_STREAM_DURATION  ((int)(AV_TIME_BASE * 2.0))
+#define MAX_STREAM_DURATION  ((int)(AV_TIME_BASE * 3.0))
 
 /**
  * Read the beginning of a media file to get stream information. This
