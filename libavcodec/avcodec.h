@@ -14,9 +14,6 @@ extern "C" {
 #include "avutil.h"
 #include <sys/types.h> /* size_t */
 
-//FIXME: This really doesn't belong in here..
-#define FFMPEG_VERSION_INT      0x000409
-
 #define AV_STRINGIFY(s)         AV_TOSTRING(s)
 #define AV_TOSTRING(s) #s
 
