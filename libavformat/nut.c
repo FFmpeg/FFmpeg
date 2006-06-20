@@ -1413,7 +1413,6 @@ static int nut_read_seek(AVFormatContext *s, int stream_index, int64_t target_ts
 static int nut_read_close(AVFormatContext *s)
 {
     NUTContext *nut = s->priv_data;
-    int i;
 
     av_freep(&nut->stream);
 
