@@ -1178,7 +1178,6 @@ enabled mp3lame && require LAME lame/lame.h lame_init -lmp3lame
 enabled libogg  && require libogg ogg/ogg.h ogg_sync_init -logg
 enabled vorbis  && require libvorbis vorbis/vorbisenc.h vorbis_info_init -lvorbis -lvorbisenc
 enabled theora  && require libtheora theora/theora.h theora_info_init -ltheora
-enabled faad    && require libfaad faad.h faacDecOpen -lfaad
 enabled xvid    && require XviD xvid.h xvid_global -lxvidcore
 enabled x264    && require x264 x264.h x264_encoder_open -lx264
 enabled dc1394  && require libdc1394 libdc1394/dc1394_control.h dc1394_create_handle -ldc1394_control -lraw1394
@@ -1195,6 +1194,21 @@ if enabled faac; then
 int main(){
     char *id, *cpr;
     faacEncGetVersion(&id, &cpr);
+    return 0;
+}
+EOF
+    restore_flags
+fi
+
+# Ugh, recent faad2 versions have renamed all functions and #define the
+# old names in faad.h.  Generic tests won't work.
+if enabled faad; then
+    save_flags
+    temp_extralibs -lfaad
+    check_ld <<EOF && add_extralibs -lfaad || die "ERROR: libfaad not found"
+#include <faad.h>
+int main(){
+    faacDecOpen();
     return 0;
 }
 EOF
