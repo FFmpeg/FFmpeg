@@ -296,7 +296,7 @@ static int decode_subframe_fixed(FLACContext *s, int channel, int pred_order)
 
 static int decode_subframe_lpc(FLACContext *s, int channel, int pred_order)
 {
-    int sum, i, j;
+    int i, j;
     int coeff_prec, qlevel;
     int coeffs[pred_order];
 
@@ -334,12 +334,24 @@ static int decode_subframe_lpc(FLACContext *s, int channel, int pred_order)
     if (decode_residuals(s, channel, pred_order) < 0)
         return -1;
 
-    for (i = pred_order; i < s->blocksize; i++)
-    {
-        sum = 0;
-        for (j = 0; j < pred_order; j++)
-            sum += coeffs[j] * s->decoded[channel][i-j-1];
-        s->decoded[channel][i] += sum >> qlevel;
+    if (s->bps > 16) {
+        int64_t sum;
+        for (i = pred_order; i < s->blocksize; i++)
+        {
+            sum = 0;
+            for (j = 0; j < pred_order; j++)
+                sum += (int64_t)coeffs[j] * s->decoded[channel][i-j-1];
+            s->decoded[channel][i] += sum >> qlevel;
+        }
+    } else {
+        int sum;
+        for (i = pred_order; i < s->blocksize; i++)
+        {
+            sum = 0;
+            for (j = 0; j < pred_order; j++)
+                sum += coeffs[j] * s->decoded[channel][i-j-1];
+            s->decoded[channel][i] += sum >> qlevel;
+        }
     }
 
     return 0;
@@ -538,6 +550,17 @@ static int decode_frame(FLACContext *s)
     return 0;
 }
 
+static inline int16_t shift_to_16_bits(int32_t data, int bps)
+{
+    if (bps == 24) {
+        return (data >> 8);
+    } else if (bps == 20) {
+        return (data >> 4);
+    } else {
+        return data;
+    }
+}
+
 static int flac_decode_frame(AVCodecContext *avctx,
                             void *data, int *data_size,
                             uint8_t *buf, int buf_size)
@@ -680,23 +703,25 @@ static int flac_decode_frame(AVCodecContext *avctx,
             for (j = 0; j < s->blocksize; j++)
             {
                 for (i = 0; i < s->channels; i++)
-                    *(samples++) = s->decoded[i][j];
+                    *(samples++) = shift_to_16_bits(s->decoded[i][j], s->bps);
             }
             break;
         case LEFT_SIDE:
             assert(s->channels == 2);
             for (i = 0; i < s->blocksize; i++)
             {
-                *(samples++) = s->decoded[0][i];
-                *(samples++) = s->decoded[0][i] - s->decoded[1][i];
+                *(samples++) = shift_to_16_bits(s->decoded[0][i], s->bps);
+                *(samples++) = shift_to_16_bits(s->decoded[0][i]
+                                              - s->decoded[1][i], s->bps);
             }
             break;
         case RIGHT_SIDE:
             assert(s->channels == 2);
             for (i = 0; i < s->blocksize; i++)
             {
-                *(samples++) = s->decoded[0][i] + s->decoded[1][i];
-                *(samples++) = s->decoded[1][i];
+                *(samples++) = shift_to_16_bits(s->decoded[0][i]
+                                              + s->decoded[1][i], s->bps);
+                *(samples++) = shift_to_16_bits(s->decoded[1][i], s->bps);
             }
             break;
         case MID_SIDE:
@@ -709,8 +734,8 @@ static int flac_decode_frame(AVCodecContext *avctx,
 
 #if 1 //needs to be checked but IMHO it should be binary identical
                 mid -= side>>1;
-                *(samples++) = mid + side;
-                *(samples++) = mid;
+                *(samples++) = shift_to_16_bits(mid + side, s->bps);
+                *(samples++) = shift_to_16_bits(mid, s->bps);
 #else
 
                 mid <<= 1;
