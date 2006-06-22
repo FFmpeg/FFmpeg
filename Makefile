@@ -199,7 +199,7 @@ ifeq ($(BUILD_VHOOK),yes)
 	$(MAKE) -C vhook       depend
 endif
 
-.depend: $(SRCS)
+.depend: $(SRCS) version.h
 	$(CC) -MM $(CFLAGS) $(SDL_CFLAGS) $^ 1>.depend
 
 .libs: lib
