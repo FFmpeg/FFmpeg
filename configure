@@ -9,7 +9,7 @@ show_help(){
   echo
   echo "Standard options:"
   echo "  --help                   print this message"
-  echo "  --log                    log tests and output to config.err"
+  echo "  --log[=FILE|yes|no]      log tests and output to FILE [config.err]"
   echo "  --prefix=PREFIX          install in PREFIX [$prefix]"
   echo "  --libdir=DIR             install libs in DIR [PREFIX/lib]"
   echo "  --incdir=DIR             install includes in DIR [PREFIX/include/ffmpeg]"
@@ -107,9 +107,29 @@ logfile(){
     log END $1
 }
 
-die(){
+echolog(){
     log "$@"
     echo "$@"
+}
+
+die(){
+    echolog "$@"
+    cat <<EOF
+If you think configure made a mistake, make sure you are using the latest
+version from SVN.  If the latest version fails, report the problem to the
+ffmpeg-devel@mplayerhq.hu mailing list or IRC #ffmpeg on irc.freenode.net.
+EOF
+    if enabled log; then
+        cat <<EOF
+Include the log file "$logfile" produced by configure as this will help
+solving the problem.
+EOF
+    else
+cat <<EOF
+Rerun configure with logging enabled (do not use --log=no), and include the
+log this produces with your report.
+EOF
+    fi
     rm -f $TMPC $TMPO $TMPE $TMPS $TMPH
     exit 1
 }
@@ -278,8 +298,8 @@ TMPS="${TMPDIR1}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.S"
 TMPH="${TMPDIR1}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.h"
 
 # default parameters
-log="no"
-logfile="/dev/null"
+log="yes"
+logfile="config.err"
 prefix="/usr/local"
 libdir=""
 incdir=""
@@ -631,7 +651,9 @@ CODEC_LIST=`grep 'register_avcodec(&[a-z]' $source_path/libavcodec/allcodecs.c  
 
 for opt do
   case "$opt" in
-  --log) log=yes
+  --log)
+  ;;
+  --log=*) log="${opt#*-}"
   ;;
   --prefix=*) prefix=`echo $opt | cut -d '=' -f 2`; force_prefix=yes
   ;;
@@ -797,10 +819,12 @@ for opt do
   esac
 done
 
-if enabled log; then
-    logfile=config.err
+if test "$log" != no; then
+    test "$log" = yes || logfile="$log"
     echo "# $0 $@" >$logfile
     set >>$logfile
+else
+    logfile=/dev/null
 fi
 
 # Combine FFLDFLAGS and the LDFLAGS environment variable
