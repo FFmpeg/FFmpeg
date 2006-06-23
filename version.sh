@@ -1,6 +1,8 @@
 #!/bin/sh
 
-svn_revision=`svn info | grep Revision | cut -d' ' -f2 || echo UNKNOWN`
+svn_revision=`svn info 2> /dev/null | grep Revision | cut -d' ' -f2`
+test $svn_revision || svn_revision=UNKNOWN
+
 NEW_REVISION="#define FFMPEG_VERSION \"SVN-r$svn_revision\""
 OLD_REVISION=`cat version.h 2> /dev/null`
 
