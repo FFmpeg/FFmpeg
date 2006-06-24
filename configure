@@ -1199,8 +1199,8 @@ fi
 enabled dts     && require libdts dts.h dts_init -ldts
 enabled libgsm  && require libgsm gsm.h gsm_create -lgsm
 enabled mp3lame && require LAME lame/lame.h lame_init -lmp3lame
-enabled libogg  && require libogg ogg/ogg.h ogg_sync_init -logg
 enabled vorbis  && require libvorbis vorbis/vorbisenc.h vorbis_info_init -lvorbis -lvorbisenc
+enabled libogg  && require libogg ogg/ogg.h ogg_sync_init -logg
 enabled theora  && require libtheora theora/theora.h theora_info_init -ltheora
 enabled xvid    && require XviD xvid.h xvid_global -lxvidcore
 enabled x264    && require x264 x264.h x264_encoder_open -lx264
