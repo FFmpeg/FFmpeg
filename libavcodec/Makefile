@@ -68,6 +68,9 @@ endif
 ifeq ($(CONFIG_FLAC_DECODER),yes)
     OBJS+= flac.o
 endif
+ifeq ($(CONFIG_FLAC_ENCODER),yes)
+    OBJS+= flacenc.o
+endif
 ifeq ($(CONFIG_FLIC_DECODER),yes)
     OBJS+= flicvideo.o
 endif
