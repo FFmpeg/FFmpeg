@@ -68,6 +68,7 @@ else
     do_g726=y
     do_adpcm_ima_wav=y
     do_adpcm_ms=y
+    do_flac=y
     do_rc=y
     do_mpeg4adv=y
     do_mpeg4thread=y
@@ -589,6 +590,16 @@ if [ -n "$do_adpcm_yam" ] ; then
 # encoding
 file=${outfile}adpcm_yam.wav
 do_ffmpeg $file -y -ab 128 -ac 2 -ar 44100 -f s16le -i $pcm_src -acodec adpcm_yamaha $file
+
+# decoding
+do_ffmpeg $pcm_dst -y -i $file -f wav $pcm_dst
+fi
+
+###################################
+if [ -n "$do_flac" ] ; then
+# encoding
+file=${outfile}flac.flac
+do_ffmpeg $file -y -ab 128 -ac 2 -ar 44100 -f s16le -i $pcm_src -acodec flac $file
 
 # decoding
 do_ffmpeg $pcm_dst -y -i $file -f wav $pcm_dst
