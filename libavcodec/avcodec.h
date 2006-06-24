@@ -365,6 +365,11 @@ extern int motion_estimation_method;
  * if this is not set, the codec is guranteed to never be feeded with NULL data
  */
 #define CODEC_CAP_DELAY           0x0020
+/**
+ * Codec can be fed a final frame with a smaller size.
+ * This can be used to prevent truncation of the last audio samples.
+ */
+#define CODEC_CAP_SMALL_LAST_FRAME 0x0040
 
 //the following defines may change, don't expect compatibility if you use them
 #define MB_TYPE_INTRA4x4   0x0001

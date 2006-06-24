@@ -1358,12 +1358,29 @@ static int output_packet(AVInputStream *ist, int ist_index,
                 if (ost->encoding_needed) {
                     for(;;) {
                         AVPacket pkt;
+                        int fifo_bytes;
                         av_init_packet(&pkt);
                         pkt.stream_index= ost->index;
 
                         switch(ost->st->codec->codec_type) {
                         case CODEC_TYPE_AUDIO:
-                            ret = avcodec_encode_audio(enc, bit_buffer, bit_buffer_size, NULL);
+                            fifo_bytes = fifo_size(&ost->fifo, NULL);
+                            ret = 0;
+                            /* encode any samples remaining in fifo */
+                            if(fifo_bytes > 0 && enc->codec->capabilities & CODEC_CAP_SMALL_LAST_FRAME) {
+                                int fs_tmp = enc->frame_size;
+                                enc->frame_size = fifo_bytes / (2 * enc->channels);
+                                if(fifo_read(&ost->fifo, (uint8_t *)samples, fifo_bytes,
+                                        &ost->fifo.rptr) == 0) {
+                                    ret = avcodec_encode_audio(enc, bit_buffer, bit_buffer_size, samples);
+                                }
+                                enc->frame_size = fs_tmp;
+                                if(ret <= 0) {
+                                    ret = avcodec_encode_audio(enc, bit_buffer, bit_buffer_size, NULL);
+                                }
+                            } else {
+                                ret = avcodec_encode_audio(enc, bit_buffer, bit_buffer_size, NULL);
+                            }
                             audio_size += ret;
                             pkt.flags |= PKT_FLAG_KEY;
                             break;
