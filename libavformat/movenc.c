@@ -47,7 +47,6 @@ typedef struct MOVIentry {
 typedef struct MOVIndex {
     int         mode;
     int         entry;
-    int         ents_allocated;
     long        timescale;
     long        time;
     int64_t     trackDuration;
@@ -62,7 +61,7 @@ typedef struct MOVIndex {
 
     int         vosLen;
     uint8_t     *vosData;
-    MOVIentry** cluster;
+    MOVIentry   *cluster;
 } MOVTrack;
 
 typedef struct MOVContext {
@@ -101,12 +100,10 @@ static int mov_write_stco_tag(ByteIOContext *pb, MOVTrack* track)
     put_be32(pb, 0); /* version & flags */
     put_be32(pb, track->entry); /* entry count */
     for (i=0; i<track->entry; i++) {
-        int cl = i / MOV_INDEX_CLUSTER_SIZE;
-        int id = i % MOV_INDEX_CLUSTER_SIZE;
         if(mode64 == 1)
-            put_be64(pb, track->cluster[cl][id].pos);
+            put_be64(pb, track->cluster[i].pos);
         else
-            put_be32(pb, track->cluster[cl][id].pos);
+            put_be32(pb, track->cluster[i].pos);
     }
     return updateSize (pb, pos);
 }
@@ -123,17 +120,15 @@ static int mov_write_stsz_tag(ByteIOContext *pb, MOVTrack* track)
     put_be32(pb, 0); /* version & flags */
 
     for (i=0; i<track->entry; i++) {
-        int cl = i / MOV_INDEX_CLUSTER_SIZE;
-        int id = i % MOV_INDEX_CLUSTER_SIZE;
-        tst = track->cluster[cl][id].size/track->cluster[cl][id].entries;
+        tst = track->cluster[i].size/track->cluster[i].entries;
         if(oldtst != -1 && tst != oldtst) {
             equalChunks = 0;
         }
         oldtst = tst;
-        entries += track->cluster[cl][id].entries;
+        entries += track->cluster[i].entries;
     }
     if (equalChunks) {
-        int sSize = track->cluster[0][0].size/track->cluster[0][0].entries;
+        int sSize = track->cluster[0].size/track->cluster[0].entries;
         put_be32(pb, sSize); // sample size
         put_be32(pb, entries); // sample count
     }
@@ -141,11 +136,9 @@ static int mov_write_stsz_tag(ByteIOContext *pb, MOVTrack* track)
         put_be32(pb, 0); // sample size
         put_be32(pb, entries); // sample count
         for (i=0; i<track->entry; i++) {
-            int cl = i / MOV_INDEX_CLUSTER_SIZE;
-            int id = i % MOV_INDEX_CLUSTER_SIZE;
-            for ( j=0; j<track->cluster[cl][id].entries; j++) {
-                put_be32(pb, track->cluster[cl][id].size /
-                         track->cluster[cl][id].entries);
+            for ( j=0; j<track->cluster[i].entries; j++) {
+                put_be32(pb, track->cluster[i].size /
+                         track->cluster[i].entries);
             }
         }
     }
@@ -165,14 +158,12 @@ static int mov_write_stsc_tag(ByteIOContext *pb, MOVTrack* track)
     entryPos = url_ftell(pb);
     put_be32(pb, track->entry); // entry count
     for (i=0; i<track->entry; i++) {
-        int cl = i / MOV_INDEX_CLUSTER_SIZE;
-        int id = i % MOV_INDEX_CLUSTER_SIZE;
-        if(oldval != track->cluster[cl][id].samplesInChunk)
+        if(oldval != track->cluster[i].samplesInChunk)
         {
             put_be32(pb, i+1); // first chunk
-            put_be32(pb, track->cluster[cl][id].samplesInChunk); // samples per chunk
+            put_be32(pb, track->cluster[i].samplesInChunk); // samples per chunk
             put_be32(pb, 0x1); // sample description index
-            oldval = track->cluster[cl][id].samplesInChunk;
+            oldval = track->cluster[i].samplesInChunk;
             index++;
         }
     }
@@ -196,9 +187,7 @@ static int mov_write_stss_tag(ByteIOContext *pb, MOVTrack* track)
     entryPos = url_ftell(pb);
     put_be32(pb, track->entry); // entry count
     for (i=0; i<track->entry; i++) {
-        int cl = i / MOV_INDEX_CLUSTER_SIZE;
-        int id = i % MOV_INDEX_CLUSTER_SIZE;
-        if(track->cluster[cl][id].key_frame == 1) {
+        if(track->cluster[i].key_frame == 1) {
             put_be32(pb, i+1);
             index++;
         }
@@ -693,15 +682,13 @@ static int mov_write_ctts_tag(ByteIOContext *pb, MOVTrack* track)
 
     ctts_entries = av_malloc((track->entry + 1) * sizeof(*ctts_entries)); /* worst case */
     ctts_entries[0].count = 1;
-    ctts_entries[0].duration = track->cluster[0][0].cts;
+    ctts_entries[0].duration = track->cluster[0].cts;
     for (i=1; i<track->entry; i++) {
-        int cl = i / MOV_INDEX_CLUSTER_SIZE;
-        int id = i % MOV_INDEX_CLUSTER_SIZE;
-        if (track->cluster[cl][id].cts == ctts_entries[entries].duration) {
+        if (track->cluster[i].cts == ctts_entries[entries].duration) {
             ctts_entries[entries].count++; /* compress */
         } else {
             entries++;
-            ctts_entries[entries].duration = track->cluster[cl][id].cts;
+            ctts_entries[entries].duration = track->cluster[i].cts;
             ctts_entries[entries].count = 1;
         }
     }
@@ -1509,7 +1496,6 @@ static int mov_write_packet(AVFormatContext *s, AVPacket *pkt)
     ByteIOContext *pb = &s->pb;
     MOVTrack *trk = &mov->tracks[pkt->stream_index];
     AVCodecContext *enc = trk->enc;
-    int cl, id;
     unsigned int samplesInChunk = 0;
     int size= pkt->size;
 
@@ -1568,29 +1554,22 @@ static int mov_write_packet(AVFormatContext *s, AVPacket *pkt)
         size = pkt->size;
     }
 
-    cl = trk->entry / MOV_INDEX_CLUSTER_SIZE;
-    id = trk->entry % MOV_INDEX_CLUSTER_SIZE;
-
-    if (trk->ents_allocated <= trk->entry) {
-        trk->cluster = av_realloc(trk->cluster, (cl+1)*sizeof(void*));
+    if (!(trk->entry % MOV_INDEX_CLUSTER_SIZE)) {
+        trk->cluster = av_realloc(trk->cluster, (trk->entry + MOV_INDEX_CLUSTER_SIZE) * sizeof(*trk->cluster));
         if (!trk->cluster)
             return -1;
-        trk->cluster[cl] = av_malloc(MOV_INDEX_CLUSTER_SIZE*sizeof(MOVIentry));
-        if (!trk->cluster[cl])
-            return -1;
-        trk->ents_allocated += MOV_INDEX_CLUSTER_SIZE;
     }
 
-    trk->cluster[cl][id].pos = url_ftell(pb);
-    trk->cluster[cl][id].samplesInChunk = samplesInChunk;
-    trk->cluster[cl][id].size = size;
-    trk->cluster[cl][id].entries = samplesInChunk;
+    trk->cluster[trk->entry].pos = url_ftell(pb);
+    trk->cluster[trk->entry].samplesInChunk = samplesInChunk;
+    trk->cluster[trk->entry].size = size;
+    trk->cluster[trk->entry].entries = samplesInChunk;
     if(enc->codec_type == CODEC_TYPE_VIDEO) {
         if (pkt->dts != pkt->pts)
             trk->hasBframes = 1;
-        trk->cluster[cl][id].cts = pkt->pts - pkt->dts;
-        trk->cluster[cl][id].key_frame = !!(pkt->flags & PKT_FLAG_KEY);
-        if(trk->cluster[cl][id].key_frame)
+        trk->cluster[trk->entry].cts = pkt->pts - pkt->dts;
+        trk->cluster[trk->entry].key_frame = !!(pkt->flags & PKT_FLAG_KEY);
+        if(trk->cluster[trk->entry].key_frame)
             trk->hasKeyframes++;
     }
     trk->entry++;
@@ -1608,7 +1587,7 @@ static int mov_write_trailer(AVFormatContext *s)
     MOVContext *mov = s->priv_data;
     ByteIOContext *pb = &s->pb;
     int res = 0;
-    int i, j;
+    int i;
 
     offset_t moov_pos = url_ftell(pb);
 
@@ -1628,14 +1607,10 @@ static int mov_write_trailer(AVFormatContext *s)
     mov_write_moov_tag(pb, mov, s);
 
     for (i=0; i<MAX_STREAMS; i++) {
-        for (j=0; j<mov->tracks[i].ents_allocated/MOV_INDEX_CLUSTER_SIZE; j++) {
-            av_free(mov->tracks[i].cluster[j]);
-        }
-        av_free(mov->tracks[i].cluster);
+        av_freep(&mov->tracks[i].cluster);
+
         if( mov->tracks[i].vosLen ) av_free( mov->tracks[i].vosData );
 
-        mov->tracks[i].cluster = NULL;
-        mov->tracks[i].ents_allocated = mov->tracks[i].entry = 0;
     }
 
     put_flush_packet(pb);
