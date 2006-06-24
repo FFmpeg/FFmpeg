@@ -653,7 +653,7 @@ for opt do
   case "$opt" in
   --log)
   ;;
-  --log=*) log="${opt#*-}"
+  --log=*) log="${opt#*=}"
   ;;
   --prefix=*) prefix=`echo $opt | cut -d '=' -f 2`; force_prefix=yes
   ;;
