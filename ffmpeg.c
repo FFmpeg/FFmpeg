@@ -1375,10 +1375,8 @@ static int output_packet(AVInputStream *ist, int ist_index,
                                     ret = avcodec_encode_audio(enc, bit_buffer, bit_buffer_size, samples);
                                 }
                                 enc->frame_size = fs_tmp;
-                                if(ret <= 0) {
-                                    ret = avcodec_encode_audio(enc, bit_buffer, bit_buffer_size, NULL);
-                                }
-                            } else {
+                            }
+                            if(ret <= 0) {
                                 ret = avcodec_encode_audio(enc, bit_buffer, bit_buffer_size, NULL);
                             }
                             audio_size += ret;
