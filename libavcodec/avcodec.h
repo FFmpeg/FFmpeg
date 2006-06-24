@@ -280,9 +280,6 @@ typedef struct RcOverride{
     float quality_factor;
 } RcOverride;
 
-/* only for ME compatiblity with old apps */
-extern int motion_estimation_method;
-
 #define FF_MAX_B_FRAMES 16
 
 /* encoding support

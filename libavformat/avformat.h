@@ -394,7 +394,7 @@ int av_read_image(ByteIOContext *pb, const char *filename,
 int av_write_image(ByteIOContext *pb, AVImageFormat *fmt, AVImageInfo *img);
 
 extern AVImageFormat *first_image_format;
-
+#if 0
 extern AVImageFormat pnm_image_format;
 extern AVImageFormat pbm_image_format;
 extern AVImageFormat pgm_image_format;
@@ -406,8 +406,9 @@ extern AVImageFormat yuv_image_format;
 extern AVImageFormat png_image_format;
 #endif
 extern AVImageFormat jpeg_image_format;
+#endif
 extern AVImageFormat gif_image_format;
-extern AVImageFormat sgi_image_format;
+//extern AVImageFormat sgi_image_format; //broken in itself
 
 /* XXX: use automatic init with either ELF sections or C file parser */
 /* modules */
