@@ -82,10 +82,6 @@ static const int flac_blocksizes[16] = {
     256, 512, 1024, 2048, 4096, 8192, 16384, 32768
 };
 
-static const int flac_blocksizes_ordered[14] = {
-    0, 192, 256, 512, 576, 1024, 1152, 2048, 2304, 4096, 4608, 8192, 16384, 32768
-};
-
 /**
  * Writes streaminfo metadata block to byte array
  */
@@ -122,16 +118,12 @@ static int select_blocksize(int samplerate)
     int blocksize;
 
     assert(samplerate > 0);
-    blocksize = 0;
+    blocksize = flac_blocksizes[1];
     target = (samplerate * BLOCK_TIME_MS) / 1000;
-    for(i=13; i>=0; i--) {
-        if(target >= flac_blocksizes_ordered[i]) {
-            blocksize = flac_blocksizes_ordered[i];
-            break;
+    for(i=0; i<16; i++) {
+        if(target >= flac_blocksizes[i] && flac_blocksizes[i] > blocksize) {
+            blocksize = flac_blocksizes[i];
         }
-    }
-    if(blocksize == 0) {
-        blocksize = flac_blocksizes_ordered[1];
     }
     return blocksize;
 }
@@ -143,10 +135,6 @@ static int flac_encode_init(AVCodecContext *avctx)
     FlacEncodeContext *s = avctx->priv_data;
     int i;
     uint8_t *streaminfo;
-
-    if(s == NULL) {
-        return -1;
-    }
 
     if(avctx->sample_fmt != SAMPLE_FMT_S16) {
         return -1;
@@ -282,26 +270,26 @@ static void encode_residual_verbatim(FlacEncodeContext *s, int ch)
 static void encode_residual_fixed(int32_t *res, int32_t *smp, int n, int order)
 {
     int i;
-    int32_t pred;
 
     for(i=0; i<order; i++) {
         res[i] = smp[i];
     }
-    for(i=order; i<n; i++) {
-        pred = 0;
-        switch(order) {
-            case 0: pred = 0;
-                    break;
-            case 1: pred = smp[i-1];
-                    break;
-            case 2: pred = 2*smp[i-1] - smp[i-2];
-                    break;
-            case 3: pred = 3*smp[i-1] - 3*smp[i-2] + smp[i-3];
-                    break;
-            case 4: pred = 4*smp[i-1] - 6*smp[i-2] + 4*smp[i-3] - smp[i-4];
-                    break;
-        }
-        res[i] = smp[i] - pred;
+
+    if(order==0){
+        for(i=order; i<n; i++)
+            res[i]= smp[i];
+    }else if(order==1){
+        for(i=order; i<n; i++)
+            res[i]= smp[i] - smp[i-1];
+    }else if(order==2){
+        for(i=order; i<n; i++)
+            res[i]= smp[i] - 2*smp[i-1] + smp[i-2];
+    }else if(order==3){
+        for(i=order; i<n; i++)
+            res[i]= smp[i] - 3*smp[i-1] + 3*smp[i-2] - smp[i-3];
+    }else{
+        for(i=order; i<n; i++)
+            res[i]= smp[i] - 4*smp[i-1] + 6*smp[i-2] - 4*smp[i-3] + smp[i-4];
     }
 }
 
@@ -328,34 +316,25 @@ static void encode_residual(FlacEncodeContext *s, int ch)
 static void
 put_sbits(PutBitContext *pb, int bits, int32_t val)
 {
-    uint32_t uval;
-
     assert(bits >= 0 && bits <= 31);
-    uval = (val < 0) ? (1UL << bits) + val : val;
-    put_bits(pb, bits, uval);
+
+    put_bits(pb, bits, val & ((1<<bits)-1));
 }
 
 static void
 write_utf8(PutBitContext *pb, uint32_t val)
 {
-    int i, bytes, mask, shift;
+    int bytes, shift;
 
-    bytes = 1;
-    if(val >= 0x80)      bytes++;
-    if(val >= 0x800)     bytes++;
-    if(val >= 0x10000)   bytes++;
-    if(val >= 0x200000)  bytes++;
-    if(val >= 0x4000000) bytes++;
-
-    if(bytes == 1) {
+    if(val < 0x80){
         put_bits(pb, 8, val);
         return;
     }
 
+    bytes= (av_log2(val)-1) / 5;
     shift = (bytes - 1) * 6;
-    mask = 0x80 + ((1 << 7) - (1 << (8 - bytes)));
-    put_bits(pb, 8, mask | (val >> shift));
-    for(i=0; i<bytes-1; i++) {
+    put_bits(pb, 8, (256 - (256>>bytes)) | (val >> shift));
+    while(shift >= 6){
         shift -= 6;
         put_bits(pb, 8, 0x80 | ((val >> shift) & 0x3F));
     }
