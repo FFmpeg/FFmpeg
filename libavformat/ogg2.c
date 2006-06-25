@@ -210,7 +210,7 @@ static int
 ogg_new_buf(ogg_t *ogg, int idx)
 {
     ogg_stream_t *os = ogg->streams + idx;
-    u_char *nb = av_malloc(os->bufsize);
+    uint8_t *nb = av_malloc(os->bufsize);
     int size = os->bufpos - os->pstart;
     if(os->buf){
         memcpy(nb, os->buf + os->pstart, size);
