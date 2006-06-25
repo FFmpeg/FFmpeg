@@ -81,10 +81,6 @@ typedef struct AVFrac {
     int64_t val, num, den;
 } AVFrac;
 
-void av_frac_init(AVFrac *f, int64_t val, int64_t num, int64_t den);
-void av_frac_add(AVFrac *f, int64_t incr);
-void av_frac_set(AVFrac *f, int64_t val);
-
 /*************************************************/
 /* input/output formats */
 

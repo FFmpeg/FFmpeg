@@ -26,6 +26,10 @@
  * Various utility functions for using ffmpeg library.
  */
 
+static void av_frac_init(AVFrac *f, int64_t val, int64_t num, int64_t den);
+static void av_frac_add(AVFrac *f, int64_t incr);
+static void av_frac_set(AVFrac *f, int64_t val);
+
 /** head of registered input format linked list. */
 AVInputFormat *first_iformat = NULL;
 /** head of registered output format linked list. */
@@ -3147,7 +3151,7 @@ void av_set_pts_info(AVStream *s, int pts_wrap_bits,
  * @param num must be >= 0
  * @param den must be >= 1
  */
-void av_frac_init(AVFrac *f, int64_t val, int64_t num, int64_t den)
+static void av_frac_init(AVFrac *f, int64_t val, int64_t num, int64_t den)
 {
     num += (den >> 1);
     if (num >= den) {
@@ -3162,7 +3166,7 @@ void av_frac_init(AVFrac *f, int64_t val, int64_t num, int64_t den)
 /**
  * Set f to (val + 0.5).
  */
-void av_frac_set(AVFrac *f, int64_t val)
+static void av_frac_set(AVFrac *f, int64_t val)
 {
     f->val = val;
     f->num = f->den >> 1;
@@ -3174,7 +3178,7 @@ void av_frac_set(AVFrac *f, int64_t val)
  * @param f fractional number
  * @param incr increment, can be positive or negative
  */
-void av_frac_add(AVFrac *f, int64_t incr)
+static void av_frac_add(AVFrac *f, int64_t incr)
 {
     int64_t num, den;
 

@@ -2530,9 +2530,6 @@ void av_free_static(void);
 void *av_mallocz_static(unsigned int size);
 void *av_realloc_static(void *ptr, unsigned int size);
 
-/* add by bero : in adx.c */
-int is_adx(const unsigned char *buf,size_t bufsize);
-
 void img_copy(AVPicture *dst, const AVPicture *src,
               int pix_fmt, int width, int height);
 
