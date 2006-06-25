@@ -993,7 +993,7 @@ static int mov_write_mvhd_tag(ByteIOContext *pb, MOVContext *mov)
     int64_t maxTrackLenTemp, maxTrackLen = 0;
     int version;
 
-    for (i=0; i<MAX_STREAMS; i++) {
+    for (i=0; i<mov->nb_streams; i++) {
         if(mov->tracks[i].entry > 0) {
             maxTrackLenTemp = av_rescale_rnd(mov->tracks[i].trackDuration, globalTimescale, mov->tracks[i].timescale, AV_ROUND_UP);
             if(maxTrackLen < maxTrackLenTemp)
@@ -1183,7 +1183,7 @@ static int mov_write_udta_tag(ByteIOContext *pb, MOVContext* mov,
 
   if(mov->mode == MODE_MOV){ // the title field breaks gtkpod with mp4 and my suspicion is that stuff isnt valid in mp4
     /* Requirements */
-    for (i=0; i<MAX_STREAMS; i++) {
+    for (i=0; i<mov->nb_streams; i++) {
         if(mov->tracks[i].entry <= 0) continue;
         if (mov->tracks[i].enc->codec_id == CODEC_ID_AAC ||
             mov->tracks[i].enc->codec_id == CODEC_ID_MPEG4) {
@@ -1303,7 +1303,7 @@ static int mov_write_moov_tag(ByteIOContext *pb, MOVContext *mov,
     put_tag(pb, "moov");
     mov->timescale = globalTimescale;
 
-    for (i=0; i<MAX_STREAMS; i++) {
+    for (i=0; i<mov->nb_streams; i++) {
         if(mov->tracks[i].entry <= 0) continue;
 
         if(mov->tracks[i].enc->codec_type == CODEC_TYPE_VIDEO) {
@@ -1322,7 +1322,7 @@ static int mov_write_moov_tag(ByteIOContext *pb, MOVContext *mov,
 
     mov_write_mvhd_tag(pb, mov);
     //mov_write_iods_tag(pb, mov);
-    for (i=0; i<MAX_STREAMS; i++) {
+    for (i=0; i<mov->nb_streams; i++) {
         if(mov->tracks[i].entry > 0) {
             mov_write_trak_tag(pb, &(mov->tracks[i]));
         }
@@ -1484,6 +1484,7 @@ static int mov_write_header(AVFormatContext *s)
 
     mov_write_mdat_tag(pb, mov);
     mov->time = s->timestamp + 0x7C25B080; //1970 based -> 1904 based
+    mov->nb_streams = s->nb_streams;
 
     put_flush_packet(pb);
 
@@ -1606,7 +1607,7 @@ static int mov_write_trailer(AVFormatContext *s)
 
     mov_write_moov_tag(pb, mov, s);
 
-    for (i=0; i<MAX_STREAMS; i++) {
+    for (i=0; i<mov->nb_streams; i++) {
         av_freep(&mov->tracks[i].cluster);
 
         if( mov->tracks[i].vosLen ) av_free( mov->tracks[i].vosData );
