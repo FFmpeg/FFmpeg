@@ -331,7 +331,7 @@ write_utf8(PutBitContext *pb, uint32_t val)
         return;
     }
 
-    bytes= (av_log2(val)-1) / 5;
+    bytes= (av_log2(val)+4) / 5;
     shift = (bytes - 1) * 6;
     put_bits(pb, 8, (256 - (256>>bytes)) | (val >> shift));
     while(shift >= 6){
