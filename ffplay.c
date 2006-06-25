@@ -1606,8 +1606,6 @@ static int stream_component_open(VideoState *is, int stream_index)
     codec = avcodec_find_decoder(enc->codec_id);
     enc->debug_mv = debug_mv;
     enc->debug = debug;
-    if(debug)
-        av_log_set_level(AV_LOG_DEBUG);
     enc->workaround_bugs = workaround_bugs;
     enc->lowres = lowres;
     if(lowres) enc->flags |= CODEC_FLAG_EMU_EDGE;
@@ -2319,6 +2317,7 @@ void opt_seek(const char *arg)
 
 static void opt_debug(const char *arg)
 {
+    av_log_set_level(atoi(arg));
     debug = atoi(arg);
 }
 
