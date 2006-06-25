@@ -193,6 +193,7 @@ ogg_new_stream (AVFormatContext * s, uint32_t serial)
     os = ogg->streams + idx;
     os->serial = serial;
     os->bufsize = DECODER_BUFFER_SIZE;
+    os->buf = av_malloc(os->bufsize);
     os->header = -1;
 
     st = av_new_stream (s, idx);
@@ -279,7 +280,7 @@ ogg_read_page (AVFormatContext * s, int *str)
 
     os = ogg->streams + idx;
 
-    if(os->segp == os->nsegs)
+    if(os->psize > 0)
         ogg_new_buf(ogg, idx);
 
     if (get_buffer (bc, os->segments, nsegs) < nsegs)
