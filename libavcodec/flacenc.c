@@ -177,7 +177,12 @@ static int flac_encode_init(AVCodecContext *avctx)
     s->blocksize = select_blocksize(s->samplerate);
     avctx->frame_size = s->blocksize;
 
-    s->max_framesize = 14 + (s->blocksize * s->channels * 2);
+    /* set maximum encoded frame size in verbatim mode */
+    if(s->channels == 2) {
+        s->max_framesize = 14 + ((s->blocksize * 33 + 7) >> 3);
+    } else {
+        s->max_framesize = 14 + (s->blocksize * s->channels * 2);
+    }
 
     streaminfo = av_malloc(FLAC_STREAMINFO_SIZE);
     write_streaminfo(s, streaminfo);
@@ -192,7 +197,7 @@ static int flac_encode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int init_frame(FlacEncodeContext *s)
+static void init_frame(FlacEncodeContext *s)
 {
     int i, ch;
     FlacFrame *frame;
@@ -221,13 +226,6 @@ static int init_frame(FlacEncodeContext *s)
     for(ch=0; ch<s->channels; ch++) {
         frame->subframes[ch].obits = 16;
     }
-    if(s->channels == 2) {
-        frame->ch_mode = FLAC_CHMODE_LEFT_RIGHT;
-    } else {
-        frame->ch_mode = FLAC_CHMODE_NOT_STEREO;
-    }
-
-    return 0;
 }
 
 /**
@@ -243,6 +241,94 @@ static void copy_samples(FlacEncodeContext *s, int16_t *samples)
         for(ch=0; ch<s->channels; ch++,j++) {
             frame->subframes[ch].samples[i] = samples[j];
         }
+    }
+}
+
+static int estimate_stereo_mode(int32_t *left_ch, int32_t *right_ch, int n)
+{
+    int i, best;
+    int32_t lt, rt;
+    uint64_t left, right, mid, side;
+    uint64_t score[4];
+
+    /* calculate sum of squares for each channel */
+    left = right = mid = side = 0;
+    for(i=2; i<n; i++) {
+        lt = left_ch[i] - 2*left_ch[i-1] + left_ch[i-2];
+        rt = right_ch[i] - 2*right_ch[i-1] + right_ch[i-2];
+        mid   += ABS((lt + rt) >> 1);
+        side  += ABS(lt - rt);
+        left  += ABS(lt);
+        right += ABS(rt);
+    }
+
+    /* calculate score for each mode */
+    score[0] = left  + right;
+    score[1] = left  +  side;
+    score[2] = right +  side;
+    score[3] = mid   +  side;
+
+    /* return mode with lowest score */
+    best = 0;
+    for(i=1; i<4; i++) {
+        if(score[i] < score[best]) {
+            best = i;
+        }
+    }
+    if(best == 0) {
+        return FLAC_CHMODE_LEFT_RIGHT;
+    } else if(best == 1) {
+        return FLAC_CHMODE_LEFT_SIDE;
+    } else if(best == 2) {
+        return FLAC_CHMODE_RIGHT_SIDE;
+    } else {
+        return FLAC_CHMODE_MID_SIDE;
+    }
+}
+
+/**
+ * Perform stereo channel decorrelation
+ */
+static void channel_decorrelation(FlacEncodeContext *ctx)
+{
+    FlacFrame *frame;
+    int32_t *left, *right;
+    int i, n;
+
+    frame = &ctx->frame;
+    n = frame->blocksize;
+    left  = frame->subframes[0].samples;
+    right = frame->subframes[1].samples;
+
+    if(ctx->channels != 2) {
+        frame->ch_mode = FLAC_CHMODE_NOT_STEREO;
+        return;
+    }
+
+    frame->ch_mode = estimate_stereo_mode(left, right, n);
+
+    /* perform decorrelation and adjust bits-per-sample */
+    if(frame->ch_mode == FLAC_CHMODE_LEFT_RIGHT) {
+        return;
+    }
+    if(frame->ch_mode == FLAC_CHMODE_MID_SIDE) {
+        int32_t tmp;
+        for(i=0; i<n; i++) {
+            tmp = left[i];
+            left[i] = (tmp + right[i]) >> 1;
+            right[i] = tmp - right[i];
+        }
+        frame->subframes[1].obits++;
+    } else if(frame->ch_mode == FLAC_CHMODE_LEFT_SIDE) {
+        for(i=0; i<n; i++) {
+            right[i] = left[i] - right[i];
+        }
+        frame->subframes[1].obits++;
+    } else {
+        for(i=0; i<n; i++) {
+            left[i] -= right[i];
+        }
+        frame->subframes[0].obits++;
     }
 }
 
@@ -359,19 +445,15 @@ output_frame_header(FlacEncodeContext *s)
     put_bits(&s->pb, 3, 4); /* bits-per-sample code */
     put_bits(&s->pb, 1, 0);
     write_utf8(&s->pb, s->frame_count);
-    if(frame->bs_code[1] > 0) {
-        if(frame->bs_code[1] < 256) {
-            put_bits(&s->pb, 8, frame->bs_code[1]);
-        } else {
-            put_bits(&s->pb, 16, frame->bs_code[1]);
-        }
+    if(frame->bs_code[0] == 6) {
+        put_bits(&s->pb, 8, frame->bs_code[1]);
+    } else if(frame->bs_code[0] == 7) {
+        put_bits(&s->pb, 16, frame->bs_code[1]);
     }
-    if(s->sr_code[1] > 0) {
-        if(s->sr_code[1] < 256) {
-            put_bits(&s->pb, 8, s->sr_code[1]);
-        } else {
-            put_bits(&s->pb, 16, s->sr_code[1]);
-        }
+    if(s->sr_code[0] == 12) {
+        put_bits(&s->pb, 8, s->sr_code[1]);
+    } else if(s->sr_code[0] > 12) {
+        put_bits(&s->pb, 16, s->sr_code[1]);
     }
     flush_put_bits(&s->pb);
     crc = av_crc(av_crc07, 0, s->pb.buf, put_bits_count(&s->pb)>>3);
@@ -493,11 +575,11 @@ static int flac_encode_frame(AVCodecContext *avctx, uint8_t *frame,
     s = avctx->priv_data;
 
     s->blocksize = avctx->frame_size;
-    if(init_frame(s)) {
-        return 0;
-    }
+    init_frame(s);
 
     copy_samples(s, samples);
+
+    channel_decorrelation(s);
 
     for(ch=0; ch<s->channels; ch++) {
         encode_residual(s, ch);
@@ -532,6 +614,8 @@ static int flac_encode_frame(AVCodecContext *avctx, uint8_t *frame,
 
 static int flac_encode_close(AVCodecContext *avctx)
 {
+    av_freep(&avctx->extradata);
+    avctx->extradata_size = 0;
     av_freep(&avctx->coded_frame);
     return 0;
 }

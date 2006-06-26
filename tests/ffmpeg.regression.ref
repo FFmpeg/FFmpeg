@@ -176,7 +176,7 @@ stddev:1050.18 PSNR:35.89 bytes:1054720
 264236 ./data/a-adpcm_yam.wav
 e92cec8c07913ffb91ad2b11f79cdc00 *./data/out.wav
 stddev:18312.68 PSNR:11.06 bytes:1056768
-7bcc7daf968fc489c9b4b7aca5ae380d *./data/a-flac.flac
-799336 ./data/a-flac.flac
+9ed4957501a56ce9d4e6a6611553a45f *./data/a-flac.flac
+801577 ./data/a-flac.flac
 0116cdcefd0aeae3ab8e5140c19c725d *./data/out.wav
 stddev: 51.59 PSNR:62.07 bytes:1032192
