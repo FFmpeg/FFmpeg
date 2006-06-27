@@ -1927,13 +1927,7 @@ static int vc1_decode_intra_block(VC1Context *v, DCTELEM block[64], int n, int c
 
         scale = mquant * 2 + v->halfpq;
 
-        if(v->s.ac_pred) {
-            if(!dc_pred_dir)
-                zz_table = vc1_horizontal_zz;
-            else
-                zz_table = vc1_vertical_zz;
-        } else
-            zz_table = vc1_normal_zz;
+        zz_table = vc1_simple_progressive_8x8_zz;
 
         ac_val = s->ac_val[0][0] + s->block_index[n] * 16;
         ac_val2 = ac_val;
