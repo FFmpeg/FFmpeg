@@ -1239,7 +1239,7 @@ static int wma_decode_superframe(AVCodecContext *avctx,
                 goto fail;
             q = s->last_superframe + s->last_superframe_len;
             len = bit_offset;
-            while (len > 0) {
+            while (len > 7) {
                 *q++ = (get_bits)(&s->gb, 8);
                 len -= 8;
             }
