@@ -39,11 +39,17 @@
 
 #define FLAC_STREAMINFO_SIZE  34
 
+typedef struct RiceContext {
+    int porder;
+    int params[256];
+} RiceContext;
+
 typedef struct FlacSubframe {
     int type;
     int type_code;
     int obits;
     int order;
+    RiceContext rc;
     int32_t samples[FLAC_MAX_BLOCKSIZE];
     int32_t residual[FLAC_MAX_BLOCKSIZE];
 } FlacSubframe;
@@ -66,6 +72,7 @@ typedef struct FlacEncodeContext {
     int max_framesize;
     uint32_t frame_count;
     FlacFrame frame;
+    AVCodecContext *avctx;
 } FlacEncodeContext;
 
 static const int flac_samplerates[16] = {
@@ -105,7 +112,7 @@ static void write_streaminfo(FlacEncodeContext *s, uint8_t *header)
     /* MD5 signature = 0 */
 }
 
-#define BLOCK_TIME_MS 105
+#define BLOCK_TIME_MS 27
 
 /**
  * Sets blocksize based on samplerate
@@ -135,6 +142,8 @@ static int flac_encode_init(AVCodecContext *avctx)
     FlacEncodeContext *s = avctx->priv_data;
     int i;
     uint8_t *streaminfo;
+
+    s->avctx = avctx;
 
     if(avctx->sample_fmt != SAMPLE_FMT_S16) {
         return -1;
@@ -244,29 +253,283 @@ static void copy_samples(FlacEncodeContext *s, int16_t *samples)
     }
 }
 
+
+#define rice_encode_count(sum, n, k) (((n)*((k)+1))+((sum-(n>>1))>>(k)))
+
+static int find_optimal_param(uint32_t sum, int n)
+{
+    int k, k_opt;
+    uint32_t nbits, nbits_opt;
+
+    k_opt = 0;
+    nbits_opt = rice_encode_count(sum, n, 0);
+    for(k=1; k<=14; k++) {
+        nbits = rice_encode_count(sum, n, k);
+        if(nbits < nbits_opt) {
+            nbits_opt = nbits;
+            k_opt = k;
+        }
+    }
+    return k_opt;
+}
+
+static uint32_t calc_optimal_rice_params(RiceContext *rc, int porder,
+                                         uint32_t *sums, int n, int pred_order)
+{
+    int i;
+    int k, cnt, part;
+    uint32_t all_bits;
+
+    part = (1 << porder);
+    all_bits = 0;
+
+    cnt = (n >> porder) - pred_order;
+    for(i=0; i<part; i++) {
+        if(i == 1) cnt = (n >> porder);
+        k = find_optimal_param(sums[i], cnt);
+        rc->params[i] = k;
+        all_bits += rice_encode_count(sums[i], cnt, k);
+    }
+    all_bits += (4 * part);
+
+    rc->porder = porder;
+
+    return all_bits;
+}
+
+static void calc_sums(int pmax, uint32_t *data, int n, int pred_order,
+                      uint32_t sums[][256])
+{
+    int i, j;
+    int parts, cnt;
+    uint32_t *res;
+
+    /* sums for highest level */
+    parts = (1 << pmax);
+    res = &data[pred_order];
+    cnt = (n >> pmax) - pred_order;
+    for(i=0; i<parts; i++) {
+        if(i == 1) cnt = (n >> pmax);
+        if(i > 0) res = &data[i*cnt];
+        sums[pmax][i] = 0;
+        for(j=0; j<cnt; j++) {
+            sums[pmax][i] += res[j];
+        }
+    }
+    /* sums for lower levels */
+    for(i=pmax-1; i>=0; i--) {
+        parts = (1 << i);
+        for(j=0; j<parts; j++) {
+            sums[i][j] = sums[i+1][2*j] + sums[i+1][2*j+1];
+        }
+    }
+}
+
+static uint32_t calc_rice_params(RiceContext *rc, int pmax, int32_t *data,
+                                 int n, int pred_order)
+{
+    int i;
+    uint32_t bits, opt_bits;
+    int opt_porder;
+    RiceContext opt_rc;
+    uint32_t *udata;
+    uint32_t sums[9][256];
+
+    assert(pmax >= 0 && pmax <= 8);
+
+    udata = av_malloc(n * sizeof(uint32_t));
+    for(i=0; i<n; i++) {
+        udata[i] = (2*data[i]) ^ (data[i]>>31);
+    }
+
+    calc_sums(pmax, udata, n, pred_order, sums);
+
+    opt_porder = 0;
+    opt_bits = UINT32_MAX;
+    for(i=0; i<=pmax; i++) {
+        bits = calc_optimal_rice_params(rc, i, sums[i], n, pred_order);
+        if(bits < opt_bits) {
+            opt_bits = bits;
+            opt_porder = i;
+            memcpy(&opt_rc, rc, sizeof(RiceContext));
+        }
+    }
+    if(opt_porder != pmax) {
+        memcpy(rc, &opt_rc, sizeof(RiceContext));
+    }
+
+    av_freep(&udata);
+    return opt_bits;
+}
+
+static uint32_t calc_rice_params_fixed(RiceContext *rc, int pmax, int32_t *data,
+                                       int n, int pred_order, int bps)
+{
+    uint32_t bits;
+    bits = pred_order*bps + 6;
+    bits += calc_rice_params(rc, pmax, data, n, pred_order);
+    return bits;
+}
+
+static void encode_residual_verbatim(int32_t *res, int32_t *smp, int n)
+{
+    assert(n > 0);
+    memcpy(res, smp, n * sizeof(int32_t));
+}
+
+static void encode_residual_fixed(int32_t *res, int32_t *smp, int n, int order)
+{
+    int i;
+
+    for(i=0; i<order; i++) {
+        res[i] = smp[i];
+    }
+
+    if(order==0){
+        for(i=order; i<n; i++)
+            res[i]= smp[i];
+    }else if(order==1){
+        for(i=order; i<n; i++)
+            res[i]= smp[i] - smp[i-1];
+    }else if(order==2){
+        for(i=order; i<n; i++)
+            res[i]= smp[i] - 2*smp[i-1] + smp[i-2];
+    }else if(order==3){
+        for(i=order; i<n; i++)
+            res[i]= smp[i] - 3*smp[i-1] + 3*smp[i-2] - smp[i-3];
+    }else{
+        for(i=order; i<n; i++)
+            res[i]= smp[i] - 4*smp[i-1] + 6*smp[i-2] - 4*smp[i-3] + smp[i-4];
+    }
+}
+
+static int get_max_p_order(int max_porder, int n, int order)
+{
+    int porder, max_parts;
+
+    porder = max_porder;
+    while(porder > 0) {
+        max_parts = (1 << porder);
+        if(!(n % max_parts) && (n > max_parts*order)) {
+            break;
+        }
+        porder--;
+    }
+    return porder;
+}
+
+static int encode_residual(FlacEncodeContext *ctx, int ch)
+{
+    int i, opt_order, porder, max_porder, n;
+    FlacFrame *frame;
+    FlacSubframe *sub;
+    uint32_t bits[5];
+    int32_t *res, *smp;
+
+    frame = &ctx->frame;
+    sub = &frame->subframes[ch];
+    res = sub->residual;
+    smp = sub->samples;
+    n = frame->blocksize;
+
+    /* CONSTANT */
+    for(i=1; i<n; i++) {
+        if(smp[i] != smp[0]) break;
+    }
+    if(i == n) {
+        sub->type = sub->type_code = FLAC_SUBFRAME_CONSTANT;
+        res[0] = smp[0];
+        return sub->obits;
+    }
+
+    /* VERBATIM */
+    if(n < 5) {
+        sub->type = sub->type_code = FLAC_SUBFRAME_VERBATIM;
+        encode_residual_verbatim(res, smp, n);
+        return sub->obits * n;
+    }
+
+    max_porder = 3;
+
+    /* FIXED */
+    opt_order = 0;
+    bits[0] = UINT32_MAX;
+    for(i=0; i<=4; i++) {
+        encode_residual_fixed(res, smp, n, i);
+        porder = get_max_p_order(max_porder, n, i);
+        bits[i] = calc_rice_params_fixed(&sub->rc, porder, res, n, i, sub->obits);
+        if(bits[i] < bits[opt_order]) {
+            opt_order = i;
+        }
+    }
+    sub->order = opt_order;
+    sub->type = FLAC_SUBFRAME_FIXED;
+    sub->type_code = sub->type | sub->order;
+    if(sub->order != 4) {
+        encode_residual_fixed(res, smp, n, sub->order);
+        porder = get_max_p_order(max_porder, n, sub->order);
+        calc_rice_params_fixed(&sub->rc, porder, res, n, sub->order, sub->obits);
+    }
+    return bits[sub->order];
+}
+
+static int encode_residual_v(FlacEncodeContext *ctx, int ch)
+{
+    int i, n;
+    FlacFrame *frame;
+    FlacSubframe *sub;
+    int32_t *res, *smp;
+
+    frame = &ctx->frame;
+    sub = &frame->subframes[ch];
+    res = sub->residual;
+    smp = sub->samples;
+    n = frame->blocksize;
+
+    /* CONSTANT */
+    for(i=1; i<n; i++) {
+        if(smp[i] != smp[0]) break;
+    }
+    if(i == n) {
+        sub->type = sub->type_code = FLAC_SUBFRAME_CONSTANT;
+        res[0] = smp[0];
+        return sub->obits;
+    }
+
+    /* VERBATIM */
+    sub->type = sub->type_code = FLAC_SUBFRAME_VERBATIM;
+    encode_residual_verbatim(res, smp, n);
+    return sub->obits * n;
+}
+
 static int estimate_stereo_mode(int32_t *left_ch, int32_t *right_ch, int n)
 {
     int i, best;
     int32_t lt, rt;
-    uint64_t left, right, mid, side;
+    uint64_t sum[4];
     uint64_t score[4];
+    int k;
 
     /* calculate sum of squares for each channel */
-    left = right = mid = side = 0;
+    sum[0] = sum[1] = sum[2] = sum[3] = 0;
     for(i=2; i<n; i++) {
         lt = left_ch[i] - 2*left_ch[i-1] + left_ch[i-2];
         rt = right_ch[i] - 2*right_ch[i-1] + right_ch[i-2];
-        mid   += ABS((lt + rt) >> 1);
-        side  += ABS(lt - rt);
-        left  += ABS(lt);
-        right += ABS(rt);
+        sum[2] += ABS((lt + rt) >> 1);
+        sum[3] += ABS(lt - rt);
+        sum[0] += ABS(lt);
+        sum[1] += ABS(rt);
+    }
+    for(i=0; i<4; i++) {
+        k = find_optimal_param(2*sum[i], n);
+        sum[i] = rice_encode_count(2*sum[i], n, k);
     }
 
     /* calculate score for each mode */
-    score[0] = left  + right;
-    score[1] = left  +  side;
-    score[2] = right +  side;
-    score[3] = mid   +  side;
+    score[0] = sum[0] + sum[1];
+    score[1] = sum[0] + sum[3];
+    score[2] = sum[1] + sum[3];
+    score[3] = sum[2] + sum[3];
 
     /* return mode with lowest score */
     best = 0;
@@ -332,83 +595,14 @@ static void channel_decorrelation(FlacEncodeContext *ctx)
     }
 }
 
-static void encode_residual_verbatim(FlacEncodeContext *s, int ch)
-{
-    FlacFrame *frame;
-    FlacSubframe *sub;
-    int32_t *res;
-    int32_t *smp;
-    int n;
-
-    frame = &s->frame;
-    sub = &frame->subframes[ch];
-    res = sub->residual;
-    smp = sub->samples;
-    n = frame->blocksize;
-
-    sub->order = 0;
-    sub->type = FLAC_SUBFRAME_VERBATIM;
-    sub->type_code = sub->type;
-
-    memcpy(res, smp, n * sizeof(int32_t));
-}
-
-static void encode_residual_fixed(int32_t *res, int32_t *smp, int n, int order)
-{
-    int i;
-
-    for(i=0; i<order; i++) {
-        res[i] = smp[i];
-    }
-
-    if(order==0){
-        for(i=order; i<n; i++)
-            res[i]= smp[i];
-    }else if(order==1){
-        for(i=order; i<n; i++)
-            res[i]= smp[i] - smp[i-1];
-    }else if(order==2){
-        for(i=order; i<n; i++)
-            res[i]= smp[i] - 2*smp[i-1] + smp[i-2];
-    }else if(order==3){
-        for(i=order; i<n; i++)
-            res[i]= smp[i] - 3*smp[i-1] + 3*smp[i-2] - smp[i-3];
-    }else{
-        for(i=order; i<n; i++)
-            res[i]= smp[i] - 4*smp[i-1] + 6*smp[i-2] - 4*smp[i-3] + smp[i-4];
-    }
-}
-
-static void encode_residual(FlacEncodeContext *s, int ch)
-{
-    FlacFrame *frame;
-    FlacSubframe *sub;
-    int32_t *res;
-    int32_t *smp;
-    int n;
-
-    frame = &s->frame;
-    sub = &frame->subframes[ch];
-    res = sub->residual;
-    smp = sub->samples;
-    n = frame->blocksize;
-
-    sub->order = 2;
-    sub->type = FLAC_SUBFRAME_FIXED;
-    sub->type_code = sub->type | sub->order;
-    encode_residual_fixed(res, smp, n, sub->order);
-}
-
-static void
-put_sbits(PutBitContext *pb, int bits, int32_t val)
+static void put_sbits(PutBitContext *pb, int bits, int32_t val)
 {
     assert(bits >= 0 && bits <= 31);
 
     put_bits(pb, bits, val & ((1<<bits)-1));
 }
 
-static void
-write_utf8(PutBitContext *pb, uint32_t val)
+static void write_utf8(PutBitContext *pb, uint32_t val)
 {
     int bytes, shift;
 
@@ -426,8 +620,7 @@ write_utf8(PutBitContext *pb, uint32_t val)
     }
 }
 
-static void
-output_frame_header(FlacEncodeContext *s)
+static void output_frame_header(FlacEncodeContext *s)
 {
     FlacFrame *frame;
     int crc;
@@ -460,6 +653,16 @@ output_frame_header(FlacEncodeContext *s)
     put_bits(&s->pb, 8, crc);
 }
 
+static void output_subframe_constant(FlacEncodeContext *s, int ch)
+{
+    FlacSubframe *sub;
+    int32_t res;
+
+    sub = &s->frame.subframes[ch];
+    res = sub->residual[0];
+    put_sbits(&s->pb, sub->obits, res);
+}
+
 static void output_subframe_verbatim(FlacEncodeContext *s, int ch)
 {
     int i;
@@ -476,43 +679,42 @@ static void output_subframe_verbatim(FlacEncodeContext *s, int ch)
     }
 }
 
-static void
-output_residual(FlacEncodeContext *ctx, int ch)
+static void output_residual(FlacEncodeContext *ctx, int ch)
 {
-    int i, j, p;
+    int i, j, p, n, parts;
     int k, porder, psize, res_cnt;
     FlacFrame *frame;
     FlacSubframe *sub;
+    int32_t *res;
 
     frame = &ctx->frame;
     sub = &frame->subframes[ch];
+    res = sub->residual;
+    n = frame->blocksize;
 
     /* rice-encoded block */
     put_bits(&ctx->pb, 2, 0);
 
     /* partition order */
-    porder = 0;
-    psize = frame->blocksize;
-    //porder = sub->rc.porder;
-    //psize = frame->blocksize >> porder;
+    porder = sub->rc.porder;
+    psize = n >> porder;
+    parts = (1 << porder);
     put_bits(&ctx->pb, 4, porder);
     res_cnt = psize - sub->order;
 
     /* residual */
     j = sub->order;
-    for(p=0; p<(1 << porder); p++) {
-        //k = sub->rc.params[p];
-        k = 9;
+    for(p=0; p<parts; p++) {
+        k = sub->rc.params[p];
         put_bits(&ctx->pb, 4, k);
         if(p == 1) res_cnt = psize;
-        for(i=0; i<res_cnt && j<frame->blocksize; i++, j++) {
-            set_sr_golomb_flac(&ctx->pb, sub->residual[j], k, INT32_MAX, 0);
+        for(i=0; i<res_cnt && j<n; i++, j++) {
+            set_sr_golomb_flac(&ctx->pb, res[j], k, INT32_MAX, 0);
         }
     }
 }
 
-static void
-output_subframe_fixed(FlacEncodeContext *ctx, int ch)
+static void output_subframe_fixed(FlacEncodeContext *ctx, int ch)
 {
     int i;
     FlacFrame *frame;
@@ -547,9 +749,11 @@ static void output_subframes(FlacEncodeContext *s)
         put_bits(&s->pb, 1, 0); /* no wasted bits */
 
         /* subframe */
-        if(sub->type == FLAC_SUBFRAME_VERBATIM) {
+        if(sub->type == FLAC_SUBFRAME_CONSTANT) {
+            output_subframe_constant(s, ch);
+        } else if(sub->type == FLAC_SUBFRAME_VERBATIM) {
             output_subframe_verbatim(s, ch);
-        } else {
+        } else if(sub->type == FLAC_SUBFRAME_FIXED) {
             output_subframe_fixed(s, ch);
         }
     }
@@ -593,7 +797,7 @@ static int flac_encode_frame(AVCodecContext *avctx, uint8_t *frame,
     if(out_bytes > s->max_framesize || out_bytes >= buf_size) {
         /* frame too large. use verbatim mode */
         for(ch=0; ch<s->channels; ch++) {
-            encode_residual_verbatim(s, ch);
+            encode_residual_v(s, ch);
         }
         init_put_bits(&s->pb, frame, buf_size);
         output_frame_header(s);
