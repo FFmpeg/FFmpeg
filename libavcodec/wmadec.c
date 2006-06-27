@@ -908,7 +908,10 @@ static int wma_decode_block(WMADecodeContext *s)
                     level = -level;
                 ptr += run;
                 if (ptr >= eptr)
-                    return -1;
+                {
+                    av_log(NULL, AV_LOG_ERROR, "overflow in spectral RLE, ignoring\n");
+                    break;
+                }
                 *ptr++ = level;
                 /* NOTE: EOB can be omitted */
                 if (ptr >= eptr)
