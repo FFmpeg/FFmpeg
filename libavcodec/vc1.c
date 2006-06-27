@@ -311,6 +311,7 @@ typedef struct VC1Context{
     int codingset;        ///< index of current table set from 11.8 to use for luma block decoding
     int codingset2;       ///< index of current table set from 11.8 to use for chroma block decoding
     int pqindex;          ///< raw pqindex used in coding set selection
+    int a_avail, c_avail;
 
 
     /** Luma compensation parameters */
@@ -1853,7 +1854,7 @@ static int vc1_decode_intra_block(VC1Context *v, DCTELEM block[64], int n, int c
     int16_t *ac_val, *ac_val2;
     int dcdiff;
     int mb_pos = s->mb_x + s->mb_y * s->mb_stride;
-    int a_avail, c_avail;
+    int a_avail = v->a_avail, c_avail = v->c_avail;
 
     /* XXX: Guard against dumb values of mquant */
     mquant = (mquant < 1) ? 0 : ( (mquant>31) ? 31 : mquant );
@@ -1862,12 +1863,6 @@ static int vc1_decode_intra_block(VC1Context *v, DCTELEM block[64], int n, int c
     s->y_dc_scale = s->y_dc_scale_table[mquant];
     s->c_dc_scale = s->c_dc_scale_table[mquant];
 
-    /* check if prediction blocks A and C are available */
-    a_avail = c_avail = 0;
-    if((n == 2 || n == 3) || (s->mb_y && IS_INTRA(s->current_picture.mb_type[mb_pos - s->mb_stride])))
-        a_avail = 1;
-    if((n == 1 || n == 3) || (s->mb_x && IS_INTRA(s->current_picture.mb_type[mb_pos - 1])))
-        c_avail = 1;
     /* Get DC differential */
     if (n < 4) {
         dcdiff = get_vlc2(&s->gb, ff_msmp4_dc_luma_vlc[s->dc_table_index].table, DC_VLC_BITS, 3);
@@ -1925,7 +1920,7 @@ static int vc1_decode_intra_block(VC1Context *v, DCTELEM block[64], int n, int c
         int scale;
         int k;
 
-        scale = mquant * 2 + v->halfpq;
+        scale = mquant * 2;
 
         zz_table = vc1_simple_progressive_8x8_zz;
 
@@ -2014,7 +2009,7 @@ not_coded:
             dc_pred_dir = 1;
         }
 
-        scale = mquant * 2 + v->halfpq;
+        scale = mquant * 2;
         memset(ac_val2, 0, 16 * 2);
         if(dc_pred_dir) {//left
             ac_val -= 16;
@@ -2068,6 +2063,7 @@ static int vc1_decode_p_block(VC1Context *v, DCTELEM block[64], int n, int mquan
     }
     if((ttblk != TT_8X8 && ttblk != TT_4X4) && (v->ttmbf || (ttmb != -1 && (ttmb & 8) && !first_block))) {
         subblkpat = decode012(gb);
+        if(subblkpat) subblkpat ^= 3; //swap decoded pattern bits
         if(ttblk == TT_8X4_TOP || ttblk == TT_8X4_BOTTOM) ttblk = TT_8X4;
         if(ttblk == TT_4X8_RIGHT || ttblk == TT_4X8_LEFT) ttblk = TT_4X8;
     }
@@ -2224,10 +2220,22 @@ static int vc1_decode_p_mb(VC1Context *v, DCTELEM block[6][64])
                 val = ((cbp >> (5 - i)) & 1);
                 off = (i & 4) ? 0 : ((i & 1) * 8 + (i & 2) * 4 * s->linesize);
                 if(s->mb_intra) {
+                    /* check if prediction blocks A and C are available */
+                    v->a_avail = v->c_avail = 0;
+                    if((i == 2 || i == 3) || (s->mb_y && IS_INTRA(s->current_picture.mb_type[mb_pos - s->mb_stride])))
+                        v->a_avail = 1;
+                    if((i == 1 || i == 3) || (s->mb_x && IS_INTRA(s->current_picture.mb_type[mb_pos - 1])))
+                        v->c_avail = 1;
+
                     vc1_decode_intra_block(v, block[i], i, val, mquant, (i&4)?v->codingset2:v->codingset);
                     vc1_inv_trans(s->block[i], 8, 8);
                     for(j = 0; j < 64; j++) s->block[i][j] += 128;
                     s->dsp.put_pixels_clamped(s->block[i], s->dest[dst_idx] + off, s->linesize >> ((i & 4) >> 2));
+                    /* TODO: proper loop filtering */
+                    if(v->a_avail)
+                        s->dsp.h263_v_loop_filter(s->dest[dst_idx] + off, s->linesize >> ((i & 4) >> 2), s->y_dc_scale);
+                    if(v->c_avail)
+                        s->dsp.h263_h_loop_filter(s->dest[dst_idx] + off, s->linesize >> ((i & 4) >> 2), s->y_dc_scale);
                 } else if(val) {
                     vc1_decode_p_block(v, block[i], i, mquant, ttmb, first_block);
                     if(!v->ttmbf && ttmb < 8) ttmb = -1;
@@ -2361,6 +2369,7 @@ static void vc1_decode_i_blocks(VC1Context *v)
 
             for(k = 0; k < 6; k++) {
                 val = ((cbp >> (5 - k)) & 1);
+
                 if (k < 4) {
                     int pred = vc1_coded_block_pred(&v->s, k, &coded_val);
                     val = val ^ pred;
@@ -2377,6 +2386,24 @@ static void vc1_decode_i_blocks(VC1Context *v)
             }
 
             vc1_put_block(v, s->block);
+            if(v->pq >= 9 && v->overlap) { /* XXX: do proper overlapping insted of loop filter */
+                if(s->mb_y) {
+                    s->dsp.h263_v_loop_filter(s->dest[0], s->linesize, s->y_dc_scale);
+                    s->dsp.h263_v_loop_filter(s->dest[0] + 8, s->linesize, s->y_dc_scale);
+                    s->dsp.h263_v_loop_filter(s->dest[1], s->uvlinesize, s->y_dc_scale);
+                    s->dsp.h263_v_loop_filter(s->dest[2], s->uvlinesize, s->y_dc_scale);
+                }
+                s->dsp.h263_v_loop_filter(s->dest[0] + 8 * s->linesize, s->linesize, s->y_dc_scale);
+                s->dsp.h263_v_loop_filter(s->dest[0] + 8 * s->linesize + 8, s->linesize, s->y_dc_scale);
+                if(s->mb_x) {
+                    s->dsp.h263_h_loop_filter(s->dest[0], s->linesize, s->y_dc_scale);
+                    s->dsp.h263_h_loop_filter(s->dest[0] + 8 * s->linesize, s->linesize, s->y_dc_scale);
+                    s->dsp.h263_h_loop_filter(s->dest[1], s->uvlinesize, s->y_dc_scale);
+                    s->dsp.h263_h_loop_filter(s->dest[2], s->uvlinesize, s->y_dc_scale);
+                }
+                s->dsp.h263_h_loop_filter(s->dest[0] + 8, s->linesize, s->y_dc_scale);
+                s->dsp.h263_h_loop_filter(s->dest[0] + 8 * s->linesize + 8, s->linesize, s->y_dc_scale);
+            }
 
             if(get_bits_count(&s->gb) > v->bits) {
                 av_log(s->avctx, AV_LOG_ERROR, "Bits overconsumption: %i > %i\n", get_bits_count(&s->gb), v->bits);
