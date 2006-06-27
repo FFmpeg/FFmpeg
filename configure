@@ -1131,7 +1131,7 @@ EOF
     SLIBPREF=""
     SLIBSUF=".dll"
     EXESUF=".exe"
-    if test "$force_prefix" != yes; then prefix="/c/Program Files/FFmpeg"; fi
+    if test "$force_prefix" != yes; then prefix="$PROGRAMFILES/FFmpeg"; fi
     if test "$force_libdir" != yes; then bindir="$prefix"; fi
 fi
 
