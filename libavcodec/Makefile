@@ -194,8 +194,8 @@ endif
 ifeq ($(CONFIG_ULTI_DECODER),yes)
     OBJS+= ulti.o
 endif
-ifneq ($(CONFIG_VC9_DECODER)$(CONFIG_WMV3_DECODER),)
-    OBJS+= vc9.o
+ifneq ($(CONFIG_VC1_DECODER)$(CONFIG_WMV3_DECODER),)
+    OBJS+= vc1.o
 endif
 ifneq ($(CONFIG_VCR1_DECODER)$(CONFIG_VCR1_ENCODER),)
     OBJS+= vcr1.o

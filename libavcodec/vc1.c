@@ -1,5 +1,5 @@
 /*
- * VC-9 and WMV3 decoder
+ * VC-1 and WMV3 decoder
  * Copyright (c) 2005 Anonymous
  * Copyright (c) 2005 Alex Beregszaszi
  * Copyright (c) 2005 Michael Niedermayer
@@ -21,8 +21,8 @@
  */
 
 /**
- * @file vc9.c
- * VC-9 and WMV3 decoder
+ * @file vc1.c
+ * VC-1 and WMV3 decoder
  *
  * TODO: most AP stuff, optimize, most of MB layer, transform, filtering and motion compensation, etc
  * TODO: use MPV_ !!
@@ -31,7 +31,7 @@
 #include "dsputil.h"
 #include "avcodec.h"
 #include "mpegvideo.h"
-#include "vc9data.h"
+#include "vc1data.h"
 
 #undef NDEBUG
 #include <assert.h>
@@ -149,31 +149,31 @@ static const uint8_t pquant_table[3][32] = {
   }
 };
 
-/** @name VC-9 VLC tables and defines
+/** @name VC-1 VLC tables and defines
  *  @todo TODO move this into the context
  */
 //@{
-#define VC9_BFRACTION_VLC_BITS 7
-static VLC vc9_bfraction_vlc;
-#define VC9_IMODE_VLC_BITS 4
-static VLC vc9_imode_vlc;
-#define VC9_NORM2_VLC_BITS 3
-static VLC vc9_norm2_vlc;
-#define VC9_NORM6_VLC_BITS 9
-static VLC vc9_norm6_vlc;
+#define VC1_BFRACTION_VLC_BITS 7
+static VLC vc1_bfraction_vlc;
+#define VC1_IMODE_VLC_BITS 4
+static VLC vc1_imode_vlc;
+#define VC1_NORM2_VLC_BITS 3
+static VLC vc1_norm2_vlc;
+#define VC1_NORM6_VLC_BITS 9
+static VLC vc1_norm6_vlc;
 /* Could be optimized, one table only needs 8 bits */
-#define VC9_TTMB_VLC_BITS 9 //12
-static VLC vc9_ttmb_vlc[3];
-#define VC9_MV_DIFF_VLC_BITS 9 //15
-static VLC vc9_mv_diff_vlc[4];
-#define VC9_CBPCY_P_VLC_BITS 9 //14
-static VLC vc9_cbpcy_p_vlc[4];
-#define VC9_4MV_BLOCK_PATTERN_VLC_BITS 6
-static VLC vc9_4mv_block_pattern_vlc[4];
-#define VC9_TTBLK_VLC_BITS 5
-static VLC vc9_ttblk_vlc[3];
-#define VC9_SUBBLKPAT_VLC_BITS 6
-static VLC vc9_subblkpat_vlc[3];
+#define VC1_TTMB_VLC_BITS 9 //12
+static VLC vc1_ttmb_vlc[3];
+#define VC1_MV_DIFF_VLC_BITS 9 //15
+static VLC vc1_mv_diff_vlc[4];
+#define VC1_CBPCY_P_VLC_BITS 9 //14
+static VLC vc1_cbpcy_p_vlc[4];
+#define VC1_4MV_BLOCK_PATTERN_VLC_BITS 6
+static VLC vc1_4mv_block_pattern_vlc[4];
+#define VC1_TTBLK_VLC_BITS 5
+static VLC vc1_ttblk_vlc[3];
+#define VC1_SUBBLKPAT_VLC_BITS 6
+static VLC vc1_subblkpat_vlc[3];
 //@}
 
 /** Bitplane struct
@@ -190,11 +190,11 @@ typedef struct BitPlane {
     uint8_t is_raw;     ///< Bit values must be read at MB level
 } BitPlane;
 
-/** The VC9 Context
+/** The VC1 Context
  * @fixme Change size wherever another size is more efficient
  * Many members are only used for Advanced Profile
  */
-typedef struct VC9Context{
+typedef struct VC1Context{
     MpegEncContext s;
 
     /** Simple/Main Profile sequence header */
@@ -328,7 +328,7 @@ typedef struct VC9Context{
     uint8_t range_mapuv;
     //@}
 #endif
-} VC9Context;
+} VC1Context;
 
 /**
  * Get unary code of limited length
@@ -373,11 +373,11 @@ static int get_prefix(GetBitContext *gb, int stop, int len)
 }
 
 /**
- * Init VC-9 specific tables and VC9Context members
- * @param v The VC9Context to initialize
+ * Init VC-1 specific tables and VC1Context members
+ * @param v The VC1Context to initialize
  * @return Status
  */
-static int vc9_init_common(VC9Context *v)
+static int vc1_init_common(VC1Context *v)
 {
     static int done = 0;
     int i = 0;
@@ -394,12 +394,12 @@ static int vc9_init_common(VC9Context *v)
     /* VLC tables */
 #if 0 // spec -> actual tables converter
     for(i=0; i<64; i++){
-        int code= (vc9_norm6_spec[i][1] << vc9_norm6_spec[i][4]) + vc9_norm6_spec[i][3];
+        int code= (vc1_norm6_spec[i][1] << vc1_norm6_spec[i][4]) + vc1_norm6_spec[i][3];
         av_log(NULL, AV_LOG_DEBUG, "0x%03X, ", code);
         if(i%16==15) av_log(NULL, AV_LOG_DEBUG, "\n");
     }
     for(i=0; i<64; i++){
-        int code= vc9_norm6_spec[i][2] + vc9_norm6_spec[i][4];
+        int code= vc1_norm6_spec[i][2] + vc1_norm6_spec[i][4];
         av_log(NULL, AV_LOG_DEBUG, "%2d, ", code);
         if(i%16==15) av_log(NULL, AV_LOG_DEBUG, "\n");
     }
@@ -407,41 +407,41 @@ static int vc9_init_common(VC9Context *v)
     if(!done)
     {
         done = 1;
-        INIT_VLC(&vc9_bfraction_vlc, VC9_BFRACTION_VLC_BITS, 23,
-                 vc9_bfraction_bits, 1, 1,
-                 vc9_bfraction_codes, 1, 1, 1);
-        INIT_VLC(&vc9_norm2_vlc, VC9_NORM2_VLC_BITS, 4,
-                 vc9_norm2_bits, 1, 1,
-                 vc9_norm2_codes, 1, 1, 1);
-        INIT_VLC(&vc9_norm6_vlc, VC9_NORM6_VLC_BITS, 64,
-                 vc9_norm6_bits, 1, 1,
-                 vc9_norm6_codes, 2, 2, 1);
-        INIT_VLC(&vc9_imode_vlc, VC9_IMODE_VLC_BITS, 7,
-                 vc9_imode_bits, 1, 1,
-                 vc9_imode_codes, 1, 1, 1);
+        INIT_VLC(&vc1_bfraction_vlc, VC1_BFRACTION_VLC_BITS, 23,
+                 vc1_bfraction_bits, 1, 1,
+                 vc1_bfraction_codes, 1, 1, 1);
+        INIT_VLC(&vc1_norm2_vlc, VC1_NORM2_VLC_BITS, 4,
+                 vc1_norm2_bits, 1, 1,
+                 vc1_norm2_codes, 1, 1, 1);
+        INIT_VLC(&vc1_norm6_vlc, VC1_NORM6_VLC_BITS, 64,
+                 vc1_norm6_bits, 1, 1,
+                 vc1_norm6_codes, 2, 2, 1);
+        INIT_VLC(&vc1_imode_vlc, VC1_IMODE_VLC_BITS, 7,
+                 vc1_imode_bits, 1, 1,
+                 vc1_imode_codes, 1, 1, 1);
         for (i=0; i<3; i++)
         {
-            INIT_VLC(&vc9_ttmb_vlc[i], VC9_TTMB_VLC_BITS, 16,
-                     vc9_ttmb_bits[i], 1, 1,
-                     vc9_ttmb_codes[i], 2, 2, 1);
-            INIT_VLC(&vc9_ttblk_vlc[i], VC9_TTBLK_VLC_BITS, 8,
-                     vc9_ttblk_bits[i], 1, 1,
-                     vc9_ttblk_codes[i], 1, 1, 1);
-            INIT_VLC(&vc9_subblkpat_vlc[i], VC9_SUBBLKPAT_VLC_BITS, 15,
-                     vc9_subblkpat_bits[i], 1, 1,
-                     vc9_subblkpat_codes[i], 1, 1, 1);
+            INIT_VLC(&vc1_ttmb_vlc[i], VC1_TTMB_VLC_BITS, 16,
+                     vc1_ttmb_bits[i], 1, 1,
+                     vc1_ttmb_codes[i], 2, 2, 1);
+            INIT_VLC(&vc1_ttblk_vlc[i], VC1_TTBLK_VLC_BITS, 8,
+                     vc1_ttblk_bits[i], 1, 1,
+                     vc1_ttblk_codes[i], 1, 1, 1);
+            INIT_VLC(&vc1_subblkpat_vlc[i], VC1_SUBBLKPAT_VLC_BITS, 15,
+                     vc1_subblkpat_bits[i], 1, 1,
+                     vc1_subblkpat_codes[i], 1, 1, 1);
         }
         for(i=0; i<4; i++)
         {
-            INIT_VLC(&vc9_4mv_block_pattern_vlc[i], VC9_4MV_BLOCK_PATTERN_VLC_BITS, 16,
-                     vc9_4mv_block_pattern_bits[i], 1, 1,
-                     vc9_4mv_block_pattern_codes[i], 1, 1, 1);
-            INIT_VLC(&vc9_cbpcy_p_vlc[i], VC9_CBPCY_P_VLC_BITS, 64,
-                     vc9_cbpcy_p_bits[i], 1, 1,
-                     vc9_cbpcy_p_codes[i], 2, 2, 1);
-            INIT_VLC(&vc9_mv_diff_vlc[i], VC9_MV_DIFF_VLC_BITS, 73,
-                     vc9_mv_diff_bits[i], 1, 1,
-                     vc9_mv_diff_codes[i], 2, 2, 1);
+            INIT_VLC(&vc1_4mv_block_pattern_vlc[i], VC1_4MV_BLOCK_PATTERN_VLC_BITS, 16,
+                     vc1_4mv_block_pattern_bits[i], 1, 1,
+                     vc1_4mv_block_pattern_codes[i], 1, 1, 1);
+            INIT_VLC(&vc1_cbpcy_p_vlc[i], VC1_CBPCY_P_VLC_BITS, 64,
+                     vc1_cbpcy_p_bits[i], 1, 1,
+                     vc1_cbpcy_p_codes[i], 2, 2, 1);
+            INIT_VLC(&vc1_mv_diff_vlc[i], VC1_MV_DIFF_VLC_BITS, 73,
+                     vc1_mv_diff_bits[i], 1, 1,
+                     vc1_mv_diff_codes[i], 2, 2, 1);
         }
     }
 
@@ -456,11 +456,11 @@ static int vc9_init_common(VC9Context *v)
 /**
  * Decode sequence header's Hypothetic Reference Decoder data
  * @see 6.2.1, p32
- * @param v The VC9Context to initialize
+ * @param v The VC1Context to initialize
  * @param gb A GetBitContext initialized from AVCodecContext extra_data
  * @return Status
  */
-static int decode_hrd(VC9Context *v, GetBitContext *gb)
+static int decode_hrd(VC1Context *v, GetBitContext *gb)
 {
     int i, num;
 
@@ -530,13 +530,13 @@ static int decode_hrd(VC9Context *v, GetBitContext *gb)
  * Decode sequence header for Advanced Profile
  * @see Table 2, p18
  * @see 6.1.7, pp21-27
- * @param v The VC9Context to initialize
+ * @param v The VC1Context to initialize
  * @param gb A GetBitContext initialized from AVCodecContext extra_data
  * @return Status
  */
 static int decode_advanced_sequence_header(AVCodecContext *avctx, GetBitContext *gb)
 {
-    VC9Context *v = avctx->priv_data;
+    VC1Context *v = avctx->priv_data;
     int nr, dr, aspect_ratio;
 
     v->postprocflag = get_bits(gb, 1);
@@ -582,7 +582,7 @@ static int decode_advanced_sequence_header(AVCodecContext *avctx, GetBitContext 
             }
             else
             {
-              avctx->sample_aspect_ratio = vc9_pixel_aspect[aspect_ratio];
+              avctx->sample_aspect_ratio = vc1_pixel_aspect[aspect_ratio];
             }
         }
     }
@@ -705,7 +705,7 @@ static int decode_advanced_sequence_header(AVCodecContext *avctx, GetBitContext 
  */
 static int decode_sequence_header(AVCodecContext *avctx, GetBitContext *gb)
 {
-    VC9Context *v = avctx->priv_data;
+    VC1Context *v = avctx->priv_data;
 
     av_log(avctx, AV_LOG_DEBUG, "Header: %0X\n", show_bits(gb, 32));
     v->profile = get_bits(gb, 2);
@@ -863,7 +863,7 @@ static int decode_sequence_header(AVCodecContext *avctx, GetBitContext *gb)
  */
 static int advanced_entry_point_process(AVCodecContext *avctx, GetBitContext *gb)
 {
-    VC9Context *v = avctx->priv_data;
+    VC1Context *v = avctx->priv_data;
     int i;
     if (v->profile != PROFILE_ADVANCED)
     {
@@ -903,7 +903,7 @@ static int advanced_entry_point_process(AVCodecContext *avctx, GetBitContext *gb
 
 /***********************************************************************/
 /**
- * @defgroup bitplane VC9 Bitplane decoding
+ * @defgroup bitplane VC1 Bitplane decoding
  * @see 8.7, p56
  * @{
  */
@@ -990,12 +990,12 @@ static void decode_colskip(uint8_t* plane, int width, int height, int stride, Ge
 
 /** Decode a bitplane's bits
  * @param bp Bitplane where to store the decode bits
- * @param v VC9 context for bit reading and logging
+ * @param v VC1 context for bit reading and logging
  * @return Status
  * @fixme FIXME: Optimize
  * @todo TODO: Decide if a struct is needed
  */
-static int bitplane_decoding(BitPlane *bp, VC9Context *v)
+static int bitplane_decoding(BitPlane *bp, VC1Context *v)
 {
     GetBitContext *gb = &v->s.gb;
 
@@ -1003,7 +1003,7 @@ static int bitplane_decoding(BitPlane *bp, VC9Context *v)
     uint8_t invert, *planep = bp->data;
 
     invert = get_bits(gb, 1);
-    imode = get_vlc2(gb, vc9_imode_vlc.table, VC9_IMODE_VLC_BITS, 2);
+    imode = get_vlc2(gb, vc1_imode_vlc.table, VC1_IMODE_VLC_BITS, 2);
 
     bp->is_raw = 0;
     switch (imode)
@@ -1025,14 +1025,14 @@ static int bitplane_decoding(BitPlane *bp, VC9Context *v)
         {
             for(; x<bp->width; x+=2)
             {
-                code = get_vlc2(gb, vc9_norm2_vlc.table, VC9_NORM2_VLC_BITS, 2);
+                code = get_vlc2(gb, vc1_norm2_vlc.table, VC1_NORM2_VLC_BITS, 2);
                 *(++planep) = code&1; //lsb => left
                 *(++planep) = (code>>1)&1; //msb => right
             }
             planep += bp->stride-bp->width;
             if ((bp->width-offset)&1) //Odd number previously processed
             {
-                code = get_vlc2(gb, vc9_norm2_vlc.table, VC9_NORM2_VLC_BITS, 2);
+                code = get_vlc2(gb, vc1_norm2_vlc.table, VC1_NORM2_VLC_BITS, 2);
                 *planep = code&1;
                 planep += bp->stride-bp->width;
                 *planep = (code>>1)&1; //msb => right
@@ -1053,7 +1053,7 @@ static int bitplane_decoding(BitPlane *bp, VC9Context *v)
 
         for(y=  bp->height%tile_h; y< bp->height; y+=tile_h){
             for(x=  bp->width%tile_w; x< bp->width; x+=tile_w){
-                code = get_vlc2(gb, vc9_norm6_vlc.table, VC9_NORM6_VLC_BITS, 2);
+                code = get_vlc2(gb, vc1_norm6_vlc.table, VC1_NORM6_VLC_BITS, 2);
                 if(code<0){
                     av_log(v->s.avctx, AV_LOG_DEBUG, "invalid NORM-6 VLC\n");
                     return -1;
@@ -1120,9 +1120,9 @@ static int bitplane_decoding(BitPlane *bp, VC9Context *v)
 
 /***********************************************************************/
 /** VOP Dquant decoding
- * @param v VC9 Context
+ * @param v VC1 Context
  */
-static int vop_dquant_decoding(VC9Context *v)
+static int vop_dquant_decoding(VC1Context *v)
 {
     GetBitContext *gb = &v->s.gb;
     int pqdiff;
@@ -1163,18 +1163,18 @@ static int vop_dquant_decoding(VC9Context *v)
 
 /***********************************************************************/
 /**
- * @defgroup all_frame_hdr All VC9 profiles frame header
+ * @defgroup all_frame_hdr All VC1 profiles frame header
  * @brief Part of the frame header decoding from all profiles
  * @warning Only pro/epilog differs between Simple/Main and Advanced => check caller
  * @{
  */
 /** B and BI frame header decoding, primary part
  * @see Tables 11+12, p62-65
- * @param v VC9 context
+ * @param v VC1 context
  * @return Status
  * @warning Also handles BI frames
  */
-static int decode_b_picture_primary_header(VC9Context *v)
+static int decode_b_picture_primary_header(VC1Context *v)
 {
     GetBitContext *gb = &v->s.gb;
     int pqindex;
@@ -1185,8 +1185,8 @@ static int decode_b_picture_primary_header(VC9Context *v)
         av_log(v->s.avctx, AV_LOG_ERROR, "Found a B frame while in Simple Profile!\n");
         return FRAME_SKIPPED;
     }
-    v->bfraction = vc9_bfraction_lut[get_vlc2(gb, vc9_bfraction_vlc.table,
-                                              VC9_BFRACTION_VLC_BITS, 2)];
+    v->bfraction = vc1_bfraction_lut[get_vlc2(gb, vc1_bfraction_vlc.table,
+                                              VC1_BFRACTION_VLC_BITS, 2)];
     if (v->bfraction < -1)
     {
         av_log(v->s.avctx, AV_LOG_ERROR, "Invalid BFRaction\n");
@@ -1254,13 +1254,13 @@ static int decode_b_picture_primary_header(VC9Context *v)
 
 /** B and BI frame header decoding, secondary part
  * @see Tables 11+12, p62-65
- * @param v VC9 context
+ * @param v VC1 context
  * @return Status
  * @warning Also handles BI frames
  * @warning To call once all MB arrays are allocated
  * @todo Support Advanced Profile headers
  */
-static int decode_b_picture_secondary_header(VC9Context *v)
+static int decode_b_picture_secondary_header(VC1Context *v)
 {
     GetBitContext *gb = &v->s.gb;
     int status;
@@ -1292,8 +1292,8 @@ static int decode_b_picture_secondary_header(VC9Context *v)
 #endif
 
     /* FIXME: what is actually chosen for B frames ? */
-    v->s.mv_table_index = get_bits(gb, 2); //but using vc9_ tables
-    v->cbpcy_vlc = &vc9_cbpcy_p_vlc[get_bits(gb, 2)];
+    v->s.mv_table_index = get_bits(gb, 2); //but using vc1_ tables
+    v->cbpcy_vlc = &vc1_cbpcy_p_vlc[get_bits(gb, 2)];
 
     if (v->dquant)
     {
@@ -1316,11 +1316,11 @@ static int decode_b_picture_secondary_header(VC9Context *v)
 
 /** I frame header decoding, primary part
  * @see Tables 5+7, p53-54 and 55-57
- * @param v VC9 context
+ * @param v VC1 context
  * @return Status
  * @todo Support Advanced Profile headers
  */
-static int decode_i_picture_primary_header(VC9Context *v)
+static int decode_i_picture_primary_header(VC1Context *v)
 {
     GetBitContext *gb = &v->s.gb;
     int pqindex;
@@ -1349,12 +1349,12 @@ static int decode_i_picture_primary_header(VC9Context *v)
 }
 
 /** I frame header decoding, secondary part
- * @param v VC9 context
+ * @param v VC1 context
  * @return Status
  * @warning Not called in A/S/C profiles, it seems
  * @todo Support Advanced Profile headers
  */
-static int decode_i_picture_secondary_header(VC9Context *v)
+static int decode_i_picture_secondary_header(VC1Context *v)
 {
 #if HAS_ADVANCED_PROFILE
     int status;
@@ -1389,11 +1389,11 @@ static int decode_i_picture_secondary_header(VC9Context *v)
 
 /** P frame header decoding, primary part
  * @see Tables 5+7, p53-54 and 55-57
- * @param v VC9 context
+ * @param v VC1 context
  * @todo Support Advanced Profile headers
  * @return Status
  */
-static int decode_p_picture_primary_header(VC9Context *v)
+static int decode_p_picture_primary_header(VC1Context *v)
 {
     /* INTERFRM, FRMCNT, RANGEREDFRM read in caller */
     GetBitContext *gb = &v->s.gb;
@@ -1433,11 +1433,11 @@ static int decode_p_picture_primary_header(VC9Context *v)
 
 /** P frame header decoding, secondary part
  * @see Tables 5+7, p53-54 and 55-57
- * @param v VC9 context
+ * @param v VC1 context
  * @warning To call once all MB arrays are allocated
  * @return Status
  */
-static int decode_p_picture_secondary_header(VC9Context *v)
+static int decode_p_picture_secondary_header(VC1Context *v)
 {
     GetBitContext *gb = &v->s.gb;
     int status = 0;
@@ -1461,8 +1461,8 @@ static int decode_p_picture_secondary_header(VC9Context *v)
 #endif
 
     /* Hopefully this is correct for P frames */
-    v->s.mv_table_index =get_bits(gb, 2); //but using vc9_ tables
-    v->cbpcy_vlc = &vc9_cbpcy_p_vlc[get_bits(gb, 2)];
+    v->s.mv_table_index =get_bits(gb, 2); //but using vc1_ tables
+    v->cbpcy_vlc = &vc1_cbpcy_p_vlc[get_bits(gb, 2)];
 
     if (v->dquant)
     {
@@ -1489,7 +1489,7 @@ static int decode_p_picture_secondary_header(VC9Context *v)
 
 /***********************************************************************/
 /**
- * @defgroup std_frame_hdr VC9 Simple/Main Profiles header decoding
+ * @defgroup std_frame_hdr VC1 Simple/Main Profiles header decoding
  * @brief Part of the frame header decoding belonging to Simple/Main Profiles
  * @warning Only pro/epilog differs between Simple/Main and Advanced =>
  *          check caller
@@ -1498,12 +1498,12 @@ static int decode_p_picture_secondary_header(VC9Context *v)
 
 /** Frame header decoding, first part, in Simple and Main profiles
  * @see Tables 5+7, p53-54 and 55-57
- * @param v VC9 context
+ * @param v VC1 context
  * @todo FIXME: RANGEREDFRM element not read if BI frame from Table6, P54
  *              However, 7.1.1.8 says "all frame types, for main profiles"
  * @return Status
  */
-static int standard_decode_picture_primary_header(VC9Context *v)
+static int standard_decode_picture_primary_header(VC1Context *v)
 {
     GetBitContext *gb = &v->s.gb;
     int status = 0;
@@ -1540,11 +1540,11 @@ static int standard_decode_picture_primary_header(VC9Context *v)
 }
 
 /** Frame header decoding, secondary part
- * @param v VC9 context
+ * @param v VC1 context
  * @warning To call once all MB arrays are allocated
  * @return Status
  */
-static int standard_decode_picture_secondary_header(VC9Context *v)
+static int standard_decode_picture_secondary_header(VC1Context *v)
 {
     GetBitContext *gb = &v->s.gb;
     int status = 0;
@@ -1574,17 +1574,17 @@ static int standard_decode_picture_secondary_header(VC9Context *v)
 #if HAS_ADVANCED_PROFILE
 /***********************************************************************/
 /**
- * @defgroup adv_frame_hdr VC9 Advanced Profile header decoding
+ * @defgroup adv_frame_hdr VC1 Advanced Profile header decoding
  * @brief Part of the frame header decoding belonging to Advanced Profiles
  * @warning Only pro/epilog differs between Simple/Main and Advanced =>
  *          check caller
  * @{
  */
 /** Frame header decoding, primary part
- * @param v VC9 context
+ * @param v VC1 context
  * @return Status
  */
-static int advanced_decode_picture_primary_header(VC9Context *v)
+static int advanced_decode_picture_primary_header(VC1Context *v)
 {
     GetBitContext *gb = &v->s.gb;
     static const int type_table[4] = { P_TYPE, B_TYPE, I_TYPE, BI_TYPE };
@@ -1641,10 +1641,10 @@ static int advanced_decode_picture_primary_header(VC9Context *v)
 }
 
 /** Frame header decoding, secondary part
- * @param v VC9 context
+ * @param v VC1 context
  * @return Status
  */
-static int advanced_decode_picture_secondary_header(VC9Context *v)
+static int advanced_decode_picture_secondary_header(VC1Context *v)
 {
     GetBitContext *gb = &v->s.gb;
     int status = 0;
@@ -1674,7 +1674,7 @@ static int advanced_decode_picture_secondary_header(VC9Context *v)
 
 /***********************************************************************/
 /**
- * @defgroup block VC9 Block-level functions
+ * @defgroup block VC1 Block-level functions
  * @see 7.1.4, p91 and 8.1.1.7, p(1)04
  * @todo TODO: Integrate to MpegEncContext facilities
  * @{
@@ -1714,8 +1714,8 @@ static int advanced_decode_picture_secondary_header(VC9Context *v)
  * @todo TODO: Use MpegEncContext arrays to store them
  */
 #define GET_MVDATA(_dmv_x, _dmv_y)                                  \
-  index = 1 + get_vlc2(gb, vc9_mv_diff_vlc[s->mv_table_index].table,\
-                       VC9_MV_DIFF_VLC_BITS, 2);                    \
+  index = 1 + get_vlc2(gb, vc1_mv_diff_vlc[s->mv_table_index].table,\
+                       VC1_MV_DIFF_VLC_BITS, 2);                    \
   if (index > 36)                                                   \
   {                                                                 \
     mb_has_coeffs = 1;                                              \
@@ -1753,10 +1753,10 @@ static int advanced_decode_picture_secondary_header(VC9Context *v)
  * @param[in] n block index in the current MB
  * @param dc_val_ptr Pointer to DC predictor
  * @param dir_ptr Prediction direction for use in AC prediction
- * @todo TODO: Actually do it the VC9 way
+ * @todo TODO: Actually do it the VC1 way
  * @todo TODO: Handle properly edges
  */
-static inline int vc9_pred_dc(MpegEncContext *s, int n,
+static inline int vc1_pred_dc(MpegEncContext *s, int n,
                               uint16_t **dc_val_ptr, int *dir_ptr)
 {
     int a, b, c, wrap, pred, scale;
@@ -1822,7 +1822,7 @@ static inline int vc9_pred_dc(MpegEncContext *s, int n,
 }
 
 /** Decode one block, inter or intra
- * @param v The VC9 context
+ * @param v The VC1 context
  * @param block 8x8 DCT block
  * @param n Block index in the current MB (<4=>luma)
  * @param coded If the block is coded
@@ -1832,7 +1832,7 @@ static inline int vc9_pred_dc(MpegEncContext *s, int n,
  * @todo TODO: Process the blocks
  * @todo TODO: Use M$ MPEG-4 cbp prediction
  */
-static int vc9_decode_block(VC9Context *v, DCTELEM block[64], int n, int coded, int mquant)
+static int vc1_decode_block(VC1Context *v, DCTELEM block[64], int n, int coded, int mquant)
 {
     GetBitContext *gb = &v->s.gb;
     MpegEncContext *s = &v->s;
@@ -1884,7 +1884,7 @@ static int vc9_decode_block(VC9Context *v, DCTELEM block[64], int n, int coded, 
         }
 
         /* Prediction */
-        dcdiff += vc9_pred_dc(s, n, &dc_val, &dc_pred_dir);
+        dcdiff += vc1_pred_dc(s, n, &dc_val, &dc_pred_dir);
         *dc_val = dcdiff;
         /* Store the quantized DC coeff, used for prediction */
 
@@ -1912,14 +1912,14 @@ static int vc9_decode_block(VC9Context *v, DCTELEM block[64], int n, int coded, 
 
         /* Get TTBLK */
         if (v->ttmb < 8) /* per block */
-            ttblk = get_vlc2(gb, vc9_ttblk_vlc[v->tt_index].table, VC9_TTBLK_VLC_BITS, 2);
+            ttblk = get_vlc2(gb, vc1_ttblk_vlc[v->tt_index].table, VC1_TTBLK_VLC_BITS, 2);
         else /* Per frame */
           ttblk = 0; //FIXME, depends on ttfrm
 
         /* Get SUBBLKPAT */
         if (ttblk == v->ttblk4x4) /* 4x4 transform for that qp value */
-            subblkpat = 1+get_vlc2(gb, vc9_subblkpat_vlc[v->tt_index].table,
-                                   VC9_SUBBLKPAT_VLC_BITS, 2);
+            subblkpat = 1+get_vlc2(gb, vc1_subblkpat_vlc[v->tt_index].table,
+                                   VC1_SUBBLKPAT_VLC_BITS, 2);
         else /* All others: 8x8, 4x8, 8x4 */
             subblkpat = decode012(gb);
     }
@@ -1944,13 +1944,13 @@ static int vc9_decode_block(VC9Context *v, DCTELEM block[64], int n, int coded, 
 
 /***********************************************************************/
 /**
- * @defgroup std_mb VC9 Macroblock-level functions in Simple/Main Profiles
+ * @defgroup std_mb VC1 Macroblock-level functions in Simple/Main Profiles
  * @see 7.1.4, p91 and 8.1.1.7, p(1)04
  * @todo TODO: Integrate to MpegEncContext facilities
  * @{
  */
 
-static inline int vc9_coded_block_pred(MpegEncContext * s, int n, uint8_t **coded_block_ptr)
+static inline int vc1_coded_block_pred(MpegEncContext * s, int n, uint8_t **coded_block_ptr)
 {
     int xy, wrap, pred, a, b, c;
 
@@ -1979,7 +1979,7 @@ static inline int vc9_coded_block_pred(MpegEncContext * s, int n, uint8_t **code
 /** Decode one I-frame MB (in Simple/Main profile)
  * @todo TODO: Extend to AP
  */
-static int vc9_decode_i_mb(VC9Context *v, DCTELEM block[6][64])
+static int vc1_decode_i_mb(VC1Context *v, DCTELEM block[6][64])
 {
     int i, cbp, val;
     uint8_t *coded_val;
@@ -1994,12 +1994,12 @@ static int vc9_decode_i_mb(VC9Context *v, DCTELEM block[6][64])
     {
         val = ((cbp >> (5 - i)) & 1);
         if (i < 4) {
-            int pred = vc9_coded_block_pred(&v->s, i, &coded_val);
+            int pred = vc1_coded_block_pred(&v->s, i, &coded_val);
             val = val ^ pred;
             *coded_val = val;
         }
         cbp |= val << (5 - i);
-        if (vc9_decode_block(v, block[i], i, val, v->pq) < 0) //FIXME Should be mquant
+        if (vc1_decode_block(v, block[i], i, val, v->pq) < 0) //FIXME Should be mquant
         {
             av_log(v->s.avctx, AV_LOG_ERROR,
                    "\nerror while decoding block: %d x %d (%d)\n", v->s.mb_x, v->s.mb_y, i);
@@ -2013,7 +2013,7 @@ static int vc9_decode_i_mb(VC9Context *v, DCTELEM block[6][64])
  * @todo TODO: Extend to AP
  * @fixme FIXME: DC value for inter blocks not set
  */
-static int vc9_decode_p_mb(VC9Context *v, DCTELEM block[6][64])
+static int vc1_decode_p_mb(VC1Context *v, DCTELEM block[6][64])
 {
     MpegEncContext *s = &v->s;
     GetBitContext *gb = &s->gb;
@@ -2059,14 +2059,14 @@ static int vc9_decode_p_mb(VC9Context *v, DCTELEM block[6][64])
                 for (i=0; i<6; i++)
                 {
                      s->coded_block[s->block_index[i]] = 0;
-                     vc9_decode_block(v, block[i], i, 0, mquant);
+                     vc1_decode_block(v, block[i], i, 0, mquant);
                 }
                 return 0;
             }
             else if (mb_has_coeffs)
             {
                 if (s->mb_intra) s->ac_pred = get_bits(gb, 1);
-                cbp = get_vlc2(&v->s.gb, v->cbpcy_vlc->table, VC9_CBPCY_P_VLC_BITS, 2);
+                cbp = get_vlc2(&v->s.gb, v->cbpcy_vlc->table, VC1_CBPCY_P_VLC_BITS, 2);
                 GET_MQUANT();
             }
             else
@@ -2078,18 +2078,18 @@ static int vc9_decode_p_mb(VC9Context *v, DCTELEM block[6][64])
             }
 
             if (!v->ttmbf)
-                ttmb = get_vlc2(gb, vc9_ttmb_vlc[v->tt_index].table,
-                                VC9_TTMB_VLC_BITS, 12);
+                ttmb = get_vlc2(gb, vc1_ttmb_vlc[v->tt_index].table,
+                                VC1_TTMB_VLC_BITS, 12);
 
             for (i=0; i<6; i++)
             {
                 val = ((cbp >> (5 - i)) & 1);
                 if (i < 4) {
-                    int pred = vc9_coded_block_pred(&v->s, i, &coded_val);
+                    int pred = vc1_coded_block_pred(&v->s, i, &coded_val);
                     val = val ^ pred;
                     *coded_val = val;
                 }
-                vc9_decode_block(v, block[i], i, val, mquant); //FIXME
+                vc1_decode_block(v, block[i], i, val, mquant); //FIXME
             }
         }
         else //Skipped
@@ -2108,12 +2108,12 @@ static int vc9_decode_p_mb(VC9Context *v, DCTELEM block[6][64])
         if (!v->skip_mb_plane.data[mb_offset] /* unskipped MB */)
         {
             /* Get CBPCY */
-            cbp = get_vlc2(&v->s.gb, v->cbpcy_vlc->table, VC9_CBPCY_P_VLC_BITS, 2);
+            cbp = get_vlc2(&v->s.gb, v->cbpcy_vlc->table, VC1_CBPCY_P_VLC_BITS, 2);
             for (i=0; i<6; i++)
             {
                 val = ((cbp >> (5 - i)) & 1);
                 if (i < 4) {
-                    int pred = vc9_coded_block_pred(&v->s, i, &coded_val);
+                    int pred = vc1_coded_block_pred(&v->s, i, &coded_val);
                     val = val ^ pred;
                     *coded_val = val;
                 }
@@ -2129,9 +2129,9 @@ static int vc9_decode_p_mb(VC9Context *v, DCTELEM block[6][64])
                     index /* non-zero pred for that block */)
                     s->ac_pred = get_bits(gb, 1);
                 if (!v->ttmbf)
-                    ttmb = get_vlc2(gb, vc9_ttmb_vlc[v->tt_index].table,
-                                    VC9_TTMB_VLC_BITS, 12);
-                status = vc9_decode_block(v, block[i], i, val, mquant);
+                    ttmb = get_vlc2(gb, vc1_ttmb_vlc[v->tt_index].table,
+                                    VC1_TTMB_VLC_BITS, 12);
+                status = vc1_decode_block(v, block[i], i, val, mquant);
             }
             return status;
         }
@@ -2142,10 +2142,10 @@ static int vc9_decode_p_mb(VC9Context *v, DCTELEM block[6][64])
             {
                 if (v->mv_mode == MV_PMODE_MIXED_MV /* Hybrid pred */)
                     hybrid_pred = get_bits(gb, 1);
-                vc9_decode_block(v, block[i], i, 0, v->pq); //FIXME
+                vc1_decode_block(v, block[i], i, 0, v->pq); //FIXME
             }
-            vc9_decode_block(v, block[4], 4, 0, v->pq); //FIXME
-            vc9_decode_block(v, block[5], 5, 0, v->pq); //FIXME
+            vc1_decode_block(v, block[4], 4, 0, v->pq); //FIXME
+            vc1_decode_block(v, block[5], 5, 0, v->pq); //FIXME
             /* TODO: blah */
             return 0;
         }
@@ -2160,7 +2160,7 @@ static int vc9_decode_p_mb(VC9Context *v, DCTELEM block[6][64])
  * @warning XXX: Used for decoding BI MBs
  * @fixme FIXME: DC value for inter blocks not set
  */
-static int vc9_decode_b_mb(VC9Context *v, DCTELEM block[6][64])
+static int vc1_decode_b_mb(VC1Context *v, DCTELEM block[6][64])
 {
     MpegEncContext *s = &v->s;
     GetBitContext *gb = &v->s.gb;
@@ -2230,13 +2230,13 @@ static int vc9_decode_b_mb(VC9Context *v, DCTELEM block[6][64])
 
     //End1
     if (v->ttmbf)
-        ttmb = get_vlc2(gb, vc9_ttmb_vlc[v->tt_index].table,
-                        VC9_TTMB_VLC_BITS, 12);
+        ttmb = get_vlc2(gb, vc1_ttmb_vlc[v->tt_index].table,
+                        VC1_TTMB_VLC_BITS, 12);
 
     //End2
     for (i=0; i<6; i++)
     {
-        vc9_decode_block(v, block[i], i, 0 /*cbp[i]*/, mquant); //FIXME
+        vc1_decode_block(v, block[i], i, 0 /*cbp[i]*/, mquant); //FIXME
     }
     return 0;
 }
@@ -2245,7 +2245,7 @@ static int vc9_decode_b_mb(VC9Context *v, DCTELEM block[6][64])
  * @todo TODO: Move out of the loop the picture type case?
                (branch prediction should help there though)
  */
-static int standard_decode_mbs(VC9Context *v)
+static int standard_decode_mbs(VC1Context *v)
 {
     MpegEncContext *s = &v->s;
 
@@ -2290,10 +2290,10 @@ static int standard_decode_mbs(VC9Context *v)
             //TODO Move out of the loop
             switch (s->pict_type)
             {
-            case I_TYPE: vc9_decode_i_mb(v, s->block); break;
-            case P_TYPE: vc9_decode_p_mb(v, s->block); break;
+            case I_TYPE: vc1_decode_i_mb(v, s->block); break;
+            case P_TYPE: vc1_decode_p_mb(v, s->block); break;
             case BI_TYPE:
-            case B_TYPE: vc9_decode_b_mb(v, s->block); break;
+            case B_TYPE: vc1_decode_b_mb(v, s->block); break;
             }
         }
         //Add a check for overconsumption ?
@@ -2305,12 +2305,12 @@ static int standard_decode_mbs(VC9Context *v)
 #if HAS_ADVANCED_PROFILE
 /***********************************************************************/
 /**
- * @defgroup adv_mb VC9 Macroblock-level functions in Advanced Profile
+ * @defgroup adv_mb VC1 Macroblock-level functions in Advanced Profile
  * @todo TODO: Integrate to MpegEncContext facilities
  * @todo TODO: Code P, B and BI
  * @{
  */
-static int advanced_decode_i_mbs(VC9Context *v)
+static int advanced_decode_i_mbs(VC1Context *v)
 {
     MpegEncContext *s = &v->s;
     GetBitContext *gb = &v->s.gb;
@@ -2337,13 +2337,13 @@ static int advanced_decode_i_mbs(VC9Context *v)
 /** @} */ //End for group adv_mb
 #endif
 
-/** Initialize a VC9/WMV3 decoder
- * @todo TODO: Handle VC-9 IDUs (Transport level?)
+/** Initialize a VC1/WMV3 decoder
+ * @todo TODO: Handle VC-1 IDUs (Transport level?)
  * @todo TODO: Decypher remaining bits in extra_data
  */
-static int vc9_decode_init(AVCodecContext *avctx)
+static int vc1_decode_init(AVCodecContext *avctx)
 {
-    VC9Context *v = avctx->priv_data;
+    VC1Context *v = avctx->priv_data;
     MpegEncContext *s = &v->s;
     GetBitContext gb;
 
@@ -2353,7 +2353,7 @@ static int vc9_decode_init(AVCodecContext *avctx)
 
     if(ff_h263_decode_init(avctx) < 0)
         return -1;
-    if (vc9_init_common(v) < 0) return -1;
+    if (vc1_init_common(v) < 0) return -1;
 
     av_log(avctx, AV_LOG_INFO, "This decoder is not supposed to produce picture. Dont report this as a bug!\n");
 
@@ -2416,15 +2416,15 @@ static int vc9_decode_init(AVCodecContext *avctx)
     return 0;
     }
 
-/** Decode a VC9/WMV3 frame
- * @todo TODO: Handle VC-9 IDUs (Transport level?)
+/** Decode a VC1/WMV3 frame
+ * @todo TODO: Handle VC-1 IDUs (Transport level?)
  * @warning Initial try at using MpegEncContext stuff
  */
-static int vc9_decode_frame(AVCodecContext *avctx,
+static int vc1_decode_frame(AVCodecContext *avctx,
                             void *data, int *data_size,
                             uint8_t *buf, int buf_size)
 {
-    VC9Context *v = avctx->priv_data;
+    VC1Context *v = avctx->priv_data;
     MpegEncContext *s = &v->s;
     int ret = FRAME_SKIPPED, len;
     AVFrame *pict = data;
@@ -2440,7 +2440,7 @@ static int vc9_decode_frame(AVCodecContext *avctx,
     avpicture_fill((AVPicture *)pict, tmp_buf, avctx->pix_fmt,
                    avctx->width, avctx->height);
 
-    if (avctx->codec_id == CODEC_ID_VC9)
+    if (avctx->codec_id == CODEC_ID_VC1)
     {
 #if 0
         // search for IDU's
@@ -2630,12 +2630,12 @@ static int vc9_decode_frame(AVCodecContext *avctx,
     return buf_size; //Number of bytes consumed
 }
 
-/** Close a VC9/WMV3 decoder
+/** Close a VC1/WMV3 decoder
  * @warning Initial try at using MpegEncContext stuff
  */
-static int vc9_decode_end(AVCodecContext *avctx)
+static int vc1_decode_end(AVCodecContext *avctx)
 {
-    VC9Context *v = avctx->priv_data;
+    VC1Context *v = avctx->priv_data;
 
 #if HAS_ADVANCED_PROFILE
     av_freep(&v->hrd_rate);
@@ -2648,15 +2648,15 @@ static int vc9_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec vc9_decoder = {
-    "vc9",
+AVCodec vc1_decoder = {
+    "vc1",
     CODEC_TYPE_VIDEO,
-    CODEC_ID_VC9,
-    sizeof(VC9Context),
-    vc9_decode_init,
+    CODEC_ID_VC1,
+    sizeof(VC1Context),
+    vc1_decode_init,
     NULL,
-    vc9_decode_end,
-    vc9_decode_frame,
+    vc1_decode_end,
+    vc1_decode_frame,
     CODEC_CAP_DELAY,
     NULL
 };
@@ -2665,11 +2665,11 @@ AVCodec wmv3_decoder = {
     "wmv3",
     CODEC_TYPE_VIDEO,
     CODEC_ID_WMV3,
-    sizeof(VC9Context),
-    vc9_decode_init,
+    sizeof(VC1Context),
+    vc1_decode_init,
     NULL,
-    vc9_decode_end,
-    vc9_decode_frame,
+    vc1_decode_end,
+    vc1_decode_frame,
     CODEC_CAP_DELAY,
     NULL
 };

@@ -1,13 +1,13 @@
 /**
- * @file vc9data.h
- * VC9 tables.
+ * @file vc1data.h
+ * VC1 tables.
  */
 
-#ifndef VC9DATA_H
-#define VC9DATA_H
+#ifndef VC1DATA_H
+#define VC1DATA_H
 
 /* bfraction is fractional, we scale to the GCD 3*5*7*8 = 840 */
-const int16_t vc9_bfraction_lut[23] = {
+const int16_t vc1_bfraction_lut[23] = {
   420 /*1/2*/, 280 /*1/3*/, 560 /*2/3*/, 210 /*1/4*/,
   630 /*3/4*/, 168 /*1/5*/, 336 /*2/5*/,
   504 /*3/5*/, 672 /*4/5*/, 140 /*1/6*/, 700 /*5/6*/,
@@ -16,7 +16,7 @@ const int16_t vc9_bfraction_lut[23] = {
   525 /*5/8*/, 735 /*7/8*/,
   -1 /*inv.*/, 0 /*BI fm*/
 };
-const uint8_t vc9_bfraction_bits[23] = {
+const uint8_t vc1_bfraction_bits[23] = {
     3, 3, 3, 3,
     3, 3, 3,
     7, 7, 7, 7,
@@ -25,7 +25,7 @@ const uint8_t vc9_bfraction_bits[23] = {
     7, 7,
     7, 7
 };
-const uint8_t vc9_bfraction_codes[23] = {
+const uint8_t vc1_bfraction_codes[23] = {
      0,   1,   2,   3,
      4,   5,   6,
    112, 113, 114, 115,
@@ -36,7 +36,7 @@ const uint8_t vc9_bfraction_codes[23] = {
 };
 
 //Same as H.264
-static const AVRational vc9_pixel_aspect[16]={
+static const AVRational vc1_pixel_aspect[16]={
  {0, 1},
  {1, 1},
  {12, 11},
@@ -56,36 +56,36 @@ static const AVRational vc9_pixel_aspect[16]={
 };
 
 /* BitPlane IMODE - such a small table... */
-static const uint8_t vc9_imode_codes[7] = {
+static const uint8_t vc1_imode_codes[7] = {
   0, 2, 1, 3, 1, 2, 3
 };
-static const uint8_t vc9_imode_bits[7] = {
+static const uint8_t vc1_imode_bits[7] = {
   4, 2, 3, 2, 4, 3, 3
 };
 
 /* Normal-2 imode */
-static const uint8_t vc9_norm2_codes[4] = {
+static const uint8_t vc1_norm2_codes[4] = {
   0, 4, 5, 3
 };
-static const uint8_t vc9_norm2_bits[4] = {
+static const uint8_t vc1_norm2_bits[4] = {
   1, 3, 3, 2
 };
 
-static const uint16_t vc9_norm6_codes[64] = {
+static const uint16_t vc1_norm6_codes[64] = {
 0x001, 0x002, 0x003, 0x000, 0x004, 0x001, 0x002, 0x047, 0x005, 0x003, 0x004, 0x04B, 0x005, 0x04D, 0x04E, 0x30E,
 0x006, 0x006, 0x007, 0x053, 0x008, 0x055, 0x056, 0x30D, 0x009, 0x059, 0x05A, 0x30C, 0x05C, 0x30B, 0x30A, 0x037,
 0x007, 0x00A, 0x00B, 0x043, 0x00C, 0x045, 0x046, 0x309, 0x00D, 0x049, 0x04A, 0x308, 0x04C, 0x307, 0x306, 0x036,
 0x00E, 0x051, 0x052, 0x305, 0x054, 0x304, 0x303, 0x035, 0x058, 0x302, 0x301, 0x034, 0x300, 0x033, 0x032, 0x007,
 };
 
-static const uint8_t vc9_norm6_bits[64] = {
+static const uint8_t vc1_norm6_bits[64] = {
  1,  4,  4,  8,  4,  8,  8, 10,  4,  8,  8, 10,  8, 10, 10, 13,
  4,  8,  8, 10,  8, 10, 10, 13,  8, 10, 10, 13, 10, 13, 13,  9,
  4,  8,  8, 10,  8, 10, 10, 13,  8, 10, 10, 13, 10, 13, 13,  9,
  8, 10, 10, 13, 10, 13, 13,  9, 10, 13, 13,  9, 13,  9,  9,  6,
 };
 /* Normal-6 imode */
-static const uint8_t vc9_norm6_spec[64][5] = {
+static const uint8_t vc1_norm6_spec[64][5] = {
 { 0,  1, 1        },
 { 1,  2, 4        },
 { 2,  3, 4        },
@@ -153,13 +153,13 @@ static const uint8_t vc9_norm6_spec[64][5] = {
 };
 
 /* 4MV Block pattern VLC tables */
-static const uint8_t vc9_4mv_block_pattern_codes[4][16] = {
+static const uint8_t vc1_4mv_block_pattern_codes[4][16] = {
   { 14, 58, 59, 25, 12, 26, 15, 15, 13, 24, 27,  0, 28,  1,  2,  2},
   {  8, 18, 19,  4, 20,  5, 30, 11, 21, 31,  6, 12,  7, 13, 14,  0},
   { 15,  6,  7,  2,  8,  3, 28,  9, 10, 29,  4, 11,  5, 12, 13,  0},
   {  0, 11, 12,  4, 13,  5, 30, 16, 14, 31,  6, 17,  7, 18, 19, 19}
 };
-static const uint8_t vc9_4mv_block_pattern_bits[4][16] = {
+static const uint8_t vc1_4mv_block_pattern_bits[4][16] = {
   { 5, 6, 6, 5, 5, 5, 5, 4, 5, 5, 5, 3, 5, 3, 3, 2},
   { 4, 5, 5, 4, 5, 4, 5, 4, 5, 5, 4, 4, 4, 4, 4, 2},
   { 4, 4, 4, 4, 4, 4, 5, 4, 4, 5, 4, 4, 4, 4, 4, 3},
@@ -171,7 +171,7 @@ const uint8_t wmv3_dc_scale_table[32]={
 };
 
 /* P-Picture CBPCY VLC tables */
-static const uint16_t vc9_cbpcy_p_codes[4][64] = {
+static const uint16_t vc1_cbpcy_p_codes[4][64] = {
   {
       0,   1,   1,   4,   5,   1,  12,   4,  13,  14,  10,  11,  12,   7,  13,   2,
      15,   1,  96,   1,  49,  97,   2, 100,   3,   4,   5, 101, 102,  52,  53,   4,
@@ -197,7 +197,7 @@ static const uint16_t vc9_cbpcy_p_codes[4][64] = {
      44,  45,  46,  47,  48,  49,  50,  51,  52,  53,  54,  55,  28,  29,  30,  31
    }
 };
-static const uint8_t vc9_cbpcy_p_bits[4][64] = {
+static const uint8_t vc1_cbpcy_p_bits[4][64] = {
   {
     13,  6,  5,  6,  6,  7,  7,  5,  7,  7,  6,  6,  6,  5,  6,  3,
      7,  8,  8, 13,  7,  8, 13,  8, 13, 13, 13,  8,  8,  7,  7,  3,
@@ -232,7 +232,7 @@ static const uint8_t vc9_cbpcy_p_bits[4][64] = {
  * 8x4:MB:btm  8x4:MB:top  8x4,MB,both
  * 4x8,MB,right  4x8,MB,left
  * 4x4,MB                               */
-static const uint16_t vc9_ttmb_codes[3][16] = {
+static const uint16_t vc1_ttmb_codes[3][16] = {
   {
     0x0003,
     0x002E, 0x005F, 0x0000,
@@ -262,7 +262,7 @@ static const uint16_t vc9_ttmb_codes[3][16] = {
   }
 };
 
-static const uint8_t vc9_ttmb_bits[3][16] = {
+static const uint8_t vc1_ttmb_bits[3][16] = {
   {
      2,
      6,  7,  2,
@@ -293,31 +293,31 @@ static const uint8_t vc9_ttmb_bits[3][16] = {
 };
 
 /* TTBLK (Transform Type per Block) tables */
-static const uint8_t vc9_ttblk_codes[3][8] = {
+static const uint8_t vc1_ttblk_codes[3][8] = {
   {  0,  1,  3,  5, 16, 17, 18, 19},
   {  3,  0,  1,  2,  3,  5,  8,  9},
   {  1,  0,  1,  4,  6,  7, 10, 11}
 };
-static const uint8_t vc9_ttblk_bits[3][8] = {
+static const uint8_t vc1_ttblk_bits[3][8] = {
   {  2,  2,  2,  3,  5,  5,  5,  5},
   {  2,  3,  3,  3,  3,  3,  4,  4},
   {  2,  3,  3,  3,  3,  3,  4,  4}
 };
 
 /* SUBBLKPAT tables, p93-94, reordered */
-static const uint8_t vc9_subblkpat_codes[3][15] = {
+static const uint8_t vc1_subblkpat_codes[3][15] = {
   { 14, 12,  7, 11,  9, 26,  2, 10, 27,  8,  0,  6,  1, 15,  1},
   { 14,  0,  8, 15, 10,  4, 23, 13,  5,  9, 25,  3, 24, 22,  1},
   {  5,  6,  2,  2,  8,  0, 28,  3,  1,  3, 29,  1, 19, 18, 15}
 };
-static const uint8_t vc9_subblkpat_bits[3][15] = {
+static const uint8_t vc1_subblkpat_bits[3][15] = {
   {  5,  5,  5,  5,  5,  6,  4,  5,  6,  5,  4,  5,  4,  5,  1},
   {  4,  3,  4,  4,  4,  5,  5,  4,  5,  4,  5,  4,  5,  5,  2},
   {  3,  3,  4,  3,  4,  5,  5,  3,  5,  4,  5,  4,  5,  5,  4}
 };
 
 /* MV differential tables, p265 */
-static const uint16_t vc9_mv_diff_codes[4][73] = {
+static const uint16_t vc1_mv_diff_codes[4][73] = {
   {
        0,    2,    3,    8,  576,    3,    2,    6,
        5,  577,  578,    7,    8,    9,   40,   19,
@@ -367,7 +367,7 @@ static const uint16_t vc9_mv_diff_codes[4][73] = {
       15 /* 73 elements */
   }
 };
-static const uint8_t vc9_mv_diff_bits[4][73] = {
+static const uint8_t vc1_mv_diff_bits[4][73] = {
   {
      6,  7,  7,  8, 14,  6,  5,  6,  7, 14, 14,  6,  6,  6,  8,  9,
     10,  9,  7,  7,  7, 14, 14, 10,  9, 10,  8, 10, 10, 14, 14, 14,
@@ -403,4 +403,4 @@ static const uint8_t vc9_mv_diff_bits[4][73] = {
 
 /* Scantables/ZZ scan are at 11.9 (p262) and 8.1.1.12 (p10) */
 
-#endif /* VC9DATA_H */
+#endif /* VC1DATA_H */

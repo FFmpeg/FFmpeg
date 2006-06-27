@@ -75,7 +75,7 @@ static int msmpeg4v12_decode_mb(MpegEncContext *s, DCTELEM block[6][64]);
 static int msmpeg4v34_decode_mb(MpegEncContext *s, DCTELEM block[6][64]);
 static int wmv2_decode_mb(MpegEncContext *s, DCTELEM block[6][64]);
 
-/* vc9 externs */
+/* vc1 externs */
 extern uint8_t wmv3_dc_scale_table[32];
 
 #ifdef DEBUG
@@ -177,7 +177,7 @@ static void common_init(MpegEncContext * s)
         s->y_dc_scale_table= wmv1_y_dc_scale_table;
         s->c_dc_scale_table= wmv1_c_dc_scale_table;
         break;
-#if defined(CONFIG_WMV3_DECODER)||defined(CONFIG_VC9_DECODER)
+#if defined(CONFIG_WMV3_DECODER)||defined(CONFIG_VC1_DECODER)
     case 6:
         s->y_dc_scale_table= wmv3_dc_scale_table;
         s->c_dc_scale_table= wmv3_dc_scale_table;
@@ -1197,7 +1197,7 @@ int ff_msmpeg4_decode_init(MpegEncContext *s)
     case 5:
         s->decode_mb= wmv2_decode_mb;
     case 6:
-        //FIXME + TODO VC9 decode mb
+        //FIXME + TODO VC1 decode mb
         break;
     }
 

@@ -101,7 +101,7 @@ enum CodecID {
     CODEC_ID_FFVHUFF,
     CODEC_ID_RV30,
     CODEC_ID_RV40,
-    CODEC_ID_VC9,
+    CODEC_ID_VC1,
     CODEC_ID_WMV3,
     CODEC_ID_LOCO,
     CODEC_ID_WNV1,
@@ -2112,7 +2112,7 @@ extern AVCodec msmpeg4v2_decoder;
 extern AVCodec msmpeg4v3_decoder;
 extern AVCodec wmv1_decoder;
 extern AVCodec wmv2_decoder;
-extern AVCodec vc9_decoder;
+extern AVCodec vc1_decoder;
 extern AVCodec wmv3_decoder;
 extern AVCodec mpeg1video_decoder;
 extern AVCodec mpeg2video_decoder;
