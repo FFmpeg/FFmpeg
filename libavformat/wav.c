@@ -203,6 +203,7 @@ int wav_codec_get_id(unsigned int tag, int bps)
 #ifdef CONFIG_MUXERS
 typedef struct {
     offset_t data;
+    offset_t data_end;
 } WAVContext;
 
 static int wav_write_header(AVFormatContext *s)
@@ -304,6 +305,7 @@ static int wav_read_header(AVFormatContext *s,
     unsigned int tag;
     ByteIOContext *pb = &s->pb;
     AVStream *st;
+    WAVContext *wav = s->priv_data;
 
     /* check RIFF header */
     tag = get_le32(pb);
@@ -331,6 +333,7 @@ static int wav_read_header(AVFormatContext *s,
     size = find_tag(pb, MKTAG('d', 'a', 't', 'a'));
     if (size < 0)
         return -1;
+    wav->data_end= url_ftell(pb) + size;
     return 0;
 }
 
@@ -339,12 +342,22 @@ static int wav_read_header(AVFormatContext *s,
 static int wav_read_packet(AVFormatContext *s,
                            AVPacket *pkt)
 {
-    int ret, size;
+    int ret, size, left;
     AVStream *st;
+    WAVContext *wav = s->priv_data;
 
     if (url_feof(&s->pb))
         return AVERROR_IO;
     st = s->streams[0];
+
+    left= wav->data_end - url_ftell(&s->pb);
+    if(left <= 0){
+        left = find_tag(&(s->pb), MKTAG('d', 'a', 't', 'a'));
+        if (left < 0) {
+            return AVERROR_IO;
+        }
+        wav->data_end= url_ftell(&s->pb) + left;
+    }
 
     size = MAX_SIZE;
     if (st->codec->block_align > 1) {
@@ -352,6 +365,7 @@ static int wav_read_packet(AVFormatContext *s,
             size = st->codec->block_align;
         size = (size / st->codec->block_align) * st->codec->block_align;
     }
+    size= FFMIN(size, left);
     if (av_new_packet(pkt, size))
         return AVERROR_IO;
     pkt->stream_index = 0;
@@ -393,7 +407,7 @@ static int wav_read_seek(AVFormatContext *s,
 static AVInputFormat wav_iformat = {
     "wav",
     "wav format",
-    0,
+    sizeof(WAVContext),
     wav_probe,
     wav_read_header,
     wav_read_packet,
