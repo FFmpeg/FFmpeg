@@ -92,7 +92,7 @@ ffplay_g$(EXESUF): ffplay.o cmdutils.o .libs
 
 .PHONY: version.h
 version.h:
-	$(SRC_PATH)/version.sh
+	$(SRC_PATH)/version.sh "$(SRC_PATH)"
 
 output_example$(EXESUF): output_example.o .libs
 	$(CC) $(FFLIBDIRS) $(LDFLAGS) -o $@ output_example.o $(FFLIBS) $(EXTRALIBS)
