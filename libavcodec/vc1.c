@@ -1341,14 +1341,18 @@ if(v->mv_mode != MV_PMODE_1MV && v->mv_mode != MV_PMODE_1MV_HPEL && v->mv_mode !
     index1 = index%6;                                               \
     if (s->mspel && index1 == 5) val = 1;                           \
     else                         val = 0;                           \
-    val = get_bits(gb, size_table[index1] - val);                   \
+    if(size_table[index1] - val > 0)                                \
+        val = get_bits(gb, size_table[index1] - val);               \
+    else                                   val = 0;                 \
     sign = 0 - (val&1);                                             \
     _dmv_x = (sign ^ ((val>>1) + offset_table[index1])) - sign;     \
                                                                     \
     index1 = index/6;                                               \
     if (s->mspel && index1 == 5) val = 1;                           \
-    else                          val = 0;                          \
-    val = get_bits(gb, size_table[index1] - val);                   \
+    else                         val = 0;                           \
+    if(size_table[index1] - val > 0)                                \
+        val = get_bits(gb, size_table[index1] - val);               \
+    else                                   val = 0;                 \
     sign = 0 - (val&1);                                             \
     _dmv_y = (sign ^ ((val>>1) + offset_table[index1])) - sign;     \
   }
