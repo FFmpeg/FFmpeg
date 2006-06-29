@@ -1995,8 +1995,9 @@ int av_find_stream_info(AVFormatContext *ic)
             int i= st->parser->parser->split(st->codec, pkt->data, pkt->size);
             if(i){
                 st->codec->extradata_size= i;
-                st->codec->extradata= av_malloc(st->codec->extradata_size);
+                st->codec->extradata= av_malloc(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
                 memcpy(st->codec->extradata, pkt->data, st->codec->extradata_size);
+                memset(st->codec->extradata + i, 0, FF_INPUT_BUFFER_PADDING_SIZE);
             }
         }
 
