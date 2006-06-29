@@ -341,7 +341,7 @@ case "$cpu" in
   "Power Macintosh"|ppc|powerpc)
     cpu="powerpc"
   ;;
-  mips|mipsel)
+  mips|mipsel|IP*)
     cpu="mips"
   ;;
   sun4u|sparc64)
