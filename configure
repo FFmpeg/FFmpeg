@@ -1033,6 +1033,20 @@ if test $tune != "generic"; then
     esac
 fi
 
+# compiler sanity check
+check_exec <<EOF
+int main(){
+    return 0;
+}
+EOF
+if test "$?" != 0; then
+    echo "$cc is unable to create an executable file."
+    if test -z "$cross_prefix" -a "$cross_compile" = no; then
+        echo "If $cc is a cross-compiler, use the --cross-compile option."
+    fi
+    die "C compiler test failed."
+fi
+
 # check for SIMD availability
 
 # AltiVec flags: The FSF version of GCC differs from the Apple version
