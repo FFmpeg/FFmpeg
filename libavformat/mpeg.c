@@ -1269,21 +1269,21 @@ static int mpegps_probe(AVProbeData *p)
     for(i=0; i<p->buf_size; i++){
         code = (code<<8) + p->buf[i];
         if ((code & 0xffffff00) == 0x100) {
-            switch(code){
-            case SYSTEM_HEADER_START_CODE:    sys++; break;
-            case         PRIVATE_STREAM_1:  priv1++; break;
-            case          PACK_START_CODE: pspack++; break;
-            case       (VIDEO_ID + 0x100):    vid++; break;
-            case       (AUDIO_ID + 0x100):  audio++; break;
-            }
+            if(code == SYSTEM_HEADER_START_CODE) sys++;
+            else if(code == PRIVATE_STREAM_1)    priv1++;
+            else if(code == PACK_START_CODE)     pspack++;
+            else if((code & 0xf0) == VIDEO_ID)   vid++;
+            else if((code & 0xe0) == AUDIO_ID)   audio++;
         }
     }
     if(sys && sys*9 <= pspack*10)
         return AVPROBE_SCORE_MAX/2+2; // +1 for .mpg
-    if((priv1 || vid) && (priv1+vid)*9 <= pspack*10)
+    if((priv1 || vid || audio) && (priv1+vid+audio)*9 <= pspack*10)
         return AVPROBE_SCORE_MAX/2+2; // +1 for .mpg
     if((!!vid ^ !!audio) && !sys && !pspack) /* PES stream */
-        return AVPROBE_SCORE_MAX/2;
+        return AVPROBE_SCORE_MAX/2+2;
+    if(vid || audio)            /* invalid VDR files */
+        return AVPROBE_SCORE_MAX/2+2;
     return 0;
 }
 
