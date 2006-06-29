@@ -267,7 +267,7 @@ check_lib(){
 }
 
 check_exec(){
-    check_ld "$@" && { test -n "$cross_prefix" || $TMPE; }
+    check_ld "$@" && { test -n "$cross_prefix" || $TMPE 2>&1 >>$logfile; }
 }
 
 require(){
