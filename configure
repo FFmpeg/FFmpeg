@@ -496,7 +496,6 @@ bktr="yes"
 audio_oss="yes"
 dv1394="no"
 make="gmake"
-FFLDFLAGS="$FFLDFLAGS -export-dynamic"
 extralibs="$extralibs -lossaudio"
 ;;
 OpenBSD)
@@ -507,7 +506,6 @@ audio_oss="yes"
 dv1394="no"
 make="gmake"
 LIBOBJFLAGS="\$(PIC)"
-FFLDFLAGS="$FFLDFLAGS -export-dynamic -pthread"
 LDCONFIG="ldconfig -m \$(libdir)"
 extralibs="$extralibs -lossaudio"
 ;;
@@ -519,7 +517,6 @@ audio_oss="yes"
 dv1394="no"
 make="gmake"
 CFLAGS="$CFLAGS -pthread"
-FFLDFLAGS="$FFLDFLAGS -export-dynamic -pthread"
 ;;
 GNU/kFreeBSD)
 v4l="no"
@@ -528,7 +525,6 @@ bktr="yes"
 audio_oss="yes"
 dv1394="no"
 CFLAGS="$CFLAGS -pthread"
-LDFLAGS="$LDFLAGS -rdynamic"
 ;;
 BSD/OS)
 v4l="no"
@@ -574,7 +570,6 @@ cygwin="yes"
 EXESUF=".exe"
 ;;
 Linux)
-FFLDFLAGS="$FFLDFLAGS -rdynamic"
 ;;
 IRIX*)
 ranlib="echo ignoring ranlib"
@@ -1277,6 +1272,10 @@ if test "$vhook" = "yes" -o "$a52bin" = "yes" -o "$faadbin" = "yes"; then
     add_extralibs $ldl
 fi
 
+if enabled vhook; then
+    check_ldflags -rdynamic
+    check_ldflags -export-dynamic
+fi
 
 ##########################################
 # imlib check
