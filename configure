@@ -48,6 +48,7 @@ show_help(){
   echo "Advanced options (experts only):"
   echo "  --source-path=PATH       path to source code [$source_path]"
   echo "  --cross-prefix=PREFIX    use PREFIX for compilation tools [$cross_prefix]"
+  echo "  --cross-compile          assume a cross-compiler is used"
   echo "  --cc=CC                  use C compiler CC [$cc]"
   echo "  --make=MAKE              use specified make [$make]"
   echo "  --extra-cflags=ECFLAGS   add ECFLAGS to CFLAGS [$CFLAGS]"
@@ -267,7 +268,7 @@ check_lib(){
 }
 
 check_exec(){
-    check_ld "$@" && { test -n "$cross_prefix" || $TMPE 2>&1 >>$logfile; }
+    check_ld "$@" && { test "$cross_compile" = yes || $TMPE 2>&1 >>$logfile; }
 }
 
 require(){
@@ -306,6 +307,7 @@ incdir=""
 mandir=""
 bindir=""
 cross_prefix=""
+cross_compile="no"
 cc="gcc"
 ar="ar"
 ranlib="ranlib"
@@ -662,6 +664,8 @@ for opt do
   ;;
   --cross-prefix=*) cross_prefix=`echo $opt | cut -d '=' -f 2`
   ;;
+  --cross-compile) cross_compile=yes
+  ;;
   --cc=*) cc=`echo $opt | cut -d '=' -f 2-`
   ;;
   --make=*) make=`echo $opt | cut -d '=' -f 2`
@@ -825,6 +829,7 @@ fi
 # Combine FFLDFLAGS and the LDFLAGS environment variable
 LDFLAGS="$FFLDFLAGS $LDFLAGS"
 
+test -n "$cross_prefix" && cross_compile=yes
 cc="${cross_prefix}${cc}"
 ar="${cross_prefix}${ar}"
 ranlib="${cross_prefix}${ranlib}"
@@ -1132,7 +1137,7 @@ fi
 
 # ---
 # big/little-endian test
-if test -z "$cross_prefix" ; then
+if test "$cross_compile" = "no"; then
     check_ld <<EOF || die "endian test failed" && $TMPE && bigendian="yes"
 #include <inttypes.h>
 int main(int argc, char ** argv){
