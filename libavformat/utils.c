@@ -1939,11 +1939,10 @@ int av_find_stream_info(AVFormatContext *ic)
                     char buf[256];
                     avcodec_string(buf, sizeof(buf), st->codec, 0);
                     av_log(ic, AV_LOG_INFO, "Could not find codec parameters (%s)\n", buf);
-                    break;
+                } else {
+                    ret = 0;
                 }
             }
-            if (i == ic->nb_streams)
-                ret = 0;
             break;
         }
 
