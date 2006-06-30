@@ -288,7 +288,7 @@ static inline float floorf(float f) {
 
 /* debug stuff */
 
-#    ifndef DEBUG
+#    if !defined(DEBUG) && !defined(NDEBUG)
 #        define NDEBUG
 #    endif
 #    include <assert.h>
