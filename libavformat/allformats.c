@@ -17,6 +17,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 #include "avformat.h"
+#include "allformats.h"
 
 /* If you do not call this function, then you can select exactly which
    formats you want to support */

@@ -26,6 +26,7 @@
  */
 
 #include "avformat.h"
+#include "allformats.h"
 #include "avi.h"
 
 /* if we don't know the size in advance */

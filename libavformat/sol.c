@@ -22,6 +22,7 @@
  */
 
 #include "avformat.h"
+#include "allformats.h"
 #include "avi.h"
 #include "bswap.h"
 
