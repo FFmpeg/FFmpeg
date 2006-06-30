@@ -50,11 +50,13 @@ void *av_malloc(unsigned int size)
 #endif
 
     /* let's disallow possible ambiguous cases */
-    if(size > INT_MAX)
+    if(size > (INT_MAX-16) )
         return NULL;
 
 #ifdef MEMALIGN_HACK
-    ptr = malloc(size+16+1);
+    ptr = malloc(size+16);
+    if(!ptr)
+        return ptr;
     diff= ((-(long)ptr - 1)&15) + 1;
     ptr += diff;
     ((char*)ptr)[-1]= diff;
@@ -104,7 +106,7 @@ void *av_realloc(void *ptr, unsigned int size)
 #endif
 
     /* let's disallow possible ambiguous cases */
-    if(size > INT_MAX)
+    if(size > (INT_MAX-16) )
         return NULL;
 
 #ifdef MEMALIGN_HACK
