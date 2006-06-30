@@ -2111,7 +2111,7 @@ static int vc1_decode_p_block(VC1Context *v, DCTELEM block[64], int n, int mquan
                 i += skip;
                 if(i > 31)
                     break;
-                idx = vc1_simple_progressive_8x4_zz[i++];
+                idx = vc1_simple_progressive_4x8_zz[i++];
                 block[idx + off] = value * scale;
             }
             if(!(subblkpat & (1 << (1 - j))))
