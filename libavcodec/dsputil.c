@@ -292,8 +292,8 @@ static int sse16_c(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
 }
 
 
-static inline int w_c(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, int w, int h, int type){
 #ifdef CONFIG_SNOW_ENCODER //dwt is in snow.c
+static inline int w_c(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, int w, int h, int type){
     int s, i, j;
     const int dec_count= w==8 ? 3 : 4;
     int tmp[32*32];
@@ -360,7 +360,6 @@ static inline int w_c(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, in
     }
     assert(s>=0);
     return s>>9;
-#endif
 }
 
 static int w53_8_c(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, int h){
@@ -386,6 +385,7 @@ int w53_32_c(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, int h){
 int w97_32_c(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, int h){
     return w_c(v, pix1, pix2, line_size, 32, h, 0);
 }
+#endif
 
 static void get_pixels_c(DCTELEM *restrict block, const uint8_t *pixels, int line_size)
 {
@@ -3212,12 +3212,14 @@ void ff_set_cmp(DSPContext* c, me_cmp_func *cmp, int type){
         case FF_CMP_NSSE:
             cmp[i]= c->nsse[i];
             break;
+#ifdef CONFIG_SNOW_ENCODER
         case FF_CMP_W53:
             cmp[i]= c->w53[i];
             break;
         case FF_CMP_W97:
             cmp[i]= c->w97[i];
             break;
+#endif
         default:
             av_log(NULL, AV_LOG_ERROR,"internal error in cmp function selection\n");
         }
@@ -4021,10 +4023,12 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     c->vsse[4]= vsse_intra16_c;
     c->nsse[0]= nsse16_c;
     c->nsse[1]= nsse8_c;
+#ifdef CONFIG_SNOW_ENCODER
     c->w53[0]= w53_16_c;
     c->w53[1]= w53_8_c;
     c->w97[0]= w97_16_c;
     c->w97[1]= w97_8_c;
+#endif
 
     c->add_bytes= add_bytes_c;
     c->diff_bytes= diff_bytes_c;
