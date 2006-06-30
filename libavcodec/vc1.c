@@ -923,8 +923,8 @@ static void vc1_mc_1mv(VC1Context *v)
     srcV = s->last_picture.data[2];
 
     if(v->fastuvmc) { // XXX: 8.3.5.4.5 specifies something different
-        uvmx = (uvmx + 1) >> 1;
-        uvmy = (uvmy + 1) >> 1;
+        uvmx = (uvmx + 1) & ~1;
+        uvmy = (uvmy + 1) & ~1;
     }
 
     src_x = s->mb_x * 16 + (mx >> 2);
@@ -959,8 +959,6 @@ static void vc1_mc_1mv(VC1Context *v)
     if(!s->quarter_sample) { // hpel mc
         mx >>= 1;
         my >>= 1;
-        uvmx >>= 1;
-        uvmy >>= 1;
         dxy = ((my & 1) << 1) | (mx & 1);
         uvdxy = 0;
 
@@ -971,8 +969,10 @@ static void vc1_mc_1mv(VC1Context *v)
 
         dsp->put_no_rnd_qpel_pixels_tab[0][dxy](s->dest[0], srcY, s->linesize);
     }
-    dsp->put_mspel_pixels_tab[uvdxy](s->dest[1], srcU, s->uvlinesize);
-    dsp->put_mspel_pixels_tab[uvdxy](s->dest[2], srcV, s->uvlinesize);
+    dsp->put_no_rnd_pixels_tab[1][uvdxy](s->dest[1], srcU, s->uvlinesize, 8);
+    dsp->put_no_rnd_pixels_tab[1][uvdxy](s->dest[2], srcV, s->uvlinesize, 8);
+//    dsp->put_mspel_pixels_tab[uvdxy](s->dest[1], srcU, s->uvlinesize);
+//    dsp->put_mspel_pixels_tab[uvdxy](s->dest[2], srcV, s->uvlinesize);
 }
 
 /**
