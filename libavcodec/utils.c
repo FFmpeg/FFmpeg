@@ -1369,7 +1369,7 @@ int av_tempfile(char *prefix, char **filename) {
     *filename = tempnam(".", prefix);
 #else
     size_t len = strlen(prefix) + 12; /* room for "/tmp/" and "XXXXXX\0" */
-    *filename = av_malloc(len * sizeof(char));
+    *filename = av_malloc(len);
 #endif
     /* -----common section-----*/
     if (*filename == NULL) {
