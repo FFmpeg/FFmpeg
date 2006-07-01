@@ -4099,7 +4099,7 @@ static int decode_ref_pic_list_reordering(H264Context *h){
     return 0;
 }
 
-static int fill_mbaff_ref_list(H264Context *h){
+static void fill_mbaff_ref_list(H264Context *h){
     int list, i, j;
     for(list=0; list<2; list++){
         for(i=0; i<h->ref_count[list]; i++){
