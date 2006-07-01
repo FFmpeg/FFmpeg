@@ -307,7 +307,6 @@ typedef struct VC1Context{
      */
     uint8_t mvrange;
     uint8_t pquantizer;           ///< Uniform (over sequence) quantizer in use
-    uint8_t *previous_line_cbpcy; ///< To use for predicted CBPCY
     VLC *cbpcy_vlc;               ///< CBPCY VLC table
     int tt_index;                 ///< Index for Transform Type tables
     uint8_t* mv_type_mb_plane;    ///< bitplane for mv_type == (4MV)
@@ -2518,10 +2517,6 @@ static int vc1_decode_init(AVCodecContext *avctx)
 
     /* Allocate mb bitplanes */
     v->mv_type_mb_plane = av_malloc(s->mb_stride * s->mb_height);
-
-    /* For predictors */
-    v->previous_line_cbpcy = (uint8_t *)av_malloc(s->mb_stride*4);
-    if (!v->previous_line_cbpcy) return -1;
 
     /* Init coded blocks info */
     if (v->profile == PROFILE_ADVANCED)
