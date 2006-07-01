@@ -2044,12 +2044,12 @@ static int vc1_decode_p_block(VC1Context *v, DCTELEM block[64], int n, int mquan
 
     // convert transforms like 8X4_TOP to generic TT and SUBBLKPAT
     if(ttblk == TT_8X4_TOP || ttblk == TT_8X4_BOTTOM) {
-        ttblk = TT_8X4;
         subblkpat = 2 - (ttblk == TT_8X4_TOP);
+        ttblk = TT_8X4;
     }
     if(ttblk == TT_4X8_RIGHT || ttblk == TT_4X8_LEFT) {
-        ttblk = TT_4X8;
         subblkpat = 2 - (ttblk == TT_4X8_LEFT);
+        ttblk = TT_4X8;
     }
     switch(ttblk) {
     case TT_8X8:
