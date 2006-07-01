@@ -311,7 +311,6 @@ typedef struct VC1Context{
     VLC *cbpcy_vlc;               ///< CBPCY VLC table
     int tt_index;                 ///< Index for Transform Type tables
     uint8_t* mv_type_mb_plane;    ///< bitplane for mv_type == (4MV)
-    uint8_t* skip_mb_plane;       ///< bitplane for skipped MBs
 //    BitPlane direct_mb_plane;     ///< bitplane for "direct" MBs
     int mv_type_is_raw;           ///< mv type mb plane is not coded
     int skip_is_raw;              ///< skip mb plane is not coded
@@ -1207,7 +1206,7 @@ if(v->mv_mode != MV_PMODE_1MV && v->mv_mode != MV_PMODE_1MV_HPEL && v->mv_mode !
             v->mv_type_is_raw = 0;
             memset(v->mv_type_mb_plane, 0, v->s.mb_stride * v->s.mb_height);
         }
-        status = bitplane_decoding(v->skip_mb_plane, &v->skip_is_raw, v);
+        status = bitplane_decoding(v->s.mbskip_table, &v->skip_is_raw, v);
         if (status < 0) return -1;
         av_log(v->s.avctx, AV_LOG_DEBUG, "MB Skip plane encoding: "
                "Imode: %i, Invert: %i\n", status>>1, status&1);
@@ -2158,7 +2157,7 @@ static int vc1_decode_p_mb(VC1Context *v, DCTELEM block[6][64])
     if (v->skip_is_raw)
         skipped = get_bits1(gb);
     else
-        skipped = v->skip_mb_plane[mb_pos];
+        skipped = v->s.mbskip_table[mb_pos];
 
     if (!fourmv) /* 1MV mode */
     {
@@ -2519,7 +2518,6 @@ static int vc1_decode_init(AVCodecContext *avctx)
 
     /* Allocate mb bitplanes */
     v->mv_type_mb_plane = av_malloc(s->mb_stride * s->mb_height);
-    v->skip_mb_plane = av_malloc(s->mb_stride * s->mb_height);
 
     /* For predictors */
     v->previous_line_cbpcy = (uint8_t *)av_malloc(s->mb_stride*4);
@@ -2646,7 +2644,6 @@ static int vc1_decode_end(AVCodecContext *avctx)
     av_freep(&v->hrd_buffer);
     MPV_common_end(&v->s);
     av_freep(&v->mv_type_mb_plane);
-    av_freep(&v->skip_mb_plane);
     return 0;
 }
 
