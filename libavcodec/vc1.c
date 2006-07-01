@@ -1892,6 +1892,7 @@ static int vc1_decode_intra_block(VC1Context *v, DCTELEM block[64], int n, int c
         const int8_t *zz_table;
         int scale;
         int k;
+        int use_pred = s->ac_pred;
 
         scale = mquant * 2;
 
@@ -1899,6 +1900,10 @@ static int vc1_decode_intra_block(VC1Context *v, DCTELEM block[64], int n, int c
 
         ac_val = s->ac_val[0][0] + s->block_index[n] * 16;
         ac_val2 = ac_val;
+        if(!a_avail) dc_pred_dir = 1;
+        if(!c_avail) dc_pred_dir = 0;
+        if(!a_avail && !c_avail) use_pred = 0;
+
         if(dc_pred_dir) //left
             ac_val -= 16;
         else //top
@@ -1913,7 +1918,7 @@ static int vc1_decode_intra_block(VC1Context *v, DCTELEM block[64], int n, int c
         }
 
         /* apply AC prediction if needed */
-        if(s->ac_pred && (v->a_avail || v->c_avail)) {
+        if(use_pred) {
             /* scale predictors if needed*/
             int mb_pos2, q1, q2;
 
@@ -1921,14 +1926,6 @@ static int vc1_decode_intra_block(VC1Context *v, DCTELEM block[64], int n, int c
             q1 = s->current_picture.qscale_table[mb_pos];
             q2 = s->current_picture.qscale_table[mb_pos2];
 
-            if(!c_avail) {
-                memset(ac_val, 0, 8 * sizeof(ac_val[0]));
-                dc_pred_dir = 0;
-            }
-            if(!a_avail) {
-                memset(ac_val + 8, 0, 8 * sizeof(ac_val[0]));
-                dc_pred_dir = 1;
-            }
             if(q2 && q1 != q2) {
                 q1 = q1 * 2 - 1;
                 q2 = q2 * 2 - 1;
@@ -1964,12 +1961,14 @@ static int vc1_decode_intra_block(VC1Context *v, DCTELEM block[64], int n, int c
                     block[k] += (block[k] < 0) ? -mquant : mquant;
             }
 
-        if(s->ac_pred) i = 63;
+        if(use_pred) i = 63;
     }
 
 not_coded:
     if(!coded) {
         int k, scale;
+        int use_pred = s->ac_pred;
+
         ac_val = s->ac_val[0][0] + s->block_index[n] * 16;
         ac_val2 = ac_val;
 
@@ -1982,20 +1981,22 @@ not_coded:
             dc_pred_dir = 1;
         }
 
+        if(!a_avail && !c_avail) use_pred = 0;
+
         scale = mquant * 2;
         memset(ac_val2, 0, 16 * 2);
         if(dc_pred_dir) {//left
             ac_val -= 16;
-            if(s->ac_pred && (v->a_avail || v->c_avail))
+            if(use_pred)
                 memcpy(ac_val2, ac_val, 8 * 2);
         } else {//top
             ac_val -= 16 * s->block_wrap[n];
-            if(s->ac_pred && (v->a_avail || v->c_avail))
+            if(use_pred)
                 memcpy(ac_val2 + 8, ac_val + 8, 8 * 2);
         }
 
         /* apply AC prediction if needed */
-        if(s->ac_pred && (v->a_avail || v->c_avail)) {
+        if(use_pred) {
             if(dc_pred_dir) { //left
                 for(k = 1; k < 8; k++) {
                     block[k << 3] = ac_val[k] * scale;
