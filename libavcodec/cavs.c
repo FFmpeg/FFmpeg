@@ -395,7 +395,7 @@ static void intra_pred_lp_top(uint8_t *d,uint8_t *top,uint8_t *left,int stride) 
 #undef LOWPASS
 
 static inline void modify_pred(const int8_t *mod_table, int *mode) {
-    int newmode = mod_table[(int)*mode];
+    int newmode = mod_table[*mode];
     if(newmode < 0) {
         av_log(NULL, AV_LOG_ERROR, "Illegal intra prediction mode\n");
         *mode = 0;
@@ -913,7 +913,7 @@ static void decode_mb_i(AVSContext *h, int is_i_pic) {
     for(block=0;block<4;block++) {
         d = h->cy + h->luma_scan[block];
         load_intra_pred_luma(h, top, left, block);
-        h->intra_pred_l[(int)h->pred_mode_Y[scan3x3[block]]]
+        h->intra_pred_l[h->pred_mode_Y[scan3x3[block]]]
             (d, top, left, h->l_stride);
         if(h->cbp & (1<<block))
             decode_residual_block(h,gb,intra_2dvlc,1,h->qp,d,h->l_stride);
@@ -1407,7 +1407,7 @@ int ff_cavs_find_frame_end(ParseContext *pc, const uint8_t *buf, int buf_size) {
 }
 
 void ff_cavs_flush(AVCodecContext * avctx) {
-    AVSContext *h = (AVSContext *)avctx->priv_data;
+    AVSContext *h = avctx->priv_data;
     h->got_keyframe = 0;
 }
 
@@ -1487,7 +1487,7 @@ static int cavs_decode_frame(AVCodecContext * avctx,void *data, int *data_size,
 }
 
 static int cavs_decode_init(AVCodecContext * avctx) {
-    AVSContext *h = (AVSContext *)avctx->priv_data;
+    AVSContext *h = avctx->priv_data;
     MpegEncContext * const s = &h->s;
 
     MPV_decode_defaults(s);
@@ -1518,7 +1518,7 @@ static int cavs_decode_init(AVCodecContext * avctx) {
 }
 
 static int cavs_decode_end(AVCodecContext * avctx) {
-    AVSContext *h = (AVSContext *)avctx->priv_data;
+    AVSContext *h = avctx->priv_data;
 
     av_free(h->top_qp);
     av_free(h->top_mv[0]);
