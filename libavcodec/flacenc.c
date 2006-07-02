@@ -301,20 +301,19 @@ static void calc_sums(int pmax, uint32_t *data, int n, int pred_order,
                       uint32_t sums[][256])
 {
     int i, j;
-    int parts, cnt;
-    uint32_t *res;
+    int parts;
+    uint32_t *res, *res_end;
 
     /* sums for highest level */
     parts = (1 << pmax);
     res = &data[pred_order];
-    cnt = (n >> pmax) - pred_order;
+    res_end = &data[n >> pmax];
     for(i=0; i<parts; i++) {
-        if(i == 1) cnt = (n >> pmax);
-        if(i > 0) res = &data[i*cnt];
         sums[pmax][i] = 0;
-        for(j=0; j<cnt; j++) {
-            sums[pmax][i] += res[j];
+        while(res < res_end){
+            sums[pmax][i] += *(res++);
         }
+        res_end+= n >> pmax;
     }
     /* sums for lower levels */
     for(i=pmax-1; i>=0; i--) {
