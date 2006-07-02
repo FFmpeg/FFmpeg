@@ -225,7 +225,7 @@ distclean: clean
 	$(MAKE) -C libpostproc distclean
 	$(MAKE) -C tests       distclean
 	$(MAKE) -C vhook       distclean
-	rm -f .depend config.mak config.h version.h *.pc config.err config.log
+	rm -f .depend version.h config.* *.pc
 
 TAGS:
 	etags *.[ch] libavformat/*.[ch] libavcodec/*.[ch]
