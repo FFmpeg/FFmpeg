@@ -583,34 +583,22 @@ static void apply_welch_window(const int32_t *data, int len, double *w_data)
 static void compute_autocorr(const int32_t *data, int len, int lag,
                              double *autoc)
 {
-    int i;
-    double *data1;
-    int lag_ptr, ptr;
+    int i, lag_ptr;
+    double tmp[len + lag];
+    double *data1= tmp + lag;
 
-    data1 = av_malloc(len * sizeof(double));
     apply_welch_window(data, len, data1);
 
-    for(i=0; i<lag; i++) autoc[i] = 1.0;
-
-    ptr = 0;
-    while(ptr <= lag) {
-        lag_ptr = 0;
-        while(lag_ptr <= ptr) {
-            autoc[ptr-lag_ptr] += data1[ptr] * data1[lag_ptr];
-            lag_ptr++;
-        }
-        ptr++;
-    }
-    while(ptr < len) {
-        lag_ptr = ptr - lag;
-        while(lag_ptr <= ptr) {
-            autoc[ptr-lag_ptr] += data1[ptr] * data1[lag_ptr];
-            lag_ptr++;
-        }
-        ptr++;
+    for(i=0; i<lag; i++){
+        autoc[i] = 1.0;
+        data1[i-lag]= 0.0;
     }
 
-    av_freep(&data1);
+    for(i=0; i<len; i++){
+        for(lag_ptr= i-lag; lag_ptr<=i; lag_ptr++){
+            autoc[i-lag_ptr] += data1[i] * data1[lag_ptr];
+        }
+    }
 }
 
 /**
