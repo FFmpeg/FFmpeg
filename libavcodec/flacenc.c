@@ -168,7 +168,7 @@ static int flac_encode_init(AVCodecContext *avctx)
     int freq = avctx->sample_rate;
     int channels = avctx->channels;
     FlacEncodeContext *s = avctx->priv_data;
-    int i;
+    int i, level;
     uint8_t *streaminfo;
 
     s->avctx = avctx;
@@ -219,59 +219,20 @@ static int flac_encode_init(AVCodecContext *avctx)
     }
     av_log(avctx, AV_LOG_DEBUG, " compression: %d\n", s->options.compression_level);
 
-    if(s->options.compression_level == 0) {
-        s->options.block_time_ms = 27;
-        s->options.use_lpc = 0;
-        s->options.min_prediction_order = 2;
-        s->options.max_prediction_order = 3;
-        s->options.prediction_order_method = ORDER_METHOD_EST;
-        s->options.min_partition_order = 2;
-        s->options.max_partition_order = 2;
-    } else if(s->options.compression_level == 1) {
-        s->options.block_time_ms = 27;
-        s->options.use_lpc = 0;
-        s->options.min_prediction_order = 0;
-        s->options.max_prediction_order = 4;
-        s->options.prediction_order_method = ORDER_METHOD_EST;
-        s->options.min_partition_order = 2;
-        s->options.max_partition_order = 2;
-    } else if(s->options.compression_level == 2) {
-        s->options.block_time_ms = 27;
-        s->options.use_lpc = 0;
-        s->options.min_prediction_order = 0;
-        s->options.max_prediction_order = 4;
-        s->options.prediction_order_method = ORDER_METHOD_EST;
-        s->options.min_partition_order = 0;
-        s->options.max_partition_order = 3;
-    } else if(s->options.compression_level == 3) {
-        s->options.block_time_ms = 105;
-        s->options.use_lpc = 1;
-        s->options.min_prediction_order = 1;
-        s->options.max_prediction_order = 6;
-        s->options.prediction_order_method = ORDER_METHOD_EST;
-        s->options.min_partition_order = 0;
-        s->options.max_partition_order = 3;
-    } else if(s->options.compression_level == 4) {
-        s->options.block_time_ms = 105;
-        s->options.use_lpc = 1;
-        s->options.min_prediction_order = 1;
-        s->options.max_prediction_order = 8;
-        s->options.prediction_order_method = ORDER_METHOD_EST;
-        s->options.min_partition_order = 0;
-        s->options.max_partition_order = 3;
-    } else if(s->options.compression_level == 5) {
-        s->options.block_time_ms = 105;
-        s->options.use_lpc = 1;
-        s->options.min_prediction_order = 1;
-        s->options.max_prediction_order = 8;
-        s->options.prediction_order_method = ORDER_METHOD_EST;
-        s->options.min_partition_order = 0;
-        s->options.max_partition_order = 8;
-    } else {
+    level= s->options.compression_level;
+    if(level > 5) {
         av_log(avctx, AV_LOG_ERROR, "invalid compression level: %d\n",
                s->options.compression_level);
         return -1;
     }
+
+    s->options.block_time_ms       = ((int[]){ 27, 27, 27,105,105,105})[level];
+    s->options.use_lpc             = ((int[]){  0,  0,  0,  1,  1,  1})[level];
+    s->options.min_prediction_order= ((int[]){  2,  0,  0,  1,  1,  1})[level];
+    s->options.max_prediction_order= ((int[]){  3,  4,  4,  6,  8,  8})[level];
+    s->options.prediction_order_method = ORDER_METHOD_EST;
+    s->options.min_partition_order = ((int[]){  2,  2,  0,  0,  0,  0})[level];
+    s->options.max_partition_order = ((int[]){  2,  2,  3,  3,  3,  8})[level];
 
     /* set compression option overrides from AVCodecContext */
     if(avctx->use_lpc >= 0) {
