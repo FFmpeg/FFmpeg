@@ -200,7 +200,7 @@ static int find_frame_rate_index(MpegEncContext *s){
     int64_t d;
 
     for(i=1;i<14;i++) {
-        int64_t n0= 1001LL/frame_rate_tab[i].den*frame_rate_tab[i].num*s->avctx->time_base.num;
+        int64_t n0= 1001LL/ff_frame_rate_tab[i].den*ff_frame_rate_tab[i].num*s->avctx->time_base.num;
         int64_t n1= 1001LL*s->avctx->time_base.den;
         if(s->avctx->strict_std_compliance > FF_COMPLIANCE_INOFFICIAL && i>=9) break;
 
@@ -262,7 +262,7 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
         if(aspect_ratio==0.0) aspect_ratio= 1.0; //pixel aspect 1:1 (VGA)
 
         if (s->current_picture.key_frame) {
-            AVRational framerate= frame_rate_tab[s->frame_rate_index];
+            AVRational framerate= ff_frame_rate_tab[s->frame_rate_index];
 
             /* mpeg1 header repeated every gop */
             put_header(s, SEQ_START_CODE);
@@ -2121,8 +2121,8 @@ static int mpeg_decode_postinit(AVCodecContext *avctx){
 
         if(avctx->sub_id==1){//s->codec_id==avctx->codec_id==CODEC_ID
             //mpeg1 fps
-            avctx->time_base.den     = frame_rate_tab[s->frame_rate_index].num;
-            avctx->time_base.num= frame_rate_tab[s->frame_rate_index].den;
+            avctx->time_base.den= ff_frame_rate_tab[s->frame_rate_index].num;
+            avctx->time_base.num= ff_frame_rate_tab[s->frame_rate_index].den;
             //mpeg1 aspect
             avctx->sample_aspect_ratio= av_d2q(
                     1.0/mpeg1_aspect[s->aspect_ratio_info], 255);
@@ -2132,8 +2132,8 @@ static int mpeg_decode_postinit(AVCodecContext *avctx){
             av_reduce(
                 &s->avctx->time_base.den,
                 &s->avctx->time_base.num,
-                frame_rate_tab[s->frame_rate_index].num * s1->frame_rate_ext.num,
-                frame_rate_tab[s->frame_rate_index].den * s1->frame_rate_ext.den,
+                ff_frame_rate_tab[s->frame_rate_index].num * s1->frame_rate_ext.num,
+                ff_frame_rate_tab[s->frame_rate_index].den * s1->frame_rate_ext.den,
                 1<<30);
         //mpeg2 aspect
             if(s->aspect_ratio_info > 1){
@@ -3252,7 +3252,7 @@ AVCodec mpeg1video_encoder = {
     encode_init,
     MPV_encode_picture,
     MPV_encode_end,
-    .supported_framerates= frame_rate_tab+1,
+    .supported_framerates= ff_frame_rate_tab+1,
     .pix_fmts= (enum PixelFormat[]){PIX_FMT_YUV420P, -1},
     .capabilities= CODEC_CAP_DELAY,
 };
@@ -3265,7 +3265,7 @@ AVCodec mpeg2video_encoder = {
     encode_init,
     MPV_encode_picture,
     MPV_encode_end,
-    .supported_framerates= frame_rate_tab+1,
+    .supported_framerates= ff_frame_rate_tab+1,
     .pix_fmts= (enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_YUV422P, -1},
     .capabilities= CODEC_CAP_DELAY,
 };

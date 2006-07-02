@@ -332,7 +332,7 @@ static const uint8_t mbMotionVectorTable[17][2] = {
 { 0xc, 10 },
 };
 
-static const AVRational frame_rate_tab[] = {
+const AVRational ff_frame_rate_tab[] = {
     {    0,    0},
     {24000, 1001},
     {   24,    1},
