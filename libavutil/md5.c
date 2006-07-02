@@ -116,7 +116,7 @@ void av_md5_update(AVMD5 *ctx, const uint8_t *src, const int len){
     for( i = 0; i < len; i++ ){
         ctx->block[ ctx->b_used++ ] = src[i];
         if( 64 == ctx->b_used ){
-            body(ctx->ABCD, ctx->block);
+            body(ctx->ABCD, (const uint32_t*) ctx->block);
             ctx->b_used = 0;
         }
     }
@@ -130,16 +130,15 @@ void av_md5_final(AVMD5 *ctx, uint8_t *dst){
     memset(&ctx->block[ctx->b_used], 0, 64 - ctx->b_used);
 
     if( 56 < ctx->b_used ){
-        body( ctx->ABCD, ctx->block );
+        body( ctx->ABCD, (const uint32_t*) ctx->block );
         memset(ctx->block, 0, 64);
     }
 
     for(i=0; i<8; i++)
         ctx->block[56+i] = (ctx->len << 3) >> (i<<3);
 
-    body(ctx->ABCD, ctx->block);
+    body(ctx->ABCD, (const uint32_t*) ctx->block);
 
-#define le2me_32(a) a
     for(i=0; i<4; i++)
         ((uint32_t*)dst)[i]= le2me_32(ctx->ABCD[3-i]);
 }
