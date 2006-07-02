@@ -46,11 +46,6 @@
     SUMSUBD2_AB( s13, d13, t )\
     SUMSUB_BADC( d13, s02, s13, d02 )
 
-#define SBUTTERFLY(a,b,t,n)\
-    "movq " #a ", " #t "                \n\t" /* abcd */\
-    "punpckl" #n " " #b ", " #a "       \n\t" /* aebf */\
-    "punpckh" #n " " #b ", " #t "       \n\t" /* cgdh */\
-
 #define TRANSPOSE4(a,b,c,d,t)\
     SBUTTERFLY(a,b,t,wd) /* a=aebf t=cgdh */\
     SBUTTERFLY(c,d,b,wd) /* c=imjn b=kolp */\
@@ -1259,7 +1254,6 @@ static void OPNAME ## h264_qpel ## SIZE ## _mc32_ ## MMX(uint8_t *dst, uint8_t *
 }\
 
 
-#define PUT_OP(a,b,temp, size) "mov" #size " " #a ", " #b "    \n\t"
 #define AVG_3DNOW_OP(a,b,temp, size) \
 "mov" #size " " #b ", " #temp "   \n\t"\
 "pavgusb " #temp ", " #a "        \n\t"\
