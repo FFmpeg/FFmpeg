@@ -71,6 +71,7 @@ static const uint32_t T[64] = {
 
 static void body(uint32_t ABCD[4], const uint32_t X[16]){
     int t;
+    int i attribute_unused;
     unsigned int a= ABCD[3];
     unsigned int b= ABCD[2];
     unsigned int c= ABCD[1];
