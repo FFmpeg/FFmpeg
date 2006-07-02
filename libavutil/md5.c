@@ -62,15 +62,15 @@ static const uint32_t T[64] = {
         a += T[i];\
 \
         switch(i>>4){\
-        case 0: a += (d ^ b&(c^d)) + X[      i &15 ]; break;\
-        case 1: a += (c ^ d&(c^b)) + X[ (1+5*i)&15 ]; break;\
-        case 2: a += (b^c^d)       + X[ (5+3*i)&15 ]; break;\
-        case 3: a += (c^(b|~d))    + X[ (  7*i)&15 ]; break;\
+        case 0: a += (d ^ (b&(c^d))) + X[      i &15 ]; break;\
+        case 1: a += (c ^ (d&(c^b))) + X[ (1+5*i)&15 ]; break;\
+        case 2: a += (b^c^d)         + X[ (5+3*i)&15 ]; break;\
+        case 3: a += (c^(b|~d))      + X[ (  7*i)&15 ]; break;\
         }\
         a = b + (( a << t ) | ( a >> (32 - t) ));
 
 static void body(uint32_t ABCD[4], const uint32_t X[16]){
-    int i, t;
+    int t;
     unsigned int a= ABCD[3];
     unsigned int b= ABCD[2];
     unsigned int c= ABCD[1];

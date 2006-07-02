@@ -1,7 +1,7 @@
 #ifndef MD5_H
 #define MD5_H
 
-extern const av_md5_size;
+extern const int av_md5_size;
 
 struct AVMD5;
 
