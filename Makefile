@@ -213,6 +213,7 @@ clean:
 	$(MAKE) -C libpostproc clean
 	$(MAKE) -C tests       clean
 	$(MAKE) -C vhook       clean
+	$(MAKE) -C doc         clean
 	rm -f *.o *.d *~ .libs gmon.out TAGS \
 	   $(ALLPROGS) $(ALLPROGS_G) $(PROGTEST) $(QTFASTSTART)
 
@@ -224,7 +225,7 @@ distclean: clean
 	$(MAKE) -C libpostproc distclean
 	$(MAKE) -C tests       distclean
 	$(MAKE) -C vhook       distclean
-	rm -f .depend config.mak config.h version.h *.pc
+	rm -f .depend config.mak config.h version.h *.pc config.err config.log
 
 TAGS:
 	etags *.[ch] libavformat/*.[ch] libavcodec/*.[ch]
