@@ -118,6 +118,7 @@ enum CodecID {
     CODEC_ID_NUV,
     CODEC_ID_KMVC,
     CODEC_ID_FLASHSV,
+    CODEC_ID_CAVS,
 
     /* various pcm "codecs" */
     CODEC_ID_PCM_S16LE= 0x10000,
@@ -2271,6 +2272,7 @@ extern AVCodec smacker_decoder;
 extern AVCodec smackaud_decoder;
 extern AVCodec kmvc_decoder;
 extern AVCodec flashsv_decoder;
+extern AVCodec cavs_decoder;
 
 /* pcm codecs */
 #define PCM_CODEC(id, name) \
@@ -2557,6 +2559,7 @@ void av_parser_close(AVCodecParserContext *s);
 
 extern AVCodecParser mpegvideo_parser;
 extern AVCodecParser mpeg4video_parser;
+extern AVCodecParser cavsvideo_parser;
 extern AVCodecParser h261_parser;
 extern AVCodecParser h263_parser;
 extern AVCodecParser h264_parser;
