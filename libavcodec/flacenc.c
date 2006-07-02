@@ -649,7 +649,7 @@ static void quantize_lpc_coefs(double *lpc_in, int order, int precision,
                                int32_t *lpc_out, int *shift)
 {
     int i;
-    double d, cmax;
+    double cmax;
     int32_t qmax;
     int sh;
 
@@ -659,18 +659,13 @@ static void quantize_lpc_coefs(double *lpc_in, int order, int precision,
     /* find maximum coefficient value */
     cmax = 0.0;
     for(i=0; i<order; i++) {
-        d = lpc_in[i];
-        if(d < 0) d = -d;
-        if(d > cmax)
-            cmax = d;
+        cmax= FFMAX(cmax, fabs(lpc_in[i]));
     }
 
     /* if maximum value quantizes to zero, return all zeros */
     if(cmax * (1 << MAX_LPC_SHIFT) < 1.0) {
         *shift = 0;
-        for(i=0; i<order; i++) {
-            lpc_out[i] = 0;
-        }
+        memset(lpc_out, 0, sizeof(int32_t) * order);
         return;
     }
 
