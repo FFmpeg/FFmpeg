@@ -10,9 +10,10 @@ OBJS= mathematics.o \
       rational.o \
       intfloat_readwrite.o \
       crc.o \
+      md5.o \
 
 HEADERS = avutil.h common.h mathematics.h integer.h rational.h \
-          intfloat_readwrite.h
+          intfloat_readwrite.h md5.h
 
 NAME=avutil
 ifeq ($(BUILD_SHARED),yes)
