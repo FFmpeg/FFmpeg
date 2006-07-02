@@ -62,7 +62,11 @@ int ff_fft_init(FFTContext *s, int nbits, int inverse)
         int has_vectors = 0;
 
 #if defined(HAVE_MMX)
+#ifdef HAVE_MM3DNOW
         has_vectors = mm_support() & (MM_3DNOW | MM_3DNOWEXT | MM_SSE | MM_SSE2);
+#else
+        has_vectors = mm_support() & (MM_SSE | MM_SSE2);
+#endif
 #endif
 #if defined(HAVE_ALTIVEC) && !defined(ALTIVEC_USE_REFERENCE_C_CODE)
         has_vectors = mm_support() & MM_ALTIVEC;
