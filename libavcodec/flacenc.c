@@ -529,7 +529,7 @@ static uint32_t calc_rice_params(RiceContext *rc, int pmin, int pmax,
         bits[i] = calc_optimal_rice_params(&tmp_rc, i, sums[i], n, pred_order);
         if(bits[i] <= bits[opt_porder]) {
             opt_porder = i;
-            memcpy(rc, &tmp_rc, sizeof(RiceContext));
+            *rc= tmp_rc;
         }
     }
 
