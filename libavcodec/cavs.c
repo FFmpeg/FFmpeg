@@ -530,29 +530,25 @@ static void inter_pred(AVSContext *h) {
  *
  ****************************************************************************/
 
-static inline void veccpy(vector_t *dst, vector_t *src) {
-    *((uint64_t *)dst) = *((uint64_t *)src);
-}
-
 static inline void set_mvs(vector_t *mv, enum block_t size) {
     switch(size) {
     case BLK_16X16:
-        veccpy(mv+MV_STRIDE  ,mv);
-        veccpy(mv+MV_STRIDE+1,mv);
+        mv[MV_STRIDE  ] = mv[0];
+        mv[MV_STRIDE+1] = mv[0];
     case BLK_16X8:
-        veccpy(mv          +1,mv);
+        mv[1] = mv[0];
         break;
     case BLK_8X16:
-        veccpy(mv+MV_STRIDE  ,mv);
+        mv[MV_STRIDE] = mv[0];
         break;
     }
 }
 
 static inline void store_mvs(AVSContext *h) {
-    veccpy(&h->col_mv[(h->mby*h->mb_width + h->mbx)*4 + 0], &h->mv[MV_FWD_X0]);
-    veccpy(&h->col_mv[(h->mby*h->mb_width + h->mbx)*4 + 1], &h->mv[MV_FWD_X1]);
-    veccpy(&h->col_mv[(h->mby*h->mb_width + h->mbx)*4 + 2], &h->mv[MV_FWD_X2]);
-    veccpy(&h->col_mv[(h->mby*h->mb_width + h->mbx)*4 + 3], &h->mv[MV_FWD_X3]);
+    h->col_mv[(h->mby*h->mb_width + h->mbx)*4 + 0] = h->mv[MV_FWD_X0];
+    h->col_mv[(h->mby*h->mb_width + h->mbx)*4 + 1] = h->mv[MV_FWD_X1];
+    h->col_mv[(h->mby*h->mb_width + h->mbx)*4 + 2] = h->mv[MV_FWD_X2];
+    h->col_mv[(h->mby*h->mb_width + h->mbx)*4 + 3] = h->mv[MV_FWD_X3];
 }
 
 static inline void scale_mv(AVSContext *h, int *d_x, int *d_y, vector_t *src, int distp) {
@@ -784,17 +780,17 @@ static inline void init_mb(AVSContext *h) {
 
     /* copy predictors from top line (MB B and C) into cache */
     for(i=0;i<3;i++) {
-        veccpy(&h->mv[MV_FWD_B2+i],&h->top_mv[0][h->mbx*2+i]);
-        veccpy(&h->mv[MV_BWD_B2+i],&h->top_mv[1][h->mbx*2+i]);
+        h->mv[MV_FWD_B2+i] = h->top_mv[0][h->mbx*2+i];
+        h->mv[MV_BWD_B2+i] = h->top_mv[1][h->mbx*2+i];
     }
     h->pred_mode_Y[1] = h->top_pred_Y[h->mbx*2+0];
     h->pred_mode_Y[2] = h->top_pred_Y[h->mbx*2+1];
     /* clear top predictors if MB B is not available */
     if(!(h->flags & B_AVAIL)) {
-        veccpy(&h->mv[MV_FWD_B2],(vector_t *)&un_mv);
-        veccpy(&h->mv[MV_FWD_B3],(vector_t *)&un_mv);
-        veccpy(&h->mv[MV_BWD_B2],(vector_t *)&un_mv);
-        veccpy(&h->mv[MV_BWD_B3],(vector_t *)&un_mv);
+        h->mv[MV_FWD_B2] = un_mv;
+        h->mv[MV_FWD_B3] = un_mv;
+        h->mv[MV_BWD_B2] = un_mv;
+        h->mv[MV_BWD_B3] = un_mv;
         h->pred_mode_Y[1] = h->pred_mode_Y[2] = NOT_AVAIL;
         h->flags &= ~(C_AVAIL|D_AVAIL);
     } else if(h->mbx) {
@@ -804,13 +800,13 @@ static inline void init_mb(AVSContext *h) {
         h->flags &= ~C_AVAIL;
     /* clear top-right predictors if MB C is not available */
     if(!(h->flags & C_AVAIL)) {
-        veccpy(&h->mv[MV_FWD_C2],(vector_t *)&un_mv);
-        veccpy(&h->mv[MV_BWD_C2],(vector_t *)&un_mv);
+        h->mv[MV_FWD_C2] = un_mv;
+        h->mv[MV_BWD_C2] = un_mv;
     }
     /* clear top-left predictors if MB D is not available */
     if(!(h->flags & D_AVAIL)) {
-        veccpy(&h->mv[MV_FWD_D3],(vector_t *)&un_mv);
-        veccpy(&h->mv[MV_BWD_D3],(vector_t *)&un_mv);
+        h->mv[MV_FWD_D3] = un_mv;
+        h->mv[MV_BWD_D3] = un_mv;
     }
     /* set pointer for co-located macroblock type */
     h->col_type = &h->col_type_base[h->mby*h->mb_width + h->mbx];
@@ -827,12 +823,12 @@ static inline int next_mb(AVSContext *h) {
     h->cv += 8;
     /* copy mvs as predictors to the left */
     for(i=0;i<=20;i+=4)
-        veccpy(&h->mv[i],&h->mv[i+2]);
+        h->mv[i] = h->mv[i+2];
     /* copy bottom mvs from cache to top line */
-    veccpy(&h->top_mv[0][h->mbx*2+0],&h->mv[MV_FWD_X2]);
-    veccpy(&h->top_mv[0][h->mbx*2+1],&h->mv[MV_FWD_X3]);
-    veccpy(&h->top_mv[1][h->mbx*2+0],&h->mv[MV_BWD_X2]);
-    veccpy(&h->top_mv[1][h->mbx*2+1],&h->mv[MV_BWD_X3]);
+    h->top_mv[0][h->mbx*2+0] = h->mv[MV_FWD_X2];
+    h->top_mv[0][h->mbx*2+1] = h->mv[MV_FWD_X3];
+    h->top_mv[1][h->mbx*2+0] = h->mv[MV_BWD_X2];
+    h->top_mv[1][h->mbx*2+1] = h->mv[MV_BWD_X3];
     /* next MB address */
     h->mbx++;
     if(h->mbx == h->mb_width) { //new mb line
@@ -841,7 +837,7 @@ static inline int next_mb(AVSContext *h) {
         h->pred_mode_Y[3] = h->pred_mode_Y[6] = NOT_AVAIL;
         /* clear left mv predictors */
         for(i=0;i<=20;i+=4)
-            veccpy(&h->mv[i],(vector_t *)&un_mv);
+            h->mv[i] = un_mv;
         h->mbx = 0;
         h->mby++;
         /* re-calculate sample pointers */
@@ -935,9 +931,9 @@ static void decode_mb_i(AVSContext *h, int is_i_pic) {
     filter_mb(h,I_8X8);
 
     /* mark motion vectors as intra */
-    veccpy( &h->mv[MV_FWD_X0], (vector_t *)&intra_mv);
+    h->mv[MV_FWD_X0] = intra_mv;
     set_mvs(&h->mv[MV_FWD_X0], BLK_16X16);
-    veccpy( &h->mv[MV_BWD_X0], (vector_t *)&intra_mv);
+    h->mv[MV_BWD_X0] = intra_mv;
     set_mvs(&h->mv[MV_BWD_X0], BLK_16X16);
     if(h->pic_type != FF_B_TYPE)
         *h->col_type = I_8X8;
@@ -1015,9 +1011,9 @@ static void decode_mb_b(AVSContext *h, enum mb_t mb_type) {
     int flags;
 
     /* reset all MVs */
-    veccpy( &h->mv[MV_FWD_X0], (vector_t *)&dir_mv);
+    h->mv[MV_FWD_X0] = dir_mv;
     set_mvs(&h->mv[MV_FWD_X0], BLK_16X16);
-    veccpy( &h->mv[MV_BWD_X0], (vector_t *)&dir_mv);
+    h->mv[MV_BWD_X0] = dir_mv;
     set_mvs(&h->mv[MV_BWD_X0], BLK_16X16);
     switch(mb_type) {
     case B_SKIP:
@@ -1163,10 +1159,10 @@ static void init_pic(AVSContext *h) {
 
     /* clear some predictors */
     for(i=0;i<=20;i+=4)
-        veccpy(&h->mv[i],(vector_t *)&un_mv);
-    veccpy(&h->mv[MV_BWD_X0], (vector_t *)&dir_mv);
+        h->mv[i] = un_mv;
+    h->mv[MV_BWD_X0] = dir_mv;
     set_mvs(&h->mv[MV_BWD_X0], BLK_16X16);
-    veccpy(&h->mv[MV_FWD_X0], (vector_t *)&dir_mv);
+    h->mv[MV_FWD_X0] = dir_mv;
     set_mvs(&h->mv[MV_FWD_X0], BLK_16X16);
     h->pred_mode_Y[3] = h->pred_mode_Y[6] = NOT_AVAIL;
     h->cy = h->picture.data[0];
@@ -1516,8 +1512,8 @@ static int cavs_decode_init(AVCodecContext * avctx) {
     h->intra_pred_c[   INTRA_C_LP_LEFT] = intra_pred_lp_left;
     h->intra_pred_c[    INTRA_C_LP_TOP] = intra_pred_lp_top;
     h->intra_pred_c[    INTRA_C_DC_128] = intra_pred_dc_128;
-    veccpy(&h->mv[ 7], (vector_t *)&un_mv);
-    veccpy(&h->mv[19], (vector_t *)&un_mv);
+    h->mv[ 7] = un_mv;
+    h->mv[19] = un_mv;
     return 0;
 }
 
