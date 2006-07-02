@@ -19,6 +19,7 @@
  */
 #undef SPREADW
 #undef PMAXW
+#undef PMAX
 #ifdef HAVE_MMX2
 #define SPREADW(a) "pshufw $0, " #a ", " #a " \n\t"
 #define PMAXW(a,b) "pmaxsw " #a ", " #b "     \n\t"
