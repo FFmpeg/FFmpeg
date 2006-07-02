@@ -1983,6 +1983,58 @@ typedef struct AVCodecContext {
      * - decoding: unused
      */
     int b_sensitivity;
+
+    /**
+     * - encoding: set by user.
+     * - decoding: unused
+     */
+    int compression_level;
+#define FF_COMPRESSION_DEFAULT -1
+
+    /**
+     * sets whether to use LPC mode - used by FLAC encoder
+     * - encoding: set by user.
+     * - decoding: unused.
+     */
+    int use_lpc;
+
+    /**
+     * LPC coefficient precision - used by FLAC encoder
+     * - encoding: set by user.
+     * - decoding: unused.
+     */
+    int lpc_coeff_precision;
+
+    /**
+     * - encoding: set by user.
+     * - decoding: unused.
+     */
+    int min_prediction_order;
+
+    /**
+     * - encoding: set by user.
+     * - decoding: unused.
+     */
+    int max_prediction_order;
+
+    /**
+     * search method for selecting prediction order
+     * - encoding: set by user.
+     * - decoding: unused.
+     */
+    int prediction_order_method;
+
+    /**
+     * - encoding: set by user.
+     * - decoding: unused.
+     */
+    int min_partition_order;
+
+    /**
+     * - encoding: set by user.
+     * - decoding: unused.
+     */
+    int max_partition_order;
 } AVCodecContext;
 
 /**

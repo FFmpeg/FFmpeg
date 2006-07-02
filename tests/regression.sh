@@ -599,7 +599,7 @@ fi
 if [ -n "$do_flac" ] ; then
 # encoding
 file=${outfile}flac.flac
-do_ffmpeg $file -y -ab 128 -ac 2 -ar 44100 -f s16le -i $pcm_src -acodec flac $file
+do_ffmpeg $file -y -ab 128 -ac 2 -ar 44100 -f s16le -i $pcm_src -acodec flac -compression_level 2 $file
 
 # decoding
 do_ffmpeg $pcm_dst -y -i $file -f wav $pcm_dst
