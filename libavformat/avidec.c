@@ -137,10 +137,12 @@ static int read_braindead_odml_indx(AVFormatContext *s, int frame_num){
                 ast->cum_len ++;
             last_pos= pos;
         }else{
-            int64_t offset= get_le64(pb);
-            int size      = get_le32(pb);
-            int duration  = get_le32(pb);
-            int64_t pos= url_ftell(pb);
+            int64_t offset, pos;
+            int duration;
+            offset = get_le64(pb);
+            get_le32(pb);       /* size */
+            duration = get_le32(pb);
+            pos = url_ftell(pb);
 
             url_fseek(pb, offset+8, SEEK_SET);
             read_braindead_odml_indx(s, frame_num);
@@ -186,7 +188,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
     unsigned int size, nb_frames;
     int i, n;
     AVStream *st;
-    AVIStream *ast;
+    AVIStream *ast = NULL;
     int xan_video = 0;  /* hack to support Xan A/V */
 
     avi->stream_index= -1;
