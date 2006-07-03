@@ -574,7 +574,8 @@ static inline void mv_pred_median(AVSContext *h, vector_t *mvP, vector_t *mvA, v
 }
 
 static inline void mv_pred_direct(AVSContext *h, vector_t *pmv_fw,
-                                  vector_t *pmv_bw, vector_t *col_mv) {
+                                  vector_t *col_mv) {
+    vector_t *pmv_bw = pmv_fw + MV_BWD_OFFS;
     int den = h->direct_den[col_mv->ref];
     int m = col_mv->x >> 31;
 
@@ -862,12 +863,14 @@ static inline int next_mb(AVSContext *h) {
     return 1;
 }
 
-static void decode_mb_i(AVSContext *h, int is_i_pic) {
+static void decode_mb_i(AVSContext *h) {
     GetBitContext *gb = &h->s.gb;
     int block, pred_mode_uv;
     uint8_t top[18];
     uint8_t left[18];
     uint8_t *d;
+
+    init_mb(h);
 
     /* get intra prediction modes from stream */
     for(block=0;block<4;block++) {
@@ -913,7 +916,7 @@ static void decode_mb_i(AVSContext *h, int is_i_pic) {
     }
 
     /* get coded block pattern */
-    if(is_i_pic)
+    if(h->pic_type == FF_I_TYPE)
         h->cbp = cbp_tab[get_ue_golomb(gb)][0];
     if(h->cbp && !h->qp_fixed)
         h->qp += get_se_golomb(gb); //qp_delta
@@ -960,39 +963,15 @@ static void decode_mb_i(AVSContext *h, int is_i_pic) {
         *h->col_type = I_8X8;
 }
 
-static void mb_skip_p(AVSContext *h) {
-    mv_pred(h, MV_FWD_X0, MV_FWD_C2, MV_PRED_PSKIP, BLK_16X16, 0);
-    inter_pred(h);
-    store_mvs(h);
-    filter_mb(h,P_SKIP);
-    *h->col_type = P_SKIP;
-}
-
-
-static void mb_skip_b(AVSContext *h) {
-    int i;
-
-    if(!(*h->col_type)) {
-        /* intra MB at co-location, do in-plane prediction */
-        mv_pred(h, MV_FWD_X0, MV_FWD_C2, MV_PRED_BSKIP, BLK_16X16, 1);
-        mv_pred(h, MV_BWD_X0, MV_BWD_C2, MV_PRED_BSKIP, BLK_16X16, 0);
-    } else {
-        /* direct prediction from co-located P MB, block-wise */
-        for(i=0;i<4;i++)
-            mv_pred_direct(h,&h->mv[mv_scan[i]],
-                           &h->mv[mv_scan[i]+MV_BWD_OFFS],
-                           &h->col_mv[(h->mby*h->mb_width + h->mbx)*4 + i]);
-    }
-}
-
 static void decode_mb_p(AVSContext *h, enum mb_t mb_type) {
     GetBitContext *gb = &h->s.gb;
     int ref[4];
 
+    init_mb(h);
     switch(mb_type) {
     case P_SKIP:
-        mb_skip_p(h);
-        return;
+        mv_pred(h, MV_FWD_X0, MV_FWD_C2, MV_PRED_PSKIP, BLK_16X16, 0);
+        break;
     case P_16X16:
         ref[0] = h->ref_flag ? 0 : get_bits1(gb);
         mv_pred(h, MV_FWD_X0, MV_FWD_C2, MV_PRED_MEDIAN,   BLK_16X16,ref[0]);
@@ -1021,7 +1000,8 @@ static void decode_mb_p(AVSContext *h, enum mb_t mb_type) {
     }
     inter_pred(h);
     store_mvs(h);
-    decode_residual_inter(h);
+    if(mb_type != P_SKIP)
+        decode_residual_inter(h);
     filter_mb(h,mb_type);
     *h->col_type = mb_type;
 }
@@ -1031,6 +1011,8 @@ static void decode_mb_b(AVSContext *h, enum mb_t mb_type) {
     enum sub_mb_t sub_type[4];
     int flags;
 
+    init_mb(h);
+
     /* reset all MVs */
     h->mv[MV_FWD_X0] = dir_mv;
     set_mvs(&h->mv[MV_FWD_X0], BLK_16X16);
@@ -1038,12 +1020,16 @@ static void decode_mb_b(AVSContext *h, enum mb_t mb_type) {
     set_mvs(&h->mv[MV_BWD_X0], BLK_16X16);
     switch(mb_type) {
     case B_SKIP:
-        mb_skip_b(h);
-        inter_pred(h);
-        filter_mb(h,B_SKIP);
-        return;
     case B_DIRECT:
-        mb_skip_b(h);
+        if(!(*h->col_type)) {
+            /* intra MB at co-location, do in-plane prediction */
+            mv_pred(h, MV_FWD_X0, MV_FWD_C2, MV_PRED_BSKIP, BLK_16X16, 1);
+            mv_pred(h, MV_BWD_X0, MV_BWD_C2, MV_PRED_BSKIP, BLK_16X16, 0);
+        } else
+            /* direct prediction from co-located P MB, block-wise */
+            for(block=0;block<4;block++)
+                mv_pred_direct(h,&h->mv[mv_scan[block]],
+                            &h->col_mv[(h->mby*h->mb_width+h->mbx)*4 + block]);
         break;
     case B_FWD_16X16:
         mv_pred(h, MV_FWD_X0, MV_FWD_C2, MV_PRED_MEDIAN, BLK_16X16, 1);
@@ -1070,7 +1056,6 @@ static void decode_mb_b(AVSContext *h, enum mb_t mb_type) {
                             MV_PRED_BSKIP, BLK_8X8, 0);
                 } else
                     mv_pred_direct(h,&h->mv[mv_scan[block]],
-                                   &h->mv[mv_scan[block]+MV_BWD_OFFS],
                                    &h->col_mv[(h->mby*h->mb_width + h->mbx)*4 + block]);
                 break;
             case B_SUB_FWD:
@@ -1131,7 +1116,8 @@ static void decode_mb_b(AVSContext *h, enum mb_t mb_type) {
         }
     }
     inter_pred(h);
-    decode_residual_inter(h);
+    if(mb_type != B_SKIP)
+        decode_residual_inter(h);
     filter_mb(h,mb_type);
 }
 
@@ -1199,7 +1185,7 @@ static void init_pic(AVSContext *h) {
 
 static int decode_pic(AVSContext *h) {
     MpegEncContext *s = &h->s;
-    int i,skip_count;
+    int skip_count;
     enum mb_t mb_type;
 
     if (!s->context_initialized) {
@@ -1273,26 +1259,23 @@ static int decode_pic(AVSContext *h) {
     check_for_slice(h);
     if(h->pic_type == FF_I_TYPE) {
         do {
-            init_mb(h);
-            decode_mb_i(h,1);
+            decode_mb_i(h);
         } while(next_mb(h));
     } else if(h->pic_type == FF_P_TYPE) {
         do {
             if(h->skip_mode_flag) {
                 skip_count = get_ue_golomb(&s->gb);
-                for(i=0;i<skip_count;i++) {
-                    init_mb(h);
-                    mb_skip_p(h);
+                while(skip_count--) {
+                    decode_mb_p(h,P_SKIP);
                     if(!next_mb(h))
                         goto done;
                 }
                 mb_type = get_ue_golomb(&s->gb) + P_16X16;
             } else
                 mb_type = get_ue_golomb(&s->gb) + P_SKIP;
-            init_mb(h);
             if(mb_type > P_8X8) {
                 h->cbp = cbp_tab[mb_type - P_8X8 - 1][0];
-                decode_mb_i(h,0);
+                decode_mb_i(h);
             } else
                 decode_mb_p(h,mb_type);
         } while(next_mb(h));
@@ -1300,11 +1283,8 @@ static int decode_pic(AVSContext *h) {
         do {
             if(h->skip_mode_flag) {
                 skip_count = get_ue_golomb(&s->gb);
-                for(i=0;i<skip_count;i++) {
-                    init_mb(h);
-                    mb_skip_b(h);
-                    inter_pred(h);
-                    filter_mb(h,B_SKIP);
+                while(skip_count--) {
+                    decode_mb_b(h,B_SKIP);
                     if(!next_mb(h))
                         goto done;
                 }
@@ -1314,7 +1294,7 @@ static int decode_pic(AVSContext *h) {
             init_mb(h);
             if(mb_type > B_8X8) {
                 h->cbp = cbp_tab[mb_type - B_8X8 - 1][0];
-                decode_mb_i(h,0);
+                decode_mb_i(h);
             } else
                 decode_mb_b(h,mb_type);
         } while(next_mb(h));
