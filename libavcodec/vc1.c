@@ -1330,7 +1330,12 @@ static int vc1_parse_frame_header(VC1Context *v, GetBitContext* gb)
         }
         if(v->mv_mode == MV_PMODE_1MV_HPEL || v->mv_mode == MV_PMODE_1MV_HPEL_BILIN)
             v->s.quarter_sample = 0;
-        else
+        else if(v->mv_mode == MV_PMODE_INTENSITY_COMP) {
+            if(v->mv_mode2 == MV_PMODE_1MV_HPEL || v->mv_mode2 == MV_PMODE_1MV_HPEL_BILIN)
+                v->s.quarter_sample = 0;
+            else
+                v->s.quarter_sample = 1;
+        } else
             v->s.quarter_sample = 1;
 
         if ((v->mv_mode == MV_PMODE_INTENSITY_COMP &&
