@@ -1605,8 +1605,15 @@ static int mpegps_read_packet(AVFormatContext *s,
             goto skip;
         }
     } else if (startcode >= 0x1e0 && startcode <= 0x1ef) {
+        static const unsigned char avs_seqh[4] = { 0, 0, 1, 0xb0 };
+        unsigned char buf[8];
+        get_buffer(&s->pb, buf, 8);
+        url_fseek(&s->pb, -8, SEEK_CUR);
+        if(!memcmp(buf, avs_seqh, 4) && (buf[6] != 0 || buf[7] != 1))
+            codec_id = CODEC_ID_CAVS;
+        else
+            codec_id = CODEC_ID_MPEG2VIDEO;
         type = CODEC_TYPE_VIDEO;
-        codec_id = CODEC_ID_MPEG2VIDEO;
     } else if (startcode >= 0x1c0 && startcode <= 0x1df) {
         type = CODEC_TYPE_AUDIO;
         codec_id = CODEC_ID_MP2;
