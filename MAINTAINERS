@@ -107,6 +107,7 @@ Codecs:
   aasc.c                                Kostya Shishkov
   asv*                                  Michael Niedermayer
   bmp.c                                 Mans Rullgard
+  cavs*                                 Stefan Gehrer
   cinepak.c                             Roberto Togni
   cljr                                  Alex Beregszaszi
   cook.c, cookdata.h                    Benjamin Larsson
@@ -115,6 +116,7 @@ Codecs:
   dv.c                                  Roman Shaposhnik
   ffv1.c                                Michael Niedermayer
   flac.c                                Alex Beregszaszi
+  flacenc.c                             Justin Ruggles
   flicvideo.c                           Mike Melanson
   g726.c                                Roman Shaposhnik
   h264*                                 Loren Merritt, Michael Niedermayer
@@ -156,6 +158,7 @@ Codecs:
   truespeech.c                          Kostya Shishkov
   tscc.c                                Kostya Shishkov
   ulti*                                 Kostya Shishkov
+  vc1*                                  Kostya Shishkov
   vcr1.c                                Michael Niedermayer
   vp3*                                  Mike Melanson
   vqavideo.c                            Mike Melanson
