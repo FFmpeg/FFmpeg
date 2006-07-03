@@ -2570,6 +2570,22 @@ static void wmv2_mspel8_h_lowpass(uint8_t *dst, uint8_t *src, int dstStride, int
     }
 }
 
+/* AVS specific */
+void ff_cavsdsp_init(DSPContext* c, AVCodecContext *avctx);
+
+void ff_put_cavs_qpel8_mc00_c(uint8_t *dst, uint8_t *src, int stride) {
+    put_pixels8_c(dst, src, stride, 8);
+}
+void ff_avg_cavs_qpel8_mc00_c(uint8_t *dst, uint8_t *src, int stride) {
+    avg_pixels8_c(dst, src, stride, 8);
+}
+void ff_put_cavs_qpel16_mc00_c(uint8_t *dst, uint8_t *src, int stride) {
+    put_pixels16_c(dst, src, stride, 16);
+}
+void ff_avg_cavs_qpel16_mc00_c(uint8_t *dst, uint8_t *src, int stride) {
+    avg_pixels16_c(dst, src, stride, 16);
+}
+
 static void wmv2_mspel8_v_lowpass(uint8_t *dst, uint8_t *src, int dstStride, int srcStride, int w){
     uint8_t *cm = cropTbl + MAX_NEG_CROP;
     int i;
@@ -3988,6 +4004,8 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     c->biweight_h264_pixels_tab[7]= biweight_h264_pixels4x2_c;
     c->biweight_h264_pixels_tab[8]= biweight_h264_pixels2x4_c;
     c->biweight_h264_pixels_tab[9]= biweight_h264_pixels2x2_c;
+
+    ff_cavsdsp_init(c,avctx);
 
     c->put_mspel_pixels_tab[0]= put_mspel8_mc00_c;
     c->put_mspel_pixels_tab[1]= put_mspel8_mc10_c;

@@ -529,6 +529,9 @@ void avcodec_register_all(void)
 #ifdef CONFIG_AVS_DECODER
     register_avcodec(&avs_decoder);
 #endif //CONFIG_AVS_DECODER
+#ifdef CONFIG_CAVS_DECODER
+    register_avcodec(&cavs_decoder);
+#endif //CONFIG_CAVS_DECODER
 #ifdef CONFIG_RAWVIDEO_DECODER
     register_avcodec(&rawvideo_decoder);
 #endif //CONFIG_RAWVIDEO_DECODER
@@ -637,6 +640,7 @@ PCM_CODEC(CODEC_ID_ADPCM_SBPRO_2, adpcm_sbpro_2);
     /* parsers */
     av_register_codec_parser(&mpegvideo_parser);
     av_register_codec_parser(&mpeg4video_parser);
+    av_register_codec_parser(&cavsvideo_parser);
 #if defined(CONFIG_H261_DECODER) || defined(CONFIG_H261_ENCODER)
     av_register_codec_parser(&h261_parser);
 #endif

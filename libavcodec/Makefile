@@ -32,6 +32,9 @@ endif
 ifeq ($(CONFIG_AVS_DECODER),yes)
     OBJS+= avs.o
 endif
+ifeq ($(CONFIG_CAVS_DECODER),yes)
+    OBJS+= cavs.o cavsdsp.o
+endif
 ifeq ($(CONFIG_CINEPAK_DECODER),yes)
     OBJS+= cinepak.o
 endif

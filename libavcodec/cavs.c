@@ -76,7 +76,7 @@ typedef struct {
     /* intra prediction is done with un-deblocked samples
      they are saved here before deblocking the MB  */
     uint8_t *top_border_y, *top_border_u, *top_border_v;
-    uint8_t left_border_y[16], left_border_u[8], left_border_v[8];
+    uint8_t left_border_y[16], left_border_u[10], left_border_v[10];
     uint8_t topleft_border_y, topleft_border_u, topleft_border_v;
 
     void (*intra_pred_l[8])(uint8_t *d,uint8_t *top,uint8_t *left,int stride);
@@ -136,22 +136,22 @@ static inline int get_bs_b(vector_t *mvP, vector_t *mvQ) {
     tc    =    tc_tab[clip(qp_avg + h->alpha_offset,0,63)];
 
 static void filter_mb(AVSContext *h, enum mb_t mb_type) {
-    uint8_t bs[8];
+    DECLARE_ALIGNED_8(uint8_t, bs[8]);
     int qp_avg, alpha, beta, tc;
     int i;
 
     /* save un-deblocked lines */
     h->topleft_border_y = h->top_border_y[h->mbx*16+15];
-    h->topleft_border_u = h->top_border_u[h->mbx*8+7];
-    h->topleft_border_v = h->top_border_v[h->mbx*8+7];
+    h->topleft_border_u = h->top_border_u[h->mbx*10+8];
+    h->topleft_border_v = h->top_border_v[h->mbx*10+8];
     memcpy(&h->top_border_y[h->mbx*16], h->cy + 15* h->l_stride,16);
-    memcpy(&h->top_border_u[h->mbx* 8], h->cu +  7* h->c_stride,8);
-    memcpy(&h->top_border_v[h->mbx* 8], h->cv +  7* h->c_stride,8);
+    memcpy(&h->top_border_u[h->mbx*10+1], h->cu +  7* h->c_stride,8);
+    memcpy(&h->top_border_v[h->mbx*10+1], h->cv +  7* h->c_stride,8);
     for(i=0;i<8;i++) {
         h->left_border_y[i*2+0] = *(h->cy + 15 + (i*2+0)*h->l_stride);
         h->left_border_y[i*2+1] = *(h->cy + 15 + (i*2+1)*h->l_stride);
-        h->left_border_u[i] = *(h->cu + 7 + i*h->c_stride);
-        h->left_border_v[i] = *(h->cv + 7 + i*h->c_stride);
+        h->left_border_u[i+1] = *(h->cu + 7 + i*h->c_stride);
+        h->left_border_v[i+1] = *(h->cv + 7 + i*h->c_stride);
     }
     if(!h->loop_filter_disable) {
         /* clear bs */
@@ -286,27 +286,6 @@ static inline void load_intra_pred_luma(AVSContext *h, uint8_t *top,
     }
 }
 
-static inline void load_intra_pred_chroma(uint8_t *stop, uint8_t *sleft,
-                                          uint8_t stopleft, uint8_t *dtop,
-                                          uint8_t *dleft, int stride, int flags) {
-    int i;
-
-    if(flags & A_AVAIL) {
-        for(i=0; i<8; i++)
-            dleft[i+1] = sleft[i];
-        dleft[0] = dleft[1];
-        dleft[9] = dleft[8];
-    }
-    if(flags & B_AVAIL) {
-        for(i=0; i<8; i++)
-            dtop[i+1] = stop[i];
-        dtop[0] = dtop[1];
-        dtop[9] = dtop[8];
-        if(flags & A_AVAIL)
-            dleft[0] = dtop[0] = stopleft;
-    }
-}
-
 static void intra_pred_vert(uint8_t *d,uint8_t *top,uint8_t *left,int stride) {
     int y;
     uint64_t a = *((uint64_t *)(&top[1]));
@@ -394,7 +373,7 @@ static void intra_pred_lp_top(uint8_t *d,uint8_t *top,uint8_t *left,int stride) 
 
 #undef LOWPASS
 
-static inline void modify_pred(const int8_t *mod_table, int *mode) {
+static inline void modify_pred(const int_fast8_t *mod_table, int *mode) {
     int newmode = mod_table[*mode];
     if(newmode < 0) {
         av_log(NULL, AV_LOG_ERROR, "Illegal intra prediction mode\n");
@@ -688,8 +667,10 @@ static void mv_pred(AVSContext *h, enum mv_loc_t nP, enum mv_loc_t nC,
 
 /* kth-order exponential golomb code */
 static inline int get_ue_code(GetBitContext *gb, int order) {
-    if(order)
-        return (get_ue_golomb(gb) << order) + get_bits(gb,order);
+    if(order) {
+        int ret = get_ue_golomb(gb) << order;
+        return ret + get_bits(gb,order);
+    }
     return get_ue_golomb(gb);
 }
 
@@ -730,7 +711,7 @@ static int decode_residual_block(AVSContext *h, GetBitContext *gb,
         run_buf[i] = run;
     }
     /* inverse scan and dequantization */
-    for(i=i-1;i>=0;i--) {
+    while(--i >= 0){
         pos += 1 + run_buf[i];
         if(pos > 63) {
             av_log(h->s.avctx, AV_LOG_ERROR,
@@ -920,12 +901,24 @@ static void decode_mb_i(AVSContext *h, int is_i_pic) {
     }
 
     /* chroma intra prediction */
-    load_intra_pred_chroma(&h->top_border_u[h->mbx*8], h->left_border_u,
-                           h->topleft_border_u, top, left, h->c_stride, h->flags);
-    h->intra_pred_c[pred_mode_uv](h->cu, top, left, h->c_stride);
-    load_intra_pred_chroma(&h->top_border_v[h->mbx*8], h->left_border_v,
-                           h->topleft_border_v, top, left, h->c_stride, h->flags);
-    h->intra_pred_c[pred_mode_uv](h->cv, top, left, h->c_stride);
+    /* extend borders by one pixel */
+    h->left_border_u[9] = h->left_border_u[8];
+    h->left_border_v[9] = h->left_border_v[8];
+    h->top_border_u[h->mbx*10+9] = h->top_border_u[h->mbx*10+8];
+    h->top_border_v[h->mbx*10+9] = h->top_border_v[h->mbx*10+8];
+    if(h->mbx && h->mby) {
+        h->top_border_u[h->mbx*10] = h->left_border_u[0] = h->topleft_border_u;
+        h->top_border_v[h->mbx*10] = h->left_border_v[0] = h->topleft_border_v;
+    } else {
+        h->left_border_u[0] = h->left_border_u[1];
+        h->left_border_v[0] = h->left_border_v[1];
+        h->top_border_u[h->mbx*10] = h->top_border_u[h->mbx*10+1];
+        h->top_border_v[h->mbx*10] = h->top_border_v[h->mbx*10+1];
+    }
+    h->intra_pred_c[pred_mode_uv](h->cu, &h->top_border_u[h->mbx*10],
+                                  h->left_border_u, h->c_stride);
+    h->intra_pred_c[pred_mode_uv](h->cv, &h->top_border_v[h->mbx*10],
+                                  h->left_border_v, h->c_stride);
 
     decode_residual_chroma(h);
     filter_mb(h,I_8X8);
@@ -1324,10 +1317,10 @@ static void init_top_lines(AVSContext *h) {
     h->top_qp       = av_malloc( h->mb_width);
     h->top_mv[0]    = av_malloc((h->mb_width*2+1)*sizeof(vector_t));
     h->top_mv[1]    = av_malloc((h->mb_width*2+1)*sizeof(vector_t));
-    h->top_pred_Y   = av_malloc( h->mb_width*2*sizeof(int));
+    h->top_pred_Y   = av_malloc( h->mb_width*2*sizeof(*h->top_pred_Y));
     h->top_border_y = av_malloc((h->mb_width+1)*16);
-    h->top_border_u = av_malloc((h->mb_width+1)*8);
-    h->top_border_v = av_malloc((h->mb_width+1)*8);
+    h->top_border_u = av_malloc((h->mb_width)*10);
+    h->top_border_v = av_malloc((h->mb_width)*10);
 
     /* alloc space for co-located MVs and types */
     h->col_mv       = av_malloc( h->mb_width*h->mb_height*4*sizeof(vector_t));
@@ -1336,7 +1329,7 @@ static void init_top_lines(AVSContext *h) {
 
 static int decode_seq_header(AVSContext *h) {
     MpegEncContext *s = &h->s;
-    extern const AVRational frame_rate_tab[];
+    extern const AVRational ff_frame_rate_tab[];
     int frame_rate_code;
 
     h->profile =         get_bits(&s->gb,8);
@@ -1354,8 +1347,8 @@ static int decode_seq_header(AVSContext *h) {
     s->low_delay =       get_bits1(&s->gb);
     h->mb_width  = (s->width  + 15) >> 4;
     h->mb_height = (s->height + 15) >> 4;
-    h->s.avctx->time_base.den = frame_rate_tab[frame_rate_code].num;
-    h->s.avctx->time_base.num = frame_rate_tab[frame_rate_code].den;
+    h->s.avctx->time_base.den = ff_frame_rate_tab[frame_rate_code].num;
+    h->s.avctx->time_base.num = ff_frame_rate_tab[frame_rate_code].den;
     h->s.avctx->width  = s->width;
     h->s.avctx->height = s->height;
     if(!h->top_qp)
@@ -1541,6 +1534,6 @@ AVCodec cavs_decoder = {
     NULL,
     cavs_decode_end,
     cavs_decode_frame,
-    CODEC_CAP_TRUNCATED | CODEC_CAP_DELAY, //FIXME is this correct ?
+    CODEC_CAP_DR1 | CODEC_CAP_DELAY,
     .flush= ff_cavs_flush,
 };

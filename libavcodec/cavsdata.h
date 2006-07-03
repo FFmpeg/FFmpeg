@@ -187,7 +187,7 @@ static const uint16_t dequant_mul[64] = {
   32771,35734,38965,42497,46341,50535,55109,60099
 };
 
-typedef struct {
+DECLARE_ALIGNED_8(typedef, struct) {
     int16_t x;
     int16_t y;
     int16_t dist;

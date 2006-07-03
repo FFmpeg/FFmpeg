@@ -274,6 +274,15 @@ typedef struct DSPContext {
     h264_weight_func weight_h264_pixels_tab[10];
     h264_biweight_func biweight_h264_pixels_tab[10];
 
+    /* AVS specific */
+    qpel_mc_func put_cavs_qpel_pixels_tab[2][16];
+    qpel_mc_func avg_cavs_qpel_pixels_tab[2][16];
+    void (*cavs_filter_lv)(uint8_t *pix, int stride, int alpha, int beta, int tc, int bs1, int bs2);
+    void (*cavs_filter_lh)(uint8_t *pix, int stride, int alpha, int beta, int tc, int bs1, int bs2);
+    void (*cavs_filter_cv)(uint8_t *pix, int stride, int alpha, int beta, int tc, int bs1, int bs2);
+    void (*cavs_filter_ch)(uint8_t *pix, int stride, int alpha, int beta, int tc, int bs1, int bs2);
+    void (*cavs_idct8_add)(uint8_t *dst, DCTELEM *block, int stride);
+
     me_cmp_func pix_abs[2][4];
 
     /* huffyuv specific */
