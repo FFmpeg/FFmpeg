@@ -32,7 +32,6 @@ Michael's TODO list: (unordered) (if anyone wanna help with sth, just ask)
 - per MB ratecontrol (so VCD and such do work better)
 - more optimizations
 - simper rate control
-- split h263.c
 - reverse engeneer RV30/RV40
 
 Francois' TODO list: (unordered, without any timeframe)
