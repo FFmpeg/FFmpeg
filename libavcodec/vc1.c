@@ -2043,6 +2043,8 @@ static int vc1_decode_intra_block(VC1Context *v, DCTELEM block[64], int n, int c
     int dcdiff;
     int mb_pos = s->mb_x + s->mb_y * s->mb_stride;
     int a_avail = v->a_avail, c_avail = v->c_avail;
+    int use_pred = s->ac_pred;
+    int scale;
 
     /* XXX: Guard against dumb values of mquant */
     mquant = (mquant < 1) ? 0 : ( (mquant>31) ? 31 : mquant );
@@ -2095,34 +2097,30 @@ static int vc1_decode_intra_block(VC1Context *v, DCTELEM block[64], int n, int c
     /* Skip ? */
     run_diff = 0;
     i = 0;
-    if (!coded) {
-        goto not_coded;
-    }
 
     //AC Decoding
     i = 1;
 
-    {
+    /* check if AC is needed at all and adjust direction if needed */
+    if(!a_avail) dc_pred_dir = 1;
+    if(!c_avail) dc_pred_dir = 0;
+    if(!a_avail && !c_avail) use_pred = 0;
+    ac_val = s->ac_val[0][0] + s->block_index[n] * 16;
+    ac_val2 = ac_val;
+
+    scale = mquant * 2;
+
+    if(dc_pred_dir) //left
+        ac_val -= 16;
+    else //top
+        ac_val -= 16 * s->block_wrap[n];
+
+    if(coded) {
         int last = 0, skip, value;
         const int8_t *zz_table;
-        int scale;
         int k;
-        int use_pred = s->ac_pred;
-
-        scale = mquant * 2;
 
         zz_table = vc1_simple_progressive_8x8_zz;
-
-        ac_val = s->ac_val[0][0] + s->block_index[n] * 16;
-        ac_val2 = ac_val;
-        if(!a_avail) dc_pred_dir = 1;
-        if(!c_avail) dc_pred_dir = 0;
-        if(!a_avail && !c_avail) use_pred = 0;
-
-        if(dc_pred_dir) //left
-            ac_val -= 16;
-        else //top
-            ac_val -= 16 * s->block_wrap[n];
 
         while (!last) {
             vc1_decode_ac_coeff(v, &last, &skip, &value, codingset);
@@ -2177,36 +2175,16 @@ static int vc1_decode_intra_block(VC1Context *v, DCTELEM block[64], int n, int c
             }
 
         if(use_pred) i = 63;
-    }
-
-not_coded:
-    if(!coded) {
-        int k, scale;
-        int use_pred = s->ac_pred;
+    } else { // no AC coeffs
+        int k;
         int mb_pos2, q1, q2;
 
         mb_pos2 = mb_pos - dc_pred_dir - (1 - dc_pred_dir) * s->mb_stride;
         q1 = s->current_picture.qscale_table[mb_pos];
         q2 = s->current_picture.qscale_table[mb_pos2];
 
-        ac_val = s->ac_val[0][0] + s->block_index[n] * 16;
-        ac_val2 = ac_val;
-
-        if(!c_avail) {
-            memset(ac_val, 0, 8 * sizeof(ac_val[0]));
-            dc_pred_dir = 0;
-        }
-        if(!a_avail) {
-            memset(ac_val + 8, 0, 8 * sizeof(ac_val[0]));
-            dc_pred_dir = 1;
-        }
-
-        if(!a_avail && !c_avail) use_pred = 0;
-
-        scale = mquant * 2;
         memset(ac_val2, 0, 16 * 2);
         if(dc_pred_dir) {//left
-            ac_val -= 16;
             if(use_pred) {
                 memcpy(ac_val2, ac_val, 8 * 2);
                 if(0 && q2 && q1!=q2 && c_avail) {
@@ -2217,7 +2195,6 @@ not_coded:
                 }
             }
         } else {//top
-            ac_val -= 16 * s->block_wrap[n];
             if(use_pred) {
                 memcpy(ac_val2 + 8, ac_val + 8, 8 * 2);
                 if(0 && q2 && q1!=q2 && a_avail) {
