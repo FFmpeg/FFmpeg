@@ -12,7 +12,6 @@
 
 #include "dsputil.h"
 
-#include "i386/mmx.h"
 #include "simple_idct.h"
 #include "faandct.h"
 

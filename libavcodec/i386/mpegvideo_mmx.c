@@ -23,7 +23,7 @@
 #include "../dsputil.h"
 #include "../mpegvideo.h"
 #include "../avcodec.h"
-#include "mmx.h"
+#include "x86_cpu.h"
 
 extern uint8_t zigzag_direct_noperm[64];
 extern uint16_t inv_zigzag_direct16[64];

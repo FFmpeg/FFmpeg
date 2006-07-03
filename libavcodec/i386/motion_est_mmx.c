@@ -20,7 +20,7 @@
  * mostly by Michael Niedermayer <michaelni@gmx.at>
  */
 #include "../dsputil.h"
-#include "mmx.h"
+#include "x86_cpu.h"
 
 static const __attribute__ ((aligned(8))) uint64_t round_tab[3]={
 0x0000000000000000ULL,

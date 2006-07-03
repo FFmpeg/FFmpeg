@@ -19,7 +19,7 @@
 
 #include "../avcodec.h"
 #include "../snow.h"
-#include "mmx.h"
+#include "x86_cpu.h"
 
 void ff_snow_horizontal_compose97i_sse2(DWTELEM *b, int width){
     const int w2= (width+1)>>1;

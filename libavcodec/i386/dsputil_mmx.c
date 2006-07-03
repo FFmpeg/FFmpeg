@@ -23,6 +23,7 @@
 #include "../dsputil.h"
 #include "../simple_idct.h"
 #include "../mpegvideo.h"
+#include "x86_cpu.h"
 #include "mmx.h"
 
 //#undef NDEBUG
