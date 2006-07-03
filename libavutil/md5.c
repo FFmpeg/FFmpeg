@@ -69,7 +69,11 @@ static const uint32_t T[64] = {
         }\
         a = b + (( a << t ) | ( a >> (32 - t) ));
 
+#ifdef WORDS_BIGENDIAN
+static void body(uint32_t ABCD[4], uint32_t X[16]){
+#else
 static void body(uint32_t ABCD[4], const uint32_t X[16]){
+#endif
     int t;
     int i attribute_unused;
     unsigned int a= ABCD[3];
