@@ -69,11 +69,8 @@ static const uint32_t T[64] = {
         }\
         a = b + (( a << t ) | ( a >> (32 - t) ));
 
-#ifdef WORDS_BIGENDIAN
 static void body(uint32_t ABCD[4], uint32_t X[16]){
-#else
-static void body(uint32_t ABCD[4], const uint32_t X[16]){
-#endif
+
     int t;
     int i attribute_unused;
     unsigned int a= ABCD[3];
@@ -121,7 +118,7 @@ void av_md5_update(AVMD5 *ctx, const uint8_t *src, const int len){
     for( i = 0; i < len; i++ ){
         ctx->block[ ctx->b_used++ ] = src[i];
         if( 64 == ctx->b_used ){
-            body(ctx->ABCD, (const uint32_t*) ctx->block);
+            body(ctx->ABCD, (uint32_t*) ctx->block);
             ctx->b_used = 0;
         }
     }
@@ -135,14 +132,14 @@ void av_md5_final(AVMD5 *ctx, uint8_t *dst){
     memset(&ctx->block[ctx->b_used], 0, 64 - ctx->b_used);
 
     if( 56 < ctx->b_used ){
-        body( ctx->ABCD, (const uint32_t*) ctx->block );
+        body( ctx->ABCD, (uint32_t*) ctx->block );
         memset(ctx->block, 0, 64);
     }
 
     for(i=0; i<8; i++)
         ctx->block[56+i] = (ctx->len << 3) >> (i<<3);
 
-    body(ctx->ABCD, (const uint32_t*) ctx->block);
+    body(ctx->ABCD, (uint32_t*) ctx->block);
 
     for(i=0; i<4; i++)
         ((uint32_t*)dst)[i]= le2me_32(ctx->ABCD[3-i]);
