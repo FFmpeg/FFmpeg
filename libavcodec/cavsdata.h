@@ -194,15 +194,15 @@ DECLARE_ALIGNED_8(typedef, struct) {
     int16_t ref;
 } vector_t;
 
-// marks block as unavailable, i.e. out of picture
-//  or not yet decoded
+/** marks block as unavailable, i.e. out of picture
+    or not yet decoded */
 static const vector_t un_mv    = {0,0,1,NOT_AVAIL};
 
-//marks block as "no prediction from this direction"
-// e.g. forward motion vector in BWD partition
+/** marks block as "no prediction from this direction"
+    e.g. forward motion vector in BWD partition */
 static const vector_t dir_mv   = {0,0,1,REF_DIR};
 
-//marks block as using intra prediction
+/** marks block as using intra prediction */
 static const vector_t intra_mv = {0,0,1,REF_INTRA};
 
 typedef struct residual_vlc_t {

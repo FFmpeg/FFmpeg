@@ -17,6 +17,12 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+/**
+ * @file cavs.c
+ * Chinese AVS video (AVS1-P2, JiZhun profile) decoder
+ * @author Stefan Gehrer <stefan.gehrer@gmx.de>
+ */
+
 #include "avcodec.h"
 #include "bitstream.h"
 #include "golomb.h"
@@ -25,27 +31,27 @@
 
 typedef struct {
     MpegEncContext s;
-    Picture picture; //currently decoded frame
-    Picture DPB[2];  //reference frames
-    int dist[2];     //temporal distances from current frame to ref frames
+    Picture picture; ///< currently decoded frame
+    Picture DPB[2];  ///< reference frames
+    int dist[2];     ///< temporal distances from current frame to ref frames
     int profile, level;
     int aspect_ratio;
     int mb_width, mb_height;
     int pic_type;
     int progressive;
     int pic_structure;
-    int skip_mode_flag;
+    int skip_mode_flag; ///< select between skip_count or one skip_flag per MB
     int loop_filter_disable;
     int alpha_offset, beta_offset;
     int ref_flag;
-    int mbx, mby;
-    int flags;
-    int stc;
-    uint8_t *cy, *cu, *cv;
+    int mbx, mby;      ///< macroblock coordinates
+    int flags;         ///< availability flags of neighbouring macroblocks
+    int stc;           ///< last start code
+    uint8_t *cy, *cu, *cv; ///< current MB sample pointers
     int left_qp;
     uint8_t *top_qp;
 
-    /* mv motion vector cache
+    /** mv motion vector cache
        0:    D3  B2  B3  C2
        4:    A1  X0  X1   -
        8:    A3  X2  X3   -
@@ -61,7 +67,7 @@ typedef struct {
     vector_t *top_mv[2];
     vector_t *col_mv;
 
-    /* luma pred mode cache
+    /** luma pred mode cache
        0:    --  B2  B3
        3:    A1  X0  X1
        6:    A3  X2  X3   */
@@ -73,7 +79,7 @@ typedef struct {
     int qp_fixed;
     int cbp;
 
-    /* intra prediction is done with un-deblocked samples
+    /** intra prediction is done with un-deblocked samples
      they are saved here before deblocking the MB  */
     uint8_t *top_border_y, *top_border_u, *top_border_v;
     uint8_t left_border_y[16], left_border_u[10], left_border_v[10];
@@ -83,9 +89,12 @@ typedef struct {
     void (*intra_pred_c[7])(uint8_t *d,uint8_t *top,uint8_t *left,int stride);
     uint8_t *col_type_base;
     uint8_t *col_type;
-    int sym_factor;
-    int direct_den[2];
-    int scale_den[2];
+
+    /* scaling factors for MV prediction */
+    int sym_factor;    ///< for scaling in symmetrical B block
+    int direct_den[2]; ///< for scaling in direct B block
+    int scale_den[2];  ///< for scaling neighbouring MVs
+
     int got_keyframe;
 } AVSContext;
 
@@ -120,7 +129,15 @@ static inline int get_bs_b(vector_t *mvP, vector_t *mvQ) {
     return 0;
 }
 
-/* boundary strength (bs) mapping:
+#define SET_PARAMS                                            \
+    alpha = alpha_tab[clip(qp_avg + h->alpha_offset,0,63)];   \
+    beta  =  beta_tab[clip(qp_avg + h->beta_offset, 0,63)];   \
+    tc    =    tc_tab[clip(qp_avg + h->alpha_offset,0,63)];
+
+/**
+ * in-loop deblocking filter for a single macroblock
+ *
+ * boundary strength (bs) mapping:
  *
  * --4---5--
  * 0   2   |
@@ -129,12 +146,6 @@ static inline int get_bs_b(vector_t *mvP, vector_t *mvQ) {
  * ---------
  *
  */
-
-#define SET_PARAMS                                            \
-    alpha = alpha_tab[clip(qp_avg + h->alpha_offset,0,63)];   \
-    beta  =  beta_tab[clip(qp_avg + h->beta_offset, 0,63)];   \
-    tc    =    tc_tab[clip(qp_avg + h->alpha_offset,0,63)];
-
 static void filter_mb(AVSContext *h, enum mb_t mb_type) {
     DECLARE_ALIGNED_8(uint8_t, bs[8]);
     int qp_avg, alpha, beta, tc;
@@ -665,7 +676,7 @@ static void mv_pred(AVSContext *h, enum mv_loc_t nP, enum mv_loc_t nC,
  *
  ****************************************************************************/
 
-/* kth-order exponential golomb code */
+/** kth-order exponential golomb code */
 static inline int get_ue_code(GetBitContext *gb, int order) {
     if(order) {
         int ret = get_ue_golomb(gb) << order;
@@ -674,6 +685,15 @@ static inline int get_ue_code(GetBitContext *gb, int order) {
     return get_ue_golomb(gb);
 }
 
+/**
+ * decode coefficients from one 8x8 block, dequantize, inverse transform
+ *  and add them to sample block
+ * @param r pointer to 2D VLC table
+ * @param esc_golomb_order escape codes are k-golomb with this order k
+ * @param qp quantizer
+ * @param dst location of sample block
+ * @param stride line stride in frame buffer
+ */
 static int decode_residual_block(AVSContext *h, GetBitContext *gb,
                                  const residual_vlc_t *r, int esc_golomb_order,
                                  int qp, uint8_t *dst, int stride) {
@@ -756,6 +776,9 @@ static inline void decode_residual_inter(AVSContext *h) {
  *
  ****************************************************************************/
 
+/**
+ * initialise predictors for motion vectors and intra prediction
+ */
 static inline void init_mb(AVSContext *h) {
     int i;
 
@@ -795,6 +818,11 @@ static inline void init_mb(AVSContext *h) {
 
 static inline void check_for_slice(AVSContext *h);
 
+/**
+ * save predictors for later macroblocks and increase
+ * macroblock address
+ * @returns 0 if end of frame is reached, 1 otherwise
+ */
 static inline int next_mb(AVSContext *h) {
     int i;
 
@@ -1259,18 +1287,16 @@ static int decode_pic(AVSContext *h) {
                         goto done;
                 }
                 mb_type = get_ue_golomb(&s->gb) + P_16X16;
-            } else {
+            } else
                 mb_type = get_ue_golomb(&s->gb) + P_SKIP;
-            }
             init_mb(h);
             if(mb_type > P_8X8) {
                 h->cbp = cbp_tab[mb_type - P_8X8 - 1][0];
                 decode_mb_i(h,0);
-            } else {
+            } else
                 decode_mb_p(h,mb_type);
-            }
         } while(next_mb(h));
-    } else { //FF_B_TYPE
+    } else { /* FF_B_TYPE */
         do {
             if(h->skip_mode_flag) {
                 skip_count = get_ue_golomb(&s->gb);
@@ -1283,16 +1309,14 @@ static int decode_pic(AVSContext *h) {
                         goto done;
                 }
                 mb_type = get_ue_golomb(&s->gb) + B_DIRECT;
-            } else {
+            } else
                 mb_type = get_ue_golomb(&s->gb) + B_SKIP;
-            }
             init_mb(h);
             if(mb_type > B_8X8) {
                 h->cbp = cbp_tab[mb_type - B_8X8 - 1][0];
                 decode_mb_i(h,0);
-            } else {
+            } else
                 decode_mb_b(h,mb_type);
-            }
         } while(next_mb(h));
     }
  done:
@@ -1312,6 +1336,11 @@ static int decode_pic(AVSContext *h) {
  *
  ****************************************************************************/
 
+/**
+ * some predictions require data from the top-neighbouring macroblock.
+ * this data has to be stored for one complete row of macroblocks
+ * and this storage space is allocated here
+ */
 static void init_top_lines(AVSContext *h) {
     /* alloc top line of predictors */
     h->top_qp       = av_malloc( h->mb_width);
