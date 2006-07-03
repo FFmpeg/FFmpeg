@@ -1581,8 +1581,8 @@ static inline void vc1_pred_mv(MpegEncContext *s, int n, int dmv_x, int dmv_y, i
     /* Pullback MV as specified in 8.3.5.3.4 */
     {
         int qx, qy, X, Y;
-        qx = s->mb_x << 6; //FIXME: add real block coords for 4MV mode
-        qy = s->mb_y << 6;
+        qx = (s->mb_x << 6) + ((n==1 || n==3) ? 32 : 0);
+        qy = (s->mb_y << 6) + ((n==2 || n==3) ? 32 : 0);
         X = (s->mb_width << 6) - 4;
         Y = (s->mb_height << 6) - 4;
         if(mv1) {
@@ -2516,7 +2516,9 @@ static int vc1_decode_p_mb(VC1Context *v, DCTELEM block[6][64])
                         v->c_avail = v->mb_type[0][s->block_index[i] - 1];
 
                     vc1_decode_intra_block(v, s->block[i], i, is_coded[i], mquant, (i&4)?v->codingset2:v->codingset);
-                    //s->dsp.put_pixels_clamped(s->block[i], s->dest[dst_idx] + off, (i&4)?s->uvlinesize:s->linesize);
+                    vc1_inv_trans(block[i], 8, 8);
+                    for(j = 0; j < 64; j++) block[i][j] += 128;
+                    s->dsp.put_pixels_clamped(s->block[i], s->dest[dst_idx] + off, (i&4)?s->uvlinesize:s->linesize);
                     /* TODO: proper loop filtering */
                     if(v->pq >= 9 && v->overlap) {
                         if(v->a_avail)
@@ -2528,20 +2530,21 @@ static int vc1_decode_p_mb(VC1Context *v, DCTELEM block[6][64])
                     status = vc1_decode_p_block(v, s->block[i], i, mquant, ttmb, first_block);
                     if(!v->ttmbf && ttmb < 8) ttmb = -1;
                     first_block = 0;
-                    //s->dsp.add_pixels_clamped(s->block[i], s->dest[dst_idx] + off, (i&4)?s->uvlinesize:s->linesize);
+                    s->dsp.add_pixels_clamped(s->block[i], s->dest[dst_idx] + off, (i&4)?s->uvlinesize:s->linesize);
                 }
             }
             return status;
         }
         else //Skipped MB
         {
+            s->mb_intra = 0;
+            for (i=0; i<6; i++) v->mb_type[0][s->block_index[i]] = 0;
             for (i=0; i<4; i++)
             {
                 vc1_pred_mv(s, i, 0, 0, 0, v->range_x, v->range_y, v->mb_type[0]);
                 vc1_mc_4mv_luma(v, i);
             }
             vc1_mc_4mv_chroma(v);
-            for(i = 0; i < 6; i++) v->mb_type[0][s->block_index[i]] = 0;
             s->current_picture.qscale_table[mb_pos] = 0;
             return 0;
         }
