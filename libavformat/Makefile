@@ -18,7 +18,7 @@ OBJS+=mpeg.o mpegts.o mpegtsenc.o ffm.o crc.o img.o img2.o raw.o rm.o \
       nut.o wc3movie.o mp3.o westwood.o segafilm.o idcin.o flic.o \
       sierravmd.o matroska.o sol.o electronicarts.o nsvdec.o asf.o \
       ogg2.o oggparsevorbis.o oggparsetheora.o oggparseflac.o daud.o aiff.o \
-      voc.o tta.o mm.o avs.o smacker.o nuv.o oggparseogm.o
+      voc.o tta.o mm.o avs.o smacker.o nuv.o gxf.o oggparseogm.o
 
 # muxers
 ifeq ($(CONFIG_MUXERS),yes)

@@ -122,6 +122,7 @@ void av_register_all(void)
     tta_init();
     avs_init();
     nuv_init();
+    gxf_init();
 
 #ifdef CONFIG_MUXERS
     /* image formats */

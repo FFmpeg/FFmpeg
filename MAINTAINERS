@@ -190,6 +190,7 @@ Muxers/Demuxers:
   dc1394.c, dv.c                        Roman Shaposhnik
   flic.c                                Mike Melanson
   flvdec.c, flvenc.c                    Michael Niedermayer
+  gxf.c                                 Reimar Doeffinger
   idcin.c                               Mike Melanson
   idroq.c                               Mike Melanson
   ipmovie.c                             Mike Melanson

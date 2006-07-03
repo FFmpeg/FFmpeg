@@ -704,6 +704,7 @@ library:
 @tab Multimedia format used by the Creature Shock game.
 @item Smacker @tab    @tab X
 @tab Multimedia format used by many games.
+@item GXF @tab    @tab X
 @end multitable
 
 @code{X} means that encoding (resp. decoding) is supported.

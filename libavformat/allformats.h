@@ -141,6 +141,9 @@ int daud_init(void);
 /* nuv.c */
 int nuv_init(void);
 
+/* gxf.c */
+int gxf_init(void);
+
 /* aiff.c */
 int ff_aiff_init(void);
 
