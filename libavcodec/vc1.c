@@ -1019,20 +1019,15 @@ static void vc1_mc_4mv_luma(VC1Context *v, int n)
     }
 }
 
-#define SETMAXMIN(var)     \
-    if(var > ma) ma = var; \
-    if(var < mi) mi = var;
-
 static inline int median4(int a, int b, int c, int d)
 {
-    int ma, mi;
-
-    ma = mi = a;
-    SETMAXMIN(b);
-    SETMAXMIN(c);
-    SETMAXMIN(d);
-
-    return (a + b + c + d - ma - mi) >> 1;
+    if(a < b) {
+        if(c < d) return (FFMIN(b, d) + FFMAX(a, c)) >> 1;
+        else      return (FFMIN(b, c) + FFMAX(a, d)) >> 1;
+    } else {
+        if(c < d) return (FFMIN(a, d) + FFMAX(b, c)) >> 1;
+        else      return (FFMIN(a, c) + FFMAX(b, d)) >> 1;
+    }
 }
 
 
@@ -1408,6 +1403,7 @@ static int vc1_parse_frame_header(VC1Context *v, GetBitContext* gb)
 #define GET_MQUANT()                                           \
   if (v->dquantfrm)                                            \
   {                                                            \
+    int edges = 0;                                             \
     if (v->dqprofile == DQPROFILE_ALL_MBS)                     \
     {                                                          \
       if (v->dqbilevel)                                        \
@@ -1421,49 +1417,21 @@ static int vc1_parse_frame_header(VC1Context *v, GetBitContext* gb)
         else mquant = get_bits(gb, 5);                         \
       }                                                        \
     }                                                          \
-    else if(v->dqprofile == DQPROFILE_SINGLE_EDGE)             \
-    {                                                          \
-        switch(v->dqsbedge){                                   \
-        case 0: /* left */                                     \
-            mquant = (s->mb_x) ? v->pq : v->altpq;             \
-            break;                                             \
-        case 1: /* top */                                      \
-            mquant = (s->mb_y) ? v->pq : v->altpq;             \
-            break;                                             \
-        case 2: /* right */                                    \
-            mquant = (s->mb_x != (s->mb_width - 1)) ? v->pq : v->altpq; \
-            break;                                             \
-        case 3: /* bottom */                                   \
-            mquant = (s->mb_y != (s->mb_height-1)) ? v->pq : v->altpq; \
-            break;                                             \
-        default:                                               \
-            mquant = v->pq;                                    \
-        }                                                      \
-    }                                                          \
+    if(v->dqprofile == DQPROFILE_SINGLE_EDGE)                  \
+        edges = 1 << v->dqsbedge;                              \
     else if(v->dqprofile == DQPROFILE_DOUBLE_EDGES)            \
-    {                                                          \
-        switch(v->dqsbedge){                                   \
-        case 0: /* left and top */                             \
-            mquant = (s->mb_x && s->mb_y) ? v->pq : v->altpq;  \
-            break;                                             \
-        case 1: /* top and right */                            \
-            mquant = (s->mb_y && s->mb_x != (s->mb_width - 1)) ? v->pq : v->altpq; \
-            break;                                             \
-        case 2: /* right and bottom */                         \
-            mquant = (s->mb_x != (s->mb_width - 1) && s->mb_y != (s->mb_height-1)) ? v->pq : v->altpq; \
-            break;                                             \
-        case 3: /* bottom and left */                          \
-            mquant = (s->mb_x && s->mb_y != (s->mb_height-1)) ? v->pq : v->altpq; \
-            break;                                             \
-        default:                                               \
-            mquant = v->pq;                                    \
-        }                                                      \
-    }                                                          \
+        edges = (3 << v->dqsbedge) % 15;                       \
     else if(v->dqprofile == DQPROFILE_FOUR_EDGES)              \
-    {                                                          \
-        mquant = (s->mb_x && s->mb_y && s->mb_x != (s->mb_width - 1) && s->mb_y != (s->mb_height-1)) ? v->pq : v->altpq; \
-    }                                                          \
-    else mquant = v->pq;                                       \
+        edges = 15;                                            \
+    mquant = v->pq;                                            \
+    if((edges&1) && !s->mb_x)                                  \
+        mquant = v->altpq;                                     \
+    if((edges&2) && !s->mb_y)                                  \
+        mquant = v->altpq;                                     \
+    if((edges&4) && s->mb_x == (s->mb_width - 1))              \
+        mquant = v->altpq;                                     \
+    if((edges&8) && s->mb_y == (s->mb_height - 1))             \
+        mquant = v->altpq;                                     \
   }
 
 /**
