@@ -184,6 +184,8 @@ static void cavs_idct8_add_c(uint8_t *dst, DCTELEM *block, int stride) {
     DCTELEM (*src)[8] = (DCTELEM(*)[8])block;
     uint8_t *cm = cropTbl + MAX_NEG_CROP;
 
+    src[0][0] += 8;
+
     for( i = 0; i < 8; i++ ) {
         const int a0 =  3*src[i][1] - (src[i][7]<<1);
         const int a1 =  3*src[i][3] + (src[i][5]<<1);
@@ -197,22 +199,22 @@ static void cavs_idct8_add_c(uint8_t *dst, DCTELEM *block, int stride) {
 
         const int a7 = (src[i][2]<<2) - 10*src[i][6];
         const int a6 = (src[i][6]<<2) + 10*src[i][2];
-        const int a5 = (src[i][0] - src[i][4]) << 3;
-        const int a4 = (src[i][0] + src[i][4]) << 3;
+        const int a5 = ((src[i][0] - src[i][4]) << 3) + 4;
+        const int a4 = ((src[i][0] + src[i][4]) << 3) + 4;
 
         const int b0 = a4 + a6;
         const int b1 = a5 + a7;
         const int b2 = a5 - a7;
         const int b3 = a4 - a6;
 
-        src[i][0] = (b0 + b4 + 4) >> 3;
-        src[i][1] = (b1 + b5 + 4) >> 3;
-        src[i][2] = (b2 + b6 + 4) >> 3;
-        src[i][3] = (b3 + b7 + 4) >> 3;
-        src[i][4] = (b3 - b7 + 4) >> 3;
-        src[i][5] = (b2 - b6 + 4) >> 3;
-        src[i][6] = (b1 - b5 + 4) >> 3;
-        src[i][7] = (b0 - b4 + 4) >> 3;
+        src[i][0] = (b0 + b4) >> 3;
+        src[i][1] = (b1 + b5) >> 3;
+        src[i][2] = (b2 + b6) >> 3;
+        src[i][3] = (b3 + b7) >> 3;
+        src[i][4] = (b3 - b7) >> 3;
+        src[i][5] = (b2 - b6) >> 3;
+        src[i][6] = (b1 - b5) >> 3;
+        src[i][7] = (b0 - b4) >> 3;
     }
     for( i = 0; i < 8; i++ ) {
         const int a0 =  3*src[1][i] - (src[7][i]<<1);
@@ -235,14 +237,14 @@ static void cavs_idct8_add_c(uint8_t *dst, DCTELEM *block, int stride) {
         const int b2 = a5 - a7;
         const int b3 = a4 - a6;
 
-        dst[i + 0*stride] = cm[ dst[i + 0*stride] + ((b0 + b4 + 64) >> 7)];
-        dst[i + 1*stride] = cm[ dst[i + 1*stride] + ((b1 + b5 + 64) >> 7)];
-        dst[i + 2*stride] = cm[ dst[i + 2*stride] + ((b2 + b6 + 64) >> 7)];
-        dst[i + 3*stride] = cm[ dst[i + 3*stride] + ((b3 + b7 + 64) >> 7)];
-        dst[i + 4*stride] = cm[ dst[i + 4*stride] + ((b3 - b7 + 64) >> 7)];
-        dst[i + 5*stride] = cm[ dst[i + 5*stride] + ((b2 - b6 + 64) >> 7)];
-        dst[i + 6*stride] = cm[ dst[i + 6*stride] + ((b1 - b5 + 64) >> 7)];
-        dst[i + 7*stride] = cm[ dst[i + 7*stride] + ((b0 - b4 + 64) >> 7)];
+        dst[i + 0*stride] = cm[ dst[i + 0*stride] + ((b0 + b4) >> 7)];
+        dst[i + 1*stride] = cm[ dst[i + 1*stride] + ((b1 + b5) >> 7)];
+        dst[i + 2*stride] = cm[ dst[i + 2*stride] + ((b2 + b6) >> 7)];
+        dst[i + 3*stride] = cm[ dst[i + 3*stride] + ((b3 + b7) >> 7)];
+        dst[i + 4*stride] = cm[ dst[i + 4*stride] + ((b3 - b7) >> 7)];
+        dst[i + 5*stride] = cm[ dst[i + 5*stride] + ((b2 - b6) >> 7)];
+        dst[i + 6*stride] = cm[ dst[i + 6*stride] + ((b1 - b5) >> 7)];
+        dst[i + 7*stride] = cm[ dst[i + 7*stride] + ((b0 - b4) >> 7)];
     }
 }
 
