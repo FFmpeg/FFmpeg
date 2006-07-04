@@ -137,10 +137,16 @@ static const int ttblk_to_tt[3][8] = {
   { TT_8X8, TT_4X8, TT_4X4, TT_8X4_BOTTOM, TT_4X8_RIGHT, TT_4X8_LEFT, TT_8X4, TT_8X4_TOP }
 };
 
+static const int ttfrm_to_tt[4] = { TT_8X8, TT_8X4, TT_4X8, TT_4X4 };
+
 /** MV P mode - the 5th element is only used for mode 1 */
 static const uint8_t mv_pmode_table[2][5] = {
   { MV_PMODE_1MV_HPEL_BILIN, MV_PMODE_1MV, MV_PMODE_1MV_HPEL, MV_PMODE_INTENSITY_COMP, MV_PMODE_MIXED_MV },
   { MV_PMODE_1MV, MV_PMODE_MIXED_MV, MV_PMODE_1MV_HPEL, MV_PMODE_INTENSITY_COMP, MV_PMODE_1MV_HPEL_BILIN }
+};
+static const uint8_t mv_pmode_table2[2][4] = {
+  { MV_PMODE_1MV_HPEL_BILIN, MV_PMODE_1MV, MV_PMODE_1MV_HPEL, MV_PMODE_MIXED_MV },
+  { MV_PMODE_1MV, MV_PMODE_MIXED_MV, MV_PMODE_1MV_HPEL, MV_PMODE_1MV_HPEL_BILIN }
 };
 
 /** One more frame type */
@@ -282,7 +288,6 @@ typedef struct VC1Context{
     //@}
     int ttfrm;            ///< Transform type info present at frame level
     uint8_t ttmbf;        ///< Transform type flag
-    int ttmb;             ///< Transform type
     uint8_t ttblk4x4;     ///< Value of ttblk which indicates a 4x4 transform
     int codingset;        ///< index of current table set from 11.8 to use for luma block decoding
     int codingset2;       ///< index of current table set from 11.8 to use for chroma block decoding
@@ -607,6 +612,7 @@ static int bitplane_decoding(uint8_t* data, int *raw_flag, VC1Context *v)
             }
             if(width & 1) decode_colskip(data, 1, height, stride, &v->s.gb);
         } else { // 3x2
+            planep += (height & 1) * stride;
             for(y = height & 1; y < height; y += 2) {
                 for(x = width % 3; x < width; x += 3) {
                     code = get_vlc2(gb, vc1_norm6_vlc.table, VC1_NORM6_VLC_BITS, 2);
@@ -1366,7 +1372,7 @@ static int vc1_parse_frame_header(VC1Context *v, GetBitContext* gb)
             v->ttmbf = get_bits(gb, 1);
             if (v->ttmbf)
             {
-                v->ttfrm = get_bits(gb, 2);
+                v->ttfrm = ttfrm_to_tt[get_bits(gb, 2)];
             }
         }
         break;
@@ -2318,7 +2324,7 @@ static int vc1_decode_p_mb(VC1Context *v, DCTELEM block[6][64])
     int mb_pos = s->mb_x + s->mb_y * s->mb_stride;
     int cbp; /* cbp decoding stuff */
     int mqdiff, mquant; /* MB quantization */
-    int ttmb = v->ttmb; /* MB Transform type */
+    int ttmb = v->ttfrm; /* MB Transform type */
     int status;
 
     static const int size_table[6] = { 0, 2, 3, 4, 5, 8 },
