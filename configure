@@ -3,6 +3,20 @@
 # ffmpeg configure script (c) 2000, 2001, 2002 Fabrice Bellard
 #
 
+# make sure we are running under a compatible shell
+(: ${foo%%bar}) 2>/dev/null
+if test "$?" != 0; then
+    if test "x$FFMPEG_CONFIGURE_EXEC" = x; then
+        FFMPEG_CONFIGURE_EXEC=1
+        export FFMPEG_CONFIGURE_EXEC
+        exec bash "$0" "$@"
+        exec ksh "$0" "$@"
+        exec /usr/xpg4/bin/sh "$0" "$@"
+    fi
+    echo "No compatible shell script interpreter found."
+    exit 1
+fi
+
 show_help(){
   echo "Usage: configure [options]"
   echo "Options: [defaults in brackets after descriptions]"
