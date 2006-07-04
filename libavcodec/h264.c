@@ -5258,18 +5258,11 @@ decode_intra_mb:
 
 //                fill_intra4x4_pred_table(h);
                 for(i=0; i<16; i+=di){
-                    const int mode_coded= !get_bits1(&s->gb);
-                    const int predicted_mode=  pred_intra_mode(h, i);
-                    int mode;
+                    int mode= pred_intra_mode(h, i);
 
-                    if(mode_coded){
+                    if(!get_bits1(&s->gb)){
                         const int rem_mode= get_bits(&s->gb, 3);
-                        if(rem_mode<predicted_mode)
-                            mode= rem_mode;
-                        else
-                            mode= rem_mode + 1;
-                    }else{
-                        mode= predicted_mode;
+                        mode = rem_mode + (rem_mode >= mode);
                     }
 
                     if(di==4)

@@ -885,17 +885,14 @@ static int decode_mb_i(AVSContext *h) {
 
         nA = h->pred_mode_Y[pos-1];
         nB = h->pred_mode_Y[pos-3];
-        if((nA == NOT_AVAIL) || (nB == NOT_AVAIL))
-            predpred = 2;
-        else
-            predpred = FFMIN(nA,nB);
-        if(get_bits1(gb))
-            h->pred_mode_Y[pos] = predpred;
-        else {
-            h->pred_mode_Y[pos] = get_bits(gb,2);
-            if(h->pred_mode_Y[pos] >= predpred)
-                h->pred_mode_Y[pos]++;
+        predpred = FFMIN(nA,nB);
+        if(predpred == NOT_AVAIL) // if either is not available
+            predpred = INTRA_L_LP;
+        if(!get_bits1(gb)){
+            int rem_mode= get_bits(gb, 2);
+            predpred = rem_mode + (rem_mode >= predpred);
         }
+        h->pred_mode_Y[pos] = predpred;
     }
     pred_mode_uv = get_ue_golomb(gb);
     if(pred_mode_uv > 6) {
