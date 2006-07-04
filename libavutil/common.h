@@ -182,12 +182,6 @@ typedef uint64_t      uint_fast64_t;
 #    endif
 #endif
 
-#if defined(CONFIG_OS2) || defined(CONFIG_SUNOS)
-static inline float floorf(float f) {
-    return floor(f);
-}
-#endif
-
 #ifdef CONFIG_WIN32
 
 /* windows */
