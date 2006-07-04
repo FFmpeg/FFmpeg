@@ -319,6 +319,7 @@ typedef struct VC1Context{
 //    BitPlane direct_mb_plane;     ///< bitplane for "direct" MBs
     int mv_type_is_raw;           ///< mv type mb plane is not coded
     int skip_is_raw;              ///< skip mb plane is not coded
+    uint8_t luty[256], lutuv[256]; // lookup tables used for intensity compensation
 
     /** Frame decoding info for S/M profiles only */
     //@{
@@ -946,7 +947,8 @@ static void vc1_mc_1mv(VC1Context *v)
     srcU += uvsrc_y * s->uvlinesize + uvsrc_x;
     srcV += uvsrc_y * s->uvlinesize + uvsrc_x;
 
-    if((unsigned)src_x > s->h_edge_pos - (mx&3) - 16
+    if((v->mv_mode == MV_PMODE_INTENSITY_COMP)
+       || (unsigned)src_x > s->h_edge_pos - (mx&3) - 16
        || (unsigned)src_y > s->v_edge_pos - (my&3) - 16){
         uint8_t *uvbuf= s->edge_emu_buffer + 18 * s->linesize;
 
@@ -959,6 +961,26 @@ static void vc1_mc_1mv(VC1Context *v)
                             uvsrc_x, uvsrc_y, s->h_edge_pos >> 1, s->v_edge_pos >> 1);
         srcU = uvbuf;
         srcV = uvbuf + 16;
+        /* if we deal with intensity compensation we need to scale source blocks */
+        if(v->mv_mode == MV_PMODE_INTENSITY_COMP) {
+            int i, j;
+            uint8_t *src, *src2;
+
+            src = srcY;
+            for(j = 0; j < 17; j++) {
+                for(i = 0; i < 17; i++) src[i] = v->luty[src[i]];
+                src += s->linesize;
+            }
+            src = srcU; src2 = srcV;
+            for(j = 0; j < 9; j++) {
+                for(i = 0; i < 9; i++) {
+                    src[i] = v->lutuv[src[i]];
+                    src2[i] = v->lutuv[src2[i]];
+                }
+                src += s->uvlinesize;
+                src2 += s->uvlinesize;
+            }
+        }
     }
 
     if(!s->quarter_sample) { // hpel mc
@@ -1325,9 +1347,27 @@ static int vc1_parse_frame_header(VC1Context *v, GetBitContext* gb)
         v->mv_mode = mv_pmode_table[lowquant][get_prefix(gb, 1, 4)];
         if (v->mv_mode == MV_PMODE_INTENSITY_COMP)
         {
-            v->mv_mode2 = mv_pmode_table[lowquant][get_prefix(gb, 1, 3)];
+            int scale, shift, i;
+            v->mv_mode2 = mv_pmode_table2[lowquant][get_prefix(gb, 1, 3)];
             v->lumscale = get_bits(gb, 6);
             v->lumshift = get_bits(gb, 6);
+            /* fill lookup tables for intensity compensation */
+            if(!v->lumscale) {
+                scale = -64;
+                shift = (255 - v->lumshift * 2) << 6;
+                if(v->lumshift > 31)
+                    shift += 128 << 6;
+            } else {
+                scale = v->lumscale + 32;
+                if(v->lumshift > 31)
+                    shift = (v->lumshift - 64) << 6;
+                else
+                    shift = v->lumshift << 6;
+            }
+            for(i = 0; i < 256; i++) {
+                v->luty[i] = clip_uint8((scale * i + shift + 32) >> 6);
+                v->lutuv[i] = clip_uint8((scale * (i - 128) + 128*64 + 32) >> 6);
+            }
         }
         if(v->mv_mode == MV_PMODE_1MV_HPEL || v->mv_mode == MV_PMODE_1MV_HPEL_BILIN)
             v->s.quarter_sample = 0;
