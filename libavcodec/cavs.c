@@ -385,12 +385,10 @@ static void intra_pred_lp_top(uint8_t *d,uint8_t *top,uint8_t *left,int stride) 
 #undef LOWPASS
 
 static inline void modify_pred(const int_fast8_t *mod_table, int *mode) {
-    int newmode = mod_table[*mode];
-    if(newmode < 0) {
+    *mode = mod_table[*mode];
+    if(*mode < 0) {
         av_log(NULL, AV_LOG_ERROR, "Illegal intra prediction mode\n");
         *mode = 0;
-    } else {
-        *mode = newmode;
     }
 }
 
