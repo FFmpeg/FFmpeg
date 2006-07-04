@@ -897,7 +897,7 @@ static int decode_mb_i(AVSContext *h) {
     pred_mode_uv = get_ue_golomb(gb);
     if(pred_mode_uv > 6) {
         av_log(h->s.avctx, AV_LOG_ERROR, "illegal intra chroma pred mode\n");
-        pred_mode_uv = 0;
+        return -1;
     }
 
     /* save pred modes before they get modified */
