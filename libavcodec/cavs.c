@@ -754,11 +754,17 @@ static inline void decode_residual_chroma(AVSContext *h) {
                               h->cv,h->c_stride);
 }
 
-static inline void decode_residual_inter(AVSContext *h) {
+static inline int decode_residual_inter(AVSContext *h) {
     int block;
 
     /* get coded block pattern */
-    h->cbp = cbp_tab[get_ue_golomb(&h->s.gb)][1];
+    int cbp= get_ue_golomb(&h->s.gb);
+    if(cbp > 63){
+        av_log(h->s.avctx, AV_LOG_ERROR, "illegal inter cbp\n");
+        return -1;
+    }
+    h->cbp = cbp_tab[cbp][1];
+
     /* get quantizer */
     if(h->cbp && !h->qp_fixed)
         h->qp += get_se_golomb(&h->s.gb);
@@ -767,6 +773,8 @@ static inline void decode_residual_inter(AVSContext *h) {
             decode_residual_block(h,&h->s.gb,inter_2dvlc,0,h->qp,
                                   h->cy + h->luma_scan[block], h->l_stride);
     decode_residual_chroma(h);
+
+    return 0;
 }
 
 /*****************************************************************************
@@ -861,7 +869,7 @@ static inline int next_mb(AVSContext *h) {
     return 1;
 }
 
-static void decode_mb_i(AVSContext *h) {
+static int decode_mb_i(AVSContext *h) {
     GetBitContext *gb = &h->s.gb;
     int block, pred_mode_uv;
     uint8_t top[18];
@@ -914,8 +922,14 @@ static void decode_mb_i(AVSContext *h) {
     }
 
     /* get coded block pattern */
-    if(h->pic_type == FF_I_TYPE)
-        h->cbp = cbp_tab[get_ue_golomb(gb)][0];
+    if(h->pic_type == FF_I_TYPE){
+        int cbp= get_ue_golomb(gb);
+        if(cbp > 63){
+            av_log(h->s.avctx, AV_LOG_ERROR, "illegal intra cbp\n");
+            return -1;
+        }
+        h->cbp = cbp_tab[cbp][0];
+    }
     if(h->cbp && !h->qp_fixed)
         h->qp += get_se_golomb(gb); //qp_delta
 
@@ -959,6 +973,8 @@ static void decode_mb_i(AVSContext *h) {
     set_mvs(&h->mv[MV_BWD_X0], BLK_16X16);
     if(h->pic_type != FF_B_TYPE)
         *h->col_type = I_8X8;
+
+    return 0;
 }
 
 static void decode_mb_p(AVSContext *h, enum mb_t mb_type) {
