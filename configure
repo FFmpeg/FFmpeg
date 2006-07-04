@@ -102,7 +102,7 @@ log(){
     echo "$@" >>$logfile
 }
 
-logfile(){
+log_file(){
     log BEGIN $1
     cat -n $1 >>$logfile
     log END $1
@@ -120,7 +120,7 @@ If you think configure made a mistake, make sure you are using the latest
 version from SVN.  If the latest version fails, report the problem to the
 ffmpeg-devel@mplayerhq.hu mailing list or IRC #ffmpeg on irc.freenode.net.
 EOF
-    if enabled log; then
+    if enabled logging; then
         cat <<EOF
 Include the log file "$logfile" produced by configure as this will help
 solving the problem.
@@ -196,7 +196,7 @@ add_extralibs(){
 check_cc(){
     log check_cc "$@"
     cat >$TMPC
-    logfile $TMPC
+    log_file $TMPC
     log $cc $CFLAGS "$@" -c -o $TMPO $TMPC
     $cc $CFLAGS "$@" -c -o $TMPO $TMPC >>$logfile 2>&1
 }
@@ -204,7 +204,7 @@ check_cc(){
 check_cpp(){
     log check_cpp "$@"
     cat >$TMPC
-    logfile $TMPC
+    log_file $TMPC
     log $cc $CFLAGS "$@" -E -o $TMPO $TMPC
     $cc $CFLAGS "$@" -E -o $TMPO $TMPC >>$logfile 2>&1
 }
@@ -212,7 +212,7 @@ check_cpp(){
 check_ld(){
     log check_ld "$@"
     cat >$TMPC
-    logfile $TMPC
+    log_file $TMPC
     log $cc $CFLAGS $LDFLAGS "$@" -o $TMPE $TMPC $extralibs
     $cc $CFLAGS $LDFLAGS "$@" -o $TMPE $TMPC $extralibs >>$logfile 2>&1
 }
@@ -299,7 +299,7 @@ TMPS="${TMPDIR1}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.S"
 TMPH="${TMPDIR1}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.h"
 
 # default parameters
-log="yes"
+logging="yes"
 logfile="config.err"
 prefix="/usr/local"
 libdir=""
@@ -650,7 +650,7 @@ for opt do
   case "$opt" in
   --log)
   ;;
-  --log=*) log="${opt#*=}"
+  --log=*) logging="${opt#*=}"
   ;;
   --prefix=*) prefix=`echo $opt | cut -d '=' -f 2`; force_prefix=yes
   ;;
@@ -818,8 +818,8 @@ for opt do
   esac
 done
 
-if test "$log" != no; then
-    test "$log" = yes || logfile="$log"
+if test "$logging" != no; then
+    test "$logging" = yes || logfile="$logging"
     echo "# $0 $@" >$logfile
     set >>$logfile
 else
