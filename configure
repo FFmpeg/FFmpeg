@@ -502,6 +502,7 @@ dv1394="no"
 make="gmake"
 FFLDFLAGS=""
 FFSLDFLAGS=""
+SHFLAGS="-shared -Wl,-h,\$@"
 need_inet_aton="yes"
 extralibs="$extralibs -lsocket -lnsl"
 ;;
@@ -1432,9 +1433,9 @@ fi
 if test "$lshared" = "yes" ; then
     # LIBOBJFLAGS may have already been set in the OS configuration
     if test -z "$LIBOBJFLAGS" ; then
-        if test "$cpu" = "x86_64" -o "$cpu" = "ia64" -o "$cpu" = "alpha" ; then
-            LIBOBJFLAGS="\$(PIC)"
-        fi
+        case "$cpu" in
+            x86_64|ia64|alpha|sparc*) LIBOBJFLAGS="\$(PIC)" ;;
+        esac
     fi
 fi
 
