@@ -52,6 +52,7 @@ typedef struct MOVIndex {
     int64_t     trackDuration;
     long        sampleCount;
     long        sampleDuration;
+    long        sampleSize;
     int         hasKeyframes;
     int         hasBframes;
     int         language;
@@ -385,15 +386,15 @@ static int mov_write_audio_tag(ByteIOContext *pb, MOVTrack* track)
     put_be16(pb, track->timescale); /* Time scale */
     put_be16(pb, 0); /* Reserved */
 
-    if(version == 1) {
-        /* SoundDescription V1 extended info */
-        put_be32(pb, track->enc->frame_size); /* Samples per packet */
+    if(version == 1) { /* SoundDescription V1 extended info */
         /* Parameters tested on quicktime 6.5, 7 */
-        put_be32(pb, 1); /* Bytes per packet */
-        /* FIXME not correct */
-        /* 8 is the min value needed for in32 to work with quicktime 6.5 */
-        /* Value ignored by other codecs currently supported (others might need it) */
-        put_be32(pb, 8); /* Bytes per frame */
+        if (track->enc->codec_id == CODEC_ID_MP3)
+            track->sampleSize = 666;
+        if (track->enc->codec_id == CODEC_ID_AAC)
+            track->sampleSize = 2;
+        put_be32(pb, track->enc->frame_size); /* Samples per packet */
+        put_be32(pb, track->sampleSize / 2); /* Bytes per packet */
+        put_be32(pb, track->sampleSize); /* Bytes per frame */
         put_be32(pb, 2); /* Bytes per sample */
     }
 
@@ -1477,6 +1478,27 @@ static int mov_write_header(AVFormatContext *s)
         }else if(st->codec->codec_type == CODEC_TYPE_AUDIO){
             track->tag = mov_find_audio_codec_tag(s, track);
             av_set_pts_info(st, 64, 1, st->codec->sample_rate);
+
+            switch (st->codec->codec_id) {
+            case CODEC_ID_PCM_MULAW:
+            case CODEC_ID_PCM_ALAW:
+                track->sampleSize = 1 * st->codec->channels;
+                break;
+            case CODEC_ID_PCM_S16BE:
+            case CODEC_ID_PCM_S16LE:
+                track->sampleSize = 2 * st->codec->channels;
+                break;
+            case CODEC_ID_PCM_S24BE:
+            case CODEC_ID_PCM_S24LE:
+                track->sampleSize = 3 * st->codec->channels;
+                break;
+            case CODEC_ID_PCM_S32BE:
+            case CODEC_ID_PCM_S32LE:
+                track->sampleSize = 4 * st->codec->channels;
+                break;
+            default:
+                track->sampleSize = 0;
+            }
         }
         track->language = ff_mov_iso639_to_lang(st->language, mov->mode != MODE_MOV);
         track->mode = mov->mode;
@@ -1503,42 +1525,20 @@ static int mov_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (url_is_streamed(&s->pb)) return 0; /* Can't handle that */
     if (!size) return 0; /* Discard 0 sized packets */
 
-    if (enc->codec_type == CODEC_TYPE_AUDIO) {
-        switch (enc->codec_id) {
-        case CODEC_ID_AMR_NB:
-            { /* We must find out how many AMR blocks there are in one packet */
-                static uint16_t packed_size[16] =
-                    {13, 14, 16, 18, 20, 21, 27, 32, 6, 0, 0, 0, 0, 0, 0, 0};
-                int len = 0;
+    if (enc->codec_type == CODEC_ID_AMR_NB) {
+        /* We must find out how many AMR blocks there are in one packet */
+        static uint16_t packed_size[16] =
+            {13, 14, 16, 18, 20, 21, 27, 32, 6, 0, 0, 0, 0, 0, 0, 0};
+        int len = 0;
 
-                while (len < size && samplesInChunk < 100) {
-                    len += packed_size[(pkt->data[len] >> 3) & 0x0F];
-                    samplesInChunk++;
-                }
-            }
-            break;
-        case CODEC_ID_PCM_MULAW:
-        case CODEC_ID_PCM_ALAW:
-            samplesInChunk = size/enc->channels;
-            break;
-        case CODEC_ID_PCM_S16BE:
-        case CODEC_ID_PCM_S16LE:
-            samplesInChunk = size/(2*enc->channels);
-            break;
-        case CODEC_ID_PCM_S24BE:
-        case CODEC_ID_PCM_S24LE:
-            samplesInChunk = size/(3*enc->channels);
-            break;
-        case CODEC_ID_PCM_S32BE:
-        case CODEC_ID_PCM_S32LE:
-            samplesInChunk = size/(4*enc->channels);
-            break;
-        default:
-            samplesInChunk = 1;
+        while (len < size && samplesInChunk < 100) {
+            len += packed_size[(pkt->data[len] >> 3) & 0x0F];
+            samplesInChunk++;
         }
-    } else {
+    } else if (trk->sampleSize)
+        samplesInChunk = size/trk->sampleSize;
+    else
         samplesInChunk = 1;
-    }
 
     /* copy extradata if it exists */
     if (trk->vosLen == 0 && enc->extradata_size > 0) {
