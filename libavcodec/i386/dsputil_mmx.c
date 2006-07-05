@@ -187,6 +187,11 @@ static const uint64_t ff_pb_FC attribute_used __attribute__ ((aligned(8))) = 0xF
 #undef DEF
 #undef PAVGB
 
+#define SBUTTERFLY(a,b,t,n)\
+    "movq " #a ", " #t "              \n\t" /* abcd */\
+    "punpckl" #n " " #b ", " #a "     \n\t" /* aebf */\
+    "punpckh" #n " " #b ", " #t "     \n\t" /* cgdh */\
+
 /***********************************/
 /* standard MMX */
 
@@ -1522,11 +1527,6 @@ static void sub_hfyu_median_prediction_mmx2(uint8_t *dst, uint8_t *src1, uint8_t
     "psubw " #a ", " #z "             \n\t"\
     "pmaxsw " #z ", " #a "            \n\t"\
     "paddusw " #a ", " #sum "         \n\t"
-
-#define SBUTTERFLY(a,b,t,n)\
-    "movq " #a ", " #t "              \n\t" /* abcd */\
-    "punpckl" #n " " #b ", " #a "     \n\t" /* aebf */\
-    "punpckh" #n " " #b ", " #t "     \n\t" /* cgdh */\
 
 #define TRANSPOSE4(a,b,c,d,t)\
     SBUTTERFLY(a,b,t,wd) /* a=aebf t=cgdh */\
