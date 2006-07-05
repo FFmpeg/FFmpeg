@@ -1732,12 +1732,16 @@ fi
 echo "EXTRALIBS=$extralibs" >> config.mak
 
 # If you do not want to use encoders, disable them.
-echo "#define CONFIG_ENCODERS 1" >> $TMPH
-echo "CONFIG_ENCODERS=yes" >> config.mak
+if echo "$CODEC_LIST" | grep -q encoder; then
+    echo "#define CONFIG_ENCODERS 1" >> $TMPH
+    echo "CONFIG_ENCODERS=yes" >> config.mak
+fi
 
 # If you do not want to use decoders, disable them.
-echo "#define CONFIG_DECODERS 1" >> $TMPH
-echo "CONFIG_DECODERS=yes" >> config.mak
+if echo "$CODEC_LIST" | grep -q decoder; then
+    echo "#define CONFIG_DECODERS 1" >> $TMPH
+    echo "CONFIG_DECODERS=yes" >> config.mak
+fi
 
 # muxers
 if test "$muxers" = "yes" ; then
