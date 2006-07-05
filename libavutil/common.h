@@ -18,6 +18,10 @@
 #define M_PI    3.14159265358979323846
 #endif
 
+#if ( defined(__PIC__) || defined(__pic__) ) && ! defined(PIC)
+#    define PIC
+#endif
+
 #ifdef HAVE_AV_CONFIG_H
 /* only include the following when compiling package */
 #    include "config.h"
