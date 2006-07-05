@@ -85,7 +85,6 @@ show_help(){
   echo "  --disable-dv1394         disable DV1394 grabbing [default=no]"
   echo "  --disable-network        disable network support [default=no]"
   echo "  --disable-zlib           disable zlib [default=no]"
-  echo "  --disable-lzo            disable lzo [default=no]"
   echo "  --disable-simple_idct    disable simple IDCT routines [default=no]"
   echo "  --disable-vhook          disable video hooking support"
   echo "  --enable-gprof           enable profiling with gprof [$gprof]"
@@ -395,7 +394,6 @@ dv1394="yes"
 dc1394="no"
 network="yes"
 zlib="yes"
-lzo="yes"
 libgsm="no"
 mp3lame="no"
 libogg="no"
@@ -722,8 +720,6 @@ for opt do
   --disable-network) network="no"; ffserver="no"
   ;;
   --disable-zlib) zlib="no"
-  ;;
-  --disable-lzo) lzo="no"
   ;;
   --enable-a52) a52="yes"
   ;;
@@ -1212,7 +1208,6 @@ fi
 
 check_func localtime_r && localtime_r=yes || localtime_r=no
 enabled zlib && check_lib zlib.h zlibVersion -lz || zlib="no"
-enabled lzo && enabled gpl && check_lib lzo1x.h lzo_version -llzo || lzo="no"
 
 # check for some common methods of building with pthread support
 # do this before the optional library checks as some of them require pthreads
@@ -1482,7 +1477,6 @@ if test $cpu = "powerpc"; then
 fi
 echo "gprof enabled    $gprof"
 echo "zlib enabled     $zlib"
-echo "lzo enabled      $lzo"
 echo "libgsm enabled   $libgsm"
 echo "mp3lame enabled  $mp3lame"
 echo "libogg enabled   $libogg"
@@ -1840,11 +1834,6 @@ fi
 if test "$zlib" = "yes" ; then
   echo "#define CONFIG_ZLIB 1" >> $TMPH
   echo "CONFIG_ZLIB=yes" >> config.mak
-fi
-
-if test "$lzo" = "yes" ; then
-  echo "#define CONFIG_LZO 1" >> $TMPH
-  echo "CONFIG_LZO=yes" >> config.mak
 fi
 
 if test "$libgsm" = "yes" ; then
