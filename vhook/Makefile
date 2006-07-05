@@ -2,11 +2,13 @@ include ../config.mak
 
 VPATH=$(SRC_PATH)/vhook
 
-CFLAGS=-fPIC $(SHCFLAGS) -I.. -I$(SRC_PATH) -I$(SRC_PATH)/libavformat -I$(SRC_PATH)/libavcodec -I$(SRC_PATH)/libavutil -DHAVE_AV_CONFIG_H
+CFLAGS=-fPIC $(SHCFLAGS) -I.. -I$(SRC_PATH) -I$(SRC_PATH)/libavformat \
+       -I$(SRC_PATH)/libavcodec -I$(SRC_PATH)/libavutil -DHAVE_AV_CONFIG_H
 
 #FIXME: This needs to be in configure/config.mak
 ifeq ($(CONFIG_DARWIN),yes)
-	SHFLAGS = -dynamiclib -Wl,-single_module -flat_namespace -undefined suppress -Wl,-install_name,$(libdir)/vhook/$@
+	SHFLAGS = -dynamiclib -Wl,-single_module -flat_namespace \
+                  -undefined suppress -Wl,-install_name,$(libdir)/vhook/$@
 endif
 HOOKS=null$(SLIBSUF) fish$(SLIBSUF) ppm$(SLIBSUF) watermark$(SLIBSUF)
 

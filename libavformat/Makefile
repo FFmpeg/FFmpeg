@@ -4,7 +4,9 @@
 #
 include ../config.mak
 
-CFLAGS=$(OPTFLAGS) -I.. -I$(SRC_PATH) -I$(SRC_PATH)/libavutil -I$(SRC_PATH)/libavcodec -DHAVE_AV_CONFIG_H -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_GNU_SOURCE
+CFLAGS=$(OPTFLAGS) -I.. -I$(SRC_PATH) -I$(SRC_PATH)/libavutil \
+       -I$(SRC_PATH)/libavcodec -DHAVE_AV_CONFIG_H -D_FILE_OFFSET_BITS=64 \
+       -D_LARGEFILE_SOURCE -D_GNU_SOURCE
 
 OBJS= utils.o cutils.o os_support.o allformats.o
 CPPOBJS=
@@ -58,7 +60,8 @@ ifeq ($(CONFIG_AUDIO_OSS),yes)
 OBJS+= audio.o
 endif
 
-EXTRALIBS := -L../libavutil -lavutil$(BUILDSUF) -lavcodec$(BUILDSUF) -L../libavcodec $(EXTRALIBS)
+EXTRALIBS := -L../libavutil -lavutil$(BUILDSUF) \
+             -lavcodec$(BUILDSUF) -L../libavcodec $(EXTRALIBS)
 
 ifeq ($(CONFIG_AUDIO_BEOS),yes)
 CPPOBJS+= beosaudio.o
