@@ -869,7 +869,7 @@ static inline int next_mb(AVSContext *h) {
     return 1;
 }
 
-static int decode_mb_i(AVSContext *h) {
+static int decode_mb_i(AVSContext *h, int cbp_code) {
     GetBitContext *gb = &h->s.gb;
     int block, pred_mode_uv;
     uint8_t top[18];
@@ -919,14 +919,13 @@ static int decode_mb_i(AVSContext *h) {
     }
 
     /* get coded block pattern */
-    if(h->pic_type == FF_I_TYPE){
-        int cbp= get_ue_golomb(gb);
-        if(cbp > 63){
-            av_log(h->s.avctx, AV_LOG_ERROR, "illegal intra cbp\n");
-            return -1;
-        }
-        h->cbp = cbp_tab[cbp][0];
+    if(h->pic_type == FF_I_TYPE)
+        cbp_code = get_ue_golomb(gb);
+    if(cbp_code > 63){
+        av_log(h->s.avctx, AV_LOG_ERROR, "illegal intra cbp\n");
+        return -1;
     }
+    h->cbp = cbp_tab[cbp_code][0];
     if(h->cbp && !h->qp_fixed)
         h->qp += get_se_golomb(gb); //qp_delta
 
@@ -1270,7 +1269,7 @@ static int decode_pic(AVSContext *h) {
     check_for_slice(h);
     if(h->pic_type == FF_I_TYPE) {
         do {
-            decode_mb_i(h);
+            decode_mb_i(h, 0);
         } while(next_mb(h));
     } else if(h->pic_type == FF_P_TYPE) {
         do {
@@ -1285,8 +1284,7 @@ static int decode_pic(AVSContext *h) {
             } else
                 mb_type = get_ue_golomb(&s->gb) + P_SKIP;
             if(mb_type > P_8X8) {
-                h->cbp = cbp_tab[mb_type - P_8X8 - 1][0];
-                decode_mb_i(h);
+                decode_mb_i(h, mb_type - P_8X8 - 1);
             } else
                 decode_mb_p(h,mb_type);
         } while(next_mb(h));
@@ -1303,8 +1301,7 @@ static int decode_pic(AVSContext *h) {
             } else
                 mb_type = get_ue_golomb(&s->gb) + B_SKIP;
             if(mb_type > B_8X8) {
-                h->cbp = cbp_tab[mb_type - B_8X8 - 1][0];
-                decode_mb_i(h);
+                decode_mb_i(h, mb_type - B_8X8 - 1);
             } else
                 decode_mb_b(h,mb_type);
         } while(next_mb(h));
