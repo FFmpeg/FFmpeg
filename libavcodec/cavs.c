@@ -1302,7 +1302,6 @@ static int decode_pic(AVSContext *h) {
                 mb_type = get_ue_golomb(&s->gb) + B_DIRECT;
             } else
                 mb_type = get_ue_golomb(&s->gb) + B_SKIP;
-            init_mb(h);
             if(mb_type > B_8X8) {
                 h->cbp = cbp_tab[mb_type - B_8X8 - 1][0];
                 decode_mb_i(h);
