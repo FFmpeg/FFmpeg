@@ -10,24 +10,24 @@ CFLAGS=-O2 -Wall -g
 REFFILE1=$(SRC_PATH)/tests/ffmpeg.regression.ref
 REFFILE2=$(SRC_PATH)/tests/rotozoom.regression.ref
 
-SERVER_REFFILE=$(V_PATH)/ffserver.regression.ref
+SERVER_REFFILE=$(VPATH)/ffserver.regression.ref
 
-LIBAV_REFFILE=$(V_PATH)/libav.regression.ref
+LIBAV_REFFILE=$(VPATH)/libav.regression.ref
 
 all fulltest: codectest libavtest test-server
 test: codectest libavtest test-server
 
 test-server: vsynth1/0.pgm asynth1.sw
-	@$(V_PATH)/server-regression.sh $(SERVER_REFFILE) $(V_PATH)/test.conf
+	@$(VPATH)/server-regression.sh $(SERVER_REFFILE) $(VPATH)/test.conf
 
 # fast regression tests for all codecs
 codectest mpeg4 mpeg ac3 snow snowll: vsynth1/0.pgm vsynth2/0.pgm asynth1.sw tiny_psnr
-	@$(V_PATH)/regression.sh $@ $(REFFILE1) vsynth1
-	@$(V_PATH)/regression.sh $@ $(REFFILE2) vsynth2
+	@$(VPATH)/regression.sh $@ $(REFFILE1) vsynth1
+	@$(VPATH)/regression.sh $@ $(REFFILE2) vsynth2
 
 # fast regression for libav formats
 libavtest: vsynth1/0.pgm asynth1.sw
-	@$(V_PATH)/regression.sh $@ $(LIBAV_REFFILE) vsynth1
+	@$(VPATH)/regression.sh $@ $(LIBAV_REFFILE) vsynth1
 
 # video generation
 
@@ -37,7 +37,7 @@ vsynth1/0.pgm: videogen
 
 vsynth2/0.pgm: rotozoom
 	@mkdir -p vsynth2
-	./rotozoom 'vsynth2/' $(V_PATH)/lena.pnm
+	./rotozoom 'vsynth2/' $(VPATH)/lena.pnm
 
 videogen: videogen.c
 	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $<
