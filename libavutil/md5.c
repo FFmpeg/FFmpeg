@@ -12,7 +12,7 @@
  * simplified, cleaned and IMO redundant comments removed by michael
  *
  * if you use gcc, then version 4.1 or later and -fomit-frame-pointer is
- * strongly recommanded
+ * strongly recommended
  */
 
 #include "common.h"

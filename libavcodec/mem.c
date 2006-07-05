@@ -122,7 +122,7 @@ void *av_realloc(void *ptr, unsigned int size)
 /**
  * Free memory which has been allocated with av_malloc(z)() or av_realloc().
  * NOTE: ptr = NULL is explicetly allowed
- * Note2: it is recommanded that you use av_freep() instead
+ * Note2: it is recommended that you use av_freep() instead
  */
 void av_free(void *ptr)
 {
