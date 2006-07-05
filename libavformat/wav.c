@@ -201,12 +201,12 @@ int wav_codec_get_id(unsigned int tag, int bps)
     return id;
 }
 
-#ifdef CONFIG_MUXERS
 typedef struct {
     offset_t data;
     offset_t data_end;
 } WAVContext;
 
+#ifdef CONFIG_MUXERS
 static int wav_write_header(AVFormatContext *s)
 {
     WAVContext *wav = s->priv_data;
