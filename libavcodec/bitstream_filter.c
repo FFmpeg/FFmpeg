@@ -15,6 +15,7 @@ AVBitStreamFilterContext *av_bitstream_filter_init(const char *name){
         if(!strcmp(name, bsf->name)){
             AVBitStreamFilterContext *bsfc= av_mallocz(sizeof(AVBitStreamFilterContext));
             bsfc->filter= bsf;
+            bsfc->priv_data= av_mallocz(bsf->priv_data_size);
             return bsfc;
         }
         bsf= bsf->next;
@@ -23,6 +24,7 @@ AVBitStreamFilterContext *av_bitstream_filter_init(const char *name){
 }
 
 void av_bitstream_filter_close(AVBitStreamFilterContext *bsfc){
+    av_freep(&bsfc->priv_data);
     av_parser_close(bsfc->parser);
     av_free(bsfc);
 }
@@ -31,6 +33,8 @@ int av_bitstream_filter_filter(AVBitStreamFilterContext *bsfc,
                                AVCodecContext *avctx, const char *args,
                      uint8_t **poutbuf, int *poutbuf_size,
                      const uint8_t *buf, int buf_size, int keyframe){
+    *poutbuf= (uint8_t *) buf;
+    *poutbuf_size= buf_size;
     return bsfc->filter->filter(bsfc, avctx, args, poutbuf, poutbuf_size, buf, buf_size, keyframe);
 }
 
@@ -39,8 +43,6 @@ static int dump_extradata(AVBitStreamFilterContext *bsfc, AVCodecContext *avctx,
                      const uint8_t *buf, int buf_size, int keyframe){
     int cmd= args ? *args : 0;
     /* cast to avoid warning about discarding qualifiers */
-    *poutbuf= (uint8_t *) buf;
-    *poutbuf_size= buf_size;
     if(avctx->extradata){
         if(  (keyframe && (avctx->flags2 & CODEC_FLAG2_LOCAL_HEADER) && cmd=='a')
            ||(keyframe && (cmd=='k' || !cmd))
@@ -85,12 +87,38 @@ static int remove_extradata(AVBitStreamFilterContext *bsfc, AVCodecContext *avct
     return 0;
 }
 
+static int noise(AVBitStreamFilterContext *bsfc, AVCodecContext *avctx, const char *args,
+                     uint8_t **poutbuf, int *poutbuf_size,
+                     const uint8_t *buf, int buf_size, int keyframe){
+    int amount= args ? atoi(args) : 10000;
+    unsigned int *state= bsfc->priv_data;
+    int i;
+
+    *poutbuf= av_malloc(buf_size + FF_INPUT_BUFFER_PADDING_SIZE);
+
+    memcpy(*poutbuf, buf, buf_size + FF_INPUT_BUFFER_PADDING_SIZE);
+    for(i=0; i<buf_size; i++){
+        (*state) += (*poutbuf)[i] + 1;
+        if(*state % amount == 0)
+            (*poutbuf)[i] = *state;
+    }
+    return 1;
+}
+
 AVBitStreamFilter dump_extradata_bsf={
     "dump_extra",
+    0,
     dump_extradata,
 };
 
 AVBitStreamFilter remove_extradata_bsf={
     "remove_extra",
+    0,
     remove_extradata,
+};
+
+AVBitStreamFilter noise_bsf={
+    "noise",
+    sizeof(int),
+    noise,
 };

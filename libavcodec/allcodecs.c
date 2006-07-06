@@ -664,5 +664,6 @@ PCM_CODEC(CODEC_ID_ADPCM_SBPRO_2, adpcm_sbpro_2);
 
     av_register_bitstream_filter(&dump_extradata_bsf);
     av_register_bitstream_filter(&remove_extradata_bsf);
+    av_register_bitstream_filter(&noise_bsf);
 }
 

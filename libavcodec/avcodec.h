@@ -2573,6 +2573,7 @@ extern AVCodecParser aac_parser;
 
 
 typedef struct AVBitStreamFilterContext {
+    void *priv_data;
     struct AVBitStreamFilter *filter;
     AVCodecParserContext *parser;
     struct AVBitStreamFilterContext *next;
@@ -2581,6 +2582,7 @@ typedef struct AVBitStreamFilterContext {
 
 typedef struct AVBitStreamFilter {
     const char *name;
+    int priv_data_size;
     int (*filter)(AVBitStreamFilterContext *bsfc,
                   AVCodecContext *avctx, const char *args,
                   uint8_t **poutbuf, int *poutbuf_size,
@@ -2600,6 +2602,7 @@ void av_bitstream_filter_close(AVBitStreamFilterContext *bsf);
 
 extern AVBitStreamFilter dump_extradata_bsf;
 extern AVBitStreamFilter remove_extradata_bsf;
+extern AVBitStreamFilter noise_bsf;
 
 
 /* memory */
