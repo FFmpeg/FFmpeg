@@ -428,8 +428,7 @@ endif
 
 ifeq ($(TARGET_ARCH_SPARC),yes)
 OBJS+=sparc/dsputil_vis.o
-sparc/%.o: sparc/%.c
-	$(CC) -mcpu=ultrasparc -mtune=ultrasparc $(CFLAGS) $(LIBOBJFLAGS) -c -o $@ $<
+sparc/dsputil_vis.o: CFLAGS += -mcpu=ultrasparc -mtune=ultrasparc
 endif
 
 NAME=avcodec
