@@ -10,7 +10,7 @@ CFLAGS=$(OPTFLAGS) -DHAVE_AV_CONFIG_H -I.. -I$(SRC_PATH)/libavutil \
 
 OBJS= bitstream.o utils.o mem.o allcodecs.o \
       mpegvideo.o jrevdct.o jfdctfst.o jfdctint.o\
-      mpegaudio.o ac3enc.o mjpeg.o resample.o resample2.o dsputil.o \
+      mjpeg.o resample.o resample2.o dsputil.o \
       motion_est.o imgconvert.o imgresample.o \
       mpeg12.o mpegaudiodec.o pcm.o simple_idct.o \
       ratecontrol.o adpcm.o eval.o error_resilience.o \
@@ -25,6 +25,9 @@ HEADERS = avcodec.h
 
 ifeq ($(CONFIG_AASC_DECODER),yes)
     OBJS+= aasc.o
+endif
+ifeq ($(CONFIG_AC3_ENCODER),yes)
+    OBJS+= ac3enc.o
 endif
 ifeq ($(CONFIG_ALAC_DECODER),yes)
     OBJS+= alac.o
@@ -118,6 +121,9 @@ ifeq ($(CONFIG_LOCO_DECODER),yes)
 endif
 ifneq ($(CONFIG_MACE3_DECODER)$(CONFIG_MACE6_DECODER),)
     OBJS+= mace.o
+endif
+ifeq ($(CONFIG_MP2_ENCODER),yes)
+    OBJS+= mpegaudio.o
 endif
 ifeq ($(CONFIG_MSRLE_DECODER),yes)
     OBJS+= msrle.o
