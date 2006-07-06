@@ -1532,6 +1532,10 @@ static int mov_write_packet(AVFormatContext *s, AVPacket *pkt)
             len += packed_size[(pkt->data[len] >> 3) & 0x0F];
             samplesInChunk++;
         }
+        if(samplesInChunk > 1){
+            av_log(s, AV_LOG_ERROR, "fatal error, input is not a single packet, inplement a AVParser for it\n");
+            return -1;
+        }
     } else if (trk->sampleSize)
         samplesInChunk = size/trk->sampleSize;
     else
