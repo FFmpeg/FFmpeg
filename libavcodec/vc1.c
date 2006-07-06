@@ -1080,7 +1080,7 @@ static void vc1_mc_4mv_chroma(VC1Context *v)
     }
 
     /* calculate chroma MV vector from four luma MVs */
-    idx = (intra[0] << 3) | (intra[1] << 2) | (intra[2] << 1) | intra[3];
+    idx = (intra[3] << 3) | (intra[2] << 2) | (intra[1] << 1) | intra[0];
     if(!idx) { // all blocks are inter
         tx = median4(mvx[0], mvx[1], mvx[2], mvx[3]);
         ty = median4(mvy[0], mvy[1], mvy[2], mvy[3]);
@@ -1088,19 +1088,19 @@ static void vc1_mc_4mv_chroma(VC1Context *v)
         switch(idx) {
         case 0x1:
             tx = mid_pred(mvx[1], mvx[2], mvx[3]);
-            tx = mid_pred(mvy[1], mvy[2], mvy[3]);
+            ty = mid_pred(mvy[1], mvy[2], mvy[3]);
             break;
         case 0x2:
             tx = mid_pred(mvx[0], mvx[2], mvx[3]);
-            tx = mid_pred(mvy[0], mvy[2], mvy[3]);
+            ty = mid_pred(mvy[0], mvy[2], mvy[3]);
             break;
         case 0x4:
             tx = mid_pred(mvx[0], mvx[1], mvx[3]);
-            tx = mid_pred(mvy[0], mvy[1], mvy[3]);
+            ty = mid_pred(mvy[0], mvy[1], mvy[3]);
             break;
         case 0x8:
             tx = mid_pred(mvx[0], mvx[1], mvx[2]);
-            tx = mid_pred(mvy[0], mvy[1], mvy[2]);
+            ty = mid_pred(mvy[0], mvy[1], mvy[2]);
             break;
         }
     } else if(count[idx] == 2) {
