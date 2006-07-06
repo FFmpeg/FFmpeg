@@ -63,7 +63,7 @@ typedef struct PixFmtInfo {
 } PixFmtInfo;
 
 /* this table gives more information about formats */
-static PixFmtInfo pix_fmt_info[PIX_FMT_NB] = {
+static const PixFmtInfo pix_fmt_info[PIX_FMT_NB] = {
     /* YUV formats */
     [PIX_FMT_YUV420P] = {
         .name = "yuv420p",
@@ -266,7 +266,7 @@ int avpicture_fill(AVPicture *picture, uint8_t *ptr,
                    int pix_fmt, int width, int height)
 {
     int size, w2, h2, size2;
-    PixFmtInfo *pinfo;
+    const PixFmtInfo *pinfo;
 
     if(avcodec_check_dimensions(NULL, width, height))
         goto fail;
@@ -359,7 +359,7 @@ fail:
 int avpicture_layout(const AVPicture* src, int pix_fmt, int width, int height,
                      unsigned char *dest, int dest_size)
 {
-    PixFmtInfo* pf = &pix_fmt_info[pix_fmt];
+    const PixFmtInfo* pf = &pix_fmt_info[pix_fmt];
     int i, j, w, h, data_planes;
     const unsigned char* s;
     int size = avpicture_get_size(pix_fmt, width, height);
@@ -592,7 +592,7 @@ void img_copy(AVPicture *dst, const AVPicture *src,
               int pix_fmt, int width, int height)
 {
     int bwidth, bits, i;
-    PixFmtInfo *pf = &pix_fmt_info[pix_fmt];
+    const PixFmtInfo *pf = &pix_fmt_info[pix_fmt];
 
     pf = &pix_fmt_info[pix_fmt];
     switch(pf->pixel_type) {
@@ -1723,7 +1723,7 @@ typedef struct ConvertEntry {
 
    The other conversion functions are just optimisations for common cases.
 */
-static ConvertEntry convert_table[PIX_FMT_NB][PIX_FMT_NB] = {
+static const ConvertEntry convert_table[PIX_FMT_NB][PIX_FMT_NB] = {
     [PIX_FMT_YUV420P] = {
         [PIX_FMT_YUV422] = {
             .convert = yuv420p_to_yuv422,
@@ -1966,7 +1966,7 @@ void avpicture_free(AVPicture *picture)
 }
 
 /* return true if yuv planar */
-static inline int is_yuv_planar(PixFmtInfo *ps)
+static inline int is_yuv_planar(const PixFmtInfo *ps)
 {
     return (ps->color_type == FF_COLOR_YUV ||
             ps->color_type == FF_COLOR_YUV_JPEG) &&
@@ -2055,8 +2055,8 @@ int img_convert(AVPicture *dst, int dst_pix_fmt,
 {
     static int inited;
     int i, ret, dst_width, dst_height, int_pix_fmt;
-    PixFmtInfo *src_pix, *dst_pix;
-    ConvertEntry *ce;
+    const PixFmtInfo *src_pix, *dst_pix;
+    const ConvertEntry *ce;
     AVPicture tmp1, *tmp = &tmp1;
 
     if (src_pix_fmt < 0 || src_pix_fmt >= PIX_FMT_NB ||
@@ -2323,7 +2323,7 @@ static int get_alpha_info_pal8(const AVPicture *src, int width, int height)
 int img_get_alpha_info(const AVPicture *src,
                        int pix_fmt, int width, int height)
 {
-    PixFmtInfo *pf = &pix_fmt_info[pix_fmt];
+    const PixFmtInfo *pf = &pix_fmt_info[pix_fmt];
     int ret;
 
     pf = &pix_fmt_info[pix_fmt];

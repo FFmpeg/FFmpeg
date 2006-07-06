@@ -450,7 +450,7 @@ static const char* context_to_name(void* ptr) {
 #define E AV_OPT_FLAG_ENCODING_PARAM
 #define D AV_OPT_FLAG_DECODING_PARAM
 
-static AVOption options[]={
+static const AVOption options[]={
 {"bit_rate", NULL, OFFSET(bit_rate), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX, V|A|E},
 {"bit_rate_tolerance", NULL, OFFSET(bit_rate_tolerance), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX, V|E},
 {"flags", NULL, OFFSET(flags), FF_OPT_TYPE_FLAGS, DEFAULT, INT_MIN, INT_MAX, V|A|E|D, "flags"},
