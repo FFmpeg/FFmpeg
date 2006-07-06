@@ -2571,6 +2571,37 @@ extern AVCodecParser dvdsub_parser;
 extern AVCodecParser dvbsub_parser;
 extern AVCodecParser aac_parser;
 
+
+typedef struct AVBitStreamFilterContext {
+    struct AVBitStreamFilter *filter;
+    AVCodecParserContext *parser;
+    struct AVBitStreamFilterContext *next;
+} AVBitStreamFilterContext;
+
+
+typedef struct AVBitStreamFilter {
+    const char *name;
+    int (*filter)(AVBitStreamFilterContext *bsfc,
+                  AVCodecContext *avctx, const char *args,
+                  uint8_t **poutbuf, int *poutbuf_size,
+                  const uint8_t *buf, int buf_size, int keyframe);
+    struct AVBitStreamFilter *next;
+} AVBitStreamFilter;
+
+extern AVBitStreamFilter *av_first_bitstream_filter;
+
+void av_register_bitstream_filter(AVBitStreamFilter *bsf);
+AVBitStreamFilterContext *av_bitstream_filter_init(const char *name);
+int av_bitstream_filter_filter(AVBitStreamFilterContext *bsfc,
+                               AVCodecContext *avctx, const char *args,
+                               uint8_t **poutbuf, int *poutbuf_size,
+                               const uint8_t *buf, int buf_size, int keyframe);
+void av_bitstream_filter_close(AVBitStreamFilterContext *bsf);
+
+extern AVBitStreamFilter dump_extradata_bsf;
+extern AVBitStreamFilter remove_extradata_bsf;
+
+
 /* memory */
 void *av_malloc(unsigned int size);
 void *av_mallocz(unsigned int size);

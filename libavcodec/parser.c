@@ -145,6 +145,7 @@ int av_parser_parse(AVCodecParserContext *s,
 /**
  *
  * @return 0 if the output buffer is a subset of the input, 1 if it is allocated and must be freed
+ * @deprecated use AVBitstreamFilter
  */
 int av_parser_change(AVCodecParserContext *s,
                      AVCodecContext *avctx,

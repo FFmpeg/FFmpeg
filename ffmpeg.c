@@ -250,6 +250,9 @@ const char **opt_names=NULL;
 int opt_name_count=0;
 AVCodecContext *avctx_opts;
 
+static AVBitStreamFilterContext *video_bitstream_filters=NULL;
+static AVBitStreamFilterContext *audio_bitstream_filters=NULL;
+static AVBitStreamFilterContext *bitstream_filters[MAX_FILES][MAX_STREAMS];
 
 #define DEFAULT_PASS_LOGFILENAME "ffmpeg2pass"
 
@@ -445,6 +448,25 @@ get_sync_ipts(const AVOutputStream *ost)
     return (double)(ist->pts + input_files_ts_offset[ist->file_index] - start_time)/AV_TIME_BASE;
 }
 
+static void write_frame(AVFormatContext *s, AVPacket *pkt, AVCodecContext *avctx, AVBitStreamFilterContext *bsfc){
+    while(bsfc){
+        AVPacket new_pkt= *pkt;
+        int a= av_bitstream_filter_filter(bsfc, avctx, NULL,
+                                          &new_pkt.data, &new_pkt.size,
+                                          pkt->data, pkt->size,
+                                          pkt->flags & PKT_FLAG_KEY);
+        if(a){
+            av_free_packet(pkt);
+            new_pkt.destruct= av_destruct_packet;
+        }
+        *pkt= new_pkt;
+
+        bsfc= bsfc->next;
+    }
+
+    av_interleaved_write_frame(s, pkt);
+}
+
 #define MAX_AUDIO_PACKET_SIZE (128 * 1024)
 
 static void do_audio_out(AVFormatContext *s,
@@ -548,7 +570,7 @@ static void do_audio_out(AVFormatContext *s,
             if(enc->coded_frame && enc->coded_frame->pts != AV_NOPTS_VALUE)
                 pkt.pts= av_rescale_q(enc->coded_frame->pts, enc->time_base, ost->st->time_base);
             pkt.flags |= PKT_FLAG_KEY;
-            av_interleaved_write_frame(s, &pkt);
+            write_frame(s, &pkt, ost->st->codec, bitstream_filters[ost->file_index][pkt.stream_index]);
 
             ost->sync_opts += enc->frame_size;
         }
@@ -592,7 +614,7 @@ static void do_audio_out(AVFormatContext *s,
         if(enc->coded_frame && enc->coded_frame->pts != AV_NOPTS_VALUE)
             pkt.pts= av_rescale_q(enc->coded_frame->pts, enc->time_base, ost->st->time_base);
         pkt.flags |= PKT_FLAG_KEY;
-        av_interleaved_write_frame(s, &pkt);
+        write_frame(s, &pkt, ost->st->codec, bitstream_filters[ost->file_index][pkt.stream_index]);
     }
 }
 
@@ -691,7 +713,7 @@ static void do_subtitle_out(AVFormatContext *s,
             else
                 pkt.pts += 90 * sub->end_display_time;
         }
-        av_interleaved_write_frame(s, &pkt);
+        write_frame(s, &pkt, ost->st->codec, bitstream_filters[ost->file_index][pkt.stream_index]);
     }
 }
 
@@ -853,7 +875,7 @@ static void do_video_out(AVFormatContext *s,
             if(dec->coded_frame && dec->coded_frame->key_frame)
                 pkt.flags |= PKT_FLAG_KEY;
 
-            av_interleaved_write_frame(s, &pkt);
+            write_frame(s, &pkt, ost->st->codec, bitstream_filters[ost->file_index][pkt.stream_index]);
             enc->coded_frame = old_frame;
         } else {
             AVFrame big_picture;
@@ -896,7 +918,7 @@ static void do_video_out(AVFormatContext *s,
 
                 if(enc->coded_frame && enc->coded_frame->key_frame)
                     pkt.flags |= PKT_FLAG_KEY;
-                av_interleaved_write_frame(s, &pkt);
+                write_frame(s, &pkt, ost->st->codec, bitstream_filters[ost->file_index][pkt.stream_index]);
                 *frame_size = ret;
                 //fprintf(stderr,"\nFrame: %3d %3d size: %5d type: %d",
                 //        enc->frame_number-1, enc->real_pict_num, ret,
@@ -1317,9 +1339,12 @@ static int output_packet(AVInputStream *ist, int ist_index,
                                 opkt.dts= av_rescale_q(dts + input_files_ts_offset[ist->file_index], AV_TIME_BASE_Q,  ost->st->time_base);
                             }
                             opkt.flags= pkt->flags;
+
+                            //FIXME remove the following 2 lines they shall be replaced by the bitstream filters
                             if(av_parser_change(ist->st->parser, ost->st->codec, &opkt.data, &opkt.size, data_buf, data_size, pkt->flags & PKT_FLAG_KEY))
                                 opkt.destruct= av_destruct_packet;
-                            av_interleaved_write_frame(os, &opkt);
+
+                            write_frame(os, &opkt, ost->st->codec, bitstream_filters[ost->file_index][pkt->stream_index]);
                             ost->st->codec->frame_number++;
                             ost->frame_number++;
                             av_free_packet(&opkt);
@@ -1401,7 +1426,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
                         pkt.size= ret;
                         if(enc->coded_frame && enc->coded_frame->pts != AV_NOPTS_VALUE)
                             pkt.pts= av_rescale_q(enc->coded_frame->pts, enc->time_base, ost->st->time_base);
-                        av_interleaved_write_frame(os, &pkt);
+                        write_frame(os, &pkt, ost->st->codec, bitstream_filters[ost->file_index][pkt.stream_index]);
                     }
                 }
             }
@@ -2980,6 +3005,9 @@ static void new_video_stream(AVFormatContext *oc)
         fprintf(stderr, "Could not alloc stream\n");
         exit(1);
     }
+    bitstream_filters[nb_output_files][oc->nb_streams - 1]= video_bitstream_filters;
+    video_bitstream_filters= NULL;
+
 #if defined(HAVE_THREADS)
     if(thread_count>1)
         avcodec_thread_init(st->codec, thread_count);
@@ -3179,6 +3207,10 @@ static void new_audio_stream(AVFormatContext *oc)
         fprintf(stderr, "Could not alloc stream\n");
         exit(1);
     }
+
+    bitstream_filters[nb_output_files][oc->nb_streams - 1]= audio_bitstream_filters;
+    audio_bitstream_filters= NULL;
+
 #if defined(HAVE_THREADS)
     if(thread_count>1)
         avcodec_thread_init(st->codec, thread_count);
@@ -3885,6 +3917,41 @@ static void opt_target(const char *arg)
     }
 }
 
+static void opt_video_bsf(const char *arg)
+{
+    AVBitStreamFilterContext *bsfc= av_bitstream_filter_init(arg); //FIXME split name and args for filter at '='
+    AVBitStreamFilterContext **bsfp;
+
+    if(!bsfc){
+        fprintf(stderr, "Unkown bitstream filter %s\n", arg);
+        exit(1);
+    }
+
+    bsfp= &video_bitstream_filters;
+    while(*bsfp)
+        bsfp= &(*bsfp)->next;
+
+    *bsfp= bsfc;
+}
+
+//FIXME avoid audio - video code duplication
+static void opt_audio_bsf(const char *arg)
+{
+    AVBitStreamFilterContext *bsfc= av_bitstream_filter_init(arg); //FIXME split name and args for filter at '='
+    AVBitStreamFilterContext **bsfp;
+
+    if(!bsfc){
+        fprintf(stderr, "Unkown bitstream filter %s\n", arg);
+        exit(1);
+    }
+
+    bsfp= &audio_bitstream_filters;
+    while(*bsfp)
+        bsfp= &(*bsfp)->next;
+
+    *bsfp= bsfc;
+}
+
 static void show_version(void)
 {
     /* TODO: add function interface to avutil and avformat */
@@ -4069,6 +4136,10 @@ const OptionDef options[] = {
     { "packetsize", OPT_INT | HAS_ARG | OPT_EXPERT, {(void*)&mux_packet_size}, "set packet size", "size" },
     { "muxdelay", OPT_FLOAT | HAS_ARG | OPT_EXPERT, {(void*)&mux_max_delay}, "set the maximum demux-decode delay", "seconds" },
     { "muxpreload", OPT_FLOAT | HAS_ARG | OPT_EXPERT, {(void*)&mux_preload}, "set the initial demux-decode delay", "seconds" },
+
+    { "absf", HAS_ARG | OPT_AUDIO | OPT_EXPERT, {(void*)opt_audio_bsf}, "", "bitstream filter" },
+    { "vbsf", HAS_ARG | OPT_VIDEO | OPT_EXPERT, {(void*)opt_video_bsf}, "", "bitstream filter" },
+
     { "default", OPT_FUNC2 | HAS_ARG | OPT_AUDIO | OPT_VIDEO | OPT_EXPERT, {(void*)opt_default}, "generic catch all option", "" },
     { NULL, },
 };
