@@ -353,9 +353,11 @@ static const CodecTag codec_movaudio_tags[] = {
 static int mov_write_audio_tag(ByteIOContext *pb, MOVTrack* track)
 {
     offset_t pos = url_ftell(pb);
+    int vbr=  track->enc->codec_id == CODEC_ID_AAC ||
+              track->enc->codec_id == CODEC_ID_MP3 ||
+              track->enc->codec_id == CODEC_ID_AMR_NB;
     int version = track->mode == MODE_MOV &&
-        (track->enc->codec_id == CODEC_ID_AAC ||
-         track->enc->codec_id == CODEC_ID_MP3 ||
+        (vbr ||
          track->enc->codec_id == CODEC_ID_PCM_S32LE ||
          track->enc->codec_id == CODEC_ID_PCM_S24LE);
 
@@ -375,9 +377,7 @@ static int mov_write_audio_tag(ByteIOContext *pb, MOVTrack* track)
                  to be a good way to get number of bits of audio */
     put_be16(pb, 0x10); /* Reserved */
 
-    if(track->enc->codec_id == CODEC_ID_AAC ||
-       track->enc->codec_id == CODEC_ID_MP3 ||
-       track->enc->codec_id == CODEC_ID_AMR_NB) {
+    if(vbr) {
         put_be16(pb, 0xfffe); /* compression ID (vbr)*/
     } else {
         put_be16(pb, 0); /* compression ID (= 0) */
@@ -387,13 +387,10 @@ static int mov_write_audio_tag(ByteIOContext *pb, MOVTrack* track)
     put_be16(pb, 0); /* Reserved */
 
     if(version == 1) { /* SoundDescription V1 extended info */
-        /* Parameters tested on quicktime 6.5, 7 */
-        if (track->enc->codec_id == CODEC_ID_MP3)
-            track->sampleSize = 666;
-        if (track->enc->codec_id == CODEC_ID_AAC)
-            track->sampleSize = 2;
+        if (vbr)
+            track->sampleSize = 0;
         put_be32(pb, track->enc->frame_size); /* Samples per packet */
-        put_be32(pb, track->sampleSize / 2); /* Bytes per packet */
+        put_be32(pb, track->sampleSize / track->enc->channels); /* Bytes per packet */
         put_be32(pb, track->sampleSize); /* Bytes per frame */
         put_be32(pb, 2); /* Bytes per sample */
     }
