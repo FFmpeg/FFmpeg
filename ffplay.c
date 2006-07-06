@@ -2317,7 +2317,7 @@ void opt_seek(const char *arg)
 
 static void opt_debug(const char *arg)
 {
-    av_log_set_level(atoi(arg));
+    av_log_set_level(99);
     debug = atoi(arg);
 }
 
