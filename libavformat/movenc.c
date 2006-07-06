@@ -208,7 +208,7 @@ static int mov_write_amr_tag(ByteIOContext *pb, MOVTrack *track)
     put_tag(pb, "FFMP");
     put_byte(pb, 0); /* decoder version */
 
-    put_be16(pb, 0x80); /* Mode set (all modes for AMR_NB) */
+    put_be16(pb, 0x81FF); /* Mode set (all modes for AMR_NB) */
     put_byte(pb, 0x00); /* Mode change period (no restriction) */
     put_byte(pb, 0x01); /* Frames per sample */
     return 0x11;
