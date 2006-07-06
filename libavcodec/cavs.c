@@ -485,28 +485,42 @@ static inline void mc_part_std(AVSContext *h,int square,int chroma_height,int de
     }
 }
 
-static void inter_pred(AVSContext *h) {
-    /* always do 8x8 blocks TODO: are larger blocks worth it? */
-    mc_part_std(h, 1, 4, 0, h->cy, h->cu, h->cv, 0, 0,
+static void inter_pred(AVSContext *h, enum mb_t mb_type) {
+    switch(mb_type) {
+    case P_SKIP:
+    case P_16X16:
+    case B_FWD_16X16:
+    case B_BWD_16X16:
+    case B_SYM_16X16:
+        mc_part_std(h, 1, 8, 0, h->cy, h->cu, h->cv, 0, 0,
+                h->s.dsp.put_cavs_qpel_pixels_tab[0],
+                h->s.dsp.put_h264_chroma_pixels_tab[0],
+                h->s.dsp.avg_cavs_qpel_pixels_tab[0],
+                h->s.dsp.avg_h264_chroma_pixels_tab[0],&h->mv[MV_FWD_X0]);
+        break;
+    default:
+        mc_part_std(h, 1, 4, 0, h->cy, h->cu, h->cv, 0, 0,
                 h->s.dsp.put_cavs_qpel_pixels_tab[1],
                 h->s.dsp.put_h264_chroma_pixels_tab[1],
                 h->s.dsp.avg_cavs_qpel_pixels_tab[1],
                 h->s.dsp.avg_h264_chroma_pixels_tab[1],&h->mv[MV_FWD_X0]);
-    mc_part_std(h, 1, 4, 0, h->cy, h->cu, h->cv, 4, 0,
+        mc_part_std(h, 1, 4, 0, h->cy, h->cu, h->cv, 4, 0,
                 h->s.dsp.put_cavs_qpel_pixels_tab[1],
                 h->s.dsp.put_h264_chroma_pixels_tab[1],
                 h->s.dsp.avg_cavs_qpel_pixels_tab[1],
                 h->s.dsp.avg_h264_chroma_pixels_tab[1],&h->mv[MV_FWD_X1]);
-    mc_part_std(h, 1, 4, 0, h->cy, h->cu, h->cv, 0, 4,
+        mc_part_std(h, 1, 4, 0, h->cy, h->cu, h->cv, 0, 4,
                 h->s.dsp.put_cavs_qpel_pixels_tab[1],
                 h->s.dsp.put_h264_chroma_pixels_tab[1],
                 h->s.dsp.avg_cavs_qpel_pixels_tab[1],
                 h->s.dsp.avg_h264_chroma_pixels_tab[1],&h->mv[MV_FWD_X2]);
-    mc_part_std(h, 1, 4, 0, h->cy, h->cu, h->cv, 4, 4,
+        mc_part_std(h, 1, 4, 0, h->cy, h->cu, h->cv, 4, 4,
                 h->s.dsp.put_cavs_qpel_pixels_tab[1],
                 h->s.dsp.put_h264_chroma_pixels_tab[1],
                 h->s.dsp.avg_cavs_qpel_pixels_tab[1],
                 h->s.dsp.avg_h264_chroma_pixels_tab[1],&h->mv[MV_FWD_X3]);
+        break;
+    }
     /* set intra prediction modes to default values */
     h->pred_mode_Y[3] =  h->pred_mode_Y[6] = INTRA_L_LP;
     h->top_pred_Y[h->mbx*2+0] = h->top_pred_Y[h->mbx*2+1] = INTRA_L_LP;
@@ -1008,7 +1022,7 @@ static void decode_mb_p(AVSContext *h, enum mb_t mb_type) {
         mv_pred(h, MV_FWD_X2, MV_FWD_X1, MV_PRED_MEDIAN,   BLK_8X8, ref[2]);
         mv_pred(h, MV_FWD_X3, MV_FWD_X0, MV_PRED_MEDIAN,   BLK_8X8, ref[3]);
     }
-    inter_pred(h);
+    inter_pred(h, mb_type);
     store_mvs(h);
     if(mb_type != P_SKIP)
         decode_residual_inter(h);
@@ -1125,7 +1139,7 @@ static void decode_mb_b(AVSContext *h, enum mb_t mb_type) {
                 mv_pred(h, MV_BWD_X1, MV_BWD_C2, MV_PRED_TOPRIGHT,BLK_8X16, 0);
         }
     }
-    inter_pred(h);
+    inter_pred(h, mb_type);
     if(mb_type != B_SKIP)
         decode_residual_inter(h);
     filter_mb(h,mb_type);
