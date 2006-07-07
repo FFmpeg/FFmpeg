@@ -49,6 +49,7 @@ version <next>
 - MPEG-2 4:2:2 encoder
 - Flash Screen Video decoder
 - GXF demuxer
+- Chinese AVS decoder
 
 version 0.4.9-pre1:
 
