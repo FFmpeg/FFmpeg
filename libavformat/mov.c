@@ -979,11 +979,6 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
             st->codec->bits_per_sample = get_be16(pb); /* depth */
             st->codec->color_table_id = get_be16(pb); /* colortable id */
 
-/*          These are set in mov_read_stts and might already be set!
-            st->codec->time_base.den      = 25;
-            st->codec->time_base.num = 1;
-*/
-
             /* figure out the palette situation */
             color_depth = st->codec->bits_per_sample & 0x1F;
             color_greyscale = st->codec->bits_per_sample & 0x20;
