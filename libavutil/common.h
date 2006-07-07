@@ -503,6 +503,20 @@ static inline int ff_get_fourcc(const char *s){
             level= (level^mask)-mask;
 #endif
 
+#define GET_UTF8(val, GET_BYTE, ERROR)\
+    val= GET_BYTE;\
+    {\
+        int ones= 7 - av_log2(val ^ 255);\
+        if(ones==1)\
+            ERROR\
+        val&= 127>>ones;\
+        while(--ones > 0){\
+            int tmp= GET_BYTE - 128;\
+            if(tmp>>6)\
+                ERROR\
+            val= (val<<6) + tmp;\
+        }\
+    }
 
 #if __CPU__ >= 686 && !defined(RUNTIME_CPUDETECT)
 #define COPY3_IF_LT(x,y,a,b,c,d)\

@@ -85,52 +85,11 @@ static int blocksize_table[] = {
 256<<0, 256<<1, 256<<2, 256<<3, 256<<4, 256<<5, 256<<6, 256<<7
 };
 
-static int64_t get_utf8(GetBitContext *gb)
-{
-    uint64_t val;
-    int ones=0, bytes;
-
-    while(get_bits1(gb))
-        ones++;
-
-    if     (ones==0) bytes=0;
-    else if(ones==1) return -1;
-    else             bytes= ones - 1;
-
-    val= get_bits(gb, 7-ones);
-    while(bytes--){
-        const int tmp = get_bits(gb, 8);
-
-        if((tmp>>6) != 2)
-            return -1;
-        val<<=6;
-        val|= tmp&0x3F;
-    }
+static int64_t get_utf8(GetBitContext *gb){
+    int64_t val;
+    GET_UTF8(val, get_bits(gb, 8), return -1;)
     return val;
 }
-
-#if 0
-static int skip_utf8(GetBitContext *gb)
-{
-    int ones=0, bytes;
-
-    while(get_bits1(gb))
-        ones++;
-
-    if     (ones==0) bytes=0;
-    else if(ones==1) return -1;
-    else             bytes= ones - 1;
-
-    skip_bits(gb, 7-ones);
-    while(bytes--){
-        const int tmp = get_bits(gb, 8);
-
-        if((tmp>>6) != 2)
-            return -1;
-    }
-    return 0;
-}
-#endif
 
 static void metadata_streaminfo(FLACContext *s);
 static void dump_headers(FLACContext *s);
