@@ -1463,27 +1463,7 @@ static int mov_write_header(AVFormatContext *s)
         }else if(st->codec->codec_type == CODEC_TYPE_AUDIO){
             track->tag = mov_find_audio_codec_tag(s, track);
             av_set_pts_info(st, 64, 1, st->codec->sample_rate);
-
-            switch (st->codec->codec_id) {
-            case CODEC_ID_PCM_MULAW:
-            case CODEC_ID_PCM_ALAW:
-                track->sampleSize = 1 * st->codec->channels;
-                break;
-            case CODEC_ID_PCM_S16BE:
-            case CODEC_ID_PCM_S16LE:
-                track->sampleSize = 2 * st->codec->channels;
-                break;
-            case CODEC_ID_PCM_S24BE:
-            case CODEC_ID_PCM_S24LE:
-                track->sampleSize = 3 * st->codec->channels;
-                break;
-            case CODEC_ID_PCM_S32BE:
-            case CODEC_ID_PCM_S32LE:
-                track->sampleSize = 4 * st->codec->channels;
-                break;
-            default:
-                track->sampleSize = 0;
-            }
+            track->sampleSize = (av_get_bits_per_sample(st->codec->codec_id) >> 3) * st->codec->channels;
         }
         track->language = ff_mov_iso639_to_lang(st->language, mov->mode != MODE_MOV);
         track->mode = mov->mode;

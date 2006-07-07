@@ -1304,6 +1304,34 @@ char av_get_pict_type_char(int pict_type){
     }
 }
 
+int av_get_bits_per_sample(enum CodecID codec_id){
+    switch(codec_id){
+    case CODEC_ID_PCM_ALAW:
+    case CODEC_ID_PCM_MULAW:
+    case CODEC_ID_PCM_S8:
+    case CODEC_ID_PCM_U8:
+        return 8;
+    case CODEC_ID_PCM_S16BE:
+    case CODEC_ID_PCM_S16LE:
+    case CODEC_ID_PCM_U16BE:
+    case CODEC_ID_PCM_U16LE:
+        return 16;
+    case CODEC_ID_PCM_S24DAUD:
+    case CODEC_ID_PCM_S24BE:
+    case CODEC_ID_PCM_S24LE:
+    case CODEC_ID_PCM_U24BE:
+    case CODEC_ID_PCM_U24LE:
+        return 24;
+    case CODEC_ID_PCM_S32BE:
+    case CODEC_ID_PCM_S32LE:
+    case CODEC_ID_PCM_U32BE:
+    case CODEC_ID_PCM_U32LE:
+        return 32;
+    default:
+        return 0;
+    }
+}
+
 /* av_log API */
 
 static int av_log_level = AV_LOG_INFO;

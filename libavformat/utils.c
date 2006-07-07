@@ -653,48 +653,17 @@ static int get_audio_frame_size(AVCodecContext *enc, int size)
     int frame_size;
 
     if (enc->frame_size <= 1) {
-        /* specific hack for pcm codecs because no frame size is
-           provided */
-        switch(enc->codec_id) {
-        case CODEC_ID_PCM_S32LE:
-        case CODEC_ID_PCM_S32BE:
-        case CODEC_ID_PCM_U32LE:
-        case CODEC_ID_PCM_U32BE:
+        int bits_per_sample = av_get_bits_per_sample(enc->codec_id);
+
+        if (bits_per_sample) {
             if (enc->channels == 0)
                 return -1;
-            frame_size = size / (4 * enc->channels);
-            break;
-        case CODEC_ID_PCM_S24LE:
-        case CODEC_ID_PCM_S24BE:
-        case CODEC_ID_PCM_U24LE:
-        case CODEC_ID_PCM_U24BE:
-        case CODEC_ID_PCM_S24DAUD:
-            if (enc->channels == 0)
-                return -1;
-            frame_size = size / (3 * enc->channels);
-            break;
-        case CODEC_ID_PCM_S16LE:
-        case CODEC_ID_PCM_S16BE:
-        case CODEC_ID_PCM_U16LE:
-        case CODEC_ID_PCM_U16BE:
-            if (enc->channels == 0)
-                return -1;
-            frame_size = size / (2 * enc->channels);
-            break;
-        case CODEC_ID_PCM_S8:
-        case CODEC_ID_PCM_U8:
-        case CODEC_ID_PCM_MULAW:
-        case CODEC_ID_PCM_ALAW:
-            if (enc->channels == 0)
-                return -1;
-            frame_size = size / (enc->channels);
-            break;
-        default:
+            frame_size = size / ((bits_per_sample >> 3) * enc->channels);
+        } else {
             /* used for example by ADPCM codecs */
             if (enc->bit_rate == 0)
                 return -1;
             frame_size = (size * 8 * enc->sample_rate) / enc->bit_rate;
-            break;
         }
     } else {
         frame_size = enc->frame_size;
