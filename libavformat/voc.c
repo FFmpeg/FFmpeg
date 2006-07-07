@@ -93,18 +93,6 @@ static int voc_read_header(AVFormatContext *s, AVFormatParameters *ap)
     return 0;
 }
 
-static int voc_get_bps(int codec_id)
-{
-    switch (codec_id) {
-    case CODEC_ID_PCM_S16LE:
-        return 16;
-    case CODEC_ID_ADPCM_CT:
-        return 4;
-    default:
-        return 8;
-    }
-}
-
 int
 voc_get_packet(AVFormatContext *s, AVPacket *pkt, AVStream *st, int max_size)
 {
@@ -130,7 +118,7 @@ voc_get_packet(AVFormatContext *s, AVPacket *pkt, AVStream *st, int max_size)
                 dec->sample_rate = sample_rate;
             dec->channels = channels;
             dec->codec_id = codec_get_id(voc_codec_tags, get_byte(pb));
-            dec->bits_per_sample = voc_get_bps(dec->codec_id);
+            dec->bits_per_sample = av_get_bits_per_sample(dec->codec_id);
             voc->remaining_size -= 2;
             max_size -= 2;
             channels = 1;
