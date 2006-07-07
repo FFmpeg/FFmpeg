@@ -697,6 +697,17 @@ static int flac_decode_frame(AVCodecContext *avctx,
     }
     }
 #else
+#define DECORRELATE(left, right)\
+            assert(s->channels == 2);\
+            for (i = 0; i < s->blocksize; i++)\
+            {\
+                int a= s->decoded[0][i];\
+                int b= s->decoded[1][i];\
+                *(samples++) = (left ) >> (16 - s->bps);\
+                *(samples++) = (right) >> (16 - s->bps);\
+            }\
+            break;
+
     switch(s->decorrelation)
     {
         case INDEPENDENT:
@@ -707,45 +718,11 @@ static int flac_decode_frame(AVCodecContext *avctx,
             }
             break;
         case LEFT_SIDE:
-            assert(s->channels == 2);
-            for (i = 0; i < s->blocksize; i++)
-            {
-                *(samples++) = shift_to_16_bits(s->decoded[0][i], s->bps);
-                *(samples++) = shift_to_16_bits(s->decoded[0][i]
-                                              - s->decoded[1][i], s->bps);
-            }
-            break;
+            DECORRELATE(a,a-b)
         case RIGHT_SIDE:
-            assert(s->channels == 2);
-            for (i = 0; i < s->blocksize; i++)
-            {
-                *(samples++) = shift_to_16_bits(s->decoded[0][i]
-                                              + s->decoded[1][i], s->bps);
-                *(samples++) = shift_to_16_bits(s->decoded[1][i], s->bps);
-            }
-            break;
+            DECORRELATE(a+b,b)
         case MID_SIDE:
-            assert(s->channels == 2);
-            for (i = 0; i < s->blocksize; i++)
-            {
-                int mid, side;
-                mid = s->decoded[0][i];
-                side = s->decoded[1][i];
-
-#if 1 //needs to be checked but IMHO it should be binary identical
-                mid -= side>>1;
-                *(samples++) = shift_to_16_bits(mid + side, s->bps);
-                *(samples++) = shift_to_16_bits(mid, s->bps);
-#else
-
-                mid <<= 1;
-                if (side & 1)
-                    mid++;
-                *(samples++) = (mid + side) >> 1;
-                *(samples++) = (mid - side) >> 1;
-#endif
-            }
-            break;
+            DECORRELATE( (a-=b>>1) + b, a)
     }
 #endif
 
