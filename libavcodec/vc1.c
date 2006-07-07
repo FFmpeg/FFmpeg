@@ -928,11 +928,6 @@ static void vc1_mc_1mv(VC1Context *v)
     srcU = s->last_picture.data[1];
     srcV = s->last_picture.data[2];
 
-    if(v->fastuvmc) { // XXX: 8.3.5.4.5 specifies something different
-        uvmx = (uvmx + 1) & ~1;
-        uvmy = (uvmy + 1) & ~1;
-    }
-
     src_x = s->mb_x * 16 + (mx >> 2);
     src_y = s->mb_y * 16 + (my >> 2);
     uvsrc_x = s->mb_x * 8 + (uvmx >> 2);
@@ -983,19 +978,25 @@ static void vc1_mc_1mv(VC1Context *v)
         }
     }
 
+    if(v->fastuvmc) {
+        uvmx = uvmx + ((uvmx<0)?(uvmx&1):-(uvmx&1));
+        uvmy = uvmy + ((uvmy<0)?(uvmy&1):-(uvmy&1));
+    }
+
     if(!s->quarter_sample) { // hpel mc
         mx >>= 1;
         my >>= 1;
         dxy = ((my & 1) << 1) | (mx & 1);
-        uvdxy = 0;
 
         dsp->put_no_rnd_pixels_tab[0][dxy](s->dest[0], srcY, s->linesize, 16);
     } else {
         dxy = ((my & 3) << 2) | (mx & 3);
-        uvdxy = ((uvmy & 1) << 1) | (uvmx & 1);
 
         dsp->put_no_rnd_qpel_pixels_tab[0][dxy](s->dest[0], srcY, s->linesize);
     }
+    uvmx >>= 1;
+    uvmy >>= 1;
+    uvdxy = ((uvmy & 1) << 1) | (uvmx & 1);
     dsp->put_no_rnd_pixels_tab[1][uvdxy](s->dest[1], srcU, s->uvlinesize, 8);
     dsp->put_no_rnd_pixels_tab[1][uvdxy](s->dest[2], srcV, s->uvlinesize, 8);
 //    dsp->put_mspel_pixels_tab[uvdxy](s->dest[1], srcU, s->uvlinesize);
@@ -1050,11 +1051,11 @@ static void vc1_mc_4mv_luma(VC1Context *v, int n)
 static inline int median4(int a, int b, int c, int d)
 {
     if(a < b) {
-        if(c < d) return (FFMIN(b, d) + FFMAX(a, c)) >> 1;
-        else      return (FFMIN(b, c) + FFMAX(a, d)) >> 1;
+        if(c < d) return (FFMIN(b, d) + FFMAX(a, c)) / 2;
+        else      return (FFMIN(b, c) + FFMAX(a, d)) / 2;
     } else {
-        if(c < d) return (FFMIN(a, d) + FFMAX(b, c)) >> 1;
-        else      return (FFMIN(a, c) + FFMAX(b, d)) >> 1;
+        if(c < d) return (FFMIN(a, d) + FFMAX(b, c)) / 2;
+        else      return (FFMIN(a, c) + FFMAX(b, d)) / 2;
     }
 }
 
@@ -1107,8 +1108,8 @@ static void vc1_mc_4mv_chroma(VC1Context *v)
         int t1 = 0, t2 = 0;
         for(i=0; i<3;i++) if(!intra[i]) {t1 = i; break;}
         for(i= t1+1; i<4; i++)if(!intra[i]) {t2 = i; break;}
-        tx = (mvx[t1] + mvx[t2]) >> 1;
-        ty = (mvy[t1] + mvy[t2]) >> 1;
+        tx = (mvx[t1] + mvx[t2]) / 2;
+        ty = (mvy[t1] + mvy[t2]) / 2;
     } else
         return; //no need to do MC for inter blocks
 
@@ -1132,10 +1133,14 @@ static void vc1_mc_4mv_chroma(VC1Context *v)
         srcV = s->edge_emu_buffer + 16;
     }
 
-    if(!s->quarter_sample) // hpel mc
-        uvdxy = 0;
-    else
-        uvdxy = ((uvmy & 1) << 1) | (uvmx & 1);
+    if(v->fastuvmc) {
+        uvmx = uvmx + ((uvmx<0)?(uvmx&1):-(uvmx&1));
+        uvmy = uvmy + ((uvmy<0)?(uvmy&1):-(uvmy&1));
+    }
+
+    uvmx >>= 1;
+    uvmy >>= 1;
+    uvdxy = ((uvmy & 1) << 1) | (uvmx & 1);
     dsp->put_no_rnd_pixels_tab[1][uvdxy](s->dest[1], srcU, s->uvlinesize, 8);
     dsp->put_no_rnd_pixels_tab[1][uvdxy](s->dest[2], srcV, s->uvlinesize, 8);
 }
