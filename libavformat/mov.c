@@ -935,6 +935,12 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
         get_be16(pb); /* reserved */
         get_be16(pb); /* index */
 
+        if (st->codec->codec_tag) {
+            /* multiple fourcc, just skip for now */
+            url_fskip(pb, size - (url_ftell(pb) - start_pos));
+            continue;
+        }
+
         st->codec->codec_tag = format;
         id = codec_get_id(mov_audio_tags, format);
         if (id > 0) {
