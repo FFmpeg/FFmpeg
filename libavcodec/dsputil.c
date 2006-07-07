@@ -2570,6 +2570,7 @@ static void wmv2_mspel8_h_lowpass(uint8_t *dst, uint8_t *src, int dstStride, int
     }
 }
 
+#ifdef CONFIG_CAVS_DECODER
 /* AVS specific */
 void ff_cavsdsp_init(DSPContext* c, AVCodecContext *avctx);
 
@@ -2585,6 +2586,7 @@ void ff_put_cavs_qpel16_mc00_c(uint8_t *dst, uint8_t *src, int stride) {
 void ff_avg_cavs_qpel16_mc00_c(uint8_t *dst, uint8_t *src, int stride) {
     avg_pixels16_c(dst, src, stride, 16);
 }
+#endif /* CONFIG_CAVS_DECODER */
 
 static void wmv2_mspel8_v_lowpass(uint8_t *dst, uint8_t *src, int dstStride, int srcStride, int w){
     uint8_t *cm = cropTbl + MAX_NEG_CROP;
@@ -4005,7 +4007,9 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     c->biweight_h264_pixels_tab[8]= biweight_h264_pixels2x4_c;
     c->biweight_h264_pixels_tab[9]= biweight_h264_pixels2x2_c;
 
+#ifdef CONFIG_CAVS_DECODER
     ff_cavsdsp_init(c,avctx);
+#endif
 
     c->put_mspel_pixels_tab[0]= put_mspel8_mc00_c;
     c->put_mspel_pixels_tab[1]= put_mspel8_mc10_c;

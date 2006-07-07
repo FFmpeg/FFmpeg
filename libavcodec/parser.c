@@ -534,6 +534,7 @@ static int mpeg4video_parse(AVCodecParserContext *s,
     return next;
 }
 
+#ifdef CONFIG_CAVS_DECODER
 static int cavsvideo_parse(AVCodecParserContext *s,
                            AVCodecContext *avctx,
                            uint8_t **poutbuf, int *poutbuf_size,
@@ -557,6 +558,7 @@ static int cavsvideo_parse(AVCodecParserContext *s,
     *poutbuf_size = buf_size;
     return next;
 }
+#endif /* CONFIG_CAVS_DECODER */
 
 static int mpeg4video_split(AVCodecContext *avctx,
                            const uint8_t *buf, int buf_size)
@@ -1012,6 +1014,7 @@ AVCodecParser mpeg4video_parser = {
     mpeg4video_split,
 };
 
+#ifdef CONFIG_CAVS_DECODER
 AVCodecParser cavsvideo_parser = {
     { CODEC_ID_CAVS },
     sizeof(ParseContext1),
@@ -1020,6 +1023,7 @@ AVCodecParser cavsvideo_parser = {
     parse1_close,
     mpeg4video_split,
 };
+#endif
 
 AVCodecParser mpegaudio_parser = {
     { CODEC_ID_MP2, CODEC_ID_MP3 },

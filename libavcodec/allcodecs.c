@@ -640,7 +640,9 @@ PCM_CODEC(CODEC_ID_ADPCM_SBPRO_2, adpcm_sbpro_2);
     /* parsers */
     av_register_codec_parser(&mpegvideo_parser);
     av_register_codec_parser(&mpeg4video_parser);
+#ifdef CONFIG_CAVS_DECODER
     av_register_codec_parser(&cavsvideo_parser);
+#endif
 #if defined(CONFIG_H261_DECODER) || defined(CONFIG_H261_ENCODER)
     av_register_codec_parser(&h261_parser);
 #endif
