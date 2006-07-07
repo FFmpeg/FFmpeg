@@ -1271,11 +1271,11 @@ please use av_log() instead.
    answer to ffmpeg-devel (or wherever you got the patch from) saying that
    you applied the patch.
 @item
-   Do NOT commit to code actively maintained by others without permission. Send
-   a patch to ffmpeg-devel instead. If noone awnsers within a reasonable time
-   (12h for build failure and security fixes, 3 days for all other small changes
-    1 week for big patches) then commit your patch if you think its ok
-    also note, the maintainer can simply ask for more time to review!
+    Do NOT commit to code actively maintained by others without permission.
+    Send a patch to ffmpeg-devel instead. If noone answers within a reasonable
+    timeframe (12h for build failures and security fixes, 3 days small changes,
+    1 week for big patches) then commit your patch if you think it's OK.
+    Also note, the maintainer can simply ask for more time to review!
 @item
     Subscribe to the ffmpeg-cvslog mailing list. The diffs of all commits
     are sent there and reviewed by all the other developers. Bugs and possible
