@@ -1731,7 +1731,7 @@ static inline int vc1_pred_dc(MpegEncContext *s, int overlap, int pq, int n,
     int a, b, c, wrap, pred, scale;
     int16_t *dc_val;
     int mb_pos = s->mb_x + s->mb_y * s->mb_stride;
-    int mb_pos2, q1, q2;
+    int q1, q2 = 0;
 
     /* find prediction - wmv3_dc_scale always used here in fact */
     if (n < 4)     scale = s->y_dc_scale;
@@ -1751,28 +1751,32 @@ static inline int vc1_pred_dc(MpegEncContext *s, int overlap, int pq, int n,
         if(abs(a - b) <= abs(b - c)) {
             pred = c;
             *dir_ptr = 1;//left
+            q2 = s->current_picture.qscale_table[mb_pos - 1];
         } else {
             pred = a;
             *dir_ptr = 0;//top
+            q2 = s->current_picture.qscale_table[mb_pos - s->mb_stride];
         }
     } else if(a_avail) {
         pred = a;
         *dir_ptr = 0;//top
+        q2 = s->current_picture.qscale_table[mb_pos - s->mb_stride];
     } else if(c_avail) {
         pred = c;
         *dir_ptr = 1;//left
+        q2 = s->current_picture.qscale_table[mb_pos - 1];
     } else {
         pred = 0;
         *dir_ptr = 1;//left
     }
 
-    /* scale coeffs if needed
-    mb_pos2 = mb_pos - *dir_ptr - (1 - *dir_ptr) * s->mb_stride;
-    q1 = s->y_dc_scale_table[s->current_picture.qscale_table[mb_pos]];
-    q2 = s->y_dc_scale_table[s->current_picture.qscale_table[mb_pos2]];
-    if(q2 && q1!=q2 && ((*dir_ptr && c_avail) || (!*dir_ptr && a_avail))) {
-        pred = (pred * q2 * vc1_dqscale[q1 - 1] + 0x20000) >> 18;
-    } */
+    /* scale coeffs if needed */
+    q1 = s->current_picture.qscale_table[mb_pos];
+    if(n && n<4) q2=q1;
+
+    if(q2 && q1!=q2) {
+        pred = (pred * s->y_dc_scale_table[q2] * vc1_dqscale[s->y_dc_scale_table[q1] - 1] + 0x20000) >> 18;
+    }
 
     /* update predictor */
     *dc_val_ptr = &dc_val[0];
@@ -2064,6 +2068,7 @@ static int vc1_decode_intra_block(VC1Context *v, DCTELEM block[64], int n, int c
     int a_avail = v->a_avail, c_avail = v->c_avail;
     int use_pred = s->ac_pred;
     int scale;
+    int q1, q2 = 0;
 
     /* XXX: Guard against dumb values of mquant */
     mquant = (mquant < 1) ? 0 : ( (mquant>31) ? 31 : mquant );
@@ -2134,6 +2139,11 @@ static int vc1_decode_intra_block(VC1Context *v, DCTELEM block[64], int n, int c
     else //top
         ac_val -= 16 * s->block_wrap[n];
 
+    q1 = s->current_picture.qscale_table[mb_pos];
+    if(dc_pred_dir && c_avail) q2 = s->current_picture.qscale_table[mb_pos - 1];
+    if(!dc_pred_dir && a_avail) q2 = s->current_picture.qscale_table[mb_pos - s->mb_stride];
+    if(n && n<4) q2 = q1;
+
     if(coded) {
         int last = 0, skip, value;
         const int8_t *zz_table;
@@ -2152,13 +2162,7 @@ static int vc1_decode_intra_block(VC1Context *v, DCTELEM block[64], int n, int c
         /* apply AC prediction if needed */
         if(use_pred) {
             /* scale predictors if needed*/
-            int mb_pos2, q1, q2;
-
-            mb_pos2 = mb_pos - dc_pred_dir - (1 - dc_pred_dir) * s->mb_stride;
-            q1 = s->current_picture.qscale_table[mb_pos];
-            q2 = s->current_picture.qscale_table[mb_pos2];
-
-            if(0 && q2 && q1!=q2 && ((dc_pred_dir && c_avail) || (!dc_pred_dir && a_avail))) {
+            if(q2 && q1!=q2) {
                 q1 = q1 * 2 - 1;
                 q2 = q2 * 2 - 1;
 
@@ -2196,17 +2200,12 @@ static int vc1_decode_intra_block(VC1Context *v, DCTELEM block[64], int n, int c
         if(use_pred) i = 63;
     } else { // no AC coeffs
         int k;
-        int mb_pos2, q1, q2;
-
-        mb_pos2 = mb_pos - dc_pred_dir - (1 - dc_pred_dir) * s->mb_stride;
-        q1 = s->current_picture.qscale_table[mb_pos];
-        q2 = s->current_picture.qscale_table[mb_pos2];
 
         memset(ac_val2, 0, 16 * 2);
         if(dc_pred_dir) {//left
             if(use_pred) {
                 memcpy(ac_val2, ac_val, 8 * 2);
-                if(0 && q2 && q1!=q2 && c_avail) {
+                if(q2 && q1!=q2) {
                     q1 = q1 * 2 - 1;
                     q2 = q2 * 2 - 1;
                     for(k = 1; k < 8; k++)
@@ -2216,7 +2215,7 @@ static int vc1_decode_intra_block(VC1Context *v, DCTELEM block[64], int n, int c
         } else {//top
             if(use_pred) {
                 memcpy(ac_val2 + 8, ac_val + 8, 8 * 2);
-                if(0 && q2 && q1!=q2 && a_avail) {
+                if(q2 && q1!=q2) {
                     q1 = q1 * 2 - 1;
                     q2 = q2 * 2 - 1;
                     for(k = 1; k < 8; k++)
