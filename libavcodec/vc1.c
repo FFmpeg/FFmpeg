@@ -2511,7 +2511,8 @@ static int vc1_decode_p_mb(VC1Context *v, DCTELEM block[6][64])
                 int intrapred = 0;
                 for(i=0; i<6; i++)
                     if(is_intra[i]) {
-                        if(v->mb_type[0][s->block_index[i] - s->block_wrap[i]] || v->mb_type[0][s->block_index[i] - 1]) {
+                        if(((s->mb_y || (i==2 || i==3)) && v->mb_type[0][s->block_index[i] - s->block_wrap[i]])
+                             || ((s->mb_x || (i==1 || i==3)) && v->mb_type[0][s->block_index[i] - 1])) {
                             intrapred = 1;
                             break;
                         }
