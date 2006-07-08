@@ -15,7 +15,7 @@ OBJS= bitstream.o utils.o mem.o allcodecs.o \
       mpeg12.o mpegaudiodec.o simple_idct.o \
       ratecontrol.o eval.o error_resilience.o \
       fft.o mdct.o raw.o golomb.o cabac.o\
-      dpcm.o faandct.o parser.o \
+      faandct.o parser.o \
       vp3dsp.o h264idct.o rangecoder.o pnm.o h263.o msmpeg4.o h263dec.o \
       opt.o \
       bitstream_filter.o \
@@ -65,6 +65,7 @@ OBJS-$(CONFIG_IDCIN_DECODER)           += idcinvideo.o
 OBJS-$(CONFIG_INDEO2_DECODER)          += indeo2.o
 OBJS-$(CONFIG_INDEO3_DECODER)          += indeo3.o
 OBJS-$(CONFIG_INTERPLAY_VIDEO_DECODER) += interplayvideo.o
+OBJS-$(CONFIG_INTERPLAY_DPCM_DECODER)  += dpcm.o
 OBJS-$(CONFIG_KMVC_DECODER)            += kmvc.o
 OBJS-$(CONFIG_LOCO_DECODER)            += loco.o
 OBJS-$(CONFIG_MACE3_DECODER)           += mace.o
@@ -84,6 +85,7 @@ OBJS-$(CONFIG_QTRLE_DECODER)           += qtrle.o
 OBJS-$(CONFIG_RA_144_DECODER)          += ra144.o
 OBJS-$(CONFIG_RA_288_DECODER)          += ra288.o
 OBJS-$(CONFIG_ROQ_DECODER)             += roqvideo.o
+OBJS-$(CONFIG_ROQ_DPCM_DECODER)        += dpcm.o
 OBJS-$(CONFIG_RPZA_DECODER)            += rpza.o
 OBJS-$(CONFIG_RV10_DECODER)            += rv10.o
 OBJS-$(CONFIG_RV10_ENCODER)            += rv10.o
@@ -95,6 +97,7 @@ OBJS-$(CONFIG_SMACKER_DECODER)         += smacker.o
 OBJS-$(CONFIG_SMC_DECODER)             += smc.o
 OBJS-$(CONFIG_SNOW_DECODER)            += snow.o
 OBJS-$(CONFIG_SNOW_ENCODER)            += snow.o
+OBJS-$(CONFIG_SOL_DPCM_DECODER)        += dpcm.o
 OBJS-$(CONFIG_SONIC_DECODER)           += sonic.o
 OBJS-$(CONFIG_SONIC_ENCODER)           += sonic.o
 OBJS-$(CONFIG_SONIC_LS_DECODER)        += sonic.o
@@ -121,6 +124,7 @@ OBJS-$(CONFIG_WMAV2_DECODER)           += wmadec.o
 OBJS-$(CONFIG_WMV3_DECODER)            += vc1.o
 OBJS-$(CONFIG_WNV1_DECODER)            += wnv1.o
 OBJS-$(CONFIG_WS_SND1_DECODER)         += ws-snd1.o
+OBJS-$(CONFIG_XAN_DPCM_DECODER)        += dpcm.o
 OBJS-$(CONFIG_XAN_WC3_DECODER)         += xan.o
 OBJS-$(CONFIG_XAN_WC4_DECODER)         += xan.o
 OBJS-$(CONFIG_XL_DECODER)              += xl.o
