@@ -63,9 +63,6 @@
 #undef NDEBUG
 #include <assert.h>
 
-/* Allows seeking */
-#define MOV_SEEK
-
 /* http://gpac.sourceforge.net/tutorial/mediatypes.htm */
 const CodecTag ff_mov_obj_type[] = {
     { CODEC_ID_MPEG4     ,  32 },
@@ -231,6 +228,11 @@ typedef struct {
     void* clrs;
 } MOV_ctab_t;
 
+typedef struct MOV_mdat_atom_s {
+    offset_t offset;
+    int64_t size;
+} MOV_mdat_atom_t;
+
 typedef struct {
     uint8_t  version;
     uint32_t flags; // 24bit
@@ -309,6 +311,7 @@ typedef struct MOVStreamContext {
     long current_sample;
     long left_in_chunk; /* how many samples before next chunk */
     MOV_esds_t esds;
+    AVRational sample_size_v1;
 } MOVStreamContext;
 
 typedef struct MOVContext {
@@ -335,6 +338,8 @@ typedef struct MOVContext {
     /* NOTE: for recursion save to/ restore from local variable! */
 
     AVPaletteControl palette_control;
+    MOV_mdat_atom_t *mdat_list;
+    int mdat_count;
 } MOVContext;
 
 
@@ -611,6 +616,10 @@ static int mov_read_mdat(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
     if(atom.size == 0) /* wrong one (MP4) */
         return 0;
+    c->mdat_list = av_realloc(c->mdat_list, (c->mdat_count + 1) * sizeof(*c->mdat_list));
+    c->mdat_list[c->mdat_count].offset = atom.offset;
+    c->mdat_list[c->mdat_count].size = atom.size;
+    c->mdat_count++;
     c->found_mdat=1;
     c->mdat_offset = atom.offset;
     c->mdat_size = atom.size;
@@ -1056,6 +1065,7 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
             } else
                 st->codec->palctrl = NULL;
         } else if(st->codec->codec_type==CODEC_TYPE_AUDIO) {
+            int bits_per_sample;
             uint16_t version = get_be16(pb);
 
             st->codec->codec_id = id;
@@ -1073,16 +1083,15 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
             st->codec->sample_rate = ((get_be32(pb) >> 16));
 
             switch (st->codec->codec_id) {
+            case CODEC_ID_PCM_S8:
+            case CODEC_ID_PCM_U8:
+                if (st->codec->bits_per_sample == 16)
+                    st->codec->codec_id = CODEC_ID_PCM_S16BE;
+                break;
             case CODEC_ID_PCM_S16LE:
             case CODEC_ID_PCM_S16BE:
                 if (st->codec->bits_per_sample == 8)
                     st->codec->codec_id = CODEC_ID_PCM_S8;
-                st->codec->bit_rate = st->codec->sample_rate * 8;
-                break;
-            case CODEC_ID_PCM_U8:
-                if (st->codec->bits_per_sample == 16)
-                    st->codec->codec_id = CODEC_ID_PCM_S16BE;
-                st->codec->bit_rate = st->codec->sample_rate * 8;
                 break;
             case CODEC_ID_AMR_WB:
                 st->codec->sample_rate = 16000; /* should really we ? */
@@ -1096,12 +1105,18 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
                 break;
             }
 
+            bits_per_sample = av_get_bits_per_sample(st->codec->codec_id);
+            if (bits_per_sample) {
+                st->codec->bits_per_sample = bits_per_sample;
+                sc->sample_size = (bits_per_sample >> 3) * st->codec->channels;
+            }
+
             //Read QT version 1 fields. In version 0 theese dont exist
             dprintf("version =%d mp4=%d\n",version,c->mp4);
             if(version==1) {
-                get_be32(pb); /* samples per packet */
+                sc->sample_size_v1.den = get_be32(pb); /* samples per packet */
                 get_be32(pb); /* bytes per packet */
-                get_be32(pb); /* bytes per frame */
+                sc->sample_size_v1.num = get_be32(pb); /* bytes per frame */
                 get_be32(pb); /* bytes per sample */
             } else if(version==2) {
                 get_be32(pb); /* sizeof struct only */
@@ -1209,47 +1224,25 @@ static int mov_read_stsz(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
     AVStream *st = c->fc->streams[c->fc->nb_streams-1];
     MOVStreamContext *sc = (MOVStreamContext *)st->priv_data;
-    unsigned int i, entries;
+    unsigned int i, entries, sample_size;
 
     get_byte(pb); /* version */
     get_byte(pb); get_byte(pb); get_byte(pb); /* flags */
 
-    sc->sample_size = get_be32(pb);
+    sample_size = get_be32(pb);
+    if (!sc->sample_size) /* do not overwrite value computed in stsd */
+        sc->sample_size = sample_size;
     entries = get_be32(pb);
     if(entries >= UINT_MAX / sizeof(long))
         return -1;
 
     sc->sample_count = entries;
+    if (sample_size)
+        return 0;
+
 #ifdef DEBUG
     av_log(NULL, AV_LOG_DEBUG, "sample_size = %ld sample_count = %ld\n", sc->sample_size, sc->sample_count);
 #endif
-    if(sc->sample_size) {
-        /* override sample size for uncompressed sound */
-        switch (st->codec->codec_id) {
-        case CODEC_ID_PCM_S32BE:
-        case CODEC_ID_PCM_S32LE:
-            sc->sample_size = 4 * st->codec->channels;
-            break;
-        case CODEC_ID_PCM_S24BE:
-        case CODEC_ID_PCM_S24LE:
-            sc->sample_size = 3 * st->codec->channels;
-            break;
-        case CODEC_ID_PCM_S16BE:
-        case CODEC_ID_PCM_S16LE:
-            sc->sample_size = 2 * st->codec->channels;
-            break;
-        case CODEC_ID_PCM_MULAW:
-        case CODEC_ID_PCM_ALAW:
-        case CODEC_ID_PCM_S8:
-        case CODEC_ID_PCM_U8:
-            sc->sample_size = 1 * st->codec->channels;
-            break;
-        default:
-            break;
-        }
-        assert(sc->sample_size);
-        return 0; /* there isn't any table following */
-    }
     sc->sample_sizes = (long*) av_malloc(entries * sizeof(long));
     if (!sc->sample_sizes)
         return -1;
@@ -1591,10 +1584,6 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 static void mov_free_stream_context(MOVStreamContext *sc)
 {
     if(sc) {
-        av_freep(&sc->chunk_offsets);
-        av_freep(&sc->sample_to_chunk);
-        av_freep(&sc->sample_sizes);
-        av_freep(&sc->keyframes);
         av_freep(&sc->stts_data);
         av_freep(&sc->ctts_data);
         av_freep(&sc);
@@ -1656,6 +1645,116 @@ static int mov_probe(AVProbeData *p)
     return score;
 }
 
+static void mov_build_index(MOVContext *mov, AVStream *st)
+{
+    MOVStreamContext *sc = st->priv_data;
+    offset_t current_offset;
+    int64_t current_dts = 0;
+    int stts_index = 0;
+    int stsc_index = 0;
+    int stss_index = 0;
+    int i, j, k;
+
+    if (sc->sample_sizes || st->codec->codec_type == CODEC_TYPE_VIDEO) {
+        int keyframe, sample_size;
+        int current_sample = 0;
+        int stts_sample = 0;
+        int distance = 0;
+
+        st->nb_frames = sc->sample_count;
+        for (i = 0; i < sc->chunk_count; i++) {
+            current_offset = sc->chunk_offsets[i];
+            if (stsc_index + 1 < sc->sample_to_chunk_sz && i + 1 == sc->sample_to_chunk[stsc_index + 1].first)
+                stsc_index++;
+            for (j = 0; j < sc->sample_to_chunk[stsc_index].count; j++) {
+                keyframe = !sc->keyframe_count || current_sample + 1 == sc->keyframes[stss_index];
+                if (keyframe) {
+                    distance = 0;
+                    if (stss_index + 1 < sc->keyframe_count)
+                        stss_index++;
+                }
+                sample_size = sc->sample_size > 0 ? sc->sample_size : sc->sample_sizes[current_sample];
+                dprintf("AVIndex stream %d, sample %d, offset %llx, dts %lld, size %d, distance %d, keyframe %d\n",
+                        st->index, current_sample, current_offset, current_dts, sample_size, distance, keyframe);
+                av_add_index_entry(st, current_offset, current_dts, sample_size, distance, keyframe ? AVINDEX_KEYFRAME : 0);
+                current_offset += sample_size;
+                assert(sc->stts_data[stts_index].duration % sc->time_rate == 0);
+                current_dts += sc->stts_data[stts_index].duration / sc->time_rate;
+                distance++;
+                stts_sample++;
+                if (current_sample + 1 < sc->sample_count)
+                    current_sample++;
+                if (stts_index + 1 < sc->stts_count && stts_sample == sc->stts_data[stts_index].count) {
+                    stts_sample = 0;
+                    stts_index++;
+                }
+            }
+        }
+    } else { /* read whole chunk */
+        int chunk_samples, chunk_size, chunk_duration;
+
+        for (i = 0; i < sc->chunk_count; i++) {
+            current_offset = sc->chunk_offsets[i];
+            if (stsc_index + 1 < sc->sample_to_chunk_sz && i + 1 == sc->sample_to_chunk[stsc_index + 1].first)
+                stsc_index++;
+            chunk_samples = sc->sample_to_chunk[stsc_index].count;
+            /* get chunk size */
+            if (sc->sample_size > 1)
+                chunk_size = chunk_samples * sc->sample_size;
+            else if (sc->sample_size_v1.den > 0 && (chunk_samples * sc->sample_size_v1.num % sc->sample_size_v1.den == 0))
+                chunk_size = chunk_samples * sc->sample_size_v1.num / sc->sample_size_v1.den;
+            else { /* workaround to find nearest next chunk offset */
+                chunk_size = INT_MAX;
+                for (j = 0; j < mov->total_streams; j++) {
+                    MOVStreamContext *msc = mov->streams[j];
+
+                    for (k = msc->next_chunk; k < msc->chunk_count; k++) {
+                        if (msc->chunk_offsets[k] > current_offset && msc->chunk_offsets[k] - current_offset < chunk_size) {
+                            chunk_size = msc->chunk_offsets[k] - current_offset;
+                            msc->next_chunk = k;
+                            break;
+                        }
+                    }
+                }
+                /* check for last chunk */
+                if (chunk_size == INT_MAX)
+                    for (j = 0; j < mov->mdat_count; j++) {
+                        dprintf("mdat %d, offset %llx, size %lld, current offset %llx\n",
+                                j, mov->mdat_list[j].offset, mov->mdat_list[j].size, current_offset);
+                        if (mov->mdat_list[j].offset <= current_offset && mov->mdat_list[j].offset + mov->mdat_list[j].size > current_offset)
+                            chunk_size = mov->mdat_list[j].offset + mov->mdat_list[j].size - current_offset;
+                    }
+                assert(chunk_size != INT_MAX);
+                for (j = 0; j < mov->total_streams; j++) {
+                    mov->streams[j]->next_chunk = 0;
+                }
+            }
+            av_add_index_entry(st, current_offset, current_dts, chunk_size, 0, AVINDEX_KEYFRAME);
+            /* get chunk duration */
+            chunk_duration = 0;
+            while (chunk_samples > 0) {
+                if (chunk_samples < sc->stts_data[stts_index].count) {
+                    chunk_duration += sc->stts_data[stts_index].duration * chunk_samples;
+                    sc->stts_data[stts_index].count -= chunk_samples;
+                    break;
+                } else {
+                    chunk_duration += sc->stts_data[stts_index].duration * chunk_samples;
+                    chunk_samples -= sc->stts_data[stts_index].count;
+                    if (stts_index + 1 < sc->stts_count) {
+                        stts_index++;
+                    }
+                }
+            }
+            dprintf("AVIndex stream %d, chunk %d, offset %llx, dts %lld, size %d, duration %d\n",
+                    st->index, i, current_offset, current_dts, chunk_size, chunk_duration);
+            assert(chunk_duration % sc->time_rate == 0);
+            current_dts += chunk_duration / sc->time_rate;
+        }
+        /* adjust sample count to chunk count */
+        sc->sample_count = sc->chunk_count;
+    }
+}
+
 static int mov_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     MOVContext *mov = (MOVContext *) s->priv_data;
@@ -1701,425 +1800,128 @@ static int mov_read_header(AVFormatContext *s, AVFormatParameters *ap)
             s->streams[i]->duration /= sc->time_rate;
         }
         sc->ffindex = i;
+        mov_build_index(mov, s->streams[i]);
     }
 
+    for(i=0; i<mov->total_streams; i++) {
+        /* dont need those anymore */
+        av_freep(&mov->streams[i]->chunk_offsets);
+        av_freep(&mov->streams[i]->sample_to_chunk);
+        av_freep(&mov->streams[i]->sample_sizes);
+        av_freep(&mov->streams[i]->keyframes);
+        av_freep(&mov->streams[i]->stts_data);
+    }
+    av_freep(&mov->mdat_list);
     return 0;
 }
 
-/* Yes, this is ugly... I didn't write the specs of QT :p */
-/* XXX:remove useless commented code sometime */
 static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    MOVContext *mov = (MOVContext *) s->priv_data;
-    MOVStreamContext *sc;
-    AVStream *st;
-    int64_t offset = INT64_MAX;
+    MOVContext *mov = s->priv_data;
+    MOVStreamContext *sc = 0;
+    AVIndexEntry *sample = 0;
     int64_t best_dts = INT64_MAX;
-    int i, a, b, m;
-    int next_sample= -99;
-    int size;
-    int idx;
-    int ret;
-    size = 0x0FFFFFFF;
+    int i;
 
-    if (mov->partial) {
-        sc = mov->partial;
-        idx = sc->sample_to_chunk_index;
-
-        if (idx < 0) return 0;
-        dprintf("sc[ffid %d]->sample_size = %ld\n", sc->ffindex, sc->sample_size);
-        //size = sc->sample_sizes[sc->current_sample];
-        // that ain't working...
-        //size = (sc->sample_size)?sc->sample_size:sc->sample_sizes[sc->current_sample];
-        size = (sc->sample_size > 1)?sc->sample_size:sc->sample_sizes[sc->current_sample];
-
-        next_sample= sc->current_sample+1;
-
-        sc->left_in_chunk--;
-
-        if (sc->left_in_chunk <= 0)
-            mov->partial = 0;
-        offset = mov->next_chunk_offset;
-        /* extract the sample */
-
-        goto readchunk;
-    }
-
-again:
-    sc = 0;
-    if(offset == INT64_MAX)
-        best_dts= INT64_MAX;
-    for(i=0; i<mov->total_streams; i++) {
+    for (i = 0; i < mov->total_streams; i++) {
         MOVStreamContext *msc = mov->streams[i];
 
-        if ((msc->next_chunk < msc->chunk_count) && msc->next_chunk >= 0){
-            if (msc->sample_to_time_index < msc->stts_count && mov->ni) {
-                int64_t dts;
-                int index= msc->sample_to_time_index;
-                int sample= msc->sample_to_time_sample;
-                int time= msc->sample_to_time_time;
-                int duration = msc->stts_data[index].duration;
-                int count = msc->stts_data[index].count;
-                if (sample + count <= msc->current_sample) {
-                    sample += count;
-                    time   += count*duration;
-                    index ++;
-                    duration = msc->stts_data[index].duration;
-                }
-                dts = time + (msc->current_sample - sample) * (int64_t)duration;
-                dts = av_rescale(dts, AV_TIME_BASE, msc->time_scale);
-                dprintf("stream: %d dts: %"PRId64" best_dts: %"PRId64" offset: %"PRId64"\n", i, dts, best_dts, offset);
-                if(dts < best_dts){
-                    best_dts= dts;
-                    sc = msc;
-                    offset = msc->chunk_offsets[msc->next_chunk];
-                }
-            }else{
-                if ((msc->chunk_offsets[msc->next_chunk] < offset)) {
-                    sc = msc;
-                    offset = msc->chunk_offsets[msc->next_chunk];
-                }
+        if (s->streams[i]->discard != AVDISCARD_ALL && msc->current_sample < msc->sample_count) {
+            AVIndexEntry *current_sample = &s->streams[i]->index_entries[msc->current_sample];
+            int64_t dts = av_rescale(current_sample->timestamp * (int64_t)msc->time_rate, AV_TIME_BASE, msc->time_scale);
+
+            dprintf("stream %d, sample %ld, dts %lld\n", i, msc->current_sample, dts);
+            if (dts < best_dts) {
+                sample = current_sample;
+                best_dts = dts;
+                sc = msc;
             }
         }
     }
-    if (!sc || offset==INT64_MAX)
+    if (!sample)
         return -1;
-
-    sc->next_chunk++;
-
-    if(mov->next_chunk_offset < offset) { /* some meta data */
-        url_fskip(&s->pb, (offset - mov->next_chunk_offset));
-        mov->next_chunk_offset = offset;
-    }
-
-    if(s->streams[sc->ffindex]->discard >= AVDISCARD_ALL) {
-        url_fskip(&s->pb, (offset - mov->next_chunk_offset));
-        mov->next_chunk_offset = offset;
-        offset = INT64_MAX;
-        goto again;
-    }
-
-    idx = sc->sample_to_chunk_index;
-    if (idx + 1 < sc->sample_to_chunk_sz && sc->next_chunk >= sc->sample_to_chunk[idx + 1].first)
-        idx++;
-    sc->sample_to_chunk_index = idx;
-    /* split chunks into samples */
-    if (sc->sample_size == 0 || sc->sample_size > 100) {
-        if (idx >= 0 && sc->sample_to_chunk[idx].count != 1) {
-            mov->partial = sc;
-            /* we'll have to get those samples before next chunk */
-            sc->left_in_chunk = sc->sample_to_chunk[idx].count - 1;
-        }
-        size = (sc->sample_size > 1)?sc->sample_size:sc->sample_sizes[sc->current_sample];
-        next_sample= sc->current_sample+1;
-    }else{
-        int adjusted= 0;
-        /* get the chunk size... */
-        for(i=0; i<mov->total_streams; i++) {
-            MOVStreamContext *msc = mov->streams[i];
-            if ((msc->next_chunk < msc->chunk_count)
-                && msc->chunk_offsets[msc->next_chunk] - offset < size
-                && msc->chunk_offsets[msc->next_chunk] > offset)
-                size = msc->chunk_offsets[msc->next_chunk] - offset;
-        }
-        //Make sure that size is according to sample_size (Needed by .mov files
-        //created on a Minolta Dimage Xi where audio chunks contains waste data in the end)
-        //needed for 'raw '
-        //sample_size is already adjusted in read_stsz
-        adjusted= sc->sample_to_chunk[idx].count * sc->sample_size;
-        if (adjusted < size) {
-            dprintf("adjusted %d, size %d, sample count %ld\n", adjusted, size, sc->sample_to_chunk[idx].count);
-            size = adjusted;
-        }
-        if(idx < sc->sample_to_chunk_sz){
-            next_sample= sc->current_sample + sc->sample_to_chunk[idx].count;
-        }else
-            next_sample= sc->current_sample;
-    }
-
-readchunk:
-    dprintf("chunk: %"PRId64" -> %"PRId64" (%i)\n", offset, offset + size, size);
-    if(size == 0x0FFFFFFF)
-        size = mov->mdat_size + mov->mdat_offset - offset;
-    if(size < 0)
+    /* must be done just before reading, to avoid infinite loop on sample */
+    sc->current_sample++;
+    url_fseek(&s->pb, sample->pos, SEEK_SET);
+    if (av_get_packet(&s->pb, pkt, sample->size) <= 0) {
+        av_log(s, AV_LOG_ERROR, "stream %d, error reading packet at offset 0x%llx, maybe partial file\n", sc->ffindex, sample->pos);
         return -1;
-    if(size == 0)
-        return -1;
-    ret = url_fseek(&s->pb, offset, SEEK_SET);
-    if (ret < 0)
-        return ret;
-    av_get_packet(&s->pb, pkt, size);
+    }
     pkt->stream_index = sc->ffindex;
-
-    // If the keyframes table exists, mark any samples that are in the table as key frames.
-    // If no table exists, treat very sample as a key frame.
-    if (sc->keyframe_count) {
-        a = 0;
-        b = sc->keyframe_count - 1;
-
-        while (a < b) {
-            m = (a + b + 1) >> 1;
-            if (sc->keyframes[m] > sc->current_sample) {
-                b = m - 1;
-            } else {
-                a = m;
-            }
+    pkt->dts = sample->timestamp;
+    if (sc->ctts_data) {
+        assert(sc->ctts_data[sc->sample_to_ctime_index].duration % sc->time_rate == 0);
+        pkt->pts = pkt->dts + sc->ctts_data[sc->sample_to_ctime_index].duration / sc->time_rate;
+        /* update ctts context */
+        sc->sample_to_ctime_sample++;
+        if (sc->sample_to_ctime_index < sc->ctts_count && sc->ctts_data[sc->sample_to_ctime_index].count == sc->sample_to_ctime_sample) {
+            sc->sample_to_ctime_index++;
+            sc->sample_to_ctime_sample = 0;
         }
-
-        if (sc->keyframes[a] == sc->current_sample)
-            pkt->flags |= PKT_FLAG_KEY;
+    } else {
+        pkt->pts = pkt->dts;
     }
-    else
-        pkt->flags |= PKT_FLAG_KEY;
-
-    mov->next_chunk_offset = offset + size;
-
-    /* find the corresponding dts */
-    if (sc && sc->sample_to_time_index < sc->stts_count && pkt) {
-      unsigned int count;
-      uint64_t dts, pts;
-      unsigned int duration = sc->stts_data[sc->sample_to_time_index].duration;
-      count = sc->stts_data[sc->sample_to_time_index].count;
-      if ((sc->sample_to_time_sample + count) <= sc->current_sample) {
-        sc->sample_to_time_sample += count;
-        sc->sample_to_time_time   += count*duration;
-        sc->sample_to_time_index ++;
-        duration = sc->stts_data[sc->sample_to_time_index].duration;
-      }
-      dts = sc->sample_to_time_time + (sc->current_sample - sc->sample_to_time_sample) * (int64_t)duration;
-        /* find the corresponding pts */
-        if (sc->sample_to_ctime_index < sc->ctts_count) {
-            int duration = sc->ctts_data[sc->sample_to_ctime_index].duration;
-            int count = sc->ctts_data[sc->sample_to_ctime_index].count;
-
-            if ((sc->sample_to_ctime_sample + count) <= sc->current_sample) {
-                sc->sample_to_ctime_sample += count;
-                sc->sample_to_ctime_index ++;
-                duration = sc->ctts_data[sc->sample_to_ctime_index].duration;
-            }
-            pts = dts + duration;
-        }else
-            pts = dts;
-
-        st= s->streams[ sc->ffindex ];
-        assert(pts % st->time_base.num == 0);
-        assert(dts % st->time_base.num == 0);
-
-        pkt->pts = pts / st->time_base.num;
-        pkt->dts = dts / st->time_base.num;
-        dprintf("stream #%d smp #%ld dts = %"PRId64" pts = %"PRId64" (smp:%ld time:%"PRId64" idx:%d ent:%d count:%d dur:%d)\n"
-                , pkt->stream_index, sc->current_sample-1, pkt->dts, pkt->pts
-                , sc->sample_to_time_sample
-                , sc->sample_to_time_time
-                , sc->sample_to_time_index
-                , sc->stts_count
-                , count
-                , duration);
-    }
-
-    assert(next_sample>=0);
-    sc->current_sample= next_sample;
-
+    pkt->flags |= sample->flags & AVINDEX_KEYFRAME ? PKT_FLAG_KEY : 0;
+    pkt->pos = sample->pos;
+    dprintf("stream %d, pts %lld, dts %lld, pos 0x%llx, duration %d\n", pkt->stream_index, pkt->pts, pkt->dts, pkt->pos, pkt->duration);
     return 0;
 }
 
-#if defined(MOV_SEEK)
-/**
- * Seek method based on the one described in the Appendix C of QTFileFormat.pdf
- */
+static int mov_seek_stream(AVStream *st, int64_t timestamp, int flags)
+{
+    MOVStreamContext *sc = st->priv_data;
+    int sample, time_sample;
+    int i;
+
+    sample = av_index_search_timestamp(st, timestamp, flags);
+    dprintf("stream %d, timestamp %lld, sample %d\n", st->index, timestamp, sample);
+    if (sample < 0) /* not sure what to do */
+        return -1;
+    sc->current_sample = sample;
+    dprintf("stream %d, found sample %ld\n", st->index, sc->current_sample);
+    /* adjust ctts index */
+    if (sc->ctts_data) {
+        time_sample = 0;
+        for (i = 0; i < sc->ctts_count; i++) {
+            time_sample += sc->ctts_data[i].count;
+            if (time_sample >= sc->current_sample) {
+                sc->sample_to_ctime_index = i;
+                sc->sample_to_ctime_sample = time_sample - sc->current_sample;
+                break;
+            }
+        }
+    }
+    return sample;
+}
+
 static int mov_read_seek(AVFormatContext *s, int stream_index, int64_t sample_time, int flags)
 {
-    MOVContext* mov = (MOVContext *) s->priv_data;
-    MOVStreamContext* sc;
-    int32_t i, a, b, m;
-    int64_t start_time;
-    int32_t seek_sample, sample;
-    int32_t duration;
-    int32_t count;
-    int32_t chunk;
-    int32_t left_in_chunk;
-    int64_t chunk_file_offset;
-    int64_t sample_file_offset;
-    int32_t first_chunk_sample;
-    int32_t sample_to_chunk_idx;
-    int sample_to_time_index;
-    long sample_to_time_sample = 0;
-    uint64_t sample_to_time_time = 0;
-    int mov_idx;
+    AVStream *st;
+    int64_t seek_timestamp, timestamp;
+    int sample;
+    int i;
 
-    // Find the corresponding mov stream
-    for (mov_idx = 0; mov_idx < mov->total_streams; mov_idx++)
-        if (mov->streams[mov_idx]->ffindex == stream_index)
-            break;
-    if (mov_idx == mov->total_streams) {
-        av_log(s, AV_LOG_ERROR, "mov: requested stream was not found in mov streams (idx=%i)\n", stream_index);
+    if (stream_index >= s->nb_streams)
         return -1;
-    }
-    sc = mov->streams[mov_idx];
 
-    sample_time *= s->streams[stream_index]->time_base.num;
-
-    // Step 1. Find the edit that contains the requested time (elst)
-    if (sc->edit_count && 0) {
-        // FIXME should handle edit list
-        av_log(s, AV_LOG_ERROR, "mov: does not handle seeking in files that contain edit list (c:%d)\n", sc->edit_count);
+    st = s->streams[stream_index];
+    sample = mov_seek_stream(st, sample_time, flags);
+    if (sample < 0)
         return -1;
-    }
 
-    // Step 2. Find the corresponding sample using the Time-to-sample atom (stts) */
-    dprintf("Searching for time %li in stream #%i (time_scale=%i)\n", (long)sample_time, mov_idx, sc->time_scale);
-    start_time = 0; // FIXME use elst atom
-    sample = 1; // sample are 0 based in table
+    /* adjust seek timestamp to found sample timestamp */
+    seek_timestamp = st->index_entries[sample].timestamp;
 
-    for (i = 0; i < sc->stts_count; i++) {
-        count = sc->stts_data[i].count;
-        duration = sc->stts_data[i].duration;
-        if ((start_time + count*duration) > sample_time) {
-            sample_to_time_time = start_time;
-            sample_to_time_index = i;
-            sample_to_time_sample = sample;
-            sample += (sample_time - start_time) / duration;
-            break;
-        }
-        sample += count;
-        start_time += count * duration;
-    }
-    sample_to_time_time = start_time;
-    sample_to_time_index = i;
-    /* NOTE: despite what qt doc say, the dt value (Display Time in qt vocabulary) computed with the stts atom
-       is a decoding time stamp (dts) not a presentation time stamp. And as usual dts != pts for stream with b frames */
+    for (i = 0; i < s->nb_streams; i++) {
+        st = s->streams[i];
+        if (stream_index == i || st->discard == AVDISCARD_ALL)
+            continue;
 
-    dprintf("Found time %li at sample #%u\n", (long)sample_time, sample);
-    if (sample > sc->sample_count) {
-        av_log(s, AV_LOG_ERROR, "mov: sample pos is too high, unable to seek (req. sample=%i, sample count=%ld)\n", sample, sc->sample_count);
-        return -1;
-    }
-
-    // Step 3. Find the prior sync. sample using the Sync sample atom (stss)
-    if (sc->keyframe_count) {
-        a = 0;
-        b = sc->keyframe_count - 1;
-        while (a < b) {
-            m = (a + b + 1) >> 1;
-            if (sc->keyframes[m] > sample) {
-                b = m - 1;
-            } else {
-                a = m;
-            }
-        }
-        // for low latency prob: always use the previous keyframe, just uncomment the next line
-        // if (a) a--;
-        seek_sample = sc->keyframes[a];
-    }
-    else
-        seek_sample = sample; // else all samples are key frames
-    dprintf("Found nearest keyframe at sample #%i \n", seek_sample);
-
-    // Step 4. Find the chunk of the sample using the Sample-to-chunk-atom (stsc)
-    for (first_chunk_sample = 1, i = 0; i < (sc->sample_to_chunk_sz - 1); i++) {
-        b = (sc->sample_to_chunk[i + 1].first - sc->sample_to_chunk[i].first) * sc->sample_to_chunk[i].count;
-        if (seek_sample >= first_chunk_sample && seek_sample < (first_chunk_sample + b))
-            break;
-        first_chunk_sample += b;
-    }
-    chunk = sc->sample_to_chunk[i].first + (seek_sample - first_chunk_sample) / sc->sample_to_chunk[i].count;
-    left_in_chunk = sc->sample_to_chunk[i].count - (seek_sample - first_chunk_sample) % sc->sample_to_chunk[i].count;
-    first_chunk_sample += ((seek_sample - first_chunk_sample) / sc->sample_to_chunk[i].count) * sc->sample_to_chunk[i].count;
-    sample_to_chunk_idx = i;
-    dprintf("Sample was found in chunk #%i at sample offset %i (idx %i)\n", chunk, seek_sample - first_chunk_sample, sample_to_chunk_idx);
-
-    // Step 5. Find the offset of the chunk using the chunk offset atom
-    if (!sc->chunk_offsets) {
-        av_log(s, AV_LOG_ERROR, "mov: no chunk offset atom, unable to seek\n");
-        return -1;
-    }
-    if (chunk > sc->chunk_count) {
-        av_log(s, AV_LOG_ERROR, "mov: chunk offset atom too short, unable to seek (req. chunk=%i, chunk count=%li)\n", chunk, sc->chunk_count);
-        return -1;
-    }
-    chunk_file_offset = sc->chunk_offsets[chunk - 1];
-    dprintf("Chunk file offset is #%"PRIu64"\n", chunk_file_offset);
-
-    // Step 6. Find the byte offset within the chunk using the sample size atom
-    sample_file_offset = chunk_file_offset;
-    if (sc->sample_size)
-        sample_file_offset += (seek_sample - first_chunk_sample) * sc->sample_size;
-    else {
-        for (i = 0; i < (seek_sample - first_chunk_sample); i++) {
-        sample_file_offset += sc->sample_sizes[first_chunk_sample + i - 1];
-        }
-    }
-    dprintf("Sample file offset is #%"PRIu64"\n", sample_file_offset);
-
-    // Step 6. Update the parser
-    mov->partial = sc;
-    mov->next_chunk_offset = sample_file_offset;
-    // Update current stream state
-    sc->current_sample = seek_sample - 1;  // zero based
-    sc->left_in_chunk = left_in_chunk;
-    sc->next_chunk = chunk; // +1 -1 (zero based)
-    sc->sample_to_chunk_index = sample_to_chunk_idx;
-
-    // Update other streams
-    for (i = 0; i<mov->total_streams; i++) {
-        MOVStreamContext *msc;
-        if (i == mov_idx) continue;
-        // Find the nearest 'next' chunk
-        msc = mov->streams[i];
-        a = 0;
-        b = msc->chunk_count - 1;
-        while (a < b) {
-            m = (a + b + 1) >> 1;
-            if (msc->chunk_offsets[m] > chunk_file_offset) {
-                b = m - 1;
-            } else {
-                a = m;
-            }
-        }
-        msc->next_chunk = a;
-        if (msc->chunk_offsets[a] < chunk_file_offset && a < (msc->chunk_count-1))
-            msc->next_chunk ++;
-        dprintf("Nearest next chunk for stream #%i is #%li @%"PRId64"\n", i, msc->next_chunk+1, msc->chunk_offsets[msc->next_chunk]);
-
-        // Compute sample count and index in the sample_to_chunk table (what a pity)
-        msc->sample_to_chunk_index = 0;
-        msc->current_sample = 0;
-        for(;  msc->sample_to_chunk_index < (msc->sample_to_chunk_sz - 1)
-            && msc->sample_to_chunk[msc->sample_to_chunk_index + 1].first <= (1 + msc->next_chunk); msc->sample_to_chunk_index++) {
-            msc->current_sample += (msc->sample_to_chunk[msc->sample_to_chunk_index + 1].first - msc->sample_to_chunk[msc->sample_to_chunk_index].first) \
-            * msc->sample_to_chunk[msc->sample_to_chunk_index].count;
-        }
-        msc->current_sample += (msc->next_chunk - (msc->sample_to_chunk[msc->sample_to_chunk_index].first - 1)) * msc->sample_to_chunk[msc->sample_to_chunk_index].count;
-        msc->left_in_chunk = msc->sample_to_chunk[msc->sample_to_chunk_index].count - 1;
-        // Find corresponding position in stts (used later to compute dts)
-        sample = 0;
-        start_time = 0;
-        for (msc->sample_to_time_index = 0; msc->sample_to_time_index < msc->stts_count; msc->sample_to_time_index++) {
-            count = msc->stts_data[msc->sample_to_time_index].count;
-            duration = msc->stts_data[msc->sample_to_time_index].duration;
-            if ((sample + count - 1) > msc->current_sample) {
-                msc->sample_to_time_time = start_time;
-                msc->sample_to_time_sample = sample;
-                break;
-            }
-            sample += count;
-            start_time += count * duration;
-        }
-        sample = 0;
-        for (msc->sample_to_ctime_index = 0; msc->sample_to_ctime_index < msc->ctts_count; msc->sample_to_ctime_index++) {
-            count = msc->ctts_data[msc->sample_to_ctime_index].count;
-            duration = msc->ctts_data[msc->sample_to_ctime_index].duration;
-            if ((sample + count - 1) > msc->current_sample) {
-                msc->sample_to_ctime_sample = sample;
-                break;
-            }
-            sample += count;
-        }
-        dprintf("Next Sample for stream #%i is #%li @%li\n", i, msc->current_sample + 1, msc->sample_to_chunk_index + 1);
+        timestamp = av_rescale_q(seek_timestamp, s->streams[stream_index]->time_base, st->time_base);
+        mov_seek_stream(st, timestamp, flags);
     }
     return 0;
 }
-#endif
 
 static int mov_read_close(AVFormatContext *s)
 {
@@ -2142,9 +1944,7 @@ static AVInputFormat mov_iformat = {
     mov_read_header,
     mov_read_packet,
     mov_read_close,
-#if defined(MOV_SEEK)
     mov_read_seek,
-#endif
 };
 
 int mov_init(void)
