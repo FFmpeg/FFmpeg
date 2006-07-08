@@ -385,8 +385,8 @@ static int adx_decode_frame(AVCodecContext *avctx,
 }
 
 #ifdef CONFIG_ENCODERS
-AVCodec adx_adpcm_encoder = {
-    "adx_adpcm",
+AVCodec adpcm_adx_encoder = {
+    "adpcm_adx",
     CODEC_TYPE_AUDIO,
     CODEC_ID_ADPCM_ADX,
     sizeof(ADXContext),
@@ -397,8 +397,8 @@ AVCodec adx_adpcm_encoder = {
 };
 #endif //CONFIG_ENCODERS
 
-AVCodec adx_adpcm_decoder = {
-    "adx_adpcm",
+AVCodec adpcm_adx_decoder = {
+    "adpcm_adx",
     CODEC_TYPE_AUDIO,
     CODEC_ID_ADPCM_ADX,
     sizeof(ADXContext),
