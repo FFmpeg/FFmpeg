@@ -295,10 +295,6 @@ typedef struct MOVStreamContext {
     int edit_count;             /* number of 'edit' (elst atom) */
     long sample_to_chunk_sz;
     MOV_sample_to_chunk_tbl *sample_to_chunk;
-    long sample_to_chunk_index;
-    int sample_to_time_index;
-    long sample_to_time_sample;
-    uint64_t sample_to_time_time;
     int sample_to_ctime_index;
     int sample_to_ctime_sample;
     long sample_size;
@@ -309,7 +305,6 @@ typedef struct MOVStreamContext {
     int time_scale;
     int time_rate;
     long current_sample;
-    long left_in_chunk; /* how many samples before next chunk */
     MOV_esds_t esds;
     AVRational sample_size_v1;
 } MOVStreamContext;
@@ -323,15 +318,12 @@ typedef struct MOVContext {
     int found_mdat; /* we suppose we have enough data to read the file */
     int64_t mdat_size;
     int64_t mdat_offset;
-    int ni;                                         ///< non interleaved mode
     int total_streams;
     /* some streams listed here aren't presented to the ffmpeg API, since they aren't either video nor audio
      * but we need the info to be able to skip data from those streams in the 'mdat' section
      */
     MOVStreamContext *streams[MAX_STREAMS];
 
-    int64_t next_chunk_offset;
-    MOVStreamContext *partial; /* != 0 : there is still to read in the current chunk */
     int ctab_size;
     MOV_ctab_t **ctab;           /* color tables */
     const struct MOVParseTableEntry *parse_table; /* could be eventually used to change the table */
@@ -897,15 +889,6 @@ static int mov_read_stco(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     } else
         return -1;
 
-    for(i=0; i<c->fc->nb_streams; i++){
-        MOVStreamContext *sc2 = (MOVStreamContext *)c->fc->streams[i]->priv_data;
-        if(sc2 && sc2->chunk_offsets){
-            int64_t first= sc2->chunk_offsets[0];
-            int64_t last= sc2->chunk_offsets[sc2->chunk_count-1];
-            if(first >= sc->chunk_offsets[entries-1] || last <= sc->chunk_offsets[0])
-                c->ni=1;
-        }
-    }
     return 0;
 }
 
@@ -1349,7 +1332,6 @@ static int mov_read_trak(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
         return -1;
     }
 
-    sc->sample_to_chunk_index = -1;
     st->priv_data = sc;
     st->codec->codec_type = CODEC_TYPE_DATA;
     st->start_time = 0; /* XXX: check */
@@ -1584,7 +1566,6 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 static void mov_free_stream_context(MOVStreamContext *sc)
 {
     if(sc) {
-        av_freep(&sc->stts_data);
         av_freep(&sc->ctts_data);
         av_freep(&sc);
     }
@@ -1783,7 +1764,6 @@ static int mov_read_header(AVFormatContext *s, AVFormatParameters *ap)
     if(!url_is_streamed(pb) && (url_ftell(pb) != mov->mdat_offset))
         url_fseek(pb, mov->mdat_offset, SEEK_SET);
 
-    mov->next_chunk_offset = mov->mdat_offset; /* initialise reading */
     mov->total_streams = s->nb_streams;
 
     for(i=0; i<mov->total_streams; i++) {
