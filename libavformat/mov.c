@@ -1571,16 +1571,6 @@ static void mov_free_stream_context(MOVStreamContext *sc)
     }
 }
 
-static inline uint32_t mov_to_tag(uint8_t *buf)
-{
-    return MKTAG(buf[0], buf[1], buf[2], buf[3]);
-}
-
-static inline uint32_t to_be32(uint8_t *buf)
-{
-    return (buf[0] << 24) | (buf[1] << 16) | (buf[2] << 8) | buf[3];
-}
-
 /* XXX: is it sufficient ? */
 static int mov_probe(AVProbeData *p)
 {
@@ -1596,7 +1586,7 @@ static int mov_probe(AVProbeData *p)
         /* ignore invalid offset */
         if ((offset + 8) > (unsigned int)p->buf_size)
             return score;
-        tag = mov_to_tag(p->buf + offset + 4);
+        tag = LE_32(p->buf + offset + 4);
         switch(tag) {
         /* check for obvious tags */
         case MKTAG( 'j', 'P', ' ', ' ' ): /* jpeg 2000 signature */
@@ -1614,7 +1604,7 @@ static int mov_probe(AVProbeData *p)
         case MKTAG( 'f', 't', 'y', 'p' ):
         case MKTAG( 's', 'k', 'i', 'p' ):
         case MKTAG( 'u', 'u', 'i', 'd' ):
-            offset = to_be32(p->buf+offset) + offset;
+            offset = BE_32(p->buf+offset) + offset;
             /* if we only find those cause probedata is too small at least rate them */
             score = AVPROBE_SCORE_MAX - 50;
             break;
