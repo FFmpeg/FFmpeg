@@ -1750,9 +1750,9 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
             assert(chunk_duration % sc->time_rate == 0);
             current_dts += chunk_duration / sc->time_rate;
         }
-        /* adjust sample count to chunk count */
-        sc->sample_count = sc->chunk_count;
     }
+    /* adjust sample count to avindex entries */
+    sc->sample_count = st->nb_index_entries;
 }
 
 static int mov_read_header(AVFormatContext *s, AVFormatParameters *ap)
@@ -1842,11 +1842,12 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
         return -1;
     /* must be done just before reading, to avoid infinite loop on sample */
     sc->current_sample++;
-    url_fseek(&s->pb, sample->pos, SEEK_SET);
-    if (av_get_packet(&s->pb, pkt, sample->size) <= 0) {
-        av_log(s, AV_LOG_ERROR, "stream %d, error reading packet at offset 0x%llx, maybe partial file\n", sc->ffindex, sample->pos);
+    if (sample->pos >= url_fsize(&s->pb)) {
+        av_log(mov->fc, AV_LOG_ERROR, "stream %d, offset 0x%llx: partial file\n", sc->ffindex, sample->pos);
         return -1;
     }
+    url_fseek(&s->pb, sample->pos, SEEK_SET);
+    av_get_packet(&s->pb, pkt, sample->size);
     pkt->stream_index = sc->ffindex;
     pkt->dts = sample->timestamp;
     if (sc->ctts_data) {
