@@ -1987,6 +1987,7 @@ echo "#define restrict $_restrict" >> $TMPH
 
 if test "$optimize" = "small"; then
   echo "#define always_inline"  >> $TMPH
+  echo "#define CONFIG_SMALL 1" >> $TMPH
 fi
 
 # build tree in object directory if source path is different from current one
