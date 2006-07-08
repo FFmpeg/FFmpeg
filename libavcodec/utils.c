@@ -1306,11 +1306,13 @@ char av_get_pict_type_char(int pict_type){
 
 int av_get_bits_per_sample(enum CodecID codec_id){
     switch(codec_id){
-    case CODEC_ID_ADPCM_CT:
     case CODEC_ID_ADPCM_SBPRO_2:
+        return 2;
     case CODEC_ID_ADPCM_SBPRO_3:
+        return 3;
     case CODEC_ID_ADPCM_SBPRO_4:
-        return 0;
+    case CODEC_ID_ADPCM_CT:
+        return 4;
     case CODEC_ID_PCM_ALAW:
     case CODEC_ID_PCM_MULAW:
     case CODEC_ID_PCM_S8:
