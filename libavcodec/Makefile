@@ -12,10 +12,10 @@ OBJS= bitstream.o utils.o mem.o allcodecs.o \
       mpegvideo.o jrevdct.o jfdctfst.o jfdctint.o\
       mjpeg.o resample.o resample2.o dsputil.o \
       motion_est.o imgconvert.o imgresample.o \
-      mpeg12.o mpegaudiodec.o pcm.o simple_idct.o \
-      ratecontrol.o adpcm.o eval.o error_resilience.o \
+      mpeg12.o mpegaudiodec.o simple_idct.o \
+      ratecontrol.o eval.o error_resilience.o \
       fft.o mdct.o raw.o golomb.o cabac.o\
-      dpcm.o adx.o faandct.o parser.o g726.o \
+      dpcm.o adx.o faandct.o parser.o \
       vp3dsp.o h264idct.o rangecoder.o pnm.o h263.o msmpeg4.o h263dec.o \
       opt.o \
       bitstream_filter.o \
@@ -127,6 +127,78 @@ OBJS-$(CONFIG_XL_DECODER)              += xl.o
 OBJS-$(CONFIG_ZLIB_DECODER)            += lcl.o
 OBJS-$(CONFIG_ZLIB_ENCODER)            += lcl.o
 OBJS-$(CONFIG_ZMBV_DECODER)            += zmbv.o
+
+OBJS-$(CONFIG_PCM_S32LE_DECODER)       += pcm.o
+OBJS-$(CONFIG_PCM_S32LE_ENCODER)       += pcm.o
+OBJS-$(CONFIG_PCM_S32BE_DECODER)       += pcm.o
+OBJS-$(CONFIG_PCM_S32BE_ENCODER)       += pcm.o
+OBJS-$(CONFIG_PCM_U32LE_DECODER)       += pcm.o
+OBJS-$(CONFIG_PCM_U32LE_ENCODER)       += pcm.o
+OBJS-$(CONFIG_PCM_U32BE_DECODER)       += pcm.o
+OBJS-$(CONFIG_PCM_U32BE_ENCODER)       += pcm.o
+OBJS-$(CONFIG_PCM_S24LE_DECODER)       += pcm.o
+OBJS-$(CONFIG_PCM_S24LE_ENCODER)       += pcm.o
+OBJS-$(CONFIG_PCM_S24BE_DECODER)       += pcm.o
+OBJS-$(CONFIG_PCM_S24BE_ENCODER)       += pcm.o
+OBJS-$(CONFIG_PCM_U24LE_DECODER)       += pcm.o
+OBJS-$(CONFIG_PCM_U24LE_ENCODER)       += pcm.o
+OBJS-$(CONFIG_PCM_U24BE_DECODER)       += pcm.o
+OBJS-$(CONFIG_PCM_U24BE_ENCODER)       += pcm.o
+OBJS-$(CONFIG_PCM_S24DAUD_DECODER)     += pcm.o
+OBJS-$(CONFIG_PCM_S24DAUD_ENCODER)     += pcm.o
+OBJS-$(CONFIG_PCM_S16LE_DECODER)       += pcm.o
+OBJS-$(CONFIG_PCM_S16LE_ENCODER)       += pcm.o
+OBJS-$(CONFIG_PCM_S16BE_DECODER)       += pcm.o
+OBJS-$(CONFIG_PCM_S16BE_ENCODER)       += pcm.o
+OBJS-$(CONFIG_PCM_U16LE_DECODER)       += pcm.o
+OBJS-$(CONFIG_PCM_U16LE_ENCODER)       += pcm.o
+OBJS-$(CONFIG_PCM_U16BE_DECODER)       += pcm.o
+OBJS-$(CONFIG_PCM_U16BE_ENCODER)       += pcm.o
+OBJS-$(CONFIG_PCM_S8_DECODER)          += pcm.o
+OBJS-$(CONFIG_PCM_S8_ENCODER)          += pcm.o
+OBJS-$(CONFIG_PCM_U8_DECODER)          += pcm.o
+OBJS-$(CONFIG_PCM_U8_ENCODER)          += pcm.o
+OBJS-$(CONFIG_PCM_ALAW_DECODER)        += pcm.o
+OBJS-$(CONFIG_PCM_ALAW_ENCODER)        += pcm.o
+OBJS-$(CONFIG_PCM_MULAW_DECODER)       += pcm.o
+OBJS-$(CONFIG_PCM_MULAW_ENCODER)       += pcm.o
+
+OBJS-$(CONFIG_ADPCM_4XM_DECODER)       += adpcm.o
+OBJS-$(CONFIG_ADPCM_4XM_ENCODER)       += adpcm.o
+OBJS-$(CONFIG_ADPCM_ADX_DECODER)       += adpcm.o
+OBJS-$(CONFIG_ADPCM_ADX_ENCODER)       += adpcm.o
+OBJS-$(CONFIG_ADPCM_CT_DECODER)        += adpcm.o
+OBJS-$(CONFIG_ADPCM_CT_ENCODER)        += adpcm.o
+OBJS-$(CONFIG_ADPCM_EA_DECODER)        += adpcm.o
+OBJS-$(CONFIG_ADPCM_EA_ENCODER)        += adpcm.o
+OBJS-$(CONFIG_ADPCM_G726_DECODER)      += g726.o
+OBJS-$(CONFIG_ADPCM_G726_ENCODER)      += g726.o
+OBJS-$(CONFIG_ADPCM_IMA_DK3_DECODER)   += adpcm.o
+OBJS-$(CONFIG_ADPCM_IMA_DK3_ENCODER)   += adpcm.o
+OBJS-$(CONFIG_ADPCM_IMA_DK4_DECODER)   += adpcm.o
+OBJS-$(CONFIG_ADPCM_IMA_DK4_ENCODER)   += adpcm.o
+OBJS-$(CONFIG_ADPCM_IMA_QT_DECODER)    += adpcm.o
+OBJS-$(CONFIG_ADPCM_IMA_QT_ENCODER)    += adpcm.o
+OBJS-$(CONFIG_ADPCM_IMA_SMJPEG_DECODER)+= adpcm.o
+OBJS-$(CONFIG_ADPCM_IMA_SMJPEG_ENCODER)+= adpcm.o
+OBJS-$(CONFIG_ADPCM_IMA_WAV_DECODER)   += adpcm.o
+OBJS-$(CONFIG_ADPCM_IMA_WAV_ENCODER)   += adpcm.o
+OBJS-$(CONFIG_ADPCM_IMA_WS_DECODER)    += adpcm.o
+OBJS-$(CONFIG_ADPCM_IMA_WS_ENCODER)    += adpcm.o
+OBJS-$(CONFIG_ADPCM_MS_DECODER)        += adpcm.o
+OBJS-$(CONFIG_ADPCM_MS_ENCODER)        += adpcm.o
+OBJS-$(CONFIG_ADPCM_SBPRO_2_DECODER)   += adpcm.o
+OBJS-$(CONFIG_ADPCM_SBPRO_2_ENCODER)   += adpcm.o
+OBJS-$(CONFIG_ADPCM_SBPRO_3_DECODER)   += adpcm.o
+OBJS-$(CONFIG_ADPCM_SBPRO_3_ENCODER)   += adpcm.o
+OBJS-$(CONFIG_ADPCM_SBPRO_4_DECODER)   += adpcm.o
+OBJS-$(CONFIG_ADPCM_SBPRO_4_ENCODER)   += adpcm.o
+OBJS-$(CONFIG_ADPCM_SWF_DECODER)       += adpcm.o
+OBJS-$(CONFIG_ADPCM_SWF_ENCODER)       += adpcm.o
+OBJS-$(CONFIG_ADPCM_XA_DECODER)        += adpcm.o
+OBJS-$(CONFIG_ADPCM_XA_ENCODER)        += adpcm.o
+OBJS-$(CONFIG_ADPCM_YAMAHA_DECODER)    += adpcm.o
+OBJS-$(CONFIG_ADPCM_YAMAHA_ENCODER)    += adpcm.o
 
 OBJS-$(CONFIG_FAAD)                    += faad.o
 OBJS-$(CONFIG_FAAC)                    += faac.o
