@@ -330,7 +330,7 @@ static int flac_encode_init(AVCodecContext *avctx)
 
     if(avctx->frame_size > 0) {
         if(avctx->frame_size < FLAC_MIN_BLOCKSIZE ||
-                avctx->frame_size > FLAC_MIN_BLOCKSIZE) {
+                avctx->frame_size > FLAC_MAX_BLOCKSIZE) {
             av_log(avctx, AV_LOG_ERROR, "invalid block size: %d\n",
                    avctx->frame_size);
             return -1;
