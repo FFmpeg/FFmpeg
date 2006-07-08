@@ -388,7 +388,6 @@ endif
 endif
 
 # sun mediaLib specific stuff
-# currently only works when libavcodec is used in mplayer
 ifeq ($(HAVE_MLIB),yes)
 OBJS += mlib/dsputil_mlib.o
 CFLAGS += $(MLIB_INC)
