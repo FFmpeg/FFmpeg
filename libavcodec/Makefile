@@ -394,12 +394,6 @@ OBJS += mlib/dsputil_mlib.o
 CFLAGS += $(MLIB_INC)
 endif
 
-# Intel IPP specific stuff
-# currently only works when libavcodec is used in mplayer
-ifeq ($(HAVE_IPP),yes)
-CFLAGS += $(IPP_INC)
-endif
-
 # alpha specific stuff
 ifeq ($(TARGET_ARCH_ALPHA),yes)
 OBJS += alpha/dsputil_alpha.o alpha/mpegvideo_alpha.o \
