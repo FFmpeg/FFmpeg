@@ -258,6 +258,20 @@ OBJS-$(AMR_WB)                        +=  amrwb_float/dec_acelp.o \
                                           amrwb_float/enc_util.o  \
                                           amrwb_float/if_rom.o
 
+OBJS-$(CONFIG_AAC_PARSER)              += parser.o
+OBJS-$(CONFIG_AC3_PARSER)              += parser.o
+OBJS-$(CONFIG_CAVS_PARSER)             += parser.o
+OBJS-$(CONFIG_DVBSUB_PARSER)           += dvbsubdec.o
+OBJS-$(CONFIG_DVDSUB_PARSER)           += dvdsub.o
+OBJS-$(CONFIG_H261_PARSER)             += h261.o
+OBJS-$(CONFIG_H263_PARSER)             += h263dec.o
+OBJS-$(CONFIG_H264_PARSER)             += h264.o
+OBJS-$(CONFIG_MJPEG_PARSER)            += mjpeg.o
+OBJS-$(CONFIG_MPEG4VIDEO_PARSER)       += parser.o
+OBJS-$(CONFIG_MPEGAUDIO_PARSER)        += parser.o
+OBJS-$(CONFIG_MPEGVIDEO_PARSER)        += parser.o
+OBJS-$(CONFIG_PNM_PARSER)              += pnm.o
+
 OBJS-$(HAVE_PTHREADS)                  += pthread.o
 OBJS-$(HAVE_W32THREADS)                += w32thread.o
 OBJS-$(HAVE_OS2THREADS)                += os2thread.o

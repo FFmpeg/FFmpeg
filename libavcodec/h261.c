@@ -847,6 +847,7 @@ static int h261_decode_gob(H261Context *h){
     return -1;
 }
 
+#ifdef CONFIG_H261_PARSER
 static int h261_find_frame_end(ParseContext *pc, AVCodecContext* avctx, const uint8_t *buf, int buf_size){
     int vop_found, i, j;
     uint32_t state;
@@ -900,6 +901,7 @@ static int h261_parse(AVCodecParserContext *s,
     *poutbuf_size = buf_size;
     return next;
 }
+#endif
 
 /**
  * returns the number of bytes consumed for building the current frame
@@ -1039,6 +1041,7 @@ AVCodec h261_decoder = {
     CODEC_CAP_DR1,
 };
 
+#ifdef CONFIG_H261_PARSER
 AVCodecParser h261_parser = {
     { CODEC_ID_H261 },
     sizeof(ParseContext),
@@ -1046,3 +1049,4 @@ AVCodecParser h261_parser = {
     h261_parse,
     ff_parse_close,
 };
+#endif

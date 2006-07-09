@@ -106,6 +106,9 @@ show_help(){
   echo "  --disable-decoders       disables all decoders"
   echo "  --disable-muxers         disables all muxers"
   echo "  --disable-demuxers       disables all demuxers"
+  echo "  --enable-parser=NAME     enables parser NAME"
+  echo "  --disable-parser=NAME    disables parser NAME"
+  echo "  --disable-parsers        disables all parsers"
   echo ""
   echo "NOTE: Object files are built at the place where configure is launched."
   exit 1
@@ -658,6 +661,7 @@ for opt do
 done
 
 CODEC_LIST=`grep 'register_avcodec(&[a-z]' $source_path/libavcodec/allcodecs.c  | sed 's/.*&\(.*\)).*/\1/'`
+PARSER_LIST=`grep 'av_register_codec_parser(&[a-z]' $source_path/libavcodec/allcodecs.c  | sed 's/.*&\(.*\)).*/\1/'`
 
 for opt do
   case "$opt" in
@@ -818,6 +822,12 @@ for opt do
   --disable-muxers) muxers="no"; ffserver="no"
   ;;
   --disable-demuxers) demuxers="no"
+  ;;
+  --enable-parser=*) PARSER_LIST="$PARSER_LIST ${opt#*=}_parser"
+  ;;
+  --disable-parser=*) PARSER_LIST="`echo $PARSER_LIST | sed -e \"s#${opt#*=}_parser##\"`"
+  ;;
+  --disable-parsers) PARSER_LIST=""
   ;;
   --help) show_help
   ;;
@@ -2072,7 +2082,7 @@ if test "$amr_if2" = "yes" ; then
 fi
 
 
-for codec in $CODEC_LIST ; do
+for codec in $CODEC_LIST $PARSER_LIST; do
     echo "#define CONFIG_`echo $codec | tr a-z A-Z` 1" >> $TMPH
     echo "CONFIG_`echo $codec | tr a-z A-Z`=yes" >> config.mak
 done

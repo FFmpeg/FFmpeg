@@ -800,31 +800,45 @@ void avcodec_register_all(void)
 #endif
 
     /* parsers */
+#ifdef CONFIG_MPEGVIDEO_PARSER
     av_register_codec_parser(&mpegvideo_parser);
+#endif
+#ifdef CONFIG_MPEG4VIDEO_PARSER
     av_register_codec_parser(&mpeg4video_parser);
-#ifdef CONFIG_CAVS_DECODER
+#endif
+#ifdef CONFIG_CAVSVIDEO_PARSER
     av_register_codec_parser(&cavsvideo_parser);
 #endif
-#if defined(CONFIG_H261_DECODER) || defined(CONFIG_H261_ENCODER)
+#ifdef CONFIG_H261_PARSER
     av_register_codec_parser(&h261_parser);
 #endif
+#ifdef CONFIG_H263_PARSER
     av_register_codec_parser(&h263_parser);
-#ifdef CONFIG_H264_DECODER
+#endif
+#ifdef CONFIG_H264_PARSER
     av_register_codec_parser(&h264_parser);
 #endif
+#ifdef CONFIG_MJPEG_PARSER
     av_register_codec_parser(&mjpeg_parser);
+#endif
+#ifdef CONFIG_PNM_PARSER
     av_register_codec_parser(&pnm_parser);
-
+#endif
+#ifdef CONFIG_MPEGAUDIO_PARSER
     av_register_codec_parser(&mpegaudio_parser);
+#endif
+#ifdef CONFIG_AC3_PARSER
     av_register_codec_parser(&ac3_parser);
-
-#ifdef CONFIG_DVDSUB_DECODER
+#endif
+#ifdef CONFIG_DVDSUB_PARSER
     av_register_codec_parser(&dvdsub_parser);
 #endif
-#ifdef CONFIG_DVBSUB_DECODER
+#ifdef CONFIG_DVBSUB_PARSER
     av_register_codec_parser(&dvbsub_parser);
 #endif
+#ifdef CONFIG_AAC_PARSER
     av_register_codec_parser(&aac_parser);
+#endif
 
     av_register_bitstream_filter(&dump_extradata_bsf);
     av_register_bitstream_filter(&remove_extradata_bsf);

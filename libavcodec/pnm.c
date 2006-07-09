@@ -454,6 +454,7 @@ static int pam_probe(AVProbeData *pd)
 }
 #endif
 
+#ifdef CONFIG_PNM_PARSER
 static int pnm_parse(AVCodecParserContext *s,
                            AVCodecContext *avctx,
                            uint8_t **poutbuf, int *poutbuf_size,
@@ -522,6 +523,7 @@ AVCodecParser pnm_parser = {
     pnm_parse,
     ff_parse_close,
 };
+#endif /* CONFIG_PNM_PARSER */
 
 #ifdef CONFIG_PGM_ENCODER
 AVCodec pgm_encoder = {

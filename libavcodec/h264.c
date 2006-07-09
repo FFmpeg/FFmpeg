@@ -7872,6 +7872,7 @@ static int find_frame_end(H264Context *h, const uint8_t *buf, int buf_size){
     return END_NOT_FOUND;
 }
 
+#ifdef CONFIG_H264_PARSER
 static int h264_parse(AVCodecParserContext *s,
                       AVCodecContext *avctx,
                       uint8_t **poutbuf, int *poutbuf_size,
@@ -7917,7 +7918,7 @@ static int h264_split(AVCodecContext *avctx,
     }
     return 0;
 }
-
+#endif /* CONFIG_H264_PARSER */
 
 static int decode_nal_units(H264Context *h, uint8_t *buf, int buf_size){
     MpegEncContext * const s = &h->s;
@@ -8488,6 +8489,7 @@ AVCodec h264_decoder = {
     .flush= flush_dpb,
 };
 
+#ifdef CONFIG_H264_PARSER
 AVCodecParser h264_parser = {
     { CODEC_ID_H264 },
     sizeof(H264Context),
@@ -8496,5 +8498,6 @@ AVCodecParser h264_parser = {
     ff_parse_close,
     h264_split,
 };
+#endif
 
 #include "svq3.c"
