@@ -113,9 +113,6 @@ static void gif_put_bits_rev(PutBitContext *s, int n, unsigned int value)
     unsigned int bit_buf;
     int bit_cnt;
 
-#ifdef STATS
-    st_out_bit_counts[st_current_index] += n;
-#endif
     //    printf("put_bits=%d %x\n", n, value);
     assert(n == 32 || value < (1U << n));
 

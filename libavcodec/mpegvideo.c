@@ -1371,10 +1371,6 @@ int MPV_encode_end(AVCodecContext *avctx)
 {
     MpegEncContext *s = avctx->priv_data;
 
-#ifdef STATS
-    print_stats();
-#endif
-
     ff_rate_control_uninit(s);
 
     MPV_common_end(s);

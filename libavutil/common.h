@@ -339,30 +339,6 @@ extern const uint32_t inverse[256];
 #    define FASTDIV(a,b)   ((a)/(b))
 #endif
 
-/* define it to include statistics code (useful only for optimizing
-   codec efficiency */
-//#define STATS
-
-#ifdef STATS
-
-enum {
-    ST_UNKNOWN,
-    ST_DC,
-    ST_INTRA_AC,
-    ST_INTER_AC,
-    ST_INTRA_MB,
-    ST_INTER_MB,
-    ST_MV,
-    ST_NB,
-};
-
-extern int st_current_index;
-extern unsigned int st_bit_counts[ST_NB];
-extern unsigned int st_out_bit_counts[ST_NB];
-
-void print_stats(void);
-#endif
-
 /* misc math functions */
 extern FF_IMPORT_ATTR const uint8_t ff_log2_tab[256];
 
