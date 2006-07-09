@@ -1698,13 +1698,13 @@ static inline int vc1_i_pred_dc(MpegEncContext *s, int overlap, int pq, int n,
     if (pq < 9 || !overlap)
     {
         /* Set outer values */
-        if (!s->mb_y && (n!=2 && n!=3)) b=a=dcpred[scale];
+        if (s->first_slice_line && (n!=2 && n!=3)) b=a=dcpred[scale];
         if (s->mb_x == 0 && (n!=1 && n!=3)) b=c=dcpred[scale];
     }
     else
     {
         /* Set outer values */
-        if (!s->mb_y && (n!=2 && n!=3)) b=a=0;
+        if (s->first_slice_line && (n!=2 && n!=3)) b=a=0;
         if (s->mb_x == 0 && (n!=1 && n!=3)) b=c=0;
     }
 
@@ -2438,7 +2438,7 @@ static int vc1_decode_p_mb(VC1Context *v, DCTELEM block[6][64])
                 if(s->mb_intra) {
                     /* check if prediction blocks A and C are available */
                     v->a_avail = v->c_avail = 0;
-                    if(i == 2 || i == 3 || s->mb_y)
+                    if(i == 2 || i == 3 || !s->first_slice_line)
                         v->a_avail = v->mb_type[0][s->block_index[i] - s->block_wrap[i]];
                     if(i == 1 || i == 3 || s->mb_x)
                         v->c_avail = v->mb_type[0][s->block_index[i] - 1];
@@ -2515,8 +2515,8 @@ static int vc1_decode_p_mb(VC1Context *v, DCTELEM block[6][64])
                 int intrapred = 0;
                 for(i=0; i<6; i++)
                     if(is_intra[i]) {
-                        if(((s->mb_y || (i==2 || i==3)) && v->mb_type[0][s->block_index[i] - s->block_wrap[i]])
-                             || ((s->mb_x || (i==1 || i==3)) && v->mb_type[0][s->block_index[i] - 1])) {
+                        if(((!s->first_slice_line || (i==2 || i==3)) && v->mb_type[0][s->block_index[i] - s->block_wrap[i]])
+                            || ((s->mb_x || (i==1 || i==3)) && v->mb_type[0][s->block_index[i] - 1])) {
                             intrapred = 1;
                             break;
                         }
@@ -2534,7 +2534,7 @@ static int vc1_decode_p_mb(VC1Context *v, DCTELEM block[6][64])
                 if (is_intra[i]) {
                     /* check if prediction blocks A and C are available */
                     v->a_avail = v->c_avail = 0;
-                    if(i == 2 || i == 3 || s->mb_y)
+                    if(i == 2 || i == 3 || !s->first_slice_line)
                         v->a_avail = v->mb_type[0][s->block_index[i] - s->block_wrap[i]];
                     if(i == 1 || i == 3 || s->mb_x)
                         v->c_avail = v->mb_type[0][s->block_index[i] - 1];
@@ -2620,6 +2620,7 @@ static void vc1_decode_i_blocks(VC1Context *v)
     //do frame decode
     s->mb_x = s->mb_y = 0;
     s->mb_intra = 1;
+    s->first_slice_line = 1;
     ff_er_add_slice(s, 0, 0, s->mb_width - 1, s->mb_height - 1, (AC_END|DC_END|MV_END));
     for(s->mb_y = 0; s->mb_y < s->mb_height; s->mb_y++) {
         for(s->mb_x = 0; s->mb_x < s->mb_width; s->mb_x++) {
@@ -2678,6 +2679,7 @@ static void vc1_decode_i_blocks(VC1Context *v)
             }
         }
         ff_draw_horiz_band(s, s->mb_y * 16, 16);
+        s->first_slice_line = 0;
     }
 }
 
