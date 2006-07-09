@@ -104,26 +104,18 @@ typedef struct {
  *
  ****************************************************************************/
 
-static inline int get_bs_p(vector_t *mvP, vector_t *mvQ) {
+static inline int get_bs(vector_t *mvP, vector_t *mvQ, int b) {
     if((mvP->ref == REF_INTRA) || (mvQ->ref == REF_INTRA))
         return 2;
-    if(mvP->ref != mvQ->ref)
-        return 1;
     if( (abs(mvP->x - mvQ->x) >= 4) ||  (abs(mvP->y - mvQ->y) >= 4) )
         return 1;
-    return 0;
-}
-
-static inline int get_bs_b(vector_t *mvP, vector_t *mvQ) {
-    if((mvP->ref == REF_INTRA) || (mvQ->ref == REF_INTRA)) {
-        return 2;
-    } else {
-        vector_t *mvPbw = mvP + MV_BWD_OFFS;
-        vector_t *mvQbw = mvQ + MV_BWD_OFFS;
-        if( (abs(  mvP->x -   mvQ->x) >= 4) ||
-            (abs(  mvP->y -   mvQ->y) >= 4) ||
-            (abs(mvPbw->x - mvQbw->x) >= 4) ||
-            (abs(mvPbw->y - mvQbw->y) >= 4) )
+    if(b){
+        mvP += MV_BWD_OFFS;
+        mvQ += MV_BWD_OFFS;
+        if( (abs(mvP->x - mvQ->x) >= 4) ||  (abs(mvP->y - mvQ->y) >= 4) )
+            return 1;
+    }else{
+        if(mvP->ref != mvQ->ref)
             return 1;
     }
     return 0;
@@ -165,52 +157,23 @@ static void filter_mb(AVSContext *h, enum mb_t mb_type) {
         h->left_border_v[i+1] = *(h->cv + 7 + i*h->c_stride);
     }
     if(!h->loop_filter_disable) {
-        /* clear bs */
-        *((uint64_t *)bs) = 0;
         /* determine bs */
-        switch(mb_type) {
-        case I_8X8:
+        if(mb_type == I_8X8)
             *((uint64_t *)bs) = 0x0202020202020202ULL;
-            break;
-        case P_8X8:
-        case P_8X16:
-            bs[2] = get_bs_p(&h->mv[MV_FWD_X0], &h->mv[MV_FWD_X1]);
-            bs[3] = get_bs_p(&h->mv[MV_FWD_X2], &h->mv[MV_FWD_X3]);
-        case P_16X8:
-            bs[6] = get_bs_p(&h->mv[MV_FWD_X0], &h->mv[MV_FWD_X2]);
-            bs[7] = get_bs_p(&h->mv[MV_FWD_X1], &h->mv[MV_FWD_X3]);
-        case P_16X16:
-        case P_SKIP:
-            bs[0] = get_bs_p(&h->mv[MV_FWD_A1], &h->mv[MV_FWD_X0]);
-            bs[1] = get_bs_p(&h->mv[MV_FWD_A3], &h->mv[MV_FWD_X2]);
-            bs[4] = get_bs_p(&h->mv[MV_FWD_B2], &h->mv[MV_FWD_X0]);
-            bs[5] = get_bs_p(&h->mv[MV_FWD_B3], &h->mv[MV_FWD_X1]);
-            break;
-        case B_SKIP:
-        case B_DIRECT:
-        case B_8X8:
-            bs[2] = get_bs_b(&h->mv[MV_FWD_X0], &h->mv[MV_FWD_X1]);
-            bs[3] = get_bs_b(&h->mv[MV_FWD_X2], &h->mv[MV_FWD_X3]);
-            bs[6] = get_bs_b(&h->mv[MV_FWD_X0], &h->mv[MV_FWD_X2]);
-            bs[7] = get_bs_b(&h->mv[MV_FWD_X1], &h->mv[MV_FWD_X3]);
-        case B_FWD_16X16:
-        case B_BWD_16X16:
-        case B_SYM_16X16:
-            bs[0] = get_bs_b(&h->mv[MV_FWD_A1], &h->mv[MV_FWD_X0]);
-            bs[1] = get_bs_b(&h->mv[MV_FWD_A3], &h->mv[MV_FWD_X2]);
-            bs[4] = get_bs_b(&h->mv[MV_FWD_B2], &h->mv[MV_FWD_X0]);
-            bs[5] = get_bs_b(&h->mv[MV_FWD_B3], &h->mv[MV_FWD_X1]);
-            break;
-        default:
-            if(mb_type & 1) { //16X8
-                bs[6] = bs[7] = get_bs_b(&h->mv[MV_FWD_X0], &h->mv[MV_FWD_X2]);
-            } else {          //8X16
-                bs[2] = bs[3] = get_bs_b(&h->mv[MV_FWD_X0], &h->mv[MV_FWD_X1]);
+        else{
+            *((uint64_t *)bs) = 0;
+            if(partition_flags[mb_type] & SPLITV){
+                bs[2] = get_bs(&h->mv[MV_FWD_X0], &h->mv[MV_FWD_X1], mb_type > P_8X8);
+                bs[3] = get_bs(&h->mv[MV_FWD_X2], &h->mv[MV_FWD_X3], mb_type > P_8X8);
             }
-            bs[0] = get_bs_b(&h->mv[MV_FWD_A1], &h->mv[MV_FWD_X0]);
-            bs[1] = get_bs_b(&h->mv[MV_FWD_A3], &h->mv[MV_FWD_X2]);
-            bs[4] = get_bs_b(&h->mv[MV_FWD_B2], &h->mv[MV_FWD_X0]);
-            bs[5] = get_bs_b(&h->mv[MV_FWD_B3], &h->mv[MV_FWD_X1]);
+            if(partition_flags[mb_type] & SPLITH){
+                bs[6] = get_bs(&h->mv[MV_FWD_X0], &h->mv[MV_FWD_X2], mb_type > P_8X8);
+                bs[7] = get_bs(&h->mv[MV_FWD_X1], &h->mv[MV_FWD_X3], mb_type > P_8X8);
+            }
+            bs[0] = get_bs(&h->mv[MV_FWD_A1], &h->mv[MV_FWD_X0], mb_type > P_8X8);
+            bs[1] = get_bs(&h->mv[MV_FWD_A3], &h->mv[MV_FWD_X2], mb_type > P_8X8);
+            bs[4] = get_bs(&h->mv[MV_FWD_B2], &h->mv[MV_FWD_X0], mb_type > P_8X8);
+            bs[5] = get_bs(&h->mv[MV_FWD_B3], &h->mv[MV_FWD_X1], mb_type > P_8X8);
         }
         if( *((uint64_t *)bs) ) {
             if(h->flags & A_AVAIL) {
@@ -486,19 +449,13 @@ static inline void mc_part_std(AVSContext *h,int square,int chroma_height,int de
 }
 
 static void inter_pred(AVSContext *h, enum mb_t mb_type) {
-    switch(mb_type) {
-    case P_SKIP:
-    case P_16X16:
-    case B_FWD_16X16:
-    case B_BWD_16X16:
-    case B_SYM_16X16:
+    if(partition_flags[mb_type] == 0){ // 16x16
         mc_part_std(h, 1, 8, 0, h->cy, h->cu, h->cv, 0, 0,
                 h->s.dsp.put_cavs_qpel_pixels_tab[0],
                 h->s.dsp.put_h264_chroma_pixels_tab[0],
                 h->s.dsp.avg_cavs_qpel_pixels_tab[0],
                 h->s.dsp.avg_h264_chroma_pixels_tab[0],&h->mv[MV_FWD_X0]);
-        break;
-    default:
+    }else{
         mc_part_std(h, 1, 4, 0, h->cy, h->cu, h->cv, 0, 0,
                 h->s.dsp.put_cavs_qpel_pixels_tab[1],
                 h->s.dsp.put_h264_chroma_pixels_tab[1],
@@ -519,7 +476,6 @@ static void inter_pred(AVSContext *h, enum mb_t mb_type) {
                 h->s.dsp.put_h264_chroma_pixels_tab[1],
                 h->s.dsp.avg_cavs_qpel_pixels_tab[1],
                 h->s.dsp.avg_h264_chroma_pixels_tab[1],&h->mv[MV_FWD_X3]);
-        break;
     }
     /* set intra prediction modes to default values */
     h->pred_mode_Y[3] =  h->pred_mode_Y[6] = INTRA_L_LP;
@@ -1102,7 +1058,7 @@ static void decode_mb_b(AVSContext *h, enum mb_t mb_type) {
         break;
     default:
         assert((mb_type > B_SYM_16X16) && (mb_type < B_8X8));
-        flags = b_partition_flags[(mb_type-1)>>1];
+        flags = partition_flags[mb_type];
         if(mb_type & 1) { /* 16x8 macroblock types */
             if(flags & FWD0)
                 mv_pred(h, MV_FWD_X0, MV_FWD_C2, MV_PRED_TOP,  BLK_16X8, 1);

@@ -41,6 +41,8 @@
 #define BWD1                          0x08
 #define SYM0                          0x10
 #define SYM1                          0x20
+#define SPLITH                        0x40
+#define SPLITV                        0x80
 
 #define MV_BWD_OFFS                     12
 #define MV_STRIDE                        4
@@ -127,17 +129,37 @@ enum mv_loc_t {
   MV_BWD_X3
 };
 
-static const uint8_t b_partition_flags[14] = {
-  0,0,0,0,0,
-  FWD0|FWD1,
-  BWD0|BWD1,
-  FWD0|BWD1,
-  BWD0|FWD1,
-  FWD0|SYM1,
-  BWD0|SYM1,
-  SYM0|FWD1,
-  SYM0|BWD1,
-  SYM0|SYM1
+static const uint8_t partition_flags[30] = {
+  0,                      //I_8X8
+  0,                      //P_SKIP
+  0,                      //P_16X16
+            SPLITH,       //P_16X8
+                   SPLITV,//P_8X16
+            SPLITH|SPLITV,//P_8X8
+            SPLITH|SPLITV,//B_SKIP
+            SPLITH|SPLITV,//B_DIRECT
+  0,                      //B_FWD_16X16
+  0,                      //B_BWD_16X16
+  0,                      //B_SYM_16X16
+  FWD0|FWD1|SPLITH,
+  FWD0|FWD1       |SPLITV,
+  BWD0|BWD1|SPLITH,
+  BWD0|BWD1       |SPLITV,
+  FWD0|BWD1|SPLITH,
+  FWD0|BWD1       |SPLITV,
+  BWD0|FWD1|SPLITH,
+  BWD0|FWD1       |SPLITV,
+  FWD0|SYM1|SPLITH,
+  FWD0|SYM1       |SPLITV,
+  BWD0|SYM1|SPLITH,
+  BWD0|SYM1       |SPLITV,
+  SYM0|FWD1|SPLITH,
+  SYM0|FWD1       |SPLITV,
+  SYM0|BWD1|SPLITH,
+  SYM0|BWD1       |SPLITV,
+  SYM0|SYM1|SPLITH,
+  SYM0|SYM1       |SPLITV,
+            SPLITH|SPLITV,//B_8X8 = 29
 };
 
 static const uint8_t scan3x3[4] = {4,5,7,8};
