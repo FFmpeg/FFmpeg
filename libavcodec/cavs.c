@@ -576,17 +576,13 @@ static void mv_pred(AVSContext *h, enum mv_loc_t nP, enum mv_loc_t nC,
     vector_t *mvA = &h->mv[nP-1];
     vector_t *mvB = &h->mv[nP-4];
     vector_t *mvC = &h->mv[nC];
-    int mvAref = mvA->ref;
-    int mvBref = mvB->ref;
-    int mvCref;
 
     mvP->ref = ref;
     mvP->dist = h->dist[mvP->ref];
     if(mvC->ref == NOT_AVAIL)
         mvC = &h->mv[nP-5]; // set to top-left (mvD)
-    mvCref = mvC->ref;
     if(mode == MV_PRED_PSKIP) {
-        if((mvAref == NOT_AVAIL) || (mvBref == NOT_AVAIL) ||
+        if((mvA->ref == NOT_AVAIL) || (mvB->ref == NOT_AVAIL) ||
            ((mvA->x | mvA->y | mvA->ref) == 0)  ||
            ((mvB->x | mvB->y | mvB->ref) == 0) ) {
             mvP->x = mvP->y = 0;
@@ -595,33 +591,33 @@ static void mv_pred(AVSContext *h, enum mv_loc_t nP, enum mv_loc_t nC,
         }
     }
     /* if there is only one suitable candidate, take it */
-    if((mvAref >= 0) && (mvBref < 0) && (mvCref < 0)) {
+    if((mvA->ref >= 0) && (mvB->ref < 0) && (mvC->ref < 0)) {
         mvP->x = mvA->x;
         mvP->y = mvA->y;
-    } else if((mvAref < 0) && (mvBref >= 0) && (mvCref < 0)) {
+    } else if((mvA->ref < 0) && (mvB->ref >= 0) && (mvC->ref < 0)) {
         mvP->x = mvB->x;
         mvP->y = mvB->y;
-    } else if((mvAref < 0) && (mvBref < 0) && (mvCref >= 0)) {
+    } else if((mvA->ref < 0) && (mvB->ref < 0) && (mvC->ref >= 0)) {
         mvP->x = mvC->x;
         mvP->y = mvC->y;
     } else {
         switch(mode) {
         case MV_PRED_LEFT:
-            if(mvAref == mvP->ref) {
+            if(mvA->ref == mvP->ref) {
                 mvP->x = mvA->x;
                 mvP->y = mvA->y;
             } else
                 mv_pred_median(h, mvP, mvA, mvB, mvC);
             break;
         case MV_PRED_TOP:
-            if(mvBref == mvP->ref) {
+            if(mvB->ref == mvP->ref) {
                 mvP->x = mvB->x;
                 mvP->y = mvB->y;
             } else
                 mv_pred_median(h, mvP, mvA, mvB, mvC);
             break;
         case MV_PRED_TOPRIGHT:
-            if(mvCref == mvP->ref) {
+            if(mvC->ref == mvP->ref) {
                 mvP->x = mvC->x;
                 mvP->y = mvC->y;
             } else
