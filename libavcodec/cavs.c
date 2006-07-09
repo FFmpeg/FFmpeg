@@ -576,6 +576,7 @@ static void mv_pred(AVSContext *h, enum mv_loc_t nP, enum mv_loc_t nC,
     vector_t *mvA = &h->mv[nP-1];
     vector_t *mvB = &h->mv[nP-4];
     vector_t *mvC = &h->mv[nC];
+    vector_t *mvP2 = NULL;
 
     mvP->ref = ref;
     mvP->dist = h->dist[mvP->ref];
@@ -592,42 +593,24 @@ static void mv_pred(AVSContext *h, enum mv_loc_t nP, enum mv_loc_t nC,
     }
     /* if there is only one suitable candidate, take it */
     if((mvA->ref >= 0) && (mvB->ref < 0) && (mvC->ref < 0)) {
-        mvP->x = mvA->x;
-        mvP->y = mvA->y;
+        mvP2= mvA;
     } else if((mvA->ref < 0) && (mvB->ref >= 0) && (mvC->ref < 0)) {
-        mvP->x = mvB->x;
-        mvP->y = mvB->y;
+        mvP2= mvB;
     } else if((mvA->ref < 0) && (mvB->ref < 0) && (mvC->ref >= 0)) {
-        mvP->x = mvC->x;
-        mvP->y = mvC->y;
-    } else {
-        switch(mode) {
-        case MV_PRED_LEFT:
-            if(mvA->ref == mvP->ref) {
-                mvP->x = mvA->x;
-                mvP->y = mvA->y;
-            } else
-                mv_pred_median(h, mvP, mvA, mvB, mvC);
-            break;
-        case MV_PRED_TOP:
-            if(mvB->ref == mvP->ref) {
-                mvP->x = mvB->x;
-                mvP->y = mvB->y;
-            } else
-                mv_pred_median(h, mvP, mvA, mvB, mvC);
-            break;
-        case MV_PRED_TOPRIGHT:
-            if(mvC->ref == mvP->ref) {
-                mvP->x = mvC->x;
-                mvP->y = mvC->y;
-            } else
-                mv_pred_median(h, mvP, mvA, mvB, mvC);
-            break;
-        default:
-            mv_pred_median(h, mvP, mvA, mvB, mvC);
-            break;
-        }
+        mvP2= mvC;
+    } else if(mode == MV_PRED_LEFT     && mvA->ref == ref){
+        mvP2= mvA;
+    } else if(mode == MV_PRED_TOP      && mvB->ref == ref){
+        mvP2= mvB;
+    } else if(mode == MV_PRED_TOPRIGHT && mvC->ref == ref){
+        mvP2= mvC;
     }
+    if(mvP2){
+        mvP->x = mvP2->x;
+        mvP->y = mvP2->y;
+    }else
+        mv_pred_median(h, mvP, mvA, mvB, mvC);
+
     if(mode < MV_PRED_PSKIP) {
         mvP->x += get_se_golomb(&h->s.gb);
         mvP->y += get_se_golomb(&h->s.gb);
