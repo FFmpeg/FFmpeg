@@ -1316,6 +1316,17 @@ static int vc1_parse_frame_header(VC1Context *v, GetBitContext* gb)
     if (v->quantizer_mode == QUANT_FRAME_EXPLICIT)
         v->pquantizer = get_bits(gb, 1);
     v->dquantfrm = 0;
+    if (v->extended_mv == 1) v->mvrange = get_prefix(gb, 0, 3);
+    v->k_x = v->mvrange + 9 + (v->mvrange >> 1); //k_x can be 9 10 12 13
+    v->k_y = v->mvrange + 8; //k_y can be 8 9 10 11
+    v->range_x = 1 << (v->k_x - 1);
+    v->range_y = 1 << (v->k_y - 1);
+    if (v->profile == PROFILE_ADVANCED)
+    {
+        if (v->postprocflag) v->postproc = get_bits(gb, 1);
+    }
+    else
+        if (v->multires && v->s.pict_type != B_TYPE) v->respic = get_bits(gb, 2);
 
 //av_log(v->s.avctx, AV_LOG_INFO, "%c Frame: QP=[%i]%i (+%i/2) %i\n",
 //        (v->s.pict_type == P_TYPE) ? 'P' : ((v->s.pict_type == I_TYPE) ? 'I' : 'B'), pqindex, v->pq, v->halfpq, v->rangeredfrm);
@@ -1327,17 +1338,6 @@ static int vc1_parse_frame_header(VC1Context *v, GetBitContext* gb)
         else if(v->pq < 13) v->tt_index = 1;
         else v->tt_index = 2;
 
-        if (v->extended_mv == 1) v->mvrange = get_prefix(gb, 0, 3);
-        v->k_x = v->mvrange + 9 + (v->mvrange >> 1); //k_x can be 9 10 12 13
-        v->k_y = v->mvrange + 8; //k_y can be 8 9 10 11
-        v->range_x = 1 << (v->k_x - 1);
-        v->range_y = 1 << (v->k_y - 1);
-        if (v->profile == PROFILE_ADVANCED)
-        {
-            if (v->postprocflag) v->postproc = get_bits(gb, 1);
-        }
-        else
-            if (v->multires) v->respic = get_bits(gb, 2);
         lowquant = (v->pq > 12) ? 0 : 1;
         v->mv_mode = mv_pmode_table[lowquant][get_prefix(gb, 1, 4)];
         if (v->mv_mode == MV_PMODE_INTENSITY_COMP)
