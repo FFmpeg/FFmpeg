@@ -832,12 +832,12 @@ static const int ac3_channels[8] = {
 #endif /* CONFIG_AC3_PARSER */
 
 #ifdef CONFIG_AAC_PARSER
-static int aac_sample_rates[16] = {
+static const int aac_sample_rates[16] = {
     96000, 88200, 64000, 48000, 44100, 32000,
     24000, 22050, 16000, 12000, 11025, 8000, 7350
 };
 
-static int aac_channels[8] = {
+static const int aac_channels[8] = {
     0, 1, 2, 3, 4, 5, 6, 8
 };
 #endif
