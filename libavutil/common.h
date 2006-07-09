@@ -410,12 +410,9 @@ static inline int mid_pred(int a, int b, int c)
  */
 static inline int clip(int a, int amin, int amax)
 {
-    if (a < amin)
-        return amin;
-    else if (a > amax)
-        return amax;
-    else
-        return a;
+    if (a < amin)      return amin;
+    else if (a > amax) return amax;
+    else               return a;
 }
 
 /**
