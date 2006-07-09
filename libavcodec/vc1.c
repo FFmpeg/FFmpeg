@@ -2496,6 +2496,8 @@ static int vc1_decode_p_mb(VC1Context *v, DCTELEM block[6][64])
                 v->mb_type[0][s->block_index[i]] = is_intra[i];
                 if(!coded_inter) coded_inter = !is_intra[i] & is_coded[i];
             }
+            // if there are no coded blocks then don't do anything more
+            if(!intra_count && !coded_inter) return 0;
             dst_idx = 0;
             GET_MQUANT();
             s->current_picture.qscale_table[mb_pos] = mquant;
