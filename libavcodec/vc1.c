@@ -1266,7 +1266,7 @@ static int decode_sequence_header(AVCodecContext *avctx, GetBitContext *gb)
         }
         av_log(avctx, AV_LOG_DEBUG,
                "Profile %i:\nfrmrtq_postproc=%i, bitrtq_postproc=%i\n"
-               "LoopFilter=%i, MultiRes=%i, FastUVMV=%i, Extended MV=%i\n"
+               "LoopFilter=%i, MultiRes=%i, FastUVMC=%i, Extended MV=%i\n"
                "Rangered=%i, VSTransform=%i, Overlap=%i, SyncMarker=%i\n"
                "DQuant=%i, Quantizer mode=%i, Max B frames=%i\n",
                v->profile, v->frmrtq_postproc, v->bitrtq_postproc,
