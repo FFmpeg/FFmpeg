@@ -658,8 +658,6 @@ for opt do
 done
 
 CODEC_LIST=`grep 'register_avcodec(&[a-z]' $source_path/libavcodec/allcodecs.c  | sed 's/.*&\(.*\)).*/\1/'`
-PCM_CODEC_LIST=`grep 'PCM_CODEC(CODEC' $source_path/libavcodec/allcodecs.c  | sed 's/.*, \(.*\)).*/\1_decoder \1_encoder/'`
-CODEC_LIST="$CODEC_LIST $PCM_CODEC_LIST"
 
 for opt do
   case "$opt" in

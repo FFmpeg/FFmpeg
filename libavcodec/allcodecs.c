@@ -571,56 +571,218 @@ void avcodec_register_all(void)
 #endif //CONFIG_MMVIDEO_DECODER
 
     /* pcm codecs */
-#if defined (CONFIG_ENCODERS) && defined (CONFIG_DECODERS)
-    #define PCM_CODEC(id, name) \
-        register_avcodec(& name ## _encoder); \
-        register_avcodec(& name ## _decoder);
-#elif defined (CONFIG_ENCODERS)
-    #define PCM_CODEC(id, name) \
-        register_avcodec(& name ## _encoder);
-#elif defined (CONFIG_DECODERS)
-    #define PCM_CODEC(id, name) \
-        register_avcodec(& name ## _decoder);
+#ifdef CONFIG_PCM_S32LE_DECODER
+    register_avcodec(&pcm_s32le_decoder);
+#endif
+#ifdef CONFIG_PCM_S32LE_ENCODER
+    register_avcodec(&pcm_s32le_encoder);
+#endif
+#ifdef CONFIG_PCM_S32BE_DECODER
+    register_avcodec(&pcm_s32be_decoder);
+#endif
+#ifdef CONFIG_PCM_S32BE_ENCODER
+    register_avcodec(&pcm_s32be_encoder);
+#endif
+#ifdef CONFIG_PCM_U32LE_DECODER
+    register_avcodec(&pcm_u32le_decoder);
+#endif
+#ifdef CONFIG_PCM_U32LE_ENCODER
+    register_avcodec(&pcm_u32le_encoder);
+#endif
+#ifdef CONFIG_PCM_U32BE_DECODER
+    register_avcodec(&pcm_u32be_decoder);
+#endif
+#ifdef CONFIG_PCM_U32BE_ENCODER
+    register_avcodec(&pcm_u32be_encoder);
+#endif
+#ifdef CONFIG_PCM_S24LE_DECODER
+    register_avcodec(&pcm_s24le_decoder);
+#endif
+#ifdef CONFIG_PCM_S24LE_ENCODER
+    register_avcodec(&pcm_s24le_encoder);
+#endif
+#ifdef CONFIG_PCM_S24BE_DECODER
+    register_avcodec(&pcm_s24be_decoder);
+#endif
+#ifdef CONFIG_PCM_S24BE_ENCODER
+    register_avcodec(&pcm_s24be_encoder);
+#endif
+#ifdef CONFIG_PCM_U24LE_DECODER
+    register_avcodec(&pcm_u24le_decoder);
+#endif
+#ifdef CONFIG_PCM_U24LE_ENCODER
+    register_avcodec(&pcm_u24le_encoder);
+#endif
+#ifdef CONFIG_PCM_U24BE_DECODER
+    register_avcodec(&pcm_u24be_decoder);
+#endif
+#ifdef CONFIG_PCM_U24BE_ENCODER
+    register_avcodec(&pcm_u24be_encoder);
+#endif
+#ifdef CONFIG_PCM_S24DAUD_DECODER
+    register_avcodec(&pcm_s24daud_decoder);
+#endif
+#ifdef CONFIG_PCM_S24DAUD_ENCODER
+    register_avcodec(&pcm_s24daud_encoder);
+#endif
+#ifdef CONFIG_PCM_S16LE_DECODER
+    register_avcodec(&pcm_s16le_decoder);
+#endif
+#ifdef CONFIG_PCM_S16LE_ENCODER
+    register_avcodec(&pcm_s16le_encoder);
+#endif
+#ifdef CONFIG_PCM_S16BE_DECODER
+    register_avcodec(&pcm_s16be_decoder);
+#endif
+#ifdef CONFIG_PCM_S16BE_ENCODER
+    register_avcodec(&pcm_s16be_encoder);
+#endif
+#ifdef CONFIG_PCM_U16LE_DECODER
+    register_avcodec(&pcm_u16le_decoder);
+#endif
+#ifdef CONFIG_PCM_U16LE_ENCODER
+    register_avcodec(&pcm_u16le_encoder);
+#endif
+#ifdef CONFIG_PCM_U16BE_DECODER
+    register_avcodec(&pcm_u16be_decoder);
+#endif
+#ifdef CONFIG_PCM_U16BE_ENCODER
+    register_avcodec(&pcm_u16be_encoder);
+#endif
+#ifdef CONFIG_PCM_S8_DECODER
+    register_avcodec(&pcm_s8_decoder);
+#endif
+#ifdef CONFIG_PCM_S8_ENCODER
+    register_avcodec(&pcm_s8_encoder);
+#endif
+#ifdef CONFIG_PCM_U8_DECODER
+    register_avcodec(&pcm_u8_decoder);
+#endif
+#ifdef CONFIG_PCM_U8_ENCODER
+    register_avcodec(&pcm_u8_encoder);
+#endif
+#ifdef CONFIG_PCM_ALAW_DECODER
+    register_avcodec(&pcm_alaw_decoder);
+#endif
+#ifdef CONFIG_PCM_ALAW_ENCODER
+    register_avcodec(&pcm_alaw_encoder);
+#endif
+#ifdef CONFIG_PCM_MULAW_DECODER
+    register_avcodec(&pcm_mulaw_decoder);
+#endif
+#ifdef CONFIG_PCM_MULAW_ENCODER
+    register_avcodec(&pcm_mulaw_encoder);
 #endif
 
-PCM_CODEC(CODEC_ID_PCM_S32LE, pcm_s32le);
-PCM_CODEC(CODEC_ID_PCM_S32BE, pcm_s32be);
-PCM_CODEC(CODEC_ID_PCM_U32LE, pcm_u32le);
-PCM_CODEC(CODEC_ID_PCM_U32BE, pcm_u32be);
-PCM_CODEC(CODEC_ID_PCM_S24LE, pcm_s24le);
-PCM_CODEC(CODEC_ID_PCM_S24BE, pcm_s24be);
-PCM_CODEC(CODEC_ID_PCM_U24LE, pcm_u24le);
-PCM_CODEC(CODEC_ID_PCM_U24BE, pcm_u24be);
-PCM_CODEC(CODEC_ID_PCM_S24DAUD, pcm_s24daud);
-PCM_CODEC(CODEC_ID_PCM_S16LE, pcm_s16le);
-PCM_CODEC(CODEC_ID_PCM_S16BE, pcm_s16be);
-PCM_CODEC(CODEC_ID_PCM_U16LE, pcm_u16le);
-PCM_CODEC(CODEC_ID_PCM_U16BE, pcm_u16be);
-PCM_CODEC(CODEC_ID_PCM_S8, pcm_s8);
-PCM_CODEC(CODEC_ID_PCM_U8, pcm_u8);
-PCM_CODEC(CODEC_ID_PCM_ALAW, pcm_alaw);
-PCM_CODEC(CODEC_ID_PCM_MULAW, pcm_mulaw);
-
-    /* adpcm codecs */
-PCM_CODEC(CODEC_ID_ADPCM_IMA_QT, adpcm_ima_qt);
-PCM_CODEC(CODEC_ID_ADPCM_IMA_WAV, adpcm_ima_wav);
-PCM_CODEC(CODEC_ID_ADPCM_IMA_DK3, adpcm_ima_dk3);
-PCM_CODEC(CODEC_ID_ADPCM_IMA_DK4, adpcm_ima_dk4);
-PCM_CODEC(CODEC_ID_ADPCM_IMA_WS, adpcm_ima_ws);
-PCM_CODEC(CODEC_ID_ADPCM_IMA_SMJPEG, adpcm_ima_smjpeg);
-PCM_CODEC(CODEC_ID_ADPCM_MS, adpcm_ms);
-PCM_CODEC(CODEC_ID_ADPCM_4XM, adpcm_4xm);
-PCM_CODEC(CODEC_ID_ADPCM_XA, adpcm_xa);
-PCM_CODEC(CODEC_ID_ADPCM_ADX, adpcm_adx);
-PCM_CODEC(CODEC_ID_ADPCM_EA, adpcm_ea);
-PCM_CODEC(CODEC_ID_ADPCM_G726, adpcm_g726);
-PCM_CODEC(CODEC_ID_ADPCM_CT, adpcm_ct);
-PCM_CODEC(CODEC_ID_ADPCM_SWF, adpcm_swf);
-PCM_CODEC(CODEC_ID_ADPCM_YAMAHA, adpcm_yamaha);
-PCM_CODEC(CODEC_ID_ADPCM_SBPRO_4, adpcm_sbpro_4);
-PCM_CODEC(CODEC_ID_ADPCM_SBPRO_3, adpcm_sbpro_3);
-PCM_CODEC(CODEC_ID_ADPCM_SBPRO_2, adpcm_sbpro_2);
-#undef PCM_CODEC
+   /* adpcm codecs */
+#ifdef CONFIG_ADPCM_IMA_QT_DECODER
+    register_avcodec(&adpcm_ima_qt_decoder);
+#endif
+#ifdef CONFIG_ADPCM_IMA_QT_ENCODER
+    register_avcodec(&adpcm_ima_qt_encoder);
+#endif
+#ifdef CONFIG_ADPCM_IMA_WAV_DECODER
+    register_avcodec(&adpcm_ima_wav_decoder);
+#endif
+#ifdef CONFIG_ADPCM_IMA_WAV_ENCODER
+    register_avcodec(&adpcm_ima_wav_encoder);
+#endif
+#ifdef CONFIG_ADPCM_IMA_DK3_DECODER
+    register_avcodec(&adpcm_ima_dk3_decoder);
+#endif
+#ifdef CONFIG_ADPCM_IMA_DK3_ENCODER
+    register_avcodec(&adpcm_ima_dk3_encoder);
+#endif
+#ifdef CONFIG_ADPCM_IMA_DK4_DECODER
+    register_avcodec(&adpcm_ima_dk4_decoder);
+#endif
+#ifdef CONFIG_ADPCM_IMA_DK4_ENCODER
+    register_avcodec(&adpcm_ima_dk4_encoder);
+#endif
+#ifdef CONFIG_ADPCM_IMA_WS_DECODER
+    register_avcodec(&adpcm_ima_ws_decoder);
+#endif
+#ifdef CONFIG_ADPCM_IMA_WS_ENCODER
+    register_avcodec(&adpcm_ima_ws_encoder);
+#endif
+#ifdef CONFIG_ADPCM_IMA_SMJPEG_DECODER
+    register_avcodec(&adpcm_ima_smjpeg_decoder);
+#endif
+#ifdef CONFIG_ADPCM_IMA_SMJPEG_ENCODER
+    register_avcodec(&adpcm_ima_smjpeg_encoder);
+#endif
+#ifdef CONFIG_ADPCM_MS_DECODER
+    register_avcodec(&adpcm_ms_decoder);
+#endif
+#ifdef CONFIG_ADPCM_MS_ENCODER
+    register_avcodec(&adpcm_ms_encoder);
+#endif
+#ifdef CONFIG_ADPCM_4XM_DECODER
+    register_avcodec(&adpcm_4xm_decoder);
+#endif
+#ifdef CONFIG_ADPCM_4XM_ENCODER
+    register_avcodec(&adpcm_4xm_encoder);
+#endif
+#ifdef CONFIG_ADPCM_XA_DECODER
+    register_avcodec(&adpcm_xa_decoder);
+#endif
+#ifdef CONFIG_ADPCM_XA_ENCODER
+    register_avcodec(&adpcm_xa_encoder);
+#endif
+#ifdef CONFIG_ADPCM_ADX_DECODER
+    register_avcodec(&adpcm_adx_decoder);
+#endif
+#ifdef CONFIG_ADPCM_ADX_ENCODER
+    register_avcodec(&adpcm_adx_encoder);
+#endif
+#ifdef CONFIG_ADPCM_EA_DECODER
+    register_avcodec(&adpcm_ea_decoder);
+#endif
+#ifdef CONFIG_ADPCM_EA_ENCODER
+    register_avcodec(&adpcm_ea_encoder);
+#endif
+#ifdef CONFIG_ADPCM_G726_DECODER
+    register_avcodec(&adpcm_g726_decoder);
+#endif
+#ifdef CONFIG_ADPCM_G726_ENCODER
+    register_avcodec(&adpcm_g726_encoder);
+#endif
+#ifdef CONFIG_ADPCM_CT_DECODER
+    register_avcodec(&adpcm_ct_decoder);
+#endif
+#ifdef CONFIG_ADPCM_CT_ENCODER
+    register_avcodec(&adpcm_ct_encoder);
+#endif
+#ifdef CONFIG_ADPCM_SWF_DECODER
+    register_avcodec(&adpcm_swf_decoder);
+#endif
+#ifdef CONFIG_ADPCM_SWF_ENCODER
+    register_avcodec(&adpcm_swf_encoder);
+#endif
+#ifdef CONFIG_ADPCM_YAMAHA_DECODER
+    register_avcodec(&adpcm_yamaha_decoder);
+#endif
+#ifdef CONFIG_ADPCM_YAMAHA_ENCODER
+    register_avcodec(&adpcm_yamaha_encoder);
+#endif
+#ifdef CONFIG_ADPCM_SBPRO_4_DECODER
+    register_avcodec(&adpcm_sbpro_4_decoder);
+#endif
+#ifdef CONFIG_ADPCM_SBPRO_4_ENCODER
+    register_avcodec(&adpcm_sbpro_4_encoder);
+#endif
+#ifdef CONFIG_ADPCM_SBPRO_3_DECODER
+    register_avcodec(&adpcm_sbpro_3_decoder);
+#endif
+#ifdef CONFIG_ADPCM_SBPRO_3_ENCODER
+    register_avcodec(&adpcm_sbpro_3_encoder);
+#endif
+#ifdef CONFIG_ADPCM_SBPRO_2_DECODER
+    register_avcodec(&adpcm_sbpro_2_decoder);
+#endif
+#ifdef CONFIG_ADPCM_SBPRO_2_ENCODER
+    register_avcodec(&adpcm_sbpro_2_encoder);
+#endif
 
     /* subtitles */
 #ifdef CONFIG_DVDSUB_DECODER
