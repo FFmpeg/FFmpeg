@@ -825,24 +825,10 @@ static void vc1_inv_trans(DCTELEM block[64], int M, int N)
     }
 }
 
-/** Apply overlap transform
+/** Apply overlap transform to vertical edge
  * @todo optimize
  * @todo move to DSPContext
  */
-static void vc1_overlap_block(MpegEncContext *s, DCTELEM block[64], int n, int do_hor, int do_vert)
-{
-    int i;
-
-    if(do_hor) { //TODO
-    }
-    if(do_vert) { //TODO
-    }
-
-    for(i = 0; i < 64; i++)
-        block[i] += 128;
-}
-
-
 static void vc1_v_overlap(uint8_t* src, int stride)
 {
     int i;
@@ -861,6 +847,10 @@ static void vc1_v_overlap(uint8_t* src, int stride)
     }
 }
 
+/** Apply overlap transform to horizontal edge
+ * @todo optimize
+ * @todo move to DSPContext
+ */
 static void vc1_h_overlap(uint8_t* src, int stride)
 {
     int i;
@@ -2450,9 +2440,9 @@ static int vc1_decode_p_mb(VC1Context *v, DCTELEM block[6][64])
                     /* TODO: proper loop filtering */
                     if(v->pq >= 9 && v->overlap) {
                         if(v->a_avail)
-                            s->dsp.h263_v_loop_filter(s->dest[dst_idx] + off, s->linesize >> ((i & 4) >> 2), s->y_dc_scale);
+                            vc1_v_overlap(s->dest[dst_idx] + off, s->linesize >> ((i & 4) >> 2));
                         if(v->c_avail)
-                            s->dsp.h263_h_loop_filter(s->dest[dst_idx] + off, s->linesize >> ((i & 4) >> 2), s->y_dc_scale);
+                            vc1_h_overlap(s->dest[dst_idx] + off, s->linesize >> ((i & 4) >> 2));
                     }
                 } else if(val) {
                     vc1_decode_p_block(v, block[i], i, mquant, ttmb, first_block);
@@ -2546,9 +2536,9 @@ static int vc1_decode_p_mb(VC1Context *v, DCTELEM block[6][64])
                     /* TODO: proper loop filtering */
                     if(v->pq >= 9 && v->overlap) {
                         if(v->a_avail)
-                            s->dsp.h263_v_loop_filter(s->dest[dst_idx] + off, s->linesize >> ((i & 4) >> 2), s->y_dc_scale);
+                            vc1_v_overlap(s->dest[dst_idx] + off, s->linesize >> ((i & 4) >> 2));
                         if(v->c_avail)
-                            s->dsp.h263_h_loop_filter(s->dest[dst_idx] + off, s->linesize >> ((i & 4) >> 2), s->y_dc_scale);
+                            vc1_h_overlap(s->dest[dst_idx] + off, s->linesize >> ((i & 4) >> 2));
                     }
                 } else if(is_coded[i]) {
                     status = vc1_decode_p_block(v, s->block[i], i, mquant, ttmb, first_block);
@@ -2582,7 +2572,7 @@ static int vc1_decode_p_mb(VC1Context *v, DCTELEM block[6][64])
  */
 static void vc1_decode_i_blocks(VC1Context *v)
 {
-    int k;
+    int k, j;
     MpegEncContext *s = &v->s;
     int cbp, val;
     uint8_t *coded_val;
@@ -2649,28 +2639,28 @@ static void vc1_decode_i_blocks(VC1Context *v)
 
                 vc1_inv_trans(s->block[k], 8, 8);
                 if(v->pq >= 9 && v->overlap) {
-                    vc1_overlap_block(s, s->block[k], k, (s->mb_y || k>1), (s->mb_x || (k != 0 && k != 2)));
+                    for(j = 0; j < 64; j++) s->block[k][j] += 128;
                 }
             }
 
             vc1_put_block(v, s->block);
             if(v->pq >= 9 && v->overlap) { /* XXX: do proper overlapping insted of loop filter */
-                if(s->mb_y) {
-                    s->dsp.h263_v_loop_filter(s->dest[0], s->linesize, s->y_dc_scale);
-                    s->dsp.h263_v_loop_filter(s->dest[0] + 8, s->linesize, s->y_dc_scale);
-                    s->dsp.h263_v_loop_filter(s->dest[1], s->uvlinesize, s->y_dc_scale);
-                    s->dsp.h263_v_loop_filter(s->dest[2], s->uvlinesize, s->y_dc_scale);
+                if(!s->first_slice_line) {
+                    vc1_v_overlap(s->dest[0], s->linesize);
+                    vc1_v_overlap(s->dest[0] + 8, s->linesize);
+                    vc1_v_overlap(s->dest[1], s->uvlinesize);
+                    vc1_v_overlap(s->dest[2], s->uvlinesize);
                 }
-                s->dsp.h263_v_loop_filter(s->dest[0] + 8 * s->linesize, s->linesize, s->y_dc_scale);
-                s->dsp.h263_v_loop_filter(s->dest[0] + 8 * s->linesize + 8, s->linesize, s->y_dc_scale);
+                vc1_v_overlap(s->dest[0] + 8 * s->linesize, s->linesize);
+                vc1_v_overlap(s->dest[0] + 8 * s->linesize + 8, s->linesize);
                 if(s->mb_x) {
-                    s->dsp.h263_h_loop_filter(s->dest[0], s->linesize, s->y_dc_scale);
-                    s->dsp.h263_h_loop_filter(s->dest[0] + 8 * s->linesize, s->linesize, s->y_dc_scale);
-                    s->dsp.h263_h_loop_filter(s->dest[1], s->uvlinesize, s->y_dc_scale);
-                    s->dsp.h263_h_loop_filter(s->dest[2], s->uvlinesize, s->y_dc_scale);
+                    vc1_h_overlap(s->dest[0], s->linesize);
+                    vc1_h_overlap(s->dest[0] + 8 * s->linesize, s->linesize);
+                    vc1_h_overlap(s->dest[1], s->uvlinesize);
+                    vc1_h_overlap(s->dest[2], s->uvlinesize);
                 }
-                s->dsp.h263_h_loop_filter(s->dest[0] + 8, s->linesize, s->y_dc_scale);
-                s->dsp.h263_h_loop_filter(s->dest[0] + 8 * s->linesize + 8, s->linesize, s->y_dc_scale);
+                vc1_h_overlap(s->dest[0] + 8, s->linesize);
+                vc1_h_overlap(s->dest[0] + 8 * s->linesize + 8, s->linesize);
             }
 
             if(get_bits_count(&s->gb) > v->bits) {
