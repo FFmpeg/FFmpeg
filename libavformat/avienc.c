@@ -762,7 +762,7 @@ static int avi_write_trailer(AVFormatContext *s)
     return res;
 }
 
-static AVOutputFormat avi_oformat = {
+static AVOutputFormat avi_muxer = {
     "avi",
     "avi format",
     "video/x-msvideo",
@@ -777,7 +777,7 @@ static AVOutputFormat avi_oformat = {
 
 int avienc_init(void)
 {
-    av_register_output_format(&avi_oformat);
+    av_register_output_format(&avi_muxer);
     return 0;
 }
 #endif //CONFIG_MUXERS

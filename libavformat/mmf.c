@@ -302,7 +302,7 @@ static int mmf_read_seek(AVFormatContext *s,
 }
 
 
-static AVInputFormat mmf_iformat = {
+static AVInputFormat mmf_demuxer = {
     "mmf",
     "mmf format",
     sizeof(MMFContext),
@@ -314,7 +314,7 @@ static AVInputFormat mmf_iformat = {
 };
 
 #ifdef CONFIG_MUXERS
-static AVOutputFormat mmf_oformat = {
+static AVOutputFormat mmf_muxer = {
     "mmf",
     "mmf format",
     "application/vnd.smaf",
@@ -330,9 +330,9 @@ static AVOutputFormat mmf_oformat = {
 
 int ff_mmf_init(void)
 {
-    av_register_input_format(&mmf_iformat);
+    av_register_input_format(&mmf_demuxer);
 #ifdef CONFIG_MUXERS
-    av_register_output_format(&mmf_oformat);
+    av_register_output_format(&mmf_muxer);
 #endif //CONFIG_MUXERS
     return 0;
 }

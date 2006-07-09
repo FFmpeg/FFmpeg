@@ -2635,7 +2635,7 @@ matroska_read_close (AVFormatContext *s)
     return 0;
 }
 
-static AVInputFormat matroska_iformat = {
+static AVInputFormat matroska_demuxer = {
     "matroska",
     "Matroska file format",
     sizeof(MatroskaDemuxContext),
@@ -2648,6 +2648,6 @@ static AVInputFormat matroska_iformat = {
 int
 matroska_init(void)
 {
-    av_register_input_format(&matroska_iformat);
+    av_register_input_format(&matroska_demuxer);
     return 0;
 }

@@ -33,8 +33,8 @@ int rtp_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
                      const uint8_t *buf, int len);
 void rtp_parse_close(RTPDemuxContext *s);
 
-extern AVOutputFormat rtp_mux;
-extern AVInputFormat rtp_demux;
+extern AVOutputFormat rtp_muxer;
+extern AVInputFormat rtp_demuxer;
 
 int rtp_get_local_port(URLContext *h);
 int rtp_set_remote_url(URLContext *h, const char *uri);

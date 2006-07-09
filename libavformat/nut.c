@@ -1419,7 +1419,7 @@ static int nut_read_close(AVFormatContext *s)
     return 0;
 }
 
-static AVInputFormat nut_iformat = {
+static AVInputFormat nut_demuxer = {
     "nut",
     "nut format",
     sizeof(NUTContext),
@@ -1433,7 +1433,7 @@ static AVInputFormat nut_iformat = {
 };
 
 #ifdef CONFIG_MUXERS
-static AVOutputFormat nut_oformat = {
+static AVOutputFormat nut_muxer = {
     "nut",
     "nut format",
     "video/x-nut",
@@ -1456,9 +1456,9 @@ static AVOutputFormat nut_oformat = {
 
 int nut_init(void)
 {
-    av_register_input_format(&nut_iformat);
+    av_register_input_format(&nut_demuxer);
 #ifdef CONFIG_MUXERS
-    av_register_output_format(&nut_oformat);
+    av_register_output_format(&nut_muxer);
 #endif //CONFIG_MUXERS
     return 0;
 }

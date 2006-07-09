@@ -761,7 +761,7 @@ static int ffm_probe(AVProbeData *p)
     return 0;
 }
 
-static AVInputFormat ffm_iformat = {
+static AVInputFormat ffm_demuxer = {
     "ffm",
     "ffm format",
     sizeof(FFMContext),
@@ -773,7 +773,7 @@ static AVInputFormat ffm_iformat = {
 };
 
 #ifdef CONFIG_MUXERS
-static AVOutputFormat ffm_oformat = {
+static AVOutputFormat ffm_muxer = {
     "ffm",
     "ffm format",
     "",
@@ -790,9 +790,9 @@ static AVOutputFormat ffm_oformat = {
 
 int ffm_init(void)
 {
-    av_register_input_format(&ffm_iformat);
+    av_register_input_format(&ffm_demuxer);
 #ifdef CONFIG_MUXERS
-    av_register_output_format(&ffm_oformat);
+    av_register_output_format(&ffm_muxer);
 #endif //CONFIG_MUXERS
     return 0;
 }

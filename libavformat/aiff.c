@@ -429,7 +429,7 @@ static int aiff_read_seek(AVFormatContext *s,
 }
 
 
-static AVInputFormat aiff_iformat = {
+static AVInputFormat aiff_demuxer = {
     "aiff",
     "Audio IFF",
     0,
@@ -441,7 +441,7 @@ static AVInputFormat aiff_iformat = {
 };
 
 #ifdef CONFIG_MUXERS
-static AVOutputFormat aiff_oformat = {
+static AVOutputFormat aiff_muxer = {
     "aiff",
     "Audio IFF",
     "audio/aiff",
@@ -457,9 +457,9 @@ static AVOutputFormat aiff_oformat = {
 
 int ff_aiff_init(void)
 {
-    av_register_input_format(&aiff_iformat);
+    av_register_input_format(&aiff_demuxer);
 #ifdef CONFIG_MUXERS
-    av_register_output_format(&aiff_oformat);
+    av_register_output_format(&aiff_muxer);
 #endif //CONFIG_MUXERS
     return 0;
 }

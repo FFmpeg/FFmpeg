@@ -742,7 +742,7 @@ static int nsv_probe(AVProbeData *p)
     return 0;
 }
 
-static AVInputFormat nsv_iformat = {
+static AVInputFormat nsv_demuxer = {
     "nsv",
     "NullSoft Video format",
     sizeof(NSVContext),
@@ -755,6 +755,6 @@ static AVInputFormat nsv_iformat = {
 
 int nsvdec_init(void)
 {
-    av_register_input_format(&nsv_iformat);
+    av_register_input_format(&nsv_demuxer);
     return 0;
 }

@@ -217,7 +217,7 @@ static int avs_read_close(AVFormatContext * s)
     return 0;
 }
 
-static AVInputFormat avs_iformat = {
+static AVInputFormat avs_demuxer = {
     "avs",
     "avs format",
     sizeof(avs_format_t),
@@ -232,7 +232,7 @@ static AVInputFormat avs_iformat = {
 int avs_init(void)
 {
 #ifdef CONFIG_DEMUXERS
-    av_register_input_format(&avs_iformat);
+    av_register_input_format(&avs_demuxer);
 #endif /* CONFIG_DEMUXERS */
     return 0;
 }

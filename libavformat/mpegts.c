@@ -1511,7 +1511,7 @@ void mpegts_parse_close(MpegTSContext *ts)
     av_free(ts);
 }
 
-AVInputFormat mpegts_demux = {
+AVInputFormat mpegts_demuxer = {
     "mpegts",
     "MPEG2 transport stream format",
     sizeof(MpegTSContext),
@@ -1526,9 +1526,9 @@ AVInputFormat mpegts_demux = {
 
 int mpegts_init(void)
 {
-    av_register_input_format(&mpegts_demux);
+    av_register_input_format(&mpegts_demuxer);
 #ifdef CONFIG_MUXERS
-    av_register_output_format(&mpegts_mux);
+    av_register_output_format(&mpegts_muxer);
 #endif
     return 0;
 }

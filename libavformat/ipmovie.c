@@ -612,7 +612,7 @@ static int ipmovie_read_close(AVFormatContext *s)
     return 0;
 }
 
-static AVInputFormat ipmovie_iformat = {
+static AVInputFormat ipmovie_demuxer = {
     "ipmovie",
     "Interplay MVE format",
     sizeof(IPMVEContext),
@@ -624,7 +624,7 @@ static AVInputFormat ipmovie_iformat = {
 
 int ipmovie_init(void)
 {
-    av_register_input_format(&ipmovie_iformat);
+    av_register_input_format(&ipmovie_demuxer);
     return 0;
 }
 

@@ -823,7 +823,7 @@ static int asf_write_trailer(AVFormatContext *s)
     return 0;
 }
 
-AVOutputFormat asf_oformat = {
+AVOutputFormat asf_muxer = {
     "asf",
     "asf format",
     "video/x-ms-asf",
@@ -841,7 +841,7 @@ AVOutputFormat asf_oformat = {
     .flags = AVFMT_GLOBALHEADER,
 };
 
-AVOutputFormat asf_stream_oformat = {
+AVOutputFormat asf_stream_muxer = {
     "asf_stream",
     "asf format",
     "video/x-ms-asf",

@@ -215,7 +215,7 @@ static int amr_read_close(AVFormatContext *s)
     return 0;
 }
 
-static AVInputFormat amr_iformat = {
+static AVInputFormat amr_demuxer = {
     "amr",
     "3gpp amr file format",
     0, /*priv_data_size*/
@@ -226,7 +226,7 @@ static AVInputFormat amr_iformat = {
 };
 
 #ifdef CONFIG_MUXERS
-static AVOutputFormat amr_oformat = {
+static AVOutputFormat amr_muxer = {
     "amr",
     "3gpp amr file format",
     "audio/amr",
@@ -242,9 +242,9 @@ static AVOutputFormat amr_oformat = {
 
 int amr_init(void)
 {
-    av_register_input_format(&amr_iformat);
+    av_register_input_format(&amr_demuxer);
 #ifdef CONFIG_MUXERS
-    av_register_output_format(&amr_oformat);
+    av_register_output_format(&amr_muxer);
 #endif
     return 0;
 }

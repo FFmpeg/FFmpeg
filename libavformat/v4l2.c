@@ -522,7 +522,7 @@ static int v4l2_read_close(AVFormatContext *s1)
     return 0;
 }
 
-static AVInputFormat v4l2_format = {
+static AVInputFormat v4l2_demuxer = {
     "video4linux2",
     "video grab",
     sizeof(struct video_data),
@@ -535,6 +535,6 @@ static AVInputFormat v4l2_format = {
 
 int v4l2_init(void)
 {
-    av_register_input_format(&v4l2_format);
+    av_register_input_format(&v4l2_demuxer);
     return 0;
 }

@@ -860,7 +860,7 @@ static int rtp_write_trailer(AVFormatContext *s1)
     return 0;
 }
 
-AVOutputFormat rtp_mux = {
+AVOutputFormat rtp_muxer = {
     "rtp",
     "RTP output format",
     NULL,
@@ -875,6 +875,6 @@ AVOutputFormat rtp_mux = {
 
 int rtp_init(void)
 {
-    av_register_output_format(&rtp_mux);
+    av_register_output_format(&rtp_muxer);
     return 0;
 }

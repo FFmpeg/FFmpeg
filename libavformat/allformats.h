@@ -2,11 +2,11 @@
 #define ALLFORMATS_H
 
 /* mpeg.c */
-extern AVInputFormat mpegps_demux;
+extern AVInputFormat mpegps_demuxer;
 int mpegps_init(void);
 
 /* mpegts.c */
-extern AVInputFormat mpegts_demux;
+extern AVInputFormat mpegts_demuxer;
 int mpegts_init(void);
 
 /* rm.c */
@@ -87,7 +87,7 @@ int ff_dv_init(void);
 int ffm_init(void);
 
 /* rtsp.c */
-extern AVInputFormat redir_demux;
+extern AVInputFormat redir_demuxer;
 int redir_open(AVFormatContext **ic_ptr, ByteIOContext *f);
 
 /* 4xm.c */

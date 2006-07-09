@@ -313,7 +313,7 @@ static int audio_read_close(AVFormatContext *s1)
     return 0;
 }
 
-static AVInputFormat audio_in_format = {
+static AVInputFormat audio_demuxer = {
     "audio_device",
     "audio grab and output",
     sizeof(AudioData),
@@ -324,7 +324,7 @@ static AVInputFormat audio_in_format = {
     .flags = AVFMT_NOFILE,
 };
 
-static AVOutputFormat audio_out_format = {
+static AVOutputFormat audio_muxer = {
     "audio_device",
     "audio grab and output",
     "",
@@ -347,7 +347,7 @@ static AVOutputFormat audio_out_format = {
 
 int audio_init(void)
 {
-    av_register_input_format(&audio_in_format);
-    av_register_output_format(&audio_out_format);
+    av_register_input_format(&audio_demuxer);
+    av_register_output_format(&audio_muxer);
     return 0;
 }

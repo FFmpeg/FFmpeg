@@ -52,7 +52,7 @@ static int mpjpeg_write_trailer(AVFormatContext *s)
     return 0;
 }
 
-static AVOutputFormat mpjpeg_format = {
+static AVOutputFormat mpjpeg_muxer = {
     "mpjpeg",
     "Mime multipart JPEG format",
     "multipart/x-mixed-replace;boundary=" BOUNDARY_TAG,
@@ -67,7 +67,7 @@ static AVOutputFormat mpjpeg_format = {
 
 int jpeg_init(void)
 {
-    av_register_output_format(&mpjpeg_format);
+    av_register_output_format(&mpjpeg_muxer);
     return 0;
 }
 #endif //CONFIG_MUXERS

@@ -619,7 +619,7 @@ static int gif_read(ByteIOContext *f,
     return 0;
 }
 
-AVInputFormat gif_iformat =
+AVInputFormat gif_demuxer =
 {
     "gif",
     "gif format",

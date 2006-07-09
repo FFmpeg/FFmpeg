@@ -365,7 +365,7 @@ static int grab_read_close(AVFormatContext *s1)
     return 0;
 }
 
-static AVInputFormat video_grab_device_format = {
+static AVInputFormat video_grab_device_demuxer = {
     "video4linux",
     "video grab",
     sizeof(VideoData),
@@ -851,6 +851,6 @@ static int aiw_close(VideoData *s)
 
 int video_grab_init(void)
 {
-    av_register_input_format(&video_grab_device_format);
+    av_register_input_format(&video_grab_device_demuxer);
     return 0;
 }

@@ -146,7 +146,7 @@ static int sol_read_close(AVFormatContext *s)
     return 0;
 }
 
-static AVInputFormat sol_iformat = {
+static AVInputFormat sol_demuxer = {
     "sol",
     "Sierra SOL Format",
     0,
@@ -159,6 +159,6 @@ static AVInputFormat sol_iformat = {
 
 int sol_init(void)
 {
-    av_register_input_format(&sol_iformat);
+    av_register_input_format(&sol_demuxer);
     return 0;
 }

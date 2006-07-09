@@ -1790,7 +1790,7 @@ static int decode_thread(void *arg)
     }
     is->ic = ic;
 #ifdef CONFIG_NETWORK
-    use_play = (ic->iformat == &rtsp_demux);
+    use_play = (ic->iformat == &rtsp_demuxer);
 #else
     use_play = 0;
 #endif
@@ -1884,7 +1884,7 @@ static int decode_thread(void *arg)
             else
                 av_read_play(ic);
         }
-        if (is->paused && ic->iformat == &rtsp_demux) {
+        if (is->paused && ic->iformat == &rtsp_demuxer) {
             /* wait 10 ms to avoid trying to get another packet */
             /* XXX: horrible */
             SDL_Delay(10);

@@ -107,7 +107,7 @@ static int adts_write_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-static AVOutputFormat adts_oformat = {
+static AVOutputFormat adts_muxer = {
     "adts",
     "ADTS AAC",
     "audio/aac",
@@ -122,6 +122,6 @@ static AVOutputFormat adts_oformat = {
 
 int ff_adts_init(void)
 {
-    av_register_output_format(&adts_oformat);
+    av_register_output_format(&adts_muxer);
     return 0;
 }

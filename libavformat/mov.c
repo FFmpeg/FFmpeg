@@ -1907,7 +1907,7 @@ static int mov_read_close(AVFormatContext *s)
     return 0;
 }
 
-static AVInputFormat mov_iformat = {
+static AVInputFormat mov_demuxer = {
     "mov,mp4,m4a,3gp,3g2,mj2",
     "QuickTime/MPEG4/Motion JPEG 2000 format",
     sizeof(MOVContext),
@@ -1920,6 +1920,6 @@ static AVInputFormat mov_iformat = {
 
 int mov_init(void)
 {
-    av_register_input_format(&mov_iformat);
+    av_register_input_format(&mov_demuxer);
     return 0;
 }

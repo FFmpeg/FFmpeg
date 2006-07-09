@@ -405,7 +405,7 @@ static int wav_read_seek(AVFormatContext *s,
 }
 
 
-static AVInputFormat wav_iformat = {
+static AVInputFormat wav_demuxer = {
     "wav",
     "wav format",
     sizeof(WAVContext),
@@ -417,7 +417,7 @@ static AVInputFormat wav_iformat = {
 };
 
 #ifdef CONFIG_MUXERS
-static AVOutputFormat wav_oformat = {
+static AVOutputFormat wav_muxer = {
     "wav",
     "wav format",
     "audio/x-wav",
@@ -433,9 +433,9 @@ static AVOutputFormat wav_oformat = {
 
 int ff_wav_init(void)
 {
-    av_register_input_format(&wav_iformat);
+    av_register_input_format(&wav_demuxer);
 #ifdef CONFIG_MUXERS
-    av_register_output_format(&wav_oformat);
+    av_register_output_format(&wav_muxer);
 #endif //CONFIG_MUXERS
     return 0;
 }

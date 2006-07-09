@@ -316,7 +316,7 @@ static int grab_read_close(AVFormatContext *s1)
     return 0;
 }
 
-AVInputFormat video_grab_device_format = {
+AVInputFormat video_grab_device_demuxer = {
     "bktr",
     "video grab",
      sizeof(VideoData),
@@ -329,6 +329,6 @@ AVInputFormat video_grab_device_format = {
 
 int video_grab_init(void)
 {
-    av_register_input_format(&video_grab_device_format);
+    av_register_input_format(&video_grab_device_demuxer);
     return 0;
 }

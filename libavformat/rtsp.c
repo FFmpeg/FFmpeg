@@ -1245,7 +1245,7 @@ static int rtsp_read_close(AVFormatContext *s)
     return 0;
 }
 
-AVInputFormat rtsp_demux = {
+AVInputFormat rtsp_demuxer = {
     "rtsp",
     "RTSP input format",
     sizeof(RTSPState),
@@ -1346,7 +1346,7 @@ static int sdp_read_close(AVFormatContext *s)
 }
 
 
-static AVInputFormat sdp_demux = {
+static AVInputFormat sdp_demuxer = {
     "sdp",
     "SDP",
     sizeof(RTSPState),
@@ -1410,7 +1410,7 @@ int redir_open(AVFormatContext **ic_ptr, ByteIOContext *f)
         return 0;
 }
 
-AVInputFormat redir_demux = {
+AVInputFormat redir_demuxer = {
     "redir",
     "Redirector format",
     0,
@@ -1422,8 +1422,8 @@ AVInputFormat redir_demux = {
 
 int rtsp_init(void)
 {
-    av_register_input_format(&rtsp_demux);
-    av_register_input_format(&redir_demux);
-    av_register_input_format(&sdp_demux);
+    av_register_input_format(&rtsp_demuxer);
+    av_register_input_format(&redir_demuxer);
+    av_register_input_format(&sdp_demuxer);
     return 0;
 }

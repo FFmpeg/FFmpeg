@@ -1588,7 +1588,7 @@ static int mov_write_trailer(AVFormatContext *s)
     return res;
 }
 
-static AVOutputFormat mov_oformat = {
+static AVOutputFormat mov_muxer = {
     "mov",
     "mov format",
     NULL,
@@ -1602,7 +1602,7 @@ static AVOutputFormat mov_oformat = {
     .flags = AVFMT_GLOBALHEADER,
 };
 
-static AVOutputFormat _3gp_oformat = {
+static AVOutputFormat _3gp_muxer = {
     "3gp",
     "3gp format",
     NULL,
@@ -1616,7 +1616,7 @@ static AVOutputFormat _3gp_oformat = {
     .flags = AVFMT_GLOBALHEADER,
 };
 
-static AVOutputFormat mp4_oformat = {
+static AVOutputFormat mp4_muxer = {
     "mp4",
     "mp4 format",
     "application/mp4",
@@ -1630,7 +1630,7 @@ static AVOutputFormat mp4_oformat = {
     .flags = AVFMT_GLOBALHEADER,
 };
 
-static AVOutputFormat psp_oformat = {
+static AVOutputFormat psp_muxer = {
     "psp",
     "psp mp4 format",
     NULL,
@@ -1644,7 +1644,7 @@ static AVOutputFormat psp_oformat = {
     .flags = AVFMT_GLOBALHEADER,
 };
 
-static AVOutputFormat _3g2_oformat = {
+static AVOutputFormat _3g2_muxer = {
     "3g2",
     "3gp2 format",
     NULL,
@@ -1660,10 +1660,10 @@ static AVOutputFormat _3g2_oformat = {
 
 int movenc_init(void)
 {
-    av_register_output_format(&mov_oformat);
-    av_register_output_format(&_3gp_oformat);
-    av_register_output_format(&mp4_oformat);
-    av_register_output_format(&psp_oformat);
-    av_register_output_format(&_3g2_oformat);
+    av_register_output_format(&mov_muxer);
+    av_register_output_format(&_3gp_muxer);
+    av_register_output_format(&mp4_muxer);
+    av_register_output_format(&psp_muxer);
+    av_register_output_format(&_3g2_muxer);
     return 0;
 }

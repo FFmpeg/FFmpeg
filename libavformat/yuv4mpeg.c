@@ -171,7 +171,7 @@ static int yuv4_write_trailer(AVFormatContext *s)
     return 0;
 }
 
-AVOutputFormat yuv4mpegpipe_oformat = {
+AVOutputFormat yuv4mpegpipe_muxer = {
     "yuv4mpegpipe",
     "YUV4MPEG pipe format",
     "",
@@ -393,7 +393,7 @@ static int yuv4_probe(AVProbeData *pd)
         return 0;
 }
 
-AVInputFormat yuv4mpegpipe_iformat = {
+AVInputFormat yuv4mpegpipe_demuxer = {
     "yuv4mpegpipe",
     "YUV4MPEG pipe format",
     sizeof(struct frame_attributes),
@@ -406,9 +406,9 @@ AVInputFormat yuv4mpegpipe_iformat = {
 
 int yuv4mpeg_init(void)
 {
-    av_register_input_format(&yuv4mpegpipe_iformat);
+    av_register_input_format(&yuv4mpegpipe_demuxer);
 #ifdef CONFIG_MUXERS
-    av_register_output_format(&yuv4mpegpipe_oformat);
+    av_register_output_format(&yuv4mpegpipe_muxer);
 #endif //CONFIG_MUXERS
     return 0;
 }

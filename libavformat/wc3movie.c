@@ -381,7 +381,7 @@ static int wc3_read_close(AVFormatContext *s)
     return 0;
 }
 
-static AVInputFormat wc3_iformat = {
+static AVInputFormat wc3_demuxer = {
     "wc3movie",
     "Wing Commander III movie format",
     sizeof(Wc3DemuxContext),
@@ -393,6 +393,6 @@ static AVInputFormat wc3_iformat = {
 
 int wc3_init(void)
 {
-    av_register_input_format(&wc3_iformat);
+    av_register_input_format(&wc3_demuxer);
     return 0;
 }

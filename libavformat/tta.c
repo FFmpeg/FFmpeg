@@ -139,7 +139,7 @@ static int tta_read_close(AVFormatContext *s)
     return 0;
 }
 
-AVInputFormat tta_iformat = {
+AVInputFormat tta_demuxer = {
     "tta",
     "true-audio",
     sizeof(TTAContext),
@@ -152,6 +152,6 @@ AVInputFormat tta_iformat = {
 
 int tta_init(void)
 {
-    av_register_input_format(&tta_iformat);
+    av_register_input_format(&tta_demuxer);
     return 0;
 }

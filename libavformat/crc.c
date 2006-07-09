@@ -101,7 +101,7 @@ static int framecrc_write_packet(struct AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-static AVOutputFormat crc_format = {
+static AVOutputFormat crc_muxer = {
     "crc",
     "crc testing format",
     NULL,
@@ -114,7 +114,7 @@ static AVOutputFormat crc_format = {
     crc_write_trailer,
 };
 
-static AVOutputFormat framecrc_format = {
+static AVOutputFormat framecrc_muxer = {
     "framecrc",
     "framecrc testing format",
     NULL,
@@ -129,8 +129,8 @@ static AVOutputFormat framecrc_format = {
 
 int crc_init(void)
 {
-    av_register_output_format(&crc_format);
-    av_register_output_format(&framecrc_format);
+    av_register_output_format(&crc_muxer);
+    av_register_output_format(&framecrc_muxer);
     return 0;
 }
 #endif /* CONFIG_MUXERS */

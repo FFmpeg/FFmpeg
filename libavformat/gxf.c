@@ -241,7 +241,7 @@ static int gxf_packet(AVFormatContext *s, AVPacket *pkt) {
     return AVERROR_IO;
 }
 
-static AVInputFormat gxf_iformat = {
+static AVInputFormat gxf_demuxer = {
     "gxf",
     "GXF format",
     0,
@@ -253,7 +253,7 @@ static AVInputFormat gxf_iformat = {
 };
 
 int gxf_init(void) {
-    av_register_input_format(&gxf_iformat);
+    av_register_input_format(&gxf_demuxer);
     return 0;
 }
 

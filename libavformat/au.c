@@ -178,7 +178,7 @@ static int au_read_close(AVFormatContext *s)
     return 0;
 }
 
-static AVInputFormat au_iformat = {
+static AVInputFormat au_demuxer = {
     "au",
     "SUN AU Format",
     0,
@@ -190,7 +190,7 @@ static AVInputFormat au_iformat = {
 };
 
 #ifdef CONFIG_MUXERS
-static AVOutputFormat au_oformat = {
+static AVOutputFormat au_muxer = {
     "au",
     "SUN AU Format",
     "audio/basic",
@@ -206,9 +206,9 @@ static AVOutputFormat au_oformat = {
 
 int au_init(void)
 {
-    av_register_input_format(&au_iformat);
+    av_register_input_format(&au_demuxer);
 #ifdef CONFIG_MUXERS
-    av_register_output_format(&au_oformat);
+    av_register_output_format(&au_muxer);
 #endif //CONFIG_MUXERS
     return 0;
 }

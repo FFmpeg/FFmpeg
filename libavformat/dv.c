@@ -1000,7 +1000,7 @@ static int dv_write_trailer(struct AVFormatContext *s)
 }
 #endif /* CONFIG_MUXERS */
 
-static AVInputFormat dv_iformat = {
+static AVInputFormat dv_demuxer = {
     "dv",
     "DV video format",
     sizeof(RawDVContext),
@@ -1013,7 +1013,7 @@ static AVInputFormat dv_iformat = {
 };
 
 #ifdef CONFIG_MUXERS
-static AVOutputFormat dv_oformat = {
+static AVOutputFormat dv_muxer = {
     "dv",
     "DV video format",
     NULL,
@@ -1029,9 +1029,9 @@ static AVOutputFormat dv_oformat = {
 
 int ff_dv_init(void)
 {
-    av_register_input_format(&dv_iformat);
+    av_register_input_format(&dv_demuxer);
 #ifdef CONFIG_MUXERS
-    av_register_output_format(&dv_oformat);
+    av_register_output_format(&dv_muxer);
 #endif
     return 0;
 }

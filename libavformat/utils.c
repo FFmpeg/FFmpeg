@@ -599,7 +599,7 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
 
     /* XXX: suppress this hack for redirectors */
 #ifdef CONFIG_NETWORK
-    if (fmt == &redir_demux) {
+    if (fmt == &redir_demuxer) {
         err = redir_open(ic_ptr, pb);
         url_fclose(pb);
         return err;
@@ -1730,7 +1730,7 @@ static void av_estimate_timings(AVFormatContext *ic)
     }
     ic->file_size = file_size;
 
-    if ((ic->iformat == &mpegps_demux || ic->iformat == &mpegts_demux) && file_size && !ic->pb.is_streamed) {
+    if ((ic->iformat == &mpegps_demuxer || ic->iformat == &mpegts_demuxer) && file_size && !ic->pb.is_streamed) {
         /* get accurate estimate from the PTSes */
         av_estimate_timings_from_pts(ic);
     } else if (av_has_timings(ic)) {

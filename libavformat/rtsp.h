@@ -88,7 +88,7 @@ extern int rtsp_default_protocols;
 extern int rtsp_rtp_port_min;
 extern int rtsp_rtp_port_max;
 extern FFRTSPCallback *ff_rtsp_callback;
-extern AVInputFormat rtsp_demux;
+extern AVInputFormat rtsp_demuxer;
 
 int rtsp_pause(AVFormatContext *s);
 int rtsp_resume(AVFormatContext *s);

@@ -51,7 +51,7 @@
 #define STREAM_TYPE_SUBTITLE_DVB    0x100
 
 unsigned int mpegts_crc32(const uint8_t *data, int len);
-extern AVOutputFormat mpegts_mux;
+extern AVOutputFormat mpegts_muxer;
 
 typedef struct MpegTSContext MpegTSContext;
 

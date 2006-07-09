@@ -211,7 +211,7 @@ static int flv_read_close(AVFormatContext *s)
     return 0;
 }
 
-AVInputFormat flv_iformat = {
+AVInputFormat flv_demuxer = {
     "flv",
     "flv format",
     0,
@@ -225,6 +225,6 @@ AVInputFormat flv_iformat = {
 
 int flvdec_init(void)
 {
-    av_register_input_format(&flv_iformat);
+    av_register_input_format(&flv_demuxer);
     return 0;
 }
