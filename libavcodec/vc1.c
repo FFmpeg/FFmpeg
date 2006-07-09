@@ -704,7 +704,7 @@ static int vop_dquant_decoding(VC1Context *v)
                 v->dqbilevel = get_bits(gb, 1);
             default: break; //Forbidden ?
             }
-            if (!v->dqbilevel || v->dqprofile != DQPROFILE_ALL_MBS)
+            if (v->dqbilevel || v->dqprofile != DQPROFILE_ALL_MBS)
             {
                 pqdiff = get_bits(gb, 3);
                 if (pqdiff == 7) v->altpq = get_bits(gb, 5);
@@ -1449,7 +1449,7 @@ static int vc1_parse_frame_header(VC1Context *v, GetBitContext* gb)
     {                                                          \
       if (v->dqbilevel)                                        \
       {                                                        \
-        mquant = (get_bits(gb, 1)) ? v->pq : v->altpq;         \
+        mquant = (get_bits(gb, 1)) ? v->altpq : v->pq;         \
       }                                                        \
       else                                                     \
       {                                                        \
@@ -1464,10 +1464,9 @@ static int vc1_parse_frame_header(VC1Context *v, GetBitContext* gb)
         edges = (3 << v->dqsbedge) % 15;                       \
     else if(v->dqprofile == DQPROFILE_FOUR_EDGES)              \
         edges = 15;                                            \
-    mquant = v->pq;                                            \
     if((edges&1) && !s->mb_x)                                  \
         mquant = v->altpq;                                     \
-    if((edges&2) && !s->mb_y)                                  \
+    if((edges&2) && s->first_slice_line)                       \
         mquant = v->altpq;                                     \
     if((edges&4) && s->mb_x == (s->mb_width - 1))              \
         mquant = v->altpq;                                     \
