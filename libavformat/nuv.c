@@ -227,7 +227,7 @@ static int nuv_packet(AVFormatContext *s, AVPacket *pkt) {
     return AVERROR_IO;
 }
 
-static AVInputFormat nuv_demuxer = {
+AVInputFormat nuv_demuxer = {
     "nuv",
     "NuppelVideo format",
     sizeof(NUVContext),
@@ -237,9 +237,3 @@ static AVInputFormat nuv_demuxer = {
     NULL,
     NULL,
 };
-
-int nuv_init(void) {
-    av_register_input_format(&nuv_demuxer);
-    return 0;
-}
-

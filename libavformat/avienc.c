@@ -24,7 +24,7 @@
  *  - fill all fields if non streamed (nb_frames for example)
  */
 
-#ifdef CONFIG_MUXERS
+#ifdef CONFIG_AVI_MUXER
 typedef struct AVIIentry {
     unsigned int flags, pos, len;
 } AVIIentry;
@@ -71,7 +71,7 @@ void end_tag(ByteIOContext *pb, offset_t start)
     put_le32(pb, (uint32_t)(pos - start));
     url_fseek(pb, pos, SEEK_SET);
 }
-#endif //CONFIG_MUXERS
+#endif //CONFIG_AVI_MUXER
 
 /* Note: when encoding, the first matching tag is used, so order is
    important if multiple tags possible for a given codec. */
@@ -260,7 +260,7 @@ enum CodecID codec_get_wav_id(unsigned int tag)
     return codec_get_id(codec_wav_tags, tag);
 }
 
-#ifdef CONFIG_MUXERS
+#ifdef CONFIG_AVI_MUXER
 /* BITMAPINFOHEADER header */
 void put_bmp_header(ByteIOContext *pb, AVCodecContext *enc, const CodecTag *tags, int for_asf)
 {
@@ -762,7 +762,7 @@ static int avi_write_trailer(AVFormatContext *s)
     return res;
 }
 
-static AVOutputFormat avi_muxer = {
+AVOutputFormat avi_muxer = {
     "avi",
     "avi format",
     "video/x-msvideo",
@@ -774,10 +774,4 @@ static AVOutputFormat avi_muxer = {
     avi_write_packet,
     avi_write_trailer,
 };
-
-int avienc_init(void)
-{
-    av_register_output_format(&avi_muxer);
-    return 0;
-}
-#endif //CONFIG_MUXERS
+#endif //CONFIG_AVI_MUXER

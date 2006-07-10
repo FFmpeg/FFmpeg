@@ -1523,12 +1523,3 @@ AVInputFormat mpegts_demuxer = {
     mpegts_get_pcr,
     .flags = AVFMT_SHOW_IDS,
 };
-
-int mpegts_init(void)
-{
-    av_register_input_format(&mpegts_demuxer);
-#ifdef CONFIG_MUXERS
-    av_register_output_format(&mpegts_muxer);
-#endif
-    return 0;
-}

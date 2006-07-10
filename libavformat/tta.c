@@ -149,9 +149,3 @@ AVInputFormat tta_demuxer = {
     tta_read_close,
     .extensions = "tta",
 };
-
-int tta_init(void)
-{
-    av_register_input_format(&tta_demuxer);
-    return 0;
-}

@@ -222,9 +222,3 @@ AVInputFormat flv_demuxer = {
     .extensions = "flv",
     .value = CODEC_ID_FLV1,
 };
-
-int flvdec_init(void)
-{
-    av_register_input_format(&flv_demuxer);
-    return 0;
-}

@@ -1122,7 +1122,8 @@ static int64_t rm_read_dts(AVFormatContext *s, int stream_index,
     return dts;
 }
 
-static AVInputFormat rm_demuxer = {
+#ifdef CONFIG_RM_DEMUXER
+AVInputFormat rm_demuxer = {
     "rm",
     "rm format",
     sizeof(RMContext),
@@ -1133,9 +1134,9 @@ static AVInputFormat rm_demuxer = {
     NULL,
     rm_read_dts,
 };
-
-#ifdef CONFIG_MUXERS
-static AVOutputFormat rm_muxer = {
+#endif
+#ifdef CONFIG_RM_MUXER
+AVOutputFormat rm_muxer = {
     "rm",
     "rm format",
     "application/vnd.rn-realmedia",
@@ -1147,13 +1148,4 @@ static AVOutputFormat rm_muxer = {
     rm_write_packet,
     rm_write_trailer,
 };
-#endif //CONFIG_MUXERS
-
-int rm_init(void)
-{
-    av_register_input_format(&rm_demuxer);
-#ifdef CONFIG_MUXERS
-    av_register_output_format(&rm_muxer);
-#endif //CONFIG_MUXERS
-    return 0;
-}
+#endif

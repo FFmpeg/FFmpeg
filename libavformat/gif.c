@@ -414,7 +414,7 @@ int gif_write(ByteIOContext *pb, AVImageInfo *info)
     return 0;
 }
 
-static AVOutputFormat gif_muxer = {
+AVOutputFormat gif_muxer = {
     "gif",
     "GIF Animation",
     "image/gif",
@@ -426,12 +426,3 @@ static AVOutputFormat gif_muxer = {
     gif_write_packet,
     gif_write_trailer,
 };
-
-extern AVInputFormat gif_demuxer;
-
-int gif_init(void)
-{
-    av_register_output_format(&gif_muxer);
-    av_register_input_format(&gif_demuxer);
-    return 0;
-}

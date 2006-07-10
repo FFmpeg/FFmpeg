@@ -313,7 +313,8 @@ static int audio_read_close(AVFormatContext *s1)
     return 0;
 }
 
-static AVInputFormat audio_demuxer = {
+#ifdef CONFIG_AUDIO_DEMUXER
+AVInputFormat audio_demuxer = {
     "audio_device",
     "audio grab and output",
     sizeof(AudioData),
@@ -323,8 +324,10 @@ static AVInputFormat audio_demuxer = {
     audio_read_close,
     .flags = AVFMT_NOFILE,
 };
+#endif
 
-static AVOutputFormat audio_muxer = {
+#ifdef CONFIG_AUDIO_MUXER
+AVOutputFormat audio_muxer = {
     "audio_device",
     "audio grab and output",
     "",
@@ -344,10 +347,4 @@ static AVOutputFormat audio_muxer = {
     audio_write_trailer,
     .flags = AVFMT_NOFILE,
 };
-
-int audio_init(void)
-{
-    av_register_input_format(&audio_demuxer);
-    av_register_output_format(&audio_muxer);
-    return 0;
-}
+#endif

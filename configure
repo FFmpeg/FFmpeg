@@ -104,7 +104,11 @@ show_help(){
   echo "  --enable-decoder=NAME    enables decoder NAME"
   echo "  --disable-encoders       disables all encoders"
   echo "  --disable-decoders       disables all decoders"
+  echo "  --disable-muxer=NAME     disables muxer NAME"
+  echo "  --enable-muxer=NAME      enables muxer NAME"
   echo "  --disable-muxers         disables all muxers"
+  echo "  --disable-demuxer=NAME   disables demuxer NAME"
+  echo "  --enable-demuxer=NAME    enables demuxer NAME"
   echo "  --disable-demuxers       disables all demuxers"
   echo "  --enable-parser=NAME     enables parser NAME"
   echo "  --disable-parser=NAME    disables parser NAME"
@@ -458,8 +462,6 @@ sunmlib="no"
 pthreads="no"
 gpl="no"
 memalignhack="no"
-muxers="yes"
-demuxers="yes"
 
 # OS specific
 targetos=`uname -s`
@@ -662,6 +664,8 @@ done
 
 CODEC_LIST=`grep 'register_avcodec(&[a-z]' $source_path/libavcodec/allcodecs.c  | sed 's/.*&\(.*\)).*/\1/'`
 PARSER_LIST=`grep 'av_register_codec_parser(&[a-z]' $source_path/libavcodec/allcodecs.c  | sed 's/.*&\(.*\)).*/\1/'`
+MUXER_LIST=`grep 'av_register_output_format(&[a-z]' $source_path/libavformat/allformats.c  | sed 's/.*&\(.*\)).*/\1/'`
+DEMUXER_LIST=`grep 'av_register_input_format(&[a-z]' $source_path/libavformat/allformats.c  | sed 's/.*&\(.*\)).*/\1/'`
 
 for opt do
   case "$opt" in
@@ -819,9 +823,17 @@ for opt do
   ;;
   --disable-decoders) CODEC_LIST="`echo $CODEC_LIST | sed 's/[-_a-zA-Z0-9]*decoder//g'`"
   ;;
-  --disable-muxers) muxers="no"; ffserver="no"
+  --enable-muxer=*) MUXER_LIST="$MUXER_LIST ${opt#*=}_muxer"
   ;;
-  --disable-demuxers) demuxers="no"
+  --disable-muxer=*) MUXER_LIST="`echo $MUXER_LIST | sed -e \"s#${opt#*=}_muxer##\"`"
+  ;;
+  --disable-muxers) MUXER_LIST=""; ffserver="no"
+  ;;
+  --enable-demuxer=*) DEMUXER_LIST="$DEMUXER_LIST ${opt#*=}_demuxer"
+  ;;
+  --disable-demuxer=*) DEMUXER_LIST="`echo $DEMUXER_LIST | sed -e \"s#${opt#*=}_demuxer##\"`"
+  ;;
+  --disable-demuxers) DEMUXER_LIST=""
   ;;
   --enable-parser=*) PARSER_LIST="$PARSER_LIST ${opt#*=}_parser"
   ;;
@@ -1763,13 +1775,13 @@ if echo "$CODEC_LIST" | grep -q decoder; then
 fi
 
 # muxers
-if test "$muxers" = "yes" ; then
+if echo "$MUXER_LIST" | grep -q muxer; then
   echo "#define CONFIG_MUXERS 1" >> $TMPH
   echo "CONFIG_MUXERS=yes" >> config.mak
 fi
 
 # demuxers
-if test "$demuxers" = "yes" ; then
+if echo "$DEMUXER_LIST" | grep -q demuxer; then
   echo "#define CONFIG_DEMUXERS 1" >> $TMPH
   echo "CONFIG_DEMUXERS=yes" >> config.mak
 fi
@@ -2091,7 +2103,7 @@ if test "$amr_if2" = "yes" ; then
 fi
 
 
-for codec in $CODEC_LIST $PARSER_LIST; do
+for codec in $CODEC_LIST $PARSER_LIST $DEMUXER_LIST $MUXER_LIST; do
     echo "#define CONFIG_`echo $codec | tr a-z A-Z` 1" >> $TMPH
     echo "CONFIG_`echo $codec | tr a-z A-Z`=yes" >> config.mak
 done

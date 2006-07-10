@@ -65,7 +65,7 @@ ogg_write_trailer (AVFormatContext * avfcontext)
 }
 
 
-static AVOutputFormat ogg_muxer = {
+AVOutputFormat ogg_muxer = {
     "ogg",
     "Ogg Vorbis",
     "audio/x-vorbis",
@@ -656,7 +656,7 @@ static int ogg_probe(AVProbeData *p)
         return 0;
 }
 
-static AVInputFormat ogg_demuxer = {
+AVInputFormat ogg_demuxer = {
     "ogg",
     "Ogg",
     sizeof (ogg_t),
@@ -668,13 +668,3 @@ static AVInputFormat ogg_demuxer = {
 // ogg_read_timestamp,
     .extensions = "ogg",
 };
-
-int
-ogg_init (void)
-{
-#if 0 // CONFIG_MUXERS
-    av_register_output_format (&ogg_muxer);
-#endif
-    av_register_input_format (&ogg_demuxer);
-    return 0;
-}

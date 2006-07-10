@@ -199,7 +199,7 @@ static int mm_read_close(AVFormatContext *s)
     return 0;
 }
 
-static AVInputFormat mm_demuxer = {
+AVInputFormat mm_demuxer = {
     "mm",
     "American Laser Games MM format",
     sizeof(MmDemuxContext),
@@ -208,9 +208,3 @@ static AVInputFormat mm_demuxer = {
     mm_read_packet,
     mm_read_close,
 };
-
-int mm_init(void)
-{
-    av_register_input_format(&mm_demuxer);
-    return 0;
-}

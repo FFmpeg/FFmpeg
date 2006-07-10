@@ -326,9 +326,3 @@ AVInputFormat video_grab_device_demuxer = {
     grab_read_close,
     .flags = AVFMT_NOFILE,
 };
-
-int video_grab_init(void)
-{
-    av_register_input_format(&video_grab_device_demuxer);
-    return 0;
-}

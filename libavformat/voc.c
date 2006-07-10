@@ -173,7 +173,7 @@ static int voc_read_close(AVFormatContext *s)
     return 0;
 }
 
-static AVInputFormat voc_demuxer = {
+AVInputFormat voc_demuxer = {
     "voc",
     "Creative Voice File format",
     sizeof(voc_dec_context_t),
@@ -256,7 +256,7 @@ static int voc_write_trailer(AVFormatContext *s)
     return 0;
 }
 
-static AVOutputFormat voc_muxer = {
+AVOutputFormat voc_muxer = {
     "voc",
     "Creative Voice File format",
     "audio/x-voc",
@@ -270,15 +270,3 @@ static AVOutputFormat voc_muxer = {
 };
 
 #endif /* CONFIG_MUXERS */
-
-
-int voc_init(void)
-{
-#ifdef CONFIG_DEMUXERS
-    av_register_input_format(&voc_demuxer);
-#endif /* CONFIG_DEMUXERS */
-#ifdef CONFIG_MUXERS
-    av_register_output_format(&voc_muxer);
-#endif /* CONFIG_MUXERS */
-    return 0;
-}

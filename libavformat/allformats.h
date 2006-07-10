@@ -1,172 +1,134 @@
 #ifndef ALLFORMATS_H
 #define ALLFORMATS_H
 
-/* mpeg.c */
+extern AVInputFormat fourxm_demuxer;
+extern AVOutputFormat adts_muxer;
+extern AVInputFormat aiff_demuxer;
+extern AVOutputFormat aiff_muxer;
+extern AVInputFormat amr_demuxer;
+extern AVOutputFormat amr_muxer;
+extern AVInputFormat asf_demuxer;
+extern AVOutputFormat asf_muxer;
+extern AVOutputFormat asf_stream_muxer;
+extern AVInputFormat au_demuxer;
+extern AVOutputFormat au_muxer;
+extern AVInputFormat audio_demuxer;
+extern AVOutputFormat audio_muxer;
+extern AVInputFormat avi_demuxer;
+extern AVOutputFormat avi_muxer;
+extern AVInputFormat avs_demuxer;
+extern AVOutputFormat crc_muxer;
+extern AVOutputFormat framecrc_muxer;
+extern AVInputFormat daud_demuxer;
+extern AVInputFormat dc1394_demuxer;
+extern AVInputFormat dv1394_demuxer;
+extern AVInputFormat dv_demuxer;
+extern AVOutputFormat dv_muxer;
+extern AVInputFormat ea_demuxer;
+extern AVInputFormat ffm_demuxer;
+extern AVOutputFormat ffm_muxer;
+extern AVInputFormat flic_demuxer;
+extern AVInputFormat flv_demuxer;
+extern AVOutputFormat flv_muxer;
+extern AVOutputFormat gif_muxer;
+extern AVInputFormat gif_demuxer;
+extern AVInputFormat video_grab_device_demuxer;
+extern AVInputFormat video_grab_device_demuxer;
+extern AVInputFormat gxf_demuxer;
+extern AVInputFormat idcin_demuxer;
+extern AVInputFormat roq_demuxer;
+extern AVInputFormat image2_demuxer;
+extern AVInputFormat image2pipe_demuxer;
+extern AVOutputFormat image2_muxer;
+extern AVOutputFormat image2pipe_muxer;
+extern AVInputFormat image_demuxer;
+extern AVInputFormat imagepipe_demuxer;
+extern AVOutputFormat image_muxer;
+extern AVOutputFormat imagepipe_muxer;
+extern AVInputFormat ipmovie_demuxer;
+extern AVInputFormat matroska_demuxer;
+extern AVInputFormat mm_demuxer;
+extern AVInputFormat mmf_demuxer;
+extern AVOutputFormat mmf_muxer;
+extern AVInputFormat mov_demuxer;
+extern AVOutputFormat mov_muxer;
+extern AVOutputFormat tgp_muxer;
+extern AVOutputFormat mp4_muxer;
+extern AVOutputFormat psp_muxer;
+extern AVOutputFormat tg2_muxer;
+extern AVInputFormat mp3_demuxer;
+extern AVOutputFormat mp2_muxer;
+extern AVOutputFormat mp3_muxer;
+extern AVOutputFormat mpeg1system_muxer;
+extern AVOutputFormat mpeg1vcd_muxer;
+extern AVOutputFormat mpeg2vob_muxer;
+extern AVOutputFormat mpeg2svcd_muxer;
+extern AVOutputFormat mpeg2dvd_muxer;
 extern AVInputFormat mpegps_demuxer;
-int mpegps_init(void);
-
-/* mpegts.c */
 extern AVInputFormat mpegts_demuxer;
-int mpegts_init(void);
-
-/* rm.c */
-int rm_init(void);
-
-/* crc.c */
-int crc_init(void);
-
-/* img.c */
-int img_init(void);
-
-/* img2.c */
-int img2_init(void);
-
-/* asf.c */
-int asf_init(void);
-
-/* avienc.c */
-int avienc_init(void);
-
-/* avidec.c */
-int avidec_init(void);
-
-/* swf.c */
-int swf_init(void);
-
-/* mov.c */
-int mov_init(void);
-
-/* movenc.c */
-int movenc_init(void);
-
-/* flvenc.c */
-int flvenc_init(void);
-
-/* flvdec.c */
-int flvdec_init(void);
-
-/* jpeg.c */
-int jpeg_init(void);
-
-/* gif.c */
-int gif_init(void);
-
-/* au.c */
-int au_init(void);
-
-/* amr.c */
-int amr_init(void);
-
-/* wav.c */
-int ff_wav_init(void);
-
-/* mmf.c */
-int ff_mmf_init(void);
+extern AVOutputFormat mpegts_muxer;
+extern AVOutputFormat mpjpeg_muxer;
+extern AVInputFormat nsv_demuxer;
+extern AVInputFormat nut_demuxer;
+extern AVOutputFormat nut_muxer;
+extern AVInputFormat nuv_demuxer;
+extern AVInputFormat ogg_demuxer;
+extern AVOutputFormat ogg_muxer;
+extern AVInputFormat str_demuxer;
+extern AVInputFormat shorten_demuxer;
+extern AVInputFormat flac_demuxer;
+extern AVOutputFormat flac_muxer;
+extern AVInputFormat ac3_demuxer;
+extern AVOutputFormat ac3_muxer;
+extern AVInputFormat dts_demuxer;
+extern AVInputFormat aac_demuxer;
+extern AVInputFormat h261_demuxer;
+extern AVOutputFormat h261_muxer;
+extern AVInputFormat h263_demuxer;
+extern AVOutputFormat h263_muxer;
+extern AVInputFormat m4v_demuxer;
+extern AVOutputFormat m4v_muxer;
+extern AVInputFormat h264_demuxer;
+extern AVOutputFormat h264_muxer;
+extern AVInputFormat mpegvideo_demuxer;
+extern AVOutputFormat mpeg1video_muxer;
+extern AVOutputFormat mpeg2video_muxer;
+extern AVInputFormat mjpeg_demuxer;
+extern AVInputFormat ingenient_demuxer;
+extern AVOutputFormat mjpeg_muxer;
+extern AVInputFormat rawvideo_demuxer;
+extern AVOutputFormat rawvideo_muxer;
+extern AVOutputFormat null_muxer;
+extern AVInputFormat rm_demuxer;
+extern AVOutputFormat rm_muxer;
+extern AVOutputFormat rtp_muxer;
+extern AVInputFormat rtsp_demuxer;
+extern AVInputFormat sdp_demuxer;
+extern AVInputFormat redir_demuxer;
+extern AVInputFormat segafilm_demuxer;
+extern AVInputFormat vmd_demuxer;
+extern AVInputFormat smacker_demuxer;
+extern AVInputFormat sol_demuxer;
+extern AVInputFormat swf_demuxer;
+extern AVOutputFormat swf_muxer;
+extern AVInputFormat tta_demuxer;
+extern AVInputFormat v4l2_demuxer;
+extern AVInputFormat voc_demuxer;
+extern AVOutputFormat voc_muxer;
+extern AVInputFormat wav_demuxer;
+extern AVOutputFormat wav_muxer;
+extern AVInputFormat wc3_demuxer;
+extern AVInputFormat wsaud_demuxer;
+extern AVInputFormat wsvqa_demuxer;
+extern AVOutputFormat yuv4mpegpipe_muxer;
+extern AVInputFormat yuv4mpegpipe_demuxer;
 
 /* raw.c */
 int pcm_read_seek(AVFormatContext *s,
                   int stream_index, int64_t timestamp, int flags);
-int raw_init(void);
-
-/* mp3.c */
-int mp3_init(void);
-
-/* yuv4mpeg.c */
-int yuv4mpeg_init(void);
-
-/* ogg2.c */
-int ogg_init(void);
-
-/* ogg.c */
-int libogg_init(void);
-
-/* dv.c */
-int ff_dv_init(void);
-
-/* ffm.c */
-int ffm_init(void);
 
 /* rtsp.c */
-extern AVInputFormat redir_demuxer;
 int redir_open(AVFormatContext **ic_ptr, ByteIOContext *f);
-
-/* 4xm.c */
-int fourxm_init(void);
-
-/* psxstr.c */
-int str_init(void);
-
-/* idroq.c */
-int roq_init(void);
-
-/* ipmovie.c */
-int ipmovie_init(void);
-
-/* nut.c */
-int nut_init(void);
-
-/* wc3movie.c */
-int wc3_init(void);
-
-/* westwood.c */
-int westwood_init(void);
-
-/* segafilm.c */
-int film_init(void);
-
-/* idcin.c */
-int idcin_init(void);
-
-/* flic.c */
-int flic_init(void);
-
-/* sierravmd.c */
-int vmd_init(void);
-
-/* matroska.c */
-int matroska_init(void);
-
-/* sol.c */
-int sol_init(void);
-
-/* electronicarts.c */
-int ea_init(void);
-
-/* nsvdec.c */
-int nsvdec_init(void);
-
-/* daud.c */
-int daud_init(void);
-
-/* nuv.c */
-int nuv_init(void);
-
-/* gxf.c */
-int gxf_init(void);
-
-/* aiff.c */
-int ff_aiff_init(void);
-
-/* voc.c */
-int voc_init(void);
-
-/* tta.c */
-int tta_init(void);
-
-/* adts.c */
-int ff_adts_init(void);
-
-/* mm.c */
-int mm_init(void);
-
-/* avs.c */
-int avs_init(void);
-
-/* smacker.c */
-int smacker_init(void);
-
-/* v4l2.c */
-int v4l2_init(void);
 
 #if 0
 extern AVImageFormat pnm_image_format;

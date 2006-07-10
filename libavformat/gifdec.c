@@ -636,5 +636,7 @@ AVImageFormat gif_image_format = {
     gif_image_probe,
     gif_read,
     (1 << PIX_FMT_PAL8),
+#ifdef CONFIG_GIF_MUXER
     gif_write,
+#endif
 };

@@ -899,7 +899,8 @@ static int swf_read_close(AVFormatContext *s)
      return 0;
 }
 
-static AVInputFormat swf_demuxer = {
+#ifdef CONFIG_SWF_DEMUXER
+AVInputFormat swf_demuxer = {
     "swf",
     "Flash format",
     sizeof(SWFContext),
@@ -908,9 +909,9 @@ static AVInputFormat swf_demuxer = {
     swf_read_packet,
     swf_read_close,
 };
-
-#ifdef CONFIG_MUXERS
-static AVOutputFormat swf_muxer = {
+#endif
+#ifdef CONFIG_SWF_MUXER
+AVOutputFormat swf_muxer = {
     "swf",
     "Flash format",
     "application/x-shockwave-flash",
@@ -922,13 +923,4 @@ static AVOutputFormat swf_muxer = {
     swf_write_packet,
     swf_write_trailer,
 };
-#endif //CONFIG_MUXERS
-
-int swf_init(void)
-{
-    av_register_input_format(&swf_demuxer);
-#ifdef CONFIG_MUXERS
-    av_register_output_format(&swf_muxer);
-#endif //CONFIG_MUXERS
-    return 0;
-}
+#endif

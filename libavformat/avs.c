@@ -41,9 +41,6 @@ typedef enum avs_block_type {
     AVS_GAME_DATA = 0x04,
 } avs_block_type_t;
 
-
-#ifdef CONFIG_DEMUXERS
-
 static int avs_probe(AVProbeData * p)
 {
     const uint8_t *d;
@@ -217,7 +214,7 @@ static int avs_read_close(AVFormatContext * s)
     return 0;
 }
 
-static AVInputFormat avs_demuxer = {
+AVInputFormat avs_demuxer = {
     "avs",
     "avs format",
     sizeof(avs_format_t),
@@ -226,13 +223,3 @@ static AVInputFormat avs_demuxer = {
     avs_read_packet,
     avs_read_close,
 };
-
-#endif /* CONFIG_DEMUXERS */
-
-int avs_init(void)
-{
-#ifdef CONFIG_DEMUXERS
-    av_register_input_format(&avs_demuxer);
-#endif /* CONFIG_DEMUXERS */
-    return 0;
-}

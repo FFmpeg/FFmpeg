@@ -90,11 +90,13 @@ AVOutputFormat *guess_format(const char *short_name, const char *filename,
     int score_max, score;
 
     /* specific test for image sequences */
+#ifdef CONFIG_IMAGE2_MUXER
     if (!short_name && filename &&
         filename_number_test(filename) >= 0 &&
         av_guess_image2_codec(filename) != CODEC_ID_NONE) {
         return guess_format("image2", NULL, NULL);
     }
+#endif
     if (!short_name && filename &&
         filename_number_test(filename) >= 0 &&
         guess_image_format(filename)) {
@@ -151,9 +153,11 @@ enum CodecID av_guess_codec(AVOutputFormat *fmt, const char *short_name,
     if(type == CODEC_TYPE_VIDEO){
         enum CodecID codec_id= CODEC_ID_NONE;
 
+#ifdef CONFIG_IMAGE2_MUXER
         if(!strcmp(fmt->name, "image2") || !strcmp(fmt->name, "image2pipe")){
             codec_id= av_guess_image2_codec(filename);
         }
+#endif
         if(codec_id == CODEC_ID_NONE)
             codec_id= fmt->video_codec;
         return codec_id;
@@ -1730,7 +1734,9 @@ static void av_estimate_timings(AVFormatContext *ic)
     }
     ic->file_size = file_size;
 
-    if ((ic->iformat == &mpegps_demuxer || ic->iformat == &mpegts_demuxer) && file_size && !ic->pb.is_streamed) {
+    if ((!strcmp(ic->iformat->name, "mpeg") ||
+         !strcmp(ic->iformat->name, "mpegts")) &&
+        file_size && !ic->pb.is_streamed) {
         /* get accurate estimate from the PTSes */
         av_estimate_timings_from_pts(ic);
     } else if (av_has_timings(ic)) {

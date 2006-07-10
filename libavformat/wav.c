@@ -404,8 +404,8 @@ static int wav_read_seek(AVFormatContext *s,
     return pcm_read_seek(s, stream_index, timestamp, flags);
 }
 
-
-static AVInputFormat wav_demuxer = {
+#ifdef CONFIG_WAV_DEMUXER
+AVInputFormat wav_demuxer = {
     "wav",
     "wav format",
     sizeof(WAVContext),
@@ -415,9 +415,9 @@ static AVInputFormat wav_demuxer = {
     wav_read_close,
     wav_read_seek,
 };
-
-#ifdef CONFIG_MUXERS
-static AVOutputFormat wav_muxer = {
+#endif
+#ifdef CONFIG_WAV_MUXER
+AVOutputFormat wav_muxer = {
     "wav",
     "wav format",
     "audio/x-wav",
@@ -429,13 +429,4 @@ static AVOutputFormat wav_muxer = {
     wav_write_packet,
     wav_write_trailer,
 };
-#endif //CONFIG_MUXERS
-
-int ff_wav_init(void)
-{
-    av_register_input_format(&wav_demuxer);
-#ifdef CONFIG_MUXERS
-    av_register_output_format(&wav_muxer);
-#endif //CONFIG_MUXERS
-    return 0;
-}
+#endif

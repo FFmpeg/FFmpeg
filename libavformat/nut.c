@@ -1419,7 +1419,8 @@ static int nut_read_close(AVFormatContext *s)
     return 0;
 }
 
-static AVInputFormat nut_demuxer = {
+#ifdef CONFIG_NUT_DEMUXER
+AVInputFormat nut_demuxer = {
     "nut",
     "nut format",
     sizeof(NUTContext),
@@ -1431,9 +1432,9 @@ static AVInputFormat nut_demuxer = {
     nut_read_timestamp,
     .extensions = "nut",
 };
-
-#ifdef CONFIG_MUXERS
-static AVOutputFormat nut_muxer = {
+#endif
+#ifdef CONFIG_NUT_MUXER
+AVOutputFormat nut_muxer = {
     "nut",
     "nut format",
     "video/x-nut",
@@ -1452,13 +1453,4 @@ static AVOutputFormat nut_muxer = {
     nut_write_trailer,
     .flags = AVFMT_GLOBALHEADER,
 };
-#endif //CONFIG_MUXERS
-
-int nut_init(void)
-{
-    av_register_input_format(&nut_demuxer);
-#ifdef CONFIG_MUXERS
-    av_register_output_format(&nut_muxer);
-#endif //CONFIG_MUXERS
-    return 0;
-}
+#endif

@@ -22,7 +22,6 @@
 
 #define BOUNDARY_TAG "ffserver"
 
-#ifdef CONFIG_MUXERS
 static int mpjpeg_write_header(AVFormatContext *s)
 {
     uint8_t buf1[256];
@@ -52,7 +51,7 @@ static int mpjpeg_write_trailer(AVFormatContext *s)
     return 0;
 }
 
-static AVOutputFormat mpjpeg_muxer = {
+AVOutputFormat mpjpeg_muxer = {
     "mpjpeg",
     "Mime multipart JPEG format",
     "multipart/x-mixed-replace;boundary=" BOUNDARY_TAG,
@@ -64,10 +63,3 @@ static AVOutputFormat mpjpeg_muxer = {
     mpjpeg_write_packet,
     mpjpeg_write_trailer,
 };
-
-int jpeg_init(void)
-{
-    av_register_output_format(&mpjpeg_muxer);
-    return 0;
-}
-#endif //CONFIG_MUXERS

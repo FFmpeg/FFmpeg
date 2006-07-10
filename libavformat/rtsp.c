@@ -1345,8 +1345,8 @@ static int sdp_read_close(AVFormatContext *s)
     return 0;
 }
 
-
-static AVInputFormat sdp_demuxer = {
+#ifdef CONFIG_SDP_DEMUXER
+AVInputFormat sdp_demuxer = {
     "sdp",
     "SDP",
     sizeof(RTSPState),
@@ -1355,7 +1355,7 @@ static AVInputFormat sdp_demuxer = {
     sdp_read_packet,
     sdp_read_close,
 };
-
+#endif
 
 /* dummy redirector format (used directly in av_open_input_file now) */
 static int redir_probe(AVProbeData *pd)
@@ -1419,11 +1419,3 @@ AVInputFormat redir_demuxer = {
     NULL,
     NULL,
 };
-
-int rtsp_init(void)
-{
-    av_register_input_format(&rtsp_demuxer);
-    av_register_input_format(&redir_demuxer);
-    av_register_input_format(&sdp_demuxer);
-    return 0;
-}

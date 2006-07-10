@@ -923,7 +923,7 @@ static int avi_probe(AVProbeData *p)
         return 0;
 }
 
-static AVInputFormat avi_demuxer = {
+AVInputFormat avi_demuxer = {
     "avi",
     "avi format",
     sizeof(AVIContext),
@@ -933,9 +933,3 @@ static AVInputFormat avi_demuxer = {
     avi_read_close,
     avi_read_seek,
 };
-
-int avidec_init(void)
-{
-    av_register_input_format(&avi_demuxer);
-    return 0;
-}

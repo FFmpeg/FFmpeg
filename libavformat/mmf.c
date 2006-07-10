@@ -301,8 +301,8 @@ static int mmf_read_seek(AVFormatContext *s,
     return pcm_read_seek(s, stream_index, timestamp, flags);
 }
 
-
-static AVInputFormat mmf_demuxer = {
+#ifdef CONFIG_MMF_DEMUXER
+AVInputFormat mmf_demuxer = {
     "mmf",
     "mmf format",
     sizeof(MMFContext),
@@ -312,9 +312,9 @@ static AVInputFormat mmf_demuxer = {
     mmf_read_close,
     mmf_read_seek,
 };
-
-#ifdef CONFIG_MUXERS
-static AVOutputFormat mmf_muxer = {
+#endif
+#ifdef CONFIG_MMF_MUXER
+AVOutputFormat mmf_muxer = {
     "mmf",
     "mmf format",
     "application/vnd.smaf",
@@ -326,14 +326,4 @@ static AVOutputFormat mmf_muxer = {
     mmf_write_packet,
     mmf_write_trailer,
 };
-#endif //CONFIG_MUXERS
-
-int ff_mmf_init(void)
-{
-    av_register_input_format(&mmf_demuxer);
-#ifdef CONFIG_MUXERS
-    av_register_output_format(&mmf_muxer);
-#endif //CONFIG_MUXERS
-    return 0;
-}
-
+#endif

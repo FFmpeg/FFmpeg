@@ -364,8 +364,8 @@ static int img_write_trailer(AVFormatContext *s)
 #endif /* CONFIG_MUXERS */
 
 /* input */
-
-static AVInputFormat image2_demuxer = {
+#ifdef CONFIG_IMAGE2_DEMUXER
+AVInputFormat image2_demuxer = {
     "image2",
     "image2 sequence",
     sizeof(VideoData),
@@ -377,8 +377,9 @@ static AVInputFormat image2_demuxer = {
     NULL,
     AVFMT_NOFILE,
 };
-
-static AVInputFormat image2pipe_demuxer = {
+#endif
+#ifdef CONFIG_IMAGE2PIPE_DEMUXER
+AVInputFormat image2pipe_demuxer = {
     "image2pipe",
     "piped image2 sequence",
     sizeof(VideoData),
@@ -388,12 +389,11 @@ static AVInputFormat image2pipe_demuxer = {
     img_read_close,
     NULL,
 };
+#endif
 
-
-#ifdef CONFIG_MUXERS
 /* output */
-
-static AVOutputFormat image2_muxer = {
+#ifdef CONFIG_IMAGE2_MUXER
+AVOutputFormat image2_muxer = {
     "image2",
     "image2 sequence",
     "",
@@ -406,8 +406,9 @@ static AVOutputFormat image2_muxer = {
     img_write_trailer,
     AVFMT_NOFILE,
 };
-
-static AVOutputFormat image2pipe_muxer = {
+#endif
+#ifdef CONFIG_IMAGE2PIPE_MUXER
+AVOutputFormat image2pipe_muxer = {
     "image2pipe",
     "piped image2 sequence",
     "",
@@ -419,17 +420,4 @@ static AVOutputFormat image2pipe_muxer = {
     img_write_packet,
     img_write_trailer,
 };
-#endif /* CONFIG_MUXERS */
-
-int img2_init(void)
-{
-    av_register_input_format(&image2_demuxer);
-    av_register_input_format(&image2pipe_demuxer);
-
-#ifdef CONFIG_MUXERS
-    av_register_output_format(&image2_muxer);
-    av_register_output_format(&image2pipe_muxer);
 #endif
-
-    return 0;
-}

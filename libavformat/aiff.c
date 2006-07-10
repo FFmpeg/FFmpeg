@@ -428,8 +428,8 @@ static int aiff_read_seek(AVFormatContext *s,
     return pcm_read_seek(s, stream_index, timestamp, flags);
 }
 
-
-static AVInputFormat aiff_demuxer = {
+#ifdef CONFIG_AIFF_DEMUXER
+AVInputFormat aiff_demuxer = {
     "aiff",
     "Audio IFF",
     0,
@@ -439,9 +439,10 @@ static AVInputFormat aiff_demuxer = {
     aiff_read_close,
     aiff_read_seek,
 };
+#endif
 
-#ifdef CONFIG_MUXERS
-static AVOutputFormat aiff_muxer = {
+#ifdef CONFIG_AIFF_DEMUXER
+AVOutputFormat aiff_muxer = {
     "aiff",
     "Audio IFF",
     "audio/aiff",
@@ -453,14 +454,4 @@ static AVOutputFormat aiff_muxer = {
     aiff_write_packet,
     aiff_write_trailer,
 };
-#endif //CONFIG_MUXERS
-
-int ff_aiff_init(void)
-{
-    av_register_input_format(&aiff_demuxer);
-#ifdef CONFIG_MUXERS
-    av_register_output_format(&aiff_muxer);
-#endif //CONFIG_MUXERS
-    return 0;
-}
-
+#endif

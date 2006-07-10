@@ -357,7 +357,8 @@ static int wsvqa_read_close(AVFormatContext *s)
     return 0;
 }
 
-static AVInputFormat wsaud_demuxer = {
+#ifdef CONFIG_WSAUD_DEMUXER
+AVInputFormat wsaud_demuxer = {
     "wsaud",
     "Westwood Studios audio format",
     sizeof(WsAudDemuxContext),
@@ -366,8 +367,9 @@ static AVInputFormat wsaud_demuxer = {
     wsaud_read_packet,
     wsaud_read_close,
 };
-
-static AVInputFormat wsvqa_demuxer = {
+#endif
+#ifdef CONFIG_WSVQA_DEMUXER
+AVInputFormat wsvqa_demuxer = {
     "wsvqa",
     "Westwood Studios VQA format",
     sizeof(WsVqaDemuxContext),
@@ -376,10 +378,4 @@ static AVInputFormat wsvqa_demuxer = {
     wsvqa_read_packet,
     wsvqa_read_close,
 };
-
-int westwood_init(void)
-{
-    av_register_input_format(&wsaud_demuxer);
-    av_register_input_format(&wsvqa_demuxer);
-    return 0;
-}
+#endif

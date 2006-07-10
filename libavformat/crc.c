@@ -56,8 +56,8 @@ unsigned long update_adler32(unsigned long adler, const uint8_t *buf, unsigned i
     }
     return (s2 << 16) | s1;
 }
-#ifdef CONFIG_MUXERS
 
+#ifdef CONFIG_CRC_MUXER
 typedef struct CRCState {
     uint32_t crcval;
 } CRCState;
@@ -89,7 +89,9 @@ static int crc_write_trailer(struct AVFormatContext *s)
     put_flush_packet(&s->pb);
     return 0;
 }
+#endif
 
+#ifdef CONFIG_FRAMECRC_MUXER
 static int framecrc_write_packet(struct AVFormatContext *s, AVPacket *pkt)
 {
     uint32_t crc = update_adler32(0, pkt->data, pkt->size);
@@ -100,8 +102,10 @@ static int framecrc_write_packet(struct AVFormatContext *s, AVPacket *pkt)
     put_flush_packet(&s->pb);
     return 0;
 }
+#endif
 
-static AVOutputFormat crc_muxer = {
+#ifdef CONFIG_CRC_MUXER
+AVOutputFormat crc_muxer = {
     "crc",
     "crc testing format",
     NULL,
@@ -113,8 +117,9 @@ static AVOutputFormat crc_muxer = {
     crc_write_packet,
     crc_write_trailer,
 };
-
-static AVOutputFormat framecrc_muxer = {
+#endif
+#ifdef CONFIG_FRAMECRC_MUXER
+AVOutputFormat framecrc_muxer = {
     "framecrc",
     "framecrc testing format",
     NULL,
@@ -126,11 +131,4 @@ static AVOutputFormat framecrc_muxer = {
     framecrc_write_packet,
     NULL,
 };
-
-int crc_init(void)
-{
-    av_register_output_format(&crc_muxer);
-    av_register_output_format(&framecrc_muxer);
-    return 0;
-}
-#endif /* CONFIG_MUXERS */
+#endif

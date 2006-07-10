@@ -278,7 +278,7 @@ static int ea_read_close(AVFormatContext *s)
     return 0;
 }
 
-static AVInputFormat ea_demuxer = {
+AVInputFormat ea_demuxer = {
     "ea",
     "Electronic Arts Multimedia Format",
     sizeof(EaDemuxContext),
@@ -287,9 +287,3 @@ static AVInputFormat ea_demuxer = {
     ea_read_packet,
     ea_read_close,
 };
-
-int ea_init(void)
-{
-    av_register_input_format(&ea_demuxer);
-    return 0;
-}

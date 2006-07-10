@@ -840,7 +840,7 @@ static int asf_read_seek(AVFormatContext *s, int stream_index, int64_t pts, int 
     return 0;
 }
 
-static AVInputFormat asf_demuxer = {
+AVInputFormat asf_demuxer = {
     "asf",
     "asf format",
     sizeof(ASFContext),
@@ -851,18 +851,3 @@ static AVInputFormat asf_demuxer = {
     asf_read_seek,
     asf_read_pts,
 };
-
-#ifdef CONFIG_MUXERS
-    extern AVOutputFormat asf_muxer;
-    extern AVOutputFormat asf_stream_muxer;
-#endif //CONFIG_MUXERS
-
-int asf_init(void)
-{
-    av_register_input_format(&asf_demuxer);
-#ifdef CONFIG_MUXERS
-    av_register_output_format(&asf_muxer);
-    av_register_output_format(&asf_stream_muxer);
-#endif //CONFIG_MUXERS
-    return 0;
-}

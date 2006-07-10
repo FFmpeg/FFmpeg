@@ -36,95 +36,381 @@ void av_register_all(void)
     avcodec_init();
     avcodec_register_all();
 
-    mpegps_init();
-    mpegts_init();
-#ifdef CONFIG_MUXERS
-    crc_init();
-    img_init();
-    img2_init();
-#endif //CONFIG_MUXERS
-    raw_init();
-    mp3_init();
-    rm_init();
-    asf_init();
-#ifdef CONFIG_MUXERS
-    avienc_init();
-#endif //CONFIG_MUXERS
-    avidec_init();
-    ff_wav_init();
-    ff_mmf_init();
-    swf_init();
-    au_init();
-    ff_aiff_init();
-#ifdef CONFIG_MUXERS
-    ff_adts_init();
-    gif_init();
-#endif //CONFIG_MUXERS
-    mov_init();
-#ifdef CONFIG_MUXERS
-    movenc_init();
-    jpeg_init();
-#endif //CONFIG_MUXERS
-    ff_dv_init();
-    fourxm_init();
-#ifdef CONFIG_MUXERS
-    flvenc_init();
-#endif //CONFIG_MUXERS
-    flvdec_init();
-    str_init();
-    roq_init();
-    ipmovie_init();
-    wc3_init();
-    westwood_init();
-    film_init();
-    idcin_init();
-    flic_init();
-    vmd_init();
-    mm_init();
-    smacker_init();
-
-#if defined(AMR_NB) || defined(AMR_NB_FIXED) || defined(AMR_WB)
-    amr_init();
+#ifdef CONFIG_FOURXM_DEMUXER
+    av_register_input_format(&fourxm_demuxer);
 #endif
-    yuv4mpeg_init();
-
-    ogg_init();
-#ifdef CONFIG_LIBOGG
-    libogg_init();
+#ifdef CONFIG_ADTS_MUXER
+    av_register_output_format(&adts_muxer);
 #endif
-
-    ffm_init();
-#if defined(CONFIG_VIDEO4LINUX2)
-    v4l2_init();
+#ifdef CONFIG_AIFF_DEMUXER
+    av_register_input_format(&aiff_demuxer);
 #endif
-#if defined(CONFIG_VIDEO4LINUX) || defined(CONFIG_BKTR)
-    video_grab_init();
+#ifdef CONFIG_AIFF_MUXER
+    av_register_output_format(&aiff_muxer);
+#endif
+#ifdef CONFIG_AMR_DEMUXER
+    av_register_input_format(&amr_demuxer);
+#endif
+#ifdef CONFIG_AMR_MUXER
+    av_register_output_format(&amr_muxer);
+#endif
+#ifdef CONFIG_ASF_DEMUXER
+    av_register_input_format(&asf_demuxer);
+#endif
+#ifdef CONFIG_ASF_MUXER
+    av_register_output_format(&asf_muxer);
+#endif
+#ifdef CONFIG_ASF_STREAM_MUXER
+    av_register_output_format(&asf_stream_muxer);
+#endif
+#ifdef CONFIG_AU_DEMUXER
+    av_register_input_format(&au_demuxer);
+#endif
+#ifdef CONFIG_AU_MUXER
+    av_register_output_format(&au_muxer);
 #endif
 #if defined(CONFIG_AUDIO_OSS) || defined(CONFIG_AUDIO_BEOS)
-    audio_init();
+#ifdef CONFIG_AUDIO_DEMUXER
+    av_register_input_format(&audio_demuxer);
 #endif
-
-#ifdef CONFIG_DV1394
-    dv1394_init();
+#ifdef CONFIG_AUDIO_MUXER
+    av_register_output_format(&audio_muxer);
 #endif
-
+#endif /* CONFIG_AUDIO_OSS || CONFIG_AUDIO_BEOS */
+#ifdef CONFIG_AVI_DEMUXER
+    av_register_input_format(&avi_demuxer);
+#endif
+#ifdef CONFIG_AVI_MUXER
+    av_register_output_format(&avi_muxer);
+#endif
+#ifdef CONFIG_AVS_DEMUXER
+    av_register_input_format(&avs_demuxer);
+#endif
+#ifdef CONFIG_CRC_MUXER
+    av_register_output_format(&crc_muxer);
+#endif
+#ifdef CONFIG_FRAMECRC_MUXER
+    av_register_output_format(&framecrc_muxer);
+#endif
+#ifdef CONFIG_DAUD_DEMUXER
+    av_register_input_format(&daud_demuxer);
+#endif
 #ifdef CONFIG_DC1394
-    dc1394_init();
+#ifdef CONFIG_DC1394_DEMUXER
+    av_register_input_format(&dc1394_demuxer);
+#endif
+#endif /* CONFIG_DC1394 */
+#ifdef CONFIG_DV1394
+#ifdef CONFIG_DV1394_DEMUXER
+    av_register_input_format(&dv1394_demuxer);
+#endif
+#endif /* CONFIG_DV1394 */
+#ifdef CONFIG_DV_DEMUXER
+    av_register_input_format(&dv_demuxer);
+#endif
+#ifdef CONFIG_DV_MUXER
+    av_register_output_format(&dv_muxer);
+#endif
+#ifdef CONFIG_EA_DEMUXER
+    av_register_input_format(&ea_demuxer);
+#endif
+#ifdef CONFIG_FFM_DEMUXER
+    av_register_input_format(&ffm_demuxer);
+#endif
+#ifdef CONFIG_FFM_MUXER
+    av_register_output_format(&ffm_muxer);
+#endif
+#ifdef CONFIG_FLIC_DEMUXER
+    av_register_input_format(&flic_demuxer);
+#endif
+#ifdef CONFIG_FLV_DEMUXER
+    av_register_input_format(&flv_demuxer);
+#endif
+#ifdef CONFIG_FLV_MUXER
+    av_register_output_format(&flv_muxer);
+#endif
+#ifdef CONFIG_GIF_MUXER
+    av_register_output_format(&gif_muxer);
+#endif
+#ifdef CONFIG_GIF_DEMUXER
+    av_register_input_format(&gif_demuxer);
+#endif
+#ifdef CONFIG_GXF_DEMUXER
+    av_register_input_format(&gxf_demuxer);
+#endif
+#ifdef CONFIG_IDCIN_DEMUXER
+    av_register_input_format(&idcin_demuxer);
+#endif
+#ifdef CONFIG_ROQ_DEMUXER
+    av_register_input_format(&roq_demuxer);
+#endif
+#ifdef CONFIG_IMAGE2_DEMUXER
+    av_register_input_format(&image2_demuxer);
+#endif
+#ifdef CONFIG_IMAGE2PIPE_DEMUXER
+    av_register_input_format(&image2pipe_demuxer);
+#endif
+#ifdef CONFIG_IMAGE2_MUXER
+    av_register_output_format(&image2_muxer);
+#endif
+#ifdef CONFIG_IMAGE2PIPE_MUXER
+    av_register_output_format(&image2pipe_muxer);
+#endif
+#ifdef CONFIG_IMAGE_DEMUXER
+    av_register_input_format(&image_demuxer);
+#endif
+#ifdef CONFIG_IMAGEPIPE_DEMUXER
+    av_register_input_format(&imagepipe_demuxer);
+#endif
+#ifdef CONFIG_IMAGE_MUXER
+    av_register_output_format(&image_muxer);
+#endif
+#ifdef CONFIG_IMAGEPIPE_MUXER
+    av_register_output_format(&imagepipe_muxer);
+#endif
+#ifdef CONFIG_IPMOVIE_DEMUXER
+    av_register_input_format(&ipmovie_demuxer);
+#endif
+#ifdef CONFIG_MATROSKA_DEMUXER
+    av_register_input_format(&matroska_demuxer);
+#endif
+#ifdef CONFIG_MM_DEMUXER
+    av_register_input_format(&mm_demuxer);
+#endif
+#ifdef CONFIG_MMF_DEMUXER
+    av_register_input_format(&mmf_demuxer);
+#endif
+#ifdef CONFIG_MMF_MUXER
+    av_register_output_format(&mmf_muxer);
+#endif
+#ifdef CONFIG_MOV_DEMUXER
+    av_register_input_format(&mov_demuxer);
+#endif
+#ifdef CONFIG_MOV_MUXER
+    av_register_output_format(&mov_muxer);
+#endif
+#ifdef CONFIG_TGP_MUXER
+    av_register_output_format(&tgp_muxer);
+#endif
+#ifdef CONFIG_MP4_MUXER
+    av_register_output_format(&mp4_muxer);
+#endif
+#ifdef CONFIG_PSP_MUXER
+    av_register_output_format(&psp_muxer);
+#endif
+#ifdef CONFIG_TG2_MUXER
+    av_register_output_format(&tg2_muxer);
+#endif
+#ifdef CONFIG_MP3_DEMUXER
+    av_register_input_format(&mp3_demuxer);
+#endif
+#ifdef CONFIG_MP2_MUXER
+    av_register_output_format(&mp2_muxer);
+#endif
+#ifdef CONFIG_MP3_MUXER
+    av_register_output_format(&mp3_muxer);
+#endif
+#ifdef CONFIG_MPEG1SYSTEM_MUXER
+    av_register_output_format(&mpeg1system_muxer);
+#endif
+#ifdef CONFIG_MPEG1VCD_MUXER
+    av_register_output_format(&mpeg1vcd_muxer);
+#endif
+#ifdef CONFIG_MPEG2VOB_MUXER
+    av_register_output_format(&mpeg2vob_muxer);
+#endif
+#ifdef CONFIG_MPEG2SVCD_MUXER
+    av_register_output_format(&mpeg2svcd_muxer);
+#endif
+#ifdef CONFIG_MPEG2DVD_MUXER
+    av_register_output_format(&mpeg2dvd_muxer);
+#endif
+#ifdef CONFIG_MPEGPS_DEMUXER
+    av_register_input_format(&mpegps_demuxer);
+#endif
+#ifdef CONFIG_MPEGTS_DEMUXER
+    av_register_input_format(&mpegts_demuxer);
+#endif
+#ifdef CONFIG_MPEGTS_MUXER
+    av_register_output_format(&mpegts_muxer);
+#endif
+#ifdef CONFIG_MPJPEG_MUXER
+    av_register_output_format(&mpjpeg_muxer);
+#endif
+#ifdef CONFIG_NSV_DEMUXER
+    av_register_input_format(&nsv_demuxer);
+#endif
+#ifdef CONFIG_NUT_DEMUXER
+    av_register_input_format(&nut_demuxer);
+#endif
+#ifdef CONFIG_NUT_MUXER
+    av_register_output_format(&nut_muxer);
+#endif
+#ifdef CONFIG_NUV_DEMUXER
+    av_register_input_format(&nuv_demuxer);
+#endif
+#ifdef CONFIG_OGG_DEMUXER
+    av_register_input_format(&ogg_demuxer);
+#endif
+#ifdef CONFIG_LIBOGG
+#ifdef CONFIG_OGG_MUXER
+    av_register_output_format(&ogg_muxer);
+#endif
+#endif /* CONFIG_LIBOGG */
+#ifdef CONFIG_STR_DEMUXER
+    av_register_input_format(&str_demuxer);
+#endif
+#ifdef CONFIG_SHORTEN_DEMUXER
+    av_register_input_format(&shorten_demuxer);
+#endif
+#ifdef CONFIG_FLAC_DEMUXER
+    av_register_input_format(&flac_demuxer);
+#endif
+#ifdef CONFIG_FLAC_MUXER
+    av_register_output_format(&flac_muxer);
+#endif
+#ifdef CONFIG_AC3_DEMUXER
+    av_register_input_format(&ac3_demuxer);
+#endif
+#ifdef CONFIG_AC3_MUXER
+    av_register_output_format(&ac3_muxer);
+#endif
+#ifdef CONFIG_DTS_DEMUXER
+    av_register_input_format(&dts_demuxer);
+#endif
+#ifdef CONFIG_AAC_DEMUXER
+    av_register_input_format(&aac_demuxer);
+#endif
+#ifdef CONFIG_H261_DEMUXER
+    av_register_input_format(&h261_demuxer);
+#endif
+#ifdef CONFIG_H261_MUXER
+    av_register_output_format(&h261_muxer);
+#endif
+#ifdef CONFIG_H263_DEMUXER
+    av_register_input_format(&h263_demuxer);
+#endif
+#ifdef CONFIG_H263_MUXER
+    av_register_output_format(&h263_muxer);
+#endif
+#ifdef CONFIG_M4V_DEMUXER
+    av_register_input_format(&m4v_demuxer);
+#endif
+#ifdef CONFIG_M4V_MUXER
+    av_register_output_format(&m4v_muxer);
+#endif
+#ifdef CONFIG_H264_DEMUXER
+    av_register_input_format(&h264_demuxer);
+#endif
+#ifdef CONFIG_H264_MUXER
+    av_register_output_format(&h264_muxer);
+#endif
+#ifdef CONFIG_MPEGVIDEO_DEMUXER
+    av_register_input_format(&mpegvideo_demuxer);
+#endif
+#ifdef CONFIG_MPEG1VIDEO_MUXER
+    av_register_output_format(&mpeg1video_muxer);
+#endif
+#ifdef CONFIG_MPEG2VIDEO_MUXER
+    av_register_output_format(&mpeg2video_muxer);
+#endif
+#ifdef CONFIG_MJPEG_DEMUXER
+    av_register_input_format(&mjpeg_demuxer);
+#endif
+#ifdef CONFIG_INGENIENT_DEMUXER
+    av_register_input_format(&ingenient_demuxer);
+#endif
+#ifdef CONFIG_MJPEG_MUXER
+    av_register_output_format(&mjpeg_muxer);
+#endif
+#ifdef CONFIG_RAWVIDEO_DEMUXER
+    av_register_input_format(&rawvideo_demuxer);
+#endif
+#ifdef CONFIG_RAWVIDEO_MUXER
+    av_register_output_format(&rawvideo_muxer);
+#endif
+#ifdef CONFIG_NULL_MUXER
+    av_register_output_format(&null_muxer);
+#endif
+#ifdef CONFIG_RM_DEMUXER
+    av_register_input_format(&rm_demuxer);
+#endif
+#ifdef CONFIG_RM_MUXER
+    av_register_output_format(&rm_muxer);
+#endif
+#ifdef CONFIG_NETWORK
+#ifdef CONFIG_RTP_MUXER
+    av_register_output_format(&rtp_muxer);
+#endif
+#ifdef CONFIG_RTSP_DEMUXER
+    av_register_input_format(&rtsp_demuxer);
+#endif
+#ifdef CONFIG_SDP_DEMUXER
+    av_register_input_format(&sdp_demuxer);
+#endif
+#ifdef CONFIG_REDIR_DEMUXER
+    av_register_input_format(&redir_demuxer);
+#endif
+#endif /* CONFIG_NETWORK */
+#ifdef CONFIG_SEGAFILM_DEMUXER
+    av_register_input_format(&segafilm_demuxer);
+#endif
+#ifdef CONFIG_VMD_DEMUXER
+    av_register_input_format(&vmd_demuxer);
+#endif
+#ifdef CONFIG_SMACKER_DEMUXER
+    av_register_input_format(&smacker_demuxer);
+#endif
+#ifdef CONFIG_SOL_DEMUXER
+    av_register_input_format(&sol_demuxer);
+#endif
+#ifdef CONFIG_SWF_DEMUXER
+    av_register_input_format(&swf_demuxer);
+#endif
+#ifdef CONFIG_SWF_MUXER
+    av_register_output_format(&swf_muxer);
+#endif
+#ifdef CONFIG_TTA_DEMUXER
+    av_register_input_format(&tta_demuxer);
+#endif
+#ifdef CONFIG_VIDEO4LINUX2
+#ifdef CONFIG_V4L2_DEMUXER
+    av_register_input_format(&v4l2_demuxer);
+#endif
+#endif /* CONFIG_VIDEO4LINUX2 */
+#if defined(CONFIG_VIDEO4LINUX) || defined(CONFIG_BKTR)
+#ifdef CONFIG_VIDEO_GRAB_DEVICE_DEMUXER
+    av_register_input_format(&video_grab_device_demuxer);
+#endif
+#endif /* CONFIG_VIDEO4LINUX || CONFIG_BKTR */
+#ifdef CONFIG_VOC_DEMUXER
+    av_register_input_format(&voc_demuxer);
+#endif
+#ifdef CONFIG_VOC_MUXER
+    av_register_output_format(&voc_muxer);
+#endif
+#ifdef CONFIG_WAV_DEMUXER
+    av_register_input_format(&wav_demuxer);
+#endif
+#ifdef CONFIG_WAV_MUXER
+    av_register_output_format(&wav_muxer);
+#endif
+#ifdef CONFIG_WC3_DEMUXER
+    av_register_input_format(&wc3_demuxer);
+#endif
+#ifdef CONFIG_WSAUD_DEMUXER
+    av_register_input_format(&wsaud_demuxer);
+#endif
+#ifdef CONFIG_WSVQA_DEMUXER
+    av_register_input_format(&wsvqa_demuxer);
+#endif
+#ifdef CONFIG_YUV4MPEGPIPE_MUXER
+    av_register_output_format(&yuv4mpegpipe_muxer);
+#endif
+#ifdef CONFIG_YUV4MPEGPIPE_DEMUXER
+    av_register_input_format(&yuv4mpegpipe_demuxer);
 #endif
 
-    nut_init();
-    matroska_init();
-    sol_init();
-    ea_init();
-    nsvdec_init();
-    daud_init();
-    voc_init();
-    tta_init();
-    avs_init();
-    nuv_init();
-    gxf_init();
-
-#ifdef CONFIG_MUXERS
     /* image formats */
 #if 0
     av_register_image_format(&pnm_image_format);
@@ -141,15 +427,12 @@ void av_register_all(void)
 #endif
     av_register_image_format(&gif_image_format);
 //    av_register_image_format(&sgi_image_format); heap corruption, dont enable
-#endif //CONFIG_MUXERS
 
 #ifdef CONFIG_PROTOCOLS
     /* file protocols */
     register_protocol(&file_protocol);
     register_protocol(&pipe_protocol);
 #ifdef CONFIG_NETWORK
-    rtsp_init();
-    rtp_init();
     register_protocol(&udp_protocol);
     register_protocol(&rtp_protocol);
     register_protocol(&tcp_protocol);

@@ -23,8 +23,6 @@
 #undef NDEBUG
 #include <assert.h>
 
-#ifdef CONFIG_MUXERS
-
 
 #define ASF_INDEXED_INTERVAL    10000000
 #define ASF_INDEX_BLOCK         600
@@ -823,6 +821,7 @@ static int asf_write_trailer(AVFormatContext *s)
     return 0;
 }
 
+#ifdef CONFIG_ASF_MUXER
 AVOutputFormat asf_muxer = {
     "asf",
     "asf format",
@@ -840,7 +839,9 @@ AVOutputFormat asf_muxer = {
     asf_write_trailer,
     .flags = AVFMT_GLOBALHEADER,
 };
+#endif
 
+#ifdef CONFIG_ASF_STREAM_MUXER
 AVOutputFormat asf_stream_muxer = {
     "asf_stream",
     "asf format",
@@ -858,4 +859,4 @@ AVOutputFormat asf_stream_muxer = {
     asf_write_trailer,
     .flags = AVFMT_GLOBALHEADER,
 };
-#endif //CONFIG_MUXERS
+#endif //CONFIG_ASF_STREAM_MUXER

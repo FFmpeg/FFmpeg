@@ -1588,7 +1588,8 @@ static int mov_write_trailer(AVFormatContext *s)
     return res;
 }
 
-static AVOutputFormat mov_muxer = {
+#ifdef CONFIG_MOV_MUXER
+AVOutputFormat mov_muxer = {
     "mov",
     "mov format",
     NULL,
@@ -1601,8 +1602,9 @@ static AVOutputFormat mov_muxer = {
     mov_write_trailer,
     .flags = AVFMT_GLOBALHEADER,
 };
-
-static AVOutputFormat _3gp_muxer = {
+#endif
+#ifdef CONFIG_TGP_MUXER
+AVOutputFormat tgp_muxer = {
     "3gp",
     "3gp format",
     NULL,
@@ -1615,8 +1617,9 @@ static AVOutputFormat _3gp_muxer = {
     mov_write_trailer,
     .flags = AVFMT_GLOBALHEADER,
 };
-
-static AVOutputFormat mp4_muxer = {
+#endif
+#ifdef CONFIG_MP4_MUXER
+AVOutputFormat mp4_muxer = {
     "mp4",
     "mp4 format",
     "application/mp4",
@@ -1629,8 +1632,9 @@ static AVOutputFormat mp4_muxer = {
     mov_write_trailer,
     .flags = AVFMT_GLOBALHEADER,
 };
-
-static AVOutputFormat psp_muxer = {
+#endif
+#ifdef CONFIG_PSP_MUXER
+AVOutputFormat psp_muxer = {
     "psp",
     "psp mp4 format",
     NULL,
@@ -1643,8 +1647,9 @@ static AVOutputFormat psp_muxer = {
     mov_write_trailer,
     .flags = AVFMT_GLOBALHEADER,
 };
-
-static AVOutputFormat _3g2_muxer = {
+#endif
+#ifdef CONFIG_TG2_MUXER
+AVOutputFormat tg2_muxer = {
     "3g2",
     "3gp2 format",
     NULL,
@@ -1657,13 +1662,4 @@ static AVOutputFormat _3g2_muxer = {
     mov_write_trailer,
     .flags = AVFMT_GLOBALHEADER,
 };
-
-int movenc_init(void)
-{
-    av_register_output_format(&mov_muxer);
-    av_register_output_format(&_3gp_muxer);
-    av_register_output_format(&mp4_muxer);
-    av_register_output_format(&psp_muxer);
-    av_register_output_format(&_3g2_muxer);
-    return 0;
-}
+#endif

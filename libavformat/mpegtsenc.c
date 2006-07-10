@@ -22,7 +22,6 @@
 
 /* write DVB SI sections */
 
-#ifdef CONFIG_MUXERS
 /*********************************************/
 /* mpegts section writer */
 
@@ -673,4 +672,3 @@ AVOutputFormat mpegts_muxer = {
     mpegts_write_packet,
     mpegts_write_end,
 };
-#endif // CONFIG_MUXERS

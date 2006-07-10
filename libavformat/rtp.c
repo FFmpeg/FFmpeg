@@ -872,9 +872,3 @@ AVOutputFormat rtp_muxer = {
     rtp_write_packet,
     rtp_write_trailer,
 };
-
-int rtp_init(void)
-{
-    av_register_output_format(&rtp_muxer);
-    return 0;
-}

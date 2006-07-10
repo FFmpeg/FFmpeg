@@ -108,11 +108,11 @@ typedef struct {
 static const int lpcm_freq_tab[4] = { 48000, 96000, 44100, 32000 };
 
 #ifdef CONFIG_MUXERS
-static AVOutputFormat mpeg1system_muxer;
-static AVOutputFormat mpeg1vcd_muxer;
-static AVOutputFormat mpeg2vob_muxer;
-static AVOutputFormat mpeg2svcd_muxer;
-static AVOutputFormat mpeg2dvd_muxer;
+AVOutputFormat mpeg1system_muxer;
+AVOutputFormat mpeg1vcd_muxer;
+AVOutputFormat mpeg2vob_muxer;
+AVOutputFormat mpeg2svcd_muxer;
+AVOutputFormat mpeg2dvd_muxer;
 
 static int put_pack_header(AVFormatContext *ctx,
                            uint8_t *buf, int64_t timestamp)
@@ -1712,8 +1712,8 @@ static int64_t mpegps_read_dts(AVFormatContext *s, int stream_index,
     return dts;
 }
 
-#ifdef CONFIG_MUXERS
-static AVOutputFormat mpeg1system_muxer = {
+#ifdef CONFIG_MPEG1SYSTEM_MUXER
+AVOutputFormat mpeg1system_muxer = {
     "mpeg",
     "MPEG1 System format",
     "video/mpeg",
@@ -1725,8 +1725,9 @@ static AVOutputFormat mpeg1system_muxer = {
     mpeg_mux_write_packet,
     mpeg_mux_end,
 };
-
-static AVOutputFormat mpeg1vcd_muxer = {
+#endif
+#ifdef CONFIG_MPEG1VCD_MUXER
+AVOutputFormat mpeg1vcd_muxer = {
     "vcd",
     "MPEG1 System format (VCD)",
     "video/mpeg",
@@ -1738,8 +1739,9 @@ static AVOutputFormat mpeg1vcd_muxer = {
     mpeg_mux_write_packet,
     mpeg_mux_end,
 };
-
-static AVOutputFormat mpeg2vob_muxer = {
+#endif
+#ifdef CONFIG_MPEG2VOB_MUXER
+AVOutputFormat mpeg2vob_muxer = {
     "vob",
     "MPEG2 PS format (VOB)",
     "video/mpeg",
@@ -1751,9 +1753,11 @@ static AVOutputFormat mpeg2vob_muxer = {
     mpeg_mux_write_packet,
     mpeg_mux_end,
 };
+#endif
 
-/* Same as mpeg2vob_muxer except that the pack size is 2324 */
-static AVOutputFormat mpeg2svcd_muxer = {
+/* Same as mpeg2vob_mux except that the pack size is 2324 */
+#ifdef CONFIG_MPEG2SVCD_MUXER
+AVOutputFormat mpeg2svcd_muxer = {
     "svcd",
     "MPEG2 PS format (VOB)",
     "video/mpeg",
@@ -1765,9 +1769,11 @@ static AVOutputFormat mpeg2svcd_muxer = {
     mpeg_mux_write_packet,
     mpeg_mux_end,
 };
+#endif
 
-/*  Same as mpeg2vob_muxer except the 'is_dvd' flag is set to produce NAV pkts */
-static AVOutputFormat mpeg2dvd_muxer = {
+/*  Same as mpeg2vob_mux except the 'is_dvd' flag is set to produce NAV pkts */
+#ifdef CONFIG_MPEG2DVD_MUXER
+AVOutputFormat mpeg2dvd_muxer = {
     "dvd",
     "MPEG2 PS format (DVD VOB)",
     "video/mpeg",
@@ -1779,9 +1785,9 @@ static AVOutputFormat mpeg2dvd_muxer = {
     mpeg_mux_write_packet,
     mpeg_mux_end,
 };
+#endif
 
-#endif //CONFIG_MUXERS
-
+#ifdef CONFIG_MPEGPS_DEMUXER
 AVInputFormat mpegps_demuxer = {
     "mpeg",
     "MPEG PS format",
@@ -1794,16 +1800,4 @@ AVInputFormat mpegps_demuxer = {
     mpegps_read_dts,
     .flags = AVFMT_SHOW_IDS,
 };
-
-int mpegps_init(void)
-{
-#ifdef CONFIG_MUXERS
-    av_register_output_format(&mpeg1system_muxer);
-    av_register_output_format(&mpeg1vcd_muxer);
-    av_register_output_format(&mpeg2vob_muxer);
-    av_register_output_format(&mpeg2svcd_muxer);
-    av_register_output_format(&mpeg2dvd_muxer);
-#endif //CONFIG_MUXERS
-    av_register_input_format(&mpegps_demuxer);
-    return 0;
-}
+#endif

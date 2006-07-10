@@ -761,7 +761,8 @@ static int ffm_probe(AVProbeData *p)
     return 0;
 }
 
-static AVInputFormat ffm_demuxer = {
+#ifdef CONFIG_FFM_DEMUXER
+AVInputFormat ffm_demuxer = {
     "ffm",
     "ffm format",
     sizeof(FFMContext),
@@ -771,9 +772,9 @@ static AVInputFormat ffm_demuxer = {
     ffm_read_close,
     ffm_seek,
 };
-
-#ifdef CONFIG_MUXERS
-static AVOutputFormat ffm_muxer = {
+#endif
+#ifdef CONFIG_FFM_MUXER
+AVOutputFormat ffm_muxer = {
     "ffm",
     "ffm format",
     "",
@@ -786,13 +787,4 @@ static AVOutputFormat ffm_muxer = {
     ffm_write_packet,
     ffm_write_trailer,
 };
-#endif //CONFIG_MUXERS
-
-int ffm_init(void)
-{
-    av_register_input_format(&ffm_demuxer);
-#ifdef CONFIG_MUXERS
-    av_register_output_format(&ffm_muxer);
-#endif //CONFIG_MUXERS
-    return 0;
-}
+#endif //CONFIG_FFM_MUXER
