@@ -54,12 +54,6 @@ VHOOK=videohook
 INSTALLVHOOK=install-vhook
 endif
 
-ifeq ($(TARGET_OS), SunOS)
-TEST=/usr/bin/test
-else
-TEST=test
-endif
-
 ifeq ($(BUILD_DOC),yes)
 DOC=documentation
 endif
@@ -206,7 +200,7 @@ endif
 
 .libs: lib
 	@test -f .libs || touch .libs
-	@for i in $(DEP_LIBS) ; do if $(TEST) $$i -nt .libs ; then touch .libs; fi ; done
+	@for i in $(DEP_LIBS) ; do if test $$i -nt .libs ; then touch .libs; fi ; done
 
 clean:
 	$(MAKE) -C libavutil   clean
