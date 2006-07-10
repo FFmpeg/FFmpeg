@@ -1048,6 +1048,9 @@ if test $tune != "generic"; then
         i[3456]86|pentium|pentiumpro|pentium-mmx|pentium[234]|prescott|k6|k6-[23]|athlon|athlon-tbird|athlon-4|athlon-[mx]p|winchip-c6|winchip2|c3|nocona|athlon64|k8|opteron|athlon-fx)
             CFLAGS="$CFLAGS -march=$tune"
         ;;
+        sparc64)
+            CFLAGS="$CFLAGS -mcpu=ultrasparc -mtune=ultrasparc"
+        ;;
         *)
         echo "WARNING: Unknown CPU \"$tune\", ignored."
         ;;

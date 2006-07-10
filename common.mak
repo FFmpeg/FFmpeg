@@ -15,11 +15,6 @@ CFLAGS+=-p
 LDFLAGS+=-p
 endif
 
-#FIXME: This should be in configure/config.mak
-ifeq ($(TARGET_ARCH_SPARC64),yes)
-CFLAGS+= -mcpu=ultrasparc -mtune=ultrasparc
-endif
-
 SRCS := $(OBJS:.o=.c) $(ASM_OBJS:.o=.S) $(CPPOBJS:.o=.cpp)
 OBJS := $(OBJS) $(ASM_OBJS) $(CPPOBJS)
 STATIC_OBJS := $(OBJS) $(STATIC_OBJS)
