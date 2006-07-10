@@ -1166,6 +1166,7 @@ EOF
     if test "$mingwce" = "yes"; then
         protocols="no"
     fi
+    LDFLAGS=-Wl,--output-def,$(@:.dll=.def),--out-implib,lib$(SLIBNAME:$(SLIBSUF)=.dll.a)
     SLIBPREF=""
     SLIBSUF=".dll"
     EXESUF=".exe"

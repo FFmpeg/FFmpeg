@@ -5,11 +5,6 @@
 SRC_DIR = $(SRC_PATH)/lib$(NAME)
 VPATH = $(SRC_DIR)
 
-#FIXME: This should be in configure/config.mak
-ifeq ($(CONFIG_WIN32),yes)
-LDFLAGS = -Wl,--output-def,$(@:.dll=.def),--out-implib,lib$(SLIBNAME:$(SLIBSUF)=.dll.a)
-endif
-
 ifeq ($(TARGET_GPROF),yes)
 CFLAGS+=-p
 LDFLAGS+=-p
