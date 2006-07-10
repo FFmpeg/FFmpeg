@@ -1079,7 +1079,7 @@ if test $tune != "generic"; then
             CFLAGS="$CFLAGS -march=$tune"
         ;;
         sparc64)
-            CFLAGS="$CFLAGS -mcpu=ultrasparc -mtune=ultrasparc"
+            CFLAGS="$CFLAGS -mcpu=v9 -mtune=v9"
         ;;
         *)
         echo "WARNING: Unknown CPU \"$tune\", ignored."
