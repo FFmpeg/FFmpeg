@@ -11,11 +11,6 @@ CFLAGS=$(OPTFLAGS) -I. -I$(SRC_PATH) -I$(SRC_PATH)/libavutil \
        -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_GNU_SOURCE
 LDFLAGS+= -g
 
-ifeq ($(TARGET_GPROF),yes)
-CFLAGS+=-p
-LDFLAGS+=-p
-endif
-
 MANPAGES=doc/ffmpeg.1
 PROGS_G+=ffmpeg_g$(EXESUF)
 PROGS+=ffmpeg$(EXESUF)

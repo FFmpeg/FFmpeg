@@ -1448,6 +1448,11 @@ if test "$lshared" = "yes" ; then
     fi
 fi
 
+if test "$gprof" = "yes" ; then
+    CFLAGS="$CFLAGS -p"
+    LDFLAGS="$LDFLAGS -p"
+fi
+
 if test x"$bindir" = x""; then
     bindir="${prefix}/bin"
 fi
@@ -1680,7 +1685,6 @@ if test "$altivec" = "yes" ; then
   fi
 fi
 if test "$gprof" = "yes" ; then
-  echo "TARGET_GPROF=yes" >> config.mak
   echo "#define HAVE_GPROF 1" >> $TMPH
 fi
 if test "$localtime_r" = "yes" ; then
