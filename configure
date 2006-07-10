@@ -847,6 +847,35 @@ else
     logfile=/dev/null
 fi
 
+if test "$mingw32" = "yes" -o "$mingwce" = "yes"; then
+    if test "$lshared" = "yes" && test "$lstatic" = "yes" ; then
+        cat <<EOF
+You can only build one library type at once on MinGW.
+Specify --disable-static --enable-shared to only build
+the shared libraries. To build only the static libraries
+you do not need to pass additional options.
+EOF
+        exit 1
+    fi
+    v4l="no"
+    v4l2="no"
+    bktr="no"
+    audio_oss="no"
+    dv1394="no"
+    dc1394="no"
+    ffserver="no"
+    network="no"
+    if test "$mingwce" = "yes"; then
+        protocols="no"
+    fi
+    LDFLAGS=-Wl,--output-def,$(@:.dll=.def),--out-implib,lib$(SLIBNAME:$(SLIBSUF)=.dll.a)
+    SLIBPREF=""
+    SLIBSUF=".dll"
+    EXESUF=".exe"
+    if test "$force_prefix" != yes; then prefix="$PROGRAMFILES/FFmpeg"; fi
+    if test "$force_libdir" != yes; then bindir="$prefix"; fi
+fi
+
 # Combine FFLDFLAGS and the LDFLAGS environment variable
 LDFLAGS="$FFLDFLAGS $LDFLAGS"
 
@@ -1144,35 +1173,6 @@ _m_femms();
 return 0;
 }
 EOF
-
-if test "$mingw32" = "yes" -o "$mingwce" = "yes"; then
-    if test "$lshared" = "yes" && test "$lstatic" = "yes" ; then
-        cat <<EOF
-You can only build one library type at once on MinGW.
-Specify --disable-static --enable-shared to only build
-the shared libraries. To build only the static libraries
-you do not need to pass additional options.
-EOF
-        exit 1
-    fi
-    v4l="no"
-    v4l2="no"
-    bktr="no"
-    audio_oss="no"
-    dv1394="no"
-    dc1394="no"
-    ffserver="no"
-    network="no"
-    if test "$mingwce" = "yes"; then
-        protocols="no"
-    fi
-    LDFLAGS=-Wl,--output-def,$(@:.dll=.def),--out-implib,lib$(SLIBNAME:$(SLIBSUF)=.dll.a)
-    SLIBPREF=""
-    SLIBSUF=".dll"
-    EXESUF=".exe"
-    if test "$force_prefix" != yes; then prefix="$PROGRAMFILES/FFmpeg"; fi
-    if test "$force_libdir" != yes; then bindir="$prefix"; fi
-fi
 
 # ---
 # big/little-endian test
