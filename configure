@@ -869,7 +869,7 @@ EOF
         protocols="no"
     fi
     #FIXME: This ignores --extra-ldflags.
-    FFLDFLAGS=-Wl,--output-def,$(@:.dll=.def),--out-implib,lib$(SLIBNAME:$(SLIBSUF)=.dll.a)
+    FFLDFLAGS='-Wl,--output-def,$(@:.dll=.def),--out-implib,lib$(SLIBNAME:$(SLIBSUF)=.dll.a)'
     SLIBPREF=""
     SLIBSUF=".dll"
     EXESUF=".exe"
