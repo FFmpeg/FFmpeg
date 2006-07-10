@@ -1,52 +1,22 @@
 
 include ../config.mak
 
-SWSLIB = libswscale.a
+NAME=swscale
+ifeq ($(BUILD_SHARED),yes)
+LIBVERSION=$(SWSVERSION)
+LIBMAJOR=$(SWSMAJOR)
+endif
 
-SWSSRCS=swscale.c rgb2rgb.c yuv2rgb.c
+# NOTE: -I.. is needed to include config.h
+CFLAGS=$(OPTFLAGS) -I.. -I$(SRC_PATH) -I$(SRC_PATH)/libavutil \
+       -DHAVE_AV_CONFIG_H -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE \
+       -D_GNU_SOURCE
 
-SWSOBJS=$(SWSSRCS:.c=.o)
-
+OBJS= swscale.o rgb2rgb.o yuv2rgb.o
 ifeq ($(TARGET_ALTIVEC),yes)
-SWSOBJS +=  yuv2rgb_altivec.o
+OBJS+=  yuv2rgb_altivec.o
 endif
 
-CFLAGS  = $(OPTFLAGS) $(MLIB_INC) -I. -I.. $(EXTRA_INC)
-# -I/usr/X11R6/include/
+HEADERS = swscale.h rgb2rgb.h
 
-.SUFFIXES: .c .o
-
-# .PHONY: all clean
-
-.c.o:
-	$(CC) -c $(CFLAGS) -I.. -o $@ $<
-
-all:    $(SWSLIB)
-
-$(SWSLIB):     $(SWSOBJS)
-	$(AR) r $(SWSLIB) $(SWSOBJS)
-	$(RANLIB) $(SWSLIB)
-
-clean:
-	rm -f *.o *.a *~ *.so cs_test swscale-example
-
-distclean: clean
-	rm -f .depend
-
-dep:    depend
-
-depend:
-	$(CC) -MM $(CFLAGS) $(SWSSRCS) 1>.depend
-
-cs_test: cs_test.o $(SWSLIB)
-	$(CC) cs_test.o $(SWSLIB) ../cpudetect.o -DFOR_MENCODER ../mp_msg.c -o cs_test -W -Wall
-
-swscale-example: swscale-example.o $(SWSLIB)
-	$(CC) swscale-example.o $(SWSLIB) ../libmpcodecs/img_format.o -lm -o swscale-example -W -Wall
-#
-# include dependency files if they exist
-#
-ifneq ($(wildcard .depend),)
-include .depend
-endif
-
+include $(SRC_PATH)/common.mak
