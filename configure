@@ -662,7 +662,8 @@ for opt do
   FFMPEG_CONFIGURATION="$FFMPEG_CONFIGURATION""$opt "
 done
 
-CODEC_LIST=`grep 'register_avcodec(&[a-z]' $source_path/libavcodec/allcodecs.c  | sed 's/.*&\(.*\)).*/\1/'`
+ENCODER_LIST=`grep 'register_avcodec(&[a-z]_encoder)' $source_path/libavcodec/allcodecs.c  | sed 's/.*&\(.*\)).*/\1/'`
+DECODER_LIST=`grep 'register_avcodec(&[a-z]_decoder)' $source_path/libavcodec/allcodecs.c  | sed 's/.*&\(.*\)).*/\1/'`
 PARSER_LIST=`grep 'av_register_codec_parser(&[a-z]' $source_path/libavcodec/allcodecs.c  | sed 's/.*&\(.*\)).*/\1/'`
 MUXER_LIST=`grep 'av_register_output_format(&[a-z]' $source_path/libavformat/allformats.c  | sed 's/.*&\(.*\)).*/\1/'`
 DEMUXER_LIST=`grep 'av_register_input_format(&[a-z]' $source_path/libavformat/allformats.c  | sed 's/.*&\(.*\)).*/\1/'`
@@ -811,17 +812,17 @@ for opt do
   ;;
   --disable-strip) dostrip="no"
   ;;
-  --enable-encoder=*) CODEC_LIST="$CODEC_LIST ${opt#--enable-encoder=}_encoder"
+  --enable-encoder=*) ENCODER_LIST="$ENCODER_LIST ${opt#--enable-encoder=}_encoder"
   ;;
-  --enable-decoder=*) CODEC_LIST="$CODEC_LIST ${opt#--enable-decoder=}_decoder"
+  --enable-decoder=*) DECODER_LIST="$DECODER_LIST ${opt#--enable-decoder=}_decoder"
   ;;
-  --disable-encoder=*) CODEC_LIST="`echo $CODEC_LIST | sed -e \"s#${opt#--disable-encoder=}_encoder##\"`"
+  --disable-encoder=*) ENCODER_LIST="`echo $ENCODER_LIST | sed -e \"s#${opt#--disable-encoder=}_encoder##\"`"
   ;;
-  --disable-decoder=*) CODEC_LIST="`echo $CODEC_LIST | sed -e \"s#${opt#--disable-decoder=}_decoder##\"`"
+  --disable-decoder=*) DECODER_LIST="`echo $DECODER_LIST | sed -e \"s#${opt#--disable-decoder=}_decoder##\"`"
   ;;
-  --disable-encoders) CODEC_LIST="`echo $CODEC_LIST | sed 's/[-_a-zA-Z0-9]*encoder//g'`"
+  --disable-encoders) ENCODER_LIST=""
   ;;
-  --disable-decoders) CODEC_LIST="`echo $CODEC_LIST | sed 's/[-_a-zA-Z0-9]*decoder//g'`"
+  --disable-decoders) DECODER_LIST=""
   ;;
   --enable-muxer=*) MUXER_LIST="$MUXER_LIST ${opt#*=}_muxer"
   ;;
@@ -1763,13 +1764,13 @@ fi
 echo "EXTRALIBS=$extralibs" >> config.mak
 
 # If you do not want to use encoders, disable them.
-if echo "$CODEC_LIST" | grep -q encoder; then
+if echo "$ENCODER_LIST" | grep -q encoder; then
     echo "#define CONFIG_ENCODERS 1" >> $TMPH
     echo "CONFIG_ENCODERS=yes" >> config.mak
 fi
 
 # If you do not want to use decoders, disable them.
-if echo "$CODEC_LIST" | grep -q decoder; then
+if echo "$DECODER_LIST" | grep -q decoder; then
     echo "#define CONFIG_DECODERS 1" >> $TMPH
     echo "CONFIG_DECODERS=yes" >> config.mak
 fi
@@ -2103,7 +2104,7 @@ if test "$amr_if2" = "yes" ; then
 fi
 
 
-for codec in $CODEC_LIST $PARSER_LIST $DEMUXER_LIST $MUXER_LIST; do
+for codec in $DECODER_LIST $ENCODER_LIST $PARSER_LIST $DEMUXER_LIST $MUXER_LIST; do
     echo "#define CONFIG_`echo $codec | tr a-z A-Z` 1" >> $TMPH
     echo "CONFIG_`echo $codec | tr a-z A-Z`=yes" >> config.mak
 done
