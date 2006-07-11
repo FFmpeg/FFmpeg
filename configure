@@ -299,6 +299,12 @@ require(){
     check_lib $header $func "$@" || die "ERROR: $name not found"
 }
 
+filter_out(){
+    pattern="$1"
+    shift
+    echo "$@" | sed "s%\\<$pattern\\>%%g"
+}
+
 if test x"$1" = x"-h" -o x"$1" = x"--help" ; then
     show_help
 fi
@@ -817,9 +823,9 @@ for opt do
   ;;
   --enable-decoder=*) DECODER_LIST="$DECODER_LIST ${optval}_decoder"
   ;;
-  --disable-encoder=*) ENCODER_LIST="`echo $ENCODER_LIST | sed -e \"s#${optval}_encoder##\"`"
+  --disable-encoder=*) ENCODER_LIST="`filter_out ${optval}_encoder $ENCODER_LIST`"
   ;;
-  --disable-decoder=*) DECODER_LIST="`echo $DECODER_LIST | sed -e \"s#${optval}_decoder##\"`"
+  --disable-decoder=*) DECODER_LIST="`filter_out ${optval}_decoder $DECODER_LIST`"
   ;;
   --disable-encoders) ENCODER_LIST=""
   ;;
@@ -827,19 +833,19 @@ for opt do
   ;;
   --enable-muxer=*) MUXER_LIST="$MUXER_LIST ${optval}_muxer"
   ;;
-  --disable-muxer=*) MUXER_LIST="`echo $MUXER_LIST | sed -e \"s#${opt#*=}_muxer##\"`"
+  --disable-muxer=*) MUXER_LIST="`filter_out ${optval}_muxer $MUXER_LIST`"
   ;;
   --disable-muxers) MUXER_LIST=""; ffserver="no"
   ;;
   --enable-demuxer=*) DEMUXER_LIST="$DEMUXER_LIST ${optval}_demuxer"
   ;;
-  --disable-demuxer=*) DEMUXER_LIST="`echo $DEMUXER_LIST | sed -e \"s#${optval}_demuxer##\"`"
+  --disable-demuxer=*) DEMUXER_LIST="`filter_out ${optval}_demuxer $DEMUXER_LIST`"
   ;;
   --disable-demuxers) DEMUXER_LIST=""
   ;;
   --enable-parser=*) PARSER_LIST="$PARSER_LIST ${optval}_parser"
   ;;
-  --disable-parser=*) PARSER_LIST="`echo $PARSER_LIST | sed -e \"s#${optval}_parser##\"`"
+  --disable-parser=*) PARSER_LIST="`filter_out ${optval}_parser $PARSER_LIST`"
   ;;
   --disable-parsers) PARSER_LIST=""
   ;;
