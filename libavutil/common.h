@@ -6,14 +6,6 @@
 #ifndef COMMON_H
 #define COMMON_H
 
-#if defined(WIN32) && !defined(__MINGW32__) && !defined(__CYGWIN__)
-#    define CONFIG_WIN32
-#endif
-
-#if defined(WIN32) && !defined(__MINGW32__) && !defined(__CYGWIN__) && !defined(EMULATE_INTTYPES)
-#    define EMULATE_INTTYPES
-#endif
-
 #ifndef M_PI
 #define M_PI    3.14159265358979323846
 #endif
@@ -292,19 +284,12 @@ typedef uint64_t      uint_fast64_t;
 #    include <assert.h>
 
 /* dprintf macros */
-#    if defined(CONFIG_WIN32) && !defined(__MINGW32__) && !defined(__CYGWIN__)
-
-inline void dprintf(const char* fmt,...) {}
-
-#    else
-
 #        ifdef DEBUG
 #            define dprintf(fmt,...) av_log(NULL, AV_LOG_DEBUG, fmt, __VA_ARGS__)
 #        else
 #            define dprintf(fmt,...)
 #        endif
 
-#    endif /* !CONFIG_WIN32 */
 #    ifdef CONFIG_WINCE
 #            define abort()
 #    endif
