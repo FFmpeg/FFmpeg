@@ -284,11 +284,11 @@ typedef uint64_t      uint_fast64_t;
 #    include <assert.h>
 
 /* dprintf macros */
-#        ifdef DEBUG
-#            define dprintf(fmt,...) av_log(NULL, AV_LOG_DEBUG, fmt, __VA_ARGS__)
-#        else
-#            define dprintf(fmt,...)
-#        endif
+#    ifdef DEBUG
+#        define dprintf(fmt,...) av_log(NULL, AV_LOG_DEBUG, fmt, __VA_ARGS__)
+#    else
+#        define dprintf(fmt,...)
+#    endif
 
 #    ifdef CONFIG_WINCE
 #            define abort()
