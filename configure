@@ -669,40 +669,41 @@ MUXER_LIST=`grep 'av_register_output_format(&[a-z]' $source_path/libavformat/all
 DEMUXER_LIST=`grep 'av_register_input_format(&[a-z]' $source_path/libavformat/allformats.c  | sed 's/.*&\(.*\)).*/\1/'`
 
 for opt do
+  optval="${opt#*=}"
   case "$opt" in
   --log)
   ;;
-  --log=*) logging="${opt#*=}"
+  --log=*) logging="$optval"
   ;;
-  --prefix=*) prefix=`echo $opt | cut -d '=' -f 2`; force_prefix=yes
+  --prefix=*) prefix="$optval"; force_prefix=yes
   ;;
-  --libdir=*) libdir=`echo $opt | cut -d '=' -f 2`; force_libdir=yes
+  --libdir=*) libdir="$optval"; force_libdir=yes
   ;;
-  --incdir=*) incdir=`echo $opt | cut -d '=' -f 2`;
+  --incdir=*) incdir="$optval"
   ;;
-  --mandir=*) mandir=`echo $opt | cut -d '=' -f 2`
+  --mandir=*) mandir="$optval"
   ;;
-  --source-path=*) source_path=`echo $opt | cut -d '=' -f 2`
+  --source-path=*) source_path="$optval"
   ;;
-  --cross-prefix=*) cross_prefix=`echo $opt | cut -d '=' -f 2`
+  --cross-prefix=*) cross_prefix="$optval"
   ;;
   --cross-compile) cross_compile=yes
   ;;
-  --cc=*) cc=`echo $opt | cut -d '=' -f 2-`
+  --cc=*) cc="$optval"
   ;;
-  --make=*) make=`echo $opt | cut -d '=' -f 2`
+  --make=*) make="$optval"
   ;;
-  --extra-cflags=*) CFLAGS="$CFLAGS ${opt#--extra-cflags=}"
+  --extra-cflags=*) CFLAGS="$CFLAGS $optval"
   ;;
-  --extra-ldflags=*) FFLDFLAGS="$FFLDFLAGS ${opt#--extra-ldflags=}"
+  --extra-ldflags=*) FFLDFLAGS="$FFLDFLAGS $optval"
   ;;
-  --extra-libs=*) extralibs=${opt#--extra-libs=}
+  --extra-libs=*) extralibs="$optval"
   ;;
-  --build-suffix=*) BUILDSUF=${opt#--build-suffix=}
+  --build-suffix=*) BUILDSUF="$optval"
   ;;
-  --cpu=*) cpu=`echo $opt | cut -d '=' -f 2`
+  --cpu=*) cpu="$optval"
   ;;
-  --tune=*) tune=`echo $opt | cut -d '=' -f 2`
+  --tune=*) tune="$optval"
   ;;
   --powerpc-perf-enable) powerpc_perf="yes"
   ;;
@@ -812,33 +813,33 @@ for opt do
   ;;
   --disable-strip) dostrip="no"
   ;;
-  --enable-encoder=*) ENCODER_LIST="$ENCODER_LIST ${opt#--enable-encoder=}_encoder"
+  --enable-encoder=*) ENCODER_LIST="$ENCODER_LIST ${optval}_encoder"
   ;;
-  --enable-decoder=*) DECODER_LIST="$DECODER_LIST ${opt#--enable-decoder=}_decoder"
+  --enable-decoder=*) DECODER_LIST="$DECODER_LIST ${optval}_decoder"
   ;;
-  --disable-encoder=*) ENCODER_LIST="`echo $ENCODER_LIST | sed -e \"s#${opt#--disable-encoder=}_encoder##\"`"
+  --disable-encoder=*) ENCODER_LIST="`echo $ENCODER_LIST | sed -e \"s#${optval}_encoder##\"`"
   ;;
-  --disable-decoder=*) DECODER_LIST="`echo $DECODER_LIST | sed -e \"s#${opt#--disable-decoder=}_decoder##\"`"
+  --disable-decoder=*) DECODER_LIST="`echo $DECODER_LIST | sed -e \"s#${optval}_decoder##\"`"
   ;;
   --disable-encoders) ENCODER_LIST=""
   ;;
   --disable-decoders) DECODER_LIST=""
   ;;
-  --enable-muxer=*) MUXER_LIST="$MUXER_LIST ${opt#*=}_muxer"
+  --enable-muxer=*) MUXER_LIST="$MUXER_LIST ${optval}_muxer"
   ;;
   --disable-muxer=*) MUXER_LIST="`echo $MUXER_LIST | sed -e \"s#${opt#*=}_muxer##\"`"
   ;;
   --disable-muxers) MUXER_LIST=""; ffserver="no"
   ;;
-  --enable-demuxer=*) DEMUXER_LIST="$DEMUXER_LIST ${opt#*=}_demuxer"
+  --enable-demuxer=*) DEMUXER_LIST="$DEMUXER_LIST ${optval}_demuxer"
   ;;
-  --disable-demuxer=*) DEMUXER_LIST="`echo $DEMUXER_LIST | sed -e \"s#${opt#*=}_demuxer##\"`"
+  --disable-demuxer=*) DEMUXER_LIST="`echo $DEMUXER_LIST | sed -e \"s#${optval}_demuxer##\"`"
   ;;
   --disable-demuxers) DEMUXER_LIST=""
   ;;
-  --enable-parser=*) PARSER_LIST="$PARSER_LIST ${opt#*=}_parser"
+  --enable-parser=*) PARSER_LIST="$PARSER_LIST ${optval}_parser"
   ;;
-  --disable-parser=*) PARSER_LIST="`echo $PARSER_LIST | sed -e \"s#${opt#*=}_parser##\"`"
+  --disable-parser=*) PARSER_LIST="`echo $PARSER_LIST | sed -e \"s#${optval}_parser##\"`"
   ;;
   --disable-parsers) PARSER_LIST=""
   ;;
