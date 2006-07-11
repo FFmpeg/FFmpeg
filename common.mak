@@ -42,7 +42,7 @@ depend: $(SRCS)
 dep:	depend
 
 clean::
-	rm -f *.o *.d *~ *.a *.lib *.so *.dylib *.dll \
+	rm -f *.o *.d *~ *.a *.lib *.so *.so.* *.dylib *.dll \
 	      *.lib *.def *.dll.a *.exp
 
 distclean: clean
