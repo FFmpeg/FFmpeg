@@ -25,7 +25,7 @@
 #include <SDL.h>
 #include <SDL_thread.h>
 
-#ifdef CONFIG_WIN32
+#ifdef __MINGW32__
 #undef main /* We don't want SDL to override our main() */
 #endif
 
@@ -2423,7 +2423,7 @@ int main(int argc, char **argv)
         video_disable = 1;
     }
     flags = SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER;
-#if !defined(CONFIG_WIN32) && !defined(CONFIG_DARWIN)
+#if !defined(__MINGW32__) && !defined(CONFIG_DARWIN)
     flags |= SDL_INIT_EVENTTHREAD; /* Not supported on win32 or darwin */
 #endif
     if (SDL_Init (flags)) {

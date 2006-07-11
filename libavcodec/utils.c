@@ -33,7 +33,7 @@
 #include <stdarg.h>
 #include <limits.h>
 #include <float.h>
-#ifdef CONFIG_WIN32
+#ifdef __MINGW32__
 #include <fcntl.h>
 #endif
 
@@ -1417,7 +1417,7 @@ unsigned int av_xiphlacing(unsigned char *s, unsigned int v)
  * and opened file name in **filename. */
 int av_tempfile(char *prefix, char **filename) {
     int fd=-1;
-#ifdef CONFIG_WIN32
+#ifdef __MINGW32__
     *filename = tempnam(".", prefix);
 #else
     size_t len = strlen(prefix) + 12; /* room for "/tmp/" and "XXXXXX\0" */
@@ -1428,7 +1428,7 @@ int av_tempfile(char *prefix, char **filename) {
         av_log(NULL, AV_LOG_ERROR, "ff_tempfile: Cannot allocate file name\n");
         return -1;
     }
-#ifdef CONFIG_WIN32
+#ifdef __MINGW32__
     fd = open(*filename, _O_RDWR | _O_BINARY | _O_CREAT, 0444);
 #else
     snprintf(*filename, len, "/tmp/%sXXXXXX", prefix);

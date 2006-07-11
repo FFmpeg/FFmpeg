@@ -124,7 +124,7 @@ wininstaller: all install
 
 # install man from source dir if available
 install-man:
-ifneq ($(CONFIG_WIN32),yes)
+ifneq ($(CONFIG_MINGW),yes)
 	if [ -f doc/ffmpeg.1 ] ; then \
 	    install -d "$(mandir)/man1" ; \
 	    install -m 644 $(MANPAGES) "$(mandir)/man1" ; \
@@ -159,7 +159,7 @@ uninstall-progs:
 	rm -f $(addprefix $(bindir)/, $(ALLPROGS))
 
 uninstall-man:
-ifneq ($(CONFIG_WIN32),yes)
+ifneq ($(CONFIG_MINGW),yes)
 	rm -f $(addprefix $(mandir)/man1/,$(ALLMANPAGES))
 endif
 

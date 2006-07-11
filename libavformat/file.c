@@ -18,14 +18,14 @@
  */
 #include "avformat.h"
 #include <fcntl.h>
-#ifndef CONFIG_WIN32
+#ifndef __MINGW32__
 #include <unistd.h>
 #include <sys/ioctl.h>
 #include <sys/time.h>
 #else
 #include <io.h>
 #define open(fname,oflag,pmode) _open(fname,oflag,pmode)
-#endif /* CONFIG_WIN32 */
+#endif /* __MINGW32__ */
 
 
 /* standard file protocol */
@@ -44,7 +44,7 @@ static int file_open(URLContext *h, const char *filename, int flags)
     } else {
         access = O_RDONLY;
     }
-#if defined(CONFIG_WIN32) || defined(CONFIG_OS2) || defined(__CYGWIN__)
+#if defined(__MINGW32__) || defined(CONFIG_OS2) || defined(__CYGWIN__)
     access |= O_BINARY;
 #endif
     fd = open(filename, access, 0666);
@@ -70,7 +70,7 @@ static int file_write(URLContext *h, unsigned char *buf, int size)
 static offset_t file_seek(URLContext *h, offset_t pos, int whence)
 {
     int fd = (size_t)h->priv_data;
-#if defined(CONFIG_WIN32) && !defined(__CYGWIN__)
+#if defined(__MINGW32__)
     return _lseeki64(fd, pos, whence);
 #else
     return lseek(fd, pos, whence);
@@ -103,7 +103,7 @@ static int pipe_open(URLContext *h, const char *filename, int flags)
     } else {
         fd = 0;
     }
-#if defined(CONFIG_WIN32) || defined(CONFIG_OS2) || defined(__CYGWIN__)
+#if defined(__MINGW32__) || defined(CONFIG_OS2) || defined(__CYGWIN__)
     setmode(fd, O_BINARY);
 #endif
     h->priv_data = (void *)(size_t)fd;

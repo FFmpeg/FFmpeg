@@ -1930,8 +1930,7 @@ if test "$x264" = "yes" ; then
 fi
 
 if test "$mingw32" = "yes" ; then
-  echo "#define CONFIG_WIN32 1" >> $TMPH
-  echo "CONFIG_WIN32=yes" >> config.mak
+  echo "CONFIG_MINGW=yes" >> config.mak
   echo "HAVE_W32THREADS=yes" >> config.mak
   echo "#define HAVE_W32THREADS 1" >> $TMPH
   echo "#define HAVE_THREADS 1" >> $TMPH
@@ -1941,8 +1940,7 @@ if test "$mingw32" = "yes" ; then
 fi
 
 if test "$mingwce" = "yes" ; then
-  echo "#define CONFIG_WIN32 1" >> $TMPH
-  echo "CONFIG_WIN32=yes" >> config.mak
+  echo "CONFIG_MINGW=yes" >> config.mak
   echo "#define CONFIG_WINCE 1" >> $TMPH
   echo "CONFIG_WINCE=yes" >> config.mak
   echo "#ifndef __MINGW32__" >> $TMPH

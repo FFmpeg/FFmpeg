@@ -23,7 +23,7 @@
 #include "dsputil.h"
 #include "opt.h"
 
-#ifndef CONFIG_WIN32
+#ifndef __MINGW32__
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
@@ -317,7 +317,7 @@ typedef struct AVInputFile {
     int nb_streams;       /* nb streams we are aware of */
 } AVInputFile;
 
-#ifndef CONFIG_WIN32
+#ifndef __MINGW32__
 
 /* init terminal so that we can grab keys */
 static struct termios oldtty;
@@ -1896,7 +1896,7 @@ static int av_encode(AVFormatContext **output_files,
         }
     }
 
-#ifndef CONFIG_WIN32
+#ifndef __MINGW32__
     if ( !using_stdin && verbose >= 0) {
         fprintf(stderr, "Press [q] to stop encoding\n");
         url_set_interrupt_cb(decode_interrupt_cb);
@@ -3585,7 +3585,7 @@ static void opt_pass(const char *pass_str)
     do_pass = pass;
 }
 
-#if defined(CONFIG_WIN32) || defined(CONFIG_OS2)
+#if defined(__MINGW32__) || defined(CONFIG_OS2)
 static int64_t getutime(void)
 {
   return av_gettime();
@@ -4299,7 +4299,7 @@ int main(int argc, char **argv)
     powerpc_display_perf_report();
 #endif /* POWERPC_PERFORMANCE_REPORT */
 
-#ifndef CONFIG_WIN32
+#ifndef __MINGW32__
     if (received_sigterm) {
         fprintf(stderr,
             "Received signal %d: terminating.\n",

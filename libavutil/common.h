@@ -95,7 +95,7 @@
     typedef unsigned short uint16_t;
     typedef unsigned int   uint32_t;
 
-#   ifdef CONFIG_WIN32
+#   ifdef __MINGW32__
         typedef signed __int64   int64_t;
         typedef unsigned __int64 uint64_t;
 #   else /* other OS */
@@ -178,7 +178,7 @@ typedef uint64_t      uint_fast64_t;
 #    endif
 #endif
 
-#ifdef CONFIG_WIN32
+#ifdef __MINGW32__
 
 /* windows */
 
@@ -209,7 +209,7 @@ typedef uint64_t      uint_fast64_t;
 
 #    endif
 
-/* CONFIG_WIN32 end */
+/* __MINGW32__ end */
 #elif defined (CONFIG_OS2)
 /* OS/2 EMX */
 
@@ -245,7 +245,7 @@ typedef uint64_t      uint_fast64_t;
 #        endif
 #    endif /* HAVE_AV_CONFIG_H */
 
-#endif /* !CONFIG_WIN32 && !CONFIG_OS2 */
+#endif /* !__MINGW32__ && !CONFIG_OS2 */
 
 #ifdef HAVE_AV_CONFIG_H
 
@@ -588,7 +588,7 @@ tend= read_time();\
 /* btw, rintf() is existing on fbsd too -- alex */
 static always_inline long int lrintf(float x)
 {
-#ifdef CONFIG_WIN32
+#ifdef __MINGW32__
 #  ifdef ARCH_X86
     int32_t i;
     asm volatile(
@@ -602,7 +602,7 @@ static always_inline long int lrintf(float x)
 #  endif /* ARCH_X86 */
 #else
     return (int)(rint(x));
-#endif /* CONFIG_WIN32 */
+#endif /* __MINGW32__ */
 }
 #else
 #ifndef _ISOC9X_SOURCE

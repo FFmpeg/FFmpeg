@@ -22,7 +22,7 @@ $(SLIBNAME): $(SLIBNAME_WITH_MAJOR)
 
 $(SLIBNAME_WITH_MAJOR): $(SHARED_OBJS)
 	$(CC) $(SHFLAGS) $(LDFLAGS) -o $@ $^ $(EXTRALIBS) $(EXTRAOBJS)
-ifeq ($(CONFIG_WIN32),yes)
+ifeq ($(CONFIG_MINGW),yes)
 	-lib /machine:i386 /def:$(@:.dll=.def)
 endif
 
@@ -61,7 +61,7 @@ install-libs: $(INSTLIBTARGETS)
 
 install-lib-shared: $(SLIBNAME)
 	install -d "$(libdir)"
-ifeq ($(CONFIG_WIN32),yes)
+ifeq ($(CONFIG_MINGW),yes)
 	install $(INSTALLSTRIP) -m 755 $(SLIBNAME) "$(prefix)"
 else
 	install $(INSTALLSTRIP) -m 755 $(SLIBNAME) \
@@ -85,7 +85,7 @@ install-headers:
 uninstall: uninstall-libs uninstall-headers
 
 uninstall-libs:
-ifeq ($(CONFIG_WIN32),yes)
+ifeq ($(CONFIG_MINGW),yes)
 	-rm -f $(prefix)/$(SLIBNAME)
 else
 	-rm -f $(libdir)/$(SLIBNAME_WITH_MAJOR) \

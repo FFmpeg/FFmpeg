@@ -20,7 +20,7 @@
 #include "avformat.h"
 #if defined(CONFIG_WINCE)
 /* Skip includes on WinCE. */
-#elif defined(CONFIG_WIN32)
+#elif defined(__MINGW32__)
 #include <sys/types.h>
 #include <sys/timeb.h>
 #elif defined(CONFIG_OS2)
@@ -40,7 +40,7 @@ int64_t av_gettime(void)
 {
 #if defined(CONFIG_WINCE)
     return timeGetTime() * int64_t_C(1000);
-#elif defined(CONFIG_WIN32)
+#elif defined(__MINGW32__)
     struct timeb tb;
     _ftime(&tb);
     return ((int64_t)tb.time * int64_t_C(1000) + (int64_t)tb.millitm) * int64_t_C(1000);
