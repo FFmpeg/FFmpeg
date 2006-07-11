@@ -441,7 +441,7 @@ AVInputFormat aiff_demuxer = {
 };
 #endif
 
-#ifdef CONFIG_AIFF_DEMUXER
+#ifdef CONFIG_AIFF_MUXER
 AVOutputFormat aiff_muxer = {
     "aiff",
     "Audio IFF",
