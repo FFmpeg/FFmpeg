@@ -288,7 +288,7 @@ check_lib(){
 }
 
 check_exec(){
-    check_ld "$@" && { test "$cross_compile" = yes || $TMPE 2>&1 >>$logfile; }
+    check_ld "$@" && { test "$cross_compile" = yes || $TMPE >>$logfile 2>&1; }
 }
 
 require(){
