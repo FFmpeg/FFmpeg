@@ -227,7 +227,6 @@ OBJS-$(CONFIG_AC3)$(CONFIG_A52BIN)     += liba52/bit_allocate.o \
 
 # currently using libdts for dts decoding
 OBJS-$(CONFIG_DTS)                     += dtsdec.o
-CFLAGS-$(CONFIG_DTS)                   += $(DTS_INC)
 
 OBJS-$(AMR)                            += amr.o
 OBJS-$(AMR_NB)                         += amr_float/sp_dec.o     \
@@ -319,7 +318,6 @@ sparc/dsputil_vis.o: CFLAGS += -mcpu=ultrasparc -mtune=ultrasparc
 
 # sun mediaLib specific stuff
 OBJS-$(HAVE_MLIB)                      += mlib/dsputil_mlib.o
-CFLAGS-$(HAVE_MLIB)                    += $(MLIB_INC)
 
 # alpha specific stuff
 OBJS-$(TARGET_ARCH_ALPHA)              += alpha/dsputil_alpha.o     \
