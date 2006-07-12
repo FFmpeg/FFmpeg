@@ -540,7 +540,7 @@ void avcodec_register_all(void)
 #endif //CONFIG_FLASHSV_DECODER
 #endif /* CONFIG_DECODERS */
 
-#if defined(AMR_NB) || defined(AMR_NB_FIXED)
+#if defined(CONFIG_AMR_NB) || defined(CONFIG_AMR_NB_FIXED)
 #ifdef CONFIG_AMR_NB_DECODER
     register_avcodec(&amr_nb_decoder);
 #endif //CONFIG_AMR_NB_DECODER
@@ -549,9 +549,9 @@ void avcodec_register_all(void)
     register_avcodec(&amr_nb_encoder);
 #endif //CONFIG_AMR_NB_ENCODER
 #endif //CONFIG_ENCODERS
-#endif /* AMR_NB || AMR_NB_FIXED */
+#endif /* CONFIG_AMR_NB || CONFIG_AMR_NB_FIXED */
 
-#ifdef AMR_WB
+#ifdef CONFIG_AMR_WB
 #ifdef CONFIG_AMR_WB_DECODER
     register_avcodec(&amr_wb_decoder);
 #endif //CONFIG_AMR_WB_DECODER
@@ -560,7 +560,7 @@ void avcodec_register_all(void)
     register_avcodec(&amr_wb_encoder);
 #endif //CONFIG_AMR_WB_ENCODER
 #endif //CONFIG_ENCODERS
-#endif /* AMR_WB */
+#endif /* CONFIG_AMR_WB */
 
 #ifdef CONFIG_BMP_DECODER
     register_avcodec(&bmp_decoder);

@@ -228,18 +228,18 @@ OBJS-$(CONFIG_AC3)$(CONFIG_A52BIN)     += liba52/bit_allocate.o \
 # currently using libdts for dts decoding
 OBJS-$(CONFIG_DTS)                     += dtsdec.o
 
-OBJS-$(AMR)                            += amr.o
-OBJS-$(AMR_NB)                         += amr_float/sp_dec.o     \
+OBJS-$(CONFIG_AMR)                     += amr.o
+OBJS-$(CONFIG_AMR_NB)                  += amr_float/sp_dec.o     \
                                           amr_float/sp_enc.o     \
                                           amr_float/interf_dec.o \
                                           amr_float/interf_enc.o
 
-ifeq ($(AMR_NB_FIXED),yes)
+ifeq ($(CONFIG_AMR_NB_FIXED),yes)
 EXTRAOBJS += amr/*.o
 EXTRADEPS=amrlibs
 endif
 
-OBJS-$(AMR_WB)                        +=  amrwb_float/dec_acelp.o \
+OBJS-$(CONFIG_AMR_WB)                 +=  amrwb_float/dec_acelp.o \
                                           amrwb_float/dec_dtx.o   \
                                           amrwb_float/dec_gain.o  \
                                           amrwb_float/dec_if.o    \

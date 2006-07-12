@@ -2066,13 +2066,13 @@ echo "SRC_PATH=$source_path" >> config.mak
 echo "BUILD_ROOT=$PWD" >> config.mak
 
 if test "$amr" = "yes" ; then
-  echo "#define AMR 1" >> $TMPH
-  echo "AMR=yes" >> config.mak
+  echo "#define CONFIG_AMR 1" >> $TMPH
+  echo "CONFIG_AMR=yes" >> config.mak
 fi
 
 if test "$amr_wb" = "yes" ; then
-  echo "#define AMR_WB 1" >> $TMPH
-  echo "AMR_WB=yes" >> config.mak
+  echo "#define CONFIG_AMR_WB 1" >> $TMPH
+  echo "CONFIG_AMR_WB=yes" >> config.mak
   echo
   echo "AMR WB FLOAT NOTICE ! Make sure you have downloaded TS26.204"
   echo "V5.1.0 from "
@@ -2081,8 +2081,8 @@ if test "$amr_wb" = "yes" ; then
 fi
 
 if test "$amr_nb" = "yes" ; then
-  echo "#define AMR_NB 1" >> $TMPH
-  echo "AMR_NB=yes" >> config.mak
+  echo "#define CONFIG_AMR_NB 1" >> $TMPH
+  echo "CONFIG_AMR_NB=yes" >> config.mak
   echo
   echo "AMR NB FLOAT NOTICE ! Make sure you have downloaded TS26.104"
   echo "REL-5 V5.1.0 from "
@@ -2092,8 +2092,8 @@ if test "$amr_nb" = "yes" ; then
 fi
 
 if test "$amr_nb_fixed" = "yes" ; then
-  echo "#define AMR_NB_FIXED 1" >> $TMPH
-  echo "AMR_NB_FIXED=yes" >> config.mak
+  echo "#define CONFIG_AMR_NB_FIXED 1" >> $TMPH
+  echo "CONFIG_AMR_NB_FIXED=yes" >> config.mak
   echo
   echo "AMR NB FIXED POINT NOTICE! Make sure you have downloaded TS26.073 "
   echo "REL-5 version 5.1.0 from "

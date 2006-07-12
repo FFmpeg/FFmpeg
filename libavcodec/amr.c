@@ -55,7 +55,7 @@
 
 #include "avcodec.h"
 
-#ifdef AMR_NB_FIXED
+#ifdef CONFIG_AMR_NB_FIXED
 
 #define MMS_IO
 
@@ -107,7 +107,7 @@ static enum Mode getBitrateMode(int bitrate)
     return(MR122);
 }
 
-#ifdef AMR_NB_FIXED
+#ifdef CONFIG_AMR_NB_FIXED
 /* fixed point version*/
 /* frame size in serial bitstream file (frame type + serial stream + flags) */
 #define SERIAL_FRAMESIZE (1+MAX_SERIAL_SIZE+5)
@@ -326,7 +326,7 @@ static int amr_nb_encode_frame(AVCodecContext *avctx,
 }
 
 
-#elif defined(AMR_NB) /* Float point version*/
+#elif defined(CONFIG_AMR_NB) /* Float point version*/
 
 typedef struct AMRContext {
     int frameCount;
@@ -457,7 +457,7 @@ static int amr_nb_encode_frame(AVCodecContext *avctx,
 
 #endif
 
-#if defined(AMR_NB) || defined(AMR_NB_FIXED)
+#if defined(CONFIG_AMR_NB) || defined(CONFIG_AMR_NB_FIXED)
 
 AVCodec amr_nb_decoder =
 {
@@ -486,7 +486,7 @@ AVCodec amr_nb_encoder =
 #endif
 
 /* -----------AMR wideband ------------*/
-#ifdef AMR_WB
+#ifdef CONFIG_AMR_WB
 
 #ifdef _TYPEDEF_H
 //To avoid duplicate typedefs from typdef in amr-nb
@@ -661,4 +661,4 @@ AVCodec amr_wb_encoder =
     NULL,
 };
 
-#endif //AMR_WB
+#endif //CONFIG_AMR_WB
