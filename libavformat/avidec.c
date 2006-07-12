@@ -19,6 +19,7 @@
 #include "avformat.h"
 #include "avi.h"
 #include "dv.h"
+#include "riff.h"
 
 #undef NDEBUG
 #include <assert.h>

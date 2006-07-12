@@ -18,7 +18,7 @@
  */
 #include "avformat.h"
 #include "allformats.h"
-#include "avi.h"
+#include "riff.h"
 
 typedef struct {
     offset_t atrpos, atsqpos, awapos;

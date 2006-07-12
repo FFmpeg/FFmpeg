@@ -27,7 +27,7 @@
 #include "bitstream.h"
 #include "bswap.h"
 #include "ogg2.h"
-#include "avi.h"
+#include "riff.h"
 
 static int
 ogm_header(AVFormatContext *s, int idx)

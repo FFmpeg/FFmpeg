@@ -33,7 +33,7 @@
 #include <limits.h>
 #include "avformat.h"
 #include "mpegaudio.h"
-#include "avi.h"
+#include "riff.h"
 
 #undef NDEBUG
 #include <assert.h>

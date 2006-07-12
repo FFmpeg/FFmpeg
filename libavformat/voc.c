@@ -18,7 +18,7 @@
  */
 
 #include "avformat.h"
-#include "avi.h"    /* for CodecTag */
+#include "riff.h"    /* for CodecTag */
 #include "voc.h"
 
 

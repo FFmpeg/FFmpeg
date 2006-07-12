@@ -18,7 +18,7 @@
  */
 #include "avformat.h"
 #include "allformats.h"
-#include "avi.h"
+#include "riff.h"
 #include "intfloat_readwrite.h"
 
 const CodecTag codec_aiff_tags[] = {

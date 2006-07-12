@@ -23,7 +23,7 @@
 
 #include "avformat.h"
 #include "allformats.h"
-#include "avi.h"
+#include "riff.h"
 #include "bswap.h"
 
 /* if we don't know the size in advance */

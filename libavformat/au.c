@@ -27,7 +27,7 @@
 
 #include "avformat.h"
 #include "allformats.h"
-#include "avi.h"
+#include "riff.h"
 
 /* if we don't know the size in advance */
 #define AU_UNKOWN_SIZE ((uint32_t)(~0))

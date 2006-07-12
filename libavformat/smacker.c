@@ -22,7 +22,7 @@
  */
 
 #include "avformat.h"
-#include "avi.h"
+#include "riff.h"
 #include "bswap.h"
 
 #define SMACKER_PAL 0x01

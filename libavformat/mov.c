@@ -22,7 +22,7 @@
 //#define DEBUG
 
 #include "avformat.h"
-#include "avi.h"
+#include "riff.h"
 #include "mov.h"
 
 #ifdef CONFIG_ZLIB
