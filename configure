@@ -231,10 +231,9 @@ check_cpp(){
 
 check_ld(){
     log check_ld "$@"
-    cat >$TMPC
-    log_file $TMPC
-    log $cc $CFLAGS $LDFLAGS "$@" -o $TMPE $TMPC $extralibs
-    $cc $CFLAGS $LDFLAGS "$@" -o $TMPE $TMPC $extralibs >>$logfile 2>&1
+    check_cc || return
+    log $cc $LDFLAGS "$@" -o $TMPE $TMPO $extralibs
+    $cc $LDFLAGS "$@" -o $TMPE $TMPO $extralibs >>$logfile 2>&1
 }
 
 check_cflags(){
