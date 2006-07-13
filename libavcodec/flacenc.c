@@ -661,7 +661,7 @@ static void quantize_lpc_coefs(double *lpc_in, int order, int precision,
                                int32_t *lpc_out, int *shift)
 {
     int i;
-    double cmax;
+    double cmax, error;
     int32_t qmax;
     int sh;
 
@@ -697,8 +697,11 @@ static void quantize_lpc_coefs(double *lpc_in, int order, int precision,
     }
 
     /* output quantized coefficients and level shift */
+    error=0;
     for(i=0; i<order; i++) {
-        lpc_out[i] = (int32_t)(lpc_in[i] * (1 << sh));
+        error += lpc_in[i] * (1 << sh);
+        lpc_out[i] = clip(lrintf(error), -qmax, qmax);
+        error -= lpc_out[i];
     }
     *shift = sh;
 }
