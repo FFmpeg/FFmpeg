@@ -94,14 +94,8 @@
     typedef unsigned char  uint8_t;
     typedef unsigned short uint16_t;
     typedef unsigned int   uint32_t;
-
-#   ifdef __MINGW32__
-        typedef signed __int64   int64_t;
-        typedef unsigned __int64 uint64_t;
-#   else /* other OS */
-        typedef signed long long   int64_t;
-        typedef unsigned long long uint64_t;
-#   endif /* other OS */
+    typedef signed long long   int64_t;
+    typedef unsigned long long uint64_t;
 #endif /* EMULATE_INTTYPES */
 
 #ifndef PRId64
