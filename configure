@@ -365,7 +365,7 @@ case "$cpu" in
   alpha)
     cpu="alpha"
   ;;
-  "Power Macintosh"|ppc|powerpc)
+  "Power Macintosh"|ppc|ppc64|powerpc)
     cpu="powerpc"
   ;;
   mips|mipsel|IP*)
