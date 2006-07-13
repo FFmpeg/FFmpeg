@@ -159,7 +159,7 @@ static int me_penalty_compensation= 256;
 static int frame_skip_threshold= 0;
 static int frame_skip_factor= 0;
 static int frame_skip_exp= 0;
-extern int loop_input; /* currently a hack */
+static int loop_input = 0;
 static int loop_output = AVFMT_NOOUTPUTLOOP;
 static int genpts = 0;
 static int qp_hist = 0;
@@ -2842,6 +2842,8 @@ static void opt_input_file(const char *filename)
         print_error(filename, err);
         exit(1);
     }
+
+    ic->loop_input = loop_input;
 
     if(genpts)
         ic->flags|= AVFMT_FLAG_GENPTS;
