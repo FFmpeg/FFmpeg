@@ -327,10 +327,10 @@ TMPH="${TMPDIR1}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.h"
 logging="yes"
 logfile="config.err"
 prefix="/usr/local"
-libdir=""
-incdir=""
-mandir=""
-bindir=""
+libdir="${prefix}/lib"
+incdir="${prefix}/include/ffmpeg"
+mandir="${prefix}/man"
+bindir="${prefix}/bin"
 cross_prefix=""
 cross_compile="no"
 cc="gcc"
@@ -1471,22 +1471,6 @@ fi
 if test "$gprof" = "yes" ; then
     CFLAGS="$CFLAGS -p"
     LDFLAGS="$LDFLAGS -p"
-fi
-
-if test x"$bindir" = x""; then
-    bindir="${prefix}/bin"
-fi
-
-if test x"$libdir" = x""; then
-    libdir="${prefix}/lib"
-fi
-
-if test x"$incdir" = x""; then
-    incdir="${prefix}/include/ffmpeg"
-fi
-
-if test x"$mandir" = x""; then
-    mandir="${prefix}/man"
 fi
 
 echo "install prefix   $prefix"
