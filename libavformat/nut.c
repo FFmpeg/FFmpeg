@@ -34,6 +34,7 @@
 #include "avformat.h"
 #include "mpegaudio.h"
 #include "riff.h"
+#include "adler32.h"
 
 #undef NDEBUG
 #include <assert.h>
@@ -330,7 +331,7 @@ static int get_packetheader(NUTContext *nut, ByteIOContext *bc, int calculate_ch
 
     size= get_v(bc);
 
-    init_checksum(bc, calculate_checksum ? update_adler32 : NULL, 0);
+    init_checksum(bc, calculate_checksum ? av_adler32_update : NULL, 0);
 
     nut->packet_start[2] = start;
     nut->written_packet_size= size;
@@ -475,7 +476,7 @@ static int put_packetheader(NUTContext *nut, ByteIOContext *bc, int max_size, in
     put_v(bc, nut->written_packet_size); /* forward ptr */
 
     if(calculate_checksum)
-        init_checksum(bc, update_adler32, 0);
+        init_checksum(bc, av_adler32_update, 0);
 
     return 0;
 }

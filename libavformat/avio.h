@@ -160,7 +160,6 @@ int url_close_dyn_buf(ByteIOContext *s, uint8_t **pbuffer);
 
 unsigned long get_checksum(ByteIOContext *s);
 void init_checksum(ByteIOContext *s, unsigned long (*update_checksum)(unsigned long c, const uint8_t *p, unsigned int len), unsigned long checksum);
-unsigned long update_adler32(unsigned long adler, const uint8_t *buf, unsigned int len);
 
 /* file.c */
 extern URLProtocol file_protocol;

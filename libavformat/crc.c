@@ -17,45 +17,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 #include "avformat.h"
-
-/* adler32.c -- compute the Adler-32 checksum of a data stream
- * Copyright (C) 1995 Mark Adler
- * For conditions of distribution and use, see copyright notice in zlib.h
- */
-
-#define BASE 65521L /* largest prime smaller than 65536 */
-#define NMAX 5552
-/* NMAX is the largest n such that 255n(n+1)/2 + (n+1)(BASE-1) <= 2^32-1 */
-
-#define DO1(buf)  {s1 += *buf++; s2 += s1;}
-#define DO2(buf)  DO1(buf); DO1(buf);
-#define DO4(buf)  DO2(buf); DO2(buf);
-#define DO8(buf)  DO4(buf); DO4(buf);
-#define DO16(buf) DO8(buf); DO8(buf);
-
-unsigned long update_adler32(unsigned long adler, const uint8_t *buf, unsigned int len)
-{
-    unsigned long s1 = adler & 0xffff;
-    unsigned long s2 = (adler >> 16) & 0xffff;
-    int k;
-
-    if (buf == NULL) return 1L;
-
-    while (len > 0) {
-        k = len < NMAX ? len : NMAX;
-        len -= k;
-        while (k >= 16) {
-            DO16(buf);
-            k -= 16;
-        }
-        if (k != 0) do {
-            DO1(buf);
-        } while (--k);
-        s1 %= BASE;
-        s2 %= BASE;
-    }
-    return (s2 << 16) | s1;
-}
+#include "adler32.h"
 
 #ifdef CONFIG_CRC_MUXER
 typedef struct CRCState {
@@ -67,7 +29,7 @@ static int crc_write_header(struct AVFormatContext *s)
     CRCState *crc = s->priv_data;
 
     /* init CRC */
-    crc->crcval = update_adler32(0, NULL, 0);
+    crc->crcval = av_adler32_update(0, NULL, 0);
 
     return 0;
 }
@@ -75,7 +37,7 @@ static int crc_write_header(struct AVFormatContext *s)
 static int crc_write_packet(struct AVFormatContext *s, AVPacket *pkt)
 {
     CRCState *crc = s->priv_data;
-    crc->crcval = update_adler32(crc->crcval, pkt->data, pkt->size);
+    crc->crcval = av_adler32_update(crc->crcval, pkt->data, pkt->size);
     return 0;
 }
 
@@ -94,7 +56,7 @@ static int crc_write_trailer(struct AVFormatContext *s)
 #ifdef CONFIG_FRAMECRC_MUXER
 static int framecrc_write_packet(struct AVFormatContext *s, AVPacket *pkt)
 {
-    uint32_t crc = update_adler32(0, pkt->data, pkt->size);
+    uint32_t crc = av_adler32_update(0, pkt->data, pkt->size);
     char buf[256];
 
     snprintf(buf, sizeof(buf), "%d, %"PRId64", %d, 0x%08x\n", pkt->stream_index, pkt->dts, pkt->size, crc);
