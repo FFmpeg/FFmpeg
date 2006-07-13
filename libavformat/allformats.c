@@ -323,6 +323,54 @@ void av_register_all(void)
 #ifdef CONFIG_MJPEG_MUXER
     av_register_output_format(&mjpeg_muxer);
 #endif
+#ifdef CONFIG_PCM_S16LE_DEMUXER
+    av_register_input_format(&pcm_s16le_demuxer);
+#endif
+#ifdef CONFIG_PCM_S16LE_MUXER
+    av_register_output_format(&pcm_s16le_muxer);
+#endif
+#ifdef CONFIG_PCM_S16BE_DEMUXER
+    av_register_input_format(&pcm_s16be_demuxer);
+#endif
+#ifdef CONFIG_PCM_S16BE_MUXER
+    av_register_output_format(&pcm_s16be_muxer);
+#endif
+#ifdef CONFIG_PCM_U16LE_DEMUXER
+    av_register_input_format(&pcm_u16le_demuxer);
+#endif
+#ifdef CONFIG_PCM_U16LE_MUXER
+    av_register_output_format(&pcm_u16le_muxer);
+#endif
+#ifdef CONFIG_PCM_U16BE_DEMUXER
+    av_register_input_format(&pcm_u16be_demuxer);
+#endif
+#ifdef CONFIG_PCM_U16BE_MUXER
+    av_register_output_format(&pcm_u16be_muxer);
+#endif
+#ifdef CONFIG_PCM_S8_DEMUXER
+    av_register_input_format(&pcm_s8_demuxer);
+#endif
+#ifdef CONFIG_PCM_S8_MUXER
+    av_register_output_format(&pcm_s8_muxer);
+#endif
+#ifdef CONFIG_PCM_U8_DEMUXER
+    av_register_input_format(&pcm_u8_demuxer);
+#endif
+#ifdef CONFIG_PCM_U8_MUXER
+    av_register_output_format(&pcm_u8_muxer);
+#endif
+#ifdef CONFIG_PCM_MULAW_DEMUXER
+    av_register_input_format(&pcm_mulaw_demuxer);
+#endif
+#ifdef CONFIG_PCM_MULAW_MUXER
+    av_register_output_format(&pcm_mulaw_muxer);
+#endif
+#ifdef CONFIG_PCM_ALAW_DEMUXER
+    av_register_input_format(&pcm_alaw_demuxer);
+#endif
+#ifdef CONFIG_PCM_ALAW_MUXER
+    av_register_output_format(&pcm_alaw_muxer);
+#endif
 #ifdef CONFIG_RAWVIDEO_DEMUXER
     av_register_input_format(&rawvideo_demuxer);
 #endif
