@@ -1037,16 +1037,12 @@ static void decode_mb_b(AVSContext *h, enum mb_t mb_type) {
         if(mb_type & 1) { /* 16x8 macroblock types */
             if(flags & FWD0)
                 mv_pred(h, MV_FWD_X0, MV_FWD_C2, MV_PRED_TOP,  BLK_16X8, 1);
-            if(flags & SYM0) {
-                mv_pred(h, MV_FWD_X0, MV_FWD_C2, MV_PRED_TOP,  BLK_16X8, 1);
+            if(flags & SYM0)
                 mv_pred_sym(h, &h->mv[MV_FWD_X0], BLK_16X8);
-            }
             if(flags & FWD1)
                 mv_pred(h, MV_FWD_X2, MV_FWD_A1, MV_PRED_LEFT, BLK_16X8, 1);
-            if(flags & SYM1) {
-                mv_pred(h, MV_FWD_X2, MV_FWD_A1, MV_PRED_LEFT, BLK_16X8, 1);
-                mv_pred_sym(h, &h->mv[9], BLK_16X8);
-            }
+            if(flags & SYM1)
+                mv_pred_sym(h, &h->mv[MV_FWD_X2], BLK_16X8);
             if(flags & BWD0)
                 mv_pred(h, MV_BWD_X0, MV_BWD_C2, MV_PRED_TOP,  BLK_16X8, 0);
             if(flags & BWD1)
@@ -1054,16 +1050,12 @@ static void decode_mb_b(AVSContext *h, enum mb_t mb_type) {
         } else {          /* 8x16 macroblock types */
             if(flags & FWD0)
                 mv_pred(h, MV_FWD_X0, MV_FWD_B3, MV_PRED_LEFT, BLK_8X16, 1);
-            if(flags & SYM0) {
-                mv_pred(h, MV_FWD_X0, MV_FWD_B3, MV_PRED_LEFT, BLK_8X16, 1);
+            if(flags & SYM0)
                 mv_pred_sym(h, &h->mv[MV_FWD_X0], BLK_8X16);
-            }
             if(flags & FWD1)
                 mv_pred(h, MV_FWD_X1, MV_FWD_C2, MV_PRED_TOPRIGHT,BLK_8X16, 1);
-            if(flags & SYM1) {
-                mv_pred(h, MV_FWD_X1, MV_FWD_C2, MV_PRED_TOPRIGHT,BLK_8X16, 1);
-                mv_pred_sym(h, &h->mv[6], BLK_8X16);
-            }
+            if(flags & SYM1)
+                mv_pred_sym(h, &h->mv[MV_FWD_X1], BLK_8X16);
             if(flags & BWD0)
                 mv_pred(h, MV_BWD_X0, MV_BWD_B3, MV_PRED_LEFT, BLK_8X16, 0);
             if(flags & BWD1)
