@@ -716,7 +716,7 @@ static inline int decode_residual_inter(AVSContext *h) {
 
     /* get quantizer */
     if(h->cbp && !h->qp_fixed)
-        h->qp += get_se_golomb(&h->s.gb);
+        h->qp = (h->qp + get_se_golomb(&h->s.gb)) & 63;
     for(block=0;block<4;block++)
         if(h->cbp & (1<<block))
             decode_residual_block(h,&h->s.gb,inter_2dvlc,0,h->qp,
@@ -876,7 +876,7 @@ static int decode_mb_i(AVSContext *h, int cbp_code) {
     }
     h->cbp = cbp_tab[cbp_code][0];
     if(h->cbp && !h->qp_fixed)
-        h->qp += get_se_golomb(gb); //qp_delta
+        h->qp = (h->qp + get_se_golomb(gb)) & 63; //qp_delta
 
     /* luma intra prediction interleaved with residual decode/transform/add */
     for(block=0;block<4;block++) {
@@ -1154,6 +1154,10 @@ static int decode_pic(AVSContext *h) {
     get_bits(&s->gb,16);//bbv_dwlay
     if(h->stc == PIC_PB_START_CODE) {
         h->pic_type = get_bits(&s->gb,2) + FF_I_TYPE;
+        if(h->pic_type > FF_B_TYPE) {
+            av_log(s->avctx, AV_LOG_ERROR, "illegal picture type\n");
+            return -1;
+        }
         /* make sure we have the reference frames we need */
         if(!h->DPB[0].data[0] ||
           (!h->DPB[1].data[0] && h->pic_type == FF_B_TYPE))
