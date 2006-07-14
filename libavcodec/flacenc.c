@@ -21,6 +21,7 @@
 #include "bitstream.h"
 #include "crc.h"
 #include "golomb.h"
+#include "lls.h"
 
 #define FLAC_MAX_CH  8
 #define FLAC_MIN_BLOCKSIZE  16
@@ -236,10 +237,12 @@ static int flac_encode_init(AVCodecContext *avctx)
 
     /* set compression option overrides from AVCodecContext */
     if(avctx->use_lpc >= 0) {
-        s->options.use_lpc = !!avctx->use_lpc;
+        s->options.use_lpc = clip(avctx->use_lpc, 0, 11);
     }
-    av_log(avctx, AV_LOG_DEBUG, " use lpc: %s\n",
-           s->options.use_lpc? "yes" : "no");
+    if(s->options.use_lpc == 1)
+        av_log(avctx, AV_LOG_DEBUG, " use lpc: Levinson-Durbin recursion with Welch window\n");
+    else if(s->options.use_lpc > 1)
+        av_log(avctx, AV_LOG_DEBUG, " use lpc: Cholesky factorization\n");
 
     if(avctx->min_prediction_order >= 0) {
         if(s->options.use_lpc) {
@@ -725,21 +728,49 @@ static int estimate_best_order(double *ref, int max_order)
  */
 static int lpc_calc_coefs(const int32_t *samples, int blocksize, int max_order,
                           int precision, int32_t coefs[][MAX_LPC_ORDER],
-                          int *shift)
+                          int *shift, int use_lpc)
 {
     double autoc[MAX_LPC_ORDER+1];
     double ref[MAX_LPC_ORDER];
     double lpc[MAX_LPC_ORDER][MAX_LPC_ORDER];
-    int i;
+    int i, j, pass;
     int opt_order;
 
     assert(max_order >= MIN_LPC_ORDER && max_order <= MAX_LPC_ORDER);
 
-    compute_autocorr(samples, blocksize, max_order+1, autoc);
+    if(use_lpc == 1){
+        compute_autocorr(samples, blocksize, max_order+1, autoc);
 
-    compute_lpc_coefs(autoc, max_order, lpc, ref);
+        compute_lpc_coefs(autoc, max_order, lpc, ref);
 
-    opt_order = estimate_best_order(ref, max_order);
+        opt_order = estimate_best_order(ref, max_order);
+    }else{
+        LLSModel m[2];
+        double var[MAX_LPC_ORDER+1], eval;
+
+        for(pass=0; pass<use_lpc-1; pass++){
+            av_init_lls(&m[pass&1], max_order/*3*/);
+
+            for(i=max_order; i<blocksize; i++){
+                for(j=0; j<=max_order; j++)
+                    var[j]= samples[i-j];
+
+                if(pass){
+                    eval= av_evaluate_lls(&m[(pass-1)&1], var+1);
+                    eval= (512>>pass) + fabs(eval - var[0]);
+                    for(j=0; j<=max_order; j++)
+                        var[j]= samples[i-j] / sqrt(eval);
+                }
+
+                av_update_lls(&m[pass&1], var, 1.0);
+            }
+            av_solve_lls(&m[pass&1], 0.001);
+            opt_order= max_order; //FIXME
+        }
+
+        for(i=0; i<opt_order; i++)
+            lpc[opt_order-1][i]= m[(pass-1)&1].coeff[i];
+    }
 
     i = opt_order-1;
     quantize_lpc_coefs(lpc[i], i+1, precision, coefs[i], &shift[i]);
@@ -865,7 +896,7 @@ static int encode_residual(FlacEncodeContext *ctx, int ch)
     }
 
     /* LPC */
-    sub->order = lpc_calc_coefs(smp, n, max_order, precision, coefs, shift);
+    sub->order = lpc_calc_coefs(smp, n, max_order, precision, coefs, shift, ctx->options.use_lpc);
     sub->type = FLAC_SUBFRAME_LPC;
     sub->type_code = sub->type | (sub->order-1);
     sub->shift = shift[sub->order-1];
