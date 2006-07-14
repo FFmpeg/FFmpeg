@@ -180,16 +180,16 @@ typedef uint64_t      uint_fast64_t;
 #ifdef HAVE_AV_CONFIG_H
 
 #ifdef __MINGW32__
-#        ifdef _DEBUG
-#            define DEBUG
-#        endif
+#    ifdef _DEBUG
+#        define DEBUG
+#    endif
 
-#        define snprintf _snprintf
-#        define vsnprintf _vsnprintf
+#    define snprintf _snprintf
+#    define vsnprintf _vsnprintf
 
-#        ifdef CONFIG_WINCE
-#            define perror(a)
-#        endif
+#    ifdef CONFIG_WINCE
+#        define perror(a)
+#    endif
 
 /* __MINGW32__ end */
 #elif defined (CONFIG_OS2)
