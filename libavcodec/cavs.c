@@ -576,23 +576,19 @@ static void mv_pred(AVSContext *h, enum mv_loc_t nP, enum mv_loc_t nC,
     vector_t *mvA = &h->mv[nP-1];
     vector_t *mvB = &h->mv[nP-4];
     vector_t *mvC = &h->mv[nC];
-    vector_t *mvP2 = NULL;
+    const vector_t *mvP2 = NULL;
 
     mvP->ref = ref;
     mvP->dist = h->dist[mvP->ref];
     if(mvC->ref == NOT_AVAIL)
         mvC = &h->mv[nP-5]; // set to top-left (mvD)
-    if(mode == MV_PRED_PSKIP) {
-        if((mvA->ref == NOT_AVAIL) || (mvB->ref == NOT_AVAIL) ||
+    if((mode == MV_PRED_PSKIP) &&
+       ((mvA->ref == NOT_AVAIL) || (mvB->ref == NOT_AVAIL) ||
            ((mvA->x | mvA->y | mvA->ref) == 0)  ||
-           ((mvB->x | mvB->y | mvB->ref) == 0) ) {
-            mvP->x = mvP->y = 0;
-            set_mvs(mvP,size);
-            return;
-        }
-    }
+           ((mvB->x | mvB->y | mvB->ref) == 0) )) {
+        mvP2 = &un_mv;
     /* if there is only one suitable candidate, take it */
-    if((mvA->ref >= 0) && (mvB->ref < 0) && (mvC->ref < 0)) {
+    } else if((mvA->ref >= 0) && (mvB->ref < 0) && (mvC->ref < 0)) {
         mvP2= mvA;
     } else if((mvA->ref < 0) && (mvB->ref >= 0) && (mvC->ref < 0)) {
         mvP2= mvB;
