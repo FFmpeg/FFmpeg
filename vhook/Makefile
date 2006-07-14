@@ -10,7 +10,9 @@ ifeq ($(CONFIG_DARWIN),yes)
 	SHFLAGS = -dynamiclib -Wl,-single_module -flat_namespace \
                   -undefined suppress -Wl,-install_name,$(libdir)/vhook/$@
 endif
+
 HOOKS=null$(SLIBSUF) fish$(SLIBSUF) ppm$(SLIBSUF) watermark$(SLIBSUF)
+ALLHOOKS=$(HOOKS) imlib2$(SLIBSUF) drawtext$(SLIBSUF)
 
 ifeq ($(HAVE_IMLIB2),yes)
     HOOKS += imlib2$(SLIBSUF)
@@ -23,9 +25,9 @@ ifeq ($(HAVE_FREETYPE2),yes)
     LDFLAGS += `freetype-config --libs`
 endif
 
-all: $(HOOKS)
-
 SRCS := $(HOOKS:$(SLIBSUF)=.c)
+
+all: $(HOOKS)
 
 depend: $(SRCS)
 	$(CC) -MM $(CFLAGS) $^ 1>.depend
@@ -34,7 +36,6 @@ install: $(HOOKS)
 	install -d "$(libdir)/vhook"
 	install -m 755 $(HOOKS) "$(libdir)/vhook"
 
-ALLHOOKS=$(HOOKS) imlib2$(SLIBSUF) drawtext$(SLIBSUF)
 uninstall:
 	rm -f $(addprefix $(libdir)/vhook/,$(ALLHOOKS))
 	-rmdir "$(libdir)/vhook/"
