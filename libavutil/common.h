@@ -176,18 +176,8 @@ typedef uint64_t      uint_fast64_t;
 
 /* windows */
 
-#    if !defined(__MINGW32__) && !defined(__CYGWIN__)
-#        define int64_t_C(c)     (c ## i64)
-#        define uint64_t_C(c)    (c ## i64)
-
-#    ifdef HAVE_AV_CONFIG_H
-#            define inline __inline
-#    endif
-
-#    else
-#        define int64_t_C(c)     (c ## LL)
-#        define uint64_t_C(c)    (c ## ULL)
-#    endif /* __MINGW32__ */
+#    define int64_t_C(c)     (c ## LL)
+#    define uint64_t_C(c)    (c ## ULL)
 
 #    ifdef HAVE_AV_CONFIG_H
 #        ifdef _DEBUG
