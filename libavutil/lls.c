@@ -28,9 +28,6 @@
 
 #include "lls.h"
 
-#undef NDEBUG // allways check asserts, the speed effect is far too small to disable them
-#include <assert.h>
-
 #ifdef TEST
 #define av_log(a,b,...) printf(__VA_ARGS__)
 #endif
