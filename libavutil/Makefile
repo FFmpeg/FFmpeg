@@ -12,6 +12,7 @@ OBJS= mathematics.o \
       intfloat_readwrite.o \
       crc.o \
       md5.o \
+      lls.o \
       adler32.o
 
 HEADERS = avutil.h common.h mathematics.h integer.h rational.h \
