@@ -749,7 +749,7 @@ static int lpc_calc_coefs(const int32_t *samples, int blocksize, int max_order,
         double var[MAX_LPC_ORDER+1], eval;
 
         for(pass=0; pass<use_lpc-1; pass++){
-            av_init_lls(&m[pass&1], max_order/*3*/);
+            av_init_lls(&m[pass&1], max_order);
 
             for(i=max_order; i<blocksize; i++){
                 for(j=0; j<=max_order; j++)
@@ -759,7 +759,7 @@ static int lpc_calc_coefs(const int32_t *samples, int blocksize, int max_order,
                     eval= av_evaluate_lls(&m[(pass-1)&1], var+1);
                     eval= (512>>pass) + fabs(eval - var[0]);
                     for(j=0; j<=max_order; j++)
-                        var[j]= samples[i-j] / sqrt(eval);
+                        var[j]/= sqrt(eval);
                 }
 
                 av_update_lls(&m[pass&1], var, 1.0);
