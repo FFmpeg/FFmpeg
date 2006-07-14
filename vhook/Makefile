@@ -5,12 +5,6 @@ VPATH=$(SRC_PATH)/vhook
 CFLAGS=-fPIC $(SHCFLAGS) -I.. -I$(SRC_PATH) -I$(SRC_PATH)/libavformat \
        -I$(SRC_PATH)/libavcodec -I$(SRC_PATH)/libavutil -DHAVE_AV_CONFIG_H
 
-#FIXME: This needs to be in configure/config.mak
-ifeq ($(CONFIG_DARWIN),yes)
-	SHFLAGS = -dynamiclib -Wl,-single_module -flat_namespace \
-                  -undefined suppress -Wl,-install_name,$(libdir)/vhook/$@
-endif
-
 HOOKS=null$(SLIBSUF) fish$(SLIBSUF) ppm$(SLIBSUF) watermark$(SLIBSUF)
 ALLHOOKS=$(HOOKS) imlib2$(SLIBSUF) drawtext$(SLIBSUF)
 
@@ -41,7 +35,7 @@ uninstall:
 	-rmdir "$(libdir)/vhook/"
 
 %$(SLIBSUF): %.o
-	$(CC) $(LDFLAGS) -g -o $@ $(SHFLAGS) $<
+	$(CC) $(LDFLAGS) -g -o $@ $(VHOOKFLAGS) $<
 
 clean:
 	rm -f *.o *.d *~ *.a *.lib *.so *.dylib *.dll
