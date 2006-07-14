@@ -655,7 +655,7 @@ static int decode_residual_block(AVSContext *h, GetBitContext *gb,
     for(i=0;i<65;i++) {
         level_code = get_ue_code(gb,r->golomb_order);
         if(level_code >= ESCAPE_CODE) {
-            run = (level_code - ESCAPE_CODE) >> 1;
+            run = ((level_code - ESCAPE_CODE) >> 1) + 1;
             esc_code = get_ue_code(gb,esc_golomb_order);
             level = esc_code + (run > r->max_run ? 1 : r->level_add[run]);
             while(level > r->inc_limit)
@@ -663,8 +663,6 @@ static int decode_residual_block(AVSContext *h, GetBitContext *gb,
             mask = -(level_code & 1);
             level = (level^mask) - mask;
         } else {
-            if(level_code < 0)
-                return -1;
             level = r->rltab[level_code][0];
             if(!level) //end of block signal
                 break;
@@ -676,7 +674,7 @@ static int decode_residual_block(AVSContext *h, GetBitContext *gb,
     }
     /* inverse scan and dequantization */
     while(--i >= 0){
-        pos += 1 + run_buf[i];
+        pos += run_buf[i];
         if(pos > 63) {
             av_log(h->s.avctx, AV_LOG_ERROR,
                    "position out of block bounds at pic %d MB(%d,%d)\n",
