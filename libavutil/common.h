@@ -197,25 +197,12 @@ typedef uint64_t      uint_fast64_t;
 #elif defined (CONFIG_OS2)
 /* OS/2 EMX */
 
-#ifndef int64_t_C
-#define int64_t_C(c)     (c ## LL)
-#define uint64_t_C(c)    (c ## ULL)
-#endif
-
 #ifdef HAVE_AV_CONFIG_H
-
-#ifdef USE_FASTMEMCPY
-#include "fastmemcpy.h"
-#endif
 
 #include <float.h>
 
 #endif /* HAVE_AV_CONFIG_H */
-
-/* CONFIG_OS2 end */
-#else
-
-/* unix */
+#endif /* !__MINGW32__ && CONFIG_OS2 */
 
 #ifndef int64_t_C
 #define int64_t_C(c)     (c ## LL)
@@ -223,15 +210,9 @@ typedef uint64_t      uint_fast64_t;
 #endif
 
 #ifdef HAVE_AV_CONFIG_H
-
-#        ifdef USE_FASTMEMCPY
-#            include "fastmemcpy.h"
-#        endif
-#    endif /* HAVE_AV_CONFIG_H */
-
-#endif /* !__MINGW32__ && !CONFIG_OS2 */
-
-#ifdef HAVE_AV_CONFIG_H
+#    ifdef USE_FASTMEMCPY
+#        include "fastmemcpy.h"
+#    endif
 
 #if defined(__MINGW32__) && !defined(BUILD_AVUTIL) && defined(BUILD_SHARED_AV)
 #  define FF_IMPORT_ATTR __declspec(dllimport)
