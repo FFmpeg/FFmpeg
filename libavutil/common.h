@@ -172,14 +172,14 @@ typedef uint64_t      uint_fast64_t;
 #    endif
 #endif
 
+#ifndef int64_t_C
+#define int64_t_C(c)     (c ## LL)
+#define uint64_t_C(c)    (c ## ULL)
+#endif
+
+#ifdef HAVE_AV_CONFIG_H
+
 #ifdef __MINGW32__
-
-/* windows */
-
-#    define int64_t_C(c)     (c ## LL)
-#    define uint64_t_C(c)    (c ## ULL)
-
-#    ifdef HAVE_AV_CONFIG_H
 #        ifdef _DEBUG
 #            define DEBUG
 #        endif
@@ -191,25 +191,14 @@ typedef uint64_t      uint_fast64_t;
 #            define perror(a)
 #        endif
 
-#    endif
-
 /* __MINGW32__ end */
 #elif defined (CONFIG_OS2)
 /* OS/2 EMX */
 
-#ifdef HAVE_AV_CONFIG_H
-
 #include <float.h>
 
-#endif /* HAVE_AV_CONFIG_H */
 #endif /* !__MINGW32__ && CONFIG_OS2 */
 
-#ifndef int64_t_C
-#define int64_t_C(c)     (c ## LL)
-#define uint64_t_C(c)    (c ## ULL)
-#endif
-
-#ifdef HAVE_AV_CONFIG_H
 #    ifdef USE_FASTMEMCPY
 #        include "fastmemcpy.h"
 #    endif
