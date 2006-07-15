@@ -742,35 +742,41 @@ static int lpc_calc_coefs(const int32_t *samples, int blocksize, int max_order,
         compute_autocorr(samples, blocksize, max_order+1, autoc);
 
         compute_lpc_coefs(autoc, max_order, lpc, ref);
-
-        opt_order = estimate_best_order(ref, max_order);
     }else{
         LLSModel m[2];
-        double var[MAX_LPC_ORDER+1], eval;
+        double var[MAX_LPC_ORDER+1], eval, weight;
 
         for(pass=0; pass<use_lpc-1; pass++){
             av_init_lls(&m[pass&1], max_order);
 
+            weight=0;
             for(i=max_order; i<blocksize; i++){
                 for(j=0; j<=max_order; j++)
                     var[j]= samples[i-j];
 
                 if(pass){
-                    eval= av_evaluate_lls(&m[(pass-1)&1], var+1);
+                    eval= av_evaluate_lls(&m[(pass-1)&1], var+1, max_order-1);
                     eval= (512>>pass) + fabs(eval - var[0]);
                     for(j=0; j<=max_order; j++)
                         var[j]/= sqrt(eval);
-                }
+                    weight += 1/eval;
+                }else
+                    weight++;
 
                 av_update_lls(&m[pass&1], var, 1.0);
             }
-            av_solve_lls(&m[pass&1], 0.001);
-            opt_order= max_order; //FIXME
+            av_solve_lls(&m[pass&1], 0.001, 0);
         }
 
-        for(i=0; i<opt_order; i++)
-            lpc[opt_order-1][i]= m[(pass-1)&1].coeff[i];
+        for(i=0; i<max_order; i++){
+            for(j=0; j<max_order; j++)
+                lpc[i][j]= m[(pass-1)&1].coeff[i][j];
+            ref[i]= sqrt(m[(pass-1)&1].variance[i] / weight) * (blocksize - max_order) / 4000;
+        }
+        for(i=max_order-1; i>0; i--)
+            ref[i] = ref[i-1] - ref[i];
     }
+    opt_order = estimate_best_order(ref, max_order);
 
     i = opt_order-1;
     quantize_lpc_coefs(lpc[i], i+1, precision, coefs[i], &shift[i]);

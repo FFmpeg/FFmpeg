@@ -49,12 +49,11 @@ void av_update_lls(LLSModel *m, double *var, double decay){
     }
 }
 
-double av_solve_lls(LLSModel *m, double threshold){
+void av_solve_lls(LLSModel *m, double threshold, int min_order){
     int i,j,k;
     double (*factor)[MAX_VARS+1]= &m->covariance[1][0];
     double (*covar )[MAX_VARS+1]= &m->covariance[1][1];
     double  *covar_y            =  m->covariance[0];
-    double variance;
     int count= m->indep_count;
 
     for(i=0; i<count; i++){
@@ -75,33 +74,34 @@ double av_solve_lls(LLSModel *m, double threshold){
     for(i=0; i<count; i++){
         double sum= covar_y[i+1];
         for(k=i-1; k>=0; k--)
-            sum -= factor[i][k]*m->coeff[k];
-        m->coeff[i]= sum / factor[i][i];
+            sum -= factor[i][k]*m->coeff[0][k];
+        m->coeff[0][i]= sum / factor[i][i];
     }
 
-    for(i=count-1; i>=0; i--){
-        double sum= m->coeff[i];
-        for(k=i+1; k<count; k++)
-            sum -= factor[k][i]*m->coeff[k];
-        m->coeff[i]= sum / factor[i][i];
-    }
+    for(j=count-1; j>=min_order; j--){
+        for(i=j; i>=0; i--){
+            double sum= m->coeff[0][i];
+            for(k=i+1; k<=j; k++)
+                sum -= factor[k][i]*m->coeff[j][k];
+            m->coeff[j][i]= sum / factor[i][i];
+        }
 
-    variance= covar_y[0];
-    for(i=0; i<count; i++){
-        double sum= m->coeff[i]*covar[i][i] - 2*covar_y[i+1];
-        for(j=0; j<i; j++)
-            sum += 2*m->coeff[j]*covar[j][i];
-        variance += m->coeff[i]*sum;
+        m->variance[j]= covar_y[0];
+        for(i=0; i<=j; i++){
+            double sum= m->coeff[j][i]*covar[i][i] - 2*covar_y[i+1];
+            for(k=0; k<i; k++)
+                sum += 2*m->coeff[j][k]*covar[k][i];
+            m->variance[j] += m->coeff[j][i]*sum;
+        }
     }
-    return variance;
 }
 
-double av_evaluate_lls(LLSModel *m, double *param){
+double av_evaluate_lls(LLSModel *m, double *param, int order){
     int i;
     double out= 0;
 
-    for(i=0; i<m->indep_count; i++)
-        out+= param[i]*m->coeff[i];
+    for(i=0; i<=order; i++)
+        out+= param[i]*m->coeff[order][i];
 
     return out;
 }
@@ -113,27 +113,35 @@ double av_evaluate_lls(LLSModel *m, double *param){
 
 int main(){
     LLSModel m;
-    int i;
+    int i, order;
 
     av_init_lls(&m, 3);
 
     for(i=0; i<100; i++){
         double var[4];
         double eval, variance;
+#if 0
         var[1] = rand() / (double)RAND_MAX;
         var[2] = rand() / (double)RAND_MAX;
         var[3] = rand() / (double)RAND_MAX;
 
-        var[2]= var[1] + var[3];
+        var[2]= var[1] + var[3]/2;
 
         var[0] = var[1] + var[2] + var[3] +  var[1]*var[2]/100;
-
-        eval= av_evaluate_lls(&m, var+1);
+#else
+        var[0] = (rand() / (double)RAND_MAX - 0.5)*2;
+        var[1] = var[0] + rand() / (double)RAND_MAX - 0.5;
+        var[2] = var[1] + rand() / (double)RAND_MAX - 0.5;
+        var[3] = var[2] + rand() / (double)RAND_MAX - 0.5;
+#endif
         av_update_lls(&m, var, 0.99);
-        variance= av_solve_lls(&m, 0.001);
-        av_log(NULL, AV_LOG_DEBUG, "real:%f pred:%f var:%f coeffs:%f %f %f\n",
-            var[0], eval, sqrt(variance / (i+1)),
-            m.coeff[0], m.coeff[1], m.coeff[2]);
+        av_solve_lls(&m, 0.001, 0);
+        for(order=0; order<3; order++){
+            eval= av_evaluate_lls(&m, var+1, order);
+            av_log(NULL, AV_LOG_DEBUG, "real:%f order:%d pred:%f var:%f coeffs:%f %f %f\n",
+                var[0], order, eval, sqrt(m.variance[order] / (i+1)),
+                m.coeff[order][0], m.coeff[order][1], m.coeff[order][2]);
+        }
     }
     return 0;
 }
