@@ -585,6 +585,7 @@ MINGW32*)
 mingw32="yes"
 ;;
 CYGWIN*)
+shlibdir='${PREFIX}/bin'
 v4l="no"
 v4l2="no"
 audio_oss="yes"
@@ -593,6 +594,11 @@ vhook="no"
 extralibs=""
 cygwin="yes"
 EXESUF=".exe"
+SLIBPREF="cyg"
+SLIBSUF=".dll"
+SLIBNAME_WITH_VERSION='$(SLIBPREF)$(NAME)-$(LIBVERSION)$(SLIBSUF)'
+SLIBNAME_WITH_MAJOR='$(SLIBPREF)$(NAME)-$(LIBMAJOR)$(SLIBSUF)'
+SHFLAGS='-shared -Wl,--out-implib=lib$(NAME).dll.a'
 ;;
 Linux)
 ;;
