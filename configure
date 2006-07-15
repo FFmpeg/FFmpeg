@@ -304,10 +304,6 @@ filter_out(){
     echo "$@" | sed "s%\\<$pattern\\>%%g"
 }
 
-if test x"$1" = x"-h" -o x"$1" = x"--help" ; then
-    show_help
-fi
-
 # set temporary file name
 if test ! -z "$TMPDIR" ; then
     TMPDIR1="${TMPDIR}"
@@ -662,6 +658,10 @@ if test -z "$source_path" -o "$source_path" = "." ; then
     source_path_used="no"
 else
     source_path="`cd \"$source_path\"; pwd`"
+fi
+
+if test x"$1" = x"-h" -o x"$1" = x"--help" ; then
+    show_help
 fi
 
 FFMPEG_CONFIGURATION=" "
