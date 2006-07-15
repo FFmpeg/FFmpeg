@@ -27,12 +27,12 @@ depend: $(SRCS)
 	$(CC) -MM $(CFLAGS) $^ 1>.depend
 
 install: $(HOOKS)
-	install -d "$(libdir)/vhook"
-	install -m 755 $(HOOKS) "$(libdir)/vhook"
+	install -d "$(shlibdir)/vhook"
+	install -m 755 $(HOOKS) "$(shlibdir)/vhook"
 
 uninstall:
-	rm -f $(addprefix $(libdir)/vhook/,$(ALLHOOKS))
-	-rmdir "$(libdir)/vhook/"
+	rm -f $(addprefix $(shlibdir)/vhook/,$(ALLHOOKS))
+	-rmdir "$(shlibdir)/vhook/"
 
 %$(SLIBSUF): %.o
 	$(CC) $(LDFLAGS) -g -o $@ $(VHOOKFLAGS) $<

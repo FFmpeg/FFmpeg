@@ -26,6 +26,7 @@ show_help(){
   echo "  --log[=FILE|yes|no]      log tests and output to FILE [config.err]"
   echo "  --prefix=PREFIX          install in PREFIX [$PREFIX]"
   echo "  --libdir=DIR             install libs in DIR [PREFIX/lib]"
+  echo "  --shlibdir=DIR           install shared libs in DIR [PREFIX/lib]"
   echo "  --incdir=DIR             install includes in DIR [PREFIX/include/ffmpeg]"
   echo "  --mandir=DIR             install man page in DIR [PREFIX/man]"
   echo "  --enable-mp3lame         enable MP3 encoding via libmp3lame [default=no]"
@@ -324,6 +325,7 @@ logging="yes"
 logfile="config.err"
 PREFIX="/usr/local"
 libdir='${PREFIX}/lib'
+shlibdir="$libdir"
 incdir='${PREFIX}/include/ffmpeg'
 mandir='${PREFIX}/man'
 bindir='${PREFIX}/bin'
@@ -685,6 +687,8 @@ for opt do
   --prefix=*) PREFIX="$optval"; force_prefix=yes
   ;;
   --libdir=*) libdir="$optval"; force_libdir=yes
+  ;;
+  --shlibdir=*) shlibdir="$optval"
   ;;
   --incdir=*) incdir="$optval"
   ;;
@@ -1558,6 +1562,7 @@ echo "#define FFMPEG_CONFIGURATION "'"'"$FFMPEG_CONFIGURATION"'"' >> $TMPH
 echo "PREFIX=$PREFIX" >> config.mak
 echo "prefix=\$(DESTDIR)\${PREFIX}" >> config.mak
 echo "libdir=\$(DESTDIR)$libdir" >> config.mak
+echo "shlibdir=\$(DESTDIR)$shlibdir" >> config.mak
 echo "incdir=\$(DESTDIR)$incdir" >> config.mak
 echo "bindir=\$(DESTDIR)$bindir" >> config.mak
 echo "mandir=\$(DESTDIR)$mandir" >> config.mak

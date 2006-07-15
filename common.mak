@@ -65,11 +65,11 @@ ifeq ($(CONFIG_MINGW),yes)
 	install $(INSTALLSTRIP) -m 755 $(SLIBNAME) "$(prefix)"
 else
 	install $(INSTALLSTRIP) -m 755 $(SLIBNAME) \
-		$(libdir)/$(SLIBNAME_WITH_VERSION)
+		$(shlibdir)/$(SLIBNAME_WITH_VERSION)
 	ln -sf $(SLIBNAME_WITH_VERSION) \
-		$(libdir)/$(SLIBNAME_WITH_MAJOR)
+		$(shlibdir)/$(SLIBNAME_WITH_MAJOR)
 	ln -sf $(SLIBNAME_WITH_VERSION) \
-		$(libdir)/$(SLIBNAME)
+		$(shlibdir)/$(SLIBNAME)
 endif
 
 install-lib-static: $(LIB)
