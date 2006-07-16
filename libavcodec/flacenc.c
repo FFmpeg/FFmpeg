@@ -43,6 +43,7 @@
 #define ORDER_METHOD_4LEVEL  2
 #define ORDER_METHOD_8LEVEL  3
 #define ORDER_METHOD_SEARCH  4
+#define ORDER_METHOD_LOG     5
 
 #define FLAC_STREAMINFO_SIZE  34
 
@@ -291,7 +292,7 @@ static int flac_encode_init(AVCodecContext *avctx)
            s->options.min_prediction_order, s->options.max_prediction_order);
 
     if(avctx->prediction_order_method >= 0) {
-        if(avctx->prediction_order_method > ORDER_METHOD_SEARCH) {
+        if(avctx->prediction_order_method > ORDER_METHOD_LOG) {
             av_log(avctx, AV_LOG_ERROR, "invalid prediction order method: %d\n",
                    avctx->prediction_order_method);
             return -1;
@@ -309,6 +310,8 @@ static int flac_encode_init(AVCodecContext *avctx)
                                          "8-level"); break;
         case ORDER_METHOD_SEARCH: av_log(avctx, AV_LOG_DEBUG, " order method: %s\n",
                                          "full search"); break;
+        case ORDER_METHOD_LOG:    av_log(avctx, AV_LOG_DEBUG, " order method: %s\n",
+                                         "log search"); break;
     }
 
     if(avctx->min_partition_order >= 0) {
@@ -948,6 +951,26 @@ static int encode_residual(FlacEncodeContext *ctx, int ch)
                                            res, n, i+1, sub->obits, precision);
             if(bits[i] < bits[opt_order]) {
                 opt_order = i;
+            }
+        }
+        opt_order++;
+    } else if(omethod == ORDER_METHOD_LOG) {
+        uint32_t bits[MAX_LPC_ORDER];
+        int step;
+
+        opt_order= min_order - 1 + (max_order-min_order)/3;
+        memset(bits, -1, sizeof(bits));
+
+        for(step=16 ;step; step>>=1){
+            int last= opt_order;
+            for(i=last-step; i<=last+step; i+= step){
+                if(i<min_order-1 || i>=max_order || bits[i] < UINT32_MAX)
+                    continue;
+                encode_residual_lpc(res, smp, n, i+1, coefs[i], shift[i]);
+                bits[i] = calc_rice_params_lpc(&sub->rc, min_porder, max_porder,
+                                            res, n, i+1, sub->obits, precision);
+                if(bits[i] < bits[opt_order])
+                    opt_order= i;
             }
         }
         opt_order++;
