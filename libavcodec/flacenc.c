@@ -237,8 +237,8 @@ static int flac_encode_init(AVCodecContext *avctx)
                                                    ORDER_METHOD_4LEVEL, ORDER_METHOD_LOG,    ORDER_METHOD_4LEVEL,
                                                    ORDER_METHOD_LOG,    ORDER_METHOD_SEARCH, ORDER_METHOD_LOG,
                                                    ORDER_METHOD_SEARCH})[level];
-    s->options.min_partition_order = ((int[]){  2,  2,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0})[level];
-    s->options.max_partition_order = ((int[]){  2,  2,  3,  3,  3,  8, 8, 8, 8, 8, 8, 8, 8})[level];
+    s->options.min_partition_order = ((int[]){  2,  2,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0})[level];
+    s->options.max_partition_order = ((int[]){  2,  2,  3,  3,  3,  8,  8,  8,  8,  8,  8,  8,  8})[level];
 
     /* set compression option overrides from AVCodecContext */
     if(avctx->use_lpc >= 0) {
