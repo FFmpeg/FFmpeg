@@ -2485,7 +2485,7 @@ static int vp3_decode_frame(AVCodecContext *avctx,
         }
 
         /* golden frame is also the current frame */
-        memcpy(&s->current_frame, &s->golden_frame, sizeof(AVFrame));
+        s->current_frame= s->golden_frame;
 
         /* time to figure out pixel addresses? */
         if (!s->pixel_addresses_inited)
@@ -2581,7 +2581,7 @@ if (!s->keyframe) {
         avctx->release_buffer(avctx, &s->last_frame);
 
     /* shuffle frames (last = current) */
-    memcpy(&s->last_frame, &s->current_frame, sizeof(AVFrame));
+    s->last_frame= s->current_frame;
     s->current_frame.data[0]= NULL; /* ensure that we catch any access to this released frame */
 
     return buf_size;
