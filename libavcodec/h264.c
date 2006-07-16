@@ -514,10 +514,8 @@ static void fill_caches(H264Context *h, int mb_type, int for_deblock){
     int left_block[8];
     int i;
 
-    //FIXME deblocking can skip fill_caches much of the time with multiple slices too.
-    // the actual condition is whether we're on the edge of a slice,
-    // and even then the intra and nnz parts are unnecessary.
-    if(for_deblock && h->slice_num == 1 && !FRAME_MBAFF)
+    //FIXME deblocking could skip the intra and nnz parts.
+    if(for_deblock && (h->slice_num == 1 || h->slice_table[mb_xy] == h->slice_table[mb_xy-s->mb_stride]) && !FRAME_MBAFF)
         return;
 
     //wow what a mess, why didn't they simplify the interlacing&intra stuff, i can't imagine that these complex rules are worth it
@@ -604,9 +602,9 @@ static void fill_caches(H264Context *h, int mb_type, int for_deblock){
     h->left_mb_xy[0] = left_xy[0];
     h->left_mb_xy[1] = left_xy[1];
     if(for_deblock){
-        topleft_type = h->slice_table[topleft_xy ] < 255 ? s->current_picture.mb_type[topleft_xy] : 0;
+        topleft_type = 0;
+        topright_type = 0;
         top_type     = h->slice_table[top_xy     ] < 255 ? s->current_picture.mb_type[top_xy]     : 0;
-        topright_type= h->slice_table[topright_xy] < 255 ? s->current_picture.mb_type[topright_xy]: 0;
         left_type[0] = h->slice_table[left_xy[0] ] < 255 ? s->current_picture.mb_type[left_xy[0]] : 0;
         left_type[1] = h->slice_table[left_xy[1] ] < 255 ? s->current_picture.mb_type[left_xy[1]] : 0;
 
@@ -781,7 +779,6 @@ static void fill_caches(H264Context *h, int mb_type, int for_deblock){
     }
 
 #if 1
-    //FIXME direct mb can skip much of this
     if(IS_INTER(mb_type) || IS_DIRECT(mb_type)){
         int list;
         for(list=0; list<1+(h->slice_type==B_TYPE); list++){
@@ -867,6 +864,8 @@ static void fill_caches(H264Context *h, int mb_type, int for_deblock){
                 h->ref_cache[list][scan8[0] + 4 - 1*8]= topright_type ? LIST_NOT_USED : PART_NOT_AVAILABLE;
             }
 
+            if(IS_SKIP(mb_type) || IS_DIRECT(mb_type))
+                continue;
 
             h->ref_cache[list][scan8[5 ]+1] =
             h->ref_cache[list][scan8[7 ]+1] =
@@ -6380,8 +6379,8 @@ decode_intra_mb:
                 sub_partition_count[i]= b_sub_mb_type_info[ h->sub_mb_type[i] ].partition_count;
                 h->sub_mb_type[i]=      b_sub_mb_type_info[ h->sub_mb_type[i] ].type;
             }
-            if(   IS_DIRECT(h->sub_mb_type[0]) || IS_DIRECT(h->sub_mb_type[1])
-               || IS_DIRECT(h->sub_mb_type[2]) || IS_DIRECT(h->sub_mb_type[3])) {
+            if( IS_DIRECT(h->sub_mb_type[0] | h->sub_mb_type[1] |
+                          h->sub_mb_type[2] | h->sub_mb_type[3]) ) {
                 pred_direct_motion(h, &mb_type);
                 if( h->ref_count[0] > 1 || h->ref_count[1] > 1 ) {
                     for( i = 0; i < 4; i++ )
