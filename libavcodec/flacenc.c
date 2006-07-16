@@ -234,8 +234,8 @@ static int flac_encode_init(AVCodecContext *avctx)
     s->options.max_prediction_order= ((int[]){  3,  4,  4,  6,  8,  8,  8,  8, 12, 12, 12, 32, 32})[level];
     s->options.prediction_order_method = ((int[]){ ORDER_METHOD_EST,    ORDER_METHOD_EST,    ORDER_METHOD_EST,
                                                    ORDER_METHOD_EST,    ORDER_METHOD_EST,    ORDER_METHOD_EST,
-                                                   ORDER_METHOD_2LEVEL, ORDER_METHOD_4LEVEL, ORDER_METHOD_4LEVEL,
-                                                   ORDER_METHOD_8LEVEL, ORDER_METHOD_SEARCH, ORDER_METHOD_8LEVEL,
+                                                   ORDER_METHOD_4LEVEL, ORDER_METHOD_LOG,    ORDER_METHOD_4LEVEL,
+                                                   ORDER_METHOD_LOG,    ORDER_METHOD_SEARCH, ORDER_METHOD_LOG,
                                                    ORDER_METHOD_SEARCH})[level];
     s->options.min_partition_order = ((int[]){  2,  2,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0})[level];
     s->options.max_partition_order = ((int[]){  2,  2,  3,  3,  3,  8, 8, 8, 8, 8, 8, 8, 8})[level];
