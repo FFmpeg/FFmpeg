@@ -2648,16 +2648,9 @@ static int read_huffman_tree(AVCodecContext *avctx, GetBitContext *gb)
 static int theora_decode_header(AVCodecContext *avctx, GetBitContext gb)
 {
     Vp3DecodeContext *s = avctx->priv_data;
-    int major, minor, micro;
 
-    major = get_bits(&gb, 8); /* version major */
-    minor = get_bits(&gb, 8); /* version minor */
-    micro = get_bits(&gb, 8); /* version micro */
-    av_log(avctx, AV_LOG_INFO, "Theora bitstream version %d.%d.%d\n",
-        major, minor, micro);
-
-    /* FIXME: endianess? */
-    s->theora = (major << 16) | (minor << 8) | micro;
+    s->theora = get_bits_long(&gb, 24);
+    av_log(avctx, AV_LOG_INFO, "Theora bitstream version %X\n", s->theora);
 
     /* 3.2.0 aka alpha3 has the same frame orientation as original vp3 */
     /* but previous versions have the image flipped relative to vp3 */
@@ -2724,16 +2717,6 @@ static int theora_decode_header(AVCodecContext *avctx, GetBitContext gb)
     avctx->height = s->height;
 
     return 0;
-}
-
-static inline int theora_get_32bit(GetBitContext gb)
-{
-    int ret = get_bits(&gb, 8);
-    ret += get_bits(&gb, 8) << 8;
-    ret += get_bits(&gb, 8) << 16;
-    ret += get_bits(&gb, 8) << 24;
-
-    return ret;
 }
 
 static int theora_decode_tables(AVCodecContext *avctx, GetBitContext gb)
