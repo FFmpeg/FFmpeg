@@ -2383,7 +2383,7 @@ static int vc1_decode_p_block(VC1Context *v, DCTELEM block[64], int n, int mquan
  * @todo TODO: Extend to AP
  * @fixme FIXME: DC value for inter blocks not set
  */
-static int vc1_decode_p_mb(VC1Context *v, DCTELEM block[6][64])
+static int vc1_decode_p_mb(VC1Context *v)
 {
     MpegEncContext *s = &v->s;
     GetBitContext *gb = &s->gb;
@@ -2466,10 +2466,10 @@ static int vc1_decode_p_mb(VC1Context *v, DCTELEM block[6][64])
                     if(i == 1 || i == 3 || s->mb_x)
                         v->c_avail = v->mb_type[0][s->block_index[i] - 1];
 
-                    vc1_decode_intra_block(v, block[i], i, val, mquant, (i&4)?v->codingset2:v->codingset);
-                    vc1_inv_trans(block[i], 8, 8);
-                    for(j = 0; j < 64; j++) block[i][j] += 128;
-                    s->dsp.put_pixels_clamped(block[i], s->dest[dst_idx] + off, s->linesize >> ((i & 4) >> 2));
+                    vc1_decode_intra_block(v, s->block[i], i, val, mquant, (i&4)?v->codingset2:v->codingset);
+                    vc1_inv_trans(s->block[i], 8, 8);
+                    for(j = 0; j < 64; j++) s->block[i][j] += 128;
+                    s->dsp.put_pixels_clamped(s->block[i], s->dest[dst_idx] + off, s->linesize >> ((i & 4) >> 2));
                     /* TODO: proper loop filtering */
                     if(v->pq >= 9 && v->overlap) {
                         if(v->a_avail)
@@ -2478,10 +2478,10 @@ static int vc1_decode_p_mb(VC1Context *v, DCTELEM block[6][64])
                             vc1_h_overlap(s->dest[dst_idx] + off, s->linesize >> ((i & 4) >> 2));
                     }
                 } else if(val) {
-                    vc1_decode_p_block(v, block[i], i, mquant, ttmb, first_block);
+                    vc1_decode_p_block(v, s->block[i], i, mquant, ttmb, first_block);
                     if(!v->ttmbf && ttmb < 8) ttmb = -1;
                     first_block = 0;
-                    s->dsp.add_pixels_clamped(block[i], s->dest[dst_idx] + off, (i&4)?s->uvlinesize:s->linesize);
+                    s->dsp.add_pixels_clamped(s->block[i], s->dest[dst_idx] + off, (i&4)?s->uvlinesize:s->linesize);
                 }
             }
         }
@@ -2531,7 +2531,7 @@ static int vc1_decode_p_mb(VC1Context *v, DCTELEM block[6][64])
                 if(!coded_inter) coded_inter = !is_intra[i] & is_coded[i];
             }
             // if there are no coded blocks then don't do anything more
-            if(!intra_count && !coded_inter) return 0;
+            if(!intra_count && !coded_inter) return;
             dst_idx = 0;
             GET_MQUANT();
             s->current_picture.qscale_table[mb_pos] = mquant;
@@ -2565,8 +2565,8 @@ static int vc1_decode_p_mb(VC1Context *v, DCTELEM block[6][64])
                         v->c_avail = v->mb_type[0][s->block_index[i] - 1];
 
                     vc1_decode_intra_block(v, s->block[i], i, is_coded[i], mquant, (i&4)?v->codingset2:v->codingset);
-                    vc1_inv_trans(block[i], 8, 8);
-                    for(j = 0; j < 64; j++) block[i][j] += 128;
+                    vc1_inv_trans(s->block[i], 8, 8);
+                    for(j = 0; j < 64; j++) s->block[i][j] += 128;
                     s->dsp.put_pixels_clamped(s->block[i], s->dest[dst_idx] + off, (i&4)?s->uvlinesize:s->linesize);
                     /* TODO: proper loop filtering */
                     if(v->pq >= 9 && v->overlap) {
@@ -2745,7 +2745,7 @@ static void vc1_decode_p_blocks(VC1Context *v)
             ff_update_block_index(s);
             s->dsp.clear_blocks(s->block[0]);
 
-            vc1_decode_p_mb(v, s->block);
+            vc1_decode_p_mb(v);
             if(get_bits_count(&s->gb) > v->bits || get_bits_count(&s->gb) < 0) {
                 av_log(s->avctx, AV_LOG_ERROR, "Bits overconsumption: %i > %i at %ix%i\n", get_bits_count(&s->gb), v->bits,s->mb_x,s->mb_y);
                 return;
