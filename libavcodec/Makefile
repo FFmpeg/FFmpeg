@@ -239,7 +239,7 @@ EXTRAOBJS += amr/*.o
 EXTRADEPS=amrlibs
 endif
 
-OBJS-$(CONFIG_AMR_WB)                 +=  amrwb_float/dec_acelp.o \
+OBJS-$(CONFIG_AMR_WB)                  += amrwb_float/dec_acelp.o \
                                           amrwb_float/dec_dtx.o   \
                                           amrwb_float/dec_gain.o  \
                                           amrwb_float/dec_if.o    \
