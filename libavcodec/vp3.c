@@ -328,7 +328,7 @@ typedef struct Vp3DecodeContext {
     int bounding_values_array[256];
 } Vp3DecodeContext;
 
-static int theora_decode_tables(AVCodecContext *avctx, GetBitContext gb);
+static int theora_decode_tables(AVCodecContext *avctx, GetBitContext *gb);
 
 /************************************************************************
  * VP3 specific functions
@@ -2417,10 +2417,10 @@ static int vp3_decode_frame(AVCodecContext *avctx,
         switch(ptype)
         {
             case 1:
-                theora_decode_comments(avctx, gb);
+                theora_decode_comments(avctx, &gb);
                 break;
             case 2:
-                theora_decode_tables(avctx, gb);
+                theora_decode_tables(avctx, &gb);
                     init_dequantizer(s);
                 break;
             default:
@@ -2645,11 +2645,11 @@ static int read_huffman_tree(AVCodecContext *avctx, GetBitContext *gb)
     return 0;
 }
 
-static int theora_decode_header(AVCodecContext *avctx, GetBitContext gb)
+static int theora_decode_header(AVCodecContext *avctx, GetBitContext *gb)
 {
     Vp3DecodeContext *s = avctx->priv_data;
 
-    s->theora = get_bits_long(&gb, 24);
+    s->theora = get_bits_long(gb, 24);
     av_log(avctx, AV_LOG_INFO, "Theora bitstream version %X\n", s->theora);
 
     /* 3.2.0 aka alpha3 has the same frame orientation as original vp3 */
@@ -2660,8 +2660,8 @@ static int theora_decode_header(AVCodecContext *avctx, GetBitContext gb)
         av_log(avctx, AV_LOG_DEBUG, "Old (<alpha3) Theora bitstream, flipped image\n");
     }
 
-    s->width = get_bits(&gb, 16) << 4;
-    s->height = get_bits(&gb, 16) << 4;
+    s->width = get_bits(gb, 16) << 4;
+    s->height = get_bits(gb, 16) << 4;
 
     if(avcodec_check_dimensions(avctx, s->width, s->height)){
         av_log(avctx, AV_LOG_ERROR, "Invalid dimensions (%dx%d)\n", s->width, s->height);
@@ -2671,47 +2671,47 @@ static int theora_decode_header(AVCodecContext *avctx, GetBitContext gb)
 
     if (s->theora >= 0x030400)
     {
-        skip_bits(&gb, 32); /* total number of superblocks in a frame */
+        skip_bits(gb, 32); /* total number of superblocks in a frame */
         // fixme, the next field is 36bits long
-        skip_bits(&gb, 32); /* total number of blocks in a frame */
-        skip_bits(&gb, 4); /* total number of blocks in a frame */
-        skip_bits(&gb, 32); /* total number of macroblocks in a frame */
+        skip_bits(gb, 32); /* total number of blocks in a frame */
+        skip_bits(gb, 4); /* total number of blocks in a frame */
+        skip_bits(gb, 32); /* total number of macroblocks in a frame */
 
-        skip_bits(&gb, 24); /* frame width */
-        skip_bits(&gb, 24); /* frame height */
+        skip_bits(gb, 24); /* frame width */
+        skip_bits(gb, 24); /* frame height */
     }
     else
     {
-        skip_bits(&gb, 24); /* frame width */
-        skip_bits(&gb, 24); /* frame height */
+        skip_bits(gb, 24); /* frame width */
+        skip_bits(gb, 24); /* frame height */
     }
 
-    skip_bits(&gb, 8); /* offset x */
-    skip_bits(&gb, 8); /* offset y */
+    skip_bits(gb, 8); /* offset x */
+    skip_bits(gb, 8); /* offset y */
 
-    skip_bits(&gb, 32); /* fps numerator */
-    skip_bits(&gb, 32); /* fps denumerator */
-    skip_bits(&gb, 24); /* aspect numerator */
-    skip_bits(&gb, 24); /* aspect denumerator */
+    skip_bits(gb, 32); /* fps numerator */
+    skip_bits(gb, 32); /* fps denumerator */
+    skip_bits(gb, 24); /* aspect numerator */
+    skip_bits(gb, 24); /* aspect denumerator */
 
     if (s->theora < 0x030200)
-        skip_bits(&gb, 5); /* keyframe frequency force */
-    skip_bits(&gb, 8); /* colorspace */
+        skip_bits(gb, 5); /* keyframe frequency force */
+    skip_bits(gb, 8); /* colorspace */
     if (s->theora >= 0x030400)
-        skip_bits(&gb, 2); /* pixel format: 420,res,422,444 */
-    skip_bits(&gb, 24); /* bitrate */
+        skip_bits(gb, 2); /* pixel format: 420,res,422,444 */
+    skip_bits(gb, 24); /* bitrate */
 
-    skip_bits(&gb, 6); /* quality hint */
+    skip_bits(gb, 6); /* quality hint */
 
     if (s->theora >= 0x030200)
     {
-        skip_bits(&gb, 5); /* keyframe frequency force */
+        skip_bits(gb, 5); /* keyframe frequency force */
 
         if (s->theora < 0x030400)
-            skip_bits(&gb, 5); /* spare bits */
+            skip_bits(gb, 5); /* spare bits */
     }
 
-//    align_get_bits(&gb);
+//    align_get_bits(gb);
 
     avctx->width = s->width;
     avctx->height = s->height;
@@ -2719,36 +2719,36 @@ static int theora_decode_header(AVCodecContext *avctx, GetBitContext gb)
     return 0;
 }
 
-static int theora_decode_tables(AVCodecContext *avctx, GetBitContext gb)
+static int theora_decode_tables(AVCodecContext *avctx, GetBitContext *gb)
 {
     Vp3DecodeContext *s = avctx->priv_data;
     int i, n, matrices;
 
     if (s->theora >= 0x030200) {
-        n = get_bits(&gb, 3);
+        n = get_bits(gb, 3);
         /* loop filter limit values table */
         for (i = 0; i < 64; i++)
-            s->filter_limit_values[i] = get_bits(&gb, n);
+            s->filter_limit_values[i] = get_bits(gb, n);
     }
 
     if (s->theora >= 0x030200)
-        n = get_bits(&gb, 4) + 1;
+        n = get_bits(gb, 4) + 1;
     else
         n = 16;
     /* quality threshold table */
     for (i = 0; i < 64; i++)
-        s->coded_ac_scale_factor[i] = get_bits(&gb, n);
+        s->coded_ac_scale_factor[i] = get_bits(gb, n);
 
     if (s->theora >= 0x030200)
-        n = get_bits(&gb, 4) + 1;
+        n = get_bits(gb, 4) + 1;
     else
         n = 16;
     /* dc scale factor table */
     for (i = 0; i < 64; i++)
-        s->coded_dc_scale_factor[i] = get_bits(&gb, n);
+        s->coded_dc_scale_factor[i] = get_bits(gb, n);
 
     if (s->theora >= 0x030200)
-        matrices = get_bits(&gb, 9) + 1;
+        matrices = get_bits(gb, 9) + 1;
     else
         matrices = 3;
     if (matrices != 3) {
@@ -2757,39 +2757,39 @@ static int theora_decode_tables(AVCodecContext *avctx, GetBitContext gb)
     }
     /* y coeffs */
     for (i = 0; i < 64; i++)
-        s->coded_intra_y_dequant[i] = get_bits(&gb, 8);
+        s->coded_intra_y_dequant[i] = get_bits(gb, 8);
 
     /* uv coeffs */
     for (i = 0; i < 64; i++)
-        s->coded_intra_c_dequant[i] = get_bits(&gb, 8);
+        s->coded_intra_c_dequant[i] = get_bits(gb, 8);
 
     /* inter coeffs */
     for (i = 0; i < 64; i++)
-        s->coded_inter_dequant[i] = get_bits(&gb, 8);
+        s->coded_inter_dequant[i] = get_bits(gb, 8);
 
     /* skip unknown matrices */
     n = matrices - 3;
     while(n--)
         for (i = 0; i < 64; i++)
-            skip_bits(&gb, 8);
+            skip_bits(gb, 8);
 
     for (i = 0; i <= 1; i++) {
         for (n = 0; n <= 2; n++) {
             int newqr;
             if (i > 0 || n > 0)
-                newqr = get_bits(&gb, 1);
+                newqr = get_bits(gb, 1);
             else
                 newqr = 1;
             if (!newqr) {
                 if (i > 0)
-                    get_bits(&gb, 1);
+                    get_bits(gb, 1);
             }
             else {
                 int qi = 0;
-                skip_bits(&gb, av_log2(matrices-1)+1);
+                skip_bits(gb, av_log2(matrices-1)+1);
                 while (qi < 63) {
-                    qi += get_bits(&gb, av_log2(63-qi)+1) + 1;
-                    skip_bits(&gb, av_log2(matrices-1)+1);
+                    qi += get_bits(gb, av_log2(63-qi)+1) + 1;
+                    skip_bits(gb, av_log2(matrices-1)+1);
                 }
                 if (qi > 63) {
                     av_log(avctx, AV_LOG_ERROR, "invalid qi %d > 63\n", qi);
@@ -2803,11 +2803,11 @@ static int theora_decode_tables(AVCodecContext *avctx, GetBitContext gb)
     for (s->hti = 0; s->hti < 80; s->hti++) {
         s->entries = 0;
         s->huff_code_size = 1;
-        if (!get_bits(&gb, 1)) {
+        if (!get_bits(gb, 1)) {
             s->hbits = 0;
-            read_huffman_tree(avctx, &gb);
+            read_huffman_tree(avctx, gb);
             s->hbits = 1;
-            read_huffman_tree(avctx, &gb);
+            read_huffman_tree(avctx, gb);
         }
     }
 
@@ -2845,7 +2845,7 @@ static int theora_decode_init(AVCodecContext *avctx)
      if (!(ptype & 0x80))
      {
         av_log(avctx, AV_LOG_ERROR, "Invalid extradata!\n");
-        return -1;
+//        return -1;
      }
 
     // FIXME: check for this aswell
@@ -2854,19 +2854,21 @@ static int theora_decode_init(AVCodecContext *avctx)
     switch(ptype)
     {
         case 0x80:
-            theora_decode_header(avctx, gb);
+            theora_decode_header(avctx, &gb);
                 break;
         case 0x81:
 // FIXME: is this needed? it breaks sometimes
 //            theora_decode_comments(avctx, gb);
             break;
         case 0x82:
-            theora_decode_tables(avctx, gb);
+            theora_decode_tables(avctx, &gb);
             break;
         default:
             av_log(avctx, AV_LOG_ERROR, "Unknown Theora config packet: %d\n", ptype&~0x80);
             break;
     }
+    if(8*op_bytes != get_bits_count(&gb))
+        av_log(avctx, AV_LOG_ERROR, "%d bits left in packet %X\n", 8*op_bytes - get_bits_count(&gb), ptype);
   }
 
     vp3_decode_init(avctx);
