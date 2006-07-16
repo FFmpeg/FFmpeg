@@ -221,19 +221,23 @@ static int flac_encode_init(AVCodecContext *avctx)
     av_log(avctx, AV_LOG_DEBUG, " compression: %d\n", s->options.compression_level);
 
     level= s->options.compression_level;
-    if(level > 5) {
+    if(level > 12) {
         av_log(avctx, AV_LOG_ERROR, "invalid compression level: %d\n",
                s->options.compression_level);
         return -1;
     }
 
-    s->options.block_time_ms       = ((int[]){ 27, 27, 27,105,105,105})[level];
-    s->options.use_lpc             = ((int[]){  0,  0,  0,  1,  1,  1})[level];
-    s->options.min_prediction_order= ((int[]){  2,  0,  0,  1,  1,  1})[level];
-    s->options.max_prediction_order= ((int[]){  3,  4,  4,  6,  8,  8})[level];
-    s->options.prediction_order_method = ORDER_METHOD_EST;
-    s->options.min_partition_order = ((int[]){  2,  2,  0,  0,  0,  0})[level];
-    s->options.max_partition_order = ((int[]){  2,  2,  3,  3,  3,  8})[level];
+    s->options.block_time_ms       = ((int[]){ 27, 27, 27,105,105,105,105,105,105,105,105,105,105})[level];
+    s->options.use_lpc             = ((int[]){  0,  0,  0,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1})[level];
+    s->options.min_prediction_order= ((int[]){  2,  0,  0,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1})[level];
+    s->options.max_prediction_order= ((int[]){  3,  4,  4,  6,  8,  8,  8,  8, 12, 12, 12, 32, 32})[level];
+    s->options.prediction_order_method = ((int[]){ ORDER_METHOD_EST,    ORDER_METHOD_EST,    ORDER_METHOD_EST,
+                                                   ORDER_METHOD_EST,    ORDER_METHOD_EST,    ORDER_METHOD_EST,
+                                                   ORDER_METHOD_2LEVEL, ORDER_METHOD_4LEVEL, ORDER_METHOD_4LEVEL,
+                                                   ORDER_METHOD_8LEVEL, ORDER_METHOD_SEARCH, ORDER_METHOD_8LEVEL,
+                                                   ORDER_METHOD_SEARCH})[level];
+    s->options.min_partition_order = ((int[]){  2,  2,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 0})[level];
+    s->options.max_partition_order = ((int[]){  2,  2,  3,  3,  3,  8, 8, 8, 8, 8, 8, 8, 8})[level];
 
     /* set compression option overrides from AVCodecContext */
     if(avctx->use_lpc >= 0) {
@@ -294,7 +298,7 @@ static int flac_encode_init(AVCodecContext *avctx)
         }
         s->options.prediction_order_method = avctx->prediction_order_method;
     }
-    switch(avctx->prediction_order_method) {
+    switch(s->options.prediction_order_method) {
         case ORDER_METHOD_EST:    av_log(avctx, AV_LOG_DEBUG, " order method: %s\n",
                                          "estimate"); break;
         case ORDER_METHOD_2LEVEL: av_log(avctx, AV_LOG_DEBUG, " order method: %s\n",
@@ -728,7 +732,7 @@ static int estimate_best_order(double *ref, int max_order)
  */
 static int lpc_calc_coefs(const int32_t *samples, int blocksize, int max_order,
                           int precision, int32_t coefs[][MAX_LPC_ORDER],
-                          int *shift, int use_lpc)
+                          int *shift, int use_lpc, int omethod)
 {
     double autoc[MAX_LPC_ORDER+1];
     double ref[MAX_LPC_ORDER];
@@ -776,10 +780,17 @@ static int lpc_calc_coefs(const int32_t *samples, int blocksize, int max_order,
         for(i=max_order-1; i>0; i--)
             ref[i] = ref[i-1] - ref[i];
     }
-    opt_order = estimate_best_order(ref, max_order);
+    opt_order = max_order;
 
-    i = opt_order-1;
-    quantize_lpc_coefs(lpc[i], i+1, precision, coefs[i], &shift[i]);
+    if(omethod == ORDER_METHOD_EST) {
+        opt_order = estimate_best_order(ref, max_order);
+        i = opt_order-1;
+        quantize_lpc_coefs(lpc[i], i+1, precision, coefs[i], &shift[i]);
+    } else {
+        for(i=0; i<max_order; i++) {
+            quantize_lpc_coefs(lpc[i], i+1, precision, coefs[i], &shift[i]);
+        }
+    }
 
     return opt_order;
 }
@@ -839,7 +850,7 @@ static void encode_residual_lpc(int32_t *res, const int32_t *smp, int n,
 static int encode_residual(FlacEncodeContext *ctx, int ch)
 {
     int i, n;
-    int min_order, max_order, opt_order, precision;
+    int min_order, max_order, opt_order, precision, omethod;
     int min_porder, max_porder;
     FlacFrame *frame;
     FlacSubframe *sub;
@@ -875,6 +886,7 @@ static int encode_residual(FlacEncodeContext *ctx, int ch)
     min_porder = ctx->options.min_partition_order;
     max_porder = ctx->options.max_partition_order;
     precision = ctx->options.lpc_coeff_precision;
+    omethod = ctx->options.prediction_order_method;
 
     /* FIXED */
     if(!ctx->options.use_lpc || max_order == 0 || (n <= max_order)) {
@@ -902,7 +914,46 @@ static int encode_residual(FlacEncodeContext *ctx, int ch)
     }
 
     /* LPC */
-    sub->order = lpc_calc_coefs(smp, n, max_order, precision, coefs, shift, ctx->options.use_lpc);
+    opt_order = lpc_calc_coefs(smp, n, max_order, precision, coefs, shift, ctx->options.use_lpc, omethod);
+
+    if(omethod == ORDER_METHOD_2LEVEL ||
+       omethod == ORDER_METHOD_4LEVEL ||
+       omethod == ORDER_METHOD_8LEVEL) {
+        int levels = 1 << omethod;
+        uint32_t bits[levels];
+        int order;
+        int opt_index = levels-1;
+        opt_order = max_order-1;
+        bits[opt_index] = UINT32_MAX;
+        for(i=levels-1; i>=0; i--) {
+            order = min_order + (((max_order-min_order+1) * (i+1)) / levels)-1;
+            if(order < 0) order = 0;
+            encode_residual_lpc(res, smp, n, order+1, coefs[order], shift[order]);
+            bits[i] = calc_rice_params_lpc(&sub->rc, min_porder, max_porder,
+                                           res, n, order+1, sub->obits, precision);
+            if(bits[i] < bits[opt_index]) {
+                opt_index = i;
+                opt_order = order;
+            }
+        }
+        opt_order++;
+    } else if(omethod == ORDER_METHOD_SEARCH) {
+        // brute-force optimal order search
+        uint32_t bits[MAX_LPC_ORDER];
+        opt_order = 0;
+        bits[0] = UINT32_MAX;
+        for(i=min_order-1; i<max_order; i++) {
+            encode_residual_lpc(res, smp, n, i+1, coefs[i], shift[i]);
+            bits[i] = calc_rice_params_lpc(&sub->rc, min_porder, max_porder,
+                                           res, n, i+1, sub->obits, precision);
+            if(bits[i] < bits[opt_order]) {
+                opt_order = i;
+            }
+        }
+        opt_order++;
+    }
+
+    sub->order = opt_order;
     sub->type = FLAC_SUBFRAME_LPC;
     sub->type_code = sub->type | (sub->order-1);
     sub->shift = shift[sub->order-1];
