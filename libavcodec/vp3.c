@@ -1145,17 +1145,10 @@ static int unpack_vectors(Vp3DecodeContext *s, GetBitContext *gb)
                         motion_y[4] += motion_y[k];
                     }
 
-                    if (motion_x[4] >= 0)
-                        motion_x[4] = (motion_x[4] + 2) / 4;
-                    else
-                        motion_x[4] = (motion_x[4] - 2) / 4;
-                    motion_x[5] = motion_x[4];
-
-                    if (motion_y[4] >= 0)
-                        motion_y[4] = (motion_y[4] + 2) / 4;
-                    else
-                        motion_y[4] = (motion_y[4] - 2) / 4;
-                    motion_y[5] = motion_y[4];
+                    motion_x[5]=
+                    motion_x[4]= RSHIFT(motion_x[4], 2);
+                    motion_y[5]=
+                    motion_y[4]= RSHIFT(motion_y[4], 2);
 
                     /* vector maintenance; vector[3] is treated as the
                      * last vector in this case */
