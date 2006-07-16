@@ -2783,9 +2783,11 @@ static int theora_decode_tables(AVCodecContext *avctx, GetBitContext *gb)
             if (!newqr) {
                 if (i > 0)
                     get_bits(gb, 1);
+                //FIXME this is simply incomplete
             }
             else {
                 int qi = 0;
+                //FIXME this is simply incomplete
                 skip_bits(gb, av_log2(matrices-1)+1);
                 while (qi < 63) {
                     qi += get_bits(gb, av_log2(63-qi)+1) + 1;
