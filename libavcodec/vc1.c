@@ -320,6 +320,7 @@ typedef struct VC1Context{
     int mv_type_is_raw;           ///< mv type mb plane is not coded
     int skip_is_raw;              ///< skip mb plane is not coded
     uint8_t luty[256], lutuv[256]; // lookup tables used for intensity compensation
+    int rnd;                      ///< rounding control
 
     /** Frame decoding info for S/M profiles only */
     //@{
@@ -978,19 +979,27 @@ static void vc1_mc_1mv(VC1Context *v)
         my >>= 1;
         dxy = ((my & 1) << 1) | (mx & 1);
 
-        dsp->put_no_rnd_pixels_tab[0][dxy](s->dest[0], srcY, s->linesize, 16);
+        if(!v->rnd)
+            dsp->put_pixels_tab[0][dxy](s->dest[0], srcY, s->linesize, 16);
+        else
+            dsp->put_no_rnd_pixels_tab[0][dxy](s->dest[0], srcY, s->linesize, 16);
     } else {
         dxy = ((my & 3) << 2) | (mx & 3);
 
-        dsp->put_no_rnd_qpel_pixels_tab[0][dxy](s->dest[0], srcY, s->linesize);
+        if(!v->rnd)
+            dsp->put_qpel_pixels_tab[0][dxy](s->dest[0], srcY, s->linesize);
+        else
+            dsp->put_no_rnd_qpel_pixels_tab[0][dxy](s->dest[0], srcY, s->linesize);
     }
-    uvmx >>= 1;
-    uvmy >>= 1;
-    uvdxy = ((uvmy & 1) << 1) | (uvmx & 1);
-    dsp->put_no_rnd_pixels_tab[1][uvdxy](s->dest[1], srcU, s->uvlinesize, 8);
-    dsp->put_no_rnd_pixels_tab[1][uvdxy](s->dest[2], srcV, s->uvlinesize, 8);
-//    dsp->put_mspel_pixels_tab[uvdxy](s->dest[1], srcU, s->uvlinesize);
-//    dsp->put_mspel_pixels_tab[uvdxy](s->dest[2], srcV, s->uvlinesize);
+    /* Chroma MC always uses qpel blilinear */
+    uvdxy = ((uvmy & 3) << 2) | (uvmx & 3);
+    if(!v->rnd){
+        dsp->put_qpel_pixels_tab[1][uvdxy](s->dest[1], srcU, s->uvlinesize);
+        dsp->put_qpel_pixels_tab[1][uvdxy](s->dest[2], srcV, s->uvlinesize);
+    }else{
+        dsp->put_no_rnd_qpel_pixels_tab[1][uvdxy](s->dest[1], srcU, s->uvlinesize);
+        dsp->put_no_rnd_qpel_pixels_tab[1][uvdxy](s->dest[2], srcV, s->uvlinesize);
+    }
 }
 
 /** Do motion compensation for 4-MV macroblock - luminance block
@@ -1030,11 +1039,17 @@ static void vc1_mc_4mv_luma(VC1Context *v, int n)
         my >>= 1;
         dxy = ((my & 1) << 1) | (mx & 1);
 
-        dsp->put_no_rnd_pixels_tab[1][dxy](s->dest[0] + off, srcY, s->linesize, 8);
+        if(!v->rnd)
+            dsp->put_pixels_tab[1][dxy](s->dest[0] + off, srcY, s->linesize, 8);
+        else
+            dsp->put_no_rnd_pixels_tab[1][dxy](s->dest[0] + off, srcY, s->linesize, 8);
     } else {
         dxy = ((my & 3) << 2) | (mx & 3);
 
-        dsp->put_no_rnd_qpel_pixels_tab[1][dxy](s->dest[0] + off, srcY, s->linesize);
+        if(!v->rnd)
+            dsp->put_qpel_pixels_tab[1][dxy](s->dest[0] + off, srcY, s->linesize);
+        else
+            dsp->put_no_rnd_qpel_pixels_tab[1][dxy](s->dest[0] + off, srcY, s->linesize);
     }
 }
 
@@ -1128,11 +1143,15 @@ static void vc1_mc_4mv_chroma(VC1Context *v)
         uvmy = uvmy + ((uvmy<0)?(uvmy&1):-(uvmy&1));
     }
 
-    uvmx >>= 1;
-    uvmy >>= 1;
-    uvdxy = ((uvmy & 1) << 1) | (uvmx & 1);
-    dsp->put_no_rnd_pixels_tab[1][uvdxy](s->dest[1], srcU, s->uvlinesize, 8);
-    dsp->put_no_rnd_pixels_tab[1][uvdxy](s->dest[2], srcV, s->uvlinesize, 8);
+    /* Chroma MC always uses qpel blilinear */
+    uvdxy = ((uvmy & 3) << 2) | (uvmx & 3);
+    if(!v->rnd){
+        dsp->put_qpel_pixels_tab[1][uvdxy](s->dest[1], srcU, s->uvlinesize);
+        dsp->put_qpel_pixels_tab[1][uvdxy](s->dest[2], srcV, s->uvlinesize);
+    }else{
+        dsp->put_no_rnd_qpel_pixels_tab[1][uvdxy](s->dest[1], srcU, s->uvlinesize);
+        dsp->put_no_rnd_qpel_pixels_tab[1][uvdxy](s->dest[2], srcV, s->uvlinesize);
+    }
 }
 
 /**
@@ -1298,6 +1317,12 @@ static int vc1_parse_frame_header(VC1Context *v, GetBitContext* gb)
 
     if(v->s.pict_type == I_TYPE)
         get_bits(gb, 7); // skip buffer fullness
+
+    /* calculate RND */
+    if(v->s.pict_type == I_TYPE)
+        v->rnd = 1;
+    if(v->s.pict_type == P_TYPE)
+        v->rnd ^= 1;
 
     /* Quantizer stuff */
     pqindex = get_bits(gb, 5);
