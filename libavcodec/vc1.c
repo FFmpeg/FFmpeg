@@ -1331,10 +1331,11 @@ static int vc1_parse_frame_header(VC1Context *v, GetBitContext* gb)
     else
         v->pq = pquant_table[v->quantizer_mode-1][pqindex];
 
+    v->pquantizer = 1;
     if (v->quantizer_mode == QUANT_FRAME_IMPLICIT)
         v->pquantizer = pqindex < 9;
-    if (v->quantizer_mode == QUANT_UNIFORM || v->quantizer_mode == QUANT_NON_UNIFORM)
-        v->pquantizer = v->quantizer_mode == QUANT_UNIFORM;
+    if (v->quantizer_mode == QUANT_NON_UNIFORM)
+        v->pquantizer = 0;
     v->pqindex = pqindex;
     if (pqindex < 9) v->halfpq = get_bits(gb, 1);
     else v->halfpq = 0;
@@ -2151,7 +2152,7 @@ static int vc1_decode_intra_block(VC1Context *v, DCTELEM block[64], int n, int c
     ac_val = s->ac_val[0][0] + s->block_index[n] * 16;
     ac_val2 = ac_val;
 
-    scale = mquant * 2;
+    scale = mquant * 2 + v->halfpq;
 
     if(dc_pred_dir) //left
         ac_val -= 16;
@@ -2289,7 +2290,7 @@ static int vc1_decode_p_block(VC1Context *v, DCTELEM block[64], int n, int mquan
         if(ttblk == TT_8X4_TOP || ttblk == TT_8X4_BOTTOM) ttblk = TT_8X4;
         if(ttblk == TT_4X8_RIGHT || ttblk == TT_4X8_LEFT) ttblk = TT_4X8;
     }
-    scale = 2 * mquant;
+    scale = 2 * mquant + v->halfpq;
 
     // convert transforms like 8X4_TOP to generic TT and SUBBLKPAT
     if(ttblk == TT_8X4_TOP || ttblk == TT_8X4_BOTTOM) {
@@ -2311,6 +2312,8 @@ static int vc1_decode_p_block(VC1Context *v, DCTELEM block[64], int n, int mquan
                 break;
             idx = vc1_simple_progressive_8x8_zz[i++];
             block[idx] = value * scale;
+            if(!v->pquantizer)
+                block[idx] += (block[idx] < 0) ? -mquant : mquant;
         }
         vc1_inv_trans(block, 8, 8);
         break;
@@ -2326,6 +2329,8 @@ static int vc1_decode_p_block(VC1Context *v, DCTELEM block[64], int n, int mquan
                     break;
                 idx = vc1_simple_progressive_4x4_zz[i++];
                 block[idx + off] = value * scale;
+                if(!v->pquantizer)
+                    block[idx + off] += (block[idx + off] < 0) ? -mquant : mquant;
             }
             if(!(subblkpat & (1 << (3 - j))))
                 vc1_inv_trans(block + off, 4, 4);
@@ -2343,6 +2348,8 @@ static int vc1_decode_p_block(VC1Context *v, DCTELEM block[64], int n, int mquan
                     break;
                 idx = vc1_simple_progressive_8x4_zz[i++];
                 block[idx + off] = value * scale;
+                if(!v->pquantizer)
+                    block[idx + off] += (block[idx + off] < 0) ? -mquant : mquant;
             }
             if(!(subblkpat & (1 << (1 - j))))
                 vc1_inv_trans(block + off, 8, 4);
@@ -2360,6 +2367,8 @@ static int vc1_decode_p_block(VC1Context *v, DCTELEM block[64], int n, int mquan
                     break;
                 idx = vc1_simple_progressive_4x8_zz[i++];
                 block[idx + off] = value * scale;
+                if(!v->pquantizer)
+                    block[idx + off] += (block[idx + off] < 0) ? -mquant : mquant;
             }
             if(!(subblkpat & (1 << (1 - j))))
                 vc1_inv_trans(block + off, 4, 8);
