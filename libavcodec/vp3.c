@@ -229,6 +229,8 @@ typedef struct Vp3DecodeContext {
     DSPContext dsp;
     int flipped_image;
 
+    int qis[3];
+    int nqis;
     int quality_index;
     int last_quality_index;
 
@@ -2376,9 +2378,13 @@ static int vp3_decode_frame(AVCodecContext *avctx,
     if (!s->theora)
         skip_bits(&gb, 1);
     s->last_quality_index = s->quality_index;
-    s->quality_index = get_bits(&gb, 6);
-    if (s->theora >= 0x030200)
-        skip_bits1(&gb);
+
+    s->nqis=0;
+    do{
+        s->qis[s->nqis++]= get_bits(&gb, 6);
+    } while(s->theora >= 0x030200 && s->nqis<3 && get_bits1(&gb));
+
+    s->quality_index= s->qis[0];
 
     if (s->avctx->debug & FF_DEBUG_PICT_INFO)
         av_log(s->avctx, AV_LOG_INFO, " VP3 %sframe #%d: Q index = %d\n",
