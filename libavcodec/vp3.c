@@ -262,9 +262,10 @@ typedef struct Vp3DecodeContext {
     /* tables */
     uint16_t coded_dc_scale_factor[64];
     uint32_t coded_ac_scale_factor[64];
-    uint16_t coded_intra_y_dequant[64];
-    uint16_t coded_intra_c_dequant[64];
-    uint16_t coded_inter_dequant[64];
+    uint8_t base_matrix[384][64];
+    uint8_t qr_count[2][3];
+    uint8_t qr_size [2][3][64];
+    uint16_t qr_base[2][3][64];
 
     /* this is a list of indices into the all_fragments array indicating
      * which of the fragments are coded */
@@ -643,98 +644,38 @@ static void init_frame(Vp3DecodeContext *s, GetBitContext *gb)
  */
 static void init_dequantizer(Vp3DecodeContext *s)
 {
-
     int ac_scale_factor = s->coded_ac_scale_factor[s->quality_index];
     int dc_scale_factor = s->coded_dc_scale_factor[s->quality_index];
-    int i, j;
+    int i, j, plane, inter, qri, bmi, bmj, qistart;
 
     debug_vp3("  vp3: initializing dequantization tables\n");
 
-    /*
-     * Scale dequantizers:
-     *
-     *   quantizer * sf
-     *   --------------
-     *        100
-     *
-     * where sf = dc_scale_factor for DC quantizer
-     *         or ac_scale_factor for AC quantizer
-     *
-     * Then, saturate the result to a lower limit of MIN_DEQUANT_VAL.
-     */
-#define SCALER 4
+    for(inter=0; inter<2; inter++){
+        for(plane=0; plane<3; plane++){
+            int sum=0;
+            for(qri=0; qri<s->qr_count[inter][plane]; qri++){
+                sum+= s->qr_size[inter][plane][qri];
+                if(s->quality_index <= sum)
+                    break;
+            }
+            qistart= sum - s->qr_size[inter][plane][qri];
+            bmi= s->qr_base[inter][plane][qri  ];
+            bmj= s->qr_base[inter][plane][qri+1];
+            for(i=0; i<64; i++){
+                int coeff= (  2*(sum    -s->quality_index)*s->base_matrix[bmi][i]
+                            - 2*(qistart-s->quality_index)*s->base_matrix[bmj][i]
+                            + s->qr_size[inter][plane][qri])
+                           / (2*s->qr_size[inter][plane][qri]);
 
-    /* scale DC quantizers */
-    s->qmat[0][0][0] = s->coded_intra_y_dequant[0] * dc_scale_factor / 100;
-    if (s->qmat[0][0][0] < MIN_DEQUANT_VAL * 2)
-        s->qmat[0][0][0] = MIN_DEQUANT_VAL * 2;
-    s->qmat[0][0][0] *= SCALER;
+                int qmin= 8<<(inter + !plane);
+                int qscale= i ? ac_scale_factor : dc_scale_factor;
 
-    s->qmat[0][1][0] = s->coded_intra_c_dequant[0] * dc_scale_factor / 100;
-    if (s->qmat[0][1][0] < MIN_DEQUANT_VAL * 2)
-        s->qmat[0][1][0] = MIN_DEQUANT_VAL * 2;
-    s->qmat[0][1][0] *= SCALER;
-
-    s->qmat[1][0][0] = s->coded_inter_dequant[0] * dc_scale_factor / 100;
-    if (s->qmat[1][0][0] < MIN_DEQUANT_VAL * 4)
-        s->qmat[1][0][0] = MIN_DEQUANT_VAL * 4;
-    s->qmat[1][0][0] *= SCALER;
-
-    /* scale AC quantizers, zigzag at the same time in preparation for
-     * the dequantization phase */
-    for (i = 1; i < 64; i++) {
-        int k= s->scantable.scantable[i];
-        j = s->scantable.permutated[i];
-
-        s->qmat[0][0][j] = s->coded_intra_y_dequant[k] * ac_scale_factor / 100;
-        if (s->qmat[0][0][j] < MIN_DEQUANT_VAL)
-            s->qmat[0][0][j] = MIN_DEQUANT_VAL;
-        s->qmat[0][0][j] *= SCALER;
-
-        s->qmat[0][1][j] = s->coded_intra_c_dequant[k] * ac_scale_factor / 100;
-        if (s->qmat[0][1][j] < MIN_DEQUANT_VAL)
-            s->qmat[0][1][j] = MIN_DEQUANT_VAL;
-        s->qmat[0][1][j] *= SCALER;
-
-        s->qmat[1][0][j] = s->coded_inter_dequant[k] * ac_scale_factor / 100;
-        if (s->qmat[1][0][j] < MIN_DEQUANT_VAL * 2)
-            s->qmat[1][0][j] = MIN_DEQUANT_VAL * 2;
-        s->qmat[1][0][j] *= SCALER;
+                s->qmat[inter][plane][i]= clip((qscale * coeff)/100 * 4, qmin, 4096);
+            }
+        }
     }
-
-    memcpy(s->qmat[0][2], s->qmat[0][1], sizeof(s->qmat[0][0]));
-    memcpy(s->qmat[1][1], s->qmat[1][0], sizeof(s->qmat[0][0]));
-    memcpy(s->qmat[1][2], s->qmat[1][0], sizeof(s->qmat[0][0]));
 
     memset(s->qscale_table, (FFMAX(s->qmat[0][0][1], s->qmat[0][1][1])+8)/16, 512); //FIXME finetune
-
-    /* print debug information as requested */
-    debug_dequantizers("intra Y dequantizers:\n");
-    for (i = 0; i < 8; i++) {
-      for (j = i * 8; j < i * 8 + 8; j++) {
-        debug_dequantizers(" %4d,", s->qmat[0][0][j]);
-      }
-      debug_dequantizers("\n");
-    }
-    debug_dequantizers("\n");
-
-    debug_dequantizers("intra C dequantizers:\n");
-    for (i = 0; i < 8; i++) {
-      for (j = i * 8; j < i * 8 + 8; j++) {
-        debug_dequantizers(" %4d,", s->qmat[0][1][j]);
-      }
-      debug_dequantizers("\n");
-    }
-    debug_dequantizers("\n");
-
-    debug_dequantizers("interframe dequantizers:\n");
-    for (i = 0; i < 8; i++) {
-      for (j = i * 8; j < i * 8 + 8; j++) {
-        debug_dequantizers(" %4d,", s->qmat[1][0][j]);
-      }
-      debug_dequantizers("\n");
-    }
-    debug_dequantizers("\n");
 }
 
 /*
@@ -2201,7 +2142,7 @@ static void theora_calculate_pixel_addresses(Vp3DecodeContext *s)
 static int vp3_decode_init(AVCodecContext *avctx)
 {
     Vp3DecodeContext *s = avctx->priv_data;
-    int i;
+    int i, inter, plane;
     int c_width;
     int c_height;
     int y_superblock_count;
@@ -2284,13 +2225,22 @@ static int vp3_decode_init(AVCodecContext *avctx)
         for (i = 0; i < 64; i++)
             s->coded_ac_scale_factor[i] = vp31_ac_scale_factor[i];
         for (i = 0; i < 64; i++)
-            s->coded_intra_y_dequant[i] = vp31_intra_y_dequant[i];
+            s->base_matrix[0][i] = vp31_intra_y_dequant[i];
         for (i = 0; i < 64; i++)
-            s->coded_intra_c_dequant[i] = vp31_intra_c_dequant[i];
+            s->base_matrix[1][i] = vp31_intra_c_dequant[i];
         for (i = 0; i < 64; i++)
-            s->coded_inter_dequant[i] = vp31_inter_dequant[i];
+            s->base_matrix[2][i] = vp31_inter_dequant[i];
         for (i = 0; i < 64; i++)
             s->filter_limit_values[i] = vp31_filter_limit_values[i];
+
+        for(inter=0; inter<2; inter++){
+            for(plane=0; plane<3; plane++){
+                s->qr_count[inter][plane]= 1;
+                s->qr_size [inter][plane][0]= 63;
+                s->qr_base [inter][plane][0]=
+                s->qr_base [inter][plane][1]= 2*inter + (!!plane)*!inter;
+            }
+        }
 
         /* init VLC tables */
         for (i = 0; i < 16; i++) {
@@ -2714,7 +2664,7 @@ static int theora_decode_header(AVCodecContext *avctx, GetBitContext *gb)
 static int theora_decode_tables(AVCodecContext *avctx, GetBitContext *gb)
 {
     Vp3DecodeContext *s = avctx->priv_data;
-    int i, n, matrices;
+    int i, n, matrices, inter, plane;
 
     if (s->theora >= 0x030200) {
         n = get_bits(gb, 3);
@@ -2743,52 +2693,57 @@ static int theora_decode_tables(AVCodecContext *avctx, GetBitContext *gb)
         matrices = get_bits(gb, 9) + 1;
     else
         matrices = 3;
-    if (matrices != 3) {
-        av_log(avctx,AV_LOG_ERROR, "unsupported matrices: %d\n", matrices);
-//        return -1;
+
+    if(matrices > 384){
+        av_log(avctx, AV_LOG_ERROR, "invalid number of base matrixes\n");
+        return -1;
     }
-    /* y coeffs */
-    for (i = 0; i < 64; i++)
-        s->coded_intra_y_dequant[i] = get_bits(gb, 8);
 
-    /* uv coeffs */
-    for (i = 0; i < 64; i++)
-        s->coded_intra_c_dequant[i] = get_bits(gb, 8);
-
-    /* inter coeffs */
-    for (i = 0; i < 64; i++)
-        s->coded_inter_dequant[i] = get_bits(gb, 8);
-
-    /* skip unknown matrices */
-    n = matrices - 3;
-    while(n--)
+    for(n=0; n<matrices; n++){
         for (i = 0; i < 64; i++)
-            skip_bits(gb, 8);
+            s->base_matrix[n][i]= get_bits(gb, 8);
+    }
 
-    for (i = 0; i <= 1; i++) {
-        for (n = 0; n <= 2; n++) {
-            int newqr;
-            if (i > 0 || n > 0)
+    for (inter = 0; inter <= 1; inter++) {
+        for (plane = 0; plane <= 2; plane++) {
+            int newqr= 1;
+            if (inter || plane > 0)
                 newqr = get_bits(gb, 1);
-            else
-                newqr = 1;
             if (!newqr) {
-                if (i > 0)
-                    get_bits(gb, 1);
-                //FIXME this is simply incomplete
-            }
-            else {
-                int qi = 0;
-                //FIXME this is simply incomplete
-                skip_bits(gb, av_log2(matrices-1)+1);
-                while (qi < 63) {
-                    qi += get_bits(gb, av_log2(63-qi)+1) + 1;
-                    skip_bits(gb, av_log2(matrices-1)+1);
+                int qtj, plj;
+                if(inter && get_bits(gb, 1)){
+                    qtj = 0;
+                    plj = plane;
+                }else{
+                    qtj= (3*inter + plane - 1) / 3;
+                    plj= (plane + 2) % 3;
                 }
+                s->qr_count[inter][plane]= s->qr_count[qtj][plj];
+                memcpy(s->qr_size[inter][plane], s->qr_size[qtj][plj], sizeof(s->qr_size[0][0]));
+                memcpy(s->qr_base[inter][plane], s->qr_base[qtj][plj], sizeof(s->qr_base[0][0]));
+            } else {
+                int qri= 0;
+                int qi = 0;
+
+                for(;;){
+                    i= get_bits(gb, av_log2(matrices-1)+1);
+                    if(i>= matrices){
+                        av_log(avctx, AV_LOG_ERROR, "invalid base matrix index\n");
+                        return -1;
+                    }
+                    s->qr_base[inter][plane][qri]= i;
+                    if(qi >= 63)
+                        break;
+                    i = get_bits(gb, av_log2(63-qi)+1) + 1;
+                    s->qr_size[inter][plane][qri++]= i;
+                    qi += i;
+                }
+
                 if (qi > 63) {
                     av_log(avctx, AV_LOG_ERROR, "invalid qi %d > 63\n", qi);
                     return -1;
                 }
+                s->qr_count[inter][plane]= qri;
             }
         }
     }
