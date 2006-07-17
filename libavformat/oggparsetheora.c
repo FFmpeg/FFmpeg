@@ -75,7 +75,7 @@ theora_header (AVFormatContext * s, int idx)
 
         if (version >= 0x030400)
             skip_bits(&gb, 164);
-        else
+        else if (version >= 0x030200)
             skip_bits(&gb, 64);
         st->codec->time_base.den = get_bits(&gb, 32);
         st->codec->time_base.num = get_bits(&gb, 32);

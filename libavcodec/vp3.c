@@ -2628,8 +2628,10 @@ static int theora_decode_header(AVCodecContext *avctx, GetBitContext *gb)
         skip_bits(gb, 24); /* frame height */
     }
 
+  if (s->theora >= 0x030200) {
     skip_bits(gb, 8); /* offset x */
     skip_bits(gb, 8); /* offset y */
+  }
 
     skip_bits(gb, 32); /* fps numerator */
     skip_bits(gb, 32); /* fps denumerator */
@@ -2818,6 +2820,8 @@ static int theora_decode_init(AVCodecContext *avctx)
     }
     if(8*op_bytes != get_bits_count(&gb))
         av_log(avctx, AV_LOG_ERROR, "%d bits left in packet %X\n", 8*op_bytes - get_bits_count(&gb), ptype);
+    if (s->theora < 0x030200)
+        break;
   }
 
     vp3_decode_init(avctx);
