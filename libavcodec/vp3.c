@@ -285,9 +285,7 @@ typedef struct Vp3DecodeContext {
 
     /* these arrays need to be on 16-byte boundaries since SSE2 operations
      * index into them */
-    DECLARE_ALIGNED_16(int16_t, intra_y_dequant[64]);
-    DECLARE_ALIGNED_16(int16_t, intra_c_dequant[64]);
-    DECLARE_ALIGNED_16(int16_t, inter_dequant[64]);
+    DECLARE_ALIGNED_16(int16_t, qmat[2][4][64]);        //<qmat[is_inter][plane]
 
     /* This table contains superblock_count * 16 entries. Each set of 16
      * numbers corresponds to the fragment indices 0..15 of the superblock.
@@ -667,20 +665,20 @@ static void init_dequantizer(Vp3DecodeContext *s)
 #define SCALER 4
 
     /* scale DC quantizers */
-    s->intra_y_dequant[0] = s->coded_intra_y_dequant[0] * dc_scale_factor / 100;
-    if (s->intra_y_dequant[0] < MIN_DEQUANT_VAL * 2)
-        s->intra_y_dequant[0] = MIN_DEQUANT_VAL * 2;
-    s->intra_y_dequant[0] *= SCALER;
+    s->qmat[0][0][0] = s->coded_intra_y_dequant[0] * dc_scale_factor / 100;
+    if (s->qmat[0][0][0] < MIN_DEQUANT_VAL * 2)
+        s->qmat[0][0][0] = MIN_DEQUANT_VAL * 2;
+    s->qmat[0][0][0] *= SCALER;
 
-    s->intra_c_dequant[0] = s->coded_intra_c_dequant[0] * dc_scale_factor / 100;
-    if (s->intra_c_dequant[0] < MIN_DEQUANT_VAL * 2)
-        s->intra_c_dequant[0] = MIN_DEQUANT_VAL * 2;
-    s->intra_c_dequant[0] *= SCALER;
+    s->qmat[0][1][0] = s->coded_intra_c_dequant[0] * dc_scale_factor / 100;
+    if (s->qmat[0][1][0] < MIN_DEQUANT_VAL * 2)
+        s->qmat[0][1][0] = MIN_DEQUANT_VAL * 2;
+    s->qmat[0][1][0] *= SCALER;
 
-    s->inter_dequant[0] = s->coded_inter_dequant[0] * dc_scale_factor / 100;
-    if (s->inter_dequant[0] < MIN_DEQUANT_VAL * 4)
-        s->inter_dequant[0] = MIN_DEQUANT_VAL * 4;
-    s->inter_dequant[0] *= SCALER;
+    s->qmat[1][0][0] = s->coded_inter_dequant[0] * dc_scale_factor / 100;
+    if (s->qmat[1][0][0] < MIN_DEQUANT_VAL * 4)
+        s->qmat[1][0][0] = MIN_DEQUANT_VAL * 4;
+    s->qmat[1][0][0] *= SCALER;
 
     /* scale AC quantizers, zigzag at the same time in preparation for
      * the dequantization phase */
@@ -688,29 +686,33 @@ static void init_dequantizer(Vp3DecodeContext *s)
         int k= s->scantable.scantable[i];
         j = s->scantable.permutated[i];
 
-        s->intra_y_dequant[j] = s->coded_intra_y_dequant[k] * ac_scale_factor / 100;
-        if (s->intra_y_dequant[j] < MIN_DEQUANT_VAL)
-            s->intra_y_dequant[j] = MIN_DEQUANT_VAL;
-        s->intra_y_dequant[j] *= SCALER;
+        s->qmat[0][0][j] = s->coded_intra_y_dequant[k] * ac_scale_factor / 100;
+        if (s->qmat[0][0][j] < MIN_DEQUANT_VAL)
+            s->qmat[0][0][j] = MIN_DEQUANT_VAL;
+        s->qmat[0][0][j] *= SCALER;
 
-        s->intra_c_dequant[j] = s->coded_intra_c_dequant[k] * ac_scale_factor / 100;
-        if (s->intra_c_dequant[j] < MIN_DEQUANT_VAL)
-            s->intra_c_dequant[j] = MIN_DEQUANT_VAL;
-        s->intra_c_dequant[j] *= SCALER;
+        s->qmat[0][1][j] = s->coded_intra_c_dequant[k] * ac_scale_factor / 100;
+        if (s->qmat[0][1][j] < MIN_DEQUANT_VAL)
+            s->qmat[0][1][j] = MIN_DEQUANT_VAL;
+        s->qmat[0][1][j] *= SCALER;
 
-        s->inter_dequant[j] = s->coded_inter_dequant[k] * ac_scale_factor / 100;
-        if (s->inter_dequant[j] < MIN_DEQUANT_VAL * 2)
-            s->inter_dequant[j] = MIN_DEQUANT_VAL * 2;
-        s->inter_dequant[j] *= SCALER;
+        s->qmat[1][0][j] = s->coded_inter_dequant[k] * ac_scale_factor / 100;
+        if (s->qmat[1][0][j] < MIN_DEQUANT_VAL * 2)
+            s->qmat[1][0][j] = MIN_DEQUANT_VAL * 2;
+        s->qmat[1][0][j] *= SCALER;
     }
 
-    memset(s->qscale_table, (FFMAX(s->intra_y_dequant[1], s->intra_c_dequant[1])+8)/16, 512); //FIXME finetune
+    memcpy(s->qmat[0][2], s->qmat[0][1], sizeof(s->qmat[0][0]));
+    memcpy(s->qmat[1][1], s->qmat[1][0], sizeof(s->qmat[0][0]));
+    memcpy(s->qmat[1][2], s->qmat[1][0], sizeof(s->qmat[0][0]));
+
+    memset(s->qscale_table, (FFMAX(s->qmat[0][0][1], s->qmat[0][1][1])+8)/16, 512); //FIXME finetune
 
     /* print debug information as requested */
     debug_dequantizers("intra Y dequantizers:\n");
     for (i = 0; i < 8; i++) {
       for (j = i * 8; j < i * 8 + 8; j++) {
-        debug_dequantizers(" %4d,", s->intra_y_dequant[j]);
+        debug_dequantizers(" %4d,", s->qmat[0][0][j]);
       }
       debug_dequantizers("\n");
     }
@@ -719,7 +721,7 @@ static void init_dequantizer(Vp3DecodeContext *s)
     debug_dequantizers("intra C dequantizers:\n");
     for (i = 0; i < 8; i++) {
       for (j = i * 8; j < i * 8 + 8; j++) {
-        debug_dequantizers(" %4d,", s->intra_c_dequant[j]);
+        debug_dequantizers(" %4d,", s->qmat[0][1][j]);
       }
       debug_dequantizers("\n");
     }
@@ -728,7 +730,7 @@ static void init_dequantizer(Vp3DecodeContext *s)
     debug_dequantizers("interframe dequantizers:\n");
     for (i = 0; i < 8; i++) {
       for (j = i * 8; j < i * 8 + 8; j++) {
-        debug_dequantizers(" %4d,", s->inter_dequant[j]);
+        debug_dequantizers(" %4d,", s->qmat[1][0][j]);
       }
       debug_dequantizers("\n");
     }
@@ -1847,12 +1849,9 @@ static void render_slice(Vp3DecodeContext *s, int slice)
                                 motion_source + stride + 1 + d,
                                 stride, 8);
                         }
-                        dequantizer = s->inter_dequant;
+                        dequantizer = s->qmat[1][plane];
                     }else{
-                        if (plane == 0)
-                            dequantizer = s->intra_y_dequant;
-                        else
-                            dequantizer = s->intra_c_dequant;
+                        dequantizer = s->qmat[0][plane];
                     }
 
                     /* dequantize the DCT coefficients */
