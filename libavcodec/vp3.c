@@ -667,7 +667,7 @@ static void init_dequantizer(Vp3DecodeContext *s)
                             + s->qr_size[inter][plane][qri])
                            / (2*s->qr_size[inter][plane][qri]);
 
-                int qmin= 8<<(inter + !plane);
+                int qmin= 8<<(inter + !i);
                 int qscale= i ? ac_scale_factor : dc_scale_factor;
 
                 s->qmat[inter][plane][i]= clip((qscale * coeff)/100 * 4, qmin, 4096);
