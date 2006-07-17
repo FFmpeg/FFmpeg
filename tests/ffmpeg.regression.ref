@@ -125,8 +125,8 @@ stddev: 20.00 PSNR:22.10 bytes:7602176
 1453500 ./data/a-asv2.avi
 0b310840a6d3970595983491687669df *./data/out.yuv
 stddev: 18.82 PSNR:22.63 bytes:7602176
-de42cb5a15bfa8e70cf60edda0b32355 *./data/a-flv.flv
-657991 ./data/a-flv.flv
+2e1647c88d1b7e56d91058484db602da *./data/a-flv.flv
+658104 ./data/a-flv.flv
 4d9c04e7017dc68da7891048c46c1c37 *./data/out.yuv
 stddev:  8.08 PSNR:29.97 bytes:7602176
 a7ef4746f27be309138c188e327d3ebe *./data/a-ffv1.avi

@@ -79,11 +79,34 @@ static int get_audio_flags(AVCodecContext *enc){
     return flags;
 }
 
+#define AMF_DOUBLE  0
+#define AMF_BOOLEAN 1
+#define AMF_STRING  2
+#define AMF_OBJECT  3
+#define AMF_MIXED_ARRAY 8
+#define AMF_ARRAY  10
+#define AMF_DATE   11
+
+static void put_amf_string(ByteIOContext *pb, const char *str)
+{
+    size_t len = strlen(str);
+    put_be16(pb, len);
+    put_buffer(pb, str, len);
+}
+
+static void put_amf_double(ByteIOContext *pb, double d)
+{
+    put_byte(pb, AMF_DOUBLE);
+    put_be64(pb, av_dbl2int(d));
+}
+
 static int flv_write_header(AVFormatContext *s)
 {
     ByteIOContext *pb = &s->pb;
     FLVContext *flv = s->priv_data;
-    int i;
+    int i, width, height, samplerate;
+    double framerate = 0.0;
+    int metadata_size_pos, data_size;
 
     flv->hasAudio = 0;
     flv->hasVideo = 0;
@@ -96,6 +119,19 @@ static int flv_write_header(AVFormatContext *s)
 
     for(i=0; i<s->nb_streams; i++){
         AVCodecContext *enc = s->streams[i]->codec;
+        if (enc->codec_type == CODEC_TYPE_VIDEO) {
+            width = enc->width;
+            height = enc->height;
+            if (s->streams[i]->r_frame_rate.den && s->streams[i]->r_frame_rate.num) {
+                framerate = av_q2d(s->streams[i]->r_frame_rate);
+            } else {
+                framerate = 1/av_q2d(s->streams[i]->codec->time_base);
+            }
+            flv->hasVideo=1;
+        } else {
+            flv->hasAudio=1;
+            samplerate = enc->sample_rate;
+        }
         av_set_pts_info(s->streams[i], 24, 1, 1000); /* 24 bit pts in ms */
         if(enc->codec_tag == 5){
             put_byte(pb,8); // message type
@@ -108,6 +144,62 @@ static int flv_write_header(AVFormatContext *s)
         if(enc->codec_type == CODEC_TYPE_AUDIO && get_audio_flags(enc)<0)
             return -1;
     }
+
+    /* write meta_tag */
+    put_byte(pb, 18);         // tag type META
+    metadata_size_pos= url_ftell(pb);
+    put_be24(pb, 0);          // size of data part (sum of all parts below)
+    put_be24(pb, 0);          // time stamp
+    put_be32(pb, 0);          // reserved
+
+    /* now data of data_size size */
+
+    /* first event name as a string */
+    put_byte(pb, AMF_STRING); // 1 byte
+    put_amf_string(pb, "onMetaData"); // 12 bytes
+
+    /* mixed array (hash) with size and string/type/data tuples */
+    put_byte(pb, AMF_MIXED_ARRAY);
+    put_be32(pb, 4*flv->hasVideo + flv->hasAudio + (!!s->file_size) + (s->duration != AV_NOPTS_VALUE && s->duration));
+
+    if (s->duration != AV_NOPTS_VALUE && s->duration) {
+        put_amf_string(pb, "duration");
+        put_amf_double(pb, s->duration / (double)AV_TIME_BASE);
+    }
+
+    if(flv->hasVideo){
+        put_amf_string(pb, "width");
+        put_amf_double(pb, width);
+
+        put_amf_string(pb, "height");
+        put_amf_double(pb, height);
+
+        put_amf_string(pb, "videodatarate");
+        put_amf_double(pb, s->bit_rate / 1024.0);
+
+        put_amf_string(pb, "framerate");
+        put_amf_double(pb, framerate);
+    }
+
+    if(flv->hasAudio){
+        put_amf_string(pb, "audiosamplerate");
+        put_amf_double(pb, samplerate);
+    }
+
+    if(s->file_size){
+        put_amf_string(pb, "filesize");
+        put_amf_double(pb, s->file_size);
+    }
+
+    put_amf_string(pb, "");
+    put_byte(pb, 9); // end marker 1 byte
+
+    /* write total size of tag */
+    data_size= url_ftell(pb) - metadata_size_pos - 10;
+    url_fseek(pb, metadata_size_pos, SEEK_SET);
+    put_be24(pb, data_size);
+    url_fseek(pb, data_size + 10 - 3, SEEK_CUR);
+    put_be32(pb, data_size + 11);
 
     return 0;
 }
@@ -143,7 +235,6 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
         put_byte(pb, 9);
         flags = 2; // choose h263
         flags |= pkt->flags & PKT_FLAG_KEY ? 0x10 : 0x20; // add keyframe indicator
-        flv->hasVideo = 1;
     } else {
         assert(enc->codec_type == CODEC_TYPE_AUDIO);
         flags = get_audio_flags(enc);
@@ -151,9 +242,6 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
         assert(size);
 
         put_byte(pb, 8);
-
-        // We got audio! Make sure we set this to the global flags on closure
-        flv->hasAudio = 1;
     }
 
     put_be24(pb,size+1); // include flags
