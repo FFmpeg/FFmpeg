@@ -14,6 +14,7 @@ OBJS= mathematics.o \
       md5.o \
       lls.o \
       adler32.o \
+      log.o
 
 HEADERS = avutil.h common.h mathematics.h integer.h rational.h \
           intfloat_readwrite.h md5.h adler32.h

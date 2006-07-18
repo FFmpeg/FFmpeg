@@ -26,6 +26,7 @@ extern "C" {
 #include "rational.h"
 #include "integer.h"
 #include "intfloat_readwrite.h"
+#include "log.h"
 
 /**
  * Pixel format. Notes:
