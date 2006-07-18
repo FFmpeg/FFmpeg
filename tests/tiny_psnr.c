@@ -106,15 +106,21 @@ int main(int argc,char* argv[]){
     int len= argc<4 ? 1 : atoi(argv[3]);
     int64_t max= (1<<(8*len))-1;
     int shift= argc<5 ? 0 : atoi(argv[4]);
+    int skip_bytes = argc<6 ? 0 : atoi(argv[5]);
 
     if(argc<3){
-        printf("tiny_psnr <file1> <file2> [<elem size> [<shift>]]\n");
+        printf("tiny_psnr <file1> <file2> [<elem size> [<shift> [<skip bytes>]]]\n");
+        printf("for wav files use the following:\n");
+        printf("./tiny_psnr file1.wav file2.wav 2 0 44 to skip the header.\n");
         return -1;
     }
 
     f[0]= fopen(argv[1], "rb");
     f[1]= fopen(argv[2], "rb");
     fseek(f[shift<0], shift < 0 ? -shift : shift, SEEK_SET);
+
+    fseek(f[0],skip_bytes,SEEK_CUR);
+    fseek(f[1],skip_bytes,SEEK_CUR);
 
     for(i=0;;){
         if( fread(buf[0], SIZE, 1, f[0]) != 1) break;
