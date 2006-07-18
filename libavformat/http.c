@@ -285,6 +285,7 @@ URLProtocol http_protocol = {
 
 /*****************************************************************************
  * b64_encode: stolen from VLC's http.c
+ * simplified by michael
  *****************************************************************************/
 
 static char *b64_encode( const unsigned char *src )
@@ -300,32 +301,17 @@ static char *b64_encode( const unsigned char *src )
     }else
         return NULL;
 
-    for( ;; )
-    {
-        if( *src )
-        {
-            i_bits = ( i_bits << 8 )|( *src++ );
-            i_shift += 8;
-        }
-        else if( i_shift > 0 )
-        {
-           i_bits <<= 6 - i_shift;
-           i_shift = 6;
-        }
-        else
-        {
-            *dst++ = '=';
-            break;
-        }
+    while(*src){
+        i_bits = (i_bits << 8) + *src++;
+        i_shift += 8;
 
-        while( i_shift >= 6 )
-        {
+        do{
+            *dst++ = b64[(i_bits << 6 >> i_shift) & 0x3f];
             i_shift -= 6;
-            *dst++ = b64[(i_bits >> i_shift)&0x3f];
-        }
+        }while( i_shift > 6 || (*src == 0 && i_shift>0));
     }
-
-    *dst++ = '\0';
+    *dst++ = '=';
+    *dst   = '\0';
 
     return ret;
 }
