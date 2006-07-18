@@ -142,13 +142,18 @@ X264_init(AVCodecContext *avctx)
     x4->params.rc.b_stat_write = (avctx->flags & CODEC_FLAG_PASS1);
     if(avctx->flags & CODEC_FLAG_PASS2) x4->params.rc.b_stat_read = 1;
     else{
-        if(avctx->crf) x4->params.rc.i_rf_constant = avctx->crf;
-        else if(avctx->cqp > -1) x4->params.rc.i_qp_constant = avctx->cqp;
+        if(avctx->crf){
+            x4->params.rc.i_rc_method = X264_RC_CRF;
+            x4->params.rc.i_rf_constant = avctx->crf;
+        }else if(avctx->cqp > -1){
+            x4->params.rc.i_rc_method = X264_RC_CQP;
+            x4->params.rc.i_qp_constant = avctx->cqp;
+        }
     }
 
     // if neither crf nor cqp modes are selected we have to enable the RC
     // we do it this way because we cannot check if the bitrate has been set
-    if(!(avctx->crf || (avctx->cqp > -1))) x4->params.rc.b_cbr = 1;
+    if(!(avctx->crf || (avctx->cqp > -1))) x4->params.rc.i_rc_method = X264_RC_ABR;
 
     x4->params.i_bframe = avctx->max_b_frames;
     x4->params.b_cabac = avctx->coder_type == FF_CODER_TYPE_AC;
