@@ -344,8 +344,6 @@ static int theora_decode_tables(AVCodecContext *avctx, GetBitContext *gb);
 static int init_block_mapping(Vp3DecodeContext *s)
 {
     int i, j;
-    signed int hilbert_walk_y[16];
-    signed int hilbert_walk_c[16];
     signed int hilbert_walk_mb[4];
 
     int current_fragment = 0;
@@ -384,41 +382,6 @@ static int init_block_mapping(Vp3DecodeContext *s)
 
     debug_vp3("  vp3: initialize block mapping tables\n");
 
-    /* figure out hilbert pattern per these frame dimensions */
-    hilbert_walk_y[0]  = 1;
-    hilbert_walk_y[1]  = 1;
-    hilbert_walk_y[2]  = s->fragment_width;
-    hilbert_walk_y[3]  = -1;
-    hilbert_walk_y[4]  = s->fragment_width;
-    hilbert_walk_y[5]  = s->fragment_width;
-    hilbert_walk_y[6]  = 1;
-    hilbert_walk_y[7]  = -s->fragment_width;
-    hilbert_walk_y[8]  = 1;
-    hilbert_walk_y[9]  = s->fragment_width;
-    hilbert_walk_y[10]  = 1;
-    hilbert_walk_y[11] = -s->fragment_width;
-    hilbert_walk_y[12] = -s->fragment_width;
-    hilbert_walk_y[13] = -1;
-    hilbert_walk_y[14] = -s->fragment_width;
-    hilbert_walk_y[15] = 1;
-
-    hilbert_walk_c[0]  = 1;
-    hilbert_walk_c[1]  = 1;
-    hilbert_walk_c[2]  = s->fragment_width / 2;
-    hilbert_walk_c[3]  = -1;
-    hilbert_walk_c[4]  = s->fragment_width / 2;
-    hilbert_walk_c[5]  = s->fragment_width / 2;
-    hilbert_walk_c[6]  = 1;
-    hilbert_walk_c[7]  = -s->fragment_width / 2;
-    hilbert_walk_c[8]  = 1;
-    hilbert_walk_c[9]  = s->fragment_width / 2;
-    hilbert_walk_c[10]  = 1;
-    hilbert_walk_c[11] = -s->fragment_width / 2;
-    hilbert_walk_c[12] = -s->fragment_width / 2;
-    hilbert_walk_c[13] = -1;
-    hilbert_walk_c[14] = -s->fragment_width / 2;
-    hilbert_walk_c[15] = 1;
-
     hilbert_walk_mb[0] = 1;
     hilbert_walk_mb[1] = s->macroblock_width;
     hilbert_walk_mb[2] = 1;
@@ -439,7 +402,6 @@ static int init_block_mapping(Vp3DecodeContext *s)
             current_height = 0;
             superblock_row_inc = 3 * s->fragment_width -
                 (s->y_superblock_width * 4 - s->fragment_width);
-            hilbert = hilbert_walk_y;
 
             /* the first operation for this variable is to advance by 1 */
             current_fragment = -1;
@@ -453,7 +415,6 @@ static int init_block_mapping(Vp3DecodeContext *s)
             current_height = 0;
             superblock_row_inc = 3 * (s->fragment_width / 2) -
                 (s->c_superblock_width * 4 - s->fragment_width / 2);
-            hilbert = hilbert_walk_c;
 
             /* the first operation for this variable is to advance by 1 */
             current_fragment = s->fragment_start[1] - 1;
@@ -467,7 +428,6 @@ static int init_block_mapping(Vp3DecodeContext *s)
             current_height = 0;
             superblock_row_inc = 3 * (s->fragment_width / 2) -
                 (s->c_superblock_width * 4 - s->fragment_width / 2);
-            hilbert = hilbert_walk_c;
 
             /* the first operation for this variable is to advance by 1 */
             current_fragment = s->fragment_start[2] - 1;
@@ -485,7 +445,7 @@ static int init_block_mapping(Vp3DecodeContext *s)
 
         /* iterate through all 16 fragments in a superblock */
         for (j = 0; j < 16; j++) {
-            current_fragment += hilbert[j];
+            current_fragment += travel_width[j] + right_edge * travel_height[j];
             current_width += travel_width[j];
             current_height += travel_height[j];
 
@@ -1488,8 +1448,7 @@ static void reverse_dc_prediction(Vp3DecodeContext *s,
                         (predictor_transform[transform][2] * vur) +
                         (predictor_transform[transform][3] * vl);
 
-                    predicted_dc += (predicted_dc >> 15) & 127;
-                    predicted_dc >>= 7;
+                    predicted_dc /= 128;
 
                     /* check for outranging on the [ul u l] and
                      * [ul u ur l] predictors */
