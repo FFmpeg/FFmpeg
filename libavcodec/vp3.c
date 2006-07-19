@@ -256,8 +256,7 @@ typedef struct Vp3DecodeContext {
     Vp3Fragment *all_fragments;
     Coeff *coeffs;
     Coeff *next_coeff;
-    int u_fragment_start;
-    int v_fragment_start;
+    int fragment_start[3];
 
     ScanTable scantable;
 
@@ -457,7 +456,7 @@ static int init_block_mapping(Vp3DecodeContext *s)
             hilbert = hilbert_walk_c;
 
             /* the first operation for this variable is to advance by 1 */
-            current_fragment = s->u_fragment_start - 1;
+            current_fragment = s->fragment_start[1] - 1;
 
         } else if (i == s->v_superblock_start) {
 
@@ -471,7 +470,7 @@ static int init_block_mapping(Vp3DecodeContext *s)
             hilbert = hilbert_walk_c;
 
             /* the first operation for this variable is to advance by 1 */
-            current_fragment = s->v_fragment_start - 1;
+            current_fragment = s->fragment_start[2] - 1;
 
         }
 
@@ -593,13 +592,13 @@ static int init_block_mapping(Vp3DecodeContext *s)
                 s->macroblock_fragments[mapping_index++] = -1;
 
             /* C planes */
-            c_fragment = s->u_fragment_start +
+            c_fragment = s->fragment_start[1] +
                 (i * s->fragment_width / 4) + (j / 2);
             s->all_fragments[c_fragment].macroblock = s->macroblock_count;
             s->macroblock_fragments[mapping_index++] = c_fragment;
             debug_init("%d ", c_fragment);
 
-            c_fragment = s->v_fragment_start +
+            c_fragment = s->fragment_start[2] +
                 (i * s->fragment_width / 4) + (j / 2);
             s->all_fragments[c_fragment].macroblock = s->macroblock_count;
             s->macroblock_fragments[mapping_index++] = c_fragment;
@@ -847,7 +846,7 @@ static int unpack_superblocks(Vp3DecodeContext *s, GetBitContext *gb)
                         s->all_fragments[current_fragment].next_coeff= s->coeffs + current_fragment;
                         s->coded_fragment_list[s->coded_fragment_list_index] =
                             current_fragment;
-                        if ((current_fragment >= s->u_fragment_start) &&
+                        if ((current_fragment >= s->fragment_start[1]) &&
                             (s->last_coded_y_fragment == -1) &&
                             (!first_c_fragment_seen)) {
                             s->first_coded_c_fragment = s->coded_fragment_list_index;
@@ -875,7 +874,7 @@ static int unpack_superblocks(Vp3DecodeContext *s, GetBitContext *gb)
                     s->all_fragments[current_fragment].next_coeff= s->coeffs + current_fragment;
                     s->coded_fragment_list[s->coded_fragment_list_index] =
                         current_fragment;
-                    if ((current_fragment >= s->u_fragment_start) &&
+                    if ((current_fragment >= s->fragment_start[1]) &&
                         (s->last_coded_y_fragment == -1) &&
                         (!first_c_fragment_seen)) {
                         s->first_coded_c_fragment = s->coded_fragment_list_index;
@@ -1644,73 +1643,32 @@ static void vertical_filter(unsigned char *first_pixel, int stride,
  */
 static void render_slice(Vp3DecodeContext *s, int slice)
 {
-    int x, y;
+    int x;
     int m, n;
-    int i;  /* indicates current fragment */
     int16_t *dequantizer;
     DECLARE_ALIGNED_16(DCTELEM, block[64]);
-    unsigned char *output_plane;
-    unsigned char *last_plane;
-    unsigned char *golden_plane;
-    int stride;
     int motion_x = 0xdeadbeef, motion_y = 0xdeadbeef;
-    int upper_motion_limit, lower_motion_limit;
     int motion_halfpel_index;
     uint8_t *motion_source;
     int plane;
-    int plane_width;
-    int plane_height;
-    int slice_height;
     int current_macroblock_entry = slice * s->macroblock_width * 6;
-    int fragment_width;
 
     if (slice >= s->macroblock_height)
         return;
 
     for (plane = 0; plane < 3; plane++) {
+        uint8_t *output_plane = s->current_frame.data    [plane];
+        uint8_t *  last_plane = s->   last_frame.data    [plane];
+        uint8_t *golden_plane = s-> golden_frame.data    [plane];
+        int stride            = s->current_frame.linesize[plane];
+        int plane_width       = s->width  >> !!plane;
+        int plane_height      = s->height >> !!plane;
+        int y =        slice *  FRAGMENT_PIXELS << !plane ;
+        int slice_height = y + (FRAGMENT_PIXELS << !plane);
+        int i = s->macroblock_fragments[current_macroblock_entry + plane + 3*!!plane];
 
-        /* set up plane-specific parameters */
-        if (plane == 0) {
-            output_plane = s->current_frame.data[0];
-            last_plane = s->last_frame.data[0];
-            golden_plane = s->golden_frame.data[0];
-            stride = s->current_frame.linesize[0];
-            if (!s->flipped_image) stride = -stride;
-            upper_motion_limit = 7 * s->current_frame.linesize[0];
-            lower_motion_limit = s->height * s->current_frame.linesize[0] + s->width - 8;
-            y = slice * FRAGMENT_PIXELS * 2;
-            plane_width = s->width;
-            plane_height = s->height;
-            slice_height = y + FRAGMENT_PIXELS * 2;
-            i = s->macroblock_fragments[current_macroblock_entry + 0];
-        } else if (plane == 1) {
-            output_plane = s->current_frame.data[1];
-            last_plane = s->last_frame.data[1];
-            golden_plane = s->golden_frame.data[1];
-            stride = s->current_frame.linesize[1];
-            if (!s->flipped_image) stride = -stride;
-            upper_motion_limit = 7 * s->current_frame.linesize[1];
-            lower_motion_limit = (s->height / 2) * s->current_frame.linesize[1] + (s->width / 2) - 8;
-            y = slice * FRAGMENT_PIXELS;
-            plane_width = s->width / 2;
-            plane_height = s->height / 2;
-            slice_height = y + FRAGMENT_PIXELS;
-            i = s->macroblock_fragments[current_macroblock_entry + 4];
-        } else {
-            output_plane = s->current_frame.data[2];
-            last_plane = s->last_frame.data[2];
-            golden_plane = s->golden_frame.data[2];
-            stride = s->current_frame.linesize[2];
-            if (!s->flipped_image) stride = -stride;
-            upper_motion_limit = 7 * s->current_frame.linesize[2];
-            lower_motion_limit = (s->height / 2) * s->current_frame.linesize[2] + (s->width / 2) - 8;
-            y = slice * FRAGMENT_PIXELS;
-            plane_width = s->width / 2;
-            plane_height = s->height / 2;
-            slice_height = y + FRAGMENT_PIXELS;
-            i = s->macroblock_fragments[current_macroblock_entry + 5];
-        }
-        fragment_width = plane_width / FRAGMENT_PIXELS;
+        if (!s->flipped_image) stride = -stride;
+
 
         if(ABS(stride) > 2048)
             return; //various tables are fixed size
@@ -1938,11 +1896,8 @@ static void vertical_filter(unsigned char *first_pixel, int stride,
 
 static void apply_loop_filter(Vp3DecodeContext *s)
 {
-    int x, y, plane;
-    int width, height;
-    int fragment;
-    int stride;
-    unsigned char *plane_data;
+    int plane;
+    int x, y;
     int *bounding_values= s->bounding_values_array+127;
 
 #if 0
@@ -1967,29 +1922,11 @@ static void apply_loop_filter(Vp3DecodeContext *s)
 #endif
 
     for (plane = 0; plane < 3; plane++) {
-
-        if (plane == 0) {
-            /* Y plane parameters */
-            fragment = 0;
-            width = s->fragment_width;
-            height = s->fragment_height;
-            stride = s->current_frame.linesize[0];
-            plane_data = s->current_frame.data[0];
-        } else if (plane == 1) {
-            /* U plane parameters */
-            fragment = s->u_fragment_start;
-            width = s->fragment_width / 2;
-            height = s->fragment_height / 2;
-            stride = s->current_frame.linesize[1];
-            plane_data = s->current_frame.data[1];
-        } else {
-            /* V plane parameters */
-            fragment = s->v_fragment_start;
-            width = s->fragment_width / 2;
-            height = s->fragment_height / 2;
-            stride = s->current_frame.linesize[2];
-            plane_data = s->current_frame.data[2];
-        }
+        int width           = s->fragment_width  >> !!plane;
+        int height          = s->fragment_height >> !!plane;
+        int fragment        = s->fragment_start        [plane];
+        int stride          = s->current_frame.linesize[plane];
+        uint8_t *plane_data = s->current_frame.data    [plane];
         if (!s->flipped_image) stride = -stride;
 
         for (y = 0; y < height; y++) {
@@ -2066,7 +2003,7 @@ static void vp3_calculate_pixel_addresses(Vp3DecodeContext *s)
     }
 
     /* U plane */
-    i = s->u_fragment_start;
+    i = s->fragment_start[1];
     for (y = s->fragment_height / 2; y > 0; y--) {
         for (x = 0; x < s->fragment_width / 2; x++) {
             s->all_fragments[i++].first_pixel =
@@ -2079,7 +2016,7 @@ static void vp3_calculate_pixel_addresses(Vp3DecodeContext *s)
     }
 
     /* V plane */
-    i = s->v_fragment_start;
+    i = s->fragment_start[2];
     for (y = s->fragment_height / 2; y > 0; y--) {
         for (x = 0; x < s->fragment_width / 2; x++) {
             s->all_fragments[i++].first_pixel =
@@ -2113,7 +2050,7 @@ static void theora_calculate_pixel_addresses(Vp3DecodeContext *s)
     }
 
     /* U plane */
-    i = s->u_fragment_start;
+    i = s->fragment_start[1];
     for (y = 1; y <= s->fragment_height / 2; y++) {
         for (x = 0; x < s->fragment_width / 2; x++) {
             s->all_fragments[i++].first_pixel =
@@ -2126,7 +2063,7 @@ static void theora_calculate_pixel_addresses(Vp3DecodeContext *s)
     }
 
     /* V plane */
-    i = s->v_fragment_start;
+    i = s->fragment_start[2];
     for (y = 1; y <= s->fragment_height / 2; y++) {
         for (x = 0; x < s->fragment_width / 2; x++) {
             s->all_fragments[i++].first_pixel =
@@ -2196,8 +2133,8 @@ static int vp3_decode_init(AVCodecContext *avctx)
 
     /* fragment count covers all 8x8 blocks for all 3 planes */
     s->fragment_count = s->fragment_width * s->fragment_height * 3 / 2;
-    s->u_fragment_start = s->fragment_width * s->fragment_height;
-    s->v_fragment_start = s->fragment_width * s->fragment_height * 5 / 4;
+    s->fragment_start[1] = s->fragment_width * s->fragment_height;
+    s->fragment_start[2] = s->fragment_width * s->fragment_height * 5 / 4;
 
     debug_init("  Y plane: %d x %d\n", s->width, s->height);
     debug_init("  C plane: %d x %d\n", c_width, c_height);
@@ -2213,8 +2150,8 @@ static int vp3_decode_init(AVCodecContext *avctx)
         s->fragment_count,
         s->fragment_width,
         s->fragment_height,
-        s->u_fragment_start,
-        s->v_fragment_start);
+        s->fragment_start[1],
+        s->fragment_start[2]);
 
     s->all_fragments = av_malloc(s->fragment_count * sizeof(Vp3Fragment));
     s->coeffs = av_malloc(s->fragment_count * sizeof(Coeff) * 65);
@@ -2501,9 +2438,9 @@ if (!s->keyframe) {
 
     reverse_dc_prediction(s, 0, s->fragment_width, s->fragment_height);
     if ((avctx->flags & CODEC_FLAG_GRAY) == 0) {
-        reverse_dc_prediction(s, s->u_fragment_start,
+        reverse_dc_prediction(s, s->fragment_start[1],
             s->fragment_width / 2, s->fragment_height / 2);
-        reverse_dc_prediction(s, s->v_fragment_start,
+        reverse_dc_prediction(s, s->fragment_start[2],
             s->fragment_width / 2, s->fragment_height / 2);
     }
     STOP_TIMER("reverse_dc_prediction")}
