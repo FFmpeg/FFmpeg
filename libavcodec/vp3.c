@@ -1869,7 +1869,7 @@ static void render_slice(Vp3DecodeContext *s, int slice)
                       (s->all_fragments[i - 1].coding_method != MODE_COPY)) )) {
                     horizontal_filter(
                         output_plane + s->all_fragments[i].first_pixel + 7*stride,
-                        -stride, bounding_values);
+                        -stride, s->bounding_values_array + 127);
                 }
 
                 /* perform the top edge filter if:
@@ -1885,7 +1885,7 @@ static void render_slice(Vp3DecodeContext *s, int slice)
                       (s->all_fragments[i - fragment_width].coding_method != MODE_COPY)) )) {
                     vertical_filter(
                         output_plane + s->all_fragments[i].first_pixel - stride,
-                        -stride, bounding_values);
+                        -stride, s->bounding_values_array + 127);
                 }
 #endif
             }
@@ -1909,7 +1909,7 @@ static void horizontal_filter(unsigned char *first_pixel, int stride,
     unsigned char *end;
     int filter_value;
 
-    for (end= first_pixel + 8*stride; first_pixel < end; first_pixel += stride) {
+    for (end= first_pixel + 8*stride; first_pixel != end; first_pixel += stride) {
         filter_value =
             (first_pixel[-2] - first_pixel[ 1])
          +3*(first_pixel[ 0] - first_pixel[-1]);
@@ -1990,6 +1990,7 @@ static void apply_loop_filter(Vp3DecodeContext *s)
             stride = s->current_frame.linesize[2];
             plane_data = s->current_frame.data[2];
         }
+        if (!s->flipped_image) stride = -stride;
 
         for (y = 0; y < height; y++) {
 
@@ -1999,7 +2000,7 @@ START_TIMER
                 if ((x > 0) &&
                     (s->all_fragments[fragment].coding_method != MODE_COPY)) {
                     horizontal_filter(
-                        plane_data + s->all_fragments[fragment].first_pixel - 7*stride,
+                        plane_data + s->all_fragments[fragment].first_pixel,
                         stride, bounding_values);
                 }
 
@@ -2007,7 +2008,7 @@ START_TIMER
                 if ((y > 0) &&
                     (s->all_fragments[fragment].coding_method != MODE_COPY)) {
                     vertical_filter(
-                        plane_data + s->all_fragments[fragment].first_pixel + stride,
+                        plane_data + s->all_fragments[fragment].first_pixel,
                         stride, bounding_values);
                 }
 
@@ -2018,7 +2019,7 @@ START_TIMER
                     (s->all_fragments[fragment].coding_method != MODE_COPY) &&
                     (s->all_fragments[fragment + 1].coding_method == MODE_COPY)) {
                     horizontal_filter(
-                        plane_data + s->all_fragments[fragment + 1].first_pixel - 7*stride,
+                        plane_data + s->all_fragments[fragment + 1].first_pixel,
                         stride, bounding_values);
                 }
 
@@ -2029,7 +2030,7 @@ START_TIMER
                     (s->all_fragments[fragment].coding_method != MODE_COPY) &&
                     (s->all_fragments[fragment + width].coding_method == MODE_COPY)) {
                     vertical_filter(
-                        plane_data + s->all_fragments[fragment + width].first_pixel + stride,
+                        plane_data + s->all_fragments[fragment + width].first_pixel,
                         stride, bounding_values);
                 }
 
