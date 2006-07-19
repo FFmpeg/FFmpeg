@@ -181,11 +181,13 @@ static int http_connect(URLContext *h, const char *path, const char *hoststr,
     HTTPContext *s = h->priv_data;
     int post, err, ch;
     char line[1024], *q;
+    char *auth_b64;
 
 
     /* send http header */
     post = h->flags & URL_WRONLY;
 
+    auth_b64 = b64_encode(auth);
     snprintf(s->buffer, sizeof(s->buffer),
              "%s %s HTTP/1.0\r\n"
              "User-Agent: %s\r\n"
@@ -197,8 +199,9 @@ static int http_connect(URLContext *h, const char *path, const char *hoststr,
              path,
              LIBAVFORMAT_IDENT,
              hoststr,
-             b64_encode(auth));
+             auth_b64);
 
+    av_freep(&auth_b64);
     if (http_write(h, s->buffer, strlen(s->buffer)) < 0)
         return AVERROR_IO;
 
