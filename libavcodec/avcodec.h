@@ -2597,10 +2597,7 @@ extern AVBitStreamFilter noise_bsf;
 
 
 /* memory */
-void *av_malloc(unsigned int size);
 void *av_mallocz(unsigned int size);
-void *av_realloc(void *ptr, unsigned int size);
-void av_free(void *ptr);
 char *av_strdup(const char *s);
 void av_freep(void *ptr);
 void *av_fast_realloc(void *ptr, unsigned int *size, unsigned int min_size);

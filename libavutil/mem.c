@@ -1,5 +1,5 @@
 /*
- * default memory allocator for libavcodec
+ * default memory allocator for libavutil
  * Copyright (c) 2002 Fabrice Bellard.
  *
  * This library is free software; you can redistribute it and/or
@@ -19,10 +19,10 @@
 
 /**
  * @file mem.c
- * default memory allocator for libavcodec.
+ * default memory allocator for libavutil.
  */
 
-#include "avcodec.h"
+#include "common.h"
 
 /* here we can use OS dependant allocation functions */
 #undef malloc

@@ -355,4 +355,9 @@ tend= read_time();\
 #define STOP_TIMER(id) {}
 #endif
 
+/* memory */
+void *av_malloc(unsigned int size);
+void *av_realloc(void *ptr, unsigned int size);
+void av_free(void *ptr);
+
 #endif /* COMMON_H */
