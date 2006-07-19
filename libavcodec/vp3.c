@@ -1369,9 +1369,6 @@ static void reverse_dc_prediction(Vp3DecodeContext *s,
 
     short predicted_dc;
 
-    /* validity flags for the left, up-left, up, and up-right fragments */
-    int fl, ful, fu, fur;
-
     /* DC values for the left, up-left, up, and up-right fragments */
     int vl, vul, vu, vur;
 
@@ -1384,26 +1381,24 @@ static void reverse_dc_prediction(Vp3DecodeContext *s,
      *   1: up multiplier
      *   2: up-right multiplier
      *   3: left multiplier
-     *   4: mask
-     *   5: right bit shift divisor (e.g., 7 means >>=7, a.k.a. div by 128)
      */
-    int predictor_transform[16][6] = {
-        {  0,  0,  0,  0,   0,  0 },
-        {  0,  0,  0,  1,   0,  0 },        // PL
-        {  0,  0,  1,  0,   0,  0 },        // PUR
-        {  0,  0, 53, 75, 127,  7 },        // PUR|PL
-        {  0,  1,  0,  0,   0,  0 },        // PU
-        {  0,  1,  0,  1,   1,  1 },        // PU|PL
-        {  0,  1,  0,  0,   0,  0 },        // PU|PUR
-        {  0,  0, 53, 75, 127,  7 },        // PU|PUR|PL
-        {  1,  0,  0,  0,   0,  0 },        // PUL
-        {  0,  0,  0,  1,   0,  0 },        // PUL|PL
-        {  1,  0,  1,  0,   1,  1 },        // PUL|PUR
-        {  0,  0, 53, 75, 127,  7 },        // PUL|PUR|PL
-        {  0,  1,  0,  0,   0,  0 },        // PUL|PU
-        {-26, 29,  0, 29,  31,  5 },        // PUL|PU|PL
-        {  3, 10,  3,  0,  15,  4 },        // PUL|PU|PUR
-        {-26, 29,  0, 29,  31,  5 }         // PUL|PU|PUR|PL
+    int predictor_transform[16][4] = {
+        {  0,  0,  0,  0},
+        {  0,  0,  0,128},        // PL
+        {  0,  0,128,  0},        // PUR
+        {  0,  0, 53, 75},        // PUR|PL
+        {  0,128,  0,  0},        // PU
+        {  0, 64,  0, 64},        // PU|PL
+        {  0,128,  0,  0},        // PU|PUR
+        {  0,  0, 53, 75},        // PU|PUR|PL
+        {128,  0,  0,  0},        // PUL
+        {  0,  0,  0,128},        // PUL|PL
+        { 64,  0, 64,  0},        // PUL|PUR
+        {  0,  0, 53, 75},        // PUL|PUR|PL
+        {  0,128,  0,  0},        // PUL|PU
+       {-104,116,  0,116},        // PUL|PU|PL
+        { 24, 80, 24,  0},        // PUL|PU|PUR
+       {-104,116,  0,116}         // PUL|PU|PUR|PL
     };
 
     /* This table shows which types of blocks can use other blocks for
@@ -1445,32 +1440,32 @@ static void reverse_dc_prediction(Vp3DecodeContext *s,
 
                 current_frame_type =
                     compatible_frame[s->all_fragments[i].coding_method];
-                debug_dc_pred(" frag %d: group %d, orig DC = %d, ",
-                    i, -1, DC_COEFF(i));
+                debug_dc_pred(" frag %d: orig DC = %d, ",
+                    i, DC_COEFF(i));
 
                 transform= 0;
                 if(x){
                     l= i-1;
                     vl = DC_COEFF(l);
-                    fl = FRAME_CODED(l) && COMPATIBLE_FRAME(l);
-                    transform |= fl*PL;
+                    if(FRAME_CODED(l) && COMPATIBLE_FRAME(l))
+                        transform |= PL;
                 }
                 if(y){
                     u= i-fragment_width;
                     vu = DC_COEFF(u);
-                    fu = FRAME_CODED(u) && COMPATIBLE_FRAME(u);
-                    transform |= fu*PU;
+                    if(FRAME_CODED(u) && COMPATIBLE_FRAME(u))
+                        transform |= PU;
                     if(x){
                         ul= i-fragment_width-1;
                         vul = DC_COEFF(ul);
-                        ful = FRAME_CODED(ul) && COMPATIBLE_FRAME(ul);
-                        transform |= ful*PUL;
+                        if(FRAME_CODED(ul) && COMPATIBLE_FRAME(ul))
+                            transform |= PUL;
                     }
                     if(x + 1 < fragment_width){
                         ur= i-fragment_width+1;
                         vur = DC_COEFF(ur);
-                        fur = FRAME_CODED(ur) && COMPATIBLE_FRAME(ur);
-                        transform |= fur*PUR;
+                        if(FRAME_CODED(ur) && COMPATIBLE_FRAME(ur))
+                            transform |= PUR;
                     }
                 }
 
@@ -1493,13 +1488,8 @@ static void reverse_dc_prediction(Vp3DecodeContext *s,
                         (predictor_transform[transform][2] * vur) +
                         (predictor_transform[transform][3] * vl);
 
-                    /* if there is a shift value in the transform, add
-                     * the sign bit before the shift */
-                    if (predictor_transform[transform][5] != 0) {
-                        predicted_dc += ((predicted_dc >> 15) &
-                            predictor_transform[transform][4]);
-                        predicted_dc >>= predictor_transform[transform][5];
-                    }
+                    predicted_dc += (predicted_dc >> 15) & 127;
+                    predicted_dc >>= 7;
 
                     /* check for outranging on the [ul u l] and
                      * [ul u ur l] predictors */
