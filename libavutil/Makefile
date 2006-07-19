@@ -18,7 +18,7 @@ OBJS= mathematics.o \
       mem.o \
 
 HEADERS = avutil.h common.h mathematics.h integer.h rational.h \
-          intfloat_readwrite.h md5.h adler32.h
+          intfloat_readwrite.h md5.h adler32.h log.h
 
 NAME=avutil
 ifeq ($(BUILD_SHARED),yes)
