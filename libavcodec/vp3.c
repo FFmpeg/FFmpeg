@@ -1367,19 +1367,6 @@ static void reverse_dc_prediction(Vp3DecodeContext *s,
     int x, y;
     int i = first_fragment;
 
-    /*
-     * Fragment prediction groups:
-     *
-     * 32222222226
-     * 10000000004
-     * 10000000004
-     * 10000000004
-     * 10000000004
-     *
-     * Note: Groups 5 and 7 do not exist as it would mean that the
-     * fragment's x coordinate is both 0 and (width - 1) at the same time.
-     */
-    int predictor_group;
     short predicted_dc;
 
     /* validity flags for the left, up-left, up, and up-right fragments */
@@ -1458,113 +1445,33 @@ static void reverse_dc_prediction(Vp3DecodeContext *s,
 
                 current_frame_type =
                     compatible_frame[s->all_fragments[i].coding_method];
-                predictor_group = (x == 0) + ((y == 0) << 1) +
-                    ((x + 1 == fragment_width) << 2);
                 debug_dc_pred(" frag %d: group %d, orig DC = %d, ",
-                    i, predictor_group, DC_COEFF(i));
+                    i, -1, DC_COEFF(i));
 
-                switch (predictor_group) {
-
-                case 0:
-                    /* main body of fragments; consider all 4 possible
-                     * fragments for prediction */
-
-                    /* calculate the indices of the predicting fragments */
-                    ul = i - fragment_width - 1;
-                    u = i - fragment_width;
-                    ur = i - fragment_width + 1;
-                    l = i - 1;
-
-                    /* fetch the DC values for the predicting fragments */
-                    vul = DC_COEFF(ul);
-                    vu = DC_COEFF(u);
-                    vur = DC_COEFF(ur);
+                transform= 0;
+                if(x){
+                    l= i-1;
                     vl = DC_COEFF(l);
-
-                    /* figure out which fragments are valid */
-                    ful = FRAME_CODED(ul) && COMPATIBLE_FRAME(ul);
-                    fu = FRAME_CODED(u) && COMPATIBLE_FRAME(u);
-                    fur = FRAME_CODED(ur) && COMPATIBLE_FRAME(ur);
                     fl = FRAME_CODED(l) && COMPATIBLE_FRAME(l);
-
-                    /* decide which predictor transform to use */
-                    transform = (fl*PL) | (fu*PU) | (ful*PUL) | (fur*PUR);
-
-                    break;
-
-                case 1:
-                    /* left column of fragments, not including top corner;
-                     * only consider up and up-right fragments */
-
-                    /* calculate the indices of the predicting fragments */
-                    u = i - fragment_width;
-                    ur = i - fragment_width + 1;
-
-                    /* fetch the DC values for the predicting fragments */
+                    transform |= fl*PL;
+                }
+                if(y){
+                    u= i-fragment_width;
                     vu = DC_COEFF(u);
-                    vur = DC_COEFF(ur);
-
-                    /* figure out which fragments are valid */
-                    fur = FRAME_CODED(ur) && COMPATIBLE_FRAME(ur);
                     fu = FRAME_CODED(u) && COMPATIBLE_FRAME(u);
-
-                    /* decide which predictor transform to use */
-                    transform = (fu*PU) | (fur*PUR);
-
-                    break;
-
-                case 2:
-                case 6:
-                    /* top row of fragments, not including top-left frag;
-                     * only consider the left fragment for prediction */
-
-                    /* calculate the indices of the predicting fragments */
-                    l = i - 1;
-
-                    /* fetch the DC values for the predicting fragments */
-                    vl = DC_COEFF(l);
-
-                    /* figure out which fragments are valid */
-                    fl = FRAME_CODED(l) && COMPATIBLE_FRAME(l);
-
-                    /* decide which predictor transform to use */
-                    transform = (fl*PL);
-
-                    break;
-
-                case 3:
-                    /* top-left fragment */
-
-                    /* nothing to predict from in this case */
-                    transform = 0;
-
-                    break;
-
-                case 4:
-                    /* right column of fragments, not including top corner;
-                     * consider up-left, up, and left fragments for
-                     * prediction */
-
-                    /* calculate the indices of the predicting fragments */
-                    ul = i - fragment_width - 1;
-                    u = i - fragment_width;
-                    l = i - 1;
-
-                    /* fetch the DC values for the predicting fragments */
-                    vul = DC_COEFF(ul);
-                    vu = DC_COEFF(u);
-                    vl = DC_COEFF(l);
-
-                    /* figure out which fragments are valid */
-                    ful = FRAME_CODED(ul) && COMPATIBLE_FRAME(ul);
-                    fu = FRAME_CODED(u) && COMPATIBLE_FRAME(u);
-                    fl = FRAME_CODED(l) && COMPATIBLE_FRAME(l);
-
-                    /* decide which predictor transform to use */
-                    transform = (fl*PL) | (fu*PU) | (ful*PUL);
-
-                    break;
-
+                    transform |= fu*PU;
+                    if(x){
+                        ul= i-fragment_width-1;
+                        vul = DC_COEFF(ul);
+                        ful = FRAME_CODED(ul) && COMPATIBLE_FRAME(ul);
+                        transform |= ful*PUL;
+                    }
+                    if(x + 1 < fragment_width){
+                        ur= i-fragment_width+1;
+                        vur = DC_COEFF(ur);
+                        fur = FRAME_CODED(ur) && COMPATIBLE_FRAME(ur);
+                        transform |= fur*PUR;
+                    }
                 }
 
                 debug_dc_pred("transform = %d, ", transform);
