@@ -29,7 +29,7 @@ static int crc_write_header(struct AVFormatContext *s)
     CRCState *crc = s->priv_data;
 
     /* init CRC */
-    crc->crcval = av_adler32_update(0, NULL, 0);
+    crc->crcval = 1;
 
     return 0;
 }
