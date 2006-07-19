@@ -35,6 +35,8 @@
 #define xC6S2 25080
 #define xC7S1 12785
 
+#define M(a,b) (((a) * (b))>>16)
+
 static always_inline void idct(uint8_t *dst, int stride, int16_t *input, int type)
 {
     int16_t *ip = input;
@@ -42,7 +44,6 @@ static always_inline void idct(uint8_t *dst, int stride, int16_t *input, int typ
 
     int A_, B_, C_, D_, _Ad, _Bd, _Cd, _Dd, E_, F_, G_, H_;
     int _Ed, _Gd, _Add, _Bdd, _Fd, _Hd;
-    int t1, t2;
 
     int i;
 
@@ -50,63 +51,22 @@ static always_inline void idct(uint8_t *dst, int stride, int16_t *input, int typ
     for (i = 0; i < 8; i++) {
         /* Check for non-zero values */
         if ( ip[0] | ip[1] | ip[2] | ip[3] | ip[4] | ip[5] | ip[6] | ip[7] ) {
-            t1 = (int32_t)(xC1S7 * ip[1]);
-            t2 = (int32_t)(xC7S1 * ip[7]);
-            t1 >>= 16;
-            t2 >>= 16;
-            A_ = t1 + t2;
+            A_ = M(xC1S7, ip[1]) + M(xC7S1, ip[7]);
+            B_ = M(xC7S1, ip[1]) - M(xC1S7, ip[7]);
+            C_ = M(xC3S5, ip[3]) + M(xC5S3, ip[5]);
+            D_ = M(xC3S5, ip[5]) - M(xC5S3, ip[3]);
 
-            t1 = (int32_t)(xC7S1 * ip[1]);
-            t2 = (int32_t)(xC1S7 * ip[7]);
-            t1 >>= 16;
-            t2 >>= 16;
-            B_ = t1 - t2;
-
-            t1 = (int32_t)(xC3S5 * ip[3]);
-            t2 = (int32_t)(xC5S3 * ip[5]);
-            t1 >>= 16;
-            t2 >>= 16;
-            C_ = t1 + t2;
-
-            t1 = (int32_t)(xC3S5 * ip[5]);
-            t2 = (int32_t)(xC5S3 * ip[3]);
-            t1 >>= 16;
-            t2 >>= 16;
-            D_ = t1 - t2;
-
-
-            t1 = (int32_t)(xC4S4 * (A_ - C_));
-            t1 >>= 16;
-            _Ad = t1;
-
-            t1 = (int32_t)(xC4S4 * (B_ - D_));
-            t1 >>= 16;
-            _Bd = t1;
-
+            _Ad = M(xC4S4, (A_ - C_));
+            _Bd = M(xC4S4, (B_ - D_));
 
             _Cd = A_ + C_;
             _Dd = B_ + D_;
 
-            t1 = (int32_t)(xC4S4 * (ip[0] + ip[4]));
-            t1 >>= 16;
-            E_ = t1;
+            E_ = M(xC4S4, (ip[0] + ip[4]));
+            F_ = M(xC4S4, (ip[0] - ip[4]));
 
-            t1 = (int32_t)(xC4S4 * (ip[0] - ip[4]));
-            t1 >>= 16;
-            F_ = t1;
-
-            t1 = (int32_t)(xC2S6 * ip[2]);
-            t2 = (int32_t)(xC6S2 * ip[6]);
-            t1 >>= 16;
-            t2 >>= 16;
-            G_ = t1 + t2;
-
-            t1 = (int32_t)(xC6S2 * ip[2]);
-            t2 = (int32_t)(xC2S6 * ip[6]);
-            t1 >>= 16;
-            t2 >>= 16;
-            H_ = t1 - t2;
-
+            G_ = M(xC2S6, ip[2]) + M(xC6S2, ip[6]);
+            H_ = M(xC6S2, ip[2]) - M(xC2S6, ip[6]);
 
             _Ed = E_ - G_;
             _Gd = E_ + G_;
@@ -129,7 +89,6 @@ static always_inline void idct(uint8_t *dst, int stride, int16_t *input, int typ
 
             ip[5] = _Fd + _Bdd;
             ip[6] = _Fd - _Bdd;
-
         }
 
         ip += 8;            /* next row */
@@ -142,63 +101,22 @@ static always_inline void idct(uint8_t *dst, int stride, int16_t *input, int typ
         if ( ip[1 * 8] | ip[2 * 8] | ip[3 * 8] |
              ip[4 * 8] | ip[5 * 8] | ip[6 * 8] | ip[7 * 8] ) {
 
-            t1 = (int32_t)(xC1S7 * ip[1*8]);
-            t2 = (int32_t)(xC7S1 * ip[7*8]);
-            t1 >>= 16;
-            t2 >>= 16;
-            A_ = t1 + t2;
+            A_ = M(xC1S7, ip[1*8]) + M(xC7S1, ip[7*8]);
+            B_ = M(xC7S1, ip[1*8]) - M(xC1S7, ip[7*8]);
+            C_ = M(xC3S5, ip[3*8]) + M(xC5S3, ip[5*8]);
+            D_ = M(xC3S5, ip[5*8]) - M(xC5S3, ip[3*8]);
 
-            t1 = (int32_t)(xC7S1 * ip[1*8]);
-            t2 = (int32_t)(xC1S7 * ip[7*8]);
-            t1 >>= 16;
-            t2 >>= 16;
-            B_ = t1 - t2;
-
-            t1 = (int32_t)(xC3S5 * ip[3*8]);
-            t2 = (int32_t)(xC5S3 * ip[5*8]);
-            t1 >>= 16;
-            t2 >>= 16;
-            C_ = t1 + t2;
-
-            t1 = (int32_t)(xC3S5 * ip[5*8]);
-            t2 = (int32_t)(xC5S3 * ip[3*8]);
-            t1 >>= 16;
-            t2 >>= 16;
-            D_ = t1 - t2;
-
-
-            t1 = (int32_t)(xC4S4 * (A_ - C_));
-            t1 >>= 16;
-            _Ad = t1;
-
-            t1 = (int32_t)(xC4S4 * (B_ - D_));
-            t1 >>= 16;
-            _Bd = t1;
-
+            _Ad = M(xC4S4, (A_ - C_));
+            _Bd = M(xC4S4, (B_ - D_));
 
             _Cd = A_ + C_;
             _Dd = B_ + D_;
 
-            t1 = (int32_t)(xC4S4 * (ip[0*8] + ip[4*8]));
-            t1 >>= 16;
-            E_ = t1;
+            E_ = M(xC4S4, (ip[0*8] + ip[4*8]));
+            F_ = M(xC4S4, (ip[0*8] - ip[4*8]));
 
-            t1 = (int32_t)(xC4S4 * (ip[0*8] - ip[4*8]));
-            t1 >>= 16;
-            F_ = t1;
-
-            t1 = (int32_t)(xC2S6 * ip[2*8]);
-            t2 = (int32_t)(xC6S2 * ip[6*8]);
-            t1 >>= 16;
-            t2 >>= 16;
-            G_ = t1 + t2;
-
-            t1 = (int32_t)(xC6S2 * ip[2*8]);
-            t2 = (int32_t)(xC2S6 * ip[6*8]);
-            t1 >>= 16;
-            t2 >>= 16;
-            H_ = t1 - t2;
-
+            G_ = M(xC2S6, ip[2*8]) + M(xC6S2, ip[6*8]);
+            H_ = M(xC6S2, ip[2*8]) - M(xC2S6, ip[6*8]);
 
             _Ed = E_ - G_;
             _Gd = E_ + G_;
