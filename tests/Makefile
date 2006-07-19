@@ -39,10 +39,10 @@ vsynth2/0.pgm: rotozoom
 	@mkdir -p vsynth2
 	./rotozoom 'vsynth2/' $(VPATH)/lena.pnm
 
-videogen: videogen.c
+videogen$(EXESUF): videogen.c
 	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $<
 
-rotozoom: rotozoom.c
+rotozoom$(EXESUF): rotozoom.c
 	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $<
 
 # audio generation
@@ -50,10 +50,10 @@ rotozoom: rotozoom.c
 asynth1.sw: audiogen
 	./audiogen $@
 
-audiogen: audiogen.c
+audiogen$(EXESUF): audiogen.c
 	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $<
 
-tiny_psnr: tiny_psnr.c
+tiny_psnr$(EXESUF): tiny_psnr.c
 	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $<
 
 DSPDEPS = $(SRC_PATH)/libavcodec/i386/dsputil_mmx.c \
@@ -78,4 +78,4 @@ dsptest: dsptest.c $(DSPDEPS)
 
 distclean clean:
 	rm -rf vsynth1 vsynth2 data
-	rm -f asynth1.sw *~ audiogen videogen rotozoom tiny_psnr
+	rm -f asynth1.sw *~ audiogen$(EXESUF) videogen$(EXESUF) rotozoom$(EXESUF) tiny_psnr$(EXESUF)
