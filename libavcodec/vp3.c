@@ -1352,7 +1352,6 @@ static int unpack_dct_coeffs(Vp3DecodeContext *s, GetBitContext *gb)
   (compatible_frame[s->all_fragments[x].coding_method] == current_frame_type)
 #define FRAME_CODED(x) (s->all_fragments[x].coding_method != MODE_COPY)
 #define DC_COEFF(u) (s->coeffs[u].index ? 0 : s->coeffs[u].coeff) //FIXME do somethin to simplify this
-static inline int iabs (int x) { return ((x < 0) ? -x : x); }
 
 static void reverse_dc_prediction(Vp3DecodeContext *s,
                                   int first_fragment,
@@ -1598,11 +1597,11 @@ static void reverse_dc_prediction(Vp3DecodeContext *s,
                     /* check for outranging on the [ul u l] and
                      * [ul u ur l] predictors */
                     if ((transform == 13) || (transform == 15)) {
-                        if (iabs(predicted_dc - vu) > 128)
+                        if (ABS(predicted_dc - vu) > 128)
                             predicted_dc = vu;
-                        else if (iabs(predicted_dc - vl) > 128)
+                        else if (ABS(predicted_dc - vl) > 128)
                             predicted_dc = vl;
-                        else if (iabs(predicted_dc - vul) > 128)
+                        else if (ABS(predicted_dc - vul) > 128)
                             predicted_dc = vul;
                     }
 
