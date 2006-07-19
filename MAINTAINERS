@@ -191,6 +191,7 @@ Muxers/Demuxers:
   flic.c                                Mike Melanson
   flvdec.c, flvenc.c                    Michael Niedermayer
   gxf.c                                 Reimar Doeffinger
+  gxfenc.c                              Baptiste Coudurier
   idcin.c                               Mike Melanson
   idroq.c                               Mike Melanson
   ipmovie.c                             Mike Melanson

@@ -183,6 +183,10 @@ ifeq ($(CONFIG_LIBOGG),yes)
 OBJS-$(CONFIG_OGG_MUXER)                 += ogg.o
 endif
 
+ifeq ($(CONFIG_GPL),yes)
+OBJS-$(CONFIG_GXF_MUXER)                 += gxfenc.o
+endif
+
 OBJS += $(OBJS-yes)
 
 NAME=avformat

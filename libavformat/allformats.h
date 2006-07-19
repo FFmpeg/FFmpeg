@@ -35,6 +35,7 @@ extern AVInputFormat gif_demuxer;
 extern AVInputFormat video_grab_device_demuxer;
 extern AVInputFormat video_grab_device_demuxer;
 extern AVInputFormat gxf_demuxer;
+extern AVOutputFormat gxf_muxer;
 extern AVInputFormat idcin_demuxer;
 extern AVInputFormat roq_demuxer;
 extern AVInputFormat image2_demuxer;

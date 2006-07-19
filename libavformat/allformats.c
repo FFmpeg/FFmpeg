@@ -138,6 +138,9 @@ void av_register_all(void)
 #ifdef CONFIG_GXF_DEMUXER
     av_register_input_format(&gxf_demuxer);
 #endif
+#if defined(CONFIG_GXF_MUXER) && defined(CONFIG_GPL)
+    av_register_output_format(&gxf_muxer);
+#endif
 #ifdef CONFIG_IDCIN_DEMUXER
     av_register_input_format(&idcin_demuxer);
 #endif
