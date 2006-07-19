@@ -112,8 +112,13 @@ static always_inline void idct(uint8_t *dst, int stride, int16_t *input, int typ
             Cd = A + C;
             Dd = B + D;
 
-            E = M(xC4S4, (ip[0*8] + ip[4*8]));
-            F = M(xC4S4, (ip[0*8] - ip[4*8]));
+            E = M(xC4S4, (ip[0*8] + ip[4*8])) + 8;
+            F = M(xC4S4, (ip[0*8] - ip[4*8])) + 8;
+
+            if(type==1){  //HACK
+                E += 16*128;
+                F += 16*128;
+            }
 
             G = M(xC2S6, ip[2*8]) + M(xC6S2, ip[6*8]);
             H = M(xC6S2, ip[2*8]) - M(xC2S6, ip[6*8]);
@@ -126,17 +131,6 @@ static always_inline void idct(uint8_t *dst, int stride, int16_t *input, int typ
 
             Fd = F - Ad;
             Hd = Bd + H;
-
-            if(type==1){  //HACK
-                Gd += 16*128;
-                Add+= 16*128;
-                Ed += 16*128;
-                Fd += 16*128;
-            }
-            Gd += IdctAdjustBeforeShift;
-            Add += IdctAdjustBeforeShift;
-            Ed += IdctAdjustBeforeShift;
-            Fd += IdctAdjustBeforeShift;
 
             /* Final sequence of operations over-write original inputs. */
             if(type==0){
