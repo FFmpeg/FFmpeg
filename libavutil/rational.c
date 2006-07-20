@@ -76,8 +76,7 @@ AVRational av_mul_q(AVRational b, AVRational c){
  * returns b/c.
  */
 AVRational av_div_q(AVRational b, AVRational c){
-    av_reduce(&b.num, &b.den, b.num * (int64_t)c.den, b.den * (int64_t)c.num, INT_MAX);
-    return b;
+    return av_mul_q(b, (AVRational){c.den, c.num});
 }
 
 /**
@@ -92,8 +91,7 @@ AVRational av_add_q(AVRational b, AVRational c){
  * returns b-c.
  */
 AVRational av_sub_q(AVRational b, AVRational c){
-    av_reduce(&b.num, &b.den, b.num * (int64_t)c.den - c.num * (int64_t)b.den, b.den * (int64_t)c.den, INT_MAX);
-    return b;
+    return av_add_q(b, (AVRational){-c.num, c.den});
 }
 
 /**
@@ -102,7 +100,8 @@ AVRational av_sub_q(AVRational b, AVRational c){
  */
 AVRational av_d2q(double d, int max){
     AVRational a;
-    int exponent= FFMAX( (int)(log(fabs(d) + 1e-20)/log(2)), 0);
+#define LOG2  0.69314718055994530941723212145817656807550013436025
+    int exponent= FFMAX( (int)(log(fabs(d) + 1e-20)/LOG2), 0);
     int64_t den= 1LL << (61 - exponent);
     av_reduce(&a.num, &a.den, (int64_t)(d * den + 0.5), den, max);
 
