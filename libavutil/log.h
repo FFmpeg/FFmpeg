@@ -22,6 +22,7 @@ struct AVCLASS {
 #define AV_LOG_ERROR 0
 #define AV_LOG_INFO 1
 #define AV_LOG_DEBUG 2
+extern int av_log_level;
 
 #ifdef __GNUC__
 extern void av_log(void*, int level, const char *fmt, ...) __attribute__ ((__format__ (__printf__, 3, 4)));
@@ -29,9 +30,13 @@ extern void av_log(void*, int level, const char *fmt, ...) __attribute__ ((__for
 extern void av_log(void*, int level, const char *fmt, ...);
 #endif
 
+#if LIBAVUTIL_VERSION_INT < (50<<16)
 extern void av_vlog(void*, int level, const char *fmt, va_list);
 extern int av_log_get_level(void);
 extern void av_log_set_level(int);
 extern void av_log_set_callback(void (*)(void*, int, const char*, va_list));
+#else
+extern void (*av_vlog)(void*, int, const char*, va_list);
+#endif
 
 #endif /* LOG_H */
