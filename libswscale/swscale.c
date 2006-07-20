@@ -55,7 +55,6 @@ untested special converters
 #include <stdio.h>
 #include <unistd.h>
 #include "config.h"
-#include "mangle.h"
 #include <assert.h>
 #ifdef HAVE_MALLOC_H
 #include <malloc.h>
@@ -70,11 +69,13 @@ untested special converters
 #endif
 #include "swscale.h"
 #include "swscale_internal.h"
-#include "cpudetect.h"
+#include "x86_cpu.h"
 #include "bswap.h"
-#include "libvo/img_format.h"
+#include "img_format.h"
 #include "rgb2rgb.h"
+#ifdef USE_FASTMEMCPY
 #include "libvo/fastmemcpy.h"
+#endif
 
 #undef MOVNTQ
 #undef PAVGB
@@ -150,7 +151,6 @@ add BGR4 output support
 write special BGR->BGR scaler
 */
 
-#define ABS(a) ((a) > 0 ? (a) : (-(a)))
 #define MIN(a,b) ((a) > (b) ? (b) : (a))
 #define MAX(a,b) ((a) < (b) ? (b) : (a))
 
@@ -212,6 +212,22 @@ extern const uint8_t dither_2x2_8[2][8];
 extern const uint8_t dither_8x8_32[8][8];
 extern const uint8_t dither_8x8_73[8][8];
 extern const uint8_t dither_8x8_220[8][8];
+
+char *sws_format_name(int format)
+{
+    static char fmt_name[64];
+    char *res;
+    static int buffer;
+
+    res = fmt_name + buffer * 32;
+    buffer = 1 - buffer;
+    snprintf(res, 32, "0x%x (%c%c%c%c)", format,
+		    format >> 24, (format >> 16) & 0xFF,
+		    (format >> 8) & 0xFF,
+		    format & 0xFF);
+
+    return res;
+}
 
 #if defined(ARCH_X86) || defined(ARCH_X86_64)
 void in_asm_used_var_warning_killer()
@@ -1021,7 +1037,7 @@ static inline void initFilter(int16_t **outFilter, int16_t **filterPos, int *out
 	}
 
 	/* apply src & dst Filter to filter -> filter2
-	   free(filter);
+	   av_free(filter);
 	*/
 	ASSERT(filterSize>0)
 	filter2Size= filterSize;
@@ -1054,7 +1070,7 @@ static inline void initFilter(int16_t **outFilter, int16_t **filterPos, int *out
 
 		if(outVec != &scaleFilter) sws_freeVec(outVec);
 	}
-	free(filter); filter=NULL;
+	av_free(filter); filter=NULL;
 
 	/* try to reduce the filter-size (step1 find size and shift left) */
 	// Assume its near normalized (*0.5 or *2.0 is ok but * 0.001 is not)
@@ -1130,7 +1146,7 @@ static inline void initFilter(int16_t **outFilter, int16_t **filterPos, int *out
 			else		   filter[i*filterSize + j]= filter2[i*filter2Size + j];
 		}
 	}
-	free(filter2); filter2=NULL;
+	av_free(filter2); filter2=NULL;
 	
 
 	//FIXME try to align filterpos if possible
@@ -1199,7 +1215,7 @@ static inline void initFilter(int16_t **outFilter, int16_t **filterPos, int *out
 		(*outFilter)[j + i]= (*outFilter)[j + i - (*outFilterSize)];
 	}
 
-	free(filter);
+	av_free(filter);
 }
 
 #if defined(ARCH_X86) || defined(ARCH_X86_64)
@@ -1495,7 +1511,7 @@ static int rgb2rgbWrapper(SwsContext *c, uint8_t* src[], int srcStride[], int sr
 		case 0x84: conv= rgb16to32; break;
 		case 0x86: conv= rgb24to32; break;
 		default: MSG_ERR("swScaler: internal error %s -> %s converter\n", 
-				 vo_format_name(srcFormat), vo_format_name(dstFormat)); break;
+				 sws_format_name(srcFormat), sws_format_name(dstFormat)); break;
 		}
 	}else if(   (isBGR(srcFormat) && isRGB(dstFormat))
 		 || (isRGB(srcFormat) && isBGR(dstFormat))){
@@ -1517,11 +1533,11 @@ static int rgb2rgbWrapper(SwsContext *c, uint8_t* src[], int srcStride[], int sr
 		case 0x86: conv= rgb24tobgr32; break;
 		case 0x88: conv= rgb32tobgr32; break;
 		default: MSG_ERR("swScaler: internal error %s -> %s converter\n", 
-				 vo_format_name(srcFormat), vo_format_name(dstFormat)); break;
+				 sws_format_name(srcFormat), sws_format_name(dstFormat)); break;
 		}
 	}else{
 		MSG_ERR("swScaler: internal error %s -> %s converter\n", 
-			 vo_format_name(srcFormat), vo_format_name(dstFormat));
+			 sws_format_name(srcFormat), sws_format_name(dstFormat));
 	}
 
 	if(dstStride[0]*srcBpp == srcStride[0]*dstBpp)
@@ -1861,12 +1877,12 @@ SwsContext *sws_getContext(int srcW, int srcH, int origSrcFormat, int dstW, int 
 
 	if(!isSupportedIn(srcFormat)) 
 	{
-		MSG_ERR("swScaler: %s is not supported as input format\n", vo_format_name(srcFormat));
+		MSG_ERR("swScaler: %s is not supported as input format\n", sws_format_name(srcFormat));
 		return NULL;
 	}
 	if(!isSupportedOut(dstFormat))
 	{
-		MSG_ERR("swScaler: %s is not supported as output format\n", vo_format_name(dstFormat));
+		MSG_ERR("swScaler: %s is not supported as output format\n", sws_format_name(dstFormat));
 		return NULL;
 	}
 
@@ -2012,7 +2028,7 @@ SwsContext *sws_getContext(int srcW, int srcH, int origSrcFormat, int dstW, int 
 		if(c->swScale){
 			if(flags&SWS_PRINT_INFO)
 				MSG_INFO("SwScaler: using unscaled %s -> %s special converter\n", 
-					vo_format_name(srcFormat), vo_format_name(dstFormat));
+					sws_format_name(srcFormat), sws_format_name(dstFormat));
 			return c;
 		}
 	}
@@ -2198,10 +2214,10 @@ SwsContext *sws_getContext(int srcW, int srcH, int origSrcFormat, int dstW, int 
 
 		if(dstFormat==IMGFMT_BGR15 || dstFormat==IMGFMT_BGR16)
 			MSG_INFO("from %s to%s %s ", 
-				vo_format_name(srcFormat), dither, vo_format_name(dstFormat));
+				sws_format_name(srcFormat), dither, sws_format_name(dstFormat));
 		else
 			MSG_INFO("from %s to %s ", 
-				vo_format_name(srcFormat), vo_format_name(dstFormat));
+				sws_format_name(srcFormat), sws_format_name(dstFormat));
 
 		if(flags & SWS_CPU_CAPS_MMX2)
 			MSG_INFO("using MMX2\n");
@@ -2348,7 +2364,7 @@ SwsFilter *sws_getDefaultFilter(float lumaGBlur, float chromaGBlur,
 				float chromaHShift, float chromaVShift,
 				int verbose)
 {
-	SwsFilter *filter= malloc(sizeof(SwsFilter));
+	SwsFilter *filter= av_malloc(sizeof(SwsFilter));
 
 	if(lumaGBlur!=0.0){
 		filter->lumH= sws_getGaussianVec(lumaGBlur, 3.0);
@@ -2410,7 +2426,7 @@ SwsVector *sws_getGaussianVec(double variance, double quality){
 	int i;
 	double *coeff= memalign(sizeof(double), length*sizeof(double));
 	double middle= (length-1)*0.5;
-	SwsVector *vec= malloc(sizeof(SwsVector));
+	SwsVector *vec= av_malloc(sizeof(SwsVector));
 
 	vec->coeff= coeff;
 	vec->length= length;
@@ -2429,7 +2445,7 @@ SwsVector *sws_getGaussianVec(double variance, double quality){
 SwsVector *sws_getConstVec(double c, int length){
 	int i;
 	double *coeff= memalign(sizeof(double), length*sizeof(double));
-	SwsVector *vec= malloc(sizeof(SwsVector));
+	SwsVector *vec= av_malloc(sizeof(SwsVector));
 
 	vec->coeff= coeff;
 	vec->length= length;
@@ -2470,7 +2486,7 @@ static SwsVector *sws_getConvVec(SwsVector *a, SwsVector *b){
 	int length= a->length + b->length - 1;
 	double *coeff= memalign(sizeof(double), length*sizeof(double));
 	int i, j;
-	SwsVector *vec= malloc(sizeof(SwsVector));
+	SwsVector *vec= av_malloc(sizeof(SwsVector));
 
 	vec->coeff= coeff;
 	vec->length= length;
@@ -2492,7 +2508,7 @@ static SwsVector *sws_sumVec(SwsVector *a, SwsVector *b){
 	int length= MAX(a->length, b->length);
 	double *coeff= memalign(sizeof(double), length*sizeof(double));
 	int i;
-	SwsVector *vec= malloc(sizeof(SwsVector));
+	SwsVector *vec= av_malloc(sizeof(SwsVector));
 
 	vec->coeff= coeff;
 	vec->length= length;
@@ -2509,7 +2525,7 @@ static SwsVector *sws_diffVec(SwsVector *a, SwsVector *b){
 	int length= MAX(a->length, b->length);
 	double *coeff= memalign(sizeof(double), length*sizeof(double));
 	int i;
-	SwsVector *vec= malloc(sizeof(SwsVector));
+	SwsVector *vec= av_malloc(sizeof(SwsVector));
 
 	vec->coeff= coeff;
 	vec->length= length;
@@ -2527,7 +2543,7 @@ static SwsVector *sws_getShiftedVec(SwsVector *a, int shift){
 	int length= a->length + ABS(shift)*2;
 	double *coeff= memalign(sizeof(double), length*sizeof(double));
 	int i;
-	SwsVector *vec= malloc(sizeof(SwsVector));
+	SwsVector *vec= av_malloc(sizeof(SwsVector));
 
 	vec->coeff= coeff;
 	vec->length= length;
@@ -2544,40 +2560,40 @@ static SwsVector *sws_getShiftedVec(SwsVector *a, int shift){
 
 void sws_shiftVec(SwsVector *a, int shift){
 	SwsVector *shifted= sws_getShiftedVec(a, shift);
-	free(a->coeff);
+	av_free(a->coeff);
 	a->coeff= shifted->coeff;
 	a->length= shifted->length;
-	free(shifted);
+	av_free(shifted);
 }
 
 void sws_addVec(SwsVector *a, SwsVector *b){
 	SwsVector *sum= sws_sumVec(a, b);
-	free(a->coeff);
+	av_free(a->coeff);
 	a->coeff= sum->coeff;
 	a->length= sum->length;
-	free(sum);
+	av_free(sum);
 }
 
 void sws_subVec(SwsVector *a, SwsVector *b){
 	SwsVector *diff= sws_diffVec(a, b);
-	free(a->coeff);
+	av_free(a->coeff);
 	a->coeff= diff->coeff;
 	a->length= diff->length;
-	free(diff);
+	av_free(diff);
 }
 
 void sws_convVec(SwsVector *a, SwsVector *b){
 	SwsVector *conv= sws_getConvVec(a, b);
-	free(a->coeff);  
+	av_free(a->coeff);  
 	a->coeff= conv->coeff;
 	a->length= conv->length;
-	free(conv);
+	av_free(conv);
 }
 
 SwsVector *sws_cloneVec(SwsVector *a){
 	double *coeff= memalign(sizeof(double), a->length*sizeof(double));
 	int i;
-	SwsVector *vec= malloc(sizeof(SwsVector));
+	SwsVector *vec= av_malloc(sizeof(SwsVector));
 
 	vec->coeff= coeff;
 	vec->length= a->length;
@@ -2612,10 +2628,10 @@ void sws_printVec(SwsVector *a){
 
 void sws_freeVec(SwsVector *a){
 	if(!a) return;
-	if(a->coeff) free(a->coeff);
+	av_free(a->coeff);
 	a->coeff=NULL;
 	a->length=0;
-	free(a);
+	av_free(a);
 }
 
 void sws_freeFilter(SwsFilter *filter){
@@ -2625,7 +2641,7 @@ void sws_freeFilter(SwsFilter *filter){
 	if(filter->lumV) sws_freeVec(filter->lumV);
 	if(filter->chrH) sws_freeVec(filter->chrH);
 	if(filter->chrV) sws_freeVec(filter->chrV);
-	free(filter);
+	av_free(filter);
 }
 
 
@@ -2637,10 +2653,10 @@ void sws_freeContext(SwsContext *c){
 	{
 		for(i=0; i<c->vLumBufSize; i++)
 		{
-			if(c->lumPixBuf[i]) free(c->lumPixBuf[i]);
+			av_free(c->lumPixBuf[i]);
 			c->lumPixBuf[i]=NULL;
 		}
-		free(c->lumPixBuf);
+		av_free(c->lumPixBuf);
 		c->lumPixBuf=NULL;
 	}
 
@@ -2648,35 +2664,35 @@ void sws_freeContext(SwsContext *c){
 	{
 		for(i=0; i<c->vChrBufSize; i++)
 		{
-			if(c->chrPixBuf[i]) free(c->chrPixBuf[i]);
+			av_free(c->chrPixBuf[i]);
 			c->chrPixBuf[i]=NULL;
 		}
-		free(c->chrPixBuf);
+		av_free(c->chrPixBuf);
 		c->chrPixBuf=NULL;
 	}
 
-	if(c->vLumFilter) free(c->vLumFilter);
+	av_free(c->vLumFilter);
 	c->vLumFilter = NULL;
-	if(c->vChrFilter) free(c->vChrFilter);
+	av_free(c->vChrFilter);
 	c->vChrFilter = NULL;
-	if(c->hLumFilter) free(c->hLumFilter);
+	av_free(c->hLumFilter);
 	c->hLumFilter = NULL;
-	if(c->hChrFilter) free(c->hChrFilter);
+	av_free(c->hChrFilter);
 	c->hChrFilter = NULL;
 #ifdef HAVE_ALTIVEC
-	if(c->vYCoeffsBank) free(c->vYCoeffsBank);
+	av_free(c->vYCoeffsBank);
 	c->vYCoeffsBank = NULL;
-	if(c->vCCoeffsBank) free(c->vCCoeffsBank);
+	av_free(c->vCCoeffsBank);
 	c->vCCoeffsBank = NULL;
 #endif
 
-	if(c->vLumFilterPos) free(c->vLumFilterPos);
+	av_free(c->vLumFilterPos);
 	c->vLumFilterPos = NULL;
-	if(c->vChrFilterPos) free(c->vChrFilterPos);
+	av_free(c->vChrFilterPos);
 	c->vChrFilterPos = NULL;
-	if(c->hLumFilterPos) free(c->hLumFilterPos);
+	av_free(c->hLumFilterPos);
 	c->hLumFilterPos = NULL;
-	if(c->hChrFilterPos) free(c->hChrFilterPos);
+	av_free(c->hChrFilterPos);
 	c->hChrFilterPos = NULL;
 
 #if defined(ARCH_X86) || defined(ARCH_X86_64)
@@ -2684,24 +2700,24 @@ void sws_freeContext(SwsContext *c){
 	if(c->funnyYCode) munmap(c->funnyYCode, MAX_FUNNY_CODE_SIZE);
 	if(c->funnyUVCode) munmap(c->funnyUVCode, MAX_FUNNY_CODE_SIZE);
 #else
-	if(c->funnyYCode) free(c->funnyYCode);
-	if(c->funnyUVCode) free(c->funnyUVCode);
+	av_free(c->funnyYCode);
+	av_free(c->funnyUVCode);
 #endif
 	c->funnyYCode=NULL;
 	c->funnyUVCode=NULL;
 #endif
 
-	if(c->lumMmx2Filter) free(c->lumMmx2Filter);
+	av_free(c->lumMmx2Filter);
 	c->lumMmx2Filter=NULL;
-	if(c->chrMmx2Filter) free(c->chrMmx2Filter);
+	av_free(c->chrMmx2Filter);
 	c->chrMmx2Filter=NULL;
-	if(c->lumMmx2FilterPos) free(c->lumMmx2FilterPos);
+	av_free(c->lumMmx2FilterPos);
 	c->lumMmx2FilterPos=NULL;
-	if(c->chrMmx2FilterPos) free(c->chrMmx2FilterPos);
+	av_free(c->chrMmx2FilterPos);
 	c->chrMmx2FilterPos=NULL;
-	if(c->yuvTable) free(c->yuvTable);
+	av_free(c->yuvTable);
 	c->yuvTable=NULL;
 
-	free(c);
+	av_free(c);
 }
 

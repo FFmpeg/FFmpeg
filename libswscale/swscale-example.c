@@ -22,10 +22,8 @@
 #include <inttypes.h>
 #include <stdarg.h>
 
-#include "config.h"
-
 #include "swscale.h"
-#include "libvo/img_format.h"
+#include "img_format.h"
 
 static int testFormat[]={
 IMGFMT_YVU9,
@@ -120,8 +118,8 @@ static void doTest(uint8_t *ref[3], int refStride[3], int w, int h, int srcForma
 	
 	if(ssdY>100 || ssdU>100 || ssdV>100){
 		printf(" %s %dx%d -> %s %4dx%4d flags=%2d SSD=%5lld,%5lld,%5lld\n", 
-			vo_format_name(srcFormat), srcW, srcH, 
-			vo_format_name(dstFormat), dstW, dstH,
+			sws_format_name(srcFormat), srcW, srcH, 
+			sws_format_name(dstFormat), dstW, dstH,
 			flags,
 			ssdY, ssdU, ssdV);
 	}
@@ -163,8 +161,8 @@ static void selfTest(uint8_t *src[3], int stride[3], int w, int h){
 			if(!dstFormat) break;
 //			if(!isSupportedOut(dstFormat)) continue;
 printf("%s -> %s\n", 
-	vo_format_name(srcFormat),
-	vo_format_name(dstFormat));
+	sws_format_name(srcFormat),
+	sws_format_name(dstFormat));
  
 			srcW= w;
 			srcH= h;

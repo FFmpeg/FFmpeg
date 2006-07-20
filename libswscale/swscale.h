@@ -29,6 +29,15 @@
 extern "C" {
 #endif
 
+#define AV_STRINGIFY(s)         AV_TOSTRING(s)
+#define AV_TOSTRING(s) #s
+
+#define LIBSWSCALE_VERSION_INT  ((0<<16)+(5<<8)+0)
+#define LIBSWSCALE_VERSION      0.5.0
+#define LIBSWSCALE_BUILD        LIBSWSCALE_VERSION_INT
+
+#define LIBSWSCALE_IDENT        "SwS" AV_STRINGIFY(LIBSWSCALE_VERSION)
+
 /* values for the flags, the stuff on the command line is different */
 #define SWS_FAST_BILINEAR 1
 #define SWS_BILINEAR 2

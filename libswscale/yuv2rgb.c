@@ -36,12 +36,10 @@
 #include <assert.h>
 
 #include "config.h"
-//#include "video_out.h"
 #include "rgb2rgb.h"
 #include "swscale.h"
 #include "swscale_internal.h"
-#include "mangle.h"
-#include "libvo/img_format.h" //FIXME try to reduce dependency of such stuff
+#include "img_format.h" //FIXME try to reduce dependency of such stuff
 
 #ifdef HAVE_MLIB
 #include "yuv2rgb_mlib.c"
@@ -692,7 +690,7 @@ int yuv2rgb_c_init_tables (SwsContext *c, const int inv_table[4], int fullRange,
 
     switch (bpp) {
     case 32:
-	table_start= table_32 = malloc ((197 + 2*682 + 256 + 132) * sizeof (uint32_t));
+	table_start= table_32 = av_malloc ((197 + 2*682 + 256 + 132) * sizeof (uint32_t));
 
 	entry_size = sizeof (uint32_t);
 	table_r = table_32 + 197;
@@ -708,7 +706,7 @@ int yuv2rgb_c_init_tables (SwsContext *c, const int inv_table[4], int fullRange,
 	break;
 
     case 24:
-	table_start= table_8 = malloc ((256 + 2*232) * sizeof (uint8_t));
+	table_start= table_8 = av_malloc ((256 + 2*232) * sizeof (uint8_t));
 
 	entry_size = sizeof (uint8_t);
 	table_r = table_g = table_b = table_8 + 232;
@@ -719,7 +717,7 @@ int yuv2rgb_c_init_tables (SwsContext *c, const int inv_table[4], int fullRange,
 
     case 15:
     case 16:
-	table_start= table_16 = malloc ((197 + 2*682 + 256 + 132) * sizeof (uint16_t));
+	table_start= table_16 = av_malloc ((197 + 2*682 + 256 + 132) * sizeof (uint16_t));
 
 	entry_size = sizeof (uint16_t);
 	table_r = table_16 + 197;
@@ -750,7 +748,7 @@ int yuv2rgb_c_init_tables (SwsContext *c, const int inv_table[4], int fullRange,
 	break;
 
     case 8:
-	table_start= table_332 = malloc ((197 + 2*682 + 256 + 132) * sizeof (uint8_t));
+	table_start= table_332 = av_malloc ((197 + 2*682 + 256 + 132) * sizeof (uint8_t));
 
 	entry_size = sizeof (uint8_t);
 	table_r = table_332 + 197;
@@ -784,7 +782,7 @@ int yuv2rgb_c_init_tables (SwsContext *c, const int inv_table[4], int fullRange,
 	break;
     case 4:
     case 4|128:
-	table_start= table_121 = malloc ((197 + 2*682 + 256 + 132) * sizeof (uint8_t));
+	table_start= table_121 = av_malloc ((197 + 2*682 + 256 + 132) * sizeof (uint8_t));
 
 	entry_size = sizeof (uint8_t);
 	table_r = table_121 + 197;
@@ -815,7 +813,7 @@ int yuv2rgb_c_init_tables (SwsContext *c, const int inv_table[4], int fullRange,
 	break;
 
     case 1:
-	table_start= table_1 = malloc (256*2 * sizeof (uint8_t));
+	table_start= table_1 = av_malloc (256*2 * sizeof (uint8_t));
 
 	entry_size = sizeof (uint8_t);
 	table_g = table_1;
@@ -842,7 +840,7 @@ int yuv2rgb_c_init_tables (SwsContext *c, const int inv_table[4], int fullRange,
 	c->table_bU[i] = table_b + entry_size * div_round (cbu * (i-128), 76309);
     }
 
-    if(c->yuvTable) free(c->yuvTable);
+    av_free(c->yuvTable);
     c->yuvTable= table_start;
     return 0;
 }

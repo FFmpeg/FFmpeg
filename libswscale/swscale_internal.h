@@ -23,20 +23,20 @@
 #include <altivec.h>
 #endif
 
+#include "avutil.h"
+
 #ifdef CONFIG_DARWIN
 #define AVV(x...) (x)
 #else
 #define AVV(x...) {x}
 #endif
 
-#include "mp_msg.h"
-
-#define MSG_WARN(args...) mp_msg(MSGT_SWS,MSGL_WARN, ##args )
-#define MSG_FATAL(args...) mp_msg(MSGT_SWS,MSGL_FATAL, ##args )
-#define MSG_ERR(args...) mp_msg(MSGT_SWS,MSGL_ERR, ##args )
-#define MSG_V(args...) mp_msg(MSGT_SWS,MSGL_V, ##args )
-#define MSG_DBG2(args...) mp_msg(MSGT_SWS,MSGL_DBG2, ##args )
-#define MSG_INFO(args...) mp_msg(MSGT_SWS,MSGL_INFO, ##args )
+#define MSG_WARN(args...) av_log(NULL, AV_LOG_DEBUG, ##args )
+#define MSG_FATAL(args...) av_log(NULL, AV_LOG_ERROR, ##args )
+#define MSG_ERR(args...) av_log(NULL, AV_LOG_ERROR, ##args )
+#define MSG_V(args...) av_log(NULL, AV_LOG_INFO, ##args )
+#define MSG_DBG2(args...) av_log(NULL, AV_LOG_DEBUG, ##args )
+#define MSG_INFO(args...) av_log(NULL, AV_LOG_INFO, ##args )
 
 #define MAX_FILTER_SIZE 256
 
@@ -163,5 +163,7 @@ typedef struct SwsContext{
 
 SwsFunc yuv2rgb_get_func_ptr (SwsContext *c);
 int yuv2rgb_c_init_tables (SwsContext *c, const int inv_table[4], int fullRange, int brightness, int contrast, int saturation);
+
+char *sws_format_name(int format);
 
 #endif

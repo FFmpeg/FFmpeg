@@ -74,8 +74,7 @@
 #include "rgb2rgb.h"
 #include "swscale.h"
 #include "swscale_internal.h"
-#include "mangle.h"
-#include "libvo/img_format.h" //FIXME try to reduce dependency of such stuff
+#include "img_format.h" //FIXME try to reduce dependency of such stuff
 
 #undef PROFILE_THE_BEAST
 #undef INC_SCALING
@@ -868,7 +867,7 @@ altivec_yuv2packedX (SwsContext *c,
           static int printed_error_message;
           if(!printed_error_message) {
             MSG_ERR("altivec_yuv2packedX doesn't support %s output\n",
-                    vo_format_name(c->dstFormat));
+                    sws_format_name(c->dstFormat));
             printed_error_message=1;
           }
           return;
@@ -943,7 +942,7 @@ altivec_yuv2packedX (SwsContext *c,
       default:
         /* Unreachable, I think. */
         MSG_ERR("altivec_yuv2packedX doesn't support %s output\n",
-                vo_format_name(c->dstFormat));
+                sws_format_name(c->dstFormat));
         return;
     }
 
