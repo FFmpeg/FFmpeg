@@ -102,7 +102,7 @@ AVRational av_sub_q(AVRational b, AVRational c){
  */
 AVRational av_d2q(double d, int max){
     AVRational a;
-    int exponent= FFMAX( (int)(log(ABS(d) + 1e-20)/log(2)), 0);
+    int exponent= FFMAX( (int)(log(fabs(d) + 1e-20)/log(2)), 0);
     int64_t den= 1LL << (61 - exponent);
     av_reduce(&a.num, &a.den, (int64_t)(d * den + 0.5), den, max);
 
