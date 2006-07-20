@@ -67,7 +67,6 @@ unassigned TODO: (unordered)
 - SNOW: 4x4 block support
 - SNOW: 1/8 pel motion compensation support
 - SNOW: iterative motion estimation based on subsampled images
-- ADPCM: viterbi/trellis based optimal encoder
 - FLAC: lossy encoding (viterbi and naive scalar quantization)
 - libavfilter
 - JPEG2000 decoder & encoder
@@ -75,4 +74,6 @@ unassigned TODO: (unordered)
 - macroblock based pixel format (better cache locality, somewhat complex, one paper claimed it faster for high res)
 - finish NUT implementation
 - movenc.c fix stts so that variable framerate files work
+- seeking regression test
+- regression tests for codecs which dont have an encoder (I+P frame bitstream in svn)
 
