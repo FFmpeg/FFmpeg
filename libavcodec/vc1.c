@@ -1329,7 +1329,7 @@ static int vc1_parse_frame_header(VC1Context *v, GetBitContext* gb)
     if (v->quantizer_mode == QUANT_FRAME_IMPLICIT)
         v->pq = pquant_table[0][pqindex];
     else
-        v->pq = pquant_table[v->quantizer_mode-1][pqindex];
+        v->pq = pquant_table[1][pqindex];
 
     v->pquantizer = 1;
     if (v->quantizer_mode == QUANT_FRAME_IMPLICIT)
@@ -1435,6 +1435,9 @@ static int vc1_parse_frame_header(VC1Context *v, GetBitContext* gb)
             {
                 v->ttfrm = ttfrm_to_tt[get_bits(gb, 2)];
             }
+        } else {
+            v->ttmbf = 1;
+            v->ttfrm = TT_8X8;
         }
         break;
     case B_TYPE:
