@@ -155,8 +155,6 @@ typedef uint64_t      uint_fast64_t;
 #endif
 
 
-#    include "bswap.h"
-
 #ifdef HAVE_AV_CONFIG_H
 /* only include the following when compiling package */
 #    include "internal.h"

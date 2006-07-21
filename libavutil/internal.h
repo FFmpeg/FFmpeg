@@ -14,6 +14,8 @@
 #        define ENODATA  61
 #    endif
 
+#include "bswap.h"
+
 #include <stddef.h>
 #ifndef offsetof
 # define offsetof(T,F) ((unsigned int)((char *)&((T *)0)->F))
