@@ -2491,7 +2491,10 @@ static int vc1_decode_p_mb(VC1Context *v)
         else //Skipped
         {
             s->mb_intra = 0;
-            for(i = 0; i < 6; i++) v->mb_type[0][s->block_index[i]] = 0;
+            for(i = 0; i < 6; i++) {
+                v->mb_type[0][s->block_index[i]] = 0;
+                s->dc_val[0][s->block_index[i]] = 0;
+            }
             s->current_picture.mb_type[mb_pos] = MB_TYPE_SKIP;
             s->current_picture.qscale_table[mb_pos] = 0;
             vc1_pred_mv(s, 0, 0, 0, 1, v->range_x, v->range_y, v->mb_type[0]);
@@ -2590,7 +2593,10 @@ static int vc1_decode_p_mb(VC1Context *v)
         else //Skipped MB
         {
             s->mb_intra = 0;
-            for (i=0; i<6; i++) v->mb_type[0][s->block_index[i]] = 0;
+            for (i=0; i<6; i++) {
+                v->mb_type[0][s->block_index[i]] = 0;
+                s->dc_val[0][s->block_index[i]] = 0;
+            }
             for (i=0; i<4; i++)
             {
                 vc1_pred_mv(s, i, 0, 0, 0, v->range_x, v->range_y, v->mb_type[0]);
