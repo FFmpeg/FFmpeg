@@ -32,7 +32,6 @@ show_help(){
   echo "  --enable-mp3lame         enable MP3 encoding via libmp3lame [default=no]"
   echo "  --enable-libogg          enable Ogg support via libogg [default=no]"
   echo "  --enable-vorbis          enable Vorbis support via libvorbis [default=no]"
-  echo "  --enable-theora          enable Theora support via libtheora [default=no]"
   echo "  --enable-faad            enable FAAD support via libfaad [default=no]"
   echo "  --enable-faadbin         build FAAD support with runtime linking [default=no]"
   echo "  --enable-faac            enable FAAC support via libfaac [default=no]"
@@ -763,9 +762,6 @@ for opt do
   ;;
   --enable-vorbis) vorbis="yes"
     pkg_requires="$pkg_requires vorbis vorbisenc"
-  ;;
-  --enable-theora) theora="yes"
-    pkg_requires="$pkg_requires theora"
   ;;
   --enable-faad) faad="yes"
   ;;
@@ -1514,7 +1510,6 @@ echo "libgsm enabled   $libgsm"
 echo "mp3lame enabled  $mp3lame"
 echo "libogg enabled   $libogg"
 echo "Vorbis enabled   $vorbis"
-echo "Theora enabled   $theora"
 echo "FAAD enabled     $faad"
 echo "faadbin enabled  $faadbin"
 echo "FAAC enabled     $faac"
