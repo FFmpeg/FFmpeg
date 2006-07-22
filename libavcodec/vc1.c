@@ -894,11 +894,6 @@ static void vc1_put_block(VC1Context *v, DCTELEM block[6][64])
     dsp->put_pixels_clamped(block[5], v->s.dest[2], vs);
 }
 
-/* clip motion vector as specified in 8.3.6.5 */
-#define CLIP_RANGE(mv, src, lim, bs)      \
-    if(mv < -bs) mv = -bs - src * bs; \
-    if(mv > lim) mv = lim - src * bs;
-
 /** Do motion compensation over 1 macroblock
  * Mostly adapted hpel_motion and qpel_motion from mpegvideo.c
  */
@@ -924,10 +919,10 @@ static void vc1_mc_1mv(VC1Context *v)
     uvsrc_x = s->mb_x * 8 + (uvmx >> 2);
     uvsrc_y = s->mb_y * 8 + (uvmy >> 2);
 
-    CLIP_RANGE(  src_x, s->mb_x, s->mb_width  * 16, 16);
-    CLIP_RANGE(  src_y, s->mb_y, s->mb_height * 16, 16);
-    CLIP_RANGE(uvsrc_x, s->mb_x, s->mb_width  *  8,  8);
-    CLIP_RANGE(uvsrc_y, s->mb_y, s->mb_height *  8,  8);
+    src_x   = clip(  src_x, -16, s->mb_width  * 16);
+    src_y   = clip(  src_y, -16, s->mb_height * 16);
+    uvsrc_x = clip(uvsrc_x,  -8, s->mb_width  *  8);
+    uvsrc_y = clip(uvsrc_y,  -8, s->mb_height *  8);
 
     srcY += src_y * s->linesize + src_x;
     srcU += uvsrc_y * s->uvlinesize + uvsrc_x;
@@ -1022,8 +1017,8 @@ static void vc1_mc_4mv_luma(VC1Context *v, int n)
     src_x = s->mb_x * 16 + (n&1) * 8 + (mx >> 2);
     src_y = s->mb_y * 16 + (n&2) * 4 + (my >> 2);
 
-    CLIP_RANGE(src_x, s->mb_x, s->mb_width  * 16, 16);
-    CLIP_RANGE(src_y, s->mb_y, s->mb_height * 16, 16);
+    src_x   = clip(  src_x, -16, s->mb_width  * 16);
+    src_y   = clip(  src_y, -16, s->mb_height * 16);
 
     srcY += src_y * s->linesize + src_x;
 
@@ -1124,8 +1119,8 @@ static void vc1_mc_4mv_chroma(VC1Context *v)
     uvsrc_x = s->mb_x * 8 + (uvmx >> 2);
     uvsrc_y = s->mb_y * 8 + (uvmy >> 2);
 
-    CLIP_RANGE(uvsrc_x, s->mb_x, s->mb_width  *  8,  8);
-    CLIP_RANGE(uvsrc_y, s->mb_y, s->mb_height *  8,  8);
+    uvsrc_x = clip(uvsrc_x,  -8, s->mb_width  *  8);
+    uvsrc_y = clip(uvsrc_y,  -8, s->mb_height *  8);
     srcU = s->last_picture.data[1] + uvsrc_y * s->uvlinesize + uvsrc_x;
     srcV = s->last_picture.data[2] + uvsrc_y * s->uvlinesize + uvsrc_x;
     if((unsigned)uvsrc_x > (s->h_edge_pos >> 1) - ((uvmx >> 1)&1) - 8
