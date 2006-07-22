@@ -2061,13 +2061,13 @@ not_coded:
             if(dc_pred_dir) { //left
                 for(k = 1; k < 8; k++) {
                     block[k << 3] = ac_val[k] * scale;
-                    if(!v->pquantizer)
+                    if(!v->pquantizer && block[k << 3])
                         block[k << 3] += (block[k << 3] < 0) ? -v->pq : v->pq;
                 }
             } else { //top
                 for(k = 1; k < 8; k++) {
                     block[k] = ac_val[k + 8] * scale;
-                    if(!v->pquantizer)
+                    if(!v->pquantizer && block[k])
                         block[k] += (block[k] < 0) ? -v->pq : v->pq;
                 }
             }
@@ -2260,13 +2260,13 @@ static int vc1_decode_intra_block(VC1Context *v, DCTELEM block[64], int n, int c
             if(dc_pred_dir) { //left
                 for(k = 1; k < 8; k++) {
                     block[k << 3] = ac_val2[k] * scale;
-                    if(!v->pquantizer)
+                    if(!v->pquantizer && block[k << 3])
                         block[k << 3] += (block[k << 3] < 0) ? -mquant : mquant;
                 }
             } else { //top
                 for(k = 1; k < 8; k++) {
                     block[k] = ac_val2[k + 8] * scale;
-                    if(!v->pquantizer)
+                    if(!v->pquantizer && block[k])
                         block[k] += (block[k] < 0) ? -mquant : mquant;
                 }
             }
