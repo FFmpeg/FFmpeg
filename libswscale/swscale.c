@@ -2129,7 +2129,7 @@ SwsContext *sws_getContext(int srcW, int srcH, int origSrcFormat, int dstW, int 
 
 #ifdef HAVE_ALTIVEC
 		c->vYCoeffsBank = av_malloc(sizeof (vector signed short)*c->vLumFilterSize*c->dstH);
-		c->vCCoeffsBank = mv_malloc(sizeof (vector signed short)*c->vChrFilterSize*c->chrDstH);
+		c->vCCoeffsBank = av_malloc(sizeof (vector signed short)*c->vChrFilterSize*c->chrDstH);
 
 		for (i=0;i<c->vLumFilterSize*c->dstH;i++) {
                   int j;
