@@ -1123,8 +1123,8 @@ static void vc1_mc_4mv_chroma(VC1Context *v)
     uvsrc_y = clip(uvsrc_y,  -8, s->mb_height *  8);
     srcU = s->last_picture.data[1] + uvsrc_y * s->uvlinesize + uvsrc_x;
     srcV = s->last_picture.data[2] + uvsrc_y * s->uvlinesize + uvsrc_x;
-    if((unsigned)uvsrc_x > (s->h_edge_pos >> 1) - ((uvmx >> 1)&1) - 8
-       || (unsigned)uvsrc_y > (s->v_edge_pos >> 1) - ((uvmy >> 1)&1) - 8){
+    if((unsigned)uvsrc_x > (s->h_edge_pos >> 1) - 9
+       || (unsigned)uvsrc_y > (s->v_edge_pos >> 1) - 9){
         ff_emulated_edge_mc(s->edge_emu_buffer     , srcU, s->uvlinesize, 8+1, 8+1,
                             uvsrc_x, uvsrc_y, s->h_edge_pos >> 1, s->v_edge_pos >> 1);
         ff_emulated_edge_mc(s->edge_emu_buffer + 16, srcV, s->uvlinesize, 8+1, 8+1,
