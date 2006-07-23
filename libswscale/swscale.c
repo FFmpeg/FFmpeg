@@ -864,13 +864,13 @@ static inline void initFilter(int16_t **outFilter, int16_t **filterPos, int *out
 #endif
 
 	// Note the +1 is for the MMXscaler which reads over the end
-	*filterPos = (int16_t*)memalign(8, (dstW+1)*sizeof(int16_t));
+	*filterPos = av_malloc((dstW+1)*sizeof(int16_t));
 
 	if(ABS(xInc - 0x10000) <10) // unscaled
 	{
 		int i;
 		filterSize= 1;
-		filter= (double*)memalign(8, dstW*sizeof(double)*filterSize);
+		filter= av_malloc(dstW*sizeof(double)*filterSize);
 		for(i=0; i<dstW*filterSize; i++) filter[i]=0;
 
 		for(i=0; i<dstW; i++)
@@ -885,7 +885,7 @@ static inline void initFilter(int16_t **outFilter, int16_t **filterPos, int *out
 		int i;
 		int xDstInSrc;
 		filterSize= 1;
-		filter= (double*)memalign(8, dstW*sizeof(double)*filterSize);
+		filter= av_malloc(dstW*sizeof(double)*filterSize);
 		
 		xDstInSrc= xInc/2 - 0x8000;
 		for(i=0; i<dstW; i++)
@@ -904,7 +904,7 @@ static inline void initFilter(int16_t **outFilter, int16_t **filterPos, int *out
 		if     (flags&SWS_BICUBIC) filterSize= 4;
 		else if(flags&SWS_X      ) filterSize= 4;
 		else			   filterSize= 2; // SWS_BILINEAR / SWS_AREA 
-		filter= (double*)memalign(8, dstW*sizeof(double)*filterSize);
+		filter= av_malloc(dstW*sizeof(double)*filterSize);
 
 		xDstInSrc= xInc/2 - 0x8000;
 		for(i=0; i<dstW; i++)
@@ -950,7 +950,7 @@ static inline void initFilter(int16_t **outFilter, int16_t **filterPos, int *out
 		filterSize= (int)ceil(1 + filterSizeInSrc); // will be reduced later if possible
 		if(filterSize > srcW-2) filterSize=srcW-2;
 
-		filter= (double*)memalign(16, dstW*sizeof(double)*filterSize);
+		filter= av_malloc(dstW*sizeof(double)*filterSize);
 
 		xDstInSrc= xInc1 / 2.0 - 0.5;
 		for(i=0; i<dstW; i++)
@@ -1044,7 +1044,7 @@ static inline void initFilter(int16_t **outFilter, int16_t **filterPos, int *out
 	if(srcFilter) filter2Size+= srcFilter->length - 1;
 	if(dstFilter) filter2Size+= dstFilter->length - 1;
 	ASSERT(filter2Size>0)
-	filter2= (double*)memalign(8, filter2Size*dstW*sizeof(double));
+	filter2= av_malloc(filter2Size*dstW*sizeof(double));
 
 	for(i=0; i<dstW; i++)
 	{
@@ -1130,7 +1130,7 @@ static inline void initFilter(int16_t **outFilter, int16_t **filterPos, int *out
 	ASSERT(minFilterSize > 0)
 	filterSize= (minFilterSize +(filterAlign-1)) & (~(filterAlign-1));
 	ASSERT(filterSize > 0)
-	filter= (double*)memalign(8, filterSize*dstW*sizeof(double));
+	filter= av_malloc(filterSize*dstW*sizeof(double));
 	*outFilterSize= filterSize;
 
 	if(flags&SWS_PRINT_INFO)
@@ -1183,7 +1183,7 @@ static inline void initFilter(int16_t **outFilter, int16_t **filterPos, int *out
 
 	// Note the +1 is for the MMXscaler which reads over the end
 	/* align at 16 for AltiVec (needed by hScale_altivec_real) */
-	*outFilter= (int16_t*)memalign(16, *outFilterSize*(dstW+1)*sizeof(int16_t));
+	*outFilter= av_malloc(*outFilterSize*(dstW+1)*sizeof(int16_t));
 	memset(*outFilter, 0, *outFilterSize*(dstW+1)*sizeof(int16_t));
 
 	/* Normalize & Store in outFilter */
@@ -1897,7 +1897,7 @@ SwsContext *sws_getContext(int srcW, int srcH, int origSrcFormat, int dstW, int 
 	if(!dstFilter) dstFilter= &dummyFilter;
 	if(!srcFilter) srcFilter= &dummyFilter;
 
-	c= memalign(64, sizeof(SwsContext));
+	c= av_malloc(sizeof(SwsContext));
 	memset(c, 0, sizeof(SwsContext));
 
 	c->srcW= srcW;
@@ -2095,14 +2095,14 @@ SwsContext *sws_getContext(int srcW, int srcH, int origSrcFormat, int dstW, int 
 			c->funnyYCode = (uint8_t*)mmap(NULL, MAX_FUNNY_CODE_SIZE, PROT_EXEC | PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
 			c->funnyUVCode = (uint8_t*)mmap(NULL, MAX_FUNNY_CODE_SIZE, PROT_EXEC | PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
 #else
-			c->funnyYCode = (uint8_t*)memalign(32, MAX_FUNNY_CODE_SIZE);
-			c->funnyUVCode = (uint8_t*)memalign(32, MAX_FUNNY_CODE_SIZE);
+			c->funnyYCode = av_malloc(MAX_FUNNY_CODE_SIZE);
+			c->funnyUVCode = av_malloc(MAX_FUNNY_CODE_SIZE);
 #endif
 
-			c->lumMmx2Filter   = (int16_t*)memalign(8, (dstW        /8+8)*sizeof(int16_t));
-			c->chrMmx2Filter   = (int16_t*)memalign(8, (c->chrDstW  /4+8)*sizeof(int16_t));
-			c->lumMmx2FilterPos= (int32_t*)memalign(8, (dstW      /2/8+8)*sizeof(int32_t));
-			c->chrMmx2FilterPos= (int32_t*)memalign(8, (c->chrDstW/2/4+8)*sizeof(int32_t));
+			c->lumMmx2Filter   = av_malloc((dstW        /8+8)*sizeof(int16_t));
+			c->chrMmx2Filter   = av_malloc((c->chrDstW  /4+8)*sizeof(int16_t));
+			c->lumMmx2FilterPos= av_malloc((dstW      /2/8+8)*sizeof(int32_t));
+			c->chrMmx2FilterPos= av_malloc((c->chrDstW/2/4+8)*sizeof(int32_t));
 
 			initMMX2HScaler(      dstW, c->lumXInc, c->funnyYCode , c->lumMmx2Filter, c->lumMmx2FilterPos, 8);
 			initMMX2HScaler(c->chrDstW, c->chrXInc, c->funnyUVCode, c->chrMmx2Filter, c->chrMmx2FilterPos, 4);
@@ -2128,8 +2128,8 @@ SwsContext *sws_getContext(int srcW, int srcH, int origSrcFormat, int dstW, int 
 				srcFilter->chrV, dstFilter->chrV, c->param);
 
 #ifdef HAVE_ALTIVEC
-		c->vYCoeffsBank = memalign (16, sizeof (vector signed short)*c->vLumFilterSize*c->dstH);
-		c->vCCoeffsBank = memalign (16, sizeof (vector signed short)*c->vChrFilterSize*c->chrDstH);
+		c->vYCoeffsBank = av_malloc(sizeof (vector signed short)*c->vLumFilterSize*c->dstH);
+		c->vCCoeffsBank = mv_malloc(sizeof (vector signed short)*c->vChrFilterSize*c->chrDstH);
 
 		for (i=0;i<c->vLumFilterSize*c->dstH;i++) {
                   int j;
@@ -2165,14 +2165,14 @@ SwsContext *sws_getContext(int srcW, int srcH, int origSrcFormat, int dstW, int 
 	}
 
 	// allocate pixbufs (we use dynamic allocation because otherwise we would need to
-	c->lumPixBuf= (int16_t**)memalign(4, c->vLumBufSize*2*sizeof(int16_t*));
-	c->chrPixBuf= (int16_t**)memalign(4, c->vChrBufSize*2*sizeof(int16_t*));
+	c->lumPixBuf= av_malloc(c->vLumBufSize*2*sizeof(int16_t*));
+	c->chrPixBuf= av_malloc(c->vChrBufSize*2*sizeof(int16_t*));
 	//Note we need at least one pixel more at the end because of the mmx code (just in case someone wanna replace the 4000/8000)
 	/* align at 16 bytes for AltiVec */
 	for(i=0; i<c->vLumBufSize; i++)
-		c->lumPixBuf[i]= c->lumPixBuf[i+c->vLumBufSize]= (uint16_t*)memalign(16, 4000);
+		c->lumPixBuf[i]= c->lumPixBuf[i+c->vLumBufSize]= av_malloc(4000);
 	for(i=0; i<c->vChrBufSize; i++)
-		c->chrPixBuf[i]= c->chrPixBuf[i+c->vChrBufSize]= (uint16_t*)memalign(16, 8000);
+		c->chrPixBuf[i]= c->chrPixBuf[i+c->vChrBufSize]= av_malloc(8000);
 
 	//try to avoid drawing green stuff between the right end and the stride end
 	for(i=0; i<c->vLumBufSize; i++) memset(c->lumPixBuf[i], 0, 4000);
@@ -2424,7 +2424,7 @@ SwsFilter *sws_getDefaultFilter(float lumaGBlur, float chromaGBlur,
 SwsVector *sws_getGaussianVec(double variance, double quality){
 	const int length= (int)(variance*quality + 0.5) | 1;
 	int i;
-	double *coeff= memalign(sizeof(double), length*sizeof(double));
+	double *coeff= av_malloc(length*sizeof(double));
 	double middle= (length-1)*0.5;
 	SwsVector *vec= av_malloc(sizeof(SwsVector));
 
@@ -2444,7 +2444,7 @@ SwsVector *sws_getGaussianVec(double variance, double quality){
 
 SwsVector *sws_getConstVec(double c, int length){
 	int i;
-	double *coeff= memalign(sizeof(double), length*sizeof(double));
+	double *coeff= av_malloc(length*sizeof(double));
 	SwsVector *vec= av_malloc(sizeof(SwsVector));
 
 	vec->coeff= coeff;
@@ -2484,7 +2484,7 @@ void sws_normalizeVec(SwsVector *a, double height){
 
 static SwsVector *sws_getConvVec(SwsVector *a, SwsVector *b){
 	int length= a->length + b->length - 1;
-	double *coeff= memalign(sizeof(double), length*sizeof(double));
+	double *coeff= av_malloc(length*sizeof(double));
 	int i, j;
 	SwsVector *vec= av_malloc(sizeof(SwsVector));
 
@@ -2506,7 +2506,7 @@ static SwsVector *sws_getConvVec(SwsVector *a, SwsVector *b){
 
 static SwsVector *sws_sumVec(SwsVector *a, SwsVector *b){
 	int length= MAX(a->length, b->length);
-	double *coeff= memalign(sizeof(double), length*sizeof(double));
+	double *coeff= av_malloc(length*sizeof(double));
 	int i;
 	SwsVector *vec= av_malloc(sizeof(SwsVector));
 
@@ -2523,7 +2523,7 @@ static SwsVector *sws_sumVec(SwsVector *a, SwsVector *b){
 
 static SwsVector *sws_diffVec(SwsVector *a, SwsVector *b){
 	int length= MAX(a->length, b->length);
-	double *coeff= memalign(sizeof(double), length*sizeof(double));
+	double *coeff= av_malloc(length*sizeof(double));
 	int i;
 	SwsVector *vec= av_malloc(sizeof(SwsVector));
 
@@ -2541,7 +2541,7 @@ static SwsVector *sws_diffVec(SwsVector *a, SwsVector *b){
 /* shift left / or right if "shift" is negative */
 static SwsVector *sws_getShiftedVec(SwsVector *a, int shift){
 	int length= a->length + ABS(shift)*2;
-	double *coeff= memalign(sizeof(double), length*sizeof(double));
+	double *coeff= av_malloc(length*sizeof(double));
 	int i;
 	SwsVector *vec= av_malloc(sizeof(SwsVector));
 
@@ -2591,7 +2591,7 @@ void sws_convVec(SwsVector *a, SwsVector *b){
 }
 
 SwsVector *sws_cloneVec(SwsVector *a){
-	double *coeff= memalign(sizeof(double), a->length*sizeof(double));
+	double *coeff= av_malloc(a->length*sizeof(double));
 	int i;
 	SwsVector *vec= av_malloc(sizeof(SwsVector));
 
