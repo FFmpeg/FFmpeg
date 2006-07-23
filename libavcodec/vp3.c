@@ -2235,10 +2235,15 @@ static int vp3_decode_frame(AVCodecContext *avctx,
                 vp3_calculate_pixel_addresses(s);
             else
                 theora_calculate_pixel_addresses(s);
+            s->pixel_addresses_inited = 1;
         }
     } else {
         /* allocate a new current frame */
         s->current_frame.reference = 3;
+        if (!s->pixel_addresses_inited) {
+            av_log(s->avctx, AV_LOG_ERROR, "vp3: first frame not a keyframe\n");
+            return -1;
+        }
         if(avctx->get_buffer(avctx, &s->current_frame) < 0) {
             av_log(s->avctx, AV_LOG_ERROR, "vp3: get_buffer() failed\n");
             return -1;
