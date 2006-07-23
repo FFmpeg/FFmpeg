@@ -201,7 +201,6 @@ ogg_new_stream (AVFormatContext * s, uint32_t serial)
         return AVERROR_NOMEM;
 
     av_set_pts_info(st, 64, 1, 1000000);
-    st->start_time = 0;
 
     return idx;
 }
@@ -495,6 +494,16 @@ ogg_get_length (AVFormatContext * s)
 
     ogg->size = size;
     ogg_restore (s, 0);
+    ogg_save (s);
+    while (ogg_read_page (s, &i)) {
+        if (i == idx && ogg->streams[i].granule != -1 && ogg->streams[i].granule != 0)
+            break;
+    }
+    if (i == idx) {
+        s->streams[idx]->start_time = ogg_gptopts (s, idx, ogg->streams[idx].granule);
+        s->streams[idx]->duration -= s->streams[idx]->start_time;
+    }
+    ogg_restore (s, 0);
 
     return 0;
 }
@@ -572,12 +581,14 @@ ogg_read_seek (AVFormatContext * s, int stream_index, int64_t target_ts,
     ogg_t *ogg = s->priv_data;
     ByteIOContext *bc = &s->pb;
     uint64_t min = 0, max = ogg->size;
-    uint64_t tmin = 0, tmax = st->duration;
+    uint64_t tmin = st->start_time, tmax = st->start_time + st->duration;
     int64_t pts = AV_NOPTS_VALUE;
 
     ogg_save (s);
 
-    while (min <= max){
+    if ((uint64_t)target_ts < tmin || target_ts < 0)
+        target_ts = tmin;
+    while (min <= max && tmin < tmax){
         uint64_t p = min + (max - min) * (target_ts - tmin) / (tmax - tmin);
         int i = -1;
 
@@ -599,9 +610,25 @@ ogg_read_seek (AVFormatContext * s, int stream_index, int64_t target_ts,
             break;
 
         if (pts > target_ts){
+            if (max == p && tmax == pts) {
+                // probably our tmin is wrong, causing us to always end up too late in the file
+                tmin = (target_ts + tmin + 1) / 2;
+                if (tmin == target_ts) {
+                    url_fseek(bc, min, SEEK_SET);
+                    break;
+                }
+            }
             max = p;
             tmax = pts;
         }else{
+            if (min == p && tmin == pts) {
+                // probably our tmax is wrong, causing us to always end up too early in the file
+                tmax = (target_ts + tmax) / 2;
+                if (tmax == target_ts) {
+                    url_fseek(bc, max, SEEK_SET);
+                    break;
+                }
+            }
             min = p;
             tmin = pts;
         }
@@ -615,7 +642,8 @@ ogg_read_seek (AVFormatContext * s, int stream_index, int64_t target_ts,
         pts = AV_NOPTS_VALUE;
     }
 
-    return pts;
+    av_update_cur_dts(s, st, pts);
+    return 0;
 
 #if 0
     //later...

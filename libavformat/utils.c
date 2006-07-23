@@ -1097,7 +1097,7 @@ static void av_read_frame_flush(AVFormatContext *s)
  * @param timestamp new dts expressed in time_base of param ref_st
  * @param ref_st reference stream giving time_base of param timestamp
  */
-static void av_update_cur_dts(AVFormatContext *s, AVStream *ref_st, int64_t timestamp){
+void av_update_cur_dts(AVFormatContext *s, AVStream *ref_st, int64_t timestamp){
     int i;
 
     for(i = 0; i < s->nb_streams; i++) {
