@@ -568,7 +568,6 @@ dv1394="no"
 SHFLAGS="-dynamiclib -Wl,-single_module -Wl,-install_name,\$(libdir)/\$(SLIBNAME),-current_version,\$(SPPVERSION),-compatibility_version,\$(SPPVERSION)"
 VHOOKFLAGS='-dynamiclib -Wl,-single_module -flat_namespace -undefined suppress -Wl,-install_name,$(libdir)/vhook/$@'
 extralibs=""
-darwin="yes"
 strip="strip -x"
 installstrip=""
 FFLDFLAGS="-Wl,-dynamic,-search_paths_first"
@@ -1242,7 +1241,7 @@ if check_header malloc.h; then
 fi
 
 if test "$_memalign" = "no" -a "$mmx" = "yes" -a \
-        "$memalignhack" != "yes" -a "$darwin" != "yes" ; then
+        "$memalignhack" != "yes" -a "$targetos != Darwin" ; then
     die "Error, no memalign() but SSE enabled, disable it or use --enable-memalign-hack."
 fi
 
@@ -1957,7 +1956,7 @@ if test "$TARGET_OS" = "BeOS" ; then
   echo "#define HAVE_THREADS 1" >> $TMPH
 fi
 
-if test "$darwin" = "yes"; then
+if test "$TARGET_OS" = "Darwin"; then
   echo "#define CONFIG_DARWIN 1"  >> $TMPH
   echo "CONFIG_DARWIN=yes" >> config.mak
 fi
