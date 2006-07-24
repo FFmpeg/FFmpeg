@@ -72,7 +72,7 @@ ffmpeg_g$(EXESUF): ffmpeg.o cmdutils.o .libs
 	$(CC) $(FFLIBDIRS) $(LDFLAGS) -o $@ ffmpeg.o cmdutils.o $(FFLIBS) $(EXTRALIBS)
 
 ffserver$(EXESUF): ffserver.o .libs
-	$(CC) $(FFLIBDIRS) $(LDFLAGS) $(FFSLDFLAGS) -o $@ ffserver.o $(FFLIBS) $(EXTRALIBS)
+	$(CC) $(FFLIBDIRS) $(LDFLAGS) $(FFSERVERLDFLAGS) -o $@ ffserver.o $(FFLIBS) $(EXTRALIBS)
 
 ffplay_g$(EXESUF): ffplay.o cmdutils.o .libs
 	$(CC) $(FFLIBDIRS) $(LDFLAGS) -o $@ ffplay.o cmdutils.o $(FFLIBS) $(EXTRALIBS) $(SDL_LIBS)
