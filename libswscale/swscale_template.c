@@ -186,6 +186,7 @@
 			: "%eax", "%ebx", "%ecx", "%edx", "%esi"
 */
 #define YSCALEYUV2PACKEDX \
+	asm volatile(\
 		"xor %%"REG_a", %%"REG_a"	\n\t"\
 		ASMALIGN16\
 		"nop				\n\t"\
@@ -226,7 +227,15 @@
 		"test %%"REG_S", %%"REG_S"	\n\t"\
 		" jnz 2b			\n\t"\
 
+#define YSCALEYUV2PACKEDX_END\
+        :: "r" (&c->redDither), \
+            "m" (dummy), "m" (dummy), "m" (dummy),\
+            "r" (dest), "m" (dstW)\
+        : "%"REG_a, "%"REG_d, "%"REG_S\
+        );
+
 #define YSCALEYUV2PACKEDX_ACCURATE \
+	asm volatile(\
 		"xor %%"REG_a", %%"REG_a"	\n\t"\
 		ASMALIGN16\
 		"nop				\n\t"\
@@ -319,8 +328,7 @@
                 "movq  "U_TEMP"(%0), %%mm3      \n\t"\
                 "movq  "V_TEMP"(%0), %%mm4      \n\t"\
 
-#define YSCALEYUV2RGBX(YSCALEYUV2PACKEDX) \
-		YSCALEYUV2PACKEDX\
+#define YSCALEYUV2RGBX \
 		"psubw "U_OFFSET"(%0), %%mm3	\n\t" /* (U-128)8*/\
 		"psubw "V_OFFSET"(%0), %%mm4	\n\t" /* (V-128)8*/\
 		"movq %%mm3, %%mm2		\n\t" /* (U-128)8*/\
@@ -1031,22 +1039,19 @@ static inline void RENAME(yuv2packedX)(SwsContext *c, int16_t *lumFilter, int16_
     if(c->flags & SWS_ACCURATE_RND){
                 switch(c->dstFormat){
                 case IMGFMT_BGR32:
-			asm volatile(
-				YSCALEYUV2RGBX(YSCALEYUV2PACKEDX_ACCURATE)
+                                YSCALEYUV2PACKEDX_ACCURATE
+				YSCALEYUV2RGBX
 				WRITEBGR32(%4, %5, %%REGa)
 
-			:: "r" (&c->redDither), 
-			   "m" (dummy), "m" (dummy), "m" (dummy),
-			   "r" (dest), "m" (dstW)
-			: "%"REG_a, "%"REG_d, "%"REG_S
-			);
+                                YSCALEYUV2PACKEDX_END
                         return;
                 case IMGFMT_BGR24:
-			asm volatile(
-				YSCALEYUV2RGBX(YSCALEYUV2PACKEDX_ACCURATE)
+                                YSCALEYUV2PACKEDX_ACCURATE
+				YSCALEYUV2RGBX
 				"lea (%%"REG_a", %%"REG_a", 2), %%"REG_b"\n\t" //FIXME optimize
 				"add %4, %%"REG_b"			\n\t"
 				WRITEBGR24(%%REGb, %5, %%REGa)
+
 
 			:: "r" (&c->redDither), 
 			   "m" (dummy), "m" (dummy), "m" (dummy),
@@ -1055,8 +1060,8 @@ static inline void RENAME(yuv2packedX)(SwsContext *c, int16_t *lumFilter, int16_
 			);
                         return;
                 case IMGFMT_BGR15:
-			asm volatile(
-				YSCALEYUV2RGBX(YSCALEYUV2PACKEDX_ACCURATE)
+                                YSCALEYUV2PACKEDX_ACCURATE
+				YSCALEYUV2RGBX
 		/* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
 #ifdef DITHER1XBPP
 				"paddusb "MANGLE(b5Dither)", %%mm2\n\t"
@@ -1065,16 +1070,11 @@ static inline void RENAME(yuv2packedX)(SwsContext *c, int16_t *lumFilter, int16_
 #endif
 
 				WRITEBGR15(%4, %5, %%REGa)
-
-			:: "r" (&c->redDither), 
-			   "m" (dummy), "m" (dummy), "m" (dummy),
-			   "r" (dest), "m" (dstW)
-			: "%"REG_a, "%"REG_d, "%"REG_S
-			);
+                                YSCALEYUV2PACKEDX_END
                         return;
                 case IMGFMT_BGR16:
-			asm volatile(
-				YSCALEYUV2RGBX(YSCALEYUV2PACKEDX_ACCURATE)
+                                YSCALEYUV2PACKEDX_ACCURATE
+				YSCALEYUV2RGBX
 		/* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
 #ifdef DITHER1XBPP
 				"paddusb "MANGLE(b5Dither)", %%mm2\n\t"
@@ -1083,15 +1083,9 @@ static inline void RENAME(yuv2packedX)(SwsContext *c, int16_t *lumFilter, int16_
 #endif
 
 				WRITEBGR16(%4, %5, %%REGa)
-
-			:: "r" (&c->redDither), 
-			   "m" (dummy), "m" (dummy), "m" (dummy),
-			   "r" (dest), "m" (dstW)
-			: "%"REG_a, "%"REG_d, "%"REG_S
-			);
+                                YSCALEYUV2PACKEDX_END
                         return;
                 case IMGFMT_YUY2:
-			asm volatile(
 				YSCALEYUV2PACKEDX_ACCURATE
 		/* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
 
@@ -1100,34 +1094,21 @@ static inline void RENAME(yuv2packedX)(SwsContext *c, int16_t *lumFilter, int16_
 				"psraw $3, %%mm1		\n\t"
 				"psraw $3, %%mm7		\n\t"
 				WRITEYUY2(%4, %5, %%REGa)
-
-			:: "r" (&c->redDither), 
-			   "m" (dummy), "m" (dummy), "m" (dummy),
-			   "r" (dest), "m" (dstW)
-			: "%"REG_a, "%"REG_d, "%"REG_S
-			);
+                                YSCALEYUV2PACKEDX_END
                         return;
                 }
     }else{
 	switch(c->dstFormat)
 	{
 	case IMGFMT_BGR32:
-		{
-			asm volatile(
-				YSCALEYUV2RGBX(YSCALEYUV2PACKEDX)
+                                YSCALEYUV2PACKEDX
+				YSCALEYUV2RGBX
 				WRITEBGR32(%4, %5, %%REGa)
-
-			:: "r" (&c->redDither), 
-			   "m" (dummy), "m" (dummy), "m" (dummy),
-			   "r" (dest), "m" (dstW)
-			: "%"REG_a, "%"REG_d, "%"REG_S
-			);
-		}
+                                YSCALEYUV2PACKEDX_END
 		return;
 	case IMGFMT_BGR24:
-		{
-			asm volatile(
-				YSCALEYUV2RGBX(YSCALEYUV2PACKEDX)
+                                YSCALEYUV2PACKEDX
+				YSCALEYUV2RGBX
 				"lea (%%"REG_a", %%"REG_a", 2), %%"REG_b"\n\t" //FIXME optimize
 				"add %4, %%"REG_b"			\n\t"
 				WRITEBGR24(%%REGb, %5, %%REGa)
@@ -1137,12 +1118,10 @@ static inline void RENAME(yuv2packedX)(SwsContext *c, int16_t *lumFilter, int16_
 			   "r" (dest), "m" (dstW)
 			: "%"REG_a, "%"REG_b, "%"REG_d, "%"REG_S //FIXME ebx
 			);
-		}
 		return;
 	case IMGFMT_BGR15:
-		{
-			asm volatile(
-				YSCALEYUV2RGBX(YSCALEYUV2PACKEDX)
+                                YSCALEYUV2PACKEDX
+				YSCALEYUV2RGBX
 		/* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
 #ifdef DITHER1XBPP
 				"paddusb "MANGLE(b5Dither)", %%mm2\n\t"
@@ -1151,18 +1130,11 @@ static inline void RENAME(yuv2packedX)(SwsContext *c, int16_t *lumFilter, int16_
 #endif
 
 				WRITEBGR15(%4, %5, %%REGa)
-
-			:: "r" (&c->redDither), 
-			   "m" (dummy), "m" (dummy), "m" (dummy),
-			   "r" (dest), "m" (dstW)
-			: "%"REG_a, "%"REG_d, "%"REG_S
-			);
-		}
+                                YSCALEYUV2PACKEDX_END
 		return;
 	case IMGFMT_BGR16:
-		{
-			asm volatile(
-				YSCALEYUV2RGBX(YSCALEYUV2PACKEDX)
+                                YSCALEYUV2PACKEDX
+				YSCALEYUV2RGBX
 		/* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
 #ifdef DITHER1XBPP
 				"paddusb "MANGLE(b5Dither)", %%mm2\n\t"
@@ -1171,17 +1143,9 @@ static inline void RENAME(yuv2packedX)(SwsContext *c, int16_t *lumFilter, int16_
 #endif
 
 				WRITEBGR16(%4, %5, %%REGa)
-
-			:: "r" (&c->redDither), 
-			   "m" (dummy), "m" (dummy), "m" (dummy),
-			   "r" (dest), "m" (dstW)
-			: "%"REG_a, "%"REG_d, "%"REG_S
-			);
-		}
+                                YSCALEYUV2PACKEDX_END
 		return;
 	case IMGFMT_YUY2:
-		{
-			asm volatile(
 				YSCALEYUV2PACKEDX
 		/* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
 
@@ -1190,13 +1154,7 @@ static inline void RENAME(yuv2packedX)(SwsContext *c, int16_t *lumFilter, int16_
 				"psraw $3, %%mm1		\n\t"
 				"psraw $3, %%mm7		\n\t"
 				WRITEYUY2(%4, %5, %%REGa)
-
-			:: "r" (&c->redDither), 
-			   "m" (dummy), "m" (dummy), "m" (dummy),
-			   "r" (dest), "m" (dstW)
-			: "%"REG_a, "%"REG_d, "%"REG_S
-			);
-		}
+                                YSCALEYUV2PACKEDX_END
 		return;
         }
     }
