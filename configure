@@ -1241,7 +1241,7 @@ if check_header malloc.h; then
 fi
 
 if test "$_memalign" = "no" -a "$mmx" = "yes" -a \
-        "$memalignhack" != "yes" -a "$targetos != Darwin" ; then
+        "$memalignhack" != "yes" -a "$targetos" != "Darwin" ; then
     die "Error, no memalign() but SSE enabled, disable it or use --enable-memalign-hack."
 fi
 
