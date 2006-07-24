@@ -126,7 +126,9 @@ typedef struct SwsContext{
 #define DSTW_OFFSET  "11*8+4*4*256*2" //do not change, its hardcoded in the asm
 #define ESP_OFFSET  "11*8+4*4*256*2+8"
 #define VROUNDER_OFFSET "11*8+4*4*256*2+16"
-                  
+#define U_TEMP       "11*8+4*4*256*2+24"
+#define V_TEMP       "11*8+4*4*256*2+32"
+
 	uint64_t redDither   __attribute__((aligned(8)));
 	uint64_t greenDither __attribute__((aligned(8)));
 	uint64_t blueDither  __attribute__((aligned(8)));
@@ -144,6 +146,8 @@ typedef struct SwsContext{
 	int dstW;
 	uint64_t esp __attribute__((aligned(8)));
 	uint64_t vRounder     __attribute__((aligned(8)));
+	uint64_t u_temp       __attribute__((aligned(8)));
+	uint64_t v_temp       __attribute__((aligned(8)));
 
 #ifdef HAVE_ALTIVEC
 

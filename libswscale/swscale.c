@@ -848,7 +848,7 @@ static double getSplineCoeff(double a, double b, double c, double d, double dist
 						dist-1.0);
 }
 
-static inline void initFilter(int16_t **outFilter, int16_t **filterPos, int *outFilterSize, int xInc,
+static inline int initFilter(int16_t **outFilter, int16_t **filterPos, int *outFilterSize, int xInc,
 			      int srcW, int dstW, int filterAlign, int one, int flags,
 			      SwsVector *srcFilter, SwsVector *dstFilter, double param[2])
 {
@@ -1127,10 +1127,18 @@ static inline void initFilter(int16_t **outFilter, int16_t **filterPos, int *out
             filterAlign = 1;
         }
 
+        if (flags & SWS_CPU_CAPS_MMX) {
+                // special case for unscaled vertical filtering
+                if(minFilterSize == 1 && filterAlign == 2)
+                        filterAlign= 1;
+        }
+
 	ASSERT(minFilterSize > 0)
 	filterSize= (minFilterSize +(filterAlign-1)) & (~(filterAlign-1));
 	ASSERT(filterSize > 0)
 	filter= av_malloc(filterSize*dstW*sizeof(double));
+        if(filterSize >= MAX_FILTER_SIZE)
+                return -1;
 	*outFilterSize= filterSize;
 
 	if(flags&SWS_PRINT_INFO)
@@ -1216,6 +1224,7 @@ static inline void initFilter(int16_t **outFilter, int16_t **filterPos, int *out
 	}
 
 	av_free(filter);
+        return 0;
 }
 
 #if defined(ARCH_X86) || defined(ARCH_X86_64)
@@ -2115,6 +2124,7 @@ SwsContext *sws_getContext(int srcW, int srcH, int origSrcFormat, int dstW, int 
 	/* precalculate vertical scaler filter coefficients */
 	{
 		const int filterAlign=
+		  (flags & SWS_CPU_CAPS_MMX) && (flags & SWS_ACCURATE_RND) ? 2 :
 		  (flags & SWS_CPU_CAPS_ALTIVEC) ? 8 :
 		  1;
 
