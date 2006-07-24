@@ -2540,7 +2540,7 @@ static int vc1_decode_p_mb(VC1Context *v)
                 if(!coded_inter) coded_inter = !is_intra[i] & is_coded[i];
             }
             // if there are no coded blocks then don't do anything more
-            if(!intra_count && !coded_inter) return;
+            if(!intra_count && !coded_inter) return 0;
             dst_idx = 0;
             GET_MQUANT();
             s->current_picture.qscale_table[mb_pos] = mquant;
@@ -2559,7 +2559,7 @@ static int vc1_decode_p_mb(VC1Context *v)
                 else s->ac_pred = 0;
             }
             if (!v->ttmbf && coded_inter)
-                ttmb = get_vlc2(gb, vc1_ttmb_vlc[v->tt_index].table, VC1_TTMB_VLC_BITS, 12);
+                ttmb = get_vlc2(gb, vc1_ttmb_vlc[v->tt_index].table, VC1_TTMB_VLC_BITS, 2);
             for (i=0; i<6; i++)
             {
                 dst_idx += i >> 2;
@@ -2596,6 +2596,7 @@ static int vc1_decode_p_mb(VC1Context *v)
         else //Skipped MB
         {
             s->mb_intra = 0;
+            s->current_picture.qscale_table[mb_pos] = 0;
             for (i=0; i<6; i++) {
                 v->mb_type[0][s->block_index[i]] = 0;
                 s->dc_val[0][s->block_index[i]] = 0;
