@@ -6,6 +6,9 @@
 #ifndef VC1DATA_H
 #define VC1DATA_H
 
+/* Denominator used for vc1_bfraction_lut */
+#define B_FRACTION_DEN  840
+
 /* bfraction is fractional, we scale to the GCD 3*5*7*8 = 840 */
 const int16_t vc1_bfraction_lut[23] = {
   420 /*1/2*/, 280 /*1/3*/, 560 /*2/3*/, 210 /*1/4*/,
