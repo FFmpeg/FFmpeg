@@ -709,7 +709,7 @@ for opt do
   ;;
   --extra-cflags=*) CFLAGS="$CFLAGS $optval"
   ;;
-  --extra-ldflags=*) FFLDFLAGS="$FFLDFLAGS $optval"
+  --extra-ldflags=*) EXTRALDFLAGS="$optval"
   ;;
   --extra-libs=*) extralibs="$optval"
   ;;
@@ -893,7 +893,6 @@ EOF
     if test "$mingwce" = "yes"; then
         protocols="no"
     fi
-    #FIXME: This ignores --extra-ldflags.
     FFLDFLAGS='-Wl,--output-def,$(@:.dll=.def),--out-implib,lib$(SLIBNAME:$(SLIBSUF)=.dll.a)'
     SLIBPREF=""
     SLIBSUF=".dll"
@@ -902,8 +901,8 @@ EOF
     if test "$force_libdir" != yes; then bindir="$PREFIX"; fi
 fi
 
-# Combine FFLDFLAGS and the LDFLAGS environment variable
-LDFLAGS="$FFLDFLAGS $LDFLAGS"
+# Combine FFLDFLAGS, EXTRALDFLAGS and the LDFLAGS environment variable.
+LDFLAGS="$FFLDFLAGS $EXTRALDFLAGS $LDFLAGS"
 
 test -n "$cross_prefix" && cross_compile=yes
 cc="${cross_prefix}${cc}"
