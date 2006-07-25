@@ -50,6 +50,7 @@ version <next>
 - Flash Screen Video decoder
 - GXF demuxer
 - Chinese AVS decoder
+- GXF muxer
 
 version 0.4.9-pre1:
 
