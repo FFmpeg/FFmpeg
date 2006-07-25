@@ -51,6 +51,7 @@ version <next>
 - GXF demuxer
 - Chinese AVS decoder
 - GXF muxer
+- MXF demuxer
 
 version 0.4.9-pre1:
 

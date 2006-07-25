@@ -69,6 +69,7 @@ extern AVInputFormat mpegps_demuxer;
 extern AVInputFormat mpegts_demuxer;
 extern AVOutputFormat mpegts_muxer;
 extern AVOutputFormat mpjpeg_muxer;
+extern AVInputFormat mxf_demuxer;
 extern AVInputFormat nsv_demuxer;
 extern AVInputFormat nut_demuxer;
 extern AVOutputFormat nut_muxer;

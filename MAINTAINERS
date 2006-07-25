@@ -198,6 +198,7 @@ Muxers/Demuxers:
   img2.c                                Michael Niedermayer
   mov.c                                 Francois Revol, Michael Niedermayer
   mpegts*                               Mans Rullgard
+  mxf.c                                 Baptiste Coudurier
   nsvdec.c                              Francois Revol
   nut.c                                 Alex Beregszaszi
   nuv.c                                 Reimar Doeffinger
