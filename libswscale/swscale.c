@@ -151,9 +151,6 @@ add BGR4 output support
 write special BGR->BGR scaler
 */
 
-#define MIN(a,b) ((a) > (b) ? (b) : (a))
-#define MAX(a,b) ((a) < (b) ? (b) : (a))
-
 #if defined(ARCH_X86) || defined(ARCH_X86_64)
 static uint64_t attribute_used __attribute__((aligned(8))) bF8=       0xF8F8F8F8F8F8F8F8LL;
 static uint64_t attribute_used __attribute__((aligned(8))) bFC=       0xFCFCFCFCFCFCFCFCLL;
@@ -252,7 +249,7 @@ static inline void yuv2yuvXinC(int16_t *lumFilter, int16_t **lumSrc, int lumFilt
 		for(j=0; j<lumFilterSize; j++)
 			val += lumSrc[j][i] * lumFilter[j];
 
-		dest[i]= MIN(MAX(val>>19, 0), 255);
+		dest[i]= FFMIN(FFMAX(val>>19, 0), 255);
 	}
 
 	if(uDest != NULL)
@@ -267,8 +264,8 @@ static inline void yuv2yuvXinC(int16_t *lumFilter, int16_t **lumSrc, int lumFilt
 				v += chrSrc[j][i + 2048] * chrFilter[j];
 			}
 
-			uDest[i]= MIN(MAX(u>>19, 0), 255);
-			vDest[i]= MIN(MAX(v>>19, 0), 255);
+			uDest[i]= FFMIN(FFMAX(u>>19, 0), 255);
+			vDest[i]= FFMIN(FFMAX(v>>19, 0), 255);
 		}
 }
 
@@ -285,7 +282,7 @@ static inline void yuv2nv12XinC(int16_t *lumFilter, int16_t **lumSrc, int lumFil
 		for(j=0; j<lumFilterSize; j++)
 			val += lumSrc[j][i] * lumFilter[j];
 
-		dest[i]= MIN(MAX(val>>19, 0), 255);
+		dest[i]= FFMIN(FFMAX(val>>19, 0), 255);
 	}
 
 	if(uDest == NULL)
@@ -303,8 +300,8 @@ static inline void yuv2nv12XinC(int16_t *lumFilter, int16_t **lumSrc, int lumFil
 				v += chrSrc[j][i + 2048] * chrFilter[j];
 			}
 
-			uDest[2*i]= MIN(MAX(u>>19, 0), 255);
-			uDest[2*i+1]= MIN(MAX(v>>19, 0), 255);
+			uDest[2*i]= FFMIN(FFMAX(u>>19, 0), 255);
+			uDest[2*i+1]= FFMIN(FFMAX(v>>19, 0), 255);
 		}
 	else
 		for(i=0; i<chrDstW; i++)
@@ -318,8 +315,8 @@ static inline void yuv2nv12XinC(int16_t *lumFilter, int16_t **lumSrc, int lumFil
 				v += chrSrc[j][i + 2048] * chrFilter[j];
 			}
 
-			uDest[2*i]= MIN(MAX(v>>19, 0), 255);
-			uDest[2*i+1]= MIN(MAX(u>>19, 0), 255);
+			uDest[2*i]= FFMIN(FFMAX(v>>19, 0), 255);
+			uDest[2*i+1]= FFMIN(FFMAX(u>>19, 0), 255);
 		}
 }
 
@@ -1168,7 +1165,7 @@ static inline int initFilter(int16_t **outFilter, int16_t **filterPos, int *outF
 			// Move filter coeffs left to compensate for filterPos
 			for(j=1; j<filterSize; j++)
 			{
-				int left= MAX(j + (*filterPos)[i], 0);
+				int left= FFMAX(j + (*filterPos)[i], 0);
 				filter[i*filterSize + left] += filter[i*filterSize + j];
 				filter[i*filterSize + j]=0;
 			}
@@ -1181,7 +1178,7 @@ static inline int initFilter(int16_t **outFilter, int16_t **filterPos, int *outF
 			// Move filter coeffs right to compensate for filterPos
 			for(j=filterSize-2; j>=0; j--)
 			{
-				int right= MIN(j + shift, filterSize-1);
+				int right= FFMIN(j + shift, filterSize-1);
 				filter[i*filterSize +right] += filter[i*filterSize +j];
 				filter[i*filterSize +j]=0;
 			}
@@ -1404,7 +1401,7 @@ static void globalInit(void){
     // generating tables:
     int i;
     for(i=0; i<768; i++){
-	int c= MIN(MAX(i-256, 0), 255);
+	int c= FFMIN(FFMAX(i-256, 0), 255);
 	clip_table[i]=c;
     }
 }
@@ -2163,7 +2160,7 @@ SwsContext *sws_getContext(int srcW, int srcH, int origSrcFormat, int dstW, int 
 	for(i=0; i<dstH; i++)
 	{
 		int chrI= i*c->chrDstH / dstH;
-		int nextSlice= MAX(c->vLumFilterPos[i   ] + c->vLumFilterSize - 1,
+		int nextSlice= FFMAX(c->vLumFilterPos[i   ] + c->vLumFilterSize - 1,
 				 ((c->vChrFilterPos[chrI] + c->vChrFilterSize - 1)<<c->chrSrcVSubSample));
 
 		nextSlice>>= c->chrSrcVSubSample;
@@ -2515,7 +2512,7 @@ static SwsVector *sws_getConvVec(SwsVector *a, SwsVector *b){
 }
 
 static SwsVector *sws_sumVec(SwsVector *a, SwsVector *b){
-	int length= MAX(a->length, b->length);
+	int length= FFMAX(a->length, b->length);
 	double *coeff= av_malloc(length*sizeof(double));
 	int i;
 	SwsVector *vec= av_malloc(sizeof(SwsVector));
@@ -2532,7 +2529,7 @@ static SwsVector *sws_sumVec(SwsVector *a, SwsVector *b){
 }
 
 static SwsVector *sws_diffVec(SwsVector *a, SwsVector *b){
-	int length= MAX(a->length, b->length);
+	int length= FFMAX(a->length, b->length);
 	double *coeff= av_malloc(length*sizeof(double));
 	int i;
 	SwsVector *vec= av_malloc(sizeof(SwsVector));
