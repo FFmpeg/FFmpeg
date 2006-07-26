@@ -2119,9 +2119,9 @@ rm -f $TMPO $TMPC $TMPE $TMPS $TMPH
 # libavutil.pc
 cat <<EOF >libavutil.pc
 prefix=$PREFIX
-exec_prefix=\${PREFIX}
+exec_prefix=\${prefix}
 libdir=\${exec_prefix}/lib
-includedir=\${PREFIX}/include
+includedir=\${prefix}/include
 
 Name: libavutil
 Description: FFmpeg utility library
@@ -2150,9 +2150,9 @@ EOF
 # libavcodec.pc
 cat <<EOF >libavcodec.pc
 prefix=$PREFIX
-exec_prefix=\${PREFIX}
+exec_prefix=\${prefix}
 libdir=\${exec_prefix}/lib
-includedir=\${PREFIX}/include
+includedir=\${prefix}/include
 
 Name: libavcodec
 Description: FFmpeg codec library
@@ -2181,9 +2181,9 @@ EOF
 # libavformat.pc
 cat <<EOF >libavformat.pc
 prefix=$PREFIX
-exec_prefix=\${PREFIX}
+exec_prefix=\${prefix}
 libdir=\${exec_prefix}/lib
-includedir=\${PREFIX}/include
+includedir=\${prefix}/include
 
 Name: libavformat
 Description: FFmpeg container format library
@@ -2213,9 +2213,9 @@ EOF
 # libpostproc.pc
 cat <<EOF >libpostproc.pc
 prefix=$PREFIX
-exec_prefix=\${PREFIX}
+exec_prefix=\${prefix}
 libdir=\${exec_prefix}/lib
-includedir=\${PREFIX}/include
+includedir=\${prefix}/include
 
 Name: libpostproc
 Description: FFmpeg post processing library
