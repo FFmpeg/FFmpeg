@@ -841,7 +841,7 @@ static void fill_caches(H264Context *h, int mb_type, int for_deblock){
                 assert((!left_type[0]) == (!left_type[1]));
             }
 
-            if(for_deblock || (IS_DIRECT(mb_type) && !h->direct_spatial_mv_pred))
+            if((for_deblock || (IS_DIRECT(mb_type) && !h->direct_spatial_mv_pred)) && !FRAME_MBAFF)
                 continue;
 
             if(USES_LIST(topleft_type, list)){
@@ -864,7 +864,7 @@ static void fill_caches(H264Context *h, int mb_type, int for_deblock){
                 h->ref_cache[list][scan8[0] + 4 - 1*8]= topright_type ? LIST_NOT_USED : PART_NOT_AVAILABLE;
             }
 
-            if(IS_SKIP(mb_type) || IS_DIRECT(mb_type))
+            if((IS_SKIP(mb_type) || IS_DIRECT(mb_type)) && !FRAME_MBAFF)
                 continue;
 
             h->ref_cache[list][scan8[5 ]+1] =
