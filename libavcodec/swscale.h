@@ -29,10 +29,4 @@ int sws_scale(struct SwsContext *ctx, uint8_t* src[], int srcStride[],
 
 void sws_freeContext(struct SwsContext *swsContext);
 
-static inline void sws_global_init(void *(*alloc)(unsigned int size),
-                     void (*free)(void *ptr),
-                     void (*log)(void*, int level, const char *fmt, ...))
-{
-}
-
 #endif /* SWSCALE_EMU_H */
