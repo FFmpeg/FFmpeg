@@ -1016,21 +1016,24 @@ if test $targetos = Darwin; then
         gcc_version="`$cc -v 2>&1 | grep version | cut -d ' ' -f3-`"
         case "$gcc_version" in
             *2.95*)
-                CFLAGS="$CFLAGS -no-cpp-precomp -pipe -fomit-frame-pointer"
+                CFLAGS="$CFLAGS -no-cpp-precomp -pipe"
                 ;;
             *[34].*)
-                CFLAGS="$CFLAGS -no-cpp-precomp -pipe -fomit-frame-pointer -force_cpusubtype_ALL -Wno-sign-compare"
+                CFLAGS="$CFLAGS -no-cpp-precomp -pipe -force_cpusubtype_ALL -Wno-sign-compare"
                 if test "$lshared" = no; then
                    needmdynamicnopic="yes"
                 fi
                 ;;
             *)
-                CFLAGS="$CFLAGS -no-cpp-precomp -pipe -fomit-frame-pointer"
+                CFLAGS="$CFLAGS -no-cpp-precomp -pipe"
                 if test "$lshared" = no; then
                    needmdynamicnopic="yes"
                 fi
                 ;;
         esac
+    fi
+    if test $optimize != "no"; then
+        CFLAGS="$CFLAGS -fomit-frame-pointer"
     fi
 fi
 
