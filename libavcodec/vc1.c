@@ -831,7 +831,7 @@ static void vc1_inv_trans(DCTELEM block[64], int M, int N)
  * @todo optimize
  * @todo move to DSPContext
  */
-static void vc1_v_overlap(uint8_t* src, int stride)
+static void vc1_v_overlap(uint8_t* src, int stride, int rnd)
 {
     int i;
     int a, b, c, d;
@@ -841,10 +841,10 @@ static void vc1_v_overlap(uint8_t* src, int stride)
         c = src[0];
         d = src[stride];
 
-        src[-2*stride] = clip_uint8((7*a + d + 3) >> 3);
-        src[-stride] = clip_uint8((-a + 7*b + c + d + 3) >> 3);
-        src[0] = clip_uint8((a + b + 7*c - d + 3) >> 3);
-        src[stride] = clip_uint8((a + 7*d + 3) >> 3);
+        src[-2*stride] = clip_uint8((7*a + d + 4 - rnd) >> 3);
+        src[-stride] = clip_uint8((-a + 7*b + c + d + 3 + rnd) >> 3);
+        src[0] = clip_uint8((a + b + 7*c - d + 4 - rnd) >> 3);
+        src[stride] = clip_uint8((a + 7*d + 3 + rnd) >> 3);
         src++;
     }
 }
@@ -853,7 +853,7 @@ static void vc1_v_overlap(uint8_t* src, int stride)
  * @todo optimize
  * @todo move to DSPContext
  */
-static void vc1_h_overlap(uint8_t* src, int stride)
+static void vc1_h_overlap(uint8_t* src, int stride, int rnd)
 {
     int i;
     int a, b, c, d;
@@ -863,10 +863,10 @@ static void vc1_h_overlap(uint8_t* src, int stride)
         c = src[0];
         d = src[1];
 
-        src[-2] = clip_uint8((7*a + d + 3) >> 3);
-        src[-1] = clip_uint8((-a + 7*b + c + d + 3) >> 3);
-        src[0] = clip_uint8((a + b + 7*c - d + 3) >> 3);
-        src[1] = clip_uint8((a + 7*d + 3) >> 3);
+        src[-2] = clip_uint8((7*a + d + 4 - rnd) >> 3);
+        src[-1] = clip_uint8((-a + 7*b + c + d + 3 + rnd) >> 3);
+        src[0] = clip_uint8((a + b + 7*c - d + 4 - rnd) >> 3);
+        src[1] = clip_uint8((a + 7*d + 3 + rnd) >> 3);
         src += stride;
     }
 }
@@ -2571,9 +2571,9 @@ static int vc1_decode_p_mb(VC1Context *v)
                     /* TODO: proper loop filtering */
                     if(v->pq >= 9 && v->overlap) {
                         if(v->a_avail)
-                            vc1_v_overlap(s->dest[dst_idx] + off, s->linesize >> ((i & 4) >> 2));
+                            vc1_v_overlap(s->dest[dst_idx] + off, s->linesize >> ((i & 4) >> 2), (i<4) ? ((i&1)>>1) : (s->mb_y&1));
                         if(v->c_avail)
-                            vc1_h_overlap(s->dest[dst_idx] + off, s->linesize >> ((i & 4) >> 2));
+                            vc1_h_overlap(s->dest[dst_idx] + off, s->linesize >> ((i & 4) >> 2), (i<4) ? (i&1) : (s->mb_x&1));
                     }
                 } else if(val) {
                     vc1_decode_p_block(v, s->block[i], i, mquant, ttmb, first_block);
@@ -2672,9 +2672,9 @@ static int vc1_decode_p_mb(VC1Context *v)
                     /* TODO: proper loop filtering */
                     if(v->pq >= 9 && v->overlap) {
                         if(v->a_avail)
-                            vc1_v_overlap(s->dest[dst_idx] + off, s->linesize >> ((i & 4) >> 2));
+                            vc1_v_overlap(s->dest[dst_idx] + off, s->linesize >> ((i & 4) >> 2), (i<4) ? ((i&1)>>1) : (s->mb_y&1));
                         if(v->c_avail)
-                            vc1_h_overlap(s->dest[dst_idx] + off, s->linesize >> ((i & 4) >> 2));
+                            vc1_h_overlap(s->dest[dst_idx] + off, s->linesize >> ((i & 4) >> 2), (i<4) ? (i&1) : (s->mb_x&1));
                     }
                 } else if(is_coded[i]) {
                     status = vc1_decode_p_block(v, s->block[i], i, mquant, ttmb, first_block);
@@ -2835,9 +2835,9 @@ static void vc1_decode_b_mb(VC1Context *v)
             /* TODO: proper loop filtering */
             if(v->pq >= 9 && v->overlap) {
                 if(v->a_avail)
-                    vc1_v_overlap(s->dest[dst_idx] + off, s->linesize >> ((i & 4) >> 2));
+                    vc1_v_overlap(s->dest[dst_idx] + off, s->linesize >> ((i & 4) >> 2), (i<4) ? ((i&1)>>1) : (s->mb_y&1));
                 if(v->c_avail)
-                    vc1_h_overlap(s->dest[dst_idx] + off, s->linesize >> ((i & 4) >> 2));
+                    vc1_h_overlap(s->dest[dst_idx] + off, s->linesize >> ((i & 4) >> 2), (i<4) ? (i&1) : (s->mb_x&1));
             }
         } else if(val) {
             vc1_decode_p_block(v, s->block[i], i, mquant, ttmb, first_block);
@@ -2926,21 +2926,21 @@ static void vc1_decode_i_blocks(VC1Context *v)
             vc1_put_block(v, s->block);
             if(v->pq >= 9 && v->overlap) { /* XXX: do proper overlapping insted of loop filter */
                 if(!s->first_slice_line) {
-                    vc1_v_overlap(s->dest[0], s->linesize);
-                    vc1_v_overlap(s->dest[0] + 8, s->linesize);
-                    vc1_v_overlap(s->dest[1], s->uvlinesize);
-                    vc1_v_overlap(s->dest[2], s->uvlinesize);
+                    vc1_v_overlap(s->dest[0], s->linesize, 0);
+                    vc1_v_overlap(s->dest[0] + 8, s->linesize, 0);
+                    vc1_v_overlap(s->dest[1], s->uvlinesize, s->mb_y&1);
+                    vc1_v_overlap(s->dest[2], s->uvlinesize, s->mb_y&1);
                 }
-                vc1_v_overlap(s->dest[0] + 8 * s->linesize, s->linesize);
-                vc1_v_overlap(s->dest[0] + 8 * s->linesize + 8, s->linesize);
+                vc1_v_overlap(s->dest[0] + 8 * s->linesize, s->linesize, 1);
+                vc1_v_overlap(s->dest[0] + 8 * s->linesize + 8, s->linesize, 1);
                 if(s->mb_x) {
-                    vc1_h_overlap(s->dest[0], s->linesize);
-                    vc1_h_overlap(s->dest[0] + 8 * s->linesize, s->linesize);
-                    vc1_h_overlap(s->dest[1], s->uvlinesize);
-                    vc1_h_overlap(s->dest[2], s->uvlinesize);
+                    vc1_h_overlap(s->dest[0], s->linesize, 0);
+                    vc1_h_overlap(s->dest[0] + 8 * s->linesize, s->linesize, 0);
+                    vc1_h_overlap(s->dest[1], s->uvlinesize, s->mb_x&1);
+                    vc1_h_overlap(s->dest[2], s->uvlinesize, s->mb_x&1);
                 }
-                vc1_h_overlap(s->dest[0] + 8, s->linesize);
-                vc1_h_overlap(s->dest[0] + 8 * s->linesize + 8, s->linesize);
+                vc1_h_overlap(s->dest[0] + 8, s->linesize, 1);
+                vc1_h_overlap(s->dest[0] + 8 * s->linesize + 8, s->linesize, 1);
             }
 
             if(get_bits_count(&s->gb) > v->bits) {
