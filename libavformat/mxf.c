@@ -215,7 +215,7 @@ static int mxf_read_metadata_sequence(MXFContext *mxf, KLVPacket *klv)
     ByteIOContext *pb = &mxf->fc->pb;
     uint8_t sequence_uid[16];
     uint8_t data_definition[16];
-    uint64_t duration = 0;
+    uint64_t duration = AV_NOPTS_VALUE;
     int bytes_read = 0;
     int i;
 
@@ -241,6 +241,7 @@ static int mxf_read_metadata_sequence(MXFContext *mxf, KLVPacket *klv)
 
     for (i = 0; i < mxf->tracks_count; i++)
         if (!memcmp(sequence_uid, mxf->tracks[i].sequence_uid, 16)) {
+            mxf->tracks[i].stream->start_time = 0;
             mxf->tracks[i].stream->duration = duration;
             if (data_definition[11] == 0x02 && data_definition[12] == 0x01)
                 mxf->tracks[i].stream->codec->codec_type = CODEC_TYPE_VIDEO;
