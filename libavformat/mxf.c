@@ -89,8 +89,8 @@ typedef struct MXFTrack {
 
 typedef struct MXFDescriptor {
     UID uid;
-    UID essence_container;
-    UID essence_compression;
+    UID essence_container_ul;
+    UID essence_codec_ul;
     enum CodecType codec_type;
     AVRational sample_rate;
     AVRational aspect_ratio;
@@ -596,7 +596,7 @@ static int mxf_read_metadata_multiple_descriptor(MXFContext *mxf, KLVPacket *klv
 static int mxf_read_metadata_generic_descriptor(MXFContext *mxf, KLVPacket *klv)
 {
     ByteIOContext *pb = &mxf->fc->pb;
-    MXFDescriptor *desc = av_mallocz(sizeof(*desc));
+    MXFDescriptor *descriptor = av_mallocz(sizeof(*descriptor));
     int bytes_read = 0;
     int i, j;
 
@@ -607,44 +607,44 @@ static int mxf_read_metadata_generic_descriptor(MXFContext *mxf, KLVPacket *klv)
         dprintf("tag 0x%04X, size %d\n", tag, size);
         switch (tag) {
         case 0x3C0A:
-            get_buffer(pb, desc->uid, 16);
+            get_buffer(pb, descriptor->uid, 16);
             break;
         case 0x3004:
-            get_buffer(pb, desc->essence_container, 16);
+            get_buffer(pb, descriptor->essence_container_ul, 16);
             break;
         case 0x3006:
-            desc->linked_track_id = get_be32(pb);
+            descriptor->linked_track_id = get_be32(pb);
             break;
         case 0x3201: /* PictureEssenceCoding */
-            desc->codec_type = CODEC_TYPE_VIDEO;
-            get_buffer(pb, desc->essence_compression, 16);
+            descriptor->codec_type = CODEC_TYPE_VIDEO;
+            get_buffer(pb, descriptor->essence_codec_ul, 16);
             break;
         case 0x3203:
-            desc->width = get_be32(pb);
+            descriptor->width = get_be32(pb);
             break;
         case 0x3202:
-            desc->height = get_be32(pb);
+            descriptor->height = get_be32(pb);
             break;
         case 0x320E:
-            desc->aspect_ratio.num = get_be32(pb);
-            desc->aspect_ratio.den = get_be32(pb);
+            descriptor->aspect_ratio.num = get_be32(pb);
+            descriptor->aspect_ratio.den = get_be32(pb);
             break;
         case 0x3D0A:
-            desc->block_align = get_be16(pb);
+            descriptor->block_align = get_be16(pb);
             break;
         case 0x3D03:
-            desc->sample_rate.num = get_be32(pb);
-            desc->sample_rate.den = get_be32(pb);
+            descriptor->sample_rate.num = get_be32(pb);
+            descriptor->sample_rate.den = get_be32(pb);
             break;
         case 0x3D06: /* SoundEssenceCompression */
-            desc->codec_type = CODEC_TYPE_AUDIO;
-            get_buffer(pb, desc->essence_compression, 16);
+            descriptor->codec_type = CODEC_TYPE_AUDIO;
+            get_buffer(pb, descriptor->essence_codec_ul, 16);
             break;
         case 0x3D07:
-            desc->channels = get_be32(pb);
+            descriptor->channels = get_be32(pb);
             break;
         case 0x3D01:
-            desc->bits_per_sample = get_be32(pb);
+            descriptor->bits_per_sample = get_be32(pb);
             break;
         default:
             url_fskip(pb, size);
@@ -653,13 +653,13 @@ static int mxf_read_metadata_generic_descriptor(MXFContext *mxf, KLVPacket *klv)
     }
     for (i = 0; i < mxf->packages_count; i++) {
         if (mxf->packages[i]) {
-            if (!memcmp(mxf->packages[i]->descriptor_ref, desc->uid, 16)) {
-                mxf->packages[i]->descriptor = desc;
+            if (!memcmp(mxf->packages[i]->descriptor_ref, descriptor->uid, 16)) {
+                mxf->packages[i]->descriptor = descriptor;
                 return 0;
             } else if (mxf->packages[i]->descriptor) { /* MultipleDescriptor */
                 for (j = 0; j < mxf->packages[i]->descriptor->sub_descriptors_count; j++) {
-                    if (!memcmp(mxf->packages[i]->descriptor->sub_descriptors_refs[j], desc->uid, 16)) {
-                        mxf->packages[i]->descriptor->sub_descriptors[j] = desc;
+                    if (!memcmp(mxf->packages[i]->descriptor->sub_descriptors_refs[j], descriptor->uid, 16)) {
+                        mxf->packages[i]->descriptor->sub_descriptors[j] = descriptor;
                         return 0;
                     }
                 }
@@ -789,9 +789,9 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
             continue;
         }
 #ifdef DEBUG
-        PRINT_KEY(descriptor->essence_compression);
+        PRINT_KEY(descriptor->essence_codec_ul);
 #endif
-        st->codec->codec_id = mxf_get_codec_id(mxf_codec_uls, &descriptor->essence_compression);
+        st->codec->codec_id = mxf_get_codec_id(mxf_codec_uls, &descriptor->essence_codec_ul);
         if (st->codec->codec_type == CODEC_TYPE_VIDEO) {
             st->codec->width = descriptor->width;
             st->codec->height = descriptor->height;
