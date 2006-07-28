@@ -193,11 +193,11 @@ static const uint64_t bgr2VCoeff  attribute_used __attribute__((aligned(8))) = 0
 static const uint64_t bgr2YCoeff  attribute_used __attribute__((aligned(8))) = 0x000020E540830C8BULL;
 static const uint64_t bgr2UCoeff  attribute_used __attribute__((aligned(8))) = 0x0000ED0FDAC23831ULL;
 static const uint64_t bgr2VCoeff  attribute_used __attribute__((aligned(8))) = 0x00003831D0E6F6EAULL;
-#endif
+#endif /* FAST_BGR2YV12 */
 static const uint64_t bgr2YOffset attribute_used __attribute__((aligned(8))) = 0x1010101010101010ULL;
 static const uint64_t bgr2UVOffset attribute_used __attribute__((aligned(8)))= 0x8080808080808080ULL;
 static const uint64_t w1111       attribute_used __attribute__((aligned(8))) = 0x0001000100010001ULL;
-#endif
+#endif /* defined(ARCH_X86) || defined(ARCH_X86_64) */
 
 // clipping helper table for C implementations:
 static unsigned char clip_table[768];
@@ -1428,7 +1428,7 @@ static SwsFunc getSwsFunc(int flags){
 	  return swScale_C;
 #endif
 	return swScale_C;
-#endif
+#endif /* defined(ARCH_X86) || defined(ARCH_X86_64) */
 #else //RUNTIME_CPUDETECT
 #ifdef HAVE_MMX2
 	return swScale_MMX2;
@@ -1868,7 +1868,7 @@ SwsContext *sws_getContext(int srcW, int srcH, int origSrcFormat, int dstW, int 
 #elif defined (HAVE_ALTIVEC)
 	flags |= SWS_CPU_CAPS_ALTIVEC;
 #endif
-#endif
+#endif /* RUNTIME_CPUDETECT */
 	if(clip_table[512] != 255) globalInit();
 	if(rgb15to16 == NULL) sws_rgb2rgb_init(flags);
 
@@ -2113,7 +2113,7 @@ SwsContext *sws_getContext(int srcW, int srcH, int origSrcFormat, int dstW, int 
 			initMMX2HScaler(      dstW, c->lumXInc, c->funnyYCode , c->lumMmx2Filter, c->lumMmx2FilterPos, 8);
 			initMMX2HScaler(c->chrDstW, c->chrXInc, c->funnyUVCode, c->chrMmx2Filter, c->chrMmx2FilterPos, 4);
 		}
-#endif
+#endif /* defined(ARCH_X86) || defined(ARCH_X86_64) */
 	} // Init Horizontal stuff
 
 
@@ -2712,7 +2712,7 @@ void sws_freeContext(SwsContext *c){
 #endif
 	c->funnyYCode=NULL;
 	c->funnyUVCode=NULL;
-#endif
+#endif /* defined(ARCH_X86) || defined(ARCH_X86_64) */
 
 	av_free(c->lumMmx2Filter);
 	c->lumMmx2Filter=NULL;

@@ -134,7 +134,7 @@ static uint64_t __attribute__((aligned(8))) dither8[2]={
 	0x0602060206020602LL,
 	0x0004000400040004LL,};
 #endif
-#endif
+#endif /* defined(ARCH_X86) || defined(ARCH_X86_64) */
 
 #define RGB2YUV_SHIFT 8
 #define BY ((int)( 0.098*(1<<RGB2YUV_SHIFT)+0.5))
@@ -287,7 +287,7 @@ void sws_rgb2rgb_init(int flags){
 		vu9_to_vu12= vu9_to_vu12_MMX;
 		yvu9_to_yuy2= yvu9_to_yuy2_MMX;
 	}else
-#endif
+#endif /* defined(ARCH_X86) || defined(ARCH_X86_64) */
 	{
 		rgb15to16= rgb15to16_C;
 		rgb15to24= rgb15to24_C;
