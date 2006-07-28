@@ -197,10 +197,7 @@ static int klv_read_packet(KLVPacket *klv, ByteIOContext *pb)
     klv->offset = url_ftell(pb);
     get_buffer(pb, klv->key, 16);
     klv->length = klv_decode_ber_length(pb);
-    if (klv->length == -1)
-        return -1;
-    else
-        return 0;
+    return klv->length == -1 ? -1 : 0;
 }
 
 static int mxf_get_stream_index(AVFormatContext *s, KLVPacket *klv)
@@ -227,9 +224,7 @@ static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
         if (IS_KLV_KEY(klv.key, mxf_essence_element_key)) {
             av_get_packet(&s->pb, pkt, klv.length);
             pkt->stream_index = mxf_get_stream_index(s, &klv);
-            if (pkt->stream_index == -1)
-                return -1;
-            return 0;
+            return pkt->stream_index == -1 ? -1 : 0;
         } else
             url_fskip(&s->pb, klv.length);
     }
