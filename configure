@@ -582,6 +582,7 @@ MINGW32*)
 mingw32="yes"
 ;;
 CYGWIN*)
+targetos=CYGWIN
 shlibdir='${PREFIX}/bin'
 v4l="no"
 v4l2="no"
@@ -599,6 +600,7 @@ SHFLAGS='-shared -Wl,--out-implib=lib$(NAME).dll.a'
 Linux)
 ;;
 IRIX*)
+targetos=IRIX
 ranlib="echo ignoring ranlib"
 v4l="no"
 v4l2="no"
@@ -630,29 +632,10 @@ vhook="no"
 os2="yes"
 
 ;;
-*) ;;
+*)
+targetos="${targetos}-UNKNOWN"
+;;
 esac
-
-# From MPlayer configure. We need TARGET_OS available
-# to the Makefile, so it can distinguish between flavors
-# of AltiVec on PowerPC.
-TARGET_OS=`( uname -s ) 2>&1`
-  case "$TARGET_OS" in
-  Linux|FreeBSD|NetBSD|BSD/OS|OpenBSD|SunOS|QNX|Darwin|GNU|BeOS|MorphOS)
-    ;;
-  IRIX*)
-    TARGET_OS=IRIX
-    ;;
-  HP-UX*)
-    TARGET_OS=HP-UX
-    ;;
-  [cC][yY][gG][wW][iI][nN]*)
-    TARGET_OS=CYGWIN
-    ;;
-  *)
-    TARGET_OS="$TARGET_OS-UNKNOWN"
-    ;;
-  esac
 
 # find source path
 source_path="`dirname $0`"
@@ -1604,7 +1587,7 @@ fi
 echo "SLIBPREF=$SLIBPREF" >> config.mak
 echo "SLIBSUF=\${BUILDSUF}$SLIBSUF" >> config.mak
 echo "EXESUF=\${BUILDSUF}$EXESUF" >> config.mak
-echo "TARGET_OS=$TARGET_OS" >> config.mak
+echo "TARGET_OS=$targetos" >> config.mak
 if test "$cpu" = "x86" ; then
   echo "TARGET_ARCH_X86=yes" >> config.mak
   echo "#define ARCH_X86 1" >> $TMPH
@@ -1949,17 +1932,17 @@ if test "$os2" = "yes" ; then
   echo "#define HAVE_THREADS 1" >> $TMPH
 fi
 
-if test "$TARGET_OS" = "SunOS" ; then
+if test "$targetos" = "SunOS" ; then
   echo "#define CONFIG_SUNOS 1" >> $TMPH
 fi
 
-if test "$TARGET_OS" = "BeOS" ; then
+if test "$targetos" = "BeOS" ; then
   echo "HAVE_BEOSTHREADS=yes" >> config.mak
   echo "#define HAVE_BEOSTHREADS 1" >> $TMPH
   echo "#define HAVE_THREADS 1" >> $TMPH
 fi
 
-if test "$TARGET_OS" = "Darwin"; then
+if test "$targetos" = "Darwin"; then
   echo "#define CONFIG_DARWIN 1"  >> $TMPH
   echo "CONFIG_DARWIN=yes" >> config.mak
 fi
