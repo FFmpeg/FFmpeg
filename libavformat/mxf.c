@@ -30,30 +30,65 @@
  * Principle
  * Search for Track numbers which will identify essence element KLV packets.
  * Search for SourcePackage which define tracks which contains Track numbers.
- * Material Package tracks does not contain Tracks numbers.
+ * Material Package contains tracks with reference to SourcePackage tracks.
  * Search for Descriptors (Picture, Sound) which contains codec info and parameters.
  * Assign Descriptors to correct Tracks.
  *
- * Preliminary demuxer, only OP1A supported and some files might not work at all.
+ * Metadata reading functions read Local Tags, get InstanceUID(0x3C0A) and then resolve Strong Reference from another object.
+ * Returns -1 if Strong Reference could not be resolved.
+ *
+ * Simple demuxer, only OP1A supported and some files might not work at all.
+ * Only tracks with associated descriptors will be decoded. "Highly Desirable" SMPTE 377M D.1
+ * Only descriptors with EssenceSoundCompression or PictureEssenceCoding will be taken into account. "D/req" SMPTE 377M
  */
 
 //#define DEBUG
 
 #include "avformat.h"
 #include "dsputil.h"
-#include "riff.h"
 
 typedef DECLARE_ALIGNED_16(uint8_t, UID[16]);
 
-typedef struct {
-    AVStream *stream;
-    UID track_uid;
-    UID sequence_uid;
+enum MXFPackageType {
+    MaterialPackage,
+    SourcePackage,
+};
+
+enum MXFStructuralComponentType {
+    Timecode,
+    SourceClip,
+};
+
+typedef struct MXFStructuralComponent {
+    UID uid;
+    UID source_package_uid;
+    UID data_definition_ul;
+    int64_t duration;
+    int64_t start_position;
+    int source_track_id;
+    enum MXFStructuralComponentType type;
+} MXFStructuralComponent;
+
+typedef struct MXFSequence {
+    UID uid;
+    UID data_definition_ul;
+    MXFStructuralComponent **structural_components;
+    UID *structural_components_refs;
+    int structural_components_count;
+    int64_t duration;
+} MXFSequence;
+
+typedef struct MXFTrack {
+    UID uid;
+    MXFSequence *sequence; /* mandatory, and only one */
+    UID sequence_ref;
     int track_id;
     int track_number;
+    AVRational edit_rate;
 } MXFTrack;
 
-typedef struct {
+typedef struct MXFDescriptor {
+    UID uid;
     UID essence_container;
     UID essence_compression;
     enum CodecType codec_type;
@@ -63,31 +98,66 @@ typedef struct {
     int height;
     int channels;
     int bits_per_sample;
+    struct MXFDescriptor **sub_descriptors;
+    UID *sub_descriptors_refs;
+    int sub_descriptors_count;
     int block_align;
     int linked_track_id;
-    int kind;
 } MXFDescriptor;
 
-typedef struct {
-    AVFormatContext *fc;
-    MXFTrack *tracks;
-    MXFDescriptor *descriptors;
-    int descriptors_count;
+typedef struct MXFPackage {
+    UID uid;
+    UID package_uid;
+    MXFTrack **tracks;
+    UID *tracks_refs;
     int tracks_count;
+    MXFDescriptor *descriptor; /* only one */
+    UID descriptor_ref;
+    enum MXFPackageType type;
+} MXFPackage;
+
+typedef struct MXFEssenceContainerData {
+    UID uid;
+    UID linked_package_uid;
+} MXFEssenceContainerData;
+
+typedef struct MXFContext {
+    MXFPackage **packages;
+    UID *packages_refs;
+    int packages_count;
+    MXFEssenceContainerData **essence_container_data_sets;
+    UID *essence_container_data_sets_refs;
+    int essence_container_data_sets_count;
+    UID *essence_containers_uls; /* Universal Labels SMPTE RP224 */
+    int essence_containers_uls_count;
+    UID operational_pattern_ul;
+    UID content_storage_uid;
+    AVFormatContext *fc;
 } MXFContext;
 
-typedef struct {
+typedef struct KLVPacket {
     UID key;
     offset_t offset;
     uint64_t length;
 } KLVPacket;
 
+typedef struct MXFCodecUL {
+    UID uid;
+    enum CodecID id;
+} MXFCodecUL;
+
+static const UID mxf_metadata_preface_key                  = { 0x06, 0x0e, 0x2b, 0x34, 0x02, 0x53, 0x01, 0x01, 0x0d, 0x01, 0x01, 0x01, 0x01, 0x01, 0x2F, 0x00 };
+static const UID mxf_metadata_content_storage_key          = { 0x06, 0x0e, 0x2b, 0x34, 0x02, 0x53, 0x01, 0x01, 0x0d, 0x01, 0x01, 0x01, 0x01, 0x01, 0x18, 0x00 };
 static const UID mxf_metadata_source_package_key           = { 0x06, 0x0e, 0x2b, 0x34, 0x02, 0x53, 0x01, 0x01, 0x0d, 0x01, 0x01, 0x01, 0x01, 0x01, 0x37, 0x00 };
+static const UID mxf_metadata_material_package_key         = { 0x06, 0x0e, 0x2b, 0x34, 0x02, 0x53, 0x01, 0x01, 0x0d, 0x01, 0x01, 0x01, 0x01, 0x01, 0x36, 0x00 };
 static const UID mxf_metadata_sequence_key                 = { 0x06, 0x0e, 0x2b, 0x34, 0x02, 0x53, 0x01, 0x01, 0x0d, 0x01, 0x01, 0x01, 0x01, 0x01, 0x0F, 0x00 };
+static const UID mxf_metadata_source_clip_key              = { 0x06, 0x0e, 0x2b, 0x34, 0x02, 0x53, 0x01, 0x01, 0x0d, 0x01, 0x01, 0x01, 0x01, 0x01, 0x11, 0x00 };
+static const UID mxf_metadata_multiple_descriptor_key      = { 0x06, 0x0e, 0x2b, 0x34, 0x02, 0x53, 0x01, 0x01, 0x0d, 0x01, 0x01, 0x01, 0x01, 0x01, 0x44, 0x00 };
 static const UID mxf_metadata_generic_sound_descriptor_key = { 0x06, 0x0e, 0x2b, 0x34, 0x02, 0x53, 0x01, 0x01, 0x0d, 0x01, 0x01, 0x01, 0x01, 0x01, 0x42, 0x00 };
 static const UID mxf_metadata_cdci_descriptor_key          = { 0x06, 0x0e, 0x2b, 0x34, 0x02, 0x53, 0x01, 0x01, 0x0d, 0x01, 0x01, 0x01, 0x01, 0x01, 0x28, 0x00 };
 static const UID mxf_metadata_mpegvideo_descriptor_key     = { 0x06, 0x0e, 0x2b, 0x34, 0x02, 0x53, 0x01, 0x01, 0x0d, 0x01, 0x01, 0x01, 0x01, 0x01, 0x51, 0x00 };
 static const UID mxf_metadata_wave_descriptor_key          = { 0x06, 0x0e, 0x2b, 0x34, 0x02, 0x53, 0x01, 0x01, 0x0d, 0x01, 0x01, 0x01, 0x01, 0x01, 0x48, 0x00 };
+static const UID mxf_metadata_static_track_key             = { 0x06, 0x0e, 0x2b, 0x34, 0x02, 0x53, 0x01, 0x01, 0x0d, 0x01, 0x01, 0x01, 0x01, 0x01, 0x3A, 0x00 };
 static const UID mxf_metadata_track_key                    = { 0x06, 0x0e, 0x2b, 0x34, 0x02, 0x53, 0x01, 0x01, 0x0d, 0x01, 0x01, 0x01, 0x01, 0x01, 0x3b, 0x00 };
 
 /* partial keys to match */
@@ -166,101 +236,323 @@ static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
     return AVERROR_IO;
 }
 
-static int mxf_read_metadata_track(MXFContext *mxf, KLVPacket *klv)
+static int mxf_read_metadata_preface(MXFContext *mxf, KLVPacket *klv)
 {
     ByteIOContext *pb = &mxf->fc->pb;
-    AVRational time_base = (AVRational){0, 0};
-    uint8_t sequence_uid[16];
-    uint8_t track_uid[16];
-    int track_number = 0;
-    int track_id = 0;
     int bytes_read = 0;
-    int i;
 
     while (bytes_read < klv->length) {
         int tag = get_be16(pb);
         int size = get_be16(pb); /* SMPTE 336M Table 8 KLV specified length, 0x53 */
 
         switch (tag) {
-        case 0x4801:
-            track_id = get_be32(pb);
+        case 0x3B03:
+            get_buffer(pb, mxf->content_storage_uid, 16);
             break;
-        case 0x4804:
-            track_number = get_be32(pb);
+        case 0x3B09:
+            get_buffer(pb, mxf->operational_pattern_ul, 16);
             break;
-        case 0x4B01:
-            time_base.den = get_be32(pb);
-            time_base.num = get_be32(pb);
-            break;
-        case 0x4803:
-            get_buffer(pb, sequence_uid, 16);
-            break;
-        case 0x3C0A:
-            get_buffer(pb, track_uid, 16);
+        case 0x3B0A:
+            mxf->essence_containers_uls_count = get_be32(pb);
+            if (mxf->essence_containers_uls_count >= UINT_MAX / sizeof(UID))
+                return -1;
+            mxf->essence_containers_uls = av_malloc(mxf->essence_containers_uls_count * sizeof(UID));
+            url_fskip(pb, 4); /* useless size of objects, always 16 according to specs */
+            get_buffer(pb, mxf->essence_containers_uls, mxf->essence_containers_uls_count * sizeof(UID));
             break;
         default:
             url_fskip(pb, size);
         }
         bytes_read += size + 4;
     }
-    for (i = 0; i < mxf->tracks_count; i++)
-        if (!memcmp(track_uid, mxf->tracks[i].track_uid, 16)) {
-            mxf->tracks[i].track_id = track_id;
-            mxf->tracks[i].track_number = track_number;
-            mxf->tracks[i].stream->time_base = time_base;
-            mxf->tracks[i].stream->id = track_number;
-            memcpy(mxf->tracks[i].sequence_uid, sequence_uid, 16);
+    return 0;
+}
+
+static int mxf_read_metadata_content_storage(MXFContext *mxf, KLVPacket *klv)
+{
+    ByteIOContext *pb = &mxf->fc->pb;
+    int bytes_read = 0;
+
+    while (bytes_read < klv->length) {
+        int tag = get_be16(pb);
+        int size = get_be16(pb); /* SMPTE 336M Table 8 KLV specified length, 0x53 */
+
+        dprintf("tag 0x%04X, size %d\n", tag, size);
+        switch (tag) {
+        case 0x1901:
+            mxf->packages_count = get_be32(pb);
+            if (mxf->packages_count >= UINT_MAX / sizeof(UID) ||
+                mxf->packages_count >= UINT_MAX / sizeof(*mxf->packages))
+                return -1;
+            mxf->packages_refs = av_malloc(mxf->packages_count * sizeof(UID));
+            mxf->packages = av_mallocz(mxf->packages_count * sizeof(*mxf->packages));
+            url_fskip(pb, 4); /* useless size of objects, always 16 according to specs */
+            get_buffer(pb, mxf->packages_refs, mxf->packages_count * sizeof(UID));
+            break;
+        case 0x1902:
+            mxf->essence_container_data_sets_count = get_be32(pb);
+            if (mxf->essence_container_data_sets_count >= UINT_MAX / sizeof(UID) ||
+                mxf->essence_container_data_sets_count >= UINT_MAX / sizeof(*mxf->essence_container_data_sets))
+                return -1;
+            mxf->essence_container_data_sets_refs = av_malloc(mxf->essence_container_data_sets_count * sizeof(UID));
+            mxf->essence_container_data_sets = av_mallocz(mxf->essence_container_data_sets_count * sizeof(*mxf->essence_container_data_sets));
+            url_fskip(pb, 4); /* useless size of objects, always 16 according to specs */
+            get_buffer(pb, mxf->essence_container_data_sets_refs, mxf->essence_container_data_sets_count * sizeof(UID));
+            break;
+        default:
+            url_fskip(pb, size);
         }
-    return bytes_read;
+        bytes_read += size + 4;
+    }
+    return 0;
+}
+
+static int mxf_read_metadata_source_clip(MXFContext *mxf, KLVPacket *klv)
+{
+    ByteIOContext *pb = &mxf->fc->pb;
+    MXFStructuralComponent *source_clip = av_mallocz(sizeof(*source_clip));
+    int bytes_read = 0;
+    int i, j, k;
+
+    source_clip->type = SourceClip;
+    while (bytes_read < klv->length) {
+        int tag = get_be16(pb);
+        int size = get_be16(pb); /* SMPTE 336M Table 8 KLV specified length, 0x53 */
+
+        dprintf("tag 0x%04X, size %d\n", tag, size);
+        switch (tag) {
+        case 0x3C0A:
+            get_buffer(pb, source_clip->uid, 16);
+            break;
+        case 0x0202:
+            source_clip->duration = get_be64(pb);
+            break;
+        case 0x1201:
+            source_clip->start_position = get_be64(pb);
+            break;
+        case 0x1101:
+            /* UMID, only get last 16 bytes */
+            url_fskip(pb, 16);
+            get_buffer(pb, source_clip->source_package_uid, 16);
+            break;
+        case 0x1102:
+            source_clip->source_track_id = get_be32(pb);
+            break;
+        default:
+            url_fskip(pb, size);
+        }
+        bytes_read += size + 4;
+    }
+    for (i = 0; i < mxf->packages_count; i++) {
+        if (mxf->packages[i]) {
+            for (j = 0; j < mxf->packages[i]->tracks_count; j++) {
+                if (mxf->packages[i]->tracks[j] && mxf->packages[i]->tracks[j]->sequence) {
+                    for (k = 0; k < mxf->packages[i]->tracks[j]->sequence->structural_components_count; k++) {
+                        if (!memcmp(mxf->packages[i]->tracks[j]->sequence->structural_components_refs[k], source_clip->uid, 16)) {
+                            mxf->packages[i]->tracks[j]->sequence->structural_components[k] = source_clip;
+                            return 0;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return -1;
+}
+
+static int mxf_read_metadata_material_package(MXFContext *mxf, KLVPacket *klv)
+{
+    ByteIOContext *pb = &mxf->fc->pb;
+    MXFPackage *package = av_mallocz(sizeof(*package));
+    int bytes_read = 0;
+    int i;
+
+    package->type = MaterialPackage;
+    while (bytes_read < klv->length) {
+        int tag = get_be16(pb);
+        int size = get_be16(pb); /* KLV specified by 0x53 */
+
+        switch (tag) {
+        case 0x3C0A:
+            get_buffer(pb, package->uid, 16);
+            break;
+        case 0x4403:
+            package->tracks_count = get_be32(pb);
+            if (package->tracks_count >= UINT_MAX / sizeof(UID) ||
+                package->tracks_count >= UINT_MAX / sizeof(*package->tracks))
+                return -1;
+            package->tracks_refs = av_malloc(package->tracks_count * sizeof(UID));
+            package->tracks = av_mallocz(package->tracks_count * sizeof(*package->tracks));
+            url_fskip(pb, 4); /* useless size of objects, always 16 according to specs */
+            get_buffer(pb, package->tracks_refs, package->tracks_count * sizeof(UID));
+            break;
+        default:
+            url_fskip(pb, size);
+        }
+        bytes_read += size + 4;
+    }
+    for (i = 0; i < mxf->packages_count; i++) {
+        if (!memcmp(mxf->packages_refs[i], package->uid, 16)) {
+            mxf->packages[i] = package;
+            return 0;
+        }
+    }
+    return -1;
+}
+
+static int mxf_read_metadata_track(MXFContext *mxf, KLVPacket *klv)
+{
+    ByteIOContext *pb = &mxf->fc->pb;
+    MXFTrack *track = av_mallocz(sizeof(*track));
+    int bytes_read = 0;
+    int i, j;
+
+    while (bytes_read < klv->length) {
+        int tag = get_be16(pb);
+        int size = get_be16(pb); /* KLV specified by 0x53 */
+
+        dprintf("tag 0x%04X, size %d\n", tag, size);
+        switch (tag) {
+        case 0x3C0A:
+            get_buffer(pb, track->uid, 16);
+            break;
+        case 0x4801:
+            track->track_id = get_be32(pb);
+            break;
+        case 0x4804:
+            track->track_number = get_be32(pb);
+            dprintf("track number 0x%04X\n", track->track_number);
+            break;
+        case 0x4B01:
+            track->edit_rate.den = get_be32(pb);
+            track->edit_rate.num = get_be32(pb);
+            break;
+        case 0x4803:
+            get_buffer(pb, track->sequence_ref, 16);
+            break;
+        default:
+            url_fskip(pb, size);
+        }
+        bytes_read += size + 4;
+    }
+    for (i = 0; i < mxf->packages_count; i++) {
+        if (mxf->packages[i]) {
+            for (j = 0; j < mxf->packages[i]->tracks_count; j++) {
+                if (!memcmp(mxf->packages[i]->tracks_refs[j], track->uid, 16)) {
+                    mxf->packages[i]->tracks[j] = track;
+                    return 0;
+                }
+            }
+        }
+    }
+    return -1;
 }
 
 static int mxf_read_metadata_sequence(MXFContext *mxf, KLVPacket *klv)
 {
     ByteIOContext *pb = &mxf->fc->pb;
-    uint8_t sequence_uid[16];
-    uint8_t data_definition[16];
-    uint64_t duration = AV_NOPTS_VALUE;
+    MXFSequence *sequence = av_mallocz(sizeof(*sequence));
     int bytes_read = 0;
-    int i;
+    int i, j;
 
     while (bytes_read < klv->length) {
         int tag = get_be16(pb);
         int size = get_be16(pb); /* KLV specified by 0x53 */
 
+        dprintf("tag 0x%04X, size %d\n", tag, size);
         switch (tag) {
         case 0x3C0A:
-            get_buffer(pb, sequence_uid, 16);
+            get_buffer(pb, sequence->uid, 16);
             break;
         case 0x0202:
-            duration = get_be64(pb);
+            sequence->duration = get_be64(pb);
             break;
         case 0x0201:
-            get_buffer(pb, data_definition, 16);
+            get_buffer(pb, sequence->data_definition_ul, 16);
+            break;
+        case 0x1001:
+            sequence->structural_components_count = get_be32(pb);
+            if (sequence->structural_components_count >= UINT_MAX / sizeof(UID) ||
+                sequence->structural_components_count >= UINT_MAX / sizeof(*sequence->structural_components))
+                return -1;
+            sequence->structural_components_refs = av_malloc(sequence->structural_components_count * sizeof(UID));
+            sequence->structural_components = av_mallocz(sequence->structural_components_count * sizeof(*sequence->structural_components));
+            url_fskip(pb, 4); /* useless size of objects, always 16 according to specs */
+            get_buffer(pb, sequence->structural_components_refs, sequence->structural_components_count * sizeof(UID));
             break;
         default:
             url_fskip(pb, size);
         }
         bytes_read += size + 4;
     }
-
-    for (i = 0; i < mxf->tracks_count; i++)
-        if (!memcmp(sequence_uid, mxf->tracks[i].sequence_uid, 16)) {
-            mxf->tracks[i].stream->start_time = 0;
-            mxf->tracks[i].stream->duration = duration;
-            if (data_definition[11] == 0x02 && data_definition[12] == 0x01)
-                mxf->tracks[i].stream->codec->codec_type = CODEC_TYPE_VIDEO;
-            else if (data_definition[11] == 0x02 && data_definition[12] == 0x02)
-                mxf->tracks[i].stream->codec->codec_type = CODEC_TYPE_AUDIO;
-            else if (data_definition[11] == 0x01) /* SMPTE 12M Time Code track */
-                mxf->tracks[i].stream->codec->codec_type = CODEC_TYPE_DATA;
+    for (i = 0; i < mxf->packages_count; i++) {
+        if (mxf->packages[i]) {
+            for (j = 0; j < mxf->packages[i]->tracks_count; j++) {
+                if (mxf->packages[i]->tracks[j]) {
+                    if (!memcmp(mxf->packages[i]->tracks[j]->sequence_ref, sequence->uid, 16)) {
+                        mxf->packages[i]->tracks[j]->sequence = sequence;
+                        return 0;
+                    }
+                }
+            }
         }
-    return bytes_read;
+    }
+    return -1;
 }
 
 static int mxf_read_metadata_source_package(MXFContext *mxf, KLVPacket *klv)
 {
     ByteIOContext *pb = &mxf->fc->pb;
-    int tracks_count;
+    MXFPackage *package = av_mallocz(sizeof(*package));
+    int bytes_read = 0;
+    int i;
+
+    package->type = SourcePackage;
+    while (bytes_read < klv->length) {
+        int tag = get_be16(pb);
+        int size = get_be16(pb); /* KLV specified by 0x53 */
+
+        dprintf("tag 0x%04X, size %d\n", tag, size);
+        switch (tag) {
+        case 0x3C0A:
+            get_buffer(pb, package->uid, 16);
+            break;
+        case 0x4403:
+            package->tracks_count = get_be32(pb);
+            if (package->tracks_count >= UINT_MAX / sizeof(UID) ||
+                package->tracks_count >= UINT_MAX / sizeof(*package->tracks))
+                return -1;
+            package->tracks_refs = av_malloc(package->tracks_count * sizeof(UID));
+            package->tracks = av_mallocz(package->tracks_count * sizeof(*package->tracks));
+            url_fskip(pb, 4); /* useless size of objects, always 16 according to specs */
+            get_buffer(pb, package->tracks_refs, package->tracks_count * sizeof(UID));
+            break;
+        case 0x4401:
+            /* UMID, only get last 16 bytes */
+            url_fskip(pb, 16);
+            get_buffer(pb, package->package_uid, 16);
+            break;
+        case 0x4701:
+            get_buffer(pb, package->descriptor_ref, 16);
+            break;
+        default:
+            url_fskip(pb, size);
+        }
+        bytes_read += size + 4;
+    }
+    for (i = 0; i < mxf->packages_count; i++) {
+        if (!memcmp(mxf->packages_refs[i], package->uid, 16)) {
+            mxf->packages[i] = package;
+            return 0;
+        }
+    }
+    return -1;
+}
+
+static int mxf_read_metadata_multiple_descriptor(MXFContext *mxf, KLVPacket *klv)
+{
+    ByteIOContext *pb = &mxf->fc->pb;
+    MXFDescriptor *descriptor = av_mallocz(sizeof(*descriptor));
     int bytes_read = 0;
     int i;
 
@@ -268,46 +560,53 @@ static int mxf_read_metadata_source_package(MXFContext *mxf, KLVPacket *klv)
         int tag = get_be16(pb);
         int size = get_be16(pb); /* KLV specified by 0x53 */
 
+        dprintf("tag 0x%04X, size %d\n", tag, size);
         switch (tag) {
-        case 0x4403:
-            tracks_count = get_be32(pb);
-            if(tracks_count >= UINT_MAX / sizeof(*mxf->tracks) ||
-               tracks_count >= UINT_MAX / sizeof(*mxf->descriptors))
+        case 0x3C0A:
+            get_buffer(pb, descriptor->uid, 16);
+            break;
+        case 0x3F01:
+            descriptor->sub_descriptors_count = get_be32(pb);
+            if (descriptor->sub_descriptors_count >= UINT_MAX / sizeof(UID) ||
+                descriptor->sub_descriptors_count >= UINT_MAX / sizeof(*descriptor->sub_descriptors))
                 return -1;
-            mxf->tracks_count += tracks_count; /* op2a contains multiple source packages */
-            mxf->tracks = av_realloc(mxf->tracks, mxf->tracks_count * sizeof(*mxf->tracks));
-            mxf->descriptors = av_realloc(mxf->descriptors, mxf->tracks_count * sizeof(*mxf->descriptors));
+            descriptor->sub_descriptors_refs = av_malloc(descriptor->sub_descriptors_count * sizeof(UID));
+            descriptor->sub_descriptors = av_mallocz(descriptor->sub_descriptors_count * sizeof(*descriptor->sub_descriptors));
             url_fskip(pb, 4); /* useless size of objects, always 16 according to specs */
-            for (i = mxf->tracks_count - tracks_count; i < mxf->tracks_count; i++) {
-                mxf->tracks[i].stream = av_new_stream(mxf->fc, 0);
-                get_buffer(pb, mxf->tracks[i].track_uid, 16);
-            }
+            get_buffer(pb, descriptor->sub_descriptors_refs, descriptor->sub_descriptors_count * sizeof(UID));
             break;
         default:
             url_fskip(pb, size);
         }
         bytes_read += size + 4;
     }
-    return bytes_read;
+    for (i = 0; i < mxf->packages_count; i++) {
+        if (mxf->packages[i]) {
+            if (!memcmp(mxf->packages[i]->descriptor_ref, descriptor->uid, 16)) {
+                mxf->packages[i]->descriptor = descriptor;
+                return 0;
+            }
+        }
+    }
+    return -1;
 }
 
-static int mxf_read_metadata_descriptor(MXFContext *mxf, KLVPacket *klv)
+static int mxf_read_metadata_generic_descriptor(MXFContext *mxf, KLVPacket *klv)
 {
     ByteIOContext *pb = &mxf->fc->pb;
-    MXFDescriptor *desc;
+    MXFDescriptor *desc = av_mallocz(sizeof(*desc));
     int bytes_read = 0;
-
-    if (mxf->descriptors_count == mxf->tracks_count)
-        return -1;
-    desc = &mxf->descriptors[mxf->descriptors_count++];
-    desc->kind = klv->key[14];
-    desc->linked_track_id = -1;
+    int i, j;
 
     while (bytes_read < klv->length) {
         int tag = get_be16(pb);
         int size = get_be16(pb); /* KLV specified by 0x53 */
 
+        dprintf("tag 0x%04X, size %d\n", tag, size);
         switch (tag) {
+        case 0x3C0A:
+            get_buffer(pb, desc->uid, 16);
+            break;
         case 0x3004:
             get_buffer(pb, desc->essence_container, 16);
             break;
@@ -350,97 +649,169 @@ static int mxf_read_metadata_descriptor(MXFContext *mxf, KLVPacket *klv)
         }
         bytes_read += size + 4;
     }
-    return bytes_read;
-}
-
-/* SMPTE RP224 http://www.smpte-ra.org/mdd/index.html */
-static const CodecTag mxf_sound_essence_labels[] = {
-    { CODEC_ID_PCM_S16LE, 0x01000000 },/* Uncompressed Sound Coding */
-    { CODEC_ID_PCM_S16LE, 0x017F0000 },/* Uncompressed Sound Coding */
-    { CODEC_ID_PCM_S16BE, 0x017E0000 },/* Uncompressed Sound Coding Big Endian*/
-    { CODEC_ID_PCM_ALAW,  0x02030101 },
-    { CODEC_ID_AC3,       0x02030201 },
-  //{ CODEC_ID_MP1,       0x02030104 },
-    { CODEC_ID_MP2,       0x02030105 },/* MP2 or MP3 */
-  //{ CODEC_ID_MP2,       0x02030106 },/* MPEG-2 Layer 1 */
-  //{ CODEC_ID_???,       0x0203010C },/* Dolby E */
-  //{ CODEC_ID_???,       0x02030301 },/* MPEG-2 AAC */
-    { 0, 0 },
-};
-
-static const CodecTag mxf_picture_essence_labels[] = {
-    { CODEC_ID_RAWVIDEO,   0x0100 },
-    { CODEC_ID_MPEG2VIDEO, 0x0201 },
-    { CODEC_ID_DVVIDEO,    0x0202 },
-  //{ CODEC_ID_???,        0x0207 },/* D-11 HDCAM */
-    { 0, 0 },
-};
-
-static const CodecTag mxf_container_picture_labels[] = {
-    { CODEC_ID_MPEG2VIDEO, 0x0201 }, /* D-10 Mapping */
-    { CODEC_ID_DVVIDEO,    0x0202 }, /* DV Mapping */
-  //{ CODEC_ID_???,        0x0203 }, /* HDCAM D-11 Mapping */
-    { CODEC_ID_MPEG2VIDEO, 0x0204 }, /* MPEG ES Mapping */
-};
-
-static const CodecTag mxf_container_sound_labels[] = {
-  //{ CODEC_ID_PCM_S16??,  0x0201 }, /* D-10 Mapping */
-    { CODEC_ID_MP2,        0x0204 }, /* MPEG ES Mapping */
-    { CODEC_ID_PCM_S16LE,  0x0206 }, /* AES BWF Mapping */
-    { CODEC_ID_PCM_ALAW,   0x020A },
-    { 0, 0 },
-};
-
-static void mxf_resolve_track_descriptor(MXFContext *mxf)
-{
-    uint32_t container_label;
-    uint32_t essence_label;
-    int i, j;
-
-    for (i = 0; i < mxf->descriptors_count; i++) {
-        for (j = 0; j < mxf->tracks_count; j++) {
-            AVStream *st = mxf->tracks[j].stream;
-            MXFDescriptor *desc = &mxf->descriptors[i];
-
-            if ((desc->linked_track_id == -1 && st->codec->codec_type == desc->codec_type)
-                || desc->linked_track_id == mxf->tracks[j].track_id) {
-                if (st->codec->codec_type == CODEC_TYPE_AUDIO) {
-                    st->codec->channels = desc->channels;
-                    st->codec->bits_per_sample = desc->bits_per_sample;
-                    st->codec->block_align = desc->block_align;
-                    st->codec->sample_rate = desc->sample_rate.num / desc->sample_rate.den;
-
-                    container_label = BE_16(desc->essence_container + 12);
-                    essence_label = BE_32(desc->essence_compression + 11);
-                    st->codec->codec_id = codec_get_id(mxf_sound_essence_labels, essence_label);
-                    if (st->codec->codec_id == CODEC_ID_PCM_S16LE) {
-                        if (desc->bits_per_sample == 24)
-                            st->codec->codec_id = CODEC_ID_PCM_S24LE;
-                        else if (desc->bits_per_sample == 32)
-                            st->codec->codec_id = CODEC_ID_PCM_S32LE;
+    for (i = 0; i < mxf->packages_count; i++) {
+        if (mxf->packages[i]) {
+            if (!memcmp(mxf->packages[i]->descriptor_ref, desc->uid, 16)) {
+                mxf->packages[i]->descriptor = desc;
+                return 0;
+            } else if (mxf->packages[i]->descriptor) { /* MultipleDescriptor */
+                for (j = 0; j < mxf->packages[i]->descriptor->sub_descriptors_count; j++) {
+                    if (!memcmp(mxf->packages[i]->descriptor->sub_descriptors_refs[j], desc->uid, 16)) {
+                        mxf->packages[i]->descriptor->sub_descriptors[j] = desc;
+                        return 0;
                     }
-                    if (st->codec->codec_id == CODEC_ID_PCM_S16BE) {
-                        if (desc->bits_per_sample == 24)
-                            st->codec->codec_id = CODEC_ID_PCM_S24BE;
-                        else if (desc->bits_per_sample == 32)
-                            st->codec->codec_id = CODEC_ID_PCM_S32BE;
-                    }
-                    if (!st->codec->codec_id)
-                        st->codec->codec_id = codec_get_id(mxf_container_sound_labels, container_label);
-
-                } else if (st->codec->codec_type == CODEC_TYPE_VIDEO) {
-                    st->codec->width = desc->width;
-                    st->codec->height = desc->height;
-
-                    container_label = BE_16(desc->essence_container + 12);
-                    essence_label = BE_16(desc->essence_compression + 11);
-                    st->codec->codec_id = codec_get_id(mxf_picture_essence_labels, essence_label);
-                    if (!st->codec->codec_id)
-                        st->codec->codec_id = codec_get_id(mxf_container_picture_labels, container_label);
                 }
             }
         }
     }
+    return -1;
+}
+
+/* SMPTE RP224 http://www.smpte-ra.org/mdd/index.html */
+static const UID picture_essence_track_ul = { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x01,0x01,0x03,0x02,0x02,0x01,0x00,0x00,0x00 };
+static const UID sound_essence_track_ul   = { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x01,0x01,0x03,0x02,0x02,0x02,0x00,0x00,0x00 };
+
+static const MXFCodecUL mxf_codec_uls[] = {
+    /* PictureEssenceCoding */
+    { { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x03,0x04,0x01,0x02,0x02,0x01,0x02,0x02,0x00 }, CODEC_ID_MPEG2VIDEO }, /* I-Frame */
+    { { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x03,0x04,0x01,0x02,0x02,0x01,0x04,0x03,0x00 }, CODEC_ID_MPEG2VIDEO }, /* Long GoP */
+    { { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x03,0x04,0x01,0x02,0x02,0x01,0x02,0x03,0x00 }, CODEC_ID_MPEG2VIDEO }, /* Long GoP */
+    { { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x01,0x04,0x01,0x02,0x02,0x01,0x02,0x01,0x05 }, CODEC_ID_MPEG2VIDEO }, /* D-10 30Mbps PAL */
+    { { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x01,0x04,0x01,0x02,0x02,0x01,0x02,0x01,0x01 }, CODEC_ID_MPEG2VIDEO }, /* D-10 50Mbps PAL */
+    { { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x01,0x04,0x01,0x02,0x02,0x02,0x02,0x04,0x00 },    CODEC_ID_DVVIDEO }, /* DVCPRO50 PAL */
+    { { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x01,0x04,0x01,0x02,0x02,0x02,0x02,0x02,0x00 },    CODEC_ID_DVVIDEO }, /* DVCPRO25 PAL */
+    { { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x01,0x04,0x01,0x02,0x02,0x02,0x01,0x02,0x00 },    CODEC_ID_DVVIDEO }, /* DV25 IEC PAL */
+    /* SoundEssenceCompression */
+    { { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x01,0x04,0x02,0x02,0x01,0x7F,0x00,0x00,0x00 },  CODEC_ID_PCM_S16LE },
+    { { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x07,0x04,0x02,0x02,0x01,0x7E,0x00,0x00,0x00 },  CODEC_ID_PCM_S16BE }, /* From Omneon MXF file */
+};
+
+static enum CodecID mxf_get_codec_id(const MXFCodecUL *uls, UID *uid)
+{
+    while (uls->id != CODEC_ID_NONE) {
+        if(!memcmp(uls->uid, *uid, 16))
+            return uls->id;
+        uls++;
+    }
+    return CODEC_ID_NONE;
+}
+
+static int mxf_parse_structural_metadata(MXFContext *mxf)
+{
+    MXFPackage *material_package = NULL;
+    MXFPackage *source_package = NULL;
+    int i, j, k;
+
+    /* TODO: handle multiple material packages (OP3x) */
+    for (i = 0; i < mxf->packages_count; i++) {
+        if (mxf->packages[i]->type == MaterialPackage) {
+            material_package = mxf->packages[i];
+            break;
+        }
+    }
+    if (!material_package) {
+        av_log(mxf->fc, AV_LOG_ERROR, "no material package found\n");
+        return -1;
+    }
+
+    for (i = 0; i < material_package->tracks_count; i++) {
+        MXFTrack *material_track = material_package->tracks[i];
+        MXFTrack *source_track = NULL;
+        MXFDescriptor *descriptor = NULL;
+        MXFStructuralComponent *component = NULL;
+        AVStream *st;
+
+        /* TODO: handle multiple source clips */
+        for (j = 0; j < material_track->sequence->structural_components_count; j++) {
+            component = material_track->sequence->structural_components[j];
+            /* TODO: handle timecode component */
+            if (!component || component->type != SourceClip)
+                continue;
+
+            for (k = 0; k < mxf->packages_count; k++) {
+                if (!memcmp(mxf->packages[k]->package_uid, component->source_package_uid, 16)) {
+                    source_package = mxf->packages[k];
+                    break;
+                }
+            }
+            if (!source_package) {
+                av_log(mxf->fc, AV_LOG_ERROR, "material track %d: no corresponding source package found\n", material_track->track_id);
+                break;
+            }
+            for (k = 0; k < source_package->tracks_count; k++) {
+                if (source_package->tracks[k]->track_id == component->source_track_id) {
+                    source_track = source_package->tracks[k];
+                    break;
+                }
+            }
+            if (!source_track) {
+                av_log(mxf->fc, AV_LOG_ERROR, "material track %d: no corresponding source track found\n", material_track->track_id);
+                break;
+            }
+        }
+        if (!source_track)
+            continue;
+
+        st = av_new_stream(mxf->fc, source_track->track_number);
+        st->duration = component->duration;
+        if (st->duration == -1)
+            st->duration = AV_NOPTS_VALUE;
+        st->start_time = component->start_position;
+        av_set_pts_info(st, 64, material_track->edit_rate.num, material_track->edit_rate.den);
+#ifdef DEBUG
+        PRINT_KEY(source_track->sequence->data_definition_ul);
+#endif
+        if (!memcmp(source_track->sequence->data_definition_ul, picture_essence_track_ul, 16))
+            st->codec->codec_type = CODEC_TYPE_VIDEO;
+        else if (!memcmp(source_track->sequence->data_definition_ul, sound_essence_track_ul, 16))
+            st->codec->codec_type = CODEC_TYPE_AUDIO;
+        else
+            st->codec->codec_type = CODEC_TYPE_DATA;
+
+        if (source_package->descriptor) {
+            if (source_package->descriptor->sub_descriptors_count > 0) { /* SourcePackage has MultipleDescriptor */
+                for (j = 0; j < source_package->descriptor->sub_descriptors_count; j++) {
+                    if (source_package->descriptor->sub_descriptors[j]) {
+                        if (source_package->descriptor->sub_descriptors[j]->linked_track_id == source_track->track_id) {
+                            descriptor = source_package->descriptor->sub_descriptors[j];
+                            break;
+                        }
+                    }
+                }
+            } else {
+                descriptor = source_package->descriptor;
+            }
+        }
+        if (!descriptor) {
+            av_log(mxf->fc, AV_LOG_INFO, "source track %d: stream %d, no descriptor found\n", source_track->track_id, st->index);
+            continue;
+        }
+#ifdef DEBUG
+        PRINT_KEY(descriptor->essence_compression);
+#endif
+        st->codec->codec_id = mxf_get_codec_id(mxf_codec_uls, &descriptor->essence_compression);
+        if (st->codec->codec_type == CODEC_TYPE_VIDEO) {
+            st->codec->width = descriptor->width;
+            st->codec->height = descriptor->height;
+        } else if (st->codec->codec_type == CODEC_TYPE_AUDIO) {
+            st->codec->channels = descriptor->channels;
+            st->codec->bits_per_sample = descriptor->bits_per_sample;
+            st->codec->sample_rate = descriptor->sample_rate.num / descriptor->sample_rate.den;
+            /* TODO: implement CODEC_ID_RAWAUDIO */
+            if (st->codec->codec_id == CODEC_ID_PCM_S16LE) {
+                if (descriptor->bits_per_sample == 24)
+                    st->codec->codec_id = CODEC_ID_PCM_S24LE;
+                else if (descriptor->bits_per_sample == 32)
+                    st->codec->codec_id = CODEC_ID_PCM_S32LE;
+            } else if (st->codec->codec_id == CODEC_ID_PCM_S16BE) {
+                if (descriptor->bits_per_sample == 24)
+                    st->codec->codec_id = CODEC_ID_PCM_S24BE;
+                else if (descriptor->bits_per_sample == 32)
+                    st->codec->codec_id = CODEC_ID_PCM_S32BE;
+            }
+        }
+    }
+    return 0;
 }
 
 static int mxf_read_header(AVFormatContext *s, AVFormatParameters *ap)
@@ -455,18 +826,30 @@ static int mxf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             return -1;
         if (IS_KLV_KEY(klv.key, mxf_metadata_track_key))
             ret = mxf_read_metadata_track(mxf, &klv);
+        else if (IS_KLV_KEY(klv.key, mxf_metadata_static_track_key))
+            ret = mxf_read_metadata_track(mxf, &klv);
         else if (IS_KLV_KEY(klv.key, mxf_metadata_source_package_key))
             ret = mxf_read_metadata_source_package(mxf, &klv);
         else if (IS_KLV_KEY(klv.key, mxf_metadata_sequence_key))
             ret = mxf_read_metadata_sequence(mxf, &klv);
+        else if (IS_KLV_KEY(klv.key, mxf_metadata_material_package_key))
+            ret = mxf_read_metadata_material_package(mxf, &klv);
+        else if (IS_KLV_KEY(klv.key, mxf_metadata_source_clip_key))
+            ret = mxf_read_metadata_source_clip(mxf, &klv);
+        else if (IS_KLV_KEY(klv.key, mxf_metadata_multiple_descriptor_key))
+            ret = mxf_read_metadata_multiple_descriptor(mxf, &klv);
         else if (IS_KLV_KEY(klv.key, mxf_metadata_wave_descriptor_key))
-            ret = mxf_read_metadata_descriptor(mxf, &klv);
+            ret = mxf_read_metadata_generic_descriptor(mxf, &klv);
         else if (IS_KLV_KEY(klv.key, mxf_metadata_mpegvideo_descriptor_key))
-            ret = mxf_read_metadata_descriptor(mxf, &klv);
+            ret = mxf_read_metadata_generic_descriptor(mxf, &klv);
         else if (IS_KLV_KEY(klv.key, mxf_metadata_cdci_descriptor_key))
-            ret = mxf_read_metadata_descriptor(mxf, &klv);
+            ret = mxf_read_metadata_generic_descriptor(mxf, &klv);
         else if (IS_KLV_KEY(klv.key, mxf_metadata_generic_sound_descriptor_key))
-            ret = mxf_read_metadata_descriptor(mxf, &klv);
+            ret = mxf_read_metadata_generic_descriptor(mxf, &klv);
+        else if (IS_KLV_KEY(klv.key, mxf_metadata_preface_key))
+            ret = mxf_read_metadata_preface(mxf, &klv);
+        else if (IS_KLV_KEY(klv.key, mxf_metadata_content_storage_key))
+            ret = mxf_read_metadata_content_storage(mxf, &klv);
         else if (IS_KLV_KEY(klv.key, mxf_essence_element_key)) {
             /* FIXME avoid seek */
             url_fseek(&s->pb, klv.offset, SEEK_SET);
@@ -476,16 +859,41 @@ static int mxf_read_header(AVFormatContext *s, AVFormatParameters *ap)
         if (ret < 0)
             return ret;
     }
-    mxf_resolve_track_descriptor(mxf);
-    return 0;
+    return mxf_parse_structural_metadata(mxf);
 }
 
 static int mxf_read_close(AVFormatContext *s)
 {
     MXFContext *mxf = s->priv_data;
+    int i, j, k;
 
-    av_freep(&mxf->tracks);
-    av_freep(&mxf->descriptors);
+    for (i = 0; i < mxf->packages_count; i++) {
+        for (j = 0; j < mxf->packages[i]->tracks_count; j++) {
+            for (k = 0; k < mxf->packages[i]->tracks[j]->sequence->structural_components_count; k++)
+                av_freep(&mxf->packages[i]->tracks[j]->sequence->structural_components[k]);
+            av_freep(&mxf->packages[i]->tracks[j]->sequence->structural_components_refs);
+            av_freep(&mxf->packages[i]->tracks[j]->sequence->structural_components);
+            av_freep(&mxf->packages[i]->tracks[j]->sequence);
+            av_freep(&mxf->packages[i]->tracks[j]);
+        }
+        av_freep(&mxf->packages[i]->tracks_refs);
+        av_freep(&mxf->packages[i]->tracks);
+        if (mxf->packages[i]->descriptor) {
+            for (k = 0; k < mxf->packages[i]->descriptor->sub_descriptors_count; k++)
+                av_freep(&mxf->packages[i]->descriptor->sub_descriptors[k]);
+            av_freep(&mxf->packages[i]->descriptor->sub_descriptors_refs);
+            av_freep(&mxf->packages[i]->descriptor->sub_descriptors);
+        }
+        av_freep(&mxf->packages[i]->descriptor);
+        av_freep(&mxf->packages[i]);
+    }
+    av_freep(&mxf->packages_refs);
+    av_freep(&mxf->packages);
+    for (i = 0; i < mxf->essence_container_data_sets_count; i++)
+        av_freep(&mxf->essence_container_data_sets[i]);
+    av_freep(&mxf->essence_container_data_sets_refs);
+    av_freep(&mxf->essence_container_data_sets);
+    av_freep(&mxf->essence_containers_uls);
     return 0;
 }
 
