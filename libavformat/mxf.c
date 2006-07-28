@@ -91,7 +91,6 @@ typedef struct MXFDescriptor {
     UID uid;
     UID essence_container_ul;
     UID essence_codec_ul;
-    enum CodecType codec_type;
     AVRational sample_rate;
     AVRational aspect_ratio;
     int width;
@@ -101,7 +100,6 @@ typedef struct MXFDescriptor {
     struct MXFDescriptor **sub_descriptors;
     UID *sub_descriptors_refs;
     int sub_descriptors_count;
-    int block_align;
     int linked_track_id;
 } MXFDescriptor;
 
@@ -616,7 +614,6 @@ static int mxf_read_metadata_generic_descriptor(MXFContext *mxf, KLVPacket *klv)
             descriptor->linked_track_id = get_be32(pb);
             break;
         case 0x3201: /* PictureEssenceCoding */
-            descriptor->codec_type = CODEC_TYPE_VIDEO;
             get_buffer(pb, descriptor->essence_codec_ul, 16);
             break;
         case 0x3203:
@@ -629,15 +626,11 @@ static int mxf_read_metadata_generic_descriptor(MXFContext *mxf, KLVPacket *klv)
             descriptor->aspect_ratio.num = get_be32(pb);
             descriptor->aspect_ratio.den = get_be32(pb);
             break;
-        case 0x3D0A:
-            descriptor->block_align = get_be16(pb);
-            break;
         case 0x3D03:
             descriptor->sample_rate.num = get_be32(pb);
             descriptor->sample_rate.den = get_be32(pb);
             break;
         case 0x3D06: /* SoundEssenceCompression */
-            descriptor->codec_type = CODEC_TYPE_AUDIO;
             get_buffer(pb, descriptor->essence_codec_ul, 16);
             break;
         case 0x3D07:
