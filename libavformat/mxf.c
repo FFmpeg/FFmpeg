@@ -221,6 +221,9 @@ static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
             av_log(s, AV_LOG_ERROR, "error reading KLV packet\n");
             return -1;
         }
+#ifdef DEBUG
+        PRINT_KEY(klv.key);
+#endif
         if (IS_KLV_KEY(klv.key, mxf_essence_element_key)) {
             av_get_packet(&s->pb, pkt, klv.length);
             pkt->stream_index = mxf_get_stream_index(s, &klv);
@@ -816,6 +819,9 @@ static int mxf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             av_log(s, AV_LOG_ERROR, "error reading KLV packet\n");
             return -1;
         }
+#ifdef DEBUG
+        PRINT_KEY(klv.key);
+#endif
         if (IS_KLV_KEY(klv.key, mxf_metadata_track_key))
             ret = mxf_read_metadata_track(mxf, &klv);
         else if (IS_KLV_KEY(klv.key, mxf_metadata_static_track_key))
