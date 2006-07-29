@@ -880,6 +880,14 @@ static void vc1_put_block(VC1Context *v, DCTELEM block[6][64])
     int ys, us, vs;
     DSPContext *dsp = &v->s.dsp;
 
+    if(v->rangeredfrm) {
+        int i, j, k;
+        for(k = 0; k < 6; k++)
+            for(j = 0; j < 8; j++)
+                for(i = 0; i < 8; i++)
+                    block[k][i + j*8] = ((block[k][i + j*8] - 128) << 1) + 128;
+
+    }
     ys = v->s.current_picture.linesize[0];
     us = v->s.current_picture.linesize[1];
     vs = v->s.current_picture.linesize[2];
@@ -943,7 +951,7 @@ static void vc1_mc_1mv(VC1Context *v, int dir)
         srcV = s->edge_emu_buffer + 18 * s->linesize;
     }
 
-    if((v->mv_mode == MV_PMODE_INTENSITY_COMP)
+    if(v->rangeredfrm || (v->mv_mode == MV_PMODE_INTENSITY_COMP)
        || (unsigned)src_x > s->h_edge_pos - (mx&3) - 16
        || (unsigned)src_y > s->v_edge_pos - (my&3) - 16){
         uint8_t *uvbuf= s->edge_emu_buffer + 18 * s->linesize;
@@ -957,6 +965,26 @@ static void vc1_mc_1mv(VC1Context *v, int dir)
                             uvsrc_x, uvsrc_y, s->h_edge_pos >> 1, s->v_edge_pos >> 1);
         srcU = uvbuf;
         srcV = uvbuf + 16;
+        /* if we deal with range reduction we need to scale source blocks */
+        if(v->rangeredfrm) {
+            int i, j;
+            uint8_t *src, *src2;
+
+            src = srcY;
+            for(j = 0; j < 17; j++) {
+                for(i = 0; i < 17; i++) src[i] = ((src[i] - 128) >> 1) + 128;
+                src += s->linesize;
+            }
+            src = srcU; src2 = srcV;
+            for(j = 0; j < 9; j++) {
+                for(i = 0; i < 9; i++) {
+                    src[i] = ((src[i] - 128) >> 1) + 128;
+                    src2[i] = ((src2[i] - 128) >> 1) + 128;
+                }
+                src += s->uvlinesize;
+                src2 += s->uvlinesize;
+            }
+        }
         /* if we deal with intensity compensation we need to scale source blocks */
         if(v->mv_mode == MV_PMODE_INTENSITY_COMP) {
             int i, j;
@@ -1039,11 +1067,22 @@ static void vc1_mc_4mv_luma(VC1Context *v, int n)
 
     srcY += src_y * s->linesize + src_x;
 
-    if((unsigned)src_x > s->h_edge_pos - (mx&3) - 16
+    if(v->rangeredfrm || (unsigned)src_x > s->h_edge_pos - (mx&3) - 16
        || (unsigned)src_y > s->v_edge_pos - (my&3) - 16){
         ff_emulated_edge_mc(s->edge_emu_buffer, srcY, s->linesize, 16+1, 16+1,
                             src_x, src_y, s->h_edge_pos, s->v_edge_pos);
         srcY = s->edge_emu_buffer;
+        /* if we deal with range reduction we need to scale source blocks */
+        if(v->rangeredfrm) {
+            int i, j;
+            uint8_t *src;
+
+            src = srcY;
+            for(j = 0; j < 17; j++) {
+                for(i = 0; i < 17; i++) src[i] = ((src[i] - 128) >> 1) + 128;
+                src += s->linesize;
+            }
+        }
     }
 
     if(!s->quarter_sample) { // hpel mc
@@ -1141,7 +1180,7 @@ static void vc1_mc_4mv_chroma(VC1Context *v)
     uvsrc_y = clip(uvsrc_y,  -8, s->mb_height *  8);
     srcU = s->last_picture.data[1] + uvsrc_y * s->uvlinesize + uvsrc_x;
     srcV = s->last_picture.data[2] + uvsrc_y * s->uvlinesize + uvsrc_x;
-    if((unsigned)uvsrc_x > (s->h_edge_pos >> 1) - 9
+    if(v->rangeredfrm || (unsigned)uvsrc_x > (s->h_edge_pos >> 1) - 9
        || (unsigned)uvsrc_y > (s->v_edge_pos >> 1) - 9){
         ff_emulated_edge_mc(s->edge_emu_buffer     , srcU, s->uvlinesize, 8+1, 8+1,
                             uvsrc_x, uvsrc_y, s->h_edge_pos >> 1, s->v_edge_pos >> 1);
@@ -1149,6 +1188,22 @@ static void vc1_mc_4mv_chroma(VC1Context *v)
                             uvsrc_x, uvsrc_y, s->h_edge_pos >> 1, s->v_edge_pos >> 1);
         srcU = s->edge_emu_buffer;
         srcV = s->edge_emu_buffer + 16;
+
+        /* if we deal with range reduction we need to scale source blocks */
+        if(v->rangeredfrm) {
+            int i, j;
+            uint8_t *src, *src2;
+
+            src = srcU; src2 = srcV;
+            for(j = 0; j < 9; j++) {
+                for(i = 0; i < 9; i++) {
+                    src[i] = ((src[i] - 128) >> 1) + 128;
+                    src2[i] = ((src2[i] - 128) >> 1) + 128;
+                }
+                src += s->uvlinesize;
+                src2 += s->uvlinesize;
+            }
+        }
     }
 
     if(v->fastuvmc) {
@@ -2578,6 +2633,7 @@ static int vc1_decode_p_mb(VC1Context *v)
                     vc1_decode_intra_block(v, s->block[i], i, val, mquant, (i&4)?v->codingset2:v->codingset);
                     if((i>3) && (s->flags & CODEC_FLAG_GRAY)) continue;
                     vc1_inv_trans(s->block[i], 8, 8);
+                    if(v->rangeredfrm) for(j = 0; j < 64; j++) s->block[i][j] <<= 1;
                     for(j = 0; j < 64; j++) s->block[i][j] += 128;
                     s->dsp.put_pixels_clamped(s->block[i], s->dest[dst_idx] + off, s->linesize >> ((i & 4) >> 2));
                     /* TODO: proper loop filtering */
@@ -2681,6 +2737,7 @@ static int vc1_decode_p_mb(VC1Context *v)
                     vc1_decode_intra_block(v, s->block[i], i, is_coded[i], mquant, (i&4)?v->codingset2:v->codingset);
                     if((i>3) && (s->flags & CODEC_FLAG_GRAY)) continue;
                     vc1_inv_trans(s->block[i], 8, 8);
+                    if(v->rangeredfrm) for(j = 0; j < 64; j++) s->block[i][j] <<= 1;
                     for(j = 0; j < 64; j++) s->block[i][j] += 128;
                     s->dsp.put_pixels_clamped(s->block[i], s->dest[dst_idx] + off, (i&4)?s->uvlinesize:s->linesize);
                     /* TODO: proper loop filtering */
@@ -2846,6 +2903,7 @@ static void vc1_decode_b_mb(VC1Context *v)
             vc1_decode_intra_block(v, s->block[i], i, val, mquant, (i&4)?v->codingset2:v->codingset);
             if((i>3) && (s->flags & CODEC_FLAG_GRAY)) continue;
             vc1_inv_trans(s->block[i], 8, 8);
+            if(v->rangeredfrm) for(j = 0; j < 64; j++) s->block[i][j] <<= 1;
             for(j = 0; j < 64; j++) s->block[i][j] += 128;
             s->dsp.put_pixels_clamped(s->block[i], s->dest[dst_idx] + off, s->linesize >> ((i & 4) >> 2));
             /* TODO: proper loop filtering */
