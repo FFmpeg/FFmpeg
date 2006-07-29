@@ -60,9 +60,6 @@ void avcodec_register_all(void)
 #endif //CONFIG_OGGVORBIS_DECODER
 #endif
 #ifdef CONFIG_LIBTHEORA
-#ifdef CONFIG_OGGTHEORA_ENCODER
-//    register_avcodec(&oggtheora_encoder);
-#endif //CONFIG_OGGTHEORA_ENCODER
 #ifdef CONFIG_OGGTHEORA_DECODER
     register_avcodec(&oggtheora_decoder);
 #endif //CONFIG_OGGTHEORA_DECODER

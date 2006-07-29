@@ -2102,7 +2102,6 @@ extern AVCodec ac3_encoder;
 extern AVCodec mp2_encoder;
 extern AVCodec mp3lame_encoder;
 extern AVCodec oggvorbis_encoder;
-extern AVCodec oggtheora_encoder;
 extern AVCodec faac_encoder;
 extern AVCodec flac_encoder;
 extern AVCodec xvid_encoder;
