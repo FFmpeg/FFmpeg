@@ -327,6 +327,12 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             pos2 = url_ftell(pb);
             url_fskip(pb, gsize - (pos2 - pos1 + 24));
         } else if (!memcmp(&g, &data_header, sizeof(GUID))) {
+            asf->data_object_offset = url_ftell(pb);
+            if (gsize != (uint64_t)-1 && gsize >= 24) {
+                asf->data_object_size = gsize - 24;
+            } else {
+                asf->data_object_size = (uint64_t)-1;
+            }
             break;
         } else if (!memcmp(&g, &comment_header, sizeof(GUID))) {
             int len1, len2, len3, len4, len5;
@@ -552,6 +558,9 @@ static int asf_read_packet(AVFormatContext *s, AVPacket *pkt)
             /* fail safe */
             url_fskip(pb, ret);
             asf->packet_pos= url_ftell(&s->pb);
+            if (asf->data_object_size != (uint64_t)-1 &&
+                (asf->packet_pos - asf->data_object_offset >= asf->data_object_size))
+                return AVERROR_IO; /* Do not exceed the size of the data object */
             ret = asf_get_packet(s);
             //printf("READ ASF PACKET  %d   r:%d   c:%d\n", ret, asf->packet_size_left, pc++);
             if (ret < 0 || url_feof(pb))

@@ -32,7 +32,7 @@ typedef struct {
     int ds_data_size;
     int ds_silence_data;
 
-    int packet_pos;
+    int64_t packet_pos;
 
 } ASFStream;
 
@@ -98,6 +98,8 @@ typedef struct {
     ByteIOContext pb;
     /* only for reading */
     uint64_t data_offset; /* begining of the first data packet */
+    uint64_t data_object_offset; /* data object offset (excl. GUID & size)*/
+    uint64_t data_object_size;   /* size of the data object */
 
     ASFMainHeader hdr;
 
@@ -117,7 +119,7 @@ typedef struct {
     int packet_obj_size;
     int packet_time_delta;
     int packet_time_start;
-    int packet_pos;
+    int64_t packet_pos;
 
     int stream_index;
 
