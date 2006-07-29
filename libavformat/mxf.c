@@ -583,6 +583,29 @@ static int mxf_read_metadata_multiple_descriptor(MXFContext *mxf, KLVPacket *klv
     return -1;
 }
 
+static void mxf_read_metadata_pixel_layout(ByteIOContext *pb, MXFDescriptor *descriptor)
+{
+    int code;
+
+    do {
+        code = get_byte(pb);
+        dprintf("pixel layout: code 0x%x\n", code);
+        switch (code) {
+        case 0x52: /* R */
+            descriptor->bits_per_sample += get_byte(pb);
+            break;
+        case 0x47: /* G */
+            descriptor->bits_per_sample += get_byte(pb);
+            break;
+        case 0x42: /* B */
+            descriptor->bits_per_sample += get_byte(pb);
+            break;
+        default:
+            get_byte(pb);
+        }
+    } while (code != 0); /* SMPTE 377M E.2.46 */
+}
+
 static int mxf_read_metadata_generic_descriptor(MXFContext *mxf, KLVPacket *klv)
 {
     ByteIOContext *pb = &mxf->fc->pb;
@@ -631,6 +654,9 @@ static int mxf_read_metadata_generic_descriptor(MXFContext *mxf, KLVPacket *klv)
         case 0x3D01:
             descriptor->bits_per_sample = get_be32(pb);
             break;
+        case 0x3401:
+            mxf_read_metadata_pixel_layout(pb, descriptor);
+            break;
         default:
             url_fskip(pb, size);
         }
@@ -669,6 +695,7 @@ static const MXFCodecUL mxf_codec_uls[] = {
     { { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x01,0x04,0x01,0x02,0x02,0x02,0x02,0x02,0x00 },    CODEC_ID_DVVIDEO }, /* DVCPRO25 PAL */
     { { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x01,0x04,0x01,0x02,0x02,0x02,0x01,0x02,0x00 },    CODEC_ID_DVVIDEO }, /* DV25 IEC PAL */
   //{ { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x01,0x04,0x01,0x02,0x02,0x03,0x01,0x01,0x00 },     CODEC_ID_JPEG2K }, /* JPEG2000 Codestream */
+    { { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x01,0x04,0x01,0x02,0x01,0x7F,0x00,0x00,0x00 },   CODEC_ID_RAWVIDEO }, /* Uncompressed */
     /* SoundEssenceCompression */
     { { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x01,0x04,0x02,0x02,0x01,0x7F,0x00,0x00,0x00 },  CODEC_ID_PCM_S16LE },
     { { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x07,0x04,0x02,0x02,0x01,0x7E,0x00,0x00,0x00 },  CODEC_ID_PCM_S16BE }, /* From Omneon MXF file */
@@ -786,6 +813,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
         if (st->codec->codec_type == CODEC_TYPE_VIDEO) {
             st->codec->width = descriptor->width;
             st->codec->height = descriptor->height;
+            st->codec->bits_per_sample = descriptor->bits_per_sample; /* Uncompressed */
         } else if (st->codec->codec_type == CODEC_TYPE_AUDIO) {
             st->codec->channels = descriptor->channels;
             st->codec->bits_per_sample = descriptor->bits_per_sample;
