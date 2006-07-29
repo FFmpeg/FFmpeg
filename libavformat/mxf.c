@@ -45,9 +45,8 @@
 //#define DEBUG
 
 #include "avformat.h"
-#include "dsputil.h"
 
-typedef DECLARE_ALIGNED_16(uint8_t, UID[16]);
+typedef uint8_t UID[16];
 
 enum MXFPackageType {
     MaterialPackage,
@@ -83,7 +82,7 @@ typedef struct MXFTrack {
     MXFSequence *sequence; /* mandatory, and only one */
     UID sequence_ref;
     int track_id;
-    int track_number;
+    uint8_t track_number[4];
     AVRational edit_rate;
 } MXFTrack;
 
@@ -160,7 +159,7 @@ static const UID mxf_metadata_track_key                    = { 0x06,0x0e,0x2b,0x
 
 /* partial keys to match */
 static const uint8_t mxf_header_partition_pack_key[]       = { 0x06,0x0e,0x2b,0x34,0x02,0x05,0x01,0x01,0x0d,0x01,0x02,0x01,0x01,0x02 };
-static const uint8_t mxf_essence_element_key[]             = { 0x06,0x0e,0x2b,0x34,0x01,0x02,0x01 };
+static const uint8_t mxf_essence_element_key[]             = { 0x06,0x0e,0x2b,0x34,0x01,0x02,0x01,0x01,0x0d,0x01,0x03,0x01 };
 
 #define IS_KLV_KEY(x, y) (!memcmp(x, y, sizeof(y)))
 
@@ -202,11 +201,12 @@ static int klv_read_packet(KLVPacket *klv, ByteIOContext *pb)
 
 static int mxf_get_stream_index(AVFormatContext *s, KLVPacket *klv)
 {
-    int id = BE_32(klv->key + 12); /* SMPTE 379M 7.3 */
     int i;
 
     for (i = 0; i < s->nb_streams; i++) {
-        if (s->streams[i]->id == id)
+        MXFTrack *track = s->streams[i]->priv_data;
+         /* SMPTE 379M 7.3 */
+        if (!memcmp(klv->key + sizeof(mxf_essence_element_key), track->track_number, sizeof(track->track_number)))
             return i;
     }
     return -1;
@@ -415,8 +415,7 @@ static int mxf_read_metadata_track(MXFContext *mxf, KLVPacket *klv)
             track->track_id = get_be32(pb);
             break;
         case 0x4804:
-            track->track_number = get_be32(pb);
-            dprintf("track number 0x%04X\n", track->track_number);
+            get_buffer(pb, track->track_number, 4);
             break;
         case 0x4B01:
             track->edit_rate.den = get_be32(pb);
@@ -742,7 +741,8 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
         if (!source_track)
             continue;
 
-        st = av_new_stream(mxf->fc, source_track->track_number);
+        st = av_new_stream(mxf->fc, source_track->track_id);
+        st->priv_data = source_track;
         st->duration = component->duration;
         if (st->duration == -1)
             st->duration = AV_NOPTS_VALUE;
