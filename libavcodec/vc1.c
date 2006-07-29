@@ -891,8 +891,10 @@ static void vc1_put_block(VC1Context *v, DCTELEM block[6][64])
     dsp->put_pixels_clamped(block[2], Y, ys);
     dsp->put_pixels_clamped(block[3], Y + 8, ys);
 
-    dsp->put_pixels_clamped(block[4], v->s.dest[1], us);
-    dsp->put_pixels_clamped(block[5], v->s.dest[2], vs);
+    if(!(v->s.flags & CODEC_FLAG_GRAY)) {
+        dsp->put_pixels_clamped(block[4], v->s.dest[1], us);
+        dsp->put_pixels_clamped(block[5], v->s.dest[2], vs);
+    }
 }
 
 /** Do motion compensation over 1 macroblock
@@ -934,6 +936,12 @@ static void vc1_mc_1mv(VC1Context *v, int dir)
     srcY += src_y * s->linesize + src_x;
     srcU += uvsrc_y * s->uvlinesize + uvsrc_x;
     srcV += uvsrc_y * s->uvlinesize + uvsrc_x;
+
+    /* for grayscale we should not try to read from unknown area */
+    if(s->flags & CODEC_FLAG_GRAY) {
+        srcU = s->edge_emu_buffer + 18 * s->linesize;
+        srcV = s->edge_emu_buffer + 18 * s->linesize;
+    }
 
     if((v->mv_mode == MV_PMODE_INTENSITY_COMP)
        || (unsigned)src_x > s->h_edge_pos - (mx&3) - 16
@@ -993,6 +1001,8 @@ static void vc1_mc_1mv(VC1Context *v, int dir)
         else
             dsp->put_no_rnd_qpel_pixels_tab[0][dxy](s->dest[0], srcY, s->linesize);
     }
+
+    if(s->flags & CODEC_FLAG_GRAY) return;
     /* Chroma MC always uses qpel blilinear */
     uvdxy = ((uvmy & 3) << 2) | (uvmx & 3);
     if(!v->rnd){
@@ -1080,6 +1090,7 @@ static void vc1_mc_4mv_chroma(VC1Context *v)
     static const int count[16] = { 0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4};
 
     if(!v->s.last_picture.data[0])return;
+    if(s->flags & CODEC_FLAG_GRAY) return;
 
     for(i = 0; i < 4; i++) {
         mvx[i] = s->mv[0][i][0];
@@ -2565,6 +2576,7 @@ static int vc1_decode_p_mb(VC1Context *v)
                         v->c_avail = v->mb_type[0][s->block_index[i] - 1];
 
                     vc1_decode_intra_block(v, s->block[i], i, val, mquant, (i&4)?v->codingset2:v->codingset);
+                    if((i>3) && (s->flags & CODEC_FLAG_GRAY)) continue;
                     vc1_inv_trans(s->block[i], 8, 8);
                     for(j = 0; j < 64; j++) s->block[i][j] += 128;
                     s->dsp.put_pixels_clamped(s->block[i], s->dest[dst_idx] + off, s->linesize >> ((i & 4) >> 2));
@@ -2579,7 +2591,8 @@ static int vc1_decode_p_mb(VC1Context *v)
                     vc1_decode_p_block(v, s->block[i], i, mquant, ttmb, first_block);
                     if(!v->ttmbf && ttmb < 8) ttmb = -1;
                     first_block = 0;
-                    s->dsp.add_pixels_clamped(s->block[i], s->dest[dst_idx] + off, (i&4)?s->uvlinesize:s->linesize);
+                    if((i<4) || !(s->flags & CODEC_FLAG_GRAY))
+                        s->dsp.add_pixels_clamped(s->block[i], s->dest[dst_idx] + off, (i&4)?s->uvlinesize:s->linesize);
                 }
             }
         }
@@ -2666,6 +2679,7 @@ static int vc1_decode_p_mb(VC1Context *v)
                         v->c_avail = v->mb_type[0][s->block_index[i] - 1];
 
                     vc1_decode_intra_block(v, s->block[i], i, is_coded[i], mquant, (i&4)?v->codingset2:v->codingset);
+                    if((i>3) && (s->flags & CODEC_FLAG_GRAY)) continue;
                     vc1_inv_trans(s->block[i], 8, 8);
                     for(j = 0; j < 64; j++) s->block[i][j] += 128;
                     s->dsp.put_pixels_clamped(s->block[i], s->dest[dst_idx] + off, (i&4)?s->uvlinesize:s->linesize);
@@ -2680,7 +2694,8 @@ static int vc1_decode_p_mb(VC1Context *v)
                     status = vc1_decode_p_block(v, s->block[i], i, mquant, ttmb, first_block);
                     if(!v->ttmbf && ttmb < 8) ttmb = -1;
                     first_block = 0;
-                    s->dsp.add_pixels_clamped(s->block[i], s->dest[dst_idx] + off, (i&4)?s->uvlinesize:s->linesize);
+                    if((i<4) || !(s->flags & CODEC_FLAG_GRAY))
+                        s->dsp.add_pixels_clamped(s->block[i], s->dest[dst_idx] + off, (i&4)?s->uvlinesize:s->linesize);
                 }
             }
             return status;
@@ -2829,6 +2844,7 @@ static void vc1_decode_b_mb(VC1Context *v)
                 v->c_avail = v->mb_type[0][s->block_index[i] - 1];
 
             vc1_decode_intra_block(v, s->block[i], i, val, mquant, (i&4)?v->codingset2:v->codingset);
+            if((i>3) && (s->flags & CODEC_FLAG_GRAY)) continue;
             vc1_inv_trans(s->block[i], 8, 8);
             for(j = 0; j < 64; j++) s->block[i][j] += 128;
             s->dsp.put_pixels_clamped(s->block[i], s->dest[dst_idx] + off, s->linesize >> ((i & 4) >> 2));
@@ -2843,7 +2859,8 @@ static void vc1_decode_b_mb(VC1Context *v)
             vc1_decode_p_block(v, s->block[i], i, mquant, ttmb, first_block);
             if(!v->ttmbf && ttmb < 8) ttmb = -1;
             first_block = 0;
-            s->dsp.add_pixels_clamped(s->block[i], s->dest[dst_idx] + off, (i&4)?s->uvlinesize:s->linesize);
+            if((i<4) || !(s->flags & CODEC_FLAG_GRAY))
+                s->dsp.add_pixels_clamped(s->block[i], s->dest[dst_idx] + off, (i&4)?s->uvlinesize:s->linesize);
         }
     }
 }
@@ -2928,16 +2945,20 @@ static void vc1_decode_i_blocks(VC1Context *v)
                 if(!s->first_slice_line) {
                     vc1_v_overlap(s->dest[0], s->linesize, 0);
                     vc1_v_overlap(s->dest[0] + 8, s->linesize, 0);
-                    vc1_v_overlap(s->dest[1], s->uvlinesize, s->mb_y&1);
-                    vc1_v_overlap(s->dest[2], s->uvlinesize, s->mb_y&1);
+                    if(!(s->flags & CODEC_FLAG_GRAY)) {
+                        vc1_v_overlap(s->dest[1], s->uvlinesize, s->mb_y&1);
+                        vc1_v_overlap(s->dest[2], s->uvlinesize, s->mb_y&1);
+                    }
                 }
                 vc1_v_overlap(s->dest[0] + 8 * s->linesize, s->linesize, 1);
                 vc1_v_overlap(s->dest[0] + 8 * s->linesize + 8, s->linesize, 1);
                 if(s->mb_x) {
                     vc1_h_overlap(s->dest[0], s->linesize, 0);
                     vc1_h_overlap(s->dest[0] + 8 * s->linesize, s->linesize, 0);
-                    vc1_h_overlap(s->dest[1], s->uvlinesize, s->mb_x&1);
-                    vc1_h_overlap(s->dest[2], s->uvlinesize, s->mb_x&1);
+                    if(!(s->flags & CODEC_FLAG_GRAY)) {
+                        vc1_h_overlap(s->dest[1], s->uvlinesize, s->mb_x&1);
+                        vc1_h_overlap(s->dest[2], s->uvlinesize, s->mb_x&1);
+                    }
                 }
                 vc1_h_overlap(s->dest[0] + 8, s->linesize, 1);
                 vc1_h_overlap(s->dest[0] + 8 * s->linesize + 8, s->linesize, 1);
@@ -3079,7 +3100,10 @@ static int vc1_decode_init(AVCodecContext *avctx)
     GetBitContext gb;
 
     if (!avctx->extradata_size || !avctx->extradata) return -1;
-    avctx->pix_fmt = PIX_FMT_YUV420P;
+    if (!(avctx->flags & CODEC_FLAG_GRAY))
+        avctx->pix_fmt = PIX_FMT_YUV420P;
+    else
+        avctx->pix_fmt = PIX_FMT_GRAY8;
     v->s.avctx = avctx;
     avctx->flags |= CODEC_FLAG_EMU_EDGE;
     v->s.flags |= CODEC_FLAG_EMU_EDGE;
