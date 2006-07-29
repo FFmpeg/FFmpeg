@@ -879,6 +879,8 @@ EOF
     SLIBPREF=""
     SLIBSUF=".dll"
     EXESUF=".exe"
+    SLIBNAME_WITH_VERSION='$(SLIBPREF)$(NAME)-$(LIBVERSION)$(SLIBSUF)'
+    SLIBNAME_WITH_MAJOR='$(SLIBPREF)$(NAME)-$(LIBMAJOR)$(SLIBSUF)'
     if test "$force_prefix" != yes; then PREFIX="$PROGRAMFILES/FFmpeg"; fi
     if test "$force_libdir" != yes; then bindir="$PREFIX"; fi
 fi
