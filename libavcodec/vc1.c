@@ -1474,6 +1474,7 @@ static int vc1_parse_frame_header(VC1Context *v, GetBitContext* gb)
                 v->s.quarter_sample = 1;
         } else
             v->s.quarter_sample = 1;
+        v->s.mspel = !(v->mv_mode == MV_PMODE_1MV_HPEL_BILIN || (v->mv_mode == MV_PMODE_INTENSITY_COMP && v->mv_mode2 == MV_PMODE_1MV_HPEL_BILIN));
 
         if ((v->mv_mode == MV_PMODE_INTENSITY_COMP &&
                  v->mv_mode2 == MV_PMODE_MIXED_MV)
@@ -1523,6 +1524,7 @@ static int vc1_parse_frame_header(VC1Context *v, GetBitContext* gb)
         lowquant = (v->pq > 12) ? 0 : 1;
         v->mv_mode = get_bits1(gb) ? MV_PMODE_1MV : MV_PMODE_1MV_HPEL_BILIN;
         v->s.quarter_sample = (v->mv_mode == MV_PMODE_1MV);
+        v->s.mspel = v->s.quarter_sample;
 
         status = bitplane_decoding(v->direct_mb_plane, &v->dmb_is_raw, v);
         if (status < 0) return -1;
