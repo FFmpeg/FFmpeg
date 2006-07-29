@@ -288,6 +288,9 @@ OBJS += i386/fdct_mmx.o i386/cputest.o \
 ifeq ($(CONFIG_GPL),yes)
 OBJS += i386/idct_mmx_xvid.o
 endif
+ifeq ($(CONFIG_CAVS_DECODER),yes)
+OBJS += i386/cavsdsp_mmx.o
+endif
 ifeq ($(TARGET_BUILTIN_VECTOR),yes)
 i386/fft_sse.o: CFLAGS+= -msse
 depend: CFLAGS+= -msse

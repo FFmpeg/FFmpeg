@@ -2622,6 +2622,22 @@ PREFETCH(prefetch_3dnow, prefetch)
 
 #include "h264dsp_mmx.c"
 
+/* AVS specific */
+void ff_cavsdsp_init_mmx2(DSPContext* c, AVCodecContext *avctx);
+
+void ff_put_cavs_qpel8_mc00_mmx2(uint8_t *dst, uint8_t *src, int stride) {
+    put_pixels8_mmx(dst, src, stride, 8);
+}
+void ff_avg_cavs_qpel8_mc00_mmx2(uint8_t *dst, uint8_t *src, int stride) {
+    avg_pixels8_mmx(dst, src, stride, 8);
+}
+void ff_put_cavs_qpel16_mc00_mmx2(uint8_t *dst, uint8_t *src, int stride) {
+    put_pixels16_mmx(dst, src, stride, 16);
+}
+void ff_avg_cavs_qpel16_mc00_mmx2(uint8_t *dst, uint8_t *src, int stride) {
+    avg_pixels16_mmx(dst, src, stride, 16);
+}
+
 /* external functions, from idct_mmx.c */
 void ff_mmx_idct(DCTELEM *block);
 void ff_mmxext_idct(DCTELEM *block);
@@ -2779,6 +2795,8 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
                     c->idct_permutation_type= FF_PARTTRANS_IDCT_PERM;
                 }
 #endif
+            }else if(idct_algo==FF_IDCT_CAVS){
+                    c->idct_permutation_type= FF_TRANSPOSE_IDCT_PERM;
 #ifdef CONFIG_GPL
             }else if(idct_algo==FF_IDCT_XVIDMMX){
                 if(mm_flags & MM_MMXEXT){
@@ -3011,6 +3029,10 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             c->biweight_h264_pixels_tab[5]= ff_h264_biweight_4x8_mmx2;
             c->biweight_h264_pixels_tab[6]= ff_h264_biweight_4x4_mmx2;
             c->biweight_h264_pixels_tab[7]= ff_h264_biweight_4x2_mmx2;
+
+#ifdef CONFIG_CAVS_DECODER
+            ff_cavsdsp_init_mmx2(c, avctx);
+#endif
 
 #ifdef CONFIG_ENCODERS
             c->sub_hfyu_median_prediction= sub_hfyu_median_prediction_mmx2;

@@ -78,6 +78,7 @@ typedef struct {
     int qp;
     int qp_fixed;
     int cbp;
+    ScanTable scantable;
 
     /** intra prediction is done with un-deblocked samples
      they are saved here before deblocking the MB  */
@@ -97,6 +98,7 @@ typedef struct {
     int scale_den[2];  ///< for scaling neighbouring MVs
 
     int got_keyframe;
+    DCTELEM *block;
 } AVSContext;
 
 /*****************************************************************************
@@ -649,10 +651,9 @@ static int decode_residual_block(AVSContext *h, GetBitContext *gb,
     int dqm = dequant_mul[qp];
     int dqs = dequant_shift[qp];
     int dqa = 1 << (dqs - 1);
-    const uint8_t *scantab = ff_zigzag_direct;
-    DCTELEM block[64];
+    const uint8_t *scantab = h->scantable.permutated;
+    DCTELEM *block = h->block;
 
-    memset(block,0,64*sizeof(DCTELEM));
     for(i=0;i<65;i++) {
         level_code = get_ue_code(gb,r->golomb_order);
         if(level_code >= ESCAPE_CODE) {
@@ -1135,8 +1136,10 @@ static int decode_pic(AVSContext *h) {
     enum mb_t mb_type;
 
     if (!s->context_initialized) {
+        s->avctx->idct_algo = FF_IDCT_CAVS;
         if (MPV_common_init(s) < 0)
             return -1;
+        ff_init_scantable(s->dsp.idct_permutation,&h->scantable,ff_zigzag_direct);
     }
     get_bits(&s->gb,16);//bbv_dwlay
     if(h->stc == PIC_PB_START_CODE) {
@@ -1281,6 +1284,7 @@ static void init_top_lines(AVSContext *h) {
     /* alloc space for co-located MVs and types */
     h->col_mv       = av_malloc( h->mb_width*h->mb_height*4*sizeof(vector_t));
     h->col_type_base = av_malloc(h->mb_width*h->mb_height);
+    h->block        = av_mallocz(64*sizeof(DCTELEM));
 }
 
 static int decode_seq_header(AVSContext *h) {
@@ -1478,6 +1482,7 @@ static int cavs_decode_end(AVCodecContext * avctx) {
     av_free(h->top_border_v);
     av_free(h->col_mv);
     av_free(h->col_type_base);
+    av_free(h->block);
     return 0;
 }
 
