@@ -163,14 +163,8 @@ static const uint8_t mxf_essence_element_key[]             = { 0x06,0x0e,0x2b,0x
 
 #define IS_KLV_KEY(x, y) (!memcmp(x, y, sizeof(y)))
 
-#define PRINT_KEY(x) \
-do { \
-    int iterpk; \
-    for (iterpk = 0; iterpk < 16; iterpk++) { \
-        av_log(NULL, AV_LOG_DEBUG, "%02X ", x[iterpk]); \
-    } \
-    av_log(NULL, AV_LOG_DEBUG, "\n"); \
-} while (0); \
+#define PRINT_KEY(x) dprintf("%02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X\n", \
+                             x[0], x[1], x[2], x[3], x[4], x[5], x[6], x[7], x[8], x[9], x[10], x[11], x[12], x[13], x[14], x[15])
 
 static int64_t klv_decode_ber_length(ByteIOContext *pb)
 {
