@@ -798,12 +798,13 @@ static void vc1_mc_1mv(VC1Context *v, int dir)
     }
 
     if(v->rangeredfrm || (v->mv_mode == MV_PMODE_INTENSITY_COMP)
-       || (unsigned)src_x > s->h_edge_pos - (mx&3) - 16
-       || (unsigned)src_y > s->v_edge_pos - (my&3) - 16){
-        uint8_t *uvbuf= s->edge_emu_buffer + 18 * s->linesize;
+       || (unsigned)(src_x - s->mspel) > s->h_edge_pos - (mx&3) - 16 - s->mspel*3
+       || (unsigned)(src_y - s->mspel) > s->v_edge_pos - (my&3) - 16 - s->mspel*3){
+        uint8_t *uvbuf= s->edge_emu_buffer + 19 * s->linesize;
 
-        ff_emulated_edge_mc(s->edge_emu_buffer, srcY, s->linesize, 16+1, 16+1,
-                            src_x, src_y, s->h_edge_pos, s->v_edge_pos);
+        srcY -= s->mspel * (1 + s->linesize);
+        ff_emulated_edge_mc(s->edge_emu_buffer, srcY, s->linesize, 17+s->mspel*2, 17+s->mspel*2,
+                            src_x - s->mspel, src_y - s->mspel, s->h_edge_pos, s->v_edge_pos);
         srcY = s->edge_emu_buffer;
         ff_emulated_edge_mc(uvbuf     , srcU, s->uvlinesize, 8+1, 8+1,
                             uvsrc_x, uvsrc_y, s->h_edge_pos >> 1, s->v_edge_pos >> 1);
@@ -817,8 +818,8 @@ static void vc1_mc_1mv(VC1Context *v, int dir)
             uint8_t *src, *src2;
 
             src = srcY;
-            for(j = 0; j < 17; j++) {
-                for(i = 0; i < 17; i++) src[i] = ((src[i] - 128) >> 1) + 128;
+            for(j = 0; j < 17 + s->mspel*2; j++) {
+                for(i = 0; i < 17 + s->mspel*2; i++) src[i] = ((src[i] - 128) >> 1) + 128;
                 src += s->linesize;
             }
             src = srcU; src2 = srcV;
@@ -837,8 +838,8 @@ static void vc1_mc_1mv(VC1Context *v, int dir)
             uint8_t *src, *src2;
 
             src = srcY;
-            for(j = 0; j < 17; j++) {
-                for(i = 0; i < 17; i++) src[i] = v->luty[src[i]];
+            for(j = 0; j < 17 + s->mspel*2; j++) {
+                for(i = 0; i < 17 + s->mspel*2; i++) src[i] = v->luty[src[i]];
                 src += s->linesize;
             }
             src = srcU; src2 = srcV;
@@ -851,6 +852,7 @@ static void vc1_mc_1mv(VC1Context *v, int dir)
                 src2 += s->uvlinesize;
             }
         }
+        srcY += s->mspel * (1 + s->linesize);
     }
 
     if(v->fastuvmc) {
@@ -858,7 +860,14 @@ static void vc1_mc_1mv(VC1Context *v, int dir)
         uvmy = uvmy + ((uvmy<0)?(uvmy&1):-(uvmy&1));
     }
 
-    if(!s->quarter_sample) { // hpel mc
+    if(s->mspel) {
+        dxy = ((my & 3) << 2) | (mx & 3);
+        dsp->put_vc1_mspel_pixels_tab[dxy](s->dest[0]    , srcY    , s->linesize, v->rnd);
+        dsp->put_vc1_mspel_pixels_tab[dxy](s->dest[0] + 8, srcY + 8, s->linesize, v->rnd);
+        srcY += s->linesize * 8;
+        dsp->put_vc1_mspel_pixels_tab[dxy](s->dest[0] + 8 * s->linesize    , srcY    , s->linesize, v->rnd);
+        dsp->put_vc1_mspel_pixels_tab[dxy](s->dest[0] + 8 * s->linesize + 8, srcY + 8, s->linesize, v->rnd);
+    } else if(!s->quarter_sample) { // hpel mc
         mx >>= 1;
         my >>= 1;
         dxy = ((my & 1) << 1) | (mx & 1);
@@ -913,10 +922,11 @@ static void vc1_mc_4mv_luma(VC1Context *v, int n)
 
     srcY += src_y * s->linesize + src_x;
 
-    if(v->rangeredfrm || (unsigned)src_x > s->h_edge_pos - (mx&3) - 16
-       || (unsigned)src_y > s->v_edge_pos - (my&3) - 16){
-        ff_emulated_edge_mc(s->edge_emu_buffer, srcY, s->linesize, 16+1, 16+1,
-                            src_x, src_y, s->h_edge_pos, s->v_edge_pos);
+    if(v->rangeredfrm || (unsigned)(src_x - s->mspel) > s->h_edge_pos - (mx&3) - 8 - s->mspel
+       || (unsigned)(src_y - s->mspel) > s->v_edge_pos - (my&3) - 8 - s->mspel){
+        srcY -= s->mspel * (1 + s->linesize);
+        ff_emulated_edge_mc(s->edge_emu_buffer, srcY, s->linesize, 9+s->mspel*2, 9+s->mspel*2,
+                            src_x - s->mspel, src_y - s->mspel, s->h_edge_pos, s->v_edge_pos);
         srcY = s->edge_emu_buffer;
         /* if we deal with range reduction we need to scale source blocks */
         if(v->rangeredfrm) {
@@ -924,14 +934,18 @@ static void vc1_mc_4mv_luma(VC1Context *v, int n)
             uint8_t *src;
 
             src = srcY;
-            for(j = 0; j < 17; j++) {
-                for(i = 0; i < 17; i++) src[i] = ((src[i] - 128) >> 1) + 128;
+            for(j = 0; j < 9 + s->mspel*2; j++) {
+                for(i = 0; i < 9 + s->mspel*2; i++) src[i] = ((src[i] - 128) >> 1) + 128;
                 src += s->linesize;
             }
         }
+        srcY += s->mspel * (1 + s->linesize);
     }
 
-    if(!s->quarter_sample) { // hpel mc
+    if(s->mspel) {
+        dxy = ((my & 3) << 2) | (mx & 3);
+        dsp->put_vc1_mspel_pixels_tab[dxy](s->dest[0] + off, srcY, s->linesize, v->rnd);
+    } else if(!s->quarter_sample) { // hpel mc
         mx >>= 1;
         my >>= 1;
         dxy = ((my & 1) << 1) | (mx & 1);
