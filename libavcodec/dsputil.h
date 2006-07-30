@@ -365,6 +365,18 @@ typedef struct DSPContext {
     void (*prefetch)(void *mem, int stride, int h);
 
     void (*shrink[4])(uint8_t *dst, int dst_wrap, const uint8_t *src, int src_wrap, int width, int height);
+
+    /* vc1 functions */
+    void (*vc1_inv_trans_8x8)(DCTELEM *b);
+    void (*vc1_inv_trans_8x4)(DCTELEM *b, int n);
+    void (*vc1_inv_trans_4x8)(DCTELEM *b, int n);
+    void (*vc1_inv_trans_4x4)(DCTELEM *b, int n);
+    void (*vc1_v_overlap)(uint8_t* src, int stride, int rnd);
+    void (*vc1_h_overlap)(uint8_t* src, int stride, int rnd);
+    /* put 8x8 block with bicubic interpolation and quarterpel precision
+     * last argument is actually round value instead of height
+     */
+    op_pixels_func put_vc1_mspel_pixels_tab[16];
 } DSPContext;
 
 void dsputil_static_init(void);
