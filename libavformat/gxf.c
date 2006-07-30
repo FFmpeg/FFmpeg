@@ -231,7 +231,7 @@ static int gxf_packet(AVFormatContext *s, AVPacket *pkt) {
         get_byte(pb); // flags
         get_byte(pb); // reserved
         // NOTE: there is also data length information in the
-        // field information, it might be better to take this int account
+        // field information, it might be better to take this into account
         // as well.
         ret = av_get_packet(pb, pkt, pkt_len);
         pkt->stream_index = get_sindex(s, track_id, track_type);
