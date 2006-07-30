@@ -76,4 +76,4 @@ unassigned TODO: (unordered)
 - movenc.c fix stts so that variable framerate files work
 - seeking regression test
 - regression tests for codecs which dont have an encoder (I+P frame bitstream in svn)
-
+- add support for using mplayers video filters to ffmpeg
