@@ -67,9 +67,9 @@ else
 	install $(INSTALLSTRIP) -m 755 $(SLIBNAME) \
 		$(shlibdir)/$(SLIBNAME_WITH_VERSION)
 	ln -sf $(SLIBNAME_WITH_VERSION) \
-		$(shlibdir)/$(SLIBNAME_WITH_MAJOR)
+	       $(shlibdir)/$(SLIBNAME_WITH_MAJOR)
 	ln -sf $(SLIBNAME_WITH_VERSION) \
-		$(shlibdir)/$(SLIBNAME)
+	       $(shlibdir)/$(SLIBNAME)
 endif
 
 install-lib-static: $(LIB)
@@ -89,8 +89,8 @@ ifeq ($(CONFIG_MINGW),yes)
 	-rm -f $(prefix)/$(SLIBNAME)
 else
 	-rm -f $(libdir)/$(SLIBNAME_WITH_MAJOR) \
-	      $(libdir)/$(SLIBNAME)            \
-	      $(libdir)/$(SLIBNAME_WITH_VERSION)
+	       $(libdir)/$(SLIBNAME)            \
+	       $(libdir)/$(SLIBNAME_WITH_VERSION)
 endif
 	-rm -f $(libdir)/$(LIB)
 
