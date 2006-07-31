@@ -314,7 +314,7 @@ static void vc1_inv_trans_4x4_c(DCTELEM block[64], int n)
 
 /** Filter used to interpolate fractional pel values
  */
-static always_inline uint8_t vc1_mspel_filter(const uint8_t *src, int stride, int mode, int r)
+static always_inline int vc1_mspel_filter(const uint8_t *src, int stride, int mode, int r)
 {
     switch(mode){
     case 0: //no shift
@@ -343,7 +343,7 @@ static void vc1_mspel_mc(uint8_t *dst, const uint8_t *src, int stride, int mode,
     tptr = tmp;
     for(j = 0; j < 11; j++) {
         for(i = 0; i < 8; i++)
-            tptr[i] = vc1_mspel_filter(src + i, 1, m, r);
+            tptr[i] = clip_uint8(vc1_mspel_filter(src + i, 1, m, r));
         src += stride;
         tptr += 8;
     }
@@ -353,7 +353,7 @@ static void vc1_mspel_mc(uint8_t *dst, const uint8_t *src, int stride, int mode,
     tptr = tmp + 8;
     for(j = 0; j < 8; j++) {
         for(i = 0; i < 8; i++)
-            dst[i] = vc1_mspel_filter(tptr + i, 8, m, r);
+            dst[i] = clip_uint8(vc1_mspel_filter(tptr + i, 8, m, r));
         dst += stride;
         tptr += 8;
     }
