@@ -210,6 +210,22 @@ extern const uint8_t dither_8x8_32[8][8];
 extern const uint8_t dither_8x8_73[8][8];
 extern const uint8_t dither_8x8_220[8][8];
 
+/* Used for ffmpeg --> MPlayer format name conversion */
+static const int fmt_name[PIX_FMT_NB] = {
+    [PIX_FMT_YUV420P] = IMGFMT_I420,   ///< Planar YUV 4:2:0 (1 Cr & Cb sample per 2x2 Y samples)
+    [PIX_FMT_YUV422] = IMGFMT_Y422,    
+    [PIX_FMT_RGB24] = IMGFMT_RGB24,     ///< Packed pixel, 3 bytes per pixel, RGBRGB...
+    [PIX_FMT_BGR24] = IMGFMT_BGR24,     ///< Packed pixel, 3 bytes per pixel, BGRBGR...
+    [PIX_FMT_YUV422P] = IMGFMT_422P,   ///< Planar YUV 4:2:2 (1 Cr & Cb sample per 2x1 Y samples)
+    [PIX_FMT_YUV444P] = IMGFMT_444P,   ///< Planar YUV 4:4:4 (1 Cr & Cb sample per 1x1 Y samples)
+    [PIX_FMT_RGBA32] = IMGFMT_RGB32,    ///< Packed pixel, 4 bytes per pixel, BGRABGRA..., stored in cpu endianness
+    [PIX_FMT_YUV410P] = IMGFMT_YVU9,   ///< Planar YUV 4:1:0 (1 Cr & Cb sample per 4x4 Y samples)
+    [PIX_FMT_YUV411P] = IMGFMT_411P,   ///< Planar YUV 4:1:1 (1 Cr & Cb sample per 4x1 Y samples)
+    [PIX_FMT_RGB565] = IMGFMT_RGB16,    ///< always stored in cpu endianness 
+    [PIX_FMT_RGB555] = IMGFMT_RGB15,    ///< always stored in cpu endianness, most significant bit to 1 
+    [PIX_FMT_UYVY422] = IMGFMT_UYVY,   ///< Packed pixel, Cb Y0 Cr Y1 
+};
+
 char *sws_format_name(int format)
 {
     static char fmt_name[64];
@@ -1873,6 +1889,12 @@ SwsContext *sws_getContext(int srcW, int srcH, int origSrcFormat, int dstW, int 
 	if(rgb15to16 == NULL) sws_rgb2rgb_init(flags);
 
 	/* avoid duplicate Formats, so we don't need to check to much */
+        if (origSrcFormat < PIX_FMT_NB) {
+            origSrcFormat = fmt_name[origSrcFormat];
+        }
+        if (origDstFormat < PIX_FMT_NB) {
+            origDstFormat = fmt_name[origDstFormat];
+        }
 	srcFormat = remove_dup_fourcc(origSrcFormat);
 	dstFormat = remove_dup_fourcc(origDstFormat);
 
