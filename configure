@@ -213,12 +213,16 @@ add_extralibs(){
     append extralibs "$@"
 }
 
+check_cmd(){
+    "$@" 2>&1 | tee -a $logfile | { ! grep -q .; }
+}
+
 check_cc(){
     log check_cc "$@"
     cat >$TMPC
     log_file $TMPC
     log $cc $CFLAGS "$@" -c -o $TMPO $TMPC
-    $cc $CFLAGS "$@" -c -o $TMPO $TMPC >>$logfile 2>&1
+    check_cmd $cc $CFLAGS "$@" -c -o $TMPO $TMPC
 }
 
 check_cpp(){
@@ -226,14 +230,14 @@ check_cpp(){
     cat >$TMPC
     log_file $TMPC
     log $cc $CFLAGS "$@" -E -o $TMPO $TMPC
-    $cc $CFLAGS "$@" -E -o $TMPO $TMPC >>$logfile 2>&1
+    check_cmd $cc $CFLAGS "$@" -E -o $TMPO $TMPC
 }
 
 check_ld(){
     log check_ld "$@"
     check_cc || return
     log $cc $LDFLAGS "$@" -o $TMPE $TMPO $extralibs
-    $cc $LDFLAGS "$@" -o $TMPE $TMPO $extralibs >>$logfile 2>&1
+    check_cmd $cc $LDFLAGS "$@" -o $TMPE $TMPO $extralibs
 }
 
 check_cflags(){
