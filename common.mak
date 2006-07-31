@@ -60,7 +60,7 @@ install: install-libs install-headers
 install-libs: $(INSTLIBTARGETS)
 
 install-lib-shared: $(SLIBNAME)
-	install -d "$(libdir)"
+	install -d "$(shlibdir)"
 ifeq ($(CONFIG_MINGW),yes)
 	install $(INSTALLSTRIP) -m 755 $(SLIBNAME) "$(prefix)"
 else
