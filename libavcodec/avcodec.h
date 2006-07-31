@@ -201,8 +201,6 @@ enum CodecID {
     CODEC_ID_TTA,
     CODEC_ID_SMACKAUDIO,
 
-    CODEC_ID_OGGTHEORA= 0x16000,
-
     /* subtitle codecs */
     CODEC_ID_DVD_SUBTITLE= 0x17000,
     CODEC_ID_DVB_SUBTITLE,
@@ -2186,7 +2184,6 @@ extern AVCodec mace6_decoder;
 extern AVCodec huffyuv_decoder;
 extern AVCodec ffvhuff_decoder;
 extern AVCodec oggvorbis_decoder;
-extern AVCodec oggtheora_decoder;
 extern AVCodec cyuv_decoder;
 extern AVCodec h264_decoder;
 extern AVCodec indeo3_decoder;

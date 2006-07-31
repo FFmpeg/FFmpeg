@@ -411,7 +411,6 @@ libgsm="no"
 mp3lame="no"
 libogg="no"
 vorbis="no"
-theora="no"
 faad="no"
 faadbin="no"
 faac="no"
@@ -909,14 +908,6 @@ EOF
     exit 1;
 fi
 
-if test "$theora" = "yes" ; then
-    if test "$libogg" = "no"; then
-        echo "libogg must be enabled to enable Theora."
-        fail="yes"
-        theora="no"
-    fi
-fi
-
 if test "$vorbis" = "yes" ; then
     if test "$libogg" = "no"; then
         echo "libogg must be enabled to enable Vorbis."
@@ -1256,7 +1247,6 @@ enabled libgsm  && require libgsm gsm.h gsm_create -lgsm
 enabled mp3lame && require LAME lame/lame.h lame_init -lmp3lame
 enabled vorbis  && require libvorbis vorbis/vorbisenc.h vorbis_info_init -lvorbis -lvorbisenc -logg
 enabled libogg  && require libogg ogg/ogg.h ogg_sync_init -logg
-enabled theora  && require libtheora theora/theora.h theora_info_init -ltheora
 enabled xvid    && require XviD xvid.h xvid_global -lxvidcore
 enabled x264    && require x264 x264.h x264_encoder_open -lx264
 enabled dc1394  && require libdc1394 libdc1394/dc1394_control.h dc1394_create_handle -ldc1394_control -lraw1394
@@ -1879,11 +1869,6 @@ fi
 if test "$vorbis" = "yes" ; then
   echo "#define CONFIG_LIBVORBIS 1" >> $TMPH
   echo "CONFIG_LIBVORBIS=yes" >> config.mak
-fi
-
-if test "$theora" = "yes" ; then
-  echo "#define CONFIG_LIBTHEORA 1" >> $TMPH
-  echo "CONFIG_LIBTHEORA=yes" >> config.mak
 fi
 
 if test "$faad" = "yes" ; then
