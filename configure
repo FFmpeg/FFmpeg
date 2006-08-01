@@ -214,7 +214,7 @@ add_extralibs(){
 }
 
 check_cmd(){
-    "$@" 2>&1 | tee -a $logfile | { ! grep -E -q -v '#warning|^In file'; }
+    "$@" >>$logfile 2>&1
 }
 
 check_cc(){
