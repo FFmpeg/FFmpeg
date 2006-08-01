@@ -17,6 +17,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 #include "avformat.h"
+#include "common.h"
 
 typedef enum {
     PKT_MAP = 0xbc,
@@ -25,6 +26,32 @@ typedef enum {
     PKT_FLT = 0xfc,
     PKT_UMF = 0xfd
 } pkt_type_t;
+
+typedef enum {
+    MAT_NAME = 0x40,
+    MAT_FIRST_FIELD = 0x41,
+    MAT_LAST_FIELD = 0x42,
+    MAT_MARK_IN = 0x43,
+    MAT_MARK_OUT = 0x44,
+    MAT_SIZE = 0x45
+} mat_tag_t;
+
+typedef enum {
+    TRACK_NAME = 0x4c,
+    TRACK_AUX = 0x4d,
+    TRACK_VER = 0x4e,
+    TRACK_MPG_AUX = 0x4f,
+    TRACK_FPS = 0x50,
+    TRACK_LINES = 0x51,
+    TRACK_FPF = 0x52
+} track_tag_t;
+
+typedef struct {
+    int64_t first_field;
+    int64_t last_field;
+    AVRational frames_per_second;
+    int32_t fields_per_frame;
+} st_info_t;
 
 /**
  * \brief parses a packet header, extracting type and length
@@ -147,11 +174,116 @@ static int get_sindex(AVFormatContext *s, int id, int format) {
     return s->nb_streams - 1;
 }
 
+/**
+ * \brief filters out interesting tags from material information.
+ * \param len lenght of tag section, will be adjusted to contain remaining bytes
+ * \param si struct to store collected information into
+ */
+static void gxf_material_tags(ByteIOContext *pb, int *len, st_info_t *si) {
+    si->first_field = AV_NOPTS_VALUE;
+    si->last_field = AV_NOPTS_VALUE;
+    while (*len >= 2) {
+        mat_tag_t tag = get_byte(pb);
+        int tlen = get_byte(pb);
+        *len -= 2;
+        if (tlen > *len)
+            return;
+        *len -= tlen;
+        if (tlen == 4) {
+            uint32_t value = get_be32(pb);
+            if (tag == MAT_FIRST_FIELD)
+                si->first_field = value;
+            else if (tag == MAT_LAST_FIELD)
+                si->last_field = value;
+        } else
+            url_fskip(pb, tlen);
+    }
+}
+
+/**
+ * \brief convert fps tag value to AVRational fps
+ * \param fps fps value from tag
+ * \return fps as AVRational, or 0 / 0 if unknown
+ */
+static AVRational fps_tag2avr(int32_t fps) {
+    extern const AVRational ff_frame_rate_tab[];
+    if (fps < 1 || fps > 9) fps = 9;
+    return ff_frame_rate_tab[9 - fps]; // values have opposite order
+}
+
+/**
+ * \brief convert UMF attributes flags to AVRational fps
+ * \param fps fps value from flags
+ * \return fps as AVRational, or 0 / 0 if unknown
+ */
+static AVRational fps_umf2avr(uint32_t flags) {
+    static const AVRational map[] = {{50, 1}, {60000, 1001}, {24, 1},
+        {25, 1}, {30000, 1001}};
+    int idx =  av_log2((flags & 0x7c0) >> 6);
+    return map[idx];
+}
+
+/**
+ * \brief filters out interesting tags from track information.
+ * \param len length of tag section, will be adjusted to contain remaining bytes
+ * \param si struct to store collected information into
+ */
+static void gxf_track_tags(ByteIOContext *pb, int *len, st_info_t *si) {
+    si->frames_per_second = (AVRational){0, 0};
+    si->fields_per_frame = 0;
+    while (*len >= 2) {
+        track_tag_t tag = get_byte(pb);
+        int tlen = get_byte(pb);
+        *len -= 2;
+        if (tlen > *len)
+            return;
+        *len -= tlen;
+        if (tlen == 4) {
+            uint32_t value = get_be32(pb);
+            if (tag == TRACK_FPS)
+                si->frames_per_second = fps_tag2avr(value);
+            else if (tag == TRACK_FPF && (value == 1 || value == 2))
+                si->fields_per_frame = value;
+        } else
+            url_fskip(pb, tlen);
+    }
+}
+
+/**
+ * \brief read index from FLT packet into stream 0 av_index
+ */
+static void gxf_read_index(AVFormatContext *s, int pkt_len) {
+    ByteIOContext *pb = &s->pb;
+    AVStream *st = s->streams[0];
+    uint32_t fields_per_map = get_le32(pb);
+    uint32_t map_cnt = get_le32(pb);
+    int i;
+    pkt_len -= 8;
+    if (map_cnt > 1000) {
+        av_log(s, AV_LOG_ERROR, "GXF: too many index entries %u (%x)\n", map_cnt, map_cnt);
+        map_cnt = 1000;
+    }
+    if (pkt_len < 4 * map_cnt) {
+        av_log(s, AV_LOG_ERROR, "GXF: invalid index length\n");
+        url_fskip(pb, pkt_len);
+        return;
+    }
+    pkt_len -= 4 * map_cnt;
+    av_add_index_entry(st, 0, 0, 0, 0, 0);
+    for (i = 0; i < map_cnt; i++)
+        av_add_index_entry(st, (uint64_t)get_le32(pb) * 1024,
+                           i * (uint64_t)fields_per_map + 1, 0, 0, 0);
+    url_fskip(pb, pkt_len);
+}
+
 static int gxf_header(AVFormatContext *s, AVFormatParameters *ap) {
     ByteIOContext *pb = &s->pb;
     pkt_type_t pkt_type;
     int map_len;
     int len;
+    AVRational main_timebase = {0, 0};
+    st_info_t si;
+    int i;
     if (!parse_packet_header(pb, &pkt_type, &map_len) || pkt_type != PKT_MAP) {
         av_log(s, AV_LOG_ERROR, "GXF: map packet not found\n");
         return 0;
@@ -168,6 +300,7 @@ static int gxf_header(AVFormatContext *s, AVFormatParameters *ap) {
         return 0;
     }
     map_len -= len;
+    gxf_material_tags(pb, &len, &si);
     url_fskip(pb, len);
     map_len -= 2;
     len = get_be16(pb); // length of track description
@@ -178,11 +311,14 @@ static int gxf_header(AVFormatContext *s, AVFormatParameters *ap) {
     map_len -= len;
     while (len > 0) {
         int track_type, track_id, track_len;
+        AVStream *st;
+        int idx;
         len -= 4;
         track_type = get_byte(pb);
         track_id = get_byte(pb);
         track_len = get_be16(pb);
         len -= track_len;
+        gxf_track_tags(pb, &track_len, &si);
         url_fskip(pb, track_len);
         if (!(track_type & 0x80)) {
            av_log(s, AV_LOG_ERROR, "GXF: invalid track type %x\n", track_type);
@@ -194,13 +330,107 @@ static int gxf_header(AVFormatContext *s, AVFormatParameters *ap) {
            continue;
         }
         track_id &= 0x3f;
-        get_sindex(s, track_id, track_type);
+        idx = get_sindex(s, track_id, track_type);
+        if (idx < 0) continue;
+        st = s->streams[idx];
+        if (!main_timebase.num || !main_timebase.den) {
+            main_timebase.num = si.frames_per_second.den;
+            main_timebase.den = si.frames_per_second.num * si.fields_per_frame;
+        }
+        st->start_time = si.first_field;
+        if (si.first_field != AV_NOPTS_VALUE && si.last_field != AV_NOPTS_VALUE)
+            st->duration = si.last_field - si.first_field;
     }
     if (len < 0)
         av_log(s, AV_LOG_ERROR, "GXF: invalid track description length specified\n");
     if (map_len)
         url_fskip(pb, map_len);
+    if (!parse_packet_header(pb, &pkt_type, &len)) {
+        av_log(s, AV_LOG_ERROR, "GXF: sync lost in header\n");
+        return -1;
+    }
+    if (pkt_type == PKT_FLT) {
+        gxf_read_index(s, len);
+        if (!parse_packet_header(pb, &pkt_type, &len)) {
+            av_log(s, AV_LOG_ERROR, "GXF: sync lost in header\n");
+            return -1;
+        }
+    }
+    if (pkt_type == PKT_UMF) {
+        if (len >= 9) {
+            AVRational fps;
+            len -= 9;
+            url_fskip(pb, 5);
+            fps = fps_umf2avr(get_le32(pb));
+            if (!main_timebase.num || !main_timebase.den) {
+                // this may not always be correct, but simply the best we can get
+                main_timebase.num = fps.den;
+                main_timebase.den = fps.num;
+            }
+        } else
+            av_log(s, AV_LOG_INFO, "GXF: UMF packet too short\n");
+    } else
+        av_log(s, AV_LOG_INFO, "GXF: UMF packet missing\n");
+    url_fskip(pb, len);
+    for (i = 0; i < s->nb_streams; i++) {
+        AVStream *st = s->streams[i];
+        if (main_timebase.num && main_timebase.den)
+            st->time_base = main_timebase;
+        else {
+            st->start_time = st->duration = AV_NOPTS_VALUE;
+        }
+    }
     return 0;
+}
+
+#define READ_ONE() \
+    { \
+        if (!max_interval-- || url_feof(pb)) \
+            goto out; \
+        tmp = tmp << 8 | get_byte(pb); \
+    }
+
+/**
+ * \brief resync the stream on the next media packet with specified properties
+ * \param max_interval how many bytes to search for matching packet at most
+ * \param track track id the media packet must belong to, -1 for any
+ * \param timestamp minimum timestamp (== field number) the packet must have, -1 for any
+ * \return timestamp of packet found
+ */
+static int64_t gxf_resync_media(AVFormatContext *s, uint64_t max_interval, int track, int timestamp) {
+    uint32_t tmp;
+    uint64_t last_pos;
+    uint64_t last_found_pos = 0;
+    int cur_track;
+    int64_t cur_timestamp = AV_NOPTS_VALUE;
+    int len;
+    ByteIOContext *pb = &s->pb;
+    pkt_type_t type;
+    tmp = 0xff;
+start:
+    while (tmp)
+        READ_ONE();
+    READ_ONE();
+    if (tmp != 1)
+        goto start;
+    last_pos = url_ftell(pb);
+    url_fseek(pb, -5, SEEK_CUR);
+    if (!parse_packet_header(pb, &type, &len) || type != PKT_MEDIA) {
+        url_fseek(pb, last_pos, SEEK_SET);
+        goto start;
+    }
+    get_byte(pb);
+    cur_track = get_byte(pb);
+    cur_timestamp = get_be32(pb);
+    last_found_pos = url_ftell(pb) - 16 - 6;
+    if ((track >= 0 && track != cur_track) || (timestamp >= 0 && timestamp > cur_timestamp)) {
+        url_fseek(pb, last_pos, SEEK_SET);
+        goto start;
+    }
+out:
+    if (last_found_pos)
+        url_fseek(pb, last_found_pos, SEEK_SET);
+    return cur_timestamp;
 }
 
 static int gxf_packet(AVFormatContext *s, AVPacket *pkt) {
@@ -209,10 +439,15 @@ static int gxf_packet(AVFormatContext *s, AVPacket *pkt) {
     int pkt_len;
     while (!url_feof(pb)) {
         int track_type, track_id, ret;
+        int field_nr;
         if (!parse_packet_header(pb, &pkt_type, &pkt_len)) {
             if (!url_feof(pb))
                 av_log(s, AV_LOG_ERROR, "GXF: sync lost\n");
             return -1;
+        }
+        if (pkt_type == PKT_FLT) {
+            gxf_read_index(s, pkt_len);
+            continue;
         }
         if (pkt_type != PKT_MEDIA) {
             url_fskip(pb, pkt_len);
@@ -225,7 +460,7 @@ static int gxf_packet(AVFormatContext *s, AVPacket *pkt) {
         pkt_len -= 16;
         track_type = get_byte(pb);
         track_id = get_byte(pb);
-        get_be32(pb); // field number
+        field_nr = get_be32(pb);
         get_be32(pb); // field information
         get_be32(pb); // "timeline" field number
         get_byte(pb); // flags
@@ -235,9 +470,43 @@ static int gxf_packet(AVFormatContext *s, AVPacket *pkt) {
         // as well.
         ret = av_get_packet(pb, pkt, pkt_len);
         pkt->stream_index = get_sindex(s, track_id, track_type);
+        pkt->pts = field_nr;
         return ret;
     }
     return AVERROR_IO;
+}
+
+static int gxf_seek(AVFormatContext *s, int stream_index, int64_t timestamp, int flags) {
+    uint64_t pos;
+    uint64_t maxlen = 100 * 1024 * 1024;
+    AVStream *st = s->streams[0];
+    int64_t start_time = s->streams[stream_index]->start_time;
+    int64_t found;
+    int idx;
+    if (timestamp < start_time) timestamp = start_time;
+    idx = av_index_search_timestamp(st, timestamp - start_time,
+                                    AVSEEK_FLAG_ANY | AVSEEK_FLAG_BACKWARD);
+    if (idx < 0)
+        return -1;
+    pos = st->index_entries[idx].pos;
+    if (idx < st->nb_index_entries - 2)
+        maxlen = st->index_entries[idx + 2].pos - pos;
+    maxlen = FFMAX(maxlen, 200 * 1024);
+    url_fseek(&s->pb, pos, SEEK_SET);
+    found = gxf_resync_media(s, maxlen, -1, timestamp);
+    if (ABS(found - timestamp) > 4)
+        return -1;
+    return 0;
+}
+
+static int64_t gxf_read_timestamp(AVFormatContext *s, int stream_index,
+                                  int64_t *pos, int64_t pos_limit) {
+    ByteIOContext *pb = &s->pb;
+    int64_t res;
+    url_fseek(pb, *pos, SEEK_SET);
+    res = gxf_resync_media(s, pos_limit - *pos, -1, -1);
+    *pos = url_ftell(pb);
+    return res;
 }
 
 AVInputFormat gxf_demuxer = {
@@ -248,5 +517,6 @@ AVInputFormat gxf_demuxer = {
     gxf_header,
     gxf_packet,
     NULL,
-    NULL,
+    gxf_seek,
+    gxf_read_timestamp,
 };
