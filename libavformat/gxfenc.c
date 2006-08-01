@@ -724,14 +724,13 @@ static int gxf_write_media_packet(ByteIOContext *pb, GXFContext *ctx, AVPacket *
     gxf_write_packet_header(pb, PKT_MEDIA);
     if (sc->codec->codec_id == CODEC_ID_MPEG2VIDEO && pkt->size % 4) /* MPEG-2 frames must be padded */
         padding = 4 - pkt->size % 4;
+    else if (sc->codec->codec_type == CODEC_TYPE_AUDIO)
+        padding = GXF_AUDIO_PACKET_SIZE - pkt->size;
     gxf_write_media_preamble(pb, ctx, pkt, pkt->size + padding);
-    if (sc->codec->codec_type == CODEC_TYPE_AUDIO)
-        put_buffer(pb, pkt->data, GXF_AUDIO_PACKET_SIZE);
-    else {
-        ctx->field_number += 2;
-        put_buffer(pb, pkt->data, pkt->size);
-    }
+    put_buffer(pb, pkt->data, pkt->size);
     gxf_write_padding(pb, padding);
+    if (sc->codec->codec_type == CODEC_TYPE_VIDEO)
+        ctx->field_number += 2;
     return updatePacketSize(pb, pos);
 }
 
@@ -793,11 +792,10 @@ static int gxf_interleave_packet(AVFormatContext *s, AVPacket *out, AVPacket *pk
             if (sc->codec->codec_type == CODEC_TYPE_AUDIO &&
                 (flush || fifo_size(&sc->audio_buffer, NULL) >= GXF_AUDIO_PACKET_SIZE)) {
                 int size = flush ? fifo_size(&sc->audio_buffer, NULL) : GXF_AUDIO_PACKET_SIZE;
-                av_new_packet(out, GXF_AUDIO_PACKET_SIZE);
+                av_new_packet(out, size);
                 fifo_read(&sc->audio_buffer, out->data, size, NULL);
                 gxf->audio_written++;
                 out->stream_index = i;
-                out->size = size;
                 return 1;
             }
         }
