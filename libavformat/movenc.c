@@ -20,7 +20,7 @@
 #include "avformat.h"
 #include "riff.h"
 #include "avio.h"
-#include "mov.h"
+#include "isom.h"
 
 #undef NDEBUG
 #include <assert.h>
