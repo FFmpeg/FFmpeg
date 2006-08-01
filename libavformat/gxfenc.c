@@ -117,7 +117,7 @@ static int gxf_find_lines_index(GXFStreamContext *ctx)
 
 static void gxf_write_padding(ByteIOContext *pb, offset_t to_pad)
 {
-    while (to_pad--) {
+    for (; to_pad > 0; to_pad--) {
         put_byte(pb, 0);
     }
 }
