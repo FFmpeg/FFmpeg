@@ -919,14 +919,19 @@ static int mxf_read_close(AVFormatContext *s)
 }
 
 static int mxf_probe(AVProbeData *p) {
-    /* KLV packet describing MXF header partition pack */
+    uint8_t *bufp = p->buf;
+    uint8_t *end = p->buf + p->buf_size;
+
     if (p->buf_size < sizeof(mxf_header_partition_pack_key))
         return 0;
 
-    if (IS_KLV_KEY(p->buf, mxf_header_partition_pack_key))
-        return AVPROBE_SCORE_MAX;
-    else
-        return 0;
+    /* Must skip Run-In Sequence and search for MXF header partition pack key SMPTE 377M 5.5 */
+    end -= sizeof(mxf_header_partition_pack_key);
+    for (; bufp < end; bufp++) {
+        if (IS_KLV_KEY(bufp, mxf_header_partition_pack_key))
+            return AVPROBE_SCORE_MAX;
+    }
+    return 0;
 }
 
 
