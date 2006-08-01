@@ -586,6 +586,7 @@ static int mov_read_esds(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
         sc->esds.avg_bitrate = get_be32(pb);
 
         st->codec->codec_id= codec_get_id(ff_mov_obj_type, sc->esds.object_type_id);
+        dprintf("esds object type id %d\n", sc->esds.object_type_id);
         len = mov_mp4_read_descr(pb, &tag);
         if (tag == MP4DecSpecificDescrTag) {
             dprintf("Specific MPEG4 header len=%d\n", len);
@@ -1056,6 +1057,7 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
             get_be32(pb); /* vendor */
 
             st->codec->channels = get_be16(pb);             /* channel count */
+            dprintf("audio channels %d\n", st->codec->channels);
             st->codec->bits_per_sample = get_be16(pb);      /* sample size */
             /* do we need to force to 16 for AMR ? */
 
