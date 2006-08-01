@@ -17,7 +17,7 @@ extern "C" {
 #define AV_STRINGIFY(s)         AV_TOSTRING(s)
 #define AV_TOSTRING(s) #s
 
-#define LIBAVCODEC_VERSION_INT  ((51<<16)+(10<<8)+0)
+#define LIBAVCODEC_VERSION_INT  ((51<<16)+(11<<8)+0)
 #define LIBAVCODEC_VERSION      51.11.0
 #define LIBAVCODEC_BUILD        LIBAVCODEC_VERSION_INT
 
