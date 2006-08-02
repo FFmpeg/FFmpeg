@@ -34,8 +34,8 @@
  * Search for Descriptors (Picture, Sound) which contains codec info and parameters.
  * Assign Descriptors to correct Tracks.
  *
- * Metadata reading functions read Local Tags, get InstanceUID(0x3C0A) and then resolve Strong Reference from another object.
- * Returns -1 if Strong Reference could not be resolved.
+ * Metadata reading functions read Local Tags, get InstanceUID(0x3C0A) then add MetaDataSet to MXFContext.
+ * Metadata parsing resolves Strong References to objects.
  *
  * Simple demuxer, only OP1A supported and some files might not work at all.
  * Only tracks with associated descriptors will be decoded. "Highly Desirable" SMPTE 377M D.1
@@ -48,30 +48,32 @@
 
 typedef uint8_t UID[16];
 
-enum MXFPackageType {
+enum MXFMetadataSetType {
     MaterialPackage,
     SourcePackage,
-};
-
-enum MXFStructuralComponentType {
-    Timecode,
     SourceClip,
+    TimecodeComponent,
+    Sequence,
+    MultipleDescriptor,
+    Descriptor,
+    Track,
+    EssenceContainerData,
 };
 
 typedef struct MXFStructuralComponent {
     UID uid;
+    enum MXFMetadataSetType type;
     UID source_package_uid;
     UID data_definition_ul;
     int64_t duration;
     int64_t start_position;
     int source_track_id;
-    enum MXFStructuralComponentType type;
 } MXFStructuralComponent;
 
 typedef struct MXFSequence {
     UID uid;
+    enum MXFMetadataSetType type;
     UID data_definition_ul;
-    MXFStructuralComponent **structural_components;
     UID *structural_components_refs;
     int structural_components_count;
     int64_t duration;
@@ -79,6 +81,7 @@ typedef struct MXFSequence {
 
 typedef struct MXFTrack {
     UID uid;
+    enum MXFMetadataSetType type;
     MXFSequence *sequence; /* mandatory, and only one */
     UID sequence_ref;
     int track_id;
@@ -88,6 +91,7 @@ typedef struct MXFTrack {
 
 typedef struct MXFDescriptor {
     UID uid;
+    enum MXFMetadataSetType type;
     UID essence_container_ul;
     UID essence_codec_ul;
     AVRational sample_rate;
@@ -96,7 +100,6 @@ typedef struct MXFDescriptor {
     int height;
     int channels;
     int bits_per_sample;
-    struct MXFDescriptor **sub_descriptors;
     UID *sub_descriptors_refs;
     int sub_descriptors_count;
     int linked_track_id;
@@ -104,31 +107,36 @@ typedef struct MXFDescriptor {
 
 typedef struct MXFPackage {
     UID uid;
+    enum MXFMetadataSetType type;
     UID package_uid;
-    MXFTrack **tracks;
     UID *tracks_refs;
     int tracks_count;
     MXFDescriptor *descriptor; /* only one */
     UID descriptor_ref;
-    enum MXFPackageType type;
 } MXFPackage;
 
 typedef struct MXFEssenceContainerData {
     UID uid;
+    enum MXFMetadataSetType type;
     UID linked_package_uid;
 } MXFEssenceContainerData;
 
+typedef struct {
+    UID uid;
+    enum MXFMetadataSetType type;
+} MXFMetadataSet;
+
 typedef struct MXFContext {
-    MXFPackage **packages;
     UID *packages_refs;
     int packages_count;
-    MXFEssenceContainerData **essence_container_data_sets;
     UID *essence_container_data_sets_refs;
     int essence_container_data_sets_count;
     UID *essence_containers_uls; /* Universal Labels SMPTE RP224 */
     int essence_containers_uls_count;
     UID operational_pattern_ul;
     UID content_storage_uid;
+    MXFMetadataSet **metadata_sets;
+    int metadata_sets_count;
     AVFormatContext *fc;
 } MXFContext;
 
@@ -219,6 +227,14 @@ static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
     return AVERROR_IO;
 }
 
+static int mxf_add_metadata_set(MXFContext *mxf, void *metadata_set)
+{
+    mxf->metadata_sets = av_realloc(mxf->metadata_sets, (mxf->metadata_sets_count + 1) * sizeof(*mxf->metadata_sets));
+    mxf->metadata_sets[mxf->metadata_sets_count] = metadata_set;
+    mxf->metadata_sets_count++;
+    return 0;
+}
+
 static int mxf_read_metadata_preface(MXFContext *mxf, KLVPacket *klv)
 {
     ByteIOContext *pb = &mxf->fc->pb;
@@ -264,21 +280,17 @@ static int mxf_read_metadata_content_storage(MXFContext *mxf, KLVPacket *klv)
         switch (tag) {
         case 0x1901:
             mxf->packages_count = get_be32(pb);
-            if (mxf->packages_count >= UINT_MAX / sizeof(UID) ||
-                mxf->packages_count >= UINT_MAX / sizeof(*mxf->packages))
+            if (mxf->packages_count >= UINT_MAX / sizeof(UID))
                 return -1;
             mxf->packages_refs = av_malloc(mxf->packages_count * sizeof(UID));
-            mxf->packages = av_mallocz(mxf->packages_count * sizeof(*mxf->packages));
             url_fskip(pb, 4); /* useless size of objects, always 16 according to specs */
             get_buffer(pb, mxf->packages_refs, mxf->packages_count * sizeof(UID));
             break;
         case 0x1902:
             mxf->essence_container_data_sets_count = get_be32(pb);
-            if (mxf->essence_container_data_sets_count >= UINT_MAX / sizeof(UID) ||
-                mxf->essence_container_data_sets_count >= UINT_MAX / sizeof(*mxf->essence_container_data_sets))
+            if (mxf->essence_container_data_sets_count >= UINT_MAX / sizeof(UID))
                 return -1;
             mxf->essence_container_data_sets_refs = av_malloc(mxf->essence_container_data_sets_count * sizeof(UID));
-            mxf->essence_container_data_sets = av_mallocz(mxf->essence_container_data_sets_count * sizeof(*mxf->essence_container_data_sets));
             url_fskip(pb, 4); /* useless size of objects, always 16 according to specs */
             get_buffer(pb, mxf->essence_container_data_sets_refs, mxf->essence_container_data_sets_count * sizeof(UID));
             break;
@@ -295,9 +307,7 @@ static int mxf_read_metadata_source_clip(MXFContext *mxf, KLVPacket *klv)
     ByteIOContext *pb = &mxf->fc->pb;
     MXFStructuralComponent *source_clip = av_mallocz(sizeof(*source_clip));
     int bytes_read = 0;
-    int i, j, k;
 
-    source_clip->type = SourceClip;
     while (bytes_read < klv->length) {
         int tag = get_be16(pb);
         int size = get_be16(pb); /* SMPTE 336M Table 8 KLV specified length, 0x53 */
@@ -326,21 +336,8 @@ static int mxf_read_metadata_source_clip(MXFContext *mxf, KLVPacket *klv)
         }
         bytes_read += size + 4;
     }
-    for (i = 0; i < mxf->packages_count; i++) {
-        if (mxf->packages[i]) {
-            for (j = 0; j < mxf->packages[i]->tracks_count; j++) {
-                if (mxf->packages[i]->tracks[j] && mxf->packages[i]->tracks[j]->sequence) {
-                    for (k = 0; k < mxf->packages[i]->tracks[j]->sequence->structural_components_count; k++) {
-                        if (!memcmp(mxf->packages[i]->tracks[j]->sequence->structural_components_refs[k], source_clip->uid, 16)) {
-                            mxf->packages[i]->tracks[j]->sequence->structural_components[k] = source_clip;
-                            return 0;
-                        }
-                    }
-                }
-            }
-        }
-    }
-    return -1;
+    source_clip->type = SourceClip;
+    return mxf_add_metadata_set(mxf, source_clip);
 }
 
 static int mxf_read_metadata_material_package(MXFContext *mxf, KLVPacket *klv)
@@ -348,9 +345,7 @@ static int mxf_read_metadata_material_package(MXFContext *mxf, KLVPacket *klv)
     ByteIOContext *pb = &mxf->fc->pb;
     MXFPackage *package = av_mallocz(sizeof(*package));
     int bytes_read = 0;
-    int i;
 
-    package->type = MaterialPackage;
     while (bytes_read < klv->length) {
         int tag = get_be16(pb);
         int size = get_be16(pb); /* KLV specified by 0x53 */
@@ -361,11 +356,9 @@ static int mxf_read_metadata_material_package(MXFContext *mxf, KLVPacket *klv)
             break;
         case 0x4403:
             package->tracks_count = get_be32(pb);
-            if (package->tracks_count >= UINT_MAX / sizeof(UID) ||
-                package->tracks_count >= UINT_MAX / sizeof(*package->tracks))
+            if (package->tracks_count >= UINT_MAX / sizeof(UID))
                 return -1;
             package->tracks_refs = av_malloc(package->tracks_count * sizeof(UID));
-            package->tracks = av_mallocz(package->tracks_count * sizeof(*package->tracks));
             url_fskip(pb, 4); /* useless size of objects, always 16 according to specs */
             get_buffer(pb, package->tracks_refs, package->tracks_count * sizeof(UID));
             break;
@@ -374,13 +367,8 @@ static int mxf_read_metadata_material_package(MXFContext *mxf, KLVPacket *klv)
         }
         bytes_read += size + 4;
     }
-    for (i = 0; i < mxf->packages_count; i++) {
-        if (!memcmp(mxf->packages_refs[i], package->uid, 16)) {
-            mxf->packages[i] = package;
-            return 0;
-        }
-    }
-    return -1;
+    package->type = MaterialPackage;
+    return mxf_add_metadata_set(mxf, package);
 }
 
 static int mxf_read_metadata_track(MXFContext *mxf, KLVPacket *klv)
@@ -388,7 +376,6 @@ static int mxf_read_metadata_track(MXFContext *mxf, KLVPacket *klv)
     ByteIOContext *pb = &mxf->fc->pb;
     MXFTrack *track = av_mallocz(sizeof(*track));
     int bytes_read = 0;
-    int i, j;
 
     while (bytes_read < klv->length) {
         int tag = get_be16(pb);
@@ -417,17 +404,8 @@ static int mxf_read_metadata_track(MXFContext *mxf, KLVPacket *klv)
         }
         bytes_read += size + 4;
     }
-    for (i = 0; i < mxf->packages_count; i++) {
-        if (mxf->packages[i]) {
-            for (j = 0; j < mxf->packages[i]->tracks_count; j++) {
-                if (!memcmp(mxf->packages[i]->tracks_refs[j], track->uid, 16)) {
-                    mxf->packages[i]->tracks[j] = track;
-                    return 0;
-                }
-            }
-        }
-    }
-    return -1;
+    track->type = Track;
+    return mxf_add_metadata_set(mxf, track);
 }
 
 static int mxf_read_metadata_sequence(MXFContext *mxf, KLVPacket *klv)
@@ -435,7 +413,6 @@ static int mxf_read_metadata_sequence(MXFContext *mxf, KLVPacket *klv)
     ByteIOContext *pb = &mxf->fc->pb;
     MXFSequence *sequence = av_mallocz(sizeof(*sequence));
     int bytes_read = 0;
-    int i, j;
 
     while (bytes_read < klv->length) {
         int tag = get_be16(pb);
@@ -454,11 +431,9 @@ static int mxf_read_metadata_sequence(MXFContext *mxf, KLVPacket *klv)
             break;
         case 0x1001:
             sequence->structural_components_count = get_be32(pb);
-            if (sequence->structural_components_count >= UINT_MAX / sizeof(UID) ||
-                sequence->structural_components_count >= UINT_MAX / sizeof(*sequence->structural_components))
+            if (sequence->structural_components_count >= UINT_MAX / sizeof(UID))
                 return -1;
             sequence->structural_components_refs = av_malloc(sequence->structural_components_count * sizeof(UID));
-            sequence->structural_components = av_mallocz(sequence->structural_components_count * sizeof(*sequence->structural_components));
             url_fskip(pb, 4); /* useless size of objects, always 16 according to specs */
             get_buffer(pb, sequence->structural_components_refs, sequence->structural_components_count * sizeof(UID));
             break;
@@ -467,19 +442,8 @@ static int mxf_read_metadata_sequence(MXFContext *mxf, KLVPacket *klv)
         }
         bytes_read += size + 4;
     }
-    for (i = 0; i < mxf->packages_count; i++) {
-        if (mxf->packages[i]) {
-            for (j = 0; j < mxf->packages[i]->tracks_count; j++) {
-                if (mxf->packages[i]->tracks[j]) {
-                    if (!memcmp(mxf->packages[i]->tracks[j]->sequence_ref, sequence->uid, 16)) {
-                        mxf->packages[i]->tracks[j]->sequence = sequence;
-                        return 0;
-                    }
-                }
-            }
-        }
-    }
-    return -1;
+    sequence->type = Sequence;
+    return mxf_add_metadata_set(mxf, sequence);
 }
 
 static int mxf_read_metadata_source_package(MXFContext *mxf, KLVPacket *klv)
@@ -487,9 +451,7 @@ static int mxf_read_metadata_source_package(MXFContext *mxf, KLVPacket *klv)
     ByteIOContext *pb = &mxf->fc->pb;
     MXFPackage *package = av_mallocz(sizeof(*package));
     int bytes_read = 0;
-    int i;
 
-    package->type = SourcePackage;
     while (bytes_read < klv->length) {
         int tag = get_be16(pb);
         int size = get_be16(pb); /* KLV specified by 0x53 */
@@ -501,11 +463,9 @@ static int mxf_read_metadata_source_package(MXFContext *mxf, KLVPacket *klv)
             break;
         case 0x4403:
             package->tracks_count = get_be32(pb);
-            if (package->tracks_count >= UINT_MAX / sizeof(UID) ||
-                package->tracks_count >= UINT_MAX / sizeof(*package->tracks))
+            if (package->tracks_count >= UINT_MAX / sizeof(UID))
                 return -1;
             package->tracks_refs = av_malloc(package->tracks_count * sizeof(UID));
-            package->tracks = av_mallocz(package->tracks_count * sizeof(*package->tracks));
             url_fskip(pb, 4); /* useless size of objects, always 16 according to specs */
             get_buffer(pb, package->tracks_refs, package->tracks_count * sizeof(UID));
             break;
@@ -522,13 +482,8 @@ static int mxf_read_metadata_source_package(MXFContext *mxf, KLVPacket *klv)
         }
         bytes_read += size + 4;
     }
-    for (i = 0; i < mxf->packages_count; i++) {
-        if (!memcmp(mxf->packages_refs[i], package->uid, 16)) {
-            mxf->packages[i] = package;
-            return 0;
-        }
-    }
-    return -1;
+    package->type = SourcePackage;
+    return mxf_add_metadata_set(mxf, package);
 }
 
 static int mxf_read_metadata_multiple_descriptor(MXFContext *mxf, KLVPacket *klv)
@@ -536,7 +491,6 @@ static int mxf_read_metadata_multiple_descriptor(MXFContext *mxf, KLVPacket *klv
     ByteIOContext *pb = &mxf->fc->pb;
     MXFDescriptor *descriptor = av_mallocz(sizeof(*descriptor));
     int bytes_read = 0;
-    int i;
 
     while (bytes_read < klv->length) {
         int tag = get_be16(pb);
@@ -549,11 +503,9 @@ static int mxf_read_metadata_multiple_descriptor(MXFContext *mxf, KLVPacket *klv
             break;
         case 0x3F01:
             descriptor->sub_descriptors_count = get_be32(pb);
-            if (descriptor->sub_descriptors_count >= UINT_MAX / sizeof(UID) ||
-                descriptor->sub_descriptors_count >= UINT_MAX / sizeof(*descriptor->sub_descriptors))
+            if (descriptor->sub_descriptors_count >= UINT_MAX / sizeof(UID))
                 return -1;
             descriptor->sub_descriptors_refs = av_malloc(descriptor->sub_descriptors_count * sizeof(UID));
-            descriptor->sub_descriptors = av_mallocz(descriptor->sub_descriptors_count * sizeof(*descriptor->sub_descriptors));
             url_fskip(pb, 4); /* useless size of objects, always 16 according to specs */
             get_buffer(pb, descriptor->sub_descriptors_refs, descriptor->sub_descriptors_count * sizeof(UID));
             break;
@@ -562,15 +514,8 @@ static int mxf_read_metadata_multiple_descriptor(MXFContext *mxf, KLVPacket *klv
         }
         bytes_read += size + 4;
     }
-    for (i = 0; i < mxf->packages_count; i++) {
-        if (mxf->packages[i]) {
-            if (!memcmp(mxf->packages[i]->descriptor_ref, descriptor->uid, 16)) {
-                mxf->packages[i]->descriptor = descriptor;
-                return 0;
-            }
-        }
-    }
-    return -1;
+    descriptor->type = MultipleDescriptor;
+    return mxf_add_metadata_set(mxf, descriptor);
 }
 
 static void mxf_read_metadata_pixel_layout(ByteIOContext *pb, MXFDescriptor *descriptor)
@@ -601,7 +546,6 @@ static int mxf_read_metadata_generic_descriptor(MXFContext *mxf, KLVPacket *klv)
     ByteIOContext *pb = &mxf->fc->pb;
     MXFDescriptor *descriptor = av_mallocz(sizeof(*descriptor));
     int bytes_read = 0;
-    int i, j;
 
     while (bytes_read < klv->length) {
         int tag = get_be16(pb);
@@ -652,22 +596,8 @@ static int mxf_read_metadata_generic_descriptor(MXFContext *mxf, KLVPacket *klv)
         }
         bytes_read += size + 4;
     }
-    for (i = 0; i < mxf->packages_count; i++) {
-        if (mxf->packages[i]) {
-            if (!memcmp(mxf->packages[i]->descriptor_ref, descriptor->uid, 16)) {
-                mxf->packages[i]->descriptor = descriptor;
-                return 0;
-            } else if (mxf->packages[i]->descriptor) { /* MultipleDescriptor */
-                for (j = 0; j < mxf->packages[i]->descriptor->sub_descriptors_count; j++) {
-                    if (!memcmp(mxf->packages[i]->descriptor->sub_descriptors_refs[j], descriptor->uid, 16)) {
-                        mxf->packages[i]->descriptor->sub_descriptors[j] = descriptor;
-                        return 0;
-                    }
-                }
-            }
-        }
-    }
-    return -1;
+    descriptor->type = Descriptor;
+    return mxf_add_metadata_set(mxf, descriptor);
 }
 
 /* SMPTE RP224 http://www.smpte-ra.org/mdd/index.html */
@@ -712,16 +642,36 @@ static enum CodecID mxf_get_codec_id(const MXFCodecUL *uls, UID *uid)
     return CODEC_ID_NONE;
 }
 
+static void *mxf_resolve_strong_ref(MXFContext *mxf, UID *strong_ref)
+{
+    int i;
+
+    if (!strong_ref)
+        return NULL;
+    for (i = 0; i < mxf->metadata_sets_count; i++) {
+        if (!memcmp(*strong_ref, mxf->metadata_sets[i]->uid, 16)) {
+            return mxf->metadata_sets[i];
+        }
+    }
+    return NULL;
+}
+
 static int mxf_parse_structural_metadata(MXFContext *mxf)
 {
     MXFPackage *material_package = NULL;
     MXFPackage *source_package = NULL;
+    MXFPackage *temp_package = NULL;
     int i, j, k;
 
+    dprintf("metadata sets count %d\n", mxf->metadata_sets_count);
     /* TODO: handle multiple material packages (OP3x) */
     for (i = 0; i < mxf->packages_count; i++) {
-        if (mxf->packages[i]->type == MaterialPackage) {
-            material_package = mxf->packages[i];
+        if (!(temp_package = mxf_resolve_strong_ref(mxf, &mxf->packages_refs[i]))) {
+            av_log(mxf->fc, AV_LOG_ERROR, "could not resolve package strong ref\n");
+            return -1;
+        }
+        if (temp_package->type == MaterialPackage) {
+            material_package = temp_package;
             break;
         }
     }
@@ -731,22 +681,37 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
     }
 
     for (i = 0; i < material_package->tracks_count; i++) {
-        MXFTrack *material_track = material_package->tracks[i];
+        MXFTrack *material_track = NULL;
         MXFTrack *source_track = NULL;
+        MXFTrack *temp_track = NULL;
         MXFDescriptor *descriptor = NULL;
         MXFStructuralComponent *component = NULL;
         AVStream *st;
 
+        if (!(material_track = mxf_resolve_strong_ref(mxf, &material_package->tracks_refs[i]))) {
+            av_log(mxf->fc, AV_LOG_ERROR, "could not resolve material track strong ref\n");
+            continue;
+        }
+
+        if (!(material_track->sequence = mxf_resolve_strong_ref(mxf, &material_track->sequence_ref))) {
+            av_log(mxf->fc, AV_LOG_ERROR, "could not resolve material track sequence strong ref\n");
+            return -1;
+        }
+
         /* TODO: handle multiple source clips */
         for (j = 0; j < material_track->sequence->structural_components_count; j++) {
-            component = material_track->sequence->structural_components[j];
             /* TODO: handle timecode component */
+            component = mxf_resolve_strong_ref(mxf, &material_track->sequence->structural_components_refs[j]);
             if (!component || component->type != SourceClip)
                 continue;
 
             for (k = 0; k < mxf->packages_count; k++) {
-                if (!memcmp(mxf->packages[k]->package_uid, component->source_package_uid, 16)) {
-                    source_package = mxf->packages[k];
+                if (!(temp_package = mxf_resolve_strong_ref(mxf, &mxf->packages_refs[k]))) {
+                    av_log(mxf->fc, AV_LOG_ERROR, "could not resolve source track strong ref\n");
+                    return -1;
+                }
+                if (!memcmp(temp_package->package_uid, component->source_package_uid, 16)) {
+                    source_package = temp_package;
                     break;
                 }
             }
@@ -755,8 +720,12 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
                 break;
             }
             for (k = 0; k < source_package->tracks_count; k++) {
-                if (source_package->tracks[k]->track_id == component->source_track_id) {
-                    source_track = source_package->tracks[k];
+                if (!(temp_track = mxf_resolve_strong_ref(mxf, &source_package->tracks_refs[k]))) {
+                    av_log(mxf->fc, AV_LOG_ERROR, "could not resolve source track strong ref\n");
+                    return -1;
+                }
+                if (temp_track->track_id == component->source_track_id) {
+                    source_track = temp_track;
                     break;
                 }
             }
@@ -775,6 +744,12 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
             st->duration = AV_NOPTS_VALUE;
         st->start_time = component->start_position;
         av_set_pts_info(st, 64, material_track->edit_rate.num, material_track->edit_rate.den);
+
+        if (!(source_track->sequence = mxf_resolve_strong_ref(mxf, &source_track->sequence_ref))) {
+            av_log(mxf->fc, AV_LOG_ERROR, "could not resolve source track sequence strong ref\n");
+            return -1;
+        }
+
 #ifdef DEBUG
         PRINT_KEY(source_track->sequence->data_definition_ul);
 #endif
@@ -785,19 +760,23 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
         else
             st->codec->codec_type = CODEC_TYPE_DATA;
 
+        source_package->descriptor = mxf_resolve_strong_ref(mxf, &source_package->descriptor_ref);
         if (source_package->descriptor) {
-            if (source_package->descriptor->sub_descriptors_count > 0) { /* SourcePackage has MultipleDescriptor */
+            if (source_package->descriptor->type == MultipleDescriptor) {
                 for (j = 0; j < source_package->descriptor->sub_descriptors_count; j++) {
-                    if (source_package->descriptor->sub_descriptors[j]) {
-                        if (source_package->descriptor->sub_descriptors[j]->linked_track_id == source_track->track_id) {
-                            descriptor = source_package->descriptor->sub_descriptors[j];
-                            break;
-                        }
+                    MXFDescriptor *sub_descriptor = mxf_resolve_strong_ref(mxf, &source_package->descriptor->sub_descriptors_refs[j]);
+
+                    if (!sub_descriptor) {
+                        av_log(mxf->fc, AV_LOG_ERROR, "could not resolve sub descriptor strong ref\n");
+                        continue;
+                    }
+                    if (sub_descriptor->linked_track_id == source_track->track_id) {
+                        descriptor = sub_descriptor;
+                        break;
                     }
                 }
-            } else {
+            } else
                 descriptor = source_package->descriptor;
-            }
         }
         if (!descriptor) {
             av_log(mxf->fc, AV_LOG_INFO, "source track %d: stream %d, no descriptor found\n", source_track->track_id, st->index);
@@ -891,35 +870,29 @@ static int mxf_read_header(AVFormatContext *s, AVFormatParameters *ap)
 static int mxf_read_close(AVFormatContext *s)
 {
     MXFContext *mxf = s->priv_data;
-    int i, j, k;
+    int i;
 
-    for (i = 0; i < mxf->packages_count; i++) {
-        for (j = 0; j < mxf->packages[i]->tracks_count; j++) {
-            for (k = 0; k < mxf->packages[i]->tracks[j]->sequence->structural_components_count; k++)
-                av_freep(&mxf->packages[i]->tracks[j]->sequence->structural_components[k]);
-            av_freep(&mxf->packages[i]->tracks[j]->sequence->structural_components_refs);
-            av_freep(&mxf->packages[i]->tracks[j]->sequence->structural_components);
-            av_freep(&mxf->packages[i]->tracks[j]->sequence);
-            av_freep(&mxf->packages[i]->tracks[j]);
-        }
-        av_freep(&mxf->packages[i]->tracks_refs);
-        av_freep(&mxf->packages[i]->tracks);
-        if (mxf->packages[i]->descriptor) {
-            for (k = 0; k < mxf->packages[i]->descriptor->sub_descriptors_count; k++)
-                av_freep(&mxf->packages[i]->descriptor->sub_descriptors[k]);
-            av_freep(&mxf->packages[i]->descriptor->sub_descriptors_refs);
-            av_freep(&mxf->packages[i]->descriptor->sub_descriptors);
-        }
-        av_freep(&mxf->packages[i]->descriptor);
-        av_freep(&mxf->packages[i]);
-    }
     av_freep(&mxf->packages_refs);
-    av_freep(&mxf->packages);
-    for (i = 0; i < mxf->essence_container_data_sets_count; i++)
-        av_freep(&mxf->essence_container_data_sets[i]);
     av_freep(&mxf->essence_container_data_sets_refs);
-    av_freep(&mxf->essence_container_data_sets);
     av_freep(&mxf->essence_containers_uls);
+    for (i = 0; i < mxf->metadata_sets_count; i++) {
+        switch (mxf->metadata_sets[i]->type) {
+        case MultipleDescriptor:
+            av_freep(&((MXFDescriptor *)mxf->metadata_sets[i])->sub_descriptors_refs);
+            break;
+        case Sequence:
+            av_freep(&((MXFSequence *)mxf->metadata_sets[i])->structural_components_refs);
+            break;
+        case SourcePackage:
+        case MaterialPackage:
+            av_freep(&((MXFPackage *)mxf->metadata_sets[i])->tracks_refs);
+            break;
+        default:
+            break;
+        }
+        av_freep(&mxf->metadata_sets[i]);
+    }
+    av_freep(&mxf->metadata_sets);
     return 0;
 }
 
