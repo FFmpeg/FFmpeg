@@ -401,7 +401,7 @@ static int64_t gxf_resync_media(AVFormatContext *s, uint64_t max_interval, int t
     int len;
     ByteIOContext *pb = &s->pb;
     pkt_type_t type;
-    tmp = 0xff;
+    tmp = get_be32(pb);
 start:
     while (tmp)
         READ_ONE();
