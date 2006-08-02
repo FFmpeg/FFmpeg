@@ -700,13 +700,13 @@ POWERPC_PERF_START_COUNT(altivec_put_pixels16_num, 1);
 #else
     for(i=0; i<h; i+=4) {
       pixelsv1 = vec_ld(0, (unsigned char*)pixels);
-      pixelsv2 = vec_ld(16, (unsigned char*)pixels);
+      pixelsv2 = vec_ld(15, (unsigned char*)pixels);
       pixelsv1B = vec_ld(line_size, (unsigned char*)pixels);
-      pixelsv2B = vec_ld(16 + line_size, (unsigned char*)pixels);
+      pixelsv2B = vec_ld(15 + line_size, (unsigned char*)pixels);
       pixelsv1C = vec_ld(line_size_2, (unsigned char*)pixels);
-      pixelsv2C = vec_ld(16 + line_size_2, (unsigned char*)pixels);
+      pixelsv2C = vec_ld(15 + line_size_2, (unsigned char*)pixels);
       pixelsv1D = vec_ld(line_size_3, (unsigned char*)pixels);
-      pixelsv2D = vec_ld(16 + line_size_3, (unsigned char*)pixels);
+      pixelsv2D = vec_ld(15 + line_size_3, (unsigned char*)pixels);
       vec_st(vec_perm(pixelsv1, pixelsv2, perm),
              0, (unsigned char*)block);
       vec_st(vec_perm(pixelsv1B, pixelsv2B, perm),
