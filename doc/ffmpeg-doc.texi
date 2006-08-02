@@ -1109,7 +1109,7 @@ valid results, then crashes.
 @chapter Developers Guide
 
 @section API
-@itemize
+@itemize @bullet
 @item libavcodec is the library containing the codecs (both encoding and
 decoding). Look at @file{libavcodec/apiexample.c} to see how to use it.
 
@@ -1214,7 +1214,6 @@ int myfunc(int my_parameter)
 fprintf and printf are forbidden in libavformat and libavcodec,
 please use av_log() instead.
 
-@node Development Policy
 @section Development Policy
 
 @enumerate
