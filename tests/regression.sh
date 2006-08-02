@@ -691,7 +691,7 @@ do_ffmpeg_crc $file -f image2pipe -i $file
 
 # gif
 file=${outfile}libav.gif
-do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src $file
+do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src -pix_fmt rgb24 $file
 #do_ffmpeg_crc $file -i $file
 
 # yuv4mpeg

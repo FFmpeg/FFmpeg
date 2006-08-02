@@ -339,8 +339,10 @@ static int gif_write_header(AVFormatContext *s)
 //        rate = video_enc->time_base.den;
     }
 
-    /* XXX: is it allowed ? seems to work so far... */
-    video_enc->pix_fmt = PIX_FMT_RGB24;
+    if (video_enc->pix_fmt != PIX_FMT_RGB24) {
+        av_log(s, AV_LOG_ERROR, "ERROR: gif only handles the rgb24 pixel format. Use -pix_fmt rgb24.\n");
+        return AVERROR_IO;
+    }
 
     gif_image_write_header(pb, width, height, loop_count, NULL);
 
