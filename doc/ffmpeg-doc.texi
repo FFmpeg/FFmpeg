@@ -1311,10 +1311,6 @@ We think our rules are not too hard. If you have comments, contact us.
 
 Note, these rules are mostly borrowed from the MPlayer project.
 
-@subsection Renaming/moving files or content of files
-  You CANNOT do that. Post a request for such a change to the mailing list
-  Do NOT remove & readd a file - it will kill the changelog!!!!
-
 @section Submitting patches
 
 First, (@pxref{Coding Rules}) above if you didn't yet.
