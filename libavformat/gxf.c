@@ -112,32 +112,27 @@ static int get_sindex(AVFormatContext *s, int id, int format) {
         case 4:
             st->codec->codec_type = CODEC_TYPE_VIDEO;
             st->codec->codec_id = CODEC_ID_MJPEG;
-            st->codec->codec_tag = MKTAG('M', 'J', 'P', 'G');
             break;
         case 13:
         case 15:
             st->codec->codec_type = CODEC_TYPE_VIDEO;
             st->codec->codec_id = CODEC_ID_DVVIDEO;
-            st->codec->codec_tag = MKTAG('d', 'v', 'c', ' ');
             break;
         case 14:
         case 16:
             st->codec->codec_type = CODEC_TYPE_VIDEO;
             st->codec->codec_id = CODEC_ID_DVVIDEO;
-            st->codec->codec_tag = MKTAG('d', 'v', 'c', 'p');
             break;
         case 11:
         case 12:
         case 20:
             st->codec->codec_type = CODEC_TYPE_VIDEO;
             st->codec->codec_id = CODEC_ID_MPEG2VIDEO;
-            st->codec->codec_tag = MKTAG('M', 'P', 'G', '2');
             break;
         case 22:
         case 23:
             st->codec->codec_type = CODEC_TYPE_VIDEO;
             st->codec->codec_id = CODEC_ID_MPEG1VIDEO;
-            st->codec->codec_tag = MKTAG('M', 'P', 'G', '1');
             break;
         case 9:
             st->codec->codec_type = CODEC_TYPE_AUDIO;
