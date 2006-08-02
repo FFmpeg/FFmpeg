@@ -137,7 +137,6 @@ static int get_sindex(AVFormatContext *s, int id, int format) {
         case 9:
             st->codec->codec_type = CODEC_TYPE_AUDIO;
             st->codec->codec_id = CODEC_ID_PCM_S24LE;
-            st->codec->codec_tag = 0x1;
             st->codec->channels = 1;
             st->codec->sample_rate = 48000;
             st->codec->bit_rate = 3 * 1 * 48000 * 8;
@@ -147,7 +146,6 @@ static int get_sindex(AVFormatContext *s, int id, int format) {
         case 10:
             st->codec->codec_type = CODEC_TYPE_AUDIO;
             st->codec->codec_id = CODEC_ID_PCM_S16LE;
-            st->codec->codec_tag = 0x1;
             st->codec->channels = 1;
             st->codec->sample_rate = 48000;
             st->codec->bit_rate = 2 * 1 * 48000 * 8;
@@ -157,7 +155,6 @@ static int get_sindex(AVFormatContext *s, int id, int format) {
         case 17:
             st->codec->codec_type = CODEC_TYPE_AUDIO;
             st->codec->codec_id = CODEC_ID_AC3;
-            st->codec->codec_tag = 0x2000;
             st->codec->channels = 2;
             st->codec->sample_rate = 48000;
             break;
