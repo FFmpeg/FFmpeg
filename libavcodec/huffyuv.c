@@ -1255,6 +1255,7 @@ AVCodec huffyuv_encoder = {
     encode_init,
     encode_frame,
     encode_end,
+    .pix_fmts= (enum PixelFormat[]){PIX_FMT_YUV422P, -1},
 };
 
 AVCodec ffvhuff_encoder = {
@@ -1265,6 +1266,7 @@ AVCodec ffvhuff_encoder = {
     encode_init,
     encode_frame,
     encode_end,
+    .pix_fmts= (enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_YUV422P, -1},
 };
 
 #endif //CONFIG_ENCODERS
