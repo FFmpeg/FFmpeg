@@ -41,6 +41,7 @@ extern void ff_snow_inner_add_yblock_altivec(uint8_t *obmc,
                                              int add, uint8_t * dst8);
 
 void dsputil_h264_init_ppc(DSPContext* c, AVCodecContext *avctx);
+void vc1dsp_init_altivec(DSPContext* c, AVCodecContext *avctx);
 
 #endif
 
@@ -249,10 +250,6 @@ long check_dcbzl_effect(void)
 {
   return 0;
 }
-#endif
-
-#ifdef HAVE_ALTIVEC
-void vc1dsp_init_altivec(DSPContext* c, AVCodecContext *avctx);
 #endif
 
 void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx)
