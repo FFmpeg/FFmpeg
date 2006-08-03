@@ -41,7 +41,7 @@
  * Only tracks with associated descriptors will be decoded. "Highly Desirable" SMPTE 377M D.1
  */
 
-#define DEBUG
+//#define DEBUG
 
 #include "avformat.h"
 
