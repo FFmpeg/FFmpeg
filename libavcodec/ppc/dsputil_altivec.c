@@ -1698,6 +1698,29 @@ int has_altivec(void)
 #endif /* __AMIGAOS4__ */
 }
 
+static void vorbis_inverse_coupling_altivec(float *mag, float *ang,
+                                            int blocksize)
+{
+    int i;
+    vector float m, a;
+    vector bool int t0, t1;
+    const vector unsigned int v_31 = //XXX
+        vec_add(vec_add(vec_splat_u32(15),vec_splat_u32(15)),vec_splat_u32(1));
+    for(i=0; i<blocksize; i+=4) {
+        m = vec_ld(0, mag+i);
+        a = vec_ld(0, ang+i);
+        t0 = vec_cmple(m, (vector float)vec_splat_u32(0));
+        t1 = vec_cmple(a, (vector float)vec_splat_u32(0));
+        a = vec_xor(a, vec_sl((vector unsigned int)t0, v_31)); // (a ^ sign(m))
+        t0 = vec_and(a, t1);
+        t1 = vec_andc(a, t1);
+        a = vec_add(m, t0);
+        m = vec_sub(m, t1);
+        vec_ste(a, 0, ang+i);
+        vec_ste(m, 0, mag+i);
+    }
+}
+
 /* next one assumes that ((line_size % 8) == 0) */
 void avg_pixels8_xy2_altivec(uint8_t *block, const uint8_t *pixels, int line_size, int h)
 {
