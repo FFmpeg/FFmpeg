@@ -22,9 +22,7 @@ $(SLIBNAME): $(SLIBNAME_WITH_MAJOR)
 
 $(SLIBNAME_WITH_MAJOR): $(SHARED_OBJS)
 	$(CC) $(SHFLAGS) $(LDFLAGS) -o $@ $^ $(EXTRALIBS) $(EXTRAOBJS)
-ifeq ($(CONFIG_MINGW),yes)
-	-lib /machine:i386 /def:$(@:.dll=.def)
-endif
+	$(SLIB_EXTRA_CMD)
 
 %.o: %.c
 	$(CC) $(CFLAGS) $(LIBOBJFLAGS) -c -o $@ $<
