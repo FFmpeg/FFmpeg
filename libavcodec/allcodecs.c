@@ -221,11 +221,9 @@ void avcodec_register_all(void)
 #ifdef CONFIG_VC1_DECODER
     register_avcodec(&vc1_decoder);
 #endif //CONFIG_VC1_DECODER
-/* Reenable when it stops crashing on every file, causing bug report spam.
 #ifdef CONFIG_WMV3_DECODER
     register_avcodec(&wmv3_decoder);
 #endif //CONFIG_WMV3_DECODER
-*/
 #ifdef CONFIG_H263I_DECODER
     register_avcodec(&h263i_decoder);
 #endif //CONFIG_H263I_DECODER
