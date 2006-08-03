@@ -307,6 +307,8 @@ typedef struct DSPContext {
 
     void (*h261_loop_filter)(uint8_t *src, int stride);
 
+    void (*vorbis_inverse_coupling)(float *mag, float *ang, int blocksize);
+
     /* (I)DCT */
     void (*fdct)(DCTELEM *block/* align 16*/);
     void (*fdct248)(DCTELEM *block/* align 16*/);

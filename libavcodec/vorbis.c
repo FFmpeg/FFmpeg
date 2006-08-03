@@ -929,6 +929,7 @@ static int vorbis_decode_init(AVCodecContext *avccontext) {
     int i, j, hdr_type;
 
     vc->avccontext = avccontext;
+    dsputil_init(&vc->dsp, avccontext);
 
     if (!headers_len) {
         av_log(avccontext, AV_LOG_ERROR, "Extradata corrupt.\n");
@@ -1443,6 +1444,31 @@ static int vorbis_residue_decode(vorbis_context *vc, vorbis_residue *vr, uint_fa
     return 0;
 }
 
+void vorbis_inverse_coupling(float *mag, float *ang, int blocksize)
+{
+    int i;
+    for(i=0; i<blocksize; i++)
+    {
+        if (mag[i]>0.0) {
+            if (ang[i]>0.0) {
+                ang[i]=mag[i]-ang[i];
+            } else {
+                float temp=ang[i];
+                ang[i]=mag[i];
+                mag[i]+=temp;
+            }
+        } else {
+            if (ang[i]>0.0) {
+                ang[i]+=mag[i];
+            } else {
+                float temp=ang[i];
+                ang[i]=mag[i];
+                mag[i]-=temp;
+            }
+        }
+    }
+}
+
 // Decode the audio packet using the functions above
 #define BIAS 385
 
@@ -1541,26 +1567,7 @@ static int vorbis_parse_audio_packet(vorbis_context *vc) {
 
         mag=vc->channel_residues+res_chan[mapping->magnitude[i]]*blocksize/2;
         ang=vc->channel_residues+res_chan[mapping->angle[i]]*blocksize/2;
-        for(j=0;j<blocksize/2;++j) {
-            float temp;
-            if (mag[j]>0.0) {
-                if (ang[j]>0.0) {
-                    ang[j]=mag[j]-ang[j];
-                } else {
-                    temp=ang[j];
-                    ang[j]=mag[j];
-                    mag[j]+=temp;
-                }
-            } else {
-                if (ang[j]>0.0) {
-                    ang[j]+=mag[j];
-                } else {
-                    temp=ang[j];
-                    ang[j]=mag[j];
-                    mag[j]-=temp;
-                }
-            }
-        }
+        vc->dsp.vorbis_inverse_coupling(mag, ang, blocksize/2);
     }
 
 // Dotproduct

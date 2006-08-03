@@ -35,6 +35,9 @@
 /* snow.c */
 void ff_spatial_dwt(int *buffer, int width, int height, int stride, int type, int decomposition_count);
 
+/* vorbis.c */
+void vorbis_inverse_coupling(float *mag, float *ang, int blocksize);
+
 uint8_t cropTbl[256 + 2 * MAX_NEG_CROP] = {0, };
 uint32_t squareTbl[512] = {0, };
 
@@ -4088,6 +4091,10 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     c->vertical_compose97i = ff_snow_vertical_compose97i;
     c->horizontal_compose97i = ff_snow_horizontal_compose97i;
     c->inner_add_yblock = ff_snow_inner_add_yblock;
+#endif
+
+#ifdef CONFIG_VORBIS_DECODER
+    c->vorbis_inverse_coupling = vorbis_inverse_coupling;
 #endif
 
     c->shrink[0]= ff_img_copy_plane;

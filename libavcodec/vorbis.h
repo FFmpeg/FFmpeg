@@ -87,6 +87,7 @@ typedef struct {
 typedef struct vorbis_context_s {
     AVCodecContext *avccontext;
     GetBitContext gb;
+    DSPContext dsp;
 
     MDCTContext mdct0;
     MDCTContext mdct1;
