@@ -2711,7 +2711,7 @@ static void ff_idct_xvid_mmx2_add(uint8_t *dest, int line_size, DCTELEM *block)
 }
 #endif
 
-static void vorbis_inverse_coupling_sse(float *mag, float *ang, int blocksize)
+static void vorbis_inverse_coupling_3dnow(float *mag, float *ang, int blocksize)
 {
     int i;
     asm volatile("pxor %%mm7, %%mm7":);
@@ -3193,8 +3193,8 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
 
         if(mm_flags & MM_SSE2)
             c->vorbis_inverse_coupling = vorbis_inverse_coupling_sse2;
-        else if(mm_flags & MM_SSE)
-            c->vorbis_inverse_coupling = vorbis_inverse_coupling_sse;
+        else if(mm_flags & MM_3DNOW)
+            c->vorbis_inverse_coupling = vorbis_inverse_coupling_3dnow;
     }
 
 #ifdef CONFIG_ENCODERS
