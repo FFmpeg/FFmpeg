@@ -812,25 +812,18 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
 #endif
         /* TODO: drop PictureEssenceCoding and SoundEssenceCompression, only check EssenceContainer */
         codec_ul = mxf_get_codec_ul(mxf_codec_uls, &descriptor->essence_codec_ul);
+        st->codec->codec_id = codec_ul->id;
         if (st->codec->codec_type == CODEC_TYPE_VIDEO) {
-            st->codec->codec_id = codec_ul->id;
             container_ul = mxf_get_codec_ul(mxf_picture_essence_container_uls, &descriptor->essence_container_ul);
             if (st->codec->codec_id == CODEC_ID_NONE)
                 st->codec->codec_id = container_ul->id;
-            if (container_ul->wrapping == Clip) {
-                dprintf("stream %d: clip wrapped picture essence\n", st->index);
-                st->need_parsing = 1;
-            }
             st->codec->width = descriptor->width;
             st->codec->height = descriptor->height;
             st->codec->bits_per_sample = descriptor->bits_per_sample; /* Uncompressed */
         } else if (st->codec->codec_type == CODEC_TYPE_AUDIO) {
-            st->codec->codec_id = codec_ul->id;
             container_ul = mxf_get_codec_ul(mxf_sound_essence_container_uls, &descriptor->essence_container_ul);
             if (st->codec->codec_id == CODEC_ID_NONE)
                 st->codec->codec_id = container_ul->id;
-            if (container_ul->wrapping == Clip)
-                st->need_parsing = 1;
             st->codec->channels = descriptor->channels;
             st->codec->bits_per_sample = descriptor->bits_per_sample;
             st->codec->sample_rate = descriptor->sample_rate.num / descriptor->sample_rate.den;
@@ -846,6 +839,10 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
                 else if (descriptor->bits_per_sample == 32)
                     st->codec->codec_id = CODEC_ID_PCM_S32BE;
             }
+        }
+        if (container_ul->wrapping == Clip) {
+            dprintf("stream %d: clip wrapped essence\n", st->index);
+            st->need_parsing = 1;
         }
     }
     return 0;
