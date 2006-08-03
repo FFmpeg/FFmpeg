@@ -251,6 +251,10 @@ long check_dcbzl_effect(void)
 }
 #endif
 
+#ifdef HAVE_ALTIVEC
+void vc1dsp_init_altivec(DSPContext* c, AVCodecContext *avctx);
+#endif
+
 void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx)
 {
     // Common optimizations whether Altivec is available or not
@@ -310,6 +314,7 @@ void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx)
         c->vertical_compose97i = ff_snow_vertical_compose97i_altivec;
         c->inner_add_yblock = ff_snow_inner_add_yblock_altivec;
 
+        vc1dsp_init_altivec(c, avctx);
 #ifdef CONFIG_ENCODERS
         if (avctx->dct_algo == FF_DCT_AUTO ||
             avctx->dct_algo == FF_DCT_ALTIVEC)
