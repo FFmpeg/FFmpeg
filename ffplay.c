@@ -18,6 +18,7 @@
  */
 #define HAVE_AV_CONFIG_H
 #include "avformat.h"
+#include "swscale.h"
 
 #include "version.h"
 #include "cmdutils.h"
@@ -69,6 +70,8 @@
 
 /* NOTE: the size must be big enough to compensate the hardware audio buffersize size */
 #define SAMPLE_ARRAY_SIZE (2*65536)
+
+static int sws_flags = SWS_BICUBIC;
 
 typedef struct PacketQueue {
     AVPacketList *first_pkt, *last_pkt;
@@ -1143,6 +1146,7 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts)
     VideoPicture *vp;
     int dst_pix_fmt;
     AVPicture pict;
+    static struct SwsContext *img_convert_ctx;
 
     /* wait until we have space to put a new picture */
     SDL_LockMutex(is->pictq_mutex);
@@ -1195,9 +1199,18 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts)
         pict.linesize[0] = vp->bmp->pitches[0];
         pict.linesize[1] = vp->bmp->pitches[2];
         pict.linesize[2] = vp->bmp->pitches[1];
-        img_convert(&pict, dst_pix_fmt,
-                    (AVPicture *)src_frame, is->video_st->codec->pix_fmt,
-                    is->video_st->codec->width, is->video_st->codec->height);
+        if (img_convert_ctx == NULL) {
+            img_convert_ctx = sws_getContext(is->video_st->codec->width,
+                    is->video_st->codec->height, is->video_st->codec->pix_fmt,
+                    is->video_st->codec->width, is->video_st->codec->height,
+                    dst_pix_fmt, sws_flags, NULL, NULL, NULL);
+            if (img_convert_ctx == NULL) {
+                fprintf(stderr, "Cannot initialize the conversion context\n");
+                exit(1);
+            }
+        }
+        sws_scale(img_convert_ctx, src_frame->data, src_frame->linesize,
+                  0, is->video_st->codec->height, pict.data, pict.linesize);
         /* update the bitmap content */
         SDL_UnlockYUVOverlay(vp->bmp);
 
