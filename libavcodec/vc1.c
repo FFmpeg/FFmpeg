@@ -1207,8 +1207,10 @@ static int decode_sequence_header(AVCodecContext *avctx, GetBitContext *gb)
         v->res_rtm_flag = get_bits(gb, 1); //reserved
         if (!v->res_rtm_flag)
         {
+//            av_log(avctx, AV_LOG_ERROR,
+//                   "0 for reserved RES_RTM_FLAG is forbidden\n");
             av_log(avctx, AV_LOG_ERROR,
-                   "0 for reserved RES_RTM_FLAG is forbidden\n");
+                   "Old WMV3 version detected, only I-frames will be decoded\n");
             //return -1;
         }
         av_log(avctx, AV_LOG_DEBUG,
@@ -3125,7 +3127,7 @@ static int vc1_decode_frame(AVCodecContext *avctx,
     if(vc1_parse_frame_header(v, &s->gb) == -1)
         return -1;
 
-//    if(s->pict_type != I_TYPE && s->pict_type != P_TYPE)return -1;
+    if(s->pict_type != I_TYPE && !v->res_rtm_flag)return -1;
 
     // for hurry_up==5
     s->current_picture.pict_type= s->pict_type;
