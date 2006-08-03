@@ -86,9 +86,9 @@ uninstall-libs:
 ifeq ($(CONFIG_MINGW),yes)
 	-rm -f $(prefix)/$(SLIBNAME)
 else
-	-rm -f $(libdir)/$(SLIBNAME_WITH_MAJOR) \
-	       $(libdir)/$(SLIBNAME)            \
-	       $(libdir)/$(SLIBNAME_WITH_VERSION)
+	-rm -f $(shlibdir)/$(SLIBNAME_WITH_MAJOR) \
+	       $(shlibdir)/$(SLIBNAME)            \
+	       $(shlibdir)/$(SLIBNAME_WITH_VERSION)
 endif
 	-rm -f $(libdir)/$(LIB)
 

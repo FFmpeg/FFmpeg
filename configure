@@ -530,7 +530,7 @@ audio_oss="yes"
 dv1394="no"
 make="gmake"
 LIBOBJFLAGS="\$(PIC)"
-LDCONFIG="ldconfig -m \$(libdir)"
+LDCONFIG="ldconfig -m \$(shlibdir)"
 extralibs="$extralibs -lossaudio"
 ;;
 FreeBSD)
@@ -567,8 +567,8 @@ v4l="no"
 v4l2="no"
 audio_oss="no"
 dv1394="no"
-SHFLAGS="-dynamiclib -Wl,-single_module -Wl,-install_name,\$(libdir)/\$(SLIBNAME),-current_version,\$(SPPVERSION),-compatibility_version,\$(SPPVERSION)"
-VHOOKFLAGS='-dynamiclib -Wl,-single_module -flat_namespace -undefined suppress -Wl,-install_name,$(libdir)/vhook/$@'
+SHFLAGS="-dynamiclib -Wl,-single_module -Wl,-install_name,\$(shlibdir)/\$(SLIBNAME),-current_version,\$(SPPVERSION),-compatibility_version,\$(SPPVERSION)"
+VHOOKFLAGS='-dynamiclib -Wl,-single_module -flat_namespace -undefined suppress -Wl,-install_name,$(shlibdir)/vhook/$@'
 extralibs=""
 strip="strip -x"
 installstrip=""
