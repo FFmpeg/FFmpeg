@@ -878,13 +878,13 @@ EOF
     if test "$mingwce" = "yes"; then
         protocols="no"
     fi
-    FFLDFLAGS='-Wl,--output-def,$(@:.dll=.def),--out-implib,lib$(SLIBNAME:$(SLIBSUF)=.dll.a)'
     SLIBPREF=""
     SLIBSUF=".dll"
     EXESUF=".exe"
     SLIBNAME_WITH_VERSION='$(SLIBPREF)$(NAME)-$(LIBVERSION)$(SLIBSUF)'
     SLIBNAME_WITH_MAJOR='$(SLIBPREF)$(NAME)-$(LIBMAJOR)$(SLIBSUF)'
-    SLIB_EXTRA_CMD='-lib /machine:i386 /def:$(@:.dll=.def)'
+    SLIB_EXTRA_CMD="-lib /machine:i386 /def:\$(@:${SLIBSUF}=.def)"
+    FFLDFLAGS="-Wl,--output-def,\$(@:${SLIBSUF}=.def),--out-implib,lib\$(SLIBNAME:\$(SLIBSUF)=.dll.a)"
     if test "$force_prefix" != yes; then PREFIX="$PROGRAMFILES/FFmpeg"; fi
     if test "$force_libdir" != yes; then bindir="$PREFIX"; fi
 fi
