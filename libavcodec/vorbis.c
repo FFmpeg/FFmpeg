@@ -1192,7 +1192,7 @@ static uint_fast8_t vorbis_floor1_decode(vorbis_context *vc, vorbis_floor_data *
         adx=vf->x_list[high_neigh_offs]-vf->x_list[low_neigh_offs];
         ady= ABS(dy);
         err=ady*(vf->x_list[i]-vf->x_list[low_neigh_offs]);
-        off=err/adx;
+        off=(int16_t)err/(int16_t)adx;
         if (dy<0) {
             predicted=floor1_Y_final[low_neigh_offs]-off;
         } else {
@@ -1252,7 +1252,7 @@ static uint_fast8_t vorbis_floor1_decode(vorbis_context *vc, vorbis_floor_data *
             dy=hy-ly;
             adx=hx-lx;
             ady= (dy<0) ? -dy:dy;//ABS(dy);
-            base=dy/adx;
+            base=(int16_t)dy/(int16_t)adx;
 
             AV_DEBUG(" dy %d  adx %d base %d = %d \n", dy, adx, base, dy/adx);
 
