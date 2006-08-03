@@ -30,21 +30,12 @@ extern void gmc1_altivec(uint8_t *dst, uint8_t *src, int stride, int h,
                          int x16, int y16, int rounder);
 extern void idct_put_altivec(uint8_t *dest, int line_size, int16_t *block);
 extern void idct_add_altivec(uint8_t *dest, int line_size, int16_t *block);
-extern void ff_snow_horizontal_compose97i_altivec(DWTELEM *b, int width);
-extern void ff_snow_vertical_compose97i_altivec(DWTELEM *b0, DWTELEM *b1,
-                                                DWTELEM *b2, DWTELEM *b3,
-                                                DWTELEM *b4, DWTELEM *b5,
-                                                int width);
-extern void ff_snow_inner_add_yblock_altivec(uint8_t *obmc,
-                                             const int obmc_stride,
-                                             uint8_t * * block, int b_w,
-                                             int b_h, int src_x, int src_y,
-                                             int src_stride, slice_buffer * sb,
-                                             int add, uint8_t * dst8);
+
+void dsputil_h264_init_ppc(DSPContext* c, AVCodecContext *avctx);
 
 void dsputil_init_altivec(DSPContext* c, AVCodecContext *avctx);
-void dsputil_h264_init_ppc(DSPContext* c, AVCodecContext *avctx);
 void vc1dsp_init_altivec(DSPContext* c, AVCodecContext *avctx);
+void snow_init_altivec(DSPContext* c, AVCodecContext *avctx);
 
 #endif
 
@@ -276,14 +267,11 @@ void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx)
     if (has_altivec()) {
         mm_flags |= MM_ALTIVEC;
 
-        vc1dsp_init_altivec(c, avctx);
         dsputil_init_altivec(c, avctx);
+        snow_init_altivec(c, avctx);
+        vc1dsp_init_altivec(c, avctx);
 
         c->gmc1 = gmc1_altivec;
-
-        c->horizontal_compose97i = ff_snow_horizontal_compose97i_altivec;
-        c->vertical_compose97i = ff_snow_vertical_compose97i_altivec;
-        c->inner_add_yblock = ff_snow_inner_add_yblock_altivec;
 
 #ifdef CONFIG_ENCODERS
         if (avctx->dct_algo == FF_DCT_AUTO ||

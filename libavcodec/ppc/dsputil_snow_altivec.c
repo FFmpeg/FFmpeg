@@ -776,3 +776,11 @@ void ff_snow_inner_add_yblock_altivec(uint8_t *obmc, const int obmc_stride,
                                      src_y, src_stride, sb, add, dst8);
     }
 }
+
+
+void snow_init_altivec(DSPContext* c, AVCodecContext *avctx)
+{
+        c->horizontal_compose97i = ff_snow_horizontal_compose97i_altivec;
+        c->vertical_compose97i = ff_snow_vertical_compose97i_altivec;
+        c->inner_add_yblock = ff_snow_inner_add_yblock_altivec;
+}
