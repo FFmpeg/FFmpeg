@@ -165,6 +165,8 @@ typedef struct MXFMetadataReadTableEntry {
 static const uint8_t mxf_header_partition_pack_key[]       = { 0x06,0x0e,0x2b,0x34,0x02,0x05,0x01,0x01,0x0d,0x01,0x02,0x01,0x01,0x02 };
 static const uint8_t mxf_essence_element_key[]             = { 0x06,0x0e,0x2b,0x34,0x01,0x02,0x01,0x01,0x0d,0x01,0x03,0x01 };
 
+static offset_t mxf_header_offset = 0;
+
 #define IS_KLV_KEY(x, y) (!memcmp(x, y, sizeof(y)))
 
 #define PRINT_KEY(x) dprintf("%02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X\n", \
@@ -873,6 +875,11 @@ static int mxf_read_header(AVFormatContext *s, AVFormatParameters *ap)
     KLVPacket klv;
 
     mxf->fc = s;
+    dprintf("header offset %llx\n", mxf_header_offset);
+    if (url_fseek(&s->pb, mxf_header_offset, SEEK_SET) < 0) {
+        av_log(s, AV_LOG_ERROR, "error seeking to header offset\n");
+        return -1;
+    }
     while (!url_feof(&s->pb)) {
         const MXFMetadataReadTableEntry *function;
 
@@ -943,8 +950,10 @@ static int mxf_probe(AVProbeData *p) {
     /* Must skip Run-In Sequence and search for MXF header partition pack key SMPTE 377M 5.5 */
     end -= sizeof(mxf_header_partition_pack_key);
     for (; bufp < end; bufp++) {
-        if (IS_KLV_KEY(bufp, mxf_header_partition_pack_key))
+        if (IS_KLV_KEY(bufp, mxf_header_partition_pack_key)) {
+            mxf_header_offset = bufp - p->buf;
             return AVPROBE_SCORE_MAX;
+        }
     }
     return 0;
 }
