@@ -41,7 +41,7 @@
  * Only tracks with associated descriptors will be decoded. "Highly Desirable" SMPTE 377M D.1
  */
 
-//#define DEBUG
+#define DEBUG
 
 #include "avformat.h"
 
@@ -840,7 +840,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
                     st->codec->codec_id = CODEC_ID_PCM_S32BE;
             }
         }
-        if (container_ul->wrapping == Clip) {
+        if (container_ul && container_ul->wrapping == Clip) {
             dprintf("stream %d: clip wrapped essence\n", st->index);
             st->need_parsing = 1;
         }
