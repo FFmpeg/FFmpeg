@@ -52,6 +52,7 @@ version <next>
 - Chinese AVS decoder
 - GXF muxer
 - MXF demuxer
+- VC-1/WMV3/WMV9 video decoder
 
 version 0.4.9-pre1:
 
