@@ -1379,7 +1379,9 @@ static int vorbis_residue_decode(vorbis_context *vc, vorbis_residue *vr, uint_fa
 
                         if (vqbook>=0) {
                             uint_fast16_t coffs;
-                            uint_fast16_t step=vr->partition_size/vc->codebooks[vqbook].dimensions;
+                            uint_fast8_t dim= vc->codebooks[vqbook].dimensions;
+                            uint_fast16_t step= dim==1 ? vr->partition_size
+                                              : FASTDIV(vr->partition_size, dim);
                             vorbis_codebook codebook= vc->codebooks[vqbook];
 
                             if (vr->type==0) {
