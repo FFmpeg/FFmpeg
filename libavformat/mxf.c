@@ -102,6 +102,8 @@ typedef struct MXFDescriptor {
     UID *sub_descriptors_refs;
     int sub_descriptors_count;
     int linked_track_id;
+    uint8_t *extradata;
+    int extradata_size;
 } MXFDescriptor;
 
 typedef struct MXFPackage {
@@ -598,6 +600,11 @@ static int mxf_read_metadata_generic_descriptor(MXFContext *mxf, KLVPacket *klv)
         case 0x3401:
             mxf_read_metadata_pixel_layout(pb, descriptor);
             break;
+        case 0x8201: /* Private tag used by SONY C0023S01.mxf */
+            descriptor->extradata = av_malloc(size);
+            descriptor->extradata_size = size;
+            get_buffer(pb, descriptor->extradata, size);
+            break;
         default:
             url_fskip(pb, size);
         }
@@ -815,6 +822,10 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
         /* TODO: drop PictureEssenceCoding and SoundEssenceCompression, only check EssenceContainer */
         codec_ul = mxf_get_codec_ul(mxf_codec_uls, &descriptor->essence_codec_ul);
         st->codec->codec_id = codec_ul->id;
+        if (descriptor->extradata) {
+            st->codec->extradata = descriptor->extradata;
+            st->codec->extradata_size = descriptor->extradata_size;
+        }
         if (st->codec->codec_type == CODEC_TYPE_VIDEO) {
             container_ul = mxf_get_codec_ul(mxf_picture_essence_container_uls, &descriptor->essence_container_ul);
             if (st->codec->codec_id == CODEC_ID_NONE)
