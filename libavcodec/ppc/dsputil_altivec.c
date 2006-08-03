@@ -1702,7 +1702,7 @@ static void vorbis_inverse_coupling_altivec(float *mag, float *ang,
                                             int blocksize)
 {
     int i;
-    vector float m, a, s0, s1;
+    vector float m, a;
     vector bool int t0, t1;
     const vector unsigned int v_31 = //XXX
         vec_add(vec_add(vec_splat_u32(15),vec_splat_u32(15)),vec_splat_u32(1));
@@ -1712,10 +1712,10 @@ static void vorbis_inverse_coupling_altivec(float *mag, float *ang,
         t0 = vec_cmple(m, (vector float)vec_splat_u32(0));
         t1 = vec_cmple(a, (vector float)vec_splat_u32(0));
         a = vec_xor(a, (vector float) vec_sl((vector unsigned int)t0, v_31));
-        s0 = vec_and(a, t1);
-        s1 = vec_andc(a, t1);
-        a = vec_add(m, s0);
-        m = vec_sub(m, s1);
+        t0 = (vector bool int)vec_and(a, t1);
+        t1 = (vector bool int)vec_andc(a, t1);
+        a = vec_add(m, (vector float)t0);
+        m = vec_sub(m, (vector float)t1);
         vec_ste(a, 0, ang+i);
         vec_ste(m, 0, mag+i);
     }
@@ -1829,4 +1829,39 @@ POWERPC_PERF_START_COUNT(altivec_avg_pixels8_xy2_num, 1);
 
 POWERPC_PERF_STOP_COUNT(altivec_avg_pixels8_xy2_num, 1);
 #endif /* ALTIVEC_USE_REFERENCE_C_CODE */
+}
+
+void dsputil_init_altivec(DSPContext* c, AVCodecContext *avctx)
+{
+    c->pix_abs[0][1] = sad16_x2_altivec;
+    c->pix_abs[0][2] = sad16_y2_altivec;
+    c->pix_abs[0][3] = sad16_xy2_altivec;
+    c->pix_abs[0][0] = sad16_altivec;
+    c->pix_abs[1][0] = sad8_altivec;
+    c->sad[0]= sad16_altivec;
+    c->sad[1]= sad8_altivec;
+    c->pix_norm1 = pix_norm1_altivec;
+    c->sse[1]= sse8_altivec;
+    c->sse[0]= sse16_altivec;
+    c->pix_sum = pix_sum_altivec;
+    c->diff_pixels = diff_pixels_altivec;
+    c->get_pixels = get_pixels_altivec;
+// next one disabled as it's untested.
+#if 0
+    c->add_bytes= add_bytes_altivec;
+#endif /* 0 */
+    c->put_pixels_tab[0][0] = put_pixels16_altivec;
+    /* the two functions do the same thing, so use the same code */
+    c->put_no_rnd_pixels_tab[0][0] = put_pixels16_altivec;
+    c->avg_pixels_tab[0][0] = avg_pixels16_altivec;
+    c->avg_pixels_tab[1][0] = avg_pixels8_altivec;
+    c->avg_pixels_tab[1][3] = avg_pixels8_xy2_altivec;
+    c->put_pixels_tab[1][3] = put_pixels8_xy2_altivec;
+    c->put_no_rnd_pixels_tab[1][3] = put_no_rnd_pixels8_xy2_altivec;
+    c->put_pixels_tab[0][3] = put_pixels16_xy2_altivec;
+    c->put_no_rnd_pixels_tab[0][3] = put_no_rnd_pixels16_xy2_altivec;
+
+    c->hadamard8_diff[0] = hadamard8_diff16_altivec;
+    c->hadamard8_diff[1] = hadamard8_diff8x8_altivec;
+    c->vorbis_inverse_coupling = vorbis_inverse_coupling_altivec;
 }

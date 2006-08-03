@@ -26,6 +26,8 @@
 #include "dsputil_altivec.h"
 
 extern void fdct_altivec(int16_t *block);
+extern void gmc1_altivec(uint8_t *dst, uint8_t *src, int stride, int h,
+                         int x16, int y16, int rounder);
 extern void idct_put_altivec(uint8_t *dest, int line_size, int16_t *block);
 extern void idct_add_altivec(uint8_t *dest, int line_size, int16_t *block);
 extern void ff_snow_horizontal_compose97i_altivec(DWTELEM *b, int width);
@@ -40,6 +42,7 @@ extern void ff_snow_inner_add_yblock_altivec(uint8_t *obmc,
                                              int src_stride, slice_buffer * sb,
                                              int add, uint8_t * dst8);
 
+void dsputil_init_altivec(DSPContext* c, AVCodecContext *avctx);
 void dsputil_h264_init_ppc(DSPContext* c, AVCodecContext *avctx);
 void vc1dsp_init_altivec(DSPContext* c, AVCodecContext *avctx);
 
@@ -256,62 +259,32 @@ void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx)
 {
     // Common optimizations whether Altivec is available or not
 
-  switch (check_dcbzl_effect()) {
-  case 32:
-    c->clear_blocks = clear_blocks_dcbz32_ppc;
-    break;
-  case 128:
-    c->clear_blocks = clear_blocks_dcbz128_ppc;
-    break;
-  default:
-    break;
-  }
+    switch (check_dcbzl_effect()) {
+        case 32:
+            c->clear_blocks = clear_blocks_dcbz32_ppc;
+            break;
+        case 128:
+            c->clear_blocks = clear_blocks_dcbz128_ppc;
+            break;
+        default:
+            break;
+    }
 
 #ifdef HAVE_ALTIVEC
-  dsputil_h264_init_ppc(c, avctx);
+    dsputil_h264_init_ppc(c, avctx);
 
     if (has_altivec()) {
         mm_flags |= MM_ALTIVEC;
 
-        // Altivec specific optimisations
-        c->pix_abs[0][1] = sad16_x2_altivec;
-        c->pix_abs[0][2] = sad16_y2_altivec;
-        c->pix_abs[0][3] = sad16_xy2_altivec;
-        c->pix_abs[0][0] = sad16_altivec;
-        c->pix_abs[1][0] = sad8_altivec;
-        c->sad[0]= sad16_altivec;
-        c->sad[1]= sad8_altivec;
-        c->pix_norm1 = pix_norm1_altivec;
-        c->sse[1]= sse8_altivec;
-        c->sse[0]= sse16_altivec;
-        c->pix_sum = pix_sum_altivec;
-        c->diff_pixels = diff_pixels_altivec;
-        c->get_pixels = get_pixels_altivec;
-// next one disabled as it's untested.
-#if 0
-        c->add_bytes= add_bytes_altivec;
-#endif /* 0 */
-        c->put_pixels_tab[0][0] = put_pixels16_altivec;
-        /* the two functions do the same thing, so use the same code */
-        c->put_no_rnd_pixels_tab[0][0] = put_pixels16_altivec;
-        c->avg_pixels_tab[0][0] = avg_pixels16_altivec;
-        c->avg_pixels_tab[1][0] = avg_pixels8_altivec;
-        c->avg_pixels_tab[1][3] = avg_pixels8_xy2_altivec;
-        c->put_pixels_tab[1][3] = put_pixels8_xy2_altivec;
-        c->put_no_rnd_pixels_tab[1][3] = put_no_rnd_pixels8_xy2_altivec;
-        c->put_pixels_tab[0][3] = put_pixels16_xy2_altivec;
-        c->put_no_rnd_pixels_tab[0][3] = put_no_rnd_pixels16_xy2_altivec;
+        vc1dsp_init_altivec(c, avctx);
+        dsputil_init_altivec(c, avctx);
 
         c->gmc1 = gmc1_altivec;
-
-        c->hadamard8_diff[0] = hadamard8_diff16_altivec;
-        c->hadamard8_diff[1] = hadamard8_diff8x8_altivec;
 
         c->horizontal_compose97i = ff_snow_horizontal_compose97i_altivec;
         c->vertical_compose97i = ff_snow_vertical_compose97i_altivec;
         c->inner_add_yblock = ff_snow_inner_add_yblock_altivec;
 
-        vc1dsp_init_altivec(c, avctx);
 #ifdef CONFIG_ENCODERS
         if (avctx->dct_algo == FF_DCT_AUTO ||
             avctx->dct_algo == FF_DCT_ALTIVEC)
@@ -320,20 +293,20 @@ void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx)
         }
 #endif //CONFIG_ENCODERS
 
-      if (avctx->lowres==0)
-      {
+        if (avctx->lowres==0)
+        {
         if ((avctx->idct_algo == FF_IDCT_AUTO) ||
                 (avctx->idct_algo == FF_IDCT_ALTIVEC))
         {
             c->idct_put = idct_put_altivec;
             c->idct_add = idct_add_altivec;
-#ifndef ALTIVEC_USE_REFERENCE_C_CODE
+        #ifndef ALTIVEC_USE_REFERENCE_C_CODE
             c->idct_permutation_type = FF_TRANSPOSE_IDCT_PERM;
-#else /* ALTIVEC_USE_REFERENCE_C_CODE */
+        #else /* ALTIVEC_USE_REFERENCE_C_CODE */
             c->idct_permutation_type = FF_NO_IDCT_PERM;
-#endif /* ALTIVEC_USE_REFERENCE_C_CODE */
+        #endif /* ALTIVEC_USE_REFERENCE_C_CODE */
         }
-      }
+        }
 
 #ifdef POWERPC_PERFORMANCE_REPORT
         {
