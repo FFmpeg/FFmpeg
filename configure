@@ -4,7 +4,8 @@
 #
 
 # make sure we are running under a compatible shell
-(: ${foo%%bar}) 2>/dev/null
+unset foo
+(: ${foo%%bar}) 2>/dev/null && ! (: ${foo?}) 2>/dev/null
 if test "$?" != 0; then
     if test "x$FFMPEG_CONFIGURE_EXEC" = x; then
         FFMPEG_CONFIGURE_EXEC=1
