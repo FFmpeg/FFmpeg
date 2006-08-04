@@ -59,16 +59,12 @@ install-libs: $(INSTLIBTARGETS)
 
 install-lib-shared: $(SLIBNAME)
 	install -d "$(shlibdir)"
-ifeq ($(CONFIG_MINGW),yes)
-	install $(INSTALLSTRIP) -m 755 $(SLIBNAME) "$(prefix)"
-else
 	install $(INSTALLSTRIP) -m 755 $(SLIBNAME) \
 		"$(shlibdir)/$(SLIBNAME_WITH_VERSION)"
-	ln -sf $(SLIBNAME_WITH_VERSION) \
-	       "$(shlibdir)/$(SLIBNAME_WITH_MAJOR)"
-	ln -sf $(SLIBNAME_WITH_VERSION) \
-	       "$(shlibdir)/$(SLIBNAME)"
-endif
+	cd "$(shlibdir)" && \
+		ln -sf $(SLIBNAME_WITH_VERSION) $(SLIBNAME_WITH_MAJOR)
+	cd "$(shlibdir)" && \
+		ln -sf $(SLIBNAME_WITH_VERSION) $(SLIBNAME)
 
 install-lib-static: $(LIB)
 	install -d "$(libdir)"
@@ -83,13 +79,9 @@ install-headers:
 uninstall: uninstall-libs uninstall-headers
 
 uninstall-libs:
-ifeq ($(CONFIG_MINGW),yes)
-	-rm -f "$(prefix)/$(SLIBNAME)"
-else
 	-rm -f "$(shlibdir)/$(SLIBNAME_WITH_MAJOR)" \
 	       "$(shlibdir)/$(SLIBNAME)"            \
 	       "$(shlibdir)/$(SLIBNAME_WITH_VERSION)"
-endif
 	-rm -f "$(libdir)/$(LIB)"
 
 uninstall-headers:
