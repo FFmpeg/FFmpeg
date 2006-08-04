@@ -922,7 +922,8 @@ static void vc1_mc_4mv_luma(VC1Context *v, int n)
 
     srcY += src_y * s->linesize + src_x;
 
-    if(v->rangeredfrm || (unsigned)(src_x - s->mspel) > s->h_edge_pos - (mx&3) - 8 - s->mspel
+    if(v->rangeredfrm || (v->mv_mode == MV_PMODE_INTENSITY_COMP)
+       || (unsigned)(src_x - s->mspel) > s->h_edge_pos - (mx&3) - 8 - s->mspel
        || (unsigned)(src_y - s->mspel) > s->v_edge_pos - (my&3) - 8 - s->mspel){
         srcY -= s->mspel * (1 + s->linesize);
         ff_emulated_edge_mc(s->edge_emu_buffer, srcY, s->linesize, 9+s->mspel*2, 9+s->mspel*2,
@@ -936,6 +937,17 @@ static void vc1_mc_4mv_luma(VC1Context *v, int n)
             src = srcY;
             for(j = 0; j < 9 + s->mspel*2; j++) {
                 for(i = 0; i < 9 + s->mspel*2; i++) src[i] = ((src[i] - 128) >> 1) + 128;
+                src += s->linesize;
+            }
+        }
+        /* if we deal with intensity compensation we need to scale source blocks */
+        if(v->mv_mode == MV_PMODE_INTENSITY_COMP) {
+            int i, j;
+            uint8_t *src;
+
+            src = srcY;
+            for(j = 0; j < 9 + s->mspel*2; j++) {
+                for(i = 0; i < 9 + s->mspel*2; i++) src[i] = v->luty[src[i]];
                 src += s->linesize;
             }
         }
@@ -1040,7 +1052,8 @@ static void vc1_mc_4mv_chroma(VC1Context *v)
     uvsrc_y = clip(uvsrc_y,  -8, s->mb_height *  8);
     srcU = s->last_picture.data[1] + uvsrc_y * s->uvlinesize + uvsrc_x;
     srcV = s->last_picture.data[2] + uvsrc_y * s->uvlinesize + uvsrc_x;
-    if(v->rangeredfrm || (unsigned)uvsrc_x > (s->h_edge_pos >> 1) - 9
+    if(v->rangeredfrm || (v->mv_mode == MV_PMODE_INTENSITY_COMP)
+       || (unsigned)uvsrc_x > (s->h_edge_pos >> 1) - 9
        || (unsigned)uvsrc_y > (s->v_edge_pos >> 1) - 9){
         ff_emulated_edge_mc(s->edge_emu_buffer     , srcU, s->uvlinesize, 8+1, 8+1,
                             uvsrc_x, uvsrc_y, s->h_edge_pos >> 1, s->v_edge_pos >> 1);
@@ -1059,6 +1072,21 @@ static void vc1_mc_4mv_chroma(VC1Context *v)
                 for(i = 0; i < 9; i++) {
                     src[i] = ((src[i] - 128) >> 1) + 128;
                     src2[i] = ((src2[i] - 128) >> 1) + 128;
+                }
+                src += s->uvlinesize;
+                src2 += s->uvlinesize;
+            }
+        }
+        /* if we deal with intensity compensation we need to scale source blocks */
+        if(v->mv_mode == MV_PMODE_INTENSITY_COMP) {
+            int i, j;
+            uint8_t *src, *src2;
+
+            src = srcU; src2 = srcV;
+            for(j = 0; j < 9; j++) {
+                for(i = 0; i < 9; i++) {
+                    src[i] = v->lutuv[src[i]];
+                    src2[i] = v->lutuv[src2[i]];
                 }
                 src += s->uvlinesize;
                 src2 += s->uvlinesize;
