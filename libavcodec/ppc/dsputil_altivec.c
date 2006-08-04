@@ -1714,10 +1714,10 @@ static void vorbis_inverse_coupling_altivec(float *mag, float *ang,
         a = vec_xor(a, (vector float) vec_sl((vector unsigned int)t0, v_31));
         t0 = (vector bool int)vec_and(a, t1);
         t1 = (vector bool int)vec_andc(a, t1);
-        a = vec_add(m, (vector float)t0);
-        m = vec_sub(m, (vector float)t1);
-        vec_ste(a, 0, ang+i);
-        vec_ste(m, 0, mag+i);
+        a = vec_sub(m, (vector float)t0);
+        m = vec_add(m, (vector float)t1);
+        vec_stl(a, 0, ang+i);
+        vec_stl(m, 0, mag+i);
     }
 }
 
