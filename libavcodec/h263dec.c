@@ -426,8 +426,8 @@ int ff_h263_decode_frame(AVCodecContext *avctx,
 uint64_t time= rdtsc();
 #endif
 #ifdef DEBUG
-    printf("*****frame %d size=%d\n", avctx->frame_number, buf_size);
-    printf("bytes=%x %x %x %x\n", buf[0], buf[1], buf[2], buf[3]);
+    av_log(avctx, AV_LOG_DEBUG, "*****frame %d size=%d\n", avctx->frame_number, buf_size);
+    av_log(avctx, AV_LOG_DEBUG, "bytes=%x %x %x %x\n", buf[0], buf[1], buf[2], buf[3]);
 #endif
     s->flags= avctx->flags;
     s->flags2= avctx->flags2;
