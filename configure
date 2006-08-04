@@ -885,7 +885,8 @@ EOF
     SLIB_EXTRA_CMD="-lib /machine:i386 /def:\$(@:${SLIBSUF}=.def)"
     FFLDFLAGS="-Wl,--output-def,\$(@:${SLIBSUF}=.def),--out-implib,lib\$(SLIBNAME:\$(SLIBSUF)=.dll.a)"
     if test "$force_prefix" != yes; then PREFIX="$PROGRAMFILES/FFmpeg"; fi
-    if test "$force_libdir" != yes; then bindir="$PREFIX"; fi
+    if test "$force_libdir" != yes; then bindir='${PREFIX}'; fi
+    shlibdir='${PREFIX}'
 fi
 
 # Combine FFLDFLAGS, EXTRALDFLAGS and the LDFLAGS environment variable.
