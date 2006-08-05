@@ -224,6 +224,7 @@ static const int fmt_name[PIX_FMT_NB] = {
     [PIX_FMT_RGB565] = IMGFMT_RGB16,    ///< always stored in cpu endianness 
     [PIX_FMT_RGB555] = IMGFMT_RGB15,    ///< always stored in cpu endianness, most significant bit to 1 
     [PIX_FMT_UYVY422] = IMGFMT_UYVY,   ///< Packed pixel, Cb Y0 Cr Y1 
+    [PIX_FMT_GRAY8] = IMGFMT_Y800,     ///< Gray jpeg
 };
 
 char *sws_format_name(int format)
