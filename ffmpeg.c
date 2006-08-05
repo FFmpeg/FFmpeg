@@ -3032,7 +3032,7 @@ static void new_video_stream(AVFormatContext *oc)
 
         video_enc->width = frame_width + frame_padright + frame_padleft;
         video_enc->height = frame_height + frame_padtop + frame_padbottom;
-        video_enc->sample_aspect_ratio = av_d2q(frame_aspect_ratio*frame_height/frame_width, 255);
+        video_enc->sample_aspect_ratio = av_d2q(frame_aspect_ratio*video_enc->height/video_enc->width, 255);
         video_enc->pix_fmt = frame_pix_fmt;
 
         if(codec && codec->pix_fmts){
