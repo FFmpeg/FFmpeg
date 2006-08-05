@@ -1665,6 +1665,10 @@ static int av_encode(AVFormatContext **output_files,
                             codec->height - (frame_padtop + frame_padbottom),
                             codec->pix_fmt,
                             sws_flags, NULL, NULL, NULL);
+                    if (ost->img_resample_ctx == NULL) {
+                        fprintf(stderr, "Cannot get resampling context\n");
+                        exit(1);
+                    }
                     ost->resample_height = icodec->height - (frame_topBand + frame_bottomBand);
                 }
                 ost->encoding_needed = 1;
