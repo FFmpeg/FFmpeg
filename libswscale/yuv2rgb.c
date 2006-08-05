@@ -154,7 +154,7 @@ const uint8_t  __attribute__((aligned(8))) dither_8x8_220[8][8]={
 };
 #endif
 
-#if defined(ARCH_X86) || defined(ARCH_X86_64)
+#ifdef HAVE_MMX
 
 /* hope these constant values are cache line aligned */
 uint64_t attribute_used __attribute__((aligned(8))) mmx_00ffw = 0x00ff00ff00ff00ffULL;
@@ -578,7 +578,7 @@ EPILOG(1)
 
 SwsFunc yuv2rgb_get_func_ptr (SwsContext *c)
 {
-#if defined(ARCH_X86) || defined(ARCH_X86_64)
+#if defined(HAVE_MMX2) || defined(HAVE_MMX)
     if(c->flags & SWS_CPU_CAPS_MMX2){
 	switch(c->dstFormat){
 	case IMGFMT_BGR32: return yuv420_rgb32_MMX2;

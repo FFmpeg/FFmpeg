@@ -72,9 +72,11 @@ void (*yvu9_to_yuy2)(const uint8_t *src1, const uint8_t *src2, const uint8_t *sr
 			long srcStride1, long srcStride2,
 			long srcStride3, long dstStride);
 
-#if defined(ARCH_X86) || defined(ARCH_X86_64)
+#if defined(HAVE_MMX)
 static const uint64_t mmx_null  __attribute__((aligned(8))) = 0x0000000000000000ULL;
 static const uint64_t mmx_one   __attribute__((aligned(8))) = 0xFFFFFFFFFFFFFFFFULL;
+#endif
+#if defined(ARCH_X86) || defined(ARCH_X86_64)
 static const uint64_t mask32b  attribute_used __attribute__((aligned(8))) = 0x000000FF000000FFULL;
 static const uint64_t mask32g  attribute_used __attribute__((aligned(8))) = 0x0000FF000000FF00ULL;
 static const uint64_t mask32r  attribute_used __attribute__((aligned(8))) = 0x00FF000000FF0000ULL;
@@ -195,7 +197,7 @@ static uint64_t __attribute__((aligned(8))) dither8[2]={
 */
 
 void sws_rgb2rgb_init(int flags){
-#if defined(ARCH_X86) || defined(ARCH_X86_64)
+#if defined(HAVE_MMX2) || defined(HAVE_3DNOW) || defined(HAVE_MMX)
 	if(flags & SWS_CPU_CAPS_MMX2){
 		rgb15to16= rgb15to16_MMX2;
 		rgb15to24= rgb15to24_MMX2;
@@ -287,7 +289,7 @@ void sws_rgb2rgb_init(int flags){
 		vu9_to_vu12= vu9_to_vu12_MMX;
 		yvu9_to_yuy2= yvu9_to_yuy2_MMX;
 	}else
-#endif /* defined(ARCH_X86) || defined(ARCH_X86_64) */
+#endif /* defined(HAVE_MMX2) || defined(HAVE_3DNOW) || defined(HAVE_MMX) */
 	{
 		rgb15to16= rgb15to16_C;
 		rgb15to24= rgb15to24_C;

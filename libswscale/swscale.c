@@ -1240,7 +1240,7 @@ static inline int initFilter(int16_t **outFilter, int16_t **filterPos, int *outF
         return 0;
 }
 
-#if defined(ARCH_X86) || defined(ARCH_X86_64)
+#ifdef HAVE_MMX2
 static void initMMX2HScaler(int dstW, int xInc, uint8_t *funnyCode, int16_t *filter, int32_t *filterPos, int numSplits)
 {
 	uint8_t *fragmentA;
@@ -1411,7 +1411,7 @@ static void initMMX2HScaler(int dstW, int xInc, uint8_t *funnyCode, int16_t *fil
 	}
 	filterPos[i/2]= xpos>>16; // needed to jump to the next part
 }
-#endif // ARCH_X86 || ARCH_X86_64
+#endif /* HAVE_MMX2 */
 
 static void globalInit(void){
     // generating tables:
@@ -2114,11 +2114,11 @@ SwsContext *sws_getContext(int srcW, int srcH, int origSrcFormat, int dstW, int 
 				 (flags&SWS_BICUBLIN) ? (flags|SWS_BILINEAR) : flags,
 				 srcFilter->chrH, dstFilter->chrH, c->param);
 
-#if defined(ARCH_X86) || defined(ARCH_X86_64)
+#define MAX_FUNNY_CODE_SIZE 10000
+#if defined(HAVE_MMX2)
 // can't downscale !!!
 		if(c->canMMX2BeUsed && (flags & SWS_FAST_BILINEAR))
 		{
-#define MAX_FUNNY_CODE_SIZE 10000
 #ifdef MAP_ANONYMOUS
 			c->funnyYCode = (uint8_t*)mmap(NULL, MAX_FUNNY_CODE_SIZE, PROT_EXEC | PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
 			c->funnyUVCode = (uint8_t*)mmap(NULL, MAX_FUNNY_CODE_SIZE, PROT_EXEC | PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
@@ -2135,7 +2135,7 @@ SwsContext *sws_getContext(int srcW, int srcH, int origSrcFormat, int dstW, int 
 			initMMX2HScaler(      dstW, c->lumXInc, c->funnyYCode , c->lumMmx2Filter, c->lumMmx2FilterPos, 8);
 			initMMX2HScaler(c->chrDstW, c->chrXInc, c->funnyUVCode, c->chrMmx2Filter, c->chrMmx2FilterPos, 4);
 		}
-#endif /* defined(ARCH_X86) || defined(ARCH_X86_64) */
+#endif /* defined(HAVE_MMX2) */
 	} // Init Horizontal stuff
 
 
