@@ -25,6 +25,9 @@ typedef struct FLVContext {
     int hasAudio;
     int hasVideo;
     int reserved;
+    offset_t duration_offset;
+    offset_t filesize_offset;
+    int64_t duration;
 } FLVContext;
 
 static int get_audio_flags(AVCodecContext *enc){
@@ -160,12 +163,11 @@ static int flv_write_header(AVFormatContext *s)
 
     /* mixed array (hash) with size and string/type/data tuples */
     put_byte(pb, AMF_MIXED_ARRAY);
-    put_be32(pb, 4*flv->hasVideo + flv->hasAudio + (!!s->file_size) + (s->duration != AV_NOPTS_VALUE && s->duration));
+    put_be32(pb, 4*flv->hasVideo + flv->hasAudio + 2); // +2 for duration and file size
 
-    if (s->duration != AV_NOPTS_VALUE && s->duration) {
-        put_amf_string(pb, "duration");
-        put_amf_double(pb, s->duration / (double)AV_TIME_BASE);
-    }
+    put_amf_string(pb, "duration");
+    flv->duration_offset= url_ftell(pb);
+    put_amf_double(pb, 0); // delayed write
 
     if(flv->hasVideo){
         put_amf_string(pb, "width");
@@ -186,10 +188,9 @@ static int flv_write_header(AVFormatContext *s)
         put_amf_double(pb, samplerate);
     }
 
-    if(s->file_size){
-        put_amf_string(pb, "filesize");
-        put_amf_double(pb, s->file_size);
-    }
+    put_amf_string(pb, "filesize");
+    flv->filesize_offset= url_ftell(pb);
+    put_amf_double(pb, 0); // delayed write
 
     put_amf_string(pb, "");
     put_byte(pb, 9); // end marker 1 byte
@@ -217,6 +218,13 @@ static int flv_write_trailer(AVFormatContext *s)
     flags |= flv->hasVideo ? 1 : 0;
     url_fseek(pb, 4, SEEK_SET);
     put_byte(pb,flags);
+
+    /* update informations */
+    url_fseek(pb, flv->duration_offset, SEEK_SET);
+    put_amf_double(pb, flv->duration / (double)1000);
+    url_fseek(pb, flv->filesize_offset, SEEK_SET);
+    put_amf_double(pb, file_size);
+
     url_fseek(pb, file_size, SEEK_SET);
     return 0;
 }
@@ -250,6 +258,7 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
     put_byte(pb,flags);
     put_buffer(pb, pkt->data, size);
     put_be32(pb,size+1+11); // previous tag size
+    flv->duration = pkt->pts + pkt->duration;
 
     put_flush_packet(pb);
     return 0;
