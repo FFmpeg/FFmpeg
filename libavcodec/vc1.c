@@ -923,8 +923,8 @@ static void vc1_mc_4mv_luma(VC1Context *v, int n)
     srcY += src_y * s->linesize + src_x;
 
     if(v->rangeredfrm || (v->mv_mode == MV_PMODE_INTENSITY_COMP)
-       || (unsigned)(src_x - s->mspel) > s->h_edge_pos - (mx&3) - 8 - s->mspel
-       || (unsigned)(src_y - s->mspel) > s->v_edge_pos - (my&3) - 8 - s->mspel){
+       || (unsigned)(src_x - s->mspel) > s->h_edge_pos - (mx&3) - 8 - s->mspel*2
+       || (unsigned)(src_y - s->mspel) > s->v_edge_pos - (my&3) - 8 - s->mspel*2){
         srcY -= s->mspel * (1 + s->linesize);
         ff_emulated_edge_mc(s->edge_emu_buffer, srcY, s->linesize, 9+s->mspel*2, 9+s->mspel*2,
                             src_x - s->mspel, src_y - s->mspel, s->h_edge_pos, s->v_edge_pos);
