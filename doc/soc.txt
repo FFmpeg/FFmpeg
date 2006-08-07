@@ -1,24 +1,24 @@
-Google Summer of Code and similar project guidlines
+Google Summer of Code and similar project guidelines
 
-Summer of code is a project by google in which students are paid to implement
+Summer of Code is a project by Google in which students are paid to implement
 some nice new features for various participating open source projects ...
 
-This text is a collection of things to take care off for the next soc as
-its a little late for this years soc (2006)
+This text is a collection of things to take care of for the next soc as
+it's a little late for this year's soc (2006).
 
 The Goal:
 Our goal in respect to soc is and must be of course exactly one thing and
 that is to improve FFmpeg, to reach this goal, code must
-* conform to the svn policy and patch submission guidlines
-* must improve ffmpeg somehow (faster, smaller, "better",
+* conform to the svn policy and patch submission guidelines
+* must improve FFmpeg somehow (faster, smaller, "better",
   more codecs supported, fewer bugs, cleaner, ...)
 
 for mentors and other developers to help students to reach that goal it is
-essential that changes to their codebase are publically vissible, clean and
+essential that changes to their codebase are publicly visible, clean and
 easy reviewable that again leads us to:
 * use of a revision control system like svn
-* seperation of cosmetic from non cosmetic changes (this is almost entirly
+* separation of cosmetic from non-cosmetic changes (this is almost entirely
   ignored by mentors and students in soc 2006 which might lead to a suprise
   when the code will be reviewed at the end before a possible inclusion in
-  ffmpeg, individual changes where generally not reviewable due to cosmetics)
+  FFmpeg, individual changes were generally not reviewable due to cosmetics).
 * frequent commits, so that comments can be provided early
