@@ -361,9 +361,8 @@ static int mov_write_audio_tag(ByteIOContext *pb, MOVTrack* track)
     put_be32(pb, 0); /* Reserved */
 
     put_be16(pb, track->mode == MODE_MOV ? track->enc->channels : 2); /* Number of channels */
-    /* TODO: Currently hard-coded to 16-bit, there doesn't seem
-                 to be a good way to get number of bits of audio */
-    put_be16(pb, 0x10); /* Reserved */
+    /* FIXME 8 bit for 'raw ' in mov */
+    put_be16(pb, 16); /* Reserved */
 
     put_be16(pb, vbr ? 0xfffe : 0); /* compression ID */
     put_be16(pb, 0); /* packet size (= 0) */
