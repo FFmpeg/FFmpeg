@@ -397,8 +397,10 @@ static int mov_write_d263_tag(ByteIOContext *pb)
     put_be32(pb, 0xf); /* size */
     put_tag(pb, "d263");
     put_tag(pb, "FFMP");
-    put_be16(pb, 0x0a);
-    put_byte(pb, 0);
+    put_byte(pb, 0); /* decoder version */
+    /* FIXME use AVCodecContext level/profile, when encoder will set values */
+    put_byte(pb, 0xa); /* level */
+    put_byte(pb, 0); /* profile */
     return 0xf;
 }
 
