@@ -341,13 +341,13 @@ static const CodecTag codec_movaudio_tags[] = {
 static int mov_write_audio_tag(ByteIOContext *pb, MOVTrack* track)
 {
     offset_t pos = url_ftell(pb);
-    int vbr=  track->enc->codec_id == CODEC_ID_AAC ||
-              track->enc->codec_id == CODEC_ID_MP3 ||
-              track->enc->codec_id == CODEC_ID_AMR_NB;
-    int version = track->mode == MODE_MOV &&
-        (vbr ||
-         track->enc->codec_id == CODEC_ID_PCM_S32LE ||
-         track->enc->codec_id == CODEC_ID_PCM_S24LE);
+    int vbr=  track->mode == MODE_MOV &&
+        (track->enc->codec_id == CODEC_ID_AAC ||
+         track->enc->codec_id == CODEC_ID_MP3 ||
+         track->enc->codec_id == CODEC_ID_AMR_NB);
+    int version = vbr ||
+        track->enc->codec_id == CODEC_ID_PCM_S32LE ||
+        track->enc->codec_id == CODEC_ID_PCM_S24LE;
 
     put_be32(pb, 0); /* size */
     put_le32(pb, track->tag); // store it byteswapped
