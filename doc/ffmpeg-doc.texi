@@ -1084,6 +1084,60 @@ MinGW tools).
 Then you can easily test FFmpeg with Wine
 (@url{http://www.winehq.com/}).
 
+@subsection Compilation under Cygwin
+
+Cygwin works very much like Unix.
+
+Just install your Cygwin with all the "Base" packages, plus the
+following "Devel" ones:
+@example
+binutils, gcc-core, make, subversion
+@end example
+
+Do not install binutils-20060709-1 (they are buggy on shared builds);
+use binutils-20050610-1 instead.
+
+Then run
+
+@example
+./configure --enable-static --disable-shared
+@end example
+
+to make a static build or
+
+@example
+./configure --enable-shared --disable-static
+@end example
+
+to build shared libraries.
+
+If you want to build FFmpeg with additional libraries, download Cygwin
+"Devel" packages for Ogg and Vorbis from any Cygwin packages repository
+and/or SDL, xvid, faac, faad2 packages from Cygwin Ports,
+(@url{http://cygwinports.dotsrc.org/}).
+
+@subsection Crosscompilation for Windows under Cygwin
+
+With Cygwin you can create Windows binaries that don't need the cygwin1.dll.
+
+Just install your Cygwin as explained before, plus these additional
+"Devel" packages:
+@example
+gcc-mingw-core, mingw-runtime, mingw-zlib
+@end example
+
+and add some special flags to your configure invocation.
+
+For a static build run
+@example
+./configure --enable-mingw32 --enable-memalign-hack --enable-static --disable-shared --extra-cflags=-mno-cygwin --extra-libs=-mno-cygwin
+@end example
+
+and for a build with shared libraries
+@example
+./configure --enable-mingw32 --enable-memalign-hack --enable-shared --disable-static --extra-cflags=-mno-cygwin --extra-libs=-mno-cygwin
+@end example
+
 @section Mac OS X
 
 @section BeOS
