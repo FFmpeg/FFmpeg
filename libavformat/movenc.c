@@ -606,14 +606,14 @@ static int mov_write_video_tag(ByteIOContext *pb, MOVTrack* track)
     put_be16(pb, 0); /* Codec stream version */
     put_be16(pb, 0); /* Codec stream revision (=0) */
     if (track->mode == MODE_MOV) {
-    put_tag(pb, "FFMP"); /* Vendor */
-    if(track->enc->codec_id == CODEC_ID_RAWVIDEO) {
-        put_be32(pb, 0); /* Temporal Quality */
-        put_be32(pb, 0x400); /* Spatial Quality = lossless*/
-    } else {
-        put_be32(pb, 0x200); /* Temporal Quality = normal */
-        put_be32(pb, 0x200); /* Spatial Quality = normal */
-    }
+        put_tag(pb, "FFMP"); /* Vendor */
+        if(track->enc->codec_id == CODEC_ID_RAWVIDEO) {
+            put_be32(pb, 0); /* Temporal Quality */
+            put_be32(pb, 0x400); /* Spatial Quality = lossless*/
+        } else {
+            put_be32(pb, 0x200); /* Temporal Quality = normal */
+            put_be32(pb, 0x200); /* Spatial Quality = normal */
+        }
     } else {
         put_be32(pb, 0); /* Reserved */
         put_be32(pb, 0); /* Reserved */
