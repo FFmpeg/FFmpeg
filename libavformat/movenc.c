@@ -365,11 +365,7 @@ static int mov_write_audio_tag(ByteIOContext *pb, MOVTrack* track)
                  to be a good way to get number of bits of audio */
     put_be16(pb, 0x10); /* Reserved */
 
-    if(vbr) {
-        put_be16(pb, 0xfffe); /* compression ID (vbr)*/
-    } else {
-        put_be16(pb, 0); /* compression ID (= 0) */
-    }
+    put_be16(pb, vbr ? 0xfffe : 0); /* compression ID */
     put_be16(pb, 0); /* packet size (= 0) */
     put_be16(pb, track->timescale); /* Time scale */
     put_be16(pb, 0); /* Reserved */
