@@ -605,6 +605,7 @@ static int mov_write_video_tag(ByteIOContext *pb, MOVTrack* track)
 
     put_be16(pb, 0); /* Codec stream version */
     put_be16(pb, 0); /* Codec stream revision (=0) */
+    if (track->mode == MODE_MOV) {
     put_tag(pb, "FFMP"); /* Vendor */
     if(track->enc->codec_id == CODEC_ID_RAWVIDEO) {
         put_be32(pb, 0); /* Temporal Quality */
@@ -612,6 +613,11 @@ static int mov_write_video_tag(ByteIOContext *pb, MOVTrack* track)
     } else {
         put_be32(pb, 0x200); /* Temporal Quality = normal */
         put_be32(pb, 0x200); /* Spatial Quality = normal */
+    }
+    } else {
+        put_be32(pb, 0); /* Reserved */
+        put_be32(pb, 0); /* Reserved */
+        put_be32(pb, 0); /* Reserved */
     }
     put_be16(pb, track->enc->width); /* Video width */
     put_be16(pb, track->enc->height); /* Video height */
@@ -621,7 +627,8 @@ static int mov_write_video_tag(ByteIOContext *pb, MOVTrack* track)
     put_be16(pb, 1); /* Frame count (= 1) */
 
     memset(compressor_name,0,32);
-    if (track->enc->codec && track->enc->codec->name)
+    /* FIXME not sure, ISO 14496-1 draft where it shall be set to 0 */
+    if (track->mode == MODE_MOV && track->enc->codec && track->enc->codec->name)
         strncpy(compressor_name,track->enc->codec->name,31);
     put_byte(pb, strlen(compressor_name));
     put_buffer(pb, compressor_name, 31);
