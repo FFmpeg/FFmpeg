@@ -532,6 +532,7 @@ static const CodecTag codec_movvideo_tags[] = {
     { CODEC_ID_SVQ1, MKTAG('S', 'V', 'Q', '1') },
     { CODEC_ID_SVQ3, MKTAG('S', 'V', 'Q', '3') },
     { CODEC_ID_MPEG4, MKTAG('m', 'p', '4', 'v') },
+    { CODEC_ID_H263, MKTAG('h', '2', '6', '3') },
     { CODEC_ID_H263, MKTAG('s', '2', '6', '3') },
     { CODEC_ID_H264, MKTAG('a', 'v', 'c', '1') },
     /* special handling in mov_find_video_codec_tag */
@@ -561,6 +562,11 @@ static int mov_find_video_codec_tag(AVFormatContext *s, MOVTrack *track)
                 else
                     tag = MKTAG('d', 'v', 'p', 'p');
             }
+        } else if (track->enc->codec_id == CODEC_ID_H263) {
+            if (track->mode == MODE_MOV)
+                tag = MKTAG('h', '2', '6', '3');
+            else
+                tag = MKTAG('s', '2', '6', '3');
         } else {
             tag = codec_get_tag(codec_movvideo_tags, track->enc->codec_id);
         }
@@ -1461,6 +1467,8 @@ static int mov_write_header(AVFormatContext *s)
         MOVTrack *track= &mov->tracks[i];
 
         track->enc = st->codec;
+        track->language = ff_mov_iso639_to_lang(st->language, mov->mode != MODE_MOV);
+        track->mode = mov->mode;
         if(st->codec->codec_type == CODEC_TYPE_VIDEO){
             track->tag = mov_find_video_codec_tag(s, track);
             av_set_pts_info(st, 64, 1, st->codec->time_base.den);
@@ -1469,8 +1477,6 @@ static int mov_write_header(AVFormatContext *s)
             av_set_pts_info(st, 64, 1, st->codec->sample_rate);
             track->sampleSize = (av_get_bits_per_sample(st->codec->codec_id) >> 3) * st->codec->channels;
         }
-        track->language = ff_mov_iso639_to_lang(st->language, mov->mode != MODE_MOV);
-        track->mode = mov->mode;
     }
 
     mov_write_mdat_tag(pb, mov);
