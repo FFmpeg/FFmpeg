@@ -423,6 +423,7 @@ AVOutputFormat flac_muxer = {
     flac_write_header,
     raw_write_packet,
     raw_write_trailer,
+    .flags= AVFMT_NOTIMESTAMPS,
 };
 #endif //CONFIG_MUXERS
 
@@ -449,6 +450,7 @@ AVOutputFormat ac3_muxer = {
     raw_write_header,
     raw_write_packet,
     raw_write_trailer,
+    .flags= AVFMT_NOTIMESTAMPS,
 };
 #endif //CONFIG_MUXERS
 
@@ -498,6 +500,7 @@ AVOutputFormat h261_muxer = {
     raw_write_header,
     raw_write_packet,
     raw_write_trailer,
+    .flags= AVFMT_NOTIMESTAMPS,
 };
 #endif //CONFIG_MUXERS
 
@@ -525,6 +528,7 @@ AVOutputFormat h263_muxer = {
     raw_write_header,
     raw_write_packet,
     raw_write_trailer,
+    .flags= AVFMT_NOTIMESTAMPS,
 };
 #endif //CONFIG_MUXERS
 
@@ -552,6 +556,7 @@ AVOutputFormat m4v_muxer = {
     raw_write_header,
     raw_write_packet,
     raw_write_trailer,
+    .flags= AVFMT_NOTIMESTAMPS,
 };
 #endif //CONFIG_MUXERS
 
@@ -579,6 +584,7 @@ AVOutputFormat h264_muxer = {
     raw_write_header,
     raw_write_packet,
     raw_write_trailer,
+    .flags= AVFMT_NOTIMESTAMPS,
 };
 #endif //CONFIG_MUXERS
 
@@ -605,6 +611,7 @@ AVOutputFormat mpeg1video_muxer = {
     raw_write_header,
     raw_write_packet,
     raw_write_trailer,
+    .flags= AVFMT_NOTIMESTAMPS,
 };
 #endif //CONFIG_MUXERS
 
@@ -620,6 +627,7 @@ AVOutputFormat mpeg2video_muxer = {
     raw_write_header,
     raw_write_packet,
     raw_write_trailer,
+    .flags= AVFMT_NOTIMESTAMPS,
 };
 #endif //CONFIG_MUXERS
 
@@ -659,6 +667,7 @@ AVOutputFormat mjpeg_muxer = {
     raw_write_header,
     raw_write_packet,
     raw_write_trailer,
+    .flags= AVFMT_NOTIMESTAMPS,
 };
 #endif //CONFIG_MUXERS
 
@@ -690,6 +699,7 @@ AVOutputFormat pcm_ ## name ## _muxer = {\
     raw_write_header,\
     raw_write_packet,\
     raw_write_trailer,\
+    .flags= AVFMT_NOTIMESTAMPS,\
 };
 
 
@@ -786,6 +796,7 @@ AVOutputFormat rawvideo_muxer = {
     raw_write_header,
     raw_write_packet,
     raw_write_trailer,
+    .flags= AVFMT_NOTIMESTAMPS,
 };
 #endif //CONFIG_MUXERS
 
@@ -810,6 +821,6 @@ AVOutputFormat null_muxer = {
     raw_write_header,
     null_write_packet,
     raw_write_trailer,
-    .flags = AVFMT_NOFILE | AVFMT_RAWPICTURE,
+    .flags = AVFMT_NOFILE | AVFMT_RAWPICTURE | AVFMT_NOTIMESTAMPS,
 };
 #endif //CONFIG_MUXERS

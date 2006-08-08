@@ -2402,7 +2402,7 @@ int av_write_frame(AVFormatContext *s, AVPacket *pkt)
     int ret;
 
     ret=compute_pkt_fields2(s->streams[pkt->stream_index], pkt);
-    if(ret<0)
+    if(ret<0 && !(s->oformat->flags & AVFMT_NOTIMESTAMPS))
         return ret;
 
     truncate_ts(s->streams[pkt->stream_index], pkt);
@@ -2509,7 +2509,7 @@ int av_interleaved_write_frame(AVFormatContext *s, AVPacket *pkt){
         return 0;
 
 //av_log(NULL, AV_LOG_DEBUG, "av_interleaved_write_frame %d %Ld %Ld\n", pkt->size, pkt->dts, pkt->pts);
-    if(compute_pkt_fields2(st, pkt) < 0)
+    if(compute_pkt_fields2(st, pkt) < 0 && !(s->oformat->flags & AVFMT_NOTIMESTAMPS))
         return -1;
 
     if(pkt->dts == AV_NOPTS_VALUE)

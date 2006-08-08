@@ -122,6 +122,7 @@ typedef struct AVFormatParameters {
 #define AVFMT_RAWPICTURE    0x0020 /* format wants AVPicture structure for
                                       raw picture data */
 #define AVFMT_GLOBALHEADER  0x0040 /* format wants global header */
+#define AVFMT_NOTIMESTAMPS  0x0080 /* format doesnt need / has any timestamps */
 
 typedef struct AVOutputFormat {
     const char *name;
