@@ -57,6 +57,7 @@ show_help(){
   echo "  --enable-pthreads        use pthreads [default=no]"
   echo "  --enable-dc1394          enable IIDC-1394 grabbing using libdc1394"
   echo "                           and libraw1394 [default=no]"
+  echo "  --enable-swscaler        software scaler support [default=no]"
   echo "  --enable-gpl             allow use of GPL code, the resulting libav*"
   echo "                           and ffmpeg will be under GPL [default=no]"
   echo ""
@@ -464,6 +465,7 @@ amr_nb_fixed="no"
 amr_if2="no"
 sunmlib="no"
 pthreads="no"
+swscaler="no"
 gpl="no"
 memalignhack="no"
 
@@ -802,6 +804,8 @@ for opt do
   ;;
   --enable-pthreads) pthreads="yes"
   ;;
+  --enable-swscaler) swscaler="yes"
+  ;;
   --enable-gpl) gpl="yes"
   ;;
   --enable-memalign-hack) memalignhack="yes"
@@ -963,6 +967,10 @@ EOF
         fi
     fi
 
+    if test "$swscaler" != "no"; then
+        echo "The software scaler is under GPL and --enable-gpl is not specified."
+        fail="yes"
+    fi
 
     if test "$fail" = "yes"; then
         exit 1
@@ -1501,6 +1509,7 @@ echo "a52 support      $a52"
 echo "a52 dlopened     $a52bin"
 echo "DTS support      $dts"
 echo "pp support       $pp"
+echo "Software Scaler enabled $swscaler"
 echo "debug symbols    $debug"
 echo "strip symbols    $dostrip"
 echo "optimize         $optimize"
@@ -1718,6 +1727,7 @@ if test "$vhook" = "yes" ; then
   echo "#define HAVE_VHOOK 1" >> $TMPH
 fi
 
+sws_version=`grep '#define LIBSWSCALE_VERSION ' "$source_path/libswscale/swscale.h" | sed 's/[^0-9\.]//g'`
 pp_version=`grep '#define LIBPOSTPROC_VERSION ' "$source_path/libpostproc/postprocess.h" | sed 's/[^0-9\.]//g'`
 lavc_version=`grep '#define LIBAVCODEC_VERSION ' "$source_path/libavcodec/avcodec.h" | sed 's/[^0-9\.]//g'`
 lavf_version=`grep '#define LIBAVFORMAT_VERSION ' "$source_path/libavformat/avformat.h" | sed 's/[^0-9\.]//g'`
@@ -1737,6 +1747,8 @@ if test "$lshared" = "yes" ; then
   echo "LAVFVERSION=$lavf_version" >> config.mak
   echo "LAVUMAJOR=${lavu_version%%.*}" >> config.mak
   echo "LAVUVERSION=$lavu_version" >> config.mak
+  echo "SWSMAJOR=${sws_version%%.*}" >> config.mak
+  echo "SWSVERSION=$sws_version" >> config.mak
   echo "SLIBNAME=${SLIBNAME}" >> config.mak
   echo "SLIBNAME_WITH_VERSION=${SLIBNAME_WITH_VERSION}" >> config.mak
   echo "SLIBNAME_WITH_MAJOR=${SLIBNAME_WITH_MAJOR}" >> config.mak
@@ -1789,6 +1801,11 @@ fi
 if test "$pp" = "yes" ; then
   echo "#define CONFIG_PP 1" >> $TMPH
   echo "CONFIG_PP=yes" >> config.mak
+fi
+
+if test "$swscaler" = "yes" ; then
+  echo "#define CONFIG_SWSCALER 1" >> $TMPH
+  echo "CONFIG_SWSCALER=yes" >> config.mak
 fi
 
 # MPEG audio high precision mode
@@ -2011,6 +2028,7 @@ if test "$source_path_used" = "yes" ; then
          libavcodec/liba52 \
          libpostproc \
          libavutil \
+         libswscale \
          tests \
          vhook \
          "
@@ -2020,6 +2038,7 @@ if test "$source_path_used" = "yes" ; then
           libavcodec/Makefile \
           libpostproc/Makefile \
           libavutil/Makefile \
+          libswscale/Makefile \
           tests/Makefile \
           vhook/Makefile \
           doc/Makefile \
@@ -2217,5 +2236,36 @@ Version: $lavc_version
 Requires:
 Conflicts:
 Libs: \${libdir}/${LIBPREF}postproc${LIBSUF}
+Cflags: -I\${includedir}
+EOF
+
+# libswscale.pc
+cat <<EOF >libswscale.pc
+prefix=$PREFIX
+exec_prefix=\${prefix}
+libdir=\${exec_prefix}/lib
+includedir=\${prefix}/include
+
+Name: libswscale
+Description: FFmpeg image rescaling library
+Version: $sws_version
+Requires: $pkg_requires libavutil = $lavu_version
+Conflicts:
+Libs: -L\${libdir} -lswscale
+Cflags: -I\${includedir} -I\${includedir}/swscale
+EOF
+
+cat <<EOF >libswscale-uninstalled.pc
+prefix=
+exec_prefix=
+libdir=\${pcfiledir}/libswscale
+includedir=\${pcfiledir}/libswscale
+
+Name: libswscale
+Description: FFmpeg image rescaling library
+Version: $sws_version
+Requires: $pkg_requires libavutil = $lavu_version
+Conflicts:
+Libs: \${libdir}/${LIBPREF}swscale${LIBSUF}
 Cflags: -I\${includedir}
 EOF

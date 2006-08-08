@@ -11,7 +11,7 @@ CFLAGS=$(OPTFLAGS) -DHAVE_AV_CONFIG_H -I.. -I$(SRC_PATH)/libavutil \
 OBJS= bitstream.o utils.o allcodecs.o \
       mpegvideo.o jrevdct.o jfdctfst.o jfdctint.o\
       mjpeg.o resample.o resample2.o dsputil.o \
-      motion_est.o imgconvert.o imgresample.o \
+      motion_est.o imgconvert.o \
       mpeg12.o mpegaudiodec.o simple_idct.o \
       ratecontrol.o eval.o error_resilience.o \
       fft.o mdct.o raw.o golomb.o cabac.o\
@@ -22,6 +22,9 @@ OBJS= bitstream.o utils.o allcodecs.o \
 
 
 HEADERS = avcodec.h
+ifneq ($(CONFIG_SWSCALER),yes)
+HEADERS += swscale.h
+endif
 
 OBJS-$(CONFIG_AASC_DECODER)            += aasc.o
 OBJS-$(CONFIG_AC3_ENCODER)             += ac3enc.o
@@ -276,6 +279,10 @@ OBJS-$(HAVE_OS2THREADS)                += os2thread.o
 OBJS-$(HAVE_BEOSTHREADS)               += beosthread.o
 
 OBJS-$(HAVE_XVMC_ACCEL)                += xvmcvideo.o
+
+ifneq ($(CONFIG_SWSCALER),yes)
+OBJS += imgresample.o
+endif
 
 # i386 mmx specific stuff
 ifeq ($(TARGET_MMX),yes)

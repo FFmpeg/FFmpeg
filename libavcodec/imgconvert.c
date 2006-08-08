@@ -2048,6 +2048,7 @@ int img_pad(AVPicture *dst, const AVPicture *src, int height, int width, int pix
     return 0;
 }
 
+#ifndef CONFIG_SWSCALER
 /* XXX: always use linesize. Return -1 if not supported */
 int img_convert(AVPicture *dst, int dst_pix_fmt,
                 const AVPicture *src, int src_pix_fmt,
@@ -2289,6 +2290,7 @@ int img_convert(AVPicture *dst, int dst_pix_fmt,
     avpicture_free(tmp);
     return ret;
 }
+#endif
 
 /* NOTE: we scan all the pixels to have an exact information */
 static int get_alpha_info_pal8(const AVPicture *src, int width, int height)

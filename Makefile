@@ -11,6 +11,10 @@ CFLAGS=$(OPTFLAGS) -I. -I$(SRC_PATH) -I$(SRC_PATH)/libavutil \
        -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_ISOC9X_SOURCE
 LDFLAGS+= -g
 
+ifeq ($(CONFIG_SWSCALER),yes)
+CFLAGS := -I$(SRC_PATH)/libswscale $(CFLAGS)
+endif
+
 MANPAGES=doc/ffmpeg.1
 PROGS_G+=ffmpeg_g$(EXESUF)
 PROGS+=ffmpeg$(EXESUF)
@@ -58,6 +62,11 @@ SRCS = $(OBJS:.o=.c) $(ASM_OBJS:.o=.s)
 FFLIBDIRS = -L./libavformat -L./libavcodec -L./libavutil
 FFLIBS = -lavformat$(BUILDSUF) -lavcodec$(BUILDSUF) -lavutil$(BUILDSUF)
 
+ifeq ($(CONFIG_SWSCALER),yes)
+FFLIBDIRS+=-L./libswscale
+FFLIBS+=-lswscale$(BUILDSUF)
+endif
+
 all: version.h lib $(PROGS_G) $(PROGS) $(PROGTEST) $(VHOOK) $(QTFASTSTART) $(DOC)
 
 lib:
@@ -66,6 +75,9 @@ lib:
 	$(MAKE) -C libavformat all
 ifeq ($(CONFIG_PP),yes)
 	$(MAKE) -C libpostproc all
+endif
+ifeq ($(CONFIG_SWSCALER),yes)
+	$(MAKE) -C libswscale  all
 endif
 
 ffmpeg_g$(EXESUF): ffmpeg.o cmdutils.o .libs
@@ -141,6 +153,10 @@ install-libs:
 ifeq ($(CONFIG_PP),yes)
 	$(MAKE) -C libpostproc install-libs
 endif
+ifeq ($(CONFIG_SWSCALER),yes)
+	$(MAKE) -C libswscale  install-libs
+endif
+
 ifeq ($(BUILD_SHARED),yes)
 	-$(LDCONFIG)
 endif
@@ -151,6 +167,9 @@ install-headers:
 	$(MAKE) -C libavformat install-headers
 ifeq ($(CONFIG_PP),yes)
 	$(MAKE) -C libpostproc install-headers
+endif
+ifeq ($(CONFIG_SWSCALER),yes)
+	$(MAKE) -C libswscale  install-headers
 endif
 
 uninstall: uninstall-progs uninstall-libs uninstall-headers uninstall-man uninstall-vhook
@@ -202,6 +221,7 @@ clean:
 	$(MAKE) -C libavcodec  clean
 	$(MAKE) -C libavformat clean
 	$(MAKE) -C libpostproc clean
+	$(MAKE) -C libswscale  clean
 	$(MAKE) -C tests       clean
 	$(MAKE) -C vhook       clean
 	$(MAKE) -C doc         clean
@@ -214,6 +234,7 @@ distclean: clean
 	$(MAKE) -C libavcodec  distclean
 	$(MAKE) -C libavformat distclean
 	$(MAKE) -C libpostproc distclean
+	$(MAKE) -C libswscale  distclean
 	$(MAKE) -C tests       distclean
 	$(MAKE) -C vhook       distclean
 	rm -f .depend version.h config.* *.pc
