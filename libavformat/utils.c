@@ -871,7 +871,7 @@ static int av_read_frame_internal(AVFormatContext *s, AVPacket *pkt)
                 *pkt = s->cur_pkt;
                 compute_pkt_fields(s, st, NULL, pkt);
                 s->cur_st = NULL;
-                return 0;
+                break;
             } else if (s->cur_len > 0 && st->discard < AVDISCARD_ALL) {
                 len = av_parser_parse(st->parser, st->codec, &pkt->data, &pkt->size,
                                       s->cur_ptr, s->cur_len,
@@ -891,7 +891,7 @@ static int av_read_frame_internal(AVFormatContext *s, AVPacket *pkt)
                     pkt->dts = st->parser->dts;
                     pkt->destruct = av_destruct_packet_nofree;
                     compute_pkt_fields(s, st, st->parser, pkt);
-                    return 0;
+                    break;
                 }
             } else {
                 /* free packet */
@@ -921,6 +921,12 @@ static int av_read_frame_internal(AVFormatContext *s, AVPacket *pkt)
             }
 
             st = s->streams[s->cur_pkt.stream_index];
+            if(st->codec->debug & FF_DEBUG_PTS)
+                av_log(s, AV_LOG_DEBUG, "av_read_packet stream=%d, pts=%lld, dts=%lld, size=%d\n",
+                    s->cur_pkt.stream_index,
+                    s->cur_pkt.pts,
+                    s->cur_pkt.dts,
+                    s->cur_pkt.size);
 
             s->cur_st = st;
             s->cur_ptr = s->cur_pkt.data;
@@ -936,6 +942,14 @@ static int av_read_frame_internal(AVFormatContext *s, AVPacket *pkt)
             }
         }
     }
+    if(st->codec->debug & FF_DEBUG_PTS)
+        av_log(s, AV_LOG_DEBUG, "av_read_frame_internal stream=%d, pts=%lld, dts=%lld, size=%d\n",
+            pkt->stream_index,
+            pkt->pts,
+            pkt->dts,
+            pkt->size);
+
+    return 0;
 }
 
 /**
