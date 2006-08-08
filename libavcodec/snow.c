@@ -3163,7 +3163,7 @@ static int get_4block_rd(SnowContext *s, int mb_x, int mb_y, int plane_index){
     const int ref_stride= s->current_picture.linesize[plane_index];
     uint8_t *dst= s->current_picture.data[plane_index];
     uint8_t *src= s-> input_picture.data[plane_index];
-    const static DWTELEM zero_dst[4096]; //FIXME
+    static const DWTELEM zero_dst[4096]; //FIXME
     const int b_stride = s->b_width << s->block_max_depth;
     const int b_height = s->b_height<< s->block_max_depth;
     const int w= p->width;

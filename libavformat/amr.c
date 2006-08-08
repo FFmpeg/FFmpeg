@@ -135,7 +135,7 @@ static int amr_read_packet(AVFormatContext *s,
 
     if (enc->codec_id == CODEC_ID_AMR_NB)
     {
-        const static uint8_t packed_size[16] = {12, 13, 15, 17, 19, 20, 26, 31, 5, 0, 0, 0, 0, 0, 0, 0};
+        static const uint8_t packed_size[16] = {12, 13, 15, 17, 19, 20, 26, 31, 5, 0, 0, 0, 0, 0, 0, 0};
         uint8_t toc, q, ft;
         int read;
         int size;
