@@ -138,7 +138,7 @@ void ff_fft_calc_3dn2(FFTContext *s, FFTComplex *z)
 void ff_imdct_calc_3dn2(MDCTContext *s, FFTSample *output,
                         const FFTSample *input, FFTSample *tmp)
 {
-    int k, n8, n4, n2, n;
+    long k, n8, n4, n2, n;
     const uint16_t *revtab = s->fft.revtab;
     const FFTSample *tcos = s->tcos;
     const FFTSample *tsin = s->tsin;
