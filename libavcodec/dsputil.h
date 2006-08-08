@@ -594,6 +594,8 @@ void get_psnr(uint8_t *orig_image[3], uint8_t *coded_image[3],
    FFTSample type */
 typedef float FFTSample;
 
+struct MDCTContext;
+
 typedef struct FFTComplex {
     FFTSample re, im;
 } FFTComplex;
@@ -605,6 +607,8 @@ typedef struct FFTContext {
     FFTComplex *exptab;
     FFTComplex *exptab1; /* only used by SSE code */
     void (*fft_calc)(struct FFTContext *s, FFTComplex *z);
+    void (*imdct_calc)(struct MDCTContext *s, FFTSample *output,
+                       const FFTSample *input, FFTSample *tmp);
 } FFTContext;
 
 int ff_fft_init(FFTContext *s, int nbits, int inverse);
@@ -635,6 +639,8 @@ typedef struct MDCTContext {
 int ff_mdct_init(MDCTContext *s, int nbits, int inverse);
 void ff_imdct_calc(MDCTContext *s, FFTSample *output,
                 const FFTSample *input, FFTSample *tmp);
+void ff_imdct_calc_3dn2(MDCTContext *s, FFTSample *output,
+                        const FFTSample *input, FFTSample *tmp);
 void ff_mdct_calc(MDCTContext *s, FFTSample *out,
                const FFTSample *input, FFTSample *tmp);
 void ff_mdct_end(MDCTContext *s);

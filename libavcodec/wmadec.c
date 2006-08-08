@@ -1113,7 +1113,7 @@ static int wma_decode_block(WMADecodeContext *s)
 
             n = s->block_len;
             n4 = s->block_len / 2;
-            ff_imdct_calc(&s->mdct_ctx[bsize],
+            s->mdct_ctx[bsize].fft.imdct_calc(&s->mdct_ctx[bsize],
                           output, s->coefs[ch], s->mdct_tmp);
 
             /* XXX: optimize all that by build the window and

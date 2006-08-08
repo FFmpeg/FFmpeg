@@ -1598,7 +1598,7 @@ static int vorbis_parse_audio_packet(vorbis_context *vc) {
 
         saved_start=vc->saved_start;
 
-        ff_imdct_calc(vc->modes[mode_number].blockflag ? &vc->mdct1 : &vc->mdct0, buf, ch_floor_ptr, buf_tmp);
+        vc->mdct0.fft.imdct_calc(vc->modes[mode_number].blockflag ? &vc->mdct1 : &vc->mdct0, buf, ch_floor_ptr, buf_tmp);
 
         if (vc->modes[mode_number].blockflag) {
             // -- overlap/add
