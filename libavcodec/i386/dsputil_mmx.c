@@ -40,6 +40,9 @@ static const uint64_t mm_bone attribute_used __attribute__ ((aligned(8))) = 0x01
 static const uint64_t mm_wone attribute_used __attribute__ ((aligned(8))) = 0x0001000100010001ULL;
 static const uint64_t mm_wtwo attribute_used __attribute__ ((aligned(8))) = 0x0002000200020002ULL;
 
+static const uint64_t ff_pdw_80000000[2] attribute_used __attribute__ ((aligned(16))) =
+{0x8000000080000000ULL, 0x8000000080000000ULL};
+
 static const uint64_t ff_pw_20 attribute_used __attribute__ ((aligned(8))) = 0x0014001400140014ULL;
 static const uint64_t ff_pw_3  attribute_used __attribute__ ((aligned(8))) = 0x0003000300030003ULL;
 static const uint64_t ff_pw_4  attribute_used __attribute__ ((aligned(8))) = 0x0004000400040004ULL;
@@ -2738,22 +2741,27 @@ static void vorbis_inverse_coupling_3dnow(float *mag, float *ang, int blocksize)
     }
     asm volatile("emms");
 }
-static void vorbis_inverse_coupling_sse2(float *mag, float *ang, int blocksize)
+static void vorbis_inverse_coupling_sse(float *mag, float *ang, int blocksize)
 {
     int i;
+
+    asm volatile(
+            "movaps  %0,     %%xmm5 \n\t"
+        ::"m"(ff_pdw_80000000[0])
+    );
     for(i=0; i<blocksize; i+=4) {
         asm volatile(
             "movaps  %0,     %%xmm0 \n\t"
             "movaps  %1,     %%xmm1 \n\t"
-            "pxor    %%xmm2, %%xmm2 \n\t"
-            "pxor    %%xmm3, %%xmm3 \n\t"
+            "xorps   %%xmm2, %%xmm2 \n\t"
+            "xorps   %%xmm3, %%xmm3 \n\t"
             "cmpleps %%xmm0, %%xmm2 \n\t" // m <= 0.0
             "cmpleps %%xmm1, %%xmm3 \n\t" // a <= 0.0
-            "pslld   $31,    %%xmm2 \n\t" // keep only the sign bit
-            "pxor    %%xmm2, %%xmm1 \n\t"
+            "andps   %%xmm5, %%xmm2 \n\t" // keep only the sign bit
+            "xorps   %%xmm2, %%xmm1 \n\t"
             "movaps  %%xmm3, %%xmm4 \n\t"
-            "pand    %%xmm1, %%xmm3 \n\t"
-            "pandn   %%xmm1, %%xmm4 \n\t"
+            "andps   %%xmm1, %%xmm3 \n\t"
+            "andnps  %%xmm1, %%xmm4 \n\t"
             "addps   %%xmm0, %%xmm3 \n\t" // a = m + ((a<0) & (a ^ sign(m)))
             "subps   %%xmm4, %%xmm0 \n\t" // m = m + ((a>0) & (a ^ sign(m)))
             "movaps  %%xmm3, %1     \n\t"
@@ -3191,8 +3199,8 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
         }
 #endif
 
-        if(mm_flags & MM_SSE2)
-            c->vorbis_inverse_coupling = vorbis_inverse_coupling_sse2;
+        if(mm_flags & MM_SSE)
+            c->vorbis_inverse_coupling = vorbis_inverse_coupling_sse;
         else if(mm_flags & MM_3DNOW)
             c->vorbis_inverse_coupling = vorbis_inverse_coupling_3dnow;
     }
