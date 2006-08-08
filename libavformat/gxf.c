@@ -462,7 +462,7 @@ static int gxf_packet(AVFormatContext *s, AVPacket *pkt) {
         // as well.
         ret = av_get_packet(pb, pkt, pkt_len);
         pkt->stream_index = get_sindex(s, track_id, track_type);
-        pkt->pts = field_nr;
+        pkt->dts = field_nr;
         return ret;
     }
     return AVERROR_IO;
