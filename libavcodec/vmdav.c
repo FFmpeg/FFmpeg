@@ -92,7 +92,7 @@ static void lz_unpack(unsigned char *src, unsigned char *dest, int dest_len)
     d_end = d + dest_len;
     dataleft = LE_32(s);
     s += 4;
-    memset(queue, QUEUE_SIZE, 0x20);
+    memset(queue, 0x20, QUEUE_SIZE);
     if (LE_32(s) == 0x56781234) {
         s += 4;
         qpos = 0x111;
