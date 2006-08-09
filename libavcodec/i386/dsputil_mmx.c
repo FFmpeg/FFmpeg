@@ -2739,7 +2739,7 @@ static void vorbis_inverse_coupling_3dnow(float *mag, float *ang, int blocksize)
             ::"memory"
         );
     }
-    asm volatile("emms");
+    asm volatile("femms");
 }
 static void vorbis_inverse_coupling_sse(float *mag, float *ang, int blocksize)
 {

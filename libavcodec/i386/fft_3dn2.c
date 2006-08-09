@@ -219,5 +219,5 @@ void ff_imdct_calc_3dn2(MDCTContext *s, FFTSample *output,
             ::"memory"
         );
     }
-    asm volatile("emms");
+    asm volatile("femms");
 }
