@@ -154,20 +154,23 @@ void ff_imdct_calc_3dn2(MDCTContext *s, FFTSample *output,
     in1 = input;
     in2 = input + n2 - 1;
     for(k = 0; k < n4; k++) {
+        // FIXME a single block is faster, but gcc 2.95 and 3.4.x on 32bit can't compile it
         asm volatile(
-            "movd       %1, %%mm0 \n\t"
-            "movd       %3, %%mm1 \n\t"
-            "punpckldq  %2, %%mm0 \n\t"
-            "punpckldq  %4, %%mm1 \n\t"
+            "movd       %0, %%mm0 \n\t"
+            "movd       %2, %%mm1 \n\t"
+            "punpckldq  %1, %%mm0 \n\t"
+            "punpckldq  %3, %%mm1 \n\t"
             "movq    %%mm0, %%mm2 \n\t"
             "pfmul   %%mm1, %%mm0 \n\t"
             "pswapd  %%mm1, %%mm1 \n\t"
             "pfmul   %%mm1, %%mm2 \n\t"
             "pfpnacc %%mm2, %%mm0 \n\t"
+            ::"m"(in2[-2*k]), "m"(in1[2*k]),
+              "m"(tcos[k]), "m"(tsin[k])
+        );
+        asm volatile(
             "movq    %%mm0, %0    \n\t"
             :"=m"(z[revtab[k]])
-            :"m"(in2[-2*k]), "m"(in1[2*k]),
-             "m"(tcos[k]), "m"(tsin[k])
         );
     }
 
@@ -190,11 +193,15 @@ void ff_imdct_calc_3dn2(MDCTContext *s, FFTSample *output,
         );
     }
 
+    z += n8;
     asm volatile("movd %0, %%mm7" ::"r"(1<<31));
     for(k = 0; k < n8; k++) {
         asm volatile(
-            "movq         %4, %%mm0 \n\t"
-            "pswapd       %5, %%mm1 \n\t"
+            "movq         %0, %%mm0 \n\t"
+            "pswapd       %1, %%mm1 \n\t"
+            ::"m"(z[k]), "m"(z[-1-k])
+        );
+        asm volatile(
             "movq      %%mm0, %%mm2 \n\t"
             "pxor      %%mm7, %%mm2 \n\t"
             "punpckldq %%mm1, %%mm2 \n\t"
@@ -209,8 +216,7 @@ void ff_imdct_calc_3dn2(MDCTContext *s, FFTSample *output,
             "movq      %%mm3, %3    \n\t" // { z[n8-1-k].im, -z[n8+k].re }
             :"=m"(output[2*k]), "=m"(output[n2-2-2*k]),
              "=m"(output[n2+2*k]), "=m"(output[n-2-2*k])
-            :"m"(z[n8+k]), "m"(z[n8-1-k])
-            :"memory"
+            ::"memory"
         );
     }
     asm volatile("emms");
