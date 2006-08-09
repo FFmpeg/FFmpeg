@@ -93,7 +93,6 @@ static const CodecTag mov_video_tags[] = {
     { CODEC_ID_H263, MKTAG('s', '2', '6', '3') }, /* H263 ?? works */
     { CODEC_ID_DVVIDEO, MKTAG('d', 'v', 'c', ' ') }, /* DV NTSC */
     { CODEC_ID_DVVIDEO, MKTAG('d', 'v', 'c', 'p') }, /* DV PAL */
-/*    { CODEC_ID_DVVIDEO, MKTAG('A', 'V', 'd', 'v') }, *//* AVID dv */
     { CODEC_ID_VP3, MKTAG('V', 'P', '3', '1') }, /* On2 VP3 */
     { CODEC_ID_RPZA, MKTAG('r', 'p', 'z', 'a') }, /* Apple Video (RPZA) */
     { CODEC_ID_CINEPAK, MKTAG('c', 'v', 'i', 'd') }, /* Cinepak */
@@ -124,7 +123,6 @@ static const CodecTag mov_audio_tags[] = {
     { CODEC_ID_PCM_S24BE, MKTAG('i', 'n', '2', '4') },
     { CODEC_ID_PCM_S16BE, MKTAG('N', 'O', 'N', 'E') }, /* uncompressed */
     { CODEC_ID_PCM_S16BE, MKTAG('t', 'w', 'o', 's') }, /* 16 bits */
-    /* { CODEC_ID_PCM_S8, MKTAG('t', 'w', 'o', 's') },*/ /* 8 bits */
     { CODEC_ID_PCM_U8, MKTAG('r', 'a', 'w', ' ') }, /* 8 bits unsigned */
     { CODEC_ID_PCM_S16LE, MKTAG('s', 'o', 'w', 't') }, /*  */
     { CODEC_ID_PCM_MULAW, MKTAG('u', 'l', 'a', 'w') }, /*  */
