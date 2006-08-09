@@ -40,6 +40,7 @@ typedef struct GXFStreamContext {
     int bframes;
     int p_per_gop;
     int b_per_gop;
+    int closed_gop;
 } GXFStreamContext;
 
 typedef struct GXFContext {
@@ -178,9 +179,9 @@ static int gxf_write_mpeg_auxiliary(ByteIOContext *pb, GXFStreamContext *ctx)
             ctx->b_per_gop = 9; /* ensure value won't take more than one char */
     }
     size = snprintf(buffer, 1024, "Ver 1\nBr %.6f\nIpg 1\nPpi %d\nBpiop %d\n"
-                    "Pix 0\nCf %d\nCg 1\nSl 7\nnl16 %d\nVi 1\nf1 1\n",
+                    "Pix 0\nCf %d\nCg %d\nSl 7\nnl16 %d\nVi 1\nf1 1\n",
                     (float)ctx->codec->bit_rate, ctx->p_per_gop, ctx->b_per_gop,
-                    ctx->codec->pix_fmt == PIX_FMT_YUV422P ? 2 : 1,
+                    ctx->codec->pix_fmt == PIX_FMT_YUV422P ? 2 : 1, ctx->closed_gop,
                     ctx->codec->height / 16);
     put_byte(pb, 0x4F);
     put_byte(pb, size + 1);
@@ -417,7 +418,7 @@ static int gxf_write_umf_media_mpeg(ByteIOContext *pb, GXFStreamContext *stream)
         put_le32(pb, 2);
     else
         put_le32(pb, 1); /* default to 420 */
-    put_le32(pb, 1); /* closed = 1, open = 0, unknown = 255 */
+    put_le32(pb, stream->closed_gop); /* closed = 1, open = 0, unknown = 255 */
     put_le32(pb, 3); /* top = 1, bottom = 2, frame = 3, unknown = 0 */
     put_le32(pb, 1); /* I picture per GOP */
     put_le32(pb, stream->p_per_gop);
@@ -682,6 +683,18 @@ static int gxf_write_trailer(AVFormatContext *s)
     return 0;
 }
 
+static int gxf_parse_mpeg_frame(GXFStreamContext *sc, const uint8_t *buf, int size)
+{
+    uint32_t c=-1;
+    int i;
+    for(i=0; i<size-4 && c!=0x100; i++){
+        c = (c<<8) + buf[i];
+        if(c == 0x1B8) /* GOP start code */
+            sc->closed_gop= (buf[i+4]>>6)&1;
+    }
+    return (buf[i+1]>>3)&7;
+}
+
 static int gxf_write_media_preamble(ByteIOContext *pb, GXFContext *ctx, AVPacket *pkt, int size)
 {
     GXFStreamContext *sc = &ctx->streams[pkt->stream_index];
@@ -693,10 +706,11 @@ static int gxf_write_media_preamble(ByteIOContext *pb, GXFContext *ctx, AVPacket
         put_be16(pb, 0);
         put_be16(pb, size / 2);
     } else if (sc->codec->codec_id == CODEC_ID_MPEG2VIDEO) {
-        if (pkt->flags & PKT_FLAG_KEY) {
+        int frame_type = gxf_parse_mpeg_frame(sc, pkt->data, pkt->size);
+        if (frame_type == FF_I_TYPE) {
             put_byte(pb, 0x0d);
             sc->iframes++;
-        } else if (pkt->pts != pkt->dts) {
+        } else if (frame_type == FF_B_TYPE) {
             put_byte(pb, 0x0f);
             sc->bframes++;
         } else {
