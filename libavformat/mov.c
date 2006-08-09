@@ -122,7 +122,7 @@ static const CodecTag mov_video_tags[] = {
 static const CodecTag mov_audio_tags[] = {
     { CODEC_ID_PCM_S32BE, MKTAG('i', 'n', '3', '2') },
     { CODEC_ID_PCM_S24BE, MKTAG('i', 'n', '2', '4') },
-/*    { CODEC_ID_PCM_S16BE, MKTAG('N', 'O', 'N', 'E') }, *//* uncompressed */
+    { CODEC_ID_PCM_S16BE, MKTAG('N', 'O', 'N', 'E') }, /* uncompressed */
     { CODEC_ID_PCM_S16BE, MKTAG('t', 'w', 'o', 's') }, /* 16 bits */
     /* { CODEC_ID_PCM_S8, MKTAG('t', 'w', 'o', 's') },*/ /* 8 bits */
     { CODEC_ID_PCM_U8, MKTAG('r', 'a', 'w', ' ') }, /* 8 bits unsigned */
