@@ -2820,12 +2820,14 @@ static void vector_fmul_reverse_3dnow2(float *dst, const float *src0, const floa
     );
     asm volatile("femms");
 }
-static void vector_fmul_reverse_sse2(float *dst, const float *src0, const float *src1, int len){
+static void vector_fmul_reverse_sse(float *dst, const float *src0, const float *src1, int len){
     long i = len*4-32;
     asm volatile(
         "1: \n\t"
-        "pshufd $0x1b, 16(%1), %%xmm0 \n\t"
-        "pshufd $0x1b,   (%1), %%xmm1 \n\t"
+        "movaps        16(%1), %%xmm0 \n\t"
+        "movaps          (%1), %%xmm1 \n\t"
+        "shufps $0x1b, %%xmm0, %%xmm0 \n\t"
+        "shufps $0x1b, %%xmm1, %%xmm1 \n\t"
         "mulps        (%3,%0), %%xmm0 \n\t"
         "mulps      16(%3,%0), %%xmm1 \n\t"
         "movaps     %%xmm0,   (%2,%0) \n\t"
@@ -2882,7 +2884,7 @@ static void vector_fmul_add_add_3dnow(float *dst, const float *src0, const float
         ff_vector_fmul_add_add_c(dst, src0, src1, src2, src3, len, step);
     asm volatile("femms");
 }
-static void vector_fmul_add_add_sse2(float *dst, const float *src0, const float *src1,
+static void vector_fmul_add_add_sse(float *dst, const float *src0, const float *src1,
                                      const float *src2, float src3, int len, int step){
     long i;
     if(step == 2 && src3 == 0){
@@ -2896,20 +2898,20 @@ static void vector_fmul_add_add_sse2(float *dst, const float *src0, const float 
             "mulps  16(%3,%0), %%xmm1 \n\t"
             "addps    (%4,%0), %%xmm0 \n\t"
             "addps  16(%4,%0), %%xmm1 \n\t"
-            "movd      %%xmm0,   (%1) \n\t"
-            "movd      %%xmm1, 32(%1) \n\t"
-            "psrldq        $4, %%xmm0 \n\t"
-            "psrldq        $4, %%xmm1 \n\t"
-            "movd      %%xmm0,  8(%1) \n\t"
-            "movd      %%xmm1, 40(%1) \n\t"
-            "psrldq        $4, %%xmm0 \n\t"
-            "psrldq        $4, %%xmm1 \n\t"
-            "movd      %%xmm0, 16(%1) \n\t"
-            "movd      %%xmm1, 48(%1) \n\t"
-            "psrldq        $4, %%xmm0 \n\t"
-            "psrldq        $4, %%xmm1 \n\t"
-            "movd      %%xmm0, 24(%1) \n\t"
-            "movd      %%xmm1, 56(%1) \n\t"
+            "movss     %%xmm0,   (%1) \n\t"
+            "movss     %%xmm1, 32(%1) \n\t"
+            "movhlps   %%xmm0, %%xmm2 \n\t"
+            "movhlps   %%xmm1, %%xmm3 \n\t"
+            "movss     %%xmm2, 16(%1) \n\t"
+            "movss     %%xmm3, 48(%1) \n\t"
+            "shufps $0xb1, %%xmm0, %%xmm0 \n\t"
+            "shufps $0xb1, %%xmm1, %%xmm1 \n\t"
+            "movss     %%xmm0,  8(%1) \n\t"
+            "movss     %%xmm1, 40(%1) \n\t"
+            "movhlps   %%xmm0, %%xmm2 \n\t"
+            "movhlps   %%xmm1, %%xmm3 \n\t"
+            "movss     %%xmm2, 24(%1) \n\t"
+            "movss     %%xmm3, 56(%1) \n\t"
             "sub  $64, %1 \n\t"
             "sub  $32, %0 \n\t"
             "jge  1b \n\t"
@@ -3403,10 +3405,8 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             c->vorbis_inverse_coupling = vorbis_inverse_coupling_sse;
             c->vector_fmul = vector_fmul_sse;
             c->float_to_int16 = float_to_int16_sse;
-        }
-        if(mm_flags & MM_SSE2){
-            c->vector_fmul_reverse = vector_fmul_reverse_sse2;
-            c->vector_fmul_add_add = vector_fmul_add_add_sse2;
+            c->vector_fmul_reverse = vector_fmul_reverse_sse;
+            c->vector_fmul_add_add = vector_fmul_add_add_sse;
         }
         if(mm_flags & MM_3DNOW)
             c->vector_fmul_add_add = vector_fmul_add_add_3dnow; // faster than sse2
