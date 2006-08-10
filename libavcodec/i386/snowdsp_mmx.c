@@ -463,9 +463,9 @@ void ff_snow_vertical_compose97i_sse2(DWTELEM *b0, DWTELEM *b1, DWTELEM *b2, DWT
         "1:                                          \n\t"
 
         "mov %6, %%"REG_a"                           \n\t"
-        "mov %4, %%"REG_b"                           \n\t"
+        "mov %4, %%"REG_S"                           \n\t"
 
-        snow_vertical_compose_sse2_load(REG_b,"xmm0","xmm2","xmm4","xmm6")
+        snow_vertical_compose_sse2_load(REG_S,"xmm0","xmm2","xmm4","xmm6")
         snow_vertical_compose_sse2_add(REG_a,"xmm0","xmm2","xmm4","xmm6")
         snow_vertical_compose_sse2_move("xmm0","xmm2","xmm4","xmm6","xmm1","xmm3","xmm5","xmm7")
         snow_vertical_compose_sse2_sll("1","xmm0","xmm2","xmm4","xmm6")\
@@ -482,10 +482,10 @@ void ff_snow_vertical_compose97i_sse2(DWTELEM *b0, DWTELEM *b1, DWTELEM *b2, DWT
         snow_vertical_compose_sse2_sub("xmm0","xmm2","xmm4","xmm6","xmm1","xmm3","xmm5","xmm7")
         snow_vertical_compose_sse2_store(REG_a,"xmm1","xmm3","xmm5","xmm7")
         "mov %3, %%"REG_c"                           \n\t"
-        snow_vertical_compose_sse2_load(REG_b,"xmm0","xmm2","xmm4","xmm6")
+        snow_vertical_compose_sse2_load(REG_S,"xmm0","xmm2","xmm4","xmm6")
         snow_vertical_compose_sse2_add(REG_c,"xmm1","xmm3","xmm5","xmm7")
         snow_vertical_compose_sse2_sub("xmm1","xmm3","xmm5","xmm7","xmm0","xmm2","xmm4","xmm6")
-        snow_vertical_compose_sse2_store(REG_b,"xmm0","xmm2","xmm4","xmm6")
+        snow_vertical_compose_sse2_store(REG_S,"xmm0","xmm2","xmm4","xmm6")
         "mov %2, %%"REG_a"                           \n\t"
         snow_vertical_compose_sse2_load(REG_c,"xmm1","xmm3","xmm5","xmm7")
         snow_vertical_compose_sse2_add(REG_a,"xmm0","xmm2","xmm4","xmm6")
@@ -495,13 +495,13 @@ void ff_snow_vertical_compose97i_sse2(DWTELEM *b0, DWTELEM *b1, DWTELEM *b2, DWT
         "pcmpeqd %%xmm1, %%xmm1                      \n\t"
         "pslld $31, %%xmm1                           \n\t"
         "psrld $28, %%xmm1                           \n\t"
-        "mov %1, %%"REG_b"                           \n\t"
+        "mov %1, %%"REG_S"                           \n\t"
 
         snow_vertical_compose_sse2_r2r_add("xmm1","xmm1","xmm1","xmm1","xmm0","xmm2","xmm4","xmm6")
         snow_vertical_compose_sse2_sra("4","xmm0","xmm2","xmm4","xmm6")
         snow_vertical_compose_sse2_add(REG_c,"xmm0","xmm2","xmm4","xmm6")
         snow_vertical_compose_sse2_store(REG_c,"xmm0","xmm2","xmm4","xmm6")
-        snow_vertical_compose_sse2_add(REG_b,"xmm0","xmm2","xmm4","xmm6")
+        snow_vertical_compose_sse2_add(REG_S,"xmm0","xmm2","xmm4","xmm6")
         snow_vertical_compose_sse2_move("xmm0","xmm2","xmm4","xmm6","xmm1","xmm3","xmm5","xmm7")
         snow_vertical_compose_sse2_sll("1","xmm0","xmm2","xmm4","xmm6")\
         snow_vertical_compose_sse2_r2r_add("xmm1","xmm3","xmm5","xmm7","xmm0","xmm2","xmm4","xmm6")
@@ -515,7 +515,7 @@ void ff_snow_vertical_compose97i_sse2(DWTELEM *b0, DWTELEM *b1, DWTELEM *b2, DWT
         :"+d"(i)
         :
         "m"(b0),"m"(b1),"m"(b2),"m"(b3),"m"(b4),"m"(b5):
-        "%"REG_a"","%"REG_b"","%"REG_c"");
+        "%"REG_a"","%"REG_S"","%"REG_c"");
 }
 
 #define snow_vertical_compose_mmx_load_add(op,r,t0,t1,t2,t3)\
@@ -570,9 +570,9 @@ void ff_snow_vertical_compose97i_mmx(DWTELEM *b0, DWTELEM *b1, DWTELEM *b2, DWTE
         "1:                                          \n\t"
 
         "mov %6, %%"REG_a"                           \n\t"
-        "mov %4, %%"REG_b"                           \n\t"
+        "mov %4, %%"REG_S"                           \n\t"
 
-        snow_vertical_compose_mmx_load(REG_b,"mm0","mm2","mm4","mm6")
+        snow_vertical_compose_mmx_load(REG_S,"mm0","mm2","mm4","mm6")
         snow_vertical_compose_mmx_add(REG_a,"mm0","mm2","mm4","mm6")
         snow_vertical_compose_mmx_move("mm0","mm2","mm4","mm6","mm1","mm3","mm5","mm7")
         snow_vertical_compose_mmx_sll("1","mm0","mm2","mm4","mm6")
@@ -589,10 +589,10 @@ void ff_snow_vertical_compose97i_mmx(DWTELEM *b0, DWTELEM *b1, DWTELEM *b2, DWTE
         snow_vertical_compose_mmx_sub("mm0","mm2","mm4","mm6","mm1","mm3","mm5","mm7")
         snow_vertical_compose_mmx_store(REG_a,"mm1","mm3","mm5","mm7")
         "mov %3, %%"REG_c"                           \n\t"
-        snow_vertical_compose_mmx_load(REG_b,"mm0","mm2","mm4","mm6")
+        snow_vertical_compose_mmx_load(REG_S,"mm0","mm2","mm4","mm6")
         snow_vertical_compose_mmx_add(REG_c,"mm1","mm3","mm5","mm7")
         snow_vertical_compose_mmx_sub("mm1","mm3","mm5","mm7","mm0","mm2","mm4","mm6")
-        snow_vertical_compose_mmx_store(REG_b,"mm0","mm2","mm4","mm6")
+        snow_vertical_compose_mmx_store(REG_S,"mm0","mm2","mm4","mm6")
         "mov %2, %%"REG_a"                           \n\t"
         snow_vertical_compose_mmx_load(REG_c,"mm1","mm3","mm5","mm7")
         snow_vertical_compose_mmx_add(REG_a,"mm0","mm2","mm4","mm6")
@@ -602,13 +602,13 @@ void ff_snow_vertical_compose97i_mmx(DWTELEM *b0, DWTELEM *b1, DWTELEM *b2, DWTE
         "pcmpeqd %%mm1, %%mm1                        \n\t"
         "pslld $31, %%mm1                            \n\t"
         "psrld $28, %%mm1                            \n\t"
-        "mov %1, %%"REG_b"                           \n\t"
+        "mov %1, %%"REG_S"                           \n\t"
 
         snow_vertical_compose_mmx_r2r_add("mm1","mm1","mm1","mm1","mm0","mm2","mm4","mm6")
         snow_vertical_compose_mmx_sra("4","mm0","mm2","mm4","mm6")
         snow_vertical_compose_mmx_add(REG_c,"mm0","mm2","mm4","mm6")
         snow_vertical_compose_mmx_store(REG_c,"mm0","mm2","mm4","mm6")
-        snow_vertical_compose_mmx_add(REG_b,"mm0","mm2","mm4","mm6")
+        snow_vertical_compose_mmx_add(REG_S,"mm0","mm2","mm4","mm6")
         snow_vertical_compose_mmx_move("mm0","mm2","mm4","mm6","mm1","mm3","mm5","mm7")
         snow_vertical_compose_mmx_sll("1","mm0","mm2","mm4","mm6")
         snow_vertical_compose_mmx_r2r_add("mm1","mm3","mm5","mm7","mm0","mm2","mm4","mm6")
@@ -622,15 +622,16 @@ void ff_snow_vertical_compose97i_mmx(DWTELEM *b0, DWTELEM *b1, DWTELEM *b2, DWTE
         :"+d"(i)
         :
         "m"(b0),"m"(b1),"m"(b2),"m"(b3),"m"(b4),"m"(b5):
-        "%"REG_a"","%"REG_b"","%"REG_c"");
+        "%"REG_a"","%"REG_S"","%"REG_c"");
 }
 
 #define snow_inner_add_yblock_sse2_header \
     DWTELEM * * dst_array = sb->line + src_y;\
+    long tmp;\
     asm volatile(\
-             "mov  %6, %%"REG_c"             \n\t"\
-             "mov  %5, %%"REG_b"             \n\t"\
-             "mov  %3, %%"REG_S"             \n\t"\
+             "mov  %7, %%"REG_c"             \n\t"\
+             "mov  %6, %2                    \n\t"\
+             "mov  %4, %%"REG_S"             \n\t"\
              "pxor %%xmm7, %%xmm7            \n\t" /* 0 */\
              "pcmpeqd %%xmm3, %%xmm3         \n\t"\
              "pslld $31, %%xmm3              \n\t"\
@@ -638,7 +639,7 @@ void ff_snow_vertical_compose97i_mmx(DWTELEM *b0, DWTELEM *b1, DWTELEM *b2, DWTE
              "1:                             \n\t"\
              "mov %1, %%"REG_D"              \n\t"\
              "mov (%%"REG_D"), %%"REG_D"     \n\t"\
-             "add %2, %%"REG_D"              \n\t"
+             "add %3, %%"REG_D"              \n\t"
 
 #define snow_inner_add_yblock_sse2_start_8(out_reg1, out_reg2, ptr_offset, s_offset)\
              "mov "PTR_SIZE"*"ptr_offset"(%%"REG_a"), %%"REG_d"; \n\t"\
@@ -686,23 +687,23 @@ void ff_snow_vertical_compose97i_mmx(DWTELEM *b0, DWTELEM *b1, DWTELEM *b2, DWTE
 
 #define snow_inner_add_yblock_sse2_end_common2\
              "jnz 1b                         \n\t"\
-             :"+m"(dst8),"+m"(dst_array)\
+             :"+m"(dst8),"+m"(dst_array),"=&r"(tmp)\
              :\
              "rm"((long)(src_x<<2)),"m"(obmc),"a"(block),"m"((long)b_h),"m"((long)src_stride):\
-             "%"REG_b"","%"REG_c"","%"REG_S"","%"REG_D"","%"REG_d"");
+             "%"REG_c"","%"REG_S"","%"REG_D"","%"REG_d"");
 
 #define snow_inner_add_yblock_sse2_end_8\
              "sal $1, %%"REG_c"              \n\t"\
              "add $"PTR_SIZE"*2, %1          \n\t"\
              snow_inner_add_yblock_sse2_end_common1\
              "sar $1, %%"REG_c"              \n\t"\
-             "sub $2, %%"REG_b"              \n\t"\
+             "sub $2, %2                     \n\t"\
              snow_inner_add_yblock_sse2_end_common2
 
 #define snow_inner_add_yblock_sse2_end_16\
              "add $"PTR_SIZE"*1, %1          \n\t"\
              snow_inner_add_yblock_sse2_end_common1\
-             "dec %%"REG_b"                  \n\t"\
+             "dec %2                         \n\t"\
              snow_inner_add_yblock_sse2_end_common2
 
 static void inner_add_yblock_bw_8_obmc_16_bh_even_sse2(uint8_t *obmc, const long obmc_stride, uint8_t * * block, int b_w, long b_h,
@@ -727,7 +728,7 @@ snow_inner_add_yblock_sse2_accum_8("0", "136")
 
              "mov %1, %%"REG_D"              \n\t"
              "mov "PTR_SIZE"(%%"REG_D"), %%"REG_D";\n\t"
-             "add %2, %%"REG_D"              \n\t"
+             "add %3, %%"REG_D"              \n\t"
 
              "movdqa (%%"REG_D"), %%xmm4     \n\t"
              "movdqa %%xmm5, %%xmm6          \n\t"
@@ -792,10 +793,11 @@ snow_inner_add_yblock_sse2_end_16
 
 #define snow_inner_add_yblock_mmx_header \
     DWTELEM * * dst_array = sb->line + src_y;\
+    long tmp;\
     asm volatile(\
-             "mov  %6, %%"REG_c"             \n\t"\
-             "mov  %5, %%"REG_b"             \n\t"\
-             "mov  %3, %%"REG_S"             \n\t"\
+             "mov  %7, %%"REG_c"             \n\t"\
+             "mov  %6, %2                    \n\t"\
+             "mov  %4, %%"REG_S"             \n\t"\
              "pxor %%mm7, %%mm7              \n\t" /* 0 */\
              "pcmpeqd %%mm3, %%mm3           \n\t"\
              "pslld $31, %%mm3               \n\t"\
@@ -803,7 +805,7 @@ snow_inner_add_yblock_sse2_end_16
              "1:                             \n\t"\
              "mov %1, %%"REG_D"              \n\t"\
              "mov (%%"REG_D"), %%"REG_D"     \n\t"\
-             "add %2, %%"REG_D"              \n\t"
+             "add %3, %%"REG_D"              \n\t"
 
 #define snow_inner_add_yblock_mmx_start(out_reg1, out_reg2, ptr_offset, s_offset, d_offset)\
              "mov "PTR_SIZE"*"ptr_offset"(%%"REG_a"), %%"REG_d"; \n\t"\
@@ -857,12 +859,12 @@ snow_inner_add_yblock_sse2_end_16
              "add %%"REG_c", (%%"REG_a")     \n\t"\
              "add $"PTR_SIZE"*1, %1          \n\t"\
              "add %%"REG_c", %0              \n\t"\
-             "dec %%"REG_b"                  \n\t"\
+             "dec %2                         \n\t"\
              "jnz 1b                         \n\t"\
-             :"+m"(dst8),"+m"(dst_array)\
+             :"+m"(dst8),"+m"(dst_array),"=&r"(tmp)\
              :\
              "rm"((long)(src_x<<2)),"m"(obmc),"a"(block),"m"((long)b_h),"m"((long)src_stride):\
-             "%"REG_b"","%"REG_c"","%"REG_S"","%"REG_D"","%"REG_d"");
+             "%"REG_c"","%"REG_S"","%"REG_D"","%"REG_d"");
 
 static void inner_add_yblock_bw_8_obmc_16_mmx(uint8_t *obmc, const long obmc_stride, uint8_t * * block, int b_w, long b_h,
                       int src_x, int src_y, long src_stride, slice_buffer * sb, int add, uint8_t * dst8){
