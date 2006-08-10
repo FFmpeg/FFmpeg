@@ -161,8 +161,8 @@ static void vorbis_free(vorbis_context *vc) {
     av_freep(&vc->residues);
     av_freep(&vc->modes);
 
-    ff_mdct_end(&vc->mdct0);
-    ff_mdct_end(&vc->mdct1);
+    ff_mdct_end(&vc->mdct[0]);
+    ff_mdct_end(&vc->mdct[1]);
 
     for(i=0;i<vc->codebook_count;++i) {
         av_free(vc->codebooks[i].codevectors);
@@ -194,8 +194,8 @@ static void vorbis_free(vorbis_context *vc) {
     av_freep(&vc->mappings);
 
     if(vc->exp_bias){
-        av_freep(&vc->swin);
-        av_freep(&vc->lwin);
+        av_freep(&vc->win[0]);
+        av_freep(&vc->win[1]);
     }
 }
 
@@ -762,7 +762,7 @@ static void create_map( vorbis_context * vc, uint_fast8_t floor_number )
 
     for (blockflag=0;blockflag<2;++blockflag)
     {
-    n=(blockflag ? vc->blocksize_1 : vc->blocksize_0) / 2;
+    n=(blockflag ? vc->blocksize[1] : vc->blocksize[0]) / 2;
     floors[floor_number].data.t0.map[blockflag]=
         av_malloc((n+1) * sizeof(int_fast32_t)); // n+sentinel
 
@@ -877,33 +877,30 @@ static int vorbis_parse_id_hdr(vorbis_context *vc){
     vc->bitrate_minimum=get_bits_long_le(gb, 32);
     bl0=get_bits(gb, 4);
     bl1=get_bits(gb, 4);
-    vc->blocksize_0=(1<<bl0);
-    vc->blocksize_1=(1<<bl1);
+    vc->blocksize[0]=(1<<bl0);
+    vc->blocksize[1]=(1<<bl1);
     if (bl0>13 || bl0<6 || bl1>13 || bl1<6 || bl1<bl0) {
         av_log(vc->avccontext, AV_LOG_ERROR, " Vorbis id header packet corrupt (illegal blocksize). \n");
         return 3;
     }
     // output format int16
-    if (vc->blocksize_1/2 * vc->audio_channels * 2 >
+    if (vc->blocksize[1]/2 * vc->audio_channels * 2 >
                                              AVCODEC_MAX_AUDIO_FRAME_SIZE) {
         av_log(vc->avccontext, AV_LOG_ERROR, "Vorbis channel count makes "
                "output packets too large.\n");
         return 4;
     }
-    vc->swin=vwin[bl0-6];
-    vc->lwin=vwin[bl1-6];
+    vc->win[0]=vwin[bl0-6];
+    vc->win[1]=vwin[bl1-6];
 
     if(vc->exp_bias){
-        int i;
-        float *win;
-        win = av_malloc(vc->blocksize_0/2 * sizeof(float));
-        for(i=0; i<vc->blocksize_0/2; i++)
-            win[i] = vc->swin[i] * (1<<15);
-        vc->swin = win;
-        win = av_malloc(vc->blocksize_1/2 * sizeof(float));
-        for(i=0; i<vc->blocksize_1/2; i++)
-            win[i] = vc->lwin[i] * (1<<15);
-        vc->lwin = win;
+        int i, j;
+        for(j=0; j<2; j++){
+            float *win = av_malloc(vc->blocksize[j]/2 * sizeof(float));
+            for(i=0; i<vc->blocksize[j]/2; i++)
+                win[i] = vc->win[j][i] * (1<<15);
+            vc->win[j] = win;
+        }
     }
 
     if ((get_bits1(gb)) == 0) {
@@ -911,24 +908,24 @@ static int vorbis_parse_id_hdr(vorbis_context *vc){
         return 2;
     }
 
-    vc->channel_residues=(float *)av_malloc((vc->blocksize_1/2)*vc->audio_channels * sizeof(float));
-    vc->channel_floors=(float *)av_malloc((vc->blocksize_1/2)*vc->audio_channels * sizeof(float));
-    vc->saved=(float *)av_malloc((vc->blocksize_1/2)*vc->audio_channels * sizeof(float));
-    vc->ret=(float *)av_malloc((vc->blocksize_1/2)*vc->audio_channels * sizeof(float));
-    vc->buf=(float *)av_malloc(vc->blocksize_1 * sizeof(float));
-    vc->buf_tmp=(float *)av_malloc(vc->blocksize_1 * sizeof(float));
+    vc->channel_residues=(float *)av_malloc((vc->blocksize[1]/2)*vc->audio_channels * sizeof(float));
+    vc->channel_floors=(float *)av_malloc((vc->blocksize[1]/2)*vc->audio_channels * sizeof(float));
+    vc->saved=(float *)av_malloc((vc->blocksize[1]/2)*vc->audio_channels * sizeof(float));
+    vc->ret=(float *)av_malloc((vc->blocksize[1]/2)*vc->audio_channels * sizeof(float));
+    vc->buf=(float *)av_malloc(vc->blocksize[1] * sizeof(float));
+    vc->buf_tmp=(float *)av_malloc(vc->blocksize[1] * sizeof(float));
     vc->saved_start=0;
 
-    ff_mdct_init(&vc->mdct0, bl0, 1);
-    ff_mdct_init(&vc->mdct1, bl1, 1);
+    ff_mdct_init(&vc->mdct[0], bl0, 1);
+    ff_mdct_init(&vc->mdct[1], bl1, 1);
 
     AV_DEBUG(" vorbis version %d \n audio_channels %d \n audio_samplerate %d \n bitrate_max %d \n bitrate_nom %d \n bitrate_min %d \n blk_0 %d blk_1 %d \n ",
-            vc->version, vc->audio_channels, vc->audio_samplerate, vc->bitrate_maximum, vc->bitrate_nominal, vc->bitrate_minimum, vc->blocksize_0, vc->blocksize_1);
+            vc->version, vc->audio_channels, vc->audio_samplerate, vc->bitrate_maximum, vc->bitrate_nominal, vc->bitrate_minimum, vc->blocksize[0], vc->blocksize[1]);
 
 /*
-    BLK=vc->blocksize_0;
+    BLK=vc->blocksize[0];
     for(i=0;i<BLK/2;++i) {
-        vc->swin[i]=sin(0.5*3.14159265358*(sin(((float)i+0.5)/(float)BLK*3.14159265358))*(sin(((float)i+0.5)/(float)BLK*3.14159265358)));
+        vc->win[0][i]=sin(0.5*3.14159265358*(sin(((float)i+0.5)/(float)BLK*3.14159265358))*(sin(((float)i+0.5)/(float)BLK*3.14159265358)));
     }
 */
 
@@ -1545,7 +1542,7 @@ static int vorbis_parse_audio_packet(vorbis_context *vc) {
         next_window=get_bits1(gb);
     }
 
-    blocksize=vc->modes[mode_number].blockflag ? vc->blocksize_1 : vc->blocksize_0;
+    blocksize=vc->blocksize[vc->modes[mode_number].blockflag];
     memset(ch_res_ptr, 0, sizeof(float)*vc->audio_channels*blocksize/2); //FIXME can this be removed ?
     memset(ch_floor_ptr, 0, sizeof(float)*vc->audio_channels*blocksize/2); //FIXME can this be removed ?
 
@@ -1618,10 +1615,10 @@ static int vorbis_parse_audio_packet(vorbis_context *vc) {
     for(j=0;j<vc->audio_channels;++j) {
         uint_fast8_t step=vc->audio_channels;
         uint_fast16_t k;
-        float *saved=vc->saved+j*vc->blocksize_1/2;
+        float *saved=vc->saved+j*vc->blocksize[1]/2;
         float *ret=vc->ret;
-        const float *lwin=vc->lwin;
-        const float *swin=vc->swin;
+        const float *lwin=vc->win[1];
+        const float *swin=vc->win[0];
         float *buf=vc->buf;
         float *buf_tmp=vc->buf_tmp;
 
@@ -1629,20 +1626,20 @@ static int vorbis_parse_audio_packet(vorbis_context *vc) {
 
         saved_start=vc->saved_start;
 
-        vc->mdct0.fft.imdct_calc(vc->modes[mode_number].blockflag ? &vc->mdct1 : &vc->mdct0, buf, ch_floor_ptr, buf_tmp);
+        vc->mdct[0].fft.imdct_calc(&vc->mdct[vc->modes[mode_number].blockflag], buf, ch_floor_ptr, buf_tmp);
 
         //FIXME process channels together, to allow faster simd vector_fmul_add_add?
         if (vc->modes[mode_number].blockflag) {
             // -- overlap/add
             if (previous_window) {
-                vc->dsp.vector_fmul_add_add(ret+j, buf, lwin, saved, vc->add_bias, vc->blocksize_1/2, step);
-                retlen=vc->blocksize_1/2;
+                vc->dsp.vector_fmul_add_add(ret+j, buf, lwin, saved, vc->add_bias, vc->blocksize[1]/2, step);
+                retlen=vc->blocksize[1]/2;
             } else {
-                int len = (vc->blocksize_1-vc->blocksize_0)/4;
+                int len = (vc->blocksize[1]-vc->blocksize[0])/4;
                 buf += len;
-                vc->dsp.vector_fmul_add_add(ret+j, buf, swin, saved, vc->add_bias, vc->blocksize_0/2, step);
-                k = vc->blocksize_0/2*step + j;
-                buf += vc->blocksize_0/2;
+                vc->dsp.vector_fmul_add_add(ret+j, buf, swin, saved, vc->add_bias, vc->blocksize[0]/2, step);
+                k = vc->blocksize[0]/2*step + j;
+                buf += vc->blocksize[0]/2;
                 if(vc->exp_bias){
                     for(i=0; i<len; i++, k+=step)
                         ((uint32_t*)ret)[k] = ((uint32_t*)buf)[i] + vc->exp_bias; // ret[k]=buf[i]*(1<<bias)
@@ -1651,19 +1648,19 @@ static int vorbis_parse_audio_packet(vorbis_context *vc) {
                         ret[k] = buf[i] + fadd_bias;
                 }
                 buf=vc->buf;
-                retlen=vc->blocksize_0/2+len;
+                retlen=vc->blocksize[0]/2+len;
             }
             // -- save
             if (next_window) {
-                buf += vc->blocksize_1/2;
-                vc->dsp.vector_fmul_reverse(saved, buf, lwin, vc->blocksize_1/2);
+                buf += vc->blocksize[1]/2;
+                vc->dsp.vector_fmul_reverse(saved, buf, lwin, vc->blocksize[1]/2);
                 saved_start=0;
             } else {
-                saved_start=(vc->blocksize_1-vc->blocksize_0)/4;
-                buf += vc->blocksize_1/2;
+                saved_start=(vc->blocksize[1]-vc->blocksize[0])/4;
+                buf += vc->blocksize[1]/2;
                 for(i=0; i<saved_start; i++)
                     ((uint32_t*)saved)[i] = ((uint32_t*)buf)[i] + vc->exp_bias;
-                vc->dsp.vector_fmul_reverse(saved+saved_start, buf+saved_start, swin, vc->blocksize_0/2);
+                vc->dsp.vector_fmul_reverse(saved+saved_start, buf+saved_start, swin, vc->blocksize[0]/2);
             }
         } else {
             // --overlap/add
@@ -1674,11 +1671,11 @@ static int vorbis_parse_audio_packet(vorbis_context *vc) {
                 for(k=j, i=0;i<saved_start;++i, k+=step)
                     ret[k] = saved[i];
             }
-            vc->dsp.vector_fmul_add_add(ret+k, buf, swin, saved+saved_start, vc->add_bias, vc->blocksize_0/2, step);
-            retlen=saved_start+vc->blocksize_0/2;
+            vc->dsp.vector_fmul_add_add(ret+k, buf, swin, saved+saved_start, vc->add_bias, vc->blocksize[0]/2, step);
+            retlen=saved_start+vc->blocksize[0]/2;
             // -- save
-            buf += vc->blocksize_0/2;
-            vc->dsp.vector_fmul_reverse(saved, buf, swin, vc->blocksize_0/2);
+            buf += vc->blocksize[0]/2;
+            vc->dsp.vector_fmul_reverse(saved, buf, swin, vc->blocksize[0]/2);
             saved_start=0;
         }
     }
