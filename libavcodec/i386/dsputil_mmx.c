@@ -2772,6 +2772,198 @@ static void vorbis_inverse_coupling_sse(float *mag, float *ang, int blocksize)
     }
 }
 
+static void vector_fmul_3dnow(float *dst, const float *src, int len){
+    long i;
+    len >>= 1;
+    for(i=0; i<len; i++) {
+        asm volatile(
+            "movq  %0, %%mm0 \n\t"
+            "pfmul %1, %%mm0 \n\t"
+            "movq  %%mm0, %0 \n\t"
+            :"+m"(dst[i*2])
+            :"m"(src[i*2])
+            :"memory"
+        );
+    }
+    asm volatile("femms");
+}
+static void vector_fmul_sse(float *dst, const float *src, int len){
+    long i;
+    len >>= 2;
+    for(i=0; i<len; i++) {
+        asm volatile(
+            "movaps %0, %%xmm0 \n\t"
+            "mulps  %1, %%xmm0 \n\t"
+            "movaps %%xmm0, %0 \n\t"
+            :"+m"(dst[i*4])
+            :"m"(src[i*4])
+            :"memory"
+        );
+    }
+}
+
+static void vector_fmul_reverse_3dnow2(float *dst, const float *src0, const float *src1, int len){
+    long i = len*4-16;
+    asm volatile(
+        "1: \n\t"
+        "pswapd   8(%1), %%mm0 \n\t"
+        "pswapd    (%1), %%mm1 \n\t"
+        "pfmul  (%3,%0), %%mm0 \n\t"
+        "pfmul 8(%3,%0), %%mm1 \n\t"
+        "movq  %%mm0,  (%2,%0) \n\t"
+        "movq  %%mm1, 8(%2,%0) \n\t"
+        "add   $16, %1 \n\t"
+        "sub   $16, %0 \n\t"
+        "jge   1b \n\t"
+        :"+r"(i), "+r"(src1)
+        :"r"(dst), "r"(src0)
+    );
+    asm volatile("femms");
+}
+static void vector_fmul_reverse_sse2(float *dst, const float *src0, const float *src1, int len){
+    long i = len*4-32;
+    asm volatile(
+        "1: \n\t"
+        "pshufd $0x1b, 16(%1), %%xmm0 \n\t"
+        "pshufd $0x1b,   (%1), %%xmm1 \n\t"
+        "mulps        (%3,%0), %%xmm0 \n\t"
+        "mulps      16(%3,%0), %%xmm1 \n\t"
+        "movaps     %%xmm0,   (%2,%0) \n\t"
+        "movaps     %%xmm1, 16(%2,%0) \n\t"
+        "add    $32, %1 \n\t"
+        "sub    $32, %0 \n\t"
+        "jge    1b \n\t"
+        :"+r"(i), "+r"(src1)
+        :"r"(dst), "r"(src0)
+    );
+}
+
+static void vector_fmul_add_add_3dnow(float *dst, const float *src0, const float *src1,
+                                      const float *src2, int src3, int len, int step){
+    long i;
+    if(step == 2 && src3 == 0){
+        i = (len-4)*4;
+        dst += (len-4)*2;
+        asm volatile(
+            "1: \n\t"
+            "movq   (%2,%0),  %%mm0 \n\t"
+            "movq  8(%2,%0),  %%mm1 \n\t"
+            "pfmul  (%3,%0),  %%mm0 \n\t"
+            "pfmul 8(%3,%0),  %%mm1 \n\t"
+            "pfadd  (%4,%0),  %%mm0 \n\t"
+            "pfadd 8(%4,%0),  %%mm1 \n\t"
+            "movd     %%mm0,   (%1) \n\t"
+            "movd     %%mm1, 16(%1) \n\t"
+            "psrlq      $32,  %%mm0 \n\t"
+            "psrlq      $32,  %%mm1 \n\t"
+            "movd     %%mm0,  8(%1) \n\t"
+            "movd     %%mm1, 24(%1) \n\t"
+            "sub  $32, %1 \n\t"
+            "sub  $16, %0 \n\t"
+            "jge  1b \n\t"
+            :"+r"(i), "+r"(dst)
+            :"r"(src0), "r"(src1), "r"(src2)
+            :"memory"
+        );
+    }
+    else if(step == 1 && src3 == 0){
+        for(i=0; i<len; i+=2){
+            asm volatile(
+                "movq      %1, %%mm0 \n\t"
+                "pfmul     %2, %%mm0 \n\t"
+                "pfadd     %3, %%mm0 \n\t"
+                "movq   %%mm0, %0    \n\t"
+                :"=m"(dst[i])
+                :"m"(src0[i]), "m"(src1[i]), "m"(src2[i])
+            );
+        }
+    }
+    else
+        ff_vector_fmul_add_add_c(dst, src0, src1, src2, src3, len, step);
+    asm volatile("femms");
+}
+static void vector_fmul_add_add_sse2(float *dst, const float *src0, const float *src1,
+                                     const float *src2, float src3, int len, int step){
+    long i;
+    if(step == 2 && src3 == 0){
+        i = (len-8)*4;
+        dst += (len-8)*2;
+        asm volatile(
+            "1: \n\t"
+            "movaps   (%2,%0), %%xmm0 \n\t"
+            "movaps 16(%2,%0), %%xmm1 \n\t"
+            "mulps    (%3,%0), %%xmm0 \n\t"
+            "mulps  16(%3,%0), %%xmm1 \n\t"
+            "addps    (%4,%0), %%xmm0 \n\t"
+            "addps  16(%4,%0), %%xmm1 \n\t"
+            "movd      %%xmm0,   (%1) \n\t"
+            "movd      %%xmm1, 32(%1) \n\t"
+            "psrldq        $4, %%xmm0 \n\t"
+            "psrldq        $4, %%xmm1 \n\t"
+            "movd      %%xmm0,  8(%1) \n\t"
+            "movd      %%xmm1, 40(%1) \n\t"
+            "psrldq        $4, %%xmm0 \n\t"
+            "psrldq        $4, %%xmm1 \n\t"
+            "movd      %%xmm0, 16(%1) \n\t"
+            "movd      %%xmm1, 48(%1) \n\t"
+            "psrldq        $4, %%xmm0 \n\t"
+            "psrldq        $4, %%xmm1 \n\t"
+            "movd      %%xmm0, 24(%1) \n\t"
+            "movd      %%xmm1, 56(%1) \n\t"
+            "sub  $64, %1 \n\t"
+            "sub  $32, %0 \n\t"
+            "jge  1b \n\t"
+            :"+r"(i), "+r"(dst)
+            :"r"(src0), "r"(src1), "r"(src2)
+            :"memory"
+        );
+    }
+    else if(step == 1 && src3 == 0){
+        for(i=0; i<len; i+=4){
+            asm volatile(
+                "movaps     %1, %%xmm0 \n\t"
+                "mulps      %2, %%xmm0 \n\t"
+                "addps      %3, %%xmm0 \n\t"
+                "movaps %%xmm0, %0     \n\t"
+                :"=m"(dst[i])
+                :"m"(src0[i]), "m"(src1[i]), "m"(src2[i])
+            );
+        }
+    }
+    else
+        ff_vector_fmul_add_add_c(dst, src0, src1, src2, src3, len, step);
+}
+
+void float_to_int16_3dnow(int16_t *dst, const float *src, int len){
+    // not bit-exact: pf2id uses different rounding than C and SSE
+    int i;
+    for(i=0; i<len; i+=4) {
+        asm volatile(
+            "pf2id       %1, %%mm0 \n\t"
+            "pf2id       %2, %%mm1 \n\t"
+            "packssdw %%mm1, %%mm0 \n\t"
+            "movq     %%mm0, %0    \n\t"
+            :"=m"(dst[i])
+            :"m"(src[i]), "m"(src[i+2])
+        );
+    }
+    asm volatile("femms");
+}
+void float_to_int16_sse(int16_t *dst, const float *src, int len){
+    int i;
+    for(i=0; i<len; i+=4) {
+        asm volatile(
+            "cvtps2pi    %1, %%mm0 \n\t"
+            "cvtps2pi    %2, %%mm1 \n\t"
+            "packssdw %%mm1, %%mm0 \n\t"
+            "movq     %%mm0, %0    \n\t"
+            :"=m"(dst[i])
+            :"m"(src[i]), "m"(src[i+2])
+        );
+    }
+    asm volatile("emms");
+}
+
 #ifdef CONFIG_SNOW_ENCODER
 extern void ff_snow_horizontal_compose97i_sse2(DWTELEM *b, int width);
 extern void ff_snow_horizontal_compose97i_mmx(DWTELEM *b, int width);
@@ -3199,10 +3391,25 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
         }
 #endif
 
-        if(mm_flags & MM_SSE)
-            c->vorbis_inverse_coupling = vorbis_inverse_coupling_sse;
-        else if(mm_flags & MM_3DNOW)
+        if(mm_flags & MM_3DNOW){
             c->vorbis_inverse_coupling = vorbis_inverse_coupling_3dnow;
+            c->vector_fmul = vector_fmul_3dnow;
+            if(!(avctx->flags & CODEC_FLAG_BITEXACT))
+                c->float_to_int16 = float_to_int16_3dnow;
+        }
+        if(mm_flags & MM_3DNOWEXT)
+            c->vector_fmul_reverse = vector_fmul_reverse_3dnow2;
+        if(mm_flags & MM_SSE){
+            c->vorbis_inverse_coupling = vorbis_inverse_coupling_sse;
+            c->vector_fmul = vector_fmul_sse;
+            c->float_to_int16 = float_to_int16_sse;
+        }
+        if(mm_flags & MM_SSE2){
+            c->vector_fmul_reverse = vector_fmul_reverse_sse2;
+            c->vector_fmul_add_add = vector_fmul_add_add_sse2;
+        }
+        if(mm_flags & MM_3DNOW)
+            c->vector_fmul_add_add = vector_fmul_add_add_3dnow; // faster than sse2
     }
 
 #ifdef CONFIG_ENCODERS

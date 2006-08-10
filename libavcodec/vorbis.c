@@ -192,6 +192,11 @@ static void vorbis_free(vorbis_context *vc) {
         av_free(vc->mappings[i].mux);
     }
     av_freep(&vc->mappings);
+
+    if(vc->exp_bias){
+        av_freep(&vc->swin);
+        av_freep(&vc->lwin);
+    }
 }
 
 // Parse setup header -------------------------------------------------
@@ -888,6 +893,19 @@ static int vorbis_parse_id_hdr(vorbis_context *vc){
     vc->swin=vwin[bl0-6];
     vc->lwin=vwin[bl1-6];
 
+    if(vc->exp_bias){
+        int i;
+        float *win;
+        win = av_malloc(vc->blocksize_0/2 * sizeof(float));
+        for(i=0; i<vc->blocksize_0/2; i++)
+            win[i] = vc->swin[i] * (1<<15);
+        vc->swin = win;
+        win = av_malloc(vc->blocksize_1/2 * sizeof(float));
+        for(i=0; i<vc->blocksize_1/2; i++)
+            win[i] = vc->lwin[i] * (1<<15);
+        vc->lwin = win;
+    }
+
     if ((get_bits1(gb)) == 0) {
         av_log(vc->avccontext, AV_LOG_ERROR, " Vorbis id header packet corrupt (framing flag not set). \n");
         return 2;
@@ -930,6 +948,14 @@ static int vorbis_decode_init(AVCodecContext *avccontext) {
 
     vc->avccontext = avccontext;
     dsputil_init(&vc->dsp, avccontext);
+
+    if(vc->dsp.float_to_int16 == ff_float_to_int16_c) {
+        vc->add_bias = 385;
+        vc->exp_bias = 0;
+    } else {
+        vc->add_bias = 0;
+        vc->exp_bias = 15<<23;
+    }
 
     if (!headers_len) {
         av_log(avccontext, AV_LOG_ERROR, "Extradata corrupt.\n");
@@ -1472,7 +1498,6 @@ void vorbis_inverse_coupling(float *mag, float *ang, int blocksize)
 }
 
 // Decode the audio packet using the functions above
-#define BIAS 385
 
 static int vorbis_parse_audio_packet(vorbis_context *vc) {
     GetBitContext *gb=&vc->gb;
@@ -1490,6 +1515,7 @@ static int vorbis_parse_audio_packet(vorbis_context *vc) {
     uint_fast8_t res_num=0;
     int_fast16_t retlen=0;
     uint_fast16_t saved_start=0;
+    float fadd_bias = vc->add_bias;
 
     if (get_bits1(gb)) {
         av_log(vc->avccontext, AV_LOG_ERROR, "Not a Vorbis I audio packet.\n");
@@ -1576,10 +1602,7 @@ static int vorbis_parse_audio_packet(vorbis_context *vc) {
 
     for(j=0, ch_floor_ptr=vc->channel_floors;j<vc->audio_channels;++j,ch_floor_ptr+=blocksize/2) {
         ch_res_ptr=vc->channel_residues+res_chan[j]*blocksize/2;
-
-        for(i=0;i<blocksize/2;++i) {
-            ch_floor_ptr[i]*=ch_res_ptr[i]; //FPMATH
-        }
+        vc->dsp.vector_fmul(ch_floor_ptr, ch_res_ptr, blocksize/2);
     }
 
 // MDCT, overlap/add, save data for next overlapping  FPMATH
@@ -1600,59 +1623,54 @@ static int vorbis_parse_audio_packet(vorbis_context *vc) {
 
         vc->mdct0.fft.imdct_calc(vc->modes[mode_number].blockflag ? &vc->mdct1 : &vc->mdct0, buf, ch_floor_ptr, buf_tmp);
 
+        //FIXME process channels together, to allow faster simd vector_fmul_add_add?
         if (vc->modes[mode_number].blockflag) {
             // -- overlap/add
             if (previous_window) {
-                for(k=j, i=0;i<vc->blocksize_1/2;++i, k+=step) {
-                    ret[k]=saved[i]+buf[i]*lwin[i]+BIAS;
-                }
+                vc->dsp.vector_fmul_add_add(ret+j, buf, lwin, saved, vc->add_bias, vc->blocksize_1/2, step);
                 retlen=vc->blocksize_1/2;
             } else {
-                buf += (vc->blocksize_1-vc->blocksize_0)/4;
-                for(k=j, i=0;i<vc->blocksize_0/2;++i, k+=step) {
-                    ret[k]=saved[i]+buf[i]*swin[i]+BIAS;
-                }
+                int len = (vc->blocksize_1-vc->blocksize_0)/4;
+                buf += len;
+                vc->dsp.vector_fmul_add_add(ret+j, buf, swin, saved, vc->add_bias, vc->blocksize_0/2, step);
+                k = vc->blocksize_0/2*step + j;
                 buf += vc->blocksize_0/2;
-                for(i=0;i<(vc->blocksize_1-vc->blocksize_0)/4;++i, k+=step) {
-                    ret[k]=buf[i]+BIAS;
+                if(vc->exp_bias){
+                    for(i=0; i<len; i++, k+=step)
+                        ((uint32_t*)ret)[k] = ((uint32_t*)buf)[i] + vc->exp_bias; // ret[k]=buf[i]*(1<<bias)
+                } else {
+                    for(i=0; i<len; i++, k+=step)
+                        ret[k] = buf[i] + fadd_bias;
                 }
                 buf=vc->buf;
-                retlen=vc->blocksize_0/2+(vc->blocksize_1-vc->blocksize_0)/4;
+                retlen=vc->blocksize_0/2+len;
             }
             // -- save
             if (next_window) {
                 buf += vc->blocksize_1/2;
-                lwin += vc->blocksize_1/2-1;
-                for(i=0;i<vc->blocksize_1/2;++i) {
-                    saved[i]=buf[i]*lwin[-i];
-                }
+                vc->dsp.vector_fmul_reverse(saved, buf, lwin, vc->blocksize_1/2);
                 saved_start=0;
             } else {
                 saved_start=(vc->blocksize_1-vc->blocksize_0)/4;
                 buf += vc->blocksize_1/2;
-                for(i=0;i<saved_start;++i) {
-                    saved[i]=buf[i];
-                }
-                swin += vc->blocksize_0/2-1;
-                for(i=0;i<vc->blocksize_0/2;++i) {
-                    saved[saved_start+i]=buf[saved_start+i]*swin[-i];
-                }
+                for(i=0; i<saved_start; i++)
+                    ((uint32_t*)saved)[i] = ((uint32_t*)buf)[i] + vc->exp_bias;
+                vc->dsp.vector_fmul_reverse(saved+saved_start, buf+saved_start, swin, vc->blocksize_0/2);
             }
         } else {
             // --overlap/add
-            for(k=j, i=0;i<saved_start;++i, k+=step) {
-                ret[k]=saved[i]+BIAS;
+            if(vc->add_bias) {
+                for(k=j, i=0;i<saved_start;++i, k+=step)
+                    ret[k] = saved[i] + fadd_bias;
+            } else {
+                for(k=j, i=0;i<saved_start;++i, k+=step)
+                    ret[k] = saved[i];
             }
-            for(i=0;i<vc->blocksize_0/2;++i, k+=step) {
-                ret[k]=saved[saved_start+i]+buf[i]*swin[i]+BIAS;
-            }
+            vc->dsp.vector_fmul_add_add(ret+k, buf, swin, saved+saved_start, vc->add_bias, vc->blocksize_0/2, step);
             retlen=saved_start+vc->blocksize_0/2;
             // -- save
             buf += vc->blocksize_0/2;
-            swin += vc->blocksize_0/2-1;
-            for(i=0;i<vc->blocksize_0/2;++i) {
-                saved[i]=buf[i]*swin[-i];
-            }
+            vc->dsp.vector_fmul_reverse(saved, buf, swin, vc->blocksize_0/2);
             saved_start=0;
         }
     }
@@ -1695,16 +1713,7 @@ static int vorbis_decode_frame(AVCodecContext *avccontext,
 
     AV_DEBUG("parsed %d bytes %d bits, returned %d samples (*ch*bits) \n", get_bits_count(gb)/8, get_bits_count(gb)%8, len);
 
-    for(i=0;i<len;++i) {
-        int_fast32_t tmp= ((int32_t*)vc->ret)[i];
-        if(tmp & 0xf0000){
-//            tmp= (0x43c0ffff - tmp)>>31; //ask gcc devs why this is slower
-            if(tmp > 0x43c0ffff) tmp= 0xFFFF;
-            else                 tmp= 0;
-        }
-        ((int16_t*)data)[i]=tmp - 0x8000;
-    }
-
+    vc->dsp.float_to_int16(data, vc->ret, len);
     *data_size=len*2;
 
     return buf_size ;

@@ -58,6 +58,10 @@ void ff_h264_idct_dc_add_c(uint8_t *dst, DCTELEM *block, int stride);
 void ff_h264_lowres_idct_add_c(uint8_t *dst, int stride, DCTELEM *block);
 void ff_h264_lowres_idct_put_c(uint8_t *dst, int stride, DCTELEM *block);
 
+void ff_vector_fmul_add_add_c(float *dst, const float *src0, const float *src1,
+                              const float *src2, int src3, int blocksize, int step);
+void ff_float_to_int16_c(int16_t *dst, const float *src, int len);
+
 /* encoding scans */
 extern const uint8_t ff_alternate_horizontal_scan[64];
 extern const uint8_t ff_alternate_vertical_scan[64];
@@ -307,7 +311,17 @@ typedef struct DSPContext {
 
     void (*h261_loop_filter)(uint8_t *src, int stride);
 
+    /* assume len is a multiple of 4, and arrays are 16-byte aligned */
     void (*vorbis_inverse_coupling)(float *mag, float *ang, int blocksize);
+    void (*vector_fmul)(float *dst, const float *src, int len);
+    /* assume len is a multiple of 8, and arrays are 16-byte aligned */
+    void (*vector_fmul_reverse)(float *dst, const float *src0, const float *src1, int len);
+    /* assume len is a multiple of 8, and src arrays are 16-byte aligned */
+    void (*vector_fmul_add_add)(float *dst, const float *src0, const float *src1, const float *src2, int src3, int len, int step);
+
+    /* C version: convert floats from the range [384.0,386.0] to ints in [-32768,32767]
+     * asm versions: convert floats from [-32768.0,32767.0] without rescaling */
+    void (*float_to_int16)(int16_t *dst, const float *src, int len);
 
     /* (I)DCT */
     void (*fdct)(DCTELEM *block/* align 16*/);

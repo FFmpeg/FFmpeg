@@ -120,6 +120,8 @@ typedef struct vorbis_context_s {
     float *ret;
     float *buf;
     float *buf_tmp;
+    uint_fast32_t add_bias; // for float->int conversion
+    uint_fast32_t exp_bias;
 } vorbis_context;
 
 
