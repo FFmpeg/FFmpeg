@@ -351,60 +351,60 @@ static always_inline void fdct_col(const int16_t *in, int16_t *out, int offset)
 static always_inline void fdct_row_sse2(const int16_t *in, int16_t *out)
 {
     asm volatile(
-        ".macro FDCT_ROW_SSE2_H1 i t    \n\t"
-        "movq      \\i(%0), %%xmm2      \n\t"
-        "movq      \\i+8(%0), %%xmm0    \n\t"
-        "movdqa    \\t+32(%1), %%xmm3   \n\t"
-        "movdqa    \\t+48(%1), %%xmm7   \n\t"
-        "movdqa    \\t(%1), %%xmm4      \n\t"
-        "movdqa    \\t+16(%1), %%xmm5   \n\t"
-        ".endm                          \n\t"
-        ".macro FDCT_ROW_SSE2_H2 i t    \n\t"
-        "movq      \\i(%0), %%xmm2      \n\t"
-        "movq      \\i+8(%0), %%xmm0    \n\t"
-        "movdqa    \\t+32(%1), %%xmm3   \n\t"
-        "movdqa    \\t+48(%1), %%xmm7   \n\t"
-        ".endm                          \n\t"
-        ".macro FDCT_ROW_SSE2 i         \n\t"
-        "movq      %%xmm2, %%xmm1       \n\t"
-        "pshuflw   $27, %%xmm0, %%xmm0  \n\t"
-        "paddsw    %%xmm0, %%xmm1       \n\t"
-        "psubsw    %%xmm0, %%xmm2       \n\t"
-        "punpckldq %%xmm2, %%xmm1       \n\t"
-        "pshufd    $78, %%xmm1, %%xmm2  \n\t"
-        "pmaddwd   %%xmm2, %%xmm3       \n\t"
-        "pmaddwd   %%xmm1, %%xmm7       \n\t"
-        "pmaddwd   %%xmm5, %%xmm2       \n\t"
-        "pmaddwd   %%xmm4, %%xmm1       \n\t"
-        "paddd     %%xmm7, %%xmm3       \n\t"
-        "paddd     %%xmm2, %%xmm1       \n\t"
-        "paddd     %%xmm6, %%xmm3       \n\t"
-        "paddd     %%xmm6, %%xmm1       \n\t"
-        "psrad     %3, %%xmm3           \n\t"
-        "psrad     %3, %%xmm1           \n\t"
-        "packssdw  %%xmm3, %%xmm1       \n\t"
-        "movdqa    %%xmm1, \\i(%4)      \n\t"
-        ".endm                          \n\t"
+#define FDCT_ROW_SSE2_H1(i,t)                    \
+        "movq      " #i "(%0), %%xmm2      \n\t" \
+        "movq      " #i "+8(%0), %%xmm0    \n\t" \
+        "movdqa    " #t "+32(%1), %%xmm3   \n\t" \
+        "movdqa    " #t "+48(%1), %%xmm7   \n\t" \
+        "movdqa    " #t "(%1), %%xmm4      \n\t" \
+        "movdqa    " #t "+16(%1), %%xmm5   \n\t"
+
+#define FDCT_ROW_SSE2_H2(i,t)                    \
+        "movq      " #i "(%0), %%xmm2      \n\t" \
+        "movq      " #i "+8(%0), %%xmm0    \n\t" \
+        "movdqa    " #t "+32(%1), %%xmm3   \n\t" \
+        "movdqa    " #t "+48(%1), %%xmm7   \n\t"
+
+#define FDCT_ROW_SSE2(i)                      \
+        "movq      %%xmm2, %%xmm1       \n\t" \
+        "pshuflw   $27, %%xmm0, %%xmm0  \n\t" \
+        "paddsw    %%xmm0, %%xmm1       \n\t" \
+        "psubsw    %%xmm0, %%xmm2       \n\t" \
+        "punpckldq %%xmm2, %%xmm1       \n\t" \
+        "pshufd    $78, %%xmm1, %%xmm2  \n\t" \
+        "pmaddwd   %%xmm2, %%xmm3       \n\t" \
+        "pmaddwd   %%xmm1, %%xmm7       \n\t" \
+        "pmaddwd   %%xmm5, %%xmm2       \n\t" \
+        "pmaddwd   %%xmm4, %%xmm1       \n\t" \
+        "paddd     %%xmm7, %%xmm3       \n\t" \
+        "paddd     %%xmm2, %%xmm1       \n\t" \
+        "paddd     %%xmm6, %%xmm3       \n\t" \
+        "paddd     %%xmm6, %%xmm1       \n\t" \
+        "psrad     %3, %%xmm3           \n\t" \
+        "psrad     %3, %%xmm1           \n\t" \
+        "packssdw  %%xmm3, %%xmm1       \n\t" \
+        "movdqa    %%xmm1, " #i "(%4)   \n\t"
+
         "movdqa    (%2), %%xmm6         \n\t"
-        "FDCT_ROW_SSE2_H1 0 0           \n\t"
-        "FDCT_ROW_SSE2 0                \n\t"
-        "FDCT_ROW_SSE2_H2 64 0          \n\t"
-        "FDCT_ROW_SSE2 64               \n\t"
+        FDCT_ROW_SSE2_H1(0,0)
+        FDCT_ROW_SSE2(0)
+        FDCT_ROW_SSE2_H2(64,0)
+        FDCT_ROW_SSE2(64)
 
-        "FDCT_ROW_SSE2_H1 16 64         \n\t"
-        "FDCT_ROW_SSE2 16               \n\t"
-        "FDCT_ROW_SSE2_H2 112 64        \n\t"
-        "FDCT_ROW_SSE2 112              \n\t"
+        FDCT_ROW_SSE2_H1(16,64)
+        FDCT_ROW_SSE2(16)
+        FDCT_ROW_SSE2_H2(112,64)
+        FDCT_ROW_SSE2(112)
 
-        "FDCT_ROW_SSE2_H1 32 128        \n\t"
-        "FDCT_ROW_SSE2 32               \n\t"
-        "FDCT_ROW_SSE2_H2 96 128        \n\t"
-        "FDCT_ROW_SSE2 96               \n\t"
+        FDCT_ROW_SSE2_H1(32,128)
+        FDCT_ROW_SSE2(32)
+        FDCT_ROW_SSE2_H2(96,128)
+        FDCT_ROW_SSE2(96)
 
-        "FDCT_ROW_SSE2_H1 48 192        \n\t"
-        "FDCT_ROW_SSE2 48               \n\t"
-        "FDCT_ROW_SSE2_H2 80 192        \n\t"
-        "FDCT_ROW_SSE2 80               \n\t"
+        FDCT_ROW_SSE2_H1(48,192)
+        FDCT_ROW_SSE2(48)
+        FDCT_ROW_SSE2_H2(80,192)
+        FDCT_ROW_SSE2(80)
         :
         : "r" (in), "r" (tab_frw_01234567_sse2.tab_frw_01234567_sse2), "r" (fdct_r_row_sse2.fdct_r_row_sse2), "i" (SHIFT_FRW_ROW), "r" (out)
     );
