@@ -3278,6 +3278,7 @@ static int vc1_decode_frame(AVCodecContext *avctx,
         return -1;
 
     if(s->pict_type != I_TYPE && !v->res_rtm_flag)return -1;
+    if(s->pict_type == B_TYPE)return -1;
 
     // for hurry_up==5
     s->current_picture.pict_type= s->pict_type;
