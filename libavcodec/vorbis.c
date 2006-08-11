@@ -762,7 +762,7 @@ static void create_map( vorbis_context * vc, uint_fast8_t floor_number )
 
     for (blockflag=0;blockflag<2;++blockflag)
     {
-    n=(blockflag ? vc->blocksize[1] : vc->blocksize[0]) / 2;
+    n=vc->blocksize[blockflag]/2;
     floors[floor_number].data.t0.map[blockflag]=
         av_malloc((n+1) * sizeof(int_fast32_t)); // n+sentinel
 

@@ -2773,33 +2773,39 @@ static void vorbis_inverse_coupling_sse(float *mag, float *ang, int blocksize)
 }
 
 static void vector_fmul_3dnow(float *dst, const float *src, int len){
-    long i;
-    len >>= 1;
-    for(i=0; i<len; i++) {
-        asm volatile(
-            "movq  %0, %%mm0 \n\t"
-            "pfmul %1, %%mm0 \n\t"
-            "movq  %%mm0, %0 \n\t"
-            :"+m"(dst[i*2])
-            :"m"(src[i*2])
-            :"memory"
-        );
-    }
-    asm volatile("femms");
+    long i = (len-4)*4;
+    asm volatile(
+        "1: \n\t"
+        "movq    (%1,%0), %%mm0 \n\t"
+        "movq   8(%1,%0), %%mm1 \n\t"
+        "pfmul   (%2,%0), %%mm0 \n\t"
+        "pfmul  8(%2,%0), %%mm1 \n\t"
+        "movq   %%mm0,  (%1,%0) \n\t"
+        "movq   %%mm1, 8(%1,%0) \n\t"
+        "sub  $16, %0 \n\t"
+        "jge 1b \n\t"
+        "femms  \n\t"
+        :"+r"(i)
+        :"r"(dst), "r"(src)
+        :"memory"
+    );
 }
 static void vector_fmul_sse(float *dst, const float *src, int len){
-    long i;
-    len >>= 2;
-    for(i=0; i<len; i++) {
-        asm volatile(
-            "movaps %0, %%xmm0 \n\t"
-            "mulps  %1, %%xmm0 \n\t"
-            "movaps %%xmm0, %0 \n\t"
-            :"+m"(dst[i*4])
-            :"m"(src[i*4])
-            :"memory"
-        );
-    }
+    long i = (len-8)*4;
+    asm volatile(
+        "1: \n\t"
+        "movaps    (%1,%0), %%xmm0 \n\t"
+        "movaps  16(%1,%0), %%xmm1 \n\t"
+        "mulps     (%2,%0), %%xmm0 \n\t"
+        "mulps   16(%2,%0), %%xmm1 \n\t"
+        "movaps  %%xmm0,   (%1,%0) \n\t"
+        "movaps  %%xmm1, 16(%1,%0) \n\t"
+        "sub  $32, %0 \n\t"
+        "jge 1b \n\t"
+        :"+r"(i)
+        :"r"(dst), "r"(src)
+        :"memory"
+    );
 }
 
 static void vector_fmul_reverse_3dnow2(float *dst, const float *src0, const float *src1, int len){
@@ -2842,9 +2848,8 @@ static void vector_fmul_reverse_sse(float *dst, const float *src0, const float *
 
 static void vector_fmul_add_add_3dnow(float *dst, const float *src0, const float *src1,
                                       const float *src2, int src3, int len, int step){
-    long i;
+    long i = (len-4)*4;
     if(step == 2 && src3 == 0){
-        i = (len-4)*4;
         dst += (len-4)*2;
         asm volatile(
             "1: \n\t"
@@ -2869,26 +2874,31 @@ static void vector_fmul_add_add_3dnow(float *dst, const float *src0, const float
         );
     }
     else if(step == 1 && src3 == 0){
-        for(i=0; i<len; i+=2){
-            asm volatile(
-                "movq      %1, %%mm0 \n\t"
-                "pfmul     %2, %%mm0 \n\t"
-                "pfadd     %3, %%mm0 \n\t"
-                "movq   %%mm0, %0    \n\t"
-                :"=m"(dst[i])
-                :"m"(src0[i]), "m"(src1[i]), "m"(src2[i])
-            );
-        }
+        asm volatile(
+            "1: \n\t"
+            "movq    (%2,%0), %%mm0 \n\t"
+            "movq   8(%2,%0), %%mm1 \n\t"
+            "pfmul   (%3,%0), %%mm0 \n\t"
+            "pfmul  8(%3,%0), %%mm1 \n\t"
+            "pfadd   (%4,%0), %%mm0 \n\t"
+            "pfadd  8(%4,%0), %%mm1 \n\t"
+            "movq  %%mm0,   (%1,%0) \n\t"
+            "movq  %%mm1,  8(%1,%0) \n\t"
+            "sub  $16, %0 \n\t"
+            "jge  1b \n\t"
+            :"+r"(i)
+            :"r"(dst), "r"(src0), "r"(src1), "r"(src2)
+            :"memory"
+        );
     }
     else
         ff_vector_fmul_add_add_c(dst, src0, src1, src2, src3, len, step);
     asm volatile("femms");
 }
 static void vector_fmul_add_add_sse(float *dst, const float *src0, const float *src1,
-                                     const float *src2, float src3, int len, int step){
-    long i;
+                                    const float *src2, int src3, int len, int step){
+    long i = (len-8)*4;
     if(step == 2 && src3 == 0){
-        i = (len-8)*4;
         dst += (len-8)*2;
         asm volatile(
             "1: \n\t"
@@ -2921,16 +2931,22 @@ static void vector_fmul_add_add_sse(float *dst, const float *src0, const float *
         );
     }
     else if(step == 1 && src3 == 0){
-        for(i=0; i<len; i+=4){
-            asm volatile(
-                "movaps     %1, %%xmm0 \n\t"
-                "mulps      %2, %%xmm0 \n\t"
-                "addps      %3, %%xmm0 \n\t"
-                "movaps %%xmm0, %0     \n\t"
-                :"=m"(dst[i])
-                :"m"(src0[i]), "m"(src1[i]), "m"(src2[i])
-            );
-        }
+        asm volatile(
+            "1: \n\t"
+            "movaps   (%2,%0), %%xmm0 \n\t"
+            "movaps 16(%2,%0), %%xmm1 \n\t"
+            "mulps    (%3,%0), %%xmm0 \n\t"
+            "mulps  16(%3,%0), %%xmm1 \n\t"
+            "addps    (%4,%0), %%xmm0 \n\t"
+            "addps  16(%4,%0), %%xmm1 \n\t"
+            "movaps %%xmm0,   (%1,%0) \n\t"
+            "movaps %%xmm1, 16(%1,%0) \n\t"
+            "sub  $32, %0 \n\t"
+            "jge  1b \n\t"
+            :"+r"(i)
+            :"r"(dst), "r"(src0), "r"(src1), "r"(src2)
+            :"memory"
+        );
     }
     else
         ff_vector_fmul_add_add_c(dst, src0, src1, src2, src3, len, step);
@@ -3409,7 +3425,7 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             c->vector_fmul_add_add = vector_fmul_add_add_sse;
         }
         if(mm_flags & MM_3DNOW)
-            c->vector_fmul_add_add = vector_fmul_add_add_3dnow; // faster than sse2
+            c->vector_fmul_add_add = vector_fmul_add_add_3dnow; // faster than sse
     }
 
 #ifdef CONFIG_ENCODERS
