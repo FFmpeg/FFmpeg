@@ -2418,7 +2418,7 @@ int av_write_frame(AVFormatContext *s, AVPacket *pkt)
  * packets with pkt->destruct == av_destruct_packet will be freed inside this function.
  * so they cannot be used after it, note calling av_free_packet() on them is still safe
  */
-static int av_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out, AVPacket *pkt, int flush){
+int av_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out, AVPacket *pkt, int flush){
     AVPacketList *pktl, **next_point, *this_pktl;
     int stream_count=0;
     int streams[MAX_STREAMS];
