@@ -2414,9 +2414,18 @@ int av_write_frame(AVFormatContext *s, AVPacket *pkt)
 }
 
 /**
- * interleave_packet implementation which will interleave per DTS.
- * packets with pkt->destruct == av_destruct_packet will be freed inside this function.
- * so they cannot be used after it, note calling av_free_packet() on them is still safe
+ * Interleave a packet per DTS in an output media file.
+ *
+ * Packets with pkt->destruct == av_destruct_packet will be freed inside this function,
+ * so they cannot be used after it, note calling av_free_packet() on them is still safe.
+ *
+ * @param s media file handle
+ * @param out the interleaved packet will be output here
+ * @param in the input packet
+ * @param flush 1 if no further packets are available as input and all
+ *              remaining packets should be output
+ * @return 1 if a packet was output, 0 if no packet could be output,
+ *         < 0 if an error occured
  */
 int av_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out, AVPacket *pkt, int flush){
     AVPacketList *pktl, **next_point, *this_pktl;
