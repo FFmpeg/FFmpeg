@@ -47,6 +47,7 @@ documentation                           Mike Melanson, Diego Biurrun
 website                                 Mike Melanson, Diego Biurrun
 build system (configure,Makefiles)      Diego Biurrun, Mans Rullgard
 project server                          Diego Biurrun, Mans Rullgard
+mailinglists                            Michael Niedermayer, Baptiste
 
 
 libavutil
