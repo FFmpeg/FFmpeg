@@ -468,6 +468,7 @@ pthreads="no"
 swscaler="no"
 gpl="no"
 memalignhack="no"
+asmalign_pot="unknown"
 
 # OS specific
 targetos=`uname -s`
@@ -1469,6 +1470,12 @@ if test "$gprof" = "yes" ; then
     LDFLAGS="$LDFLAGS -p"
 fi
 
+# find if .align arg is power-of-two or not
+if test $asmalign_pot = "unknown"; then
+    asmalign_pot="no"
+    echo 'asm (".align 3");' | check_cc && asmalign_pot="yes"
+fi
+
 echo "install prefix   $PREFIX"
 echo "source path      $source_path"
 echo "C compiler       $cc"
@@ -1535,6 +1542,7 @@ echo "network support      $network"
 if test "$network" = "yes" ; then
     echo "IPv6 support         $ipv6"
 fi
+echo ".align is power-of-two" $asmalign_pot
 if test "$gpl" = "no" ; then
     echo "License: LGPL"
 else
@@ -2094,6 +2102,12 @@ fi
 
 if test "$amr_if2" = "yes" ; then
   echo "AMR_CFLAGS=-DIF2=1" >> config.mak
+fi
+
+if test "$asmalign_pot" = "yes" ; then
+  echo '#define ASMALIGN(ZEROBITS) ".align " #ZEROBITS "\n\t"' >> $TMPH
+else
+  echo '#define ASMALIGN(ZEROBITS) ".align 1<<" #ZEROBITS "\n\t"' >> $TMPH
 fi
 
 

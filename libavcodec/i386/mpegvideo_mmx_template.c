@@ -112,7 +112,7 @@ static int RENAME(dct_quantize)(MpegEncContext *s,
             "pxor %%mm6, %%mm6                  \n\t"
             "psubw (%3), %%mm6                  \n\t" // -bias[0]
             "mov $-128, %%"REG_a"               \n\t"
-            ".balign 16                         \n\t"
+            ASMALIGN(4)
             "1:                                 \n\t"
             "pxor %%mm1, %%mm1                  \n\t" // 0
             "movq (%1, %%"REG_a"), %%mm0        \n\t" // block[i]
@@ -156,7 +156,7 @@ static int RENAME(dct_quantize)(MpegEncContext *s,
             "pxor %%mm7, %%mm7                  \n\t" // 0
             "pxor %%mm4, %%mm4                  \n\t" // 0
             "mov $-128, %%"REG_a"               \n\t"
-            ".balign 16                         \n\t"
+            ASMALIGN(4)
             "1:                                 \n\t"
             "pxor %%mm1, %%mm1                  \n\t" // 0
             "movq (%1, %%"REG_a"), %%mm0        \n\t" // block[i]

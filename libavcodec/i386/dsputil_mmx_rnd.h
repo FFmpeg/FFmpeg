@@ -28,7 +28,7 @@ static void DEF(put, pixels8_x2)(uint8_t *block, const uint8_t *pixels, int line
     MOVQ_BFE(mm6);
     __asm __volatile(
         "lea    (%3, %3), %%"REG_a"     \n\t"
-        ".balign 8                      \n\t"
+        ASMALIGN(3)
         "1:                             \n\t"
         "movq   (%1), %%mm0             \n\t"
         "movq   1(%1), %%mm1            \n\t"
@@ -69,7 +69,7 @@ static void attribute_unused DEF(put, pixels8_l2)(uint8_t *dst, uint8_t *src1, u
         "movq   %%mm4, (%3)             \n\t"
         "add    %5, %3                  \n\t"
         "decl   %0                      \n\t"
-        ".balign 8                      \n\t"
+        ASMALIGN(3)
         "1:                             \n\t"
         "movq   (%1), %%mm0             \n\t"
         "movq   (%2), %%mm1             \n\t"
@@ -110,7 +110,7 @@ static void DEF(put, pixels16_x2)(uint8_t *block, const uint8_t *pixels, int lin
     MOVQ_BFE(mm6);
     __asm __volatile(
         "lea        (%3, %3), %%"REG_a" \n\t"
-        ".balign 8                      \n\t"
+        ASMALIGN(3)
         "1:                             \n\t"
         "movq   (%1), %%mm0             \n\t"
         "movq   1(%1), %%mm1            \n\t"
@@ -168,7 +168,7 @@ static void attribute_unused DEF(put, pixels16_l2)(uint8_t *dst, uint8_t *src1, 
         "movq   %%mm5, 8(%3)            \n\t"
         "add    %5, %3                  \n\t"
         "decl   %0                      \n\t"
-        ".balign 8                      \n\t"
+        ASMALIGN(3)
         "1:                             \n\t"
         "movq   (%1), %%mm0             \n\t"
         "movq   (%2), %%mm1             \n\t"
@@ -206,7 +206,7 @@ static void DEF(put, pixels8_y2)(uint8_t *block, const uint8_t *pixels, int line
     __asm __volatile(
         "lea (%3, %3), %%"REG_a"        \n\t"
         "movq (%1), %%mm0               \n\t"
-        ".balign 8                      \n\t"
+        ASMALIGN(3)
         "1:                             \n\t"
         "movq   (%1, %3), %%mm1         \n\t"
         "movq   (%1, %%"REG_a"),%%mm2   \n\t"
@@ -246,7 +246,7 @@ static void DEF(put, pixels8_xy2)(uint8_t *block, const uint8_t *pixels, int lin
         "paddusw %%mm1, %%mm5           \n\t"
         "xor    %%"REG_a", %%"REG_a"    \n\t"
         "add    %3, %1                  \n\t"
-        ".balign 8                      \n\t"
+        ASMALIGN(3)
         "1:                             \n\t"
         "movq   (%1, %%"REG_a"), %%mm0  \n\t"
         "movq   1(%1, %%"REG_a"), %%mm2 \n\t"
@@ -458,7 +458,7 @@ static void DEF(avg, pixels8_y2)(uint8_t *block, const uint8_t *pixels, int line
     __asm __volatile(
         "lea    (%3, %3), %%"REG_a"     \n\t"
         "movq   (%1), %%mm0             \n\t"
-        ".balign 8                      \n\t"
+        ASMALIGN(3)
         "1:                             \n\t"
         "movq   (%1, %3), %%mm1         \n\t"
         "movq   (%1, %%"REG_a"), %%mm2  \n\t"
@@ -509,7 +509,7 @@ static void DEF(avg, pixels8_xy2)(uint8_t *block, const uint8_t *pixels, int lin
         "paddusw %%mm1, %%mm5           \n\t"
         "xor    %%"REG_a", %%"REG_a"    \n\t"
         "add    %3, %1                  \n\t"
-        ".balign 8                      \n\t"
+        ASMALIGN(3)
         "1:                             \n\t"
         "movq   (%1, %%"REG_a"), %%mm0  \n\t"
         "movq   1(%1, %%"REG_a"), %%mm2 \n\t"

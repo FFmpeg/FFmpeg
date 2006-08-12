@@ -56,7 +56,7 @@ static const uint64_t ff_pw_15 attribute_used __attribute__ ((aligned(8))) = 0x0
 static const uint64_t ff_pb_3F attribute_used __attribute__ ((aligned(8))) = 0x3F3F3F3F3F3F3F3FULL;
 static const uint64_t ff_pb_FC attribute_used __attribute__ ((aligned(8))) = 0xFCFCFCFCFCFCFCFCULL;
 
-#define JUMPALIGN() __asm __volatile (".balign 8"::)
+#define JUMPALIGN() __asm __volatile (ASMALIGN(3)::)
 #define MOVQ_ZERO(regd)  __asm __volatile ("pxor %%" #regd ", %%" #regd ::)
 
 #define MOVQ_WONE(regd) \
@@ -204,7 +204,7 @@ static void get_pixels_mmx(DCTELEM *block, const uint8_t *pixels, int line_size)
     asm volatile(
         "mov $-128, %%"REG_a"           \n\t"
         "pxor %%mm7, %%mm7              \n\t"
-        ".balign 16                     \n\t"
+        ASMALIGN(4)
         "1:                             \n\t"
         "movq (%0), %%mm0               \n\t"
         "movq (%0, %2), %%mm2           \n\t"
@@ -232,7 +232,7 @@ static inline void diff_pixels_mmx(DCTELEM *block, const uint8_t *s1, const uint
     asm volatile(
         "pxor %%mm7, %%mm7              \n\t"
         "mov $-128, %%"REG_a"           \n\t"
-        ".balign 16                     \n\t"
+        ASMALIGN(4)
         "1:                             \n\t"
         "movq (%0), %%mm0               \n\t"
         "movq (%1), %%mm2               \n\t"
@@ -375,7 +375,7 @@ static void put_pixels4_mmx(uint8_t *block, const uint8_t *pixels, int line_size
 {
     __asm __volatile(
          "lea (%3, %3), %%"REG_a"       \n\t"
-         ".balign 8                     \n\t"
+         ASMALIGN(3)
          "1:                            \n\t"
          "movd (%1), %%mm0              \n\t"
          "movd (%1, %3), %%mm1          \n\t"
@@ -401,7 +401,7 @@ static void put_pixels8_mmx(uint8_t *block, const uint8_t *pixels, int line_size
 {
     __asm __volatile(
          "lea (%3, %3), %%"REG_a"       \n\t"
-         ".balign 8                     \n\t"
+         ASMALIGN(3)
          "1:                            \n\t"
          "movq (%1), %%mm0              \n\t"
          "movq (%1, %3), %%mm1          \n\t"
@@ -427,7 +427,7 @@ static void put_pixels16_mmx(uint8_t *block, const uint8_t *pixels, int line_siz
 {
     __asm __volatile(
          "lea (%3, %3), %%"REG_a"       \n\t"
-         ".balign 8                     \n\t"
+         ASMALIGN(3)
          "1:                            \n\t"
          "movq (%1), %%mm0              \n\t"
          "movq 8(%1), %%mm4             \n\t"

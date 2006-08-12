@@ -34,7 +34,7 @@ static inline void sad8_1_mmx(uint8_t *blk1, uint8_t *blk2, int stride, int h)
 {
     long len= -(stride*h);
     asm volatile(
-        ".balign 16                     \n\t"
+        ASMALIGN(4)
         "1:                             \n\t"
         "movq (%1, %%"REG_a"), %%mm0    \n\t"
         "movq (%2, %%"REG_a"), %%mm2    \n\t"
@@ -70,7 +70,7 @@ static inline void sad8_1_mmx2(uint8_t *blk1, uint8_t *blk2, int stride, int h)
 {
     long len= -(stride*h);
     asm volatile(
-        ".balign 16                     \n\t"
+        ASMALIGN(4)
         "1:                             \n\t"
         "movq (%1, %%"REG_a"), %%mm0    \n\t"
         "movq (%2, %%"REG_a"), %%mm2    \n\t"
@@ -92,7 +92,7 @@ static inline void sad8_2_mmx2(uint8_t *blk1a, uint8_t *blk1b, uint8_t *blk2, in
 {
     long len= -(stride*h);
     asm volatile(
-        ".balign 16                     \n\t"
+        ASMALIGN(4)
         "1:                             \n\t"
         "movq (%1, %%"REG_a"), %%mm0    \n\t"
         "movq (%2, %%"REG_a"), %%mm2    \n\t"
@@ -118,7 +118,7 @@ static inline void sad8_4_mmx2(uint8_t *blk1, uint8_t *blk2, int stride, int h)
 { //FIXME reuse src
     long len= -(stride*h);
     asm volatile(
-        ".balign 16                     \n\t"
+        ASMALIGN(4)
         "movq "MANGLE(bone)", %%mm5     \n\t"
         "1:                             \n\t"
         "movq (%1, %%"REG_a"), %%mm0    \n\t"
@@ -155,7 +155,7 @@ static inline void sad8_2_mmx(uint8_t *blk1a, uint8_t *blk1b, uint8_t *blk2, int
 {
     long len= -(stride*h);
     asm volatile(
-        ".balign 16                     \n\t"
+        ASMALIGN(4)
         "1:                             \n\t"
         "movq (%1, %%"REG_a"), %%mm0    \n\t"
         "movq (%2, %%"REG_a"), %%mm1    \n\t"
@@ -193,7 +193,7 @@ static inline void sad8_4_mmx(uint8_t *blk1, uint8_t *blk2, int stride, int h)
 {
     long len= -(stride*h);
     asm volatile(
-        ".balign 16                     \n\t"
+        ASMALIGN(4)
         "1:                             \n\t"
         "movq (%1, %%"REG_a"), %%mm0    \n\t"
         "movq (%2, %%"REG_a"), %%mm1    \n\t"
