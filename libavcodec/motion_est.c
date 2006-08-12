@@ -1670,7 +1670,7 @@ static inline int bidir_refine(MpegEncContext * s, int mb_x, int mb_y)
     }
 #define CHECK_BIDIR2(a,b,c,d)\
 CHECK_BIDIR(a,b,c,d)\
-CHECK_BIDIR(-a,-b,-c,-d)
+CHECK_BIDIR(-(a),-(b),-(c),-(d))
 
 #define CHECK_BIDIRR(a,b,c,d)\
 CHECK_BIDIR2(a,b,c,d)\
