@@ -1241,7 +1241,7 @@ static inline int initFilter(int16_t **outFilter, int16_t **filterPos, int *outF
         return 0;
 }
 
-#ifdef HAVE_MMX2
+#ifdef COMPILE_MMX2
 static void initMMX2HScaler(int dstW, int xInc, uint8_t *funnyCode, int16_t *filter, int32_t *filterPos, int numSplits)
 {
 	uint8_t *fragmentA;
@@ -1412,7 +1412,7 @@ static void initMMX2HScaler(int dstW, int xInc, uint8_t *funnyCode, int16_t *fil
 	}
 	filterPos[i/2]= xpos>>16; // needed to jump to the next part
 }
-#endif /* HAVE_MMX2 */
+#endif /* COMPILE_MMX2 */
 
 static void globalInit(void){
     // generating tables:
@@ -2116,7 +2116,7 @@ SwsContext *sws_getContext(int srcW, int srcH, int origSrcFormat, int dstW, int 
 				 srcFilter->chrH, dstFilter->chrH, c->param);
 
 #define MAX_FUNNY_CODE_SIZE 10000
-#if defined(HAVE_MMX2)
+#if defined(COMPILE_MMX2)
 // can't downscale !!!
 		if(c->canMMX2BeUsed && (flags & SWS_FAST_BILINEAR))
 		{
@@ -2136,7 +2136,7 @@ SwsContext *sws_getContext(int srcW, int srcH, int origSrcFormat, int dstW, int 
 			initMMX2HScaler(      dstW, c->lumXInc, c->funnyYCode , c->lumMmx2Filter, c->lumMmx2FilterPos, 8);
 			initMMX2HScaler(c->chrDstW, c->chrXInc, c->funnyUVCode, c->chrMmx2Filter, c->chrMmx2FilterPos, 4);
 		}
-#endif /* defined(HAVE_MMX2) */
+#endif /* defined(COMPILE_MMX2) */
 	} // Init Horizontal stuff
 
 
