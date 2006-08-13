@@ -50,7 +50,7 @@ void *av_malloc(unsigned int size)
 #endif
 
     /* let's disallow possible ambiguous cases */
-    if(size > (INT_MAX-16) )
+    if(size > (INT_MAX-16) || !size)
         return NULL;
 
 #ifdef MEMALIGN_HACK
@@ -109,14 +109,16 @@ void *av_realloc(void *ptr, unsigned int size)
 
 #ifndef MEMALIGN_HACK
     ptr= realloc(ptr, size);
-    if(((int)ptr&15) || !ptr)
+assert(((int)((void*)0)&15) == 0); //for the null pointer pedants
+    if(!((int)ptr&15))
         return ptr;
 #endif
 
     ptr2= av_malloc(size);
     if(ptr && ptr2)
         memcpy(ptr2, ptr, size);
-    av_free(ptr);
+    if(ptr2 || !size)
+        av_free(ptr);
 
     return ptr2;
 }
