@@ -101,22 +101,24 @@ void *av_malloc(unsigned int size)
  */
 void *av_realloc(void *ptr, unsigned int size)
 {
-#ifdef MEMALIGN_HACK
-    int diff;
-#endif
+    void *ptr2;
 
     /* let's disallow possible ambiguous cases */
     if(size > (INT_MAX-16) )
         return NULL;
 
-#ifdef MEMALIGN_HACK
-    //FIXME this isn't aligned correctly, though it probably isn't needed
-    if(!ptr) return av_malloc(size);
-    diff= ((char*)ptr)[-1];
-    return realloc(ptr - diff, size + diff) + diff;
-#else
-    return realloc(ptr, size);
+#ifndef MEMALIGN_HACK
+    ptr= realloc(ptr, size);
+    if(((int)ptr&15) || !ptr)
+        return ptr;
 #endif
+
+    ptr2= av_malloc(size);
+    if(ptr && ptr2)
+        memcpy(ptr2, ptr, size);
+    av_free(ptr);
+
+    return ptr2;
 }
 
 /**
