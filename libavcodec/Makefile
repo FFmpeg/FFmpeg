@@ -349,8 +349,8 @@ OBJS-$(TARGET_ALTIVEC)                 += ppc/dsputil_altivec.o      \
                                           ppc/fft_altivec.o          \
                                           ppc/gmc_altivec.o          \
                                           ppc/fdct_altivec.o         \
-                                          ppc/dsputil_h264_altivec.o \
-                                          ppc/dsputil_snow_altivec.o \
+                                          ppc/h264_altivec.o 	     \
+                                          ppc/snow_altivec.o 	     \
                                           ppc/vc1dsp_altivec.o
 
 CFLAGS += $(CFLAGS-yes)

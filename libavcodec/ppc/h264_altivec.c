@@ -34,7 +34,7 @@
 #define PREFIX_h264_qpel16_v_lowpass_num       altivec_put_h264_qpel16_v_lowpass_num
 #define PREFIX_h264_qpel16_hv_lowpass_altivec  put_h264_qpel16_hv_lowpass_altivec
 #define PREFIX_h264_qpel16_hv_lowpass_num      altivec_put_h264_qpel16_hv_lowpass_num
-#include "dsputil_h264_template_altivec.c"
+#include "h264_template_altivec.c"
 #undef OP_U8_ALTIVEC
 #undef PREFIX_h264_chroma_mc8_altivec
 #undef PREFIX_h264_chroma_mc8_num
@@ -54,7 +54,7 @@
 #define PREFIX_h264_qpel16_v_lowpass_num       altivec_avg_h264_qpel16_v_lowpass_num
 #define PREFIX_h264_qpel16_hv_lowpass_altivec  avg_h264_qpel16_hv_lowpass_altivec
 #define PREFIX_h264_qpel16_hv_lowpass_num      altivec_avg_h264_qpel16_hv_lowpass_num
-#include "dsputil_h264_template_altivec.c"
+#include "h264_template_altivec.c"
 #undef OP_U8_ALTIVEC
 #undef PREFIX_h264_chroma_mc8_altivec
 #undef PREFIX_h264_chroma_mc8_num
