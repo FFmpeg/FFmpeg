@@ -184,16 +184,16 @@ typedef        union {
 #define         mmx_m2ri(op,mem,reg,imm) \
         __asm__ __volatile__ (#op " %1, %0, %%" #reg \
                               : /* nothing */ \
-                              : "X" (mem), "X" (imm))
+                              : "m" (mem), "i" (imm))
 #define         mmx_r2ri(op,regs,regd,imm) \
         __asm__ __volatile__ (#op " %0, %%" #regs ", %%" #regd \
                               : /* nothing */ \
-                              : "X" (imm) )
+                              : "i" (imm) )
 
 #define         mmx_fetch(mem,hint) \
         __asm__ __volatile__ ("prefetch" #hint " %0" \
                               : /* nothing */ \
-                              : "X" (mem))
+                              : "m" (mem))
 
 
 #define         maskmovq(regs,maskreg)      mmx_r2ri (maskmovq, regs, maskreg)
