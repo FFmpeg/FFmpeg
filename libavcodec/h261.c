@@ -781,7 +781,14 @@ static int h261_decode_picture_header(H261Context *h){
     }
 
     /* temporal reference */
-    s->picture_number = get_bits(&s->gb, 5); /* picture timestamp */
+    i= get_bits(&s->gb, 5); /* picture timestamp */
+    if(i < (s->picture_number&31))
+        i += 32;
+    s->picture_number = (s->picture_number&~31) + i;
+
+    s->avctx->time_base= (AVRational){1001, 30000};
+    s->current_picture.pts= s->picture_number;
+
 
     /* PTYPE starts here */
     skip_bits1(&s->gb); /* split screen off */
@@ -997,10 +1004,6 @@ assert(s->current_picture.pict_type == s->current_picture_ptr->pict_type);
 assert(s->current_picture.pict_type == s->pict_type);
     *pict= *(AVFrame*)s->current_picture_ptr;
     ff_print_debug_info(s, pict);
-
-    /* Return the Picture timestamp as the frame number */
-    /* we substract 1 because it is added on utils.c    */
-    avctx->frame_number = s->picture_number - 1;
 
     *data_size = sizeof(AVFrame);
 
