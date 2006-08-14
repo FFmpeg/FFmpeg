@@ -859,7 +859,6 @@ static int h261_find_frame_end(ParseContext *pc, AVCodecContext* avctx, const ui
         state= (state<<8) | buf[i];
         for(j=0; j<8; j++){
             if(((state>>j)&0xFFFFF) == 0x00010){
-                i++;
                 vop_found=1;
                 break;
             }
