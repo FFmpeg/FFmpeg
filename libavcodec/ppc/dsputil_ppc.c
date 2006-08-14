@@ -36,6 +36,7 @@ void dsputil_h264_init_ppc(DSPContext* c, AVCodecContext *avctx);
 void dsputil_init_altivec(DSPContext* c, AVCodecContext *avctx);
 void vc1dsp_init_altivec(DSPContext* c, AVCodecContext *avctx);
 void snow_init_altivec(DSPContext* c, AVCodecContext *avctx);
+void float_init_altivec(DSPContext* c, AVCodecContext *avctx);
 
 #endif
 
@@ -270,7 +271,7 @@ void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx)
         dsputil_init_altivec(c, avctx);
         snow_init_altivec(c, avctx);
         vc1dsp_init_altivec(c, avctx);
-
+        float_init_altivec(c, avctx);
         c->gmc1 = gmc1_altivec;
 
 #ifdef CONFIG_ENCODERS
