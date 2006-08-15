@@ -2752,7 +2752,7 @@ FUNNY_UV_CODE
 #if defined(PIC)
 			,"m" (ebxsave)
 #endif
-			: "%"REG_a, "%"REG_BP, "%"REG_c, "%"REG_d, "%"REG_S, "%"REG_D
+			: "%"REG_a, "%"REG_c, "%"REG_d, "%"REG_S, "%"REG_D
 #if !defined(PIC)
 			 ,"%"REG_b
 #endif
