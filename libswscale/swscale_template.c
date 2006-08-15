@@ -1046,15 +1046,15 @@ static inline void RENAME(yuv2packedX)(SwsContext *c, int16_t *lumFilter, int16_
                 case IMGFMT_BGR24:
                                 YSCALEYUV2PACKEDX_ACCURATE
 				YSCALEYUV2RGBX
-				"lea (%%"REG_a", %%"REG_a", 2), %%"REG_b"\n\t" //FIXME optimize
-				"add %4, %%"REG_b"			\n\t"
-				WRITEBGR24(%%REGb, %5, %%REGa)
+				"lea (%%"REG_a", %%"REG_a", 2), %%"REG_c"\n\t" //FIXME optimize
+				"add %4, %%"REG_c"			\n\t"
+				WRITEBGR24(%%REGc, %5, %%REGa)
 
 
 			:: "r" (&c->redDither), 
 			   "m" (dummy), "m" (dummy), "m" (dummy),
 			   "r" (dest), "m" (dstW)
-			: "%"REG_a, "%"REG_b, "%"REG_d, "%"REG_S //FIXME ebx
+			: "%"REG_a, "%"REG_c, "%"REG_d, "%"REG_S
 			);
                         return;
                 case IMGFMT_BGR15:
@@ -1107,14 +1107,14 @@ static inline void RENAME(yuv2packedX)(SwsContext *c, int16_t *lumFilter, int16_
 	case IMGFMT_BGR24:
                                 YSCALEYUV2PACKEDX
 				YSCALEYUV2RGBX
-				"lea (%%"REG_a", %%"REG_a", 2), %%"REG_b"\n\t" //FIXME optimize
-				"add %4, %%"REG_b"			\n\t"
-				WRITEBGR24(%%REGb, %5, %%REGa)
+				"lea (%%"REG_a", %%"REG_a", 2), %%"REG_c"\n\t" //FIXME optimize
+				"add %4, %%"REG_c"			\n\t"
+				WRITEBGR24(%%REGc, %5, %%REGa)
 
 			:: "r" (&c->redDither), 
 			   "m" (dummy), "m" (dummy), "m" (dummy),
 			   "r" (dest), "m" (dstW)
-			: "%"REG_a, "%"REG_b, "%"REG_d, "%"REG_S //FIXME ebx
+			: "%"REG_a, "%"REG_c, "%"REG_d, "%"REG_S
 			);
 		return;
 	case IMGFMT_BGR15:
@@ -1865,16 +1865,16 @@ static inline void RENAME(bgr24ToY)(uint8_t *dst, uint8_t *src, long width)
 		"movq "MANGLE(bgr2YCoeff)", %%mm6		\n\t"
 		"movq "MANGLE(w1111)", %%mm5		\n\t"
 		"pxor %%mm7, %%mm7		\n\t"
-		"lea (%%"REG_a", %%"REG_a", 2), %%"REG_b"\n\t"
+		"lea (%%"REG_a", %%"REG_a", 2), %%"REG_d"\n\t"
 		ASMALIGN(4)
 		"1:				\n\t"
-		PREFETCH" 64(%0, %%"REG_b")	\n\t"
-		"movd (%0, %%"REG_b"), %%mm0	\n\t"
-		"movd 3(%0, %%"REG_b"), %%mm1	\n\t"
+		PREFETCH" 64(%0, %%"REG_d")	\n\t"
+		"movd (%0, %%"REG_d"), %%mm0	\n\t"
+		"movd 3(%0, %%"REG_d"), %%mm1	\n\t"
 		"punpcklbw %%mm7, %%mm0		\n\t"
 		"punpcklbw %%mm7, %%mm1		\n\t"
-		"movd 6(%0, %%"REG_b"), %%mm2	\n\t"
-		"movd 9(%0, %%"REG_b"), %%mm3	\n\t"
+		"movd 6(%0, %%"REG_d"), %%mm2	\n\t"
+		"movd 9(%0, %%"REG_d"), %%mm3	\n\t"
 		"punpcklbw %%mm7, %%mm2		\n\t"
 		"punpcklbw %%mm7, %%mm3		\n\t"
 		"pmaddwd %%mm6, %%mm0		\n\t"
@@ -1894,12 +1894,12 @@ static inline void RENAME(bgr24ToY)(uint8_t *dst, uint8_t *src, long width)
 		"packssdw %%mm2, %%mm0		\n\t"
 		"psraw $7, %%mm0		\n\t"
 
-		"movd 12(%0, %%"REG_b"), %%mm4	\n\t"
-		"movd 15(%0, %%"REG_b"), %%mm1	\n\t"
+		"movd 12(%0, %%"REG_d"), %%mm4	\n\t"
+		"movd 15(%0, %%"REG_d"), %%mm1	\n\t"
 		"punpcklbw %%mm7, %%mm4		\n\t"
 		"punpcklbw %%mm7, %%mm1		\n\t"
-		"movd 18(%0, %%"REG_b"), %%mm2	\n\t"
-		"movd 21(%0, %%"REG_b"), %%mm3	\n\t"
+		"movd 18(%0, %%"REG_d"), %%mm2	\n\t"
+		"movd 21(%0, %%"REG_d"), %%mm3	\n\t"
 		"punpcklbw %%mm7, %%mm2		\n\t"
 		"punpcklbw %%mm7, %%mm3		\n\t"
 		"pmaddwd %%mm6, %%mm4		\n\t"
@@ -1916,7 +1916,7 @@ static inline void RENAME(bgr24ToY)(uint8_t *dst, uint8_t *src, long width)
 		"packssdw %%mm3, %%mm2		\n\t"
 		"pmaddwd %%mm5, %%mm4		\n\t"
 		"pmaddwd %%mm5, %%mm2		\n\t"
-		"add $24, %%"REG_b"		\n\t"
+		"add $24, %%"REG_d"		\n\t"
 		"packssdw %%mm2, %%mm4		\n\t"
 		"psraw $7, %%mm4		\n\t"
 
@@ -1927,7 +1927,7 @@ static inline void RENAME(bgr24ToY)(uint8_t *dst, uint8_t *src, long width)
 		"add $8, %%"REG_a"		\n\t"
 		" js 1b				\n\t"
 		: : "r" (src+width*3), "r" (dst+width), "g" (-width)
-		: "%"REG_a, "%"REG_b
+		: "%"REG_a, "%"REG_d
 	);
 #else
 	int i;
@@ -1950,17 +1950,17 @@ static inline void RENAME(bgr24ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1
 		"movq "MANGLE(w1111)", %%mm5		\n\t"
 		"movq "MANGLE(bgr2UCoeff)", %%mm6		\n\t"
 		"pxor %%mm7, %%mm7		\n\t"
-		"lea (%%"REG_a", %%"REG_a", 2), %%"REG_b"	\n\t"
-		"add %%"REG_b", %%"REG_b"	\n\t"
+		"lea (%%"REG_a", %%"REG_a", 2), %%"REG_d"	\n\t"
+		"add %%"REG_d", %%"REG_d"	\n\t"
 		ASMALIGN(4)
 		"1:				\n\t"
-		PREFETCH" 64(%0, %%"REG_b")	\n\t"
-		PREFETCH" 64(%1, %%"REG_b")	\n\t"
+		PREFETCH" 64(%0, %%"REG_d")	\n\t"
+		PREFETCH" 64(%1, %%"REG_d")	\n\t"
 #if defined (HAVE_MMX2) || defined (HAVE_3DNOW)
-		"movq (%0, %%"REG_b"), %%mm0	\n\t"
-		"movq (%1, %%"REG_b"), %%mm1	\n\t"
-		"movq 6(%0, %%"REG_b"), %%mm2	\n\t"
-		"movq 6(%1, %%"REG_b"), %%mm3	\n\t"
+		"movq (%0, %%"REG_d"), %%mm0	\n\t"
+		"movq (%1, %%"REG_d"), %%mm1	\n\t"
+		"movq 6(%0, %%"REG_d"), %%mm2	\n\t"
+		"movq 6(%1, %%"REG_d"), %%mm3	\n\t"
 		PAVGB(%%mm1, %%mm0)
 		PAVGB(%%mm3, %%mm2)
 		"movq %%mm0, %%mm1		\n\t"
@@ -1972,10 +1972,10 @@ static inline void RENAME(bgr24ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1
 		"punpcklbw %%mm7, %%mm0		\n\t"
 		"punpcklbw %%mm7, %%mm2		\n\t"
 #else
-		"movd (%0, %%"REG_b"), %%mm0	\n\t"
-		"movd (%1, %%"REG_b"), %%mm1	\n\t"
-		"movd 3(%0, %%"REG_b"), %%mm2	\n\t"
-		"movd 3(%1, %%"REG_b"), %%mm3	\n\t"
+		"movd (%0, %%"REG_d"), %%mm0	\n\t"
+		"movd (%1, %%"REG_d"), %%mm1	\n\t"
+		"movd 3(%0, %%"REG_d"), %%mm2	\n\t"
+		"movd 3(%1, %%"REG_d"), %%mm3	\n\t"
 		"punpcklbw %%mm7, %%mm0		\n\t"
 		"punpcklbw %%mm7, %%mm1		\n\t"
 		"punpcklbw %%mm7, %%mm2		\n\t"
@@ -1983,10 +1983,10 @@ static inline void RENAME(bgr24ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1
 		"paddw %%mm1, %%mm0		\n\t"
 		"paddw %%mm3, %%mm2		\n\t"
 		"paddw %%mm2, %%mm0		\n\t"
-		"movd 6(%0, %%"REG_b"), %%mm4	\n\t"
-		"movd 6(%1, %%"REG_b"), %%mm1	\n\t"
-		"movd 9(%0, %%"REG_b"), %%mm2	\n\t"
-		"movd 9(%1, %%"REG_b"), %%mm3	\n\t"
+		"movd 6(%0, %%"REG_d"), %%mm4	\n\t"
+		"movd 6(%1, %%"REG_d"), %%mm1	\n\t"
+		"movd 9(%0, %%"REG_d"), %%mm2	\n\t"
+		"movd 9(%1, %%"REG_d"), %%mm3	\n\t"
 		"punpcklbw %%mm7, %%mm4		\n\t"
 		"punpcklbw %%mm7, %%mm1		\n\t"
 		"punpcklbw %%mm7, %%mm2		\n\t"
@@ -2018,10 +2018,10 @@ static inline void RENAME(bgr24ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1
 		"psraw $7, %%mm0		\n\t"
 
 #if defined (HAVE_MMX2) || defined (HAVE_3DNOW)
-		"movq 12(%0, %%"REG_b"), %%mm4	\n\t"
-		"movq 12(%1, %%"REG_b"), %%mm1	\n\t"
-		"movq 18(%0, %%"REG_b"), %%mm2	\n\t"
-		"movq 18(%1, %%"REG_b"), %%mm3	\n\t"
+		"movq 12(%0, %%"REG_d"), %%mm4	\n\t"
+		"movq 12(%1, %%"REG_d"), %%mm1	\n\t"
+		"movq 18(%0, %%"REG_d"), %%mm2	\n\t"
+		"movq 18(%1, %%"REG_d"), %%mm3	\n\t"
 		PAVGB(%%mm1, %%mm4)
 		PAVGB(%%mm3, %%mm2)
 		"movq %%mm4, %%mm1		\n\t"
@@ -2033,10 +2033,10 @@ static inline void RENAME(bgr24ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1
 		"punpcklbw %%mm7, %%mm4		\n\t"
 		"punpcklbw %%mm7, %%mm2		\n\t"
 #else
-		"movd 12(%0, %%"REG_b"), %%mm4	\n\t"
-		"movd 12(%1, %%"REG_b"), %%mm1	\n\t"
-		"movd 15(%0, %%"REG_b"), %%mm2	\n\t"
-		"movd 15(%1, %%"REG_b"), %%mm3	\n\t"
+		"movd 12(%0, %%"REG_d"), %%mm4	\n\t"
+		"movd 12(%1, %%"REG_d"), %%mm1	\n\t"
+		"movd 15(%0, %%"REG_d"), %%mm2	\n\t"
+		"movd 15(%1, %%"REG_d"), %%mm3	\n\t"
 		"punpcklbw %%mm7, %%mm4		\n\t"
 		"punpcklbw %%mm7, %%mm1		\n\t"
 		"punpcklbw %%mm7, %%mm2		\n\t"
@@ -2044,10 +2044,10 @@ static inline void RENAME(bgr24ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1
 		"paddw %%mm1, %%mm4		\n\t"
 		"paddw %%mm3, %%mm2		\n\t"
 		"paddw %%mm2, %%mm4		\n\t"
-		"movd 18(%0, %%"REG_b"), %%mm5	\n\t"
-		"movd 18(%1, %%"REG_b"), %%mm1	\n\t"
-		"movd 21(%0, %%"REG_b"), %%mm2	\n\t"
-		"movd 21(%1, %%"REG_b"), %%mm3	\n\t"
+		"movd 18(%0, %%"REG_d"), %%mm5	\n\t"
+		"movd 18(%1, %%"REG_d"), %%mm1	\n\t"
+		"movd 21(%0, %%"REG_d"), %%mm2	\n\t"
+		"movd 21(%1, %%"REG_d"), %%mm3	\n\t"
 		"punpcklbw %%mm7, %%mm5		\n\t"
 		"punpcklbw %%mm7, %%mm1		\n\t"
 		"punpcklbw %%mm7, %%mm2		\n\t"
@@ -2076,7 +2076,7 @@ static inline void RENAME(bgr24ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1
 		"packssdw %%mm3, %%mm1		\n\t"
 		"pmaddwd %%mm5, %%mm4		\n\t"
 		"pmaddwd %%mm5, %%mm1		\n\t"
-		"add $24, %%"REG_b"		\n\t"
+		"add $24, %%"REG_d"		\n\t"
 		"packssdw %%mm1, %%mm4		\n\t" // V3 V2 U3 U2
 		"psraw $7, %%mm4		\n\t"
 		
@@ -2092,7 +2092,7 @@ static inline void RENAME(bgr24ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1
 		"add $4, %%"REG_a"		\n\t"
 		" js 1b				\n\t"
 		: : "r" (src1+width*6), "r" (src2+width*6), "r" (dstU+width), "r" (dstV+width), "g" (-width)
-		: "%"REG_a, "%"REG_b
+		: "%"REG_a, "%"REG_d
 	);
 #else
 	int i;
@@ -2255,6 +2255,9 @@ static inline void RENAME(hScale)(int16_t *dst, int dstW, uint8_t *src, int srcW
 		filterPos-= counter/2;
 		dst-= counter/2;
 		asm volatile(
+#if defined(PIC)
+			"push %%"REG_b"   		\n\t"
+#endif
 			"pxor %%mm7, %%mm7		\n\t"
 			"movq "MANGLE(w02)", %%mm6	\n\t"
 			"push %%"REG_BP"		\n\t" // we use 7 regs here ...
@@ -2281,9 +2284,14 @@ static inline void RENAME(hScale)(int16_t *dst, int dstW, uint8_t *src, int srcW
 			" jnc 1b			\n\t"
 
 			"pop %%"REG_BP"			\n\t"
+#if defined(PIC)
+			"pop %%"REG_b"   		\n\t"
+#endif
 			: "+a" (counter)
 			: "c" (filter), "d" (filterPos), "S" (src), "D" (dst)
+#if !defined(PIC)
 			: "%"REG_b
+#endif
 		);
 	}
 	else if(filterSize==8)
@@ -2293,6 +2301,9 @@ static inline void RENAME(hScale)(int16_t *dst, int dstW, uint8_t *src, int srcW
 		filterPos-= counter/2;
 		dst-= counter/2;
 		asm volatile(
+#if defined(PIC)
+			"push %%"REG_b"   		\n\t"
+#endif
 			"pxor %%mm7, %%mm7		\n\t"
 			"movq "MANGLE(w02)", %%mm6	\n\t"
 			"push %%"REG_BP"		\n\t" // we use 7 regs here ...
@@ -2331,9 +2342,14 @@ static inline void RENAME(hScale)(int16_t *dst, int dstW, uint8_t *src, int srcW
 			" jnc 1b			\n\t"
 
 			"pop %%"REG_BP"			\n\t"
+#if defined(PIC)
+			"pop %%"REG_b"   		\n\t"
+#endif
 			: "+a" (counter)
 			: "c" (filter), "d" (filterPos), "S" (src), "D" (dst)
+#if !defined(PIC)
 			: "%"REG_b
+#endif
 		);
 	}
 	else
@@ -2350,7 +2366,7 @@ static inline void RENAME(hScale)(int16_t *dst, int dstW, uint8_t *src, int srcW
 			"1:				\n\t"
 			"mov %2, %%"REG_c"		\n\t"
 			"movzwl (%%"REG_c", %0), %%eax	\n\t"
-			"movzwl 2(%%"REG_c", %0), %%ebx	\n\t"
+			"movzwl 2(%%"REG_c", %0), %%edx	\n\t"
 			"mov %5, %%"REG_c"		\n\t"
 			"pxor %%mm4, %%mm4		\n\t"
 			"pxor %%mm5, %%mm5		\n\t"
@@ -2358,7 +2374,7 @@ static inline void RENAME(hScale)(int16_t *dst, int dstW, uint8_t *src, int srcW
 			"movq (%1), %%mm1		\n\t"
 			"movq (%1, %6), %%mm3		\n\t"
 			"movd (%%"REG_c", %%"REG_a"), %%mm0\n\t"
-			"movd (%%"REG_c", %%"REG_b"), %%mm2\n\t"
+			"movd (%%"REG_c", %%"REG_d"), %%mm2\n\t"
 			"punpcklbw %%mm7, %%mm0		\n\t"
 			"punpcklbw %%mm7, %%mm2		\n\t"
 			"pmaddwd %%mm1, %%mm0		\n\t"
@@ -2383,7 +2399,7 @@ static inline void RENAME(hScale)(int16_t *dst, int dstW, uint8_t *src, int srcW
 			: "+r" (counter), "+r" (filter)
 			: "m" (filterPos), "m" (dst), "m"(offset),
 			  "m" (src), "r" (filterSize*2)
-			: "%"REG_b, "%"REG_a, "%"REG_c
+			: "%"REG_a, "%"REG_c, "%"REG_d
 		);
 	}
 #else
@@ -2471,9 +2487,15 @@ static inline void RENAME(hyscale)(uint16_t *dst, long dstWidth, uint8_t *src, i
 #if defined(ARCH_X86) || defined(ARCH_X86_64)
 #ifdef HAVE_MMX2
 	int i;
+#if defined(PIC)
+	uint64_t ebxsave __attribute__((aligned(8)));
+#endif
 	if(canMMX2BeUsed)
 	{
 		asm volatile(
+#if defined(PIC)
+			"mov %%"REG_b", %5    \n\t"
+#endif
 			"pxor %%mm7, %%mm7		\n\t"
 			"mov %0, %%"REG_c"		\n\t"
 			"mov %1, %%"REG_D"		\n\t"
@@ -2514,9 +2536,18 @@ FUNNY_Y_CODE
 FUNNY_Y_CODE
 FUNNY_Y_CODE
 
+#if defined(PIC)
+			"mov %5, %%"REG_b"    \n\t"
+#endif
 			:: "m" (src), "m" (dst), "m" (mmx2Filter), "m" (mmx2FilterPos),
 			"m" (funnyYCode)
-			: "%"REG_a, "%"REG_b, "%"REG_c, "%"REG_d, "%"REG_S, "%"REG_D
+#if defined(PIC)
+			,"m" (ebxsave)
+#endif
+			: "%"REG_a, "%"REG_c, "%"REG_d, "%"REG_S, "%"REG_D
+#if !defined(PIC)
+			,"%"REG_b
+#endif
 		);
 		for(i=dstWidth-1; (i*xInc)>>16 >=srcW-1; i--) dst[i] = src[srcW-1]*128;
 	}
@@ -2528,12 +2559,12 @@ FUNNY_Y_CODE
 	//NO MMX just normal asm ...
 	asm volatile(
 		"xor %%"REG_a", %%"REG_a"	\n\t" // i
-		"xor %%"REG_b", %%"REG_b"	\n\t" // xx
+		"xor %%"REG_d", %%"REG_d"	\n\t" // xx
 		"xorl %%ecx, %%ecx		\n\t" // 2*xalpha
 		ASMALIGN(4)
 		"1:				\n\t"
-		"movzbl  (%0, %%"REG_b"), %%edi	\n\t" //src[xx]
-		"movzbl 1(%0, %%"REG_b"), %%esi	\n\t" //src[xx+1]
+		"movzbl  (%0, %%"REG_d"), %%edi	\n\t" //src[xx]
+		"movzbl 1(%0, %%"REG_d"), %%esi	\n\t" //src[xx+1]
 		"subl %%edi, %%esi		\n\t" //src[xx+1] - src[xx]
 		"imull %%ecx, %%esi		\n\t" //(src[xx+1] - src[xx])*2*xalpha
 		"shll $16, %%edi		\n\t"
@@ -2542,10 +2573,10 @@ FUNNY_Y_CODE
 		"shrl $9, %%esi			\n\t"
 		"movw %%si, (%%"REG_D", %%"REG_a", 2)\n\t"
 		"addw %4, %%cx			\n\t" //2*xalpha += xInc&0xFF
-		"adc %3, %%"REG_b"		\n\t" //xx+= xInc>>8 + carry
+		"adc %3, %%"REG_d"		\n\t" //xx+= xInc>>8 + carry
 
-		"movzbl (%0, %%"REG_b"), %%edi	\n\t" //src[xx]
-		"movzbl 1(%0, %%"REG_b"), %%esi	\n\t" //src[xx+1]
+		"movzbl (%0, %%"REG_d"), %%edi	\n\t" //src[xx]
+		"movzbl 1(%0, %%"REG_d"), %%esi	\n\t" //src[xx+1]
 		"subl %%edi, %%esi		\n\t" //src[xx+1] - src[xx]
 		"imull %%ecx, %%esi		\n\t" //(src[xx+1] - src[xx])*2*xalpha
 		"shll $16, %%edi		\n\t"
@@ -2554,7 +2585,7 @@ FUNNY_Y_CODE
 		"shrl $9, %%esi			\n\t"
 		"movw %%si, 2(%%"REG_D", %%"REG_a", 2)\n\t"
 		"addw %4, %%cx			\n\t" //2*xalpha += xInc&0xFF
-		"adc %3, %%"REG_b"		\n\t" //xx+= xInc>>8 + carry
+		"adc %3, %%"REG_d"		\n\t" //xx+= xInc>>8 + carry
 
 
 		"add $2, %%"REG_a"		\n\t"
@@ -2563,7 +2594,7 @@ FUNNY_Y_CODE
 
 
 		:: "r" (src), "m" (dst), "m" (dstWidth), "m" (xInc_shr16), "m" (xInc_mask)
-		: "%"REG_a, "%"REG_b, "%ecx", "%"REG_D, "%esi"
+		: "%"REG_a, "%"REG_d, "%ecx", "%"REG_D, "%esi"
 		);
 #ifdef HAVE_MMX2
 	} //if MMX2 can't be used
@@ -2656,9 +2687,15 @@ inline static void RENAME(hcscale)(uint16_t *dst, long dstWidth, uint8_t *src1, 
 #if defined(ARCH_X86) || defined(ARCH_X86_64)
 #ifdef HAVE_MMX2
 	int i;
+#if defined(PIC)
+	uint64_t ebxsave __attribute__((aligned(8)));
+#endif
 	if(canMMX2BeUsed)
 	{
 		asm volatile(
+#if defined(PIC)
+			"mov %%"REG_b", %6    \n\t"
+#endif
 			"pxor %%mm7, %%mm7		\n\t"
 			"mov %0, %%"REG_c"		\n\t"
 			"mov %1, %%"REG_D"		\n\t"
@@ -2707,9 +2744,18 @@ FUNNY_UV_CODE
 FUNNY_UV_CODE
 FUNNY_UV_CODE
 
+#if defined(PIC)
+			"mov %6, %%"REG_b"    \n\t"
+#endif
 			:: "m" (src1), "m" (dst), "m" (mmx2Filter), "m" (mmx2FilterPos),
 			"m" (funnyUVCode), "m" (src2)
-			: "%"REG_a, "%"REG_b, "%"REG_c, "%"REG_d, "%"REG_S, "%"REG_D
+#if defined(PIC)
+			,"m" (ebxsave)
+#endif
+			: "%"REG_a, "%"REG_BP, "%"REG_c, "%"REG_d, "%"REG_S, "%"REG_D
+#if !defined(PIC)
+			 ,"%"REG_b
+#endif
 		);
 		for(i=dstWidth-1; (i*xInc)>>16 >=srcW-1; i--)
 		{
@@ -2725,13 +2771,13 @@ FUNNY_UV_CODE
 	uint16_t xInc_mask = xInc & 0xffff; 
 	asm volatile(
 		"xor %%"REG_a", %%"REG_a"	\n\t" // i
-		"xor %%"REG_b", %%"REG_b"		\n\t" // xx
+		"xor %%"REG_d", %%"REG_d"		\n\t" // xx
 		"xorl %%ecx, %%ecx		\n\t" // 2*xalpha
 		ASMALIGN(4)
 		"1:				\n\t"
 		"mov %0, %%"REG_S"		\n\t"
-		"movzbl  (%%"REG_S", %%"REG_b"), %%edi	\n\t" //src[xx]
-		"movzbl 1(%%"REG_S", %%"REG_b"), %%esi	\n\t" //src[xx+1]
+		"movzbl  (%%"REG_S", %%"REG_d"), %%edi	\n\t" //src[xx]
+		"movzbl 1(%%"REG_S", %%"REG_d"), %%esi	\n\t" //src[xx+1]
 		"subl %%edi, %%esi		\n\t" //src[xx+1] - src[xx]
 		"imull %%ecx, %%esi		\n\t" //(src[xx+1] - src[xx])*2*xalpha
 		"shll $16, %%edi		\n\t"
@@ -2740,8 +2786,8 @@ FUNNY_UV_CODE
 		"shrl $9, %%esi			\n\t"
 		"movw %%si, (%%"REG_D", %%"REG_a", 2)\n\t"
 
-		"movzbl  (%5, %%"REG_b"), %%edi	\n\t" //src[xx]
-		"movzbl 1(%5, %%"REG_b"), %%esi	\n\t" //src[xx+1]
+		"movzbl  (%5, %%"REG_d"), %%edi	\n\t" //src[xx]
+		"movzbl 1(%5, %%"REG_d"), %%esi	\n\t" //src[xx+1]
 		"subl %%edi, %%esi		\n\t" //src[xx+1] - src[xx]
 		"imull %%ecx, %%esi		\n\t" //(src[xx+1] - src[xx])*2*xalpha
 		"shll $16, %%edi		\n\t"
@@ -2751,7 +2797,7 @@ FUNNY_UV_CODE
 		"movw %%si, 4096(%%"REG_D", %%"REG_a", 2)\n\t"
 
 		"addw %4, %%cx			\n\t" //2*xalpha += xInc&0xFF
-		"adc %3, %%"REG_b"		\n\t" //xx+= xInc>>8 + carry
+		"adc %3, %%"REG_d"		\n\t" //xx+= xInc>>8 + carry
 		"add $1, %%"REG_a"		\n\t"
 		"cmp %2, %%"REG_a"		\n\t"
 		" jb 1b				\n\t"
@@ -2764,7 +2810,7 @@ FUNNY_UV_CODE
 		:: "m" (src1), "m" (dst), "m" ((long)dstWidth), "m" (xInc_shr16), "m" (xInc_mask),
 #endif
 		"r" (src2)
-		: "%"REG_a, "%"REG_b, "%ecx", "%"REG_D, "%esi"
+		: "%"REG_a, "%"REG_d, "%ecx", "%"REG_D, "%esi"
 		);
 #ifdef HAVE_MMX2
 	} //if MMX2 can't be used
