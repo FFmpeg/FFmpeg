@@ -909,7 +909,11 @@ void mpeg4_pred_ac(MpegEncContext * s, DCTELEM *block, int n,
                    int dir);
 void ff_set_mpeg4_time(MpegEncContext * s, int picture_number);
 void mpeg4_encode_picture_header(MpegEncContext *s, int picture_number);
+#ifdef CONFIG_ENCODERS
 void h263_encode_init(MpegEncContext *s);
+#else
+static void h263_encode_init(MpegEncContext *s) {assert(0);}
+#endif
 void h263_decode_init_vlc(MpegEncContext *s);
 int h263_decode_picture_header(MpegEncContext *s);
 int ff_h263_decode_gob_header(MpegEncContext *s);
