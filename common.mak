@@ -69,6 +69,7 @@ install-lib-shared: $(SLIBNAME)
 install-lib-static: $(LIB)
 	install -d "$(libdir)"
 	install -m 644 $(LIB) "$(libdir)"
+	$(LIB_INSTALL_EXTRA_CMD)
 
 install-headers:
 	install -d "$(incdir)"

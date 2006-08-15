@@ -580,6 +580,7 @@ SLIBSUF=".dylib"
 SLIBNAME_WITH_FULLVERSION='$(SLIBPREF)$(NAME).$(LIBVERSION)$(SLIBSUF)'
 SLIBNAME_WITH_MAJOR='$(SLIBPREF)$(NAME).$(LIBMAJOR)$(SLIBSUF)'
 FFSERVERLDFLAGS=-Wl,-bind_at_load
+LIB_INSTALL_EXTRA_CMD="\$(RANLIB) \"\$(libdir)/\$(LIB)\""
 ;;
 MINGW32*)
 # Note: the rest of the mingw32 config is done afterwards as mingw32
@@ -1762,6 +1763,7 @@ if test "$lshared" = "yes" ; then
   echo "SLIBNAME_WITH_MAJOR=${SLIBNAME_WITH_MAJOR}" >> config.mak
   echo "SLIB_EXTRA_CMD=${SLIB_EXTRA_CMD}" >> config.mak
 fi
+echo "LIB_INSTALL_EXTRA_CMD=${LIB_INSTALL_EXTRA_CMD}" >> config.mak
 echo "EXTRALIBS=$extralibs" >> config.mak
 
 # If you do not want to use encoders, disable them.
