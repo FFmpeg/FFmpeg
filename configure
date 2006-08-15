@@ -469,6 +469,7 @@ swscaler="no"
 gpl="no"
 memalignhack="no"
 asmalign_pot="unknown"
+LIB_INSTALL_EXTRA_CMD='$(RANLIB) "$(libdir)/$(LIB)"'
 
 # OS specific
 targetos=`uname -s`
@@ -580,7 +581,7 @@ SLIBSUF=".dylib"
 SLIBNAME_WITH_FULLVERSION='$(SLIBPREF)$(NAME).$(LIBVERSION)$(SLIBSUF)'
 SLIBNAME_WITH_MAJOR='$(SLIBPREF)$(NAME).$(LIBMAJOR)$(SLIBSUF)'
 FFSERVERLDFLAGS=-Wl,-bind_at_load
-LIB_INSTALL_EXTRA_CMD="\$(RANLIB) \"\$(libdir)/\$(LIB)\""
+LIB_INSTALL_EXTRA_CMD='$(RANLIB) "$(libdir)/$(LIB)"'
 ;;
 MINGW32*)
 # Note: the rest of the mingw32 config is done afterwards as mingw32
