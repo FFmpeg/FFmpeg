@@ -2107,10 +2107,11 @@ if test "$amr_if2" = "yes" ; then
   echo "AMR_CFLAGS=-DIF2=1" >> config.mak
 fi
 
+# Apparently it's not possible to portably echo a backslash.
 if test "$asmalign_pot" = "yes" ; then
-  echo '#define ASMALIGN(ZEROBITS) ".align " #ZEROBITS "\n\t"' >> $TMPH
+  printf '#define ASMALIGN(ZEROBITS) ".align " #ZEROBITS "\\n\\t"\n' >> $TMPH
 else
-  echo '#define ASMALIGN(ZEROBITS) ".align 1<<" #ZEROBITS "\n\t"' >> $TMPH
+  printf '#define ASMALIGN(ZEROBITS) ".align 1<<" #ZEROBITS "\\n\\t"\n' >> $TMPH
 fi
 
 
