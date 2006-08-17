@@ -439,7 +439,7 @@ dlfcn="no"
 dlopen="no"
 mpegaudio_hp="yes"
 SHFLAGS='-shared -Wl,-soname,$@'
-VHOOKFLAGS="$SHFLAGS"
+VHOOKSHFLAGS="$SHFLAGS"
 netserver="no"
 need_inet_aton="no"
 protocols="yes"
@@ -572,7 +572,7 @@ v4l2="no"
 audio_oss="no"
 dv1394="no"
 SHFLAGS="-dynamiclib -Wl,-single_module -Wl,-install_name,\$(shlibdir)/\$(SLIBNAME),-current_version,\$(SPPVERSION),-compatibility_version,\$(SPPVERSION)"
-VHOOKFLAGS='-dynamiclib -Wl,-single_module -flat_namespace -undefined suppress -Wl,-install_name,$(shlibdir)/vhook/$@'
+VHOOKSHFLAGS='-dynamiclib -Wl,-single_module -flat_namespace -undefined suppress -Wl,-install_name,$(shlibdir)/vhook/$@'
 extralibs=""
 strip="strip -x"
 installstrip=""
@@ -1579,18 +1579,16 @@ else
     echo "INSTALLSTRIP=" >> config.mak
 fi
 
-# SHCFLAGS is a copy of CFLAGS without -mdynamic-no-pic, used when building
-# shared modules on OS/X (vhook/Makefile).
-SHCFLAGS="$CFLAGS"
+VHOOKCFLAGS="-fPIC $CFLAGS"
 test "$needmdynamicnopic" = yes && add_cflags -mdynamic-no-pic
 
 echo "OPTFLAGS=$CFLAGS" >> config.mak
-echo "SHCFLAGS=$SHCFLAGS">>config.mak
+echo "VHOOKCFLAGS=$VHOOKCFLAGS">>config.mak
 echo "LDFLAGS=$LDFLAGS" >> config.mak
 echo "LDCONFIG=$LDCONFIG" >> config.mak
 echo "FFSERVERLDFLAGS=$FFSERVERLDFLAGS" >> config.mak
 echo "SHFLAGS=$SHFLAGS" >> config.mak
-echo "VHOOKFLAGS=$VHOOKFLAGS" >> config.mak
+echo "VHOOKSHFLAGS=$VHOOKSHFLAGS" >> config.mak
 echo "LIBOBJFLAGS=$LIBOBJFLAGS" >> config.mak
 echo "BUILD_STATIC=$lstatic" >> config.mak
 echo "BUILDSUF=$BUILDSUF" >> config.mak

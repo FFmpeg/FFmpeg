@@ -2,7 +2,7 @@ include ../config.mak
 
 VPATH=$(SRC_PATH)/vhook
 
-CFLAGS=-fPIC $(SHCFLAGS) -I.. -I$(SRC_PATH) -I$(SRC_PATH)/libavformat \
+CFLAGS=$(VHOOKCFLAGS) -I.. -I$(SRC_PATH) -I$(SRC_PATH)/libavformat \
        -I$(SRC_PATH)/libavcodec -I$(SRC_PATH)/libavutil -DHAVE_AV_CONFIG_H
 
 HOOKS=null$(SLIBSUF) fish$(SLIBSUF) ppm$(SLIBSUF) watermark$(SLIBSUF)
@@ -35,7 +35,7 @@ uninstall:
 	-rmdir "$(shlibdir)/vhook/"
 
 %$(SLIBSUF): %.o
-	$(CC) $(LDFLAGS) -g -o $@ $(VHOOKFLAGS) $<
+	$(CC) $(LDFLAGS) -g -o $@ $(VHOOKSHFLAGS) $<
 
 clean:
 	rm -f *.o *.d *~ *.a *.lib *.so *.dylib *.dll
