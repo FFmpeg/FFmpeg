@@ -22,6 +22,6 @@ include $(SRC_PATH)/common.mak
 
 ifeq ($(BUILD_SHARED),yes)
 postprocess_pic.o: postprocess.c
-	$(CC) -c $(CFLAGS) -fomit-frame-pointer -fPIC -DPIC -I.. -I../.. -o $@ $<
+	$(CC) -c $(CFLAGS) -fomit-frame-pointer -fPIC -DPIC -o $@ $<
 endif
 
