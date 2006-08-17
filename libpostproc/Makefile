@@ -15,7 +15,7 @@ SHARED_OBJS=postprocess_pic.o
 
 HEADERS = postprocess.h
 
-CFLAGS  = $(OPTFLAGS) -I. -I.. -I$(SRC_PATH)/libavcodec
+CFLAGS  = $(OPTFLAGS) -I.. -I$(SRC_PATH)/libavcodec
 # -I/usr/X11R6/include/
 
 include $(SRC_PATH)/common.mak
