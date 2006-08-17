@@ -86,6 +86,7 @@ show_help(){
   echo "  --disable-bktr           disable bktr video grabbing [default=no]"
   echo "  --disable-dv1394         disable DV1394 grabbing [default=no]"
   echo "  --disable-network        disable network support [default=no]"
+  echo "  --disable-ipv6           disable ipv6 support [default=no]"
   echo "  --disable-zlib           disable zlib [default=no]"
   echo "  --disable-simple_idct    disable simple IDCT routines [default=no]"
   echo "  --disable-vhook          disable video hooking support"
@@ -406,6 +407,7 @@ audio_beos="no"
 dv1394="yes"
 dc1394="no"
 network="yes"
+ipv6="yes"
 zlib="yes"
 libgsm="no"
 mp3lame="no"
@@ -731,6 +733,8 @@ for opt do
   --disable-dv1394) dv1394="no"
   ;;
   --disable-network) network="no"; ffserver="no"
+  ;;
+  --disable-ipv6) ipv6="no";
   ;;
   --disable-zlib) zlib="no"
   ;;
@@ -1413,7 +1417,7 @@ fi
 ##########################################
 # IPv6 check
 
-enabled network && check_ld <<EOF && ipv6=yes || ipv6=no
+enabled network && enabled ipv6 && check_ld <<EOF && ipv6=yes || ipv6=no
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
