@@ -549,7 +549,7 @@ void ff_fdct_mmx2(int16_t *block)
 
 void ff_fdct_sse2(int16_t *block)
 {
-    int64_t align_tmp[16] ATTR_ALIGN(8);
+    int64_t align_tmp[16] ATTR_ALIGN(16);
     int16_t * const block_tmp= (int16_t*)align_tmp;
     int16_t *block1;
 
