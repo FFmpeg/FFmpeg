@@ -1,7 +1,3 @@
--include ../config.mak
-
-VPATH=$(SRC_PATH)/doc
-
 all: ffmpeg-doc.html faq.html ffserver-doc.html ffplay-doc.html hooks.html \
      ffmpeg.1 ffserver.1 ffplay.1
 
