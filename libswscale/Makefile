@@ -9,7 +9,7 @@ EXTRALIBS := -L../libavutil -lavutil$(BUILDSUF) $(EXTRALIBS)
 endif
 
 # NOTE: -I.. is needed to include config.h
-CFLAGS=$(OPTFLAGS) -I.. -I$(SRC_PATH) -I$(SRC_PATH)/libavutil \
+CFLAGS=-I.. -I$(SRC_PATH) -I$(SRC_PATH)/libavutil $(OPTFLAGS) \
        -DHAVE_AV_CONFIG_H -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE \
        -D_GNU_SOURCE
 
