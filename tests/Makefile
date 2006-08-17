@@ -7,8 +7,8 @@ include ../config.mak
 VPATH=$(SRC_PATH)/tests
 CFLAGS=-O2 -Wall -g
 
-REFFILE1=$(SRC_PATH)/tests/ffmpeg.regression.ref
-REFFILE2=$(SRC_PATH)/tests/rotozoom.regression.ref
+REFFILE1=$(VPATH)/ffmpeg.regression.ref
+REFFILE2=$(VPATH)/rotozoom.regression.ref
 
 SERVER_REFFILE=$(VPATH)/ffserver.regression.ref
 
