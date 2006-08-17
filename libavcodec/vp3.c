@@ -2015,18 +2015,14 @@ static int vp3_decode_init(AVCodecContext *avctx)
 
     if (!s->theora_tables)
     {
-        for (i = 0; i < 64; i++)
+        for (i = 0; i < 64; i++) {
             s->coded_dc_scale_factor[i] = vp31_dc_scale_factor[i];
-        for (i = 0; i < 64; i++)
             s->coded_ac_scale_factor[i] = vp31_ac_scale_factor[i];
-        for (i = 0; i < 64; i++)
             s->base_matrix[0][i] = vp31_intra_y_dequant[i];
-        for (i = 0; i < 64; i++)
             s->base_matrix[1][i] = vp31_intra_c_dequant[i];
-        for (i = 0; i < 64; i++)
             s->base_matrix[2][i] = vp31_inter_dequant[i];
-        for (i = 0; i < 64; i++)
             s->filter_limit_values[i] = vp31_filter_limit_values[i];
+        }
 
         for(inter=0; inter<2; inter++){
             for(plane=0; plane<3; plane++){
