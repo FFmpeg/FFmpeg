@@ -38,6 +38,7 @@ typedef struct PixelFormatTag {
 const PixelFormatTag pixelFormatTags[] = {
     { PIX_FMT_YUV420P, MKTAG('I', '4', '2', '0') }, /* Planar formats */
     { PIX_FMT_YUV420P, MKTAG('I', 'Y', 'U', 'V') },
+    { PIX_FMT_YUV420P, MKTAG('Y', 'V', '1', '2') },
     { PIX_FMT_YUV410P, MKTAG('Y', 'U', 'V', '9') },
     { PIX_FMT_YUV411P, MKTAG('Y', '4', '1', 'B') },
     { PIX_FMT_YUV422P, MKTAG('Y', '4', '2', 'B') },
@@ -141,6 +142,15 @@ static int raw_decode(AVCodecContext *avctx,
     }
 
     flip(avctx, picture);
+
+    if (avctx->codec_tag == MKTAG('Y', 'V', '1', '2'))
+    {
+        // swap fields
+        unsigned char *tmp = picture->data[1];
+        picture->data[1] = picture->data[2];
+        picture->data[2] = tmp;
+    }
+
     *data_size = sizeof(AVPicture);
     return buf_size;
 }
