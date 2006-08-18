@@ -71,7 +71,7 @@ untested special converters
 #include "swscale_internal.h"
 #include "x86_cpu.h"
 #include "bswap.h"
-#include "img_format.h"
+#include "libmpcodecs/img_format.h"
 #include "rgb2rgb.h"
 #ifdef USE_FASTMEMCPY
 #include "libvo/fastmemcpy.h"

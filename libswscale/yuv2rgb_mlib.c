@@ -30,7 +30,7 @@
 #include <stdlib.h>
 #include <assert.h>
 
-#include "libvo/img_format.h" //FIXME try to reduce dependency of such stuff
+#include "libmpcodecs/img_format.h" //FIXME try to reduce dependency of such stuff
 #include "swscale.h"
 
 static int mlib_YUV2ARGB420_32(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY, 

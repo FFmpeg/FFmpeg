@@ -23,7 +23,7 @@
 #include <stdarg.h>
 
 #include "swscale.h"
-#include "img_format.h"
+#include "libmpcodecs/img_format.h"
 
 static int testFormat[]={
 IMGFMT_YVU9,
