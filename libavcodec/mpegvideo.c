@@ -32,7 +32,7 @@
 #include <limits.h>
 
 #ifdef USE_FASTMEMCPY
-#include "fastmemcpy.h"
+#include "libvo/fastmemcpy.h"
 #endif
 
 //#undef NDEBUG

@@ -28,7 +28,7 @@
 #include <assert.h>
 
 #ifdef USE_FASTMEMCPY
-#include "fastmemcpy.h"
+#include "libvo/fastmemcpy.h"
 #endif
 
 #ifdef HAVE_XVMC

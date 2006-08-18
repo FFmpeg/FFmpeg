@@ -57,7 +57,7 @@
 #endif /* !__MINGW32__ && CONFIG_OS2 */
 
 #    ifdef USE_FASTMEMCPY
-#        include "fastmemcpy.h"
+#        include "libvo/fastmemcpy.h"
 #    endif
 
 // Use rip-relative addressing if compiling PIC code on x86-64.

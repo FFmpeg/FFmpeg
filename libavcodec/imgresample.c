@@ -27,7 +27,7 @@
 #include "dsputil.h"
 
 #ifdef USE_FASTMEMCPY
-#include "fastmemcpy.h"
+#include "libvo/fastmemcpy.h"
 #endif
 
 #define NB_COMPONENTS 3
