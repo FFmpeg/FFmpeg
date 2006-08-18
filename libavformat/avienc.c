@@ -89,6 +89,19 @@ static unsigned char* avi_stream2fourcc(unsigned char* tag, int index,
     return tag;
 }
 
+static void avi_write_info_tag(ByteIOContext *pb, const char *tag, const char *str)
+{
+    int len = strlen(str);
+    if (len > 0) {
+        len++;
+        put_tag(pb, tag);
+        put_le32(pb, len);
+        put_strz(pb, str);
+        if (len & 1)
+            put_byte(pb, 0);
+    }
+}
+
 static int avi_write_header(AVFormatContext *s)
 {
     AVIContext *avi = s->priv_data;
@@ -257,6 +270,24 @@ static int avi_write_header(AVFormatContext *s)
     }
 
     end_tag(pb, list1);
+
+    list2 = start_tag(pb, "LIST");
+    put_tag(pb, "INFO");
+    avi_write_info_tag(pb, "INAM", s->title);
+    avi_write_info_tag(pb, "IART", s->author);
+    avi_write_info_tag(pb, "ICOP", s->copyright);
+    avi_write_info_tag(pb, "ICMT", s->comment);
+    avi_write_info_tag(pb, "IPRD", s->album);
+    avi_write_info_tag(pb, "IGNR", s->genre);
+    if(!(s->streams[0]->codec->flags & CODEC_FLAG_BITEXACT))
+        avi_write_info_tag(pb, "ISFT", LIBAVFORMAT_IDENT);
+    end_tag(pb, list2);
+
+    /* some padding for easier tag editing */
+    list2 = start_tag(pb, "JUNK");
+    for (i = 0; i < 1016; i += 4)
+        put_le32(pb, 0);
+    end_tag(pb, list2);
 
     avi->movi_list = start_tag(pb, "LIST");
     put_tag(pb, "movi");

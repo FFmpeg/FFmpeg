@@ -180,6 +180,15 @@ static void clean_index(AVFormatContext *s){
     }
 }
 
+static int avi_read_tag(ByteIOContext *pb, char *buf, int maxlen,  unsigned int size)
+{
+    offset_t i = url_ftell(pb);
+    size += (size & 1);
+    get_strz(pb, buf, maxlen);
+    url_fseek(pb, i+size, SEEK_SET);
+    return 0;
+}
+
 static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     AVIContext *avi = s->priv_data;
@@ -437,6 +446,21 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 avi->index_loaded=1;
             }
             url_fseek(pb, i+size, SEEK_SET);
+            break;
+        case MKTAG('I', 'N', 'A', 'M'):
+            avi_read_tag(pb, s->title, sizeof(s->title), size);
+            break;
+        case MKTAG('I', 'A', 'R', 'T'):
+            avi_read_tag(pb, s->author, sizeof(s->author), size);
+            break;
+        case MKTAG('I', 'C', 'O', 'P'):
+            avi_read_tag(pb, s->copyright, sizeof(s->copyright), size);
+            break;
+        case MKTAG('I', 'C', 'M', 'T'):
+            avi_read_tag(pb, s->comment, sizeof(s->comment), size);
+            break;
+        case MKTAG('I', 'G', 'N', 'R'):
+            avi_read_tag(pb, s->genre, sizeof(s->genre), size);
             break;
         default:
             /* skip tag */
