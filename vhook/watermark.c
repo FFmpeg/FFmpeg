@@ -102,8 +102,7 @@ void Release(void *ctx)
 
     if (ci) get_watermark_picture(ci, 1);
 
-    if (ctx)
-        av_free(ctx);
+    av_free(ctx);
 }
 
 
@@ -556,14 +555,8 @@ int get_watermark_picture(ContextInfo *ci, int cleanup)
     if (0 != cleanup)
     {
         // Free the RGB image
-        if (0 != ci->buffer) {
-            av_free(ci->buffer);
-            ci->buffer = 0;
-        }
-        if (0 != ci->pFrameRGB) {
-            av_free(ci->pFrameRGB);
-            ci->pFrameRGB = 0;
-        }
+        av_freep(&ci->buffer);
+        av_freep(&ci->pFrameRGB);
 
         // Close the codec
         if (0 != ci->pCodecCtx) {
