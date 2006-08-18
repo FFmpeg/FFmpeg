@@ -504,56 +504,44 @@ static always_inline void fdct_row_mmx(const int16_t *in, int16_t *out, const in
 void ff_fdct_mmx(int16_t *block)
 {
     int64_t align_tmp[16] ATTR_ALIGN(8);
-    int16_t * const block_tmp= (int16_t*)align_tmp;
-    int16_t *block1, *out;
-    const int16_t *table;
+    int16_t * block1= (int16_t*)align_tmp;
+    const int16_t *table= tab_frw_01234567;
     int i;
 
-    block1 = block_tmp;
     fdct_col(block, block1, 0);
     fdct_col(block, block1, 4);
 
-    block1 = block_tmp;
-    table = tab_frw_01234567;
-    out = block;
     for(i=8;i>0;i--) {
-        fdct_row_mmx(block1, out, table);
+        fdct_row_mmx(block1, block, table);
         block1 += 8;
         table += 32;
-        out += 8;
+        block += 8;
     }
 }
 
 void ff_fdct_mmx2(int16_t *block)
 {
     int64_t align_tmp[16] ATTR_ALIGN(8);
-    int16_t * const block_tmp= (int16_t*)align_tmp;
-    int16_t *block1, *out;
-    const int16_t *table;
+    int16_t *block1= (int16_t*)align_tmp;
+    const int16_t *table= tab_frw_01234567;
     int i;
 
-    block1 = block_tmp;
     fdct_col(block, block1, 0);
     fdct_col(block, block1, 4);
 
-    block1 = block_tmp;
-    table = tab_frw_01234567;
-    out = block;
     for(i=8;i>0;i--) {
-        fdct_row_mmx2(block1, out, table);
+        fdct_row_mmx2(block1, block, table);
         block1 += 8;
         table += 32;
-        out += 8;
+        block += 8;
     }
 }
 
 void ff_fdct_sse2(int16_t *block)
 {
     int64_t align_tmp[16] ATTR_ALIGN(16);
-    int16_t * const block_tmp= (int16_t*)align_tmp;
-    int16_t *block1;
+    int16_t * const block1= (int16_t*)align_tmp;
 
-    block1 = block_tmp;
     fdct_col(block, block1, 0);
     fdct_col(block, block1, 4);
 
