@@ -17,11 +17,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 #include "../dsputil.h"
-#include <math.h>
-
-#ifdef HAVE_BUILTIN_VECTOR
-
-#include <xmmintrin.h>
 
 static const int p1p1p1m1[4] __attribute__((aligned(16))) =
     { 0, 0, 0, 1 << 31 };
@@ -45,96 +40,81 @@ static void print_v4sf(const char *str, __m128 a)
 void ff_fft_calc_sse(FFTContext *s, FFTComplex *z)
 {
     int ln = s->nbits;
-    int         j, np, np2;
-    int         nblocks, nloops;
-    register FFTComplex *p, *q;
-    FFTComplex *cptr, *cptr1;
-    int k;
+    long i, j;
+    long nblocks, nloops;
+    FFTComplex *p, *cptr;
 
-    np = 1 << ln;
+    asm volatile(
+        "movaps %0, %%xmm4 \n\t"
+        "movaps %1, %%xmm5 \n\t"
+        ::"m"(*p1p1m1m1),
+          "m"(*(s->inverse ? p1p1m1p1 : p1p1p1m1))
+    );
 
-    {
-        __m128 *r, a, b, a1, c1, c2;
-
-        r = (__m128 *)&z[0];
-        c1 = *(__m128 *)p1p1m1m1;
-        if (s->inverse)
-            c2 = *(__m128 *)p1p1m1p1;
-        else
-            c2 = *(__m128 *)p1p1p1m1;
-
-        j = (np >> 2);
-        do {
-            a = r[0];
-            b = _mm_shuffle_ps(a, a, _MM_SHUFFLE(1, 0, 3, 2));
-            a = _mm_xor_ps(a, c1);
-            /* do the pass 0 butterfly */
-            a = _mm_add_ps(a, b);
-
-            a1 = r[1];
-            b = _mm_shuffle_ps(a1, a1, _MM_SHUFFLE(1, 0, 3, 2));
-            a1 = _mm_xor_ps(a1, c1);
-            /* do the pass 0 butterfly */
-            b = _mm_add_ps(a1, b);
-
-            /* multiply third by -i */
-            /* by toggling the sign bit */
-            b = _mm_shuffle_ps(b, b, _MM_SHUFFLE(2, 3, 1, 0));
-            b = _mm_xor_ps(b, c2);
-
-            /* do the pass 1 butterfly */
-            r[0] = _mm_add_ps(a, b);
-            r[1] = _mm_sub_ps(a, b);
-            r += 2;
-        } while (--j != 0);
-    }
+    i = 8 << ln;
+    asm volatile(
+        "1: \n\t"
+        "sub $32, %0 \n\t"
+        /* do the pass 0 butterfly */
+        "movaps   (%0,%1), %%xmm0 \n\t"
+        "movaps    %%xmm0, %%xmm1 \n\t"
+        "shufps     $0x4E, %%xmm0, %%xmm0 \n\t"
+        "xorps     %%xmm4, %%xmm1 \n\t"
+        "addps     %%xmm1, %%xmm0 \n\t"
+        "movaps 16(%0,%1), %%xmm2 \n\t"
+        "movaps    %%xmm2, %%xmm3 \n\t"
+        "shufps     $0x4E, %%xmm2, %%xmm2 \n\t"
+        "xorps     %%xmm4, %%xmm3 \n\t"
+        "addps     %%xmm3, %%xmm2 \n\t"
+        /* multiply third by -i */
+        /* by toggling the sign bit */
+        "shufps     $0xB4, %%xmm2, %%xmm2 \n\t"
+        "xorps     %%xmm5, %%xmm2 \n\t"
+        /* do the pass 1 butterfly */
+        "movaps    %%xmm0, %%xmm1 \n\t"
+        "addps     %%xmm2, %%xmm0 \n\t"
+        "subps     %%xmm2, %%xmm1 \n\t"
+        "movaps    %%xmm0,   (%0,%1) \n\t"
+        "movaps    %%xmm1, 16(%0,%1) \n\t"
+        "jg 1b \n\t"
+        :"+r"(i)
+        :"r"(z)
+    );
     /* pass 2 .. ln-1 */
 
-    nblocks = np >> 3;
+    nblocks = 1 << (ln-3);
     nloops = 1 << 2;
-    np2 = np >> 1;
-
-    cptr1 = s->exptab1;
+    cptr = s->exptab1;
     do {
         p = z;
-        q = z + nloops;
         j = nblocks;
         do {
-            cptr = cptr1;
-            k = nloops >> 1;
-            do {
-                __m128 a, b, c, t1, t2;
-
-                a = *(__m128 *)p;
-                b = *(__m128 *)q;
-
-                /* complex mul */
-                c = *(__m128 *)cptr;
-                /*  cre*re cim*re */
-                t1 = _mm_mul_ps(c,
-                                _mm_shuffle_ps(b, b, _MM_SHUFFLE(2, 2, 0, 0)));
-                c = *(__m128 *)(cptr + 2);
-                /*  -cim*im cre*im */
-                t2 = _mm_mul_ps(c,
-                                _mm_shuffle_ps(b, b, _MM_SHUFFLE(3, 3, 1, 1)));
-                b = _mm_add_ps(t1, t2);
-
-                /* butterfly */
-                *(__m128 *)p = _mm_add_ps(a, b);
-                *(__m128 *)q = _mm_sub_ps(a, b);
-
-                p += 2;
-                q += 2;
-                cptr += 4;
-            } while (--k);
-
-            p += nloops;
-            q += nloops;
+            i = nloops*8;
+            asm volatile(
+                "1: \n\t"
+                "sub $16, %0 \n\t"
+                "movaps    (%2,%0), %%xmm1 \n\t"
+                "movaps    (%1,%0), %%xmm0 \n\t"
+                "movaps     %%xmm1, %%xmm2 \n\t"
+                "shufps      $0xA0, %%xmm1, %%xmm1 \n\t"
+                "shufps      $0xF5, %%xmm2, %%xmm2 \n\t"
+                "mulps   (%3,%0,2), %%xmm1 \n\t" //  cre*re cim*re
+                "mulps 16(%3,%0,2), %%xmm2 \n\t" // -cim*im cre*im
+                "addps      %%xmm2, %%xmm1 \n\t"
+                "movaps     %%xmm0, %%xmm3 \n\t"
+                "addps      %%xmm1, %%xmm0 \n\t"
+                "subps      %%xmm1, %%xmm3 \n\t"
+                "movaps     %%xmm0, (%1,%0) \n\t"
+                "movaps     %%xmm3, (%2,%0) \n\t"
+                "jg 1b \n\t"
+                :"+r"(i)
+                :"r"(p), "r"(p + nloops), "r"(cptr)
+            );
+            p += nloops*2;
         } while (--j);
-        cptr1 += nloops * 2;
-        nblocks = nblocks >> 1;
-        nloops = nloops << 1;
+        cptr += nloops*2;
+        nblocks >>= 1;
+        nloops <<= 1;
     } while (nblocks != 0);
 }
 
-#endif
