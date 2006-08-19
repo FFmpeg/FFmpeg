@@ -68,17 +68,13 @@ int ff_fft_init(FFTContext *s, int nbits, int inverse)
             if (has_vectors & MM_3DNOWEXT)
                 s->imdct_calc = ff_imdct_calc_3dn2;
             if (has_vectors & MM_3DNOWEXT)
-                /* 3DNowEx for Athlon(XP) */
+                /* 3DNowEx for K7/K8 */
                 s->fft_calc = ff_fft_calc_3dn2;
             else if (has_vectors & MM_3DNOW)
                 /* 3DNow! for K6-2/3 */
                 s->fft_calc = ff_fft_calc_3dn;
-            if (has_vectors & MM_SSE2)
-                /* SSE for P4/K8 */
-                s->fft_calc = ff_fft_calc_sse;
-            else if ((has_vectors & MM_SSE) &&
-                     s->fft_calc == ff_fft_calc_c)
-                /* SSE for P3 */
+            else if (has_vectors & MM_SSE)
+                /* SSE for P3/P4 */
                 s->fft_calc = ff_fft_calc_sse;
 #else /* HAVE_MMX */
             if (has_vectors & MM_ALTIVEC)
