@@ -505,12 +505,12 @@ streams. This option is used for automatic FFserver testing.
 Repeatedly loop output for formats that support looping such as animated GIF
 (0 will loop the output infinitely).
 @item -vsync parameter
-Video sync method. Video will be stretched/sqeezed to match the timestamps,
-it is done by duplicating and droping frames. With -map you can select from
-which stream the timestamps should be taken, you can leave either video or
+Video sync method. Video will be stretched/squeezed to match the timestamps,
+it is done by duplicating and dropping frames. With -map you can select from
+which stream the timestamps should be taken. You can leave either video or
 audio unchanged and sync the remaining stream(s) to the unchanged one.
 @item -async samples_per_second
-Audio sync method. "Stretches/sqeezes" the audio stream to match the timestamps,
+Audio sync method. "Stretches/squeezes" the audio stream to match the timestamps,
 the parameter is the maximum samples per second by which the audio is changed.
 -async 1 is a special case where only the start of the audio stream is corrected
 without any later correction.
