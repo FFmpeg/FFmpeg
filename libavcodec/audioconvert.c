@@ -1,5 +1,5 @@
 /*
- * audio conversation
+ * audio conversion
  * Copyright (c) 2006 Michael Niedermayer <michaelni@gmx.at>
  *
  * This library is free software; you can redistribute it and/or
@@ -20,7 +20,7 @@
 
 /**
  * @file audioconvert.c
- * audio conversation
+ * audio conversion
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 
