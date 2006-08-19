@@ -130,6 +130,7 @@ typedef struct WMADecodeContext {
     float lsp_pow_e_table[256];
     float lsp_pow_m_table1[(1 << LSP_POW_BITS)];
     float lsp_pow_m_table2[(1 << LSP_POW_BITS)];
+    DSPContext dsp;
 
 #ifdef TRACE
     int frame_count;
@@ -227,6 +228,8 @@ static int wma_decode_init(AVCodecContext * avctx)
     s->nb_channels = avctx->channels;
     s->bit_rate = avctx->bit_rate;
     s->block_align = avctx->block_align;
+
+    dsputil_init(&s->dsp, avctx);
 
     if (avctx->codec->id == CODEC_ID_WMAV1) {
         s->version = 1;
@@ -1109,7 +1112,7 @@ static int wma_decode_block(WMADecodeContext *s)
         if (s->channel_coded[ch]) {
             DECLARE_ALIGNED_16(FFTSample, output[BLOCK_MAX_SIZE * 2]);
             float *ptr;
-            int i, n4, index, n;
+            int n4, index, n;
 
             n = s->block_len;
             n4 = s->block_len / 2;
@@ -1118,27 +1121,17 @@ static int wma_decode_block(WMADecodeContext *s)
 
             /* XXX: optimize all that by build the window and
                multipying/adding at the same time */
-            /* multiply by the window */
-            for(i=0;i<n * 2;i++) {
-                output[i] *= window[i];
-            }
 
-            /* add in the frame */
+            /* multiply by the window and add in the frame */
             index = (s->frame_len / 2) + s->block_pos - n4;
             ptr = &s->frame_out[ch][index];
-            for(i=0;i<n * 2;i++) {
-                *ptr += output[i];
-                ptr++;
-            }
+            s->dsp.vector_fmul_add_add(ptr,window,output,ptr,0,2*n,1);
 
             /* specific fast case for ms-stereo : add to second
                channel if it is not coded */
             if (s->ms_stereo && !s->channel_coded[1]) {
                 ptr = &s->frame_out[1][index];
-                for(i=0;i<n * 2;i++) {
-                    *ptr += output[i];
-                    ptr++;
-                }
+                s->dsp.vector_fmul_add_add(ptr,window,output,ptr,0,2*n,1);
             }
         }
     }
