@@ -19,6 +19,7 @@ OBJS= bitstream.o utils.o allcodecs.o \
       vp3dsp.o h264idct.o rangecoder.o pnm.o h263.o msmpeg4.o h263dec.o \
       opt.o \
       bitstream_filter.o \
+      audioconvert.o \
 
 
 HEADERS = avcodec.h
