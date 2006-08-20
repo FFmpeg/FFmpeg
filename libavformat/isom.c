@@ -43,6 +43,7 @@ const CodecTag ff_mov_obj_type[] = {
     { CODEC_ID_MJPEG     , 108 },
     { CODEC_ID_PCM_S16LE , 224 },
     { CODEC_ID_VORBIS    , 221 },
+    { CODEC_ID_QCELP     , 225 },
     { CODEC_ID_AC3       , 226 },
     { CODEC_ID_PCM_ALAW  , 227 },
     { CODEC_ID_PCM_MULAW , 228 },

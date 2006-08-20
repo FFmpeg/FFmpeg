@@ -200,6 +200,7 @@ enum CodecID {
     CODEC_ID_TRUESPEECH,
     CODEC_ID_TTA,
     CODEC_ID_SMACKAUDIO,
+    CODEC_ID_QCELP,
 
     /* subtitle codecs */
     CODEC_ID_DVD_SUBTITLE= 0x17000,
