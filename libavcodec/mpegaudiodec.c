@@ -582,87 +582,96 @@ static void dct32(int32_t *out, int32_t *tab)
 {
     int tmp0, tmp1;
 
+
     /* pass 1 */
     BF(0, 31, COS0_0);
-    BF(1, 30, COS0_1);
-    BF(2, 29, COS0_2);
-    BF(3, 28, COS0_3);
-    BF(4, 27, COS0_4);
-    BF(5, 26, COS0_5);
-    BF(6, 25, COS0_6);
-    BF(7, 24, COS0_7);
-    BF(8, 23, COS0_8);
-    BF(9, 22, COS0_9);
-    BF(10, 21, COS0_10);
-    BF(11, 20, COS0_11);
-    BF(12, 19, COS0_12);
-    BF(13, 18, COS0_13);
-    BF(14, 17, COS0_14);
     BF(15, 16, COS0_15);
-
     /* pass 2 */
     BF(0, 15, COS1_0);
-    BF(1, 14, COS1_1);
-    BF(2, 13, COS1_2);
-    BF(3, 12, COS1_3);
-    BF(4, 11, COS1_4);
-    BF(5, 10, COS1_5);
-    BF(6,  9, COS1_6);
-    BF(7,  8, COS1_7);
-
     BF(16, 31, -COS1_0);
-    BF(17, 30, -COS1_1);
-    BF(18, 29, -COS1_2);
-    BF(19, 28, -COS1_3);
-    BF(20, 27, -COS1_4);
-    BF(21, 26, -COS1_5);
-    BF(22, 25, -COS1_6);
+    /* pass 1 */
+    BF(7, 24, COS0_7);
+    BF(8, 23, COS0_8);
+    /* pass 2 */
+    BF(7,  8, COS1_7);
     BF(23, 24, -COS1_7);
-
     /* pass 3 */
     BF(0, 7, COS2_0);
-    BF(1, 6, COS2_1);
-    BF(2, 5, COS2_2);
-    BF(3, 4, COS2_3);
-
     BF(8, 15, -COS2_0);
-    BF(9, 14, -COS2_1);
-    BF(10, 13, -COS2_2);
-    BF(11, 12, -COS2_3);
-
     BF(16, 23, COS2_0);
-    BF(17, 22, COS2_1);
-    BF(18, 21, COS2_2);
-    BF(19, 20, COS2_3);
-
     BF(24, 31, -COS2_0);
-    BF(25, 30, -COS2_1);
-    BF(26, 29, -COS2_2);
+    /* pass 1 */
+    BF(3, 28, COS0_3);
+    BF(12, 19, COS0_12);
+    /* pass 2 */
+    BF(3, 12, COS1_3);
+    BF(19, 28, -COS1_3);
+    /* pass 1 */
+    BF(4, 27, COS0_4);
+    BF(11, 20, COS0_11);
+    /* pass 2 */
+    BF(4, 11, COS1_4);
+    BF(20, 27, -COS1_4);
+    /* pass 3 */
+    BF(3, 4, COS2_3);
+    BF(11, 12, -COS2_3);
+    BF(19, 20, COS2_3);
     BF(27, 28, -COS2_3);
-
     /* pass 4 */
     BF(0, 3, COS3_0);
-    BF(1, 2, COS3_1);
-
     BF(4, 7, -COS3_0);
-    BF(5, 6, -COS3_1);
-
     BF(8, 11, COS3_0);
-    BF(9, 10, COS3_1);
-
     BF(12, 15, -COS3_0);
-    BF(13, 14, -COS3_1);
-
     BF(16, 19, COS3_0);
-    BF(17, 18, COS3_1);
-
     BF(20, 23, -COS3_0);
-    BF(21, 22, -COS3_1);
-
     BF(24, 27, COS3_0);
-    BF(25, 26, COS3_1);
-
     BF(28, 31, -COS3_0);
+
+
+
+    /* pass 1 */
+    BF(1, 30, COS0_1);
+    BF(14, 17, COS0_14);
+    /* pass 2 */
+    BF(1, 14, COS1_1);
+    BF(17, 30, -COS1_1);
+    /* pass 1 */
+    BF(6, 25, COS0_6);
+    BF(9, 22, COS0_9);
+    /* pass 2 */
+    BF(6,  9, COS1_6);
+    BF(22, 25, -COS1_6);
+    /* pass 3 */
+    BF(1, 6, COS2_1);
+    BF(9, 14, -COS2_1);
+    BF(17, 22, COS2_1);
+    BF(25, 30, -COS2_1);
+
+    /* pass 1 */
+    BF(2, 29, COS0_2);
+    BF(13, 18, COS0_13);
+    /* pass 2 */
+    BF(2, 13, COS1_2);
+    BF(18, 29, -COS1_2);
+    /* pass 1 */
+    BF(5, 26, COS0_5);
+    BF(10, 21, COS0_10);
+    /* pass 2 */
+    BF(5, 10, COS1_5);
+    BF(21, 26, -COS1_5);
+    /* pass 3 */
+    BF(2, 5, COS2_2);
+    BF(10, 13, -COS2_2);
+    BF(18, 21, COS2_2);
+    BF(26, 29, -COS2_2);
+    /* pass 4 */
+    BF(1, 2, COS3_1);
+    BF(5, 6, -COS3_1);
+    BF(9, 10, COS3_1);
+    BF(13, 14, -COS3_1);
+    BF(17, 18, COS3_1);
+    BF(21, 22, -COS3_1);
+    BF(25, 26, COS3_1);
     BF(29, 30, -COS3_1);
 
     /* pass 5 */
