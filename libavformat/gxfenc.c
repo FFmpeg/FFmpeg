@@ -40,7 +40,7 @@ typedef struct GXFStreamContext {
     int bframes;
     int p_per_gop;
     int b_per_gop;
-    int closed_gop;
+    int first_gop_closed;
     int64_t current_dts;
 } GXFStreamContext;
 
@@ -181,7 +181,7 @@ static int gxf_write_mpeg_auxiliary(ByteIOContext *pb, GXFStreamContext *ctx)
     size = snprintf(buffer, 1024, "Ver 1\nBr %.6f\nIpg 1\nPpi %d\nBpiop %d\n"
                     "Pix 0\nCf %d\nCg %d\nSl 7\nnl16 %d\nVi 1\nf1 1\n",
                     (float)ctx->codec->bit_rate, ctx->p_per_gop, ctx->b_per_gop,
-                    ctx->codec->pix_fmt == PIX_FMT_YUV422P ? 2 : 1, ctx->closed_gop,
+                    ctx->codec->pix_fmt == PIX_FMT_YUV422P ? 2 : 1, ctx->first_gop_closed,
                     ctx->codec->height / 16);
     put_byte(pb, 0x4F);
     put_byte(pb, size + 1);
@@ -418,7 +418,7 @@ static int gxf_write_umf_media_mpeg(ByteIOContext *pb, GXFStreamContext *stream)
         put_le32(pb, 2);
     else
         put_le32(pb, 1); /* default to 420 */
-    put_le32(pb, stream->closed_gop); /* closed = 1, open = 0, unknown = 255 */
+    put_le32(pb, stream->first_gop_closed); /* closed = 1, open = 0, unknown = 255 */
     put_le32(pb, 3); /* top = 1, bottom = 2, frame = 3, unknown = 0 */
     put_le32(pb, 1); /* I picture per GOP */
     put_le32(pb, stream->p_per_gop);
@@ -693,7 +693,7 @@ static int gxf_parse_mpeg_frame(GXFStreamContext *sc, const uint8_t *buf, int si
     for(i=0; i<size-4 && c!=0x100; i++){
         c = (c<<8) + buf[i];
         if(c == 0x1B8) /* GOP start code */
-            sc->closed_gop= (buf[i+4]>>6)&1;
+            sc->first_gop_closed= (buf[i+4]>>6)&1;
     }
     return (buf[i+1]>>3)&7;
 }
