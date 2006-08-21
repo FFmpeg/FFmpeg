@@ -353,7 +353,7 @@ case "$cpu" in
   ;;
   x86_64|amd64)
     cpu="x86"
-    canon_arch="`cc -dumpmachine | sed -e 's,\([^-]*\)-.*,\1,'`"
+    canon_arch="`$cc -dumpmachine | sed -e 's,\([^-]*\)-.*,\1,'`"
     if [ x"$canon_arch" = x"x86_64" -o x"$canon_arch" = x"amd64" ]; then
       if [ -z "`echo $CFLAGS | grep -- -m32`"  ]; then
         cpu="x86_64"
