@@ -667,6 +667,11 @@ file=${outfile}libav.dv
 do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src -f s16le -i $pcm_src -ar 48000 -r 25 -s pal -ac 2 $file
 do_ffmpeg_crc $file -i $file
 
+# gxf
+file=${outfile}libav.gxf
+do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src -f s16le -i $pcm_src -ar 48000 -r 25 -s pal -ac 1 $file
+do_ffmpeg_crc $file -i $file
+
 ####################
 # streamed images
 # mjpeg
