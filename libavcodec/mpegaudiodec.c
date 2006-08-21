@@ -943,6 +943,19 @@ static const int icos36[9] = {
     FIXR(5.73685662283492756461),
 };
 
+/* 0.5 / cos(pi*(2*i+1)/36) */
+static const int icos36h[9] = {
+    FIXHR(0.50190991877167369479/2),
+    FIXHR(0.51763809020504152469/2), //0
+    FIXHR(0.55168895948124587824/2),
+    FIXHR(0.61038729438072803416/2),
+    FIXHR(0.70710678118654752439/2), //1
+    FIXHR(0.87172339781054900991/2),
+    FIXHR(1.18310079157624925896/4),
+    FIXHR(1.93185165257813657349/4), //2
+//    FIXHR(5.73685662283492756461),
+};
+
 /* 12 points IMDCT. We compute it "by hand" by factorizing obvious
    cases. */
 static void imdct12(int *out, int *in)
@@ -959,10 +972,10 @@ static void imdct12(int *out, int *in)
     in3 += in1;
 
     in2= MULH(2*in2, C3);
-    in3= MULH(2*in3, C3);
+    in3= MULH(4*in3, C3);
 
     t1 = in0 - in4;
-    t2 = MULL(in1 - in5, icos36[4]);
+    t2 = MULH(2*(in1 - in5), icos36h[4]);
 
     out[ 7]=
     out[10]= t1 + t2;
@@ -971,19 +984,19 @@ static void imdct12(int *out, int *in)
 
     in0 += in4>>1;
     in4 = in0 + in2;
-    in1 += in5>>1;
-    in5 = MULL(in1 + in3, icos36[1]);
+    in5 += 2*in1;
+    in1 = MULH(in5 + in3, icos36h[1]);
     out[ 8]=
-    out[ 9]= in4 + in5;
+    out[ 9]= in4 + in1;
     out[ 2]=
-    out[ 3]= in4 - in5;
+    out[ 3]= in4 - in1;
 
     in0 -= in2;
-    in1 = MULL(in1 - in3, icos36[7]);
+    in5 = MULH(2*(in5 - in3), icos36h[7]);
     out[ 0]=
-    out[ 5]= in0 - in1;
+    out[ 5]= in0 - in5;
     out[ 6]=
-    out[11]= in0 + in1;
+    out[11]= in0 + in5;
 }
 
 /* cos(pi*i/18) */
@@ -1077,7 +1090,7 @@ static void imdct36(int *out, int *buf, int *in, int *win)
 
         t2 = tmp[i + 1];
         t3 = tmp[i + 3];
-        s1 = MULL(t3 + t2, icos36[j]);
+        s1 = MULH(2*(t3 + t2), icos36h[j]);
         s3 = MULL(t3 - t2, icos36[8 - j]);
 
         t0 = s0 + s1;
@@ -1097,7 +1110,7 @@ static void imdct36(int *out, int *buf, int *in, int *win)
     }
 
     s0 = tmp[16];
-    s1 = MULL(tmp[17], icos36[4]);
+    s1 = MULH(2*tmp[17], icos36h[4]);
     t0 = s0 + s1;
     t1 = s0 - s1;
     out[(9 + 4)*SBLIMIT] =  MULH(t1, win[9 + 4]) + buf[9 + 4];
