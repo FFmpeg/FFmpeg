@@ -492,6 +492,7 @@ static int gxf_write_umf_media_description(ByteIOContext *pb, GXFContext *ctx)
         offset_t startpos, curpos;
         int path_size = strlen(ES_NAME_PATTERN);
 
+        memset(buffer, 0, 88);
         startpos = url_ftell(pb);
         put_le16(pb, 0); /* length */
         put_le16(pb, sc->media_info);
