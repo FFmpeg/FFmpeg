@@ -21,3 +21,9 @@ endif
 HEADERS = swscale.h rgb2rgb.h
 
 include $(SRC_PATH)/common.mak
+
+cs_test: cs_test.c
+	$(CC) $(CFLAGS) -o $@ $^ -L. -lswscale -L$(SRC_PATH)/libavutil -lavutil -lm
+
+swscale-example: swscale-example.c
+	$(CC) $(CFLAGS) -o $@ $^ -L. -lswscale -L$(SRC_PATH)/libavutil -lavutil -lm

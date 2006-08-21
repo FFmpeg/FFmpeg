@@ -17,12 +17,13 @@
 */
 
 #include <stdio.h>
+#include <string.h>              /* for memset() */
+#include <unistd.h>
 #include <stdlib.h>
 #include <inttypes.h>
 
 #include "swscale.h"
 #include "rgb2rgb.h"
-#include "cpudetect.h"
 
 #define SIZE 1000
 #define srcByte 0x55
@@ -32,11 +33,29 @@
 #define memalign(x,y) malloc(y)
 #endif
 
-static int get_sws_cpuflags()
+static int cpu_caps;
+
+static char *args_parse(int argc, char *argv[])
 {
-    return (gCpuCaps.hasMMX ? SWS_CPU_CAPS_MMX : 0) |
-	(gCpuCaps.hasMMX2 ? SWS_CPU_CAPS_MMX2 : 0) |
-	(gCpuCaps.has3DNow ? SWS_CPU_CAPS_3DNOW : 0);
+    int o;
+
+    while ((o = getopt(argc, argv, "m23")) != -1) {
+        switch (o) {
+            case 'm':
+                cpu_caps |= SWS_CPU_CAPS_MMX;
+                break;
+            case '2':
+                cpu_caps |= SWS_CPU_CAPS_MMX2;
+                break;
+            case '3':
+                cpu_caps |= SWS_CPU_CAPS_3DNOW;
+                break;
+            default:
+                fprintf(stderr, "Unknown option %c\n", o);
+        }
+    }
+
+    return argv[optind];
 }
 
 main(int argc, char **argv)
@@ -48,13 +67,9 @@ main(int argc, char **argv)
 	int passedNum=0;
 	
 	printf("memory corruption test ...\n");
-	
-	if(argc==2){
-		GetCpuCaps(&gCpuCaps);
-		printf("testing mmx\n");
-	}
-	
-	sws_rgb2rgb_init(get_sws_cpuflags());
+	args_parse(argc, argv);
+	fprintf(stderr, "CPU capabilities forced to %x\n", cpu_caps);
+	sws_rgb2rgb_init(cpu_caps);
 	
 	for(funcNum=0; funcNum<100; funcNum++){
 		int width;
