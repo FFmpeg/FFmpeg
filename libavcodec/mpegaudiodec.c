@@ -784,8 +784,13 @@ static inline int round_sample(int64_t *sum)
     return sum1;
 }
 
+#ifdef ARCH_X86
+/* ask gcc devels why this is 3 times faster then the generic code below */
+#define MULS(ra, rb) \
+    ({ int64_t rt; asm ("imull %2\n\t" : "=A"(rt) : "a" (ra), "g" (rb)); rt; })
+#else
 #define MULS(ra, rb) MUL64(ra, rb)
-
+#endif
 #endif
 
 #define SUM8(sum, op, w, p) \
