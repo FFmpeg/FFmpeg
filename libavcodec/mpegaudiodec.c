@@ -55,6 +55,17 @@
         ({ int64_t rt; asm ("imull %2\n\t" : "=A"(rt) : "a" (ra), "g" (rb)); rt; })
 #   define MULH(ra, rb) \
         ({ int rt, dummy; asm ("imull %3\n\t" : "=d"(rt), "=a"(dummy): "a" (ra), "rm" (rb)); rt; })
+#elif defined(ARCH_ARMV4L)
+#   define MULL(a, b) \
+        ({  int lo, hi;\
+            asm("smull %0, %1, %2, %3     \n\t"\
+                "mov   %0, %0,     lsr #%4\n\t"\
+                "add   %1, %0, %1, lsl #%5\n\t"\
+            : "=r"(lo), "=r"(hi)\
+            : "r"(b), "r"(a), "i"(FRAC_BITS), "i"(32-FRAC_BITS));\
+         hi; })
+#   define MUL64(a,b) ((int64_t)(a) * (int64_t)(b))
+#   define MULH(a, b) ({ int lo, hi; asm ("smull %0, %1, %2, %3" : "=r"(lo), "=r"(hi) : "r"(b),"r"(a)); hi; })
 #else
 #   define MULL(a,b) (((int64_t)(a) * (int64_t)(b)) >> FRAC_BITS)
 #   define MUL64(a,b) ((int64_t)(a) * (int64_t)(b))
