@@ -43,18 +43,26 @@
 
 #define FRAC_ONE    (1 << FRAC_BITS)
 
-#define MULL(a,b) (((int64_t)(a) * (int64_t)(b)) >> FRAC_BITS)
-#define MUL64(a,b) ((int64_t)(a) * (int64_t)(b))
+#ifdef ARCH_X86
+#   define MULL(a,b) (((int64_t)(a) * (int64_t)(b)) >> FRAC_BITS)
+#   define MUL64(ra, rb) \
+        ({ int64_t rt; asm ("imull %2\n\t" : "=A"(rt) : "a" (ra), "g" (rb)); rt; })
+#   define MULH(ra, rb) \
+        ({ int rt, dummy; asm ("imull %3\n\t" : "=d"(rt), "=a"(dummy): "a" (ra), "rm" (rb)); rt; })
+#else
+#   define MULL(a,b) (((int64_t)(a) * (int64_t)(b)) >> FRAC_BITS)
+#   define MUL64(a,b) ((int64_t)(a) * (int64_t)(b))
+//#define MULH(a,b) (((int64_t)(a) * (int64_t)(b))>>32) //gcc 3.4 creates an incredibly bloated mess out of this
+static always_inline int MULH(int a, int b){
+    return ((int64_t)(a) * (int64_t)(b))>>32;
+}
+#endif
 #define FIX(a)   ((int)((a) * FRAC_ONE))
 /* WARNING: only correct for posititive numbers */
 #define FIXR(a)   ((int)((a) * FRAC_ONE + 0.5))
 #define FRAC_RND(a) (((a) + (FRAC_ONE/2)) >> FRAC_BITS)
 
 #define FIXHR(a) ((int)((a) * (1LL<<32) + 0.5))
-//#define MULH(a,b) (((int64_t)(a) * (int64_t)(b))>>32) //gcc 3.4 creates an incredibly bloated mess out of this
-static always_inline int MULH(int a, int b){
-    return ((int64_t)(a) * (int64_t)(b))>>32;
-}
 
 /****************/
 
@@ -779,13 +787,7 @@ static inline int round_sample(int64_t *sum)
     return sum1;
 }
 
-#   ifdef ARCH_X86
-        /* ask gcc devels why this is 3 times faster then the generic code below */
-#       define MULS(ra, rb) \
-            ({ int64_t rt; asm ("imull %2\n\t" : "=A"(rt) : "a" (ra), "g" (rb)); rt; })
-#   else
-#       define MULS(ra, rb) MUL64(ra, rb)
-#   endif
+#   define MULS(ra, rb) MUL64(ra, rb)
 #endif
 
 #define SUM8(sum, op, w, p) \
