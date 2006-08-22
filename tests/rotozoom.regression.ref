@@ -155,7 +155,7 @@ stddev:  2.98 PSNR:38.61 bytes:7602176
 stddev:  3.44 PSNR:37.38 bytes:7602176
 21f8ff9f1daacd9133683bb4ea0f50a4 *./data/a-mp2.mp2
 95712 ./data/a-mp2.mp2
-6956f2c5185c4edbae648c614992a14b *./data/out.wav
+83f8df5d5f84480566af548bb037fceb *./data/out.wav
 stddev:9330.70 PSNR:16.92 bytes:1054720
 stddev:4396.13 PSNR:23.46 bytes:1052672
 aefe11ab5067621a1c674859d6413891 *./data/a-ac3.rm

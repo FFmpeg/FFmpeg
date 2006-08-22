@@ -513,62 +513,62 @@ static int decode_init(AVCodecContext * avctx)
 
 /* cos(i*pi/64) */
 
-#define COS0_0  FIXR(0.50060299823519630134)
-#define COS0_1  FIXR(0.50547095989754365998)
-#define COS0_2  FIXR(0.51544730992262454697)
-#define COS0_3  FIXR(0.53104259108978417447)
-#define COS0_4  FIXR(0.55310389603444452782)
-#define COS0_5  FIXR(0.58293496820613387367)
-#define COS0_6  FIXR(0.62250412303566481615)
-#define COS0_7  FIXR(0.67480834145500574602)
-#define COS0_8  FIXR(0.74453627100229844977)
-#define COS0_9  FIXR(0.83934964541552703873)
-#define COS0_10 FIXR(0.97256823786196069369)
-#define COS0_11 FIXR(1.16943993343288495515)
-#define COS0_12 FIXR(1.48416461631416627724)
-#define COS0_13 FIXR(2.05778100995341155085)
-#define COS0_14 FIXR(3.40760841846871878570)
-#define COS0_15 FIXR(10.19000812354805681150)
+#define COS0_0  FIXHR(0.50060299823519630134/2)
+#define COS0_1  FIXHR(0.50547095989754365998/2)
+#define COS0_2  FIXHR(0.51544730992262454697/2)
+#define COS0_3  FIXHR(0.53104259108978417447/2)
+#define COS0_4  FIXHR(0.55310389603444452782/2)
+#define COS0_5  FIXHR(0.58293496820613387367/2)
+#define COS0_6  FIXHR(0.62250412303566481615/2)
+#define COS0_7  FIXHR(0.67480834145500574602/2)
+#define COS0_8  FIXHR(0.74453627100229844977/2)
+#define COS0_9  FIXHR(0.83934964541552703873/2)
+#define COS0_10 FIXHR(0.97256823786196069369/2)
+#define COS0_11 FIXHR(1.16943993343288495515/4)
+#define COS0_12 FIXHR(1.48416461631416627724/4)
+#define COS0_13 FIXHR(2.05778100995341155085/8)
+#define COS0_14 FIXHR(3.40760841846871878570/8)
+#define COS0_15 FIXHR(10.19000812354805681150/32)
 
-#define COS1_0 FIXR(0.50241928618815570551)
-#define COS1_1 FIXR(0.52249861493968888062)
-#define COS1_2 FIXR(0.56694403481635770368)
-#define COS1_3 FIXR(0.64682178335999012954)
-#define COS1_4 FIXR(0.78815462345125022473)
-#define COS1_5 FIXR(1.06067768599034747134)
-#define COS1_6 FIXR(1.72244709823833392782)
-#define COS1_7 FIXR(5.10114861868916385802)
+#define COS1_0 FIXHR(0.50241928618815570551/2)
+#define COS1_1 FIXHR(0.52249861493968888062/2)
+#define COS1_2 FIXHR(0.56694403481635770368/2)
+#define COS1_3 FIXHR(0.64682178335999012954/2)
+#define COS1_4 FIXHR(0.78815462345125022473/2)
+#define COS1_5 FIXHR(1.06067768599034747134/4)
+#define COS1_6 FIXHR(1.72244709823833392782/4)
+#define COS1_7 FIXHR(5.10114861868916385802/16)
 
-#define COS2_0 FIXR(0.50979557910415916894)
-#define COS2_1 FIXR(0.60134488693504528054)
-#define COS2_2 FIXR(0.89997622313641570463)
-#define COS2_3 FIXR(2.56291544774150617881)
+#define COS2_0 FIXHR(0.50979557910415916894/2)
+#define COS2_1 FIXHR(0.60134488693504528054/2)
+#define COS2_2 FIXHR(0.89997622313641570463/2)
+#define COS2_3 FIXHR(2.56291544774150617881/8)
 
-#define COS3_0 FIXR(0.54119610014619698439)
-#define COS3_1 FIXR(1.30656296487637652785)
+#define COS3_0 FIXHR(0.54119610014619698439/2)
+#define COS3_1 FIXHR(1.30656296487637652785/4)
 
-#define COS4_0 FIXR(0.70710678118654752439)
+#define COS4_0 FIXHR(0.70710678118654752439/2)
 
 /* butterfly operator */
-#define BF(a, b, c)\
+#define BF(a, b, c, s)\
 {\
     tmp0 = tab[a] + tab[b];\
     tmp1 = tab[a] - tab[b];\
     tab[a] = tmp0;\
-    tab[b] = MULL(tmp1, c);\
+    tab[b] = MULH(tmp1<<(s), c);\
 }
 
 #define BF1(a, b, c, d)\
 {\
-    BF(a, b, COS4_0);\
-    BF(c, d, -COS4_0);\
+    BF(a, b, COS4_0, 1);\
+    BF(c, d,-COS4_0, 1);\
     tab[c] += tab[d];\
 }
 
 #define BF2(a, b, c, d)\
 {\
-    BF(a, b, COS4_0);\
-    BF(c, d, -COS4_0);\
+    BF(a, b, COS4_0, 1);\
+    BF(c, d,-COS4_0, 1);\
     tab[c] += tab[d];\
     tab[a] += tab[c];\
     tab[c] += tab[b];\
@@ -582,102 +582,101 @@ static void dct32(int32_t *out, int32_t *tab)
 {
     int tmp0, tmp1;
 
-
     /* pass 1 */
-    BF(0, 31, COS0_0);
-    BF(15, 16, COS0_15);
+    BF( 0, 31, COS0_0 , 1);
+    BF(15, 16, COS0_15, 5);
     /* pass 2 */
-    BF(0, 15, COS1_0);
-    BF(16, 31, -COS1_0);
+    BF( 0, 15, COS1_0 , 1);
+    BF(16, 31,-COS1_0 , 1);
     /* pass 1 */
-    BF(7, 24, COS0_7);
-    BF(8, 23, COS0_8);
+    BF( 7, 24, COS0_7 , 1);
+    BF( 8, 23, COS0_8 , 1);
     /* pass 2 */
-    BF(7,  8, COS1_7);
-    BF(23, 24, -COS1_7);
+    BF( 7,  8, COS1_7 , 4);
+    BF(23, 24,-COS1_7 , 4);
     /* pass 3 */
-    BF(0, 7, COS2_0);
-    BF(8, 15, -COS2_0);
-    BF(16, 23, COS2_0);
-    BF(24, 31, -COS2_0);
+    BF( 0,  7, COS2_0 , 1);
+    BF( 8, 15,-COS2_0 , 1);
+    BF(16, 23, COS2_0 , 1);
+    BF(24, 31,-COS2_0 , 1);
     /* pass 1 */
-    BF(3, 28, COS0_3);
-    BF(12, 19, COS0_12);
+    BF( 3, 28, COS0_3 , 1);
+    BF(12, 19, COS0_12, 2);
     /* pass 2 */
-    BF(3, 12, COS1_3);
-    BF(19, 28, -COS1_3);
+    BF( 3, 12, COS1_3 , 1);
+    BF(19, 28,-COS1_3 , 1);
     /* pass 1 */
-    BF(4, 27, COS0_4);
-    BF(11, 20, COS0_11);
+    BF( 4, 27, COS0_4 , 1);
+    BF(11, 20, COS0_11, 2);
     /* pass 2 */
-    BF(4, 11, COS1_4);
-    BF(20, 27, -COS1_4);
+    BF( 4, 11, COS1_4 , 1);
+    BF(20, 27,-COS1_4 , 1);
     /* pass 3 */
-    BF(3, 4, COS2_3);
-    BF(11, 12, -COS2_3);
-    BF(19, 20, COS2_3);
-    BF(27, 28, -COS2_3);
+    BF( 3,  4, COS2_3 , 3);
+    BF(11, 12,-COS2_3 , 3);
+    BF(19, 20, COS2_3 , 3);
+    BF(27, 28,-COS2_3 , 3);
     /* pass 4 */
-    BF(0, 3, COS3_0);
-    BF(4, 7, -COS3_0);
-    BF(8, 11, COS3_0);
-    BF(12, 15, -COS3_0);
-    BF(16, 19, COS3_0);
-    BF(20, 23, -COS3_0);
-    BF(24, 27, COS3_0);
-    BF(28, 31, -COS3_0);
+    BF( 0,  3, COS3_0 , 1);
+    BF( 4,  7,-COS3_0 , 1);
+    BF( 8, 11, COS3_0 , 1);
+    BF(12, 15,-COS3_0 , 1);
+    BF(16, 19, COS3_0 , 1);
+    BF(20, 23,-COS3_0 , 1);
+    BF(24, 27, COS3_0 , 1);
+    BF(28, 31,-COS3_0 , 1);
 
 
 
     /* pass 1 */
-    BF(1, 30, COS0_1);
-    BF(14, 17, COS0_14);
+    BF( 1, 30, COS0_1 , 1);
+    BF(14, 17, COS0_14, 3);
     /* pass 2 */
-    BF(1, 14, COS1_1);
-    BF(17, 30, -COS1_1);
+    BF( 1, 14, COS1_1 , 1);
+    BF(17, 30,-COS1_1 , 1);
     /* pass 1 */
-    BF(6, 25, COS0_6);
-    BF(9, 22, COS0_9);
+    BF( 6, 25, COS0_6 , 1);
+    BF( 9, 22, COS0_9 , 1);
     /* pass 2 */
-    BF(6,  9, COS1_6);
-    BF(22, 25, -COS1_6);
+    BF( 6,  9, COS1_6 , 2);
+    BF(22, 25,-COS1_6 , 2);
     /* pass 3 */
-    BF(1, 6, COS2_1);
-    BF(9, 14, -COS2_1);
-    BF(17, 22, COS2_1);
-    BF(25, 30, -COS2_1);
+    BF( 1,  6, COS2_1 , 1);
+    BF( 9, 14,-COS2_1 , 1);
+    BF(17, 22, COS2_1 , 1);
+    BF(25, 30,-COS2_1 , 1);
 
     /* pass 1 */
-    BF(2, 29, COS0_2);
-    BF(13, 18, COS0_13);
+    BF( 2, 29, COS0_2 , 1);
+    BF(13, 18, COS0_13, 3);
     /* pass 2 */
-    BF(2, 13, COS1_2);
-    BF(18, 29, -COS1_2);
+    BF( 2, 13, COS1_2 , 1);
+    BF(18, 29,-COS1_2 , 1);
     /* pass 1 */
-    BF(5, 26, COS0_5);
-    BF(10, 21, COS0_10);
+    BF( 5, 26, COS0_5 , 1);
+    BF(10, 21, COS0_10, 1);
     /* pass 2 */
-    BF(5, 10, COS1_5);
-    BF(21, 26, -COS1_5);
+    BF( 5, 10, COS1_5 , 2);
+    BF(21, 26,-COS1_5 , 2);
     /* pass 3 */
-    BF(2, 5, COS2_2);
-    BF(10, 13, -COS2_2);
-    BF(18, 21, COS2_2);
-    BF(26, 29, -COS2_2);
+    BF( 2,  5, COS2_2 , 1);
+    BF(10, 13,-COS2_2 , 1);
+    BF(18, 21, COS2_2 , 1);
+    BF(26, 29,-COS2_2 , 1);
     /* pass 4 */
-    BF(1, 2, COS3_1);
-    BF(5, 6, -COS3_1);
-    BF(9, 10, COS3_1);
-    BF(13, 14, -COS3_1);
-    BF(17, 18, COS3_1);
-    BF(21, 22, -COS3_1);
-    BF(25, 26, COS3_1);
-    BF(29, 30, -COS3_1);
+    BF( 1,  2, COS3_1 , 2);
+    BF( 5,  6,-COS3_1 , 2);
+    BF( 9, 10, COS3_1 , 2);
+    BF(13, 14,-COS3_1 , 2);
+    BF(17, 18, COS3_1 , 2);
+    BF(21, 22,-COS3_1 , 2);
+    BF(25, 26, COS3_1 , 2);
+    BF(29, 30,-COS3_1 , 2);
 
     /* pass 5 */
-    BF1(0, 1, 2, 3);
-    BF2(4, 5, 6, 7);
-    BF1(8, 9, 10, 11);
+    BF1( 0,  1,  2,  3);
+    BF2( 4,  5,  6,  7);
+    BF1( 8,  9, 10, 11);
     BF2(12, 13, 14, 15);
     BF1(16, 17, 18, 19);
     BF2(20, 21, 22, 23);

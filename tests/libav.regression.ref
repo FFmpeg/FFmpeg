@@ -1,24 +1,24 @@
 ffmpeg regression test
 5fb135845dbde3ce5208c468173ef2c2 *./data/b-libav.avi
- 343318 ./data/b-libav.avi
-./data/b-libav.avi CRC=0xccab3a27
+343318 ./data/b-libav.avi
+./data/b-libav.avi CRC=0x1fdd352c
 6f4dca897d9a009009798e434fe5f651 *./data/b-libav.asf
- 342967 ./data/b-libav.asf
-./data/b-libav.asf CRC=0x41af1ed9
+342967 ./data/b-libav.asf
+./data/b-libav.asf CRC=0x94d219de
 5275686385346789108ec4fdf06ecef8 *./data/b-libav.rm
 360269 ./data/b-libav.rm
 90784a1b9589095f20fc6bcc0cc23cc4 *./data/b-libav.mpg
- 387072 ./data/b-libav.mpg
-./data/b-libav.mpg CRC=0x8b644837
+387072 ./data/b-libav.mpg
+./data/b-libav.mpg CRC=0xde87433c
 2933a367c996b49f4b7e66a481fb334e *./data/b-libav.ts
 476768 ./data/b-libav.ts
-./data/b-libav.ts CRC=0x0dd7fc5f
+./data/b-libav.ts CRC=0x60faf764
 57a8dfc7926802bb337a9d8918de94a8 *./data/b-libav.swf
-  41816 ./data/b-libav.swf
+41816 ./data/b-libav.swf
 ./data/b-libav.swf CRC=0x2b273fea
 0026c4e2528ff8f71b79ef53d38cc04d *./data/b-libav.ffm
- 389120 ./data/b-libav.ffm
-./data/b-libav.ffm CRC=0x688bd1eb
+389120 ./data/b-libav.ffm
+./data/b-libav.ffm CRC=0x1acfcaf1
 1596b6d08a94e6b5519357ed23a48aa3 *./data/b-libav.flv
 339476 ./data/b-libav.flv
 ./data/b-libav.flv CRC=0x7b9076f8
@@ -27,7 +27,7 @@ ffmpeg regression test
 ./data/b-libav.mov CRC=0x48f5a90d
 8bf16d40a2ec19fa36b124a928e47e23 *./data/b-libav.nut
  332358 ./data/b-libav.nut
-./data/b-libav.nut CRC=0xccab3a27
+./data/b-libav.nut CRC=0x1fdd352c
 2cc647904d3cca01703f36056b9d3f42 *./data/b-libav.dv
 3600000 ./data/b-libav.dv
 ./data/b-libav.dv CRC=0xa6b8b635
