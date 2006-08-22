@@ -36,7 +36,7 @@
 /* define USE_HIGHPRECISION to have a bit exact (but slower) mpeg
    audio decoder */
 #ifdef CONFIG_MPEGAUDIO_HP
-#define USE_HIGHPRECISION
+#   define USE_HIGHPRECISION
 #endif
 
 #include "mpegaudio.h"
@@ -750,26 +750,21 @@ static inline int round_sample(int *sum)
     return sum1;
 }
 
-#if defined(ARCH_POWERPC_405)
+#   if defined(ARCH_POWERPC_405)
+        /* signed 16x16 -> 32 multiply add accumulate */
+#       define MACS(rt, ra, rb) \
+            asm ("maclhw %0, %2, %3" : "=r" (rt) : "0" (rt), "r" (ra), "r" (rb));
 
-/* signed 16x16 -> 32 multiply add accumulate */
-#define MACS(rt, ra, rb) \
-    asm ("maclhw %0, %2, %3" : "=r" (rt) : "0" (rt), "r" (ra), "r" (rb));
+        /* signed 16x16 -> 32 multiply */
+#       define MULS(ra, rb) \
+            ({ int __rt; asm ("mullhw %0, %1, %2" : "=r" (__rt) : "r" (ra), "r" (rb)); __rt; })
+#   else
+        /* signed 16x16 -> 32 multiply add accumulate */
+#       define MACS(rt, ra, rb) rt += (ra) * (rb)
 
-/* signed 16x16 -> 32 multiply */
-#define MULS(ra, rb) \
-    ({ int __rt; asm ("mullhw %0, %1, %2" : "=r" (__rt) : "r" (ra), "r" (rb)); __rt; })
-
-#else
-
-/* signed 16x16 -> 32 multiply add accumulate */
-#define MACS(rt, ra, rb) rt += (ra) * (rb)
-
-/* signed 16x16 -> 32 multiply */
-#define MULS(ra, rb) ((ra) * (rb))
-
-#endif
-
+        /* signed 16x16 -> 32 multiply */
+#       define MULS(ra, rb) ((ra) * (rb))
+#   endif
 #else
 
 static inline int round_sample(int64_t *sum)
@@ -784,13 +779,13 @@ static inline int round_sample(int64_t *sum)
     return sum1;
 }
 
-#ifdef ARCH_X86
-/* ask gcc devels why this is 3 times faster then the generic code below */
-#define MULS(ra, rb) \
-    ({ int64_t rt; asm ("imull %2\n\t" : "=A"(rt) : "a" (ra), "g" (rb)); rt; })
-#else
-#define MULS(ra, rb) MUL64(ra, rb)
-#endif
+#   ifdef ARCH_X86
+        /* ask gcc devels why this is 3 times faster then the generic code below */
+#       define MULS(ra, rb) \
+            ({ int64_t rt; asm ("imull %2\n\t" : "=A"(rt) : "a" (ra), "g" (rb)); rt; })
+#   else
+#       define MULS(ra, rb) MUL64(ra, rb)
+#   endif
 #endif
 
 #define SUM8(sum, op, w, p) \
