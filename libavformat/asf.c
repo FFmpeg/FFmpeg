@@ -354,7 +354,8 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 desc_count = get_le16(pb);
                 for(i=0;i<desc_count;i++)
                 {
-                        int name_len,value_type,value_len,value_num = 0;
+                        int name_len,value_type,value_len;
+                        uint64_t value_num = 0;
                         char *name, *value;
 
                         name_len = get_le16(pb);
