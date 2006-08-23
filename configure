@@ -394,6 +394,9 @@ case "$cpu" in
   ia64)
     cpu="ia64"
   ;;
+  bfin)
+    cpu="bfin"
+  ;;
   *)
     cpu="unknown"
   ;;
@@ -1656,6 +1659,9 @@ elif test "$cpu" = "m68k" ; then
 elif test "$cpu" = "ia64" ; then
   echo "TARGET_ARCH_IA64=yes" >> config.mak
   echo "#define ARCH_IA64 1" >> $TMPH
+elif test "$cpu" = "bfin" ; then
+  echo "TARGET_ARCH_BFIN=yes" >> config.mak
+  echo "#define ARCH_BFIN 1" >> $TMPH
 fi
 echo "#define TUNECPU $TUNECPU" >> $TMPH
 if test "$bigendian" = "yes" ; then
