@@ -166,7 +166,6 @@ static void compute_antialias_float(MPADecodeContext *s, GranuleDef *g);
 
 /* vlc structure for decoding layer 3 huffman tables */
 static VLC huff_vlc[16];
-static uint8_t *huff_code_table[16];
 static VLC huff_quad_vlc[2];
 /* computed from band_size_long */
 static uint16_t band_index_long[9][23];
@@ -368,26 +367,30 @@ static int decode_init(AVCodecContext * avctx)
         ff_mpa_synth_init(window);
 
         /* huffman decode tables */
-        huff_code_table[0] = NULL;
         for(i=1;i<16;i++) {
             const HuffTable *h = &mpa_huff_tables[i];
             int xsize, x, y;
             unsigned int n;
-            uint8_t *code_table;
+            uint8_t tmp_bits [256];
+            uint16_t tmp_codes[256];
+
+            memset(tmp_bits , 0, sizeof(tmp_bits ));
+            memset(tmp_codes, 0, sizeof(tmp_codes));
 
             xsize = h->xsize;
             n = xsize * xsize;
-            /* XXX: fail test */
-            init_vlc(&huff_vlc[i], 8, n,
-                     h->bits, 1, 1, h->codes, 2, 2, 1);
 
-            code_table = av_mallocz(n);
             j = 0;
             for(x=0;x<xsize;x++) {
-                for(y=0;y<xsize;y++)
-                    code_table[j++] = (x << 4) | y;
+                for(y=0;y<xsize;y++){
+                    tmp_bits [(x << 4) | y]= h->bits [j  ];
+                    tmp_codes[(x << 4) | y]= h->codes[j++];
+                }
             }
-            huff_code_table[i] = code_table;
+
+            /* XXX: fail test */
+            init_vlc(&huff_vlc[i], 8, 256,
+                     tmp_bits, 1, 1, tmp_codes, 2, 2, 1);
         }
         for(i=0;i<2;i++) {
             init_vlc(&huff_quad_vlc[i], i == 0 ? 7 : 4, 16,
@@ -1670,7 +1673,6 @@ static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
     int linbits, code, x, y, l, v, i, j, k, pos;
     GetBitContext last_gb;
     VLC *vlc;
-    uint8_t *code_table;
 
     /* low frequencies (called big values) */
     s_index = 0;
@@ -1683,17 +1685,13 @@ static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
         l = mpa_huff_data[k][0];
         linbits = mpa_huff_data[k][1];
         vlc = &huff_vlc[l];
-        code_table = huff_code_table[l];
 
         /* read huffcode and compute each couple */
         for(;j>0;j--) {
             if (get_bits_count(&s->gb) >= end_pos)
                 break;
-            if (code_table) {
-                code = get_vlc2(&s->gb, vlc->table, 8, 3);
-                if (code < 0)
-                    return -1;
-                y = code_table[code];
+            if (l) {
+                y = get_vlc2(&s->gb, vlc->table, 8, 3);
                 x = y >> 4;
                 y = y & 0x0f;
             } else {
@@ -2232,9 +2230,7 @@ static int mp_decode_layer3(MPADecodeContext *s)
             g->region_size[2] = (576 / 2);
             j = 0;
             for(i=0;i<3;i++) {
-                k = g->region_size[i];
-                if (k > g->big_values)
-                    k = g->big_values;
+                k = FFMIN(g->region_size[i], g->big_values);
                 g->region_size[i] = k - j;
                 j = k;
             }
@@ -2252,10 +2248,7 @@ static int mp_decode_layer3(MPADecodeContext *s)
                     else
                         g->long_end = 4; /* 8000 Hz */
 
-                    if (s->sample_rate_index != 8)
-                        g->short_start = 3;
-                    else
-                        g->short_start = 2;
+                    g->short_start = 2 + (s->sample_rate_index != 8);
                 } else {
                     g->long_end = 0;
                     g->short_start = 0;
