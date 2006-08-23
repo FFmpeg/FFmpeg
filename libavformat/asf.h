@@ -100,6 +100,7 @@ typedef struct {
     uint64_t data_offset; /* begining of the first data packet */
     uint64_t data_object_offset; /* data object offset (excl. GUID & size)*/
     uint64_t data_object_size;   /* size of the data object */
+    int index_read;
 
     ASFMainHeader hdr;
 
