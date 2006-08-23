@@ -187,7 +187,8 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             asf->packet_size = asf->hdr.max_pktsize;
             asf->nb_packets = asf->hdr.packets_count;
         } else if (!memcmp(&g, &stream_header, sizeof(GUID))) {
-            int type, total_size, type_specific_size, sizeX;
+            int type, type_specific_size, sizeX;
+            uint64_t total_size;
             unsigned int tag1;
             int64_t pos1, pos2;
             int test_for_ext_stream_audio;
