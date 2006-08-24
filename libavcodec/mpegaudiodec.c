@@ -1686,18 +1686,20 @@ static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
         linbits = mpa_huff_data[k][1];
         vlc = &huff_vlc[l];
 
+        if(!l){
+            memset(&g->sb_hybrid[s_index], 0, sizeof(*g->sb_hybrid)*j);
+            s_index += 2*j;
+            continue;
+        }
+
         /* read huffcode and compute each couple */
         for(;j>0;j--) {
             if (get_bits_count(&s->gb) >= end_pos)
                 break;
-            if (l) {
-                y = get_vlc2(&s->gb, vlc->table, 8, 3);
-                x = y >> 4;
-                y = y & 0x0f;
-            } else {
-                x = 0;
-                y = 0;
-            }
+            y = get_vlc2(&s->gb, vlc->table, 8, 3);
+            x = y >> 4;
+            y = y & 0x0f;
+
             dprintf("region=%d n=%d x=%d y=%d exp=%d\n",
                     i, g->region_size[i] - j, x, y, exponents[s_index]);
             if (x) {
@@ -1756,8 +1758,7 @@ static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
             g->sb_hybrid[s_index++] = v;
         }
     }
-    while (s_index < 576)
-        g->sb_hybrid[s_index++] = 0;
+    memset(&g->sb_hybrid[s_index], 0, sizeof(*g->sb_hybrid)*(576 - s_index));
     return 0;
 }
 
