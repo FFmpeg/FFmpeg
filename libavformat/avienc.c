@@ -102,6 +102,38 @@ static void avi_write_info_tag(ByteIOContext *pb, const char *tag, const char *s
     }
 }
 
+static int avi_write_counters(AVFormatContext* s, int riff_id)
+{
+    ByteIOContext *pb = &s->pb;
+    AVIContext *avi = s->priv_data;
+    int n, au_byterate, au_ssize, au_scale, nb_frames = 0;
+    offset_t file_size;
+    AVCodecContext* stream;
+
+    file_size = url_ftell(pb);
+    for(n = 0; n < s->nb_streams; n++) {
+        assert(avi->frames_hdr_strm[n]);
+        stream = s->streams[n]->codec;
+        url_fseek(pb, avi->frames_hdr_strm[n], SEEK_SET);
+        ff_parse_specific_params(stream, &au_byterate, &au_ssize, &au_scale);
+        if(au_ssize == 0) {
+            put_le32(pb, avi->packet_count[n]);
+        } else {
+            put_le32(pb, avi->audio_strm_length[n] / au_ssize);
+        }
+        if(stream->codec_type == CODEC_TYPE_VIDEO)
+            nb_frames = FFMAX(nb_frames, avi->packet_count[n]);
+    }
+    if(riff_id == 1) {
+        assert(avi->frames_hdr_all);
+        url_fseek(pb, avi->frames_hdr_all, SEEK_SET);
+        put_le32(pb, nb_frames);
+    }
+    url_fseek(pb, file_size, SEEK_SET);
+
+    return 0;
+}
+
 static int avi_write_header(AVFormatContext *s)
 {
     AVIContext *avi = s->priv_data;
@@ -358,9 +390,8 @@ static int avi_write_idx1(AVFormatContext *s)
 {
     ByteIOContext *pb = &s->pb;
     AVIContext *avi = s->priv_data;
-    offset_t file_size, idx_chunk;
-    int i, n, nb_frames, au_byterate, au_ssize, au_scale;
-    AVCodecContext *stream;
+    offset_t idx_chunk;
+    int i;
     unsigned char tag[5];
 
     if (!url_is_streamed(pb)) {
@@ -395,26 +426,7 @@ static int avi_write_idx1(AVFormatContext *s)
         } while (!empty);
         end_tag(pb, idx_chunk);
 
-        /* Fill in frame/sample counters */
-        file_size = url_ftell(pb);
-        nb_frames = 0;
-        for(n=0;n<s->nb_streams;n++) {
-            assert(avi->frames_hdr_strm[n]);
-                stream = s->streams[n]->codec;
-                url_fseek(pb, avi->frames_hdr_strm[n], SEEK_SET);
-                ff_parse_specific_params(stream, &au_byterate, &au_ssize, &au_scale);
-                if (au_ssize == 0) {
-                    put_le32(pb, avi->packet_count[n]);
-                } else {
-                    put_le32(pb, avi->audio_strm_length[n] / au_ssize);
-                }
-            if(stream->codec_type == CODEC_TYPE_VIDEO)
-                nb_frames = FFMAX(nb_frames, avi->packet_count[n]);
-       }
-        assert(avi->frames_hdr_all);
-        url_fseek(pb, avi->frames_hdr_all, SEEK_SET);
-        put_le32(pb, nb_frames);
-       url_fseek(pb, file_size, SEEK_SET);
+        avi_write_counters(s, avi->riff_id);
     }
     return 0;
 }
@@ -530,6 +542,8 @@ static int avi_write_trailer(AVFormatContext *s)
         }
         put_le32(pb, nb_frames);
         url_fseek(pb, file_size, SEEK_SET);
+
+        avi_write_counters(s, avi->riff_id);
     }
     }
     put_flush_packet(pb);
