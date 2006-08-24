@@ -2390,7 +2390,7 @@ static int mp_decode_layer3(MPADecodeContext *s)
                 for(k=0;k<4;k++) {
                     n = lsf_nsf_table[tindex2][tindex][k];
                     sl = slen[k];
-                    if(s1){
+                    if(sl){
                         for(i=0;i<n;i++)
                             g->scale_factors[j++] = get_bits(&s->gb, sl);
                     }else{
