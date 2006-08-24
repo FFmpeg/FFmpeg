@@ -482,7 +482,7 @@ case $targetos in
 BeOS)
 PREFIX="/boot/home/config"
 # helps building libavcodec
-CFLAGS="$CFLAGS -DPIC -fomit-frame-pointer"
+add_cflags "-DPIC -fomit-frame-pointer"
 # 3 gcc releases known for BeOS, each with ugly bugs
 gcc_version="`$cc -v 2>&1 | grep version | cut -d ' ' -f3-`"
 case "$gcc_version" in
@@ -490,7 +490,7 @@ case "$gcc_version" in
 mmx="no"
 ;;
 *20010315*) echo "BeBits gcc"
-CFLAGS="$CFLAGS -fno-expensive-optimizations"
+add_cflags "-fno-expensive-optimizations"
 ;;
 esac
 SHFLAGS=-nostart
@@ -520,7 +520,7 @@ FFLDFLAGS=""
 FFSERVERLDFLAGS=""
 SHFLAGS="-shared -Wl,-h,\$@"
 need_inet_aton="yes"
-extralibs="$extralibs -lsocket -lnsl"
+add_extralibs "-lsocket -lnsl"
 ;;
 NetBSD)
 v4l="no"
@@ -529,7 +529,7 @@ bktr="yes"
 audio_oss="yes"
 dv1394="no"
 make="gmake"
-extralibs="$extralibs -lossaudio"
+add_extralibs "-lossaudio"
 ;;
 OpenBSD)
 v4l="no"
@@ -540,7 +540,7 @@ dv1394="no"
 make="gmake"
 LIBOBJFLAGS="\$(PIC)"
 LDCONFIG="ldconfig -m \$(shlibdir)"
-extralibs="$extralibs -lossaudio"
+add_extralibs "-lossaudio"
 ;;
 FreeBSD)
 v4l="no"
@@ -549,7 +549,7 @@ bktr="yes"
 audio_oss="yes"
 dv1394="no"
 make="gmake"
-CFLAGS="$CFLAGS -pthread"
+add_cflags "-pthread"
 ;;
 GNU/kFreeBSD)
 v4l="no"
@@ -557,7 +557,7 @@ v4l2="no"
 bktr="yes"
 audio_oss="yes"
 dv1394="no"
-CFLAGS="$CFLAGS -pthread"
+add_cflags "-pthread"
 ;;
 BSD/OS)
 v4l="no"
@@ -624,7 +624,7 @@ TMPE=$TMPE".exe"
 ar="emxomfar -p128"
 ranlib="echo ignoring ranlib"
 strip="echo ignoring strip"
-CFLAGS="$CFLAGS -Zomf"
+add_cflags "-Zomf"
 FFLDFLAGS="-Zomf -Zstack 16384 -s"
 SHFLAGS="-Zdll -Zomf"
 FFSERVERLDFLAGS=""
@@ -701,7 +701,7 @@ for opt do
   ;;
   --make=*) make="$optval"
   ;;
-  --extra-cflags=*) CFLAGS="$CFLAGS $optval"
+  --extra-cflags=*) add_cflags "$optval"
   ;;
   --extra-ldflags=*) EXTRALDFLAGS="$optval"
   ;;
@@ -1010,21 +1010,21 @@ fi
 needmdynamicnopic="no"
 if test $targetos = Darwin; then
     if test -n "`$cc -v 2>&1 | grep xlc`"; then
-        CFLAGS="$CFLAGS -qpdf2 -qlanglvl=extc99 -qmaxmem=-1 -qarch=auto -qtune=auto"
+        add_cflags "-qpdf2 -qlanglvl=extc99 -qmaxmem=-1 -qarch=auto -qtune=auto"
     else
         gcc_version="`$cc -v 2>&1 | grep version | cut -d ' ' -f3-`"
         case "$gcc_version" in
             *2.95*)
-                CFLAGS="$CFLAGS -no-cpp-precomp -pipe"
+                add_cflags "-no-cpp-precomp -pipe"
                 ;;
             *[34].*)
-                CFLAGS="$CFLAGS -no-cpp-precomp -pipe -force_cpusubtype_ALL -Wno-sign-compare"
+                add_cflags "-no-cpp-precomp -pipe -force_cpusubtype_ALL -Wno-sign-compare"
                 if test "$lshared" = no; then
                    needmdynamicnopic="yes"
                 fi
                 ;;
             *)
-                CFLAGS="$CFLAGS -no-cpp-precomp -pipe"
+                add_cflags "-no-cpp-precomp -pipe"
                 if test "$lshared" = no; then
                    needmdynamicnopic="yes"
                 fi
@@ -1032,7 +1032,7 @@ if test $targetos = Darwin; then
         esac
     fi
     if test $optimize != "no"; then
-        CFLAGS="$CFLAGS -fomit-frame-pointer"
+        add_cflags "-fomit-frame-pointer"
     fi
 fi
 
@@ -1051,49 +1051,49 @@ POWERPCMODE="32bits"
 if test $tune != "generic"; then
     case $tune in
         601|ppc601|PowerPC601)
-            CFLAGS="$CFLAGS -mcpu=601"
+            add_cflags "-mcpu=601"
             if test $altivec = "yes"; then
                 echo "WARNING: Tuning for PPC601 but AltiVec enabled!";
             fi
             TUNECPU=ppc601
         ;;
         603*|ppc603*|PowerPC603*)
-            CFLAGS="$CFLAGS -mcpu=603"
+            add_cflags "-mcpu=603"
             if test $altivec = "yes"; then
                 echo "WARNING: Tuning for PPC603 but AltiVec enabled!";
             fi
             TUNECPU=ppc603
         ;;
         604*|ppc604*|PowerPC604*)
-            CFLAGS="$CFLAGS -mcpu=604"
+            add_cflags "-mcpu=604"
             if test $altivec = "yes"; then
                 echo "WARNING: Tuning for PPC604 but AltiVec enabled!";
             fi
             TUNECPU=ppc604
         ;;
         G3|g3|75*|ppc75*|PowerPC75*)
-            CFLAGS="$CFLAGS -mcpu=750 -mtune=750 -mpowerpc-gfxopt"
+            add_cflags "-mcpu=750 -mtune=750 -mpowerpc-gfxopt"
             if test $altivec = "yes"; then
                 echo "WARNING: Tuning for PPC75x but AltiVec enabled!";
             fi
             TUNECPU=ppc750
         ;;
         G4|g4|745*|ppc745*|PowerPC745*)
-            CFLAGS="$CFLAGS -mcpu=7450 -mtune=7450 -mpowerpc-gfxopt"
+            add_cflags "-mcpu=7450 -mtune=7450 -mpowerpc-gfxopt"
             if test $altivec = "no"; then
                 echo "WARNING: Tuning for PPC745x but AltiVec disabled!";
             fi
             TUNECPU=ppc7450
         ;;
         74*|ppc74*|PowerPC74*)
-            CFLAGS="$CFLAGS -mcpu=7400 -mtune=7400 -mpowerpc-gfxopt"
+            add_cflags "-mcpu=7400 -mtune=7400 -mpowerpc-gfxopt"
             if test $altivec = "no"; then
                 echo "WARNING: Tuning for PPC74xx but AltiVec disabled!";
             fi
             TUNECPU=ppc7400
         ;;
         G5|g5|970|ppc970|PowerPC970|power4*|Power4*)
-            CFLAGS="$CFLAGS -mcpu=970 -mtune=970 -mpowerpc-gfxopt -mpowerpc64"
+            add_cflags "-mcpu=970 -mtune=970 -mpowerpc-gfxopt -mpowerpc64"
             if test $altivec = "no"; then
                 echo "WARNING: Tuning for PPC970 but AltiVec disabled!";
             fi
@@ -1101,10 +1101,10 @@ if test $tune != "generic"; then
             POWERPCMODE="64bits"
         ;;
         i[3456]86|pentium|pentiumpro|pentium-mmx|pentium[234]|prescott|k6|k6-[23]|athlon|athlon-tbird|athlon-4|athlon-[mx]p|winchip-c6|winchip2|c3|nocona|athlon64|k8|opteron|athlon-fx)
-            CFLAGS="$CFLAGS -march=$tune"
+            add_cflags "-march=$tune"
         ;;
         sparc64)
-            CFLAGS="$CFLAGS -mcpu=v9 -mtune=v9"
+            add_cflags "-mcpu=v9 -mtune=v9"
         ;;
         *)
         echo "WARNING: Unknown CPU \"$tune\", ignored."
@@ -1132,9 +1132,9 @@ fi
 if test $cpu = "powerpc"; then
     if test $altivec = "yes"; then
         if test -n "`$cc -v 2>&1 | grep version | grep Apple`"; then
-            CFLAGS="$CFLAGS -faltivec"
+            add_cflags "-faltivec"
         else
-            CFLAGS="$CFLAGS -maltivec -mabi=altivec"
+            add_cflags "-maltivec -mabi=altivec"
         fi
     fi
 fi
@@ -1458,10 +1458,10 @@ test "$optimize" = "small" && check_cflags -Os
 
 if enabled optimize; then
     if test -n "`$cc -v 2>&1 | grep xlc`"; then
-        CFLAGS="$CFLAGS -O5"
-        LDFLAGS="$LDFLAGS -O5"
+        add_cflags  "-O5"
+        add_ldflags "-O5"
     else
-        CFLAGS="-O3 $CFLAGS"
+        add_cflags "-O3"
     fi
 fi
 
@@ -1476,8 +1476,8 @@ if test "$lshared" = "yes" ; then
 fi
 
 if test "$gprof" = "yes" ; then
-    CFLAGS="$CFLAGS -p"
-    LDFLAGS="$LDFLAGS -p"
+    add_cflags  "-p"
+    add_ldflags "-p"
 fi
 
 # find if .align arg is power-of-two or not
