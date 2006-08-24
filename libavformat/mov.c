@@ -978,14 +978,6 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
                 if (st->codec->bits_per_sample == 8)
                     st->codec->codec_id = CODEC_ID_PCM_S8;
                 break;
-            case CODEC_ID_AMR_WB:
-                st->codec->sample_rate = 16000; /* should really we ? */
-                st->codec->channels=1; /* really needed */
-                break;
-            case CODEC_ID_AMR_NB:
-                st->codec->sample_rate = 8000; /* should really we ? */
-                st->codec->channels=1; /* really needed */
-                break;
             default:
                 break;
             }
@@ -1064,6 +1056,15 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
         st->codec->codec_id = CODEC_ID_PCM_S16LE;
         break;
 #endif
+    /* no ifdef since parameters are always those */
+    case CODEC_ID_AMR_WB:
+        st->codec->sample_rate= 16000;
+        st->codec->channels= 1; /* really needed */
+        break;
+    case CODEC_ID_AMR_NB:
+        st->codec->sample_rate= 8000;
+        st->codec->channels= 1; /* really needed */
+        break;
     default:
         break;
     }
