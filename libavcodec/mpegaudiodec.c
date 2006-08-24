@@ -2299,12 +2299,22 @@ static int mp_decode_layer3(MPADecodeContext *s)
                 if (g->block_type == 2) {
                     n = g->switch_point ? 17 : 18;
                     j = 0;
-                    for(i=0;i<n;i++)
-                        g->scale_factors[j++] = get_bitsz(&s->gb, slen1);
-                    for(i=0;i<18;i++)
-                        g->scale_factors[j++] = get_bitsz(&s->gb, slen2);
-                    for(i=0;i<3;i++)
-                        g->scale_factors[j++] = 0;
+                    if(slen1){
+                        for(i=0;i<n;i++)
+                            g->scale_factors[j++] = get_bits(&s->gb, slen1);
+                    }else{
+                        for(i=0;i<n;i++)
+                            g->scale_factors[j++] = 0;
+                    }
+                    if(slen2){
+                        for(i=0;i<18;i++)
+                            g->scale_factors[j++] = get_bits(&s->gb, slen2);
+                        for(i=0;i<3;i++)
+                            g->scale_factors[j++] = 0;
+                    }else{
+                        for(i=0;i<21;i++)
+                            g->scale_factors[j++] = 0;
+                    }
                 } else {
                     sc = granules[ch][0].scale_factors;
                     j = 0;
@@ -2312,8 +2322,13 @@ static int mp_decode_layer3(MPADecodeContext *s)
                         n = (k == 0 ? 6 : 5);
                         if ((g->scfsi & (0x8 >> k)) == 0) {
                             slen = (k < 2) ? slen1 : slen2;
-                            for(i=0;i<n;i++)
-                                g->scale_factors[j++] = get_bitsz(&s->gb, slen);
+                            if(slen){
+                                for(i=0;i<n;i++)
+                                    g->scale_factors[j++] = get_bits(&s->gb, slen);
+                            }else{
+                                for(i=0;i<n;i++)
+                                    g->scale_factors[j++] = 0;
+                            }
                         } else {
                             /* simply copy from last granule */
                             for(i=0;i<n;i++) {
@@ -2375,8 +2390,13 @@ static int mp_decode_layer3(MPADecodeContext *s)
                 for(k=0;k<4;k++) {
                     n = lsf_nsf_table[tindex2][tindex][k];
                     sl = slen[k];
-                    for(i=0;i<n;i++)
-                        g->scale_factors[j++] = get_bitsz(&s->gb, sl);
+                    if(s1){
+                        for(i=0;i<n;i++)
+                            g->scale_factors[j++] = get_bits(&s->gb, sl);
+                    }else{
+                        for(i=0;i<n;i++)
+                            g->scale_factors[j++] = 0;
+                    }
                 }
                 /* XXX: should compute exact size */
                 for(;j<40;j++)
