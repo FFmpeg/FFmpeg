@@ -45,7 +45,6 @@
 #include <stddef.h>
 #include <stdio.h>
 
-#define ALT_BITSTREAM_READER
 #include "avcodec.h"
 #include "bitstream.h"
 #include "dsputil.h"
