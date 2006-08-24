@@ -1776,7 +1776,7 @@ static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
    complicated */
 static void reorder_block(MPADecodeContext *s, GranuleDef *g)
 {
-    int i, j, k, len;
+    int i, j, len;
     int32_t *ptr, *dst, *ptr1;
     int32_t tmp[576];
 
@@ -1796,14 +1796,15 @@ static void reorder_block(MPADecodeContext *s, GranuleDef *g)
     for(i=g->short_start;i<13;i++) {
         len = band_size_short[s->sample_rate_index][i];
         ptr1 = ptr;
-        for(k=0;k<3;k++) {
-            dst = tmp + k;
-            for(j=len;j>0;j--) {
-                *dst = *ptr++;
-                dst += 3;
-            }
+        dst = tmp;
+        for(j=len;j>0;j--) {
+            *dst++ = ptr[0*len];
+            *dst++ = ptr[1*len];
+            *dst++ = ptr[2*len];
+            ptr++;
         }
-        memcpy(ptr1, tmp, len * 3 * sizeof(int32_t));
+        ptr+=2*len;
+        memcpy(ptr1, tmp, len * 3 * sizeof(*ptr1));
     }
 }
 
