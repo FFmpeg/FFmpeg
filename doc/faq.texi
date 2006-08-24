@@ -21,7 +21,7 @@ documentation.
 If the JPEGs are named img1.jpg, img2.jpg, img3.jpg,..., use:
 
 @example
-  ffmpeg -i img%d.jpg /tmp/a.mpg
+  ffmpeg -f image2 -i img%d.jpg /tmp/a.mpg
 @end example
 
 @samp{%d} is replaced by the image number.
@@ -29,6 +29,8 @@ If the JPEGs are named img1.jpg, img2.jpg, img3.jpg,..., use:
 @file{img%03d.jpg} generates @file{img001.jpg}, @file{img002.jpg}, etc...
 
 The same system is used for the other image formats.
+
+(Note: you need -f image2 for all image formats except GIF; see next section).
 
 @section Only GIF is listed by -format. Is that the only accepted image format?
 
@@ -136,7 +138,7 @@ to Subversion HEAD".
 
 @section -f jpeg doesn't work.
 
-Try '-f image -img jpeg test%d.jpg'.
+Try '-f image2 test%d.jpg'.
 
 @section Why can I not change the framerate?
 
