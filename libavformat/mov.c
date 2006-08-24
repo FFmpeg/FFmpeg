@@ -1029,7 +1029,20 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
         st->codec->sample_rate= sc->time_scale;
     }
 
+    /* special codec parameters handling */
     switch (st->codec->codec_id) {
+#ifdef CONFIG_H261_DECODER
+    case CODEC_ID_H261:
+#endif
+#ifdef CONFIG_H263_DECODER
+    case CODEC_ID_H263:
+#endif
+#ifdef CONFIG_MPEG4_DECODER
+    case CODEC_ID_MPEG4:
+#endif
+        st->codec->width= 0; /* let decoder init width/height */
+        st->codec->height= 0;
+        break;
 #ifdef CONFIG_FAAD
     case CODEC_ID_AAC:
 #endif
