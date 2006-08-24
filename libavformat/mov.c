@@ -1730,19 +1730,22 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
         av_log(mov->fc, AV_LOG_ERROR, "stream %d, offset 0x%llx: partial file\n", sc->ffindex, sample->pos);
         return -1;
     }
-
+#ifdef CONFIG_DV_DEMUXER
     if (sc->dv_audio_container) {
         dv_get_packet(mov->dv_demux, pkt);
         dprintf("dv audio pkt size %d\n", pkt->size);
     } else {
+#endif
         url_fseek(&s->pb, sample->pos, SEEK_SET);
         av_get_packet(&s->pb, pkt, sample->size);
+#ifdef CONFIG_DV_DEMUXER
         if (mov->dv_demux) {
             void *pkt_destruct_func = pkt->destruct;
             dv_produce_packet(mov->dv_demux, pkt, pkt->data, pkt->size);
             pkt->destruct = pkt_destruct_func;
         }
     }
+#endif
     pkt->stream_index = sc->ffindex;
     pkt->dts = sample->timestamp;
     if (sc->ctts_data) {
