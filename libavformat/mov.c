@@ -1039,6 +1039,7 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     case CODEC_ID_MP3ON4:
         st->codec->sample_rate= 0; /* let decoder init parameters properly */
         break;
+#ifdef CONFIG_DV_DEMUXER
     case CODEC_ID_DVAUDIO:
         c->dv_fctx = av_alloc_format_context();
         c->dv_demux = dv_init_demux(c->dv_fctx);
@@ -1049,6 +1050,7 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
         sc->dv_audio_container = 1;
         st->codec->codec_id = CODEC_ID_PCM_S16LE;
         break;
+#endif
     default:
         break;
     }
