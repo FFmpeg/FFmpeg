@@ -1741,22 +1741,22 @@ static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
         }
         last_gb= s->gb;
 
-        code = get_vlc2(&s->gb, vlc->table, vlc->bits, 2);
+        code = get_vlc2(&s->gb, vlc->table, vlc->bits, 1);
         dprintf("t=%d code=%d\n", g->count1table_select, code);
-        if (code < 0)
-            return -1;
-        for(i=0;i<4;i++) {
-            if (code & (8 >> i)) {
-                /* non zero value. Could use a hand coded function for
-                   'one' value */
-                v = l3_unscale(1, exponents[s_index]);
-                if(get_bits1(&s->gb))
-                    v = -v;
-            } else {
-                v = 0;
-            }
-            g->sb_hybrid[s_index++] = v;
+        g->sb_hybrid[s_index+0]=
+        g->sb_hybrid[s_index+1]=
+        g->sb_hybrid[s_index+2]=
+        g->sb_hybrid[s_index+3]= 0;
+        while(code){
+            const static int idxtab[16]={3,3,2,2,1,1,1,1,0,0,0,0,0,0,0,0};
+            int pos= s_index+idxtab[code];
+            code ^= 8>>idxtab[code];
+            v = l3_unscale(1, exponents[pos]);
+            if(get_bits1(&s->gb))
+                v = -v;
+            g->sb_hybrid[pos] = v;
         }
+        s_index+=4;
     }
     memset(&g->sb_hybrid[s_index], 0, sizeof(*g->sb_hybrid)*(576 - s_index));
     return 0;
