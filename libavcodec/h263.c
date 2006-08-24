@@ -5799,7 +5799,7 @@ static int decode_user_data(MpegEncContext *s, GetBitContext *gb){
     int ver = 0, build = 0, ver2 = 0, ver3 = 0;
     char last;
 
-    for(i=0; i<255 && gb->index < gb->size_in_bits; i++){
+    for(i=0; i<255 && get_bits_count(gb) < gb->size_in_bits; i++){
         if(show_bits(gb, 23) == 0) break;
         buf[i]= get_bits(gb, 8);
     }
