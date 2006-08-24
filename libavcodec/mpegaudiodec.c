@@ -1671,7 +1671,7 @@ static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
 {
     int s_index;
     int linbits, code, x, y, l, v, i, j, k, pos;
-    GetBitContext last_gb;
+    int last_pos;
     VLC *vlc;
 
     /* low frequencies (called big values) */
@@ -1735,19 +1735,20 @@ static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
 
     /* high frequencies */
     vlc = &huff_quad_vlc[g->count1table_select];
-    last_gb.buffer = NULL;
+    last_pos=0;
     while (s_index <= 572) {
         pos = get_bits_count(&s->gb);
         if (pos >= end_pos) {
-            if (pos > end_pos && last_gb.buffer != NULL) {
+            if (pos > end_pos && last_pos){
                 /* some encoders generate an incorrect size for this
                    part. We must go back into the data */
                 s_index -= 4;
-                s->gb = last_gb;
+                init_get_bits(&s->gb, s->gb.buffer + (last_pos>>3), s->gb.size_in_bits - (last_pos&(~7)));
+                skip_bits(&s->gb, last_pos&7);
             }
             break;
         }
-        last_gb= s->gb;
+        last_pos= pos;
 
         code = get_vlc2(&s->gb, vlc->table, vlc->bits, 1);
         dprintf("t=%d code=%d\n", g->count1table_select, code);
