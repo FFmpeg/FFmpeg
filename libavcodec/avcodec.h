@@ -119,6 +119,7 @@ enum CodecID {
     CODEC_ID_KMVC,
     CODEC_ID_FLASHSV,
     CODEC_ID_CAVS,
+    CODEC_ID_JPEG2000,
 
     /* various pcm "codecs" */
     CODEC_ID_PCM_S16LE= 0x10000,
