@@ -2159,10 +2159,7 @@ static int mp_decode_layer3(MPADecodeContext *s)
     /* read side info */
     if (s->lsf) {
         main_data_begin = get_bits(&s->gb, 8);
-        if (s->nb_channels == 2)
-            private_bits = get_bits(&s->gb, 2);
-        else
-            private_bits = get_bits(&s->gb, 1);
+        private_bits = get_bits(&s->gb, s->nb_channels);
         nb_granules = 1;
     } else {
         main_data_begin = get_bits(&s->gb, 9);
