@@ -1332,7 +1332,7 @@ static int mov_write_moov_tag(ByteIOContext *pb, MOVContext *mov,
 static int mov_write_mdat_tag(ByteIOContext *pb, MOVContext* mov)
 {
     put_be32(pb, 8);    // placeholder for extended size field (64 bit)
-    put_tag(pb, "wide");
+    put_tag(pb, mov->mode == MODE_MOV ? "wide" : "free");
 
     mov->mdat_pos = url_ftell(pb);
     put_be32(pb, 0); /* size placeholder*/
