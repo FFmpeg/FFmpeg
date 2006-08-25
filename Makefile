@@ -248,7 +248,7 @@ libavtest test mpeg4 mpeg test-server fulltest: $(PROGS)
 	$(MAKE) -C tests $@
 
 # tar release (use 'make -k tar' on a checkouted tree)
-FILE=ffmpeg-$(shell grep "\#define FFMPEG_VERSION " libavcodec/avcodec.h | \
+FILE=ffmpeg-$(shell grep "\#define FFMPEG_VERSION " version.h | \
                     cut -d "\"" -f 2 )
 
 tar:
