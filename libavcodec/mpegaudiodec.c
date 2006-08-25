@@ -391,7 +391,7 @@ static int decode_init(AVCodecContext * avctx)
             }
 
             /* XXX: fail test */
-            init_vlc(&huff_vlc[i], 8, 256,
+            init_vlc(&huff_vlc[i], 7, 256,
                      tmp_bits, 1, 1, tmp_codes, 2, 2, 1);
         }
         for(i=0;i<2;i++) {
@@ -1705,7 +1705,7 @@ static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
         for(;j>0;j--) {
             if (get_bits_count(&s->gb) >= end_pos)
                 break;
-            y = get_vlc2(&s->gb, vlc->table, 8, 3);
+            y = get_vlc2(&s->gb, vlc->table, 7, 3);
 
             if(!y){
                 g->sb_hybrid[s_index  ] =
