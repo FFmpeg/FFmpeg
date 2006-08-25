@@ -174,6 +174,7 @@ static uint16_t band_index_long[9][23];
 static int8_t  *table_4_3_exp;
 static uint32_t *table_4_3_value;
 static uint32_t exp_table[512];
+static uint32_t expval_table[512][16];
 /* intensity stereo coef table */
 static int32_t is_table[2][16];
 static int32_t is_table_lsf[2][2][16];
@@ -429,10 +430,12 @@ static int decode_init(AVCodecContext * avctx)
 //            av_log(NULL, AV_LOG_DEBUG, "%d %d %f\n", i, m, pow((double)i, 4.0 / 3.0));
             table_4_3_exp[i] = -e;
         }
-        for(i=0; i<512; i++){
-            int exponent= i-400;
-            double f=  pow(1, 4.0 / 3.0) * pow(2, exponent*0.25 + FRAC_BITS + 5);
-            exp_table[i]= lrintf(f);
+        for(i=0; i<512*16; i++){
+            int exponent= (i>>4)-400;
+            double f= pow(i&15, 4.0 / 3.0) * pow(2, exponent*0.25 + FRAC_BITS + 5);
+            expval_table[exponent+400][i&15]= lrintf(f);
+            if((i&15)==1)
+                exp_table[exponent+400]= lrintf(f);
         }
 
         for(i=0;i<7;i++) {
@@ -1717,9 +1720,18 @@ static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
             dprintf("region=%d n=%d x=%d y=%d exp=%d\n",
                     i, g->region_size[i] - j, x, y, exponents[s_index]);
             if (x) {
+#if 0
                 if (x == 15)
                     x += get_bitsz(&s->gb, linbits);
                 v = l3_unscale(x, exponents[s_index]);
+#else
+                if (x < 15){
+                    v = expval_table[ exponents[s_index] + 400 ][ x ];
+                }else{
+                    x += get_bitsz(&s->gb, linbits);
+                    v = l3_unscale(x, exponents[s_index]);
+                }
+#endif
                 if (get_bits1(&s->gb))
                     v = -v;
             } else {
@@ -1727,9 +1739,18 @@ static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
             }
             g->sb_hybrid[s_index++] = v;
             if (y) {
+#if 0
                 if (y == 15)
                     y += get_bitsz(&s->gb, linbits);
                 v = l3_unscale(y, exponents[s_index]);
+#else
+                if (y < 15){
+                    v = expval_table[ exponents[s_index] + 400 ][ y ];
+                }else{
+                    y += get_bitsz(&s->gb, linbits);
+                    v = l3_unscale(y, exponents[s_index]);
+                }
+#endif
                 if (get_bits1(&s->gb))
                     v = -v;
             } else {
