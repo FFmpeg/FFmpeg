@@ -423,7 +423,7 @@ static int decode_init(AVCodecContext * avctx)
             f = pow((double)(i/4), 4.0 / 3.0) * pow(2, (i&3)*0.25);
             fm = frexp(f, &e);
             m = (uint32_t)(fm*(1LL<<31) + 0.5);
-            e+= FRAC_BITS - 31 + 5;
+            e+= FRAC_BITS - 31 + 5 - 100;
 
             /* normalized to FRAC_BITS */
             table_4_3_value[i] = m;
@@ -431,11 +431,11 @@ static int decode_init(AVCodecContext * avctx)
             table_4_3_exp[i] = -e;
         }
         for(i=0; i<512*16; i++){
-            int exponent= (i>>4)-400;
-            double f= pow(i&15, 4.0 / 3.0) * pow(2, exponent*0.25 + FRAC_BITS + 5);
-            expval_table[exponent+400][i&15]= lrintf(f);
+            int exponent= (i>>4);
+            double f= pow(i&15, 4.0 / 3.0) * pow(2, (exponent-400)*0.25 + FRAC_BITS + 5);
+            expval_table[exponent][i&15]= lrintf(f);
             if((i&15)==1)
-                exp_table[exponent+400]= lrintf(f);
+                exp_table[exponent]= lrintf(f);
         }
 
         for(i=0;i<7;i++) {
@@ -1643,7 +1643,7 @@ static void exponents_from_scale_factors(MPADecodeContext *s,
     bstab = band_size_long[s->sample_rate_index];
     pretab = mpa_pretab[g->preflag];
     for(i=0;i<g->long_end;i++) {
-        v0 = gain - ((g->scale_factors[i] + pretab[i]) << shift);
+        v0 = gain - ((g->scale_factors[i] + pretab[i]) << shift) + 400;
         len = bstab[i];
         for(j=len;j>0;j--)
             *exp_ptr++ = v0;
@@ -1658,7 +1658,7 @@ static void exponents_from_scale_factors(MPADecodeContext *s,
         for(i=g->short_start;i<13;i++) {
             len = bstab[i];
             for(l=0;l<3;l++) {
-                v0 = gains[l] - (g->scale_factors[k++] << shift);
+                v0 = gains[l] - (g->scale_factors[k++] << shift) + 400;
                 for(j=len;j>0;j--)
                 *exp_ptr++ = v0;
             }
@@ -1729,8 +1729,8 @@ static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
                 v = l3_unscale(x, exponent);
 #else
                 if (x < 15){
-                    v = expval_table[ exponent + 400 ][ x ];
-//                      v = expval_table[ (exponent&3) + 400 ][ x ] >> FFMIN(0 - (exponent>>2), 31);
+                    v = expval_table[ exponent ][ x ];
+//                      v = expval_table[ (exponent&3) ][ x ] >> FFMIN(0 - (exponent>>2), 31);
                 }else{
                     x += get_bitsz(&s->gb, linbits);
                     v = l3_unscale(x, exponent);
@@ -1749,7 +1749,7 @@ static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
                 v = l3_unscale(y, exponent);
 #else
                 if (y < 15){
-                    v = expval_table[ exponent + 400 ][ y ];
+                    v = expval_table[ exponent ][ y ];
                 }else{
                     y += get_bitsz(&s->gb, linbits);
                     v = l3_unscale(y, exponent);
@@ -1791,7 +1791,8 @@ static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
             const static int idxtab[16]={3,3,2,2,1,1,1,1,0,0,0,0,0,0,0,0};
             int pos= s_index+idxtab[code];
             code ^= 8>>idxtab[code];
-            v = exp_table[ exponents[pos] + 400];
+            v = exp_table[ exponents[pos] ];
+//            v = exp_table[ (exponents[pos]&3) ] >> FFMIN(0 - (exponents[pos]>>2), 31);
             if(get_bits1(&s->gb))
                 v = -v;
             g->sb_hybrid[pos] = v;
