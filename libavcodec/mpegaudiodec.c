@@ -1743,8 +1743,8 @@ static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
                 /* some encoders generate an incorrect size for this
                    part. We must go back into the data */
                 s_index -= 4;
-                init_get_bits(&s->gb, s->gb.buffer + (last_pos>>3), s->gb.size_in_bits - (last_pos&(~7)));
-                skip_bits(&s->gb, last_pos&7);
+                init_get_bits(&s->gb, s->gb.buffer + 4*(last_pos>>5), s->gb.size_in_bits - (last_pos&(~31)));
+                skip_bits(&s->gb, last_pos&31);
             }
             break;
         }
