@@ -173,6 +173,7 @@ static uint16_t band_index_long[9][23];
 #define TABLE_4_3_SIZE (8191 + 16)*4
 static int8_t  *table_4_3_exp;
 static uint32_t *table_4_3_value;
+static uint32_t exp_table[512];
 /* intensity stereo coef table */
 static int32_t is_table[2][16];
 static int32_t is_table_lsf[2][2][16];
@@ -427,6 +428,11 @@ static int decode_init(AVCodecContext * avctx)
             table_4_3_value[i] = m;
 //            av_log(NULL, AV_LOG_DEBUG, "%d %d %f\n", i, m, pow((double)i, 4.0 / 3.0));
             table_4_3_exp[i] = -e;
+        }
+        for(i=0; i<512; i++){
+            int exponent= i-400;
+            double f=  pow(1, 4.0 / 3.0) * pow(2, exponent*0.25 + FRAC_BITS + 5);
+            exp_table[i]= lrintf(f);
         }
 
         for(i=0;i<7;i++) {
@@ -1760,7 +1766,7 @@ static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
             const static int idxtab[16]={3,3,2,2,1,1,1,1,0,0,0,0,0,0,0,0};
             int pos= s_index+idxtab[code];
             code ^= 8>>idxtab[code];
-            v = l3_unscale(1, exponents[pos]);
+            v = exp_table[ exponents[pos] + 400];
             if(get_bits1(&s->gb))
                 v = -v;
             g->sb_hybrid[pos] = v;
