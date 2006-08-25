@@ -1703,6 +1703,8 @@ static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
 
         /* read huffcode and compute each couple */
         for(;j>0;j--) {
+            int exponent;
+
             if (get_bits_count(&s->gb) >= end_pos)
                 break;
             y = get_vlc2(&s->gb, vlc->table, 7, 3);
@@ -1716,20 +1718,22 @@ static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
 
             x = y >> 4;
             y = y & 0x0f;
+            exponent= exponents[s_index];
 
             dprintf("region=%d n=%d x=%d y=%d exp=%d\n",
-                    i, g->region_size[i] - j, x, y, exponents[s_index]);
+                    i, g->region_size[i] - j, x, y, exponent);
             if (x) {
 #if 0
                 if (x == 15)
                     x += get_bitsz(&s->gb, linbits);
-                v = l3_unscale(x, exponents[s_index]);
+                v = l3_unscale(x, exponent);
 #else
                 if (x < 15){
-                    v = expval_table[ exponents[s_index] + 400 ][ x ];
+                    v = expval_table[ exponent + 400 ][ x ];
+//                      v = expval_table[ (exponent&3) + 400 ][ x ] >> FFMIN(0 - (exponent>>2), 31);
                 }else{
                     x += get_bitsz(&s->gb, linbits);
-                    v = l3_unscale(x, exponents[s_index]);
+                    v = l3_unscale(x, exponent);
                 }
 #endif
                 if (get_bits1(&s->gb))
@@ -1742,13 +1746,13 @@ static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
 #if 0
                 if (y == 15)
                     y += get_bitsz(&s->gb, linbits);
-                v = l3_unscale(y, exponents[s_index]);
+                v = l3_unscale(y, exponent);
 #else
                 if (y < 15){
-                    v = expval_table[ exponents[s_index] + 400 ][ y ];
+                    v = expval_table[ exponent + 400 ][ y ];
                 }else{
                     y += get_bitsz(&s->gb, linbits);
-                    v = l3_unscale(y, exponents[s_index]);
+                    v = l3_unscale(y, exponent);
                 }
 #endif
                 if (get_bits1(&s->gb))
