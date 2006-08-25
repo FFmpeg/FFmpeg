@@ -373,8 +373,8 @@ static int decode_init(AVCodecContext * avctx)
             const HuffTable *h = &mpa_huff_tables[i];
             int xsize, x, y;
             unsigned int n;
-            uint8_t tmp_bits [256];
-            uint16_t tmp_codes[256];
+            uint8_t  tmp_bits [512];
+            uint16_t tmp_codes[512];
 
             memset(tmp_bits , 0, sizeof(tmp_bits ));
             memset(tmp_codes, 0, sizeof(tmp_codes));
@@ -385,13 +385,13 @@ static int decode_init(AVCodecContext * avctx)
             j = 0;
             for(x=0;x<xsize;x++) {
                 for(y=0;y<xsize;y++){
-                    tmp_bits [(x << 4) | y]= h->bits [j  ];
-                    tmp_codes[(x << 4) | y]= h->codes[j++];
+                    tmp_bits [(x << 5) | y | ((x&&y)<<4)]= h->bits [j  ];
+                    tmp_codes[(x << 5) | y | ((x&&y)<<4)]= h->codes[j++];
                 }
             }
 
             /* XXX: fail test */
-            init_vlc(&huff_vlc[i], 7, 256,
+            init_vlc(&huff_vlc[i], 7, 512,
                      tmp_bits, 1, 1, tmp_codes, 2, 2, 1);
         }
         for(i=0;i<2;i++) {
@@ -1717,18 +1717,13 @@ static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
                 continue;
             }
 
-            x = y >> 4;
-            y = y & 0x0f;
             exponent= exponents[s_index];
 
             dprintf("region=%d n=%d x=%d y=%d exp=%d\n",
                     i, g->region_size[i] - j, x, y, exponent);
-            if (x) {
-#if 0
-                if (x == 15)
-                    x += get_bitsz(&s->gb, linbits);
-                v = l3_unscale(x, exponent);
-#else
+            if(y&16){
+                x = y >> 5;
+                y = y & 0x0f;
                 if (x < 15){
                     v = expval_table[ exponent ][ x ];
 //                      v = expval_table[ (exponent&3) ][ x ] >> FFMIN(0 - (exponent>>2), 31);
@@ -1736,32 +1731,33 @@ static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
                     x += get_bitsz(&s->gb, linbits);
                     v = l3_unscale(x, exponent);
                 }
-#endif
                 if (get_bits1(&s->gb))
                     v = -v;
-            } else {
-                v = 0;
-            }
-            g->sb_hybrid[s_index++] = v;
-            if (y) {
-#if 0
-                if (y == 15)
-                    y += get_bitsz(&s->gb, linbits);
-                v = l3_unscale(y, exponent);
-#else
+                g->sb_hybrid[s_index] = v;
                 if (y < 15){
                     v = expval_table[ exponent ][ y ];
                 }else{
                     y += get_bitsz(&s->gb, linbits);
                     v = l3_unscale(y, exponent);
                 }
-#endif
                 if (get_bits1(&s->gb))
                     v = -v;
-            } else {
-                v = 0;
+                g->sb_hybrid[s_index+1] = v;
+            }else{
+                x = y >> 5;
+                y = y & 0x0f;
+                x += y;
+                if (x < 15){
+                    v = expval_table[ exponent ][ x ];
+                }else{
+                    x += get_bitsz(&s->gb, linbits);
+                    v = l3_unscale(x, exponent);
+                }
+                if (get_bits1(&s->gb))
+                    v = -v;
+                g->sb_hybrid[s_index+!!y] = v;
             }
-            g->sb_hybrid[s_index++] = v;
+            s_index+=2;
         }
     }
 
