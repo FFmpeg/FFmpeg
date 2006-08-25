@@ -1679,13 +1679,14 @@ static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
                           int16_t *exponents, int end_pos)
 {
     int s_index;
-    int linbits, code, x, y, l, v, i, j, k, pos;
+    int i;
     int last_pos;
     VLC *vlc;
 
     /* low frequencies (called big values) */
     s_index = 0;
     for(i=0;i<3;i++) {
+        int j, k, l, linbits;
         j = g->region_size[i];
         if (j == 0)
             continue;
@@ -1703,7 +1704,7 @@ static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
 
         /* read huffcode and compute each couple */
         for(;j>0;j--) {
-            int exponent;
+            int exponent, x, y, v;
 
             if (get_bits_count(&s->gb) >= end_pos)
                 break;
@@ -1768,6 +1769,7 @@ static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
     vlc = &huff_quad_vlc[g->count1table_select];
     last_pos=0;
     while (s_index <= 572) {
+        int pos, code;
         pos = get_bits_count(&s->gb);
         if (pos >= end_pos) {
             if (pos > end_pos && last_pos){
@@ -1789,6 +1791,7 @@ static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
         g->sb_hybrid[s_index+3]= 0;
         while(code){
             const static int idxtab[16]={3,3,2,2,1,1,1,1,0,0,0,0,0,0,0,0};
+            int v;
             int pos= s_index+idxtab[code];
             code ^= 8>>idxtab[code];
             v = exp_table[ exponents[pos] ];
