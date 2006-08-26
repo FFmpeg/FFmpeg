@@ -85,13 +85,13 @@ static always_inline int MULH(int a, int b){
 
 #define HEADER_SIZE 4
 #define BACKSTEP_SIZE 512
+#define EXTRABYTES 24
 
 struct GranuleDef;
 
 typedef struct MPADecodeContext {
-    uint8_t inbuf1[2][MPA_MAX_CODED_FRAME_SIZE + BACKSTEP_SIZE];        /* input buffer */
-    int inbuf_index;
-    uint8_t *inbuf_ptr, *inbuf;
+    DECLARE_ALIGNED_8(uint8_t, last_buf[BACKSTEP_SIZE + EXTRABYTES + MPA_MAX_CODED_FRAME_SIZE]); //FIXME we dont need that much
+    int last_buf_size;
     int frame_size;
     int free_format_frame_size; /* frame size in case of free format
                                    (zero if currently unknown) */
@@ -104,6 +104,7 @@ typedef struct MPADecodeContext {
     int bit_rate;
     int old_frame_size;
     GetBitContext gb;
+    GetBitContext in_gb;
     int nb_channels;
     int mode;
     int mode_ext;
@@ -535,9 +536,6 @@ static int decode_init(AVCodecContext * avctx)
         init = 1;
     }
 
-    s->inbuf_index = 0;
-    s->inbuf = &s->inbuf1[s->inbuf_index][BACKSTEP_SIZE];
-    s->inbuf_ptr = s->inbuf;
 #ifdef DEBUG
     s->frame_count = 0;
 #endif
@@ -1585,29 +1583,6 @@ static int mp_decode_layer2(MPADecodeContext *s)
     return 3 * 12;
 }
 
-/*
- * Seek back in the stream for backstep bytes (at most 511 bytes)
- */
-static void seek_to_maindata(MPADecodeContext *s, unsigned int backstep)
-{
-    uint8_t *ptr;
-
-    /* compute current position in stream */
-    ptr = (uint8_t *)(s->gb.buffer + (get_bits_count(&s->gb)>>3));
-
-    /* copy old data before current one */
-    ptr -= backstep;
-    memcpy(ptr, s->inbuf1[s->inbuf_index ^ 1] +
-           BACKSTEP_SIZE + s->old_frame_size - backstep, backstep);
-    /* init get bits again */
-    init_get_bits(&s->gb, ptr, (s->frame_size + backstep)*8);
-
-    /* prepare next buffer */
-    s->inbuf_index ^= 1;
-    s->inbuf = &s->inbuf1[s->inbuf_index][BACKSTEP_SIZE];
-    s->old_frame_size = s->frame_size;
-}
-
 static inline void lsf_sf_expand(int *slen,
                                  int sf, int n1, int n2, int n3)
 {
@@ -1676,12 +1651,13 @@ static inline int get_bitsz(GetBitContext *s, int n)
 }
 
 static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
-                          int16_t *exponents, int end_pos)
+                          int16_t *exponents, int end_pos2)
 {
     int s_index;
     int i;
-    int last_pos;
+    int last_pos, bits_left;
     VLC *vlc;
+    int end_pos= FFMIN(end_pos2, s->gb.size_in_bits);
 
     /* low frequencies (called big values) */
     s_index = 0;
@@ -1705,9 +1681,22 @@ static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
         /* read huffcode and compute each couple */
         for(;j>0;j--) {
             int exponent, x, y, v;
+            int pos= get_bits_count(&s->gb);
 
-            if (get_bits_count(&s->gb) >= end_pos)
-                break;
+            if (pos >= end_pos){
+//                av_log(NULL, AV_LOG_ERROR, "pos: %d %d %d %d\n", pos, end_pos, end_pos2, s_index);
+                if(s->in_gb.buffer && pos >= s->gb.size_in_bits){
+                    s->gb= s->in_gb;
+                    s->in_gb.buffer=NULL;
+                    assert((get_bits_count(&s->gb) & 7) == 0);
+                    skip_bits_long(&s->gb, pos - end_pos);
+                    end_pos= end_pos2 + get_bits_count(&s->gb) - pos;
+                    pos= get_bits_count(&s->gb);
+                }
+//                av_log(NULL, AV_LOG_ERROR, "new pos: %d %d\n", pos, end_pos);
+                if(pos >= end_pos)
+                    break;
+            }
             y = get_vlc2(&s->gb, vlc->table, 7, 3);
 
             if(!y){
@@ -1768,14 +1757,25 @@ static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
         int pos, code;
         pos = get_bits_count(&s->gb);
         if (pos >= end_pos) {
-            if (pos > end_pos && last_pos){
+//                av_log(NULL, AV_LOG_ERROR, "pos2: %d %d %d %d\n", pos, end_pos, end_pos2, s_index);
+            if(s->in_gb.buffer && pos >= s->gb.size_in_bits){
+                s->gb= s->in_gb;
+                s->in_gb.buffer=NULL;
+                assert((get_bits_count(&s->gb) & 7) == 0);
+                skip_bits_long(&s->gb, pos - end_pos);
+                end_pos= end_pos2 + get_bits_count(&s->gb) - pos;
+                pos= get_bits_count(&s->gb);
+            }
+//                av_log(NULL, AV_LOG_ERROR, "new pos2: %d %d %d\n", pos, end_pos, s_index);
+            if (pos > end_pos && last_pos){ //FIXME last_pos is messed if we switch buffers
                 /* some encoders generate an incorrect size for this
                    part. We must go back into the data */
                 s_index -= 4;
-                init_get_bits(&s->gb, s->gb.buffer + 4*(last_pos>>5), s->gb.size_in_bits - (last_pos&(~31)));
-                skip_bits(&s->gb, last_pos&31);
+                skip_bits_long(&s->gb, last_pos - pos);
+                av_log(NULL, AV_LOG_ERROR, "overread, skip %d\n", last_pos&7);
             }
-            break;
+            if(pos >= end_pos)
+                break;
         }
         last_pos= pos;
 
@@ -1799,6 +1799,16 @@ static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
         s_index+=4;
     }
     memset(&g->sb_hybrid[s_index], 0, sizeof(*g->sb_hybrid)*(576 - s_index));
+
+    /* skip extension bits */
+    bits_left = end_pos - get_bits_count(&s->gb);
+//av_log(NULL, AV_LOG_ERROR, "left:%d buf:%p\n", bits_left, s->in_gb.buffer);
+    if (bits_left < 0) {
+        dprintf("bits_left=%d\n", bits_left);
+        return -1;
+    }
+    skip_bits_long(&s->gb, bits_left);
+
     return 0;
 }
 
@@ -2184,7 +2194,7 @@ void sample_dump(int fnum, int32_t *tab, int n)
 static int mp_decode_layer3(MPADecodeContext *s)
 {
     int nb_granules, main_data_begin, private_bits;
-    int gr, ch, blocksplit_flag, i, j, k, n, bits_pos, bits_left;
+    int gr, ch, blocksplit_flag, i, j, k, n, bits_pos;
     GranuleDef granules[2][2], *g;
     int16_t exponents[576];
 
@@ -2308,9 +2318,18 @@ static int mp_decode_layer3(MPADecodeContext *s)
     }
 
   if (!s->adu_mode) {
+    const uint8_t *ptr = s->gb.buffer + (get_bits_count(&s->gb)>>3);
     /* now we get bits from the main_data_begin offset */
     dprintf("seekback: %d\n", main_data_begin);
-    seek_to_maindata(s, main_data_begin);
+//av_log(NULL, AV_LOG_ERROR, "backstep:%d, lastbuf:%d\n", main_data_begin, s->last_buf_size);
+    if(main_data_begin > s->last_buf_size)
+        s->last_buf_size= main_data_begin;
+
+    memcpy(s->last_buf + s->last_buf_size, ptr, EXTRABYTES);
+    s->in_gb= s->gb;
+    init_get_bits(&s->gb, s->last_buf + s->last_buf_size - main_data_begin, main_data_begin*8);
+    /* prepare next buffer */
+    s->old_frame_size = s->frame_size;
   }
 
     for(gr=0;gr<nb_granules;gr++) {
@@ -2452,19 +2471,6 @@ static int mp_decode_layer3(MPADecodeContext *s)
 #if defined(DEBUG)
             sample_dump(0, g->sb_hybrid, 576);
 #endif
-
-            /* skip extension bits */
-            bits_left = g->part2_3_length - (get_bits_count(&s->gb) - bits_pos);
-            if (bits_left < 0) {
-                dprintf("bits_left=%d\n", bits_left);
-                return -1;
-            }
-            while (bits_left >= 16) {
-                skip_bits(&s->gb, 16);
-                bits_left -= 16;
-            }
-            if (bits_left > 0)
-                skip_bits(&s->gb, bits_left);
         } /* ch */
 
         if (s->nb_channels == 2)
@@ -2491,13 +2497,12 @@ static int mp_decode_layer3(MPADecodeContext *s)
 }
 
 static int mp_decode_frame(MPADecodeContext *s,
-                           OUT_INT *samples)
+                           OUT_INT *samples, const uint8_t *buf, int buf_size)
 {
     int i, nb_frames, ch;
     OUT_INT *samples_ptr;
 
-    init_get_bits(&s->gb, s->inbuf + HEADER_SIZE,
-                  (s->inbuf_ptr - s->inbuf - HEADER_SIZE)*8);
+    init_get_bits(&s->gb, buf + HEADER_SIZE, (buf_size - HEADER_SIZE)*8);
 
     /* skip error protection field */
     if (s->error_protection)
@@ -2514,6 +2519,14 @@ static int mp_decode_frame(MPADecodeContext *s,
     case 3:
     default:
         nb_frames = mp_decode_layer3(s);
+
+        if(s->in_gb.buffer)
+            s->gb= s->in_gb;
+        align_get_bits(&s->gb);
+        assert((get_bits_count(&s->gb) & 7) == 0);
+        s->last_buf_size= (s->gb.size_in_bits - get_bits_count(&s->gb))>>3;
+        memcpy(s->last_buf, s->gb.buffer + (get_bits_count(&s->gb)>>3), s->last_buf_size);
+
         break;
     }
 #if defined(DEBUG)
@@ -2550,159 +2563,58 @@ static int decode_frame(AVCodecContext * avctx,
 {
     MPADecodeContext *s = avctx->priv_data;
     uint32_t header;
-    uint8_t *buf_ptr;
-    int len, out_size;
+    int out_size;
     OUT_INT *out_samples = data;
 
-    buf_ptr = buf;
-    while (buf_size > 0) {
-        len = s->inbuf_ptr - s->inbuf;
-        if (s->frame_size == 0) {
-            /* special case for next header for first frame in free
-               format case (XXX: find a simpler method) */
-            if (s->free_format_next_header != 0) {
-                s->inbuf[0] = s->free_format_next_header >> 24;
-                s->inbuf[1] = s->free_format_next_header >> 16;
-                s->inbuf[2] = s->free_format_next_header >> 8;
-                s->inbuf[3] = s->free_format_next_header;
-                s->inbuf_ptr = s->inbuf + 4;
-                s->free_format_next_header = 0;
-                goto got_header;
-            }
-            /* no header seen : find one. We need at least HEADER_SIZE
-               bytes to parse it */
-            len = HEADER_SIZE - len;
-            if (len > buf_size)
-                len = buf_size;
-            if (len > 0) {
-                memcpy(s->inbuf_ptr, buf_ptr, len);
-                buf_ptr += len;
-                buf_size -= len;
-                s->inbuf_ptr += len;
-            }
-            if ((s->inbuf_ptr - s->inbuf) >= HEADER_SIZE) {
-            got_header:
-                header = (s->inbuf[0] << 24) | (s->inbuf[1] << 16) |
-                    (s->inbuf[2] << 8) | s->inbuf[3];
+retry:
+    if(buf_size < HEADER_SIZE)
+        return -1;
 
-                if (ff_mpa_check_header(header) < 0) {
-                    /* no sync found : move by one byte (inefficient, but simple!) */
-                    memmove(s->inbuf, s->inbuf + 1, s->inbuf_ptr - s->inbuf - 1);
-                    s->inbuf_ptr--;
-                    dprintf("skip %x\n", header);
-                    /* reset free format frame size to give a chance
-                       to get a new bitrate */
-                    s->free_format_frame_size = 0;
-                } else {
-                    if (decode_header(s, header) == 1) {
-                        /* free format: prepare to compute frame size */
-                        s->frame_size = -1;
-                    }
-                    /* update codec info */
-                    avctx->sample_rate = s->sample_rate;
-                    avctx->channels = s->nb_channels;
-                    avctx->bit_rate = s->bit_rate;
-                    avctx->sub_id = s->layer;
-                    switch(s->layer) {
-                    case 1:
-                        avctx->frame_size = 384;
-                        break;
-                    case 2:
-                        avctx->frame_size = 1152;
-                        break;
-                    case 3:
-                        if (s->lsf)
-                            avctx->frame_size = 576;
-                        else
-                            avctx->frame_size = 1152;
-                        break;
-                    }
-                }
-            }
-        } else if (s->frame_size == -1) {
-            /* free format : find next sync to compute frame size */
-            len = MPA_MAX_CODED_FRAME_SIZE - len;
-            if (len > buf_size)
-                len = buf_size;
-            if (len == 0) {
-                /* frame too long: resync */
-                s->frame_size = 0;
-                memmove(s->inbuf, s->inbuf + 1, s->inbuf_ptr - s->inbuf - 1);
-                s->inbuf_ptr--;
-            } else {
-                uint8_t *p, *pend;
-                uint32_t header1;
-                int padding;
-
-                memcpy(s->inbuf_ptr, buf_ptr, len);
-                /* check for header */
-                p = s->inbuf_ptr - 3;
-                pend = s->inbuf_ptr + len - 4;
-                while (p <= pend) {
-                    header = (p[0] << 24) | (p[1] << 16) |
-                        (p[2] << 8) | p[3];
-                    header1 = (s->inbuf[0] << 24) | (s->inbuf[1] << 16) |
-                        (s->inbuf[2] << 8) | s->inbuf[3];
-                    /* check with high probability that we have a
-                       valid header */
-                    if ((header & SAME_HEADER_MASK) ==
-                        (header1 & SAME_HEADER_MASK)) {
-                        /* header found: update pointers */
-                        len = (p + 4) - s->inbuf_ptr;
-                        buf_ptr += len;
-                        buf_size -= len;
-                        s->inbuf_ptr = p;
-                        /* compute frame size */
-                        s->free_format_next_header = header;
-                        s->free_format_frame_size = s->inbuf_ptr - s->inbuf;
-                        padding = (header1 >> 9) & 1;
-                        if (s->layer == 1)
-                            s->free_format_frame_size -= padding * 4;
-                        else
-                            s->free_format_frame_size -= padding;
-                        dprintf("free frame size=%d padding=%d\n",
-                                s->free_format_frame_size, padding);
-                        decode_header(s, header1);
-                        goto next_data;
-                    }
-                    p++;
-                }
-                /* not found: simply increase pointers */
-                buf_ptr += len;
-                s->inbuf_ptr += len;
-                buf_size -= len;
-            }
-        } else if (len < s->frame_size) {
-            if (s->frame_size > MPA_MAX_CODED_FRAME_SIZE)
-                s->frame_size = MPA_MAX_CODED_FRAME_SIZE;
-            len = s->frame_size - len;
-            if (len > buf_size)
-                len = buf_size;
-            memcpy(s->inbuf_ptr, buf_ptr, len);
-            buf_ptr += len;
-            s->inbuf_ptr += len;
-            buf_size -= len;
-        }
-    next_data:
-        if (s->frame_size > 0 &&
-            (s->inbuf_ptr - s->inbuf) >= s->frame_size) {
-            if (avctx->parse_only) {
-                /* simply return the frame data */
-                *(uint8_t **)data = s->inbuf;
-                out_size = s->inbuf_ptr - s->inbuf;
-            } else {
-                out_size = mp_decode_frame(s, out_samples);
-            }
-            s->inbuf_ptr = s->inbuf;
-            s->frame_size = 0;
-            if(out_size>=0)
-                *data_size = out_size;
-            else
-                av_log(avctx, AV_LOG_DEBUG, "Error while decoding mpeg audio frame\n"); //FIXME return -1 / but also return the number of bytes consumed
-            break;
-        }
+    header = (buf[0] << 24) | (buf[1] << 16) | (buf[2] << 8) | buf[3];
+    if(ff_mpa_check_header(header) < 0){
+        buf++;
+//        buf_size--;
+        av_log(avctx, AV_LOG_ERROR, "header missing skiping one byte\n");
+        goto retry;
     }
-    return buf_ptr - buf;
+
+    if (decode_header(s, header) == 1) {
+        /* free format: prepare to compute frame size */
+        s->frame_size = -1;
+        return -1;
+    }
+    /* update codec info */
+    avctx->sample_rate = s->sample_rate;
+    avctx->channels = s->nb_channels;
+    avctx->bit_rate = s->bit_rate;
+    avctx->sub_id = s->layer;
+    switch(s->layer) {
+    case 1:
+        avctx->frame_size = 384;
+        break;
+    case 2:
+        avctx->frame_size = 1152;
+        break;
+    case 3:
+        if (s->lsf)
+            avctx->frame_size = 576;
+        else
+            avctx->frame_size = 1152;
+        break;
+    }
+
+    if(s->frame_size<=0 || s->frame_size < buf_size){
+        av_log(avctx, AV_LOG_ERROR, "incomplete frame\n");
+        return -1;
+    }
+
+    out_size = mp_decode_frame(s, out_samples, buf, buf_size);
+    if(out_size>=0)
+        *data_size = out_size;
+    else
+        av_log(avctx, AV_LOG_DEBUG, "Error while decoding mpeg audio frame\n"); //FIXME return -1 / but also return the number of bytes consumed
+    s->frame_size = 0;
+    return buf_size;
 }
 
 
@@ -2727,12 +2639,8 @@ static int decode_frame_adu(AVCodecContext * avctx,
     if (len > MPA_MAX_CODED_FRAME_SIZE)
         len = MPA_MAX_CODED_FRAME_SIZE;
 
-    memcpy(s->inbuf, buf, len);
-    s->inbuf_ptr = s->inbuf + len;
-
     // Get header and restore sync word
-    header = (s->inbuf[0] << 24) | (s->inbuf[1] << 16) |
-              (s->inbuf[2] << 8) | s->inbuf[3] | 0xffe00000;
+    header = (buf[0] << 24) | (buf[1] << 16) | (buf[2] << 8) | buf[3] | 0xffe00000;
 
     if (ff_mpa_check_header(header) < 0) { // Bad header, discard frame
         *data_size = 0;
@@ -2749,11 +2657,9 @@ static int decode_frame_adu(AVCodecContext * avctx,
     avctx->frame_size=s->frame_size = len;
 
     if (avctx->parse_only) {
-        /* simply return the frame data */
-        *(uint8_t **)data = s->inbuf;
-        out_size = s->inbuf_ptr - s->inbuf;
+        out_size = buf_size;
     } else {
-        out_size = mp_decode_frame(s, out_samples);
+        out_size = mp_decode_frame(s, out_samples, buf, buf_size);
     }
 
     *data_size = out_size;
@@ -2816,8 +2722,6 @@ static int decode_init_mp3on4(AVCodecContext * avctx)
     for (i = 1; i < s->frames; i++) {
         s->mp3decctx[i] = av_mallocz(sizeof(MPADecodeContext));
         s->mp3decctx[i]->compute_antialias = s->mp3decctx[0]->compute_antialias;
-        s->mp3decctx[i]->inbuf = &s->mp3decctx[i]->inbuf1[0][BACKSTEP_SIZE];
-        s->mp3decctx[i]->inbuf_ptr = s->mp3decctx[i]->inbuf;
         s->mp3decctx[i]->adu_mode = 1;
     }
 
@@ -2877,13 +2781,9 @@ static int decode_frame_mp3on4(AVCodecContext * avctx,
             fsize = MPA_MAX_CODED_FRAME_SIZE;
         m = s->mp3decctx[fr];
         assert (m != NULL);
-        /* copy original to new */
-        m->inbuf_ptr = m->inbuf + fsize;
-        memcpy(m->inbuf, start, fsize);
 
         // Get header
-        header = (m->inbuf[0] << 24) | (m->inbuf[1] << 16) |
-                  (m->inbuf[2] << 8) | m->inbuf[3] | 0xfff00000;
+        header = (start[0] << 24) | (start[1] << 16) | (start[2] << 8) | start[3] | 0xfff00000;
 
         if (ff_mpa_check_header(header) < 0) { // Bad header, discard block
             *data_size = 0;
@@ -2891,7 +2791,7 @@ static int decode_frame_mp3on4(AVCodecContext * avctx,
         }
 
         decode_header(m, header);
-        mp_decode_frame(m, decoded_buf);
+        mp_decode_frame(m, decoded_buf, start, fsize);
 
         n = MPA_FRAME_SIZE * m->nb_channels;
         out_size += n * sizeof(OUT_INT);
