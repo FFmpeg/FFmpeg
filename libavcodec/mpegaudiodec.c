@@ -1252,7 +1252,6 @@ static int decode_header(MPADecodeContext *s, uint32_t header)
 int mpa_decode_header(AVCodecContext *avctx, uint32_t head)
 {
     MPADecodeContext s1, *s = &s1;
-    memset( s, 0, sizeof(MPADecodeContext) );
 
     if (ff_mpa_check_header(head) != 0)
         return -1;
