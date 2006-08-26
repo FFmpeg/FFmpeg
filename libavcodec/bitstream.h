@@ -553,7 +553,7 @@ static inline void skip_bits_long(GetBitContext *s, int n){
             "shldl %2, %1, %0          \n\t"\
             "shll %2, %1               \n\t"\
             : "+r" (name##_cache0), "+r" (name##_cache1)\
-            : "Ic" ((uint8_t)num)\
+            : "Ic" ((uint8_t)(num))\
            );
 #else
 #   define SKIP_CACHE(name, gb, num)\
