@@ -102,7 +102,6 @@ typedef struct MPADecodeContext {
     int sample_rate;
     int sample_rate_index; /* between 0 and 8 */
     int bit_rate;
-    int old_frame_size;
     GetBitContext gb;
     GetBitContext in_gb;
     int nb_channels;
@@ -2328,8 +2327,6 @@ static int mp_decode_layer3(MPADecodeContext *s)
     memcpy(s->last_buf + s->last_buf_size, ptr, EXTRABYTES);
     s->in_gb= s->gb;
     init_get_bits(&s->gb, s->last_buf + s->last_buf_size - main_data_begin, main_data_begin*8);
-    /* prepare next buffer */
-    s->old_frame_size = s->frame_size;
   }
 
     for(gr=0;gr<nb_granules;gr++) {
