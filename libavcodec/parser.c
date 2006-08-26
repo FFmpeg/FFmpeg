@@ -634,9 +634,7 @@ static int mpegaudio_parse(AVCodecParserContext *s1,
             }
             /* no header seen : find one. We need at least MPA_HEADER_SIZE
                bytes to parse it */
-            len = MPA_HEADER_SIZE - len;
-            if (len > buf_size)
-                len = buf_size;
+            len = FFMIN(MPA_HEADER_SIZE - len, buf_size);
             if (len > 0) {
                 memcpy(s->inbuf_ptr, buf_ptr, len);
                 buf_ptr += len;
@@ -736,14 +734,25 @@ static int mpegaudio_parse(AVCodecParserContext *s1,
         if (len < s->frame_size) {
             if (s->frame_size > MPA_MAX_CODED_FRAME_SIZE)
                 s->frame_size = MPA_MAX_CODED_FRAME_SIZE;
-            len = s->frame_size - len;
-            if (len > buf_size)
-                len = buf_size;
+            len = FFMIN(s->frame_size - len, buf_size);
             memcpy(s->inbuf_ptr, buf_ptr, len);
             buf_ptr += len;
             s->inbuf_ptr += len;
             buf_size -= len;
         }
+
+        if(s->frame_size > 0 && buf_ptr - buf == s->inbuf_ptr - s->inbuf
+           && buf_size + buf_ptr - buf >= s->frame_size){
+            if(s->header_count > 0){
+                *poutbuf = buf;
+                *poutbuf_size = s->frame_size;
+            }
+            buf_ptr = buf + s->frame_size;
+            s->inbuf_ptr = s->inbuf;
+            s->frame_size = 0;
+            break;
+        }
+
         //    next_data:
         if (s->frame_size > 0 &&
             (s->inbuf_ptr - s->inbuf) >= s->frame_size) {
