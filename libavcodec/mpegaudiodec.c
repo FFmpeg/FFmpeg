@@ -1673,7 +1673,7 @@ static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
         vlc = &huff_vlc[l];
 
         if(!l){
-            memset(&g->sb_hybrid[s_index], 0, sizeof(*g->sb_hybrid)*j);
+            memset(&g->sb_hybrid[s_index], 0, sizeof(*g->sb_hybrid)*2*j);
             s_index += 2*j;
             continue;
         }
