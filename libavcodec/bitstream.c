@@ -73,12 +73,6 @@ unsigned int show_bits_long(GetBitContext *s, int n){
     }
 }
 
-void align_get_bits(GetBitContext *s)
-{
-    int n= (-get_bits_count(s)) & 7;
-    if(n) skip_bits(s, n);
-}
-
 int check_marker(GetBitContext *s, const char *msg)
 {
     int bit= get_bits1(s);

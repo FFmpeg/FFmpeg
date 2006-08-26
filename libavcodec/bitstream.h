@@ -444,6 +444,11 @@ static inline int unaligned32_le(const void *v)
 static inline int get_bits_count(GetBitContext *s){
     return s->index;
 }
+
+static inline void skip_bits_long(GetBitContext *s, int n){
+    s->index + n;
+}
+
 #elif defined LIBMPEG2_BITSTREAM_READER
 //libmpeg2 like reader
 
@@ -570,6 +575,22 @@ static inline int get_bits_count(GetBitContext *s){
 
 static inline int get_bits_count(GetBitContext *s){
     return ((uint8_t*)s->buffer_ptr - s->buffer)*8 - 32 + s->bit_count;
+}
+
+static inline void skip_bits_long(GetBitContext *s, int n){
+    OPEN_READER(re, s)
+    re_bit_count += n;
+    re_buffer_ptr += s->bit_count>>5;
+    re_bit_count &= 31;
+    if(re_bit_count<=0){
+        re_bit_count += 32;
+        re_buffer_ptr--;
+    }
+    re_cache0=
+    re_cache1= 0;
+    UPDATE_CACHE(re, s)
+    re_cache1= 0;
+    CLOSE_READER(re, s)
 }
 
 #endif
@@ -720,8 +741,13 @@ static inline void init_get_bits(GetBitContext *s,
 #endif
 }
 
+static void align_get_bits(GetBitContext *s)
+{
+    int n= (-get_bits_count(s)) & 7;
+    if(n) skip_bits(s, n);
+}
+
 int check_marker(GetBitContext *s, const char *msg);
-void align_get_bits(GetBitContext *s);
 int init_vlc(VLC *vlc, int nb_bits, int nb_codes,
              const void *bits, int bits_wrap, int bits_size,
              const void *codes, int codes_wrap, int codes_size,
