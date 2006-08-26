@@ -1745,6 +1745,7 @@ static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
                 if (get_bits1(&s->gb))
                     v = -v;
                 g->sb_hybrid[s_index+!!y] = v;
+                g->sb_hybrid[s_index+ !y] = 0;
             }
             s_index+=2;
         }
