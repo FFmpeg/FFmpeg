@@ -582,14 +582,9 @@ static inline void skip_bits_long(GetBitContext *s, int n){
     re_bit_count += n;
     re_buffer_ptr += s->bit_count>>5;
     re_bit_count &= 31;
-    if(re_bit_count<=0){
-        re_bit_count += 32;
-        re_buffer_ptr--;
-    }
-    re_cache0=
-    re_cache1= 0;
+    re_cache0 = be2me_32( re_buffer_ptr[-1] ) << re_bit_count;
+    re_cache1 = 0;
     UPDATE_CACHE(re, s)
-    re_cache1= 0;
     CLOSE_READER(re, s)
 }
 
