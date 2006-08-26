@@ -446,7 +446,7 @@ static inline int get_bits_count(GetBitContext *s){
 }
 
 static inline void skip_bits_long(GetBitContext *s, int n){
-    s->index + n;
+    s->index += n;
 }
 
 #elif defined LIBMPEG2_BITSTREAM_READER
@@ -510,6 +510,16 @@ static inline void skip_bits_long(GetBitContext *s, int n){
 
 static inline int get_bits_count(GetBitContext *s){
     return (s->buffer_ptr - s->buffer)*8 - 16 + s->bit_count;
+}
+
+static inline void skip_bits_long(GetBitContext *s, int n){
+    OPEN_READER(re, s)
+    re_bit_count += n;
+    re_buffer_ptr += 2*(re_bit_count>>4);
+    re_bit_count &= 15;
+    re_cache = ((re_buffer_ptr[-2]<<8) + re_buffer_ptr[-1]) << (16+re_bit_count);
+    UPDATE_CACHE(re, s)
+    CLOSE_READER(re, s)
 }
 
 #elif defined A32_BITSTREAM_READER
@@ -706,25 +716,9 @@ static inline void init_get_bits(GetBitContext *s,
 #ifdef ALT_BITSTREAM_READER
     s->index=0;
 #elif defined LIBMPEG2_BITSTREAM_READER
-#ifdef LIBMPEG2_BITSTREAM_READER_HACK
-  if ((int)buffer&1) {
-     /* word alignment */
-    s->cache = (*buffer++)<<24;
-    s->buffer_ptr = buffer;
-    s->bit_count = 16-8;
-  } else
-#endif
-  {
-    s->buffer_ptr = buffer;
-    s->bit_count = 16;
-    s->cache = 0;
-  }
-    {
-        OPEN_READER(re, s)
-        UPDATE_CACHE(re, s)
-        UPDATE_CACHE(re, s)
-        CLOSE_READER(re, s)
-    }
+    s->buffer_ptr = (uint8_t*)((intptr_t)buffer&(~1));
+    s->bit_count = 16 + 8*((intptr_t)buffer&1);
+    skip_bits_long(s, 0);
 #elif defined A32_BITSTREAM_READER
     s->buffer_ptr = (uint32_t*)((intptr_t)buffer&(~3));
     s->bit_count = 32 + 8*((intptr_t)buffer&3);
