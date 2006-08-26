@@ -719,20 +719,16 @@ static inline void init_get_bits(GetBitContext *s,
     s->bit_count = 16;
     s->cache = 0;
   }
-#elif defined A32_BITSTREAM_READER
-    s->buffer_ptr = (uint32_t*)buffer;
-    s->bit_count = 32;
-    s->cache0 = 0;
-    s->cache1 = 0;
-#endif
     {
         OPEN_READER(re, s)
         UPDATE_CACHE(re, s)
         UPDATE_CACHE(re, s)
         CLOSE_READER(re, s)
     }
-#ifdef A32_BITSTREAM_READER
-    s->cache1 = 0;
+#elif defined A32_BITSTREAM_READER
+    s->buffer_ptr = (uint32_t*)((intptr_t)buffer&(~3));
+    s->bit_count = 32 + 8*((intptr_t)buffer&3);
+    skip_bits_long(s, 0);
 #endif
 }
 
