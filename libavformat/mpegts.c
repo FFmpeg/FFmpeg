@@ -1203,7 +1203,7 @@ goto_auto_guess:
             url_fseek(pb, pos, SEEK_SET);
             mpegts_scan_sdt(ts);
 
-            handle_packets(ts, MAX_SCAN_PACKETS);
+            handle_packets(ts, s->probesize);
 
             if (ts->nb_services <= 0) {
                 /* no SDT found, we try to look at the PAT */
@@ -1217,7 +1217,7 @@ goto_auto_guess:
                 url_fseek(pb, pos, SEEK_SET);
                 mpegts_scan_pat(ts);
 
-                handle_packets(ts, MAX_SCAN_PACKETS);
+                handle_packets(ts, s->probesize);
             }
 
             if (ts->nb_services <= 0) {
@@ -1241,7 +1241,7 @@ goto_auto_guess:
                 url_fseek(pb, pos, SEEK_SET);
                 mpegts_set_service(ts, sid, set_service_cb, ts);
 
-                handle_packets(ts, MAX_SCAN_PACKETS);
+                handle_packets(ts, s->probesize);
             }
             /* if could not find service, exit */
 
