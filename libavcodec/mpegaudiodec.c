@@ -2517,15 +2517,26 @@ static int mp_decode_frame(MPADecodeContext *s,
     default:
         nb_frames = mp_decode_layer3(s);
 
-        if(s->in_gb.buffer)
+        s->last_buf_size=0;
+        if(s->in_gb.buffer){
+            align_get_bits(&s->gb);
+            i= (s->gb.size_in_bits - get_bits_count(&s->gb))>>3;
+            if(i > 0 && i <= BACKSTEP_SIZE){
+                memmove(s->last_buf, s->gb.buffer + (get_bits_count(&s->gb)>>3), i);
+                s->last_buf_size=i;
+            }
             s->gb= s->in_gb;
+        }
+
         align_get_bits(&s->gb);
         assert((get_bits_count(&s->gb) & 7) == 0);
-        s->last_buf_size= (s->gb.size_in_bits - get_bits_count(&s->gb))>>3;
-        if(s->last_buf_size <0 || s->last_buf_size > BACKSTEP_SIZE || nb_frames<0)
-            s->last_buf_size= FFMIN(BACKSTEP_SIZE, buf_size - HEADER_SIZE);
-        assert(s->last_buf_size <= buf_size - HEADER_SIZE);
-        memcpy(s->last_buf, s->gb.buffer + buf_size - HEADER_SIZE - s->last_buf_size, s->last_buf_size);
+        i= (s->gb.size_in_bits - get_bits_count(&s->gb))>>3;
+
+        if(i<0 || s->last_buf_size + i > BACKSTEP_SIZE || nb_frames<0)
+            i= FFMIN(BACKSTEP_SIZE-s->last_buf_size, buf_size - HEADER_SIZE);
+        assert(i <= buf_size - HEADER_SIZE && i>= 0);
+            memcpy(s->last_buf + s->last_buf_size, s->gb.buffer + buf_size - HEADER_SIZE - i, i);
+        s->last_buf_size += i;
 
         break;
     }
