@@ -252,6 +252,7 @@ static int sws_flags = SWS_BICUBIC;
 const char **opt_names=NULL;
 int opt_name_count=0;
 AVCodecContext *avctx_opts;
+AVFormatContext *avformat_opts;
 
 static AVBitStreamFilterContext *video_bitstream_filters=NULL;
 static AVBitStreamFilterContext *audio_bitstream_filters=NULL;
@@ -2780,7 +2781,10 @@ static void opt_input_file(const char *filename)
                    !strcmp( filename, "/dev/stdin" );
 
     /* get default parameters from command line */
+    ic = av_alloc_format_context();
+
     memset(ap, 0, sizeof(*ap));
+    ap->prealloced_context = 1;
     ap->sample_rate = audio_sample_rate;
     ap->channels = audio_channels;
     ap->time_base.den = frame_rate;
@@ -2797,6 +2801,12 @@ static void opt_input_file(const char *filename)
     if(pgmyuv_compatibility_hack)
         ap->video_codec_id= CODEC_ID_PGMYUV;
 
+    for(i=0; i<opt_name_count; i++){
+        AVOption *opt;
+        double d= av_get_double(avformat_opts, opt_names[i], &opt);
+        if(d==d && (opt->flags&AV_OPT_FLAG_DECODING_PARAM))
+            av_set_double(ic, opt_names[i], d);
+    }
     /* open the input file with generic libav function */
     err = av_open_input_file(&ic, filename, file_iformat, 0, ap);
     if (err < 0) {
@@ -3929,6 +3939,8 @@ static void show_version(void)
 static int opt_default(const char *opt, const char *arg){
     AVOption *o= av_set_string(avctx_opts, opt, arg);
     if(!o)
+        o = av_set_string(avformat_opts, opt, arg);
+    if(!o)
         return -1;
 
 //    av_log(NULL, AV_LOG_ERROR, "%s:%s: %f 0x%0X\n", opt, arg, av_get_double(avctx_opts, opt, NULL), (int)av_get_int(avctx_opts, opt, NULL));
@@ -4191,6 +4203,7 @@ static void show_help(void)
                       OPT_EXPERT | OPT_AUDIO | OPT_VIDEO | OPT_GRAB,
                       OPT_EXPERT);
     av_opt_show(avctx_opts, NULL);
+    av_opt_show(avformat_opts, NULL);
 
     exit(1);
 }
@@ -4208,6 +4221,7 @@ int main(int argc, char **argv)
     av_register_all();
 
     avctx_opts= avcodec_alloc_context();
+    avformat_opts = av_alloc_format_context();
 
     if (argc <= 1)
         show_help();

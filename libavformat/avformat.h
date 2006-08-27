@@ -112,6 +112,7 @@ typedef struct AVFormatParameters {
                                   mpeg2ts_raw is TRUE */
     int initial_pause:1;       /* do not begin to play the stream
                                   immediately (RTSP only) */
+    int prealloced_context:1;
     enum CodecID video_codec_id;
     enum CodecID audio_codec_id;
 } AVFormatParameters;

@@ -18,6 +18,7 @@
  */
 #include "avformat.h"
 #include "allformats.h"
+#include "opt.h"
 
 #undef NDEBUG
 #include <assert.h>
@@ -453,13 +454,28 @@ static const char* format_to_name(void* ptr)
     else return "NULL";
 }
 
-static const AVClass av_format_context_class = { "AVFormatContext", format_to_name };
+#define OFFSET(x) (int)&((AVFormatContext*)0)->x
+#define DEFAULT 0 //should be NAN but it doesnt work as its not a constant in glibc as required by ANSI/ISO C
+//these names are too long to be readable
+#define E AV_OPT_FLAG_ENCODING_PARAM
+#define D AV_OPT_FLAG_DECODING_PARAM
+
+static const AVOption options[]={
+{NULL},
+};
+
+static const AVClass av_format_context_class = { "AVFormatContext", format_to_name, options };
+
+void avformat_get_context_defaults(AVFormatContext *s){
+    memset(s, 0, sizeof(AVFormatContext));
+}
 
 AVFormatContext *av_alloc_format_context(void)
 {
     AVFormatContext *ic;
     ic = av_mallocz(sizeof(AVFormatContext));
     if (!ic) return ic;
+    avformat_get_context_defaults(ic);
     ic->av_class = &av_format_context_class;
     return ic;
 }
@@ -481,7 +497,10 @@ int av_open_input_stream(AVFormatContext **ic_ptr,
         memset(ap, 0, sizeof(default_ap));
     }
 
-    ic = av_alloc_format_context();
+    if(!ap->prealloced_context)
+        ic = av_alloc_format_context();
+    else
+        ic = *ic_ptr;
     if (!ic) {
         err = AVERROR_NOMEM;
         goto fail;
