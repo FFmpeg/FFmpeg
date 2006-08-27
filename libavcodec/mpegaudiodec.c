@@ -2522,7 +2522,10 @@ static int mp_decode_frame(MPADecodeContext *s,
         align_get_bits(&s->gb);
         assert((get_bits_count(&s->gb) & 7) == 0);
         s->last_buf_size= (s->gb.size_in_bits - get_bits_count(&s->gb))>>3;
-        memcpy(s->last_buf, s->gb.buffer + (get_bits_count(&s->gb)>>3), s->last_buf_size);
+        if(s->last_buf_size <0 || s->last_buf_size > BACKSTEP_SIZE || nb_frames<0)
+            s->last_buf_size= FFMIN(BACKSTEP_SIZE, buf_size - HEADER_SIZE);
+        assert(s->last_buf_size <= buf_size - HEADER_SIZE);
+        memcpy(s->last_buf, s->gb.buffer + buf_size - HEADER_SIZE - s->last_buf_size, s->last_buf_size);
 
         break;
     }
