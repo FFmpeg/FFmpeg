@@ -1771,7 +1771,7 @@ static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
                    part. We must go back into the data */
                 s_index -= 4;
                 skip_bits_long(&s->gb, last_pos - pos);
-                av_log(NULL, AV_LOG_ERROR, "overread, skip %d\n", last_pos&7);
+                av_log(NULL, AV_LOG_DEBUG, "overread, skip %d\n", last_pos - pos);
             }
             if(pos >= end_pos)
                 break;
