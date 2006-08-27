@@ -295,28 +295,30 @@ static inline void renorm_cabac_decoder(CABACContext *c){
 }
 
 static inline void renorm_cabac_decoder_once(CABACContext *c){
-    int mask= (c->range - (0x200 << CABAC_BITS))>>31;
-    c->range+= c->range&mask;
-    c->low  += c->low  &mask;
+    int shift= (uint32_t)(c->range - (0x200 << CABAC_BITS))>>31;
+    c->range<<= shift;
+    c->low  <<= shift;
     if(!(c->low & CABAC_MASK))
         refill(c);
 }
 
 static inline int get_cabac(CABACContext *c, uint8_t * const state){
-    int RangeLPS= c->lps_range[*state][c->range>>(CABAC_BITS+7)]<<(CABAC_BITS+1);
+    //FIXME gcc generates duplicate load/stores for c->low and c->range
+    int s = *state;
+    int RangeLPS= c->lps_range[s][c->range>>(CABAC_BITS+7)]<<(CABAC_BITS+1);
     int bit, lps_mask attribute_unused;
 
     c->range -= RangeLPS;
 #if 1
     if(c->low < c->range){
-        bit= (*state)&1;
-        *state= c->mps_state[*state];
+        bit= s&1;
+        *state= c->mps_state[s];
         renorm_cabac_decoder_once(c);
     }else{
 //        int shift= ff_h264_norm_shift[RangeLPS>>17];
-        bit= ((*state)&1)^1;
+        bit= (s&1)^1;
         c->low -= c->range;
-        *state= c->lps_state[*state];
+        *state= c->lps_state[s];
         c->range = RangeLPS;
         renorm_cabac_decoder(c);
 /*        c->range = RangeLPS<<shift;
@@ -331,8 +333,8 @@ static inline int get_cabac(CABACContext *c, uint8_t * const state){
     c->low -= c->range & lps_mask;
     c->range += (RangeLPS - c->range) & lps_mask;
 
-    bit= ((*state)^lps_mask)&1;
-    *state= c->mps_state[(*state) - (128&lps_mask)];
+    bit= (s^lps_mask)&1;
+    *state= c->mps_state[s - (128&lps_mask)];
 
     lps_mask= ff_h264_norm_shift[c->range>>(CABAC_BITS+2)];
     c->range<<= lps_mask;
