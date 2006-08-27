@@ -341,6 +341,8 @@ typedef struct AVFormatContext {
 #define AVFMT_FLAG_GENPTS       0x0001 ///< generate pts if missing even if it requires parsing future frames
 
     int loop_input;
+    /* decoding: size of data to probe; encoding unused */
+    unsigned int probesize;
 } AVFormatContext;
 
 typedef struct AVPacketList {

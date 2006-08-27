@@ -461,6 +461,7 @@ static const char* format_to_name(void* ptr)
 #define D AV_OPT_FLAG_DECODING_PARAM
 
 static const AVOption options[]={
+{"probesize", NULL, OFFSET(probesize), FF_OPT_TYPE_INT, DEFAULT, 32, INT_MAX, D},
 {NULL},
 };
 
@@ -468,6 +469,9 @@ static const AVClass av_format_context_class = { "AVFormatContext", format_to_na
 
 void avformat_get_context_defaults(AVFormatContext *s){
     memset(s, 0, sizeof(AVFormatContext));
+
+    /* from mpegts.c: 1.0 second at 24Mbit/s */
+    s->probesize=32000;
 }
 
 AVFormatContext *av_alloc_format_context(void)
