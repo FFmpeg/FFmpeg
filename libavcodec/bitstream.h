@@ -8,6 +8,10 @@
 
 #include "log.h"
 
+#if defined(ALT_BITSTREAM_READER_LE) && !defined(ALT_BITSTREAM_READER)
+#define ALT_BITSTREAM_READER
+#endif
+
 //#define ALT_BITSTREAM_WRITER
 //#define ALIGNED_BITSTREAM_WRITER
 #if !defined(LIBMPEG2_BITSTREAM_READER) && !defined(A32_BITSTREAM_READER) && !defined(ALT_BITSTREAM_READER)

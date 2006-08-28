@@ -31,6 +31,7 @@
  * @file dv.c
  * DV codec.
  */
+#define ALT_BITSTREAM_READER
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mpegvideo.h"
@@ -269,11 +270,6 @@ static const uint16_t block_sizes[6] = {
 static const int vs_total_ac_bits = (100 * 4 + 68*2) * 5;
 /* see dv_88_areas and dv_248_areas for details */
 static const int mb_area_start[5] = { 1, 6, 21, 43, 64 };
-
-#ifndef ALT_BITSTREAM_READER
-#warning only works with ALT_BITSTREAM_READER
-static int re_index; //Hack to make it compile
-#endif
 
 static inline int get_bits_left(GetBitContext *s)
 {
