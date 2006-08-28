@@ -53,6 +53,9 @@ static const uint64_t ff_pw_32 attribute_used __attribute__ ((aligned(8))) = 0x0
 static const uint64_t ff_pw_64 attribute_used __attribute__ ((aligned(8))) = 0x0040004000400040ULL;
 static const uint64_t ff_pw_15 attribute_used __attribute__ ((aligned(8))) = 0x000F000F000F000FULL;
 
+static const uint64_t ff_pb_1  attribute_used __attribute__ ((aligned(8))) = 0x0101010101010101ULL;
+static const uint64_t ff_pb_3  attribute_used __attribute__ ((aligned(8))) = 0x0303030303030303ULL;
+static const uint64_t ff_pb_7  attribute_used __attribute__ ((aligned(8))) = 0x0707070707070707ULL;
 static const uint64_t ff_pb_3F attribute_used __attribute__ ((aligned(8))) = 0x3F3F3F3F3F3F3F3FULL;
 static const uint64_t ff_pb_FC attribute_used __attribute__ ((aligned(8))) = 0xFCFCFCFCFCFCFCFCULL;
 
@@ -3282,6 +3285,7 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             c->h264_h_loop_filter_chroma= h264_h_loop_filter_chroma_mmx2;
             c->h264_v_loop_filter_chroma_intra= h264_v_loop_filter_chroma_intra_mmx2;
             c->h264_h_loop_filter_chroma_intra= h264_h_loop_filter_chroma_intra_mmx2;
+            c->h264_loop_filter_strength= h264_loop_filter_strength_mmx2;
 
             c->weight_h264_pixels_tab[0]= ff_h264_weight_16x16_mmx2;
             c->weight_h264_pixels_tab[1]= ff_h264_weight_16x8_mmx2;

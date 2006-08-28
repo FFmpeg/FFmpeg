@@ -4111,6 +4111,7 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     c->h264_h_loop_filter_chroma= h264_h_loop_filter_chroma_c;
     c->h264_v_loop_filter_chroma_intra= h264_v_loop_filter_chroma_intra_c;
     c->h264_h_loop_filter_chroma_intra= h264_h_loop_filter_chroma_intra_c;
+    c->h264_loop_filter_strength= NULL;
 
     c->h263_h_loop_filter= h263_h_loop_filter_c;
     c->h263_v_loop_filter= h263_v_loop_filter_c;

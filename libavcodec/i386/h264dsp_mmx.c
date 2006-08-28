@@ -561,6 +561,101 @@ static void h264_h_loop_filter_chroma_intra_mmx2(uint8_t *pix, int stride, int a
     transpose4x4(pix-2+4*stride, trans+4, stride, 8);
 }
 
+static void h264_loop_filter_strength_mmx2( int16_t bS[2][4][4], uint8_t nnz[40], int8_t ref[2][40], int16_t mv[2][40][2],
+                                            int bidir, int edges, int step, int mask_mv0, int mask_mv1 ) {
+    int dir;
+    asm volatile(
+        "pxor %%mm7, %%mm7 \n\t"
+        "movq %0, %%mm6 \n\t"
+        "movq %1, %%mm5 \n\t"
+        "movq %2, %%mm4 \n\t"
+        ::"m"(ff_pb_1), "m"(ff_pb_3), "m"(ff_pb_7)
+    );
+    // could do a special case for dir==0 && edges==1, but it only reduces the
+    // average filter time by 1.2%
+    for( dir=1; dir>=0; dir-- ) {
+        const int d_idx = dir ? -8 : -1;
+        const int mask_mv = dir ? mask_mv1 : mask_mv0;
+        const uint64_t mask_dir = dir ? 0 : 0xffffffffffffffffULL;
+        int b_idx, edge, l;
+        for( b_idx=12, edge=0; edge<edges; edge+=step, b_idx+=8*step ) {
+            asm volatile(
+                "pand %0, %%mm0 \n\t"
+                ::"m"(mask_dir)
+            );
+            if(!(mask_mv & edge)) {
+                asm volatile("pxor %%mm0, %%mm0 \n\t":);
+                for( l = bidir; l >= 0; l-- ) {
+                    asm volatile(
+                        "movd %0, %%mm1 \n\t"
+                        "punpckldq %1, %%mm1 \n\t"
+                        "movq %%mm1, %%mm2 \n\t"
+                        "psrlw $7, %%mm2 \n\t"
+                        "pand %%mm6, %%mm2 \n\t"
+                        "por %%mm2, %%mm1 \n\t" // ref_cache with -2 mapped to -1
+                        "punpckldq %%mm1, %%mm2 \n\t"
+                        "pcmpeqb %%mm2, %%mm1 \n\t"
+                        "paddb %%mm6, %%mm1 \n\t"
+                        "punpckhbw %%mm7, %%mm1 \n\t" // ref[b] != ref[bn]
+                        "por %%mm1, %%mm0 \n\t"
+
+                        "movq %2, %%mm1 \n\t"
+                        "movq %3, %%mm2 \n\t"
+                        "psubw %4, %%mm1 \n\t"
+                        "psubw %5, %%mm2 \n\t"
+                        "packsswb %%mm2, %%mm1 \n\t"
+                        "paddb %%mm5, %%mm1 \n\t"
+                        "pminub %%mm4, %%mm1 \n\t"
+                        "pcmpeqb %%mm4, %%mm1 \n\t" // abs(mv[b] - mv[bn]) >= limit
+                        "por %%mm1, %%mm0 \n\t"
+                        ::"m"(ref[l][b_idx]),
+                          "m"(ref[l][b_idx+d_idx]),
+                          "m"(mv[l][b_idx][0]),
+                          "m"(mv[l][b_idx+2][0]),
+                          "m"(mv[l][b_idx+d_idx][0]),
+                          "m"(mv[l][b_idx+d_idx+2][0])
+                    );
+                }
+            }
+            asm volatile(
+                "movd %0, %%mm1 \n\t"
+                "por  %1, %%mm1 \n\t"
+                "punpcklbw %%mm7, %%mm1 \n\t"
+                "pcmpgtw %%mm7, %%mm1 \n\t" // nnz[b] || nnz[bn]
+                ::"m"(nnz[b_idx]),
+                  "m"(nnz[b_idx+d_idx])
+            );
+            asm volatile(
+                "pcmpeqw %%mm7, %%mm0 \n\t"
+                "pcmpeqw %%mm7, %%mm0 \n\t"
+                "psrlw $15, %%mm0 \n\t" // nonzero -> 1
+                "psrlw $14, %%mm1 \n\t"
+                "movq %%mm0, %%mm2 \n\t"
+                "por %%mm1, %%mm2 \n\t"
+                "psrlw $1, %%mm1 \n\t"
+                "pandn %%mm2, %%mm1 \n\t"
+                "movq %%mm1, %0 \n\t"
+                :"=m"(*bS[dir][edge])
+                ::"memory"
+            );
+        }
+        edges = 4;
+        step = 1;
+    }
+    asm volatile(
+        "movq   (%0), %%mm0 \n\t"
+        "movq  8(%0), %%mm1 \n\t"
+        "movq 16(%0), %%mm2 \n\t"
+        "movq 24(%0), %%mm3 \n\t"
+        TRANSPOSE4(%%mm0, %%mm1, %%mm2, %%mm3, %%mm4)
+        "movq %%mm0,   (%0) \n\t"
+        "movq %%mm3,  8(%0) \n\t"
+        "movq %%mm4, 16(%0) \n\t"
+        "movq %%mm2, 24(%0) \n\t"
+        ::"r"(bS[0])
+        :"memory"
+    );
+}
 
 /***********************************/
 /* motion compensation */
