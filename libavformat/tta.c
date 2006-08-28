@@ -17,7 +17,6 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 #include "avformat.h"
-#define ALT_BITSREAM_READER_LE
 #include "bitstream.h"
 
 typedef struct {
