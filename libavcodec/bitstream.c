@@ -47,41 +47,6 @@ void ff_put_string(PutBitContext * pbc, char *s, int put_zero)
         put_bits(pbc, 8, 0);
 }
 
-/* bit input functions */
-
-/**
- * reads 0-32 bits.
- */
-unsigned int get_bits_long(GetBitContext *s, int n){
-    if(n<=17) return get_bits(s, n);
-    else{
-        int ret= get_bits(s, 16) << (n-16);
-        return ret | get_bits(s, n-16);
-    }
-}
-
-/**
- * shows 0-32 bits.
- */
-unsigned int show_bits_long(GetBitContext *s, int n){
-    if(n<=17) return show_bits(s, n);
-    else{
-        GetBitContext gb= *s;
-        int ret= get_bits_long(s, n);
-        *s= gb;
-        return ret;
-    }
-}
-
-int check_marker(GetBitContext *s, const char *msg)
-{
-    int bit= get_bits1(s);
-    if(!bit)
-            av_log(NULL, AV_LOG_INFO, "Marker bit missing %s\n", msg);
-
-    return bit;
-}
-
 /* VLC decoding */
 
 //#define DEBUG_VLC

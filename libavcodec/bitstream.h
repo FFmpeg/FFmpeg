@@ -6,6 +6,8 @@
 #ifndef BITSTREAM_H
 #define BITSTREAM_H
 
+#include "log.h"
+
 //#define ALT_BITSTREAM_WRITER
 //#define ALIGNED_BITSTREAM_WRITER
 #if !defined(LIBMPEG2_BITSTREAM_READER) && !defined(A32_BITSTREAM_READER) && !defined(ALT_BITSTREAM_READER)
@@ -642,8 +644,6 @@ static inline unsigned int get_bits(GetBitContext *s, int n){
     return tmp;
 }
 
-unsigned int get_bits_long(GetBitContext *s, int n);
-
 /**
  * shows 0-17 bits.
  * Note, the alt bitstream reader can read up to 25 bits, but the libmpeg2 reader can't
@@ -656,8 +656,6 @@ static inline unsigned int show_bits(GetBitContext *s, int n){
 //    CLOSE_READER(re, s)
     return tmp;
 }
-
-unsigned int show_bits_long(GetBitContext *s, int n);
 
 static inline void skip_bits(GetBitContext *s, int n){
  //Note gcc seems to optimize this to s->index+=n for the ALT_READER :))
@@ -693,6 +691,39 @@ static inline unsigned int show_bits1(GetBitContext *s){
 
 static inline void skip_bits1(GetBitContext *s){
     skip_bits(s, 1);
+}
+
+/**
+ * reads 0-32 bits.
+ */
+static inline unsigned int get_bits_long(GetBitContext *s, int n){
+    if(n<=17) return get_bits(s, n);
+    else{
+        int ret= get_bits(s, 16) << (n-16);
+        return ret | get_bits(s, n-16);
+    }
+}
+
+/**
+ * shows 0-32 bits.
+ */
+static inline unsigned int show_bits_long(GetBitContext *s, int n){
+    if(n<=17) return show_bits(s, n);
+    else{
+        GetBitContext gb= *s;
+        int ret= get_bits_long(s, n);
+        *s= gb;
+        return ret;
+    }
+}
+
+static inline int check_marker(GetBitContext *s, const char *msg)
+{
+    int bit= get_bits1(s);
+    if(!bit)
+        av_log(NULL, AV_LOG_INFO, "Marker bit missing %s\n", msg);
+
+    return bit;
 }
 
 /**
@@ -828,7 +859,6 @@ static always_inline int get_vlc2(GetBitContext *s, VLC_TYPE (*table)[2],
 //#define TRACE
 
 #ifdef TRACE
-#include "avcodec.h"
 static inline void print_bin(int bits, int n){
     int i;
 
