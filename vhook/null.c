@@ -19,9 +19,24 @@
 #include <stdio.h>
 
 #include "framehook.h"
+#include "swscale.h"
+
+static int sws_flags = SWS_BICUBIC;
 
 typedef struct {
     int dummy;
+
+    // This vhook first converts frame to RGB ...
+    struct SwsContext *toRGB_convert_ctx;
+
+    // ... and later converts back frame from RGB to initial format
+    struct SwsContext *fromRGB_convert_ctx;
+
+    enum PixelFormat sws_pix_fmt;   // Sws_Context is opaque, we need to save
+    int sws_width, sws_height;      // this to check if we can re-use contexts
+    // Contexts will be re-used 99% of time,
+    // I know of width/height changes only in DVB broadcasts
+
 } ContextInfo;
 
 void Release(void *ctx)
@@ -29,8 +44,11 @@ void Release(void *ctx)
     ContextInfo *ci;
     ci = (ContextInfo *) ctx;
 
-    if (ctx)
+    if (ctx) {
+        sws_freeContext(ci->toRGB_convert_ctx);
+        sws_freeContext(ci->fromRGB_convert_ctx);
         av_free(ctx);
+    }
 }
 
 int Configure(void **ctxp, int argc, char *argv[])
@@ -57,20 +75,59 @@ void Process(void *ctx, AVPicture *picture, enum PixelFormat pix_fmt, int width,
         buf = av_malloc(size);
 
         avpicture_fill(&picture1, buf, PIX_FMT_RGB24, width, height);
-        if (img_convert(&picture1, PIX_FMT_RGB24,
-                        picture, pix_fmt, width, height) < 0) {
-            av_free(buf);
-            return;
+
+        // if we already got a SWS context, let's realloc if is not re-useable
+        if (ci->toRGB_convert_ctx != NULL) {
+            if ((ci->sws_pix_fmt != pix_fmt) ||
+                 (ci->sws_width != width) || (ci->sws_height != height)) {
+                sws_freeContext(ci->toRGB_convert_ctx);
+                ci->toRGB_convert_ctx = NULL;
+                sws_freeContext(ci->fromRGB_convert_ctx);
+                ci->fromRGB_convert_ctx = NULL;
+            }
         }
+        if (ci->toRGB_convert_ctx == NULL) {
+            ci->sws_pix_fmt = pix_fmt;
+            ci->sws_width = width;
+            ci->sws_height = height;
+            ci->toRGB_convert_ctx = sws_getContext(
+                                             ci->sws_width, ci->sws_height,
+                                             ci->sws_pix_fmt,
+                                             ci->sws_width, ci->sws_height,
+                                             PIX_FMT_RGB24,
+                                             sws_flags, NULL, NULL, NULL);
+            if (ci->toRGB_convert_ctx == NULL) {
+                av_log(NULL, AV_LOG_ERROR,
+                       "Cannot initialize the toRGB conversion context\n");
+                exit(1);
+            }
+            ci->fromRGB_convert_ctx = sws_getContext(
+                                             ci->sws_width, ci->sws_height,
+                                             PIX_FMT_RGB24,
+                                             ci->sws_width, ci->sws_height,
+                                             ci->sws_pix_fmt,
+                                             sws_flags, NULL, NULL, NULL);
+            if (ci->fromRGB_convert_ctx == NULL) {
+                av_log(NULL, AV_LOG_ERROR,
+                       "Cannot initialize the fromRGB conversion context\n");
+                exit(1);
+            }
+        }
+// img_convert parameters are          2 first destination, then 4 source
+// sws_scale   parameters are context, 4 first source,      then 2 destination
+        sws_scale(ci->toRGB_convert_ctx,
+            picture->data, picture->linesize, 0, ci->sws_height,
+            picture1.data, picture1.linesize);
+
         pict = &picture1;
     }
 
     /* Insert filter code here */
 
     if (pix_fmt != PIX_FMT_RGB24) {
-        if (img_convert(picture, pix_fmt,
-                        &picture1, PIX_FMT_RGB24, width, height) < 0) {
-        }
+        sws_scale(ci->fromRGB_convert_ctx,
+            picture1.data, picture1.linesize, 0, ci->sws_height,
+            picture->data, picture->linesize);
     }
 
     av_free(buf);
