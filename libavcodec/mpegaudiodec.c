@@ -90,7 +90,7 @@ static always_inline int MULH(int a, int b){
 struct GranuleDef;
 
 typedef struct MPADecodeContext {
-    DECLARE_ALIGNED_8(uint8_t, last_buf[BACKSTEP_SIZE + EXTRABYTES + MPA_MAX_CODED_FRAME_SIZE]); //FIXME we dont need that much
+    DECLARE_ALIGNED_8(uint8_t, last_buf[2*BACKSTEP_SIZE + EXTRABYTES]);
     int last_buf_size;
     int frame_size;
     int free_format_frame_size; /* frame size in case of free format
@@ -1688,6 +1688,7 @@ static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
                     s->in_gb.buffer=NULL;
                     assert((get_bits_count(&s->gb) & 7) == 0);
                     skip_bits_long(&s->gb, pos - end_pos);
+                    end_pos2=
                     end_pos= end_pos2 + get_bits_count(&s->gb) - pos;
                     pos= get_bits_count(&s->gb);
                 }
@@ -1756,23 +1757,25 @@ static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
         int pos, code;
         pos = get_bits_count(&s->gb);
         if (pos >= end_pos) {
+            if (pos > end_pos2 && last_pos){
+                /* some encoders generate an incorrect size for this
+                   part. We must go back into the data */
+                s_index -= 4;
+                skip_bits_long(&s->gb, last_pos - pos);
+                av_log(NULL, AV_LOG_INFO, "overread, skip %d enddists: %d %d\n", last_pos - pos, end_pos-pos, end_pos2-pos);
+                break;
+            }
 //                av_log(NULL, AV_LOG_ERROR, "pos2: %d %d %d %d\n", pos, end_pos, end_pos2, s_index);
             if(s->in_gb.buffer && pos >= s->gb.size_in_bits){
                 s->gb= s->in_gb;
                 s->in_gb.buffer=NULL;
                 assert((get_bits_count(&s->gb) & 7) == 0);
                 skip_bits_long(&s->gb, pos - end_pos);
+                end_pos2=
                 end_pos= end_pos2 + get_bits_count(&s->gb) - pos;
                 pos= get_bits_count(&s->gb);
             }
 //                av_log(NULL, AV_LOG_ERROR, "new pos2: %d %d %d\n", pos, end_pos, s_index);
-            if (pos > end_pos && last_pos){ //FIXME last_pos is messed if we switch buffers
-                /* some encoders generate an incorrect size for this
-                   part. We must go back into the data */
-                s_index -= 4;
-                skip_bits_long(&s->gb, last_pos - pos);
-                av_log(NULL, AV_LOG_DEBUG, "overread, skip %d\n", last_pos - pos);
-            }
             if(pos >= end_pos)
                 break;
         }
@@ -2318,11 +2321,14 @@ static int mp_decode_layer3(MPADecodeContext *s)
 
   if (!s->adu_mode) {
     const uint8_t *ptr = s->gb.buffer + (get_bits_count(&s->gb)>>3);
+    assert((get_bits_count(&s->gb) & 7) == 0);
     /* now we get bits from the main_data_begin offset */
     dprintf("seekback: %d\n", main_data_begin);
 //av_log(NULL, AV_LOG_ERROR, "backstep:%d, lastbuf:%d\n", main_data_begin, s->last_buf_size);
-    if(main_data_begin > s->last_buf_size)
+    if(main_data_begin > s->last_buf_size){
+        av_log(NULL, AV_LOG_ERROR, "backstep:%d, lastbuf:%d\n", main_data_begin, s->last_buf_size);
         s->last_buf_size= main_data_begin;
+      }
 
     memcpy(s->last_buf + s->last_buf_size, ptr, EXTRABYTES);
     s->in_gb= s->gb;
@@ -2521,10 +2527,11 @@ static int mp_decode_frame(MPADecodeContext *s,
         if(s->in_gb.buffer){
             align_get_bits(&s->gb);
             i= (s->gb.size_in_bits - get_bits_count(&s->gb))>>3;
-            if(i > 0 && i <= BACKSTEP_SIZE){
+            if(i >= 0 && i <= BACKSTEP_SIZE){
                 memmove(s->last_buf, s->gb.buffer + (get_bits_count(&s->gb)>>3), i);
                 s->last_buf_size=i;
-            }
+            }else
+                av_log(NULL, AV_LOG_ERROR, "invalid old backstep %d\n", i);
             s->gb= s->in_gb;
         }
 
@@ -2532,10 +2539,12 @@ static int mp_decode_frame(MPADecodeContext *s,
         assert((get_bits_count(&s->gb) & 7) == 0);
         i= (s->gb.size_in_bits - get_bits_count(&s->gb))>>3;
 
-        if(i<0 || s->last_buf_size + i > BACKSTEP_SIZE || nb_frames<0)
-            i= FFMIN(BACKSTEP_SIZE-s->last_buf_size, buf_size - HEADER_SIZE);
+        if(i<0 || i > BACKSTEP_SIZE || nb_frames<0){
+            av_log(NULL, AV_LOG_ERROR, "invalid new backstep %d\n", i);
+            i= FFMIN(BACKSTEP_SIZE, buf_size - HEADER_SIZE);
+        }
         assert(i <= buf_size - HEADER_SIZE && i>= 0);
-            memcpy(s->last_buf + s->last_buf_size, s->gb.buffer + buf_size - HEADER_SIZE - i, i);
+        memcpy(s->last_buf + s->last_buf_size, s->gb.buffer + buf_size - HEADER_SIZE - i, i);
         s->last_buf_size += i;
 
         break;
