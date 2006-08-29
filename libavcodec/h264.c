@@ -371,6 +371,7 @@ typedef struct H264Context{
 
     /* 0x100 -> non null luma_dc, 0x80/0x40 -> non null chroma_dc (cb/cr), 0x?0 -> chroma_cbp(0,1,2), 0x0? luma_cbp */
     uint16_t     *cbp_table;
+    int cbp;
     int top_cbp;
     int left_cbp;
     /* chroma_pred_mode for i4x4 or i16x16, else 0 */
@@ -5479,6 +5480,7 @@ decode_intra_mb:
         else
             cbp= golomb_to_inter_cbp[cbp];
     }
+    h->cbp = cbp;
 
     if(dct8x8_allowed && (cbp&15) && !IS_INTRA(mb_type)){
         if(get_bits1(&s->gb))
@@ -6581,7 +6583,7 @@ decode_intra_mb:
         cbp |= decode_cabac_mb_cbp_chroma( h ) << 4;
     }
 
-    h->cbp_table[mb_xy] = cbp;
+    h->cbp_table[mb_xy] = h->cbp = cbp;
 
     if( dct8x8_allowed && (cbp&15) && !IS_INTRA( mb_type ) ) {
         if( decode_cabac_mb_transform_size( h ) )
@@ -7020,11 +7022,12 @@ static void filter_mb_fast( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, 
     qpc1 = get_chroma_qp( h->pps.chroma_qp_index_offset, qp1 );
     qp0 = (qp + qp0 + 1) >> 1;
     qp1 = (qp + qp1 + 1) >> 1;
-    qp_thresh = 15 - h->slice_alpha_c0_offset - FFMAX(0, h->pps.chroma_qp_index_offset);
-    if(qp <= qp_thresh && qp0 <= qp_thresh && qp1 <= qp_thresh)
-        return;
     qpc0 = (qpc + qpc0 + 1) >> 1;
     qpc1 = (qpc + qpc1 + 1) >> 1;
+    qp_thresh = 15 - h->slice_alpha_c0_offset;
+    if(qp <= qp_thresh && qp0 <= qp_thresh && qp1 <= qp_thresh &&
+       qpc <= qp_thresh && qpc0 <= qp_thresh && qpc1 <= qp_thresh)
+        return;
 
     if( IS_INTRA(mb_type) ) {
         int16_t bS4[4] = {4,4,4,4};
@@ -7056,16 +7059,21 @@ static void filter_mb_fast( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, 
     } else {
         DECLARE_ALIGNED_8(int16_t, bS[2][4][4]);
         uint64_t (*bSv)[4] = (uint64_t(*)[4])bS;
-        int edges = (mb_type & (MB_TYPE_16x16|MB_TYPE_SKIP))
-                            == (MB_TYPE_16x16|MB_TYPE_SKIP) ? 1 : 4;
-        int mask_edge1 = (mb_type & (MB_TYPE_16x16 | MB_TYPE_8x16)) ? 3 :
-                         (mb_type & MB_TYPE_16x8) ? 1 : 0;
-        int mask_edge0 = (mb_type & (MB_TYPE_16x16 | MB_TYPE_8x16))
-                         && (s->current_picture.mb_type[mb_xy-1] & (MB_TYPE_16x16 | MB_TYPE_8x16))
-                         ? 3 : 0;
-        int step = IS_8x8DCT(mb_type) ? 2 : 1;
-        s->dsp.h264_loop_filter_strength( bS, h->non_zero_count_cache, h->ref_cache, h->mv_cache,
-                                          (h->slice_type == B_TYPE), edges, step, mask_edge0, mask_edge1 );
+        int edges;
+        if( IS_8x8DCT(mb_type) && (h->cbp&7) == 7 ) {
+            edges = 4;
+            bSv[0][0] = bSv[0][2] = bSv[1][0] = bSv[1][2] = 0x0002000200020002ULL;
+        } else {
+            int mask_edge1 = (mb_type & (MB_TYPE_16x16 | MB_TYPE_8x16)) ? 3 :
+                             (mb_type & MB_TYPE_16x8) ? 1 : 0;
+            int mask_edge0 = (mb_type & (MB_TYPE_16x16 | MB_TYPE_8x16))
+                             && (s->current_picture.mb_type[mb_xy-1] & (MB_TYPE_16x16 | MB_TYPE_8x16))
+                             ? 3 : 0;
+            int step = IS_8x8DCT(mb_type) ? 2 : 1;
+            edges = (mb_type & MB_TYPE_16x16) && !(h->cbp & 15) ? 1 : 4;
+            s->dsp.h264_loop_filter_strength( bS, h->non_zero_count_cache, h->ref_cache, h->mv_cache,
+                                              (h->slice_type == B_TYPE), edges, step, mask_edge0, mask_edge1 );
+        }
         if( IS_INTRA(s->current_picture.mb_type[mb_xy-1]) )
             bSv[0][0] = 0x0004000400040004ULL;
         if( IS_INTRA(s->current_picture.mb_type[h->top_mb_xy]) )
