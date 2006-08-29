@@ -83,6 +83,9 @@ void av_register_all(void)
 #ifdef CONFIG_AVI_MUXER
     av_register_output_format(&avi_muxer);
 #endif
+#ifdef CONFIG_AVISYNTH
+    av_register_input_format(&avisynth_demuxer);
+#endif
 #ifdef CONFIG_AVS_DEMUXER
     av_register_input_format(&avs_demuxer);
 #endif

@@ -58,6 +58,7 @@ show_help(){
   echo "  --enable-dc1394          enable IIDC-1394 grabbing using libdc1394"
   echo "                           and libraw1394 [default=no]"
   echo "  --enable-swscaler        software scaler support [default=no]"
+  echo "  --enable-avisynth        allow reading AVISynth script files [default=no]"
   echo "  --enable-gpl             allow use of GPL code, the resulting libav*"
   echo "                           and ffmpeg will be under GPL [default=no]"
   echo ""
@@ -440,6 +441,7 @@ bigendian="no"
 inttypes="yes"
 emu_fast_int="no"
 vhook="default"
+avisynth="no"
 dlfcn="no"
 dlopen="no"
 mpegaudio_hp="yes"
@@ -768,6 +770,8 @@ for opt do
   --enable-xvid) xvid="yes"
   ;;
   --enable-x264) x264="yes"
+  ;;
+  --enable-avisynth) avisynth="yes";
   ;;
   --enable-dc1394) dc1394="yes"
     pkg_requires="$pkg_requires libraw1394"
@@ -1304,6 +1308,22 @@ EOF
     restore_flags
 fi
 
+# Ugh, avisynth uses WINAPI calls. Generic tests won't work.
+if enabled avisynth; then
+    save_flags
+    temp_extralibs -lvfw32
+    check_ld <<EOF && add_extralibs -lvfw32 || die "ERROR: vfw32 not found"
+#include <windows.h>
+#include <vfw.h>
+int main(){
+    AVIFileInit();
+    return 0;
+}
+EOF
+    restore_flags
+fi
+
+
 # test for lrintf in math.h
 check_exec <<EOF && have_lrintf=yes || have_lrintf=no
 #define _ISOC9X_SOURCE  1
@@ -1527,6 +1547,7 @@ echo "a52 dlopened     $a52bin"
 echo "DTS support      $dts"
 echo "pp support       $pp"
 echo "Software Scaler enabled $swscaler"
+echo "AVISynth enabled $avisynth"
 echo "debug symbols    $debug"
 echo "strip symbols    $dostrip"
 echo "optimize         $optimize"
@@ -1933,6 +1954,11 @@ fi
 if test "$x264" = "yes" ; then
   echo "#define CONFIG_X264 1" >> $TMPH
   echo "CONFIG_X264=yes" >> config.mak
+fi
+
+if test "$avisynth" = "yes" ; then
+  echo "#define CONFIG_AVISYNTH 1" >> $TMPH
+  echo "CONFIG_AVISYNTH=yes" >> config.mak
 fi
 
 if test "$mingw32" = "yes" ; then

@@ -27,6 +27,7 @@ OBJS-$(CONFIG_AU_DEMUXER)                += au.o riff.o
 OBJS-$(CONFIG_AU_MUXER)                  += au.o riff.o
 OBJS-$(CONFIG_AVI_DEMUXER)               += avidec.o riff.o
 OBJS-$(CONFIG_AVI_MUXER)                 += avienc.o riff.o
+OBJS-$(CONFIG_AVISYNTH)                  += avisynth.o
 OBJS-$(CONFIG_AVS_DEMUXER)               += avs.o
 OBJS-$(CONFIG_CRC_MUXER)                 += crc.o
 OBJS-$(CONFIG_FRAMECRC_MUXER)            += crc.o

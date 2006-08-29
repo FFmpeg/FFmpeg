@@ -16,6 +16,7 @@ extern AVInputFormat audio_demuxer;
 extern AVOutputFormat audio_muxer;
 extern AVInputFormat avi_demuxer;
 extern AVOutputFormat avi_muxer;
+extern AVInputFormat avisynth_demuxer;
 extern AVInputFormat avs_demuxer;
 extern AVOutputFormat crc_muxer;
 extern AVOutputFormat framecrc_muxer;
