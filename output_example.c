@@ -103,7 +103,7 @@ static void open_audio(AVFormatContext *oc, AVStream *st)
     tincr2 = 2 * M_PI * 110.0 / c->sample_rate / c->sample_rate;
 
     audio_outbuf_size = 10000;
-    audio_outbuf = malloc(audio_outbuf_size);
+    audio_outbuf = av_malloc(audio_outbuf_size);
 
     /* ugly hack for PCM codecs (will be removed ASAP with new PCM
        support to compute the input frame size in samples */
@@ -122,7 +122,7 @@ static void open_audio(AVFormatContext *oc, AVStream *st)
     } else {
         audio_input_frame_size = c->frame_size;
     }
-    samples = malloc(audio_input_frame_size * 2 * c->channels);
+    samples = av_malloc(audio_input_frame_size * 2 * c->channels);
 }
 
 /* prepare a 16 bit dummy audio frame of 'frame_size' samples and
@@ -237,7 +237,7 @@ static AVFrame *alloc_picture(int pix_fmt, int width, int height)
     if (!picture)
         return NULL;
     size = avpicture_get_size(pix_fmt, width, height);
-    picture_buf = malloc(size);
+    picture_buf = av_malloc(size);
     if (!picture_buf) {
         av_free(picture);
         return NULL;
@@ -271,8 +271,12 @@ static void open_video(AVFormatContext *oc, AVStream *st)
     if (!(oc->oformat->flags & AVFMT_RAWPICTURE)) {
         /* allocate output buffer */
         /* XXX: API change will be done */
+        /* buffers passed into lav* can be allocated any way you prefer,
+           as long as they're aligned enough for the architecture, and
+           they're freed appropriately (such as using av_free for buffers
+           allocated with av_malloc) */
         video_outbuf_size = 200000;
-        video_outbuf = malloc(video_outbuf_size);
+        video_outbuf = av_malloc(video_outbuf_size);
     }
 
     /* allocate the encoded raw picture */
