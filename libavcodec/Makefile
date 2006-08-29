@@ -22,7 +22,7 @@ OBJS= bitstream.o utils.o allcodecs.o \
       audioconvert.o \
 
 
-HEADERS = avcodec.h
+HEADERS = avcodec.h opt.h
 ifneq ($(CONFIG_SWSCALER),yes)
 HEADERS += swscale.h
 endif
