@@ -484,8 +484,10 @@ Set audio device (e.g. @file{/dev/dsp}).
 @section Advanced options
 
 @table @option
-@item -map file:stream
-Set input stream mapping.
+@item -map input stream id[:input stream id]
+Set stream mapping from input streams to output streams.
+Just enumerate the input streams in the order you want them in the output.
+[input stream id] sets the (input) stream to sync against.
 @item -debug
 Print specific debug info.
 @item -benchmark
