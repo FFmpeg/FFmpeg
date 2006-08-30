@@ -1357,9 +1357,9 @@ please use av_log() instead.
     parts (libavutil, libavcodec, libavformat) you are changing. You need
     to change the version integer and the version string.
     Incrementing the first component means no backward compatibility to
-    previous versions (e.g. removal of a function).
+    previous versions (e.g. removal of a function from the public API).
     Incrementing the second component means backward compatible change
-    (e.g. addition of a function).
+    (e.g. addition of a function to the public API).
     Incrementing the third component means a noteworthy binary compatible
     change (e.g. encoder bug fix that matters for the decoder).
 @item
