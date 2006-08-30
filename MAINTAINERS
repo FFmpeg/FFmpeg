@@ -118,6 +118,7 @@ Codecs:
   ffv1.c                                Michael Niedermayer
   flac.c                                Alex Beregszaszi
   flacenc.c                             Justin Ruggles
+  flashsv.c                             Benjamin Larsson
   flicvideo.c                           Mike Melanson
   g726.c                                Roman Shaposhnik
   h264*                                 Loren Merritt, Michael Niedermayer
