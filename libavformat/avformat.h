@@ -266,6 +266,9 @@ typedef struct AVStream {
     int index_entries_allocated_size;
 
     int64_t nb_frames;                 ///< number of frames in this stream if known or 0
+
+#define MAX_REORDER_DELAY 4
+    int64_t pts_buffer[MAX_REORDER_DELAY+1];
 } AVStream;
 
 #define AVFMTCTX_NOHEADER      0x0001 /* signal that no header is present

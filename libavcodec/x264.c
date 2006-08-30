@@ -160,6 +160,7 @@ X264_init(AVCodecContext *avctx)
     x4->params.b_bframe_adaptive = avctx->b_frame_strategy;
     x4->params.i_bframe_bias = avctx->bframebias;
     x4->params.b_bframe_pyramid = (avctx->flags2 & CODEC_FLAG2_BPYRAMID);
+    avctx->has_b_frames= (avctx->flags2 & CODEC_FLAG2_BPYRAMID) ? 2 : !!avctx->max_b_frames;
 
     x4->params.i_keyint_min = avctx->keyint_min;
     if(x4->params.i_keyint_min > x4->params.i_keyint_max)

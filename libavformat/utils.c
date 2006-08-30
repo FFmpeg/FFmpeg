@@ -2213,6 +2213,7 @@ void av_close_input_file(AVFormatContext *s)
 AVStream *av_new_stream(AVFormatContext *s, int id)
 {
     AVStream *st;
+    int i;
 
     if (s->nb_streams >= MAX_STREAMS)
         return NULL;
@@ -2235,6 +2236,8 @@ AVStream *av_new_stream(AVFormatContext *s, int id)
     /* default pts settings is MPEG like */
     av_set_pts_info(st, 33, 1, 90000);
     st->last_IP_pts = AV_NOPTS_VALUE;
+    for(i=0; i<MAX_REORDER_DELAY+1; i++)
+        st->pts_buffer[i]= AV_NOPTS_VALUE;
 
     s->streams[s->nb_streams++] = st;
     return st;
@@ -2330,10 +2333,10 @@ int av_write_header(AVFormatContext *s)
 
 //FIXME merge with compute_pkt_fields
 static int compute_pkt_fields2(AVStream *st, AVPacket *pkt){
-    int b_frames = FFMAX(st->codec->has_b_frames, st->codec->max_b_frames);
-    int num, den, frame_size;
+    int delay = FFMAX(st->codec->has_b_frames, !!st->codec->max_b_frames);
+    int num, den, frame_size, i;
 
-//    av_log(NULL, AV_LOG_DEBUG, "av_write_frame: pts:%lld dts:%lld cur_dts:%lld b:%d size:%d st:%d\n", pkt->pts, pkt->dts, st->cur_dts, b_frames, pkt->size, pkt->stream_index);
+//    av_log(NULL, AV_LOG_DEBUG, "av_write_frame: pts:%lld dts:%lld cur_dts:%lld b:%d size:%d st:%d\n", pkt->pts, pkt->dts, st->cur_dts, delay, pkt->size, pkt->stream_index);
 
 /*    if(pkt->pts == AV_NOPTS_VALUE && pkt->dts == AV_NOPTS_VALUE)
         return -1;*/
@@ -2347,7 +2350,7 @@ static int compute_pkt_fields2(AVStream *st, AVPacket *pkt){
     }
 
     //XXX/FIXME this is a temporary hack until all encoders output pts
-    if((pkt->pts == 0 || pkt->pts == AV_NOPTS_VALUE) && pkt->dts == AV_NOPTS_VALUE && !b_frames){
+    if((pkt->pts == 0 || pkt->pts == AV_NOPTS_VALUE) && pkt->dts == AV_NOPTS_VALUE && !delay){
         pkt->dts=
 //        pkt->pts= st->cur_dts;
         pkt->pts= st->pts.val;
@@ -2355,17 +2358,13 @@ static int compute_pkt_fields2(AVStream *st, AVPacket *pkt){
 
     //calculate dts from pts
     if(pkt->pts != AV_NOPTS_VALUE && pkt->dts == AV_NOPTS_VALUE){
-        if(b_frames){
-            if(st->last_IP_pts == AV_NOPTS_VALUE){
-                st->last_IP_pts= -pkt->duration;
-            }
-            if(st->last_IP_pts < pkt->pts){
-                pkt->dts= st->last_IP_pts;
-                st->last_IP_pts= pkt->pts;
-            }else
-                pkt->dts= pkt->pts;
-        }else
-            pkt->dts= pkt->pts;
+        st->pts_buffer[0]= pkt->pts;
+        for(i=1; i<delay+1 && st->pts_buffer[i] == AV_NOPTS_VALUE; i++)
+            st->pts_buffer[i]= (i-delay-1) * pkt->duration;
+        for(i=0; i<delay && st->pts_buffer[i] > st->pts_buffer[i+1]; i++)
+            SWAP(int64_t, st->pts_buffer[i], st->pts_buffer[i+1]);
+
+        pkt->dts= st->pts_buffer[0];
     }
 
     if(st->cur_dts && st->cur_dts != AV_NOPTS_VALUE && st->cur_dts >= pkt->dts){
