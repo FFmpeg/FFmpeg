@@ -45,5 +45,16 @@ This allows a caption to be placed onto each frame. It supports inserting the
 time and date. By using the imlib functions, it would be easy to add your own
 graphical logo, add a frame/border, etc.
 
+@section ppm.c
+
+It's basically a launch point for a PPM pipe, so you can use any
+executable (or script) which consumes a PPM on stdin and produces a PPM
+on stdout (and flushes each frame).
+
+Usage example:
+
+@example
+ffmpeg -i input -vhook "/path/to/ppm.so some-ppm-filter args" output
+@end example
 
 @bye
