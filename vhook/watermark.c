@@ -421,6 +421,10 @@ int get_watermark_picture(ContextInfo *ci, int cleanup)
                ci->p_ext = &(ci->filename[ci->i]);
             ci->file_iformat = av_find_input_format (ci->p_ext);
             if (0 == ci->file_iformat) {
+                av_log(NULL, AV_LOG_INFO, "get_watermark_picture() attempt to use image2 for [%s]\n", ci->p_ext);
+                ci->file_iformat = av_find_input_format ("image2");
+            }
+            if (0 == ci->file_iformat) {
                 av_log(NULL, AV_LOG_ERROR, "get_watermark_picture() Really failed to find iformat [%s]\n", ci->p_ext);
                 return -1;
             }
