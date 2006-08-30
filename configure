@@ -2154,9 +2154,10 @@ else
 fi
 
 
+# "tr '[a-z]' '[A-Z]'" is a workaround for Solaris tr not grokking "tr a-z A-Z"
 for codec in $DECODER_LIST $ENCODER_LIST $PARSER_LIST $DEMUXER_LIST $MUXER_LIST; do
-    echo "#define CONFIG_`echo $codec | tr a-z A-Z` 1" >> $TMPH
-    echo "CONFIG_`echo $codec | tr a-z A-Z`=yes" >> config.mak
+    echo "#define CONFIG_`echo $codec | tr '[a-z]' '[A-Z]'` 1" >> $TMPH
+    echo "CONFIG_`echo $codec | tr '[a-z]' '[A-Z]'`=yes" >> config.mak
 done
 
 # Do not overwrite config.h if unchanged to avoid superfluous rebuilds.
