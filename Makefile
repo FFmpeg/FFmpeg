@@ -210,7 +210,7 @@ ifeq ($(BUILD_VHOOK),yes)
 endif
 
 .depend: $(SRCS) version.h
-	$(CC) -MM $(CFLAGS) $(SDL_CFLAGS) $^ 1>.depend
+	$(CC) -MM $(CFLAGS) $(SDL_CFLAGS) $(SRCS) 1>.depend
 
 .libs: lib
 	@test -f .libs || touch .libs
