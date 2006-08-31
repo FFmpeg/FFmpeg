@@ -207,8 +207,8 @@ static inline void put_pixels16_l2_altivec( uint8_t * dst, const uint8_t * src1,
 
         align = vec_lvsr(0, dst);
 
-        tmp1 = vec_perm(d, edges, align);
-        tmp2 = vec_perm(edges, d, align);
+        tmp1 = vec_perm(edges, d, align);
+        tmp2 = vec_perm(d, edges, align);
 
         vec_st(tmp1, 0 , dst);
         vec_st(tmp2, 15, dst);
@@ -249,8 +249,8 @@ static inline void avg_pixels16_l2_altivec( uint8_t * dst, const uint8_t * src1,
 
         align = vec_lvsr(0, dst);
 
-        tmp1 = vec_perm(d, edges, align);
-        tmp2 = vec_perm(edges, d, align);
+        tmp1 = vec_perm(edges, d, align);
+        tmp2 = vec_perm(d, edges, align);
 
         vec_st(tmp1, 0 , dst);
         vec_st(tmp2, 15, dst);
