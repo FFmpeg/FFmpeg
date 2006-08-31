@@ -867,22 +867,13 @@ static void vc1_mc_1mv(VC1Context *v, int dir)
         srcY += s->linesize * 8;
         dsp->put_vc1_mspel_pixels_tab[dxy](s->dest[0] + 8 * s->linesize    , srcY    , s->linesize, v->rnd);
         dsp->put_vc1_mspel_pixels_tab[dxy](s->dest[0] + 8 * s->linesize + 8, srcY + 8, s->linesize, v->rnd);
-    } else if(!s->quarter_sample) { // hpel mc
-        mx >>= 1;
-        my >>= 1;
-        dxy = ((my & 1) << 1) | (mx & 1);
+    } else { // hpel mc - always used for luma
+        dxy = (my & 2) | ((mx & 2) >> 1);
 
         if(!v->rnd)
             dsp->put_pixels_tab[0][dxy](s->dest[0], srcY, s->linesize, 16);
         else
             dsp->put_no_rnd_pixels_tab[0][dxy](s->dest[0], srcY, s->linesize, 16);
-    } else {
-        dxy = ((my & 3) << 2) | (mx & 3);
-
-        if(!v->rnd)
-            dsp->put_qpel_pixels_tab[0][dxy](s->dest[0], srcY, s->linesize);
-        else
-            dsp->put_no_rnd_qpel_pixels_tab[0][dxy](s->dest[0], srcY, s->linesize);
     }
 
     if(s->flags & CODEC_FLAG_GRAY) return;
@@ -957,22 +948,12 @@ static void vc1_mc_4mv_luma(VC1Context *v, int n)
     if(s->mspel) {
         dxy = ((my & 3) << 2) | (mx & 3);
         dsp->put_vc1_mspel_pixels_tab[dxy](s->dest[0] + off, srcY, s->linesize, v->rnd);
-    } else if(!s->quarter_sample) { // hpel mc
-        mx >>= 1;
-        my >>= 1;
-        dxy = ((my & 1) << 1) | (mx & 1);
-
+    } else { // hpel mc - always used for luma
+        dxy = (my & 2) | ((mx & 2) >> 1);
         if(!v->rnd)
             dsp->put_pixels_tab[1][dxy](s->dest[0] + off, srcY, s->linesize, 8);
         else
             dsp->put_no_rnd_pixels_tab[1][dxy](s->dest[0] + off, srcY, s->linesize, 8);
-    } else {
-        dxy = ((my & 3) << 2) | (mx & 3);
-
-        if(!v->rnd)
-            dsp->put_qpel_pixels_tab[1][dxy](s->dest[0] + off, srcY, s->linesize);
-        else
-            dsp->put_no_rnd_qpel_pixels_tab[1][dxy](s->dest[0] + off, srcY, s->linesize);
     }
 }
 
@@ -1765,17 +1746,11 @@ static void vc1_interp_mc(VC1Context *v)
         uvmy = uvmy + ((uvmy<0)?(uvmy&1):-(uvmy&1));
     }
 
-    if(!s->quarter_sample) { // hpel mc
-        mx >>= 1;
-        my >>= 1;
-        dxy = ((my & 1) << 1) | (mx & 1);
+    mx >>= 1;
+    my >>= 1;
+    dxy = ((my & 1) << 1) | (mx & 1);
 
-        dsp->avg_pixels_tab[0][dxy](s->dest[0], srcY, s->linesize, 16);
-    } else {
-        dxy = ((my & 3) << 2) | (mx & 3);
-
-        dsp->avg_qpel_pixels_tab[0][dxy](s->dest[0], srcY, s->linesize);
-    }
+    dsp->avg_pixels_tab[0][dxy](s->dest[0], srcY, s->linesize, 16);
 
     if(s->flags & CODEC_FLAG_GRAY) return;
     /* Chroma MC always uses qpel blilinear */
