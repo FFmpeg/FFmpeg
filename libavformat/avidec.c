@@ -243,7 +243,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
 #endif
             if (tag1 == MKTAG('m', 'o', 'v', 'i')) {
                 avi->movi_list = url_ftell(pb) - 4;
-                if(size) avi->movi_end = avi->movi_list + size;
+                if(size) avi->movi_end = avi->movi_list + size + (size & 1);
                 else     avi->movi_end = url_fsize(pb);
 #ifdef DEBUG
                 printf("movi end=%Lx\n", avi->movi_end);
