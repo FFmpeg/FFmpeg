@@ -877,7 +877,7 @@ static void vc1_mc_1mv(VC1Context *v, int dir)
     }
 
     if(s->flags & CODEC_FLAG_GRAY) return;
-    /* Chroma MC always uses qpel blilinear */
+    /* Chroma MC always uses qpel bilinear */
     uvdxy = ((uvmy & 3) << 2) | (uvmx & 3);
     if(!v->rnd){
         dsp->put_qpel_pixels_tab[1][uvdxy](s->dest[1], srcU, s->uvlinesize);
@@ -1080,7 +1080,7 @@ static void vc1_mc_4mv_chroma(VC1Context *v)
         uvmy = uvmy + ((uvmy<0)?(uvmy&1):-(uvmy&1));
     }
 
-    /* Chroma MC always uses qpel blilinear */
+    /* Chroma MC always uses qpel bilinear */
     uvdxy = ((uvmy & 3) << 2) | (uvmx & 3);
     if(!v->rnd){
         dsp->put_qpel_pixels_tab[1][uvdxy](s->dest[1], srcU, s->uvlinesize);
