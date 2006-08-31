@@ -138,10 +138,10 @@ static void vector_fmul_add_add_altivec(float *dst, const float *src0,
             s2 = vec_ld(0, src2+i);
             edges = vec_perm(t1 ,t0, mask);
             d = vec_madd(s0,s1,s2);
-            t0 = vec_perm(d, edges, align);
-            t1 = vec_perm(edges, d, align);
-            vec_st(t0, 0, dst+i);
+            t1 = vec_perm(d, edges, align);
+            t0 = vec_perm(edges, d, align);
             vec_st(t1, 15, dst+i);
+            vec_st(t0, 0, dst+i);
             t0 = t1;
         }
     else
