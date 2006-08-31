@@ -3573,7 +3573,9 @@ static int64_t getutime(void)
 }
 #endif
 
+#if defined(CONFIG_FFM_DEMUXER) || defined(CONFIG_FFM_MUXER)
 extern int ffm_nopts;
+#endif
 
 static void show_formats(void)
 {
@@ -3949,9 +3951,11 @@ static int opt_default(const char *opt, const char *arg){
     opt_names= av_realloc(opt_names, sizeof(void*)*(opt_name_count+1));
     opt_names[opt_name_count++]= o->name;
 
+#if defined(CONFIG_FFM_DEMUXER) || defined(CONFIG_FFM_MUXER)
     /* disable generate of real time pts in ffm (need to be supressed anyway) */
     if(avctx_opts->flags & CODEC_FLAG_BITEXACT)
         ffm_nopts = 1;
+#endif
 
     if(avctx_opts->debug)
         av_log_set_level(AV_LOG_DEBUG);
