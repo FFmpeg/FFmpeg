@@ -364,6 +364,13 @@ tend= read_time();\
 #endif
 
 /* memory */
+
+#ifdef __GNUC__
+  #define DECLARE_ALIGNED(n,t,v)       t v __attribute__ ((aligned (n)))
+#else
+  #define DECLARE_ALIGNED(n,t,v)      __declspec(align(n)) t v
+#endif
+
 void *av_malloc(unsigned int size);
 void *av_realloc(void *ptr, unsigned int size);
 void av_free(void *ptr);

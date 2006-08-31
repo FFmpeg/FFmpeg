@@ -323,7 +323,7 @@ typedef struct DSPContext {
     void (*vector_fmul_add_add)(float *dst, const float *src0, const float *src1, const float *src2, int src3, int len, int step);
 
     /* C version: convert floats from the range [384.0,386.0] to ints in [-32768,32767]
-     * asm versions: convert floats from [-32768.0,32767.0] without rescaling */
+     * simd versions: convert floats from [-32768.0,32767.0] without rescaling and arrays are 16byte aligned */
     void (*float_to_int16)(int16_t *dst, const float *src, int len);
 
     /* (I)DCT */
