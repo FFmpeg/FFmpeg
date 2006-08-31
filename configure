@@ -931,7 +931,6 @@ if test "$vorbis" = "yes" ; then
     if test "$libogg" = "no"; then
         echo "libogg must be enabled to enable Vorbis."
         fail="yes"
-        vorbis="no"
     fi
 fi
 
