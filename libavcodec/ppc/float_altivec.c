@@ -166,8 +166,8 @@ void float_to_int16_altivec(int16_t *dst, const float *src, int len)
         d = vec_packs(t0,t1);
         d1 = vec_perm(d1, d0, vec_lvsl(0,dst+i));
         align = vec_lvsr(0, dst+i);
-        d0 = vec_perm(d, d1, align);
-        d1 = vec_perm(d1, d, align);
+        d0 = vec_perm(d1, d, align);
+        d1 = vec_perm(d, d1, align);
         vec_st(d0, 0, dst+i);
         vec_st(d1,15, dst+i);
     }
