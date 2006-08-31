@@ -985,10 +985,10 @@ EOF
         echo "The software scaler is under GPL and --enable-gpl is not specified."
         fail="yes"
     fi
+fi
 
-    if test "$fail" = "yes"; then
-        exit 1
-    fi
+if test "$fail" = "yes"; then
+    exit 1
 fi
 
 # compute MMX state
