@@ -396,6 +396,7 @@ typedef struct DSPContext {
      * last argument is actually round value instead of height
      */
     op_pixels_func put_vc1_mspel_pixels_tab[16];
+    op_pixels_func put_vc1_qpel_pixels_tab[16];
 } DSPContext;
 
 void dsputil_static_init(void);
