@@ -2317,12 +2317,12 @@ static void decode_q_branch(SnowContext *s, int level, int x, int y){
     }
 }
 
-static void encode_blocks(SnowContext *s){
+static void encode_blocks(SnowContext *s, int search){
     int x, y;
     int w= s->b_width;
     int h= s->b_height;
 
-    if(s->avctx->me_method == ME_ITER && !s->keyframe)
+    if(s->avctx->me_method == ME_ITER && !s->keyframe && search)
         iterative_me(s);
 
     for(y=0; y<h; y++){
@@ -2331,7 +2331,7 @@ static void encode_blocks(SnowContext *s){
             return;
         }
         for(x=0; x<w; x++){
-            if(s->avctx->me_method == ME_ITER)
+            if(s->avctx->me_method == ME_ITER || !search)
                 encode_q_branch2(s, 0, x, y);
             else
                 encode_q_branch (s, 0, x, y);
@@ -3957,13 +3957,13 @@ static int qscale2qlog(int qscale){
            + 61*QROOT/8; //<64 >60
 }
 
-static void ratecontrol_1pass(SnowContext *s, AVFrame *pict)
+static int ratecontrol_1pass(SnowContext *s, AVFrame *pict)
 {
     /* estimate the frame's complexity as a sum of weighted dwt coefs.
      * FIXME we know exact mv bits at this point,
      * but ratecontrol isn't set up to include them. */
     uint32_t coef_sum= 0;
-    int level, orientation;
+    int level, orientation, delta_qlog;
 
     for(level=0; level<s->spatial_decomposition_count; level++){
         for(orientation=level ? 1 : 0; orientation<4; orientation++){
@@ -4000,7 +4000,9 @@ static void ratecontrol_1pass(SnowContext *s, AVFrame *pict)
 
     pict->quality= ff_rate_estimate_qscale(&s->m, 1);
     s->lambda= pict->quality * 3/2;
-    s->qlog= qscale2qlog(pict->quality);
+    delta_qlog= qscale2qlog(pict->quality) - s->qlog;
+    s->qlog+= delta_qlog;
+    return delta_qlog;
 }
 
 static void calculate_vissual_weight(SnowContext *s, Plane *p){
@@ -4162,6 +4164,8 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
     const int width= s->avctx->width;
     const int height= s->avctx->height;
     int level, orientation, plane_index, i, y;
+    uint8_t rc_header_bak[sizeof(s->header_state)];
+    uint8_t rc_block_bak[sizeof(s->block_state)];
 
     ff_init_range_encoder(c, buf, buf_size);
     ff_build_rac_states(c, 0.05*(1LL<<32), 256-8);
@@ -4244,6 +4248,11 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
         s->dsp= s->m.dsp;
     }
 
+    if(s->pass1_rc){
+        memcpy(rc_header_bak, s->header_state, sizeof(s->header_state));
+        memcpy(rc_block_bak, s->block_state, sizeof(s->block_state));
+    }
+
 redo_frame:
 
     s->m.pict_type = pict->pict_type;
@@ -4251,7 +4260,7 @@ redo_frame:
 
     encode_header(s);
     s->m.misc_bits = 8*(s->c.bytestream - s->c.bytestream_start);
-    encode_blocks(s);
+    encode_blocks(s, 1);
     s->m.mv_bits = 8*(s->c.bytestream - s->c.bytestream_start) - s->m.misc_bits;
 
     for(plane_index=0; plane_index<3; plane_index++){
@@ -4294,8 +4303,17 @@ redo_frame:
 
         ff_spatial_dwt(s->spatial_dwt_buffer, w, h, w, s->spatial_decomposition_type, s->spatial_decomposition_count);
 
-        if(s->pass1_rc && plane_index==0)
-            ratecontrol_1pass(s, pict);
+        if(s->pass1_rc && plane_index==0){
+            int delta_qlog = ratecontrol_1pass(s, pict);
+            if(delta_qlog){
+                //reordering qlog in the bitstream would eliminate this reset
+                ff_init_range_encoder(c, buf, buf_size);
+                memcpy(s->header_state, rc_header_bak, sizeof(s->header_state));
+                memcpy(s->block_state, rc_block_bak, sizeof(s->block_state));
+                encode_header(s);
+                encode_blocks(s, 0);
+            }
+        }
 
         for(level=0; level<s->spatial_decomposition_count; level++){
             for(orientation=level ? 1 : 0; orientation<4; orientation++){
