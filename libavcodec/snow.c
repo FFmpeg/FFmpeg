@@ -2551,8 +2551,7 @@ void ff_snow_inner_add_yblock(uint8_t *obmc, const int obmc_stride, uint8_t * * 
 }
 
 //FIXME name clenup (b_w, block_w, b_width stuff)
-static always_inline void add_yblock_buffered(SnowContext *s, slice_buffer * sb, DWTELEM *old_dst, uint8_t *dst8, uint8_t *obmc, int src_x, int src_y, int b_w, int b_h, int w, int h, int dst_stride, int src_stride, int obmc_stride, int b_x, int b_y, int add, int plane_index){
-    DWTELEM * dst = NULL;
+static always_inline void add_yblock(SnowContext *s, int sliced, slice_buffer *sb, DWTELEM *dst, uint8_t *dst8, const uint8_t *obmc, int src_x, int src_y, int b_w, int b_h, int w, int h, int dst_stride, int src_stride, int obmc_stride, int b_x, int b_y, int add, int offset_dst, int plane_index){
     const int b_width = s->b_width  << s->block_max_depth;
     const int b_height= s->b_height << s->block_max_depth;
     const int b_stride= b_width;
@@ -2584,136 +2583,7 @@ static always_inline void add_yblock_buffered(SnowContext *s, slice_buffer * sb,
     if(src_x<0){ //FIXME merge with prev & always round internal width upto *16
         obmc -= src_x;
         b_w += src_x;
-        src_x=0;
-    }else if(src_x + b_w > w){
-        b_w = w - src_x;
-    }
-    if(src_y<0){
-        obmc -= src_y*obmc_stride;
-        b_h += src_y;
-        src_y=0;
-    }else if(src_y + b_h> h){
-        b_h = h - src_y;
-    }
-
-    if(b_w<=0 || b_h<=0) return;
-
-assert(src_stride > 2*MB_SIZE + 5);
-//    old_dst += src_x + src_y*dst_stride;
-    dst8+= src_x + src_y*src_stride;
-//    src += src_x + src_y*src_stride;
-
-    ptmp= tmp + 3*tmp_step;
-    block[0]= ptmp;
-    ptmp+=tmp_step;
-    pred_block(s, block[0], tmp, src_stride, src_x, src_y, b_w, b_h, lt, plane_index, w, h);
-
-    if(same_block(lt, rt)){
-        block[1]= block[0];
-    }else{
-        block[1]= ptmp;
-        ptmp+=tmp_step;
-        pred_block(s, block[1], tmp, src_stride, src_x, src_y, b_w, b_h, rt, plane_index, w, h);
-    }
-
-    if(same_block(lt, lb)){
-        block[2]= block[0];
-    }else if(same_block(rt, lb)){
-        block[2]= block[1];
-    }else{
-        block[2]= ptmp;
-        ptmp+=tmp_step;
-        pred_block(s, block[2], tmp, src_stride, src_x, src_y, b_w, b_h, lb, plane_index, w, h);
-    }
-
-    if(same_block(lt, rb) ){
-        block[3]= block[0];
-    }else if(same_block(rt, rb)){
-        block[3]= block[1];
-    }else if(same_block(lb, rb)){
-        block[3]= block[2];
-    }else{
-        block[3]= ptmp;
-        pred_block(s, block[3], tmp, src_stride, src_x, src_y, b_w, b_h, rb, plane_index, w, h);
-    }
-#if 0
-    for(y=0; y<b_h; y++){
-        for(x=0; x<b_w; x++){
-            int v=   obmc [x + y*obmc_stride] * block[3][x + y*src_stride] * (256/OBMC_MAX);
-            if(add) dst[x + y*dst_stride] += v;
-            else    dst[x + y*dst_stride] -= v;
-        }
-    }
-    for(y=0; y<b_h; y++){
-        uint8_t *obmc2= obmc + (obmc_stride>>1);
-        for(x=0; x<b_w; x++){
-            int v=   obmc2[x + y*obmc_stride] * block[2][x + y*src_stride] * (256/OBMC_MAX);
-            if(add) dst[x + y*dst_stride] += v;
-            else    dst[x + y*dst_stride] -= v;
-        }
-    }
-    for(y=0; y<b_h; y++){
-        uint8_t *obmc3= obmc + obmc_stride*(obmc_stride>>1);
-        for(x=0; x<b_w; x++){
-            int v=   obmc3[x + y*obmc_stride] * block[1][x + y*src_stride] * (256/OBMC_MAX);
-            if(add) dst[x + y*dst_stride] += v;
-            else    dst[x + y*dst_stride] -= v;
-        }
-    }
-    for(y=0; y<b_h; y++){
-        uint8_t *obmc3= obmc + obmc_stride*(obmc_stride>>1);
-        uint8_t *obmc4= obmc3+ (obmc_stride>>1);
-        for(x=0; x<b_w; x++){
-            int v=   obmc4[x + y*obmc_stride] * block[0][x + y*src_stride] * (256/OBMC_MAX);
-            if(add) dst[x + y*dst_stride] += v;
-            else    dst[x + y*dst_stride] -= v;
-        }
-    }
-#else
-{
-
-    START_TIMER
-
-    s->dsp.inner_add_yblock(obmc, obmc_stride, block, b_w, b_h, src_x,src_y, src_stride, sb, add, dst8);
-        STOP_TIMER("Inner add y block")
-}
-#endif
-}
-
-//FIXME name clenup (b_w, block_w, b_width stuff)
-static always_inline void add_yblock(SnowContext *s, DWTELEM *dst, uint8_t *dst8, const uint8_t *obmc, int src_x, int src_y, int b_w, int b_h, int w, int h, int dst_stride, int src_stride, int obmc_stride, int b_x, int b_y, int add, int offset_dst, int plane_index){
-    const int b_width = s->b_width  << s->block_max_depth;
-    const int b_height= s->b_height << s->block_max_depth;
-    const int b_stride= b_width;
-    BlockNode *lt= &s->block[b_x + b_y*b_stride];
-    BlockNode *rt= lt+1;
-    BlockNode *lb= lt+b_stride;
-    BlockNode *rb= lb+1;
-    uint8_t *block[4];
-    int tmp_step= src_stride >= 7*MB_SIZE ? MB_SIZE : MB_SIZE*src_stride;
-    uint8_t tmp[src_stride*7*MB_SIZE]; //FIXME align
-    uint8_t *ptmp;
-    int x,y;
-
-    if(b_x<0){
-        lt= rt;
-        lb= rb;
-    }else if(b_x + 1 >= b_width){
-        rt= lt;
-        rb= lb;
-    }
-    if(b_y<0){
-        lt= lb;
-        rt= rb;
-    }else if(b_y + 1 >= b_height){
-        lb= lt;
-        rb= rt;
-    }
-
-    if(src_x<0){ //FIXME merge with prev & always round internal width upto *16
-        obmc -= src_x;
-        b_w += src_x;
-        if(!offset_dst)
+        if(!sliced && !offset_dst)
             dst -= src_x;
         src_x=0;
     }else if(src_x + b_w > w){
@@ -2722,7 +2592,7 @@ static always_inline void add_yblock(SnowContext *s, DWTELEM *dst, uint8_t *dst8
     if(src_y<0){
         obmc -= src_y*obmc_stride;
         b_h += src_y;
-        if(!offset_dst)
+        if(!sliced && !offset_dst)
             dst -= src_y*dst_stride;
         src_y=0;
     }else if(src_y + b_h> h){
@@ -2732,7 +2602,7 @@ static always_inline void add_yblock(SnowContext *s, DWTELEM *dst, uint8_t *dst8
     if(b_w<=0 || b_h<=0) return;
 
 assert(src_stride > 2*MB_SIZE + 5);
-    if(offset_dst)
+    if(!sliced && offset_dst)
         dst += src_x + src_y*dst_stride;
     dst8+= src_x + src_y*src_stride;
 //    src += src_x + src_y*src_stride;
@@ -2804,6 +2674,12 @@ assert(src_stride > 2*MB_SIZE + 5);
         }
     }
 #else
+    if(sliced){
+        START_TIMER
+
+        s->dsp.inner_add_yblock(obmc, obmc_stride, block, b_w, b_h, src_x,src_y, src_stride, sb, add, dst8);
+        STOP_TIMER("inner_add_yblock")
+    }else
     for(y=0; y<b_h; y++){
         //FIXME ugly missue of obmc_stride
         uint8_t *obmc1= obmc + y*obmc_stride;
@@ -2886,14 +2762,14 @@ static always_inline void predict_slice_buffered(SnowContext *s, slice_buffer * 
         for(mb_x=0; mb_x<=mb_w; mb_x++){
             START_TIMER
 
-            add_yblock_buffered(s, sb, old_buffer, dst8, obmc,
+            add_yblock(s, 1, sb, old_buffer, dst8, obmc,
                        block_w*mb_x - block_w/2,
                        block_w*mb_y - block_w/2,
                        block_w, block_w,
                        w, h,
                        w, ref_stride, obmc_stride,
                        mb_x - 1, mb_y - 1,
-                       add, plane_index);
+                       add, 0, plane_index);
 
             STOP_TIMER("add_yblock")
         }
@@ -2943,7 +2819,7 @@ static always_inline void predict_slice(SnowContext *s, DWTELEM *buf, int plane_
         for(mb_x=0; mb_x<=mb_w; mb_x++){
             START_TIMER
 
-            add_yblock(s, buf, dst8, obmc,
+            add_yblock(s, 0, NULL, buf, dst8, obmc,
                        block_w*mb_x - block_w/2,
                        block_w*mb_y - block_w/2,
                        block_w, block_w,
@@ -2994,7 +2870,7 @@ static int get_dc(SnowContext *s, int mb_x, int mb_y, int plane_index){
         int x= block_w*mb_x2 + block_w/2;
         int y= block_w*mb_y2 + block_w/2;
 
-        add_yblock(s, dst + ((i&1)+(i>>1)*obmc_stride)*block_w, NULL, obmc,
+        add_yblock(s, 0, NULL, dst + ((i&1)+(i>>1)*obmc_stride)*block_w, NULL, obmc,
                     x, y, block_w, block_w, w, h, obmc_stride, ref_stride, obmc_stride, mb_x2, mb_y2, 0, 0, plane_index);
 
         for(y2= FFMAX(y, 0); y2<FFMIN(h, y+block_w); y2++){
@@ -3178,7 +3054,7 @@ static int get_4block_rd(SnowContext *s, int mb_x, int mb_y, int plane_index){
         int x= block_w*mb_x2 + block_w/2;
         int y= block_w*mb_y2 + block_w/2;
 
-        add_yblock(s, zero_dst, dst, obmc,
+        add_yblock(s, 0, NULL, zero_dst, dst, obmc,
                    x, y, block_w, block_w, w, h, /*dst_stride*/0, ref_stride, obmc_stride, mb_x2, mb_y2, 1, 1, plane_index);
 
         //FIXME find a cleaner/simpler way to skip the outside stuff
