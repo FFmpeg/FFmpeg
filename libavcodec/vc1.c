@@ -879,8 +879,15 @@ static void vc1_mc_1mv(VC1Context *v, int dir)
     if(s->flags & CODEC_FLAG_GRAY) return;
     /* Chroma MC always uses qpel bilinear */
     uvdxy = ((uvmy & 3) << 2) | (uvmx & 3);
-    dsp->put_vc1_qpel_pixels_tab[uvdxy](s->dest[1], srcU, s->uvlinesize, v->rnd);
-    dsp->put_vc1_qpel_pixels_tab[uvdxy](s->dest[2], srcV, s->uvlinesize, v->rnd);
+    uvmx = (uvmx&3)<<1;
+    uvmy = (uvmy&3)<<1;
+    if(!v->rnd){
+        dsp->put_h264_chroma_pixels_tab[0](s->dest[1], srcU, s->uvlinesize, 8, uvmx, uvmy);
+        dsp->put_h264_chroma_pixels_tab[0](s->dest[2], srcV, s->uvlinesize, 8, uvmx, uvmy);
+    }else{
+        dsp->put_no_rnd_h264_chroma_pixels_tab[0](s->dest[1], srcU, s->uvlinesize, 8, uvmx, uvmy);
+        dsp->put_no_rnd_h264_chroma_pixels_tab[0](s->dest[2], srcV, s->uvlinesize, 8, uvmx, uvmy);
+    }
 }
 
 /** Do motion compensation for 4-MV macroblock - luminance block
@@ -1077,8 +1084,15 @@ static void vc1_mc_4mv_chroma(VC1Context *v)
 
     /* Chroma MC always uses qpel bilinear */
     uvdxy = ((uvmy & 3) << 2) | (uvmx & 3);
-    dsp->put_vc1_qpel_pixels_tab[uvdxy](s->dest[1], srcU, s->uvlinesize, v->rnd);
-    dsp->put_vc1_qpel_pixels_tab[uvdxy](s->dest[2], srcV, s->uvlinesize, v->rnd);
+    uvmx = (uvmx&3)<<1;
+    uvmy = (uvmy&3)<<1;
+    if(!v->rnd){
+        dsp->put_h264_chroma_pixels_tab[0](s->dest[1], srcU, s->uvlinesize, 8, uvmx, uvmy);
+        dsp->put_h264_chroma_pixels_tab[0](s->dest[2], srcV, s->uvlinesize, 8, uvmx, uvmy);
+    }else{
+        dsp->put_no_rnd_h264_chroma_pixels_tab[0](s->dest[1], srcU, s->uvlinesize, 8, uvmx, uvmy);
+        dsp->put_no_rnd_h264_chroma_pixels_tab[0](s->dest[2], srcV, s->uvlinesize, 8, uvmx, uvmy);
+    }
 }
 
 /**
