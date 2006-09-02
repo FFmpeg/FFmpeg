@@ -29,7 +29,6 @@
 //#undef NDEBUG
 //#include <assert.h>
 
-extern const uint8_t ff_h263_loop_filter_strength[32];
 extern void ff_idct_xvid_mmx(short *block);
 extern void ff_idct_xvid_mmx2(short *block);
 

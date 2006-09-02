@@ -407,9 +407,6 @@ extern AVImageFormat *first_image_format attribute_deprecated;
 
 #include "rtsp.h"
 
-/* yuv4mpeg.c */
-extern AVOutputFormat yuv4mpegpipe_muxer;
-
 /* utils.c */
 void av_register_input_format(AVInputFormat *format);
 void av_register_output_format(AVOutputFormat *format);

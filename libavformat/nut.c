@@ -112,8 +112,6 @@ static char *info_table[][2]={
         {"Cover"                , "PNG"},
 };
 
-void ff_parse_specific_params(AVCodecContext *stream, int *au_rate, int *au_ssize, int *au_scale);
-
 static void update(NUTContext *nut, int stream_index, int64_t frame_start, int frame_type, int frame_code, int key_frame, int size, int64_t pts){
     StreamContext *stream= &nut->stream[stream_index];
 

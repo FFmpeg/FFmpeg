@@ -197,7 +197,6 @@ static const int32_t scale_factor_mult2[3][3] = {
     SCALE_GEN(4.0 / 9.0), /* 9 steps */
 };
 
-void ff_mpa_synth_init(MPA_INT *window);
 static MPA_INT window[512] __attribute__((aligned(16)));
 
 /* layer 1 unscaling */

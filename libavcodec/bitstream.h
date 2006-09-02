@@ -771,7 +771,6 @@ static void align_get_bits(GetBitContext *s)
     if(n) skip_bits(s, n);
 }
 
-int check_marker(GetBitContext *s, const char *msg);
 int init_vlc(VLC *vlc, int nb_bits, int nb_codes,
              const void *bits, int bits_wrap, int bits_size,
              const void *codes, int codes_wrap, int codes_size,

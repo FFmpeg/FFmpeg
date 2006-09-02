@@ -3540,8 +3540,6 @@ static int dct_max8x8_c(/*MpegEncContext*/ void *c, uint8_t *src1, uint8_t *src2
     return sum;
 }
 
-void simple_idct(DCTELEM *block); //FIXME
-
 static int quant_psnr8x8_c(/*MpegEncContext*/ void *c, uint8_t *src1, uint8_t *src2, int stride, int h){
     MpegEncContext * const s= (MpegEncContext *)c;
     DECLARE_ALIGNED_8 (uint64_t, aligned_temp[sizeof(DCTELEM)*64*2/8]);

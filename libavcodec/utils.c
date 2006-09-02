@@ -57,8 +57,6 @@ const uint8_t ff_reverse[256]={
 
 static int volatile entangled_thread_counter=0;
 
-void avcodec_default_free_buffers(AVCodecContext *s);
-
 void *av_mallocz(unsigned int size)
 {
     void *ptr;
