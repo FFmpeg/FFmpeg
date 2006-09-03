@@ -175,6 +175,135 @@ static void OPNAME ## h264_qpel ## SIZE ## _mc32_ ## CODETYPE(uint8_t *dst, uint
     OPNAME ## pixels ## SIZE ## _l2_ ## CODETYPE(dst, halfV, halfHV, stride, SIZE, SIZE);\
 }\
 
+/* this code assume that stride % 16 == 0 */
+void put_no_rnd_h264_chroma_mc8_altivec(uint8_t * dst, uint8_t * src, int stride, int h, int x, int y) {
+    signed int ABCD[4] __attribute__((aligned(16))) =
+                        {((8 - x) * (8 - y)),
+                          ((x) * (8 - y)),
+                          ((8 - x) * (y)),
+                          ((x) * (y))};
+    register int i;
+    vector unsigned char fperm;
+    const vector signed int vABCD = vec_ld(0, ABCD);
+    const vector signed short vA = vec_splat((vector signed short)vABCD, 1);
+    const vector signed short vB = vec_splat((vector signed short)vABCD, 3);
+    const vector signed short vC = vec_splat((vector signed short)vABCD, 5);
+    const vector signed short vD = vec_splat((vector signed short)vABCD, 7);
+    const vector signed int vzero = vec_splat_s32(0);
+    const vector signed short v28ss = vec_sub(vec_sl(vec_splat_s16(1),vec_splat_u16(5)),vec_splat_s16(4));
+    const vector unsigned short v6us = vec_splat_u16(6);
+    register int loadSecond = (((unsigned long)src) % 16) <= 7 ? 0 : 1;
+    register int reallyBadAlign = (((unsigned long)src) % 16) == 15 ? 1 : 0;
+
+    vector unsigned char vsrcAuc, vsrcBuc, vsrcperm0, vsrcperm1;
+    vector unsigned char vsrc0uc, vsrc1uc;
+    vector signed short vsrc0ssH, vsrc1ssH;
+    vector unsigned char vsrcCuc, vsrc2uc, vsrc3uc;
+    vector signed short vsrc2ssH, vsrc3ssH, psum;
+    vector unsigned char vdst, ppsum, vfdst, fsum;
+
+    if (((unsigned long)dst) % 16 == 0) {
+      fperm = (vector unsigned char)AVV(0x10, 0x11, 0x12, 0x13,
+                                        0x14, 0x15, 0x16, 0x17,
+                                        0x08, 0x09, 0x0A, 0x0B,
+                                        0x0C, 0x0D, 0x0E, 0x0F);
+    } else {
+      fperm = (vector unsigned char)AVV(0x00, 0x01, 0x02, 0x03,
+                                        0x04, 0x05, 0x06, 0x07,
+                                        0x18, 0x19, 0x1A, 0x1B,
+                                        0x1C, 0x1D, 0x1E, 0x1F);
+    }
+
+    vsrcAuc = vec_ld(0, src);
+
+    if (loadSecond)
+      vsrcBuc = vec_ld(16, src);
+    vsrcperm0 = vec_lvsl(0, src);
+    vsrcperm1 = vec_lvsl(1, src);
+
+    vsrc0uc = vec_perm(vsrcAuc, vsrcBuc, vsrcperm0);
+    if (reallyBadAlign)
+      vsrc1uc = vsrcBuc;
+    else
+      vsrc1uc = vec_perm(vsrcAuc, vsrcBuc, vsrcperm1);
+
+    vsrc0ssH = (vector signed short)vec_mergeh((vector unsigned char)vzero,
+                                               (vector unsigned char)vsrc0uc);
+    vsrc1ssH = (vector signed short)vec_mergeh((vector unsigned char)vzero,
+                                               (vector unsigned char)vsrc1uc);
+
+    if (!loadSecond) {// -> !reallyBadAlign
+      for (i = 0 ; i < h ; i++) {
+
+
+        vsrcCuc = vec_ld(stride + 0, src);
+
+        vsrc2uc = vec_perm(vsrcCuc, vsrcCuc, vsrcperm0);
+        vsrc3uc = vec_perm(vsrcCuc, vsrcCuc, vsrcperm1);
+
+        vsrc2ssH = (vector signed short)vec_mergeh((vector unsigned char)vzero,
+                                                (vector unsigned char)vsrc2uc);
+        vsrc3ssH = (vector signed short)vec_mergeh((vector unsigned char)vzero,
+                                                (vector unsigned char)vsrc3uc);
+
+        psum = vec_mladd(vA, vsrc0ssH, vec_splat_s16(0));
+        psum = vec_mladd(vB, vsrc1ssH, psum);
+        psum = vec_mladd(vC, vsrc2ssH, psum);
+        psum = vec_mladd(vD, vsrc3ssH, psum);
+        psum = vec_add(v28ss, psum);
+        psum = vec_sra(psum, v6us);
+
+        vdst = vec_ld(0, dst);
+        ppsum = (vector unsigned char)vec_packsu(psum, psum);
+        fsum = vec_perm(vdst, ppsum, fperm);
+
+        vec_st(fsum, 0, dst);
+
+        vsrc0ssH = vsrc2ssH;
+        vsrc1ssH = vsrc3ssH;
+
+        dst += stride;
+        src += stride;
+      }
+    } else {
+        vector unsigned char vsrcDuc;
+      for (i = 0 ; i < h ; i++) {
+        vsrcCuc = vec_ld(stride + 0, src);
+        vsrcDuc = vec_ld(stride + 16, src);
+
+        vsrc2uc = vec_perm(vsrcCuc, vsrcDuc, vsrcperm0);
+        if (reallyBadAlign)
+          vsrc3uc = vsrcDuc;
+        else
+          vsrc3uc = vec_perm(vsrcCuc, vsrcDuc, vsrcperm1);
+
+        vsrc2ssH = (vector signed short)vec_mergeh((vector unsigned char)vzero,
+                                                (vector unsigned char)vsrc2uc);
+        vsrc3ssH = (vector signed short)vec_mergeh((vector unsigned char)vzero,
+                                                (vector unsigned char)vsrc3uc);
+
+        psum = vec_mladd(vA, vsrc0ssH, vec_splat_s16(0));
+        psum = vec_mladd(vB, vsrc1ssH, psum);
+        psum = vec_mladd(vC, vsrc2ssH, psum);
+        psum = vec_mladd(vD, vsrc3ssH, psum);
+        psum = vec_add(v28ss, psum);
+        psum = vec_sr(psum, v6us);
+
+        vdst = vec_ld(0, dst);
+        ppsum = (vector unsigned char)vec_pack(psum, psum);
+        fsum = vec_perm(vdst, ppsum, fperm);
+
+        vec_st(fsum, 0, dst);
+
+        vsrc0ssH = vsrc2ssH;
+        vsrc1ssH = vsrc3ssH;
+
+        dst += stride;
+        src += stride;
+      }
+    }
+}
+
 static inline void put_pixels16_l2_altivec( uint8_t * dst, const uint8_t * src1,
                                     const uint8_t * src2, int dst_stride,
                                     int src_stride1, int h)
@@ -272,6 +401,7 @@ void dsputil_h264_init_ppc(DSPContext* c, AVCodecContext *avctx) {
 #ifdef HAVE_ALTIVEC
   if (has_altivec()) {
     c->put_h264_chroma_pixels_tab[0] = put_h264_chroma_mc8_altivec;
+    c->put_no_rnd_h264_chroma_pixels_tab[0] = put_no_rnd_h264_chroma_mc8_altivec;
     c->avg_h264_chroma_pixels_tab[0] = avg_h264_chroma_mc8_altivec;
 
 #define dspfunc(PFX, IDX, NUM) \
