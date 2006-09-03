@@ -25,6 +25,9 @@
 #include <ctype.h>
 #include "framehook.h"
 #include "avformat.h"
+#include "swscale.h"
+
+static int sws_flags = SWS_BICUBIC;
 
 /** Bi-directional pipe structure.
 */
@@ -188,6 +191,12 @@ typedef struct
     char *buf1;
     int size2;
     char *buf2;
+
+    // This vhook first converts frame to RGB ...
+    struct SwsContext *toRGB_convert_ctx;
+    // ... then processes it via a PPM command pipe ...
+    // ... and finally converts back frame from RGB to initial format
+    struct SwsContext *fromRGB_convert_ctx;
 }
 ContextInfo;
 
@@ -246,8 +255,24 @@ void Process(void *ctx, AVPicture *picture, enum PixelFormat pix_fmt, int width,
         if ( !err )
         {
             avpicture_fill(&picture1, ci->buf1, PIX_FMT_RGB24, width, height);
-            if (img_convert(&picture1, PIX_FMT_RGB24, picture, pix_fmt, width, height) < 0)
-                err = 1;
+
+            // if we already got a SWS context, let's realloc if is not re-useable
+            ci->toRGB_convert_ctx = sws_getCachedContext(ci->toRGB_convert_ctx,
+                                        width, height, pix_fmt,
+                                        width, height, PIX_FMT_RGB24,
+                                        sws_flags, NULL, NULL, NULL);
+            if (ci->toRGB_convert_ctx == NULL) {
+                av_log(NULL, AV_LOG_ERROR,
+                       "Cannot initialize the toRGB conversion context\n");
+                exit(1);
+            }
+
+// img_convert parameters are          2 first destination, then 4 source
+// sws_scale   parameters are context, 4 first source,      then 2 destination
+            sws_scale(ci->toRGB_convert_ctx,
+                     picture->data, picture->linesize, 0, height,
+                     picture1.data, picture1.linesize);
+
             pict = &picture1;
         }
     }
@@ -294,22 +319,28 @@ void Process(void *ctx, AVPicture *picture, enum PixelFormat pix_fmt, int width,
     /* Convert the returned PPM back to the input format */
     if ( !err )
     {
-        /* Actually, this is wrong, since the out_width/out_height returned from the
-         * filter won't necessarily be the same as width and height - img_resample
-         * won't scale rgb24, so the only way out of this is to convert to something
-         * that img_resample does like [which may or may not be pix_fmt], rescale
-         * and finally convert to pix_fmt... slow, but would provide the most flexibility.
-         *
-         * Currently, we take the upper left width/height pixels from the filtered image,
-         * smaller images are going to be corrupted or cause a crash.
-         *
-         * Finally, what should we do in case of this call failing? Up to now, failures
-         * are gracefully ignored and the original image is returned - in this case, a
-         * failure may corrupt the input.
+        /* The out_width/out_height returned from the PPM
+         * filter won't necessarily be the same as width and height
+         * but it will be scaled anyway to width/height.
          */
-        if (img_convert(picture, pix_fmt, &picture2, PIX_FMT_RGB24, width, height) < 0)
-        {
+        av_log(NULL, AV_LOG_DEBUG,
+                  "PPM vhook: Input dimensions: %d x %d Output dimensions: %d x %d\n",
+                  width, height, out_width, out_height);
+        ci->fromRGB_convert_ctx = sws_getCachedContext(ci->fromRGB_convert_ctx,
+                                        out_width, out_height, PIX_FMT_RGB24,
+                                        width,     height,     pix_fmt,
+                                        sws_flags, NULL, NULL, NULL);
+        if (ci->fromRGB_convert_ctx == NULL) {
+            av_log(NULL, AV_LOG_ERROR,
+                   "Cannot initialize the fromRGB conversion context\n");
+            exit(1);
         }
+
+// img_convert parameters are          2 first destination, then 4 source
+// sws_scale   parameters are context, 4 first source,      then 2 destination
+        sws_scale(ci->fromRGB_convert_ctx,
+                 picture2.data, picture2.linesize, 0, out_height,
+                 picture->data, picture->linesize);
     }
 }
 
@@ -326,6 +357,8 @@ void Release(void *ctx)
         rwpipe_close( ci->rw );
         av_free( ci->buf1 );
         av_free( ci->buf2 );
+        sws_freeContext(ci->toRGB_convert_ctx);
+        sws_freeContext(ci->fromRGB_convert_ctx);
         av_free(ctx);
     }
 }
