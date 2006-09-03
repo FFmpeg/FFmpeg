@@ -160,7 +160,7 @@ static const uint16_t dbkneetab[4]= {
     0x000, 0x700, 0x900, 0xb00,
 };
 
-static const uint16_t floortab[8]= {
+static const int16_t floortab[8]= {
     0x2f0, 0x2b0, 0x270, 0x230, 0x1f0, 0x170, 0x0f0, 0xf800,
 };
 

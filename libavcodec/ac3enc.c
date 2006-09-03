@@ -804,7 +804,7 @@ void ac3_common_init(void)
         for(j=0;j<v;j++) masktab[k++]=i;
         l += v;
     }
-    bndtab[50] = 0;
+    bndtab[50] = l;
 }
 
 
