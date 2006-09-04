@@ -142,6 +142,7 @@ const CodecTag codec_bmp_tags[] = {
     { CODEC_ID_QPEG, MKTAG('Q', '1', '.', '0') },
     { CODEC_ID_QPEG, MKTAG('Q', '1', '.', '1') },
     { CODEC_ID_WMV3, MKTAG('W', 'M', 'V', '3') },
+    { CODEC_ID_VC1, MKTAG('W', 'V', 'C', '1') },
     { CODEC_ID_LOCO, MKTAG('L', 'O', 'C', 'O') },
     { CODEC_ID_WNV1, MKTAG('W', 'N', 'V', '1') },
     { CODEC_ID_AASC, MKTAG('A', 'A', 'S', 'C') },
