@@ -434,6 +434,16 @@ int fifo_read(FifoBuffer *f, uint8_t *buf, int buf_size, uint8_t **rptr_ptr);
 void fifo_write(FifoBuffer *f, const uint8_t *buf, int size, uint8_t **wptr_ptr);
 int put_fifo(ByteIOContext *pb, FifoBuffer *f, int buf_size, uint8_t **rptr_ptr);
 void fifo_realloc(FifoBuffer *f, unsigned int size);
+static inline uint8_t fifo_peek(FifoBuffer *f, int offs)
+{
+    return f->buffer[(f->rptr - f->buffer + offs) % (f->end - f->buffer)];
+}
+static inline void fifo_drain(FifoBuffer *f, int size)
+{
+    f->rptr += size;
+    if (f->rptr >= f->end)
+        f->rptr = f->buffer + (f->rptr - f->end);
+}
 
 /* media file input */
 AVInputFormat *av_find_input_format(const char *short_name);

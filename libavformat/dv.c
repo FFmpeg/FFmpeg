@@ -49,91 +49,9 @@ struct DVMuxContext {
     FifoBuffer  audio_data[2]; /* Fifo for storing excessive amounts of PCM */
     int         frames;       /* Number of a current frame */
     time_t      start_time;   /* Start time of recording */
-    uint8_t     aspect;       /* Aspect ID 0 - 4:3, 7 - 16:9 */
     int         has_audio;    /* frame under contruction has audio */
     int         has_video;    /* frame under contruction has video */
     uint8_t     frame_buf[DV_MAX_FRAME_SIZE]; /* frame under contruction */
-};
-
-enum dv_section_type {
-     dv_sect_header  = 0x1f,
-     dv_sect_subcode = 0x3f,
-     dv_sect_vaux    = 0x56,
-     dv_sect_audio   = 0x76,
-     dv_sect_video   = 0x96,
-};
-
-enum dv_pack_type {
-     dv_header525     = 0x3f, /* see dv_write_pack for important details on */
-     dv_header625     = 0xbf, /* these two packs */
-     dv_timecode      = 0x13,
-     dv_audio_source  = 0x50,
-     dv_audio_control = 0x51,
-     dv_audio_recdate = 0x52,
-     dv_audio_rectime = 0x53,
-     dv_video_source  = 0x60,
-     dv_video_control = 0x61,
-     dv_video_recdate = 0x62,
-     dv_video_rectime = 0x63,
-     dv_unknown_pack  = 0xff,
-};
-
-
-
-/*
- * The reason why the following three big ugly looking tables are
- * here is my lack of DV spec IEC 61834. The tables were basically
- * constructed to make code that places packs in SSYB, VAUX and
- * AAUX blocks very simple and table-driven. They conform to the
- * SMPTE 314M and the output of my personal DV camcorder, neither
- * of which is sufficient for a reliable DV stream producing. Thus
- * while code is still in development I'll be gathering input from
- * people with different DV equipment and modifying the tables to
- * accommodate all the quirks. Later on, if possible, some of them
- * will be folded into smaller tables and/or switch-if logic. For
- * now, my only excuse is -- they don't eat up that much of a space.
- */
-
-static const int dv_ssyb_packs_dist[12][6] = {
-    { 0x13, 0x13, 0x13, 0x13, 0x13, 0x13 },
-    { 0x13, 0x13, 0x13, 0x13, 0x13, 0x13 },
-    { 0x13, 0x13, 0x13, 0x13, 0x13, 0x13 },
-    { 0x13, 0x13, 0x13, 0x13, 0x13, 0x13 },
-    { 0x13, 0x13, 0x13, 0x13, 0x13, 0x13 },
-    { 0x13, 0x13, 0x13, 0x13, 0x13, 0x13 },
-    { 0x13, 0x62, 0x63, 0x13, 0x62, 0x63 },
-    { 0x13, 0x62, 0x63, 0x13, 0x62, 0x63 },
-    { 0x13, 0x62, 0x63, 0x13, 0x62, 0x63 },
-    { 0x13, 0x62, 0x63, 0x13, 0x62, 0x63 },
-    { 0x13, 0x62, 0x63, 0x13, 0x62, 0x63 },
-    { 0x13, 0x62, 0x63, 0x13, 0x62, 0x63 },
-};
-
-static const int dv_vaux_packs_dist[12][15] = {
-    { 0x60, 0x61, 0x62, 0x63, 0xff, 0xff, 0xff, 0xff, 0xff,
-      0x60, 0x61, 0x62, 0x63, 0xff, 0xff },
-    { 0x60, 0x61, 0x62, 0x63, 0xff, 0xff, 0xff, 0xff, 0xff,
-      0x60, 0x61, 0x62, 0x63, 0xff, 0xff },
-    { 0x60, 0x61, 0x62, 0x63, 0xff, 0xff, 0xff, 0xff, 0xff,
-      0x60, 0x61, 0x62, 0x63, 0xff, 0xff },
-    { 0x60, 0x61, 0x62, 0x63, 0xff, 0xff, 0xff, 0xff, 0xff,
-      0x60, 0x61, 0x62, 0x63, 0xff, 0xff },
-    { 0x60, 0x61, 0x62, 0x63, 0xff, 0xff, 0xff, 0xff, 0xff,
-      0x60, 0x61, 0x62, 0x63, 0xff, 0xff },
-    { 0x60, 0x61, 0x62, 0x63, 0xff, 0xff, 0xff, 0xff, 0xff,
-      0x60, 0x61, 0x62, 0x63, 0xff, 0xff },
-    { 0x60, 0x61, 0x62, 0x63, 0xff, 0xff, 0xff, 0xff, 0xff,
-      0x60, 0x61, 0x62, 0x63, 0xff, 0xff },
-    { 0x60, 0x61, 0x62, 0x63, 0xff, 0xff, 0xff, 0xff, 0xff,
-      0x60, 0x61, 0x62, 0x63, 0xff, 0xff },
-    { 0x60, 0x61, 0x62, 0x63, 0xff, 0xff, 0xff, 0xff, 0xff,
-      0x60, 0x61, 0x62, 0x63, 0xff, 0xff },
-    { 0x60, 0x61, 0x62, 0x63, 0xff, 0xff, 0xff, 0xff, 0xff,
-      0x60, 0x61, 0x62, 0x63, 0xff, 0xff },
-    { 0x60, 0x61, 0x62, 0x63, 0xff, 0xff, 0xff, 0xff, 0xff,
-      0x60, 0x61, 0x62, 0x63, 0xff, 0xff },
-    { 0x60, 0x61, 0x62, 0x63, 0xff, 0xff, 0xff, 0xff, 0xff,
-      0x60, 0x61, 0x62, 0x63, 0xff, 0xff },
 };
 
 static const int dv_aaux_packs_dist[12][9] = {
@@ -189,20 +107,6 @@ static int dv_write_pack(enum dv_pack_type pack_id, DVMuxContext *c, uint8_t* bu
 
     buf[0] = (uint8_t)pack_id;
     switch (pack_id) {
-    case dv_header525: /* I can't imagine why these two weren't defined as real */
-    case dv_header625: /* packs in SMPTE314M -- they definitely look like ones */
-          buf[1] = 0xf8 |               /* reserved -- always 1 */
-                   (apt & 0x07);        /* APT: Track application ID */
-          buf[2] = (0 << 7)    | /* TF1: audio data is 0 - valid; 1 - invalid */
-                   (0x0f << 3) | /* reserved -- always 1 */
-                   (apt & 0x07); /* AP1: Audio application ID */
-          buf[3] = (0 << 7)    | /* TF2: video data is 0 - valid; 1 - invalid */
-                   (0x0f << 3) | /* reserved -- always 1 */
-                   (apt & 0x07); /* AP2: Video application ID */
-          buf[4] = (0 << 7)    | /* TF3: subcode(SSYB) is 0 - valid; 1 - invalid */
-                   (0x0f << 3) | /* reserved -- always 1 */
-                   (apt & 0x07); /* AP3: Subcode application ID */
-          break;
     case dv_timecode:
           ct = (time_t)(c->frames / ((float)c->sys->frame_rate /
                                      (float)c->sys->frame_rate_base));
@@ -293,117 +197,13 @@ static int dv_write_pack(enum dv_pack_type pack_id, DVMuxContext *c, uint8_t* bu
                    ((tc.tm_hour / 10) << 4) | /* Tens of hours */
                    (tc.tm_hour % 10);         /* Units of hours */
           break;
-    case dv_video_source:
-          buf[1] = 0xff; /* reserved -- always 1 */
-          buf[2] = (1 << 7) | /* B/W: 0 - b/w, 1 - color */
-                   (1 << 6) | /* following CLF is valid - 0, invalid - 1 */
-                   (3 << 4) | /* CLF: color frames id (see ITU-R BT.470-4) */
-                   0xf; /* reserved -- always 1 */
-          buf[3] = (3 << 6) | /* reserved -- always 1 */
-                   (c->sys->dsf << 5) | /*  system: 60fields/50fields */
-                   (apt << 2); /* signal type video compression */
-          buf[4] = 0xff; /* VISC: 0xff -- no information */
-          break;
-    case dv_video_control:
-          buf[1] = (0 << 6) | /* Copy generation management (CGMS) 0 -- free */
-                   0x3f; /* reserved -- always 1 */
-          buf[2] = 0xc8 | /* reserved -- always b11001xxx */
-                   c->aspect;
-          buf[3] = (1 << 7) | /* Frame/field flag 1 -- frame, 0 -- field */
-                   (1 << 6) | /* First/second field flag 0 -- field 2, 1 -- field 1 */
-                   (1 << 5) | /* Frame change flag 0 -- same picture as before, 1 -- different */
-                   (1 << 4) | /* 1 - interlaced, 0 - noninterlaced */
-                   0xc; /* reserved -- always b1100 */
-          buf[4] = 0xff; /* reserved -- always 1 */
-          break;
     default:
           buf[1] = buf[2] = buf[3] = buf[4] = 0xff;
     }
     return 5;
 }
 
-static inline int dv_write_dif_id(enum dv_section_type t, uint8_t chan_num, uint8_t seq_num,
-                                  uint8_t dif_num, uint8_t* buf)
-{
-    buf[0] = (uint8_t)t;    /* Section type */
-    buf[1] = (seq_num<<4) | /* DIF seq number 0-9 for 525/60; 0-11 for 625/50 */
-             (chan_num << 3) | /* FSC: for 50Mb/s 0 - first channel; 1 - second */
-             7;             /* reserved -- always 1 */
-    buf[2] = dif_num;       /* DIF block number Video: 0-134, Audio: 0-8 */
-    return 3;
-}
-
-static inline int dv_write_ssyb_id(uint8_t syb_num, uint8_t fr, uint8_t* buf)
-{
-    if (syb_num == 0 || syb_num == 6) {
-        buf[0] = (fr<<7) | /* FR ID 1 - first half of each channel; 0 - second */
-                 (0<<4)  | /* AP3 (Subcode application ID) */
-                 0x0f;     /* reserved -- always 1 */
-    }
-    else if (syb_num == 11) {
-        buf[0] = (fr<<7) | /* FR ID 1 - first half of each channel; 0 - second */
-                 0x7f;     /* reserved -- always 1 */
-    }
-    else {
-        buf[0] = (fr<<7) | /* FR ID 1 - first half of each channel; 0 - second */
-                 (0<<4)  | /* APT (Track application ID) */
-                 0x0f;     /* reserved -- always 1 */
-    }
-    buf[1] = 0xf0 |            /* reserved -- always 1 */
-             (syb_num & 0x0f); /* SSYB number 0 - 11   */
-    buf[2] = 0xff;             /* reserved -- always 1 */
-    return 3;
-}
-
-static void dv_format_frame(DVMuxContext *c, uint8_t* buf)
-{
-    int chan, i, j, k;
-
-    for (chan = 0; chan < c->sys->n_difchan; chan++) {
-        for (i = 0; i < c->sys->difseg_size; i++) {
-            memset(buf, 0xff, 80 * 6); /* First 6 DIF blocks are for control data */
-
-            /* DV header: 1DIF */
-            buf += dv_write_dif_id(dv_sect_header, chan, i, 0, buf);
-            buf += dv_write_pack((c->sys->dsf ? dv_header625 : dv_header525), c, buf);
-            buf += 72; /* unused bytes */
-
-            /* DV subcode: 2DIFs */
-            for (j = 0; j < 2; j++) {
-                buf += dv_write_dif_id(dv_sect_subcode, chan, i, j, buf);
-                for (k = 0; k < 6; k++) {
-                    buf += dv_write_ssyb_id(k, (i < c->sys->difseg_size/2), buf);
-                    buf += dv_write_pack(dv_ssyb_packs_dist[i][k], c, buf);
-                }
-                buf += 29; /* unused bytes */
-            }
-
-            /* DV VAUX: 3DIFs */
-            for (j = 0; j < 3; j++) {
-                buf += dv_write_dif_id(dv_sect_vaux, chan, i, j, buf);
-                for (k = 0; k < 15 ; k++)
-                    buf += dv_write_pack(dv_vaux_packs_dist[i][k], c, buf);
-                buf += 2; /* unused bytes */
-            }
-
-            /* DV Audio/Video: 135 Video DIFs + 9 Audio DIFs */
-            for (j = 0; j < 135; j++) {
-                if (j%15 == 0) {
-                    memset(buf, 0xff, 80);
-                    buf += dv_write_dif_id(dv_sect_audio, chan, i, j/15, buf);
-                    buf += 77; /* audio control & shuffled PCM audio */
-                }
-                buf += dv_write_dif_id(dv_sect_video, chan, i, j, buf);
-                buf += 77; /* 1 video macro block: 1 bytes control
-                              4 * 14 bytes Y 8x8 data
-                              10 bytes Cr 8x8 data
-                              10 bytes Cb 8x8 data */
-            }
-        }
-    }
-}
-
-static void dv_inject_audio(DVMuxContext *c, const uint8_t* pcm, int channel, uint8_t* frame_ptr)
+static void dv_inject_audio(DVMuxContext *c, int channel, uint8_t* frame_ptr)
 {
     int i, j, d, of, size;
     size = 4 * dv_audio_frame_size(c->sys, c->frames);
@@ -417,29 +217,39 @@ static void dv_inject_audio(DVMuxContext *c, const uint8_t* pcm, int channel, ui
              if (of*2 >= size)
                  continue;
 
-             frame_ptr[d] = pcm[of*2+1]; // FIXME: may be we have to admit
-             frame_ptr[d+1] = pcm[of*2]; //        that DV is a big endian PCM
+             frame_ptr[d] = fifo_peek(&c->audio_data[channel], of*2+1); // FIXME: may be we have to admit
+             frame_ptr[d+1] = fifo_peek(&c->audio_data[channel], of*2); //        that DV is a big endian PCM
           }
           frame_ptr += 16 * 80; /* 15 Video DIFs + 1 Audio DIF */
        }
     }
 }
 
-static void dv_inject_video(DVMuxContext *c, const uint8_t* video_data, uint8_t* frame_ptr)
+static void dv_inject_metadata(DVMuxContext *c, uint8_t* frame)
 {
-    int chan, i, j;
-    int ptr = 0;
+    int j, k;
+    uint8_t* buf;
 
-    for (chan = 0; chan < c->sys->n_difchan; chan++) {
-        for (i = 0; i < c->sys->difseg_size; i++) {
-            ptr += 6 * 80; /* skip DIF segment header */
-            for (j = 0; j < 135; j++) {
-                if (j%15 == 0)
-                    ptr += 80; /* skip Audio DIF */
-                ptr += 3;
-                memcpy(frame_ptr + ptr, video_data + ptr, 77);
-                ptr += 77;
+    for (buf = frame; buf < frame + c->sys->frame_size; buf += 150 * 80) {
+        /* DV subcode: 2nd and 3d DIFs */
+        for (j = 80; j < 80 * 3; j += 80) {
+            for (k = 6; k < 6 * 8; k += 8)
+                dv_write_pack(dv_timecode, c, &buf[j+k]);
+
+            if (((long)(buf-frame)/(c->sys->frame_size/(c->sys->difseg_size*c->sys->n_difchan))%c->sys->difseg_size) > 5) { /* FIXME: is this really needed ? */
+                dv_write_pack(dv_video_recdate, c, &buf[j+14]);
+                dv_write_pack(dv_video_rectime, c, &buf[j+22]);
+                dv_write_pack(dv_video_recdate, c, &buf[j+38]);
+                dv_write_pack(dv_video_rectime, c, &buf[j+46]);
             }
+        }
+
+        /* DV VAUX: 4th, 5th and 6th 3DIFs */
+        for (j = 80*3 + 3; j < 80*6; j += 80) {
+            dv_write_pack(dv_video_recdate, c, &buf[j+5*2]);
+            dv_write_pack(dv_video_rectime, c, &buf[j+5*3]);
+            dv_write_pack(dv_video_recdate, c, &buf[j+5*11]);
+            dv_write_pack(dv_video_rectime, c, &buf[j+5*12]);
         }
     }
 }
@@ -643,60 +453,52 @@ static int dv_extract_video_info(DVDemuxContext *c, uint8_t* frame)
 int dv_assemble_frame(DVMuxContext *c, AVStream* st,
                       const uint8_t* data, int data_size, uint8_t** frame)
 {
-    uint8_t pcm[8192];
-    int i;
+    int i, reqasize;
 
     *frame = &c->frame_buf[0];
-    if (c->has_audio && c->has_video &&
-        (c->has_audio == -1 || c->has_audio == c->n_ast)) {
-        /* must be a stale frame */
-        dv_format_frame(c, *frame);
-        c->frames++;
-        if (c->has_audio > 0)
-            c->has_audio = 0;
-        c->has_video = 0;
+    reqasize = 4 * dv_audio_frame_size(c->sys, c->frames);
+
+    switch (st->codec->codec_type) {
+    case CODEC_TYPE_VIDEO:
+          /* FIXME: we have to have more sensible approach than this one */
+          if (c->has_video)
+              av_log(st->codec, AV_LOG_ERROR, "Can't process DV frame #%d. Insufficient audio data or severe sync problem.\n", c->frames);
+
+          memcpy(*frame, data, c->sys->frame_size);
+          c->has_video = 1;
+          break;
+    case CODEC_TYPE_AUDIO:
+          for (i = 0; i < c->n_ast && st != c->ast[i]; i++);
+
+          /* FIXME: we have to have more sensible approach than this one */
+          if (fifo_size(&c->audio_data[i], c->audio_data[i].rptr) + data_size >= 100*AVCODEC_MAX_AUDIO_FRAME_SIZE)
+              av_log(st->codec, AV_LOG_ERROR, "Can't process DV frame #%d. Insufficient video data or severe sync problem.\n", c->frames);
+          fifo_write(&c->audio_data[i], data, data_size, &c->audio_data[i].wptr);
+
+          /* Lets see if we've got enough audio for one DV frame */
+          c->has_audio |= ((reqasize <= fifo_size(&c->audio_data[i], c->audio_data[i].rptr)) << i);
+
+          break;
+    default:
+          break;
     }
 
-    if (st->codec->codec_type == CODEC_TYPE_VIDEO) {
-        /* FIXME: we have to have more sensible approach than this one */
-        if (c->has_video)
-            av_log(st->codec, AV_LOG_ERROR, "Can't process DV frame #%d. Insufficient audio data or severe sync problem.\n", c->frames);
-
-        dv_inject_video(c, data, *frame);
-        c->has_video = 1;
-        data_size = 0;
-        if (c->has_audio < 0)
-            goto out;
-    }
-
-    for (i = 0; i < c->n_ast; i++) {
-        int reqasize, fsize;
-        if (st != c->ast[i])
-            continue;
-        reqasize = 4 * dv_audio_frame_size(c->sys, c->frames);
-        fsize = fifo_size(&c->audio_data[i], c->audio_data[i].rptr);
-        if (st->codec->codec_type == CODEC_TYPE_AUDIO ||
-            (c->has_video && fsize >= reqasize)) {
-            if (fsize + data_size >= reqasize && (c->has_audio < c->n_ast)) {
-                if (fsize >= reqasize) {
-                    fifo_read(&c->audio_data[i], &pcm[0], reqasize, &c->audio_data[i].rptr);
-                } else {
-                    fifo_read(&c->audio_data[i], &pcm[0], fsize, &c->audio_data[i].rptr);
-                    memcpy(&pcm[fsize], &data[0], reqasize - fsize);
-                    data += reqasize - fsize;
-                    data_size -= reqasize - fsize;
-                }
-                dv_inject_audio(c, &pcm[0], i, *frame);
-                c->has_audio += 1;
-            }
-            /* FIXME: we have to have more sensible approach than this one */
-            if (fifo_size(&c->audio_data[i], c->audio_data[i].rptr) + data_size >= 100*AVCODEC_MAX_AUDIO_FRAME_SIZE)
-                av_log(st->codec, AV_LOG_ERROR, "Can't process DV frame #%d. Insufficient video data or severe sync problem.\n", c->frames);
-            fifo_write(&c->audio_data[i], data, data_size, &c->audio_data[i].wptr);
+    /* Lets see if we have enough data to construct one DV frame */
+    if (c->has_video == 1 && c->has_audio + 1 == 1<<c->n_ast) {
+        dv_inject_metadata(c, *frame);
+        for (i=0; i<c->n_ast; i++) {
+             dv_inject_audio(c, i, *frame);
+             fifo_drain(&c->audio_data[i], reqasize);
         }
+
+        c->has_video = 0;
+        c->has_audio = 0;
+        c->frames++;
+
+        return c->sys->frame_size;
     }
-out:
-    return ((c->has_audio == -1 || c->has_audio == c->n_ast) && c->has_video) ? c->sys->frame_size : 0;
+
+    return 0;
 }
 
 DVMuxContext* dv_init_mux(AVFormatContext* s)
@@ -750,12 +552,9 @@ DVMuxContext* dv_init_mux(AVFormatContext* s)
 
     /* Ok, everything seems to be in working order */
     c->frames = 0;
-    c->has_audio = c->n_ast ? 0 : -1;
+    c->has_audio = 0;
     c->has_video = 0;
     c->start_time = (time_t)s->timestamp;
-    c->aspect = 0; /* 4:3 is the default */
-    if ((int)(av_q2d(vst->codec->sample_aspect_ratio) * vst->codec->width / vst->codec->height * 10) == 17) /* 16:9 */
-        c->aspect = 0x07;
 
     for (i=0; i<c->n_ast; i++) {
         if (c->ast[i] && fifo_init(&c->audio_data[i], 100*AVCODEC_MAX_AUDIO_FRAME_SIZE) < 0) {
@@ -766,8 +565,6 @@ DVMuxContext* dv_init_mux(AVFormatContext* s)
             goto bail_out;
         }
     }
-
-    dv_format_frame(c, &c->frame_buf[0]);
 
     return c;
 
