@@ -1299,14 +1299,6 @@ static int mov_write_moov_tag(ByteIOContext *pb, MOVContext *mov,
     for (i=0; i<mov->nb_streams; i++) {
         if(mov->tracks[i].entry <= 0) continue;
 
-        if(mov->tracks[i].enc->codec_type == CODEC_TYPE_VIDEO) {
-            mov->tracks[i].timescale = mov->tracks[i].enc->time_base.den;
-            mov->tracks[i].sampleDuration = mov->tracks[i].enc->time_base.num;
-        } else if(mov->tracks[i].enc->codec_type == CODEC_TYPE_AUDIO) {
-            mov->tracks[i].timescale = mov->tracks[i].enc->sample_rate;
-            mov->tracks[i].sampleDuration = mov->tracks[i].enc->frame_size;
-        }
-
         mov->tracks[i].trackDuration =
             (int64_t)mov->tracks[i].sampleCount * mov->tracks[i].sampleDuration;
         mov->tracks[i].time = mov->time;
@@ -1468,11 +1460,19 @@ static int mov_write_header(AVFormatContext *s)
         track->mode = mov->mode;
         if(st->codec->codec_type == CODEC_TYPE_VIDEO){
             track->tag = mov_find_video_codec_tag(s, track);
+            track->timescale = st->codec->time_base.den;
+            track->sampleDuration = st->codec->time_base.num;
             av_set_pts_info(st, 64, 1, st->codec->time_base.den);
         }else if(st->codec->codec_type == CODEC_TYPE_AUDIO){
             track->tag = mov_find_audio_codec_tag(s, track);
+            track->timescale = st->codec->sample_rate;
+            track->sampleDuration = st->codec->frame_size;
             av_set_pts_info(st, 64, 1, st->codec->sample_rate);
             track->sampleSize = (av_get_bits_per_sample(st->codec->codec_id) >> 3) * st->codec->channels;
+        }
+        if (!track->sampleDuration) {
+            av_log(s, AV_LOG_ERROR, "track %d: sample duration is not set\n", i);
+            return -1;
         }
     }
 
