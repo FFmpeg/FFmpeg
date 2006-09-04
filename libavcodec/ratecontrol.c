@@ -793,9 +793,7 @@ static int init_pass2(MpegEncContext *s)
     int i;
     double fps= 1/av_q2d(s->avctx->time_base);
     double complexity[5]={0,0,0,0,0};   // aproximate bits at quant=1
-    double avg_quantizer[5];
     uint64_t const_bits[5]={0,0,0,0,0}; // quantizer idependant bits
-    uint64_t available_bits[5];
     uint64_t all_const_bits;
     uint64_t all_available_bits= (uint64_t)(s->bit_rate*(double)rcc->num_entries/fps);
     double rate_factor=0;
@@ -824,31 +822,6 @@ static int init_pass2(MpegEncContext *s)
         av_log(s->avctx, AV_LOG_ERROR, "requested bitrate is too low\n");
         return -1;
     }
-
-    /* find average quantizers */
-    avg_quantizer[P_TYPE]=0;
-    for(step=256*256; step>0.0000001; step*=0.5){
-        double expected_bits=0;
-        avg_quantizer[P_TYPE]+= step;
-
-        avg_quantizer[I_TYPE]= avg_quantizer[P_TYPE]*ABS(s->avctx->i_quant_factor) + s->avctx->i_quant_offset;
-        avg_quantizer[B_TYPE]= avg_quantizer[P_TYPE]*ABS(s->avctx->b_quant_factor) + s->avctx->b_quant_offset;
-
-        expected_bits=
-            + all_const_bits
-            + complexity[I_TYPE]/avg_quantizer[I_TYPE]
-            + complexity[P_TYPE]/avg_quantizer[P_TYPE]
-            + complexity[B_TYPE]/avg_quantizer[B_TYPE];
-
-        if(expected_bits < all_available_bits) avg_quantizer[P_TYPE]-= step;
-//printf("%f %lld %f\n", expected_bits, all_available_bits, avg_quantizer[P_TYPE]);
-    }
-//printf("qp_i:%f, qp_p:%f, qp_b:%f\n", avg_quantizer[I_TYPE],avg_quantizer[P_TYPE],avg_quantizer[B_TYPE]);
-
-    for(i=0; i<5; i++){
-        available_bits[i]= const_bits[i] + complexity[i]/avg_quantizer[i];
-    }
-//printf("%lld %lld %lld %lld\n", available_bits[I_TYPE], available_bits[P_TYPE], available_bits[B_TYPE], all_available_bits);
 
     qscale= av_malloc(sizeof(double)*rcc->num_entries);
     blured_qscale= av_malloc(sizeof(double)*rcc->num_entries);
