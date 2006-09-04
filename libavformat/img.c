@@ -44,7 +44,7 @@ static int find_image_range(int *pfirst_index, int *plast_index,
 
     /* find the first image */
     for(first_index = 0; first_index < 5; first_index++) {
-        if (get_frame_filename(buf, sizeof(buf), path, first_index) < 0)
+        if (av_get_frame_filename(buf, sizeof(buf), path, first_index) < 0)
             goto fail;
         if (url_exist(buf))
             break;
@@ -61,8 +61,8 @@ static int find_image_range(int *pfirst_index, int *plast_index,
                 range1 = 1;
             else
                 range1 = 2 * range;
-            if (get_frame_filename(buf, sizeof(buf), path,
-                                   last_index + range1) < 0)
+            if (av_get_frame_filename(buf, sizeof(buf), path,
+                                      last_index + range1) < 0)
                 goto fail;
             if (!url_exist(buf))
                 break;
@@ -86,7 +86,7 @@ static int find_image_range(int *pfirst_index, int *plast_index,
 
 static int image_probe(AVProbeData *p)
 {
-    if (filename_number_test(p->filename) >= 0 && guess_image_format(p->filename))
+    if (av_filename_number_test(p->filename) && guess_image_format(p->filename))
         return AVPROBE_SCORE_MAX-1;
     else
         return 0;
@@ -144,7 +144,7 @@ static int img_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         /* compute duration */
         st->start_time = 0;
         st->duration = last_index - first_index + 1;
-        if (get_frame_filename(buf, sizeof(buf), s->path, s->img_number) < 0)
+        if (av_get_frame_filename(buf, sizeof(buf), s->path, s->img_number) < 0)
             goto fail;
         if (url_fopen(f, buf, URL_RDONLY) < 0)
             goto fail;
@@ -200,8 +200,8 @@ static int img_read_packet(AVFormatContext *s1, AVPacket *pkt)
         if (s1->loop_input && s->img_number > s->img_last) {
             s->img_number = s->img_first;
         }
-        if (get_frame_filename(filename, sizeof(filename),
-                               s->path, s->img_number) < 0)
+        if (av_get_frame_filename(filename, sizeof(filename),
+                                  s->path, s->img_number) < 0)
             return AVERROR_IO;
         f = &f1;
         if (url_fopen(f, filename, URL_RDONLY) < 0)
@@ -307,8 +307,8 @@ static int img_write_packet(AVFormatContext *s, AVPacket *pkt)
     picture = (AVPicture *)pkt->data;
 
     if (!img->is_pipe) {
-        if (get_frame_filename(filename, sizeof(filename),
-                               img->path, img->img_number) < 0)
+        if (av_get_frame_filename(filename, sizeof(filename),
+                                  img->path, img->img_number) < 0)
             return AVERROR_IO;
         pb = &pb1;
         if (url_fopen(pb, filename, URL_WRONLY) < 0)

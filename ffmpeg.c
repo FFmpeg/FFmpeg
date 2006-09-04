@@ -3392,7 +3392,7 @@ static void opt_output_file(const char *filename)
 
     /* check filename in case of an image number is expected */
     if (oc->oformat->flags & AVFMT_NEEDNUMBER) {
-        if (filename_number_test(oc->filename) < 0) {
+        if (!av_filename_number_test(oc->filename)) {
             print_error(oc->filename, AVERROR_NUMEXPECTED);
             exit(1);
         }

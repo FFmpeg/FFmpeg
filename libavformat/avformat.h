@@ -515,9 +515,9 @@ void ffm_set_write_index(AVFormatContext *s, offset_t pos, offset_t file_size);
 
 int find_info_tag(char *arg, int arg_size, const char *tag1, const char *info);
 
-int get_frame_filename(char *buf, int buf_size,
-                       const char *path, int number);
-int filename_number_test(const char *filename);
+int av_get_frame_filename(char *buf, int buf_size,
+                          const char *path, int number);
+int av_filename_number_test(const char *filename);
 
 /* grab specific */
 int video_grab_init(void);

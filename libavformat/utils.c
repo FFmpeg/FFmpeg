@@ -93,13 +93,13 @@ AVOutputFormat *guess_format(const char *short_name, const char *filename,
     /* specific test for image sequences */
 #ifdef CONFIG_IMAGE2_MUXER
     if (!short_name && filename &&
-        filename_number_test(filename) >= 0 &&
+        av_filename_number_test(filename) &&
         av_guess_image2_codec(filename) != CODEC_ID_NONE) {
         return guess_format("image2", NULL, NULL);
     }
 #endif
     if (!short_name && filename &&
-        filename_number_test(filename) >= 0 &&
+        av_filename_number_test(filename) &&
         guess_image_format(filename)) {
         return guess_format("image", NULL, NULL);
     }
@@ -403,12 +403,16 @@ int put_fifo(ByteIOContext *pb, FifoBuffer *f, int buf_size, uint8_t **rptr_ptr)
     return 0;
 }
 
-int filename_number_test(const char *filename)
+/**
+ * Allocate the payload of a packet and intialized its fields to default values.
+ *
+ * @param filename possible numbered sequence string
+ * @return 1 if a valid numbered sequence string, 0 otherwise.
+ */
+int av_filename_number_test(const char *filename)
 {
     char buf[1024];
-    if(!filename)
-        return -1;
-    return get_frame_filename(buf, sizeof(buf), filename, 1);
+    return filename && (av_get_frame_filename(buf, sizeof(buf), filename, 1)>=0);
 }
 
 /**
@@ -635,7 +639,7 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
 
     /* check filename in case of an image number is expected */
     if (fmt->flags & AVFMT_NEEDNUMBER) {
-        if (filename_number_test(filename) < 0) {
+        if (!av_filename_number_test(filename)) {
             err = AVERROR_NUMEXPECTED;
             goto fail;
         }
@@ -2951,12 +2955,18 @@ int find_info_tag(char *arg, int arg_size, const char *tag1, const char *info)
 
 /**
  * Returns in 'buf' the path with '%d' replaced by number.
- *
+
  * Also handles the '%0nd' format where 'n' is the total number
- * of digits and '%%'. Return 0 if OK, and -1 if format error.
+ * of digits and '%%'.
+ *
+ * @param buf destination buffer
+ * @param buf_size destination buffer size
+ * @param path numbered sequence string
+ * @number frame number
+ * @return 0 if OK, -1 if format error.
  */
-int get_frame_filename(char *buf, int buf_size,
-                       const char *path, int number)
+int av_get_frame_filename(char *buf, int buf_size,
+                          const char *path, int number)
 {
     const char *p;
     char *q, buf1[20], c;
