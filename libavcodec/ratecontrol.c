@@ -821,7 +821,7 @@ static int init_pass2(MpegEncContext *s)
     all_const_bits= const_bits[I_TYPE] + const_bits[P_TYPE] + const_bits[B_TYPE];
 
     if(all_available_bits < all_const_bits){
-        av_log(s->avctx, AV_LOG_ERROR, "requested bitrate is to low\n");
+        av_log(s->avctx, AV_LOG_ERROR, "requested bitrate is too low\n");
         return -1;
     }
 
