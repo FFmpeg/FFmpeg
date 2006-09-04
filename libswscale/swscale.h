@@ -135,6 +135,11 @@ SwsFilter *sws_getDefaultFilter(float lumaGBlur, float chromaGBlur,
 				int verbose);
 void sws_freeFilter(SwsFilter *filter);
 
+struct SwsContext *sws_getCachedContext(struct SwsContext *context,
+                int srcW, int srcH, int srcFormat,
+                int dstW, int dstH, int dstFormat, int flags,
+                SwsFilter *srcFilter, SwsFilter *dstFilter, double *param);
+
 #ifdef __cplusplus
 }
 #endif
