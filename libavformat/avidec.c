@@ -456,7 +456,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
             break;
         case MKTAG('i', 'n', 'd', 'x'):
             i= url_ftell(pb);
-            if(!url_is_streamed(pb)){
+            if(!url_is_streamed(pb) && !(s->flags & AVFMT_FLAG_IGNIDX)){
                 read_braindead_odml_indx(s, 0);
             }
             url_fseek(pb, i+size, SEEK_SET);

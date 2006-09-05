@@ -162,7 +162,6 @@ static int frame_skip_factor= 0;
 static int frame_skip_exp= 0;
 static int loop_input = 0;
 static int loop_output = AVFMT_NOOUTPUTLOOP;
-static int genpts = 0;
 static int qp_hist = 0;
 
 static int gop_size = 12;
@@ -2816,9 +2815,6 @@ static void opt_input_file(const char *filename)
 
     ic->loop_input = loop_input;
 
-    if(genpts)
-        ic->flags|= AVFMT_FLAG_GENPTS;
-
     /* If not enough info to get the stream parameters, we decode the
        first frames to get it. (used in mpeg case for example) */
     ret = av_find_stream_info(ic);
@@ -4080,7 +4076,6 @@ const OptionDef options[] = {
     { "skip_factor", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&frame_skip_factor}, "frame skip factor", "factor" },
     { "skip_exp", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&frame_skip_exp}, "frame skip exponent", "exponent" },
     { "newvideo", OPT_VIDEO, {(void*)opt_new_video_stream}, "add a new video stream to the current output stream" },
-    { "genpts", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, { (void *)&genpts }, "generate pts" },
     { "qphist", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, { (void *)&qp_hist }, "show QP histogram" },
 
     /* audio options */

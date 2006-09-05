@@ -342,6 +342,7 @@ typedef struct AVFormatContext {
 
     int flags;
 #define AVFMT_FLAG_GENPTS       0x0001 ///< generate pts if missing even if it requires parsing future frames
+#define AVFMT_FLAG_IGNIDX       0x0002 ///< ignore index
 
     int loop_input;
     /* decoding: size of data to probe; encoding unused */
