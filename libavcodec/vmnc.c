@@ -105,7 +105,17 @@ static always_inline void paint_raw(uint8_t *dst, int w, int h, uint8_t* src, in
         for(i = 0; i < w; i++) {
             p = vmnc_get_pixel(src, bpp, be);
             src += bpp;
-            memcpy(dst + i*bpp, &p, bpp);
+            switch(bpp){
+            case 1:
+                dst[i] = p;
+                break;
+            case 2:
+                ((uint16_t*)dst)[i] = p;
+                break;
+            case 4:
+                ((uint32_t*)dst)[i] = p;
+                break;
+            }
         }
         dst += stride;
     }
@@ -129,6 +139,7 @@ static int decode_hextile(VmncContext *c, uint8_t* dst, uint8_t* src, int w, int
             flags = *src++;
             if(flags & HT_RAW) {
                 paint_raw(dst2, bw, bh, src, bpp, c->bigendian, stride);
+                src += bw * bh * bpp;
             } else {
                 if(flags & HT_BKG) {
                     bg = vmnc_get_pixel(src, bpp, c->bigendian); src += bpp;
