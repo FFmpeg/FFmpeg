@@ -152,6 +152,10 @@ config file, and enjoy the results.
 Note that "MONster" can be used for many other things, but it's
 documented by Apple, it's not my subject.
 
+If you are using CHUD 4.4.2 or later, you'll notice that MONster is
+no longer available. It's been superseeded by Shark, where
+configuration of PMCs is available as a plugin.
+
 
 
 V) Enabling the PMC on Linux
