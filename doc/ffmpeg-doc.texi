@@ -815,6 +815,7 @@ following image formats are supported:
 @item Smacker Video          @tab     @tab  X @tab Video encoding used in Smacker.
 @item RTjpeg                 @tab     @tab  X @tab Video encoding used in NuppelVideo files.
 @item KMVC                   @tab     @tab  X @tab Codec used in Worms games.
+@item VMware Video           @tab     @tab  X @tab Codec used in videos captured by VMware.
 @end multitable
 
 @code{X} means that encoding (resp. decoding) is supported.

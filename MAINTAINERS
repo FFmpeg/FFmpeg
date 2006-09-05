@@ -162,6 +162,7 @@ Codecs:
   ulti*                                 Kostya Shishkov
   vc1*                                  Kostya Shishkov
   vcr1.c                                Michael Niedermayer
+  vmnc.c                                Kostya Shishkov
   vp3*                                  Mike Melanson
   vqavideo.c                            Mike Melanson
   wmv2.c                                Michael Niedermayer

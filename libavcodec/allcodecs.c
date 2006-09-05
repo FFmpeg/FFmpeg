@@ -528,6 +528,9 @@ void avcodec_register_all(void)
 #ifdef CONFIG_FLASHSV_DECODER
     register_avcodec(&flashsv_decoder);
 #endif //CONFIG_FLASHSV_DECODER
+#ifdef CONFIG_VMNC_DECODER
+    register_avcodec(&vmnc_decoder);
+#endif //CONFIG_VMNC_DECODER
 #endif /* CONFIG_DECODERS */
 
 #if defined(CONFIG_AMR_NB) || defined(CONFIG_AMR_NB_FIXED)
