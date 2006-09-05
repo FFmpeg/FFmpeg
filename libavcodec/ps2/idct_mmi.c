@@ -1,16 +1,29 @@
 /*
-  Originally provided by Intel at AP-922
-  http://developer.intel.com/vtune/cbts/strmsimd/922down.htm
-  (See more app notes at http://developer.intel.com/vtune/cbts/strmsimd/appnotes.htm)
-  but in a limited edition.
-
-  column code adapted from peter gubanov
-  Copyright (c) 2000-2001 Peter Gubanov <peter@elecard.net.ru>
-  http://www.elecard.com/peter/idct.shtml
-  Rounding trick Copyright (c) 2000 Michel Lespinasse <walken@zoy.org>
-
-  MMI port by Leon van Stuivenberg
+ * Originally provided by Intel at Application Note AP-922.
+ *
+ * Column code adapted from Peter Gubanov.
+ * Copyright (c) 2000-2001 Peter Gubanov <peter@elecard.net.ru>
+ * http://www.elecard.com/peter/idct.shtml
+ * rounding trick copyright (c) 2000 Michel Lespinasse <walken@zoy.org>
+ *
+ * MMI port and (c) 2002 by Leon van Stuivenberg
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ *
 */
+
 #include "../common.h"
 #include "../dsputil.h"
 #include "mmi.h"
