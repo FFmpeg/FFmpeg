@@ -30,7 +30,15 @@
 #include "common.h"
 #include "avcodec.h"
 
-#define MAGIC_WMVi 0x574D5669
+enum EncTypes {
+    MAGIC_WMVd = 0x574D5664,
+    MAGIC_WMVe,
+    MAGIC_WMVf,
+    MAGIC_WMVg,
+    MAGIC_WMVh,
+    MAGIC_WMVi,
+    MAGIC_WMVj
+};
 
 enum HexTile_Flags {
     HT_RAW =  1, // tile is raw
@@ -174,7 +182,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
     VmncContext * const c = (VmncContext *)avctx->priv_data;
     uint8_t *outptr;
     uint8_t *src = buf;
-    int t, dx, dy, w, h, enc, chunks, res;
+    int dx, dy, w, h, depth, enc, chunks, res;
 
     c->pic.reference = 1;
     c->pic.buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_PRESERVE | FF_BUFFER_HINTS_REUSABLE;
@@ -183,81 +191,67 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
         return -1;
     }
 
-    t = BE_32(src);
-    src += 4;
+    c->pic.key_frame = 0;
+    c->pic.pict_type = FF_P_TYPE;
 
-    chunks = t & 0xFF;
-    if(chunks > 8) {
-        av_log(avctx, AV_LOG_ERROR, "Frame decoding is not possible. Please report sample to developers.\n");
-        return -1;
-    }
-    if(chunks == 8) {
-        int w, h, depth;
-        c->pic.key_frame = 1;
-        c->pic.pict_type = FF_I_TYPE;
-
-        /* parse ServerInitialization struct */
-        src += 4;
-        w = BE_16(src); src += 2;
-        h = BE_16(src); src += 2;
-        t = BE_32(src); src += 4;
-        if(t != MAGIC_WMVi) {
-            av_log(avctx, AV_LOG_INFO, "Invalid header: magic not found\n");
-            return -1;
-        }
-        depth = *src++;
-        if(depth != c->bpp) {
-            av_log(avctx, AV_LOG_INFO, "Depth mismatch. Container %i bpp, Frame data: %i bpp\n", c->bpp, depth);
-        }
-        src++;
-        c->bigendian = *src++;
-        if(c->bigendian & (~1)) {
-            av_log(avctx, AV_LOG_INFO, "Invalid header: bigendian flag = %i\n", c->bigendian);
-            return -1;
-        }
-        //skip pixel format data
-        src += 13;
-        chunks = 1; // there should be one chunk with the whole frame, rest could be ignored
-    } else {
-        c->pic.key_frame = 0;
-        c->pic.pict_type = FF_P_TYPE;
-    }
+    src += 2;
+    chunks = BE_16(src); src += 2;
     while(chunks--) {
-        // decode FramebufferUpdate struct
         dx = BE_16(src); src += 2;
         dy = BE_16(src); src += 2;
         w  = BE_16(src); src += 2;
         h  = BE_16(src); src += 2;
-        if((dx + w > c->width) || (dy + h > c->height)) {
-            av_log(avctx, AV_LOG_ERROR, "Incorrect frame size: %ix%i+%ix%i of %ix%i\n", w, h, dx, dy, c->width, c->height);
-            return -1;
-        }
         enc = BE_32(src); src += 4;
-        if(enc != 0x00000005) {
-            av_log(avctx, AV_LOG_ERROR, "Only hextile decoding is supported for now\n");
-            switch(enc) {
-            case 0:
-                av_log(avctx, AV_LOG_INFO, "And this is raw encoding\n");
-                break;
-            case 1:
-                av_log(avctx, AV_LOG_INFO, "And this is CopyRect encoding\n");
-                break;
-            case 2:
-                av_log(avctx, AV_LOG_INFO, "And this is RRE encoding\n");
-                break;
-            case 3:
-                av_log(avctx, AV_LOG_INFO, "And this is CoRRE encoding\n");
-                break;
-            default:
-                av_log(avctx, AV_LOG_INFO, "And this is unknown encoding (%i)\n", enc);
+        switch(enc) {
+        case MAGIC_WMVd: // unknown
+            src += 2;
+            src += w * h * 8; // skip this data for now
+            break;
+        case MAGIC_WMVe: // unknown
+            src += 2;
+            break;
+        case MAGIC_WMVf: // unknown and empty
+            break;
+        case MAGIC_WMVi: // ServerInitialization struct
+            c->pic.key_frame = 1;
+            c->pic.pict_type = FF_I_TYPE;
+            depth = *src++;
+            if(depth != c->bpp) {
+                av_log(avctx, AV_LOG_INFO, "Depth mismatch. Container %i bpp, Frame data: %i bpp\n", c->bpp, depth);
             }
-            return -1;
+            src++;
+            c->bigendian = *src++;
+            if(c->bigendian & (~1)) {
+                av_log(avctx, AV_LOG_INFO, "Invalid header: bigendian flag = %i\n", c->bigendian);
+                return -1;
+            }
+            //skip the rest of pixel format data
+            src += 13;
+            break;
+        case 0x00000000: // raw rectangle data
+            if((dx + w > c->width) || (dy + h > c->height)) {
+                av_log(avctx, AV_LOG_ERROR, "Incorrect frame size: %ix%i+%ix%i of %ix%i\n", w, h, dx, dy, c->width, c->height);
+                return -1;
+            }
+            outptr = c->pic.data[0] + dx * c->bpp2 + dy * c->pic.linesize[0];
+            paint_raw(outptr, w, h, src, c->bpp2, c->bigendian, c->pic.linesize[0]);
+            src += w * h * c->bpp2;
+            break;
+        case 0x00000005: // HexTile encoded rectangle
+            if((dx + w > c->width) || (dy + h > c->height)) {
+                av_log(avctx, AV_LOG_ERROR, "Incorrect frame size: %ix%i+%ix%i of %ix%i\n", w, h, dx, dy, c->width, c->height);
+                return -1;
+            }
+            outptr = c->pic.data[0] + dx * c->bpp2 + dy * c->pic.linesize[0];
+            res = decode_hextile(c, outptr, src, w, h, c->pic.linesize[0]);
+            if(res < 0)
+                return -1;
+            src += res;
+            break;
+        default:
+            av_log(avctx, AV_LOG_ERROR, "Unsupported block type 0x%08X\n", enc);
+            chunks = 0; // leave chunks decoding loop
         }
-        outptr = c->pic.data[0] + dx * c->bpp2 + dy * c->pic.linesize[0];
-        res = decode_hextile(c, outptr, src, w, h, c->pic.linesize[0]);
-        if(res < 0)
-            return -1;
-        src += res;
     }
     *data_size = sizeof(AVFrame);
     *(AVFrame*)data = c->pic;
