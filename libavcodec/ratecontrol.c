@@ -790,7 +790,7 @@ static int init_pass2(MpegEncContext *s)
 {
     RateControlContext *rcc= &s->rc_context;
     AVCodecContext *a= s->avctx;
-    int i;
+    int i, toobig;
     double fps= 1/av_q2d(s->avctx->time_base);
     double complexity[5]={0,0,0,0,0};   // aproximate bits at quant=1
     uint64_t const_bits[5]={0,0,0,0,0}; // quantizer idependant bits
@@ -801,7 +801,7 @@ static int init_pass2(MpegEncContext *s)
     //int last_i_frame=-10000000;
     const int filter_size= (int)(a->qblur*4) | 1;
     double expected_bits;
-    double *qscale, *blured_qscale;
+    double *qscale, *blured_qscale, qscale_sum;
 
     /* find complexity & const_bits & decide the pict_types */
     for(i=0; i<rcc->num_entries; i++){
@@ -825,6 +825,7 @@ static int init_pass2(MpegEncContext *s)
 
     qscale= av_malloc(sizeof(double)*rcc->num_entries);
     blured_qscale= av_malloc(sizeof(double)*rcc->num_entries);
+    toobig = 0;
 
     for(step=256*256; step>0.0000001; step*=0.5){
         expected_bits=0;
@@ -878,14 +879,46 @@ static int init_pass2(MpegEncContext *s)
             expected_bits += bits;
         }
 
-//        printf("%f %d %f\n", expected_bits, (int)all_available_bits, rate_factor);
-        if(expected_bits > all_available_bits) rate_factor-= step;
+        /*
+        av_log(s->avctx, AV_LOG_INFO,
+            "expected_bits: %f all_available_bits: %d rate_factor: %f\n",
+            expected_bits, (int)all_available_bits, rate_factor);
+        */
+        if(expected_bits > all_available_bits) {
+            rate_factor-= step;
+            ++toobig;
+        }
     }
     av_free(qscale);
     av_free(blured_qscale);
 
-    if(fabs(expected_bits/all_available_bits - 1.0) > 0.01 ){
-        av_log(s->avctx, AV_LOG_ERROR, "Error: 2pass curve failed to converge\n");
+    /* check bitrate calculations and print info */
+    qscale_sum = 0.0;
+    for(i=0; i<rcc->num_entries; i++){
+        /* av_log(s->avctx, AV_LOG_DEBUG, "[lavc rc] entry[%d].new_qscale = %.3f  qp = %.3f\n",
+            i, rcc->entry[i].new_qscale, rcc->entry[i].new_qscale / FF_QP2LAMBDA); */
+        qscale_sum += clip(rcc->entry[i].new_qscale / FF_QP2LAMBDA, s->avctx->qmin, s->avctx->qmax);
+    }
+    assert(toobig <= 40);
+    av_log(s->avctx, AV_LOG_DEBUG,
+        "[lavc rc] requested bitrate: %d bps  expected bitrate: %d bps\n",
+        s->bit_rate,
+        (int)(expected_bits / ((double)all_available_bits/s->bit_rate)));
+    av_log(s->avctx, AV_LOG_DEBUG,
+        "[lavc rc] estimated target average qp: %.3f\n",
+        (float)qscale_sum / rcc->num_entries);
+    if (toobig == 0) {
+        av_log(s->avctx, AV_LOG_INFO,
+            "[lavc rc] Using all of requested bitrate is not "
+            "necessary for this video with these parameters.\n");
+    } else if (toobig == 40) {
+        av_log(s->avctx, AV_LOG_ERROR,
+            "[lavc rc] Error: bitrate too low for this video "
+            "with these parameters.\n");
+        return -1;
+    } else if (fabs(expected_bits/all_available_bits - 1.0) > 0.01) {
+        av_log(s->avctx, AV_LOG_ERROR,
+            "[lavc rc] Error: 2pass curve failed to converge\n");
         return -1;
     }
 
