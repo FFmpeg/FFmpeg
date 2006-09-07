@@ -1065,6 +1065,9 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
         st->codec->sample_rate= 8000;
         st->codec->channels= 1; /* really needed */
         break;
+    case CODEC_ID_MP2:
+        st->need_parsing = 1;
+        break;
     default:
         break;
     }
