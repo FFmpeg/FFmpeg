@@ -21,21 +21,6 @@
 # define offsetof(T,F) ((unsigned int)((char *)&((T *)0)->F))
 #endif
 
-#define AVOPTION_CODEC_BOOL(name, help, field) \
-    { name, help, offsetof(AVCodecContext, field), FF_OPT_TYPE_BOOL }
-#define AVOPTION_CODEC_DOUBLE(name, help, field, minv, maxv, defval) \
-    { name, help, offsetof(AVCodecContext, field), FF_OPT_TYPE_DOUBLE, minv, maxv, defval }
-#define AVOPTION_CODEC_FLAG(name, help, field, flag, defval) \
-    { name, help, offsetof(AVCodecContext, field), FF_OPT_TYPE_FLAG, flag, 0, defval }
-#define AVOPTION_CODEC_INT(name, help, field, minv, maxv, defval) \
-    { name, help, offsetof(AVCodecContext, field), FF_OPT_TYPE_INT, minv, maxv, defval }
-#define AVOPTION_CODEC_STRING(name, help, field, str, val) \
-    { name, help, offsetof(AVCodecContext, field), FF_OPT_TYPE_STRING, .defval = val, .defstr = str }
-#define AVOPTION_CODEC_RCOVERRIDE(name, help, field) \
-    { name, help, offsetof(AVCodecContext, field), FF_OPT_TYPE_RCOVERRIDE, .defval = 0, .defstr = NULL }
-#define AVOPTION_SUB(ptr) { .name = NULL, .help = (const char*)ptr }
-#define AVOPTION_END() AVOPTION_SUB(NULL)
-
 #ifdef __MINGW32__
 #    ifdef _DEBUG
 #        define DEBUG
