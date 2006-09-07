@@ -1755,6 +1755,10 @@ static void dump_stream_info(const AVFormatContext *s)
         fprintf(stderr, "Title: %s\n", s->title);
     if (s->author[0] != '\0')
         fprintf(stderr, "Author: %s\n", s->author);
+    if (s->copyright[0] != '\0')
+        fprintf(stderr, "Copyright: %s\n", s->copyright);
+    if (s->comment[0] != '\0')
+        fprintf(stderr, "Comment: %s\n", s->comment);
     if (s->album[0] != '\0')
         fprintf(stderr, "Album: %s\n", s->album);
     if (s->year != 0)

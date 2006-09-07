@@ -476,6 +476,9 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
         case MKTAG('I', 'G', 'N', 'R'):
             avi_read_tag(pb, s->genre, sizeof(s->genre), size);
             break;
+        case MKTAG('I', 'P', 'R', 'D'):
+            avi_read_tag(pb, s->album, sizeof(s->album), size);
+            break;
         default:
             /* skip tag */
             size += (size & 1);
