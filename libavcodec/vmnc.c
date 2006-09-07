@@ -363,6 +363,12 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
             c->cur_x = dx - c->cur_hx;
             c->cur_y = dy - c->cur_hy;
             break;
+        case MAGIC_WMVg: // unknown
+            src += 10;
+            break;
+        case MAGIC_WMVh: // unknown
+            src += 4;
+            break;
         case MAGIC_WMVi: // ServerInitialization struct
             c->pic.key_frame = 1;
             c->pic.pict_type = FF_I_TYPE;
@@ -378,6 +384,9 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
             }
             //skip the rest of pixel format data
             src += 13;
+            break;
+        case MAGIC_WMVj: // unknown
+            src += 2;
             break;
         case 0x00000000: // raw rectangle data
             if((dx + w > c->width) || (dy + h > c->height)) {
