@@ -10,13 +10,13 @@ ALLHOOKS=$(HOOKS) imlib2$(SLIBSUF) drawtext$(SLIBSUF)
 
 ifeq ($(HAVE_IMLIB2),yes)
     HOOKS += imlib2$(SLIBSUF)
-    LDFLAGS += -lImlib2
+    LDFLAGS_imlib2$(SLIBSUF) = -lImlib2
 endif
 
 ifeq ($(HAVE_FREETYPE2),yes)
     HOOKS += drawtext$(SLIBSUF)
     CFLAGS += `freetype-config --cflags`
-    LDFLAGS += `freetype-config --libs`
+    LDFLAGS_drawtext$(SLIBSUF) = `freetype-config --libs`
 endif
 
 SRCS := $(HOOKS:$(SLIBSUF)=.c)
@@ -35,7 +35,7 @@ uninstall:
 	-rmdir "$(shlibdir)/vhook/"
 
 %$(SLIBSUF): %.o
-	$(CC) $(LDFLAGS) -g -o $@ $(VHOOKSHFLAGS) $<
+	$(CC) $(LDFLAGS_$@) $(LDFLAGS) -g -o $@ $(VHOOKSHFLAGS) $<
 
 clean:
 	rm -f *.o *.d *~ *.a *.lib *.so *.dylib *.dll
