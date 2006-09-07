@@ -193,6 +193,7 @@ static char *str_title = NULL;
 static char *str_author = NULL;
 static char *str_copyright = NULL;
 static char *str_comment = NULL;
+static char *str_album = NULL;
 static int do_benchmark = 0;
 static int do_hex_dump = 0;
 static int do_pkt_dump = 0;
@@ -3382,6 +3383,8 @@ static void opt_output_file(const char *filename)
             pstrcpy(oc->copyright, sizeof(oc->copyright), str_copyright);
         if (str_comment)
             pstrcpy(oc->comment, sizeof(oc->comment), str_comment);
+        if (str_album)
+            pstrcpy(oc->album, sizeof(oc->album), str_album);
     }
 
     output_files[nb_output_files++] = oc;
@@ -3979,6 +3982,7 @@ const OptionDef options[] = {
     { "author", HAS_ARG | OPT_STRING, {(void*)&str_author}, "set the author", "string" },
     { "copyright", HAS_ARG | OPT_STRING, {(void*)&str_copyright}, "set the copyright", "string" },
     { "comment", HAS_ARG | OPT_STRING, {(void*)&str_comment}, "set the comment", "string" },
+    { "album", HAS_ARG | OPT_STRING, {(void*)&str_album}, "set the album", "string" },
     { "benchmark", OPT_BOOL | OPT_EXPERT, {(void*)&do_benchmark},
       "add timings for benchmarking" },
     { "dump", OPT_BOOL | OPT_EXPERT, {(void*)&do_pkt_dump},
