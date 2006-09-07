@@ -215,6 +215,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
     AVStream *st;
     AVIStream *ast = NULL;
     int xan_video = 0;  /* hack to support Xan A/V */
+    char str_track[4];
 
     avi->stream_index= -1;
 
@@ -478,6 +479,10 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
             break;
         case MKTAG('I', 'P', 'R', 'D'):
             avi_read_tag(pb, s->album, sizeof(s->album), size);
+            break;
+        case MKTAG('I', 'P', 'R', 'T'):
+            avi_read_tag(pb, str_track, sizeof(str_track), size);
+            sscanf(str_track, "%d", &s->track);
             break;
         default:
             /* skip tag */
