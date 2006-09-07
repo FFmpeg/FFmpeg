@@ -223,7 +223,7 @@ static always_inline void paint_raw(uint8_t *dst, int w, int h, uint8_t* src, in
     }
 }
 
-static int decode_hextile(VmncContext *c, uint8_t* dst, uint8_t* src, int w, int h, int stride)
+static int decode_hextile(VmncContext *c, uint8_t* dst, uint8_t* src, int ssize, int w, int h, int stride)
 {
     int i, j, k;
     int bg = 0, fg = 0, rects, color, flags, xy, wh;
@@ -237,9 +237,17 @@ static int decode_hextile(VmncContext *c, uint8_t* dst, uint8_t* src, int w, int
         bw = 16;
         if(j + 16 > h) bh = h - j;
         for(i = 0; i < w; i += 16, dst2 += 16 * bpp) {
+            if(src - ssrc >= ssize) {
+                av_log(c->avctx, AV_LOG_ERROR, "Premature end of data!\n");
+                return -1;
+            }
             if(i + 16 > w) bw = w - i;
             flags = *src++;
             if(flags & HT_RAW) {
+                if(src - ssrc > ssize - bw * bh * bpp) {
+                    av_log(c->avctx, AV_LOG_ERROR, "Premature end of data!\n");
+                    return -1;
+                }
                 paint_raw(dst2, bw, bh, src, bpp, c->bigendian, stride);
                 src += bw * bh * bpp;
             } else {
@@ -252,10 +260,14 @@ static int decode_hextile(VmncContext *c, uint8_t* dst, uint8_t* src, int w, int
                 rects = 0;
                 if(flags & HT_SUB)
                     rects = *src++;
-                color = (flags & HT_CLR);
+                color = !!(flags & HT_CLR);
 
                 paint_rect(dst2, 0, 0, bw, bh, bg, bpp, stride);
 
+                if(src - ssrc > ssize - rects * (color * bpp + 2)) {
+                    av_log(c->avctx, AV_LOG_ERROR, "Premature end of data!\n");
+                    return -1;
+                }
                 for(k = 0; k < rects; k++) {
                     if(color) {
                         fg = vmnc_get_pixel(src, bpp, c->bigendian); src += bpp;
@@ -276,7 +288,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
     VmncContext * const c = (VmncContext *)avctx->priv_data;
     uint8_t *outptr;
     uint8_t *src = buf;
-    int dx, dy, w, h, depth, enc, chunks, res;
+    int dx, dy, w, h, depth, enc, chunks, res, size_left;
 
     c->pic.reference = 1;
     c->pic.buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_PRESERVE | FF_BUFFER_HINTS_REUSABLE;
@@ -322,8 +334,13 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
         h  = BE_16(src); src += 2;
         enc = BE_32(src); src += 4;
         outptr = c->pic.data[0] + dx * c->bpp2 + dy * c->pic.linesize[0];
+        size_left = buf_size - (src - buf);
         switch(enc) {
         case MAGIC_WMVd: // cursor
+            if(size_left < 2 + w * h * c->bpp2 * 2) {
+                av_log(avctx, AV_LOG_ERROR, "Premature end of data! (need %i got %i)\n", 2 + w * h * c->bpp2 * 2, size_left);
+                return -1;
+            }
             src += 2;
             c->cur_w = w;
             c->cur_h = h;
@@ -367,6 +384,10 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
                 av_log(avctx, AV_LOG_ERROR, "Incorrect frame size: %ix%i+%ix%i of %ix%i\n", w, h, dx, dy, c->width, c->height);
                 return -1;
             }
+            if(size_left < w * h * c->bpp2) {
+                av_log(avctx, AV_LOG_ERROR, "Premature end of data! (need %i got %i)\n", w * h * c->bpp2, size_left);
+                return -1;
+            }
             paint_raw(outptr, w, h, src, c->bpp2, c->bigendian, c->pic.linesize[0]);
             src += w * h * c->bpp2;
             break;
@@ -375,7 +396,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
                 av_log(avctx, AV_LOG_ERROR, "Incorrect frame size: %ix%i+%ix%i of %ix%i\n", w, h, dx, dy, c->width, c->height);
                 return -1;
             }
-            res = decode_hextile(c, outptr, src, w, h, c->pic.linesize[0]);
+            res = decode_hextile(c, outptr, src, size_left, w, h, c->pic.linesize[0]);
             if(res < 0)
                 return -1;
             src += res;
