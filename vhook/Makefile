@@ -35,7 +35,7 @@ uninstall:
 	-rmdir "$(shlibdir)/vhook/"
 
 %$(SLIBSUF): %.o
-	$(CC) $(LDFLAGS_$@) $(LDFLAGS) -g -o $@ $(VHOOKSHFLAGS) $<
+	$(CC) $(LDFLAGS) -g -o $@ $(VHOOKSHFLAGS) $< $(LDFLAGS_$@)
 
 clean:
 	rm -f *.o *.d *~ *.a *.lib *.so *.dylib *.dll
