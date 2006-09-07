@@ -311,6 +311,11 @@ static int avi_write_header(AVFormatContext *s)
     avi_write_info_tag(pb, "ICMT", s->comment);
     avi_write_info_tag(pb, "IPRD", s->album);
     avi_write_info_tag(pb, "IGNR", s->genre);
+    if (s->track) {
+        char str_track[4];
+        snprintf(str_track, 4, "%d", s->track);
+        avi_write_info_tag(pb, "IPRT", str_track);
+    }
     if(!(s->streams[0]->codec->flags & CODEC_FLAG_BITEXACT))
         avi_write_info_tag(pb, "ISFT", LIBAVFORMAT_IDENT);
     end_tag(pb, list2);
