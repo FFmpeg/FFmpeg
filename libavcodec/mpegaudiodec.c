@@ -2622,9 +2622,11 @@ retry:
         break;
     }
 
-    if(s->frame_size<=0 || s->frame_size < buf_size){
+    if(s->frame_size<=0 || s->frame_size > buf_size){
         av_log(avctx, AV_LOG_ERROR, "incomplete frame\n");
         return -1;
+    }else if(s->frame_size < buf_size){
+        av_log(avctx, AV_LOG_ERROR, "incorrect frame size\n");
     }
 
     out_size = mp_decode_frame(s, out_samples, buf, buf_size);
