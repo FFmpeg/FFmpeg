@@ -4,6 +4,7 @@ VPATH=$(SRC_PATH)/vhook
 
 CFLAGS=-I.. -I$(SRC_PATH) -I$(SRC_PATH)/libavutil -I$(SRC_PATH)/libavcodec \
        -I$(SRC_PATH)/libavformat $(VHOOKCFLAGS) -DHAVE_AV_CONFIG_H
+LDFLAGS+= -g
 
 HOOKS=null$(SLIBSUF) fish$(SLIBSUF) ppm$(SLIBSUF) watermark$(SLIBSUF)
 ALLHOOKS=$(HOOKS) imlib2$(SLIBSUF) drawtext$(SLIBSUF)
@@ -35,7 +36,7 @@ uninstall:
 	-rmdir "$(shlibdir)/vhook/"
 
 %$(SLIBSUF): %.o
-	$(CC) $(LDFLAGS) -g -o $@ $(VHOOKSHFLAGS) $< $(LIBS_$@)
+	$(CC) $(LDFLAGS) -o $@ $(VHOOKSHFLAGS) $< $(LIBS_$@)
 
 clean:
 	rm -f *.o *.d *~ *.a *.lib *.so *.dylib *.dll
