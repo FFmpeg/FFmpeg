@@ -30,7 +30,6 @@ ifeq ($(CONFIG_FFPLAY),yes)
 MANPAGES+=doc/ffplay.1
 PROGS_G+=ffplay_g$(EXESUF)
 PROGS+=ffplay$(EXESUF)
-FFPLAY_O=ffplay.o
 endif
 
 BASENAMES=ffmpeg ffplay ffserver
@@ -57,7 +56,7 @@ ifeq ($(BUILD_DOC),yes)
 DOC=documentation
 endif
 
-OBJS = ffmpeg.o ffserver.o cmdutils.o $(FFPLAY_O)
+OBJS = ffmpeg.o ffserver.o cmdutils.o ffplay.o
 SRCS = $(OBJS:.o=.c) $(ASM_OBJS:.o=.s)
 LDFLAGS += -L./libavformat -L./libavcodec -L./libavutil
 FFLIBS = -lavformat$(BUILDSUF) -lavcodec$(BUILDSUF) -lavutil$(BUILDSUF)
