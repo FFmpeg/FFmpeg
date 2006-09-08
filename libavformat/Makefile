@@ -9,7 +9,6 @@ CFLAGS=-I.. -I$(SRC_PATH) -I$(SRC_PATH)/libavutil -I$(SRC_PATH)/libavcodec \
        -D_LARGEFILE_SOURCE -D_ISOC9X_SOURCE
 
 OBJS= utils.o cutils.o os_support.o allformats.o
-CPPOBJS=
 
 HEADERS = avformat.h avio.h rtp.h rtsp.h rtspcodes.h
 
