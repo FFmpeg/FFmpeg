@@ -101,10 +101,10 @@ output_example$(EXESUF): output_example.o .libs
 	$(CC) $(LDFLAGS) -o $@ output_example.o $(FFLIBS) $(EXTRALIBS)
 
 qt-faststart$(EXESUF): qt-faststart.c
-	$(CC) $(CFLAGS) $(SRC_PATH)/qt-faststart.c -o qt-faststart$(EXESUF)
+	$(CC) $(CFLAGS) $(SRC_PATH)/$< -o $@
 
 cws2fws$(EXESUF): cws2fws.c
-	$(CC) $(SRC_PATH)/cws2fws.c -o cws2fws$(EXESUF) -lz
+	$(CC) $(SRC_PATH)/$< -o $@ -lz
 
 ffplay.o: ffplay.c
 	$(CC) $(CFLAGS) $(SDL_CFLAGS) -c -o $@ $<
