@@ -3310,7 +3310,7 @@ static void opt_new_video_stream(void)
 static void opt_output_file(const char *filename)
 {
     AVFormatContext *oc;
-    int use_video, use_audio, input_has_video, input_has_audio;
+    int use_video, use_audio, input_has_video, input_has_audio, i;
     AVFormatParameters params, *ap = &params;
 
     if (!strcmp(filename, "-"))
@@ -3441,6 +3441,13 @@ static void opt_output_file(const char *filename)
     oc->preload= (int)(mux_preload*AV_TIME_BASE);
     oc->max_delay= (int)(mux_max_delay*AV_TIME_BASE);
     oc->loop_output = loop_output;
+
+    for(i=0; i<opt_name_count; i++){
+        AVOption *opt;
+        double d = av_get_double(avformat_opts, opt_names[i], &opt);
+        if(d==d && (opt->flags&AV_OPT_FLAG_ENCODING_PARAM))
+            av_set_double(oc, opt_names[i], d);
+    }
 
     /* reset some options */
     file_oformat = NULL;
