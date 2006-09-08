@@ -190,6 +190,12 @@ Set the copyright.
 @item -comment string
 Set the comment.
 
+@item -track number
+Set the track.
+
+@item -year number
+Set the year.
+
 @item -target type
 Specify target file type ("vcd", "svcd", "dvd", "dv", "pal-vcd",
 "ntsc-svcd", ... ). All the format options (bitrate, codecs,
