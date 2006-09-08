@@ -59,7 +59,7 @@ endif
 OBJS = ffmpeg.o ffserver.o cmdutils.o ffplay.o
 SRCS = $(OBJS:.o=.c) $(ASM_OBJS:.o=.s)
 LDFLAGS += -L./libavformat -L./libavcodec -L./libavutil
-EXTRALIBS += -lavformat$(BUILDSUF) -lavcodec$(BUILDSUF) -lavutil$(BUILDSUF)
+EXTRALIBS := -lavformat$(BUILDSUF) -lavcodec$(BUILDSUF) -lavutil$(BUILDSUF) $(EXTRALIBS)
 
 ifeq ($(CONFIG_SWSCALER),yes)
 LDFLAGS+=-L./libswscale
