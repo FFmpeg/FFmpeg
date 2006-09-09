@@ -93,7 +93,7 @@ typedef struct AVProbeData {
     int buf_size;
 } AVProbeData;
 
-#define AVPROBE_SCORE_MAX 100
+#define AVPROBE_SCORE_MAX 100               ///< max score, half of that is used for file extension based detection
 
 typedef struct AVFormatParameters {
     AVRational time_base;
