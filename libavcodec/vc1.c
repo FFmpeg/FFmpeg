@@ -562,7 +562,6 @@ static void decode_colskip(uint8_t* plane, int width, int height, int stride, Ge
  * @param v VC-1 context for bit reading and logging
  * @return Status
  * @fixme FIXME: Optimize
- * @todo TODO: Decide if a struct is needed
  */
 static int bitplane_decoding(uint8_t* data, int *raw_flag, VC1Context *v)
 {
@@ -734,7 +733,6 @@ static int vop_dquant_decoding(VC1Context *v)
 }
 
 /** Put block onto picture
- * @todo move to DSPContext
  */
 static void vc1_put_block(VC1Context *v, DCTELEM block[6][64])
 {
@@ -1442,7 +1440,6 @@ static int vc1_parse_frame_header(VC1Context *v, GetBitContext* gb)
 //av_log(v->s.avctx, AV_LOG_INFO, "%c Frame: QP=[%i]%i (+%i/2) %i\n",
 //        (v->s.pict_type == P_TYPE) ? 'P' : ((v->s.pict_type == I_TYPE) ? 'I' : 'B'), pqindex, v->pq, v->halfpq, v->rangeredfrm);
 
-    //TODO: complete parsing for P/B/BI frames
     switch(v->s.pict_type) {
     case P_TYPE:
         if (v->pq < 5) v->tt_index = 0;
@@ -1779,15 +1776,12 @@ static int vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
 /**
  * @defgroup block VC-1 Block-level functions
  * @see 7.1.4, p91 and 8.1.1.7, p(1)04
- * @todo TODO: Integrate to MpegEncContext facilities
  * @{
  */
 
 /**
  * @def GET_MQUANT
  * @brief Get macroblock-level quantizer scale
- * @warning XXX: qdiff to the frame quant, not previous quant ?
- * @fixme XXX: Don't know how to initialize mquant otherwise in last case
  */
 #define GET_MQUANT()                                           \
   if (v->dquantfrm)                                            \
@@ -1828,7 +1822,6 @@ static int vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
  * @see MVDATA decoding from 8.3.5.2, p(1)20
  * @param _dmv_x Horizontal differential for decoded MV
  * @param _dmv_y Vertical differential for decoded MV
- * @todo TODO: Use MpegEncContext arrays to store them
  */
 #define GET_MVDATA(_dmv_x, _dmv_y)                                  \
   index = 1 + get_vlc2(gb, vc1_mv_diff_vlc[s->mv_table_index].table,\
@@ -2468,7 +2461,6 @@ static inline int vc1_pred_dc(MpegEncContext *s, int overlap, int pq, int n,
 /**
  * @defgroup std_mb VC1 Macroblock-level functions in Simple/Main Profiles
  * @see 7.1.4, p91 and 8.1.1.7, p(1)04
- * @todo TODO: Integrate to MpegEncContext facilities
  * @{
  */
 
@@ -3243,8 +3235,6 @@ static int vc1_decode_p_block(VC1Context *v, DCTELEM block[64], int n, int mquan
 
 
 /** Decode one P-frame MB (in Simple/Main profile)
- * @todo TODO: Extend to AP
- * @fixme FIXME: DC value for inter blocks not set
  */
 static int vc1_decode_p_mb(VC1Context *v)
 {
@@ -3339,7 +3329,6 @@ static int vc1_decode_p_mb(VC1Context *v)
                     if(v->rangeredfrm) for(j = 0; j < 64; j++) s->block[i][j] <<= 1;
                     for(j = 0; j < 64; j++) s->block[i][j] += 128;
                     s->dsp.put_pixels_clamped(s->block[i], s->dest[dst_idx] + off, s->linesize >> ((i & 4) >> 2));
-                    /* TODO: proper loop filtering */
                     if(v->pq >= 9 && v->overlap) {
                         if(v->a_avail)
                             s->dsp.vc1_v_overlap(s->dest[dst_idx] + off, s->linesize >> ((i & 4) >> 2), (i<4) ? ((i&1)>>1) : (s->mb_y&1));
@@ -3443,7 +3432,6 @@ static int vc1_decode_p_mb(VC1Context *v)
                     if(v->rangeredfrm) for(j = 0; j < 64; j++) s->block[i][j] <<= 1;
                     for(j = 0; j < 64; j++) s->block[i][j] += 128;
                     s->dsp.put_pixels_clamped(s->block[i], s->dest[dst_idx] + off, (i&4)?s->uvlinesize:s->linesize);
-                    /* TODO: proper loop filtering */
                     if(v->pq >= 9 && v->overlap) {
                         if(v->a_avail)
                             s->dsp.vc1_v_overlap(s->dest[dst_idx] + off, s->linesize >> ((i & 4) >> 2), (i<4) ? ((i&1)>>1) : (s->mb_y&1));
@@ -3504,7 +3492,7 @@ static void vc1_decode_b_mb(VC1Context *v)
     int dst_idx, off;
     int skipped, direct;
     int dmv_x[2], dmv_y[2];
-    int bmvtype = BMV_TYPE_BACKWARD; /* XXX: is it so? */
+    int bmvtype = BMV_TYPE_BACKWARD;
 
     mquant = v->pq; /* Loosy initialization */
     s->mb_intra = 0;
@@ -3711,7 +3699,7 @@ static void vc1_decode_i_blocks(VC1Context *v)
             }
 
             vc1_put_block(v, s->block);
-            if(v->pq >= 9 && v->overlap) { /* XXX: do proper overlapping insted of loop filter */
+            if(v->pq >= 9 && v->overlap) {
                 if(!s->first_slice_line) {
                     s->dsp.vc1_v_overlap(s->dest[0], s->linesize, 0);
                     s->dsp.vc1_v_overlap(s->dest[0] + 8, s->linesize, 0);
@@ -4136,7 +4124,6 @@ static int vc1_decode_init(AVCodecContext *avctx)
 
 /** Decode a VC1/WMV3 frame
  * @todo TODO: Handle VC-1 IDUs (Transport level?)
- * @warning Initial try at using MpegEncContext stuff
  */
 static int vc1_decode_frame(AVCodecContext *avctx,
                             void *data, int *data_size,
