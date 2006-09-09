@@ -19,6 +19,7 @@
  */
 #include "avformat.h"
 #include "bitstream.h"
+#include "riff.h"    /* for CodecTag */
 
 /* should have a generic way to indicate probable size */
 #define DUMMY_FILE_SIZE   (100 * 1024 * 1024)
@@ -44,8 +45,6 @@
 #define FLAG_MOVETO      0x01
 #define FLAG_SETFILL0    0x02
 #define FLAG_SETFILL1    0x04
-
-#define SWF_VIDEO_CODEC_FLV1    0x02
 
 #define AUDIO_FIFO_SIZE 65536
 
@@ -79,6 +78,12 @@ typedef struct {
     int video_type;
     int audio_type;
 } SWFContext;
+
+static const CodecTag swf_codec_tags[] = {
+    {CODEC_ID_FLV1, 0x02},
+    {CODEC_ID_VP6F, 0x04},
+    {0, 0},
+};
 
 static const int sSampleRates[3][4] = {
     {44100, 48000, 32000, 0},
@@ -328,10 +333,12 @@ static int swf_write_header(AVFormatContext *s)
         if (enc->codec_type == CODEC_TYPE_AUDIO)
             audio_enc = enc;
         else {
-            if ( enc->codec_id == CODEC_ID_FLV1 || enc->codec_id == CODEC_ID_MJPEG ) {
+            if ( enc->codec_id == CODEC_ID_VP6F ||
+                 enc->codec_id == CODEC_ID_FLV1 ||
+                 enc->codec_id == CODEC_ID_MJPEG ) {
                 video_enc = enc;
             } else {
-                av_log(enc, AV_LOG_ERROR, "SWF only supports FLV1 and MJPEG\n");
+                av_log(enc, AV_LOG_ERROR, "SWF only supports VP6, FLV1 and MJPEG\n");
                 return -1;
             }
         }
@@ -361,7 +368,9 @@ static int swf_write_header(AVFormatContext *s)
     }
 
     put_tag(pb, "FWS");
-    if ( video_enc && video_enc->codec_id == CODEC_ID_FLV1 ) {
+    if ( video_enc && video_enc->codec_id == CODEC_ID_VP6F ) {
+        put_byte(pb, 8); /* version (version 8 and above support VP6 codec) */
+    } else if ( video_enc && video_enc->codec_id == CODEC_ID_FLV1 ) {
         put_byte(pb, 6); /* version (version 6 and above support FLV1 codec) */
     } else {
         put_byte(pb, 4); /* version (should use 4 for mpeg audio support) */
@@ -375,7 +384,8 @@ static int swf_write_header(AVFormatContext *s)
     put_le16(pb, (uint16_t)(DUMMY_DURATION * (int64_t)rate / rate_base)); /* frame count */
 
     /* define a shape with the jpeg inside */
-    if ( video_enc && video_enc->codec_id == CODEC_ID_FLV1 ) {
+    if ( video_enc && (video_enc->codec_id == CODEC_ID_VP6F ||
+                       video_enc->codec_id == CODEC_ID_FLV1 )) {
     } else if ( video_enc && video_enc->codec_id == CODEC_ID_MJPEG ) {
         put_swf_tag(s, TAG_DEFINESHAPE);
 
@@ -512,7 +522,8 @@ retry_swf_audio_packet:
         }
     }
 
-            if ( swf->video_type == CODEC_ID_FLV1 ) {
+            if ( swf->video_type == CODEC_ID_VP6F ||
+                 swf->video_type == CODEC_ID_FLV1 ) {
                 if ( swf->video_frame_number == 0 ) {
                     /* create a new video object */
                     put_swf_tag(s, TAG_VIDEOSTREAM);
@@ -521,7 +532,7 @@ retry_swf_audio_packet:
                     put_le16(pb, enc->width);
                     put_le16(pb, enc->height);
                     put_byte(pb, 0);
-                    put_byte(pb, SWF_VIDEO_CODEC_FLV1);
+                    put_byte(pb,codec_get_tag(swf_codec_tags,swf->video_type));
                     put_swf_end_tag(s);
 
                     /* place the video object for the first time */
@@ -784,18 +795,20 @@ static int swf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             return AVERROR_IO;
         }
         if ( tag == TAG_VIDEOSTREAM && !vst) {
+            int codec_id;
             swf->ch_id = get_le16(pb);
             get_le16(pb);
             get_le16(pb);
             get_le16(pb);
             get_byte(pb);
             /* Check for FLV1 */
-            if ( get_byte(pb) == SWF_VIDEO_CODEC_FLV1 ) {
+            codec_id = codec_get_id(swf_codec_tags, get_byte(pb));
+            if ( codec_id ) {
                 vst = av_new_stream(s, 0);
                 av_set_pts_info(vst, 24, 1, 1000); /* 24 bit pts in ms */
 
                 vst->codec->codec_type = CODEC_TYPE_VIDEO;
-                vst->codec->codec_id = CODEC_ID_FLV1;
+                vst->codec->codec_id = codec_id;
                 if ( swf->samples_per_frame ) {
                     vst->codec->time_base.den = 1000. / swf->ms_per_frame;
                     vst->codec->time_base.num = 1;

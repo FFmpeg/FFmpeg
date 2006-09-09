@@ -182,15 +182,15 @@ static const CodecTag nsv_codec_video_tags[] = {
     { CODEC_ID_VP3, MKTAG('V', 'P', '3', ' ') },
     { CODEC_ID_VP3, MKTAG('V', 'P', '3', '0') },
     { CODEC_ID_VP3, MKTAG('V', 'P', '3', '1') },
+    { CODEC_ID_VP5, MKTAG('V', 'P', '5', ' ') },
+    { CODEC_ID_VP5, MKTAG('V', 'P', '5', '0') },
+    { CODEC_ID_VP6, MKTAG('V', 'P', '6', '2') },
 /*
     { CODEC_ID_VP4, MKTAG('V', 'P', '4', ' ') },
     { CODEC_ID_VP4, MKTAG('V', 'P', '4', '0') },
-    { CODEC_ID_VP5, MKTAG('V', 'P', '5', ' ') },
-    { CODEC_ID_VP5, MKTAG('V', 'P', '5', '0') },
     { CODEC_ID_VP6, MKTAG('V', 'P', '6', ' ') },
     { CODEC_ID_VP6, MKTAG('V', 'P', '6', '0') },
     { CODEC_ID_VP6, MKTAG('V', 'P', '6', '1') },
-    { CODEC_ID_VP6, MKTAG('V', 'P', '6', '2') },
 */
     { CODEC_ID_XVID, MKTAG('X', 'V', 'I', 'D') }, /* cf sample xvid decoder from nsv_codec_sdk.zip */
     { CODEC_ID_RAWVIDEO, MKTAG('R', 'G', 'B', '3') },

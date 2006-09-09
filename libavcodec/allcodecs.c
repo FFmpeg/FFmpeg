@@ -371,6 +371,15 @@ void avcodec_register_all(void)
 #ifdef CONFIG_THEORA_DECODER
     register_avcodec(&theora_decoder);
 #endif //CONFIG_THEORA_DECODER
+#ifdef CONFIG_VP5_DECODER
+    register_avcodec(&vp5_decoder);
+#endif //CONFIG_VP5_DECODER
+#ifdef CONFIG_VP6_DECODER
+    register_avcodec(&vp6_decoder);
+#endif //CONFIG_VP6_DECODER
+#ifdef CONFIG_VP6F_DECODER
+    register_avcodec(&vp6f_decoder);
+#endif //CONFIG_VP6F_DECODER
 #ifdef CONFIG_ASV1_DECODER
     register_avcodec(&asv1_decoder);
 #endif //CONFIG_ASV1_DECODER

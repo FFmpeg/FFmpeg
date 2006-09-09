@@ -17,8 +17,8 @@ extern "C" {
 #define AV_STRINGIFY(s)         AV_TOSTRING(s)
 #define AV_TOSTRING(s) #s
 
-#define LIBAVCODEC_VERSION_INT  ((51<<16)+(13<<8)+0)
-#define LIBAVCODEC_VERSION      51.13.0
+#define LIBAVCODEC_VERSION_INT  ((51<<16)+(14<<8)+0)
+#define LIBAVCODEC_VERSION      51.14.0
 #define LIBAVCODEC_BUILD        LIBAVCODEC_VERSION_INT
 
 #define LIBAVCODEC_IDENT        "Lavc" AV_STRINGIFY(LIBAVCODEC_VERSION)
@@ -121,6 +121,9 @@ enum CodecID {
     CODEC_ID_CAVS,
     CODEC_ID_JPEG2000,
     CODEC_ID_VMNC,
+    CODEC_ID_VP5,
+    CODEC_ID_VP6,
+    CODEC_ID_VP6F,
 
     /* various pcm "codecs" */
     CODEC_ID_PCM_S16LE= 0x10000,
@@ -2192,6 +2195,9 @@ extern AVCodec h264_decoder;
 extern AVCodec indeo3_decoder;
 extern AVCodec vp3_decoder;
 extern AVCodec theora_decoder;
+extern AVCodec vp5_decoder;
+extern AVCodec vp6_decoder;
+extern AVCodec vp6f_decoder;
 extern AVCodec amr_nb_decoder;
 extern AVCodec amr_nb_encoder;
 extern AVCodec amr_wb_encoder;

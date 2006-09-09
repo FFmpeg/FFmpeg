@@ -114,6 +114,8 @@ const CodecTag codec_bmp_tags[] = {
     { CODEC_ID_INDEO3, MKTAG('I', 'V', '3', '2') },
     { CODEC_ID_VP3, MKTAG('V', 'P', '3', '1') },
     { CODEC_ID_VP3, MKTAG('V', 'P', '3', '0') },
+    { CODEC_ID_VP5, MKTAG('V', 'P', '5', '0') },
+    { CODEC_ID_VP6, MKTAG('V', 'P', '6', '2') },
     { CODEC_ID_ASV1, MKTAG('A', 'S', 'V', '1') },
     { CODEC_ID_ASV2, MKTAG('A', 'S', 'V', '2') },
     { CODEC_ID_VCR1, MKTAG('V', 'C', 'R', '1') },
