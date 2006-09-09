@@ -6,6 +6,7 @@
 #ifndef VC1DATA_H
 #define VC1DATA_H
 
+#if 0 //original bfraction from vc9data.h, not conforming to standard
 /* Denominator used for vc1_bfraction_lut */
 #define B_FRACTION_DEN  840
 
@@ -19,6 +20,22 @@ const int16_t vc1_bfraction_lut[23] = {
   525 /*5/8*/, 735 /*7/8*/,
   -1 /*inv.*/, 0 /*BI fm*/
 };
+#else
+/* Denominator used for vc1_bfraction_lut */
+#define B_FRACTION_DEN  256
+
+/* pre-computed scales for all bfractions and base=256 */
+const int16_t vc1_bfraction_lut[23] = {
+  128 /*1/2*/,  85 /*1/3*/, 170 /*2/3*/,  64 /*1/4*/,
+  192 /*3/4*/,  51 /*1/5*/, 102 /*2/5*/,
+  153 /*3/5*/, 204 /*4/5*/,  43 /*1/6*/, 215 /*5/6*/,
+   37 /*1/7*/,  74 /*2/7*/, 111 /*3/7*/, 148 /*4/7*/,
+  185 /*5/7*/, 222 /*6/7*/,  32 /*1/8*/,  96 /*3/8*/,
+  160 /*5/8*/, 224 /*7/8*/,
+  -1 /*inv.*/, 0 /*BI fm*/
+};
+#endif
+
 const uint8_t vc1_bfraction_bits[23] = {
     3, 3, 3, 3,
     3, 3, 3,

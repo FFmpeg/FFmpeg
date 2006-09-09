@@ -369,6 +369,7 @@ typedef struct VC1Context{
     //@}
 
     int p_frame_skipped;
+    int bi_type;
 } VC1Context;
 
 /**
@@ -778,8 +779,14 @@ static void vc1_mc_1mv(VC1Context *v, int dir)
 
     if(!v->s.last_picture.data[0])return;
 
-    mx = s->mv[0][0][0];
-    my = s->mv[0][0][1];
+    mx = s->mv[dir][0][0];
+    my = s->mv[dir][0][1];
+
+    // store motion vectors for further use in B frames
+    if(s->pict_type == P_TYPE) {
+        s->current_picture.motion_val[1][s->block_index[0]][0] = mx;
+        s->current_picture.motion_val[1][s->block_index[0]][1] = my;
+    }
     uvmx = (mx + ((mx & 3) == 3)) >> 1;
     uvmy = (my + ((my & 3) == 3)) >> 1;
     if(!dir) {
@@ -1040,6 +1047,8 @@ static void vc1_mc_4mv_chroma(VC1Context *v)
     } else
         return; //no need to do MC for inter blocks
 
+    s->current_picture.motion_val[1][s->block_index[0]][0] = tx;
+    s->current_picture.motion_val[1][s->block_index[0]][1] = ty;
     uvmx = (tx + ((tx&3) == 3)) >> 1;
     uvmy = (ty + ((ty&3) == 3)) >> 1;
 
@@ -1383,18 +1392,19 @@ static int vc1_parse_frame_header(VC1Context *v, GetBitContext* gb)
         } else v->s.pict_type = P_TYPE;
     } else v->s.pict_type = v->s.pict_type ? P_TYPE : I_TYPE;
 
-    if(v->s.pict_type == I_TYPE)
-        get_bits(gb, 7); // skip buffer fullness
+    v->bi_type = 0;
     if(v->s.pict_type == B_TYPE) {
         v->bfraction = get_vlc2(gb, vc1_bfraction_vlc.table, VC1_BFRACTION_VLC_BITS, 1);
         v->bfraction = vc1_bfraction_lut[v->bfraction];
-        if(v->bfraction == -1) {
+        if(v->bfraction == 0) {
             v->s.pict_type = BI_TYPE;
         }
     }
+    if(v->s.pict_type == I_TYPE || v->s.pict_type == BI_TYPE)
+        get_bits(gb, 7); // skip buffer fullness
 
     /* calculate RND */
-    if(v->s.pict_type == I_TYPE)
+    if(v->s.pict_type == I_TYPE || v->s.pict_type == BI_TYPE)
         v->rnd = 1;
     if(v->s.pict_type == P_TYPE)
         v->rnd ^= 1;
@@ -1568,6 +1578,10 @@ static int vc1_parse_frame_header(VC1Context *v, GetBitContext* gb)
     /* DC Syntax */
     v->s.dc_table_index = get_bits(gb, 1);
 
+    if(v->s.pict_type == BI_TYPE) {
+        v->s.pict_type = B_TYPE;
+        v->bi_type = 1;
+    }
     return 0;
 }
 
@@ -2078,71 +2092,242 @@ static void vc1_interp_mc(VC1Context *v)
     dsp->avg_qpel_pixels_tab[1][uvdxy](s->dest[2], srcV, s->uvlinesize);
 }
 
+static always_inline int scale_mv(int value, int bfrac, int inv, int qs)
+{
+    int n = bfrac;
+
+#if B_FRACTION_DEN==256
+    if(inv)
+        n -= 256;
+    if(!qs)
+        return 2 * ((value * n + 255) >> 9);
+    return (value * n + 128) >> 8;
+#else
+    if(inv)
+        n -= B_FRACTION_DEN;
+    if(!qs)
+        return 2 * ((value * n + B_FRACTION_DEN - 1) / (2 * B_FRACTION_DEN));
+    return (value * n + B_FRACTION_DEN/2) / B_FRACTION_DEN;
+#endif
+}
+
 /** Reconstruct motion vector for B-frame and do motion compensation
  */
 static inline void vc1_b_mc(VC1Context *v, int dmv_x[2], int dmv_y[2], int direct, int mode)
 {
-    MpegEncContext *s = &v->s;
-    int mx[4], my[4], mv_x, mv_y;
-    int i;
+    if(direct) {
+        vc1_mc_1mv(v, 0);
+        vc1_interp_mc(v);
+        return;
+    }
+    if(mode == BMV_TYPE_INTERPOLATED) {
+        vc1_mc_1mv(v, 0);
+        vc1_interp_mc(v);
+        return;
+    }
 
+    vc1_mc_1mv(v, (mode == BMV_TYPE_FORWARD));
+}
+
+static inline void vc1_pred_b_mv(VC1Context *v, int dmv_x[2], int dmv_y[2], int direct, int mvtype)
+{
+    MpegEncContext *s = &v->s;
+    int xy, wrap, off = 0;
+    int16_t *A, *B, *C;
+    int px, py;
+    int sum;
+    int r_x, r_y;
+    const uint8_t *is_intra = v->mb_type[0];
+
+    r_x = v->range_x;
+    r_y = v->range_y;
     /* scale MV difference to be quad-pel */
     dmv_x[0] <<= 1 - s->quarter_sample;
     dmv_y[0] <<= 1 - s->quarter_sample;
     dmv_x[1] <<= 1 - s->quarter_sample;
     dmv_y[1] <<= 1 - s->quarter_sample;
 
+    wrap = s->b8_stride;
+    xy = s->block_index[0];
+
+    if(s->mb_intra) {
+        s->current_picture.motion_val[0][xy][0] =
+        s->current_picture.motion_val[0][xy][1] =
+        s->current_picture.motion_val[1][xy][0] =
+        s->current_picture.motion_val[1][xy][1] = 0;
+        return;
+    }
+    s->mv[0][0][0] = scale_mv(s->next_picture.motion_val[1][xy][0], v->bfraction, 1, s->quarter_sample);
+    s->mv[0][0][1] = scale_mv(s->next_picture.motion_val[1][xy][1], v->bfraction, 1, s->quarter_sample);
+    s->mv[1][0][0] = scale_mv(s->next_picture.motion_val[1][xy][0], v->bfraction, 0, s->quarter_sample);
+    s->mv[1][0][1] = scale_mv(s->next_picture.motion_val[1][xy][1], v->bfraction, 0, s->quarter_sample);
     if(direct) {
-        for(i = 0; i < 4; i++) {
-            mx[i] = s->last_picture.motion_val[0][s->block_index[i]][0];
-            my[i] = s->last_picture.motion_val[0][s->block_index[i]][1];
-        }
-        mv_x = median4(mx[0], mx[1], mx[2], mx[3]);
-        mv_y = median4(my[0], my[1], my[2], my[3]);
-        s->mv[0][0][0] = (mv_x * v->bfraction + B_FRACTION_DEN/2) / B_FRACTION_DEN;
-        s->mv[0][0][1] = (mv_y * v->bfraction + B_FRACTION_DEN/2) / B_FRACTION_DEN;
-        vc1_mc_1mv(v, 0);
-
-        for(i = 0; i < 4; i++) {
-            mx[i] = s->next_picture.motion_val[0][s->block_index[i]][0];
-            my[i] = s->next_picture.motion_val[0][s->block_index[i]][1];
-        }
-        mv_x = median4(mx[0], mx[1], mx[2], mx[3]);
-        mv_y = median4(my[0], my[1], my[2], my[3]);
-        s->mv[1][0][0] = (mv_x * (B_FRACTION_DEN - v->bfraction) + B_FRACTION_DEN/2) / B_FRACTION_DEN;
-        s->mv[1][0][1] = (mv_y * (B_FRACTION_DEN - v->bfraction) + B_FRACTION_DEN/2) / B_FRACTION_DEN;
-        vc1_interp_mc(v);
-        return;
-    }
-    if(mode == BMV_TYPE_INTERPOLATED) {
-        s->mv[0][0][0] = dmv_x[0];
-        s->mv[0][0][1] = dmv_y[0];
-        vc1_mc_1mv(v, 0);
-        s->mv[1][0][0] = dmv_x[1];
-        s->mv[1][0][1] = dmv_y[1];
-        vc1_interp_mc(v);
+        s->current_picture.motion_val[0][xy][0] = s->mv[0][0][0];
+        s->current_picture.motion_val[0][xy][1] = s->mv[0][0][1];
+        s->current_picture.motion_val[1][xy][0] = s->mv[1][0][0];
+        s->current_picture.motion_val[1][xy][1] = s->mv[1][0][1];
         return;
     }
 
-    if(mode == BMV_TYPE_BACKWARD) {
-        for(i = 0; i < 4; i++) {
-            mx[i] = s->last_picture.motion_val[0][s->block_index[i]][0];
-            my[i] = s->last_picture.motion_val[0][s->block_index[i]][1];
+    if((mvtype == BMV_TYPE_BACKWARD) || (mvtype == BMV_TYPE_INTERPOLATED)) {
+        C = s->current_picture.motion_val[0][xy - 2];
+        A = s->current_picture.motion_val[0][xy - wrap*2];
+        off = (s->mb_x == (s->mb_width - 1)) ? -2 : 2;
+        B = s->current_picture.motion_val[0][xy - wrap*2 + off];
+
+        if(!s->first_slice_line) { // predictor A is not out of bounds
+            if(s->mb_width == 1) {
+                px = A[0];
+                py = A[1];
+            } else {
+                px = mid_pred(A[0], B[0], C[0]);
+                py = mid_pred(A[1], B[1], C[1]);
+            }
+        } else if(s->mb_x) { // predictor C is not out of bounds
+            px = C[0];
+            py = C[1];
+        } else {
+            px = py = 0;
         }
-    } else {
-        for(i = 0; i < 4; i++) {
-            mx[i] = s->next_picture.motion_val[0][s->block_index[i]][0];
-            my[i] = s->next_picture.motion_val[0][s->block_index[i]][1];
+        /* Pullback MV as specified in 8.3.5.3.4 */
+        {
+            int qx, qy, X, Y;
+            if(v->profile < PROFILE_ADVANCED) {
+                qx = (s->mb_x << 5);
+                qy = (s->mb_y << 5);
+                X = (s->mb_width << 5) - 4;
+                Y = (s->mb_height << 5) - 4;
+                if(qx + px < -28) px = -28 - qx;
+                if(qy + py < -28) py = -28 - qy;
+                if(qx + px > X) px = X - qx;
+                if(qy + py > Y) py = Y - qy;
+            } else {
+                qx = (s->mb_x << 6);
+                qy = (s->mb_y << 6);
+                X = (s->mb_width << 6) - 4;
+                Y = (s->mb_height << 6) - 4;
+                if(qx + px < -60) px = -60 - qx;
+                if(qy + py < -60) py = -60 - qy;
+                if(qx + px > X) px = X - qx;
+                if(qy + py > Y) py = Y - qy;
+            }
         }
+        /* Calculate hybrid prediction as specified in 8.3.5.3.5 */
+        if(0 && !s->first_slice_line && s->mb_x) {
+            if(is_intra[xy - wrap])
+                sum = ABS(px) + ABS(py);
+            else
+                sum = ABS(px - A[0]) + ABS(py - A[1]);
+            if(sum > 32) {
+                if(get_bits1(&s->gb)) {
+                    px = A[0];
+                    py = A[1];
+                } else {
+                    px = C[0];
+                    py = C[1];
+                }
+            } else {
+                if(is_intra[xy - 2])
+                    sum = ABS(px) + ABS(py);
+                else
+                    sum = ABS(px - C[0]) + ABS(py - C[1]);
+                if(sum > 32) {
+                    if(get_bits1(&s->gb)) {
+                        px = A[0];
+                        py = A[1];
+                    } else {
+                        px = C[0];
+                        py = C[1];
+                    }
+                }
+            }
+        }
+        /* store MV using signed modulus of MV range defined in 4.11 */
+        s->mv[0][0][0] = ((px + dmv_x[0] + r_x) & ((r_x << 1) - 1)) - r_x;
+        s->mv[0][0][1] = ((py + dmv_y[0] + r_y) & ((r_y << 1) - 1)) - r_y;
     }
+    if((mvtype == BMV_TYPE_FORWARD) || (mvtype == BMV_TYPE_INTERPOLATED)) {
+        C = s->current_picture.motion_val[1][xy - 2];
+        A = s->current_picture.motion_val[1][xy - wrap*2];
+        off = (s->mb_x == (s->mb_width - 1)) ? -2 : 2;
+        B = s->current_picture.motion_val[1][xy - wrap*2 + off];
 
-    /* XXX: not right but how to determine 4-MV intra/inter in another frame? */
-    mv_x = median4(mx[0], mx[1], mx[2], mx[3]);
-    mv_y = median4(my[0], my[1], my[2], my[3]);
-    s->mv[0][0][0] = mv_x;
-    s->mv[0][0][1] = mv_y;
+        if(!s->first_slice_line) { // predictor A is not out of bounds
+            if(s->mb_width == 1) {
+                px = A[0];
+                py = A[1];
+            } else {
+                px = mid_pred(A[0], B[0], C[0]);
+                py = mid_pred(A[1], B[1], C[1]);
+            }
+        } else if(s->mb_x) { // predictor C is not out of bounds
+            px = C[0];
+            py = C[1];
+        } else {
+            px = py = 0;
+        }
+        /* Pullback MV as specified in 8.3.5.3.4 */
+        {
+            int qx, qy, X, Y;
+            if(v->profile < PROFILE_ADVANCED) {
+                qx = (s->mb_x << 5);
+                qy = (s->mb_y << 5);
+                X = (s->mb_width << 5) - 4;
+                Y = (s->mb_height << 5) - 4;
+                if(qx + px < -28) px = -28 - qx;
+                if(qy + py < -28) py = -28 - qy;
+                if(qx + px > X) px = X - qx;
+                if(qy + py > Y) py = Y - qy;
+            } else {
+                qx = (s->mb_x << 6);
+                qy = (s->mb_y << 6);
+                X = (s->mb_width << 6) - 4;
+                Y = (s->mb_height << 6) - 4;
+                if(qx + px < -60) px = -60 - qx;
+                if(qy + py < -60) py = -60 - qy;
+                if(qx + px > X) px = X - qx;
+                if(qy + py > Y) py = Y - qy;
+            }
+        }
+        /* Calculate hybrid prediction as specified in 8.3.5.3.5 */
+        if(0 && !s->first_slice_line && s->mb_x) {
+            if(is_intra[xy - wrap])
+                sum = ABS(px) + ABS(py);
+            else
+                sum = ABS(px - A[0]) + ABS(py - A[1]);
+            if(sum > 32) {
+                if(get_bits1(&s->gb)) {
+                    px = A[0];
+                    py = A[1];
+                } else {
+                    px = C[0];
+                    py = C[1];
+                }
+            } else {
+                if(is_intra[xy - 2])
+                    sum = ABS(px) + ABS(py);
+                else
+                    sum = ABS(px - C[0]) + ABS(py - C[1]);
+                if(sum > 32) {
+                    if(get_bits1(&s->gb)) {
+                        px = A[0];
+                        py = A[1];
+                    } else {
+                        px = C[0];
+                        py = C[1];
+                    }
+                }
+            }
+        }
+        /* store MV using signed modulus of MV range defined in 4.11 */
 
-    vc1_mc_1mv(v, (mode == BMV_TYPE_FORWARD));
+        s->mv[1][0][0] = ((px + dmv_x[1] + r_x) & ((r_x << 1) - 1)) - r_x;
+        s->mv[1][0][1] = ((py + dmv_y[1] + r_y) & ((r_y << 1) - 1)) - r_y;
+    }
+    s->current_picture.motion_val[0][xy][0] = s->mv[0][0][0];
+    s->current_picture.motion_val[0][xy][1] = s->mv[0][0][1];
+    s->current_picture.motion_val[1][xy][0] = s->mv[1][0][0];
+    s->current_picture.motion_val[1][xy][1] = s->mv[1][0][1];
 }
 
 /** Get predicted DC value for I-frames only
@@ -3101,6 +3286,10 @@ static int vc1_decode_p_mb(VC1Context *v)
         {
             GET_MVDATA(dmv_x, dmv_y);
 
+            if (s->mb_intra) {
+                s->current_picture.motion_val[1][s->block_index[0]][0] = 0;
+                s->current_picture.motion_val[1][s->block_index[0]][1] = 0;
+            }
             s->current_picture.mb_type[mb_pos] = s->mb_intra ? MB_TYPE_INTRA : MB_TYPE_16x16;
             vc1_pred_mv(s, 0, dmv_x, dmv_y, 1, v->range_x, v->range_y, v->mb_type[0]);
 
@@ -3354,10 +3543,16 @@ static void vc1_decode_b_mb(VC1Context *v)
                 break;
             case 2:
                 bmvtype = BMV_TYPE_INTERPOLATED;
+                dmv_x[1] = dmv_y[1] = 0;
             }
         }
     }
+    for(i = 0; i < 6; i++)
+        v->mb_type[0][s->block_index[i]] = s->mb_intra;
+
     if (skipped) {
+        if(direct) bmvtype = BMV_TYPE_INTERPOLATED;
+        vc1_pred_b_mv(v, dmv_x, dmv_y, direct, bmvtype);
         vc1_b_mc(v, dmv_x, dmv_y, direct, bmvtype);
         return;
     }
@@ -3369,10 +3564,13 @@ static void vc1_decode_b_mb(VC1Context *v)
         s->current_picture.qscale_table[mb_pos] = mquant;
         if(!v->ttmbf)
             ttmb = get_vlc2(gb, vc1_ttmb_vlc[v->tt_index].table, VC1_TTMB_VLC_BITS, 2);
+        dmv_x[0] = dmv_y[0] = dmv_x[1] = dmv_y[1] = 0;
+        vc1_pred_b_mv(v, dmv_x, dmv_y, direct, bmvtype);
         vc1_b_mc(v, dmv_x, dmv_y, direct, bmvtype);
     } else {
         if(!mb_has_coeffs && !s->mb_intra) {
             /* no coded blocks - effectively skipped */
+            vc1_pred_b_mv(v, dmv_x, dmv_y, direct, bmvtype);
             vc1_b_mc(v, dmv_x, dmv_y, direct, bmvtype);
             return;
         }
@@ -3381,17 +3579,21 @@ static void vc1_decode_b_mb(VC1Context *v)
             s->current_picture.qscale_table[mb_pos] = mquant;
             s->ac_pred = get_bits1(gb);
             cbp = 0;
+            vc1_pred_b_mv(v, dmv_x, dmv_y, direct, bmvtype);
         } else {
             if(bmvtype == BMV_TYPE_INTERPOLATED) {
                 GET_MVDATA(dmv_x[1], dmv_y[1]);
                 if(!mb_has_coeffs) {
                     /* interpolated skipped block */
+                    vc1_pred_b_mv(v, dmv_x, dmv_y, direct, bmvtype);
                     vc1_b_mc(v, dmv_x, dmv_y, direct, bmvtype);
                     return;
                 }
             }
-            if(!s->mb_intra)
+            vc1_pred_b_mv(v, dmv_x, dmv_y, direct, bmvtype);
+            if(!s->mb_intra) {
                 vc1_b_mc(v, dmv_x, dmv_y, direct, bmvtype);
+            }
             if(s->mb_intra)
                 s->ac_pred = get_bits1(gb);
             cbp = get_vlc2(&v->s.gb, v->cbpcy_vlc->table, VC1_CBPCY_P_VLC_BITS, 2);
@@ -3804,7 +4006,10 @@ static void vc1_decode_blocks(VC1Context *v)
             vc1_decode_p_blocks(v);
         break;
     case B_TYPE:
-        vc1_decode_b_blocks(v);
+        if(v->bi_type)
+            vc1_decode_i_blocks(v);
+        else
+            vc1_decode_b_blocks(v);
         break;
     }
 }
