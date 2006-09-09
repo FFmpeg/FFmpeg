@@ -1164,23 +1164,20 @@ static int decode_sequence_header(AVCodecContext *avctx, GetBitContext *gb)
                "LOOPFILTER shell not be enabled in simple profile\n");
     }
 
-    if (v->profile < PROFILE_ADVANCED)
+    v->res_x8 = get_bits(gb, 1); //reserved
+    if (v->res_x8)
     {
-        v->res_x8 = get_bits(gb, 1); //reserved
-        if (v->res_x8)
-        {
-            av_log(avctx, AV_LOG_ERROR,
-                   "1 for reserved RES_X8 is forbidden\n");
-            //return -1;
-        }
-        v->multires = get_bits(gb, 1);
-        v->res_fasttx = get_bits(gb, 1);
-        if (!v->res_fasttx)
-        {
-            av_log(avctx, AV_LOG_ERROR,
-                   "0 for reserved RES_FASTTX is forbidden\n");
-            //return -1;
-        }
+        av_log(avctx, AV_LOG_ERROR,
+               "1 for reserved RES_X8 is forbidden\n");
+        //return -1;
+    }
+    v->multires = get_bits(gb, 1);
+    v->res_fasttx = get_bits(gb, 1);
+    if (!v->res_fasttx)
+    {
+        av_log(avctx, AV_LOG_ERROR,
+               "0 for reserved RES_FASTTX is forbidden\n");
+        //return -1;
     }
 
     v->fastuvmc =  get_bits(gb, 1); //common
@@ -1200,46 +1197,38 @@ static int decode_sequence_header(AVCodecContext *avctx, GetBitContext *gb)
     v->dquant =  get_bits(gb, 2); //common
     v->vstransform =  get_bits(gb, 1); //common
 
-    if (v->profile < PROFILE_ADVANCED)
+    v->res_transtab = get_bits(gb, 1);
+    if (v->res_transtab)
     {
-        v->res_transtab = get_bits(gb, 1);
-        if (v->res_transtab)
-        {
-            av_log(avctx, AV_LOG_ERROR,
-                   "1 for reserved RES_TRANSTAB is forbidden\n");
-            return -1;
-        }
+        av_log(avctx, AV_LOG_ERROR,
+               "1 for reserved RES_TRANSTAB is forbidden\n");
+        return -1;
     }
 
     v->overlap = get_bits(gb, 1); //common
 
-    if (v->profile < PROFILE_ADVANCED)
+    v->s.resync_marker = get_bits(gb, 1);
+    v->rangered = get_bits(gb, 1);
+    if (v->rangered && v->profile == PROFILE_SIMPLE)
     {
-        v->s.resync_marker = get_bits(gb, 1);
-        v->rangered = get_bits(gb, 1);
-        if (v->rangered && v->profile == PROFILE_SIMPLE)
-        {
-            av_log(avctx, AV_LOG_INFO,
-                   "RANGERED should be set to 0 in simple profile\n");
-        }
+        av_log(avctx, AV_LOG_INFO,
+               "RANGERED should be set to 0 in simple profile\n");
     }
 
     v->s.max_b_frames = avctx->max_b_frames = get_bits(gb, 3); //common
     v->quantizer_mode = get_bits(gb, 2); //common
 
-    if (v->profile < PROFILE_ADVANCED)
+    v->finterpflag = get_bits(gb, 1); //common
+    v->res_rtm_flag = get_bits(gb, 1); //reserved
+    if (!v->res_rtm_flag)
     {
-        v->finterpflag = get_bits(gb, 1); //common
-        v->res_rtm_flag = get_bits(gb, 1); //reserved
-        if (!v->res_rtm_flag)
-        {
 //            av_log(avctx, AV_LOG_ERROR,
 //                   "0 for reserved RES_RTM_FLAG is forbidden\n");
-            av_log(avctx, AV_LOG_ERROR,
-                   "Old WMV3 version detected, only I-frames will be decoded\n");
-            //return -1;
-        }
-        av_log(avctx, AV_LOG_DEBUG,
+        av_log(avctx, AV_LOG_ERROR,
+               "Old WMV3 version detected, only I-frames will be decoded\n");
+        //return -1;
+    }
+    av_log(avctx, AV_LOG_DEBUG,
                "Profile %i:\nfrmrtq_postproc=%i, bitrtq_postproc=%i\n"
                "LoopFilter=%i, MultiRes=%i, FastUVMC=%i, Extended MV=%i\n"
                "Rangered=%i, VSTransform=%i, Overlap=%i, SyncMarker=%i\n"
@@ -1249,9 +1238,7 @@ static int decode_sequence_header(AVCodecContext *avctx, GetBitContext *gb)
                v->rangered, v->vstransform, v->overlap, v->s.resync_marker,
                v->dquant, v->quantizer_mode, avctx->max_b_frames
                );
-        return 0;
-    }
-    return -1;
+    return 0;
 }
 
 static int decode_sequence_header_adv(VC1Context *v, GetBitContext *gb)
