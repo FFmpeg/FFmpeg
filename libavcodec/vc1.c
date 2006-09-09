@@ -1326,7 +1326,7 @@ static int decode_entry_point(AVCodecContext *avctx, GetBitContext *gb)
 
     av_log(avctx, AV_LOG_DEBUG, "Entry point: %08X\n", show_bits_long(gb, 32));
     get_bits1(gb); // broken link
-    get_bits1(gb); // closed entry
+    avctx->max_b_frames = 1 - get_bits1(gb); // 'closed entry' also signalize possible B-frames
     v->panscanflag = get_bits1(gb);
     get_bits1(gb); // refdist flag
     v->s.loop_filter = get_bits1(gb);
@@ -1592,8 +1592,7 @@ static int vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
         break;
     case 3:
         v->s.pict_type = BI_TYPE;
-        return -1;
-//      break;
+        break;
     case 4:
         v->s.pict_type = P_TYPE; // skipped pic
         v->p_frame_skipped = 1;
@@ -1636,6 +1635,7 @@ static int vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
 
     switch(v->s.pict_type) {
     case I_TYPE:
+    case BI_TYPE:
         status = bitplane_decoding(v->acpred_plane, &v->acpred_is_raw, v);
         if (status < 0) return -1;
         av_log(v->s.avctx, AV_LOG_DEBUG, "ACPRED plane encoding: "
@@ -1756,6 +1756,11 @@ static int vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
         vop_dquant_decoding(v);
     }
 
+    v->bi_type = 0;
+    if(v->s.pict_type == BI_TYPE) {
+        v->s.pict_type = B_TYPE;
+        v->bi_type = 1;
+    }
     return 0;
 }
 
