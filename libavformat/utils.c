@@ -474,6 +474,10 @@ static const AVOption options[]={
 {NULL},
 };
 
+#undef E
+#undef D
+#undef DEFAULT
+
 static const AVClass av_format_context_class = { "AVFormatContext", format_to_name, options };
 
 #if LIBAVCODEC_VERSION_INT > ((52<<16)+(0<<8)+0)

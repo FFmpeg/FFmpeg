@@ -754,6 +754,10 @@ static const AVOption options[]={
 
 #undef A
 #undef V
+#undef S
+#undef E
+#undef D
+#undef DEFAULT
 
 static AVClass av_codec_context_class = { "AVCodecContext", context_to_name, options };
 
