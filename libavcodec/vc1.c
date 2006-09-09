@@ -1130,7 +1130,7 @@ static int decode_sequence_header(AVCodecContext *avctx, GetBitContext *gb)
 {
     VC1Context *v = avctx->priv_data;
 
-    av_log(avctx, AV_LOG_INFO, "Header: %0X\n", show_bits(gb, 32));
+    av_log(avctx, AV_LOG_DEBUG, "Header: %0X\n", show_bits(gb, 32));
     v->profile = get_bits(gb, 2);
     if (v->profile == 2)
     {
