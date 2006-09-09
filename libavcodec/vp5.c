@@ -84,7 +84,7 @@ static int vp5_adjust(int v, int t)
     return v;
 }
 
-static void vp5_parse_vector_adjustment(vp56_context_t *s, vp56_mv_t *vector)
+static void vp5_parse_vector_adjustment(vp56_context_t *s, vp56_mv_t *vect)
 {
     vp56_range_coder_t *c = &s->c;
     int comp, di;
@@ -101,9 +101,9 @@ static void vp5_parse_vector_adjustment(vp56_context_t *s, vp56_mv_t *vector)
             delta = (delta ^ -sign) + sign;
         }
         if (!comp)
-            vector->x = delta;
+            vect->x = delta;
         else
-            vector->y = delta;
+            vect->y = delta;
     }
 }
 

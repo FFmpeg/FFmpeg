@@ -36,7 +36,7 @@ static int vp56_get_vectors_predictors(vp56_context_t *s, int row, int col,
                                        vp56_frame_t ref_frame)
 {
     int nb_pred = 0;
-    vp56_mv_t vector[2] = {{0,0}, {0,0}};
+    vp56_mv_t vect[2] = {{0,0}, {0,0}};
     int pos, offset;
     vp56_mv_t mvp;
 
@@ -50,13 +50,13 @@ static int vp56_get_vectors_predictors(vp56_context_t *s, int row, int col,
 
         if (vp56_reference_frame[s->macroblocks[offset].type] != ref_frame)
             continue;
-        if ((s->macroblocks[offset].mv.x == vector[0].x &&
-             s->macroblocks[offset].mv.y == vector[0].y) ||
+        if ((s->macroblocks[offset].mv.x == vect[0].x &&
+             s->macroblocks[offset].mv.y == vect[0].y) ||
             (s->macroblocks[offset].mv.x == 0 &&
              s->macroblocks[offset].mv.y == 0))
             continue;
 
-        vector[nb_pred++] = s->macroblocks[offset].mv;
+        vect[nb_pred++] = s->macroblocks[offset].mv;
         if (nb_pred > 1) {
             nb_pred = -1;
             break;
@@ -64,8 +64,8 @@ static int vp56_get_vectors_predictors(vp56_context_t *s, int row, int col,
         s->vector_candidate_pos = pos;
     }
 
-    s->vector_candidate[0] = vector[0];
-    s->vector_candidate[1] = vector[1];
+    s->vector_candidate[0] = vect[0];
+    s->vector_candidate[1] = vect[1];
 
     return nb_pred+1;
 }
@@ -198,7 +198,7 @@ static void vp56_decode_4mv(vp56_context_t *s, int row, int col)
 
 static vp56_mb_t vp56_decode_mv(vp56_context_t *s, int row, int col)
 {
-    vp56_mv_t *mv, vector = {0,0};
+    vp56_mv_t *mv, vect = {0,0};
     int ctx, b;
 
     ctx = vp56_get_vectors_predictors(s, row, col, VP56_FRAME_PREVIOUS);
@@ -225,14 +225,14 @@ static vp56_mb_t vp56_decode_mv(vp56_context_t *s, int row, int col)
             break;
 
         case VP56_MB_INTER_DELTA_PF:
-            s->parse_vector_adjustment(s, &vector);
-            mv = &vector;
+            s->parse_vector_adjustment(s, &vect);
+            mv = &vect;
             break;
 
         case VP56_MB_INTER_DELTA_GF:
             vp56_get_vectors_predictors(s, row, col, VP56_FRAME_GOLDEN);
-            s->parse_vector_adjustment(s, &vector);
-            mv = &vector;
+            s->parse_vector_adjustment(s, &vect);
+            mv = &vect;
             break;
 
         case VP56_MB_INTER_4V:
@@ -240,7 +240,7 @@ static vp56_mb_t vp56_decode_mv(vp56_context_t *s, int row, int col)
             return s->mb_type;
 
         default:
-            mv = &vector;
+            mv = &vect;
             break;
     }
 

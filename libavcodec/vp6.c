@@ -195,14 +195,14 @@ static void vp6_parse_coeff_models(vp56_context_t *s)
                 s->coeff_model_dcct[pt][ctx][node] = clip(((s->coeff_model_dccv[pt][node] * vp6_dccv_lc[ctx][node][0] + 128) >> 8) + vp6_dccv_lc[ctx][node][1], 1, 255);
 }
 
-static void vp6_parse_vector_adjustment(vp56_context_t *s, vp56_mv_t *vector)
+static void vp6_parse_vector_adjustment(vp56_context_t *s, vp56_mv_t *vect)
 {
     vp56_range_coder_t *c = &s->c;
     int comp;
 
-    *vector = (vp56_mv_t) {0,0};
+    *vect = (vp56_mv_t) {0,0};
     if (s->vector_candidate_pos < 2)
-        *vector = s->vector_candidate[0];
+        *vect = s->vector_candidate[0];
 
     for (comp=0; comp<2; comp++) {
         int i, delta = 0;
@@ -226,9 +226,9 @@ static void vp6_parse_vector_adjustment(vp56_context_t *s, vp56_mv_t *vector)
             delta = -delta;
 
         if (!comp)
-            vector->x += delta;
+            vect->x += delta;
         else
-            vector->y += delta;
+            vect->y += delta;
     }
 }
 
