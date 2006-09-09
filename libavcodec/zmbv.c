@@ -671,10 +671,8 @@ static int decode_end(AVCodecContext *avctx)
 #ifdef CONFIG_ZLIB
     inflateEnd(&(c->zstream));
 #endif
-    if(c->cur)
-        av_freep(&c->cur);
-    if(c->prev)
-        av_freep(&c->prev);
+    av_freep(&c->cur);
+    av_freep(&c->prev);
 
     return 0;
 }

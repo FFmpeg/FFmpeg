@@ -4165,18 +4165,18 @@ static int vc1_decode_frame(AVCodecContext *avctx,
     // do parse frame header
     if(v->profile < PROFILE_ADVANCED) {
         if(vc1_parse_frame_header(v, &s->gb) == -1) {
-            if(buf2)av_free(buf2);
+            av_free(buf2);
             return -1;
         }
     } else {
         if(vc1_parse_frame_header_adv(v, &s->gb) == -1) {
-            if(buf2)av_free(buf2);
+            av_free(buf2);
             return -1;
         }
     }
 
     if(s->pict_type != I_TYPE && !v->res_rtm_flag){
-        if(buf2)av_free(buf2);
+        av_free(buf2);
         return -1;
     }
 
@@ -4186,7 +4186,7 @@ static int vc1_decode_frame(AVCodecContext *avctx,
 
     /* skip B-frames if we don't have reference frames */
     if(s->last_picture_ptr==NULL && (s->pict_type==B_TYPE || s->dropable)){
-        if(buf2)av_free(buf2);
+        av_free(buf2);
         return -1;//buf_size;
     }
     /* skip b frames if we are in a hurry */
@@ -4194,12 +4194,12 @@ static int vc1_decode_frame(AVCodecContext *avctx,
     if(   (avctx->skip_frame >= AVDISCARD_NONREF && s->pict_type==B_TYPE)
        || (avctx->skip_frame >= AVDISCARD_NONKEY && s->pict_type!=I_TYPE)
        ||  avctx->skip_frame >= AVDISCARD_ALL) {
-        if(buf2)av_free(buf2);
+        av_free(buf2);
         return buf_size;
     }
     /* skip everything if we are in a hurry>=5 */
     if(avctx->hurry_up>=5) {
-        if(buf2)av_free(buf2);
+        av_free(buf2);
         return -1;//buf_size;
     }
 
@@ -4211,7 +4211,7 @@ static int vc1_decode_frame(AVCodecContext *avctx,
     }
 
     if(MPV_frame_start(s, avctx) < 0) {
-        if(buf2)av_free(buf2);
+        av_free(buf2);
         return -1;
     }
 
@@ -4243,7 +4243,7 @@ assert(s->current_picture.pict_type == s->pict_type);
     /* we substract 1 because it is added on utils.c    */
     avctx->frame_number = s->picture_number - 1;
 
-    if(buf2)av_free(buf2);
+    av_free(buf2);
     return buf_size;
 }
 
