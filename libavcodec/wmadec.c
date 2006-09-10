@@ -716,12 +716,7 @@ static int wma_decode_block(WMADecodeContext *s)
     int n, v, a, ch, code, bsize;
     int coef_nb_bits, total_gain, parse_exponents;
     DECLARE_ALIGNED_16(float, window[BLOCK_MAX_SIZE * 2]);
-// XXX: FIXME!! there's a bug somewhere which makes this mandatory under altivec
-#ifdef HAVE_ALTIVEC
-    volatile int nb_coefs[MAX_CHANNELS] __attribute__((aligned(16)));
-#else
     int nb_coefs[MAX_CHANNELS];
-#endif
     float mdct_norm;
 
 #ifdef TRACE
