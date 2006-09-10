@@ -1693,7 +1693,7 @@ static int vorbis_decode_frame(AVCodecContext *avccontext,
     vorbis_context *vc = avccontext->priv_data ;
     GetBitContext *gb = &(vc->gb);
 
-    int_fast16_t i, len;
+    int_fast16_t len;
 
     if(!buf_size){
         return 0;
