@@ -4180,6 +4180,12 @@ static int vc1_decode_frame(AVCodecContext *avctx,
         return -1;
     }
 
+    /* skip B frames as they are not decoded correctly */
+    if(s->pict_type == B_TYPE){
+        av_free(buf2);
+        return buf_size;
+    }
+
     // for hurry_up==5
     s->current_picture.pict_type= s->pict_type;
     s->current_picture.key_frame= s->pict_type == I_TYPE;
