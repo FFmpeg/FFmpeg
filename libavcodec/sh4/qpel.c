@@ -1,7 +1,23 @@
 /*
-        this is optimized for sh, which have post increment addressing (*p++)
-        some cpu may be index (p[n]) faster than post increment (*p++)
-*/
+ * This is optimized for sh, which have post increment addressing (*p++).
+ * Some CPU may be index (p[n]) faster than post increment (*p++).
+ *
+ * copyright (c) 2001-2003 BERO <bero@geocities.co.jp>
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ */
 
 #define         LD(adr) *(uint32_t*)(adr)
 
