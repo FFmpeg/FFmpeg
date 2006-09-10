@@ -765,6 +765,9 @@ void avcodec_get_context_defaults(AVCodecContext *s){
     memset(s, 0, sizeof(AVCodecContext));
 
     s->av_class= &av_codec_context_class;
+
+    av_opt_set_defaults(s);
+
     s->bit_rate= 800*1000;
     s->bit_rate_tolerance= s->bit_rate*10;
     s->qmin= 2;

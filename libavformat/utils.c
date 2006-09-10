@@ -486,6 +486,10 @@ static
 void avformat_get_context_defaults(AVFormatContext *s){
     memset(s, 0, sizeof(AVFormatContext));
 
+    s->av_class = &av_format_context_class;
+
+    av_opt_set_defaults(s);
+
     /* from mpegts.c: 1.0 second at 24Mbit/s */
     s->probesize=32000;
 }

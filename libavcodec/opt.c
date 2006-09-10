@@ -299,3 +299,40 @@ int av_opt_show(void *obj, void *av_log_obj){
     }
     return 0;
 }
+
+void av_opt_set_defaults(void *s)
+{
+    AVOption *opt = NULL;
+    while ((opt = av_next_option(s, opt)) != NULL) {
+        switch(opt->type) {
+            case FF_OPT_TYPE_CONST:
+                /* Nothing to be done here */
+            break;
+            case FF_OPT_TYPE_FLAGS:
+            case FF_OPT_TYPE_INT: {
+                int val;
+                val = opt->default_val;
+                av_set_int(s, opt->name, val);
+            }
+            break;
+            case FF_OPT_TYPE_FLOAT: {
+                double val;
+                val = opt->default_val;
+                av_set_double(s, opt->name, val);
+            }
+            break;
+            case FF_OPT_TYPE_RATIONAL: {
+                AVRational val;
+                val = av_d2q(opt->default_val, INT_MAX);
+                av_set_q(s, opt->name, val);
+            }
+            break;
+            case FF_OPT_TYPE_STRING:
+                /* Cannot set default for string as default_val is of type * double */
+            break;
+            default:
+                av_log(s, AV_LOG_DEBUG, "AVOption type %d of option %s not implemented yet\n", opt->type, opt->name);
+        }
+    }
+}
+

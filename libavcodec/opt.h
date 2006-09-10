@@ -76,5 +76,6 @@ int64_t av_get_int(void *obj, const char *name, AVOption **o_out);
 const char *av_get_string(void *obj, const char *name, AVOption **o_out, char *buf, int buf_len);
 AVOption *av_next_option(void *obj, AVOption *last);
 int av_opt_show(void *obj, void *av_log_obj);
+void av_opt_set_defaults(void *s);
 
 #endif
