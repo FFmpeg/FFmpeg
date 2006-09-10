@@ -212,9 +212,6 @@ they do not conflict with the standard, as in:
 ffmpeg -i myfile.avi -target vcd -bf 2 /tmp/vcd.mpg
 @end example
 
-@item -hq
-Activate high quality settings.
-
 @item -itsoffset offset
 Set the input time offset in seconds.
 @code{[-]hh:mm:ss[.xxx]} syntax is also supported.
