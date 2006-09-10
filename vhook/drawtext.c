@@ -190,14 +190,14 @@ int Configure(void **ctxp, int argc, char *argv[])
       case 'c':
         if (ParseColor(optarg, ci->fgcolor) == -1)
           {
-            fprintf(stderr, "ERROR: Invalid foreground color: '%s'. You must specify the color in the internet way(packaged hex): #RRGGBB, ie: -c #ffffff (for white foreground)\n",optarg);
+            av_log(NULL, AV_LOG_ERROR, "Invalid foreground color: '%s'. You must specify the color in the internet way(packaged hex): #RRGGBB, ie: -c #ffffff (for white foreground)\n", optarg);
             return -1;
           }
         break;
       case 'C':
         if (ParseColor(optarg, ci->bgcolor) == -1)
           {
-            fprintf(stderr, "ERROR: Invalid foreground color: '%s'. You must specify the color in the internet way(packaged hex): #RRGGBB, ie: -c #ffffff (for white foreground)\n",optarg);
+            av_log(NULL, AV_LOG_ERROR, "Invalid foreground color: '%s'. You must specify the color in the internet way(packaged hex): #RRGGBB, ie: -c #ffffff (for white foreground)\n", optarg);
             return -1;
           }
         break;
@@ -208,14 +208,14 @@ int Configure(void **ctxp, int argc, char *argv[])
         ci->outline=1;
         break;
       case '?':
-        fprintf(stderr, "ERROR: Unrecognized argument '%s'\n", argv[optind]);
+        av_log(NULL, AV_LOG_ERROR, "Unrecognized argument '%s'\n", argv[optind]);
         return -1;
       }
     }
 
     if (!ci->text)
       {
-        fprintf(stderr,"ERROR: No text provided (-t text)\n");
+        av_log(NULL, AV_LOG_ERROR, "No text provided (-t text)\n");
         return -1;
       }
 
@@ -224,7 +224,7 @@ int Configure(void **ctxp, int argc, char *argv[])
         FILE *fp;
         if ((fp=fopen(ci->file, "r")) == NULL)
           {
-            perror("WARNING: the file could not be opened. Using text provided with -t switch. ");
+            av_log(NULL, AV_LOG_INFO, "WARNING: The file could not be opened. Using text provided with -t switch: %s", strerror(errno));
           }
         else
           {
@@ -234,25 +234,25 @@ int Configure(void **ctxp, int argc, char *argv[])
 
     if (!font)
       {
-        fprintf(stderr,"ERROR: No font file provided! (-f filename)\n");
+        av_log(NULL, AV_LOG_ERROR, "No font file provided! (-f filename)\n");
         return -1;
       }
 
     if ((error = FT_Init_FreeType(&(ci->library))) != 0)
       {
-        fprintf(stderr,"ERROR: Could not load FreeType (error# %d)\n",error);
+        av_log(NULL, AV_LOG_ERROR, "Could not load FreeType (error# %d).\n", error);
         return -1;
       }
 
     if ((error = FT_New_Face( ci->library, font, 0, &(ci->face) )) != 0)
       {
-        fprintf(stderr,"ERROR: Could not load face: %s  (error# %d)\n",font, error);
+        av_log(NULL, AV_LOG_ERROR, "Could not load face: %s  (error# %d).\n", font, error);
         return -1;
       }
 
     if ((error = FT_Set_Pixel_Sizes( ci->face, 0, size)) != 0)
       {
-        fprintf(stderr,"ERROR: Could not set font size to %d pixels (error# %d)\n",size, error);
+        av_log(NULL, AV_LOG_ERROR, "Could not set font size to %d pixels (error# %d).\n", size, error);
         return -1;
       }
 
@@ -400,7 +400,7 @@ void Process(void *ctx, AVPicture *picture, enum PixelFormat pix_fmt, int width,
       if (fd < 0)
         {
           text = ci->text;
-          perror("WARNING: the file could not be opened. Using text provided with -t switch. ");
+          av_log(NULL, AV_LOG_INFO, "WARNING: The file could not be opened. Using text provided with -t switch: %s", strerror(errno));
         }
       else
         {
@@ -414,7 +414,7 @@ void Process(void *ctx, AVPicture *picture, enum PixelFormat pix_fmt, int width,
           else
             {
               text = ci->text;
-              perror("WARNING: the file could not be opened. Using text provided with -t switch. ");
+              av_log(NULL, AV_LOG_INFO, "WARNING: The file could not be read. Using text provided with -t switch: %s", strerror(errno));
             }
           close(fd);
         }
