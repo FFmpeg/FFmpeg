@@ -465,11 +465,11 @@ static const char* format_to_name(void* ptr)
 #define D AV_OPT_FLAG_DECODING_PARAM
 
 static const AVOption options[]={
-{"probesize", NULL, OFFSET(probesize), FF_OPT_TYPE_INT, DEFAULT, 32, INT_MAX, D},
+{"probesize", NULL, OFFSET(probesize), FF_OPT_TYPE_INT, 32000, 32, INT_MAX, D}, /* 32000 from mpegts.c: 1.0 second at 24Mbit/s */
 {"fflags", NULL, OFFSET(flags), FF_OPT_TYPE_FLAGS, DEFAULT, INT_MIN, INT_MAX, D, "fflags"},
 {"ignidx", "ignore index", 0, FF_OPT_TYPE_CONST, AVFMT_FLAG_IGNIDX, INT_MIN, INT_MAX, D, "fflags"},
 {"genpts", "generate pts", 0, FF_OPT_TYPE_CONST, AVFMT_FLAG_GENPTS, INT_MIN, INT_MAX, D, "fflags"},
-{"track", " set the track number", OFFSET(track), FF_OPT_TYPE_INT, DEFAULT, 1, INT_MAX, E},
+{"track", " set the track number", OFFSET(track), FF_OPT_TYPE_INT, DEFAULT, 0, INT_MAX, E},
 {"year", "set the year", OFFSET(year), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX, E},
 {NULL},
 };
@@ -489,9 +489,6 @@ void avformat_get_context_defaults(AVFormatContext *s){
     s->av_class = &av_format_context_class;
 
     av_opt_set_defaults(s);
-
-    /* from mpegts.c: 1.0 second at 24Mbit/s */
-    s->probesize=32000;
 }
 
 AVFormatContext *av_alloc_format_context(void)
