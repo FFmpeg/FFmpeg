@@ -27,6 +27,11 @@
 #include "bitstream.h"
 #include "dsputil.h"
 
+/* Assume that all Intel XScale processors support armv5 edsp instructions */
+#if defined(ARCH_ARMV4L) && defined (HAVE_IWMMXT)
+#define ARCH_ARM5E
+#endif
+
 /*
  * TODO:
  *  - in low precision mode, use more 16 bit multiplies in synth filter
@@ -791,6 +796,17 @@ static inline int round_sample(int *sum)
         /* signed 16x16 -> 32 multiply */
 #       define MULS(ra, rb) \
             ({ int __rt; asm ("mullhw %0, %1, %2" : "=r" (__rt) : "r" (ra), "r" (rb)); __rt; })
+
+#   elif defined(ARCH_ARM5E)
+
+        /* signed 16x16 -> 32 multiply add accumulate */
+#       define MACS(rt, ra, rb) \
+            asm ("smlabb %0, %2, %3, %0" : "=r" (rt) : "0" (rt), "r" (ra), "r" (rb));
+
+        /* signed 16x16 -> 32 multiply */
+#       define MULS(ra, rb) \
+            ({ int __rt; asm ("smulbb %0, %1, %2" : "=r" (__rt) : "r" (ra), "r" (rb)); __rt; })
+
 #   else
         /* signed 16x16 -> 32 multiply add accumulate */
 #       define MACS(rt, ra, rb) rt += (ra) * (rb)
