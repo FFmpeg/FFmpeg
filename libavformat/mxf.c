@@ -319,7 +319,10 @@ static int mxf_read_metadata_source_clip(MXFContext *mxf, KLVPacket *klv)
         int tag = get_be16(pb);
         int size = get_be16(pb); /* SMPTE 336M Table 8 KLV specified length, 0x53 */
 
+        bytes_read += size + 4;
         dprintf("tag 0x%04X, size %d\n", tag, size);
+        if (!size) /* ignore empty tag, needed for some files with empty UMID tag */
+            continue;
         switch (tag) {
         case 0x3C0A:
             get_buffer(pb, source_clip->uid, 16);
@@ -341,7 +344,6 @@ static int mxf_read_metadata_source_clip(MXFContext *mxf, KLVPacket *klv)
         default:
             url_fskip(pb, size);
         }
-        bytes_read += size + 4;
     }
     source_clip->type = SourceClip;
     return mxf_add_metadata_set(mxf, source_clip);
