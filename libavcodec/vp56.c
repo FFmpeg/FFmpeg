@@ -358,11 +358,14 @@ static void vp56_mc(vp56_context_t *s, int b, uint8_t *src,
         src_block = s->edge_emu_buffer;
         src_offset = 2 + 2*stride;
     } else if (deblock_filtering) {
-        /* only need a 12x12 block, but there is no such dsp function, */
-        /* so copy a 16x12 block */
-        s->dsp.put_pixels_tab[0][0](s->edge_emu_buffer,
-                                    src + s->block_offset[b] + (dy-2)*stride + (dx-2),
-                                    stride, 12);
+        int i;
+        src_block = s->edge_emu_buffer;
+        src += s->block_offset[b] + (dy-2)*stride + (dx-2);
+        for (i=0; i<12; i++) {
+            memcpy(src_block, src, 12);
+            src_block += stride;
+            src += stride;
+        }
         src_block = s->edge_emu_buffer;
         src_offset = 2 + 2*stride;
     } else {
