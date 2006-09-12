@@ -137,6 +137,7 @@ const CodecTag codec_bmp_tags[] = {
     { CODEC_ID_4XM, MKTAG('4', 'X', 'M', 'V') },
     { CODEC_ID_FLV1, MKTAG('F', 'L', 'V', '1') },
     { CODEC_ID_FLASHSV, MKTAG('F', 'S', 'V', '1') },
+    { CODEC_ID_VP6F, MKTAG('V', 'P', '6', 'F') },
     { CODEC_ID_SVQ1, MKTAG('s', 'v', 'q', '1') },
     { CODEC_ID_TSCC, MKTAG('t', 's', 'c', 'c') },
     { CODEC_ID_ULTI, MKTAG('U', 'L', 'T', 'I') },
