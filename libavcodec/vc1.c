@@ -2028,7 +2028,8 @@ static void vc1_interp_mc(VC1Context *v)
        || (unsigned)src_y > s->v_edge_pos - (my&3) - 16){
         uint8_t *uvbuf= s->edge_emu_buffer + 19 * s->linesize;
 
-        ff_emulated_edge_mc(s->edge_emu_buffer, srcY, s->linesize, 17, 17,
+        srcY -= s->mspel * (1 + s->linesize);
+        ff_emulated_edge_mc(s->edge_emu_buffer, srcY, s->linesize, 17+s->mspel*2, 17+s->mspel*2,
                             src_x - s->mspel, src_y - s->mspel, s->h_edge_pos, s->v_edge_pos);
         srcY = s->edge_emu_buffer;
         ff_emulated_edge_mc(uvbuf     , srcU, s->uvlinesize, 8+1, 8+1,
@@ -2043,8 +2044,8 @@ static void vc1_interp_mc(VC1Context *v)
             uint8_t *src, *src2;
 
             src = srcY;
-            for(j = 0; j < 17; j++) {
-                for(i = 0; i < 17; i++) src[i] = ((src[i] - 128) >> 1) + 128;
+            for(j = 0; j < 17 + s->mspel*2; j++) {
+                for(i = 0; i < 17 + s->mspel*2; i++) src[i] = ((src[i] - 128) >> 1) + 128;
                 src += s->linesize;
             }
             src = srcU; src2 = srcV;
@@ -2057,6 +2058,7 @@ static void vc1_interp_mc(VC1Context *v)
                 src2 += s->uvlinesize;
             }
         }
+        srcY += s->mspel * (1 + s->linesize);
     }
 
     if(v->fastuvmc) {
