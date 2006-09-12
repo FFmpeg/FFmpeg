@@ -66,7 +66,7 @@ LDFLAGS+=-L./libswscale
 EXTRALIBS+=-lswscale$(BUILDSUF)
 endif
 
-all: version.h lib $(PROGS_G) $(PROGS) $(PROGTEST) $(VHOOK) $(QTFASTSTART) $(DOC)
+all: lib $(PROGS_G) $(PROGS) $(PROGTEST) $(VHOOK) $(QTFASTSTART) $(DOC)
 
 lib:
 	$(MAKE) -C libavutil   all
@@ -107,6 +107,8 @@ cws2fws$(EXESUF): cws2fws.c
 
 ffplay.o: ffplay.c
 	$(CC) $(CFLAGS) $(SDL_CFLAGS) -c -o $@ $<
+
+ffmpeg.o ffplay.o ffserver.o: version.h
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $<
