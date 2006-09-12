@@ -3671,6 +3671,8 @@ static void vc1_decode_i_blocks(VC1Context *v)
             mb_pos = s->mb_x + s->mb_y * s->mb_width;
             s->current_picture.mb_type[mb_pos] = MB_TYPE_INTRA;
             s->current_picture.qscale_table[mb_pos] = v->pq;
+            s->current_picture.motion_val[1][s->block_index[0]][0] = 0;
+            s->current_picture.motion_val[1][s->block_index[0]][1] = 0;
 
             // do actual MB decoding and displaying
             cbp = get_vlc2(&v->s.gb, ff_msmp4_mb_i_vlc.table, MB_INTRA_VLC_BITS, 2);
@@ -3783,6 +3785,8 @@ static void vc1_decode_i_blocks_adv(VC1Context *v)
             s->dsp.clear_blocks(s->block[0]);
             mb_pos = s->mb_x + s->mb_y * s->mb_stride;
             s->current_picture.mb_type[mb_pos] = MB_TYPE_INTRA;
+            s->current_picture.motion_val[1][s->block_index[0]][0] = 0;
+            s->current_picture.motion_val[1][s->block_index[0]][1] = 0;
 
             // do actual MB decoding and displaying
             cbp = get_vlc2(&v->s.gb, ff_msmp4_mb_i_vlc.table, MB_INTRA_VLC_BITS, 2);
