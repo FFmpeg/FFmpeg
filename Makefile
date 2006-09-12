@@ -204,6 +204,9 @@ depend: .depend
 	$(MAKE) -C libavutil   depend
 	$(MAKE) -C libavcodec  depend
 	$(MAKE) -C libavformat depend
+ifeq ($(CONFIG_PP),yes)
+	$(MAKE) -C libpostproc depend
+endif
 ifeq ($(BUILD_VHOOK),yes)
 	$(MAKE) -C vhook       depend
 endif

@@ -20,6 +20,8 @@ CFLAGS  = -I.. -I$(SRC_PATH)/libavcodec $(OPTFLAGS)
 
 include $(SRC_PATH)/common.mak
 
+depend: postprocess.c
+
 ifeq ($(BUILD_SHARED),yes)
 postprocess_pic.o: postprocess.c
 	$(CC) -c $(CFLAGS) -fomit-frame-pointer -fPIC -DPIC -o $@ $<
