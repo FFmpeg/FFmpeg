@@ -2104,6 +2104,16 @@ static always_inline int scale_mv(int value, int bfrac, int inv, int qs)
  */
 static inline void vc1_b_mc(VC1Context *v, int dmv_x[2], int dmv_y[2], int direct, int mode)
 {
+    int t;
+
+    //XXX: more elegant solution is possible
+    t = v->s.mv[0][0][0];
+    v->s.mv[0][0][0] = v->s.mv[1][0][0];
+    v->s.mv[1][0][0] = t;
+    t = v->s.mv[0][0][1];
+    v->s.mv[0][0][1] = v->s.mv[1][0][1];
+    v->s.mv[1][0][1] = t;
+
     if(direct) {
         vc1_mc_1mv(v, 0);
         vc1_interp_mc(v);
@@ -2115,7 +2125,7 @@ static inline void vc1_b_mc(VC1Context *v, int dmv_x[2], int dmv_y[2], int direc
         return;
     }
 
-    vc1_mc_1mv(v, (mode == BMV_TYPE_FORWARD));
+    vc1_mc_1mv(v, (mode == BMV_TYPE_BACKWARD));
 }
 
 static inline void vc1_pred_b_mv(VC1Context *v, int dmv_x[2], int dmv_y[2], int direct, int mvtype)
