@@ -4085,6 +4085,7 @@ static int vc1_decode_init(AVCodecContext *avctx)
           return -1;
     }
     avctx->has_b_frames= !!(avctx->max_b_frames);
+    s->low_delay = !avctx->has_b_frames;
 
     s->mb_width = (avctx->coded_width+15)>>4;
     s->mb_height = (avctx->coded_height+15)>>4;
@@ -4144,8 +4145,6 @@ static int vc1_decode_frame(AVCodecContext *avctx,
         int i= ff_find_unused_picture(s, 0);
         s->current_picture_ptr= &s->picture[i];
     }
-
-    avctx->has_b_frames= !s->low_delay;
 
     //for advanced profile we need to unescape buffer
     if (avctx->codec_id == CODEC_ID_VC1) {
