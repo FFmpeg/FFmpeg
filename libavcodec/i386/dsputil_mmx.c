@@ -3053,8 +3053,8 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
                     c->idct    = ff_mmx_idct;
                 }
                 c->idct_permutation_type= FF_LIBMPEG2_IDCT_PERM;
-#if 0
-            }else if(idct_algo==FF_IDCT_VP3){
+            }else if(idct_algo==FF_IDCT_VP3 &&
+                     !(avctx->flags & CODEC_FLAG_BITEXACT)){
                 if(mm_flags & MM_SSE2){
                     c->idct_put= ff_vp3_idct_put_sse2;
                     c->idct_add= ff_vp3_idct_add_sse2;
@@ -3067,7 +3067,6 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
                     c->idct    = ff_vp3_idct_mmx;
                     c->idct_permutation_type= FF_PARTTRANS_IDCT_PERM;
                 }
-#endif
             }else if(idct_algo==FF_IDCT_CAVS){
                     c->idct_permutation_type= FF_TRANSPOSE_IDCT_PERM;
 #ifdef CONFIG_GPL
