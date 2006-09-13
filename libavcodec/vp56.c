@@ -358,14 +358,11 @@ static void vp56_mc(vp56_context_t *s, int b, uint8_t *src,
         src_block = s->edge_emu_buffer;
         src_offset = 2 + 2*stride;
     } else if (deblock_filtering) {
-        int i;
-        src_block = s->edge_emu_buffer;
-        src += s->block_offset[b] + (dy-2)*stride + (dx-2);
-        for (i=0; i<12; i++) {
-            memcpy(src_block, src, 12);
-            src_block += stride;
-            src += stride;
-        }
+        /* only need a 12x12 block, but there is no such dsp function, */
+        /* so copy a 16x12 block */
+        s->dsp.put_pixels_tab[0][0](s->edge_emu_buffer,
+                                    src + s->block_offset[b] + (dy-2)*stride + (dx-2),
+                                    stride, 12);
         src_block = s->edge_emu_buffer;
         src_offset = 2 + 2*stride;
     } else {
@@ -483,7 +480,8 @@ static int vp56_size_changed(AVCodecContext *avctx, vp56_context_t *s)
                                  (4*s->mb_width+6) * sizeof(*s->above_blocks));
     s->macroblocks = av_realloc(s->macroblocks,
                                 s->mb_width*s->mb_height*sizeof(*s->macroblocks));
-    s->edge_emu_buffer_alloc = av_realloc(s->edge_emu_buffer_alloc, 16*stride);
+    av_free(s->edge_emu_buffer_alloc);
+    s->edge_emu_buffer_alloc = av_malloc(16*stride);
     s->edge_emu_buffer = s->edge_emu_buffer_alloc;
     if (s->flip < 0)
         s->edge_emu_buffer += 15 * stride;
