@@ -604,7 +604,8 @@ v4l="no"
 v4l2="no"
 audio_oss="yes"
 dv1394="no"
-vhook="no"
+VHOOKSHFLAGS="-shared -L../libavformat -L../libavcodec -L../libavutil"
+VHOOKLIBS='-lavformat$(BUILDSUF) -lavcodec$(BUILDSUF) -lavutil$(BUILDSUF) $(EXTRALIBS)'
 extralibs=""
 EXESUF=".exe"
 SLIBPREF="cyg"
@@ -1375,6 +1376,14 @@ if test "$vhook" = "yes" -o "$a52bin" = "yes" -o "$faadbin" = "yes"; then
     add_extralibs $ldl
 fi
 
+if test "$targetos" = "CYGWIN" -a "$lstatic" = "yes" ; then
+    vhook="no"
+    echo
+    echo "At the moment vhooks don't work on Cygwin static builds."
+    echo "Patches welcome."
+    echo
+fi
+
 if enabled vhook; then
     check_ldflags -rdynamic
     check_ldflags -export-dynamic
@@ -1635,6 +1644,7 @@ echo "LDCONFIG=$LDCONFIG" >> config.mak
 echo "FFSERVERLDFLAGS=$FFSERVERLDFLAGS" >> config.mak
 echo "SHFLAGS=$SHFLAGS" >> config.mak
 echo "VHOOKSHFLAGS=$VHOOKSHFLAGS" >> config.mak
+echo "VHOOKLIBS=$VHOOKLIBS" >> config.mak
 echo "LIBOBJFLAGS=$LIBOBJFLAGS" >> config.mak
 echo "BUILD_STATIC=$lstatic" >> config.mak
 echo "BUILDSUF=$BUILDSUF" >> config.mak
