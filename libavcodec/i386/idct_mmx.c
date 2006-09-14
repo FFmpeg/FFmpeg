@@ -1,7 +1,4 @@
 /*
- * Note: For libavcodec, this code can also be used under the LGPL license
- */
-/*
  * idct_mmx.c
  * Copyright (C) 1999-2001 Aaron Holtzman <aholtzma@ess.engr.uvic.ca>
  *
