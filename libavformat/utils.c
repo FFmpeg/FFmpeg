@@ -494,7 +494,7 @@ void avformat_get_context_defaults(AVFormatContext *s){
 AVFormatContext *av_alloc_format_context(void)
 {
     AVFormatContext *ic;
-    ic = av_mallocz(sizeof(AVFormatContext));
+    ic = av_malloc(sizeof(AVFormatContext));
     if (!ic) return ic;
     avformat_get_context_defaults(ic);
     ic->av_class = &av_format_context_class;
