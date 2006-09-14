@@ -27,11 +27,38 @@
 #include "avcodec.h"
 #include "opt.h"
 
-static double av_parse_num(const char *name, char **tail){
+/**
+ * strtod() function extended with 'k', 'M' and 'B' postfixes.
+ * This allows using kB, MB, k, M and B as a postfix. This function
+ * assumes that the unit of numbers is bits not bytes.
+ */
+static double av_strtod(const char *name, char **tail) {
     double d;
     d= strtod(name, tail);
+    if(*tail>name && (**tail=='k')) {
+        d*=1000;
+        (*tail)++;
+    }
+    else if(*tail && (**tail=='M')) {
+        d*=1000000;
+        (*tail)++;
+    }
+    else if(*tail && (**tail=='G')) {
+        d*=1000000000;
+        (*tail)++;
+    }
+    if(*tail && (**tail=='B')) {
+        d*=8;
+        (*tail)++;
+    }
+    return d;
+}
+
+static double av_parse_num(const char *name, char **tail){
+    double d;
+    d= av_strtod(name, tail);
     if(*tail>name && (**tail=='/' || **tail==':'))
-        d/=strtod((*tail)+1, tail);
+        d/=av_strtod((*tail)+1, tail);
     return d;
 }
 
