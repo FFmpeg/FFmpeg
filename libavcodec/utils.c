@@ -447,11 +447,11 @@ static const char* context_to_name(void* ptr) {
 #define E AV_OPT_FLAG_ENCODING_PARAM
 #define D AV_OPT_FLAG_DECODING_PARAM
 
-#define AV_CODEC_DEFAULT_BITRATE 800*1000
+#define AV_CODEC_DEFAULT_BITRATE 200*1000
 
 static const AVOption options[]={
 {"bit_rate", "set video bitrate (in bits/s)", OFFSET(bit_rate), FF_OPT_TYPE_INT, AV_CODEC_DEFAULT_BITRATE, INT_MIN, INT_MAX, V|A|E},
-{"bit_rate_tolerance", "set video bitrate tolerance (in bits/s)", OFFSET(bit_rate_tolerance), FF_OPT_TYPE_INT, AV_CODEC_DEFAULT_BITRATE*10, INT_MIN, INT_MAX, V|E},
+{"bit_rate_tolerance", "set video bitrate tolerance (in bits/s)", OFFSET(bit_rate_tolerance), FF_OPT_TYPE_INT, AV_CODEC_DEFAULT_BITRATE*20, INT_MIN, INT_MAX, V|E},
 {"flags", NULL, OFFSET(flags), FF_OPT_TYPE_FLAGS, DEFAULT, INT_MIN, INT_MAX, V|A|E|D, "flags"},
 {"mv4", "use four motion vector by macroblock (mpeg4)", 0, FF_OPT_TYPE_CONST, CODEC_FLAG_4MV, INT_MIN, INT_MAX, V|E, "flags"},
 {"obmc", "use overlapped block motion compensation (h263+)", 0, FF_OPT_TYPE_CONST, CODEC_FLAG_OBMC, INT_MIN, INT_MAX, V|E, "flags"},
@@ -493,17 +493,17 @@ static const AVOption options[]={
 {"me_method", "set motion estimation method", OFFSET(me_method), FF_OPT_TYPE_INT, ME_EPZS, INT_MIN, INT_MAX, V|E, "me_method"},
 {"extradata_size", NULL, OFFSET(extradata_size), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX},
 {"time_base", NULL, OFFSET(time_base), FF_OPT_TYPE_RATIONAL, DEFAULT, INT_MIN, INT_MAX},
-{"gop_size", "set the group of picture size", OFFSET(gop_size), FF_OPT_TYPE_INT, 50, INT_MIN, INT_MAX, V|E},
+{"gop_size", "set the group of picture size", OFFSET(gop_size), FF_OPT_TYPE_INT, 12, INT_MIN, INT_MAX, V|E},
 {"rate_emu", NULL, OFFSET(rate_emu), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX},
 {"sample_rate", "set audio sampling rate (in Hz)", OFFSET(sample_rate), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX},
-{"channels", "set number of audio channels", OFFSET(channels), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX},
+{"channels", "set number of audio channels", OFFSET(channels), FF_OPT_TYPE_INT, 1, INT_MIN, INT_MAX},
 {"cutoff", "set cutoff bandwidth", OFFSET(cutoff), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX, A|E},
 {"frame_size", NULL, OFFSET(frame_size), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX, A|E},
 {"frame_number", NULL, OFFSET(frame_number), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX},
 {"real_pict_num", NULL, OFFSET(real_pict_num), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX},
 {"delay", NULL, OFFSET(delay), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX},
 {"qcompress", "video quantiser scale compression (VBR)", OFFSET(qcompress), FF_OPT_TYPE_FLOAT, 0.5, FLT_MIN, FLT_MAX, V|E},
-{"qblur", "video quantiser scale blur (VBR)", OFFSET(qblur), FF_OPT_TYPE_FLOAT, DEFAULT, FLT_MIN, FLT_MAX, V|E},
+{"qblur", "video quantiser scale blur (VBR)", OFFSET(qblur), FF_OPT_TYPE_FLOAT, 0.5, FLT_MIN, FLT_MAX, V|E},
 {"qmin", "min video quantiser scale (VBR)", OFFSET(qmin), FF_OPT_TYPE_INT, 2, 0, INT_MAX, V|E},
 {"qmax", "max video quantiser scale (VBR)", OFFSET(qmax), FF_OPT_TYPE_INT, 31, 0, INT_MAX, V|E},
 {"max_qdiff", "max difference between the quantiser scale (VBR)", OFFSET(max_qdiff), FF_OPT_TYPE_INT, 3, INT_MIN, INT_MAX, V|E},
@@ -568,7 +568,7 @@ static const AVOption options[]={
 {"rc_max_rate", "set max video bitrate tolerance (in bits/s)", OFFSET(rc_max_rate), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX, V|E},
 {"rc_min_rate", "set min video bitrate tolerance (in bits/s)", OFFSET(rc_min_rate), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX, V|E},
 {"rc_buffer_size", "set ratecontrol buffer size (in bits)", OFFSET(rc_buffer_size), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX, V|E},
-{"rc_buf_aggressivity", NULL, OFFSET(rc_buffer_aggressivity), FF_OPT_TYPE_FLOAT, DEFAULT, FLT_MIN, FLT_MAX, V|E},
+{"rc_buf_aggressivity", NULL, OFFSET(rc_buffer_aggressivity), FF_OPT_TYPE_FLOAT, 1.0, FLT_MIN, FLT_MAX, V|E},
 {"i_quant_factor", "qp factor between p and i frames", OFFSET(i_quant_factor), FF_OPT_TYPE_FLOAT, -0.8, FLT_MIN, FLT_MAX, V|E},
 {"i_quant_offset", "qp offset between p and i frames", OFFSET(i_quant_offset), FF_OPT_TYPE_FLOAT, 0.0, FLT_MIN, FLT_MAX, V|E},
 {"rc_initial_cplx", "initial complexity for 1-pass encoding", OFFSET(rc_initial_cplx), FF_OPT_TYPE_FLOAT, DEFAULT, FLT_MIN, FLT_MAX, V|E},
@@ -696,7 +696,7 @@ static const AVOption options[]={
 {"thread_count", NULL, OFFSET(thread_count), FF_OPT_TYPE_INT, 1, INT_MIN, INT_MAX, V|E|D},
 {"me_threshold", "motion estimaton threshold", OFFSET(me_threshold), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX},
 {"mb_threshold", "macroblock threshold", OFFSET(mb_threshold), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX},
-{"dc", "intra_dc_precision", OFFSET(intra_dc_precision), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX, V|E},
+{"dc", "intra_dc_precision", OFFSET(intra_dc_precision), FF_OPT_TYPE_INT, 8, INT_MIN, INT_MAX, V|E},
 {"nssew", "nsse weight", OFFSET(nsse_weight), FF_OPT_TYPE_INT, 8, INT_MIN, INT_MAX, V|E},
 {"skip_top", NULL, OFFSET(skip_top), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX, V|D},
 {"skip_bottom", NULL, OFFSET(skip_bottom), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX, V|D},
