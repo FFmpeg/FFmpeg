@@ -438,7 +438,7 @@ static const char* context_to_name(void* ptr) {
         return "NULL";
 }
 
-#define OFFSET(x) (int)&((AVCodecContext*)0)->x
+#define OFFSET(x) offsetof(AVCodecContext,x)
 #define DEFAULT 0 //should be NAN but it doesnt work as its not a constant in glibc as required by ANSI/ISO C
 //these names are too long to be readable
 #define V AV_OPT_FLAG_VIDEO_PARAM

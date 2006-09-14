@@ -458,7 +458,7 @@ static const char* format_to_name(void* ptr)
     else return "NULL";
 }
 
-#define OFFSET(x) (int)&((AVFormatContext*)0)->x
+#define OFFSET(x) offsetof(AVFormatContext,x)
 #define DEFAULT 0 //should be NAN but it doesnt work as its not a constant in glibc as required by ANSI/ISO C
 //these names are too long to be readable
 #define E AV_OPT_FLAG_ENCODING_PARAM
