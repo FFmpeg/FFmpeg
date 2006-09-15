@@ -142,7 +142,6 @@ static int video_codec_id = CODEC_ID_NONE;
 static int video_codec_tag = 0;
 static int same_quality = 0;
 static int b_frames = 0;
-static int pre_me = 0;
 static int do_deinterlace = 0;
 static int workaround_bugs = FF_BUG_AUTODETECT;
 static int packet_size = 0;
@@ -2373,11 +2372,6 @@ static void opt_b_frames(const char *arg)
     }
 }
 
-static void opt_pre_me(const char *arg)
-{
-    pre_me = atoi(arg);
-}
-
 static void opt_qscale(const char *arg)
 {
     video_qscale = atof(arg);
@@ -3043,8 +3037,6 @@ static void new_video_stream(AVFormatContext *oc)
             video_enc->intra_matrix = intra_matrix;
         if(inter_matrix)
             video_enc->inter_matrix = inter_matrix;
-
-        video_enc->pre_me = pre_me;
 
         if (b_frames) {
             video_enc->max_b_frames = b_frames;
@@ -4028,7 +4020,6 @@ const OptionDef options[] = {
     { "me_threshold", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_me_threshold}, "motion estimaton threshold",  "" },
     { "mb_threshold", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_mb_threshold}, "macroblock threshold",  "" },
     { "bf", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_b_frames}, "use 'frames' B frames", "frames" },
-    { "preme", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_pre_me}, "pre motion estimation", "" },
     { "bug", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_workaround_bugs}, "workaround not auto detected encoder bugs", "param" },
     { "ps", HAS_ARG | OPT_EXPERT, {(void*)opt_packet_size}, "set packet size in bits", "size" },
     { "error", HAS_ARG | OPT_EXPERT, {(void*)opt_error_rate}, "error rate", "rate" },
