@@ -127,7 +127,6 @@ static char *video_rc_eq="tex^qComp";
 static int video_rc_buffer_size=0;
 static float video_rc_buffer_aggressivity=1.0;
 static float video_rc_initial_cplx=0;
-static float video_b_qfactor = 1.25;
 static float video_b_qoffset = 1.25;
 static float video_i_qfactor = -0.8;
 static float video_i_qoffset = 0.0;
@@ -2452,10 +2451,6 @@ static void opt_rc_initial_cplx(const char *arg)
 {
     video_rc_initial_cplx = atof(arg);
 }
-static void opt_b_qfactor(const char *arg)
-{
-    video_b_qfactor = atof(arg);
-}
 static void opt_i_qfactor(const char *arg)
 {
     video_i_qfactor = atof(arg);
@@ -3058,7 +3053,6 @@ static void new_video_stream(AVFormatContext *oc)
         video_enc->rc_buffer_aggressivity= video_rc_buffer_aggressivity;
         video_enc->rc_initial_cplx= video_rc_initial_cplx;
         video_enc->i_quant_factor = video_i_qfactor;
-        video_enc->b_quant_factor = video_b_qfactor;
         video_enc->i_quant_offset = video_i_qoffset;
         video_enc->b_quant_offset = video_b_qoffset;
         video_enc->me_threshold= me_threshold;
@@ -3972,7 +3966,6 @@ const OptionDef options[] = {
     { "qdiff", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_qdiff}, "max difference between the quantiser scale (VBR)", "q" },
     { "qsquish", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_qsquish}, "how to keep quantiser between qmin and qmax (0 = clip, 1 = use differentiable function)", "squish" },
     { "rc_init_cplx", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_rc_initial_cplx}, "initial complexity for 1-pass encoding", "complexity" },
-    { "b_qfactor", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_b_qfactor}, "qp factor between p and b frames", "factor" },
     { "i_qfactor", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_i_qfactor}, "qp factor between p and i frames", "factor" },
     { "b_qoffset", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_b_qoffset}, "qp offset between p and b frames", "offset" },
     { "i_qoffset", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_i_qoffset}, "qp offset between p and i frames", "offset" },
