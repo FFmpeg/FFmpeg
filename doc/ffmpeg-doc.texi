@@ -269,7 +269,7 @@ blue (default = 000000 (black)).
 @item -vn
 Disable video recording.
 @item -bt tolerance
-Set video bitrate tolerance (in kbit/s).
+Set video bitrate tolerance (in bit/s).
 @item -maxrate bitrate
 Set max video bitrate tolerance (in bit/s).
 @item -minrate bitrate

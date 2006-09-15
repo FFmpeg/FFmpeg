@@ -105,7 +105,6 @@ static int frame_rightBand = 0;
 static int max_frames[4] = {INT_MAX, INT_MAX, INT_MAX, INT_MAX};
 static int frame_rate = 25;
 static int frame_rate_base = 1;
-static int video_bit_rate_tolerance = 4000*1000;
 static float video_qscale = 0;
 static int video_qmin = 2;
 static int video_qmax = 31;
@@ -2102,11 +2101,6 @@ static void opt_format(const char *arg)
     }
 }
 
-static void opt_video_bitrate_tolerance(const char *arg)
-{
-    video_bit_rate_tolerance = atoi(arg) * 1000;
-}
-
 static void opt_video_buffer_size(const char *arg)
 {
     video_rc_buffer_size = atoi(arg) * 8*1024;
@@ -2941,7 +2935,6 @@ static void new_video_stream(AVFormatContext *oc)
                  av_set_double(video_enc, opt_names[i], d);
         }
 
-        video_enc->bit_rate_tolerance = video_bit_rate_tolerance;
         video_enc->time_base.den = frame_rate;
         video_enc->time_base.num = frame_rate_base;
         if(codec && codec->supported_framerates){
@@ -3943,7 +3936,6 @@ const OptionDef options[] = {
     { "rc_init_cplx", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_rc_initial_cplx}, "initial complexity for 1-pass encoding", "complexity" },
     { "rc_eq", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_video_rc_eq}, "set rate control equation", "equation" },
     { "rc_override", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_video_rc_override_string}, "rate control override for specific intervals", "override" },
-    { "bt", HAS_ARG | OPT_VIDEO, {(void*)opt_video_bitrate_tolerance}, "set video bitrate tolerance (in kbit/s)", "tolerance" },
     { "bufsize", HAS_ARG | OPT_VIDEO, {(void*)opt_video_buffer_size}, "set ratecontrol buffer size (in kByte)", "size" },
     { "vcodec", HAS_ARG | OPT_VIDEO, {(void*)opt_video_codec}, "force video codec ('copy' to copy stream)", "codec" },
     { "me", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_motion_estimation}, "set motion estimation method",
