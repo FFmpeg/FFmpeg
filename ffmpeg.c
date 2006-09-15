@@ -161,7 +161,6 @@ static int loop_input = 0;
 static int loop_output = AVFMT_NOOUTPUTLOOP;
 static int qp_hist = 0;
 
-static int gop_size = 12;
 static int intra_only = 0;
 static int audio_sample_rate = 44100;
 static int audio_bit_rate = 64000;
@@ -2362,11 +2361,6 @@ static void opt_frame_aspect_ratio(const char *arg)
     frame_aspect_ratio = ar;
 }
 
-static void opt_gop_size(const char *arg)
-{
-    gop_size = atoi(arg);
-}
-
 static void opt_b_frames(const char *arg)
 {
     b_frames = atoi(arg);
@@ -3037,9 +3031,7 @@ static void new_video_stream(AVFormatContext *oc)
                 video_enc->pix_fmt = codec->pix_fmts[0];
         }
 
-        if (!intra_only)
-            video_enc->gop_size = gop_size;
-        else
+        if (intra_only)
             video_enc->gop_size = 0;
         if (video_qscale || same_quality) {
             video_enc->flags |= CODEC_FLAG_QSCALE;
@@ -3797,7 +3789,7 @@ static void opt_target(const char *arg)
 
         opt_frame_size(norm ? "352x240" : "352x288");
         opt_frame_rate(frame_rates[norm]);
-        opt_gop_size(norm ? "18" : "15");
+        opt_default("gop", norm ? "18" : "15");
 
         opt_default("b", "1150000");
         opt_default("maxrate", "1150000");
@@ -3824,7 +3816,7 @@ static void opt_target(const char *arg)
 
         opt_frame_size(norm ? "480x480" : "480x576");
         opt_frame_rate(frame_rates[norm]);
-        opt_gop_size(norm ? "18" : "15");
+        opt_default("gop", norm ? "18" : "15");
 
         opt_default("b", "2040000");
         opt_default("maxrate", "2516000");
@@ -3846,7 +3838,7 @@ static void opt_target(const char *arg)
 
         opt_frame_size(norm ? "720x480" : "720x576");
         opt_frame_rate(frame_rates[norm]);
-        opt_gop_size(norm ? "18" : "15");
+        opt_default("gop", norm ? "18" : "15");
 
         opt_default("b", "6000000");
         opt_default("maxrate", "9000000");
@@ -4005,7 +3997,6 @@ const OptionDef options[] = {
     { "padleft", HAS_ARG | OPT_VIDEO, {(void*)opt_frame_pad_left}, "set left pad band size (in pixels)", "size" },
     { "padright", HAS_ARG | OPT_VIDEO, {(void*)opt_frame_pad_right}, "set right pad band size (in pixels)", "size" },
     { "padcolor", HAS_ARG | OPT_VIDEO, {(void*)opt_pad_color}, "set color of pad bands (Hex 000000 thru FFFFFF)", "color" },
-    { "g", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_gop_size}, "set the group of picture size", "gop_size" },
     { "intra", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&intra_only}, "use only intra frames"},
     { "vn", OPT_BOOL | OPT_VIDEO, {(void*)&video_disable}, "disable video" },
     { "vdt", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&video_discard}, "discard threshold", "n" },
