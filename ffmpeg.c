@@ -127,7 +127,6 @@ static char *video_rc_eq="tex^qComp";
 static int video_rc_buffer_size=0;
 static float video_rc_buffer_aggressivity=1.0;
 static float video_rc_initial_cplx=0;
-static float video_i_qfactor = -0.8;
 static int me_method = ME_EPZS;
 static int video_disable = 0;
 static int video_discard = 0;
@@ -2448,10 +2447,6 @@ static void opt_rc_initial_cplx(const char *arg)
 {
     video_rc_initial_cplx = atof(arg);
 }
-static void opt_i_qfactor(const char *arg)
-{
-    video_i_qfactor = atof(arg);
-}
 
 static void opt_packet_size(const char *arg)
 {
@@ -3036,7 +3031,6 @@ static void new_video_stream(AVFormatContext *oc)
         video_enc->rc_initial_buffer_occupancy = video_rc_buffer_size*3/4;
         video_enc->rc_buffer_aggressivity= video_rc_buffer_aggressivity;
         video_enc->rc_initial_cplx= video_rc_initial_cplx;
-        video_enc->i_quant_factor = video_i_qfactor;
         video_enc->me_threshold= me_threshold;
         video_enc->mb_threshold= mb_threshold;
         video_enc->intra_dc_precision= intra_dc_precision - 8;
@@ -3947,7 +3941,6 @@ const OptionDef options[] = {
     { "qdiff", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_qdiff}, "max difference between the quantiser scale (VBR)", "q" },
     { "qsquish", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_qsquish}, "how to keep quantiser between qmin and qmax (0 = clip, 1 = use differentiable function)", "squish" },
     { "rc_init_cplx", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_rc_initial_cplx}, "initial complexity for 1-pass encoding", "complexity" },
-    { "i_qfactor", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_i_qfactor}, "qp factor between p and i frames", "factor" },
     { "rc_eq", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_video_rc_eq}, "set rate control equation", "equation" },
     { "rc_override", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_video_rc_override_string}, "rate control override for specific intervals", "override" },
     { "bt", HAS_ARG | OPT_VIDEO, {(void*)opt_video_bitrate_tolerance}, "set video bitrate tolerance (in kbit/s)", "tolerance" },
