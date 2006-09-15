@@ -173,7 +173,11 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
                 pict.depth=24;
                 ret = ioctl(video_fd, VIDIOCSPICT, &pict);
                 if (ret < 0)
-                    goto fail1;
+                    pict.palette=VIDEO_PALETTE_GREY;
+                    pict.depth=8;
+                    ret = ioctl(video_fd, VIDIOCSPICT, &pict);
+                    if (ret < 0)
+                        goto fail1;
             }
         }
     }
@@ -255,6 +259,10 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     case VIDEO_PALETTE_RGB24:
         frame_size = width * height * 3;
         st->codec->pix_fmt = PIX_FMT_BGR24; /* NOTE: v4l uses BGR24, not RGB24 ! */
+        break;
+    case VIDEO_PALETTE_GREY:
+        frame_size = width * height * 1;
+        st->codec->pix_fmt = PIX_FMT_GRAY8;
         break;
     default:
         goto fail;
