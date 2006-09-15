@@ -93,8 +93,6 @@ typedef struct MPADecodeContext {
     DECLARE_ALIGNED_8(uint8_t, last_buf[2*BACKSTEP_SIZE + EXTRABYTES]);
     int last_buf_size;
     int frame_size;
-    int free_format_frame_size; /* frame size in case of free format
-                                   (zero if currently unknown) */
     /* next header (used in free format parsing) */
     uint32_t free_format_next_header;
     int error_protection;
@@ -1215,26 +1213,7 @@ static int decode_header(MPADecodeContext *s, uint32_t header)
         s->frame_size = frame_size;
     } else {
         /* if no frame size computed, signal it */
-        if (!s->free_format_frame_size)
-            return 1;
-        /* free format: compute bitrate and real frame size from the
-           frame size we extracted by reading the bitstream */
-        s->frame_size = s->free_format_frame_size;
-        switch(s->layer) {
-        case 1:
-            s->frame_size += padding  * 4;
-            s->bit_rate = (s->frame_size * sample_rate) / 48000;
-            break;
-        case 2:
-            s->frame_size += padding;
-            s->bit_rate = (s->frame_size * sample_rate) / 144000;
-            break;
-        default:
-        case 3:
-            s->frame_size += padding;
-            s->bit_rate = (s->frame_size * (sample_rate << s->lsf)) / 144000;
-            break;
-        }
+        return 1;
     }
 
 #if defined(DEBUG)
