@@ -114,7 +114,6 @@ static int video_lmax = 31*FF_QP2LAMBDA;
 static int video_mb_lmin = 2*FF_QP2LAMBDA;
 static int video_mb_lmax = 31*FF_QP2LAMBDA;
 static int video_qdiff = 3;
-static float video_qblur = 0.5;
 static float video_qsquish = 0.0;
 static float video_qcomp = 0.5;
 static uint16_t *intra_matrix = NULL;
@@ -2450,11 +2449,6 @@ static void opt_qdiff(const char *arg)
     }
 }
 
-static void opt_qblur(const char *arg)
-{
-    video_qblur = atof(arg);
-}
-
 static void opt_qcomp(const char *arg)
 {
     video_qcomp = atof(arg);
@@ -3039,7 +3033,6 @@ static void new_video_stream(AVFormatContext *oc)
         video_enc->mb_lmin = video_mb_lmin;
         video_enc->mb_lmax = video_mb_lmax;
         video_enc->max_qdiff = video_qdiff;
-        video_enc->qblur = video_qblur;
         video_enc->qcompress = video_qcomp;
         video_enc->rc_eq = video_rc_eq;
         video_enc->workaround_bugs = workaround_bugs;
@@ -3987,7 +3980,6 @@ const OptionDef options[] = {
     { "mblmin", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_mb_lmin}, "min macroblock quantiser scale (VBR)", "q" },
     { "mblmax", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_mb_lmax}, "max macroblock quantiser scale (VBR)", "q" },
     { "qdiff", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_qdiff}, "max difference between the quantiser scale (VBR)", "q" },
-    { "qblur", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_qblur}, "video quantiser scale blur (VBR)", "blur" },
     { "qsquish", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_qsquish}, "how to keep quantiser between qmin and qmax (0 = clip, 1 = use differentiable function)", "squish" },
     { "qcomp", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_qcomp}, "video quantiser scale compression (VBR)", "compression" },
     { "rc_init_cplx", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_rc_initial_cplx}, "initial complexity for 1-pass encoding", "complexity" },
