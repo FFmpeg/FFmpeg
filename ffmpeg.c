@@ -223,7 +223,6 @@ static int using_vhook = 0;
 static int verbose = 1;
 static int thread_count= 1;
 static int q_pressed = 0;
-static int me_range = 0;
 static int64_t video_size = 0;
 static int64_t audio_size = 0;
 static int64_t extra_size = 0;
@@ -2479,11 +2478,6 @@ static void opt_sc_threshold(const char *arg)
     sc_threshold= atoi(arg);
 }
 
-static void opt_me_range(const char *arg)
-{
-    me_range = atoi(arg);
-}
-
 static void opt_thread_count(const char *arg)
 {
     thread_count= atoi(arg);
@@ -3049,7 +3043,6 @@ static void new_video_stream(AVFormatContext *oc)
         video_enc->strict_std_compliance = strict;
         video_enc->error_rate = error_rate;
         video_enc->scenechange_threshold= sc_threshold;
-        video_enc->me_range = me_range;
         video_enc->me_penalty_compensation= me_penalty_compensation;
         video_enc->frame_skip_threshold= frame_skip_threshold;
         video_enc->frame_skip_factor= frame_skip_factor;
@@ -3982,7 +3975,6 @@ const OptionDef options[] = {
     { "inter_matrix", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_inter_matrix}, "specify inter matrix coeffs", "matrix" },
     { "top", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_top_field_first}, "top=1/bottom=0/auto=-1 field first", "" },
     { "sc_threshold", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_sc_threshold}, "scene change threshold", "threshold" },
-    { "me_range", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_me_range}, "limit motion vectors range (1023 for DivX player)", "range" },
     { "dc", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&intra_dc_precision}, "intra_dc_precision", "precision" },
     { "mepc", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&me_penalty_compensation}, "motion estimation bitrate penalty compensation", "factor (1.0 = 256)" },
     { "vtag", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_video_tag}, "force video tag/fourcc", "fourcc/tag" },
