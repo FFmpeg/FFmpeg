@@ -105,7 +105,6 @@ static int frame_rightBand = 0;
 static int max_frames[4] = {INT_MAX, INT_MAX, INT_MAX, INT_MAX};
 static int frame_rate = 25;
 static int frame_rate_base = 1;
-static int video_bit_rate = 200*1000;
 static int video_bit_rate_tolerance = 4000*1000;
 static float video_qscale = 0;
 static int video_qmin = 2;
@@ -2116,11 +2115,6 @@ static void opt_format(const char *arg)
     }
 }
 
-static void opt_video_bitrate(const char *arg)
-{
-    video_bit_rate = atoi(arg) * 1000;
-}
-
 static void opt_video_bitrate_tolerance(const char *arg)
 {
     video_bit_rate_tolerance = atoi(arg) * 1000;
@@ -3020,7 +3014,6 @@ static void new_video_stream(AVFormatContext *oc)
                  av_set_double(video_enc, opt_names[i], d);
         }
 
-        video_enc->bit_rate = video_bit_rate;
         video_enc->bit_rate_tolerance = video_bit_rate_tolerance;
         video_enc->time_base.den = frame_rate;
         video_enc->time_base.num = frame_rate_base;
@@ -3820,7 +3813,7 @@ static void opt_target(const char *arg)
         opt_frame_rate(frame_rates[norm]);
         opt_gop_size(norm ? "18" : "15");
 
-        video_bit_rate = 1150000;
+        opt_default("b", "1150000");
         video_rc_max_rate = 1150000;
         video_rc_min_rate = 1150000;
         video_rc_buffer_size = 40*1024*8;
@@ -3847,7 +3840,7 @@ static void opt_target(const char *arg)
         opt_frame_rate(frame_rates[norm]);
         opt_gop_size(norm ? "18" : "15");
 
-        video_bit_rate = 2040000;
+        opt_default("b", "2040000");
         video_rc_max_rate = 2516000;
         video_rc_min_rate = 0; //1145000;
         video_rc_buffer_size = 224*1024*8;
@@ -3869,7 +3862,7 @@ static void opt_target(const char *arg)
         opt_frame_rate(frame_rates[norm]);
         opt_gop_size(norm ? "18" : "15");
 
-        video_bit_rate = 6000000;
+        opt_default("b", "6000000");
         video_rc_max_rate = 9000000;
         video_rc_min_rate = 0; //1500000;
         video_rc_buffer_size = 224*1024*8;
@@ -4010,7 +4003,6 @@ const OptionDef options[] = {
     { "dts_delta_threshold", HAS_ARG | OPT_INT | OPT_EXPERT, {(void*)&dts_delta_threshold}, "timestamp discontinuity delta threshold", "" },
 
     /* video options */
-    { "b", HAS_ARG | OPT_VIDEO, {(void*)opt_video_bitrate}, "set video bitrate (in kbit/s)", "bitrate" },
     { "vframes", OPT_INT | HAS_ARG | OPT_VIDEO, {(void*)&max_frames[CODEC_TYPE_VIDEO]}, "set the number of video frames to record", "number" },
     { "aframes", OPT_INT | HAS_ARG | OPT_AUDIO, {(void*)&max_frames[CODEC_TYPE_AUDIO]}, "set the number of audio frames to record", "number" },
     { "dframes", OPT_INT | HAS_ARG, {(void*)&max_frames[CODEC_TYPE_DATA]}, "set the number of data frames to record", "number" },

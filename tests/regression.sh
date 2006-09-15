@@ -320,7 +320,7 @@ fi
 if [ -n "$do_rc" ] ; then
 # mpeg4 rate control
 file=${outfile}mpeg4-rc.avi
-do_ffmpeg $file -y -b 400 -bf 2 -f pgmyuv -i $raw_src -an -vcodec mpeg4 $file
+do_ffmpeg $file -y -b 400k -bf 2 -f pgmyuv -i $raw_src -an -vcodec mpeg4 $file
 
 # mpeg4 rate control decoding
 do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst
@@ -340,7 +340,7 @@ fi
 if [ -n "$do_mpeg4thread" ] ; then
 # mpeg4
 file=${outfile}mpeg4-thread.avi
-do_ffmpeg $file -y -b 500 -flags +mv4+part+aic+trell -mbd bits  -ps 200 -bf 2 -f pgmyuv -i $raw_src -an -vcodec mpeg4 -threads 2 $file
+do_ffmpeg $file -y -b 500k -flags +mv4+part+aic+trell -mbd bits  -ps 200 -bf 2 -f pgmyuv -i $raw_src -an -vcodec mpeg4 -threads 2 $file
 
 # mpeg4 decoding
 do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst
@@ -360,7 +360,7 @@ fi
 if [ -n "$do_mp4psp" ] ; then
 # mp4 PSP style
 file=${outfile}mpeg4-PSP.mp4
-do_ffmpeg $file -y -b 768 -s 320x240 -f psp -ar 24000 -ab 32 -i $raw_src $file
+do_ffmpeg $file -y -b 768k -s 320x240 -f psp -ar 24000 -ab 32 -i $raw_src $file
 fi
 
 ###################################

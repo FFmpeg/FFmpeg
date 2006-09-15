@@ -109,7 +109,7 @@ stream, in the order of the definition of output streams.
 * You can transcode decrypted VOBs
 
 @example
-ffmpeg -i snatch_1.vob -f avi -vcodec mpeg4 -b 800 -g 300 -bf 2 -acodec mp3 -ab 128 snatch.avi
+ffmpeg -i snatch_1.vob -f avi -vcodec mpeg4 -b 800k -g 300 -bf 2 -acodec mp3 -ab 128 snatch.avi
 @end example
 
 This is a typical DVD ripping example; the input is a VOB file, the
@@ -139,7 +139,7 @@ ffmpeg [[infile options][@option{-i} @var{infile}]]... @{[outfile options] @var{
 If no input file is given, audio/video grabbing is done.
 
 As a general rule, options are applied to the next specified
-file. For example, if you give the @option{-b 64} option, it sets the video
+file. For example, if you give the @option{-b 64k} option, it sets the video
 bitrate of the next file. The format option may be needed for raw input
 files.
 
@@ -226,7 +226,7 @@ streams are delayed by 'offset' seconds.
 
 @table @option
 @item -b bitrate
-Set the video bitrate in kbit/s (default = 200 kb/s).
+Set the video bitrate in bit/s (default = 200 kb/s).
 @item -r fps
 Set frame rate (default = 25).
 @item -s size
@@ -618,7 +618,7 @@ the Linux player does not seem to be very fast, so it can miss
 frames. An example is:
 
 @example
-ffmpeg -g 3 -r 3 -t 10 -b 50 -s qcif -f rv10 /tmp/b.rm
+ffmpeg -g 3 -r 3 -t 10 -b 50k -s qcif -f rv10 /tmp/b.rm
 @end example
 
 @item  The parameter 'q' which is displayed while encoding is the current
