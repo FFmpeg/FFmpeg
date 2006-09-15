@@ -110,6 +110,7 @@ const CodecTag codec_bmp_tags[] = {
     { CODEC_ID_RAWVIDEO, MKTAG('Y', 'V', '1', '2') },
     { CODEC_ID_RAWVIDEO, MKTAG('U', 'Y', 'V', 'Y') },
     { CODEC_ID_RAWVIDEO, MKTAG('I', 'Y', 'U', 'V') },
+    { CODEC_ID_RAWVIDEO, MKTAG('Y', '8', '0', '0') },
     { CODEC_ID_INDEO3, MKTAG('I', 'V', '3', '1') },
     { CODEC_ID_INDEO3, MKTAG('I', 'V', '3', '2') },
     { CODEC_ID_VP3, MKTAG('V', 'P', '3', '1') },
