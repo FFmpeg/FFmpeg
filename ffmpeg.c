@@ -3015,10 +3015,7 @@ static void new_video_stream(AVFormatContext *oc)
         if(inter_matrix)
             video_enc->inter_matrix = inter_matrix;
 
-        if (b_frames) {
-            video_enc->max_b_frames = b_frames;
-            video_enc->b_quant_factor = 2.0;
-        }
+        video_enc->max_b_frames = b_frames;
         video_enc->qmin = video_qmin;
         video_enc->qmax = video_qmax;
         video_enc->lmin = video_lmin;
