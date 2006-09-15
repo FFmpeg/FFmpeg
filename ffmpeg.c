@@ -133,7 +133,6 @@ static float video_b_qfactor = 1.25;
 static float video_b_qoffset = 1.25;
 static float video_i_qfactor = -0.8;
 static float video_i_qoffset = 0.0;
-static int video_intra_quant_bias= FF_DEFAULT_QUANT_BIAS;
 static int video_inter_quant_bias= FF_DEFAULT_QUANT_BIAS;
 static int me_method = ME_EPZS;
 static int video_disable = 0;
@@ -2483,10 +2482,6 @@ static void opt_i_qoffset(const char *arg)
     video_i_qoffset = atof(arg);
 }
 
-static void opt_ibias(const char *arg)
-{
-    video_intra_quant_bias = atoi(arg);
-}
 static void opt_pbias(const char *arg)
 {
     video_inter_quant_bias = atoi(arg);
@@ -3089,7 +3084,6 @@ static void new_video_stream(AVFormatContext *oc)
         video_enc->b_quant_factor = video_b_qfactor;
         video_enc->i_quant_offset = video_i_qoffset;
         video_enc->b_quant_offset = video_b_qoffset;
-        video_enc->intra_quant_bias = video_intra_quant_bias;
         video_enc->inter_quant_bias = video_inter_quant_bias;
         video_enc->me_threshold= me_threshold;
         video_enc->mb_threshold= mb_threshold;
@@ -4008,7 +4002,6 @@ const OptionDef options[] = {
     { "i_qfactor", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_i_qfactor}, "qp factor between p and i frames", "factor" },
     { "b_qoffset", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_b_qoffset}, "qp offset between p and b frames", "offset" },
     { "i_qoffset", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_i_qoffset}, "qp offset between p and i frames", "offset" },
-    { "ibias", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_ibias}, "intra quant bias", "bias" },
     { "pbias", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_pbias}, "inter quant bias", "bias" },
     { "rc_eq", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_video_rc_eq}, "set rate control equation", "equation" },
     { "rc_override", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_video_rc_override_string}, "rate control override for specific intervals", "override" },
