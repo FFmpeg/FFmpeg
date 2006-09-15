@@ -128,8 +128,6 @@ static char *video_rc_override_string=NULL;
 static char *video_rc_eq="tex^qComp";
 static int video_rc_buffer_size=0;
 static float video_rc_buffer_aggressivity=1.0;
-static int video_rc_max_rate=0;
-static int video_rc_min_rate=0;
 static float video_rc_initial_cplx=0;
 static float video_b_qfactor = 1.25;
 static float video_b_qoffset = 1.25;
@@ -2120,16 +2118,6 @@ static void opt_video_bitrate_tolerance(const char *arg)
     video_bit_rate_tolerance = atoi(arg) * 1000;
 }
 
-static void opt_video_bitrate_max(const char *arg)
-{
-    video_rc_max_rate = atoi(arg) * 1000;
-}
-
-static void opt_video_bitrate_min(const char *arg)
-{
-    video_rc_min_rate = atoi(arg) * 1000;
-}
-
 static void opt_video_buffer_size(const char *arg)
 {
     video_rc_buffer_size = atoi(arg) * 8*1024;
@@ -3109,8 +3097,6 @@ static void new_video_stream(AVFormatContext *oc)
         }
         video_enc->rc_override_count=i;
 
-        video_enc->rc_max_rate = video_rc_max_rate;
-        video_enc->rc_min_rate = video_rc_min_rate;
         video_enc->rc_buffer_size = video_rc_buffer_size;
         video_enc->rc_initial_buffer_occupancy = video_rc_buffer_size*3/4;
         video_enc->rc_buffer_aggressivity= video_rc_buffer_aggressivity;
@@ -3814,8 +3800,8 @@ static void opt_target(const char *arg)
         opt_gop_size(norm ? "18" : "15");
 
         opt_default("b", "1150000");
-        video_rc_max_rate = 1150000;
-        video_rc_min_rate = 1150000;
+        opt_default("maxrate", "1150000");
+        opt_default("minrate", "1150000");
         video_rc_buffer_size = 40*1024*8;
 
         audio_bit_rate = 224000;
@@ -3841,8 +3827,8 @@ static void opt_target(const char *arg)
         opt_gop_size(norm ? "18" : "15");
 
         opt_default("b", "2040000");
-        video_rc_max_rate = 2516000;
-        video_rc_min_rate = 0; //1145000;
+        opt_default("maxrate", "2516000");
+        opt_default("minrate", "0"); //1145000;
         video_rc_buffer_size = 224*1024*8;
         opt_default("flags", "+SCAN_OFFSET");
 
@@ -3863,8 +3849,8 @@ static void opt_target(const char *arg)
         opt_gop_size(norm ? "18" : "15");
 
         opt_default("b", "6000000");
-        video_rc_max_rate = 9000000;
-        video_rc_min_rate = 0; //1500000;
+        opt_default("maxrate", "9000000");
+        opt_default("minrate", "0"); //1500000;
         video_rc_buffer_size = 224*1024*8;
 
         mux_packet_size= 2048;  // from www.mpucoder.com: DVD sectors contain 2048 bytes of data, this is also the size of one pack.
@@ -4044,8 +4030,6 @@ const OptionDef options[] = {
     { "rc_eq", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_video_rc_eq}, "set rate control equation", "equation" },
     { "rc_override", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_video_rc_override_string}, "rate control override for specific intervals", "override" },
     { "bt", HAS_ARG | OPT_VIDEO, {(void*)opt_video_bitrate_tolerance}, "set video bitrate tolerance (in kbit/s)", "tolerance" },
-    { "maxrate", HAS_ARG | OPT_VIDEO, {(void*)opt_video_bitrate_max}, "set max video bitrate tolerance (in kbit/s)", "bitrate" },
-    { "minrate", HAS_ARG | OPT_VIDEO, {(void*)opt_video_bitrate_min}, "set min video bitrate tolerance (in kbit/s)", "bitrate" },
     { "bufsize", HAS_ARG | OPT_VIDEO, {(void*)opt_video_buffer_size}, "set ratecontrol buffer size (in kByte)", "size" },
     { "vcodec", HAS_ARG | OPT_VIDEO, {(void*)opt_video_codec}, "force video codec ('copy' to copy stream)", "codec" },
     { "me", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_motion_estimation}, "set motion estimation method",

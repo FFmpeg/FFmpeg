@@ -271,9 +271,9 @@ Disable video recording.
 @item -bt tolerance
 Set video bitrate tolerance (in kbit/s).
 @item -maxrate bitrate
-Set max video bitrate tolerance (in kbit/s).
+Set max video bitrate tolerance (in bit/s).
 @item -minrate bitrate
-Set min video bitrate tolerance (in kbit/s).
+Set min video bitrate tolerance (in bit/s).
 @item -bufsize size
 Set rate control buffer size (in kbit).
 @item -vcodec codec
