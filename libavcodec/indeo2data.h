@@ -1,5 +1,5 @@
 /*
- * Indel Indeo 2 codec
+ * Intel Indeo 2 codec
  * copyright (c) 2005 Konstantin Shishkov
  *
  * This library is free software; you can redistribute it and/or
