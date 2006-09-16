@@ -571,6 +571,13 @@ void dsputil_init_mmi(DSPContext* c, AVCodecContext *avctx);
 
 void dsputil_init_sh4(DSPContext* c, AVCodecContext *avctx);
 
+#elif defined(ARCH_BFIN)
+
+#define DECLARE_ALIGNED_8(t,v)    t v __attribute__ ((aligned (8)))
+#define STRIDE_ALIGN 8
+
+void dsputil_init_bfin(DSPContext* c, AVCodecContext *avctx);
+
 #else
 
 #define DECLARE_ALIGNED_8(t,v)    t v __attribute__ ((aligned (8)))

@@ -357,6 +357,7 @@ OBJS-$(TARGET_ALTIVEC)                 += ppc/dsputil_altivec.o      \
                                           ppc/snow_altivec.o 	     \
                                           ppc/vc1dsp_altivec.o       \
                                           ppc/float_altivec.o
+OBJS-$(TARGET_ARCH_BFIN)               += bfin/dsputil_bfin.o
 
 CFLAGS += $(CFLAGS-yes)
 OBJS += $(OBJS-yes)
