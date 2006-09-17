@@ -74,7 +74,6 @@ untested special converters
 #include "swscale_internal.h"
 #include "x86_cpu.h"
 #include "bswap.h"
-#include "libmpcodecs/img_format.h"
 #include "rgb2rgb.h"
 #ifdef USE_FASTMEMCPY
 #include "libvo/fastmemcpy.h"
@@ -106,25 +105,17 @@ untested special converters
 #define PI 3.14159265358979323846
 #endif
 
-//FIXME replace this with something faster
-#define isPlanarYUV(x) ((x)==IMGFMT_YV12 || (x)==IMGFMT_YVU9 \
-			|| (x)==IMGFMT_NV12 || (x)==IMGFMT_NV21 \
-			|| (x)==IMGFMT_444P || (x)==IMGFMT_422P || (x)==IMGFMT_411P)
-#define isYUV(x)       ((x)==IMGFMT_UYVY || (x)==IMGFMT_YUY2 || isPlanarYUV(x))
-#define isGray(x)      ((x)==IMGFMT_Y800)
-#define isRGB(x)       (((x)&IMGFMT_RGB_MASK)==IMGFMT_RGB)
-#define isBGR(x)       (((x)&IMGFMT_BGR_MASK)==IMGFMT_BGR)
-#define isSupportedIn(x)  ((x)==IMGFMT_YV12 || (x)==IMGFMT_YUY2 || (x)==IMGFMT_UYVY\
-			|| (x)==IMGFMT_BGR32|| (x)==IMGFMT_BGR24|| (x)==IMGFMT_BGR16|| (x)==IMGFMT_BGR15\
-			|| (x)==IMGFMT_RGB32|| (x)==IMGFMT_RGB24\
-			|| (x)==IMGFMT_Y800 || (x)==IMGFMT_YVU9\
-			|| (x)==IMGFMT_444P || (x)==IMGFMT_422P || (x)==IMGFMT_411P)
-#define isSupportedOut(x) ((x)==IMGFMT_YV12 || (x)==IMGFMT_YUY2 || (x)==IMGFMT_UYVY\
-			|| (x)==IMGFMT_444P || (x)==IMGFMT_422P || (x)==IMGFMT_411P\
+#define isSupportedIn(x)  ((x)==PIX_FMT_YUV420P || (x)==PIX_FMT_YUYV422 || (x)==PIX_FMT_UYVY422\
+			|| (x)==PIX_FMT_RGB32|| (x)==PIX_FMT_BGR24|| (x)==PIX_FMT_BGR565|| (x)==PIX_FMT_BGR555\
+			|| (x)==PIX_FMT_BGR32|| (x)==PIX_FMT_RGB24\
+			|| (x)==PIX_FMT_GRAY8 || (x)==PIX_FMT_YUV410P\
+			|| (x)==PIX_FMT_YUV444P || (x)==PIX_FMT_YUV422P || (x)==PIX_FMT_YUV411P)
+#define isSupportedOut(x) ((x)==PIX_FMT_YUV420P || (x)==PIX_FMT_YUYV422 || (x)==PIX_FMT_UYVY422\
+			|| (x)==PIX_FMT_YUV444P || (x)==PIX_FMT_YUV422P || (x)==PIX_FMT_YUV411P\
 			|| isRGB(x) || isBGR(x)\
-			|| (x)==IMGFMT_NV12 || (x)==IMGFMT_NV21\
-			|| (x)==IMGFMT_Y800 || (x)==IMGFMT_YVU9)
-#define isPacked(x)    ((x)==IMGFMT_YUY2 || (x)==IMGFMT_UYVY ||isRGB(x) || isBGR(x))
+			|| (x)==PIX_FMT_NV12 || (x)==PIX_FMT_NV21\
+			|| (x)==PIX_FMT_GRAY8 || (x)==PIX_FMT_YUV410P)
+#define isPacked(x)    ((x)==PIX_FMT_YUYV422 || (x)==PIX_FMT_UYVY422 ||isRGB(x) || isBGR(x))
 
 #define RGB2YUV_SHIFT 16
 #define BY ((int)( 0.098*(1<<RGB2YUV_SHIFT)+0.5))
@@ -213,37 +204,82 @@ extern const uint8_t dither_8x8_32[8][8];
 extern const uint8_t dither_8x8_73[8][8];
 extern const uint8_t dither_8x8_220[8][8];
 
-/* Used for ffmpeg --> MPlayer format name conversion */
-static const int fmt_name[PIX_FMT_NB] = {
-    [PIX_FMT_YUV420P] = IMGFMT_I420,   ///< Planar YUV 4:2:0 (1 Cr & Cb sample per 2x2 Y samples)
-    [PIX_FMT_YUV422] = IMGFMT_Y422,    
-    [PIX_FMT_RGB24] = IMGFMT_RGB24,     ///< Packed pixel, 3 bytes per pixel, RGBRGB...
-    [PIX_FMT_BGR24] = IMGFMT_BGR24,     ///< Packed pixel, 3 bytes per pixel, BGRBGR...
-    [PIX_FMT_YUV422P] = IMGFMT_422P,   ///< Planar YUV 4:2:2 (1 Cr & Cb sample per 2x1 Y samples)
-    [PIX_FMT_YUV444P] = IMGFMT_444P,   ///< Planar YUV 4:4:4 (1 Cr & Cb sample per 1x1 Y samples)
-    [PIX_FMT_RGBA32] = IMGFMT_BGR32,    ///< Packed pixel, 4 bytes per pixel, BGRABGRA..., stored in cpu endianness
-    [PIX_FMT_YUV410P] = IMGFMT_YVU9,   ///< Planar YUV 4:1:0 (1 Cr & Cb sample per 4x4 Y samples)
-    [PIX_FMT_YUV411P] = IMGFMT_411P,   ///< Planar YUV 4:1:1 (1 Cr & Cb sample per 4x1 Y samples)
-    [PIX_FMT_RGB565] = IMGFMT_RGB16,    ///< always stored in cpu endianness 
-    [PIX_FMT_RGB555] = IMGFMT_RGB15,    ///< always stored in cpu endianness, most significant bit to 1 
-    [PIX_FMT_UYVY422] = IMGFMT_UYVY,   ///< Packed pixel, Cb Y0 Cr Y1 
-    [PIX_FMT_GRAY8] = IMGFMT_Y800,     ///< Gray jpeg
-};
-
-char *sws_format_name(int format)
+char *sws_format_name(enum PixelFormat format)
 {
-    static char fmt_name[64];
-    char *res;
-    static int buffer;
-
-    res = fmt_name + buffer * 32;
-    buffer = 1 - buffer;
-    snprintf(res, 32, "0x%x (%c%c%c%c)", format,
-		    format >> 24, (format >> 16) & 0xFF,
-		    (format >> 8) & 0xFF,
-		    format & 0xFF);
-
-    return res;
+    switch (format) {
+        case PIX_FMT_YUV420P:
+            return "yuv420p";
+        case PIX_FMT_YUYV422:
+            return "yuyv422";
+        case PIX_FMT_RGB24:
+            return "rgb24";
+        case PIX_FMT_BGR24:
+            return "bgr24";
+        case PIX_FMT_YUV422P:
+            return "yuv422p";
+        case PIX_FMT_YUV444P:
+            return "yuv444p";
+        case PIX_FMT_RGB32:
+            return "rgb32";
+        case PIX_FMT_YUV410P:
+            return "yuv410p";
+        case PIX_FMT_YUV411P:
+            return "yuv411p";
+        case PIX_FMT_RGB565:
+            return "rgb565";
+        case PIX_FMT_RGB555:
+            return "rgb555";
+        case PIX_FMT_GRAY8:
+            return "gray8";
+        case PIX_FMT_MONOWHITE:
+            return "mono white";
+        case PIX_FMT_MONOBLACK:
+            return "mono black";
+        case PIX_FMT_PAL8:
+            return "Palette";
+        case PIX_FMT_YUVJ420P:
+            return "yuvj420p";
+        case PIX_FMT_YUVJ422P:
+            return "yuvj422p";
+        case PIX_FMT_YUVJ444P:
+            return "yuvj444p";
+        case PIX_FMT_XVMC_MPEG2_MC:
+            return "xvmc_mpeg2_mc";
+        case PIX_FMT_XVMC_MPEG2_IDCT:
+            return "xvmc_mpeg2_idct";
+        case PIX_FMT_UYVY422:
+            return "uyvy422";
+        case PIX_FMT_UYYVYY411:
+            return "uyyvyy411";
+        case PIX_FMT_RGB32_1:
+            return "rgb32x";
+        case PIX_FMT_BGR32_1:
+            return "bgr32x";
+        case PIX_FMT_BGR32:
+            return "bgr32";
+        case PIX_FMT_BGR565:
+            return "bgr565";
+        case PIX_FMT_BGR555:
+            return "bgr555";
+        case PIX_FMT_BGR8:
+            return "bgr8";
+        case PIX_FMT_BGR4:
+            return "bgr4";
+        case PIX_FMT_BGR4_BYTE:
+            return "bgr4 byte";
+        case PIX_FMT_RGB8:
+            return "rgb8";
+        case PIX_FMT_RGB4:
+            return "rgb4";
+        case PIX_FMT_RGB4_BYTE:
+            return "rgb4 byte";
+        case PIX_FMT_NV12:
+            return "nv12";
+        case PIX_FMT_NV21:
+            return "nv21";
+        default:
+            return "Unknown format";
+    }
 }
 
 #if defined(ARCH_X86) || defined(ARCH_X86_64)
@@ -308,7 +344,7 @@ static inline void yuv2nv12XinC(int16_t *lumFilter, int16_t **lumSrc, int lumFil
 	if(uDest == NULL)
 		return;
 
-	if(dstFormat == IMGFMT_NV12)
+	if(dstFormat == PIX_FMT_NV12)
 		for(i=0; i<chrDstW; i++)
 		{
 			int u=1<<18;
@@ -430,14 +466,14 @@ static inline void yuv2nv12XinC(int16_t *lumFilter, int16_t **lumSrc, int lumFil
 #define YSCALE_YUV_2_ANYRGB_C(func, func2)\
 	switch(c->dstFormat)\
 	{\
-	case IMGFMT_BGR32:\
-	case IMGFMT_RGB32:\
+	case PIX_FMT_RGB32:\
+	case PIX_FMT_BGR32:\
 		func(uint32_t)\
 			((uint32_t*)dest)[i2+0]= r[Y1] + g[Y1] + b[Y1];\
 			((uint32_t*)dest)[i2+1]= r[Y2] + g[Y2] + b[Y2];\
 		}		\
 		break;\
-	case IMGFMT_RGB24:\
+	case PIX_FMT_RGB24:\
 		func(uint8_t)\
 			((uint8_t*)dest)[0]= r[Y1];\
 			((uint8_t*)dest)[1]= g[Y1];\
@@ -448,7 +484,7 @@ static inline void yuv2nv12XinC(int16_t *lumFilter, int16_t **lumSrc, int lumFil
 			dest+=6;\
 		}\
 		break;\
-	case IMGFMT_BGR24:\
+	case PIX_FMT_BGR24:\
 		func(uint8_t)\
 			((uint8_t*)dest)[0]= b[Y1];\
 			((uint8_t*)dest)[1]= g[Y1];\
@@ -459,8 +495,8 @@ static inline void yuv2nv12XinC(int16_t *lumFilter, int16_t **lumSrc, int lumFil
 			dest+=6;\
 		}\
 		break;\
-	case IMGFMT_RGB16:\
-	case IMGFMT_BGR16:\
+	case PIX_FMT_RGB565:\
+	case PIX_FMT_BGR565:\
 		{\
 			const int dr1= dither_2x2_8[y&1    ][0];\
 			const int dg1= dither_2x2_4[y&1    ][0];\
@@ -474,8 +510,8 @@ static inline void yuv2nv12XinC(int16_t *lumFilter, int16_t **lumSrc, int lumFil
 			}\
 		}\
 		break;\
-	case IMGFMT_RGB15:\
-	case IMGFMT_BGR15:\
+	case PIX_FMT_RGB555:\
+	case PIX_FMT_BGR555:\
 		{\
 			const int dr1= dither_2x2_8[y&1    ][0];\
 			const int dg1= dither_2x2_8[y&1    ][1];\
@@ -489,8 +525,8 @@ static inline void yuv2nv12XinC(int16_t *lumFilter, int16_t **lumSrc, int lumFil
 			}\
 		}\
 		break;\
-	case IMGFMT_RGB8:\
-	case IMGFMT_BGR8:\
+	case PIX_FMT_RGB8:\
+	case PIX_FMT_BGR8:\
 		{\
 			const uint8_t * const d64= dither_8x8_73[y&7];\
 			const uint8_t * const d32= dither_8x8_32[y&7];\
@@ -500,8 +536,8 @@ static inline void yuv2nv12XinC(int16_t *lumFilter, int16_t **lumSrc, int lumFil
 			}\
 		}\
 		break;\
-	case IMGFMT_RGB4:\
-	case IMGFMT_BGR4:\
+	case PIX_FMT_RGB4:\
+	case PIX_FMT_BGR4:\
 		{\
 			const uint8_t * const d64= dither_8x8_73 [y&7];\
 			const uint8_t * const d128=dither_8x8_220[y&7];\
@@ -511,8 +547,8 @@ static inline void yuv2nv12XinC(int16_t *lumFilter, int16_t **lumSrc, int lumFil
 			}\
 		}\
 		break;\
-	case IMGFMT_RG4B:\
-	case IMGFMT_BG4B:\
+	case PIX_FMT_RGB4_BYTE:\
+	case PIX_FMT_BGR4_BYTE:\
 		{\
 			const uint8_t * const d64= dither_8x8_73 [y&7];\
 			const uint8_t * const d128=dither_8x8_220[y&7];\
@@ -522,8 +558,7 @@ static inline void yuv2nv12XinC(int16_t *lumFilter, int16_t **lumSrc, int lumFil
 			}\
 		}\
 		break;\
-	case IMGFMT_RGB1:\
-	case IMGFMT_BGR1:\
+	case PIX_FMT_MONOBLACK:\
 		{\
 			const uint8_t * const d128=dither_8x8_220[y&7];\
 			uint8_t *g= c->table_gU[128] + c->table_gV[128];\
@@ -587,7 +622,7 @@ static inline void yuv2nv12XinC(int16_t *lumFilter, int16_t **lumSrc, int lumFil
 */\
 		}\
 		break;\
-	case IMGFMT_YUY2:\
+	case PIX_FMT_YUYV422:\
 		func2\
 			((uint8_t*)dest)[2*i2+0]= Y1;\
 			((uint8_t*)dest)[2*i2+1]= U;\
@@ -595,7 +630,7 @@ static inline void yuv2nv12XinC(int16_t *lumFilter, int16_t **lumSrc, int lumFil
 			((uint8_t*)dest)[2*i2+3]= V;\
 		}		\
 		break;\
-	case IMGFMT_UYVY:\
+	case PIX_FMT_UYVY422:\
 		func2\
 			((uint8_t*)dest)[2*i2+0]= U;\
 			((uint8_t*)dest)[2*i2+1]= Y1;\
@@ -613,14 +648,14 @@ static inline void yuv2packedXinC(SwsContext *c, int16_t *lumFilter, int16_t **l
 	int i;
 	switch(c->dstFormat)
 	{
-	case IMGFMT_RGB32:
-	case IMGFMT_BGR32:
+	case PIX_FMT_BGR32:
+	case PIX_FMT_RGB32:
 		YSCALE_YUV_2_RGBX_C(uint32_t)
 			((uint32_t*)dest)[i2+0]= r[Y1] + g[Y1] + b[Y1];
 			((uint32_t*)dest)[i2+1]= r[Y2] + g[Y2] + b[Y2];
 		}
 		break;
-	case IMGFMT_RGB24:
+	case PIX_FMT_RGB24:
 		YSCALE_YUV_2_RGBX_C(uint8_t)
 			((uint8_t*)dest)[0]= r[Y1];
 			((uint8_t*)dest)[1]= g[Y1];
@@ -631,7 +666,7 @@ static inline void yuv2packedXinC(SwsContext *c, int16_t *lumFilter, int16_t **l
 			dest+=6;
 		}
 		break;
-	case IMGFMT_BGR24:
+	case PIX_FMT_BGR24:
 		YSCALE_YUV_2_RGBX_C(uint8_t)
 			((uint8_t*)dest)[0]= b[Y1];
 			((uint8_t*)dest)[1]= g[Y1];
@@ -642,8 +677,8 @@ static inline void yuv2packedXinC(SwsContext *c, int16_t *lumFilter, int16_t **l
 			dest+=6;
 		}
 		break;
-	case IMGFMT_RGB16:
-	case IMGFMT_BGR16:
+	case PIX_FMT_RGB565:
+	case PIX_FMT_BGR565:
 		{
 			const int dr1= dither_2x2_8[y&1    ][0];
 			const int dg1= dither_2x2_4[y&1    ][0];
@@ -657,8 +692,8 @@ static inline void yuv2packedXinC(SwsContext *c, int16_t *lumFilter, int16_t **l
 			}
 		}
 		break;
-	case IMGFMT_RGB15:
-	case IMGFMT_BGR15:
+	case PIX_FMT_RGB555:
+	case PIX_FMT_BGR555:
 		{
 			const int dr1= dither_2x2_8[y&1    ][0];
 			const int dg1= dither_2x2_8[y&1    ][1];
@@ -672,8 +707,8 @@ static inline void yuv2packedXinC(SwsContext *c, int16_t *lumFilter, int16_t **l
 			}
 		}
 		break;
-	case IMGFMT_RGB8:
-	case IMGFMT_BGR8:
+	case PIX_FMT_RGB8:
+	case PIX_FMT_BGR8:
 		{
 			const uint8_t * const d64= dither_8x8_73[y&7];
 			const uint8_t * const d32= dither_8x8_32[y&7];
@@ -683,8 +718,8 @@ static inline void yuv2packedXinC(SwsContext *c, int16_t *lumFilter, int16_t **l
 			}
 		}
 		break;
-	case IMGFMT_RGB4:
-	case IMGFMT_BGR4:
+	case PIX_FMT_RGB4:
+	case PIX_FMT_BGR4:
 		{
 			const uint8_t * const d64= dither_8x8_73 [y&7];
 			const uint8_t * const d128=dither_8x8_220[y&7];
@@ -694,8 +729,8 @@ static inline void yuv2packedXinC(SwsContext *c, int16_t *lumFilter, int16_t **l
 			}
 		}
 		break;
-	case IMGFMT_RG4B:
-	case IMGFMT_BG4B:
+	case PIX_FMT_RGB4_BYTE:
+	case PIX_FMT_BGR4_BYTE:
 		{
 			const uint8_t * const d64= dither_8x8_73 [y&7];
 			const uint8_t * const d128=dither_8x8_220[y&7];
@@ -705,8 +740,7 @@ static inline void yuv2packedXinC(SwsContext *c, int16_t *lumFilter, int16_t **l
 			}
 		}
 		break;
-	case IMGFMT_RGB1:
-	case IMGFMT_BGR1:
+	case PIX_FMT_MONOBLACK:
 		{
 			const uint8_t * const d128=dither_8x8_220[y&7];
 			uint8_t *g= c->table_gU[128] + c->table_gV[128];
@@ -739,7 +773,7 @@ static inline void yuv2packedXinC(SwsContext *c, int16_t *lumFilter, int16_t **l
 			}
 		}
 		break;
-	case IMGFMT_YUY2:
+	case PIX_FMT_YUYV422:
 		YSCALE_YUV_2_PACKEDX_C(void)
 			((uint8_t*)dest)[2*i2+0]= Y1;
 			((uint8_t*)dest)[2*i2+1]= U;
@@ -747,7 +781,7 @@ static inline void yuv2packedXinC(SwsContext *c, int16_t *lumFilter, int16_t **l
 			((uint8_t*)dest)[2*i2+3]= V;
 		}
                 break;
-	case IMGFMT_UYVY:
+	case PIX_FMT_UYVY422:
 		YSCALE_YUV_2_PACKEDX_C(void)
 			((uint8_t*)dest)[2*i2+0]= U;
 			((uint8_t*)dest)[2*i2+1]= Y1;
@@ -1483,7 +1517,7 @@ static int PlanarToNV12Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], i
 		}
 	}
 	dst = dstParam[1] + dstStride[1]*srcSliceY/2;
-	if (c->dstFormat == IMGFMT_NV12)
+	if (c->dstFormat == PIX_FMT_NV12)
 		interleaveBytes( src[1],src[2],dst,c->srcW/2,srcSliceH/2,srcStride[1],srcStride[2],dstStride[0] );
 	else
 		interleaveBytes( src[2],src[1],dst,c->srcW/2,srcSliceH/2,srcStride[2],srcStride[1],dstStride[0] );
@@ -1514,10 +1548,10 @@ static int rgb2rgbWrapper(SwsContext *c, uint8_t* src[], int srcStride[], int sr
 			   int srcSliceH, uint8_t* dst[], int dstStride[]){
 	const int srcFormat= c->srcFormat;
 	const int dstFormat= c->dstFormat;
-	const int srcBpp= ((srcFormat&0xFF) + 7)>>3;
-	const int dstBpp= ((dstFormat&0xFF) + 7)>>3;
-	const int srcId= (srcFormat&0xFF)>>2; // 1:0, 4:1, 8:2, 15:3, 16:4, 24:6, 32:8 
-	const int dstId= (dstFormat&0xFF)>>2;
+	const int srcBpp= (fmt_depth(srcFormat) + 7) >> 3;
+	const int dstBpp= (fmt_depth(dstFormat) + 7) >> 3;
+	const int srcId= fmt_depth(srcFormat) >> 2; /* 1:0, 4:1, 8:2, 15:3, 16:4, 24:6, 32:8 */
+	const int dstId= fmt_depth(dstFormat) >> 2;
 	void (*conv)(const uint8_t *src, uint8_t *dst, long src_size)=NULL;
 
 	/* BGR -> BGR */
@@ -1616,7 +1650,7 @@ static int yvu9toyv12Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], int
 		}
 	}
 
-	if(c->dstFormat==IMGFMT_YV12){
+	if(c->dstFormat==PIX_FMT_YUV420P){
 		planar2x(src[1], dst[1], c->chrSrcW, c->chrSrcH, srcStride[1], dstStride[1]);
 		planar2x(src[2], dst[2], c->chrSrcW, c->chrSrcH, srcStride[2], dstStride[2]);
 	}else{
@@ -1624,50 +1658,6 @@ static int yvu9toyv12Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], int
 		planar2x(src[2], dst[1], c->chrSrcW, c->chrSrcH, srcStride[2], dstStride[1]);
 	}
 	return srcSliceH;
-}
-
-/**
- * bring pointers in YUV order instead of YVU
- */
-static inline void sws_orderYUV(int format, uint8_t * sortedP[], int sortedStride[], uint8_t * p[], int stride[]){
-	if(format == IMGFMT_YV12 || format == IMGFMT_YVU9
-           || format == IMGFMT_444P || format == IMGFMT_422P || format == IMGFMT_411P){
-		sortedP[0]= p[0];
-		sortedP[1]= p[2];
-		sortedP[2]= p[1];
-		sortedStride[0]= stride[0];
-		sortedStride[1]= stride[2];
-		sortedStride[2]= stride[1];
-	}
-	else if(isPacked(format) || isGray(format) || format == IMGFMT_Y8)
-	{
-		sortedP[0]= p[0];
-		sortedP[1]= 
-		sortedP[2]= NULL;
-		sortedStride[0]= stride[0];
-		sortedStride[1]= 
-		sortedStride[2]= 0;
-	}
-	else if(format == IMGFMT_I420 || format == IMGFMT_IYUV)
-	{
-		sortedP[0]= p[0];
-		sortedP[1]= p[1];
-		sortedP[2]= p[2];
-		sortedStride[0]= stride[0];
-		sortedStride[1]= stride[1];
-		sortedStride[2]= stride[2];
-	}
-	else if(format == IMGFMT_NV12 || format == IMGFMT_NV21)
-	{
-		sortedP[0]= p[0];
-		sortedP[1]= p[1];
-		sortedP[2]= NULL;
-		sortedStride[0]= stride[0];
-		sortedStride[1]= stride[1];
-		sortedStride[2]= 0;
-	}else{
-		MSG_ERR("internal error in orderYUV\n");
-	}
 }
 
 /* unscaled copy like stuff (assumes nearly identical formats) */
@@ -1734,45 +1724,33 @@ static int simpleCopy(SwsContext *c, uint8_t* src[], int srcStride[], int srcSli
 	return srcSliceH;
 }
 
-static int remove_dup_fourcc(int fourcc)
-{
-	switch(fourcc)
-	{
-	    case IMGFMT_I420:
-	    case IMGFMT_IYUV: return IMGFMT_YV12;
-	    case IMGFMT_Y8  : return IMGFMT_Y800;
-	    case IMGFMT_IF09: return IMGFMT_YVU9;
-	    default: return fourcc;
-	}
-}
-
 static void getSubSampleFactors(int *h, int *v, int format){
 	switch(format){
-	case IMGFMT_UYVY:
-	case IMGFMT_YUY2:
+	case PIX_FMT_UYVY422:
+	case PIX_FMT_YUYV422:
 		*h=1;
 		*v=0;
 		break;
-	case IMGFMT_YV12:
-	case IMGFMT_Y800: //FIXME remove after different subsamplings are fully implemented
-	case IMGFMT_NV12:
-	case IMGFMT_NV21:
+	case PIX_FMT_YUV420P:
+	case PIX_FMT_GRAY8: //FIXME remove after different subsamplings are fully implemented
+	case PIX_FMT_NV12:
+	case PIX_FMT_NV21:
 		*h=1;
 		*v=1;
 		break;
-	case IMGFMT_YVU9:
+	case PIX_FMT_YUV410P:
 		*h=2;
 		*v=2;
 		break;
-	case IMGFMT_444P:
+	case PIX_FMT_YUV444P:
 		*h=0;
 		*v=0;
 		break;
-	case IMGFMT_422P:
+	case PIX_FMT_YUV422P:
 		*h=1;
 		*v=0;
 		break;
-	case IMGFMT_411P:
+	case PIX_FMT_YUV411P:
 		*h=2;
 		*v=0;
 		break;
@@ -1863,14 +1841,13 @@ int sws_getColorspaceDetails(SwsContext *c, int **inv_table, int *srcRange, int 
 	return 0;	
 }
 
-SwsContext *sws_getContext(int srcW, int srcH, int origSrcFormat, int dstW, int dstH, int origDstFormat, int flags,
+SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, int dstH, int dstFormat, int flags,
                          SwsFilter *srcFilter, SwsFilter *dstFilter, double *param){
 
 	SwsContext *c;
 	int i;
 	int usesVFilter, usesHFilter;
 	int unscaled, needsDither;
-	int srcFormat, dstFormat;
 	SwsFilter dummyFilter= {NULL, NULL, NULL, NULL};
 #if defined(ARCH_X86) || defined(ARCH_X86_64)
 	if(flags & SWS_CPU_CAPS_MMX)
@@ -1892,20 +1869,10 @@ SwsContext *sws_getContext(int srcW, int srcH, int origSrcFormat, int dstW, int 
 	if(clip_table[512] != 255) globalInit();
 	if(rgb15to16 == NULL) sws_rgb2rgb_init(flags);
 
-	/* avoid duplicate Formats, so we don't need to check to much */
-        if (origSrcFormat < PIX_FMT_NB) {
-            origSrcFormat = fmt_name[origSrcFormat];
-        }
-        if (origDstFormat < PIX_FMT_NB) {
-            origDstFormat = fmt_name[origDstFormat];
-        }
-	srcFormat = remove_dup_fourcc(origSrcFormat);
-	dstFormat = remove_dup_fourcc(origDstFormat);
-
 	unscaled = (srcW == dstW && srcH == dstH);
 	needsDither= (isBGR(dstFormat) || isRGB(dstFormat)) 
-		     && (dstFormat&0xFF)<24
-		     && ((dstFormat&0xFF)<(srcFormat&0xFF) || (!(isRGB(srcFormat) || isBGR(srcFormat))));
+		     && (fmt_depth(dstFormat))<24
+		     && ((fmt_depth(dstFormat))<(fmt_depth(srcFormat)) || (!(isRGB(srcFormat) || isBGR(srcFormat))));
 
 	if(!isSupportedIn(srcFormat)) 
 	{
@@ -1941,8 +1908,6 @@ SwsContext *sws_getContext(int srcW, int srcH, int origSrcFormat, int dstW, int 
 	c->flags= flags;
 	c->dstFormat= dstFormat;
 	c->srcFormat= srcFormat;
-	c->origDstFormat= origDstFormat;
-	c->origSrcFormat= origSrcFormat;
         c->vRounder= 4* 0x0001000100010001ULL;
 
 	usesHFilter= usesVFilter= 0;
@@ -1992,23 +1957,23 @@ SwsContext *sws_getContext(int srcW, int srcH, int origSrcFormat, int dstW, int 
 	if(unscaled && !usesHFilter && !usesVFilter)
 	{
 		/* yv12_to_nv12 */
-		if(srcFormat == IMGFMT_YV12 && (dstFormat == IMGFMT_NV12 || dstFormat == IMGFMT_NV21))
+		if(srcFormat == PIX_FMT_YUV420P && (dstFormat == PIX_FMT_NV12 || dstFormat == PIX_FMT_NV21))
 		{
 			c->swScale= PlanarToNV12Wrapper;
 		}
 		/* yuv2bgr */
-		if((srcFormat==IMGFMT_YV12 || srcFormat==IMGFMT_422P) && (isBGR(dstFormat) || isRGB(dstFormat)))
+		if((srcFormat==PIX_FMT_YUV420P || srcFormat==PIX_FMT_YUV422P) && (isBGR(dstFormat) || isRGB(dstFormat)))
 		{
 			c->swScale= yuv2rgb_get_func_ptr(c);
 		}
 		
-		if( srcFormat==IMGFMT_YVU9 && dstFormat==IMGFMT_YV12 )
+		if( srcFormat==PIX_FMT_YUV410P && dstFormat==PIX_FMT_YUV420P )
 		{
 			c->swScale= yvu9toyv12Wrapper;
 		}
 
 		/* bgr24toYV12 */
-		if(srcFormat==IMGFMT_BGR24 && dstFormat==IMGFMT_YV12)
+		if(srcFormat==PIX_FMT_BGR24 && dstFormat==PIX_FMT_YUV420P)
 			c->swScale= bgr24toyv12Wrapper;
 		
 		/* rgb/bgr -> rgb/bgr (no dither needed forms) */
@@ -2026,10 +1991,10 @@ SwsContext *sws_getContext(int srcW, int srcH, int origSrcFormat, int dstW, int 
 				c->swScale= rgb2rgbWrapper;
 
 			/* yv12_to_yuy2 */
-			if(srcFormat == IMGFMT_YV12 && 
-			    (dstFormat == IMGFMT_YUY2 || dstFormat == IMGFMT_UYVY))
+			if(srcFormat == PIX_FMT_YUV420P && 
+			    (dstFormat == PIX_FMT_YUYV422 || dstFormat == PIX_FMT_UYVY422))
 			{
-				if (dstFormat == IMGFMT_YUY2)
+				if (dstFormat == PIX_FMT_YUYV422)
 				    c->swScale= PlanarToYuy2Wrapper;
 				else
 				    c->swScale= PlanarToUyvyWrapper;
@@ -2038,10 +2003,10 @@ SwsContext *sws_getContext(int srcW, int srcH, int origSrcFormat, int dstW, int 
 
 #ifdef COMPILE_ALTIVEC
 		if ((c->flags & SWS_CPU_CAPS_ALTIVEC) &&
-		    ((srcFormat == IMGFMT_YV12 && 
-		      (dstFormat == IMGFMT_YUY2 || dstFormat == IMGFMT_UYVY)))) {
+		    ((srcFormat == PIX_FMT_YUV420P && 
+		      (dstFormat == PIX_FMT_YUYV422 || dstFormat == PIX_FMT_UYVY422)))) {
 		  // unscaled YV12 -> packed YUV, we want speed
-		  if (dstFormat == IMGFMT_YUY2)
+		  if (dstFormat == PIX_FMT_YUYV422)
 		    c->swScale= yv12toyuy2_unscaled_altivec;
 		  else
 		    c->swScale= yv12touyvy_unscaled_altivec;
@@ -2245,7 +2210,7 @@ SwsContext *sws_getContext(int srcW, int srcH, int origSrcFormat, int dstW, int 
 		else
 			MSG_INFO("\nSwScaler: ehh flags invalid?! ");
 
-		if(dstFormat==IMGFMT_BGR15 || dstFormat==IMGFMT_BGR16)
+		if(dstFormat==PIX_FMT_BGR555 || dstFormat==PIX_FMT_BGR565)
 			MSG_INFO("from %s to%s %s ", 
 				sws_format_name(srcFormat), dither, sws_format_name(dstFormat));
 		else
@@ -2316,14 +2281,14 @@ SwsContext *sws_getContext(int srcW, int srcH, int origSrcFormat, int dstW, int 
 				MSG_V("SwScaler: using n-tap %s scaler for vertical scaling (BGR)\n", (flags & SWS_CPU_CAPS_MMX) ? "MMX" : "C");
 		}
 
-		if(dstFormat==IMGFMT_BGR24)
+		if(dstFormat==PIX_FMT_BGR24)
 			MSG_V("SwScaler: using %s YV12->BGR24 Converter\n",
 				(flags & SWS_CPU_CAPS_MMX2) ? "MMX2" : ((flags & SWS_CPU_CAPS_MMX) ? "MMX" : "C"));
-		else if(dstFormat==IMGFMT_BGR32)
+		else if(dstFormat==PIX_FMT_RGB32)
 			MSG_V("SwScaler: using %s YV12->BGR32 Converter\n", (flags & SWS_CPU_CAPS_MMX) ? "MMX" : "C");
-		else if(dstFormat==IMGFMT_BGR16)
+		else if(dstFormat==PIX_FMT_BGR565)
 			MSG_V("SwScaler: using %s YV12->BGR16 Converter\n", (flags & SWS_CPU_CAPS_MMX) ? "MMX" : "C");
-		else if(dstFormat==IMGFMT_BGR15)
+		else if(dstFormat==PIX_FMT_BGR555)
 			MSG_V("SwScaler: using %s YV12->BGR15 Converter\n", (flags & SWS_CPU_CAPS_MMX) ? "MMX" : "C");
 
 		MSG_V("SwScaler: %dx%d -> %dx%d\n", srcW, srcH, dstW, dstH);
@@ -2379,14 +2344,12 @@ int sws_scale_ordered(SwsContext *c, uint8_t* src[], int srcStride[], int srcSli
 /**
  * swscale warper, so we don't need to export the SwsContext
  */
-int sws_scale(SwsContext *c, uint8_t* srcParam[], int srcStrideParam[], int srcSliceY,
-                           int srcSliceH, uint8_t* dstParam[], int dstStrideParam[]){
-	int srcStride[3];
-	int dstStride[3];
+int sws_scale(SwsContext *c, uint8_t* srcParam[], int srcStride[], int srcSliceY,
+                           int srcSliceH, uint8_t* dstParam[], int dstStride[]){
 	uint8_t *src[3];
 	uint8_t *dst[3];
-	sws_orderYUV(c->origSrcFormat, src, srcStride, srcParam, srcStrideParam);
-	sws_orderYUV(c->origDstFormat, dst, dstStride, dstParam, dstStrideParam);
+	src[0] = srcParam[0]; src[1] = srcParam[1]; src[2] = srcParam[2];
+	dst[0] = dstParam[0]; dst[1] = dstParam[1]; dst[2] = dstParam[2];
 //printf("sws: slice %d %d\n", srcSliceY, srcSliceH);
 
 	return c->swScale(c, src, srcStride, srcSliceY, srcSliceH, dst, dstStride);

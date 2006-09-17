@@ -39,7 +39,6 @@
 #include "rgb2rgb.h"
 #include "swscale.h"
 #include "swscale_internal.h"
-#include "libmpcodecs/img_format.h" //FIXME try to reduce dependency of such stuff
 
 #ifdef HAVE_MLIB
 #include "yuv2rgb_mlib.c"
@@ -259,7 +258,7 @@ static int func_name(SwsContext *c, uint8_t* src[], int srcStride[], int srcSlic
              int srcSliceH, uint8_t* dst[], int dstStride[]){\
     int y;\
 \
-    if(c->srcFormat == IMGFMT_422P){\
+    if(c->srcFormat == PIX_FMT_YUV422P){\
 	srcStride[1] *= 2;\
 	srcStride[2] *= 2;\
     }\
@@ -581,18 +580,18 @@ SwsFunc yuv2rgb_get_func_ptr (SwsContext *c)
 #if defined(HAVE_MMX2) || defined(HAVE_MMX)
     if(c->flags & SWS_CPU_CAPS_MMX2){
 	switch(c->dstFormat){
-	case IMGFMT_BGR32: return yuv420_rgb32_MMX2;
-	case IMGFMT_BGR24: return yuv420_rgb24_MMX2;
-	case IMGFMT_BGR16: return yuv420_rgb16_MMX2;
-	case IMGFMT_BGR15: return yuv420_rgb15_MMX2;
+	case PIX_FMT_RGB32: return yuv420_rgb32_MMX2;
+	case PIX_FMT_BGR24: return yuv420_rgb24_MMX2;
+	case PIX_FMT_BGR565: return yuv420_rgb16_MMX2;
+	case PIX_FMT_BGR555: return yuv420_rgb15_MMX2;
 	}
     }
     if(c->flags & SWS_CPU_CAPS_MMX){
 	switch(c->dstFormat){
-	case IMGFMT_BGR32: return yuv420_rgb32_MMX;
-	case IMGFMT_BGR24: return yuv420_rgb24_MMX;
-	case IMGFMT_BGR16: return yuv420_rgb16_MMX;
-	case IMGFMT_BGR15: return yuv420_rgb15_MMX;
+	case PIX_FMT_RGB32: return yuv420_rgb32_MMX;
+	case PIX_FMT_BGR24: return yuv420_rgb24_MMX;
+	case PIX_FMT_BGR565: return yuv420_rgb16_MMX;
+	case PIX_FMT_BGR555: return yuv420_rgb15_MMX;
 	}
     }
 #endif
@@ -613,22 +612,21 @@ SwsFunc yuv2rgb_get_func_ptr (SwsContext *c)
     MSG_WARN("No accelerated colorspace conversion found\n");
 
     switch(c->dstFormat){
-    case IMGFMT_RGB32:
-    case IMGFMT_BGR32: return yuv2rgb_c_32;
-    case IMGFMT_RGB24: return yuv2rgb_c_24_rgb;
-    case IMGFMT_BGR24: return yuv2rgb_c_24_bgr;
-    case IMGFMT_RGB16:
-    case IMGFMT_BGR16:
-    case IMGFMT_RGB15:
-    case IMGFMT_BGR15: return yuv2rgb_c_16;
-    case IMGFMT_RGB8:
-    case IMGFMT_BGR8:  return yuv2rgb_c_8_ordered_dither;
-    case IMGFMT_RGB4:
-    case IMGFMT_BGR4:  return yuv2rgb_c_4_ordered_dither;
-    case IMGFMT_RG4B:
-    case IMGFMT_BG4B:  return yuv2rgb_c_4b_ordered_dither;
-    case IMGFMT_RGB1:
-    case IMGFMT_BGR1:  return yuv2rgb_c_1_ordered_dither;
+    case PIX_FMT_BGR32:
+    case PIX_FMT_RGB32: return yuv2rgb_c_32;
+    case PIX_FMT_RGB24: return yuv2rgb_c_24_rgb;
+    case PIX_FMT_BGR24: return yuv2rgb_c_24_bgr;
+    case PIX_FMT_RGB565:
+    case PIX_FMT_BGR565:
+    case PIX_FMT_RGB555:
+    case PIX_FMT_BGR555: return yuv2rgb_c_16;
+    case PIX_FMT_RGB8:
+    case PIX_FMT_BGR8:  return yuv2rgb_c_8_ordered_dither;
+    case PIX_FMT_RGB4:
+    case PIX_FMT_BGR4:  return yuv2rgb_c_4_ordered_dither;
+    case PIX_FMT_RGB4_BYTE:
+    case PIX_FMT_BGR4_BYTE:  return yuv2rgb_c_4b_ordered_dither;
+    case PIX_FMT_MONOBLACK:  return yuv2rgb_c_1_ordered_dither;
     default:
     	assert(0);
     }
@@ -645,8 +643,8 @@ static int div_round (int dividend, int divisor)
 
 int yuv2rgb_c_init_tables (SwsContext *c, const int inv_table[4], int fullRange, int brightness, int contrast, int saturation)
 {  
-    const int isRgb = IMGFMT_IS_BGR(c->dstFormat);
-    const int bpp = isRgb?IMGFMT_RGB_DEPTH(c->dstFormat):IMGFMT_BGR_DEPTH(c->dstFormat);
+    const int isRgb = isBGR(c->dstFormat);
+    const int bpp = fmt_depth(c->dstFormat);
     int i;
     uint8_t table_Y[1024];
     uint32_t *table_32 = 0;

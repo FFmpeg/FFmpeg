@@ -30,12 +30,11 @@
 #include <stdlib.h>
 #include <assert.h>
 
-#include "libmpcodecs/img_format.h" //FIXME try to reduce dependency of such stuff
 #include "swscale.h"
 
 static int mlib_YUV2ARGB420_32(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY, 
              int srcSliceH, uint8_t* dst[], int dstStride[]){
-    if(c->srcFormat == IMGFMT_422P){
+    if(c->srcFormat == PIX_FMT_YUV422P){
 	srcStride[1] *= 2;
 	srcStride[2] *= 2;
     }
@@ -49,7 +48,7 @@ static int mlib_YUV2ARGB420_32(SwsContext *c, uint8_t* src[], int srcStride[], i
 
 static int mlib_YUV2ABGR420_32(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY, 
              int srcSliceH, uint8_t* dst[], int dstStride[]){
-    if(c->srcFormat == IMGFMT_422P){
+    if(c->srcFormat == PIX_FMT_YUV422P){
 	srcStride[1] *= 2;
 	srcStride[2] *= 2;
     }
@@ -63,7 +62,7 @@ static int mlib_YUV2ABGR420_32(SwsContext *c, uint8_t* src[], int srcStride[], i
 
 static int mlib_YUV2RGB420_24(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY, 
              int srcSliceH, uint8_t* dst[], int dstStride[]){
-    if(c->srcFormat == IMGFMT_422P){
+    if(c->srcFormat == PIX_FMT_YUV422P){
 	srcStride[1] *= 2;
 	srcStride[2] *= 2;
     }
@@ -79,9 +78,9 @@ static int mlib_YUV2RGB420_24(SwsContext *c, uint8_t* src[], int srcStride[], in
 SwsFunc yuv2rgb_init_mlib(SwsContext *c) 
 {
 	switch(c->dstFormat){
-	case IMGFMT_RGB24: return mlib_YUV2RGB420_24;
-	case IMGFMT_RGB32: return mlib_YUV2ARGB420_32;
-	case IMGFMT_BGR32: return mlib_YUV2ABGR420_32;
+	case PIX_FMT_RGB24: return mlib_YUV2RGB420_24;
+	case PIX_FMT_BGR32: return mlib_YUV2ARGB420_32;
+	case PIX_FMT_RGB32: return mlib_YUV2ABGR420_32;
 	default: return NULL;
 	}
 }

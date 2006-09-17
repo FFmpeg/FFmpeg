@@ -22,24 +22,25 @@
 #include <inttypes.h>
 #include <stdarg.h>
 
+#undef HAVE_AV_CONFIG_H
+#include "avutil.h"
 #include "swscale.h"
-#include "libmpcodecs/img_format.h"
 
 static int testFormat[]={
-IMGFMT_YVU9,
-IMGFMT_YV12,
+PIX_FMT_YUV410P,
+PIX_FMT_YUV420P,
 //IMGFMT_IYUV,
-IMGFMT_I420,
-IMGFMT_BGR15,
-IMGFMT_BGR16,
-IMGFMT_BGR24,
-IMGFMT_BGR32,
-IMGFMT_RGB24,
-IMGFMT_RGB32,
+//IMGFMT_I420,
+PIX_FMT_BGR555,
+PIX_FMT_BGR565,
+PIX_FMT_BGR24,
+PIX_FMT_RGB32,
+PIX_FMT_RGB24,
+PIX_FMT_BGR32,
 //IMGFMT_Y8,
-IMGFMT_Y800,
+PIX_FMT_GRAY8,
 //IMGFMT_YUY2,
-0
+PIX_FMT_NONE
 };
 
 static uint64_t getSSD(uint8_t *src1, uint8_t *src2, int stride1, int stride2, int w, int h){
@@ -73,12 +74,12 @@ static void doTest(uint8_t *ref[3], int refStride[3], int w, int h, int srcForma
 	
 	for(i=0; i<3; i++){
 		// avoid stride % bpp != 0
-		if(srcFormat==IMGFMT_RGB24 || srcFormat==IMGFMT_BGR24)
+		if(srcFormat==PIX_FMT_RGB24 || srcFormat==PIX_FMT_BGR24)
 			srcStride[i]= srcW*3;
 		else
 			srcStride[i]= srcW*4;
 		
-		if(dstFormat==IMGFMT_RGB24 || dstFormat==IMGFMT_BGR24)
+		if(dstFormat==PIX_FMT_RGB24 || dstFormat==PIX_FMT_BGR24)
 			dstStride[i]= dstW*3;
 		else
 			dstStride[i]= dstW*4;
@@ -86,11 +87,16 @@ static void doTest(uint8_t *ref[3], int refStride[3], int w, int h, int srcForma
 		src[i]= (uint8_t*) malloc(srcStride[i]*srcH);
 		dst[i]= (uint8_t*) malloc(dstStride[i]*dstH);
 		out[i]= (uint8_t*) malloc(refStride[i]*h);
+		if ((src[i] == NULL) || (dst[i] == NULL) || (out[i] == NULL)) {
+			perror("Malloc");
+
+			goto end;
+		}
 	}
 
-	srcContext= sws_getContext(w, h, IMGFMT_YV12, srcW, srcH, srcFormat, flags, NULL, NULL, NULL);
+	srcContext= sws_getContext(w, h, PIX_FMT_YUV420P, srcW, srcH, srcFormat, flags, NULL, NULL, NULL);
 	dstContext= sws_getContext(srcW, srcH, srcFormat, dstW, dstH, dstFormat, flags, NULL, NULL, NULL);
-	outContext= sws_getContext(dstW, dstH, dstFormat, w, h, IMGFMT_YV12, flags, NULL, NULL, NULL);
+	outContext= sws_getContext(dstW, dstH, dstFormat, w, h, PIX_FMT_YUV420P, flags, NULL, NULL, NULL);
 	if(srcContext==NULL ||dstContext==NULL ||outContext==NULL){
 		printf("Failed allocating swsContext\n");
 		goto end;
@@ -110,7 +116,7 @@ static void doTest(uint8_t *ref[3], int refStride[3], int w, int h, int srcForma
 	ssdU= getSSD(ref[1], out[1], refStride[1], refStride[1], (w+1)>>1, (h+1)>>1);
 	ssdV= getSSD(ref[2], out[2], refStride[2], refStride[2], (w+1)>>1, (h+1)>>1);
 	
-	if(srcFormat == IMGFMT_Y800 || dstFormat==IMGFMT_Y800) ssdU=ssdV=0; //FIXME check that output is really gray
+	if(srcFormat == PIX_FMT_GRAY8 || dstFormat==PIX_FMT_GRAY8) ssdU=ssdV=0; //FIXME check that output is really gray
 	
 	ssdY/= w*h;
 	ssdU/= w*h/4;
@@ -155,10 +161,10 @@ static void selfTest(uint8_t *src[3], int stride[3], int w, int h){
 
 	for(srcFormatIndex=0; ;srcFormatIndex++){
 		srcFormat= testFormat[srcFormatIndex];
-		if(!srcFormat) break;
+		if(srcFormat == PIX_FMT_NONE) break;
 		for(dstFormatIndex=0; ;dstFormatIndex++){
 			dstFormat= testFormat[dstFormatIndex];
-			if(!dstFormat) break;
+			if(dstFormat == PIX_FMT_NONE) break;
 //			if(!isSupportedOut(dstFormat)) continue;
 printf("%s -> %s\n", 
 	sws_format_name(srcFormat),
@@ -190,7 +196,7 @@ int main(int argc, char **argv){
 	int x, y;
 	struct SwsContext *sws;
 
-	sws= sws_getContext(W/12, H/12, IMGFMT_BGR32, W, H, IMGFMT_YV12, 2, NULL, NULL, NULL);
+	sws= sws_getContext(W/12, H/12, PIX_FMT_RGB32, W, H, PIX_FMT_YUV420P, 2, NULL, NULL, NULL);
         
 	for(y=0; y<H; y++){
 		for(x=0; x<W*4; x++){

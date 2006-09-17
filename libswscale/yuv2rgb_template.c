@@ -127,7 +127,7 @@ static inline int RENAME(yuv420_rgb16)(SwsContext *c, uint8_t* src[], int srcStr
              int srcSliceH, uint8_t* dst[], int dstStride[]){
     int y, h_size;
 
-    if(c->srcFormat == IMGFMT_422P){
+    if(c->srcFormat == PIX_FMT_YUV422P){
 	srcStride[1] *= 2;
 	srcStride[2] *= 2;
     }
@@ -222,7 +222,7 @@ static inline int RENAME(yuv420_rgb15)(SwsContext *c, uint8_t* src[], int srcStr
              int srcSliceH, uint8_t* dst[], int dstStride[]){
     int y, h_size;
 
-    if(c->srcFormat == IMGFMT_422P){
+    if(c->srcFormat == PIX_FMT_YUV422P){
 	srcStride[1] *= 2;
 	srcStride[2] *= 2;
     }
@@ -311,7 +311,7 @@ static inline int RENAME(yuv420_rgb24)(SwsContext *c, uint8_t* src[], int srcStr
              int srcSliceH, uint8_t* dst[], int dstStride[]){
     int y, h_size;
 
-    if(c->srcFormat == IMGFMT_422P){
+    if(c->srcFormat == PIX_FMT_YUV422P){
 	srcStride[1] *= 2;
 	srcStride[2] *= 2;
     }
@@ -457,7 +457,7 @@ static inline int RENAME(yuv420_rgb32)(SwsContext *c, uint8_t* src[], int srcStr
              int srcSliceH, uint8_t* dst[], int dstStride[]){
     int y, h_size;
 
-    if(c->srcFormat == IMGFMT_422P){
+    if(c->srcFormat == PIX_FMT_YUV422P){
 	srcStride[1] *= 2;
 	srcStride[2] *= 2;
     }

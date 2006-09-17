@@ -88,7 +88,6 @@
 #include "rgb2rgb.h"
 #include "swscale.h"
 #include "swscale_internal.h"
-#include "libmpcodecs/img_format.h" //FIXME try to reduce dependency of such stuff
 
 #undef PROFILE_THE_BEAST
 #undef INC_SCALING
@@ -697,45 +696,41 @@ SwsFunc yuv2rgb_init_altivec (SwsContext *c)
   if ((c->srcW & 0xf) != 0)    return NULL;
 
   switch (c->srcFormat) {
-  case IMGFMT_YVU9:
-  case IMGFMT_IF09:
-  case IMGFMT_YV12:
-  case IMGFMT_I420:
-  case IMGFMT_IYUV:
-  case IMGFMT_CLPL:
-  case IMGFMT_Y800:
-  case IMGFMT_Y8:
-  case IMGFMT_NV12:
-  case IMGFMT_NV21:
+  case PIX_FMT_YUV410P:
+  case PIX_FMT_YUV420P:
+  /*case IMGFMT_CLPL:	??? */
+  case PIX_FMT_GRAY8:
+  case PIX_FMT_NV12:
+  case PIX_FMT_NV21:
     if ((c->srcH & 0x1) != 0)
       return NULL;
 
     switch(c->dstFormat){
-    case IMGFMT_RGB24:
+    case PIX_FMT_RGB24:
       MSG_WARN("ALTIVEC: Color Space RGB24\n");
       return altivec_yuv2_rgb24;
-    case IMGFMT_BGR24:
+    case PIX_FMT_BGR24:
       MSG_WARN("ALTIVEC: Color Space BGR24\n");
       return altivec_yuv2_bgr24;
-    case IMGFMT_ARGB:
+    case PIX_FMT_ARGB:
       MSG_WARN("ALTIVEC: Color Space ARGB\n");
       return altivec_yuv2_argb;
-    case IMGFMT_ABGR:
+    case PIX_FMT_ABGR:
       MSG_WARN("ALTIVEC: Color Space ABGR\n");
       return altivec_yuv2_abgr;
-    case IMGFMT_RGBA:
+    case PIX_FMT_RGBA:
       MSG_WARN("ALTIVEC: Color Space RGBA\n");
       return altivec_yuv2_rgba;
-    case IMGFMT_BGRA:
+    case PIX_FMT_BGRA:
       MSG_WARN("ALTIVEC: Color Space BGRA\n");
       return altivec_yuv2_bgra;
     default: return NULL;
     }
     break;
 
-  case IMGFMT_UYVY:
+  case PIX_FMT_UYVY422:
     switch(c->dstFormat){
-    case IMGFMT_RGB32:
+    case PIX_FMT_BGR32:
       MSG_WARN("ALTIVEC: Color Space UYVY -> RGB32\n");
       return altivec_uyvy_rgb32;
     default: return NULL;
@@ -868,12 +863,12 @@ altivec_yuv2packedX (SwsContext *c,
     B  = vec_packclp (B0,B1);
 
     switch(c->dstFormat) {
-      case IMGFMT_ABGR: out_abgr (R,G,B,out); break;
-      case IMGFMT_BGRA: out_bgra (R,G,B,out); break;
-      case IMGFMT_RGBA: out_rgba (R,G,B,out); break;
-      case IMGFMT_ARGB: out_argb (R,G,B,out); break;
-      case IMGFMT_RGB24: out_rgb24 (R,G,B,out); break;
-      case IMGFMT_BGR24: out_bgr24 (R,G,B,out); break;
+      case PIX_FMT_ABGR: out_abgr (R,G,B,out); break;
+      case PIX_FMT_BGRA: out_bgra (R,G,B,out); break;
+      case PIX_FMT_RGBA: out_rgba (R,G,B,out); break;
+      case PIX_FMT_ARGB: out_argb (R,G,B,out); break;
+      case PIX_FMT_RGB24: out_rgb24 (R,G,B,out); break;
+      case PIX_FMT_BGR24: out_bgr24 (R,G,B,out); break;
       default:
         {
           /* If this is reached, the caller should have called yuv2packedXinC
@@ -947,12 +942,12 @@ altivec_yuv2packedX (SwsContext *c,
 
     nout = (vector unsigned char *)scratch;
     switch(c->dstFormat) {
-      case IMGFMT_ABGR: out_abgr (R,G,B,nout); break;
-      case IMGFMT_BGRA: out_bgra (R,G,B,nout); break;
-      case IMGFMT_RGBA: out_rgba (R,G,B,nout); break;
-      case IMGFMT_ARGB: out_argb (R,G,B,nout); break;
-      case IMGFMT_RGB24: out_rgb24 (R,G,B,nout); break;
-      case IMGFMT_BGR24: out_bgr24 (R,G,B,nout); break;
+      case PIX_FMT_ABGR: out_abgr (R,G,B,nout); break;
+      case PIX_FMT_BGRA: out_bgra (R,G,B,nout); break;
+      case PIX_FMT_RGBA: out_rgba (R,G,B,nout); break;
+      case PIX_FMT_ARGB: out_argb (R,G,B,nout); break;
+      case PIX_FMT_RGB24: out_rgb24 (R,G,B,nout); break;
+      case PIX_FMT_BGR24: out_bgr24 (R,G,B,nout); break;
       default:
         /* Unreachable, I think. */
         MSG_ERR("altivec_yuv2packedX doesn't support %s output\n",
