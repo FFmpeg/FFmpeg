@@ -55,15 +55,18 @@ static int flv_read_header(AVFormatContext *s,
 
     url_fseek(&s->pb, offset, SEEK_SET);
 
+    s->start_time = 0;
+
     return 0;
 }
 
 static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    int ret, i, type, size, pts, flags, is_audio, next;
+    int ret, i, type, size, pts, flags, is_audio, next, pos;
     AVStream *st = NULL;
 
  for(;;){
+    pos = url_ftell(&s->pb);
     url_fskip(&s->pb, 4); /* size of previous packet */
     type = get_byte(&s->pb);
     size = get_be24(&s->pb);
@@ -154,6 +157,8 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
         url_fseek(&s->pb, next, SEEK_SET);
         continue;
     }
+    if ((flags >> 4)==1)
+        av_add_index_entry(st, pos, pts, size, 0, AVINDEX_KEYFRAME);
     break;
  }
 
@@ -216,6 +221,17 @@ static int flv_read_close(AVFormatContext *s)
     return 0;
 }
 
+static int flv_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp, int flags)
+{
+    AVStream *st = s->streams[stream_index];
+    int index = av_index_search_timestamp(st, timestamp, flags);
+    if (index < 0)
+        return -1;
+    url_fseek(&s->pb, st->index_entries[index].pos, SEEK_SET);
+
+    return 0;
+}
+
 AVInputFormat flv_demuxer = {
     "flv",
     "flv format",
@@ -224,6 +240,7 @@ AVInputFormat flv_demuxer = {
     flv_read_header,
     flv_read_packet,
     flv_read_close,
+    flv_read_seek,
     .extensions = "flv",
     .value = CODEC_ID_FLV1,
 };
