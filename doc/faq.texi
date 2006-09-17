@@ -194,17 +194,19 @@ CAVLC
 ffmpeg -i input -acodec aac -ab 128 -vcodec h264 -b 1200 -ar 48000 -mbd 2 -coder 1 -cmp 2 -subcmp 2 -s 368x192 -r 30000/1001 -title X -f psp -flags loop -trellis 2 -partitions parti4x4+parti8x8+partp4x4+partp8x8+partb8x8 output.mp4
 @end table
 
-@section How could I read DirectShow files?
+@section How can I read DirectShow files?
 
-If you have built FFmpeg with @code{./configure --enable-avisynth} (only possible in MinGW/Cygwin platforms)
-then you may use as input any file that DirectShow reads.
-(Be aware that this feature has just been added, so you will need to support yourself for any query)
+If you have built FFmpeg with @code{./configure --enable-avisynth}
+(only possible on MinGW/Cygwin platforms),
+then you may use any file that DirectShow can read as input.
+(Be aware that this feature has been recently added,
+so you will need to help yourself in case of problems.)
 
 Just create an "input.avs" text file with this single line ...
 @example
   DirectShowSource("C:\path to your file\yourfile.asf")
 @end example
-... and then feed that text file to ffmpeg:
+... and then feed that text file to FFmpeg:
 @example
   ffmpeg -i input.avs
 @end example
