@@ -77,6 +77,7 @@ static int8_t si_prefixes['z' - 'E' + 1]={
     ['d'-'E']= - 1,
     ['h'-'E']=   2,
     ['k'-'E']=   3,
+    ['K'-'E']=   3,
     ['M'-'E']=   6,
     ['G'-'E']=   9,
     ['T'-'E']=  12,
@@ -250,6 +251,7 @@ static const char *const_names[]={
 main(){
     int i;
     printf("%f == 12.7\n", ff_eval("1+(5-2)^(3-1)+1/2+sin(PI)-max(-2.2,-3.1)", const_values, const_names, NULL, NULL, NULL, NULL, NULL));
+    printf("%f == 0.931322575\n", ff_eval("80G/80Gi", const_values, const_names, NULL, NULL, NULL, NULL, NULL));
 
     for(i=0; i<1050; i++){
         START_TIMER
