@@ -27,30 +27,63 @@
 #include "avcodec.h"
 #include "opt.h"
 
-/**
- * strtod() function extended with 'k', 'M' and 'B' postfixes.
- * This allows using kB, MB, k, M and B as a postfix. This function
- * assumes that the unit of numbers is bits not bytes.
+static int8_t si_prefixes['z' - 'E' + 1]={
+    ['y'-'E']= -24,
+    ['z'-'E']= -21,
+    ['a'-'E']= -18,
+    ['f'-'E']= -15,
+    ['p'-'E']= -12,
+    ['n'-'E']= - 9,
+    ['u'-'E']= - 6,
+    ['m'-'E']= - 3,
+    ['c'-'E']= - 2,
+    ['d'-'E']= - 1,
+    ['h'-'E']=   2,
+    ['k'-'E']=   3,
+    ['K'-'E']=   3,
+    ['M'-'E']=   6,
+    ['G'-'E']=   9,
+    ['T'-'E']=  12,
+    ['P'-'E']=  15,
+    ['E'-'E']=  18,
+    ['Z'-'E']=  21,
+    ['Y'-'E']=  24,
+};
+
+/** strtod() function extended with 'k', 'M', 'G', 'ki', 'Mi', 'Gi' and 'B'
+ * postfixes.  This allows using f.e. kB, MiB, G and B as a postfix. This
+ * function assumes that the unit of numbers is bits not bytes.
  */
-static double av_strtod(const char *name, char **tail) {
+double av_strtod(const char *name, char **tail) {
     double d;
-    d= strtod(name, tail);
-    if(*tail>name && (**tail=='k')) {
-        d*=1000;
-        (*tail)++;
+    int p = 0;
+    char *next;
+    d = strtod(name, &next);
+    /* if parsing succeeded, check for and interpret postfixes */
+    if (next!=name) {
+
+        if(*next >= 'E' && *next <= 'z'){
+            int e= si_prefixes[*next - 'E'];
+            if(e){
+                if(next[1] == 'i'){
+                    d*= pow( 2, e/0.3);
+                    next+=2;
+                }else{
+                    d*= pow(10, e);
+                    next++;
+                }
+            }
+        }
+
+        if(*next=='B') {
+            d*=8;
+            *next++;
+        }
     }
-    else if(*tail && (**tail=='M')) {
-        d*=1000000;
-        (*tail)++;
-    }
-    else if(*tail && (**tail=='G')) {
-        d*=1000000000;
-        (*tail)++;
-    }
-    if(*tail && (**tail=='B')) {
-        d*=8;
-        (*tail)++;
-    }
+    /* if requested, fill in tail with the position after the last parsed
+       character */
+    if (tail)
+        *tail = next;
     return d;
 }
 

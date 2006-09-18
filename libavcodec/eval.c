@@ -64,49 +64,14 @@ static int strmatch(const char *s, const char *prefix){
     return 1;
 }
 
-static int8_t si_prefixes['z' - 'E' + 1]={
-    ['y'-'E']= -24,
-    ['z'-'E']= -21,
-    ['a'-'E']= -18,
-    ['f'-'E']= -15,
-    ['p'-'E']= -12,
-    ['n'-'E']= - 9,
-    ['u'-'E']= - 6,
-    ['m'-'E']= - 3,
-    ['c'-'E']= - 2,
-    ['d'-'E']= - 1,
-    ['h'-'E']=   2,
-    ['k'-'E']=   3,
-    ['K'-'E']=   3,
-    ['M'-'E']=   6,
-    ['G'-'E']=   9,
-    ['T'-'E']=  12,
-    ['P'-'E']=  15,
-    ['E'-'E']=  18,
-    ['Z'-'E']=  21,
-    ['Y'-'E']=  24,
-};
-
 static double evalPrimary(Parser *p){
     double d, d2=NAN;
     char *next= p->s;
     int i;
 
     /* number */
-    d= strtod(p->s, &next);
+    d= av_strtod(p->s, &next);
     if(next != p->s){
-        if(*next >= 'E' && *next <= 'z'){
-            int e= si_prefixes[*next - 'E'];
-            if(e){
-                if(next[1] == 'i'){
-                    d*= pow( 2, e/0.3);
-                    next+=2;
-                }else{
-                    d*= pow(10, e);
-                    next++;
-                }
-            }
-        }
         p->s= next;
         return d;
     }
