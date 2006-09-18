@@ -64,6 +64,10 @@ Beware that there is no "jpeg" codec. Use "mjpeg" instead.
 No. FFmpeg only supports open source codecs. Windows DLLs are not
 portable, bloated and often slow.
 
+@section I get "Unsupported codec (id=86043) for input stream #0.1". What is the problem ?
+
+This is the Qcelp codec, FFmpeg has no support for that codec currently. Try mencoder/mplayer it might work.
+
 @section Why do I see a slight quality degradation with multithreaded MPEG* encoding ?
 
 For multithreaded MPEG* encoding, the encoded slices must be independent,
