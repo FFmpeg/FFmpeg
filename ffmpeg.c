@@ -123,7 +123,6 @@ static int video_rc_qmod_freq=0;
 #endif
 static char *video_rc_override_string=NULL;
 static char *video_rc_eq="tex^qComp";
-static int video_rc_buffer_size=0;
 static float video_rc_buffer_aggressivity=1.0;
 static int me_method = ME_EPZS;
 static int video_disable = 0;
@@ -2100,11 +2099,6 @@ static void opt_format(const char *arg)
     }
 }
 
-static void opt_video_buffer_size(const char *arg)
-{
-    video_rc_buffer_size = atoi(arg) * 8*1024;
-}
-
 static void opt_video_rc_eq(char *arg)
 {
     video_rc_eq = arg;
@@ -3013,9 +3007,7 @@ static void new_video_stream(AVFormatContext *oc)
             if(p) p++;
         }
         video_enc->rc_override_count=i;
-
-        video_enc->rc_buffer_size = video_rc_buffer_size;
-        video_enc->rc_initial_buffer_occupancy = video_rc_buffer_size*3/4;
+        video_enc->rc_initial_buffer_occupancy = video_enc->rc_buffer_size*3/4;
         video_enc->rc_buffer_aggressivity= video_rc_buffer_aggressivity;
         video_enc->me_threshold= me_threshold;
         video_enc->mb_threshold= mb_threshold;
@@ -3711,7 +3703,7 @@ static void opt_target(const char *arg)
         opt_default("b", "1150000");
         opt_default("maxrate", "1150000");
         opt_default("minrate", "1150000");
-        video_rc_buffer_size = 40*1024*8;
+        opt_default("bufsize", "327680"); // 40*1024*8;
 
         audio_bit_rate = 224000;
         audio_sample_rate = 44100;
@@ -3738,7 +3730,7 @@ static void opt_target(const char *arg)
         opt_default("b", "2040000");
         opt_default("maxrate", "2516000");
         opt_default("minrate", "0"); //1145000;
-        video_rc_buffer_size = 224*1024*8;
+        opt_default("bufsize", "1835008"); //224*1024*8;
         opt_default("flags", "+SCAN_OFFSET");
 
 
@@ -3760,7 +3752,7 @@ static void opt_target(const char *arg)
         opt_default("b", "6000000");
         opt_default("maxrate", "9000000");
         opt_default("minrate", "0"); //1500000;
-        video_rc_buffer_size = 224*1024*8;
+        opt_default("bufsize", "1835008"); //224*1024*8;
 
         mux_packet_size= 2048;  // from www.mpucoder.com: DVD sectors contain 2048 bytes of data, this is also the size of one pack.
         mux_rate = 10080000;    // from mplex project: data_rate = 1260000. mux_rate = data_rate * 8
@@ -3928,7 +3920,6 @@ const OptionDef options[] = {
     { "qsquish", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_qsquish}, "how to keep quantiser between qmin and qmax (0 = clip, 1 = use differentiable function)", "squish" },
     { "rc_eq", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_video_rc_eq}, "set rate control equation", "equation" },
     { "rc_override", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_video_rc_override_string}, "rate control override for specific intervals", "override" },
-    { "bufsize", HAS_ARG | OPT_VIDEO, {(void*)opt_video_buffer_size}, "set ratecontrol buffer size (in kByte)", "size" },
     { "vcodec", HAS_ARG | OPT_VIDEO, {(void*)opt_video_codec}, "force video codec ('copy' to copy stream)", "codec" },
     { "me", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_motion_estimation}, "set motion estimation method",
       "method" },

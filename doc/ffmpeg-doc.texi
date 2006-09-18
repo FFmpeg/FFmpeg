@@ -275,7 +275,7 @@ Set max video bitrate tolerance (in bit/s).
 @item -minrate bitrate
 Set min video bitrate tolerance (in bit/s).
 @item -bufsize size
-Set rate control buffer size (in kbit).
+Set rate control buffer size (in bits).
 @item -vcodec codec
 Force video codec to @var{codec}. Use the @code{copy} special value to
 tell that the raw codec data must be copied as is.
