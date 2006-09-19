@@ -430,9 +430,9 @@ static int decode_init(AVCodecContext * avctx)
         for(i=0; i<512*16; i++){
             int exponent= (i>>4);
             double f= pow(i&15, 4.0 / 3.0) * pow(2, (exponent-400)*0.25 + FRAC_BITS + 5);
-            expval_table[exponent][i&15]= lrintf(f);
+            expval_table[exponent][i&15]= llrint(f);
             if((i&15)==1)
-                exp_table[exponent]= lrintf(f);
+                exp_table[exponent]= llrint(f);
         }
 
         for(i=0;i<7;i++) {
