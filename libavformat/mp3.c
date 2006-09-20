@@ -244,7 +244,7 @@ static void id3_create_tag(AVFormatContext *s, uint8_t *buf)
 
 static int mp3_read_probe(AVProbeData *p)
 {
-    int max_frames;
+    int max_frames, first_frames;
     int fsize, frames;
     uint32_t header;
     uint8_t *buf, *buf2, *end;
@@ -271,10 +271,12 @@ static int mp3_read_probe(AVProbeData *p)
             buf2 += fsize;
         }
         max_frames = FFMAX(max_frames, frames);
+        if(buf == p->buf)
+            first_frames= frames;
     }
-    if     (max_frames>=3) return AVPROBE_SCORE_MAX/2+1;
-    else if(max_frames==2) return AVPROBE_SCORE_MAX/4;
-    else if(max_frames==1) return 1;
+    if   (first_frames>=3) return AVPROBE_SCORE_MAX/2+1;
+    else if(max_frames>=3) return AVPROBE_SCORE_MAX/4;
+    else if(max_frames>=1) return 1;
     else                   return 0;
 }
 
