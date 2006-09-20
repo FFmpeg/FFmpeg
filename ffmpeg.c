@@ -130,7 +130,6 @@ static int video_discard = 0;
 static int video_codec_id = CODEC_ID_NONE;
 static int video_codec_tag = 0;
 static int same_quality = 0;
-static int b_frames = 0;
 static int do_deinterlace = 0;
 static int workaround_bugs = FF_BUG_AUTODETECT;
 static int packet_size = 0;
@@ -2336,18 +2335,6 @@ static void opt_frame_aspect_ratio(const char *arg)
     frame_aspect_ratio = ar;
 }
 
-static void opt_b_frames(const char *arg)
-{
-    b_frames = atoi(arg);
-    if (b_frames > FF_MAX_B_FRAMES) {
-        fprintf(stderr, "\nCannot have more than %d B frames, increase FF_MAX_B_FRAMES.\n", FF_MAX_B_FRAMES);
-        exit(1);
-    } else if (b_frames < 1) {
-        fprintf(stderr, "\nNumber of B frames must be higher than 0\n");
-        exit(1);
-    }
-}
-
 static void opt_qscale(const char *arg)
 {
     video_qscale = atof(arg);
@@ -2968,7 +2955,6 @@ static void new_video_stream(AVFormatContext *oc)
         if(inter_matrix)
             video_enc->inter_matrix = inter_matrix;
 
-        video_enc->max_b_frames = b_frames;
         video_enc->qmin = video_qmin;
         video_enc->qmax = video_qmax;
         video_enc->lmin = video_lmin;
@@ -3921,7 +3907,6 @@ const OptionDef options[] = {
       "method" },
     { "me_threshold", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_me_threshold}, "motion estimaton threshold",  "" },
     { "mb_threshold", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_mb_threshold}, "macroblock threshold",  "" },
-    { "bf", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_b_frames}, "use 'frames' B frames", "frames" },
     { "bug", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_workaround_bugs}, "workaround not auto detected encoder bugs", "param" },
     { "ps", HAS_ARG | OPT_EXPERT, {(void*)opt_packet_size}, "set packet size in bits", "size" },
     { "error", HAS_ARG | OPT_EXPERT, {(void*)opt_error_rate}, "error rate", "rate" },

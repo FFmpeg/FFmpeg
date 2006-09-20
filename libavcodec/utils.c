@@ -507,7 +507,7 @@ static const AVOption options[]={
 {"qmin", "min video quantiser scale (VBR)", OFFSET(qmin), FF_OPT_TYPE_INT, 2, 0, INT_MAX, V|E},
 {"qmax", "max video quantiser scale (VBR)", OFFSET(qmax), FF_OPT_TYPE_INT, 31, 0, INT_MAX, V|E},
 {"qdiff", "max difference between the quantiser scale (VBR)", OFFSET(max_qdiff), FF_OPT_TYPE_INT, 3, INT_MIN, INT_MAX, V|E},
-{"bf", "use 'frames' B frames", OFFSET(max_b_frames), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX, V|E},
+{"bf", "use 'frames' B frames", OFFSET(max_b_frames), FF_OPT_TYPE_INT, DEFAULT, 0, FF_MAX_B_FRAMES, V|E},
 {"b_qfactor", "qp factor between p and b frames", OFFSET(b_quant_factor), FF_OPT_TYPE_FLOAT, 1.25, FLT_MIN, FLT_MAX, V|E},
 {"rc_strategy", NULL, OFFSET(rc_strategy), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX, V|E},
 {"b_strategy", NULL, OFFSET(b_frame_strategy), FF_OPT_TYPE_INT, 0, INT_MIN, INT_MAX, V|E},
