@@ -120,7 +120,6 @@ static int video_rc_qmod_freq=0;
 #endif
 static char *video_rc_override_string=NULL;
 static char *video_rc_eq="tex^qComp";
-static float video_rc_buffer_aggressivity=1.0;
 static int me_method = ME_EPZS;
 static int video_disable = 0;
 static int video_discard = 0;
@@ -2941,7 +2940,6 @@ static void new_video_stream(AVFormatContext *oc)
         }
         video_enc->rc_override_count=i;
         video_enc->rc_initial_buffer_occupancy = video_enc->rc_buffer_size*3/4;
-        video_enc->rc_buffer_aggressivity= video_rc_buffer_aggressivity;
         video_enc->me_threshold= me_threshold;
         video_enc->mb_threshold= mb_threshold;
         video_enc->intra_dc_precision= intra_dc_precision - 8;
