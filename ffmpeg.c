@@ -163,7 +163,6 @@ static char *audio_language = NULL;
 static int subtitle_codec_id = CODEC_ID_NONE;
 static char *subtitle_language = NULL;
 
-static int mux_rate= 0;
 static int mux_packet_size= 0;
 static float mux_preload= 0.5;
 static float mux_max_delay= 0.7;
@@ -3317,7 +3316,6 @@ static void opt_output_file(const char *filename)
     }
 
     oc->packet_size= mux_packet_size;
-    oc->mux_rate= mux_rate;
     oc->preload= (int)(mux_preload*AV_TIME_BASE);
     oc->max_delay= (int)(mux_max_delay*AV_TIME_BASE);
     oc->loop_output = loop_output;
@@ -3709,7 +3707,7 @@ static void opt_target(const char *arg)
         audio_sample_rate = 44100;
 
         mux_packet_size= 2324;
-        mux_rate= 2352 * 75 * 8;
+        opt_default("muxrate", "1411200"); // 2352 * 75 * 8;
 
         /* We have to offset the PTS, so that it is consistent with the SCR.
            SCR starts at 36000, but the first two packs contain only padding
@@ -3755,7 +3753,7 @@ static void opt_target(const char *arg)
         opt_default("bufsize", "1835008"); //224*1024*8;
 
         mux_packet_size= 2048;  // from www.mpucoder.com: DVD sectors contain 2048 bytes of data, this is also the size of one pack.
-        mux_rate = 10080000;    // from mplex project: data_rate = 1260000. mux_rate = data_rate * 8
+        opt_default("muxrate", "10080000"); // from mplex project: data_rate = 1260000. mux_rate = data_rate * 8
 
         audio_bit_rate = 448000;
         audio_sample_rate = 48000;
@@ -3980,7 +3978,6 @@ const OptionDef options[] = {
     { "gd", HAS_ARG | OPT_EXPERT | OPT_VIDEO | OPT_GRAB, {(void*)opt_grab_device}, "set grab device", "device" },
 
     /* muxer options */
-    { "muxrate", OPT_INT | HAS_ARG | OPT_EXPERT, {(void*)&mux_rate}, "set mux rate", "rate" },
     { "packetsize", OPT_INT | HAS_ARG | OPT_EXPERT, {(void*)&mux_packet_size}, "set packet size", "size" },
     { "muxdelay", OPT_FLOAT | HAS_ARG | OPT_EXPERT, {(void*)&mux_max_delay}, "set the maximum demux-decode delay", "seconds" },
     { "muxpreload", OPT_FLOAT | HAS_ARG | OPT_EXPERT, {(void*)&mux_preload}, "set the initial demux-decode delay", "seconds" },
