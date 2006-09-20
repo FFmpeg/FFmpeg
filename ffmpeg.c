@@ -128,7 +128,6 @@ static int video_codec_id = CODEC_ID_NONE;
 static int video_codec_tag = 0;
 static int same_quality = 0;
 static int do_deinterlace = 0;
-static int workaround_bugs = FF_BUG_AUTODETECT;
 static int packet_size = 0;
 static int error_rate = 0;
 static int strict = 0;
@@ -2103,12 +2102,6 @@ static void opt_video_rc_override_string(char *arg)
     video_rc_override_string = arg;
 }
 
-
-static void opt_workaround_bugs(const char *arg)
-{
-    workaround_bugs = atoi(arg);
-}
-
 static void opt_me_threshold(const char *arg)
 {
     me_threshold = atoi(arg);
@@ -2731,7 +2724,6 @@ static void opt_input_file(const char *filename)
             frame_pix_fmt = enc->pix_fmt;
             rfps      = ic->streams[i]->r_frame_rate.num;
             rfps_base = ic->streams[i]->r_frame_rate.den;
-            enc->workaround_bugs = workaround_bugs;
             if(enc->lowres) enc->flags |= CODEC_FLAG_EMU_EDGE;
             if(me_threshold)
                 enc->debug |= FF_DEBUG_MV;
@@ -2928,7 +2920,6 @@ static void new_video_stream(AVFormatContext *oc)
         video_enc->mb_lmax = video_mb_lmax;
         video_enc->max_qdiff = video_qdiff;
         video_enc->rc_eq = video_rc_eq;
-        video_enc->workaround_bugs = workaround_bugs;
         video_enc->thread_count = thread_count;
         p= video_rc_override_string;
         for(i=0; p; i++){
@@ -3868,7 +3859,6 @@ const OptionDef options[] = {
       "method" },
     { "me_threshold", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_me_threshold}, "motion estimaton threshold",  "" },
     { "mb_threshold", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_mb_threshold}, "macroblock threshold",  "" },
-    { "bug", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_workaround_bugs}, "workaround not auto detected encoder bugs", "param" },
     { "ps", HAS_ARG | OPT_EXPERT, {(void*)opt_packet_size}, "set packet size in bits", "size" },
     { "error", HAS_ARG | OPT_EXPERT, {(void*)opt_error_rate}, "error rate", "rate" },
     { "strict", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_strict}, "how strictly to follow the standards", "strictness" },
