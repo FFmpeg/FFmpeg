@@ -106,7 +106,6 @@ static int max_frames[4] = {INT_MAX, INT_MAX, INT_MAX, INT_MAX};
 static int frame_rate = 25;
 static int frame_rate_base = 1;
 static float video_qscale = 0;
-static int video_qmax = 31;
 static int video_lmin = 2*FF_QP2LAMBDA;
 static int video_lmax = 31*FF_QP2LAMBDA;
 static int video_mb_lmin = 2*FF_QP2LAMBDA;
@@ -2364,16 +2363,6 @@ static void opt_lmin(const char *arg)
     video_lmin = atof(arg)*FF_QP2LAMBDA;
 }
 
-static void opt_qmax(const char *arg)
-{
-    video_qmax = atoi(arg);
-    if (video_qmax < 1 ||
-        video_qmax > 51) {
-        fprintf(stderr, "qmax must be >= 1 and <= 51\n");
-        exit(1);
-    }
-}
-
 static void opt_mb_lmin(const char *arg)
 {
     video_mb_lmin = atof(arg)*FF_QP2LAMBDA;
@@ -2944,7 +2933,6 @@ static void new_video_stream(AVFormatContext *oc)
         if(inter_matrix)
             video_enc->inter_matrix = inter_matrix;
 
-        video_enc->qmax = video_qmax;
         video_enc->lmin = video_lmin;
         video_enc->lmax = video_lmax;
         video_enc->rc_qsquish = video_qsquish;
@@ -3880,7 +3868,6 @@ const OptionDef options[] = {
     { "vn", OPT_BOOL | OPT_VIDEO, {(void*)&video_disable}, "disable video" },
     { "vdt", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&video_discard}, "discard threshold", "n" },
     { "qscale", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_qscale}, "use fixed video quantiser scale (VBR)", "q" },
-    { "qmax", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_qmax}, "max video quantiser scale (VBR)", "q" },
     { "lmin", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_lmin}, "min video lagrange factor (VBR)", "lambda" },
     { "lmax", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_lmax}, "max video lagrange factor (VBR)", "lambda" },
     { "mblmin", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_mb_lmin}, "min macroblock quantiser scale (VBR)", "q" },
