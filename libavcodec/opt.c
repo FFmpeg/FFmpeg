@@ -119,8 +119,10 @@ static AVOption *av_set_number(void *obj, const char *name, double num, int den,
     if(!o || o->offset<=0)
         return NULL;
 
-    if(o->max*den < num*intnum || o->min*den > num*intnum)
+    if(o->max*den < num*intnum || o->min*den > num*intnum) {
+        av_log(NULL, AV_LOG_ERROR, "Value %lf for parameter '%s' out of range.\n", num, name);
         return NULL;
+    }
 
     dst= ((uint8_t*)obj) + o->offset;
 
