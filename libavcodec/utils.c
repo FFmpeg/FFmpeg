@@ -560,7 +560,7 @@ static const AVOption options[]={
 {"mpeg_quant", NULL, OFFSET(mpeg_quant), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX, V|E},
 {"stats_out", NULL, OFFSET(stats_out), FF_OPT_TYPE_STRING, DEFAULT, CHAR_MIN, CHAR_MAX},
 {"stats_in", NULL, OFFSET(stats_in), FF_OPT_TYPE_STRING, DEFAULT, CHAR_MIN, CHAR_MAX},
-{"qsquish", "how to keep quantiser between qmin and qmax (0 = clip, 1 = use differentiable function)", OFFSET(rc_qsquish), FF_OPT_TYPE_FLOAT, DEFAULT, -FLT_MAX, FLT_MAX, V|E},
+{"qsquish", "how to keep quantiser between qmin and qmax (0 = clip, 1 = use differentiable function)", OFFSET(rc_qsquish), FF_OPT_TYPE_FLOAT, DEFAULT, 0, 99, V|E},
 {"rc_qmod_amp", NULL, OFFSET(rc_qmod_amp), FF_OPT_TYPE_FLOAT, DEFAULT, -FLT_MAX, FLT_MAX, V|E},
 {"rc_qmod_freq", NULL, OFFSET(rc_qmod_freq), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX, V|E},
 {"rc_override_count", NULL, OFFSET(rc_override_count), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX},

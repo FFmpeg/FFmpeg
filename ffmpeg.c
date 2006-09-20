@@ -111,7 +111,6 @@ static int video_lmax = 31*FF_QP2LAMBDA;
 static int video_mb_lmin = 2*FF_QP2LAMBDA;
 static int video_mb_lmax = 31*FF_QP2LAMBDA;
 static int video_qdiff = 3;
-static float video_qsquish = 0.0;
 static uint16_t *intra_matrix = NULL;
 static uint16_t *inter_matrix = NULL;
 #if 0 //experimental, (can be removed)
@@ -2343,16 +2342,6 @@ static void opt_qscale(const char *arg)
     }
 }
 
-static void opt_qsquish(const char *arg)
-{
-    video_qsquish = atof(arg);
-    if (video_qsquish < 0.0 ||
-        video_qsquish > 99.0) {
-        fprintf(stderr, "qsquish must be >= 0.0 and <= 99.0\n");
-        exit(1);
-    }
-}
-
 static void opt_lmax(const char *arg)
 {
     video_lmax = atof(arg)*FF_QP2LAMBDA;
@@ -2935,7 +2924,6 @@ static void new_video_stream(AVFormatContext *oc)
 
         video_enc->lmin = video_lmin;
         video_enc->lmax = video_lmax;
-        video_enc->rc_qsquish = video_qsquish;
         video_enc->mb_lmin = video_mb_lmin;
         video_enc->mb_lmax = video_mb_lmax;
         video_enc->max_qdiff = video_qdiff;
@@ -3873,7 +3861,6 @@ const OptionDef options[] = {
     { "mblmin", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_mb_lmin}, "min macroblock quantiser scale (VBR)", "q" },
     { "mblmax", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_mb_lmax}, "max macroblock quantiser scale (VBR)", "q" },
     { "qdiff", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_qdiff}, "max difference between the quantiser scale (VBR)", "q" },
-    { "qsquish", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_qsquish}, "how to keep quantiser between qmin and qmax (0 = clip, 1 = use differentiable function)", "squish" },
     { "rc_eq", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_video_rc_eq}, "set rate control equation", "equation" },
     { "rc_override", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_video_rc_override_string}, "rate control override for specific intervals", "override" },
     { "vcodec", HAS_ARG | OPT_VIDEO, {(void*)opt_video_codec}, "force video codec ('copy' to copy stream)", "codec" },
