@@ -2106,14 +2106,6 @@ static inline void vc1_b_mc(VC1Context *v, int dmv_x[2], int dmv_y[2], int direc
 {
     int t;
 
-    //XXX: more elegant solution is possible
-    t = v->s.mv[0][0][0];
-    v->s.mv[0][0][0] = v->s.mv[1][0][0];
-    v->s.mv[1][0][0] = t;
-    t = v->s.mv[0][0][1];
-    v->s.mv[0][0][1] = v->s.mv[1][0][1];
-    v->s.mv[1][0][1] = t;
-
     if(direct) {
         vc1_mc_1mv(v, 0);
         vc1_interp_mc(v);
@@ -2156,10 +2148,10 @@ static inline void vc1_pred_b_mv(VC1Context *v, int dmv_x[2], int dmv_y[2], int 
         s->current_picture.motion_val[1][xy][1] = 0;
         return;
     }
-    s->mv[0][0][0] = scale_mv(s->next_picture.motion_val[1][xy][0], v->bfraction, 1, s->quarter_sample);
-    s->mv[0][0][1] = scale_mv(s->next_picture.motion_val[1][xy][1], v->bfraction, 1, s->quarter_sample);
-    s->mv[1][0][0] = scale_mv(s->next_picture.motion_val[1][xy][0], v->bfraction, 0, s->quarter_sample);
-    s->mv[1][0][1] = scale_mv(s->next_picture.motion_val[1][xy][1], v->bfraction, 0, s->quarter_sample);
+    s->mv[0][0][0] = scale_mv(s->next_picture.motion_val[1][xy][0], v->bfraction, 0, s->quarter_sample);
+    s->mv[0][0][1] = scale_mv(s->next_picture.motion_val[1][xy][1], v->bfraction, 0, s->quarter_sample);
+    s->mv[1][0][0] = scale_mv(s->next_picture.motion_val[1][xy][0], v->bfraction, 1, s->quarter_sample);
+    s->mv[1][0][1] = scale_mv(s->next_picture.motion_val[1][xy][1], v->bfraction, 1, s->quarter_sample);
     if(direct) {
         s->current_picture.motion_val[0][xy][0] = s->mv[0][0][0];
         s->current_picture.motion_val[0][xy][1] = s->mv[0][0][1];
@@ -2168,7 +2160,7 @@ static inline void vc1_pred_b_mv(VC1Context *v, int dmv_x[2], int dmv_y[2], int 
         return;
     }
 
-    if((mvtype == BMV_TYPE_BACKWARD) || (mvtype == BMV_TYPE_INTERPOLATED)) {
+    if((mvtype == BMV_TYPE_FORWARD) || (mvtype == BMV_TYPE_INTERPOLATED)) {
         C = s->current_picture.motion_val[0][xy - 2];
         A = s->current_picture.motion_val[0][xy - wrap*2];
         off = (s->mb_x == (s->mb_width - 1)) ? -2 : 2;
@@ -2245,7 +2237,7 @@ static inline void vc1_pred_b_mv(VC1Context *v, int dmv_x[2], int dmv_y[2], int 
         s->mv[0][0][0] = ((px + dmv_x[0] + r_x) & ((r_x << 1) - 1)) - r_x;
         s->mv[0][0][1] = ((py + dmv_y[0] + r_y) & ((r_y << 1) - 1)) - r_y;
     }
-    if((mvtype == BMV_TYPE_FORWARD) || (mvtype == BMV_TYPE_INTERPOLATED)) {
+    if((mvtype == BMV_TYPE_BACKWARD) || (mvtype == BMV_TYPE_INTERPOLATED)) {
         C = s->current_picture.motion_val[1][xy - 2];
         A = s->current_picture.motion_val[1][xy - wrap*2];
         off = (s->mb_x == (s->mb_width - 1)) ? -2 : 2;
@@ -3537,7 +3529,7 @@ static void vc1_decode_b_mb(VC1Context *v)
                 break;
             case 2:
                 bmvtype = BMV_TYPE_INTERPOLATED;
-                dmv_x[1] = dmv_y[1] = 0;
+                dmv_x[0] = dmv_y[0] = 0;
             }
         }
     }
@@ -3576,7 +3568,7 @@ static void vc1_decode_b_mb(VC1Context *v)
             vc1_pred_b_mv(v, dmv_x, dmv_y, direct, bmvtype);
         } else {
             if(bmvtype == BMV_TYPE_INTERPOLATED) {
-                GET_MVDATA(dmv_x[1], dmv_y[1]);
+                GET_MVDATA(dmv_x[0], dmv_y[0]);
                 if(!mb_has_coeffs) {
                     /* interpolated skipped block */
                     vc1_pred_b_mv(v, dmv_x, dmv_y, direct, bmvtype);
