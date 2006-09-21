@@ -180,25 +180,25 @@ void ff_imdct_calc_3dn2(MDCTContext *s, FFTSample *output,
     k = n-8;
     asm volatile("movd %0, %%mm7" ::"r"(1<<31));
     asm volatile(
-            "1: \n\t"
-            "movq    (%4,%0), %%mm0 \n\t" // z[n8+k]
-            "neg %0 \n\t"
-            "pswapd -8(%4,%0), %%mm1 \n\t" // z[n8-1-k]
-            "movq      %%mm0, %%mm2 \n\t"
-            "pxor      %%mm7, %%mm2 \n\t"
-            "punpckldq %%mm1, %%mm2 \n\t"
-            "pswapd    %%mm2, %%mm3 \n\t"
-            "punpckhdq %%mm1, %%mm0 \n\t"
-            "pswapd    %%mm0, %%mm4 \n\t"
-            "pxor      %%mm7, %%mm0 \n\t"
-            "pxor      %%mm7, %%mm4 \n\t"
-            "movq      %%mm3, -8(%3,%0) \n\t" // output[n-2-2*k] = { z[n8-1-k].im, -z[n8+k].re }
-            "movq      %%mm4, -8(%2,%0) \n\t" // output[n2-2-2*k]= { -z[n8-1-k].re, z[n8+k].im }
-            "neg %0 \n\t"
-            "movq      %%mm0, (%1,%0) \n\t"   // output[2*k]     = { -z[n8+k].im, z[n8-1-k].re }
-            "movq      %%mm2, (%2,%0) \n\t"   // output[n2+2*k]  = { -z[n8+k].re, z[n8-1-k].im }
-            "sub $8, %0 \n\t"
-            "jge 1b \n\t"
+        "1: \n\t"
+        "movq    (%4,%0), %%mm0 \n\t" // z[n8+k]
+        "neg %0 \n\t"
+        "pswapd -8(%4,%0), %%mm1 \n\t" // z[n8-1-k]
+        "movq      %%mm0, %%mm2 \n\t"
+        "pxor      %%mm7, %%mm2 \n\t"
+        "punpckldq %%mm1, %%mm2 \n\t"
+        "pswapd    %%mm2, %%mm3 \n\t"
+        "punpckhdq %%mm1, %%mm0 \n\t"
+        "pswapd    %%mm0, %%mm4 \n\t"
+        "pxor      %%mm7, %%mm0 \n\t"
+        "pxor      %%mm7, %%mm4 \n\t"
+        "movq      %%mm3, -8(%3,%0) \n\t" // output[n-2-2*k] = { z[n8-1-k].im, -z[n8+k].re }
+        "movq      %%mm4, -8(%2,%0) \n\t" // output[n2-2-2*k]= { -z[n8-1-k].re, z[n8+k].im }
+        "neg %0 \n\t"
+        "movq      %%mm0, (%1,%0) \n\t"   // output[2*k]     = { -z[n8+k].im, z[n8-1-k].re }
+        "movq      %%mm2, (%2,%0) \n\t"   // output[n2+2*k]  = { -z[n8+k].re, z[n8-1-k].im }
+        "sub $8, %0 \n\t"
+        "jge 1b \n\t"
         :"+r"(k)
         :"r"(output), "r"(output+n2), "r"(output+n), "r"(z+n8)
         :"memory"
