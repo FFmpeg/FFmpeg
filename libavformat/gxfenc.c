@@ -20,12 +20,13 @@
 #include "avformat.h"
 #include "gxf.h"
 #include "riff.h"
+#include "fifo.h"
 
 #define GXF_AUDIO_PACKET_SIZE 65536
 
 typedef struct GXFStreamContext {
     AVCodecContext *codec;
-    FifoBuffer audio_buffer;
+    AVFifoBuffer audio_buffer;
     uint32_t track_type;
     uint32_t sample_size;
     uint32_t sample_rate;
@@ -604,7 +605,7 @@ static int gxf_write_header(AVFormatContext *s)
             sc->fields = -2;
             gxf->audio_tracks++;
             gxf->flags |= 0x04000000; /* audio is 16 bit pcm */
-            fifo_init(&sc->audio_buffer, 3*GXF_AUDIO_PACKET_SIZE);
+            av_fifo_init(&sc->audio_buffer, 3*GXF_AUDIO_PACKET_SIZE);
         } else if (sc->codec->codec_type == CODEC_TYPE_VIDEO) {
             /* FIXME check from time_base ? */
             if (sc->codec->height == 480 || sc->codec->height == 512) { /* NTSC or NTSC+VBI */
@@ -670,7 +671,7 @@ static int gxf_write_trailer(AVFormatContext *s)
 
     for (i = 0; i < s->nb_streams; ++i) {
         if (s->streams[i]->codec->codec_type == CODEC_TYPE_AUDIO) {
-            fifo_free(&gxf->streams[i].audio_buffer);
+            av_fifo_free(&gxf->streams[i].audio_buffer);
         }
         if (s->streams[i]->codec->frame_number > gxf->nb_frames)
             gxf->nb_frames = 2 * s->streams[i]->codec->frame_number;
@@ -762,12 +763,12 @@ static int gxf_write_packet(AVFormatContext *s, AVPacket *pkt)
 
 static int gxf_new_audio_packet(GXFContext *gxf, GXFStreamContext *sc, AVPacket *pkt, int flush)
 {
-    int size = flush ? fifo_size(&sc->audio_buffer, NULL) : GXF_AUDIO_PACKET_SIZE;
+    int size = flush ? av_fifo_size(&sc->audio_buffer) : GXF_AUDIO_PACKET_SIZE;
 
     if (!size)
         return 0;
     av_new_packet(pkt, size);
-    fifo_read(&sc->audio_buffer, pkt->data, size, NULL);
+    av_fifo_read(&sc->audio_buffer, pkt->data, size);
     pkt->stream_index = sc->index;
     pkt->dts = sc->current_dts;
     sc->current_dts += size / 2; /* we only support 16 bit pcm mono for now */
@@ -784,10 +785,10 @@ static int gxf_interleave_packet(AVFormatContext *s, AVPacket *out, AVPacket *pk
         if (s->streams[i]->codec->codec_type == CODEC_TYPE_AUDIO) {
             GXFStreamContext *sc = &gxf->streams[i];
             if (pkt && pkt->stream_index == i) {
-                fifo_write(&sc->audio_buffer, pkt->data, pkt->size, NULL);
+                av_fifo_write(&sc->audio_buffer, pkt->data, pkt->size);
                 pkt = NULL;
             }
-            if (flush || fifo_size(&sc->audio_buffer, NULL) >= GXF_AUDIO_PACKET_SIZE) {
+            if (flush || av_fifo_size(&sc->audio_buffer) >= GXF_AUDIO_PACKET_SIZE) {
                 if (gxf_new_audio_packet(gxf, sc, &new_pkt, flush) > 0) {
                     pkt = &new_pkt;
                     break; /* add pkt right now into list */

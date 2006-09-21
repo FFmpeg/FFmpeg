@@ -18,6 +18,7 @@
  */
 #include "avformat.h"
 #include "bitstream.h"
+#include "fifo.h"
 
 #define MAX_PAYLOAD_SIZE 4096
 //#define DEBUG_SEEK
@@ -35,7 +36,7 @@ typedef struct PacketDesc {
 } PacketDesc;
 
 typedef struct {
-    FifoBuffer fifo;
+    AVFifoBuffer fifo;
     uint8_t id;
     int max_buffer_size; /* in bytes */
     int buffer_index;
@@ -45,7 +46,7 @@ typedef struct {
     int packet_number;
     uint8_t lpcm_header[3];
     int lpcm_align;
-    uint8_t *fifo_iframe_ptr;
+    int bytes_to_iframe;
     int align_iframe;
     int64_t vobu_start_pts;
 } StreamInfo;
@@ -412,7 +413,7 @@ static int mpeg_mux_init(AVFormatContext *ctx)
         default:
             return -1;
         }
-        fifo_init(&stream->fifo, 16);
+        av_fifo_init(&stream->fifo, 16);
     }
     bitrate = 0;
     audio_bitrate = 0;
@@ -708,14 +709,7 @@ static int flush_packet(AVFormatContext *ctx, int stream_index,
             }
         } else if (s->is_dvd) {
             if (stream->align_iframe || s->packet_number == 0){
-                int bytes_to_iframe;
-                int PES_bytes_to_fill;
-                if (stream->fifo_iframe_ptr >= stream->fifo.rptr) {
-                    bytes_to_iframe = stream->fifo_iframe_ptr - stream->fifo.rptr;
-                } else {
-                    bytes_to_iframe = (stream->fifo.end - stream->fifo.rptr) + (stream->fifo_iframe_ptr - stream->fifo.buffer);
-                }
-                PES_bytes_to_fill = s->packet_size - size - 10;
+                int PES_bytes_to_fill = s->packet_size - size - 10;
 
                 if (pts != AV_NOPTS_VALUE) {
                     if (dts != pts)
@@ -724,7 +718,7 @@ static int flush_packet(AVFormatContext *ctx, int stream_index,
                         PES_bytes_to_fill -= 5;
                 }
 
-                if (bytes_to_iframe == 0 || s->packet_number == 0) {
+                if (stream->bytes_to_iframe == 0 || s->packet_number == 0) {
                     size = put_system_header(ctx, buf_ptr, 0);
                     buf_ptr += size;
                     size = buf_ptr - buffer;
@@ -751,8 +745,8 @@ static int flush_packet(AVFormatContext *ctx, int stream_index,
                     s->last_scr= scr;
                     buf_ptr += size;
                     /* GOP Start */
-                } else if (bytes_to_iframe < PES_bytes_to_fill) {
-                    pad_packet_bytes = PES_bytes_to_fill - bytes_to_iframe;
+                } else if (stream->bytes_to_iframe < PES_bytes_to_fill) {
+                    pad_packet_bytes = PES_bytes_to_fill - stream->bytes_to_iframe;
                 }
             }
         } else {
@@ -824,7 +818,7 @@ static int flush_packet(AVFormatContext *ctx, int stream_index,
             startcode = 0x100 + id;
         }
 
-        stuffing_size = payload_size - fifo_size(&stream->fifo, stream->fifo.rptr);
+        stuffing_size = payload_size - av_fifo_size(&stream->fifo);
 
         // first byte doesnt fit -> reset pts/dts + stuffing
         if(payload_size <= trailer_size && pts != AV_NOPTS_VALUE){
@@ -951,8 +945,9 @@ static int flush_packet(AVFormatContext *ctx, int stream_index,
         }
 
         /* output data */
-        if(put_fifo(&ctx->pb, &stream->fifo, payload_size - stuffing_size, &stream->fifo.rptr) < 0)
+        if(av_fifo_generic_read(&stream->fifo, payload_size - stuffing_size, &put_buffer, &ctx->pb) < 0)
             return -1;
+        stream->bytes_to_iframe -= payload_size - stuffing_size;
     }else{
         payload_size=
         stuffing_size= 0;
@@ -1065,7 +1060,7 @@ retry:
     for(i=0; i<ctx->nb_streams; i++){
         AVStream *st = ctx->streams[i];
         StreamInfo *stream = st->priv_data;
-        const int avail_data=  fifo_size(&stream->fifo, stream->fifo.rptr);
+        const int avail_data=  av_fifo_size(&stream->fifo);
         const int space= stream->max_buffer_size - stream->buffer_index;
         int rel_space= 1024*space / stream->max_buffer_size;
         PacketDesc *next_pkt= stream->premux_packet;
@@ -1125,7 +1120,7 @@ retry:
     st = ctx->streams[best_i];
     stream = st->priv_data;
 
-    assert(fifo_size(&stream->fifo, stream->fifo.rptr) > 0);
+    assert(av_fifo_size(&stream->fifo) > 0);
 
     assert(avail_space >= s->packet_size || ignore_constraints);
 
@@ -1141,7 +1136,7 @@ retry:
 //av_log(ctx, AV_LOG_DEBUG, "dts:%f pts:%f scr:%f stream:%d\n", timestamp_packet->dts/90000.0, timestamp_packet->pts/90000.0, scr/90000.0, best_i);
         es_size= flush_packet(ctx, best_i, timestamp_packet->pts, timestamp_packet->dts, scr, trailer_size);
     }else{
-        assert(fifo_size(&stream->fifo, stream->fifo.rptr) == trailer_size);
+        assert(av_fifo_size(&stream->fifo) == trailer_size);
         es_size= flush_packet(ctx, best_i, AV_NOPTS_VALUE, AV_NOPTS_VALUE, scr, trailer_size);
     }
 
@@ -1204,11 +1199,11 @@ static int mpeg_mux_write_packet(AVFormatContext *ctx, AVPacket *pkt)
         stream->predecode_packet= pkt_desc;
     stream->next_packet= &pkt_desc->next;
 
-    fifo_realloc(&stream->fifo, fifo_size(&stream->fifo, NULL) + size + 1);
+    av_fifo_realloc(&stream->fifo, av_fifo_size(&stream->fifo) + size + 1);
 
     if (s->is_dvd){
         if (is_iframe && (s->packet_number == 0 || (pts - stream->vobu_start_pts >= 36000))) { // min VOBU length 0.4 seconds (mpucoder)
-            stream->fifo_iframe_ptr = stream->fifo.wptr;
+            stream->bytes_to_iframe = av_fifo_size(&stream->fifo);
             stream->align_iframe = 1;
             stream->vobu_start_pts = pts;
         } else {
@@ -1216,7 +1211,7 @@ static int mpeg_mux_write_packet(AVFormatContext *ctx, AVPacket *pkt)
         }
     }
 
-    fifo_write(&stream->fifo, buf, size, &stream->fifo.wptr);
+    av_fifo_write(&stream->fifo, buf, size);
 
     for(;;){
         int ret= output_packet(ctx, 0);
@@ -1248,8 +1243,8 @@ static int mpeg_mux_end(AVFormatContext *ctx)
     for(i=0;i<ctx->nb_streams;i++) {
         stream = ctx->streams[i]->priv_data;
 
-        assert(fifo_size(&stream->fifo, stream->fifo.rptr) == 0);
-        fifo_free(&stream->fifo);
+        assert(av_fifo_size(&stream->fifo) == 0);
+        av_fifo_free(&stream->fifo);
     }
     return 0;
 }

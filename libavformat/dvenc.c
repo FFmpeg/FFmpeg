@@ -29,12 +29,13 @@
 #include "avformat.h"
 #include "dvdata.h"
 #include "dv.h"
+#include "fifo.h"
 
 struct DVMuxContext {
     const DVprofile*  sys;    /* Current DV profile. E.g.: 525/60, 625/50 */
     int         n_ast;        /* Number of stereo audio streams (up to 2) */
     AVStream   *ast[2];       /* Stereo audio streams */
-    FifoBuffer  audio_data[2]; /* Fifo for storing excessive amounts of PCM */
+    AVFifoBuffer  audio_data[2]; /* Fifo for storing excessive amounts of PCM */
     int         frames;       /* Number of a current frame */
     time_t      start_time;   /* Start time of recording */
     int         has_audio;    /* frame under contruction has audio */
@@ -185,8 +186,8 @@ static void dv_inject_audio(DVMuxContext *c, int channel, uint8_t* frame_ptr)
              if (of*2 >= size)
                  continue;
 
-             frame_ptr[d] = fifo_peek(&c->audio_data[channel], of*2+1); // FIXME: may be we have to admit
-             frame_ptr[d+1] = fifo_peek(&c->audio_data[channel], of*2); //        that DV is a big endian PCM
+             frame_ptr[d] = av_fifo_peek(&c->audio_data[channel], of*2+1); // FIXME: may be we have to admit
+             frame_ptr[d+1] = av_fifo_peek(&c->audio_data[channel], of*2); //        that DV is a big endian PCM
           }
           frame_ptr += 16 * 80; /* 15 Video DIFs + 1 Audio DIF */
        }
@@ -247,12 +248,12 @@ int dv_assemble_frame(DVMuxContext *c, AVStream* st,
           for (i = 0; i < c->n_ast && st != c->ast[i]; i++);
 
           /* FIXME: we have to have more sensible approach than this one */
-          if (fifo_size(&c->audio_data[i], c->audio_data[i].rptr) + data_size >= 100*AVCODEC_MAX_AUDIO_FRAME_SIZE)
+          if (av_fifo_size(&c->audio_data[i]) + data_size >= 100*AVCODEC_MAX_AUDIO_FRAME_SIZE)
               av_log(st->codec, AV_LOG_ERROR, "Can't process DV frame #%d. Insufficient video data or severe sync problem.\n", c->frames);
-          fifo_write(&c->audio_data[i], data, data_size, &c->audio_data[i].wptr);
+          av_fifo_write(&c->audio_data[i], data, data_size);
 
           /* Lets see if we've got enough audio for one DV frame */
-          c->has_audio |= ((reqasize <= fifo_size(&c->audio_data[i], c->audio_data[i].rptr)) << i);
+          c->has_audio |= ((reqasize <= av_fifo_size(&c->audio_data[i])) << i);
 
           break;
     default:
@@ -264,7 +265,7 @@ int dv_assemble_frame(DVMuxContext *c, AVStream* st,
         dv_inject_metadata(c, *frame);
         for (i=0; i<c->n_ast; i++) {
              dv_inject_audio(c, i, *frame);
-             fifo_drain(&c->audio_data[i], reqasize);
+             av_fifo_drain(&c->audio_data[i], reqasize);
         }
 
         c->has_video = 0;
@@ -333,10 +334,10 @@ DVMuxContext* dv_init_mux(AVFormatContext* s)
     c->start_time = (time_t)s->timestamp;
 
     for (i=0; i<c->n_ast; i++) {
-        if (c->ast[i] && fifo_init(&c->audio_data[i], 100*AVCODEC_MAX_AUDIO_FRAME_SIZE) < 0) {
+        if (c->ast[i] && av_fifo_init(&c->audio_data[i], 100*AVCODEC_MAX_AUDIO_FRAME_SIZE) < 0) {
             while (i>0) {
                 i--;
-                fifo_free(&c->audio_data[i]);
+                av_fifo_free(&c->audio_data[i]);
             }
             goto bail_out;
         }
@@ -353,7 +354,7 @@ void dv_delete_mux(DVMuxContext *c)
 {
     int i;
     for (i=0; i < c->n_ast; i++)
-        fifo_free(&c->audio_data[i]);
+        av_fifo_free(&c->audio_data[i]);
 }
 
 #ifdef CONFIG_MUXERS

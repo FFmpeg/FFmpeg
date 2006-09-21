@@ -23,6 +23,7 @@
 #include "framehook.h"
 #include "dsputil.h"
 #include "opt.h"
+#include "fifo.h"
 
 #ifndef __MINGW32__
 #include <unistd.h>
@@ -267,7 +268,7 @@ typedef struct AVOutputStream {
     /* audio only */
     int audio_resample;
     ReSampleContext *resample; /* for audio resampling */
-    FifoBuffer fifo;     /* for compression: one audio fifo per codec */
+    AVFifoBuffer fifo;     /* for compression: one audio fifo per codec */
     FILE *logfile;
 } AVOutputStream;
 
@@ -471,7 +472,7 @@ static void do_audio_out(AVFormatContext *s,
 
     if(audio_sync_method){
         double delta = get_sync_ipts(ost) * enc->sample_rate - ost->sync_opts
-                - fifo_size(&ost->fifo, ost->fifo.rptr)/(ost->st->codec->channels * 2);
+                - av_fifo_size(&ost->fifo)/(ost->st->codec->channels * 2);
         double idelta= delta*ist->st->codec->sample_rate / enc->sample_rate;
         int byte_delta= ((int)idelta)*2*ist->st->codec->channels;
 
@@ -508,13 +509,13 @@ static void do_audio_out(AVFormatContext *s,
                 assert(ost->audio_resample);
                 if(verbose > 2)
                     fprintf(stderr, "compensating audio timestamp drift:%f compensation:%d in:%d\n", delta, comp, enc->sample_rate);
-//                fprintf(stderr, "drift:%f len:%d opts:%lld ipts:%lld fifo:%d\n", delta, -1, ost->sync_opts, (int64_t)(get_sync_ipts(ost) * enc->sample_rate), fifo_size(&ost->fifo, ost->fifo.rptr)/(ost->st->codec->channels * 2));
+//                fprintf(stderr, "drift:%f len:%d opts:%lld ipts:%lld fifo:%d\n", delta, -1, ost->sync_opts, (int64_t)(get_sync_ipts(ost) * enc->sample_rate), av_fifo_size(&ost->fifo)/(ost->st->codec->channels * 2));
                 av_resample_compensate(*(struct AVResampleContext**)ost->resample, comp, enc->sample_rate);
             }
         }
     }else
         ost->sync_opts= lrintf(get_sync_ipts(ost) * enc->sample_rate)
-                        - fifo_size(&ost->fifo, ost->fifo.rptr)/(ost->st->codec->channels * 2); //FIXME wrong
+                        - av_fifo_size(&ost->fifo)/(ost->st->codec->channels * 2); //FIXME wrong
 
     if (ost->audio_resample) {
         buftmp = audio_buf;
@@ -530,13 +531,11 @@ static void do_audio_out(AVFormatContext *s,
     /* now encode as many frames as possible */
     if (enc->frame_size > 1) {
         /* output resampled raw samples */
-        fifo_write(&ost->fifo, buftmp, size_out,
-                   &ost->fifo.wptr);
+        av_fifo_write(&ost->fifo, buftmp, size_out);
 
         frame_bytes = enc->frame_size * 2 * enc->channels;
 
-        while (fifo_read(&ost->fifo, audio_buf, frame_bytes,
-                     &ost->fifo.rptr) == 0) {
+        while (av_fifo_read(&ost->fifo, audio_buf, frame_bytes) == 0) {
             AVPacket pkt;
             av_init_packet(&pkt);
 
@@ -1317,14 +1316,13 @@ static int output_packet(AVInputStream *ist, int ist_index,
 
                         switch(ost->st->codec->codec_type) {
                         case CODEC_TYPE_AUDIO:
-                            fifo_bytes = fifo_size(&ost->fifo, NULL);
+                            fifo_bytes = av_fifo_size(&ost->fifo);
                             ret = 0;
                             /* encode any samples remaining in fifo */
                             if(fifo_bytes > 0 && enc->codec->capabilities & CODEC_CAP_SMALL_LAST_FRAME) {
                                 int fs_tmp = enc->frame_size;
                                 enc->frame_size = fifo_bytes / (2 * enc->channels);
-                                if(fifo_read(&ost->fifo, (uint8_t *)samples, fifo_bytes,
-                                        &ost->fifo.rptr) == 0) {
+                                if(av_fifo_read(&ost->fifo, (uint8_t *)samples, fifo_bytes) == 0) {
                                     ret = avcodec_encode_audio(enc, bit_buffer, bit_buffer_size, samples);
                                 }
                                 enc->frame_size = fs_tmp;
@@ -1563,7 +1561,7 @@ static int av_encode(AVFormatContext **output_files,
         } else {
             switch(codec->codec_type) {
             case CODEC_TYPE_AUDIO:
-                if (fifo_init(&ost->fifo, 2 * MAX_AUDIO_PACKET_SIZE))
+                if (av_fifo_init(&ost->fifo, 2 * MAX_AUDIO_PACKET_SIZE))
                     goto fail;
 
                 if (codec->channels == icodec->channels &&
@@ -2018,8 +2016,8 @@ static int av_encode(AVFormatContext **output_files,
                     fclose(ost->logfile);
                     ost->logfile = NULL;
                 }
-                fifo_free(&ost->fifo); /* works even if fifo is not
-                                          initialized but set to zero */
+                av_fifo_free(&ost->fifo); /* works even if fifo is not
+                                             initialized but set to zero */
                 av_free(ost->pict_tmp.data[0]);
                 if (ost->video_resample)
                     sws_freeContext(ost->img_resample_ctx);
