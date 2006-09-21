@@ -332,6 +332,7 @@ typedef struct VC1Context{
     int dmb_is_raw;               ///< direct mb plane is raw
     int skip_is_raw;              ///< skip mb plane is not coded
     uint8_t luty[256], lutuv[256]; // lookup tables used for intensity compensation
+    int use_ic;                   ///< use intensity compensation in B-frames
     int rnd;                      ///< rounding control
 
     /** Frame decoding info for S/M profiles only */
@@ -1427,6 +1428,8 @@ static int vc1_parse_frame_header(VC1Context *v, GetBitContext* gb)
 //av_log(v->s.avctx, AV_LOG_INFO, "%c Frame: QP=[%i]%i (+%i/2) %i\n",
 //        (v->s.pict_type == P_TYPE) ? 'P' : ((v->s.pict_type == I_TYPE) ? 'I' : 'B'), pqindex, v->pq, v->halfpq, v->rangeredfrm);
 
+    if(v->s.pict_type == I_TYPE || v->s.pict_type == P_TYPE) v->use_ic = 0;
+
     switch(v->s.pict_type) {
     case P_TYPE:
         if (v->pq < 5) v->tt_index = 0;
@@ -1441,6 +1444,7 @@ static int vc1_parse_frame_header(VC1Context *v, GetBitContext* gb)
             v->mv_mode2 = mv_pmode_table2[lowquant][get_prefix(gb, 1, 3)];
             v->lumscale = get_bits(gb, 6);
             v->lumshift = get_bits(gb, 6);
+            v->use_ic = 1;
             /* fill lookup tables for intensity compensation */
             if(!v->lumscale) {
                 scale = -64;
@@ -2106,18 +2110,26 @@ static inline void vc1_b_mc(VC1Context *v, int dmv_x[2], int dmv_y[2], int direc
 {
     int t;
 
+    if(v->use_ic) {
+        v->mv_mode2 = v->mv_mode;
+        v->mv_mode = MV_PMODE_INTENSITY_COMP;
+    }
     if(direct) {
         vc1_mc_1mv(v, 0);
         vc1_interp_mc(v);
+        if(v->use_ic) v->mv_mode = v->mv_mode2;
         return;
     }
     if(mode == BMV_TYPE_INTERPOLATED) {
         vc1_mc_1mv(v, 0);
         vc1_interp_mc(v);
+        if(v->use_ic) v->mv_mode = v->mv_mode2;
         return;
     }
 
+    if(v->use_ic && (mode == BMV_TYPE_BACKWARD)) v->mv_mode = v->mv_mode2;
     vc1_mc_1mv(v, (mode == BMV_TYPE_BACKWARD));
+    if(v->use_ic) v->mv_mode = v->mv_mode2;
 }
 
 static inline void vc1_pred_b_mv(VC1Context *v, int dmv_x[2], int dmv_y[2], int direct, int mvtype)
