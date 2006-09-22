@@ -41,39 +41,10 @@
 
 #include "mpegaudio.h"
 
+#include "mathops.h"
+
 #define FRAC_ONE    (1 << FRAC_BITS)
 
-#ifdef ARCH_X86
-#   define MULL(ra, rb) \
-        ({ int rt, dummy; asm (\
-            "imull %3               \n\t"\
-            "shrdl %4, %%edx, %%eax \n\t"\
-            : "=a"(rt), "=d"(dummy)\
-            : "a" (ra), "rm" (rb), "i"(FRAC_BITS));\
-         rt; })
-#   define MUL64(ra, rb) \
-        ({ int64_t rt; asm ("imull %2\n\t" : "=A"(rt) : "a" (ra), "g" (rb)); rt; })
-#   define MULH(ra, rb) \
-        ({ int rt, dummy; asm ("imull %3\n\t" : "=d"(rt), "=a"(dummy): "a" (ra), "rm" (rb)); rt; })
-#elif defined(ARCH_ARMV4L)
-#   define MULL(a, b) \
-        ({  int lo, hi;\
-            asm("smull %0, %1, %2, %3     \n\t"\
-                "mov   %0, %0,     lsr %4\n\t"\
-                "add   %1, %0, %1, lsl %5\n\t"\
-            : "=&r"(lo), "=&r"(hi)\
-            : "r"(b), "r"(a), "i"(FRAC_BITS), "i"(32-FRAC_BITS));\
-         hi; })
-#   define MUL64(a,b) ((int64_t)(a) * (int64_t)(b))
-#   define MULH(a, b) ({ int lo, hi; asm ("smull %0, %1, %2, %3" : "=&r"(lo), "=&r"(hi) : "r"(b), "r"(a)); hi; })
-#else
-#   define MULL(a,b) (((int64_t)(a) * (int64_t)(b)) >> FRAC_BITS)
-#   define MUL64(a,b) ((int64_t)(a) * (int64_t)(b))
-//#define MULH(a,b) (((int64_t)(a) * (int64_t)(b))>>32) //gcc 3.4 creates an incredibly bloated mess out of this
-static always_inline int MULH(int a, int b){
-    return ((int64_t)(a) * (int64_t)(b))>>32;
-}
-#endif
 #define FIX(a)   ((int)((a) * FRAC_ONE))
 /* WARNING: only correct for posititive numbers */
 #define FIXR(a)   ((int)((a) * FRAC_ONE + 0.5))
@@ -781,32 +752,12 @@ static inline int round_sample(int *sum)
     return sum1;
 }
 
-#   if defined(ARCH_POWERPC_405)
-        /* signed 16x16 -> 32 multiply add accumulate */
-#       define MACS(rt, ra, rb) \
-            asm ("maclhw %0, %2, %3" : "=r" (rt) : "0" (rt), "r" (ra), "r" (rb));
+/* signed 16x16 -> 32 multiply add accumulate */
+#define MACS(rt, ra, rb) MAC16(rt, ra, rb)
 
-        /* signed 16x16 -> 32 multiply */
-#       define MULS(ra, rb) \
-            ({ int __rt; asm ("mullhw %0, %1, %2" : "=r" (__rt) : "r" (ra), "r" (rb)); __rt; })
+/* signed 16x16 -> 32 multiply */
+#define MULS(ra, rb) MUL16(ra, rb)
 
-#   elif defined(HAVE_ARMV5TE)
-
-        /* signed 16x16 -> 32 multiply add accumulate */
-#       define MACS(rt, ra, rb) \
-            asm ("smlabb %0, %2, %3, %0" : "=r" (rt) : "0" (rt), "r" (ra), "r" (rb));
-
-        /* signed 16x16 -> 32 multiply */
-#       define MULS(ra, rb) \
-            ({ int __rt; asm ("smulbb %0, %1, %2" : "=r" (__rt) : "r" (ra), "r" (rb)); __rt; })
-
-#   else
-        /* signed 16x16 -> 32 multiply add accumulate */
-#       define MACS(rt, ra, rb) rt += (ra) * (rb)
-
-        /* signed 16x16 -> 32 multiply */
-#       define MULS(ra, rb) ((ra) * (rb))
-#   endif
 #else
 
 static inline int round_sample(int64_t *sum)
