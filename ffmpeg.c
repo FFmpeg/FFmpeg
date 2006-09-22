@@ -135,7 +135,6 @@ static int top_field_first = -1;
 static int me_threshold = 0;
 static int intra_dc_precision = 8;
 static int me_penalty_compensation= 256;
-static int frame_skip_factor= 0;
 static int frame_skip_exp= 0;
 static int loop_input = 0;
 static int loop_output = AVFMT_NOOUTPUTLOOP;
@@ -2936,7 +2935,6 @@ static void new_video_stream(AVFormatContext *oc)
         video_enc->strict_std_compliance = strict;
         video_enc->error_rate = error_rate;
         video_enc->me_penalty_compensation= me_penalty_compensation;
-        video_enc->frame_skip_factor= frame_skip_factor;
         video_enc->frame_skip_exp= frame_skip_exp;
 
         if(packet_size){
@@ -3856,7 +3854,6 @@ const OptionDef options[] = {
     { "dc", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&intra_dc_precision}, "intra_dc_precision", "precision" },
     { "mepc", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&me_penalty_compensation}, "motion estimation bitrate penalty compensation", "factor (1.0 = 256)" },
     { "vtag", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_video_tag}, "force video tag/fourcc", "fourcc/tag" },
-    { "skip_factor", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&frame_skip_factor}, "frame skip factor", "factor" },
     { "skip_exp", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&frame_skip_exp}, "frame skip exponent", "exponent" },
     { "newvideo", OPT_VIDEO, {(void*)opt_new_video_stream}, "add a new video stream to the current output stream" },
     { "qphist", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, { (void *)&qp_hist }, "show QP histogram" },
