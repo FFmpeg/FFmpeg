@@ -129,7 +129,6 @@ static int video_codec_tag = 0;
 static int same_quality = 0;
 static int do_deinterlace = 0;
 static int packet_size = 0;
-static int error_rate = 0;
 static int strict = 0;
 static int top_field_first = -1;
 static int me_threshold = 0;
@@ -2366,11 +2365,6 @@ static void opt_packet_size(const char *arg)
     packet_size= atoi(arg);
 }
 
-static void opt_error_rate(const char *arg)
-{
-    error_rate= atoi(arg);
-}
-
 static void opt_strict(const char *arg)
 {
     strict= atoi(arg);
@@ -2931,7 +2925,6 @@ static void new_video_stream(AVFormatContext *oc)
         video_enc->me_threshold= me_threshold;
         video_enc->intra_dc_precision= intra_dc_precision - 8;
         video_enc->strict_std_compliance = strict;
-        video_enc->error_rate = error_rate;
 
         if(packet_size){
             video_enc->rtp_mode= 1;
@@ -3833,7 +3826,6 @@ const OptionDef options[] = {
       "method" },
     { "me_threshold", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_me_threshold}, "motion estimaton threshold",  "" },
     { "ps", HAS_ARG | OPT_EXPERT, {(void*)opt_packet_size}, "set packet size in bits", "size" },
-    { "error", HAS_ARG | OPT_EXPERT, {(void*)opt_error_rate}, "error rate", "rate" },
     { "strict", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_strict}, "how strictly to follow the standards", "strictness" },
     { "sameq", OPT_BOOL | OPT_VIDEO, {(void*)&same_quality},
       "use same video quality as source (implies VBR)" },
