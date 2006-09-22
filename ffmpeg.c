@@ -133,7 +133,6 @@ static int error_rate = 0;
 static int strict = 0;
 static int top_field_first = -1;
 static int me_threshold = 0;
-static int mb_threshold = 0;
 static int intra_dc_precision = 8;
 static int me_penalty_compensation= 256;
 static int frame_skip_threshold= 0;
@@ -2103,11 +2102,6 @@ static void opt_me_threshold(const char *arg)
     me_threshold = atoi(arg);
 }
 
-static void opt_mb_threshold(const char *arg)
-{
-    mb_threshold = atoi(arg);
-}
-
 static void opt_verbose(const char *arg)
 {
     verbose = atoi(arg);
@@ -2939,7 +2933,6 @@ static void new_video_stream(AVFormatContext *oc)
         video_enc->rc_override_count=i;
         video_enc->rc_initial_buffer_occupancy = video_enc->rc_buffer_size*3/4;
         video_enc->me_threshold= me_threshold;
-        video_enc->mb_threshold= mb_threshold;
         video_enc->intra_dc_precision= intra_dc_precision - 8;
         video_enc->strict_std_compliance = strict;
         video_enc->error_rate = error_rate;
@@ -3847,7 +3840,6 @@ const OptionDef options[] = {
     { "me", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_motion_estimation}, "set motion estimation method",
       "method" },
     { "me_threshold", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_me_threshold}, "motion estimaton threshold",  "" },
-    { "mb_threshold", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_mb_threshold}, "macroblock threshold",  "" },
     { "ps", HAS_ARG | OPT_EXPERT, {(void*)opt_packet_size}, "set packet size in bits", "size" },
     { "error", HAS_ARG | OPT_EXPERT, {(void*)opt_error_rate}, "error rate", "rate" },
     { "strict", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_strict}, "how strictly to follow the standards", "strictness" },
