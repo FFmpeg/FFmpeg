@@ -35,7 +35,7 @@
 #include <math.h>
 
 #ifndef NAN
-  #define NAN 0
+  #define NAN 0.0/0.0
 #endif
 
 #ifndef M_PI
