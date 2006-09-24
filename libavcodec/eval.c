@@ -87,6 +87,7 @@ static double evalPrimary(Parser *p){
     p->s= strchr(p->s, '(');
     if(p->s==NULL){
         av_log(NULL, AV_LOG_ERROR, "Parser: missing ( in \"%s\"\n", next);
+        p->s= next;
         return NAN;
     }
     p->s++; // "("
