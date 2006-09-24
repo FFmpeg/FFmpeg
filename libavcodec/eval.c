@@ -54,6 +54,8 @@ typedef struct Parser{
     void *opaque;
 } Parser;
 
+extern double av_strtod(const char *name, char **tail);
+
 static double evalExpression(Parser *p);
 
 static int strmatch(const char *s, const char *prefix){
