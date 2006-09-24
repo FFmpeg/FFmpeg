@@ -26,23 +26,6 @@
 #include "avutil.h"
 #include "swscale.h"
 
-static int testFormat[]={
-PIX_FMT_YUV410P,
-PIX_FMT_YUV420P,
-//IMGFMT_IYUV,
-//IMGFMT_I420,
-PIX_FMT_BGR555,
-PIX_FMT_BGR565,
-PIX_FMT_BGR24,
-PIX_FMT_RGB32,
-PIX_FMT_RGB24,
-PIX_FMT_BGR32,
-//IMGFMT_Y8,
-PIX_FMT_GRAY8,
-//IMGFMT_YUY2,
-PIX_FMT_NONE
-};
-
 static uint64_t getSSD(uint8_t *src1, uint8_t *src2, int stride1, int stride2, int w, int h){
 	int x,y;
 	uint64_t ssd=0;
@@ -62,7 +45,7 @@ static uint64_t getSSD(uint8_t *src1, uint8_t *src2, int stride1, int stride2, i
 
 // test by ref -> src -> dst -> out & compare out against ref
 // ref & out are YV12
-static void doTest(uint8_t *ref[3], int refStride[3], int w, int h, int srcFormat, int dstFormat, 
+static int doTest(uint8_t *ref[3], int refStride[3], int w, int h, int srcFormat, int dstFormat, 
                    int srcW, int srcH, int dstW, int dstH, int flags){
 	uint8_t *src[3];
 	uint8_t *dst[3];
@@ -71,7 +54,9 @@ static void doTest(uint8_t *ref[3], int refStride[3], int w, int h, int srcForma
 	int i;
 	uint64_t ssdY, ssdU, ssdV;
 	struct SwsContext *srcContext, *dstContext, *outContext;
+	int res;
 	
+	res = 0;
 	for(i=0; i<3; i++){
 		// avoid stride % bpp != 0
 		if(srcFormat==PIX_FMT_RGB24 || srcFormat==PIX_FMT_BGR24)
@@ -89,16 +74,38 @@ static void doTest(uint8_t *ref[3], int refStride[3], int w, int h, int srcForma
 		out[i]= (uint8_t*) malloc(refStride[i]*h);
 		if ((src[i] == NULL) || (dst[i] == NULL) || (out[i] == NULL)) {
 			perror("Malloc");
+			res = -1;
 
 			goto end;
 		}
 	}
 
+	dstContext = outContext = NULL;
 	srcContext= sws_getContext(w, h, PIX_FMT_YUV420P, srcW, srcH, srcFormat, flags, NULL, NULL, NULL);
+	if (srcContext == NULL) {
+		fprintf(stderr, "Failed to get %s ---> %s\n",
+				sws_format_name(PIX_FMT_YUV420P),
+				sws_format_name(srcFormat));
+		res = -1;
+
+		goto end;
+	}
 	dstContext= sws_getContext(srcW, srcH, srcFormat, dstW, dstH, dstFormat, flags, NULL, NULL, NULL);
+	if (dstContext == NULL) {
+		fprintf(stderr, "Failed to get %s ---> %s\n",
+				sws_format_name(srcFormat),
+				sws_format_name(dstFormat));
+		res = -1;
+
+		goto end;
+	}
 	outContext= sws_getContext(dstW, dstH, dstFormat, w, h, PIX_FMT_YUV420P, flags, NULL, NULL, NULL);
-	if(srcContext==NULL ||dstContext==NULL ||outContext==NULL){
-		printf("Failed allocating swsContext\n");
+	if (outContext == NULL) {
+		fprintf(stderr, "Failed to get %s ---> %s\n",
+				sws_format_name(dstFormat),
+				sws_format_name(PIX_FMT_YUV420P));
+		res = -1;
+
 		goto end;
 	}
 //	printf("test %X %X %X -> %X %X %X\n", (int)ref[0], (int)ref[1], (int)ref[2],
@@ -141,13 +148,8 @@ static void doTest(uint8_t *ref[3], int refStride[3], int w, int h, int srcForma
 		free(dst[i]);
 		free(out[i]);
 	}
-}
 
-void mp_msg( int x, int y, const char *format, ... ){
-    va_list va;
-    va_start(va, format);
-    vfprintf(stderr, format, va);
-    va_end(va);
+	return res;
 }
 
 void fast_memcpy(void *a, void *b, int s){ //FIXME
@@ -155,28 +157,31 @@ void fast_memcpy(void *a, void *b, int s){ //FIXME
 }
 
 static void selfTest(uint8_t *src[3], int stride[3], int w, int h){
-	int srcFormat, dstFormat, srcFormatIndex, dstFormatIndex;
+	enum PixelFormat srcFormat, dstFormat;
 	int srcW, srcH, dstW, dstH;
 	int flags;
 
-	for(srcFormatIndex=0; ;srcFormatIndex++){
-		srcFormat= testFormat[srcFormatIndex];
-		if(srcFormat == PIX_FMT_NONE) break;
-		for(dstFormatIndex=0; ;dstFormatIndex++){
-			dstFormat= testFormat[dstFormatIndex];
-			if(dstFormat == PIX_FMT_NONE) break;
-//			if(!isSupportedOut(dstFormat)) continue;
-printf("%s -> %s\n", 
-	sws_format_name(srcFormat),
-	sws_format_name(dstFormat));
+	for(srcFormat = 0; srcFormat < PIX_FMT_NB; srcFormat++) {
+		for(dstFormat = 0; dstFormat < PIX_FMT_NB; dstFormat++) {
+			printf("%s -> %s\n",
+					sws_format_name(srcFormat),
+					sws_format_name(dstFormat));
  
 			srcW= w;
 			srcH= h;
 			for(dstW=w - w/3; dstW<= 4*w/3; dstW+= w/3){
 				for(dstH=h - h/3; dstH<= 4*h/3; dstH+= h/3){
-					for(flags=1; flags<33; flags*=2)
-						doTest(src, stride, w, h, srcFormat, dstFormat,
+					for(flags=1; flags<33; flags*=2) {
+						int res;
+						
+						res = doTest(src, stride, w, h, srcFormat, dstFormat,
 							srcW, srcH, dstW, dstH, flags);
+						if (res < 0) {
+							dstW = 4 * w / 3;
+							dstH = 4 * h / 3;
+							flags = 33;
+						}
+					}
 				}
 			}
 		}
