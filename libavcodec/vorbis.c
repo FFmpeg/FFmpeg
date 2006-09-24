@@ -1186,7 +1186,7 @@ static uint_fast8_t vorbis_floor1_decode(vorbis_context *vc, vorbis_floor_data *
             AV_DEBUG("book %d Cbits %d cval %d  bits:%d \n", book, cbits, cval, get_bits_count(gb));
 
             cval=cval>>cbits;
-            if (book>0) {
+            if (book>-1) {
                 floor1_Y[offset+j]=get_vlc2(gb, vc->codebooks[book].vlc.table,
                 vc->codebooks[book].nb_bits, 3);
             } else {
