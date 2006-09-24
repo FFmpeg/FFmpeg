@@ -113,12 +113,12 @@ static double evalPrimary(Parser *p){
     else if( strmatch(next, "squish") ) d= 1/(1+exp(4*d));
     else if( strmatch(next, "gauss" ) ) d= exp(-d*d/2)/sqrt(2*M_PI);
     else if( strmatch(next, "abs"   ) ) d= fabs(d);
-    else if( strmatch(next, "max"   ) ) d= d > d2 ? d : d2;
-    else if( strmatch(next, "min"   ) ) d= d < d2 ? d : d2;
-    else if( strmatch(next, "gt"    ) ) d= d > d2 ? 1.0 : 0.0;
-    else if( strmatch(next, "gte"    ) ) d= d >= d2 ? 1.0 : 0.0;
-    else if( strmatch(next, "lt"    ) ) d= d > d2 ? 0.0 : 1.0;
-    else if( strmatch(next, "lte"    ) ) d= d >= d2 ? 0.0 : 1.0;
+    else if( strmatch(next, "max"   ) ) d= d >  d2 ?   d : d2;
+    else if( strmatch(next, "min"   ) ) d= d <  d2 ?   d : d2;
+    else if( strmatch(next, "gt"    ) ) d= d >  d2 ? 1.0 : 0.0;
+    else if( strmatch(next, "gte"   ) ) d= d >= d2 ? 1.0 : 0.0;
+    else if( strmatch(next, "lt"    ) ) d= d >  d2 ? 0.0 : 1.0;
+    else if( strmatch(next, "lte"   ) ) d= d >= d2 ? 0.0 : 1.0;
     else if( strmatch(next, "eq"    ) ) d= d == d2 ? 1.0 : 0.0;
     else if( strmatch(next, "("     ) ) d= d;
 //    else if( strmatch(next, "l1"    ) ) d= 1 + d2*(d - 1);
