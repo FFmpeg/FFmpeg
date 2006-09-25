@@ -198,12 +198,12 @@ static int tta_get_unary(GetBitContext *gb)
 // shamelessly copied from shorten.c
 static int inline get_le16(GetBitContext *gb)
 {
-    return bswap_16(get_bits_long(gb, 16));
+    return get_bits_long(gb, 16);
 }
 
 static int inline get_le32(GetBitContext *gb)
 {
-    return bswap_32(get_bits_long(gb, 32));
+    return get_bits_long(gb, 32);
 }
 
 static int tta_decode_init(AVCodecContext * avctx)
@@ -218,7 +218,7 @@ static int tta_decode_init(AVCodecContext * avctx)
         return -1;
 
     init_get_bits(&s->gb, avctx->extradata, avctx->extradata_size);
-    if (show_bits_long(&s->gb, 32) == bswap_32(ff_get_fourcc("TTA1")))
+    if (show_bits_long(&s->gb, 32) == ff_get_fourcc("TTA1"))
     {
         /* signature */
         skip_bits(&s->gb, 32);
