@@ -135,3 +135,35 @@ void av_free(void *ptr)
 #endif
 }
 
+/**
+ * Frees memory and sets the pointer to NULL.
+ * @param arg pointer to the pointer which should be freed
+ */
+void av_freep(void *arg)
+{
+    void **ptr= (void**)arg;
+    av_free(*ptr);
+    *ptr = NULL;
+}
+
+void *av_mallocz(unsigned int size)
+{
+    void *ptr;
+
+    ptr = av_malloc(size);
+    if (ptr)
+        memset(ptr, 0, size);
+    return ptr;
+}
+
+char *av_strdup(const char *s)
+{
+    char *ptr;
+    int len;
+    len = strlen(s) + 1;
+    ptr = av_malloc(len);
+    if (ptr)
+        memcpy(ptr, s, len);
+    return ptr;
+}
+

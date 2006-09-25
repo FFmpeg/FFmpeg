@@ -35,8 +35,8 @@ extern "C" {
 #define AV_STRINGIFY(s)         AV_TOSTRING(s)
 #define AV_TOSTRING(s) #s
 
-#define LIBAVCODEC_VERSION_INT  ((51<<16)+(14<<8)+0)
-#define LIBAVCODEC_VERSION      51.14.0
+#define LIBAVCODEC_VERSION_INT  ((51<<16)+(15<<8)+0)
+#define LIBAVCODEC_VERSION      51.15.0
 #define LIBAVCODEC_BUILD        LIBAVCODEC_VERSION_INT
 
 #define LIBAVCODEC_IDENT        "Lavc" AV_STRINGIFY(LIBAVCODEC_VERSION)
@@ -2633,9 +2633,6 @@ extern AVBitStreamFilter noise_bsf;
 
 
 /* memory */
-void *av_mallocz(unsigned int size);
-char *av_strdup(const char *s);
-void av_freep(void *ptr);
 void *av_fast_realloc(void *ptr, unsigned int *size, unsigned int min_size);
 /* for static data only */
 /* call av_free_static to release all staticaly allocated tables */

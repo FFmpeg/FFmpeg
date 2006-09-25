@@ -403,8 +403,13 @@ tend= read_time();\
   #define DECLARE_ALIGNED(n,t,v)      __declspec(align(n)) t v
 #endif
 
+/* memory */
 void *av_malloc(unsigned int size);
 void *av_realloc(void *ptr, unsigned int size);
 void av_free(void *ptr);
+
+void *av_mallocz(unsigned int size);
+char *av_strdup(const char *s);
+void av_freep(void *ptr);
 
 #endif /* COMMON_H */

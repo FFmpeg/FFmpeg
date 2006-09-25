@@ -57,29 +57,6 @@ const uint8_t ff_reverse[256]={
 
 static int volatile entangled_thread_counter=0;
 
-void *av_mallocz(unsigned int size)
-{
-    void *ptr;
-
-    ptr = av_malloc(size);
-    if (!ptr)
-        return NULL;
-    memset(ptr, 0, size);
-    return ptr;
-}
-
-char *av_strdup(const char *s)
-{
-    char *ptr;
-    int len;
-    len = strlen(s) + 1;
-    ptr = av_malloc(len);
-    if (!ptr)
-        return NULL;
-    memcpy(ptr, s, len);
-    return ptr;
-}
-
 /**
  * realloc which does nothing if the block is large enough
  */
@@ -92,7 +69,6 @@ void *av_fast_realloc(void *ptr, unsigned int *size, unsigned int min_size)
 
     return av_realloc(ptr, *size);
 }
-
 
 static unsigned int last_static = 0;
 static unsigned int allocated_static = 0;
@@ -157,16 +133,6 @@ static void do_free(void)
     av_free_static();
 }
 
-/**
- * Frees memory and sets the pointer to NULL.
- * @param arg pointer to the pointer which should be freed
- */
-void av_freep(void *arg)
-{
-    void **ptr= (void**)arg;
-    av_free(*ptr);
-    *ptr = NULL;
-}
 
 /* encoder management */
 AVCodec *first_avcodec = NULL;
