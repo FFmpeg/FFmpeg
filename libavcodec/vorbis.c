@@ -45,17 +45,6 @@
 
 /* Helper functions */
 
-/**
- *  reads 0-32 bits when using the ALT_BITSTREAM_READER_LE bitstream reader
- */
-static unsigned int get_bits_long_le(GetBitContext *s, int n){
-    if(n<=17) return get_bits(s, n);
-    else{
-        int ret= get_bits(s, 16);
-        return ret | (get_bits(s, n-16) << 16);
-    }
-}
-
 #define ilog(i) av_log2(2*(i))
 
 #define BARK(x) \
@@ -311,8 +300,8 @@ static int vorbis_parse_setup_hdr_codebooks(vorbis_context *vc) {
             uint_fast16_t codebook_lookup_values=nth_root(entries, codebook_setup->dimensions);
             uint_fast16_t codebook_multiplicands[codebook_lookup_values];
 
-            float codebook_minimum_value=vorbisfloat2float(get_bits_long_le(gb, 32));
-            float codebook_delta_value=vorbisfloat2float(get_bits_long_le(gb, 32));
+            float codebook_minimum_value=vorbisfloat2float(get_bits_long(gb, 32));
+            float codebook_delta_value=vorbisfloat2float(get_bits_long(gb, 32));
             uint_fast8_t codebook_value_bits=get_bits(gb, 4)+1;
             uint_fast8_t codebook_sequence_p=get_bits1(gb);
 
@@ -869,12 +858,12 @@ static int vorbis_parse_id_hdr(vorbis_context *vc){
         return 1;
     }
 
-    vc->version=get_bits_long_le(gb, 32);    //FIXME check 0
+    vc->version=get_bits_long(gb, 32);    //FIXME check 0
     vc->audio_channels=get_bits(gb, 8);   //FIXME check >0
-    vc->audio_samplerate=get_bits_long_le(gb, 32);   //FIXME check >0
-    vc->bitrate_maximum=get_bits_long_le(gb, 32);
-    vc->bitrate_nominal=get_bits_long_le(gb, 32);
-    vc->bitrate_minimum=get_bits_long_le(gb, 32);
+    vc->audio_samplerate=get_bits_long(gb, 32);   //FIXME check >0
+    vc->bitrate_maximum=get_bits_long(gb, 32);
+    vc->bitrate_nominal=get_bits_long(gb, 32);
+    vc->bitrate_minimum=get_bits_long(gb, 32);
     bl0=get_bits(gb, 4);
     bl1=get_bits(gb, 4);
     vc->blocksize[0]=(1<<bl0);
