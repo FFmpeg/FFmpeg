@@ -33,7 +33,7 @@ typedef struct vp56_context vp56_context_t;
 typedef struct vp56_mv vp56_mv_t;
 
 typedef void (*vp56_parse_vector_adjustment_t)(vp56_context_t *s,
-                                               vp56_mv_t *vector);
+                                               vp56_mv_t *vect);
 typedef int (*vp56_adjust_t)(int v, int t);
 typedef void (*vp56_filter_t)(vp56_context_t *s, uint8_t *dst, uint8_t *src,
                               int offset1, int offset2, int stride,
