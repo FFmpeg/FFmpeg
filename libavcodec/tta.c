@@ -195,17 +195,6 @@ static int tta_get_unary(GetBitContext *gb)
     return ret;
 }
 
-// shamelessly copied from shorten.c
-static int inline get_le16(GetBitContext *gb)
-{
-    return get_bits_long(gb, 16);
-}
-
-static int inline get_le32(GetBitContext *gb)
-{
-    return get_bits_long(gb, 32);
-}
-
 static int tta_decode_init(AVCodecContext * avctx)
 {
     TTAContext *s = avctx->priv_data;
@@ -227,22 +216,22 @@ static int tta_decode_init(AVCodecContext * avctx)
 //            return -1;
 //        }
 
-        s->flags = get_le16(&s->gb);
+        s->flags = get_bits(&s->gb, 16);
         if (s->flags != 1 && s->flags != 3)
         {
             av_log(s->avctx, AV_LOG_ERROR, "Invalid flags\n");
             return -1;
         }
         s->is_float = (s->flags == FORMAT_FLOAT);
-        avctx->channels = s->channels = get_le16(&s->gb);
-        avctx->bits_per_sample = get_le16(&s->gb);
+        avctx->channels = s->channels = get_bits(&s->gb, 16);
+        avctx->bits_per_sample = get_bits(&s->gb, 16);
         s->bps = (avctx->bits_per_sample + 7) / 8;
-        avctx->sample_rate = get_le32(&s->gb);
+        avctx->sample_rate = get_bits_long(&s->gb, 32);
         if(avctx->sample_rate > 1000000){ //prevent FRAME_TIME * avctx->sample_rate from overflowing and sanity check
             av_log(avctx, AV_LOG_ERROR, "sample_rate too large\n");
             return -1;
         }
-        s->data_length = get_le32(&s->gb);
+        s->data_length = get_bits_long(&s->gb, 32);
         skip_bits(&s->gb, 32); // CRC32 of header
 
         if (s->is_float)
