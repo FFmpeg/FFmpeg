@@ -725,8 +725,13 @@ static inline void skip_bits1(GetBitContext *s){
 static inline unsigned int get_bits_long(GetBitContext *s, int n){
     if(n<=17) return get_bits(s, n);
     else{
+#ifdef ALT_BITSTREAM_READER_LE
+        int ret= get_bits(s, 16);
+        return ret | (get_bits(s, n-16) << 16);
+#else
         int ret= get_bits(s, 16) << (n-16);
         return ret | get_bits(s, n-16);
+#endif
     }
 }
 
