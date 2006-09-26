@@ -123,9 +123,6 @@ offset_t url_fseek(ByteIOContext *s, offset_t offset, int whence)
         /* can do the seek inside the buffer */
         s->buf_ptr = s->buffer + offset1;
     } else {
-        if (!s->seek)
-            return -EPIPE;
-
 #ifdef CONFIG_MUXERS
         if (s->write_flag) {
             flush_buffer(s);
@@ -136,7 +133,7 @@ offset_t url_fseek(ByteIOContext *s, offset_t offset, int whence)
             s->buf_end = s->buffer;
         }
         s->buf_ptr = s->buffer;
-        if (s->seek(s->opaque, offset, SEEK_SET) == (offset_t)-EPIPE)
+        if (!s->seek || s->seek(s->opaque, offset, SEEK_SET) == (offset_t)-EPIPE)
             return -EPIPE;
         s->pos = offset;
     }
