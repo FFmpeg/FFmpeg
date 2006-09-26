@@ -662,7 +662,7 @@ static const AVOption options[]={
 {"threads", NULL, OFFSET(thread_count), FF_OPT_TYPE_INT, 1, INT_MIN, INT_MAX, V|E|D},
 {"me_threshold", "motion estimaton threshold", OFFSET(me_threshold), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX},
 {"mb_threshold", "macroblock threshold", OFFSET(mb_threshold), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX, V|E},
-{"dc", "intra_dc_precision", OFFSET(intra_dc_precision), FF_OPT_TYPE_INT, 8, INT_MIN, INT_MAX, V|E},
+{"dc", "intra_dc_precision", OFFSET(intra_dc_precision), FF_OPT_TYPE_INT, 0, INT_MIN, INT_MAX, V|E},
 {"nssew", "nsse weight", OFFSET(nsse_weight), FF_OPT_TYPE_INT, 8, INT_MIN, INT_MAX, V|E},
 {"skip_top", NULL, OFFSET(skip_top), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX, V|D},
 {"skip_bottom", NULL, OFFSET(skip_bottom), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX, V|D},
