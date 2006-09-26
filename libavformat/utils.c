@@ -1812,11 +1812,11 @@ int av_find_stream_info(AVFormatContext *ic)
                 break;
             }
         }
-            /* we did not get all the codec info, but we read too much data */
-            if (read_size >= MAX_READ_SIZE) {
-                ret = count;
-                break;
-            }
+        /* we did not get all the codec info, but we read too much data */
+        if (read_size >= MAX_READ_SIZE) {
+            ret = count;
+            break;
+        }
 
         /* NOTE: a new stream can be added there if no header in file
            (AVFMTCTX_NOHEADER) */
