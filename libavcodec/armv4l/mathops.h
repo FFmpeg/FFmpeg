@@ -39,9 +39,9 @@
 #   define MAC16(rt, ra, rb) \
         asm ("smlabb %0, %2, %3, %0" : "=r" (rt) : "0" (rt), "r" (ra), "r" (rb));
 /* signed 16x16 -> 32 multiply */
-#   define MUL16(ra, rb) \
-        ({ int __rt;\
-         asm ("smulbb %0, %1, %2" : "=r" (__rt) : "r" (ra), "r" (rb));
+#   define MUL16(ra, rb)                                                \
+        ({ int __rt;                                                    \
+         asm ("smulbb %0, %1, %2" : "=r" (__rt) : "r" (ra), "r" (rb));  \
          __rt; })
 
 #endif
