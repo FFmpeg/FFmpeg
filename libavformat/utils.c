@@ -1873,7 +1873,10 @@ int av_find_stream_info(AVFormatContext *ic)
                     duration_sum[index]= duration;
                     duration_count[index]=1;
                 }else{
-                    int factor= av_rescale(duration, duration_count[index], duration_sum[index]);
+                    int factor= av_rescale(2*duration, duration_count[index], duration_sum[index]);
+                    if(factor==3)
+                         duration_count[index] *= 2;
+                    factor= av_rescale(duration, duration_count[index], duration_sum[index]);
                     duration_sum[index] += duration;
                     duration_count[index]+= factor;
                 }
@@ -1931,7 +1934,9 @@ int av_find_stream_info(AVFormatContext *ic)
             if(st->codec->codec_id == CODEC_ID_RAWVIDEO && !st->codec->codec_tag && !st->codec->bits_per_sample)
                 st->codec->codec_tag= avcodec_pix_fmt_to_codec_tag(st->codec->pix_fmt);
 
-            if(duration_count[i] && st->codec->time_base.num*101LL <= st->codec->time_base.den &&
+            if(duration_count[i]
+               && (st->codec->time_base.num*101LL <= st->codec->time_base.den || st->codec->codec_id == CODEC_ID_MPEG2VIDEO) &&
+               //FIXME we should not special case mpeg2, but this needs testing with non mpeg2 ...
                st->time_base.num*duration_sum[i]/duration_count[i]*101LL > st->time_base.den){
                 int64_t num, den, error, best_error;
 
@@ -1946,11 +1951,12 @@ int av_find_stream_info(AVFormatContext *ic)
                         av_reduce(&st->r_frame_rate.num, &st->r_frame_rate.den, j, 12, INT_MAX);
                     }
                 }
-                for(j=24; j<=30; j+=6){
-                    error= ABS(1001*12*num - 1000*12*j*den);
+                for(j=0; j<3; j++){
+                    static const int ticks[]= {24,30,60};
+                    error= ABS(1001*12*num - 1000*12*den * ticks[j]);
                     if(error < best_error){
                         best_error= error;
-                        av_reduce(&st->r_frame_rate.num, &st->r_frame_rate.den, j*1000, 1001, INT_MAX);
+                        av_reduce(&st->r_frame_rate.num, &st->r_frame_rate.den, ticks[j]*1000, 1001, INT_MAX);
                     }
                 }
             }
