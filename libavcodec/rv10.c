@@ -594,7 +594,7 @@ static int rv10_decode_packet(AVCodecContext *avctx,
                              uint8_t *buf, int buf_size)
 {
     MpegEncContext *s = avctx->priv_data;
-    int mb_count, mb_pos, left;
+    int mb_count, mb_pos, left, start_mb_x;
 
     init_get_bits(&s->gb, buf, buf_size*8);
     if(s->codec_id ==CODEC_ID_RV10)
@@ -639,8 +639,9 @@ static int rv10_decode_packet(AVCodecContext *avctx,
         if(s->mb_y==0) s->first_slice_line=1;
     }else{
         s->first_slice_line=1;
+        s->resync_mb_x= s->mb_x;
     }
-    s->resync_mb_x= s->mb_x;
+    start_mb_x= s->mb_x;
     s->resync_mb_y= s->mb_y;
     if(s->h263_aic){
         s->y_dc_scale_table=
@@ -699,7 +700,7 @@ static int rv10_decode_packet(AVCodecContext *avctx,
         if(ret == SLICE_END) break;
     }
 
-    ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x-1, s->mb_y, AC_END|DC_END|MV_END);
+    ff_er_add_slice(s, start_mb_x, s->resync_mb_y, s->mb_x-1, s->mb_y, AC_END|DC_END|MV_END);
 
     return buf_size;
 }
