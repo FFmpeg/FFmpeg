@@ -167,6 +167,7 @@ Codecs:
   vp5                                   Aurelien Jacobs
   vp6                                   Aurelien Jacobs
   vqavideo.c                            Mike Melanson
+  wavpack.c                             Kostya Shishkov
   wmv2.c                                Michael Niedermayer
   wnv1.c                                Kostya Shishkov
   x264.c                                Mans Rullgard
@@ -219,6 +220,7 @@ Muxers/Demuxers:
   wav.c                                 Michael Niedermayer
   wc3movie.c                            Mike Melanson
   westwood.c                            Mike Melanson
+  wv.c                                  Kostya Shishkov
 
 
 Operating systems / CPU architectures

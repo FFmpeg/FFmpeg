@@ -126,6 +126,7 @@ OBJS-$(CONFIG_VP3_DECODER)             += vp3.o
 OBJS-$(CONFIG_VP5_DECODER)             += vp5.o vp56.o vp56data.o
 OBJS-$(CONFIG_VP6_DECODER)             += vp6.o vp56.o vp56data.o
 OBJS-$(CONFIG_VQA_DECODER)             += vqavideo.o
+OBJS-$(CONFIG_WAVPACK_DECODER)         += wavpack.o
 OBJS-$(CONFIG_WMAV1_DECODER)           += wmadec.o
 OBJS-$(CONFIG_WMAV2_DECODER)           += wmadec.o
 OBJS-$(CONFIG_WMV3_DECODER)            += vc1.o

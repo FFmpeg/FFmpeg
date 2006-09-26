@@ -155,6 +155,7 @@ extern AVOutputFormat wav_muxer;
 extern AVInputFormat wc3_demuxer;
 extern AVInputFormat wsaud_demuxer;
 extern AVInputFormat wsvqa_demuxer;
+extern AVInputFormat wv_demuxer;
 extern AVOutputFormat yuv4mpegpipe_muxer;
 extern AVInputFormat yuv4mpegpipe_demuxer;
 

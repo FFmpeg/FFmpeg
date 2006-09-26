@@ -893,6 +893,7 @@ following image formats are supported:
 @item DSP Group TrueSpeech   @tab      @tab X
 @item True Audio (TTA)       @tab      @tab X
 @item Smacker Audio          @tab      @tab X
+@item WavPack Audio          @tab      @tab X
 @end multitable
 
 @code{X} means that encoding (resp. decoding) is supported.

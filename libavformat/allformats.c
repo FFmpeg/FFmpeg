@@ -461,6 +461,9 @@ void av_register_all(void)
 #ifdef CONFIG_WSVQA_DEMUXER
     av_register_input_format(&wsvqa_demuxer);
 #endif
+#ifdef CONFIG_WV_DEMUXER
+    av_register_input_format(&wv_demuxer);
+#endif
 #ifdef CONFIG_YUV4MPEGPIPE_MUXER
     av_register_output_format(&yuv4mpegpipe_muxer);
 #endif

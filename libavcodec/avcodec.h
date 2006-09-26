@@ -224,6 +224,7 @@ enum CodecID {
     CODEC_ID_TTA,
     CODEC_ID_SMACKAUDIO,
     CODEC_ID_QCELP,
+    CODEC_ID_WAVPACK,
 
     /* subtitle codecs */
     CODEC_ID_DVD_SUBTITLE= 0x17000,
@@ -2285,6 +2286,7 @@ extern AVCodec kmvc_decoder;
 extern AVCodec flashsv_decoder;
 extern AVCodec cavs_decoder;
 extern AVCodec vmnc_decoder;
+extern AVCodec wavpack_decoder;
 
 /* pcm codecs */
 #define PCM_CODEC(id, name) \

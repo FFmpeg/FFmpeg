@@ -127,6 +127,7 @@ OBJS-$(CONFIG_WAV_MUXER)                 += wav.o riff.o
 OBJS-$(CONFIG_WC3_DEMUXER)               += wc3movie.o
 OBJS-$(CONFIG_WSAUD_DEMUXER)             += westwood.o
 OBJS-$(CONFIG_WSVQA_DEMUXER)             += westwood.o
+OBJS-$(CONFIG_WV_DEMUXER)                += wv.o
 OBJS-$(CONFIG_YUV4MPEGPIPE_MUXER)        += yuv4mpeg.o
 OBJS-$(CONFIG_YUV4MPEGPIPE_DEMUXER)      += yuv4mpeg.o
 

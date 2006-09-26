@@ -58,6 +58,7 @@ version <next>
 - VMware video decoder
 - VP5 video decoder
 - VP6 video decoder
+- WavPack lossless audio decoder
 
 version 0.4.9-pre1:
 
