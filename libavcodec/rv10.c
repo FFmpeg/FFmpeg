@@ -534,7 +534,7 @@ static int rv10_decode_init(AVCodecContext *avctx)
         break;
     case 0x10003001:
         s->rv10_version= 3;
-        s->h263_long_vectors=0;
+        s->h263_long_vectors= !!(*(uint32_t*)avctx->extradata & 0x1000000);
         s->low_delay=1;
         break;
     case 0x20001000: /* real rv20 decoder fail on this id */
