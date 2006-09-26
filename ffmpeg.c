@@ -827,6 +827,10 @@ static void do_video_out(AVFormatContext *s,
             ret = avcodec_encode_video(enc,
                                        bit_buffer, bit_buffer_size,
                                        &big_picture);
+            if (ret == -1) {
+                fprintf(stderr, "Video encoding failed\n");
+                exit(1);
+            }
             //enc->frame_number = enc->real_pict_num;
             if(ret>0){
                 pkt.data= bit_buffer;

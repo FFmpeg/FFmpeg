@@ -326,6 +326,10 @@ static double get_qscale(MpegEncContext *s, RateControlEntry *rce, double rate_f
     };
 
     bits= ff_eval(s->avctx->rc_eq, const_values, const_names, func1, func1_names, NULL, NULL, rce);
+    if (isnan(bits)) {
+        av_log(s->avctx, AV_LOG_ERROR, "Unable to parse rc_eq \"%s\".\n", s->avctx->rc_eq);
+        return -1;
+    }
 
     rcc->pass1_rc_eq_output_sum+= bits;
     bits*=rate_factor;
@@ -726,6 +730,8 @@ float ff_rate_estimate_qscale(MpegEncContext *s, int dry_run)
         rate_factor= rcc->pass1_wanted_bits/rcc->pass1_rc_eq_output_sum * br_compensation;
 
         q= get_qscale(s, rce, rate_factor, picture_number);
+        if (q < 0)
+            return -1;
 
         assert(q>0.0);
 //printf("%f ", q);

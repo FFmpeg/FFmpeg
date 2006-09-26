@@ -3875,6 +3875,8 @@ static int ratecontrol_1pass(SnowContext *s, AVFrame *pict)
     }
 
     pict->quality= ff_rate_estimate_qscale(&s->m, 1);
+    if (pict->quality < 0)
+        return -1;
     s->lambda= pict->quality * 3/2;
     delta_qlog= qscale2qlog(pict->quality) - s->qlog;
     s->qlog+= delta_qlog;
@@ -4060,8 +4062,11 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
         s->m.pict_type =
         pict->pict_type= s->m.rc_context.entry[avctx->frame_number].new_pict_type;
         s->keyframe= pict->pict_type==FF_I_TYPE;
-        if(!(avctx->flags&CODEC_FLAG_QSCALE))
+        if(!(avctx->flags&CODEC_FLAG_QSCALE)) {
             pict->quality= ff_rate_estimate_qscale(&s->m, 0);
+            if (pict->quality < 0)
+                return -1;
+        }
     }else{
         s->keyframe= avctx->gop_size==0 || avctx->frame_number % avctx->gop_size == 0;
         s->m.pict_type=
@@ -4181,6 +4186,8 @@ redo_frame:
 
         if(s->pass1_rc && plane_index==0){
             int delta_qlog = ratecontrol_1pass(s, pict);
+            if (delta_qlog < 0)
+                return -1;
             if(delta_qlog){
                 //reordering qlog in the bitstream would eliminate this reset
                 ff_init_range_encoder(c, buf, buf_size);
@@ -4267,7 +4274,8 @@ STOP_TIMER("pred-conv")}
     s->m.current_picture.quality = pict->quality;
     s->m.total_bits += 8*(s->c.bytestream - s->c.bytestream_start);
     if(s->pass1_rc)
-        ff_rate_estimate_qscale(&s->m, 0);
+        if (ff_rate_estimate_qscale(&s->m, 0) < 0)
+            return -1;
     if(avctx->flags&CODEC_FLAG_PASS1)
         ff_write_pass1_stats(&s->m);
     s->m.last_pict_type = s->m.pict_type;

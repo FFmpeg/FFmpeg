@@ -39,7 +39,7 @@
 //#include <assert.h>
 
 #ifdef CONFIG_ENCODERS
-static void encode_picture(MpegEncContext *s, int picture_number);
+static int encode_picture(MpegEncContext *s, int picture_number);
 #endif //CONFIG_ENCODERS
 static void dct_unquantize_mpeg1_intra_c(MpegEncContext *s,
                                    DCTELEM *block, int n, int qscale);
@@ -2502,7 +2502,8 @@ int MPV_encode_picture(AVCodecContext *avctx,
 //printf("qs:%f %f %d\n", s->new_picture.quality, s->current_picture.quality, s->qscale);
         MPV_frame_start(s, avctx);
 
-        encode_picture(s, s->picture_number);
+        if (encode_picture(s, s->picture_number) < 0)
+            return -1;
 
         avctx->real_pict_num  = s->picture_number;
         avctx->header_bits = s->header_bits;
@@ -5463,10 +5464,13 @@ static void merge_context_after_encode(MpegEncContext *dst, MpegEncContext *src)
     flush_put_bits(&dst->pb);
 }
 
-static void estimate_qp(MpegEncContext *s, int dry_run){
-    if (!s->fixed_qscale)
+static int estimate_qp(MpegEncContext *s, int dry_run){
+    if (!s->fixed_qscale) {
         s->current_picture_ptr->quality=
         s->current_picture.quality = ff_rate_estimate_qscale(s, dry_run);
+        if (s->current_picture.quality < 0)
+            return -1;
+    }
 
     if(s->adaptive_quant){
         switch(s->codec_id){
@@ -5488,7 +5492,7 @@ static void estimate_qp(MpegEncContext *s, int dry_run){
     update_qscale(s);
 }
 
-static void encode_picture(MpegEncContext *s, int picture_number)
+static int encode_picture(MpegEncContext *s, int picture_number)
 {
     int i;
     int bits;
@@ -5517,7 +5521,8 @@ static void encode_picture(MpegEncContext *s, int picture_number)
     }
 
     if(s->flags & CODEC_FLAG_PASS2){
-        estimate_qp(s, 1);
+        if (estimate_qp(s,1) < 0)
+            return -1;
         ff_get_2pass_fcode(s);
     }else if(!(s->flags & CODEC_FLAG_QSCALE)){
         if(s->pict_type==B_TYPE)
@@ -5623,7 +5628,8 @@ static void encode_picture(MpegEncContext *s, int picture_number)
         }
     }
 
-    estimate_qp(s, 0);
+    if (estimate_qp(s, 0) < 0)
+        return -1;
 
     if(s->qscale < 3 && s->max_qcoeff<=128 && s->pict_type==I_TYPE && !(s->flags & CODEC_FLAG_QSCALE))
         s->qscale= 3; //reduce clipping problems
