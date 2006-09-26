@@ -52,6 +52,7 @@ typedef struct Parser{
     double (**func2)(void *, double a, double b); // NULL terminated
     char **func2_name;          // NULL terminated
     void *opaque;
+    char **error;
 } Parser;
 
 extern double av_strtod(const char *name, char **tail);
@@ -88,7 +89,7 @@ static double evalPrimary(Parser *p){
 
     p->s= strchr(p->s, '(');
     if(p->s==NULL){
-        av_log(NULL, AV_LOG_ERROR, "Parser: missing ( in \"%s\"\n", next);
+        *p->error = "missing (";
         p->s= next;
         return NAN;
     }
@@ -99,7 +100,7 @@ static double evalPrimary(Parser *p){
         d2= evalExpression(p);
     }
     if(p->s[0] != ')'){
-        av_log(NULL, AV_LOG_ERROR, "Parser: missing ) in \"%s\"\n", next);
+        *p->error = "missing )";
         return NAN;
     }
     p->s++; // ")"
@@ -138,7 +139,7 @@ static double evalPrimary(Parser *p){
             }
         }
 
-        av_log(NULL, AV_LOG_ERROR, "Parser: unknown function in \"%s\"\n", next);
+        *p->error = "unknown function";
         return NAN;
     }
 
@@ -185,10 +186,10 @@ static double evalExpression(Parser *p){
     return ret;
 }
 
-double ff_eval(char *s, double *const_value, const char **const_name,
+double ff_eval2(char *s, double *const_value, const char **const_name,
                double (**func1)(void *, double), const char **func1_name,
                double (**func2)(void *, double, double), char **func2_name,
-               void *opaque){
+               void *opaque, char **error){
     Parser p;
 
     p.stack_index=100;
@@ -200,9 +201,24 @@ double ff_eval(char *s, double *const_value, const char **const_name,
     p.func2      = func2;
     p.func2_name = func2_name;
     p.opaque     = opaque;
+    p.error= error;
 
     return evalExpression(&p);
 }
+
+#if LIBAVCODEC_VERSION_INT < ((51<<16)+(16<<8)+0)
+attribute_deprecated double ff_eval(char *s, double *const_value, const char **const_name,
+               double (**func1)(void *, double), const char **func1_name,
+               double (**func2)(void *, double, double), char **func2_name,
+               void *opaque){
+    char *error=NULL;
+    double ret;
+    ret = ff_eval2(s, const_value, const_name, func1, func1_name, func2, func2_name, opaque, &error);
+    if (error)
+        av_log(NULL, AV_LOG_ERROR, "Error evaluating \"%s\": %s\n", s, error);
+    return ret;
+}
+#endif
 
 #ifdef TEST
 #undef printf
