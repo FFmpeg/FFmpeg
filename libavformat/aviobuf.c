@@ -22,6 +22,8 @@
 
 #define IO_BUFFER_SIZE 32768
 
+static void fill_buffer(ByteIOContext *s);
+
 int init_put_byte(ByteIOContext *s,
                   unsigned char *buffer,
                   int buffer_size,
@@ -122,6 +124,11 @@ offset_t url_fseek(ByteIOContext *s, offset_t offset, int whence)
         offset1 >= 0 && offset1 < (s->buf_end - s->buffer)) {
         /* can do the seek inside the buffer */
         s->buf_ptr = s->buffer + offset1;
+    } else if(s->is_streamed && !s->write_flag &&
+              offset1 >= 0 && offset1 < (s->buf_end - s->buffer) + (1<<16)){
+        while(s->pos < offset && !s->eof_reached)
+            fill_buffer(s);
+        s->buf_ptr = s->buf_end + offset - s->pos;
     } else {
 #ifdef CONFIG_MUXERS
         if (s->write_flag) {
