@@ -1955,29 +1955,6 @@ int av_find_stream_info(AVFormatContext *ic)
                 }
             }
 
-            /* set real frame rate info */
-            /* compute the real frame rate for telecine */
-            if ((st->codec->codec_id == CODEC_ID_MPEG1VIDEO ||
-                 st->codec->codec_id == CODEC_ID_MPEG2VIDEO) &&
-                st->codec->sub_id == 2) {
-                if (st->codec_info_nb_frames >= 20) {
-                    float coded_frame_rate, est_frame_rate;
-                    est_frame_rate = ((double)st->codec_info_nb_frames * AV_TIME_BASE) /
-                        (double)st->codec_info_duration ;
-                    coded_frame_rate = 1.0/av_q2d(st->codec->time_base);
-#if 0
-                    printf("telecine: coded_frame_rate=%0.3f est_frame_rate=%0.3f\n",
-                           coded_frame_rate, est_frame_rate);
-#endif
-                    /* if we detect that it could be a telecine, we
-                       signal it. It would be better to do it at a
-                       higher level as it can change in a film */
-                    if (coded_frame_rate >= 24.97 &&
-                        (est_frame_rate >= 23.5 && est_frame_rate < 24.5)) {
-                        st->r_frame_rate = (AVRational){24000, 1001};
-                    }
-                }
-            }
             /* if no real frame rate, use the codec one */
             if (!st->r_frame_rate.num){
                 st->r_frame_rate.num = st->codec->time_base.den;
