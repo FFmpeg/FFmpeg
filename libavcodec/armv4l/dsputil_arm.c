@@ -27,6 +27,12 @@ extern void dsputil_init_iwmmxt(DSPContext* c, AVCodecContext *avctx);
 extern void j_rev_dct_ARM(DCTELEM *data);
 extern void simple_idct_ARM(DCTELEM *data);
 
+extern void simple_idct_armv5te(DCTELEM *data);
+extern void simple_idct_put_armv5te(uint8_t *dest, int line_size,
+                                    DCTELEM *data);
+extern void simple_idct_add_armv5te(uint8_t *dest, int line_size,
+                                    DCTELEM *data);
+
 /* XXX: local hack */
 static void (*ff_put_pixels_clamped)(const DCTELEM *block, uint8_t *pixels, int line_size);
 static void (*ff_add_pixels_clamped)(const DCTELEM *block, uint8_t *pixels, int line_size);
@@ -196,8 +202,10 @@ void dsputil_init_armv4l(DSPContext* c, AVCodecContext *avctx)
     ff_add_pixels_clamped = c->add_pixels_clamped;
 
     if(idct_algo == FF_IDCT_AUTO){
-#ifdef HAVE_IPP
+#if defined(HAVE_IPP)
         idct_algo = FF_IDCT_IPP;
+#elif defined(HAVE_ARMV5TE)
+        idct_algo = FF_IDCT_SIMPLEARMV5TE;
 #else
         idct_algo = FF_IDCT_ARM;
 #endif
@@ -213,6 +221,13 @@ void dsputil_init_armv4l(DSPContext* c, AVCodecContext *avctx)
         c->idct_add= simple_idct_ARM_add;
         c->idct    = simple_idct_ARM;
         c->idct_permutation_type= FF_NO_IDCT_PERM;
+#ifdef HAVE_ARMV5TE
+    } else if (idct_algo==FF_IDCT_SIMPLEARMV5TE){
+        c->idct_put= simple_idct_put_armv5te;
+        c->idct_add= simple_idct_add_armv5te;
+        c->idct    = simple_idct_armv5te;
+        c->idct_permutation_type = FF_NO_IDCT_PERM;
+#endif
 #ifdef HAVE_IPP
     } else if (idct_algo==FF_IDCT_IPP){
         c->idct_put= simple_idct_ipp_put;

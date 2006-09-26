@@ -564,6 +564,7 @@ static const AVOption options[]={
 {"altivec", NULL, 0, FF_OPT_TYPE_CONST, FF_IDCT_ALTIVEC, INT_MIN, INT_MAX, V|E|D, "idct"},
 {"sh4", NULL, 0, FF_OPT_TYPE_CONST, FF_IDCT_SH4, INT_MIN, INT_MAX, V|E|D, "idct"},
 {"simplearm", NULL, 0, FF_OPT_TYPE_CONST, FF_IDCT_SIMPLEARM, INT_MIN, INT_MAX, V|E|D, "idct"},
+{"simplearmv5te", NULL, 0, FF_OPT_TYPE_CONST, FF_IDCT_SIMPLEARMV5TE, INT_MIN, INT_MAX, V|E|D, "idct"},
 {"h264", NULL, 0, FF_OPT_TYPE_CONST, FF_IDCT_H264, INT_MIN, INT_MAX, V|E|D, "idct"},
 {"vp3", NULL, 0, FF_OPT_TYPE_CONST, FF_IDCT_VP3, INT_MIN, INT_MAX, V|E|D, "idct"},
 {"ipp", NULL, 0, FF_OPT_TYPE_CONST, FF_IDCT_IPP, INT_MIN, INT_MAX, V|E|D, "idct"},
