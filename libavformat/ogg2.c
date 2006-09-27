@@ -307,7 +307,6 @@ ogg_read_page (AVFormatContext * s, int *str)
 
     if (os->bufsize - os->bufpos < size){
         uint8_t *nb = av_malloc (os->bufsize *= 2);
-        memset (nb, 0, os->bufsize);
         memcpy (nb, os->buf, os->bufpos);
         av_free (os->buf);
         os->buf = nb;
