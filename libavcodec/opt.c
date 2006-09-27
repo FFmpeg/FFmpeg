@@ -26,74 +26,7 @@
 
 #include "avcodec.h"
 #include "opt.h"
-
-static int8_t si_prefixes['z' - 'E' + 1]={
-    ['y'-'E']= -24,
-    ['z'-'E']= -21,
-    ['a'-'E']= -18,
-    ['f'-'E']= -15,
-    ['p'-'E']= -12,
-    ['n'-'E']= - 9,
-    ['u'-'E']= - 6,
-    ['m'-'E']= - 3,
-    ['c'-'E']= - 2,
-    ['d'-'E']= - 1,
-    ['h'-'E']=   2,
-    ['k'-'E']=   3,
-    ['K'-'E']=   3,
-    ['M'-'E']=   6,
-    ['G'-'E']=   9,
-    ['T'-'E']=  12,
-    ['P'-'E']=  15,
-    ['E'-'E']=  18,
-    ['Z'-'E']=  21,
-    ['Y'-'E']=  24,
-};
-
-/** strtod() function extended with 'k', 'M', 'G', 'ki', 'Mi', 'Gi' and 'B'
- * postfixes.  This allows using f.e. kB, MiB, G and B as a postfix. This
- * function assumes that the unit of numbers is bits not bytes.
- */
-double av_strtod(const char *name, char **tail) {
-    double d;
-    int p = 0;
-    char *next;
-    d = strtod(name, &next);
-    /* if parsing succeeded, check for and interpret postfixes */
-    if (next!=name) {
-
-        if(*next >= 'E' && *next <= 'z'){
-            int e= si_prefixes[*next - 'E'];
-            if(e){
-                if(next[1] == 'i'){
-                    d*= pow( 2, e/0.3);
-                    next+=2;
-                }else{
-                    d*= pow(10, e);
-                    next++;
-                }
-            }
-        }
-
-        if(*next=='B') {
-            d*=8;
-            *next++;
-        }
-    }
-    /* if requested, fill in tail with the position after the last parsed
-       character */
-    if (tail)
-        *tail = next;
-    return d;
-}
-
-static double av_parse_num(const char *name, char **tail){
-    double d;
-    d= av_strtod(name, tail);
-    if(*tail>name && (**tail=='/' || **tail==':'))
-        d/=av_strtod((*tail)+1, tail);
-    return d;
-}
+#include "mpegvideo.h"
 
 //FIXME order them and do a bin search
 static AVOption *find_opt(void *v, const char *name, const char *unit){
@@ -159,7 +92,20 @@ static AVOption *set_all_opt(void *v, const char *unit, double d){
     return ret;
 }
 
-//FIXME use eval.c maybe?
+static double const_values[]={
+    M_PI,
+    M_E,
+    FF_QP2LAMBDA,
+    0
+};
+
+static const char *const_names[]={
+    "PI",
+    "E",
+    "QP2LAMBDA",
+    0
+};
+
 AVOption *av_set_string(void *obj, const char *name, const char *val){
     AVOption *o= find_opt(obj, name, NULL);
     if(o && o->offset==0 && o->type == FF_OPT_TYPE_CONST && o->unit){
@@ -170,9 +116,10 @@ AVOption *av_set_string(void *obj, const char *name, const char *val){
     if(o->type != FF_OPT_TYPE_STRING){
         for(;;){
             int i;
-            char buf[256], *tail;
+            char buf[256];
             int cmd=0;
             double d;
+            char *error = NULL;
 
             if(*val == '+' || *val == '-')
                 cmd= *(val++);
@@ -182,15 +129,19 @@ AVOption *av_set_string(void *obj, const char *name, const char *val){
             buf[i]=0;
             val+= i;
 
-            d= av_parse_num(buf, &tail);
-            if(tail <= buf){
+            d = ff_eval2(buf, const_values, const_names, NULL, NULL, NULL, NULL, NULL, &error);
+            if(isnan(d)) {
                 AVOption *o_named= find_opt(obj, buf, o->unit);
                 if(o_named && o_named->type == FF_OPT_TYPE_CONST)
                     d= o_named->default_val;
                 else if(!strcmp(buf, "default")) d= o->default_val;
                 else if(!strcmp(buf, "max"    )) d= o->max;
                 else if(!strcmp(buf, "min"    )) d= o->min;
-                else return NULL;
+                else {
+                    if (!error)
+                        av_log(NULL, AV_LOG_ERROR, "Unable to parse option value \"%s\": %s\n", val, error);
+                    return NULL;
+                }
             }
             if(o->type == FF_OPT_TYPE_FLAGS){
                 if     (cmd=='+') d= av_get_int(obj, name, NULL) | (int64_t)d;
