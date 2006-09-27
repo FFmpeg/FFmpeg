@@ -1140,6 +1140,7 @@ if test "$?" != 0; then
     echo "$cc is unable to create an executable file."
     if test -z "$cross_prefix" -a "$cross_compile" = no; then
         echo "If $cc is a cross-compiler, use the --cross-compile option."
+        echo "Only do this if you know what cross compiling means."
     fi
     die "C compiler test failed."
 fi
