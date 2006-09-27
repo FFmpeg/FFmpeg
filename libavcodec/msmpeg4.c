@@ -627,10 +627,10 @@ static int get_dc(uint8_t *src, int stride, int scale)
 
 /* dir = 0: left, dir = 1: top prediction */
 static inline int msmpeg4_pred_dc(MpegEncContext * s, int n,
-                             uint16_t **dc_val_ptr, int *dir_ptr)
+                             int16_t **dc_val_ptr, int *dir_ptr)
 {
     int a, b, c, wrap, pred, scale;
-    uint16_t *dc_val;
+    int16_t *dc_val;
 
     /* find prediction */
     if (n < 4) {
@@ -787,7 +787,7 @@ static void msmpeg4_encode_dc(MpegEncContext * s, int level, int n, int *dir_ptr
         /* update predictor */
         *dc_val= level;
     }else{
-        uint16_t *dc_val;
+        int16_t *dc_val;
         pred = msmpeg4_pred_dc(s, n, &dc_val, dir_ptr);
 
         /* update predictor */
@@ -1875,7 +1875,7 @@ static int msmpeg4_decode_dc(MpegEncContext * s, int n, int *dir_ptr)
         /* update predictor */
         *dc_val= level;
     }else{
-        uint16_t *dc_val;
+        int16_t *dc_val;
         pred = msmpeg4_pred_dc(s, n, &dc_val, dir_ptr);
         level += pred;
 

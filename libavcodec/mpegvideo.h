@@ -344,8 +344,8 @@ typedef struct MpegEncContext {
     Picture *current_picture_ptr;  ///< pointer to the current picture
     uint8_t *visualization_buffer[3]; //< temporary buffer vor MV visualization
     int last_dc[3];                ///< last DC values for MPEG1
-    uint16_t *dc_val_base;
-    uint16_t *dc_val[3];           ///< used for mpeg4 DC prediction, all 3 arrays must be continuous
+    int16_t *dc_val_base;
+    int16_t *dc_val[3];            ///< used for mpeg4 DC prediction, all 3 arrays must be continuous
     int16_t dc_cache[4*5];
     int y_dc_scale, c_dc_scale;
     const uint8_t *y_dc_scale_table;     ///< qscale -> y_dc_scale table

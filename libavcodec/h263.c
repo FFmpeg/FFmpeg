@@ -72,7 +72,7 @@ static inline int mpeg4_decode_dc(MpegEncContext * s, int n, int *dir_ptr);
 static inline int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
                               int n, int coded, int intra, int rvlc);
 #ifdef CONFIG_ENCODERS
-static int h263_pred_dc(MpegEncContext * s, int n, uint16_t **dc_val_ptr);
+static int h263_pred_dc(MpegEncContext * s, int n, int16_t **dc_val_ptr);
 static void mpeg4_encode_visual_object_header(MpegEncContext * s);
 static void mpeg4_encode_vol_header(MpegEncContext * s, int vo_number, int vol_number);
 #endif //CONFIG_ENCODERS
@@ -1231,7 +1231,7 @@ void h263_encode_mb(MpegEncContext * s,
     int cbpc, cbpy, i, cbp, pred_x, pred_y;
     int16_t pred_dc;
     int16_t rec_intradc[6];
-    uint16_t *dc_ptr[6];
+    int16_t *dc_ptr[6];
     const int interleaved_stats= (s->flags&CODEC_FLAG_PASS1);
     const int dquant_code[5]= {1,0,9,2,3};
 
@@ -1516,10 +1516,10 @@ void ff_h263_loop_filter(MpegEncContext * s){
 }
 
 #ifdef CONFIG_ENCODERS
-static int h263_pred_dc(MpegEncContext * s, int n, uint16_t **dc_val_ptr)
+static int h263_pred_dc(MpegEncContext * s, int n, int16_t **dc_val_ptr)
 {
     int x, y, wrap, a, c, pred_dc, scale;
-    uint16_t *dc_val;
+    int16_t *dc_val;
 
     /* find prediction */
     if (n < 4) {
@@ -1565,8 +1565,7 @@ static int h263_pred_dc(MpegEncContext * s, int n, uint16_t **dc_val_ptr)
 static void h263_pred_acdc(MpegEncContext * s, DCTELEM *block, int n)
 {
     int x, y, wrap, a, c, pred_dc, scale, i;
-    uint16_t *dc_val;
-    int16_t *ac_val, *ac_val1;
+    int16_t *dc_val, *ac_val, *ac_val1;
 
     /* find prediction */
     if (n < 4) {
@@ -2530,7 +2529,7 @@ void ff_set_qscale(MpegEncContext * s, int qscale)
 static inline int ff_mpeg4_pred_dc(MpegEncContext * s, int n, int level, int *dir_ptr, int encoding)
 {
     int a, b, c, wrap, pred, scale, ret;
-    uint16_t *dc_val;
+    int16_t *dc_val;
 
     /* find prediction */
     if (n < 4) {
