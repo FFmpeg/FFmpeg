@@ -521,6 +521,16 @@ static int asf_get_packet(AVFormatContext *s)
     DO_2BITS(asf->packet_flags >> 1, padsize, 0); // sequence ignored
     DO_2BITS(asf->packet_flags >> 3, padsize, 0); // padding length
 
+    //the following checks prevent overflows and infinite loops
+    if(packet_length >= (1U<<29)){
+        av_log(s, AV_LOG_ERROR, "invalid packet_length %d at:%"PRId64"\n", packet_length, url_ftell(pb));
+        return 0; // FIXME this should be -1
+    }
+    if(padsize >= (1U<<29)){
+        av_log(s, AV_LOG_ERROR, "invalid padsize %d at:%"PRId64"\n", padsize, url_ftell(pb));
+        return 0; // FIXME this should be -1
+    }
+
     asf->packet_timestamp = get_le32(pb);
     get_le16(pb); /* duration */
     // rsize has at least 11 bytes which have to be present
@@ -557,6 +567,7 @@ static int asf_read_packet(AVFormatContext *s, AVPacket *pkt)
             //printf("PacketLeftSize:%d  Pad:%d Pos:%Ld\n", asf->packet_size_left, asf->packet_padsize, url_ftell(pb));
             if((url_ftell(&s->pb) + ret - s->data_offset) % asf->packet_size)
                 ret += asf->packet_size - ((url_ftell(&s->pb) + ret - s->data_offset) % asf->packet_size);
+            assert(ret>=0);
             /* fail safe */
             url_fskip(pb, ret);
             asf->packet_pos= url_ftell(&s->pb);
