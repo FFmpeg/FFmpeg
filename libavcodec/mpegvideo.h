@@ -991,10 +991,16 @@ int ff_rate_control_init(MpegEncContext *s);
 float ff_rate_estimate_qscale(MpegEncContext *s, int dry_run);
 void ff_write_pass1_stats(MpegEncContext *s);
 void ff_rate_control_uninit(MpegEncContext *s);
+#if LIBAVCODEC_VERSION_INT < ((52<<16)+(0<<8)+0)
 double ff_eval(char *s, double *const_value, const char **const_name,
                double (**func1)(void *, double), const char **func1_name,
                double (**func2)(void *, double, double), char **func2_name,
                void *opaque);
+#endif
+double ff_eval2(char *s, double *const_value, const char **const_name,
+               double (**func1)(void *, double), const char **func1_name,
+               double (**func2)(void *, double, double), char **func2_name,
+               void *opaque, char **error);
 int ff_vbv_update(MpegEncContext *s, int frame_size);
 void ff_get_2pass_fcode(MpegEncContext *s);
 

@@ -259,6 +259,7 @@ static double get_qscale(MpegEncContext *s, RateControlEntry *rce, double rate_f
     const int pict_type= rce->new_pict_type;
     const double mb_num= s->mb_num;
     int i;
+    char *error = NULL;
 
     double const_values[]={
         M_PI,
@@ -325,9 +326,9 @@ static double get_qscale(MpegEncContext *s, RateControlEntry *rce, double rate_f
         NULL
     };
 
-    bits= ff_eval(s->avctx->rc_eq, const_values, const_names, func1, func1_names, NULL, NULL, rce);
+    bits= ff_eval2(s->avctx->rc_eq, const_values, const_names, func1, func1_names, NULL, NULL, rce, &error);
     if (isnan(bits)) {
-        av_log(s->avctx, AV_LOG_ERROR, "Unable to parse rc_eq \"%s\".\n", s->avctx->rc_eq);
+        av_log(s->avctx, AV_LOG_ERROR, "Error evaluating rc_eq \"%s\": %s\n", s->avctx->rc_eq, error? error : "");
         return -1;
     }
 
