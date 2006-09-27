@@ -1110,6 +1110,19 @@ if test $tune != "generic"; then
     esac
 fi
 
+# make sure we can execute files in $TMPDIR
+cat >$TMPE 2>>$logfile <<EOF
+#! /bin/sh
+EOF
+chmod +x $TMPE >>$logfile 2>&1
+if ! $TMPE >>$logfile 2>&1; then
+    cat <<EOF
+Unable to create and execute files in $TMPDIR1.  Set the TMPDIR environment
+variable to another directory.
+EOF
+    die "Sanity test failed."
+fi
+
 # compiler sanity check
 check_exec <<EOF
 int main(){
