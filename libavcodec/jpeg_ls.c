@@ -459,6 +459,8 @@ static int ls_decode_picture(MJpegDecodeContext *s, int near, int point_transfor
         }
     } else if(ilv == 2) { /* sample interleaving */
         av_log(s->avctx, AV_LOG_ERROR, "Sample interleaved images are not supported.\n");
+        av_free(state);
+        av_free(zero);
         return -1;
     }
 
