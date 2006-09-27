@@ -5494,6 +5494,7 @@ static int estimate_qp(MpegEncContext *s, int dry_run){
         s->lambda= s->current_picture.quality;
 //printf("%d %d\n", s->avctx->global_quality, s->current_picture.quality);
     update_qscale(s);
+    return 0;
 }
 
 static int encode_picture(MpegEncContext *s, int picture_number)
@@ -5709,6 +5710,7 @@ static int encode_picture(MpegEncContext *s, int picture_number)
         merge_context_after_encode(s, s->thread_context[i]);
     }
     emms_c();
+    return 0;
 }
 
 static void  denoise_dct_c(MpegEncContext *s, DCTELEM *block){
