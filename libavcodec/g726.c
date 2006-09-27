@@ -299,6 +299,7 @@ static int16_t g726_decode(G726Context* c, int16_t i)
     return g726_iterate(c, i);
 }
 
+#ifdef CONFIG_ENCODERS
 static int16_t g726_encode(G726Context* c, int16_t sig)
 {
    uint8_t i;
@@ -307,6 +308,7 @@ static int16_t g726_encode(G726Context* c, int16_t sig)
    g726_iterate(c, i);
    return i;
 }
+#endif
 
 /* Interfacing to the libavcodec */
 
@@ -350,6 +352,7 @@ static int g726_close(AVCodecContext *avctx)
     return 0;
 }
 
+#ifdef CONFIG_ENCODERS
 static int g726_encode_frame(AVCodecContext *avctx,
                             uint8_t *dst, int buf_size, void *data)
 {
@@ -366,6 +369,7 @@ static int g726_encode_frame(AVCodecContext *avctx,
 
     return put_bits_count(&pb)>>3;
 }
+#endif
 
 static int g726_decode_frame(AVCodecContext *avctx,
                              void *data, int *data_size,

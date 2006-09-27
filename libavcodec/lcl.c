@@ -190,7 +190,7 @@ static unsigned int mszh_decomp(unsigned char * srcptr, int srclen, unsigned cha
 
 
 
-
+#ifdef CONFIG_DECODERS
 /*
  *
  * Decode a frame
@@ -544,9 +544,9 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
     /* always report that the buffer was completely consumed */
     return buf_size;
 }
+#endif
 
-
-
+#ifdef CONFIG_ENCODERS
 /*
  *
  * Encode a frame
@@ -605,9 +605,9 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
     return c->zstream.total_out;
 #endif
 }
+#endif /* CONFIG_ENCODERS */
 
-
-
+#ifdef CONFIG_DECODERS
 /*
  *
  * Init lcl decoder
@@ -769,9 +769,9 @@ static int decode_init(AVCodecContext *avctx)
 
     return 0;
 }
+#endif /* CONFIG_DECODERS */
 
-
-
+#ifdef CONFIG_ENCODERS
 /*
  *
  * Init lcl encoder
@@ -839,11 +839,11 @@ static int encode_init(AVCodecContext *avctx)
     return 0;
 #endif
 }
+#endif /* CONFIG_ENCODERS */
 
 
 
-
-
+#ifdef CONFIG_DECODERS
 /*
  *
  * Uninit lcl decoder
@@ -861,9 +861,9 @@ static int decode_end(AVCodecContext *avctx)
 
         return 0;
 }
+#endif
 
-
-
+#ifdef CONFIG_ENCODERS
 /*
  *
  * Uninit lcl encoder
@@ -881,7 +881,9 @@ static int encode_end(AVCodecContext *avctx)
 
     return 0;
 }
+#endif
 
+#ifdef CONFIG_MSZH_DECODER
 AVCodec mszh_decoder = {
         "mszh",
         CODEC_TYPE_VIDEO,
@@ -893,8 +895,9 @@ AVCodec mszh_decoder = {
         decode_frame,
         CODEC_CAP_DR1,
 };
+#endif
 
-
+#ifdef CONFIG_ZLIB_DECODER
 AVCodec zlib_decoder = {
         "zlib",
         CODEC_TYPE_VIDEO,
@@ -906,6 +909,7 @@ AVCodec zlib_decoder = {
         decode_frame,
         CODEC_CAP_DR1,
 };
+#endif
 
 #ifdef CONFIG_ENCODERS
 

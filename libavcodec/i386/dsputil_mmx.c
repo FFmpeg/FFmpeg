@@ -2527,6 +2527,7 @@ static void gmc_mmx(uint8_t *dst, uint8_t *src, int stride, int h, int ox, int o
     }
 }
 
+#ifdef CONFIG_ENCODERS
 static int try_8x8basis_mmx(int16_t rem[64], int16_t weight[64], int16_t basis[64], int scale){
     long i=0;
 
@@ -2612,6 +2613,7 @@ static void add_8x8basis_mmx(int16_t rem[64], int16_t basis[64], int scale){
         }
     }
 }
+#endif /* CONFIG_ENCODERS */
 
 #define PREFETCH(name, op) \
 void name(void *mem, int stride, int h){\

@@ -60,6 +60,8 @@ static void h263p_encode_umotion(MpegEncContext * s, int val);
 static inline void mpeg4_encode_block(MpegEncContext * s, DCTELEM * block,
                                int n, int dc, uint8_t *scan_table,
                                PutBitContext *dc_pb, PutBitContext *ac_pb);
+static int mpeg4_get_block_length(MpegEncContext * s, DCTELEM * block, int n, int intra_dc,
+                                  uint8_t *scan_table);
 #endif
 
 static int h263_decode_motion(MpegEncContext * s, int pred, int fcode);
@@ -69,10 +71,8 @@ static int h263_decode_block(MpegEncContext * s, DCTELEM * block,
 static inline int mpeg4_decode_dc(MpegEncContext * s, int n, int *dir_ptr);
 static inline int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
                               int n, int coded, int intra, int rvlc);
-static int mpeg4_get_block_length(MpegEncContext * s, DCTELEM * block, int n, int intra_dc,
-                               uint8_t *scan_table);
-static int h263_pred_dc(MpegEncContext * s, int n, uint16_t **dc_val_ptr);
 #ifdef CONFIG_ENCODERS
+static int h263_pred_dc(MpegEncContext * s, int n, uint16_t **dc_val_ptr);
 static void mpeg4_encode_visual_object_header(MpegEncContext * s);
 static void mpeg4_encode_vol_header(MpegEncContext * s, int vo_number, int vol_number);
 #endif //CONFIG_ENCODERS
@@ -1515,6 +1515,7 @@ void ff_h263_loop_filter(MpegEncContext * s){
     }
 }
 
+#ifdef CONFIG_ENCODERS
 static int h263_pred_dc(MpegEncContext * s, int n, uint16_t **dc_val_ptr)
 {
     int x, y, wrap, a, c, pred_dc, scale;
@@ -1559,6 +1560,7 @@ static int h263_pred_dc(MpegEncContext * s, int n, uint16_t **dc_val_ptr)
     *dc_val_ptr = &dc_val[x + y * wrap];
     return pred_dc;
 }
+#endif /* CONFIG_ENCODERS */
 
 static void h263_pred_acdc(MpegEncContext * s, DCTELEM *block, int n)
 {

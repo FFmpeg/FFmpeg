@@ -164,7 +164,7 @@ static int raw_close_decoder(AVCodecContext *avctx)
 }
 
 /* RAW Encoder Implementation */
-
+#ifdef CONFIG_RAWVIDEO_ENCODER
 static int raw_init_encoder(AVCodecContext *avctx)
 {
     avctx->coded_frame = (AVFrame *)avctx->priv_data;
@@ -182,7 +182,6 @@ static int raw_encode(AVCodecContext *avctx,
                                                avctx->height, frame, buf_size);
 }
 
-#ifdef CONFIG_RAWVIDEO_ENCODER
 AVCodec rawvideo_encoder = {
     "rawvideo",
     CODEC_TYPE_VIDEO,

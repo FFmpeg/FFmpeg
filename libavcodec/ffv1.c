@@ -354,6 +354,7 @@ static inline int get_vlc_symbol(GetBitContext *gb, VlcState * const state, int 
     return ret;
 }
 
+#ifdef CONFIG_ENCODERS
 static inline int encode_line(FFV1Context *s, int w, int_fast16_t *sample[2], int plane_index, int bits){
     PlaneContext * const p= &s->plane[plane_index];
     RangeCoder * const c= &s->c;
@@ -527,6 +528,7 @@ static void write_header(FFV1Context *f){
     for(i=0; i<5; i++)
         write_quant_table(c, f->quant_table[i]);
 }
+#endif /* CONFIG_ENCODERS */
 
 static int common_init(AVCodecContext *avctx){
     FFV1Context *s = avctx->priv_data;
@@ -545,6 +547,7 @@ static int common_init(AVCodecContext *avctx){
     return 0;
 }
 
+#ifdef CONFIG_ENCODERS
 static int encode_init(AVCodecContext *avctx)
 {
     FFV1Context *s = avctx->priv_data;
@@ -608,6 +611,7 @@ static int encode_init(AVCodecContext *avctx)
 
     return 0;
 }
+#endif /* CONFIG_ENCODERS */
 
 
 static void clear_state(FFV1Context *f){
@@ -632,6 +636,7 @@ static void clear_state(FFV1Context *f){
     }
 }
 
+#ifdef CONFIG_ENCODERS
 static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size, void *data){
     FFV1Context *f = avctx->priv_data;
     RangeCoder * const c= &f->c;
@@ -687,6 +692,7 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
         return used_count + (put_bits_count(&f->pb)+7)/8;
     }
 }
+#endif /* CONFIG_ENCODERS */
 
 static int common_end(AVCodecContext *avctx){
     FFV1Context *s = avctx->priv_data;

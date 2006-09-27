@@ -462,6 +462,7 @@ for(i=0; i<s->avctx->extradata_size; i++){
     return (get_bits_count(&a->gb)+31)/32*4;
 }
 
+#ifdef CONFIG_ENCODERS
 static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size, void *data){
     ASV1Context * const a = avctx->priv_data;
     AVFrame *pict = data;
@@ -515,6 +516,7 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
 
     return size*4;
 }
+#endif /* CONFIG_ENCODERS */
 
 static void common_init(AVCodecContext *avctx){
     ASV1Context * const a = avctx->priv_data;
@@ -564,6 +566,7 @@ static int decode_init(AVCodecContext *avctx){
     return 0;
 }
 
+#ifdef CONFIG_ENCODERS
 static int encode_init(AVCodecContext *avctx){
     ASV1Context * const a = avctx->priv_data;
     int i;
@@ -587,6 +590,7 @@ static int encode_init(AVCodecContext *avctx){
 
     return 0;
 }
+#endif
 
 static int decode_end(AVCodecContext *avctx){
     ASV1Context * const a = avctx->priv_data;

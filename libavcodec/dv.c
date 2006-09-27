@@ -1010,6 +1010,7 @@ static int dv_decode_mt(AVCodecContext *avctx, void* sl)
     return 0;
 }
 
+#ifdef CONFIG_ENCODERS
 static int dv_encode_mt(AVCodecContext *avctx, void* sl)
 {
     DVVideoContext *s = avctx->priv_data;
@@ -1028,7 +1029,9 @@ static int dv_encode_mt(AVCodecContext *avctx, void* sl)
                             &s->sys->video_place[slice*5]);
     return 0;
 }
+#endif
 
+#ifdef CONFIG_DECODERS
 /* NOTE: exactly one frame must be given (120000 bytes for NTSC,
    144000 bytes for PAL - or twice those for 50Mbps) */
 static int dvvideo_decode_frame(AVCodecContext *avctx,
@@ -1068,6 +1071,7 @@ static int dvvideo_decode_frame(AVCodecContext *avctx,
 
     return s->sys->frame_size;
 }
+#endif
 
 
 static inline int dv_write_pack(enum dv_pack_type pack_id, DVVideoContext *c, uint8_t* buf)
@@ -1242,6 +1246,7 @@ AVCodec dvvideo_encoder = {
 };
 #endif // CONFIG_DVVIDEO_ENCODER
 
+#ifdef CONFIG_DVVIDEO_DECODER
 AVCodec dvvideo_decoder = {
     "dvvideo",
     CODEC_TYPE_VIDEO,
@@ -1254,3 +1259,4 @@ AVCodec dvvideo_decoder = {
     CODEC_CAP_DR1,
     NULL
 };
+#endif

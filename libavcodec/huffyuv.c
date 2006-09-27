@@ -236,6 +236,7 @@ static int generate_bits_table(uint32_t *dst, uint8_t *len_table){
     return 0;
 }
 
+#ifdef CONFIG_ENCODERS
 static void generate_len_table(uint8_t *dst, uint64_t *stats, int size){
     uint64_t counts[2*size];
     int up[2*size];
@@ -291,6 +292,7 @@ static void generate_len_table(uint8_t *dst, uint64_t *stats, int size){
         if(i==size) break;
     }
 }
+#endif /* CONFIG_ENCODERS */
 
 static int read_huffman_tables(HYuvContext *s, uint8_t *src, int length){
     GetBitContext gb;
@@ -375,6 +377,7 @@ static int common_init(AVCodecContext *avctx){
     return 0;
 }
 
+#ifdef CONFIG_DECODERS
 static int decode_init(AVCodecContext *avctx)
 {
     HYuvContext *s = avctx->priv_data;
@@ -470,7 +473,9 @@ s->bgr32=1;
 
     return 0;
 }
+#endif
 
+#ifdef CONFIG_ENCODERS
 static int store_table(HYuvContext *s, uint8_t *len, uint8_t *buf){
     int i;
     int index= 0;
@@ -612,6 +617,7 @@ static int encode_init(AVCodecContext *avctx)
 
     return 0;
 }
+#endif /* CONFIG_ENCODERS */
 
 static void decode_422_bitstream(HYuvContext *s, int count){
     int i;
@@ -637,6 +643,7 @@ static void decode_gray_bitstream(HYuvContext *s, int count){
     }
 }
 
+#ifdef CONFIG_ENCODERS
 static int encode_422_bitstream(HYuvContext *s, int count){
     int i;
 
@@ -711,6 +718,7 @@ static int encode_gray_bitstream(HYuvContext *s, int count){
     }
     return 0;
 }
+#endif /* CONFIG_ENCODERS */
 
 static void decode_bgr_bitstream(HYuvContext *s, int count){
     int i;
@@ -748,6 +756,7 @@ static void decode_bgr_bitstream(HYuvContext *s, int count){
     }
 }
 
+#ifdef CONFIG_DECODERS
 static void draw_slice(HYuvContext *s, int y){
     int h, cy;
     int offset[4];
@@ -1014,6 +1023,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
 
     return (get_bits_count(&s->gb)+31)/32*4 + table_size;
 }
+#endif
 
 static int common_end(HYuvContext *s){
     int i;
@@ -1024,6 +1034,7 @@ static int common_end(HYuvContext *s){
     return 0;
 }
 
+#ifdef CONFIG_DECODERS
 static int decode_end(AVCodecContext *avctx)
 {
     HYuvContext *s = avctx->priv_data;
@@ -1038,7 +1049,9 @@ static int decode_end(AVCodecContext *avctx)
 
     return 0;
 }
+#endif
 
+#ifdef CONFIG_ENCODERS
 static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size, void *data){
     HYuvContext *s = avctx->priv_data;
     AVFrame *pict = data;
@@ -1218,7 +1231,9 @@ static int encode_end(AVCodecContext *avctx)
 
     return 0;
 }
+#endif /* CONFIG_ENCODERS */
 
+#ifdef CONFIG_DECODERS
 AVCodec huffyuv_decoder = {
     "huffyuv",
     CODEC_TYPE_VIDEO,
@@ -1244,6 +1259,7 @@ AVCodec ffvhuff_decoder = {
     CODEC_CAP_DR1 | CODEC_CAP_DRAW_HORIZ_BAND,
     NULL
 };
+#endif
 
 #ifdef CONFIG_ENCODERS
 

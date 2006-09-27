@@ -2579,7 +2579,7 @@ retry:
     return buf_size;
 }
 
-
+#ifdef CONFIG_MP3ADU_DECODER
 static int decode_frame_adu(AVCodecContext * avctx,
                         void *data, int *data_size,
                         uint8_t * buf, int buf_size)
@@ -2627,8 +2627,9 @@ static int decode_frame_adu(AVCodecContext * avctx,
     *data_size = out_size;
     return buf_size;
 }
+#endif /* CONFIG_MP3ADU_DECODER */
 
-
+#ifdef CONFIG_MP3ON4_DECODER
 /* Next 3 arrays are indexed by channel config number (passed via codecdata) */
 static int mp3Frames[16] = {0,1,1,2,3,3,4,5,2};   /* number of mp3 decoder instances */
 static int mp3Channels[16] = {0,1,2,3,4,5,6,8,4}; /* total output channels */
@@ -2785,8 +2786,9 @@ static int decode_frame_mp3on4(AVCodecContext * avctx,
     *data_size = out_size;
     return buf_size;
 }
+#endif /* CONFIG_MP3ON4_DECODER */
 
-
+#ifdef CONFIG_MP2_DECODER
 AVCodec mp2_decoder =
 {
     "mp2",
@@ -2799,7 +2801,8 @@ AVCodec mp2_decoder =
     decode_frame,
     CODEC_CAP_PARSE_ONLY,
 };
-
+#endif
+#ifdef CONFIG_MP3_DECODER
 AVCodec mp3_decoder =
 {
     "mp3",
@@ -2812,7 +2815,8 @@ AVCodec mp3_decoder =
     decode_frame,
     CODEC_CAP_PARSE_ONLY,
 };
-
+#endif
+#ifdef CONFIG_MP3ADU_DECODER
 AVCodec mp3adu_decoder =
 {
     "mp3adu",
@@ -2825,7 +2829,8 @@ AVCodec mp3adu_decoder =
     decode_frame_adu,
     CODEC_CAP_PARSE_ONLY,
 };
-
+#endif
+#ifdef CONFIG_MP3ON4_DECODER
 AVCodec mp3on4_decoder =
 {
     "mp3on4",
@@ -2838,3 +2843,4 @@ AVCodec mp3on4_decoder =
     decode_frame_mp3on4,
     0
 };
+#endif

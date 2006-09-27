@@ -326,6 +326,7 @@ static void copy_picture(Picture *dst, Picture *src){
     dst->type= FF_BUFFER_TYPE_COPY;
 }
 
+#ifdef CONFIG_ENCODERS
 static void copy_picture_attributes(MpegEncContext *s, AVFrame *dst, AVFrame *src){
     int i;
 
@@ -364,6 +365,7 @@ static void copy_picture_attributes(MpegEncContext *s, AVFrame *dst, AVFrame *sr
         }
     }
 }
+#endif
 
 /**
  * allocates a Picture
@@ -565,6 +567,7 @@ void ff_update_duplicate_context(MpegEncContext *dst, MpegEncContext *src){
 //STOP_TIMER("update_duplicate_context") //about 10k cycles / 0.01 sec for 1000frames on 1ghz with 2 threads
 }
 
+#ifdef CONFIG_ENCODERS
 static void update_duplicate_context_after_me(MpegEncContext *dst, MpegEncContext *src){
 #define COPY(a) dst->a= src->a
     COPY(pict_type);
@@ -581,6 +584,7 @@ static void update_duplicate_context_after_me(MpegEncContext *dst, MpegEncContex
     COPY(partitioned_frame); //FIXME don't set in encode_header
 #undef COPY
 }
+#endif
 
 /**
  * sets the given MpegEncContext to common defaults (same for encoding and decoding).
@@ -5707,8 +5711,6 @@ static int encode_picture(MpegEncContext *s, int picture_number)
     emms_c();
 }
 
-#endif //CONFIG_ENCODERS
-
 static void  denoise_dct_c(MpegEncContext *s, DCTELEM *block){
     const int intra= s->mb_intra;
     int i;
@@ -5732,8 +5734,6 @@ static void  denoise_dct_c(MpegEncContext *s, DCTELEM *block){
         }
     }
 }
-
-#ifdef CONFIG_ENCODERS
 
 static int dct_quantize_trellis_c(MpegEncContext *s,
                         DCTELEM *block, int n,
