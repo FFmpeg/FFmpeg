@@ -1667,7 +1667,7 @@ matroska_parse_index (MatroskaDemuxContext *matroska)
                     switch (id) {
                         /* one single index entry ('point') */
                         case MATROSKA_ID_CUETIME: {
-                            int64_t time;
+                            uint64_t time;
                             if ((res = ebml_read_uint(matroska, &id,
                                                       &time)) < 0)
                                 break;

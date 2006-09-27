@@ -381,7 +381,7 @@ static void iv_Decode_Chunk(Indeo3DecodeContext *s,
     } else if(cmd == 3) {
       if(strip->usl7 == 0) {
         strip->usl7 = 1;
-        ref_vectors = buf2 + (*buf1 * 2);
+        ref_vectors = (signed char*)buf2 + (*buf1 * 2);
         buf1++;
         continue;
       }

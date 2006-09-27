@@ -175,7 +175,8 @@ static int rtp_read(URLContext *h, uint8_t *buf, int size)
 {
     RTPContext *s = h->priv_data;
     struct sockaddr_in from;
-    int from_len, len, fd_max, n;
+    socklen_t from_len;
+    int len, fd_max, n;
     fd_set rfds;
 #if 0
     for(;;) {

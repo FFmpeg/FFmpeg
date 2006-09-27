@@ -619,7 +619,7 @@ static void fill_caches(H264Context *h, int mb_type, int for_deblock){
                 if(USES_LIST(mb_type,list)){
                     uint32_t *src = (uint32_t*)s->current_picture.motion_val[list][h->mb2b_xy[mb_xy]];
                     uint32_t *dst = (uint32_t*)h->mv_cache[list][scan8[0]];
-                    uint8_t *ref = &s->current_picture.ref_index[list][h->mb2b8_xy[mb_xy]];
+                    int8_t *ref = &s->current_picture.ref_index[list][h->mb2b8_xy[mb_xy]];
                     for(i=0; i<4; i++, dst+=8, src+=h->b_stride){
                         dst[0] = src[0];
                         dst[1] = src[1];
@@ -1133,7 +1133,7 @@ static inline int fetch_diagonal_mv(H264Context *h, const int16_t **C, int i, in
      * make mbaff happy, so we can't move all this logic to fill_caches */
     if(FRAME_MBAFF){
         MpegEncContext *s = &h->s;
-        const int *mb_types = s->current_picture_ptr->mb_type;
+        const uint32_t *mb_types = s->current_picture_ptr->mb_type;
         const int16_t *mv;
         *(uint32_t*)h->mv_cache[list][scan8[0]-2] = 0;
         *C = h->mv_cache[list][scan8[0]-2];
@@ -1721,7 +1721,7 @@ static inline void write_back_motion(H264Context *h, int mb_type){
         }
 
         {
-            uint8_t *ref_index = &s->current_picture.ref_index[list][b8_xy];
+            int8_t *ref_index = &s->current_picture.ref_index[list][b8_xy];
             ref_index[0+0*h->b8_stride]= h->ref_cache[list][scan8[0]];
             ref_index[1+0*h->b8_stride]= h->ref_cache[list][scan8[4]];
             ref_index[0+1*h->b8_stride]= h->ref_cache[list][scan8[8]];

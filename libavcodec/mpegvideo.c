@@ -217,7 +217,7 @@ void ff_init_scantable(uint8_t *permutation, ScanTable *st, const uint8_t *src_s
 }
 
 #ifdef CONFIG_ENCODERS
-void ff_write_quant_matrix(PutBitContext *pb, int16_t *matrix){
+void ff_write_quant_matrix(PutBitContext *pb, uint16_t *matrix){
     int i;
 
     if(matrix){

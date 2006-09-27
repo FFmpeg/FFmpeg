@@ -871,7 +871,7 @@ static int wma_decode_block(WMADecodeContext *s)
             VLC *coef_vlc;
             int level, run, sign, tindex;
             int16_t *ptr, *eptr;
-            const int16_t *level_table, *run_table;
+            const uint16_t *level_table, *run_table;
 
             /* special VLC tables are used for ms stereo because
                there is potentially less energy there */

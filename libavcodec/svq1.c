@@ -655,9 +655,9 @@ static int svq1_decode_frame_header (GetBitContext *bitbuf,MpegEncContext *s) {
     }
 
     if ((s->f_code ^ 0x10) >= 0x50) {
-      char msg[256];
+      uint8_t msg[256];
 
-      svq1_parse_string (bitbuf, (char *) msg);
+      svq1_parse_string (bitbuf, msg);
 
       av_log(s->avctx, AV_LOG_INFO, "embedded message: \"%s\"\n", (char *) msg);
     }

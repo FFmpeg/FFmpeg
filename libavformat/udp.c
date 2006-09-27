@@ -428,7 +428,8 @@ static int udp_read(URLContext *h, uint8_t *buf, int size)
 #else
     struct sockaddr_storage from;
 #endif
-    int from_len, len;
+    socklen_t from_len;
+    int len;
 
     for(;;) {
         from_len = sizeof(from);

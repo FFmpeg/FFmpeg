@@ -75,9 +75,9 @@ static int cyuv_decode_frame(AVCodecContext *avctx,
     int v_ptr;
 
     /* prediction error tables (make it clear that they are signed values) */
-    signed char *y_table = buf +  0;
-    signed char *u_table = buf + 16;
-    signed char *v_table = buf + 32;
+    signed char *y_table = (signed char*)buf +  0;
+    signed char *u_table = (signed char*)buf + 16;
+    signed char *v_table = (signed char*)buf + 32;
 
     unsigned char y_pred, u_pred, v_pred;
     int stream_ptr;

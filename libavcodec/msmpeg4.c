@@ -630,7 +630,7 @@ static inline int msmpeg4_pred_dc(MpegEncContext * s, int n,
                              uint16_t **dc_val_ptr, int *dir_ptr)
 {
     int a, b, c, wrap, pred, scale;
-    int16_t *dc_val;
+    uint16_t *dc_val;
 
     /* find prediction */
     if (n < 4) {

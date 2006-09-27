@@ -705,7 +705,7 @@ static int asf_read_packet(AVFormatContext *s, AVPacket *pkt)
             /* return packet */
             if (asf_st->ds_span > 1) {
                 /* packet descrambling */
-                char* newdata = av_malloc(asf_st->pkt.size);
+                uint8_t *newdata = av_malloc(asf_st->pkt.size);
                 if (newdata) {
                     int offset = 0;
                     while (offset < asf_st->pkt.size) {

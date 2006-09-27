@@ -306,7 +306,7 @@ static void mpegvideo_extract_headers(AVCodecParserContext *s,
 {
     ParseContext1 *pc = s->priv_data;
     const uint8_t *buf_end;
-    int32_t start_code;
+    uint32_t start_code;
     int frame_rate_index, ext_type, bytes_left;
     int frame_rate_ext_n, frame_rate_ext_d;
     int picture_structure, top_field_first, repeat_first_field, progressive_frame;

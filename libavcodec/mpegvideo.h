@@ -344,8 +344,8 @@ typedef struct MpegEncContext {
     Picture *current_picture_ptr;  ///< pointer to the current picture
     uint8_t *visualization_buffer[3]; //< temporary buffer vor MV visualization
     int last_dc[3];                ///< last DC values for MPEG1
-    int16_t *dc_val_base;
-    int16_t *dc_val[3];            ///< used for mpeg4 DC prediction, all 3 arrays must be continuous
+    uint16_t *dc_val_base;
+    uint16_t *dc_val[3];           ///< used for mpeg4 DC prediction, all 3 arrays must be continuous
     int16_t dc_cache[4*5];
     int y_dc_scale, c_dc_scale;
     const uint8_t *y_dc_scale_table;     ///< qscale -> y_dc_scale table
@@ -772,7 +772,7 @@ int ff_combine_frame(ParseContext *pc, int next, uint8_t **buf, int *buf_size);
 void ff_parse_close(AVCodecParserContext *s);
 void ff_mpeg_flush(AVCodecContext *avctx);
 void ff_print_debug_info(MpegEncContext *s, AVFrame *pict);
-void ff_write_quant_matrix(PutBitContext *pb, int16_t *matrix);
+void ff_write_quant_matrix(PutBitContext *pb, uint16_t *matrix);
 int ff_find_unused_picture(MpegEncContext *s, int shared);
 void ff_denoise_dct(MpegEncContext *s, DCTELEM *block);
 void ff_update_duplicate_context(MpegEncContext *dst, MpegEncContext *src);
@@ -828,8 +828,8 @@ int inline ff_get_mb_score(MpegEncContext * s, int mx, int my, int src_index,
                                int ref_index, int size, int h, int add_rate);
 
 /* mpeg12.c */
-extern const int16_t ff_mpeg1_default_intra_matrix[64];
-extern const int16_t ff_mpeg1_default_non_intra_matrix[64];
+extern const uint16_t ff_mpeg1_default_intra_matrix[64];
+extern const uint16_t ff_mpeg1_default_non_intra_matrix[64];
 extern const uint8_t ff_mpeg1_dc_scale_table[128];
 
 void mpeg1_encode_picture_header(MpegEncContext *s, int picture_number);

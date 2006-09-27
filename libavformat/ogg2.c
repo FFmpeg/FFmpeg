@@ -235,7 +235,7 @@ ogg_read_page (AVFormatContext * s, int *str)
     uint32_t seq;
     uint32_t crc;
     int size, idx;
-    char sync[4];
+    uint8_t sync[4];
     int sp = 0;
 
     if (get_buffer (bc, sync, 4) < 4)

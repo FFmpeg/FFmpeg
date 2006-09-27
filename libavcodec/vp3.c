@@ -315,7 +315,7 @@ typedef struct Vp3DecodeContext {
     int last_coded_c_fragment;
 
     uint8_t edge_emu_buffer[9*2048]; //FIXME dynamic alloc
-    uint8_t qscale_table[2048]; //FIXME dynamic alloc (width+15)/16
+    int8_t qscale_table[2048]; //FIXME dynamic alloc (width+15)/16
 
     /* Huffman decode */
     int hti;

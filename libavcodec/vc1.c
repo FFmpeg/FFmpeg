@@ -2341,10 +2341,10 @@ static inline void vc1_pred_b_mv(VC1Context *v, int dmv_x[2], int dmv_y[2], int 
  * @param dir_ptr Prediction direction for use in AC prediction
  */
 static inline int vc1_i_pred_dc(MpegEncContext *s, int overlap, int pq, int n,
-                              int16_t **dc_val_ptr, int *dir_ptr)
+                                uint16_t **dc_val_ptr, int *dir_ptr)
 {
     int a, b, c, wrap, pred, scale;
-    int16_t *dc_val;
+    uint16_t *dc_val;
     static const uint16_t dcpred[32] = {
     -1, 1024,  512,  341,  256,  205,  171,  146,  128,
          114,  102,   93,   85,   79,   73,   68,   64,
@@ -2402,10 +2402,10 @@ static inline int vc1_i_pred_dc(MpegEncContext *s, int overlap, int pq, int n,
  */
 static inline int vc1_pred_dc(MpegEncContext *s, int overlap, int pq, int n,
                               int a_avail, int c_avail,
-                              int16_t **dc_val_ptr, int *dir_ptr)
+                              uint16_t **dc_val_ptr, int *dir_ptr)
 {
     int a, b, c, wrap, pred, scale;
-    int16_t *dc_val;
+    uint16_t *dc_val;
     int mb_pos = s->mb_x + s->mb_y * s->mb_stride;
     int q1, q2 = 0;
 
@@ -2578,7 +2578,7 @@ static int vc1_decode_i_block(VC1Context *v, DCTELEM block[64], int n, int coded
     MpegEncContext *s = &v->s;
     int dc_pred_dir = 0; /* Direction of the DC prediction used */
     int run_diff, i;
-    int16_t *dc_val;
+    uint16_t *dc_val;
     int16_t *ac_val, *ac_val2;
     int dcdiff;
 
@@ -2743,7 +2743,7 @@ static int vc1_decode_i_block_adv(VC1Context *v, DCTELEM block[64], int n, int c
     MpegEncContext *s = &v->s;
     int dc_pred_dir = 0; /* Direction of the DC prediction used */
     int run_diff, i;
-    int16_t *dc_val;
+    uint16_t *dc_val;
     int16_t *ac_val, *ac_val2;
     int dcdiff;
     int a_avail = v->a_avail, c_avail = v->c_avail;
@@ -2940,7 +2940,7 @@ static int vc1_decode_intra_block(VC1Context *v, DCTELEM block[64], int n, int c
     MpegEncContext *s = &v->s;
     int dc_pred_dir = 0; /* Direction of the DC prediction used */
     int run_diff, i;
-    int16_t *dc_val;
+    uint16_t *dc_val;
     int16_t *ac_val, *ac_val2;
     int dcdiff;
     int mb_pos = s->mb_x + s->mb_y * s->mb_stride;

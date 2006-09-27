@@ -28,7 +28,7 @@
 #include "avformat.h"
 
 typedef struct ogg_codec {
-    uint8_t *magic;
+    int8_t *magic;
     uint8_t magicsize;
     int8_t *name;
     int (*header)(AVFormatContext *, int);
@@ -80,6 +80,6 @@ extern ogg_codec_t ogm_video_codec;
 extern ogg_codec_t ogm_audio_codec;
 extern ogg_codec_t ogm_old_codec;
 
-extern int vorbis_comment(AVFormatContext *ms, char *buf, int size);
+extern int vorbis_comment(AVFormatContext *ms, uint8_t *buf, int size);
 
 #endif

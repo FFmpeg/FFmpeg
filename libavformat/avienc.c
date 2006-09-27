@@ -73,8 +73,7 @@ static offset_t avi_start_new_riff(AVIContext *avi, ByteIOContext *pb,
     return loff;
 }
 
-static unsigned char* avi_stream2fourcc(unsigned char* tag, int index,
-                                        enum CodecType type)
+static char* avi_stream2fourcc(char* tag, int index, enum CodecType type)
 {
     tag[0] = '0';
     tag[1] = '0' + index;
@@ -338,8 +337,8 @@ static int avi_write_ix(AVFormatContext *s)
 {
     ByteIOContext *pb = &s->pb;
     AVIContext *avi = s->priv_data;
-    unsigned char tag[5];
-    unsigned char ix_tag[] = "ix00";
+    char tag[5];
+    char ix_tag[] = "ix00";
     int i, j;
 
     assert(!url_is_streamed(pb));
@@ -397,7 +396,7 @@ static int avi_write_idx1(AVFormatContext *s)
     AVIContext *avi = s->priv_data;
     offset_t idx_chunk;
     int i;
-    unsigned char tag[5];
+    char tag[5];
 
     if (!url_is_streamed(pb)) {
         AVIIentry* ie = 0, *tie;

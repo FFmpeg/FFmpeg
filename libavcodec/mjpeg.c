@@ -1801,7 +1801,7 @@ static int mjpeg_decode_com(MJpegDecodeContext *s)
 {
     int len = get_bits(&s->gb, 16);
     if (len >= 2 && 8*len - 16 + get_bits_count(&s->gb) <= s->gb.size_in_bits) {
-        uint8_t *cbuf = av_malloc(len - 1);
+        char *cbuf = av_malloc(len - 1);
         if (cbuf) {
             int i;
             for (i = 0; i < len - 2; i++)

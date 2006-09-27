@@ -70,7 +70,7 @@ static void put_dc(MpegEncContext *s, uint8_t *dest_y, uint8_t *dest_cb, uint8_t
     }
 }
 
-static void filter181(int16_t *data, int width, int height, int stride){
+static void filter181(uint16_t *data, int width, int height, int stride){
     int x,y;
 
     /* horizontal filter */
@@ -111,7 +111,7 @@ static void filter181(int16_t *data, int width, int height, int stride){
  * @param w     width in 8 pixel blocks
  * @param h     height in 8 pixel blocks
  */
-static void guess_dc(MpegEncContext *s, int16_t *dc, int w, int h, int stride, int is_luma){
+static void guess_dc(MpegEncContext *s, uint16_t *dc, int w, int h, int stride, int is_luma){
     int b_x, b_y;
 
     for(b_y=0; b_y<h; b_y++){
@@ -931,7 +931,7 @@ void ff_er_frame_end(MpegEncContext *s){
     for(mb_y=0; mb_y<s->mb_height; mb_y++){
         for(mb_x=0; mb_x<s->mb_width; mb_x++){
             int dc, dcu, dcv, y, n;
-            int16_t *dc_ptr;
+            uint16_t *dc_ptr;
             uint8_t *dest_y, *dest_cb, *dest_cr;
             const int mb_xy= mb_x + mb_y * s->mb_stride;
             const int mb_type= s->current_picture.mb_type[mb_xy];

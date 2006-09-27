@@ -495,7 +495,7 @@ int rtp_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
             len -= infos->au_headers[0].size;
             }
             s->read_buf_size = len;
-            s->buf_ptr = (char *)buf;
+            s->buf_ptr = buf;
             pkt->stream_index = s->st->index;
             return 0;
         default:

@@ -2695,7 +2695,8 @@ static int slice_decode_thread(AVCodecContext *c, void *arg){
     s->error_count= 3*(s->end_mb_y - s->start_mb_y)*s->mb_width;
 
     for(;;){
-        int start_code, ret;
+        uint32_t start_code;
+        int ret;
 
         ret= mpeg_decode_slice((Mpeg1Context*)s, mb_y, &buf, s->gb.buffer_end - buf);
         emms_c();
@@ -3033,7 +3034,8 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
     Mpeg1Context *s = avctx->priv_data;
     const uint8_t *buf_end;
     const uint8_t *buf_ptr;
-    int ret, start_code, input_size;
+    uint32_t start_code;
+    int ret, input_size;
     AVFrame *picture = data;
     MpegEncContext *s2 = &s->mpeg_enc_ctx;
     dprintf("fill_buffer\n");
@@ -3080,7 +3082,7 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
         /* find start next code */
         start_code = -1;
         buf_ptr = ff_find_start_code(buf_ptr,buf_end, &start_code);
-        if (start_code < 0){
+        if (start_code > 0x1ff){
             if(s2->pict_type != B_TYPE || avctx->skip_frame <= AVDISCARD_DEFAULT){
                 if(avctx->thread_count > 1){
                     int i;

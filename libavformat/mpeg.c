@@ -1308,7 +1308,7 @@ static int mpegps_probe(AVProbeData *p)
 
 
 typedef struct MpegDemuxContext {
-    int header_state;
+    int32_t header_state;
     unsigned char psm_es_type[256];
 } MpegDemuxContext;
 
@@ -1339,7 +1339,7 @@ static int64_t get_pts(ByteIOContext *pb, int c)
 }
 
 static int find_next_start_code(ByteIOContext *pb, int *size_ptr,
-                                uint32_t *header_state)
+                                int32_t *header_state)
 {
     unsigned int state, v;
     int val, n;

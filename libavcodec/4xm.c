@@ -104,8 +104,8 @@ static VLC block_type_vlc[4];
 
 
 typedef struct CFrameBuffer{
-    int allocated_size;
-    int size;
+    unsigned int allocated_size;
+    unsigned int size;
     int id;
     uint8_t *data;
 }CFrameBuffer;

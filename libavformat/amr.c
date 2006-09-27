@@ -25,8 +25,8 @@ Only mono files are supported.
 */
 #include "avformat.h"
 
-static const unsigned char AMR_header [] = "#!AMR\n";
-static const unsigned char AMRWB_header [] = "#!AMR-WB\n";
+static const char AMR_header [] = "#!AMR\n";
+static const char AMRWB_header [] = "#!AMR-WB\n";
 
 #ifdef CONFIG_MUXERS
 static int amr_write_header(AVFormatContext *s)

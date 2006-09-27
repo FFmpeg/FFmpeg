@@ -29,7 +29,7 @@
 #include "ogg2.h"
 
 extern int
-vorbis_comment (AVFormatContext * as, char *buf, int size)
+vorbis_comment (AVFormatContext * as, uint8_t *buf, int size)
 {
     char *p = buf;
     int s, n, j;

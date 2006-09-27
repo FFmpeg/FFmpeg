@@ -281,7 +281,7 @@ typedef struct AVStream {
     AVIndexEntry *index_entries; /* only used if the format does not
                                     support seeking natively */
     int nb_index_entries;
-    int index_entries_allocated_size;
+    unsigned int index_entries_allocated_size;
 
     int64_t nb_frames;                 ///< number of frames in this stream if known or 0
 

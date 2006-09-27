@@ -1518,7 +1518,7 @@ void ff_h263_loop_filter(MpegEncContext * s){
 static int h263_pred_dc(MpegEncContext * s, int n, uint16_t **dc_val_ptr)
 {
     int x, y, wrap, a, c, pred_dc, scale;
-    int16_t *dc_val;
+    uint16_t *dc_val;
 
     /* find prediction */
     if (n < 4) {
@@ -1563,7 +1563,8 @@ static int h263_pred_dc(MpegEncContext * s, int n, uint16_t **dc_val_ptr)
 static void h263_pred_acdc(MpegEncContext * s, DCTELEM *block, int n)
 {
     int x, y, wrap, a, c, pred_dc, scale, i;
-    int16_t *dc_val, *ac_val, *ac_val1;
+    uint16_t *dc_val;
+    int16_t *ac_val, *ac_val1;
 
     /* find prediction */
     if (n < 4) {
