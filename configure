@@ -1004,26 +1004,6 @@ if test $mmx = "default"; then
     fi
 fi
 
-# check armv5te instructions support
-if test $armv5te = "default" -a $cpu = "armv4l"; then
-    armv5te=no
-    check_cc <<EOF && armv5te=yes
-        int main(void) {
-        __asm__ __volatile__ ("qadd r0, r0, r0");
-        }
-EOF
-fi
-
-# check iwmmxt support
-if test $iwmmxt = "default" -a $cpu = "armv4l"; then
-    iwmmxt=no
-    check_cc <<EOF && iwmmxt=yes
-        int main(void) {
-        __asm__ __volatile__ ("wunpckelub wr6, wr4");
-        }
-EOF
-fi
-
 #Darwin CC versions
 needmdynamicnopic="no"
 if test $targetos = Darwin; then
@@ -1174,6 +1154,26 @@ int main(void) {
     v1 = vec_add(v2,v3);
     return 0;
 }
+EOF
+fi
+
+# check armv5te instructions support
+if test $armv5te = "default" -a $cpu = "armv4l"; then
+    armv5te=no
+    check_cc <<EOF && armv5te=yes
+        int main(void) {
+        __asm__ __volatile__ ("qadd r0, r0, r0");
+        }
+EOF
+fi
+
+# check iwmmxt support
+if test $iwmmxt = "default" -a $cpu = "armv4l"; then
+    iwmmxt=no
+    check_cc <<EOF && iwmmxt=yes
+        int main(void) {
+        __asm__ __volatile__ ("wunpckelub wr6, wr4");
+        }
 EOF
 fi
 
