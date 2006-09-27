@@ -1841,6 +1841,23 @@ int sws_getColorspaceDetails(SwsContext *c, int **inv_table, int *srcRange, int 
 	return 0;	
 }
 
+static int handle_jpeg(int *format)
+{
+	switch (*format) {
+		case PIX_FMT_YUVJ420P:
+			*format = PIX_FMT_YUV420P;
+			return 1;
+		case PIX_FMT_YUVJ422P:
+			*format = PIX_FMT_YUV422P;
+			return 1;
+		case PIX_FMT_YUVJ444P:
+			*format = PIX_FMT_YUV444P;
+			return 1;
+		default:
+			return 0;
+	}
+}
+
 SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, int dstH, int dstFormat, int flags,
                          SwsFilter *srcFilter, SwsFilter *dstFilter, double *param){
 
@@ -1848,6 +1865,7 @@ SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, int dstH
 	int i;
 	int usesVFilter, usesHFilter;
 	int unscaled, needsDither;
+	int srcRange, dstRange;
 	SwsFilter dummyFilter= {NULL, NULL, NULL, NULL};
 #if defined(ARCH_X86) || defined(ARCH_X86_64)
 	if(flags & SWS_CPU_CAPS_MMX)
@@ -1873,6 +1891,9 @@ SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, int dstH
 	needsDither= (isBGR(dstFormat) || isRGB(dstFormat)) 
 		     && (fmt_depth(dstFormat))<24
 		     && ((fmt_depth(dstFormat))<(fmt_depth(srcFormat)) || (!(isRGB(srcFormat) || isBGR(srcFormat))));
+
+	srcRange = handle_jpeg(&srcFormat);
+	dstRange = handle_jpeg(&dstFormat);
 
 	if(!isSupportedIn(srcFormat)) 
 	{
@@ -1951,7 +1972,7 @@ SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, int dstH
 	c->chrDstW= -((-dstW) >> c->chrDstHSubSample);
 	c->chrDstH= -((-dstH) >> c->chrDstVSubSample);
 
-	sws_setColorspaceDetails(c, Inverse_Table_6_9[SWS_CS_DEFAULT], 0, Inverse_Table_6_9[SWS_CS_DEFAULT] /* FIXME*/, 0, 0, 1<<16, 1<<16); 
+	sws_setColorspaceDetails(c, Inverse_Table_6_9[SWS_CS_DEFAULT], srcRange, Inverse_Table_6_9[SWS_CS_DEFAULT] /* FIXME*/, dstRange, 0, 1<<16, 1<<16); 
 
 	/* unscaled special Cases */
 	if(unscaled && !usesHFilter && !usesVFilter)
