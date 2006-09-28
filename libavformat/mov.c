@@ -985,12 +985,6 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
                 break;
             }
 
-            bits_per_sample = av_get_bits_per_sample(st->codec->codec_id);
-            if (bits_per_sample) {
-                st->codec->bits_per_sample = bits_per_sample;
-                sc->sample_size = (bits_per_sample >> 3) * st->codec->channels;
-            }
-
             //Read QT version 1 fields. In version 0 theese dont exist
             dprintf("version =%d mp4=%d\n",version,c->mp4);
             if(version==1) {
@@ -1007,6 +1001,12 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
                 get_be32(pb); /* lcpm format specific flag */
                 get_be32(pb); /* bytes per audio packet if constant */
                 get_be32(pb); /* lpcm frames per audio packet if constant */
+            }
+
+            bits_per_sample = av_get_bits_per_sample(st->codec->codec_id);
+            if (bits_per_sample) {
+                st->codec->bits_per_sample = bits_per_sample;
+                sc->sample_size = (bits_per_sample >> 3) * st->codec->channels;
             }
         } else {
             /* other codec type, just skip (rtp, mp4s, tmcd ...) */
