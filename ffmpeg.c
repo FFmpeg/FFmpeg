@@ -107,7 +107,6 @@ static int max_frames[4] = {INT_MAX, INT_MAX, INT_MAX, INT_MAX};
 static int frame_rate = 25;
 static int frame_rate_base = 1;
 static float video_qscale = 0;
-static int video_mb_lmax = 31*FF_QP2LAMBDA;
 static int video_qdiff = 3;
 static uint16_t *intra_matrix = NULL;
 static uint16_t *inter_matrix = NULL;
@@ -2321,16 +2320,6 @@ static void opt_qscale(const char *arg)
     }
 }
 
-static void opt_mb_lmax(const char *arg)
-{
-    video_mb_lmax = atof(arg)*FF_QP2LAMBDA;
-    if (video_mb_lmax < 1 ||
-        video_mb_lmax > FF_LAMBDA_MAX) {
-        fprintf(stderr, "mblmax must be >= 1 and <= %d\n", FF_LAMBDA_MAX / FF_QP2LAMBDA);
-        exit(1);
-    }
-}
-
 static void opt_qdiff(const char *arg)
 {
     video_qdiff = atoi(arg);
@@ -2870,7 +2859,6 @@ static void new_video_stream(AVFormatContext *oc)
         if(inter_matrix)
             video_enc->inter_matrix = inter_matrix;
 
-        video_enc->mb_lmax = video_mb_lmax;
         video_enc->max_qdiff = video_qdiff;
         video_enc->rc_eq = video_rc_eq;
         video_enc->thread_count = thread_count;
@@ -3792,7 +3780,6 @@ const OptionDef options[] = {
     { "vn", OPT_BOOL | OPT_VIDEO, {(void*)&video_disable}, "disable video" },
     { "vdt", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&video_discard}, "discard threshold", "n" },
     { "qscale", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_qscale}, "use fixed video quantiser scale (VBR)", "q" },
-    { "mblmax", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_mb_lmax}, "max macroblock quantiser scale (VBR)", "q" },
     { "qdiff", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_qdiff}, "max difference between the quantiser scale (VBR)", "q" },
     { "rc_eq", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_video_rc_eq}, "set rate control equation", "equation" },
     { "rc_override", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_video_rc_override_string}, "rate control override for specific intervals", "override" },
