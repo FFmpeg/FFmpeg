@@ -147,6 +147,7 @@ static const CodecTag mov_audio_tags[] = {
     { CODEC_ID_QDM2,MKTAG('Q', 'D', 'M', '2') }, /* QDM2 */
     { CODEC_ID_DVAUDIO, MKTAG('v', 'd', 'v', 'a') },
     { CODEC_ID_DVAUDIO, MKTAG('d', 'v', 'c', 'a') },
+    { CODEC_ID_PCM_S16LE, MKTAG('l', 'p', 'c', 'm') },
     { CODEC_ID_NONE, 0 },
 };
 
