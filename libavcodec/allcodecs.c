@@ -39,7 +39,6 @@ void avcodec_register_all(void)
     inited = 1;
 
     /* encoders */
-#ifdef CONFIG_ENCODERS
 #ifdef CONFIG_AC3_ENCODER
     register_avcodec(&ac3_encoder);
 #endif //CONFIG_AC3_ENCODER
@@ -190,10 +189,8 @@ void avcodec_register_all(void)
 #ifdef CONFIG_RAWVIDEO_ENCODER
     register_avcodec(&rawvideo_encoder);
 #endif //CONFIG_RAWVIDEO_ENCODER
-#endif /* CONFIG_ENCODERS */
 
     /* decoders */
-#ifdef CONFIG_DECODERS
 #ifdef CONFIG_H263_DECODER
     register_avcodec(&h263_decoder);
 #endif //CONFIG_H263_DECODER
@@ -543,28 +540,23 @@ void avcodec_register_all(void)
 #ifdef CONFIG_WAVPACK_DECODER
     register_avcodec(&wavpack_decoder);
 #endif //CONFIG_WAVPACK_DECODER
-#endif /* CONFIG_DECODERS */
 
 #if defined(CONFIG_AMR_NB) || defined(CONFIG_AMR_NB_FIXED)
 #ifdef CONFIG_AMR_NB_DECODER
     register_avcodec(&amr_nb_decoder);
 #endif //CONFIG_AMR_NB_DECODER
-#ifdef CONFIG_ENCODERS
 #ifdef CONFIG_AMR_NB_ENCODER
     register_avcodec(&amr_nb_encoder);
 #endif //CONFIG_AMR_NB_ENCODER
-#endif //CONFIG_ENCODERS
 #endif /* CONFIG_AMR_NB || CONFIG_AMR_NB_FIXED */
 
 #ifdef CONFIG_AMR_WB
 #ifdef CONFIG_AMR_WB_DECODER
     register_avcodec(&amr_wb_decoder);
 #endif //CONFIG_AMR_WB_DECODER
-#ifdef CONFIG_ENCODERS
 #ifdef CONFIG_AMR_WB_ENCODER
     register_avcodec(&amr_wb_encoder);
 #endif //CONFIG_AMR_WB_ENCODER
-#endif //CONFIG_ENCODERS
 #endif /* CONFIG_AMR_WB */
 
 #ifdef CONFIG_BMP_DECODER
