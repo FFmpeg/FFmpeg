@@ -264,7 +264,7 @@ static int mxf_read_metadata_preface(MXFContext *mxf, KLVPacket *klv)
                 return -1;
             mxf->essence_containers_uls = av_malloc(mxf->essence_containers_uls_count * sizeof(UID));
             url_fskip(pb, 4); /* useless size of objects, always 16 according to specs */
-            get_buffer(pb, mxf->essence_containers_uls, mxf->essence_containers_uls_count * sizeof(UID));
+            get_buffer(pb, (uint8_t *)mxf->essence_containers_uls, mxf->essence_containers_uls_count * sizeof(UID));
             break;
         default:
             url_fskip(pb, size);
@@ -291,7 +291,7 @@ static int mxf_read_metadata_content_storage(MXFContext *mxf, KLVPacket *klv)
                 return -1;
             mxf->packages_refs = av_malloc(mxf->packages_count * sizeof(UID));
             url_fskip(pb, 4); /* useless size of objects, always 16 according to specs */
-            get_buffer(pb, mxf->packages_refs, mxf->packages_count * sizeof(UID));
+            get_buffer(pb, (uint8_t *)mxf->packages_refs, mxf->packages_count * sizeof(UID));
             break;
         case 0x1902:
             mxf->essence_container_data_sets_count = get_be32(pb);
@@ -299,7 +299,7 @@ static int mxf_read_metadata_content_storage(MXFContext *mxf, KLVPacket *klv)
                 return -1;
             mxf->essence_container_data_sets_refs = av_malloc(mxf->essence_container_data_sets_count * sizeof(UID));
             url_fskip(pb, 4); /* useless size of objects, always 16 according to specs */
-            get_buffer(pb, mxf->essence_container_data_sets_refs, mxf->essence_container_data_sets_count * sizeof(UID));
+            get_buffer(pb, (uint8_t *)mxf->essence_container_data_sets_refs, mxf->essence_container_data_sets_count * sizeof(UID));
             break;
         default:
             url_fskip(pb, size);
@@ -369,7 +369,7 @@ static int mxf_read_metadata_material_package(MXFContext *mxf, KLVPacket *klv)
                 return -1;
             package->tracks_refs = av_malloc(package->tracks_count * sizeof(UID));
             url_fskip(pb, 4); /* useless size of objects, always 16 according to specs */
-            get_buffer(pb, package->tracks_refs, package->tracks_count * sizeof(UID));
+            get_buffer(pb, (uint8_t *)package->tracks_refs, package->tracks_count * sizeof(UID));
             break;
         default:
             url_fskip(pb, size);
@@ -444,7 +444,7 @@ static int mxf_read_metadata_sequence(MXFContext *mxf, KLVPacket *klv)
                 return -1;
             sequence->structural_components_refs = av_malloc(sequence->structural_components_count * sizeof(UID));
             url_fskip(pb, 4); /* useless size of objects, always 16 according to specs */
-            get_buffer(pb, sequence->structural_components_refs, sequence->structural_components_count * sizeof(UID));
+            get_buffer(pb, (uint8_t *)sequence->structural_components_refs, sequence->structural_components_count * sizeof(UID));
             break;
         default:
             url_fskip(pb, size);
@@ -476,7 +476,7 @@ static int mxf_read_metadata_source_package(MXFContext *mxf, KLVPacket *klv)
                 return -1;
             package->tracks_refs = av_malloc(package->tracks_count * sizeof(UID));
             url_fskip(pb, 4); /* useless size of objects, always 16 according to specs */
-            get_buffer(pb, package->tracks_refs, package->tracks_count * sizeof(UID));
+            get_buffer(pb, (uint8_t *)package->tracks_refs, package->tracks_count * sizeof(UID));
             break;
         case 0x4401:
             /* UMID, only get last 16 bytes */
@@ -516,7 +516,7 @@ static int mxf_read_metadata_multiple_descriptor(MXFContext *mxf, KLVPacket *klv
                 return -1;
             descriptor->sub_descriptors_refs = av_malloc(descriptor->sub_descriptors_count * sizeof(UID));
             url_fskip(pb, 4); /* useless size of objects, always 16 according to specs */
-            get_buffer(pb, descriptor->sub_descriptors_refs, descriptor->sub_descriptors_count * sizeof(UID));
+            get_buffer(pb, (uint8_t *)descriptor->sub_descriptors_refs, descriptor->sub_descriptors_count * sizeof(UID));
             break;
         default:
             url_fskip(pb, size);
