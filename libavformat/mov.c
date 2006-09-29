@@ -491,7 +491,7 @@ static int mov_read_esds(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
         len = mov_mp4_read_descr(pb, &tag);
         if (tag == MP4DecSpecificDescrTag) {
             dprintf("Specific MPEG4 header len=%d\n", len);
-            st->codec->extradata = (uint8_t*) av_mallocz(len + FF_INPUT_BUFFER_PADDING_SIZE);
+            st->codec->extradata = av_mallocz(len + FF_INPUT_BUFFER_PADDING_SIZE);
             if (st->codec->extradata) {
                 get_buffer(pb, st->codec->extradata, len);
                 st->codec->extradata_size = len;
@@ -645,7 +645,7 @@ static int mov_read_smi(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     // this should be fixed and just SMI header should be passed
     av_free(st->codec->extradata);
     st->codec->extradata_size = 0x5a + atom.size;
-    st->codec->extradata = (uint8_t*) av_mallocz(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
+    st->codec->extradata = av_mallocz(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
 
     if (st->codec->extradata) {
         strcpy(st->codec->extradata, "SVQ3"); // fake
@@ -686,7 +686,7 @@ static int mov_read_alac(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 
     av_free(st->codec->extradata);
     st->codec->extradata_size = 36;
-    st->codec->extradata = (uint8_t*) av_mallocz(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
+    st->codec->extradata = av_mallocz(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
 
     if (st->codec->extradata) {
         strcpy((char *)st->codec->extradata + 4, "alac"); // fake
@@ -708,7 +708,7 @@ static int mov_read_wave(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
         // pass all frma atom to codec, needed at least for QDM2
         av_free(st->codec->extradata);
         st->codec->extradata_size = atom.size;
-        st->codec->extradata = (uint8_t*) av_mallocz(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
+        st->codec->extradata = av_mallocz(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
 
         if (st->codec->extradata) {
             get_buffer(pb, st->codec->extradata, atom.size);
@@ -731,7 +731,7 @@ static int mov_read_jp2h(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     av_free(st->codec->extradata);
 
     st->codec->extradata_size = atom.size + 8;
-    st->codec->extradata = (uint8_t*) av_mallocz(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
+    st->codec->extradata = av_mallocz(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
 
     /* pass all jp2h atom to codec */
     if (st->codec->extradata) {
@@ -752,7 +752,7 @@ static int mov_read_avcC(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     av_free(st->codec->extradata);
 
     st->codec->extradata_size = atom.size;
-    st->codec->extradata = (uint8_t*) av_mallocz(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
+    st->codec->extradata = av_mallocz(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
 
     if (st->codec->extradata) {
         get_buffer(pb, st->codec->extradata, atom.size);
@@ -777,7 +777,7 @@ static int mov_read_stco(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
         return -1;
 
     sc->chunk_count = entries;
-    sc->chunk_offsets = (int64_t*) av_malloc(entries * sizeof(int64_t));
+    sc->chunk_offsets = av_malloc(entries * sizeof(int64_t));
     if (!sc->chunk_offsets)
         return -1;
     if (atom.type == MKTAG('s', 't', 'c', 'o')) {
@@ -1096,7 +1096,7 @@ static int mov_read_stsc(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 av_log(NULL, AV_LOG_DEBUG, "track[%i].stsc.entries = %i\n", c->fc->nb_streams-1, entries);
 #endif
     sc->sample_to_chunk_sz = entries;
-    sc->sample_to_chunk = (MOV_sample_to_chunk_tbl*) av_malloc(entries * sizeof(MOV_sample_to_chunk_tbl));
+    sc->sample_to_chunk = av_malloc(entries * sizeof(MOV_sample_to_chunk_tbl));
     if (!sc->sample_to_chunk)
         return -1;
     for(i=0; i<entries; i++) {
@@ -1125,7 +1125,7 @@ static int mov_read_stss(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 #ifdef DEBUG
     av_log(NULL, AV_LOG_DEBUG, "keyframe_count = %ld\n", sc->keyframe_count);
 #endif
-    sc->keyframes = (long*) av_malloc(entries * sizeof(long));
+    sc->keyframes = av_malloc(entries * sizeof(long));
     if (!sc->keyframes)
         return -1;
     for(i=0; i<entries; i++) {
@@ -1160,7 +1160,7 @@ static int mov_read_stsz(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 #ifdef DEBUG
     av_log(NULL, AV_LOG_DEBUG, "sample_size = %ld sample_count = %ld\n", sc->sample_size, sc->sample_count);
 #endif
-    sc->sample_sizes = (long*) av_malloc(entries * sizeof(long));
+    sc->sample_sizes = av_malloc(entries * sizeof(long));
     if (!sc->sample_sizes)
         return -1;
     for(i=0; i<entries; i++) {
@@ -1260,7 +1260,7 @@ static int mov_read_trak(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 
     st = av_new_stream(c->fc, c->fc->nb_streams);
     if (!st) return -2;
-    sc = (MOVStreamContext*) av_mallocz(sizeof(MOVStreamContext));
+    sc = av_mallocz(sizeof(MOVStreamContext));
     if (!sc) {
         av_free(st);
         return -1;
@@ -1368,10 +1368,10 @@ static int mov_read_cmov(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     moov_len = get_be32(pb); /* uncompressed size */
     cmov_len = atom.size - 6 * 4;
 
-    cmov_data = (uint8_t *) av_malloc(cmov_len);
+    cmov_data = av_malloc(cmov_len);
     if (!cmov_data)
         return -1;
-    moov_data = (uint8_t *) av_malloc(moov_len);
+    moov_data = av_malloc(moov_len);
     if (!moov_data) {
         av_free(cmov_data);
         return -1;
