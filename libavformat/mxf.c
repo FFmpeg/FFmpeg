@@ -976,6 +976,35 @@ static int mxf_probe(AVProbeData *p) {
     return 0;
 }
 
+/* rudimentary binary seek */
+/* XXX: use MXF Index */
+static int mxf_read_seek(AVFormatContext *s, int stream_index, int64_t sample_time, int flags)
+{
+    AVStream *st = s->streams[stream_index];
+    offset_t pos = url_ftell(&s->pb);
+    int64_t seconds;
+    int i;
+
+    if (!s->bit_rate || sample_time < 0)
+        return -1;
+    seconds = av_rescale(sample_time, st->time_base.num, st->time_base.den);
+    url_fseek(&s->pb, (s->bit_rate * seconds) >> 3, SEEK_SET);
+    /* sync on KLV essence element */
+    for (i = 0; i < 12 && url_ftell(&s->pb) < s->file_size; i++) {
+        int b = get_byte(&s->pb);
+        if (b == mxf_essence_element_key[0])
+            i = 0;
+        else if (b != mxf_essence_element_key[i])
+            i = -1;
+    }
+    if (i == 12) { /* found KLV key */
+        url_fseek(&s->pb, -12, SEEK_CUR);
+        av_update_cur_dts(s, st, sample_time);
+        return 0;
+    }
+    url_fseek(&s->pb, pos, SEEK_SET);
+    return -1;
+}
 
 AVInputFormat mxf_demuxer = {
     "mxf",
@@ -985,5 +1014,5 @@ AVInputFormat mxf_demuxer = {
     mxf_read_header,
     mxf_read_packet,
     mxf_read_close,
-    NULL,
+    mxf_read_seek,
 };
