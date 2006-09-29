@@ -516,26 +516,24 @@ static int rv10_decode_init(AVCodecContext *avctx)
     s->width = avctx->width;
     s->height = avctx->height;
 
+    s->h263_long_vectors= !!(*(uint32_t*)avctx->extradata & 0x1000000);
+
     switch(avctx->sub_id){
     case 0x10000000:
         s->rv10_version= 0;
-        s->h263_long_vectors=0;
         s->low_delay=1;
         break;
     case 0x10002000:
         s->rv10_version= 3;
-        s->h263_long_vectors=1;
         s->low_delay=1;
         s->obmc=1;
         break;
     case 0x10003000:
         s->rv10_version= 3;
-        s->h263_long_vectors=1;
         s->low_delay=1;
         break;
     case 0x10003001:
         s->rv10_version= 3;
-        s->h263_long_vectors= !!(*(uint32_t*)avctx->extradata & 0x1000000);
         s->low_delay=1;
         break;
     case 0x20001000: /* real rv20 decoder fail on this id */
