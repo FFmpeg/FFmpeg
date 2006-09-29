@@ -169,7 +169,7 @@ static const uint8_t mxf_essence_element_key[]             = { 0x06,0x0e,0x2b,0x
 
 #define IS_KLV_KEY(x, y) (!memcmp(x, y, sizeof(y)))
 
-#define PRINT_KEY(x) dprintf("%02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X\n", \
+#define PRINT_KEY(s, x) dprintf("%s %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X\n", s, \
                              (x)[0], (x)[1], (x)[2], (x)[3], (x)[4], (x)[5], (x)[6], (x)[7], (x)[8], (x)[9], (x)[10], (x)[11], (x)[12], (x)[13], (x)[14], (x)[15])
 
 static int64_t klv_decode_ber_length(ByteIOContext *pb)
@@ -222,7 +222,7 @@ static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
             return -1;
         }
 #ifdef DEBUG
-        PRINT_KEY(klv.key);
+        PRINT_KEY("read packet", klv.key);
 #endif
         if (IS_KLV_KEY(klv.key, mxf_essence_element_key)) {
             av_get_packet(&s->pb, pkt, klv.length);
@@ -784,7 +784,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
         }
 
 #ifdef DEBUG
-        PRINT_KEY(source_track->sequence->data_definition_ul);
+        PRINT_KEY("data definition   ul", source_track->sequence->data_definition_ul);
 #endif
         if (!memcmp(source_track->sequence->data_definition_ul, picture_essence_track_ul, 16))
             st->codec->codec_type = CODEC_TYPE_VIDEO;
@@ -816,8 +816,8 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
             continue;
         }
 #ifdef DEBUG
-        PRINT_KEY(descriptor->essence_codec_ul);
-        PRINT_KEY(descriptor->essence_container_ul);
+        PRINT_KEY("essence codec     ul", descriptor->essence_codec_ul);
+        PRINT_KEY("essence container ul", descriptor->essence_container_ul);
 #endif
         /* TODO: drop PictureEssenceCoding and SoundEssenceCompression, only check EssenceContainer */
         codec_ul = mxf_get_codec_ul(mxf_codec_uls, &descriptor->essence_codec_ul);
@@ -894,7 +894,7 @@ static int mxf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             return -1;
         }
 #ifdef DEBUG
-        PRINT_KEY(klv.key);
+        PRINT_KEY("read header", klv.key);
 #endif
         if (IS_KLV_KEY(klv.key, mxf_essence_element_key)) {
             /* FIXME avoid seek */
