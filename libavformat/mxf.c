@@ -158,6 +158,11 @@ typedef struct MXFCodecUL {
     enum MXFWrappingScheme wrapping;
 } MXFCodecUL;
 
+typedef struct MXFDataDefinitionUL {
+    UID uid;
+    enum CodecType type;
+} MXFDataDefinitionUL;
+
 typedef struct MXFMetadataReadTableEntry {
     const UID key;
     int (*read)(MXFContext *mxf, KLVPacket *klv);
@@ -615,8 +620,11 @@ static int mxf_read_metadata_generic_descriptor(MXFContext *mxf, KLVPacket *klv)
 }
 
 /* SMPTE RP224 http://www.smpte-ra.org/mdd/index.html */
-static const UID picture_essence_track_ul = { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x01,0x01,0x03,0x02,0x02,0x01,0x00,0x00,0x00 };
-static const UID sound_essence_track_ul   = { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x01,0x01,0x03,0x02,0x02,0x02,0x00,0x00,0x00 };
+static const MXFDataDefinitionUL mxf_data_definition_uls[] = {
+    { { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x01,0x01,0x03,0x02,0x02,0x01,0x00,0x00,0x00 }, CODEC_TYPE_VIDEO },
+    { { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x01,0x01,0x03,0x02,0x02,0x02,0x00,0x00,0x00 }, CODEC_TYPE_AUDIO },
+    { { 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 },  CODEC_TYPE_DATA },
+};
 
 static const MXFCodecUL mxf_codec_uls[] = {
     /* PictureEssenceCoding */
@@ -671,6 +679,16 @@ static const MXFCodecUL *mxf_get_codec_ul(const MXFCodecUL *uls, UID *uid)
         uls++;
     }
     return uls;
+}
+
+static enum CodecType mxf_get_codec_type(const MXFDataDefinitionUL *uls, UID *uid)
+{
+    while (uls->type != CODEC_TYPE_DATA) {
+        if(!memcmp(uls->uid, *uid, 16))
+            break;
+        uls++;
+    }
+    return uls->type;
 }
 
 static void *mxf_resolve_strong_ref(MXFContext *mxf, UID *strong_ref)
@@ -786,12 +804,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
 #ifdef DEBUG
         PRINT_KEY("data definition   ul", source_track->sequence->data_definition_ul);
 #endif
-        if (!memcmp(source_track->sequence->data_definition_ul, picture_essence_track_ul, 16))
-            st->codec->codec_type = CODEC_TYPE_VIDEO;
-        else if (!memcmp(source_track->sequence->data_definition_ul, sound_essence_track_ul, 16))
-            st->codec->codec_type = CODEC_TYPE_AUDIO;
-        else
-            st->codec->codec_type = CODEC_TYPE_DATA;
+        st->codec->codec_type = mxf_get_codec_type(mxf_data_definition_uls, &source_track->sequence->data_definition_ul);
 
         source_package->descriptor = mxf_resolve_strong_ref(mxf, &source_package->descriptor_ref);
         if (source_package->descriptor) {
