@@ -258,19 +258,28 @@ int64_t av_get_int(void *obj, const char *name, AVOption **o_out){
     return num*intnum/den;
 }
 
-int av_opt_show(void *obj, void *av_log_obj){
+static int opt_list(void *obj, void *av_log_obj, char *unit)
+{
     AVOption *opt=NULL;
-
-    if(!obj)
-        return -1;
-
-    av_log(av_log_obj, AV_LOG_INFO, "%s AVOptions:\n", (*(AVClass**)obj)->class_name);
 
     while((opt= av_next_option(obj, opt))){
         if(!(opt->flags & (AV_OPT_FLAG_ENCODING_PARAM|AV_OPT_FLAG_DECODING_PARAM)))
             continue;
 
-        av_log(av_log_obj, AV_LOG_INFO, "-%-17s ", opt->name);
+        /* Don't print CONST's on level one.
+         * Don't print anything but CONST's on level two.
+         * Only print items from the requested unit.
+         */
+        if (!unit && opt->type==FF_OPT_TYPE_CONST)
+            continue;
+        else if (unit && opt->type!=FF_OPT_TYPE_CONST)
+            continue;
+        else if (unit && opt->type==FF_OPT_TYPE_CONST && strcmp(unit, opt->unit))
+            continue;
+        else if (unit && opt->type == FF_OPT_TYPE_CONST)
+            av_log(av_log_obj, AV_LOG_INFO, "   %-15s ", opt->name);
+        else
+            av_log(av_log_obj, AV_LOG_INFO, "-%-17s ", opt->name);
 
         switch( opt->type )
         {
@@ -309,7 +318,20 @@ int av_opt_show(void *obj, void *av_log_obj){
         if(opt->help)
             av_log(av_log_obj, AV_LOG_INFO, " %s", opt->help);
         av_log(av_log_obj, AV_LOG_INFO, "\n");
+        if (opt->unit && opt->type != FF_OPT_TYPE_CONST) {
+            opt_list(obj, av_log_obj, opt->unit);
+        }
     }
+}
+
+int av_opt_show(void *obj, void *av_log_obj){
+    if(!obj)
+        return -1;
+
+    av_log(av_log_obj, AV_LOG_INFO, "%s AVOptions:\n", (*(AVClass**)obj)->class_name);
+
+    opt_list(obj, av_log_obj, NULL);
+
     return 0;
 }
 
