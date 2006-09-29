@@ -556,7 +556,7 @@ void ff_clean_mpeg4_qscales(MpegEncContext *s){
 #define tab_size ((signed)(sizeof(s->direct_scale_mv[0])/sizeof(int16_t)))
 #define tab_bias (tab_size/2)
 
-static void ff_mpeg4_init_direct_mv(MpegEncContext *s){
+void ff_mpeg4_init_direct_mv(MpegEncContext *s){
     int i;
     for(i=0; i<tab_size; i++){
         s->direct_scale_mv[0][i] = (i-tab_bias)*s->pb_time/s->pp_time;

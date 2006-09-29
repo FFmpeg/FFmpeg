@@ -473,6 +473,7 @@ static int rv20_decode_picture_header(MpegEncContext *s)
                 av_log(s->avctx, AV_LOG_DEBUG, "messed up order, possible from seeking? skipping current b frame\n");
                 return FRAME_SKIPPED;
             }
+            ff_mpeg4_init_direct_mv(s);
         }
     }
 //    printf("%d %d %d %d %d\n", seq, (int)s->time, (int)s->last_non_b_time, s->pp_time, s->pb_time);
