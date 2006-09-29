@@ -649,7 +649,7 @@ static int mov_read_smi(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 
     if (st->codec->extradata) {
         strcpy(st->codec->extradata, "SVQ3"); // fake
-        get_buffer(pb, st->codec->extradata + 0x5a, atom.size);
+        get_buffer(pb, (uint8_t *)st->codec->extradata + 0x5a, atom.size);
         dprintf("Reading SMI %"PRId64"  %s\n", atom.size, (char*)st->codec->extradata + 0x5a);
     } else
         url_fskip(pb, atom.size);
@@ -689,8 +689,8 @@ static int mov_read_alac(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     st->codec->extradata = (uint8_t*) av_mallocz(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
 
     if (st->codec->extradata) {
-        strcpy(st->codec->extradata + 4, "alac"); // fake
-        get_buffer(pb, st->codec->extradata + 8, 36 - 8);
+        strcpy((char *)st->codec->extradata + 4, "alac"); // fake
+        get_buffer(pb, (uint8_t *)st->codec->extradata + 8, 36 - 8);
         dprintf("Reading alac %d  %s\n", st->codec->extradata_size, (char*)st->codec->extradata);
     } else
         url_fskip(pb, atom.size);
@@ -735,8 +735,8 @@ static int mov_read_jp2h(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 
     /* pass all jp2h atom to codec */
     if (st->codec->extradata) {
-        strcpy(st->codec->extradata + 4, "jp2h");
-        get_buffer(pb, st->codec->extradata + 8, atom.size);
+        strcpy((char *)st->codec->extradata + 4, "jp2h");
+        get_buffer(pb, (uint8_t *)st->codec->extradata + 8, atom.size);
     } else
         url_fskip(pb, atom.size);
     return 0;
