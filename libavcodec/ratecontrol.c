@@ -25,6 +25,7 @@
 
 #include "avcodec.h"
 #include "dsputil.h"
+#include "ratecontrol.h"
 #include "mpegvideo.h"
 #include "eval.h"
 
