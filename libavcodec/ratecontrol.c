@@ -26,6 +26,7 @@
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mpegvideo.h"
+#include "eval.h"
 
 #undef NDEBUG // allways check asserts, the speed effect is far too small to disable them
 #include <assert.h>

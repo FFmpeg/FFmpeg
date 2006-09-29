@@ -26,7 +26,7 @@
 
 #include "avcodec.h"
 #include "opt.h"
-#include "mpegvideo.h"
+#include "eval.h"
 
 //FIXME order them and do a bin search
 static AVOption *find_opt(void *v, const char *name, const char *unit){
