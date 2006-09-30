@@ -26,13 +26,9 @@ Long term (ask me if you want to help):
 
 Michael's TODO list: (unordered) (if anyone wanna help with sth, just ask)
 -------------------
-- finish implementation of WMV2 j-picture
-- H264 encoder
 - optimize H264 CABAC
-- per MB ratecontrol (so VCD and such do work better)
 - more optimizations
 - simper rate control
-- reverse engeneer RV30/RV40
 
 Francois' TODO list: (unordered, without any timeframe)
 -------------------
@@ -77,3 +73,7 @@ unassigned TODO: (unordered)
 - seeking regression test
 - regression tests for codecs which dont have an encoder (I+P frame bitstream in svn)
 - add support for using mplayers video filters to ffmpeg
+- reverse engeneer RV30/RV40
+- finish implementation of WMV2 j-picture
+- H264 encoder
+- per MB ratecontrol (so VCD and such do work better)
