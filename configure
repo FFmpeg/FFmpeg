@@ -1122,6 +1122,7 @@ variable to another directory.
 EOF
     die "Sanity test failed."
 fi
+rm $TMPE
 
 # compiler sanity check
 check_exec <<EOF
