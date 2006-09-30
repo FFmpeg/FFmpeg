@@ -107,7 +107,7 @@ typedef struct VqaContext {
     unsigned char *buf;
     int size;
 
-    unsigned int palette[PALETTE_COUNT];
+    uint32_t palette[PALETTE_COUNT];
 
     int width;   /* width of a frame */
     int height;   /* height of a frame */
