@@ -761,14 +761,7 @@ static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
 //                av_log(NULL, AV_LOG_DEBUG, "fps= %d fps2= %d\n", fps, fps2);
                 st->codec->time_base.den = fps * st->codec->time_base.num;
-                /* modification of h263 codec version (!) */
-#ifdef WORDS_BIGENDIAN
-                h263_hack_version = ((uint32_t*)st->codec->extradata)[1];
-#else
-                h263_hack_version = bswap_32(((uint32_t*)st->codec->extradata)[1]);
-#endif
-                st->codec->sub_id = h263_hack_version;
-                switch((h263_hack_version>>28)){
+                switch(((uint8_t*)st->codec->extradata)[4]>>4){
                 case 1: st->codec->codec_id = CODEC_ID_RV10; break;
                 case 2: st->codec->codec_id = CODEC_ID_RV20; break;
                 case 3: st->codec->codec_id = CODEC_ID_RV30; break;
