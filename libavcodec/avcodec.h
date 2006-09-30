@@ -2086,6 +2086,7 @@ typedef struct AVPicture {
  * AVPaletteControl
  * This structure defines a method for communicating palette changes
  * between and demuxer and a decoder.
+ * this is totally broken, palette changes should be sent as AVPackets
  */
 #define AVPALETTE_SIZE 1024
 #define AVPALETTE_COUNT 256
@@ -2101,7 +2102,7 @@ typedef struct AVPaletteControl {
      * data is probably 6 bits in size and needs to be scaled */
     unsigned int palette[AVPALETTE_COUNT];
 
-} AVPaletteControl;
+} AVPaletteControl attribute_deprecated;
 
 typedef struct AVSubtitleRect {
     uint16_t x;
