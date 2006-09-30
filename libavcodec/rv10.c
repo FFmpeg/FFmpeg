@@ -383,8 +383,9 @@ static int rv20_decode_picture_header(MpegEncContext *s)
     av_log(s->avctx, AV_LOG_DEBUG, "\n");
 #endif
 #if 0
+    av_log(s->avctx, AV_LOG_DEBUG, "%3dx%03d/%02Xx%02X ", s->width, s->height, s->width/4, s->height/4);
     for(i=0; i<s->avctx->extradata_size; i++){
-        av_log(s->avctx, AV_LOG_DEBUG, "%2X ", ((uint8_t*)s->avctx->extradata)[i]);
+        av_log(s->avctx, AV_LOG_DEBUG, "%02X ", ((uint8_t*)s->avctx->extradata)[i]);
         if(i%4==3) av_log(s->avctx, AV_LOG_DEBUG, " ");
     }
     av_log(s->avctx, AV_LOG_DEBUG, "\n");
@@ -431,17 +432,32 @@ static int rv20_decode_picture_header(MpegEncContext *s)
     }
 
     if(s->avctx->has_b_frames){
-        int f=9;
+        int f, new_w, new_h;
         int v= s->avctx->extradata_size >= 4 ? ((uint8_t*)s->avctx->extradata)[1] : 0;
 
         if (get_bits(&s->gb, 1)){
             av_log(s->avctx, AV_LOG_ERROR, "unknown bit3 set\n");
 //            return -1;
         }
-        seq= get_bits(&s->gb, 14)<<1;
+        seq= get_bits(&s->gb, 13)<<2;
 
-        if(v)
-            f= get_bits(&s->gb, av_log2(v));
+        f= get_bits(&s->gb, av_log2(v)+1);
+
+        if(f){
+            new_w= 4*((uint8_t*)s->avctx->extradata)[6+2*f];
+            new_h= 4*((uint8_t*)s->avctx->extradata)[7+2*f];
+        }else{
+            new_w= s->width; //FIXME wrong we of course must save the original in the context
+            new_h= s->height;
+        }
+        if(new_w != s->width || new_h != s->height){
+            av_log(s->avctx, AV_LOG_DEBUG, "attempting to change resolution to %dx%d\n", new_w, new_h);
+            MPV_common_end(s);
+            s->width  = s->avctx->width = new_w;
+            s->height = s->avctx->height= new_h;
+            if (MPV_common_init(s) < 0)
+                return -1;
+        }
 
         if(s->avctx->debug & FF_DEBUG_PICT_INFO){
             av_log(s->avctx, AV_LOG_DEBUG, "F %d/%d\n", f, v);
