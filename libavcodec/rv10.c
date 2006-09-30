@@ -433,7 +433,7 @@ static int rv20_decode_picture_header(MpegEncContext *s)
 
     if(s->avctx->has_b_frames){
         int f, new_w, new_h;
-        int v= s->avctx->extradata_size >= 4 ? ((uint8_t*)s->avctx->extradata)[1] : 0;
+        int v= s->avctx->extradata_size >= 4 ? 7&((uint8_t*)s->avctx->extradata)[1] : 0;
 
         if (get_bits(&s->gb, 1)){
             av_log(s->avctx, AV_LOG_ERROR, "unknown bit3 set\n");
