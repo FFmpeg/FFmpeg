@@ -94,6 +94,7 @@ static int avisynth_read_header(AVFormatContext *s, AVFormatParameters *ap)
                   stream->chunck_samples = wvfmt.nSamplesPerSec * (uint64_t)info.dwScale / (uint64_t)info.dwRate;
                   stream->chunck_size = stream->chunck_samples * wvfmt.nChannels * wvfmt.wBitsPerSample / 8;
 
+                  st->codec->codec_tag = wvfmt.wFormatTag;
                   st->codec->codec_id = wav_codec_get_id(wvfmt.wFormatTag, st->codec->bits_per_sample);
                 }
               else if (stream->info.fccType == streamtypeVIDEO)
@@ -115,9 +116,10 @@ static int avisynth_read_header(AVFormatContext *s, AVFormatParameters *ap)
                   st->codec->width = imgfmt.bmiHeader.biWidth;
                   st->codec->height = imgfmt.bmiHeader.biHeight;
 
-                  st->codec->bits_per_sample = stream->info.dwSampleSize * 8;
+                  st->codec->bits_per_sample = imgfmt.bmiHeader.biBitCount;
                   st->codec->bit_rate = (uint64_t)stream->info.dwSampleSize * (uint64_t)stream->info.dwRate * 8 / (uint64_t)stream->info.dwScale;
-                  st->codec->codec_id = codec_get_id(codec_bmp_tags, stream->info.fccHandler);
+                  st->codec->codec_tag = imgfmt.bmiHeader.biCompression;
+                  st->codec->codec_id = codec_get_id(codec_bmp_tags, imgfmt.bmiHeader.biCompression);
 
                   st->duration = stream->info.dwLength;
                 }
@@ -128,7 +130,6 @@ static int avisynth_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 }
 
               avs->nb_streams++;
-              st->codec->codec_tag = stream->info.fccHandler;
 
               st->codec->stream_codec_tag = stream->info.fccHandler;
 
