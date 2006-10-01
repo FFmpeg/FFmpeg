@@ -208,6 +208,9 @@ depend: .depend
 ifeq ($(CONFIG_PP),yes)
 	$(MAKE) -C libpostproc depend
 endif
+ifeq ($(CONFIG_SWSCALER),yes)
+	$(MAKE) -C libswscale  depend
+endif
 ifeq ($(BUILD_VHOOK),yes)
 	$(MAKE) -C vhook       depend
 endif
