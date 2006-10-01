@@ -35,7 +35,7 @@ void ff_vorbis_ready_floor1_list(floor1_entry_t * list, int values);
 unsigned int ff_vorbis_nth_root(unsigned int x, unsigned int n); // x^(1/n)
 int ff_vorbis_len2vlc(uint8_t *bits, uint32_t *codes, uint_fast32_t num);
 
-static void render_line(int x0, int y0, int x1, int y1, float * buf, int n) {
+static void attribute_unused render_line(int x0, int y0, int x1, int y1, float * buf, int n) {
     int dy = y1 - y0;
     int adx = x1 - x0;
     int ady = ABS(dy);
