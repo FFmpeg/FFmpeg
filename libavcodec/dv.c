@@ -1196,7 +1196,7 @@ static void dv_format_frame(DVVideoContext* c, uint8_t* buf)
 }
 
 
-
+#ifdef CONFIG_ENCODERS
 static int dvvideo_encode_frame(AVCodecContext *c, uint8_t *buf, int buf_size,
                                 void *data)
 {
@@ -1223,6 +1223,7 @@ static int dvvideo_encode_frame(AVCodecContext *c, uint8_t *buf, int buf_size,
 
     return s->sys->frame_size;
 }
+#endif
 
 static int dvvideo_close(AVCodecContext *c)
 {
