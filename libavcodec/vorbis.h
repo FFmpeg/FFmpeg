@@ -22,4 +22,13 @@
 extern const float ff_vorbis_floor1_inverse_db_table[256];
 extern const float * ff_vorbis_vwin[8];
 
+typedef struct {
+    uint_fast16_t x;
+    uint_fast16_t sort;
+    uint_fast16_t low;
+    uint_fast16_t high;
+} floor1_entry_t;
+
+void ff_vorbis_ready_floor1_list(floor1_entry_t * list, int values);
+
 #endif

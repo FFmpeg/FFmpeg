@@ -88,10 +88,7 @@ typedef struct {
             int_fast16_t subclass_books[16][8];
             uint_fast8_t multiplier;
             uint_fast16_t x_list_dim;
-            uint_fast16_t *x_list;
-            uint_fast16_t *x_list_order;
-            uint_fast16_t *low_neighbour;
-            uint_fast16_t *high_neighbour;
+            floor1_entry_t * list;
         } t1;
     } data;
 } vorbis_floor;
@@ -253,6 +250,36 @@ static int vorbis_len2vlc(vorbis_context *vc, uint_fast8_t *bits, uint_fast32_t 
     return 0;
 }
 
+void ff_vorbis_ready_floor1_list(floor1_entry_t * list, int values) {
+    int i;
+    list[0].sort = 0;
+    list[1].sort = 1;
+    for (i = 2; i < values; i++) {
+        int j;
+        list[i].low = 0;
+        list[i].high = 1;
+        list[i].sort = i;
+        for (j = 2; j < i; j++) {
+            int tmp = list[j].x;
+            if (tmp < list[i].x) {
+                if (tmp > list[list[i].low].x) list[i].low = j;
+            } else {
+                if (tmp < list[list[i].high].x) list[i].high = j;
+            }
+        }
+    }
+    for (i = 0; i < values - 1; i++) {
+        int j;
+        for (j = i + 1; j < values; j++) {
+            if (list[list[i].sort].x > list[list[j].sort].x) {
+                int tmp = list[i].sort;
+                list[i].sort = list[j].sort;
+                list[j].sort = tmp;
+            }
+        }
+    }
+}
+
 // Free all allocated memory -----------------------------------------
 
 static void vorbis_free(vorbis_context *vc) {
@@ -285,10 +312,7 @@ static void vorbis_free(vorbis_context *vc) {
             av_free(vc->floors[i].data.t0.lsp);
         }
         else {
-            av_free(vc->floors[i].data.t1.x_list);
-            av_free(vc->floors[i].data.t1.x_list_order);
-            av_free(vc->floors[i].data.t1.low_neighbour);
-            av_free(vc->floors[i].data.t1.high_neighbour);
+            av_free(vc->floors[i].data.t1.list);
         }
     }
     av_freep(&vc->floors);
@@ -600,57 +624,23 @@ static int vorbis_parse_setup_hdr_floors(vorbis_context *vc) {
                 floor_setup->data.t1.x_list_dim+=floor_setup->data.t1.class_dimensions[floor_setup->data.t1.partition_class[j]];
             }
 
-            floor_setup->data.t1.x_list=(uint_fast16_t *)av_mallocz(floor_setup->data.t1.x_list_dim * sizeof(uint_fast16_t));
-            floor_setup->data.t1.x_list_order=(uint_fast16_t *)av_mallocz(floor_setup->data.t1.x_list_dim * sizeof(uint_fast16_t));
-            floor_setup->data.t1.low_neighbour=(uint_fast16_t *)av_mallocz(floor_setup->data.t1.x_list_dim * sizeof(uint_fast16_t));
-            floor_setup->data.t1.high_neighbour=(uint_fast16_t *)av_mallocz(floor_setup->data.t1.x_list_dim * sizeof(uint_fast16_t));
+            floor_setup->data.t1.list=(floor1_entry_t *)av_mallocz(floor_setup->data.t1.x_list_dim * sizeof(floor1_entry_t));
 
 
             rangebits=get_bits(gb, 4);
-            floor_setup->data.t1.x_list[0] = 0;
-            floor_setup->data.t1.x_list[1] = (1<<rangebits);
+            floor_setup->data.t1.list[0].x = 0;
+            floor_setup->data.t1.list[1].x = (1<<rangebits);
 
             for(j=0;j<floor_setup->data.t1.partitions;++j) {
                 for(k=0;k<floor_setup->data.t1.class_dimensions[floor_setup->data.t1.partition_class[j]];++k,++floor1_values) {
-                    floor_setup->data.t1.x_list[floor1_values]=get_bits(gb, rangebits);
+                    floor_setup->data.t1.list[floor1_values].x=get_bits(gb, rangebits);
 
-                    AV_DEBUG(" %d. floor1 Y coord. %d \n", floor1_values, floor_setup->data.t1.x_list[floor1_values]);
+                    AV_DEBUG(" %d. floor1 Y coord. %d \n", floor1_values, floor_setup->data.t1.list[floor1_values].x);
                 }
             }
 
 // Precalculate order of x coordinates - needed for decode
-
-            for(k=0;k<floor_setup->data.t1.x_list_dim;++k) {
-                floor_setup->data.t1.x_list_order[k]=k;
-            }
-
-            for(k=0;k<floor_setup->data.t1.x_list_dim-1;++k) {   // FIXME optimize sorting ?
-                for(j=k+1;j<floor_setup->data.t1.x_list_dim;++j) {
-                    if(floor_setup->data.t1.x_list[floor_setup->data.t1.x_list_order[k]]>floor_setup->data.t1.x_list[floor_setup->data.t1.x_list_order[j]]) {
-                        uint_fast16_t tmp=floor_setup->data.t1.x_list_order[k];
-                        floor_setup->data.t1.x_list_order[k]=floor_setup->data.t1.x_list_order[j];
-                        floor_setup->data.t1.x_list_order[j]=tmp;
-                    }
-                }
-            }
-
-// Precalculate low and high neighbours
-
-            for(k=2;k<floor_setup->data.t1.x_list_dim;++k) {
-                floor_setup->data.t1.low_neighbour[k]=0;
-                floor_setup->data.t1.high_neighbour[k]=1;  // correct according to SPEC requirements
-
-                for (j=0;j<k;++j) {
-                    if ((floor_setup->data.t1.x_list[j]<floor_setup->data.t1.x_list[k]) &&
-                      (floor_setup->data.t1.x_list[j]>floor_setup->data.t1.x_list[floor_setup->data.t1.low_neighbour[k]])) {
-                        floor_setup->data.t1.low_neighbour[k]=j;
-                    }
-                    if ((floor_setup->data.t1.x_list[j]>floor_setup->data.t1.x_list[k]) &&
-                      (floor_setup->data.t1.x_list[j]<floor_setup->data.t1.x_list[floor_setup->data.t1.high_neighbour[k]])) {
-                        floor_setup->data.t1.high_neighbour[k]=j;
-                    }
-                }
-            }
+            ff_vorbis_ready_floor1_list(floor_setup->data.t1.list, floor_setup->data.t1.x_list_dim);
         }
         else if(floor_setup->floor_type==0) {
             uint_fast8_t max_codebook_dim=0;
@@ -1256,7 +1246,6 @@ static uint_fast8_t vorbis_floor1_decode(vorbis_context *vc, vorbis_floor_data *
     int_fast16_t book;
     uint_fast16_t offset;
     uint_fast16_t i,j;
-    uint_fast16_t *floor_x_sort=vf->x_list_order;
     /*u*/int_fast16_t adx, ady, off, predicted; // WTF ? dy/adx= (unsigned)dy/adx ?
     int_fast16_t dy, err;
     uint_fast16_t lx,hx, ly, hy=0;
@@ -1299,7 +1288,7 @@ static uint_fast8_t vorbis_floor1_decode(vorbis_context *vc, vorbis_floor_data *
                 floor1_Y[offset+j]=0;
             }
 
-            AV_DEBUG(" floor(%d) = %d \n", vf->x_list[offset+j], floor1_Y[offset+j]);
+            AV_DEBUG(" floor(%d) = %d \n", vf->list[offset+j].x, floor1_Y[offset+j]);
         }
         offset+=cdim;
     }
@@ -1316,12 +1305,12 @@ static uint_fast8_t vorbis_floor1_decode(vorbis_context *vc, vorbis_floor_data *
         uint_fast16_t high_neigh_offs;
         uint_fast16_t low_neigh_offs;
 
-        low_neigh_offs=vf->low_neighbour[i];
-        high_neigh_offs=vf->high_neighbour[i];
+        low_neigh_offs=vf->list[i].low;
+        high_neigh_offs=vf->list[i].high;
         dy=floor1_Y_final[high_neigh_offs]-floor1_Y_final[low_neigh_offs];  // render_point begin
-        adx=vf->x_list[high_neigh_offs]-vf->x_list[low_neigh_offs];
+        adx=vf->list[high_neigh_offs].x-vf->list[low_neigh_offs].x;
         ady= ABS(dy);
-        err=ady*(vf->x_list[i]-vf->x_list[low_neigh_offs]);
+        err=ady*(vf->list[i].x-vf->list[low_neigh_offs].x);
         off=(int16_t)err/(int16_t)adx;
         if (dy<0) {
             predicted=floor1_Y_final[low_neigh_offs]-off;
@@ -1359,7 +1348,7 @@ static uint_fast8_t vorbis_floor1_decode(vorbis_context *vc, vorbis_floor_data *
             floor1_Y_final[i]=predicted;
         }
 
-        AV_DEBUG(" Decoded floor(%d) = %d / val %d \n", vf->x_list[i], floor1_Y_final[i], val);
+        AV_DEBUG(" Decoded floor(%d) = %d / val %d \n", vf->list[i].x, floor1_Y_final[i], val);
     }
 
 // Curve synth - connect the calculated dots and convert from dB scale FIXME optimize ?
@@ -1373,11 +1362,11 @@ static uint_fast8_t vorbis_floor1_decode(vorbis_context *vc, vorbis_floor_data *
     for(i=1;i<vf->x_list_dim;++i) {
         AV_DEBUG(" Looking at post %d \n", i);
 
-        if (floor1_flag[floor_x_sort[i]]) {   // SPEC mispelled
+        if (floor1_flag[vf->list[i].sort]) {   // SPEC mispelled
             int_fast16_t x, y, dy, base, sy; // if uncommented: dy = -32 adx = 2  base = 2blablabla ?????
 
-            hy=floor1_Y_final[floor_x_sort[i]]*vf->multiplier;
-            hx=vf->x_list[floor_x_sort[i]];
+            hy=floor1_Y_final[vf->list[i].sort]*vf->multiplier;
+            hx=vf->list[vf->list[i].sort].x;
 
             dy=hy-ly;
             adx=hx-lx;
@@ -1399,7 +1388,7 @@ static uint_fast8_t vorbis_floor1_decode(vorbis_context *vc, vorbis_floor_data *
 
             AV_DEBUG(" vec[ %d ] = %d \n", x, y);
 
-            for(x=lx+1;(x<hx) && (x<vf->x_list[1]);++x) {
+            for(x=lx+1;(x<hx) && (x<vf->list[1].x);++x) {
                 err+=ady;
                 if (err>=adx) {
                     err-=adx;
@@ -1433,8 +1422,8 @@ static uint_fast8_t vorbis_floor1_decode(vorbis_context *vc, vorbis_floor_data *
         }
     }
 
-    if (hx<vf->x_list[1]) {
-        for(i=hx;i<vf->x_list[1];++i) {
+    if (hx<vf->list[1].x) {
+        for(i=hx;i<vf->list[1].x;++i) {
             vec[i]=ff_vorbis_floor1_inverse_db_table[hy];
         }
     }
