@@ -231,7 +231,6 @@ static inline void hScale_altivec_real(int16_t *dst, int dstW, uint8_t *src, int
   case 4:
     {
       for(i=0; i<dstW; i++) {
-	register int j;
 	register int srcPos = filterPos[i];
 
 	vector unsigned char src_v0 = vec_ld(srcPos, src);

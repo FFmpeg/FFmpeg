@@ -625,7 +625,6 @@ static int altivec_uyvy_rgb32 (SwsContext *c,
   int i,j;
   vector unsigned char uyvy;
   vector signed   short Y,U,V;
-  vector signed   short vx,ux,uvx;
   vector signed   short R0,G0,B0,R1,G1,B1;
   vector unsigned char  R,G,B;
   vector unsigned char *out;
@@ -790,11 +789,10 @@ altivec_yuv2packedX (SwsContext *c,
 		       uint8_t *dest, int dstW, int dstY)
 {
   int i,j;
-  short *f;
   vector signed short X,X0,X1,Y0,U0,V0,Y1,U1,V1,U,V;
   vector signed short R0,G0,B0,R1,G1,B1;
 
-  vector unsigned char R,G,B,pels[3];
+  vector unsigned char R,G,B;
   vector unsigned char *out,*nout;
 
   vector signed short   RND = vec_splat_s16(1<<3);
