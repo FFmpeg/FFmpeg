@@ -92,7 +92,6 @@ ffplay_g$(EXESUF): ffplay.o cmdutils.o .libs
 	cp -p $< $@
 	$(STRIP) $@
 
-.PHONY: version.h
 version.h:
 	$(SRC_PATH)/version.sh "$(SRC_PATH)"
 
