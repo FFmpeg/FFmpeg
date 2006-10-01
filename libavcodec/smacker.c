@@ -520,7 +520,7 @@ static int decode_init(AVCodecContext *avctx)
 
     c->pic.data[0] = NULL;
 
-    if (avcodec_check_dimensions(avctx, avctx->height, avctx->width) < 0) {
+    if (avcodec_check_dimensions(avctx, avctx->width, avctx->height) < 0) {
         return 1;
     }
 

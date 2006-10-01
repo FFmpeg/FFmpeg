@@ -822,7 +822,7 @@ static int decode_init(AVCodecContext *avctx){
     TM2Context * const l = avctx->priv_data;
     int i;
 
-    if (avcodec_check_dimensions(avctx, avctx->height, avctx->width) < 0) {
+    if (avcodec_check_dimensions(avctx, avctx->width, avctx->height) < 0) {
         return -1;
     }
     if((avctx->width & 3) || (avctx->height & 3)){
