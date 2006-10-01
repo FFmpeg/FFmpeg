@@ -3782,8 +3782,8 @@ static void hl_decode_mb(H264Context *h){
                 xchg_mb_border(h, dest_y, dest_cb, dest_cr, linesize, uvlinesize, 0);
         }else if(s->codec_id == CODEC_ID_H264){
             hl_motion(h, dest_y, dest_cb, dest_cr,
-                      s->dsp.put_h264_qpel_pixels_tab, s->dsp.put_h264_chroma_pixels_tab,
-                      s->dsp.avg_h264_qpel_pixels_tab, s->dsp.avg_h264_chroma_pixels_tab,
+                      s->me.qpel_put, s->dsp.put_h264_chroma_pixels_tab,
+                      s->me.qpel_avg, s->dsp.avg_h264_chroma_pixels_tab,
                       s->dsp.weight_h264_pixels_tab, s->dsp.biweight_h264_pixels_tab);
         }
 
@@ -4883,6 +4883,14 @@ static int decode_slice_header(H264Context *h){
                h->use_weight,
                h->use_weight==1 && h->use_weight_chroma ? "c" : ""
                );
+    }
+
+    if((s->avctx->flags2 & CODEC_FLAG2_FAST) && !s->current_picture.reference){
+        s->me.qpel_put= s->dsp.put_2tap_qpel_pixels_tab;
+        s->me.qpel_avg= s->dsp.avg_2tap_qpel_pixels_tab;
+    }else{
+        s->me.qpel_put= s->dsp.put_h264_qpel_pixels_tab;
+        s->me.qpel_avg= s->dsp.avg_h264_qpel_pixels_tab;
     }
 
     return 0;

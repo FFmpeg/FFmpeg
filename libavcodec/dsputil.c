@@ -4165,6 +4165,9 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
 
     c->prefetch= just_return;
 
+    memset(c->put_2tap_qpel_pixels_tab, 0, sizeof(c->put_2tap_qpel_pixels_tab));
+    memset(c->avg_2tap_qpel_pixels_tab, 0, sizeof(c->avg_2tap_qpel_pixels_tab));
+
 #ifdef HAVE_MMX
     dsputil_init_mmx(c, avctx);
 #endif
@@ -4192,6 +4195,13 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
 #ifdef ARCH_BFIN
     dsputil_init_bfin(c,avctx);
 #endif
+
+    for(i=0; i<64; i++){
+        if(!c->put_2tap_qpel_pixels_tab[0][i])
+            c->put_2tap_qpel_pixels_tab[0][i]= c->put_h264_qpel_pixels_tab[0][i];
+        if(!c->avg_2tap_qpel_pixels_tab[0][i])
+            c->avg_2tap_qpel_pixels_tab[0][i]= c->avg_h264_qpel_pixels_tab[0][i];
+    }
 
     switch(c->idct_permutation_type){
     case FF_NO_IDCT_PERM:

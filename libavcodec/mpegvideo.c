@@ -3944,17 +3944,16 @@ static always_inline void MPV_decode_mb_internal(MpegEncContext *s, DCTELEM bloc
                         MPV_motion_lowres(s, dest_y, dest_cb, dest_cr, 1, s->next_picture.data, op_pix);
                     }
                 }else{
+                    op_qpix= s->me.qpel_put;
                     if ((!s->no_rounding) || s->pict_type==B_TYPE){
                         op_pix = s->dsp.put_pixels_tab;
-                        op_qpix= s->dsp.put_qpel_pixels_tab;
                     }else{
                         op_pix = s->dsp.put_no_rnd_pixels_tab;
-                        op_qpix= s->dsp.put_no_rnd_qpel_pixels_tab;
                     }
                     if (s->mv_dir & MV_DIR_FORWARD) {
                         MPV_motion(s, dest_y, dest_cb, dest_cr, 0, s->last_picture.data, op_pix, op_qpix);
                         op_pix = s->dsp.avg_pixels_tab;
-                        op_qpix= s->dsp.avg_qpel_pixels_tab;
+                        op_qpix= s->me.qpel_avg;
                     }
                     if (s->mv_dir & MV_DIR_BACKWARD) {
                         MPV_motion(s, dest_y, dest_cb, dest_cr, 1, s->next_picture.data, op_pix, op_qpix);

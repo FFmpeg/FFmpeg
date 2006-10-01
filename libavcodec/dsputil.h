@@ -277,6 +277,9 @@ typedef struct DSPContext {
     qpel_mc_func put_h264_qpel_pixels_tab[4][16];
     qpel_mc_func avg_h264_qpel_pixels_tab[4][16];
 
+    qpel_mc_func put_2tap_qpel_pixels_tab[4][16];
+    qpel_mc_func avg_2tap_qpel_pixels_tab[4][16];
+
     h264_weight_func weight_h264_pixels_tab[10];
     h264_biweight_func biweight_h264_pixels_tab[10];
 
