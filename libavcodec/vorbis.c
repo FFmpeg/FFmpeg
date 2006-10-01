@@ -1230,6 +1230,50 @@ static uint_fast8_t vorbis_floor0_decode(vorbis_context *vc,
 
     return 0;
 }
+
+static void render_line(int x0, int y0, int x1, int y1, float * buf, int n) {
+    int dy = y1 - y0;
+    int adx = x1 - x0;
+    int ady = ABS(dy);
+    int base = dy / adx;
+    int x = x0;
+    int y = y0;
+    int err = 0;
+    int sy;
+    if (dy < 0) sy = base - 1;
+    else        sy = base + 1;
+    ady = ady - ABS(base) * adx;
+    if (x >= n) return;
+    buf[x] = ff_vorbis_floor1_inverse_db_table[y];
+    for (x = x0 + 1; x < x1; x++) {
+        if (x >= n) return;
+        err += ady;
+        if (err >= adx) {
+            err -= adx;
+            y += sy;
+        } else {
+            y += base;
+        }
+        buf[x] = ff_vorbis_floor1_inverse_db_table[y];
+    }
+}
+
+void ff_vorbis_floor1_render_list(floor1_entry_t * list, int values, uint_fast16_t * y_list, int * flag, int multiplier, float * out, int samples) {
+    int lx, ly, i;
+    lx = 0;
+    ly = y_list[0] * multiplier;
+    for (i = 1; i < values; i++) {
+        int pos = list[i].sort;
+        if (flag[pos]) {
+            render_line(lx, ly, list[pos].x, y_list[pos] * multiplier, out, samples);
+            lx = list[pos].x;
+            ly = y_list[pos] * multiplier;
+        }
+        if (lx >= samples) break;
+    }
+    if (lx < samples) render_line(lx, ly, samples, ly, out, samples);
+}
+
 static uint_fast8_t vorbis_floor1_decode(vorbis_context *vc, vorbis_floor_data *vfu, float *vec) {
     vorbis_floor1 * vf=&vfu->t1;
     GetBitContext *gb=&vc->gb;
@@ -1237,7 +1281,7 @@ static uint_fast8_t vorbis_floor1_decode(vorbis_context *vc, vorbis_floor_data *
     uint_fast16_t range=range_v[vf->multiplier-1];
     uint_fast16_t floor1_Y[vf->x_list_dim];
     uint_fast16_t floor1_Y_final[vf->x_list_dim];
-    uint_fast8_t floor1_flag[vf->x_list_dim];
+    int floor1_flag[vf->x_list_dim];
     uint_fast8_t class_;
     uint_fast8_t cdim;
     uint_fast8_t cbits;
@@ -1248,7 +1292,6 @@ static uint_fast8_t vorbis_floor1_decode(vorbis_context *vc, vorbis_floor_data *
     uint_fast16_t i,j;
     /*u*/int_fast16_t adx, ady, off, predicted; // WTF ? dy/adx= (unsigned)dy/adx ?
     int_fast16_t dy, err;
-    uint_fast16_t lx,hx, ly, hy=0;
 
 
     if (!get_bits1(gb)) return 1; // silence
@@ -1353,29 +1396,7 @@ static uint_fast8_t vorbis_floor1_decode(vorbis_context *vc, vorbis_floor_data *
 
 // Curve synth - connect the calculated dots and convert from dB scale FIXME optimize ?
 
-    hx=0;
-    lx=0;
-    ly=floor1_Y_final[0]*vf->multiplier;  // conforms to SPEC
-
-    vec[0]=ff_vorbis_floor1_inverse_db_table[ly];
-
-    for(i=1;i<vf->x_list_dim;++i) {
-        AV_DEBUG(" Looking at post %d \n", i);
-
-        if (floor1_flag[vf->list[i].sort]) {   // SPEC mispelled
-            hy=floor1_Y_final[vf->list[i].sort]*vf->multiplier;
-            hx=vf->list[vf->list[i].sort].x;
-
-            render_line(lx, ly, hx, hy, vec, vc->blocksize[1]);
-
-            lx=hx;
-            ly=hy;
-        }
-    }
-
-    if (hx<vf->list[1].x) {
-        render_line(hx, hy, vf->list[1].x, hy, vec, vc->blocksize[1]);
-    }
+    ff_vorbis_floor1_render_list(vf->list, vf->x_list_dim, floor1_Y_final, floor1_flag, vf->multiplier, vec, vf->list[1].x);
 
     AV_DEBUG(" Floor decoded\n");
 
