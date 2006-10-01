@@ -282,7 +282,9 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size, int64_t data
     AVCodecContext *enc;
     int64_t header_offset, cur_pos, hpos;
     int bit_rate;
+    int64_t duration;
 
+    duration = asf->duration + preroll_time * 10000;
     has_title = (s->title[0] || s->author[0] || s->copyright[0] || s->comment[0]);
 
     bit_rate = 0;
@@ -312,8 +314,8 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size, int64_t data
     file_time = 0;
     put_le64(pb, unix_to_file_time(file_time));
     put_le64(pb, asf->nb_packets); /* number of packets */
-    put_le64(pb, asf->duration); /* end time stamp (in 100ns units) */
-    put_le64(pb, asf->duration); /* duration (in 100ns units) */
+    put_le64(pb, duration); /* end time stamp (in 100ns units) */
+    put_le64(pb, duration); /* duration (in 100ns units) */
     put_le32(pb, preroll_time); /* start time stamp */
     put_le32(pb, 0); /* ??? */
     put_le32(pb, asf->is_streamed ? 1 : 0); /* ??? */
