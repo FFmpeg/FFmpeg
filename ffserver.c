@@ -4417,7 +4417,7 @@ static void write_packet(FFCodec *ffenc,
 
 static void show_banner(void)
 {
-    printf("ffserver version " FFMPEG_VERSION ", Copyright (c) 2000-2003 Fabrice Bellard\n");
+    printf("ffserver version " FFMPEG_VERSION ", Copyright (c) 2000-2006 Fabrice Bellard, et al.\n");
 }
 
 static void show_help(void)
