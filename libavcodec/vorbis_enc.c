@@ -771,20 +771,30 @@ static int put_main_header(venc_context_t * venc, uint8_t ** out) {
     return p - *out;
 }
 
+static float get_floor_average(floor_t * fc, float * coeffs, int i) {
+    int begin = fc->list[fc->list[FFMAX(i-1, 0)].sort].x;
+    int end   = fc->list[fc->list[FFMIN(i+1, fc->values - 1)].sort].x;
+    int j;
+    float average = 0;
+
+    for (j = begin; j < end; j++) average += fabs(coeffs[j]);
+    return average / (end - begin);
+}
+
 static void floor_fit(venc_context_t * venc, floor_t * fc, float * coeffs, int * posts, int samples) {
     int range = 255 / fc->multiplier + 1;
     int i;
+    float tot_average = 0.;
+    for (i = 0; i < fc->values; i++) tot_average += get_floor_average(fc, coeffs, i);
+    tot_average /= fc->values;
+    tot_average /= 0.5;
+
     for (i = 0; i < fc->values; i++) {
         int position = fc->list[fc->list[i].sort].x;
-        int begin = fc->list[fc->list[FFMAX(i-1, 0)].sort].x;
-        int end   = fc->list[fc->list[FFMIN(i+1, fc->values - 1)].sort].x;
+        float average = get_floor_average(fc, coeffs, i);
         int j;
-        float average = 0;
 
-        assert(end <= samples);
-        for (j = begin; j < end; j++) average += fabs(coeffs[j]);
-        average /= end - begin;
-        average /= pow(4, 1 - position/400.); // MAGIC!
+        average /= pow(average, 0.7) / tot_average * pow(0.9, position/200.); // MAGIC!
         for (j = 0; j < range - 1; j++) if (floor1_inverse_db_table[j * fc->multiplier] > average) break;
         posts[fc->list[i].sort] = j;
     }
