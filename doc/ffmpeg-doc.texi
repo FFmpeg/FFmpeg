@@ -301,17 +301,17 @@ Set the group of pictures size.
 @item -intra
 Use only intra frames.
 @item -qscale q
-Use fixed video quantiser scale (VBR).
+Use fixed video quantizer scale (VBR).
 @item -qmin q
-minimum video quantiser scale (VBR)
+minimum video quantizer scale (VBR)
 @item -qmax q
-maximum video quantiser scale (VBR)
+maximum video quantizer scale (VBR)
 @item -qdiff q
-maximum difference between the quantiser scales (VBR)
+maximum difference between the quantizer scales (VBR)
 @item -qblur blur
-video quantiser scale blur (VBR)
+video quantizer scale blur (VBR)
 @item -qcomp compression
-video quantiser scale compression (VBR)
+video quantizer scale compression (VBR)
 
 @item -lmin lambda
 minimum video lagrange factor (VBR)
