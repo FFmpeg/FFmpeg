@@ -1116,13 +1116,14 @@ static void floor_fit(venc_context_t * venc, floor_t * fc, float * coeffs, int *
     int range = 255 / fc->multiplier + 1;
     int i;
     float tot_average = 0.;
-    for (i = 0; i < fc->values; i++) tot_average += get_floor_average(fc, coeffs, i);
+    float averages[fc->values];
+    for (i = 0; i < fc->values; i++) tot_average += averages[i] = get_floor_average(fc, coeffs, i);
     tot_average /= fc->values;
     tot_average /= venc->quality;
 
     for (i = 0; i < fc->values; i++) {
         int position = fc->list[fc->list[i].sort].x;
-        float average = get_floor_average(fc, coeffs, i);
+        float average = averages[i];
         int j;
 
         average /= pow(average, 0.5) / tot_average * pow(0.8, position/200.); // MAGIC!
