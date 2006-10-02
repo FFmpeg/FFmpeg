@@ -1253,8 +1253,8 @@ static void residue_encode(venc_context_t * venc, residue_t * rc, PutBitContext 
         float max1 = 0., max2 = 0.;
         int s = rc->begin + p * psize;
         for (k = s; k < s + psize; k += 2) {
-            if (fabs(coeffs[k / real_ch]) > max1) max1 = fabs(coeffs[k / real_ch]);
-            if (fabs(coeffs[samples + k / real_ch]) > max2) max2 = fabs(coeffs[samples + k / real_ch]);
+            max1 = FFMAX(max1, fabs(coeffs[          k / real_ch]));
+            max2 = FFMAX(max2, fabs(coeffs[samples + k / real_ch]));
         }
 
         for (i = 0; i < rc->classifications - 1; i++) {
