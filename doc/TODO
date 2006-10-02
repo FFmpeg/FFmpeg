@@ -77,3 +77,4 @@ unassigned TODO: (unordered)
 - finish implementation of WMV2 j-picture
 - H264 encoder
 - per MB ratecontrol (so VCD and such do work better)
+- replace/rewrite libavcodec/fdctref.c
