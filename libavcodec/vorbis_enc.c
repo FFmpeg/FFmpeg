@@ -164,6 +164,7 @@ static void ready_codebook(codebook_t * cb) {
 
 static void create_vorbis_context(venc_context_t * venc, AVCodecContext * avccontext) {
     codebook_t * cb;
+    floor_t * fc;
     int i, book;
 
     venc->channels = avccontext->channels;
@@ -215,6 +216,36 @@ static void create_vorbis_context(venc_context_t * venc, AVCodecContext * avccon
         ready_codebook(cb);
     }
 
+    venc->nfloors = 1;
+    venc->floors = av_malloc(sizeof(floor_t) * venc->nfloors);
+    fc = &venc->floors[0];
+
+    fc->partitions = 1;
+    fc->partition_to_class = av_malloc(sizeof(int) * fc->partitions);
+    for (i = 0; i < fc->partitions; i++) fc->partition_to_class = 0;
+    fc->nclasses = 1;
+    fc->classes = av_malloc(sizeof(floor_class_t) * fc->nclasses);
+    for (i = 0; i < fc->nclasses; i++) {
+        floor_class_t * c = &fc->classes[i];
+        int j, books;
+        c->dim = 1;
+        c->subclass = 0;
+        c->masterbook = 0;
+        books = (1 << c->subclass);
+        c->books = av_malloc(sizeof(int) * books);
+        for (j = 0; j < books; j++) c->books[j] = 0;
+    }
+    fc->multiplier = 1;
+    fc->rangebits = venc->blocksize[0];
+
+    fc->values = 2;
+    for (i = 0; i < fc->partitions; i++)
+        fc->values += fc->classes[fc->partition_to_class[i]].dim;
+
+    fc->list = av_malloc(sizeof(*fc->list) * fc->values);
+    fc->list[0].x = 0;
+    fc->list[1].x = 1 << fc->rangebits;
+    for (i = 2; i < fc->values; i++) fc->list[i].x = i * 5;
 }
 
 static inline int ilog(unsigned int a) {
