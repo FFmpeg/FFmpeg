@@ -52,12 +52,30 @@ typedef struct {
 } codebook_t;
 
 typedef struct {
+} floor_t;
+
+typedef struct {
+} residue_t;
+
+typedef struct {
+} mapping_t;
+
+typedef struct {
     int channels;
     int sample_rate;
     int blocksize[2];
 
     int ncodebooks;
     codebook_t * codebooks;
+
+    int nfloors;
+    floor_t * floors;
+
+    int nresidues;
+    residue_t * residues;
+
+    int nmappings;
+    mapping_t * mappings;
 } venc_context_t;
 
 static inline int ilog(unsigned int a) {
@@ -136,6 +154,12 @@ static void put_codebook_header(PutBitContext * pb, codebook_t * cb) {
     }
 }
 
+static void put_floor_header(PutBitContext * pb, floor_t * fl) {
+}
+
+static void put_residue_header(PutBitContext * pb, residue_t * r) {
+}
+
 static int put_main_header(venc_context_t * venc, uint8_t ** out) {
     int i;
     PutBitContext pb;
@@ -184,6 +208,22 @@ static int put_main_header(venc_context_t * venc, uint8_t ** out) {
     put_bits(&pb, 8, venc->ncodebooks - 1);
     for (i = 0; i < venc->ncodebooks; i++) put_codebook_header(&pb, &venc->codebooks[0]);
 
+    // time domain, reserved, zero
+    put_bits(&pb, 6, 0);
+    put_bits(&pb, 16, 0);
+
+    // floors
+    put_bits(&pb, 6, venc->nfloors - 1);
+    for (i = 0; i < venc->nfloors; i++) put_floor_header(&pb, &venc->floors[0]);
+
+    // residues
+    put_bits(&pb, 6, venc->nresidues - 1);
+    for (i = 0; i < venc->nresidues; i++) put_residue_header(&pb, &venc->residues[0]);
+
+    // mappings
+    put_bits(&pb, 6, venc->nmappings - 1);
+    for (i = 0; i < venc->nmappings; i++) {
+    }
 
     flush_put_bits(&pb);
     hlens[2] = (put_bits_count(&pb) + 7) / 8;
