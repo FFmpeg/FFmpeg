@@ -433,7 +433,7 @@ static void put_residue_header(PutBitContext * pb, residue_t * rc) {
     put_bits(pb, 24, rc->begin);
     put_bits(pb, 24, rc->end);
     put_bits(pb, 24, rc->partition_size - 1);
-    put_bits(pb, 6, rc->classifications);
+    put_bits(pb, 6, rc->classifications - 1);
     put_bits(pb, 8, rc->classbook);
 
     for (i = 0; i < rc->classifications; i++) {
