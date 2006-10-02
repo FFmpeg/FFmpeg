@@ -166,6 +166,7 @@ static void create_vorbis_context(venc_context_t * venc, AVCodecContext * avccon
     codebook_t * cb;
     floor_t * fc;
     residue_t * rc;
+    mapping_t * mc;
     int i, book;
 
     venc->channels = avccontext->channels;
@@ -265,6 +266,18 @@ static void create_vorbis_context(venc_context_t * venc, AVCodecContext * avccon
 
     venc->nmappings = 1;
     venc->mappings = av_malloc(sizeof(mapping_t) * venc->nmappings);
+
+    // single mapping
+    mc = &venc->mappings[0];
+    mc->submaps = 1;
+    mc->mux = av_malloc(sizeof(int) * venc->channels);
+    for (i = 0; i < venc->channels; i++) mc->mux[i] = 0;
+    mc->floor = av_malloc(sizeof(int) * mc->submaps);
+    mc->residue = av_malloc(sizeof(int) * mc->submaps);
+    for (i = 0; i < mc->submaps; i++) {
+        mc->floor[i] = 0;
+        mc->residue[i] = 0;
+    }
 
     venc->nmodes = 1;
     venc->modes = av_malloc(sizeof(vorbis_mode_t) * venc->nmodes);
