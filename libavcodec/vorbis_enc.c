@@ -60,6 +60,13 @@ typedef struct {
 } floor_class_t;
 
 typedef struct {
+    int x;
+    int low;
+    int high;
+    int sort;
+} floor_entry_t;
+
+typedef struct {
     int partitions;
     int * partition_to_class;
     int nclasses;
@@ -67,7 +74,7 @@ typedef struct {
     int multiplier;
     int rangebits;
     int values;
-    struct { int x; } * list;
+    floor_entry_t * list;
 } floor_t;
 
 typedef struct {
@@ -222,6 +229,36 @@ static void ready_codebook(codebook_t * cb) {
 
 }
 
+static void ready_floor(floor_t * fc) {
+    int i;
+    fc->list[0].sort = 0;
+    fc->list[1].sort = 1;
+    for (i = 2; i < fc->values; i++) {
+        int j;
+        fc->list[i].low = 0;
+        fc->list[i].high = 1;
+        fc->list[i].sort = i;
+        for (j = 2; j < i; j++) {
+            int tmp = fc->list[j].x;
+            if (tmp < fc->list[i].x) {
+                if (tmp > fc->list[fc->list[i].low].x) fc->list[i].low = j;
+            } else {
+                if (tmp < fc->list[fc->list[i].high].x) fc->list[i].high = j;
+            }
+        }
+    }
+    for (i = 0; i < fc->values - 1; i++) {
+        int j;
+        for (j = i + 1; j < fc->values; j++) {
+            if (fc->list[fc->list[i].sort].x > fc->list[fc->list[j].sort].x) {
+                int tmp = fc->list[i].sort;
+                fc->list[i].sort = fc->list[j].sort;
+                fc->list[j].sort = tmp;
+            }
+        }
+    }
+}
+
 static void create_vorbis_context(venc_context_t * venc, AVCodecContext * avccontext) {
     codebook_t * cb;
     floor_t * fc;
@@ -305,10 +342,18 @@ static void create_vorbis_context(venc_context_t * venc, AVCodecContext * avccon
     for (i = 0; i < fc->partitions; i++)
         fc->values += fc->classes[fc->partition_to_class[i]].dim;
 
-    fc->list = av_malloc(sizeof(*fc->list) * fc->values);
+    fc->list = av_malloc(sizeof(floor_entry_t) * fc->values);
     fc->list[0].x = 0;
     fc->list[1].x = 1 << fc->rangebits;
-    for (i = 2; i < fc->values; i++) fc->list[i].x = i * 5;
+    for (i = 2; i < fc->values; i++) {
+        int a = i - 1;
+        int g = ilog(a);
+        assert(g <= fc->rangebits);
+        a ^= 1 << (g-1);
+        g = 1 << (fc->rangebits - g);
+        fc->list[i].x = g + a*2*g;
+    }
+    ready_floor(fc);
 
     venc->nresidues = 1;
     venc->residues = av_malloc(sizeof(residue_t) * venc->nresidues);
@@ -598,6 +643,27 @@ static int put_main_header(venc_context_t * venc, uint8_t ** out) {
     return p - *out;
 }
 
+static void floor_encode(venc_context_t * venc, floor_t * fc, PutBitContext * pb, float * floor, int samples) {
+    int range = 255 / fc->multiplier + 1;
+    int j;
+    put_bits(pb, 1, 1); // non zero
+    put_bits(pb, ilog(range - 1), 180); // magic value - 3.7180282E-05
+    put_bits(pb, ilog(range - 1), 180); // both sides of X
+    for (j = 0; j < fc->partitions; j++) {
+        floor_class_t * c = &fc->classes[fc->partition_to_class[j]];
+        codebook_t * book = &venc->codebooks[c->books[0]];
+        int entry = 0;
+        int k;
+        for (k = 0; k < c->dim; k++) {
+            put_bits(pb, book->entries[entry].len, book->entries[entry].codeword);
+        }
+    }
+
+    for (j = 0; j < samples; j++) {
+        floor[j] = floor1_inverse_db_table[180];
+    }
+}
+
 static float * put_vector(codebook_t * book, PutBitContext * pb, float * num) {
     int i;
     int entry = -1;
@@ -755,24 +821,7 @@ static int vorbis_encode_frame(AVCodecContext * avccontext, unsigned char * pack
 
     for (i = 0; i < venc->channels; i++) {
         floor_t * fc = &venc->floors[mapping->floor[mapping->mux[i]]];
-        int range = 255 / fc->multiplier + 1;
-        int j;
-        put_bits(&pb, 1, 1); // non zero
-        put_bits(&pb, ilog(range - 1), 180); // magic value - 3.7180282E-05
-        put_bits(&pb, ilog(range - 1), 180); // both sides of X
-        for (j = 0; j < fc->partitions; j++) {
-            floor_class_t * c = &fc->classes[fc->partition_to_class[j]];
-            codebook_t * book = &venc->codebooks[c->books[0]];
-            int entry = 0;
-            int k;
-            for (k = 0; k < c->dim; k++) {
-                put_bits(&pb, book->entries[entry].len, book->entries[entry].codeword);
-            }
-        }
-
-        for (j = 0; j < samples; j++) {
-            venc->floor[i * samples + j] = floor1_inverse_db_table[180];
-        }
+        floor_encode(venc, fc, &pb, &venc->floor[i * samples], samples);
     }
 
     for (i = 0; i < venc->channels; i++) {
