@@ -268,7 +268,7 @@ static void create_vorbis_context(venc_context_t * venc, AVCodecContext * avccon
 
     venc->channels = avccontext->channels;
     venc->sample_rate = avccontext->sample_rate;
-    venc->blocksize[0] = venc->blocksize[1] = 8;
+    venc->blocksize[0] = venc->blocksize[1] = 9;
 
     venc->ncodebooks = 10;
     venc->codebooks = av_malloc(sizeof(codebook_t) * venc->ncodebooks);
@@ -320,7 +320,7 @@ static void create_vorbis_context(venc_context_t * venc, AVCodecContext * avccon
 
     // just 1 floor
     fc = &venc->floors[0];
-    fc->partitions = 1;
+    fc->partitions = 3;
     fc->partition_to_class = av_malloc(sizeof(int) * fc->partitions);
     for (i = 0; i < fc->partitions; i++) fc->partition_to_class[i] = 0;
     fc->nclasses = 1;
@@ -328,7 +328,7 @@ static void create_vorbis_context(venc_context_t * venc, AVCodecContext * avccon
     for (i = 0; i < fc->nclasses; i++) {
         floor_class_t * c = &fc->classes[i];
         int j, books;
-        c->dim = 1;
+        c->dim = 2;
         c->subclass = 0;
         c->masterbook = 0;
         books = (1 << c->subclass);
@@ -346,12 +346,14 @@ static void create_vorbis_context(venc_context_t * venc, AVCodecContext * avccon
     fc->list[0].x = 0;
     fc->list[1].x = 1 << fc->rangebits;
     for (i = 2; i < fc->values; i++) {
-        int a = i - 1;
+        /*int a = i - 1;
         int g = ilog(a);
         assert(g <= fc->rangebits);
         a ^= 1 << (g-1);
         g = 1 << (fc->rangebits - g);
-        fc->list[i].x = g + a*2*g;
+        fc->list[i].x = g + a*2*g;*/
+        int a[] = {14, 4, 58, 2, 8, 28, 90};
+        fc->list[i].x = a[i - 2];
     }
     ready_floor(fc);
 
@@ -370,7 +372,7 @@ static void create_vorbis_context(venc_context_t * venc, AVCodecContext * avccon
     for (i = 0; i < rc->classifications; i++) {
         int j;
         for (j = 0; j < 8; j++) rc->books[i][j] = 2 + j;
-        rc->books[i][0] = rc->books[i][1] = rc->books[i][2] = rc->books[i][3] = -1;
+        //rc->books[i][0] = rc->books[i][1] = rc->books[i][2] = rc->books[i][3] = -1;
     }
 
     venc->nmappings = 1;
@@ -658,7 +660,7 @@ static void floor_fit(venc_context_t * venc, floor_t * fc, float * coeffs, int *
         assert(end <= samples);
         for (j = begin; j < end; j++) average += fabs(coeffs[j]);
         average /= end - begin;
-        average /= 64; // MAGIC!
+        average /= 5000; // MAGIC!
         for (j = 0; j < range; j++) if (floor1_inverse_db_table[j * fc->multiplier] > average) break;
         posts[fc->list[i].sort] = j;
     }
