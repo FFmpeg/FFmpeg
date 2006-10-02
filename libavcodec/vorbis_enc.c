@@ -186,7 +186,7 @@ static void create_vorbis_context(venc_context_t * venc, AVCodecContext * avccon
     cb->quantlist = NULL;
     ready_codebook(cb);
 
-    // codebook 2 - classbook, values 0..0, dimentions 200
+    // codebook 2 - residue classbook, values 0..0, dimentions 200
     cb = &venc->codebooks[1];
     cb->nentries = 1;
     cb->entries = av_malloc(sizeof(cb_entry_t) * cb->nentries);
