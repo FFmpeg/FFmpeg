@@ -273,14 +273,35 @@ static void create_vorbis_context(venc_context_t * venc, AVCodecContext * avccon
     venc->sample_rate = avccontext->sample_rate;
     venc->blocksize[0] = venc->blocksize[1] = 11;
 
-    venc->ncodebooks = 10;
+    venc->ncodebooks = 15 + 1 + 8;
     venc->codebooks = av_malloc(sizeof(codebook_t) * venc->ncodebooks);
 
-    // codebook 0 - floor1 book, values 0..255
-    cb = &venc->codebooks[0];
-    cb->nentries = 512;
+    int codebook0[] = { 2, 10, 8, 14, 7, 12, 11, 14, 1, 5, 3, 7, 4, 9, 7, 13, };
+    int codebook1[] = { 1, 4, 2, 6, 3, 7, 5, 7, };
+    int codebook2[] = { 1, 5, 7, 21, 5, 8, 9, 21, 10, 9, 12, 20, 20, 16, 20, 20, 4, 8, 9, 20, 6, 8, 9, 20, 11, 11, 13, 20, 20, 15, 17, 20, 9, 11, 14, 20, 8, 10, 15, 20, 11, 13, 15, 20, 20, 20, 20, 20, 20, 20, 20, 20, 13, 20, 20, 20, 18, 18, 20, 20, 20, 20, 20, 20, 3, 6, 8, 20, 6, 7, 9, 20, 10, 9, 12, 20, 20, 20, 20, 20, 5, 7, 9, 20, 6, 6, 9, 20, 10, 9, 12, 20, 20, 20, 20, 20, 8, 10, 13, 20, 8, 9, 12, 20, 11, 10, 12, 20, 20, 20, 20, 20, 18, 20, 20, 20, 15, 17, 18, 20, 18, 17, 18, 20, 20, 20, 20, 20, 7, 10, 12, 20, 8, 9, 11, 20, 14, 13, 14, 20, 20, 20, 20, 20, 6, 9, 12, 20, 7, 8, 11, 20, 12, 11, 13, 20, 20, 20, 20, 20, 9, 11, 15, 20, 8, 10, 14, 20, 12, 11, 14, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 11, 16, 18, 20, 15, 15, 17, 20, 20, 17, 20, 20, 20, 20, 20, 20, 9, 14, 16, 20, 12, 12, 15, 20, 17, 15, 18, 20, 20, 20, 20, 20, 16, 19, 18, 20, 15, 16, 20, 20, 17, 17, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, };
+    int codebook3[] = { 2, 3, 7, 13, 4, 4, 7, 15, 8, 6, 9, 17, 21, 16, 15, 21, 2, 5, 7, 11, 5, 5, 7, 14, 9, 7, 10, 16, 17, 15, 16, 21, 4, 7, 10, 17, 7, 7, 9, 15, 11, 9, 11, 16, 21, 18, 15, 21, 18, 21, 21, 21, 15, 17, 17, 19, 21, 19, 18, 20, 21, 21, 21, 20, };
+    int codebook4[] = { 5, 5, 5, 5, 6, 5, 6, 5, 6, 5, 6, 5, 6, 5, 6, 5, 6, 5, 6, 5, 6, 5, 6, 5, 7, 5, 7, 5, 7, 5, 7, 5, 8, 6, 8, 6, 8, 6, 9, 6, 9, 6, 10, 6, 10, 6, 11, 6, 11, 7, 11, 7, 12, 7, 12, 7, 12, 7, 12, 7, 12, 7, 12, 7, 12, 7, 12, 8, 13, 8, 12, 8, 12, 8, 13, 8, 13, 9, 13, 9, 13, 9, 13, 9, 12, 10, 12, 10, 13, 10, 14, 11, 14, 12, 14, 13, 14, 13, 14, 14, 15, 16, 15, 15, 15, 14, 15, 17, 21, 22, 22, 21, 22, 22, 22, 22, 22, 22, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, };
+    int codebook5[] = { 2, 5, 5, 4, 5, 4, 5, 4, 5, 4, 6, 5, 6, 5, 6, 5, 6, 5, 7, 5, 7, 6, 8, 6, 8, 6, 8, 6, 9, 6, 9, 6, };
+    int codebook6[] = { 8, 5, 8, 4, 9, 4, 9, 4, 9, 4, 9, 4, 9, 4, 9, 4, 9, 4, 9, 4, 9, 4, 8, 4, 8, 4, 9, 5, 9, 5, 9, 5, 9, 5, 9, 6, 10, 6, 10, 7, 10, 8, 11, 9, 11, 11, 12, 13, 12, 14, 13, 15, 13, 15, 14, 16, 14, 17, 15, 17, 15, 15, 16, 16, 15, 16, 16, 16, 15, 18, 16, 15, 17, 17, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, };
+    int codebook7[] = { 1, 5, 5, 5, 5, 5, 5, 5, 6, 5, 6, 5, 6, 5, 6, 5, 6, 6, 7, 7, 7, 7, 8, 7, 8, 8, 9, 8, 10, 9, 10, 9, };
+    int codebook8[] = { 4, 3, 4, 3, 4, 4, 5, 4, 5, 4, 5, 5, 6, 5, 6, 5, 7, 5, 7, 6, 7, 6, 8, 7, 8, 7, 8, 7, 9, 8, 9, 9, 9, 9, 10, 10, 10, 11, 9, 12, 9, 12, 9, 15, 10, 14, 9, 13, 10, 13, 10, 12, 10, 12, 10, 13, 10, 12, 11, 13, 11, 14, 12, 13, 13, 14, 14, 13, 14, 15, 14, 16, 13, 13, 14, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 15, 15, };
+    int codebook9[] = { 4, 5, 4, 5, 3, 5, 3, 5, 3, 5, 4, 4, 4, 4, 5, 5, 5, };
+    int codebook10[] = { 3, 3, 4, 3, 4, 4, 4, 4, 5, 5, 5, 5, 5, 6, 5, 7, 5, 8, 6, 8, 6, 9, 7, 10, 7, 10, 8, 10, 8, 11, 9, 11, };
+    int codebook11[] = { 3, 7, 3, 8, 3, 10, 3, 8, 3, 9, 3, 8, 4, 9, 4, 9, 5, 9, 6, 10, 6, 9, 7, 11, 7, 12, 9, 13, 10, 13, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, };
+    int codebook12[] = { 4, 5, 4, 5, 4, 5, 4, 5, 3, 5, 3, 5, 3, 5, 4, 5, 4, };
+    int codebook13[] = { 4, 2, 4, 2, 5, 3, 5, 4, 6, 6, 6, 7, 7, 8, 7, 8, 7, 8, 7, 9, 8, 9, 8, 9, 8, 10, 8, 11, 9, 12, 9, 12, };
+    int codebook14[] = { 2, 5, 2, 6, 3, 6, 4, 7, 4, 7, 5, 9, 5, 11, 6, 11, 6, 11, 7, 11, 6, 11, 6, 11, 9, 11, 8, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 10, 10, 10, 10, 10, 10, };
+
+    int codebook_sizes[] = { 16, 8, 256, 64, 128, 32, 96, 32, 96, 17, 32, 78, 17, 32, 78 };
+    int * codebook_lens[] = { codebook0, codebook1, codebook2,  codebook3,  codebook4,  codebook5,  codebook6, codebook7,
+                              codebook8, codebook9, codebook10, codebook11, codebook12, codebook13, codebook14 };
+
+    // codebook 0..14 - floor1 book, values 0..255
+    for (book = 0; book < 15; book++) {
+    cb = &venc->codebooks[book];
+    cb->nentries = codebook_sizes[book];
     cb->entries = av_malloc(sizeof(cb_entry_t) * cb->nentries);
-    for (i = 0; i < cb->nentries; i++) cb->entries[i].len = 9;
+    for (i = 0; i < cb->nentries; i++) cb->entries[i].len = codebook_lens[book][i];
     cb->ndimentions = 0;
     cb->min = 0.;
     cb->delta = 0.;
@@ -288,9 +309,10 @@ static void create_vorbis_context(venc_context_t * venc, AVCodecContext * avccon
     cb->lookup = 0;
     cb->quantlist = NULL;
     ready_codebook(cb);
+    }
 
-    // codebook 1 - residue classbook, values 0..1, dimentions 4
-    cb = &venc->codebooks[1];
+    // codebook 15 - residue classbook, values 0..1, dimentions 4
+    cb = &venc->codebooks[15];
     cb->nentries = 2;
     cb->entries = av_malloc(sizeof(cb_entry_t) * cb->nentries);
     for (i = 0; i < cb->nentries; i++) cb->entries[i].len = 1;
@@ -302,9 +324,9 @@ static void create_vorbis_context(venc_context_t * venc, AVCodecContext * avccon
     cb->quantlist = NULL;
     ready_codebook(cb);
 
-    // codebook 2..9 - vector, for the residue, values -32767..32767, dimentions 1
+    // codebook 16..23 - vector, for the residue, values -32767..32767, dimentions 1
     for (book = 0; book < 8; book++) {
-        cb = &venc->codebooks[2 + book];
+        cb = &venc->codebooks[16 + book];
         cb->nentries = 5;
         cb->entries = av_malloc(sizeof(cb_entry_t) * cb->nentries);
         for (i = 0; i < cb->nentries; i++) cb->entries[i].len = i == 2 ? 1 : 3;
@@ -323,22 +345,37 @@ static void create_vorbis_context(venc_context_t * venc, AVCodecContext * avccon
 
     // just 1 floor
     fc = &venc->floors[0];
-    fc->partitions = 13;
+    fc->partitions = 8;
     fc->partition_to_class = av_malloc(sizeof(int) * fc->partitions);
-    for (i = 0; i < fc->partitions; i++) fc->partition_to_class[i] = 0;
-    fc->nclasses = 1;
+    fc->nclasses = 0;
+    for (i = 0; i < fc->partitions; i++) {
+        int a[] = {0,1,2,2,3,3,4,4};
+        fc->partition_to_class[i] = a[i];
+        fc->nclasses = FFMAX(fc->nclasses, fc->partition_to_class[i]);
+    }
+    fc->nclasses++;
     fc->classes = av_malloc(sizeof(floor_class_t) * fc->nclasses);
     for (i = 0; i < fc->nclasses; i++) {
         floor_class_t * c = &fc->classes[i];
         int j, books;
-        c->dim = 2;
-        c->subclass = 0;
-        c->masterbook = 0;
+        int dim[] = {3,4,3,4,3};
+        int subclass[] = {0,1,1,2,2};
+        int masterbook[] = {0/*none*/,0,1,2,3};
+        int * nbooks[] = {
+            (int[]){ 4 },
+            (int[]){ 5, 6 },
+            (int[]){ 7, 8 },
+            (int[]){ -1, 9, 10, 11 },
+            (int[]){ -1, 12, 13, 14 },
+        };
+        c->dim = dim[i];
+        c->subclass = subclass[i];
+        c->masterbook = masterbook[i];
         books = (1 << c->subclass);
         c->books = av_malloc(sizeof(int) * books);
-        for (j = 0; j < books; j++) c->books[j] = 0;
+        for (j = 0; j < books; j++) c->books[j] = nbooks[i][j];
     }
-    fc->multiplier = 1;
+    fc->multiplier = 2;
     fc->rangebits = venc->blocksize[0] - 1;
 
     fc->values = 2;
@@ -371,11 +408,11 @@ static void create_vorbis_context(venc_context_t * venc, AVCodecContext * avccon
     rc->end = 1 << (venc->blocksize[0] - 1);
     rc->partition_size = 64;
     rc->classifications = 2;
-    rc->classbook = 1;
+    rc->classbook = 15;
     rc->books = av_malloc(sizeof(int[8]) * rc->classifications);
     for (i = 0; i < rc->classifications; i++) {
         int j;
-        for (j = 0; j < 8; j++) rc->books[i][j] = 2 + j;
+        for (j = 0; j < 8; j++) rc->books[i][j] = 16 + j;
         rc->books[i][0] = rc->books[i][1] = rc->books[i][2] = rc->books[i][3] = -1;
     }
 
