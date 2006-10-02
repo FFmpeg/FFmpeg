@@ -389,7 +389,7 @@ static void put_codebook_header(PutBitContext * pb, codebook_t * cb) {
     put_bits(pb, 1, ordered);
     if (ordered) {
         int len = cb->entries[0].len;
-        put_bits(pb, 5, len);
+        put_bits(pb, 5, len - 1);
         i = 0;
         while (i < cb->nentries) {
             int j;
