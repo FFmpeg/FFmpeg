@@ -753,11 +753,29 @@ static void floor_encode(venc_context_t * venc, floor_t * fc, PutBitContext * pb
     counter = 2;
     for (i = 0; i < fc->partitions; i++) {
         floor_class_t * c = &fc->classes[fc->partition_to_class[i]];
-        codebook_t * book = &venc->codebooks[c->books[0]];
-        int k;
-        assert(!c->subclass);
+        int k, cval = 0, csub = 1<<c->subclass;
+        if (c->subclass) {
+            codebook_t * book = &venc->codebooks[c->masterbook];
+            int cshift = 0;
+            for (k = 0; k < c->dim; k++) {
+                int l;
+                for (l = 0; l < csub; l++) {
+                    int maxval = 1;
+                    if (c->books[l] != -1) maxval = venc->codebooks[c->books[l]].nentries;
+                    // coded could be -1, but this still works, cause thats 0
+                    if (coded[counter + k] < maxval) break;
+                }
+                assert(l != csub);
+                cval |= l << cshift;
+                cshift += c->subclass;
+            }
+            assert(cval < book->nentries);
+            put_bits(pb, book->entries[cval].len, book->entries[cval].codeword);
+        }
         for (k = 0; k < c->dim; k++) {
+            codebook_t * book = &venc->codebooks[c->books[cval & (csub-1)]];
             int entry = coded[counter++];
+            cval >>= c->subclass;
             if (entry == -1) entry = 0;
             assert(entry < book->nentries);
             assert(entry >= 0);
