@@ -52,6 +52,21 @@ typedef struct {
 } codebook_t;
 
 typedef struct {
+    int dim;
+    int subclass;
+    int masterbook;
+    int * books;
+} floor_class_t;
+
+typedef struct {
+    int partitions;
+    int * partition_to_class;
+    int nclasses;
+    floor_class_t * classes;
+    int multiplier;
+    int rangebits;
+    int values;
+    struct { int x; } * list;
 } floor_t;
 
 typedef struct {
@@ -154,10 +169,35 @@ static void put_codebook_header(PutBitContext * pb, codebook_t * cb) {
     }
 }
 
-static void put_floor_header(PutBitContext * pb, floor_t * fl) {
+static void put_floor_header(PutBitContext * pb, floor_t * fc) {
+    int i;
+
+    put_bits(pb, 16, 1); // type, only floor1 is supported
+
+    put_bits(pb, 5, fc->partitions);
+
+    for (i = 0; i < fc->partitions; i++) put_bits(pb, 4, fc->partition_to_class[i]);
+
+    for (i = 0; i < fc->nclasses; i++) {
+        int j, books;
+
+        put_bits(pb, 3, fc->classes[i].dim - 1);
+        put_bits(pb, 2, fc->classes[i].subclass);
+
+        if (fc->classes[i].subclass) put_bits(pb, 8, fc->classes[i].masterbook);
+
+        books = (1 << fc->classes[i].subclass);
+
+        for (j = 0; j < books; j++) put_bits(pb, 8, fc->classes[i].books[j] + 1);
+    }
+
+    put_bits(pb, 2, fc->multiplier - 1);
+    put_bits(pb, 4, fc->rangebits);
+
+    for (i = 2; i < fc->values; i++) put_bits(pb, fc->rangebits, fc->list[i].x);
 }
 
-static void put_residue_header(PutBitContext * pb, residue_t * r) {
+static void put_residue_header(PutBitContext * pb, residue_t * rc) {
 }
 
 static int put_main_header(venc_context_t * venc, uint8_t ** out) {
