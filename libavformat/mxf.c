@@ -866,6 +866,8 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
                     st->codec->codec_id = CODEC_ID_PCM_S24BE;
                 else if (descriptor->bits_per_sample == 32)
                     st->codec->codec_id = CODEC_ID_PCM_S32BE;
+            } else if (st->codec->codec_id == CODEC_ID_MP2) {
+                st->need_parsing = 1;
             }
         }
         if (container_ul && container_ul->wrapping == Clip) {
