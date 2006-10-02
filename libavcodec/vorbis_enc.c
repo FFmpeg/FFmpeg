@@ -225,7 +225,7 @@ static void create_vorbis_context(venc_context_t * venc, AVCodecContext * avccon
     fc = &venc->floors[0];
     fc->partitions = 1;
     fc->partition_to_class = av_malloc(sizeof(int) * fc->partitions);
-    for (i = 0; i < fc->partitions; i++) fc->partition_to_class = 0;
+    for (i = 0; i < fc->partitions; i++) fc->partition_to_class[i] = 0;
     fc->nclasses = 1;
     fc->classes = av_malloc(sizeof(floor_class_t) * fc->nclasses);
     for (i = 0; i < fc->nclasses; i++) {
