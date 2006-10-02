@@ -298,13 +298,6 @@ static void create_vorbis_context(venc_context_t * venc, AVCodecContext * avccon
     mapping_t * mc;
     int i, book;
 
-    venc->channels = avccontext->channels;
-    venc->sample_rate = avccontext->sample_rate;
-    venc->blocksize[0] = venc->blocksize[1] = 11;
-
-    venc->ncodebooks = 29;
-    venc->codebooks = av_malloc(sizeof(codebook_t) * venc->ncodebooks);
-
     int codebook0[] = { 2, 10, 8, 14, 7, 12, 11, 14, 1, 5, 3, 7, 4, 9, 7, 13, };
     int codebook1[] = { 1, 4, 2, 6, 3, 7, 5, 7, };
     int codebook2[] = { 1, 5, 7, 21, 5, 8, 9, 21, 10, 9, 12, 20, 20, 16, 20, 20, 4, 8, 9, 20, 6, 8, 9, 20, 11, 11, 13, 20, 20, 15, 17, 20, 9, 11, 14, 20, 8, 10, 15, 20, 11, 13, 15, 20, 20, 20, 20, 20, 20, 20, 20, 20, 13, 20, 20, 20, 18, 18, 20, 20, 20, 20, 20, 20, 3, 6, 8, 20, 6, 7, 9, 20, 10, 9, 12, 20, 20, 20, 20, 20, 5, 7, 9, 20, 6, 6, 9, 20, 10, 9, 12, 20, 20, 20, 20, 20, 8, 10, 13, 20, 8, 9, 12, 20, 11, 10, 12, 20, 20, 20, 20, 20, 18, 20, 20, 20, 15, 17, 18, 20, 18, 17, 18, 20, 20, 20, 20, 20, 7, 10, 12, 20, 8, 9, 11, 20, 14, 13, 14, 20, 20, 20, 20, 20, 6, 9, 12, 20, 7, 8, 11, 20, 12, 11, 13, 20, 20, 20, 20, 20, 9, 11, 15, 20, 8, 10, 14, 20, 12, 11, 14, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 11, 16, 18, 20, 15, 15, 17, 20, 20, 17, 20, 20, 20, 20, 20, 20, 9, 14, 16, 20, 12, 12, 15, 20, 17, 15, 18, 20, 20, 20, 20, 20, 16, 19, 18, 20, 15, 16, 20, 20, 17, 17, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, };
@@ -363,6 +356,13 @@ static void create_vorbis_context(venc_context_t * venc, AVCodecContext * avccon
         { 1, 2,  -119.0,  17.0, 225, (int[]){ 7, 6, 8, 5, 9, 4, 10, 3, 11, 2, 12, 1, 13, 0, 14, } },
         { 1, 2,    -8.0,   1.0, 289, (int[]){ 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15, 0, 16, } },
     };
+
+    venc->channels = avccontext->channels;
+    venc->sample_rate = avccontext->sample_rate;
+    venc->blocksize[0] = venc->blocksize[1] = 11;
+
+    venc->ncodebooks = 29;
+    venc->codebooks = av_malloc(sizeof(codebook_t) * venc->ncodebooks);
 
     // codebook 0..14 - floor1 book, values 0..255
     // codebook 15 residue masterbook
