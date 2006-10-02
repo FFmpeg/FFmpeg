@@ -14,8 +14,7 @@ SERVER_REFFILE=$(VPATH)/ffserver.regression.ref
 
 LIBAV_REFFILE=$(VPATH)/libav.regression.ref
 
-all fulltest: codectest libavtest test-server
-test: codectest libavtest test-server
+all fulltest test: codectest libavtest test-server
 
 test-server: vsynth1/0.pgm asynth1.sw
 	@$(VPATH)/server-regression.sh $(SERVER_REFFILE) $(VPATH)/test.conf
