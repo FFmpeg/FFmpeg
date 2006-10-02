@@ -643,6 +643,27 @@ static int put_main_header(venc_context_t * venc, uint8_t ** out) {
     return p - *out;
 }
 
+static void floor_fit(venc_context_t * venc, floor_t * fc, float * coeffs, int * posts, int samples) {
+    int range = 255 / fc->multiplier + 1;
+    int i;
+    for (i = 0; i < fc->values; i++) {
+        int position = fc->list[fc->list[i].sort].x;
+        int begin = fc->list[fc->list[FFMAX(i-1, 0)].sort].x;
+        int end   = fc->list[fc->list[FFMIN(i+1, fc->values - 1)].sort].x;
+        int j;
+        float average = 0;
+        begin = (position + begin) / 2;
+        end   = (position + end  ) / 2;
+
+        assert(end <= samples);
+        for (j = begin; j < end; j++) average += fabs(coeffs[j]);
+        average /= end - begin;
+        average /= 64; // MAGIC!
+        for (j = 0; j < range; j++) if (floor1_inverse_db_table[j * fc->multiplier] > average) break;
+        posts[fc->list[i].sort] = j;
+    }
+}
+
 static void floor_encode(venc_context_t * venc, floor_t * fc, PutBitContext * pb, float * floor, int samples) {
     int range = 255 / fc->multiplier + 1;
     int j;
@@ -805,6 +826,7 @@ static int vorbis_encode_frame(AVCodecContext * avccontext, unsigned char * pack
     int i;
 
     if (!window(venc, audio, samples)) return 0;
+    samples = 1 << (venc->blocksize[0] - 1);
 
     init_put_bits(&pb, packets, buf_size);
 
@@ -821,6 +843,8 @@ static int vorbis_encode_frame(AVCodecContext * avccontext, unsigned char * pack
 
     for (i = 0; i < venc->channels; i++) {
         floor_t * fc = &venc->floors[mapping->floor[mapping->mux[i]]];
+        int posts[fc->values];
+        floor_fit(venc, fc, &venc->coeffs[i * samples], posts, samples);
         floor_encode(venc, fc, &pb, &venc->floor[i * samples], samples);
     }
 
