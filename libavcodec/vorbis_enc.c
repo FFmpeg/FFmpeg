@@ -70,6 +70,13 @@ typedef struct {
 } floor_t;
 
 typedef struct {
+    int type;
+    int begin;
+    int end;
+    int partition_size;
+    int classifications;
+    int classbook;
+    int (*books)[8];
 } residue_t;
 
 typedef struct {
@@ -198,6 +205,32 @@ static void put_floor_header(PutBitContext * pb, floor_t * fc) {
 }
 
 static void put_residue_header(PutBitContext * pb, residue_t * rc) {
+    int i;
+
+    put_bits(pb, 16, rc->type);
+
+    put_bits(pb, 24, rc->begin);
+    put_bits(pb, 24, rc->end);
+    put_bits(pb, 24, rc->partition_size - 1);
+    put_bits(pb, 6, rc->classifications);
+    put_bits(pb, 8, rc->classbook);
+
+    for (i = 0; i < rc->classifications; i++) {
+        int j, tmp = 0;
+        for (j = 0; j < 8; j++) tmp |= (!!rc->books[i][j]) << j;
+
+        put_bits(pb, 3, tmp & 7);
+        put_bits(pb, 1, tmp > 7);
+
+        if (tmp > 7) put_bits(pb, 5, tmp >> 3);
+    }
+
+    for (i = 0; i < rc->classifications; i++) {
+        int j;
+        for (j = 0; j < 8; j++)
+            if (rc->books[i][j])
+                put_bits(pb, 8, rc->books[i][j]);
+    }
 }
 
 static int put_main_header(venc_context_t * venc, uint8_t ** out) {
