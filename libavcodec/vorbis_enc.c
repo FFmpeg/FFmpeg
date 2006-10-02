@@ -711,7 +711,7 @@ static void floor_encode(venc_context_t * venc, floor_t * fc, PutBitContext * pb
                                      fc->list[fc->list[i].high].x,
                                      posts[fc->list[i].high],
                                      fc->list[i].x);
-        int highroom = range -  predicted;
+        int highroom = range - predicted;
         int lowroom = predicted;
         int room = FFMIN(highroom, lowroom);
         if (predicted == posts[i]) {
