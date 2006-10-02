@@ -773,13 +773,14 @@ static void floor_encode(venc_context_t * venc, floor_t * fc, PutBitContext * pb
             put_bits(pb, book->entries[cval].len, book->entries[cval].codeword);
         }
         for (k = 0; k < c->dim; k++) {
-            codebook_t * book = &venc->codebooks[c->books[cval & (csub-1)]];
+            int book = c->books[cval & (csub-1)];
             int entry = coded[counter++];
             cval >>= c->subclass;
+            if (book == -1) continue;
             if (entry == -1) entry = 0;
-            assert(entry < book->nentries);
+            assert(entry < venc->codebooks[book].nentries);
             assert(entry >= 0);
-            put_bits(pb, book->entries[entry].len, book->entries[entry].codeword);
+            put_bits(pb, venc->codebooks[book].entries[entry].len, venc->codebooks[book].entries[entry].codeword);
         }
     }
 
