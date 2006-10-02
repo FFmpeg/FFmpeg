@@ -534,7 +534,7 @@ static int vorbis_encode_init(AVCodecContext * avccontext)
 
     avccontext->extradata_size = put_main_header(venc, (uint8_t**)&avccontext->extradata);
 
-    avccontext->frame_size = VORBIS_FRAME_SIZE;
+    avccontext->frame_size = 1 << venc->blocksize[0];
 
     avccontext->coded_frame = avcodec_alloc_frame();
     avccontext->coded_frame->key_frame = 1;
@@ -548,7 +548,7 @@ static int vorbis_encode_frame(AVCodecContext * avccontext, unsigned char * pack
 #if 0
     venc_context_t * venc = avccontext->priv_data;
     signed short * audio = data;
-    int samples = data ? VORBIS_FRAME_SIZE : 0;
+    int samples = data ? avccontext->frame_size : 0;
 
     avccontext->coded_frame->pts = av_rescale_q(op2->granulepos, (AVRational){1, avccontext->sample_rate}, avccontext->time_base);
     memcpy(packets, compressed_frame, l);
