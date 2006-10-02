@@ -252,7 +252,7 @@ static void put_codebook_header(PutBitContext * pb, codebook_t * cb) {
         while (i < cb->nentries) {
             int j;
             for (j = 0; j+i < cb->nentries; j++) if (cb->entries[j+i].len != len) break;
-            put_bits(pb, 5, j);
+            put_bits(pb, ilog(cb->nentries - i), j);
             i += j;
             len++;
         }
@@ -273,7 +273,7 @@ static void put_codebook_header(PutBitContext * pb, codebook_t * cb) {
         int tmp = cb_lookup_vals(cb->lookup, cb->ndimentions, cb->nentries);
         int bits = ilog(cb->quantlist[0]);
 
-        for (i = 1; i < tmp; i++) bits = FFMIN(bits, ilog(cb->quantlist[i]));
+        for (i = 1; i < tmp; i++) bits = FFMAX(bits, ilog(cb->quantlist[i]));
 
         put_float(pb, cb->min);
         put_float(pb, cb->delta);
