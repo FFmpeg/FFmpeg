@@ -325,6 +325,7 @@ static void create_vorbis_context(venc_context_t * venc, AVCodecContext * avccon
     for (i = 0; i < rc->classifications; i++) {
         int j;
         for (j = 0; j < 8; j++) rc->books[i][j] = 2 + j;
+        rc->books[i][0] = rc->books[i][1] = rc->books[i][2] = rc->books[i][3] = -1;
     }
 
     venc->nmappings = 1;
@@ -750,8 +751,8 @@ static int vorbis_encode_frame(AVCodecContext * avccontext, unsigned char * pack
         int range = 255 / fc->multiplier + 1;
         int j;
         put_bits(&pb, 1, 1); // non zero
-        put_bits(&pb, ilog(range - 1), 113); // magic value - 3.7180282E-05
-        put_bits(&pb, ilog(range - 1), 113); // both sides of X
+        put_bits(&pb, ilog(range - 1), 180); // magic value - 3.7180282E-05
+        put_bits(&pb, ilog(range - 1), 180); // both sides of X
         for (j = 0; j < fc->partitions; j++) {
             floor_class_t * c = &fc->classes[fc->partition_to_class[j]];
             codebook_t * book = &venc->codebooks[c->books[0]];
@@ -763,7 +764,7 @@ static int vorbis_encode_frame(AVCodecContext * avccontext, unsigned char * pack
         }
 
         for (j = 0; j < samples; j++) {
-            venc->floor[i * samples + j] = floor1_inverse_db_table[113];
+            venc->floor[i * samples + j] = floor1_inverse_db_table[180];
         }
     }
 
