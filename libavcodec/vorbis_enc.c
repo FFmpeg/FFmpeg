@@ -218,7 +218,7 @@ static void create_vorbis_context(venc_context_t * venc, AVCodecContext * avccon
     venc->ncodebooks = 10;
     venc->codebooks = av_malloc(sizeof(codebook_t) * venc->ncodebooks);
 
-    // codebook 1 - floor1 book, values 0..255
+    // codebook 0 - floor1 book, values 0..255
     cb = &venc->codebooks[0];
     cb->nentries = 256;
     cb->entries = av_malloc(sizeof(cb_entry_t) * cb->nentries);
@@ -231,7 +231,7 @@ static void create_vorbis_context(venc_context_t * venc, AVCodecContext * avccon
     cb->quantlist = NULL;
     ready_codebook(cb);
 
-    // codebook 2 - residue classbook, values 0..1, dimentions 200
+    // codebook 1 - residue classbook, values 0..1, dimentions 200
     cb = &venc->codebooks[1];
     cb->nentries = 2;
     cb->entries = av_malloc(sizeof(cb_entry_t) * cb->nentries);
@@ -244,7 +244,7 @@ static void create_vorbis_context(venc_context_t * venc, AVCodecContext * avccon
     cb->quantlist = NULL;
     ready_codebook(cb);
 
-    // codebook 3..10 - vector, for the residue, values -32767..32767, dimentions 1
+    // codebook 2..9 - vector, for the residue, values -32767..32767, dimentions 1
     for (book = 0; book < 8; book++) {
         cb = &venc->codebooks[2 + book];
         cb->nentries = 5;
