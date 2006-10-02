@@ -985,12 +985,12 @@ static void residue_encode(venc_context_t * venc, residue_t * rc, PutBitContext 
                         }
                     } else {
                         for (k = 0; k < psize; k += book->ndimentions) {
-                            int dim = book->ndimentions, s = rc->begin + p * psize, l;
+                            int dim = book->ndimentions, s = rc->begin + p * psize + k, l;
                             float vec[dim], * a = vec;
-                            for (l = s + k; l < s + k + dim; l++)
+                            for (l = s; l < s + dim; l++)
                                 *a++ = coeffs[(l % real_ch) * samples + l / real_ch];
                             a = put_vector(book, pb, vec);
-                            for (l = s + k; l < s + k + dim; l++)
+                            for (l = s; l < s + dim; l++)
                                 coeffs[(l % real_ch) * samples + l / real_ch] -= *a++;
                         }
                     }
