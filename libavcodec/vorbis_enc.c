@@ -605,7 +605,7 @@ static int vorbis_encode_init(AVCodecContext * avccontext)
 
     avccontext->extradata_size = put_main_header(venc, (uint8_t**)&avccontext->extradata);
 
-    avccontext->frame_size = 1 << venc->blocksize[0];
+    avccontext->frame_size = 1 << (venc->blocksize[0] - 1);
 
     avccontext->coded_frame = avcodec_alloc_frame();
     avccontext->coded_frame->key_frame = 1;
