@@ -667,21 +667,25 @@ static int window(venc_context_t * venc, signed short * audio, int samples) {
     return 1;
 }
 
-static float put_vector(codebook_t * book, PutBitContext * pb, float num) {
+static float * put_vector(codebook_t * book, PutBitContext * pb, float * num) {
     int i;
     int entry = -1;
     float distance = 0;
     assert(book->dimentions);
-    assert(book->ndimentions == 1);
     for (i = 0; i < book->nentries; i++) {
-        float d = (book->dimentions[i] - num)*(book->dimentions[i] - num);
+        float d = 0.;
+        int j;
+        for (j = 0; j < book->ndimentions; j++) {
+            float a = (book->dimentions[i * book->ndimentions + j] - num[j]);
+            d += a*a;
+        }
         if (entry == -1 || distance > d) {
             entry = i;
             distance = d;
         }
     }
     put_bits(pb, book->entries[entry].len, book->entries[entry].codeword);
-    return book->dimentions[entry];
+    return &book->dimentions[entry * book->ndimentions];
 }
 
 static void residue_encode(venc_context_t * venc, residue_t * rc, PutBitContext * pb, float * coeffs, int samples, int channels) {
@@ -711,10 +715,12 @@ static void residue_encode(venc_context_t * venc, residue_t * rc, PutBitContext 
                     if (nbook == -1) continue;
 
                     assert(rc->type == 0);
-                    assert(book->ndimentions == 1);
+                    assert(!(psize % book->ndimentions));
 
-                    for (k = 0; k < psize; k++) {
-                        buf[k] -= put_vector(book, pb, buf[k]);
+                    for (k = 0; k < psize; k += book->ndimentions) {
+                        float * a = put_vector(book, pb, &buf[k]);
+                        int l;
+                        for (l = 0; l < book->ndimentions; l++) buf[k + l] -= a[l];
                     }
                 }
             }
