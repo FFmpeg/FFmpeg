@@ -299,7 +299,7 @@ static void create_vorbis_context(venc_context_t * venc, AVCodecContext * avccon
         for (j = 0; j < books; j++) c->books[j] = 0;
     }
     fc->multiplier = 1;
-    fc->rangebits = venc->blocksize[0];
+    fc->rangebits = venc->blocksize[0] - 1;
 
     fc->values = 2;
     for (i = 0; i < fc->partitions; i++)
