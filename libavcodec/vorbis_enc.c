@@ -1031,10 +1031,10 @@ static int vorbis_encode_close(AVCodecContext * avccontext)
     if (venc->floors)
         for (i = 0; i < venc->nfloors; i++) {
             int j;
-            av_freep(&venc->floors[i].classes);
             if (venc->floors[i].classes)
                 for (j = 0; j < venc->floors[i].nclasses; j++)
                     av_freep(&venc->floors[i].classes[j].books);
+            av_freep(&venc->floors[i].classes);
             av_freep(&venc->floors[i].partition_to_class);
             av_freep(&venc->floors[i].list);
         }
