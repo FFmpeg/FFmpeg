@@ -560,6 +560,39 @@ static int vorbis_encode_frame(AVCodecContext * avccontext, unsigned char * pack
 static int vorbis_encode_close(AVCodecContext * avccontext)
 {
     venc_context_t * venc = avccontext->priv_data;
+    int i;
+
+    if (venc->codebooks) for (i = 0; i < venc->ncodebooks; i++) {
+        av_freep(&venc->codebooks[i].entries);
+        av_freep(&venc->codebooks[i].quantlist);
+        av_freep(&venc->codebooks[i].dimentions);
+    }
+    av_freep(&venc->codebooks);
+
+    if (venc->floors) for (i = 0; i < venc->nfloors; i++) {
+        int j;
+        av_freep(&venc->floors[i].classes);
+        if (venc->floors[i].classes)
+            for (j = 0; j < venc->floors[i].nclasses; j++)
+                av_freep(&venc->floors[i].classes[j].books);
+        av_freep(&venc->floors[i].partition_to_class);
+        av_freep(&venc->floors[i].list);
+    }
+    av_freep(&venc->floors);
+
+    if (venc->residues) for (i = 0; i < venc->nresidues; i++) {
+        av_freep(&venc->residues[i].books);
+    }
+    av_freep(&venc->residues);
+
+    if (venc->mappings) for (i = 0; i < venc->nmappings; i++) {
+        av_freep(&venc->mappings[i].mux);
+        av_freep(&venc->mappings[i].floor);
+        av_freep(&venc->mappings[i].residue);
+    }
+    av_freep(&venc->mappings);
+
+    av_freep(&venc->modes);
 
     av_freep(&avccontext->coded_frame);
     av_freep(&avccontext->extradata);
