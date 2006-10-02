@@ -616,7 +616,6 @@ static int put_main_header(venc_context_t * venc, uint8_t ** out) {
         if (mc->coupling_steps) {
             put_bits(&pb, 8, mc->coupling_steps - 1);
             for (j = 0; j < mc->coupling_steps; j++) {
-                av_log(NULL, AV_LOG_ERROR, "%d %d %d %d\n", venc->channels, ilog(venc->channels - 1), mc->magnitude[j], mc->angle[j]);
                 put_bits(&pb, ilog(venc->channels - 1), mc->magnitude[j]);
                 put_bits(&pb, ilog(venc->channels - 1), mc->angle[j]);
             }
