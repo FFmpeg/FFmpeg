@@ -29,9 +29,6 @@
 #undef NDEBUG
 #include <assert.h>
 
-//#define ALT_BITSTREAM_WRITER
-//#include "bitstream.h"
-
 typedef struct {
     int nentries;
     uint8_t * lens;
@@ -823,14 +820,11 @@ static void create_vorbis_context(venc_context_t * venc, AVCodecContext * avccon
     fc->list[0].x = 0;
     fc->list[1].x = 1 << fc->rangebits;
     for (i = 2; i < fc->values; i++) {
-        /*int a = i - 1;
-        int g = ilog(a);
-        assert(g <= fc->rangebits);
-        a ^= 1 << (g-1);
-        g = 1 << (fc->rangebits - g);
-        fc->list[i].x = g + a*2*g;*/
-        //int a[] = {14, 4, 58, 2, 8, 28, 90};
-        int a[] = {93,23,372,6,46,186,750,14,33,65,130,260,556,3,10,18,28,39,55,79,111,158,220,312,464,650,850};
+        static const int a[] = {
+             93, 23,372,  6, 46,186,750, 14, 33, 65,
+            130,260,556,  3, 10, 18, 28, 39, 55, 79,
+            111,158,220,312,464,650,850
+        };
         fc->list[i].x = a[i - 2];
     }
     ready_floor(fc);
@@ -1410,7 +1404,6 @@ static int vorbis_encode_init(AVCodecContext * avccontext)
 
     if (avccontext->flags & CODEC_FLAG_QSCALE) venc->quality = avccontext->global_quality / (float)FF_QP2LAMBDA / 100.;
     else venc->quality = 0.17;
-    //if(avccontext->cutoff > 0) cfreq = avccontext->cutoff / 1000.0;
 
     avccontext->extradata_size = put_main_header(venc, (uint8_t**)&avccontext->extradata);
 
