@@ -51,7 +51,7 @@ void avcodec_register_all(void)
 #endif //CONFIG_MP3LAME_ENCODER
 #endif
 #ifdef CONFIG_LIBVORBIS
-#ifdef CONFIG_OGGVORBIS_ENCODER
+#if (defined CONFIG_OGGVORBIS_ENCODER && !defined CONFIG_VORBIS_ENCODER)
     register_avcodec(&oggvorbis_encoder);
 #endif //CONFIG_OGGVORBIS_ENCODER
 #if (defined CONFIG_OGGVORBIS_DECODER && !defined CONFIG_VORBIS_DECODER)
@@ -506,6 +506,9 @@ void avcodec_register_all(void)
 #endif //CONFIG_WS_SND1_DECODER
 #ifdef CONFIG_VORBIS_DECODER
     register_avcodec(&vorbis_decoder);
+#endif
+#ifdef CONFIG_VORBIS_ENCODER
+    register_avcodec(&vorbis_encoder);
 #endif
 #ifdef CONFIG_LIBGSM
     register_avcodec(&libgsm_decoder);
