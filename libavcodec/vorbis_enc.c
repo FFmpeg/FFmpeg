@@ -1362,7 +1362,10 @@ static int vorbis_encode_init(AVCodecContext * avccontext)
 {
     venc_context_t * venc = avccontext->priv_data;
 
-    if (avccontext->channels != 2) return -1;
+    if (avccontext->channels != 2) {
+        av_log(avccontext, AV_LOG_ERROR, "Current FFmpeg Vorbis encoder only supports 2 channels.\n");
+        return -1;
+    }
 
     create_vorbis_context(venc, avccontext);
 
