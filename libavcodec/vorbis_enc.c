@@ -717,13 +717,16 @@ static void floor_encode(venc_context_t * venc, floor_t * fc, PutBitContext * pb
         if (predicted == posts[i]) {
             coded[i] = 0; // must be used later as flag!
             continue;
+        } else {
+            if (!coded[fc->list[i].low]) coded[fc->list[i].low] = -1;
+            if (!coded[fc->list[i].high]) coded[fc->list[i].high] = -1;
         }
         if (posts[i] > predicted) {
             if (posts[i] - predicted > room) coded[i] = posts[i] - predicted + lowroom;
             else coded[i] = (posts[i] - predicted) << 1;
         } else {
             if (predicted - posts[i] > room) coded[i] = predicted - posts[i] + highroom - 1;
-            else coded[i] = ((predicted - posts[i]) << 1) + 1;
+            else coded[i] = ((predicted - posts[i]) << 1) - 1;
         }
     }
 
@@ -735,7 +738,7 @@ static void floor_encode(venc_context_t * venc, floor_t * fc, PutBitContext * pb
         assert(!c->subclass);
         for (k = 0; k < c->dim; k++) {
             int entry = coded[counter++];
-            if (entry >= book->nentries || entry < 0) av_log(NULL, AV_LOG_ERROR, "%d %d %d %d \n", entry, book->nentries, counter, fc->values);
+            if (entry == -1) entry = 0;
             assert(entry < book->nentries);
             assert(entry >= 0);
             put_bits(pb, book->entries[entry].len, book->entries[entry].codeword);
