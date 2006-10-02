@@ -701,6 +701,19 @@ static void ready_residue(residue_t * rc, venc_context_t * venc) {
     }
 }
 
+static const struct {
+    int dim;
+    int subclass;
+    int masterbook;
+    const int * nbooks;
+} floor_classes[] = {
+    { 3, 0, 0, (const int[]){  4             } },
+    { 4, 1, 0, (const int[]){  5,  6         } },
+    { 3, 1, 1, (const int[]){  7,  8         } },
+    { 4, 2, 2, (const int[]){ -1,  9, 10, 11 } },
+    { 3, 2, 3, (const int[]){ -1, 12, 13, 14 } },
+};
+
 static void create_vorbis_context(venc_context_t * venc, AVCodecContext * avccontext) {
     floor_t * fc;
     residue_t * rc;
@@ -751,7 +764,7 @@ static void create_vorbis_context(venc_context_t * venc, AVCodecContext * avccon
     fc->partition_to_class = av_malloc(sizeof(int) * fc->partitions);
     fc->nclasses = 0;
     for (i = 0; i < fc->partitions; i++) {
-        int a[] = {0,1,2,2,3,3,4,4};
+        static const int a[] = {0,1,2,2,3,3,4,4};
         fc->partition_to_class[i] = a[i];
         fc->nclasses = FFMAX(fc->nclasses, fc->partition_to_class[i]);
     }
@@ -760,22 +773,12 @@ static void create_vorbis_context(venc_context_t * venc, AVCodecContext * avccon
     for (i = 0; i < fc->nclasses; i++) {
         floor_class_t * c = &fc->classes[i];
         int j, books;
-        int dim[] = {3,4,3,4,3};
-        int subclass[] = {0,1,1,2,2};
-        int masterbook[] = {0/*none*/,0,1,2,3};
-        int * nbooks[] = {
-            (int[]){ 4 },
-            (int[]){ 5, 6 },
-            (int[]){ 7, 8 },
-            (int[]){ -1, 9, 10, 11 },
-            (int[]){ -1, 12, 13, 14 },
-        };
-        c->dim = dim[i];
-        c->subclass = subclass[i];
-        c->masterbook = masterbook[i];
+        c->dim = floor_classes[i].dim;
+        c->subclass = floor_classes[i].subclass;
+        c->masterbook = floor_classes[i].masterbook;
         books = (1 << c->subclass);
         c->books = av_malloc(sizeof(int) * books);
-        for (j = 0; j < books; j++) c->books[j] = nbooks[i][j];
+        for (j = 0; j < books; j++) c->books[j] = floor_classes[i].nbooks[j];
     }
     fc->multiplier = 2;
     fc->rangebits = venc->blocksize[0] - 1;
