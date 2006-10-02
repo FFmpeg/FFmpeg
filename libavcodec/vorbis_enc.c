@@ -388,7 +388,7 @@ static int put_main_header(venc_context_t * venc, uint8_t ** out) {
 
     // codebooks
     put_bits(&pb, 8, venc->ncodebooks - 1);
-    for (i = 0; i < venc->ncodebooks; i++) put_codebook_header(&pb, &venc->codebooks[0]);
+    for (i = 0; i < venc->ncodebooks; i++) put_codebook_header(&pb, &venc->codebooks[i]);
 
     // time domain, reserved, zero
     put_bits(&pb, 6, 0);
@@ -396,11 +396,11 @@ static int put_main_header(venc_context_t * venc, uint8_t ** out) {
 
     // floors
     put_bits(&pb, 6, venc->nfloors - 1);
-    for (i = 0; i < venc->nfloors; i++) put_floor_header(&pb, &venc->floors[0]);
+    for (i = 0; i < venc->nfloors; i++) put_floor_header(&pb, &venc->floors[i]);
 
     // residues
     put_bits(&pb, 6, venc->nresidues - 1);
-    for (i = 0; i < venc->nresidues; i++) put_residue_header(&pb, &venc->residues[0]);
+    for (i = 0; i < venc->nresidues; i++) put_residue_header(&pb, &venc->residues[i]);
 
     // mappings
     put_bits(&pb, 6, venc->nmappings - 1);
