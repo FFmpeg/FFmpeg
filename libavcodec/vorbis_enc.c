@@ -1059,7 +1059,7 @@ static int vorbis_encode_init(AVCodecContext * avccontext)
 
     create_vorbis_context(venc, avccontext);
 
-    if (avccontext->flags & CODEC_FLAG_QSCALE) venc->quality = avccontext->global_quality / (float)FF_QP2LAMBDA;
+    if (avccontext->flags & CODEC_FLAG_QSCALE) venc->quality = avccontext->global_quality / (float)FF_QP2LAMBDA / 100.;
     else venc->quality = 0.17;
     //if(avccontext->cutoff > 0) cfreq = avccontext->cutoff / 1000.0;
 
