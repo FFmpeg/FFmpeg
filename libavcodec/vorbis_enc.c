@@ -468,7 +468,7 @@ static void put_residue_header(PutBitContext * pb, residue_t * rc) {
 
     for (i = 0; i < rc->classifications; i++) {
         int j, tmp = 0;
-        for (j = 0; j < 8; j++) tmp |= (!!rc->books[i][j]) << j;
+        for (j = 0; j < 8; j++) tmp |= (rc->books[i][j] != -1) << j;
 
         put_bits(pb, 3, tmp & 7);
         put_bits(pb, 1, tmp > 7);
