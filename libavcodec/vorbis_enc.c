@@ -1117,7 +1117,7 @@ static float get_floor_average(floor_t * fc, float * coeffs, int i) {
     return average / (end - begin);
 }
 
-static void floor_fit(venc_context_t * venc, floor_t * fc, float * coeffs, int * posts, int samples) {
+static void floor_fit(venc_context_t * venc, floor_t * fc, float * coeffs, uint_fast16_t * posts, int samples) {
     int range = 255 / fc->multiplier + 1;
     int i;
     float tot_average = 0.;
@@ -1141,11 +1141,10 @@ static int render_point(int x0, int y0, int x1, int y1, int x) {
     return y0 +  (x - x0) * (y1 - y0) / (x1 - x0);
 }
 
-static void floor_encode(venc_context_t * venc, floor_t * fc, PutBitContext * pb, int * posts, float * floor, int samples) {
+static void floor_encode(venc_context_t * venc, floor_t * fc, PutBitContext * pb, uint_fast16_t * posts, float * floor, int samples) {
     int range = 255 / fc->multiplier + 1;
     int coded[fc->values]; // first 2 values are unused
     int i, counter;
-    int lx, ly;
 
     put_bits(pb, 1, 1); // non zero
     put_bits(pb, ilog(range - 1), posts[0]);
@@ -1208,18 +1207,7 @@ static void floor_encode(venc_context_t * venc, floor_t * fc, PutBitContext * pb
         }
     }
 
-    lx = 0;
-    ly = posts[0] * fc->multiplier; // sorted 0 is still 0
-    for (i = 1; i < fc->values; i++) {
-        int pos = fc->list[i].sort;
-        if (coded[pos]) {
-            render_line(lx, ly, fc->list[pos].x, posts[pos] * fc->multiplier, floor, samples);
-            lx = fc->list[pos].x;
-            ly = posts[pos] * fc->multiplier;
-        }
-        if (lx >= samples) break;
-    }
-    if (lx < samples) render_line(lx, ly, samples, ly, floor, samples);
+    ff_vorbis_floor1_render_list(fc->list, fc->values, posts, coded, fc->multiplier, floor, samples);
 }
 
 static float * put_vector(codebook_t * book, PutBitContext * pb, float * num) {
@@ -1419,7 +1407,7 @@ static int vorbis_encode_frame(AVCodecContext * avccontext, unsigned char * pack
 
     for (i = 0; i < venc->channels; i++) {
         floor_t * fc = &venc->floors[mapping->floor[mapping->mux[i]]];
-        int posts[fc->values];
+        uint_fast16_t posts[fc->values];
         floor_fit(venc, fc, &venc->coeffs[i * samples], posts, samples);
         floor_encode(venc, fc, &pb, posts, &venc->floor[i * samples], samples);
     }
