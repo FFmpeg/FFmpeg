@@ -250,7 +250,7 @@ TAGS:
 
 # regression tests
 
-libavtest test mpeg4 mpeg test-server fulltest: $(PROGS)
+codectest libavtest test-server fulltest test mpeg4 mpeg: $(PROGS)
 	$(MAKE) -C tests $@
 
 # tar release (use 'make -k tar' on a checkouted tree)
