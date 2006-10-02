@@ -247,6 +247,15 @@ static void create_vorbis_context(venc_context_t * venc, AVCodecContext * avccon
     fc->list[0].x = 0;
     fc->list[1].x = 1 << fc->rangebits;
     for (i = 2; i < fc->values; i++) fc->list[i].x = i * 5;
+
+    venc->nresidues = 1;
+    venc->residues = av_malloc(sizeof(residue_t) * venc->nresidues);
+
+    venc->nmappings = 1;
+    venc->mappings = av_malloc(sizeof(mapping_t) * venc->nmappings);
+
+    venc->nmodes = 1;
+    venc->modes = av_malloc(sizeof(vorbis_mode_t) * venc->nmodes);
 }
 
 static inline int ilog(unsigned int a) {
