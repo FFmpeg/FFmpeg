@@ -1057,6 +1057,8 @@ static int vorbis_encode_init(AVCodecContext * avccontext)
 {
     venc_context_t * venc = avccontext->priv_data;
 
+    if (avccontext->channels != 2) return -1;
+
     create_vorbis_context(venc, avccontext);
 
     if (avccontext->flags & CODEC_FLAG_QSCALE) venc->quality = avccontext->global_quality / (float)FF_QP2LAMBDA / 100.;
