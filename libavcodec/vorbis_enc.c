@@ -87,6 +87,11 @@ typedef struct {
 } mapping_t;
 
 typedef struct {
+    int blockflag;
+    int mapping;
+} vorbis_mode_t;
+
+typedef struct {
     int channels;
     int sample_rate;
     int blocksize[2];
@@ -102,6 +107,9 @@ typedef struct {
 
     int nmappings;
     mapping_t * mappings;
+
+    int nmodes;
+    vorbis_mode_t * modes;
 } venc_context_t;
 
 static inline int ilog(unsigned int a) {
@@ -318,6 +326,15 @@ static int put_main_header(venc_context_t * venc, uint8_t ** out) {
             put_bits(&pb, 8, mc->floor[j]);
             put_bits(&pb, 8, mc->residue[j]);
         }
+    }
+
+    // modes
+    put_bits(&pb, 6, venc->nmodes - 1);
+    for (i = 0; i < venc->nmodes; i++) {
+        put_bits(&pb, 1, venc->modes[i].blockflag);
+        put_bits(&pb, 16, 0); // reserved window type
+        put_bits(&pb, 16, 0); // reserved transform type
+        put_bits(&pb, 8, venc->modes[i].mapping);
     }
 
     flush_put_bits(&pb);
