@@ -480,7 +480,7 @@ static void put_residue_header(PutBitContext * pb, residue_t * rc) {
     for (i = 0; i < rc->classifications; i++) {
         int j;
         for (j = 0; j < 8; j++)
-            if (rc->books[i][j])
+            if (rc->books[i][j] != -1)
                 put_bits(pb, 8, rc->books[i][j]);
     }
 }
@@ -708,6 +708,7 @@ static void residue_encode(venc_context_t * venc, residue_t * rc, PutBitContext 
                     int nbook = rc->books[classes[j][p]][pass];
                     codebook_t * book = &venc->codebooks[nbook];
                     float * buf = coeffs + samples*j + rc->begin + p*psize;
+                    if (nbook == -1) continue;
 
                     assert(rc->type == 0);
                     assert(book->ndimentions == 1);
