@@ -281,6 +281,10 @@ static void create_vorbis_context(venc_context_t * venc, AVCodecContext * avccon
 
     venc->nmodes = 1;
     venc->modes = av_malloc(sizeof(vorbis_mode_t) * venc->nmodes);
+
+    // single mode
+    venc->modes[0].blockflag = 0;
+    venc->modes[0].mapping = 0;
 }
 
 static inline int ilog(unsigned int a) {
