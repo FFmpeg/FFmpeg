@@ -21,6 +21,8 @@
  * internal api header.
  */
 
+#include "avutil.h"
+
 #define V_DEBLOCK       0x01
 #define H_DEBLOCK       0x02
 #define DERING          0x04
@@ -124,8 +126,8 @@ typedef struct PPContext{
          */
         uint64_t *yHistogram;
 
-        uint64_t __attribute__((aligned(8))) packedYOffset;
-        uint64_t __attribute__((aligned(8))) packedYScale;
+        DECLARE_ALIGNED(8, uint64_t, packedYOffset);
+        DECLARE_ALIGNED(8, uint64_t, packedYScale);
 
         /** Temporal noise reducing buffers */
         uint8_t *tempBlured[3];
@@ -137,11 +139,11 @@ typedef struct PPContext{
 
         uint8_t *deintTemp;
 
-        uint64_t __attribute__((aligned(8))) pQPb;
-        uint64_t __attribute__((aligned(8))) pQPb2;
+        DECLARE_ALIGNED(8, uint64_t, pQPb);
+        DECLARE_ALIGNED(8, uint64_t, pQPb2);
 
-        uint64_t __attribute__((aligned(8))) mmxDcOffset[64];
-        uint64_t __attribute__((aligned(8))) mmxDcThreshold[64];
+        DECLARE_ALIGNED(8, uint64_t, mmxDcOffset[64]);
+        DECLARE_ALIGNED(8, uint64_t, mmxDcThreshold[64]);
 
         QP_STORE_T *stdQPTable;       ///< used to fix MPEG2 style qscale
         QP_STORE_T *nonBQPTable;

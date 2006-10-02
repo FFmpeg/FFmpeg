@@ -72,6 +72,7 @@ try to unroll inner for(x=0 ... loop to avoid these damn if(x ... checks
 //Changelog: use the Subversion log
 
 #include "config.h"
+#include "avutil.h"
 #include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -94,10 +95,6 @@ try to unroll inner for(x=0 ... loop to avoid these damn if(x ... checks
 
 #ifdef HAVE_ALTIVEC_H
 #include <altivec.h>
-#endif
-
-#ifndef HAVE_MEMALIGN
-#define memalign(a,b) malloc(b)
 #endif
 
 #define MIN(a,b) ((a) > (b) ? (b) : (a))
@@ -428,7 +425,7 @@ static inline void horizX1Filter(uint8_t *src, int stride, int QP)
         if(lut==NULL)
         {
                 int i;
-                lut= (uint64_t*)memalign(8, 256*8);
+                lut = av_malloc(256*8);
                 for(i=0; i<256; i++)
                 {
                         int v= i < 128 ? 2*i : 2*(i-256);
@@ -771,7 +768,7 @@ pp_mode_t *pp_get_mode_by_name_and_quality(char *name, int quality)
         struct PPMode *ppMode;
         char *filterToken;
 
-        ppMode= memalign(8, sizeof(PPMode));
+        ppMode= av_malloc(sizeof(PPMode));
 
         ppMode->lumMode= 0;
         ppMode->chromMode= 0;
@@ -949,20 +946,19 @@ pp_mode_t *pp_get_mode_by_name_and_quality(char *name, int quality)
         if(ppMode->error)
         {
                 fprintf(stderr, "%d errors in postprocess string \"%s\"\n", ppMode->error, name);
-                free(ppMode);
+                av_free(ppMode);
                 return NULL;
         }
         return ppMode;
 }
 
 void pp_free_mode(pp_mode_t *mode){
-    if(mode) free(mode);
+    av_free(mode);
 }
 
 static void reallocAlign(void **p, int alignment, int size){
-        if(*p) free(*p);
-        *p= memalign(alignment, size);
-        memset(*p, 0, size);
+        av_free(p);
+        *p= av_mallocz(size);
 }
 
 static void reallocBuffers(PPContext *c, int width, int height, int stride, int qpStride){
@@ -1002,7 +998,7 @@ static void global_init(void){
 }
 
 pp_context_t *pp_get_context(int width, int height, int cpuCaps){
-        PPContext *c= memalign(32, sizeof(PPContext));
+        PPContext *c= av_malloc(sizeof(PPContext));
         int stride= (width+15)&(~15);    //assumed / will realloc if needed
         int qpStride= (width+15)/16 + 2; //assumed / will realloc if needed
 
@@ -1029,21 +1025,21 @@ void pp_free_context(void *vc){
         PPContext *c = (PPContext*)vc;
         int i;
 
-        for(i=0; i<3; i++) free(c->tempBlured[i]);
-        for(i=0; i<3; i++) free(c->tempBluredPast[i]);
+        for(i=0; i<3; i++) av_free(c->tempBlured[i]);
+        for(i=0; i<3; i++) av_free(c->tempBluredPast[i]);
 
-        free(c->tempBlocks);
-        free(c->yHistogram);
-        free(c->tempDst);
-        free(c->tempSrc);
-        free(c->deintTemp);
-        free(c->stdQPTable);
-        free(c->nonBQPTable);
-        free(c->forcedQPTable);
+        av_free(c->tempBlocks);
+        av_free(c->yHistogram);
+        av_free(c->tempDst);
+        av_free(c->tempSrc);
+        av_free(c->deintTemp);
+        av_free(c->stdQPTable);
+        av_free(c->nonBQPTable);
+        av_free(c->forcedQPTable);
 
         memset(c, 0, sizeof(PPContext));
 
-        free(c);
+        av_free(c);
 }
 
 void  pp_postprocess(uint8_t * src[3], int srcStride[3],
