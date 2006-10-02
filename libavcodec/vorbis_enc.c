@@ -36,7 +36,8 @@ typedef struct {
     int buffer_index;
 } venc_context_t;
 
-static int vorbis_encode_init(AVCodecContext * avccontext) {
+static int vorbis_encode_init(AVCodecContext * avccontext)
+{
     venc_context_t * venc = avccontext->priv_data;
     uint8_t *p;
     unsigned int offset, len;
@@ -63,7 +64,7 @@ static int vorbis_encode_init(AVCodecContext * avccontext) {
     avccontext->extradata_size = offset;
     avccontext->extradata = av_realloc(avccontext->extradata, avccontext->extradata_size);
 
-    avccontext->frame_size = OGGVORBIS_FRAME_SIZE;
+    avccontext->frame_size = VORBIS_FRAME_SIZE;
 
     avccontext->coded_frame = avcodec_alloc_frame();
     avccontext->coded_frame->key_frame = 1;
