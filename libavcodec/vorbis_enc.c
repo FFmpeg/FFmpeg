@@ -22,6 +22,7 @@
  * @author Oded Shimon <ods15@ods15.dyndns.org>
  */
 
+#include <float.h>
 #include "avcodec.h"
 #include "dsputil.h"
 #include "vorbis.h"
@@ -40,6 +41,7 @@ typedef struct {
     int lookup;
     int * quantlist;
     float * dimentions;
+    float * pow2;
 } codebook_t;
 
 typedef struct {
@@ -645,10 +647,11 @@ static void ready_codebook(codebook_t * cb) {
 
     ff_vorbis_len2vlc(cb->lens, cb->codewords, cb->nentries);
 
-    if (!cb->lookup) cb->dimentions = NULL;
+    if (!cb->lookup) cb->pow2 = cb->dimentions = NULL;
     else {
         int vals = cb_lookup_vals(cb->lookup, cb->ndimentions, cb->nentries);
         cb->dimentions = av_malloc(sizeof(float) * cb->nentries * cb->ndimentions);
+        cb->pow2 = av_mallocz(sizeof(float) * cb->nentries);
         for (i = 0; i < cb->nentries; i++) {
             float last = 0;
             int j;
@@ -660,8 +663,10 @@ static void ready_codebook(codebook_t * cb) {
 
                 cb->dimentions[i * cb->ndimentions + j] = last + cb->min + cb->quantlist[off] * cb->delta;
                 if (cb->seq_p) last = cb->dimentions[i * cb->ndimentions + j];
+                cb->pow2[i] += cb->dimentions[i * cb->ndimentions + j]*cb->dimentions[i * cb->ndimentions + j];
                 div *= vals;
             }
+            cb->pow2[i] /= 2.;
         }
     }
 
@@ -1218,19 +1223,15 @@ static void floor_encode(venc_context_t * venc, floor_t * fc, PutBitContext * pb
 }
 
 static float * put_vector(codebook_t * book, PutBitContext * pb, float * num) {
-    int i;
-    int entry = -1;
-    float distance = 0;
+    int i, entry = -1;
+    float distance = FLT_MAX;
     assert(book->dimentions);
     for (i = 0; i < book->nentries; i++) {
-        float d = 0.;
+        float * vec = book->dimentions + i * book->ndimentions, d = book->pow2[i];
         int j;
         if (!book->lens[i]) continue;
-        for (j = 0; j < book->ndimentions; j++) {
-            float a = (book->dimentions[i * book->ndimentions + j] - num[j]);
-            d += a*a;
-        }
-        if (entry == -1 || distance > d) {
+        for (j = 0; j < book->ndimentions; j++) d -= vec[j] * num[j];
+        if (distance > d) {
             entry = i;
             distance = d;
         }
@@ -1459,6 +1460,7 @@ static int vorbis_encode_close(AVCodecContext * avccontext)
         av_freep(&venc->codebooks[i].codewords);
         av_freep(&venc->codebooks[i].quantlist);
         av_freep(&venc->codebooks[i].dimentions);
+        av_freep(&venc->codebooks[i].pow2);
     }
     av_freep(&venc->codebooks);
 
