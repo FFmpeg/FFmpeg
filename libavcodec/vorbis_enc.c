@@ -661,7 +661,7 @@ static void floor_fit(venc_context_t * venc, floor_t * fc, float * coeffs, int *
         for (j = begin; j < end; j++) average += fabs(coeffs[j]);
         average /= end - begin;
         average /= 32; // MAGIC!
-        for (j = 0; j < range; j++) if (floor1_inverse_db_table[j * fc->multiplier] > average) break;
+        for (j = 0; j < range - 1; j++) if (floor1_inverse_db_table[j * fc->multiplier] > average) break;
         posts[fc->list[i].sort] = j;
     }
 }
