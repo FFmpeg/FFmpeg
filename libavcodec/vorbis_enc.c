@@ -85,6 +85,7 @@ typedef struct {
     int classifications;
     int classbook;
     int (*books)[8];
+    float (*maxes)[2];
 } residue_t;
 
 typedef struct {
@@ -260,6 +261,35 @@ static void ready_floor(floor_t * fc) {
                 fc->list[j].sort = tmp;
             }
         }
+    }
+}
+
+static void ready_residue(residue_t * rc, venc_context_t * venc) {
+    int i;
+    assert(rc->type == 2);
+    rc->maxes = av_mallocz(sizeof(float[2]) * rc->classifications);
+    for (i = 0; i < rc->classifications; i++) {
+        int j;
+        codebook_t * cb;
+        for (j = 0; j < 8; j++) if (rc->books[i][j] != -1) break;
+        if (j == 8) continue; // zero
+        cb = &venc->codebooks[rc->books[i][j]];
+        assert(cb->ndimentions >= 2);
+        assert(cb->lookup);
+
+        for (j = 0; j < cb->nentries; j++) {
+            float a;
+            if (!cb->entries[j].len) continue;
+            a = fabs(cb->dimentions[j * cb->ndimentions]);
+            if (a > rc->maxes[i][0]) rc->maxes[i][0] = a;
+            a = fabs(cb->dimentions[j * cb->ndimentions + 1]);
+            if (a > rc->maxes[i][1]) rc->maxes[i][1] = a;
+        }
+    }
+    // small bias
+    for (i = 0; i < rc->classifications; i++) {
+        rc->maxes[i][0] += 0.8;
+        rc->maxes[i][1] += 0.8;
     }
 }
 
@@ -450,6 +480,7 @@ static void create_vorbis_context(venc_context_t * venc, AVCodecContext * avccon
         int j;
         for (j = 0; j < 8; j++) rc->books[i][j] = a[i][j];
     }
+    ready_residue(rc, venc);
 
     venc->nmappings = 1;
     venc->mappings = av_malloc(sizeof(mapping_t) * venc->nmappings);
@@ -902,17 +933,35 @@ static void residue_encode(venc_context_t * venc, residue_t * rc, PutBitContext 
 
     if (rc->type == 2) channels = 1;
 
+    assert(rc->type == 2);
+    assert(real_ch == 2);
+    for (p = 0; p < partitions; p++) {
+        float max1 = 0., max2 = 0.;
+        int s = rc->begin + p * psize;
+        for (k = s; k < s + psize; k += 2) {
+            if (fabs(coeffs[k / real_ch]) > max1) max1 = fabs(coeffs[k / real_ch]);
+            if (fabs(coeffs[samples + k / real_ch]) > max2) max2 = fabs(coeffs[samples + k / real_ch]);
+        }
+
+        for (i = 0; i < rc->classifications - 1; i++) {
+            if (max1 < rc->maxes[i][0] && max2 < rc->maxes[i][1]) break;
+        }
+        classes[0][p] = i;
+    }
+
     for (pass = 0; pass < 8; pass++) {
         p = 0;
         while (p < partitions) {
             if (pass == 0) for (j = 0; j < channels; j++) {
                 codebook_t * book = &venc->codebooks[rc->classbook];
-                int entry = 99;
-                put_bits(pb, book->entries[entry].len, book->entries[entry].codeword);
-                for (i = classwords; i--; ) {
-                    classes[j][p + i] = entry % rc->classifications;
-                    entry /= rc->classifications;
+                int entry = 0;
+                for (i = 0; i < classwords; i++) {
+                    entry *= rc->classifications;
+                    entry += classes[j][p + i];
                 }
+                assert(entry < book->nentries);
+                assert(entry >= 0);
+                put_bits(pb, book->entries[entry].len, book->entries[entry].codeword);
             }
             for (i = 0; i < classwords && p < partitions; i++, p++) {
                 for (j = 0; j < channels; j++) {
@@ -1106,6 +1155,7 @@ static int vorbis_encode_close(AVCodecContext * avccontext)
 
     if (venc->residues) for (i = 0; i < venc->nresidues; i++) {
         av_freep(&venc->residues[i].books);
+        av_freep(&venc->residues[i].maxes);
     }
     av_freep(&venc->residues);
 
