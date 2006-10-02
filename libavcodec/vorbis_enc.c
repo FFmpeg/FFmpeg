@@ -266,7 +266,7 @@ static void create_vorbis_context(venc_context_t * venc, AVCodecContext * avccon
         cb->delta = 1 << ((7 - book) * 2);
         cb->min = -cb->delta*2;
         cb->seq_p = 0;
-        cb->lookup = 2;
+        cb->lookup = 1;
         cb->quantlist = av_malloc(sizeof(int) * cb_lookup_vals(cb->lookup, cb->ndimentions, cb->nentries));
         for (i = 0; i < cb->nentries; i++) cb->quantlist[i] = i;
         ready_codebook(cb);
@@ -313,10 +313,13 @@ static void create_vorbis_context(venc_context_t * venc, AVCodecContext * avccon
     rc->begin = 0;
     rc->end = 1 << (venc->blocksize[0] - 1);
     rc->partition_size = 64;
-    rc->classifications = 1;
+    rc->classifications = 2;
     rc->classbook = 1;
     rc->books = av_malloc(sizeof(int[8]) * rc->classifications);
-    for (i = 0; i < 8; i++) rc->books[0][i] = 2 + i;
+    for (i = 0; i < rc->classifications; i++) {
+        int j;
+        for (j = 0; j < 8; j++) rc->books[i][j] = 2 + j;
+    }
 
     venc->nmappings = 1;
     venc->mappings = av_malloc(sizeof(mapping_t) * venc->nmappings);
