@@ -91,7 +91,7 @@ typedef struct {
 typedef struct {
     int channels;
     int sample_rate;
-    int blocksize[2]; // in (1<<n) format
+    int log2_blocksize[2];
     MDCTContext mdct[2];
     const float * win[2];
     int have_saved;
@@ -722,7 +722,7 @@ static void create_vorbis_context(venc_context_t * venc, AVCodecContext * avccon
 
     venc->channels = avccontext->channels;
     venc->sample_rate = avccontext->sample_rate;
-    venc->blocksize[0] = venc->blocksize[1] = 11;
+    venc->log2_blocksize[0] = venc->log2_blocksize[1] = 11;
 
     venc->ncodebooks = sizeof(cvectors)/sizeof(cvectors[0]);
     venc->codebooks = av_malloc(sizeof(codebook_t) * venc->ncodebooks);
@@ -781,7 +781,7 @@ static void create_vorbis_context(venc_context_t * venc, AVCodecContext * avccon
         for (j = 0; j < books; j++) c->books[j] = floor_classes[i].nbooks[j];
     }
     fc->multiplier = 2;
-    fc->rangebits = venc->blocksize[0] - 1;
+    fc->rangebits = venc->log2_blocksize[0] - 1;
 
     fc->values = 2;
     for (i = 0; i < fc->partitions; i++)
@@ -859,16 +859,16 @@ static void create_vorbis_context(venc_context_t * venc, AVCodecContext * avccon
     venc->modes[0].mapping = 0;
 
     venc->have_saved = 0;
-    venc->saved = av_malloc(sizeof(float) * venc->channels * (1 << venc->blocksize[1]) / 2);
-    venc->samples = av_malloc(sizeof(float) * venc->channels * (1 << venc->blocksize[1]));
-    venc->floor = av_malloc(sizeof(float) * venc->channels * (1 << venc->blocksize[1]) / 2);
-    venc->coeffs = av_malloc(sizeof(float) * venc->channels * (1 << venc->blocksize[1]) / 2);
+    venc->saved = av_malloc(sizeof(float) * venc->channels * (1 << venc->log2_blocksize[1]) / 2);
+    venc->samples = av_malloc(sizeof(float) * venc->channels * (1 << venc->log2_blocksize[1]));
+    venc->floor = av_malloc(sizeof(float) * venc->channels * (1 << venc->log2_blocksize[1]) / 2);
+    venc->coeffs = av_malloc(sizeof(float) * venc->channels * (1 << venc->log2_blocksize[1]) / 2);
 
-    venc->win[0] = ff_vorbis_vwin[venc->blocksize[0] - 6];
-    venc->win[1] = ff_vorbis_vwin[venc->blocksize[1] - 6];
+    venc->win[0] = ff_vorbis_vwin[venc->log2_blocksize[0] - 6];
+    venc->win[1] = ff_vorbis_vwin[venc->log2_blocksize[1] - 6];
 
-    ff_mdct_init(&venc->mdct[0], venc->blocksize[0], 0);
-    ff_mdct_init(&venc->mdct[1], venc->blocksize[1], 0);
+    ff_mdct_init(&venc->mdct[0], venc->log2_blocksize[0], 0);
+    ff_mdct_init(&venc->mdct[1], venc->log2_blocksize[1], 0);
 }
 
 static void put_float(PutBitContext * pb, float f) {
@@ -1007,8 +1007,8 @@ static int put_main_header(venc_context_t * venc, uint8_t ** out) {
     put_bits(&pb, 32, 0); // bitrate
     put_bits(&pb, 32, 0); // bitrate
     put_bits(&pb, 32, 0); // bitrate
-    put_bits(&pb, 4, venc->blocksize[0]);
-    put_bits(&pb, 4, venc->blocksize[1]);
+    put_bits(&pb, 4, venc->log2_blocksize[0]);
+    put_bits(&pb, 4, venc->log2_blocksize[1]);
     put_bits(&pb, 1, 1); // framing
 
     flush_put_bits(&pb);
@@ -1311,8 +1311,8 @@ static void residue_encode(venc_context_t * venc, residue_t * rc, PutBitContext 
 static int apply_window_and_mdct(venc_context_t * venc, signed short * audio, int samples) {
     int i, j, channel;
     const float * win = venc->win[0];
-    int window_len = 1 << (venc->blocksize[0] - 1);
-    float n = (float)(1 << venc->blocksize[0]) / 4.;
+    int window_len = 1 << (venc->log2_blocksize[0] - 1);
+    float n = (float)(1 << venc->log2_blocksize[0]) / 4.;
     // FIXME use dsp
 
     if (!venc->have_saved && !samples) return 0;
@@ -1375,7 +1375,7 @@ static int vorbis_encode_init(AVCodecContext * avccontext)
 
     avccontext->extradata_size = put_main_header(venc, (uint8_t**)&avccontext->extradata);
 
-    avccontext->frame_size = 1 << (venc->blocksize[0] - 1);
+    avccontext->frame_size = 1 << (venc->log2_blocksize[0] - 1);
 
     avccontext->coded_frame = avcodec_alloc_frame();
     avccontext->coded_frame->key_frame = 1;
@@ -1394,7 +1394,7 @@ static int vorbis_encode_frame(AVCodecContext * avccontext, unsigned char * pack
     int i;
 
     if (!apply_window_and_mdct(venc, audio, samples)) return 0;
-    samples = 1 << (venc->blocksize[0] - 1);
+    samples = 1 << (venc->log2_blocksize[0] - 1);
 
     init_put_bits(&pb, packets, buf_size);
 
