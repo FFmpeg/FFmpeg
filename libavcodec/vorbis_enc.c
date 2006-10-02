@@ -372,7 +372,7 @@ static void create_vorbis_context(venc_context_t * venc, AVCodecContext * avccon
     for (i = 0; i < rc->classifications; i++) {
         int j;
         for (j = 0; j < 8; j++) rc->books[i][j] = 2 + j;
-        //rc->books[i][0] = rc->books[i][1] = rc->books[i][2] = rc->books[i][3] = -1;
+        rc->books[i][0] = rc->books[i][1] = rc->books[i][2] = rc->books[i][3] = -1;
     }
 
     venc->nmappings = 1;
@@ -660,7 +660,7 @@ static void floor_fit(venc_context_t * venc, floor_t * fc, float * coeffs, int *
         assert(end <= samples);
         for (j = begin; j < end; j++) average += fabs(coeffs[j]);
         average /= end - begin;
-        average /= 5000; // MAGIC!
+        average /= 32; // MAGIC!
         for (j = 0; j < range; j++) if (floor1_inverse_db_table[j * fc->multiplier] > average) break;
         posts[fc->list[i].sort] = j;
     }
