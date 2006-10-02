@@ -271,7 +271,7 @@ static void create_vorbis_context(venc_context_t * venc, AVCodecContext * avccon
 
     venc->channels = avccontext->channels;
     venc->sample_rate = avccontext->sample_rate;
-    venc->blocksize[0] = venc->blocksize[1] = 9;
+    venc->blocksize[0] = venc->blocksize[1] = 11;
 
     venc->ncodebooks = 10;
     venc->codebooks = av_malloc(sizeof(codebook_t) * venc->ncodebooks);
@@ -323,7 +323,7 @@ static void create_vorbis_context(venc_context_t * venc, AVCodecContext * avccon
 
     // just 1 floor
     fc = &venc->floors[0];
-    fc->partitions = 3;
+    fc->partitions = 13;
     fc->partition_to_class = av_malloc(sizeof(int) * fc->partitions);
     for (i = 0; i < fc->partitions; i++) fc->partition_to_class[i] = 0;
     fc->nclasses = 1;
@@ -355,7 +355,8 @@ static void create_vorbis_context(venc_context_t * venc, AVCodecContext * avccon
         a ^= 1 << (g-1);
         g = 1 << (fc->rangebits - g);
         fc->list[i].x = g + a*2*g;*/
-        int a[] = {14, 4, 58, 2, 8, 28, 90};
+        //int a[] = {14, 4, 58, 2, 8, 28, 90};
+        int a[] = {93,23,372,6,46,186,750,14,33,65,130,260,556,3,10,18,28,39,55,79,111,158,220,312,464,650,850};
         fc->list[i].x = a[i - 2];
     }
     ready_floor(fc);
