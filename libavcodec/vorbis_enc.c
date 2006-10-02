@@ -165,6 +165,7 @@ static void ready_codebook(codebook_t * cb) {
 static void create_vorbis_context(venc_context_t * venc, AVCodecContext * avccontext) {
     codebook_t * cb;
     floor_t * fc;
+    residue_t * rc;
     int i, book;
 
     venc->channels = avccontext->channels;
@@ -250,6 +251,17 @@ static void create_vorbis_context(venc_context_t * venc, AVCodecContext * avccon
 
     venc->nresidues = 1;
     venc->residues = av_malloc(sizeof(residue_t) * venc->nresidues);
+
+    // single residue
+    rc = &venc->residues[0];
+    rc->type = 0;
+    rc->begin = 0;
+    rc->end = 1 << venc->blocksize[0];
+    rc->partition_size = 64;
+    rc->classifications = 1;
+    rc->classbook = 1;
+    rc->books = av_malloc(sizeof(int[8]) * rc->classifications);
+    for (i = 0; i < 8; i++) rc->books[0][i] = 2 + i;
 
     venc->nmappings = 1;
     venc->mappings = av_malloc(sizeof(mapping_t) * venc->nmappings);
