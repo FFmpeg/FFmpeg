@@ -483,7 +483,7 @@ static int vorbis_encode_frame(AVCodecContext * avccontext, unsigned char * pack
     avccontext->coded_frame->pts = av_rescale_q(op2->granulepos, (AVRational){1, avccontext->sample_rate}, avccontext->time_base);
     memcpy(packets, compressed_frame, l);
 #endif
-    return 0;
+    return data ? 50 : 0;
 }
 
 
