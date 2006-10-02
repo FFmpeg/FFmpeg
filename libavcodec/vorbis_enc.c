@@ -664,7 +664,7 @@ static void floor_fit(venc_context_t * venc, floor_t * fc, float * coeffs, int *
     }
 }
 
-static void floor_encode(venc_context_t * venc, floor_t * fc, PutBitContext * pb, float * floor, int samples) {
+static void floor_encode(venc_context_t * venc, floor_t * fc, PutBitContext * pb, int * posts, float * floor, int samples) {
     int range = 255 / fc->multiplier + 1;
     int j;
     put_bits(pb, 1, 1); // non zero
@@ -845,7 +845,7 @@ static int vorbis_encode_frame(AVCodecContext * avccontext, unsigned char * pack
         floor_t * fc = &venc->floors[mapping->floor[mapping->mux[i]]];
         int posts[fc->values];
         floor_fit(venc, fc, &venc->coeffs[i * samples], posts, samples);
-        floor_encode(venc, fc, &pb, &venc->floor[i * samples], samples);
+        floor_encode(venc, fc, &pb, posts, &venc->floor[i * samples], samples);
     }
 
     for (i = 0; i < venc->channels; i++) {
