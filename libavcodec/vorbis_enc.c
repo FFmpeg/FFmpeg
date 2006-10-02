@@ -661,6 +661,60 @@ static int window(venc_context_t * venc, signed short * audio, int samples) {
     return 1;
 }
 
+static float put_vector(codebook_t * book, PutBitContext * pb, float num) {
+    int i;
+    int entry = -1;
+    float distance = 0;
+    assert(book->dimentions);
+    assert(book->ndimentions == 1);
+    for (i = 0; i < book->nentries; i++) {
+        float d = (book->dimentions[i] - num)*(book->dimentions[i] - num);
+        if (entry == -1 || distance > d) {
+            entry = i;
+            distance = d;
+        }
+    }
+    put_bits(pb, book->entries[entry].len, book->entries[entry].codeword);
+    return book->dimentions[entry];
+}
+
+static void residue_encode(venc_context_t * venc, residue_t * rc, PutBitContext * pb, float * coeffs, int samples, int channels) {
+    int pass, i, j, p, k;
+    int psize = rc->partition_size;
+    int partitions = (rc->end - rc->begin) / psize;
+    int classes[channels][partitions];
+    int classwords = venc->codebooks[rc->classbook].ndimentions;
+
+    for (pass = 0; pass < 8; pass++) {
+        p = 0;
+        while (p < partitions) {
+            if (pass == 0) for (j = 0; j < channels; j++) {
+                codebook_t * book = &venc->codebooks[rc->classbook];
+                int entry = 0;
+                put_bits(pb, book->entries[entry].len, book->entries[entry].codeword);
+                for (i = classwords; i--; ) {
+                    classes[j][p + i] = entry % rc->classifications;
+                    entry /= rc->classifications;
+                }
+            }
+            for (i = 0; i < classwords && p < partitions; i++, p++) {
+                for (j = 0; j < channels; j++) {
+                    int nbook = rc->books[classes[j][p]][pass];
+                    codebook_t * book = &venc->codebooks[nbook];
+                    float * buf = coeffs + samples*j + rc->begin + p*psize;
+
+                    assert(rc->type == 0);
+                    assert(book->ndimentions == 1);
+
+                    for (k = 0; k < psize; k++) {
+                        buf[k] -= put_vector(book, pb, buf[k]);
+                    }
+                }
+            }
+        }
+    }
+}
+
 static int vorbis_encode_frame(AVCodecContext * avccontext, unsigned char * packets, int buf_size, void *data)
 {
     venc_context_t * venc = avccontext->priv_data;
@@ -702,9 +756,22 @@ static int vorbis_encode_frame(AVCodecContext * avccontext, unsigned char * pack
                 put_bits(&pb, book->entries[entry].len, book->entries[entry].codeword);
             }
         }
+
+        for (j = 0; j < samples; j++) {
+            venc->floor[i * samples + j] = floor1_inverse_db_table[220];
+        }
     }
 
-    return data ? 50 : 0;
+    for (i = 0; i < venc->channels; i++) {
+        int j;
+        for (j = 0; j < samples; j++) {
+            venc->coeffs[i * samples + j] /= venc->floor[i * samples + j];
+        }
+    }
+
+    residue_encode(venc, &venc->residues[mapping->residue[mapping->mux[0]]], &pb, venc->coeffs, samples, venc->channels);
+
+    return (put_bits_count(&pb) + 7) / 8;
 }
 
 
