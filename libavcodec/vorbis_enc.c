@@ -81,7 +81,7 @@ typedef struct {
     int partition_size;
     int classifications;
     int classbook;
-    int (*books)[8];
+    int8_t (*books)[8];
     float (*maxes)[2];
 } residue_t;
 
@@ -466,9 +466,9 @@ static void create_vorbis_context(venc_context_t * venc, AVCodecContext * avccon
     rc->partition_size = 32;
     rc->classifications = 10;
     rc->classbook = 15;
-    rc->books = av_malloc(sizeof(int[8]) * rc->classifications);
-    for (i = 0; i < rc->classifications; i++) {
-        int a[10][8] = {
+    rc->books = av_malloc(sizeof(*rc->books) * rc->classifications);
+    {
+        static const int8_t a[10][8] = {
             { -1, -1, -1, -1, -1, -1, -1, -1, },
             { -1, -1, 16, -1, -1, -1, -1, -1, },
             { -1, -1, 17, -1, -1, -1, -1, -1, },
@@ -480,8 +480,7 @@ static void create_vorbis_context(venc_context_t * venc, AVCodecContext * avccon
             { 24, 25, -1, -1, -1, -1, -1, -1, },
             { 26, 27, 28, -1, -1, -1, -1, -1, },
         };
-        int j;
-        for (j = 0; j < 8; j++) rc->books[i][j] = a[i][j];
+        memcpy(rc->books, a, sizeof a);
     }
     ready_residue(rc, venc);
 
