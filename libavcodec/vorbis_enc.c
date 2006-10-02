@@ -546,6 +546,8 @@ static int put_main_header(venc_context_t * venc, uint8_t ** out) {
         put_bits(&pb, 8, venc->modes[i].mapping);
     }
 
+    put_bits(&pb, 1, 1); // framing
+
     flush_put_bits(&pb);
     hlens[2] = (put_bits_count(&pb) + 7) / 8;
 
