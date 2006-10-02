@@ -24,6 +24,11 @@
 
 #include "avcodec.h"
 
+#define BITSTREAM_H // don't include this
+typedef int VLC;
+typedef int GetBitContext;
+#include "vorbis.h"
+
 #undef NDEBUG
 #include <assert.h>
 
@@ -91,6 +96,12 @@ typedef struct {
     int channels;
     int sample_rate;
     int blocksize[2]; // in (1<<n) format
+    MDCTContext mdct[2];
+    const float * win[2];
+    float * saved;
+    float * samples;
+    float * floor; // also used for tmp values for mdct
+    float * coeffs; // also used for residue after floor
 
     int ncodebooks;
     codebook_t * codebooks;
@@ -327,6 +338,20 @@ static void create_vorbis_context(venc_context_t * venc, AVCodecContext * avccon
     // single mode
     venc->modes[0].blockflag = 0;
     venc->modes[0].mapping = 0;
+
+    venc->saved = av_malloc(sizeof(float) * venc->channels * (1 << venc->blocksize[1]) / 2);
+    venc->samples = av_malloc(sizeof(float) * venc->channels * (1 << venc->blocksize[1]));
+    venc->floor = av_malloc(sizeof(float) * venc->channels * (1 << venc->blocksize[1]) / 2);
+    venc->coeffs = av_malloc(sizeof(float) * venc->channels * (1 << venc->blocksize[1]) / 2);
+
+    {
+        const float *vwin[8]={ vwin64, vwin128, vwin256, vwin512, vwin1024, vwin2048, vwin4096, vwin8192 };
+        venc->win[0] = vwin[venc->blocksize[0] - 6];
+        venc->win[1] = vwin[venc->blocksize[1] - 6];
+    }
+
+    ff_mdct_init(&venc->mdct[0], venc->blocksize[0], 0);
+    ff_mdct_init(&venc->mdct[1], venc->blocksize[1], 0);
 }
 
 static inline int ilog(unsigned int a) {
@@ -668,6 +693,14 @@ static int vorbis_encode_close(AVCodecContext * avccontext)
     av_freep(&venc->mappings);
 
     av_freep(&venc->modes);
+
+    av_freep(&venc->saved);
+    av_freep(&venc->samples);
+    av_freep(&venc->floor);
+    av_freep(&venc->coeffs);
+
+    ff_mdct_end(&venc->mdct[0]);
+    ff_mdct_end(&venc->mdct[1]);
 
     av_freep(&avccontext->coded_frame);
     av_freep(&avccontext->extradata);
