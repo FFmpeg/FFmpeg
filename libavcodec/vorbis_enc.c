@@ -27,8 +27,8 @@
 #undef NDEBUG
 #include <assert.h>
 
-#define ALT_BITSTREAM_WRITER
-#include "bitstream.h"
+//#define ALT_BITSTREAM_WRITER
+//#include "bitstream.h"
 
 typedef struct {
     int len;
@@ -107,6 +107,52 @@ typedef struct {
     int nmodes;
     vorbis_mode_t * modes;
 } venc_context_t;
+
+typedef struct {
+    int total;
+    int total_pos;
+    int pos;
+    uint8_t * buf_ptr;
+} PutBitContext;
+
+static inline void init_put_bits(PutBitContext * pb, uint8_t * buf, int buffer_len) {
+    pb->total = buffer_len * 8;
+    pb->total_pos = 0;
+    pb->pos = 0;
+    pb->buf_ptr = buf;
+}
+
+static void put_bits(PutBitContext * pb, int bits, uint64_t val) {
+    if ((pb->total_pos += bits) >= pb->total) return;
+    if (!bits) return;
+    if (pb->pos) {
+        if (pb->pos > bits) {
+            *pb->buf_ptr |= val << (8 - pb->pos);
+            pb->pos -= bits;
+            bits = 0;
+        } else {
+            *pb->buf_ptr++ |= (val << (8 - pb->pos)) & 0xFF;
+            val >>= pb->pos;
+            bits -= pb->pos;
+            pb->pos = 0;
+        }
+    }
+    for (; bits >= 8; bits -= 8) {
+        *pb->buf_ptr++ = val & 0xFF;
+        val >>= 8;
+    }
+    if (bits) {
+        *pb->buf_ptr = val;
+        pb->pos = 8 - bits;
+    }
+}
+
+static inline void flush_put_bits(PutBitContext * pb) {
+}
+
+static inline int put_bits_count(PutBitContext * pb) {
+    return pb->total_pos;
+}
 
 static int cb_lookup_vals(int lookup, int dimentions, int entries) {
     if (lookup == 1) {
