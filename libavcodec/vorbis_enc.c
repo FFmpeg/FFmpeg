@@ -189,7 +189,11 @@ static void ready_codebook(codebook_t * cb) {
         cb_entry_t * e = &cb->entries[i];
         int j = 0;
         if (h[0]) h[0] = 0;
-        else for (j = e->len; !h[j]; j--) assert(j);
+        else {
+            for (j = e->len; j; j--)
+                if (h[j]) break;
+            assert(j);
+        }
         e->codeword = h[j];
         h[j] = 0;
         for (j++; j <= e->len; j++) h[j] = e->codeword | (1 << (j - 1));
