@@ -807,6 +807,9 @@ static void residue_encode(venc_context_t * venc, residue_t * rc, PutBitContext 
     int partitions = (rc->end - rc->begin) / psize;
     int classes[channels][partitions];
     int classwords = venc->codebooks[rc->classbook].ndimentions;
+    int real_ch = channels;
+
+    if (rc->type == 2) channels = 1;
 
     for (pass = 0; pass < 8; pass++) {
         p = 0;
@@ -827,13 +830,25 @@ static void residue_encode(venc_context_t * venc, residue_t * rc, PutBitContext 
                     float * buf = coeffs + samples*j + rc->begin + p*psize;
                     if (nbook == -1) continue;
 
-                    assert(rc->type == 0);
+                    assert(rc->type == 0 || rc->type == 2);
                     assert(!(psize % book->ndimentions));
 
+                    if (rc->type == 0) {
                     for (k = 0; k < psize; k += book->ndimentions) {
                         float * a = put_vector(book, pb, &buf[k]);
                         int l;
                         for (l = 0; l < book->ndimentions; l++) buf[k + l] -= a[l];
+                    }
+                    } else {
+                        for (k = 0; k < psize; k += book->ndimentions) {
+                            int dim = book->ndimentions, s = rc->begin + p * psize, l;
+                            float vec[dim], * pvec = vec, * a;
+                            for (l = s + k; l < s + k + dim; l++)
+                                *pvec++ = coeffs[(l % real_ch) * samples + l / real_ch];
+                            a = put_vector(book, pb, vec);
+                            for (l = s + k; l < s + k + dim; l++)
+                                coeffs[(l % real_ch) * samples + l / real_ch] -= *a++;
+                        }
                     }
                 }
             }
