@@ -37,18 +37,18 @@
 typedef struct {
     int len;
     uint32_t codeword;
-} entry_t;
+} cb_entry_t;
 
 typedef struct {
     int nentries;
-    entry_t * entries;
+    cb_entry_t * entries;
     int ndimentions;
     float min;
     float delta;
     int seq_p;
     int lookup;
-    //float * dimentions;
     int * quantlist;
+    float * dimentions;
 } codebook_t;
 
 typedef struct {
@@ -94,7 +94,7 @@ typedef struct {
 typedef struct {
     int channels;
     int sample_rate;
-    int blocksize[2];
+    int blocksize[2]; // in (1<<n) format
 
     int ncodebooks;
     codebook_t * codebooks;
@@ -111,6 +111,109 @@ typedef struct {
     int nmodes;
     vorbis_mode_t * modes;
 } venc_context_t;
+
+static int cb_lookup_vals(int lookup, int dimentions, int entries) {
+    if (lookup == 1) {
+        int tmp, i;
+        for (tmp = 0; ; tmp++) {
+                int n = 1;
+                for (i = 0; i < dimentions; i++) n *= tmp;
+                if (n > entries) break;
+        }
+        return tmp - 1;
+    } else if (lookup == 2) return dimentions * entries;
+    return 0;
+}
+
+static void ready_codebook(codebook_t * cb) {
+    int h[33] = { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 };
+    int i;
+
+    for (i = 0; i < cb->nentries; i++) {
+        cb_entry_t * e = &cb->entries[i];
+        int j = 0;
+        if (h[0]) h[0] = 0;
+        else for (j = e->len; !h[j]; j--) assert(j);
+        e->codeword = h[j];
+        h[j] = 0;
+        for (j++; j <= e->len; j++) h[j] = e->codeword | (1 << (j - 1));
+    }
+    for (i = 0; i < 33; i++) assert(!h[i]);
+
+    if (!cb->lookup) cb->dimentions = NULL;
+    else {
+        int vals = cb_lookup_vals(cb->lookup, cb->ndimentions, cb->nentries);
+        cb->dimentions = av_malloc(sizeof(float) * cb->nentries * cb->ndimentions);
+        for (i = 0; i < cb->nentries; i++) {
+            float last = 0;
+            int j;
+            int div = 1;
+            for (j = 0; j < cb->ndimentions; j++) {
+                int off;
+                if (cb->lookup == 1) off = (i / div) % vals; // lookup type 1
+                else off = i * cb->ndimentions + j; // lookup type 2
+
+                cb->dimentions[i * cb->ndimentions + j] = last + cb->min + cb->quantlist[off] * cb->delta;
+                if (cb->seq_p) last = cb->dimentions[i * cb->ndimentions + j];
+                div *= vals;
+            }
+        }
+    }
+
+}
+
+static void create_vorbis_context(venc_context_t * venc, AVCodecContext * avccontext) {
+    codebook_t * cb;
+    int i;
+
+    venc->channels = avccontext->channels;
+    venc->sample_rate = avccontext->sample_rate;
+    venc->blocksize[0] = venc->blocksize[1] = 8;
+
+    venc->ncodebooks = 3;
+    venc->codebooks = av_malloc(sizeof(codebook_t) * venc->ncodebooks);
+
+    // codebook 1 - floor1 book, values 0..255
+    cb = &venc->codebooks[0];
+    cb->nentries = 256;
+    cb->entries = av_malloc(sizeof(cb_entry_t) * cb->nentries);
+    for (i = 0; i < cb->nentries; i++) cb->entries[i].len = 8;
+    cb->ndimentions = 0;
+    cb->min = 0.;
+    cb->delta = 0.;
+    cb->seq_p = 0;
+    cb->lookup = 0;
+    cb->quantlist = NULL;
+    ready_codebook(cb);
+
+    // codebook 2 - classbook, values 0..0, dimentions 200
+    cb = &venc->codebooks[1];
+    cb->nentries = 1;
+    cb->entries = av_malloc(sizeof(cb_entry_t) * cb->nentries);
+    for (i = 0; i < cb->nentries; i++) cb->entries[i].len = 1;
+    cb->ndimentions = 200;
+    cb->min = 0.;
+    cb->delta = 0.;
+    cb->seq_p = 0;
+    cb->lookup = 0;
+    cb->quantlist = NULL;
+    ready_codebook(cb);
+
+    // codebook 3 - vector, for the residue, dimentions 1. values -32768..32767
+    cb = &venc->codebooks[2];
+    cb->nentries = 32767 - (-32768);
+    cb->entries = av_malloc(sizeof(cb_entry_t) * cb->nentries);
+    for (i = 0; i < cb->nentries; i++) cb->entries[i].len = 16;
+    cb->ndimentions = 1;
+    cb->min = -32768.;
+    cb->delta = 1.;
+    cb->seq_p = 0;
+    cb->lookup = 2;
+    cb->quantlist = av_malloc(sizeof(int) * cb_lookup_vals(cb->lookup, cb->ndimentions, cb->nentries));
+    for (i = 0; i < cb->nentries; i++) cb->quantlist[i] = i;
+    ready_codebook(cb);
+
+}
 
 static inline int ilog(unsigned int a) {
     int i;
@@ -165,16 +268,8 @@ static void put_codebook_header(PutBitContext * pb, codebook_t * cb) {
 
     put_bits(pb, 4, cb->lookup);
     if (cb->lookup) {
-        int tmp, bits = ilog(cb->quantlist[0]);
-
-        if (cb->lookup == 1) {
-            for (tmp = 0; ; tmp++) {
-                int n = 1;
-                for (i = 0; i < cb->ndimentions; i++) n *= tmp;
-                if (n > cb->nentries) break;
-            }
-            tmp--;
-        } else tmp = cb->ndimentions * cb->nentries;
+        int tmp = cb_lookup_vals(cb->lookup, cb->ndimentions, cb->nentries);
+        int bits = ilog(cb->quantlist[0]);
 
         for (i = 1; i < tmp; i++) bits = FFMIN(bits, ilog(cb->quantlist[i]));
 
@@ -360,8 +455,7 @@ static int vorbis_encode_init(AVCodecContext * avccontext)
 {
     venc_context_t * venc = avccontext->priv_data;
 
-    venc->channels = avccontext->channels;
-    venc->sample_rate = avccontext->sample_rate;
+    create_vorbis_context(venc, avccontext);
 
     //if (avccontext->flags & CODEC_FLAG_QSCALE) avccontext->global_quality / (float)FF_QP2LAMBDA); else avccontext->bit_rate;
     //if(avccontext->cutoff > 0) cfreq = avccontext->cutoff / 1000.0;
