@@ -1424,17 +1424,10 @@ static int vorbis_encode_frame(AVCodecContext * avccontext, unsigned char * pack
         float * ang = venc->coeffs + mapping->angle[i] * samples;
         int j;
         for (j = 0; j < samples; j++) {
-            float m = mag[j];
             float a = ang[j];
-            if (m > 0) {
-                ang[j] = m - a;
-                if (a > m) mag[j] = a;
-                else mag[j] = m;
-            } else {
-                ang[j] = a - m;
-                if (a > m) mag[j] = m;
-                else mag[j] = a;
-            }
+            ang[j] -= mag[j];
+            if (mag[j] > 0) ang[j] = -ang[j];
+            if (ang[j] < 0) mag[j] = a;
         }
     }
 
