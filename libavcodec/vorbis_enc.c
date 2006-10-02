@@ -589,14 +589,45 @@ static int vorbis_encode_init(AVCodecContext * avccontext)
 
 static int vorbis_encode_frame(AVCodecContext * avccontext, unsigned char * packets, int buf_size, void *data)
 {
-#if 0
     venc_context_t * venc = avccontext->priv_data;
     signed short * audio = data;
     int samples = data ? avccontext->frame_size : 0;
+    vorbis_mode_t * mode;
+    mapping_t * mapping;
+    PutBitContext pb;
+    int i;
 
-    avccontext->coded_frame->pts = av_rescale_q(op2->granulepos, (AVRational){1, avccontext->sample_rate}, avccontext->time_base);
-    memcpy(packets, compressed_frame, l);
-#endif
+    init_put_bits(&pb, packets, buf_size);
+
+    put_bits(&pb, 1, 0); // magic bit
+
+    put_bits(&pb, ilog(venc->nmodes - 1), 0); // 0 bits, the mode
+
+    mode = &venc->modes[0];
+    mapping = &venc->mappings[mode->mapping];
+    if (mode->blockflag) {
+        put_bits(&pb, 1, 0);
+        put_bits(&pb, 1, 0);
+    }
+
+    for (i = 0; i < venc->channels; i++) {
+        floor_t * fc = &venc->floors[mapping->floor[mapping->mux[i]]];
+        int range = 255 / fc->multiplier + 1;
+        int j;
+        put_bits(&pb, 1, 1); // non zero
+        put_bits(&pb, ilog(range - 1), 113); // magic value - 3.7180282E-05
+        put_bits(&pb, ilog(range - 1), 113); // both sides of X
+        for (j = 0; j < fc->partitions; j++) {
+            floor_class_t * c = &fc->classes[fc->partition_to_class[j]];
+            codebook_t * book = &venc->codebooks[c->books[0]];
+            int entry = 0;
+            int k;
+            for (k = 0; k < c->dim; k++) {
+                put_bits(&pb, book->entries[entry].len, book->entries[entry].codeword);
+            }
+        }
+    }
+
     return data ? 50 : 0;
 }
 
