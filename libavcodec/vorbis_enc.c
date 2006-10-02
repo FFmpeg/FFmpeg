@@ -311,7 +311,7 @@ static void create_vorbis_context(venc_context_t * venc, AVCodecContext * avccon
     rc = &venc->residues[0];
     rc->type = 0;
     rc->begin = 0;
-    rc->end = 1 << venc->blocksize[0];
+    rc->end = 1 << (venc->blocksize[0] - 1);
     rc->partition_size = 64;
     rc->classifications = 1;
     rc->classbook = 1;
