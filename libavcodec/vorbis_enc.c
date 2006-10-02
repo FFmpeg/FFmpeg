@@ -633,7 +633,7 @@ static int window(venc_context_t * venc, signed short * audio, int samples) {
 
     if (samples) {
         for (channel = 0; channel < venc->channels; channel++) {
-            float * offset = venc->saved + channel*window_len*2 + window_len;
+            float * offset = venc->samples + channel*window_len*2 + window_len;
             j = channel;
             for (i = 0; i < samples; i++, j += venc->channels)
                 offset[i] = audio[j] / 32768. * win[window_len - i];
@@ -650,9 +650,10 @@ static int window(venc_context_t * venc, signed short * audio, int samples) {
 
     if (samples) {
         for (channel = 0; channel < venc->channels; channel++) {
+            float * offset = venc->saved + channel*window_len;
             j = channel;
             for (i = 0; i < samples; i++, j += venc->channels)
-                venc->saved[i] = audio[j] / 32768. * win[i];
+                offset[i] = audio[j] / 32768. * win[i];
         }
         venc->have_saved = 1;
     } else {
