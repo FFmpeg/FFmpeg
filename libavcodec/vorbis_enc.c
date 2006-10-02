@@ -218,8 +218,9 @@ static void create_vorbis_context(venc_context_t * venc, AVCodecContext * avccon
 
     venc->nfloors = 1;
     venc->floors = av_malloc(sizeof(floor_t) * venc->nfloors);
-    fc = &venc->floors[0];
 
+    // just 1 floor
+    fc = &venc->floors[0];
     fc->partitions = 1;
     fc->partition_to_class = av_malloc(sizeof(int) * fc->partitions);
     for (i = 0; i < fc->partitions; i++) fc->partition_to_class = 0;
