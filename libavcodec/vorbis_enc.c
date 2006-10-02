@@ -923,13 +923,13 @@ static float * put_vector(codebook_t * book, PutBitContext * pb, float * num) {
     return &book->dimentions[entry * book->ndimentions];
 }
 
-static void residue_encode(venc_context_t * venc, residue_t * rc, PutBitContext * pb, float * coeffs, int samples, int channels) {
+static void residue_encode(venc_context_t * venc, residue_t * rc, PutBitContext * pb, float * coeffs, int samples, int real_ch) {
     int pass, i, j, p, k;
     int psize = rc->partition_size;
     int partitions = (rc->end - rc->begin) / psize;
+    int channels = (rc->type == 2) ? 1 : real_ch;
     int classes[channels][partitions];
     int classwords = venc->codebooks[rc->classbook].ndimentions;
-    int real_ch = channels;
 
     if (rc->type == 2) channels = 1;
 
