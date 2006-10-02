@@ -33,13 +33,9 @@
 //#include "bitstream.h"
 
 typedef struct {
-    int len;
-    uint32_t codeword;
-} cb_entry_t;
-
-typedef struct {
     int nentries;
-    cb_entry_t * entries;
+    uint8_t * lens;
+    uint32_t * codewords;
     int ndimentions;
     float min;
     float delta;
@@ -135,8 +131,6 @@ typedef struct {
     int pos;
     uint8_t * buf_ptr;
 } PutBitContext;
-
-#define ilog(i) av_log2(2*(i))
 
 static const uint8_t codebook0[] = {
    2, 10,  8, 14,  7, 12, 11, 14,  1,  5,  3,  7,  4,  9,  7,
@@ -643,38 +637,23 @@ static inline int put_bits_count(PutBitContext * pb) {
     return pb->total_pos;
 }
 
+static inline void put_codeword(PutBitContext * pb, codebook_t * cb, int entry) {
+    assert(entry >= 0);
+    assert(entry < cb->nentries);
+    assert(cb->lens[entry]);
+    put_bits(pb, cb->lens[entry], cb->codewords[entry]);
+}
+
 static int cb_lookup_vals(int lookup, int dimentions, int entries) {
-    if (lookup == 1) {
-        int tmp, i;
-        for (tmp = 0; ; tmp++) {
-                int n = 1;
-                for (i = 0; i < dimentions; i++) n *= tmp;
-                if (n > entries) break;
-        }
-        return tmp - 1;
-    } else if (lookup == 2) return dimentions * entries;
+    if (lookup == 1) return ff_vorbis_nth_root(entries, dimentions);
+    else if (lookup == 2) return dimentions * entries;
     return 0;
 }
 
 static void ready_codebook(codebook_t * cb) {
-    int h[33] = { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 };
     int i;
 
-    for (i = 0; i < cb->nentries; i++) {
-        cb_entry_t * e = &cb->entries[i];
-        int j = 0;
-        if (!e->len) continue;
-        if (h[0]) h[0] = 0;
-        else {
-            for (j = e->len; j; j--)
-                if (h[j]) break;
-            assert(j);
-        }
-        e->codeword = h[j];
-        h[j] = 0;
-        for (j++; j <= e->len; j++) h[j] = e->codeword | (1 << (j - 1));
-    }
-    for (i = 0; i < 33; i++) assert(!h[i]);
+    ff_vorbis_len2vlc(cb->lens, cb->codewords, cb->nentries);
 
     if (!cb->lookup) cb->dimentions = NULL;
     else {
@@ -743,7 +722,7 @@ static void ready_residue(residue_t * rc, venc_context_t * venc) {
 
         for (j = 0; j < cb->nentries; j++) {
             float a;
-            if (!cb->entries[j].len) continue;
+            if (!cb->lens[j]) continue;
             a = fabs(cb->dimentions[j * cb->ndimentions]);
             if (a > rc->maxes[i][0]) rc->maxes[i][0] = a;
             a = fabs(cb->dimentions[j * cb->ndimentions + 1]);
@@ -782,11 +761,12 @@ static void create_vorbis_context(venc_context_t * venc, AVCodecContext * avccon
         cb->delta = cvectors[book].delta;
         cb->lookup = cvectors[book].lookup;
         cb->seq_p = 0;
-        cb->entries = av_malloc(sizeof(cb_entry_t) * cb->nentries);
-        for (i = 0; i < cb->nentries; i++) {
-            if (i < cvectors[book].len) cb->entries[i].len = cvectors[book].clens[i];
-            else cb->entries[i].len = 0;
-        }
+
+        cb->lens = av_malloc(sizeof(uint8_t) * cb->nentries);
+        cb->codewords = av_malloc(sizeof(uint32_t) * cb->nentries);
+        memcpy(cb->lens, cvectors[book].clens, cvectors[book].len);
+        memset(cb->lens + cvectors[book].len, 0, cb->nentries - cvectors[book].len);
+
         if (cb->lookup) {
             vals = cb_lookup_vals(cb->lookup, cb->ndimentions, cb->nentries);
             cb->quantlist = av_malloc(sizeof(int) * vals);
@@ -944,30 +924,30 @@ static void put_codebook_header(PutBitContext * pb, codebook_t * cb) {
     put_bits(pb, 16, cb->ndimentions);
     put_bits(pb, 24, cb->nentries);
 
-    for (i = 1; i < cb->nentries; i++) if (cb->entries[i].len < cb->entries[i-1].len) break;
+    for (i = 1; i < cb->nentries; i++) if (cb->lens[i] < cb->lens[i-1]) break;
     if (i == cb->nentries) ordered = 1;
 
     put_bits(pb, 1, ordered);
     if (ordered) {
-        int len = cb->entries[0].len;
+        int len = cb->lens[0];
         put_bits(pb, 5, len - 1);
         i = 0;
         while (i < cb->nentries) {
             int j;
-            for (j = 0; j+i < cb->nentries; j++) if (cb->entries[j+i].len != len) break;
+            for (j = 0; j+i < cb->nentries; j++) if (cb->lens[j+i] != len) break;
             put_bits(pb, ilog(cb->nentries - i), j);
             i += j;
             len++;
         }
     } else {
         int sparse = 0;
-        for (i = 0; i < cb->nentries; i++) if (!cb->entries[i].len) break;
+        for (i = 0; i < cb->nentries; i++) if (!cb->lens[i]) break;
         if (i != cb->nentries) sparse = 1;
         put_bits(pb, 1, sparse);
 
         for (i = 0; i < cb->nentries; i++) {
-            if (sparse) put_bits(pb, 1, !!cb->entries[i].len);
-            if (cb->entries[i].len) put_bits(pb, 5, cb->entries[i].len - 1);
+            if (sparse) put_bits(pb, 1, !!cb->lens[i]);
+            if (cb->lens[i]) put_bits(pb, 5, cb->lens[i] - 1);
         }
     }
 
@@ -1198,33 +1178,6 @@ static int render_point(int x0, int y0, int x1, int y1, int x) {
     return y0 +  (x - x0) * (y1 - y0) / (x1 - x0);
 }
 
-static void render_line(int x0, int y0, int x1, int y1, float * buf, int n) {
-    int dy = y1 - y0;
-    int adx = x1 - x0;
-    int ady = FFMAX(dy, -dy);
-    int base = dy / adx;
-    int x = x0;
-    int y = y0;
-    int err = 0;
-    int sy;
-    if (dy < 0) sy = base - 1;
-    else sy = base + 1;
-    ady = ady - FFMAX(base, -base) * adx;
-    if (x >= n) return;
-    buf[x] = ff_vorbis_floor1_inverse_db_table[y];
-    for (x = x0 + 1; x < x1; x++) {
-        if (x >= n) return;
-        err += ady;
-        if (err >= adx) {
-            err -= adx;
-            y += sy;
-        } else {
-            y += base;
-        }
-        buf[x] = ff_vorbis_floor1_inverse_db_table[y];
-    }
-}
-
 static void floor_encode(venc_context_t * venc, floor_t * fc, PutBitContext * pb, int * posts, float * floor, int samples) {
     int range = 255 / fc->multiplier + 1;
     int coded[fc->values]; // first 2 values are unused
@@ -1280,8 +1233,7 @@ static void floor_encode(venc_context_t * venc, floor_t * fc, PutBitContext * pb
                 cval |= l << cshift;
                 cshift += c->subclass;
             }
-            assert(cval < book->nentries);
-            put_bits(pb, book->entries[cval].len, book->entries[cval].codeword);
+            put_codeword(pb, book, cval);
         }
         for (k = 0; k < c->dim; k++) {
             int book = c->books[cval & (csub-1)];
@@ -1289,9 +1241,7 @@ static void floor_encode(venc_context_t * venc, floor_t * fc, PutBitContext * pb
             cval >>= c->subclass;
             if (book == -1) continue;
             if (entry == -1) entry = 0;
-            assert(entry < venc->codebooks[book].nentries);
-            assert(entry >= 0);
-            put_bits(pb, venc->codebooks[book].entries[entry].len, venc->codebooks[book].entries[entry].codeword);
+            put_codeword(pb, &venc->codebooks[book], entry);
         }
     }
 
@@ -1317,7 +1267,7 @@ static float * put_vector(codebook_t * book, PutBitContext * pb, float * num) {
     for (i = 0; i < book->nentries; i++) {
         float d = 0.;
         int j;
-        if (!book->entries[i].len) continue;
+        if (!book->lens[i]) continue;
         for (j = 0; j < book->ndimentions; j++) {
             float a = (book->dimentions[i * book->ndimentions + j] - num[j]);
             d += a*a;
@@ -1327,7 +1277,7 @@ static float * put_vector(codebook_t * book, PutBitContext * pb, float * num) {
             distance = d;
         }
     }
-    put_bits(pb, book->entries[entry].len, book->entries[entry].codeword);
+    put_codeword(pb, book, entry);
     return &book->dimentions[entry * book->ndimentions];
 }
 
@@ -1365,9 +1315,7 @@ static void residue_encode(venc_context_t * venc, residue_t * rc, PutBitContext 
                     entry *= rc->classifications;
                     entry += classes[j][p + i];
                 }
-                assert(entry < book->nentries);
-                assert(entry >= 0);
-                put_bits(pb, book->entries[entry].len, book->entries[entry].codeword);
+                put_codeword(pb, book, entry);
             }
             for (i = 0; i < classwords && p < partitions; i++, p++) {
                 for (j = 0; j < channels; j++) {
@@ -1546,7 +1494,8 @@ static int vorbis_encode_close(AVCodecContext * avccontext)
     int i;
 
     if (venc->codebooks) for (i = 0; i < venc->ncodebooks; i++) {
-        av_freep(&venc->codebooks[i].entries);
+        av_freep(&venc->codebooks[i].lens);
+        av_freep(&venc->codebooks[i].codewords);
         av_freep(&venc->codebooks[i].quantlist);
         av_freep(&venc->codebooks[i].dimentions);
     }
