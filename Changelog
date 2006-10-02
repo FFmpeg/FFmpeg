@@ -19,7 +19,7 @@ version <next>
 - Fraps FPS1 video decoder
 - Snow video encoder/decoder
 - Sonic audio encoder/decoder
-- Vorbis audio decoder
+- Vorbis audio encoder/decoder
 - Macromedia ADPCM decoder
 - Duck TrueMotion 2 video decoder
 - support for decoding FLX and DTA extensions in FLIC files
