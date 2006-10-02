@@ -1424,11 +1424,8 @@ static int vorbis_encode_frame(AVCodecContext * avccontext, unsigned char * pack
         floor_encode(venc, fc, &pb, posts, &venc->floor[i * samples], samples);
     }
 
-    for (i = 0; i < venc->channels; i++) {
-        int j;
-        for (j = 0; j < samples; j++) {
-            venc->coeffs[i * samples + j] /= venc->floor[i * samples + j];
-        }
+    for (i = 0; i < venc->channels * samples; i++) {
+        venc->coeffs[i] /= venc->floor[i];
     }
 
     for (i = 0; i < mapping->coupling_steps; i++) {
