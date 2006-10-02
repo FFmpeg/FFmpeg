@@ -376,7 +376,7 @@ static void put_codebook_header(PutBitContext * pb, codebook_t * cb) {
 
         for (i = 0; i < cb->nentries; i++) {
             if (sparse) put_bits(pb, 1, !!cb->entries[i].len);
-            if (cb->entries[i].len) put_bits(pb, 5, cb->entries[i].len);
+            if (cb->entries[i].len) put_bits(pb, 5, cb->entries[i].len - 1);
         }
     }
 
