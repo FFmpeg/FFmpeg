@@ -1134,6 +1134,7 @@ static int vorbis_encode_frame(AVCodecContext * avccontext, unsigned char * pack
 
     residue_encode(venc, &venc->residues[mapping->residue[mapping->mux[0]]], &pb, venc->coeffs, samples, venc->channels);
 
+    flush_put_bits(&pb);
     return (put_bits_count(&pb) + 7) / 8;
 }
 
