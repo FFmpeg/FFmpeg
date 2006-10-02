@@ -915,6 +915,7 @@ static float * put_vector(codebook_t * book, PutBitContext * pb, float * num) {
     for (i = 0; i < book->nentries; i++) {
         float d = 0.;
         int j;
+        if (!book->entries[i].len) continue;
         for (j = 0; j < book->ndimentions; j++) {
             float a = (book->dimentions[i * book->ndimentions + j] - num[j]);
             d += a*a;
