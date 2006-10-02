@@ -348,21 +348,22 @@ static void create_vorbis_context(venc_context_t * venc, AVCodecContext * avccon
         int dim;
         float min;
         float delta;
+        int real_len;
         int * quant;
     } cvectors[] = {
-        { 1, 8, -1.0, 1.0, (int[]){ 1, 0, 2, } },
-        { 1, 4, -2.0, 1.0, (int[]){ 2, 1, 3, 0, 4, } },
-        { 1, 4, -2.0, 1.0, (int[]){ 2, 1, 3, 0, 4, } },
-        { 1, 2, -4.0, 1.0, (int[]){ 4, 3, 5, 2, 6, 1, 7, 0, 8, } },
-        { 1, 2, -4.0, 1.0, (int[]){ 4, 3, 5, 2, 6, 1, 7, 0, 8, } },
-        { 1, 2, -8.0, 1.0, (int[]){ 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15, 0, 16, } },
-        { 1, 4, -11.0, 11.0, (int[]){ 1, 0, 2, } },
-        { 1, 2, -5.0, 1.0, (int[]){ 5, 4, 6, 3, 7, 2, 8, 1, 9, 0, 10, } },
-        { 1, 2, -30.0, 5.0, (int[]){ 6, 5, 7, 4, 8, 3, 9, 2, 10, 1, 11, 0, 12, } },
-        { 1, 2, -2.0, 1.0, (int[]){ 2, 1, 3, 0, 4, } },
-        { 1, 2, -1530.0, 255.0, (int[]){ 6, 5, 7, 4, 8, 3, 9, 2, 10, 1, 11, 0, 12, } },
-        { 1, 2, -119.0, 17.0, (int[]){ 7, 6, 8, 5, 9, 4, 10, 3, 11, 2, 12, 1, 13, 0, 14, } },
-        { 1, 2, -8.0, 1.0, (int[]){ 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15, 0, 16, } },
+        { 1, 8,    -1.0,   1.0, 6561,(int[]){ 1, 0, 2, } },
+        { 1, 4,    -2.0,   1.0, 625, (int[]){ 2, 1, 3, 0, 4, } },
+        { 1, 4,    -2.0,   1.0, 625, (int[]){ 2, 1, 3, 0, 4, } },
+        { 1, 2,    -4.0,   1.0, 81,  (int[]){ 4, 3, 5, 2, 6, 1, 7, 0, 8, } },
+        { 1, 2,    -4.0,   1.0, 81,  (int[]){ 4, 3, 5, 2, 6, 1, 7, 0, 8, } },
+        { 1, 2,    -8.0,   1.0, 289, (int[]){ 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15, 0, 16, } },
+        { 1, 4,   -11.0,  11.0, 81,  (int[]){ 1, 0, 2, } },
+        { 1, 2,    -5.0,   1.0, 121, (int[]){ 5, 4, 6, 3, 7, 2, 8, 1, 9, 0, 10, } },
+        { 1, 2,   -30.0,   5.0, 169, (int[]){ 6, 5, 7, 4, 8, 3, 9, 2, 10, 1, 11, 0, 12, } },
+        { 1, 2,    -2.0,   1.0, 25,  (int[]){ 2, 1, 3, 0, 4, } },
+        { 1, 2, -1530.0, 255.0, 169, (int[]){ 6, 5, 7, 4, 8, 3, 9, 2, 10, 1, 11, 0, 12, } },
+        { 1, 2,  -119.0,  17.0, 225, (int[]){ 7, 6, 8, 5, 9, 4, 10, 3, 11, 2, 12, 1, 13, 0, 14, } },
+        { 1, 2,    -8.0,   1.0, 289, (int[]){ 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15, 0, 16, } },
     };
 
     // codebook 0..14 - floor1 book, values 0..255
@@ -371,8 +372,6 @@ static void create_vorbis_context(venc_context_t * venc, AVCodecContext * avccon
     for (book = 0; book < venc->ncodebooks; book++) {
         cb = &venc->codebooks[book];
         cb->nentries = codebook_sizes[book];
-        cb->entries = av_malloc(sizeof(cb_entry_t) * cb->nentries);
-        for (i = 0; i < cb->nentries; i++) cb->entries[i].len = codebook_lens[book][i];
         if (book < 16) {
             cb->ndimentions = 2;
             cb->min = 0.;
@@ -383,6 +382,7 @@ static void create_vorbis_context(venc_context_t * venc, AVCodecContext * avccon
         } else {
             int vals;
             cb->seq_p = 0;
+            cb->nentries = cvectors[book - 16].real_len;
             cb->ndimentions = cvectors[book - 16].dim;
             cb->min = cvectors[book - 16].min;
             cb->delta = cvectors[book - 16].delta;
@@ -390,6 +390,11 @@ static void create_vorbis_context(venc_context_t * venc, AVCodecContext * avccon
             vals = cb_lookup_vals(cb->lookup, cb->ndimentions, cb->nentries);
             cb->quantlist = av_malloc(sizeof(int) * vals);
             for (i = 0; i < vals; i++) cb->quantlist[i] = cvectors[book - 16].quant[i];
+        }
+        cb->entries = av_malloc(sizeof(cb_entry_t) * cb->nentries);
+        for (i = 0; i < cb->nentries; i++) {
+            if (i < codebook_sizes[book]) cb->entries[i].len = codebook_lens[book][i];
+            else cb->entries[i].len = 0;
         }
         ready_codebook(cb);
     }
