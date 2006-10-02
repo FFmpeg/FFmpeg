@@ -127,6 +127,8 @@ typedef struct {
     uint8_t * buf_ptr;
 } PutBitContext;
 
+#define ilog(i) av_log2(2*(i))
+
 static inline void init_put_bits(PutBitContext * pb, uint8_t * buf, int buffer_len) {
     pb->total = buffer_len * 8;
     pb->total_pos = 0;
@@ -357,12 +359,6 @@ static void create_vorbis_context(venc_context_t * venc, AVCodecContext * avccon
 
     ff_mdct_init(&venc->mdct[0], venc->blocksize[0], 0);
     ff_mdct_init(&venc->mdct[1], venc->blocksize[1], 0);
-}
-
-static inline int ilog(unsigned int a) {
-    int i;
-    for (i = 0; a >> i; i++);
-    return i;
 }
 
 static void put_float(PutBitContext * pb, float f) {
