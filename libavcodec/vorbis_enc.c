@@ -832,6 +832,7 @@ static void floor_encode(venc_context_t * venc, floor_t * fc, PutBitContext * pb
     put_bits(pb, 1, 1); // non zero
     put_bits(pb, ilog(range - 1), posts[0]);
     put_bits(pb, ilog(range - 1), posts[1]);
+    coded[0] = coded[1] = 1;
 
     for (i = 2; i < fc->values; i++) {
         int predicted = render_point(fc->list[fc->list[i].low].x,
@@ -894,7 +895,6 @@ static void floor_encode(venc_context_t * venc, floor_t * fc, PutBitContext * pb
 
     lx = 0;
     ly = posts[0] * fc->multiplier; // sorted 0 is still 0
-    coded[0] = coded[1] = 1;
     for (i = 1; i < fc->values; i++) {
         int pos = fc->list[i].sort;
         if (coded[pos]) {
