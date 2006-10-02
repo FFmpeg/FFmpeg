@@ -1052,6 +1052,8 @@ static int vorbis_encode_close(AVCodecContext * avccontext)
             av_freep(&venc->mappings[i].mux);
             av_freep(&venc->mappings[i].floor);
             av_freep(&venc->mappings[i].residue);
+            av_freep(&venc->mappings[i].magnitude);
+            av_freep(&venc->mappings[i].angle);
         }
     av_freep(&venc->mappings);
 
