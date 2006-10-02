@@ -27,14 +27,108 @@
 #undef NDEBUG
 #include <assert.h>
 
+#define ALT_BITSTREAM_READER_LE
+#include "bitstream.h"
+
 #define VORBIS_FRAME_SIZE 64
 
 #define BUFFER_SIZE (1024*64)
 
 typedef struct {
-    uint8_t buffer[BUFFER_SIZE];
-    int buffer_index;
+    int len;
+    uint32_t codeword;
+} entry_t;
+
+typedef struct {
+    int nentries;
+    entry_t * entries;
+    int ndimentions;
+    float min;
+    float delta;
+    int seq_p;
+    int lookup;
+    //float * dimentions;
+    int * quantlist;
+} codebook_t;
+
+typedef struct {
+    int ncodebooks;
+    codebook_t * codebooks;
 } venc_context_t;
+
+static inline int ilog(int a) {
+    int i;
+    for (i = 0; (a >> i) > 0; i++);
+    return i;
+}
+
+static void put_codebook_header(PutBitContext * pb, codebook_t * cb) {
+    int i;
+    int ordered = 0;
+
+    put_bits(pb, 24, 0x564342); //magic
+    put_bits(pb, 16, cb->ndimentions);
+    put_bits(pb, 24, cb->nentries);
+
+    for (i = 1; i < cb->nentries; i++) if (cb->entries[i].len < cb->entries[i-1].len) break;
+    if (i == cb->entires) ordered = 1;
+
+    put_bits(pb, 1, ordered);
+    if (ordered) {
+        int len = cb->entries[0].len;
+        put_bits(pb, 5, len);
+        i = 0;
+        while (i < cb->nentries) {
+            for (j = 0; j+i < cb->nentries; j++) if (cb->entries[j+i].len != len) break;
+            put_bits(pb, 5, j);
+            i += j;
+            len++;
+        }
+    } else {
+        int sparse = 0;
+        for (i = 0; i < cb->nentries; i++) if (!cb->entries[i].len) break;
+        if (i != cb->entires) sparse = 1;
+        put_bits(pb, 1, sparse);
+
+        for (i = 0; i < cb->nentries; i++) {
+            if (sparse) put_bits(pb, 1, !!cb->entries[i].len);
+            if (cb->entries[i].len) put_bits(pb, 5, cb->entries[i].len);
+        }
+    }
+
+    put_bits(pb, 4, cb->lookup);
+    if (cb->lookup) {
+        int tmp, bits = ilog(cb->quantlist[0]);
+
+        if (cb->lookup == 1) {
+            for (tmp = 0; ; tmp++) {
+                int n = 1;
+                for (i = 0; i < cb->ndimentions; i++) n *= tmp;
+                if (n > cb->nentries) break;
+            }
+            tmp--;
+        } else tmp = cb->ndimentions * cb->nentries;
+
+        for (i = 1; i < tmp; i++) bits = FFMIN(bits, ilog(cb->quantlist[i]));
+
+        put_float(bc, cb->min);
+        put_float(bc, cb->delta);
+
+        put_bits(bc, 4, bits - 1);
+        put_bits(bc, 1, seq_p);
+
+        for (i = 0; i < tmp; i++) put_bits(bc, bits, cb->quantlist[i])
+    }
+}
+
+static void put_main_header(PutBitContext * pb, venc_context_t * venc) {
+    int i;
+    put_bits(pb, 8, 5); //magic
+    for (i = 0; "vorbis"[i]; i++) put_bits(pb, 8, "vorbis"[i]);
+
+    put_bits(pb, 8, venc->ncodebooks - 1);
+    for (i = 0; i < venc->ncodebooks; i++) put_codebook_header(pb, venc->codebooks[0]);
+}
 
 static int vorbis_encode_init(AVCodecContext * avccontext)
 {
@@ -48,9 +142,8 @@ static int vorbis_encode_init(AVCodecContext * avccontext)
     //if(avccontext->cutoff > 0) cfreq = avccontext->cutoff / 1000.0;
 
     len = header.bytes + header_comm.bytes + header_code.bytes;
-    avccontext->extradata_size = 64 + len + len/255;
 
-    p = avccontext->extradata = av_mallocz(avccontext->extradata_size);
+    p = avccontext->extradata = av_mallocz(64 + len + len/255);
     p[0] = 2;
     offset = 1;
     offset += av_xiphlacing(&p[offset], header.bytes);
@@ -62,7 +155,6 @@ static int vorbis_encode_init(AVCodecContext * avccontext)
     memcpy(&p[offset], header_code.packet, header_code.bytes);
     offset += header_code.bytes;
     avccontext->extradata_size = offset;
-    avccontext->extradata = av_realloc(avccontext->extradata, avccontext->extradata_size);
 
     avccontext->frame_size = VORBIS_FRAME_SIZE;
 
