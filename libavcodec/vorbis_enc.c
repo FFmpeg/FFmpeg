@@ -164,13 +164,13 @@ static void ready_codebook(codebook_t * cb) {
 
 static void create_vorbis_context(venc_context_t * venc, AVCodecContext * avccontext) {
     codebook_t * cb;
-    int i;
+    int i, book;
 
     venc->channels = avccontext->channels;
     venc->sample_rate = avccontext->sample_rate;
     venc->blocksize[0] = venc->blocksize[1] = 8;
 
-    venc->ncodebooks = 3;
+    venc->ncodebooks = 10;
     venc->codebooks = av_malloc(sizeof(codebook_t) * venc->ncodebooks);
 
     // codebook 1 - floor1 book, values 0..255
@@ -199,19 +199,21 @@ static void create_vorbis_context(venc_context_t * venc, AVCodecContext * avccon
     cb->quantlist = NULL;
     ready_codebook(cb);
 
-    // codebook 3 - vector, for the residue, dimentions 1. values -32768..32767
-    cb = &venc->codebooks[2];
-    cb->nentries = 32767 - (-32768);
-    cb->entries = av_malloc(sizeof(cb_entry_t) * cb->nentries);
-    for (i = 0; i < cb->nentries; i++) cb->entries[i].len = 16;
-    cb->ndimentions = 1;
-    cb->min = -32768.;
-    cb->delta = 1.;
-    cb->seq_p = 0;
-    cb->lookup = 2;
-    cb->quantlist = av_malloc(sizeof(int) * cb_lookup_vals(cb->lookup, cb->ndimentions, cb->nentries));
-    for (i = 0; i < cb->nentries; i++) cb->quantlist[i] = i;
-    ready_codebook(cb);
+    // codebook 3..10 - vector, for the residue, values -32767..32767, dimentions 1
+    for (book = 0; book < 8; book++) {
+        cb = &venc->codebooks[2 + book];
+        cb->nentries = 5;
+        cb->entries = av_malloc(sizeof(cb_entry_t) * cb->nentries);
+        for (i = 0; i < cb->nentries; i++) cb->entries[i].len = i == 2 ? 1 : 3;
+        cb->ndimentions = 1;
+        cb->delta = 1 << ((7 - book) * 2);
+        cb->min = -cb->delta*2;
+        cb->seq_p = 0;
+        cb->lookup = 2;
+        cb->quantlist = av_malloc(sizeof(int) * cb_lookup_vals(cb->lookup, cb->ndimentions, cb->nentries));
+        for (i = 0; i < cb->nentries; i++) cb->quantlist[i] = i;
+        ready_codebook(cb);
+    }
 
 }
 
