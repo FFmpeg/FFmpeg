@@ -617,6 +617,7 @@ static int window(venc_context_t * venc, signed short * audio, int samples) {
     int i, j, channel;
     const float * win = venc->win[0];
     int window_len = 1 << (venc->blocksize[0] - 1);
+    float n = (float)(1 << venc->blocksize[0]) / 4.;
     // FIXME use dsp
 
     if (!venc->have_saved && !samples) return 0;
@@ -636,7 +637,7 @@ static int window(venc_context_t * venc, signed short * audio, int samples) {
             float * offset = venc->samples + channel*window_len*2 + window_len;
             j = channel;
             for (i = 0; i < samples; i++, j += venc->channels)
-                offset[i] = audio[j] / 32768. * win[window_len - i];
+                offset[i] = audio[j] / 32768. * win[window_len - i] / n;
         }
     } else {
         for (channel = 0; channel < venc->channels; channel++) {
@@ -653,7 +654,7 @@ static int window(venc_context_t * venc, signed short * audio, int samples) {
             float * offset = venc->saved + channel*window_len;
             j = channel;
             for (i = 0; i < samples; i++, j += venc->channels)
-                offset[i] = audio[j] / 32768. * win[i];
+                offset[i] = audio[j] / 32768. * win[i] / n;
         }
         venc->have_saved = 1;
     } else {
@@ -759,7 +760,7 @@ static int vorbis_encode_frame(AVCodecContext * avccontext, unsigned char * pack
         }
 
         for (j = 0; j < samples; j++) {
-            venc->floor[i * samples + j] = floor1_inverse_db_table[220];
+            venc->floor[i * samples + j] = floor1_inverse_db_table[113];
         }
     }
 
