@@ -313,6 +313,21 @@ video quantiser scale blur (VBR)
 @item -qcomp compression
 video quantiser scale compression (VBR)
 
+@item -lmin lambda
+minimum video lagrange factor (VBR)
+@item -lmax lambda
+max video lagrange factor (VBR)
+@item -mblmin lambda
+minimum macroblock quantizer scale (VBR)
+@item -mblmax lambda
+maximum macroblock quantizer scale (VBR)
+
+These four options (lmin, lmax, mblmin, mblmax) use 'lambda' units,
+but you may use the QP2LAMBDA constant to easily convert from 'q' units:
+@example
+ffmpeg -i src.ext -lmax 21*QP2LAMBDA dst.ext
+@end example
+
 @item -rc_init_cplx complexity
 initial complexity for single pass encoding
 @item -b_qfactor factor
