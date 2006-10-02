@@ -1308,7 +1308,7 @@ static void residue_encode(venc_context_t * venc, residue_t * rc, PutBitContext 
     }
 }
 
-static int window(venc_context_t * venc, signed short * audio, int samples) {
+static int apply_window_and_mdct(venc_context_t * venc, signed short * audio, int samples) {
     int i, j, channel;
     const float * win = venc->win[0];
     int window_len = 1 << (venc->blocksize[0] - 1);
@@ -1389,7 +1389,7 @@ static int vorbis_encode_frame(AVCodecContext * avccontext, unsigned char * pack
     PutBitContext pb;
     int i;
 
-    if (!window(venc, audio, samples)) return 0;
+    if (!apply_window_and_mdct(venc, audio, samples)) return 0;
     samples = 1 << (venc->blocksize[0] - 1);
 
     init_put_bits(&pb, packets, buf_size);
