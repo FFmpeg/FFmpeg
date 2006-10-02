@@ -27,12 +27,8 @@
 #undef NDEBUG
 #include <assert.h>
 
-#define ALT_BITSTREAM_READER_LE
+#define ALT_BITSTREAM_WRITER
 #include "bitstream.h"
-
-#define VORBIS_FRAME_SIZE 64
-
-#define BUFFER_SIZE (1024*64)
 
 typedef struct {
     int len;
