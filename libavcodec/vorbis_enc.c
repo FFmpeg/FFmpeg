@@ -92,6 +92,9 @@ typedef struct {
     int * mux;
     int * floor;
     int * residue;
+    int coupling_steps;
+    int * magnitude;
+    int * angle;
 } mapping_t;
 
 typedef struct {
@@ -389,6 +392,13 @@ static void create_vorbis_context(venc_context_t * venc, AVCodecContext * avccon
         mc->floor[i] = 0;
         mc->residue[i] = 0;
     }
+    mc->coupling_steps = venc->channels == 2 ? 1 : 0;
+    mc->magnitude = av_malloc(sizeof(int) * mc->coupling_steps);
+    mc->angle = av_malloc(sizeof(int) * mc->coupling_steps);
+    if (mc->coupling_steps) {
+        mc->magnitude[0] = 0;
+        mc->angle[0] = 1;
+    }
 
     venc->nmodes = 1;
     venc->modes = av_malloc(sizeof(vorbis_mode_t) * venc->nmodes);
@@ -602,7 +612,15 @@ static int put_main_header(venc_context_t * venc, uint8_t ** out) {
         put_bits(&pb, 1, mc->submaps > 1);
         if (mc->submaps > 1) put_bits(&pb, 4, mc->submaps - 1);
 
-        put_bits(&pb, 1, 0); // channel coupling
+        put_bits(&pb, 1, !!mc->coupling_steps);
+        if (mc->coupling_steps) {
+            put_bits(&pb, 8, mc->coupling_steps - 1);
+            for (j = 0; j < mc->coupling_steps; j++) {
+                av_log(NULL, AV_LOG_ERROR, "%d %d %d %d\n", venc->channels, ilog(venc->channels - 1), mc->magnitude[j], mc->angle[j]);
+                put_bits(&pb, ilog(venc->channels - 1), mc->magnitude[j]);
+                put_bits(&pb, ilog(venc->channels - 1), mc->angle[j]);
+            }
+        }
 
         put_bits(&pb, 2, 0); // reserved
 
@@ -929,6 +947,25 @@ static int vorbis_encode_frame(AVCodecContext * avccontext, unsigned char * pack
         int j;
         for (j = 0; j < samples; j++) {
             venc->coeffs[i * samples + j] /= venc->floor[i * samples + j];
+        }
+    }
+
+    for (i = 0; i < mapping->coupling_steps; i++) {
+        float * mag = venc->coeffs + mapping->magnitude[i] * samples;
+        float * ang = venc->coeffs + mapping->angle[i] * samples;
+        int j;
+        for (j = 0; j < samples; j++) {
+            float m = mag[j];
+            float a = ang[j];
+            if (m > 0) {
+                ang[j] = m - a;
+                if (a > m) mag[j] = a;
+                else mag[j] = m;
+            } else {
+                ang[j] = a - m;
+                if (a > m) mag[j] = m;
+                else mag[j] = a;
+            }
         }
     }
 
