@@ -298,17 +298,17 @@ static void create_vorbis_context(venc_context_t * venc, AVCodecContext * avccon
 
     // codebook 0..14 - floor1 book, values 0..255
     for (book = 0; book < 15; book++) {
-    cb = &venc->codebooks[book];
-    cb->nentries = codebook_sizes[book];
-    cb->entries = av_malloc(sizeof(cb_entry_t) * cb->nentries);
-    for (i = 0; i < cb->nentries; i++) cb->entries[i].len = codebook_lens[book][i];
-    cb->ndimentions = 0;
-    cb->min = 0.;
-    cb->delta = 0.;
-    cb->seq_p = 0;
-    cb->lookup = 0;
-    cb->quantlist = NULL;
-    ready_codebook(cb);
+        cb = &venc->codebooks[book];
+        cb->nentries = codebook_sizes[book];
+        cb->entries = av_malloc(sizeof(cb_entry_t) * cb->nentries);
+        for (i = 0; i < cb->nentries; i++) cb->entries[i].len = codebook_lens[book][i];
+        cb->ndimentions = 0;
+        cb->min = 0.;
+        cb->delta = 0.;
+        cb->seq_p = 0;
+        cb->lookup = 0;
+        cb->quantlist = NULL;
+        ready_codebook(cb);
     }
 
     // codebook 15 - residue classbook, values 0..1, dimentions 4
