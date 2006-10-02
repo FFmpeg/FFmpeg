@@ -834,11 +834,11 @@ static void residue_encode(venc_context_t * venc, residue_t * rc, PutBitContext 
                     assert(!(psize % book->ndimentions));
 
                     if (rc->type == 0) {
-                    for (k = 0; k < psize; k += book->ndimentions) {
-                        float * a = put_vector(book, pb, &buf[k]);
-                        int l;
-                        for (l = 0; l < book->ndimentions; l++) buf[k + l] -= a[l];
-                    }
+                        for (k = 0; k < psize; k += book->ndimentions) {
+                            float * a = put_vector(book, pb, &buf[k]);
+                            int l;
+                            for (l = 0; l < book->ndimentions; l++) buf[k + l] -= a[l];
+                        }
                     } else {
                         for (k = 0; k < psize; k += book->ndimentions) {
                             int dim = book->ndimentions, s = rc->begin + p * psize, l;
