@@ -114,6 +114,7 @@ typedef struct {
     float * samples;
     float * floor; // also used for tmp values for mdct
     float * coeffs; // also used for residue after floor
+    float quality;
 
     int ncodebooks;
     codebook_t * codebooks;
@@ -787,14 +788,14 @@ static void floor_fit(venc_context_t * venc, floor_t * fc, float * coeffs, int *
     float tot_average = 0.;
     for (i = 0; i < fc->values; i++) tot_average += get_floor_average(fc, coeffs, i);
     tot_average /= fc->values;
-    tot_average /= 0.5;
+    tot_average /= venc->quality;
 
     for (i = 0; i < fc->values; i++) {
         int position = fc->list[fc->list[i].sort].x;
         float average = get_floor_average(fc, coeffs, i);
         int j;
 
-        average /= pow(average, 0.7) / tot_average * pow(0.9, position/200.); // MAGIC!
+        average /= pow(average, 0.5) / tot_average * pow(0.8, position/200.); // MAGIC!
         for (j = 0; j < range - 1; j++) if (floor1_inverse_db_table[j * fc->multiplier] > average) break;
         posts[fc->list[i].sort] = j;
     }
@@ -1064,7 +1065,8 @@ static int vorbis_encode_init(AVCodecContext * avccontext)
 
     create_vorbis_context(venc, avccontext);
 
-    //if (avccontext->flags & CODEC_FLAG_QSCALE) avccontext->global_quality / (float)FF_QP2LAMBDA); else avccontext->bit_rate;
+    if (avccontext->flags & CODEC_FLAG_QSCALE) venc->quality = avccontext->global_quality / (float)FF_QP2LAMBDA;
+    else venc->quality = 0.17;
     //if(avccontext->cutoff > 0) cfreq = avccontext->cutoff / 1000.0;
 
     avccontext->extradata_size = put_main_header(venc, (uint8_t**)&avccontext->extradata);
