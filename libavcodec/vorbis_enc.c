@@ -23,10 +23,7 @@
  */
 
 #include "avcodec.h"
-
-#define BITSTREAM_H // don't include this
-typedef int VLC;
-typedef int GetBitContext;
+#include "dsputil.h"
 #include "vorbis.h"
 
 #undef NDEBUG
@@ -523,11 +520,8 @@ static void create_vorbis_context(venc_context_t * venc, AVCodecContext * avccon
     venc->floor = av_malloc(sizeof(float) * venc->channels * (1 << venc->blocksize[1]) / 2);
     venc->coeffs = av_malloc(sizeof(float) * venc->channels * (1 << venc->blocksize[1]) / 2);
 
-    {
-        const float *vwin[8]={ vwin64, vwin128, vwin256, vwin512, vwin1024, vwin2048, vwin4096, vwin8192 };
-        venc->win[0] = vwin[venc->blocksize[0] - 6];
-        venc->win[1] = vwin[venc->blocksize[1] - 6];
-    }
+    venc->win[0] = ff_vorbis_vwin[venc->blocksize[0] - 6];
+    venc->win[1] = ff_vorbis_vwin[venc->blocksize[1] - 6];
 
     ff_mdct_init(&venc->mdct[0], venc->blocksize[0], 0);
     ff_mdct_init(&venc->mdct[1], venc->blocksize[1], 0);
@@ -796,7 +790,7 @@ static void floor_fit(venc_context_t * venc, floor_t * fc, float * coeffs, int *
         int j;
 
         average /= pow(average, 0.5) / tot_average * pow(0.8, position/200.); // MAGIC!
-        for (j = 0; j < range - 1; j++) if (floor1_inverse_db_table[j * fc->multiplier] > average) break;
+        for (j = 0; j < range - 1; j++) if (ff_vorbis_floor1_inverse_db_table[j * fc->multiplier] > average) break;
         posts[fc->list[i].sort] = j;
     }
 }
@@ -818,7 +812,7 @@ static void render_line(int x0, int y0, int x1, int y1, float * buf, int n) {
     else sy = base + 1;
     ady = ady - FFMAX(base, -base) * adx;
     if (x >= n) return;
-    buf[x] = floor1_inverse_db_table[y];
+    buf[x] = ff_vorbis_floor1_inverse_db_table[y];
     for (x = x0 + 1; x < x1; x++) {
         if (x >= n) return;
         err += ady;
@@ -828,7 +822,7 @@ static void render_line(int x0, int y0, int x1, int y1, float * buf, int n) {
         } else {
             y += base;
         }
-        buf[x] = floor1_inverse_db_table[y];
+        buf[x] = ff_vorbis_floor1_inverse_db_table[y];
     }
 }
 
