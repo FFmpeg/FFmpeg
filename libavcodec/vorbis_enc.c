@@ -936,8 +936,6 @@ static void residue_encode(venc_context_t * venc, residue_t * rc, PutBitContext 
     int classes[channels][partitions];
     int classwords = venc->codebooks[rc->classbook].ndimentions;
 
-    if (rc->type == 2) channels = 1;
-
     assert(rc->type == 2);
     assert(real_ch == 2);
     for (p = 0; p < partitions; p++) {
