@@ -50,13 +50,6 @@ typedef struct {
 } floor_class_t;
 
 typedef struct {
-    int x;
-    int low;
-    int high;
-    int sort;
-} floor_entry_t;
-
-typedef struct {
     int partitions;
     int * partition_to_class;
     int nclasses;
@@ -64,7 +57,7 @@ typedef struct {
     int multiplier;
     int rangebits;
     int values;
-    floor_entry_t * list;
+    floor1_entry_t * list;
 } floor_t;
 
 typedef struct {
@@ -674,36 +667,6 @@ static void ready_codebook(codebook_t * cb) {
 
 }
 
-static void ready_floor(floor_t * fc) {
-    int i;
-    fc->list[0].sort = 0;
-    fc->list[1].sort = 1;
-    for (i = 2; i < fc->values; i++) {
-        int j;
-        fc->list[i].low = 0;
-        fc->list[i].high = 1;
-        fc->list[i].sort = i;
-        for (j = 2; j < i; j++) {
-            int tmp = fc->list[j].x;
-            if (tmp < fc->list[i].x) {
-                if (tmp > fc->list[fc->list[i].low].x) fc->list[i].low = j;
-            } else {
-                if (tmp < fc->list[fc->list[i].high].x) fc->list[i].high = j;
-            }
-        }
-    }
-    for (i = 0; i < fc->values - 1; i++) {
-        int j;
-        for (j = i + 1; j < fc->values; j++) {
-            if (fc->list[fc->list[i].sort].x > fc->list[fc->list[j].sort].x) {
-                int tmp = fc->list[i].sort;
-                fc->list[i].sort = fc->list[j].sort;
-                fc->list[j].sort = tmp;
-            }
-        }
-    }
-}
-
 static void ready_residue(residue_t * rc, venc_context_t * venc) {
     int i;
     assert(rc->type == 2);
@@ -816,7 +779,7 @@ static void create_vorbis_context(venc_context_t * venc, AVCodecContext * avccon
     for (i = 0; i < fc->partitions; i++)
         fc->values += fc->classes[fc->partition_to_class[i]].dim;
 
-    fc->list = av_malloc(sizeof(floor_entry_t) * fc->values);
+    fc->list = av_malloc(sizeof(floor1_entry_t) * fc->values);
     fc->list[0].x = 0;
     fc->list[1].x = 1 << fc->rangebits;
     for (i = 2; i < fc->values; i++) {
@@ -827,7 +790,7 @@ static void create_vorbis_context(venc_context_t * venc, AVCodecContext * avccon
         };
         fc->list[i].x = a[i - 2];
     }
-    ready_floor(fc);
+    ff_vorbis_ready_floor1_list(fc->list, fc->values);
 
     venc->nresidues = 1;
     venc->residues = av_malloc(sizeof(residue_t) * venc->nresidues);
