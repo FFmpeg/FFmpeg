@@ -80,6 +80,10 @@ typedef struct {
 } residue_t;
 
 typedef struct {
+    int submaps;
+    int * mux;
+    int * floor;
+    int * residue;
 } mapping_t;
 
 typedef struct {
@@ -296,6 +300,24 @@ static int put_main_header(venc_context_t * venc, uint8_t ** out) {
     // mappings
     put_bits(&pb, 6, venc->nmappings - 1);
     for (i = 0; i < venc->nmappings; i++) {
+        mapping_t * mc = &venc->mappings[i];
+        int j;
+        put_bits(&pb, 16, 0); // mapping type
+
+        put_bits(&pb, 1, mc->submaps > 1);
+        if (mc->submaps > 1) put_bits(&pb, 4, mc->submaps - 1);
+
+        put_bits(&pb, 1, 0); // channel coupling
+
+        put_bits(&pb, 2, 0); // reserved
+
+        if (mc->submaps > 1) for (j = 0; j < venc->channels; j++) put_bits(&pb, 4, mc->mux[j]);
+
+        for (j = 0; j < mc->submaps; j++) {
+            put_bits(&pb, 8, 0); // reserved time configuration
+            put_bits(&pb, 8, mc->floor[j]);
+            put_bits(&pb, 8, mc->residue[j]);
+        }
     }
 
     flush_put_bits(&pb);
