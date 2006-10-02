@@ -275,9 +275,9 @@ static void create_vorbis_context(venc_context_t * venc, AVCodecContext * avccon
 
     // codebook 0 - floor1 book, values 0..255
     cb = &venc->codebooks[0];
-    cb->nentries = 256;
+    cb->nentries = 512;
     cb->entries = av_malloc(sizeof(cb_entry_t) * cb->nentries);
-    for (i = 0; i < cb->nentries; i++) cb->entries[i].len = 8;
+    for (i = 0; i < cb->nentries; i++) cb->entries[i].len = 9;
     cb->ndimentions = 0;
     cb->min = 0.;
     cb->delta = 0.;
@@ -664,25 +664,97 @@ static void floor_fit(venc_context_t * venc, floor_t * fc, float * coeffs, int *
     }
 }
 
+static int render_point(int x0, int y0, int x1, int y1, int x) {
+    return y0 +  (x - x0) * (y1 - y0) / (x1 - x0);
+}
+
+static void render_line(int x0, int y0, int x1, int y1, float * buf, int n) {
+    int dy = y1 - y0;
+    int adx = x1 - x0;
+    int ady = FFMAX(dy, -dy);
+    int base = dy / adx;
+    int x = x0;
+    int y = y0;
+    int err = 0;
+    int sy;
+    if (dy < 0) sy = base - 1;
+    else sy = base + 1;
+    ady = ady - FFMAX(base, -base) * adx;
+    if (x >= n) return;
+    buf[x] = floor1_inverse_db_table[y];
+    for (x = x0 + 1; x < x1; x++) {
+        if (x >= n) return;
+        err += ady;
+        if (err >= adx) {
+            err -= adx;
+            y += sy;
+        } else {
+            y += base;
+        }
+        buf[x] = floor1_inverse_db_table[y];
+    }
+}
+
 static void floor_encode(venc_context_t * venc, floor_t * fc, PutBitContext * pb, int * posts, float * floor, int samples) {
     int range = 255 / fc->multiplier + 1;
-    int j;
+    int coded[fc->values]; // first 2 values are unused
+    int i, counter;
+    int lx, ly;
+
     put_bits(pb, 1, 1); // non zero
-    put_bits(pb, ilog(range - 1), 180); // magic value - 3.7180282E-05
-    put_bits(pb, ilog(range - 1), 180); // both sides of X
-    for (j = 0; j < fc->partitions; j++) {
-        floor_class_t * c = &fc->classes[fc->partition_to_class[j]];
+    put_bits(pb, ilog(range - 1), posts[0]);
+    put_bits(pb, ilog(range - 1), posts[1]);
+
+    for (i = 2; i < fc->values; i++) {
+        int predicted = render_point(fc->list[fc->list[i].low].x,
+                                     posts[fc->list[i].low],
+                                     fc->list[fc->list[i].high].x,
+                                     posts[fc->list[i].high],
+                                     fc->list[i].x);
+        int highroom = range -  predicted;
+        int lowroom = predicted;
+        int room = FFMIN(highroom, lowroom);
+        if (predicted == posts[i]) {
+            coded[i] = 0; // must be used later as flag!
+            continue;
+        }
+        if (posts[i] > predicted) {
+            if (posts[i] - predicted > room) coded[i] = posts[i] - predicted + lowroom;
+            else coded[i] = (posts[i] - predicted) << 1;
+        } else {
+            if (predicted - posts[i] > room) coded[i] = predicted - posts[i] + highroom - 1;
+            else coded[i] = ((predicted - posts[i]) << 1) + 1;
+        }
+    }
+
+    counter = 2;
+    for (i = 0; i < fc->partitions; i++) {
+        floor_class_t * c = &fc->classes[fc->partition_to_class[i]];
         codebook_t * book = &venc->codebooks[c->books[0]];
-        int entry = 0;
         int k;
+        assert(!c->subclass);
         for (k = 0; k < c->dim; k++) {
+            int entry = coded[counter++];
+            if (entry >= book->nentries || entry < 0) av_log(NULL, AV_LOG_ERROR, "%d %d %d %d \n", entry, book->nentries, counter, fc->values);
+            assert(entry < book->nentries);
+            assert(entry >= 0);
             put_bits(pb, book->entries[entry].len, book->entries[entry].codeword);
         }
     }
 
-    for (j = 0; j < samples; j++) {
-        floor[j] = floor1_inverse_db_table[180];
+    lx = 0;
+    ly = posts[0] * fc->multiplier; // sorted 0 is still 0
+    coded[0] = coded[1] = 1;
+    for (i = 1; i < fc->values; i++) {
+        int pos = fc->list[i].sort;
+        if (coded[pos]) {
+            render_line(lx, ly, fc->list[pos].x, posts[pos] * fc->multiplier, floor, samples);
+            lx = fc->list[pos].x;
+            ly = posts[pos] * fc->multiplier;
+        }
+        if (lx >= samples) break;
     }
+    if (lx < samples) render_line(lx, ly, samples, ly, floor, samples);
 }
 
 static float * put_vector(codebook_t * book, PutBitContext * pb, float * num) {
