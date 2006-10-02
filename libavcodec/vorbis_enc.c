@@ -470,7 +470,7 @@ static void create_vorbis_context(venc_context_t * venc, AVCodecContext * avccon
     rc->classbook = 15;
     rc->books = av_malloc(sizeof(int[8]) * rc->classifications);
     for (i = 0; i < rc->classifications; i++) {
-        int a[][10] = {
+        int a[10][8] = {
             { -1, -1, -1, -1, -1, -1, -1, -1, },
             { -1, -1, 16, -1, -1, -1, -1, -1, },
             { -1, -1, 17, -1, -1, -1, -1, -1, },
