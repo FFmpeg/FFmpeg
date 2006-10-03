@@ -383,8 +383,6 @@ amrlibs:
 
 tests: apiexample cpuid_test $(TESTS)
 
-dsputil.o: dsputil.c dsputil.h
-
 clean::
 	rm -f \
 	   i386/*.o i386/*~ \
