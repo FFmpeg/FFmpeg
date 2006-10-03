@@ -401,7 +401,7 @@ clean::
 
 # api example program
 apiexample: apiexample.c $(LIB)
-	$(CC) $(CFLAGS) -o $@ $< $(LIB) $(LIBAVUTIL) $(EXTRALIBS)
+	$(CC) $(CFLAGS) -o $@ $^ $(LIBAVUTIL) $(EXTRALIBS)
 
 # cpuid test
 cpuid_test: i386/cputest.c
