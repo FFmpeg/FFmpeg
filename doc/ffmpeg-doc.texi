@@ -764,10 +764,10 @@ following image formats are supported:
 @item Supported Codec @tab Encoding @tab Decoding @tab Comments
 @item MPEG-1 video           @tab  X  @tab  X
 @item MPEG-2 video           @tab  X  @tab  X
-@item MPEG-4                 @tab  X  @tab  X @tab also known as DivX4/5
+@item MPEG-4                 @tab  X  @tab  X
 @item MSMPEG4 V1             @tab  X  @tab  X
 @item MSMPEG4 V2             @tab  X  @tab  X
-@item MSMPEG4 V3             @tab  X  @tab  X @tab also known as DivX3
+@item MSMPEG4 V3             @tab  X  @tab  X
 @item WMV7                   @tab  X  @tab  X
 @item WMV8                   @tab  X  @tab  X @tab not completely working
 @item H.261                  @tab  X  @tab  X
