@@ -1035,8 +1035,8 @@ static inline void RENAME(yuv2packedX)(SwsContext *c, int16_t *lumFilter, int16_
 				    int16_t *chrFilter, int16_t **chrSrc, int chrFilterSize,
 			    uint8_t *dest, long dstW, long dstY)
 {
-	long dummy=0;
 #ifdef HAVE_MMX
+    long dummy=0;
     if(c->flags & SWS_ACCURATE_RND){
                 switch(c->dstFormat){
                 case PIX_FMT_RGB32:
