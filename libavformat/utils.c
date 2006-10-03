@@ -1961,10 +1961,15 @@ int av_find_stream_info(AVFormatContext *ic)
                 }
             }
 
-            /* if no real frame rate, use the codec one */
             if (!st->r_frame_rate.num){
-                st->r_frame_rate.num = st->codec->time_base.den;
-                st->r_frame_rate.den = st->codec->time_base.num;
+                if(    st->codec->time_base.den * (int64_t)st->time_base.num
+                    <= st->codec->time_base.num * (int64_t)st->time_base.den){
+                    st->r_frame_rate.num = st->codec->time_base.den;
+                    st->r_frame_rate.den = st->codec->time_base.num;
+                }else{
+                    st->r_frame_rate.num = st->time_base.den;
+                    st->r_frame_rate.den = st->time_base.num;
+                }
             }
         }
     }
