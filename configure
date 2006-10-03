@@ -2114,6 +2114,7 @@ if test "$source_path_used" = "yes" ; then
          libavcodec \
          libavcodec/alpha \
          libavcodec/armv4l \
+         libavcodec/bfin \
          libavcodec/i386 \
          libavcodec/sparc \
          libavcodec/mlib \
