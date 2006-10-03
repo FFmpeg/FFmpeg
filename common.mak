@@ -89,6 +89,8 @@ uninstall-headers:
 	rm -f "$(addprefix $(incdir)/,$(HEADERS))"
 	rm -f "$(libdir)/pkgconfig/lib$(NAME).pc"
 
+.PHONY: all depend dep clean distclean install* uninstall*
+
 #
 # include dependency files if they exist
 #

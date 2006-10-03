@@ -422,3 +422,5 @@ motion-test: motion_test.o $(LIB)
 
 fft-test: fft-test.o $(LIB)
 	$(CC) -o $@ $^ $(LIBAVUTIL) -lm
+
+.PHONY: amrlibs tests

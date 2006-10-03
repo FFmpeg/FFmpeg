@@ -44,6 +44,8 @@ clean:
 distclean: clean
 	rm -f .depend
 
+.PHONY: all depend dep clean distclean install* uninstall*
+
 ifneq ($(wildcard .depend),)
 include .depend
 endif

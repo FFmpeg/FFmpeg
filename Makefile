@@ -118,8 +118,6 @@ videohook: .libs
 documentation:
 	$(MAKE) -C doc all
 
-.PHONY: install
-
 install: install-progs install-libs install-headers install-man $(INSTALLVHOOK)
 
 ifeq ($(BUILD_SHARED),yes)
@@ -263,7 +261,9 @@ tar:
 	( cd /tmp ; tar zcvf ~/$(FILE).tar.gz $(FILE) --exclude .svn )
 	rm -rf /tmp/$(FILE)
 
-.PHONY: lib
+.PHONY: all lib videohook documentation install* wininstaller uninstall*
+.PHONY: dep depend clean distclean TAGS tar
+.PHONY: codectest libavtest test-server fulltest test mpeg4 mpeg
 
 ifneq ($(wildcard .depend),)
 include .depend

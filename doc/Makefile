@@ -16,3 +16,5 @@ all: ffmpeg-doc.html faq.html ffserver-doc.html ffplay-doc.html hooks.html \
 
 clean:
 	rm -f *.html *.pod *.1
+
+.PHONY: all clean
