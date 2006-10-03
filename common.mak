@@ -34,10 +34,8 @@ $(SLIBNAME_WITH_MAJOR): $(SHARED_OBJS)
 %.o: %.cpp
 	g++ $(subst -Wall,,$(CFLAGS)) -c -o $@ $<
 
-depend: $(SRCS)
+depend dep: $(SRCS)
 	$(CC) -MM $(CFLAGS) $^ 1>.depend
-
-dep:	depend
 
 clean::
 	rm -f *.o *.d *~ *.a *.lib *.so *.so.* *.dylib *.dll \
