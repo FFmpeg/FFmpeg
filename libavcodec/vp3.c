@@ -607,7 +607,7 @@ static void init_dequantizer(Vp3DecodeContext *s)
 {
     int ac_scale_factor = s->coded_ac_scale_factor[s->quality_index];
     int dc_scale_factor = s->coded_dc_scale_factor[s->quality_index];
-    int i, j, plane, inter, qri, bmi, bmj, qistart;
+    int i, plane, inter, qri, bmi, bmj, qistart;
 
     debug_vp3("  vp3: initializing dequantization tables\n");
 

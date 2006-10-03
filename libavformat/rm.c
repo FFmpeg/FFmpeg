@@ -645,7 +645,7 @@ static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
     unsigned int tag, v;
     int tag_size, size, codec_data_size, i;
     int64_t codec_pos;
-    unsigned int h263_hack_version, start_time, duration;
+    unsigned int start_time, duration;
     char buf[128];
     int flags = 0;
 

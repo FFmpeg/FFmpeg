@@ -115,7 +115,7 @@ static void load_cursor(VmncContext *c, uint8_t *src)
 
 static void put_cursor(uint8_t *dst, int stride, VmncContext *c, int dx, int dy)
 {
-    int i, j, t;
+    int i, j;
     int w, h, x, y;
     w = c->cur_w;
     if(c->width < c->cur_x + c->cur_w) w = c->width - c->cur_x;

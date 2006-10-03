@@ -2108,8 +2108,6 @@ static always_inline int scale_mv(int value, int bfrac, int inv, int qs)
  */
 static inline void vc1_b_mc(VC1Context *v, int dmv_x[2], int dmv_y[2], int direct, int mode)
 {
-    int t;
-
     if(v->use_ic) {
         v->mv_mode2 = v->mv_mode;
         v->mv_mode = MV_PMODE_INTENSITY_COMP;

@@ -2938,7 +2938,6 @@ static int get_block_rd(SnowContext *s, int mb_x, int mb_y, int plane_index, con
     Plane *p= &s->plane[plane_index];
     const int block_size = MB_SIZE >> s->block_max_depth;
     const int block_w    = plane_index ? block_size/2 : block_size;
-    const uint8_t *obmc  = plane_index ? obmc_tab[s->block_max_depth+1] : obmc_tab[s->block_max_depth];
     const int obmc_stride= plane_index ? block_size : 2*block_size;
     const int ref_stride= s->current_picture.linesize[plane_index];
     uint8_t *dst= s->current_picture.data[plane_index];
@@ -3041,7 +3040,6 @@ static int get_4block_rd(SnowContext *s, int mb_x, int mb_y, int plane_index){
     uint8_t *src= s-> input_picture.data[plane_index];
     static const DWTELEM zero_dst[4096]; //FIXME
     const int b_stride = s->b_width << s->block_max_depth;
-    const int b_height = s->b_height<< s->block_max_depth;
     const int w= p->width;
     const int h= p->height;
     int distortion= 0;

@@ -86,7 +86,6 @@ static int8_t si_prefixes['z' - 'E' + 1]={
  */
 static double av_strtod(const char *name, char **tail) {
     double d;
-    int p = 0;
     char *next;
     d = strtod(name, &next);
     /* if parsing succeeded, check for and interpret postfixes */
