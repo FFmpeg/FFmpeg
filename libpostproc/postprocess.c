@@ -957,7 +957,7 @@ void pp_free_mode(pp_mode_t *mode){
 }
 
 static void reallocAlign(void **p, int alignment, int size){
-        av_free(p);
+        av_free(*p);
         *p= av_mallocz(size);
 }
 
