@@ -24,7 +24,7 @@ SRCS := $(HOOKS:$(SLIBSUF)=.c)
 
 all: $(HOOKS)
 
-depend: $(SRCS)
+depend dep: $(SRCS)
 	$(CC) -MM $(CFLAGS) $^ 1>.depend
 
 install: $(HOOKS)
