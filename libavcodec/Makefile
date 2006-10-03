@@ -374,14 +374,14 @@ ifeq ($(BUILD_SHARED),yes)
 LIBVERSION=$(LAVCVERSION)
 LIBMAJOR=$(LAVCMAJOR)
 endif
-TESTS= imgresample-test dct-test motion-test fft-test
+TESTS= cpuid_test imgresample-test dct-test motion-test fft-test
 
 include $(SRC_PATH)/common.mak
 
 amrlibs:
 	$(MAKE) -C amr spclib fipoplib
 
-tests: apiexample cpuid_test $(TESTS)
+tests: apiexample $(TESTS)
 
 clean::
 	rm -f \
