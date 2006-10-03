@@ -366,8 +366,6 @@ CFLAGS += $(CFLAGS-yes)
 OBJS += $(OBJS-yes)
 ASM_OBJS += $(ASM_OBJS-yes)
 
-EXTRALIBS := -L../libavutil -lavutil$(BUILDSUF) $(EXTRALIBS)
-
 NAME=avcodec
 LIBAVUTIL= $(SRC_PATH)/libavutil/$(LIBPREF)avutil$(LIBSUF)
 ifeq ($(BUILD_SHARED),yes)
