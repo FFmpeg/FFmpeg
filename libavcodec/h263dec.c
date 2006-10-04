@@ -697,10 +697,10 @@ retry:
         s->me.qpel_put= s->dsp.put_2tap_qpel_pixels_tab;
         s->me.qpel_avg= s->dsp.avg_2tap_qpel_pixels_tab;
     }else if((!s->no_rounding) || s->pict_type==B_TYPE){
-        s->me.qpel_put= s->dsp.put_no_rnd_qpel_pixels_tab;
+        s->me.qpel_put= s->dsp.put_qpel_pixels_tab;
         s->me.qpel_avg= s->dsp.avg_qpel_pixels_tab;
     }else{
-        s->me.qpel_put= s->dsp.put_qpel_pixels_tab;
+        s->me.qpel_put= s->dsp.put_no_rnd_qpel_pixels_tab;
         s->me.qpel_avg= s->dsp.avg_qpel_pixels_tab;
     }
 
