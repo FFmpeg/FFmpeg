@@ -308,4 +308,8 @@ the silver bullet that solves this problem, feel free to shoot it at us.
 You have to implement a URLProtocol, see libavformat/file.c in FFmpeg
 and libmpdemux/demux_lavf.c in MPlayer sources.
 
+@section I get "No compatible shell script interpreter found." in MSys.
+
+The standard MSys bash (2.04) is broken. You need to install 2.05 or later.
+
 @bye
