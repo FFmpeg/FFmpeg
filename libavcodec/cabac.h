@@ -83,7 +83,7 @@ static inline void renorm_cabac_encoder(CABACContext *c){
     }
 }
 
-static inline void put_cabac(CABACContext *c, uint8_t * const state, int bit){
+static void put_cabac(CABACContext *c, uint8_t * const state, int bit){
     int RangeLPS= c->lps_range[*state][c->range>>6];
 
     if(bit == ((*state)&1)){
@@ -102,7 +102,7 @@ static inline void put_cabac(CABACContext *c, uint8_t * const state, int bit){
 #endif
 }
 
-static inline void put_cabac_static(CABACContext *c, int RangeLPS, int bit){
+static void put_cabac_static(CABACContext *c, int RangeLPS, int bit){
     assert(c->range > RangeLPS);
 
     if(!bit){
@@ -122,7 +122,7 @@ static inline void put_cabac_static(CABACContext *c, int RangeLPS, int bit){
 /**
  * @param bit 0 -> write zero bit, !=0 write one bit
  */
-static inline void put_cabac_bypass(CABACContext *c, int bit){
+static void put_cabac_bypass(CABACContext *c, int bit){
     c->low += c->low;
 
     if(bit){
@@ -148,7 +148,7 @@ static inline void put_cabac_bypass(CABACContext *c, int bit){
  *
  * @return the number of bytes written
  */
-static inline int put_cabac_terminate(CABACContext *c, int bit){
+static int put_cabac_terminate(CABACContext *c, int bit){
     c->range -= 2;
 
     if(!bit){
@@ -176,7 +176,7 @@ static inline int put_cabac_terminate(CABACContext *c, int bit){
 /**
  * put (truncated) unary binarization.
  */
-static inline void put_cabac_u(CABACContext *c, uint8_t * state, int v, int max, int max_index, int truncated){
+static void put_cabac_u(CABACContext *c, uint8_t * state, int v, int max, int max_index, int truncated){
     int i;
 
     assert(v <= max);
@@ -211,7 +211,7 @@ static inline void put_cabac_u(CABACContext *c, uint8_t * state, int v, int max,
 /**
  * put unary exp golomb k-th order binarization.
  */
-static inline void put_cabac_ueg(CABACContext *c, uint8_t * state, int v, int max, int is_signed, int k, int max_index){
+static void put_cabac_ueg(CABACContext *c, uint8_t * state, int v, int max, int is_signed, int k, int max_index){
     int i;
 
     if(v==0)
@@ -302,7 +302,7 @@ static inline void renorm_cabac_decoder_once(CABACContext *c){
         refill(c);
 }
 
-static inline int get_cabac(CABACContext *c, uint8_t * const state){
+static int get_cabac(CABACContext *c, uint8_t * const state){
     //FIXME gcc generates duplicate load/stores for c->low and c->range
     int s = *state;
     int RangeLPS= c->lps_range[s][c->range>>(CABAC_BITS+7)]<<(CABAC_BITS+1);
@@ -346,7 +346,7 @@ static inline int get_cabac(CABACContext *c, uint8_t * const state){
     return bit;
 }
 
-static inline int get_cabac_bypass(CABACContext *c){
+static int get_cabac_bypass(CABACContext *c){
     c->low += c->low;
 
     if(!(c->low & CABAC_MASK))
@@ -364,7 +364,7 @@ static inline int get_cabac_bypass(CABACContext *c){
  *
  * @return the number of bytes read or 0 if no end
  */
-static inline int get_cabac_terminate(CABACContext *c){
+static int get_cabac_terminate(CABACContext *c){
     c->range -= 4<<CABAC_BITS;
     if(c->low < c->range){
         renorm_cabac_decoder_once(c);
@@ -377,7 +377,7 @@ static inline int get_cabac_terminate(CABACContext *c){
 /**
  * get (truncated) unnary binarization.
  */
-static inline int get_cabac_u(CABACContext *c, uint8_t * state, int max, int max_index, int truncated){
+static int get_cabac_u(CABACContext *c, uint8_t * state, int max, int max_index, int truncated){
     int i;
 
     for(i=0; i<max; i++){
@@ -393,7 +393,7 @@ static inline int get_cabac_u(CABACContext *c, uint8_t * state, int max, int max
 /**
  * get unary exp golomb k-th order binarization.
  */
-static inline int get_cabac_ueg(CABACContext *c, uint8_t * state, int max, int is_signed, int k, int max_index){
+static int get_cabac_ueg(CABACContext *c, uint8_t * state, int max, int is_signed, int k, int max_index){
     int i, v;
     int m= 1<<k;
 
