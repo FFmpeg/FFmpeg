@@ -1714,6 +1714,9 @@ static inline void write_back_motion(H264Context *h, int mb_type){
             *(uint64_t*)s->current_picture.motion_val[list][b_xy + 2 + y*h->b_stride]= *(uint64_t*)h->mv_cache[list][scan8[0]+2 + 8*y];
         }
         if( h->pps.cabac ) {
+            if(IS_SKIP(mb_type))
+                fill_rectangle(h->mvd_table[list][b_xy], 4, 4, h->b_stride, 0, 4);
+            else
             for(y=0; y<4; y++){
                 *(uint64_t*)h->mvd_table[list][b_xy + 0 + y*h->b_stride]= *(uint64_t*)h->mvd_cache[list][scan8[0]+0 + 8*y];
                 *(uint64_t*)h->mvd_table[list][b_xy + 2 + y*h->b_stride]= *(uint64_t*)h->mvd_cache[list][scan8[0]+2 + 8*y];
@@ -5110,10 +5113,7 @@ static void decode_mb_skip(H264Context *h){
 
         fill_caches(h, mb_type, 0); //FIXME check what is needed and what not ...
         pred_direct_motion(h, &mb_type);
-        if(h->pps.cabac){
-            fill_rectangle(h->mvd_cache[0][scan8[0]], 4, 4, 8, 0, 4);
-            fill_rectangle(h->mvd_cache[1][scan8[0]], 4, 4, 8, 0, 4);
-        }
+        mb_type|= MB_TYPE_SKIP;
     }
     else
     {
@@ -5124,12 +5124,10 @@ static void decode_mb_skip(H264Context *h){
         pred_pskip_motion(h, &mx, &my);
         fill_rectangle(&h->ref_cache[0][scan8[0]], 4, 4, 8, 0, 1);
         fill_rectangle(  h->mv_cache[0][scan8[0]], 4, 4, 8, pack16to32(mx,my), 4);
-        if(h->pps.cabac)
-            fill_rectangle(h->mvd_cache[0][scan8[0]], 4, 4, 8, 0, 4);
     }
 
     write_back_motion(h, mb_type);
-    s->current_picture.mb_type[mb_xy]= mb_type|MB_TYPE_SKIP;
+    s->current_picture.mb_type[mb_xy]= mb_type;
     s->current_picture.qscale_table[mb_xy]= s->qscale;
     h->slice_table[ mb_xy ]= h->slice_num;
     h->prev_mb_skipped= 1;
