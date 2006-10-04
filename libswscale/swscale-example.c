@@ -25,6 +25,8 @@
 #undef HAVE_AV_CONFIG_H
 #include "avutil.h"
 #include "swscale.h"
+#include "swscale_internal.h"
+#include "rgb2rgb.h"
 
 static uint64_t getSSD(uint8_t *src1, uint8_t *src2, int stride1, int stride2, int w, int h){
 	int x,y;
