@@ -8,15 +8,39 @@ include ../config.mak
 CFLAGS=-DHAVE_AV_CONFIG_H -I.. -I$(SRC_PATH)/libavutil $(OPTFLAGS) \
        -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_ISOC9X_SOURCE $(AMR_CFLAGS)
 
-OBJS= bitstream.o utils.o allcodecs.o \
-      mpegvideo.o jrevdct.o jfdctfst.o jfdctint.o\
-      mjpeg.o resample.o resample2.o dsputil.o \
-      motion_est.o imgconvert.o \
-      mpeg12.o mpegaudiodec.o simple_idct.o \
-      ratecontrol.o eval.o error_resilience.o \
-      fft.o mdct.o raw.o golomb.o cabac.o\
-      faandct.o parser.o \
-      vp3dsp.o h264idct.o rangecoder.o pnm.o h263.o msmpeg4.o h263dec.o \
+OBJS= bitstream.o \
+      utils.o \
+      allcodecs.o \
+      mpegvideo.o \
+      jrevdct.o \
+      jfdctfst.o \
+      jfdctint.o\
+      mjpeg.o \
+      resample.o \
+      resample2.o \
+      dsputil.o \
+      motion_est.o \
+      imgconvert.o \
+      mpeg12.o \
+      mpegaudiodec.o \
+      simple_idct.o \
+      ratecontrol.o \
+      eval.o \
+      error_resilience.o \
+      fft.o \
+      mdct.o \
+      raw.o \
+      golomb.o \
+      cabac.o\
+      faandct.o \
+      parser.o \
+      vp3dsp.o \
+      h264idct.o \
+      rangecoder.o \
+      pnm.o \
+      h263.o \
+      msmpeg4.o \
+      h263dec.o \
       opt.o \
       bitstream_filter.o \
       audioconvert.o \
@@ -292,11 +316,19 @@ endif
 
 # i386 mmx specific stuff
 ifeq ($(TARGET_MMX),yes)
-OBJS += i386/fdct_mmx.o i386/cputest.o \
-	i386/dsputil_mmx.o i386/mpegvideo_mmx.o \
-	i386/motion_est_mmx.o \
-	i386/simple_idct_mmx.o i386/fft_sse.o i386/vp3dsp_mmx.o \
-	i386/vp3dsp_sse2.o i386/fft_3dn.o i386/fft_3dn2.o i386/snowdsp_mmx.o
+OBJS += i386/fdct_mmx.o \
+        i386/cputest.o \
+        i386/dsputil_mmx.o \
+        i386/mpegvideo_mmx.o \
+        i386/motion_est_mmx.o \
+        i386/simple_idct_mmx.o \
+        i386/fft_sse.o \
+        i386/vp3dsp_mmx.o \
+        i386/vp3dsp_sse2.o \
+        i386/fft_3dn.o \
+        i386/fft_3dn2.o \
+        i386/snowdsp_mmx.o \
+
 ifeq ($(CONFIG_GPL),yes)
 OBJS += i386/idct_mmx.o i386/idct_mmx_xvid.o
 endif
