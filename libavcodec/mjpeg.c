@@ -613,7 +613,7 @@ static void encode_block(MpegEncContext *s, DCTELEM *block, int n)
     uint16_t *huff_code_ac;
 
     /* DC coef */
-    component = (n <= 3 ? 0 : n - 4 + 1);
+    component = (n <= 3 ? 0 : (n&1) + 1);
     dc = block[0]; /* overflow is impossible */
     val = dc - s->last_dc[component];
     if (n < 4) {
@@ -666,8 +666,15 @@ void mjpeg_encode_mb(MpegEncContext *s,
                      DCTELEM block[6][64])
 {
     int i;
-    for(i=0;i<6;i++) {
+    for(i=0;i<5;i++) {
         encode_block(s, block[i], i);
+    }
+    if (s->chroma_format == CHROMA_420) {
+        encode_block(s, block[5], 5);
+    } else {
+        encode_block(s, block[6], 6);
+        encode_block(s, block[5], 5);
+        encode_block(s, block[7], 7);
     }
 }
 
@@ -1103,7 +1110,7 @@ static int mjpeg_decode_dht(MJpegDecodeContext *s)
 
 static int mjpeg_decode_sof(MJpegDecodeContext *s)
 {
-    int len, nb_components, i, width, height;
+    int len, nb_components, i, width, height, pix_fmt_id;
 
     /* XXX: verify len field validity */
     len = get_bits(&s->gb, 16);
@@ -1188,8 +1195,13 @@ static int mjpeg_decode_sof(MJpegDecodeContext *s)
         return 0;
 
     /* XXX: not complete test ! */
-    switch((s->h_count[0] << 4) | s->v_count[0]) {
-    case 0x11:
+    pix_fmt_id = (s->h_count[0] << 20) | (s->v_count[0] << 16) |
+                 (s->h_count[1] << 12) | (s->v_count[1] <<  8) |
+                 (s->h_count[2] <<  4) |  s->v_count[2];
+    dprintf("pix fmt id %x\n", pix_fmt_id);
+    switch(pix_fmt_id){
+    case 0x222222:
+    case 0x111111:
         if(s->rgb){
             s->avctx->pix_fmt = PIX_FMT_RGBA32;
         }else if(s->nb_components==3)
@@ -1197,11 +1209,12 @@ static int mjpeg_decode_sof(MJpegDecodeContext *s)
         else
             s->avctx->pix_fmt = PIX_FMT_GRAY8;
         break;
-    case 0x21:
+    case 0x211111:
+    case 0x221212:
         s->avctx->pix_fmt = s->cs_itu601 ? PIX_FMT_YUV422P : PIX_FMT_YUVJ422P;
         break;
     default:
-    case 0x22:
+    case 0x221111:
         s->avctx->pix_fmt = s->cs_itu601 ? PIX_FMT_YUV420P : PIX_FMT_YUVJ420P;
         break;
     }

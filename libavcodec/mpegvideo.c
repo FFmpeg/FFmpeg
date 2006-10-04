@@ -940,7 +940,8 @@ int MPV_encode_init(AVCodecContext *avctx)
         break;
     case CODEC_ID_LJPEG:
     case CODEC_ID_MJPEG:
-        if(avctx->pix_fmt != PIX_FMT_YUVJ420P && (avctx->pix_fmt != PIX_FMT_YUV420P || avctx->strict_std_compliance>FF_COMPLIANCE_INOFFICIAL)){
+        if(avctx->pix_fmt != PIX_FMT_YUVJ420P && avctx->pix_fmt != PIX_FMT_YUVJ422P &&
+           ((avctx->pix_fmt != PIX_FMT_YUV420P && avctx->pix_fmt != PIX_FMT_YUV422P) || avctx->strict_std_compliance>FF_COMPLIANCE_INOFFICIAL)){
             av_log(avctx, AV_LOG_ERROR, "colorspace not supported in jpeg\n");
             return -1;
         }
@@ -1182,12 +1183,12 @@ int MPV_encode_init(AVCodecContext *avctx)
         s->intra_only = 1; /* force intra only for jpeg */
         s->mjpeg_write_tables = avctx->codec->id != CODEC_ID_JPEGLS;
         s->mjpeg_data_only_frames = 0; /* write all the needed headers */
-        s->mjpeg_vsample[0] = 1<<chroma_v_shift;
-        s->mjpeg_vsample[1] = 1;
-        s->mjpeg_vsample[2] = 1;
-        s->mjpeg_hsample[0] = 1<<chroma_h_shift;
-        s->mjpeg_hsample[1] = 1;
-        s->mjpeg_hsample[2] = 1;
+        s->mjpeg_vsample[0] = 2;
+        s->mjpeg_vsample[1] = 2>>chroma_v_shift;
+        s->mjpeg_vsample[2] = 2>>chroma_v_shift;
+        s->mjpeg_hsample[0] = 2;
+        s->mjpeg_hsample[1] = 2>>chroma_h_shift;
+        s->mjpeg_hsample[2] = 2>>chroma_h_shift;
         if (mjpeg_init(s) < 0)
             return -1;
         avctx->delay=0;
@@ -6842,7 +6843,7 @@ AVCodec mjpeg_encoder = {
     MPV_encode_init,
     MPV_encode_picture,
     MPV_encode_end,
-    .pix_fmts= (enum PixelFormat[]){PIX_FMT_YUVJ420P, -1},
+    .pix_fmts= (enum PixelFormat[]){PIX_FMT_YUVJ420P, PIX_FMT_YUVJ422P, -1},
 };
 
 #endif //CONFIG_ENCODERS
