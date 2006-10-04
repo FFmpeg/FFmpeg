@@ -5,7 +5,6 @@ NAME=swscale
 ifeq ($(BUILD_SHARED),yes)
 LIBVERSION=$(SWSVERSION)
 LIBMAJOR=$(SWSMAJOR)
-EXTRALIBS := -L../libavutil -lavutil$(BUILDSUF) $(EXTRALIBS)
 endif
 
 # NOTE: -I.. is needed to include config.h
