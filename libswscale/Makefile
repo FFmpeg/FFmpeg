@@ -26,3 +26,6 @@ cs_test: cs_test.c
 
 swscale-example: swscale-example.c
 	$(CC) $(CFLAGS) -o $@ $^ -L. -lswscale $(EXTRALIBS)
+
+clean::
+	rm -f cs_test swscale-example
