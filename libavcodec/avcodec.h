@@ -741,7 +741,7 @@ typedef struct AVCodecContext {
      * - encoding: set/allocated/freed by lavc.
      * - decoding: set/allocated/freed by user.
      */
-    void *extradata;
+    uint8_t *extradata;
     int extradata_size;
 
     /**
