@@ -21,6 +21,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <inttypes.h>
+#include <malloc.h>
 
 #include "swscale.h"
 #include "rgb2rgb.h"
@@ -58,7 +59,7 @@ static char *args_parse(int argc, char *argv[])
     return argv[optind];
 }
 
-main(int argc, char **argv)
+int main(int argc, char **argv)
 {
 	int i, funcNum;
 	uint8_t *srcBuffer= (uint8_t*)memalign(128, SIZE);
