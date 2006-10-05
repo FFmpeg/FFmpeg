@@ -22,10 +22,8 @@ HEADERS = swscale.h rgb2rgb.h
 include $(SRC_PATH)/common.mak
 
 cs_test: cs_test.c $(LIB)
-	$(CC) $(CFLAGS) -o $@ $^ -L. -lswscale $(EXTRALIBS)
 
-swscale-example: swscale-example.c $(LIB)
-	$(CC) $(CFLAGS) -o $@ $^ -L. -lswscale $(EXTRALIBS)
+swscale-example: swscale-example.o $(LIB)
 
 clean::
 	rm -f cs_test swscale-example
