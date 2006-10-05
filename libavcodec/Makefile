@@ -400,7 +400,6 @@ OBJS += $(OBJS-yes)
 ASM_OBJS += $(ASM_OBJS-yes)
 
 NAME=avcodec
-LIBAVUTIL= $(SRC_PATH)/libavutil/$(LIBPREF)avutil$(LIBSUF)
 ifeq ($(BUILD_SHARED),yes)
 LIBVERSION=$(LAVCVERSION)
 LIBMAJOR=$(LAVCMAJOR)
@@ -432,7 +431,7 @@ clean::
 
 # api example program
 apiexample: apiexample.c $(LIB)
-	$(CC) $(CFLAGS) -o $@ $^ $(LIBAVUTIL) $(EXTRALIBS)
+	$(CC) $(CFLAGS) -o $@ $^ $(EXTRALIBS)
 
 # cpuid test
 cpuid_test: i386/cputest.c
@@ -444,12 +443,12 @@ imgresample-test: imgresample.c
 	$(CC) $(CFLAGS) -DTEST -o $@ $^ -lm
 
 dct-test: dct-test.o fdctref.o $(LIB)
-	$(CC) -o $@ $^ -lm $(LIBAVUTIL)
+	$(CC) -o $@ $^ $(EXTRALIBS)
 
 motion-test: motion_test.o $(LIB)
 	$(CC) -o $@ $^ -lm
 
 fft-test: fft-test.o $(LIB)
-	$(CC) -o $@ $^ $(LIBAVUTIL) -lm
+	$(CC) -o $@ $^ $(EXTRALIBS)
 
 .PHONY: amrlibs tests
