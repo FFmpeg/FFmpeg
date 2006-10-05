@@ -439,7 +439,7 @@ cpuid_test: i386/cputest.c
 
 # testing progs
 
-imgresample-test: imgresample.c
+imgresample-test: imgresample.c $(LIB)
 	$(CC) $(CFLAGS) -DTEST -o $@ $^ -lm
 
 dct-test: dct-test.o fdctref.o $(LIB)
