@@ -36,6 +36,9 @@ $(SLIBNAME_WITH_MAJOR): $(SHARED_OBJS)
 %.o: %.cpp
 	g++ $(subst -Wall,,$(CFLAGS)) -c -o $@ $<
 
+%: %.o $(LIB)
+	$(CC) $(LDFLAGS) -o $@ $^ $(EXTRALIBS)
+
 depend dep: $(SRCS)
 	$(CC) -MM $(CFLAGS) $^ 1>.depend
 

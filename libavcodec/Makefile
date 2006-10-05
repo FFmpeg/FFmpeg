@@ -429,26 +429,18 @@ clean::
 	-$(MAKE) -C amr clean
 	-$(MAKE) -C amrwb_float -f makefile.gcc clean
 
-# api example program
-apiexample: apiexample.c $(LIB)
-	$(CC) $(CFLAGS) -o $@ $^ $(EXTRALIBS)
+apiexample: apiexample.o $(LIB)
 
-# cpuid test
 cpuid_test: i386/cputest.c
 	$(CC) $(CFLAGS) -D__TEST__ -o $@ $<
-
-# testing progs
 
 imgresample-test: imgresample.c $(LIB)
 	$(CC) $(CFLAGS) -DTEST -o $@ $^ $(EXTRALIBS)
 
 dct-test: dct-test.o fdctref.o $(LIB)
-	$(CC) -o $@ $^ $(EXTRALIBS)
 
 motion-test: motion_test.o $(LIB)
-	$(CC) -o $@ $^ -lm
 
 fft-test: fft-test.o $(LIB)
-	$(CC) -o $@ $^ $(EXTRALIBS)
 
 .PHONY: amrlibs tests
