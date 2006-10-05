@@ -2139,7 +2139,10 @@ static int load_input_picture(MpegEncContext *s, AVFrame *pic_arg){
                 int w= s->width >>h_shift;
                 int h= s->height>>v_shift;
                 uint8_t *src= pic_arg->data[i];
-                uint8_t *dst= pic->data[i] + INPLACE_OFFSET;
+                uint8_t *dst= pic->data[i];
+
+                if(!s->avctx->rc_buffer_size)
+                    dst +=INPLACE_OFFSET;
 
                 if(src_stride==dst_stride)
                     memcpy(dst, src, src_stride*h);
@@ -2438,20 +2441,21 @@ no_output_pic:
 
         copy_picture(&s->new_picture, s->reordered_input_picture[0]);
 
-        if(s->reordered_input_picture[0]->type == FF_BUFFER_TYPE_SHARED){
+        if(s->reordered_input_picture[0]->type == FF_BUFFER_TYPE_SHARED || s->avctx->rc_buffer_size){
             // input is a shared pix, so we can't modifiy it -> alloc a new one & ensure that the shared one is reuseable
 
             int i= ff_find_unused_picture(s, 0);
             Picture *pic= &s->picture[i];
 
+            pic->reference              = s->reordered_input_picture[0]->reference;
+            alloc_picture(s, pic, 0);
+
             /* mark us unused / free shared pic */
+            if(s->reordered_input_picture[0]->type == FF_BUFFER_TYPE_INTERNAL)
+                s->avctx->release_buffer(s->avctx, (AVFrame*)s->reordered_input_picture[0]);
             for(i=0; i<4; i++)
                 s->reordered_input_picture[0]->data[i]= NULL;
             s->reordered_input_picture[0]->type= 0;
-
-            pic->reference              = s->reordered_input_picture[0]->reference;
-
-            alloc_picture(s, pic, 0);
 
             copy_picture_attributes(s, (AVFrame*)pic, (AVFrame*)s->reordered_input_picture[0]);
 
@@ -2506,7 +2510,7 @@ int MPV_encode_picture(AVCodecContext *avctx,
 //emms_c();
 //printf("qs:%f %f %d\n", s->new_picture.quality, s->current_picture.quality, s->qscale);
         MPV_frame_start(s, avctx);
-
+vbv_retry:
         if (encode_picture(s, s->picture_number) < 0)
             return -1;
 
@@ -2524,6 +2528,28 @@ int MPV_encode_picture(AVCodecContext *avctx,
 
         if (s->out_format == FMT_MJPEG)
             mjpeg_picture_trailer(s);
+
+        if(avctx->rc_buffer_size){
+            RateControlContext *rcc= &s->rc_context;
+            int max_size= rcc->buffer_index/3;
+
+            if(put_bits_count(&s->pb) > max_size && s->qscale < s->avctx->qmax){
+                s->next_lambda= s->lambda*(s->qscale+1) / s->qscale;
+                s->mb_skipped = 0;        //done in MPV_frame_start()
+                if(s->pict_type==P_TYPE){ //done in encode_picture() so we must undo it
+                    if(s->flipflop_rounding || s->codec_id == CODEC_ID_H263P || s->codec_id == CODEC_ID_MPEG4)
+                        s->no_rounding ^= 1;
+                }
+//                av_log(NULL, AV_LOG_ERROR, "R:%d ", s->next_lambda);
+                for(i=0; i<avctx->thread_count; i++){
+                    PutBitContext *pb= &s->thread_context[i]->pb;
+                    init_put_bits(pb, pb->buf, pb->buf_end - pb->buf);
+                }
+                goto vbv_retry;
+            }
+
+            assert(s->avctx->rc_max_rate);
+        }
 
         if(s->flags&CODEC_FLAG_PASS1)
             ff_write_pass1_stats(s);
@@ -5469,7 +5495,11 @@ static void merge_context_after_encode(MpegEncContext *dst, MpegEncContext *src)
 }
 
 static int estimate_qp(MpegEncContext *s, int dry_run){
-    if (!s->fixed_qscale) {
+    if (s->next_lambda){
+        s->current_picture_ptr->quality=
+        s->current_picture.quality = s->next_lambda;
+        if(!dry_run) s->next_lambda= 0;
+    } else if (!s->fixed_qscale) {
         s->current_picture_ptr->quality=
         s->current_picture.quality = ff_rate_estimate_qscale(s, dry_run);
         if (s->current_picture.quality < 0)
