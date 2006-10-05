@@ -218,6 +218,35 @@ static int mxf_get_stream_index(AVFormatContext *s, KLVPacket *klv)
     return s->nb_streams == 1 ? 0 : -1;
 }
 
+/* XXX: use AVBitStreamFilter */
+static int mxf_get_d10_aes3_packet(ByteIOContext *pb, AVStream *st, AVPacket *pkt, int64_t length)
+{
+    uint8_t buffer[61444];
+    uint8_t *buf_ptr, *end_ptr, *data_ptr;
+
+    if (length > 61444) /* worst case PAL 1920 samples 8 channels */
+        return -1;
+    get_buffer(pb, buffer, length);
+    av_new_packet(pkt, length);
+    data_ptr = pkt->data;
+    end_ptr = buffer + length;
+    buf_ptr = buffer + 4; /* skip SMPTE 331M header */
+    for (; buf_ptr < end_ptr; buf_ptr += 4) {
+        if (st->codec->bits_per_sample == 24) {
+            data_ptr[0] = (buf_ptr[2] >> 4) | ((buf_ptr[3] & 0x0f) << 4);
+            data_ptr[1] = (buf_ptr[1] >> 4) | ((buf_ptr[2] & 0x0f) << 4);
+            data_ptr[2] = (buf_ptr[0] >> 4) | ((buf_ptr[1] & 0x0f) << 4);
+            data_ptr += 3;
+        } else {
+            data_ptr[0] = (buf_ptr[2] >> 4) | ((buf_ptr[3] & 0x0f) << 4);
+            data_ptr[1] = (buf_ptr[1] >> 4) | ((buf_ptr[2] & 0x0f) << 4);
+            data_ptr += 2;
+        }
+    }
+    pkt->size = data_ptr - pkt->data;
+    return 0;
+}
+
 static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     KLVPacket klv;
@@ -231,9 +260,21 @@ static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
         PRINT_KEY("read packet", klv.key);
 #endif
         if (IS_KLV_KEY(klv.key, mxf_essence_element_key)) {
-            av_get_packet(&s->pb, pkt, klv.length);
-            pkt->stream_index = mxf_get_stream_index(s, &klv);
-            return pkt->stream_index == -1 ? -1 : 0;
+            int index = mxf_get_stream_index(s, &klv);
+            if (index < 0) {
+                av_log(s, AV_LOG_ERROR, "error getting stream index\n");
+                return -1;
+            }
+            /* check for 8 channels AES3 element */
+            if (klv.key[12] == 0x06 && klv.key[13] == 0x01 && klv.key[14] == 0x10) {
+                if (mxf_get_d10_aes3_packet(&s->pb, s->streams[index], pkt, klv.length) < 0) {
+                    av_log(s, AV_LOG_ERROR, "error reading D-10 aes3 frame\n");
+                    return -1;
+                }
+            } else
+                av_get_packet(&s->pb, pkt, klv.length);
+            pkt->stream_index = index;
+            return 0;
         } else
             url_fskip(&s->pb, klv.length);
     }
@@ -669,7 +710,8 @@ static const MXFCodecUL mxf_sound_essence_container_uls[] = {
     { { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x02,0x0D,0x01,0x03,0x01,0x02,0x04,0x40,0x01 },        CODEC_ID_MP2, Frame }, /* MPEG-ES Frame wrapped, 0x40 ??? stream id */
     { { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x02,0x0D,0x01,0x03,0x01,0x02,0x04,0xc0,0x01 },        CODEC_ID_MP2, Frame }, /* MPEG-ES Frame wrapped, 0xc0 MPA stream id */
     { { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x02,0x0D,0x01,0x03,0x01,0x02,0x04,0xc0,0x02 },        CODEC_ID_MP2,  Clip }, /* MPEG-ES Clip wrapped, 0xc0 MPA stream id */
-  //{ { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x01,0x0D,0x01,0x03,0x01,0x02,0x01,0x05,0x01 },   CODEC_ID_PCM_AES3, Frame }, /* D-10 Mapping 30Mbps PAL Extended Template */
+    { { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x01,0x0D,0x01,0x03,0x01,0x02,0x01,0x05,0x01 },  CODEC_ID_PCM_S16BE, Frame }, /* D-10 Mapping 30Mbps PAL Extended Template */
+    { { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x01,0x0D,0x01,0x03,0x01,0x02,0x01,0x01,0x01 },  CODEC_ID_PCM_S16BE, Frame }, /* D-10 Mapping 50Mbps PAL Extended Template */
     { { 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 },       CODEC_ID_NONE, Frame },
 };
 
@@ -866,6 +908,8 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
                     st->codec->codec_id = CODEC_ID_PCM_S24BE;
                 else if (descriptor->bits_per_sample == 32)
                     st->codec->codec_id = CODEC_ID_PCM_S32BE;
+                if (descriptor->essence_container_ul[14] == 0x01) /* D-10 Mapping */
+                    st->codec->channels = 8; /* force channels to 8 */
             } else if (st->codec->codec_id == CODEC_ID_MP2) {
                 st->need_parsing = 1;
             }
