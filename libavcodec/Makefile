@@ -440,7 +440,7 @@ cpuid_test: i386/cputest.c
 # testing progs
 
 imgresample-test: imgresample.c $(LIB)
-	$(CC) $(CFLAGS) -DTEST -o $@ $^ -lm
+	$(CC) $(CFLAGS) -DTEST -o $@ $^ $(EXTRALIBS)
 
 dct-test: dct-test.o fdctref.o $(LIB)
 	$(CC) -o $@ $^ $(EXTRALIBS)
