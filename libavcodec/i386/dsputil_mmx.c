@@ -2742,7 +2742,6 @@ static void ff_vp3_idct_add_mmx(uint8_t *dest, int line_size, DCTELEM *block)
     ff_vp3_idct_mmx(block);
     add_pixels_clamped_mmx(block, dest, line_size);
 }
-#ifdef CONFIG_GPL
 static void ff_idct_xvid_mmx_put(uint8_t *dest, int line_size, DCTELEM *block)
 {
     ff_idct_xvid_mmx (block);
@@ -2763,7 +2762,6 @@ static void ff_idct_xvid_mmx2_add(uint8_t *dest, int line_size, DCTELEM *block)
     ff_idct_xvid_mmx2 (block);
     add_pixels_clamped_mmx(block, dest, line_size);
 }
-#endif
 
 static void vorbis_inverse_coupling_3dnow(float *mag, float *ang, int blocksize)
 {
@@ -3121,7 +3119,6 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
                 }
             }else if(idct_algo==FF_IDCT_CAVS){
                     c->idct_permutation_type= FF_TRANSPOSE_IDCT_PERM;
-#ifdef CONFIG_GPL
             }else if(idct_algo==FF_IDCT_XVIDMMX){
                 if(mm_flags & MM_MMXEXT){
                     c->idct_put= ff_idct_xvid_mmx2_put;
@@ -3132,7 +3129,6 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
                     c->idct_add= ff_idct_xvid_mmx_add;
                     c->idct    = ff_idct_xvid_mmx;
                 }
-#endif
             }
         }
 
