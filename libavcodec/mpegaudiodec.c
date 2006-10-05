@@ -2534,7 +2534,7 @@ retry:
     if(ff_mpa_check_header(header) < 0){
         buf++;
 //        buf_size--;
-        av_log(avctx, AV_LOG_ERROR, "header missing skiping one byte\n");
+        av_log(avctx, AV_LOG_ERROR, "Header missing skipping one byte.\n");
         goto retry;
     }
 
@@ -2574,7 +2574,7 @@ retry:
     if(out_size>=0)
         *data_size = out_size;
     else
-        av_log(avctx, AV_LOG_DEBUG, "Error while decoding mpeg audio frame\n"); //FIXME return -1 / but also return the number of bytes consumed
+        av_log(avctx, AV_LOG_DEBUG, "Error while decoding MPEG audio frame.\n"); //FIXME return -1 / but also return the number of bytes consumed
     s->frame_size = 0;
     return buf_size;
 }
