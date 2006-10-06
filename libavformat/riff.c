@@ -278,7 +278,7 @@ int put_wav_header(ByteIOContext *pb, AVCodecContext *enc)
 
     if(!enc->codec_tag || enc->codec_tag > 0xffff)
        enc->codec_tag = codec_get_tag(codec_wav_tags, enc->codec_id);
-    if(!enc->codec_tag)
+    if(!enc->codec_tag || enc->codec_tag > 0xffff)
         return -1;
 
     put_le16(pb, enc->codec_tag);
