@@ -1327,7 +1327,7 @@ static void reverse_dc_prediction(Vp3DecodeContext *s,
     int x, y;
     int i = first_fragment;
 
-    short predicted_dc;
+    int predicted_dc;
 
     /* DC values for the left, up-left, up, and up-right fragments */
     int vl, vul, vu, vur;
