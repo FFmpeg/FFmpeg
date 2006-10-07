@@ -7,8 +7,7 @@ LIBVERSION=$(SWSVERSION)
 LIBMAJOR=$(SWSMAJOR)
 endif
 
-# NOTE: -I.. is needed to include config.h
-CFLAGS=-I.. -I$(SRC_PATH) -I$(SRC_PATH)/libavutil $(OPTFLAGS) \
+CFLAGS=-I$(BUILD_ROOT) -I$(SRC_PATH) -I$(SRC_PATH)/libavutil $(OPTFLAGS) \
        -DHAVE_AV_CONFIG_H -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE \
        -D_ISOC9X_SOURCE
 
