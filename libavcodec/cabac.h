@@ -295,15 +295,77 @@ static inline void renorm_cabac_decoder(CABACContext *c){
 }
 
 static inline void renorm_cabac_decoder_once(CABACContext *c){
+#ifdef ARCH_X86
+    int temp;
+#if 0
+    //P3:683
+    asm(
+        "lea -0x20000(%0), %2       \n\t"
+        "shr $31, %2                \n\t"  //FIXME 31->63 for x86-64
+        "shl %%cl, %0               \n\t"
+        "shl %%cl, %1               \n\t"
+        : "+r"(c->range), "+r"(c->low), "+c"(temp)
+    );
+#elif 0
+    //P3:680
+    asm(
+        "cmp $0x20000, %0           \n\t"
+        "setb %%cl                  \n\t"  //FIXME 31->63 for x86-64
+        "shl %%cl, %0               \n\t"
+        "shl %%cl, %1               \n\t"
+        : "+r"(c->range), "+r"(c->low), "+c"(temp)
+    );
+#elif 1
+    int temp2;
+    //P3:665
+    asm(
+        "lea -0x20000(%0), %%eax    \n\t"
+        "cdq                        \n\t"
+        "mov %0, %%eax              \n\t"
+        "and %%edx, %0              \n\t"
+        "and %1, %%edx              \n\t"
+        "add %%eax, %0              \n\t"
+        "add %%edx, %1              \n\t"
+        : "+r"(c->range), "+r"(c->low), "+a"(temp), "+d"(temp2)
+    );
+#elif 0
+    int temp2;
+    //P3:673
+    asm(
+        "cmp $0x20000, %0           \n\t"
+        "sbb %%edx, %%edx           \n\t"
+        "mov %0, %%eax              \n\t"
+        "and %%edx, %0              \n\t"
+        "and %1, %%edx              \n\t"
+        "add %%eax, %0              \n\t"
+        "add %%edx, %1              \n\t"
+        : "+r"(c->range), "+r"(c->low), "+a"(temp), "+d"(temp2)
+    );
+#else
+    int temp2;
+    //P3:677
+    asm(
+        "cmp $0x20000, %0           \n\t"
+        "lea (%0, %0), %%eax        \n\t"
+        "lea (%1, %1), %%edx        \n\t"
+        "cmovb %%eax, %0            \n\t"
+        "cmovb %%edx, %1            \n\t"
+        : "+r"(c->range), "+r"(c->low), "+a"(temp), "+d"(temp2)
+    );
+#endif
+#else
+    //P3:675
     int shift= (uint32_t)(c->range - (0x200 << CABAC_BITS))>>31;
     c->range<<= shift;
     c->low  <<= shift;
+#endif
     if(!(c->low & CABAC_MASK))
         refill(c);
 }
 
 static int get_cabac(CABACContext *c, uint8_t * const state){
     //FIXME gcc generates duplicate load/stores for c->low and c->range
+START_TIMER
     int s = *state;
     int RangeLPS= c->lps_range[s][c->range>>(CABAC_BITS+7)]<<(CABAC_BITS+1);
     int bit, lps_mask attribute_unused;
@@ -342,7 +404,7 @@ static int get_cabac(CABACContext *c, uint8_t * const state){
     if(!(c->low & CABAC_MASK))
         refill2(c);
 #endif
-
+STOP_TIMER("get_cabac")
     return bit;
 }
 
