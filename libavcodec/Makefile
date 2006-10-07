@@ -354,46 +354,56 @@ endif
 # armv4l specific stuff
 ASM_OBJS-$(TARGET_ARCH_ARMV4L)         += armv4l/jrevdct_arm.o     \
                                           armv4l/simple_idct_arm.o \
-                                          armv4l/dsputil_arm_s.o
+                                          armv4l/dsputil_arm_s.o   \
+
 OBJS-$(TARGET_ARCH_ARMV4L)             += armv4l/dsputil_arm.o   \
-                                          armv4l/mpegvideo_arm.o
+                                          armv4l/mpegvideo_arm.o \
+
 OBJS-$(TARGET_IWMMXT)                  += armv4l/dsputil_iwmmxt.o   \
-                                          armv4l/mpegvideo_iwmmxt.o
-ASM_OBJS-$(TARGET_ARMV5TE)             += armv4l/simple_idct_armv5te.o
+                                          armv4l/mpegvideo_iwmmxt.o \
+
+ASM_OBJS-$(TARGET_ARMV5TE)             += armv4l/simple_idct_armv5te.o \
 
 # sun sparc
-OBJS-$(TARGET_ARCH_SPARC)              += sparc/dsputil_vis.o
+OBJS-$(TARGET_ARCH_SPARC)              += sparc/dsputil_vis.o \
+
 sparc/dsputil_vis.o: CFLAGS += -mcpu=ultrasparc -mtune=ultrasparc
 
 # sun mediaLib specific stuff
-OBJS-$(HAVE_MLIB)                      += mlib/dsputil_mlib.o
+OBJS-$(HAVE_MLIB)                      += mlib/dsputil_mlib.o \
 
 # alpha specific stuff
 OBJS-$(TARGET_ARCH_ALPHA)              += alpha/dsputil_alpha.o     \
                                           alpha/mpegvideo_alpha.o   \
                                           alpha/simple_idct_alpha.o \
-                                          alpha/motion_est_alpha.o
-ASM_OBJS-$(TARGET_ARCH_ALPHA)          += alpha/dsputil_alpha_asm.o  \
-                                          alpha/motion_est_mvi_asm.o
+                                          alpha/motion_est_alpha.o  \
 
-OBJS-$(TARGET_ARCH_POWERPC)            += ppc/dsputil_ppc.o ppc/mpegvideo_ppc.o
+ASM_OBJS-$(TARGET_ARCH_ALPHA)          += alpha/dsputil_alpha_asm.o  \
+                                          alpha/motion_est_mvi_asm.o \
+
+OBJS-$(TARGET_ARCH_POWERPC)            += ppc/dsputil_ppc.o   \
+                                          ppc/mpegvideo_ppc.o \
+
 OBJS-$(TARGET_MMI)                     += ps2/dsputil_mmi.o   \
                                           ps2/idct_mmi.o      \
-                                          ps2/mpegvideo_mmi.o
+                                          ps2/mpegvideo_mmi.o \
+
 OBJS-$(TARGET_ARCH_SH4)                += sh4/idct_sh4.o      \
                                           sh4/dsputil_sh4.o   \
-                                          sh4/dsputil_align.o
+                                          sh4/dsputil_align.o \
+
 OBJS-$(TARGET_ALTIVEC)                 += ppc/dsputil_altivec.o      \
                                           ppc/mpegvideo_altivec.o    \
                                           ppc/idct_altivec.o         \
                                           ppc/fft_altivec.o          \
                                           ppc/gmc_altivec.o          \
                                           ppc/fdct_altivec.o         \
-                                          ppc/h264_altivec.o 	     \
-                                          ppc/snow_altivec.o 	     \
+                                          ppc/h264_altivec.o         \
+                                          ppc/snow_altivec.o         \
                                           ppc/vc1dsp_altivec.o       \
-                                          ppc/float_altivec.o
-OBJS-$(TARGET_ARCH_BFIN)               += bfin/dsputil_bfin.o
+                                          ppc/float_altivec.o        \
+
+OBJS-$(TARGET_ARCH_BFIN)               += bfin/dsputil_bfin.o \
 
 CFLAGS += $(CFLAGS-yes)
 OBJS += $(OBJS-yes)
