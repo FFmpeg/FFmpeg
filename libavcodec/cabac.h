@@ -300,7 +300,7 @@ static inline void renorm_cabac_decoder_once(CABACContext *c){
 #ifdef ARCH_X86
     int temp;
 #if 0
-    //P3:683
+    //P3:683    athlon:475
     asm(
         "lea -0x2000000(%0), %2     \n\t"
         "shr $31, %2                \n\t"  //FIXME 31->63 for x86-64
@@ -309,7 +309,7 @@ static inline void renorm_cabac_decoder_once(CABACContext *c){
         : "+r"(c->range), "+r"(c->low), "+c"(temp)
     );
 #elif 0
-    //P3:680
+    //P3:680    athlon:474
     asm(
         "cmp $0x2000000, %0         \n\t"
         "setb %%cl                  \n\t"  //FIXME 31->63 for x86-64
@@ -319,7 +319,7 @@ static inline void renorm_cabac_decoder_once(CABACContext *c){
     );
 #elif 1
     int temp2;
-    //P3:665
+    //P3:665    athlon:517
     asm(
         "lea -0x2000000(%0), %%eax  \n\t"
         "cdq                        \n\t"
@@ -332,7 +332,7 @@ static inline void renorm_cabac_decoder_once(CABACContext *c){
     );
 #elif 0
     int temp2;
-    //P3:673
+    //P3:673    athlon:509
     asm(
         "cmp $0x2000000, %0         \n\t"
         "sbb %%edx, %%edx           \n\t"
@@ -345,7 +345,7 @@ static inline void renorm_cabac_decoder_once(CABACContext *c){
     );
 #else
     int temp2;
-    //P3:677
+    //P3:677    athlon:511
     asm(
         "cmp $0x2000000, %0         \n\t"
         "lea (%0, %0), %%eax        \n\t"
@@ -356,7 +356,7 @@ static inline void renorm_cabac_decoder_once(CABACContext *c){
     );
 #endif
 #else
-    //P3:675
+    //P3:675    athlon:476
     int shift= (uint32_t)(c->range - (0x200 << CABAC_BITS))>>31;
     c->range<<= shift;
     c->low  <<= shift;
