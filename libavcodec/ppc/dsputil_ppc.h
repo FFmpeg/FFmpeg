@@ -21,17 +21,6 @@
 #ifndef _DSPUTIL_PPC_
 #define _DSPUTIL_PPC_
 
-#ifdef CONFIG_DARWIN
-/* The Apple assembler shipped w/ gcc-3.3 knows about DCBZL, previous assemblers don't
-   We assume here that the Darwin GCC is from Apple.... */
-#if (__GNUC__ * 100 + __GNUC_MINOR__ < 303)
-#define NO_DCBZL
-#endif
-#else /* CONFIG_DARWIN */
-/* I don't think any non-Apple assembler knows about DCBZL */
-#define NO_DCBZL
-#endif /* CONFIG_DARWIN */
-
 #ifdef POWERPC_PERFORMANCE_REPORT
 void powerpc_display_perf_report(void);
 /* the 604* have 2, the G3* have 4, the G4s have 6,

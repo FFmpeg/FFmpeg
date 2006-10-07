@@ -175,7 +175,7 @@ POWERPC_PERF_STOP_COUNT(powerpc_clear_blocks_dcbz32, 1);
 
 /* same as above, when dcbzl clear a whole 128B cache line
    i.e. the PPC970 aka G5 */
-#ifndef NO_DCBZL
+#ifdef HAVE_DCBZL
 void clear_blocks_dcbz128_ppc(DCTELEM *blocks)
 {
 POWERPC_PERF_DECLARE(powerpc_clear_blocks_dcbz128, 1);
@@ -205,7 +205,7 @@ void clear_blocks_dcbz128_ppc(DCTELEM *blocks)
 }
 #endif
 
-#ifndef NO_DCBZL
+#ifdef HAVE_DCBZL
 /* check dcbz report how many bytes are set to 0 by dcbz */
 /* update 24/06/2003 : replace dcbz by dcbzl to get
    the intended effect (Apple "fixed" dcbz)

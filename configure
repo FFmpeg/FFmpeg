@@ -349,6 +349,7 @@ mmx="default"
 armv5te="default"
 iwmmxt="default"
 altivec="default"
+dcbzl="no"
 mmi="default"
 case "$cpu" in
   i386|i486|i586|i686|i86pc|BePC)
@@ -1139,6 +1140,19 @@ if test "$?" != 0; then
     die "C compiler test failed."
 fi
 
+# check for assembler specific support
+
+if test $cpu = "powerpc"; then
+check_cc <<EOF && dcbzl=yes
+int main(void) {
+    register long zero = 0;
+    char data[1024];
+    asm volatile("dcbzl %0, %1" : : "b" (data), "r" (zero));
+return 0;
+}
+EOF
+fi
+
 # check for SIMD availability
 
 # AltiVec flags: The FSF version of GCC differs from the Apple version
@@ -1572,6 +1586,7 @@ if test $cpu = "mips"; then
 fi
 if test $cpu = "powerpc"; then
     echo "AltiVec enabled  $altivec"
+    echo "dcbzl available  $dcbzl"
 fi
 echo "gprof enabled    $gprof"
 echo "zlib enabled     $zlib"
@@ -1763,6 +1778,13 @@ if test "$mmi" = "yes" ; then
   echo "TARGET_MMI=yes" >> config.mak
   echo "#define HAVE_MMI 1" >> $TMPH
 fi
+
+if test "$dcbzl" = "yes" ; then
+  echo "#define HAVE_DCBZL 1" >> $TMPH
+else
+  echo "#undef HAVE_DCBZL" >> $TMPH
+fi
+
 if test "$altivec" = "yes" ; then
   echo "TARGET_ALTIVEC=yes" >> config.mak
   echo "#define HAVE_ALTIVEC 1" >> $TMPH
