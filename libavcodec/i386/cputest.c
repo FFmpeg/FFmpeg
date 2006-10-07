@@ -21,6 +21,8 @@
 #include <stdlib.h>
 #include "../dsputil.h"
 
+#undef printf
+
 #ifdef ARCH_X86_64
 #  define REG_b "rbx"
 #  define REG_S "rsi"
