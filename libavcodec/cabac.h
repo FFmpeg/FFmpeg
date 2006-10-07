@@ -29,7 +29,7 @@
 //#undef NDEBUG
 #include <assert.h>
 
-#define CABAC_BITS 8
+#define CABAC_BITS 16
 #define CABAC_MASK ((1<<CABAC_BITS)-1)
 
 typedef struct CABACContext{
@@ -302,7 +302,7 @@ static inline void renorm_cabac_decoder_once(CABACContext *c){
 #if 0
     //P3:683
     asm(
-        "lea -0x20000(%0), %2       \n\t"
+        "lea -0x2000000(%0), %2     \n\t"
         "shr $31, %2                \n\t"  //FIXME 31->63 for x86-64
         "shl %%cl, %0               \n\t"
         "shl %%cl, %1               \n\t"
@@ -311,7 +311,7 @@ static inline void renorm_cabac_decoder_once(CABACContext *c){
 #elif 0
     //P3:680
     asm(
-        "cmp $0x20000, %0           \n\t"
+        "cmp $0x2000000, %0         \n\t"
         "setb %%cl                  \n\t"  //FIXME 31->63 for x86-64
         "shl %%cl, %0               \n\t"
         "shl %%cl, %1               \n\t"
@@ -321,7 +321,7 @@ static inline void renorm_cabac_decoder_once(CABACContext *c){
     int temp2;
     //P3:665
     asm(
-        "lea -0x20000(%0), %%eax    \n\t"
+        "lea -0x2000000(%0), %%eax  \n\t"
         "cdq                        \n\t"
         "mov %0, %%eax              \n\t"
         "and %%edx, %0              \n\t"
@@ -334,7 +334,7 @@ static inline void renorm_cabac_decoder_once(CABACContext *c){
     int temp2;
     //P3:673
     asm(
-        "cmp $0x20000, %0           \n\t"
+        "cmp $0x2000000, %0         \n\t"
         "sbb %%edx, %%edx           \n\t"
         "mov %0, %%eax              \n\t"
         "and %%edx, %0              \n\t"
@@ -347,7 +347,7 @@ static inline void renorm_cabac_decoder_once(CABACContext *c){
     int temp2;
     //P3:677
     asm(
-        "cmp $0x20000, %0           \n\t"
+        "cmp $0x2000000, %0         \n\t"
         "lea (%0, %0), %%eax        \n\t"
         "lea (%1, %1), %%edx        \n\t"
         "cmovb %%eax, %0            \n\t"

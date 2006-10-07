@@ -7420,7 +7420,7 @@ static int decode_slice(H264Context *h){
             }
             eos = get_cabac_terminate( &h->cabac );
 
-            if( ret < 0 || h->cabac.bytestream > h->cabac.bytestream_end + 1) {
+            if( ret < 0 || h->cabac.bytestream > h->cabac.bytestream_end + 2) {
                 av_log(h->s.avctx, AV_LOG_ERROR, "error while decoding MB %d %d, bytestream (%d)\n", s->mb_x, s->mb_y, h->cabac.bytestream_end - h->cabac.bytestream);
                 ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x, s->mb_y, (AC_ERROR|DC_ERROR|MV_ERROR)&part_mask);
                 return -1;
