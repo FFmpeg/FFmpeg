@@ -27,6 +27,10 @@
 
 extern int has_altivec(void);
 
+void put_pixels16_altivec(uint8_t *block, const uint8_t *pixels, int line_size, int h);
+
+void avg_pixels16_altivec(uint8_t *block, const uint8_t *pixels, int line_size, int h);
+
 // used to build registers permutation vectors (vcprm)
 // the 's' are for words in the _s_econd vector
 #define WORD_0 0x00,0x01,0x02,0x03
