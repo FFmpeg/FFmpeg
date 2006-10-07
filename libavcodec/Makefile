@@ -4,8 +4,7 @@
 #
 include ../config.mak
 
-# NOTE: -I.. is needed to include config.h
-CFLAGS=-DHAVE_AV_CONFIG_H -I.. -I$(SRC_PATH)/libavutil $(OPTFLAGS) \
+CFLAGS=-DHAVE_AV_CONFIG_H -I$(BUILD_ROOT) -I$(SRC_PATH)/libavutil $(OPTFLAGS) \
        -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_ISOC9X_SOURCE $(AMR_CFLAGS)
 
 OBJS= bitstream.o \

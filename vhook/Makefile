@@ -2,7 +2,7 @@ include ../config.mak
 
 VPATH=$(SRC_PATH)/vhook
 
-CFLAGS=-I.. -I$(SRC_PATH) -I$(SRC_PATH)/libavutil -I$(SRC_PATH)/libavcodec \
+CFLAGS=-I$(BUILD_ROOT) -I$(SRC_PATH) -I$(SRC_PATH)/libavutil -I$(SRC_PATH)/libavcodec \
        -I$(SRC_PATH)/libavformat $(VHOOKCFLAGS) -DHAVE_AV_CONFIG_H
 LDFLAGS+= -g
 
