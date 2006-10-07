@@ -297,7 +297,7 @@ static inline void renorm_cabac_decoder(CABACContext *c){
 }
 
 static inline void renorm_cabac_decoder_once(CABACContext *c){
-#ifdef ARCH_X86
+#ifdef ARCH_X86_DISABLED
     int temp;
 #if 0
     //P3:683    athlon:475
@@ -367,7 +367,7 @@ static inline void renorm_cabac_decoder_once(CABACContext *c){
 
 static int get_cabac(CABACContext *c, uint8_t * const state){
     //FIXME gcc generates duplicate load/stores for c->low and c->range
-START_TIMER
+//START_TIMER
     int s = *state;
     int RangeLPS= c->lps_range[s][c->range>>(CABAC_BITS+7)]<<(CABAC_BITS+1);
     int bit, lps_mask attribute_unused;
@@ -406,7 +406,7 @@ START_TIMER
     if(!(c->low & CABAC_MASK))
         refill2(c);
 #endif
-STOP_TIMER("get_cabac")
+//STOP_TIMER("get_cabac")
     return bit;
 }
 
