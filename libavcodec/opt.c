@@ -260,7 +260,7 @@ int64_t av_get_int(void *obj, const char *name, AVOption **o_out){
     return num*intnum/den;
 }
 
-static int opt_list(void *obj, void *av_log_obj, char *unit)
+static void opt_list(void *obj, void *av_log_obj, char *unit)
 {
     AVOption *opt=NULL;
 
