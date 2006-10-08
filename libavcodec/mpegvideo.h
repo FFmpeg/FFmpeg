@@ -935,6 +935,8 @@ void mjpeg_picture_header(MpegEncContext *s);
 void mjpeg_picture_trailer(MpegEncContext *s);
 void ff_mjpeg_stuffing(PutBitContext * pbc);
 
+/* cavs.c */
+int ff_cavs_find_frame_end(ParseContext *pc, const uint8_t *buf, int buf_size);
 
 #endif /* AVCODEC_MPEGVIDEO_H */
 
