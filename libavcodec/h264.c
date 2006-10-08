@@ -7399,9 +7399,9 @@ static int decode_slice(H264Context *h){
                 pre = clip( ((cabac_context_init_PB[h->cabac_init_idc][i][0] * s->qscale) >>4 ) + cabac_context_init_PB[h->cabac_init_idc][i][1], 1, 126 );
 
             if( pre <= 63 )
-                h->cabac_state[i] = 2 * ( 63 - pre ) + 0;
+                h->cabac_state[i] = 2 * ( 63 - pre ) + 2;
             else
-                h->cabac_state[i] = 2 * ( pre - 64 ) + 1;
+                h->cabac_state[i] = 2 * ( pre - 64 ) + 3;
         }
 
         for(;;){

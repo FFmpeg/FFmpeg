@@ -133,19 +133,19 @@ void ff_init_cabac_states(CABACContext *c, uint8_t const (*lps_range)[4],
 
     for(i=0; i<state_count; i++){
         for(j=0; j<4; j++){ //FIXME check if this is worth the 1 shift we save
-            c->lps_range[2*i+0][j+4]=
-            c->lps_range[2*i+1][j+4]= lps_range[i][j];
+            c->lps_range[2*i+2][j+4]=
+            c->lps_range[2*i+3][j+4]= lps_range[i][j];
         }
 
-        c->mps_state[2*i+0]= 2*mps_state[i];
-        c->mps_state[2*i+1]= 2*mps_state[i]+1;
+        c->mps_state[2*i+2]= 2*mps_state[i]+2;
+        c->mps_state[2*i+3]= 2*mps_state[i]+3;
 
         if( i ){
-            c->lps_state[2*i+0]= 2*lps_state[i];
-            c->lps_state[2*i+1]= 2*lps_state[i]+1;
+            c->lps_state[2*i+2]= 2*lps_state[i]+2;
+            c->lps_state[2*i+3]= 2*lps_state[i]+3;
         }else{
-            c->lps_state[2*i+0]= 1;
-            c->lps_state[2*i+1]= 0;
+            c->lps_state[2*i+2]= 3;
+            c->lps_state[2*i+3]= 2;
         }
     }
 }

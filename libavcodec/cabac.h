@@ -39,9 +39,9 @@ typedef struct CABACContext{
 #ifdef STRICT_LIMITS
     int symCount;
 #endif
-    uint8_t lps_range[2*65][4];   ///< rangeTabLPS
-    uint8_t lps_state[2*64];      ///< transIdxLPS
-    uint8_t mps_state[2*64];      ///< transIdxMPS
+    uint8_t lps_range[2*66][4];   ///< rangeTabLPS
+    uint8_t lps_state[2*65];      ///< transIdxLPS
+    uint8_t mps_state[2*65];      ///< transIdxMPS
     const uint8_t *bytestream_start;
     const uint8_t *bytestream;
     const uint8_t *bytestream_end;
@@ -376,7 +376,23 @@ static int get_cabac(CABACContext *c, uint8_t * const state){
 #if 1
     if(c->low < c->range){
         bit= s&1;
-        *state= c->mps_state[s];
+#ifdef ARCH_X86
+    //P3:627
+asm(
+        "addb $2, %b0       \n\t"
+        " js 1f             \n\t"
+        "movb %b0, %1       \n\t"
+        "1:                 \n\t"
+        : "+q"(s), "=m"(*state)
+);
+#else
+        *state= c->mps_state[s]; //P3:655
+/*        if(s<126) //P3:657
+            *state= s+2;*/
+        s+=2; //P3:631
+        if(s<128)
+            *state= s;
+#endif
         renorm_cabac_decoder_once(c);
     }else{
 //        int shift= ff_h264_norm_shift[RangeLPS>>17];
