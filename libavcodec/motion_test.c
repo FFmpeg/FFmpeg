@@ -37,6 +37,7 @@
 
 int pix_abs16x16_mmx(uint8_t *blk1, uint8_t *blk2, int lx);
 int pix_abs16x16_mmx1(uint8_t *blk1, uint8_t *blk2, int lx);
+int pix_abs16x16_c(uint8_t *blk1, uint8_t *blk2, int lx);
 int pix_abs16x16_x2_mmx(uint8_t *blk1, uint8_t *blk2, int lx);
 int pix_abs16x16_x2_mmx1(uint8_t *blk1, uint8_t *blk2, int lx);
 int pix_abs16x16_x2_c(uint8_t *blk1, uint8_t *blk2, int lx);
