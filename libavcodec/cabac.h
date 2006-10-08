@@ -266,7 +266,6 @@ static void refill(CABACContext *c){
     c->bytestream+= CABAC_BITS/8;
 }
 
-#if 1 /* all use commented */
 static void refill2(CABACContext *c){
     int i, x;
 
@@ -285,7 +284,6 @@ static void refill2(CABACContext *c){
     c->low += x<<i;
     c->bytestream+= CABAC_BITS/8;
 }
-#endif
 
 static inline void renorm_cabac_decoder(CABACContext *c){
     while(c->range < (0x200 << CABAC_BITS)){
@@ -398,8 +396,6 @@ asm(
         bit= ff_h264_norm_shift[RangeLPS>>17];
         c->low -= c->range;
         *state= c->lps_state[s];
-//        c->range = RangeLPS;
-//        renorm_cabac_decoder(c);
         c->range = RangeLPS<<bit;
         c->low <<= bit;
         bit= (s&1)^1;
