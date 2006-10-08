@@ -774,7 +774,7 @@ int ff_pre_estimate_p_frame_motion(MpegEncContext * s, int mb_x, int mb_y);
 inline int ff_epzs_motion_search(MpegEncContext * s, int *mx_ptr, int *my_ptr,
                              int P[10][2], int src_index, int ref_index, int16_t (*last_mv)[2],
                              int ref_mv_scale, int size, int h);
-int inline ff_get_mb_score(MpegEncContext * s, int mx, int my, int src_index,
+inline int ff_get_mb_score(MpegEncContext * s, int mx, int my, int src_index,
                                int ref_index, int size, int h, int add_rate);
 
 /* mpeg12.c */

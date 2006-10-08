@@ -233,7 +233,7 @@ static int no_sub_motion_search(MpegEncContext * s,
     return dmin;
 }
 
-int inline ff_get_mb_score(MpegEncContext * s, int mx, int my, int src_index,
+inline int ff_get_mb_score(MpegEncContext * s, int mx, int my, int src_index,
                                int ref_index, int size, int h, int add_rate)
 {
 //    const int check_luma= s->dsp.me_sub_cmp != s->dsp.mb_cmp;
