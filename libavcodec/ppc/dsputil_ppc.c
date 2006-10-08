@@ -314,11 +314,6 @@ void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx)
           }
         }
 #endif /* POWERPC_PERFORMANCE_REPORT */
-    } else
-#endif /* HAVE_ALTIVEC */
-    {
-        // Non-AltiVec PPC optimisations
-
-        // ... pending ...
     }
+#endif /* HAVE_ALTIVEC */
 }
