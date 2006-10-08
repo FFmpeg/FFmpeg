@@ -266,16 +266,16 @@ static void refill(CABACContext *c){
     c->bytestream+= CABAC_BITS/8;
 }
 
-#if 0 /* all use commented */
+#if 1 /* all use commented */
 static void refill2(CABACContext *c){
     int i, x;
 
     x= c->low ^ (c->low-1);
-    i= 8 - ff_h264_norm_shift[x>>(CABAC_BITS+1)];
+    i= 9 - ff_h264_norm_shift[x>>(CABAC_BITS+1)];
 
     x= -CABAC_MASK;
 
-    if(c->bytestream < c->bytestream_end)
+    if(c->bytestream <= c->bytestream_end)
 #if CABAC_BITS == 16
         x+= (c->bytestream[0]<<9) + (c->bytestream[1]<<1);
 #else
@@ -395,17 +395,18 @@ asm(
 #endif
         renorm_cabac_decoder_once(c);
     }else{
-//        int shift= ff_h264_norm_shift[RangeLPS>>17];
-        bit= (s&1)^1;
+        bit= ff_h264_norm_shift[RangeLPS>>17];
         c->low -= c->range;
         *state= c->lps_state[s];
-        c->range = RangeLPS;
-        renorm_cabac_decoder(c);
-/*        c->range = RangeLPS<<shift;
-        c->low <<= shift;
+//        c->range = RangeLPS;
+//        renorm_cabac_decoder(c);
+        c->range = RangeLPS<<bit;
+        c->low <<= bit;
+        bit= (s&1)^1;
+
         if(!(c->low & 0xFFFF)){
             refill2(c);
-        }*/
+        }
     }
 #else
     lps_mask= (c->range - c->low)>>31;
