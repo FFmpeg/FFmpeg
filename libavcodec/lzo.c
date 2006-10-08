@@ -166,9 +166,9 @@ int lzo1x_decode(void *out, int *outlen, void *in, int *inlen) {
     int x;
     LZOContext c;
     c.in = in;
-    c.in_end = in + *inlen;
+    c.in_end = (uint8_t *)in + *inlen;
     c.out = c.out_start = out;
-    c.out_end = out + * outlen;
+    c.out_end = (uint8_t *)out + * outlen;
     c.error = 0;
     x = get_byte(&c);
     if (x > 17) {
