@@ -5194,7 +5194,7 @@ static int decode_mb_cavlc(H264Context *h){
        assert(h->slice_type == I_TYPE);
 decode_intra_mb:
         if(mb_type > 25){
-            av_log(h->s.avctx, AV_LOG_ERROR, "mb_type %d in %c slice to large at %d %d\n", mb_type, av_get_pict_type_char(h->slice_type), s->mb_x, s->mb_y);
+            av_log(h->s.avctx, AV_LOG_ERROR, "mb_type %d in %c slice too large at %d %d\n", mb_type, av_get_pict_type_char(h->slice_type), s->mb_x, s->mb_y);
             return -1;
         }
         partition_count=0;
@@ -7813,7 +7813,7 @@ static inline int decode_seq_parameter_set(H264Context *h){
 
 #ifndef ALLOW_INTERLACE
     if(sps->mb_aff)
-        av_log(h->s.avctx, AV_LOG_ERROR, "MBAFF support not included; enable it compilation time\n");
+        av_log(h->s.avctx, AV_LOG_ERROR, "MBAFF support not included; enable it at compile-time.\n");
 #endif
     if(!sps->direct_8x8_inference_flag && sps->mb_aff)
         av_log(h->s.avctx, AV_LOG_ERROR, "MBAFF + !direct_8x8_inference is not implemented\n");
