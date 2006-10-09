@@ -393,7 +393,7 @@ static int get_cabac(CABACContext *c, uint8_t * const state){
         "setb %%cl                              \n\t"
         "shl %%cl, %%edx                        \n\t"
         "shl %%cl, %%ebx                        \n\t"
-        "movb "MPS_STATE"(%2, %%eax), %%cl      \n\t"
+        "movzbl "MPS_STATE"(%2, %%eax), %%ecx   \n\t"
         "movb %%cl, (%1)                        \n\t"
 //eax:state ebx:low, edx:range, esi:RangeLPS
         "test %%bx, %%bx                        \n\t"
@@ -412,10 +412,10 @@ static int get_cabac(CABACContext *c, uint8_t * const state){
         "subl %%edx, %%ebx                      \n\t"
         "movl %%esi, %%edx                      \n\t"
         "shr $19, %%esi                         \n\t"
-        "movb " MANGLE(ff_h264_norm_shift) "(%%esi), %%cl   \n\t"
+        "movzbl " MANGLE(ff_h264_norm_shift) "(%%esi), %%ecx   \n\t"
         "shll %%cl, %%ebx                       \n\t"
         "shll %%cl, %%edx                       \n\t"
-        "movb "LPS_STATE"(%2, %%eax), %%cl      \n\t"
+        "movzbl "LPS_STATE"(%2, %%eax), %%ecx   \n\t"
         "movb %%cl, (%1)                        \n\t"
         "addl $1, %%eax                         \n\t"
         "test %%bx, %%bx                        \n\t"
@@ -432,7 +432,7 @@ static int get_cabac(CABACContext *c, uint8_t * const state){
         "leal -1(%%ebx), %%ecx                  \n\t"
         "xorl %%ebx, %%ecx                      \n\t"
         "shrl $17, %%ecx                        \n\t"
-        "movb " MANGLE(ff_h264_norm_shift) "(%%ecx), %%cl   \n\t"
+        "movzbl " MANGLE(ff_h264_norm_shift) "(%%ecx), %%ecx   \n\t"
         "neg %%cl                               \n\t"
         "add $7, %%cl                           \n\t"
 
@@ -470,14 +470,14 @@ static int get_cabac(CABACContext *c, uint8_t * const state){
 
 //eax:state ebx:low edx:mask esi:range
         "xorl %%edx, %%eax                      \n\t"
-        "movb "MPS_STATE"(%2, %%eax), %%cl      \n\t"
+        "movzbl "MPS_STATE"(%2, %%eax), %%ecx   \n\t"
         "movb %%cl, (%1)                        \n\t"
 
         "movl %%esi, %%edx                      \n\t"
 //eax:bit ebx:low edx:range esi:range
 
         "shr $19, %%esi                         \n\t"
-        "movb " MANGLE(ff_h264_norm_shift) "(%%esi), %%cl   \n\t"
+        "movzbl " MANGLE(ff_h264_norm_shift) "(%%esi), %%ecx   \n\t"
         "shll %%cl, %%ebx                       \n\t"
         "shll %%cl, %%edx                       \n\t"
         "test %%bx, %%bx                        \n\t"
@@ -494,7 +494,7 @@ static int get_cabac(CABACContext *c, uint8_t * const state){
         "leal -1(%%ebx), %%ecx                  \n\t"
         "xorl %%ebx, %%ecx                      \n\t"
         "shrl $17, %%ecx                        \n\t"
-        "movb " MANGLE(ff_h264_norm_shift) "(%%ecx), %%cl   \n\t"
+        "movzbl " MANGLE(ff_h264_norm_shift) "(%%ecx), %%ecx   \n\t"
         "neg %%cl                               \n\t"
         "add $7, %%cl                           \n\t"
 
