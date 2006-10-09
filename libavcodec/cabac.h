@@ -469,10 +469,6 @@ static int get_cabac(CABACContext *c, uint8_t * const state){
         "subl %%ecx, %%ebx                      \n\t"
 
 //eax:state ebx:low edx:mask esi:range
-        "movl $-130, %%ecx                      \n\t"
-        "andl %%edx, %%ecx                      \n\t"
-        "addl %%eax, %%ecx                      \n\t"
-
         "xorl %%edx, %%eax                      \n\t"
         "movb "MPS_STATE"(%2, %%eax), %%cl      \n\t"
         "movb %%cl, (%1)                        \n\t"
