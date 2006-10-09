@@ -51,7 +51,7 @@ typedef struct CABACContext{
 extern const uint8_t ff_h264_lps_range[64][4];
 extern const uint8_t ff_h264_mps_state[64];
 extern const uint8_t ff_h264_lps_state[64];
-extern const uint8_t ff_h264_norm_shift[256];
+extern const uint8_t ff_h264_norm_shift[128];
 
 
 void ff_init_cabac_encoder(CABACContext *c, uint8_t *buf, int buf_size);
@@ -270,7 +270,7 @@ static void refill2(CABACContext *c){
     int i, x;
 
     x= c->low ^ (c->low-1);
-    i= 9 - ff_h264_norm_shift[x>>(CABAC_BITS+1)];
+    i= 7 - ff_h264_norm_shift[x>>(CABAC_BITS+1)];
 
     x= -CABAC_MASK;
 
@@ -393,7 +393,7 @@ asm(
 #endif
         renorm_cabac_decoder_once(c);
     }else{
-        bit= ff_h264_norm_shift[RangeLPS>>17];
+        bit= ff_h264_norm_shift[RangeLPS>>19];
         c->low -= c->range;
         *state= c->lps_state[s];
         c->range = RangeLPS<<bit;
