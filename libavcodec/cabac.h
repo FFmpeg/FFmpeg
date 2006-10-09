@@ -493,9 +493,9 @@ asm(
     c->range += (RangeLPS - c->range) & lps_mask;
 
     bit= (s^lps_mask)&1;
-    *state= c->mps_state[s - (128&lps_mask)];
+    *state= c->mps_state[s - (130&lps_mask)];
 
-    lps_mask= ff_h264_norm_shift[c->range>>(CABAC_BITS+2)];
+    lps_mask= ff_h264_norm_shift[c->range>>(CABAC_BITS+3)];
     c->range<<= lps_mask;
     c->low  <<= lps_mask;
     if(!(c->low & CABAC_MASK))
