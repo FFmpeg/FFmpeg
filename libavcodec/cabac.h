@@ -40,9 +40,9 @@ typedef struct CABACContext{
 #ifdef STRICT_LIMITS
     int symCount;
 #endif
-    uint8_t lps_range[2*66][4];   ///< rangeTabLPS
-    uint8_t lps_state[2*65];      ///< transIdxLPS
-    uint8_t mps_state[2*65];      ///< transIdxMPS
+    uint8_t lps_range[2*65][4];   ///< rangeTabLPS
+    uint8_t lps_state[2*64];      ///< transIdxLPS
+    uint8_t mps_state[2*64];      ///< transIdxMPS
     const uint8_t *bytestream_start;
     const uint8_t *bytestream;
     const uint8_t *bytestream_end;
@@ -370,11 +370,11 @@ static int get_cabac(CABACContext *c, uint8_t * const state){
 #define LOW          "0"
 #define RANGE        "4"
 #define LPS_RANGE   "12"
-#define LPS_STATE   "12+2*66*4"
-#define MPS_STATE   "12+2*66*4+2*65"
-#define BYTESTART   "12+2*66*4+4*65"
-#define BYTE        "16+2*66*4+4*65"
-#define BYTEEND     "20+2*66*4+4*65"
+#define LPS_STATE   "12+2*65*4"
+#define MPS_STATE   "12+2*65*4+2*64"
+#define BYTESTART   "12+2*65*4+4*64"
+#define BYTE        "16+2*65*4+4*64"
+#define BYTEEND     "20+2*65*4+4*64"
 #ifndef BRANCHLESS_CABAD
     asm volatile(
         "movzbl (%1), %%eax                     \n\t"
