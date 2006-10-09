@@ -637,12 +637,12 @@ void add_bytes_altivec(uint8_t *dst, uint8_t *src, int w) {
     register vector unsigned char vdst, vsrc;
 
     /* dst and src are 16 bytes-aligned (guaranteed) */
-    for(i = 0 ; (i + 15) < w ; i++)
+    for(i = 0 ; (i + 15) < w ; i+=16)
     {
-      vdst = vec_ld(i << 4, (unsigned char*)dst);
-      vsrc = vec_ld(i << 4, (unsigned char*)src);
+      vdst = vec_ld(i, (unsigned char*)dst);
+      vsrc = vec_ld(i, (unsigned char*)src);
       vdst = vec_add(vsrc, vdst);
-      vec_st(vdst, i << 4, (unsigned char*)dst);
+      vec_st(vdst, i, (unsigned char*)dst);
     }
     /* if w is not a multiple of 16 */
     for (; (i < w) ; i++)
@@ -1839,10 +1839,7 @@ void dsputil_init_altivec(DSPContext* c, AVCodecContext *avctx)
     c->pix_sum = pix_sum_altivec;
     c->diff_pixels = diff_pixels_altivec;
     c->get_pixels = get_pixels_altivec;
-// next one disabled as it's untested.
-#if 0
     c->add_bytes= add_bytes_altivec;
-#endif /* 0 */
     c->put_pixels_tab[0][0] = put_pixels16_altivec;
     /* the two functions do the same thing, so use the same code */
     c->put_no_rnd_pixels_tab[0][0] = put_pixels16_altivec;
