@@ -364,6 +364,90 @@ static inline void renorm_cabac_decoder_once(CABACContext *c){
 static int get_cabac(CABACContext *c, uint8_t * const state){
     //FIXME gcc generates duplicate load/stores for c->low and c->range
 //START_TIMER
+#ifdef ARCH_X86
+    int bit;
+
+#define LOW          "0"
+#define RANGE        "4"
+#define LPS_RANGE   "12"
+#define LPS_STATE   "12+2*66*4"
+#define MPS_STATE   "12+2*66*4+2*65"
+#define BYTESTART   "12+2*66*4+4*65"
+#define BYTE        "16+2*66*4+4*65"
+#define BYTEEND     "20+2*66*4+4*65"
+
+    asm volatile(
+        "movzbl (%1), %%eax                     \n\t"
+        "movl "RANGE    "(%2), %%ebx            \n\t"
+        "movl "RANGE    "(%2), %%edx            \n\t"
+        "shrl $23, %%ebx                        \n\t"
+        "leal "LPS_RANGE"(%2, %%eax, 4), %%esi  \n\t"
+        "movzbl (%%ebx, %%esi), %%esi           \n\t"
+        "shll $17, %%esi                        \n\t"
+        "movl "LOW      "(%2), %%ebx            \n\t"
+//eax:state ebx:low, edx:range, esi:RangeLPS
+        "subl %%esi, %%edx                      \n\t"
+        "cmpl %%edx, %%ebx                      \n\t"
+        " ja 1f                                 \n\t"
+        "cmp $0x2000000, %%edx                  \n\t" //FIXME avoidable
+        "setb %%cl                              \n\t"
+        "shl %%cl, %%edx                        \n\t"
+        "shl %%cl, %%ebx                        \n\t"
+        "movb "MPS_STATE"(%2, %%eax), %%cl      \n\t"
+        "movb %%cl, (%1)                        \n\t"
+//eax:state ebx:low, edx:range, esi:RangeLPS
+        "test %%bx, %%bx                        \n\t"
+        " jnz 2f                                \n\t"
+        "movl "BYTE     "(%2), %%esi            \n\t"
+        "subl $0xFFFF, %%ebx                    \n\t"
+        "movzwl (%%esi), %%ecx                  \n\t"
+        "bswap %%ecx                            \n\t"
+        "shrl $15, %%ecx                        \n\t"
+        "addl $2, %%esi                         \n\t"
+        "addl %%ecx, %%ebx                      \n\t"
+        "movl %%esi, "BYTE    "(%2)             \n\t"
+        "jmp 2f                                 \n\t"
+        "1:                                     \n\t"
+//eax:state ebx:low, edx:range, esi:RangeLPS
+        "subl %%edx, %%ebx                      \n\t"
+        "movl %%esi, %%edx                      \n\t"
+        "shr $19, %%esi                         \n\t"
+        "movb " MANGLE(ff_h264_norm_shift) "(%%esi), %%cl   \n\t"
+        "shll %%cl, %%ebx                       \n\t"
+        "shll %%cl, %%edx                       \n\t"
+        "movb "LPS_STATE"(%2, %%eax), %%cl      \n\t"
+        "movb %%cl, (%1)                        \n\t"
+        "incl %%eax                             \n\t"
+        "test %%bx, %%bx                        \n\t"
+        " jnz 2f                                \n\t"
+
+        "movl "BYTE     "(%2), %%ecx            \n\t"
+        "movzwl (%%ecx), %%esi                  \n\t"
+        "bswap %%esi                            \n\t"
+        "shrl $15, %%esi                        \n\t"
+        "subl $0xFFFF, %%esi                    \n\t"
+        "addl $2, %%ecx                         \n\t"
+        "movl %%ecx, "BYTE    "(%2)             \n\t"
+
+        "leal -1(%%ebx), %%ecx                  \n\t"
+        "xorl %%ebx, %%ecx                      \n\t"
+        "shrl $17, %%ecx                        \n\t"
+        "movb " MANGLE(ff_h264_norm_shift) "(%%ecx), %%cl   \n\t"
+        "neg %%cl                               \n\t"
+        "add $7, %%cl                           \n\t"
+
+        "shll %%cl , %%esi                      \n\t"
+        "addl %%esi, %%ebx                      \n\t"
+        "2:                                     \n\t"
+        "movl %%edx, "RANGE    "(%2)            \n\t"
+        "movl %%ebx, "LOW      "(%2)            \n\t"
+        "andl $1, %%eax                         \n\t"
+
+        :"=&a"(bit) //FIXME this is fragile gcc either runs out of registers or misscompiles it (for example if "+a"(bit) or "+m"(*state) is used
+        :"r"(state), "r"(c)
+        : "%ecx", "%ebx", "%edx", "%esi"
+    );
+#else
     int s = *state;
     int RangeLPS= c->lps_range[s][c->range>>(CABAC_BITS+7)]<<(CABAC_BITS+1);
     int bit, lps_mask attribute_unused;
@@ -416,6 +500,7 @@ asm(
     c->low  <<= lps_mask;
     if(!(c->low & CABAC_MASK))
         refill2(c);
+#endif
 #endif
 //STOP_TIMER("get_cabac")
     return bit;
