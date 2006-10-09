@@ -3,7 +3,7 @@
  *
  * AltiVec optimizations (C) 2004 Romain Dolbeau <romain@dolbeau.org>
  *
- * FFmpeg is free software.
+ * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
