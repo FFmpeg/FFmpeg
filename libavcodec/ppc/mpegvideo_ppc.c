@@ -48,11 +48,7 @@ void MPV_common_init_ppc(MpegEncContext *s)
         {
             s->dsp.idct_put = idct_put_altivec;
             s->dsp.idct_add = idct_add_altivec;
-#ifndef ALTIVEC_USE_REFERENCE_C_CODE
             s->dsp.idct_permutation_type = FF_TRANSPOSE_IDCT_PERM;
-#else /* ALTIVEC_USE_REFERENCE_C_CODE */
-            s->dsp.idct_permutation_type = FF_NO_IDCT_PERM;
-#endif /* ALTIVEC_USE_REFERENCE_C_CODE */
         }
       }
 

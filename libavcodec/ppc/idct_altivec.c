@@ -169,12 +169,6 @@ static const_vector_s16_t constants[5] = {
 void idct_put_altivec(uint8_t* dest, int stride, vector_s16_t* block)
 {
 POWERPC_PERF_DECLARE(altivec_idct_put_num, 1);
-#ifdef ALTIVEC_USE_REFERENCE_C_CODE
-POWERPC_PERF_START_COUNT(altivec_idct_put_num, 1);
-    void simple_idct_put(uint8_t *dest, int line_size, int16_t *block);
-    simple_idct_put(dest, stride, (int16_t*)block);
-POWERPC_PERF_STOP_COUNT(altivec_idct_put_num, 1);
-#else /* ALTIVEC_USE_REFERENCE_C_CODE */
     vector_u8_t tmp;
 
 #ifdef POWERPC_PERFORMANCE_REPORT
@@ -197,18 +191,11 @@ POWERPC_PERF_START_COUNT(altivec_idct_put_num, 1);
     COPY (dest, vx7)
 
 POWERPC_PERF_STOP_COUNT(altivec_idct_put_num, 1);
-#endif /* ALTIVEC_USE_REFERENCE_C_CODE */
 }
 
 void idct_add_altivec(uint8_t* dest, int stride, vector_s16_t* block)
 {
 POWERPC_PERF_DECLARE(altivec_idct_add_num, 1);
-#ifdef ALTIVEC_USE_REFERENCE_C_CODE
-POWERPC_PERF_START_COUNT(altivec_idct_add_num, 1);
-    void simple_idct_add(uint8_t *dest, int line_size, int16_t *block);
-    simple_idct_add(dest, stride, (int16_t*)block);
-POWERPC_PERF_STOP_COUNT(altivec_idct_add_num, 1);
-#else /* ALTIVEC_USE_REFERENCE_C_CODE */
     vector_u8_t tmp;
     vector_s16_t tmp2, tmp3;
     vector_u8_t perm0;
@@ -246,6 +233,5 @@ POWERPC_PERF_START_COUNT(altivec_idct_add_num, 1);
     ADD (dest, vx7, perm1)
 
 POWERPC_PERF_STOP_COUNT(altivec_idct_add_num, 1);
-#endif /* ALTIVEC_USE_REFERENCE_C_CODE */
 }
 

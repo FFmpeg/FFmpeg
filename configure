@@ -1789,8 +1789,6 @@ fi
 if test "$altivec" = "yes" ; then
   echo "TARGET_ALTIVEC=yes" >> config.mak
   echo "#define HAVE_ALTIVEC 1" >> $TMPH
-  echo "// Enable the next line to use the reference C code instead of AltiVec" >> $TMPH
-  echo "// #define ALTIVEC_USE_REFERENCE_C_CODE 1" >> $TMPH
   if test "$_altivec_h" = "yes" ; then
     echo "#define HAVE_ALTIVEC_H 1" >> $TMPH
   else

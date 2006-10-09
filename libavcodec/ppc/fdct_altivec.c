@@ -198,12 +198,6 @@ static vector float fdctconsts[3] = {
 void fdct_altivec(int16_t *block)
 {
 POWERPC_PERF_DECLARE(altivec_fdct, 1);
-#ifdef ALTIVEC_USE_REFERENCE_C_CODE
-POWERPC_PERF_START_COUNT(altivec_fdct, 1);
-    void ff_jpeg_fdct_islow(int16_t *block);
-    ff_jpeg_fdct_islow(block);
-POWERPC_PERF_STOP_COUNT(altivec_fdct, 1);
-#else /* ALTIVEC_USE_REFERENCE_C_CODE */
     vector signed short *bp;
     vector float *cp;
     vector float b00, b10, b20, b30, b40, b50, b60, b70;
@@ -494,7 +488,6 @@ POWERPC_PERF_STOP_COUNT(altivec_fdct, 1);
     /* }}} */
 
 POWERPC_PERF_STOP_COUNT(altivec_fdct, 1);
-#endif /* ALTIVEC_USE_REFERENCE_C_CODE */
 }
 
 /* vim:set foldmethod=marker foldlevel=0: */

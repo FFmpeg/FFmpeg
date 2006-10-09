@@ -291,11 +291,7 @@ void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx)
         {
             c->idct_put = idct_put_altivec;
             c->idct_add = idct_add_altivec;
-        #ifndef ALTIVEC_USE_REFERENCE_C_CODE
             c->idct_permutation_type = FF_TRANSPOSE_IDCT_PERM;
-        #else /* ALTIVEC_USE_REFERENCE_C_CODE */
-            c->idct_permutation_type = FF_NO_IDCT_PERM;
-        #endif /* ALTIVEC_USE_REFERENCE_C_CODE */
         }
         }
 

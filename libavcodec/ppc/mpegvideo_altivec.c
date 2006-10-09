@@ -554,19 +554,6 @@ POWERPC_PERF_START_COUNT(altivec_dct_unquantize_h263_num, 1);
         nCoeffs= s->intra_scantable.raster_end[ s->block_last_index[n] ];
     }
 
-#ifdef ALTIVEC_USE_REFERENCE_C_CODE
-    for(;i<=nCoeffs;i++) {
-        level = block[i];
-        if (level) {
-            if (level < 0) {
-                level = level * qmul - qadd;
-            } else {
-                level = level * qmul + qadd;
-            }
-            block[i] = level;
-        }
-    }
-#else /* ALTIVEC_USE_REFERENCE_C_CODE */
     {
       register const_vector signed short vczero = (const_vector signed short)vec_splat_s16(0);
       short __attribute__ ((aligned(16))) qmul8[] =
@@ -645,7 +632,5 @@ POWERPC_PERF_START_COUNT(altivec_dct_unquantize_h263_num, 1);
         block[0] = backup_0;
       }
     }
-#endif /* ALTIVEC_USE_REFERENCE_C_CODE */
-
 POWERPC_PERF_STOP_COUNT(altivec_dct_unquantize_h263_num, nCoeffs == 63);
 }

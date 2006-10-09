@@ -65,83 +65,6 @@
 void ff_fft_calc_altivec(FFTContext *s, FFTComplex *z)
 {
 POWERPC_PERF_DECLARE(altivec_fft_num, s->nbits >= 6);
-#ifdef ALTIVEC_USE_REFERENCE_C_CODE
-    int ln = s->nbits;
-    int j, np, np2;
-    int nblocks, nloops;
-    register FFTComplex *p, *q;
-    FFTComplex *exptab = s->exptab;
-    int l;
-    FFTSample tmp_re, tmp_im;
-
-POWERPC_PERF_START_COUNT(altivec_fft_num, s->nbits >= 6);
-
-    np = 1 << ln;
-
-    /* pass 0 */
-
-    p=&z[0];
-    j=(np >> 1);
-    do {
-        BF(p[0].re, p[0].im, p[1].re, p[1].im,
-           p[0].re, p[0].im, p[1].re, p[1].im);
-        p+=2;
-    } while (--j != 0);
-
-    /* pass 1 */
-
-
-    p=&z[0];
-    j=np >> 2;
-    if (s->inverse) {
-        do {
-            BF(p[0].re, p[0].im, p[2].re, p[2].im,
-               p[0].re, p[0].im, p[2].re, p[2].im);
-            BF(p[1].re, p[1].im, p[3].re, p[3].im,
-               p[1].re, p[1].im, -p[3].im, p[3].re);
-            p+=4;
-        } while (--j != 0);
-    } else {
-        do {
-            BF(p[0].re, p[0].im, p[2].re, p[2].im,
-               p[0].re, p[0].im, p[2].re, p[2].im);
-            BF(p[1].re, p[1].im, p[3].re, p[3].im,
-               p[1].re, p[1].im, p[3].im, -p[3].re);
-            p+=4;
-        } while (--j != 0);
-    }
-    /* pass 2 .. ln-1 */
-
-    nblocks = np >> 3;
-    nloops = 1 << 2;
-    np2 = np >> 1;
-    do {
-        p = z;
-        q = z + nloops;
-        for (j = 0; j < nblocks; ++j) {
-            BF(p->re, p->im, q->re, q->im,
-               p->re, p->im, q->re, q->im);
-
-            p++;
-            q++;
-            for(l = nblocks; l < np2; l += nblocks) {
-                CMUL(tmp_re, tmp_im, exptab[l].re, exptab[l].im, q->re, q->im);
-                BF(p->re, p->im, q->re, q->im,
-                   p->re, p->im, tmp_re, tmp_im);
-                p++;
-                q++;
-            }
-
-            p += nloops;
-            q += nloops;
-        }
-        nblocks = nblocks >> 1;
-        nloops = nloops << 1;
-    } while (nblocks != 0);
-
-POWERPC_PERF_STOP_COUNT(altivec_fft_num, s->nbits >= 6);
-
-#else /* ALTIVEC_USE_REFERENCE_C_CODE */
 #ifdef CONFIG_DARWIN
     register const vector float vczero = (const vector float)(0.);
 #else
@@ -244,6 +167,4 @@ POWERPC_PERF_START_COUNT(altivec_fft_num, s->nbits >= 6);
     } while (nblocks != 0);
 
 POWERPC_PERF_STOP_COUNT(altivec_fft_num, s->nbits >= 6);
-
-#endif /* ALTIVEC_USE_REFERENCE_C_CODE */
 }

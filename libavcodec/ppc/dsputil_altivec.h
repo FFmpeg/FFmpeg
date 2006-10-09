@@ -67,10 +67,6 @@ void avg_pixels16_altivec(uint8_t *block, const uint8_t *pixels, int line_size, 
 #define vcii(a,b,c,d) (const vector float){FLOAT_ ## a, FLOAT_ ## b, FLOAT_ ## c, FLOAT_ ## d}
 #endif
 
-#else /* HAVE_ALTIVEC */
-#ifdef ALTIVEC_USE_REFERENCE_C_CODE
-#error "I can't use ALTIVEC_USE_REFERENCE_C_CODE if I don't use HAVE_ALTIVEC"
-#endif /* ALTIVEC_USE_REFERENCE_C_CODE */
 #endif /* HAVE_ALTIVEC */
 
 #endif /* _DSPUTIL_ALTIVEC_ */
