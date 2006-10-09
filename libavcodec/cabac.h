@@ -256,7 +256,6 @@ static void put_cabac_ueg(CABACContext *c, uint8_t * state, int v, int max, int 
 }
 
 static void refill(CABACContext *c){
-    if(c->bytestream <= c->bytestream_end)
 #if CABAC_BITS == 16
         c->low+= (c->bytestream[0]<<9) + (c->bytestream[1]<<1);
 #else
@@ -274,7 +273,6 @@ static void refill2(CABACContext *c){
 
     x= -CABAC_MASK;
 
-    if(c->bytestream <= c->bytestream_end)
 #if CABAC_BITS == 16
         x+= (c->bytestream[0]<<9) + (c->bytestream[1]<<1);
 #else
