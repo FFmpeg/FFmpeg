@@ -1030,9 +1030,10 @@ if test $targetos = Darwin; then
                 ;;
         esac
     fi
-    if test $optimize != "no"; then
-        add_cflags "-fomit-frame-pointer"
-    fi
+fi
+
+if test $optimize != "no"; then
+    add_cflags "-fomit-frame-pointer"
 fi
 
 # Can only do AltiVec on PowerPC
