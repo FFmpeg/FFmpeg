@@ -417,7 +417,7 @@ static int get_cabac(CABACContext *c, uint8_t * const state){
         "shll %%cl, %%edx                       \n\t"
         "movb "LPS_STATE"(%2, %%eax), %%cl      \n\t"
         "movb %%cl, (%1)                        \n\t"
-        "incl %%eax                             \n\t"
+        "addl $1, %%eax                         \n\t"
         "test %%bx, %%bx                        \n\t"
         " jnz 2f                                \n\t"
 
