@@ -452,7 +452,7 @@ static int get_cabac(CABACContext *c, uint8_t * const state){
     int bit, lps_mask attribute_unused;
 
     c->range -= RangeLPS;
-#if 1
+#ifndef BRANCHLESS_CABAD
     if(c->low < c->range){
         bit= s&1;
         *state= c->mps_state[s];
@@ -475,8 +475,9 @@ static int get_cabac(CABACContext *c, uint8_t * const state){
     c->low -= c->range & lps_mask;
     c->range += (RangeLPS - c->range) & lps_mask;
 
-    bit= (s^lps_mask)&1;
-    *state= c->mps_state[s - (130&lps_mask)];
+    s^=lps_mask;
+    *state= c->mps_state[s];
+    bit= s&1;
 
     lps_mask= ff_h264_norm_shift[c->range>>(CABAC_BITS+3)];
     c->range<<= lps_mask;
