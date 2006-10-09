@@ -31,6 +31,7 @@
 
 #define CABAC_BITS 16
 #define CABAC_MASK ((1<<CABAC_BITS)-1)
+#define BRANCHLESS_CABAD 1
 
 typedef struct CABACContext{
     int low;
@@ -374,7 +375,7 @@ static int get_cabac(CABACContext *c, uint8_t * const state){
 #define BYTESTART   "12+2*66*4+4*65"
 #define BYTE        "16+2*66*4+4*65"
 #define BYTEEND     "20+2*66*4+4*65"
-
+#ifndef BRANCHLESS_CABAD
     asm volatile(
         "movzbl (%1), %%eax                     \n\t"
         "movl "RANGE    "(%2), %%ebx            \n\t"
@@ -446,6 +447,72 @@ static int get_cabac(CABACContext *c, uint8_t * const state){
         :"r"(state), "r"(c)
         : "%ecx", "%ebx", "%edx", "%esi"
     );
+#else
+    asm volatile(
+        "movzbl (%1), %%eax                     \n\t"
+        "movl "RANGE    "(%2), %%ebx            \n\t"
+        "movl "RANGE    "(%2), %%edx            \n\t"
+        "shrl $23, %%ebx                        \n\t"
+        "leal "LPS_RANGE"(%2, %%eax, 4), %%esi  \n\t"
+        "movzbl (%%ebx, %%esi), %%esi           \n\t"
+        "shll $17, %%esi                        \n\t"
+        "movl "LOW      "(%2), %%ebx            \n\t"
+//eax:state ebx:low, edx:range, esi:RangeLPS
+        "subl %%esi, %%edx                      \n\t"
+        "movl %%edx, %%ecx                      \n\t"
+        "subl %%ebx, %%edx                      \n\t"
+        "sarl $31, %%edx                        \n\t" //lps_mask
+        "subl %%ecx, %%esi                      \n\t" //RangeLPS - range
+        "andl %%edx, %%esi                      \n\t" //(RangeLPS - range)&lps_mask
+        "addl %%ecx, %%esi                      \n\t" //new range
+        "andl %%edx, %%ecx                      \n\t"
+        "subl %%ecx, %%ebx                      \n\t"
+
+//eax:state ebx:low edx:mask esi:range
+        "movl $-130, %%ecx                      \n\t"
+        "andl %%edx, %%ecx                      \n\t"
+        "addl %%eax, %%ecx                      \n\t"
+
+        "xorl %%edx, %%eax                      \n\t"
+        "movb "MPS_STATE"(%2, %%eax), %%cl      \n\t"
+        "movb %%cl, (%1)                        \n\t"
+
+        "movl %%esi, %%edx                      \n\t"
+//eax:bit ebx:low edx:range esi:range
+
+        "shr $19, %%esi                         \n\t"
+        "movb " MANGLE(ff_h264_norm_shift) "(%%esi), %%cl   \n\t"
+        "shll %%cl, %%ebx                       \n\t"
+        "shll %%cl, %%edx                       \n\t"
+        "test %%bx, %%bx                        \n\t"
+        " jnz 1f                                \n\t"
+
+        "movl "BYTE     "(%2), %%ecx            \n\t"
+        "movzwl (%%ecx), %%esi                  \n\t"
+        "bswap %%esi                            \n\t"
+        "shrl $15, %%esi                        \n\t"
+        "subl $0xFFFF, %%esi                    \n\t"
+        "addl $2, %%ecx                         \n\t"
+        "movl %%ecx, "BYTE    "(%2)             \n\t"
+
+        "leal -1(%%ebx), %%ecx                  \n\t"
+        "xorl %%ebx, %%ecx                      \n\t"
+        "shrl $17, %%ecx                        \n\t"
+        "movb " MANGLE(ff_h264_norm_shift) "(%%ecx), %%cl   \n\t"
+        "neg %%cl                               \n\t"
+        "add $7, %%cl                           \n\t"
+
+        "shll %%cl , %%esi                      \n\t"
+        "addl %%esi, %%ebx                      \n\t"
+        "1:                                     \n\t"
+        "movl %%edx, "RANGE    "(%2)            \n\t"
+        "movl %%ebx, "LOW      "(%2)            \n\t"
+        "andl $1, %%eax                         \n\t"
+        :"=&a"(bit)
+        :"r"(state), "r"(c)
+        : "%ecx", "%ebx", "%edx", "%esi"
+    );
+#endif
 #else
     int s = *state;
     int RangeLPS= c->lps_range[s][c->range>>(CABAC_BITS+7)]<<(CABAC_BITS+1);
