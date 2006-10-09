@@ -110,14 +110,6 @@ try to unroll inner for(x=0 ... loop to avoid these damn if(x ... checks
 #define TEMP_STRIDE 8
 //#define NUM_BLOCKS_AT_ONCE 16 //not used yet
 
-#if defined(__GNUC__) && (__GNUC__ > 3 || __GNUC__ == 3 && __GNUC_MINOR__ > 0)
-#    define attribute_used __attribute__((used))
-#    define always_inline __attribute__((always_inline)) inline
-#else
-#    define attribute_used
-#    define always_inline inline
-#endif
-
 #if defined(ARCH_X86) || defined(ARCH_X86_64)
 static uint64_t __attribute__((aligned(8))) attribute_used w05= 0x0005000500050005LL;
 static uint64_t __attribute__((aligned(8))) attribute_used w04= 0x0004000400040004LL;
