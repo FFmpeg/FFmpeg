@@ -363,7 +363,6 @@ static inline void renorm_cabac_decoder_once(CABACContext *c){
 
 static int get_cabac(CABACContext *c, uint8_t * const state){
     //FIXME gcc generates duplicate load/stores for c->low and c->range
-//START_TIMER
 #ifdef ARCH_X86
     int bit;
 
@@ -486,7 +485,6 @@ static int get_cabac(CABACContext *c, uint8_t * const state){
         refill2(c);
 #endif
 #endif
-//STOP_TIMER("get_cabac")
     return bit;
 }
 
