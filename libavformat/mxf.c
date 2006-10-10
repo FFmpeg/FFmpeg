@@ -1030,7 +1030,6 @@ static int mxf_probe(AVProbeData *p) {
 static int mxf_read_seek(AVFormatContext *s, int stream_index, int64_t sample_time, int flags)
 {
     AVStream *st = s->streams[stream_index];
-    offset_t pos = url_ftell(&s->pb);
     int64_t seconds;
     int i;
 
@@ -1051,7 +1050,6 @@ static int mxf_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
         av_update_cur_dts(s, st, sample_time);
         return 0;
     }
-    url_fseek(&s->pb, pos, SEEK_SET);
     return -1;
 }
 
