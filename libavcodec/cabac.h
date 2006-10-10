@@ -512,11 +512,11 @@ static int get_cabac(CABACContext *c, uint8_t * const state){
         "1:                                     \n\t"
         "movl %%edx, "RANGE    "(%2)            \n\t"
         "movl %%ebx, "LOW      "(%2)            \n\t"
-        "andl $1, %%eax                         \n\t"
         :"=&a"(bit)
         :"r"(state), "r"(c)
         : "%ecx", "%ebx", "%edx", "%esi"
     );
+    bit&=1;
 #endif
 #else
     int s = *state;
