@@ -91,17 +91,17 @@ static int amr_read_header(AVFormatContext *s,
 
     get_buffer(pb, header, 6);
 
+    st = av_new_stream(s, 0);
+    if (!st)
+    {
+        return AVERROR_NOMEM;
+    }
     if(memcmp(header,AMR_header,6)!=0)
     {
         get_buffer(pb, header+6, 3);
         if(memcmp(header,AMRWB_header,9)!=0)
         {
             return -1;
-        }
-        st = av_new_stream(s, 0);
-        if (!st)
-        {
-            return AVERROR_NOMEM;
         }
 
         st->codec->codec_tag = MKTAG('s', 'a', 'w', 'b');
@@ -110,12 +110,6 @@ static int amr_read_header(AVFormatContext *s,
     }
     else
     {
-        st = av_new_stream(s, 0);
-        if (!st)
-        {
-            return AVERROR_NOMEM;
-        }
-
         st->codec->codec_tag = MKTAG('s', 'a', 'm', 'r');
         st->codec->codec_id = CODEC_ID_AMR_NB;
         st->codec->sample_rate = 8000;
@@ -140,6 +134,7 @@ static int amr_read_packet(AVFormatContext *s,
         return AVERROR_IO;
     }
 
+//FIXME this is wrong, this should rather be in a AVParset
     toc=get_byte(&s->pb);
     mode = (toc >> 3) & 0x0F;
 
