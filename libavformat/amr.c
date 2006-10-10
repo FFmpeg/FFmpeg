@@ -48,7 +48,7 @@ static int amr_write_header(AVFormatContext *s)
     }
     else
     {
-        //This is an error!
+        return -1;
     }
     put_flush_packet(pb);
     return 0;
@@ -168,8 +168,6 @@ static int amr_read_packet(AVFormatContext *s,
             av_free_packet(pkt);
             return AVERROR_IO;
         }
-
-        return 0;
     }
     else if(enc->codec_id == CODEC_ID_AMR_WB)
     {
@@ -203,13 +201,12 @@ static int amr_read_packet(AVFormatContext *s,
             av_free_packet(pkt);
             return AVERROR_IO;
         }
-
-        return 0;
     }
     else
     {
-        return AVERROR_IO;
+        assert(0);
     }
+    return 0;
 }
 
 static int amr_read_close(AVFormatContext *s)
