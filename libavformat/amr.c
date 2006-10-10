@@ -121,8 +121,6 @@ static int amr_read_header(AVFormatContext *s,
     return 0;
 }
 
-#define MAX_SIZE 32
-
 static int amr_read_packet(AVFormatContext *s,
                           AVPacket *pkt)
 {
