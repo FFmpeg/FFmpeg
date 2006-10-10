@@ -191,6 +191,7 @@ Generic parts:
 Muxers/Demuxers:
   4xm.c                                 Mike Melanson
   adtsenc.c                             Mans Rullgard
+  aiff.c                                Baptiste Coudurier
   avi*                                  Michael Niedermayer
   crc.c                                 Michael Niedermayer
   daud.c                                Reimar Doeffinger
