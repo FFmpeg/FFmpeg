@@ -590,7 +590,7 @@ static inline void RENAME(vertX1Filter)(uint8_t *src, int stride, PPContext *co)
                 int c= src[l5] - src[l6];
 
                 int d= ABS(b) - ((ABS(a) + ABS(c))>>1);
-                d= MAX(d, 0);
+                d= FFMAX(d, 0);
 
                 if(d < co->QP*2)
                 {
@@ -851,8 +851,8 @@ static inline void RENAME(doVertDefFilter)(uint8_t src[], int stride, PPContext 
                         const int leftEnergy=  5*(src[l3] - src[l2]) + 2*(src[l1] - src[l4]);
                         const int rightEnergy= 5*(src[l7] - src[l6]) + 2*(src[l5] - src[l8]);
 
-                        int d= ABS(middleEnergy) - MIN( ABS(leftEnergy), ABS(rightEnergy) );
-                        d= MAX(d, 0);
+                        int d= ABS(middleEnergy) - FFMIN( ABS(leftEnergy), ABS(rightEnergy) );
+                        d= FFMAX(d, 0);
 
                         d= (5*d + 32) >> 6;
                         d*= SIGN(-middleEnergy);
@@ -1155,8 +1155,8 @@ src-=8;
                         const int leftEnergy=  5*(src[l3] - src[l2]) + 2*(src[l1] - src[l4]);
                         const int rightEnergy= 5*(src[l7] - src[l6]) + 2*(src[l5] - src[l8]);
 
-                        int d= ABS(middleEnergy) - MIN( ABS(leftEnergy), ABS(rightEnergy) );
-                        d= MAX(d, 0);
+                        int d= ABS(middleEnergy) - FFMIN( ABS(leftEnergy), ABS(rightEnergy) );
+                        d= FFMAX(d, 0);
 
                         d= (5*d + 32) >> 6;
                         d*= SIGN(-middleEnergy);
@@ -1532,7 +1532,7 @@ DERING_CORE((%0, %1, 8)    ,(%%REGd, %1, 4),%%mm2,%%mm4,%%mm0,%%mm3,%%mm5,%%mm1,
                         for(x=1; x<9; x++)
                         {
                                 p++;
-                                *p = MIN(*p + 20, 255);
+                                *p = FFMIN(*p + 20, 255);
                         }
                 }
 //                src[0] = src[7]=src[stride*7]=src[stride*7 + 7]=255;
@@ -3566,14 +3566,14 @@ static void RENAME(postProcess)(uint8_t src[], int srcStride, uint8_t dst[], int
                         /* copy from line (copyAhead) to (copyAhead+7) of src, these will be copied with
                            blockcopy to dst later */
                         linecpy(tempSrc + srcStride*copyAhead, srcBlock + srcStride*copyAhead,
-                                MAX(height-y-copyAhead, 0), srcStride);
+                                FFMAX(height-y-copyAhead, 0), srcStride);
 
                         /* duplicate last line of src to fill the void upto line (copyAhead+7) */
-                        for(i=MAX(height-y, 8); i<copyAhead+8; i++)
+                        for(i=FFMAX(height-y, 8); i<copyAhead+8; i++)
                                 memcpy(tempSrc + srcStride*i, src + srcStride*(height-1), ABS(srcStride));
 
                         /* copy up to (copyAhead+1) lines of dst (line -1 to (copyAhead-1))*/
-                        linecpy(tempDst, dstBlock - dstStride, MIN(height-y+1, copyAhead+1), dstStride);
+                        linecpy(tempDst, dstBlock - dstStride, FFMIN(height-y+1, copyAhead+1), dstStride);
 
                         /* duplicate last line of dst to fill the void upto line (copyAhead) */
                         for(i=height-y+1; i<=copyAhead; i++)
