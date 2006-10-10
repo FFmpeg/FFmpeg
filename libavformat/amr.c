@@ -124,6 +124,7 @@ static int amr_read_header(AVFormatContext *s,
         st->codec->channels = 1;
         st->codec->sample_rate = 8000;
     }
+    av_set_pts_info(st, 64, 1, st->codec->sample_rate);
 
     return 0;
 }
@@ -169,6 +170,7 @@ static int amr_read_packet(AVFormatContext *s,
     pkt->stream_index = 0;
     pkt->pos= url_ftell(&s->pb);
     pkt->data[0]=toc;
+    pkt->duration= enc->codec_id == CODEC_ID_AMR_NB ? 160 : 320;
     read = get_buffer(&s->pb, pkt->data+1, size-1);
 
     if (read != size-1)
