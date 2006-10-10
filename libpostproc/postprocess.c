@@ -101,7 +101,6 @@ try to unroll inner for(x=0 ... loop to avoid these damn if(x ... checks
 
 #define MIN(a,b) ((a) > (b) ? (b) : (a))
 #define MAX(a,b) ((a) < (b) ? (b) : (a))
-#define ABS(a) ((a) > 0 ? (a) : (-(a)))
 #define SIGN(a) ((a) > 0 ? 1 : -1)
 
 #define GET_MODE_BUFFER_SIZE 500
