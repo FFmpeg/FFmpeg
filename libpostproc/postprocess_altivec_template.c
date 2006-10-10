@@ -67,7 +67,6 @@ static inline int vertClassify_altivec(uint8_t src[], int stride, PPContext *c) 
     vector by assuming (stride % 16) == 0, unfortunately
     this is not always true.
   */
-  register int y;
   short __attribute__ ((aligned(16))) data[8];
   int numEq;
   uint8_t *src2 = src;
@@ -265,7 +264,6 @@ static inline void doVertLowPass_altivec(uint8_t *src, int stride, PPContext *c)
 #undef LOAD_LINE
 #undef LOAD_LINE_ALIGNED
 
-  const vector unsigned short v_1 = vec_splat_u16(1);
   const vector unsigned short v_2 = vec_splat_u16(2);
   const vector unsigned short v_4 = vec_splat_u16(4);
 
@@ -518,7 +516,6 @@ static inline void dering_altivec(uint8_t src[], int stride, PPContext *c) {
   */
   uint8_t *srcCopy = src;
   uint8_t __attribute__((aligned(16))) dt[16];
-  const vector unsigned char vuint8_1 = vec_splat_u8(1);
   const vector signed int zero = vec_splat_s32(0);
   vector unsigned char v_dt;
   dt[0] = deringThreshold;
@@ -682,7 +679,6 @@ static inline void dering_altivec(uint8_t src[], int stride, PPContext *c) {
   tQP2[0]= c->QP/2 + 1;
   vector signed int vQP2 = vec_ld(0, tQP2);
   vQP2 = vec_splat(vQP2, 0);
-  const vector unsigned char vuint8_2 = vec_splat_u8(2);
   const vector signed int vsint32_8 = vec_splat_s32(8);
   const vector unsigned int vuint32_4 = vec_splat_u32(4);
 
@@ -1107,9 +1103,6 @@ static inline void transpose_16x8_char_toPackedAlign_altivec(unsigned char* dst,
 
 static inline void transpose_8x16_char_fromPackedAlign_altivec(unsigned char* dst, unsigned char* src, int stride) {
   const vector unsigned char zero = vec_splat_u8(0);
-  const vector unsigned char magic_perm = (const vector unsigned char)
-    AVV(0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
-        0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F);
 
 #define LOAD_DOUBLE_LINE(i, j)                                  \
   vector unsigned char src##i = vec_ld(i * 16, src);            \
