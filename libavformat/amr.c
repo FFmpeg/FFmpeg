@@ -175,11 +175,6 @@ static int amr_read_packet(AVFormatContext *s,
     return 0;
 }
 
-static int amr_read_close(AVFormatContext *s)
-{
-    return 0;
-}
-
 #ifdef CONFIG_AMR_DEMUXER
 AVInputFormat amr_demuxer = {
     "amr",
@@ -188,7 +183,7 @@ AVInputFormat amr_demuxer = {
     amr_probe,
     amr_read_header,
     amr_read_packet,
-    amr_read_close,
+    NULL,
 };
 #endif
 
