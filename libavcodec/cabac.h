@@ -441,12 +441,11 @@ static int get_cabac(CABACContext *c, uint8_t * const state){
         "2:                                     \n\t"
         "movl %%edx, "RANGE    "(%2)            \n\t"
         "movl %%ebx, "LOW      "(%2)            \n\t"
-        "andl $1, %%eax                         \n\t"
-
         :"=&a"(bit) //FIXME this is fragile gcc either runs out of registers or misscompiles it (for example if "+a"(bit) or "+m"(*state) is used
         :"r"(state), "r"(c)
         : "%ecx", "%ebx", "%edx", "%esi"
     );
+    bit&=1;
 #else
     asm volatile(
         "movzbl (%1), %%eax                     \n\t"
