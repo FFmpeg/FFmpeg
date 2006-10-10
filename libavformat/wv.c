@@ -205,5 +205,4 @@ AVInputFormat wv_demuxer = {
     wv_read_header,
     wv_read_packet,
     wv_read_close,
-    pcm_read_seek,
 };
