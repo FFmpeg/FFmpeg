@@ -352,9 +352,9 @@ static int tta_decode_frame(AVCodecContext *avctx,
                     rice->k0++;
             }
 
-            // extract sign
-#define SIGN(x) (((x)&1) ? (++(x)>>1) : (-(x)>>1))
-            *p = SIGN(value);
+            // extract coded value
+#define UNFOLD(x) (((x)&1) ? (++(x)>>1) : (-(x)>>1))
+            *p = UNFOLD(value);
 
             // run hybrid filter
             ttafilter_process(filter, p, 0);
