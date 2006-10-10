@@ -133,7 +133,7 @@ void ff_init_cabac_states(CABACContext *c, uint8_t const (*lps_range)[4],
         c->mps_state[2*i+1]= 2*mps_state[i]+1;
 
         if( i ){
-#ifdef BRANCHLESS_CABAD
+#ifdef BRANCHLESS_CABAC_DECODER
             c->mps_state[-2*i-1]= 2*lps_state[i]+0; //FIXME yes this is not valid C but iam lazy, cleanup welcome
             c->mps_state[-2*i-2]= 2*lps_state[i]+1;
         }else{

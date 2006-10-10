@@ -31,7 +31,7 @@
 
 #define CABAC_BITS 16
 #define CABAC_MASK ((1<<CABAC_BITS)-1)
-#define BRANCHLESS_CABAD 1
+#define BRANCHLESS_CABAC_DECODER 1
 
 typedef struct CABACContext{
     int low;
@@ -375,7 +375,7 @@ static int get_cabac(CABACContext *c, uint8_t * const state){
 #define BYTESTART   "12+2*65*4+4*64"
 #define BYTE        "16+2*65*4+4*64"
 #define BYTEEND     "20+2*65*4+4*64"
-#ifndef BRANCHLESS_CABAD
+#ifndef BRANCHLESS_CABAC_DECODER
     asm volatile(
         "movzbl (%1), %%eax                     \n\t"
         "movl "RANGE    "(%2), %%ebx            \n\t"
@@ -523,7 +523,7 @@ static int get_cabac(CABACContext *c, uint8_t * const state){
     int bit, lps_mask attribute_unused;
 
     c->range -= RangeLPS;
-#ifndef BRANCHLESS_CABAD
+#ifndef BRANCHLESS_CABAC_DECODER
     if(c->low < c->range){
         bit= s&1;
         *state= c->mps_state[s];
