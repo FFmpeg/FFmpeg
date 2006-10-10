@@ -52,39 +52,6 @@ do { \
   d = vec_mergel(_trans_acl, _trans_bdl); \
 } while (0)
 
-#define TRANSPOSE8(a,b,c,d,e,f,g,h) \
-do { \
-    __typeof__(a)  _A1, _B1, _C1, _D1, _E1, _F1, _G1, _H1; \
-    __typeof__(a)  _A2, _B2, _C2, _D2, _E2, _F2, _G2, _H2; \
- \
-    _A1 = vec_mergeh (a, e); \
-    _B1 = vec_mergel (a, e); \
-    _C1 = vec_mergeh (b, f); \
-    _D1 = vec_mergel (b, f); \
-    _E1 = vec_mergeh (c, g); \
-    _F1 = vec_mergel (c, g); \
-    _G1 = vec_mergeh (d, h); \
-    _H1 = vec_mergel (d, h); \
- \
-    _A2 = vec_mergeh (_A1, _E1); \
-    _B2 = vec_mergel (_A1, _E1); \
-    _C2 = vec_mergeh (_B1, _F1); \
-    _D2 = vec_mergel (_B1, _F1); \
-    _E2 = vec_mergeh (_C1, _G1); \
-    _F2 = vec_mergel (_C1, _G1); \
-    _G2 = vec_mergeh (_D1, _H1); \
-    _H2 = vec_mergel (_D1, _H1); \
- \
-    a = vec_mergeh (_A2, _E2); \
-    b = vec_mergel (_A2, _E2); \
-    c = vec_mergeh (_B2, _F2); \
-    d = vec_mergel (_B2, _F2); \
-    e = vec_mergeh (_C2, _G2); \
-    f = vec_mergel (_C2, _G2); \
-    g = vec_mergeh (_D2, _H2); \
-    h = vec_mergel (_D2, _H2); \
-} while (0)
-
 
 // Loads a four-byte value (int or float) from the target address
 // into every element in the target vector.  Only works if the
