@@ -405,6 +405,7 @@ static int gxf_write_umf_track_description(ByteIOContext *pb, GXFContext *ctx)
         case CODEC_ID_PCM_S16LE:  id= 'A'; break;
         case CODEC_ID_DVVIDEO:    id= sc->track_type == 6 ? 'E' : 'D'; break;
         case CODEC_ID_MJPEG:      id= 'V'; break;
+        default:                  break;
         }
         sc->media_info= id << 8;
         /* FIXME first 10 audio tracks are 0 to 9 next 22 are A to V */
