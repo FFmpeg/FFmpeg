@@ -1033,8 +1033,10 @@ static int mxf_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
     int64_t seconds;
     int i;
 
-    if (!s->bit_rate || sample_time < 0)
+    if (!s->bit_rate)
         return -1;
+    if (sample_time < 0)
+        sample_time = 0;
     seconds = av_rescale(sample_time, st->time_base.num, st->time_base.den);
     url_fseek(&s->pb, (s->bit_rate * seconds) >> 3, SEEK_SET);
     /* sync on KLV essence element */
