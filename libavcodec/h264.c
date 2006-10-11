@@ -3639,6 +3639,9 @@ static void hl_decode_mb(H264Context *h){
     dest_cb = s->current_picture.data[1] + (mb_y * 8 * s->uvlinesize) + mb_x * 8;
     dest_cr = s->current_picture.data[2] + (mb_y * 8 * s->uvlinesize) + mb_x * 8;
 
+    s->dsp.prefetch(dest_y + (s->mb_x&3)*4*s->linesize + 64, s->linesize, 4);
+    s->dsp.prefetch(dest_cb + (s->mb_x&7)*s->uvlinesize + 64, dest_cr - dest_cb, 2);
+
     if (MB_FIELD) {
         linesize   = h->mb_linesize   = s->linesize * 2;
         uvlinesize = h->mb_uvlinesize = s->uvlinesize * 2;
