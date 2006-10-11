@@ -51,8 +51,10 @@ static const uint8_t lps_range[64][4]= {
 };
 
 uint8_t ff_h264_lps_range[2*65][4];
+uint8_t ff_h264_lps_state[2*64];
+uint8_t ff_h264_mps_state[2*64];
 
-const uint8_t ff_h264_mps_state[64]= {
+static const uint8_t mps_state[64]= {
   1, 2, 3, 4, 5, 6, 7, 8,
   9,10,11,12,13,14,15,16,
  17,18,19,20,21,22,23,24,
@@ -63,7 +65,7 @@ const uint8_t ff_h264_mps_state[64]= {
  57,58,59,60,61,62,62,63,
 };
 
-const uint8_t ff_h264_lps_state[64]= {
+static const uint8_t lps_state[64]= {
   0, 0, 1, 2, 2, 4, 4, 5,
   6, 7, 8, 9, 9,11,11,12,
  13,13,15,15,16,16,18,18,
@@ -121,32 +123,31 @@ void ff_init_cabac_decoder(CABACContext *c, const uint8_t *buf, int buf_size){
     c->range= 0x1FE<<(CABAC_BITS + 1);
 }
 
-void ff_init_cabac_states(CABACContext *c,
-                          uint8_t const *mps_state, uint8_t const *lps_state, int state_count){
+void ff_init_cabac_states(CABACContext *c){
     int i, j;
 
-    for(i=0; i<state_count; i++){
+    for(i=0; i<64; i++){
         for(j=0; j<4; j++){ //FIXME check if this is worth the 1 shift we save
             ff_h264_lps_range[2*i+0][j+4]=
             ff_h264_lps_range[2*i+1][j+4]= lps_range[i][j];
         }
 
-        c->mps_state[2*i+0]= 2*mps_state[i]+0;
-        c->mps_state[2*i+1]= 2*mps_state[i]+1;
+        ff_h264_mps_state[2*i+0]= 2*mps_state[i]+0;
+        ff_h264_mps_state[2*i+1]= 2*mps_state[i]+1;
 
         if( i ){
 #ifdef BRANCHLESS_CABAC_DECODER
-            c->mps_state[-2*i-1]= 2*lps_state[i]+0; //FIXME yes this is not valid C but iam lazy, cleanup welcome
-            c->mps_state[-2*i-2]= 2*lps_state[i]+1;
+            ff_h264_mps_state[-2*i-1]= 2*lps_state[i]+0; //FIXME yes this is not valid C but iam lazy, cleanup welcome
+            ff_h264_mps_state[-2*i-2]= 2*lps_state[i]+1;
         }else{
-            c->mps_state[-2*i-1]= 1;
-            c->mps_state[-2*i-2]= 0;
+            ff_h264_mps_state[-2*i-1]= 1;
+            ff_h264_mps_state[-2*i-2]= 0;
 #else
-            c->lps_state[2*i+0]= 2*lps_state[i]+0;
-            c->lps_state[2*i+1]= 2*lps_state[i]+1;
+            ff_h264_lps_state[2*i+0]= 2*lps_state[i]+0;
+            ff_h264_lps_state[2*i+1]= 2*lps_state[i]+1;
         }else{
-            c->lps_state[2*i+0]= 1;
-            c->lps_state[2*i+1]= 0;
+            ff_h264_lps_state[2*i+0]= 1;
+            ff_h264_lps_state[2*i+1]= 0;
 #endif
         }
     }

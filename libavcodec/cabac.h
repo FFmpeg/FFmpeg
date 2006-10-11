@@ -41,8 +41,6 @@ typedef struct CABACContext{
 #ifdef STRICT_LIMITS
     int symCount;
 #endif
-    uint8_t lps_state[2*64];      ///< transIdxLPS
-    uint8_t mps_state[2*64];      ///< transIdxMPS
     const uint8_t *bytestream_start;
     const uint8_t *bytestream;
     const uint8_t *bytestream_end;
@@ -50,15 +48,14 @@ typedef struct CABACContext{
 }CABACContext;
 
 extern uint8_t ff_h264_lps_range[2*65][4];  ///< rangeTabLPS
-extern const uint8_t ff_h264_mps_state[64];
-extern const uint8_t ff_h264_lps_state[64];
+extern uint8_t ff_h264_mps_state[2*64];     ///< transIdxMPS
+extern uint8_t ff_h264_lps_state[2*64];     ///< transIdxLPS
 extern const uint8_t ff_h264_norm_shift[128];
 
 
 void ff_init_cabac_encoder(CABACContext *c, uint8_t *buf, int buf_size);
 void ff_init_cabac_decoder(CABACContext *c, const uint8_t *buf, int buf_size);
-void ff_init_cabac_states(CABACContext *c,
-                          uint8_t const *mps_state, uint8_t const *lps_state, int state_count);
+void ff_init_cabac_states(CABACContext *c);
 
 
 static inline void put_cabac_bit(CABACContext *c, int b){
@@ -91,11 +88,11 @@ static void put_cabac(CABACContext *c, uint8_t * const state, int bit){
 
     if(bit == ((*state)&1)){
         c->range -= RangeLPS;
-        *state= c->mps_state[*state];
+        *state= ff_h264_mps_state[*state];
     }else{
         c->low += c->range - RangeLPS;
         c->range = RangeLPS;
-        *state= c->lps_state[*state];
+        *state= ff_h264_lps_state[*state];
     }
 
     renorm_cabac_encoder(c);
@@ -369,11 +366,9 @@ static int get_cabac(CABACContext *c, uint8_t * const state){
 
 #define LOW          "0"
 #define RANGE        "4"
-#define LPS_STATE   "12"
-#define MPS_STATE   "12+2*64"
-#define BYTESTART   "12+4*64"
-#define BYTE        "16+4*64"
-#define BYTEEND     "20+4*64"
+#define BYTESTART   "12"
+#define BYTE        "16"
+#define BYTEEND     "20"
 #ifndef BRANCHLESS_CABAC_DECODER
     asm volatile(
         "movzbl (%1), %%eax                     \n\t"
@@ -391,7 +386,7 @@ static int get_cabac(CABACContext *c, uint8_t * const state){
         "setb %%cl                              \n\t"
         "shl %%cl, %%edx                        \n\t"
         "shl %%cl, %%ebx                        \n\t"
-        "movzbl "MPS_STATE"(%2, %%eax), %%ecx   \n\t"
+        "movzbl "MANGLE(ff_h264_mps_state)"(%%eax), %%ecx   \n\t"
         "movb %%cl, (%1)                        \n\t"
 //eax:state ebx:low, edx:range, esi:RangeLPS
         "test %%bx, %%bx                        \n\t"
@@ -413,7 +408,7 @@ static int get_cabac(CABACContext *c, uint8_t * const state){
         "movzbl " MANGLE(ff_h264_norm_shift) "(%%esi), %%ecx   \n\t"
         "shll %%cl, %%ebx                       \n\t"
         "shll %%cl, %%edx                       \n\t"
-        "movzbl "LPS_STATE"(%2, %%eax), %%ecx   \n\t"
+        "movzbl "MANGLE(ff_h264_lps_state)"(%%eax), %%ecx   \n\t"
         "movb %%cl, (%1)                        \n\t"
         "addl $1, %%eax                         \n\t"
         "test %%bx, %%bx                        \n\t"
@@ -475,7 +470,7 @@ static int get_cabac(CABACContext *c, uint8_t * const state){
 #endif
 
 //eax:state ebx:low edx:mask esi:range
-        "movzbl "MPS_STATE"(%2, %%eax), %%ecx   \n\t"
+        "movzbl "MANGLE(ff_h264_mps_state)"(%%eax), %%ecx   \n\t"
         "movb %%cl, (%1)                        \n\t"
 
         "movl %%esi, %%edx                      \n\t"
@@ -523,12 +518,12 @@ static int get_cabac(CABACContext *c, uint8_t * const state){
 #ifndef BRANCHLESS_CABAC_DECODER
     if(c->low < c->range){
         bit= s&1;
-        *state= c->mps_state[s];
+        *state= ff_h264_mps_state[s];
         renorm_cabac_decoder_once(c);
     }else{
         bit= ff_h264_norm_shift[RangeLPS>>19];
         c->low -= c->range;
-        *state= c->lps_state[s];
+        *state= ff_h264_lps_state[s];
         c->range = RangeLPS<<bit;
         c->low <<= bit;
         bit= (s&1)^1;
@@ -544,7 +539,7 @@ static int get_cabac(CABACContext *c, uint8_t * const state){
     c->range += (RangeLPS - c->range) & lps_mask;
 
     s^=lps_mask;
-    *state= c->mps_state[s];
+    *state= ff_h264_mps_state[s];
     bit= s&1;
 
     lps_mask= ff_h264_norm_shift[c->range>>(CABAC_BITS+3)];
