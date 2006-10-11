@@ -3,8 +3,7 @@
 #
 include ../config.mak
 
-CFLAGS=-DHAVE_AV_CONFIG_H -DBUILD_AVUTIL -I$(BUILD_ROOT) $(OPTFLAGS) \
-       -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_ISOC9X_SOURCE
+CFLAGS+=-DBUILD_AVUTIL
 
 OBJS= mathematics.o \
       rational.o \
