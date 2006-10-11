@@ -94,8 +94,6 @@ typedef struct {
     int inset;
     int min_width;
     struct SwsContext *toRGB_convert_ctx;
-    enum PixelFormat sws_pix_fmt;   // Sws_Context is opaque, we need to save
-    int sws_width, sws_height;      // this to check if we can re-use contexts
 } ContextInfo;
 
 static void dorange(const char *s, int *first, int *second, int maxval)
@@ -346,33 +344,19 @@ void Process(void *ctx, AVPicture *picture, enum PixelFormat pix_fmt, int width,
                 avpicture_fill(&picture1, buf, PIX_FMT_RGB24, width, height);
 
                 // if we already got a SWS context, let's realloc if is not re-useable
-                if (ci->toRGB_convert_ctx != NULL) {
-                    if ((ci->sws_pix_fmt != pix_fmt) ||
-                         (ci->sws_width != width) || (ci->sws_height != height)) {
-                        sws_freeContext(ci->toRGB_convert_ctx);
-                        ci->toRGB_convert_ctx = NULL;
-                    }
-                }
+                ci->toRGB_convert_ctx = sws_getCachedContext(ci->toRGB_convert_ctx,
+                                            width, height, pix_fmt,
+                                            width, height, PIX_FMT_RGB24,
+                                            sws_flags, NULL, NULL, NULL);
                 if (ci->toRGB_convert_ctx == NULL) {
-                    ci->sws_pix_fmt = pix_fmt;
-                    ci->sws_width = width;
-                    ci->sws_height = height;
-                    ci->toRGB_convert_ctx = sws_getContext(
-                                                     ci->sws_width, ci->sws_height,
-                                                     ci->sws_pix_fmt,
-                                                     ci->sws_width, ci->sws_height,
-                                                     PIX_FMT_RGB24,
-                                                     sws_flags, NULL, NULL, NULL);
-                    if (ci->toRGB_convert_ctx == NULL) {
-                        av_log(NULL, AV_LOG_ERROR,
-                               "Cannot initialize the toRGB conversion context\n");
-                        exit(1);
-                    }
+                    av_log(NULL, AV_LOG_ERROR,
+                           "Cannot initialize the toRGB conversion context\n");
+                    exit(1);
                 }
                 // img_convert parameters are          2 first destination, then 4 source
                 // sws_scale   parameters are context, 4 first source,      then 2 destination
                 sws_scale(ci->toRGB_convert_ctx,
-                              picture->data, picture->linesize, 0, ci->sws_height,
+                              picture->data, picture->linesize, 0, height,
                               picture1.data, picture1.linesize);
 
                     /* Write out the PPM file */
