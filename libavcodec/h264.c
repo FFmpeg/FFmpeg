@@ -7388,7 +7388,7 @@ static int decode_slice(H264Context *h){
         align_get_bits( &s->gb );
 
         /* init cabac */
-        ff_init_cabac_states( &h->cabac, ff_h264_lps_range, ff_h264_mps_state, ff_h264_lps_state, 64 );
+        ff_init_cabac_states( &h->cabac, ff_h264_mps_state, ff_h264_lps_state, 64 );
         ff_init_cabac_decoder( &h->cabac,
                                s->gb.buffer + get_bits_count(&s->gb)/8,
                                ( s->gb.size_in_bits - get_bits_count(&s->gb) + 7)/8);

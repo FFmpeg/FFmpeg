@@ -31,7 +31,7 @@
 #include "bitstream.h"
 #include "cabac.h"
 
-const uint8_t ff_h264_lps_range[64][4]= {
+static const uint8_t lps_range[64][4]= {
 {128,176,208,240}, {128,167,197,227}, {128,158,187,216}, {123,150,178,205},
 {116,142,169,195}, {111,135,160,185}, {105,128,152,175}, {100,122,144,166},
 { 95,116,137,158}, { 90,110,130,150}, { 85,104,123,142}, { 81, 99,117,135},
@@ -49,6 +49,8 @@ const uint8_t ff_h264_lps_range[64][4]= {
 {  8,  9, 11, 13}, {  7,  9, 11, 12}, {  7,  9, 10, 12}, {  7,  8, 10, 11},
 {  6,  8,  9, 11}, {  6,  7,  9, 10}, {  6,  7,  8,  9}, {  2,  2,  2,  2},
 };
+
+uint8_t ff_h264_lps_range[2*65][4];
 
 const uint8_t ff_h264_mps_state[64]= {
   1, 2, 3, 4, 5, 6, 7, 8,
@@ -119,14 +121,14 @@ void ff_init_cabac_decoder(CABACContext *c, const uint8_t *buf, int buf_size){
     c->range= 0x1FE<<(CABAC_BITS + 1);
 }
 
-void ff_init_cabac_states(CABACContext *c, uint8_t const (*lps_range)[4],
+void ff_init_cabac_states(CABACContext *c,
                           uint8_t const *mps_state, uint8_t const *lps_state, int state_count){
     int i, j;
 
     for(i=0; i<state_count; i++){
         for(j=0; j<4; j++){ //FIXME check if this is worth the 1 shift we save
-            c->lps_range[2*i+0][j+4]=
-            c->lps_range[2*i+1][j+4]= lps_range[i][j];
+            ff_h264_lps_range[2*i+0][j+4]=
+            ff_h264_lps_range[2*i+1][j+4]= lps_range[i][j];
         }
 
         c->mps_state[2*i+0]= 2*mps_state[i]+0;

@@ -41,7 +41,6 @@ typedef struct CABACContext{
 #ifdef STRICT_LIMITS
     int symCount;
 #endif
-    uint8_t lps_range[2*65][4];   ///< rangeTabLPS
     uint8_t lps_state[2*64];      ///< transIdxLPS
     uint8_t mps_state[2*64];      ///< transIdxMPS
     const uint8_t *bytestream_start;
@@ -50,7 +49,7 @@ typedef struct CABACContext{
     PutBitContext pb;
 }CABACContext;
 
-extern const uint8_t ff_h264_lps_range[64][4];
+extern uint8_t ff_h264_lps_range[2*65][4];  ///< rangeTabLPS
 extern const uint8_t ff_h264_mps_state[64];
 extern const uint8_t ff_h264_lps_state[64];
 extern const uint8_t ff_h264_norm_shift[128];
@@ -58,7 +57,7 @@ extern const uint8_t ff_h264_norm_shift[128];
 
 void ff_init_cabac_encoder(CABACContext *c, uint8_t *buf, int buf_size);
 void ff_init_cabac_decoder(CABACContext *c, const uint8_t *buf, int buf_size);
-void ff_init_cabac_states(CABACContext *c, uint8_t const (*lps_range)[4],
+void ff_init_cabac_states(CABACContext *c,
                           uint8_t const *mps_state, uint8_t const *lps_state, int state_count);
 
 
@@ -88,7 +87,7 @@ static inline void renorm_cabac_encoder(CABACContext *c){
 }
 
 static void put_cabac(CABACContext *c, uint8_t * const state, int bit){
-    int RangeLPS= c->lps_range[*state][c->range>>6];
+    int RangeLPS= ff_h264_lps_range[*state][c->range>>6];
 
     if(bit == ((*state)&1)){
         c->range -= RangeLPS;
@@ -370,20 +369,18 @@ static int get_cabac(CABACContext *c, uint8_t * const state){
 
 #define LOW          "0"
 #define RANGE        "4"
-#define LPS_RANGE   "12"
-#define LPS_STATE   "12+2*65*4"
-#define MPS_STATE   "12+2*65*4+2*64"
-#define BYTESTART   "12+2*65*4+4*64"
-#define BYTE        "16+2*65*4+4*64"
-#define BYTEEND     "20+2*65*4+4*64"
+#define LPS_STATE   "12"
+#define MPS_STATE   "12+2*64"
+#define BYTESTART   "12+4*64"
+#define BYTE        "16+4*64"
+#define BYTEEND     "20+4*64"
 #ifndef BRANCHLESS_CABAC_DECODER
     asm volatile(
         "movzbl (%1), %%eax                     \n\t"
         "movl "RANGE    "(%2), %%ebx            \n\t"
         "movl "RANGE    "(%2), %%edx            \n\t"
         "shrl $23, %%ebx                        \n\t"
-        "leal "LPS_RANGE"(%2, %%eax, 4), %%esi  \n\t"
-        "movzbl (%%ebx, %%esi), %%esi           \n\t"
+        "movzbl ff_h264_lps_range(%%ebx, %%eax, 4), %%esi\n\t"
         "shll $17, %%esi                        \n\t"
         "movl "LOW      "(%2), %%ebx            \n\t"
 //eax:state ebx:low, edx:range, esi:RangeLPS
@@ -453,8 +450,7 @@ static int get_cabac(CABACContext *c, uint8_t * const state){
         "movl "RANGE    "(%2), %%ebx            \n\t"
         "movl "RANGE    "(%2), %%edx            \n\t"
         "shrl $23, %%ebx                        \n\t"
-        "leal "LPS_RANGE"(%2, %%eax, 4), %%esi  \n\t"
-        "movzbl (%%ebx, %%esi), %%esi           \n\t"
+        "movzbl ff_h264_lps_range(%%ebx, %%eax, 4), %%esi\n\t"
         "shll $17, %%esi                        \n\t"
         "movl "LOW      "(%2), %%ebx            \n\t"
 //eax:state ebx:low, edx:range, esi:RangeLPS
@@ -520,7 +516,7 @@ static int get_cabac(CABACContext *c, uint8_t * const state){
 #endif
 #else
     int s = *state;
-    int RangeLPS= c->lps_range[s][c->range>>(CABAC_BITS+7)]<<(CABAC_BITS+1);
+    int RangeLPS= ff_h264_lps_range[s][c->range>>(CABAC_BITS+7)]<<(CABAC_BITS+1);
     int bit, lps_mask attribute_unused;
 
     c->range -= RangeLPS;
