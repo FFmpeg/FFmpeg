@@ -105,6 +105,9 @@ void av_register_all(void)
     av_register_input_format(&dc1394_demuxer);
 #endif
 #endif /* CONFIG_DC1394 */
+#ifdef CONFIG_DSICIN_DEMUXER
+    av_register_input_format(&dsicin_demuxer);
+#endif
 #ifdef CONFIG_DV1394
 #ifdef CONFIG_DV1394_DEMUXER
     av_register_input_format(&dv1394_demuxer);

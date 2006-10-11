@@ -548,6 +548,12 @@ void avcodec_register_all(void)
 #ifdef CONFIG_TARGA_DECODER
     register_avcodec(&targa_decoder);
 #endif //CONFIG_TARGA_DECODER
+#ifdef CONFIG_DSICINVIDEO_DECODER
+    register_avcodec(&dsicinvideo_decoder);
+#endif //CONFIG_DSICINVIDEO_DECODER
+#ifdef CONFIG_DSICINAUDIO_DECODER
+    register_avcodec(&dsicinaudio_decoder);
+#endif //CONFIG_DSICINAUDIO_DECODER
 
 #if defined(CONFIG_AMR_NB) || defined(CONFIG_AMR_NB_FIXED)
 #ifdef CONFIG_AMR_NB_DECODER

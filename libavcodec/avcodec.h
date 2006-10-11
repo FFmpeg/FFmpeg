@@ -145,6 +145,7 @@ enum CodecID {
     CODEC_ID_VP6,
     CODEC_ID_VP6F,
     CODEC_ID_TARGA,
+    CODEC_ID_DSICINVIDEO,
 
     /* various pcm "codecs" */
     CODEC_ID_PCM_S16LE= 0x10000,
@@ -228,6 +229,7 @@ enum CodecID {
     CODEC_ID_SMACKAUDIO,
     CODEC_ID_QCELP,
     CODEC_ID_WAVPACK,
+    CODEC_ID_DSICINAUDIO,
 
     /* subtitle codecs */
     CODEC_ID_DVD_SUBTITLE= 0x17000,
@@ -2294,6 +2296,8 @@ extern AVCodec cavs_decoder;
 extern AVCodec vmnc_decoder;
 extern AVCodec wavpack_decoder;
 extern AVCodec targa_decoder;
+extern AVCodec dsicinvideo_decoder;
+extern AVCodec dsicinaudio_decoder;
 
 /* pcm codecs */
 #define PCM_CODEC(id, name) \

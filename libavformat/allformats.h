@@ -43,6 +43,7 @@ extern AVOutputFormat crc_muxer;
 extern AVOutputFormat framecrc_muxer;
 extern AVInputFormat daud_demuxer;
 extern AVInputFormat dc1394_demuxer;
+extern AVInputFormat dsicin_demuxer;
 extern AVInputFormat dv1394_demuxer;
 extern AVInputFormat dv_demuxer;
 extern AVOutputFormat dv_muxer;

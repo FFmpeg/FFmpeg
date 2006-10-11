@@ -29,6 +29,7 @@ OBJS-$(CONFIG_AVS_DEMUXER)               += avs.o
 OBJS-$(CONFIG_CRC_MUXER)                 += crc.o
 OBJS-$(CONFIG_FRAMECRC_MUXER)            += crc.o
 OBJS-$(CONFIG_DAUD_DEMUXER)              += daud.o
+OBJS-$(CONFIG_DSICIN_DEMUXER)            += dsicin.o
 OBJS-$(CONFIG_DV_DEMUXER)                += dv.o
 OBJS-$(CONFIG_DV_MUXER)                  += dvenc.o
 OBJS-$(CONFIG_EA_DEMUXER)                += electronicarts.o
