@@ -734,7 +734,8 @@ library:
 @tab Multimedia format used by the Creature Shock game.
 @item Smacker @tab    @tab X
 @tab Multimedia format used by many games.
-@item GXF @tab    @tab X
+@item GXF @tab  X @tab X
+@tab General eXchange Format SMPTE 360M, used by Thomson Grass Valley playout servers.
 @item CIN @tab    @tab X
 @tab Multimedia format used by Delphine Software games.
 @end multitable
