@@ -594,7 +594,7 @@ static inline void RENAME(vertX1Filter)(uint8_t *src, int stride, PPContext *co)
 
                 if(d < co->QP*2)
                 {
-                        int v = d * SIGN(-b);
+                        int v = d * FFSIGN(-b);
 
                         src[l2] +=v>>3;
                         src[l3] +=v>>2;
@@ -855,7 +855,7 @@ static inline void RENAME(doVertDefFilter)(uint8_t src[], int stride, PPContext 
                         d= FFMAX(d, 0);
 
                         d= (5*d + 32) >> 6;
-                        d*= SIGN(-middleEnergy);
+                        d*= FFSIGN(-middleEnergy);
 
                         if(q>0)
                         {
@@ -1159,7 +1159,7 @@ src-=8;
                         d= FFMAX(d, 0);
 
                         d= (5*d + 32) >> 6;
-                        d*= SIGN(-middleEnergy);
+                        d*= FFSIGN(-middleEnergy);
 
                         if(q>0)
                         {

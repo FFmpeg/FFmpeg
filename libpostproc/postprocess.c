@@ -340,7 +340,7 @@ static inline void doHorizDefFilter_C(uint8_t dst[], int stride, PPContext *c)
                         d= FFMAX(d, 0);
 
                         d= (5*d + 32) >> 6;
-                        d*= SIGN(-middleEnergy);
+                        d*= FFSIGN(-middleEnergy);
 
                         if(q>0)
                         {
@@ -449,7 +449,7 @@ static inline void horizX1Filter(uint8_t *src, int stride, int QP)
 
                 if(d < QP)
                 {
-                        int v = d * SIGN(-b);
+                        int v = d * FFSIGN(-b);
 
                         src[1] +=v/8;
                         src[2] +=v/4;
@@ -542,7 +542,7 @@ static always_inline void do_a_deblock_C(uint8_t *src, int step, int stride, PPC
                                 d= FFMAX(d, 0);
 
                                 d= (5*d + 32) >> 6;
-                                d*= SIGN(-middleEnergy);
+                                d*= FFSIGN(-middleEnergy);
 
                                 if(q>0)
                                 {
