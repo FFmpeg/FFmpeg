@@ -382,10 +382,20 @@ static int get_cabac(CABACContext *c, uint8_t * const state){
         "subl %%esi, %%edx                      \n\t"
         "cmpl %%edx, %%ebx                      \n\t"
         " ja 1f                                 \n\t"
+
+#if 1
+        //athlon:4067 P3:4110
+        "lea -0x2000000(%%edx), %%ecx           \n\t"
+        "shr $31, %%ecx                         \n\t"
+        "shl %%cl, %%edx                        \n\t"
+        "shl %%cl, %%ebx                        \n\t"
+#else
+        //athlon:4057 P3:4130
         "cmp $0x2000000, %%edx                  \n\t" //FIXME avoidable
         "setb %%cl                              \n\t"
         "shl %%cl, %%edx                        \n\t"
         "shl %%cl, %%ebx                        \n\t"
+#endif
         "movzbl "MANGLE(ff_h264_mps_state)"(%%eax), %%ecx   \n\t"
         "movb %%cl, (%1)                        \n\t"
 //eax:state ebx:low, edx:range, esi:RangeLPS
