@@ -478,8 +478,10 @@ static int get_cabac(CABACContext *c, uint8_t * const state){
 
         "shr $19, %%esi                         \n\t"
         "movzbl " MANGLE(ff_h264_norm_shift) "(%%esi), %%ecx   \n\t"
-        "shll %%cl, %%ebx                       \n\t"
         "shll %%cl, %%edx                       \n\t"
+        "movl %%edx, "RANGE    "(%2)            \n\t"
+        "shll %%cl, %%ebx                       \n\t"
+        "movl %%ebx, "LOW      "(%2)            \n\t"
         "test %%bx, %%bx                        \n\t"
         " jnz 1f                                \n\t"
 
@@ -500,9 +502,8 @@ static int get_cabac(CABACContext *c, uint8_t * const state){
 
         "shll %%cl , %%esi                      \n\t"
         "addl %%esi, %%ebx                      \n\t"
-        "1:                                     \n\t"
-        "movl %%edx, "RANGE    "(%2)            \n\t"
         "movl %%ebx, "LOW      "(%2)            \n\t"
+        "1:                                     \n\t"
         :"=&a"(bit)
         :"r"(state), "r"(c)
         : "%ecx", "%ebx", "%edx", "%esi"
