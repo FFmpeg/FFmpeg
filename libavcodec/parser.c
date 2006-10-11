@@ -71,8 +71,29 @@ AVCodecParserContext *av_parser_init(int codec_id)
     return s;
 }
 
-/* NOTE: buf_size == 0 is used to signal EOF so that the last frame
-   can be returned if necessary */
+/**
+ *
+ * @param buf           input
+ * @param buf_size      input length, to signal EOF, this should be 0 (so that the last frame can be output)
+ * @param pts           input presentation timestamp
+ * @param dts           input decoding timestamp
+ * @param poutbuf       will contain a pointer to the first byte of the output frame
+ * @param poutbuf_size  will contain the length of the output frame
+ * @return the number of bytes of the input bitstream used
+ *
+ * Example:
+ * @code
+ *   while(in_len){
+ *       len = av_parser_parse(myparser, AVCodecContext, &data, &size,
+ *                                       in_data, in_len,
+ *                                       pts, dts);
+ *       in_data += len;
+ *       in_len  -= len;
+ *
+ *       decode_frame(data, size);
+ *   }
+ * @endcode
+ */
 int av_parser_parse(AVCodecParserContext *s,
                     AVCodecContext *avctx,
                     uint8_t **poutbuf, int *poutbuf_size,
