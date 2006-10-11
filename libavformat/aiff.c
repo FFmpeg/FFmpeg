@@ -95,23 +95,6 @@ static void get_meta(ByteIOContext *pb, char * str, int strsize, int size)
         url_fskip(pb, size);
 }
 
-/* Returns the number of bits per second */
-static int fix_bps(int codec_id)
-{
-    switch (codec_id) {
-        case CODEC_ID_PCM_S8:
-                return 8;
-        case CODEC_ID_PCM_S16BE:
-                return 16;
-        case CODEC_ID_PCM_S24BE:
-                return 24;
-        case CODEC_ID_PCM_S32BE:
-                return 32;
-    }
-
-    return -1;
-}
-
 /* Returns the number of sound data frames or negative on error */
 static unsigned int get_aiff_header(ByteIOContext *pb, AVCodecContext *codec,
                              int size, unsigned version)
@@ -141,14 +124,14 @@ static unsigned int get_aiff_header(ByteIOContext *pb, AVCodecContext *codec,
 
         if (codec->codec_id == CODEC_ID_PCM_S16BE) {
             codec->codec_id = aiff_codec_get_id (codec->bits_per_sample);
-            codec->bits_per_sample = fix_bps(codec->codec_id);
+            codec->bits_per_sample = av_get_bits_per_sample(codec->codec_id);
         }
 
         size -= 4;
     } else {
         /* Need the codec type */
         codec->codec_id = aiff_codec_get_id (codec->bits_per_sample);
-        codec->bits_per_sample = fix_bps(codec->codec_id);
+        codec->bits_per_sample = av_get_bits_per_sample(codec->codec_id);
     }
 
     if (!codec->codec_id)
