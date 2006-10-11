@@ -738,6 +738,8 @@ library:
 @tab General eXchange Format SMPTE 360M, used by Thomson Grass Valley playout servers.
 @item CIN @tab    @tab X
 @tab Multimedia format used by Delphine Software games.
+@item MXF @tab    @tab X
+@tab Material eXchange Format SMPTE 377M, used by D-Cinema, broadcast industry.
 @end multitable
 
 @code{X} means that encoding (resp. decoding) is supported.
