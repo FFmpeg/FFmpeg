@@ -545,6 +545,9 @@ void avcodec_register_all(void)
 #ifdef CONFIG_WAVPACK_DECODER
     register_avcodec(&wavpack_decoder);
 #endif //CONFIG_WAVPACK_DECODER
+#ifdef CONFIG_TARGA_DECODER
+    register_avcodec(&targa_decoder);
+#endif //CONFIG_TARGA_DECODER
 
 #if defined(CONFIG_AMR_NB) || defined(CONFIG_AMR_NB_FIXED)
 #ifdef CONFIG_AMR_NB_DECODER

@@ -155,6 +155,7 @@ Codecs:
   snow.c                                Michael Niedermayer, Loren Merritt
   sonic.c                               Alex Beregszaszi
   svq3.c                                Michael Niedermayer
+  targa.c                               Kostya Shishkov
   truemotion1*                          Mike Melanson
   truemotion2*                          Kostya Shishkov
   truespeech.c                          Kostya Shishkov

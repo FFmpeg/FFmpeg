@@ -59,6 +59,7 @@ version <next>
 - VP5 video decoder
 - VP6 video decoder
 - WavPack lossless audio decoder
+- Targa (.TGA) picture decoder
 
 version 0.4.9-pre1:
 
