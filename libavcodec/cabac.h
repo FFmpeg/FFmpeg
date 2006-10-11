@@ -32,6 +32,7 @@
 #define CABAC_BITS 16
 #define CABAC_MASK ((1<<CABAC_BITS)-1)
 #define BRANCHLESS_CABAC_DECODER 1
+#define CMOV_IS_FAST 1
 
 typedef struct CABACContext{
     int low;
