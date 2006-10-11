@@ -735,6 +735,8 @@ library:
 @item Smacker @tab    @tab X
 @tab Multimedia format used by many games.
 @item GXF @tab    @tab X
+@item CIN @tab    @tab X
+@tab Multimedia format used by Delphine Software games.
 @end multitable
 
 @code{X} means that encoding (resp. decoding) is supported.
@@ -837,6 +839,7 @@ following image formats are supported:
 @item RTjpeg                 @tab     @tab  X @tab Video encoding used in NuppelVideo files.
 @item KMVC                   @tab     @tab  X @tab Codec used in Worms games.
 @item VMware Video           @tab     @tab  X @tab Codec used in videos captured by VMware.
+@item Cin Video              @tab     @tab  X @tab Codec used in Delphine Software games.
 @end multitable
 
 @code{X} means that encoding (resp. decoding) is supported.
@@ -910,6 +913,8 @@ following image formats are supported:
 @item True Audio (TTA)       @tab      @tab X
 @item Smacker Audio          @tab      @tab X
 @item WavPack Audio          @tab      @tab X
+@item Cin Audio              @tab      @tab X
+@tab Codec used in Delphine Software games.
 @end multitable
 
 @code{X} means that encoding (resp. decoding) is supported.
