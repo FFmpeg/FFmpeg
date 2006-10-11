@@ -1236,7 +1236,7 @@ static uint_fast8_t vorbis_floor0_decode(vorbis_context *vc,
 static void render_line(int x0, int y0, int x1, int y1, float * buf, int n) {
     int dy = y1 - y0;
     int adx = x1 - x0;
-    int ady = ABS(dy);
+    int ady = FFABS(dy);
     int base = dy / adx;
     int x = x0;
     int y = y0;
@@ -1244,7 +1244,7 @@ static void render_line(int x0, int y0, int x1, int y1, float * buf, int n) {
     int sy;
     if (dy < 0) sy = base - 1;
     else        sy = base + 1;
-    ady = ady - ABS(base) * adx;
+    ady = ady - FFABS(base) * adx;
     if (x >= n) return;
     buf[x] = ff_vorbis_floor1_inverse_db_table[y];
     for (x = x0 + 1; x < x1; x++) {
@@ -1354,7 +1354,7 @@ static uint_fast8_t vorbis_floor1_decode(vorbis_context *vc, vorbis_floor_data *
         high_neigh_offs=vf->list[i].high;
         dy=floor1_Y_final[high_neigh_offs]-floor1_Y_final[low_neigh_offs];  // render_point begin
         adx=vf->list[high_neigh_offs].x-vf->list[low_neigh_offs].x;
-        ady= ABS(dy);
+        ady= FFABS(dy);
         err=ady*(vf->list[i].x-vf->list[low_neigh_offs].x);
         off=(int16_t)err/(int16_t)adx;
         if (dy<0) {

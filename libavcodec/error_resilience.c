@@ -217,7 +217,7 @@ static void h_block_filter(MpegEncContext *s, uint8_t *dst, int w, int h, int st
             if(!(left_damage||right_damage)) continue; // both undamaged
 
             if(   (!left_intra) && (!right_intra)
-               && ABS(left_mv[0]-right_mv[0]) + ABS(left_mv[1]+right_mv[1]) < 2) continue;
+               && FFABS(left_mv[0]-right_mv[0]) + FFABS(left_mv[1]+right_mv[1]) < 2) continue;
 
             for(y=0; y<8; y++){
                 int a,b,c,d;
@@ -226,7 +226,7 @@ static void h_block_filter(MpegEncContext *s, uint8_t *dst, int w, int h, int st
                 b= dst[offset + 8 + y*stride] - dst[offset + 7 + y*stride];
                 c= dst[offset + 9 + y*stride] - dst[offset + 8 + y*stride];
 
-                d= ABS(b) - ((ABS(a) + ABS(c) + 1)>>1);
+                d= FFABS(b) - ((FFABS(a) + FFABS(c) + 1)>>1);
                 d= FFMAX(d, 0);
                 if(b<0) d= -d;
 
@@ -277,7 +277,7 @@ static void v_block_filter(MpegEncContext *s, uint8_t *dst, int w, int h, int st
             if(!(top_damage||bottom_damage)) continue; // both undamaged
 
             if(   (!top_intra) && (!bottom_intra)
-               && ABS(top_mv[0]-bottom_mv[0]) + ABS(top_mv[1]+bottom_mv[1]) < 2) continue;
+               && FFABS(top_mv[0]-bottom_mv[0]) + FFABS(top_mv[1]+bottom_mv[1]) < 2) continue;
 
             for(x=0; x<8; x++){
                 int a,b,c,d;
@@ -286,7 +286,7 @@ static void v_block_filter(MpegEncContext *s, uint8_t *dst, int w, int h, int st
                 b= dst[offset + x + 8*stride] - dst[offset + x + 7*stride];
                 c= dst[offset + x + 9*stride] - dst[offset + x + 8*stride];
 
-                d= ABS(b) - ((ABS(a) + ABS(c)+1)>>1);
+                d= FFABS(b) - ((FFABS(a) + FFABS(c)+1)>>1);
                 d= FFMAX(d, 0);
                 if(b<0) d= -d;
 
@@ -495,22 +495,22 @@ int score_sum=0;
                         if(mb_x>0 && fixed[mb_xy-1]){
                             int k;
                             for(k=0; k<16; k++)
-                                score += ABS(src[k*s->linesize-1 ]-src[k*s->linesize   ]);
+                                score += FFABS(src[k*s->linesize-1 ]-src[k*s->linesize   ]);
                         }
                         if(mb_x+1<mb_width && fixed[mb_xy+1]){
                             int k;
                             for(k=0; k<16; k++)
-                                score += ABS(src[k*s->linesize+15]-src[k*s->linesize+16]);
+                                score += FFABS(src[k*s->linesize+15]-src[k*s->linesize+16]);
                         }
                         if(mb_y>0 && fixed[mb_xy-mb_stride]){
                             int k;
                             for(k=0; k<16; k++)
-                                score += ABS(src[k-s->linesize   ]-src[k               ]);
+                                score += FFABS(src[k-s->linesize   ]-src[k               ]);
                         }
                         if(mb_y+1<mb_height && fixed[mb_xy+mb_stride]){
                             int k;
                             for(k=0; k<16; k++)
-                                score += ABS(src[k+s->linesize*15]-src[k+s->linesize*16]);
+                                score += FFABS(src[k+s->linesize*15]-src[k+s->linesize*16]);
                         }
 
                         if(score <= best_score){ // <= will favor the last MV

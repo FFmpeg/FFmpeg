@@ -513,7 +513,7 @@ static int16_t *wmv2_pred_motion(Wmv2Context *w, int *px, int *py){
     C = s->current_picture.motion_val[0][xy + 2 - wrap];
 
     if(s->mb_x && !s->first_slice_line && !s->mspel && w->top_left_mv_flag)
-        diff= FFMAX(ABS(A[0] - B[0]), ABS(A[1] - B[1]));
+        diff= FFMAX(FFABS(A[0] - B[0]), FFABS(A[1] - B[1]));
     else
         diff=0;
 

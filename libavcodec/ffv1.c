@@ -225,7 +225,7 @@ static inline void put_symbol(RangeCoder *c, uint8_t *state, int v, int is_signe
     int i;
 
     if(v){
-        const int a= ABS(v);
+        const int a= FFABS(v);
         const int e= av_log2(a);
         put_rac(c, state+0, 0);
 
@@ -273,7 +273,7 @@ static inline int get_symbol(RangeCoder *c, uint8_t *state, int is_signed){
 static inline void update_vlc_state(VlcState * const state, const int v){
     int drift= state->drift;
     int count= state->count;
-    state->error_sum += ABS(v);
+    state->error_sum += FFABS(v);
     drift += v;
 
     if(count == 128){ //FIXME variable

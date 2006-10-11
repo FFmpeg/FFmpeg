@@ -1032,10 +1032,10 @@ static int estimate_stereo_mode(int32_t *left_ch, int32_t *right_ch, int n)
     for(i=2; i<n; i++) {
         lt = left_ch[i] - 2*left_ch[i-1] + left_ch[i-2];
         rt = right_ch[i] - 2*right_ch[i-1] + right_ch[i-2];
-        sum[2] += ABS((lt + rt) >> 1);
-        sum[3] += ABS(lt - rt);
-        sum[0] += ABS(lt);
-        sum[1] += ABS(rt);
+        sum[2] += FFABS((lt + rt) >> 1);
+        sum[3] += FFABS(lt - rt);
+        sum[0] += FFABS(lt);
+        sum[1] += FFABS(rt);
     }
     /* estimate bit counts */
     for(i=0; i<4; i++) {

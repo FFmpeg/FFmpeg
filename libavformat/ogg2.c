@@ -605,7 +605,7 @@ ogg_read_seek (AVFormatContext * s, int stream_index, int64_t target_ts,
         pts = ogg_gptopts (s, i, ogg->streams[i].granule);
         p = url_ftell (bc);
 
-        if (ABS (pts - target_ts) * st->time_base.num < st->time_base.den)
+        if (FFABS (pts - target_ts) * st->time_base.num < st->time_base.den)
             break;
 
         if (pts > target_ts){
@@ -633,7 +633,7 @@ ogg_read_seek (AVFormatContext * s, int stream_index, int64_t target_ts,
         }
     }
 
-    if (ABS (pts - target_ts) * st->time_base.num < st->time_base.den){
+    if (FFABS (pts - target_ts) * st->time_base.num < st->time_base.den){
         ogg_restore (s, 1);
         ogg_reset (ogg);
     }else{

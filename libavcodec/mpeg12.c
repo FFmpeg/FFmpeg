@@ -159,7 +159,7 @@ static void init_uni_ac_vlc(RLTable *rl, uint8_t *uni_ac_vlc_len){
         for(run=0; run<64; run++){
             int len, bits, code;
 
-            int alevel= ABS(level);
+            int alevel= FFABS(level);
             int sign= (level>>31)&1;
 
             if (alevel > rl->max_level[0][run])
@@ -206,7 +206,7 @@ static int find_frame_rate_index(MpegEncContext *s){
         int64_t n1= 1001LL*s->avctx->time_base.den;
         if(s->avctx->strict_std_compliance > FF_COMPLIANCE_INOFFICIAL && i>=9) break;
 
-        d = ABS(n0 - n1);
+        d = FFABS(n0 - n1);
         if(d < dmin){
             dmin=d;
             s->frame_rate_index= i;
@@ -279,7 +279,7 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
                 else
                     error-= av_q2d(mpeg2_aspect[i])*s->height/s->width;
 
-                error= ABS(error);
+                error= FFABS(error);
 
                 if(error < best_aspect_error){
                     best_aspect_error= error;
@@ -806,7 +806,7 @@ void ff_mpeg1_encode_init(MpegEncContext *s)
                 int bits, code;
                 int diff=i;
 
-                adiff = ABS(diff);
+                adiff = FFABS(diff);
                 if(diff<0) diff--;
                 index = av_log2(2*adiff);
 

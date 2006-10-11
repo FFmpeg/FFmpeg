@@ -705,7 +705,7 @@ static always_inline void dv_set_class_number(DCTELEM* blk, EncBlockInfo* bi,
               /* weigh it and and shift down into range, adding for rounding */
               /* the extra division by a factor of 2^4 reverses the 8x expansion of the DCT
                  AND the 2x doubling of the weights */
-              level = (ABS(level) * weight[i] + (1<<(dv_weight_bits+3))) >> (dv_weight_bits+4);
+              level = (FFABS(level) * weight[i] + (1<<(dv_weight_bits+3))) >> (dv_weight_bits+4);
               bi->mb[i] = level;
               if(level>max) max= level;
               bi->bit_size[area] += dv_rl2vlc_size(i - prev  - 1, level);

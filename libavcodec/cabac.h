@@ -219,7 +219,7 @@ static void put_cabac_ueg(CABACContext *c, uint8_t * state, int v, int max, int 
     else{
         const int sign= v < 0;
 
-        if(is_signed) v= ABS(v);
+        if(is_signed) v= FFABS(v);
 
         if(v<max){
             for(i=0; i<v; i++){

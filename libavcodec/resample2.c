@@ -215,7 +215,7 @@ int av_resample(AVResampleContext *c, short *dst, short *src, int *consumed, int
 
         if(sample_index < 0){
             for(i=0; i<c->filter_length; i++)
-                val += src[ABS(sample_index + i) % src_size] * filter[i];
+                val += src[FFABS(sample_index + i) % src_size] * filter[i];
         }else if(sample_index + c->filter_length > src_size){
             break;
         }else if(c->linear){

@@ -1184,8 +1184,8 @@ static int nsse16_mmx(void *p, uint8_t * pix1, uint8_t * pix2, int line_size, in
     else  score1 = sse16_mmx(c, pix1, pix2, line_size, h);
     score2= hf_noise16_mmx(pix1, line_size, h) - hf_noise16_mmx(pix2, line_size, h);
 
-    if(c) return score1 + ABS(score2)*c->avctx->nsse_weight;
-    else  return score1 + ABS(score2)*8;
+    if(c) return score1 + FFABS(score2)*c->avctx->nsse_weight;
+    else  return score1 + FFABS(score2)*8;
 }
 
 static int nsse8_mmx(void *p, uint8_t * pix1, uint8_t * pix2, int line_size, int h) {
@@ -1193,8 +1193,8 @@ static int nsse8_mmx(void *p, uint8_t * pix1, uint8_t * pix2, int line_size, int
     int score1= sse8_mmx(c, pix1, pix2, line_size, h);
     int score2= hf_noise8_mmx(pix1, line_size, h) - hf_noise8_mmx(pix2, line_size, h);
 
-    if(c) return score1 + ABS(score2)*c->avctx->nsse_weight;
-    else  return score1 + ABS(score2)*8;
+    if(c) return score1 + FFABS(score2)*c->avctx->nsse_weight;
+    else  return score1 + FFABS(score2)*8;
 }
 
 static int vsad_intra16_mmx(void *v, uint8_t * pix, uint8_t * dummy, int line_size, int h) {
@@ -2580,7 +2580,7 @@ static void gmc_mmx(uint8_t *dst, uint8_t *src, int stride, int h, int ox, int o
 static int try_8x8basis_mmx(int16_t rem[64], int16_t weight[64], int16_t basis[64], int scale){
     long i=0;
 
-    assert(ABS(scale) < 256);
+    assert(FFABS(scale) < 256);
     scale<<= 16 + 1 - BASIS_SHIFT + RECON_SHIFT;
 
     asm volatile(
@@ -2628,7 +2628,7 @@ static int try_8x8basis_mmx(int16_t rem[64], int16_t weight[64], int16_t basis[6
 static void add_8x8basis_mmx(int16_t rem[64], int16_t basis[64], int scale){
     long i=0;
 
-    if(ABS(scale) < 256){
+    if(FFABS(scale) < 256){
         scale<<= 16 + 1 - BASIS_SHIFT + RECON_SHIFT;
         asm volatile(
                 "pcmpeqw %%mm6, %%mm6   \n\t" // -1w

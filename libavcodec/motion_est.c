@@ -296,14 +296,14 @@ static int pix_dev(uint8_t * pix, int line_size, int mean)
     s = 0;
     for (i = 0; i < 16; i++) {
         for (j = 0; j < 16; j += 8) {
-            s += ABS(pix[0]-mean);
-            s += ABS(pix[1]-mean);
-            s += ABS(pix[2]-mean);
-            s += ABS(pix[3]-mean);
-            s += ABS(pix[4]-mean);
-            s += ABS(pix[5]-mean);
-            s += ABS(pix[6]-mean);
-            s += ABS(pix[7]-mean);
+            s += FFABS(pix[0]-mean);
+            s += FFABS(pix[1]-mean);
+            s += FFABS(pix[2]-mean);
+            s += FFABS(pix[3]-mean);
+            s += FFABS(pix[4]-mean);
+            s += FFABS(pix[5]-mean);
+            s += FFABS(pix[6]-mean);
+            s += FFABS(pix[7]-mean);
             pix += 8;
         }
         pix += line_size - 16;

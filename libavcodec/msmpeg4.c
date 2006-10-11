@@ -1716,7 +1716,7 @@ static inline int msmpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
 //printf("level: %d, run: %d at %d %d\n", level, run, s->mb_x, s->mb_y);
 #if 0 // waste of time / this will detect very few errors
                     {
-                        const int abs_level= ABS(level);
+                        const int abs_level= FFABS(level);
                         const int run1= run - rl->max_run[last][abs_level] - run_diff;
                         if(abs_level<=MAX_LEVEL && run<=MAX_RUN){
                             if(abs_level <= rl->max_level[last][run]){

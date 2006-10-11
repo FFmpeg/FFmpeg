@@ -1455,11 +1455,11 @@ static void reverse_dc_prediction(Vp3DecodeContext *s,
                     /* check for outranging on the [ul u l] and
                      * [ul u ur l] predictors */
                     if ((transform == 13) || (transform == 15)) {
-                        if (ABS(predicted_dc - vu) > 128)
+                        if (FFABS(predicted_dc - vu) > 128)
                             predicted_dc = vu;
-                        else if (ABS(predicted_dc - vl) > 128)
+                        else if (FFABS(predicted_dc - vl) > 128)
                             predicted_dc = vl;
-                        else if (ABS(predicted_dc - vul) > 128)
+                        else if (FFABS(predicted_dc - vul) > 128)
                             predicted_dc = vul;
                     }
 
@@ -1527,7 +1527,7 @@ static void render_slice(Vp3DecodeContext *s, int slice)
         if (!s->flipped_image) stride = -stride;
 
 
-        if(ABS(stride) > 2048)
+        if(FFABS(stride) > 2048)
             return; //various tables are fixed size
 
         /* for each fragment row in the slice (both of them)... */

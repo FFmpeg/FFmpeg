@@ -224,7 +224,7 @@ void dct_error(const char *name, int is_idct,
         }
 #endif
     }
-    for(i=0; i<64; i++) sysErrMax= MAX(sysErrMax, ABS(sysErr[i]));
+    for(i=0; i<64; i++) sysErrMax= MAX(sysErrMax, FFABS(sysErr[i]));
 
 #if 1 // dump systematic errors
     for(i=0; i<64; i++){

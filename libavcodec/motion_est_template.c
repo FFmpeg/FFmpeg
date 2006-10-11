@@ -639,8 +639,8 @@ static int funny_diamond_search(MpegEncContext * s, int *best, int dmin,
 {
 int dx, dy, i;
 static int stats[8*8];
-dx= ABS(x-best[0]);
-dy= ABS(y-best[1]);
+dx= FFABS(x-best[0]);
+dy= FFABS(y-best[1]);
 if(dy>dx){
     dx^=dy; dy^=dx; dx^=dy;
 }
@@ -695,7 +695,7 @@ static int sab_diamond_search(MpegEncContext * s, int *best, int dmin,
     MotionEstContext * const c= &s->me;
     me_cmp_func cmpf, chroma_cmpf;
     Minima minima[MAX_SAB_SIZE];
-    const int minima_count= ABS(c->dia_size);
+    const int minima_count= FFABS(c->dia_size);
     int i, j;
     LOAD_COMMON
     LOAD_COMMON2
@@ -829,8 +829,8 @@ static int var_diamond_search(MpegEncContext * s, int *best, int dmin,
 {
 int dx, dy, i;
 static int stats[8*8];
-dx= ABS(x-best[0]);
-dy= ABS(y-best[1]);
+dx= FFABS(x-best[0]);
+dy= FFABS(y-best[1]);
 stats[dy*8 + dx] ++;
 if(256*256*256*64 % (stats[0]+1)==0){
     for(i=0; i<64; i++){

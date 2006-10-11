@@ -428,8 +428,8 @@ static void vp6_filter(vp56_context_t *s, uint8_t *dst, uint8_t *src,
         filter4 = s->filter_mode;
         if (filter4 == 2) {
             if (s->max_vector_length &&
-                (ABS(mv.x) > s->max_vector_length ||
-                 ABS(mv.y) > s->max_vector_length)) {
+                (FFABS(mv.x) > s->max_vector_length ||
+                 FFABS(mv.y) > s->max_vector_length)) {
                 filter4 = 0;
             } else if (!s->sample_variance_threshold
                        || (vp6_block_variance(src+offset1, stride)

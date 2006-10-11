@@ -213,7 +213,7 @@ static inline int ls_get_code_regular(GetBitContext *gb, JLSState *state, int Q)
     if(!state->near && !k && (2 * state->B[Q] <= -state->N[Q]))
         ret = -(ret + 1);
 
-    state->A[Q] += ABS(ret);
+    state->A[Q] += FFABS(ret);
     ret *= state->twonear;
     state->B[Q] += ret;
 
@@ -274,7 +274,7 @@ static inline int ls_get_code_runterm(GetBitContext *gb, JLSState *state, int RI
     }
 
     /* update state */
-    state->A[Q] += ABS(ret) - RItype;
+    state->A[Q] += FFABS(ret) - RItype;
     ret *= state->twonear;
     if(state->N[Q] == state->reset){
         state->A[Q] >>=1;
@@ -306,7 +306,7 @@ static inline void ls_decode_line(JLSState *state, MJpegDecodeContext *s, uint8_
         D1 = Rb - Rc;
         D2 = Rc - Ra;
         /* run mode */
-        if((ABS(D0) <= state->near) && (ABS(D1) <= state->near) && (ABS(D2) <= state->near)) {
+        if((FFABS(D0) <= state->near) && (FFABS(D1) <= state->near) && (FFABS(D2) <= state->near)) {
             int r;
             int RItype;
 
@@ -340,7 +340,7 @@ static inline void ls_decode_line(JLSState *state, MJpegDecodeContext *s, uint8_
 
             /* decode run termination value */
             Rb = last[x];
-            RItype = (ABS(Ra - Rb) <= state->near) ? 1 : 0;
+            RItype = (FFABS(Ra - Rb) <= state->near) ? 1 : 0;
             err = ls_get_code_runterm(&s->gb, state, RItype, log2_run[state->run_index[comp]]);
             if(state->run_index[comp])
                 state->run_index[comp]--;
@@ -491,13 +491,13 @@ static inline void ls_encode_regular(JLSState *state, PutBitContext *pb, int Q, 
         err += state->range;
     if(err >= ((state->range + 1) >> 1)) {
         err -= state->range;
-        val = 2 * ABS(err) - 1 - map;
+        val = 2 * FFABS(err) - 1 - map;
     } else
         val = 2 * err + map;
 
     set_ur_golomb_jpegls(pb, val, k, state->limit, state->qbpp);
 
-    state->A[Q] += ABS(err);
+    state->A[Q] += FFABS(err);
     state->B[Q] += err * state->twonear;
 
     if(state->N[Q] == state->reset) {
@@ -598,12 +598,12 @@ static inline void ls_encode_line(JLSState *state, PutBitContext *pb, uint8_t *l
         D2 = Rc - Ra;
 
         /* run mode */
-        if((ABS(D0) <= state->near) && (ABS(D1) <= state->near) && (ABS(D2) <= state->near)) {
+        if((FFABS(D0) <= state->near) && (FFABS(D1) <= state->near) && (FFABS(D2) <= state->near)) {
             int RUNval, RItype, run;
 
             run = 0;
             RUNval = Ra;
-            while(x < w && (ABS(cur[x] - RUNval) <= state->near)){
+            while(x < w && (FFABS(cur[x] - RUNval) <= state->near)){
                 run++;
                 cur[x] = Ra;
                 x += stride;
@@ -612,7 +612,7 @@ static inline void ls_encode_line(JLSState *state, PutBitContext *pb, uint8_t *l
             if(x >= w)
                 return;
             Rb = last[x];
-            RItype = (ABS(Ra - Rb) <= state->near);
+            RItype = (FFABS(Ra - Rb) <= state->near);
             pred = RItype ? Ra : Rb;
             err = cur[x] - pred;
 

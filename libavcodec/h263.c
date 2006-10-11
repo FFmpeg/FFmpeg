@@ -212,7 +212,7 @@ void h263_encode_picture_header(MpegEncContext * s, int picture_number)
             int div, error;
             div= (s->avctx->time_base.num*1800000LL + 500LL*s->avctx->time_base.den) / ((1000LL+i)*s->avctx->time_base.den);
             div= clip(1, div, 127);
-            error= ABS(s->avctx->time_base.num*1800000LL - (1000LL+i)*s->avctx->time_base.den*div);
+            error= FFABS(s->avctx->time_base.num*1800000LL - (1000LL+i)*s->avctx->time_base.den*div);
             if(error < best_error){
                 best_error= error;
                 best_divisor= div;
@@ -4933,7 +4933,7 @@ static inline int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
 
 #if 0
                     if(s->error_resilience >= FF_ER_COMPLIANT){
-                        const int abs_level= ABS(level);
+                        const int abs_level= FFABS(level);
                         if(abs_level<=MAX_LEVEL && run<=MAX_RUN){
                             const int run1= run - rl->max_run[last][abs_level] - 1;
                             if(abs_level <= rl->max_level[last][run]){

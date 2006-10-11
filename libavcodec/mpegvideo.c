@@ -1703,7 +1703,7 @@ static void draw_line(uint8_t *buf, int sx, int sy, int ex, int ey, int w, int h
 
     buf[sy*stride + sx]+= color;
 
-    if(ABS(ex - sx) > ABS(ey - sy)){
+    if(FFABS(ex - sx) > FFABS(ey - sy)){
         if(sx > ex){
             SWAP(int, sx, ex);
             SWAP(int, sy, ey);
@@ -2037,7 +2037,7 @@ static int get_sae(uint8_t *src, int ref, int stride){
 
     for(y=0; y<16; y++){
         for(x=0; x<16; x++){
-            acc+= ABS(src[x+y*stride] - ref);
+            acc+= FFABS(src[x+y*stride] - ref);
         }
     }
 
@@ -2186,9 +2186,9 @@ static int skip_check(MpegEncContext *s, Picture *p, Picture *ref){
 
                 switch(s->avctx->frame_skip_exp){
                     case 0: score= FFMAX(score, v); break;
-                    case 1: score+= ABS(v);break;
+                    case 1: score+= FFABS(v);break;
                     case 2: score+= v*v;break;
-                    case 3: score64+= ABS(v*v*(int64_t)v);break;
+                    case 3: score64+= FFABS(v*v*(int64_t)v);break;
                     case 4: score64+= v*v*(int64_t)(v*v);break;
                 }
             }
@@ -2219,7 +2219,7 @@ static int estimate_best_b_count(MpegEncContext *s){
 
 //    emms_c();
     p_lambda= s->last_lambda_for[P_TYPE]; //s->next_picture_ptr->quality;
-    b_lambda= s->last_lambda_for[B_TYPE]; //p_lambda *ABS(s->avctx->b_quant_factor) + s->avctx->b_quant_offset;
+    b_lambda= s->last_lambda_for[B_TYPE]; //p_lambda *FFABS(s->avctx->b_quant_factor) + s->avctx->b_quant_offset;
     if(!b_lambda) b_lambda= p_lambda; //FIXME we should do this somewhere else
     lambda2= (b_lambda*b_lambda + (1<<FF_LAMBDA_SHIFT)/2 ) >> FF_LAMBDA_SHIFT;
 
@@ -4146,7 +4146,7 @@ static inline void dct_single_coeff_elimination(MpegEncContext *s, int n, int th
 
     for(i=0; i<=last_index; i++){
         const int j = s->intra_scantable.permutated[i];
-        const int level = ABS(block[j]);
+        const int level = FFABS(block[j]);
         if(level==1){
             if(skip_dc && i==0) continue;
             score+= tab[run];
@@ -5887,13 +5887,13 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
 
     for(i=start_i; i<=last_non_zero; i++){
         int level_index, j;
-        const int dct_coeff= ABS(block[ scantable[i] ]);
+        const int dct_coeff= FFABS(block[ scantable[i] ]);
         const int zero_distoration= dct_coeff*dct_coeff;
         int best_score=256*256*256*120;
         for(level_index=0; level_index < coeff_count[i]; level_index++){
             int distoration;
             int level= coeff[level_index][i];
-            const int alevel= ABS(level);
+            const int alevel= FFABS(level);
             int unquant_coeff;
 
             assert(level);
@@ -6003,7 +6003,7 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
 
     s->coded_score[n] = last_score;
 
-    dc= ABS(block[0]);
+    dc= FFABS(block[0]);
     last_non_zero= last_i - 1;
     memset(block + start_i, 0, (64-start_i)*sizeof(DCTELEM));
 
@@ -6016,7 +6016,7 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
 
         for(i=0; i<coeff_count[0]; i++){
             int level= coeff[i][0];
-            int alevel= ABS(level);
+            int alevel= FFABS(level);
             int unquant_coeff, score, distortion;
 
             if(s->out_format == FMT_H263){
@@ -6158,7 +6158,7 @@ STOP_TIMER("memset rem[]")}
         int qns=4;
         int w;
 
-        w= ABS(weight[i]) + qns*one;
+        w= FFABS(weight[i]) + qns*one;
         w= 15 + (48*qns*one + w/2)/w; // 16 .. 63
 
         weight[i] = w;
@@ -6282,7 +6282,7 @@ STOP_TIMER("dct")}
                 int score, new_coeff, unquant_change;
 
                 score=0;
-                if(s->avctx->quantizer_noise_shaping < 2 && ABS(new_level) > ABS(level))
+                if(s->avctx->quantizer_noise_shaping < 2 && FFABS(new_level) > FFABS(level))
                    continue;
 
                 if(new_level){
@@ -6302,7 +6302,7 @@ STOP_TIMER("dct")}
                                          - last_length[UNI_AC_ENC_INDEX(run, level+64)];
                         }
                     }else{
-                        assert(ABS(new_level)==1);
+                        assert(FFABS(new_level)==1);
 
                         if(analyze_gradient){
                             int g= d1[ scantable[i] ];
@@ -6335,7 +6335,7 @@ STOP_TIMER("dct")}
                     }
                 }else{
                     new_coeff=0;
-                    assert(ABS(level)==1);
+                    assert(FFABS(level)==1);
 
                     if(i < last_non_zero){
                         int next_i= i + run2 + 1;
@@ -6403,7 +6403,7 @@ after_last++;
 #ifdef REFINE_STATS
 if(block[j]){
     if(block[j] - best_change){
-        if(ABS(block[j]) > ABS(block[j] - best_change)){
+        if(FFABS(block[j]) > FFABS(block[j] - best_change)){
             raise++;
         }else{
             lower++;

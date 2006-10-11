@@ -330,13 +330,13 @@ static inline void doHorizDefFilter_C(uint8_t dst[], int stride, PPContext *c)
         {
                 const int middleEnergy= 5*(dst[4] - dst[3]) + 2*(dst[2] - dst[5]);
 
-                if(ABS(middleEnergy) < 8*c->QP)
+                if(FFABS(middleEnergy) < 8*c->QP)
                 {
                         const int q=(dst[3] - dst[4])/2;
                         const int leftEnergy=  5*(dst[2] - dst[1]) + 2*(dst[0] - dst[3]);
                         const int rightEnergy= 5*(dst[6] - dst[5]) + 2*(dst[4] - dst[7]);
 
-                        int d= ABS(middleEnergy) - FFMIN( ABS(leftEnergy), ABS(rightEnergy) );
+                        int d= FFABS(middleEnergy) - FFMIN( FFABS(leftEnergy), FFABS(rightEnergy) );
                         d= FFMAX(d, 0);
 
                         d= (5*d + 32) >> 6;
@@ -369,8 +369,8 @@ static inline void doHorizLowPass_C(uint8_t dst[], int stride, PPContext *c)
         int y;
         for(y=0; y<BLOCK_SIZE; y++)
         {
-                const int first= ABS(dst[-1] - dst[0]) < c->QP ? dst[-1] : dst[0];
-                const int last= ABS(dst[8] - dst[7]) < c->QP ? dst[8] : dst[7];
+                const int first= FFABS(dst[-1] - dst[0]) < c->QP ? dst[-1] : dst[0];
+                const int last= FFABS(dst[8] - dst[7]) < c->QP ? dst[8] : dst[7];
 
                 int sums[10];
                 sums[0] = 4*first + dst[0] + dst[1] + dst[2] + 4;
@@ -445,7 +445,7 @@ static inline void horizX1Filter(uint8_t *src, int stride, int QP)
                 int b= src[3] - src[4];
                 int c= src[5] - src[6];
 
-                int d= FFMAX(ABS(b) - (ABS(a) + ABS(c))/2, 0);
+                int d= FFMAX(FFABS(b) - (FFABS(a) + FFABS(c))/2, 0);
 
                 if(d < QP)
                 {
@@ -505,8 +505,8 @@ static always_inline void do_a_deblock_C(uint8_t *src, int step, int stride, PPC
                                 }
                         }
                         if(max-min < 2*QP){
-                                const int first= ABS(src[-1*step] - src[0]) < QP ? src[-1*step] : src[0];
-                                const int last= ABS(src[8*step] - src[7*step]) < QP ? src[8*step] : src[7*step];
+                                const int first= FFABS(src[-1*step] - src[0]) < QP ? src[-1*step] : src[0];
+                                const int last= FFABS(src[8*step] - src[7*step]) < QP ? src[8*step] : src[7*step];
 
                                 int sums[10];
                                 sums[0] = 4*first + src[0*step] + src[1*step] + src[2*step] + 4;
@@ -532,13 +532,13 @@ static always_inline void do_a_deblock_C(uint8_t *src, int step, int stride, PPC
                 }else{
                         const int middleEnergy= 5*(src[4*step] - src[3*step]) + 2*(src[2*step] - src[5*step]);
 
-                        if(ABS(middleEnergy) < 8*QP)
+                        if(FFABS(middleEnergy) < 8*QP)
                         {
                                 const int q=(src[3*step] - src[4*step])/2;
                                 const int leftEnergy=  5*(src[2*step] - src[1*step]) + 2*(src[0*step] - src[3*step]);
                                 const int rightEnergy= 5*(src[6*step] - src[5*step]) + 2*(src[4*step] - src[7*step]);
 
-                                int d= ABS(middleEnergy) - FFMIN( ABS(leftEnergy), ABS(rightEnergy) );
+                                int d= FFABS(middleEnergy) - FFMIN( FFABS(leftEnergy), FFABS(rightEnergy) );
                                 d= FFMAX(d, 0);
 
                                 d= (5*d + 32) >> 6;
@@ -1045,8 +1045,8 @@ void  pp_postprocess(uint8_t * src[3], int srcStride[3],
         int mbHeight= (height+15)>>4;
         PPMode *mode = (PPMode*)vm;
         PPContext *c = (PPContext*)vc;
-        int minStride= FFMAX(ABS(srcStride[0]), ABS(dstStride[0]));
-        int absQPStride = ABS(QPStride);
+        int minStride= FFMAX(FFABS(srcStride[0]), FFABS(dstStride[0]));
+        int absQPStride = FFABS(QPStride);
 
         // c->stride and c->QPStride are always positive
         if(c->stride < minStride || c->qpStride < absQPStride)

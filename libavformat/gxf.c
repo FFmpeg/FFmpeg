@@ -488,7 +488,7 @@ static int gxf_seek(AVFormatContext *s, int stream_index, int64_t timestamp, int
     maxlen = FFMAX(maxlen, 200 * 1024);
     url_fseek(&s->pb, pos, SEEK_SET);
     found = gxf_resync_media(s, maxlen, -1, timestamp);
-    if (ABS(found - timestamp) > 4)
+    if (FFABS(found - timestamp) > 4)
         return -1;
     return 0;
 }

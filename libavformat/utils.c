@@ -711,8 +711,8 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
            by knowing the futur */
     } else if(pkt->pts != AV_NOPTS_VALUE || pkt->dts != AV_NOPTS_VALUE || pkt->duration){
         if(pkt->pts != AV_NOPTS_VALUE && pkt->duration){
-            int64_t old_diff= ABS(st->cur_dts - pkt->duration - pkt->pts);
-            int64_t new_diff= ABS(st->cur_dts - pkt->pts);
+            int64_t old_diff= FFABS(st->cur_dts - pkt->duration - pkt->pts);
+            int64_t new_diff= FFABS(st->cur_dts - pkt->pts);
             if(old_diff < new_diff && old_diff < (pkt->duration>>3)){
                 pkt->pts += pkt->duration;
 //                av_log(NULL, AV_LOG_DEBUG, "id:%d old:%Ld new:%Ld dur:%d cur:%Ld size:%d\n", pkt->stream_index, old_diff, new_diff, pkt->duration, st->cur_dts, pkt->size);
@@ -1947,7 +1947,7 @@ int av_find_stream_info(AVFormatContext *ic)
 
                 best_error= INT64_MAX;
                 for(j=1; j<60*12; j++){
-                    error= ABS(1001*12*num - 1001*j*den);
+                    error= FFABS(1001*12*num - 1001*j*den);
                     if(error < best_error){
                         best_error= error;
                         av_reduce(&st->r_frame_rate.num, &st->r_frame_rate.den, j, 12, INT_MAX);
@@ -1955,7 +1955,7 @@ int av_find_stream_info(AVFormatContext *ic)
                 }
                 for(j=0; j<3; j++){
                     static const int ticks[]= {24,30,60};
-                    error= ABS(1001*12*num - 1000*12*den * ticks[j]);
+                    error= FFABS(1001*12*num - 1000*12*den * ticks[j]);
                     if(error < best_error){
                         best_error= error;
                         av_reduce(&st->r_frame_rate.num, &st->r_frame_rate.den, ticks[j]*1000, 1001, INT_MAX);

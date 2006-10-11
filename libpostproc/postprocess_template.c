@@ -338,8 +338,8 @@ static inline void RENAME(doVertLowPass)(uint8_t *src, int stride, PPContext *c)
         src+= stride*3;
         for(x=0; x<BLOCK_SIZE; x++)
         {
-                const int first= ABS(src[0] - src[l1]) < c->QP ? src[0] : src[l1];
-                const int last= ABS(src[l8] - src[l9]) < c->QP ? src[l9] : src[l8];
+                const int first= FFABS(src[0] - src[l1]) < c->QP ? src[0] : src[l1];
+                const int last= FFABS(src[l8] - src[l9]) < c->QP ? src[l9] : src[l8];
 
                 int sums[10];
                 sums[0] = 4*first + src[l1] + src[l2] + src[l3] + 4;
@@ -460,7 +460,7 @@ static inline void RENAME(vertRK1Filter)(uint8_t *src, int stride, int QP)
         for(x=0; x<BLOCK_SIZE; x++)
         {
                 const int v = (src[x+l5] - src[x+l4]);
-                if(ABS(v) < QP15)
+                if(FFABS(v) < QP15)
                 {
                         src[x+l3] +=v>>3;
                         src[x+l4] +=v>>1;
@@ -589,7 +589,7 @@ static inline void RENAME(vertX1Filter)(uint8_t *src, int stride, PPContext *co)
                 int b= src[l4] - src[l5];
                 int c= src[l5] - src[l6];
 
-                int d= ABS(b) - ((ABS(a) + ABS(c))>>1);
+                int d= FFABS(b) - ((FFABS(a) + FFABS(c))>>1);
                 d= FFMAX(d, 0);
 
                 if(d < co->QP*2)
@@ -845,13 +845,13 @@ static inline void RENAME(doVertDefFilter)(uint8_t src[], int stride, PPContext 
         for(x=0; x<BLOCK_SIZE; x++)
         {
                 const int middleEnergy= 5*(src[l5] - src[l4]) + 2*(src[l3] - src[l6]);
-                if(ABS(middleEnergy)< 8*QP)
+                if(FFABS(middleEnergy)< 8*QP)
                 {
                         const int q=(src[l4] - src[l5])/2;
                         const int leftEnergy=  5*(src[l3] - src[l2]) + 2*(src[l1] - src[l4]);
                         const int rightEnergy= 5*(src[l7] - src[l6]) + 2*(src[l5] - src[l8]);
 
-                        int d= ABS(middleEnergy) - FFMIN( ABS(leftEnergy), ABS(rightEnergy) );
+                        int d= FFABS(middleEnergy) - FFMIN( FFABS(leftEnergy), FFABS(rightEnergy) );
                         d= FFMAX(d, 0);
 
                         d= (5*d + 32) >> 6;
@@ -880,7 +880,7 @@ src-=8;
                 for(y=4; y<6; y++)
                 {
                         int d= src[x+y*stride] - tmp[x+(y-4)*8];
-                        int ad= ABS(d);
+                        int ad= FFABS(d);
                         static int max=0;
                         static int sum=0;
                         static int num=0;
@@ -1149,13 +1149,13 @@ src-=8;
         for(x=0; x<BLOCK_SIZE; x++)
         {
                 const int middleEnergy= 5*(src[l5] - src[l4]) + 2*(src[l3] - src[l6]);
-                if(ABS(middleEnergy) < 8*c->QP)
+                if(FFABS(middleEnergy) < 8*c->QP)
                 {
                         const int q=(src[l4] - src[l5])/2;
                         const int leftEnergy=  5*(src[l3] - src[l2]) + 2*(src[l1] - src[l4]);
                         const int rightEnergy= 5*(src[l7] - src[l6]) + 2*(src[l5] - src[l8]);
 
-                        int d= ABS(middleEnergy) - FFMIN( ABS(leftEnergy), ABS(rightEnergy) );
+                        int d= FFABS(middleEnergy) - FFMIN( FFABS(leftEnergy), FFABS(rightEnergy) );
                         d= FFMAX(d, 0);
 
                         d= (5*d + 32) >> 6;
@@ -1491,7 +1491,7 @@ DERING_CORE((%0, %1, 8)    ,(%%REGd, %1, 4),%%mm2,%%mm4,%%mm0,%%mm3,%%mm5,%%mm1,
                                         static int worstRange=0;
                                         static int worstDiff=0;
                                         int diff= (f - *p);
-                                        int absDiff= ABS(diff);
+                                        int absDiff= FFABS(diff);
                                         int error= diff*diff;
 
                                         if(x==1 || x==8 || y==1 || y==8) continue;
@@ -2552,7 +2552,7 @@ L2_DIFF_CORE((%0, %%REGc)  , (%1, %%REGc))
                         int d1=ref - cur;
 //                        if(x==0 || x==7) d1+= d1>>1;
 //                        if(y==0 || y==7) d1+= d1>>1;
-//                        d+= ABS(d1);
+//                        d+= FFABS(d1);
                         d+= d1*d1;
 //                        sysd+= d1;
                 }
@@ -3529,7 +3529,7 @@ static void RENAME(postProcess)(uint8_t src[], int srcStride, uint8_t dst[], int
                         dstBlock+=8;
                         srcBlock+=8;
                 }
-                if(width==ABS(dstStride))
+                if(width==FFABS(dstStride))
                         linecpy(dst, tempDst + 9*dstStride, copyAhead, dstStride);
                 else
                 {
@@ -3551,7 +3551,7 @@ static void RENAME(postProcess)(uint8_t src[], int srcStride, uint8_t dst[], int
                 uint8_t *tempBlock2= c.tempBlocks + 8;
 #endif
                 int8_t *QPptr= &QPs[(y>>qpVShift)*QPStride];
-                int8_t *nonBQPptr= &c.nonBQPTable[(y>>qpVShift)*ABS(QPStride)];
+                int8_t *nonBQPptr= &c.nonBQPTable[(y>>qpVShift)*FFABS(QPStride)];
                 int QP=0;
                 /* can we mess with a 8x16 block from srcBlock/dstBlock downwards and 1 line upwards
                    if not than use a temporary buffer */
@@ -3565,14 +3565,14 @@ static void RENAME(postProcess)(uint8_t src[], int srcStride, uint8_t dst[], int
 
                         /* duplicate last line of src to fill the void upto line (copyAhead+7) */
                         for(i=FFMAX(height-y, 8); i<copyAhead+8; i++)
-                                memcpy(tempSrc + srcStride*i, src + srcStride*(height-1), ABS(srcStride));
+                                memcpy(tempSrc + srcStride*i, src + srcStride*(height-1), FFABS(srcStride));
 
                         /* copy up to (copyAhead+1) lines of dst (line -1 to (copyAhead-1))*/
                         linecpy(tempDst, dstBlock - dstStride, FFMIN(height-y+1, copyAhead+1), dstStride);
 
                         /* duplicate last line of dst to fill the void upto line (copyAhead) */
                         for(i=height-y+1; i<=copyAhead; i++)
-                                memcpy(tempDst + dstStride*i, dst + dstStride*(height-1), ABS(dstStride));
+                                memcpy(tempDst + dstStride*i, dst + dstStride*(height-1), FFABS(dstStride));
 
                         dstBlock= tempDst + dstStride;
                         srcBlock= tempSrc;
@@ -3783,7 +3783,7 @@ static void RENAME(postProcess)(uint8_t src[], int srcStride, uint8_t dst[], int
                 if(y+15 >= height)
                 {
                         uint8_t *dstBlock= &(dst[y*dstStride]);
-                        if(width==ABS(dstStride))
+                        if(width==FFABS(dstStride))
                                 linecpy(dstBlock, tempDst + dstStride, height-y, dstStride);
                         else
                         {

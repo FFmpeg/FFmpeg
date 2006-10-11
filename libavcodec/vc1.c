@@ -1950,9 +1950,9 @@ static inline void vc1_pred_mv(MpegEncContext *s, int n, int dmv_x, int dmv_y, i
     /* Calculate hybrid prediction as specified in 8.3.5.3.5 */
     if((!s->first_slice_line || (n==2 || n==3)) && (s->mb_x || (n==1 || n==3))) {
         if(is_intra[xy - wrap])
-            sum = ABS(px) + ABS(py);
+            sum = FFABS(px) + FFABS(py);
         else
-            sum = ABS(px - A[0]) + ABS(py - A[1]);
+            sum = FFABS(px - A[0]) + FFABS(py - A[1]);
         if(sum > 32) {
             if(get_bits1(&s->gb)) {
                 px = A[0];
@@ -1963,9 +1963,9 @@ static inline void vc1_pred_mv(MpegEncContext *s, int n, int dmv_x, int dmv_y, i
             }
         } else {
             if(is_intra[xy - 1])
-                sum = ABS(px) + ABS(py);
+                sum = FFABS(px) + FFABS(py);
             else
-                sum = ABS(px - C[0]) + ABS(py - C[1]);
+                sum = FFABS(px - C[0]) + FFABS(py - C[1]);
             if(sum > 32) {
                 if(get_bits1(&s->gb)) {
                     px = A[0];
@@ -2218,9 +2218,9 @@ static inline void vc1_pred_b_mv(VC1Context *v, int dmv_x[2], int dmv_y[2], int 
         /* Calculate hybrid prediction as specified in 8.3.5.3.5 */
         if(0 && !s->first_slice_line && s->mb_x) {
             if(is_intra[xy - wrap])
-                sum = ABS(px) + ABS(py);
+                sum = FFABS(px) + FFABS(py);
             else
-                sum = ABS(px - A[0]) + ABS(py - A[1]);
+                sum = FFABS(px - A[0]) + FFABS(py - A[1]);
             if(sum > 32) {
                 if(get_bits1(&s->gb)) {
                     px = A[0];
@@ -2231,9 +2231,9 @@ static inline void vc1_pred_b_mv(VC1Context *v, int dmv_x[2], int dmv_y[2], int 
                 }
             } else {
                 if(is_intra[xy - 2])
-                    sum = ABS(px) + ABS(py);
+                    sum = FFABS(px) + FFABS(py);
                 else
-                    sum = ABS(px - C[0]) + ABS(py - C[1]);
+                    sum = FFABS(px - C[0]) + FFABS(py - C[1]);
                 if(sum > 32) {
                     if(get_bits1(&s->gb)) {
                         px = A[0];
@@ -2295,9 +2295,9 @@ static inline void vc1_pred_b_mv(VC1Context *v, int dmv_x[2], int dmv_y[2], int 
         /* Calculate hybrid prediction as specified in 8.3.5.3.5 */
         if(0 && !s->first_slice_line && s->mb_x) {
             if(is_intra[xy - wrap])
-                sum = ABS(px) + ABS(py);
+                sum = FFABS(px) + FFABS(py);
             else
-                sum = ABS(px - A[0]) + ABS(py - A[1]);
+                sum = FFABS(px - A[0]) + FFABS(py - A[1]);
             if(sum > 32) {
                 if(get_bits1(&s->gb)) {
                     px = A[0];
@@ -2308,9 +2308,9 @@ static inline void vc1_pred_b_mv(VC1Context *v, int dmv_x[2], int dmv_y[2], int 
                 }
             } else {
                 if(is_intra[xy - 2])
-                    sum = ABS(px) + ABS(py);
+                    sum = FFABS(px) + FFABS(py);
                 else
-                    sum = ABS(px - C[0]) + ABS(py - C[1]);
+                    sum = FFABS(px - C[0]) + FFABS(py - C[1]);
                 if(sum > 32) {
                     if(get_bits1(&s->gb)) {
                         px = A[0];

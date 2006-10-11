@@ -1343,7 +1343,7 @@ static inline void direct_dist_scale_factor(H264Context * const h){
             h->dist_scale_factor[i] = 256;
         }else{
             int tb = clip(poc - poc0, -128, 127);
-            int tx = (16384 + (ABS(td) >> 1)) / td;
+            int tx = (16384 + (FFABS(td) >> 1)) / td;
             h->dist_scale_factor[i] = clip((tb*tx + 32) >> 6, -1024, 1023);
         }
     }
@@ -1474,8 +1474,8 @@ static inline void pred_direct_motion(H264Context * const h, int *mb_type){
             fill_rectangle(&h->ref_cache[0][scan8[0]], 4, 4, 8, (uint8_t)ref[0], 1);
             fill_rectangle(&h->ref_cache[1][scan8[0]], 4, 4, 8, (uint8_t)ref[1], 1);
             if(!IS_INTRA(mb_type_col)
-               && (   (l1ref0[0] == 0 && ABS(l1mv0[0][0]) <= 1 && ABS(l1mv0[0][1]) <= 1)
-                   || (l1ref0[0]  < 0 && l1ref1[0] == 0 && ABS(l1mv1[0][0]) <= 1 && ABS(l1mv1[0][1]) <= 1
+               && (   (l1ref0[0] == 0 && FFABS(l1mv0[0][0]) <= 1 && FFABS(l1mv0[0][1]) <= 1)
+                   || (l1ref0[0]  < 0 && l1ref1[0] == 0 && FFABS(l1mv1[0][0]) <= 1 && FFABS(l1mv1[0][1]) <= 1
                        && (h->x264_build>33 || !h->x264_build)))){
                 if(ref[0] > 0)
                     fill_rectangle(&h->mv_cache[0][scan8[0]], 4, 4, 8, pack16to32(mv[0][0],mv[0][1]), 4);
@@ -1510,7 +1510,7 @@ static inline void pred_direct_motion(H264Context * const h, int *mb_type){
                     const int16_t (*l1mv)[2]= l1ref0[x8 + y8*h->b8_stride] == 0 ? l1mv0 : l1mv1;
                     if(IS_SUB_8X8(sub_mb_type)){
                         const int16_t *mv_col = l1mv[x8*3 + y8*3*h->b_stride];
-                        if(ABS(mv_col[0]) <= 1 && ABS(mv_col[1]) <= 1){
+                        if(FFABS(mv_col[0]) <= 1 && FFABS(mv_col[1]) <= 1){
                             if(ref[0] == 0)
                                 fill_rectangle(&h->mv_cache[0][scan8[i8*4]], 2, 2, 8, 0, 4);
                             if(ref[1] == 0)
@@ -1519,7 +1519,7 @@ static inline void pred_direct_motion(H264Context * const h, int *mb_type){
                     }else
                     for(i4=0; i4<4; i4++){
                         const int16_t *mv_col = l1mv[x8*2 + (i4&1) + (y8*2 + (i4>>1))*h->b_stride];
-                        if(ABS(mv_col[0]) <= 1 && ABS(mv_col[1]) <= 1){
+                        if(FFABS(mv_col[0]) <= 1 && FFABS(mv_col[1]) <= 1){
                             if(ref[0] == 0)
                                 *(uint32_t*)h->mv_cache[0][scan8[i8*4+i4]] = 0;
                             if(ref[1] == 0)
@@ -4213,7 +4213,7 @@ static void implicit_weight_table(H264Context *h){
             int td = clip(poc1 - poc0, -128, 127);
             if(td){
                 int tb = clip(cur_poc - poc0, -128, 127);
-                int tx = (16384 + (ABS(td) >> 1)) / td;
+                int tx = (16384 + (FFABS(td) >> 1)) / td;
                 int dist_scale_factor = clip((tb*tx + 32) >> 6, -1024, 1023) >> 2;
                 if(dist_scale_factor < -64 || dist_scale_factor > 128)
                     h->implicit_weight[ref0][ref1] = 32;
@@ -6733,12 +6733,12 @@ static void filter_mb_edgev( H264Context *h, uint8_t *pix, int stride, int16_t b
                 const int q1 = pix[1];
                 const int q2 = pix[2];
 
-                if( ABS( p0 - q0 ) < alpha &&
-                    ABS( p1 - p0 ) < beta &&
-                    ABS( q1 - q0 ) < beta ) {
+                if( FFABS( p0 - q0 ) < alpha &&
+                    FFABS( p1 - p0 ) < beta &&
+                    FFABS( q1 - q0 ) < beta ) {
 
-                    if(ABS( p0 - q0 ) < (( alpha >> 2 ) + 2 )){
-                        if( ABS( p2 - p0 ) < beta)
+                    if(FFABS( p0 - q0 ) < (( alpha >> 2 ) + 2 )){
+                        if( FFABS( p2 - p0 ) < beta)
                         {
                             const int p3 = pix[-4];
                             /* p0', p1', p2' */
@@ -6749,7 +6749,7 @@ static void filter_mb_edgev( H264Context *h, uint8_t *pix, int stride, int16_t b
                             /* p0' */
                             pix[-1] = ( 2*p1 + p0 + q1 + 2 ) >> 2;
                         }
-                        if( ABS( q2 - q0 ) < beta)
+                        if( FFABS( q2 - q0 ) < beta)
                         {
                             const int q3 = pix[3];
                             /* q0', q1', q2' */
@@ -6819,17 +6819,17 @@ static void filter_mb_mbaff_edgev( H264Context *h, uint8_t *pix, int stride, int
             const int q1 = pix[1];
             const int q2 = pix[2];
 
-            if( ABS( p0 - q0 ) < alpha &&
-                ABS( p1 - p0 ) < beta &&
-                ABS( q1 - q0 ) < beta ) {
+            if( FFABS( p0 - q0 ) < alpha &&
+                FFABS( p1 - p0 ) < beta &&
+                FFABS( q1 - q0 ) < beta ) {
                 int tc = tc0;
                 int i_delta;
 
-                if( ABS( p2 - p0 ) < beta ) {
+                if( FFABS( p2 - p0 ) < beta ) {
                     pix[-2] = p1 + clip( ( p2 + ( ( p0 + q0 + 1 ) >> 1 ) - ( p1 << 1 ) ) >> 1, -tc0, tc0 );
                     tc++;
                 }
-                if( ABS( q2 - q0 ) < beta ) {
+                if( FFABS( q2 - q0 ) < beta ) {
                     pix[1] = q1 + clip( ( q2 + ( ( p0 + q0 + 1 ) >> 1 ) - ( q1 << 1 ) ) >> 1, -tc0, tc0 );
                     tc++;
                 }
@@ -6848,12 +6848,12 @@ static void filter_mb_mbaff_edgev( H264Context *h, uint8_t *pix, int stride, int
             const int q1 = pix[1];
             const int q2 = pix[2];
 
-            if( ABS( p0 - q0 ) < alpha &&
-                ABS( p1 - p0 ) < beta &&
-                ABS( q1 - q0 ) < beta ) {
+            if( FFABS( p0 - q0 ) < alpha &&
+                FFABS( p1 - p0 ) < beta &&
+                FFABS( q1 - q0 ) < beta ) {
 
-                if(ABS( p0 - q0 ) < (( alpha >> 2 ) + 2 )){
-                    if( ABS( p2 - p0 ) < beta)
+                if(FFABS( p0 - q0 ) < (( alpha >> 2 ) + 2 )){
+                    if( FFABS( p2 - p0 ) < beta)
                     {
                         const int p3 = pix[-4];
                         /* p0', p1', p2' */
@@ -6864,7 +6864,7 @@ static void filter_mb_mbaff_edgev( H264Context *h, uint8_t *pix, int stride, int
                         /* p0' */
                         pix[-1] = ( 2*p1 + p0 + q1 + 2 ) >> 2;
                     }
-                    if( ABS( q2 - q0 ) < beta)
+                    if( FFABS( q2 - q0 ) < beta)
                     {
                         const int q3 = pix[3];
                         /* q0', q1', q2' */
@@ -6911,9 +6911,9 @@ static void filter_mb_mbaff_edgecv( H264Context *h, uint8_t *pix, int stride, in
             const int q0 = pix[0];
             const int q1 = pix[1];
 
-            if( ABS( p0 - q0 ) < alpha &&
-                ABS( p1 - p0 ) < beta &&
-                ABS( q1 - q0 ) < beta ) {
+            if( FFABS( p0 - q0 ) < alpha &&
+                FFABS( p1 - p0 ) < beta &&
+                FFABS( q1 - q0 ) < beta ) {
                 const int i_delta = clip( (((q0 - p0 ) << 2) + (p1 - q1) + 4) >> 3, -tc, tc );
 
                 pix[-1] = clip_uint8( p0 + i_delta );    /* p0' */
@@ -6926,9 +6926,9 @@ static void filter_mb_mbaff_edgecv( H264Context *h, uint8_t *pix, int stride, in
             const int q0 = pix[0];
             const int q1 = pix[1];
 
-            if( ABS( p0 - q0 ) < alpha &&
-                ABS( p1 - p0 ) < beta &&
-                ABS( q1 - q0 ) < beta ) {
+            if( FFABS( p0 - q0 ) < alpha &&
+                FFABS( p1 - p0 ) < beta &&
+                FFABS( q1 - q0 ) < beta ) {
 
                 pix[-1] = ( 2*p1 + p0 + q1 + 2 ) >> 2;   /* p0' */
                 pix[0]  = ( 2*q1 + q0 + p1 + 2 ) >> 2;   /* q0' */
@@ -6960,15 +6960,15 @@ static void filter_mb_edgeh( H264Context *h, uint8_t *pix, int stride, int16_t b
                 const int q1 = pix[1*pix_next];
                 const int q2 = pix[2*pix_next];
 
-                if( ABS( p0 - q0 ) < alpha &&
-                    ABS( p1 - p0 ) < beta &&
-                    ABS( q1 - q0 ) < beta ) {
+                if( FFABS( p0 - q0 ) < alpha &&
+                    FFABS( p1 - p0 ) < beta &&
+                    FFABS( q1 - q0 ) < beta ) {
 
                     const int p3 = pix[-4*pix_next];
                     const int q3 = pix[ 3*pix_next];
 
-                    if(ABS( p0 - q0 ) < (( alpha >> 2 ) + 2 )){
-                        if( ABS( p2 - p0 ) < beta) {
+                    if(FFABS( p0 - q0 ) < (( alpha >> 2 ) + 2 )){
+                        if( FFABS( p2 - p0 ) < beta) {
                             /* p0', p1', p2' */
                             pix[-1*pix_next] = ( p2 + 2*p1 + 2*p0 + 2*q0 + q1 + 4 ) >> 3;
                             pix[-2*pix_next] = ( p2 + p1 + p0 + q0 + 2 ) >> 2;
@@ -6977,7 +6977,7 @@ static void filter_mb_edgeh( H264Context *h, uint8_t *pix, int stride, int16_t b
                             /* p0' */
                             pix[-1*pix_next] = ( 2*p1 + p0 + q1 + 2 ) >> 2;
                         }
-                        if( ABS( q2 - q0 ) < beta) {
+                        if( FFABS( q2 - q0 ) < beta) {
                             /* q0', q1', q2' */
                             pix[0*pix_next] = ( p1 + 2*p0 + 2*q0 + 2*q1 + q2 + 4 ) >> 3;
                             pix[1*pix_next] = ( p0 + q0 + q1 + q2 + 2 ) >> 2;
@@ -7313,8 +7313,8 @@ static void filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint8
                     int v = 0;
                     for( l = 0; !v && l < 1 + (h->slice_type == B_TYPE); l++ ) {
                         v |= ref2frm[h->ref_cache[l][b_idx]+2] != ref2frm[h->ref_cache[l][bn_idx]+2] ||
-                             ABS( h->mv_cache[l][b_idx][0] - h->mv_cache[l][bn_idx][0] ) >= 4 ||
-                             ABS( h->mv_cache[l][b_idx][1] - h->mv_cache[l][bn_idx][1] ) >= mvy_limit;
+                             FFABS( h->mv_cache[l][b_idx][0] - h->mv_cache[l][bn_idx][0] ) >= 4 ||
+                             FFABS( h->mv_cache[l][b_idx][1] - h->mv_cache[l][bn_idx][1] ) >= mvy_limit;
                     }
                     bS[0] = bS[1] = bS[2] = bS[3] = v;
                     mv_done = 1;
@@ -7337,8 +7337,8 @@ static void filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint8
                         bS[i] = 0;
                         for( l = 0; l < 1 + (h->slice_type == B_TYPE); l++ ) {
                             if( ref2frm[h->ref_cache[l][b_idx]+2] != ref2frm[h->ref_cache[l][bn_idx]+2] ||
-                                ABS( h->mv_cache[l][b_idx][0] - h->mv_cache[l][bn_idx][0] ) >= 4 ||
-                                ABS( h->mv_cache[l][b_idx][1] - h->mv_cache[l][bn_idx][1] ) >= mvy_limit ) {
+                                FFABS( h->mv_cache[l][b_idx][0] - h->mv_cache[l][bn_idx][0] ) >= 4 ||
+                                FFABS( h->mv_cache[l][b_idx][1] - h->mv_cache[l][bn_idx][1] ) >= mvy_limit ) {
                                 bS[i] = 1;
                                 break;
                             }
@@ -8505,7 +8505,7 @@ int main(){
         printf("\n");*/
 
         for(j=0; j<16; j++){
-            int diff= ABS(src[j] - ref[j]);
+            int diff= FFABS(src[j] - ref[j]);
 
             error+= diff*diff;
             max_error= FFMAX(max_error, diff);
