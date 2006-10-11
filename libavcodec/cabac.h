@@ -380,7 +380,7 @@ static int get_cabac(CABACContext *c, uint8_t * const state){
         "movl "RANGE    "(%2), %%ebx            \n\t"
         "movl "RANGE    "(%2), %%edx            \n\t"
         "shrl $23, %%ebx                        \n\t"
-        "movzbl ff_h264_lps_range(%%ebx, %%eax, 4), %%esi\n\t"
+        "movzbl "MANGLE(ff_h264_lps_range)"(%%ebx, %%eax, 4), %%esi\n\t"
         "shll $17, %%esi                        \n\t"
         "movl "LOW      "(%2), %%ebx            \n\t"
 //eax:state ebx:low, edx:range, esi:RangeLPS
@@ -450,7 +450,7 @@ static int get_cabac(CABACContext *c, uint8_t * const state){
         "movl "RANGE    "(%2), %%ebx            \n\t"
         "movl "RANGE    "(%2), %%edx            \n\t"
         "shrl $23, %%ebx                        \n\t"
-        "movzbl ff_h264_lps_range(%%ebx, %%eax, 4), %%esi\n\t"
+        "movzbl "MANGLE(ff_h264_lps_range)"(%%ebx, %%eax, 4), %%esi\n\t"
         "shll $17, %%esi                        \n\t"
         "movl "LOW      "(%2), %%ebx            \n\t"
 //eax:state ebx:low, edx:range, esi:RangeLPS
