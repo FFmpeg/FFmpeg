@@ -603,8 +603,8 @@ static inline void yuv2nv12XinC(int16_t *lumFilter, int16_t **lumSrc, int lumFil
 					+ (last_new[y][i] - in3)*f/256;\
 				int new= old> 128 ? 255 : 0;\
 \
-				error_new+= ABS(last_new[y][i] - new);\
-				error_in3+= ABS(last_in3[y][i] - in3);\
+				error_new+= FFABS(last_new[y][i] - new);\
+				error_in3+= FFABS(last_in3[y][i] - in3);\
 				f= error_new - error_in3*4;\
 				if(f<0) f=0;\
 				if(f>256) f=256;\
@@ -919,7 +919,7 @@ static inline int initFilter(int16_t **outFilter, int16_t **filterPos, int *outF
 	// Note the +1 is for the MMXscaler which reads over the end
 	*filterPos = av_malloc((dstW+1)*sizeof(int16_t));
 
-	if(ABS(xInc - 0x10000) <10) // unscaled
+	if(FFABS(xInc - 0x10000) <10) // unscaled
 	{
 		int i;
 		filterSize= 1;
@@ -969,7 +969,7 @@ static inline int initFilter(int16_t **outFilter, int16_t **filterPos, int *outF
 				//Bilinear upscale / linear interpolate / Area averaging
 				for(j=0; j<filterSize; j++)
 				{
-					double d= ABS((xx<<16) - xDstInSrc)/(double)(1<<16);
+					double d= FFABS((xx<<16) - xDstInSrc)/(double)(1<<16);
 					double coeff= 1.0 - d;
 					if(coeff<0) coeff=0;
 					filter[i*filterSize + j]= coeff;
@@ -1013,7 +1013,7 @@ static inline int initFilter(int16_t **outFilter, int16_t **filterPos, int *outF
 			(*filterPos)[i]= xx;
 			for(j=0; j<filterSize; j++)
 			{
-				double d= ABS(xx - xDstInSrc)/filterSizeInSrc*sizeFactor;
+				double d= FFABS(xx - xDstInSrc)/filterSizeInSrc*sizeFactor;
 				double coeff;
 				if(flags & SWS_BICUBIC)
 				{
@@ -1138,7 +1138,7 @@ static inline int initFilter(int16_t **outFilter, int16_t **filterPos, int *outF
 		for(j=0; j<filter2Size; j++)
 		{
 			int k;
-			cutOff += ABS(filter2[i*filter2Size]);
+			cutOff += FFABS(filter2[i*filter2Size]);
 
 			if(cutOff > SWS_MAX_REDUCE_CUTOFF) break;
 
@@ -1156,7 +1156,7 @@ static inline int initFilter(int16_t **outFilter, int16_t **filterPos, int *outF
 		/* count near zeros on the right */
 		for(j=filter2Size-1; j>0; j--)
 		{
-			cutOff += ABS(filter2[i*filter2Size + j]);
+			cutOff += FFABS(filter2[i*filter2Size + j]);
 
 			if(cutOff > SWS_MAX_REDUCE_CUTOFF) break;
 			min--;
@@ -1678,8 +1678,8 @@ static int simpleCopy(SwsContext *c, uint8_t* src[], int srcStride[], int srcSli
 			int length=0;
 
 			/* universal length finder */
-			while(length+c->srcW <= ABS(dstStride[0]) 
-			   && length+c->srcW <= ABS(srcStride[0])) length+= c->srcW;
+			while(length+c->srcW <= FFABS(dstStride[0]) 
+			   && length+c->srcW <= FFABS(srcStride[0])) length+= c->srcW;
 			ASSERT(length!=0);
 
 			for(i=0; i<srcSliceH; i++)
@@ -2559,7 +2559,7 @@ static SwsVector *sws_diffVec(SwsVector *a, SwsVector *b){
 
 /* shift left / or right if "shift" is negative */
 static SwsVector *sws_getShiftedVec(SwsVector *a, int shift){
-	int length= a->length + ABS(shift)*2;
+	int length= a->length + FFABS(shift)*2;
 	double *coeff= av_malloc(length*sizeof(double));
 	int i;
 	SwsVector *vec= av_malloc(sizeof(SwsVector));
