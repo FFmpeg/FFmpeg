@@ -141,7 +141,7 @@ static unsigned int get_aiff_header(ByteIOContext *pb, AVCodecContext *codec,
      * is specific to applications -> here we use the WAVE format definition */
     codec->block_align = (codec->bits_per_sample * codec->channels) >> 3;
 
-    codec->bit_rate = codec->sample_rate * codec->block_align;
+    codec->bit_rate = codec->sample_rate * (codec->block_align << 3);
 
     /* Chunk is over */
     if (size)
