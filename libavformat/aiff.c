@@ -208,7 +208,14 @@ static int aiff_write_header(AVFormatContext *s)
     put_be32(pb, 0);                    /* Number of frames */
 
     if (!enc->bits_per_sample)
-        enc->bits_per_sample = (enc->block_align<<3) / enc->channels;
+        enc->bits_per_sample = av_get_bits_per_sample(enc->codec_id);
+    if (!enc->bits_per_sample) {
+        av_log(s, AV_LOG_ERROR, "could not compute bits per sample\n");
+        return -1;
+    }
+    if (!enc->block_align)
+        enc->block_align = (enc->bits_per_sample * enc->channels) >> 3;
+
     put_be16(pb, enc->bits_per_sample); /* Sample size */
 
     sample_rate = av_dbl2ext((double)enc->sample_rate);
