@@ -180,7 +180,6 @@ static int aiff_write_header(AVFormatContext *s)
     ByteIOContext *pb = &s->pb;
     AVCodecContext *enc = s->streams[0]->codec;
     AVExtFloat sample_rate;
-    int coder_len;
 
     /* First verify if format is ok */
     enc->codec_tag = codec_get_tag(codec_aiff_tags, enc->codec_id);
@@ -188,8 +187,6 @@ static int aiff_write_header(AVFormatContext *s)
         av_free(aiff);
         return -1;
     }
-
-    coder_len = strlen(enc->codec->name);
 
     /* FORM AIFF header */
     put_tag(pb, "FORM");
@@ -204,10 +201,7 @@ static int aiff_write_header(AVFormatContext *s)
 
     /* Common chunk */
     put_tag(pb, "COMM");
-    if (coder_len & 1)                  /* Common chunk is of var size */
-        put_be32(pb, 23+coder_len);
-    else
-        put_be32(pb, 24+coder_len);
+    put_be32(pb, 24); /* size */
     put_be16(pb, enc->channels);        /* Number of channels */
 
     aiff->frames = url_ftell(pb);
@@ -221,14 +215,7 @@ static int aiff_write_header(AVFormatContext *s)
     put_buffer(pb, (uint8_t*)&sample_rate, sizeof(sample_rate));
 
     put_le32(pb, enc->codec_tag);
-    if (coder_len & 1) {
-        put_byte(pb, coder_len);
-        put_buffer(pb, (const uint8_t*)enc->codec->name, coder_len);
-    } else {
-        put_byte(pb, coder_len+1);
-        put_buffer(pb, (const uint8_t*)enc->codec->name, coder_len);
-        put_byte(pb, 0);
-    }
+    put_be16(pb, 0);
 
     /* Sound data chunk */
     put_tag(pb, "SSND");
