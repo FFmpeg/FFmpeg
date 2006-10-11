@@ -896,7 +896,7 @@ src-=8;
                         num++;
                         if(num%1000000 == 0)
                         {
-                                printf(" %d %d %d %d\n", num, sum, max, bias);
+                                av_log(c, AV_LOG_INFO, " %d %d %d %d\n", num, sum, max, bias);
                         }
                 }
         }
@@ -1507,7 +1507,7 @@ DERING_CORE((%0, %1, 8)    ,(%%REGd, %1, 4),%%mm2,%%mm4,%%mm0,%%mm3,%%mm5,%%mm1,
 
                                         if(1024LL*1024LL*1024LL % numSkiped == 0)
                                         {
-                                                printf( "sum:%1.3f, skip:%d, wQP:%d, "
+                                                av_log(c, AV_LOG_INFO, "sum:%1.3f, skip:%d, wQP:%d, "
                                                         "wRange:%d, wDiff:%d, relSkip:%1.3f\n",
                                                         (float)errorSum/numSkiped, numSkiped, worstQP, worstRange,
                                                         worstDiff, (float)numSkiped/numPixels);
@@ -2535,7 +2535,6 @@ L2_DIFF_CORE((%0, %%REGc)  , (%1, %%REGc))
                 :: "r" (src), "r" (tempBlured), "r"((long)stride), "m" (tempBluredPast)
                 : "%"REG_a, "%"REG_d, "%"REG_c, "memory"
                 );
-//printf("%d\n", test);
 #else //defined (HAVE_MMX2) || defined (HAVE_3DNOW)
 {
         int y;
@@ -2568,7 +2567,6 @@ L2_DIFF_CORE((%0, %%REGc)  , (%1, %%REGc))
         *tempBluredPast=i;
 //        ((*tempBluredPast)*3 + d + 2)>>2;
 
-//printf("%d %d %d\n", maxNoise[0], maxNoise[1], maxNoise[2]);
 /*
 Switch between
  1  0  0  0  0  0  0  (0)
@@ -3415,9 +3413,7 @@ static void RENAME(postProcess)(uint8_t src[], int srcStride, uint8_t dst[], int
                 for(i=0; i<256; i++)
                 {
                         sum+= yHistogram[i];
-//                        printf("%d ", yHistogram[i]);
                 }
-//                printf("\n\n");
 
                 /* we allways get a completly black picture first */
                 maxClipped= (uint64_t)(sum * c.ppMode.maxClippedThreshold);
@@ -3545,7 +3541,6 @@ static void RENAME(postProcess)(uint8_t src[], int srcStride, uint8_t dst[], int
                 }
         }
 
-//printf("\n");
         for(y=0; y<height; y+=BLOCK_SIZE)
         {
                 //1% speedup if these are here instead of the inner loop
@@ -3582,7 +3577,6 @@ static void RENAME(postProcess)(uint8_t src[], int srcStride, uint8_t dst[], int
                         dstBlock= tempDst + dstStride;
                         srcBlock= tempSrc;
                 }
-//printf("\n");
 
                 // From this point on it is guranteed that we can read and write 16 lines downward
                 // finish 1 block before the next otherwise we might have a problem

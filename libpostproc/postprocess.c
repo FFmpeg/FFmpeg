@@ -119,8 +119,6 @@ static uint64_t __attribute__((aligned(8))) attribute_used b80= 0x80808080808080
 static uint8_t clip_table[3*256];
 static uint8_t * const clip_tab= clip_table + 256;
 
-static const int verbose= 0;
-
 static const int attribute_used deringThreshold= 20;
 
 
@@ -773,7 +771,7 @@ pp_mode_t *pp_get_mode_by_name_and_quality(char *name, int quality)
 
         strncpy(temp, name, GET_MODE_BUFFER_SIZE);
 
-        if(verbose>1) printf("pp: %s\n", name);
+        av_log(NULL, AV_LOG_DEBUG, "pp: %s\n", name);
 
         for(;;){
                 char *filterName;
@@ -791,7 +789,7 @@ pp_mode_t *pp_get_mode_by_name_and_quality(char *name, int quality)
                 if(filterToken == NULL) break;
                 p+= strlen(filterToken) + 1; // p points to next filterToken
                 filterName= strtok(filterToken, optionDelimiters);
-                if(verbose>1) printf("pp: %s::%s\n", filterToken, filterName);
+                av_log(NULL, AV_LOG_DEBUG, "pp: %s::%s\n", filterToken, filterName);
 
                 if(*filterName == '-')
                 {
@@ -803,7 +801,7 @@ pp_mode_t *pp_get_mode_by_name_and_quality(char *name, int quality)
                         option= strtok(NULL, optionDelimiters);
                         if(option == NULL) break;
 
-                        if(verbose>1) printf("pp: option: %s\n", option);
+                        av_log(NULL, AV_LOG_DEBUG, "pp: option: %s\n", option);
                         if(!strcmp("autoq", option) || !strcmp("a", option)) q= quality;
                         else if(!strcmp("nochrom", option) || !strcmp("y", option)) chrom=0;
                         else if(!strcmp("chrom", option) || !strcmp("c", option)) chrom=1;
@@ -844,7 +842,6 @@ pp_mode_t *pp_get_mode_by_name_and_quality(char *name, int quality)
 
                 for(i=0; filters[i].shortName!=NULL; i++)
                 {
-//                        printf("Compareing %s, %s, %s\n", filters[i].shortName,filters[i].longName, filterName);
                         if(   !strcmp(filters[i].longName, filterName)
                            || !strcmp(filters[i].shortName, filterName))
                         {
@@ -931,10 +928,10 @@ pp_mode_t *pp_get_mode_by_name_and_quality(char *name, int quality)
                 ppMode->error += numOfUnknownOptions;
         }
 
-        if(verbose>1) printf("pp: lumMode=%X, chromMode=%X\n", ppMode->lumMode, ppMode->chromMode);
+        av_log(NULL, AV_LOG_DEBUG, "pp: lumMode=%X, chromMode=%X\n", ppMode->lumMode, ppMode->chromMode);
         if(ppMode->error)
         {
-                fprintf(stderr, "%d errors in postprocess string \"%s\"\n", ppMode->error, name);
+                av_log(NULL, AV_LOG_ERROR, "%d errors in postprocess string \"%s\"\n", ppMode->error, name);
                 av_free(ppMode);
                 return NULL;
         }
@@ -986,6 +983,12 @@ static void global_init(void){
         memset(clip_table+512, 0, 256);
 }
 
+static const char * context_to_name(void * ptr) {
+    return "postproc";
+}
+
+static AVClass av_codec_context_class = { "Postproc", context_to_name, NULL };
+
 pp_context_t *pp_get_context(int width, int height, int cpuCaps){
         PPContext *c= av_malloc(sizeof(PPContext));
         int stride= (width+15)&(~15);    //assumed / will realloc if needed
@@ -994,6 +997,7 @@ pp_context_t *pp_get_context(int width, int height, int cpuCaps){
         global_init();
 
         memset(c, 0, sizeof(PPContext));
+        c->av_class = &av_codec_context_class;
         c->cpuCaps= cpuCaps;
         if(cpuCaps&PP_FORMAT){
                 c->hChromaSubSample= cpuCaps&0x3;
@@ -1060,7 +1064,6 @@ void  pp_postprocess(uint8_t * src[3], int srcStride[3],
                 else
                         for(i=0; i<mbWidth; i++) QP_store[i]= 1;
         }
-//printf("pict_type:%d\n", pict_type);
 
         if(pict_type & PP_PICT_TYPE_QP2){
                 int i;
@@ -1079,11 +1082,11 @@ if(0){
 int x,y;
 for(y=0; y<mbHeight; y++){
         for(x=0; x<mbWidth; x++){
-                printf("%2d ", QP_store[x + y*QPStride]);
+                av_log(c, AV_LOG_INFO, "%2d ", QP_store[x + y*QPStride]);
         }
-        printf("\n");
+        av_log(c, AV_LOG_INFO, "\n");
 }
-        printf("\n");
+        av_log(c, AV_LOG_INFO, "\n");
 }
 
         if((pict_type&7)!=3)
@@ -1107,10 +1110,8 @@ for(y=0; y<mbHeight; y++){
                 }
         }
 
-        if(verbose>2)
-        {
-                printf("using npp filters 0x%X/0x%X\n", mode->lumMode, mode->chromMode);
-        }
+        av_log(c, AV_LOG_DEBUG, "using npp filters 0x%X/0x%X\n",
+               mode->lumMode, mode->chromMode);
 
         postProcess(src[0], srcStride[0], dst[0], dstStride[0],
                 width, height, QP_store, QPStride, 0, mode, c);
