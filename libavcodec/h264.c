@@ -6048,7 +6048,7 @@ static int decode_cabac_residual( H264Context *h, DCTELEM *block, int cat, int n
     static const int coeff_abs_level_m1_offset[6] = {
         227+0, 227+10, 227+20, 227+30, 227+39, 426
     };
-    static const int significant_coeff_flag_offset_8x8[2][63] = {
+    static const uint8_t significant_coeff_flag_offset_8x8[2][63] = {
       { 0, 1, 2, 3, 4, 5, 5, 4, 4, 3, 3, 4, 4, 4, 5, 5,
         4, 4, 4, 4, 3, 3, 6, 7, 7, 7, 8, 9,10, 9, 8, 7,
         7, 6,11,12,13,11, 6, 7, 8, 9,14,10, 9, 8, 6,11,
@@ -6058,7 +6058,7 @@ static int decode_cabac_residual( H264Context *h, DCTELEM *block, int cat, int n
         9, 9,10,10, 8,11,12,11, 9, 9,10,10, 8,13,13, 9,
         9,10,10, 8,13,13, 9, 9,10,10,14,14,14,14,14 }
     };
-    static const int last_coeff_flag_offset_8x8[63] = {
+    static const uint8_t last_coeff_flag_offset_8x8[63] = {
         0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
         2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
         3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4,
