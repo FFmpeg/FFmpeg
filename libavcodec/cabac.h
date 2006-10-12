@@ -449,7 +449,7 @@ static int get_cabac(CABACContext *c, uint8_t * const state){
         : "%ecx", "%ebx", "%edx", "%esi"
     );
     bit&=1;
-#else
+#else /* BRANCHLESS_CABAC_DECODER */
     asm volatile(
         "movzbl (%1), %%eax                     \n\t"
         "movl "RANGE    "(%2), %%ebx            \n\t"
@@ -467,7 +467,7 @@ static int get_cabac(CABACContext *c, uint8_t * const state){
         "andl %%ecx, %%edx                      \n\t"
         "subl %%edx, %%ebx                      \n\t"
         "xorl %%ecx, %%eax                      \n\t"
-#else
+#else /* CMOV_IS_FAST */
         "movl %%edx, %%ecx                      \n\t"
         "subl %%ebx, %%edx                      \n\t"
         "sarl $31, %%edx                        \n\t" //lps_mask
@@ -477,7 +477,7 @@ static int get_cabac(CABACContext *c, uint8_t * const state){
         "andl %%edx, %%ecx                      \n\t"
         "subl %%ecx, %%ebx                      \n\t"
         "xorl %%edx, %%eax                      \n\t"
-#endif
+#endif /* CMOV_IS_FAST */
 
 //eax:state ebx:low edx:mask esi:range
         "movzbl "MANGLE(ff_h264_mps_state)"(%%eax), %%ecx   \n\t"
@@ -519,8 +519,8 @@ static int get_cabac(CABACContext *c, uint8_t * const state){
         : "%ecx", "%ebx", "%edx", "%esi"
     );
     bit&=1;
-#endif
-#else
+#endif /* BRANCHLESS_CABAC_DECODER */
+#else /* ARCH_X86 */
     int s = *state;
     int RangeLPS= ff_h264_lps_range[s][c->range>>(CABAC_BITS+7)]<<(CABAC_BITS+1);
     int bit, lps_mask attribute_unused;
@@ -543,7 +543,7 @@ static int get_cabac(CABACContext *c, uint8_t * const state){
             refill2(c);
         }
     }
-#else
+#else /* BRANCHLESS_CABAC_DECODER */
     lps_mask= (c->range - c->low)>>31;
 
     c->low -= c->range & lps_mask;
@@ -558,8 +558,8 @@ static int get_cabac(CABACContext *c, uint8_t * const state){
     c->low  <<= lps_mask;
     if(!(c->low & CABAC_MASK))
         refill2(c);
-#endif
-#endif
+#endif /* BRANCHLESS_CABAC_DECODER */
+#endif /* ARCH_X86 */
     return bit;
 }
 
