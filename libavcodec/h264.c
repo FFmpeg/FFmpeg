@@ -6117,7 +6117,7 @@ static int decode_cabac_residual( H264Context *h, DCTELEM *block, int cat, int n
                 } \
             } \
         }
-        const int *sig_off = significant_coeff_flag_offset_8x8[MB_FIELD];
+        const uint8_t *sig_off = significant_coeff_flag_offset_8x8[MB_FIELD];
         DECODE_SIGNIFICANCE( 63, sig_off[last], last_coeff_flag_offset_8x8[last] );
     } else {
         DECODE_SIGNIFICANCE( max_coeff - 1, last, last );
