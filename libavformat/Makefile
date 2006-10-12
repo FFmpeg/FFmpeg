@@ -58,6 +58,7 @@ OBJS-$(CONFIG_MMF_DEMUXER)               += mmf.o riff.o
 OBJS-$(CONFIG_MMF_MUXER)                 += mmf.o riff.o
 OBJS-$(CONFIG_MOV_DEMUXER)               += mov.o riff.o isom.o
 OBJS-$(CONFIG_MOV_MUXER)                 += movenc.o riff.o isom.o
+OBJS-$(CONFIG_MTV_DEMUXER)               += mtv.o
 OBJS-$(CONFIG_TGP_MUXER)                 += movenc.o riff.o isom.o
 OBJS-$(CONFIG_MP4_MUXER)                 += movenc.o riff.o isom.o
 OBJS-$(CONFIG_PSP_MUXER)                 += movenc.o riff.o isom.o

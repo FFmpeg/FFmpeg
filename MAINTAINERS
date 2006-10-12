@@ -207,6 +207,7 @@ Muxers/Demuxers:
   img2.c                                Michael Niedermayer
   mov.c                                 Francois Revol, Michael Niedermayer
   mpegts*                               Mans Rullgard
+  mtv.c                                 Reynaldo H. Verdejo Pinochet
   mxf.c                                 Baptiste Coudurier
   nsvdec.c                              Francois Revol
   nut.c                                 Alex Beregszaszi

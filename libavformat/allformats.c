@@ -200,6 +200,9 @@ void av_register_all(void)
 #ifdef CONFIG_MOV_MUXER
     av_register_output_format(&mov_muxer);
 #endif
+#ifdef CONFIG_MTV_DEMUXER
+    av_register_input_format(&mtv_demuxer);
+#endif
 #ifdef CONFIG_TGP_MUXER
     av_register_output_format(&tgp_muxer);
 #endif
