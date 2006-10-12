@@ -29,7 +29,7 @@
 #include <unistd.h>
 #include "common.h"
 #include "avcodec.h"
-#include "internal.h"
+#include "xvid_internal.h"
 
 /**
  * Buffer management macros.

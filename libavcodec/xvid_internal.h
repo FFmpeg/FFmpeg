@@ -18,15 +18,15 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef INTERNAL_H
-#define INTERNAL_H
+#ifndef XVID_INTERNAL_H
+#define XVID_INTERNAL_H
 
 /**
- * @file internal.h
- * common functions for internal libavcodec use
+ * @file xvid_internal.h
+ * common functions for use with the XviD wrappers
  */
 
 
 int av_tempfile(char *prefix, char **filename);
 
-#endif /* INTERNAL_H */
+#endif /* XVID_INTERNAL_H */
