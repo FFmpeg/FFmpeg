@@ -740,6 +740,8 @@ library:
 @tab Multimedia format used by Delphine Software games.
 @item MXF @tab    @tab X
 @tab Material eXchange Format SMPTE 377M, used by D-Cinema, broadcast industry.
+@item SEQ @tab    @tab X
+@tab Tiertex .seq files used in the DOS CDROM version of the game Flashback.
 @end multitable
 
 @code{X} means that encoding (resp. decoding) is supported.
@@ -843,6 +845,7 @@ following image formats are supported:
 @item KMVC                   @tab     @tab  X @tab Codec used in Worms games.
 @item VMware Video           @tab     @tab  X @tab Codec used in videos captured by VMware.
 @item Cin Video              @tab     @tab  X @tab Codec used in Delphine Software games.
+@item Tiertex Seq Video      @tab     @tab  X @tab Codec used in DOS CDROM FlashBack game.
 @end multitable
 
 @code{X} means that encoding (resp. decoding) is supported.

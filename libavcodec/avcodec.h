@@ -37,8 +37,8 @@ extern "C" {
 #define AV_STRINGIFY(s)         AV_TOSTRING(s)
 #define AV_TOSTRING(s) #s
 
-#define LIBAVCODEC_VERSION_INT  ((51<<16)+(18<<8)+0)
-#define LIBAVCODEC_VERSION      51.18.0
+#define LIBAVCODEC_VERSION_INT  ((51<<16)+(19<<8)+0)
+#define LIBAVCODEC_VERSION      51.19.0
 #define LIBAVCODEC_BUILD        LIBAVCODEC_VERSION_INT
 
 #define LIBAVCODEC_IDENT        "Lavc" AV_STRINGIFY(LIBAVCODEC_VERSION)
@@ -146,6 +146,7 @@ enum CodecID {
     CODEC_ID_VP6F,
     CODEC_ID_TARGA,
     CODEC_ID_DSICINVIDEO,
+    CODEC_ID_TIERTEXSEQVIDEO,
 
     /* various pcm "codecs" */
     CODEC_ID_PCM_S16LE= 0x10000,
@@ -2298,6 +2299,7 @@ extern AVCodec wavpack_decoder;
 extern AVCodec targa_decoder;
 extern AVCodec dsicinvideo_decoder;
 extern AVCodec dsicinaudio_decoder;
+extern AVCodec tiertexseqvideo_decoder;
 
 /* pcm codecs */
 #define PCM_CODEC(id, name) \

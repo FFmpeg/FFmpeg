@@ -478,6 +478,9 @@ void av_register_all(void)
 #ifdef CONFIG_YUV4MPEGPIPE_DEMUXER
     av_register_input_format(&yuv4mpegpipe_demuxer);
 #endif
+#ifdef CONFIG_TIERTEXSEQ_DEMUXER
+    av_register_input_format(&tiertexseq_demuxer);
+#endif
 
     /* image formats */
 #if 0

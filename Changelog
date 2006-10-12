@@ -61,6 +61,7 @@ version <next>
 - WavPack lossless audio decoder
 - Targa (.TGA) picture decoder
 - Delphine Software .cin demuxer/audio and video decoder
+- Tiertex .seq demuxer/video decoder
 
 version 0.4.9-pre1:
 

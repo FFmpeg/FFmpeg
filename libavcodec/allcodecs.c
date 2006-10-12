@@ -554,6 +554,9 @@ void avcodec_register_all(void)
 #ifdef CONFIG_DSICINAUDIO_DECODER
     register_avcodec(&dsicinaudio_decoder);
 #endif //CONFIG_DSICINAUDIO_DECODER
+#ifdef CONFIG_TIERTEXSEQVIDEO_DECODER
+    register_avcodec(&tiertexseqvideo_decoder);
+#endif //CONFIG_TIERTEXSEQVIDEO_DECODER
 
 #if defined(CONFIG_AMR_NB) || defined(CONFIG_AMR_NB_FIXED)
 #ifdef CONFIG_AMR_NB_DECODER
