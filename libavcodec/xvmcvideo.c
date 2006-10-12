@@ -138,7 +138,7 @@ const int mb_xy = s->mb_y * s->mb_stride + s->mb_x;
 
     if(s->encoding){
         av_log(s->avctx, AV_LOG_ERROR, "XVMC doesn't support encoding!!!\n");
-        return -1;
+        return;
     }
 
    //from MPV_decode_mb(),
