@@ -249,10 +249,19 @@ long check_dcbzl_effect(void)
 }
 #endif
 
+static void prefetch_ppc(void *mem, int stride, int h)
+{
+    register const uint8_t *p = mem;
+    do {
+        asm volatile ("dcbt 0,%0" : : "r" (p));
+        p+= stride;
+    } while(--h);
+}
+
 void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx)
 {
     // Common optimizations whether Altivec is available or not
-
+    c->prefetch = prefetch_ppc;
     switch (check_dcbzl_effect()) {
         case 32:
             c->clear_blocks = clear_blocks_dcbz32_ppc;
