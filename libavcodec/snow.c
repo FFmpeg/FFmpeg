@@ -3876,7 +3876,7 @@ static int ratecontrol_1pass(SnowContext *s, AVFrame *pict)
 
     pict->quality= ff_rate_estimate_qscale(&s->m, 1);
     if (pict->quality < 0)
-        return -1;
+        return INT_MIN;
     s->lambda= pict->quality * 3/2;
     delta_qlog= qscale2qlog(pict->quality) - s->qlog;
     s->qlog+= delta_qlog;
@@ -4186,7 +4186,7 @@ redo_frame:
 
         if(s->pass1_rc && plane_index==0){
             int delta_qlog = ratecontrol_1pass(s, pict);
-            if (delta_qlog < 0)
+            if (delta_qlog <= INT_MIN)
                 return -1;
             if(delta_qlog){
                 //reordering qlog in the bitstream would eliminate this reset
