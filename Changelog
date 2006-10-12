@@ -62,6 +62,7 @@ version <next>
 - Targa (.TGA) picture decoder
 - Delphine Software .cin demuxer/audio and video decoder
 - Tiertex .seq demuxer/video decoder
+- MTV demuxer
 
 version 0.4.9-pre1:
 
