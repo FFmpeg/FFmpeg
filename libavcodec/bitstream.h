@@ -460,13 +460,16 @@ static inline int unaligned32_le(const void *v)
 # ifdef ALT_BITSTREAM_READER_LE
 #   define SHOW_UBITS(name, gb, num)\
         ((name##_cache) & (NEG_USR32(0xffffffff,num)))
+
+#   define SHOW_SBITS(name, gb, num)\
+        NEG_SSR32((name##_cache)<<(32-(num)), num)
 # else
 #   define SHOW_UBITS(name, gb, num)\
         NEG_USR32(name##_cache, num)
-# endif
 
 #   define SHOW_SBITS(name, gb, num)\
         NEG_SSR32(name##_cache, num)
+# endif
 
 #   define GET_CACHE(name, gb)\
         ((uint32_t)name##_cache)
