@@ -446,7 +446,7 @@ static int always_inline get_cabac_inline(CABACContext *c, uint8_t * const state
         "movl %%ebx, "LOW      "(%2)            \n\t"
         :"=&a"(bit) //FIXME this is fragile gcc either runs out of registers or misscompiles it (for example if "+a"(bit) or "+m"(*state) is used
         :"r"(state), "r"(c)
-        : "%ecx", "%ebx", "%edx", "%esi"
+        : "%ecx", "%ebx", "%edx", "%esi", "memory"
     );
     bit&=1;
 #else /* BRANCHLESS_CABAC_DECODER */
@@ -516,7 +516,7 @@ static int always_inline get_cabac_inline(CABACContext *c, uint8_t * const state
         "1:                                     \n\t"
         :"=&a"(bit)
         :"r"(state), "r"(c)
-        : "%ecx", "%ebx", "%edx", "%esi"
+        : "%ecx", "%ebx", "%edx", "%esi", "memory"
     );
     bit&=1;
 #endif /* BRANCHLESS_CABAC_DECODER */
