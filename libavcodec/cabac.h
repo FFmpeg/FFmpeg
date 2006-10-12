@@ -359,7 +359,7 @@ static inline void renorm_cabac_decoder_once(CABACContext *c){
         refill(c);
 }
 
-static int get_cabac(CABACContext *c, uint8_t * const state){
+static int always_inline get_cabac_inline(CABACContext *c, uint8_t * const state){
     //FIXME gcc generates duplicate load/stores for c->low and c->range
 #ifdef ARCH_X86
     int bit;
@@ -561,6 +561,14 @@ static int get_cabac(CABACContext *c, uint8_t * const state){
 #endif /* BRANCHLESS_CABAC_DECODER */
 #endif /* ARCH_X86 */
     return bit;
+}
+
+static int __attribute((noinline)) get_cabac_noinline(CABACContext *c, uint8_t * const state){
+    return get_cabac_inline(c,state);
+}
+
+static int get_cabac(CABACContext *c, uint8_t * const state){
+    return get_cabac_inline(c,state);
 }
 
 static int get_cabac_bypass(CABACContext *c){
