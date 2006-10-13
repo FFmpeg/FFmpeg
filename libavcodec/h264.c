@@ -6164,14 +6164,14 @@ static int decode_cabac_residual( H264Context *h, DCTELEM *block, int cat, int n
             if( coeff_abs >= 15 ) {
                 int j = 0;
                 while( get_cabac_bypass( &h->cabac ) ) {
-                    coeff_abs += 1 << j;
                     j++;
                 }
 
+                coeff_abs=1;
                 while( j-- ) {
-                    if( get_cabac_bypass( &h->cabac ) )
-                        coeff_abs += 1 << j ;
+                    coeff_abs += coeff_abs + get_cabac_bypass( &h->cabac );
                 }
+                coeff_abs+= 14;
             }
 
             if( !qmul ) {
