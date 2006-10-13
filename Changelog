@@ -63,6 +63,7 @@ version <next>
 - Delphine Software .cin demuxer/audio and video decoder
 - Tiertex .seq demuxer/video decoder
 - MTV demuxer
+- TIFF picture decoder
 
 version 0.4.9-pre1:
 

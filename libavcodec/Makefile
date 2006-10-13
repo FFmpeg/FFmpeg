@@ -134,6 +134,7 @@ OBJS-$(CONFIG_SVQ1_ENCODER)            += svq1.o
 OBJS-$(CONFIG_SVQ3_DECODER)            += h264.o
 OBJS-$(CONFIG_TARGA_DECODER)           += targa.o
 OBJS-$(CONFIG_THEORA_DECODER)          += vp3.o
+OBJS-$(CONFIG_TIFF_DECODER)            += tiff.o
 OBJS-$(CONFIG_TRUEMOTION1_DECODER)     += truemotion1.o
 OBJS-$(CONFIG_TRUEMOTION2_DECODER)     += truemotion2.o
 OBJS-$(CONFIG_TRUESPEECH_DECODER)      += truespeech.o
