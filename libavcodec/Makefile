@@ -339,19 +339,6 @@ endif
 ifeq ($(CONFIG_CAVS_DECODER),yes)
 OBJS += i386/cavsdsp_mmx.o
 endif
-ifeq ($(TARGET_BUILTIN_VECTOR),yes)
-i386/fft_sse.o: CFLAGS+= -msse
-depend: CFLAGS+= -msse
-endif
-ifeq ($(TARGET_BUILTIN_3DNOW),yes)
-i386/fft_3dn.o: CFLAGS+= -m3dnow
-ifeq ($(TARGET_ARCH_X86),yes)
-i386/fft_3dn2.o: CFLAGS+= -march=athlon
-endif
-ifeq ($(TARGET_ARCH_X86_64),yes)
-i386/fft_3dn2.o: CFLAGS+= -march=k8
-endif
-endif
 endif
 
 # armv4l specific stuff

@@ -1223,31 +1223,6 @@ int main(void) {
 }
 EOF
 
-# test gcc version to see if vector builtins can be used
-# currently only used on i386 for MMX builtins
-check_cc -msse <<EOF && builtin_vector=yes || builtin_vector=no
-#include <xmmintrin.h>
-int main(void) {
-#if __GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 2)
-return 0;
-#else
-#error no vector builtins
-#endif
-}
-EOF
-
-# test for mm3dnow.h
-test "$cpu" = "x86_64" && march=k8 || march=athlon
-check_cc -march=$march <<EOF && mm3dnow=yes || mm3dnow=no
-#include <mm3dnow.h>
-int main(void) {
-__m64 b1;
-b1 = _m_pswapd(b1);
-_m_femms();
-return 0;
-}
-EOF
-
 # ---
 # big/little-endian test
 if test "$cross_compile" = "no"; then
@@ -1575,8 +1550,6 @@ echo "inttypes.h       $inttypes"
 echo "broken inttypes.h $emu_fast_int"
 if test $cpu = "x86" -o $cpu = "x86_64"; then
     echo "MMX enabled      $mmx"
-    echo "Vector Builtins  $builtin_vector"
-    echo "3DNow! Builtins  $mm3dnow"
 fi
 if test $cpu = "armv4l"; then
     echo "ARMv5TE enabled  $armv5te"
@@ -1758,14 +1731,6 @@ if test "$mmx" = "yes" ; then
   echo "TARGET_MMX=yes" >> config.mak
   echo "#define HAVE_MMX 1" >> $TMPH
   echo "#define __CPU__ 586" >> $TMPH
-fi
-if test "$builtin_vector" = "yes" ; then
-  echo "TARGET_BUILTIN_VECTOR=yes" >> config.mak
-  echo "#define HAVE_BUILTIN_VECTOR 1" >> $TMPH
-fi
-if test "$mm3dnow" = "yes" ; then
-  echo "TARGET_BUILTIN_3DNOW=yes" >> config.mak
-  echo "#define HAVE_MM3DNOW 1" >> $TMPH
 fi
 if test "$armv5te" = "yes" ; then
   echo "TARGET_ARMV5TE=yes" >> config.mak
