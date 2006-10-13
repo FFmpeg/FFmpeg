@@ -50,6 +50,7 @@ static const uint8_t lps_range[64][4]= {
 {  6,  8,  9, 11}, {  6,  7,  9, 10}, {  6,  7,  8,  9}, {  2,  2,  2,  2},
 };
 
+uint8_t ff_h264_mlps_state[4*64];
 uint8_t ff_h264_lps_range[2*65][4];
 uint8_t ff_h264_lps_state[2*64];
 uint8_t ff_h264_mps_state[2*64];
@@ -132,16 +133,18 @@ void ff_init_cabac_states(CABACContext *c){
             ff_h264_lps_range[2*i+1][j+4]= lps_range[i][j];
         }
 
+        ff_h264_mlps_state[128+2*i+0]=
         ff_h264_mps_state[2*i+0]= 2*mps_state[i]+0;
+        ff_h264_mlps_state[128+2*i+1]=
         ff_h264_mps_state[2*i+1]= 2*mps_state[i]+1;
 
         if( i ){
 #ifdef BRANCHLESS_CABAC_DECODER
-            ff_h264_mps_state[-2*i-1]= 2*lps_state[i]+0; //FIXME yes this is not valid C but iam lazy, cleanup welcome
-            ff_h264_mps_state[-2*i-2]= 2*lps_state[i]+1;
+            ff_h264_mlps_state[128-2*i-1]= 2*lps_state[i]+0;
+            ff_h264_mlps_state[128-2*i-2]= 2*lps_state[i]+1;
         }else{
-            ff_h264_mps_state[-2*i-1]= 1;
-            ff_h264_mps_state[-2*i-2]= 0;
+            ff_h264_mlps_state[128-2*i-1]= 1;
+            ff_h264_mlps_state[128-2*i-2]= 0;
 #else
             ff_h264_lps_state[2*i+0]= 2*lps_state[i]+0;
             ff_h264_lps_state[2*i+1]= 2*lps_state[i]+1;

@@ -47,6 +47,7 @@ typedef struct CABACContext{
     PutBitContext pb;
 }CABACContext;
 
+extern uint8_t ff_h264_mlps_state[4*64];
 extern uint8_t ff_h264_lps_range[2*65][4];  ///< rangeTabLPS
 extern uint8_t ff_h264_mps_state[2*64];     ///< transIdxMPS
 extern uint8_t ff_h264_lps_state[2*64];     ///< transIdxLPS
@@ -480,7 +481,7 @@ static int always_inline get_cabac_inline(CABACContext *c, uint8_t * const state
 #endif /* CMOV_IS_FAST */
 
 //eax:state ebx:low edx:mask esi:range
-        "movzbl "MANGLE(ff_h264_mps_state)"(%%eax), %%ecx   \n\t"
+        "movzbl "MANGLE(ff_h264_mlps_state)"+128(%%eax), %%ecx   \n\t"
         "movb %%cl, (%1)                        \n\t"
 
         "movl %%esi, %%edx                      \n\t"
@@ -550,7 +551,7 @@ static int always_inline get_cabac_inline(CABACContext *c, uint8_t * const state
     c->range += (RangeLPS - c->range) & lps_mask;
 
     s^=lps_mask;
-    *state= ff_h264_mps_state[s];
+    *state= (ff_h264_mlps_state+128)[s];
     bit= s&1;
 
     lps_mask= ff_h264_norm_shift[c->range>>(CABAC_BITS+3)];
