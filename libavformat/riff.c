@@ -193,6 +193,8 @@ const CodecTag codec_wav_tags[] = {
     { CODEC_ID_ADPCM_CT, 0x200 },
     { CODEC_ID_ADPCM_SWF, ('S'<<8)+'F' },
     { CODEC_ID_TRUESPEECH, 0x22 },
+
+    /* FIXME: All of the IDs below are not 16 bit and thus illegal. */
     { CODEC_ID_FLAC, MKTAG('f', 'L', 'a', 'C') },
     { CODEC_ID_TTA, MKTAG('T', 'T', 'A', '1') },
     { CODEC_ID_WAVPACK, MKTAG('W', 'V', 'P', 'K') },
