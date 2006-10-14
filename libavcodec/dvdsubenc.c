@@ -23,9 +23,6 @@
 #undef NDEBUG
 #include <assert.h>
 
-typedef struct DVDSubtitleContext {
-} DVDSubtitleContext;
-
 // ncnt is the nibble counter
 #define PUTNIBBLE(val)\
 do {\
@@ -239,7 +236,7 @@ AVCodec dvdsub_encoder = {
     "dvdsub",
     CODEC_TYPE_SUBTITLE,
     CODEC_ID_DVD_SUBTITLE,
-    sizeof(DVDSubtitleContext),
+    0,
     dvdsub_init_encoder,
     dvdsub_encode,
     dvdsub_close_encoder,

@@ -29,9 +29,6 @@
  * http://www.multimedia.cx
  */
 
-typedef struct {
-} WSSNDContext;
-
 static const char ws_adpcm_2bit[] = { -2, -1, 0, 1};
 static const char ws_adpcm_4bit[] = {
     -9, -8, -6, -5, -4, -3, -2, -1,
@@ -139,7 +136,7 @@ AVCodec ws_snd1_decoder = {
     "ws_snd1",
     CODEC_TYPE_AUDIO,
     CODEC_ID_WESTWOOD_SND1,
-    sizeof(WSSNDContext),
+    0,
     ws_snd_decode_init,
     NULL,
     NULL,

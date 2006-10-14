@@ -22,9 +22,6 @@
 
 //#define DEBUG
 
-typedef struct DVDSubContext {
-} DVDSubContext;
-
 static int dvdsub_init_decoder(AVCodecContext *avctx)
 {
     return 0;
@@ -412,7 +409,7 @@ AVCodec dvdsub_decoder = {
     "dvdsub",
     CODEC_TYPE_SUBTITLE,
     CODEC_ID_DVD_SUBTITLE,
-    sizeof(DVDSubContext),
+    0,
     dvdsub_init_decoder,
     NULL,
     dvdsub_close_decoder,
