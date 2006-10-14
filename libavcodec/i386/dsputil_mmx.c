@@ -2704,6 +2704,7 @@ void ff_vp3_dsp_init_mmx(void);
 
 /* XXX: those functions should be suppressed ASAP when all IDCTs are
    converted */
+#ifdef CONFIG_GPL
 static void ff_libmpeg2mmx_idct_put(uint8_t *dest, int line_size, DCTELEM *block)
 {
     ff_mmx_idct (block);
@@ -2724,6 +2725,7 @@ static void ff_libmpeg2mmx2_idct_add(uint8_t *dest, int line_size, DCTELEM *bloc
     ff_mmxext_idct (block);
     add_pixels_clamped_mmx(block, dest, line_size);
 }
+#endif
 static void ff_vp3_idct_put_sse2(uint8_t *dest, int line_size, DCTELEM *block)
 {
     ff_vp3_idct_sse2(block);
