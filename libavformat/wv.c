@@ -171,12 +171,6 @@ static int wv_read_packet(AVFormatContext *s,
             return -1;
     }
 
-    samples = LE_32(wc->extra);
-    /* should not happen but who knows */
-    if(samples * 2 * wc->chan > AVCODEC_MAX_AUDIO_FRAME_SIZE){
-        av_log(s, AV_LOG_ERROR, "Packet size is too big to be handled in lavc!\n");
-        return -EIO;
-    }
     if(av_new_packet(pkt, wc->blksize + WV_EXTRA_SIZE) < 0)
         return AVERROR_NOMEM;
     memcpy(pkt->data, wc->extra, WV_EXTRA_SIZE);
