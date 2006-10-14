@@ -869,7 +869,7 @@ static void asf_build_simple_index(AVFormatContext *s, int stream_index)
         itime=get_le64(&s->pb);
         pct=get_le32(&s->pb);
         ict=get_le32(&s->pb);
-        av_log(NULL, AV_LOG_DEBUG, "itime:0x%Lx, pct:%d, ict:%d\n",itime,pct,ict);
+        av_log(NULL, AV_LOG_DEBUG, "itime:0x%"PRIx64", pct:%d, ict:%d\n",itime,pct,ict);
 
         for (i=0;i<ict;i++){
             int pktnum=get_le32(&s->pb);
@@ -933,7 +933,7 @@ static int asf_read_seek(AVFormatContext *s, int stream_index, int64_t pts, int 
     //     }
 
         /* do the seek */
-        av_log(NULL, AV_LOG_DEBUG, "SEEKTO: %Ld\n", pos);
+        av_log(NULL, AV_LOG_DEBUG, "SEEKTO: %"PRId64"\n", pos);
         url_fseek(&s->pb, pos, SEEK_SET);
     }
     asf_reset_header(s);
