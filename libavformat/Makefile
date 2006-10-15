@@ -161,7 +161,7 @@ OBJS-$(CONFIG_AUDIO_DEMUXER)             += audio.o
 OBJS-$(CONFIG_AUDIO_MUXER)               += audio.o
 endif
 
-EXTRALIBS := -lavcodec$(BUILDSUF) -L../libavcodec $(EXTRALIBS)
+EXTRALIBS := -lavcodec$(BUILDSUF) -L$(BUILD_ROOT)/libavcodec $(EXTRALIBS)
 
 ifeq ($(CONFIG_AUDIO_BEOS),yes)
 CPPOBJS+= beosaudio.o
