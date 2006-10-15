@@ -162,7 +162,7 @@ static int wv_read_packet(AVFormatContext *s,
                           AVPacket *pkt)
 {
     WVContext *wc = s->priv_data;
-    int ret, samples;
+    int ret;
 
     if (url_feof(&s->pb))
         return -EIO;
