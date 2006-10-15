@@ -335,7 +335,8 @@ int ff_xvid_encode_init(AVCodecContext *avctx)  {
     } else {
         /* We are claiming to be XviD */
         x->quicktime_format = 0;
-        avctx->codec_tag = ff_get_fourcc("xvid");
+        if(!avctx->codec_tag)
+            avctx->codec_tag = ff_get_fourcc("xvid");
     }
 
     /* Bframes */
