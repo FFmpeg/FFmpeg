@@ -26,6 +26,9 @@ codectest mpeg4 mpeg ac3 snow snowll: vsynth1/00.pgm vsynth2/00.pgm asynth1.sw t
 
 # fast regression for libav formats
 libavtest: vsynth1/00.pgm asynth1.sw
+	@echo
+	@echo "This test requires FFmpeg to be compiled with --enable-gpl."
+	@echo
 	@$(VPATH)/regression.sh $@ $(LIBAV_REFFILE) vsynth1
 
 # video generation
