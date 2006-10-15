@@ -362,7 +362,7 @@ static inline void renorm_cabac_decoder_once(CABACContext *c){
 
 static int always_inline get_cabac_inline(CABACContext *c, uint8_t * const state){
     //FIXME gcc generates duplicate load/stores for c->low and c->range
-#ifdef ARCH_X86
+#if defined(ARCH_X86) && !defined(PIC)
     int bit;
 
 #define LOW          "0"
