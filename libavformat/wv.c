@@ -118,15 +118,15 @@ static int wv_read_block_header(AVFormatContext *ctx, ByteIOContext *pb)
     if(!wc->chan) wc->chan = chan;
     if(!wc->rate) wc->rate = rate;
 
-    if(bpp != wc->bpp){
+    if(wc->flags && bpp != wc->bpp){
         av_log(ctx, AV_LOG_ERROR, "Bits per sample differ, this block: %i, header block: %i\n", bpp, wc->bpp);
         return -1;
     }
-    if(chan != wc->chan){
+    if(wc->flags && chan != wc->chan){
         av_log(ctx, AV_LOG_ERROR, "Channels differ, this block: %i, header block: %i\n", chan, wc->chan);
         return -1;
     }
-    if(rate != wc->rate){
+    if(wc->flags && rate != wc->rate){
         av_log(ctx, AV_LOG_ERROR, "Sampling rate differ, this block: %i, header block: %i\n", rate, wc->rate);
         return -1;
     }
