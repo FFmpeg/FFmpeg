@@ -16,25 +16,25 @@ LIBAV_REFFILE=$(VPATH)/libav.regression.ref
 
 all fulltest test: codectest libavtest test-server
 
-test-server: vsynth1/0.pgm asynth1.sw
+test-server: vsynth1/00.pgm asynth1.sw
 	@$(VPATH)/server-regression.sh $(SERVER_REFFILE) $(VPATH)/test.conf
 
 # fast regression tests for all codecs
-codectest mpeg4 mpeg ac3 snow snowll: vsynth1/0.pgm vsynth2/0.pgm asynth1.sw tiny_psnr$(EXESUF)
+codectest mpeg4 mpeg ac3 snow snowll: vsynth1/00.pgm vsynth2/00.pgm asynth1.sw tiny_psnr$(EXESUF)
 	@$(VPATH)/regression.sh $@ $(REFFILE1) vsynth1
 	@$(VPATH)/regression.sh $@ $(REFFILE2) vsynth2
 
 # fast regression for libav formats
-libavtest: vsynth1/0.pgm asynth1.sw
+libavtest: vsynth1/00.pgm asynth1.sw
 	@$(VPATH)/regression.sh $@ $(LIBAV_REFFILE) vsynth1
 
 # video generation
 
-vsynth1/0.pgm: videogen$(EXESUF)
+vsynth1/00.pgm: videogen$(EXESUF)
 	@mkdir -p vsynth1
 	./videogen 'vsynth1/'
 
-vsynth2/0.pgm: rotozoom$(EXESUF)
+vsynth2/00.pgm: rotozoom$(EXESUF)
 	@mkdir -p vsynth2
 	./rotozoom 'vsynth2/' $(VPATH)/lena.pnm
 
