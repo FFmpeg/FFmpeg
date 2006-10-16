@@ -170,6 +170,9 @@ static double evalPrimary(Parser *p){
     else if( strmatch(next, "sin"   ) ) d= sin(d);
     else if( strmatch(next, "cos"   ) ) d= cos(d);
     else if( strmatch(next, "tan"   ) ) d= tan(d);
+    else if( strmatch(next, "atan"  ) ) d= atan(d);
+    else if( strmatch(next, "asin"  ) ) d= asin(d);
+    else if( strmatch(next, "acos"  ) ) d= acos(d);
     else if( strmatch(next, "exp"   ) ) d= exp(d);
     else if( strmatch(next, "log"   ) ) d= log(d);
     else if( strmatch(next, "squish") ) d= 1/(1+exp(4*d));
