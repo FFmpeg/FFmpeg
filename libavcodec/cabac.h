@@ -470,13 +470,14 @@ static int always_inline get_cabac_inline(CABACContext *c, uint8_t * const state
         "subl %%edx, %%ebx                      \n\t"
         "xorl %%ecx, %%eax                      \n\t"
 #else /* CMOV_IS_FAST */
-FIXTHIS
         "movl %%edx, %%ecx                      \n\t"
+        "shl $17, %%edx                         \n\t"
         "subl %%ebx, %%edx                      \n\t"
         "sarl $31, %%edx                        \n\t" //lps_mask
         "subl %%ecx, %%esi                      \n\t" //RangeLPS - range
         "andl %%edx, %%esi                      \n\t" //(RangeLPS - range)&lps_mask
         "addl %%ecx, %%esi                      \n\t" //new range
+        "shl $17, %%ecx                         \n\t"
         "andl %%edx, %%ecx                      \n\t"
         "subl %%ecx, %%ebx                      \n\t"
         "xorl %%edx, %%eax                      \n\t"
