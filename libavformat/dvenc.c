@@ -72,10 +72,6 @@ static int dv_write_pack(enum dv_pack_type pack_id, DVMuxContext *c, uint8_t* bu
     time_t ct;
     int ltc_frame;
 
-    /* Its hard to tell what SMPTE requires w.r.t. APT, but Quicktime needs it.
-     * We set it based on pix_fmt value but it really should be per DV profile */
-    int apt = (c->sys->pix_fmt == PIX_FMT_YUV422P ? 1 : 0);
-
     buf[0] = (uint8_t)pack_id;
     switch (pack_id) {
     case dv_timecode:
@@ -115,7 +111,7 @@ static int dv_write_pack(enum dv_pack_type pack_id, DVMuxContext *c, uint8_t* bu
           buf[3] = (1 << 7) | /* res               */
                    (1 << 6) | /* multi-language flag */
                    (c->sys->dsf << 5) | /*  system: 60fields/50fields */
-                   (apt << 1);/* definition: 0 -- 25Mbps, 2 -- 50Mbps */
+                   (c->sys->n_difchan & 2); /* definition: 0 -- 25Mbps, 2 -- 50Mbps */
           buf[4] = (1 << 7) | /* emphasis: 1 -- off */
                    (0 << 6) | /* emphasis time constant: 0 -- reserved */
                    (0 << 3) | /* frequency: 0 -- 48Khz, 1 -- 44,1Khz, 2 -- 32Khz */
@@ -131,7 +127,8 @@ static int dv_write_pack(enum dv_pack_type pack_id, DVMuxContext *c, uint8_t* bu
                    (1 << 3) | /* recording mode: 1 -- original */
                     7;
           buf[3] = (1 << 7) | /* direction: 1 -- forward */
-                    0x20;     /* speed */
+                   (c->sys->pix_fmt == PIX_FMT_YUV420P ? 0x20 : /* speed */
+                                                         c->sys->ltc_divisor*4);
           buf[4] = (1 << 7) | /* reserved -- always 1 */
                     0x7f;     /* genre category */
           break;
