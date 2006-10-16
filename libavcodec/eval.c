@@ -209,19 +209,22 @@ static double evalPrimary(Parser *p){
     return d;
 }
 
-static double evalPow(Parser *p){
-    int sign= (*p->s == '+') - (*p->s == '-');
-    p->s += sign&1;
-    return (sign|1) * evalPrimary(p);
+static double evalPow(Parser *p, int *sign){
+    *sign= (*p->s == '+') - (*p->s == '-');
+    p->s += *sign&1;
+    return evalPrimary(p);
 }
 
 static double evalFactor(Parser *p){
-    double ret= evalPow(p);
+    int sign, sign2;
+    double ret, e;
+    ret= evalPow(p, &sign);
     while(p->s[0]=='^'){
         p->s++;
-        ret= pow(ret, evalPow(p));
+        e= evalPow(p, &sign2);
+        ret= pow(ret, (sign2|1) * e);
     }
-    return ret;
+    return (sign|1) * ret;
 }
 
 static double evalTerm(Parser *p){
