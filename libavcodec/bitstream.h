@@ -200,7 +200,7 @@ unaligned(16)
 unaligned(32)
 unaligned(64)
 #undef unaligned
-#endif //!ARCH_X86
+#endif /* defined(ARCH_X86) || defined(ARCH_X86_64) */
 
 #ifndef ALT_BITSTREAM_WRITER
 static inline void put_bits(PutBitContext *s, int n, unsigned int value)

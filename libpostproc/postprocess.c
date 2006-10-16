@@ -594,7 +594,7 @@ static always_inline void do_a_deblock_C(uint8_t *src, int step, int stride, PPC
 #if (defined (HAVE_3DNOW) && !defined (HAVE_MMX2)) || defined (RUNTIME_CPUDETECT)
 #define COMPILE_3DNOW
 #endif
-#endif //ARCH_X86
+#endif /* defined(ARCH_X86) || defined(ARCH_X86_64) */
 
 #undef HAVE_MMX
 #undef HAVE_MMX2
