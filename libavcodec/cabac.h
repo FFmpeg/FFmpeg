@@ -460,7 +460,7 @@ static int always_inline get_cabac_inline(CABACContext *c, uint8_t * const state
         "movl "LOW      "(%2), %%ebx            \n\t"
 //eax:state ebx:low, edx:range, esi:RangeLPS
         "subl %%esi, %%edx                      \n\t"
-#ifdef CMOV_IS_FAST
+#if (defined CMOV_IS_FAST  && __CPU__ >= 686)
         "movl %%edx, %%ecx                      \n\t"
         "shl $17, %%edx                         \n\t"
         "cmpl %%ebx, %%edx                      \n\t"
