@@ -338,6 +338,9 @@ void Process(void *ctx, AVPicture *picture, enum PixelFormat pix_fmt, int width,
             }
 
             if (foundfile < ci->file_limit) {
+                FILE *f;
+                char fname[256];
+
                 size = avpicture_get_size(PIX_FMT_RGB24, width, height);
                 buf = av_malloc(size);
 
@@ -360,10 +363,6 @@ void Process(void *ctx, AVPicture *picture, enum PixelFormat pix_fmt, int width,
                               picture1.data, picture1.linesize);
 
                     /* Write out the PPM file */
-
-                    FILE *f;
-                    char fname[256];
-
                     snprintf(fname, sizeof(fname), "%s/fishimg%ld_%"PRId64".ppm", ci->dir, (long)(av_gettime() / 1000000), pts);
                     f = fopen(fname, "w");
                     if (f) {
