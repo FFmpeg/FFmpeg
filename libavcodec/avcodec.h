@@ -1889,7 +1889,7 @@ typedef struct AVCodecContext {
      * - encoding: set by user.
      * - decoding: unused
      */
-    int crf;
+    float crf;
 
     /**
      * constant quantization parameter rate control method

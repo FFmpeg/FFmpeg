@@ -146,7 +146,7 @@ X264_init(AVCodecContext *avctx)
     else{
         if(avctx->crf){
             x4->params.rc.i_rc_method = X264_RC_CRF;
-            x4->params.rc.i_rf_constant = avctx->crf;
+            x4->params.rc.f_rf_constant = avctx->crf;
         }else if(avctx->cqp > -1){
             x4->params.rc.i_rc_method = X264_RC_CQP;
             x4->params.rc.i_qp_constant = avctx->cqp;

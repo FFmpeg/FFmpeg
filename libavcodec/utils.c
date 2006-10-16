@@ -684,7 +684,7 @@ static const AVOption options[]={
 {"mepc", "motion estimation bitrate penalty compensation (1.0 = 256)", OFFSET(me_penalty_compensation), FF_OPT_TYPE_INT, 256, INT_MIN, INT_MAX, V|E},
 {"bidir_refine", NULL, OFFSET(bidir_refine), FF_OPT_TYPE_INT, DEFAULT, 0, 4, V|E},
 {"brd_scale", NULL, OFFSET(brd_scale), FF_OPT_TYPE_INT, DEFAULT, 0, 10, V|E},
-{"crf", NULL, OFFSET(crf), FF_OPT_TYPE_INT, DEFAULT, INT_MIN, INT_MAX, V|E},
+{"crf", NULL, OFFSET(crf), FF_OPT_TYPE_FLOAT, DEFAULT, 0, 51, V|E},
 {"cqp", NULL, OFFSET(cqp), FF_OPT_TYPE_INT, -1, INT_MIN, INT_MAX, V|E},
 {"keyint_min", NULL, OFFSET(keyint_min), FF_OPT_TYPE_INT, 25, INT_MIN, INT_MAX, V|E},
 {"refs", NULL, OFFSET(refs), FF_OPT_TYPE_INT, 1, INT_MIN, INT_MAX, V|E},
