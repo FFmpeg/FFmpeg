@@ -72,7 +72,7 @@ show_help(){
   echo "  --extra-ldflags=ELDFLAGS add ELDFLAGS to LDFLAGS [$LDFLAGS]"
   echo "  --extra-libs=ELIBS       add ELIBS [$ELIBS]"
   echo "  --build-suffix=SUFFIX    suffix for application specific build []"
-  echo "  --cpu=CPU                force cpu to CPU  [$cpu]"
+  echo "  --arch=ARCH              select architecture  [$arch]"
   echo "  --tune=CPU               tune code for a particular CPU"
   echo "                           (may fail or perform badly on other CPUs)"
   echo "  --powerpc-perf-enable    enable performance report on PPC"
@@ -342,7 +342,7 @@ ar="ar"
 ranlib="ranlib"
 make="make"
 strip="strip"
-cpu=`uname -m`
+arch=`uname -m`
 tune="generic"
 powerpc_perf="no"
 mmx="default"
@@ -351,58 +351,58 @@ iwmmxt="default"
 altivec="default"
 dcbzl="no"
 mmi="default"
-case "$cpu" in
+case "$arch" in
   i386|i486|i586|i686|i86pc|BePC)
-    cpu="x86"
+    arch="x86"
   ;;
   x86_64|amd64)
-    cpu="x86"
+    arch="x86"
     canon_arch="`$cc -dumpmachine | sed -e 's,\([^-]*\)-.*,\1,'`"
     if [ x"$canon_arch" = x"x86_64" -o x"$canon_arch" = x"amd64" ]; then
       if [ -z "`echo $CFLAGS | grep -- -m32`"  ]; then
-        cpu="x86_64"
+        arch="x86_64"
       fi
     fi
   ;;
   # armv4l is a subset of armv5tel
   arm|armv4l|armv5tel)
-    cpu="armv4l"
+    arch="armv4l"
   ;;
   alpha)
-    cpu="alpha"
+    arch="alpha"
   ;;
   "Power Macintosh"|ppc|ppc64|powerpc)
-    cpu="powerpc"
+    arch="powerpc"
   ;;
   mips|mipsel|IP*)
-    cpu="mips"
+    arch="mips"
   ;;
   sun4u|sparc64)
-    cpu="sparc64"
+    arch="sparc64"
   ;;
   sparc)
-    cpu="sparc"
+    arch="sparc"
   ;;
   sh4)
-    cpu="sh4"
+    arch="sh4"
   ;;
   parisc|parisc64)
-    cpu="parisc"
+    arch="parisc"
   ;;
   s390|s390x)
-    cpu="s390"
+    arch="s390"
   ;;
   m68k)
-    cpu="m68k"
+    arch="m68k"
   ;;
   ia64)
-    cpu="ia64"
+    arch="ia64"
   ;;
   bfin)
-    cpu="bfin"
+    arch="bfin"
   ;;
   *)
-    cpu="unknown"
+    arch="unknown"
   ;;
 esac
 gprof="no"
@@ -715,7 +715,7 @@ for opt do
   ;;
   --build-suffix=*) BUILDSUF="$optval"
   ;;
-  --cpu=*) cpu="$optval"
+  --arch=*) arch="$optval"
   ;;
   --tune=*) tune="$optval"
   ;;
@@ -998,7 +998,7 @@ fi
 
 # compute MMX state
 if test $mmx = "default"; then
-    if test $cpu = "x86" -o $cpu = "x86_64"; then
+    if test $arch = "x86" -o $arch = "x86_64"; then
         mmx="yes"
     else
         mmx="no"
@@ -1038,7 +1038,7 @@ fi
 
 # Can only do AltiVec on PowerPC
 if test $altivec = "default"; then
-    if test $cpu = "powerpc"; then
+    if test $arch = "powerpc"; then
         altivec="yes"
     else
         altivec="no"
@@ -1143,7 +1143,7 @@ fi
 
 # check for assembler specific support
 
-if test $cpu = "powerpc"; then
+if test $arch = "powerpc"; then
 check_cc <<EOF && dcbzl=yes
 int main(void) {
     register long zero = 0;
@@ -1157,7 +1157,7 @@ fi
 # check for SIMD availability
 
 # AltiVec flags: The FSF version of GCC differs from the Apple version
-if test $cpu = "powerpc"; then
+if test $arch = "powerpc"; then
     if test $altivec = "yes"; then
         if test -n "`$cc -v 2>&1 | grep version | grep Apple`"; then
             add_cflags "-faltivec"
@@ -1187,7 +1187,7 @@ EOF
 fi
 
 # check armv5te instructions support
-if test $armv5te = "default" -a $cpu = "armv4l"; then
+if test $armv5te = "default" -a $arch = "armv4l"; then
     armv5te=no
     check_cc <<EOF && armv5te=yes
         int main(void) {
@@ -1197,7 +1197,7 @@ EOF
 fi
 
 # check iwmmxt support
-if test $iwmmxt = "default" -a $cpu = "armv4l"; then
+if test $iwmmxt = "default" -a $arch = "armv4l"; then
     iwmmxt=no
     check_cc <<EOF && iwmmxt=yes
         int main(void) {
@@ -1208,7 +1208,7 @@ fi
 
 # mmi only available on mips
 if test $mmi = "default"; then
-    if test $cpu = "mips"; then
+    if test $arch = "mips"; then
         mmi="yes"
     else
         mmi="no"
@@ -1235,7 +1235,7 @@ int main(int argc, char ** argv){
 EOF
 else
     # programs cannot be launched if cross compiling, so make a static guess
-    if test "$cpu" = "powerpc" -o "$cpu" = "mips" ; then
+    if test "$arch" = "powerpc" -o "$arch" = "mips" ; then
         bigendian="yes"
     fi
 fi
@@ -1520,7 +1520,7 @@ fi
 if test "$lshared" = "yes" ; then
     # LIBOBJFLAGS may have already been set in the OS configuration
     if test -z "$LIBOBJFLAGS" ; then
-        case "$cpu" in
+        case "$arch" in
             x86_64|ia64|alpha|sparc*) LIBOBJFLAGS="\$(PIC)" ;;
         esac
     fi
@@ -1541,24 +1541,24 @@ echo "install prefix   $PREFIX"
 echo "source path      $source_path"
 echo "C compiler       $cc"
 echo "make             $make"
-echo "CPU              $cpu ($tune)"
+echo "ARCH             $arch ($tune)"
 if test "$BUILDSUF" != ""; then
     echo "build suffix     $BUILDSUF"
 fi
 echo "big-endian       $bigendian"
 echo "inttypes.h       $inttypes"
 echo "broken inttypes.h $emu_fast_int"
-if test $cpu = "x86" -o $cpu = "x86_64"; then
+if test $arch = "x86" -o $arch = "x86_64"; then
     echo "MMX enabled      $mmx"
 fi
-if test $cpu = "armv4l"; then
+if test $arch = "armv4l"; then
     echo "ARMv5TE enabled  $armv5te"
     echo "IWMMXT enabled   $iwmmxt"
 fi
-if test $cpu = "mips"; then
+if test $arch = "mips"; then
     echo "MMI enabled      $mmi"
 fi
-if test $cpu = "powerpc"; then
+if test $arch = "powerpc"; then
     echo "AltiVec enabled  $altivec"
     echo "dcbzl available  $dcbzl"
 fi
@@ -1663,27 +1663,27 @@ echo "SLIBPREF=$SLIBPREF" >> config.mak
 echo "SLIBSUF=\${BUILDSUF}$SLIBSUF" >> config.mak
 echo "EXESUF=\${BUILDSUF}$EXESUF" >> config.mak
 echo "TARGET_OS=$targetos" >> config.mak
-if test "$cpu" = "x86" ; then
+if test "$arch" = "x86" ; then
   echo "TARGET_ARCH_X86=yes" >> config.mak
   echo "#define ARCH_X86 1" >> $TMPH
-elif test "$cpu" = "x86_64" ; then
+elif test "$arch" = "x86_64" ; then
   echo "TARGET_ARCH_X86_64=yes" >> config.mak
   echo "#define ARCH_X86_64 1" >> $TMPH
-elif test "$cpu" = "armv4l" ; then
+elif test "$arch" = "armv4l" ; then
   echo "TARGET_ARCH_ARMV4L=yes" >> config.mak
   echo "#define ARCH_ARMV4L 1" >> $TMPH
-elif test "$cpu" = "alpha" ; then
+elif test "$arch" = "alpha" ; then
   echo "TARGET_ARCH_ALPHA=yes" >> config.mak
   echo "#define ARCH_ALPHA 1" >> $TMPH
-elif test "$cpu" = "sparc64" ; then
+elif test "$arch" = "sparc64" ; then
   echo "TARGET_ARCH_SPARC64=yes" >> config.mak
   echo "#define ARCH_SPARC64 1" >> $TMPH
   echo "TARGET_ARCH_SPARC=yes" >> config.mak
   echo "#define ARCH_SPARC 1" >> $TMPH
-elif test "$cpu" = "sparc" ; then
+elif test "$arch" = "sparc" ; then
   echo "TARGET_ARCH_SPARC=yes" >> config.mak
   echo "#define ARCH_SPARC 1" >> $TMPH
-elif test "$cpu" = "powerpc" ; then
+elif test "$arch" = "powerpc" ; then
   echo "TARGET_ARCH_POWERPC=yes" >> config.mak
   echo "#define ARCH_POWERPC 1" >> $TMPH
   if test $POWERPCMODE = "32bits"; then
@@ -1694,25 +1694,25 @@ elif test "$cpu" = "powerpc" ; then
   if test "$powerpc_perf" = "yes"; then
     echo "#define POWERPC_PERFORMANCE_REPORT 1" >> $TMPH
   fi
-elif test "$cpu" = "mips" ; then
+elif test "$arch" = "mips" ; then
   echo "TARGET_ARCH_MIPS=yes" >> config.mak
   echo "#define ARCH_MIPS 1" >> $TMPH
-elif test "$cpu" = "sh4" ; then
+elif test "$arch" = "sh4" ; then
   echo "TARGET_ARCH_SH4=yes" >> config.mak
   echo "#define ARCH_SH4 1" >> $TMPH
-elif test "$cpu" = "parisc" ; then
+elif test "$arch" = "parisc" ; then
   echo "TARGET_ARCH_PARISC=yes" >> config.mak
   echo "#define ARCH_PARISC 1" >> $TMPH
-elif test "$cpu" = "s390" ; then
+elif test "$arch" = "s390" ; then
   echo "TARGET_ARCH_S390=yes" >> config.mak
   echo "#define ARCH_S390 1" >> $TMPH
-elif test "$cpu" = "m68k" ; then
+elif test "$arch" = "m68k" ; then
   echo "TARGET_ARCH_M68K=yes" >> config.mak
   echo "#define ARCH_M68K 1" >> $TMPH
-elif test "$cpu" = "ia64" ; then
+elif test "$arch" = "ia64" ; then
   echo "TARGET_ARCH_IA64=yes" >> config.mak
   echo "#define ARCH_IA64 1" >> $TMPH
-elif test "$cpu" = "bfin" ; then
+elif test "$arch" = "bfin" ; then
   echo "TARGET_ARCH_BFIN=yes" >> config.mak
   echo "#define ARCH_BFIN 1" >> $TMPH
 fi
