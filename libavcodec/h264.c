@@ -6077,6 +6077,20 @@ static int decode_cabac_residual( H264Context *h, DCTELEM *block, int cat, int n
     uint8_t *last_coeff_ctx_base;
     uint8_t *abs_level_m1_ctx_base;
 
+#ifndef ARCH_X86
+#define CABAC_ON_STACK
+#endif
+#ifdef CABAC_ON_STACK
+#define CC &cc
+    CABACContext cc;
+    cc.range     = h->cabac.range;
+    cc.low       = h->cabac.low;
+    cc.bytestream= h->cabac.bytestream;
+#else
+#define CC &h->cabac
+#endif
+
+
     /* cat: 0-> DC 16x16  n = 0
      *      1-> AC 16x16  n = luma4x4idx
      *      2-> Luma4x4   n = luma4x4idx
@@ -6087,12 +6101,16 @@ static int decode_cabac_residual( H264Context *h, DCTELEM *block, int cat, int n
 
     /* read coded block flag */
     if( cat != 5 ) {
-        if( get_cabac( &h->cabac, &h->cabac_state[85 + get_cabac_cbf_ctx( h, cat, n ) ] ) == 0 ) {
+        if( get_cabac( CC, &h->cabac_state[85 + get_cabac_cbf_ctx( h, cat, n ) ] ) == 0 ) {
             if( cat == 1 || cat == 2 )
                 h->non_zero_count_cache[scan8[n]] = 0;
             else if( cat == 4 )
                 h->non_zero_count_cache[scan8[16+n]] = 0;
-
+#ifdef CABAC_ON_STACK
+            h->cabac.range     = cc.range     ;
+            h->cabac.low       = cc.low       ;
+            h->cabac.bytestream= cc.bytestream;
+#endif
             return 0;
         }
     }
@@ -6108,10 +6126,10 @@ static int decode_cabac_residual( H264Context *h, DCTELEM *block, int cat, int n
 #define DECODE_SIGNIFICANCE( coefs, sig_off, last_off ) \
         for(last= 0; last < coefs; last++) { \
             uint8_t *sig_ctx = significant_coeff_ctx_base + sig_off; \
-            if( get_cabac( &h->cabac, sig_ctx )) { \
+            if( get_cabac( CC, sig_ctx )) { \
                 uint8_t *last_ctx = last_coeff_ctx_base + last_off; \
                 index[coeff_count++] = last; \
-                if( get_cabac( &h->cabac, last_ctx ) ) { \
+                if( get_cabac( CC, last_ctx ) ) { \
                     last= max_coeff; \
                     break; \
                 } \
@@ -6124,7 +6142,7 @@ static int decode_cabac_residual( H264Context *h, DCTELEM *block, int cat, int n
         DECODE_SIGNIFICANCE( 63, sig_off[last], last_coeff_flag_offset_8x8[last] );
     } else {
 #ifdef ARCH_X86
-        coeff_count= decode_significance_x86(&h->cabac, max_coeff, significant_coeff_ctx_base, index);
+        coeff_count= decode_significance_x86(CC, max_coeff, significant_coeff_ctx_base, index);
 #else
         DECODE_SIGNIFICANCE( max_coeff - 1, last, last );
 #endif
@@ -6148,12 +6166,12 @@ static int decode_cabac_residual( H264Context *h, DCTELEM *block, int cat, int n
         uint8_t *ctx = (abslevelgt1 != 0 ? 0 : FFMIN( 4, abslevel1 )) + abs_level_m1_ctx_base;
         int j= scantable[index[i]];
 
-        if( get_cabac( &h->cabac, ctx ) == 0 ) {
+        if( get_cabac( CC, ctx ) == 0 ) {
             if( !qmul ) {
-                if( get_cabac_bypass( &h->cabac ) ) block[j] = -1;
+                if( get_cabac_bypass( CC ) ) block[j] = -1;
                 else                                block[j] =  1;
             }else{
-                if( get_cabac_bypass( &h->cabac ) ) block[j] = (-qmul[j] + 32) >> 6;
+                if( get_cabac_bypass( CC ) ) block[j] = (-qmul[j] + 32) >> 6;
                 else                                block[j] = ( qmul[j] + 32) >> 6;
             }
 
@@ -6161,34 +6179,39 @@ static int decode_cabac_residual( H264Context *h, DCTELEM *block, int cat, int n
         } else {
             int coeff_abs = 2;
             ctx = 5 + FFMIN( 4, abslevelgt1 ) + abs_level_m1_ctx_base;
-            while( coeff_abs < 15 && get_cabac( &h->cabac, ctx ) ) {
+            while( coeff_abs < 15 && get_cabac( CC, ctx ) ) {
                 coeff_abs++;
             }
 
             if( coeff_abs >= 15 ) {
                 int j = 0;
-                while( get_cabac_bypass( &h->cabac ) ) {
+                while( get_cabac_bypass( CC ) ) {
                     j++;
                 }
 
                 coeff_abs=1;
                 while( j-- ) {
-                    coeff_abs += coeff_abs + get_cabac_bypass( &h->cabac );
+                    coeff_abs += coeff_abs + get_cabac_bypass( CC );
                 }
                 coeff_abs+= 14;
             }
 
             if( !qmul ) {
-                if( get_cabac_bypass( &h->cabac ) ) block[j] = -coeff_abs;
+                if( get_cabac_bypass( CC ) ) block[j] = -coeff_abs;
                 else                                block[j] =  coeff_abs;
             }else{
-                if( get_cabac_bypass( &h->cabac ) ) block[j] = (-coeff_abs * qmul[j] + 32) >> 6;
+                if( get_cabac_bypass( CC ) ) block[j] = (-coeff_abs * qmul[j] + 32) >> 6;
                 else                                block[j] = ( coeff_abs * qmul[j] + 32) >> 6;
             }
 
             abslevelgt1++;
         }
     }
+#ifdef CABAC_ON_STACK
+            h->cabac.range     = cc.range     ;
+            h->cabac.low       = cc.low       ;
+            h->cabac.bytestream= cc.bytestream;
+#endif
     return 0;
 }
 
