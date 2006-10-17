@@ -372,11 +372,11 @@ static int always_inline get_cabac_inline(CABACContext *c, uint8_t * const state
 #define BYTEEND     "20"
 #ifndef BRANCHLESS_CABAC_DECODER
     asm volatile(
-        "movzbl (%1), %%eax                     \n\t"
+        "movzbl (%1), %0                        \n\t"
         "movl "RANGE    "(%2), %%ebx            \n\t"
         "movl "RANGE    "(%2), %%edx            \n\t"
         "andl $0xC0, %%ebx                      \n\t"
-        "movzbl "MANGLE(ff_h264_lps_range)"(%%eax, %%ebx, 2), %%esi\n\t"
+        "movzbl "MANGLE(ff_h264_lps_range)"(%0, %%ebx, 2), %%esi\n\t"
         "movl "LOW      "(%2), %%ebx            \n\t"
 //eax:state ebx:low, edx:range, esi:RangeLPS
         "subl %%esi, %%edx                      \n\t"
@@ -398,7 +398,7 @@ static int always_inline get_cabac_inline(CABACContext *c, uint8_t * const state
         "shl %%cl, %%edx                        \n\t"
         "shl %%cl, %%ebx                        \n\t"
 #endif
-        "movzbl "MANGLE(ff_h264_mps_state)"(%%eax), %%ecx   \n\t"
+        "movzbl "MANGLE(ff_h264_mps_state)"(%0), %%ecx   \n\t"
         "movb %%cl, (%1)                        \n\t"
 //eax:state ebx:low, edx:range, esi:RangeLPS
         "test %%bx, %%bx                        \n\t"
@@ -419,9 +419,9 @@ static int always_inline get_cabac_inline(CABACContext *c, uint8_t * const state
         "movzbl " MANGLE(ff_h264_norm_shift) "(%%esi), %%ecx   \n\t"
         "shll %%cl, %%ebx                       \n\t"
         "shll %%cl, %%edx                       \n\t"
-        "movzbl "MANGLE(ff_h264_lps_state)"(%%eax), %%ecx   \n\t"
+        "movzbl "MANGLE(ff_h264_lps_state)"(%0), %%ecx   \n\t"
         "movb %%cl, (%1)                        \n\t"
-        "addl $1, %%eax                         \n\t"
+        "addl $1, %0                            \n\t"
         "test %%bx, %%bx                        \n\t"
         " jnz 2f                                \n\t"
 
@@ -452,11 +452,11 @@ static int always_inline get_cabac_inline(CABACContext *c, uint8_t * const state
     bit&=1;
 #else /* BRANCHLESS_CABAC_DECODER */
     asm volatile(
-        "movzbl (%1), %%eax                     \n\t"
+        "movzbl (%1), %0                        \n\t"
         "movl "RANGE    "(%2), %%ebx            \n\t"
         "movl "RANGE    "(%2), %%edx            \n\t"
         "andl $0xC0, %%ebx                      \n\t"
-        "movzbl "MANGLE(ff_h264_lps_range)"(%%eax, %%ebx, 2), %%esi\n\t"
+        "movzbl "MANGLE(ff_h264_lps_range)"(%0, %%ebx, 2), %%esi\n\t"
         "movl "LOW      "(%2), %%ebx            \n\t"
 //eax:state ebx:low, edx:range, esi:RangeLPS
         "subl %%esi, %%edx                      \n\t"
@@ -468,7 +468,7 @@ static int always_inline get_cabac_inline(CABACContext *c, uint8_t * const state
         "sbbl %%ecx, %%ecx                      \n\t"
         "andl %%ecx, %%edx                      \n\t"
         "subl %%edx, %%ebx                      \n\t"
-        "xorl %%ecx, %%eax                      \n\t"
+        "xorl %%ecx, %0                         \n\t"
 #else /* CMOV_IS_FAST */
         "movl %%edx, %%ecx                      \n\t"
         "shl $17, %%edx                         \n\t"
@@ -480,7 +480,7 @@ static int always_inline get_cabac_inline(CABACContext *c, uint8_t * const state
         "shl $17, %%ecx                         \n\t"
         "andl %%edx, %%ecx                      \n\t"
         "subl %%ecx, %%ebx                      \n\t"
-        "xorl %%edx, %%eax                      \n\t"
+        "xorl %%edx, %0                         \n\t"
 #endif /* CMOV_IS_FAST */
 
 //eax:state ebx:low edx:mask esi:range
@@ -489,7 +489,7 @@ static int always_inline get_cabac_inline(CABACContext *c, uint8_t * const state
 
         "movzbl " MANGLE(ff_h264_norm_shift) "(%%esi), %%ecx   \n\t"
         "shll %%cl, %%esi                       \n\t"
-        "movzbl "MANGLE(ff_h264_mlps_state)"+128(%%eax), %%edx   \n\t"
+        "movzbl "MANGLE(ff_h264_mlps_state)"+128(%0), %%edx   \n\t"
         "movb %%dl, (%1)                        \n\t"
         "movl %%esi, "RANGE    "(%2)            \n\t"
         "shll %%cl, %%ebx                       \n\t"
