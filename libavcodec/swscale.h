@@ -54,6 +54,11 @@ int sws_scale(struct SwsContext *ctx, uint8_t* src[], int srcStride[],
 
 void sws_freeContext(struct SwsContext *swsContext);
 
+struct SwsContext *sws_getCachedContext(struct SwsContext *context,
+                int srcW, int srcH, int srcFormat,
+                int dstW, int dstH, int dstFormat, int flags,
+                SwsFilter *srcFilter, SwsFilter *dstFilter, double *param);
+
 #ifdef __cplusplus
 }
 #endif
