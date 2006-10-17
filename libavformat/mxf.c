@@ -943,11 +943,29 @@ static const MXFMetadataReadTableEntry mxf_metadata_read_table[] = {
     { { 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 }, NULL },
 };
 
+static int mxf_read_sync(ByteIOContext *pb, const uint8_t *key, unsigned size)
+{
+    int i, b;
+    for (i = 0; i < size && !url_feof(pb); i++) {
+        b = get_byte(pb);
+        if (b == key[0])
+            i = 0;
+        else if (b != key[i])
+            i = -1;
+    }
+    return i == size;
+}
+
 static int mxf_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     MXFContext *mxf = s->priv_data;
     KLVPacket klv;
 
+    if (!mxf_read_sync(&s->pb, mxf_header_partition_pack_key, 14)) {
+        av_log(s, AV_LOG_ERROR, "could not find header partition pack key\n");
+        return -1;
+    }
+    url_fseek(&s->pb, -14, SEEK_CUR);
     mxf->fc = s;
     while (!url_feof(&s->pb)) {
         const MXFMetadataReadTableEntry *function;
@@ -1031,7 +1049,6 @@ static int mxf_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
 {
     AVStream *st = s->streams[stream_index];
     int64_t seconds;
-    int i;
 
     if (!s->bit_rate)
         return -1;
@@ -1039,20 +1056,13 @@ static int mxf_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
         sample_time = 0;
     seconds = av_rescale(sample_time, st->time_base.num, st->time_base.den);
     url_fseek(&s->pb, (s->bit_rate * seconds) >> 3, SEEK_SET);
-    /* sync on KLV essence element */
-    for (i = 0; i < 12 && url_ftell(&s->pb) < s->file_size; i++) {
-        int b = get_byte(&s->pb);
-        if (b == mxf_essence_element_key[0])
-            i = 0;
-        else if (b != mxf_essence_element_key[i])
-            i = -1;
-    }
-    if (i == 12) { /* found KLV key */
-        url_fseek(&s->pb, -12, SEEK_CUR);
-        av_update_cur_dts(s, st, sample_time);
-        return 0;
-    }
-    return -1;
+    if (!mxf_read_sync(&s->pb, mxf_essence_element_key, 12))
+        return -1;
+
+    /* found KLV key */
+    url_fseek(&s->pb, -12, SEEK_CUR);
+    av_update_cur_dts(s, st, sample_time);
+    return 0;
 }
 
 AVInputFormat mxf_demuxer = {
