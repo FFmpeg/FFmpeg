@@ -494,7 +494,7 @@ ogg_get_length (AVFormatContext * s)
     ogg->size = size;
     ogg_restore (s, 0);
     ogg_save (s);
-    while (ogg_read_page (s, &i)) {
+    while (!ogg_read_page (s, &i)) {
         if (i == idx && ogg->streams[i].granule != -1 && ogg->streams[i].granule != 0)
             break;
     }
