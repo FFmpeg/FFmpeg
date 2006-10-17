@@ -6116,14 +6116,18 @@ static int decode_cabac_residual( H264Context *h, DCTELEM *block, int cat, int n
                     break; \
                 } \
             } \
+        }\
+        if( last == max_coeff -1 ) {\
+            index[coeff_count++] = last;\
         }
         const uint8_t *sig_off = significant_coeff_flag_offset_8x8[MB_FIELD];
         DECODE_SIGNIFICANCE( 63, sig_off[last], last_coeff_flag_offset_8x8[last] );
     } else {
+#ifdef ARCH_X86
+        coeff_count= decode_significance_x86(&h->cabac, max_coeff, significant_coeff_ctx_base, index);
+#else
         DECODE_SIGNIFICANCE( max_coeff - 1, last, last );
-    }
-    if( last == max_coeff -1 ) {
-        index[coeff_count++] = last;
+#endif
     }
     assert(coeff_count > 0);
 

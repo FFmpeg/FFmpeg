@@ -588,6 +588,171 @@ static int get_cabac_bypass(CABACContext *c){
         return 1;
     }
 }
+//FIXME the x86 code from this file should be moved into i386/h264 or cabac something.c/h (note ill kill you if you move my code away from under my fingers before iam finished with it!)
+//FIXME use some macros to avoid duplicatin get_cabac (cant be done yet as that would make optimization work hard)
+#ifdef ARCH_X86
+static int decode_significance_x86(CABACContext *c, int max_coeff, uint8_t *significant_coeff_ctx_base, int *index){
+    void *end= significant_coeff_ctx_base + max_coeff - 1;
+    int minusstart= -(int)significant_coeff_ctx_base;
+    int minusindex= -(int)index;
+    int coeff_count;
+    asm volatile(
+        "movl "RANGE    "(%3), %%esi            \n\t"
+        "movl "LOW      "(%3), %%ebx            \n\t"
+
+        "2:                                     \n\t"
+
+        "movzbl (%1), %0                        \n\t"
+        "movl %%esi, %%edx                      \n\t"
+        "andl $0xC0, %%esi                      \n\t"
+        "movzbl "MANGLE(ff_h264_lps_range)"(%0, %%esi, 2), %%esi\n\t"
+/*eax:state ebx:low, edx:range, esi:RangeLPS*/
+        "subl %%esi, %%edx                      \n\t"
+
+#if (defined CMOV_IS_FAST  && __CPU__ >= 686)
+        "movl %%edx, %%ecx                      \n\t"
+        "shl $17, %%edx                         \n\t"
+        "cmpl %%ebx, %%edx                      \n\t"
+        "cmova %%ecx, %%esi                     \n\t"
+        "sbbl %%ecx, %%ecx                      \n\t"
+        "andl %%ecx, %%edx                      \n\t"
+        "subl %%edx, %%ebx                      \n\t"
+        "xorl %%ecx, %0                         \n\t"
+#else /* CMOV_IS_FAST */
+        "movl %%edx, %%ecx                      \n\t"
+        "shl $17, %%edx                         \n\t"
+        "subl %%ebx, %%edx                      \n\t"
+        "sarl $31, %%edx                        \n\t" //lps_mask
+        "subl %%ecx, %%esi                      \n\t" //RangeLPS - range
+        "andl %%edx, %%esi                      \n\t" //(RangeLPS - range)&lps_mask
+        "addl %%ecx, %%esi                      \n\t" //new range
+        "shl $17, %%ecx                         \n\t"
+        "andl %%edx, %%ecx                      \n\t"
+        "subl %%ecx, %%ebx                      \n\t"
+        "xorl %%edx, %0                         \n\t"
+#endif /* CMOV_IS_FAST */
+
+        "movzbl " MANGLE(ff_h264_norm_shift) "(%%esi), %%ecx   \n\t"
+        "shll %%cl, %%esi                       \n\t"
+        "movzbl "MANGLE(ff_h264_mlps_state)"+128(%0), %%edx   \n\t"
+        "movb %%dl, (%1)                        \n\t"
+        "shll %%cl, %%ebx                       \n\t"
+        "test %%bx, %%bx                        \n\t"
+        " jnz 1f                                \n\t"
+
+        "movl "BYTE     "(%3), %%ecx            \n\t"
+        "movzwl (%%ecx), %%edx                  \n\t"
+        "bswap %%edx                            \n\t"
+        "shrl $15, %%edx                        \n\t"
+        "subl $0xFFFF, %%edx                    \n\t"
+        "addl $2, %%ecx                         \n\t"
+        "movl %%ecx, "BYTE    "(%3)             \n\t"
+
+        "leal -1(%%ebx), %%ecx                  \n\t"
+        "xorl %%ebx, %%ecx                      \n\t"
+        "shrl $15, %%ecx                        \n\t"
+        "movzbl " MANGLE(ff_h264_norm_shift) "(%%ecx), %%ecx   \n\t"
+        "neg %%ecx                              \n\t"
+        "add $7, %%ecx                          \n\t"
+
+        "shll %%cl , %%edx                      \n\t"
+        "addl %%edx, %%ebx                      \n\t"
+        "1:                                     \n\t"
+
+        "test $1, %0                            \n\t"
+        " jz 3f                                 \n\t"
+
+        "movl %2, %%eax                         \n\t"
+        "movl %4, %%ecx                         \n\t"
+        "addl %1, %%ecx                         \n\t"
+        "movl %%ecx, (%%eax)                    \n\t"
+        "addl $4, %%eax                         \n\t"
+        "movl %%eax, %2                         \n\t"
+
+        "movzbl 61(%1), %0                      \n\t"
+        "movl %%esi, %%edx                      \n\t"
+        "andl $0xC0, %%esi                      \n\t"
+        "movzbl "MANGLE(ff_h264_lps_range)"(%0, %%esi, 2), %%esi\n\t"
+/*eax:state ebx:low, edx:range, esi:RangeLPS*/
+        "subl %%esi, %%edx                      \n\t"
+
+#if (defined CMOV_IS_FAST  && __CPU__ >= 686)
+        "movl %%edx, %%ecx                      \n\t"
+        "shl $17, %%edx                         \n\t"
+        "cmpl %%ebx, %%edx                      \n\t"
+        "cmova %%ecx, %%esi                     \n\t"
+        "sbbl %%ecx, %%ecx                      \n\t"
+        "andl %%ecx, %%edx                      \n\t"
+        "subl %%edx, %%ebx                      \n\t"
+        "xorl %%ecx, %0                         \n\t"
+#else /* CMOV_IS_FAST */
+        "movl %%edx, %%ecx                      \n\t"
+        "shl $17, %%edx                         \n\t"
+        "subl %%ebx, %%edx                      \n\t"
+        "sarl $31, %%edx                        \n\t" //lps_mask
+        "subl %%ecx, %%esi                      \n\t" //RangeLPS - range
+        "andl %%edx, %%esi                      \n\t" //(RangeLPS - range)&lps_mask
+        "addl %%ecx, %%esi                      \n\t" //new range
+        "shl $17, %%ecx                         \n\t"
+        "andl %%edx, %%ecx                      \n\t"
+        "subl %%ecx, %%ebx                      \n\t"
+        "xorl %%edx, %0                         \n\t"
+#endif /* CMOV_IS_FAST */
+
+        "movzbl " MANGLE(ff_h264_norm_shift) "(%%esi), %%ecx   \n\t"
+        "shll %%cl, %%esi                       \n\t"
+        "movzbl "MANGLE(ff_h264_mlps_state)"+128(%0), %%edx   \n\t"
+        "movb %%dl, 61(%1)                      \n\t"
+        "shll %%cl, %%ebx                       \n\t"
+        "test %%bx, %%bx                        \n\t"
+        " jnz 1f                                \n\t"
+
+        "movl "BYTE     "(%3), %%ecx            \n\t"
+        "movzwl (%%ecx), %%edx                  \n\t"
+        "bswap %%edx                            \n\t"
+        "shrl $15, %%edx                        \n\t"
+        "subl $0xFFFF, %%edx                    \n\t"
+        "addl $2, %%ecx                         \n\t"
+        "movl %%ecx, "BYTE    "(%3)             \n\t"
+
+        "leal -1(%%ebx), %%ecx                  \n\t"
+        "xorl %%ebx, %%ecx                      \n\t"
+        "shrl $15, %%ecx                        \n\t"
+        "movzbl " MANGLE(ff_h264_norm_shift) "(%%ecx), %%ecx   \n\t"
+        "neg %%ecx                              \n\t"
+        "add $7, %%ecx                          \n\t"
+
+        "shll %%cl , %%edx                      \n\t"
+        "addl %%edx, %%ebx                      \n\t"
+        "1:                                     \n\t"
+
+        "test $1, %%eax                         \n\t"
+        " jnz 4f                                \n\t"
+
+        "3:                                     \n\t"
+        "addl $1, %1                            \n\t"
+        "cmpl %5, %1                            \n\t"
+        " jb 2b                                 \n\t"
+        "movl %2, %%eax                         \n\t"
+        "movl %4, %%ecx                         \n\t"
+        "addl %1, %%ecx                         \n\t"
+        "movl %%ecx, (%%eax)                    \n\t"
+        "addl $4, %%eax                         \n\t"
+        "movl %%eax, %2                         \n\t"
+        "4:                                     \n\t"
+        "movl %2, %%eax                         \n\t"
+        "addl %6, %%eax                         \n\t"
+        "shr $2, %%eax                          \n\t"
+
+        "movl %%esi, "RANGE    "(%3)            \n\t"
+        "movl %%ebx, "LOW      "(%3)            \n\t"
+        :"=&a"(coeff_count), "+r"(significant_coeff_ctx_base), "+m"(index)\
+        :"r"(c), "m"(minusstart), "m"(end), "m"(minusindex)\
+        : "%ecx", "%ebx", "%edx", "%esi", "memory"\
+    );
+    return coeff_count;
+}
+#endif
 
 /**
  *
