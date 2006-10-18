@@ -51,7 +51,7 @@ static const uint8_t lps_range[64][4]= {
 };
 
 uint8_t ff_h264_mlps_state[4*64];
-uint8_t ff_h264_lps_range[4][2*64];
+uint8_t ff_h264_lps_range[4*2*64];
 uint8_t ff_h264_lps_state[2*64];
 uint8_t ff_h264_mps_state[2*64];
 
@@ -152,8 +152,8 @@ void ff_init_cabac_states(CABACContext *c){
 
     for(i=0; i<64; i++){
         for(j=0; j<4; j++){ //FIXME check if this is worth the 1 shift we save
-            ff_h264_lps_range[j][2*i+0]=
-            ff_h264_lps_range[j][2*i+1]= lps_range[i][j];
+            ff_h264_lps_range[j*2*64+2*i+0]=
+            ff_h264_lps_range[j*2*64+2*i+1]= lps_range[i][j];
         }
 
         ff_h264_mlps_state[128+2*i+0]=

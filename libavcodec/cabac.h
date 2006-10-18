@@ -33,6 +33,7 @@
 #define CABAC_MASK ((1<<CABAC_BITS)-1)
 #define BRANCHLESS_CABAC_DECODER 1
 #define CMOV_IS_FAST 1
+//#define ARCH_X86_DISABLED 1
 
 typedef struct CABACContext{
     int low;
@@ -48,7 +49,7 @@ typedef struct CABACContext{
 }CABACContext;
 
 extern uint8_t ff_h264_mlps_state[4*64];
-extern uint8_t ff_h264_lps_range[4][2*64];  ///< rangeTabLPS
+extern uint8_t ff_h264_lps_range[4*2*64];  ///< rangeTabLPS
 extern uint8_t ff_h264_mps_state[2*64];     ///< transIdxMPS
 extern uint8_t ff_h264_lps_state[2*64];     ///< transIdxLPS
 extern const uint8_t ff_h264_norm_shift[512];
@@ -524,7 +525,7 @@ static int always_inline get_cabac_inline(CABACContext *c, uint8_t * const state
 #endif /* BRANCHLESS_CABAC_DECODER */
 #else /* defined(ARCH_X86) && !(defined(PIC) && defined(__GNUC__)) */
     int s = *state;
-    int RangeLPS= ff_h264_lps_range[0][2*(c->range&0xC0) + s];
+    int RangeLPS= ff_h264_lps_range[2*(c->range&0xC0) + s];
     int bit, lps_mask attribute_unused;
 
     c->range -= RangeLPS;
