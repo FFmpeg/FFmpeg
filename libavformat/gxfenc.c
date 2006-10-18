@@ -645,7 +645,7 @@ static int gxf_write_header(AVFormatContext *s)
                 }
                 break;
             default:
-                av_log(NULL, AV_LOG_ERROR, "video codec not supported\n");
+                av_log(s, AV_LOG_ERROR, "video codec not supported\n");
                 return -1;
             }
         }
