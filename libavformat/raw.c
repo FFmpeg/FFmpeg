@@ -183,26 +183,11 @@ int pcm_read_seek(AVFormatContext *s,
     int64_t pos;
 
     st = s->streams[0];
-    switch(st->codec->codec_id) {
-    case CODEC_ID_PCM_S16LE:
-    case CODEC_ID_PCM_S16BE:
-    case CODEC_ID_PCM_U16LE:
-    case CODEC_ID_PCM_U16BE:
-        block_align = 2 * st->codec->channels;
-        byte_rate = block_align * st->codec->sample_rate;
-        break;
-    case CODEC_ID_PCM_S8:
-    case CODEC_ID_PCM_U8:
-    case CODEC_ID_PCM_MULAW:
-    case CODEC_ID_PCM_ALAW:
-        block_align = st->codec->channels;
-        byte_rate = block_align * st->codec->sample_rate;
-        break;
-    default:
-        block_align = st->codec->block_align;
-        byte_rate = st->codec->bit_rate / 8;
-        break;
-    }
+
+    block_align = st->codec->block_align ? st->codec->block_align :
+        (av_get_bits_per_sample(st->codec->codec_id) * st->codec->channels) >> 3;
+    byte_rate = st->codec->bit_rate ? st->codec->bit_rate >> 3 :
+        block_align * st->codec->sample_rate;
 
     if (block_align <= 0 || byte_rate <= 0)
         return -1;
