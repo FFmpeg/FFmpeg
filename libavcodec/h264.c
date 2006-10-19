@@ -6003,8 +6003,7 @@ static int decode_cabac_mb_mvd( H264Context *h, int list, int n, int l ) {
                 mvd += 1 << k;
         }
     }
-    if( get_cabac_bypass( &h->cabac ) )  return -mvd;
-    else                                 return  mvd;
+    return get_cabac_bypass_sign( &h->cabac, -mvd );
 }
 
 static int inline get_cabac_cbf_ctx( H264Context *h, int cat, int idx ) {
