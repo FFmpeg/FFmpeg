@@ -190,7 +190,6 @@ static int flic_decode_frame_8BPP(AVCodecContext *avctx,
         case FLI_256_COLOR:
         case FLI_COLOR:
             stream_ptr_after_color_chunk = stream_ptr + chunk_size - 6;
-            s->new_palette = 1;
 
             /* check special case: If this file is from the Magic Carpet
              * game and uses 6-bit colors even though it reports 256-color
@@ -216,6 +215,7 @@ static int flic_decode_frame_8BPP(AVCodecContext *avctx,
                     color_changes = 256;
 
                 for (j = 0; j < color_changes; j++) {
+                    unsigned int entry;
 
                     /* wrap around, for good measure */
                     if ((unsigned)palette_ptr >= 256)
@@ -224,7 +224,10 @@ static int flic_decode_frame_8BPP(AVCodecContext *avctx,
                     r = buf[stream_ptr++] << color_shift;
                     g = buf[stream_ptr++] << color_shift;
                     b = buf[stream_ptr++] << color_shift;
-                    s->palette[palette_ptr++] = (r << 16) | (g << 8) | b;
+                    entry = (r << 16) | (g << 8) | b;
+                    if (s->palette[palette_ptr] != entry)
+                        s->new_palette = 1;
+                    s->palette[palette_ptr++] = entry;
                 }
             }
 
@@ -404,9 +407,8 @@ static int flic_decode_frame_8BPP(AVCodecContext *avctx,
                "and final chunk ptr = %d\n", buf_size, stream_ptr);
 
     /* make the palette available on the way out */
-//    if (s->new_palette) {
-    if (1) {
-        memcpy(s->frame.data[1], s->palette, AVPALETTE_SIZE);
+    memcpy(s->frame.data[1], s->palette, AVPALETTE_SIZE);
+    if (s->new_palette) {
         s->frame.palette_has_changed = 1;
         s->new_palette = 0;
     }
