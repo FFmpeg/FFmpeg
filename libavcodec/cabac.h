@@ -575,6 +575,36 @@ static int get_cabac(CABACContext *c, uint8_t * const state){
 }
 
 static int get_cabac_bypass(CABACContext *c){
+#if 0 //not faster
+    int bit;
+    asm volatile(
+        "movl "RANGE    "(%1), %%ebx            \n\t"
+        "movl "LOW      "(%1), %%eax            \n\t"
+        "shl $17, %%ebx                         \n\t"
+        "add %%eax, %%eax                       \n\t"
+        "sub %%ebx, %%eax                       \n\t"
+        "cdq                                    \n\t"
+        "and %%edx, %%ebx                       \n\t"
+        "add %%ebx, %%eax                       \n\t"
+        "test %%ax, %%ax                        \n\t"
+        " jnz 1f                                \n\t"
+        "movl "BYTE     "(%1), %%ebx            \n\t"
+        "subl $0xFFFF, %%eax                    \n\t"
+        "movzwl (%%ebx), %%ecx                  \n\t"
+        "bswap %%ecx                            \n\t"
+        "shrl $15, %%ecx                        \n\t"
+        "addl $2, %%ebx                         \n\t"
+        "addl %%ecx, %%eax                      \n\t"
+        "movl %%ebx, "BYTE     "(%1)            \n\t"
+        "1:                                     \n\t"
+        "movl %%eax, "LOW      "(%1)            \n\t"
+
+        :"=&d"(bit)
+        :"r"(c)
+        : "%eax", "%ebx", "%ecx", "memory"
+    );
+    return bit+1;
+#else
     int range;
     c->low += c->low;
 
@@ -588,7 +618,58 @@ static int get_cabac_bypass(CABACContext *c){
         c->low -= range;
         return 1;
     }
+#endif
 }
+
+
+static always_inline int get_cabac_bypass_sign(CABACContext *c, int val){
+#ifdef ARCH_X86
+    int bit;
+    asm volatile(
+        "movl "RANGE    "(%1), %%ebx            \n\t"
+        "movl "LOW      "(%1), %%eax            \n\t"
+        "shl $17, %%ebx                         \n\t"
+        "add %%eax, %%eax                       \n\t"
+        "sub %%ebx, %%eax                       \n\t"
+        "cdq                                    \n\t"
+        "and %%edx, %%ebx                       \n\t"
+        "add %%ebx, %%eax                       \n\t"
+        "xor %%edx, %%ecx                       \n\t"
+        "sub %%edx, %%ecx                       \n\t"
+        "test %%ax, %%ax                        \n\t"
+        " jnz 1f                                \n\t"
+        "movl "BYTE     "(%1), %%ebx            \n\t"
+        "subl $0xFFFF, %%eax                    \n\t"
+        "movzwl (%%ebx), %%edx                  \n\t"
+        "bswap %%edx                            \n\t"
+        "shrl $15, %%edx                        \n\t"
+        "addl $2, %%ebx                         \n\t"
+        "addl %%edx, %%eax                      \n\t"
+        "movl %%ebx, "BYTE     "(%1)            \n\t"
+        "1:                                     \n\t"
+        "movl %%eax, "LOW      "(%1)            \n\t"
+
+        :"+c"(val)
+        :"r"(c)
+        : "%eax", "%ebx", "%edx", "memory"
+    );
+    return val;
+#else
+    int range, mask;
+    c->low += c->low;
+
+    if(!(c->low & CABAC_MASK))
+        refill(c);
+
+    range= c->range<<17;
+    c->low -= range;
+    mask= c->low >> 31;
+    range &= mask;
+    c->low += range;
+    return (val^mask)-mask;
+#endif
+}
+
 //FIXME the x86 code from this file should be moved into i386/h264 or cabac something.c/h (note ill kill you if you move my code away from under my fingers before iam finished with it!)
 //FIXME use some macros to avoid duplicatin get_cabac (cant be done yet as that would make optimization work hard)
 #ifdef ARCH_X86

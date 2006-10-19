@@ -6168,11 +6168,9 @@ static int decode_cabac_residual( H264Context *h, DCTELEM *block, int cat, int n
 
         if( get_cabac( CC, ctx ) == 0 ) {
             if( !qmul ) {
-                if( get_cabac_bypass( CC ) ) block[j] = -1;
-                else                                block[j] =  1;
+                block[j] = get_cabac_bypass_sign( CC, -1);
             }else{
-                if( get_cabac_bypass( CC ) ) block[j] = (-qmul[j] + 32) >> 6;
-                else                                block[j] = ( qmul[j] + 32) >> 6;
+                block[j] = (get_cabac_bypass_sign( CC, -qmul[j]) + 32) >> 6;;
             }
 
             abslevel1++;
