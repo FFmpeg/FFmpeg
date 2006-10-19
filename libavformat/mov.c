@@ -1348,7 +1348,7 @@ static int mov_read_wide(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 #ifdef CONFIG_ZLIB
 static int null_read_packet(void *opaque, uint8_t *buf, int buf_size)
 {
-    return -1;
+    return buf_size;
 }
 
 static int mov_read_cmov(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
@@ -1385,7 +1385,6 @@ static int mov_read_cmov(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
         return -1;
     if(init_put_byte(&ctx, moov_data, moov_len, 0, NULL, null_read_packet, NULL, NULL) != 0)
         return -1;
-    ctx.buf_end = ctx.buffer + moov_len;
     atom.type = MKTAG( 'm', 'o', 'o', 'v' );
     atom.offset = 0;
     atom.size = moov_len;
