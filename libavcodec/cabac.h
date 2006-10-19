@@ -624,7 +624,6 @@ static int get_cabac_bypass(CABACContext *c){
 
 static always_inline int get_cabac_bypass_sign(CABACContext *c, int val){
 #ifdef ARCH_X86
-    int bit;
     asm volatile(
         "movl "RANGE    "(%1), %%ebx            \n\t"
         "movl "LOW      "(%1), %%eax            \n\t"
