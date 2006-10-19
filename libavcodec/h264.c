@@ -6067,7 +6067,7 @@ static int decode_cabac_residual( H264Context *h, DCTELEM *block, int cat, int n
 
     int index[64];
 
-    int i, last;
+    int last;
     int coeff_count = 0;
 
     int abslevel1 = 1;
@@ -6162,9 +6162,9 @@ static int decode_cabac_residual( H264Context *h, DCTELEM *block, int cat, int n
         fill_rectangle(&h->non_zero_count_cache[scan8[n]], 2, 2, 8, coeff_count, 1);
     }
 
-    for( i = coeff_count - 1; i >= 0; i-- ) {
+    for( coeff_count--; coeff_count >= 0; coeff_count-- ) {
         uint8_t *ctx = (abslevelgt1 != 0 ? 0 : FFMIN( 4, abslevel1 )) + abs_level_m1_ctx_base;
-        int j= scantable[index[i]];
+        int j= scantable[index[coeff_count]];
 
         if( get_cabac( CC, ctx ) == 0 ) {
             if( !qmul ) {
