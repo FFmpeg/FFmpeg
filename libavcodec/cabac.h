@@ -721,6 +721,62 @@ static int decode_significance_x86(CABACContext *c, int max_coeff, uint8_t *sign
     );
     return coeff_count;
 }
+
+static int decode_significance_8x8_x86(CABACContext *c, uint8_t *significant_coeff_ctx_base, int *index, uint8_t *sig_off){
+    int minusindex= 4-(int)index;
+    int coeff_count;
+    int last=0;
+    asm volatile(
+        "movl "RANGE    "(%3), %%esi            \n\t"
+        "movl "LOW      "(%3), %%ebx            \n\t"
+
+        "mov %1, %%edi                          \n\t"
+        "2:                                     \n\t"
+
+        "mov %6, %%eax                          \n\t"
+        "movzbl (%%eax, %%edi), %%edi           \n\t"
+        "add %5, %%edi                          \n\t"
+
+        BRANCHLESS_GET_CABAC("%%edx", "%3", "(%%edi)", "%%ebx", "%%bx", "%%esi", "%%eax", "%%al")
+
+        "mov %1, %%edi                          \n\t"
+        "test $1, %%edx                         \n\t"
+        " jz 3f                                 \n\t"
+
+        "movzbl "MANGLE(last_coeff_flag_offset_8x8)"(%%edi), %%edi\n\t"
+        "add %5, %%edi                          \n\t"
+
+        BRANCHLESS_GET_CABAC("%%edx", "%3", "15(%%edi)", "%%ebx", "%%bx", "%%esi", "%%eax", "%%al")
+
+        "movl %2, %%eax                         \n\t"
+        "mov %1, %%edi                          \n\t"
+        "movl %%edi, (%%eax)                    \n\t"
+
+        "test $1, %%edx                         \n\t"
+        " jnz 4f                                \n\t"
+
+        "addl $4, %%eax                         \n\t"
+        "movl %%eax, %2                         \n\t"
+
+        "3:                                     \n\t"
+        "addl $1, %%edi                         \n\t"
+        "mov %%edi, %1                          \n\t"
+        "cmpl $63, %%edi                        \n\t"
+        " jb 2b                                 \n\t"
+        "movl %2, %%eax                         \n\t"
+        "movl %%edi, (%%eax)                    \n\t"
+        "4:                                     \n\t"
+        "addl %4, %%eax                         \n\t"
+        "shr $2, %%eax                          \n\t"
+
+        "movl %%esi, "RANGE    "(%3)            \n\t"
+        "movl %%ebx, "LOW      "(%3)            \n\t"
+        :"=&a"(coeff_count),"+m"(last), "+m"(index)\
+        :"r"(c), "m"(minusindex), "m"(significant_coeff_ctx_base), "m"(sig_off)\
+        : "%ecx", "%ebx", "%edx", "%esi", "%edi", "memory"\
+    );
+    return coeff_count;
+}
 #endif
 
 /**

@@ -6034,6 +6034,13 @@ static int inline get_cabac_cbf_ctx( H264Context *h, int cat, int idx ) {
     return ctx + 4 * cat;
 }
 
+static const __attribute((used)) uint8_t last_coeff_flag_offset_8x8[63] = {
+    0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+    3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4,
+    5, 5, 5, 5, 6, 6, 6, 6, 7, 7, 7, 7, 8, 8, 8
+};
+
 static int decode_cabac_residual( H264Context *h, DCTELEM *block, int cat, int n, const uint8_t *scantable, const uint32_t *qmul, int max_coeff) {
     const int mb_xy  = h->s.mb_x + h->s.mb_y*h->s.mb_stride;
     static const int significant_coeff_flag_offset[2][6] = {
@@ -6056,12 +6063,6 @@ static int decode_cabac_residual( H264Context *h, DCTELEM *block, int cat, int n
         6, 9,10,10, 8,11,12,11, 9, 9,10,10, 8,11,12,11,
         9, 9,10,10, 8,11,12,11, 9, 9,10,10, 8,13,13, 9,
         9,10,10, 8,13,13, 9, 9,10,10,14,14,14,14,14 }
-    };
-    static const uint8_t last_coeff_flag_offset_8x8[63] = {
-        0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-        2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-        3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4,
-        5, 5, 5, 5, 6, 6, 6, 6, 7, 7, 7, 7, 8, 8, 8
     };
 
     int index[64];
@@ -6138,11 +6139,13 @@ static int decode_cabac_residual( H264Context *h, DCTELEM *block, int cat, int n
             index[coeff_count++] = last;\
         }
         const uint8_t *sig_off = significant_coeff_flag_offset_8x8[MB_FIELD];
-        DECODE_SIGNIFICANCE( 63, sig_off[last], last_coeff_flag_offset_8x8[last] );
-    } else {
 #ifdef ARCH_X86
+        coeff_count= decode_significance_8x8_x86(CC, significant_coeff_ctx_base, index, sig_off);
+    } else {
         coeff_count= decode_significance_x86(CC, max_coeff, significant_coeff_ctx_base, index);
 #else
+        DECODE_SIGNIFICANCE( 63, sig_off[last], last_coeff_flag_offset_8x8[last] );
+    } else {
         DECODE_SIGNIFICANCE( max_coeff - 1, last, last );
 #endif
     }
