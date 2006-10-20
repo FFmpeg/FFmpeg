@@ -452,71 +452,72 @@ static int always_inline get_cabac_inline(CABACContext *c, uint8_t * const state
     );
     bit&=1;
 #else /* BRANCHLESS_CABAC_DECODER */
-    asm volatile(
-        "movzbl (%1), %0                        \n\t"
-        "movl "RANGE    "(%2), %%ebx            \n\t"
-        "movl "RANGE    "(%2), %%edx            \n\t"
-        "andl $0xC0, %%ebx                      \n\t"
-        "movzbl "MANGLE(ff_h264_lps_range)"(%0, %%ebx, 2), %%esi\n\t"
-        "movl "LOW      "(%2), %%ebx            \n\t"
-//eax:state ebx:low, edx:range, esi:RangeLPS
-        "subl %%esi, %%edx                      \n\t"
+
+
 #if (defined CMOV_IS_FAST  && __CPU__ >= 686)
-        "movl %%edx, %%ecx                      \n\t"
-        "shl $17, %%edx                         \n\t"
-        "cmpl %%ebx, %%edx                      \n\t"
-        "cmova %%ecx, %%esi                     \n\t"
-        "sbbl %%ecx, %%ecx                      \n\t"
-        "andl %%ecx, %%edx                      \n\t"
-        "subl %%edx, %%ebx                      \n\t"
-        "xorl %%ecx, %0                         \n\t"
+#define BRANCHLESS_GET_CABAC_UPDATE(ret, cabac, statep, low, lowword, range, tmp, tmpbyte)\
+        "mov    "tmp"       , %%ecx                                     \n\t"\
+        "shl    $17         , "tmp"                                     \n\t"\
+        "cmp    "low"       , "tmp"                                     \n\t"\
+        "cmova  %%ecx       , "range"                                   \n\t"\
+        "sbb    %%ecx       , %%ecx                                     \n\t"\
+        "and    %%ecx       , "tmp"                                     \n\t"\
+        "sub    "tmp"       , "low"                                     \n\t"\
+        "xor    %%ecx       , "ret"                                     \n\t"
 #else /* CMOV_IS_FAST */
-        "movl %%edx, %%ecx                      \n\t"
-        "shl $17, %%edx                         \n\t"
-        "subl %%ebx, %%edx                      \n\t"
-        "sarl $31, %%edx                        \n\t" //lps_mask
-        "subl %%ecx, %%esi                      \n\t" //RangeLPS - range
-        "andl %%edx, %%esi                      \n\t" //(RangeLPS - range)&lps_mask
-        "addl %%ecx, %%esi                      \n\t" //new range
-        "shl $17, %%ecx                         \n\t"
-        "andl %%edx, %%ecx                      \n\t"
-        "subl %%ecx, %%ebx                      \n\t"
-        "xorl %%edx, %0                         \n\t"
+#define BRANCHLESS_GET_CABAC_UPDATE(ret, cabac, statep, low, lowword, range, tmp, tmpbyte)\
+        "mov    "tmp"       , %%ecx                                     \n\t"\
+        "shl    $17         , "tmp"                                     \n\t"\
+        "sub    "low"       , "tmp"                                     \n\t"\
+        "sar    $31         , "tmp"                                     \n\t" /*lps_mask*/\
+        "sub    %%ecx       , "range"                                   \n\t" /*RangeLPS - range*/\
+        "and    "tmp"       , "range"                                   \n\t" /*(RangeLPS - range)&lps_mask*/\
+        "add    %%ecx       , "range"                                   \n\t" /*new range*/\
+        "shl    $17         , %%ecx                                     \n\t"\
+        "and    "tmp"       , %%ecx                                     \n\t"\
+        "sub    %%ecx       , "low"                                     \n\t"\
+        "xor    "tmp"       , "ret"                                     \n\t"
 #endif /* CMOV_IS_FAST */
 
-//eax:state ebx:low edx:mask esi:range
 
-//eax:bit ebx:low esi:range
+#define BRANCHLESS_GET_CABAC(ret, cabac, statep, low, lowword, range, tmp, tmpbyte)\
+        "movzbl "statep"    , "ret"                                     \n\t"\
+        "mov    "range"     , "tmp"                                     \n\t"\
+        "and    $0xC0       , "range"                                   \n\t"\
+        "movzbl "MANGLE(ff_h264_lps_range)"("ret", "range", 2), "range" \n\t"\
+        "sub    "range"     , "tmp"                                     \n\t"\
+        BRANCHLESS_GET_CABAC_UPDATE(ret, cabac, statep, low, lowword, range, tmp, tmpbyte)\
+        "movzbl " MANGLE(ff_h264_norm_shift) "("range"), %%ecx          \n\t"\
+        "shl    %%cl        , "range"                                   \n\t"\
+        "movzbl "MANGLE(ff_h264_mlps_state)"+128("ret"), "tmp"          \n\t"\
+        "mov    "tmpbyte"   , "statep"                                  \n\t"\
+        "shl    %%cl        , "low"                                     \n\t"\
+        "test   "lowword"   , "lowword"                                 \n\t"\
+        " jnz   1f                                                      \n\t"\
+        "mov "BYTE"("cabac"), %%ecx                                     \n\t"\
+        "movzwl (%%ecx)     , "tmp"                                     \n\t"\
+        "bswap  "tmp"                                                   \n\t"\
+        "shr    $15         , "tmp"                                     \n\t"\
+        "sub    $0xFFFF     , "tmp"                                     \n\t"\
+        "add    $2          , %%ecx                                     \n\t"\
+        "mov    %%ecx       , "BYTE    "("cabac")                       \n\t"\
+        "lea    -1("low")   , %%ecx                                     \n\t"\
+        "xor    "low"       , %%ecx                                     \n\t"\
+        "shr    $15         , %%ecx                                     \n\t"\
+        "movzbl " MANGLE(ff_h264_norm_shift) "(%%ecx), %%ecx            \n\t"\
+        "neg    %%ecx                                                   \n\t"\
+        "add    $7          , %%ecx                                     \n\t"\
+        "shl    %%cl        , "tmp"                                     \n\t"\
+        "add    "tmp"       , "low"                                     \n\t"\
+        "1:                                                             \n\t"
 
-        "movzbl " MANGLE(ff_h264_norm_shift) "(%%esi), %%ecx   \n\t"
-        "shll %%cl, %%esi                       \n\t"
-        "movzbl "MANGLE(ff_h264_mlps_state)"+128(%0), %%edx   \n\t"
-        "movb %%dl, (%1)                        \n\t"
+    asm volatile(
+        "movl "RANGE    "(%2), %%esi            \n\t"
+        "movl "LOW      "(%2), %%ebx            \n\t"
+        BRANCHLESS_GET_CABAC("%0", "%2", "(%1)", "%%ebx", "%%bx", "%%esi", "%%edx", "%%dl")
         "movl %%esi, "RANGE    "(%2)            \n\t"
-        "shll %%cl, %%ebx                       \n\t"
         "movl %%ebx, "LOW      "(%2)            \n\t"
-        "test %%bx, %%bx                        \n\t"
-        " jnz 1f                                \n\t"
 
-        "movl "BYTE     "(%2), %%ecx            \n\t"
-        "movzwl (%%ecx), %%esi                  \n\t"
-        "bswap %%esi                            \n\t"
-        "shrl $15, %%esi                        \n\t"
-        "subl $0xFFFF, %%esi                    \n\t"
-        "addl $2, %%ecx                         \n\t"
-        "movl %%ecx, "BYTE    "(%2)             \n\t"
-
-        "leal -1(%%ebx), %%ecx                  \n\t"
-        "xorl %%ebx, %%ecx                      \n\t"
-        "shrl $15, %%ecx                        \n\t"
-        "movzbl " MANGLE(ff_h264_norm_shift) "(%%ecx), %%ecx   \n\t"
-        "neg %%ecx                              \n\t"
-        "add $7, %%ecx                          \n\t"
-
-        "shll %%cl , %%esi                      \n\t"
-        "addl %%esi, %%ebx                      \n\t"
-        "movl %%ebx, "LOW      "(%2)            \n\t"
-        "1:                                     \n\t"
         :"=&a"(bit)
         :"r"(state), "r"(c)
         : "%ecx", "%ebx", "%edx", "%esi", "memory"
@@ -683,62 +684,7 @@ static int decode_significance_x86(CABACContext *c, int max_coeff, uint8_t *sign
 
         "2:                                     \n\t"
 
-        "movzbl (%1), %0                        \n\t"
-        "movl %%esi, %%edx                      \n\t"
-        "andl $0xC0, %%esi                      \n\t"
-        "movzbl "MANGLE(ff_h264_lps_range)"(%0, %%esi, 2), %%esi\n\t"
-/*eax:state ebx:low, edx:range, esi:RangeLPS*/
-        "subl %%esi, %%edx                      \n\t"
-
-#if (defined CMOV_IS_FAST  && __CPU__ >= 686)
-        "movl %%edx, %%ecx                      \n\t"
-        "shl $17, %%edx                         \n\t"
-        "cmpl %%ebx, %%edx                      \n\t"
-        "cmova %%ecx, %%esi                     \n\t"
-        "sbbl %%ecx, %%ecx                      \n\t"
-        "andl %%ecx, %%edx                      \n\t"
-        "subl %%edx, %%ebx                      \n\t"
-        "xorl %%ecx, %0                         \n\t"
-#else /* CMOV_IS_FAST */
-        "movl %%edx, %%ecx                      \n\t"
-        "shl $17, %%edx                         \n\t"
-        "subl %%ebx, %%edx                      \n\t"
-        "sarl $31, %%edx                        \n\t" //lps_mask
-        "subl %%ecx, %%esi                      \n\t" //RangeLPS - range
-        "andl %%edx, %%esi                      \n\t" //(RangeLPS - range)&lps_mask
-        "addl %%ecx, %%esi                      \n\t" //new range
-        "shl $17, %%ecx                         \n\t"
-        "andl %%edx, %%ecx                      \n\t"
-        "subl %%ecx, %%ebx                      \n\t"
-        "xorl %%edx, %0                         \n\t"
-#endif /* CMOV_IS_FAST */
-
-        "movzbl " MANGLE(ff_h264_norm_shift) "(%%esi), %%ecx   \n\t"
-        "shll %%cl, %%esi                       \n\t"
-        "movzbl "MANGLE(ff_h264_mlps_state)"+128(%0), %%edx   \n\t"
-        "movb %%dl, (%1)                        \n\t"
-        "shll %%cl, %%ebx                       \n\t"
-        "test %%bx, %%bx                        \n\t"
-        " jnz 1f                                \n\t"
-
-        "movl "BYTE     "(%3), %%ecx            \n\t"
-        "movzwl (%%ecx), %%edx                  \n\t"
-        "bswap %%edx                            \n\t"
-        "shrl $15, %%edx                        \n\t"
-        "subl $0xFFFF, %%edx                    \n\t"
-        "addl $2, %%ecx                         \n\t"
-        "movl %%ecx, "BYTE    "(%3)             \n\t"
-
-        "leal -1(%%ebx), %%ecx                  \n\t"
-        "xorl %%ebx, %%ecx                      \n\t"
-        "shrl $15, %%ecx                        \n\t"
-        "movzbl " MANGLE(ff_h264_norm_shift) "(%%ecx), %%ecx   \n\t"
-        "neg %%ecx                              \n\t"
-        "add $7, %%ecx                          \n\t"
-
-        "shll %%cl , %%edx                      \n\t"
-        "addl %%edx, %%ebx                      \n\t"
-        "1:                                     \n\t"
+        BRANCHLESS_GET_CABAC("%0", "%3", "(%1)", "%%ebx", "%%bx", "%%esi", "%%edx", "%%dl")
 
         "test $1, %0                            \n\t"
         " jz 3f                                 \n\t"
@@ -750,62 +696,7 @@ static int decode_significance_x86(CABACContext *c, int max_coeff, uint8_t *sign
         "addl $4, %%eax                         \n\t"
         "movl %%eax, %2                         \n\t"
 
-        "movzbl 61(%1), %0                      \n\t"
-        "movl %%esi, %%edx                      \n\t"
-        "andl $0xC0, %%esi                      \n\t"
-        "movzbl "MANGLE(ff_h264_lps_range)"(%0, %%esi, 2), %%esi\n\t"
-/*eax:state ebx:low, edx:range, esi:RangeLPS*/
-        "subl %%esi, %%edx                      \n\t"
-
-#if (defined CMOV_IS_FAST  && __CPU__ >= 686)
-        "movl %%edx, %%ecx                      \n\t"
-        "shl $17, %%edx                         \n\t"
-        "cmpl %%ebx, %%edx                      \n\t"
-        "cmova %%ecx, %%esi                     \n\t"
-        "sbbl %%ecx, %%ecx                      \n\t"
-        "andl %%ecx, %%edx                      \n\t"
-        "subl %%edx, %%ebx                      \n\t"
-        "xorl %%ecx, %0                         \n\t"
-#else /* CMOV_IS_FAST */
-        "movl %%edx, %%ecx                      \n\t"
-        "shl $17, %%edx                         \n\t"
-        "subl %%ebx, %%edx                      \n\t"
-        "sarl $31, %%edx                        \n\t" //lps_mask
-        "subl %%ecx, %%esi                      \n\t" //RangeLPS - range
-        "andl %%edx, %%esi                      \n\t" //(RangeLPS - range)&lps_mask
-        "addl %%ecx, %%esi                      \n\t" //new range
-        "shl $17, %%ecx                         \n\t"
-        "andl %%edx, %%ecx                      \n\t"
-        "subl %%ecx, %%ebx                      \n\t"
-        "xorl %%edx, %0                         \n\t"
-#endif /* CMOV_IS_FAST */
-
-        "movzbl " MANGLE(ff_h264_norm_shift) "(%%esi), %%ecx   \n\t"
-        "shll %%cl, %%esi                       \n\t"
-        "movzbl "MANGLE(ff_h264_mlps_state)"+128(%0), %%edx   \n\t"
-        "movb %%dl, 61(%1)                      \n\t"
-        "shll %%cl, %%ebx                       \n\t"
-        "test %%bx, %%bx                        \n\t"
-        " jnz 1f                                \n\t"
-
-        "movl "BYTE     "(%3), %%ecx            \n\t"
-        "movzwl (%%ecx), %%edx                  \n\t"
-        "bswap %%edx                            \n\t"
-        "shrl $15, %%edx                        \n\t"
-        "subl $0xFFFF, %%edx                    \n\t"
-        "addl $2, %%ecx                         \n\t"
-        "movl %%ecx, "BYTE    "(%3)             \n\t"
-
-        "leal -1(%%ebx), %%ecx                  \n\t"
-        "xorl %%ebx, %%ecx                      \n\t"
-        "shrl $15, %%ecx                        \n\t"
-        "movzbl " MANGLE(ff_h264_norm_shift) "(%%ecx), %%ecx   \n\t"
-        "neg %%ecx                              \n\t"
-        "add $7, %%ecx                          \n\t"
-
-        "shll %%cl , %%edx                      \n\t"
-        "addl %%edx, %%ebx                      \n\t"
-        "1:                                     \n\t"
+        BRANCHLESS_GET_CABAC("%0", "%3", "61(%1)", "%%ebx", "%%bx", "%%esi", "%%edx", "%%dl")
 
         "test $1, %%eax                         \n\t"
         " jnz 4f                                \n\t"
