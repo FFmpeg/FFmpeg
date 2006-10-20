@@ -676,7 +676,7 @@ static always_inline int get_cabac_bypass_sign(CABACContext *c, int val){
 static int decode_significance_x86(CABACContext *c, int max_coeff, uint8_t *significant_coeff_ctx_base, int *index){
     void *end= significant_coeff_ctx_base + max_coeff - 1;
     int minusstart= -(int)significant_coeff_ctx_base;
-    int minusindex= -(int)index;
+    int minusindex= 4-(int)index;
     int coeff_count;
     asm volatile(
         "movl "RANGE    "(%3), %%esi            \n\t"
@@ -695,11 +695,11 @@ static int decode_significance_x86(CABACContext *c, int max_coeff, uint8_t *sign
         "movl %4, %%ecx                         \n\t"
         "addl %1, %%ecx                         \n\t"
         "movl %%ecx, (%%eax)                    \n\t"
-        "addl $4, %%eax                         \n\t"
 
         "test $1, %%edx                         \n\t"
         " jnz 4f                                \n\t"
 
+        "addl $4, %%eax                         \n\t"
         "movl %%eax, %2                         \n\t"
 
         "3:                                     \n\t"
@@ -710,7 +710,6 @@ static int decode_significance_x86(CABACContext *c, int max_coeff, uint8_t *sign
         "movl %4, %%ecx                         \n\t"
         "addl %1, %%ecx                         \n\t"
         "movl %%ecx, (%%eax)                    \n\t"
-        "addl $4, %%eax                         \n\t"
         "4:                                     \n\t"
         "addl %6, %%eax                         \n\t"
         "shr $2, %%eax                          \n\t"
