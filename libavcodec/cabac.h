@@ -684,10 +684,12 @@ static int decode_significance_x86(CABACContext *c, int max_coeff, uint8_t *sign
 
         "2:                                     \n\t"
 
-        BRANCHLESS_GET_CABAC("%0", "%3", "(%1)", "%%ebx", "%%bx", "%%esi", "%%edx", "%%dl")
+        BRANCHLESS_GET_CABAC("%%edx", "%3", "(%1)", "%%ebx", "%%bx", "%%esi", "%%eax", "%%al")
 
-        "test $1, %0                            \n\t"
+        "test $1, %%edx                         \n\t"
         " jz 3f                                 \n\t"
+
+        BRANCHLESS_GET_CABAC("%%edx", "%3", "61(%1)", "%%ebx", "%%bx", "%%esi", "%%eax", "%%al")
 
         "movl %2, %%eax                         \n\t"
         "movl %4, %%ecx                         \n\t"
@@ -696,9 +698,7 @@ static int decode_significance_x86(CABACContext *c, int max_coeff, uint8_t *sign
         "addl $4, %%eax                         \n\t"
         "movl %%eax, %2                         \n\t"
 
-        BRANCHLESS_GET_CABAC("%0", "%3", "61(%1)", "%%ebx", "%%bx", "%%esi", "%%edx", "%%dl")
-
-        "test $1, %%eax                         \n\t"
+        "test $1, %%edx                         \n\t"
         " jnz 4f                                \n\t"
 
         "3:                                     \n\t"
@@ -710,9 +710,7 @@ static int decode_significance_x86(CABACContext *c, int max_coeff, uint8_t *sign
         "addl %1, %%ecx                         \n\t"
         "movl %%ecx, (%%eax)                    \n\t"
         "addl $4, %%eax                         \n\t"
-        "movl %%eax, %2                         \n\t"
         "4:                                     \n\t"
-        "movl %2, %%eax                         \n\t"
         "addl %6, %%eax                         \n\t"
         "shr $2, %%eax                          \n\t"
 
