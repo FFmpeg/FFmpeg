@@ -696,10 +696,11 @@ static int decode_significance_x86(CABACContext *c, int max_coeff, uint8_t *sign
         "addl %1, %%ecx                         \n\t"
         "movl %%ecx, (%%eax)                    \n\t"
         "addl $4, %%eax                         \n\t"
-        "movl %%eax, %2                         \n\t"
 
         "test $1, %%edx                         \n\t"
         " jnz 4f                                \n\t"
+
+        "movl %%eax, %2                         \n\t"
 
         "3:                                     \n\t"
         "addl $1, %1                            \n\t"
