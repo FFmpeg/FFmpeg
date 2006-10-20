@@ -78,3 +78,6 @@ unassigned TODO: (unordered)
 - H264 encoder
 - per MB ratecontrol (so VCD and such do work better)
 - replace/rewrite libavcodec/fdctref.c
+- write a script which iteratively changes all functions between always_inline and noinline and benchmarks the result to find the best set of inlined functions
+- set up roundup bugtracker somewhere with (newBug, reproduced, analyzed, fixed, worksForMe, duplicate, wontFix, invalid, needMoreInfo, newPatch, ok, applied, rejected, needChanges, newRequest, implemented, wontImplement, invalidReq) states and a checked integer
+- convert all the non SIMD asm into small asm vs. C testcases and submit them to the gcc devels so they can improve gcc
