@@ -1109,7 +1109,7 @@ if test $cpu != "generic"; then
         # targets that do support conditional mov (cmov)
         i686|pentiumpro|pentium[234]|pentium-m|prescott|athlon|athlon-tbird|athlon-4|athlon-[mx]p|nocona|athlon64|k8|opteron|athlon-fx)
             add_cflags "-march=$cpu"
-            cmov=yes
+            cmov="yes"
         ;;
         sparc64)
             add_cflags "-mcpu=v9"
