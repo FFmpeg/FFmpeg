@@ -346,6 +346,7 @@ arch=`uname -m`
 cpu="generic"
 powerpc_perf="no"
 mmx="default"
+cmov="no"
 armv5te="default"
 iwmmxt="default"
 altivec="default"
@@ -1100,8 +1101,15 @@ if test $cpu != "generic"; then
             TUNECPU=ppc970
             POWERPCMODE="64bits"
         ;;
-        i[3456]86|pentium|pentiumpro|pentium-mmx|pentium[234]|pentium-m|prescott|k6|k6-[23]|athlon|athlon-tbird|athlon-4|athlon-[mx]p|winchip-c6|winchip2|c3|nocona|athlon64|k8|opteron|athlon-fx)
+        # targets that do NOT support conditional mov (cmov)
+        i[345]86|pentium|pentium-mmx|k6|k6-[23]|winchip-c6|winchip2|c3)
             add_cflags "-march=$cpu"
+            cmov="no"
+        ;;
+        # targets that do support conditional mov (cmov)
+        i686|pentiumpro|pentium[234]|pentium-m|prescott|athlon|athlon-tbird|athlon-4|athlon-[mx]p|nocona|athlon64|k8|opteron|athlon-fx)
+            add_cflags "-march=$cpu"
+            cmov=yes
         ;;
         sparc64)
             add_cflags "-mcpu=v9"
@@ -1550,6 +1558,7 @@ echo "inttypes.h       $inttypes"
 echo "broken inttypes.h $emu_fast_int"
 if test $arch = "x86" -o $arch = "x86_64"; then
     echo "MMX enabled      $mmx"
+    echo "CMOV enabled     $cmov"
 fi
 if test $arch = "armv4l"; then
     echo "ARMv5TE enabled  $armv5te"
@@ -1731,6 +1740,10 @@ if test "$mmx" = "yes" ; then
   echo "TARGET_MMX=yes" >> config.mak
   echo "#define HAVE_MMX 1" >> $TMPH
   echo "#define __CPU__ 586" >> $TMPH
+fi
+if test "$cmov" = "yes" ; then
+  echo "TARGET_CMOV=yes" >> config.mak
+  echo "#define HAVE_CMOV 1" >> $TMPH
 fi
 if test "$armv5te" = "yes" ; then
   echo "TARGET_ARMV5TE=yes" >> config.mak
