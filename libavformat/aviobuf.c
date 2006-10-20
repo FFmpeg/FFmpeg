@@ -54,6 +54,10 @@ int init_put_byte(ByteIOContext *s,
     s->is_streamed = 0;
     s->max_packet_size = 0;
     s->update_checksum= NULL;
+    if(!read_packet && !write_flag){
+        s->pos = buffer_size;
+        s->buf_end = s->buffer + buffer_size;
+    }
     return 0;
 }
 
