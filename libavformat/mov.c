@@ -1344,10 +1344,9 @@ static int mov_read_wide(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     return err;
 }
 
-
-#ifdef CONFIG_ZLIB
 static int mov_read_cmov(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
+#ifdef CONFIG_ZLIB
     ByteIOContext ctx;
     uint8_t *cmov_data;
     uint8_t *moov_data; /* uncompressed data */
@@ -1389,10 +1388,12 @@ static int mov_read_cmov(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     ret = mov_read_default(c, &ctx, atom);
     av_free(moov_data);
     av_free(cmov_data);
-
     return ret;
-}
+#else
+    av_log(c->fc, AV_LOG_ERROR, "this file requires zlib support compiled in\n");
+    return -1;
 #endif
+}
 
 /* edit list atom */
 static int mov_read_elst(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
@@ -1487,11 +1488,7 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG( 't', 'c', 'm', 'd' ), mov_read_leaf },
 { MKTAG( 'w', 'i', 'd', 'e' ), mov_read_wide }, /* place holder */
 //{ MKTAG( 'r', 'm', 'q', 'u' ), mov_read_leaf },
-#ifdef CONFIG_ZLIB
 { MKTAG( 'c', 'm', 'o', 'v' ), mov_read_cmov },
-#else
-{ MKTAG( 'c', 'm', 'o', 'v' ), mov_read_leaf },
-#endif
 { 0L, mov_read_leaf }
 };
 
