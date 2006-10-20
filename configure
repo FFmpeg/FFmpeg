@@ -347,6 +347,7 @@ cpu="generic"
 powerpc_perf="no"
 mmx="default"
 cmov="no"
+cmov_is_fast="no"
 armv5te="default"
 iwmmxt="default"
 altivec="default"
@@ -1107,9 +1108,16 @@ if test $cpu != "generic"; then
             cmov="no"
         ;;
         # targets that do support conditional mov (cmov)
-        i686|pentiumpro|pentium[234]|pentium-m|prescott|athlon|athlon-tbird|athlon-4|athlon-[mx]p|nocona|athlon64|k8|opteron|athlon-fx)
+        i686|pentiumpro|pentium[23]|pentium-m|athlon|athlon-tbird|athlon-4|athlon-[mx]p|athlon64|k8|opteron|athlon-fx)
             add_cflags "-march=$cpu"
             cmov="yes"
+            cmov_is_fast="yes"
+        ;;
+        # targets that do support conditional mov but on which it's slow
+        pentium4|prescott|nocona)
+            add_cflags "-march=$cpu"
+            cmov="yes"
+            cmov_is_fast="no"
         ;;
         sparc64)
             add_cflags "-mcpu=v9"
@@ -1559,6 +1567,7 @@ echo "broken inttypes.h $emu_fast_int"
 if test $arch = "x86" -o $arch = "x86_64"; then
     echo "MMX enabled      $mmx"
     echo "CMOV enabled     $cmov"
+    echo "CMOV is fast     $cmov_is_fast"
 fi
 if test $arch = "armv4l"; then
     echo "ARMv5TE enabled  $armv5te"
@@ -1744,6 +1753,10 @@ fi
 if test "$cmov" = "yes" ; then
   echo "TARGET_CMOV=yes" >> config.mak
   echo "#define HAVE_CMOV 1" >> $TMPH
+fi
+if test "$cmov_is_fast" = "yes" ; then
+  echo "TARGET_CMOV_IS_FAST=yes" >> config.mak
+  echo "#define CMOV_IS_FAST 1" >> $TMPH
 fi
 if test "$armv5te" = "yes" ; then
   echo "TARGET_ARMV5TE=yes" >> config.mak

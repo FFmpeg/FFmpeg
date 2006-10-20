@@ -168,7 +168,7 @@ static inline int ff_sqrt(int a)
             level= (level^mask)-mask;
 #endif
 
-#if __CPU__ >= 686 && !defined(RUNTIME_CPUDETECT)
+#ifdef HAVE_CMOV
 #define COPY3_IF_LT(x,y,a,b,c,d)\
 asm volatile (\
     "cmpl %0, %3        \n\t"\

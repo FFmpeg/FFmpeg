@@ -32,7 +32,6 @@
 #define CABAC_BITS 16
 #define CABAC_MASK ((1<<CABAC_BITS)-1)
 #define BRANCHLESS_CABAC_DECODER 1
-#define CMOV_IS_FAST 1
 //#define ARCH_X86_DISABLED 1
 
 typedef struct CABACContext{
@@ -454,7 +453,7 @@ static int always_inline get_cabac_inline(CABACContext *c, uint8_t * const state
 #else /* BRANCHLESS_CABAC_DECODER */
 
 
-#if (defined CMOV_IS_FAST  && __CPU__ >= 686)
+#if defined CMOV_IS_FAST
 #define BRANCHLESS_GET_CABAC_UPDATE(ret, cabac, statep, low, lowword, range, tmp, tmpbyte)\
         "mov    "tmp"       , %%ecx                                     \n\t"\
         "shl    $17         , "tmp"                                     \n\t"\

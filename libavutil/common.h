@@ -238,7 +238,7 @@ static inline int av_log2_16bit(unsigned int v)
 /* median of 3 */
 static inline int mid_pred(int a, int b, int c)
 {
-#if (defined(ARCH_X86) && __CPU__ >= 686 || defined(ARCH_X86_64)) && !defined(RUNTIME_CPUDETECT)
+#if HAVE_CMOV
     int i=b;
     asm volatile(
         "cmp    %2, %1 \n\t"
