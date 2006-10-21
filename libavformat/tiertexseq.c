@@ -68,7 +68,7 @@ static int seq_probe(AVProbeData *p)
     /* there's no real header in a .seq file, the only thing they have in common */
     /* is the first 256 bytes of the file which are always filled with 0 */
     for (i = 0; i < 256; i++)
-        if (p->buf[0] != 0)
+        if (p->buf[i] != 0)
             return 0;
 
     /* only one fourth of the score since the previous check is too naive */
