@@ -2536,7 +2536,7 @@ vbv_retry:
             int max_size= rcc->buffer_index/3;
 
             if(put_bits_count(&s->pb) > max_size && s->qscale < s->avctx->qmax){
-                s->next_lambda= s->lambda*(s->qscale+1) / s->qscale;
+                s->next_lambda= FFMAX(s->lambda+1, s->lambda*(s->qscale+1) / s->qscale);
                 s->mb_skipped = 0;        //done in MPV_frame_start()
                 if(s->pict_type==P_TYPE){ //done in encode_picture() so we must undo it
                     if(s->flipflop_rounding || s->codec_id == CODEC_ID_H263P || s->codec_id == CODEC_ID_MPEG4)
