@@ -224,8 +224,8 @@ static int GLZWDecode(GifState * s, uint8_t * buf, int len)
 static int gif_read_image(GifState *s)
 {
     int left, top, width, height, bits_per_pixel, code_size, flags;
-    int is_interleaved, has_local_palette, y, x, pass, y1, linesize, n, i;
-    uint8_t *ptr, *line, *d, *spal, *palette, *sptr, *ptr1;
+    int is_interleaved, has_local_palette, y, pass, y1, linesize, n, i;
+    uint8_t *ptr, *line, *spal, *palette, *ptr1;
 
     left = bytestream_get_le16(&s->bytestream);
     top = bytestream_get_le16(&s->bytestream);
@@ -369,7 +369,7 @@ static int gif_read_extension(GifState *s)
 static int gif_read_header1(GifState *s)
 {
     uint8_t sig[6];
-    int ret, v, n;
+    int v, n;
     int has_global_palette;
 
     /* read gif signature */
