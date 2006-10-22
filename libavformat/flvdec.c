@@ -193,7 +193,12 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
             case 3: st->codec->codec_id = CODEC_ID_FLASHSV; break;
             case 4:
                 st->codec->codec_id = CODEC_ID_VP6F;
-                get_byte(&s->pb); /* width and height adjustment */
+                if (st->codec->extradata_size != 1) {
+                    st->codec->extradata_size = 1;
+                    st->codec->extradata = av_malloc(1);
+                }
+                /* width and height adjustment */
+                st->codec->extradata[0] = get_byte(&s->pb);
                 size--;
                 break;
             default:

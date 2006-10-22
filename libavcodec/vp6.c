@@ -64,6 +64,10 @@ static int vp6_parse_header(vp56_context_t *s, uint8_t *buf, int buf_size,
         if (16*cols != s->avctx->coded_width ||
             16*rows != s->avctx->coded_height) {
             avcodec_set_dimensions(s->avctx, 16*cols, 16*rows);
+            if (s->avctx->extradata_size == 1) {
+                s->avctx->width  -= s->avctx->extradata[0] >> 4;
+                s->avctx->height -= s->avctx->extradata[0] & 0x0F;
+            }
             res = 2;
         }
 
