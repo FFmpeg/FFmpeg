@@ -41,9 +41,7 @@ typedef struct GifState {
     int background_color_index;
     int transparent_color_index;
     int color_resolution;
-    int image_linesize;
     uint32_t *image_palette;
-    int pix_fmt;
 
     /* after the frame is displayed, the disposal method is used */
     int gce_disposal;
@@ -459,11 +457,6 @@ static int gif_decode_frame(AVCodecContext *avctx, void *data, int *data_size, u
     s->bytestream = buf;
     if (gif_read_header1(s) < 0)
         return -1;
-
-    /* allocate image buffer */
-    s->image_linesize = s->screen_width * 3;
-    s->pix_fmt = PIX_FMT_PAL8;
-    /* now we are ready: build format streams */
 
     avctx->pix_fmt = PIX_FMT_PAL8;
     if (avcodec_check_dimensions(avctx, s->screen_width, s->screen_height))
