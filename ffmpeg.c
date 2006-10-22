@@ -3123,8 +3123,7 @@ static void opt_output_file(const char *filename)
         }
 
         if (!oc->nb_streams) {
-            fprintf(stderr, "No audio or video streams available\n");
-            exit(1);
+            fprintf(stderr, "Note: Output file will not contain a video or audio stream\n");
         }
 
         oc->timestamp = rec_timestamp;
