@@ -236,7 +236,7 @@ static int gif_read_image(GifState *s)
     has_local_palette = flags & 0x80;
     bits_per_pixel = (flags & 0x07) + 1;
 #ifdef DEBUG
-    printf("gif: image x=%d y=%d w=%d h=%d\n", left, top, width, height);
+    dprintf("gif: image x=%d y=%d w=%d h=%d\n", left, top, width, height);
 #endif
 
     if (has_local_palette) {
@@ -329,7 +329,7 @@ static int gif_read_extension(GifState *s)
     ext_code = bytestream_get_byte(&s->bytestream);
     ext_len = bytestream_get_byte(&s->bytestream);
 #ifdef DEBUG
-    printf("gif: ext_code=0x%x len=%d\n", ext_code, ext_len);
+    dprintf("gif: ext_code=0x%x len=%d\n", ext_code, ext_len);
 #endif
     switch(ext_code) {
     case 0xf9:
@@ -345,7 +345,7 @@ static int gif_read_extension(GifState *s)
             s->transparent_color_index = -1;
         s->gce_disposal = (gce_flags >> 2) & 0x7;
 #ifdef DEBUG
-        printf("gif: gce_flags=%x delay=%d tcolor=%d disposal=%d\n",
+        dprintf("gif: gce_flags=%x delay=%d tcolor=%d disposal=%d\n",
                gce_flags, s->gce_delay,
                s->transparent_color_index, s->gce_disposal);
 #endif
@@ -360,7 +360,7 @@ static int gif_read_extension(GifState *s)
             bytestream_get_byte(&s->bytestream);
         ext_len = bytestream_get_byte(&s->bytestream);
 #ifdef DEBUG
-        printf("gif: ext_len1=%d\n", ext_len);
+        dprintf("gif: ext_len1=%d\n", ext_len);
 #endif
     }
     return 0;
@@ -395,7 +395,7 @@ static int gif_read_header1(GifState *s)
     s->background_color_index = bytestream_get_byte(&s->bytestream);
     bytestream_get_byte(&s->bytestream);                /* ignored */
 #ifdef DEBUG
-    printf("gif: screen_w=%d screen_h=%d bpp=%d global_palette=%d\n",
+    dprintf("gif: screen_w=%d screen_h=%d bpp=%d global_palette=%d\n",
            s->screen_width, s->screen_height, s->bits_per_pixel,
            has_global_palette);
 #endif
@@ -413,7 +413,7 @@ static int gif_parse_next_image(GifState *s)
     for (;;) {
         code = bytestream_get_byte(&s->bytestream);
 #ifdef DEBUG
-        printf("gif: code=%02x '%c'\n", code, code);
+        dprintf("gif: code=%02x '%c'\n", code, code);
 #endif
         switch (code) {
         case ',':
