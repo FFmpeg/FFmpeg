@@ -829,9 +829,9 @@ static int swf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     get_le16(pb);
                 }
                 ast = av_new_stream(s, 1);
-                av_set_pts_info(ast, 24, 1, 1000); /* 24 bit pts in ms */
                 if (!ast)
                     return -ENOMEM;
+                av_set_pts_info(ast, 24, 1, 1000); /* 24 bit pts in ms */
 
                 if (v & 0x01)
                     ast->codec->channels = 2;
