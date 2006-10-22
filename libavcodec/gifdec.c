@@ -251,19 +251,19 @@ static int gif_read_image(GifState *s)
         return -EINVAL;
 
     /* build the palette */
-        n = (1 << bits_per_pixel);
-        spal = palette;
-        for(i = 0; i < n; i++) {
-            s->image_palette[i] = (0xff << 24) |
-                (spal[0] << 16) | (spal[1] << 8) | (spal[2]);
-            spal += 3;
-        }
-        for(; i < 256; i++)
-            s->image_palette[i] = (0xff << 24);
-        /* handle transparency */
-        if (s->transparent_color_index >= 0)
-            s->image_palette[s->transparent_color_index] = 0;
-        line = NULL;
+    n = (1 << bits_per_pixel);
+    spal = palette;
+    for(i = 0; i < n; i++) {
+        s->image_palette[i] = (0xff << 24) |
+            (spal[0] << 16) | (spal[1] << 8) | (spal[2]);
+        spal += 3;
+    }
+    for(; i < 256; i++)
+        s->image_palette[i] = (0xff << 24);
+    /* handle transparency */
+    if (s->transparent_color_index >= 0)
+        s->image_palette[s->transparent_color_index] = 0;
+    line = NULL;
 
     /* now get the image data */
     code_size = bytestream_get_byte(&s->bytestream);
@@ -276,7 +276,7 @@ static int gif_read_image(GifState *s)
     pass = 0;
     y1 = 0;
     for (y = 0; y < height; y++) {
-            GLZWDecode(s, ptr, width);
+        GLZWDecode(s, ptr, width);
         if (is_interleaved) {
             switch(pass) {
             default:
