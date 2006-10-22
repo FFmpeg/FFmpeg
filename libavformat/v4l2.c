@@ -308,7 +308,12 @@ static int mmap_read_frame(struct video_data *s, void *frame, int64_t *ts)
         return -1;
     }
     assert (buf.index < s->buffers);
-    assert(buf.bytesused == s->frame_size);
+    if (buf.bytesused != s->frame_size) {
+        av_log(NULL, AV_LOG_ERROR, "The v4l2 frame is %d bytes, but %d bytes are expected\n", buf.bytesused, s->frame_size);
+
+        return -1;
+    }
+
     /* Image is at s->buff_start[buf.index] */
     memcpy(frame, s->buf_start[buf.index], buf.bytesused);
     *ts = buf.timestamp.tv_sec * int64_t_C(1000000) + buf.timestamp.tv_usec;
