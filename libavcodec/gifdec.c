@@ -34,15 +34,15 @@
 #define GCE_DISPOSAL_RESTORE    3
 
 typedef struct GifState {
+    AVFrame picture;
     int screen_width;
     int screen_height;
     int bits_per_pixel;
     int background_color_index;
     int transparent_color_index;
     int color_resolution;
-    uint8_t *image_buf;
     int image_linesize;
-    uint32_t image_palette[256];
+    uint32_t *image_palette;
     int pix_fmt;
 
     /* after the frame is displayed, the disposal method is used */
@@ -272,8 +272,8 @@ static int gif_read_image(GifState *s)
     GLZWDecodeInit(s, code_size);
 
     /* read all the image */
-    linesize = s->image_linesize;
-    ptr1 = s->image_buf + top * linesize + (left * 3);
+    linesize = s->picture.linesize[0];
+    ptr1 = s->picture.data[0] + top * linesize + (left * 3);
     ptr = ptr1;
     pass = 0;
     y1 = 0;
@@ -444,6 +444,9 @@ static int gif_decode_init(AVCodecContext *avctx)
 {
     GifState *s = avctx->priv_data;
 
+    avcodec_get_frame_defaults(&s->picture);
+    avctx->coded_frame= &s->picture;
+    s->picture.data[0] = NULL;
     return 0;
 }
 
@@ -459,27 +462,36 @@ static int gif_decode_frame(AVCodecContext *avctx, void *data, int *data_size, u
 
     /* allocate image buffer */
     s->image_linesize = s->screen_width * 3;
-    s->image_buf = av_malloc(s->screen_height * s->image_linesize);
-    if (!s->image_buf)
-        return -ENOMEM;
     s->pix_fmt = PIX_FMT_PAL8;
     /* now we are ready: build format streams */
 
-    /* XXX: check if screen size is always valid */
-    avctx->width = s->screen_width;
-    avctx->height = s->screen_height;
     avctx->pix_fmt = PIX_FMT_PAL8;
+    if (avcodec_check_dimensions(avctx, s->screen_width, s->screen_height))
+        return -1;
+    avcodec_set_dimensions(avctx, s->screen_width, s->screen_height);
 
+    if (s->picture.data[0])
+        avctx->release_buffer(avctx, &s->picture);
+    if (avctx->get_buffer(avctx, &s->picture) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+        return -1;
+    }
+    s->image_palette = (uint32_t *)s->picture.data[1];
     ret = gif_parse_next_image(s);
     if (ret < 0)
         return ret;
 
-    picture->data[0] = s->image_buf;
-    picture->linesize[0] = s->image_linesize;
-    picture->data[1] = s->image_palette;
-    picture->linesize[1] = 4;
-
+    *picture = s->picture;
     *data_size = sizeof(AVPicture);
+    return 0;
+}
+
+static int gif_decode_close(AVCodecContext *avctx)
+{
+    GifState *s = avctx->priv_data;
+
+    if(s->picture.data[0])
+        avctx->release_buffer(avctx, &s->picture);
     return 0;
 }
 
@@ -490,6 +502,6 @@ AVCodec gif_decoder = {
     sizeof(GifState),
     gif_decode_init,
     NULL,
-    NULL,
+    gif_decode_close,
     gif_decode_frame,
 };
