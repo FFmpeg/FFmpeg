@@ -26,7 +26,7 @@
 #include "bytestream.h"
 
 #define MAXBITS                 12
-#define         SIZTABLE        (1<<MAXBITS)
+#define SIZTABLE                (1<<MAXBITS)
 
 #define GCE_DISPOSAL_NONE       0
 #define GCE_DISPOSAL_INPLACE    1
