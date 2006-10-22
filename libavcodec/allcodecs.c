@@ -193,6 +193,9 @@ void avcodec_register_all(void)
 #endif //CONFIG_RAWVIDEO_ENCODER
 
     /* decoders */
+#ifdef CONFIG_GIF_DECODER
+    register_avcodec(&gif_decoder);
+#endif
 #ifdef CONFIG_H263_DECODER
     register_avcodec(&h263_decoder);
 #endif //CONFIG_H263_DECODER

@@ -121,6 +121,7 @@ Codecs:
   flashsv.c                             Benjamin Larsson
   flicvideo.c                           Mike Melanson
   g726.c                                Roman Shaposhnik
+  gifdec.c                              Baptiste Coudurier
   h264*                                 Loren Merritt, Michael Niedermayer
   h261*                                 Michael Niedermayer
   h263*                                 Michael Niedermayer

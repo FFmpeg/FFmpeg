@@ -64,6 +64,7 @@ version <next>
 - Tiertex .seq demuxer/video decoder
 - MTV demuxer
 - TIFF picture decoder
+- GIF picture decoder
 
 version 0.4.9-pre1:
 
