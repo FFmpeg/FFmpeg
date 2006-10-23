@@ -7,6 +7,8 @@ LIBVERSION=$(SWSVERSION)
 LIBMAJOR=$(SWSMAJOR)
 endif
 
+EXTRALIBS := -L$(BUILD_ROOT)/libavutil -lavutil$(BUILDSUF) $(EXTRALIBS)
+
 OBJS= swscale.o rgb2rgb.o yuv2rgb.o
 ifeq ($(TARGET_ALTIVEC),yes)
 OBJS+=  yuv2rgb_altivec.o
