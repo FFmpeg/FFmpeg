@@ -52,6 +52,8 @@ static const IdStrMap img_tags[] = {
     { CODEC_ID_RAWVIDEO  , "y"},
     { CODEC_ID_BMP       , "bmp"},
     { CODEC_ID_GIF       , "gif"},
+    { CODEC_ID_TARGA     , "tga"},
+    { CODEC_ID_TIFF      , "tiff"},
     {0, NULL}
 };
 
