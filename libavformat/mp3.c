@@ -1,5 +1,5 @@
 /*
- * MP3 encoder and decoder
+ * MP3 muxer and demuxer
  * Copyright (c) 2003 Fabrice Bellard.
  *
  * This file is part of FFmpeg.

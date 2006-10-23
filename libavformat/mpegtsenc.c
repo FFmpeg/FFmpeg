@@ -1,5 +1,5 @@
 /*
- * MPEG2 transport stream (aka DVB) mux
+ * MPEG2 transport stream (aka DVB) muxer
  * Copyright (c) 2003 Fabrice Bellard.
  *
  * This file is part of FFmpeg.

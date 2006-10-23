@@ -1,5 +1,5 @@
 /*
- * AIFF/AIFF-C encoder and decoder
+ * AIFF/AIFF-C muxer and demuxer
  * Copyright (c) 2006  Patrick Guimond
  *
  * This file is part of FFmpeg.

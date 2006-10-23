@@ -1,5 +1,5 @@
 /*
- * FFM (ffserver live feed) encoder and decoder
+ * FFM (ffserver live feed) muxer and demuxer
  * Copyright (c) 2001 Fabrice Bellard.
  *
  * This file is part of FFmpeg.

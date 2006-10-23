@@ -1,5 +1,5 @@
 /*
- * RAW encoder and decoder
+ * RAW muxer and demuxer
  * Copyright (c) 2001 Fabrice Bellard.
  * Copyright (c) 2005 Alex Beregszaszi
  *

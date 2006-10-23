@@ -1,5 +1,5 @@
 /*
- * MPEG1/2 mux/demux
+ * MPEG1/2 muxer and demuxer
  * Copyright (c) 2000, 2001, 2002 Fabrice Bellard.
  *
  * This file is part of FFmpeg.

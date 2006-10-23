@@ -1,5 +1,5 @@
 /*
- * Sierra SOL decoder
+ * Sierra SOL demuxer
  * Copyright Konstantin Shishkov.
  *
  * This file is part of FFmpeg.

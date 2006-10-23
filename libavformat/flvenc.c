@@ -1,5 +1,5 @@
 /*
- * FLV encoder.
+ * FLV muxer
  * Copyright (c) 2003 The FFmpeg Project.
  *
  * This file is part of FFmpeg.

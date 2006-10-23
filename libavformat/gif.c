@@ -1,5 +1,5 @@
 /*
- * Animated GIF encoder
+ * Animated GIF muxer
  * Copyright (c) 2000 Fabrice Bellard.
  *
  * This file is part of FFmpeg.

@@ -1,5 +1,5 @@
 /*
- * NSV decoder.
+ * NSV demuxer
  * Copyright (c) 2004 The FFmpeg Project.
  *
  * This file is part of FFmpeg.
