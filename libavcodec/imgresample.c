@@ -47,6 +47,11 @@
 
 #define LINE_BUF_HEIGHT (NB_TAPS * 4)
 
+struct SwsContext {
+    struct ImgReSampleContext *resampling_ctx;
+    enum PixelFormat src_pix_fmt, dst_pix_fmt;
+};
+
 struct ImgReSampleContext {
     int iwidth, iheight, owidth, oheight;
     int topBand, bottomBand, leftBand, rightBand;

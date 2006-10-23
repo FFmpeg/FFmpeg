@@ -7,13 +7,9 @@ include config.mak
 VPATH=$(SRC_PATH)
 
 CFLAGS=$(OPTFLAGS) -I$(BUILD_ROOT) -I$(SRC_PATH) -I$(SRC_PATH)/libavutil \
-       -I$(SRC_PATH)/libavcodec -I$(SRC_PATH)/libavformat \
+       -I$(SRC_PATH)/libavcodec -I$(SRC_PATH)/libavformat -I$(SRC_PATH)/libswscale \
        -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_ISOC9X_SOURCE
 LDFLAGS+= -g
-
-ifeq ($(CONFIG_SWSCALER),yes)
-CFLAGS := -I$(SRC_PATH)/libswscale $(CFLAGS)
-endif
 
 MANPAGES=doc/ffmpeg.1
 PROGS_G+=ffmpeg_g$(EXESUF)
@@ -166,9 +162,7 @@ install-headers:
 ifeq ($(CONFIG_PP),yes)
 	$(MAKE) -C libpostproc install-headers
 endif
-ifeq ($(CONFIG_SWSCALER),yes)
 	$(MAKE) -C libswscale  install-headers
-endif
 
 uninstall: uninstall-progs uninstall-libs uninstall-headers uninstall-man uninstall-vhook
 

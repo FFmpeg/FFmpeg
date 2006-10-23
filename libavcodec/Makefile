@@ -4,7 +4,7 @@
 #
 include ../config.mak
 
-CFLAGS+=$(AMR_CFLAGS)
+CFLAGS+=-I$(SRC_PATH)/libswscale $(AMR_CFLAGS)
 
 OBJS= bitstream.o \
       utils.o \
@@ -45,9 +45,6 @@ OBJS= bitstream.o \
 
 
 HEADERS = avcodec.h opt.h
-ifneq ($(CONFIG_SWSCALER),yes)
-HEADERS += swscale.h
-endif
 
 OBJS-$(CONFIG_AASC_DECODER)            += aasc.o
 OBJS-$(CONFIG_AC3_ENCODER)             += ac3enc.o

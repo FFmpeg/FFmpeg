@@ -3,12 +3,8 @@ include ../config.mak
 VPATH=$(SRC_PATH)/vhook
 
 CFLAGS=-I$(BUILD_ROOT) -I$(SRC_PATH) -I$(SRC_PATH)/libavutil -I$(SRC_PATH)/libavcodec \
-       -I$(SRC_PATH)/libavformat $(VHOOKCFLAGS) -DHAVE_AV_CONFIG_H
+       -I$(SRC_PATH)/libavformat -I$(SRC_PATH)/libswscale $(VHOOKCFLAGS) -DHAVE_AV_CONFIG_H
 LDFLAGS+= -g
-
-ifeq ($(CONFIG_SWSCALER),yes)
-CFLAGS := -I$(SRC_PATH)/libswscale $(CFLAGS)
-endif
 
 HOOKS=null$(SLIBSUF) fish$(SLIBSUF) ppm$(SLIBSUF) watermark$(SLIBSUF)
 ALLHOOKS=$(HOOKS) imlib2$(SLIBSUF) drawtext$(SLIBSUF)
