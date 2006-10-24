@@ -70,7 +70,7 @@ static int common_init(AVCodecContext *avctx){
 
 static int pnm_decode_header(AVCodecContext *avctx, PNMContext * const s){
     char buf1[32], tuple_type[32];
-    int h, w, depth, maxval;;
+    int h, w, depth, maxval;
 
     pnm_get(s, buf1, sizeof(buf1));
     if (!strcmp(buf1, "P4")) {
@@ -142,8 +142,9 @@ static int pnm_decode_header(AVCodecContext *avctx, PNMContext * const s){
         return -1;
     if (avctx->pix_fmt != PIX_FMT_MONOWHITE) {
         pnm_get(s, buf1, sizeof(buf1));
+        if(atoi(buf1) == 65535 && avctx->pix_fmt == PIX_FMT_GRAY8)
+            avctx->pix_fmt = PIX_FMT_GRAY16BE;
     }
-
     /* more check if YUV420 */
     if (avctx->pix_fmt == PIX_FMT_YUV420P) {
         if ((avctx->width & 1) != 0)
@@ -193,6 +194,9 @@ static int pnm_decode_frame(AVCodecContext *avctx,
         goto do_read;
     case PIX_FMT_GRAY8:
         n = avctx->width;
+        goto do_read;
+    case PIX_FMT_GRAY16BE:
+        n = avctx->width * 2;
         goto do_read;
     case PIX_FMT_MONOWHITE:
     case PIX_FMT_MONOBLACK:
@@ -292,6 +296,10 @@ static int pnm_encode_frame(AVCodecContext *avctx, unsigned char *outbuf, int bu
         c = '5';
         n = avctx->width;
         break;
+    case PIX_FMT_GRAY16BE:
+        c = '5';
+        n = avctx->width * 2;
+        break;
     case PIX_FMT_RGB24:
         c = '6';
         n = avctx->width * 3;
@@ -310,7 +318,7 @@ static int pnm_encode_frame(AVCodecContext *avctx, unsigned char *outbuf, int bu
     s->bytestream += strlen(s->bytestream);
     if (avctx->pix_fmt != PIX_FMT_MONOWHITE) {
         snprintf(s->bytestream, s->bytestream_end - s->bytestream,
-                 "%d\n", 255);
+                 "%d\n", (avctx->pix_fmt != PIX_FMT_GRAY16BE) ? 255 : 65535);
         s->bytestream += strlen(s->bytestream);
     }
 
@@ -537,7 +545,7 @@ AVCodec pgm_encoder = {
     pnm_encode_frame,
     NULL, //encode_end,
     pnm_decode_frame,
-    .pix_fmts= (enum PixelFormat[]){PIX_FMT_GRAY8, -1},
+    .pix_fmts= (enum PixelFormat[]){PIX_FMT_GRAY8, PIX_FMT_GRAY16BE, -1},
 };
 #endif // CONFIG_PGM_ENCODER
 
