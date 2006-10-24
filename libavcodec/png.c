@@ -567,6 +567,9 @@ static int decode_frame(AVCodecContext *avctx,
                 } else if (s->bit_depth == 8 &&
                            s->color_type == PNG_COLOR_TYPE_GRAY) {
                     avctx->pix_fmt = PIX_FMT_GRAY8;
+                } else if (s->bit_depth == 16 &&
+                           s->color_type == PNG_COLOR_TYPE_GRAY) {
+                    avctx->pix_fmt = PIX_FMT_GRAY16BE;
                 } else if (s->bit_depth == 1 &&
                            s->color_type == PNG_COLOR_TYPE_GRAY) {
                     avctx->pix_fmt = PIX_FMT_MONOBLACK;
