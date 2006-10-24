@@ -77,9 +77,7 @@ static void ls_init_state(JLSState *state){
         state->limit = (4 * state->bpp) - state->qbpp;
 
     for(i = 0; i < 367; i++) {
-        state->A[i] = (state->range + 32) >> 6;
-        if(state->A[i] < 2)
-            state->A[i] = 2;
+        state->A[i] = FFMAX((state->range + 32) >> 6, 2);
         state->N[i] = 1;
     }
 
