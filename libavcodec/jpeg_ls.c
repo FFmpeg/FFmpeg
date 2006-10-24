@@ -248,10 +248,9 @@ static inline int ls_get_code_runterm(GetBitContext *gb, JLSState *state, int RI
     int k, ret, temp, map;
     int Q = 365 + RItype;
 
-    if(!RItype)
-        temp = state->A[Q];
-    else
-        temp = state->A[Q] + (state->N[Q] >> 1);
+    temp=  state->A[Q];
+    if(RItype)
+        temp += state->N[Q] >> 1;
 
     for(k = 0; (state->N[Q] << k) < temp; k++);
 
@@ -355,17 +354,6 @@ static inline void ls_decode_line(JLSState *state, MJpegDecodeContext *s, void *
                 else
                     pred = Rb + err;
             }
-
-            if(state->near){
-                if(pred < -state->near)
-                    pred += state->range * state->twonear;
-                else if(pred > state->maxval + state->near)
-                    pred -= state->range * state->twonear;
-                pred = clip(pred, 0, state->maxval);
-            }
-
-            W(dst, x, pred);
-            x += stride;
         } else { /* regular mode */
             int context, sign;
 
@@ -389,17 +377,17 @@ static inline void ls_decode_line(JLSState *state, MJpegDecodeContext *s, void *
 
             /* we have to do something more for near-lossless coding */
             pred += err;
-            if(state->near) {
-                if(pred < -state->near)
-                    pred += state->range * state->twonear;
-                else if(pred > state->maxval + state->near)
-                    pred -= state->range * state->twonear;
-                pred = clip(pred, 0, state->maxval);
-            }
-
-            W(dst, x, pred);
-            x += stride;
         }
+        if(state->near){
+            if(pred < -state->near)
+                pred += state->range * state->twonear;
+            else if(pred > state->maxval + state->near)
+                pred -= state->range * state->twonear;
+            pred = clip(pred, 0, state->maxval);
+        }
+
+        W(dst, x, pred);
+        x += stride;
     }
 }
 
@@ -677,7 +665,6 @@ static inline void ls_encode_line(JLSState *state, PutBitContext *pb, void *last
 
             if(state->run_index[comp] > 0)
                 state->run_index[comp]--;
-            x += stride;
         } else { /* regular mode */
             int context;
 
@@ -708,8 +695,8 @@ static inline void ls_encode_line(JLSState *state, PutBitContext *pb, void *last
             }
 
             ls_encode_regular(state, pb, context, err);
-            x += stride;
         }
+        x += stride;
     }
 }
 
