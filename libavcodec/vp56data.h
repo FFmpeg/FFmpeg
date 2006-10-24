@@ -24,7 +24,7 @@
 #ifndef VP56DATA_H
 #define VP56DATA_H
 
-#include <inttypes.h>
+#include "common.h"
 
 typedef enum {
     VP56_FRAME_CURRENT  = 0,

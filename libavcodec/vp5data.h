@@ -24,8 +24,6 @@
 #ifndef VP5DATA_H
 #define VP5DATA_H
 
-#include <inttypes.h>
-
 static const uint8_t vp5_coeff_groups[] = {
     -1, 0, 1, 1, 2, 1, 1, 2,
      2, 1, 1, 2, 2, 2, 1, 2,

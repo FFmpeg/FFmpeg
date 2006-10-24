@@ -24,7 +24,6 @@
 #ifndef VP6DATA_H
 #define VP6DATA_H
 
-#include <inttypes.h>
 #include "vp56data.h"
 
 static const uint8_t vp6_def_fdv_vector_model[2][8] = {

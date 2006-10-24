@@ -21,7 +21,6 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#include <inttypes.h>
 #include "vp56data.h"
 
 const uint8_t vp56_b6to3[] = { 0, 0, 0, 0, 1, 2 };

@@ -24,8 +24,6 @@
 #ifndef VP56_H
 #define VP56_H
 
-#include <stdint.h>
-
 #include "vp56data.h"
 #include "dsputil.h"
 #include "mpegvideo.h"

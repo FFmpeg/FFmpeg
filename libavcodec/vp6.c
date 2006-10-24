@@ -27,7 +27,6 @@
  */
 
 #include <stdlib.h>
-#include <inttypes.h>
 
 #include "avcodec.h"
 #include "dsputil.h"
