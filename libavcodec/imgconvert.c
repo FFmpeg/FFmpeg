@@ -193,6 +193,20 @@ static const PixFmtInfo pix_fmt_info[PIX_FMT_NB] = {
     },
 
     /* gray / mono formats */
+    [PIX_FMT_GRAY16BE] = {
+        .name = "gray16be",
+        .nb_channels = 1,
+        .color_type = FF_COLOR_GRAY,
+        .pixel_type = FF_PIXEL_PLANAR,
+        .depth = 16,
+    },
+    [PIX_FMT_GRAY16LE] = {
+        .name = "gray16le",
+        .nb_channels = 1,
+        .color_type = FF_COLOR_GRAY,
+        .pixel_type = FF_PIXEL_PLANAR,
+        .depth = 16,
+    },
     [PIX_FMT_GRAY8] = {
         .name = "gray",
         .nb_channels = 1,
@@ -427,6 +441,8 @@ int avpicture_fill(AVPicture *picture, uint8_t *ptr,
         picture->data[2] = NULL;
         picture->linesize[0] = width * 4;
         return size * 4;
+    case PIX_FMT_GRAY16BE:
+    case PIX_FMT_GRAY16LE:
     case PIX_FMT_BGR555:
     case PIX_FMT_BGR565:
     case PIX_FMT_RGB555:
@@ -1842,6 +1858,75 @@ static void gray_to_monoblack(AVPicture *dst, const AVPicture *src,
     gray_to_mono(dst, src, width, height, 0x00);
 }
 
+static void gray_to_gray16(AVPicture *dst, const AVPicture *src,
+                              int width, int height)
+{
+    int x, y, src_wrap, dst_wrap;
+    uint8_t *s, *d;
+    s = src->data[0];
+    src_wrap = src->linesize[0] - width;
+    d = dst->data[0];
+    dst_wrap = dst->linesize[0] - width * 2;
+    for(y=0; y<height; y++){
+        for(x=0; x<width; x++){
+            *d++ = *s;
+            *d++ = *s++;
+        }
+        s += src_wrap;
+        d += dst_wrap;
+    }
+}
+
+static void gray16_to_gray(AVPicture *dst, const AVPicture *src,
+                              int width, int height)
+{
+    int x, y, src_wrap, dst_wrap;
+    uint8_t *s, *d;
+    s = src->data[0];
+    src_wrap = src->linesize[0] - width * 2;
+    d = dst->data[0];
+    dst_wrap = dst->linesize[0] - width;
+    for(y=0; y<height; y++){
+        for(x=0; x<width; x++){
+            *d++ = *s;
+            s += 2;
+        }
+        s += src_wrap;
+        d += dst_wrap;
+    }
+}
+
+static void gray16be_to_gray(AVPicture *dst, const AVPicture *src,
+                              int width, int height)
+{
+    gray16_to_gray(dst, src, width, height);
+}
+
+static void gray16le_to_gray(AVPicture *dst, const AVPicture *src,
+                              int width, int height)
+{
+    gray16_to_gray(dst, src + 1, width, height);
+}
+
+static void gray16_to_gray16(AVPicture *dst, const AVPicture *src,
+                              int width, int height)
+{
+    int x, y, src_wrap, dst_wrap;
+    uint16_t *s, *d;
+    s = src->data[0];
+    src_wrap = (src->linesize[0] - width * 2)/2;
+    d = dst->data[0];
+    dst_wrap = (dst->linesize[0] - width * 2)/2;
+    for(y=0; y<height; y++){
+        for(x=0; x<width; x++){
+            *d++ = bswap_16(*s++);
+        }
+        s += src_wrap;
+        d += dst_wrap;
+    }
+}
+
+
 typedef struct ConvertEntry {
     void (*convert)(AVPicture *dst,
                     const AVPicture *src, int width, int height);
@@ -2024,6 +2109,22 @@ static const ConvertEntry convert_table[PIX_FMT_NB][PIX_FMT_NB] = {
             .convert = rgb565_to_gray
         },
     },
+    [PIX_FMT_GRAY16BE] = {
+        [PIX_FMT_GRAY8] = {
+            .convert = gray16be_to_gray
+        },
+        [PIX_FMT_GRAY16LE] = {
+            .convert = gray16_to_gray16
+        },
+    },
+    [PIX_FMT_GRAY16LE] = {
+        [PIX_FMT_GRAY8] = {
+            .convert = gray16le_to_gray
+        },
+        [PIX_FMT_GRAY16BE] = {
+            .convert = gray16_to_gray16
+        },
+    },
     [PIX_FMT_GRAY8] = {
         [PIX_FMT_RGB555] = {
             .convert = gray_to_rgb555
@@ -2045,6 +2146,12 @@ static const ConvertEntry convert_table[PIX_FMT_NB][PIX_FMT_NB] = {
         },
         [PIX_FMT_MONOBLACK] = {
             .convert = gray_to_monoblack
+        },
+        [PIX_FMT_GRAY16LE] = {
+            .convert = gray_to_gray16
+        },
+        [PIX_FMT_GRAY16BE] = {
+            .convert = gray_to_gray16
         },
     },
     [PIX_FMT_MONOWHITE] = {

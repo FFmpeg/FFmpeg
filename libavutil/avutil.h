@@ -34,8 +34,8 @@ extern "C" {
 #define AV_STRINGIFY(s)         AV_TOSTRING(s)
 #define AV_TOSTRING(s) #s
 
-#define LIBAVUTIL_VERSION_INT   ((49<<16)+(0<<8)+1)
-#define LIBAVUTIL_VERSION       49.0.1
+#define LIBAVUTIL_VERSION_INT   ((49<<16)+(0<<8)+2)
+#define LIBAVUTIL_VERSION       49.0.2
 #define LIBAVUTIL_BUILD         LIBAVUTIL_VERSION_INT
 
 #define LIBAVUTIL_IDENT         "Lavu" AV_STRINGIFY(LIBAVUTIL_VERSION)
@@ -105,6 +105,8 @@ enum PixelFormat {
     PIX_FMT_RGB32_1,   ///< Packed RGB 8:8:8, 32bpp, (msb)8R 8G 8B 8A(lsb), in cpu endianness
     PIX_FMT_BGR32_1,   ///< Packed RGB 8:8:8, 32bpp, (msb)8B 8G 8R 8A(lsb), in cpu endianness
 
+    PIX_FMT_GRAY16BE,  ///<        Y        , 16bpp, big-endian
+    PIX_FMT_GRAY16LE,  ///<        Y        , 16bpp, little-endian
     PIX_FMT_NB,        ///< number of pixel formats, DO NOT USE THIS if you want to link with shared libav* because the number of formats might differ between versions
 };
 
@@ -113,11 +115,13 @@ enum PixelFormat {
 #define PIX_FMT_BGRA PIX_FMT_BGR32_1
 #define PIX_FMT_ARGB PIX_FMT_RGB32
 #define PIX_FMT_ABGR PIX_FMT_BGR32
+#define PIX_FMT_GRAY16 PIX_FMT_GRAY16BE
 #else
 #define PIX_FMT_RGBA PIX_FMT_BGR32
 #define PIX_FMT_BGRA PIX_FMT_RGB32
 #define PIX_FMT_ARGB PIX_FMT_BGR32_1
 #define PIX_FMT_ABGR PIX_FMT_RGB32_1
+#define PIX_FMT_GRAY16 PIX_FMT_GRAY16LE
 #endif
 
 #if LIBAVUTIL_VERSION_INT < (50<<16)
