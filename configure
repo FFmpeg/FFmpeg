@@ -1302,9 +1302,9 @@ if enabled pthreads; then
 fi
 
 # these are off by default, so fail if requested and not available
-enabled dts     && require libdts dts.h dts_init -ldts
+enabled dts     && require libdts dts.h dts_init -ldts -lm
 enabled libgsm  && require libgsm gsm.h gsm_create -lgsm
-enabled mp3lame && require LAME lame/lame.h lame_init -lmp3lame
+enabled mp3lame && require LAME lame/lame.h lame_init -lmp3lame -lm
 enabled vorbis  && require libvorbis vorbis/vorbisenc.h vorbis_info_init -lvorbis -lvorbisenc -logg
 enabled libogg  && require libogg ogg/ogg.h ogg_sync_init -logg
 enabled xvid    && require XviD xvid.h xvid_global -lxvidcore
