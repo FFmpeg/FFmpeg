@@ -401,11 +401,126 @@ static inline void ls_decode_line(JLSState *state, MJpegDecodeContext *s, uint8_
     }
 }
 
+/**
+ * Decode one line of image - 16bpp version
+ */
+static inline void ls_decode_line_16bpp(JLSState *state, MJpegDecodeContext *s, uint16_t *last, uint16_t *dst, int last2, int w, int stride, int comp){
+    int i, x = 0;
+    int Ra, Rb, Rc, Rd;
+    int D0, D1, D2;
+
+    while(x < w) {
+        int err, pred;
+
+        /* compute gradients */
+        Ra = x ? dst[x - stride] : last[x];
+        Rb = last[x];
+        Rc = x ? last[x - stride] : last2;
+        Rd = (x >= w - stride) ? last[x] : last[x + stride];
+        D0 = Rd - Rb;
+        D1 = Rb - Rc;
+        D2 = Rc - Ra;
+        /* run mode */
+        if((FFABS(D0) <= state->near) && (FFABS(D1) <= state->near) && (FFABS(D2) <= state->near)) {
+            int r;
+            int RItype;
+
+            /* decode full runs while available */
+            while(get_bits1(&s->gb)) {
+                int r;
+                r = 1 << log2_run[state->run_index[comp]];
+                if(x + r * stride > w) {
+                    r = (w - x) / stride;
+                }
+                for(i = 0; i < r; i++) {
+                    dst[x] = Ra;
+                    x += stride;
+                }
+                /* if EOL reached, we stop decoding */
+                if(r != (1 << log2_run[state->run_index[comp]]))
+                    return;
+                if(state->run_index[comp] < 31)
+                    state->run_index[comp]++;
+                if(x + stride > w)
+                    return;
+            }
+            /* decode aborted run */
+            r = log2_run[state->run_index[comp]];
+            if(r)
+                r = get_bits_long(&s->gb, r);
+            for(i = 0; i < r; i++) {
+                dst[x] = Ra;
+                x += stride;
+            }
+
+            /* decode run termination value */
+            Rb = last[x];
+            RItype = (FFABS(Ra - Rb) <= state->near) ? 1 : 0;
+            err = ls_get_code_runterm(&s->gb, state, RItype, log2_run[state->run_index[comp]]);
+            if(state->run_index[comp])
+                state->run_index[comp]--;
+
+            if(state->near && RItype){
+                pred = Ra + err;
+            } else {
+                if(Rb < Ra)
+                    pred = Rb - err;
+                else
+                    pred = Rb + err;
+            }
+
+            if(state->near){
+                if(pred < -state->near)
+                    pred += state->range * state->twonear;
+                else if(pred > state->maxval + state->near)
+                    pred -= state->range * state->twonear;
+                pred = clip(pred, 0, state->maxval);
+            }
+
+            dst[x] = pred;
+            x += stride;
+        } else { /* regular mode */
+            int context, sign;
+
+            context = quantize(state, D0) * 81 + quantize(state, D1) * 9 + quantize(state, D2);
+            pred = mid_pred(Ra, Ra + Rb - Rc, Rb);
+
+            if(context < 0){
+                context = -context;
+                sign = 1;
+            }else{
+                sign = 0;
+            }
+
+            if(sign){
+                pred = clip(pred - state->C[context], 0, state->maxval);
+                err = -ls_get_code_regular(&s->gb, state, context);
+            } else {
+                pred = clip(pred + state->C[context], 0, state->maxval);
+                err = ls_get_code_regular(&s->gb, state, context);
+            }
+
+            /* we have to do something more for near-lossless coding */
+            pred += err;
+            if(state->near) {
+                if(pred < -state->near)
+                    pred += state->range * state->twonear;
+                else if(pred > state->maxval + state->near)
+                    pred -= state->range * state->twonear;
+                pred = clip(pred, 0, state->maxval);
+            }
+
+            dst[x] = pred;
+            x += stride;
+        }
+    }
+}
+
 static int ls_decode_picture(MJpegDecodeContext *s, int near, int point_transform, int ilv){
     int i, t = 0;
     uint8_t *zero, *last, *cur;
     JLSState *state;
-    int off, stride, width;
+    int off = 0, stride = 1, width, shift;
 
     zero = av_mallocz(s->picture.linesize[0]);
     last = zero;
@@ -423,6 +538,11 @@ static int ls_decode_picture(MJpegDecodeContext *s, int near, int point_transfor
     reset_ls_coding_parameters(state, 0);
     ls_init_state(state);
 
+    if(s->bits <= 8)
+        shift = point_transform + (8 - s->bits);
+    else
+        shift = point_transform + (16 - s->bits);
+
 //    av_log(s->avctx, AV_LOG_DEBUG, "JPEG-LS params: %ix%i NEAR=%i MV=%i T(%i,%i,%i) RESET=%i, LIMIT=%i, qbpp=%i, RANGE=%i\n",s->width,s->height,state->near,state->maxval,state->T1,state->T2,state->T3,state->reset,state->limit,state->qbpp, state->range);
 //    av_log(s->avctx, AV_LOG_DEBUG, "JPEG params: ILV=%i Pt=%i BPP=%i, scan = %i\n", ilv, point_transform, s->bits, s->cur_scan);
     if(ilv == 0) { /* separate planes */
@@ -431,8 +551,13 @@ static int ls_decode_picture(MJpegDecodeContext *s, int near, int point_transfor
         width = s->width * stride;
         cur += off;
         for(i = 0; i < s->height; i++) {
-            ls_decode_line(state, s, last, cur, t, width, stride, off);
-            t = last[0];
+            if(s->bits <= 8){
+                ls_decode_line(state, s, last, cur, t, width, stride, off);
+                t = last[0];
+            }else{
+                ls_decode_line_16bpp(state, s, last, cur, t, width, stride, off);
+                t = *((uint16_t*)last);
+            }
             last = cur;
             cur += s->picture.linesize[0];
 
@@ -466,6 +591,31 @@ static int ls_decode_picture(MJpegDecodeContext *s, int near, int point_transfor
         return -1;
     }
 
+    if(shift){ /* we need to do point transform or normalize samples */
+        int x, w;
+
+        w = s->width * s->nb_components;
+
+        if(s->bits <= 8){
+            uint8_t *src = s->picture.data[0];
+
+            for(i = 0; i < s->height; i++){
+                for(x = off; x < w; x+= stride){
+                    src[x] <<= shift;
+                }
+                src += s->picture.linesize[0];
+            }
+        }else{
+            uint16_t *src = s->picture.data[0];
+
+            for(i = 0; i < s->height; i++){
+                for(x = 0; x < w; x++){
+                    src[x] <<= shift;
+                }
+                src += s->picture.linesize[0]/2;
+            }
+        }
+    }
     av_free(state);
     av_free(zero);
 
@@ -676,11 +826,110 @@ static inline void ls_encode_line(JLSState *state, PutBitContext *pb, uint8_t *l
     }
 }
 
+/**
+ * Encode one line of image with 16 bpp sample size
+ */
+static inline void ls_encode_line_16bpp(JLSState *state, PutBitContext *pb, uint16_t *last, uint16_t *cur, int last2, int w, int stride, int comp){
+    int x = 0;
+    int Ra, Rb, Rc, Rd;
+    int D0, D1, D2;
+
+    while(x < w) {
+        int err, pred, sign;
+
+        /* compute gradients */
+        Ra = x ? cur[x - stride] : last[x];
+        Rb = last[x];
+        Rc = x ? last[x - stride] : last2;
+        Rd = (x >= w - stride) ? last[x] : last[x + stride];
+        D0 = Rd - Rb;
+        D1 = Rb - Rc;
+        D2 = Rc - Ra;
+
+        /* run mode */
+        if((FFABS(D0) <= state->near) && (FFABS(D1) <= state->near) && (FFABS(D2) <= state->near)) {
+            int RUNval, RItype, run;
+
+            run = 0;
+            RUNval = Ra;
+            while(x < w && (FFABS(cur[x] - RUNval) <= state->near)){
+                run++;
+                cur[x] = Ra;
+                x += stride;
+            }
+            ls_encode_run(state, pb, run, comp, x < w);
+            if(x >= w)
+                return;
+            Rb = last[x];
+            RItype = (FFABS(Ra - Rb) <= state->near);
+            pred = RItype ? Ra : Rb;
+            err = cur[x] - pred;
+
+            if(!RItype && Ra > Rb)
+                err = -err;
+
+            if(state->near){
+                if(err > 0)
+                    err = (state->near + err) / state->twonear;
+                else
+                    err = -(state->near - err) / state->twonear;
+
+                if(RItype || (Rb >= Ra))
+                    Ra = clip(pred + err * state->twonear, 0, state->maxval);
+                else
+                    Ra = clip(pred - err * state->twonear, 0, state->maxval);
+                cur[x] = Ra;
+            }
+            if(err < 0)
+                err += state->range;
+            if(err >= ((state->range + 1) >> 1))
+                err -= state->range;
+
+            ls_encode_runterm(state, pb, RItype, err, log2_run[state->run_index[comp]]);
+
+            if(state->run_index[comp] > 0)
+                state->run_index[comp]--;
+            x += stride;
+        } else { /* regular mode */
+            int context;
+
+            context = quantize(state, D0) * 81 + quantize(state, D1) * 9 + quantize(state, D2);
+            pred = mid_pred(Ra, Ra + Rb - Rc, Rb);
+
+            if(context < 0){
+                context = -context;
+                sign = 1;
+                pred = clip(pred - state->C[context], 0, state->maxval);
+                err = pred - cur[x];
+            }else{
+                sign = 0;
+                pred = clip(pred + state->C[context], 0, state->maxval);
+                err = cur[x] - pred;
+            }
+
+            if(state->near){
+                if(err > 0)
+                    err = (state->near + err) / state->twonear;
+                else
+                    err = -(state->near - err) / state->twonear;
+                if(!sign)
+                    Ra = clip(pred + err * state->twonear, 0, state->maxval);
+                else
+                    Ra = clip(pred - err * state->twonear, 0, state->maxval);
+                cur[x] = Ra;
+            }
+
+            ls_encode_regular(state, pb, context, err);
+            x += stride;
+        }
+    }
+}
+
 static void ls_store_lse(JLSState *state, PutBitContext *pb){
     /* Test if we have default params and don't need to store LSE */
     JLSState state2;
     memset(&state2, 0, sizeof(JLSState));
-    state2.bpp = 8;
+    state2.bpp = state->bpp;
     state2.near = state->near;
     reset_ls_coding_parameters(&state2, 1);
     if(state->T1 == state2.T1 && state->T2 == state2.T2 && state->T3 == state2.T3 && state->reset == state2.reset)
@@ -717,13 +966,16 @@ static int encode_picture_ls(AVCodecContext *avctx, unsigned char *buf, int buf_
     p->pict_type= FF_I_TYPE;
     p->key_frame= 1;
 
-    comps = (avctx->pix_fmt == PIX_FMT_GRAY8) ? 1 : 3;
+    if(avctx->pix_fmt == PIX_FMT_GRAY8 || avctx->pix_fmt == PIX_FMT_GRAY16)
+        comps = 1;
+    else
+        comps = 3;
 
     /* write our own JPEG header, can't use mjpeg_picture_header */
     put_marker(&pb, SOI);
     put_marker(&pb, SOF48);
     put_bits(&pb, 16, 8 + comps * 3); // header size depends on components
-    put_bits(&pb,  8, 8);             // bpp
+    put_bits(&pb,  8, (avctx->pix_fmt == PIX_FMT_GRAY16) ? 16 : 8); // bpp
     put_bits(&pb, 16, avctx->height);
     put_bits(&pb, 16, avctx->width);
     put_bits(&pb,  8, comps);         // components
@@ -747,7 +999,7 @@ static int encode_picture_ls(AVCodecContext *avctx, unsigned char *buf, int buf_
     state = av_mallocz(sizeof(JLSState));
     /* initialize JPEG-LS state from JPEG parameters */
     state->near = near;
-    state->bpp = 8;
+    state->bpp = (avctx->pix_fmt == PIX_FMT_GRAY16) ? 16 : 8;
     reset_ls_coding_parameters(state, 0);
     ls_init_state(state);
 
@@ -762,6 +1014,15 @@ static int encode_picture_ls(AVCodecContext *avctx, unsigned char *buf, int buf_
         for(i = 0; i < avctx->height; i++) {
             ls_encode_line(state, &pb2, last, cur, t, avctx->width, 1, 0);
             t = last[0];
+            last = cur;
+            cur += p->linesize[0];
+        }
+    }else if(avctx->pix_fmt == PIX_FMT_GRAY16){
+        int t = 0;
+
+        for(i = 0; i < avctx->height; i++) {
+            ls_encode_line_16bpp(state, &pb2, last, cur, t, avctx->width, 1, 0);
+            t = *((uint16_t*)last);
             last = cur;
             cur += p->linesize[0];
         }
@@ -827,7 +1088,7 @@ static int encode_init_ls(AVCodecContext *ctx) {
     c->avctx = ctx;
     ctx->coded_frame = &c->picture;
 
-    if(ctx->pix_fmt != PIX_FMT_GRAY8 && ctx->pix_fmt != PIX_FMT_RGB24 && ctx->pix_fmt != PIX_FMT_BGR24){
+    if(ctx->pix_fmt != PIX_FMT_GRAY8 && ctx->pix_fmt != PIX_FMT_GRAY16 && ctx->pix_fmt != PIX_FMT_RGB24 && ctx->pix_fmt != PIX_FMT_BGR24){
         av_log(ctx, AV_LOG_ERROR, "Only grayscale and RGB24/BGR24 images are supported\n");
         return -1;
     }
@@ -842,6 +1103,6 @@ AVCodec jpegls_encoder = { //FIXME avoid MPV_* lossless jpeg shouldnt need them
     encode_init_ls,
     encode_picture_ls,
     NULL,
-    .pix_fmts= (enum PixelFormat[]){PIX_FMT_BGR24, PIX_FMT_RGB24, PIX_FMT_GRAY8, -1},
+    .pix_fmts= (enum PixelFormat[]){PIX_FMT_BGR24, PIX_FMT_RGB24, PIX_FMT_GRAY8, PIX_FMT_GRAY16, -1},
 };
 #endif

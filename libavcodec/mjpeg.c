@@ -1125,10 +1125,6 @@ static int mjpeg_decode_sof(MJpegDecodeContext *s)
         av_log(s->avctx, AV_LOG_ERROR, "only 8 bits/component accepted\n");
         return -1;
     }
-    if (s->bits > 8 && s->ls){
-        av_log(s->avctx, AV_LOG_ERROR, "only <= 8 bits/component accepted for JPEG-LS\n");
-        return -1;
-    }
 
     height = get_bits(&s->gb, 16);
     width = get_bits(&s->gb, 16);
@@ -1141,6 +1137,10 @@ static int mjpeg_decode_sof(MJpegDecodeContext *s)
     if (nb_components <= 0 ||
         nb_components > MAX_COMPONENTS)
         return -1;
+    if (s->ls && !(s->bits <= 8 || nb_components == 1)){
+        av_log(s->avctx, AV_LOG_ERROR, "only <= 8 bits/component or 16-bit gray accepted for JPEG-LS\n");
+        return -1;
+    }
     s->nb_components = nb_components;
     s->h_max = 1;
     s->v_max = 1;
@@ -1223,8 +1223,10 @@ static int mjpeg_decode_sof(MJpegDecodeContext *s)
     if(s->ls){
         if(s->nb_components > 1)
             s->avctx->pix_fmt = PIX_FMT_RGB24;
-        else
+        else if(s->bits <= 8)
             s->avctx->pix_fmt = PIX_FMT_GRAY8;
+        else
+            s->avctx->pix_fmt = PIX_FMT_GRAY16;
     }
 
     if(s->picture.data[0])
