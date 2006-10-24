@@ -286,10 +286,12 @@ static inline int ls_get_code_runterm(GetBitContext *gb, JLSState *state, int RI
     return ret;
 }
 
+#define R(a, i   ) (bits == 8 ?  ((uint8_t*)(a))[i]    :  ((uint16_t*)(a))[i]  )
+#define W(a, i, v) (bits == 8 ? (((uint8_t*)(a))[i]=v) : (((uint16_t*)(a))[i]=v))
 /**
  * Decode one line of image
  */
-static inline void ls_decode_line(JLSState *state, MJpegDecodeContext *s, uint8_t *last, uint8_t *dst, int last2, int w, int stride, int comp){
+static inline void ls_decode_line(JLSState *state, MJpegDecodeContext *s, void *last, void *dst, int last2, int w, int stride, int comp, int bits){
     int i, x = 0;
     int Ra, Rb, Rc, Rd;
     int D0, D1, D2;
@@ -298,10 +300,10 @@ static inline void ls_decode_line(JLSState *state, MJpegDecodeContext *s, uint8_
         int err, pred;
 
         /* compute gradients */
-        Ra = x ? dst[x - stride] : last[x];
-        Rb = last[x];
-        Rc = x ? last[x - stride] : last2;
-        Rd = (x >= w - stride) ? last[x] : last[x + stride];
+        Ra = x ? R(dst, x - stride) : R(last, x);
+        Rb = R(last, x);
+        Rc = x ? R(last, x - stride) : last2;
+        Rd = (x >= w - stride) ? R(last, x) : R(last, x + stride);
         D0 = Rd - Rb;
         D1 = Rb - Rc;
         D2 = Rc - Ra;
@@ -318,7 +320,7 @@ static inline void ls_decode_line(JLSState *state, MJpegDecodeContext *s, uint8_
                     r = (w - x) / stride;
                 }
                 for(i = 0; i < r; i++) {
-                    dst[x] = Ra;
+                    W(dst, x, Ra);
                     x += stride;
                 }
                 /* if EOL reached, we stop decoding */
@@ -334,12 +336,12 @@ static inline void ls_decode_line(JLSState *state, MJpegDecodeContext *s, uint8_
             if(r)
                 r = get_bits_long(&s->gb, r);
             for(i = 0; i < r; i++) {
-                dst[x] = Ra;
+                W(dst, x, Ra);
                 x += stride;
             }
 
             /* decode run termination value */
-            Rb = last[x];
+            Rb = R(last, x);
             RItype = (FFABS(Ra - Rb) <= state->near) ? 1 : 0;
             err = ls_get_code_runterm(&s->gb, state, RItype, log2_run[state->run_index[comp]]);
             if(state->run_index[comp])
@@ -362,7 +364,7 @@ static inline void ls_decode_line(JLSState *state, MJpegDecodeContext *s, uint8_
                 pred = clip(pred, 0, state->maxval);
             }
 
-            dst[x] = pred;
+            W(dst, x, pred);
             x += stride;
         } else { /* regular mode */
             int context, sign;
@@ -395,122 +397,7 @@ static inline void ls_decode_line(JLSState *state, MJpegDecodeContext *s, uint8_
                 pred = clip(pred, 0, state->maxval);
             }
 
-            dst[x] = pred;
-            x += stride;
-        }
-    }
-}
-
-/**
- * Decode one line of image - 16bpp version
- */
-static inline void ls_decode_line_16bpp(JLSState *state, MJpegDecodeContext *s, uint16_t *last, uint16_t *dst, int last2, int w, int stride, int comp){
-    int i, x = 0;
-    int Ra, Rb, Rc, Rd;
-    int D0, D1, D2;
-
-    while(x < w) {
-        int err, pred;
-
-        /* compute gradients */
-        Ra = x ? dst[x - stride] : last[x];
-        Rb = last[x];
-        Rc = x ? last[x - stride] : last2;
-        Rd = (x >= w - stride) ? last[x] : last[x + stride];
-        D0 = Rd - Rb;
-        D1 = Rb - Rc;
-        D2 = Rc - Ra;
-        /* run mode */
-        if((FFABS(D0) <= state->near) && (FFABS(D1) <= state->near) && (FFABS(D2) <= state->near)) {
-            int r;
-            int RItype;
-
-            /* decode full runs while available */
-            while(get_bits1(&s->gb)) {
-                int r;
-                r = 1 << log2_run[state->run_index[comp]];
-                if(x + r * stride > w) {
-                    r = (w - x) / stride;
-                }
-                for(i = 0; i < r; i++) {
-                    dst[x] = Ra;
-                    x += stride;
-                }
-                /* if EOL reached, we stop decoding */
-                if(r != (1 << log2_run[state->run_index[comp]]))
-                    return;
-                if(state->run_index[comp] < 31)
-                    state->run_index[comp]++;
-                if(x + stride > w)
-                    return;
-            }
-            /* decode aborted run */
-            r = log2_run[state->run_index[comp]];
-            if(r)
-                r = get_bits_long(&s->gb, r);
-            for(i = 0; i < r; i++) {
-                dst[x] = Ra;
-                x += stride;
-            }
-
-            /* decode run termination value */
-            Rb = last[x];
-            RItype = (FFABS(Ra - Rb) <= state->near) ? 1 : 0;
-            err = ls_get_code_runterm(&s->gb, state, RItype, log2_run[state->run_index[comp]]);
-            if(state->run_index[comp])
-                state->run_index[comp]--;
-
-            if(state->near && RItype){
-                pred = Ra + err;
-            } else {
-                if(Rb < Ra)
-                    pred = Rb - err;
-                else
-                    pred = Rb + err;
-            }
-
-            if(state->near){
-                if(pred < -state->near)
-                    pred += state->range * state->twonear;
-                else if(pred > state->maxval + state->near)
-                    pred -= state->range * state->twonear;
-                pred = clip(pred, 0, state->maxval);
-            }
-
-            dst[x] = pred;
-            x += stride;
-        } else { /* regular mode */
-            int context, sign;
-
-            context = quantize(state, D0) * 81 + quantize(state, D1) * 9 + quantize(state, D2);
-            pred = mid_pred(Ra, Ra + Rb - Rc, Rb);
-
-            if(context < 0){
-                context = -context;
-                sign = 1;
-            }else{
-                sign = 0;
-            }
-
-            if(sign){
-                pred = clip(pred - state->C[context], 0, state->maxval);
-                err = -ls_get_code_regular(&s->gb, state, context);
-            } else {
-                pred = clip(pred + state->C[context], 0, state->maxval);
-                err = ls_get_code_regular(&s->gb, state, context);
-            }
-
-            /* we have to do something more for near-lossless coding */
-            pred += err;
-            if(state->near) {
-                if(pred < -state->near)
-                    pred += state->range * state->twonear;
-                else if(pred > state->maxval + state->near)
-                    pred -= state->range * state->twonear;
-                pred = clip(pred, 0, state->maxval);
-            }
-
-            dst[x] = pred;
+            W(dst, x, pred);
             x += stride;
         }
     }
@@ -552,10 +439,10 @@ static int ls_decode_picture(MJpegDecodeContext *s, int near, int point_transfor
         cur += off;
         for(i = 0; i < s->height; i++) {
             if(s->bits <= 8){
-                ls_decode_line(state, s, last, cur, t, width, stride, off);
+                ls_decode_line(state, s, last, cur, t, width, stride, off,  8);
                 t = last[0];
             }else{
-                ls_decode_line_16bpp(state, s, last, cur, t, width, stride, off);
+                ls_decode_line(state, s, last, cur, t, width, stride, off, 16);
                 t = *((uint16_t*)last);
             }
             last = cur;
@@ -573,7 +460,7 @@ static int ls_decode_picture(MJpegDecodeContext *s, int near, int point_transfor
         width = s->width * 3;
         for(i = 0; i < s->height; i++) {
             for(j = 0; j < 3; j++) {
-                ls_decode_line(state, s, last + j, cur + j, Rc[j], width, 3, j);
+                ls_decode_line(state, s, last + j, cur + j, Rc[j], width, 3, j, 8);
                 Rc[j] = last[j];
 
                 if (s->restart_interval && !--s->restart_count) {
@@ -730,7 +617,7 @@ static inline void ls_encode_run(JLSState *state, PutBitContext *pb, int run, in
 /**
  * Encode one line of image
  */
-static inline void ls_encode_line(JLSState *state, PutBitContext *pb, uint8_t *last, uint8_t *cur, int last2, int w, int stride, int comp){
+static inline void ls_encode_line(JLSState *state, PutBitContext *pb, void *last, void *cur, int last2, int w, int stride, int comp, int bits){
     int x = 0;
     int Ra, Rb, Rc, Rd;
     int D0, D1, D2;
@@ -739,10 +626,10 @@ static inline void ls_encode_line(JLSState *state, PutBitContext *pb, uint8_t *l
         int err, pred, sign;
 
         /* compute gradients */
-        Ra = x ? cur[x - stride] : last[x];
-        Rb = last[x];
-        Rc = x ? last[x - stride] : last2;
-        Rd = (x >= w - stride) ? last[x] : last[x + stride];
+        Ra = x ? R(cur, x - stride) : R(last, x);
+        Rb = R(last, x);
+        Rc = x ? R(last, x - stride) : last2;
+        Rd = (x >= w - stride) ? R(last, x) : R(last, x + stride);
         D0 = Rd - Rb;
         D1 = Rb - Rc;
         D2 = Rc - Ra;
@@ -753,18 +640,18 @@ static inline void ls_encode_line(JLSState *state, PutBitContext *pb, uint8_t *l
 
             run = 0;
             RUNval = Ra;
-            while(x < w && (FFABS(cur[x] - RUNval) <= state->near)){
+            while(x < w && (FFABS(R(cur, x) - RUNval) <= state->near)){
                 run++;
-                cur[x] = Ra;
+                W(cur, x, Ra);
                 x += stride;
             }
             ls_encode_run(state, pb, run, comp, x < w);
             if(x >= w)
                 return;
-            Rb = last[x];
+            Rb = R(last, x);
             RItype = (FFABS(Ra - Rb) <= state->near);
             pred = RItype ? Ra : Rb;
-            err = cur[x] - pred;
+            err = R(cur, x) - pred;
 
             if(!RItype && Ra > Rb)
                 err = -err;
@@ -779,7 +666,7 @@ static inline void ls_encode_line(JLSState *state, PutBitContext *pb, uint8_t *l
                     Ra = clip(pred + err * state->twonear, 0, state->maxval);
                 else
                     Ra = clip(pred - err * state->twonear, 0, state->maxval);
-                cur[x] = Ra;
+                W(cur, x, Ra);
             }
             if(err < 0)
                 err += state->range;
@@ -801,11 +688,11 @@ static inline void ls_encode_line(JLSState *state, PutBitContext *pb, uint8_t *l
                 context = -context;
                 sign = 1;
                 pred = clip(pred - state->C[context], 0, state->maxval);
-                err = pred - cur[x];
+                err = pred - R(cur, x);
             }else{
                 sign = 0;
                 pred = clip(pred + state->C[context], 0, state->maxval);
-                err = cur[x] - pred;
+                err = R(cur, x) - pred;
             }
 
             if(state->near){
@@ -817,106 +704,7 @@ static inline void ls_encode_line(JLSState *state, PutBitContext *pb, uint8_t *l
                     Ra = clip(pred + err * state->twonear, 0, state->maxval);
                 else
                     Ra = clip(pred - err * state->twonear, 0, state->maxval);
-                cur[x] = Ra;
-            }
-
-            ls_encode_regular(state, pb, context, err);
-            x += stride;
-        }
-    }
-}
-
-/**
- * Encode one line of image with 16 bpp sample size
- */
-static inline void ls_encode_line_16bpp(JLSState *state, PutBitContext *pb, uint16_t *last, uint16_t *cur, int last2, int w, int stride, int comp){
-    int x = 0;
-    int Ra, Rb, Rc, Rd;
-    int D0, D1, D2;
-
-    while(x < w) {
-        int err, pred, sign;
-
-        /* compute gradients */
-        Ra = x ? cur[x - stride] : last[x];
-        Rb = last[x];
-        Rc = x ? last[x - stride] : last2;
-        Rd = (x >= w - stride) ? last[x] : last[x + stride];
-        D0 = Rd - Rb;
-        D1 = Rb - Rc;
-        D2 = Rc - Ra;
-
-        /* run mode */
-        if((FFABS(D0) <= state->near) && (FFABS(D1) <= state->near) && (FFABS(D2) <= state->near)) {
-            int RUNval, RItype, run;
-
-            run = 0;
-            RUNval = Ra;
-            while(x < w && (FFABS(cur[x] - RUNval) <= state->near)){
-                run++;
-                cur[x] = Ra;
-                x += stride;
-            }
-            ls_encode_run(state, pb, run, comp, x < w);
-            if(x >= w)
-                return;
-            Rb = last[x];
-            RItype = (FFABS(Ra - Rb) <= state->near);
-            pred = RItype ? Ra : Rb;
-            err = cur[x] - pred;
-
-            if(!RItype && Ra > Rb)
-                err = -err;
-
-            if(state->near){
-                if(err > 0)
-                    err = (state->near + err) / state->twonear;
-                else
-                    err = -(state->near - err) / state->twonear;
-
-                if(RItype || (Rb >= Ra))
-                    Ra = clip(pred + err * state->twonear, 0, state->maxval);
-                else
-                    Ra = clip(pred - err * state->twonear, 0, state->maxval);
-                cur[x] = Ra;
-            }
-            if(err < 0)
-                err += state->range;
-            if(err >= ((state->range + 1) >> 1))
-                err -= state->range;
-
-            ls_encode_runterm(state, pb, RItype, err, log2_run[state->run_index[comp]]);
-
-            if(state->run_index[comp] > 0)
-                state->run_index[comp]--;
-            x += stride;
-        } else { /* regular mode */
-            int context;
-
-            context = quantize(state, D0) * 81 + quantize(state, D1) * 9 + quantize(state, D2);
-            pred = mid_pred(Ra, Ra + Rb - Rc, Rb);
-
-            if(context < 0){
-                context = -context;
-                sign = 1;
-                pred = clip(pred - state->C[context], 0, state->maxval);
-                err = pred - cur[x];
-            }else{
-                sign = 0;
-                pred = clip(pred + state->C[context], 0, state->maxval);
-                err = cur[x] - pred;
-            }
-
-            if(state->near){
-                if(err > 0)
-                    err = (state->near + err) / state->twonear;
-                else
-                    err = -(state->near - err) / state->twonear;
-                if(!sign)
-                    Ra = clip(pred + err * state->twonear, 0, state->maxval);
-                else
-                    Ra = clip(pred - err * state->twonear, 0, state->maxval);
-                cur[x] = Ra;
+                W(cur, x, Ra);
             }
 
             ls_encode_regular(state, pb, context, err);
@@ -1012,7 +800,7 @@ static int encode_picture_ls(AVCodecContext *avctx, unsigned char *buf, int buf_
         int t = 0;
 
         for(i = 0; i < avctx->height; i++) {
-            ls_encode_line(state, &pb2, last, cur, t, avctx->width, 1, 0);
+            ls_encode_line(state, &pb2, last, cur, t, avctx->width, 1, 0,  8);
             t = last[0];
             last = cur;
             cur += p->linesize[0];
@@ -1021,7 +809,7 @@ static int encode_picture_ls(AVCodecContext *avctx, unsigned char *buf, int buf_
         int t = 0;
 
         for(i = 0; i < avctx->height; i++) {
-            ls_encode_line_16bpp(state, &pb2, last, cur, t, avctx->width, 1, 0);
+            ls_encode_line(state, &pb2, last, cur, t, avctx->width, 1, 0, 16);
             t = *((uint16_t*)last);
             last = cur;
             cur += p->linesize[0];
@@ -1033,7 +821,7 @@ static int encode_picture_ls(AVCodecContext *avctx, unsigned char *buf, int buf_
         width = avctx->width * 3;
         for(i = 0; i < avctx->height; i++) {
             for(j = 0; j < 3; j++) {
-                ls_encode_line(state, &pb2, last + j, cur + j, Rc[j], width, 3, j);
+                ls_encode_line(state, &pb2, last + j, cur + j, Rc[j], width, 3, j, 8);
                 Rc[j] = last[j];
             }
             last = cur;
@@ -1046,7 +834,7 @@ static int encode_picture_ls(AVCodecContext *avctx, unsigned char *buf, int buf_
         width = avctx->width * 3;
         for(i = 0; i < avctx->height; i++) {
             for(j = 2; j >= 0; j--) {
-                ls_encode_line(state, &pb2, last + j, cur + j, Rc[j], width, 3, j);
+                ls_encode_line(state, &pb2, last + j, cur + j, Rc[j], width, 3, j, 8);
                 Rc[j] = last[j];
             }
             last = cur;
