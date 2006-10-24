@@ -187,6 +187,38 @@ static int decode_lse(MJpegDecodeContext *s)
     return 0;
 }
 
+static void inline downscale_state(JLSState *state, int Q){
+    if(state->N[Q] == state->reset){
+        state->A[Q] >>=1;
+        state->B[Q] >>=1;
+        state->N[Q] >>=1;
+    }
+    state->N[Q]++;
+}
+
+static inline int update_state_regular(JLSState *state, int Q, int err){
+    state->A[Q] += FFABS(err);
+    err *= state->twonear;
+    state->B[Q] += err;
+
+    downscale_state(state, Q);
+
+    if(state->B[Q] <= -state->N[Q]) {
+        state->B[Q] += state->N[Q];
+        if(state->C[Q] > -128)
+            state->C[Q]--;
+        if(state->B[Q] <= -state->N[Q])
+            state->B[Q] = -state->N[Q] + 1;
+    }else if(state->B[Q] > 0){
+        state->B[Q] -= state->N[Q];
+        if(state->C[Q] < 127)
+            state->C[Q]++;
+        if(state->B[Q] > 0)
+            state->B[Q] = 0;
+    }
+
+    return err;
+}
 
 /**
  * Get context-dependent Golomb code, decode it and update context
@@ -211,30 +243,7 @@ static inline int ls_get_code_regular(GetBitContext *gb, JLSState *state, int Q)
     if(!state->near && !k && (2 * state->B[Q] <= -state->N[Q]))
         ret = -(ret + 1);
 
-    state->A[Q] += FFABS(ret);
-    ret *= state->twonear;
-    state->B[Q] += ret;
-
-    if(state->N[Q] == state->reset) {
-        state->A[Q] >>= 1;
-        state->B[Q] >>= 1;
-        state->N[Q] >>= 1;
-    }
-    state->N[Q]++;
-
-    if(state->B[Q] <= -state->N[Q]) {
-        state->B[Q] += state->N[Q];
-        if(state->C[Q] > -128)
-            state->C[Q]--;
-        if(state->B[Q] <= -state->N[Q])
-            state->B[Q] = -state->N[Q] + 1;
-    }else if(state->B[Q] > 0){
-        state->B[Q] -= state->N[Q];
-        if(state->C[Q] < 127)
-            state->C[Q]++;
-        if(state->B[Q] > 0)
-            state->B[Q] = 0;
-    }
+    ret= update_state_regular(state, Q, ret);
 
     return ret;
 }
@@ -273,12 +282,7 @@ static inline int ls_get_code_runterm(GetBitContext *gb, JLSState *state, int RI
     /* update state */
     state->A[Q] += FFABS(ret) - RItype;
     ret *= state->twonear;
-    if(state->N[Q] == state->reset){
-        state->A[Q] >>=1;
-        state->B[Q] >>=1;
-        state->N[Q] >>=1;
-    }
-    state->N[Q]++;
+    downscale_state(state, Q);
 
     return ret;
 }
@@ -520,29 +524,7 @@ static inline void ls_encode_regular(JLSState *state, PutBitContext *pb, int Q, 
 
     set_ur_golomb_jpegls(pb, val, k, state->limit, state->qbpp);
 
-    state->A[Q] += FFABS(err);
-    state->B[Q] += err * state->twonear;
-
-    if(state->N[Q] == state->reset) {
-        state->A[Q] >>= 1;
-        state->B[Q] >>= 1;
-        state->N[Q] >>= 1;
-    }
-    state->N[Q]++;
-
-    if(state->B[Q] <= -state->N[Q]) {
-        state->B[Q] += state->N[Q];
-        if(state->C[Q] > -128)
-            state->C[Q]--;
-        if(state->B[Q] <= -state->N[Q])
-            state->B[Q] = -state->N[Q] + 1;
-    }else if(state->B[Q] > 0){
-        state->B[Q] -= state->N[Q];
-        if(state->C[Q] < 127)
-            state->C[Q]++;
-        if(state->B[Q] > 0)
-            state->B[Q] = 0;
-    }
+    update_state_regular(state, Q, err);
 }
 
 /**
@@ -572,12 +554,7 @@ static inline void ls_encode_runterm(JLSState *state, PutBitContext *pb, int RIt
         state->B[Q]++;
     state->A[Q] += (val + 1 - RItype) >> 1;
 
-    if(state->N[Q] == state->reset) {
-        state->A[Q] >>= 1;
-        state->B[Q] >>= 1;
-        state->N[Q] >>= 1;
-    }
-    state->N[Q]++;
+    downscale_state(state, Q);
 }
 
 /**
