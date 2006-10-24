@@ -204,17 +204,13 @@ static inline int update_state_regular(JLSState *state, int Q, int err){
     downscale_state(state, Q);
 
     if(state->B[Q] <= -state->N[Q]) {
-        state->B[Q] += state->N[Q];
+        state->B[Q]= FFMAX(state->B[Q] + state->N[Q], 1-state->N[Q]);
         if(state->C[Q] > -128)
             state->C[Q]--;
-        if(state->B[Q] <= -state->N[Q])
-            state->B[Q] = -state->N[Q] + 1;
     }else if(state->B[Q] > 0){
-        state->B[Q] -= state->N[Q];
+        state->B[Q]= FFMIN(state->B[Q] - state->N[Q], 0);
         if(state->C[Q] < 127)
             state->C[Q]++;
-        if(state->B[Q] > 0)
-            state->B[Q] = 0;
     }
 
     return err;
