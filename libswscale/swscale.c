@@ -111,11 +111,13 @@ untested special converters
 			|| (x)==PIX_FMT_RGB32|| (x)==PIX_FMT_BGR24|| (x)==PIX_FMT_BGR565|| (x)==PIX_FMT_BGR555\
 			|| (x)==PIX_FMT_BGR32|| (x)==PIX_FMT_RGB24\
 			|| (x)==PIX_FMT_GRAY8 || (x)==PIX_FMT_YUV410P\
+			|| (x)==PIX_FMT_GRAY16BE || (x)==PIX_FMT_GRAY16LE\
 			|| (x)==PIX_FMT_YUV444P || (x)==PIX_FMT_YUV422P || (x)==PIX_FMT_YUV411P)
 #define isSupportedOut(x) ((x)==PIX_FMT_YUV420P || (x)==PIX_FMT_YUYV422 || (x)==PIX_FMT_UYVY422\
 			|| (x)==PIX_FMT_YUV444P || (x)==PIX_FMT_YUV422P || (x)==PIX_FMT_YUV411P\
 			|| isRGB(x) || isBGR(x)\
 			|| (x)==PIX_FMT_NV12 || (x)==PIX_FMT_NV21\
+			|| (x)==PIX_FMT_GRAY16BE || (x)==PIX_FMT_GRAY16LE\
 			|| (x)==PIX_FMT_GRAY8 || (x)==PIX_FMT_YUV410P)
 #define isPacked(x)    ((x)==PIX_FMT_YUYV422 || (x)==PIX_FMT_UYVY422 ||isRGB(x) || isBGR(x))
 
@@ -231,6 +233,10 @@ char *sws_format_name(enum PixelFormat format)
             return "rgb565";
         case PIX_FMT_RGB555:
             return "rgb555";
+        case PIX_FMT_GRAY16BE:
+            return "gray16be";
+        case PIX_FMT_GRAY16LE:
+            return "gray16le";
         case PIX_FMT_GRAY8:
             return "gray8";
         case PIX_FMT_MONOWHITE:
@@ -1726,6 +1732,72 @@ static int simpleCopy(SwsContext *c, uint8_t* src[], int srcStride[], int srcSli
 	return srcSliceH;
 }
 
+static int gray16togray(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
+             int srcSliceH, uint8_t* dst[], int dstStride[]){
+
+	int length= c->srcW;
+	int y=      srcSliceY;
+	int height= srcSliceH;
+	int i, j;
+	uint8_t *srcPtr= src[0];
+	uint8_t *dstPtr= dst[0] + dstStride[0]*y;
+
+	if(!isGray(c->dstFormat)){
+		int height= -((-srcSliceH)>>c->chrDstVSubSample);
+		memset(dst[1], 128, dstStride[1]*height);
+		memset(dst[2], 128, dstStride[2]*height);
+	}
+	if(c->srcFormat == PIX_FMT_GRAY16LE) srcPtr++;
+	for(i=0; i<height; i++)
+	{
+		for(j=0; j<length; j++) dstPtr[j] = srcPtr[j<<1];
+		srcPtr+= srcStride[0];
+		dstPtr+= dstStride[0];
+	}
+	return srcSliceH;
+}
+
+static int graytogray16(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
+             int srcSliceH, uint8_t* dst[], int dstStride[]){
+
+	int length= c->srcW;
+	int y=      srcSliceY;
+	int height= srcSliceH;
+	int i, j;
+	uint8_t *srcPtr= src[0];
+	uint8_t *dstPtr= dst[0] + dstStride[0]*y;
+	for(i=0; i<height; i++)
+	{
+		for(j=0; j<length; j++)
+		{
+			dstPtr[j<<1] = srcPtr[j];
+			dstPtr[(j<<1)+1] = srcPtr[j];
+		}
+		srcPtr+= srcStride[0];
+		dstPtr+= dstStride[0];
+	}
+	return srcSliceH;
+}
+
+static int gray16swap(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
+             int srcSliceH, uint8_t* dst[], int dstStride[]){
+
+	int length= c->srcW;
+	int y=      srcSliceY;
+	int height= srcSliceH;
+	int i, j;
+	uint16_t *srcPtr= src[0];
+	uint16_t *dstPtr= dst[0] + dstStride[0]*y/2;
+	for(i=0; i<height; i++)
+	{
+		for(j=0; j<length; j++) dstPtr[j] = bswap_16(srcPtr[j]);
+		srcPtr+= srcStride[0]/2;
+		dstPtr+= dstStride[0]/2;
+	}
+	return srcSliceH;
+}
+
+
 static void getSubSampleFactors(int *h, int *v, int format){
 	switch(format){
 	case PIX_FMT_UYVY422:
@@ -1734,6 +1806,8 @@ static void getSubSampleFactors(int *h, int *v, int format){
 		*v=0;
 		break;
 	case PIX_FMT_YUV420P:
+	case PIX_FMT_GRAY16BE:
+	case PIX_FMT_GRAY16LE:
 	case PIX_FMT_GRAY8: //FIXME remove after different subsamplings are fully implemented
 	case PIX_FMT_NV12:
 	case PIX_FMT_NV21:
@@ -2044,6 +2118,20 @@ SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, int dstH
 		{
 			c->swScale= simpleCopy;
 		}
+
+		/* gray16{le,be} conversions */
+		if(isGray16(srcFormat) && (isPlanarYUV(dstFormat) || (dstFormat == PIX_FMT_GRAY8)))
+		{
+			c->swScale= gray16togray;
+		}
+		if((isPlanarYUV(srcFormat) || (srcFormat == PIX_FMT_GRAY8)) && isGray16(dstFormat))
+		{
+			c->swScale= graytogray16;
+		}
+		if(srcFormat != dstFormat && isGray16(srcFormat) && isGray16(dstFormat))
+		{
+			c->swScale= gray16swap;
+		}		
 
 		if(c->swScale){
 			if(flags&SWS_PRINT_INFO)

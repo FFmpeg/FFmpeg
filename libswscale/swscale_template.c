@@ -2437,12 +2437,12 @@ static inline void RENAME(hyscale)(uint16_t *dst, long dstWidth, uint8_t *src, i
 				   int srcFormat, uint8_t *formatConvBuffer, int16_t *mmx2Filter,
 				   int32_t *mmx2FilterPos)
 {
-    if(srcFormat==PIX_FMT_YUYV422)
+    if(srcFormat==PIX_FMT_YUYV422 || srcFormat==PIX_FMT_GRAY16BE)
     {
 	RENAME(yuy2ToY)(formatConvBuffer, src, srcW);
 	src= formatConvBuffer;
     }
-    else if(srcFormat==PIX_FMT_UYVY422)
+    else if(srcFormat==PIX_FMT_UYVY422 || srcFormat==PIX_FMT_GRAY16LE)
     {
 	RENAME(uyvyToY)(formatConvBuffer, src, srcW);
 	src= formatConvBuffer;

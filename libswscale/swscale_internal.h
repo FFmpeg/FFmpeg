@@ -181,7 +181,8 @@ char *sws_format_name(int format);
 			|| (x)==PIX_FMT_YUV444P || (x)==PIX_FMT_NV12	\
 			|| (x)==PIX_FMT_NV21)
 #define isYUV(x)       ((x)==PIX_FMT_UYVY422 || (x)==PIX_FMT_YUYV422 || isPlanarYUV(x))
-#define isGray(x)      ((x)==PIX_FMT_GRAY8)
+#define isGray(x)      ((x)==PIX_FMT_GRAY8 || (x)==PIX_FMT_GRAY16BE || (x)==PIX_FMT_GRAY16LE)
+#define isGray16(x)    ((x)==PIX_FMT_GRAY16BE || (x)==PIX_FMT_GRAY16LE)
 #define isRGB(x)       ((x)==PIX_FMT_BGR32 || (x)==PIX_FMT_RGB24	\
 			|| (x)==PIX_FMT_RGB565 || (x)==PIX_FMT_RGB555	\
 			|| (x)==PIX_FMT_RGB8 || (x)==PIX_FMT_RGB4	\
@@ -204,6 +205,8 @@ static inline int fmt_depth(int fmt)
             return 24;
         case PIX_FMT_BGR565:
         case PIX_FMT_RGB565:
+        case PIX_FMT_GRAY16BE:
+        case PIX_FMT_GRAY16LE:
             return 16;
         case PIX_FMT_BGR555:
         case PIX_FMT_RGB555:
