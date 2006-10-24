@@ -2390,10 +2390,12 @@ static void mpeg_decode_picture_coding_extension(MpegEncContext *s)
     s->chroma_420_type = get_bits1(&s->gb);
     s->progressive_frame = get_bits1(&s->gb);
 
-    if(s->picture_structure == PICT_FRAME)
+    if(s->picture_structure == PICT_FRAME){
         s->first_field=0;
-    else{
+        s->v_edge_pos= 16*s->mb_height;
+    }else{
         s->first_field ^= 1;
+        s->v_edge_pos=  8*s->mb_height;
         memset(s->mbskip_table, 0, s->mb_stride*s->mb_height);
     }
 
