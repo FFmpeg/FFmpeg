@@ -854,6 +854,7 @@ static int swf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 }
                 ast->codec->codec_type = CODEC_TYPE_AUDIO;
                 ast->codec->codec_id = CODEC_ID_MP3;
+                ast->need_parsing = 1;
             }
         } else {
             url_fskip(pb, len);
@@ -896,7 +897,8 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
             for( i=0; i<s->nb_streams; i++ ) {
                 st = s->streams[i];
                 if (st->id == 1) {
-                    av_get_packet(pb, pkt, len);
+                    url_fskip(pb, 4);
+                    av_get_packet(pb, pkt, len-4);
                     pkt->stream_index = st->index;
                     return pkt->size;
                 }
