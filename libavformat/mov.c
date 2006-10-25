@@ -305,14 +305,6 @@ typedef struct MOVParseTableEntry {
     mov_parse_function func;
 } MOVParseTableEntry;
 
-static int mov_read_leaf(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
-{
-    if (atom.size>1)
-        url_fskip(pb, atom.size);
-/*        url_seek(pb, atom_offset+atom.size, SEEK_SET); */
-    return 0;
-}
-
 static int mov_read_default(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
     int64_t total_size = 0;
@@ -1416,80 +1408,37 @@ static int mov_read_elst(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 static const MOVParseTableEntry mov_default_parse_table[] = {
 /* mp4 atoms */
 { MKTAG( 'c', 'o', '6', '4' ), mov_read_stco },
-{ MKTAG( 'c', 'p', 'r', 't' ), mov_read_default },
-{ MKTAG( 'c', 'r', 'h', 'd' ), mov_read_default },
 { MKTAG( 'c', 't', 't', 's' ), mov_read_ctts }, /* composition time to sample */
-{ MKTAG( 'd', 'i', 'n', 'f' ), mov_read_default }, /* data information */
-{ MKTAG( 'd', 'p', 'n', 'd' ), mov_read_leaf },
-{ MKTAG( 'd', 'r', 'e', 'f' ), mov_read_leaf },
 { MKTAG( 'e', 'd', 't', 's' ), mov_read_default },
 { MKTAG( 'e', 'l', 's', 't' ), mov_read_elst },
 { MKTAG( 'e', 'n', 'd', 'a' ), mov_read_enda },
-{ MKTAG( 'f', 'r', 'e', 'e' ), mov_read_leaf },
 { MKTAG( 'f', 't', 'y', 'p' ), mov_read_ftyp },
 { MKTAG( 'h', 'd', 'l', 'r' ), mov_read_hdlr },
-{ MKTAG( 'h', 'i', 'n', 't' ), mov_read_leaf },
-{ MKTAG( 'h', 'm', 'h', 'd' ), mov_read_leaf },
-{ MKTAG( 'i', 'o', 'd', 's' ), mov_read_leaf },
 { MKTAG( 'j', 'p', '2', 'h' ), mov_read_jp2h },
 { MKTAG( 'm', 'd', 'a', 't' ), mov_read_mdat },
 { MKTAG( 'm', 'd', 'h', 'd' ), mov_read_mdhd },
 { MKTAG( 'm', 'd', 'i', 'a' ), mov_read_default },
 { MKTAG( 'm', 'i', 'n', 'f' ), mov_read_default },
 { MKTAG( 'm', 'o', 'o', 'v' ), mov_read_moov },
-{ MKTAG( 'm', 'p', '4', 'a' ), mov_read_default },
-{ MKTAG( 'm', 'p', '4', 's' ), mov_read_default },
-{ MKTAG( 'm', 'p', '4', 'v' ), mov_read_default },
-{ MKTAG( 'm', 'p', 'o', 'd' ), mov_read_leaf },
 { MKTAG( 'm', 'v', 'h', 'd' ), mov_read_mvhd },
-{ MKTAG( 'n', 'm', 'h', 'd' ), mov_read_leaf },
-{ MKTAG( 'o', 'd', 'h', 'd' ), mov_read_default },
-{ MKTAG( 's', 'd', 'h', 'd' ), mov_read_default },
-{ MKTAG( 's', 'k', 'i', 'p' ), mov_read_leaf },
-{ MKTAG( 's', 'm', 'h', 'd' ), mov_read_leaf }, /* sound media info header */
 { MKTAG( 'S', 'M', 'I', ' ' ), mov_read_smi }, /* Sorenson extension ??? */
 { MKTAG( 'a', 'l', 'a', 'c' ), mov_read_alac }, /* alac specific atom */
 { MKTAG( 'a', 'v', 'c', 'C' ), mov_read_avcC },
 { MKTAG( 's', 't', 'b', 'l' ), mov_read_default },
 { MKTAG( 's', 't', 'c', 'o' ), mov_read_stco },
-{ MKTAG( 's', 't', 'd', 'p' ), mov_read_default },
 { MKTAG( 's', 't', 's', 'c' ), mov_read_stsc },
 { MKTAG( 's', 't', 's', 'd' ), mov_read_stsd }, /* sample description */
-{ MKTAG( 's', 't', 's', 'h' ), mov_read_default },
 { MKTAG( 's', 't', 's', 's' ), mov_read_stss }, /* sync sample */
 { MKTAG( 's', 't', 's', 'z' ), mov_read_stsz }, /* sample size */
 { MKTAG( 's', 't', 't', 's' ), mov_read_stts },
 { MKTAG( 't', 'k', 'h', 'd' ), mov_read_tkhd }, /* track header */
 { MKTAG( 't', 'r', 'a', 'k' ), mov_read_trak },
-{ MKTAG( 't', 'r', 'e', 'f' ), mov_read_default }, /* not really */
-{ MKTAG( 'u', 'd', 't', 'a' ), mov_read_leaf },
-{ MKTAG( 'u', 'r', 'l', ' ' ), mov_read_leaf },
-{ MKTAG( 'u', 'r', 'n', ' ' ), mov_read_leaf },
-{ MKTAG( 'u', 'u', 'i', 'd' ), mov_read_leaf },
-{ MKTAG( 'v', 'm', 'h', 'd' ), mov_read_leaf }, /* video media info header */
 { MKTAG( 'w', 'a', 'v', 'e' ), mov_read_wave },
-/* extra mp4 */
-{ MKTAG( 'M', 'D', 'E', 'S' ), mov_read_leaf },
-/* QT atoms */
-{ MKTAG( 'c', 'h', 'a', 'p' ), mov_read_leaf },
-{ MKTAG( 'c', 'l', 'i', 'p' ), mov_read_default },
-{ MKTAG( 'c', 'r', 'g', 'n' ), mov_read_leaf },
 { MKTAG( 'c', 't', 'a', 'b' ), mov_read_ctab },
 { MKTAG( 'e', 's', 'd', 's' ), mov_read_esds },
-{ MKTAG( 'k', 'm', 'a', 't' ), mov_read_leaf },
-{ MKTAG( 'm', 'a', 't', 't' ), mov_read_default },
-{ MKTAG( 'r', 'd', 'r', 'f' ), mov_read_leaf },
-{ MKTAG( 'r', 'm', 'd', 'a' ), mov_read_default },
-{ MKTAG( 'r', 'm', 'd', 'r' ), mov_read_leaf },
-{ MKTAG( 'r', 'm', 'r', 'a' ), mov_read_default },
-{ MKTAG( 's', 'c', 'p', 't' ), mov_read_leaf },
-{ MKTAG( 's', 's', 'r', 'c' ), mov_read_leaf },
-{ MKTAG( 's', 'y', 'n', 'c' ), mov_read_leaf },
-{ MKTAG( 't', 'c', 'm', 'd' ), mov_read_leaf },
 { MKTAG( 'w', 'i', 'd', 'e' ), mov_read_wide }, /* place holder */
-//{ MKTAG( 'r', 'm', 'q', 'u' ), mov_read_leaf },
 { MKTAG( 'c', 'm', 'o', 'v' ), mov_read_cmov },
-{ 0L, mov_read_leaf }
+{ 0L, NULL }
 };
 
 static void mov_free_stream_context(MOVStreamContext *sc)
