@@ -482,6 +482,18 @@ Disable audio recording.
 @item -acodec codec
 Force audio codec to @var{codec}. Use the @code{copy} special value to
 specify that the raw codec data must be copied as is.
+@item -newaudio
+It will add a new audio track to the output file. If you want to
+specify parameters, specify them before @code{-newaudio} (@code{-acodec}, @code{-ab}, etc..)
+
+Mapping will be done automatically, if output streams number is equal to
+input streams number, else it will pick first one found which match. You
+can override the mapping using @code{-map} as usual.
+
+Example:
+@example
+ffmpeg -i file.mpg -vcodec copy -acodec ac3 -ab 384 test.mpg -acodec mp2 -ab 192 -newaudio
+@end example
 @end table
 
 @section Audio/Video grab options
