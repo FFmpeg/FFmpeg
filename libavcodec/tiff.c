@@ -335,7 +335,7 @@ static int tiff_decode_tag(TiffContext *s, uint8_t *start, uint8_t *buf, uint8_t
             return -1;
         }
         if(value == 2){
-            src = pic->data[0] + pic->linesize[0];
+            src = pic->data[0];
             stride = pic->linesize[0];
             soff = s->bpp >> 3;
             ssize = s->width * soff;
