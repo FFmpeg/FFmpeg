@@ -416,6 +416,7 @@ void av_register_all(void)
 #ifdef CONFIG_REDIR_DEMUXER
     av_register_input_format(&redir_demuxer);
 #endif
+    av_register_rtp_dynamic_payload_handlers();
 #endif /* CONFIG_NETWORK */
 #ifdef CONFIG_SEGAFILM_DEMUXER
     av_register_input_format(&segafilm_demuxer);

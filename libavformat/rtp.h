@@ -89,13 +89,6 @@ typedef struct AVRtpPayloadType_s
     int audio_channels;
 } AVRtpPayloadType_t;
 
-typedef struct AVRtpDynamicPayloadType_s /* payload type >= 96 */
-{
-    const char enc_name[50]; /* XXX: still why 50 ? ;-) */
-    enum CodecType codec_type;
-    enum CodecID codec_id;
-} AVRtpDynamicPayloadType_t;
-
 #if 0
 typedef enum {
   RTCP_SR   = 200,
@@ -122,6 +115,4 @@ typedef enum {
 #endif
 
 extern AVRtpPayloadType_t AVRtpPayloadTypes[];
-extern AVRtpDynamicPayloadType_t AVRtpDynamicPayloadTypes[];
-
 #endif /* RTP_H */

@@ -33,6 +33,13 @@
 #endif
 #include <netdb.h>
 
+#include "rtp_internal.h"
+
+//#define RTP_H264
+#ifdef RTP_H264
+    #include "rtp_h264.h"
+#endif
+
 //#define DEBUG
 
 
@@ -179,42 +186,26 @@ AVRtpPayloadType_t AVRtpPayloadTypes[]=
   {-1, "",           CODEC_TYPE_UNKNOWN, CODEC_ID_NONE, -1, -1}
 };
 
-AVRtpDynamicPayloadType_t AVRtpDynamicPayloadTypes[]=
+/* statistics functions */
+RTPDynamicProtocolHandler *RTPFirstDynamicPayloadHandler= NULL;
+
+static RTPDynamicProtocolHandler mp4v_es_handler= {"MP4V-ES", CODEC_TYPE_VIDEO, CODEC_ID_MPEG4};
+static RTPDynamicProtocolHandler mpeg4_generic_handler= {"mpeg4-generic", CODEC_TYPE_AUDIO, CODEC_ID_MPEG4AAC};
+
+static void register_dynamic_payload_handler(RTPDynamicProtocolHandler *handler)
 {
-    {"MP4V-ES", CODEC_TYPE_VIDEO, CODEC_ID_MPEG4},
-    {"mpeg4-generic", CODEC_TYPE_AUDIO, CODEC_ID_MPEG4AAC},
-    {"", CODEC_TYPE_UNKNOWN, CODEC_ID_NONE}
-};
+    handler->next= RTPFirstDynamicPayloadHandler;
+    RTPFirstDynamicPayloadHandler= handler;
+}
 
-struct RTPDemuxContext {
-    AVFormatContext *ic;
-    AVStream *st;
-    int payload_type;
-    uint32_t ssrc;
-    uint16_t seq;
-    uint32_t timestamp;
-    uint32_t base_timestamp;
-    uint32_t cur_timestamp;
-    int max_payload_size;
-    MpegTSContext *ts; /* only used for MP2T payloads */
-    int read_buf_index;
-    int read_buf_size;
-
-    /* rtcp sender statistics receive */
-    int64_t last_rtcp_ntp_time;
-    int64_t first_rtcp_ntp_time;
-    uint32_t last_rtcp_timestamp;
-    /* rtcp sender statistics */
-    unsigned int packet_count;
-    unsigned int octet_count;
-    unsigned int last_octet_count;
-    int first_packet;
-    /* buffer for output */
-    uint8_t buf[RTP_MAX_PACKET_LENGTH];
-    uint8_t *buf_ptr;
-    /* special infos for au headers parsing */
-    rtp_payload_data_t *rtp_payload_data;
-};
+void av_register_rtp_dynamic_payload_handlers()
+{
+    register_dynamic_payload_handler(&mp4v_es_handler);
+    register_dynamic_payload_handler(&mpeg4_generic_handler);
+#ifdef RTP_H264
+    register_dynamic_payload_handler(&ff_h264_dynamic_handler);
+#endif
+}
 
 int rtp_get_codec_info(AVCodecContext *codec, int payload_type)
 {
@@ -271,6 +262,7 @@ static int rtcp_parse_packet(RTPDemuxContext *s, const unsigned char *buf, int l
  * open a new RTP parse context for stream 'st'. 'st' can be NULL for
  * MPEG2TS streams to indicate that they should be demuxed inside the
  * rtp demux (otherwise CODEC_ID_MPEG2TS packets are returned)
+ * TODO: change this to not take rtp_payload data, and use the new dynamic payload system.
  */
 RTPDemuxContext *rtp_parse_open(AVFormatContext *s1, AVStream *st, int payload_type, rtp_payload_data_t *rtp_payload_data)
 {
@@ -298,6 +290,9 @@ RTPDemuxContext *rtp_parse_open(AVFormatContext *s1, AVStream *st, int payload_t
         case CODEC_ID_MP2:
         case CODEC_ID_MP3:
         case CODEC_ID_MPEG4:
+#ifdef RTP_H264
+        case CODEC_ID_H264:
+#endif
             st->need_parsing = 1;
             break;
         default:
@@ -374,6 +369,9 @@ int rtp_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
 
     if (!buf) {
         /* return the next packets, if any */
+        if(s->st && s->parse_packet) {
+            return s->parse_packet(s, pkt, 0, NULL, 0);
+        } else {
         if (s->read_buf_index >= s->read_buf_size)
             return -1;
         ret = mpegts_parse_packet(s->ts, pkt, s->buf + s->read_buf_index,
@@ -385,6 +383,7 @@ int rtp_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
             return 1;
         else
             return 0;
+        }
     }
 
     if (len < 12)
@@ -428,6 +427,7 @@ int rtp_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
             return 1;
         }
     } else {
+        // at this point, the RTP header has been stripped;  This is ASSUMING that there is only 1 CSRC, which in't wise.
         switch(st->codec->codec_id) {
         case CODEC_ID_MP2:
             /* better than nothing: skip mpeg audio RTP header */
@@ -457,8 +457,12 @@ int rtp_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
             memcpy(pkt->data, buf, len);
             break;
         default:
+            if(s->parse_packet) {
+                return s->parse_packet(s, pkt, timestamp, buf, len);
+            } else {
             av_new_packet(pkt, len);
             memcpy(pkt->data, buf, len);
+            }
             break;
         }
 
@@ -511,6 +515,7 @@ int rtp_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
 
 void rtp_parse_close(RTPDemuxContext *s)
 {
+    // TODO: fold this into the protocol specific data fields.
     if (!strcmp(AVRtpPayloadTypes[s->payload_type].enc_name, "MP2T")) {
         mpegts_parse_close(s->ts);
     }

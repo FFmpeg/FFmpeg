@@ -1,0 +1,86 @@
+/*
+ * RTP definitions
+ * Copyright (c) 2006 Ryan Martell <rdm4@martellventures.com>
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ */
+
+// this is a bit of a misnomer, because rtp & rtsp internal structures and prototypes are in here.
+#ifndef RTP_INTERNAL_H
+#define RTP_INTERNAL_H
+
+typedef int (*DynamicPayloadPacketHandlerProc) (struct RTPDemuxContext * s,
+                                                AVPacket * pkt,
+                                                uint32_t timestamp,
+                                                const uint8_t * buf,
+                                                int len);
+
+typedef struct RTPDynamicProtocolHandler_s {
+    // fields from AVRtpDynamicPayloadType_s
+    const char enc_name[50];    /* XXX: still why 50 ? ;-) */
+    enum CodecType codec_type;
+    enum CodecID codec_id;
+
+    // may be null
+    int (*parse_sdp_a_line) (AVStream * stream,
+                             void *protocol_data,
+                             const char *line); ///< Parse the a= line from the sdp field
+    void *(*open) (); ///< allocate any data needed by the rtp parsing for this dynamic data.
+    void (*close)(void *protocol_data); ///< free any data needed by the rtp parsing for this dynamic data.
+    DynamicPayloadPacketHandlerProc parse_packet; ///< parse handler for this dynamic packet.
+
+    struct RTPDynamicProtocolHandler_s *next;
+} RTPDynamicProtocolHandler;
+
+// moved out of rtp.c, because the h264 decoder needs to know about this structure..
+struct RTPDemuxContext {
+    AVFormatContext *ic;
+    AVStream *st;
+    int payload_type;
+    uint32_t ssrc;
+    uint16_t seq;
+    uint32_t timestamp;
+    uint32_t base_timestamp;
+    uint32_t cur_timestamp;
+    int max_payload_size;
+    struct MpegTSContext *ts;   /* only used for MP2T payloads */
+    int read_buf_index;
+    int read_buf_size;
+
+    /* rtcp sender statistics receive */
+    int64_t last_rtcp_ntp_time;    // TODO: move into statistics
+    int64_t first_rtcp_ntp_time;   // TODO: move into statistics
+    uint32_t last_rtcp_timestamp;  // TODO: move into statistics
+
+    /* rtcp sender statistics */
+    unsigned int packet_count;     // TODO: move into statistics (outgoing)
+    unsigned int octet_count;      // TODO: move into statistics (outgoing)
+    unsigned int last_octet_count; // TODO: move into statistics (outgoing)
+    int first_packet;
+    /* buffer for output */
+    uint8_t buf[RTP_MAX_PACKET_LENGTH];
+    uint8_t *buf_ptr;
+
+    /* special infos for au headers parsing */
+    rtp_payload_data_t *rtp_payload_data; // TODO: Move into dynamic payload handlers
+
+    /* dynamic payload stuff */
+    DynamicPayloadPacketHandlerProc parse_packet;     ///< This is also copied from the dynamic protocol handler structure
+    void *dynamic_protocol_context;        ///< This is a copy from the values setup from the sdp parsing, in rtsp.c don't free me.
+};
+
+extern RTPDynamicProtocolHandler *RTPFirstDynamicPayloadHandler;
+#endif /* RTP_INTERNAL_H */
+
