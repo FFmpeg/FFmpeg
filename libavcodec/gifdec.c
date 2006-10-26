@@ -24,9 +24,7 @@
 
 #include "avcodec.h"
 #include "bytestream.h"
-
-#define MAXBITS                 12
-#define SIZTABLE                (1<<MAXBITS)
+#include "lzw.h"
 
 #define GCE_DISPOSAL_NONE       0
 #define GCE_DISPOSAL_INPLACE    1
@@ -50,174 +48,15 @@ typedef struct GifState {
 
     /* LZW compatible decoder */
     uint8_t *bytestream;
-    int eob_reached;
-    uint8_t *pbuf, *ebuf;
-    int bbits;
-    unsigned int bbuf;
-
-    int cursize;                /* The current code size */
-    int curmask;
-    int codesize;
-    int clear_code;
-    int end_code;
-    int newcodes;               /* First available code */
-    int top_slot;               /* Highest code for current size */
-    int slot;                   /* Last read code */
-    int fc, oc;
-    uint8_t *sp;
-    uint8_t stack[SIZTABLE];
-    uint8_t suffix[SIZTABLE];
-    uint16_t prefix[SIZTABLE];
+    LZWState *lzw;
 
     /* aux buffers */
     uint8_t global_palette[256 * 3];
     uint8_t local_palette[256 * 3];
-    uint8_t buf[256];
 } GifState;
 
 static const uint8_t gif87a_sig[6] = "GIF87a";
 static const uint8_t gif89a_sig[6] = "GIF89a";
-
-static const uint16_t mask[17] =
-{
-    0x0000, 0x0001, 0x0003, 0x0007,
-    0x000F, 0x001F, 0x003F, 0x007F,
-    0x00FF, 0x01FF, 0x03FF, 0x07FF,
-    0x0FFF, 0x1FFF, 0x3FFF, 0x7FFF, 0xFFFF
-};
-
-static void GLZWDecodeInit(GifState * s, int csize)
-{
-    /* read buffer */
-    s->eob_reached = 0;
-    s->pbuf = s->buf;
-    s->ebuf = s->buf;
-    s->bbuf = 0;
-    s->bbits = 0;
-
-    /* decoder */
-    s->codesize = csize;
-    s->cursize = s->codesize + 1;
-    s->curmask = mask[s->cursize];
-    s->top_slot = 1 << s->cursize;
-    s->clear_code = 1 << s->codesize;
-    s->end_code = s->clear_code + 1;
-    s->slot = s->newcodes = s->clear_code + 2;
-    s->oc = s->fc = 0;
-    s->sp = s->stack;
-}
-
-/* XXX: optimize */
-static inline int GetCode(GifState * s)
-{
-    int c, sizbuf;
-    uint8_t *ptr;
-
-    while (s->bbits < s->cursize) {
-        ptr = s->pbuf;
-        if (ptr >= s->ebuf) {
-            if (!s->eob_reached) {
-                sizbuf = bytestream_get_byte(&s->bytestream);
-                s->ebuf = s->buf + sizbuf;
-                s->pbuf = s->buf;
-                if (sizbuf > 0) {
-                    bytestream_get_buffer(&s->bytestream, s->buf, sizbuf);
-                } else {
-                    s->eob_reached = 1;
-                }
-            }
-            ptr = s->pbuf;
-        }
-        s->bbuf |= ptr[0] << s->bbits;
-        ptr++;
-        s->pbuf = ptr;
-        s->bbits += 8;
-    }
-    c = s->bbuf & s->curmask;
-    s->bbuf >>= s->cursize;
-    s->bbits -= s->cursize;
-    return c;
-}
-
-/* NOTE: the algorithm here is inspired from the LZW GIF decoder
-   written by Steven A. Bennett in 1987. */
-/* return the number of byte decoded */
-static int GLZWDecode(GifState * s, uint8_t * buf, int len)
-{
-    int l, c, code, oc, fc;
-    uint8_t *sp;
-
-    if (s->end_code < 0)
-        return 0;
-
-    l = len;
-    sp = s->sp;
-    oc = s->oc;
-    fc = s->fc;
-
-    while (sp > s->stack) {
-        *buf++ = *(--sp);
-        if ((--l) == 0)
-            goto the_end;
-    }
-
-    for (;;) {
-        c = GetCode(s);
-        if (c == s->end_code) {
-            s->end_code = -1;
-            break;
-        } else if (c == s->clear_code) {
-            s->cursize = s->codesize + 1;
-            s->curmask = mask[s->cursize];
-            s->slot = s->newcodes;
-            s->top_slot = 1 << s->cursize;
-            while ((c = GetCode(s)) == s->clear_code);
-            if (c == s->end_code) {
-                s->end_code = -1;
-                break;
-            }
-            /* test error */
-            if (c >= s->slot)
-                c = 0;
-            fc = oc = c;
-            *buf++ = c;
-            if ((--l) == 0)
-                break;
-        } else {
-            code = c;
-            if (code >= s->slot) {
-                *sp++ = fc;
-                code = oc;
-            }
-            while (code >= s->newcodes) {
-                *sp++ = s->suffix[code];
-                code = s->prefix[code];
-            }
-            *sp++ = code;
-            if (s->slot < s->top_slot) {
-                s->suffix[s->slot] = fc = code;
-                s->prefix[s->slot++] = oc;
-                oc = c;
-            }
-            if (s->slot >= s->top_slot) {
-                if (s->cursize < MAXBITS) {
-                    s->top_slot <<= 1;
-                    s->curmask = mask[++s->cursize];
-                }
-            }
-            while (sp > s->stack) {
-                *buf++ = *(--sp);
-                if ((--l) == 0)
-                    goto the_end;
-            }
-        }
-    }
-  the_end:
-    s->sp = sp;
-    s->oc = oc;
-    s->fc = fc;
-    return len - l;
-}
 
 static int gif_read_image(GifState *s)
 {
@@ -267,7 +106,8 @@ static int gif_read_image(GifState *s)
 
     /* now get the image data */
     code_size = bytestream_get_byte(&s->bytestream);
-    GLZWDecodeInit(s, code_size);
+    //TODO: add proper data size
+    ff_lzw_decode_init(s->lzw, code_size, s->bytestream, 0, FF_LZW_GIF);
 
     /* read all the image */
     linesize = s->picture.linesize[0];
@@ -276,7 +116,7 @@ static int gif_read_image(GifState *s)
     pass = 0;
     y1 = 0;
     for (y = 0; y < height; y++) {
-        GLZWDecode(s, ptr, width);
+        ff_lzw_decode(s->lzw, ptr, width);
         if (is_interleaved) {
             switch(pass) {
             default:
@@ -314,8 +154,8 @@ static int gif_read_image(GifState *s)
     av_free(line);
 
     /* read the garbage data until end marker is found */
-    while (!s->eob_reached)
-        GetCode(s);
+    ff_lzw_decode_tail(s->lzw);
+    s->bytestream = ff_lzw_cur_ptr(s->lzw);
     return 0;
 }
 
@@ -445,6 +285,7 @@ static int gif_decode_init(AVCodecContext *avctx)
     avcodec_get_frame_defaults(&s->picture);
     avctx->coded_frame= &s->picture;
     s->picture.data[0] = NULL;
+    ff_lzw_decode_open(&s->lzw);
     return 0;
 }
 
@@ -483,6 +324,7 @@ static int gif_decode_close(AVCodecContext *avctx)
 {
     GifState *s = avctx->priv_data;
 
+    ff_lzw_decode_close(&s->lzw);
     if(s->picture.data[0])
         avctx->release_buffer(avctx, &s->picture);
     return 0;

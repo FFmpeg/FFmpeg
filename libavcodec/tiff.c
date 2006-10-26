@@ -23,6 +23,7 @@
 #ifdef CONFIG_ZLIB
 #include <zlib.h>
 #endif
+#include "lzw.h"
 
 /* abridged list of TIFF tags */
 enum TiffTags{
@@ -74,6 +75,7 @@ typedef struct TiffContext {
     uint8_t* stripdata;
     uint8_t* stripsizes;
     int stripsize, stripoff;
+    LZWState *lzw;
 } TiffContext;
 
 static int tget_short(uint8_t **p, int le){
@@ -126,6 +128,12 @@ static int tiff_unpack_strip(TiffContext *s, uint8_t* dst, int stride, uint8_t *
         return 0;
     }
 #endif
+    if(s->compr == TIFF_LZW){
+        if(ff_lzw_decode_init(s->lzw, 8, src, size, FF_LZW_TIFF) < 0){
+            av_log(s->avctx, AV_LOG_ERROR, "Error initializing LZW decoder\n");
+            return -1;
+        }
+    }
     for(line = 0; line < lines; line++){
         if(src - ssrc > size){
             av_log(s->avctx, AV_LOG_ERROR, "Source data overread\n");
@@ -158,6 +166,13 @@ static int tiff_unpack_strip(TiffContext *s, uint8_t* dst, int stride, uint8_t *
                     memset(dst + pixels, c, code);
                     pixels += code;
                 }
+            }
+            break;
+        case TIFF_LZW:
+            pixels = ff_lzw_decode(s->lzw, dst, width);
+            if(pixels < width){
+                av_log(s->avctx, AV_LOG_ERROR, "Decoded only %i bytes of %i\n", pixels, width);
+                return -1;
             }
             break;
         }
@@ -247,6 +262,7 @@ static int tiff_decode_tag(TiffContext *s, uint8_t *start, uint8_t *buf, uint8_t
         switch(s->compr){
         case TIFF_RAW:
         case TIFF_PACKBITS:
+        case TIFF_LZW:
             break;
         case TIFF_DEFLATE:
         case TIFF_ADOBE_DEFLATE:
@@ -256,9 +272,6 @@ static int tiff_decode_tag(TiffContext *s, uint8_t *start, uint8_t *buf, uint8_t
             av_log(s->avctx, AV_LOG_ERROR, "Deflate: ZLib not compiled in\n");
             return -1;
 #endif
-        case TIFF_LZW:
-            av_log(s->avctx, AV_LOG_ERROR, "LZW: not implemented yet\n");
-            return -1;
         case TIFF_G3:
             av_log(s->avctx, AV_LOG_ERROR, "CCITT G3 compression is not supported\n");
             return -1;
@@ -405,6 +418,7 @@ static int tiff_init(AVCodecContext *avctx){
     avcodec_get_frame_defaults((AVFrame*)&s->picture);
     avctx->coded_frame= (AVFrame*)&s->picture;
     s->picture.data[0] = NULL;
+    ff_lzw_decode_open(&s->lzw);
 
     return 0;
 }
@@ -413,6 +427,7 @@ static int tiff_end(AVCodecContext *avctx)
 {
     TiffContext * const s = avctx->priv_data;
 
+    ff_lzw_decode_close(&s->lzw);
     if(s->picture.data[0])
         avctx->release_buffer(avctx, &s->picture);
     return 0;
