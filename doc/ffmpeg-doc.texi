@@ -483,11 +483,11 @@ Disable audio recording.
 Force audio codec to @var{codec}. Use the @code{copy} special value to
 specify that the raw codec data must be copied as is.
 @item -newaudio
-It will add a new audio track to the output file. If you want to
-specify parameters, specify them before @code{-newaudio} (@code{-acodec}, @code{-ab}, etc..)
+Add a new audio track to the output file. If you want to specify parameters,
+do so before @code{-newaudio} (@code{-acodec}, @code{-ab}, etc..).
 
-Mapping will be done automatically, if output streams number is equal to
-input streams number, else it will pick first one found which match. You
+Mapping will be done automatically, if the number of output streams is equal to
+the number of input streams, else it will pick the first one that matches. You
 can override the mapping using @code{-map} as usual.
 
 Example:
