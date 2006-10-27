@@ -884,7 +884,7 @@ static int rtsp_read_header(AVFormatContext *s,
             if (RTSP_RTP_PORT_MIN != 0) {
                 while(j <= RTSP_RTP_PORT_MAX) {
                     snprintf(buf, sizeof(buf), "rtp://?localport=%d", j);
-                    if (url_open(&rtsp_st->rtp_handle, buf, URL_RDONLY) == 0) {
+                    if (url_open(&rtsp_st->rtp_handle, buf, URL_RDWR) == 0) {
                         j += 2; /* we will use two port by rtp stream (rtp and rtcp) */
                         goto rtp_opened;
                     }
@@ -981,7 +981,7 @@ static int rtsp_read_header(AVFormatContext *s,
                          host,
                          reply->transports[0].server_port_min,
                          ttl);
-                if (url_open(&rtsp_st->rtp_handle, url, URL_RDONLY) < 0) {
+                if (url_open(&rtsp_st->rtp_handle, url, URL_RDWR) < 0) {
                     err = AVERROR_INVALIDDATA;
                     goto fail;
                 }
@@ -994,7 +994,7 @@ static int rtsp_read_header(AVFormatContext *s,
             st = s->streams[rtsp_st->stream_index];
         if (!st)
             s->ctx_flags |= AVFMTCTX_NOHEADER;
-        rtsp_st->rtp_ctx = rtp_parse_open(s, st, rtsp_st->sdp_payload_type, &rtsp_st->rtp_payload_data);
+        rtsp_st->rtp_ctx = rtp_parse_open(s, st, rtsp_st->rtp_handle, rtsp_st->sdp_payload_type, &rtsp_st->rtp_payload_data);
 
         if (!rtsp_st->rtp_ctx) {
             err = AVERROR_NOMEM;
@@ -1157,6 +1157,8 @@ static int rtsp_read_packet(AVFormatContext *s,
     case RTSP_PROTOCOL_RTP_UDP:
     case RTSP_PROTOCOL_RTP_UDP_MULTICAST:
         len = udp_read_packet(s, &rtsp_st, buf, sizeof(buf));
+        if (rtsp_st->rtp_ctx)
+            rtp_check_and_send_back_rr(rtsp_st->rtp_ctx, len);
         break;
     }
     if (len < 0)
@@ -1336,7 +1338,7 @@ static int sdp_read_header(AVFormatContext *s,
                  inet_ntoa(rtsp_st->sdp_ip),
                  rtsp_st->sdp_port,
                  rtsp_st->sdp_ttl);
-        if (url_open(&rtsp_st->rtp_handle, url, URL_RDONLY) < 0) {
+        if (url_open(&rtsp_st->rtp_handle, url, URL_RDWR) < 0) {
             err = AVERROR_INVALIDDATA;
             goto fail;
         }
@@ -1346,7 +1348,7 @@ static int sdp_read_header(AVFormatContext *s,
             st = s->streams[rtsp_st->stream_index];
         if (!st)
             s->ctx_flags |= AVFMTCTX_NOHEADER;
-        rtsp_st->rtp_ctx = rtp_parse_open(s, st, rtsp_st->sdp_payload_type, &rtsp_st->rtp_payload_data);
+        rtsp_st->rtp_ctx = rtp_parse_open(s, st, rtsp_st->rtp_handle, rtsp_st->sdp_payload_type, &rtsp_st->rtp_payload_data);
         if (!rtsp_st->rtp_ctx) {
             err = AVERROR_NOMEM;
             goto fail;

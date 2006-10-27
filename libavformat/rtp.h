@@ -30,7 +30,7 @@ int rtp_get_payload_type(AVCodecContext *codec);
 
 typedef struct RTPDemuxContext RTPDemuxContext;
 typedef struct rtp_payload_data_s rtp_payload_data_s;
-RTPDemuxContext *rtp_parse_open(AVFormatContext *s1, AVStream *st, int payload_type, rtp_payload_data_s *rtp_payload_data);
+RTPDemuxContext *rtp_parse_open(AVFormatContext *s1, AVStream *st, URLContext *rtpc, int payload_type, rtp_payload_data_s *rtp_payload_data);
 int rtp_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
                      const uint8_t *buf, int len);
 void rtp_parse_close(RTPDemuxContext *s);

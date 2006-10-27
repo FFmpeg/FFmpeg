@@ -60,6 +60,9 @@ struct RTPDemuxContext {
     struct MpegTSContext *ts;   /* only used for MP2T payloads */
     int read_buf_index;
     int read_buf_size;
+    /* used to send back RTCP RR */
+    URLContext *rtp_ctx;
+    char hostname[256];
 
     /* rtcp sender statistics receive */
     int64_t last_rtcp_ntp_time;    // TODO: move into statistics
