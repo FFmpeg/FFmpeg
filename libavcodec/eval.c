@@ -56,6 +56,8 @@ typedef struct Parser{
     char **func2_name;          // NULL terminated
     void *opaque;
     char **error;
+#define VARS 10
+    double var[VARS];
 } Parser;
 
 static int8_t si_prefixes['z' - 'E' + 1]={
@@ -128,9 +130,10 @@ static int strmatch(const char *s, const char *prefix){
 struct ff_expr_s {
     enum {
         e_value, e_const, e_func0, e_func1, e_func2,
-        e_squish, e_gauss,
+        e_squish, e_gauss, e_ld,
         e_mod, e_max, e_min, e_eq, e_gt, e_gte,
         e_pow, e_mul, e_div, e_add,
+        e_last, e_st,
     } type;
     double value; // is sign in other types
     union {
@@ -151,6 +154,7 @@ static double eval_expr(Parser * p, AVEvalExpr * e) {
         case e_func2:  return e->value * e->a.func2(p->opaque, eval_expr(p, e->param[0]), eval_expr(p, e->param[1]));
         case e_squish: return 1/(1+exp(4*eval_expr(p, e->param[0])));
         case e_gauss: { double d = eval_expr(p, e->param[0]); return exp(-d*d/2)/sqrt(2*M_PI); }
+        case e_ld:     return e->value * p->var[clip(eval_expr(p, e->param[0]), 0, VARS-1)];
         default: {
             double d = eval_expr(p, e->param[0]);
             double d2 = eval_expr(p, e->param[1]);
@@ -165,6 +169,8 @@ static double eval_expr(Parser * p, AVEvalExpr * e) {
                 case e_mul: return e->value * (d * d2);
                 case e_div: return e->value * (d / d2);
                 case e_add: return e->value * (d + d2);
+                case e_last:return d2;
+                case e_st : return e->value * (p->var[clip(d, 0, VARS-1)]= d2);
             }
         }
     }
@@ -258,6 +264,8 @@ static AVEvalExpr * parse_primary(Parser *p) {
     else if( strmatch(next, "gt"    ) ) d->type = e_gt;
     else if( strmatch(next, "lte"   ) ) { AVEvalExpr * tmp = d->param[1]; d->param[1] = d->param[0]; d->param[0] = tmp; d->type = e_gt; }
     else if( strmatch(next, "lt"    ) ) { AVEvalExpr * tmp = d->param[1]; d->param[1] = d->param[0]; d->param[0] = tmp; d->type = e_gte; }
+    else if( strmatch(next, "ld"    ) ) d->type = e_ld;
+    else if( strmatch(next, "st"    ) ) d->type = e_st;
     else {
         for(i=0; p->func1_name && p->func1_name[i]; i++){
             if(strmatch(next, p->func1_name[i])){
@@ -319,6 +327,15 @@ static AVEvalExpr * parse_term(Parser *p){
     return e;
 }
 
+static AVEvalExpr * parse_subexpr(Parser *p) {
+    AVEvalExpr * e = parse_term(p);
+    while(*p->s == '+' || *p->s == '-') {
+        e= new_eval_expr(e_add, 1, e, parse_term(p));
+    };
+
+    return e;
+}
+
 static AVEvalExpr * parse_expr(Parser *p) {
     AVEvalExpr * e;
 
@@ -326,10 +343,11 @@ static AVEvalExpr * parse_expr(Parser *p) {
         return NULL;
     p->stack_index--;
 
-    e = parse_term(p);
+    e = parse_subexpr(p);
 
-    while(*p->s == '+' || *p->s == '-') {
-        e= new_eval_expr(e_add, 1, e, parse_term(p));
+    while(*p->s == ';') {
+        p->s++;
+        e= new_eval_expr(e_last, 1, e, parse_subexpr(p));
     };
 
     p->stack_index++;
@@ -345,6 +363,7 @@ static int verify_expr(AVEvalExpr * e) {
         case e_func0:
         case e_func1:
         case e_squish:
+        case e_ld:
         case e_gauss: return verify_expr(e->param[0]);
         default: return verify_expr(e->param[0]) && verify_expr(e->param[1]);
     }
