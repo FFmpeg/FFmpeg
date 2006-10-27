@@ -467,7 +467,7 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
                             sdp_parse_fmtp(st, p);
                         }
                     } else {
-                    sdp_parse_fmtp(st, p);
+                        sdp_parse_fmtp(st, p);
                     }
                 }
             }

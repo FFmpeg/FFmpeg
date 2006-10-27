@@ -372,17 +372,17 @@ int rtp_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
         if(s->st && s->parse_packet) {
             return s->parse_packet(s, pkt, 0, NULL, 0);
         } else {
-        if (s->read_buf_index >= s->read_buf_size)
-            return -1;
-        ret = mpegts_parse_packet(s->ts, pkt, s->buf + s->read_buf_index,
-                                  s->read_buf_size - s->read_buf_index);
-        if (ret < 0)
-            return -1;
-        s->read_buf_index += ret;
-        if (s->read_buf_index < s->read_buf_size)
-            return 1;
-        else
-            return 0;
+            if (s->read_buf_index >= s->read_buf_size)
+                return -1;
+            ret = mpegts_parse_packet(s->ts, pkt, s->buf + s->read_buf_index,
+                                      s->read_buf_size - s->read_buf_index);
+            if (ret < 0)
+                return -1;
+            s->read_buf_index += ret;
+            if (s->read_buf_index < s->read_buf_size)
+                return 1;
+            else
+                return 0;
         }
     }
 
@@ -460,8 +460,8 @@ int rtp_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
             if(s->parse_packet) {
                 return s->parse_packet(s, pkt, timestamp, buf, len);
             } else {
-            av_new_packet(pkt, len);
-            memcpy(pkt->data, buf, len);
+                av_new_packet(pkt, len);
+                memcpy(pkt->data, buf, len);
             }
             break;
         }
