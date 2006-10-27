@@ -302,12 +302,9 @@ static AVEvalExpr * parse_factor(Parser *p){
     int sign, sign2;
     AVEvalExpr * e = parse_pow(p, &sign);
     while(p->s[0]=='^'){
-        AVEvalExpr * tmp;
-
         p->s++;
-        tmp= new_eval_expr(e_pow, 1, e, parse_pow(p, &sign2));
-        if (tmp->param[1]) tmp->param[1]->value *= (sign2|1);
-        e = tmp;
+        e= new_eval_expr(e_pow, 1, e, parse_pow(p, &sign2));
+        if (e->param[1]) e->param[1]->value *= (sign2|1);
     }
     if (e) e->value *= (sign|1);
     return e;
