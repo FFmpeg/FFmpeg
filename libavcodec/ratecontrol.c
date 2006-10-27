@@ -48,11 +48,69 @@ void ff_write_pass1_stats(MpegEncContext *s){
             s->f_code, s->b_code, s->current_picture.mc_mb_var_sum, s->current_picture.mb_var_sum, s->i_count, s->skip_count, s->header_bits);
 }
 
+static inline double qp2bits(RateControlEntry *rce, double qp){
+    if(qp<=0.0){
+        av_log(NULL, AV_LOG_ERROR, "qp<=0.0\n");
+    }
+    return rce->qscale * (double)(rce->i_tex_bits + rce->p_tex_bits+1)/ qp;
+}
+
+static inline double bits2qp(RateControlEntry *rce, double bits){
+    if(bits<0.9){
+        av_log(NULL, AV_LOG_ERROR, "bits<0.9\n");
+    }
+    return rce->qscale * (double)(rce->i_tex_bits + rce->p_tex_bits+1)/ bits;
+}
+
 int ff_rate_control_init(MpegEncContext *s)
 {
     RateControlContext *rcc= &s->rc_context;
     int i;
+    char *error = NULL;
+    static const char *const_names[]={
+        "PI",
+        "E",
+        "iTex",
+        "pTex",
+        "tex",
+        "mv",
+        "fCode",
+        "iCount",
+        "mcVar",
+        "var",
+        "isI",
+        "isP",
+        "isB",
+        "avgQP",
+        "qComp",
+/*        "lastIQP",
+        "lastPQP",
+        "lastBQP",
+        "nextNonBQP",*/
+        "avgIITex",
+        "avgPITex",
+        "avgPPTex",
+        "avgBPTex",
+        "avgTex",
+        NULL
+    };
+    static double (*func1[])(void *, double)={
+        (void *)bits2qp,
+        (void *)qp2bits,
+        NULL
+    };
+    static const char *func1_names[]={
+        "bits2qp",
+        "qp2bits",
+        NULL
+    };
     emms_c();
+
+    rcc->rc_eq_eval = ff_parse(s->avctx->rc_eq, const_names, func1, func1_names, NULL, NULL, &error);
+    if (!rcc->rc_eq_eval) {
+        av_log(s->avctx, AV_LOG_ERROR, "Error parsing rc_eq \"%s\": %s\n", s->avctx->rc_eq, error? error : "");
+        return -1;
+    }
 
     for(i=0; i<5; i++){
         rcc->pred[i].coeff= FF_QP2LAMBDA * 7.0;
@@ -195,26 +253,13 @@ void ff_rate_control_uninit(MpegEncContext *s)
     RateControlContext *rcc= &s->rc_context;
     emms_c();
 
+    ff_eval_free(rcc->rc_eq_eval);
     av_freep(&rcc->entry);
 
 #ifdef CONFIG_XVID
     if((s->flags&CODEC_FLAG_PASS2) && s->avctx->rc_strategy == FF_RC_STRATEGY_XVID)
         ff_xvid_rate_control_uninit(s);
 #endif
-}
-
-static inline double qp2bits(RateControlEntry *rce, double qp){
-    if(qp<=0.0){
-        av_log(NULL, AV_LOG_ERROR, "qp<=0.0\n");
-    }
-    return rce->qscale * (double)(rce->i_tex_bits + rce->p_tex_bits+1)/ qp;
-}
-
-static inline double bits2qp(RateControlEntry *rce, double bits){
-    if(bits<0.9){
-        av_log(NULL, AV_LOG_ERROR, "bits<0.9\n");
-    }
-    return rce->qscale * (double)(rce->i_tex_bits + rce->p_tex_bits+1)/ bits;
 }
 
 int ff_vbv_update(MpegEncContext *s, int frame_size){
@@ -263,7 +308,6 @@ static double get_qscale(MpegEncContext *s, RateControlEntry *rce, double rate_f
     const int pict_type= rce->new_pict_type;
     const double mb_num= s->mb_num;
     int i;
-    char *error = NULL;
 
     double const_values[]={
         M_PI,
@@ -292,47 +336,10 @@ static double get_qscale(MpegEncContext *s, RateControlEntry *rce, double rate_f
         (rcc->i_cplx_sum[pict_type] + rcc->p_cplx_sum[pict_type]) / (double)rcc->frame_count[pict_type],
         0
     };
-    static const char *const_names[]={
-        "PI",
-        "E",
-        "iTex",
-        "pTex",
-        "tex",
-        "mv",
-        "fCode",
-        "iCount",
-        "mcVar",
-        "var",
-        "isI",
-        "isP",
-        "isB",
-        "avgQP",
-        "qComp",
-/*        "lastIQP",
-        "lastPQP",
-        "lastBQP",
-        "nextNonBQP",*/
-        "avgIITex",
-        "avgPITex",
-        "avgPPTex",
-        "avgBPTex",
-        "avgTex",
-        NULL
-    };
-    static double (*func1[])(void *, double)={
-        (void *)bits2qp,
-        (void *)qp2bits,
-        NULL
-    };
-    static const char *func1_names[]={
-        "bits2qp",
-        "qp2bits",
-        NULL
-    };
 
-    bits= ff_eval2(s->avctx->rc_eq, const_values, const_names, func1, func1_names, NULL, NULL, rce, &error);
+    bits= ff_parse_eval(rcc->rc_eq_eval, const_values, rce);
     if (isnan(bits)) {
-        av_log(s->avctx, AV_LOG_ERROR, "Error evaluating rc_eq \"%s\": %s\n", s->avctx->rc_eq, error? error : "");
+        av_log(s->avctx, AV_LOG_ERROR, "Error evaluating rc_eq \"%s\"\n", s->avctx->rc_eq);
         return -1;
     }
 
