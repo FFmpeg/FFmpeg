@@ -39,4 +39,12 @@ double ff_eval2(char *s, double *const_value, const char **const_name,
                double (**func2)(void *, double, double), char **func2_name,
                void *opaque, char **error);
 
+typedef struct ff_expr_s AVEvalExpr;
+AVEvalExpr * ff_parse(char *s, const char **const_name,
+               double (**func1)(void *, double), const char **func1_name,
+               double (**func2)(void *, double, double), char **func2_name,
+               char **error);
+double ff_parse_eval(AVEvalExpr * e, double *const_value, void *opaque);
+void ff_eval_free(AVEvalExpr * e);
+
 #endif /* AVCODEC_EVAL_H */
