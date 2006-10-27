@@ -254,10 +254,10 @@ static AVEvalExpr * parse_primary(Parser *p) {
     else if( strmatch(next, "max"   ) ) d->type = e_max;
     else if( strmatch(next, "min"   ) ) d->type = e_min;
     else if( strmatch(next, "eq"    ) ) d->type = e_eq;
-    else if( strmatch(next, "gt"    ) ) d->type = e_gt;
     else if( strmatch(next, "gte"   ) ) d->type = e_gte;
-    else if( strmatch(next, "lt"    ) ) { AVEvalExpr * tmp = d->param[1]; d->param[1] = d->param[0]; d->param[0] = tmp; d->type = e_gte; }
+    else if( strmatch(next, "gt"    ) ) d->type = e_gt;
     else if( strmatch(next, "lte"   ) ) { AVEvalExpr * tmp = d->param[1]; d->param[1] = d->param[0]; d->param[0] = tmp; d->type = e_gt; }
+    else if( strmatch(next, "lt"    ) ) { AVEvalExpr * tmp = d->param[1]; d->param[1] = d->param[0]; d->param[0] = tmp; d->type = e_gte; }
     else {
         for(i=0; p->func1_name && p->func1_name[i]; i++){
             if(strmatch(next, p->func1_name[i])){
