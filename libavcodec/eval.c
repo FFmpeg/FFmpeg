@@ -133,7 +133,7 @@ struct ff_expr_s {
         e_squish, e_gauss, e_ld,
         e_mod, e_max, e_min, e_eq, e_gt, e_gte,
         e_pow, e_mul, e_div, e_add,
-        e_last, e_st,
+        e_last, e_st, e_while,
     } type;
     double value; // is sign in other types
     union {
@@ -155,6 +155,12 @@ static double eval_expr(Parser * p, AVEvalExpr * e) {
         case e_squish: return 1/(1+exp(4*eval_expr(p, e->param[0])));
         case e_gauss: { double d = eval_expr(p, e->param[0]); return exp(-d*d/2)/sqrt(2*M_PI); }
         case e_ld:     return e->value * p->var[clip(eval_expr(p, e->param[0]), 0, VARS-1)];
+        case e_while: {
+            double d;
+            while(eval_expr(p, e->param[0]))
+                d=eval_expr(p, e->param[1]);
+            return d;
+        }
         default: {
             double d = eval_expr(p, e->param[0]);
             double d2 = eval_expr(p, e->param[1]);
@@ -266,6 +272,7 @@ static AVEvalExpr * parse_primary(Parser *p) {
     else if( strmatch(next, "lt"    ) ) { AVEvalExpr * tmp = d->param[1]; d->param[1] = d->param[0]; d->param[0] = tmp; d->type = e_gte; }
     else if( strmatch(next, "ld"    ) ) d->type = e_ld;
     else if( strmatch(next, "st"    ) ) d->type = e_st;
+    else if( strmatch(next, "while" ) ) d->type = e_while;
     else {
         for(i=0; p->func1_name && p->func1_name[i]; i++){
             if(strmatch(next, p->func1_name[i])){
