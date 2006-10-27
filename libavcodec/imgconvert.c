@@ -522,7 +522,7 @@ int avpicture_layout(const AVPicture* src, int pix_fmt, int width, int height,
         if (pix_fmt == PIX_FMT_YUV422 ||
             pix_fmt == PIX_FMT_UYVY422 ||
             pix_fmt == PIX_FMT_BGR565 ||
-            pix_fmt == PIX_FMT_BGR565 ||
+            pix_fmt == PIX_FMT_BGR555 ||
             pix_fmt == PIX_FMT_RGB565 ||
             pix_fmt == PIX_FMT_RGB555)
             w = width * 2;
