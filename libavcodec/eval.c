@@ -382,9 +382,14 @@ AVEvalExpr * ff_parse(char *s, const char **const_name,
                char **error){
     Parser p;
     AVEvalExpr * e;
+    char w[strlen(s) + 1], * wp = w;
+
+    while (*s)
+        if (!isspace(*s++)) *wp++ = s[-1];
+    *wp++ = 0;
 
     p.stack_index=100;
-    p.s= s;
+    p.s= w;
     p.const_name = const_name;
     p.func1      = func1;
     p.func1_name = func1_name;
