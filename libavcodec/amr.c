@@ -109,6 +109,23 @@ static enum Mode getBitrateMode(int bitrate)
     return(MR122);
 }
 
+static void amr_decode_fix_avctx(AVCodecContext * avctx)
+{
+    const int is_amr_wb = 1 + (avctx->codec_id == CODEC_ID_AMR_WB);
+
+    if(avctx->sample_rate == 0)
+    {
+        avctx->sample_rate = 8000 * is_amr_wb;
+    }
+
+    if(avctx->channels == 0)
+    {
+        avctx->channels = 1;
+    }
+
+    avctx->frame_size = 160 * is_amr_wb;
+}
+
 #ifdef CONFIG_AMR_NB_FIXED
 /* fixed point version*/
 /* frame size in serial bitstream file (frame type + serial stream + flags) */
@@ -145,6 +162,15 @@ static int amr_nb_decode_init(AVCodecContext * avctx)
         av_log(avctx, AV_LOG_ERROR, "Speech_Decode_Frame_init error\n");
         return -1;
     }
+
+    amr_decode_fix_avctx(avctx);
+
+    if(avctx->channels > 1)
+    {
+        av_log(avctx, AV_LOG_ERROR, "amr_nb: multichannel decoding not supported\n");
+        return -1;
+    }
+
     return 0;
 }
 
@@ -347,6 +373,15 @@ static int amr_nb_decode_init(AVCodecContext * avctx)
         av_log(avctx, AV_LOG_ERROR, "Decoder_Interface_init error\r\n");
         return -1;
     }
+
+    amr_decode_fix_avctx(avctx);
+
+    if(avctx->channels > 1)
+    {
+        av_log(avctx, AV_LOG_ERROR, "amr_nb: multichannel decoding not supported\n");
+        return -1;
+    }
+
     return 0;
 }
 
@@ -598,6 +633,15 @@ static int amr_wb_decode_init(AVCodecContext * avctx)
     AMRWBContext *s = (AMRWBContext *)avctx->priv_data;
     s->frameCount=0;
     s->state = D_IF_init();
+
+    amr_decode_fix_avctx(avctx);
+
+    if(avctx->channels > 1)
+    {
+        av_log(avctx, AV_LOG_ERROR, "amr_wb: multichannel decoding not supported\n");
+        return -1;
+    }
+
     return 0;
 }
 
