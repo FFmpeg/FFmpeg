@@ -40,6 +40,7 @@ typedef struct {
     int ttl;
     int is_multicast;
     int local_port;
+    int reuse_socket;
 #ifndef CONFIG_IPV6
     struct ip_mreq mreq;
     struct sockaddr_in dest_addr;
@@ -236,6 +237,7 @@ static int udp_ipv6_set_local(URLContext *h) {
  *         'ttl=n'       : set the ttl value (for multicast only)
  *         'localport=n' : set the local port
  *         'pkt_size=n'  : set max packet size
+ *         'reuse=1'     : enable reusing the socket
  *
  * @param s1 media file context
  * @param uri of the remote server
@@ -311,9 +313,11 @@ static int udp_open(URLContext *h, const char *uri, int flags)
     s->ttl = 16;
     s->is_multicast = 0;
     s->local_port = 0;
+    s->reuse_socket = 0;
     p = strchr(uri, '?');
     if (p) {
         s->is_multicast = find_info_tag(buf, sizeof(buf), "multicast", p);
+        s->reuse_socket = find_info_tag(buf, sizeof(buf), "reuse", p);
         if (find_info_tag(buf, sizeof(buf), "ttl", p)) {
             s->ttl = strtol(buf, NULL, 10);
         }
@@ -350,6 +354,10 @@ static int udp_open(URLContext *h, const char *uri, int flags)
     } else {
         my_addr.sin_port = htons(s->local_port);
     }
+
+    if (s->reuse_socket)
+        if (setsockopt (udp_fd, SOL_SOCKET, SO_REUSEADDR, &(s->reuse_socket), sizeof(s->reuse_socket)) != 0)
+            goto fail;
 
     /* the bind is needed to give a port to the socket now */
     if (bind(udp_fd,(struct sockaddr *)&my_addr, sizeof(my_addr)) < 0)
