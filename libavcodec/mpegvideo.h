@@ -321,8 +321,8 @@ typedef struct MpegEncContext {
 
     int qscale;                 ///< QP
     int chroma_qscale;          ///< chroma QP
-    int lambda;                 ///< lagrange multipler used in rate distortion
-    int lambda2;                ///< (lambda*lambda) >> FF_LAMBDA_SHIFT
+    unsigned int lambda;        ///< lagrange multipler used in rate distortion
+    unsigned int lambda2;       ///< (lambda*lambda) >> FF_LAMBDA_SHIFT
     int *lambda_table;
     int adaptive_quant;         ///< use adaptive quantization
     int dquant;                 ///< qscale difference to prev qscale
