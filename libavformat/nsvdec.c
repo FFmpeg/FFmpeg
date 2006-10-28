@@ -177,6 +177,7 @@ typedef struct {
     int64_t duration;
     uint32_t vtag, atag;
     uint16_t vwidth, vheight;
+    int16_t avsync;
     //DVDemuxContext* dv_demux;
 } NSVContext;
 
@@ -405,7 +406,6 @@ static int nsv_parse_NSVs_header(AVFormatContext *s, AVFormatParameters *ap)
     uint16_t vwidth, vheight;
     AVRational framerate;
     int i;
-    uint16_t unknown;
     AVStream *st;
     NSVStream *nst;
     PRINT(("%s()\n", __FUNCTION__));
@@ -420,7 +420,7 @@ static int nsv_parse_NSVs_header(AVFormatContext *s, AVFormatParameters *ap)
     PRINT(("NSV NSVs framerate code %2x\n", i));
     if(i&0x80) framerate= nsv_framerate_table[i & 0x7F];
     else       framerate= (AVRational){i, 1};
-    unknown = get_le16(pb);
+    nsv->avsync = get_le16(pb);
 #ifdef DEBUG
     print_tag("NSV NSVs vtag", vtag, 0);
     print_tag("NSV NSVs atag", atag, 0);
@@ -466,15 +466,13 @@ static int nsv_parse_NSVs_header(AVFormatContext *s, AVFormatParameters *ap)
             st->codec->codec_type = CODEC_TYPE_AUDIO;
             st->codec->codec_tag = atag;
             st->codec->codec_id = codec_get_id(nsv_codec_audio_tags, atag);
-            st->start_time = 0;
-//            st->duration = nsv->duration; //FIXME
 
             st->need_parsing = 1; /* for PCM we will read a chunk later and put correct info */
-            /* XXX:FIXME */
-            //st->codec->channels = 2; //XXX:channels;
-            //st->codec->sample_rate = 1000;
-            //av_set_pts_info(st, 64, 1, st->codec->sample_rate);
 
+            /* set timebase to common denominator of ms and framerate */
+            av_set_pts_info(st, 64, 1, framerate.num*1000);
+            st->start_time = 0;
+            st->duration = (int64_t)nsv->duration * framerate.num;
 #endif
         }
 #ifdef CHECK_SUBSEQUENT_NSVS
@@ -598,7 +596,7 @@ null_chunk_retry:
         av_get_packet(pb, pkt, vsize);
         pkt->stream_index = st[NSV_ST_VIDEO]->index;//NSV_ST_VIDEO;
         pkt->dts = nst->frame_offset++;
-        pkt->flags |= PKT_FLAG_KEY; /* stupid format has no way to tell XXX: try the index */
+        pkt->flags |= nsv->state == NSV_HAS_READ_NSVS ? PKT_FLAG_KEY : 0; /* keyframe only likely on a sync frame */
 /*
         for (i = 0; i < MIN(8, vsize); i++)
             PRINT(("NSV video: [%d] = %02x\n", i, pkt->data[i]));
@@ -630,20 +628,22 @@ null_chunk_retry:
                 channels = 1;
                 st[NSV_ST_AUDIO]->codec->channels = channels;
                 st[NSV_ST_AUDIO]->codec->sample_rate = samplerate;
-                av_set_pts_info(st[NSV_ST_AUDIO], 64, 1,
-                                st[NSV_ST_AUDIO]->codec->sample_rate);
                 PRINT(("NSV RAWAUDIO: bps %d, nchan %d, srate %d\n", bps, channels, samplerate));
             }
         }
         av_get_packet(pb, pkt, asize);
         pkt->stream_index = st[NSV_ST_AUDIO]->index;//NSV_ST_AUDIO;
-        //pkt->dts = nst->frame_offset;
-        //if (nst->sample_size)
-        //    pkt->dts /= nst->sample_size;
-        nst->frame_offset += asize; // XXX: that's valid only for PCM !?
+        pkt->flags |= nsv->state == NSV_HAS_READ_NSVS ? PKT_FLAG_KEY : 0; /* keyframe only likely on a sync frame */
+        if( nsv->state == NSV_HAS_READ_NSVS && st[NSV_ST_VIDEO] ) {
+            /* on a nsvs frame we have new information on a/v sync */
+            pkt->dts = (((NSVStream*)st[NSV_ST_VIDEO]->priv_data)->frame_offset-1);
+            pkt->dts *= (int64_t)1000 * st[NSV_ST_VIDEO]->time_base.num;
+            pkt->dts += (int64_t)nsv->avsync * st[NSV_ST_VIDEO]->time_base.den;
+            PRINT(("NSV AUDIO: sync:%d, dts:%"PRId64, nsv->avsync, pkt->dts));
+        }
+        nst->frame_offset++;
     }
 
-    //pkt->flags |= PKT_FLAG_KEY;
     nsv->state = NSV_UNSYNC;
     return 0;
 }
