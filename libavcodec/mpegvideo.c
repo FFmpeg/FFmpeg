@@ -5579,7 +5579,7 @@ static int encode_picture(MpegEncContext *s, int picture_number)
     /* Estimate motion for every MB */
     if(s->pict_type != I_TYPE){
         s->lambda = (s->lambda * s->avctx->me_penalty_compensation + 128)>>8;
-        s->lambda2= (s->lambda2* s->avctx->me_penalty_compensation + 128)>>8;
+        s->lambda2= (s->lambda2* (int64_t)s->avctx->me_penalty_compensation + 128)>>8;
         if(s->pict_type != B_TYPE && s->avctx->me_threshold==0){
             if((s->avctx->pre_me && s->last_non_b_pict_type==I_TYPE) || s->avctx->pre_me==2){
                 s->avctx->execute(s->avctx, pre_estimate_motion_thread, (void**)&(s->thread_context[0]), NULL, s->avctx->thread_count);
