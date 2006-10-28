@@ -40,6 +40,8 @@
  * seems someone came to the same conclusions as me, and updated it:
  * (2) http://www.stud.ktu.lt/~vitslav/nsv/nsv-format.txt
  *     http://www.stud.ktu.lt/~vitslav/nsv/
+ * official docs
+ * (3) http://ultravox.aol.com/NSVFormat.rtf
  * Sample files:
  * (S1) http://www.nullsoft.com/nsv/samples/
  * http://www.nullsoft.com/nsv/samples/faster.nsv
@@ -206,15 +208,6 @@ static const CodecTag nsv_codec_audio_tags[] = {
     { CODEC_ID_AAC, MKTAG('A', 'A', 'C', 'P') }, /* _CUTTED__MUXED_2 Heads - Out Of The City.nsv */
     { CODEC_ID_PCM_U16LE, MKTAG('P', 'C', 'M', ' ') },
     { 0, 0 },
-};
-
-static const AVRational nsv_framerate_table[] = {
-    {30,1},
-    {30000,1001},
-    {25,1},
-    {24000,1001},
-    {30,1},
-    {15000,1001},
 };
 
 //static int nsv_load_index(AVFormatContext *s);
@@ -415,11 +408,25 @@ static int nsv_parse_NSVs_header(AVFormatContext *s, AVFormatParameters *ap)
     vwidth = get_le16(pb);
     vheight = get_le16(pb);
     i = get_byte(pb);
-    /* XXX how big must the table be ? */
-    /* seems there is more to that... */
+
     PRINT(("NSV NSVs framerate code %2x\n", i));
-    if(i&0x80) framerate= nsv_framerate_table[i & 0x7F];
-    else       framerate= (AVRational){i, 1};
+    if(i&0x80) { /* odd way of giving native framerates from docs */
+        int t=(i & 0x7F)>>2;
+        if(t<16) framerate = (AVRational){1, t+1};
+        else     framerate = (AVRational){t-15, 1};
+
+        if(i&1){
+            framerate.num *= 1000;
+            framerate.den *= 1001;
+        }
+
+        if((i&3)==3)      framerate.num *= 24;
+        else if((i&3)==2) framerate.num *= 25;
+        else              framerate.num *= 30;
+    }
+    else
+        framerate= (AVRational){i, 1};
+
     nsv->avsync = get_le16(pb);
 #ifdef DEBUG
     print_tag("NSV NSVs vtag", vtag, 0);
