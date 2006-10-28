@@ -156,7 +156,7 @@ static double eval_expr(Parser * p, AVEvalExpr * e) {
         case e_gauss: { double d = eval_expr(p, e->param[0]); return exp(-d*d/2)/sqrt(2*M_PI); }
         case e_ld:     return e->value * p->var[clip(eval_expr(p, e->param[0]), 0, VARS-1)];
         case e_while: {
-            double d;
+            double d = NAN;
             while(eval_expr(p, e->param[0]))
                 d=eval_expr(p, e->param[1]);
             return d;
