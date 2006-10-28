@@ -526,6 +526,31 @@ int rtp_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
             av_new_packet(pkt, len);
             memcpy(pkt->data, buf, len);
             break;
+            // moved from below, verbatim.  this is because this section handles packets, and the lower switch handles
+            // timestamps.
+            // TODO: Put this into a dynamic packet handler...
+        case CODEC_ID_MPEG4AAC:
+            if (rtp_parse_mp4_au(s, buf))
+                return -1;
+            {
+                rtp_payload_data_t *infos = s->rtp_payload_data;
+                if (infos == NULL)
+                    return -1;
+                buf += infos->au_headers_length_bytes + 2;
+                len -= infos->au_headers_length_bytes + 2;
+
+                /* XXX: Fixme we only handle the case where rtp_parse_mp4_au define
+                    one au_header */
+                av_new_packet(pkt, infos->au_headers[0].size);
+                memcpy(pkt->data, buf, infos->au_headers[0].size);
+                buf += infos->au_headers[0].size;
+                len -= infos->au_headers[0].size;
+            }
+            s->read_buf_size = len;
+            s->buf_ptr = buf;
+            pkt->stream_index = s->st->index;
+            return 0; ///< Temporary return.
+            break;
         default:
             if(s->parse_packet) {
                 return s->parse_packet(s, pkt, timestamp, buf, len);
@@ -550,30 +575,11 @@ int rtp_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
                 pkt->pts = addend + delta_timestamp;
             }
             break;
+        case CODEC_ID_MPEG4AAC:
+        case CODEC_ID_H264:
         case CODEC_ID_MPEG4:
             pkt->pts = timestamp;
             break;
-        case CODEC_ID_MPEG4AAC:
-            if (rtp_parse_mp4_au(s, buf))
-              return -1;
-            {
-            rtp_payload_data_t *infos = s->rtp_payload_data;
-            if (infos == NULL)
-                return -1;
-            buf += infos->au_headers_length_bytes + 2;
-            len -= infos->au_headers_length_bytes + 2;
-
-            /* XXX: Fixme we only handle the case where rtp_parse_mp4_au define
-               one au_header */
-            av_new_packet(pkt, infos->au_headers[0].size);
-            memcpy(pkt->data, buf, infos->au_headers[0].size);
-            buf += infos->au_headers[0].size;
-            len -= infos->au_headers[0].size;
-            }
-            s->read_buf_size = len;
-            s->buf_ptr = buf;
-            pkt->stream_index = s->st->index;
-            return 0;
         default:
             /* no timestamp info yet */
             break;
