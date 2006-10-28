@@ -1299,7 +1299,8 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
 
         if (vard*2 + 200*256 > varc)
             mb_type|= CANDIDATE_MB_TYPE_INTRA;
-        if (varc*2 + 200*256 > vard){
+        if (varc*2 + 200*256 > vard || s->qscale > 24){
+//        if (varc*2 + 200*256 + 50*(s->lambda2>>FF_LAMBDA_SHIFT) > vard){
             mb_type|= CANDIDATE_MB_TYPE_INTER;
             c->sub_motion_search(s, &mx, &my, dmin, 0, 0, 0, 16);
             if(s->flags&CODEC_FLAG_MV0)
