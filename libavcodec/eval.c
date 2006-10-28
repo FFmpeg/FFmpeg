@@ -2,6 +2,7 @@
  * simple arithmetic expression evaluator
  *
  * Copyright (c) 2002 Michael Niedermayer <michaelni@gmx.at>
+ * Copyright (c) 2006 Oded Shimon <ods15@ods15.dyndns.org>
  *
  * This file is part of FFmpeg.
  *
