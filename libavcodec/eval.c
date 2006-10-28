@@ -175,7 +175,7 @@ static double eval_expr(Parser * p, AVEvalExpr * e) {
                 case e_mul: return e->value * (d * d2);
                 case e_div: return e->value * (d / d2);
                 case e_add: return e->value * (d + d2);
-                case e_last:return d2;
+                case e_last:return e->value * d2;
                 case e_st : return e->value * (p->var[clip(d, 0, VARS-1)]= d2);
             }
         }
