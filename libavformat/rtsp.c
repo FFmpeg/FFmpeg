@@ -200,6 +200,8 @@ static int sdp_parse_rtpmap(AVCodecContext *codec, RTSPStream *rtsp_st, int payl
                     i = atoi(buf);
                     if (i > 0)
                         codec->channels = i;
+                    // TODO: there is a bug here; if it is a mono stream, and less than 22000Hz, faad upconverts to stereo and twice the
+                    //  frequency.  No problem, but the sample rate is being set here by the sdp line.  Upcoming patch forthcoming. (rdm)
                 }
                 av_log(codec, AV_LOG_DEBUG, " audio samplerate set to : %i\n", codec->sample_rate);
                 av_log(codec, AV_LOG_DEBUG, " audio channels set to : %i\n", codec->channels);
@@ -287,6 +289,25 @@ static attrname_map_t attr_names[]=
     {NULL, -1, -1},
 };
 
+/** parse the attribute line from the fmtp a line of an sdp resonse.  This is broken out as a function
+* because it is used in rtp_h264.c, which is forthcoming.
+*/
+int rtsp_next_attr_and_value(const char **p, char *attr, int attr_size, char *value, int value_size)
+{
+    skip_spaces(p);
+    if(**p)
+    {
+        get_word_sep(attr, attr_size, "=", p);
+        if (**p == '=')
+            (*p)++;
+        get_word_sep(value, value_size, ";", p);
+        if (**p == ';')
+            (*p)++;
+        return 1;
+    }
+    return 0;
+}
+
 /* parse a SDP line and save stream attributes */
 static void sdp_parse_fmtp(AVStream *st, const char *p)
 {
@@ -298,6 +319,7 @@ static void sdp_parse_fmtp(AVStream *st, const char *p)
     AVCodecContext *codec = st->codec;
     rtp_payload_data_t *rtp_payload_data = &rtsp_st->rtp_payload_data;
 
+    // TODO (Replace with rtsp_next_attr_and_value)
     /* loop on each attribute */
     for(;;) {
         skip_spaces(&p);
@@ -468,6 +490,19 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
                         }
                     } else {
                         sdp_parse_fmtp(st, p);
+                    }
+                }
+            }
+        } else if(strstart(p, "framesize:", &p)) {
+            // let dynamic protocol handlers have a stab at the line.
+            get_word(buf1, sizeof(buf1), &p);
+            payload_type = atoi(buf1);
+            for(i = 0; i < s->nb_streams;i++) {
+                st = s->streams[i];
+                rtsp_st = st->priv_data;
+                if (rtsp_st->sdp_payload_type == payload_type) {
+                    if(rtsp_st->dynamic_handler && rtsp_st->dynamic_handler->parse_sdp_a_line) {
+                        rtsp_st->dynamic_handler->parse_sdp_a_line(st, rtsp_st->dynamic_protocol_context, buf);
                     }
                 }
             }

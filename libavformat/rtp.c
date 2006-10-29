@@ -328,6 +328,7 @@ int rtp_check_and_send_back_rr(RTPDemuxContext *s, int count)
  * open a new RTP parse context for stream 'st'. 'st' can be NULL for
  * MPEG2TS streams to indicate that they should be demuxed inside the
  * rtp demux (otherwise CODEC_ID_MPEG2TS packets are returned)
+ * TODO: change this to not take rtp_payload data, and use the new dynamic payload system.
  */
 RTPDemuxContext *rtp_parse_open(AVFormatContext *s1, AVStream *st, URLContext *rtpc, int payload_type, rtp_payload_data_t *rtp_payload_data)
 {
@@ -419,6 +420,39 @@ static int rtp_parse_mp4_au(RTPDemuxContext *s, const uint8_t *buf)
 }
 
 /**
+ * This was the second switch in rtp_parse packet.  Normalizes time, if required, sets stream_index, etc.
+ */
+static void finalize_packet(RTPDemuxContext *s, AVPacket *pkt, uint32_t timestamp)
+{
+    switch(s->st->codec->codec_id) {
+        case CODEC_ID_MP2:
+        case CODEC_ID_MPEG1VIDEO:
+            if (s->last_rtcp_ntp_time != AV_NOPTS_VALUE) {
+                int64_t addend;
+
+                int delta_timestamp;
+                /* XXX: is it really necessary to unify the timestamp base ? */
+                /* compute pts from timestamp with received ntp_time */
+                delta_timestamp = timestamp - s->last_rtcp_timestamp;
+                /* convert to 90 kHz without overflow */
+                addend = (s->last_rtcp_ntp_time - s->first_rtcp_ntp_time) >> 14;
+                addend = (addend * 5625) >> 14;
+                pkt->pts = addend + delta_timestamp;
+            }
+            break;
+        case CODEC_ID_MPEG4AAC:
+        case CODEC_ID_H264:
+        case CODEC_ID_MPEG4:
+            pkt->pts = timestamp;
+            break;
+        default:
+            /* no timestamp info yet */
+            break;
+    }
+    pkt->stream_index = s->st->index;
+}
+
+/**
  * Parse an RTP or RTCP packet directly sent as a buffer.
  * @param s RTP parse context.
  * @param pkt returned packet
@@ -431,15 +465,20 @@ int rtp_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
                      const uint8_t *buf, int len)
 {
     unsigned int ssrc, h;
-    int payload_type, seq, delta_timestamp, ret;
+    int payload_type, seq, ret;
     AVStream *st;
     uint32_t timestamp;
+    int rv= 0;
 
     if (!buf) {
         /* return the next packets, if any */
         if(s->st && s->parse_packet) {
-            return s->parse_packet(s, pkt, 0, NULL, 0);
+            timestamp= 0; ///< Should not be used if buf is NULL, but should be set to the timestamp of the packet returned....
+            rv= s->parse_packet(s, pkt, &timestamp, NULL, 0);
+            finalize_packet(s, pkt, timestamp);
+            return rv;
         } else {
+            // TODO: Move to a dynamic packet handler (like above)
             if (s->read_buf_index >= s->read_buf_size)
                 return -1;
             ret = mpegts_parse_packet(s->ts, pkt, s->buf + s->read_buf_index,
@@ -548,12 +587,11 @@ int rtp_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
             }
             s->read_buf_size = len;
             s->buf_ptr = buf;
-            pkt->stream_index = s->st->index;
-            return 0; ///< Temporary return.
+            rv= 0;
             break;
         default:
             if(s->parse_packet) {
-                return s->parse_packet(s, pkt, timestamp, buf, len);
+                rv= s->parse_packet(s, pkt, &timestamp, buf, len);
             } else {
                 av_new_packet(pkt, len);
                 memcpy(pkt->data, buf, len);
@@ -561,32 +599,10 @@ int rtp_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
             break;
         }
 
-        switch(st->codec->codec_id) {
-        case CODEC_ID_MP2:
-        case CODEC_ID_MPEG1VIDEO:
-            if (s->last_rtcp_ntp_time != AV_NOPTS_VALUE) {
-                int64_t addend;
-                /* XXX: is it really necessary to unify the timestamp base ? */
-                /* compute pts from timestamp with received ntp_time */
-                delta_timestamp = timestamp - s->last_rtcp_timestamp;
-                /* convert to 90 kHz without overflow */
-                addend = (s->last_rtcp_ntp_time - s->first_rtcp_ntp_time) >> 14;
-                addend = (addend * 5625) >> 14;
-                pkt->pts = addend + delta_timestamp;
-            }
-            break;
-        case CODEC_ID_MPEG4AAC:
-        case CODEC_ID_H264:
-        case CODEC_ID_MPEG4:
-            pkt->pts = timestamp;
-            break;
-        default:
-            /* no timestamp info yet */
-            break;
-        }
-        pkt->stream_index = s->st->index;
+        // now perform timestamp things....
+        finalize_packet(s, pkt, timestamp);
     }
-    return 0;
+    return rv;
 }
 
 void rtp_parse_close(RTPDemuxContext *s)

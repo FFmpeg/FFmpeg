@@ -25,7 +25,7 @@
 
 typedef int (*DynamicPayloadPacketHandlerProc) (struct RTPDemuxContext * s,
                                                 AVPacket * pkt,
-                                                uint32_t timestamp,
+                                                uint32_t *timestamp,
                                                 const uint8_t * buf,
                                                 int len);
 
