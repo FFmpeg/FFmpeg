@@ -19,7 +19,7 @@ HEADERS = postprocess.h
 
 include $(SRC_PATH)/common.mak
 
-depend: postprocess.c
+depend dep: postprocess.c
 
 postprocess_pic.o: postprocess.c
 	$(CC) -c $(CFLAGS) -fomit-frame-pointer -fPIC -DPIC -o $@ $<
