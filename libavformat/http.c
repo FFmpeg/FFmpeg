@@ -30,6 +30,7 @@
 #endif
 #include <netdb.h>
 
+#include "base64.h"
 
 /* XXX: POST protocol is not completly implemented because ffmpeg use
    only a subset of it */
@@ -51,7 +52,6 @@ typedef struct {
 static int http_connect(URLContext *h, const char *path, const char *hoststr,
                         const char *auth);
 static int http_write(URLContext *h, uint8_t *buf, int size);
-static char *b64_encode(const unsigned char *src );
 
 
 /* return non zero if error */
@@ -189,7 +189,7 @@ static int http_connect(URLContext *h, const char *path, const char *hoststr,
     /* send http header */
     post = h->flags & URL_WRONLY;
 
-    auth_b64 = b64_encode(auth);
+    auth_b64 = av_base64_encode((uint8_t *)auth, strlen(auth));
     snprintf(s->buffer, sizeof(s->buffer),
              "%s %s HTTP/1.0\r\n"
              "User-Agent: %s\r\n"
@@ -287,37 +287,3 @@ URLProtocol http_protocol = {
     NULL, /* seek */
     http_close,
 };
-
-/*****************************************************************************
- * b64_encode: stolen from VLC's http.c
- * simplified by michael
- *****************************************************************************/
-
-static char *b64_encode( const unsigned char *src )
-{
-    static const char b64[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-    unsigned int len= strlen(src);
-    char *ret, *dst;
-    unsigned i_bits = 0;
-    unsigned i_shift = 0;
-
-    if(len < UINT_MAX/4){
-        ret=dst= av_malloc( len * 4 / 3 + 12 );
-    }else
-        return NULL;
-
-    while(*src){
-        i_bits = (i_bits << 8) + *src++;
-        i_shift += 8;
-
-        do{
-            *dst++ = b64[(i_bits << 6 >> i_shift) & 0x3f];
-            i_shift -= 6;
-        }while( i_shift > 6 || (*src == 0 && i_shift>0));
-    }
-    *dst++ = '=';
-    *dst   = '\0';
-
-    return ret;
-}
-
