@@ -727,7 +727,7 @@ int sws_scale(struct SwsContext *ctx, uint8_t* src[], int srcStride[],
     uint8_t *buf1 = NULL, *buf2 = NULL;
     enum PixelFormat current_pix_fmt;
 
-    for (i = 0; i < 3; i++) {
+    for (i = 0; i < 4; i++) {
         src_pict.data[i] = src[i];
         src_pict.linesize[i] = srcStride[i];
         dst_pict.data[i] = dst[i];
