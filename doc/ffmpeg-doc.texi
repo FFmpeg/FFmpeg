@@ -934,6 +934,7 @@ following image formats are supported:
 @item WavPack Audio          @tab      @tab X
 @item Cin Audio              @tab      @tab X
 @tab Codec used in Delphine Software games.
+@item Intel Music Coder      @tab      @tab X
 @end multitable
 
 @code{X} means that encoding (resp. decoding) is supported.

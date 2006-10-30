@@ -563,6 +563,9 @@ void avcodec_register_all(void)
 #ifdef CONFIG_TIFF_DECODER
     register_avcodec(&tiff_decoder);
 #endif //CONFIG_TIFF_DECODER
+#ifdef CONFIG_IMC_DECODER
+    register_avcodec(&imc_decoder);
+#endif //CONFIG_IMC_DECODER
 
 #if defined(CONFIG_AMR_NB) || defined(CONFIG_AMR_NB_FIXED)
 #ifdef CONFIG_AMR_NB_DECODER

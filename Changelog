@@ -65,6 +65,7 @@ version <next>
 - MTV demuxer
 - TIFF picture decoder
 - GIF picture decoder
+- Intel Music decoder
 
 version 0.4.9-pre1:
 
