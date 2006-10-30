@@ -666,11 +666,10 @@ static int mpegaudio_parse(AVCodecParserContext *s1,
             }
             if ((s->inbuf_ptr - s->inbuf) >= MPA_HEADER_SIZE) {
             got_header:
-                sr= avctx->sample_rate;
                 header = (s->inbuf[0] << 24) | (s->inbuf[1] << 16) |
                     (s->inbuf[2] << 8) | s->inbuf[3];
 
-                ret = mpa_decode_header(avctx, header);
+                ret = mpa_decode_header(avctx, header, &sr);
                 if (ret < 0) {
                     s->header_count= -2;
                     /* no sync found : move by one byte (inefficient, but simple!) */
@@ -694,8 +693,8 @@ static int mpegaudio_parse(AVCodecParserContext *s1,
                     }
 #endif
                 }
-                if(s->header_count <= 0)
-                    avctx->sample_rate= sr; //FIXME ugly
+                if(s->header_count > 1)
+                    avctx->sample_rate= sr;
             }
         } else
 #if 0
