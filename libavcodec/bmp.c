@@ -177,7 +177,8 @@ static int bmp_decode_frame(AVCodecContext *avctx,
     buf += hsize;
     dsize = buf_size - hsize;
 
-    n = avctx->width * (depth / 8);
+    /* Line size in file multiple of 4 */
+    n = (avctx->width * (depth / 8) + 3) & ~3;
 
     if(n * avctx->height > dsize){
         av_log(avctx, AV_LOG_ERROR, "not enough data (%d < %d)\n",
