@@ -2269,7 +2269,8 @@ static int mp_decode_layer3(MPADecodeContext *s)
 //av_log(NULL, AV_LOG_ERROR, "backstep:%d, lastbuf:%d\n", main_data_begin, s->last_buf_size);
     if(main_data_begin > s->last_buf_size){
         av_log(NULL, AV_LOG_ERROR, "backstep:%d, lastbuf:%d\n", main_data_begin, s->last_buf_size);
-        s->last_buf_size= main_data_begin;
+//        s->last_buf_size= main_data_begin;
+        return -1;
       }
 
     memcpy(s->last_buf + s->last_buf_size, ptr, EXTRABYTES);
