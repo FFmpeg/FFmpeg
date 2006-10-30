@@ -203,7 +203,7 @@ void av_destruct_packet(AVPacket *pkt)
  */
 int av_new_packet(AVPacket *pkt, int size)
 {
-    void *data;
+    uint8_t *data;
     if((unsigned)size > (unsigned)size + FF_INPUT_BUFFER_PADDING_SIZE)
         return AVERROR_NOMEM;
     data = av_malloc(size + FF_INPUT_BUFFER_PADDING_SIZE);
