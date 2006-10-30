@@ -139,7 +139,7 @@ static int imc_decode_init(AVCodecContext * avctx)
         for(j = 0; j < 4; j++) {
             init_vlc (&q->huffman_vlc[i][j], 9, imc_huffman_sizes[i],
                      imc_huffman_lens[i][j], 1, 1,
-                     imc_huffman_bits[i][j], 2, 2, 0);
+                     imc_huffman_bits[i][j], 2, 2, 1);
         }
     }
     q->one_div_log2 = 1/log(2);
