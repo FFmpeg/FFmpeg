@@ -61,11 +61,15 @@
 #include FT_FREETYPE_H
 #include FT_GLYPH_H
 
-#define RGB_TO_YUV(rgb_color, yuv_color) { \
-    yuv_color[0] = ( 0.257 * rgb_color[0]) + (0.504 * rgb_color[1]) + (0.098 * rgb_color[2]) +  16; \
-    yuv_color[2] = ( 0.439 * rgb_color[0]) - (0.368 * rgb_color[1]) - (0.071 * rgb_color[2]) + 128; \
-    yuv_color[1] = (-0.148 * rgb_color[0]) - (0.291 * rgb_color[1]) + (0.439 * rgb_color[2]) + 128; \
-}
+#define SCALEBITS 10
+#define ONE_HALF  (1 << (SCALEBITS - 1))
+#define FIX(x)    ((int) ((x) * (1<<SCALEBITS) + 0.5))
+
+#define RGB_TO_YUV(rgb_color, yuv_color) do { \
+  yuv_color[0] = (FIX(0.29900)    * rgb_color[0] + FIX(0.58700) * rgb_color[1] + FIX(0.11400) * rgb_color[2] + ONE_HALF) >> SCALEBITS; \
+  yuv_color[2] = ((FIX(0.50000)   * rgb_color[0] - FIX(0.41869) * rgb_color[1] - FIX(0.08131) * rgb_color[2] + ONE_HALF - 1) >> SCALEBITS) + 128; \
+  yuv_color[1] = ((- FIX(0.16874) * rgb_color[0] - FIX(0.33126) * rgb_color[1] + FIX(0.50000) * rgb_color[2] + ONE_HALF - 1) >> SCALEBITS) + 128; \
+} while (0)
 
 #define COPY_3(dst,src) { \
     dst[0]=src[0]; \
