@@ -94,7 +94,7 @@
 
 typedef struct {
   unsigned char *text;
-  unsigned char *file;
+  char *file;
   unsigned int x;
   unsigned int y;
   int bg;
