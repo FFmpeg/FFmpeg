@@ -459,6 +459,7 @@ ffserver="yes"
 ffplay="yes"
 LIBOBJFLAGS=""
 FFLDFLAGS=-Wl,--warn-common
+LDLATEFLAGS='-Wl,-rpath-link,\$(BUILD_ROOT)/libavcodec -Wl,-rpath-link,\$(BUILD_ROOT)/libavformat -Wl,-rpath-link,\$(BUILD_ROOT)/libavutil'
 FFSERVERLDFLAGS=-Wl,-E
 LDCONFIG="ldconfig"
 LIBPREF="lib"
@@ -618,7 +619,7 @@ SLIBNAME_WITH_MAJOR='$(SLIBPREF)$(NAME)-$(LIBMAJOR)$(SLIBSUF)'
 SHFLAGS='-shared -Wl,--out-implib=lib$(NAME).dll.a'
 ;;
 Linux)
-check_ldflags '-Wl,--as-needed'
+LDLATEFLAGS="-Wl,--as-needed $LDLATEFLAGS"
 ;;
 IRIX*)
 targetos=IRIX
@@ -1520,7 +1521,7 @@ check_cflags -Wredundant-decls
 check_cflags -Winline
 
 # add some linker flags
-check_ldflags '-Wl,-rpath-link,\$(BUILD_ROOT)/libavcodec' '-Wl,-rpath-link,\$(BUILD_ROOT)/libavformat' '-Wl,-rpath-link,\$(BUILD_ROOT)/libavutil'
+check_ldflags $LDLATEFLAGS
 
 # not all compilers support -Os
 test "$optimize" = "small" && check_cflags -Os
