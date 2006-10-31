@@ -119,6 +119,7 @@ OBJS-$(CONFIG_SMACKER_DEMUXER)           += smacker.o
 OBJS-$(CONFIG_SOL_DEMUXER)               += sol.o
 OBJS-$(CONFIG_SWF_DEMUXER)               += swf.o
 OBJS-$(CONFIG_SWF_MUXER)                 += swf.o
+OBJS-$(CONFIG_TIERTEXSEQ_DEMUXER)        += tiertexseq.o
 OBJS-$(CONFIG_TTA_DEMUXER)               += tta.o
 OBJS-$(CONFIG_VOC_DEMUXER)               += voc.o riff.o
 OBJS-$(CONFIG_VOC_MUXER)                 += voc.o riff.o
@@ -130,7 +131,6 @@ OBJS-$(CONFIG_WSVQA_DEMUXER)             += westwood.o
 OBJS-$(CONFIG_WV_DEMUXER)                += wv.o
 OBJS-$(CONFIG_YUV4MPEGPIPE_MUXER)        += yuv4mpeg.o
 OBJS-$(CONFIG_YUV4MPEGPIPE_DEMUXER)      += yuv4mpeg.o
-OBJS-$(CONFIG_TIERTEXSEQ_DEMUXER)        += tiertexseq.o
 
 # image formats
 OBJS+= pnm.o yuv.o png.o jpeg.o gifdec.o sgi.o
