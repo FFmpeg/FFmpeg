@@ -2542,6 +2542,10 @@ vbv_retry:
                     if(s->flipflop_rounding || s->codec_id == CODEC_ID_H263P || s->codec_id == CODEC_ID_MPEG4)
                         s->no_rounding ^= 1;
                 }
+                if(s->pict_type!=B_TYPE){
+                    s->time_base= s->last_time_base;
+                    s->last_non_b_time= s->time - s->pp_time;
+                }
 //                av_log(NULL, AV_LOG_ERROR, "R:%d ", s->next_lambda);
                 for(i=0; i<avctx->thread_count; i++){
                     PutBitContext *pb= &s->thread_context[i]->pb;
