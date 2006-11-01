@@ -345,13 +345,10 @@ static const CodecTag codec_movaudio_tags[] = {
 static int mov_write_audio_tag(ByteIOContext *pb, MOVTrack* track)
 {
     offset_t pos = url_ftell(pb);
-    int vbr=  track->mode == MODE_MOV &&
-        (track->enc->codec_id == CODEC_ID_AAC ||
-         track->enc->codec_id == CODEC_ID_MP3 ||
-         track->enc->codec_id == CODEC_ID_AMR_NB);
-    int version = vbr ||
-        track->enc->codec_id == CODEC_ID_PCM_S32LE ||
-        track->enc->codec_id == CODEC_ID_PCM_S24LE;
+    int version = track->mode == MODE_MOV &&
+        (track->audio_vbr ||
+         track->enc->codec_id == CODEC_ID_PCM_S32LE ||
+         track->enc->codec_id == CODEC_ID_PCM_S24LE);
 
     put_be32(pb, 0); /* size */
     put_le32(pb, track->tag); // store it byteswapped
@@ -368,14 +365,12 @@ static int mov_write_audio_tag(ByteIOContext *pb, MOVTrack* track)
     /* FIXME 8 bit for 'raw ' in mov */
     put_be16(pb, 16); /* Reserved */
 
-    put_be16(pb, vbr ? 0xfffe : 0); /* compression ID */
+    put_be16(pb, track->mode == MODE_MOV && track->audio_vbr ? -2 : 0); /* compression ID */
     put_be16(pb, 0); /* packet size (= 0) */
     put_be16(pb, track->timescale); /* Time scale */
     put_be16(pb, 0); /* Reserved */
 
     if(version == 1) { /* SoundDescription V1 extended info */
-        if (vbr)
-            track->sampleSize = 0;
         put_be32(pb, track->enc->frame_size); /* Samples per packet */
         put_be32(pb, track->sampleSize / track->enc->channels); /* Bytes per packet */
         put_be32(pb, track->sampleSize); /* Bytes per frame */
