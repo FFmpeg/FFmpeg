@@ -2489,7 +2489,7 @@ static inline void RENAME(hyscale)(uint16_t *dst, long dstWidth, uint8_t *src, i
     }
     else // Fast Bilinear upscale / crap downscale
     {
-#if defined(ARCH_X86) || defined(ARCH_X86_64)
+#if defined(ARCH_X86)
 #ifdef HAVE_MMX2
 	int i;
 #if defined(PIC)
@@ -2689,7 +2689,7 @@ inline static void RENAME(hcscale)(uint16_t *dst, long dstWidth, uint8_t *src1, 
     }
     else // Fast Bilinear upscale / crap downscale
     {
-#if defined(ARCH_X86) || defined(ARCH_X86_64)
+#if defined(ARCH_X86)
 #ifdef HAVE_MMX2
 	int i;
 #if defined(PIC)

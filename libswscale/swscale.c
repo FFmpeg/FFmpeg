@@ -149,7 +149,7 @@ add BGR4 output support
 write special BGR->BGR scaler
 */
 
-#if defined(ARCH_X86) || defined(ARCH_X86_64)
+#if defined(ARCH_X86)
 static uint64_t attribute_used __attribute__((aligned(8))) bF8=       0xF8F8F8F8F8F8F8F8LL;
 static uint64_t attribute_used __attribute__((aligned(8))) bFC=       0xFCFCFCFCFCFCFCFCLL;
 static uint64_t __attribute__((aligned(8))) w10=       0x0010001000100010LL;
@@ -195,7 +195,7 @@ static const uint64_t bgr2VCoeff  attribute_used __attribute__((aligned(8))) = 0
 static const uint64_t bgr2YOffset attribute_used __attribute__((aligned(8))) = 0x1010101010101010ULL;
 static const uint64_t bgr2UVOffset attribute_used __attribute__((aligned(8)))= 0x8080808080808080ULL;
 static const uint64_t w1111       attribute_used __attribute__((aligned(8))) = 0x0001000100010001ULL;
-#endif /* defined(ARCH_X86) || defined(ARCH_X86_64) */
+#endif /* defined(ARCH_X86) */
 
 // clipping helper table for C implementations:
 static unsigned char clip_table[768];
@@ -290,7 +290,7 @@ char *sws_format_name(enum PixelFormat format)
     }
 }
 
-#if defined(ARCH_X86) || defined(ARCH_X86_64)
+#if defined(ARCH_X86)
 void in_asm_used_var_warning_killer()
 {
  volatile int i= bF8+bFC+w10+
@@ -813,7 +813,7 @@ static inline void yuv2packedXinC(SwsContext *c, int16_t *lumFilter, int16_t **l
 #endif //HAVE_ALTIVEC
 #endif //ARCH_POWERPC
 
-#if defined(ARCH_X86) || defined(ARCH_X86_64)
+#if defined(ARCH_X86)
 
 #if (defined (HAVE_MMX) && !defined (HAVE_3DNOW) && !defined (HAVE_MMX2)) || defined (RUNTIME_CPUDETECT)
 #define COMPILE_MMX
@@ -850,7 +850,7 @@ static inline void yuv2packedXinC(SwsContext *c, int16_t *lumFilter, int16_t **l
 #endif
 #endif //ARCH_POWERPC
 
-#if defined(ARCH_X86) || defined(ARCH_X86_64)
+#if defined(ARCH_X86)
 
 //X86 versions
 /*
@@ -917,7 +917,7 @@ static inline int initFilter(int16_t **outFilter, int16_t **filterPos, int *outF
 	int minFilterSize;
 	double *filter=NULL;
 	double *filter2=NULL;
-#if defined(ARCH_X86) || defined(ARCH_X86_64)
+#if defined(ARCH_X86)
 	if(flags & SWS_CPU_CAPS_MMX)
 		asm volatile("emms\n\t"::: "memory"); //FIXME this shouldnt be required but it IS (even for non mmx versions)
 #endif
@@ -1471,7 +1471,7 @@ static void globalInit(void){
 static SwsFunc getSwsFunc(int flags){
     
 #ifdef RUNTIME_CPUDETECT
-#if defined(ARCH_X86) || defined(ARCH_X86_64)
+#if defined(ARCH_X86)
 	// ordered per speed fasterst first
 	if(flags & SWS_CPU_CAPS_MMX2)
 		return swScale_MMX2;
@@ -1490,7 +1490,7 @@ static SwsFunc getSwsFunc(int flags){
 	  return swScale_C;
 #endif
 	return swScale_C;
-#endif /* defined(ARCH_X86) || defined(ARCH_X86_64) */
+#endif /* defined(ARCH_X86) */
 #else //RUNTIME_CPUDETECT
 #ifdef HAVE_MMX2
 	return swScale_MMX2;
@@ -1943,7 +1943,7 @@ SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, int dstH
 	int unscaled, needsDither;
 	int srcRange, dstRange;
 	SwsFilter dummyFilter= {NULL, NULL, NULL, NULL};
-#if defined(ARCH_X86) || defined(ARCH_X86_64)
+#if defined(ARCH_X86)
 	if(flags & SWS_CPU_CAPS_MMX)
 		asm volatile("emms\n\t"::: "memory");
 #endif
@@ -2365,7 +2365,7 @@ SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, int dstH
 		}
 		else
 		{
-#if defined(ARCH_X86) || defined(ARCH_X86_64)
+#if defined(ARCH_X86)
 			MSG_V("SwScaler: using X86-Asm scaler for horizontal scaling\n");
 #else
 			if(flags & SWS_FAST_BILINEAR)
@@ -2802,7 +2802,7 @@ void sws_freeContext(SwsContext *c){
 	av_free(c->hChrFilterPos);
 	c->hChrFilterPos = NULL;
 
-#if defined(ARCH_X86) || defined(ARCH_X86_64)
+#if defined(ARCH_X86)
 #ifdef MAP_ANONYMOUS
 	if(c->funnyYCode) munmap(c->funnyYCode, MAX_FUNNY_CODE_SIZE);
 	if(c->funnyUVCode) munmap(c->funnyUVCode, MAX_FUNNY_CODE_SIZE);
@@ -2812,7 +2812,7 @@ void sws_freeContext(SwsContext *c){
 #endif
 	c->funnyYCode=NULL;
 	c->funnyUVCode=NULL;
-#endif /* defined(ARCH_X86) || defined(ARCH_X86_64) */
+#endif /* defined(ARCH_X86) */
 
 	av_free(c->lumMmx2Filter);
 	c->lumMmx2Filter=NULL;

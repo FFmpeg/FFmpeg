@@ -88,7 +88,7 @@ void (*yvu9_to_yuy2)(const uint8_t *src1, const uint8_t *src2, const uint8_t *sr
 			long srcStride1, long srcStride2,
 			long srcStride3, long dstStride);
 
-#if defined(ARCH_X86) || defined(ARCH_X86_64)
+#if defined(ARCH_X86)
 static const uint64_t mmx_null  __attribute__((aligned(8))) = 0x0000000000000000ULL;
 static const uint64_t mmx_one   __attribute__((aligned(8))) = 0xFFFFFFFFFFFFFFFFULL;
 static const uint64_t mask32b  attribute_used __attribute__((aligned(8))) = 0x000000FF000000FFULL;
@@ -150,7 +150,7 @@ static uint64_t __attribute__((aligned(8))) dither8[2]={
 	0x0602060206020602LL,
 	0x0004000400040004LL,};
 #endif
-#endif /* defined(ARCH_X86) || defined(ARCH_X86_64) */
+#endif /* defined(ARCH_X86) */
 
 #define RGB2YUV_SHIFT 8
 #define BY ((int)( 0.098*(1<<RGB2YUV_SHIFT)+0.5))
@@ -172,7 +172,7 @@ static uint64_t __attribute__((aligned(8))) dither8[2]={
 #define RENAME(a) a ## _C
 #include "rgb2rgb_template.c"
 
-#if defined(ARCH_X86) || defined(ARCH_X86_64)
+#if defined(ARCH_X86)
 
 //MMX versions
 #undef RENAME
