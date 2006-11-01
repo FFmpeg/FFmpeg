@@ -334,7 +334,7 @@ static inline int ff_get_fourcc(const char *s){
         }\
     }
 
-#if defined(ARCH_X86) || defined(ARCH_X86_64) || defined(ARCH_POWERPC)
+#if defined(ARCH_X86) || defined(ARCH_POWERPC)
 #if defined(ARCH_X86_64)
 static inline uint64_t read_time(void)
 {

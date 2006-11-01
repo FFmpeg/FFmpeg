@@ -47,7 +47,7 @@
 
 extern const uint8_t ff_reverse[256];
 
-#if defined(ARCH_X86) || defined(ARCH_X86_64)
+#if defined(ARCH_X86)
 // avoid +32 for shift optimization (gcc should do that ...)
 static inline  int32_t NEG_SSR32( int32_t a, int8_t s){
     asm ("sarl %1, %0\n\t"
@@ -171,7 +171,7 @@ typedef struct RL_VLC_ELEM {
 #endif
 
 /* used to avoid missaligned exceptions on some archs (alpha, ...) */
-#if defined(ARCH_X86) || defined(ARCH_X86_64)
+#if defined(ARCH_X86)
 #    define unaligned16(a) (*(const uint16_t*)(a))
 #    define unaligned32(a) (*(const uint32_t*)(a))
 #    define unaligned64(a) (*(const uint64_t*)(a))
@@ -200,7 +200,7 @@ unaligned(16)
 unaligned(32)
 unaligned(64)
 #undef unaligned
-#endif /* defined(ARCH_X86) || defined(ARCH_X86_64) */
+#endif /* defined(ARCH_X86) */
 
 #ifndef ALT_BITSTREAM_WRITER
 static inline void put_bits(PutBitContext *s, int n, unsigned int value)
@@ -247,7 +247,7 @@ static inline void put_bits(PutBitContext *s, int n, unsigned int value)
 static inline void put_bits(PutBitContext *s, int n, unsigned int value)
 {
 #    ifdef ALIGNED_BITSTREAM_WRITER
-#        if defined(ARCH_X86) || defined(ARCH_X86_64)
+#        if defined(ARCH_X86)
     asm volatile(
         "movl %0, %%ecx                 \n\t"
         "xorl %%eax, %%eax              \n\t"
@@ -278,7 +278,7 @@ static inline void put_bits(PutBitContext *s, int n, unsigned int value)
     s->index= index;
 #        endif
 #    else //ALIGNED_BITSTREAM_WRITER
-#        if defined(ARCH_X86) || defined(ARCH_X86_64)
+#        if defined(ARCH_X86)
     asm volatile(
         "movl $7, %%ecx                 \n\t"
         "andl %0, %%ecx                 \n\t"
@@ -580,7 +580,7 @@ static inline void skip_bits_long(GetBitContext *s, int n){
         name##_bit_count-= 32;\
     }\
 
-#if defined(ARCH_X86) || defined(ARCH_X86_64)
+#if defined(ARCH_X86)
 #   define SKIP_CACHE(name, gb, num)\
         asm(\
             "shldl %2, %1, %0          \n\t"\

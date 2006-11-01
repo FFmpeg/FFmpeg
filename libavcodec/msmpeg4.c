@@ -659,7 +659,7 @@ static inline int msmpeg4_pred_dc(MpegEncContext * s, int n,
        necessitate to modify mpegvideo.c. The problem comes from the
        fact they decided to store the quantized DC (which would lead
        to problems if Q could vary !) */
-#if (defined(ARCH_X86) || defined(ARCH_X86_64)) && !defined PIC
+#if (defined(ARCH_X86)) && !defined PIC
     asm volatile(
         "movl %3, %%eax         \n\t"
         "shrl $1, %%eax         \n\t"

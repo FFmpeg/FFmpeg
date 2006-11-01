@@ -105,7 +105,7 @@
 
 extern const uint32_t inverse[256];
 
-#if defined(ARCH_X86) || defined(ARCH_X86_64)
+#if defined(ARCH_X86)
 #    define FASTDIV(a,b) \
     ({\
         int ret,dmy;\
@@ -154,7 +154,7 @@ static inline int ff_sqrt(int a)
     return ret;
 }
 
-#if defined(ARCH_X86) || defined(ARCH_X86_64)
+#if defined(ARCH_X86)
 #define MASK_ABS(mask, level)\
             asm volatile(\
                 "cdq                    \n\t"\
