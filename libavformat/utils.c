@@ -1854,8 +1854,8 @@ int av_find_stream_info(AVFormatContext *ic)
 
         /* duplicate the packet */
         if (av_dup_packet(pkt) < 0) {
-                ret = AVERROR_NOMEM;
-                break;
+            ret = AVERROR_NOMEM;
+            break;
         }
 
         read_size += pkt->size;

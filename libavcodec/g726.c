@@ -33,20 +33,19 @@
  * instead of simply using 32bit integer arithmetic.
  */
 typedef struct Float11 {
-        int sign;   /**< 1bit sign */
-        int exp;    /**< 4bit exponent */
-        int mant;   /**< 6bit mantissa */
+    int sign;   /**< 1bit sign */
+    int exp;    /**< 4bit exponent */
+    int mant;   /**< 6bit mantissa */
 } Float11;
 
 static inline Float11* i2f(int16_t i, Float11* f)
 {
-        f->sign = (i < 0);
-        if (f->sign)
-                i = -i;
-        f->exp = av_log2_16bit(i) + !!i;
-        f->mant = i? (i<<6) >> f->exp :
-                         1<<5;
-        return f;
+    f->sign = (i < 0);
+    if (f->sign)
+        i = -i;
+    f->exp = av_log2_16bit(i) + !!i;
+    f->mant = i? (i<<6) >> f->exp : 1<<5;
+    return f;
 }
 
 static inline int16_t mult(Float11* f1, Float11* f2)
@@ -61,39 +60,39 @@ static inline int16_t mult(Float11* f1, Float11* f2)
 
 static inline int sgn(int value)
 {
-   return (value < 0) ? -1 : 1;
+    return (value < 0) ? -1 : 1;
 }
 
 typedef struct G726Tables {
-        int  bits;            /**< bits per sample */
-        int* quant;           /**< quantization table */
-        int* iquant;          /**< inverse quantization table */
-        int* W;               /**< special table #1 ;-) */
-        int* F;               /**< special table #2 */
+    int  bits;          /**< bits per sample */
+    int* quant;         /**< quantization table */
+    int* iquant;        /**< inverse quantization table */
+    int* W;             /**< special table #1 ;-) */
+    int* F;             /**< special table #2 */
 } G726Tables;
 
 typedef struct G726Context {
-         G726Tables* tbls;    /**< static tables needed for computation */
+    G726Tables* tbls;   /**< static tables needed for computation */
 
-         Float11 sr[2];       /**< prev. reconstructed samples */
-         Float11 dq[6];       /**< prev. difference */
-         int a[2];            /**< second order predictor coeffs */
-         int b[6];            /**< sixth order predictor coeffs */
-         int pk[2];           /**< signs of prev. 2 sez + dq */
+    Float11 sr[2];      /**< prev. reconstructed samples */
+    Float11 dq[6];      /**< prev. difference */
+    int a[2];           /**< second order predictor coeffs */
+    int b[6];           /**< sixth order predictor coeffs */
+    int pk[2];          /**< signs of prev. 2 sez + dq */
 
-         int ap;              /**< scale factor control */
-         int yu;              /**< fast scale factor */
-         int yl;              /**< slow scale factor */
-         int dms;             /**< short average magnitude of F[i] */
-         int dml;             /**< long average magnitude of F[i] */
-         int td;              /**< tone detect */
+    int ap;             /**< scale factor control */
+    int yu;             /**< fast scale factor */
+    int yl;             /**< slow scale factor */
+    int dms;            /**< short average magnitude of F[i] */
+    int dml;            /**< long average magnitude of F[i] */
+    int td;             /**< tone detect */
 
-         int se;              /**< estimated signal for the next iteration */
-         int sez;             /**< estimated second order prediction */
-         int y;               /**< quantizer scaling factor for the next iteration */
+    int se;             /**< estimated signal for the next iteration */
+    int sez;            /**< estimated second order prediction */
+    int y;              /**< quantizer scaling factor for the next iteration */
 } G726Context;
 
-static int quant_tbl16[] =                       /**< 16kbit/s 2bits per sample */
+static int quant_tbl16[] =                  /**< 16kbit/s 2bits per sample */
            { 260, INT_MAX };
 static int iquant_tbl16[] =
            { 116, 365, 365, 116 };
@@ -102,7 +101,7 @@ static int W_tbl16[] =
 static int F_tbl16[] =
            { 0, 7, 7, 0 };
 
-static int quant_tbl24[] =                       /**< 24kbit/s 3bits per sample */
+static int quant_tbl24[] =                  /**< 24kbit/s 3bits per sample */
            {  7, 217, 330, INT_MAX };
 static int iquant_tbl24[] =
            { INT_MIN, 135, 273, 373, 373, 273, 135, INT_MIN };
@@ -111,7 +110,7 @@ static int W_tbl24[] =
 static int F_tbl24[] =
            { 0, 1, 2, 7, 7, 2, 1, 0 };
 
-static int quant_tbl32[] =                       /**< 32kbit/s 4bits per sample */
+static int quant_tbl32[] =                  /**< 32kbit/s 4bits per sample */
            { -125,  79, 177, 245, 299, 348, 399, INT_MAX };
 static int iquant_tbl32[] =
            { INT_MIN,   4, 135, 213, 273, 323, 373, 425,
@@ -122,7 +121,7 @@ static int W_tbl32[] =
 static int F_tbl32[] =
            { 0, 0, 0, 1, 1, 1, 3, 7, 7, 3, 1, 1, 1, 0, 0, 0 };
 
-static int quant_tbl40[] =                      /**< 40kbit/s 5bits per sample */
+static int quant_tbl40[] =                  /**< 40kbit/s 5bits per sample */
            { -122, -16,  67, 138, 197, 249, 297, 338,
               377, 412, 444, 474, 501, 527, 552, INT_MAX };
 static int iquant_tbl40[] =
@@ -151,25 +150,25 @@ static G726Tables G726Tables_pool[] =
  */
 static inline uint8_t quant(G726Context* c, int d)
 {
-   int sign, exp, i, dln;
+    int sign, exp, i, dln;
 
-   sign = i = 0;
-   if (d < 0) {
-       sign = 1;
-       d = -d;
-   }
-   exp = av_log2_16bit(d);
-   dln = ((exp<<7) + (((d<<7)>>exp)&0x7f)) - (c->y>>2);
+    sign = i = 0;
+    if (d < 0) {
+        sign = 1;
+        d = -d;
+    }
+    exp = av_log2_16bit(d);
+    dln = ((exp<<7) + (((d<<7)>>exp)&0x7f)) - (c->y>>2);
 
-   while (c->tbls->quant[i] < INT_MAX && c->tbls->quant[i] < dln)
+    while (c->tbls->quant[i] < INT_MAX && c->tbls->quant[i] < dln)
         ++i;
 
-   if (sign)
-       i = ~i;
-   if (c->tbls->bits != 2 && i == 0) /* I'm not sure this is a good idea */
-       i = 0xff;
+    if (sign)
+        i = ~i;
+    if (c->tbls->bits != 2 && i == 0) /* I'm not sure this is a good idea */
+        i = 0xff;
 
-   return i;
+    return i;
 }
 
 /**
@@ -211,7 +210,7 @@ static inline int16_t g726_iterate(G726Context* c, int16_t I)
         c->a[0] = 0;
         c->a[1] = 0;
         for (i=0; i<6; i++)
-           c->b[i] = 0;
+            c->b[i] = 0;
     } else {
         /* This is a bit crazy, but it really is +255 not +256 */
         fa1 = clip((-c->a[0]*c->pk[0]*pk0)>>5, -256, 255);
@@ -222,7 +221,7 @@ static inline int16_t g726_iterate(G726Context* c, int16_t I)
         c->a[0] = clip(c->a[0], -(15360 - c->a[1]), 15360 - c->a[1]);
 
         for (i=0; i<6; i++)
-             c->b[i] += 128*dq0*sgn(-c->dq[i].sign) - (c->b[i]>>8);
+            c->b[i] += 128*dq0*sgn(-c->dq[i].sign) - (c->b[i]>>8);
     }
 
     /* Update Dq and Sr and Pk */
@@ -231,7 +230,7 @@ static inline int16_t g726_iterate(G726Context* c, int16_t I)
     c->sr[1] = c->sr[0];
     i2f(re_signal, &c->sr[0]);
     for (i=5; i>0; i--)
-       c->dq[i] = c->dq[i-1];
+        c->dq[i] = c->dq[i-1];
     i2f(dq, &c->dq[0]);
     c->dq[0].sign = I >> (c->tbls->bits - 1); /* Isn't it crazy ?!?! */
 
@@ -242,11 +241,11 @@ static inline int16_t g726_iterate(G726Context* c, int16_t I)
     c->dms += ((c->tbls->F[I]<<9) - c->dms) >> 5;
     c->dml += ((c->tbls->F[I]<<11) - c->dml) >> 7;
     if (tr)
-       c->ap = 256;
+        c->ap = 256;
     else if (c->y > 1535 && !c->td && (abs((c->dms << 2) - c->dml) < (c->dml >> 3)))
-       c->ap += (-c->ap) >> 4;
+        c->ap += (-c->ap) >> 4;
     else
-       c->ap += (0x200 - c->ap) >> 4;
+        c->ap += (0x200 - c->ap) >> 4;
 
     /* Update Yu and Yl */
     c->yu = clip(c->y + (((c->tbls->W[I] << 5) - c->y) >> 5), 544, 5120);
@@ -259,10 +258,10 @@ static inline int16_t g726_iterate(G726Context* c, int16_t I)
     /* Next iteration for SE and SEZ */
     c->se = 0;
     for (i=0; i<6; i++)
-       c->se += mult(i2f(c->b[i] >> 2, &f), &c->dq[i]);
+        c->se += mult(i2f(c->b[i] >> 2, &f), &c->dq[i]);
     c->sez = c->se >> 1;
     for (i=0; i<2; i++)
-       c->se += mult(i2f(c->a[i] >> 2, &f), &c->sr[i]);
+        c->se += mult(i2f(c->a[i] >> 2, &f), &c->sr[i]);
     c->se >>= 1;
 
     return clip(re_signal << 2, -0xffff, 0xffff);
@@ -274,13 +273,13 @@ static int g726_reset(G726Context* c, int bit_rate)
 
     c->tbls = &G726Tables_pool[bit_rate/8000 - 2];
     for (i=0; i<2; i++) {
-       i2f(0, &c->sr[i]);
-       c->a[i] = 0;
-       c->pk[i] = 1;
+        i2f(0, &c->sr[i]);
+        c->a[i] = 0;
+        c->pk[i] = 1;
     }
     for (i=0; i<6; i++) {
-       i2f(0, &c->dq[i]);
-       c->b[i] = 0;
+        i2f(0, &c->dq[i]);
+        c->b[i] = 0;
     }
     c->ap = 0;
     c->dms = 0;
@@ -304,21 +303,21 @@ static int16_t g726_decode(G726Context* c, int16_t i)
 #ifdef CONFIG_ENCODERS
 static int16_t g726_encode(G726Context* c, int16_t sig)
 {
-   uint8_t i;
+    uint8_t i;
 
-   i = quant(c, sig/4 - c->se) & ((1<<c->tbls->bits) - 1);
-   g726_iterate(c, i);
-   return i;
+    i = quant(c, sig/4 - c->se) & ((1<<c->tbls->bits) - 1);
+    g726_iterate(c, i);
+    return i;
 }
 #endif
 
 /* Interfacing to the libavcodec */
 
 typedef struct AVG726Context {
-   G726Context c;
-   int bits_left;
-   int bit_buffer;
-   int code_size;
+    G726Context c;
+    int bits_left;
+    int bit_buffer;
+    int code_size;
 } AVG726Context;
 
 static int g726_init(AVCodecContext * avctx)
@@ -365,7 +364,7 @@ static int g726_encode_frame(AVCodecContext *avctx,
     init_put_bits(&pb, dst, 1024*1024);
 
     for (; buf_size; buf_size--)
-       put_bits(&pb, c->code_size, g726_encode(&c->c, *samples++));
+        put_bits(&pb, c->code_size, g726_encode(&c->c, *samples++));
 
     flush_put_bits(&pb);
 

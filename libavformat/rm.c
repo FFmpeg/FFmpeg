@@ -547,8 +547,8 @@ static int rm_read_audio_stream_info(AVFormatContext *s, AVStream *st,
             buf[3] = get_byte(pb);
             buf[4] = 0;
         } else {
-        get_str8(pb, buf, sizeof(buf)); /* desc */
-        get_str8(pb, buf, sizeof(buf)); /* desc */
+            get_str8(pb, buf, sizeof(buf)); /* desc */
+            get_str8(pb, buf, sizeof(buf)); /* desc */
         }
         st->codec->codec_type = CODEC_TYPE_AUDIO;
         if (!strcmp(buf, "dnet")) {

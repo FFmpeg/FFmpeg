@@ -1341,7 +1341,7 @@ static int mov_write_moov_tag(ByteIOContext *pb, MOVContext *mov,
     if (mov->mode == MODE_PSP)
         mov_write_uuidusmt_tag(pb, s);
     else
-    mov_write_udta_tag(pb, mov, s);
+        mov_write_udta_tag(pb, mov, s);
 
     return updateSize(pb, pos);
 }

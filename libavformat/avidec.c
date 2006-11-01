@@ -287,7 +287,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
             tag1 = get_le32(pb);
             handler = get_le32(pb); /* codec tag */
 #ifdef DEBUG
-        print_tag("strh", tag1, -1);
+            print_tag("strh", tag1, -1);
 #endif
             if(tag1 == MKTAG('i', 'a', 'v', 's') || tag1 == MKTAG('i', 'v', 'a', 's')){
                 /*
@@ -399,11 +399,11 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     get_le32(pb); /* ClrUsed */
                     get_le32(pb); /* ClrImportant */
 
-                 if(size > 10*4 && size<(1<<30)){
-                    st->codec->extradata_size= size - 10*4;
-                    st->codec->extradata= av_malloc(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
-                    get_buffer(pb, st->codec->extradata, st->codec->extradata_size);
-                 }
+                    if(size > 10*4 && size<(1<<30)){
+                        st->codec->extradata_size= size - 10*4;
+                        st->codec->extradata= av_malloc(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
+                        get_buffer(pb, st->codec->extradata, st->codec->extradata_size);
+                    }
 
                     if(st->codec->extradata_size & 1) //FIXME check if the encoder really did this correctly
                         get_byte(pb);
