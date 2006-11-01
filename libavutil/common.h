@@ -109,6 +109,10 @@
 #define PRIx64 "llx"
 #endif
 
+#ifndef PRIX64
+#define PRIX64 "llX"
+#endif
+
 #ifndef PRId32
 #define PRId32 "d"
 #endif
