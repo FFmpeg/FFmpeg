@@ -6139,7 +6139,7 @@ static int decode_cabac_residual( H264Context *h, DCTELEM *block, int cat, int n
             index[coeff_count++] = last;\
         }
         const uint8_t *sig_off = significant_coeff_flag_offset_8x8[MB_FIELD];
-#if defined(ARCH_X86_32) && !(defined(PIC) && defined(__GNUC__))
+#if defined(ARCH_X86) && !(defined(PIC) && defined(__GNUC__))
         coeff_count= decode_significance_8x8_x86(CC, significant_coeff_ctx_base, index, sig_off);
     } else {
         coeff_count= decode_significance_x86(CC, max_coeff, significant_coeff_ctx_base, index);
