@@ -239,7 +239,7 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
     int size= pkt->size;
     int flags;
 
-//    av_log(s, AV_LOG_DEBUG, "type:%d pts: %lld size:%d\n", enc->codec_type, timestamp, size);
+//    av_log(s, AV_LOG_DEBUG, "type:%d pts: %"PRId64" size:%d\n", enc->codec_type, timestamp, size);
 
     if (enc->codec_type == CODEC_TYPE_VIDEO) {
         put_byte(pb, 9);

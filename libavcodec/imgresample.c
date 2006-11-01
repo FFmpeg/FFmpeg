@@ -171,7 +171,7 @@ static void v_resample(uint8_t *dst, int dst_width, const uint8_t *src,
         src_pos += src_incr;\
 }
 
-#define DUMP(reg) movq_r2m(reg, tmp); printf(#reg "=%016Lx\n", tmp.uq);
+#define DUMP(reg) movq_r2m(reg, tmp); printf(#reg "=%016"PRIx64"\n", tmp.uq);
 
 /* XXX: do four pixels at a time */
 static void h_resample_fast4_mmx(uint8_t *dst, int dst_width,

@@ -1453,7 +1453,7 @@ static int mpegps_read_pes_header(AVFormatContext *s,
         m->header_state = 0xff;
         size = MAX_SYNC_SIZE;
         startcode = find_next_start_code(&s->pb, &size, &m->header_state);
-    //printf("startcode=%x pos=0x%Lx\n", startcode, url_ftell(&s->pb));
+    //printf("startcode=%x pos=0x%"PRIx64"\n", startcode, url_ftell(&s->pb));
     if (startcode < 0)
         return AVERROR_IO;
     if (startcode == PACK_START_CODE)
@@ -1709,7 +1709,7 @@ static int64_t mpegps_read_dts(AVFormatContext *s, int stream_index,
 
     pos = *ppos;
 #ifdef DEBUG_SEEK
-    printf("read_dts: pos=0x%llx next=%d -> ", pos, find_next);
+    printf("read_dts: pos=0x%"PRIx64" next=%d -> ", pos, find_next);
 #endif
     url_fseek(&s->pb, pos, SEEK_SET);
     for(;;) {
@@ -1727,7 +1727,7 @@ static int64_t mpegps_read_dts(AVFormatContext *s, int stream_index,
         url_fskip(&s->pb, len);
     }
 #ifdef DEBUG_SEEK
-    printf("pos=0x%llx dts=0x%llx %0.3f\n", pos, dts, dts / 90000.0);
+    printf("pos=0x%"PRIx64" dts=0x%"PRIx64" %0.3f\n", pos, dts, dts / 90000.0);
 #endif
     *ppos = pos;
     return dts;

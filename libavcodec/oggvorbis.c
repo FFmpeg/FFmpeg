@@ -334,7 +334,7 @@ static int oggvorbis_decode_frame(AVCodecContext *avccontext,
     op->packet = buf;
     op->bytes  = buf_size;
 
-//    av_log(avccontext, AV_LOG_DEBUG, "%d %d %d %lld %lld %d %d\n", op->bytes, op->b_o_s, op->e_o_s, op->granulepos, op->packetno, buf_size, context->vi.rate);
+//    av_log(avccontext, AV_LOG_DEBUG, "%d %d %d %"PRId64" %"PRId64" %d %d\n", op->bytes, op->b_o_s, op->e_o_s, op->granulepos, op->packetno, buf_size, context->vi.rate);
 
 /*    for(i=0; i<op->bytes; i++)
       av_log(avccontext, AV_LOG_DEBUG, "%02X ", op->packet[i]);

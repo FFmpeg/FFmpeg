@@ -156,7 +156,7 @@ static int load_ipmovie_packet(IPMVEContext *s, ByteIOContext *pb,
             s->audio_frame_count +=
                 (s->audio_chunk_size - 6) / s->audio_channels;
 
-        debug_ipmovie("sending audio frame with pts %lld (%d audio frames)\n",
+        debug_ipmovie("sending audio frame with pts %"PRId64" (%d audio frames)\n",
             audio_pts, s->audio_frame_count);
 
         chunk_type = CHUNK_VIDEO;
@@ -190,7 +190,7 @@ static int load_ipmovie_packet(IPMVEContext *s, ByteIOContext *pb,
         pkt->stream_index = s->video_stream_index;
         pkt->pts = s->video_pts;
 
-        debug_ipmovie("sending video frame with pts %lld\n",
+        debug_ipmovie("sending video frame with pts %"PRId64"\n",
             pkt->pts);
 
         s->video_pts += s->frame_pts_inc;

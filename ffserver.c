@@ -1790,7 +1790,7 @@ static void compute_stats(HTTPContext *c)
                 avg = fdata->avg_frame_size * (float)enc->rate * 8.0;
                 if (enc->codec->type == CODEC_TYPE_AUDIO && enc->frame_size > 0)
                     avg /= enc->frame_size;
-                url_fprintf(pb, "<TR><TD>%s <TD> %d <TD> %Ld <TD> %0.1f\n",
+                url_fprintf(pb, "<TR><TD>%s <TD> %d <TD> %"PRId64" <TD> %0.1f\n",
                              buf, enc->frame_number, fdata->data_count, avg / 1000.0);
             }
             url_fprintf(pb, "</TABLE>\n");
@@ -1912,7 +1912,7 @@ static int open_input_stream(HTTPContext *c, const char *info)
 
 #if 0
     { time_t when = stream_pos / 1000000;
-    http_log("Stream pos = %lld, time=%s", stream_pos, ctime(&when));
+    http_log("Stream pos = %"PRId64", time=%s", stream_pos, ctime(&when));
     }
 #endif
 
@@ -2401,7 +2401,7 @@ static int http_receive_data(HTTPContext *c)
            if header */
         if (c->data_count > FFM_PACKET_SIZE) {
 
-            //            printf("writing pos=0x%Lx size=0x%Lx\n", feed->feed_write_index, feed->feed_size);
+            //            printf("writing pos=0x%"PRIx64" size=0x%"PRIx64"\n", feed->feed_write_index, feed->feed_size);
             /* XXX: use llseek or url_seek */
             lseek(c->feed_fd, feed->feed_write_index, SEEK_SET);
             write(c->feed_fd, c->buffer, FFM_PACKET_SIZE);

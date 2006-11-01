@@ -671,7 +671,7 @@ static void rtcp_send_sr(AVFormatContext *s1, int64_t ntp_time)
 {
     RTPDemuxContext *s = s1->priv_data;
 #if defined(DEBUG)
-    printf("RTCP: %02x %Lx %x\n", s->payload_type, ntp_time, s->timestamp);
+    printf("RTCP: %02x %"PRIx64" %x\n", s->payload_type, ntp_time, s->timestamp);
 #endif
     put_byte(&s1->pb, (RTP_VERSION << 6));
     put_byte(&s1->pb, 200);

@@ -131,7 +131,7 @@ main(){
                 if((double)a * (double)b / (double)c > (1LL<<63))
                     continue;
 
-                if(d!=e) printf("%Ld*%Ld/%Ld= %Ld=%Ld\n", a, b, c, d, e);
+                if(d!=e) printf("%"PRId64"*%"PRId64"/%"PRId64"= %"PRId64"=%"PRId64"\n", a, b, c, d, e);
             }
         }
     }

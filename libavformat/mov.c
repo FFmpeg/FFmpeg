@@ -1487,7 +1487,7 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
                         stss_index++;
                 }
                 sample_size = sc->sample_size > 0 ? sc->sample_size : sc->sample_sizes[current_sample];
-                dprintf("AVIndex stream %d, sample %d, offset %llx, dts %lld, size %d, distance %d, keyframe %d\n",
+                dprintf("AVIndex stream %d, sample %d, offset %"PRIx64", dts %"PRId64", size %d, distance %d, keyframe %d\n",
                         st->index, current_sample, current_offset, current_dts, sample_size, distance, keyframe);
                 av_add_index_entry(st, current_offset, current_dts, sample_size, distance, keyframe ? AVINDEX_KEYFRAME : 0);
                 current_offset += sample_size;
@@ -1532,7 +1532,7 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
                 /* check for last chunk */
                 if (chunk_size == INT_MAX)
                     for (j = 0; j < mov->mdat_count; j++) {
-                        dprintf("mdat %d, offset %llx, size %lld, current offset %llx\n",
+                        dprintf("mdat %d, offset %"PRIx64", size %"PRId64", current offset %"PRIx64"\n",
                                 j, mov->mdat_list[j].offset, mov->mdat_list[j].size, current_offset);
                         if (mov->mdat_list[j].offset <= current_offset && mov->mdat_list[j].offset + mov->mdat_list[j].size > current_offset)
                             chunk_size = mov->mdat_list[j].offset + mov->mdat_list[j].size - current_offset;
@@ -1558,7 +1558,7 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
                     }
                 }
             }
-            dprintf("AVIndex stream %d, chunk %d, offset %llx, dts %lld, size %d, duration %d\n",
+            dprintf("AVIndex stream %d, chunk %d, offset %"PRIx64", dts %"PRId64", size %d, duration %d\n",
                     st->index, i, current_offset, current_dts, chunk_size, chunk_duration);
             assert(chunk_duration % sc->time_rate == 0);
             current_dts += chunk_duration / sc->time_rate;
@@ -1642,7 +1642,7 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
             AVIndexEntry *current_sample = &s->streams[i]->index_entries[msc->current_sample];
             int64_t dts = av_rescale(current_sample->timestamp * (int64_t)msc->time_rate, AV_TIME_BASE, msc->time_scale);
 
-            dprintf("stream %d, sample %ld, dts %lld\n", i, msc->current_sample, dts);
+            dprintf("stream %d, sample %ld, dts %"PRId64"\n", i, msc->current_sample, dts);
             if (dts < best_dts) {
                 sample = current_sample;
                 best_dts = dts;
@@ -1690,7 +1690,7 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
     }
     pkt->flags |= sample->flags & AVINDEX_KEYFRAME ? PKT_FLAG_KEY : 0;
     pkt->pos = sample->pos;
-    dprintf("stream %d, pts %lld, dts %lld, pos 0x%llx, duration %d\n", pkt->stream_index, pkt->pts, pkt->dts, pkt->pos, pkt->duration);
+    dprintf("stream %d, pts %"PRId64", dts %"PRId64", pos 0x%"PRIx64", duration %d\n", pkt->stream_index, pkt->pts, pkt->dts, pkt->pos, pkt->duration);
     return 0;
 }
 
@@ -1701,7 +1701,7 @@ static int mov_seek_stream(AVStream *st, int64_t timestamp, int flags)
     int i;
 
     sample = av_index_search_timestamp(st, timestamp, flags);
-    dprintf("stream %d, timestamp %lld, sample %d\n", st->index, timestamp, sample);
+    dprintf("stream %d, timestamp %"PRId64", sample %d\n", st->index, timestamp, sample);
     if (sample < 0) /* not sure what to do */
         return -1;
     sc->current_sample = sample;

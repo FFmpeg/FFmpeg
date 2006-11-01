@@ -254,7 +254,7 @@ static int ogg_read_packet(AVFormatContext *avfcontext, AVPacket *pkt) {
     memcpy(pkt->data, op.packet, op.bytes);
     if(avfcontext->streams[0]->codec.sample_rate && op.granulepos!=-1)
         pkt->pts= av_rescale(op.granulepos, AV_TIME_BASE, avfcontext->streams[0]->codec.sample_rate);
-//    printf("%lld %d %d\n", pkt->pts, (int)op.granulepos, avfcontext->streams[0]->codec.sample_rate);
+//    printf("%"PRId64" %d %d\n", pkt->pts, (int)op.granulepos, avfcontext->streams[0]->codec.sample_rate);
 
     return op.bytes;
 }

@@ -250,7 +250,7 @@ static uint64_t get_v(ByteIOContext *bc)
         if (tmp&0x80)
             val= (val<<7) + tmp - 0x80;
         else{
-//av_log(NULL, AV_LOG_DEBUG, "get_v()= %lld\n", (val<<7) + tmp);
+//av_log(NULL, AV_LOG_DEBUG, "get_v()= %"PRId64"\n", (val<<7) + tmp);
             return (val<<7) + tmp;
         }
     }
@@ -293,7 +293,7 @@ static uint64_t get_vb(ByteIOContext *bc){
     while(i--)
         val = (val<<8) + get_byte(bc);
 
-//av_log(NULL, AV_LOG_DEBUG, "get_vb()= %lld\n", val);
+//av_log(NULL, AV_LOG_DEBUG, "get_vb()= %"PRId64"\n", val);
     return val;
 }
 
@@ -301,21 +301,21 @@ static uint64_t get_vb(ByteIOContext *bc){
 static inline uint64_t get_v_trace(ByteIOContext *bc, char *file, char *func, int line){
     uint64_t v= get_v(bc);
 
-    printf("get_v %5lld / %llX in %s %s:%d\n", v, v, file, func, line);
+    printf("get_v %5"PRId64" / %"PRIX64" in %s %s:%d\n", v, v, file, func, line);
     return v;
 }
 
 static inline int64_t get_s_trace(ByteIOContext *bc, char *file, char *func, int line){
     int64_t v= get_s(bc);
 
-    printf("get_s %5lld / %llX in %s %s:%d\n", v, v, file, func, line);
+    printf("get_s %5"PRId64" / %"PRIX64" in %s %s:%d\n", v, v, file, func, line);
     return v;
 }
 
 static inline uint64_t get_vb_trace(ByteIOContext *bc, char *file, char *func, int line){
     uint64_t v= get_vb(bc);
 
-    printf("get_vb %5lld / %llX in %s %s:%d\n", v, v, file, func, line);
+    printf("get_vb %5"PRId64" / %"PRIX64" in %s %s:%d\n", v, v, file, func, line);
     return v;
 }
 #define get_v(bc)  get_v_trace(bc, __FILE__, __PRETTY_FUNCTION__, __LINE__)
@@ -407,7 +407,7 @@ static void put_v(ByteIOContext *bc, uint64_t val)
 {
     int i;
 
-//av_log(NULL, AV_LOG_DEBUG, "put_v()= %lld\n", val);
+//av_log(NULL, AV_LOG_DEBUG, "put_v()= %"PRId64"\n", val);
     val &= 0x7FFFFFFFFFFFFFFFULL; // FIXME can only encode upto 63 bits currently
     i= get_length(val);
 
@@ -445,19 +445,19 @@ static void put_vb(ByteIOContext *bc, uint64_t val){
 
 #ifdef TRACE
 static inline void put_v_trace(ByteIOContext *bc, uint64_t v, char *file, char *func, int line){
-    printf("get_v %5lld / %llX in %s %s:%d\n", v, v, file, func, line);
+    printf("get_v %5"PRId64" / %"PRIX64" in %s %s:%d\n", v, v, file, func, line);
 
     put_v(bc, v);
 }
 
 static inline void put_s_trace(ByteIOContext *bc, int64_t v, char *file, char *func, int line){
-    printf("get_s %5lld / %llX in %s %s:%d\n", v, v, file, func, line);
+    printf("get_s %5"PRId64" / %"PRIX64" in %s %s:%d\n", v, v, file, func, line);
 
     put_s(bc, v);
 }
 
 static inline void put_vb_trace(ByteIOContext *bc, uint64_t v, char *file, char *func, int line){
-    printf("get_vb %5lld / %llX in %s %s:%d\n", v, v, file, func, line);
+    printf("get_vb %5"PRId64" / %"PRIX64" in %s %s:%d\n", v, v, file, func, line);
 
     put_vb(bc, v);
 }
@@ -796,7 +796,7 @@ static int nut_write_packet(AVFormatContext *s, AVPacket *pkt)
     if(frame_type==2){
         best_length += 8; // startcode
     }
-    av_log(s, AV_LOG_DEBUG, "kf:%d ft:%d pt:%d fc:%2X len:%2d size:%d stream:%d flag:%d mul:%d lsb:%d s+1:%d pts_delta:%d pts:%lld fs:%lld\n", key_frame, frame_type, full_pts ? 1 : 0, frame_code, best_length, size, stream_index, flags, size_mul, size_lsb, nut->frame_code[frame_code].stream_id_plus1,(int)(pts - stream->last_pts), pts, frame_start);
+    av_log(s, AV_LOG_DEBUG, "kf:%d ft:%d pt:%d fc:%2X len:%2d size:%d stream:%d flag:%d mul:%d lsb:%d s+1:%d pts_delta:%d pts:%"PRId64" fs:%"PRId64"\n", key_frame, frame_type, full_pts ? 1 : 0, frame_code, best_length, size, stream_index, flags, size_mul, size_lsb, nut->frame_code[frame_code].stream_id_plus1,(int)(pts - stream->last_pts), pts, frame_start);
 //    av_log(s, AV_LOG_DEBUG, "%d %d %d\n", stream->lru_pts_delta[0], stream->lru_pts_delta[1], stream->lru_pts_delta[2]);
 #endif
 
@@ -1193,7 +1193,7 @@ static int decode_frame_header(NUTContext *nut, int *key_frame_ret, int64_t *pts
     }
 
     if(*key_frame_ret){
-//        av_log(s, AV_LOG_DEBUG, "stream:%d start:%lld pts:%lld length:%lld\n",stream_id, frame_start, av_pts, frame_start - nut->stream[stream_id].last_sync_pos);
+//        av_log(s, AV_LOG_DEBUG, "stream:%d start:%"PRId64" pts:%"PRId64" length:%"PRId64"\n",stream_id, frame_start, av_pts, frame_start - nut->stream[stream_id].last_sync_pos);
         av_add_index_entry(
             s->streams[stream_id],
             frame_start,
@@ -1211,7 +1211,7 @@ static int decode_frame_header(NUTContext *nut, int *key_frame_ret, int64_t *pts
         size+= size_mul*get_v(bc);
 
 #ifdef TRACE
-av_log(s, AV_LOG_DEBUG, "fs:%lld fc:%d ft:%d kf:%d pts:%lld size:%d mul:%d lsb:%d flags:%d delta:%d\n", frame_start, frame_code, frame_type, *key_frame_ret, pts, size, size_mul, size_lsb, flags, time_delta);
+av_log(s, AV_LOG_DEBUG, "fs:%"PRId64" fc:%d ft:%d kf:%d pts:%"PRId64" size:%d mul:%d lsb:%d flags:%d delta:%d\n", frame_start, frame_code, frame_type, *key_frame_ret, pts, size, size_mul, size_lsb, flags, time_delta);
 #endif
 
     if(frame_type==0 && url_ftell(bc) - nut->packet_start[2] + size > nut->max_distance){
@@ -1358,7 +1358,7 @@ av_log(s, AV_LOG_DEBUG, "read_timestamp(X,%d,%"PRId64",%"PRId64")\n", stream_ind
             for(i=1; i<8; i++)
                 tmp = (tmp<<8) + get_byte(bc);
         }
-//av_log(s, AV_LOG_DEBUG, "before switch %llX at=%lld\n", tmp, pos);
+//av_log(s, AV_LOG_DEBUG, "before switch %"PRIX64" at=%"PRId64"\n", tmp, pos);
 
         switch(tmp){
         case MAIN_STARTCODE:

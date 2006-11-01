@@ -4616,7 +4616,7 @@ int64_t g=0;
                 for(x=0; x<width; x++){
                     int64_t d= buffer[0][x + y*width];
                     error += d*d;
-                    if(FFABS(width/2-x)<9 && FFABS(height/2-y)<9 && level==2) printf("%8lld ", d);
+                    if(FFABS(width/2-x)<9 && FFABS(height/2-y)<9 && level==2) printf("%8"PRId64" ", d);
                 }
                 if(FFABS(height/2-y)<9 && level==2) printf("\n");
             }
@@ -4630,7 +4630,7 @@ int64_t g=0;
     for(level=0; level<s.spatial_decomposition_count; level++){
         printf("  {");
         for(orientation=0; orientation<4; orientation++){
-            printf("%8lld,", errors[level][orientation]/g);
+            printf("%8"PRId64",", errors[level][orientation]/g);
         }
         printf("},\n");
     }
@@ -4669,7 +4669,7 @@ int64_t g=0;
                 for(x=0; x<width; x++){
                     int64_t d= buffer[0][x + y*width];
                     error += d*d;
-                    if(FFABS(width/2-x)<9 && FFABS(height/2-y)<9) printf("%8lld ", d);
+                    if(FFABS(width/2-x)<9 && FFABS(height/2-y)<9) printf("%8"PRId64" ", d);
                 }
                 if(FFABS(height/2-y)<9) printf("\n");
             }

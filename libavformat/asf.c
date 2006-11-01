@@ -167,9 +167,9 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
         get_guid(pb, &g);
         gsize = get_le64(pb);
 #ifdef DEBUG
-        printf("%08Lx: ", url_ftell(pb) - 24);
+        printf("%08"PRIx64": ", url_ftell(pb) - 24);
         print_guid(&g);
-        printf("  size=0x%Lx\n", gsize);
+        printf("  size=0x%"PRIx64"\n", gsize);
 #endif
         if (gsize < 24)
             goto fail;
@@ -512,7 +512,7 @@ static int asf_get_packet(AVFormatContext *s)
         rsize+=2;
 /*    }else{
         if (!url_feof(pb))
-            printf("ff asf bad header %x  at:%lld\n", c, url_ftell(pb));
+            printf("ff asf bad header %x  at:%"PRId64"\n", c, url_ftell(pb));
         return AVERROR_IO;*/
     }
 
@@ -566,7 +566,7 @@ static int asf_read_packet(AVFormatContext *s, AVPacket *pkt)
             || asf->packet_segments < 1) {
             //asf->packet_size_left <= asf->packet_padsize) {
             int ret = asf->packet_size_left + asf->packet_padsize;
-            //printf("PacketLeftSize:%d  Pad:%d Pos:%Ld\n", asf->packet_size_left, asf->packet_padsize, url_ftell(pb));
+            //printf("PacketLeftSize:%d  Pad:%d Pos:%"PRId64"\n", asf->packet_size_left, asf->packet_padsize, url_ftell(pb));
             if((url_ftell(&s->pb) + ret - s->data_offset) % asf->packet_size)
                 ret += asf->packet_size - ((url_ftell(&s->pb) + ret - s->data_offset) % asf->packet_size);
             assert(ret>=0);
@@ -845,7 +845,7 @@ static int64_t asf_read_pts(AVFormatContext *s, int stream_index, int64_t *ppos,
     }
 
     *ppos= pos;
-//printf("found keyframe at %Ld stream %d stamp:%Ld\n", *ppos, stream_index, pts);
+//printf("found keyframe at %"PRId64" stream %d stamp:%"PRId64"\n", *ppos, stream_index, pts);
 
     return pts;
 }

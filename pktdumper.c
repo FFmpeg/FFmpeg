@@ -6,7 +6,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#define PKTFILESUFF "_%08Ld_%02d_%010Ld_%06d_%c.bin"
+#define PKTFILESUFF "_%08"PRId64"_%02d_%010"PRId64"_%06d_%c.bin"
 
 static int usage(int ret)
 {

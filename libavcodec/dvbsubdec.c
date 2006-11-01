@@ -1493,7 +1493,7 @@ static int dvbsub_parse(AVCodecParserContext *s,
     int len, buf_pos = 0;
 
 #ifdef DEBUG
-    av_log(avctx, AV_LOG_INFO, "DVB parse packet pts=%Lx, lpts=%Lx, cpts=%Lx:\n",
+    av_log(avctx, AV_LOG_INFO, "DVB parse packet pts=%"PRIx64", lpts=%"PRIx64", cpts=%"PRIx64":\n",
             s->pts, s->last_pts, s->cur_frame_pts[s->cur_frame_start_index]);
 #endif
 

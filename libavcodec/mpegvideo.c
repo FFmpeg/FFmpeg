@@ -2333,7 +2333,7 @@ static void select_input_picture(MpegEncContext *s){
             if(s->avctx->frame_skip_threshold || s->avctx->frame_skip_factor){
                 if(s->picture_in_gop_number < s->gop_size && skip_check(s, s->input_picture[0], s->next_picture_ptr)){
                 //FIXME check that te gop check above is +-1 correct
-//av_log(NULL, AV_LOG_DEBUG, "skip %p %Ld\n", s->input_picture[0]->data[0], s->input_picture[0]->pts);
+//av_log(NULL, AV_LOG_DEBUG, "skip %p %"PRId64"\n", s->input_picture[0]->data[0], s->input_picture[0]->pts);
 
                     if(s->input_picture[0]->type == FF_BUFFER_TYPE_SHARED){
                         for(i=0; i<4; i++)

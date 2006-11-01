@@ -101,7 +101,7 @@ void powerpc_display_perf_report(void)
       {
         if (perfdata[j][i][powerpc_data_num] != (unsigned long long)0)
           av_log(NULL, AV_LOG_INFO,
-                  " Function \"%s\" (pmc%d):\n\tmin: %llu\n\tmax: %llu\n\tavg: %1.2lf (%llu)\n",
+                  " Function \"%s\" (pmc%d):\n\tmin: %"PRIu64"\n\tmax: %"PRIu64"\n\tavg: %1.2lf (%"PRIu64")\n",
                   perfname[i],
                   j+1,
                   perfdata[j][i][powerpc_data_min],

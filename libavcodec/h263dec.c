@@ -798,7 +798,7 @@ assert(s->current_picture.pict_type == s->pict_type);
     avctx->frame_number = s->picture_number - 1;
 
 #ifdef PRINT_FRAME_TIME
-av_log(avctx, AV_LOG_DEBUG, "%Ld\n", rdtsc()-time);
+av_log(avctx, AV_LOG_DEBUG, "%"PRId64"\n", rdtsc()-time);
 #endif
 
     return get_consumed_bytes(s, buf_size);

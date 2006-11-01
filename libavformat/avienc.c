@@ -447,7 +447,7 @@ static int avi_write_packet(AVFormatContext *s, AVPacket *pkt)
     AVCodecContext *enc= s->streams[stream_index]->codec;
     int size= pkt->size;
 
-//    av_log(s, AV_LOG_DEBUG, "%lld %d %d\n", pkt->dts, avi->packet_count[stream_index], stream_index);
+//    av_log(s, AV_LOG_DEBUG, "%"PRId64" %d %d\n", pkt->dts, avi->packet_count[stream_index], stream_index);
     while(enc->block_align==0 && pkt->dts != AV_NOPTS_VALUE && pkt->dts > avi->packet_count[stream_index]){
         AVPacket empty_packet;
 
@@ -456,7 +456,7 @@ static int avi_write_packet(AVFormatContext *s, AVPacket *pkt)
         empty_packet.data= NULL;
         empty_packet.stream_index= stream_index;
         avi_write_packet(s, &empty_packet);
-//        av_log(s, AV_LOG_DEBUG, "dup %lld %d\n", pkt->dts, avi->packet_count[stream_index]);
+//        av_log(s, AV_LOG_DEBUG, "dup %"PRId64" %d\n", pkt->dts, avi->packet_count[stream_index]);
     }
     avi->packet_count[stream_index]++;
 
