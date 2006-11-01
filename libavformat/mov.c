@@ -262,7 +262,6 @@ typedef struct MOVStreamContext {
 } MOVStreamContext;
 
 typedef struct MOVContext {
-    int mp4; /* set to 1 as soon as we are sure that the file is an .mp4 file (even some header parsing depends on this) */
     AVFormatContext *fc;
     int time_scale;
     int64_t duration; /* duration of the longest track */
@@ -394,7 +393,6 @@ static int mov_read_ctab(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 static int mov_read_hdlr(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
     AVStream *st = c->fc->streams[c->fc->nb_streams-1];
-    int len = 0;
     uint32_t type;
     uint32_t ctype;
 
@@ -407,10 +405,6 @@ static int mov_read_hdlr(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 
     dprintf("ctype= %c%c%c%c (0x%08lx)\n", *((char *)&ctype), ((char *)&ctype)[1], ((char *)&ctype)[2], ((char *)&ctype)[3], (long) ctype);
     dprintf("stype= %c%c%c%c\n", *((char *)&type), ((char *)&type)[1], ((char *)&type)[2], ((char *)&type)[3]);
-    if(ctype == MKTAG('m', 'h', 'l', 'r')) /* MOV */
-        c->mp4 = 0;
-    else if(ctype == 0)
-        c->mp4 = 1;
     if(type == MKTAG('v', 'i', 'd', 'e'))
         st->codec->codec_type = CODEC_TYPE_VIDEO;
     else if(type == MKTAG('s', 'o', 'u', 'n'))
@@ -421,17 +415,6 @@ static int mov_read_hdlr(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 
     if(atom.size <= 24)
         return 0; /* nothing left to read */
-    /* XXX: MP4 uses a C string, not a pascal one */
-    /* component name */
-
-    if(c->mp4) {
-        /* .mp4: C string */
-        while(get_byte(pb) && (++len < (atom.size - 24)));
-    } else {
-        /* .mov: PASCAL string */
-        len = get_byte(pb);
-        url_fskip(pb, len);
-    }
 
     url_fskip(pb, atom.size - (url_ftell(pb) - atom.offset));
     return 0;
@@ -538,7 +521,6 @@ static int mov_read_ftyp(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     case MKTAG('M', '4', 'A', ' '): /* Apple iTunes AAC-LC Audio */
     case MKTAG('M', '4', 'P', ' '): /* Apple iTunes AAC-LC Protected Audio */
     case MKTAG('m', 'j', 'p', '2'): /* Motion Jpeg 2000 */
-        c->mp4 = 1;
     case MKTAG('q', 't', ' ', ' '):
     default:
         av_log(c->fc, AV_LOG_DEBUG, "ISO: File Type Major Brand: %.4s\n",(char *)&type);
@@ -982,7 +964,7 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
             }
 
             //Read QT version 1 fields. In version 0 theese dont exist
-            dprintf("version =%d mp4=%d\n",version,c->mp4);
+            dprintf("version =%d\n",version);
             if(version==1) {
                 sc->sample_size_v1.den = get_be32(pb); /* samples per packet */
                 get_be32(pb); /* bytes per packet */
