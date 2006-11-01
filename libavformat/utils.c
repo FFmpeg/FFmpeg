@@ -2230,7 +2230,7 @@ static int compute_pkt_fields2(AVStream *st, AVPacket *pkt){
         for(i=1; i<delay+1 && st->pts_buffer[i] == AV_NOPTS_VALUE; i++)
             st->pts_buffer[i]= (i-delay-1) * pkt->duration;
         for(i=0; i<delay && st->pts_buffer[i] > st->pts_buffer[i+1]; i++)
-            SWAP(int64_t, st->pts_buffer[i], st->pts_buffer[i+1]);
+            FFSWAP(int64_t, st->pts_buffer[i], st->pts_buffer[i+1]);
 
         pkt->dts= st->pts_buffer[0];
     }

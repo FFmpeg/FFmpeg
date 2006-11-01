@@ -278,7 +278,7 @@ static int cinvideo_decode_frame(AVCodecContext *avctx,
           cin->bitmap_table[CIN_CUR_BMP] + y * cin->avctx->width,
           cin->avctx->width);
 
-    SWAP(uint8_t *, cin->bitmap_table[CIN_CUR_BMP], cin->bitmap_table[CIN_PRE_BMP]);
+    FFSWAP(uint8_t *, cin->bitmap_table[CIN_CUR_BMP], cin->bitmap_table[CIN_PRE_BMP]);
 
     *data_size = sizeof(AVFrame);
     *(AVFrame *)data = cin->frame;

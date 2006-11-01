@@ -1705,8 +1705,8 @@ static void draw_line(uint8_t *buf, int sx, int sy, int ex, int ey, int w, int h
 
     if(FFABS(ex - sx) > FFABS(ey - sy)){
         if(sx > ex){
-            SWAP(int, sx, ex);
-            SWAP(int, sy, ey);
+            FFSWAP(int, sx, ex);
+            FFSWAP(int, sy, ey);
         }
         buf+= sx + sy*stride;
         ex-= sx;
@@ -1719,8 +1719,8 @@ static void draw_line(uint8_t *buf, int sx, int sy, int ex, int ey, int w, int h
         }
     }else{
         if(sy > ey){
-            SWAP(int, sx, ex);
-            SWAP(int, sy, ey);
+            FFSWAP(int, sx, ex);
+            FFSWAP(int, sy, ey);
         }
         buf+= sx + sy*stride;
         ey-= sy;
