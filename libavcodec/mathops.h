@@ -22,7 +22,7 @@
 #ifndef MATHOPS_H
 #define MATHOPS_H
 
-#ifdef ARCH_X86
+#ifdef ARCH_X86_32
 
 #include "i386/mathops.h"
 

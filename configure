@@ -355,10 +355,10 @@ dcbzl="no"
 mmi="default"
 case "$arch" in
   i386|i486|i586|i686|i86pc|BePC)
-    arch="x86"
+    arch="x86_32"
   ;;
   x86_64|amd64)
-    arch="x86"
+    arch="x86"_32
     canon_arch="`$cc -dumpmachine | sed -e 's,\([^-]*\)-.*,\1,'`"
     if [ x"$canon_arch" = x"x86_64" -o x"$canon_arch" = x"amd64" ]; then
       if [ -z "`echo $CFLAGS | grep -- -m32`"  ]; then
@@ -1002,7 +1002,7 @@ fi
 
 # compute MMX state
 if test $mmx = "default"; then
-    if test $arch = "x86" -o $arch = "x86_64"; then
+    if test $arch = "x86_32" -o $arch = "x86_64"; then
         mmx="yes"
     else
         mmx="no"
@@ -1567,7 +1567,7 @@ fi
 echo "big-endian       $bigendian"
 echo "inttypes.h       $inttypes"
 echo "broken inttypes.h $emu_fast_int"
-if test $arch = "x86" -o $arch = "x86_64"; then
+if test $arch = "x86_32" -o $arch = "x86_64"; then
     echo "MMX enabled      $mmx"
     echo "CMOV enabled     $cmov"
     echo "CMOV is fast     $cmov_is_fast"
@@ -1684,9 +1684,13 @@ echo "SLIBPREF=$SLIBPREF" >> config.mak
 echo "SLIBSUF=\${BUILDSUF}$SLIBSUF" >> config.mak
 echo "EXESUF=\${BUILDSUF}$EXESUF" >> config.mak
 echo "TARGET_OS=$targetos" >> config.mak
-if test "$arch" = "x86" ; then
+if test "$arch" = "x86_32" -o "$arch" = "x86_64" ; then
   echo "TARGET_ARCH_X86=yes" >> config.mak
   echo "#define ARCH_X86 1" >> $TMPH
+fi
+if test "$arch" = "x86_32" ; then
+  echo "TARGET_ARCH_X86_32=yes" >> config.mak
+  echo "#define ARCH_X86_32 1" >> $TMPH
 elif test "$arch" = "x86_64" ; then
   echo "TARGET_ARCH_X86_64=yes" >> config.mak
   echo "#define ARCH_X86_64 1" >> $TMPH

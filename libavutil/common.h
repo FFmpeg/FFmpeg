@@ -344,7 +344,7 @@ static inline uint64_t read_time(void)
         );
         return (d << 32) | (a & 0xffffffff);
 }
-#elif defined(ARCH_X86)
+#elif defined(ARCH_X86_32)
 static inline long long read_time(void)
 {
         long long l;
