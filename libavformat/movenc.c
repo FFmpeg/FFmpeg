@@ -44,6 +44,7 @@ typedef struct MOVIentry {
     char         key_frame;
     unsigned int entries;
     int64_t      cts;
+    int64_t      dts;
 } MOVIentry;
 
 typedef struct MOVIndex {
@@ -65,6 +66,7 @@ typedef struct MOVIndex {
     int         vosLen;
     uint8_t     *vosData;
     MOVIentry   *cluster;
+    int         audio_vbr;
 } MOVTrack;
 
 typedef struct MOVContext {
@@ -704,18 +706,46 @@ static int mov_write_ctts_tag(ByteIOContext *pb, MOVTrack* track)
     return atom_size;
 }
 
-/* TODO: */
 /* Time to sample atom */
 static int mov_write_stts_tag(ByteIOContext *pb, MOVTrack* track)
 {
-    put_be32(pb, 0x18); /* size */
+    Time2Sample *stts_entries;
+    uint32_t entries = -1;
+    uint32_t atom_size;
+    int i;
+
+    if (track->enc->codec_type == CODEC_TYPE_AUDIO && !track->audio_vbr) {
+        stts_entries = av_malloc(sizeof(*stts_entries)); /* one entry */
+        stts_entries[0].count = track->sampleCount;
+        stts_entries[0].duration = 1;
+        entries = 1;
+    } else {
+        stts_entries = av_malloc(track->entry * sizeof(*stts_entries)); /* worst case */
+        for (i=0; i<track->entry; i++) {
+            int64_t duration = i + 1 == track->entry ?
+                track->trackDuration - track->cluster[i].dts + track->cluster[0].dts : /* readjusting */
+                track->cluster[i+1].dts - track->cluster[i].dts;
+            if (i && duration == stts_entries[entries].duration) {
+                stts_entries[entries].count++; /* compress */
+            } else {
+                entries++;
+                stts_entries[entries].duration = duration;
+                stts_entries[entries].count = 1;
+            }
+        }
+        entries++; /* last one */
+    }
+    atom_size = 16 + (entries * 8);
+    put_be32(pb, atom_size); /* size */
     put_tag(pb, "stts");
     put_be32(pb, 0); /* version & flags */
-    put_be32(pb, 1); /* entry count */
-
-    put_be32(pb, track->sampleCount); /* sample count */
-    put_be32(pb, track->sampleDuration); /* sample duration */
-    return 0x18;
+    put_be32(pb, entries); /* entry count */
+    for (i=0; i<entries; i++) {
+        put_be32(pb, stts_entries[i].count);
+        put_be32(pb, stts_entries[i].duration);
+    }
+    av_free(stts_entries);
+    return atom_size;
 }
 
 static int mov_write_dref_tag(ByteIOContext *pb)
@@ -1301,8 +1331,6 @@ static int mov_write_moov_tag(ByteIOContext *pb, MOVContext *mov,
     for (i=0; i<mov->nb_streams; i++) {
         if(mov->tracks[i].entry <= 0) continue;
 
-        mov->tracks[i].trackDuration =
-            (int64_t)mov->tracks[i].sampleCount * mov->tracks[i].sampleDuration;
         mov->tracks[i].time = mov->time;
         mov->tracks[i].trackID = i+1;
     }
@@ -1470,7 +1498,16 @@ static int mov_write_header(AVFormatContext *s)
             track->timescale = st->codec->sample_rate;
             track->sampleDuration = st->codec->frame_size;
             av_set_pts_info(st, 64, 1, st->codec->sample_rate);
-            track->sampleSize = (av_get_bits_per_sample(st->codec->codec_id) >> 3) * st->codec->channels;
+            switch(track->enc->codec_id){
+            case CODEC_ID_MP3:
+            case CODEC_ID_AAC:
+            case CODEC_ID_AMR_NB:
+            case CODEC_ID_AMR_WB:
+                track->audio_vbr = 1;
+                break;
+            default:
+                track->sampleSize = (av_get_bits_per_sample(st->codec->codec_id) >> 3) * st->codec->channels;
+            }
         }
         if (!track->sampleDuration) {
             av_log(s, AV_LOG_ERROR, "track %d: sample duration is not set\n", i);
@@ -1543,6 +1580,9 @@ static int mov_write_packet(AVFormatContext *s, AVPacket *pkt)
     trk->cluster[trk->entry].samplesInChunk = samplesInChunk;
     trk->cluster[trk->entry].size = size;
     trk->cluster[trk->entry].entries = samplesInChunk;
+    trk->cluster[trk->entry].dts = pkt->dts;
+    trk->trackDuration = pkt->dts - trk->cluster[0].dts + pkt->duration;
+
     if(enc->codec_type == CODEC_TYPE_VIDEO) {
         if (pkt->dts != pkt->pts)
             trk->hasBframes = 1;

@@ -69,7 +69,6 @@ unassigned TODO: (unordered)
 - MPEG4 GMC encoding support
 - macroblock based pixel format (better cache locality, somewhat complex, one paper claimed it faster for high res)
 - finish NUT implementation
-- movenc.c fix stts so that variable framerate files work
 - seeking regression test
 - regression tests for codecs which dont have an encoder (I+P frame bitstream in svn)
 - add support for using mplayers video filters to ffmpeg
