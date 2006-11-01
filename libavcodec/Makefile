@@ -405,7 +405,11 @@ ifeq ($(BUILD_SHARED),yes)
 LIBVERSION=$(LAVCVERSION)
 LIBMAJOR=$(LAVCMAJOR)
 endif
-TESTS= cpuid_test imgresample-test dct-test motion-test fft-test
+
+TESTS= imgresample-test fft-test
+ifeq ($(TARGET_ARCH_X86),yes)
+TESTS+= cpuid_test dct-test motion-test
+endif
 
 include $(SRC_PATH)/common.mak
 
