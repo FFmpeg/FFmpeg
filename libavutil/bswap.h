@@ -149,7 +149,7 @@ static inline uint64_t bswap_64(uint64_t x)
     return r.ll;
 #endif
 }
-#endif  /* !ARCH_X86 */
+#endif  /* defined(ARCH_X86) || defined(ARCH_X86_64) */
 
 #endif  /* !HAVE_BYTESWAP_H */
 
