@@ -79,13 +79,13 @@ X264_frame(AVCodecContext *ctx, uint8_t *buf, int bufsize, void *data)
     x4->pic.img.i_plane = 3;
 
     if (frame) {
-    for(i = 0; i < 3; i++){
-        x4->pic.img.plane[i] = frame->data[i];
-        x4->pic.img.i_stride[i] = frame->linesize[i];
-    }
+        for(i = 0; i < 3; i++){
+            x4->pic.img.plane[i] = frame->data[i];
+            x4->pic.img.i_stride[i] = frame->linesize[i];
+        }
 
-    x4->pic.i_pts = frame->pts;
-    x4->pic.i_type = X264_TYPE_AUTO;
+        x4->pic.i_pts = frame->pts;
+        x4->pic.i_type = X264_TYPE_AUTO;
     }
 
     if(x264_encoder_encode(x4->enc, &nal, &nnal, frame? &x4->pic: NULL,
