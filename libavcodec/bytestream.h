@@ -47,4 +47,29 @@ static always_inline unsigned int bytestream_get_buffer(uint8_t **b, uint8_t *ds
     return size;
 }
 
+static always_inline void bytestream_put_le32(uint8_t **b, const unsigned int value)
+{
+    *(*b)++ = value;
+    *(*b)++ = value >> 8;
+    *(*b)++ = value >> 16;
+    *(*b)++ = value >> 24;
+}
+
+static always_inline void bytestream_put_le16(uint8_t **b, const unsigned int value)
+{
+    *(*b)++ = value;
+    *(*b)++ = value >> 8;
+}
+
+static always_inline void bytestream_put_byte(uint8_t **b, const unsigned int value)
+{
+    *(*b)++ = value;
+}
+
+static always_inline void bytestream_put_buffer(uint8_t **b, const uint8_t *src, unsigned int size)
+{
+    memcpy(*b, src, size);
+    (*b) += size;
+}
+
 #endif /* FFMPEG_BYTESTREAM_H */

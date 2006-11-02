@@ -68,6 +68,9 @@ void avcodec_register_all(void)
 #ifdef CONFIG_FLAC_ENCODER
     register_avcodec(&flac_encoder);
 #endif
+#ifdef CONFIG_GIF_ENCODER
+    register_avcodec(&gif_encoder);
+#endif
 #ifdef CONFIG_XVID
 #ifdef CONFIG_XVID_ENCODER
     register_avcodec(&xvid_encoder);

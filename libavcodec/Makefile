@@ -82,6 +82,7 @@ OBJS-$(CONFIG_FLIC_DECODER)            += flicvideo.o
 OBJS-$(CONFIG_FOURXM_DECODER)          += 4xm.o
 OBJS-$(CONFIG_FRAPS_DECODER)           += fraps.o
 OBJS-$(CONFIG_GIF_DECODER)             += gifdec.o lzw.o
+OBJS-$(CONFIG_GIF_ENCODER)             += gif.o
 OBJS-$(CONFIG_H261_DECODER)            += h261.o
 OBJS-$(CONFIG_H261_ENCODER)            += h261.o
 OBJS-$(CONFIG_H264_DECODER)            += h264.o

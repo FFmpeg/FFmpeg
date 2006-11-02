@@ -37,8 +37,8 @@ extern "C" {
 #define AV_STRINGIFY(s)         AV_TOSTRING(s)
 #define AV_TOSTRING(s) #s
 
-#define LIBAVCODEC_VERSION_INT  ((51<<16)+(23<<8)+0)
-#define LIBAVCODEC_VERSION      51.23.0
+#define LIBAVCODEC_VERSION_INT  ((51<<16)+(24<<8)+0)
+#define LIBAVCODEC_VERSION      51.24.0
 #define LIBAVCODEC_BUILD        LIBAVCODEC_VERSION_INT
 
 #define LIBAVCODEC_IDENT        "Lavc" AV_STRINGIFY(LIBAVCODEC_VERSION)
@@ -2138,6 +2138,7 @@ extern AVCodec mp3lame_encoder;
 extern AVCodec oggvorbis_encoder;
 extern AVCodec faac_encoder;
 extern AVCodec flac_encoder;
+extern AVCodec gif_encoder;
 extern AVCodec xvid_encoder;
 extern AVCodec mpeg1video_encoder;
 extern AVCodec mpeg2video_encoder;
