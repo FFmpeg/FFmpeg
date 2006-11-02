@@ -109,7 +109,7 @@ untested special converters
 
 #define isSupportedIn(x)  ((x)==PIX_FMT_YUV420P || (x)==PIX_FMT_YUYV422 || (x)==PIX_FMT_UYVY422\
 			|| (x)==PIX_FMT_RGB32|| (x)==PIX_FMT_BGR24|| (x)==PIX_FMT_BGR565|| (x)==PIX_FMT_BGR555\
-			|| (x)==PIX_FMT_BGR32|| (x)==PIX_FMT_RGB24\
+			|| (x)==PIX_FMT_BGR32|| (x)==PIX_FMT_RGB24|| (x)==PIX_FMT_RGB565|| (x)==PIX_FMT_RGB555\
 			|| (x)==PIX_FMT_GRAY8 || (x)==PIX_FMT_YUV410P\
 			|| (x)==PIX_FMT_GRAY16BE || (x)==PIX_FMT_GRAY16LE\
 			|| (x)==PIX_FMT_YUV444P || (x)==PIX_FMT_YUV422P || (x)==PIX_FMT_YUV411P)
