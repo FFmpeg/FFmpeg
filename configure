@@ -366,8 +366,8 @@ case "$arch" in
       fi
     fi
   ;;
-  # armv4l is a subset of armv5tel
-  arm|armv4l|armv5tel)
+  # armv4l is a subset of armv[567]*l
+  arm|armv[4567]*l)
     arch="armv4l"
   ;;
   alpha)
