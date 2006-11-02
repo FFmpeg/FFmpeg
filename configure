@@ -713,9 +713,9 @@ for opt do
   ;;
   --extra-cflags=*) add_cflags "$optval"
   ;;
-  --extra-ldflags=*) EXTRALDFLAGS="$optval"
+  --extra-ldflags=*) add_ldflags "$optval"
   ;;
-  --extra-libs=*) extralibs="$optval"
+  --extra-libs=*) add_extralibs "$optval"
   ;;
   --build-suffix=*) BUILDSUF="$optval"
   ;;
@@ -917,8 +917,8 @@ EOF
     shlibdir='${PREFIX}'
 fi
 
-# Combine FFLDFLAGS, EXTRALDFLAGS and the LDFLAGS environment variable.
-LDFLAGS="$FFLDFLAGS $EXTRALDFLAGS $LDFLAGS"
+# Combine FFLDFLAGS and the LDFLAGS environment variable.
+LDFLAGS="$FFLDFLAGS $LDFLAGS"
 
 test -n "$cross_prefix" && cross_compile=yes
 cc="${cross_prefix}${cc}"
