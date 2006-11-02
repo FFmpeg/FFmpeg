@@ -11,11 +11,13 @@ CFLAGS=$(OPTFLAGS) -I$(BUILD_ROOT) -I$(SRC_PATH) -I$(SRC_PATH)/libavutil \
        -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_ISOC9X_SOURCE
 LDFLAGS+= -g
 
+ifeq ($(CONFIG_FFMPEG),yes)
 MANPAGES=doc/ffmpeg.1
 PROGS_G+=ffmpeg_g$(EXESUF)
 PROGS+=ffmpeg$(EXESUF)
 PROGTEST=output_example$(EXESUF)
 QTFASTSTART=qt-faststart$(EXESUF)
+endif
 
 ifeq ($(CONFIG_FFSERVER),yes)
 MANPAGES+=doc/ffserver.1

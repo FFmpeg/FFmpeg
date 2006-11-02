@@ -98,6 +98,7 @@ show_help(){
   echo "  --disable-mpegaudio-hp   faster (but less accurate)"
   echo "                           MPEG audio decoding [default=no]"
   echo "  --disable-protocols      disable I/O protocols support [default=no]"
+  echo "  --disable-ffmpeg         disable ffmpeg build"
   echo "  --disable-ffserver       disable ffserver build"
   echo "  --disable-ffplay         disable ffplay build"
   echo "  --enable-small           optimize for size instead of speed"
@@ -455,6 +456,7 @@ VHOOKSHFLAGS='$(SHFLAGS)'
 netserver="no"
 need_inet_aton="no"
 protocols="yes"
+ffmpeg="yes"
 ffserver="yes"
 ffplay="yes"
 LIBOBJFLAGS=""
@@ -809,6 +811,8 @@ for opt do
   --disable-mpegaudio-hp) mpegaudio_hp="no"
   ;;
   --disable-protocols) protocols="no"; network="no"; ffserver="no"
+  ;;
+  --disable-ffmpeg) ffmpeg="no"
   ;;
   --disable-ffserver) ffserver="no"
   ;;
@@ -2102,6 +2106,11 @@ fi
 if test "$protocols" = "yes" ; then
   echo "#define CONFIG_PROTOCOLS 1" >> $TMPH
   echo "CONFIG_PROTOCOLS=yes" >> config.mak
+fi
+
+if test "$ffmpeg" = "yes" ; then
+  echo "#define CONFIG_FFMPEG 1" >> $TMPH
+  echo "CONFIG_FFMPEG=yes" >> config.mak
 fi
 
 if test "$ffserver" = "yes" ; then
