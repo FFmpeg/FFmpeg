@@ -47,10 +47,6 @@ OBJS-$(CONFIG_IMAGE2_DEMUXER)            += img2.o
 OBJS-$(CONFIG_IMAGE2PIPE_DEMUXER)        += img2.o
 OBJS-$(CONFIG_IMAGE2_MUXER)              += img2.o
 OBJS-$(CONFIG_IMAGE2PIPE_MUXER)          += img2.o
-OBJS-$(CONFIG_IMAGE_DEMUXER)             += img.o
-OBJS-$(CONFIG_IMAGEPIPE_DEMUXER)         += img.o
-OBJS-$(CONFIG_IMAGE_MUXER)               += img.o
-OBJS-$(CONFIG_IMAGEPIPE_MUXER)           += img.o
 OBJS-$(CONFIG_IPMOVIE_DEMUXER)           += ipmovie.o
 OBJS-$(CONFIG_MATROSKA_DEMUXER)          += matroska.o riff.o
 OBJS-$(CONFIG_MM_DEMUXER)                += mm.o
@@ -132,8 +128,6 @@ OBJS-$(CONFIG_WV_DEMUXER)                += wv.o
 OBJS-$(CONFIG_YUV4MPEGPIPE_MUXER)        += yuv4mpeg.o
 OBJS-$(CONFIG_YUV4MPEGPIPE_DEMUXER)      += yuv4mpeg.o
 
-# image formats
-OBJS+= pnm.o yuv.o png.o jpeg.o gifdec.o sgi.o
 OBJS+= framehook.o
 
 ifeq ($(CONFIG_VIDEO4LINUX),yes)

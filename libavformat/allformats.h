@@ -173,21 +173,4 @@ int redir_open(AVFormatContext **ic_ptr, ByteIOContext *f);
 /* rtp.c */
 void av_register_rtp_dynamic_payload_handlers();
 
-
-#if 0
-extern AVImageFormat pnm_image_format;
-extern AVImageFormat pbm_image_format;
-extern AVImageFormat pgm_image_format;
-extern AVImageFormat ppm_image_format;
-extern AVImageFormat pam_image_format;
-extern AVImageFormat pgmyuv_image_format;
-extern AVImageFormat yuv_image_format;
-#ifdef CONFIG_ZLIB
-extern AVImageFormat png_image_format;
-#endif
-extern AVImageFormat jpeg_image_format;
-#endif
-extern AVImageFormat gif_image_format;
-//extern AVImageFormat sgi_image_format; //broken in itself
-
 #endif

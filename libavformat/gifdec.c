@@ -20,8 +20,6 @@
  */
 #include "avformat.h"
 
-int gif_write(ByteIOContext *pb, AVImageInfo *info);
-
 //#define DEBUG
 
 #define MAXBITS                 12
@@ -143,17 +141,6 @@ static int gif_video_probe(AVProbeData * pd)
     }
     return 0;
 }
-
-static int gif_image_probe(AVProbeData * pd)
-{
-    if (pd->buf_size >= 24 &&
-        (memcmp(pd->buf, gif87a_sig, 6) == 0 ||
-         memcmp(pd->buf, gif89a_sig, 6) == 0))
-        return AVPROBE_SCORE_MAX - 1;
-    else
-        return 0;
-}
-
 
 static void GLZWDecodeInit(GifState * s, int csize)
 {
@@ -594,33 +581,6 @@ static int gif_read_close(AVFormatContext *s1)
     return 0;
 }
 
-/* read gif as image */
-static int gif_read(ByteIOContext *f,
-                    int (*alloc_cb)(void *opaque, AVImageInfo *info), void *opaque)
-{
-    GifState s1, *s = &s1;
-    AVImageInfo info1, *info = &info1;
-    int ret;
-
-    memset(s, 0, sizeof(GifState));
-    s->f = f;
-    if (gif_read_header1(s) < 0)
-        return -1;
-    info->width = s->screen_width;
-    info->height = s->screen_height;
-    info->pix_fmt = PIX_FMT_PAL8;
-    ret = alloc_cb(opaque, info);
-    if (ret)
-        return ret;
-    s->image_buf = info->pict.data[0];
-    s->image_linesize = info->pict.linesize[0];
-    s->image_palette = (uint32_t *)info->pict.data[1];
-
-    if (gif_parse_next_image(s) < 0)
-        return -1;
-    return 0;
-}
-
 AVInputFormat gif_demuxer =
 {
     "gif",
@@ -630,15 +590,4 @@ AVInputFormat gif_demuxer =
     gif_read_header,
     gif_read_packet,
     gif_read_close,
-};
-
-AVImageFormat gif_image_format = {
-    "gif",
-    "gif",
-    gif_image_probe,
-    gif_read,
-    (1 << PIX_FMT_PAL8),
-#ifdef CONFIG_GIF_MUXER
-    gif_write,
-#endif
 };

@@ -185,7 +185,6 @@ static int audio_write_get_buf_size(VideoState *is);
 
 /* options specified by the user */
 static AVInputFormat *file_iformat;
-static AVImageFormat *image_format;
 static const char *input_filename;
 static int fs_screen_width;
 static int fs_screen_height;
@@ -1797,7 +1796,6 @@ static int decode_thread(void *arg)
     url_set_interrupt_cb(decode_interrupt_cb);
 
     memset(ap, 0, sizeof(*ap));
-    ap->image_format = image_format;
     ap->initial_pause = 1; /* we force a pause when starting an RTSP
                               stream */
 
@@ -2294,21 +2292,6 @@ static void opt_format(const char *arg)
     }
 }
 
-static void opt_image_format(const char *arg)
-{
-    AVImageFormat *f;
-
-    for(f = first_image_format; f != NULL; f = f->next) {
-        if (!strcmp(arg, f->name))
-            break;
-    }
-    if (!f) {
-        fprintf(stderr, "Unknown image format: '%s'\n", arg);
-        exit(1);
-    }
-    image_format = f;
-}
-
 #ifdef CONFIG_NETWORK
 void opt_rtp_tcp(void)
 {
@@ -2363,7 +2346,6 @@ const OptionDef options[] = {
     { "ss", HAS_ARG, {(void*)&opt_seek}, "seek to a given position in seconds", "pos" },
     { "nodisp", OPT_BOOL, {(void*)&display_disable}, "disable graphical display" },
     { "f", HAS_ARG, {(void*)opt_format}, "force format", "fmt" },
-    { "img", HAS_ARG, {(void*)opt_image_format}, "force image format", "img_fmt" },
     { "stats", OPT_BOOL | OPT_EXPERT, {(void*)&show_status}, "show status", "" },
     { "debug", HAS_ARG | OPT_EXPERT, {(void*)opt_debug}, "print specific debug info", "" },
     { "bug", OPT_INT | HAS_ARG | OPT_EXPERT, {(void*)&workaround_bugs}, "workaround bugs", "" },

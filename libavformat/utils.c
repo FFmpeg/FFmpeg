@@ -38,8 +38,6 @@ static void av_frac_set(AVFrac *f, int64_t val);
 AVInputFormat *first_iformat = NULL;
 /** head of registered output format linked list. */
 AVOutputFormat *first_oformat = NULL;
-/** head of registered image format linked list. */
-AVImageFormat *first_image_format = NULL;
 
 void av_register_input_format(AVInputFormat *format)
 {
@@ -100,12 +98,6 @@ AVOutputFormat *guess_format(const char *short_name, const char *filename,
         return guess_format("image2", NULL, NULL);
     }
 #endif
-    if (!short_name && filename &&
-        av_filename_number_test(filename) &&
-        guess_image_format(filename)) {
-        return guess_format("image", NULL, NULL);
-    }
-
     /* find the proper file type */
     fmt_found = NULL;
     score_max = 0;
@@ -3092,93 +3084,3 @@ static void av_frac_add(AVFrac *f, int64_t incr)
     }
     f->num = num;
 }
-
-/**
- * register a new image format
- * @param img_fmt Image format descriptor
- */
-void av_register_image_format(AVImageFormat *img_fmt)
-{
-    AVImageFormat **p;
-
-    p = &first_image_format;
-    while (*p != NULL) p = &(*p)->next;
-    *p = img_fmt;
-    img_fmt->next = NULL;
-}
-
-/**
- * Guesses image format based on data in the image.
- */
-AVImageFormat *av_probe_image_format(AVProbeData *pd)
-{
-    AVImageFormat *fmt1, *fmt;
-    int score, score_max;
-
-    fmt = NULL;
-    score_max = 0;
-    for(fmt1 = first_image_format; fmt1 != NULL; fmt1 = fmt1->next) {
-        if (fmt1->img_probe) {
-            score = fmt1->img_probe(pd);
-            if (score > score_max) {
-                score_max = score;
-                fmt = fmt1;
-            }
-        }
-    }
-    return fmt;
-}
-
-/**
- * Guesses image format based on file name extensions.
- */
-AVImageFormat *guess_image_format(const char *filename)
-{
-    AVImageFormat *fmt1;
-
-    for(fmt1 = first_image_format; fmt1 != NULL; fmt1 = fmt1->next) {
-        if (fmt1->extensions && match_ext(filename, fmt1->extensions))
-            return fmt1;
-    }
-    return NULL;
-}
-
-/**
- * Read an image from a stream.
- * @param gb byte stream containing the image
- * @param fmt image format, NULL if probing is required
- */
-int av_read_image(ByteIOContext *pb, const char *filename,
-                  AVImageFormat *fmt,
-                  int (*alloc_cb)(void *, AVImageInfo *info), void *opaque)
-{
-    uint8_t buf[PROBE_BUF_MIN];
-    AVProbeData probe_data, *pd = &probe_data;
-    offset_t pos;
-    int ret;
-
-    if (!fmt) {
-        pd->filename = filename;
-        pd->buf = buf;
-        pos = url_ftell(pb);
-        pd->buf_size = get_buffer(pb, buf, PROBE_BUF_MIN);
-        url_fseek(pb, pos, SEEK_SET);
-        fmt = av_probe_image_format(pd);
-    }
-    if (!fmt)
-        return AVERROR_NOFMT;
-    ret = fmt->img_read(pb, alloc_cb, opaque);
-    return ret;
-}
-
-/**
- * Write an image to a stream.
- * @param pb byte stream for the image output
- * @param fmt image format
- * @param img image data and informations
- */
-int av_write_image(ByteIOContext *pb, AVImageFormat *fmt, AVImageInfo *img)
-{
-    return fmt->img_write(pb, img);
-}
-

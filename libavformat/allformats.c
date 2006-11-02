@@ -167,18 +167,6 @@ void av_register_all(void)
 #ifdef CONFIG_IMAGE2PIPE_MUXER
     av_register_output_format(&image2pipe_muxer);
 #endif
-#ifdef CONFIG_IMAGE_DEMUXER
-    av_register_input_format(&image_demuxer);
-#endif
-#ifdef CONFIG_IMAGEPIPE_DEMUXER
-    av_register_input_format(&imagepipe_demuxer);
-#endif
-#ifdef CONFIG_IMAGE_MUXER
-    av_register_output_format(&image_muxer);
-#endif
-#ifdef CONFIG_IMAGEPIPE_MUXER
-    av_register_output_format(&imagepipe_muxer);
-#endif
 #ifdef CONFIG_IPMOVIE_DEMUXER
     av_register_input_format(&ipmovie_demuxer);
 #endif
@@ -482,23 +470,6 @@ void av_register_all(void)
 #ifdef CONFIG_TIERTEXSEQ_DEMUXER
     av_register_input_format(&tiertexseq_demuxer);
 #endif
-
-    /* image formats */
-#if 0
-    av_register_image_format(&pnm_image_format);
-    av_register_image_format(&pbm_image_format);
-    av_register_image_format(&pgm_image_format);
-    av_register_image_format(&ppm_image_format);
-    av_register_image_format(&pam_image_format);
-    av_register_image_format(&pgmyuv_image_format);
-    av_register_image_format(&yuv_image_format);
-#ifdef CONFIG_ZLIB
-    av_register_image_format(&png_image_format);
-#endif
-    av_register_image_format(&jpeg_image_format);
-#endif
-    av_register_image_format(&gif_image_format);
-//    av_register_image_format(&sgi_image_format); heap corruption, dont enable
 
 #ifdef CONFIG_PROTOCOLS
     /* file protocols */

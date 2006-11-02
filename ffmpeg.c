@@ -91,7 +91,6 @@ static int nb_meta_data_maps;
 
 static AVInputFormat *file_iformat;
 static AVOutputFormat *file_oformat;
-static AVImageFormat *image_format;
 static int frame_width  = 0;
 static int frame_height = 0;
 static float frame_aspect_ratio = 0;
@@ -2055,21 +2054,6 @@ int file_read(const char *filename)
 }
 #endif
 
-static void opt_image_format(const char *arg)
-{
-    AVImageFormat *f;
-
-    for(f = first_image_format; f != NULL; f = f->next) {
-        if (!strcmp(arg, f->name))
-            break;
-    }
-    if (!f) {
-        fprintf(stderr, "Unknown image format: '%s'\n", arg);
-        exit(1);
-    }
-    image_format = f;
-}
-
 static void opt_format(const char *arg)
 {
     /* compatibility stuff for pgmyuv */
@@ -2589,7 +2573,6 @@ static void opt_input_file(const char *filename)
     ap->time_base.num = frame_rate_base;
     ap->width = frame_width + frame_padleft + frame_padright;
     ap->height = frame_height + frame_padtop + frame_padbottom;
-    ap->image_format = image_format;
     ap->pix_fmt = frame_pix_fmt;
     ap->device  = grab_device;
     ap->channel = video_channel;
@@ -2716,7 +2699,6 @@ static void opt_input_file(const char *filename)
     nb_input_files++;
     file_iformat = NULL;
     file_oformat = NULL;
-    image_format = NULL;
 
     grab_device = NULL;
     video_channel = 0;
@@ -3185,7 +3167,6 @@ static void opt_output_file(const char *filename)
     }
 
     memset(ap, 0, sizeof(*ap));
-    ap->image_format = image_format;
     if (av_set_parameters(oc, ap) < 0) {
         fprintf(stderr, "%s: Invalid encoding parameters\n",
                 oc->filename);
@@ -3206,7 +3187,6 @@ static void opt_output_file(const char *filename)
     /* reset some options */
     file_oformat = NULL;
     file_iformat = NULL;
-    image_format = NULL;
 }
 
 /* prepare dummy protocols for grab */
@@ -3341,7 +3321,6 @@ static void show_formats(void)
 {
     AVInputFormat *ifmt;
     AVOutputFormat *ofmt;
-    AVImageFormat *image_fmt;
     URLProtocol *up;
     AVCodec *p, *p2;
     const char **pp, *last_name;
@@ -3382,18 +3361,6 @@ static void show_formats(void)
             encode ? "E":" ",
             name,
             long_name ? long_name:" ");
-    }
-    printf("\n");
-
-    printf("Image formats (filename extensions, if any, follow):\n");
-    for(image_fmt = first_image_format; image_fmt != NULL;
-        image_fmt = image_fmt->next) {
-        printf(
-            " %s%s %-6s %s\n",
-            image_fmt->img_read  ? "D":" ",
-            image_fmt->img_write ? "E":" ",
-            image_fmt->name,
-            image_fmt->extensions ? image_fmt->extensions:" ");
     }
     printf("\n");
 
@@ -3729,7 +3696,6 @@ const OptionDef options[] = {
     { "version", 0, {(void*)show_version}, "show version" },
     { "formats", 0, {(void*)show_formats}, "show available formats, codecs, protocols, ..." },
     { "f", HAS_ARG, {(void*)opt_format}, "force format", "fmt" },
-    { "img", HAS_ARG, {(void*)opt_image_format}, "force image format", "img_fmt" },
     { "i", HAS_ARG, {(void*)opt_input_file}, "input file name", "filename" },
     { "y", OPT_BOOL, {(void*)&file_overwrite}, "overwrite output files" },
     { "map", HAS_ARG | OPT_EXPERT, {(void*)opt_map}, "set input stream mapping", "file:stream[:syncfile:syncstream]" },

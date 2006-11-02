@@ -25,8 +25,8 @@
 extern "C" {
 #endif
 
-#define LIBAVFORMAT_VERSION_INT ((50<<16)+(6<<8)+0)
-#define LIBAVFORMAT_VERSION     50.6.0
+#define LIBAVFORMAT_VERSION_INT ((51<<16)+(6<<8)+0)
+#define LIBAVFORMAT_VERSION     51.6.0
 #define LIBAVFORMAT_BUILD       LIBAVFORMAT_VERSION_INT
 
 #define LIBAVFORMAT_IDENT       "Lavf" AV_STRINGIFY(LIBAVFORMAT_VERSION)
@@ -122,7 +122,6 @@ typedef struct AVFormatParameters {
     int width;
     int height;
     enum PixelFormat pix_fmt;
-    struct AVImageFormat *image_format;
     int channel; /* used to select dv channel */
     const char *device; /* video, audio or DV device */
     const char *standard; /* tv standard, NTSC, PAL, SECAM */
@@ -377,49 +376,7 @@ typedef struct AVPacketList {
 extern AVInputFormat *first_iformat;
 extern AVOutputFormat *first_oformat;
 
-/* still image support */
-struct AVInputImageContext attribute_deprecated;
-typedef struct AVInputImageContext AVInputImageContext attribute_deprecated;
-
-typedef struct AVImageInfo {
-    enum PixelFormat pix_fmt; /* requested pixel format */
-    int width; /* requested width */
-    int height; /* requested height */
-    int interleaved; /* image is interleaved (e.g. interleaved GIF) */
-    AVPicture pict; /* returned allocated image */
-} AVImageInfo attribute_deprecated;
-
-/* AVImageFormat.flags field constants */
-#define AVIMAGE_INTERLEAVED 0x0001 /* image format support interleaved output */
-
-typedef struct AVImageFormat {
-    const char *name;
-    const char *extensions;
-    /* tell if a given file has a chance of being parsing by this format */
-    int (*img_probe)(AVProbeData *);
-    /* read a whole image. 'alloc_cb' is called when the image size is
-       known so that the caller can allocate the image. If 'allo_cb'
-       returns non zero, then the parsing is aborted. Return '0' if
-       OK. */
-    int (*img_read)(ByteIOContext *,
-                    int (*alloc_cb)(void *, AVImageInfo *info), void *);
-    /* write the image */
-    int supported_pixel_formats; /* mask of supported formats for output */
-    int (*img_write)(ByteIOContext *, AVImageInfo *);
-    int flags;
-    struct AVImageFormat *next;
-} AVImageFormat attribute_deprecated;
-
-void av_register_image_format(AVImageFormat *img_fmt) attribute_deprecated;
-AVImageFormat *av_probe_image_format(AVProbeData *pd) attribute_deprecated;
-AVImageFormat *guess_image_format(const char *filename) attribute_deprecated;
 enum CodecID av_guess_image2_codec(const char *filename);
-int av_read_image(ByteIOContext *pb, const char *filename,
-                  AVImageFormat *fmt,
-                  int (*alloc_cb)(void *, AVImageInfo *info), void *opaque) attribute_deprecated;
-int av_write_image(ByteIOContext *pb, AVImageFormat *fmt, AVImageInfo *img) attribute_deprecated;
-
-extern AVImageFormat *first_image_format attribute_deprecated;
 
 /* XXX: use automatic init with either ELF sections or C file parser */
 /* modules */
