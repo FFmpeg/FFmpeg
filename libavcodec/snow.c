@@ -4279,6 +4279,10 @@ STOP_TIMER("pred-conv")}
     if(avctx->flags&CODEC_FLAG_PASS1)
         ff_write_pass1_stats(&s->m);
     s->m.last_pict_type = s->m.pict_type;
+    avctx->frame_bits = s->m.frame_bits;
+    avctx->mv_bits = s->m.mv_bits;
+    avctx->misc_bits = s->m.misc_bits;
+    avctx->p_tex_bits = s->m.p_tex_bits;
 
     emms_c();
 
