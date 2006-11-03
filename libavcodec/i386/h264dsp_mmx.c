@@ -377,10 +377,7 @@ static void ff_h264_idct8_dc_add_mmx2(uint8_t *dst, int16_t *block, int stride)
 
 static inline void h264_loop_filter_luma_mmx2(uint8_t *pix, int stride, int alpha1, int beta1, int8_t *tc0)
 {
-    uint64_t tmp0;
-    uint64_t tc = (uint8_t)tc0[1]*0x01010000 | (uint8_t)tc0[0]*0x0101;
-    // with luma, tc0=0 doesn't mean no filtering, so we need a separate input mask
-    uint32_t mask[2] = { (tc0[0]>=0)*0xffffffff, (tc0[1]>=0)*0xffffffff };
+    uint64_t tmp0[2];
 
     asm volatile(
         "movq    (%1,%3), %%mm0    \n\t" //p1
@@ -388,8 +385,16 @@ static inline void h264_loop_filter_luma_mmx2(uint8_t *pix, int stride, int alph
         "movq    (%2),    %%mm2    \n\t" //q0
         "movq    (%2,%3), %%mm3    \n\t" //q1
         H264_DEBLOCK_MASK(%6, %7)
-        "pand     %5,     %%mm7    \n\t"
-        "movq     %%mm7,  %0       \n\t"
+
+        "movd      %5,    %%mm4    \n\t"
+        "punpcklbw %%mm4, %%mm4    \n\t"
+        "punpcklwd %%mm4, %%mm4    \n\t"
+        "pcmpeqb   %%mm3, %%mm3    \n\t"
+        "movq      %%mm4, %%mm6    \n\t"
+        "pcmpgtb   %%mm3, %%mm4    \n\t"
+        "movq      %%mm6, 8+%0     \n\t"
+        "pand      %%mm4, %%mm7    \n\t"
+        "movq      %%mm7, %0       \n\t"
 
         /* filter p1 */
         "movq     (%1),   %%mm3    \n\t" //p2
@@ -397,7 +402,7 @@ static inline void h264_loop_filter_luma_mmx2(uint8_t *pix, int stride, int alph
         "pandn    %%mm7,  %%mm6    \n\t"
         "pcmpeqb  %%mm7,  %%mm6    \n\t"
         "pand     %%mm7,  %%mm6    \n\t" // mask & |p2-p0|<beta
-        "pshufw  $80, %4, %%mm4    \n\t"
+        "movq     8+%0,   %%mm4    \n\t"
         "pand     %%mm7,  %%mm4    \n\t" // mask & tc0
         "movq     %%mm4,  %%mm7    \n\t"
         "psubb    %%mm6,  %%mm7    \n\t"
@@ -410,21 +415,21 @@ static inline void h264_loop_filter_luma_mmx2(uint8_t *pix, int stride, int alph
         "pandn    %0,     %%mm6    \n\t"
         "pcmpeqb  %0,     %%mm6    \n\t"
         "pand     %0,     %%mm6    \n\t"
-        "pshufw  $80, %4, %%mm5    \n\t"
+        "movq     8+%0,   %%mm5    \n\t"
         "pand     %%mm6,  %%mm5    \n\t"
         "psubb    %%mm6,  %%mm7    \n\t"
         "movq    (%2,%3), %%mm3    \n\t"
         H264_DEBLOCK_Q1(%%mm3, %%mm4, "(%2,%3,2)", "(%2,%3)", %%mm5, %%mm6)
 
         /* filter p0, q0 */
-        H264_DEBLOCK_P0_Q0(%8, %9)
+        H264_DEBLOCK_P0_Q0(%8, unused)
         "movq      %%mm1, (%1,%3,2) \n\t"
         "movq      %%mm2, (%2)      \n\t"
 
-        : "=m"(tmp0)
+        : "=m"(*tmp0)
         : "r"(pix-3*stride), "r"(pix), "r"((long)stride),
-          "m"(tc), "m"(*(uint64_t*)mask), "m"(alpha1), "m"(beta1),
-          "m"(mm_bone), "m"(ff_pb_3F)
+          "m"(*tmp0/*unused*/), "m"(*(uint32_t*)tc0), "m"(alpha1), "m"(beta1),
+          "m"(mm_bone)
     );
 }
 
