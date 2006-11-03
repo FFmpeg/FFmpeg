@@ -399,10 +399,9 @@ static inline void h264_loop_filter_luma_mmx2(uint8_t *pix, int stride, int alph
         "pand     %%mm7,  %%mm6    \n\t" // mask & |p2-p0|<beta
         "pshufw  $80, %4, %%mm4    \n\t"
         "pand     %%mm7,  %%mm4    \n\t" // mask & tc0
-        "movq     %8,     %%mm7    \n\t"
-        "pand     %%mm6,  %%mm7    \n\t" // mask & |p2-p0|<beta & 1
+        "movq     %%mm4,  %%mm7    \n\t"
+        "psubb    %%mm6,  %%mm7    \n\t"
         "pand     %%mm4,  %%mm6    \n\t" // mask & |p2-p0|<beta & tc0
-        "paddb    %%mm4,  %%mm7    \n\t" // tc++
         H264_DEBLOCK_Q1(%%mm0, %%mm3, "(%1)", "(%1,%3)", %%mm6, %%mm4)
 
         /* filter q1 */
@@ -413,8 +412,7 @@ static inline void h264_loop_filter_luma_mmx2(uint8_t *pix, int stride, int alph
         "pand     %0,     %%mm6    \n\t"
         "pshufw  $80, %4, %%mm5    \n\t"
         "pand     %%mm6,  %%mm5    \n\t"
-        "pand     %8,     %%mm6    \n\t"
-        "paddb    %%mm6,  %%mm7    \n\t"
+        "psubb    %%mm6,  %%mm7    \n\t"
         "movq    (%2,%3), %%mm3    \n\t"
         H264_DEBLOCK_Q1(%%mm3, %%mm4, "(%2,%3,2)", "(%2,%3)", %%mm5, %%mm6)
 
