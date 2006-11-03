@@ -317,6 +317,17 @@ static void ff_h264_idct8_dc_add_mmx2(uint8_t *dst, int16_t *block, int stride)
     "por      "#t", "#o"  \n\t"\
     "psubusb  "#a", "#o"  \n\t"
 
+// out: o = |x-y|>a
+// clobbers: t
+#define DIFF_GT2_MMX(x,y,a,o,t)\
+    "movq     "#y", "#t"  \n\t"\
+    "movq     "#x", "#o"  \n\t"\
+    "psubusb  "#x", "#t"  \n\t"\
+    "psubusb  "#y", "#o"  \n\t"\
+    "psubusb  "#a", "#t"  \n\t"\
+    "psubusb  "#a", "#o"  \n\t"\
+    "pcmpeqb  "#t", "#o"  \n\t"\
+
 // in: mm0=p1 mm1=p0 mm2=q0 mm3=q1
 // out: mm5=beta-1, mm7=mask
 // clobbers: mm4,mm6
@@ -398,9 +409,7 @@ static inline void h264_loop_filter_luma_mmx2(uint8_t *pix, int stride, int alph
 
         /* filter p1 */
         "movq     (%1),   %%mm3    \n\t" //p2
-        DIFF_GT_MMX(%%mm1, %%mm3, %%mm5, %%mm6, %%mm4) // |p2-p0|>beta-1
-        "pandn    %%mm7,  %%mm6    \n\t"
-        "pcmpeqb  %%mm7,  %%mm6    \n\t"
+        DIFF_GT2_MMX(%%mm1, %%mm3, %%mm5, %%mm6, %%mm4) // |p2-p0|>beta-1
         "pand     %%mm7,  %%mm6    \n\t" // mask & |p2-p0|<beta
         "movq     8+%0,   %%mm4    \n\t" // can be merged with the and below but is slower then
         "pand     %%mm7,  %%mm4    \n\t" // mask & tc0
@@ -411,9 +420,7 @@ static inline void h264_loop_filter_luma_mmx2(uint8_t *pix, int stride, int alph
 
         /* filter q1 */
         "movq    (%2,%3,2), %%mm4  \n\t" //q2
-        DIFF_GT_MMX(%%mm2, %%mm4, %%mm5, %%mm6, %%mm3) // |q2-q0|>beta-1
-        "pandn    %0,     %%mm6    \n\t"
-        "pcmpeqb  %0,     %%mm6    \n\t"
+        DIFF_GT2_MMX(%%mm2, %%mm4, %%mm5, %%mm6, %%mm3) // |q2-q0|>beta-1
         "pand     %0,     %%mm6    \n\t"
         "movq     8+%0,   %%mm5    \n\t" // can be merged with the and below but is slower then
         "pand     %%mm6,  %%mm5    \n\t"
