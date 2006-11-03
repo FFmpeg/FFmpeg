@@ -34,16 +34,50 @@ double ff_eval(char *s, double *const_value, const char **const_name,
                double (**func2)(void *, double, double), char **func2_name,
                void *opaque);
 #endif
+
+/**
+ * Parses and evaluates an expression.
+ * Note, this is significantly slower then ff_parse_eval()
+ * @param s expression as a zero terminated string for example "1+2^3+5*5+sin(2/3)"
+ * @param func1 NULL terminated array of function pointers for functions which take 1 argument
+ * @param func2 NULL terminated array of function pointers for functions which take 2 arguments
+ * @param const_name NULL terminated array of zero terminated strings of constant identifers for example {"PI", "E", 0}
+ * @param func1_name NULL terminated array of zero terminated strings of func1 identifers
+ * @param func2_name NULL terminated array of zero terminated strings of func2 identifers
+ * @param error pointer to a char* which is set to an error message if something goes wrong
+ * @param const_value a zero terminated array of values for the identifers from const_name
+ * @param opaque a pointer which will be passed to all functions from func1 and func2
+ * @return the value of the expression
+ */
 double ff_eval2(char *s, double *const_value, const char **const_name,
                double (**func1)(void *, double), const char **func1_name,
                double (**func2)(void *, double, double), char **func2_name,
                void *opaque, char **error);
 
 typedef struct ff_expr_s AVEvalExpr;
+
+/**
+ * Parses a expression.
+ * @param s expression as a zero terminated string for example "1+2^3+5*5+sin(2/3)"
+ * @param func1 NULL terminated array of function pointers for functions which take 1 argument
+ * @param func2 NULL terminated array of function pointers for functions which take 2 arguments
+ * @param const_name NULL terminated array of zero terminated strings of constant identifers for example {"PI", "E", 0}
+ * @param func1_name NULL terminated array of zero terminated strings of func1 identifers
+ * @param func2_name NULL terminated array of zero terminated strings of func2 identifers
+ * @param error pointer to a char* which is set to an error message if something goes wrong
+ * @return AVEvalExpr which must be freed with ff_eval_free by the user when its not needed anymore
+ *         NULL if anything went wrong
+ */
 AVEvalExpr * ff_parse(char *s, const char **const_name,
                double (**func1)(void *, double), const char **func1_name,
                double (**func2)(void *, double, double), char **func2_name,
                char **error);
+/**
+ * Evaluates a previously parsed expression.
+ * @param const_value a zero terminated array of values for the identifers from ff_parse const_name
+ * @param opaque a pointer which will be passed to all functions from func1 and func2
+ * @return the value of the expression
+ */
 double ff_parse_eval(AVEvalExpr * e, double *const_value, void *opaque);
 void ff_eval_free(AVEvalExpr * e);
 
