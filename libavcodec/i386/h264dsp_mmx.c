@@ -176,7 +176,7 @@ static void ff_h264_idct8_add_mmx(uint8_t *dst, int16_t *block, int stride)
     block[0] += 32;
 
     for(i=0; i<2; i++){
-        uint64_t tmp;
+        DECLARE_ALIGNED_8(uint64_t, tmp);
 
         h264_idct8_1d(block+4*i);
 
@@ -388,7 +388,7 @@ static void ff_h264_idct8_dc_add_mmx2(uint8_t *dst, int16_t *block, int stride)
 
 static inline void h264_loop_filter_luma_mmx2(uint8_t *pix, int stride, int alpha1, int beta1, int8_t *tc0)
 {
-    uint64_t tmp0[2];
+    DECLARE_ALIGNED_8(uint64_t, tmp0[2]);
 
     asm volatile(
         "movq    (%1,%3), %%mm0    \n\t" //p1
@@ -450,7 +450,7 @@ static void h264_h_loop_filter_luma_mmx2(uint8_t *pix, int stride, int alpha, in
 {
     //FIXME: could cut some load/stores by merging transpose with filter
     // also, it only needs to transpose 6x8
-    uint8_t trans[8*8];
+    DECLARE_ALIGNED_8(uint8_t, trans[8*8]);
     int i;
     for(i=0; i<2; i++, pix+=8*stride, tc0+=2) {
         if((tc0[0] & tc0[1]) < 0)
@@ -494,7 +494,7 @@ static void h264_v_loop_filter_chroma_mmx2(uint8_t *pix, int stride, int alpha, 
 static void h264_h_loop_filter_chroma_mmx2(uint8_t *pix, int stride, int alpha, int beta, int8_t *tc0)
 {
     //FIXME: could cut some load/stores by merging transpose with filter
-    uint8_t trans[8*4];
+    DECLARE_ALIGNED_8(uint8_t, trans[8*4]);
     transpose4x4(trans, pix-2, 8, stride);
     transpose4x4(trans+4, pix-2+4*stride, 8, stride);
     h264_loop_filter_chroma_mmx2(trans+2*8, 8, alpha-1, beta-1, tc0);
@@ -544,7 +544,7 @@ static void h264_v_loop_filter_chroma_intra_mmx2(uint8_t *pix, int stride, int a
 static void h264_h_loop_filter_chroma_intra_mmx2(uint8_t *pix, int stride, int alpha, int beta)
 {
     //FIXME: could cut some load/stores by merging transpose with filter
-    uint8_t trans[8*4];
+    DECLARE_ALIGNED_8(uint8_t, trans[8*4]);
     transpose4x4(trans, pix-2, 8, stride);
     transpose4x4(trans+4, pix-2+4*stride, 8, stride);
     h264_loop_filter_chroma_intra_mmx2(trans+2*8, 8, alpha-1, beta-1);
@@ -567,7 +567,7 @@ static void h264_loop_filter_strength_mmx2( int16_t bS[2][4][4], uint8_t nnz[40]
     for( dir=1; dir>=0; dir-- ) {
         const int d_idx = dir ? -8 : -1;
         const int mask_mv = dir ? mask_mv1 : mask_mv0;
-        const uint64_t mask_dir = dir ? 0 : 0xffffffffffffffffULL;
+        DECLARE_ALIGNED_8(const uint64_t, mask_dir) = dir ? 0 : 0xffffffffffffffffULL;
         int b_idx, edge, l;
         for( b_idx=12, edge=0; edge<edges; edge+=step, b_idx+=8*step ) {
             asm volatile(
