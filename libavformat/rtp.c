@@ -258,6 +258,98 @@ static int rtcp_parse_packet(RTPDemuxContext *s, const unsigned char *buf, int l
     return 0;
 }
 
+#define RTP_SEQ_MOD (1<<16)
+
+/**
+* called on parse open packet
+*/
+static void rtp_init_statistics(RTPStatistics *s, uint16_t base_sequence) // called on parse open packet.
+{
+    memset(s, 0, sizeof(RTPStatistics));
+    s->max_seq= base_sequence;
+    s->probation= 1;
+}
+
+/**
+* called whenever there is a large jump in sequence numbers, or when they get out of probation...
+*/
+static void rtp_init_sequence(RTPStatistics *s, uint16_t seq)
+{
+    s->max_seq= seq;
+    s->cycles= 0;
+    s->base_seq= seq -1;
+    s->bad_seq= RTP_SEQ_MOD + 1;
+    s->received= 0;
+    s->expected_prior= 0;
+    s->received_prior= 0;
+    s->jitter= 0;
+    s->transit= 0;
+}
+
+/**
+* returns 1 if we should handle this packet.
+*/
+static int rtp_valid_packet_in_sequence(RTPStatistics *s, uint16_t seq)
+{
+    uint16_t udelta= seq - s->max_seq;
+    const int MAX_DROPOUT= 3000;
+    const int MAX_MISORDER = 100;
+    const int MIN_SEQUENTIAL = 2;
+
+    /* source not valid until MIN_SEQUENTIAL packets with sequence seq. numbers have been received */
+    if(s->probation)
+    {
+        if(seq==s->max_seq + 1) {
+            s->probation--;
+            s->max_seq= seq;
+            if(s->probation==0) {
+                rtp_init_sequence(s, seq);
+                s->received++;
+                return 1;
+            }
+        } else {
+            s->probation= MIN_SEQUENTIAL - 1;
+            s->max_seq = seq;
+        }
+    } else if (udelta < MAX_DROPOUT) {
+        // in order, with permissible gap
+        if(seq < s->max_seq) {
+            //sequence number wrapped; count antother 64k cycles
+            s->cycles += RTP_SEQ_MOD;
+        }
+        s->max_seq= seq;
+    } else if (udelta <= RTP_SEQ_MOD - MAX_MISORDER) {
+        // sequence made a large jump...
+        if(seq==s->bad_seq) {
+            // two sequential packets-- assume that the other side restarted without telling us; just resync.
+            rtp_init_sequence(s, seq);
+        } else {
+            s->bad_seq= (seq + 1) & (RTP_SEQ_MOD-1);
+            return 0;
+        }
+    } else {
+        // duplicate or reordered packet...
+    }
+    s->received++;
+    return 1;
+}
+
+#if 0
+/**
+* This function is currently unused; without a valid local ntp time, I don't see how we could calculate the
+* difference between the arrival and sent timestamp.  As a result, the jitter and transit statistics values
+* never change.  I left this in in case someone else can see a way. (rdm)
+*/
+static void rtcp_update_jitter(RTPStatistics *s, uint32_t sent_timestamp, uint32_t arrival_timestamp)
+{
+    uint32_t transit= arrival_timestamp - sent_timestamp;
+    int d;
+    s->transit= transit;
+    d= FFABS(transit - s->transit);
+    s->jitter += d - ((s->jitter + 8)>>4);
+}
+#endif
+
 /**
  * some rtp servers assume client is dead if they don't hear from them...
  * so we send a Receiver Report to the provided ByteIO context
@@ -269,10 +361,20 @@ int rtp_check_and_send_back_rr(RTPDemuxContext *s, int count)
     uint8_t *buf;
     int len;
     int rtcp_bytes;
+    RTPStatistics *stats= &s->statistics;
+    uint32_t lost;
+    uint32_t extended_max;
+    uint32_t expected_interval;
+    uint32_t received_interval;
+    uint32_t lost_interval;
+    uint32_t expected;
+    uint32_t fraction;
+    uint64_t ntp_time= s->last_rtcp_ntp_time; // TODO: Get local ntp time?
 
     if (!s->rtp_ctx || (count < 1))
         return -1;
 
+    /* TODO: I think this is way too often; RFC 1889 has algorithm for this */
     /* XXX: mpeg pts hardcoded. RTCP send every 0.5 seconds */
     s->octet_count += count;
     rtcp_bytes = ((s->octet_count - s->last_octet_count) * RTCP_TX_RATIO_NUM) /
@@ -292,11 +394,36 @@ int rtp_check_and_send_back_rr(RTPDemuxContext *s, int count)
     put_be32(&pb, s->ssrc); // our own SSRC
     put_be32(&pb, s->ssrc); // XXX: should be the server's here!
     // some placeholders we should really fill...
-    put_be32(&pb, ((0 << 24) | (0 & 0x0ffffff))); /* 0% lost, total 0 lost */
-    put_be32(&pb, (0 << 16) | s->seq);
-    put_be32(&pb, 0x68); /* jitter */
-    put_be32(&pb, -1); /* last SR timestamp */
-    put_be32(&pb, 1); /* delay since last SR */
+    // RFC 1889/p64
+    extended_max= stats->cycles + stats->max_seq;
+    expected= extended_max - stats->base_seq + 1;
+    lost= expected - stats->received;
+    lost= FFMIN(lost, 0xffffff); // clamp it since it's only 24 bits...
+    expected_interval= expected - stats->expected_prior;
+    stats->expected_prior= expected;
+    received_interval= stats->received - stats->received_prior;
+    stats->received_prior= stats->received;
+    lost_interval= expected_interval - received_interval;
+    if (expected_interval==0 || lost_interval<=0) fraction= 0;
+    else fraction = (lost_interval<<8)/expected_interval;
+
+    fraction= (fraction<<24) | lost;
+
+    put_be32(&pb, fraction); /* 8 bits of fraction, 24 bits of total packets lost */
+    put_be32(&pb, extended_max); /* max sequence received */
+    put_be32(&pb, stats->jitter>>4); /* jitter */
+
+    if(s->last_rtcp_ntp_time==AV_NOPTS_VALUE)
+    {
+        put_be32(&pb, 0); /* last SR timestamp */
+        put_be32(&pb, 0); /* delay since last SR */
+    } else {
+        uint32_t middle_32_bits= s->last_rtcp_ntp_time>>16; // this is valid, right? do we need to handle 64 bit values special?
+        uint32_t delay_since_last= ntp_time - s->last_rtcp_ntp_time;
+
+        put_be32(&pb, middle_32_bits); /* last SR timestamp */
+        put_be32(&pb, delay_since_last); /* delay since last SR */
+    }
 
     // CNAME
     put_byte(&pb, (RTP_VERSION << 6) + 1); /* 1 report block */
@@ -315,10 +442,14 @@ int rtp_check_and_send_back_rr(RTPDemuxContext *s, int count)
     put_flush_packet(&pb);
     len = url_close_dyn_buf(&pb, &buf);
     if ((len > 0) && buf) {
+        int result;
 #if defined(DEBUG)
         printf("sending %d bytes of RR\n", len);
 #endif
-        url_write(s->rtp_ctx, buf, len);
+        result= url_write(s->rtp_ctx, buf, len);
+#if defined(DEBUG)
+        printf("result from url_write: %d\n", result);
+#endif
         av_free(buf);
     }
     return 0;
@@ -343,6 +474,7 @@ RTPDemuxContext *rtp_parse_open(AVFormatContext *s1, AVStream *st, URLContext *r
     s->ic = s1;
     s->st = st;
     s->rtp_payload_data = rtp_payload_data;
+    rtp_init_statistics(&s->statistics, 0); // do we know the initial sequence from sdp?
     if (!strcmp(AVRtpPayloadTypes[payload_type].enc_name, "MP2T")) {
         s->ts = mpegts_parse_open(s->ic);
         if (s->ts == NULL) {
@@ -514,12 +646,14 @@ int rtp_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
         return -1;
 
     st = s->st;
-#if defined(DEBUG) || 1
-    if (seq != ((s->seq + 1) & 0xffff)) {
+    // only do something with this if all the rtp checks pass...
+    if(!rtp_valid_packet_in_sequence(&s->statistics, seq))
+    {
         av_log(st?st->codec:NULL, AV_LOG_ERROR, "RTP: PT=%02x: bad cseq %04x expected=%04x\n",
                payload_type, seq, ((s->seq + 1) & 0xffff));
+        return -1;
     }
-#endif
+
     s->seq = seq;
     len -= 12;
     buf += 12;

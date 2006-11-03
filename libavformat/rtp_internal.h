@@ -23,6 +23,21 @@
 #ifndef RTP_INTERNAL_H
 #define RTP_INTERNAL_H
 
+// these statistics are used for rtcp receiver reports...
+typedef struct {
+    uint16_t max_seq;           ///< highest sequence number seen
+    uint32_t cycles;            ///< shifted count of sequence number cycles
+    uint32_t base_seq;          ///< base sequence number
+    uint32_t bad_seq;           ///< last bad sequence number + 1
+    int probation;              ///< sequence packets till source is valid
+    int received;               ///< packets received
+    int expected_prior;         ///< packets expected in last interval
+    int received_prior;         ///< packets received in last interval
+    uint32_t transit;           ///< relative transit time for previous packet
+    uint32_t jitter;            ///< estimated jitter.
+} RTPStatistics;
+
+
 typedef int (*DynamicPayloadPacketHandlerProc) (struct RTPDemuxContext * s,
                                                 AVPacket * pkt,
                                                 uint32_t *timestamp,
@@ -64,6 +79,8 @@ struct RTPDemuxContext {
     URLContext *rtp_ctx;
     char hostname[256];
 
+    RTPStatistics statistics; ///< Statistics for this stream (used by RTCP receiver reports)
+
     /* rtcp sender statistics receive */
     int64_t last_rtcp_ntp_time;    // TODO: move into statistics
     int64_t first_rtcp_ntp_time;   // TODO: move into statistics
@@ -87,5 +104,7 @@ struct RTPDemuxContext {
 };
 
 extern RTPDynamicProtocolHandler *RTPFirstDynamicPayloadHandler;
+
+int rtsp_next_attr_and_value(const char **p, char *attr, int attr_size, char *value, int value_size); ///< from rtsp.c, but used by rtp dynamic protocol handlers.
 #endif /* RTP_INTERNAL_H */
 
