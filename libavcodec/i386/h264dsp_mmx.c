@@ -411,9 +411,8 @@ static inline void h264_loop_filter_luma_mmx2(uint8_t *pix, int stride, int alph
         "movq     (%1),   %%mm3    \n\t" //p2
         DIFF_GT2_MMX(%%mm1, %%mm3, %%mm5, %%mm6, %%mm4) // |p2-p0|>beta-1
         "pand     %%mm7,  %%mm6    \n\t" // mask & |p2-p0|<beta
-        "movq     8+%0,   %%mm4    \n\t" // can be merged with the and below but is slower then
-        "pand     %%mm7,  %%mm4    \n\t" // mask & tc0
-        "movq     %%mm4,  %%mm7    \n\t"
+        "pand     8+%0,   %%mm7    \n\t" // mask & tc0
+        "movq     %%mm7,  %%mm4    \n\t"
         "psubb    %%mm6,  %%mm7    \n\t"
         "pand     %%mm4,  %%mm6    \n\t" // mask & |p2-p0|<beta & tc0
         H264_DEBLOCK_Q1(%%mm0, %%mm3, "(%1)", "(%1,%3)", %%mm6, %%mm4)
