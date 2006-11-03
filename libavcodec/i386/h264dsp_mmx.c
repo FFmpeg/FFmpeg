@@ -337,46 +337,27 @@ static void ff_h264_idct8_dc_add_mmx2(uint8_t *dst, int16_t *block, int stride)
 // out: mm1=p0' mm2=q0'
 // clobbers: mm0,3-6
 #define H264_DEBLOCK_P0_Q0(pb_01, pb_3f)\
-        /* a = q0^p0^((p1-q1)>>2) */\
-        "movq    %%mm0, %%mm4  \n\t"\
-        "psubb   %%mm3, %%mm4  \n\t"\
-        "psrlw   $2,    %%mm4  \n\t"\
-        "pxor    %%mm1, %%mm4  \n\t"\
-        "pxor    %%mm2, %%mm4  \n\t"\
-        /* b = p0^(q1>>2) */\
-        "psrlw   $2,    %%mm3  \n\t"\
-        "pand "#pb_3f", %%mm3  \n\t"\
-        "movq    %%mm1, %%mm5  \n\t"\
-        "pxor    %%mm3, %%mm5  \n\t"\
-        /* c = q0^(p1>>2) */\
-        "psrlw   $2,    %%mm0  \n\t"\
-        "pand "#pb_3f", %%mm0  \n\t"\
-        "movq    %%mm2, %%mm6  \n\t"\
-        "pxor    %%mm0, %%mm6  \n\t"\
-        /* d = (c^b) & ~(b^a) & 1 */\
-        "pxor    %%mm5, %%mm6  \n\t"\
-        "pxor    %%mm4, %%mm5  \n\t"\
-        "pandn   %%mm6, %%mm5  \n\t"\
-        "pand "#pb_01", %%mm5  \n\t"\
-        /* delta = (avg(q0, p1>>2) + (d&a))
-         *       - (avg(p0, q1>>2) + (d&~a)) */\
-        "pavgb   %%mm2, %%mm0  \n\t"\
-        "pand    %%mm5, %%mm4  \n\t"\
-        "paddusb %%mm4, %%mm0  \n\t"\
-        "pavgb   %%mm1, %%mm3  \n\t"\
-        "pxor    %%mm5, %%mm4  \n\t"\
-        "paddusb %%mm4, %%mm3  \n\t"\
-        /* p0 += clip(delta, -tc0, tc0)
-         * q0 -= clip(delta, -tc0, tc0) */\
-        "movq    %%mm0, %%mm4  \n\t"\
-        "psubusb %%mm3, %%mm0  \n\t"\
-        "psubusb %%mm4, %%mm3  \n\t"\
-        "pminub  %%mm7, %%mm0  \n\t"\
-        "pminub  %%mm7, %%mm3  \n\t"\
-        "paddusb %%mm0, %%mm1  \n\t"\
-        "paddusb %%mm3, %%mm2  \n\t"\
-        "psubusb %%mm3, %%mm1  \n\t"\
-        "psubusb %%mm0, %%mm2  \n\t"
+        "movq    %%mm1              , %%mm5 \n\t"\
+        "pxor    %%mm2              , %%mm5 \n\t" /* p0^q0*/\
+        "pand    "#pb_01"           , %%mm5 \n\t" /* (p0^q0)&1*/\
+        "pcmpeqb %%mm4              , %%mm4 \n\t"\
+        "pxor    %%mm4              , %%mm3 \n\t"\
+        "pavgb   %%mm0              , %%mm3 \n\t" /* (p1 - q1 + 256)>>1*/\
+        "pavgb   "MANGLE(ff_pb_3)"  , %%mm3 \n\t" /*(((p1 - q1 + 256)>>1)+4)>>1 = 64+2+(p1-q1)>>2*/\
+        "pxor    %%mm1              , %%mm4 \n\t"\
+        "pavgb   %%mm2              , %%mm4 \n\t" /* (q0 - p0 + 256)>>1*/\
+        "pavgb   %%mm5              , %%mm3 \n\t"\
+        "paddb   %%mm4              , %%mm3 \n\t" /* d+128+33*/\
+        "pxor    %%mm6              , %%mm6 \n\t" /* 0*/\
+        "psubb   %%mm3              , %%mm6 \n\t" /* 128-33-d*/\
+        "psubusb "MANGLE(ff_pb_A1)" , %%mm3 \n\t"\
+        "psubusb "MANGLE(ff_pb_5F)" , %%mm6 \n\t"\
+        "pminub  %%mm7              , %%mm3 \n\t"\
+        "pminub  %%mm7              , %%mm6 \n\t"\
+        "paddusb %%mm3              , %%mm1 \n\t"\
+        "paddusb %%mm6              , %%mm2 \n\t"\
+        "psubusb %%mm6              , %%mm1 \n\t"\
+        "psubusb %%mm3              , %%mm2 \n\t"
 
 // in: mm0=p1 mm1=p0 mm2=q0 mm3=q1 mm7=(tc&mask) %8=mm_bone
 // out: (q1addr) = clip( (q2+((p0+q0+1)>>1))>>1, q1-tc0, q1+tc0 )
