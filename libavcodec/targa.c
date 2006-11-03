@@ -129,7 +129,7 @@ static int decode_frame(AVCodecContext *avctx,
         avctx->pix_fmt = PIX_FMT_BGR24;
         break;
     default:
-        av_log(avctx, AV_LOG_ERROR, "Bit depth %i is not supported\n", avctx->bits_per_sample);
+        av_log(avctx, AV_LOG_ERROR, "Bit depth %i is not supported\n", s->bpp);
         return -1;
     }
 
