@@ -68,6 +68,9 @@ static void targa_decode_rle(AVCodecContext *avctx, TargaContext *s, uint8_t *sr
                 dst[1] = src[1];
                 dst[2] = src[2];
                 break;
+            case 4:
+                *((uint32_t*)dst) = LE_32(src);
+                break;
             }
             dst += depth;
             if(!type)
@@ -127,6 +130,9 @@ static int decode_frame(AVCodecContext *avctx,
         break;
     case 24:
         avctx->pix_fmt = PIX_FMT_BGR24;
+        break;
+    case 32:
+        avctx->pix_fmt = PIX_FMT_RGBA32;
         break;
     default:
         av_log(avctx, AV_LOG_ERROR, "Bit depth %i is not supported\n", s->bpp);
@@ -195,6 +201,10 @@ static int decode_frame(AVCodecContext *avctx,
                     uint16_t *dst16 = (uint16_t*)dst;
                     for(x = 0; x < s->width; x++)
                         dst16[x] = LE_16(buf + x * 2);
+                }else if((s->bpp + 1) >> 3 == 4){
+                    uint32_t *dst32 = (uint32_t*)dst;
+                    for(x = 0; x < s->width; x++)
+                        dst32[x] = LE_32(buf + x * 4);
                 }else
 #endif
                     memcpy(dst, buf, s->width * ((s->bpp + 1) >> 3));
