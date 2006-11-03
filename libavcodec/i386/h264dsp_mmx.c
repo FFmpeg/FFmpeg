@@ -347,7 +347,7 @@ static void ff_h264_idct8_dc_add_mmx2(uint8_t *dst, int16_t *block, int stride)
         "pxor    %%mm1              , %%mm4 \n\t"\
         "pavgb   %%mm2              , %%mm4 \n\t" /* (q0 - p0 + 256)>>1*/\
         "pavgb   %%mm5              , %%mm3 \n\t"\
-        "paddb   %%mm4              , %%mm3 \n\t" /* d+128+33*/\
+        "paddusb %%mm4              , %%mm3 \n\t" /* d+128+33*/\
         "movq    "MANGLE(ff_pb_A1)" , %%mm6 \n\t"\
         "psubusb %%mm3              , %%mm6 \n\t"\
         "psubusb "MANGLE(ff_pb_A1)" , %%mm3 \n\t"\
