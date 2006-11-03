@@ -803,9 +803,10 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 
         st->codec->codec_tag = format;
         id = codec_get_id(mov_audio_tags, format);
-        if (id > 0) {
+        if (st->codec->codec_type != CODEC_TYPE_VIDEO && id > 0) {
             st->codec->codec_type = CODEC_TYPE_AUDIO;
-        } else if (format && format != MKTAG('m', 'p', '4', 's')) { /* skip old asf mpeg4 tag */
+        } else if (st->codec->codec_type != CODEC_TYPE_AUDIO && /* do not overwrite codec type */
+                   format && format != MKTAG('m', 'p', '4', 's')) { /* skip old asf mpeg4 tag */
             id = codec_get_id(mov_video_tags, format);
             if (id <= 0)
                 id = codec_get_id(codec_bmp_tags, format);
