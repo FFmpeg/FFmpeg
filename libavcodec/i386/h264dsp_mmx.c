@@ -402,7 +402,7 @@ static inline void h264_loop_filter_luma_mmx2(uint8_t *pix, int stride, int alph
         "pandn    %%mm7,  %%mm6    \n\t"
         "pcmpeqb  %%mm7,  %%mm6    \n\t"
         "pand     %%mm7,  %%mm6    \n\t" // mask & |p2-p0|<beta
-        "movq     8+%0,   %%mm4    \n\t"
+        "movq     8+%0,   %%mm4    \n\t" // can be merged with the and below but is slower then
         "pand     %%mm7,  %%mm4    \n\t" // mask & tc0
         "movq     %%mm4,  %%mm7    \n\t"
         "psubb    %%mm6,  %%mm7    \n\t"
@@ -415,7 +415,7 @@ static inline void h264_loop_filter_luma_mmx2(uint8_t *pix, int stride, int alph
         "pandn    %0,     %%mm6    \n\t"
         "pcmpeqb  %0,     %%mm6    \n\t"
         "pand     %0,     %%mm6    \n\t"
-        "movq     8+%0,   %%mm5    \n\t"
+        "movq     8+%0,   %%mm5    \n\t" // can be merged with the and below but is slower then
         "pand     %%mm6,  %%mm5    \n\t"
         "psubb    %%mm6,  %%mm7    \n\t"
         "movq    (%2,%3), %%mm3    \n\t"
