@@ -285,6 +285,7 @@ typedef struct MOVContext {
     int mdat_count;
     DVDemuxContext *dv_demux;
     AVFormatContext *dv_fctx;
+    int isom; /* 1 if file is ISO Media (mp4/3gp) */
 } MOVContext;
 
 
@@ -405,6 +406,8 @@ static int mov_read_hdlr(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 
     dprintf("ctype= %c%c%c%c (0x%08lx)\n", *((char *)&ctype), ((char *)&ctype)[1], ((char *)&ctype)[2], ((char *)&ctype)[3], (long) ctype);
     dprintf("stype= %c%c%c%c\n", *((char *)&type), ((char *)&type)[1], ((char *)&type)[2], ((char *)&type)[3]);
+    if(!ctype)
+        c->isom = 1;
     if(type == MKTAG('v', 'i', 'd', 'e'))
         st->codec->codec_type = CODEC_TYPE_VIDEO;
     else if(type == MKTAG('s', 'o', 'u', 'n'))
@@ -506,6 +509,8 @@ static int mov_read_ftyp(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
     uint32_t type = get_le32(pb);
 
+    if (type != MKTAG('q','t',' ',' '))
+        c->isom = 1;
     av_log(c->fc, AV_LOG_DEBUG, "ISO: File Type Major Brand: %.4s\n",(char *)&type);
     get_be32(pb); /* minor version */
     url_fskip(pb, atom.size - 8);
@@ -946,7 +951,8 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
             }
 
             //Read QT version 1 fields. In version 0 theese dont exist
-            dprintf("version =%d\n",version);
+            dprintf("version =%d, isom =%d\n",version,c->isom);
+            if(!c->isom) {
             if(version==1) {
                 sc->sample_size_v1.den = get_be32(pb); /* samples per packet */
                 get_be32(pb); /* bytes per packet */
@@ -961,6 +967,7 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
                 get_be32(pb); /* lcpm format specific flag */
                 get_be32(pb); /* bytes per audio packet if constant */
                 get_be32(pb); /* lpcm frames per audio packet if constant */
+            }
             }
 
             bits_per_sample = av_get_bits_per_sample(st->codec->codec_id);
