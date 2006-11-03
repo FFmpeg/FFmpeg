@@ -348,16 +348,15 @@ static void ff_h264_idct8_dc_add_mmx2(uint8_t *dst, int16_t *block, int stride)
         "pavgb   %%mm2              , %%mm4 \n\t" /* (q0 - p0 + 256)>>1*/\
         "pavgb   %%mm5              , %%mm3 \n\t"\
         "paddb   %%mm4              , %%mm3 \n\t" /* d+128+33*/\
-        "pxor    %%mm6              , %%mm6 \n\t" /* 0*/\
-        "psubb   %%mm3              , %%mm6 \n\t" /* 128-33-d*/\
+        "movq    "MANGLE(ff_pb_A1)" , %%mm6 \n\t"\
+        "psubusb %%mm3              , %%mm6 \n\t"\
         "psubusb "MANGLE(ff_pb_A1)" , %%mm3 \n\t"\
-        "psubusb "MANGLE(ff_pb_5F)" , %%mm6 \n\t"\
-        "pminub  %%mm7              , %%mm3 \n\t"\
         "pminub  %%mm7              , %%mm6 \n\t"\
-        "paddusb %%mm3              , %%mm1 \n\t"\
-        "paddusb %%mm6              , %%mm2 \n\t"\
+        "pminub  %%mm7              , %%mm3 \n\t"\
         "psubusb %%mm6              , %%mm1 \n\t"\
-        "psubusb %%mm3              , %%mm2 \n\t"
+        "psubusb %%mm3              , %%mm2 \n\t"\
+        "paddusb %%mm3              , %%mm1 \n\t"\
+        "paddusb %%mm6              , %%mm2 \n\t"
 
 // in: mm0=p1 mm1=p0 mm2=q0 mm3=q1 mm7=(tc&mask) %8=mm_bone
 // out: (q1addr) = clip( (q2+((p0+q0+1)>>1))>>1, q1-tc0, q1+tc0 )
