@@ -37,7 +37,7 @@ double ff_eval(char *s, double *const_value, const char **const_name,
 
 /**
  * Parses and evaluates an expression.
- * Note, this is significantly slower then ff_parse_eval()
+ * Note, this is significantly slower than ff_parse_eval()
  * @param s expression as a zero terminated string for example "1+2^3+5*5+sin(2/3)"
  * @param func1 NULL terminated array of function pointers for functions which take 1 argument
  * @param func2 NULL terminated array of function pointers for functions which take 2 arguments
