@@ -225,7 +225,7 @@ typedef struct ParseContext1{
     ParseContext pc;
 /* XXX/FIXME PC1 vs. PC */
     /* MPEG2 specific */
-    int frame_rate;
+    AVRational frame_rate;
     int progressive_sequence;
     int width, height;
 
@@ -296,32 +296,10 @@ int ff_combine_frame(ParseContext *pc, int next, uint8_t **buf, int *buf_size)
     return 0;
 }
 
-/* XXX: merge with libavcodec ? */
-#define MPEG1_FRAME_RATE_BASE 1001
-
-static const int frame_rate_tab[16] = {
-        0,
-    24000,
-    24024,
-    25025,
-    30000,
-    30030,
-    50050,
-    60000,
-    60060,
-  // Xing's 15fps: (9)
-    15015,
-  // libmpeg3's "Unofficial economy rates": (10-13)
-     5005,
-    10010,
-    12012,
-    15015,
-  // random, just to avoid segfault !never encode these
-    25025,
-    25025,
-};
-
 #ifdef CONFIG_MPEGVIDEO_PARSER
+
+extern const AVRational ff_frame_rate_tab[];
+
 //FIXME move into mpeg12.c
 static void mpegvideo_extract_headers(AVCodecParserContext *s,
                                       AVCodecContext *avctx,
@@ -353,8 +331,8 @@ static void mpegvideo_extract_headers(AVCodecParserContext *s,
                 pc->height = ((buf[1] & 0x0f) << 8) | buf[2];
                 avcodec_set_dimensions(avctx, pc->width, pc->height);
                 frame_rate_index = buf[3] & 0xf;
-                pc->frame_rate = avctx->time_base.den = frame_rate_tab[frame_rate_index];
-                avctx->time_base.num = MPEG1_FRAME_RATE_BASE;
+                pc->frame_rate.den = avctx->time_base.den = ff_frame_rate_tab[frame_rate_index].num;
+                pc->frame_rate.num = avctx->time_base.num = ff_frame_rate_tab[frame_rate_index].den;
                 avctx->bit_rate = ((buf[4]<<10) | (buf[5]<<2) | (buf[6]>>6))*400;
                 avctx->codec_id = CODEC_ID_MPEG1VIDEO;
                 avctx->sub_id = 1;
@@ -378,8 +356,8 @@ static void mpegvideo_extract_headers(AVCodecParserContext *s,
                         pc->height |=( vert_size_ext << 12);
                         avctx->bit_rate += (bit_rate_ext << 18) * 400;
                         avcodec_set_dimensions(avctx, pc->width, pc->height);
-                        avctx->time_base.den = pc->frame_rate * (frame_rate_ext_n + 1);
-                        avctx->time_base.num = MPEG1_FRAME_RATE_BASE * (frame_rate_ext_d + 1);
+                        avctx->time_base.den = pc->frame_rate.den * (frame_rate_ext_n + 1);
+                        avctx->time_base.num = pc->frame_rate.num * (frame_rate_ext_d + 1);
                         avctx->codec_id = CODEC_ID_MPEG2VIDEO;
                         avctx->sub_id = 2; /* forces MPEG2 */
                     }
