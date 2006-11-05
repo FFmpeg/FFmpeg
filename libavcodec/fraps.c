@@ -93,30 +93,33 @@ static int huff_cmp(const Node *a, const Node *b){
     return (a->count - b->count)*256 + a->sym - b->sym;
 }
 
-static void get_tree_codes(uint32_t *bits, int16_t *lens, Node *nodes, int node, uint32_t pfx, int pl)
+static void get_tree_codes(uint32_t *bits, int16_t *lens, uint8_t *xlat, Node *nodes, int node, uint32_t pfx, int pl, int *pos)
 {
     int s;
 
     s = nodes[node].sym;
-    if(s != HNODE){
-        bits[s] = pfx;
-        lens[s] = pl;
+    if(s != HNODE || !nodes[node].count){
+        bits[*pos] = pfx;
+        lens[*pos] = pl;
+        xlat[*pos] = s;
+        (*pos)++;
     }else{
         pfx <<= 1;
         pl++;
-        get_tree_codes(bits, lens, nodes, nodes[node].n0, pfx, pl);
+        get_tree_codes(bits, lens, xlat, nodes, nodes[node].n0, pfx, pl, pos);
         pfx |= 1;
-        get_tree_codes(bits, lens, nodes, nodes[node].n0+1, pfx, pl);
+        get_tree_codes(bits, lens, xlat, nodes, nodes[node].n0+1, pfx, pl, pos);
     }
 }
 
-static int build_huff_tree(VLC *vlc, Node *nodes)
+static int build_huff_tree(VLC *vlc, Node *nodes, uint8_t *xlat)
 {
     uint32_t bits[256];
     int16_t lens[256];
+    int pos = 0;
 
-    get_tree_codes(bits, lens, nodes, 510, 0, 0);
-    return init_vlc(vlc, 9, 256, lens, 2, 2, bits, 4, 4, 0);
+    get_tree_codes(bits, lens, xlat, nodes, 510, 0, 0, &pos);
+    return init_vlc(vlc, 9, pos, lens, 2, 2, bits, 4, 4, 0);
 }
 
 
@@ -131,6 +134,7 @@ static int fraps2_decode_plane(FrapsContext *s, uint8_t *dst, int stride, int w,
     GetBitContext gb;
     VLC vlc;
     int64_t sum = 0;
+    uint8_t recode[256];
 
     for(i = 0; i < 256; i++){
         s->nodes[i].sym = i;
@@ -147,7 +151,6 @@ static int fraps2_decode_plane(FrapsContext *s, uint8_t *dst, int stride, int w,
     }
     qsort(s->nodes, 256, sizeof(Node), huff_cmp);
     cur_node = 256;
-    // FIXME how it will handle nodes with zero count?
     for(i = 0; i < 511; i += 2){
         s->nodes[cur_node].sym = HNODE;
         s->nodes[cur_node].count = s->nodes[i].count + s->nodes[i+1].count;
@@ -158,7 +161,7 @@ static int fraps2_decode_plane(FrapsContext *s, uint8_t *dst, int stride, int w,
         }
         cur_node++;
     }
-    if(build_huff_tree(&vlc, s->nodes) < 0){
+    if(build_huff_tree(&vlc, s->nodes, recode) < 0){
         av_log(s->avctx, AV_LOG_ERROR, "Error building tree\n");
         return -1;
     }
@@ -170,7 +173,7 @@ static int fraps2_decode_plane(FrapsContext *s, uint8_t *dst, int stride, int w,
     init_get_bits(&gb, s->tmpbuf, size * 8);
     for(j = 0; j < h; j++){
         for(i = 0; i < w; i++){
-            dst[i] = get_vlc2(&gb, vlc.table, 9, 3);
+            dst[i] = recode[get_vlc2(&gb, vlc.table, 9, 3)];
             /* lines are stored as deltas between previous lines
              * and we need to add 0x80 to the first lines of chroma planes
              */
@@ -310,10 +313,10 @@ static int decode_frame(AVCodecContext *avctx,
     case 4:
         /**
          * Fraps v2 is Huffman-coded YUV420 planes
-         * Fraps v4 is the same except it works in grayscale
+         * Fraps v4 is virtually the same
          */
-        avctx->pix_fmt = (version == 2) ? PIX_FMT_YUV420P : PIX_FMT_GRAY8;
-        planes = (version == 2) ? 3 : 1;
+        avctx->pix_fmt = PIX_FMT_YUV420P;
+        planes = 3;
         f->reference = 1;
         f->buffer_hints = FF_BUFFER_HINTS_VALID |
                           FF_BUFFER_HINTS_PRESERVE |
@@ -344,7 +347,7 @@ static int decode_frame(AVCodecContext *avctx,
         offs[planes] = buf_size;
         for(i = 0; i < planes; i++){
             is_chroma = !!i;
-            s->tmpbuf = av_realloc(s->tmpbuf, offs[i + 1] - offs[i] - 1024);
+            s->tmpbuf = av_realloc(s->tmpbuf, offs[i + 1] - offs[i] - 1024 + FF_INPUT_BUFFER_PADDING_SIZE);
             if(fraps2_decode_plane(s, f->data[i], f->linesize[i], avctx->width >> is_chroma,
                     avctx->height >> is_chroma, buf + offs[i], offs[i + 1] - offs[i], is_chroma) < 0) {
                 av_log(avctx, AV_LOG_ERROR, "Error decoding plane %i\n", i);
