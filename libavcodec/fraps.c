@@ -27,7 +27,6 @@
  * @author Roine Gustafsson <roine at users sf net>
  * @author Konstantin Shishkov
  *
- * Only decodes version 0 and 1 files.
  * Codec algorithm for version 0 is taken from Transcode <www.transcoding.org>
  *
  * Version 2 files support by Konstantin Shishkov
