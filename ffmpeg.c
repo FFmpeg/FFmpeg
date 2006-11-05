@@ -1424,6 +1424,10 @@ static int av_encode(AVFormatContext **output_files,
     nb_ostreams = 0;
     for(i=0;i<nb_output_files;i++) {
         os = output_files[i];
+        if (!os->nb_streams) {
+            fprintf(stderr, "Output file does not contain any stream\n");
+            exit(1);
+        }
         nb_ostreams += os->nb_streams;
     }
     if (nb_stream_maps > 0 && nb_stream_maps != nb_ostreams) {
@@ -3105,10 +3109,6 @@ static void opt_output_file(const char *filename)
 
         if (use_audio) {
             new_audio_stream(oc);
-        }
-
-        if (!oc->nb_streams) {
-            fprintf(stderr, "Note: Output file will not contain a video or audio stream\n");
         }
 
         oc->timestamp = rec_timestamp;
