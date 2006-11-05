@@ -25,7 +25,6 @@
 typedef struct {
     int w, h;
     DSPContext *dsp;
-    DCTELEM block[64];
     uint8_t scan[64];
     uint32_t lquant[64];
     uint32_t cquant[64];
