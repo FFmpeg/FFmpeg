@@ -62,7 +62,7 @@ static int gif_read_image(GifState *s)
 {
     int left, top, width, height, bits_per_pixel, code_size, flags;
     int is_interleaved, has_local_palette, y, pass, y1, linesize, n, i;
-    uint8_t *ptr, *line, *spal, *palette, *ptr1;
+    uint8_t *ptr, *spal, *palette, *ptr1;
 
     left = bytestream_get_le16(&s->bytestream);
     top = bytestream_get_le16(&s->bytestream);
@@ -102,7 +102,6 @@ static int gif_read_image(GifState *s)
     /* handle transparency */
     if (s->transparent_color_index >= 0)
         s->image_palette[s->transparent_color_index] = 0;
-    line = NULL;
 
     /* now get the image data */
     code_size = bytestream_get_byte(&s->bytestream);
@@ -151,8 +150,6 @@ static int gif_read_image(GifState *s)
             ptr += linesize;
         }
     }
-    av_free(line);
-
     /* read the garbage data until end marker is found */
     ff_lzw_decode_tail(s->lzw);
     s->bytestream = ff_lzw_cur_ptr(s->lzw);
