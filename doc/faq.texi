@@ -30,19 +30,16 @@ If the JPEGs are named img1.jpg, img2.jpg, img3.jpg,..., use:
 
 The same system is used for the other image formats.
 
-(Note: you need -f image2 for all image formats except GIF; see next section).
+@section How do I encode movie to single pictures ?
 
-@section Only GIF is listed by -format. Is that the only accepted image format?
+Use:
 
-No, there are more; they are listed among the video codecs:
-  jpeg, png, ppm, pbm, pam, pgm.
-
-For example:
 @example
-  ffmpeg -f image2 -i menu.png -f image2 menu.jpg
+  ffmpeg -i movie.mpg movie%d.jpg
 @end example
 
-The @file{menu.png} used as input will be converted to @file{menu.jpg}.
+The @file{movie.mpg} used as input will be converted to
+@file{movie1.jpg}, @file{movie2.jpg}, etc...
 
 Instead of relying on file format self-recognition, you may also use
 @table @option
@@ -54,7 +51,7 @@ to force the encoding.
 
 Applying that to the previous example:
 @example
-  ffmpeg -f image2 -vcodec png -i menu.png -f image2 -vcodec mjpeg menu.jpg
+  ffmpeg -i movie.mpg -f image2 -vcodec mjpeg menu%d.jpg
 @end example
 
 Beware that there is no "jpeg" codec. Use "mjpeg" instead.

@@ -43,12 +43,6 @@ disable video
 disable graphical display
 @item -f fmt
 force format
-@item -img img_fmt
-This option is used to force a given image format
-when playing image sequences. Example:
-@example
-ffplay -img pgmyuv tests/vsynth1/%d.pgm
-@end example
 @end table
 
 @section Advanced options
