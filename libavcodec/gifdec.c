@@ -111,7 +111,7 @@ static int gif_read_image(GifState *s)
 
     /* read all the image */
     linesize = s->picture.linesize[0];
-    ptr1 = s->picture.data[0] + top * linesize + (left * 3);
+    ptr1 = s->picture.data[0] + top * linesize + left;
     ptr = ptr1;
     pass = 0;
     y1 = 0;
