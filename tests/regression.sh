@@ -110,12 +110,14 @@ fi
 # create the data directory if it does not exists
 mkdir -p $datadir
 
+FFMPEG_OPTS="-y -flags +bitexact -dct fastint -idct simple"
+
 do_ffmpeg()
 {
     f="$1"
     shift
-    echo $ffmpeg -y -flags +bitexact -dct fastint -idct simple $*
-    $ffmpeg -y -flags +bitexact -dct fastint -idct simple -benchmark $* > $datadir/bench.tmp 2> /tmp/ffmpeg$$
+    echo $ffmpeg $FFMPEG_OPTS $*
+    $ffmpeg $FFMPEG_OPTS -benchmark $* > $datadir/bench.tmp 2> /tmp/ffmpeg$$
     egrep -v "^(Stream|Press|Input|Output|frame|  Stream|  Duration|video:)" /tmp/ffmpeg$$ || true
     rm -f /tmp/ffmpeg$$
     do_md5sum $f >> $logfile
@@ -134,8 +136,8 @@ do_ffmpeg_crc()
 {
     f="$1"
     shift
-    echo $ffmpeg -y -flags +bitexact -dct fastint -idct simple $* -f crc $datadir/ffmpeg.crc
-    $ffmpeg -y -flags +bitexact -dct fastint -idct simple $* -f crc $datadir/ffmpeg.crc > /tmp/ffmpeg$$ 2>&1
+    echo $ffmpeg $FFMPEG_OPTS $* -f crc $datadir/ffmpeg.crc
+    $ffmpeg $FFMPEG_OPTS $* -f crc $datadir/ffmpeg.crc > /tmp/ffmpeg$$ 2>&1
     egrep -v "^(Stream|Press|Input|Output|frame|  Stream|  Duration|video:|ffmpeg version|  configuration|  built)" /tmp/ffmpeg$$ || true
     rm -f /tmp/ffmpeg$$
     echo "$f `cat $datadir/ffmpeg.crc`" >> $logfile
@@ -145,8 +147,8 @@ do_ffmpeg_nocheck()
 {
     f="$1"
     shift
-    echo $ffmpeg -y -flags +bitexact -dct fastint -idct simple $*
-    $ffmpeg -y -flags +bitexact -dct fastint -idct simple -benchmark $* > $datadir/bench.tmp 2> /tmp/ffmpeg$$
+    echo $ffmpeg $FFMPEG_OPTS $*
+    $ffmpeg $FFMPEG_OPTS -benchmark $* > $datadir/bench.tmp 2> /tmp/ffmpeg$$
     egrep -v "^(Stream|Press|Input|Output|frame|  Stream|  Duration|video:)" /tmp/ffmpeg$$ || true
     rm -f /tmp/ffmpeg$$
     expr "`cat $datadir/bench.tmp`" : '.*utime=\(.*s\)' > $datadir/bench2.tmp
