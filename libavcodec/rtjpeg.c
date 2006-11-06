@@ -102,8 +102,8 @@ int rtjpeg_decode_frame_yuv420(RTJpegContext *c, AVFrame *f,
     GetBitContext gb;
     int w = c->w / 16, h = c->h / 16;
     int x, y;
-    void *y1 = f->data[0], *y2 = f->data[0] + 8 * f->linesize[0];
-    void *u = f->data[1], *v = f->data[2];
+    uint8_t *y1 = f->data[0], *y2 = f->data[0] + 8 * f->linesize[0];
+    uint8_t *u = f->data[1], *v = f->data[2];
     init_get_bits(&gb, buf, buf_size * 8);
     for (y = 0; y < h; y++) {
         for (x = 0; x < w; x++) {
