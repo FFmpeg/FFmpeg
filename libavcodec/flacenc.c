@@ -1122,20 +1122,8 @@ static void put_sbits(PutBitContext *pb, int bits, int32_t val)
 
 static void write_utf8(PutBitContext *pb, uint32_t val)
 {
-    int bytes, shift;
-
-    if(val < 0x80){
-        put_bits(pb, 8, val);
-        return;
-    }
-
-    bytes= (av_log2(val)+4) / 5;
-    shift = (bytes - 1) * 6;
-    put_bits(pb, 8, (256 - (256>>bytes)) | (val >> shift));
-    while(shift >= 6){
-        shift -= 6;
-        put_bits(pb, 8, 0x80 | ((val >> shift) & 0x3F));
-    }
+    uint8_t tmp;
+    PUT_UTF8(val, tmp, put_bits(pb, 8, tmp);)
 }
 
 static void output_frame_header(FlacEncodeContext *s)
