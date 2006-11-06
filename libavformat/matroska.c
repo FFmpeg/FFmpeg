@@ -630,10 +630,6 @@ ebml_read_float (MatroskaDemuxContext *matroska,
         *num= av_int2flt(get_be32(pb));
     } else if(size==8){
         *num= av_int2dbl(get_be64(pb));
-    } else if(size==10){
-        av_log(matroska->ctx, AV_LOG_ERROR,
-               "FIXME! 10-byte floats unimplemented\n");
-        return AVERROR_UNKNOWN;
     } else{
         offset_t pos = url_ftell(pb);
         av_log(matroska->ctx, AV_LOG_ERROR,
