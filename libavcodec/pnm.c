@@ -19,7 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 #include "avcodec.h"
-#include "mpegvideo.h" //only for ParseContext
+#include "parser.h" //for ParseContext
 
 typedef struct PNMContext {
     uint8_t *bytestream;
