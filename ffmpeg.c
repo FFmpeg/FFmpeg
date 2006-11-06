@@ -1538,7 +1538,7 @@ static int av_encode(AVFormatContext **output_files,
             codec->bit_rate = icodec->bit_rate;
             codec->extradata= icodec->extradata;
             codec->extradata_size= icodec->extradata_size;
-            if(av_q2d(icodec->time_base) > av_q2d(ist->st->time_base))
+            if(av_q2d(icodec->time_base) > av_q2d(ist->st->time_base) && av_q2d(ist->st->time_base) < 1.0/1000)
                 codec->time_base = icodec->time_base;
             else
                 codec->time_base = ist->st->time_base;
