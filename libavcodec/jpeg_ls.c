@@ -384,6 +384,7 @@ static inline void ls_decode_line(JLSState *state, MJpegDecodeContext *s, void *
             pred = clip(pred, 0, state->maxval);
         }
 
+        pred &= state->maxval;
         W(dst, x, pred);
         x += stride;
     }
