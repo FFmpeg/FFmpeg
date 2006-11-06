@@ -345,6 +345,32 @@ static void sdp_parse_fmtp(AVStream *st, const char *p)
     }
 }
 
+/** Parse a string \p in the form of Range:npt=xx-xx, and determine the start
+ *  and end time.
+ *  Used for seeking in the rtp stream.
+ */
+static void rtsp_parse_range_npt(const char *p, int64_t *start, int64_t *end)
+{
+    char buf[256];
+
+    skip_spaces(&p);
+    if (!stristart(p, "npt=", &p))
+        return;
+
+    *start = AV_NOPTS_VALUE;
+    *end = AV_NOPTS_VALUE;
+
+    get_word_sep(buf, sizeof(buf), "-", &p);
+    *start = parse_date(buf, 1);
+    if (*p == '-') {
+        p++;
+        get_word_sep(buf, sizeof(buf), "-", &p);
+        *end = parse_date(buf, 1);
+    }
+//    av_log(NULL, AV_LOG_DEBUG, "Range Start: %lld\n", *start);
+//    av_log(NULL, AV_LOG_DEBUG, "Range End: %lld\n", *end);
+}
+
 typedef struct SDPParseState {
     /* SDP only */
     struct in_addr default_ip;
@@ -506,6 +532,13 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
                     }
                 }
             }
+        } else if(strstart(p, "range:", &p)) {
+            int64_t start, end;
+
+            // this is so that seeking on a streamed file can work.
+            rtsp_parse_range_npt(p, &start, &end);
+            s->start_time= start;
+            s->duration= (end==AV_NOPTS_VALUE)?AV_NOPTS_VALUE:end-start; // AV_NOPTS_VALUE means live broadcast (and can't seek)
         }
         break;
     }
@@ -660,26 +693,6 @@ static void rtsp_parse_transport(RTSPHeader *reply, const char *p)
     }
 }
 
-static void rtsp_parse_range_npt(RTSPHeader *reply, const char *p)
-{
-    char buf[256];
-
-    skip_spaces(&p);
-    if (!stristart(p, "npt=", &p))
-        return;
-
-    reply->range_start = AV_NOPTS_VALUE;
-    reply->range_end = AV_NOPTS_VALUE;
-
-    get_word_sep(buf, sizeof(buf), "-", &p);
-    reply->range_start = parse_date(buf, 1);
-    if (*p == '-') {
-        p++;
-        get_word_sep(buf, sizeof(buf), "-", &p);
-        reply->range_end = parse_date(buf, 1);
-    }
-}
-
 void rtsp_parse_line(RTSPHeader *reply, const char *buf)
 {
     const char *p;
@@ -695,7 +708,7 @@ void rtsp_parse_line(RTSPHeader *reply, const char *buf)
     } else if (stristart(p, "CSeq:", &p)) {
         reply->seq = strtol(p, NULL, 10);
     } else if (stristart(p, "Range:", &p)) {
-        rtsp_parse_range_npt(reply, p);
+        rtsp_parse_range_npt(p, &reply->range_start, &reply->range_end);
     }
 }
 
