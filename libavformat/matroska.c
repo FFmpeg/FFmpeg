@@ -2209,6 +2209,10 @@ matroska_read_header (AVFormatContext    *s,
 
             st->codec->codec_id = codec_id;
 
+            if (track->default_duration)
+                av_reduce(&st->codec->time_base.num, &st->codec->time_base.den,
+                          track->default_duration, 1000000000, 30000);
+
             if(extradata){
                 st->codec->extradata = extradata;
                 st->codec->extradata_size = extradata_size;
