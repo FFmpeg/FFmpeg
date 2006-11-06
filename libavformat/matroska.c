@@ -2138,11 +2138,11 @@ matroska_read_header (AVFormatContext    *s,
     /* Have we found a cluster? */
     if (res == 1) {
         int i, j;
-        enum CodecID codec_id= CODEC_ID_NONE;
         MatroskaTrack *track;
         AVStream *st;
 
         for (i = 0; i < matroska->num_tracks; i++) {
+            enum CodecID codec_id = CODEC_ID_NONE;
             void *extradata = NULL;
             int extradata_size = 0;
             track = matroska->tracks[i];
