@@ -322,6 +322,18 @@ static inline int ff_get_fourcc(const char *s){
 #define MKTAG(a,b,c,d) (a | (b << 8) | (c << 16) | (d << 24))
 #define MKBETAG(a,b,c,d) (d | (c << 8) | (b << 16) | (a << 24))
 
+/*!
+ * \def GET_UTF8(val, GET_BYTE, ERROR)
+ * converts a utf-8 character (up to 4 bytes long) to its 32-bit ucs-4 encoded form
+ * \param val is the output and should be of type uint32_t. It holds the converted
+ * ucs-4 character and should be a left value.
+ * \param GET_BYTE gets utf-8 encoded bytes from any proper source. It can be
+ * a function or a statement whose return value or evaluated value is of type
+ * uint8_t. It will be execuded up to 4 times.
+ * \param ERROR action that should be taken when an invalid utf-8 byte is returned
+ * from GET_BYTE. It should be a statement that jumps out of the macro,
+ * like exit(), goto, return, break, or continue.
+ */
 #define GET_UTF8(val, GET_BYTE, ERROR)\
     val= GET_BYTE;\
     {\
@@ -339,7 +351,7 @@ static inline int ff_get_fourcc(const char *s){
 
 /*!
  * \def PUT_UTF8(val, tmp, PUT_BYTE)
- * converts a 32-bit unicode character to its utf-8 encoded form (up to 6 bytes long).
+ * converts a 32-bit unicode character to its utf-8 encoded form (up to 4 bytes long).
  * \param val is an input only argument and should be of type uint32_t. It holds
  * a ucs4 encoded unicode character that is to be converted to utf-8. If
  * val is given as a function it's executed only once.
@@ -349,7 +361,7 @@ static inline int ff_get_fourcc(const char *s){
  * \param PUT_BYTE writes the converted utf-8 bytes to any proper destination.
  * It could be a function or a statement, and uses tmp as the input byte.
  * For example, PUT_BYTE could be "*output++ = tmp;" PUT_BYTE will be
- * executed up to 6 times, depending on the length of the converted
+ * executed up to 4 times, depending on the length of the converted
  * unicode character.
  */
 #define PUT_UTF8(val, tmp, PUT_BYTE)\
