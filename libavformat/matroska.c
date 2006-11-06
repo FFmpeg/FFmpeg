@@ -2609,9 +2609,9 @@ matroska_read_close (AVFormatContext *s)
     MatroskaDemuxContext *matroska = s->priv_data;
     int n = 0;
 
-        av_free(matroska->writing_app);
-        av_free(matroska->muxing_app);
-        av_free(matroska->index);
+    av_free(matroska->writing_app);
+    av_free(matroska->muxing_app);
+    av_free(matroska->index);
 
     if (matroska->packets != NULL) {
         for (n = 0; n < matroska->num_packets; n++) {
@@ -2623,11 +2623,11 @@ matroska_read_close (AVFormatContext *s)
 
     for (n = 0; n < matroska->num_tracks; n++) {
         MatroskaTrack *track = matroska->tracks[n];
-            av_free(track->codec_id);
-            av_free(track->codec_name);
-            av_free(track->codec_priv);
-            av_free(track->name);
-            av_free(track->language);
+        av_free(track->codec_id);
+        av_free(track->codec_name);
+        av_free(track->codec_priv);
+        av_free(track->name);
+        av_free(track->language);
 
         av_free(track);
     }
