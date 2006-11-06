@@ -338,7 +338,7 @@ static inline int ff_get_fourcc(const char *s){
     }
 
 /*!
- * \def PUT_UTF8(val, GET_BYTE, ERROR)
+ * \def PUT_UTF8(val, tmp, PUT_BYTE)
  * converts a 32-bit unicode character to its utf-8 encoded form (up to 6 bytes long).
  * \param val is an input only argument and should be of type uint32_t. It holds
  * a ucs4 encoded unicode character that is to be converted to utf-8. If
