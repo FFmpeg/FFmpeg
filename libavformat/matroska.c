@@ -2277,8 +2277,10 @@ matroska_parse_blockgroup (MatroskaDemuxContext *matroska,
 {
     int res = 0;
     uint32_t id;
-    AVPacket *pkt;
+    AVPacket *pkt = NULL;
     int is_keyframe = PKT_FLAG_KEY, last_num_packets = matroska->num_packets;
+    uint64_t duration = AV_NOPTS_VALUE;
+    int track = -1;
 
     av_log(matroska->ctx, AV_LOG_DEBUG, "parsing blockgroup...\n");
 
@@ -2300,7 +2302,7 @@ matroska_parse_blockgroup (MatroskaDemuxContext *matroska,
                 int size;
                 int16_t block_time;
                 uint32_t *lace_size = NULL;
-                int n, track, flags, laces = 0;
+                int n, flags, laces = 0;
                 uint64_t num;
                 int64_t pos= url_ftell(&matroska->ctx->pb);
 
@@ -2454,11 +2456,8 @@ matroska_parse_blockgroup (MatroskaDemuxContext *matroska,
             }
 
             case MATROSKA_ID_BLOCKDURATION: {
-                uint64_t num;
-                if ((res = ebml_read_uint(matroska, &id, &num)) < 0)
+                if ((res = ebml_read_uint(matroska, &id, &duration)) < 0)
                     break;
-                av_log(matroska->ctx, AV_LOG_INFO,
-                       "FIXME: implement support for BlockDuration\n");
                 break;
             }
 
@@ -2485,6 +2484,14 @@ matroska_parse_blockgroup (MatroskaDemuxContext *matroska,
             matroska->level_up--;
             break;
         }
+    }
+
+    if (pkt)
+    {
+        if (duration != AV_NOPTS_VALUE)
+            pkt->duration = duration;
+        else if (track >= 0 && track < matroska->num_tracks)
+            pkt->duration = matroska->tracks[track]->default_duration / matroska->time_scale;
     }
 
     return res;
