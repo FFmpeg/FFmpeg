@@ -221,6 +221,7 @@ static CodecTags codec_tags[]={
     {"A_VORBIS"         , CODEC_ID_VORBIS},
     {"A_AAC/MPEG2/"     , CODEC_ID_AAC},
     {"A_AAC/MPEG4/"     , CODEC_ID_AAC},
+    {"A_WAVPACK4"       , CODEC_ID_WAVPACK},
     {NULL               , CODEC_ID_NONE}
 /* TODO: AC3-9/10 (?), Real, Musepack, Quicktime */
 };
