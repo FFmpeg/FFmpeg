@@ -140,6 +140,10 @@ static int fraps2_decode_plane(FrapsContext *s, uint8_t *dst, int stride, int w,
         s->nodes[i].sym = i;
         s->nodes[i].count = LE_32(src);
         s->nodes[i].n0 = -2;
+        if(s->nodes[i].count < 0) {
+            av_log(s->avctx, AV_LOG_ERROR, "Symbol count < 0\n");
+            return -1;
+        }
         src += 4;
         sum += s->nodes[i].count;
     }
