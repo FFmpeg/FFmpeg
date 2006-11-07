@@ -69,6 +69,7 @@
 /* IDs in the info master */
 #define MATROSKA_ID_TIMECODESCALE 0x2AD7B1
 #define MATROSKA_ID_DURATION   0x4489
+#define MATROSKA_ID_TITLE      0x7BA9
 #define MATROSKA_ID_WRITINGAPP 0x5741
 #define MATROSKA_ID_MUXINGAPP  0x4D80
 #define MATROSKA_ID_DATEUTC    0x4461
@@ -1093,6 +1094,16 @@ matroska_parse_info (MatroskaDemuxContext *matroska)
                 if ((res = ebml_read_float(matroska, &id, &num)) < 0)
                     break;
                 matroska->ctx->duration = num * matroska->time_scale * 1000 / AV_TIME_BASE;
+                break;
+            }
+
+            case MATROSKA_ID_TITLE: {
+                char *text;
+                if ((res = ebml_read_utf8(matroska, &id, &text)) < 0)
+                    break;
+                strncpy(matroska->ctx->title, text,
+                        sizeof(matroska->ctx->title)-1);
+                av_free(text);
                 break;
             }
 
