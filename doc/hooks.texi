@@ -41,9 +41,62 @@ colors than would an RGB cuboid.
 
 @section imlib2.c
 
-This allows a caption to be placed onto each frame. It supports inserting the
-time and date. By using the imlib functions, it would be easy to add your own
-graphical logo, add a frame/border, etc.
+This module implements a text overlay for a video image. Currently it
+supports a fixed overlay or reading the text from a file. The string
+is passed through strftime so that it is easy to imprint the date and
+time onto the image.
+
+You may also overlay an image (even semi-transparent) like TV stations do.
+You may move either the text or the image around your video to create
+scrolling credits, for example.
+
+Text fonts are being looked for in a FONTPATH environment variable.
+
+Options:
+@multitable @columnfractions .2 .8
+@item @option{-c <color>}     @tab The color of the text
+@item @option{-F <fontname>}  @tab The font face and size
+@item @option{-t <text>}      @tab The text
+@item @option{-f <filename>}  @tab The filename to read text from
+@item @option{-x <expresion>} @tab X coordinate of text or image
+@item @option{-y <expresion>} @tab Y coordinate of text or image
+@item @option{-i <filename>}  @tab The filename to read a image from
+@end multitable
+
+Expresions are functions of these variables:
+@multitable @columnfractions .2 .8
+@item @var{N} @tab frame number (starting at zero)
+@item @var{H} @tab frame height
+@item @var{W} @tab frame width
+@item @var{h} @tab image height
+@item @var{w} @tab image width
+@item @var{X} @tab previous x coordinate of text or image
+@item @var{Y} @tab previous y coordinate of text or image
+@end multitable
+
+You may also use the constants @var{PI}, @var{E}, and the math functions available at the
+FFmpeg formula evaluator at (@url{ffmpeg-doc.html#SEC13}), except @var{bits2qp(bits)}
+and @var{qp2bits(qp)}.
+
+Usage examples:
+
+@example
+   # Remember to set the path to your fonts
+   FONTPATH="/cygdrive/c/WINDOWS/Fonts/"
+   FONTPATH="$FONTPATH:/usr/share/imlib2/data/fonts/"
+   FONTPATH="$FONTPATH:/usr/X11R6/lib/X11/fonts/TTF/"
+   export FONTPATH
+
+   # Bulb dancing in a Lissajous pattern
+   ffmpeg -i input.avi -vhook \
+     'vhook/imlib2.dll -x W*(0.5+0.25*sin(N/47*PI))-w/2 -y H*(0.5+0.50*cos(N/97*PI))-h/2 -i /usr/share/imlib2/data/images/bulb.png' \
+     -acodec copy -sameq output.avi
+
+   # Text scrolling
+   ffmpeg -i input.avi -vhook \
+     'vhook/imlib2.dll -c red -F Vera.ttf/20 -x 150+0.5*N -y 70+0.25*N -t Hello' \
+     -acodec copy -sameq output.avi
+@end example
 
 @section ppm.c
 
