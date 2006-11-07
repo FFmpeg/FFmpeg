@@ -192,6 +192,7 @@ static int screen_width = 640;
 static int screen_height = 480;
 static int audio_disable;
 static int video_disable;
+static int seek_by_bytes;
 static int display_disable;
 static int show_status;
 static int av_sync_type = AV_SYNC_AUDIO_MASTER;
@@ -918,6 +919,8 @@ static void stream_seek(VideoState *is, int64_t pos, int rel)
     if (!is->seek_req) {
         is->seek_pos = pos;
         is->seek_flags = rel < 0 ? AVSEEK_FLAG_BACKWARD : 0;
+        if (seek_by_bytes)
+            is->seek_flags |= AVSEEK_FLAG_BYTE;
         is->seek_req = 1;
     }
 }
@@ -2222,9 +2225,19 @@ static void event_loop(void)
                 incr = -60.0;
             do_seek:
                 if (cur_stream) {
-                    pos = get_master_clock(cur_stream);
-                    pos += incr;
-                    stream_seek(cur_stream, (int64_t)(pos * AV_TIME_BASE), incr);
+                    if (seek_by_bytes) {
+                        pos = url_ftell(&cur_stream->ic->pb);
+                        if (cur_stream->ic->bit_rate)
+                            incr *= cur_stream->ic->bit_rate / 60.0;
+                        else
+                            incr *= 180000.0;
+                        pos += incr;
+                        stream_seek(cur_stream, pos, incr);
+                    } else {
+                        pos = get_master_clock(cur_stream);
+                        pos += incr;
+                        stream_seek(cur_stream, (int64_t)(pos * AV_TIME_BASE), incr);
+                    }
                 }
                 break;
             default:
@@ -2344,6 +2357,7 @@ const OptionDef options[] = {
     { "an", OPT_BOOL, {(void*)&audio_disable}, "disable audio" },
     { "vn", OPT_BOOL, {(void*)&video_disable}, "disable video" },
     { "ss", HAS_ARG, {(void*)&opt_seek}, "seek to a given position in seconds", "pos" },
+    { "bytes", OPT_BOOL, {(void*)&seek_by_bytes}, "seek by bytes" },
     { "nodisp", OPT_BOOL, {(void*)&display_disable}, "disable graphical display" },
     { "f", HAS_ARG, {(void*)opt_format}, "force format", "fmt" },
     { "stats", OPT_BOOL | OPT_EXPERT, {(void*)&show_status}, "show status", "" },
