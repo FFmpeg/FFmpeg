@@ -7,19 +7,48 @@
  * is passed through strftime so that it is easy to imprint the date and
  * time onto the image.
  *
+ * You may also overlay an image (even semi-transparent) like TV stations do.
+ * You may move either the text or the image around your video to create
+ * scrolling credits, for example.
+ *
+ * Text fonts are being looked for in FONTPATH
+ *
  * Options:
  *
  * -c <color>           The color of the text
  * -F <fontname>        The font face and size
  * -t <text>            The text
  * -f <filename>        The filename to read text from
- * -x <num>             X coordinate to start text
- * -y <num>             Y coordinate to start text
+ * -x <expresion>       X coordinate of text or image
+ * -y <expresion>       Y coordinate of text or image
+ * -i <filename>        The filename to read a image from
  *
+ * Expresions are functions of:
+ *      N  // frame number (starting at zero)
+ *      H  // frame height
+ *      W  // frame width
+ *      h  // image height
+ *      w  // image width
+ *      X  // previous x
+ *      Y  // previous y
+ *
+
+   Examples:
+
+   FONTPATH="/cygdrive/c/WINDOWS/Fonts/"
+   FONTPATH="$FONTPATH:/usr/share/imlib2/data/fonts/"
+   FONTPATH="$FONTPATH:/usr/X11R6/lib/X11/fonts/TTF/"
+   export FONTPATH
+
+   ffmpeg -i input.avi -vhook \
+     'vhook/imlib2.dll -x W*(0.5+0.25*sin(N/47*PI))-w/2 -y H*(0.5+0.50*cos(N/97*PI))-h/2 -i /usr/share/imlib2/data/images/bulb.png'
+      -acodec copy -sameq output.avi
+
+   ffmpeg -i input.avi -vhook \
+     'vhook/imlib2.dll -c red -F Vera.ttf/20 -x 150+0.5*N -y 70+0.25*N -t Hello'
+      -acodec copy -sameq output.avi
+
  * This module is very much intended as an example of what could be done.
- * For example, you could overlay an image (even semi-transparent) like
- * TV stations do. You can manipulate the image using imlib2 functions
- * in any way.
  *
  * One caution is that this is an expensive process -- in particular the
  * conversion of the image into RGB and back is time consuming. For some
@@ -27,6 +56,23 @@
  * the text into a bitmap and then combine it directly into the YUV
  * image. However, this code is fast enough to handle 10 fps of 320x240 on a
  * 900MHz Duron in maybe 15% of the CPU.
+
+ * See further statistics on Pentium4, 3GHz, FFMpeg is SVN-r6798
+ * Input movie is 20.2 seconds of PAL DV on AVI
+ * Output movie is DVD compliant VOB.
+ *
+   ffmpeg -i input.avi -target pal-dvd out.vob
+   #   13.516s  just transcode
+   ffmpeg -i input.avi -vhook /usr/local/bin/vhook/null.dll -target pal-dvd out.vob
+   #   23.546s  transcode and img_convert
+   ffmpeg -i input.avi -vhook \
+     'vhook/imlib2.dll -c red -F Vera/20 -x 150-0.5*N -y 70+0.25*N -t Hello_person' \
+     -target pal-dvd out.vob
+   #   21.454s  transcode, img_convert and move text around
+   ffmpeg -i input.avi -vhook \
+     'vhook/imlib2.dll -x 150-0.5*N -y 70+0.25*N -i /usr/share/imlib2/data/images/bulb.png' \
+     -target pal-dvd out.vob
+   #   20.828s  transcode, img_convert and move image around
  *
  * This file is part of FFmpeg.
  *
@@ -59,6 +105,20 @@
 #include <time.h>
 #include <X11/Xlib.h>
 #include <Imlib2.h>
+#include "eval.h"
+
+const char *const_names[]={
+    "PI",
+    "E",
+    "N",  // frame number (starting at zero)
+    "H",  // frame height
+    "W",  // frame width
+    "h",  // image height
+    "w",  // image width
+    "X",  // previous x
+    "Y",  // previous y
+    NULL
+};
 
 static int sws_flags = SWS_BICUBIC;
 
@@ -68,9 +128,14 @@ typedef struct {
     char *text;
     char *file;
     int r, g, b;
-    int x;
-    int y;
+    double x, y;
+    char *fileImage;
     struct _CachedImage *cache;
+    Imlib_Image imageOverlaid;
+    AVEvalExpr *eval_x, *eval_y;
+    char *expr_x, *expr_y;
+    int frame_number;
+    int imageOverlaid_width, imageOverlaid_height;
 
     // This vhook first converts frame to RGB ...
     struct SwsContext *toRGB_convert_ctx;
@@ -96,6 +161,12 @@ void Release(void *ctx)
         av_free(ci->cache);
     }
     if (ctx) {
+        if (ci->imageOverlaid) {
+            imlib_context_set_image(ci->imageOverlaid);
+            imlib_free_image();
+        }
+        ff_eval_free(ci->expr_x);
+        ff_eval_free(ci->expr_y);
         sws_freeContext(ci->toRGB_convert_ctx);
         sws_freeContext(ci->fromRGB_convert_ctx);
         av_free(ctx);
@@ -110,16 +181,30 @@ int Configure(void **ctxp, int argc, char *argv[])
     char *fp = getenv("FONTPATH");
     char *color = 0;
     FILE *f;
+    char *p;
 
     *ctxp = av_mallocz(sizeof(ContextInfo));
     ci = (ContextInfo *) *ctxp;
 
+    ci->x = 0.0;
+    ci->y = 0.0;
+    ci->expr_x = "0.0";
+    ci->expr_y = "0.0";
+
     optind = 0;
 
+    /* Use ':' to split FONTPATH */
     if (fp)
+        while (p = strchr(fp, ':')) {
+            *p = 0;
+            imlib_add_path_to_font_path(fp);
+            fp = p + 1;
+        }
+    if ((fp) && (*fp))
         imlib_add_path_to_font_path(fp);
 
-    while ((c = getopt(argc, argv, "c:f:F:t:x:y:")) > 0) {
+
+    while ((c = getopt(argc, argv, "c:f:F:t:x:y:i:")) > 0) {
         switch (c) {
             case 'c':
                 color = optarg;
@@ -134,10 +219,13 @@ int Configure(void **ctxp, int argc, char *argv[])
                 ci->file = av_strdup(optarg);
                 break;
             case 'x':
-                ci->x = atoi(optarg);
+                ci->expr_x = av_strdup(optarg);
                 break;
             case 'y':
-                ci->y = atoi(optarg);
+                ci->expr_y = av_strdup(optarg);
+                break;
+            case 'i':
+                ci->fileImage = av_strdup(optarg);
                 break;
             case '?':
                 fprintf(stderr, "Unrecognized argument '%s'\n", argv[optind]);
@@ -145,6 +233,7 @@ int Configure(void **ctxp, int argc, char *argv[])
         }
     }
 
+    if (ci->text || ci->file) {
     ci->fn = imlib_load_font(font);
     if (!ci->fn) {
         fprintf(stderr, "Failed to load font '%s'\n", font);
@@ -152,6 +241,7 @@ int Configure(void **ctxp, int argc, char *argv[])
     }
     imlib_context_set_font(ci->fn);
     imlib_context_set_direction(IMLIB_TEXT_TO_RIGHT);
+    }
 
     if (color) {
         char buff[256];
@@ -185,6 +275,29 @@ int Configure(void **ctxp, int argc, char *argv[])
         }
     }
     imlib_context_set_color(ci->r, ci->g, ci->b, 255);
+
+    /* load the image (for example, credits for a movie) */
+    if (ci->fileImage) {
+        ci->imageOverlaid = imlib_load_image_immediately(ci->fileImage);
+        if (!(ci->imageOverlaid)){
+            av_log(NULL, AV_LOG_ERROR, "Couldn't load image '%s'\n", ci->fileImage);
+            return -1;
+        }
+        imlib_context_set_image(ci->imageOverlaid);
+        ci->imageOverlaid_width  = imlib_image_get_width();
+        ci->imageOverlaid_height = imlib_image_get_height();
+    }
+
+    if (!(ci->eval_x = ff_parse(ci->expr_x, const_names, NULL, NULL, NULL, NULL, NULL))){
+        av_log(NULL, AV_LOG_ERROR, "Couldn't parse x expression '%s'\n", ci->expr_x);
+        return -1;
+    }
+
+    if (!(ci->eval_y = ff_parse(ci->expr_y, const_names, NULL, NULL, NULL, NULL, NULL))){
+        av_log(NULL, AV_LOG_ERROR, "Couldn't parse y expression '%s'\n", ci->expr_y);
+        return -1;
+    }
+
     return 0;
 }
 
@@ -256,7 +369,20 @@ void Process(void *ctx, AVPicture *picture, enum PixelFormat pix_fmt, int width,
         char *tbp = ci->text;
         time_t now = time(0);
         char *p, *q;
-        int x, y;
+        int y;
+
+        double const_values[]={
+            M_PI,
+            M_E,
+            ci->frame_number,         // frame number (starting at zero)
+            height,                   // frame height
+            width,                    // frame width
+            ci->imageOverlaid_height, // image height
+            ci->imageOverlaid_width,  // image width
+            ci->x,                    // previous x
+            ci->y,                    // previous y
+            0
+        };
 
         if (ci->file) {
             int fd = open(ci->file, O_RDONLY);
@@ -276,19 +402,32 @@ void Process(void *ctx, AVPicture *picture, enum PixelFormat pix_fmt, int width,
             }
         }
 
-        strftime(buff, sizeof(buff), tbp ? tbp : "[No data]", localtime(&now));
+        if (tbp)
+            strftime(buff, sizeof(buff), tbp, localtime(&now));
+        else if (!(ci->imageOverlaid))
+            strftime(buff, sizeof(buff), "[No data]", localtime(&now));
 
-        x = ci->x;
+        ci->x = ff_parse_eval(ci->eval_x, const_values, ci);
+        ci->y = ff_parse_eval(ci->eval_y, const_values, ci);
         y = ci->y;
 
+        if (!(ci->imageOverlaid))
         for (p = buff; p; p = q) {
             q = strchr(p, '\n');
             if (q)
                 *q++ = 0;
 
-            imlib_text_draw_with_return_metrics(x, y, p, &wid, &hig, &h_a, &v_a);
+            imlib_text_draw_with_return_metrics(ci->x, y, p, &wid, &hig, &h_a, &v_a);
             y += v_a;
         }
+
+        if (ci->imageOverlaid) {
+            imlib_context_set_image(image);
+            imlib_blend_image_onto_image(ci->imageOverlaid, 0,
+                0, 0, ci->imageOverlaid_width, ci->imageOverlaid_height,
+                ci->x, ci->y, ci->imageOverlaid_width, ci->imageOverlaid_height);
+        }
+
     }
 
     ci->fromRGB_convert_ctx = sws_getCachedContext(ci->fromRGB_convert_ctx,
@@ -306,5 +445,6 @@ void Process(void *ctx, AVPicture *picture, enum PixelFormat pix_fmt, int width,
              picture1.data, picture1.linesize, 0, height,
              picture->data, picture->linesize);
 
+    ci->frame_number++;
 }
 
