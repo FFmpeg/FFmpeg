@@ -362,7 +362,7 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
                 /* only works for NTSC 29.97 */
                 int d = time_code / 17982;
                 int m = time_code % 17982;
-                //if (m < 2) m += 2; /* not needed since -2,-1 / 2 in C returns 0 */
+                //if (m < 2) m += 2; /* not needed since -2,-1 / 1798 in C returns 0 */
                 time_code += 18 * d + 2 * ((m - 2) / 1798);
             }
             put_bits(&s->pb, 5, (uint32_t)((time_code / (fps * 3600)) % 24));
