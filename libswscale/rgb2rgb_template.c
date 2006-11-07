@@ -60,8 +60,8 @@
 #define PREFETCH "#"
 #define PREFETCHW "#"
 #else
-#define PREFETCH "/nop"
-#define PREFETCHW "/nop"
+#define PREFETCH  " # nop"
+#define PREFETCHW " # nop"
 #endif
 #endif
 
@@ -77,11 +77,7 @@
 #define SFENCE "sfence"
 #else
 #define MOVNTQ "movq"
-#ifdef __APPLE__
-#define SFENCE "#"
-#else
-#define SFENCE "/nop"
-#endif
+#define SFENCE " # nop"
 #endif
 
 static inline void RENAME(rgb24to32)(const uint8_t *src,uint8_t *dst,long src_size)

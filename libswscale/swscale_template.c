@@ -43,14 +43,14 @@
 #define PREFETCH "prefetchnta"
 #define PREFETCHW "prefetcht0"
 #else
-#define PREFETCH "/nop"
-#define PREFETCHW "/nop"
+#define PREFETCH  " # nop"
+#define PREFETCHW " # nop"
 #endif
 
 #ifdef HAVE_MMX2
 #define SFENCE "sfence"
 #else
-#define SFENCE "/nop"
+#define SFENCE " # nop"
 #endif
 
 #ifdef HAVE_MMX2
