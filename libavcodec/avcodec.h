@@ -370,6 +370,7 @@ typedef struct RcOverride{
 #define CODEC_FLAG2_BRDO          0x00000400 ///< b-frame rate-distortion optimization
 #define CODEC_FLAG2_INTRA_VLC     0x00000800 ///< use MPEG-2 intra VLC table
 #define CODEC_FLAG2_MEMC_ONLY     0x00001000 ///< only do ME/MC (I frames -> ref, P frame -> ME+MC)
+#define CODEC_FLAG2_DROP_FRAME_TIMECODE 0x00002000 ///< timecode is in drop frame format
 
 /* Unsupported options :
  *              Syntax Arithmetic coding (SAC)
@@ -2057,6 +2058,13 @@ typedef struct AVCodecContext {
      * - decoding: unused.
      */
     int max_partition_order;
+
+    /**
+     * GOP timecode frame start number, in non drop frame format
+     * - encoding: set by user.
+     * - decoding: unused.
+     */
+    int64_t timecode_frame_start;
 } AVCodecContext;
 
 /**
