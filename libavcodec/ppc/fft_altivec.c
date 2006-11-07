@@ -65,11 +65,7 @@
 void ff_fft_calc_altivec(FFTContext *s, FFTComplex *z)
 {
 POWERPC_PERF_DECLARE(altivec_fft_num, s->nbits >= 6);
-#ifdef CONFIG_DARWIN
-    register const vector float vczero = (const vector float)(0.);
-#else
-    register const vector float vczero = (const vector float){0.,0.,0.,0.};
-#endif
+    register const vector float vczero = (const vector float)vec_splat_u32(0.);
 
     int ln = s->nbits;
     int j, np, np2;
