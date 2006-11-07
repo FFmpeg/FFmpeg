@@ -33,14 +33,14 @@ int (* a52_resample) (float * _f, int16_t * s16)=NULL;
 
 #include "resample_c.c"
 
-#ifdef ARCH_X86
+#ifdef ARCH_X86_32
 #include "resample_mmx.c"
 #endif
 
 void* a52_resample_init(uint32_t mm_accel,int flags,int chans){
 void* tmp;
 
-#ifdef ARCH_X86
+#ifdef ARCH_X86_32
     if(mm_accel&MM_ACCEL_X86_MMX){
 	tmp=a52_resample_MMX(flags,chans);
 	if(tmp){
