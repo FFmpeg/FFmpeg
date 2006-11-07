@@ -518,19 +518,19 @@ retry:
     avctx->has_b_frames= !s->low_delay;
 
     if(s->xvid_build==0 && s->divx_version==0 && s->lavc_build==0){
-        if(s->avctx->stream_codec_tag == ff_get_fourcc("XVID") ||
-           s->avctx->codec_tag == ff_get_fourcc("XVID") || s->avctx->codec_tag == ff_get_fourcc("XVIX") ||
-           s->avctx->codec_tag == ff_get_fourcc("RMP4"))
+        if(s->stream_codec_tag == ff_get_fourcc("XVID") ||
+           s->codec_tag == ff_get_fourcc("XVID") || s->codec_tag == ff_get_fourcc("XVIX") ||
+           s->codec_tag == ff_get_fourcc("RMP4"))
             s->xvid_build= -1;
 #if 0
-        if(s->avctx->codec_tag == ff_get_fourcc("DIVX") && s->vo_type==0 && s->vol_control_parameters==1
+        if(s->codec_tag == ff_get_fourcc("DIVX") && s->vo_type==0 && s->vol_control_parameters==1
            && s->padding_bug_score > 0 && s->low_delay) // XVID with modified fourcc
             s->xvid_build= -1;
 #endif
     }
 
     if(s->xvid_build==0 && s->divx_version==0 && s->lavc_build==0){
-        if(s->avctx->codec_tag == ff_get_fourcc("DIVX") && s->vo_type==0 && s->vol_control_parameters==0)
+        if(s->codec_tag == ff_get_fourcc("DIVX") && s->vo_type==0 && s->vol_control_parameters==0)
             s->divx_version= 400; //divx 4
     }
 
@@ -540,10 +540,10 @@ retry:
     }
 
     if(s->workaround_bugs&FF_BUG_AUTODETECT){
-        if(s->avctx->codec_tag == ff_get_fourcc("XVIX"))
+        if(s->codec_tag == ff_get_fourcc("XVIX"))
             s->workaround_bugs|= FF_BUG_XVID_ILACE;
 
-        if(s->avctx->codec_tag == ff_get_fourcc("UMP4")){
+        if(s->codec_tag == ff_get_fourcc("UMP4")){
             s->workaround_bugs|= FF_BUG_UMP4;
         }
 

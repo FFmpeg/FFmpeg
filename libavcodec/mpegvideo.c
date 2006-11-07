@@ -698,12 +698,12 @@ int MPV_common_init(MpegEncContext *s)
     yc_size = y_size + 2 * c_size;
 
     /* convert fourcc to upper case */
-    s->avctx->codec_tag=   toupper( s->avctx->codec_tag     &0xFF)
+    s->codec_tag=          toupper( s->avctx->codec_tag     &0xFF)
                         + (toupper((s->avctx->codec_tag>>8 )&0xFF)<<8 )
                         + (toupper((s->avctx->codec_tag>>16)&0xFF)<<16)
                         + (toupper((s->avctx->codec_tag>>24)&0xFF)<<24);
 
-    s->avctx->stream_codec_tag=   toupper( s->avctx->stream_codec_tag     &0xFF)
+    s->stream_codec_tag=          toupper( s->avctx->stream_codec_tag     &0xFF)
                                + (toupper((s->avctx->stream_codec_tag>>8 )&0xFF)<<8 )
                                + (toupper((s->avctx->stream_codec_tag>>16)&0xFF)<<16)
                                + (toupper((s->avctx->stream_codec_tag>>24)&0xFF)<<24);
