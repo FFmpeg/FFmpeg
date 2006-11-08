@@ -207,6 +207,7 @@ Muxers/Demuxers:
   idroq.c                               Mike Melanson
   ipmovie.c                             Mike Melanson
   img2.c                                Michael Niedermayer
+  matroska.c                            Aurelien Jacobs
   mov.c                                 Francois Revol, Michael Niedermayer
   mpegts*                               Mans Rullgard
   mtv.c                                 Reynaldo H. Verdejo Pinochet
