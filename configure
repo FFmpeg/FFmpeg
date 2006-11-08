@@ -1835,8 +1835,8 @@ if test "$have_lrintf" = "yes" ; then
   echo "#define HAVE_LRINTF 1" >> $TMPH
 fi
 if test "$vhook" = "yes" ; then
-  echo "BUILD_VHOOK=yes" >> config.mak
-  echo "#define HAVE_VHOOK 1" >> $TMPH
+  echo "CONFIG_VHOOK=yes" >> config.mak
+  echo "#define CONFIG_VHOOK 1" >> $TMPH
 fi
 
 sws_version=`grep '#define LIBSWSCALE_VERSION ' "$source_path/libswscale/swscale.h" | sed 's/[^0-9\.]//g'`

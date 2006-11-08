@@ -45,7 +45,7 @@ else
 DEP_LIBS=libavcodec/$(LIBPREF)avcodec$(LIBSUF) libavformat/$(LIBPREF)avformat$(LIBSUF)
 endif
 
-ifeq ($(BUILD_VHOOK),yes)
+ifeq ($(CONFIG_VHOOK),yes)
 VHOOK=videohook
 INSTALLVHOOK=install-vhook
 endif
@@ -205,7 +205,7 @@ endif
 ifeq ($(CONFIG_SWSCALER),yes)
 	$(MAKE) -C libswscale  depend
 endif
-ifeq ($(BUILD_VHOOK),yes)
+ifeq ($(CONFIG_VHOOK),yes)
 	$(MAKE) -C vhook       depend
 endif
 
