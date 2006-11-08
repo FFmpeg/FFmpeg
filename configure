@@ -1821,7 +1821,7 @@ if test "$pthreads" = "yes" ; then
   echo "#define HAVE_THREADS 1" >> $TMPH
 fi
 if test "$sdl" = "yes" ; then
-  echo "CONFIG_SDL=yes" >> config.mak
+  echo "HAVE_SDL=yes" >> config.mak
   echo "SDL_LIBS=`"${SDL_CONFIG}" --libs`" >> config.mak
   echo "SDL_CFLAGS=`"${SDL_CONFIG}" --cflags`" >> config.mak
   if test "$sdl_video_size" = "yes"; then
