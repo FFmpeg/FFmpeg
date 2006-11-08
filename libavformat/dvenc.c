@@ -279,16 +279,12 @@ int dv_assemble_frame(DVMuxContext *c, AVStream* st,
 
 DVMuxContext* dv_init_mux(AVFormatContext* s)
 {
-    DVMuxContext *c;
+    DVMuxContext *c = (DVMuxContext *)s->priv_data;
     AVStream *vst = NULL;
     int i;
 
     /* we support at most 1 video and 2 audio streams */
     if (s->nb_streams > 3)
-        return NULL;
-
-    c = av_mallocz(sizeof(DVMuxContext));
-    if (!c)
         return NULL;
 
     c->n_ast = 0;
@@ -345,7 +341,6 @@ DVMuxContext* dv_init_mux(AVFormatContext* s)
     return c;
 
 bail_out:
-    av_free(c);
     return NULL;
 }
 
@@ -359,8 +354,7 @@ void dv_delete_mux(DVMuxContext *c)
 #ifdef CONFIG_MUXERS
 static int dv_write_header(AVFormatContext *s)
 {
-    s->priv_data = dv_init_mux(s);
-    if (!s->priv_data) {
+    if (!dv_init_mux(s)) {
         av_log(s, AV_LOG_ERROR, "Can't initialize DV format!\n"
                     "Make sure that you supply exactly two streams:\n"
                     "     video: 25fps or 29.97fps, audio: 2ch/48Khz/PCM\n"
