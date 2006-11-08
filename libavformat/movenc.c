@@ -1225,19 +1225,25 @@ static int mov_write_udta_tag(ByteIOContext *pb, MOVContext* mov,
     return updateSize(pb, pos);
 }
 
+static int utf8len(uint8_t *b){
+    int len=0;
+    int val;
+    while(*b){
+        GET_UTF8(val, *b++, return -1;)
+        len++;
+    }
+    return len;
+}
 
-static size_t ascii_to_wc (ByteIOContext *pb, char *b, size_t n)
+static int ascii_to_wc (ByteIOContext *pb, uint8_t *b)
 {
-    size_t i;
-    unsigned char c;
-    for (i = 0; i < n - 1; i++) {
-        c = b[i];
-        if (! (0x20 <= c && c <= 0x7f ))
-            c = 0x3f;  /* '?' */
-        put_be16(pb, c);
+    int val;
+    while(*b){
+        GET_UTF8(val, *b++, return -1;)
+        put_be16(pb, val);
     }
     put_be16(pb, 0x00);
-    return 2*n;
+    return 0;
 }
 
 static uint16_t language_code (const char *str)
@@ -1275,31 +1281,37 @@ static int mov_write_uuidusmt_tag (ByteIOContext *pb, AVFormatContext *s)
         size += 12;
 
         // Encoder
-        len = strlen(LIBAVCODEC_IDENT)+1;
+        len = utf8len(LIBAVCODEC_IDENT)+1;
+        if(len<=0)
+            goto not_utf8;
         put_be16(pb, len*2+10);             /* size */
         put_be32(pb, 0x04);                 /* type */
         put_be16(pb, language_code("eng")); /* language */
         put_be16(pb, 0x01);                 /* ? */
-        ascii_to_wc(pb, LIBAVCODEC_IDENT, len);
+        ascii_to_wc(pb, LIBAVCODEC_IDENT);
         size += len*2+10;
 
         // Title
-        len = strlen(s->title)+1;
+        len = utf8len(s->title)+1;
+        if(len<=0)
+            goto not_utf8;
         put_be16(pb, len*2+10);             /* size */
         put_be32(pb, 0x01);                 /* type */
         put_be16(pb, language_code("eng")); /* language */
         put_be16(pb, 0x01);                 /* ? */
-        ascii_to_wc (pb, s->title, len);
+        ascii_to_wc (pb, s->title);
         size += len*2+10;
 
         // Date
 //        snprintf(dt,32,"%04d/%02d/%02d %02d:%02d:%02d",t_st->tm_year+1900,t_st->tm_mon+1,t_st->tm_mday,t_st->tm_hour,t_st->tm_min,t_st->tm_sec);
-        len = strlen("2006/04/01 11:11:11")+1;
+        len = utf8len("2006/04/01 11:11:11")+1;
+        if(len<=0)
+            goto not_utf8;
         put_be16(pb, len*2+10);    /* size */
         put_be32(pb, 0x03);        /* type */
         put_be16(pb, language_code("und")); /* language */
         put_be16(pb, 0x01);        /* ? */
-        ascii_to_wc (pb, "2006/04/01 11:11:11", len);
+        ascii_to_wc (pb, "2006/04/01 11:11:11");
         size += len*2+10;
 
         // size
@@ -1312,6 +1324,9 @@ static int mov_write_uuidusmt_tag (ByteIOContext *pb, AVFormatContext *s)
     }
 
     return size;
+not_utf8:
+    av_log(s, AV_LOG_ERROR, "not utf8\n");
+    return -1;
 }
 
 static int mov_write_moov_tag(ByteIOContext *pb, MOVContext *mov,
