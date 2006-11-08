@@ -2143,11 +2143,8 @@ matroska_read_header (AVFormatContext    *s,
         }
     }
 
-    if (res < 0)
-        return res;
-
     /* Have we found a cluster? */
-    if (res == 1) {
+    if (ebml_peek_id(matroska, NULL) == MATROSKA_ID_CLUSTER) {
         int i, j;
         MatroskaTrack *track;
         AVStream *st;
@@ -2264,9 +2261,10 @@ matroska_read_header (AVFormatContext    *s,
 
             /* What do we do with private data? E.g. for Vorbis. */
         }
+        res = 0;
     }
 
-    return 0;
+    return res;
 }
 
 static int
