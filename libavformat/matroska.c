@@ -110,6 +110,8 @@
 
 /* IDs in the trackaudio master */
 #define MATROSKA_ID_AUDIOSAMPLINGFREQ 0xB5
+#define MATROSKA_ID_AUDIOOUTSAMPLINGFREQ 0x78B5
+
 #define MATROSKA_ID_AUDIOBITDEPTH 0x6264
 #define MATROSKA_ID_AUDIOCHANNELS 0x9F
 
@@ -273,6 +275,7 @@ typedef struct MatroskaAudioTrack {
 
     int channels,
         bitdepth,
+        internal_samplerate,
         samplerate;
     //..
 } MatroskaAudioTrack;
@@ -1429,6 +1432,16 @@ matroska_add_stream (MatroskaDemuxContext *matroska)
                     switch (id) {
                         /* samplerate */
                         case MATROSKA_ID_AUDIOSAMPLINGFREQ: {
+                            double num;
+                            if ((res = ebml_read_float(matroska, &id,
+                                                       &num)) < 0)
+                                break;
+                            audiotrack->internal_samplerate =
+                            audiotrack->samplerate = num;
+                            break;
+                        }
+
+                        case MATROSKA_ID_AUDIOOUTSAMPLINGFREQ: {
                             double num;
                             if ((res = ebml_read_float(matroska, &id,
                                                        &num)) < 0)
