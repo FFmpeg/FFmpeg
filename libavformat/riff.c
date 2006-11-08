@@ -197,10 +197,6 @@ const CodecTag codec_wav_tags[] = {
     { CODEC_ID_IMC, 0x401 },
 
     /* FIXME: All of the IDs below are not 16 bit and thus illegal. */
-    { CODEC_ID_TTA, MKTAG('T', 'T', 'A', '1') },
-    { CODEC_ID_WAVPACK, MKTAG('W', 'V', 'P', 'K') },
-    { CODEC_ID_SHORTEN, MKTAG('s', 'h', 'r', 'n') },
-
     // for NuppelVideo (nuv.c)
     { CODEC_ID_PCM_S16LE, MKTAG('R', 'A', 'W', 'A') },
     { CODEC_ID_MP3, MKTAG('L', 'A', 'M', 'E') },
