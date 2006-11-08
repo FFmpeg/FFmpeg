@@ -192,4 +192,4 @@ LIBVERSION=$(LAVFVERSION)
 LIBMAJOR=$(LAVFMAJOR)
 endif
 
-include $(SRC_PATH)/common.mak
+include ../common.mak

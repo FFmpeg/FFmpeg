@@ -412,7 +412,7 @@ ifeq ($(TARGET_ARCH_X86),yes)
 TESTS+= cpuid_test dct-test motion-test
 endif
 
-include $(SRC_PATH)/common.mak
+include ../common.mak
 
 amrlibs:
 	$(MAKE) -C amr spclib fipoplib

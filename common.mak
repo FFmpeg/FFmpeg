@@ -2,8 +2,8 @@
 # common bits used by all libraries
 #
 
-SRC_DIR = $(SRC_PATH)/lib$(NAME)
-VPATH = $(SRC_DIR)
+VPATH = $(SRC_PATH_BARE)/lib$(NAME)
+SRC_DIR = "$(VPATH)"
 
 CFLAGS += -DHAVE_AV_CONFIG_H -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE \
           -D_ISOC9X_SOURCE -I$(BUILD_ROOT) -I$(SRC_PATH) \
@@ -78,7 +78,7 @@ install-lib-static: $(LIB)
 install-headers:
 	install -d "$(incdir)"
 	install -d "$(libdir)/pkgconfig"
-	install -m 644 $(addprefix "$(SRC_DIR)"/,$(HEADERS)) "$(incdir)"
+	install -m 644 $(addprefix $(SRC_DIR)/,$(HEADERS)) "$(incdir)"
 	install -m 644 $(BUILD_ROOT)/lib$(NAME).pc "$(libdir)/pkgconfig"
 
 uninstall: uninstall-libs uninstall-headers

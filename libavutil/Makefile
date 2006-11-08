@@ -25,4 +25,4 @@ LIBVERSION=$(LAVUVERSION)
 LIBMAJOR=$(LAVUMAJOR)
 endif
 
-include $(SRC_PATH)/common.mak
+include ../common.mak

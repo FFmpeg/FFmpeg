@@ -662,13 +662,15 @@ targetos="${targetos}-UNKNOWN"
 esac
 
 # find source path
-source_path="`dirname $0`"
+source_path="`dirname \"$0\"`"
 source_path_used="yes"
 if test -z "$source_path" -o "$source_path" = "." ; then
-    source_path=`pwd`
+    source_path="`pwd`"
     source_path_used="no"
 else
     source_path="`cd \"$source_path\"; pwd`"
+    echo "$source_path" | grep -q '[[:blank:]]' &&
+      die "Out of tree builds are impossible with whitespace in source path."
 fi
 
 if test x"$1" = x"-h" -o x"$1" = x"--help" ; then
@@ -2156,6 +2158,7 @@ if test "$source_path_used" = "yes" ; then
          "
     FILES="\
           Makefile \
+          common.mak \
           libavformat/Makefile \
           libavcodec/Makefile \
           libpostproc/Makefile \
@@ -2173,8 +2176,9 @@ if test "$source_path_used" = "yes" ; then
         ln -sf "$source_path/$f" $f
     done
 fi
-echo "SRC_PATH=$source_path" >> config.mak
-echo "BUILD_ROOT=$PWD" >> config.mak
+echo "SRC_PATH=\"$source_path\"" >> config.mak
+echo "SRC_PATH_BARE=$source_path" >> config.mak
+echo "BUILD_ROOT=\"$PWD\"" >> config.mak
 
 if test "$amr" = "yes" ; then
   echo "#define CONFIG_AMR 1" >> $TMPH

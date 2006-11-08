@@ -4,7 +4,7 @@
 #
 include config.mak
 
-VPATH=$(SRC_PATH)
+VPATH=$(SRC_PATH_BARE)
 
 CFLAGS=$(OPTFLAGS) -I$(BUILD_ROOT) -I$(SRC_PATH) -I$(SRC_PATH)/libavutil \
        -I$(SRC_PATH)/libavcodec -I$(SRC_PATH)/libavformat -I$(SRC_PATH)/libswscale \
@@ -91,7 +91,7 @@ ffplay_g$(EXESUF): ffplay.o cmdutils.o .libs
 	$(STRIP) $@
 
 version.h:
-	$(SRC_PATH)/version.sh "$(SRC_PATH)"
+	$(SRC_PATH)/version.sh $(SRC_PATH)
 
 output_example$(EXESUF): output_example.o .libs
 	$(CC) $(LDFLAGS) -o $@ output_example.o $(EXTRALIBS)

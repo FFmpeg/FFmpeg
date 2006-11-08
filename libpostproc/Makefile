@@ -17,7 +17,7 @@ SHARED_OBJS=postprocess_pic.o
 
 HEADERS = postprocess.h
 
-include $(SRC_PATH)/common.mak
+include ../common.mak
 
 depend dep: postprocess.c
 

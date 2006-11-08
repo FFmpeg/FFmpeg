@@ -39,7 +39,7 @@ sleep 2
 )
 kill $FFSERVER_PID
 wait > /dev/null 2>&1
-if $diff_cmd data/ffserver.regression $1 ; then
+if $diff_cmd data/ffserver.regression "$1" ; then
     echo
     echo Server regression test succeeded.
     exit 0
