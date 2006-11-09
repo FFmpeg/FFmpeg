@@ -412,6 +412,8 @@ static int mov_read_hdlr(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
         st->codec->codec_type = CODEC_TYPE_VIDEO;
     else if(type == MKTAG('s', 'o', 'u', 'n'))
         st->codec->codec_type = CODEC_TYPE_AUDIO;
+    else if(type == MKTAG('m', '1', 'a', ' '))
+        st->codec->codec_id = CODEC_ID_MP2;
     get_be32(pb); /* component  manufacture */
     get_be32(pb); /* component flags */
     get_be32(pb); /* component flags mask */
@@ -1037,6 +1039,7 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
         st->codec->channels= 1; /* really needed */
         break;
     case CODEC_ID_MP2:
+        st->codec->codec_type = CODEC_TYPE_AUDIO; /* force type after stsd for m1a hdlr */
         st->need_parsing = 1;
         break;
     default:
