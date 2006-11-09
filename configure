@@ -95,6 +95,7 @@ show_help(){
   echo "  --enable-gprof           enable profiling with gprof [$gprof]"
   echo "  --disable-debug          disable debugging symbols"
   echo "  --disable-opts           disable compiler optimizations"
+  echo "  --enable-extra-warnings  enable more compiler warnings"
   echo "  --disable-mpegaudio-hp   faster (but less accurate)"
   echo "                           MPEG audio decoding [default=no]"
   echo "  --disable-protocols      disable I/O protocols support [default=no]"
@@ -439,6 +440,7 @@ lstatic="yes"
 lshared="no"
 optimize="yes"
 debug="yes"
+extrawarnings="no"
 dostrip="yes"
 installstrip="-s"
 extralibs="-lm"
@@ -809,6 +811,8 @@ for opt do
   --disable-debug) debug="no"
   ;;
   --disable-opts) optimize="no"
+  ;;
+  --enable-extra-warnings) extrawarnings="yes"
   ;;
   --disable-mpegaudio-hp) mpegaudio_hp="no"
   ;;
@@ -1526,7 +1530,7 @@ check_cflags -Wno-switch
 check_cflags -Wdisabled-optimization
 check_cflags -Wpointer-arith
 check_cflags -Wredundant-decls
-check_cflags -Winline
+enabled extrawarnings && check_cflags -Winline
 
 # add some linker flags
 check_ldflags $LDLATEFLAGS
