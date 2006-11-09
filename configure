@@ -1296,6 +1296,8 @@ if test "$_memalign" = "no" -a "$mmx" = "yes" -a \
     die "Error, no memalign() but SSE enabled, disable it or use --enable-memalign-hack."
 fi
 
+check_header byteswap.h && byteswap_h=yes || byteswap_h=no
+
 check_func localtime_r && localtime_r=yes || localtime_r=no
 enabled zlib && check_lib zlib.h zlibVersion -lz || zlib="no"
 
@@ -2091,6 +2093,9 @@ if test "$memalignhack" = "yes" ; then
   echo "#define MEMALIGN_HACK 1" >> $TMPH
 fi
 
+if test "$byteswap_h" = "yes"; then
+  echo "#define HAVE_BYTESWAP_H 1" >> $TMPH
+fi
 
 if test "$netserver" = "yes" ; then
   echo "#define CONFIG_BEOS_NETSERVER 1" >> $TMPH
