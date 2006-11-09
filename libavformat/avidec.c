@@ -443,6 +443,9 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     /* special case time: To support Xan DPCM, hardcode
                      * the format if Xxan is the video codec */
                     st->need_parsing = 1;
+                    /* ADTS header is in extradata, AAC without header must be stored as exact frames, parser not needed and it will fail */
+                    if (st->codec->codec_id == CODEC_ID_AAC && st->codec->extradata_size)
+                        st->need_parsing = 0;
                     /* force parsing as several audio frames can be in
                        one packet */
                     if (xan_video)

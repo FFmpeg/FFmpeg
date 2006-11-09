@@ -186,7 +186,7 @@ AVRtpPayloadType_t AVRtpPayloadTypes[]=
 RTPDynamicProtocolHandler *RTPFirstDynamicPayloadHandler= NULL;
 
 static RTPDynamicProtocolHandler mp4v_es_handler= {"MP4V-ES", CODEC_TYPE_VIDEO, CODEC_ID_MPEG4};
-static RTPDynamicProtocolHandler mpeg4_generic_handler= {"mpeg4-generic", CODEC_TYPE_AUDIO, CODEC_ID_MPEG4AAC};
+static RTPDynamicProtocolHandler mpeg4_generic_handler= {"mpeg4-generic", CODEC_TYPE_AUDIO, CODEC_ID_AAC};
 
 static void register_dynamic_payload_handler(RTPDynamicProtocolHandler *handler)
 {
@@ -564,7 +564,7 @@ static void finalize_packet(RTPDemuxContext *s, AVPacket *pkt, uint32_t timestam
                 pkt->pts = addend + delta_timestamp;
             }
             break;
-        case CODEC_ID_MPEG4AAC:
+        case CODEC_ID_AAC:
         case CODEC_ID_H264:
         case CODEC_ID_MPEG4:
             pkt->pts = timestamp;
@@ -694,7 +694,7 @@ int rtp_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
             // moved from below, verbatim.  this is because this section handles packets, and the lower switch handles
             // timestamps.
             // TODO: Put this into a dynamic packet handler...
-        case CODEC_ID_MPEG4AAC:
+        case CODEC_ID_AAC:
             if (rtp_parse_mp4_au(s, buf))
                 return -1;
             {
