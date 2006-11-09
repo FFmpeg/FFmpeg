@@ -3149,7 +3149,7 @@ static void hl_motion(H264Context *h, uint8_t *dest_y, uint8_t *dest_cb, uint8_t
     prefetch_motion(h, 1);
 }
 
-static void decode_init_vlc(H264Context *h){
+static void decode_init_vlc(){
     static int done = 0;
 
     if (!done) {
@@ -3406,7 +3406,7 @@ static int decode_init(AVCodecContext *avctx){
     s->low_delay= 1;
     avctx->pix_fmt= PIX_FMT_YUV420P;
 
-    decode_init_vlc(h);
+    decode_init_vlc();
 
     if(avctx->extradata_size > 0 && avctx->extradata &&
        *(char *)avctx->extradata == 1){
