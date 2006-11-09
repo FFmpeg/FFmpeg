@@ -16,7 +16,7 @@ endif
 
 HEADERS = swscale.h rgb2rgb.h
 
-include $(SRC_PATH)/common.mak
+include ../common.mak
 
 cs_test: cs_test.c $(LIB)
 
