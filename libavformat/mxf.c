@@ -371,8 +371,10 @@ static int mxf_read_metadata_source_clip(MXFContext *mxf, KLVPacket *klv)
 
         bytes_read += size + 4;
         dprintf("tag 0x%04X, size %d\n", tag, size);
-        if (!size) /* ignore empty tag, needed for some files with empty UMID tag */
+        if (!size) { /* ignore empty tag, needed for some files with empty UMID tag */
+            av_log(mxf->fc, AV_LOG_ERROR, "local tag 0x%04X with 0 size\n", tag);
             continue;
+        }
         switch (tag) {
         case 0x3C0A:
             get_buffer(pb, source_clip->uid, 16);
