@@ -869,5 +869,7 @@ void avcodec_register_all(void)
     av_register_bitstream_filter(&dump_extradata_bsf);
     av_register_bitstream_filter(&remove_extradata_bsf);
     av_register_bitstream_filter(&noise_bsf);
+    av_register_bitstream_filter(&mp3_header_compress_bsf);
+    av_register_bitstream_filter(&mp3_header_decompress_bsf);
 }
 

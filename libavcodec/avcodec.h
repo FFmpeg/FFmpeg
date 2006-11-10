@@ -2662,6 +2662,8 @@ void av_bitstream_filter_close(AVBitStreamFilterContext *bsf);
 extern AVBitStreamFilter dump_extradata_bsf;
 extern AVBitStreamFilter remove_extradata_bsf;
 extern AVBitStreamFilter noise_bsf;
+extern AVBitStreamFilter mp3_header_compress_bsf;
+extern AVBitStreamFilter mp3_header_decompress_bsf;
 
 
 /* memory */
