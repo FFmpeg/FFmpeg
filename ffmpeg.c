@@ -2931,6 +2931,7 @@ static void new_audio_stream(AVFormatContext *oc)
 
     audio_enc = st->codec;
     audio_enc->codec_type = CODEC_TYPE_AUDIO;
+    audio_enc->strict_std_compliance = strict;
 
     if(audio_codec_tag)
         audio_enc->codec_tag= audio_codec_tag;
@@ -2961,7 +2962,6 @@ static void new_audio_stream(AVFormatContext *oc)
             audio_enc->flags |= CODEC_FLAG_QSCALE;
             audio_enc->global_quality = st->quality = FF_QP2LAMBDA * audio_qscale;
         }
-        audio_enc->strict_std_compliance = strict;
         audio_enc->thread_count = thread_count;
         /* For audio codecs other than AC3 or DTS we limit */
         /* the number of coded channels to stereo   */
