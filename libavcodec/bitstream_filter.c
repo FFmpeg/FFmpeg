@@ -238,8 +238,10 @@ static int mp3_header_decompress(AVBitStreamFilterContext *bsfc, AVCodecContext 
         if(lsf){
             FFSWAP(int, p[1], p[2]);
             header |= (p[1] & 0xC0)>>2;
+            p[1] &= 0x3F;
         }else{
             header |= p[1] & 0x30;
+            p[1] &= 0xCF;
         }
     }
 
