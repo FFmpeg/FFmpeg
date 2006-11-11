@@ -222,7 +222,7 @@ static CodecTags codec_tags[]={
     {"A_AC3"            , CODEC_ID_AC3},
     {"A_DTS"            , CODEC_ID_DTS},
     {"A_VORBIS"         , CODEC_ID_VORBIS},
-    {"A_AAC/"           , CODEC_ID_AAC},
+    {"A_AAC"            , CODEC_ID_AAC},
     {"A_WAVPACK4"       , CODEC_ID_WAVPACK},
     {NULL               , CODEC_ID_NONE}
 /* TODO: AC3-9/10 (?), Real, Musepack, Quicktime */
@@ -2245,7 +2245,7 @@ matroska_read_header (AVFormatContext    *s,
 
             }
 
-            if (codec_id==CODEC_ID_AAC) {
+            else if (codec_id == CODEC_ID_AAC && !track->codec_priv_size) {
                 MatroskaAudioTrack *audiotrack = (MatroskaAudioTrack *) track;
                 int profile = matroska_aac_profile(track->codec_id);
                 int sri = matroska_aac_sri(audiotrack->internal_samplerate);
