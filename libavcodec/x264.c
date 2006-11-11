@@ -66,7 +66,7 @@ encode_nals(uint8_t *buf, int size, x264_nal_t *nals, int nnal)
     return p - buf;
 }
 
-extern int
+static int
 X264_frame(AVCodecContext *ctx, uint8_t *buf, int bufsize, void *data)
 {
     X264Context *x4 = ctx->priv_data;
@@ -130,7 +130,7 @@ X264_close(AVCodecContext *avctx)
     return 0;
 }
 
-extern int
+static int
 X264_init(AVCodecContext *avctx)
 {
     X264Context *x4 = avctx->priv_data;
