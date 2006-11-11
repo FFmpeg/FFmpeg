@@ -135,8 +135,8 @@ static int mp3len(void *data, int *samplesPerFrame, int *sampleRate)
     return *samplesPerFrame * bitRate / (bitsPerSlot * *sampleRate) + isPadded;
 }
 
-int MP3lame_encode_frame(AVCodecContext *avctx,
-                     unsigned char *frame, int buf_size, void *data)
+static int MP3lame_encode_frame(AVCodecContext *avctx,
+                                unsigned char *frame, int buf_size, void *data)
 {
     Mp3AudioContext *s = avctx->priv_data;
     int len;
@@ -198,7 +198,7 @@ int MP3lame_encode_frame(AVCodecContext *avctx,
             return 0;
 }
 
-int MP3lame_encode_close(AVCodecContext *avctx)
+static int MP3lame_encode_close(AVCodecContext *avctx)
 {
     Mp3AudioContext *s = avctx->priv_data;
 

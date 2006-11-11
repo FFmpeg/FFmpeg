@@ -538,7 +538,7 @@ static void imc_adjust_bit_allocation (IMCContext* q, int summer) {
     }
 }
 
-void imc_imdct256(IMCContext *q) {
+static void imc_imdct256(IMCContext *q) {
     int i;
     float re, im;
 

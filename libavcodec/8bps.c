@@ -39,7 +39,7 @@
 #include "avcodec.h"
 
 
-const enum PixelFormat pixfmt_rgb24[] = {PIX_FMT_BGR24, PIX_FMT_RGBA32, -1};
+static const enum PixelFormat pixfmt_rgb24[] = {PIX_FMT_BGR24, PIX_FMT_RGBA32, -1};
 
 /*
  * Decoder context

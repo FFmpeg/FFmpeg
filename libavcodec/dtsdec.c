@@ -55,7 +55,7 @@ int16_t convert (int32_t i)
     return (i > 32767) ? 32767 : ((i < -32768) ? -32768 : i);
 }
 
-void
+static void
 convert2s16_2 (sample_t * _f, int16_t * s16)
 {
   int i;
@@ -68,7 +68,7 @@ convert2s16_2 (sample_t * _f, int16_t * s16)
     }
 }
 
-void
+static void
 convert2s16_4 (sample_t * _f, int16_t * s16)
 {
   int i;
@@ -83,7 +83,7 @@ convert2s16_4 (sample_t * _f, int16_t * s16)
     }
 }
 
-void
+static void
 convert2s16_5 (sample_t * _f, int16_t * s16)
 {
   int i;

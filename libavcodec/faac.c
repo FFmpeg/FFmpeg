@@ -95,8 +95,8 @@ static int Faac_encode_init(AVCodecContext *avctx)
     return 0;
 }
 
-int Faac_encode_frame(AVCodecContext *avctx,
-                      unsigned char *frame, int buf_size, void *data)
+static int Faac_encode_frame(AVCodecContext *avctx,
+                             unsigned char *frame, int buf_size, void *data)
 {
     FaacAudioContext *s = avctx->priv_data;
     int bytes_written;
@@ -110,7 +110,7 @@ int Faac_encode_frame(AVCodecContext *avctx,
     return bytes_written;
 }
 
-int Faac_encode_close(AVCodecContext *avctx)
+static int Faac_encode_close(AVCodecContext *avctx)
 {
     FaacAudioContext *s = avctx->priv_data;
 

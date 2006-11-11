@@ -26,7 +26,7 @@
 #define MB_TYPE_H261_FIL 0x800000
 
 // H.261 VLC table for macroblock addressing
-const uint8_t h261_mba_code[35] = {
+static const uint8_t h261_mba_code[35] = {
      1,  3,  2,  3,
      2,  3,  2,  7,
      6, 11, 10,  9,
@@ -40,7 +40,7 @@ const uint8_t h261_mba_code[35] = {
     1             //(start code)
 };
 
-const uint8_t h261_mba_bits[35] = {
+static const uint8_t h261_mba_bits[35] = {
      1,  3,  3,  4,
      4,  5,  5,  7,
      7,  8,  8,  8,
@@ -55,13 +55,13 @@ const uint8_t h261_mba_bits[35] = {
 };
 
 //H.261 VLC table for macroblock type
-const uint8_t h261_mtype_code[10] = {
+static const uint8_t h261_mtype_code[10] = {
     1,  1,  1,  1,
     1,  1,  1,  1,
     1,  1
 };
 
-const uint8_t h261_mtype_bits[10] = {
+static const uint8_t h261_mtype_bits[10] = {
     4,  7,  1,  5,
     9,  8, 10,  3,
     2,  6
@@ -81,7 +81,7 @@ static const int h261_mtype_map[10]= {
 };
 
 //H.261 VLC table for motion vectors
-const uint8_t h261_mv_tab[17][2] = {
+static const uint8_t h261_mv_tab[17][2] = {
     {1,1}, {1,2}, {1,3}, {1,4}, {3,6}, {5,7}, {4,7}, {3,7},
     {11,9}, {10,9}, {9,9}, {17,10}, {16,10}, {15,10}, {14,10}, {13,10}, {12,10}
 };
@@ -92,7 +92,7 @@ static const int mvmap[17] =
 };
 
 //H.261 VLC table for coded block pattern
-const uint8_t h261_cbp_tab[63][2] =
+static const uint8_t h261_cbp_tab[63][2] =
 {
     {11,5}, {9,5}, {13,6}, {13,4}, {23,7}, {19,7}, {31,8}, {12,4},
     {22,7}, {18,7}, {30,8}, {19,5}, {27,8}, {23,8}, {19,8}, {11,4},
@@ -105,7 +105,7 @@ const uint8_t h261_cbp_tab[63][2] =
 };
 
 //H.261 VLC table for transform coefficients
-const uint16_t h261_tcoeff_vlc[65][2] = {
+static const uint16_t h261_tcoeff_vlc[65][2] = {
 { 0x2, 2 }, { 0x3, 2 },{ 0x4, 4 },{ 0x5, 5 },
 { 0x6, 7 },{ 0x26, 8 },{ 0x21, 8 },{ 0xa, 10 },
 { 0x1d, 12 },{ 0x18, 12 },{ 0x13, 12 },{ 0x10 , 12 },
@@ -125,7 +125,7 @@ const uint16_t h261_tcoeff_vlc[65][2] = {
 { 0x1, 6 }                                             //escape
 };
 
-const int8_t h261_tcoeff_level[64] = {
+static const int8_t h261_tcoeff_level[64] = {
     0,  1,  2,  3,  4,  5,  6,  7,
     8,  9, 10, 11, 12, 13, 14, 15,
     1,  2,  3,  4,  5,  6,  7,  1,
@@ -136,7 +136,7 @@ const int8_t h261_tcoeff_level[64] = {
     1,  1,  1,  1,  1,  1,  1,  1
 };
 
-const int8_t h261_tcoeff_run[64] = {
+static const int8_t h261_tcoeff_run[64] = {
     0,
     0,  0,  0,  0,  0,  0,  0,  0,
     0,  0,  0,  0,  0,  0,  0,  1,

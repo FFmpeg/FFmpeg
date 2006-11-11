@@ -37,7 +37,7 @@ typedef struct PixelFormatTag {
     unsigned int fourcc;
 } PixelFormatTag;
 
-const PixelFormatTag pixelFormatTags[] = {
+static const PixelFormatTag pixelFormatTags[] = {
     { PIX_FMT_YUV420P, MKTAG('I', '4', '2', '0') }, /* Planar formats */
     { PIX_FMT_YUV420P, MKTAG('I', 'Y', 'U', 'V') },
     { PIX_FMT_YUV420P, MKTAG('Y', 'V', '1', '2') },
