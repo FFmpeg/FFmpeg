@@ -404,7 +404,7 @@ int av_open_input_stream(AVFormatContext **ic_ptr,
     if (err < 0)
         goto fail;
 
-    if (pb)
+    if (pb && !ic->data_offset)
         ic->data_offset = url_ftell(&ic->pb);
 
     *ic_ptr = ic;

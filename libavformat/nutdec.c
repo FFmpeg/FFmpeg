@@ -449,7 +449,7 @@ static int decode_syncpoint(NUTContext *nut){
     int i;
     AVRational time_base;
 
-    nut->last_syncpoint_pos= url_ftell(bc);
+    nut->last_syncpoint_pos= url_ftell(bc)-8;
 
     end= get_packetheader(nut, bc, 1);
     end += url_ftell(bc) - 4;
@@ -465,7 +465,7 @@ static int decode_syncpoint(NUTContext *nut){
     //FIXME put this in a reset func maybe
 
     if(skip_reserved(bc, end) || check_checksum(bc)){
-        av_log(s, AV_LOG_ERROR, "Info header checksum mismatch\n");
+        av_log(s, AV_LOG_ERROR, "sync point checksum mismatch\n");
         return -1;
     }
     return 0;
@@ -523,6 +523,8 @@ static int nut_read_header(AVFormatContext *s, AVFormatParameters *ap)
         decode_info_header(nut);
     }
 
+    s->data_offset= pos-8;
+
     return 0;
 }
 
@@ -534,7 +536,7 @@ static int decode_frame_header(NUTContext *nut, int *flags_ret, int64_t *pts, in
     uint64_t tmp;
 
     if(url_ftell(bc) > nut->last_syncpoint_pos + nut->max_distance){
-        av_log(s, AV_LOG_ERROR, "last frame must have been damaged\n");
+        av_log(s, AV_LOG_ERROR, "last frame must have been damaged %Ld > %Ld + %d\n", url_ftell(bc), nut->last_syncpoint_pos, nut->max_distance);
         return -1;
     }
 
@@ -576,6 +578,16 @@ static int decode_frame_header(NUTContext *nut, int *flags_ret, int64_t *pts, in
 
     stc->last_pts= *pts;
     stc->last_key_frame= flags&FLAG_KEY; //FIXME change to last flags
+
+    if(flags&FLAG_KEY){
+        av_add_index_entry(
+            s->streams[*stream_id],
+            nut->last_syncpoint_pos,
+            *pts,
+            0,
+            0,
+            AVINDEX_KEYFRAME);
+    }
 
     return size;
 }
@@ -665,6 +677,44 @@ av_log(s, AV_LOG_DEBUG, "sync\n");
     }
 }
 
+static int64_t nut_read_timestamp(AVFormatContext *s, int stream_index, int64_t *pos_arg, int64_t pos_limit){
+    NUTContext *nut = s->priv_data;
+    ByteIOContext *bc = &s->pb;
+    int64_t pos, pts;
+    int frame_code, stream_id,size, flags;
+av_log(s, AV_LOG_DEBUG, "read_timestamp(X,%d,%"PRId64",%"PRId64")\n", stream_index, *pos_arg, pos_limit);
+
+    pos= *pos_arg;
+resync:
+    do{
+        pos= find_startcode(bc, SYNCPOINT_STARTCODE, pos)+1;
+        if(pos < 1){
+            assert(nut->next_startcode == 0);
+            av_log(s, AV_LOG_ERROR, "read_timestamp failed\n");
+            return AV_NOPTS_VALUE;
+        }
+    }while(decode_syncpoint(nut) < 0);
+    *pos_arg = pos-1;
+    assert(nut->last_syncpoint_pos == *pos_arg);
+
+    do{
+        frame_code= get_byte(bc);
+        if(frame_code == 'N') //FIXME update pos
+            goto resync;
+        //FIXME consider pos_limit and eof
+        size= decode_frame_header(nut, &flags, &pts, &stream_id, frame_code);
+
+        if(size < 0)
+            goto resync;
+
+        url_fseek(bc, size, SEEK_CUR);
+    }while(stream_id != stream_index || !(flags & FLAG_KEY));
+    assert(nut->next_startcode == 0);
+    av_log(s, AV_LOG_DEBUG, "read_timestamp success\n");
+
+    return pts;
+}
+
 static int nut_read_close(AVFormatContext *s)
 {
     NUTContext *nut = s->priv_data;
@@ -685,7 +735,7 @@ AVInputFormat nut_demuxer = {
     nut_read_packet,
     nut_read_close,
     NULL,
-    NULL,
+    nut_read_timestamp,
     .extensions = "nut",
 };
 #endif
