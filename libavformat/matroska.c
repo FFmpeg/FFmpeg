@@ -2383,7 +2383,7 @@ matroska_parse_blockgroup (MatroskaDemuxContext *matroska,
                     break;
                 origdata = data;
 
-                /* first byte(s): blocknum */
+                /* first byte(s): tracknum */
                 if ((n = matroska_ebmlnum_uint(data, size, &num)) < 0) {
                     av_log(matroska->ctx, AV_LOG_ERROR,
                            "EBML block data error\n");
