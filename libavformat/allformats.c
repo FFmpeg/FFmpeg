@@ -249,7 +249,7 @@ void av_register_all(void)
     av_register_input_format(&nut_demuxer);
 #endif
 #ifdef CONFIG_NUT_MUXER
-    av_register_output_format(&nut_muxer);
+//    av_register_output_format(&nut_muxer);
 #endif
 #ifdef CONFIG_NUV_DEMUXER
     av_register_input_format(&nuv_demuxer);

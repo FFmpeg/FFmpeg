@@ -73,8 +73,8 @@ OBJS-$(CONFIG_MPEGTS_MUXER)              += mpegtsenc.o
 OBJS-$(CONFIG_MPJPEG_MUXER)              += mpjpeg.o
 OBJS-$(CONFIG_MXF_DEMUXER)               += mxf.o
 OBJS-$(CONFIG_NSV_DEMUXER)               += nsvdec.o riff.o
-OBJS-$(CONFIG_NUT_DEMUXER)               += nut.o riff.o
-OBJS-$(CONFIG_NUT_MUXER)                 += nut.o riff.o
+OBJS-$(CONFIG_NUT_DEMUXER)               += nutdec.o riff.o
+#OBJS-$(CONFIG_NUT_MUXER)                 += nutenc.o riff.o
 OBJS-$(CONFIG_NUV_DEMUXER)               += nuv.o riff.o
 OBJS-$(CONFIG_OGG_DEMUXER)               += ogg2.o           \
                                             oggparsevorbis.o \
