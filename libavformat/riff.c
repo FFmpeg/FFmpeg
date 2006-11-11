@@ -200,6 +200,7 @@ const CodecTag codec_wav_tags[] = {
     // for NuppelVideo (nuv.c)
     { CODEC_ID_PCM_S16LE, MKTAG('R', 'A', 'W', 'A') },
     { CODEC_ID_MP3, MKTAG('L', 'A', 'M', 'E') },
+    { CODEC_ID_MP3, MKTAG('M', 'P', '3', ' ') },
     { 0, 0 },
 };
 
