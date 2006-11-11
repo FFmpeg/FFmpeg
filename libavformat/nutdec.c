@@ -699,8 +699,10 @@ resync:
 
     do{
         frame_code= get_byte(bc);
-        if(frame_code == 'N') //FIXME update pos
+        if(frame_code == 'N'){
+            pos= url_ftell(bc)-1;
             goto resync;
+        }
         //FIXME consider pos_limit and eof
         size= decode_frame_header(nut, &flags, &pts, &stream_id, frame_code);
 
