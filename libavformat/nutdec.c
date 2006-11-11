@@ -482,15 +482,13 @@ static int nut_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
     /* main header */
     pos=0;
-    for(;;){
+    do{
         pos= find_startcode(bc, MAIN_STARTCODE, pos)+1;
         if (pos<0+1){
             av_log(s, AV_LOG_ERROR, "no main startcode found\n");
             return -1;
         }
-        if(decode_main_header(nut) >= 0)
-            break;
-    }
+    }while(decode_main_header(nut) < 0);
 
     /* stream headers */
     pos=0;
