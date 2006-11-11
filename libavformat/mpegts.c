@@ -1132,7 +1132,7 @@ static int mpegts_probe(AVProbeData *p)
 #endif
 }
 
-void set_service_cb(void *opaque, int ret)
+static void set_service_cb(void *opaque, int ret)
 {
     MpegTSContext *ts = opaque;
     ts->set_service_ret = ret;
