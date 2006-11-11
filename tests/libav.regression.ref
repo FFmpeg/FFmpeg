@@ -25,9 +25,6 @@ bac6c5f50f3ca5db6e2ef6eaccf1d4f1 *./data/b-libav.asf
 63e05396e2d52135c4025ce14eb090a9 *./data/b-libav.mov
 369893 ./data/b-libav.mov
 ./data/b-libav.mov CRC=0x48f5a90d
-8bf16d40a2ec19fa36b124a928e47e23 *./data/b-libav.nut
- 332358 ./data/b-libav.nut
-./data/b-libav.nut CRC=0x1fdd352c
 26c41db318d9aacfd6b9e734c0ea4d94 *./data/b-libav.dv
 3600000 ./data/b-libav.dv
 ./data/b-libav.dv CRC=0xa6b8b635

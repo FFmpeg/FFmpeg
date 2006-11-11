@@ -670,9 +670,9 @@ do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src -f s16le -i $pcm_src -a
 do_ffmpeg_crc $file -i $file
 
 # nut
-file=${outfile}libav.nut
-do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src -f s16le -i $pcm_src -acodec mp2 $file
-do_ffmpeg_crc $file -i $file
+#file=${outfile}libav.nut
+#do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src -f s16le -i $pcm_src -acodec mp2 $file
+#do_ffmpeg_crc $file -i $file
 
 # dv
 file=${outfile}libav.dv
