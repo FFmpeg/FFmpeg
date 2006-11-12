@@ -54,10 +54,10 @@ static const unsigned char vlc_dc_lum_bits[12] = {
     3, 2, 2, 3, 3, 4, 5, 6, 7, 8, 9, 9,
 };
 
-const uint16_t vlc_dc_chroma_code[12] = {
+static const uint16_t vlc_dc_chroma_code[12] = {
     0x0, 0x1, 0x2, 0x6, 0xe, 0x1e, 0x3e, 0x7e, 0xfe, 0x1fe, 0x3fe, 0x3ff,
 };
-const unsigned char vlc_dc_chroma_bits[12] = {
+static const unsigned char vlc_dc_chroma_bits[12] = {
     2, 2, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10,
 };
 

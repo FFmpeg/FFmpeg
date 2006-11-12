@@ -47,7 +47,7 @@ const int16_t vc1_bfraction_lut[23] = {
 #define B_FRACTION_DEN  256
 
 /* pre-computed scales for all bfractions and base=256 */
-const int16_t vc1_bfraction_lut[23] = {
+static const int16_t vc1_bfraction_lut[23] = {
   128 /*1/2*/,  85 /*1/3*/, 170 /*2/3*/,  64 /*1/4*/,
   192 /*3/4*/,  51 /*1/5*/, 102 /*2/5*/,
   153 /*3/5*/, 204 /*4/5*/,  43 /*1/6*/, 215 /*5/6*/,
@@ -58,7 +58,7 @@ const int16_t vc1_bfraction_lut[23] = {
 };
 #endif
 
-const uint8_t vc1_bfraction_bits[23] = {
+static const uint8_t vc1_bfraction_bits[23] = {
     3, 3, 3, 3,
     3, 3, 3,
     7, 7, 7, 7,
@@ -67,7 +67,7 @@ const uint8_t vc1_bfraction_bits[23] = {
     7, 7,
     7, 7
 };
-const uint8_t vc1_bfraction_codes[23] = {
+static const uint8_t vc1_bfraction_codes[23] = {
      0,   1,   2,   3,
      4,   5,   6,
    112, 113, 114, 115,
