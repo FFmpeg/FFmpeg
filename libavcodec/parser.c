@@ -387,7 +387,7 @@ static int cavsvideo_parse(AVCodecParserContext *s,
 }
 #endif /* CONFIG_CAVSVIDEO_PARSER */
 
-static int mpeg4video_split(AVCodecContext *avctx,
+int ff_mpeg4video_split(AVCodecContext *avctx,
                            const uint8_t *buf, int buf_size)
 {
     int i;
@@ -854,7 +854,7 @@ AVCodecParser mpeg4video_parser = {
     mpeg4video_parse_init,
     mpeg4video_parse,
     ff_parse1_close,
-    mpeg4video_split,
+    ff_mpeg4video_split,
 };
 #endif
 #ifdef CONFIG_CAVSVIDEO_PARSER
@@ -864,7 +864,7 @@ AVCodecParser cavsvideo_parser = {
     NULL,
     cavsvideo_parse,
     ff_parse1_close,
-    mpeg4video_split,
+    ff_mpeg4video_split,
 };
 #endif
 #ifdef CONFIG_MPEGAUDIO_PARSER
