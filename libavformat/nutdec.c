@@ -114,21 +114,12 @@ static int get_packetheader(NUTContext *nut, ByteIOContext *bc, int calculate_ch
 
     size= get_v(bc);
 
-    init_checksum(bc, calculate_checksum ? av_crc04C11DB7_update : NULL, 1);
+    init_checksum(bc, calculate_checksum ? av_crc04C11DB7_update : NULL, 0);
 
 //    nut->packet_start[2] = start;
 //    nut->written_packet_size= size;
 
     return size;
-}
-
-static int check_checksum(ByteIOContext *bc){
-    unsigned long checksum= get_checksum(bc);
-//    return checksum != get_be32(bc);
-
-    av_log(NULL, AV_LOG_ERROR, "%08X %08X\n", checksum, (int)get_be32(bc));
-
-    return 0;
 }
 
 static uint64_t find_any_startcode(ByteIOContext *bc, int64_t pos){
@@ -218,7 +209,7 @@ static int decode_main_header(NUTContext *nut){
     int i, j, tmp_stream, tmp_mul, tmp_pts, tmp_size, count, tmp_res;
 
     end= get_packetheader(nut, bc, 1);
-    end += url_ftell(bc) - 4;
+    end += url_ftell(bc);
 
     GET_V(tmp              , tmp >=2 && tmp <= 3)
     GET_V(stream_count     , tmp > 0 && tmp <=MAX_STREAMS)
@@ -284,7 +275,7 @@ static int decode_main_header(NUTContext *nut){
     }
     assert(nut->frame_code['N'].flags == FLAG_INVALID);
 
-    if(skip_reserved(bc, end) || check_checksum(bc)){
+    if(skip_reserved(bc, end) || get_checksum(bc)){
         av_log(s, AV_LOG_ERROR, "Main header checksum mismatch\n");
         return -1;
     }
@@ -306,7 +297,7 @@ static int decode_stream_header(NUTContext *nut){
     AVStream *st;
 
     end= get_packetheader(nut, bc, 1);
-    end += url_ftell(bc) - 4;
+    end += url_ftell(bc);
 
     GET_V(stream_id, tmp < s->nb_streams && !nut->stream[tmp].time_base.num);
     stc= &nut->stream[stream_id];
@@ -374,7 +365,7 @@ static int decode_stream_header(NUTContext *nut){
         }
         GET_V(st->codec->channels, tmp > 0)
     }
-    if(skip_reserved(bc, end) || check_checksum(bc)){
+    if(skip_reserved(bc, end) || get_checksum(bc)){
         av_log(s, AV_LOG_ERROR, "Stream header %d checksum mismatch\n", stream_id);
         return -1;
     }
@@ -393,7 +384,7 @@ static int decode_info_header(NUTContext *nut){
     char name[256], str_value[1024], type_str[256], *type= type_str;
 
     end= get_packetheader(nut, bc, 1);
-    end += url_ftell(bc) - 4;
+    end += url_ftell(bc);
 
     GET_V(stream_id_plus1, tmp <= s->nb_streams)
     chapter_id   = get_s(bc);
@@ -434,7 +425,7 @@ static int decode_info_header(NUTContext *nut){
         }
     }
 
-    if(skip_reserved(bc, end) || check_checksum(bc)){
+    if(skip_reserved(bc, end) || get_checksum(bc)){
         av_log(s, AV_LOG_ERROR, "Info header checksum mismatch\n");
         return -1;
     }
@@ -452,7 +443,7 @@ static int decode_syncpoint(NUTContext *nut){
     nut->last_syncpoint_pos= url_ftell(bc)-8;
 
     end= get_packetheader(nut, bc, 1);
-    end += url_ftell(bc) - 4;
+    end += url_ftell(bc);
 
     tmp= get_v(bc);
     get_v(bc); //back_ptr_div16
@@ -468,7 +459,7 @@ static int decode_syncpoint(NUTContext *nut){
     }
     //FIXME put this in a reset func maybe
 
-    if(skip_reserved(bc, end) || check_checksum(bc)){
+    if(skip_reserved(bc, end) || get_checksum(bc)){
         av_log(s, AV_LOG_ERROR, "sync point checksum mismatch\n");
         return -1;
     }
@@ -492,7 +483,7 @@ static int find_and_decode_index(NUTContext *nut){
     }
 
     end= get_packetheader(nut, bc, 1);
-    end += url_ftell(bc) - 4;
+    end += url_ftell(bc);
 
     get_v(bc); //max_pts
     GET_V(syncpoint_count, tmp < INT_MAX/8 && tmp > 0)
@@ -558,7 +549,7 @@ static int find_and_decode_index(NUTContext *nut){
         }
     }
 
-    if(skip_reserved(bc, end) || check_checksum(bc)){
+    if(skip_reserved(bc, end) || get_checksum(bc)){
         av_log(s, AV_LOG_ERROR, "Index checksum mismatch\n");
         return -1;
     }
