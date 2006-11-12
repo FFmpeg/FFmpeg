@@ -306,9 +306,11 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 av_freep(&s->streams[0]->codec->extradata);
                 av_freep(&s->streams[0]);
                 s->nb_streams = 0;
+                if (ENABLE_DV_DEMUXER) {
                 avi->dv_demux = dv_init_demux(s);
                 if (!avi->dv_demux)
                     goto fail;
+                }
                 s->streams[0]->priv_data = ast;
                 url_fskip(pb, 3 * 4);
                 ast->scale = get_le32(pb);
@@ -525,7 +527,7 @@ static int avi_read_packet(AVFormatContext *s, AVPacket *pkt)
     offset_t i, sync;
     void* dstr;
 
-    if (avi->dv_demux) {
+    if (ENABLE_DV_DEMUXER && avi->dv_demux) {
         size = dv_get_packet(avi->dv_demux, pkt);
         if (size >= 0)
             return size;
@@ -594,7 +596,7 @@ resync:
             size= ast->remaining;
         av_get_packet(pb, pkt, size);
 
-        if (avi->dv_demux) {
+        if (ENABLE_DV_DEMUXER && avi->dv_demux) {
             dstr = pkt->destruct;
             size = dv_produce_packet(avi->dv_demux, pkt,
                                     pkt->data, pkt->size);
@@ -935,7 +937,7 @@ static int avi_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
             ast2->frame_offset *=ast2->sample_size;
     }
 
-    if (avi->dv_demux)
+    if (ENABLE_DV_DEMUXER && avi->dv_demux)
         dv_flush_audio_packets(avi->dv_demux);
     /* do the seek */
     url_fseek(&s->pb, pos, SEEK_SET);
