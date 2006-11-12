@@ -73,8 +73,6 @@ OBJS-$(CONFIG_MPEGTS_MUXER)              += mpegtsenc.o
 OBJS-$(CONFIG_MPJPEG_MUXER)              += mpjpeg.o
 OBJS-$(CONFIG_MXF_DEMUXER)               += mxf.o
 OBJS-$(CONFIG_NSV_DEMUXER)               += nsvdec.o riff.o
-OBJS-$(CONFIG_NUT_DEMUXER)               += nutdec.o riff.o
-#OBJS-$(CONFIG_NUT_MUXER)                 += nutenc.o riff.o
 OBJS-$(CONFIG_NUV_DEMUXER)               += nuv.o riff.o
 OBJS-$(CONFIG_OGG_DEMUXER)               += ogg2.o           \
                                             oggparsevorbis.o \
@@ -174,6 +172,14 @@ ifeq ($(NEED_INET_ATON),yes)
 OBJS+= barpainet.o
 endif
 endif
+endif
+
+ifeq ($(CONFIG_LIBNUT),yes)
+OBJS-$(CONFIG_NUT_DEMUXER)               += libnut.o riff.o
+OBJS-$(CONFIG_NUT_MUXER)                 += libnut.o riff.o
+else
+OBJS-$(CONFIG_NUT_DEMUXER)               += nutdec.o riff.o
+#OBJS-$(CONFIG_NUT_MUXER)                 += nutenc.o riff.o
 endif
 
 ifeq ($(CONFIG_LIBOGG),yes)

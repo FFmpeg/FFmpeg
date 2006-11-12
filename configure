@@ -31,6 +31,7 @@ show_help(){
   echo "  --incdir=DIR             install includes in DIR [PREFIX/include/ffmpeg]"
   echo "  --mandir=DIR             install man page in DIR [PREFIX/man]"
   echo "  --enable-mp3lame         enable MP3 encoding via libmp3lame [default=no]"
+  echo "  --enable-libnut          enable NUT support via libnut [default=no]"
   echo "  --enable-libogg          enable Ogg support via libogg [default=no]"
   echo "  --enable-vorbis          enable Vorbis support via libvorbis [default=no]"
   echo "  --enable-faad            enable FAAD support via libfaad [default=no]"
@@ -422,6 +423,7 @@ ipv6="yes"
 zlib="yes"
 libgsm="no"
 mp3lame="no"
+libnut="no"
 libogg="no"
 vorbis="no"
 faad="no"
@@ -770,6 +772,8 @@ for opt do
   --enable-libgsm) libgsm="yes"
   ;;
   --enable-mp3lame) mp3lame="yes"
+  ;;
+  --enable-libnut) libnut="yes"
   ;;
   --enable-libogg) libogg="yes"
     pkg_requires="$pkg_requires ogg >= 1.1"
@@ -1321,6 +1325,7 @@ enabled libgsm  && require libgsm gsm.h gsm_create -lgsm
 enabled mp3lame && require LAME lame/lame.h lame_init -lmp3lame -lm
 enabled vorbis  && require libvorbis vorbis/vorbisenc.h vorbis_info_init -lvorbis -lvorbisenc -logg
 enabled libogg  && require libogg ogg/ogg.h ogg_sync_init -logg
+enabled libnut  && require libnut nut.h nut_demuxer_init -lnut
 enabled xvid    && require XviD xvid.h xvid_global -lxvidcore
 enabled x264    && require x264 x264.h x264_encoder_open -lx264
 enabled dc1394  && require libdc1394 libdc1394/dc1394_control.h dc1394_create_handle -ldc1394_control -lraw1394
@@ -1599,6 +1604,7 @@ echo "gprof enabled    $gprof"
 echo "zlib enabled     $zlib"
 echo "libgsm enabled   $libgsm"
 echo "mp3lame enabled  $mp3lame"
+echo "libnut enabled   $libnut"
 echo "libogg enabled   $libogg"
 echo "Vorbis enabled   $vorbis"
 echo "FAAD enabled     $faad"
@@ -1997,6 +2003,11 @@ fi
 if test "$mp3lame" = "yes" ; then
   echo "#define CONFIG_MP3LAME 1" >> $TMPH
   echo "CONFIG_MP3LAME=yes" >> config.mak
+fi
+
+if test "$libnut" = "yes" ; then
+  echo "#define CONFIG_LIBNUT 1" >> $TMPH
+  echo "CONFIG_LIBNUT=yes" >> config.mak
 fi
 
 if test "$libogg" = "yes" ; then
