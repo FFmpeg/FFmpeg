@@ -163,6 +163,22 @@ EOF
     exit 1
 }
 
+set_all(){
+    value=$1
+    shift
+    for var in $*; do
+        eval $var=$value
+    done
+}
+
+enable(){
+    set_all yes $*
+}
+
+disable(){
+    set_all no $*
+}
+
 enabled(){
     eval test "\$$1" = "yes"
 }
@@ -692,6 +708,8 @@ PARSER_LIST=`grep 'av_register_codec_parser(&[a-z]' "$source_path/libavcodec/all
 MUXER_LIST=`grep 'av_register_output_format(&[a-z]' "$source_path/libavformat/allformats.c"  | sed 's/.*&\(.*\)).*/\1/'`
 DEMUXER_LIST=`grep 'av_register_input_format(&[a-z]' "$source_path/libavformat/allformats.c"  | sed 's/.*&\(.*\)).*/\1/'`
 
+enable $ENCODER_LIST $DECODER_LIST $PARSER_LIST $MUXER_LIST $DEMUXER_LIST
+
 for opt do
   optval="${opt#*=}"
   case "$opt" in
@@ -850,35 +868,35 @@ for opt do
   ;;
   --disable-strip) dostrip="no"
   ;;
-  --enable-encoder=*) ENCODER_LIST="$ENCODER_LIST ${optval}_encoder"
+  --enable-encoder=*) enable ${optval}_encoder
   ;;
-  --enable-decoder=*) DECODER_LIST="$DECODER_LIST ${optval}_decoder"
+  --enable-decoder=*) enable ${optval}_decoder
   ;;
-  --disable-encoder=*) ENCODER_LIST="`filter_out ${optval}_encoder $ENCODER_LIST`"
+  --disable-encoder=*) disable ${optval}_encoder
   ;;
-  --disable-decoder=*) DECODER_LIST="`filter_out ${optval}_decoder $DECODER_LIST`"
+  --disable-decoder=*) disable ${optval}_decoder
   ;;
-  --disable-encoders) ENCODER_LIST=""
+  --disable-encoders) disable $ENCODER_LIST
   ;;
-  --disable-decoders) DECODER_LIST=""
+  --disable-decoders) disable $DECODER_LIST
   ;;
-  --enable-muxer=*) MUXER_LIST="$MUXER_LIST ${optval}_muxer"
+  --enable-muxer=*) enable ${optval}_muxer
   ;;
-  --disable-muxer=*) MUXER_LIST="`filter_out ${optval}_muxer $MUXER_LIST`"
+  --disable-muxer=*) disable ${optval}_muxer
   ;;
-  --disable-muxers) MUXER_LIST=""; ffserver="no"
+  --disable-muxers) disable $MUXER_LIST; ffserver="no"
   ;;
-  --enable-demuxer=*) DEMUXER_LIST="$DEMUXER_LIST ${optval}_demuxer"
+  --enable-demuxer=*) enable ${optval}_demuxer
   ;;
-  --disable-demuxer=*) DEMUXER_LIST="`filter_out ${optval}_demuxer $DEMUXER_LIST`"
+  --disable-demuxer=*) disable ${optval}_demuxer
   ;;
-  --disable-demuxers) DEMUXER_LIST=""
+  --disable-demuxers) disable $DEMUXER_LIST
   ;;
-  --enable-parser=*) PARSER_LIST="$PARSER_LIST ${optval}_parser"
+  --enable-parser=*) enable ${optval}_parser
   ;;
-  --disable-parser=*) PARSER_LIST="`filter_out ${optval}_parser $PARSER_LIST`"
+  --disable-parser=*) disable ${optval}_parser
   ;;
-  --disable-parsers) PARSER_LIST=""
+  --disable-parsers) disable $PARSER_LIST
   ;;
   --help) show_help
   ;;
@@ -2252,8 +2270,16 @@ fi
 
 # "tr '[a-z]' '[A-Z]'" is a workaround for Solaris tr not grokking "tr a-z A-Z"
 for codec in $DECODER_LIST $ENCODER_LIST $PARSER_LIST $DEMUXER_LIST $MUXER_LIST; do
-    echo "#define CONFIG_`echo $codec | tr '[a-z]' '[A-Z]'` 1" >> $TMPH
-    echo "CONFIG_`echo $codec | tr '[a-z]' '[A-Z]'`=yes" >> config.mak
+    ucname="`echo $codec | tr '[a-z]' '[A-Z]'`"
+    config_name="CONFIG_$ucname"
+    enabled_name="ENABLE_$ucname"
+    if enabled $codec; then
+        echo "#define $config_name 1" >> $TMPH
+        echo "#define $enabled_name 1" >> $TMPH
+        echo "$config_name=yes" >> config.mak
+    else
+        echo "#define $enabled_name 0" >> $TMPH
+    fi
 done
 
 # Do not overwrite config.h if unchanged to avoid superfluous rebuilds.
