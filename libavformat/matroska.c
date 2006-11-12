@@ -1942,7 +1942,7 @@ matroska_parse_seekhead (MatroskaDemuxContext *matroska)
                         /* check ID */
                         if (!(id = ebml_peek_id (matroska,
                                                  &matroska->level_up)))
-                            break;
+                            goto finish;
                         if (id != seek_id) {
                             av_log(matroska->ctx, AV_LOG_INFO,
                                    "We looked for ID=0x%x but got "
@@ -1954,7 +1954,7 @@ matroska_parse_seekhead (MatroskaDemuxContext *matroska)
 
                         /* read master + parse */
                         if ((res = ebml_read_master(matroska, &id)) < 0)
-                            break;
+                            goto finish;
                         switch (id) {
                             case MATROSKA_ID_CUES:
                                 if (!(res = matroska_parse_index(matroska)) ||
@@ -1971,8 +1971,6 @@ matroska_parse_seekhead (MatroskaDemuxContext *matroska)
                                 }
                                 break;
                         }
-                        if (res < 0)
-                            break;
 
                     finish:
                         /* remove dummy level */
