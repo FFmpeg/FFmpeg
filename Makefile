@@ -193,9 +193,7 @@ uninstall-headers:
 	-rmdir "$(incdir)"
 	-rmdir "$(prefix)/include/postproc"
 
-dep:	depend
-
-depend: .depend
+depend dep: .depend
 	$(MAKE) -C libavutil   depend
 	$(MAKE) -C libavcodec  depend
 	$(MAKE) -C libavformat depend
