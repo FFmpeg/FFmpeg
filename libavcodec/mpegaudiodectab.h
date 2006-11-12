@@ -242,55 +242,55 @@ static const uint8_t lsf_nsf_table[6][3][4] = {
 
 /* mpegaudio layer 3 huffman tables */
 
-const uint16_t mpa_huffcodes_1[4] = {
+static const uint16_t mpa_huffcodes_1[4] = {
  0x0001, 0x0001, 0x0001, 0x0000,
 };
 
-const uint8_t mpa_huffbits_1[4] = {
+static const uint8_t mpa_huffbits_1[4] = {
   1,  3,  2,  3,
 };
 
-const uint16_t mpa_huffcodes_2[9] = {
+static const uint16_t mpa_huffcodes_2[9] = {
  0x0001, 0x0002, 0x0001, 0x0003, 0x0001, 0x0001, 0x0003, 0x0002,
  0x0000,
 };
 
-const uint8_t mpa_huffbits_2[9] = {
+static const uint8_t mpa_huffbits_2[9] = {
   1,  3,  6,  3,  3,  5,  5,  5,
   6,
 };
 
-const uint16_t mpa_huffcodes_3[9] = {
+static const uint16_t mpa_huffcodes_3[9] = {
  0x0003, 0x0002, 0x0001, 0x0001, 0x0001, 0x0001, 0x0003, 0x0002,
  0x0000,
 };
 
-const uint8_t mpa_huffbits_3[9] = {
+static const uint8_t mpa_huffbits_3[9] = {
   2,  2,  6,  3,  2,  5,  5,  5,
   6,
 };
 
-const uint16_t mpa_huffcodes_5[16] = {
+static const uint16_t mpa_huffcodes_5[16] = {
  0x0001, 0x0002, 0x0006, 0x0005, 0x0003, 0x0001, 0x0004, 0x0004,
  0x0007, 0x0005, 0x0007, 0x0001, 0x0006, 0x0001, 0x0001, 0x0000,
 };
 
-const uint8_t mpa_huffbits_5[16] = {
+static const uint8_t mpa_huffbits_5[16] = {
   1,  3,  6,  7,  3,  3,  6,  7,
   6,  6,  7,  8,  7,  6,  7,  8,
 };
 
-const uint16_t mpa_huffcodes_6[16] = {
+static const uint16_t mpa_huffcodes_6[16] = {
  0x0007, 0x0003, 0x0005, 0x0001, 0x0006, 0x0002, 0x0003, 0x0002,
  0x0005, 0x0004, 0x0004, 0x0001, 0x0003, 0x0003, 0x0002, 0x0000,
 };
 
-const uint8_t mpa_huffbits_6[16] = {
+static const uint8_t mpa_huffbits_6[16] = {
   3,  3,  5,  7,  3,  2,  4,  5,
   4,  4,  5,  6,  6,  5,  6,  7,
 };
 
-const uint16_t mpa_huffcodes_7[36] = {
+static const uint16_t mpa_huffcodes_7[36] = {
  0x0001, 0x0002, 0x000a, 0x0013, 0x0010, 0x000a, 0x0003, 0x0003,
  0x0007, 0x000a, 0x0005, 0x0003, 0x000b, 0x0004, 0x000d, 0x0011,
  0x0008, 0x0004, 0x000c, 0x000b, 0x0012, 0x000f, 0x000b, 0x0002,
@@ -298,7 +298,7 @@ const uint16_t mpa_huffcodes_7[36] = {
  0x0005, 0x0003, 0x0002, 0x0000,
 };
 
-const uint8_t mpa_huffbits_7[36] = {
+static const uint8_t mpa_huffbits_7[36] = {
   1,  3,  6,  8,  8,  9,  3,  4,
   6,  7,  7,  8,  6,  5,  7,  8,
   8,  9,  7,  7,  8,  9,  9,  9,
@@ -306,7 +306,7 @@ const uint8_t mpa_huffbits_7[36] = {
   9, 10, 10, 10,
 };
 
-const uint16_t mpa_huffcodes_8[36] = {
+static const uint16_t mpa_huffcodes_8[36] = {
  0x0003, 0x0004, 0x0006, 0x0012, 0x000c, 0x0005, 0x0005, 0x0001,
  0x0002, 0x0010, 0x0009, 0x0003, 0x0007, 0x0003, 0x0005, 0x000e,
  0x0007, 0x0003, 0x0013, 0x0011, 0x000f, 0x000d, 0x000a, 0x0004,
@@ -314,7 +314,7 @@ const uint16_t mpa_huffcodes_8[36] = {
  0x0004, 0x0001, 0x0001, 0x0000,
 };
 
-const uint8_t mpa_huffbits_8[36] = {
+static const uint8_t mpa_huffbits_8[36] = {
   2,  3,  6,  8,  8,  9,  3,  2,
   4,  8,  8,  8,  6,  4,  6,  8,
   8,  9,  8,  8,  8,  9,  9, 10,
@@ -322,7 +322,7 @@ const uint8_t mpa_huffbits_8[36] = {
   9,  9, 11, 11,
 };
 
-const uint16_t mpa_huffcodes_9[36] = {
+static const uint16_t mpa_huffcodes_9[36] = {
  0x0007, 0x0005, 0x0009, 0x000e, 0x000f, 0x0007, 0x0006, 0x0004,
  0x0005, 0x0005, 0x0006, 0x0007, 0x0007, 0x0006, 0x0008, 0x0008,
  0x0008, 0x0005, 0x000f, 0x0006, 0x0009, 0x000a, 0x0005, 0x0001,
@@ -330,7 +330,7 @@ const uint16_t mpa_huffcodes_9[36] = {
  0x0006, 0x0002, 0x0006, 0x0000,
 };
 
-const uint8_t mpa_huffbits_9[36] = {
+static const uint8_t mpa_huffbits_9[36] = {
   3,  3,  5,  6,  8,  9,  3,  3,
   4,  5,  6,  8,  4,  4,  5,  6,
   7,  8,  6,  5,  6,  7,  7,  8,
@@ -338,7 +338,7 @@ const uint8_t mpa_huffbits_9[36] = {
   8,  8,  9,  9,
 };
 
-const uint16_t mpa_huffcodes_10[64] = {
+static const uint16_t mpa_huffcodes_10[64] = {
  0x0001, 0x0002, 0x000a, 0x0017, 0x0023, 0x001e, 0x000c, 0x0011,
  0x0003, 0x0003, 0x0008, 0x000c, 0x0012, 0x0015, 0x000c, 0x0007,
  0x000b, 0x0009, 0x000f, 0x0015, 0x0020, 0x0028, 0x0013, 0x0006,
@@ -349,7 +349,7 @@ const uint16_t mpa_huffcodes_10[64] = {
  0x0009, 0x0008, 0x0007, 0x0008, 0x0004, 0x0004, 0x0002, 0x0000,
 };
 
-const uint8_t mpa_huffbits_10[64] = {
+static const uint8_t mpa_huffbits_10[64] = {
   1,  3,  6,  8,  9,  9,  9, 10,
   3,  4,  6,  7,  8,  9,  8,  8,
   6,  6,  7,  8,  9, 10,  9,  9,
@@ -360,7 +360,7 @@ const uint8_t mpa_huffbits_10[64] = {
   9,  8,  9, 10, 10, 11, 11, 11,
 };
 
-const uint16_t mpa_huffcodes_11[64] = {
+static const uint16_t mpa_huffcodes_11[64] = {
  0x0003, 0x0004, 0x000a, 0x0018, 0x0022, 0x0021, 0x0015, 0x000f,
  0x0005, 0x0003, 0x0004, 0x000a, 0x0020, 0x0011, 0x000b, 0x000a,
  0x000b, 0x0007, 0x000d, 0x0012, 0x001e, 0x001f, 0x0014, 0x0005,
@@ -371,7 +371,7 @@ const uint16_t mpa_huffcodes_11[64] = {
  0x000b, 0x0004, 0x0006, 0x0006, 0x0006, 0x0003, 0x0002, 0x0000,
 };
 
-const uint8_t mpa_huffbits_11[64] = {
+static const uint8_t mpa_huffbits_11[64] = {
   2,  3,  5,  7,  8,  9,  8,  9,
   3,  3,  4,  6,  8,  8,  7,  8,
   5,  5,  6,  7,  8,  9,  8,  8,
@@ -382,7 +382,7 @@ const uint8_t mpa_huffbits_11[64] = {
   8,  7,  8,  9, 10, 10, 10, 10,
 };
 
-const uint16_t mpa_huffcodes_12[64] = {
+static const uint16_t mpa_huffcodes_12[64] = {
  0x0009, 0x0006, 0x0010, 0x0021, 0x0029, 0x0027, 0x0026, 0x001a,
  0x0007, 0x0005, 0x0006, 0x0009, 0x0017, 0x0010, 0x001a, 0x000b,
  0x0011, 0x0007, 0x000b, 0x000e, 0x0015, 0x001e, 0x000a, 0x0007,
@@ -393,7 +393,7 @@ const uint16_t mpa_huffcodes_12[64] = {
  0x001b, 0x000c, 0x0008, 0x000c, 0x0006, 0x0003, 0x0001, 0x0000,
 };
 
-const uint8_t mpa_huffbits_12[64] = {
+static const uint8_t mpa_huffbits_12[64] = {
   4,  3,  5,  7,  8,  9,  9,  9,
   3,  3,  4,  5,  7,  7,  8,  8,
   5,  4,  5,  6,  7,  8,  7,  8,
@@ -404,7 +404,7 @@ const uint8_t mpa_huffbits_12[64] = {
   9,  8,  8,  9,  9,  9,  9, 10,
 };
 
-const uint16_t mpa_huffcodes_13[256] = {
+static const uint16_t mpa_huffcodes_13[256] = {
  0x0001, 0x0005, 0x000e, 0x0015, 0x0022, 0x0033, 0x002e, 0x0047,
  0x002a, 0x0034, 0x0044, 0x0034, 0x0043, 0x002c, 0x002b, 0x0013,
  0x0003, 0x0004, 0x000c, 0x0013, 0x001f, 0x001a, 0x002c, 0x0021,
@@ -439,7 +439,7 @@ const uint16_t mpa_huffcodes_13[256] = {
  0x0011, 0x000c, 0x0010, 0x0008, 0x0001, 0x0001, 0x0000, 0x0001,
 };
 
-const uint8_t mpa_huffbits_13[256] = {
+static const uint8_t mpa_huffbits_13[256] = {
   1,  4,  6,  7,  8,  9,  9, 10,
   9, 10, 11, 11, 12, 12, 13, 13,
   3,  4,  6,  7,  8,  8,  9,  9,
@@ -474,7 +474,7 @@ const uint8_t mpa_huffbits_13[256] = {
  15, 15, 16, 16, 19, 18, 19, 16,
 };
 
-const uint16_t mpa_huffcodes_15[256] = {
+static const uint16_t mpa_huffcodes_15[256] = {
  0x0007, 0x000c, 0x0012, 0x0035, 0x002f, 0x004c, 0x007c, 0x006c,
  0x0059, 0x007b, 0x006c, 0x0077, 0x006b, 0x0051, 0x007a, 0x003f,
  0x000d, 0x0005, 0x0010, 0x001b, 0x002e, 0x0024, 0x003d, 0x0033,
@@ -509,7 +509,7 @@ const uint16_t mpa_huffcodes_15[256] = {
  0x0015, 0x0010, 0x000a, 0x0006, 0x0008, 0x0006, 0x0002, 0x0000,
 };
 
-const uint8_t mpa_huffbits_15[256] = {
+static const uint8_t mpa_huffbits_15[256] = {
   3,  4,  5,  7,  7,  8,  9,  9,
   9, 10, 10, 11, 11, 11, 12, 13,
   4,  3,  5,  6,  7,  7,  8,  8,
@@ -544,7 +544,7 @@ const uint8_t mpa_huffbits_15[256] = {
  12, 12, 12, 12, 13, 13, 13, 13,
 };
 
-const uint16_t mpa_huffcodes_16[256] = {
+static const uint16_t mpa_huffcodes_16[256] = {
  0x0001, 0x0005, 0x000e, 0x002c, 0x004a, 0x003f, 0x006e, 0x005d,
  0x00ac, 0x0095, 0x008a, 0x00f2, 0x00e1, 0x00c3, 0x0178, 0x0011,
  0x0003, 0x0004, 0x000c, 0x0014, 0x0023, 0x003e, 0x0035, 0x002f,
@@ -579,7 +579,7 @@ const uint16_t mpa_huffcodes_16[256] = {
  0x000d, 0x000c, 0x000a, 0x0007, 0x0005, 0x0003, 0x0001, 0x0003,
 };
 
-const uint8_t mpa_huffbits_16[256] = {
+static const uint8_t mpa_huffbits_16[256] = {
   1,  4,  6,  8,  9,  9, 10, 10,
  11, 11, 11, 12, 12, 12, 13,  9,
   3,  4,  6,  7,  8,  9,  9,  9,
@@ -614,7 +614,7 @@ const uint8_t mpa_huffbits_16[256] = {
  11, 11, 11, 11, 11, 11, 11,  8,
 };
 
-const uint16_t mpa_huffcodes_24[256] = {
+static const uint16_t mpa_huffcodes_24[256] = {
  0x000f, 0x000d, 0x002e, 0x0050, 0x0092, 0x0106, 0x00f8, 0x01b2,
  0x01aa, 0x029d, 0x028d, 0x0289, 0x026d, 0x0205, 0x0408, 0x0058,
  0x000e, 0x000c, 0x0015, 0x0026, 0x0047, 0x0082, 0x007a, 0x00d8,
@@ -649,7 +649,7 @@ const uint16_t mpa_huffcodes_24[256] = {
  0x0007, 0x0006, 0x0004, 0x0007, 0x0005, 0x0003, 0x0001, 0x0003,
 };
 
-const uint8_t mpa_huffbits_24[256] = {
+static const uint8_t mpa_huffbits_24[256] = {
   4,  4,  6,  7,  8,  9,  9, 10,
  10, 11, 11, 11, 11, 11, 12,  9,
   4,  4,  5,  6,  7,  8,  8,  9,
@@ -684,7 +684,7 @@ const uint8_t mpa_huffbits_24[256] = {
   7,  7,  7,  8,  8,  8,  8,  4,
 };
 
-const HuffTable mpa_huff_tables[16] = {
+static const HuffTable mpa_huff_tables[16] = {
 { 1, NULL, NULL },
 { 2, mpa_huffbits_1, mpa_huffcodes_1 },
 { 3, mpa_huffbits_2, mpa_huffcodes_2 },
@@ -703,7 +703,7 @@ const HuffTable mpa_huff_tables[16] = {
 { 16, mpa_huffbits_24, mpa_huffcodes_24 },
 };
 
-const uint8_t mpa_huff_data[32][2] = {
+static const uint8_t mpa_huff_data[32][2] = {
 { 0, 0 },
 { 1, 0 },
 { 2, 0 },
@@ -751,7 +751,7 @@ static const uint8_t mpa_quad_bits[2][16] = {
 };
 
 /* band size tables */
-const uint8_t band_size_long[9][22] = {
+static const uint8_t band_size_long[9][22] = {
 { 4, 4, 4, 4, 4, 4, 6, 6, 8, 8, 10,
   12, 16, 20, 24, 28, 34, 42, 50, 54, 76, 158, }, /* 44100 */
 { 4, 4, 4, 4, 4, 4, 6, 6, 6, 8, 10,
@@ -772,7 +772,7 @@ const uint8_t band_size_long[9][22] = {
   40, 48, 56, 64, 76, 90, 2, 2, 2, 2, 2, }, /* 8000 */
 };
 
-const uint8_t band_size_short[9][13] = {
+static const uint8_t band_size_short[9][13] = {
 { 4, 4, 4, 4, 6, 8, 10, 12, 14, 18, 22, 30, 56, }, /* 44100 */
 { 4, 4, 4, 4, 6, 6, 10, 12, 14, 16, 20, 26, 66, }, /* 48000 */
 { 4, 4, 4, 4, 6, 8, 12, 16, 20, 26, 34, 42, 12, }, /* 32000 */
@@ -784,12 +784,12 @@ const uint8_t band_size_short[9][13] = {
 { 8, 8, 8, 12, 16, 20, 24, 28, 36, 2, 2, 2, 26, }, /* 8000 */
 };
 
-const uint8_t mpa_pretab[2][22] = {
+static const uint8_t mpa_pretab[2][22] = {
     { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
     { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 3, 3, 3, 2, 0 },
 };
 
 /* table for alias reduction (XXX: store it as integer !) */
-const float ci_table[8] = {
+static const float ci_table[8] = {
     -0.6, -0.535, -0.33, -0.185, -0.095, -0.041, -0.0142, -0.0037,
 };
