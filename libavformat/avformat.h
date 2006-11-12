@@ -236,6 +236,9 @@ typedef struct AVStream {
     AVCodecContext *codec; /* codec context */
     /**
      * real base frame rate of the stream.
+     * this is the lowest framerate with which all timestamps can be
+     * represented accurately (its the least common multiple of all
+     * framerates in the stream), Note, this value is just a guess!
      * for example if the timebase is 1/90000 and all frames have either
      * approximately 3600 or 1800 timer ticks then r_frame_rate will be 50/1
      */
