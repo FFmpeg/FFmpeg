@@ -184,7 +184,7 @@ static void cavs_filter_ch_c(uint8_t *d, int stride, int alpha, int beta, int tc
 static void cavs_idct8_add_c(uint8_t *dst, DCTELEM *block, int stride) {
     int i;
     DCTELEM (*src)[8] = (DCTELEM(*)[8])block;
-    uint8_t *cm = cropTbl + MAX_NEG_CROP;
+    uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
 
     src[0][0] += 8;
 
@@ -260,7 +260,7 @@ static void cavs_idct8_add_c(uint8_t *dst, DCTELEM *block, int stride) {
 #define CAVS_SUBPIX(OPNAME, OP, NAME, A, B, C, D, E, F) \
 static void OPNAME ## cavs_filt8_h_ ## NAME(uint8_t *dst, uint8_t *src, int dstStride, int srcStride){\
     const int h=8;\
-    uint8_t *cm = cropTbl + MAX_NEG_CROP;\
+    uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;\
     int i;\
     for(i=0; i<h; i++)\
     {\
@@ -279,7 +279,7 @@ static void OPNAME ## cavs_filt8_h_ ## NAME(uint8_t *dst, uint8_t *src, int dstS
 \
 static void OPNAME ## cavs_filt8_v_  ## NAME(uint8_t *dst, uint8_t *src, int dstStride, int srcStride){\
     const int w=8;\
-    uint8_t *cm = cropTbl + MAX_NEG_CROP;\
+    uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;\
     int i;\
     for(i=0; i<w; i++)\
     {\
@@ -333,7 +333,7 @@ static void OPNAME ## cavs_filt8_hv_ ## NAME(uint8_t *dst, uint8_t *src1, uint8_
     int16_t *tmp = temp;\
     const int h=8;\
     const int w=8;\
-    uint8_t *cm = cropTbl + MAX_NEG_CROP;\
+    uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;\
     int i;\
     src1 -= 2*srcStride;\
     for(i=0; i<h+5; i++)\

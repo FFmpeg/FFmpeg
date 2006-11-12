@@ -75,7 +75,7 @@ extern const uint8_t ff_zigzag248_direct[64];
 
 /* temporary */
 extern uint32_t squareTbl[512];
-extern uint8_t cropTbl[256 + 2 * MAX_NEG_CROP];
+extern uint8_t ff_cropTbl[256 + 2 * MAX_NEG_CROP];
 
 /* VP3 DSP functions */
 void ff_vp3_idct_c(DCTELEM *block/* align 16*/);

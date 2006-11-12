@@ -29,7 +29,7 @@ static void glue(yuv420p_to_, RGB_NAME)(AVPicture *dst, const AVPicture *src,
     const uint8_t *y1_ptr, *y2_ptr, *cb_ptr, *cr_ptr;
     uint8_t *d, *d1, *d2;
     int w, y, cb, cr, r_add, g_add, b_add, width2;
-    uint8_t *cm = cropTbl + MAX_NEG_CROP;
+    uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
     unsigned int r, g, b;
 
     d = dst->data[0];
@@ -123,7 +123,7 @@ static void glue(yuvj420p_to_, RGB_NAME)(AVPicture *dst, const AVPicture *src,
     const uint8_t *y1_ptr, *y2_ptr, *cb_ptr, *cr_ptr;
     uint8_t *d, *d1, *d2;
     int w, y, cb, cr, r_add, g_add, b_add, width2;
-    uint8_t *cm = cropTbl + MAX_NEG_CROP;
+    uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
     unsigned int r, g, b;
 
     d = dst->data[0];
@@ -539,7 +539,7 @@ static void yuv444p_to_rgb24(AVPicture *dst, const AVPicture *src,
     const uint8_t *y1_ptr, *cb_ptr, *cr_ptr;
     uint8_t *d, *d1;
     int w, y, cb, cr, r_add, g_add, b_add;
-    uint8_t *cm = cropTbl + MAX_NEG_CROP;
+    uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
     unsigned int r, g, b;
 
     d = dst->data[0];
@@ -572,7 +572,7 @@ static void yuvj444p_to_rgb24(AVPicture *dst, const AVPicture *src,
     const uint8_t *y1_ptr, *cb_ptr, *cr_ptr;
     uint8_t *d, *d1;
     int w, y, cb, cr, r_add, g_add, b_add;
-    uint8_t *cm = cropTbl + MAX_NEG_CROP;
+    uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
     unsigned int r, g, b;
 
     d = dst->data[0];

@@ -199,7 +199,7 @@ static void guess_dc(MpegEncContext *s, int16_t *dc, int w, int h, int stride, i
  */
 static void h_block_filter(MpegEncContext *s, uint8_t *dst, int w, int h, int stride, int is_luma){
     int b_x, b_y;
-    uint8_t *cm = cropTbl + MAX_NEG_CROP;
+    uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
 
     for(b_y=0; b_y<h; b_y++){
         for(b_x=0; b_x<w-1; b_x++){
@@ -259,7 +259,7 @@ static void h_block_filter(MpegEncContext *s, uint8_t *dst, int w, int h, int st
  */
 static void v_block_filter(MpegEncContext *s, uint8_t *dst, int w, int h, int stride, int is_luma){
     int b_x, b_y;
-    uint8_t *cm = cropTbl + MAX_NEG_CROP;
+    uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
 
     for(b_y=0; b_y<h-1; b_y++){
         for(b_x=0; b_x<w; b_x++){

@@ -344,7 +344,7 @@ static int dvbsub_init_decoder(AVCodecContext *avctx)
     int i, r, g, b, a = 0;
     DVBSubContext *ctx = (DVBSubContext*) avctx->priv_data;
 
-    cm = cropTbl + MAX_NEG_CROP;
+    cm = ff_cropTbl + MAX_NEG_CROP;
 
     memset(avctx->priv_data, 0, sizeof(DVBSubContext));
 

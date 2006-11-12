@@ -230,7 +230,7 @@ static void get_hsv(HSV *hsv, int r, int g, int b)
 void Process(void *ctx, AVPicture *picture, enum PixelFormat pix_fmt, int width, int height, int64_t pts)
 {
     ContextInfo *ci = (ContextInfo *) ctx;
-    uint8_t *cm = cropTbl + MAX_NEG_CROP;
+    uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
     int rowsize = picture->linesize[0];
 
 #if 0

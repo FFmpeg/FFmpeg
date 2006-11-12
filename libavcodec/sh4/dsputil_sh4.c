@@ -70,7 +70,7 @@ static void idct_put(uint8_t *dest, int line_size, DCTELEM *block)
 {
         idct_sh4(block);
         int i;
-        uint8_t *cm = cropTbl + MAX_NEG_CROP;
+        uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
         for(i=0;i<8;i++) {
                 dest[0] = cm[block[0]];
                 dest[1] = cm[block[1]];
@@ -88,7 +88,7 @@ static void idct_add(uint8_t *dest, int line_size, DCTELEM *block)
 {
         idct_sh4(block);
         int i;
-        uint8_t *cm = cropTbl + MAX_NEG_CROP;
+        uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
         for(i=0;i<8;i++) {
                 dest[0] = cm[dest[0]+block[0]];
                 dest[1] = cm[dest[1]+block[1]];

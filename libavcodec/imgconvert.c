@@ -1241,7 +1241,7 @@ static uint8_t c_jpeg_to_ccir[256];
 static void img_convert_init(void)
 {
     int i;
-    uint8_t *cm = cropTbl + MAX_NEG_CROP;
+    uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
 
     for(i = 0;i < 256; i++) {
         y_ccir_to_jpeg[i] = Y_CCIR_TO_JPEG(i);
@@ -2653,7 +2653,7 @@ static void deinterlace_line(uint8_t *dst,
                              int size)
 {
 #ifndef HAVE_MMX
-    uint8_t *cm = cropTbl + MAX_NEG_CROP;
+    uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
     int sum;
 
     for(;size > 0;size--) {
@@ -2696,7 +2696,7 @@ static void deinterlace_line_inplace(uint8_t *lum_m4, uint8_t *lum_m3, uint8_t *
                              int size)
 {
 #ifndef HAVE_MMX
-    uint8_t *cm = cropTbl + MAX_NEG_CROP;
+    uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
     int sum;
 
     for(;size > 0;size--) {

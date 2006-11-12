@@ -40,7 +40,7 @@ void ff_spatial_dwt(int *buffer, int width, int height, int stride, int type, in
 /* vorbis.c */
 void vorbis_inverse_coupling(float *mag, float *ang, int blocksize);
 
-uint8_t cropTbl[256 + 2 * MAX_NEG_CROP] = {0, };
+uint8_t ff_cropTbl[256 + 2 * MAX_NEG_CROP] = {0, };
 uint32_t squareTbl[512] = {0, };
 
 const uint8_t ff_zigzag_direct[64] = {
@@ -436,7 +436,7 @@ static void put_pixels_clamped_c(const DCTELEM *block, uint8_t *restrict pixels,
                                  int line_size)
 {
     int i;
-    uint8_t *cm = cropTbl + MAX_NEG_CROP;
+    uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
 
     /* read the pixels */
     for(i=0;i<8;i++) {
@@ -458,7 +458,7 @@ static void put_pixels_clamped4_c(const DCTELEM *block, uint8_t *restrict pixels
                                  int line_size)
 {
     int i;
-    uint8_t *cm = cropTbl + MAX_NEG_CROP;
+    uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
 
     /* read the pixels */
     for(i=0;i<4;i++) {
@@ -476,7 +476,7 @@ static void put_pixels_clamped2_c(const DCTELEM *block, uint8_t *restrict pixels
                                  int line_size)
 {
     int i;
-    uint8_t *cm = cropTbl + MAX_NEG_CROP;
+    uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
 
     /* read the pixels */
     for(i=0;i<2;i++) {
@@ -513,7 +513,7 @@ static void add_pixels_clamped_c(const DCTELEM *block, uint8_t *restrict pixels,
                           int line_size)
 {
     int i;
-    uint8_t *cm = cropTbl + MAX_NEG_CROP;
+    uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
 
     /* read the pixels */
     for(i=0;i<8;i++) {
@@ -534,7 +534,7 @@ static void add_pixels_clamped4_c(const DCTELEM *block, uint8_t *restrict pixels
                           int line_size)
 {
     int i;
-    uint8_t *cm = cropTbl + MAX_NEG_CROP;
+    uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
 
     /* read the pixels */
     for(i=0;i<4;i++) {
@@ -551,7 +551,7 @@ static void add_pixels_clamped2_c(const DCTELEM *block, uint8_t *restrict pixels
                           int line_size)
 {
     int i;
-    uint8_t *cm = cropTbl + MAX_NEG_CROP;
+    uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
 
     /* read the pixels */
     for(i=0;i<2;i++) {
@@ -1592,7 +1592,7 @@ static inline void copy_block9(uint8_t *dst, uint8_t *src, int dstStride, int sr
 
 #define QPEL_MC(r, OPNAME, RND, OP) \
 static void OPNAME ## mpeg4_qpel8_h_lowpass(uint8_t *dst, uint8_t *src, int dstStride, int srcStride, int h){\
-    uint8_t *cm = cropTbl + MAX_NEG_CROP;\
+    uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;\
     int i;\
     for(i=0; i<h; i++)\
     {\
@@ -1611,7 +1611,7 @@ static void OPNAME ## mpeg4_qpel8_h_lowpass(uint8_t *dst, uint8_t *src, int dstS
 \
 static void OPNAME ## mpeg4_qpel8_v_lowpass(uint8_t *dst, uint8_t *src, int dstStride, int srcStride){\
     const int w=8;\
-    uint8_t *cm = cropTbl + MAX_NEG_CROP;\
+    uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;\
     int i;\
     for(i=0; i<w; i++)\
     {\
@@ -1638,7 +1638,7 @@ static void OPNAME ## mpeg4_qpel8_v_lowpass(uint8_t *dst, uint8_t *src, int dstS
 }\
 \
 static void OPNAME ## mpeg4_qpel16_h_lowpass(uint8_t *dst, uint8_t *src, int dstStride, int srcStride, int h){\
-    uint8_t *cm = cropTbl + MAX_NEG_CROP;\
+    uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;\
     int i;\
     \
     for(i=0; i<h; i++)\
@@ -1665,7 +1665,7 @@ static void OPNAME ## mpeg4_qpel16_h_lowpass(uint8_t *dst, uint8_t *src, int dst
 }\
 \
 static void OPNAME ## mpeg4_qpel16_v_lowpass(uint8_t *dst, uint8_t *src, int dstStride, int srcStride){\
-    uint8_t *cm = cropTbl + MAX_NEG_CROP;\
+    uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;\
     int i;\
     const int w=16;\
     for(i=0; i<w; i++)\
@@ -2091,7 +2091,7 @@ QPEL_MC(0, avg_       , _       , op_avg)
 #define H264_LOWPASS(OPNAME, OP, OP2) \
 static void OPNAME ## h264_qpel2_h_lowpass(uint8_t *dst, uint8_t *src, int dstStride, int srcStride){\
     const int h=2;\
-    uint8_t *cm = cropTbl + MAX_NEG_CROP;\
+    uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;\
     int i;\
     for(i=0; i<h; i++)\
     {\
@@ -2104,7 +2104,7 @@ static void OPNAME ## h264_qpel2_h_lowpass(uint8_t *dst, uint8_t *src, int dstSt
 \
 static void OPNAME ## h264_qpel2_v_lowpass(uint8_t *dst, uint8_t *src, int dstStride, int srcStride){\
     const int w=2;\
-    uint8_t *cm = cropTbl + MAX_NEG_CROP;\
+    uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;\
     int i;\
     for(i=0; i<w; i++)\
     {\
@@ -2125,7 +2125,7 @@ static void OPNAME ## h264_qpel2_v_lowpass(uint8_t *dst, uint8_t *src, int dstSt
 static void OPNAME ## h264_qpel2_hv_lowpass(uint8_t *dst, int16_t *tmp, uint8_t *src, int dstStride, int tmpStride, int srcStride){\
     const int h=2;\
     const int w=2;\
-    uint8_t *cm = cropTbl + MAX_NEG_CROP;\
+    uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;\
     int i;\
     src -= 2*srcStride;\
     for(i=0; i<h+5; i++)\
@@ -2153,7 +2153,7 @@ static void OPNAME ## h264_qpel2_hv_lowpass(uint8_t *dst, int16_t *tmp, uint8_t 
 }\
 static void OPNAME ## h264_qpel4_h_lowpass(uint8_t *dst, uint8_t *src, int dstStride, int srcStride){\
     const int h=4;\
-    uint8_t *cm = cropTbl + MAX_NEG_CROP;\
+    uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;\
     int i;\
     for(i=0; i<h; i++)\
     {\
@@ -2168,7 +2168,7 @@ static void OPNAME ## h264_qpel4_h_lowpass(uint8_t *dst, uint8_t *src, int dstSt
 \
 static void OPNAME ## h264_qpel4_v_lowpass(uint8_t *dst, uint8_t *src, int dstStride, int srcStride){\
     const int w=4;\
-    uint8_t *cm = cropTbl + MAX_NEG_CROP;\
+    uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;\
     int i;\
     for(i=0; i<w; i++)\
     {\
@@ -2193,7 +2193,7 @@ static void OPNAME ## h264_qpel4_v_lowpass(uint8_t *dst, uint8_t *src, int dstSt
 static void OPNAME ## h264_qpel4_hv_lowpass(uint8_t *dst, int16_t *tmp, uint8_t *src, int dstStride, int tmpStride, int srcStride){\
     const int h=4;\
     const int w=4;\
-    uint8_t *cm = cropTbl + MAX_NEG_CROP;\
+    uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;\
     int i;\
     src -= 2*srcStride;\
     for(i=0; i<h+5; i++)\
@@ -2228,7 +2228,7 @@ static void OPNAME ## h264_qpel4_hv_lowpass(uint8_t *dst, int16_t *tmp, uint8_t 
 \
 static void OPNAME ## h264_qpel8_h_lowpass(uint8_t *dst, uint8_t *src, int dstStride, int srcStride){\
     const int h=8;\
-    uint8_t *cm = cropTbl + MAX_NEG_CROP;\
+    uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;\
     int i;\
     for(i=0; i<h; i++)\
     {\
@@ -2247,7 +2247,7 @@ static void OPNAME ## h264_qpel8_h_lowpass(uint8_t *dst, uint8_t *src, int dstSt
 \
 static void OPNAME ## h264_qpel8_v_lowpass(uint8_t *dst, uint8_t *src, int dstStride, int srcStride){\
     const int w=8;\
-    uint8_t *cm = cropTbl + MAX_NEG_CROP;\
+    uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;\
     int i;\
     for(i=0; i<w; i++)\
     {\
@@ -2280,7 +2280,7 @@ static void OPNAME ## h264_qpel8_v_lowpass(uint8_t *dst, uint8_t *src, int dstSt
 static void OPNAME ## h264_qpel8_hv_lowpass(uint8_t *dst, int16_t *tmp, uint8_t *src, int dstStride, int tmpStride, int srcStride){\
     const int h=8;\
     const int w=8;\
-    uint8_t *cm = cropTbl + MAX_NEG_CROP;\
+    uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;\
     int i;\
     src -= 2*srcStride;\
     for(i=0; i<h+5; i++)\
@@ -2582,7 +2582,7 @@ H264_WEIGHT(2,2)
 #undef H264_WEIGHT
 
 static void wmv2_mspel8_h_lowpass(uint8_t *dst, uint8_t *src, int dstStride, int srcStride, int h){
-    uint8_t *cm = cropTbl + MAX_NEG_CROP;
+    uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
     int i;
 
     for(i=0; i<h; i++){
@@ -2627,7 +2627,7 @@ void ff_put_vc1_mspel_mc00_c(uint8_t *dst, uint8_t *src, int stride, int rnd) {
 #endif /* CONFIG_VC1_DECODER||CONFIG_WMV3_DECODER */
 
 static void wmv2_mspel8_v_lowpass(uint8_t *dst, uint8_t *src, int dstStride, int srcStride, int w){
-    uint8_t *cm = cropTbl + MAX_NEG_CROP;
+    uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
     int i;
 
     for(i=0; i<w; i++){
@@ -3847,13 +3847,13 @@ static void ff_jref_idct2_add(uint8_t *dest, int line_size, DCTELEM *block)
 
 static void ff_jref_idct1_put(uint8_t *dest, int line_size, DCTELEM *block)
 {
-    uint8_t *cm = cropTbl + MAX_NEG_CROP;
+    uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
 
     dest[0] = cm[(block[0] + 4)>>3];
 }
 static void ff_jref_idct1_add(uint8_t *dest, int line_size, DCTELEM *block)
 {
-    uint8_t *cm = cropTbl + MAX_NEG_CROP;
+    uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
 
     dest[0] = cm[dest[0] + ((block[0] + 4)>>3)];
 }
@@ -3865,10 +3865,10 @@ void dsputil_static_init(void)
 {
     int i;
 
-    for(i=0;i<256;i++) cropTbl[i + MAX_NEG_CROP] = i;
+    for(i=0;i<256;i++) ff_cropTbl[i + MAX_NEG_CROP] = i;
     for(i=0;i<MAX_NEG_CROP;i++) {
-        cropTbl[i] = 0;
-        cropTbl[i + MAX_NEG_CROP + 256] = 255;
+        ff_cropTbl[i] = 0;
+        ff_cropTbl[i + MAX_NEG_CROP + 256] = 255;
     }
 
     for(i=0;i<512;i++) {

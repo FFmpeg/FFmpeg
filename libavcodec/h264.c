@@ -2451,7 +2451,7 @@ static void pred16x16_128_dc_c(uint8_t *src, int stride){
 static inline void pred16x16_plane_compat_c(uint8_t *src, int stride, const int svq3){
   int i, j, k;
   int a;
-  uint8_t *cm = cropTbl + MAX_NEG_CROP;
+  uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
   const uint8_t * const src0 = src+7-stride;
   const uint8_t *src1 = src+8*stride-1;
   const uint8_t *src2 = src1-2*stride;      // == src+6*stride-1;
@@ -2594,7 +2594,7 @@ static void pred8x8_dc_c(uint8_t *src, int stride){
 static void pred8x8_plane_c(uint8_t *src, int stride){
   int j, k;
   int a;
-  uint8_t *cm = cropTbl + MAX_NEG_CROP;
+  uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
   const uint8_t * const src0 = src+3-stride;
   const uint8_t *src1 = src+4*stride-1;
   const uint8_t *src2 = src1-2*stride;      // == src+2*stride-1;

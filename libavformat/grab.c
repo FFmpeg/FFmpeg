@@ -760,7 +760,7 @@ static int aiw_read_picture(VideoData *s, uint8_t *data)
         movq_m2r(rounder,mm6);
         pxor_r2r(mm7,mm7);
 #else
-        uint8_t *cm = cropTbl + MAX_NEG_CROP;
+        uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
 #endif
 
         /* read two fields and deinterlace them */
