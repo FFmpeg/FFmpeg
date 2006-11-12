@@ -41,7 +41,7 @@ void ff_spatial_dwt(int *buffer, int width, int height, int stride, int type, in
 void vorbis_inverse_coupling(float *mag, float *ang, int blocksize);
 
 uint8_t ff_cropTbl[256 + 2 * MAX_NEG_CROP] = {0, };
-uint32_t squareTbl[512] = {0, };
+uint32_t ff_squareTbl[512] = {0, };
 
 const uint8_t ff_zigzag_direct[64] = {
     0,   1,  8, 16,  9,  2,  3, 10,
@@ -165,7 +165,7 @@ static int pix_sum_c(uint8_t * pix, int line_size)
 static int pix_norm1_c(uint8_t * pix, int line_size)
 {
     int s, i, j;
-    uint32_t *sq = squareTbl + 256;
+    uint32_t *sq = ff_squareTbl + 256;
 
     s = 0;
     for (i = 0; i < 16; i++) {
@@ -231,7 +231,7 @@ static void bswap_buf(uint32_t *dst, uint32_t *src, int w){
 static int sse4_c(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, int h)
 {
     int s, i;
-    uint32_t *sq = squareTbl + 256;
+    uint32_t *sq = ff_squareTbl + 256;
 
     s = 0;
     for (i = 0; i < h; i++) {
@@ -248,7 +248,7 @@ static int sse4_c(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, int h)
 static int sse8_c(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, int h)
 {
     int s, i;
-    uint32_t *sq = squareTbl + 256;
+    uint32_t *sq = ff_squareTbl + 256;
 
     s = 0;
     for (i = 0; i < h; i++) {
@@ -269,7 +269,7 @@ static int sse8_c(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, int h)
 static int sse16_c(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
 {
     int s, i;
-    uint32_t *sq = squareTbl + 256;
+    uint32_t *sq = ff_squareTbl + 256;
 
     s = 0;
     for (i = 0; i < h; i++) {
@@ -3872,7 +3872,7 @@ void dsputil_static_init(void)
     }
 
     for(i=0;i<512;i++) {
-        squareTbl[i] = (i - 256) * (i - 256);
+        ff_squareTbl[i] = (i - 256) * (i - 256);
     }
 
     for(i=0; i<64; i++) inv_zigzag_direct16[ff_zigzag_direct[i]]= i+1;

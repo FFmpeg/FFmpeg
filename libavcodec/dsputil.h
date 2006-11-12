@@ -74,7 +74,7 @@ extern const uint8_t ff_zigzag248_direct[64];
 #define MAX_NEG_CROP 1024
 
 /* temporary */
-extern uint32_t squareTbl[512];
+extern uint32_t ff_squareTbl[512];
 extern uint8_t ff_cropTbl[256 + 2 * MAX_NEG_CROP];
 
 /* VP3 DSP functions */

@@ -1902,7 +1902,7 @@ static int pix_sum(uint8_t * pix, int line_size, int w)
 static int pix_norm1(uint8_t * pix, int line_size, int w)
 {
     int s, i, j;
-    uint32_t *sq = squareTbl + 256;
+    uint32_t *sq = ff_squareTbl + 256;
 
     s = 0;
     for (i = 0; i < w; i++) {
