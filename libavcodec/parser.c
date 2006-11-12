@@ -361,32 +361,6 @@ static int mpeg4video_parse(AVCodecParserContext *s,
 }
 #endif
 
-#ifdef CONFIG_CAVSVIDEO_PARSER
-static int cavsvideo_parse(AVCodecParserContext *s,
-                           AVCodecContext *avctx,
-                           uint8_t **poutbuf, int *poutbuf_size,
-                           const uint8_t *buf, int buf_size)
-{
-    ParseContext *pc = s->priv_data;
-    int next;
-
-    if(s->flags & PARSER_FLAG_COMPLETE_FRAMES){
-        next= buf_size;
-    }else{
-        next= ff_cavs_find_frame_end(pc, buf, buf_size);
-
-        if (ff_combine_frame(pc, next, (uint8_t **)&buf, &buf_size) < 0) {
-            *poutbuf = NULL;
-            *poutbuf_size = 0;
-            return buf_size;
-        }
-    }
-    *poutbuf = (uint8_t *)buf;
-    *poutbuf_size = buf_size;
-    return next;
-}
-#endif /* CONFIG_CAVSVIDEO_PARSER */
-
 int ff_mpeg4video_split(AVCodecContext *avctx,
                            const uint8_t *buf, int buf_size)
 {
@@ -853,16 +827,6 @@ AVCodecParser mpeg4video_parser = {
     sizeof(ParseContext1),
     mpeg4video_parse_init,
     mpeg4video_parse,
-    ff_parse1_close,
-    ff_mpeg4video_split,
-};
-#endif
-#ifdef CONFIG_CAVSVIDEO_PARSER
-AVCodecParser cavsvideo_parser = {
-    { CODEC_ID_CAVS },
-    sizeof(ParseContext1),
-    NULL,
-    cavsvideo_parse,
     ff_parse1_close,
     ff_mpeg4video_split,
 };

@@ -60,7 +60,4 @@ void ff_parse1_close(AVCodecParserContext *s);
 /* h263dec.c */
 int ff_mpeg4_find_frame_end(ParseContext *pc, const uint8_t *buf, int buf_size);
 
-/* cavs.c */
-int ff_cavs_find_frame_end(ParseContext *pc, const uint8_t *buf, int buf_size);
-
 #endif /* !FFMPEG_PARSER_H */

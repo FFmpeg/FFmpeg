@@ -131,6 +131,7 @@ enum mv_loc_t {
   MV_BWD_X3
 };
 
+#ifdef CONFIG_CAVS_DECODER
 static const uint8_t partition_flags[30] = {
   0,                                 //I_8X8
   0,                                 //P_SKIP
@@ -639,3 +640,4 @@ static const int_fast8_t left_modifier_l[8] = { 0,-1, 6,-1,-1, 7, 6, 7};
 static const int_fast8_t top_modifier_l[8]  = {-1, 1, 5,-1,-1, 5, 7, 7};
 static const int_fast8_t left_modifier_c[7] = { 5,-1, 2,-1, 6, 5, 6};
 static const int_fast8_t top_modifier_c[7]  = { 4, 1,-1,-1, 4, 6, 6};
+#endif /* CONFIG_CAVS_DECODER */

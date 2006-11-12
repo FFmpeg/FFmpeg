@@ -294,7 +294,7 @@ OBJS-$(CONFIG_AMR_WB)                  += amrwb_float/dec_acelp.o \
 
 OBJS-$(CONFIG_AAC_PARSER)              += parser.o
 OBJS-$(CONFIG_AC3_PARSER)              += parser.o
-OBJS-$(CONFIG_CAVS_PARSER)             += parser.o
+OBJS-$(CONFIG_CAVSVIDEO_PARSER)        += cavs.o parser.o
 OBJS-$(CONFIG_DVBSUB_PARSER)           += dvbsubdec.o
 OBJS-$(CONFIG_DVDSUB_PARSER)           += dvdsubdec.o
 OBJS-$(CONFIG_H261_PARSER)             += h261.o
