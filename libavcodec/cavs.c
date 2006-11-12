@@ -1319,7 +1319,7 @@ static int decode_seq_header(AVSContext *h) {
     return 0;
 }
 
-void ff_cavs_flush(AVCodecContext * avctx) {
+static void cavs_flush(AVCodecContext * avctx) {
     AVSContext *h = avctx->priv_data;
     h->got_keyframe = 0;
 }
@@ -1456,7 +1456,7 @@ AVCodec cavs_decoder = {
     cavs_decode_end,
     cavs_decode_frame,
     CODEC_CAP_DR1 | CODEC_CAP_DELAY,
-    .flush= ff_cavs_flush,
+    .flush= cavs_flush,
 };
 #endif /* CONFIG_CAVS_DECODER */
 
