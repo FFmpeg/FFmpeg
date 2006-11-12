@@ -158,6 +158,9 @@ Show license.
 @item -h
 Show help.
 
+@item -version
+Show version.
+
 @item -formats
 Show available formats, codecs, protocols, ...
 
@@ -174,12 +177,26 @@ Overwrite output files.
 Set the recording time in seconds.
 @code{hh:mm:ss[.xxx]} syntax is also supported.
 
+@item -fs limit_size
+Set the file size limit.
+
 @item -ss position
 Seek to given time position in seconds.
 @code{hh:mm:ss[.xxx]} syntax is also supported.
 
+@item -itsoffset offset
+Set the input time offset in seconds.
+@code{[-]hh:mm:ss[.xxx]} syntax is also supported.
+This option affects all the input files that follow it.
+The offset is added to the timestamps of the input files.
+Specifying a positive offset means that the corresponding
+streams are delayed by 'offset' seconds.
+
 @item -title string
 Set the title.
+
+@item -timestamp time
+Set the timestamp.
 
 @item -author string
 Set the author.
@@ -190,14 +207,20 @@ Set the copyright.
 @item -comment string
 Set the comment.
 
+@item -album string
+Set the album.
+
 @item -track number
 Set the track.
 
 @item -year number
 Set the year.
 
+@item -v verbose
+Control amount of logging.
+
 @item -target type
-Specify target file type ("vcd", "svcd", "dvd", "dv", "pal-vcd",
+Specify target file type ("vcd", "svcd", "dvd", "dv", "dv50", "pal-vcd",
 "ntsc-svcd", ... ). All the format options (bitrate, codecs,
 buffer sizes) are then set automatically. You can just type:
 
@@ -212,13 +235,17 @@ they do not conflict with the standard, as in:
 ffmpeg -i myfile.avi -target vcd -bf 2 /tmp/vcd.mpg
 @end example
 
-@item -itsoffset offset
-Set the input time offset in seconds.
-@code{[-]hh:mm:ss[.xxx]} syntax is also supported.
-This option affects all the input files that follow it.
-The offset is added to the timestamps of the input files.
-Specifying a positive offset means that the corresponding
-streams are delayed by 'offset' seconds.
+@item -dframes number
+Set the number of data frames to record.
+
+@item -scodec codec
+Force subtitle codec ('copy' to copy stream).
+
+@item -newsubtitle
+Add a new subtitle stream to the current output stream.
+
+@item -slang code
+Set the ISO 639 language code (3 letters) of the current subtitle stream.
 
 @end table
 
@@ -227,8 +254,10 @@ streams are delayed by 'offset' seconds.
 @table @option
 @item -b bitrate
 Set the video bitrate in bit/s (default = 200 kb/s).
+@item -vframes number
+Set the number of video frames to record.
 @item -r fps
-Set frame rate (default = 25).
+Set frame rate (Hz value, fraction or abbreviation), (default = 25).
 @item -s size
 Set frame size. The format is @samp{wxh} (default = 160x128).
 The following abbreviations are recognized:
@@ -291,15 +320,22 @@ in the second pass.
 @item -passlogfile file
 Set two pass logfile name to @var{file}.
 
+@item -newvideo
+Add a new video stream to the current output stream.
+
 @end table
 
 @section Advanced Video Options
 
 @table @option
+@item -pix_fmt format
+Set pixel format.
 @item -g gop_size
 Set the group of pictures size.
 @item -intra
 Use only intra frames.
+@item -vdt n
+Discard threshold.
 @item -qscale q
 Use fixed video quantizer scale (VBR).
 @item -qmin q
@@ -466,11 +502,23 @@ Dump video coding statistics to @file{vstats_HHMMSS.log}.
 @item -vhook module
 Insert video processing @var{module}. @var{module} contains the module
 name and its parameters separated by spaces.
+@item -top n
+top=1/bottom=0/auto=-1 field first
+@item -dc precision
+Intra_dc_precision.
+@item -vtag fourcc/tag
+Force video tag/fourcc.
+@item -qphist
+Show QP histogram.
+@item -vbsf bitstream filter
+Bitstream filters available are "dump_extra", "remove_extra", "noise".
 @end table
 
 @section Audio Options
 
 @table @option
+@item -aframes number
+Set the number of audio frames to record.
 @item -ar freq
 Set the audio sampling frequency (default = 44100 Hz).
 @item -ab bitrate
@@ -494,6 +542,28 @@ Example:
 @example
 ffmpeg -i file.mpg -vcodec copy -acodec ac3 -ab 384 test.mpg -acodec mp2 -ab 192 -newaudio
 @end example
+@item -alang code
+Set the ISO 639 language code (3 letters) of the current audio stream.
+@end table
+
+@section Advanced Audio options:
+
+@table @option
+@item -atag fourcc/tag
+Force audio tag/fourcc.
+@item -absf bitstream filter
+Bitstream filters available are "dump_extra", "remove_extra", "noise", "mp3comp", "mp3decomp".
+@end table
+
+@section Subtitle options:
+
+@table @option
+@item -scodec codec
+Force subtitle codec ('copy' to copy stream).
+@item -newsubtitle
+Add a new subtitle stream to the current output stream.
+@item -slang code
+Set the ISO 639 language code (3 letters) of the current subtitle stream.
 @end table
 
 @section Audio/Video grab options
@@ -509,6 +579,10 @@ Set television standard (NTSC, PAL (SECAM)).
 Set DV1394 grab.
 @item -ad device
 Set audio device (e.g. @file{/dev/dsp}).
+@item -grab format
+Request grabbing using.
+@item -gd device
+Set grab device.
 @end table
 
 @section Advanced options
@@ -518,24 +592,30 @@ Set audio device (e.g. @file{/dev/dsp}).
 Set stream mapping from input streams to output streams.
 Just enumerate the input streams in the order you want them in the output.
 [input stream id] sets the (input) stream to sync against.
+@item -map_meta_data outfile:infile
+Set meta data information of outfile from infile.
 @item -debug
 Print specific debug info.
 @item -benchmark
 Add timings for benchmarking.
-@item -hex
+@item -dump
 Dump each input packet.
+@item -hex
+When dumping packets, also dump the payload.
 @item -bitexact
 Only use bit exact algorithms (for codec testing).
 @item -ps size
 Set packet size in bits.
 @item -re
 Read input at native frame rate. Mainly used to simulate a grab device.
-@item -loop
+@item -loop_input
 Loop over the input stream. Currently it works only for image
 streams. This option is used for automatic FFserver testing.
 @item -loop_output number_of_times
 Repeatedly loop output for formats that support looping such as animated GIF
 (0 will loop the output infinitely).
+@item -threads count
+Thread count.
 @item -vsync parameter
 Video sync method. Video will be stretched/squeezed to match the timestamps,
 it is done by duplicating and dropping frames. With -map you can select from
