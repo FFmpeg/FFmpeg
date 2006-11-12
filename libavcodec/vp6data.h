@@ -275,7 +275,7 @@ static const int16_t vp6_block_copy_filter[16][8][4] = {
     {  -2,  18, 124, -12  } },
 };
 
-const vp56_tree_t vp6_pcr_tree[] = {
+static const vp56_tree_t vp6_pcr_tree[] = {
     { 8, 0},
     { 4, 1},
     { 2, 2}, {-1}, {-2},
