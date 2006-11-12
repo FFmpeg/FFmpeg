@@ -103,7 +103,7 @@
 
 #    define av_abort()      do { av_log(NULL, AV_LOG_ERROR, "Abort at %s:%d\n", __FILE__, __LINE__); abort(); } while (0)
 
-extern const uint32_t inverse[256];
+extern const uint32_t ff_inverse[256];
 
 #if defined(ARCH_X86)
 #    define FASTDIV(a,b) \
@@ -112,7 +112,7 @@ extern const uint32_t inverse[256];
         asm volatile(\
             "mull %3"\
             :"=d"(ret),"=a"(dmy)\
-            :"1"(a),"g"(inverse[b])\
+            :"1"(a),"g"(ff_inverse[b])\
             );\
         ret;\
     })
@@ -123,12 +123,12 @@ extern const uint32_t inverse[256];
         asm volatile(\
             "umull %1, %0, %2, %3"\
             :"=&r"(ret),"=&r"(dmy)\
-            :"r"(a),"r"(inverse[b])\
+            :"r"(a),"r"(ff_inverse[b])\
             );\
         ret;\
     })
 #elif defined(CONFIG_FASTDIV)
-#    define FASTDIV(a,b)   ((uint32_t)((((uint64_t)a)*inverse[b])>>32))
+#    define FASTDIV(a,b)   ((uint32_t)((((uint64_t)a)*ff_inverse[b])>>32))
 #else
 #    define FASTDIV(a,b)   ((a)/(b))
 #endif

@@ -1438,7 +1438,7 @@ static int vorbis_residue_decode(vorbis_context *vc, vorbis_residue *vr, uint_fa
         voffset=vr->begin;
         for(partition_count=0;partition_count<ptns_to_read;) {  // SPEC        error
             if (!pass) {
-                uint_fast32_t inverse_class = inverse[vr->classifications];
+                uint_fast32_t inverse_class = ff_inverse[vr->classifications];
                 for(j_times_ptns_to_read=0, j=0;j<ch_used;++j) {
                     if (!do_not_decode[j]) {
                         uint_fast32_t temp=get_vlc2(gb, vc->codebooks[vr->classbook].vlc.table,

@@ -76,7 +76,7 @@ static int RENAME(dct_quantize)(MpegEncContext *s,
         asm volatile (
                 "mul %%ecx                \n\t"
                 : "=d" (level), "=a"(dummy)
-                : "a" ((block[0]>>2) + q), "c" (inverse[q<<1])
+                : "a" ((block[0]>>2) + q), "c" (ff_inverse[q<<1])
         );
 #else
         asm volatile (

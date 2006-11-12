@@ -675,7 +675,7 @@ static inline int msmpeg4_pred_dc(MpegEncContext * s, int n,
         "mull %4                \n\t"
         "movl %%edx, %2         \n\t"
         : "+b" (a), "+c" (b), "+D" (c)
-        : "g" (scale), "S" (inverse[scale])
+        : "g" (scale), "S" (ff_inverse[scale])
         : "%eax", "%edx"
     );
 #else
