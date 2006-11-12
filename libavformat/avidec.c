@@ -307,9 +307,9 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 av_freep(&s->streams[0]);
                 s->nb_streams = 0;
                 if (ENABLE_DV_DEMUXER) {
-                avi->dv_demux = dv_init_demux(s);
-                if (!avi->dv_demux)
-                    goto fail;
+                    avi->dv_demux = dv_init_demux(s);
+                    if (!avi->dv_demux)
+                        goto fail;
                 }
                 s->streams[0]->priv_data = ast;
                 url_fskip(pb, 3 * 4);
