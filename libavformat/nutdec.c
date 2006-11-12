@@ -199,7 +199,7 @@ static int nut_probe(AVProbeData *p){
 
 static int skip_reserved(ByteIOContext *bc, int64_t pos){
     pos -= url_ftell(bc);
-
+av_log(NULL, AV_LOG_ERROR, "skip %d\n", (int)pos);
     if(pos<0){
         url_fseek(bc, pos, SEEK_CUR);
         return -1;
@@ -459,13 +459,107 @@ static int decode_syncpoint(NUTContext *nut){
 
     time_base= nut->time_base[tmp % nut->time_base_count];
     for(i=0; i<s->nb_streams; i++){
-        nut->stream[i].last_pts= av_rescale_q(tmp / nut->time_base_count, time_base, nut->stream[i].time_base); //FIXME rounding and co
+        nut->stream[i].last_pts= av_rescale_rnd(
+            tmp / nut->time_base_count,
+            time_base.num * (int64_t)nut->stream[i].time_base.den,
+            time_base.den * (int64_t)nut->stream[i].time_base.num,
+            AV_ROUND_DOWN);
         //last_key_frame ?
     }
     //FIXME put this in a reset func maybe
 
     if(skip_reserved(bc, end) || check_checksum(bc)){
         av_log(s, AV_LOG_ERROR, "sync point checksum mismatch\n");
+        return -1;
+    }
+    return 0;
+}
+
+static int find_and_decode_index(NUTContext *nut){
+    AVFormatContext *s= nut->avf;
+    ByteIOContext *bc = &s->pb;
+    uint64_t tmp, end;
+    int i, j, syncpoint_count;
+    int64_t filesize= url_fsize(bc);
+    int64_t *syncpoints;
+    int8_t *has_keyframe;
+
+    url_fseek(bc, filesize-12, SEEK_SET);
+    url_fseek(bc, filesize-get_be64(bc), SEEK_SET);
+    if(get_be64(bc) != INDEX_STARTCODE){
+        av_log(s, AV_LOG_ERROR, "no index at the end\n");
+        return -1;
+    }
+
+    end= get_packetheader(nut, bc, 1);
+    end += url_ftell(bc) - 4;
+
+    get_v(bc); //max_pts
+    GET_V(syncpoint_count, tmp < INT_MAX/8 && tmp > 0)
+    syncpoints= av_malloc(sizeof(int64_t)*syncpoint_count);
+    has_keyframe= av_malloc(sizeof(int8_t)*(syncpoint_count+1));
+    for(i=0; i<syncpoint_count; i++){
+        GET_V(syncpoints[i], tmp>0)
+        if(i)
+            syncpoints[i] += syncpoints[i-1];
+    }
+
+    for(i=0; i<s->nb_streams; i++){
+        int64_t last_pts= -1;
+        for(j=0; j<syncpoint_count;){
+            uint64_t x= get_v(bc);
+            int type= x&1;
+            int n= j;
+            x>>=1;
+            if(type){
+                int flag= x&1;
+                x>>=1;
+                if(n+x >= syncpoint_count + 1){
+                    av_log(s, AV_LOG_ERROR, "index overflow A\n");
+                    return -1;
+                }
+                while(x--)
+                    has_keyframe[n++]= flag;
+                has_keyframe[n++]= !flag;
+            }else{
+                while(x != 1){
+                    if(n>=syncpoint_count + 1){
+                        av_log(s, AV_LOG_ERROR, "index overflow B\n");
+                        return -1;
+                    }
+                    has_keyframe[n++]= x&1;
+                    x>>=1;
+                }
+            }
+            if(has_keyframe[0]){
+                av_log(s, AV_LOG_ERROR, "keyframe before first syncpoint in index\n");
+                return -1;
+            }
+            assert(n<=syncpoint_count+1);
+            for(; j<n; j++){
+                if(has_keyframe[j]){
+                    uint64_t B, A= get_v(bc);
+                    if(!A){
+                        A= get_v(bc);
+                        B= get_v(bc);
+                        //eor_pts[j][i] = last_pts + A + B
+                    }else
+                        B= 0;
+                    av_add_index_entry(
+                        s->streams[i],
+                        16*syncpoints[j-1],
+                        last_pts + A,
+                        0,
+                        0,
+                        AVINDEX_KEYFRAME);
+                    last_pts += A + B;
+                }
+            }
+        }
+    }
+
+    if(skip_reserved(bc, end) || check_checksum(bc)){
+        av_log(s, AV_LOG_ERROR, "Index checksum mismatch\n");
         return -1;
     }
     return 0;
@@ -522,6 +616,13 @@ static int nut_read_header(AVFormatContext *s, AVFormatParameters *ap)
     }
 
     s->data_offset= pos-8;
+
+    if(0 &&!url_is_streamed(bc)){
+        int64_t orig_pos= url_ftell(bc);
+        find_and_decode_index(nut);
+        url_fseek(bc, orig_pos, SEEK_SET);
+    }
+    assert(nut->next_startcode == SYNCPOINT_STARTCODE);
 
     return 0;
 }
