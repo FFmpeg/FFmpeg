@@ -2419,6 +2419,15 @@ Libs: \${libdir}/${LIBPREF}postproc${LIBSUF}
 Cflags: -I\${includedir}
 EOF
 
+if test "$swscaler" != "no"; then
+  sws_pc_libs="-L\${libdir} -lswscale"
+  sws_pc_uninstalled_libs="\${libdir}/${LIBPREF}swscale${LIBSUF}"
+  sws_pc_requires="$pkg_requires libavutil = $lavu_version"
+else
+  sws_pc_libs=""
+  sws_pc_uninstalled_libs=""
+  sws_pc_requires="$pkg_requires libavcodec = $lavc_version"
+fi
 # libswscale.pc
 cat <<EOF >libswscale.pc
 prefix=$PREFIX
@@ -2429,9 +2438,9 @@ includedir=\${prefix}/include
 Name: libswscale
 Description: FFmpeg image rescaling library
 Version: $sws_version
-Requires: $pkg_requires libavutil = $lavu_version
+Requires: $sws_pc_requires
 Conflicts:
-Libs: -L\${libdir} -lswscale
+Libs: $sws_pc_libs
 Cflags: -I\${includedir} -I\${includedir}/swscale
 EOF
 
@@ -2444,8 +2453,8 @@ includedir=\${pcfiledir}/libswscale
 Name: libswscale
 Description: FFmpeg image rescaling library
 Version: $sws_version
-Requires: $pkg_requires libavutil = $lavu_version
+Requires: $sws_pc_requires
 Conflicts:
-Libs: \${libdir}/${LIBPREF}swscale${LIBSUF}
+Libs: $sws_pc_uninstalled_libs
 Cflags: -I\${includedir}
 EOF
