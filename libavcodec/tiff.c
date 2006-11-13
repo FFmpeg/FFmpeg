@@ -37,7 +37,8 @@ enum TiffTags{
     TIFF_STRIP_SIZE,
     TIFF_XPOS = 0x11E,
     TIFF_YPOS = 0x11F,
-    TIFF_PREDICTOR = 0x13D
+    TIFF_PREDICTOR = 0x13D,
+    TIFF_PAL = 0x140
 };
 
 enum TiffCompr{
@@ -69,6 +70,7 @@ typedef struct TiffContext {
     unsigned int bpp;
     int le;
     int compr;
+    int invert;
 
     int strips, rps;
     int sot;
@@ -187,6 +189,7 @@ static int tiff_decode_tag(TiffContext *s, uint8_t *start, uint8_t *buf, uint8_t
     int tag, type, count, off, value = 0;
     uint8_t *src, *dst;
     int i, j, ssize, soff, stride;
+    int *pal, *rp, *gp, *bp;
 
     tag = tget_short(&buf, s->le);
     type = tget_short(&buf, s->le);
@@ -224,18 +227,6 @@ static int tiff_decode_tag(TiffContext *s, uint8_t *start, uint8_t *buf, uint8_t
         break;
     case TIFF_HEIGHT:
         s->height = value;
-        s->avctx->pix_fmt = PIX_FMT_RGB24;
-        if(s->width != s->avctx->width || s->height != s->avctx->height){
-            if(avcodec_check_dimensions(s->avctx, s->width, s->height))
-                return -1;
-            avcodec_set_dimensions(s->avctx, s->width, s->height);
-        }
-        if(s->picture.data[0])
-            s->avctx->release_buffer(s->avctx, &s->picture);
-        if(s->avctx->get_buffer(s->avctx, &s->picture) < 0){
-            av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-            return -1;
-        }
         break;
     case TIFF_BPP:
         if(count == 1) s->bpp = value;
@@ -253,9 +244,33 @@ static int tiff_decode_tag(TiffContext *s, uint8_t *start, uint8_t *buf, uint8_t
                 s->bpp = -1;
             }
         }
-        if(s->bpp != 24){
-            av_log(s->avctx, AV_LOG_ERROR, "Only RGB24 is supported\n");
+        switch(s->bpp){
+        case 8:
+            s->avctx->pix_fmt = PIX_FMT_PAL8;
+            break;
+        case 24:
+            s->avctx->pix_fmt = PIX_FMT_RGB24;
+            break;
+        default:
+            av_log(s->avctx, AV_LOG_ERROR, "Only RGB24 is supported (this bpp=%i)\n", s->bpp);
             return -1;
+        }
+        if(s->width != s->avctx->width || s->height != s->avctx->height){
+            if(avcodec_check_dimensions(s->avctx, s->width, s->height))
+                return -1;
+            avcodec_set_dimensions(s->avctx, s->width, s->height);
+        }
+        if(s->picture.data[0])
+            s->avctx->release_buffer(s->avctx, &s->picture);
+        if(s->avctx->get_buffer(s->avctx, &s->picture) < 0){
+            av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+            return -1;
+        }
+        if(s->bpp == 8){
+            /* make default grayscale pal */
+            pal = s->picture.data[1];
+            for(i = 0; i < 256; i++)
+                pal[i] = i * 0x010101;
         }
         break;
     case TIFF_COMPR:
@@ -364,6 +379,33 @@ static int tiff_decode_tag(TiffContext *s, uint8_t *start, uint8_t *buf, uint8_t
             }
         }
         break;
+    case TIFF_INVERT:
+        switch(value){
+        case 0:
+            s->invert = 1;
+            break;
+        case 1:
+            s->invert = 0;
+            break;
+        }
+        break;
+    case TIFF_PAL:
+        if(s->avctx->pix_fmt != PIX_FMT_PAL8){
+            av_log(s->avctx, AV_LOG_ERROR, "Palette met but this is not palettized format\n");
+            return -1;
+        }
+        pal = s->picture.data[1];
+        off = (type == TIFF_SHORT) ? 2 : 1;
+        rp = buf;
+        gp = buf + count / 3 * off;
+        bp = buf + count / 3 * off * 2;
+        off = (type == TIFF_SHORT) ? 8 : 0;
+        for(i = 0; i < count / 3; i++){
+            j = (tget(&rp, type, s->le) >> off) << 16;
+            j |= (tget(&gp, type, s->le) >> off) << 8;
+            j |= tget(&bp, type, s->le) >> off;
+            pal[i] = j;
+        }
     }
     return 0;
 }
@@ -388,6 +430,7 @@ static int decode_frame(AVCodecContext *avctx,
         return -1;
     }
     s->le = le;
+    s->invert = 0;
     // As TIFF 6.0 specification puts it "An arbitrary but carefully chosen number
     // that further identifies the file as a TIFF file"
     if(tget_short(&buf, le) != 42){
@@ -408,6 +451,17 @@ static int decode_frame(AVCodecContext *avctx,
         buf += 12;
     }
 
+    if(s->invert){
+        uint8_t *src;
+        int j;
+
+        src = s->picture.data[0];
+        for(j = 0; j < s->height; j++){
+            for(i = 0; i < s->picture.linesize[0]; i++)
+                src[i] = 255 - src[i];
+            src += s->picture.linesize[0];
+        }
+    }
     *picture= *(AVFrame*)&s->picture;
     *data_size = sizeof(AVPicture);
 
