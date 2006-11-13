@@ -1298,15 +1298,15 @@ EOF
 # ---
 # check availability of some header files
 
-_memalign=no
+memalign=no
 malloc_h=no
 if check_header malloc.h; then
     malloc_h=yes
-    _memalign=yes
-    check_func memalign || _memalign="no"
+    memalign=yes
+    check_func memalign || memalign="no"
 fi
 
-if test "$_memalign" = "no" -a "$mmx" = "yes" -a \
+if test "$memalign" = "no" -a "$mmx" = "yes" -a \
         "$memalignhack" != "yes" -a "$targetos" != "Darwin" -a \
         "$targetos" != "FreeBSD" ; then
     die "Error, no memalign() but SSE enabled, disable it or use --enable-memalign-hack."
@@ -2106,7 +2106,7 @@ else
   echo "#undef  HAVE_MALLOC_H" >> $TMPH
 fi
 
-if test "$_memalign" = "yes" ; then
+if test "$memalign" = "yes" ; then
   echo "#define HAVE_MEMALIGN 1" >> $TMPH
 else
   echo "#undef  HAVE_MEMALIGN" >> $TMPH
