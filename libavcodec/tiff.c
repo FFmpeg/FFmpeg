@@ -282,6 +282,10 @@ static int tiff_decode_tag(TiffContext *s, uint8_t *start, uint8_t *buf, uint8_t
         case TIFF_CCITT_RLE:
             av_log(s->avctx, AV_LOG_ERROR, "CCITT RLE compression is not supported\n");
             return -1;
+        case TIFF_JPEG:
+        case TIFF_NEWJPEG:
+            av_log(s->avctx, AV_LOG_ERROR, "JPEG compression is not supported\n");
+            return -1;
         default:
             av_log(s->avctx, AV_LOG_ERROR, "Unknown compression method %i\n", s->compr);
             return -1;
