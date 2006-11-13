@@ -91,7 +91,6 @@ show_help(){
   echo "  --disable-network        disable network support [default=no]"
   echo "  --disable-ipv6           disable ipv6 support [default=no]"
   echo "  --disable-zlib           disable zlib [default=no]"
-  echo "  --disable-simple_idct    disable simple IDCT routines [default=no]"
   echo "  --disable-vhook          disable video hooking support"
   echo "  --enable-gprof           enable profiling with gprof [$gprof]"
   echo "  --disable-debug          disable debugging symbols"
@@ -456,7 +455,6 @@ extrawarnings="no"
 dostrip="yes"
 installstrip="-s"
 extralibs="-lm"
-simpleidct="yes"
 bigendian="no"
 inttypes="yes"
 emu_fast_int="no"
@@ -809,8 +807,6 @@ for opt do
     pkg_requires="$pkg_requires libraw1394"
   ;;
   --disable-vhook) vhook="no"
-  ;;
-  --disable-simple_idct) simpleidct="no"
   ;;
   --enable-mingw32) mingw32="yes"
   ;;
@@ -2131,10 +2127,6 @@ fi
 
 if test "$need_inet_aton" = "yes" ; then
   echo "NEED_INET_ATON=yes" >> config.mak
-fi
-
-if test "$simpleidct" = "yes" ; then
-  echo "#define SIMPLE_IDCT 1" >> $TMPH
 fi
 
 if test "$protocols" = "yes" ; then
