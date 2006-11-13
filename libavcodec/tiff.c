@@ -255,7 +255,7 @@ static int tiff_decode_tag(TiffContext *s, uint8_t *start, uint8_t *buf, uint8_t
             s->avctx->pix_fmt = PIX_FMT_RGB24;
             break;
         default:
-            av_log(s->avctx, AV_LOG_ERROR, "Only RGB24 is supported (this bpp=%i)\n", s->bpp);
+            av_log(s->avctx, AV_LOG_ERROR, "This format is not supported (bpp=%i)\n", s->bpp);
             return -1;
         }
         if(s->width != s->avctx->width || s->height != s->avctx->height){
