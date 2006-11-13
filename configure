@@ -1919,8 +1919,8 @@ fi
 
 # AC3
 if test "$a52" = "yes" ; then
-  echo "#define CONFIG_AC3 1" >> $TMPH
-  echo "CONFIG_AC3=yes" >> config.mak
+  echo "#define CONFIG_A52 1" >> $TMPH
+  echo "CONFIG_A52=yes" >> config.mak
 
   if test "$a52bin" = "yes" ; then
     echo "#define CONFIG_A52BIN 1" >> $TMPH

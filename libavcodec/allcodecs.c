@@ -469,7 +469,7 @@ void avcodec_register_all(void)
 #ifdef CONFIG_SONIC_DECODER
     register_avcodec(&sonic_decoder);
 #endif //CONFIG_SONIC_DECODER
-#ifdef CONFIG_AC3
+#ifdef CONFIG_A52
 #ifdef CONFIG_AC3_DECODER
     register_avcodec(&ac3_decoder);
 #endif //CONFIG_AC3_DECODER

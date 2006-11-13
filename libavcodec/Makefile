@@ -249,10 +249,10 @@ OBJS-$(CONFIG_LIBVORBIS)               += oggvorbis.o
 OBJS-$(CONFIG_LIBGSM)                  += libgsm.o
 
 # currently using liba52 for ac3 decoding
-OBJS-$(CONFIG_AC3)                     += a52dec.o
+OBJS-$(CONFIG_A52)                     += a52dec.o
 
 # using builtin liba52 or runtime linked liba52.so.0
-OBJS-$(CONFIG_AC3)$(CONFIG_A52BIN)     += liba52/bit_allocate.o \
+OBJS-$(CONFIG_A52)$(CONFIG_A52BIN)     += liba52/bit_allocate.o \
                                           liba52/bitstream.o    \
                                           liba52/downmix.o      \
                                           liba52/imdct.o        \
