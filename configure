@@ -1208,11 +1208,11 @@ if test $arch = "powerpc"; then
     fi
 fi
 
-check_header altivec.h && _altivec_h=yes || _altivec_h=no
+check_header altivec.h && altivec_h=yes || altivec_h=no
 
 # check if our compiler supports Motorola AltiVec C API
 if test $altivec = "yes"; then
-    if test $_altivec_h = "yes"; then
+    if test $altivec_h = "yes"; then
         inc_altivec_h="#include <altivec.h>"
     else
         inc_altivec_h=
@@ -1813,7 +1813,7 @@ fi
 if test "$altivec" = "yes" ; then
   echo "TARGET_ALTIVEC=yes" >> config.mak
   echo "#define HAVE_ALTIVEC 1" >> $TMPH
-  if test "$_altivec_h" = "yes" ; then
+  if test "$altivec_h" = "yes" ; then
     echo "#define HAVE_ALTIVEC_H 1" >> $TMPH
   else
     echo "#undef HAVE_ALTIVEC_H" >> $TMPH
