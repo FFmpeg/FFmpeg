@@ -484,10 +484,13 @@ static int vmdaudio_loadsound(VmdAudioContext *s, unsigned char *data,
         } else {
             if (s->bits == 16)
                 vmdaudio_decode_audio(s, data, buf, 1);
-            else
+            else {
                 /* copy the data but convert it to signed */
-                for (i = 0; i < s->block_align; i++)
-                    data[i * 2 + 1] = buf[i] + 0x80;
+                for (i = 0; i < s->block_align; i++){
+                    *data++ = buf[i] + 0x80;
+                    *data++ = buf[i] + 0x80;
+                }
+            }
         }
     } else {
         bytes_decoded = s->block_align * 2;
@@ -500,8 +503,10 @@ static int vmdaudio_loadsound(VmdAudioContext *s, unsigned char *data,
                 vmdaudio_decode_audio(s, data, buf, 0);
             } else {
                 /* copy the data but convert it to signed */
-                for (i = 0; i < s->block_align; i++)
-                    data[i * 2 + 1] = buf[i] + 0x80;
+                for (i = 0; i < s->block_align; i++){
+                    *data++ = buf[i] + 0x80;
+                    *data++ = buf[i] + 0x80;
+                }
             }
         }
     }
