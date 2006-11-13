@@ -387,6 +387,12 @@ static int tiff_decode_tag(TiffContext *s, uint8_t *start, uint8_t *buf, uint8_t
         case 1:
             s->invert = 0;
             break;
+        case 2:
+        case 3:
+            break;
+        default:
+            av_log(s->avctx, AV_LOG_ERROR, "Color mode %d is not supported\n", value);
+            return -1;
         }
         break;
     case TIFF_PAL:
