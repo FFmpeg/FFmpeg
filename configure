@@ -435,7 +435,7 @@ libgsm="no"
 mp3lame="no"
 libnut="no"
 libogg="no"
-vorbis="no"
+libvorbis="no"
 faad="no"
 faadbin="no"
 faac="no"
@@ -790,7 +790,7 @@ for opt do
   --enable-libogg) libogg="yes"
     pkg_requires="$pkg_requires ogg >= 1.1"
   ;;
-  --enable-vorbis) vorbis="yes"
+  --enable-vorbis) libvorbis="yes"
     pkg_requires="$pkg_requires vorbis vorbisenc"
   ;;
   --enable-faad) faad="yes"
@@ -963,7 +963,7 @@ EOF
     exit 1;
 fi
 
-if test "$vorbis" = "yes" ; then
+if test "$libvorbis" = "yes" ; then
     if test "$libogg" = "no"; then
         echo "libogg must be enabled to enable Vorbis."
         fail="yes"
@@ -1335,7 +1335,7 @@ fi
 enabled dts     && require libdts dts.h dts_init -ldts -lm
 enabled libgsm  && require libgsm gsm.h gsm_create -lgsm
 enabled mp3lame && require LAME lame/lame.h lame_init -lmp3lame -lm
-enabled vorbis  && require libvorbis vorbis/vorbisenc.h vorbis_info_init -lvorbis -lvorbisenc -logg
+enabled libvorbis && require libvorbis vorbis/vorbisenc.h vorbis_info_init -lvorbis -lvorbisenc -logg
 enabled libogg  && require libogg ogg/ogg.h ogg_sync_init -logg
 enabled libnut  && require libnut nut.h nut_demuxer_init -lnut
 enabled xvid    && require XviD xvid.h xvid_global -lxvidcore
@@ -1618,7 +1618,7 @@ echo "libgsm enabled   $libgsm"
 echo "mp3lame enabled  $mp3lame"
 echo "libnut enabled   $libnut"
 echo "libogg enabled   $libogg"
-echo "Vorbis enabled   $vorbis"
+echo "Vorbis enabled   $libvorbis"
 echo "FAAD enabled     $faad"
 echo "faadbin enabled  $faadbin"
 echo "FAAC enabled     $faac"
@@ -2027,7 +2027,7 @@ if test "$libogg" = "yes" ; then
   echo "CONFIG_LIBOGG=yes" >> config.mak
 fi
 
-if test "$vorbis" = "yes" ; then
+if test "$libvorbis" = "yes" ; then
   echo "#define CONFIG_LIBVORBIS 1" >> $TMPH
   echo "CONFIG_LIBVORBIS=yes" >> config.mak
 fi
