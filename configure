@@ -1972,11 +1972,11 @@ if test "$dc1394" = "yes" ; then
 fi
 
 if test "$dlopen" = "yes" ; then
-  echo "#define CONFIG_HAVE_DLOPEN 1" >> $TMPH
+  echo "#define HAVE_DLOPEN 1" >> $TMPH
 fi
 
 if test "$dlfcn" = "yes" ; then
-  echo "#define CONFIG_HAVE_DLFCN 1" >> $TMPH
+  echo "#define HAVE_DLFCN 1" >> $TMPH
 fi
 
 if test "$audio_oss" = "yes" ; then

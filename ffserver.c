@@ -37,7 +37,7 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <signal.h>
-#ifdef CONFIG_HAVE_DLFCN
+#ifdef HAVE_DLFCN
 #include <dlfcn.h>
 #endif
 
@@ -3706,7 +3706,7 @@ static int opt_video_codec(const char *arg)
 
 /* simplistic plugin support */
 
-#ifdef CONFIG_HAVE_DLOPEN
+#ifdef HAVE_DLOPEN
 static void load_module(const char *filename)
 {
     void *dll;
@@ -4377,7 +4377,7 @@ static int parse_ffconfig(const char *filename)
             redirect = NULL;
         } else if (!strcasecmp(cmd, "LoadModule")) {
             get_arg(arg, sizeof(arg), &p);
-#ifdef CONFIG_HAVE_DLOPEN
+#ifdef HAVE_DLOPEN
             load_module(arg);
 #else
             fprintf(stderr, "%s:%d: Module support not compiled into this version: '%s'\n",
