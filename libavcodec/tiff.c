@@ -35,6 +35,7 @@ enum TiffTags{
     TIFF_STRIP_OFFS = 0x111,
     TIFF_ROWSPERSTRIP = 0x116,
     TIFF_STRIP_SIZE,
+    TIFF_PLANAR = 0x11C,
     TIFF_XPOS = 0x11E,
     TIFF_YPOS = 0x11F,
     TIFF_PREDICTOR = 0x13D,
@@ -415,6 +416,13 @@ static int tiff_decode_tag(TiffContext *s, uint8_t *start, uint8_t *buf, uint8_t
             j |= tget(&bp, type, s->le) >> off;
             pal[i] = j;
         }
+        break;
+    case TIFF_PLANAR:
+        if(value == 2){
+            av_log(s->avctx, AV_LOG_ERROR, "Planar format is not supported\n");
+            return -1;
+        }
+        break;
     }
     return 0;
 }
