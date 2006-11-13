@@ -242,11 +242,12 @@ static int tiff_decode_tag(TiffContext *s, uint8_t *start, uint8_t *buf, uint8_t
         else{
             switch(type){
             case TIFF_BYTE:
-                s->bpp = (off & 0xFF) + ((off >> 8) & 0xFF) + ((off >> 16) & 0xFF);
+                s->bpp = (off & 0xFF) + ((off >> 8) & 0xFF) + ((off >> 16) & 0xFF) + ((off >> 24) & 0xFF);
                 break;
             case TIFF_SHORT:
             case TIFF_LONG:
-                s->bpp = tget(&buf, type, s->le) + tget(&buf, type, s->le) + tget(&buf, type, s->le);
+                s->bpp = 0;
+                for(i = 0; i < count; i++) s->bpp += tget(&buf, type, s->le);
                 break;
             default:
                 s->bpp = -1;
