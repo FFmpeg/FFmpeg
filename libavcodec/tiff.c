@@ -255,6 +255,14 @@ static int tiff_decode_tag(TiffContext *s, uint8_t *start, uint8_t *buf, uint8_t
         case 24:
             s->avctx->pix_fmt = PIX_FMT_RGB24;
             break;
+        case 16:
+            if(count == 1){
+                s->avctx->pix_fmt = PIX_FMT_GRAY16BE;
+            }else{
+                av_log(s->avctx, AV_LOG_ERROR, "This format is not supported (bpp=%i)\n", s->bpp);
+                return -1;
+            }
+            break;
         default:
             av_log(s->avctx, AV_LOG_ERROR, "This format is not supported (bpp=%i)\n", s->bpp);
             return -1;
