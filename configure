@@ -1299,9 +1299,9 @@ EOF
 # check availability of some header files
 
 _memalign=no
-_malloc_h=no
+malloc_h=no
 if check_header malloc.h; then
-    _malloc_h=yes
+    malloc_h=yes
     _memalign=yes
     check_func memalign || _memalign="no"
 fi
@@ -2100,7 +2100,7 @@ if test "$targetos" = "Darwin"; then
   echo "CONFIG_DARWIN=yes" >> config.mak
 fi
 
-if test "$_malloc_h" = "yes" ; then
+if test "$malloc_h" = "yes" ; then
   echo "#define HAVE_MALLOC_H 1" >> $TMPH
 else
   echo "#undef  HAVE_MALLOC_H" >> $TMPH
