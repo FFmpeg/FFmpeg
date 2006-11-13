@@ -467,7 +467,7 @@ dlopen="no"
 mpegaudio_hp="yes"
 SHFLAGS='-shared -Wl,-soname,$@'
 VHOOKSHFLAGS='$(SHFLAGS)'
-netserver="no"
+beos_netserver="no"
 need_inet_aton="no"
 protocols="yes"
 ffmpeg="yes"
@@ -530,7 +530,7 @@ audio_beos="yes"
 if (echo $BEINCLUDES|grep 'headers/be/bone' >/dev/null); then
 extralibs="-lbind -lsocket"
 else
-netserver="yes"
+beos_netserver="yes"
 need_inet_aton="yes"
 extralibs="-lnet"
 fi ;;
@@ -2124,7 +2124,7 @@ if test "$byteswap_h" = "yes"; then
   echo "#define HAVE_BYTESWAP_H 1" >> $TMPH
 fi
 
-if test "$netserver" = "yes" ; then
+if test "$beos_netserver" = "yes" ; then
   echo "#define CONFIG_BEOS_NETSERVER 1" >> $TMPH
   echo "CONFIG_BEOS_NETSERVER=yes" >> config.mak
 fi
