@@ -490,7 +490,7 @@ amr_nb="no"
 amr_wb="no"
 amr_nb_fixed="no"
 amr_if2="no"
-sunmlib="no"
+mlib="no"
 pthreads="no"
 swscaler="no"
 gpl="no"
@@ -846,7 +846,7 @@ for opt do
   ;;
   --enable-amr_if2) amr="yes"; amr_if2="yes"
   ;;
-  --enable-sunmlib) sunmlib="yes"
+  --enable-sunmlib) mlib="yes"
   ;;
   --enable-pthreads) pthreads="yes"
   ;;
@@ -1337,7 +1337,7 @@ enabled libnut  && require libnut nut.h nut_demuxer_init -lnut
 enabled xvid    && require XviD xvid.h xvid_global -lxvidcore
 enabled x264    && require x264 x264.h x264_encoder_open -lx264
 enabled dc1394  && require libdc1394 libdc1394/dc1394_control.h dc1394_create_handle -ldc1394_control -lraw1394
-enabled sunmlib && require mediaLib mlib_types.h mlib_VectorSub_S16_U8_Mod -lmlib
+enabled mlib    && require mediaLib mlib_types.h mlib_VectorSub_S16_U8_Mod -lmlib
 
 # Ugh, faac uses stdcall calling convention on win32 so we can't use
 # the generic test functions
@@ -1641,7 +1641,7 @@ if test "$vhook" = "yes"; then
     echo "Imlib2 support   $imlib2"
     echo "FreeType support $freetype2"
 fi
-echo "Sun medialib support"  $sunmlib
+echo "Sun medialib support"  $mlib
 echo "pthreads support"      $pthreads
 echo "AMR-NB float support"  $amr_nb
 echo "AMR-NB fixed support"  $amr_nb_fixed
@@ -1831,7 +1831,7 @@ fi
 if test "$freetype2" = "yes" ; then
   echo "HAVE_FREETYPE2=yes" >> config.mak
 fi
-if test "$sunmlib" = "yes" ; then
+if test "$mlib" = "yes" ; then
   echo "HAVE_MLIB=yes" >> config.mak
   echo "#define HAVE_MLIB 1" >> $TMPH
 fi
