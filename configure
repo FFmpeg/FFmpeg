@@ -324,12 +324,6 @@ require(){
     check_lib $header $func "$@" || die "ERROR: $name not found"
 }
 
-filter_out(){
-    pattern="$1"
-    shift
-    echo "$@" | sed "s%\\<$pattern\\>%%g"
-}
-
 # set temporary file name
 if test ! -z "$TMPDIR" ; then
     TMPDIR1="${TMPDIR}"
