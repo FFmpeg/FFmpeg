@@ -110,10 +110,6 @@ static int tiff_unpack_strip(TiffContext *s, uint8_t* dst, int stride, uint8_t *
 
     if(s->compr == TIFF_DEFLATE || s->compr == TIFF_ADOBE_DEFLATE){
         outlen = width * lines;
-        if(lines != s->height){
-            av_log(s->avctx, AV_LOG_ERROR, "This decoder won't decode ZLib-packed TIFF with %i lines per strip\n", lines);
-            return -1;
-        }
         zbuf = av_malloc(outlen);
         if(uncompress(zbuf, &outlen, src, size) != Z_OK){
             av_log(s->avctx, AV_LOG_ERROR, "Uncompressing failed (%lu of %lu)\n", outlen, (unsigned long)width * lines);
