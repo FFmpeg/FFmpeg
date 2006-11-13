@@ -62,6 +62,11 @@ enum TiffTypes{
     TIFF_LONGLONG
 };
 
+/** sizes of various TIFF field types */
+static const int type_sizes[6] = {
+    0, 1, 100, 2, 4, 8
+};
+
 typedef struct TiffContext {
     AVCodecContext *avctx;
     AVFrame picture;
@@ -208,6 +213,8 @@ static int tiff_decode_tag(TiffContext *s, uint8_t *start, uint8_t *buf, uint8_t
             value = -1;
             buf = start + off;
         }
+    }else if(type_sizes[type] * count <= 4){
+        buf -= 4;
     }else{
         buf = start + off;
     }
@@ -397,11 +404,11 @@ static int tiff_decode_tag(TiffContext *s, uint8_t *start, uint8_t *buf, uint8_t
             return -1;
         }
         pal = s->picture.data[1];
-        off = (type == TIFF_SHORT) ? 2 : 1;
+        off = type_sizes[type];
         rp = buf;
         gp = buf + count / 3 * off;
         bp = buf + count / 3 * off * 2;
-        off = (type == TIFF_SHORT) ? 8 : 0;
+        off = (type_sizes[type] - 1) << 3;
         for(i = 0; i < count / 3; i++){
             j = (tget(&rp, type, s->le) >> off) << 16;
             j |= (tget(&gp, type, s->le) >> off) << 8;
