@@ -1104,6 +1104,17 @@ int MPV_encode_init(AVCodecContext *avctx)
         return -1;
     }
 
+    if(s->flags & CODEC_FLAG_LOW_DELAY){
+        if (s->codec_id != CODEC_ID_MPEG2VIDEO && s->codec_id != CODEC_ID_MPEG1VIDEO){
+            av_log(avctx, AV_LOG_ERROR, "low delay forcing is only available for mpeg1/2\n");
+            return -1;
+        }
+        if (s->max_b_frames != 0){
+            av_log(avctx, AV_LOG_ERROR, "b frames cannot be used with low delay\n");
+            return -1;
+        }
+    }
+
     if(s->avctx->thread_count > 1 && s->codec_id != CODEC_ID_MPEG4
        && s->codec_id != CODEC_ID_MPEG1VIDEO && s->codec_id != CODEC_ID_MPEG2VIDEO
        && (s->codec_id != CODEC_ID_H263P || !(s->flags & CODEC_FLAG_H263P_SLICE_STRUCT))){
@@ -1169,12 +1180,12 @@ int MPV_encode_init(AVCodecContext *avctx)
     switch(avctx->codec->id) {
     case CODEC_ID_MPEG1VIDEO:
         s->out_format = FMT_MPEG1;
-        s->low_delay= 0; //s->max_b_frames ? 0 : 1;
+        s->low_delay= !!(s->flags & CODEC_FLAG_LOW_DELAY);
         avctx->delay= s->low_delay ? 0 : (s->max_b_frames + 1);
         break;
     case CODEC_ID_MPEG2VIDEO:
         s->out_format = FMT_MPEG1;
-        s->low_delay= 0; //s->max_b_frames ? 0 : 1;
+        s->low_delay= !!(s->flags & CODEC_FLAG_LOW_DELAY);
         avctx->delay= s->low_delay ? 0 : (s->max_b_frames + 1);
         s->rtp_mode= 1;
         break;
