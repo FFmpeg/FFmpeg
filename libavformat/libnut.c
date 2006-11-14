@@ -198,7 +198,8 @@ static int nut_read_header(AVFormatContext * avf, AVFormatParameters * ap) {
             .file_pos = 0,
         },
         .alloc = { av_malloc, av_realloc, av_free },
-        .read_index = 1
+        .read_index = 1,
+        .cache_syncpoints = 1,
     };
     nut_context_t * nut = priv->nut = nut_demuxer_init(&dopts);
     nut_stream_header_t * s;
