@@ -1422,7 +1422,7 @@ fi
 
 
 # test for lrintf in math.h
-check_exec <<EOF && have_lrintf=yes || have_lrintf=no
+check_exec <<EOF && lrintf=yes || lrintf=no
 #define _ISOC9X_SOURCE  1
 #include <math.h>
 int main( void ) { return (lrintf(3.999f) > 0)?0:1; }
