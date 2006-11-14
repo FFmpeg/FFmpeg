@@ -2166,6 +2166,11 @@ static int mp_decode_layer3(MPADecodeContext *s)
             g = &granules[ch][gr];
             g->part2_3_length = get_bits(&s->gb, 12);
             g->big_values = get_bits(&s->gb, 9);
+            if(g->big_values > 288){
+                av_log(NULL, AV_LOG_ERROR, "big_values too big\n");
+                return -1;
+            }
+
             g->global_gain = get_bits(&s->gb, 8);
             /* if MS stereo only is selected, we precompute the
                1/sqrt(2) renormalization factor */
@@ -2179,8 +2184,10 @@ static int mp_decode_layer3(MPADecodeContext *s)
             blocksplit_flag = get_bits(&s->gb, 1);
             if (blocksplit_flag) {
                 g->block_type = get_bits(&s->gb, 2);
-                if (g->block_type == 0)
+                if (g->block_type == 0){
+                    av_log(NULL, AV_LOG_ERROR, "invalid block type\n");
                     return -1;
+                }
                 g->switch_point = get_bits(&s->gb, 1);
                 for(i=0;i<2;i++)
                     g->table_select[i] = get_bits(&s->gb, 5);
