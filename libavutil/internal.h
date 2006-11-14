@@ -100,6 +100,8 @@
 
 #define av_abort()      do { av_log(NULL, AV_LOG_ERROR, "Abort at %s:%d\n", __FILE__, __LINE__); abort(); } while (0)
 
+/* math */
+
 extern const uint32_t ff_inverse[256];
 
 #if defined(ARCH_X86)
@@ -130,7 +132,6 @@ extern const uint32_t ff_inverse[256];
 #    define FASTDIV(a,b)   ((a)/(b))
 #endif
 
-/* math */
 extern FF_IMPORT_ATTR const uint8_t ff_sqrt_tab[128];
 
 static inline int ff_sqrt(int a)
