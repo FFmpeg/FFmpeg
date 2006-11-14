@@ -127,6 +127,7 @@ Codecs:
   h263*                                 Michael Niedermayer
   huffyuv.c                             Michael Niedermayer
   idcinvideo.c                          Mike Melanson
+  imc*                                  Benjamin Larsson
   indeo2*                               Kostya Shishkov
   interplayvideo.c                      Mike Melanson
   jpeg_ls.c                             Kostya Shishkov
