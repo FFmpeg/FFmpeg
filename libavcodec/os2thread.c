@@ -25,8 +25,6 @@
 #include "avcodec.h"
 #include "common.h"
 
-#ifdef HAVE_THREADS
-
 #define INCL_DOS
 #define INCL_DOSERRORS
 #define INCL_DOSDEVIOCTL
@@ -147,4 +145,3 @@ fail:
     avcodec_thread_free(s);
     return -1;
 }
-#endif
