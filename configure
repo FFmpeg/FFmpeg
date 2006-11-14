@@ -353,7 +353,7 @@ require(){
     check_lib $header $func "$@" || die "ERROR: $name not found"
 }
 
-CONFIG_LIST='encoders decoders parsers muxers demuxers a52 a52bin amr amr_nb amr_nb_fixed amr_wb audio_beos audio_oss avisynth beos_netserver bktr dc1394 dts dv1394 faac faad faadbin ffmpeg ffplay ffserver gpl ipv6 libgsm libnut libogg libvorbis mp3lame mpegaudio_hp network pp protocols swscaler vhook video4linux video4linux2 x264 xvid zlib'
+CONFIG_LIST='encoders decoders parsers muxers demuxers a52 a52bin amr amr_nb amr_nb_fixed amr_wb audio_beos audio_oss avisynth beos_netserver bktr dc1394 dts dv1394 faac faad faadbin ffmpeg ffplay ffserver gpl ipv6 libgsm libnut libogg libvorbis memalign_hack mp3lame mpegaudio_hp network pp protocols swscaler vhook video4linux video4linux2 x264 xvid zlib'
 
 HAVE_LIST='altivec_h byteswap_h dcbzl dlfcn dlopen freetype2 gprof imlib2 localtime_r lrintf malloc_h memalign mlib sdl sdl_video_size'
 
@@ -528,7 +528,7 @@ mlib="no"
 pthreads="no"
 swscaler="no"
 gpl="no"
-memalignhack="no"
+memalign_hack="no"
 asmalign_pot="unknown"
 LIB_INSTALL_EXTRA_CMD='$(RANLIB) "$(libdir)/$(LIB)"'
 
@@ -888,7 +888,7 @@ for opt do
   ;;
   --enable-gpl) gpl="yes"
   ;;
-  --enable-memalign-hack) memalignhack="yes"
+  --enable-memalign-hack) memalign_hack="yes"
   ;;
   --disable-strip) dostrip="no"
   ;;
@@ -1341,7 +1341,7 @@ if check_header malloc.h; then
 fi
 
 if test "$memalign" = "no" -a "$mmx" = "yes" -a \
-        "$memalignhack" != "yes" -a "$targetos" != "Darwin" -a \
+        "$memalign_hack" != "yes" -a "$targetos" != "Darwin" -a \
         "$targetos" != "FreeBSD" ; then
     die "Error, no memalign() but SSE enabled, disable it or use --enable-memalign-hack."
 fi
@@ -1934,10 +1934,6 @@ fi
 if test "$targetos" = "Darwin"; then
   echo "#define CONFIG_DARWIN 1"  >> $TMPH
   echo "CONFIG_DARWIN=yes" >> config.mak
-fi
-
-if test "$memalignhack" = "yes" ; then
-  echo "#define MEMALIGN_HACK 1" >> $TMPH
 fi
 
 if test "$need_inet_aton" = "yes" ; then

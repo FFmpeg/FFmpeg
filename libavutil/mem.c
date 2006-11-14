@@ -47,7 +47,7 @@
 void *av_malloc(unsigned int size)
 {
     void *ptr;
-#ifdef MEMALIGN_HACK
+#ifdef CONFIG_MEMALIGN_HACK
     long diff;
 #endif
 
@@ -55,7 +55,7 @@ void *av_malloc(unsigned int size)
     if(size > (INT_MAX-16) )
         return NULL;
 
-#ifdef MEMALIGN_HACK
+#ifdef CONFIG_MEMALIGN_HACK
     ptr = malloc(size+16);
     if(!ptr)
         return ptr;
@@ -103,7 +103,7 @@ void *av_malloc(unsigned int size)
  */
 void *av_realloc(void *ptr, unsigned int size)
 {
-#ifdef MEMALIGN_HACK
+#ifdef CONFIG_MEMALIGN_HACK
     int diff;
 #endif
 
@@ -111,7 +111,7 @@ void *av_realloc(void *ptr, unsigned int size)
     if(size > (INT_MAX-16) )
         return NULL;
 
-#ifdef MEMALIGN_HACK
+#ifdef CONFIG_MEMALIGN_HACK
     //FIXME this isn't aligned correctly, though it probably isn't needed
     if(!ptr) return av_malloc(size);
     diff= ((char*)ptr)[-1];
@@ -130,7 +130,7 @@ void av_free(void *ptr)
 {
     /* XXX: this test should not be needed on most libcs */
     if (ptr)
-#ifdef MEMALIGN_HACK
+#ifdef CONFIG_MEMALIGN_HACK
         free(ptr - ((char*)ptr)[-1]);
 #else
         free(ptr);
