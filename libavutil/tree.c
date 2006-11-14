@@ -134,7 +134,7 @@ int cmp(const void *a, const void *b){
 
 int main(){
     int i,j,k;
-    AVTreeNode *root= av_mallocz(sizeof(AVTreeNode));
+    AVTreeNode *root= NULL;
 
     for(i=0; i<10000; i++){
         int j= (random()%863294);
