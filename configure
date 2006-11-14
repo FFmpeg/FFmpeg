@@ -162,6 +162,7 @@ EOF
     exit 1
 }
 
+# "tr '[a-z]' '[A-Z]'" is a workaround for Solaris tr not grokking "tr a-z A-Z"
 toupper(){
     echo "$@" | tr '[a-z]' '[A-Z]'
 }
@@ -2036,7 +2037,6 @@ else
 fi
 
 
-# "tr '[a-z]' '[A-Z]'" is a workaround for Solaris tr not grokking "tr a-z A-Z"
 for codec in $DECODER_LIST $ENCODER_LIST $PARSER_LIST $DEMUXER_LIST $MUXER_LIST; do
     ucname="`toupper $codec`"
     config_name="CONFIG_$ucname"
