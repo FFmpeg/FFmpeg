@@ -754,6 +754,40 @@ It allows almost lossless encoding.
 
 @end itemize
 
+
+@chapter external libraries
+
+FFmpeg can be hooked up with a number of external libraries to add support
+for more formats.
+
+@section AMR
+
+AMR comes in two different flavors, WB and NB. FFmpeg can make use of the
+AMR WB (floating-point mode) and the AMR NB (both floating-point and
+fixed-point mode) reference decoders and encoders.
+
+@itemize
+
+@item For AMR WB floating-point download TS26.204 V5.1.0 from
+@url{http://www.3gpp.org/ftp/Specs/archive/26_series/26.204/26204-510.zip}
+and extract the source to @file{libavcodec/amrwb_float/}.
+
+@item For AMR NB floating-point download TS26.104 REL-5 V5.1.0 from
+@url{http://www.3gpp.org/ftp/Specs/archive/26_series/26.104/26104-510.zip}
+and extract the source to @file{libavcodec/amr_float/}.
+If you try this on Alpha, you may need to change @code{Word32} to
+@code{int} in @file{amr/typedef.h}.
+
+@item For AMR NB fixed-point download TS26.073 REL-5 V5.1.0 from
+@url{http://www.3gpp.org/ftp/Specs/archive/26_series/26.073/26073-510.zip}
+and extract the source to @file{libavcodec/amr}.
+You must also add @code{-DMMS_IO} and remove @code{-pedantic-errors}
+to/from @code{CFLAGS} in @file{libavcodec/amr/makefile}, i.e.
+``@code{CFLAGS = -Wall -I. \$(CFLAGS_\$(MODE)) -D\$(VAD) -DMMS_IO}''.
+
+@end itemize
+
+
 @chapter Supported File Formats and Codecs
 
 You can use the @code{-formats} option to have an exhaustive list.
