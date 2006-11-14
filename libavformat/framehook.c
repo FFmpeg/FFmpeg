@@ -23,7 +23,7 @@
 #include "avformat.h"
 #include "framehook.h"
 
-#ifdef HAVE_DLFCN
+#ifdef HAVE_DLFCN_H
 #include <dlfcn.h>
 #endif
 

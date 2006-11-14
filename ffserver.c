@@ -37,7 +37,7 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <signal.h>
-#ifdef HAVE_DLFCN
+#ifdef HAVE_DLFCN_H
 #include <dlfcn.h>
 #endif
 

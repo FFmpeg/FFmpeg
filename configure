@@ -424,7 +424,7 @@ HAVE_LIST='
     beosthreads
     byteswap_h
     dcbzl
-    dlfcn
+    dlfcn_h
     dlopen
     freetype2
     gprof
@@ -578,7 +578,7 @@ extralibs="-lm"
 bigendian="no"
 vhook="default"
 avisynth="no"
-dlfcn="no"
+dlfcn_h="no"
 dlopen="no"
 mpegaudio_hp="yes"
 SHFLAGS='-shared -Wl,-soname,$@'
@@ -1509,7 +1509,7 @@ done
 
 # dlopen/dlfcn.h probing
 
-check_header dlfcn.h && dlfcn=yes
+check_header dlfcn.h && dlfcn_h=yes
 
 temp_extralibs -ldl
 if check_func dlopen; then
