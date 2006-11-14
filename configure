@@ -402,6 +402,7 @@ CONFIG_LIST='
 
 HAVE_LIST='
     altivec_h
+    beosthreads
     byteswap_h
     dcbzl
     dlfcn
@@ -414,8 +415,12 @@ HAVE_LIST='
     malloc_h
     memalign
     mlib
+    os2threads
+    pthreads
     sdl
     sdl_video_size
+    threads
+    w32threads
 '
 
 # set temporary file name
@@ -618,6 +623,7 @@ video4linux2="no"
 dv1394="no"
 # enable BeOS things
 audio_beos="yes"
+beosthreads="yes"
 # no need for libm, but the inet stuff
 # Check for BONE
 if (echo $BEINCLUDES|grep 'headers/be/bone' >/dev/null); then
@@ -761,7 +767,7 @@ dv1394="no"
 ffserver="no"
 vhook="no"
 os2="yes"
-
+os2threads="yes"
 ;;
 *)
 targetos="${targetos}-UNKNOWN"
@@ -1019,6 +1025,9 @@ EOF
     dc1394="no"
     ffserver="no"
     network="no"
+    if enabled mingw32; then
+        w32threads="yes"
+    fi
     if test "$mingwce" = "yes"; then
         protocols="no"
     fi
@@ -1931,11 +1940,6 @@ if test "$altivec" = "yes" ; then
   echo "#define HAVE_ALTIVEC 1" >> $TMPH
 fi
 
-if test "$pthreads" = "yes" ; then
-  echo "HAVE_PTHREADS=yes" >> config.mak
-  echo "#define HAVE_PTHREADS 1" >> $TMPH
-  echo "#define HAVE_THREADS 1" >> $TMPH
-fi
 if test "$sdl" = "yes" ; then
   echo "SDL_LIBS=`"${SDL_CONFIG}" --libs`" >> config.mak
   echo "SDL_CFLAGS=`"${SDL_CONFIG}" --cflags`" >> config.mak
@@ -1979,13 +1983,12 @@ enabled_any $DECODER_LIST && enable decoders
 enabled_any $MUXER_LIST   && enable muxers
 enabled_any $DEMUXER_LIST && enable demuxers
 
+enabled_any pthreads beosthreads os2threads w32threads && enable threads
+
 print_config HAVE_   $TMPH config.mak $HAVE_LIST
 print_config CONFIG_ $TMPH config.mak $CONFIG_LIST
 
 if test "$mingw32" = "yes" ; then
-  echo "HAVE_W32THREADS=yes" >> config.mak
-  echo "#define HAVE_W32THREADS 1" >> $TMPH
-  echo "#define HAVE_THREADS 1" >> $TMPH
   echo "#ifndef __MINGW32__" >> $TMPH
   echo "#define __MINGW32__ 1" >> $TMPH
   echo "#endif" >> $TMPH
@@ -2000,15 +2003,6 @@ fi
 
 if test "$os2" = "yes" ; then
   echo "#define CONFIG_OS2 1" >> $TMPH
-  echo "HAVE_OS2THREADS=yes" >> config.mak
-  echo "#define HAVE_OS2THREADS 1" >> $TMPH
-  echo "#define HAVE_THREADS 1" >> $TMPH
-fi
-
-if test "$targetos" = "BeOS" ; then
-  echo "HAVE_BEOSTHREADS=yes" >> config.mak
-  echo "#define HAVE_BEOSTHREADS 1" >> $TMPH
-  echo "#define HAVE_THREADS 1" >> $TMPH
 fi
 
 if test "$targetos" = "Darwin"; then
