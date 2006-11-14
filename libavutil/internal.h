@@ -51,6 +51,7 @@
 
 #    ifdef CONFIG_WINCE
 #        define perror(a)
+#        define abort()
 #    endif
 
 /* __MINGW32__ end */
@@ -95,10 +96,6 @@
 #    define dprintf(fmt,...) av_log(NULL, AV_LOG_DEBUG, fmt, __VA_ARGS__)
 #else
 #    define dprintf(fmt,...)
-#endif
-
-#ifdef CONFIG_WINCE
-#    define abort()
 #endif
 
 #define av_abort()      do { av_log(NULL, AV_LOG_ERROR, "Abort at %s:%d\n", __FILE__, __LINE__); abort(); } while (0)
