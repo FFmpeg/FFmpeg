@@ -21,6 +21,7 @@
  *
  */
 
+#include "tree.h"
 #include "nut.h"
 
 #undef NDEBUG
@@ -432,11 +433,29 @@ static int decode_info_header(NUTContext *nut){
     return 0;
 }
 
-static int decode_syncpoint(NUTContext *nut){
+int sp_pos_cmp(syncpoint_t *a, syncpoint_t *b){
+    return (a->pos - b->pos>>32) - (b->pos - a->pos>>32);
+}
+
+int sp_pts_cmp(syncpoint_t *a, syncpoint_t *b){
+    return (a->ts - b->ts>>32) - (b->ts - a->ts>>32);
+}
+
+static void add_sp(NUTContext *nut, int64_t pos, int64_t back_ptr, int64_t ts){
+    syncpoint_t *sp2, *sp= av_mallocz(sizeof(syncpoint_t));
+
+    sp->pos= pos;
+    sp->back_ptr= back_ptr;
+    sp->ts= ts;
+    sp2= av_tree_insert(&nut->syncpoints, sp, sp_pos_cmp);
+    if(sp2 && sp2 != sp)
+        av_free(sp);
+}
+
+static int decode_syncpoint(NUTContext *nut, int64_t *ts, int64_t *back_ptr){
     AVFormatContext *s= nut->avf;
     ByteIOContext *bc = &s->pb;
-    int64_t end;
-    uint64_t tmp;
+    int64_t end, tmp;
     int i;
     AVRational time_base;
 
@@ -446,7 +465,9 @@ static int decode_syncpoint(NUTContext *nut){
     end += url_ftell(bc);
 
     tmp= get_v(bc);
-    get_v(bc); //back_ptr_div16
+    *back_ptr= nut->last_syncpoint_pos - 16*get_v(bc);
+    if(*back_ptr < 0)
+        return -1;
 
     time_base= nut->time_base[tmp % nut->time_base_count];
     for(i=0; i<s->nb_streams; i++){
@@ -463,6 +484,10 @@ static int decode_syncpoint(NUTContext *nut){
         av_log(s, AV_LOG_ERROR, "sync point checksum mismatch\n");
         return -1;
     }
+
+    *ts= tmp / s->nb_streams * av_q2d(nut->time_base[tmp % s->nb_streams])*AV_TIME_BASE;
+    add_sp(nut, nut->last_syncpoint_pos, *back_ptr, *ts);
+
     return 0;
 }
 
@@ -715,6 +740,7 @@ static int nut_read_packet(AVFormatContext *s, AVPacket *pkt)
     NUTContext *nut = s->priv_data;
     ByteIOContext *bc = &s->pb;
     int i, frame_code=0, ret, skip;
+    int64_t ts, back_ptr;
 
     for(;;){
         int64_t pos= url_ftell(bc);
@@ -746,7 +772,7 @@ static int nut_read_packet(AVFormatContext *s, AVPacket *pkt)
                 goto resync;
             break;
         case SYNCPOINT_STARTCODE:
-            if(decode_syncpoint(nut)<0)
+            if(decode_syncpoint(nut, &ts, &back_ptr)<0)
                 goto resync;
             frame_code = get_byte(bc);
         case 0:
@@ -770,7 +796,7 @@ av_log(s, AV_LOG_DEBUG, "sync\n");
 static int64_t nut_read_timestamp(AVFormatContext *s, int stream_index, int64_t *pos_arg, int64_t pos_limit){
     NUTContext *nut = s->priv_data;
     ByteIOContext *bc = &s->pb;
-    int64_t pos, pts;
+    int64_t pos, pts, back_ptr;
     int frame_code, stream_id,size, flags;
 av_log(s, AV_LOG_DEBUG, "read_timestamp(X,%d,%"PRId64",%"PRId64")\n", stream_index, *pos_arg, pos_limit);
 
@@ -783,10 +809,15 @@ resync:
             av_log(s, AV_LOG_ERROR, "read_timestamp failed\n");
             return AV_NOPTS_VALUE;
         }
-    }while(decode_syncpoint(nut) < 0);
+    }while(decode_syncpoint(nut, &pts, &back_ptr) < 0);
     *pos_arg = pos-1;
     assert(nut->last_syncpoint_pos == *pos_arg);
 
+    av_log(s, AV_LOG_DEBUG, "return %Ld %Ld\n", pts,back_ptr );
+    if     (stream_index == -1) return pts;
+    else if(stream_index == -2) return back_ptr;
+
+assert(0);
     do{
         frame_code= get_byte(bc);
         if(frame_code == 'N'){
@@ -805,6 +836,45 @@ resync:
     av_log(s, AV_LOG_DEBUG, "read_timestamp success\n");
 
     return pts;
+}
+
+static int read_seek(AVFormatContext *s, int stream_index, int64_t pts, int flags){
+    NUTContext *nut = s->priv_data;
+    AVStream *st= s->streams[stream_index];
+    syncpoint_t dummy={.ts= pts*av_q2d(st->time_base)*AV_TIME_BASE};
+    syncpoint_t nopts_sp= {.ts= AV_NOPTS_VALUE, .back_ptr= AV_NOPTS_VALUE};
+    syncpoint_t *sp, *next_node[2]= {&nopts_sp, &nopts_sp};
+    int64_t pos, pos2, ts;
+
+    av_tree_find(nut->syncpoints, &dummy, sp_pts_cmp, next_node);
+    av_log(s, AV_LOG_DEBUG, "%Ld-%Ld %Ld-%Ld\n", next_node[0]->pos, next_node[1]->pos,
+                                                 next_node[0]->ts , next_node[1]->ts);
+    pos= av_gen_search(s, -1, dummy.ts, next_node[0]->pos, next_node[1]->pos, next_node[1]->pos,
+                                        next_node[0]->ts , next_node[1]->ts, AVSEEK_FLAG_BACKWARD, &ts, nut_read_timestamp);
+
+    if(!(flags & AVSEEK_FLAG_BACKWARD)){
+        dummy.pos= pos+16;
+        next_node[1]= &nopts_sp;
+        av_tree_find(nut->syncpoints, &dummy, sp_pos_cmp, next_node);
+        pos2= av_gen_search(s, -2, dummy.pos, next_node[0]->pos     , next_node[1]->pos, next_node[1]->pos,
+                                              next_node[0]->back_ptr, next_node[1]->back_ptr, flags, &ts, nut_read_timestamp);
+        if(pos2>=0)
+            pos= pos2;
+        //FIXME dir but i think it doesnt matter
+    }
+    dummy.pos= pos;
+    sp= av_tree_find(nut->syncpoints, &dummy, sp_pos_cmp, NULL);
+
+    assert(sp);
+
+    av_log(NULL, AV_LOG_DEBUG, "SEEKTO: %"PRId64"\n", sp->back_ptr);
+    pos= find_startcode(&s->pb, SYNCPOINT_STARTCODE, sp->back_ptr - 15);
+    url_fseek(&s->pb, pos, SEEK_SET);
+    av_log(NULL, AV_LOG_DEBUG, "SP: %"PRId64"\n", pos);
+    if(sp->back_ptr - 15 > pos || sp->back_ptr < pos){
+        av_log(NULL, AV_LOG_ERROR, "no syncpoint at backptr pos\n");
+    }
+    return 0;
 }
 
 static int nut_read_close(AVFormatContext *s)
@@ -826,8 +896,8 @@ AVInputFormat nut_demuxer = {
     nut_read_header,
     nut_read_packet,
     nut_read_close,
-    NULL,
-    nut_read_timestamp,
+    read_seek,
+//    nut_read_timestamp,
     .extensions = "nut",
 };
 #endif

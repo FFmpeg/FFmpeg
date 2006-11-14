@@ -50,9 +50,10 @@ typedef enum{
 }flag_t;
 
 typedef struct {
-    uint32_t pos; //64gb limit if div16 (change this to 64 if thats too little)
-    uint64_t global_key_pts;
-    uint32_t back_ptr_div16; //is stored /16
+    uint64_t pos;
+    uint64_t back_ptr;
+//    uint64_t global_key_pts;
+    int64_t ts;
 } syncpoint_t;
 
 typedef struct {
@@ -85,6 +86,7 @@ typedef struct {
     unsigned int time_base_count;
     int64_t last_syncpoint_pos;
     AVRational *time_base;
+    struct AVTreeNode *syncpoints;
 } NUTContext;
 
 
