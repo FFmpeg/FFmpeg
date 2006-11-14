@@ -687,6 +687,9 @@ static int decode_frame_header(NUTContext *nut, int *flags_ret, int64_t *pts, in
         get_v(bc);
     if(flags&FLAG_CHECKSUM){
         get_be32(bc); //FIXME check this
+    }else if(size > 2*nut->max_distance){
+        av_log(s, AV_LOG_ERROR, "frame size > 2max_distance and no checksum\n");
+        return -1;
     }
     *flags_ret= flags;
 
