@@ -633,7 +633,7 @@ static int nut_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
     s->data_offset= pos-8;
 
-    if(0 &&!url_is_streamed(bc)){
+    if(!url_is_streamed(bc)){
         int64_t orig_pos= url_ftell(bc);
         find_and_decode_index(nut);
         url_fseek(bc, orig_pos, SEEK_SET);
@@ -693,16 +693,6 @@ static int decode_frame_header(NUTContext *nut, int *flags_ret, int64_t *pts, in
 
     stc->last_pts= *pts;
     stc->last_key_frame= flags&FLAG_KEY; //FIXME change to last flags
-
-    if(flags&FLAG_KEY){
-        av_add_index_entry(
-            s->streams[*stream_id],
-            nut->last_syncpoint_pos,
-            *pts,
-            0,
-            0,
-            AVINDEX_KEYFRAME);
-    }
 
     return size;
 }
@@ -846,6 +836,14 @@ static int read_seek(AVFormatContext *s, int stream_index, int64_t pts, int flag
     syncpoint_t *sp, *next_node[2]= {&nopts_sp, &nopts_sp};
     int64_t pos, pos2, ts;
 
+    if(st->index_entries){
+        int index= av_index_search_timestamp(st, pts, flags);
+        if(index<0)
+            return -1;
+
+        pos2= st->index_entries[index].pos;
+        ts  = st->index_entries[index].timestamp;
+    }else{
     av_tree_find(nut->syncpoints, &dummy, sp_pts_cmp, next_node);
     av_log(s, AV_LOG_DEBUG, "%Ld-%Ld %Ld-%Ld\n", next_node[0]->pos, next_node[1]->pos,
                                                  next_node[0]->ts , next_node[1]->ts);
@@ -866,12 +864,13 @@ static int read_seek(AVFormatContext *s, int stream_index, int64_t pts, int flag
     sp= av_tree_find(nut->syncpoints, &dummy, sp_pos_cmp, NULL);
 
     assert(sp);
-
-    av_log(NULL, AV_LOG_DEBUG, "SEEKTO: %"PRId64"\n", sp->back_ptr);
-    pos= find_startcode(&s->pb, SYNCPOINT_STARTCODE, sp->back_ptr - 15);
+    pos2= sp->back_ptr  - 15;
+    }
+    av_log(NULL, AV_LOG_DEBUG, "SEEKTO: %"PRId64"\n", pos2);
+    pos= find_startcode(&s->pb, SYNCPOINT_STARTCODE, pos2);
     url_fseek(&s->pb, pos, SEEK_SET);
     av_log(NULL, AV_LOG_DEBUG, "SP: %"PRId64"\n", pos);
-    if(sp->back_ptr - 15 > pos || sp->back_ptr < pos){
+    if(pos2 > pos || pos2 + 15 < pos){
         av_log(NULL, AV_LOG_ERROR, "no syncpoint at backptr pos\n");
     }
     return 0;
