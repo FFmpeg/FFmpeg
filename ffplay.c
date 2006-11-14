@@ -1922,6 +1922,7 @@ static int decode_thread(void *arg)
             }else{
                 if (is->audio_stream >= 0) {
                     packet_queue_flush(&is->audioq);
+                    avcodec_flush_buffers(ic->streams[audio_index]->codec);
                 }
                 if (is->subtitle_stream >= 0) {
                     packet_queue_flush(&is->subtitleq);
