@@ -132,12 +132,10 @@ wininstaller: all install
 
 # install man from source dir if available
 install-man:
-ifneq ($(CONFIG_MINGW),yes)
 	if [ -f doc/ffmpeg.1 ] ; then \
 	    install -d "$(mandir)/man1" ; \
 	    install -m 644 $(MANPAGES) "$(mandir)/man1" ; \
 	fi
-endif
 
 install-vhook:
 	$(MAKE) -C vhook install
