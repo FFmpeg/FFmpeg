@@ -414,6 +414,10 @@ static int mov_read_hdlr(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
         st->codec->codec_type = CODEC_TYPE_AUDIO;
     else if(type == MKTAG('m', '1', 'a', ' '))
         st->codec->codec_id = CODEC_ID_MP2;
+    else if(type == MKTAG('s', 'u', 'b', 'p')) {
+        st->codec->codec_type = CODEC_TYPE_SUBTITLE;
+        st->codec->codec_id = CODEC_ID_DVD_SUBTITLE;
+    }
     get_be32(pb); /* component  manufacture */
     get_be32(pb); /* component flags */
     get_be32(pb); /* component flags mask */
