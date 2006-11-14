@@ -2060,6 +2060,12 @@ static const ConvertEntry convert_table[PIX_FMT_NB][PIX_FMT_NB] = {
         [PIX_FMT_RGB24] = {
             .convert = rgba32_to_rgb24
         },
+        [PIX_FMT_BGR24] = {
+            .convert = rgba32_to_bgr24
+        },
+        [PIX_FMT_RGB565] = {
+            .convert = rgba32_to_rgb565
+        },
         [PIX_FMT_RGB555] = {
             .convert = rgba32_to_rgb555
         },
@@ -2074,6 +2080,9 @@ static const ConvertEntry convert_table[PIX_FMT_NB][PIX_FMT_NB] = {
         },
     },
     [PIX_FMT_BGR24] = {
+        [PIX_FMT_RGBA32] = {
+            .convert = bgr24_to_rgba32
+        },
         [PIX_FMT_RGB24] = {
             .convert = bgr24_to_rgb24
         },
@@ -2099,6 +2108,9 @@ static const ConvertEntry convert_table[PIX_FMT_NB][PIX_FMT_NB] = {
         },
     },
     [PIX_FMT_RGB565] = {
+        [PIX_FMT_RGBA32] = {
+            .convert = rgb565_to_rgba32
+        },
         [PIX_FMT_RGB24] = {
             .convert = rgb565_to_rgb24
         },
