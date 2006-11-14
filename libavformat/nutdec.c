@@ -844,27 +844,27 @@ static int read_seek(AVFormatContext *s, int stream_index, int64_t pts, int flag
         pos2= st->index_entries[index].pos;
         ts  = st->index_entries[index].timestamp;
     }else{
-    av_tree_find(nut->syncpoints, &dummy, sp_pts_cmp, next_node);
-    av_log(s, AV_LOG_DEBUG, "%Ld-%Ld %Ld-%Ld\n", next_node[0]->pos, next_node[1]->pos,
-                                                 next_node[0]->ts , next_node[1]->ts);
-    pos= av_gen_search(s, -1, dummy.ts, next_node[0]->pos, next_node[1]->pos, next_node[1]->pos,
-                                        next_node[0]->ts , next_node[1]->ts, AVSEEK_FLAG_BACKWARD, &ts, nut_read_timestamp);
+        av_tree_find(nut->syncpoints, &dummy, sp_pts_cmp, next_node);
+        av_log(s, AV_LOG_DEBUG, "%Ld-%Ld %Ld-%Ld\n", next_node[0]->pos, next_node[1]->pos,
+                                                    next_node[0]->ts , next_node[1]->ts);
+        pos= av_gen_search(s, -1, dummy.ts, next_node[0]->pos, next_node[1]->pos, next_node[1]->pos,
+                                            next_node[0]->ts , next_node[1]->ts, AVSEEK_FLAG_BACKWARD, &ts, nut_read_timestamp);
 
-    if(!(flags & AVSEEK_FLAG_BACKWARD)){
-        dummy.pos= pos+16;
-        next_node[1]= &nopts_sp;
-        av_tree_find(nut->syncpoints, &dummy, sp_pos_cmp, next_node);
-        pos2= av_gen_search(s, -2, dummy.pos, next_node[0]->pos     , next_node[1]->pos, next_node[1]->pos,
-                                              next_node[0]->back_ptr, next_node[1]->back_ptr, flags, &ts, nut_read_timestamp);
-        if(pos2>=0)
-            pos= pos2;
-        //FIXME dir but i think it doesnt matter
-    }
-    dummy.pos= pos;
-    sp= av_tree_find(nut->syncpoints, &dummy, sp_pos_cmp, NULL);
+        if(!(flags & AVSEEK_FLAG_BACKWARD)){
+            dummy.pos= pos+16;
+            next_node[1]= &nopts_sp;
+            av_tree_find(nut->syncpoints, &dummy, sp_pos_cmp, next_node);
+            pos2= av_gen_search(s, -2, dummy.pos, next_node[0]->pos     , next_node[1]->pos, next_node[1]->pos,
+                                                next_node[0]->back_ptr, next_node[1]->back_ptr, flags, &ts, nut_read_timestamp);
+            if(pos2>=0)
+                pos= pos2;
+            //FIXME dir but i think it doesnt matter
+        }
+        dummy.pos= pos;
+        sp= av_tree_find(nut->syncpoints, &dummy, sp_pos_cmp, NULL);
 
-    assert(sp);
-    pos2= sp->back_ptr  - 15;
+        assert(sp);
+        pos2= sp->back_ptr  - 15;
     }
     av_log(NULL, AV_LOG_DEBUG, "SEEKTO: %"PRId64"\n", pos2);
     pos= find_startcode(&s->pb, SYNCPOINT_STARTCODE, pos2);
