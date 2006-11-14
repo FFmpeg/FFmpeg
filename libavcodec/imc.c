@@ -80,7 +80,6 @@ typedef struct {
     float sqrt_tab[30];
     GetBitContext gb;
     VLC huffman_vlc[4][4];
-    float flcf1, flcf2;
     int decoder_reset;
     float one_div_log2;
 
@@ -125,8 +124,6 @@ static int imc_decode_init(AVCodecContext * avctx)
 
         q->last_fft_im[i] = 0;
     }
-    q->flcf1 = log2(10) * 0.05703125;
-    q->flcf2 = log2(10) * 0.25;
 
     /* Generate a square root table */
 
@@ -236,8 +233,8 @@ static void imc_decode_level_coefficients(IMCContext* q, int* levlCoeffBuf, floa
     float tmp, tmp2;
     //maybe some frequency division thingy
 
-    flcoeffs1[0] = 20000.0 / pow (2, levlCoeffBuf[0] * q->flcf1);
-    flcoeffs2[0] = log2(flcoeffs1[0]);
+    flcoeffs1[0] = 20000.0 / pow (2, levlCoeffBuf[0] * 0.18945); // 0.18945 = log2(10) * 0.05703125
+    flcoeffs2[0] = log(flcoeffs1[0])/log(2);
     tmp = flcoeffs1[0];
     tmp2 = flcoeffs2[0];
 
@@ -255,7 +252,7 @@ static void imc_decode_level_coefficients(IMCContext* q, int* levlCoeffBuf, floa
                 level -=16;
 
             tmp  *= imc_exp_tab[15 + level];
-            tmp2 += q->flcf2 * level;
+            tmp2 += 0.83048 * level;  // 0.83048 = log2(10) * 0.25
             flcoeffs1[i] = tmp;
             flcoeffs2[i] = tmp2;
         }
@@ -273,7 +270,7 @@ static void imc_decode_level_coefficients2(IMCContext* q, int* levlCoeffBuf, flo
         flcoeffs1[i] = 0;
         if(levlCoeffBuf[i] < 16) {
             flcoeffs1[i] = imc_exp_tab2[levlCoeffBuf[i]] * old_floor[i];
-            flcoeffs2[i] = (levlCoeffBuf[i]-7) * q->flcf2 + flcoeffs2[i];
+            flcoeffs2[i] = (levlCoeffBuf[i]-7) * 0.83048 + flcoeffs2[i]; // 0.83048 = log2(10) * 0.25
         } else {
             flcoeffs1[i] = old_floor[i];
         }
