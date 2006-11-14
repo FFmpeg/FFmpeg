@@ -408,12 +408,10 @@ HAVE_LIST='
     dcbzl
     dlfcn
     dlopen
-    fast_int
     freetype2
     gprof
     imlib2
     inet_aton
-    inttypes
     localtime_r
     lrintf
     malloc_h
@@ -560,8 +558,6 @@ dostrip="yes"
 installstrip="-s"
 extralibs="-lm"
 bigendian="no"
-inttypes="yes"
-fast_int="yes"
 vhook="default"
 avisynth="no"
 dlfcn="no"
@@ -1387,20 +1383,6 @@ else
 fi
 
 # ---
-# *inttypes.h* test
-check_header inttypes.h || inttypes=no
-
-# ---
-# *int_fast* test
-check_cc <<EOF || fast_int=no
-#include <inttypes.h>
-int main(int argc, char ** argv){
-        volatile uint_fast64_t i=0x01234567;
-        return 0;
-}
-EOF
-
-# ---
 # check availability of some header files
 
 memalign=no
@@ -1699,8 +1681,6 @@ if test "$BUILDSUF" != ""; then
     echo "build suffix     $BUILDSUF"
 fi
 echo "big-endian       $bigendian"
-echo "inttypes.h       $inttypes"
-echo "int_fastxx_t     $fast_int"
 if test $arch = "x86_32" -o $arch = "x86_64"; then
     echo "MMX enabled      $mmx"
     echo "CMOV enabled     $cmov"

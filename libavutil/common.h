@@ -84,18 +84,7 @@
 #endif
 #endif
 
-#ifdef HAVE_INTTYPES
 #   include <inttypes.h>
-#else
-    typedef signed char  int8_t;
-    typedef signed short int16_t;
-    typedef signed int   int32_t;
-    typedef unsigned char  uint8_t;
-    typedef unsigned short uint16_t;
-    typedef unsigned int   uint32_t;
-    typedef signed long long   int64_t;
-    typedef unsigned long long uint64_t;
-#endif /* HAVE_INTTYPES */
 
 #ifndef PRId64
 #define PRId64 "lld"
@@ -155,16 +144,6 @@
 
 #ifndef UINT64_MAX
 #define UINT64_MAX uint64_t_C(0xFFFFFFFFFFFFFFFF)
-#endif
-
-#ifndef HAVE_FAST_INT
-typedef signed char int_fast8_t;
-typedef signed int  int_fast16_t;
-typedef signed int  int_fast32_t;
-typedef unsigned char uint_fast8_t;
-typedef unsigned int  uint_fast16_t;
-typedef unsigned int  uint_fast32_t;
-typedef uint64_t      uint_fast64_t;
 #endif
 
 #ifndef INT_BIT
