@@ -93,9 +93,9 @@ void av_tree_destroy(AVTreeNode *t){
 
 #if 0
 void av_tree_enumerate(AVTreeNode *t, void *opaque, int (*f)(void *opaque, void *elem)){
-    f(opaque, t->elem);
-    av_tree_enumerate(t->child[0], opaque, f);
-    av_tree_enumerate(t->child[1], opaque, f);
+    int v= f(opaque, t->elem);
+    if(v>=0) av_tree_enumerate(t->child[0], opaque, f);
+    if(v<=0) av_tree_enumerate(t->child[1], opaque, f);
 }
 #endif
 
