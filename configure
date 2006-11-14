@@ -1525,7 +1525,7 @@ if test "$vhook" = "default"; then
     vhook="$dlopen"
 fi
 
-if test "$vhook" = "yes" -o "$a52bin" = "yes" -o "$faadbin" = "yes"; then
+if enabled_any vhook a52bin faadbin; then
     add_extralibs $ldl
 fi
 
