@@ -411,6 +411,7 @@ HAVE_LIST='
     freetype2
     gprof
     imlib2
+    inet_aton
     localtime_r
     lrintf
     malloc_h
@@ -567,7 +568,6 @@ mpegaudio_hp="yes"
 SHFLAGS='-shared -Wl,-soname,$@'
 VHOOKSHFLAGS='$(SHFLAGS)'
 beos_netserver="no"
-need_inet_aton="no"
 protocols="yes"
 ffmpeg="yes"
 ffserver="yes"
@@ -631,7 +631,6 @@ if (echo $BEINCLUDES|grep 'headers/be/bone' >/dev/null); then
 extralibs="-lbind -lsocket"
 else
 beos_netserver="yes"
-need_inet_aton="yes"
 extralibs="-lnet"
 fi ;;
 SunOS)
@@ -643,7 +642,6 @@ make="gmake"
 FFLDFLAGS=""
 FFSERVERLDFLAGS=""
 SHFLAGS="-shared -Wl,-h,\$@"
-need_inet_aton="yes"
 add_extralibs "-lsocket -lnsl"
 ;;
 NetBSD)
@@ -1419,6 +1417,7 @@ fi
 
 check_header byteswap.h && byteswap_h=yes || byteswap_h=no
 
+check_func inet_aton && inet_aton=yes || inet_aton=no
 check_func localtime_r && localtime_r=yes || localtime_r=no
 enabled zlib && check_lib zlib.h zlibVersion -lz || zlib="no"
 
@@ -2008,10 +2007,6 @@ fi
 
 if test "$targetos" = "Darwin"; then
   echo "#define CONFIG_DARWIN 1"  >> $TMPH
-fi
-
-if test "$need_inet_aton" = "yes" ; then
-  echo "NEED_INET_ATON=yes" >> config.mak
 fi
 
 echo "#define restrict $_restrict" >> $TMPH

@@ -167,7 +167,7 @@ ifeq ($(CONFIG_PROTOCOLS),yes)
 OBJS+= file.o
 ifeq ($(CONFIG_NETWORK),yes)
 OBJS+= udp.o tcp.o http.o rtsp.o rtp.o rtpproto.o mpegts.o base64.o rtp_h264.o
-ifeq ($(NEED_INET_ATON),yes)
+ifneq ($(HAVE_INET_ATON),yes)
 OBJS+= barpainet.o
 endif
 endif
