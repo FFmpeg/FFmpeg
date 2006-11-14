@@ -871,6 +871,8 @@ following image formats are supported:
 @item MSMPEG4 V3             @tab  X  @tab  X
 @item WMV7                   @tab  X  @tab  X
 @item WMV8                   @tab  X  @tab  X @tab not completely working
+@item WMV9                   @tab     @tab  X @tab not completely working
+@item VC1                    @tab     @tab  X
 @item H.261                  @tab  X  @tab  X
 @item H.263(+)               @tab  X  @tab  X @tab also known as RealVideo 1.0
 @item H.264                  @tab     @tab  X
@@ -953,7 +955,6 @@ following image formats are supported:
 @item AC3                    @tab  IX  @tab  IX
 @tab liba52 is used internally for decoding.
 @item Vorbis                 @tab  X   @tab  X
-@tab Supported through the external library libvorbis.
 @item WMA V1/V2              @tab      @tab X
 @item AAC                    @tab X    @tab X
 @tab Supported through the external library libfaac/libfaad.
