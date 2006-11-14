@@ -3001,9 +3001,9 @@ static int get_block_rd(SnowContext *s, int mb_x, int mb_y, int plane_index, con
          * improve the score of the whole frame, so iterative motion est
          * doesn't always converge. */
         if(s->avctx->me_cmp == FF_CMP_W97)
-            distortion = w97_32_c(&s->m, src + sx + sy*ref_stride, dst + sx + sy*ref_stride, ref_stride, 32);
+            distortion = ff_w97_32_c(&s->m, src + sx + sy*ref_stride, dst + sx + sy*ref_stride, ref_stride, 32);
         else if(s->avctx->me_cmp == FF_CMP_W53)
-            distortion = w53_32_c(&s->m, src + sx + sy*ref_stride, dst + sx + sy*ref_stride, ref_stride, 32);
+            distortion = ff_w53_32_c(&s->m, src + sx + sy*ref_stride, dst + sx + sy*ref_stride, ref_stride, 32);
         else{
             distortion = 0;
             for(i=0; i<4; i++){

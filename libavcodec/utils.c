@@ -1197,7 +1197,7 @@ void avcodec_init(void)
         return;
     inited = 1;
 
-    dsputil_static_init();
+    ff_dsputil_static_init();
     init_crcs();
 }
 

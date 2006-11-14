@@ -57,9 +57,3 @@ extern const uint16_t floortab[8];
 extern const uint16_t fgaintab[8];
 #endif
 
-void ac3_common_init(void);
-void ac3_parametric_bit_allocation(AC3BitAllocParameters *s, uint8_t *bap,
-                                   int8_t *exp, int start, int end,
-                                   int snroffset, int fgain, int is_lfe,
-                                   int deltbae,int deltnseg,
-                                   uint8_t *deltoffst, uint8_t *deltlen, uint8_t *deltba);
