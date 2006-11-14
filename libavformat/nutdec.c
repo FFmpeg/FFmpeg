@@ -773,7 +773,7 @@ static int nut_read_packet(AVFormatContext *s, AVPacket *pkt)
         default:
 resync:
 av_log(s, AV_LOG_DEBUG, "syncing from %"PRId64"\n", pos);
-            tmp= find_any_startcode(bc, pos+1);
+            tmp= find_any_startcode(bc, nut->last_syncpoint_pos+1);
             if(tmp==0)
                 return -1;
 av_log(s, AV_LOG_DEBUG, "sync\n");
