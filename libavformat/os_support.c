@@ -1,6 +1,7 @@
 /*
  * Various utilities for ffmpeg system
  * Copyright (c) 2000, 2001, 2002 Fabrice Bellard
+ * copyright (c) 2002 Francois Revol
  *
  * This file is part of FFmpeg.
  *
@@ -35,6 +36,10 @@
 #endif
 #include <time.h>
 
+#include <stdlib.h>
+#include <strings.h>
+#include "barpainet.h"
+
 /**
  * gets the current time in micro seconds.
  */
@@ -65,3 +70,27 @@ struct tm *localtime_r(const time_t *t, struct tm *tp)
     return tp;
 }
 #endif /* !defined(CONFIG_WINCE) && !defined(HAVE_LOCALTIME_R) */
+
+#if !defined(HAVE_INET_ATON)
+int inet_aton (const char * str, struct in_addr * add)
+{
+    const char * pch = str;
+    unsigned int add1 = 0, add2 = 0, add3 = 0, add4 = 0;
+
+    add1 = atoi(pch);
+    pch = strpbrk(pch,".");
+    if (pch == 0 || ++pch == 0) goto done;
+    add2 = atoi(pch);
+    pch = strpbrk(pch,".");
+    if (pch == 0 || ++pch == 0) goto done;
+    add3 = atoi(pch);
+    pch = strpbrk(pch,".");
+    if (pch == 0 || ++pch == 0) goto done;
+    add4 = atoi(pch);
+
+done:
+    add->s_addr=(add4<<24)+(add3<<16)+(add2<<8)+add1;
+
+    return 1;
+}
+#endif /* !defined HAVE_INET_ATON */
