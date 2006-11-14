@@ -2051,8 +2051,7 @@ for codec in $DECODER_LIST $ENCODER_LIST $PARSER_LIST $DEMUXER_LIST $MUXER_LIST;
 done
 
 # Do not overwrite config.h if unchanged to avoid superfluous rebuilds.
-diff $TMPH config.h >/dev/null 2>&1
-if test "$?" != "0" ; then
+if ! cmp -s $TMPH config.h; then
         mv -f $TMPH config.h
 else
         echo "config.h is unchanged"
