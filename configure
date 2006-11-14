@@ -353,9 +353,70 @@ require(){
     check_lib $header $func "$@" || die "ERROR: $name not found"
 }
 
-CONFIG_LIST='encoders decoders parsers muxers demuxers a52 a52bin amr amr_nb amr_nb_fixed amr_wb audio_beos audio_oss avisynth beos_netserver bktr dc1394 dts dv1394 faac faad faadbin ffmpeg ffplay ffserver gpl ipv6 libgsm libnut libogg libvorbis memalign_hack mp3lame mpegaudio_hp network pp protocols swscaler vhook video4linux video4linux2 x264 xvid zlib'
+CONFIG_LIST='
+    encoders
+    decoders
+    parsers
+    muxers
+    demuxers
+    a52
+    a52bin
+    amr
+    amr_nb
+    amr_nb_fixed
+    amr_wb
+    audio_beos
+    audio_oss
+    avisynth
+    beos_netserver
+    bktr
+    dc1394
+    dts
+    dv1394
+    faac
+    faad
+    faadbin
+    ffmpeg
+    ffplay
+    ffserver
+    gpl
+    ipv6
+    libgsm
+    libnut
+    libogg
+    libvorbis
+    memalign_hack
+    mp3lame
+    mpegaudio_hp
+    network
+    pp
+    protocols
+    swscaler
+    vhook
+    video4linux
+    video4linux2
+    x264
+    xvid
+    zlib
+'
 
-HAVE_LIST='altivec_h byteswap_h dcbzl dlfcn dlopen freetype2 gprof imlib2 localtime_r lrintf malloc_h memalign mlib sdl sdl_video_size'
+HAVE_LIST='
+    altivec_h
+    byteswap_h
+    dcbzl
+    dlfcn
+    dlopen
+    freetype2
+    gprof
+    imlib2
+    localtime_r
+    lrintf
+    malloc_h
+    memalign
+    mlib
+    sdl
+    sdl_video_size
+'
 
 # set temporary file name
 if test ! -z "$TMPDIR" ; then
