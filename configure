@@ -1439,7 +1439,7 @@ enabled libgsm  && require libgsm gsm.h gsm_create -lgsm
 enabled mp3lame && require LAME lame/lame.h lame_init -lmp3lame -lm
 enabled libvorbis && require libvorbis vorbis/vorbisenc.h vorbis_info_init -lvorbis -lvorbisenc -logg
 enabled libogg  && require libogg ogg/ogg.h ogg_sync_init -logg
-enabled libnut  && require libnut nut.h nut_demuxer_init -lnut
+enabled libnut  && require libnut libnut.h nut_demuxer_init -lnut
 enabled xvid    && require XviD xvid.h xvid_global -lxvidcore
 enabled x264    && require x264 x264.h x264_encoder_open -lx264
 enabled dc1394  && require libdc1394 libdc1394/dc1394_control.h dc1394_create_handle -ldc1394_control -lraw1394

@@ -1,6 +1,6 @@
 #include "avformat.h"
 #include "riff.h"
-#include <nut.h>
+#include <libnut.h>
 
 #define ID_STRING "nut/multimedia container"
 #define ID_LENGTH (strlen(ID_STRING) + 1)
