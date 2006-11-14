@@ -191,7 +191,6 @@ static int nut_probe(AVProbeData *p){
 
 static int skip_reserved(ByteIOContext *bc, int64_t pos){
     pos -= url_ftell(bc);
-av_log(NULL, AV_LOG_ERROR, "skip %d\n", (int)pos);
     if(pos<0){
         url_fseek(bc, pos, SEEK_CUR);
         return -1;
