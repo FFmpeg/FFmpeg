@@ -162,6 +162,10 @@ EOF
     exit 1
 }
 
+toupper(){
+    echo "$@" | tr '[a-z]' '[A-Z]'
+}
+
 set_all(){
     value=$1
     shift
@@ -179,7 +183,33 @@ disable(){
 }
 
 enabled(){
-    eval test "\$$1" = "yes"
+    eval test "x\$$1" = "xyes"
+}
+
+enabled_all(){
+    for opt; do
+        enabled $opt || return 1
+    done
+}
+
+enabled_any(){
+    for opt; do
+        enabled $opt && return 0
+    done
+}
+
+print_config(){
+    pfx=$1
+    header=$2
+    makefile=$3
+    shift 3
+    for cfg; do
+        if enabled $cfg; then
+            ucname="${pfx}`toupper $cfg`"
+            echo "#define ${ucname} 1" >> $header
+            echo "${ucname}=yes" >> $makefile
+        fi
+    done
 }
 
 flags_saved(){
@@ -322,6 +352,10 @@ require(){
     shift 3
     check_lib $header $func "$@" || die "ERROR: $name not found"
 }
+
+CONFIG_LIST='encoders decoders parsers muxers demuxers a52 a52bin amr amr_nb amr_nb_fixed amr_wb audio_beos audio_oss avisynth beos_netserver bktr dc1394 dts dv1394 faac faad faadbin ffmpeg ffplay ffserver gpl ipv6 libgsm libnut libogg libvorbis mp3lame mpegaudio_hp network pp protocols swscaler vhook video4linux video4linux2 x264 xvid zlib'
+
+HAVE_LIST='altivec_h byteswap_h dcbzl dlfcn dlopen freetype2 gprof imlib2 localtime_r lrintf malloc_h memalign mlib sdl sdl_video_size'
 
 # set temporary file name
 if test ! -z "$TMPDIR" ; then
@@ -1804,59 +1838,22 @@ if test "$mmi" = "yes" ; then
   echo "#define HAVE_MMI 1" >> $TMPH
 fi
 
-if test "$dcbzl" = "yes" ; then
-  echo "#define HAVE_DCBZL 1" >> $TMPH
-else
-  echo "#undef HAVE_DCBZL" >> $TMPH
-fi
-
 if test "$altivec" = "yes" ; then
   echo "TARGET_ALTIVEC=yes" >> config.mak
   echo "#define HAVE_ALTIVEC 1" >> $TMPH
-  if test "$altivec_h" = "yes" ; then
-    echo "#define HAVE_ALTIVEC_H 1" >> $TMPH
-  else
-    echo "#undef HAVE_ALTIVEC_H" >> $TMPH
-  fi
 fi
-if test "$gprof" = "yes" ; then
-  echo "#define HAVE_GPROF 1" >> $TMPH
-fi
-if test "$localtime_r" = "yes" ; then
-  echo "#define HAVE_LOCALTIME_R 1" >> $TMPH
-fi
-if test "$imlib2" = "yes" ; then
-  echo "HAVE_IMLIB2=yes" >> config.mak
-fi
-if test "$freetype2" = "yes" ; then
-  echo "HAVE_FREETYPE2=yes" >> config.mak
-fi
-if test "$mlib" = "yes" ; then
-  echo "HAVE_MLIB=yes" >> config.mak
-  echo "#define HAVE_MLIB 1" >> $TMPH
-fi
+
 if test "$pthreads" = "yes" ; then
   echo "HAVE_PTHREADS=yes" >> config.mak
   echo "#define HAVE_PTHREADS 1" >> $TMPH
   echo "#define HAVE_THREADS 1" >> $TMPH
 fi
 if test "$sdl" = "yes" ; then
-  echo "HAVE_SDL=yes" >> config.mak
   echo "SDL_LIBS=`"${SDL_CONFIG}" --libs`" >> config.mak
   echo "SDL_CFLAGS=`"${SDL_CONFIG}" --cflags`" >> config.mak
-  if test "$sdl_video_size" = "yes"; then
-    echo "#define HAVE_SDL_VIDEO_SIZE 1" >> $TMPH
-  fi
 fi
 if test "$texi2html" = "yes"; then
   echo "BUILD_DOC=yes" >> config.mak
-fi
-if test "$have_lrintf" = "yes" ; then
-  echo "#define HAVE_LRINTF 1" >> $TMPH
-fi
-if test "$vhook" = "yes" ; then
-  echo "CONFIG_VHOOK=yes" >> config.mak
-  echo "#define CONFIG_VHOOK 1" >> $TMPH
 fi
 
 sws_version=`grep '#define LIBSWSCALE_VERSION ' "$source_path/libswscale/swscale.h" | sed 's/[^0-9\.]//g'`
@@ -1889,174 +1886,13 @@ fi
 echo "LIB_INSTALL_EXTRA_CMD=${LIB_INSTALL_EXTRA_CMD}" >> config.mak
 echo "EXTRALIBS=$extralibs" >> config.mak
 
-# If you do not want to use encoders, disable them.
-if echo "$ENCODER_LIST" | grep -q encoder; then
-    echo "#define CONFIG_ENCODERS 1" >> $TMPH
-    echo "CONFIG_ENCODERS=yes" >> config.mak
-fi
+enabled_any $ENCODER_LIST && enable encoders
+enabled_any $DECODER_LIST && enable decoders
+enabled_any $MUXER_LIST   && enable muxers
+enabled_any $DEMUXER_LIST && enable demuxers
 
-# If you do not want to use decoders, disable them.
-if echo "$DECODER_LIST" | grep -q decoder; then
-    echo "#define CONFIG_DECODERS 1" >> $TMPH
-    echo "CONFIG_DECODERS=yes" >> config.mak
-fi
-
-# muxers
-if echo "$MUXER_LIST" | grep -q muxer; then
-  echo "#define CONFIG_MUXERS 1" >> $TMPH
-  echo "CONFIG_MUXERS=yes" >> config.mak
-fi
-
-# demuxers
-if echo "$DEMUXER_LIST" | grep -q demuxer; then
-  echo "#define CONFIG_DEMUXERS 1" >> $TMPH
-  echo "CONFIG_DEMUXERS=yes" >> config.mak
-fi
-
-# AC3
-if test "$a52" = "yes" ; then
-  echo "#define CONFIG_A52 1" >> $TMPH
-  echo "CONFIG_A52=yes" >> config.mak
-
-  if test "$a52bin" = "yes" ; then
-    echo "#define CONFIG_A52BIN 1" >> $TMPH
-    echo "CONFIG_A52BIN=yes" >> config.mak
-  fi
-fi
-
-# DTS
-if test "$dts" = "yes" ; then
-  echo "#define CONFIG_DTS 1" >> $TMPH
-  echo "CONFIG_DTS=yes" >> config.mak
-fi
-
-# PP
-if test "$pp" = "yes" ; then
-  echo "#define CONFIG_PP 1" >> $TMPH
-  echo "CONFIG_PP=yes" >> config.mak
-fi
-
-if test "$swscaler" = "yes" ; then
-  echo "#define CONFIG_SWSCALER 1" >> $TMPH
-  echo "CONFIG_SWSCALER=yes" >> config.mak
-fi
-
-# MPEG audio high precision mode
-if test "$mpegaudio_hp" = "yes" ; then
-  echo "#define CONFIG_MPEGAUDIO_HP 1" >> $TMPH
-fi
-
-if test "$video4linux" = "yes" ; then
-  echo "#define CONFIG_VIDEO4LINUX 1" >> $TMPH
-  echo "CONFIG_VIDEO4LINUX=yes" >> config.mak
-fi
-
-if test "$video4linux2" = "yes" ; then
-  echo "#define CONFIG_VIDEO4LINUX2 1" >> $TMPH
-  echo "CONFIG_VIDEO4LINUX2=yes" >> config.mak
-fi
-
-if test "$bktr" = "yes" ; then
-  echo "#define CONFIG_BKTR 1" >> $TMPH
-  echo "CONFIG_BKTR=yes" >> config.mak
-fi
-
-if test "$dv1394" = "yes" ; then
-  echo "#define CONFIG_DV1394 1" >> $TMPH
-  echo "CONFIG_DV1394=yes" >> config.mak
-fi
-
-if test "$dc1394" = "yes" ; then
-  echo "#define CONFIG_DC1394 1" >> $TMPH
-  echo "CONFIG_DC1394=yes" >> config.mak
-fi
-
-if test "$dlopen" = "yes" ; then
-  echo "#define HAVE_DLOPEN 1" >> $TMPH
-fi
-
-if test "$dlfcn" = "yes" ; then
-  echo "#define HAVE_DLFCN 1" >> $TMPH
-fi
-
-if test "$audio_oss" = "yes" ; then
-  echo "#define CONFIG_AUDIO_OSS 1" >> $TMPH
-  echo "CONFIG_AUDIO_OSS=yes" >> config.mak
-fi
-
-if test "$audio_beos" = "yes" ; then
-  echo "#define CONFIG_AUDIO_BEOS 1" >> $TMPH
-  echo "CONFIG_AUDIO_BEOS=yes" >> config.mak
-fi
-
-if test "$network" = "yes" ; then
-  echo "#define CONFIG_NETWORK 1" >> $TMPH
-  echo "CONFIG_NETWORK=yes" >> config.mak
-fi
-
-if test "$ipv6" = "yes" ; then
-  echo "#define CONFIG_IPV6 1" >> $TMPH
-fi
-
-if test "$zlib" = "yes" ; then
-  echo "#define CONFIG_ZLIB 1" >> $TMPH
-  echo "CONFIG_ZLIB=yes" >> config.mak
-fi
-
-if test "$libgsm" = "yes" ; then
-  echo "#define CONFIG_LIBGSM 1" >> $TMPH
-  echo "CONFIG_LIBGSM=yes" >> config.mak
-fi
-
-if test "$mp3lame" = "yes" ; then
-  echo "#define CONFIG_MP3LAME 1" >> $TMPH
-  echo "CONFIG_MP3LAME=yes" >> config.mak
-fi
-
-if test "$libnut" = "yes" ; then
-  echo "#define CONFIG_LIBNUT 1" >> $TMPH
-  echo "CONFIG_LIBNUT=yes" >> config.mak
-fi
-
-if test "$libogg" = "yes" ; then
-  echo "#define CONFIG_LIBOGG 1" >> $TMPH
-  echo "CONFIG_LIBOGG=yes" >> config.mak
-fi
-
-if test "$libvorbis" = "yes" ; then
-  echo "#define CONFIG_LIBVORBIS 1" >> $TMPH
-  echo "CONFIG_LIBVORBIS=yes" >> config.mak
-fi
-
-if test "$faad" = "yes" ; then
-  echo "#define CONFIG_FAAD 1" >> $TMPH
-  echo "CONFIG_FAAD=yes" >> config.mak
-fi
-
-if test "$faadbin" = "yes" ; then
-  echo "#define CONFIG_FAADBIN 1" >> $TMPH
-  echo "CONFIG_FAADBIN=yes" >> config.mak
-fi
-
-if test "$faac" = "yes" ; then
-  echo "#define CONFIG_FAAC 1" >> $TMPH
-  echo "CONFIG_FAAC=yes" >> config.mak
-fi
-
-if test "$xvid" = "yes" ; then
-  echo "#define CONFIG_XVID 1" >> $TMPH
-  echo "CONFIG_XVID=yes" >> config.mak
-fi
-
-if test "$x264" = "yes" ; then
-  echo "#define CONFIG_X264 1" >> $TMPH
-  echo "CONFIG_X264=yes" >> config.mak
-fi
-
-if test "$avisynth" = "yes" ; then
-  echo "#define CONFIG_AVISYNTH 1" >> $TMPH
-  echo "CONFIG_AVISYNTH=yes" >> config.mak
-fi
+print_config HAVE_   $TMPH config.mak $HAVE_LIST
+print_config CONFIG_ $TMPH config.mak $CONFIG_LIST
 
 if test "$mingw32" = "yes" ; then
   echo "CONFIG_MINGW=yes" >> config.mak
@@ -2100,57 +1936,12 @@ if test "$targetos" = "Darwin"; then
   echo "CONFIG_DARWIN=yes" >> config.mak
 fi
 
-if test "$malloc_h" = "yes" ; then
-  echo "#define HAVE_MALLOC_H 1" >> $TMPH
-else
-  echo "#undef  HAVE_MALLOC_H" >> $TMPH
-fi
-
-if test "$memalign" = "yes" ; then
-  echo "#define HAVE_MEMALIGN 1" >> $TMPH
-else
-  echo "#undef  HAVE_MEMALIGN" >> $TMPH
-fi
-
 if test "$memalignhack" = "yes" ; then
   echo "#define MEMALIGN_HACK 1" >> $TMPH
 fi
 
-if test "$byteswap_h" = "yes"; then
-  echo "#define HAVE_BYTESWAP_H 1" >> $TMPH
-fi
-
-if test "$beos_netserver" = "yes" ; then
-  echo "#define CONFIG_BEOS_NETSERVER 1" >> $TMPH
-  echo "CONFIG_BEOS_NETSERVER=yes" >> config.mak
-fi
-
 if test "$need_inet_aton" = "yes" ; then
   echo "NEED_INET_ATON=yes" >> config.mak
-fi
-
-if test "$protocols" = "yes" ; then
-  echo "#define CONFIG_PROTOCOLS 1" >> $TMPH
-  echo "CONFIG_PROTOCOLS=yes" >> config.mak
-fi
-
-if test "$ffmpeg" = "yes" ; then
-  echo "#define CONFIG_FFMPEG 1" >> $TMPH
-  echo "CONFIG_FFMPEG=yes" >> config.mak
-fi
-
-if test "$ffserver" = "yes" ; then
-  echo "#define CONFIG_FFSERVER 1" >> $TMPH
-  echo "CONFIG_FFSERVER=yes" >> config.mak
-fi
-
-if test "$ffplay" = "yes" ; then
-  echo "CONFIG_FFPLAY=yes" >> config.mak
-fi
-
-if test "$gpl" = "yes" ; then
-  echo "#define CONFIG_GPL 1" >> $TMPH
-  echo "CONFIG_GPL=yes" >> config.mak
 fi
 
 echo "#define restrict $_restrict" >> $TMPH
@@ -2204,14 +1995,7 @@ echo "SRC_PATH=\"$source_path\"" >> config.mak
 echo "SRC_PATH_BARE=$source_path" >> config.mak
 echo "BUILD_ROOT=\"$PWD\"" >> config.mak
 
-if test "$amr" = "yes" ; then
-  echo "#define CONFIG_AMR 1" >> $TMPH
-  echo "CONFIG_AMR=yes" >> config.mak
-fi
-
 if test "$amr_wb" = "yes" ; then
-  echo "#define CONFIG_AMR_WB 1" >> $TMPH
-  echo "CONFIG_AMR_WB=yes" >> config.mak
   echo
   echo "AMR WB FLOAT NOTICE ! Make sure you have downloaded TS26.204"
   echo "V5.1.0 from "
@@ -2220,8 +2004,6 @@ if test "$amr_wb" = "yes" ; then
 fi
 
 if test "$amr_nb" = "yes" ; then
-  echo "#define CONFIG_AMR_NB 1" >> $TMPH
-  echo "CONFIG_AMR_NB=yes" >> config.mak
   echo
   echo "AMR NB FLOAT NOTICE ! Make sure you have downloaded TS26.104"
   echo "REL-5 V5.1.0 from "
@@ -2231,8 +2013,6 @@ if test "$amr_nb" = "yes" ; then
 fi
 
 if test "$amr_nb_fixed" = "yes" ; then
-  echo "#define CONFIG_AMR_NB_FIXED 1" >> $TMPH
-  echo "CONFIG_AMR_NB_FIXED=yes" >> config.mak
   echo
   echo "AMR NB FIXED POINT NOTICE! Make sure you have downloaded TS26.073 "
   echo "REL-5 version 5.1.0 from "
@@ -2256,7 +2036,7 @@ fi
 
 # "tr '[a-z]' '[A-Z]'" is a workaround for Solaris tr not grokking "tr a-z A-Z"
 for codec in $DECODER_LIST $ENCODER_LIST $PARSER_LIST $DEMUXER_LIST $MUXER_LIST; do
-    ucname="`echo $codec | tr '[a-z]' '[A-Z]'`"
+    ucname="`toupper $codec`"
     config_name="CONFIG_$ucname"
     enabled_name="ENABLE_$ucname"
     if enabled $codec; then
