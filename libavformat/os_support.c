@@ -53,8 +53,7 @@ int64_t av_gettime(void)
 #endif
 }
 
-#if !defined(CONFIG_WINCE)
-#if !defined(HAVE_LOCALTIME_R)
+#if !defined(CONFIG_WINCE) && !defined(HAVE_LOCALTIME_R)
 struct tm *localtime_r(const time_t *t, struct tm *tp)
 {
     struct tm *l;
@@ -65,5 +64,4 @@ struct tm *localtime_r(const time_t *t, struct tm *tp)
     *tp = *l;
     return tp;
 }
-#endif /* !defined(HAVE_LOCALTIME_R) */
-#endif /* !defined(CONFIG_WINCE) */
+#endif /* !defined(CONFIG_WINCE) && !defined(HAVE_LOCALTIME_R) */
