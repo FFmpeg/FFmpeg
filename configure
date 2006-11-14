@@ -420,8 +420,8 @@ case "$arch" in
   ;;
 esac
 gprof="no"
-v4l="yes"
-v4l2="yes"
+video4linux="yes"
+video4linux2="yes"
 bktr="no"
 audio_oss="yes"
 audio_beos="no"
@@ -518,8 +518,8 @@ esac
 SHFLAGS=-nostart
 # disable Linux things
 audio_oss="no"
-v4l="no"
-v4l2="no"
+video4linux="no"
+video4linux2="no"
 dv1394="no"
 # enable BeOS things
 audio_beos="yes"
@@ -533,8 +533,8 @@ need_inet_aton="yes"
 extralibs="-lnet"
 fi ;;
 SunOS)
-v4l="no"
-v4l2="no"
+video4linux="no"
+video4linux2="no"
 audio_oss="no"
 dv1394="no"
 make="gmake"
@@ -545,8 +545,8 @@ need_inet_aton="yes"
 add_extralibs "-lsocket -lnsl"
 ;;
 NetBSD)
-v4l="no"
-v4l2="no"
+video4linux="no"
+video4linux2="no"
 bktr="yes"
 audio_oss="yes"
 dv1394="no"
@@ -554,8 +554,8 @@ make="gmake"
 add_extralibs "-lossaudio"
 ;;
 OpenBSD)
-v4l="no"
-v4l2="no"
+video4linux="no"
+video4linux2="no"
 bktr="yes"
 audio_oss="yes"
 dv1394="no"
@@ -565,8 +565,8 @@ LDCONFIG="ldconfig -m \$(shlibdir)"
 add_extralibs "-lossaudio"
 ;;
 FreeBSD)
-v4l="no"
-v4l2="no"
+video4linux="no"
+video4linux2="no"
 bktr="yes"
 audio_oss="yes"
 dv1394="no"
@@ -574,16 +574,16 @@ make="gmake"
 add_cflags "-pthread"
 ;;
 GNU/kFreeBSD)
-v4l="no"
-v4l2="no"
+video4linux="no"
+video4linux2="no"
 bktr="yes"
 audio_oss="yes"
 dv1394="no"
 add_cflags "-pthread"
 ;;
 BSD/OS)
-v4l="no"
-v4l2="no"
+video4linux="no"
+video4linux2="no"
 bktr="yes"
 audio_oss="yes"
 dv1394="no"
@@ -594,8 +594,8 @@ installstrip=""
 ;;
 Darwin)
 cc="cc"
-v4l="no"
-v4l2="no"
+video4linux="no"
+video4linux2="no"
 audio_oss="no"
 dv1394="no"
 SHFLAGS="-dynamiclib -Wl,-single_module -Wl,-install_name,\$(shlibdir)/\$(SLIBNAME),-current_version,\$(SPPVERSION),-compatibility_version,\$(SPPVERSION)"
@@ -618,8 +618,8 @@ mingw32="yes"
 CYGWIN*)
 targetos=CYGWIN
 shlibdir='${PREFIX}/bin'
-v4l="no"
-v4l2="no"
+video4linux="no"
+video4linux2="no"
 audio_oss="yes"
 dv1394="no"
 VHOOKSHFLAGS='-shared -L$(BUILD_ROOT)/libavformat -L$(BUILD_ROOT)/libavcodec -L$(BUILD_ROOT)/libavutil'
@@ -638,8 +638,8 @@ LDLATEFLAGS="-Wl,--as-needed $LDLATEFLAGS"
 IRIX*)
 targetos=IRIX
 ranlib="echo ignoring ranlib"
-v4l="no"
-v4l2="no"
+video4linux="no"
+video4linux2="no"
 audio_oss="no"
 make="gmake"
 ;;
@@ -659,8 +659,8 @@ SLIBSUF=".dll"
 EXESUF=".exe"
 extralibs=""
 pkg_requires=""
-v4l="no"
-v4l2="no"
+video4linux="no"
+video4linux2="no"
 audio_oss="no"
 dv1394="no"
 ffserver="no"
@@ -753,9 +753,9 @@ for opt do
   ;;
   --enable-gprof) gprof="yes"
   ;;
-  --disable-v4l) v4l="no"
+  --disable-v4l) video4linux="no"
   ;;
-  --disable-v4l2) v4l2="no"
+  --disable-v4l2) video4linux2="no"
   ;;
   --disable-bktr) bktr="no"
   ;;
@@ -916,8 +916,8 @@ you do not need to pass additional options.
 EOF
         exit 1
     fi
-    v4l="no"
-    v4l2="no"
+    video4linux="no"
+    video4linux2="no"
     bktr="no"
     audio_oss="no"
     dv1394="no"
@@ -1526,7 +1526,7 @@ int main( void ) {
 EOF
 
 # check for video4linux2 --- V4L2_PIX_FMT_YUV420
-enabled v4l2 && check_cc <<EOF || v4l2="no"
+enabled video4linux2 && check_cc <<EOF || video4linux2="no"
 #include <sys/time.h>
 #include <asm/types.h>
 #include <linux/videodev2.h>
@@ -1946,12 +1946,12 @@ if test "$mpegaudio_hp" = "yes" ; then
   echo "#define CONFIG_MPEGAUDIO_HP 1" >> $TMPH
 fi
 
-if test "$v4l" = "yes" ; then
+if test "$video4linux" = "yes" ; then
   echo "#define CONFIG_VIDEO4LINUX 1" >> $TMPH
   echo "CONFIG_VIDEO4LINUX=yes" >> config.mak
 fi
 
-if test "$v4l2" = "yes" ; then
+if test "$video4linux2" = "yes" ; then
   echo "#define CONFIG_VIDEO4LINUX2 1" >> $TMPH
   echo "CONFIG_VIDEO4LINUX2=yes" >> config.mak
 fi
