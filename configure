@@ -2020,46 +2020,6 @@ if test "$optimize" = "small"; then
   echo "#define CONFIG_SMALL 1" >> $TMPH
 fi
 
-# build tree in object directory if source path is different from current one
-if test "$source_path_used" = "yes" ; then
-    DIRS="\
-         doc \
-         libavformat \
-         libavcodec \
-         libavcodec/alpha \
-         libavcodec/armv4l \
-         libavcodec/bfin \
-         libavcodec/i386 \
-         libavcodec/sparc \
-         libavcodec/mlib \
-         libavcodec/ppc \
-         libavcodec/liba52 \
-         libpostproc \
-         libavutil \
-         libswscale \
-         tests \
-         vhook \
-         "
-    FILES="\
-          Makefile \
-          common.mak \
-          libavformat/Makefile \
-          libavcodec/Makefile \
-          libpostproc/Makefile \
-          libavutil/Makefile \
-          libswscale/Makefile \
-          tests/Makefile \
-          vhook/Makefile \
-          doc/Makefile \
-          doc/texi2pod.pl \
-          "
-    for dir in $DIRS ; do
-            mkdir -p $dir
-    done
-    for f in $FILES ; do
-        ln -sf "$source_path/$f" $f
-    done
-fi
 echo "SRC_PATH=\"$source_path\"" >> config.mak
 echo "SRC_PATH_BARE=$source_path" >> config.mak
 echo "BUILD_ROOT=\"$PWD\"" >> config.mak
@@ -2100,6 +2060,46 @@ fi
 
 rm -f $TMPO $TMPC $TMPE $TMPS $TMPH
 
+# build tree in object directory if source path is different from current one
+if test "$source_path_used" = "yes" ; then
+    DIRS="\
+         doc \
+         libavformat \
+         libavcodec \
+         libavcodec/alpha \
+         libavcodec/armv4l \
+         libavcodec/bfin \
+         libavcodec/i386 \
+         libavcodec/sparc \
+         libavcodec/mlib \
+         libavcodec/ppc \
+         libavcodec/liba52 \
+         libpostproc \
+         libavutil \
+         libswscale \
+         tests \
+         vhook \
+         "
+    FILES="\
+          Makefile \
+          common.mak \
+          libavformat/Makefile \
+          libavcodec/Makefile \
+          libpostproc/Makefile \
+          libavutil/Makefile \
+          libswscale/Makefile \
+          tests/Makefile \
+          vhook/Makefile \
+          doc/Makefile \
+          doc/texi2pod.pl \
+          "
+    for dir in $DIRS ; do
+            mkdir -p $dir
+    done
+    for f in $FILES ; do
+        ln -sf "$source_path/$f" $f
+    done
+fi
 
 # build pkg-config files libav*.pc and libpostproc.pc
 # libavutil.pc
