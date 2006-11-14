@@ -52,6 +52,7 @@ endif
 
 ifeq ($(BUILD_DOC),yes)
 DOC=documentation
+INSTALLMAN=install-man
 endif
 
 OBJS = ffmpeg.o ffserver.o cmdutils.o ffplay.o
@@ -116,7 +117,7 @@ videohook: .libs
 documentation:
 	$(MAKE) -C doc all
 
-install: install-progs install-libs install-headers install-man $(INSTALLVHOOK)
+install: install-progs install-libs install-headers $(INSTALLMAN) $(INSTALLVHOOK)
 
 ifeq ($(BUILD_SHARED),yes)
 install-progs: $(PROGS) install-libs
@@ -130,12 +131,9 @@ endif
 wininstaller: all install
 	makensis ffinstall.nsi
 
-# install man from source dir if available
 install-man:
-	if [ -f doc/ffmpeg.1 ] ; then \
-	    install -d "$(mandir)/man1" ; \
-	    install -m 644 $(MANPAGES) "$(mandir)/man1" ; \
-	fi
+	install -d "$(mandir)/man1"
+	install -m 644 $(MANPAGES) "$(mandir)/man1"
 
 install-vhook:
 	$(MAKE) -C vhook install
