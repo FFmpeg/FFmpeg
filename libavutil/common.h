@@ -84,7 +84,7 @@
 #endif
 #endif
 
-#ifndef EMULATE_INTTYPES
+#ifdef HAVE_INTTYPES
 #   include <inttypes.h>
 #else
     typedef signed char  int8_t;
@@ -95,7 +95,7 @@
     typedef unsigned int   uint32_t;
     typedef signed long long   int64_t;
     typedef unsigned long long uint64_t;
-#endif /* EMULATE_INTTYPES */
+#endif /* HAVE_INTTYPES */
 
 #ifndef PRId64
 #define PRId64 "lld"
@@ -157,7 +157,7 @@
 #define UINT64_MAX uint64_t_C(0xFFFFFFFFFFFFFFFF)
 #endif
 
-#ifdef EMULATE_FAST_INT
+#ifndef HAVE_FAST_INT
 typedef signed char int_fast8_t;
 typedef signed int  int_fast16_t;
 typedef signed int  int_fast32_t;

@@ -408,10 +408,12 @@ HAVE_LIST='
     dcbzl
     dlfcn
     dlopen
+    fast_int
     freetype2
     gprof
     imlib2
     inet_aton
+    inttypes
     localtime_r
     lrintf
     malloc_h
@@ -559,7 +561,7 @@ installstrip="-s"
 extralibs="-lm"
 bigendian="no"
 inttypes="yes"
-emu_fast_int="no"
+fast_int="yes"
 vhook="default"
 avisynth="no"
 dlfcn="no"
@@ -1390,7 +1392,7 @@ check_header inttypes.h || inttypes=no
 
 # ---
 # *int_fast* test
-check_cc <<EOF || emu_fast_int=yes
+check_cc <<EOF || fast_int=no
 #include <inttypes.h>
 int main(int argc, char ** argv){
         volatile uint_fast64_t i=0x01234567;
@@ -1698,7 +1700,7 @@ if test "$BUILDSUF" != ""; then
 fi
 echo "big-endian       $bigendian"
 echo "inttypes.h       $inttypes"
-echo "broken inttypes.h $emu_fast_int"
+echo "int_fastxx_t     $fast_int"
 if test $arch = "x86_32" -o $arch = "x86_64"; then
     echo "MMX enabled      $mmx"
     echo "CMOV enabled     $cmov"
@@ -1902,12 +1904,6 @@ echo "#define TUNECPU $TUNECPU" >> $TMPH
 if test "$bigendian" = "yes" ; then
   echo "WORDS_BIGENDIAN=yes" >> config.mak
   echo "#define WORDS_BIGENDIAN 1" >> $TMPH
-fi
-if test "$inttypes" != "yes" ; then
-  echo "#define EMULATE_INTTYPES 1" >> $TMPH
-fi
-if test "$emu_fast_int" = "yes" ; then
-  echo "#define EMULATE_FAST_INT 1" >> $TMPH
 fi
 if test "$mmx" = "yes" ; then
   echo "TARGET_MMX=yes" >> config.mak
