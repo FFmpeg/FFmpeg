@@ -2590,6 +2590,11 @@ retry:
     return buf_size;
 }
 
+static void flush(AVCodecContext *avctx){
+    MPADecodeContext *s = avctx->priv_data;
+    s->last_buf_size= 0;
+}
+
 #ifdef CONFIG_MP3ADU_DECODER
 static int decode_frame_adu(AVCodecContext * avctx,
                         void *data, int *data_size,
@@ -2825,6 +2830,7 @@ AVCodec mp3_decoder =
     NULL,
     decode_frame,
     CODEC_CAP_PARSE_ONLY,
+    .flush= flush,
 };
 #endif
 #ifdef CONFIG_MP3ADU_DECODER
@@ -2839,6 +2845,7 @@ AVCodec mp3adu_decoder =
     NULL,
     decode_frame_adu,
     CODEC_CAP_PARSE_ONLY,
+    .flush= flush,
 };
 #endif
 #ifdef CONFIG_MP3ON4_DECODER
@@ -2852,6 +2859,6 @@ AVCodec mp3on4_decoder =
     NULL,
     decode_close_mp3on4,
     decode_frame_mp3on4,
-    0
+    .flush= flush,
 };
 #endif
