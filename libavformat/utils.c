@@ -1163,8 +1163,7 @@ int av_seek_frame_binary(AVFormatContext *s, int stream_index, int64_t target_ts
     AVInputFormat *avif= s->iformat;
     int64_t pos_min, pos_max, pos, pos_limit;
     int64_t ts_min, ts_max, ts;
-    int64_t start_pos, filesize;
-    int index, no_change;
+    int index;
     AVStream *st;
 
     if (stream_index < 0)
@@ -1212,9 +1211,36 @@ int av_seek_frame_binary(AVFormatContext *s, int stream_index, int64_t target_ts
         }
     }
 
+    pos= av_gen_search(s, stream_index, target_ts, pos_min, pos_max, pos_limit, ts_min, ts_max, flags, &ts, avif->read_timestamp);
+    if(pos<0)
+        return -1;
+
+    /* do the seek */
+    url_fseek(&s->pb, pos, SEEK_SET);
+
+    av_update_cur_dts(s, st, ts);
+
+    return 0;
+}
+
+/**
+ * Does a binary search using read_timestamp().
+ * this isnt supposed to be called directly by a user application, but by demuxers
+ * @param target_ts target timestamp in the time base of the given stream
+ * @param stream_index stream number
+ */
+int64_t av_gen_search(AVFormatContext *s, int stream_index, int64_t target_ts, int64_t pos_min, int64_t pos_max, int64_t pos_limit, int64_t ts_min, int64_t ts_max, int flags, int64_t *ts_ret, int64_t (*read_timestamp)(struct AVFormatContext *, int , int64_t *, int64_t )){
+    int64_t pos, ts;
+    int64_t start_pos, filesize;
+    int no_change;
+
+#ifdef DEBUG_SEEK
+    av_log(s, AV_LOG_DEBUG, "gen_seek: %d %"PRId64"\n", stream_index, target_ts);
+#endif
+
     if(ts_min == AV_NOPTS_VALUE){
         pos_min = s->data_offset;
-        ts_min = avif->read_timestamp(s, stream_index, &pos_min, INT64_MAX);
+        ts_min = read_timestamp(s, stream_index, &pos_min, INT64_MAX);
         if (ts_min == AV_NOPTS_VALUE)
             return -1;
     }
@@ -1225,7 +1251,7 @@ int av_seek_frame_binary(AVFormatContext *s, int stream_index, int64_t target_ts
         pos_max = filesize - 1;
         do{
             pos_max -= step;
-            ts_max = avif->read_timestamp(s, stream_index, &pos_max, pos_max + step);
+            ts_max = read_timestamp(s, stream_index, &pos_max, pos_max + step);
             step += step;
         }while(ts_max == AV_NOPTS_VALUE && pos_max >= step);
         if (ts_max == AV_NOPTS_VALUE)
@@ -1233,7 +1259,7 @@ int av_seek_frame_binary(AVFormatContext *s, int stream_index, int64_t target_ts
 
         for(;;){
             int64_t tmp_pos= pos_max + 1;
-            int64_t tmp_ts= avif->read_timestamp(s, stream_index, &tmp_pos, INT64_MAX);
+            int64_t tmp_ts= read_timestamp(s, stream_index, &tmp_pos, INT64_MAX);
             if(tmp_ts == AV_NOPTS_VALUE)
                 break;
             ts_max= tmp_ts;
@@ -1277,7 +1303,7 @@ int av_seek_frame_binary(AVFormatContext *s, int stream_index, int64_t target_ts
             pos= pos_limit;
         start_pos= pos;
 
-        ts = avif->read_timestamp(s, stream_index, &pos, INT64_MAX); //may pass pos_limit instead of -1
+        ts = read_timestamp(s, stream_index, &pos, INT64_MAX); //may pass pos_limit instead of -1
         if(pos == pos_max)
             no_change++;
         else
@@ -1301,18 +1327,14 @@ av_log(s, AV_LOG_DEBUG, "%"PRId64" %"PRId64" %"PRId64" / %"PRId64" %"PRId64" %"P
     ts  = (flags & AVSEEK_FLAG_BACKWARD) ?  ts_min :  ts_max;
 #ifdef DEBUG_SEEK
     pos_min = pos;
-    ts_min = avif->read_timestamp(s, stream_index, &pos_min, INT64_MAX);
+    ts_min = read_timestamp(s, stream_index, &pos_min, INT64_MAX);
     pos_min++;
-    ts_max = avif->read_timestamp(s, stream_index, &pos_min, INT64_MAX);
+    ts_max = read_timestamp(s, stream_index, &pos_min, INT64_MAX);
     av_log(s, AV_LOG_DEBUG, "pos=0x%"PRIx64" %"PRId64"<=%"PRId64"<=%"PRId64"\n",
            pos, ts_min, target_ts, ts_max);
 #endif
-    /* do the seek */
-    url_fseek(&s->pb, pos, SEEK_SET);
-
-    av_update_cur_dts(s, st, ts);
-
-    return 0;
+    *ts_ret= ts;
+    return pos;
 }
 
 static int av_seek_frame_byte(AVFormatContext *s, int stream_index, int64_t pos, int flags){

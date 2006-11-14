@@ -445,6 +445,7 @@ int av_add_index_entry(AVStream *st,
                        int64_t pos, int64_t timestamp, int size, int distance, int flags);
 int av_seek_frame_binary(AVFormatContext *s, int stream_index, int64_t target_ts, int flags);
 void av_update_cur_dts(AVFormatContext *s, AVStream *ref_st, int64_t timestamp);
+int64_t av_gen_search(AVFormatContext *s, int stream_index, int64_t target_ts, int64_t pos_min, int64_t pos_max, int64_t pos_limit, int64_t ts_min, int64_t ts_max, int flags, int64_t *ts_ret, int64_t (*read_timestamp)(struct AVFormatContext *, int , int64_t *, int64_t ));
 
 /* media file output */
 int av_set_parameters(AVFormatContext *s, AVFormatParameters *ap);
