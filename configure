@@ -4,17 +4,35 @@
 #
 
 # make sure we are running under a compatible shell
+# try to make this part work with most shells
+
+try_exec(){
+    type "$1" >/dev/null 2>&1 && exec "$@"
+}
+
 unset foo
 (: ${foo%%bar}) 2>/dev/null && ! (: ${foo?}) 2>/dev/null
 if test "$?" != 0; then
-    if test "x$FFMPEG_CONFIGURE_EXEC" = x; then
-        FFMPEG_CONFIGURE_EXEC=1
-        export FFMPEG_CONFIGURE_EXEC
-        exec bash "$0" "$@"
-        exec ksh "$0" "$@"
-        exec /usr/xpg4/bin/sh "$0" "$@"
+    export FF_CONF_EXEC
+    if test "0$FF_CONF_EXEC" -lt 1; then
+        FF_CONF_EXEC=1
+        try_exec bash "$0" "$@"
+    fi
+    if test "0$FF_CONF_EXEC" -lt 2; then
+        FF_CONF_EXEC=2
+        try_exec ksh "$0" "$@"
+    fi
+    if test "0$FF_CONF_EXEC" -lt 3; then
+        FF_CONF_EXEC=3
+        try_exec /usr/xpg4/bin/sh "$0" "$@"
     fi
     echo "No compatible shell script interpreter found."
+    echo "This configure script requires a POSIX compatible shell"
+    echo "such as bash or ksh."
+    if test "$BASH_VERSION" = '2.04.0(1)-release'; then
+        echo "This bash version ($BASH_VERSION) is broken on your platform."
+        echo "Upgrade to a later version if available."
+    fi
     exit 1
 fi
 
