@@ -1956,7 +1956,6 @@ print_config HAVE_   $TMPH config.mak $HAVE_LIST
 print_config CONFIG_ $TMPH config.mak $CONFIG_LIST
 
 if test "$mingw32" = "yes" ; then
-  echo "CONFIG_MINGW=yes" >> config.mak
   echo "HAVE_W32THREADS=yes" >> config.mak
   echo "#define HAVE_W32THREADS 1" >> $TMPH
   echo "#define HAVE_THREADS 1" >> $TMPH
@@ -1966,9 +1965,7 @@ if test "$mingw32" = "yes" ; then
 fi
 
 if test "$mingwce" = "yes" ; then
-  echo "CONFIG_MINGW=yes" >> config.mak
   echo "#define CONFIG_WINCE 1" >> $TMPH
-  echo "CONFIG_WINCE=yes" >> config.mak
   echo "#ifndef __MINGW32__" >> $TMPH
   echo "#define __MINGW32__ 1" >> $TMPH
   echo "#endif" >> $TMPH
@@ -1976,14 +1973,9 @@ fi
 
 if test "$os2" = "yes" ; then
   echo "#define CONFIG_OS2 1" >> $TMPH
-  echo "CONFIG_OS2=yes" >> config.mak
   echo "HAVE_OS2THREADS=yes" >> config.mak
   echo "#define HAVE_OS2THREADS 1" >> $TMPH
   echo "#define HAVE_THREADS 1" >> $TMPH
-fi
-
-if test "$targetos" = "SunOS" ; then
-  echo "#define CONFIG_SUNOS 1" >> $TMPH
 fi
 
 if test "$targetos" = "BeOS" ; then
@@ -1994,7 +1986,6 @@ fi
 
 if test "$targetos" = "Darwin"; then
   echo "#define CONFIG_DARWIN 1"  >> $TMPH
-  echo "CONFIG_DARWIN=yes" >> config.mak
 fi
 
 if test "$need_inet_aton" = "yes" ; then
