@@ -68,7 +68,7 @@ const uint8_t ff_zigzag248_direct[64] = {
 };
 
 /* not permutated inverse zigzag_direct + 1 for MMX quantizer */
-DECLARE_ALIGNED_8(uint16_t, ff_inv_zigzag_direct16[64]) = {0, };
+DECLARE_ALIGNED_8(uint16_t, inv_zigzag_direct16[64]) = {0, };
 
 const uint8_t ff_alternate_horizontal_scan[64] = {
     0,  1,   2,  3,  8,  9, 16, 17,
@@ -383,11 +383,11 @@ static int w97_16_c(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, int 
     return w_c(v, pix1, pix2, line_size, 16, h, 0);
 }
 
-int ff_w53_32_c(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, int h){
+int w53_32_c(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, int h){
     return w_c(v, pix1, pix2, line_size, 32, h, 1);
 }
 
-int ff_w97_32_c(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, int h){
+int w97_32_c(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, int h){
     return w_c(v, pix1, pix2, line_size, 32, h, 0);
 }
 #endif
@@ -3861,7 +3861,7 @@ static void ff_jref_idct1_add(uint8_t *dest, int line_size, DCTELEM *block)
 static void just_return() { return; }
 
 /* init static data */
-void ff_dsputil_static_init(void)
+void dsputil_static_init(void)
 {
     int i;
 
@@ -3875,7 +3875,7 @@ void ff_dsputil_static_init(void)
         ff_squareTbl[i] = (i - 256) * (i - 256);
     }
 
-    for(i=0; i<64; i++) ff_inv_zigzag_direct16[ff_zigzag_direct[i]]= i+1;
+    for(i=0; i<64; i++) inv_zigzag_direct16[ff_zigzag_direct[i]]= i+1;
 }
 
 

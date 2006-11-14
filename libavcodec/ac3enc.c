@@ -119,7 +119,6 @@ static inline int calc_lowcomp(int a, int b0, int b1, int bin)
 
 /* AC3 bit allocation. The algorithm is the one described in the AC3
    spec. */
-static
 void ac3_parametric_bit_allocation(AC3BitAllocParameters *s, uint8_t *bap,
                                    int8_t *exp, int start, int end,
                                    int snroffset, int fgain, int is_lfe,
@@ -795,7 +794,7 @@ static int compute_bit_allocation(AC3EncodeContext *s,
     return 0;
 }
 
-static void ac3_common_init(void)
+void ac3_common_init(void)
 {
     int i, j, k, l, v;
     /* compute bndtab and masktab from bandsz */

@@ -69,7 +69,7 @@ static const unsigned short aanscales[64] = {
     4520,  6270,  5906,  5315,  4520,  3552,  2446,  1247
 };
 
-uint8_t ff_cropTbl[256 + 2 * MAX_NEG_CROP];
+uint8_t cropTbl[256 + 2 * MAX_NEG_CROP];
 
 int64_t gettime(void)
 {
@@ -473,10 +473,10 @@ int main(int argc, char **argv)
     init_fdct();
     idct_mmx_init();
 
-    for(i=0;i<256;i++) ff_cropTbl[i + MAX_NEG_CROP] = i;
+    for(i=0;i<256;i++) cropTbl[i + MAX_NEG_CROP] = i;
     for(i=0;i<MAX_NEG_CROP;i++) {
-        ff_cropTbl[i] = 0;
-        ff_cropTbl[i + MAX_NEG_CROP + 256] = 255;
+        cropTbl[i] = 0;
+        cropTbl[i + MAX_NEG_CROP + 256] = 255;
     }
 
     for(;;) {

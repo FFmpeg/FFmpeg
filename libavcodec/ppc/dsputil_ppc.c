@@ -42,7 +42,7 @@ void float_init_altivec(DSPContext* c, AVCodecContext *avctx);
 
 #endif
 
-int ff_mm_flags = 0;
+int mm_flags = 0;
 
 int mm_support(void)
 {
@@ -277,7 +277,7 @@ void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx)
     dsputil_h264_init_ppc(c, avctx);
 
     if (has_altivec()) {
-        ff_mm_flags |= MM_ALTIVEC;
+        mm_flags |= MM_ALTIVEC;
 
         dsputil_init_altivec(c, avctx);
         snow_init_altivec(c, avctx);

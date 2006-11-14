@@ -405,7 +405,7 @@ typedef struct DSPContext {
     op_pixels_func put_vc1_mspel_pixels_tab[16];
 } DSPContext;
 
-void ff_dsputil_static_init(void);
+void dsputil_static_init(void);
 void dsputil_init(DSPContext* p, AVCodecContext *avctx);
 
 /**
@@ -463,8 +463,6 @@ static inline int get_penalty_factor(int lambda, int lambda2, int type){
    one or more MultiMedia extension */
 int mm_support(void);
 
-extern int ff_mm_flags;
-
 #ifdef __GNUC__
   #define DECLARE_ALIGNED_16(t,v)       t v __attribute__ ((aligned (16)))
 #else
@@ -483,6 +481,8 @@ extern int ff_mm_flags;
 #define MM_3DNOWEXT  0x0020 /* AMD 3DNowExt */
 #define MM_SSE3   0x0040 /* Prescott SSE3 functions */
 
+extern int mm_flags;
+
 void add_pixels_clamped_mmx(const DCTELEM *block, uint8_t *pixels, int line_size);
 void put_pixels_clamped_mmx(const DCTELEM *block, uint8_t *pixels, int line_size);
 void put_signed_pixels_clamped_mmx(const DCTELEM *block, uint8_t *pixels, int line_size);
@@ -495,7 +495,7 @@ static inline void emms(void)
 
 #define emms_c() \
 {\
-    if (ff_mm_flags & MM_MMX)\
+    if (mm_flags & MM_MMX)\
         emms();\
 }
 
@@ -518,6 +518,8 @@ void dsputil_init_pix_mmx(DSPContext* c, AVCodecContext *avctx);
 #define STRIDE_ALIGN 4
 
 #define MM_IWMMXT    0x0100 /* XScale IWMMXT */
+
+extern int mm_flags;
 
 void dsputil_init_armv4l(DSPContext* c, AVCodecContext *avctx);
 
@@ -546,6 +548,8 @@ void dsputil_init_alpha(DSPContext* c, AVCodecContext *avctx);
 #elif defined(ARCH_POWERPC)
 
 #define MM_ALTIVEC    0x0001 /* standard AltiVec */
+
+extern int mm_flags;
 
 #if defined(HAVE_ALTIVEC) && !defined(CONFIG_DARWIN)
 #define pixel altivec_pixel

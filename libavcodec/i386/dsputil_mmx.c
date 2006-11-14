@@ -34,7 +34,7 @@
 extern void ff_idct_xvid_mmx(short *block);
 extern void ff_idct_xvid_mmx2(short *block);
 
-int ff_mm_flags; /* multimedia extension flags */
+int mm_flags; /* multimedia extension flags */
 
 /* pixel operations */
 static const uint64_t mm_bone attribute_used __attribute__ ((aligned(8))) = 0x0101010101010101ULL;
@@ -3050,39 +3050,39 @@ extern void ff_snow_inner_add_yblock_mmx(uint8_t *obmc, const int obmc_stride, u
 
 void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
 {
-    ff_mm_flags = mm_support();
+    mm_flags = mm_support();
 
     if (avctx->dsp_mask) {
         if (avctx->dsp_mask & FF_MM_FORCE)
-            ff_mm_flags |= (avctx->dsp_mask & 0xffff);
+            mm_flags |= (avctx->dsp_mask & 0xffff);
         else
-            ff_mm_flags &= ~(avctx->dsp_mask & 0xffff);
+            mm_flags &= ~(avctx->dsp_mask & 0xffff);
     }
 
 #if 0
     av_log(avctx, AV_LOG_INFO, "libavcodec: CPU flags:");
-    if (ff_mm_flags & MM_MMX)
+    if (mm_flags & MM_MMX)
         av_log(avctx, AV_LOG_INFO, " mmx");
-    if (ff_mm_flags & MM_MMXEXT)
+    if (mm_flags & MM_MMXEXT)
         av_log(avctx, AV_LOG_INFO, " mmxext");
-    if (ff_mm_flags & MM_3DNOW)
+    if (mm_flags & MM_3DNOW)
         av_log(avctx, AV_LOG_INFO, " 3dnow");
-    if (ff_mm_flags & MM_SSE)
+    if (mm_flags & MM_SSE)
         av_log(avctx, AV_LOG_INFO, " sse");
-    if (ff_mm_flags & MM_SSE2)
+    if (mm_flags & MM_SSE2)
         av_log(avctx, AV_LOG_INFO, " sse2");
     av_log(avctx, AV_LOG_INFO, "\n");
 #endif
 
-    if (ff_mm_flags & MM_MMX) {
+    if (mm_flags & MM_MMX) {
         const int idct_algo= avctx->idct_algo;
 
 #ifdef CONFIG_ENCODERS
         const int dct_algo = avctx->dct_algo;
         if(dct_algo==FF_DCT_AUTO || dct_algo==FF_DCT_MMX){
-            if(ff_mm_flags & MM_SSE2){
+            if(mm_flags & MM_SSE2){
                 c->fdct = ff_fdct_sse2;
-            }else if(ff_mm_flags & MM_MMXEXT){
+            }else if(mm_flags & MM_MMXEXT){
                 c->fdct = ff_fdct_mmx2;
             }else{
                 c->fdct = ff_fdct_mmx;
@@ -3097,7 +3097,7 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
                 c->idct_permutation_type= FF_SIMPLE_IDCT_PERM;
 #ifdef CONFIG_GPL
             }else if(idct_algo==FF_IDCT_LIBMPEG2MMX){
-                if(ff_mm_flags & MM_MMXEXT){
+                if(mm_flags & MM_MMXEXT){
                     c->idct_put= ff_libmpeg2mmx2_idct_put;
                     c->idct_add= ff_libmpeg2mmx2_idct_add;
                     c->idct    = ff_mmxext_idct;
@@ -3111,7 +3111,7 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             }else if(idct_algo==FF_IDCT_VP3 &&
                      avctx->codec->id!=CODEC_ID_THEORA &&
                      !(avctx->flags & CODEC_FLAG_BITEXACT)){
-                if(ff_mm_flags & MM_SSE2){
+                if(mm_flags & MM_SSE2){
                     c->idct_put= ff_vp3_idct_put_sse2;
                     c->idct_add= ff_vp3_idct_add_sse2;
                     c->idct    = ff_vp3_idct_sse2;
@@ -3126,7 +3126,7 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             }else if(idct_algo==FF_IDCT_CAVS){
                     c->idct_permutation_type= FF_TRANSPOSE_IDCT_PERM;
             }else if(idct_algo==FF_IDCT_XVIDMMX){
-                if(ff_mm_flags & MM_MMXEXT){
+                if(mm_flags & MM_MMXEXT){
                     c->idct_put= ff_idct_xvid_mmx2_put;
                     c->idct_add= ff_idct_xvid_mmx2_add;
                     c->idct    = ff_idct_xvid_mmx2;
@@ -3200,7 +3200,7 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
         c->hadamard8_diff[1]= hadamard8_diff_mmx;
 
         c->pix_norm1 = pix_norm1_mmx;
-        c->sse[0] = (ff_mm_flags & MM_SSE2) ? sse16_sse2 : sse16_mmx;
+        c->sse[0] = (mm_flags & MM_SSE2) ? sse16_sse2 : sse16_mmx;
           c->sse[1] = sse8_mmx;
         c->vsad[4]= vsad_intra16_mmx;
 
@@ -3227,7 +3227,7 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
         c->h264_idct8_dc_add=
         c->h264_idct8_add= ff_h264_idct8_add_mmx;
 
-        if (ff_mm_flags & MM_MMXEXT) {
+        if (mm_flags & MM_MMXEXT) {
             c->prefetch = prefetch_mmx2;
 
             c->put_pixels_tab[0][1] = put_pixels16_x2_mmx2;
@@ -3369,7 +3369,7 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
 #ifdef CONFIG_ENCODERS
             c->sub_hfyu_median_prediction= sub_hfyu_median_prediction_mmx2;
 #endif //CONFIG_ENCODERS
-        } else if (ff_mm_flags & MM_3DNOW) {
+        } else if (mm_flags & MM_3DNOW) {
             c->prefetch = prefetch_3dnow;
 
             c->put_pixels_tab[0][1] = put_pixels16_x2_3dnow;
@@ -3463,7 +3463,7 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
         }
 
 #ifdef CONFIG_SNOW_ENCODER
-        if(ff_mm_flags & MM_SSE2){
+        if(mm_flags & MM_SSE2){
             c->horizontal_compose97i = ff_snow_horizontal_compose97i_sse2;
             c->vertical_compose97i = ff_snow_vertical_compose97i_sse2;
             c->inner_add_yblock = ff_snow_inner_add_yblock_sse2;
@@ -3475,22 +3475,22 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
         }
 #endif
 
-        if(ff_mm_flags & MM_3DNOW){
+        if(mm_flags & MM_3DNOW){
             c->vorbis_inverse_coupling = vorbis_inverse_coupling_3dnow;
             c->vector_fmul = vector_fmul_3dnow;
             if(!(avctx->flags & CODEC_FLAG_BITEXACT))
                 c->float_to_int16 = float_to_int16_3dnow;
         }
-        if(ff_mm_flags & MM_3DNOWEXT)
+        if(mm_flags & MM_3DNOWEXT)
             c->vector_fmul_reverse = vector_fmul_reverse_3dnow2;
-        if(ff_mm_flags & MM_SSE){
+        if(mm_flags & MM_SSE){
             c->vorbis_inverse_coupling = vorbis_inverse_coupling_sse;
             c->vector_fmul = vector_fmul_sse;
             c->float_to_int16 = float_to_int16_sse;
             c->vector_fmul_reverse = vector_fmul_reverse_sse;
             c->vector_fmul_add_add = vector_fmul_add_add_sse;
         }
-        if(ff_mm_flags & MM_3DNOW)
+        if(mm_flags & MM_3DNOW)
             c->vector_fmul_add_add = vector_fmul_add_add_3dnow; // faster than sse
     }
 

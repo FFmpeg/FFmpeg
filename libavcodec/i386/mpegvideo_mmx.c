@@ -27,7 +27,7 @@
 #include "../avcodec.h"
 #include "x86_cpu.h"
 
-extern uint16_t ff_inv_zigzag_direct16[64];
+extern uint16_t inv_zigzag_direct16[64];
 
 static const unsigned long long int mm_wabs __attribute__ ((aligned(8))) = 0xffffffffffffffffULL;
 static const unsigned long long int mm_wone __attribute__ ((aligned(8))) = 0x0001000100010001ULL;
@@ -693,7 +693,7 @@ static void  denoise_dct_sse2(MpegEncContext *s, DCTELEM *block){
 
 void MPV_common_init_mmx(MpegEncContext *s)
 {
-    if (ff_mm_flags & MM_MMX) {
+    if (mm_flags & MM_MMX) {
         const int dct_algo = s->avctx->dct_algo;
 
         s->dct_unquantize_h263_intra = dct_unquantize_h263_intra_mmx;
@@ -706,16 +706,16 @@ void MPV_common_init_mmx(MpegEncContext *s)
 
         draw_edges = draw_edges_mmx;
 
-        if (ff_mm_flags & MM_SSE2) {
+        if (mm_flags & MM_SSE2) {
             s->denoise_dct= denoise_dct_sse2;
         } else {
                 s->denoise_dct= denoise_dct_mmx;
         }
 
         if(dct_algo==FF_DCT_AUTO || dct_algo==FF_DCT_MMX){
-            if(ff_mm_flags & MM_SSE2){
+            if(mm_flags & MM_SSE2){
                 s->dct_quantize= dct_quantize_SSE2;
-            } else if(ff_mm_flags & MM_MMXEXT){
+            } else if(mm_flags & MM_MMXEXT){
                 s->dct_quantize= dct_quantize_MMX2;
             } else {
                 s->dct_quantize= dct_quantize_MMX;

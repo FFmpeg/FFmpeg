@@ -1680,9 +1680,6 @@ if test "$gprof" = "yes" ; then
     add_ldflags "-p"
 fi
 
-VHOOKCFLAGS="-fPIC $CFLAGS"
-test "$needmdynamicnopic" = yes && add_cflags -mdynamic-no-pic
-
 # find if .align arg is power-of-two or not
 if test $asmalign_pot = "unknown"; then
     asmalign_pot="no"
@@ -1819,6 +1816,9 @@ else
     echo "STRIP=echo ignoring strip" >> config.mak
     echo "INSTALLSTRIP=" >> config.mak
 fi
+
+VHOOKCFLAGS="-fPIC $CFLAGS"
+test "$needmdynamicnopic" = yes && add_cflags -mdynamic-no-pic
 
 echo "OPTFLAGS=$CFLAGS" >> config.mak
 echo "VHOOKCFLAGS=$VHOOKCFLAGS">>config.mak

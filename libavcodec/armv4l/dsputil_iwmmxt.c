@@ -128,7 +128,7 @@ static void nop(uint8_t *block, const uint8_t *pixels, int line_size, int h)
     return;
 }
 
-int ff_mm_flags; /* multimedia extension flags */
+int mm_flags; /* multimedia extension flags */
 
 int mm_support(void)
 {
@@ -137,16 +137,16 @@ int mm_support(void)
 
 void dsputil_init_iwmmxt(DSPContext* c, AVCodecContext *avctx)
 {
-    ff_mm_flags = mm_support();
+    mm_flags = mm_support();
 
     if (avctx->dsp_mask) {
         if (avctx->dsp_mask & FF_MM_FORCE)
-            ff_mm_flags |= (avctx->dsp_mask & 0xffff);
+            mm_flags |= (avctx->dsp_mask & 0xffff);
         else
-            ff_mm_flags &= ~(avctx->dsp_mask & 0xffff);
+            mm_flags &= ~(avctx->dsp_mask & 0xffff);
     }
 
-    if (!(ff_mm_flags & MM_IWMMXT)) return;
+    if (!(mm_flags & MM_IWMMXT)) return;
 
     c->add_pixels_clamped = add_pixels_clamped_iwmmxt;
 
