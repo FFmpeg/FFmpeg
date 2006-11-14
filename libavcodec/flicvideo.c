@@ -156,7 +156,7 @@ static int flic_decode_frame_8BPP(AVCodecContext *avctx,
     int starting_line;
     signed short line_packets;
     int y_ptr;
-    signed char byte_run;
+    int byte_run;
     int pixel_skip;
     int pixel_countdown;
     unsigned char *pixels;
@@ -258,7 +258,7 @@ static int flic_decode_frame_8BPP(AVCodecContext *avctx,
                         pixel_skip = buf[stream_ptr++];
                         pixel_ptr += pixel_skip;
                         pixel_countdown -= pixel_skip;
-                        byte_run = buf[stream_ptr++];
+                        byte_run = (signed char)(buf[stream_ptr++]);
                         if (byte_run < 0) {
                             byte_run = -byte_run;
                             palette_idx1 = buf[stream_ptr++];
@@ -301,7 +301,7 @@ static int flic_decode_frame_8BPP(AVCodecContext *avctx,
                         pixel_skip = buf[stream_ptr++];
                         pixel_ptr += pixel_skip;
                         pixel_countdown -= pixel_skip;
-                        byte_run = buf[stream_ptr++];
+                        byte_run = (signed char)(buf[stream_ptr++]);
                         if (byte_run > 0) {
                             CHECK_PIXEL_PTR(byte_run);
                             for (j = 0; j < byte_run; j++, pixel_countdown--) {
@@ -341,7 +341,7 @@ static int flic_decode_frame_8BPP(AVCodecContext *avctx,
                 stream_ptr++;
                 pixel_countdown = s->avctx->width;
                 while (pixel_countdown > 0) {
-                    byte_run = buf[stream_ptr++];
+                    byte_run = (signed char)(buf[stream_ptr++]);
                     if (byte_run > 0) {
                         palette_idx1 = buf[stream_ptr++];
                         CHECK_PIXEL_PTR(byte_run);
@@ -443,7 +443,7 @@ static int flic_decode_frame_15_16BPP(AVCodecContext *avctx,
     int compressed_lines;
     signed short line_packets;
     int y_ptr;
-    signed char byte_run;
+    int byte_run;
     int pixel_skip;
     int pixel_countdown;
     unsigned char *pixels;
@@ -503,7 +503,7 @@ static int flic_decode_frame_15_16BPP(AVCodecContext *avctx,
                         pixel_skip = buf[stream_ptr++];
                         pixel_ptr += (pixel_skip*2); /* Pixel is 2 bytes wide */
                         pixel_countdown -= pixel_skip;
-                        byte_run = buf[stream_ptr++];
+                        byte_run = (signed char)(buf[stream_ptr++]);
                         if (byte_run < 0) {
                             byte_run = -byte_run;
                             pixel    = LE_16(&buf[stream_ptr]);
@@ -549,7 +549,7 @@ static int flic_decode_frame_15_16BPP(AVCodecContext *avctx,
                 pixel_countdown = (s->avctx->width * 2);
 
                 while (pixel_countdown > 0) {
-                    byte_run = buf[stream_ptr++];
+                    byte_run = (signed char)(buf[stream_ptr++]);
                     if (byte_run > 0) {
                         palette_idx1 = buf[stream_ptr++];
                         CHECK_PIXEL_PTR(byte_run);
@@ -603,7 +603,7 @@ static int flic_decode_frame_15_16BPP(AVCodecContext *avctx,
                 pixel_countdown = s->avctx->width; /* Width is in pixels, not bytes */
 
                 while (pixel_countdown > 0) {
-                    byte_run = buf[stream_ptr++];
+                    byte_run = (signed char)(buf[stream_ptr++]);
                     if (byte_run > 0) {
                         pixel    = LE_16(&buf[stream_ptr]);
                         stream_ptr += 2;
