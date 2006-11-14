@@ -1753,6 +1753,33 @@ else
     echo "License: GPL"
 fi
 
+if test "$amr_wb" = "yes" ; then
+  echo
+  echo "AMR WB FLOAT NOTICE ! Make sure you have downloaded TS26.204"
+  echo "V5.1.0 from "
+  echo "http://www.3gpp.org/ftp/Specs/archive/26_series/26.204/26204-510.zip"
+  echo "and extracted the source to libavcodec/amrwb_float"
+fi
+
+if test "$amr_nb" = "yes" ; then
+  echo
+  echo "AMR NB FLOAT NOTICE ! Make sure you have downloaded TS26.104"
+  echo "REL-5 V5.1.0 from "
+  echo "http://www.3gpp.org/ftp/Specs/archive/26_series/26.104/26104-510.zip"
+  echo "and extracted the source to libavcodec/amr_float"
+  echo "If you try this on alpha, you may need to change Word32 to int in amr/typedef.h"
+fi
+
+if test "$amr_nb_fixed" = "yes" ; then
+  echo
+  echo "AMR NB FIXED POINT NOTICE! Make sure you have downloaded TS26.073 "
+  echo "REL-5 version 5.1.0 from "
+  echo "http://www.3gpp.org/ftp/Specs/archive/26_series/26.073/26073-510.zip"
+  echo "and extracted src to libavcodec/amr"
+  echo "You must also add -DMMS_IO and remove -pedantic-errors to/from CFLAGS in libavcodec/amr/makefile."
+  echo "i.e. CFLAGS = -Wall -I. \$(CFLAGS_\$(MODE)) -D\$(VAD) -DMMS_IO"
+fi
+
 echo "Creating config.mak and config.h..."
 
 date >> config.log
@@ -2042,33 +2069,6 @@ fi
 echo "SRC_PATH=\"$source_path\"" >> config.mak
 echo "SRC_PATH_BARE=$source_path" >> config.mak
 echo "BUILD_ROOT=\"$PWD\"" >> config.mak
-
-if test "$amr_wb" = "yes" ; then
-  echo
-  echo "AMR WB FLOAT NOTICE ! Make sure you have downloaded TS26.204"
-  echo "V5.1.0 from "
-  echo "http://www.3gpp.org/ftp/Specs/archive/26_series/26.204/26204-510.zip"
-  echo "and extracted the source to libavcodec/amrwb_float"
-fi
-
-if test "$amr_nb" = "yes" ; then
-  echo
-  echo "AMR NB FLOAT NOTICE ! Make sure you have downloaded TS26.104"
-  echo "REL-5 V5.1.0 from "
-  echo "http://www.3gpp.org/ftp/Specs/archive/26_series/26.104/26104-510.zip"
-  echo "and extracted the source to libavcodec/amr_float"
-  echo "If you try this on alpha, you may need to change Word32 to int in amr/typedef.h"
-fi
-
-if test "$amr_nb_fixed" = "yes" ; then
-  echo
-  echo "AMR NB FIXED POINT NOTICE! Make sure you have downloaded TS26.073 "
-  echo "REL-5 version 5.1.0 from "
-  echo "http://www.3gpp.org/ftp/Specs/archive/26_series/26.073/26073-510.zip"
-  echo "and extracted src to libavcodec/amr"
-  echo "You must also add -DMMS_IO and remove -pedantic-errors to/from CFLAGS in libavcodec/amr/makefile."
-  echo "i.e. CFLAGS = -Wall -I. \$(CFLAGS_\$(MODE)) -D\$(VAD) -DMMS_IO"
-fi
 
 if test "$amr_if2" = "yes" ; then
   echo "AMR_CFLAGS=-DIF2=1" >> config.mak
