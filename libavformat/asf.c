@@ -22,6 +22,7 @@
 #include "riff.h"
 #include "mpegaudio.h"
 #include "asf.h"
+#include "common.h"
 
 #undef NDEBUG
 #include <assert.h>
@@ -107,15 +108,11 @@ static void get_str16(ByteIOContext *pb, char *buf, int buf_size)
 
 static void get_str16_nolen(ByteIOContext *pb, int len, char *buf, int buf_size)
 {
-    int c;
-    char *q;
-
-    q = buf;
-    while (len > 0) {
-        c = get_le16(pb);
-        if ((q - buf) < buf_size - 1)
-            *q++ = c;
-        len-=2;
+    char* q = buf;
+    len /= 2;
+    while (len--) {
+        uint8_t tmp;
+        PUT_UTF8(get_le16(pb), tmp, if (q - buf < buf_size - 1) *q++ = tmp;)
     }
     *q = '\0';
 }
@@ -361,14 +358,15 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                         char *name, *value;
 
                         name_len = get_le16(pb);
-                        name = (char *)av_mallocz(name_len);
-                        get_str16_nolen(pb, name_len, name, name_len);
+                        name = (char *)av_malloc(name_len * 2);
+                        get_str16_nolen(pb, name_len, name, name_len * 2);
                         value_type = get_le16(pb);
                         value_len = get_le16(pb);
                         if ((value_type == 0) || (value_type == 1)) // unicode or byte
                         {
-                                value = (char *)av_mallocz(value_len);
-                                get_str16_nolen(pb, value_len, value, value_len);
+                                value = (char *)av_malloc(value_len * 2);
+                                get_str16_nolen(pb, value_len, value,
+                                        value_len * 2);
                                 if (strcmp(name,"WM/AlbumTitle")==0) { pstrcpy(s->album, sizeof(s->album), value); }
                                 av_free(value);
                         }
