@@ -89,6 +89,7 @@ typedef struct MPADecodeContext {
     void (*compute_antialias)(struct MPADecodeContext *s, struct GranuleDef *g);
     int adu_mode; ///< 0 for standard mp3, 1 for adu formatted mp3
     int dither_state;
+    int error_resilience;
 } MPADecodeContext;
 
 /**
@@ -305,6 +306,7 @@ static int decode_init(AVCodecContext * avctx)
 #else
     avctx->sample_fmt= SAMPLE_FMT_S16;
 #endif
+    s->error_resilience= avctx->error_resilience;
 
     if(avctx->antialias_algo != FF_AA_FLOAT)
         s->compute_antialias= compute_antialias_integer;
@@ -1705,6 +1707,8 @@ static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
                 s_index -= 4;
                 skip_bits_long(&s->gb, last_pos - pos);
                 av_log(NULL, AV_LOG_INFO, "overread, skip %d enddists: %d %d\n", last_pos - pos, end_pos-pos, end_pos2-pos);
+                if(s->error_resilience >= FF_ER_COMPLIANT)
+                    s_index=0;
                 break;
             }
 //                av_log(NULL, AV_LOG_ERROR, "pos2: %d %d %d %d\n", pos, end_pos, end_pos2, s_index);
@@ -1742,14 +1746,17 @@ static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
         }
         s_index+=4;
     }
-    memset(&g->sb_hybrid[s_index], 0, sizeof(*g->sb_hybrid)*(576 - s_index));
-
     /* skip extension bits */
     bits_left = end_pos - get_bits_count(&s->gb);
 //av_log(NULL, AV_LOG_ERROR, "left:%d buf:%p\n", bits_left, s->in_gb.buffer);
-    if (bits_left < 0) {
+    if (bits_left < 0 || bits_left > 16) {
         av_log(NULL, AV_LOG_ERROR, "bits_left=%d\n", bits_left);
+        s_index=0;
+    }else if(bits_left > 0 && s->error_resilience >= FF_ER_AGGRESSIVE){
+        av_log(NULL, AV_LOG_ERROR, "bits_left=%d\n", bits_left);
+        s_index=0;
     }
+    memset(&g->sb_hybrid[s_index], 0, sizeof(*g->sb_hybrid)*(576 - s_index));
     skip_bits_long(&s->gb, bits_left);
 
     return 0;
