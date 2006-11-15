@@ -421,6 +421,7 @@ CONFIG_LIST='
     vhook
     video4linux
     video4linux2
+    wince
     x264
     xvid
     zlib
@@ -572,7 +573,7 @@ a52bin="no"
 dts="no"
 pp="no"
 mingw32="no"
-mingwce="no"
+wince="no"
 os2="no"
 lstatic="yes"
 lshared="no"
@@ -933,7 +934,7 @@ for opt do
   ;;
   --enable-mingw32) mingw32="yes"
   ;;
-  --enable-mingwce) mingwce="yes"
+  --enable-mingwce) wince="yes"
   ;;
   --enable-static) lstatic="yes"
   ;;
@@ -1029,7 +1030,7 @@ else
     logfile=/dev/null
 fi
 
-if test "$mingw32" = "yes" -o "$mingwce" = "yes"; then
+if test "$mingw32" = "yes" -o "$wince" = "yes"; then
     if test "$lshared" = "yes" && test "$lstatic" = "yes" ; then
         cat <<EOF
 You can only build one library type at once on MinGW.
@@ -1050,7 +1051,7 @@ EOF
     if enabled mingw32; then
         w32threads="yes"
     fi
-    if test "$mingwce" = "yes"; then
+    if test "$wince" = "yes"; then
         protocols="no"
     fi
     SLIBPREF=""
@@ -1954,19 +1955,6 @@ enabled_any pthreads beosthreads os2threads w32threads && enable threads
 
 print_config HAVE_   $TMPH config.mak $HAVE_LIST
 print_config CONFIG_ $TMPH config.mak $CONFIG_LIST
-
-if test "$mingw32" = "yes" ; then
-  echo "#ifndef __MINGW32__" >> $TMPH
-  echo "#define __MINGW32__ 1" >> $TMPH
-  echo "#endif" >> $TMPH
-fi
-
-if test "$mingwce" = "yes" ; then
-  echo "#define CONFIG_WINCE 1" >> $TMPH
-  echo "#ifndef __MINGW32__" >> $TMPH
-  echo "#define __MINGW32__ 1" >> $TMPH
-  echo "#endif" >> $TMPH
-fi
 
 if test "$os2" = "yes" ; then
   echo "#define CONFIG_OS2 1" >> $TMPH
