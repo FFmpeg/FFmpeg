@@ -334,6 +334,10 @@ check_header(){
 #include <$header>
 int x;
 EOF
+    err=$?
+    var=`echo $header | sed 's/[^[:alnum:]]/_/g'`
+    test "$err" = 0 && enable $var || disable $var
+    return $err
 }
 
 check_func(){
@@ -346,6 +350,9 @@ int main(){
     $func();
 }
 EOF
+    err=$?
+    test "$err" = 0 && enable $func || disable $func
+    return $err
 }
 
 check_lib(){
@@ -1327,7 +1334,7 @@ if test $arch = "powerpc"; then
     fi
 fi
 
-check_header altivec.h && altivec_h=yes || altivec_h=no
+check_header altivec.h
 
 # check if our compiler supports Motorola AltiVec C API
 if test $altivec = "yes"; then
@@ -1403,13 +1410,8 @@ fi
 # ---
 # check availability of some header files
 
-memalign=no
-malloc_h=no
-if check_header malloc.h; then
-    malloc_h=yes
-    memalign=yes
-    check_func memalign || memalign="no"
-fi
+check_header malloc.h
+check_func memalign
 
 if test "$memalign" = "no" -a "$mmx" = "yes" -a \
         "$memalign_hack" != "yes" -a "$targetos" != "Darwin" -a \
@@ -1417,10 +1419,10 @@ if test "$memalign" = "no" -a "$mmx" = "yes" -a \
     die "Error, no memalign() but SSE enabled, disable it or use --enable-memalign-hack."
 fi
 
-check_header byteswap.h && byteswap_h=yes || byteswap_h=no
+check_header byteswap.h
 
-check_func inet_aton && inet_aton=yes || inet_aton=no
-check_func localtime_r && localtime_r=yes || localtime_r=no
+check_func inet_aton
+check_func localtime_r
 enabled zlib && check_lib zlib.h zlibVersion -lz || zlib="no"
 
 # check for some common methods of building with pthread support
@@ -1509,18 +1511,12 @@ done
 
 # dlopen/dlfcn.h probing
 
-check_header dlfcn.h && dlfcn_h=yes
-
-temp_extralibs -ldl
-if check_func dlopen; then
-    dlopen=yes
-    ldl=-ldl
-fi
-restore_flags
+check_header dlfcn.h
 
 if check_func dlopen; then
-    dlopen=yes
     ldl=
+elif check_func dlopen -ldl; then
+    ldl=-ldl
 fi
 
 if test "$vhook" = "default"; then
