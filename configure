@@ -1540,6 +1540,10 @@ if enabled vhook; then
     check_ldflags -export-dynamic
 fi
 
+if enabled audio_beos; then
+    add_extralibs "-lmedia -lbe"
+fi
+
 ##########################################
 # imlib check
 

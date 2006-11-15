@@ -35,10 +35,6 @@ ALLPROGS=$(addsuffix $(EXESUF), $(BASENAMES))
 ALLPROGS_G=$(addsuffix _g$(EXESUF), $(BASENAMES))
 ALLMANPAGES=$(addsuffix .1, $(BASENAMES))
 
-ifeq ($(CONFIG_AUDIO_BEOS),yes)
-EXTRALIBS+=-lmedia -lbe
-endif
-
 ifeq ($(BUILD_SHARED),yes)
 DEP_LIBS=libavcodec/$(SLIBPREF)avcodec$(SLIBSUF) libavformat/$(SLIBPREF)avformat$(SLIBSUF)
 else
