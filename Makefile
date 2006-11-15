@@ -241,18 +241,8 @@ TAGS:
 codectest libavtest test-server fulltest test mpeg4 mpeg: $(PROGS)
 	$(MAKE) -C tests $@
 
-# tar release (use 'make -k tar' on a checkouted tree)
-FILE=ffmpeg-$(shell grep "\#define FFMPEG_VERSION " version.h | \
-                    cut -d "\"" -f 2 )
-
-tar:
-	rm -rf /tmp/$(FILE)
-	cp -r . /tmp/$(FILE)
-	( cd /tmp ; tar zcvf ~/$(FILE).tar.gz $(FILE) --exclude .svn )
-	rm -rf /tmp/$(FILE)
-
 .PHONY: all lib videohook documentation install* wininstaller uninstall*
-.PHONY: dep depend clean distclean TAGS tar
+.PHONY: dep depend clean distclean TAGS
 .PHONY: codectest libavtest test-server fulltest test mpeg4 mpeg
 
 ifneq ($(wildcard .depend),)
