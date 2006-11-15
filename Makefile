@@ -164,9 +164,7 @@ uninstall-progs:
 	rm -f $(addprefix $(bindir)/, $(ALLPROGS))
 
 uninstall-man:
-ifneq ($(CONFIG_MINGW),yes)
 	rm -f $(addprefix $(mandir)/man1/,$(ALLMANPAGES))
-endif
 
 uninstall-vhook:
 	$(MAKE) -C vhook uninstall
