@@ -443,6 +443,7 @@ HAVE_LIST='
     malloc_h
     memalign
     mlib
+    os2
     os2threads
     pthreads
     sdl
@@ -1955,10 +1956,6 @@ enabled_any pthreads beosthreads os2threads w32threads && enable threads
 
 print_config HAVE_   $TMPH config.mak $HAVE_LIST
 print_config CONFIG_ $TMPH config.mak $CONFIG_LIST
-
-if test "$os2" = "yes" ; then
-  echo "#define CONFIG_OS2 1" >> $TMPH
-fi
 
 if test "$targetos" = "Darwin"; then
   echo "#define CONFIG_DARWIN 1"  >> $TMPH
