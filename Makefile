@@ -15,8 +15,6 @@ ifeq ($(CONFIG_FFMPEG),yes)
 MANPAGES=doc/ffmpeg.1
 PROGS_G+=ffmpeg_g$(EXESUF)
 PROGS+=ffmpeg$(EXESUF)
-PROGTEST=output_example$(EXESUF)
-QTFASTSTART=qt-faststart$(EXESUF)
 endif
 
 ifeq ($(CONFIG_FFSERVER),yes)
@@ -61,7 +59,7 @@ LDFLAGS+=-L./libswscale
 EXTRALIBS+=-lswscale$(BUILDSUF)
 endif
 
-all: lib $(PROGS_G) $(PROGS) $(PROGTEST) $(VHOOK) $(QTFASTSTART) $(DOC)
+all: lib $(PROGS_G) $(PROGS) $(VHOOK) $(DOC)
 
 lib:
 	$(MAKE) -C libavutil   all
@@ -214,7 +212,7 @@ clean:
 	$(MAKE) -C vhook       clean
 	$(MAKE) -C doc         clean
 	rm -f *.o *.d *~ .libs gmon.out TAGS \
-	   $(ALLPROGS) $(ALLPROGS_G) $(PROGTEST) $(QTFASTSTART)
+	   $(ALLPROGS) $(ALLPROGS_G) output_example$(EXESUF) qt-faststart$(EXESUF)
 
 # Note well: config.log is NOT removed.
 distclean: clean
