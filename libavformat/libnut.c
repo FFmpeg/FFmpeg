@@ -291,7 +291,6 @@ static int nut_read_close(AVFormatContext *s) {
     NUTContext * priv = s->priv_data;
 
     nut_demuxer_uninit(priv->nut);
-    av_free(priv->s);
 
     return 0;
 }
