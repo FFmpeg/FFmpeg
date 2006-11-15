@@ -210,6 +210,7 @@ Muxers/Demuxers:
   img2.c                                Michael Niedermayer
   matroska.c                            Aurelien Jacobs
   mov.c                                 Francois Revol, Michael Niedermayer
+  movenc.c                              Michael Niedermayer, Baptiste Coudurier
   mpegts*                               Mans Rullgard
   mtv.c                                 Reynaldo H. Verdejo Pinochet
   mxf.c                                 Baptiste Coudurier
