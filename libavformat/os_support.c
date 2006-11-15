@@ -36,10 +36,6 @@
 #endif
 #include <time.h>
 
-#include <stdlib.h>
-#include <strings.h>
-#include "barpainet.h"
-
 /**
  * gets the current time in micro seconds.
  */
@@ -71,7 +67,11 @@ struct tm *localtime_r(const time_t *t, struct tm *tp)
 }
 #endif /* !defined(CONFIG_WINCE) && !defined(HAVE_LOCALTIME_R) */
 
-#if !defined(HAVE_INET_ATON)
+#if !defined(HAVE_INET_ATON) && defined(CONFIG_NETWORK)
+#include <stdlib.h>
+#include <strings.h>
+#include "barpainet.h"
+
 int inet_aton (const char * str, struct in_addr * add)
 {
     const char * pch = str;
@@ -93,4 +93,4 @@ done:
 
     return 1;
 }
-#endif /* !defined HAVE_INET_ATON */
+#endif /* !defined(HAVE_INET_ATON) && defined(CONFIG_NETWORK) */
