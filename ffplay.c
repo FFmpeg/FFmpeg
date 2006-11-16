@@ -171,10 +171,6 @@ typedef struct VideoState {
     SDL_mutex *pictq_mutex;
     SDL_cond *pictq_cond;
 
-    SDL_mutex *video_decoder_mutex;
-    SDL_mutex *audio_decoder_mutex;
-    SDL_mutex *subtitle_decoder_mutex;
-
     //    QETimer *video_timer;
     char filename[1024];
     int width, height, xleft, ytop;
@@ -216,6 +212,8 @@ static int error_concealment = 3;
 static int is_full_screen;
 static VideoState *cur_stream;
 static int64_t audio_callback_time;
+
+AVPacket flush_pkt;
 
 #define FF_ALLOC_EVENT   (SDL_USEREVENT)
 #define FF_REFRESH_EVENT (SDL_USEREVENT + 1)
@@ -260,7 +258,7 @@ static int packet_queue_put(PacketQueue *q, AVPacket *pkt)
     AVPacketList *pkt1;
 
     /* duplicate the packet */
-    if (av_dup_packet(pkt) < 0)
+    if (pkt!=&flush_pkt && av_dup_packet(pkt) < 0)
         return -1;
 
     pkt1 = av_malloc(sizeof(AVPacketList));
@@ -1283,17 +1281,21 @@ static int video_thread(void *arg)
         }
         if (packet_queue_get(&is->videoq, pkt, 1) < 0)
             break;
+
+        if(pkt->data == flush_pkt.data){
+            avcodec_flush_buffers(is->video_st->codec);
+            continue;
+        }
+
         /* NOTE: ipts is the PTS of the _first_ picture beginning in
            this packet, if any */
         pts = 0;
         if (pkt->dts != AV_NOPTS_VALUE)
             pts = av_q2d(is->video_st->time_base)*pkt->dts;
 
-            SDL_LockMutex(is->video_decoder_mutex);
             len1 = avcodec_decode_video(is->video_st->codec,
                                         frame, &got_picture,
                                         pkt->data, pkt->size);
-            SDL_UnlockMutex(is->video_decoder_mutex);
 //            if (len1 < 0)
 //                break;
             if (got_picture) {
@@ -1327,6 +1329,10 @@ static int subtitle_thread(void *arg)
         if (packet_queue_get(&is->subtitleq, pkt, 1) < 0)
             break;
 
+        if(pkt->data == flush_pkt.data){
+            avcodec_flush_buffers(is->subtitle_st->codec);
+            continue;
+        }
         SDL_LockMutex(is->subpq_mutex);
         while (is->subpq_size >= SUBPICTURE_QUEUE_SIZE &&
                !is->subtitleq.abort_request) {
@@ -1345,11 +1351,9 @@ static int subtitle_thread(void *arg)
         if (pkt->pts != AV_NOPTS_VALUE)
             pts = av_q2d(is->subtitle_st->time_base)*pkt->pts;
 
-        SDL_LockMutex(is->subtitle_decoder_mutex);
         len1 = avcodec_decode_subtitle(is->subtitle_st->codec,
                                     &sp->sub, &got_subtitle,
                                     pkt->data, pkt->size);
-        SDL_UnlockMutex(is->subtitle_decoder_mutex);
 //            if (len1 < 0)
 //                break;
         if (got_subtitle && sp->sub.format == 0) {
@@ -1491,11 +1495,9 @@ static int audio_decode_frame(VideoState *is, uint8_t *audio_buf, double *pts_pt
     for(;;) {
         /* NOTE: the audio packet can contain several frames */
         while (is->audio_pkt_size > 0) {
-            SDL_LockMutex(is->audio_decoder_mutex);
             len1 = avcodec_decode_audio(is->audio_st->codec,
                                         (int16_t *)audio_buf, &data_size,
                                         is->audio_pkt_data, is->audio_pkt_size);
-            SDL_UnlockMutex(is->audio_decoder_mutex);
             if (len1 < 0) {
                 /* if error, we skip the frame */
                 is->audio_pkt_size = 0;
@@ -1535,6 +1537,11 @@ static int audio_decode_frame(VideoState *is, uint8_t *audio_buf, double *pts_pt
         /* read next packet */
         if (packet_queue_get(&is->audioq, pkt, 1) < 0)
             return -1;
+        if(pkt->data == flush_pkt.data){
+            avcodec_flush_buffers(is->audio_st->codec);
+            continue;
+        }
+
         is->audio_pkt_data = pkt->data;
         is->audio_pkt_size = pkt->size;
 
@@ -1912,29 +1919,23 @@ static int decode_thread(void *arg)
         }
 #endif
         if (is->seek_req) {
-            /* XXX: must lock decoder threads */
-            SDL_LockMutex(is->video_decoder_mutex);
-            SDL_LockMutex(is->audio_decoder_mutex);
-            SDL_LockMutex(is->subtitle_decoder_mutex);
             ret = av_seek_frame(is->ic, -1, is->seek_pos, is->seek_flags);
             if (ret < 0) {
                 fprintf(stderr, "%s: error while seeking\n", is->ic->filename);
             }else{
                 if (is->audio_stream >= 0) {
                     packet_queue_flush(&is->audioq);
-                    avcodec_flush_buffers(ic->streams[audio_index]->codec);
+                    packet_queue_put(&is->audioq, &flush_pkt);
                 }
                 if (is->subtitle_stream >= 0) {
                     packet_queue_flush(&is->subtitleq);
+                    packet_queue_put(&is->subtitleq, &flush_pkt);
                 }
                 if (is->video_stream >= 0) {
                     packet_queue_flush(&is->videoq);
-                    avcodec_flush_buffers(ic->streams[video_index]->codec);
+                    packet_queue_put(&is->videoq, &flush_pkt);
                 }
             }
-            SDL_UnlockMutex(is->subtitle_decoder_mutex);
-            SDL_UnlockMutex(is->audio_decoder_mutex);
-            SDL_UnlockMutex(is->video_decoder_mutex);
             is->seek_req = 0;
         }
 
@@ -2021,10 +2022,6 @@ static VideoState *stream_open(const char *filename, AVInputFormat *iformat)
     is->subpq_mutex = SDL_CreateMutex();
     is->subpq_cond = SDL_CreateCond();
 
-    is->subtitle_decoder_mutex = SDL_CreateMutex();
-    is->audio_decoder_mutex = SDL_CreateMutex();
-    is->video_decoder_mutex = SDL_CreateMutex();
-
     /* add the refresh timer to draw the picture */
     schedule_refresh(is, 40);
 
@@ -2057,9 +2054,6 @@ static void stream_close(VideoState *is)
     SDL_DestroyCond(is->pictq_cond);
     SDL_DestroyMutex(is->subpq_mutex);
     SDL_DestroyCond(is->subpq_cond);
-    SDL_DestroyMutex(is->subtitle_decoder_mutex);
-    SDL_DestroyMutex(is->audio_decoder_mutex);
-    SDL_DestroyMutex(is->video_decoder_mutex);
 }
 
 static void stream_cycle_channel(VideoState *is, int codec_type)
@@ -2480,6 +2474,9 @@ int main(int argc, char **argv)
     SDL_EventState(SDL_MOUSEMOTION, SDL_IGNORE);
     SDL_EventState(SDL_SYSWMEVENT, SDL_IGNORE);
     SDL_EventState(SDL_USEREVENT, SDL_IGNORE);
+
+    av_init_packet(&flush_pkt);
+    flush_pkt.data= "FLUSH";
 
     cur_stream = stream_open(input_filename, file_iformat);
 
