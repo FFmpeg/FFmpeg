@@ -450,6 +450,7 @@ static int swf_write_header(AVFormatContext *s)
             break;
         default:
             /* not supported */
+            av_log(s, AV_LOG_ERROR, "swf doesnt support that sample rate, choose from (44100, 22050, 11025)\n");
             av_free(swf->audio_fifo);
             av_free(swf);
             return -1;
