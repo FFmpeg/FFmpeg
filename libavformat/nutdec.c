@@ -27,17 +27,12 @@
 #undef NDEBUG
 #include <assert.h>
 
-static uint64_t get_v(ByteIOContext *bc/*, maxstuffing*/){
+static uint64_t get_v(ByteIOContext *bc){
     uint64_t val = 0;
 
     for(;;)
     {
         int tmp = get_byte(bc);
-
-//         if(tmp=0x80){
-//             if(!maxstuffing-- || val)
-//                 return -1;
-//         }
 
         if (tmp&0x80)
             val= (val<<7) + tmp - 0x80;
@@ -810,24 +805,6 @@ resync:
     else if(stream_index == -2) return back_ptr;
 
 assert(0);
-    do{
-        frame_code= get_byte(bc);
-        if(frame_code == 'N'){
-            pos= url_ftell(bc)-1;
-            goto resync;
-        }
-        //FIXME consider pos_limit and eof
-        size= decode_frame_header(nut, &flags, &pts, &stream_id, frame_code);
-
-        if(size < 0)
-            goto resync;
-
-        url_fseek(bc, size, SEEK_CUR);
-    }while(stream_id != stream_index || !(flags & FLAG_KEY));
-    assert(nut->next_startcode == 0);
-    av_log(s, AV_LOG_DEBUG, "read_timestamp success\n");
-
-    return pts;
 }
 
 static int read_seek(AVFormatContext *s, int stream_index, int64_t pts, int flags){
@@ -898,7 +875,6 @@ AVInputFormat nut_demuxer = {
     nut_read_packet,
     nut_read_close,
     read_seek,
-//    nut_read_timestamp,
     .extensions = "nut",
 };
 #endif
