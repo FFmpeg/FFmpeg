@@ -145,10 +145,10 @@ static int read_braindead_odml_indx(AVFormatContext *s, int frame_num){
             if(last_pos == pos || pos == base - 8)
                 avi->non_interleaved= 1;
             else
-                av_add_index_entry(st, pos, ast->cum_len, len, 0, key ? AVINDEX_KEYFRAME : 0);
+                av_add_index_entry(st, pos, ast->cum_len / FFMAX(1, ast->sample_size), len, 0, key ? AVINDEX_KEYFRAME : 0);
 
             if(ast->sample_size)
-                ast->cum_len += len / ast->sample_size;
+                ast->cum_len += len;
             else
                 ast->cum_len ++;
             last_pos= pos;
@@ -355,6 +355,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
             get_le32(pb); /* buffer size */
             get_le32(pb); /* quality */
             ast->sample_size = get_le32(pb); /* sample ssize */
+            ast->cum_len *= FFMAX(1, ast->sample_size);
 //            av_log(NULL, AV_LOG_DEBUG, "%d %d %d %d\n", ast->rate, ast->scale, ast->start, ast->sample_size);
 
             switch(tag1) {
@@ -378,7 +379,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 av_log(s, AV_LOG_ERROR, "unknown stream type %X\n", tag1);
                 goto fail;
             }
-            ast->frame_offset= ast->cum_len * FFMAX(ast->sample_size, 1);
+            ast->frame_offset= ast->cum_len;
             url_fskip(pb, size - 12 * 4);
             break;
         case MKTAG('s', 't', 'r', 'f'):
@@ -805,9 +806,9 @@ static int avi_read_idx1(AVFormatContext *s, int size)
         if(last_pos == pos)
             avi->non_interleaved= 1;
         else
-            av_add_index_entry(st, pos, ast->cum_len, len, 0, (flags&AVIIF_INDEX) ? AVINDEX_KEYFRAME : 0);
+            av_add_index_entry(st, pos, ast->cum_len / FFMAX(1, ast->sample_size), len, 0, (flags&AVIIF_INDEX) ? AVINDEX_KEYFRAME : 0);
         if(ast->sample_size)
-            ast->cum_len += len / ast->sample_size;
+            ast->cum_len += len;
         else
             ast->cum_len ++;
         last_pos= pos;
