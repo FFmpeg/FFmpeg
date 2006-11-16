@@ -1820,63 +1820,31 @@ echo "SLIBPREF=$SLIBPREF" >> config.mak
 echo "SLIBSUF=\${BUILDSUF}$SLIBSUF" >> config.mak
 echo "EXESUF=\${BUILDSUF}$EXESUF" >> config.mak
 echo "TARGET_OS=$targetos" >> config.mak
-if test "$arch" = "x86_32" -o "$arch" = "x86_64" ; then
-  echo "TARGET_ARCH_X86=yes" >> config.mak
-  echo "#define ARCH_X86 1" >> $TMPH
-fi
-if test "$arch" = "x86_32" ; then
-  echo "TARGET_ARCH_X86_32=yes" >> config.mak
-  echo "#define ARCH_X86_32 1" >> $TMPH
-elif test "$arch" = "x86_64" ; then
-  echo "TARGET_ARCH_X86_64=yes" >> config.mak
-  echo "#define ARCH_X86_64 1" >> $TMPH
-elif test "$arch" = "armv4l" ; then
-  echo "TARGET_ARCH_ARMV4L=yes" >> config.mak
-  echo "#define ARCH_ARMV4L 1" >> $TMPH
-elif test "$arch" = "alpha" ; then
-  echo "TARGET_ARCH_ALPHA=yes" >> config.mak
-  echo "#define ARCH_ALPHA 1" >> $TMPH
-elif test "$arch" = "sparc64" ; then
-  echo "TARGET_ARCH_SPARC64=yes" >> config.mak
-  echo "#define ARCH_SPARC64 1" >> $TMPH
-  echo "TARGET_ARCH_SPARC=yes" >> config.mak
-  echo "#define ARCH_SPARC 1" >> $TMPH
-elif test "$arch" = "sparc" ; then
-  echo "TARGET_ARCH_SPARC=yes" >> config.mak
-  echo "#define ARCH_SPARC 1" >> $TMPH
-elif test "$arch" = "powerpc" ; then
-  echo "TARGET_ARCH_POWERPC=yes" >> config.mak
-  echo "#define ARCH_POWERPC 1" >> $TMPH
-  if test $POWERPCMODE = "32bits"; then
-    echo "#define POWERPC_MODE_32BITS 1" >> $TMPH
-  else
-    echo "#define POWERPC_MODE_64BITS 1" >> $TMPH
-  fi
-  if test "$powerpc_perf" = "yes"; then
-    echo "#define POWERPC_PERFORMANCE_REPORT 1" >> $TMPH
-  fi
-elif test "$arch" = "mips" ; then
-  echo "TARGET_ARCH_MIPS=yes" >> config.mak
-  echo "#define ARCH_MIPS 1" >> $TMPH
-elif test "$arch" = "sh4" ; then
-  echo "TARGET_ARCH_SH4=yes" >> config.mak
-  echo "#define ARCH_SH4 1" >> $TMPH
-elif test "$arch" = "parisc" ; then
-  echo "TARGET_ARCH_PARISC=yes" >> config.mak
-  echo "#define ARCH_PARISC 1" >> $TMPH
-elif test "$arch" = "s390" ; then
-  echo "TARGET_ARCH_S390=yes" >> config.mak
-  echo "#define ARCH_S390 1" >> $TMPH
-elif test "$arch" = "m68k" ; then
-  echo "TARGET_ARCH_M68K=yes" >> config.mak
-  echo "#define ARCH_M68K 1" >> $TMPH
-elif test "$arch" = "ia64" ; then
-  echo "TARGET_ARCH_IA64=yes" >> config.mak
-  echo "#define ARCH_IA64 1" >> $TMPH
-elif test "$arch" = "bfin" ; then
-  echo "TARGET_ARCH_BFIN=yes" >> config.mak
-  echo "#define ARCH_BFIN 1" >> $TMPH
-fi
+
+ucarch=`toupper $arch`
+echo "TARGET_ARCH_${ucarch}=yes" >> config.mak
+echo "#define ARCH_${ucarch} 1" >> $TMPH
+
+# special cases
+case "$arch" in
+    x86_32|x86_64)
+        echo "TARGET_ARCH_X86=yes" >> config.mak
+        echo "#define ARCH_X86 1" >> $TMPH
+        ;;
+    powerpc)
+        if test "$POWERPCMODE" = "64bits"; then
+            echo "#define POWERPC_MODE_64BITS 1" >> $TMPH
+        fi
+        if test "$powerpc_perf" = "yes"; then
+            echo "#define POWERPC_PERFORMANCE_REPORT 1" >> $TMPH
+        fi
+        ;;
+    sparc64)
+        echo "TARGET_ARCH_SPARC=yes" >> config.mak
+        echo "#define ARCH_SPARC 1" >> $TMPH
+        ;;
+esac
+
 echo "#define TUNECPU $TUNECPU" >> $TMPH
 if test "$bigendian" = "yes" ; then
   echo "WORDS_BIGENDIAN=yes" >> config.mak
