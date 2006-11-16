@@ -319,18 +319,9 @@ static void sdp_parse_fmtp(AVStream *st, const char *p)
     AVCodecContext *codec = st->codec;
     rtp_payload_data_t *rtp_payload_data = &rtsp_st->rtp_payload_data;
 
-    // TODO (Replace with rtsp_next_attr_and_value)
     /* loop on each attribute */
-    for(;;) {
-        skip_spaces(&p);
-        if (*p == '\0')
-            break;
-        get_word_sep(attr, sizeof(attr), "=", &p);
-        if (*p == '=')
-            p++;
-        get_word_sep(value, sizeof(value), ";", &p);
-        if (*p == ';')
-            p++;
+    while(rtsp_next_attr_and_value(&p, attr, sizeof(attr), value, sizeof(value)))
+    {
         /* grab the codec extra_data from the config parameter of the fmtp line */
         sdp_parse_fmtp_config(codec, attr, value);
         /* Looking for a known attribute */
