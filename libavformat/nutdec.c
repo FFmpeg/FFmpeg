@@ -637,7 +637,7 @@ static int nut_read_header(AVFormatContext *s, AVFormatParameters *ap)
     return 0;
 }
 
-static int decode_frame_header(NUTContext *nut, int *flags_ret, int64_t *pts, int *stream_id, int frame_code){
+static int decode_frame_header(NUTContext *nut, int64_t *pts, int *stream_id, int frame_code){
     AVFormatContext *s= nut->avf;
     ByteIOContext *bc = &s->pb;
     StreamContext *stc;
@@ -682,14 +682,13 @@ static int decode_frame_header(NUTContext *nut, int *flags_ret, int64_t *pts, in
         get_v(bc);
     if(flags&FLAG_CHECKSUM){
         get_be32(bc); //FIXME check this
-    }else if(size > 2*nut->max_distance){
+    }else if(size > 2*nut->max_distance || FFABS(stc->last_pts - *pts) > stc->max_pts_distance){
         av_log(s, AV_LOG_ERROR, "frame size > 2max_distance and no checksum\n");
         return -1;
     }
-    *flags_ret= flags;
 
     stc->last_pts= *pts;
-    stc->last_key_frame= flags&FLAG_KEY; //FIXME change to last flags
+    stc->last_flags= flags;
 
     return size;
 }
@@ -697,29 +696,32 @@ static int decode_frame_header(NUTContext *nut, int *flags_ret, int64_t *pts, in
 static int decode_frame(NUTContext *nut, AVPacket *pkt, int frame_code){
     AVFormatContext *s= nut->avf;
     ByteIOContext *bc = &s->pb;
-    int size, stream_id, flags, discard;
+    int size, stream_id, discard;
     int64_t pts, last_IP_pts;
+    StreamContext *stc;
 
-    size= decode_frame_header(nut, &flags, &pts, &stream_id, frame_code);
+    size= decode_frame_header(nut, &pts, &stream_id, frame_code);
     if(size < 0)
         return -1;
 
-    if (flags & FLAG_KEY)
-        nut->stream[stream_id].skip_until_key_frame=0;
+    stc= &nut->stream[stream_id];
+
+    if (stc->last_flags & FLAG_KEY)
+        stc->skip_until_key_frame=0;
 
     discard= s->streams[ stream_id ]->discard;
     last_IP_pts= s->streams[ stream_id ]->last_IP_pts;
-    if(  (discard >= AVDISCARD_NONKEY && !(flags & FLAG_KEY))
+    if(  (discard >= AVDISCARD_NONKEY && !(stc->last_flags & FLAG_KEY))
        ||(discard >= AVDISCARD_BIDIR && last_IP_pts != AV_NOPTS_VALUE && last_IP_pts > pts)
        || discard >= AVDISCARD_ALL
-       || nut->stream[stream_id].skip_until_key_frame){
+       || stc->skip_until_key_frame){
         url_fskip(bc, size);
         return 1;
     }
 
     av_get_packet(bc, pkt, size);
     pkt->stream_index = stream_id;
-    if (flags & FLAG_KEY)
+    if (stc->last_flags & FLAG_KEY)
         pkt->flags |= PKT_FLAG_KEY;
     pkt->pts = pts;
 
