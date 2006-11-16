@@ -33,7 +33,7 @@ struct AVCLASS {
                                         or AVFormatContext, which begin with an AVClass.
                                         Needed because av_log is in libavcodec and has no visibility
                                         of AVIn/OutputFormat */
-    struct AVOption *option;
+    const struct AVOption *option;
 };
 
 /* av_log API */
