@@ -66,7 +66,8 @@ typedef struct {
 } FrameCode; // maybe s/FrameCode/framecode_t/ or change all to java style but dont mix
 
 typedef struct {
-    int last_key_frame;  ///<was the last frame a keyfraeme
+    int last_flags;
+    int skip_until_key_frame;
     int64_t last_pts;
     int time_base_id;
     AVRational time_base;
