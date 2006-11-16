@@ -287,7 +287,7 @@ static int decode_stream_header(NUTContext *nut){
     AVFormatContext *s= nut->avf;
     ByteIOContext *bc = &s->pb;
     StreamContext *stc;
-    int class, nom, denom, stream_id;
+    int class, stream_id;
     uint64_t tmp, end;
     AVStream *st;
 
@@ -784,7 +784,6 @@ static int64_t nut_read_timestamp(AVFormatContext *s, int stream_index, int64_t 
     NUTContext *nut = s->priv_data;
     ByteIOContext *bc = &s->pb;
     int64_t pos, pts, back_ptr;
-    int frame_code, stream_id,size, flags;
 av_log(s, AV_LOG_DEBUG, "read_timestamp(X,%d,%"PRId64",%"PRId64")\n", stream_index, *pos_arg, pos_limit);
 
     pos= *pos_arg;
