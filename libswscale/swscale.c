@@ -2297,29 +2297,29 @@ SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, int dstH
 		char *dither= "";
 #endif
 		if(flags&SWS_FAST_BILINEAR)
-			MSG_INFO("\nSwScaler: FAST_BILINEAR scaler, ");
+			MSG_INFO("SwScaler: FAST_BILINEAR scaler, ");
 		else if(flags&SWS_BILINEAR)
-			MSG_INFO("\nSwScaler: BILINEAR scaler, ");
+			MSG_INFO("SwScaler: BILINEAR scaler, ");
 		else if(flags&SWS_BICUBIC)
-			MSG_INFO("\nSwScaler: BICUBIC scaler, ");
+			MSG_INFO("SwScaler: BICUBIC scaler, ");
 		else if(flags&SWS_X)
-			MSG_INFO("\nSwScaler: Experimental scaler, ");
+			MSG_INFO("SwScaler: Experimental scaler, ");
 		else if(flags&SWS_POINT)
-			MSG_INFO("\nSwScaler: Nearest Neighbor / POINT scaler, ");
+			MSG_INFO("SwScaler: Nearest Neighbor / POINT scaler, ");
 		else if(flags&SWS_AREA)
-			MSG_INFO("\nSwScaler: Area Averageing scaler, ");
+			MSG_INFO("SwScaler: Area Averageing scaler, ");
 		else if(flags&SWS_BICUBLIN)
-			MSG_INFO("\nSwScaler: luma BICUBIC / chroma BILINEAR scaler, ");
+			MSG_INFO("SwScaler: luma BICUBIC / chroma BILINEAR scaler, ");
 		else if(flags&SWS_GAUSS)
-			MSG_INFO("\nSwScaler: Gaussian scaler, ");
+			MSG_INFO("SwScaler: Gaussian scaler, ");
 		else if(flags&SWS_SINC)
-			MSG_INFO("\nSwScaler: Sinc scaler, ");
+			MSG_INFO("SwScaler: Sinc scaler, ");
 		else if(flags&SWS_LANCZOS)
-			MSG_INFO("\nSwScaler: Lanczos scaler, ");
+			MSG_INFO("SwScaler: Lanczos scaler, ");
 		else if(flags&SWS_SPLINE)
-			MSG_INFO("\nSwScaler: Bicubic spline scaler, ");
+			MSG_INFO("SwScaler: Bicubic spline scaler, ");
 		else
-			MSG_INFO("\nSwScaler: ehh flags invalid?! ");
+			MSG_INFO("SwScaler: ehh flags invalid?! ");
 
 		if(dstFormat==PIX_FMT_BGR555 || dstFormat==PIX_FMT_BGR565)
 			MSG_INFO("from %s to%s %s ", 
