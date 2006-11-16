@@ -206,7 +206,7 @@ static int nut_read_header(AVFormatContext * avf, AVFormatParameters * ap) {
     int ret, i;
 
     if ((ret = nut_read_headers(nut, &s, NULL))) {
-        if (ret < 0) av_log(avf, AV_LOG_ERROR, " NUT error: %s\n", nut_error(-ret));
+        av_log(avf, AV_LOG_ERROR, " NUT error: %s\n", nut_error(ret));
         nut_demuxer_uninit(nut);
         return -1;
     }
@@ -262,10 +262,13 @@ static int nut_read_packet(AVFormatContext * avf, AVPacket * pkt) {
     nut_packet_t pd;
     int ret;
 
-    while ((ret = nut_read_next_packet(priv->nut, &pd)) < 0)
-        av_log(avf, AV_LOG_ERROR, " NUT error: %s\n", nut_error(-ret));
+    ret = nut_read_next_packet(priv->nut, &pd);
 
-    if (ret || av_new_packet(pkt, pd.len) < 0) return -1;
+    if (ret || av_new_packet(pkt, pd.len) < 0) {
+        if (ret != NUT_ERR_EOF)
+            av_log(avf, AV_LOG_ERROR, " NUT error: %s\n", nut_error(ret));
+        return -1;
+    }
 
     if (pd.flags & NUT_FLAG_KEY) pkt->flags |= PKT_FLAG_KEY;
     pkt->pts = pd.pts;
