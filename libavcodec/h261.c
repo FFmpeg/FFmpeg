@@ -77,7 +77,7 @@ void ff_h261_loop_filter(MpegEncContext *s){
     s->dsp.h261_loop_filter(dest_cr, uvlinesize);
 }
 
-static int ff_h261_get_picture_format(int width, int height){
+int ff_h261_get_picture_format(int width, int height){
     // QCIF
     if (width == 176 && height == 144)
         return 0;

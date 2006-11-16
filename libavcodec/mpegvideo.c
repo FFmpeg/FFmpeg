@@ -1208,6 +1208,10 @@ int MPV_encode_init(AVCodecContext *avctx)
         s->low_delay=1;
         break;
     case CODEC_ID_H261:
+        if (ff_h261_get_picture_format(s->width, s->height) < 0) {
+            av_log(avctx, AV_LOG_ERROR, "The specified picture size of %dx%d is not valid for the H.261 codec.\nValid sizes are 176x144, 352x288\n", s->width, s->height);
+            return -1;
+        }
         s->out_format = FMT_H261;
         avctx->delay=0;
         s->low_delay=1;

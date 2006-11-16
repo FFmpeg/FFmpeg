@@ -824,6 +824,7 @@ void ff_h261_encode_mb(MpegEncContext *s,
                     int motion_x, int motion_y);
 void ff_h261_encode_picture_header(MpegEncContext * s, int picture_number);
 void ff_h261_encode_init(MpegEncContext *s);
+int ff_h261_get_picture_format(int width, int height);
 
 
 /* h263.c, h263dec.c */
