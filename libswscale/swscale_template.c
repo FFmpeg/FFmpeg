@@ -1730,17 +1730,14 @@ static inline void RENAME(yuy2ToY)(uint8_t *dst, uint8_t *src, long width)
 
 static inline void RENAME(yuy2ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1, uint8_t *src2, long width)
 {
-#if defined (HAVE_MMX2) || defined (HAVE_3DNOW)
+        assert(src1 == src2);
+#ifdef HAVE_MMX
 	asm volatile(
 		"movq "MANGLE(bm01010101)", %%mm4\n\t"
 		"mov %0, %%"REG_a"		\n\t"
 		"1:				\n\t"
 		"movq (%1, %%"REG_a",4), %%mm0	\n\t"
 		"movq 8(%1, %%"REG_a",4), %%mm1	\n\t"
-		"movq (%2, %%"REG_a",4), %%mm2	\n\t"
-		"movq 8(%2, %%"REG_a",4), %%mm3	\n\t"
-		PAVGB(%%mm2, %%mm0)
-		PAVGB(%%mm3, %%mm1)
 		"psrlw $8, %%mm0		\n\t"
 		"psrlw $8, %%mm1		\n\t"
 		"packuswb %%mm1, %%mm0		\n\t"
@@ -1749,19 +1746,19 @@ static inline void RENAME(yuy2ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1,
 		"pand %%mm4, %%mm1		\n\t"
 		"packuswb %%mm0, %%mm0		\n\t"
 		"packuswb %%mm1, %%mm1		\n\t"
-		"movd %%mm0, (%4, %%"REG_a")	\n\t"
-		"movd %%mm1, (%3, %%"REG_a")	\n\t"
+		"movd %%mm0, (%3, %%"REG_a")	\n\t"
+		"movd %%mm1, (%2, %%"REG_a")	\n\t"
 		"add $4, %%"REG_a"		\n\t"
 		" js 1b				\n\t"
-		: : "g" (-width), "r" (src1+width*4), "r" (src2+width*4), "r" (dstU+width), "r" (dstV+width)
+		: : "g" (-width), "r" (src1+width*4), "r" (dstU+width), "r" (dstV+width)
 		: "%"REG_a
 	);
 #else
 	int i;
 	for(i=0; i<width; i++)
 	{
-		dstU[i]= (src1[4*i + 1] + src2[4*i + 1])>>1;
-		dstV[i]= (src1[4*i + 3] + src2[4*i + 3])>>1;
+		dstU[i]= src1[4*i + 1];
+		dstV[i]= src1[4*i + 3];
 	}
 #endif
 }
@@ -1793,17 +1790,14 @@ static inline void RENAME(uyvyToY)(uint8_t *dst, uint8_t *src, long width)
 
 static inline void RENAME(uyvyToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1, uint8_t *src2, long width)
 {
-#if defined (HAVE_MMX2) || defined (HAVE_3DNOW)
+        assert(src1 == src2);
+#ifdef HAVE_MMX
 	asm volatile(
 		"movq "MANGLE(bm01010101)", %%mm4\n\t"
 		"mov %0, %%"REG_a"		\n\t"
 		"1:				\n\t"
 		"movq (%1, %%"REG_a",4), %%mm0	\n\t"
 		"movq 8(%1, %%"REG_a",4), %%mm1	\n\t"
-		"movq (%2, %%"REG_a",4), %%mm2	\n\t"
-		"movq 8(%2, %%"REG_a",4), %%mm3	\n\t"
-		PAVGB(%%mm2, %%mm0)
-		PAVGB(%%mm3, %%mm1)
 		"pand %%mm4, %%mm0		\n\t"
 		"pand %%mm4, %%mm1		\n\t"
 		"packuswb %%mm1, %%mm0		\n\t"
@@ -1812,19 +1806,19 @@ static inline void RENAME(uyvyToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1,
 		"pand %%mm4, %%mm1		\n\t"
 		"packuswb %%mm0, %%mm0		\n\t"
 		"packuswb %%mm1, %%mm1		\n\t"
-		"movd %%mm0, (%4, %%"REG_a")	\n\t"
-		"movd %%mm1, (%3, %%"REG_a")	\n\t"
+		"movd %%mm0, (%3, %%"REG_a")	\n\t"
+		"movd %%mm1, (%2, %%"REG_a")	\n\t"
 		"add $4, %%"REG_a"		\n\t"
 		" js 1b				\n\t"
-		: : "g" (-width), "r" (src1+width*4), "r" (src2+width*4), "r" (dstU+width), "r" (dstV+width)
+		: : "g" (-width), "r" (src1+width*4), "r" (dstU+width), "r" (dstV+width)
 		: "%"REG_a
 	);
 #else
 	int i;
 	for(i=0; i<width; i++)
 	{
-		dstU[i]= (src1[4*i + 0] + src2[4*i + 0])>>1;
-		dstV[i]= (src1[4*i + 2] + src2[4*i + 2])>>1;
+		dstU[i]= src1[4*i + 0];
+		dstV[i]= src1[4*i + 2];
 	}
 #endif
 }
@@ -1845,20 +1839,19 @@ static inline void RENAME(bgr32ToY)(uint8_t *dst, uint8_t *src, int width)
 static inline void RENAME(bgr32ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1, uint8_t *src2, int width)
 {
 	int i;
+        assert(src1 == src2);
 	for(i=0; i<width; i++)
 	{
 		const int a= ((uint32_t*)src1)[2*i+0];
 		const int e= ((uint32_t*)src1)[2*i+1];
-		const int c= ((uint32_t*)src2)[2*i+0];
-		const int d= ((uint32_t*)src2)[2*i+1];
-		const int l= (a&0xFF00FF) + (e&0xFF00FF) + (c&0xFF00FF) + (d&0xFF00FF);
-		const int h= (a&0x00FF00) + (e&0x00FF00) + (c&0x00FF00) + (d&0x00FF00);
+		const int l= (a&0xFF00FF) + (e&0xFF00FF);
+		const int h= (a&0x00FF00) + (e&0x00FF00);
  		const int b=  l&0x3FF;
 		const int g=  h>>8;
 		const int r=  l>>16;
 
-		dstU[i]= ((RU*r + GU*g + BU*b)>>(RGB2YUV_SHIFT+2)) + 128;
-		dstV[i]= ((RV*r + GV*g + BV*b)>>(RGB2YUV_SHIFT+2)) + 128;
+		dstU[i]= ((RU*r + GU*g + BU*b)>>(RGB2YUV_SHIFT+1)) + 128;
+		dstV[i]= ((RV*r + GV*g + BV*b)>>(RGB2YUV_SHIFT+1)) + 128;
 	}
 }
 
@@ -1949,9 +1942,10 @@ static inline void RENAME(bgr24ToY)(uint8_t *dst, uint8_t *src, long width)
 
 static inline void RENAME(bgr24ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1, uint8_t *src2, long width)
 {
+        assert(src1 == src2);
 #ifdef HAVE_MMX
 	asm volatile(
-		"mov %4, %%"REG_a"		\n\t"
+		"mov %3, %%"REG_a"		\n\t"
 		"movq "MANGLE(w1111)", %%mm5		\n\t"
 		"movq "MANGLE(bgr2UCoeff)", %%mm6		\n\t"
 		"pxor %%mm7, %%mm7		\n\t"
@@ -1960,14 +1954,9 @@ static inline void RENAME(bgr24ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1
 		ASMALIGN(4)
 		"1:				\n\t"
 		PREFETCH" 64(%0, %%"REG_d")	\n\t"
-		PREFETCH" 64(%1, %%"REG_d")	\n\t"
 #if defined (HAVE_MMX2) || defined (HAVE_3DNOW)
 		"movq (%0, %%"REG_d"), %%mm0	\n\t"
-		"movq (%1, %%"REG_d"), %%mm1	\n\t"
 		"movq 6(%0, %%"REG_d"), %%mm2	\n\t"
-		"movq 6(%1, %%"REG_d"), %%mm3	\n\t"
-		PAVGB(%%mm1, %%mm0)
-		PAVGB(%%mm3, %%mm2)
 		"movq %%mm0, %%mm1		\n\t"
 		"movq %%mm2, %%mm3		\n\t"
 		"psrlq $24, %%mm0		\n\t"
@@ -1978,29 +1967,17 @@ static inline void RENAME(bgr24ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1
 		"punpcklbw %%mm7, %%mm2		\n\t"
 #else
 		"movd (%0, %%"REG_d"), %%mm0	\n\t"
-		"movd (%1, %%"REG_d"), %%mm1	\n\t"
 		"movd 3(%0, %%"REG_d"), %%mm2	\n\t"
-		"movd 3(%1, %%"REG_d"), %%mm3	\n\t"
 		"punpcklbw %%mm7, %%mm0		\n\t"
-		"punpcklbw %%mm7, %%mm1		\n\t"
 		"punpcklbw %%mm7, %%mm2		\n\t"
-		"punpcklbw %%mm7, %%mm3		\n\t"
-		"paddw %%mm1, %%mm0		\n\t"
-		"paddw %%mm3, %%mm2		\n\t"
 		"paddw %%mm2, %%mm0		\n\t"
 		"movd 6(%0, %%"REG_d"), %%mm4	\n\t"
-		"movd 6(%1, %%"REG_d"), %%mm1	\n\t"
 		"movd 9(%0, %%"REG_d"), %%mm2	\n\t"
-		"movd 9(%1, %%"REG_d"), %%mm3	\n\t"
 		"punpcklbw %%mm7, %%mm4		\n\t"
-		"punpcklbw %%mm7, %%mm1		\n\t"
 		"punpcklbw %%mm7, %%mm2		\n\t"
-		"punpcklbw %%mm7, %%mm3		\n\t"
-		"paddw %%mm1, %%mm4		\n\t"
-		"paddw %%mm3, %%mm2		\n\t"
 		"paddw %%mm4, %%mm2		\n\t"
-		"psrlw $2, %%mm0		\n\t"
-		"psrlw $2, %%mm2		\n\t"
+		"psrlw $1, %%mm0		\n\t"
+		"psrlw $1, %%mm2		\n\t"
 #endif
 		"movq "MANGLE(bgr2VCoeff)", %%mm1		\n\t"
 		"movq "MANGLE(bgr2VCoeff)", %%mm3		\n\t"
@@ -2024,11 +2001,7 @@ static inline void RENAME(bgr24ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1
 
 #if defined (HAVE_MMX2) || defined (HAVE_3DNOW)
 		"movq 12(%0, %%"REG_d"), %%mm4	\n\t"
-		"movq 12(%1, %%"REG_d"), %%mm1	\n\t"
 		"movq 18(%0, %%"REG_d"), %%mm2	\n\t"
-		"movq 18(%1, %%"REG_d"), %%mm3	\n\t"
-		PAVGB(%%mm1, %%mm4)
-		PAVGB(%%mm3, %%mm2)
 		"movq %%mm4, %%mm1		\n\t"
 		"movq %%mm2, %%mm3		\n\t"
 		"psrlq $24, %%mm4		\n\t"
@@ -2039,26 +2012,14 @@ static inline void RENAME(bgr24ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1
 		"punpcklbw %%mm7, %%mm2		\n\t"
 #else
 		"movd 12(%0, %%"REG_d"), %%mm4	\n\t"
-		"movd 12(%1, %%"REG_d"), %%mm1	\n\t"
 		"movd 15(%0, %%"REG_d"), %%mm2	\n\t"
-		"movd 15(%1, %%"REG_d"), %%mm3	\n\t"
 		"punpcklbw %%mm7, %%mm4		\n\t"
-		"punpcklbw %%mm7, %%mm1		\n\t"
 		"punpcklbw %%mm7, %%mm2		\n\t"
-		"punpcklbw %%mm7, %%mm3		\n\t"
-		"paddw %%mm1, %%mm4		\n\t"
-		"paddw %%mm3, %%mm2		\n\t"
 		"paddw %%mm2, %%mm4		\n\t"
 		"movd 18(%0, %%"REG_d"), %%mm5	\n\t"
-		"movd 18(%1, %%"REG_d"), %%mm1	\n\t"
 		"movd 21(%0, %%"REG_d"), %%mm2	\n\t"
-		"movd 21(%1, %%"REG_d"), %%mm3	\n\t"
 		"punpcklbw %%mm7, %%mm5		\n\t"
-		"punpcklbw %%mm7, %%mm1		\n\t"
 		"punpcklbw %%mm7, %%mm2		\n\t"
-		"punpcklbw %%mm7, %%mm3		\n\t"
-		"paddw %%mm1, %%mm5		\n\t"
-		"paddw %%mm3, %%mm2		\n\t"
 		"paddw %%mm5, %%mm2		\n\t"
 		"movq "MANGLE(w1111)", %%mm5		\n\t"
 		"psrlw $2, %%mm4		\n\t"
@@ -2091,24 +2052,24 @@ static inline void RENAME(bgr24ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1
 		"packsswb %%mm1, %%mm0		\n\t"
 		"paddb "MANGLE(bgr2UVOffset)", %%mm0	\n\t"
 
-		"movd %%mm0, (%2, %%"REG_a")	\n\t"
+		"movd %%mm0, (%1, %%"REG_a")	\n\t"
 		"punpckhdq %%mm0, %%mm0		\n\t"
-		"movd %%mm0, (%3, %%"REG_a")	\n\t"
+		"movd %%mm0, (%2, %%"REG_a")	\n\t"
 		"add $4, %%"REG_a"		\n\t"
 		" js 1b				\n\t"
-		: : "r" (src1+width*6), "r" (src2+width*6), "r" (dstU+width), "r" (dstV+width), "g" (-width)
+		: : "r" (src1+width*6), "r" (dstU+width), "r" (dstV+width), "g" (-width)
 		: "%"REG_a, "%"REG_d
 	);
 #else
 	int i;
 	for(i=0; i<width; i++)
 	{
-		int b= src1[6*i + 0] + src1[6*i + 3] + src2[6*i + 0] + src2[6*i + 3];
-		int g= src1[6*i + 1] + src1[6*i + 4] + src2[6*i + 1] + src2[6*i + 4];
-		int r= src1[6*i + 2] + src1[6*i + 5] + src2[6*i + 2] + src2[6*i + 5];
+		int b= src1[6*i + 0] + src1[6*i + 3];
+		int g= src1[6*i + 1] + src1[6*i + 4];
+		int r= src1[6*i + 2] + src1[6*i + 5];
 
-		dstU[i]= ((RU*r + GU*g + BU*b)>>(RGB2YUV_SHIFT+2)) + 128;
-		dstV[i]= ((RV*r + GV*g + BV*b)>>(RGB2YUV_SHIFT+2)) + 128;
+		dstU[i]= ((RU*r + GU*g + BU*b)>>(RGB2YUV_SHIFT+1)) + 128;
+		dstV[i]= ((RV*r + GV*g + BV*b)>>(RGB2YUV_SHIFT+1)) + 128;
 	}
 #endif
 }
@@ -2129,14 +2090,14 @@ static inline void RENAME(bgr16ToY)(uint8_t *dst, uint8_t *src, int width)
 
 static inline void RENAME(bgr16ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1, uint8_t *src2, int width)
 {
+        assert(src1==src2);
 	int i;
 	for(i=0; i<width; i++)
 	{
 		int d0= ((uint32_t*)src1)[i];
-		int d1= ((uint32_t*)src2)[i];
 		
-		int dl= (d0&0x07E0F81F) + (d1&0x07E0F81F);
-		int dh= ((d0>>5)&0x07C0F83F) + ((d1>>5)&0x07C0F83F);
+		int dl= (d0&0x07E0F81F);
+		int dh= ((d0>>5)&0x07C0F83F);
 
 		int dh2= (dh>>11) + (dh<<21);
 		int d= dh2 + dl;
@@ -2144,8 +2105,8 @@ static inline void RENAME(bgr16ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1
 		int b= d&0x7F;
 		int r= (d>>11)&0x7F;
 		int g= d>>21;
-		dstU[i]= ((2*RU*r + GU*g + 2*BU*b)>>(RGB2YUV_SHIFT+2-2)) + 128;
-		dstV[i]= ((2*RV*r + GV*g + 2*BV*b)>>(RGB2YUV_SHIFT+2-2)) + 128;
+		dstU[i]= ((2*RU*r + GU*g + 2*BU*b)>>(RGB2YUV_SHIFT+1-2)) + 128;
+		dstV[i]= ((2*RV*r + GV*g + 2*BV*b)>>(RGB2YUV_SHIFT+1-2)) + 128;
 	}
 }
 
@@ -2166,13 +2127,13 @@ static inline void RENAME(bgr15ToY)(uint8_t *dst, uint8_t *src, int width)
 static inline void RENAME(bgr15ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1, uint8_t *src2, int width)
 {
 	int i;
+        assert(src1==src2);
 	for(i=0; i<width; i++)
 	{
 		int d0= ((uint32_t*)src1)[i];
-		int d1= ((uint32_t*)src2)[i];
 		
-		int dl= (d0&0x03E07C1F) + (d1&0x03E07C1F);
-		int dh= ((d0>>5)&0x03E0F81F) + ((d1>>5)&0x03E0F81F);
+		int dl= (d0&0x03E07C1F);
+		int dh= ((d0>>5)&0x03E0F81F);
 
 		int dh2= (dh>>11) + (dh<<21);
 		int d= dh2 + dl;
@@ -2180,8 +2141,8 @@ static inline void RENAME(bgr15ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1
 		int b= d&0x7F;
 		int r= (d>>10)&0x7F;
 		int g= d>>21;
-		dstU[i]= ((RU*r + GU*g + BU*b)>>(RGB2YUV_SHIFT+2-3)) + 128;
-		dstV[i]= ((RV*r + GV*g + BV*b)>>(RGB2YUV_SHIFT+2-3)) + 128;
+		dstU[i]= ((RU*r + GU*g + BU*b)>>(RGB2YUV_SHIFT+1-3)) + 128;
+		dstV[i]= ((RV*r + GV*g + BV*b)>>(RGB2YUV_SHIFT+1-3)) + 128;
 	}
 }
 
@@ -2202,20 +2163,19 @@ static inline void RENAME(rgb32ToY)(uint8_t *dst, uint8_t *src, int width)
 static inline void RENAME(rgb32ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1, uint8_t *src2, int width)
 {
 	int i;
+        assert(src1==src2);
 	for(i=0; i<width; i++)
 	{
 		const int a= ((uint32_t*)src1)[2*i+0];
 		const int e= ((uint32_t*)src1)[2*i+1];
-		const int c= ((uint32_t*)src2)[2*i+0];
-		const int d= ((uint32_t*)src2)[2*i+1];
-		const int l= (a&0xFF00FF) + (e&0xFF00FF) + (c&0xFF00FF) + (d&0xFF00FF);
-		const int h= (a&0x00FF00) + (e&0x00FF00) + (c&0x00FF00) + (d&0x00FF00);
+		const int l= (a&0xFF00FF) + (e&0xFF00FF);
+		const int h= (a&0x00FF00) + (e&0x00FF00);
  		const int r=  l&0x3FF;
 		const int g=  h>>8;
 		const int b=  l>>16;
 
-		dstU[i]= ((RU*r + GU*g + BU*b)>>(RGB2YUV_SHIFT+2)) + 128;
-		dstV[i]= ((RV*r + GV*g + BV*b)>>(RGB2YUV_SHIFT+2)) + 128;
+		dstU[i]= ((RU*r + GU*g + BU*b)>>(RGB2YUV_SHIFT+1)) + 128;
+		dstV[i]= ((RV*r + GV*g + BV*b)>>(RGB2YUV_SHIFT+1)) + 128;
 	}
 }
 
@@ -2235,14 +2195,15 @@ static inline void RENAME(rgb24ToY)(uint8_t *dst, uint8_t *src, int width)
 static inline void RENAME(rgb24ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1, uint8_t *src2, int width)
 {
 	int i;
+        assert(src1==src2);
 	for(i=0; i<width; i++)
 	{
-		int r= src1[6*i + 0] + src1[6*i + 3] + src2[6*i + 0] + src2[6*i + 3];
-		int g= src1[6*i + 1] + src1[6*i + 4] + src2[6*i + 1] + src2[6*i + 4];
-		int b= src1[6*i + 2] + src1[6*i + 5] + src2[6*i + 2] + src2[6*i + 5];
+		int r= src1[6*i + 0] + src1[6*i + 3];
+		int g= src1[6*i + 1] + src1[6*i + 4];
+		int b= src1[6*i + 2] + src1[6*i + 5];
 
-		dstU[i]= ((RU*r + GU*g + BU*b)>>(RGB2YUV_SHIFT+2)) + 128;
-		dstV[i]= ((RV*r + GV*g + BV*b)>>(RGB2YUV_SHIFT+2)) + 128;
+		dstU[i]= ((RU*r + GU*g + BU*b)>>(RGB2YUV_SHIFT+1)) + 128;
+		dstV[i]= ((RV*r + GV*g + BV*b)>>(RGB2YUV_SHIFT+1)) + 128;
 	}
 }
 
