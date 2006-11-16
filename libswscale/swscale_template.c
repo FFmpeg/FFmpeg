@@ -2090,8 +2090,8 @@ static inline void RENAME(bgr16ToY)(uint8_t *dst, uint8_t *src, int width)
 
 static inline void RENAME(bgr16ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1, uint8_t *src2, int width)
 {
-        assert(src1==src2);
 	int i;
+        assert(src1==src2);
 	for(i=0; i<width; i++)
 	{
 		int d0= ((uint32_t*)src1)[i];
@@ -2224,13 +2224,13 @@ static inline void RENAME(rgb16ToY)(uint8_t *dst, uint8_t *src, int width)
 static inline void RENAME(rgb16ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1, uint8_t *src2, int width)
 {
 	int i;
+        assert(src1 == src2);
 	for(i=0; i<width; i++)
 	{
 		int d0= ((uint32_t*)src1)[i];
-		int d1= ((uint32_t*)src2)[i];
 		
-		int dl= (d0&0x07E0F81F) + (d1&0x07E0F81F);
-		int dh= ((d0>>5)&0x07C0F83F) + ((d1>>5)&0x07C0F83F);
+		int dl= (d0&0x07E0F81F);
+		int dh= ((d0>>5)&0x07C0F83F);
 
 		int dh2= (dh>>11) + (dh<<21);
 		int d= dh2 + dl;
@@ -2238,8 +2238,8 @@ static inline void RENAME(rgb16ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1
 		int r= d&0x7F;
 		int b= (d>>11)&0x7F;
 		int g= d>>21;
-		dstU[i]= ((2*RU*r + GU*g + 2*BU*b)>>(RGB2YUV_SHIFT+2-2)) + 128;
-		dstV[i]= ((2*RV*r + GV*g + 2*BV*b)>>(RGB2YUV_SHIFT+2-2)) + 128;
+		dstU[i]= ((2*RU*r + GU*g + 2*BU*b)>>(RGB2YUV_SHIFT+1-2)) + 128;
+		dstV[i]= ((2*RV*r + GV*g + 2*BV*b)>>(RGB2YUV_SHIFT+1-2)) + 128;
 	}
 }
 
@@ -2260,13 +2260,13 @@ static inline void RENAME(rgb15ToY)(uint8_t *dst, uint8_t *src, int width)
 static inline void RENAME(rgb15ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1, uint8_t *src2, int width)
 {
 	int i;
+        assert(src1 == src2);
 	for(i=0; i<width; i++)
 	{
 		int d0= ((uint32_t*)src1)[i];
-		int d1= ((uint32_t*)src2)[i];
 		
-		int dl= (d0&0x03E07C1F) + (d1&0x03E07C1F);
-		int dh= ((d0>>5)&0x03E0F81F) + ((d1>>5)&0x03E0F81F);
+		int dl= (d0&0x03E07C1F);
+		int dh= ((d0>>5)&0x03E0F81F);
 
 		int dh2= (dh>>11) + (dh<<21);
 		int d= dh2 + dl;
@@ -2274,8 +2274,8 @@ static inline void RENAME(rgb15ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1
 		int g= d&0x7F;
 		int r= (d>>10)&0x7F;
 		int b= d>>21;
-		dstU[i]= ((RU*r + GU*g + BU*b)>>(RGB2YUV_SHIFT+2-3)) + 128;
-		dstV[i]= ((RV*r + GV*g + BV*b)>>(RGB2YUV_SHIFT+2-3)) + 128;
+		dstU[i]= ((RU*r + GU*g + BU*b)>>(RGB2YUV_SHIFT+1-3)) + 128;
+		dstV[i]= ((RV*r + GV*g + BV*b)>>(RGB2YUV_SHIFT+1-3)) + 128;
 	}
 }
 
