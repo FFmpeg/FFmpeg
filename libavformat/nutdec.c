@@ -704,11 +704,15 @@ static int decode_frame(NUTContext *nut, AVPacket *pkt, int frame_code){
     if(size < 0)
         return -1;
 
+    if (flags & FLAG_KEY)
+        nut->stream[stream_id].skip_until_key_frame=0;
+
     discard= s->streams[ stream_id ]->discard;
     last_IP_pts= s->streams[ stream_id ]->last_IP_pts;
     if(  (discard >= AVDISCARD_NONKEY && !(flags & FLAG_KEY))
        ||(discard >= AVDISCARD_BIDIR && last_IP_pts != AV_NOPTS_VALUE && last_IP_pts > pts)
-       || discard >= AVDISCARD_ALL){
+       || discard >= AVDISCARD_ALL
+       || nut->stream[stream_id].skip_until_key_frame){
         url_fskip(bc, size);
         return 1;
     }
@@ -813,6 +817,7 @@ static int read_seek(AVFormatContext *s, int stream_index, int64_t pts, int flag
     syncpoint_t nopts_sp= {.ts= AV_NOPTS_VALUE, .back_ptr= AV_NOPTS_VALUE};
     syncpoint_t *sp, *next_node[2]= {&nopts_sp, &nopts_sp};
     int64_t pos, pos2, ts;
+    int i;
 
     if(st->index_entries){
         int index= av_index_search_timestamp(st, pts, flags);
@@ -851,6 +856,9 @@ static int read_seek(AVFormatContext *s, int stream_index, int64_t pts, int flag
     if(pos2 > pos || pos2 + 15 < pos){
         av_log(NULL, AV_LOG_ERROR, "no syncpoint at backptr pos\n");
     }
+    for(i=0; i<s->nb_streams; i++)
+        nut->stream[i].skip_until_key_frame=1;
+
     return 0;
 }
 
