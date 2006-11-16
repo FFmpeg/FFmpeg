@@ -1204,7 +1204,6 @@ if test $altivec = "default"; then
 fi
 
 # Add processor-specific flags
-TUNECPU="generic"
 POWERPCMODE="32bits"
 if test $cpu != "generic"; then
     case $cpu in
@@ -1213,49 +1212,42 @@ if test $cpu != "generic"; then
             if test $altivec = "yes"; then
                 echo "WARNING: Tuning for PPC601 but AltiVec enabled!";
             fi
-            TUNECPU=ppc601
         ;;
         603*|ppc603*|PowerPC603*)
             add_cflags "-mcpu=603"
             if test $altivec = "yes"; then
                 echo "WARNING: Tuning for PPC603 but AltiVec enabled!";
             fi
-            TUNECPU=ppc603
         ;;
         604*|ppc604*|PowerPC604*)
             add_cflags "-mcpu=604"
             if test $altivec = "yes"; then
                 echo "WARNING: Tuning for PPC604 but AltiVec enabled!";
             fi
-            TUNECPU=ppc604
         ;;
         G3|g3|75*|ppc75*|PowerPC75*)
             add_cflags "-mcpu=750 -mpowerpc-gfxopt"
             if test $altivec = "yes"; then
                 echo "WARNING: Tuning for PPC75x but AltiVec enabled!";
             fi
-            TUNECPU=ppc750
         ;;
         G4|g4|745*|ppc745*|PowerPC745*)
             add_cflags "-mcpu=7450 -mpowerpc-gfxopt"
             if test $altivec = "no"; then
                 echo "WARNING: Tuning for PPC745x but AltiVec disabled!";
             fi
-            TUNECPU=ppc7450
         ;;
         74*|ppc74*|PowerPC74*)
             add_cflags "-mcpu=7400 -mpowerpc-gfxopt"
             if test $altivec = "no"; then
                 echo "WARNING: Tuning for PPC74xx but AltiVec disabled!";
             fi
-            TUNECPU=ppc7400
         ;;
         G5|g5|970|ppc970|PowerPC970|power4*|Power4*)
             add_cflags "-mcpu=970 -mpowerpc-gfxopt -mpowerpc64"
             if test $altivec = "no"; then
                 echo "WARNING: Tuning for PPC970 but AltiVec disabled!";
             fi
-            TUNECPU=ppc970
             POWERPCMODE="64bits"
         ;;
         # targets that do NOT support conditional mov (cmov)
@@ -1845,7 +1837,6 @@ case "$arch" in
         ;;
 esac
 
-echo "#define TUNECPU $TUNECPU" >> $TMPH
 if test "$bigendian" = "yes" ; then
   echo "WORDS_BIGENDIAN=yes" >> config.mak
   echo "#define WORDS_BIGENDIAN 1" >> $TMPH
