@@ -34,8 +34,8 @@ extern "C" {
 #define AV_STRINGIFY(s)         AV_TOSTRING(s)
 #define AV_TOSTRING(s) #s
 
-#define LIBAVUTIL_VERSION_INT   ((49<<16)+(0<<8)+2)
-#define LIBAVUTIL_VERSION       49.0.2
+#define LIBAVUTIL_VERSION_INT   ((49<<16)+(1<<8)+0)
+#define LIBAVUTIL_VERSION       49.1.0
 #define LIBAVUTIL_BUILD         LIBAVUTIL_VERSION_INT
 
 #define LIBAVUTIL_IDENT         "Lavu" AV_STRINGIFY(LIBAVUTIL_VERSION)
@@ -78,7 +78,7 @@ enum PixelFormat {
     PIX_FMT_YUV410P,   ///< Planar YUV 4:1:0,  9bpp, (1 Cr & Cb sample per 4x4 Y samples)
     PIX_FMT_YUV411P,   ///< Planar YUV 4:1:1, 12bpp, (1 Cr & Cb sample per 4x1 Y samples)
     PIX_FMT_RGB565,    ///< Packed RGB 5:6:5, 16bpp, (msb)   5R 6G 5B(lsb), in cpu endianness
-    PIX_FMT_RGB555,    ///< Packed RGB 5:5:5, 16bpp, (msb)1A 5R 5G 5B(lsb), in cpu endianness most significant bit to 1
+    PIX_FMT_RGB555,    ///< Packed RGB 5:5:5, 16bpp, (msb)1A 5R 5G 5B(lsb), in cpu endianness most significant bit to 0
     PIX_FMT_GRAY8,     ///<        Y        ,  8bpp
     PIX_FMT_MONOWHITE, ///<        Y        ,  1bpp, 1 is white
     PIX_FMT_MONOBLACK, ///<        Y        ,  1bpp, 0 is black

@@ -185,7 +185,7 @@ static const PixFmtInfo pix_fmt_info[PIX_FMT_NB] = {
     },
     [PIX_FMT_RGB555] = {
         .name = "rgb555",
-        .nb_channels = 4, .is_alpha = 1,
+        .nb_channels = 3,
         .color_type = FF_COLOR_RGB,
         .pixel_type = FF_PIXEL_PACKED,
         .depth = 5,
@@ -1629,19 +1629,10 @@ static inline unsigned int bitcopy_n(unsigned int a, int n)
     b = bitcopy_n(v << 3, 3);\
 }
 
-#define RGBA_IN(r, g, b, a, s)\
-{\
-    unsigned int v = ((const uint16_t *)(s))[0];\
-    r = bitcopy_n(v >> (10 - 3), 3);\
-    g = bitcopy_n(v >> (5 - 3), 3);\
-    b = bitcopy_n(v << 3, 3);\
-    a = (-(v >> 15)) & 0xff;\
-}
 
-#define RGBA_OUT(d, r, g, b, a)\
+#define RGB_OUT(d, r, g, b)\
 {\
-    ((uint16_t *)(d))[0] = ((r >> 3) << 10) | ((g >> 3) << 5) | (b >> 3) | \
-                           ((a << 8) & 0x8000);\
+    ((uint16_t *)(d))[0] = ((r >> 3) << 10) | ((g >> 3) << 5) | (b >> 3);\
 }
 
 #define BPP 2
@@ -2595,9 +2586,6 @@ int img_get_alpha_info(const AVPicture *src,
     switch(pix_fmt) {
     case PIX_FMT_RGBA32:
         ret = get_alpha_info_rgba32(src, width, height);
-        break;
-    case PIX_FMT_RGB555:
-        ret = get_alpha_info_rgb555(src, width, height);
         break;
     case PIX_FMT_PAL8:
         ret = get_alpha_info_pal8(src, width, height);
