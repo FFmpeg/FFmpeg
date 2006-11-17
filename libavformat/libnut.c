@@ -11,7 +11,7 @@ typedef struct {
 } NUTContext;
 
 static const CodecTag nut_tags[] = {
-    { CODEC_ID_MPEG4,  MKTAG('m', 'p', '4', 's') },
+    { CODEC_ID_MPEG4,  MKTAG('m', 'p', '4', 'v') },
     { CODEC_ID_MP3,    MKTAG('m', 'p', '3', ' ') },
     { CODEC_ID_VORBIS, MKTAG('v', 'r', 'b', 's') },
     { 0, 0 },
