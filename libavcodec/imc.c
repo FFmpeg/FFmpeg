@@ -301,7 +301,7 @@ static int bit_allocation (IMCContext* q, int stream_format_code, int freebits, 
         highest = FFMAX(highest, q->flcoeffs1[i]);
 
     for(i = 0; i < BANDS-1; i++) {
-        q->flcoeffs4[i] = q->flcoeffs3[i] - log2(q->flcoeffs5[i]);
+        q->flcoeffs4[i] = q->flcoeffs3[i] - log(q->flcoeffs5[i])/log(2);
     }
     q->flcoeffs4[BANDS - 1] = limit;
 
