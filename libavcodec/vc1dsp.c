@@ -35,16 +35,19 @@ static void vc1_v_overlap_c(uint8_t* src, int stride, int rnd)
 {
     int i;
     int a, b, c, d;
+    int d1, d2;
     for(i = 0; i < 8; i++) {
         a = src[-2*stride];
         b = src[-stride];
         c = src[0];
         d = src[stride];
+        d1 = (a - d + 3 + rnd) >> 3;
+        d2 = (a - d + b - c + 4 - rnd) >> 3;
 
-        src[-2*stride] = clip_uint8((7*a + d + 4 - rnd) >> 3);
-        src[-stride] = clip_uint8((-a + 7*b + c + d + 3 + rnd) >> 3);
-        src[0] = clip_uint8((a + b + 7*c - d + 4 - rnd) >> 3);
-        src[stride] = clip_uint8((a + 7*d + 3 + rnd) >> 3);
+        src[-2*stride] = a - d1;
+        src[-stride] = b - d2;
+        src[0] = c + d2;
+        src[stride] = d + d1;
         src++;
     }
 }
@@ -55,16 +58,19 @@ static void vc1_h_overlap_c(uint8_t* src, int stride, int rnd)
 {
     int i;
     int a, b, c, d;
+    int d1, d2;
     for(i = 0; i < 8; i++) {
         a = src[-2];
         b = src[-1];
         c = src[0];
         d = src[1];
+        d1 = (a - d + 3 + rnd) >> 3;
+        d2 = (a - d + b - c + 4 - rnd) >> 3;
 
-        src[-2] = clip_uint8((7*a + d + 4 - rnd) >> 3);
-        src[-1] = clip_uint8((-a + 7*b + c + d + 3 + rnd) >> 3);
-        src[0] = clip_uint8((a + b + 7*c - d + 4 - rnd) >> 3);
-        src[1] = clip_uint8((a + 7*d + 3 + rnd) >> 3);
+        src[-2] = a - d1;
+        src[-1] = b - d2;
+        src[0] = c + d2;
+        src[1] = d + d1;
         src += stride;
     }
 }
