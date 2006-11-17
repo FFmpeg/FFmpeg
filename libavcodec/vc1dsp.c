@@ -29,7 +29,7 @@
 #include "dsputil.h"
 
 
-/** Apply overlap transform to vertical edge
+/** Apply overlap transform to horizontal edge
 */
 static void vc1_v_overlap_c(uint8_t* src, int stride, int rnd)
 {
@@ -49,7 +49,7 @@ static void vc1_v_overlap_c(uint8_t* src, int stride, int rnd)
     }
 }
 
-/** Apply overlap transform to horizontal edge
+/** Apply overlap transform to vertical edge
 */
 static void vc1_h_overlap_c(uint8_t* src, int stride, int rnd)
 {
