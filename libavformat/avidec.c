@@ -216,7 +216,6 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
     int i, n;
     AVStream *st;
     AVIStream *ast = NULL;
-    int xan_video = 0;  /* hack to support Xan A/V */
     char str_track[4];
 
     avi->stream_index= -1;
@@ -432,8 +431,6 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     st->codec->codec_type = CODEC_TYPE_VIDEO;
                     st->codec->codec_tag = tag1;
                     st->codec->codec_id = codec_get_id(codec_bmp_tags, tag1);
-                    if (st->codec->codec_id == CODEC_ID_XAN_WC4)
-                        xan_video = 1;
                     st->need_parsing = 2; //only parse headers dont do slower repacketization, this is needed to get the pict type which is needed for generating correct pts
 //                    url_fskip(pb, size - 5 * 4);
                     break;
@@ -443,16 +440,18 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                         av_log(s, AV_LOG_DEBUG, "invalid sample size or block align detected\n");
                     if (size%2) /* 2-aligned (fix for Stargate SG-1 - 3x18 - Shades of Grey.avi) */
                         url_fskip(pb, 1);
-                    /* special case time: To support Xan DPCM, hardcode
-                     * the format if Xxan is the video codec */
                     st->need_parsing = 1;
                     /* ADTS header is in extradata, AAC without header must be stored as exact frames, parser not needed and it will fail */
                     if (st->codec->codec_id == CODEC_ID_AAC && st->codec->extradata_size)
                         st->need_parsing = 0;
                     /* force parsing as several audio frames can be in
                        one packet */
-                    if (xan_video)
-                        st->codec->codec_id = CODEC_ID_XAN_DPCM;
+                    /* AVI files with Xan DPCM audio (wrongly) declare PCM
+                     * audio in the header but have Axan as stream_code_tag. */
+                    if (st->codec->stream_codec_tag == ff_get_fourcc("Axan")){
+                        st->codec->codec_id  = CODEC_ID_XAN_DPCM;
+                        st->codec->codec_tag = 0;
+                    }
                     break;
                 default:
                     st->codec->codec_type = CODEC_TYPE_DATA;
