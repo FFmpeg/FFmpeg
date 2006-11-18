@@ -440,12 +440,12 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                         av_log(s, AV_LOG_DEBUG, "invalid sample size or block align detected\n");
                     if (size%2) /* 2-aligned (fix for Stargate SG-1 - 3x18 - Shades of Grey.avi) */
                         url_fskip(pb, 1);
+                    /* Force parsing as several audio frames can be in
+                     * one packet. */
                     st->need_parsing = 1;
                     /* ADTS header is in extradata, AAC without header must be stored as exact frames, parser not needed and it will fail */
                     if (st->codec->codec_id == CODEC_ID_AAC && st->codec->extradata_size)
                         st->need_parsing = 0;
-                    /* force parsing as several audio frames can be in
-                       one packet */
                     /* AVI files with Xan DPCM audio (wrongly) declare PCM
                      * audio in the header but have Axan as stream_code_tag. */
                     if (st->codec->stream_codec_tag == ff_get_fourcc("Axan")){
