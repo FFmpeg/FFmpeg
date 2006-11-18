@@ -1426,11 +1426,17 @@ enabled zlib && check_lib zlib.h zlibVersion -lz || zlib="no"
 # check for some common methods of building with pthread support
 # do this before the optional library checks as some of them require pthreads
 if enabled pthreads; then
-    { check_cflags -pthread && check_ldflags -pthread; } ||
-    { check_cflags -pthreads && check_ldflags -pthreads; } ||
-    check_lib pthread.h pthread_create -lpthread ||
-    check_func pthread_create ||
-    die "ERROR: can't find pthreads library"
+    if check_func pthread_create; then
+        :
+    elif check_func pthread_create -pthread; then
+        add_cflags -pthread
+        add_ldflags -pthread
+    elif check_func pthread_create -pthreads; then
+        add_cflags -pthreads
+        add_ldflags -pthreads
+    elif ! check_lib pthread.h pthread_create -lpthread; then
+        die "ERROR: can't find pthreads library"
+    fi
 fi
 
 # these are off by default, so fail if requested and not available
