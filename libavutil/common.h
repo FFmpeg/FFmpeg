@@ -308,7 +308,8 @@ static inline int ff_get_fourcc(const char *s){
  * ucs-4 character and should be a left value.
  * \param GET_BYTE gets utf-8 encoded bytes from any proper source. It can be
  * a function or a statement whose return value or evaluated value is of type
- * uint8_t. It will be executed up to 4 times.
+ * uint8_t. It will be executed up to 4 times for values in the valid utf-8 range,
+ * and up to 7 times in the general case.
  * \param ERROR action that should be taken when an invalid utf-8 byte is returned
  * from GET_BYTE. It should be a statement that jumps out of the macro,
  * like exit(), goto, return, break, or continue.
@@ -340,7 +341,8 @@ static inline int ff_get_fourcc(const char *s){
  * \param PUT_BYTE writes the converted utf-8 bytes to any proper destination.
  * It could be a function or a statement, and uses tmp as the input byte.
  * For example, PUT_BYTE could be "*output++ = tmp;" PUT_BYTE will be
- * executed up to 4 times, depending on the length of the converted
+ * executed up to 4 times for values in the valid utf-8 range and up to
+ * 7 times in the general case, depending on the length of the converted
  * unicode character.
  */
 #define PUT_UTF8(val, tmp, PUT_BYTE)\
