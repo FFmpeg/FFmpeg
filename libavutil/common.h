@@ -308,7 +308,7 @@ static inline int ff_get_fourcc(const char *s){
  * ucs-4 character and should be a left value.
  * \param GET_BYTE gets utf-8 encoded bytes from any proper source. It can be
  * a function or a statement whose return value or evaluated value is of type
- * uint8_t. It will be execuded up to 4 times.
+ * uint8_t. It will be executed up to 4 times.
  * \param ERROR action that should be taken when an invalid utf-8 byte is returned
  * from GET_BYTE. It should be a statement that jumps out of the macro,
  * like exit(), goto, return, break, or continue.
