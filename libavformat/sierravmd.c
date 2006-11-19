@@ -186,13 +186,13 @@ static int vmd_read_header(AVFormatContext *s,
             case 1: /* Audio Chunk */
                 /* first audio chunk contains several audio buffers */
                 if(current_audio_pts){
-                vmd->frame_table[total_frames].frame_offset = current_offset;
-                vmd->frame_table[total_frames].stream_index = vmd->audio_stream_index;
-                vmd->frame_table[total_frames].frame_size = size;
-                memcpy(vmd->frame_table[total_frames].frame_record, chunk, BYTES_PER_FRAME_RECORD);
-                vmd->frame_table[total_frames].pts = current_audio_pts;
-                total_frames++;
-                current_audio_pts += pts_inc;
+                    vmd->frame_table[total_frames].frame_offset = current_offset;
+                    vmd->frame_table[total_frames].stream_index = vmd->audio_stream_index;
+                    vmd->frame_table[total_frames].frame_size = size;
+                    memcpy(vmd->frame_table[total_frames].frame_record, chunk, BYTES_PER_FRAME_RECORD);
+                    vmd->frame_table[total_frames].pts = current_audio_pts;
+                    total_frames++;
+                    current_audio_pts += pts_inc;
                 }else{
                     uint32_t flags;
                     int k;
