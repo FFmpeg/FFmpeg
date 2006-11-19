@@ -87,6 +87,7 @@ static int vmd_read_header(AVFormatContext *s,
     int64_t current_video_pts = 0, current_audio_pts = 0;
     unsigned char chunk[BYTES_PER_FRAME_RECORD];
     int num, den;
+    int sound_buffers;
 
     /* fetch the main header, including the 2 header length bytes */
     url_fseek(pb, 0, SEEK_SET);
@@ -146,13 +147,14 @@ static int vmd_read_header(AVFormatContext *s,
 
     raw_frame_table = NULL;
     vmd->frame_table = NULL;
+    sound_buffers = LE_16(&vmd->vmd_header[808]);
     raw_frame_table_size = vmd->frame_count * 6;
     raw_frame_table = av_malloc(raw_frame_table_size);
     if(vmd->frame_count * vmd->frames_per_block  >= UINT_MAX / sizeof(vmd_frame_t)){
         av_log(s, AV_LOG_ERROR, "vmd->frame_count * vmd->frames_per_block too large\n");
         return -1;
     }
-    vmd->frame_table = av_malloc(vmd->frame_count * vmd->frames_per_block * sizeof(vmd_frame_t));
+    vmd->frame_table = av_malloc((vmd->frame_count * vmd->frames_per_block + sound_buffers) * sizeof(vmd_frame_t));
     if (!raw_frame_table || !vmd->frame_table) {
         av_free(raw_frame_table);
         av_free(vmd->frame_table);
@@ -182,14 +184,43 @@ static int vmd_read_header(AVFormatContext *s,
                 continue;
             switch(type) {
             case 1: /* Audio Chunk */
+                /* first audio chunk contains several audio buffers */
+                if(current_audio_pts){
                 vmd->frame_table[total_frames].frame_offset = current_offset;
                 vmd->frame_table[total_frames].stream_index = vmd->audio_stream_index;
                 vmd->frame_table[total_frames].frame_size = size;
                 memcpy(vmd->frame_table[total_frames].frame_record, chunk, BYTES_PER_FRAME_RECORD);
                 vmd->frame_table[total_frames].pts = current_audio_pts;
                 total_frames++;
-                /* first audio chunk contains several audio buffers */
-                current_audio_pts += (current_audio_pts == 0) ? LE_16(&vmd->vmd_header[808]) * pts_inc : pts_inc;
+                current_audio_pts += pts_inc;
+                }else{
+                    uint32_t flags;
+                    int k;
+                    int noff;
+                    int64_t pos;
+
+                    pos = url_ftell(pb);
+                    url_fseek(pb, current_offset, SEEK_SET);
+                    flags = get_le32(pb);
+                    noff = 4;
+                    url_fseek(pb, pos, SEEK_SET);
+                    av_log(s, AV_LOG_DEBUG, "Sound mapping = %08X (%i bufs)\n", flags, sound_buffers);
+                    for(k = 0; k < sound_buffers - 1; k++){
+                        if(flags & 1) { /* silent block */
+                            vmd->frame_table[total_frames].frame_size = 0;
+                        }else{
+                            vmd->frame_table[total_frames].frame_size = st->codec->block_align + (st->codec->block_align & 1);
+                        }
+                        noff += vmd->frame_table[total_frames].frame_size;
+                        vmd->frame_table[total_frames].frame_offset = current_offset + noff;
+                        vmd->frame_table[total_frames].stream_index = vmd->audio_stream_index;
+                        memcpy(vmd->frame_table[total_frames].frame_record, chunk, BYTES_PER_FRAME_RECORD);
+                        vmd->frame_table[total_frames].pts = current_audio_pts;
+                        total_frames++;
+                        current_audio_pts += pts_inc;
+                        flags >>= 1;
+                    }
+                }
                 break;
             case 2: /* Video Chunk */
                 vmd->frame_table[total_frames].frame_offset = current_offset;
