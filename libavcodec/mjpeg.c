@@ -854,6 +854,7 @@ typedef struct MJpegDecodeContext {
     int bottom_field;   /* true if bottom field */
     int lossless;
     int ls;
+    int progressive;
     int rgb;
     int rct;            /* standard rct */
     int pegasus_rct;    /* pegasus reversible colorspace transform */
@@ -885,6 +886,7 @@ typedef struct MJpegDecodeContext {
     DECLARE_ALIGNED_8(DCTELEM, block[64]);
     ScanTable scantable;
     void (*idct_put)(uint8_t *dest/*align 8*/, int line_size, DCTELEM *block/*align 16*/);
+    void (*idct_add)(uint8_t *dest/*align 8*/, int line_size, DCTELEM *block/*align 16*/);
 
     int restart_interval;
     int restart_count;
@@ -941,6 +943,7 @@ static int mjpeg_decode_init(AVCodecContext *avctx)
 
     s->scantable= s2.intra_scantable;
     s->idct_put= s2.dsp.idct_put;
+    s->idct_add= s2.dsp.idct_add;
 
     s->mpeg_enc_ctx_allocated = 0;
     s->buffer_size = 0;
@@ -1251,6 +1254,12 @@ static int mjpeg_decode_sof(MJpegDecodeContext *s)
         dprintf("decode_sof0: error, len(%d) mismatch\n", len);
     }
 
+    /* totally blank picture as progressive JPEG will only add details to it */
+    if(s->progressive){
+        memset(s->picture.data[0], 0, s->picture.linesize[0] * s->height);
+        memset(s->picture.data[1], 0, s->picture.linesize[1] * s->height >> (s->v_max - s->v_count[1]));
+        memset(s->picture.data[2], 0, s->picture.linesize[2] * s->height >> (s->v_max - s->v_count[2]));
+    }
     return 0;
 }
 
@@ -1321,6 +1330,83 @@ static int decode_block(MJpegDecodeContext *s, DCTELEM *block,
             }
             j = s->scantable.permutated[i];
             block[j] = level * quant_matrix[j];
+        }
+    }
+    CLOSE_READER(re, &s->gb)}
+
+    return 0;
+}
+
+/* decode block and dequantize - progressive JPEG version */
+static int decode_block_progressive(MJpegDecodeContext *s, DCTELEM *block,
+                        int component, int dc_index, int ac_index, int16_t *quant_matrix,
+                        int ss, int se, int Ah, int Al, int *EOBRUN)
+{
+    int code, i, j, level, val, run;
+
+    /* DC coef */
+    if(!ss){
+        val = mjpeg_decode_dc(s, dc_index);
+        if (val == 0xffff) {
+            dprintf("error dc\n");
+            return -1;
+        }
+        val = (val * quant_matrix[0] << Al) + s->last_dc[component];
+    }else
+        val = 0;
+    s->last_dc[component] = val;
+    block[0] = val;
+    if(!se) return 0;
+    /* AC coefs */
+    if(*EOBRUN){
+        (*EOBRUN)--;
+        return 0;
+    }
+    {OPEN_READER(re, &s->gb)
+    for(i=ss;;i++) {
+        UPDATE_CACHE(re, &s->gb);
+        GET_VLC(code, re, &s->gb, s->vlcs[1][ac_index].table, 9, 2)
+        /* Progressive JPEG use AC coeffs from zero and this decoder sets offset 16 by default */
+        code -= 16;
+        if(code & 0xF) {
+            i += ((unsigned) code) >> 4;
+            code &= 0xf;
+            if(code > MIN_CACHE_BITS - 16){
+                UPDATE_CACHE(re, &s->gb)
+            }
+            {
+                int cache=GET_CACHE(re,&s->gb);
+                int sign=(~cache)>>31;
+                level = (NEG_USR32(sign ^ cache,code) ^ sign) - sign;
+            }
+
+            LAST_SKIP_BITS(re, &s->gb, code)
+
+            if (i >= se) {
+                if(i == se){
+                    j = s->scantable.permutated[se];
+                    block[j] = level * quant_matrix[j] << Al;
+                    break;
+                }
+                dprintf("error count: %d\n", i);
+                return -1;
+            }
+            j = s->scantable.permutated[i];
+            block[j] = level * quant_matrix[j] << Al;
+        }else{
+            run = ((unsigned) code) >> 4;
+            if(run == 0xF){// ZRL - skip 15 coefficients
+                i += 15;
+            }else{
+                val = run;
+                run = (1 << run);
+                UPDATE_CACHE(re, &s->gb);
+                run += (GET_CACHE(re, &s->gb) >> (32 - val)) & (run - 1);
+                if(val)
+                    LAST_SKIP_BITS(re, &s->gb, val);
+                *EOBRUN = run - 1;
+                break;
+            }
         }
     }
     CLOSE_READER(re, &s->gb)}
@@ -1479,10 +1565,11 @@ static int ljpeg_decode_yuv_scan(MJpegDecodeContext *s, int predictor, int point
     return 0;
 }
 
-static int mjpeg_decode_scan(MJpegDecodeContext *s){
+static int mjpeg_decode_scan(MJpegDecodeContext *s, int nb_components, int ss, int se, int Ah, int Al){
     int i, mb_x, mb_y;
-    const int nb_components=3;
+    int EOBRUN = 0;
 
+    if(Ah) return 0; /* TODO decode refinement planes too */
     for(mb_y = 0; mb_y < s->mb_height; mb_y++) {
         for(mb_x = 0; mb_x < s->mb_width; mb_x++) {
             if (s->restart_interval && !s->restart_count)
@@ -1499,9 +1586,15 @@ static int mjpeg_decode_scan(MJpegDecodeContext *s){
                 y = 0;
                 for(j=0;j<n;j++) {
                     memset(s->block, 0, sizeof(s->block));
-                    if (decode_block(s, s->block, i,
+                    if (!s->progressive && decode_block(s, s->block, i,
                                      s->dc_index[i], s->ac_index[i],
                                      s->quant_matrixes[ s->quant_index[c] ]) < 0) {
+                        dprintf("error y=%d x=%d\n", mb_y, mb_x);
+                        return -1;
+                    }
+                    if (s->progressive && decode_block_progressive(s, s->block, i,
+                                     s->dc_index[i], s->ac_index[i],
+                                     s->quant_matrixes[ s->quant_index[c] ], ss, se, Ah, Al, &EOBRUN) < 0) {
                         dprintf("error y=%d x=%d\n", mb_y, mb_x);
                         return -1;
                     }
@@ -1512,7 +1605,10 @@ static int mjpeg_decode_scan(MJpegDecodeContext *s){
                     if (s->interlaced && s->bottom_field)
                         ptr += s->linesize[c] >> 1;
 //av_log(NULL, AV_LOG_DEBUG, "%d %d %d %d %d %d %d %d \n", mb_x, mb_y, x, y, c, s->bottom_field, (v * mb_y + y) * 8, (h * mb_x + x) * 8);
-                    s->idct_put(ptr, s->linesize[c], s->block);
+                    if(!s->progressive)
+                        s->idct_put(ptr, s->linesize[c], s->block);
+                    else
+                        s->idct_add(ptr, s->linesize[c], s->block);
                     if (++x == h) {
                         x = 0;
                         y++;
@@ -1537,7 +1633,7 @@ static int mjpeg_decode_sos(MJpegDecodeContext *s)
     int len, nb_components, i, h, v, predictor, point_transform;
     int vmax, hmax, index, id;
     const int block_size= s->lossless ? 1 : 8;
-    int ilv;
+    int ilv, prev_shift;
 
     /* XXX: verify len field validity */
     len = get_bits(&s->gb, 16);
@@ -1548,7 +1644,7 @@ static int mjpeg_decode_sos(MJpegDecodeContext *s)
         return -1;
     }
     /* XXX: only interleaved scan accepted */
-    if ((nb_components != s->nb_components) && !s->ls)
+    if ((nb_components != s->nb_components) && !s->ls && !s->progressive)
     {
         dprintf("decode_sos: components(%d) mismatch\n", nb_components);
         return -1;
@@ -1602,7 +1698,7 @@ static int mjpeg_decode_sos(MJpegDecodeContext *s)
 
     predictor= get_bits(&s->gb, 8); /* JPEG Ss / lossless JPEG predictor /JPEG-LS NEAR */
     ilv= get_bits(&s->gb, 8);    /* JPEG Se / JPEG-LS ILV */
-    skip_bits(&s->gb, 4); /* Ah */
+    prev_shift = get_bits(&s->gb, 4); /* Ah */
     point_transform= get_bits(&s->gb, 4); /* Al */
 
     for(i=0;i<nb_components;i++)
@@ -1648,7 +1744,7 @@ static int mjpeg_decode_sos(MJpegDecodeContext *s)
             }
         }
     }else{
-        if(mjpeg_decode_scan(s) < 0)
+        if(mjpeg_decode_scan(s, nb_components, predictor, ilv, prev_shift, point_transform) < 0)
             return -1;
     }
     emms_c();
@@ -2037,17 +2133,26 @@ static int mjpeg_decode_frame(AVCodecContext *avctx,
                     break;
                 case SOF0:
                     s->lossless=0;
+                    s->progressive=0;
+                    if (mjpeg_decode_sof(s) < 0)
+                        return -1;
+                    break;
+                case SOF2:
+                    s->lossless=0;
+                    s->progressive=1;
                     if (mjpeg_decode_sof(s) < 0)
                         return -1;
                     break;
                 case SOF3:
                     s->lossless=1;
+                    s->progressive=0;
                     if (mjpeg_decode_sof(s) < 0)
                         return -1;
                     break;
                 case SOF48:
                     s->lossless=1;
                     s->ls=1;
+                    s->progressive=0;
                     if (mjpeg_decode_sof(s) < 0)
                         return -1;
                     break;
@@ -2094,7 +2199,6 @@ eoi_parser:
                     mjpeg_decode_dri(s);
                     break;
                 case SOF1:
-                case SOF2:
                 case SOF5:
                 case SOF6:
                 case SOF7:
