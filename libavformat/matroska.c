@@ -225,6 +225,7 @@ static CodecTags codec_tags[]={
     {"A_VORBIS"         , CODEC_ID_VORBIS},
     {"A_AAC"            , CODEC_ID_AAC},
     {"A_WAVPACK4"       , CODEC_ID_WAVPACK},
+    {"A_TTA1"           , CODEC_ID_TTA},
     {NULL               , CODEC_ID_NONE}
 /* TODO: AC3-9/10 (?), Real, Musepack, Quicktime */
 };
@@ -2262,6 +2263,23 @@ matroska_read_header (AVFormatContext    *s,
                 } else {
                     extradata_size = 2;
                 }
+            }
+
+            else if (codec_id == CODEC_ID_TTA) {
+                MatroskaAudioTrack *audiotrack = (MatroskaAudioTrack *) track;
+                ByteIOContext b;
+                extradata_size = 30;
+                extradata = av_mallocz(extradata_size);
+                if (extradata == NULL)
+                    return AVERROR_NOMEM;
+                init_put_byte(&b, extradata, extradata_size, 1,
+                              NULL, NULL, NULL, NULL);
+                put_buffer(&b, (uint8_t *) "TTA1", 4);
+                put_le16(&b, 1);
+                put_le16(&b, audiotrack->channels);
+                put_le16(&b, audiotrack->bitdepth);
+                put_le32(&b, audiotrack->samplerate);
+                put_le32(&b, matroska->ctx->duration * audiotrack->samplerate);
             }
 
             else if (codec_id == CODEC_ID_RV10 || codec_id == CODEC_ID_RV20 ||
