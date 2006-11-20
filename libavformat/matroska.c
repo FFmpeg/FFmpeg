@@ -2538,15 +2538,15 @@ matroska_parse_blockgroup (MatroskaDemuxContext *matroska,
                             }
                             memcpy (pkt->data, data+slice_offset, slice_size);
 
-                        if (n == 0)
-                            pkt->flags = is_keyframe;
-                        pkt->stream_index =
-                            matroska->tracks[track]->stream_index;
+                            if (n == 0)
+                                pkt->flags = is_keyframe;
+                            pkt->stream_index =
+                                matroska->tracks[track]->stream_index;
 
-                        pkt->pts = timecode;
-                        pkt->pos= pos;
+                            pkt->pts = timecode;
+                            pkt->pos = pos;
 
-                        matroska_queue_packet(matroska, pkt);
+                            matroska_queue_packet(matroska, pkt);
                         }
                         data += lace_size[n];
                     }
