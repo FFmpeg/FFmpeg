@@ -988,8 +988,7 @@ matroska_deliver_packet (MatroskaDemuxContext *matroska,
                 av_realloc(matroska->packets, (matroska->num_packets - 1) *
                            sizeof(AVPacket *));
         } else {
-            av_free(matroska->packets);
-            matroska->packets = NULL;
+            av_freep(&matroska->packets);
         }
         matroska->num_packets--;
         return 0;
