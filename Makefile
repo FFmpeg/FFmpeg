@@ -214,7 +214,6 @@ clean:
 	rm -f *.o *.d *~ .libs gmon.out TAGS $(ALLPROGS) $(ALLPROGS_G) \
 	   output_example$(EXESUF) qt-faststart$(EXESUF) cws2fws$(EXESUF)
 
-# Note well: config.log is NOT removed.
 distclean: clean
 	$(MAKE) -C libavutil   distclean
 	$(MAKE) -C libavcodec  distclean
