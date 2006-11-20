@@ -176,6 +176,7 @@ typedef enum {
   MATROSKA_TRACK_ENABLED = (1<<0),
   MATROSKA_TRACK_DEFAULT = (1<<1),
   MATROSKA_TRACK_LACING  = (1<<2),
+  MATROSKA_TRACK_REAL_V  = (1<<4),
   MATROSKA_TRACK_SHIFT   = (1<<16)
 } MatroskaTrackFlags;
 
@@ -2267,6 +2268,7 @@ matroska_read_header (AVFormatContext    *s,
                      codec_id == CODEC_ID_RV30 || codec_id == CODEC_ID_RV40) {
                 extradata_offset = 26;
                 track->codec_priv_size -= extradata_offset;
+                track->flags |= MATROSKA_TRACK_REAL_V;
             }
 
             if (codec_id == CODEC_ID_NONE) {
@@ -2346,6 +2348,12 @@ matroska_find_track_by_num (MatroskaDemuxContext *matroska,
             return i;
 
     return -1;
+}
+
+static inline int
+rv_offset(uint8_t *data, int slice, int slices)
+{
+    return LE_32(data+8*slice+4) + 8*slices;
 }
 
 static int
@@ -2498,14 +2506,14 @@ matroska_parse_blockgroup (MatroskaDemuxContext *matroska,
                 }
 
                 if (res == 0) {
+                    int real_v = matroska->tracks[track]->flags & MATROSKA_TRACK_REAL_V;
                     for (n = 0; n < laces; n++) {
                         uint64_t timecode = AV_NOPTS_VALUE;
+                        int slice, slices = 1;
 
-                        pkt = av_mallocz(sizeof(AVPacket));
-                        /* XXX: prevent data copy... */
-                        if (av_new_packet(pkt,lace_size[n]) < 0) {
-                            res = AVERROR_NOMEM;
-                            break;
+                        if (real_v) {
+                            slices = *data++ + 1;
+                            lace_size[n]--;
                         }
                         if (cluster_time != (uint64_t)-1 && n == 0) {
                             if (cluster_time + block_time >= 0)
@@ -2513,8 +2521,23 @@ matroska_parse_blockgroup (MatroskaDemuxContext *matroska,
                         }
                         /* FIXME: duration */
 
-                        memcpy(pkt->data, data, lace_size[n]);
-                        data += lace_size[n];
+                        for (slice=0; slice<slices; slice++) {
+                            int slice_size, slice_offset = 0;
+                            if (real_v)
+                                slice_offset = rv_offset(data, slice, slices);
+                            if (slice+1 == slices)
+                                slice_size = lace_size[n] - slice_offset;
+                            else
+                                slice_size = rv_offset(data, slice+1, slices) - slice_offset;
+                            pkt = av_mallocz(sizeof(AVPacket));
+                            /* XXX: prevent data copy... */
+                            if (av_new_packet(pkt, slice_size) < 0) {
+                                res = AVERROR_NOMEM;
+                                n = laces-1;
+                                break;
+                            }
+                            memcpy (pkt->data, data+slice_offset, slice_size);
+
                         if (n == 0)
                             pkt->flags = is_keyframe;
                         pkt->stream_index =
@@ -2524,6 +2547,8 @@ matroska_parse_blockgroup (MatroskaDemuxContext *matroska,
                         pkt->pos= pos;
 
                         matroska_queue_packet(matroska, pkt);
+                        }
+                        data += lace_size[n];
                     }
                 }
 
