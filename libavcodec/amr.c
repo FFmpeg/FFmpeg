@@ -482,6 +482,8 @@ static int amr_nb_encode_frame(AVCodecContext *avctx,
     AMRContext *s = (AMRContext*)avctx->priv_data;
     int written;
 
+    s->enc_bitrate=getBitrateMode(avctx->bit_rate);
+
     written = Encoder_Interface_Encode(s->enstate,
         s->enc_bitrate,
         data,
@@ -624,7 +626,9 @@ static int amr_wb_encode_frame(AVCodecContext *avctx,
                             unsigned char *frame/*out*/, int buf_size, void *data/*in*/)
 {
     AMRWBContext *s = (AMRWBContext*) avctx->priv_data;
-    int size = E_IF_encode(s->state, s->mode, data, frame, s->allow_dtx);
+    int size;
+    s->mode=getWBBitrateMode(avctx->bit_rate);
+    size = E_IF_encode(s->state, s->mode, data, frame, s->allow_dtx);
     return size;
 }
 
