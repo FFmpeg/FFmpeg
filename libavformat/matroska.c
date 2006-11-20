@@ -2193,6 +2193,7 @@ matroska_read_header (AVFormatContext    *s,
             enum CodecID codec_id = CODEC_ID_NONE;
             uint8_t *extradata = NULL;
             int extradata_size = 0;
+            int extradata_offset = 0;
             track = matroska->tracks[i];
 
             /* libavformat does not really support subtitles.
@@ -2262,6 +2263,12 @@ matroska_read_header (AVFormatContext    *s,
                 }
             }
 
+            else if (codec_id == CODEC_ID_RV10 || codec_id == CODEC_ID_RV20 ||
+                     codec_id == CODEC_ID_RV30 || codec_id == CODEC_ID_RV40) {
+                extradata_offset = 26;
+                track->codec_priv_size -= extradata_offset;
+            }
+
             if (codec_id == CODEC_ID_NONE) {
                 av_log(matroska->ctx, AV_LOG_INFO,
                        "Unknown/unsupported CodecID %s.\n",
@@ -2290,7 +2297,7 @@ matroska_read_header (AVFormatContext    *s,
                 if(st->codec->extradata == NULL)
                     return AVERROR_NOMEM;
                 st->codec->extradata_size = track->codec_priv_size;
-                memcpy(st->codec->extradata, track->codec_priv,
+                memcpy(st->codec->extradata,track->codec_priv+extradata_offset,
                        track->codec_priv_size);
             }
 
