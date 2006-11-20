@@ -5226,7 +5226,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
                 if(s->flags & CODEC_FLAG_QP_RD){
                     if(best_s.mv_type==MV_TYPE_16X16 && !(best_s.mv_dir&MV_DIRECT)){
                         const int last_qp= backup_s.qscale;
-                        int dquant, qpi, qp, dc[6];
+                        int qpi, qp, dc[6];
                         DCTELEM ac[6][16];
                         const int mvdir= (best_s.mv_dir&MV_DIR_BACKWARD) ? 1 : 0;
                         static const int dquant_tab[4]={-1,1,-2,2};
@@ -5243,7 +5243,8 @@ static int encode_thread(AVCodecContext *c, void *arg){
                         s->mv[1][0][1] = best_s.mv[1][0][1];
 
                         qpi = s->pict_type == B_TYPE ? 2 : 0;
-                        for(dquant= dquant_tab[qpi]; qpi<4; qpi++){
+                        for(; qpi<4; qpi++){
+                            int dquant= dquant_tab[qpi];
                             qp= last_qp + dquant;
                             if(qp < s->avctx->qmin || qp > s->avctx->qmax)
                                 continue;
