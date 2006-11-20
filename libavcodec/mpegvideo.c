@@ -2552,6 +2552,11 @@ vbv_retry:
 
             if(put_bits_count(&s->pb) > max_size && s->lambda < s->avctx->lmax){
                 s->next_lambda= FFMAX(s->lambda+1, s->lambda*(s->qscale+1) / s->qscale);
+                if(s->adaptive_quant){
+                    int i;
+                    for(i=0; i<s->mb_height*s->mb_width; i++)
+                        s->lambda_table[i]= FFMAX(s->lambda_table[i]+1, s->lambda_table[i]*(s->qscale+1) / s->qscale);
+                }
                 s->mb_skipped = 0;        //done in MPV_frame_start()
                 if(s->pict_type==P_TYPE){ //done in encode_picture() so we must undo it
                     if(s->flipflop_rounding || s->codec_id == CODEC_ID_H263P || s->codec_id == CODEC_ID_MPEG4)
