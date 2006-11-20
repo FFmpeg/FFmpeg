@@ -171,7 +171,7 @@ default.
 @item non-working stuff
 B-frames
 @item example command line
-ffmpeg -i input -acodec aac -ab 128 -vcodec mpeg4 -b 1200Kb -mbd 2 -flags +4mv+trell -aic 2 -cmp 2 -subcmp 2 -s 320x180 -title X output.mp4
+ffmpeg -i input -acodec aac -ab 128 -vcodec mpeg4 -b 1200kb -mbd 2 -flags +4mv+trell -aic 2 -cmp 2 -subcmp 2 -s 320x180 -title X output.mp4
 @end table
 
 @section How do I encode videos which play on the PSP?
@@ -184,7 +184,7 @@ ffmpeg -i input -acodec aac -ab 128 -vcodec mpeg4 -b 1200Kb -mbd 2 -flags +4mv+t
 @item non-working stuff
 B-frames
 @item example command line
-ffmpeg -i input -acodec aac -ab 128 -vcodec mpeg4 -b 1200Kb -ar 24000 -mbd 2 -flags +4mv+trell -aic 2 -cmp 2 -subcmp 2 -s 368x192 -r 30000/1001 -title X -f psp output.mp4
+ffmpeg -i input -acodec aac -ab 128 -vcodec mpeg4 -b 1200kb -ar 24000 -mbd 2 -flags +4mv+trell -aic 2 -cmp 2 -subcmp 2 -s 368x192 -r 30000/1001 -title X -f psp output.mp4
 @item needed stuff for H.264
 -acodec aac -vcodec h264 width*height<=76800 width%16=0? height%16=0? -ar 48000 -coder 1 -r 30000/1001 or 15000/1001 -f psp
 @item working stuff for H.264
@@ -192,7 +192,7 @@ title, loop filter
 @item non-working stuff for H.264
 CAVLC
 @item example command line
-ffmpeg -i input -acodec aac -ab 128 -vcodec h264 -b 1200Kb -ar 48000 -mbd 2 -coder 1 -cmp 2 -subcmp 2 -s 368x192 -r 30000/1001 -title X -f psp -flags loop -trellis 2 -partitions parti4x4+parti8x8+partp4x4+partp8x8+partb8x8 output.mp4
+ffmpeg -i input -acodec aac -ab 128 -vcodec h264 -b 1200kb -ar 48000 -mbd 2 -coder 1 -cmp 2 -subcmp 2 -s 368x192 -r 30000/1001 -title X -f psp -flags loop -trellis 2 -partitions parti4x4+parti8x8+partp4x4+partp8x8+partb8x8 output.mp4
 @end table
 
 @section How can I read DirectShow files?

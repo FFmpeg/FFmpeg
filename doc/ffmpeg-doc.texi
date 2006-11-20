@@ -143,7 +143,7 @@ file. Therefore, order is important, and you can have the same
 option on the command line multiple times. Each occurence is
 then applied to the next input or output file.
 
-* To set the video bitrate of the output file to 64Kbit/s:
+* To set the video bitrate of the output file to 64kbit/s:
 @example
 ffmpeg -i input.avi -b 64k output.avi
 @end example
