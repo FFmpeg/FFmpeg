@@ -139,9 +139,31 @@ ffmpeg [[infile options][@option{-i} @var{infile}]]... @{[outfile options] @var{
 If no input file is given, audio/video grabbing is done.
 
 As a general rule, options are applied to the next specified
-file. For example, if you give the @option{-b 64k} option, it sets the video
-bitrate of the next file. The format option may be needed for raw input
-files.
+file. Therefore, order is important, and you can have the same
+option on the comman line multiple times. Each occurence is
+then applied to the next input or output file.
+
+* To set the video bitrate of the output file to 64Kbit/s:
+@example
+ffmpeg -i input.avi -b 64k output.avi
+@end example
+
+* To force the frame rate of the input and output file to 24 fps:
+@example
+ffmpeg -r 24 -i input.avi output.avi
+@end example
+
+* To force the frame rate of the output file to 24 fps:
+@example
+ffmpeg -i input.avi -r 24 output.avi
+@end example
+
+* To force the frame rate of input file to 1 fps and the output file to 24 fps:
+@example
+ffmpeg -r 1 -i input.avi -r 24 output.avi
+@end example
+
+The format option may be needed for raw input files.
 
 By default, FFmpeg tries to convert as losslessly as possible: It
 uses the same audio and video parameters for the outputs as the one
