@@ -224,6 +224,7 @@ static CodecTags codec_tags[]={
     {"A_DTS"            , CODEC_ID_DTS},
     {"A_VORBIS"         , CODEC_ID_VORBIS},
     {"A_AAC"            , CODEC_ID_AAC},
+    {"A_FLAC"           , CODEC_ID_FLAC},
     {"A_WAVPACK4"       , CODEC_ID_WAVPACK},
     {"A_TTA1"           , CODEC_ID_TTA},
     {NULL               , CODEC_ID_NONE}
@@ -2263,6 +2264,14 @@ matroska_read_header (AVFormatContext    *s,
                 } else {
                     extradata_size = 2;
                 }
+            }
+
+            else if (codec_id == CODEC_ID_FLAC) {
+                AVPacket *pkt = av_mallocz(sizeof(AVPacket));
+                av_new_packet(pkt, track->codec_priv_size);
+                memcpy(pkt->data, track->codec_priv, track->codec_priv_size);
+                matroska_queue_packet(matroska, pkt);
+                track->codec_priv_size = 0;
             }
 
             else if (codec_id == CODEC_ID_TTA) {
