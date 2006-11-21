@@ -19,25 +19,10 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#include "avformat.h"
-#include "riff.h"    /* for CodecTag */
 #include "voc.h"
 
 
 static const int voc_max_pkt_size = 2048;
-static const unsigned char voc_magic[] = "Creative Voice File\x1A";
-
-static const CodecTag voc_codec_tags[] = {
-    {CODEC_ID_PCM_U8,        0x00},
-    {CODEC_ID_ADPCM_SBPRO_4, 0x01},
-    {CODEC_ID_ADPCM_SBPRO_3, 0x02},
-    {CODEC_ID_ADPCM_SBPRO_2, 0x03},
-    {CODEC_ID_PCM_S16LE,     0x04},
-    {CODEC_ID_PCM_ALAW,      0x06},
-    {CODEC_ID_PCM_MULAW,     0x07},
-    {CODEC_ID_ADPCM_CT,    0x0200},
-    {0, 0},
-};
 
 
 static int voc_probe(AVProbeData *p)

@@ -1,5 +1,5 @@
 /*
- * Creative Voice File demuxer.
+ * Creative Voice File common data.
  * Copyright (c) 2006  Aurelien Jacobs <aurel@gnuage.org>
  *
  * This file is part of FFmpeg.
@@ -19,33 +19,18 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef VOC_H
-#define VOC_H
+#include "voc.h"
 
-#include "avformat.h"
-#include "riff.h"    /* for CodecTag */
+const unsigned char voc_magic[21] = "Creative Voice File\x1A";
 
-typedef struct voc_dec_context {
-    int remaining_size;
-} voc_dec_context_t;
-
-typedef enum voc_type {
-    VOC_TYPE_EOF              = 0x00,
-    VOC_TYPE_VOICE_DATA       = 0x01,
-    VOC_TYPE_VOICE_DATA_CONT  = 0x02,
-    VOC_TYPE_SILENCE          = 0x03,
-    VOC_TYPE_MARKER           = 0x04,
-    VOC_TYPE_ASCII            = 0x05,
-    VOC_TYPE_REPETITION_START = 0x06,
-    VOC_TYPE_REPETITION_END   = 0x07,
-    VOC_TYPE_EXTENDED         = 0x08,
-    VOC_TYPE_NEW_VOICE_DATA   = 0x09,
-} voc_type_t;
-
-extern const unsigned char voc_magic[21];
-extern const CodecTag voc_codec_tags[];
-
-int voc_get_packet(AVFormatContext *s, AVPacket *pkt,
-                   AVStream *st, int max_size);
-
-#endif
+const CodecTag voc_codec_tags[] = {
+    {CODEC_ID_PCM_U8,        0x00},
+    {CODEC_ID_ADPCM_SBPRO_4, 0x01},
+    {CODEC_ID_ADPCM_SBPRO_3, 0x02},
+    {CODEC_ID_ADPCM_SBPRO_2, 0x03},
+    {CODEC_ID_PCM_S16LE,     0x04},
+    {CODEC_ID_PCM_ALAW,      0x06},
+    {CODEC_ID_PCM_MULAW,     0x07},
+    {CODEC_ID_ADPCM_CT,    0x0200},
+    {0, 0},
+};
