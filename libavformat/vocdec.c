@@ -24,20 +24,6 @@
 #include "voc.h"
 
 
-typedef enum voc_type {
-    VOC_TYPE_EOF              = 0x00,
-    VOC_TYPE_VOICE_DATA       = 0x01,
-    VOC_TYPE_VOICE_DATA_CONT  = 0x02,
-    VOC_TYPE_SILENCE          = 0x03,
-    VOC_TYPE_MARKER           = 0x04,
-    VOC_TYPE_ASCII            = 0x05,
-    VOC_TYPE_REPETITION_START = 0x06,
-    VOC_TYPE_REPETITION_END   = 0x07,
-    VOC_TYPE_EXTENDED         = 0x08,
-    VOC_TYPE_NEW_VOICE_DATA   = 0x09,
-} voc_type_t;
-
-
 static const int voc_max_pkt_size = 2048;
 static const unsigned char voc_magic[] = "Creative Voice File\x1A";
 
@@ -53,8 +39,6 @@ static const CodecTag voc_codec_tags[] = {
     {0, 0},
 };
 
-
-#ifdef CONFIG_DEMUXERS
 
 static int voc_probe(AVProbeData *p)
 {
@@ -184,91 +168,3 @@ AVInputFormat voc_demuxer = {
     voc_read_packet,
     voc_read_close,
 };
-
-#endif /* CONFIG_DEMUXERS */
-
-
-#ifdef CONFIG_MUXERS
-
-typedef struct voc_enc_context {
-    int param_written;
-} voc_enc_context_t;
-
-static int voc_write_header(AVFormatContext *s)
-{
-    ByteIOContext *pb = &s->pb;
-    const int header_size = 26;
-    const int version = 0x0114;
-
-    if (s->nb_streams != 1
-        || s->streams[0]->codec->codec_type != CODEC_TYPE_AUDIO)
-        return AVERROR_NOTSUPP;
-
-    put_buffer(pb, voc_magic, sizeof(voc_magic) - 1);
-    put_le16(pb, header_size);
-    put_le16(pb, version);
-    put_le16(pb, ~version + 0x1234);
-
-    return 0;
-}
-
-static int voc_write_packet(AVFormatContext *s, AVPacket *pkt)
-{
-    voc_enc_context_t *voc = s->priv_data;
-    AVCodecContext *enc = s->streams[0]->codec;
-    ByteIOContext *pb = &s->pb;
-
-    if (!voc->param_written) {
-        int format = codec_get_tag(voc_codec_tags, enc->codec_id);
-
-        if (format > 0xFF) {
-            put_byte(pb, VOC_TYPE_NEW_VOICE_DATA);
-            put_le24(pb, pkt->size + 12);
-            put_le32(pb, enc->sample_rate);
-            put_byte(pb, enc->bits_per_sample);
-            put_byte(pb, enc->channels);
-            put_le16(pb, format);
-            put_le32(pb, 0);
-        } else {
-            if (s->streams[0]->codec->channels > 1) {
-                put_byte(pb, VOC_TYPE_EXTENDED);
-                put_le24(pb, 4);
-                put_le16(pb, 65536-256000000/(enc->sample_rate*enc->channels));
-                put_byte(pb, format);
-                put_byte(pb, enc->channels - 1);
-            }
-            put_byte(pb, VOC_TYPE_VOICE_DATA);
-            put_le24(pb, pkt->size + 2);
-            put_byte(pb, 256 - 1000000 / enc->sample_rate);
-            put_byte(pb, format);
-        }
-        voc->param_written = 1;
-    } else {
-        put_byte(pb, VOC_TYPE_VOICE_DATA_CONT);
-        put_le24(pb, pkt->size);
-    }
-
-    put_buffer(pb, pkt->data, pkt->size);
-    return 0;
-}
-
-static int voc_write_trailer(AVFormatContext *s)
-{
-    put_byte(&s->pb, 0);
-    return 0;
-}
-
-AVOutputFormat voc_muxer = {
-    "voc",
-    "Creative Voice File format",
-    "audio/x-voc",
-    "voc",
-    sizeof(voc_enc_context_t),
-    CODEC_ID_PCM_U8,
-    CODEC_ID_NONE,
-    voc_write_header,
-    voc_write_packet,
-    voc_write_trailer,
-};
-
-#endif /* CONFIG_MUXERS */
