@@ -1643,12 +1643,6 @@ static int mjpeg_decode_sos(MJpegDecodeContext *s)
         dprintf("decode_sos: invalid len (%d)\n", len);
         return -1;
     }
-    /* XXX: only interleaved scan accepted */
-    if ((nb_components != s->nb_components) && !s->ls && !s->progressive)
-    {
-        dprintf("decode_sos: components(%d) mismatch\n", nb_components);
-        return -1;
-    }
     vmax = 0;
     hmax = 0;
     for(i=0;i<nb_components;i++) {
@@ -1709,8 +1703,8 @@ static int mjpeg_decode_sos(MJpegDecodeContext *s)
         s->mb_width  = (s->width  + s->h_max * block_size - 1) / (s->h_max * block_size);
         s->mb_height = (s->height + s->v_max * block_size - 1) / (s->v_max * block_size);
     } else if(!s->ls) { /* skip this for JPEG-LS */
-        h = s->h_max / s->h_scount[s->comp_index[0]];
-        v = s->v_max / s->v_scount[s->comp_index[0]];
+        h = s->h_max / s->h_scount[0];
+        v = s->v_max / s->v_scount[0];
         s->mb_width  = (s->width  + h * block_size - 1) / (h * block_size);
         s->mb_height = (s->height + v * block_size - 1) / (v * block_size);
         s->nb_blocks[0] = 1;
