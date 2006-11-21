@@ -2556,7 +2556,7 @@ vbv_retry:
                 s->next_lambda= FFMAX(s->lambda+1, s->lambda*(s->qscale+1) / s->qscale);
                 if(s->adaptive_quant){
                     int i;
-                    for(i=0; i<s->mb_height*s->mb_width; i++)
+                    for(i=0; i<s->mb_height*s->mb_stride; i++)
                         s->lambda_table[i]= FFMAX(s->lambda_table[i]+1, s->lambda_table[i]*(s->qscale+1) / s->qscale);
                 }
                 s->mb_skipped = 0;        //done in MPV_frame_start()
