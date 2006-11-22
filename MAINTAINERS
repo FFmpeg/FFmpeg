@@ -187,9 +187,9 @@ libavformat
 
 Generic parts:
   External Interface:
-    libavcodec/avcodec.h
+    libavformat/avformat.h
   Utility Code:
-    libavcodec/utils.c
+    libavformat/utils.c
 
 
 Muxers/Demuxers:
