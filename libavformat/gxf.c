@@ -162,6 +162,13 @@ static int get_sindex(AVFormatContext *s, int id, int format) {
             st->codec->channels = 2;
             st->codec->sample_rate = 48000;
             break;
+        // timecode tracks:
+        case 7:
+        case 8:
+        case 24:
+            st->codec->codec_type = CODEC_TYPE_DATA;
+            st->codec->codec_id = CODEC_ID_NONE;
+            break;
         default:
             st->codec->codec_type = CODEC_TYPE_UNKNOWN;
             st->codec->codec_id = CODEC_ID_NONE;
