@@ -130,11 +130,13 @@ static int get_sindex(AVFormatContext *s, int id, int format) {
         case 20:
             st->codec->codec_type = CODEC_TYPE_VIDEO;
             st->codec->codec_id = CODEC_ID_MPEG2VIDEO;
+            st->need_parsing = 2; // get keyframe flag etc.
             break;
         case 22:
         case 23:
             st->codec->codec_type = CODEC_TYPE_VIDEO;
             st->codec->codec_id = CODEC_ID_MPEG1VIDEO;
+            st->need_parsing = 2; // get keyframe flag etc.
             break;
         case 9:
             st->codec->codec_type = CODEC_TYPE_AUDIO;
