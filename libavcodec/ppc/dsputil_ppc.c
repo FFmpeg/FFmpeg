@@ -274,14 +274,15 @@ void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx)
     }
 
 #ifdef HAVE_ALTIVEC
-    dsputil_h264_init_ppc(c, avctx);
+    if(ENABLE_H264_DECODER) dsputil_h264_init_ppc(c, avctx);
 
     if (has_altivec()) {
         mm_flags |= MM_ALTIVEC;
 
         dsputil_init_altivec(c, avctx);
-        snow_init_altivec(c, avctx);
-        vc1dsp_init_altivec(c, avctx);
+        if(ENABLE_SNOW_DECODER) snow_init_altivec(c, avctx);
+        if(ENABLE_VC1_DECODER || ENABLE_WMV3_DECODER)
+            vc1dsp_init_altivec(c, avctx);
         float_init_altivec(c, avctx);
         c->gmc1 = gmc1_altivec;
 

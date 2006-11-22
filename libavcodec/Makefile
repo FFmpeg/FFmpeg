@@ -388,10 +388,14 @@ OBJS-$(TARGET_ALTIVEC)                 += ppc/dsputil_altivec.o      \
                                           ppc/fft_altivec.o          \
                                           ppc/gmc_altivec.o          \
                                           ppc/fdct_altivec.o         \
-                                          ppc/h264_altivec.o         \
-                                          ppc/snow_altivec.o         \
-                                          ppc/vc1dsp_altivec.o       \
                                           ppc/float_altivec.o        \
+
+ifeq ($(TARGET_ALTIVEC),yes)
+OBJS-$(CONFIG_H264_DECODER)            += ppc/h264_altivec.o
+OBJS-$(CONFIG_SNOW_DECODER)            += ppc/snow_altivec.o
+OBJS-$(CONFIG_VC1_DECODER)             += ppc/vc1dsp_altivec.o
+OBJS-$(CONFIG_WMV3_DECODER)            += ppc/vc1dsp_altivec.o
+endif
 
 OBJS-$(TARGET_ARCH_BFIN)               += bfin/dsputil_bfin.o \
 
