@@ -1355,7 +1355,7 @@ static int svq1_encode_frame(AVCodecContext *avctx, unsigned char *buf,
     init_put_bits(&s->pb, buf, buf_size);
 
     *p = *pict;
-    p->pict_type = avctx->frame_number % avctx->gop_size ? P_TYPE : I_TYPE;
+    p->pict_type = avctx->gop_size && avctx->frame_number % avctx->gop_size ? P_TYPE : I_TYPE;
     p->key_frame = p->pict_type == I_TYPE;
 
     svq1_write_header(s, p->pict_type);
