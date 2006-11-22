@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 #define HAVE_AV_CONFIG_H
+#include <signal.h>
 #include <limits.h>
 #include "avformat.h"
 #include "swscale.h"
@@ -27,14 +28,15 @@
 #include "opt.h"
 #include "fifo.h"
 
-#ifndef __MINGW32__
+#ifdef __MINGW32__
+#include <conio.h>
+#else
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <sys/time.h>
 #include <termios.h>
 #include <sys/resource.h>
-#include <signal.h>
 #endif
 #ifdef CONFIG_OS2
 #include <sys/types.h>
@@ -292,10 +294,13 @@ typedef struct AVInputFile {
 
 /* init terminal so that we can grab keys */
 static struct termios oldtty;
+#endif
 
 static void term_exit(void)
 {
+#ifndef __MINGW32__
     tcsetattr (0, TCSANOW, &oldtty);
+#endif
 }
 
 static volatile sig_atomic_t received_sigterm = 0;
@@ -309,6 +314,7 @@ sigterm_handler(int sig)
 
 static void term_init(void)
 {
+#ifndef __MINGW32__
     struct termios tty;
 
     tcgetattr (0, &tty);
@@ -324,9 +330,10 @@ static void term_init(void)
     tty.c_cc[VTIME] = 0;
 
     tcsetattr (0, TCSANOW, &tty);
+    signal(SIGQUIT, sigterm_handler); /* Quit (POSIX).  */
+#endif
 
     signal(SIGINT , sigterm_handler); /* Interrupt (ANSI).  */
-    signal(SIGQUIT, sigterm_handler); /* Quit (POSIX).  */
     signal(SIGTERM, sigterm_handler); /* Termination (ANSI).  */
     /*
     register a function to be called at normal program termination
@@ -340,6 +347,10 @@ static void term_init(void)
 /* read a key without blocking */
 static int read_key(void)
 {
+#ifdef __MINGW32__
+    if(kbhit())
+        return(getch());
+#else
     int n = 1;
     unsigned char ch;
 #ifndef CONFIG_BEOS_NETSERVER
@@ -359,6 +370,7 @@ static int read_key(void)
 
         return n;
     }
+#endif
     return -1;
 }
 
@@ -366,26 +378,6 @@ static int decode_interrupt_cb(void)
 {
     return q_pressed || (q_pressed = read_key() == 'q');
 }
-
-#else
-
-static volatile int received_sigterm = 0;
-
-/* no interactive support */
-static void term_exit(void)
-{
-}
-
-static void term_init(void)
-{
-}
-
-static int read_key(void)
-{
-    return 0;
-}
-
-#endif
 
 static int read_ffserver_streams(AVFormatContext *s, const char *filename)
 {
@@ -1832,12 +1824,10 @@ static int av_encode(AVFormatContext **output_files,
         }
     }
 
-#ifndef __MINGW32__
     if ( !using_stdin && verbose >= 0) {
         fprintf(stderr, "Press [q] to stop encoding\n");
         url_set_interrupt_cb(decode_interrupt_cb);
     }
-#endif
     term_init();
 
     stream_no_data = 0;
@@ -3971,14 +3961,13 @@ int main(int argc, char **argv)
     powerpc_display_perf_report();
 #endif /* POWERPC_PERFORMANCE_REPORT */
 
-#ifndef __MINGW32__
     if (received_sigterm) {
         fprintf(stderr,
             "Received signal %d: terminating.\n",
             (int) received_sigterm);
         exit (255);
     }
-#endif
+
     exit(0); /* not all OS-es handle main() return value */
     return 0;
 }
