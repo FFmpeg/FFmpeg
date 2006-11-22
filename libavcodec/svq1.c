@@ -905,7 +905,7 @@ static void svq1_write_header(SVQ1Context *s, int frame_type)
         /* no embedded string either */
 
         /* output 5 unknown bits (2 + 2 + 1) */
-        put_bits(&s->pb, 5, 0);
+        put_bits(&s->pb, 5, 2); /* 2 needed by quicktime decoder */
 
         for (i = 0; i < 7; i++)
         {
