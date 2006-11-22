@@ -472,7 +472,10 @@ static int alac_decode_frame(AVCodecContext *avctx,
                 ALAC_EXTRADATA_SIZE);
             return input_buffer_size;
         }
-        alac_set_info(alac);
+        if (alac_set_info(alac)) {
+            av_log(avctx, AV_LOG_ERROR, "alac: set_info failed\n");
+            return input_buffer_size;
+        }
         alac->context_initialized = 1;
     }
 
