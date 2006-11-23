@@ -536,7 +536,7 @@ static int flic_decode_frame_15_16BPP(AVCodecContext *avctx,
         case FLI_BLACK:
             /* set the whole frame to 0x0000 which is balck in both 15Bpp and 16Bpp modes. */
             memset(pixels, 0x0000,
-                   s->frame.linesize[0] * s->avctx->height * 2);
+                   s->frame.linesize[0] * s->avctx->height);
             break;
 
         case FLI_BRUN:
