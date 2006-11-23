@@ -95,18 +95,23 @@ static int64_t get_utf8(GetBitContext *gb){
 }
 
 static void metadata_streaminfo(FLACContext *s);
-static void dump_headers(FLACContext *s);
+static void allocate_buffers(FLACContext *s);
+static int metadata_parse(FLACContext *s);
 
 static int flac_decode_init(AVCodecContext * avctx)
 {
     FLACContext *s = avctx->priv_data;
     s->avctx = avctx;
 
-    /* initialize based on the demuxer-supplied streamdata header */
-    if (avctx->extradata_size == FLAC_STREAMINFO_SIZE) {
+    if (avctx->extradata_size > 4) {
+        /* initialize based on the demuxer-supplied streamdata header */
         init_get_bits(&s->gb, avctx->extradata, avctx->extradata_size*8);
-        metadata_streaminfo(s);
-        dump_headers(s);
+        if (avctx->extradata_size == FLAC_STREAMINFO_SIZE) {
+            metadata_streaminfo(s);
+            allocate_buffers(s);
+        } else {
+            metadata_parse(s);
+        }
     }
 
     return 0;
@@ -159,7 +164,51 @@ static void metadata_streaminfo(FLACContext *s)
     skip_bits(&s->gb, 64); /* md5 sum */
     skip_bits(&s->gb, 64); /* md5 sum */
 
-    allocate_buffers(s);
+    dump_headers(s);
+}
+
+/**
+ * Parse a list of metadata blocks. This list of blocks must begin with
+ * the fLaC marker.
+ * @param s the flac decoding context containing the gb bit reader used to
+ *          parse metadata
+ * @return 1 if some metadata was read, 0 if no fLaC marker was found
+ */
+static int metadata_parse(FLACContext *s)
+{
+    int i, metadata_last, metadata_type, metadata_size, streaminfo_updated=0;
+
+    if (show_bits_long(&s->gb, 32) == MKBETAG('f','L','a','C')) {
+        skip_bits(&s->gb, 32);
+
+        av_log(s->avctx, AV_LOG_DEBUG, "STREAM HEADER\n");
+        do {
+            metadata_last = get_bits(&s->gb, 1);
+            metadata_type = get_bits(&s->gb, 7);
+            metadata_size = get_bits_long(&s->gb, 24);
+
+            av_log(s->avctx, AV_LOG_DEBUG,
+                   " metadata block: flag = %d, type = %d, size = %d\n",
+                   metadata_last, metadata_type, metadata_size);
+            if (metadata_size) {
+                switch (metadata_type) {
+                case METADATA_TYPE_STREAMINFO:
+                    metadata_streaminfo(s);
+                    streaminfo_updated = 1;
+                    break;
+
+                default:
+                    for (i=0; i<metadata_size; i++)
+                        skip_bits(&s->gb, 8);
+                }
+            }
+        } while (!metadata_last);
+
+        if (streaminfo_updated)
+            allocate_buffers(s);
+        return 1;
+    }
+    return 0;
 }
 
 static int decode_residuals(FLACContext *s, int channel, int pred_order)
@@ -528,7 +577,6 @@ static int flac_decode_frame(AVCodecContext *avctx,
                             uint8_t *buf, int buf_size)
 {
     FLACContext *s = avctx->priv_data;
-    int metadata_last, metadata_type, metadata_size;
     int tmp = 0, i, j = 0, input_buf_size = 0;
     int16_t *samples = data;
 
@@ -559,47 +607,8 @@ static int flac_decode_frame(AVCodecContext *avctx,
 
     init_get_bits(&s->gb, buf, buf_size*8);
 
-    /* fLaC signature (be) */
-    if (show_bits_long(&s->gb, 32) == bswap_32(ff_get_fourcc("fLaC")))
+    if (!metadata_parse(s))
     {
-        skip_bits(&s->gb, 32);
-
-        av_log(s->avctx, AV_LOG_DEBUG, "STREAM HEADER\n");
-        do {
-            metadata_last = get_bits(&s->gb, 1);
-            metadata_type = get_bits(&s->gb, 7);
-            metadata_size = get_bits_long(&s->gb, 24);
-
-            av_log(s->avctx, AV_LOG_DEBUG, " metadata block: flag = %d, type = %d, size = %d\n",
-                metadata_last, metadata_type,
-                metadata_size);
-            if(metadata_size){
-                switch(metadata_type)
-                {
-                case METADATA_TYPE_STREAMINFO:{
-                    metadata_streaminfo(s);
-
-                    /* Buffer might have been reallocated, reinit bitreader */
-                    if(buf != &s->bitstream[s->bitstream_index])
-                    {
-                        int bits_count = get_bits_count(&s->gb);
-                        buf= &s->bitstream[s->bitstream_index];
-                        init_get_bits(&s->gb, buf, buf_size*8);
-                        skip_bits(&s->gb, bits_count);
-                    }
-
-                    dump_headers(s);
-                    break;}
-                default:
-                    for(i=0; i<metadata_size; i++)
-                        skip_bits(&s->gb, 8);
-                }
-            }
-        } while(!metadata_last);
-    }
-    else
-    {
-
         tmp = show_bits(&s->gb, 16);
         if(tmp != 0xFFF8){
             av_log(s->avctx, AV_LOG_ERROR, "FRAME HEADER not here\n");
