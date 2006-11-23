@@ -2266,14 +2266,6 @@ matroska_read_header (AVFormatContext    *s,
                 }
             }
 
-            else if (codec_id == CODEC_ID_FLAC) {
-                AVPacket *pkt = av_mallocz(sizeof(AVPacket));
-                av_new_packet(pkt, track->codec_priv_size);
-                memcpy(pkt->data, track->codec_priv, track->codec_priv_size);
-                matroska_queue_packet(matroska, pkt);
-                track->codec_priv_size = 0;
-            }
-
             else if (codec_id == CODEC_ID_TTA) {
                 MatroskaAudioTrack *audiotrack = (MatroskaAudioTrack *) track;
                 ByteIOContext b;
