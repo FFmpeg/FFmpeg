@@ -308,7 +308,7 @@ static int flic_decode_frame_8BPP(AVCodecContext *avctx,
                                 palette_idx1 = buf[stream_ptr++];
                                 pixels[pixel_ptr++] = palette_idx1;
                             }
-                        } else {
+                        } else if (byte_run < 0) {
                             byte_run = -byte_run;
                             palette_idx1 = buf[stream_ptr++];
                             CHECK_PIXEL_PTR(byte_run);
