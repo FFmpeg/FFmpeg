@@ -246,9 +246,15 @@ static int flic_decode_frame_8BPP(AVCodecContext *avctx,
             while (compressed_lines > 0) {
                 line_packets = LE_16(&buf[stream_ptr]);
                 stream_ptr += 2;
-                if (line_packets < 0) {
+                if ((line_packets & 0xC000) == 0xC000) {
+                    // line skip opcode
                     line_packets = -line_packets;
                     y_ptr += line_packets * s->frame.linesize[0];
+                } else if ((line_packets & 0xC000) == 0x4000) {
+                    av_log(avctx, AV_LOG_ERROR, "Undefined opcode (%x) in DELTA_FLI\n", line_packets);
+                } else if ((line_packets & 0xC000) == 0x8000) {
+                    // "last byte" opcode
+                    pixels[y_ptr + s->frame.linesize[0] - 1] = line_packets & 0xff;
                 } else {
                     compressed_lines--;
                     pixel_ptr = y_ptr;
