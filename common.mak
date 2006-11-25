@@ -95,9 +95,6 @@ uninstall-headers:
 
 .PHONY: all depend dep clean distclean install* uninstall*
 
-#
-# include dependency files if they exist
-#
 ifneq ($(wildcard .depend),)
 include .depend
 endif
