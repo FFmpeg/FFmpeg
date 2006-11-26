@@ -698,4 +698,81 @@ static int name16(void /*MpegEncContext*/ *s, uint8_t *dst, uint8_t *src, int st
     return score;\
 }
 
+
+static inline void copy_block2(uint8_t *dst, uint8_t *src, int dstStride, int srcStride, int h)
+{
+    int i;
+    for(i=0; i<h; i++)
+    {
+        ST16(dst   , LD16(src   ));
+        dst+=dstStride;
+        src+=srcStride;
+    }
+}
+
+static inline void copy_block4(uint8_t *dst, uint8_t *src, int dstStride, int srcStride, int h)
+{
+    int i;
+    for(i=0; i<h; i++)
+    {
+        ST32(dst   , LD32(src   ));
+        dst+=dstStride;
+        src+=srcStride;
+    }
+}
+
+static inline void copy_block8(uint8_t *dst, uint8_t *src, int dstStride, int srcStride, int h)
+{
+    int i;
+    for(i=0; i<h; i++)
+    {
+        ST32(dst   , LD32(src   ));
+        ST32(dst+4 , LD32(src+4 ));
+        dst+=dstStride;
+        src+=srcStride;
+    }
+}
+
+static inline void copy_block9(uint8_t *dst, uint8_t *src, int dstStride, int srcStride, int h)
+{
+    int i;
+    for(i=0; i<h; i++)
+    {
+        ST32(dst   , LD32(src   ));
+        ST32(dst+4 , LD32(src+4 ));
+        dst[8]= src[8];
+        dst+=dstStride;
+        src+=srcStride;
+    }
+}
+
+static inline void copy_block16(uint8_t *dst, uint8_t *src, int dstStride, int srcStride, int h)
+{
+    int i;
+    for(i=0; i<h; i++)
+    {
+        ST32(dst   , LD32(src   ));
+        ST32(dst+4 , LD32(src+4 ));
+        ST32(dst+8 , LD32(src+8 ));
+        ST32(dst+12, LD32(src+12));
+        dst+=dstStride;
+        src+=srcStride;
+    }
+}
+
+static inline void copy_block17(uint8_t *dst, uint8_t *src, int dstStride, int srcStride, int h)
+{
+    int i;
+    for(i=0; i<h; i++)
+    {
+        ST32(dst   , LD32(src   ));
+        ST32(dst+4 , LD32(src+4 ));
+        ST32(dst+8 , LD32(src+8 ));
+        ST32(dst+12, LD32(src+12));
+        dst[16]= src[16];
+        dst+=dstStride;
+        src+=srcStride;
+    }
+}
+
 #endif
