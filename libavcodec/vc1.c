@@ -2843,8 +2843,8 @@ static int vc1_decode_i_block_adv(VC1Context *v, DCTELEM block[64], int n, int c
         if(use_pred) {
             /* scale predictors if needed*/
             if(q2 && q1!=q2) {
-                q1 = q1 * 2 - 1;
-                q2 = q2 * 2 - 1;
+                q1 = q1 * 2 + ((q1 == v->pq) ? v->halfpq : 0) - 1;
+                q2 = q2 * 2 + ((q2 == v->pq) ? v->halfpq : 0) - 1;
 
                 if(dc_pred_dir) { //left
                     for(k = 1; k < 8; k++)
@@ -2886,8 +2886,8 @@ static int vc1_decode_i_block_adv(VC1Context *v, DCTELEM block[64], int n, int c
             if(use_pred) {
                 memcpy(ac_val2, ac_val, 8 * 2);
                 if(q2 && q1!=q2) {
-                    q1 = q1 * 2 - 1;
-                    q2 = q2 * 2 - 1;
+                    q1 = q1 * 2 + ((q1 == v->pq) ? v->halfpq : 0) - 1;
+                    q2 = q2 * 2 + ((q2 == v->pq) ? v->halfpq : 0) - 1;
                     for(k = 1; k < 8; k++)
                         ac_val2[k] = (ac_val2[k] * q2 * vc1_dqscale[q1 - 1] + 0x20000) >> 18;
                 }
@@ -2896,8 +2896,8 @@ static int vc1_decode_i_block_adv(VC1Context *v, DCTELEM block[64], int n, int c
             if(use_pred) {
                 memcpy(ac_val2 + 8, ac_val + 8, 8 * 2);
                 if(q2 && q1!=q2) {
-                    q1 = q1 * 2 - 1;
-                    q2 = q2 * 2 - 1;
+                    q1 = q1 * 2 + ((q1 == v->pq) ? v->halfpq : 0) - 1;
+                    q2 = q2 * 2 + ((q2 == v->pq) ? v->halfpq : 0) - 1;
                     for(k = 1; k < 8; k++)
                         ac_val2[k + 8] = (ac_val2[k + 8] * q2 * vc1_dqscale[q1 - 1] + 0x20000) >> 18;
                 }
@@ -3042,8 +3042,8 @@ static int vc1_decode_intra_block(VC1Context *v, DCTELEM block[64], int n, int c
         if(use_pred) {
             /* scale predictors if needed*/
             if(q2 && q1!=q2) {
-                q1 = q1 * 2 - 1;
-                q2 = q2 * 2 - 1;
+                q1 = q1 * 2 + ((q1 == v->pq) ? v->halfpq : 0) - 1;
+                q2 = q2 * 2 + ((q2 == v->pq) ? v->halfpq : 0) - 1;
 
                 if(dc_pred_dir) { //left
                     for(k = 1; k < 8; k++)
@@ -3085,8 +3085,8 @@ static int vc1_decode_intra_block(VC1Context *v, DCTELEM block[64], int n, int c
             if(use_pred) {
                 memcpy(ac_val2, ac_val, 8 * 2);
                 if(q2 && q1!=q2) {
-                    q1 = q1 * 2 - 1;
-                    q2 = q2 * 2 - 1;
+                    q1 = q1 * 2 + ((q1 == v->pq) ? v->halfpq : 0) - 1;
+                    q2 = q2 * 2 + ((q2 == v->pq) ? v->halfpq : 0) - 1;
                     for(k = 1; k < 8; k++)
                         ac_val2[k] = (ac_val2[k] * q2 * vc1_dqscale[q1 - 1] + 0x20000) >> 18;
                 }
@@ -3095,8 +3095,8 @@ static int vc1_decode_intra_block(VC1Context *v, DCTELEM block[64], int n, int c
             if(use_pred) {
                 memcpy(ac_val2 + 8, ac_val + 8, 8 * 2);
                 if(q2 && q1!=q2) {
-                    q1 = q1 * 2 - 1;
-                    q2 = q2 * 2 - 1;
+                    q1 = q1 * 2 + ((q1 == v->pq) ? v->halfpq : 0) - 1;
+                    q2 = q2 * 2 + ((q2 == v->pq) ? v->halfpq : 0) - 1;
                     for(k = 1; k < 8; k++)
                         ac_val2[k + 8] = (ac_val2[k + 8] * q2 * vc1_dqscale[q1 - 1] + 0x20000) >> 18;
                 }
