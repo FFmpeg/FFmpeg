@@ -1591,8 +1591,7 @@ static int vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
         break;
     case 1:
         v->s.pict_type = B_TYPE;
-        return -1;
-//      break;
+        break;
     case 2:
         v->s.pict_type = I_TYPE;
         break;
@@ -1621,6 +1620,13 @@ static int vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
     if(v->interlace)
         v->uvsamp = get_bits1(gb);
     if(v->finterpflag) v->interpfrm = get_bits(gb, 1);
+    if(v->s.pict_type == B_TYPE) {
+        v->bfraction = get_vlc2(gb, vc1_bfraction_vlc.table, VC1_BFRACTION_VLC_BITS, 1);
+        v->bfraction = vc1_bfraction_lut[v->bfraction];
+        if(v->bfraction == 0) {
+            v->s.pict_type = BI_TYPE; /* XXX: should not happen here */
+        }
+    }
     pqindex = get_bits(gb, 5);
     v->pqindex = pqindex;
     if (v->quantizer_mode == QUANT_FRAME_IMPLICIT)
@@ -1735,6 +1741,56 @@ static int vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
         }
 
         v->ttfrm = 0; //FIXME Is that so ?
+        if (v->vstransform)
+        {
+            v->ttmbf = get_bits(gb, 1);
+            if (v->ttmbf)
+            {
+                v->ttfrm = ttfrm_to_tt[get_bits(gb, 2)];
+            }
+        } else {
+            v->ttmbf = 1;
+            v->ttfrm = TT_8X8;
+        }
+        break;
+    case B_TYPE:
+        if(v->postprocflag)
+            v->postproc = get_bits1(gb);
+        if (v->extended_mv) v->mvrange = get_prefix(gb, 0, 3);
+        else v->mvrange = 0;
+        v->k_x = v->mvrange + 9 + (v->mvrange >> 1); //k_x can be 9 10 12 13
+        v->k_y = v->mvrange + 8; //k_y can be 8 9 10 11
+        v->range_x = 1 << (v->k_x - 1);
+        v->range_y = 1 << (v->k_y - 1);
+
+        if (v->pq < 5) v->tt_index = 0;
+        else if(v->pq < 13) v->tt_index = 1;
+        else v->tt_index = 2;
+
+        lowquant = (v->pq > 12) ? 0 : 1;
+        v->mv_mode = get_bits1(gb) ? MV_PMODE_1MV : MV_PMODE_1MV_HPEL_BILIN;
+        v->s.quarter_sample = (v->mv_mode == MV_PMODE_1MV);
+        v->s.mspel = v->s.quarter_sample;
+
+        status = bitplane_decoding(v->direct_mb_plane, &v->dmb_is_raw, v);
+        if (status < 0) return -1;
+        av_log(v->s.avctx, AV_LOG_DEBUG, "MB Direct Type plane encoding: "
+               "Imode: %i, Invert: %i\n", status>>1, status&1);
+        status = bitplane_decoding(v->s.mbskip_table, &v->skip_is_raw, v);
+        if (status < 0) return -1;
+        av_log(v->s.avctx, AV_LOG_DEBUG, "MB Skip plane encoding: "
+               "Imode: %i, Invert: %i\n", status>>1, status&1);
+
+        v->s.mv_table_index = get_bits(gb, 2);
+        v->cbpcy_vlc = &vc1_cbpcy_p_vlc[get_bits(gb, 2)];
+
+        if (v->dquant)
+        {
+            av_log(v->s.avctx, AV_LOG_DEBUG, "VOP DQuant info\n");
+            vop_dquant_decoding(v);
+        }
+
+        v->ttfrm = 0;
         if (v->vstransform)
         {
             v->ttmbf = get_bits(gb, 1);
