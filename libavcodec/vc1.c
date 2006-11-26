@@ -3783,10 +3783,6 @@ static void vc1_decode_i_blocks_adv(VC1Context *v)
         break;
     }
 
-    /* Set DC scale - y and c use the same */
-    s->y_dc_scale = s->y_dc_scale_table[v->pq];
-    s->c_dc_scale = s->c_dc_scale_table[v->pq];
-
     //do frame decode
     s->mb_x = s->mb_y = 0;
     s->mb_intra = 1;
@@ -3820,6 +3816,9 @@ static void vc1_decode_i_blocks_adv(VC1Context *v)
             GET_MQUANT();
 
             s->current_picture.qscale_table[mb_pos] = mquant;
+            /* Set DC scale - y and c use the same */
+            s->y_dc_scale = s->y_dc_scale_table[mquant];
+            s->c_dc_scale = s->c_dc_scale_table[mquant];
 
             for(k = 0; k < 6; k++) {
                 val = ((cbp >> (5 - k)) & 1);
