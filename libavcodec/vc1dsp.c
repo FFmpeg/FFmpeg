@@ -31,11 +31,12 @@
 
 /** Apply overlap transform to horizontal edge
 */
-static void vc1_v_overlap_c(uint8_t* src, int stride, int rnd)
+static void vc1_v_overlap_c(uint8_t* src, int stride)
 {
     int i;
     int a, b, c, d;
     int d1, d2;
+    int rnd = 1;
     for(i = 0; i < 8; i++) {
         a = src[-2*stride];
         b = src[-stride];
@@ -49,16 +50,18 @@ static void vc1_v_overlap_c(uint8_t* src, int stride, int rnd)
         src[0] = c + d2;
         src[stride] = d + d1;
         src++;
+        rnd = !rnd;
     }
 }
 
 /** Apply overlap transform to vertical edge
 */
-static void vc1_h_overlap_c(uint8_t* src, int stride, int rnd)
+static void vc1_h_overlap_c(uint8_t* src, int stride)
 {
     int i;
     int a, b, c, d;
     int d1, d2;
+    int rnd = 1;
     for(i = 0; i < 8; i++) {
         a = src[-2];
         b = src[-1];
@@ -72,6 +75,7 @@ static void vc1_h_overlap_c(uint8_t* src, int stride, int rnd)
         src[0] = c + d2;
         src[1] = d + d1;
         src += stride;
+        rnd = !rnd;
     }
 }
 

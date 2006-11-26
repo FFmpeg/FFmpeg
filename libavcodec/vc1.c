@@ -3397,9 +3397,9 @@ static int vc1_decode_p_mb(VC1Context *v)
                     s->dsp.put_pixels_clamped(s->block[i], s->dest[dst_idx] + off, s->linesize >> ((i & 4) >> 2));
                     if(v->pq >= 9 && v->overlap) {
                         if(v->c_avail)
-                            s->dsp.vc1_h_overlap(s->dest[dst_idx] + off, s->linesize >> ((i & 4) >> 2), (i<4) ? (i&1) : (s->mb_x&1));
+                            s->dsp.vc1_h_overlap(s->dest[dst_idx] + off, s->linesize >> ((i & 4) >> 2));
                         if(v->a_avail)
-                            s->dsp.vc1_v_overlap(s->dest[dst_idx] + off, s->linesize >> ((i & 4) >> 2), (i<4) ? ((i&1)>>1) : (s->mb_y&1));
+                            s->dsp.vc1_v_overlap(s->dest[dst_idx] + off, s->linesize >> ((i & 4) >> 2));
                     }
                 } else if(val) {
                     vc1_decode_p_block(v, s->block[i], i, mquant, ttmb, first_block);
@@ -3500,9 +3500,9 @@ static int vc1_decode_p_mb(VC1Context *v)
                     s->dsp.put_pixels_clamped(s->block[i], s->dest[dst_idx] + off, (i&4)?s->uvlinesize:s->linesize);
                     if(v->pq >= 9 && v->overlap) {
                         if(v->c_avail)
-                            s->dsp.vc1_h_overlap(s->dest[dst_idx] + off, s->linesize >> ((i & 4) >> 2), (i<4) ? (i&1) : (s->mb_x&1));
+                            s->dsp.vc1_h_overlap(s->dest[dst_idx] + off, s->linesize >> ((i & 4) >> 2));
                         if(v->a_avail)
-                            s->dsp.vc1_v_overlap(s->dest[dst_idx] + off, s->linesize >> ((i & 4) >> 2), (i<4) ? ((i&1)>>1) : (s->mb_y&1));
+                            s->dsp.vc1_v_overlap(s->dest[dst_idx] + off, s->linesize >> ((i & 4) >> 2));
                     }
                 } else if(is_coded[i]) {
                     status = vc1_decode_p_block(v, s->block[i], i, mquant, ttmb, first_block);
@@ -3769,25 +3769,25 @@ static void vc1_decode_i_blocks(VC1Context *v)
             vc1_put_block(v, s->block);
             if(v->pq >= 9 && v->overlap) {
                 if(s->mb_x) {
-                    s->dsp.vc1_h_overlap(s->dest[0], s->linesize, 0);
-                    s->dsp.vc1_h_overlap(s->dest[0] + 8 * s->linesize, s->linesize, 0);
+                    s->dsp.vc1_h_overlap(s->dest[0], s->linesize);
+                    s->dsp.vc1_h_overlap(s->dest[0] + 8 * s->linesize, s->linesize);
                     if(!(s->flags & CODEC_FLAG_GRAY)) {
-                        s->dsp.vc1_h_overlap(s->dest[1], s->uvlinesize, s->mb_x&1);
-                        s->dsp.vc1_h_overlap(s->dest[2], s->uvlinesize, s->mb_x&1);
+                        s->dsp.vc1_h_overlap(s->dest[1], s->uvlinesize);
+                        s->dsp.vc1_h_overlap(s->dest[2], s->uvlinesize);
                     }
                 }
-                s->dsp.vc1_h_overlap(s->dest[0] + 8, s->linesize, 1);
-                s->dsp.vc1_h_overlap(s->dest[0] + 8 * s->linesize + 8, s->linesize, 1);
+                s->dsp.vc1_h_overlap(s->dest[0] + 8, s->linesize);
+                s->dsp.vc1_h_overlap(s->dest[0] + 8 * s->linesize + 8, s->linesize);
                 if(!s->first_slice_line) {
-                    s->dsp.vc1_v_overlap(s->dest[0], s->linesize, 0);
-                    s->dsp.vc1_v_overlap(s->dest[0] + 8, s->linesize, 0);
+                    s->dsp.vc1_v_overlap(s->dest[0], s->linesize);
+                    s->dsp.vc1_v_overlap(s->dest[0] + 8, s->linesize);
                     if(!(s->flags & CODEC_FLAG_GRAY)) {
-                        s->dsp.vc1_v_overlap(s->dest[1], s->uvlinesize, s->mb_y&1);
-                        s->dsp.vc1_v_overlap(s->dest[2], s->uvlinesize, s->mb_y&1);
+                        s->dsp.vc1_v_overlap(s->dest[1], s->uvlinesize);
+                        s->dsp.vc1_v_overlap(s->dest[2], s->uvlinesize);
                     }
                 }
-                s->dsp.vc1_v_overlap(s->dest[0] + 8 * s->linesize, s->linesize, 1);
-                s->dsp.vc1_v_overlap(s->dest[0] + 8 * s->linesize + 8, s->linesize, 1);
+                s->dsp.vc1_v_overlap(s->dest[0] + 8 * s->linesize, s->linesize);
+                s->dsp.vc1_v_overlap(s->dest[0] + 8 * s->linesize + 8, s->linesize);
             }
 
             if(get_bits_count(&s->gb) > v->bits) {
@@ -3898,25 +3898,25 @@ static void vc1_decode_i_blocks_adv(VC1Context *v)
             vc1_put_block(v, s->block);
             if(overlap) {
                 if(s->mb_x) {
-                    s->dsp.vc1_h_overlap(s->dest[0], s->linesize, 0);
-                    s->dsp.vc1_h_overlap(s->dest[0] + 8 * s->linesize, s->linesize, 0);
+                    s->dsp.vc1_h_overlap(s->dest[0], s->linesize);
+                    s->dsp.vc1_h_overlap(s->dest[0] + 8 * s->linesize, s->linesize);
                     if(!(s->flags & CODEC_FLAG_GRAY)) {
-                        s->dsp.vc1_h_overlap(s->dest[1], s->uvlinesize, s->mb_x&1);
-                        s->dsp.vc1_h_overlap(s->dest[2], s->uvlinesize, s->mb_x&1);
+                        s->dsp.vc1_h_overlap(s->dest[1], s->uvlinesize);
+                        s->dsp.vc1_h_overlap(s->dest[2], s->uvlinesize);
                     }
                 }
-                s->dsp.vc1_h_overlap(s->dest[0] + 8, s->linesize, 1);
-                s->dsp.vc1_h_overlap(s->dest[0] + 8 * s->linesize + 8, s->linesize, 1);
+                s->dsp.vc1_h_overlap(s->dest[0] + 8, s->linesize);
+                s->dsp.vc1_h_overlap(s->dest[0] + 8 * s->linesize + 8, s->linesize);
                 if(!s->first_slice_line) {
-                    s->dsp.vc1_v_overlap(s->dest[0], s->linesize, 0);
-                    s->dsp.vc1_v_overlap(s->dest[0] + 8, s->linesize, 0);
+                    s->dsp.vc1_v_overlap(s->dest[0], s->linesize);
+                    s->dsp.vc1_v_overlap(s->dest[0] + 8, s->linesize);
                     if(!(s->flags & CODEC_FLAG_GRAY)) {
-                        s->dsp.vc1_v_overlap(s->dest[1], s->uvlinesize, s->mb_y&1);
-                        s->dsp.vc1_v_overlap(s->dest[2], s->uvlinesize, s->mb_y&1);
+                        s->dsp.vc1_v_overlap(s->dest[1], s->uvlinesize);
+                        s->dsp.vc1_v_overlap(s->dest[2], s->uvlinesize);
                     }
                 }
-                s->dsp.vc1_v_overlap(s->dest[0] + 8 * s->linesize, s->linesize, 1);
-                s->dsp.vc1_v_overlap(s->dest[0] + 8 * s->linesize + 8, s->linesize, 1);
+                s->dsp.vc1_v_overlap(s->dest[0] + 8 * s->linesize, s->linesize);
+                s->dsp.vc1_v_overlap(s->dest[0] + 8 * s->linesize + 8, s->linesize);
             }
 
             if(get_bits_count(&s->gb) > v->bits) {

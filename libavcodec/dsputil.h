@@ -397,8 +397,8 @@ typedef struct DSPContext {
     void (*vc1_inv_trans_8x4)(DCTELEM *b, int n);
     void (*vc1_inv_trans_4x8)(DCTELEM *b, int n);
     void (*vc1_inv_trans_4x4)(DCTELEM *b, int n);
-    void (*vc1_v_overlap)(uint8_t* src, int stride, int rnd);
-    void (*vc1_h_overlap)(uint8_t* src, int stride, int rnd);
+    void (*vc1_v_overlap)(uint8_t* src, int stride);
+    void (*vc1_h_overlap)(uint8_t* src, int stride);
     /* put 8x8 block with bicubic interpolation and quarterpel precision
      * last argument is actually round value instead of height
      */
