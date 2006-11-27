@@ -826,8 +826,8 @@ done
 ENCODER_LIST=`grep 'register_avcodec(&[a-z0-9_]*_encoder)' "$source_path/libavcodec/allcodecs.c"  | sed 's/.*&\(.*\)).*/\1/'`
 DECODER_LIST=`grep 'register_avcodec(&[a-z0-9_]*_decoder)' "$source_path/libavcodec/allcodecs.c"  | sed 's/.*&\(.*\)).*/\1/'`
 PARSER_LIST=`grep 'av_register_codec_parser(&[a-z]' "$source_path/libavcodec/allcodecs.c"  | sed 's/.*&\(.*\)).*/\1/'`
-MUXER_LIST=`grep 'av_register_output_format(&[a-z]' "$source_path/libavformat/allformats.c"  | sed 's/.*&\(.*\)).*/\1/'`
-DEMUXER_LIST=`grep 'av_register_input_format(&[a-z]' "$source_path/libavformat/allformats.c"  | sed 's/.*&\(.*\)).*/\1/'`
+MUXER_LIST=`sed -n 's/^[^#]*_MUX.*, *\(.*\)).*/\1_muxer/p' "$source_path/libavformat/allformats.c"`
+DEMUXER_LIST=`sed -n 's/^[^#]*DEMUX.*, *\(.*\)).*/\1_demuxer/p' "$source_path/libavformat/allformats.c"`
 
 enable $ENCODER_LIST $DECODER_LIST $PARSER_LIST $MUXER_LIST $DEMUXER_LIST
 
