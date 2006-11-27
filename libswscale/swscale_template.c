@@ -102,7 +102,7 @@
 			"mov (%%"REG_d"), %%"REG_S"	\n\t"\
 			"jb 1b				\n\t"\
                         :: "r" (&c->redDither),\
-                        "r" (dest), "p" (width)\
+                        "r" (dest), "g" (width)\
                         : "%"REG_a, "%"REG_d, "%"REG_S\
                 );
 
@@ -164,7 +164,7 @@
 			"mov (%%"REG_d"), %%"REG_S"	\n\t"\
 			"jb 1b				\n\t"\
                         :: "r" (&c->redDither),\
-                        "r" (dest), "p" (width)\
+                        "r" (dest), "g" (width)\
                         : "%"REG_a, "%"REG_d, "%"REG_S\
                 );
 
