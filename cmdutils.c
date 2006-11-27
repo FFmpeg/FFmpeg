@@ -59,7 +59,7 @@ static const OptionDef* find_option(const OptionDef *po, const char *name){
 void parse_options(int argc, char **argv, const OptionDef *options)
 {
     const char *opt, *arg;
-    int optindex;
+    int optindex, handleoptions;
     const OptionDef *po;
 
     /* parse options */
@@ -67,7 +67,11 @@ void parse_options(int argc, char **argv, const OptionDef *options)
     while (optindex < argc) {
         opt = argv[optindex++];
 
-        if (opt[0] == '-' && opt[1] != '\0') {
+        if (handleoptions && opt[0] == '-' && opt[1] != '\0') {
+          if (opt[1] == '-' && opt[2] == '\0') {
+            handleoptions = 0;
+            continue;
+          }
             po= find_option(options, opt + 1);
             if (!po->name)
                 po= find_option(options, "default");
