@@ -59,7 +59,7 @@ static const OptionDef* find_option(const OptionDef *po, const char *name){
 void parse_options(int argc, char **argv, const OptionDef *options)
 {
     const char *opt, *arg;
-    int optindex, handleoptions;
+    int optindex, handleoptions=1;
     const OptionDef *po;
 
     /* parse options */
