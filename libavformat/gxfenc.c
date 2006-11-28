@@ -45,6 +45,7 @@ typedef struct GXFStreamContext {
     int b_per_gop;
     int first_gop_closed;
     int64_t current_dts;
+    int dts_delay;
 } GXFStreamContext;
 
 typedef struct GXFContext {
@@ -785,8 +786,9 @@ static int gxf_interleave_packet(AVFormatContext *s, AVPacket *out, AVPacket *pk
     int i;
 
     for (i = 0; i < s->nb_streams; i++) {
-        if (s->streams[i]->codec->codec_type == CODEC_TYPE_AUDIO) {
-            GXFStreamContext *sc = &gxf->streams[i];
+        AVStream *st = s->streams[i];
+        GXFStreamContext *sc = &gxf->streams[i];
+        if (st->codec->codec_type == CODEC_TYPE_AUDIO) {
             if (pkt && pkt->stream_index == i) {
                 av_fifo_write(&sc->audio_buffer, pkt->data, pkt->size);
                 pkt = NULL;
@@ -797,6 +799,14 @@ static int gxf_interleave_packet(AVFormatContext *s, AVPacket *out, AVPacket *pk
                     break; /* add pkt right now into list */
                 }
             }
+        } else if (pkt) {
+            /* adjust dts if negative */
+            if (pkt->dts < 0 && !sc->dts_delay) {
+                /* XXX: rescale if codec time base is different from stream time base */
+                sc->dts_delay = av_rescale_q(pkt->dts, st->codec->time_base, st->time_base);
+                pkt->dts = sc->dts_delay; /* set to 0 */
+            }
+            pkt->dts -= sc->dts_delay;
         }
     }
     return av_interleave_packet_per_dts(s, out, pkt, flush);
