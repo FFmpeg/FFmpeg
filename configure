@@ -823,9 +823,9 @@ for opt do
   FFMPEG_CONFIGURATION="$FFMPEG_CONFIGURATION""$opt "
 done
 
-ENCODER_LIST=`grep 'register_avcodec(&[a-z0-9_]*_encoder)' "$source_path/libavcodec/allcodecs.c"  | sed 's/.*&\(.*\)).*/\1/'`
-DECODER_LIST=`grep 'register_avcodec(&[a-z0-9_]*_decoder)' "$source_path/libavcodec/allcodecs.c"  | sed 's/.*&\(.*\)).*/\1/'`
-PARSER_LIST=`grep 'av_register_codec_parser(&[a-z]' "$source_path/libavcodec/allcodecs.c"  | sed 's/.*&\(.*\)).*/\1/'`
+ENCODER_LIST=`sed -n 's/^[^#]*ENC.*, *\(.*\)).*/\1_encoder/p' "$source_path/libavcodec/allcodecs.c"`
+DECODER_LIST=`sed -n 's/^[^#]*DEC.*, *\(.*\)).*/\1_decoder/p' "$source_path/libavcodec/allcodecs.c"`
+PARSER_LIST=`sed -n 's/^[^#]*PARSER.*, *\(.*\)).*/\1_parser/p' "$source_path/libavcodec/allcodecs.c"`
 MUXER_LIST=`sed -n 's/^[^#]*_MUX.*, *\(.*\)).*/\1_muxer/p' "$source_path/libavformat/allformats.c"`
 DEMUXER_LIST=`sed -n 's/^[^#]*DEMUX.*, *\(.*\)).*/\1_demuxer/p' "$source_path/libavformat/allformats.c"`
 
