@@ -758,7 +758,6 @@ static void *mxf_resolve_strong_ref(MXFContext *mxf, UID *strong_ref)
 static int mxf_parse_structural_metadata(MXFContext *mxf)
 {
     MXFPackage *material_package = NULL;
-    MXFPackage *source_package = NULL;
     MXFPackage *temp_package = NULL;
     int i, j, k;
 
@@ -780,6 +779,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
     }
 
     for (i = 0; i < material_package->tracks_count; i++) {
+        MXFPackage *source_package = NULL;
         MXFTrack *material_track = NULL;
         MXFTrack *source_track = NULL;
         MXFTrack *temp_track = NULL;
