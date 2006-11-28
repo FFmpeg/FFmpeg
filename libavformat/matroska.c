@@ -2536,7 +2536,7 @@ matroska_parse_blockgroup (MatroskaDemuxContext *matroska,
                         }
                         if (cluster_time != (uint64_t)-1 && n == 0) {
                             if (cluster_time + block_time >= 0)
-                                timecode = cluster_time + block_time;
+                                timecode = (cluster_time + block_time) * matroska->time_scale;
                         }
                         /* FIXME: duration */
 
