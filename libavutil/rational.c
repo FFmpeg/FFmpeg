@@ -46,7 +46,7 @@ int av_reduce(int *dst_nom, int *dst_den, int64_t nom, int64_t den, int64_t max)
     }
 
     while(den){
-        int64_t x       = nom / den;
+        uint64_t x      = nom / den;
         int64_t next_den= nom - den*x;
         int64_t a2n= x*a1.num + a0.num;
         int64_t a2d= x*a1.den + a0.den;
@@ -55,7 +55,6 @@ int av_reduce(int *dst_nom, int *dst_den, int64_t nom, int64_t den, int64_t max)
             if(a1.num) x= (max - a0.num) / a1.num;
             if(a1.den) x= FFMIN(x, (max - a0.den) / a1.den);
 
-            // Won't overflow, sum == original denominator
             if (den*(2*x*a1.den + a0.den) > nom*a1.den)
                 a1 = (AVRational){x*a1.num + a0.num, x*a1.den + a0.den};
             break;
