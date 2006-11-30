@@ -136,12 +136,12 @@ offset_t url_fseek(ByteIOContext *s, offset_t offset, int whence)
             fill_buffer(s);
         s->buf_ptr = s->buf_end + offset - s->pos;
     } else {
-#ifdef CONFIG_MUXERS
+#if defined(CONFIG_MUXERS) || defined(CONFIG_NETWORK)
         if (s->write_flag) {
             flush_buffer(s);
             s->must_flush = 1;
         } else
-#endif //CONFIG_MUXERS
+#endif /* defined(CONFIG_MUXERS) || defined(CONFIG_NETWORK) */
         {
             s->buf_end = s->buffer;
         }
@@ -622,7 +622,9 @@ int url_fget_max_packet_size(ByteIOContext *s)
     return s->max_packet_size;
 }
 
-#ifdef CONFIG_MUXERS
+/* url_open_dyn_buf and url_close_dyn_buf are used in rtp.c to send a response
+ * back to the server even if CONFIG_MUXERS is not set. */
+#if defined(CONFIG_MUXERS) || defined(CONFIG_NETWORK)
 /* buffer handling */
 int url_open_buf(ByteIOContext *s, uint8_t *buf, int buf_size, int flags)
 {
@@ -785,4 +787,4 @@ int url_close_dyn_buf(ByteIOContext *s, uint8_t **pbuffer)
     av_free(d);
     return size;
 }
-#endif //CONFIG_MUXERS
+#endif /* CONFIG_MUXERS || CONFIG_NETWORK */
