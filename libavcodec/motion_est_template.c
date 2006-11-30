@@ -907,7 +907,11 @@ static always_inline int epzs_motion_search_internal(MpegEncContext * s, int *mx
             c->skip=1;
             return dmin;
         }
-        CHECK_MV(P_MEDIAN[0]>>shift, P_MEDIAN[1]>>shift)
+        CHECK_MV(    P_MEDIAN[0] >>shift ,    P_MEDIAN[1] >>shift)
+        CHECK_CLIPED_MV((P_MEDIAN[0]>>shift)  , (P_MEDIAN[1]>>shift)-1)
+        CHECK_CLIPED_MV((P_MEDIAN[0]>>shift)  , (P_MEDIAN[1]>>shift)+1)
+        CHECK_CLIPED_MV((P_MEDIAN[0]>>shift)-1, (P_MEDIAN[1]>>shift)  )
+        CHECK_CLIPED_MV((P_MEDIAN[0]>>shift)+1, (P_MEDIAN[1]>>shift)  )
         if(dmin>h*h*2){
             CHECK_CLIPED_MV((last_mv[ref_mv_xy][0]*ref_mv_scale + (1<<15))>>16,
                             (last_mv[ref_mv_xy][1]*ref_mv_scale + (1<<15))>>16)
