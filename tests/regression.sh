@@ -172,6 +172,14 @@ do_streamed_images()
     do_ffmpeg_crc $file -f image2pipe -i $file
 }
 
+do_image_formats()
+{
+    file=${outfile}libav%02d.$1
+    $ffmpeg -t 0.5 -y -qscale 10 -f pgmyuv -i $raw_src $2 $3 $file
+    do_ffmpeg_crc $file $3 -i $file
+
+}
+
 do_audio_only()
 {
     file=${outfile}libav.$1
@@ -727,19 +735,13 @@ do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src $file
 ####################
 # image formats
 # pgm (we do not do md5 on image files yet)
-file=${outfile}libav%02d.pgm
-$ffmpeg -t 0.5 -y -qscale 10 -f pgmyuv -i $raw_src $file
-do_ffmpeg_crc $file -i $file
+do_image_formats pgm
 
 # ppm (we do not do md5 on image files yet)
-file=${outfile}libav%02d.ppm
-$ffmpeg -t 0.5 -y -qscale 10 -f pgmyuv -i $raw_src $file
-do_ffmpeg_crc $file -i $file
+do_image_formats ppm
 
 # jpeg (we do not do md5 on image files yet)
-file=${outfile}libav%02d.jpg
-$ffmpeg -t 0.5 -y -qscale 10 -f pgmyuv -i $raw_src -flags +bitexact -dct fastint -idct simple -pix_fmt yuvj420p -f image2 $file
-do_ffmpeg_crc $file -f image2 -i $file
+do_image_formats jpg "-flags +bitexact -dct fastint -idct simple -pix_fmt yuvj420p" "-f image2"
 
 ####################
 # audio only
