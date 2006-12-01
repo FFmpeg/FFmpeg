@@ -879,8 +879,8 @@ static void vc1_mc_1mv(VC1Context *v, int dir)
     }
 
     if(v->fastuvmc) {
-        uvmx = uvmx + ((uvmx<0)?(uvmx&1):-(uvmx&1));
-        uvmy = uvmy + ((uvmy<0)?(uvmy&1):-(uvmy&1));
+        uvmx = uvmx + ((uvmx<0)?-(uvmx&1):(uvmx&1));
+        uvmy = uvmy + ((uvmy<0)?-(uvmy&1):(uvmy&1));
     }
 
     if(s->mspel) {
@@ -1103,8 +1103,8 @@ static void vc1_mc_4mv_chroma(VC1Context *v)
     }
 
     if(v->fastuvmc) {
-        uvmx = uvmx + ((uvmx<0)?(uvmx&1):-(uvmx&1));
-        uvmy = uvmy + ((uvmy<0)?(uvmy&1):-(uvmy&1));
+        uvmx = uvmx + ((uvmx<0)?-(uvmx&1):(uvmx&1));
+        uvmy = uvmy + ((uvmy<0)?-(uvmy&1):(uvmy&1));
     }
 
     /* Chroma MC always uses qpel bilinear */
@@ -2124,8 +2124,8 @@ static void vc1_interp_mc(VC1Context *v)
     }
 
     if(v->fastuvmc) {
-        uvmx = uvmx + ((uvmx<0)?(uvmx&1):-(uvmx&1));
-        uvmy = uvmy + ((uvmy<0)?(uvmy&1):-(uvmy&1));
+        uvmx = uvmx + ((uvmx<0)?-(uvmx&1):(uvmx&1));
+        uvmy = uvmy + ((uvmy<0)?-(uvmy&1):(uvmy&1));
     }
 
     mx >>= 1;
