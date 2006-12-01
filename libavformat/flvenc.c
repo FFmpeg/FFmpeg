@@ -65,10 +65,10 @@ static int get_audio_flags(AVCodecContext *enc){
     case CODEC_ID_PCM_S8:
         break;
     case CODEC_ID_PCM_S16BE:
-        flags |= 0x60 | 0x2;
+        flags |= 0x2;
         break;
     case CODEC_ID_PCM_S16LE:
-        flags |= 0x2;
+        flags |= 0x30 | 0x2;
         break;
     case CODEC_ID_ADPCM_SWF:
         flags |= 0x10;
