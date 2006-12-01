@@ -517,11 +517,11 @@ static int qpel_motion_search(MpegEncContext * s,
 
 #define CHECK_CLIPED_MV(ax,ay)\
 {\
-    const int x= ax;\
-    const int y= ay;\
-    const int x2= FFMAX(xmin, FFMIN(x, xmax));\
-    const int y2= FFMAX(ymin, FFMIN(y, ymax));\
-    CHECK_MV(x2, y2)\
+    const int Lx= ax;\
+    const int Ly= ay;\
+    const int Lx2= FFMAX(xmin, FFMIN(Lx, xmax));\
+    const int Ly2= FFMAX(ymin, FFMIN(Ly, ymax));\
+    CHECK_MV(Lx2, Ly2)\
 }
 
 #define CHECK_MV_DIR(x,y,new_dir)\
