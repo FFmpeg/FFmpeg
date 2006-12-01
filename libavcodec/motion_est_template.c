@@ -671,7 +671,7 @@ static int umh_search(MpegEncContext * s, int *best, int dmin,
     static const int hex[16][2]={{-4,-2}, {-4,-1}, {-4, 0}, {-4, 1}, {-4, 2},
                                  { 4,-2}, { 4,-1}, { 4, 0}, { 4, 1}, { 4, 2},
                                  {-2, 3}, { 0, 4}, { 2, 3},
-                                 {-2, 3}, { 0, 4}, { 2, 3},};
+                                 {-2,-3}, { 0,-4}, { 2,-3},};
     static const int hex2[6][2]={{-2, 0}, { 2,0}, {-1,-2}, {1,-2}, {-1,2},{1,2}};
 
     cmpf= s->dsp.me_cmp[size];
