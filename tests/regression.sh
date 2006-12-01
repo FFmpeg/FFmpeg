@@ -165,6 +165,14 @@ do_video_encoding()
     do_ffmpeg $file -y $1 -f pgmyuv -i $raw_src $2 $file
 }
 
+do_libav()
+{
+    file=${outfile}libav.$1
+    do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src -f s16le -i $pcm_src $2 $file
+    do_ffmpeg_crc $file -i $file $3
+
+}
+
 do_streamed_images()
 {
     file=${outfile}libav.$1
@@ -646,14 +654,10 @@ fi
 if [ -n "$do_libav" ] ; then
 
 # avi
-file=${outfile}libav.avi
-do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src -f s16le -i $pcm_src $file
-do_ffmpeg_crc $file -i $file
+do_libav avi
 
 # asf
-file=${outfile}libav.asf
-do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src -f s16le -i $pcm_src -acodec mp2 $file
-do_ffmpeg_crc $file -i $file -r 25
+do_libav asf "-acodec mp2" "-r 25"
 
 # rm
 file=${outfile}libav.rm
@@ -662,49 +666,31 @@ do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src -f s16le -i $pcm_src $f
 #do_ffmpeg_crc $file -i $file
 
 # mpegps
-file=${outfile}libav.mpg
-do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src -f s16le -i $pcm_src $file
-do_ffmpeg_crc $file -i $file
+do_libav mpg
 
 # mpegts
-file=${outfile}libav.ts
-do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src -f s16le -i $pcm_src $file
-do_ffmpeg_crc $file -i $file
+do_libav ts
 
 # swf (decode audio only)
-file=${outfile}libav.swf
-do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src -f s16le -i $pcm_src -acodec mp2 $file
-do_ffmpeg_crc $file -i $file
+do_libav swf "-acodec mp2"
 
 # ffm
-file=${outfile}libav.ffm
-do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src -f s16le -i $pcm_src $file
-do_ffmpeg_crc $file -i $file
+do_libav ffm
 
 # flv
-file=${outfile}libav.flv
-do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src -f s16le -i $pcm_src -an $file
-do_ffmpeg_crc $file -i $file
+do_libav flv -an
 
 # mov
-file=${outfile}libav.mov
-do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src -f s16le -i $pcm_src -acodec pcm_alaw $file
-do_ffmpeg_crc $file -i $file
+do_libav mov "-acodec pcm_alaw"
 
 # nut
-#file=${outfile}libav.nut
-#do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src -f s16le -i $pcm_src -acodec mp2 $file
-#do_ffmpeg_crc $file -i $file
+#do_libav nut "-acodec mp2"
 
 # dv
-file=${outfile}libav.dv
-do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src -f s16le -i $pcm_src -ar 48000 -r 25 -s pal -ac 2 $file
-do_ffmpeg_crc $file -i $file
+do_libav dv "-ar 48000 -r 25 -s pal -ac 2"
 
 # gxf
-file=${outfile}libav.gxf
-do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src -f s16le -i $pcm_src -ar 48000 -r 25 -s pal -ac 1 $file
-do_ffmpeg_crc $file -i $file
+do_libav gxf "-ar 48000 -r 25 -s pal -ac 1"
 
 ####################
 # streamed images
