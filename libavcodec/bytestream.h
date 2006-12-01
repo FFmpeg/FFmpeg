@@ -47,6 +47,20 @@ static always_inline unsigned int bytestream_get_buffer(uint8_t **b, uint8_t *ds
     return size;
 }
 
+static always_inline void bytestream_put_be32(uint8_t **b, const unsigned int value)
+{
+    *(*b)++ = value >> 24;
+    *(*b)++ = value >> 16;
+    *(*b)++ = value >> 8;
+    *(*b)++ = value;
+};
+
+static always_inline void bytestream_put_be16(uint8_t **b, const unsigned int value)
+{
+    *(*b)++ = value >> 8;
+    *(*b)++ = value;
+}
+
 static always_inline void bytestream_put_le32(uint8_t **b, const unsigned int value)
 {
     *(*b)++ = value;
