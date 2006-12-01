@@ -658,6 +658,70 @@ if(256*256*256*64 % (stats[0]+1)==0){
     return dmin;
 }
 
+static int umh_search(MpegEncContext * s, int *best, int dmin,
+                                       int src_index, int ref_index, int const penalty_factor,
+                                       int size, int h, int flags)
+{
+    MotionEstContext * const c= &s->me;
+    me_cmp_func cmpf, chroma_cmpf;
+    LOAD_COMMON
+    LOAD_COMMON2
+    int map_generation= c->map_generation;
+    int x,y,x2,y2, i, j, d;
+    static const int hex[16][2]={{-4,-2}, {-4,-1}, {-4, 0}, {-4, 1}, {-4, 2},
+                                 { 4,-2}, { 4,-1}, { 4, 0}, { 4, 1}, { 4, 2},
+                                 {-2, 3}, { 0, 4}, { 2, 3},
+                                 {-2, 3}, { 0, 4}, { 2, 3},};
+    static const int hex2[6][2]={{-2, 0}, { 2,0}, {-1,-2}, {1,-2}, {-1,2},{1,2}};
+
+    cmpf= s->dsp.me_cmp[size];
+    chroma_cmpf= s->dsp.me_cmp[size+1];
+
+    x= best[0];
+    y= best[1];
+    for(x2=FFMAX(x-15, xmin); x2<=FFMIN(x+15,xmax); x2+=2){
+        CHECK_MV(x2, y);
+    }
+    for(y2=FFMAX(y- 7, ymin); y2<=FFMIN(y+ 7,ymax); y2+=2){
+        CHECK_MV(x, y2);
+    }
+
+    x= best[0];
+    y= best[1];
+    for(y2=FFMAX(y-2, ymin); y2<=FFMIN(y+2,ymax); y2++){
+        for(x2=FFMAX(x-2, xmin); x2<=FFMIN(x+2,xmax); x2++){
+            CHECK_MV(x2, y2);
+        }
+    }
+
+//FIXME prevent the CLIP stuff
+
+    for(j=1; j<=4; j++){
+        for(i=0; i<16; i++){
+            CHECK_CLIPED_MV(x+hex[i][0]*j, y+hex[i][1]*j);
+        }
+    }
+
+    do{
+        x= best[0];
+        y= best[1];
+        for(i=0; i<6; i++){
+            CHECK_CLIPED_MV(x+hex2[i][0], y+hex2[i][1]);
+        }
+    }while(best[0] != x || best[1] != y);
+
+    do{
+        x= best[0];
+        y= best[1];
+        CHECK_CLIPED_MV(x+1, y);
+        CHECK_CLIPED_MV(x, y+1);
+        CHECK_CLIPED_MV(x-1, y);
+        CHECK_CLIPED_MV(x, y-1);
+    }while(best[0] != x || best[1] != y);
+
+    return dmin;
+}
+
 #define SAB_CHECK_MV(ax,ay)\
 {\
     const int key= ((ay)<<ME_MAP_MV_BITS) + (ax) + map_generation;\
@@ -850,7 +914,7 @@ static always_inline int diamond_search(MpegEncContext * s, int *best, int dmin,
                                        int size, int h, int flags){
     MotionEstContext * const c= &s->me;
     if(c->dia_size==-1)
-        return funny_diamond_search(s, best, dmin, src_index, ref_index, penalty_factor, size, h, flags);
+        return           umh_search(s, best, dmin, src_index, ref_index, penalty_factor, size, h, flags);
     else if(c->dia_size<-1)
         return   sab_diamond_search(s, best, dmin, src_index, ref_index, penalty_factor, size, h, flags);
     else if(c->dia_size<2)
