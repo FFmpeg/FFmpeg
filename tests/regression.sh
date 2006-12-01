@@ -165,6 +165,13 @@ do_video_encoding()
     do_ffmpeg $file -y $1 -f pgmyuv -i $raw_src $2 $file
 }
 
+do_streamed_images()
+{
+    file=${outfile}libav.$1
+    do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src -f image2pipe $file
+    do_ffmpeg_crc $file -f image2pipe -i $file
+}
+
 do_audio_only()
 {
     file=${outfile}libav.$1
@@ -699,19 +706,13 @@ do_ffmpeg_crc $file -i $file
 #do_ffmpeg_crc $file -i $file
 
 # pbmpipe
-file=${outfile}libav.pbm
-do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src -f image2pipe $file
-do_ffmpeg_crc $file -f image2pipe -i $file
+do_streamed_images pbm
 
 # pgmpipe
-file=${outfile}libav.pgm
-do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src -f image2pipe $file
-do_ffmpeg_crc $file -f image2pipe -i $file
+do_streamed_images pgm
 
 # ppmpipe
-file=${outfile}libav.ppm
-do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src -f image2pipe $file
-do_ffmpeg_crc $file -f image2pipe -i $file
+do_streamed_images ppm
 
 # gif
 file=${outfile}libav.gif
