@@ -976,13 +976,11 @@ static always_inline int epzs_motion_search_internal(MpegEncContext * s, int *mx
         CHECK_CLIPED_MV((P_MEDIAN[0]>>shift)  , (P_MEDIAN[1]>>shift)+1)
         CHECK_CLIPED_MV((P_MEDIAN[0]>>shift)-1, (P_MEDIAN[1]>>shift)  )
         CHECK_CLIPED_MV((P_MEDIAN[0]>>shift)+1, (P_MEDIAN[1]>>shift)  )
-        if(dmin>h*h*2){
             CHECK_CLIPED_MV((last_mv[ref_mv_xy][0]*ref_mv_scale + (1<<15))>>16,
                             (last_mv[ref_mv_xy][1]*ref_mv_scale + (1<<15))>>16)
             CHECK_MV(P_LEFT[0]    >>shift, P_LEFT[1]    >>shift)
             CHECK_MV(P_TOP[0]     >>shift, P_TOP[1]     >>shift)
             CHECK_MV(P_TOPRIGHT[0]>>shift, P_TOPRIGHT[1]>>shift)
-        }
     }
     if(dmin>h*h*4){
         if(c->pre_pass){
@@ -1083,14 +1081,12 @@ static int epzs_motion_search4(MpegEncContext * s,
     }else{
         CHECK_MV(P_MV1[0]>>shift, P_MV1[1]>>shift)
         //FIXME try some early stop
-        if(dmin>64*2){
             CHECK_MV(P_MEDIAN[0]>>shift, P_MEDIAN[1]>>shift)
             CHECK_MV(P_LEFT[0]>>shift, P_LEFT[1]>>shift)
             CHECK_MV(P_TOP[0]>>shift, P_TOP[1]>>shift)
             CHECK_MV(P_TOPRIGHT[0]>>shift, P_TOPRIGHT[1]>>shift)
             CHECK_CLIPED_MV((last_mv[ref_mv_xy][0]*ref_mv_scale + (1<<15))>>16,
                             (last_mv[ref_mv_xy][1]*ref_mv_scale + (1<<15))>>16)
-        }
     }
     if(dmin>64*4){
         CHECK_CLIPED_MV((last_mv[ref_mv_xy+1][0]*ref_mv_scale + (1<<15))>>16,
@@ -1145,14 +1141,12 @@ static int epzs_motion_search2(MpegEncContext * s,
     }else{
         CHECK_MV(P_MV1[0]>>shift, P_MV1[1]>>shift)
         //FIXME try some early stop
-        if(dmin>64*2){
             CHECK_MV(P_MEDIAN[0]>>shift, P_MEDIAN[1]>>shift)
             CHECK_MV(P_LEFT[0]>>shift, P_LEFT[1]>>shift)
             CHECK_MV(P_TOP[0]>>shift, P_TOP[1]>>shift)
             CHECK_MV(P_TOPRIGHT[0]>>shift, P_TOPRIGHT[1]>>shift)
             CHECK_CLIPED_MV((last_mv[ref_mv_xy][0]*ref_mv_scale + (1<<15))>>16,
                             (last_mv[ref_mv_xy][1]*ref_mv_scale + (1<<15))>>16)
-        }
     }
     if(dmin>64*4){
         CHECK_CLIPED_MV((last_mv[ref_mv_xy+1][0]*ref_mv_scale + (1<<15))>>16,

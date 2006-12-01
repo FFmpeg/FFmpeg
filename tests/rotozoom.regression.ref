@@ -1,101 +1,101 @@
 ffmpeg regression test
-13f3526e10f3e61758fd35e0d74631ca *./data/a-mpeg1.mpg
-192726 ./data/a-mpeg1.mpg
-2b593ccfcd5a35f00805663bb34f9144 *./data/out.yuv
+73ca6f1deab02d1d67a0e8495c026a9e *./data/a-mpeg1.mpg
+192783 ./data/a-mpeg1.mpg
+56147e94b12f08df7213e610e177823d *./data/out.yuv
 stddev:  4.95 PSNR:34.21 bytes:7602176
-d5beac21c30ab17ad05555d9ba8a9cbd *./data/a-mpeg2.mpg
-198768 ./data/a-mpeg2.mpg
-280dbdb05ada82b2cdf03afabc88952d *./data/out.yuv
-stddev:  4.97 PSNR:34.19 bytes:7602176
-6a29938a6189595e8826a17e9c00f70a *./data/a-mpeg2ivlc.mpg
-197973 ./data/a-mpeg2ivlc.mpg
-280dbdb05ada82b2cdf03afabc88952d *./data/out.yuv
-stddev:  4.97 PSNR:34.19 bytes:7602176
-c51027e0021301cc94692726fea9c1ed *./data/a-mpeg2.mpg
-198001 ./data/a-mpeg2.mpg
-527bdb78f1bc55469ba852babdd05793 *./data/out.yuv
+2d55ce623a7be4e8136f80266e487678 *./data/a-mpeg2.mpg
+198667 ./data/a-mpeg2.mpg
+b7cae8a1f751b821cddcbe4d5dbc518c *./data/out.yuv
+stddev:  4.96 PSNR:34.19 bytes:7602176
+6dc412b7972918b0c3be5b448c76cdbb *./data/a-mpeg2ivlc.mpg
+197869 ./data/a-mpeg2ivlc.mpg
+b7cae8a1f751b821cddcbe4d5dbc518c *./data/out.yuv
+stddev:  4.96 PSNR:34.19 bytes:7602176
+f979bcca866e6e4cad5dc6cb06e56cfb *./data/a-mpeg2.mpg
+198041 ./data/a-mpeg2.mpg
+f6d9bf24ff8676a7f6076c05cd2c81a3 *./data/out.yuv
 stddev:  4.97 PSNR:34.18 bytes:7602176
-a3d88483a0012970017b226a137d8a10 *./data/a-mpeg2i.mpg
-204660 ./data/a-mpeg2i.mpg
-584677e4af5d7162e80fc11699ceea24 *./data/out.yuv
+f90197a8b6e62ae25f82625337f27240 *./data/a-mpeg2i.mpg
+204579 ./data/a-mpeg2i.mpg
+ea5057b60146c06d40449cdfc686bf13 *./data/out.yuv
 stddev:  4.98 PSNR:34.17 bytes:7602176
-79ae25a01733a0d221cd768f4c15cead *./data/a-mpeg2thread.mpg
-183311 ./data/a-mpeg2thread.mpg
-e92ef755c008e8640a021b363f8758d2 *./data/out.yuv
+dc359097986fc04df7541f720fa5da14 *./data/a-mpeg2thread.mpg
+183314 ./data/a-mpeg2thread.mpg
+354eb621a217e50252dbed937f9eab18 *./data/out.yuv
 stddev:  4.76 PSNR:34.57 bytes:7602176
-bae9d04f67e584b8404c3bd140e3440e *./data/a-mpeg2threadivlc.mpg
-182455 ./data/a-mpeg2threadivlc.mpg
-e92ef755c008e8640a021b363f8758d2 *./data/out.yuv
+fb02afb5a0c79c7e99a32e60e19a86bc *./data/a-mpeg2threadivlc.mpg
+182460 ./data/a-mpeg2threadivlc.mpg
+354eb621a217e50252dbed937f9eab18 *./data/out.yuv
 stddev:  4.76 PSNR:34.57 bytes:7602176
-0f8c4bf5bd07f53e98d43caea8b6fb2b *./data/a-mpeg2reuse.mpg
+b567ce695c24fb1e08ff1c137a805e1a *./data/a-mpeg2reuse.mpg
 394759 ./data/a-mpeg2reuse.mpg
-1c51026a35fae071ab1a627e53c7a17e *./data/out.yuv
-stddev:  4.76 PSNR:34.55 bytes:7602176
-f5882da87ee7b6d05b3ff5cc78522569 *./data/a-msmpeg4v2.avi
-129942 ./data/a-msmpeg4v2.avi
-83746a4954925753732ae7c5a488e05a *./data/out.yuv
+c3a86762e97a8869ed3c969ee2e084b8 *./data/out.yuv
+stddev:  4.76 PSNR:34.56 bytes:7602176
+c09815e40a9d260628e1ebad8b2b3774 *./data/a-msmpeg4v2.avi
+129918 ./data/a-msmpeg4v2.avi
+8920194f8bf8f9cdd6c65b3df9e1a292 *./data/out.yuv
 stddev:  5.33 PSNR:33.58 bytes:7602176
-07d1ab166eae53a79e4f946c01900c79 *./data/a-msmpeg4.avi
-127690 ./data/a-msmpeg4.avi
-77a58e6bb536d89d768f86aaac40b25c *./data/out.yuv
+3069f95f2ffca1f20c8ea36e2625fabc *./data/a-msmpeg4.avi
+127680 ./data/a-msmpeg4.avi
+0e1c6e25c71c6a8fa8e506e3d97ca4c9 *./data/out.yuv
 stddev:  5.33 PSNR:33.58 bytes:7602176
-5dce6255b18d04cfc8d587e9adf2c2f2 *./data/a-wmv1.avi
+6896c9bdf765953d272c25e34795b934 *./data/a-wmv1.avi
 129548 ./data/a-wmv1.avi
-e0f560d2ceb2212e99b7695953c485a9 *./data/out.yuv
+81eee429b665254d19a06607463c0b5e *./data/out.yuv
 stddev:  5.33 PSNR:33.59 bytes:7602176
-7df3075a4823ddea4fc435ed050ebdcf *./data/a-wmv2.avi
+34b40c67036c8e09740f7acfe3d43df6 *./data/a-wmv2.avi
 129864 ./data/a-wmv2.avi
-e0f560d2ceb2212e99b7695953c485a9 *./data/out.yuv
+81eee429b665254d19a06607463c0b5e *./data/out.yuv
 stddev:  5.33 PSNR:33.59 bytes:7602176
-62a9246a6cdafc7197b08f0423fc9650 *./data/a-h261.avi
-191080 ./data/a-h261.avi
-cd47962207e5d846d4c48f76d201c688 *./data/out.yuv
+dfd005d4c9030a0dc889c828a6408b9c *./data/a-h261.avi
+191086 ./data/a-h261.avi
+db7ceff174823b98834faa2320ca89ac *./data/out.yuv
 stddev:  6.38 PSNR:32.02 bytes:7602176
-44addeb0c2dcded59a4126d5f3ebfcd4 *./data/a-h263.avi
-160110 ./data/a-h263.avi
-4cbaab01992441ef827eeb52f87c7089 *./data/out.yuv
+9a368687ab34c48079f11a202839a6bc *./data/a-h263.avi
+160106 ./data/a-h263.avi
+61213b91b359697ebcefb9e0a53ac54a *./data/out.yuv
 stddev:  5.43 PSNR:33.41 bytes:7602176
-bd7a056430483d092c72f5a0cea4722a *./data/a-h263p.avi
-868248 ./data/a-h263p.avi
-cc9e7a671f0529cb9ab9953fca1566af *./data/out.yuv
+c7644d40e9f40bbd98e5a978f9f94bb4 *./data/a-h263p.avi
+868018 ./data/a-h263p.avi
+4b0ee791f280029dc03c528f76f195d4 *./data/out.yuv
 stddev:  1.91 PSNR:42.49 bytes:7602176
-e2ff2428390448148e89f136b2bb8cf1 *./data/a-odivx.mp4
-119838 ./data/a-odivx.mp4
-3a56233169cd9d89e0f5bfa99b27f58f *./data/out.yuv
+f15f07988bfdb2851f88ebe3036b72d3 *./data/a-odivx.mp4
+119797 ./data/a-odivx.mp4
+90a3577850239083a9042bef33c50e85 *./data/out.yuv
 stddev:  5.34 PSNR:33.56 bytes:7602176
 a1323da0c8b437cd6961f8c90451880b *./data/a-huffyuv.avi
 6455232 ./data/a-huffyuv.avi
 dde5895817ad9d219f79a52d0bdfb001 *./data/out.yuv
 stddev:  0.00 PSNR:99.99 bytes:7602176
-cccc9b7c4585052503f7347ddddbb860 *./data/a-mpeg4-rc.avi
+a418db8cc1410a50a154e8418d78e3d7 *./data/a-mpeg4-rc.avi
 227918 ./data/a-mpeg4-rc.avi
-b5a5e3252da6f38be2b36d23425b7fa4 *./data/out.yuv
+56b327651c526538576fbc104f696dde *./data/out.yuv
 stddev:  4.24 PSNR:35.55 bytes:7602176
-5244e1d668f692b401a1ce54a2200892 *./data/a-mpeg4-adv.avi
-173584 ./data/a-mpeg4-adv.avi
-072c36ae50d8847abd1bd1e68e18941f *./data/out.yuv
+9001cf571eb7f26fa5592bdec6538583 *./data/a-mpeg4-adv.avi
+173590 ./data/a-mpeg4-adv.avi
+699edf05648fdc42196b7bebef9be269 *./data/out.yuv
 stddev:  4.84 PSNR:34.41 bytes:7602176
-26a5e8ebd3279d0786cad42dcf0330d9 *./data/a-mpeg4-thread.avi
-254272 ./data/a-mpeg4-thread.avi
-db13a52cb0ca377437252020dcb77070 *./data/out.yuv
+5d94ca237bd1ba1a6cdab6796485c6dc *./data/a-mpeg4-thread.avi
+254248 ./data/a-mpeg4-thread.avi
+1cb815783ab9dc787add51cdbc97e156 *./data/out.yuv
 stddev:  4.03 PSNR:36.01 bytes:7602176
 59e682efe457070d21170fdb117c1961 *./data/a-mpeg4-Q.avi
 165840 ./data/a-mpeg4-Q.avi
 f5838ffcf1dd6c538e27dbe906e5eadd *./data/out.yuv
 stddev:  4.00 PSNR:36.08 bytes:7602176
-637276f7d050939943201b36a84f4a63 *./data/a-mpeg4-PSP.mp4
-325126 ./data/a-mpeg4-PSP.mp4
-66366267ec7669cd49cc761c02a3b9db *./data/a-error-mpeg4-adv.avi
-180442 ./data/a-error-mpeg4-adv.avi
-15bb31699dd69be8a35f641cae0d1079 *./data/out.yuv
-stddev:  8.38 PSNR:29.65 bytes:7602176
-4e7c820df5386b62b857c9c6a0fde646 *./data/a-mpeg4-nr.avi
-155066 ./data/a-mpeg4-nr.avi
-460ce46a8e22a3305ad28640e5d39d08 *./data/out.yuv
+5b5b88ce610114e346a5df4f46995bb9 *./data/a-mpeg4-PSP.mp4
+325006 ./data/a-mpeg4-PSP.mp4
+90e65096aa9ebafa3fe3f44a5a47cdc4 *./data/a-error-mpeg4-adv.avi
+176588 ./data/a-error-mpeg4-adv.avi
+113defd3f8daf878e0b3fc03fafb4c09 *./data/out.yuv
+stddev:  9.02 PSNR:29.01 bytes:7602176
+c41187c99588fb7229ad330b2f80d28b *./data/a-mpeg4-nr.avi
+155044 ./data/a-mpeg4-nr.avi
+f7fc191308679f709405e62271f5c65f *./data/out.yuv
 stddev:  4.73 PSNR:34.62 bytes:7602176
-ca07f03ee7235ad1f91cf5f4d9f70a87 *./data/a-mpeg1b.mpg
-229976 ./data/a-mpeg1b.mpg
-05ea55f7a0c243672c3d64bdfda288ee *./data/out.yuv
+1244f602a39b255ca676ca1e47617afd *./data/a-mpeg1b.mpg
+230033 ./data/a-mpeg1b.mpg
+df02ed235141aa229b47b91b28f71da5 *./data/out.yuv
 stddev:  4.13 PSNR:35.79 bytes:7602176
 b179402bba391073b5f5f9324a834061 *./data/a-mjpeg.avi
 703564 ./data/a-mjpeg.avi
@@ -109,13 +109,13 @@ stddev:  0.00 PSNR:99.99 bytes:7602176
 8334508 ./data/a-jpegls.avi
 a63d4e3ea1f0b0c0d44821da9e09b8f4 *./data/out.yuv
 stddev:  0.67 PSNR:51.57 bytes:7602176
-1f2b4b2b0f678f3f771daaaf79ad56da *./data/a-rv10.rm
-154332 ./data/a-rv10.rm
-4cbaab01992441ef827eeb52f87c7089 *./data/out.yuv
+989a42671603dc1a7e6b156dccf0e820 *./data/a-rv10.rm
+154330 ./data/a-rv10.rm
+61213b91b359697ebcefb9e0a53ac54a *./data/out.yuv
 stddev:  5.43 PSNR:33.41 bytes:7602176
-b0d8ca3f359689eab810f3cf689cbcde *./data/a-rv20.rm
-132745 ./data/a-rv20.rm
-0bdc9ece25480278095ba4eda2f22d0a *./data/out.yuv
+1b1cbff8e78602de498b4314cb991e72 *./data/a-rv20.rm
+132754 ./data/a-rv20.rm
+c66afdcc0daac2f1b4167b9811968877 *./data/out.yuv
 stddev:  5.42 PSNR:33.44 bytes:7602176
 4eb34d2de25f67a2706456e999338fe9 *./data/a-asv1.avi
 832512 ./data/a-asv1.avi
@@ -125,9 +125,9 @@ stddev: 10.47 PSNR:27.72 bytes:7602176
 789072 ./data/a-asv2.avi
 74a78015b64b2cf8cb9da2e44f508a69 *./data/out.yuv
 stddev: 10.28 PSNR:27.88 bytes:7602176
-c5f91672f147b43f903fa90b2b6b631c *./data/a-flv.flv
-131356 ./data/a-flv.flv
-68ba2ed47bd361a3df673fa445e9adc2 *./data/out.yuv
+bd76377d9e167caff10ebaf381f01a82 *./data/a-flv.flv
+131337 ./data/a-flv.flv
+8999c8264fb0941561f64c4a736e9d88 *./data/out.yuv
 stddev:  5.33 PSNR:33.58 bytes:7602176
 d72b0960e162d4998b9acbabb07e99ab *./data/a-ffv1.avi
 3525804 ./data/a-ffv1.avi
@@ -137,8 +137,8 @@ stddev:  0.00 PSNR:99.99 bytes:7602176
 68526 ./data/a-snow.avi
 d2914543504345fad6e5593f66f072bc *./data/out.yuv
 stddev: 10.93 PSNR:27.34 bytes:7602176
-eea9dcade6a999ea217d4952d79c4741 *./data/a-snow53.avi
-2723150 ./data/a-snow53.avi
+892221ef4c1debf694a481a5e23e1136 *./data/a-snow53.avi
+2722066 ./data/a-snow53.avi
 dde5895817ad9d219f79a52d0bdfb001 *./data/out.yuv
 stddev:  0.00 PSNR:99.99 bytes:7602176
 af9f474238c9c68cb32e389659ee25ab *./data/a-dv.dv
@@ -149,9 +149,9 @@ stddev:  2.99 PSNR:38.59 bytes:7602176
 14400000 ./data/a-dv.dv
 74b01209bb5e096d570dd4df112bb82d *./data/out.yuv
 stddev:  2.98 PSNR:38.61 bytes:7602176
-6e310a8dab12bd1e0f9df39d220ac36f *./data/a-svq1.mov
-768347 ./data/a-svq1.mov
-0ec9c7ce4159024312aa9682b16f0444 *./data/out.yuv
+7ba9292d663819a9a1d1cdecc6f1b079 *./data/a-svq1.mov
+768407 ./data/a-svq1.mov
+6bc10518bc387c3bdf117997713ee69a *./data/out.yuv
 stddev:  3.44 PSNR:37.39 bytes:7602176
 21f8ff9f1daacd9133683bb4ea0f50a4 *./data/a-mp2.mp2
 95712 ./data/a-mp2.mp2
