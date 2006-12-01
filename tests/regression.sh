@@ -165,6 +165,13 @@ do_video_encoding()
     do_ffmpeg $file -y $1 -f pgmyuv -i $raw_src $2 $file
 }
 
+do_audio_only()
+{
+    file=${outfile}libav.$1
+    do_ffmpeg $file -t 1 -y -qscale 10 -f s16le -i $pcm_src $file
+    do_ffmpeg_crc $file -i $file
+}
+
 echo "ffmpeg regression test" > $logfile
 echo "ffmpeg benchmarks" > $benchfile
 
@@ -737,39 +744,25 @@ do_ffmpeg_crc $file -f image2 -i $file
 # audio only
 
 # wav
-file=${outfile}libav.wav
-do_ffmpeg $file -t 1 -y -qscale 10 -f s16le -i $pcm_src $file
-do_ffmpeg_crc $file -i $file
+do_audio_only wav
 
 # alaw
-file=${outfile}libav.al
-do_ffmpeg $file -t 1 -y -qscale 10 -f s16le -i $pcm_src $file
-do_ffmpeg_crc $file -i $file
+do_audio_only al
 
 # mulaw
-file=${outfile}libav.ul
-do_ffmpeg $file -t 1 -y -qscale 10 -f s16le -i $pcm_src $file
-do_ffmpeg_crc $file -i $file
+do_audio_only ul
 
 # au
-file=${outfile}libav.au
-do_ffmpeg $file -t 1 -y -qscale 10 -f s16le -i $pcm_src $file
-do_ffmpeg_crc $file -i $file
+do_audio_only au
 
 # mmf
-file=${outfile}libav.mmf
-do_ffmpeg $file -t 1 -y -qscale 10 -f s16le -i $pcm_src $file
-do_ffmpeg_crc $file -i $file
+do_audio_only mmf
 
 # aiff
-file=${outfile}libav.aif
-do_ffmpeg $file -t 1 -y -qscale 10 -f s16le -i $pcm_src $file
-do_ffmpeg_crc $file -i $file
+do_audio_only aif
 
 # voc
-file=${outfile}libav.voc
-do_ffmpeg $file -t 1 -y -qscale 10 -f s16le -i $pcm_src $file
-do_ffmpeg_crc $file -i $file
+do_audio_only voc
 
 ####################
 # pix_fmt conversions
