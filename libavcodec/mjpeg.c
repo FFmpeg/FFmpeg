@@ -36,6 +36,7 @@
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mpegvideo.h"
+#include "bytestream.h"
 
 /* use two quantizer tables (one for luminance and one for chrominance) */
 /* not yet working */
@@ -2503,6 +2504,61 @@ static int mjpeg_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
+static int mjpega_dump_header(AVBitStreamFilterContext *bsfc, AVCodecContext *avctx, const char *args,
+                              uint8_t **poutbuf, int *poutbuf_size,
+                              const uint8_t *buf, int buf_size, int keyframe)
+{
+    uint8_t *poutbufp;
+    int i;
+
+    if (avctx->codec_id != CODEC_ID_MJPEG) {
+        av_log(avctx, AV_LOG_ERROR, "mjpega bitstream filter only applies to mjpeg codec\n");
+        return 0;
+    }
+
+    *poutbuf_size = 0;
+    *poutbuf = av_malloc(buf_size + 44 + FF_INPUT_BUFFER_PADDING_SIZE);
+    poutbufp = *poutbuf;
+    bytestream_put_byte(&poutbufp, 0xff);
+    bytestream_put_byte(&poutbufp, SOI);
+    bytestream_put_byte(&poutbufp, 0xff);
+    bytestream_put_byte(&poutbufp, APP1);
+    bytestream_put_be16(&poutbufp, 42); /* size */
+    bytestream_put_be32(&poutbufp, 0);
+    bytestream_put_buffer(&poutbufp, "mjpg", 4);
+    bytestream_put_be32(&poutbufp, buf_size + 44); /* field size */
+    bytestream_put_be32(&poutbufp, buf_size + 44); /* pad field size */
+    bytestream_put_be32(&poutbufp, 0);             /* next ptr */
+
+    for (i = 0; i < buf_size - 1; i++) {
+        if (buf[i] == 0xff) {
+            switch (buf[i + 1]) {
+            case DQT:  /* quant off */
+            case DHT:  /* huff  off */
+            case SOF0: /* image off */
+                bytestream_put_be32(&poutbufp, i + 46);
+                break;
+            case SOS:
+                bytestream_put_be32(&poutbufp, i + 46); /* scan off */
+                bytestream_put_be32(&poutbufp, i + 46 + BE_16(buf + i + 2)); /* data off */
+                bytestream_put_buffer(&poutbufp, buf + 2, buf_size - 2); /* skip already written SOI */
+                *poutbuf_size = poutbufp - *poutbuf;
+                return 1;
+            case APP1:
+                if (i + 8 < buf_size && LE_32(buf + i + 8) == ff_get_fourcc("mjpg")) {
+                    av_log(avctx, AV_LOG_ERROR, "bitstream already formatted\n");
+                    memcpy(*poutbuf, buf, buf_size);
+                    *poutbuf_size = buf_size;
+                    return 1;
+                }
+            }
+        }
+    }
+    av_freep(poutbuf);
+    av_log(avctx, AV_LOG_ERROR, "could not find SOS marker in bitstream\n");
+    return 0;
+}
+
 AVCodec mjpeg_decoder = {
     "mjpeg",
     CODEC_TYPE_VIDEO,
@@ -2562,3 +2618,8 @@ AVCodecParser mjpeg_parser = {
     ff_parse_close,
 };
 
+AVBitStreamFilter mjpega_dump_header_bsf = {
+    "mjpegadump",
+    0,
+    mjpega_dump_header,
+};
