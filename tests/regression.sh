@@ -165,6 +165,17 @@ do_video_encoding()
     do_ffmpeg $file -y $1 -f pgmyuv -i $raw_src $2 $file
 }
 
+do_audio_encoding()
+{
+    file=${outfile}$1
+    do_ffmpeg $file -y -ab 128 -ac 2 -f s16le -i $pcm_src $3 $file
+}
+
+do_audio_decoding()
+{
+    do_ffmpeg $pcm_dst -y -i $file -f wav $pcm_dst
+}
+
 do_libav()
 {
     file=${outfile}libav.$1
@@ -579,72 +590,65 @@ fi
 ###################################
 if [ -n "$do_mp2" ] ; then
 # mp2 encoding
-file=${outfile}mp2.mp2
-do_ffmpeg $file -y -ab 128 -ac 2 -ar 44100 -f s16le -i $pcm_src $file
+do_audio_encoding mp2.mp2 "-ar 44100"
 
 # mp2 decoding
-do_ffmpeg $pcm_dst -y -i $file -f wav $pcm_dst
+do_audio_decoding
 $tiny_psnr $pcm_dst $pcm_ref 2 1924 >> $logfile
 fi
 
 ###################################
 if [ -n "$do_ac3" ] ; then
 # ac3 encoding
-file=${outfile}ac3.rm
-do_ffmpeg $file -y -ab 128 -ac 2 -f s16le  -i $pcm_src -vn $file
+do_audio_encoding ac3.rm "" -vn
 
 # ac3 decoding
-#do_ffmpeg $pcm_dst -y -i $file -f wav $pcm_dst
+#do_audio_decoding
 fi
 
 ###################################
 if [ -n "$do_g726" ] ; then
 # g726 encoding
-file=${outfile}g726.wav
-do_ffmpeg $file -y -ab 128 -ac 2 -ar 44100 -f s16le -i $pcm_src -ab 32 -ac 1 -ar 8000 -acodec g726 $file
+do_audio_encoding g726.wav "-ar 44100" "-ab 32 -ac 1 -ar 8000 -acodec g726"
 
 # g726 decoding
-do_ffmpeg $pcm_dst -y -i $file -f wav $pcm_dst
+do_audio_decoding
 fi
 
 ###################################
 if [ -n "$do_adpcm_ima_wav" ] ; then
 # encoding
-file=${outfile}adpcm_ima.wav
-do_ffmpeg $file -y -ab 128 -ac 2 -ar 44100 -f s16le -i $pcm_src -acodec adpcm_ima_wav $file
+do_audio_encoding adpcm_ima.wav "-ar 44100" "-acodec adpcm_ima_wav"
 
 # decoding
-do_ffmpeg $pcm_dst -y -i $file -f wav $pcm_dst
+do_audio_decoding
 fi
 
 ###################################
 if [ -n "$do_adpcm_ms" ] ; then
 # encoding
-file=${outfile}adpcm_ms.wav
-do_ffmpeg $file -y -ab 128 -ac 2 -ar 44100 -f s16le -i $pcm_src -acodec adpcm_ms $file
+do_audio_encoding adpcm_ms.wav "-ar 44100" "-acodec adpcm_ms"
 
 # decoding
-do_ffmpeg $pcm_dst -y -i $file -f wav $pcm_dst
+do_audio_decoding
 fi
 
 ###################################
 if [ -n "$do_adpcm_yam" ] ; then
 # encoding
-file=${outfile}adpcm_yam.wav
-do_ffmpeg $file -y -ab 128 -ac 2 -ar 44100 -f s16le -i $pcm_src -acodec adpcm_yamaha $file
+do_audio_encoding adpcm_yam.wav "-ar 44100" "-acodec adpcm_yamaha"
 
 # decoding
-do_ffmpeg $pcm_dst -y -i $file -f wav $pcm_dst
+do_audio_decoding
 fi
 
 ###################################
 if [ -n "$do_flac" ] ; then
 # encoding
-file=${outfile}flac.flac
-do_ffmpeg $file -y -ab 128 -ac 2 -ar 44100 -f s16le -i $pcm_src -acodec flac -compression_level 2 $file
+do_audio_encoding flac.flac "-ar 44100" "-acodec flac -compression_level 2"
 
 # decoding
-do_ffmpeg $pcm_dst -y -i $file -f wav $pcm_dst
+do_audio_decoding
 fi
 
 ###################################
