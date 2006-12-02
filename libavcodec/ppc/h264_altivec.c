@@ -23,6 +23,7 @@
 #include "gcc_fixes.h"
 
 #include "dsputil_altivec.h"
+#include "types_altivec.h"
 
 #define PUT_OP_U8_ALTIVEC(d, s, dst) d = s
 #define AVG_OP_U8_ALTIVEC(d, s, dst) d = vec_avg(dst, s)
@@ -398,6 +399,131 @@ static inline void avg_pixels16_l2_altivec( uint8_t * dst, const uint8_t * src1,
   H264_MC(put_, 16, altivec)
   H264_MC(avg_, 16, altivec)
 
+
+/****************************************************************************
+ * IDCT transform:
+ ****************************************************************************/
+
+#define IDCT8_1D_ALTIVEC(s0, s1, s2, s3, s4, s5, s6, s7,  d0, d1, d2, d3, d4, d5, d6, d7) {\
+    /*        a0  = SRC(0) + SRC(4); */ \
+    vec_s16_t a0v = vec_add(s0, s4);    \
+    /*        a2  = SRC(0) - SRC(4); */ \
+    vec_s16_t a2v = vec_sub(s0, s4);    \
+    /*        a4  =           (SRC(2)>>1) - SRC(6); */ \
+    vec_s16_t a4v = vec_sub(vec_sra(s2, onev), s6);    \
+    /*        a6  =           (SRC(6)>>1) + SRC(2); */ \
+    vec_s16_t a6v = vec_add(vec_sra(s6, onev), s2);    \
+    /*        b0  =         a0 + a6; */ \
+    vec_s16_t b0v = vec_add(a0v, a6v);  \
+    /*        b2  =         a2 + a4; */ \
+    vec_s16_t b2v = vec_add(a2v, a4v);  \
+    /*        b4  =         a2 - a4; */ \
+    vec_s16_t b4v = vec_sub(a2v, a4v);  \
+    /*        b6  =         a0 - a6; */ \
+    vec_s16_t b6v = vec_sub(a0v, a6v);  \
+    /* a1 =  SRC(5) - SRC(3) - SRC(7) - (SRC(7)>>1); */ \
+    /*        a1 =             (SRC(5)-SRC(3)) -  (SRC(7)  +  (SRC(7)>>1)); */ \
+    vec_s16_t a1v = vec_sub( vec_sub(s5, s3), vec_add(s7, vec_sra(s7, onev)) ); \
+    /* a3 =  SRC(7) + SRC(1) - SRC(3) - (SRC(3)>>1); */ \
+    /*        a3 =             (SRC(7)+SRC(1)) -  (SRC(3)  +  (SRC(3)>>1)); */ \
+    vec_s16_t a3v = vec_sub( vec_add(s7, s1), vec_add(s3, vec_sra(s3, onev)) );\
+    /* a5 =  SRC(7) - SRC(1) + SRC(5) + (SRC(5)>>1); */ \
+    /*        a5 =             (SRC(7)-SRC(1)) +   SRC(5) +   (SRC(5)>>1); */ \
+    vec_s16_t a5v = vec_add( vec_sub(s7, s1), vec_add(s5, vec_sra(s5, onev)) );\
+    /*        a7 =                SRC(5)+SRC(3) +  SRC(1) +   (SRC(1)>>1); */ \
+    vec_s16_t a7v = vec_add( vec_add(s5, s3), vec_add(s1, vec_sra(s1, onev)) );\
+    /*        b1 =                  (a7>>2)  +  a1; */ \
+    vec_s16_t b1v = vec_add( vec_sra(a7v, twov), a1v); \
+    /*        b3 =          a3 +        (a5>>2); */ \
+    vec_s16_t b3v = vec_add(a3v, vec_sra(a5v, twov)); \
+    /*        b5 =                  (a3>>2)  -   a5; */ \
+    vec_s16_t b5v = vec_sub( vec_sra(a3v, twov), a5v); \
+    /*        b7 =           a7 -        (a1>>2); */ \
+    vec_s16_t b7v = vec_sub( a7v, vec_sra(a1v, twov)); \
+    /* DST(0,    b0 + b7); */ \
+    d0 = vec_add(b0v, b7v); \
+    /* DST(1,    b2 + b5); */ \
+    d1 = vec_add(b2v, b5v); \
+    /* DST(2,    b4 + b3); */ \
+    d2 = vec_add(b4v, b3v); \
+    /* DST(3,    b6 + b1); */ \
+    d3 = vec_add(b6v, b1v); \
+    /* DST(4,    b6 - b1); */ \
+    d4 = vec_sub(b6v, b1v); \
+    /* DST(5,    b4 - b3); */ \
+    d5 = vec_sub(b4v, b3v); \
+    /* DST(6,    b2 - b5); */ \
+    d6 = vec_sub(b2v, b5v); \
+    /* DST(7,    b0 - b7); */ \
+    d7 = vec_sub(b0v, b7v); \
+}
+
+#define ALTIVEC_STORE_SUM_CLIP(dest, idctv, perm_ldv, perm_stv, sel) { \
+    /* unaligned load */                                       \
+    vec_u8_t hv = vec_ld( 0, dest );                           \
+    vec_u8_t lv = vec_ld( 7, dest );                           \
+    vec_u8_t dstv   = vec_perm( hv, lv, (vec_u8_t)perm_ldv );  \
+    vec_s16_t idct_sh6 = vec_sra(idctv, sixv);                 \
+    vec_u16_t dst16 = vec_mergeh(zero_u8v, dstv);              \
+    vec_s16_t idstsum = vec_adds(idct_sh6, (vec_s16_t)dst16);  \
+    vec_u8_t idstsum8 = vec_packsu(zero_s16v, idstsum);        \
+    vec_u8_t edgehv;                                           \
+    /* unaligned store */                                      \
+    vec_u8_t bodyv  = vec_perm( idstsum8, idstsum8, perm_stv );\
+    vec_u8_t edgelv = vec_perm( sel, zero_u8v, perm_stv );     \
+    lv    = vec_sel( lv, bodyv, edgelv );                      \
+    vec_st( lv, 7, dest );                                     \
+    hv    = vec_ld( 0, dest );                                 \
+    edgehv = vec_perm( zero_u8v, sel, perm_stv );              \
+    hv    = vec_sel( hv, bodyv, edgehv );                      \
+    vec_st( hv, 0, dest );                                     \
+ }
+
+void ff_h264_idct8_add_altivec( uint8_t *dst, DCTELEM *dct, int stride ) {
+    vec_s16_t s0, s1, s2, s3, s4, s5, s6, s7;
+    vec_s16_t d0, d1, d2, d3, d4, d5, d6, d7;
+    vec_s16_t idct0, idct1, idct2, idct3, idct4, idct5, idct6, idct7;
+
+    vec_u8_t perm_ldv = vec_lvsl(0, dst);
+    vec_u8_t perm_stv = vec_lvsr(8, dst);
+
+    const vec_u16_t onev = vec_splat_u16(1);
+    const vec_u16_t twov = vec_splat_u16(2);
+    const vec_u16_t sixv = vec_splat_u16(6);
+
+    const vec_u8_t sel = (vec_u8_t) AVV(0,0,0,0,0,0,0,0,
+                                        -1,-1,-1,-1,-1,-1,-1,-1);
+    LOAD_ZERO;
+
+    dct[0] += 32; // rounding for the >>6 at the end
+
+    s0 = vec_ld(0x00, (int16_t*)dct);
+    s1 = vec_ld(0x10, (int16_t*)dct);
+    s2 = vec_ld(0x20, (int16_t*)dct);
+    s3 = vec_ld(0x30, (int16_t*)dct);
+    s4 = vec_ld(0x40, (int16_t*)dct);
+    s5 = vec_ld(0x50, (int16_t*)dct);
+    s6 = vec_ld(0x60, (int16_t*)dct);
+    s7 = vec_ld(0x70, (int16_t*)dct);
+
+    IDCT8_1D_ALTIVEC(s0, s1, s2, s3, s4, s5, s6, s7,
+                     d0, d1, d2, d3, d4, d5, d6, d7);
+
+    TRANSPOSE8( d0,  d1,  d2,  d3,  d4,  d5,  d6, d7 );
+
+    IDCT8_1D_ALTIVEC(d0,  d1,  d2,  d3,  d4,  d5,  d6, d7,
+                     idct0, idct1, idct2, idct3, idct4, idct5, idct6, idct7);
+
+    ALTIVEC_STORE_SUM_CLIP(&dst[0*stride], idct0, perm_ldv, perm_stv, sel);
+    ALTIVEC_STORE_SUM_CLIP(&dst[1*stride], idct1, perm_ldv, perm_stv, sel);
+    ALTIVEC_STORE_SUM_CLIP(&dst[2*stride], idct2, perm_ldv, perm_stv, sel);
+    ALTIVEC_STORE_SUM_CLIP(&dst[3*stride], idct3, perm_ldv, perm_stv, sel);
+    ALTIVEC_STORE_SUM_CLIP(&dst[4*stride], idct4, perm_ldv, perm_stv, sel);
+    ALTIVEC_STORE_SUM_CLIP(&dst[5*stride], idct5, perm_ldv, perm_stv, sel);
+    ALTIVEC_STORE_SUM_CLIP(&dst[6*stride], idct6, perm_ldv, perm_stv, sel);
+    ALTIVEC_STORE_SUM_CLIP(&dst[7*stride], idct7, perm_ldv, perm_stv, sel);
+}
+
 void dsputil_h264_init_ppc(DSPContext* c, AVCodecContext *avctx) {
 
 #ifdef HAVE_ALTIVEC
@@ -405,6 +531,7 @@ void dsputil_h264_init_ppc(DSPContext* c, AVCodecContext *avctx) {
     c->put_h264_chroma_pixels_tab[0] = put_h264_chroma_mc8_altivec;
     c->put_no_rnd_h264_chroma_pixels_tab[0] = put_no_rnd_h264_chroma_mc8_altivec;
     c->avg_h264_chroma_pixels_tab[0] = avg_h264_chroma_mc8_altivec;
+    c->h264_idct8_add = ff_h264_idct8_add_altivec;
 
 #define dspfunc(PFX, IDX, NUM) \
     c->PFX ## _pixels_tab[IDX][ 0] = PFX ## NUM ## _mc00_altivec; \
