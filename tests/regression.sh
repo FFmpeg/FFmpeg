@@ -157,7 +157,7 @@ do_ffmpeg_nocheck()
 
 do_video_decoding()
 {
-    do_ffmpeg $raw_dst -y -i $file -f rawvideo $@ $raw_dst
+    do_ffmpeg $raw_dst -y $1 -i $file -f rawvideo $2 $raw_dst
 }
 
 do_video_encoding()
@@ -242,7 +242,7 @@ do_video_decoding
 do_video_encoding mpeg2.mpg "-qscale 10" "-vcodec mpeg2video -idct int -dct int -f mpeg1video"
 
 # mpeg2 decoding
-do_ffmpeg $raw_dst -y -idct int -i $file -f rawvideo $raw_dst
+do_video_decoding "-idct int"
 
 # mpeg2 encoding interlaced
 do_video_encoding mpeg2i.mpg "-qscale 10" "-vcodec mpeg2video -f mpeg1video -flags +ildct+ilme"
@@ -351,7 +351,7 @@ if [ -n "$do_huffyuv" ] ; then
 do_video_encoding huffyuv.avi "" "-an -vcodec huffyuv -pix_fmt yuv422p"
 
 # huffyuv decoding
-do_video_decoding -strict -2 -pix_fmt yuv420p
+do_video_decoding "" "-strict -2 -pix_fmt yuv420p"
 fi
 
 ###################################
@@ -430,7 +430,7 @@ if [ -n "$do_mjpeg" ] ; then
 do_video_encoding mjpeg.avi "-qscale 10" "-an -vcodec mjpeg -pix_fmt yuvj420p"
 
 # mjpeg decoding
-do_video_decoding -pix_fmt yuv420p
+do_video_decoding "" "-pix_fmt yuv420p"
 fi
 
 ###################################
@@ -448,7 +448,7 @@ if [ -n "$do_jpegls" ] ; then
 do_video_encoding jpegls.avi "" "-an -vcodec jpegls -vtag MJPG"
 
 # jpeg ls decoding
-do_video_decoding -pix_fmt yuv420p
+do_video_decoding "" "-pix_fmt yuv420p"
 fi
 
 ###################################
@@ -511,7 +511,7 @@ if [ -n "$do_snow" ] ; then
 do_video_encoding snow.avi "-strict -2" "-an -vcodec snow -qscale 2 -flags +qpel -me iter -dia_size 2 -cmp 12 -subcmp 12 -s 128x64"
 
 # snow decoding
-do_video_decoding -s 352x288
+do_video_decoding "" "-s 352x288"
 fi
 
 ###################################
@@ -529,7 +529,7 @@ if [ -n "$do_dv" ] ; then
 do_video_encoding dv.dv "-dct int" "-s pal -an"
 
 # dv decoding
-do_video_decoding -s cif
+do_video_decoding "" "-s cif"
 fi
 
 ###################################
@@ -538,7 +538,7 @@ if [ -n "$do_dv50" ] ; then
 do_video_encoding dv.dv "-dct int" "-s pal -pix_fmt yuv422p -an"
 
 # dv50 decoding
-do_video_decoding -s cif -pix_fmt yuv420p
+do_video_decoding "" "-s cif -pix_fmt yuv420p"
 fi
 
 
@@ -548,7 +548,7 @@ if [ -n "$do_svq1" ] ; then
 do_video_encoding svq1.mov "" "-an -vcodec svq1 -qscale 3 -pix_fmt yuv410p"
 
 # svq1 decoding
-do_video_decoding -pix_fmt yuv420p
+do_video_decoding "" "-pix_fmt yuv420p"
 fi
 
 ###################################
