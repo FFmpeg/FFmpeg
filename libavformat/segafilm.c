@@ -58,8 +58,6 @@ typedef struct FilmDemuxContext {
 
     unsigned int base_clock;
     unsigned int version;
-    int cvid_extra_bytes;  /* the number of bytes thrown into the Cinepak
-                            * chunk header to throw off decoders */
 
     /* buffer used for interleaving stereo PCM data */
     unsigned char *stereo_buffer;
@@ -126,13 +124,8 @@ static int film_read_header(AVFormatContext *s,
     if (BE_32(&scratch[0]) != FDSC_TAG)
         return AVERROR_INVALIDDATA;
 
-    film->cvid_extra_bytes = 0;
     if (BE_32(&scratch[8]) == CVID_TAG) {
         film->video_type = CODEC_ID_CINEPAK;
-        if (film->version)
-            film->cvid_extra_bytes = 2;
-        else
-            film->cvid_extra_bytes = 6;  /* Lemmings 3DO case */
     } else
         film->video_type = 0;
 
@@ -231,18 +224,10 @@ static int film_read_packet(AVFormatContext *s,
     /* do a special song and dance when loading FILM Cinepak chunks */
     if ((sample->stream == film->video_stream_index) &&
         (film->video_type == CODEC_ID_CINEPAK)) {
-        if (av_new_packet(pkt, sample->sample_size - film->cvid_extra_bytes))
-            return AVERROR_NOMEM;
-        if(pkt->size < 10)
-            return -1;
         pkt->pos= url_ftell(pb);
-        ret = get_buffer(pb, pkt->data, 10);
-        /* skip the non-spec CVID bytes */
-        url_fseek(pb, film->cvid_extra_bytes, SEEK_CUR);
-        ret += get_buffer(pb, pkt->data + 10,
-            sample->sample_size - 10 - film->cvid_extra_bytes);
-        if (ret != sample->sample_size - film->cvid_extra_bytes)
-            ret = AVERROR_IO;
+        if (av_new_packet(pkt, sample->sample_size))
+            return AVERROR_NOMEM;
+        get_buffer(pb, pkt->data, sample->sample_size);
     } else if ((sample->stream == film->audio_stream_index) &&
         (film->audio_channels == 2)) {
         /* stereo PCM needs to be interleaved */
