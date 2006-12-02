@@ -741,6 +741,7 @@ static int umh_search(MpegEncContext * s, int *best, int dmin,
     LOAD_COMMON2
     int map_generation= c->map_generation;
     int x,y,x2,y2, i, j, d;
+    const int dia_size= c->dia_size&0xFE;
     static const int hex[16][2]={{-4,-2}, {-4,-1}, {-4, 0}, {-4, 1}, {-4, 2},
                                  { 4,-2}, { 4,-1}, { 4, 0}, { 4, 1}, { 4, 2},
                                  {-2, 3}, { 0, 4}, { 2, 3},
@@ -751,10 +752,10 @@ static int umh_search(MpegEncContext * s, int *best, int dmin,
 
     x= best[0];
     y= best[1];
-    for(x2=FFMAX(x-15, xmin); x2<=FFMIN(x+15,xmax); x2+=2){
+    for(x2=FFMAX(x-dia_size+1, xmin); x2<=FFMIN(x+dia_size-1,xmax); x2+=2){
         CHECK_MV(x2, y);
     }
-    for(y2=FFMAX(y- 7, ymin); y2<=FFMIN(y+ 7,ymax); y2+=2){
+    for(y2=FFMAX(y-dia_size/2+1, ymin); y2<=FFMIN(y+dia_size/2-1,ymax); y2+=2){
         CHECK_MV(x, y2);
     }
 
@@ -768,7 +769,7 @@ static int umh_search(MpegEncContext * s, int *best, int dmin,
 
 //FIXME prevent the CLIP stuff
 
-    for(j=1; j<=4; j++){
+    for(j=1; j<=dia_size/4; j++){
         for(i=0; i<16; i++){
             CHECK_CLIPED_MV(x+hex[i][0]*j, y+hex[i][1]*j);
         }
@@ -969,11 +970,13 @@ static always_inline int diamond_search(MpegEncContext * s, int *best, int dmin,
                                        int size, int h, int flags){
     MotionEstContext * const c= &s->me;
     if(c->dia_size==-1)
-        return           umh_search(s, best, dmin, src_index, ref_index, penalty_factor, size, h, flags);
+        return funny_diamond_search(s, best, dmin, src_index, ref_index, penalty_factor, size, h, flags);
     else if(c->dia_size<-1)
         return   sab_diamond_search(s, best, dmin, src_index, ref_index, penalty_factor, size, h, flags);
     else if(c->dia_size<2)
         return small_diamond_search(s, best, dmin, src_index, ref_index, penalty_factor, size, h, flags);
+    else if(c->dia_size>768)
+        return           umh_search(s, best, dmin, src_index, ref_index, penalty_factor, size, h, flags);
     else if(c->dia_size>512)
         return           hex_search(s, best, dmin, src_index, ref_index, penalty_factor, size, h, flags, c->dia_size&0xFF);
     else if(c->dia_size>256)
