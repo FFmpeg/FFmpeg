@@ -1786,7 +1786,7 @@ static inline int direct_search(MpegEncContext * s, int mb_x, int mb_y)
     P_LEFT[1]        = clip(mv_table[mot_xy - 1][1], ymin<<shift, ymax<<shift);
 
     /* special case for first line */
-    if (!s->first_slice_line) { //FIXME maybe allow this over thread boundary as its cliped
+    if (!s->first_slice_line) { //FIXME maybe allow this over thread boundary as its clipped
         P_TOP[0]      = clip(mv_table[mot_xy - mot_stride             ][0], xmin<<shift, xmax<<shift);
         P_TOP[1]      = clip(mv_table[mot_xy - mot_stride             ][1], ymin<<shift, ymax<<shift);
         P_TOPRIGHT[0] = clip(mv_table[mot_xy - mot_stride + 1         ][0], xmin<<shift, xmax<<shift);

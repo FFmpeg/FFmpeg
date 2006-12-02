@@ -515,7 +515,7 @@ static int qpel_motion_search(MpegEncContext * s,
     }\
 }
 
-#define CHECK_CLIPED_MV(ax,ay)\
+#define CHECK_CLIPPED_MV(ax,ay)\
 {\
     const int Lx= ax;\
     const int Ly= ay;\
@@ -678,7 +678,7 @@ static int hex_search(MpegEncContext * s, int *best, int dmin,
             x= best[0];
             y= best[1];
             for(i=0; i<6; i++){
-                CHECK_CLIPED_MV(x+hex[i][0]*dia_size, y+hex[i][1]*dia_size);
+                CHECK_CLIPPED_MV(x+hex[i][0]*dia_size, y+hex[i][1]*dia_size);
             }
         }while(best[0] != x || best[1] != y);
     }
@@ -686,10 +686,10 @@ static int hex_search(MpegEncContext * s, int *best, int dmin,
     do{
         x= best[0];
         y= best[1];
-        CHECK_CLIPED_MV(x+1, y);
-        CHECK_CLIPED_MV(x, y+1);
-        CHECK_CLIPED_MV(x-1, y);
-        CHECK_CLIPED_MV(x, y-1);
+        CHECK_CLIPPED_MV(x+1, y);
+        CHECK_CLIPPED_MV(x, y+1);
+        CHECK_CLIPPED_MV(x-1, y);
+        CHECK_CLIPPED_MV(x, y-1);
     }while(best[0] != x || best[1] != y);
 
     return dmin;
@@ -716,17 +716,17 @@ static int l2s_dia_search(MpegEncContext * s, int *best, int dmin,
             x= best[0];
             y= best[1];
             for(i=0; i<8; i++){
-                CHECK_CLIPED_MV(x+hex[i][0]*dia_size, y+hex[i][1]*dia_size);
+                CHECK_CLIPPED_MV(x+hex[i][0]*dia_size, y+hex[i][1]*dia_size);
             }
         }while(best[0] != x || best[1] != y);
     }
 
     x= best[0];
     y= best[1];
-    CHECK_CLIPED_MV(x+1, y);
-    CHECK_CLIPED_MV(x, y+1);
-    CHECK_CLIPED_MV(x-1, y);
-    CHECK_CLIPED_MV(x, y-1);
+    CHECK_CLIPPED_MV(x+1, y);
+    CHECK_CLIPPED_MV(x, y+1);
+    CHECK_CLIPPED_MV(x-1, y);
+    CHECK_CLIPPED_MV(x, y-1);
 
     return dmin;
 }
@@ -771,7 +771,7 @@ static int umh_search(MpegEncContext * s, int *best, int dmin,
 
     for(j=1; j<=dia_size/4; j++){
         for(i=0; i<16; i++){
-            CHECK_CLIPED_MV(x+hex[i][0]*j, y+hex[i][1]*j);
+            CHECK_CLIPPED_MV(x+hex[i][0]*j, y+hex[i][1]*j);
         }
     }
 
@@ -1021,7 +1021,7 @@ static always_inline int epzs_motion_search_internal(MpegEncContext * s, int *mx
     /* first line */
     if (s->first_slice_line) {
         CHECK_MV(P_LEFT[0]>>shift, P_LEFT[1]>>shift)
-        CHECK_CLIPED_MV((last_mv[ref_mv_xy][0]*ref_mv_scale + (1<<15))>>16,
+        CHECK_CLIPPED_MV((last_mv[ref_mv_xy][0]*ref_mv_scale + (1<<15))>>16,
                         (last_mv[ref_mv_xy][1]*ref_mv_scale + (1<<15))>>16)
     }else{
         if(dmin<((h*h*s->avctx->mv0_threshold)>>8)
@@ -1034,11 +1034,11 @@ static always_inline int epzs_motion_search_internal(MpegEncContext * s, int *mx
             return dmin;
         }
         CHECK_MV(    P_MEDIAN[0] >>shift ,    P_MEDIAN[1] >>shift)
-        CHECK_CLIPED_MV((P_MEDIAN[0]>>shift)  , (P_MEDIAN[1]>>shift)-1)
-        CHECK_CLIPED_MV((P_MEDIAN[0]>>shift)  , (P_MEDIAN[1]>>shift)+1)
-        CHECK_CLIPED_MV((P_MEDIAN[0]>>shift)-1, (P_MEDIAN[1]>>shift)  )
-        CHECK_CLIPED_MV((P_MEDIAN[0]>>shift)+1, (P_MEDIAN[1]>>shift)  )
-        CHECK_CLIPED_MV((last_mv[ref_mv_xy][0]*ref_mv_scale + (1<<15))>>16,
+        CHECK_CLIPPED_MV((P_MEDIAN[0]>>shift)  , (P_MEDIAN[1]>>shift)-1)
+        CHECK_CLIPPED_MV((P_MEDIAN[0]>>shift)  , (P_MEDIAN[1]>>shift)+1)
+        CHECK_CLIPPED_MV((P_MEDIAN[0]>>shift)-1, (P_MEDIAN[1]>>shift)  )
+        CHECK_CLIPPED_MV((P_MEDIAN[0]>>shift)+1, (P_MEDIAN[1]>>shift)  )
+        CHECK_CLIPPED_MV((last_mv[ref_mv_xy][0]*ref_mv_scale + (1<<15))>>16,
                         (last_mv[ref_mv_xy][1]*ref_mv_scale + (1<<15))>>16)
         CHECK_MV(P_LEFT[0]    >>shift, P_LEFT[1]    >>shift)
         CHECK_MV(P_TOP[0]     >>shift, P_TOP[1]     >>shift)
@@ -1046,16 +1046,16 @@ static always_inline int epzs_motion_search_internal(MpegEncContext * s, int *mx
     }
     if(dmin>h*h*4){
         if(c->pre_pass){
-            CHECK_CLIPED_MV((last_mv[ref_mv_xy-1][0]*ref_mv_scale + (1<<15))>>16,
+            CHECK_CLIPPED_MV((last_mv[ref_mv_xy-1][0]*ref_mv_scale + (1<<15))>>16,
                             (last_mv[ref_mv_xy-1][1]*ref_mv_scale + (1<<15))>>16)
             if(!s->first_slice_line)
-                CHECK_CLIPED_MV((last_mv[ref_mv_xy-ref_mv_stride][0]*ref_mv_scale + (1<<15))>>16,
+                CHECK_CLIPPED_MV((last_mv[ref_mv_xy-ref_mv_stride][0]*ref_mv_scale + (1<<15))>>16,
                                 (last_mv[ref_mv_xy-ref_mv_stride][1]*ref_mv_scale + (1<<15))>>16)
         }else{
-            CHECK_CLIPED_MV((last_mv[ref_mv_xy+1][0]*ref_mv_scale + (1<<15))>>16,
+            CHECK_CLIPPED_MV((last_mv[ref_mv_xy+1][0]*ref_mv_scale + (1<<15))>>16,
                             (last_mv[ref_mv_xy+1][1]*ref_mv_scale + (1<<15))>>16)
             if(s->mb_y+1<s->end_mb_y)  //FIXME replace at least with last_slice_line
-                CHECK_CLIPED_MV((last_mv[ref_mv_xy+ref_mv_stride][0]*ref_mv_scale + (1<<15))>>16,
+                CHECK_CLIPPED_MV((last_mv[ref_mv_xy+ref_mv_stride][0]*ref_mv_scale + (1<<15))>>16,
                                 (last_mv[ref_mv_xy+ref_mv_stride][1]*ref_mv_scale + (1<<15))>>16)
         }
     }
@@ -1137,7 +1137,7 @@ static int epzs_motion_search4(MpegEncContext * s,
     /* first line */
     if (s->first_slice_line) {
         CHECK_MV(P_LEFT[0]>>shift, P_LEFT[1]>>shift)
-        CHECK_CLIPED_MV((last_mv[ref_mv_xy][0]*ref_mv_scale + (1<<15))>>16,
+        CHECK_CLIPPED_MV((last_mv[ref_mv_xy][0]*ref_mv_scale + (1<<15))>>16,
                         (last_mv[ref_mv_xy][1]*ref_mv_scale + (1<<15))>>16)
         CHECK_MV(P_MV1[0]>>shift, P_MV1[1]>>shift)
     }else{
@@ -1147,14 +1147,14 @@ static int epzs_motion_search4(MpegEncContext * s,
         CHECK_MV(P_LEFT[0]>>shift, P_LEFT[1]>>shift)
         CHECK_MV(P_TOP[0]>>shift, P_TOP[1]>>shift)
         CHECK_MV(P_TOPRIGHT[0]>>shift, P_TOPRIGHT[1]>>shift)
-        CHECK_CLIPED_MV((last_mv[ref_mv_xy][0]*ref_mv_scale + (1<<15))>>16,
+        CHECK_CLIPPED_MV((last_mv[ref_mv_xy][0]*ref_mv_scale + (1<<15))>>16,
                         (last_mv[ref_mv_xy][1]*ref_mv_scale + (1<<15))>>16)
     }
     if(dmin>64*4){
-        CHECK_CLIPED_MV((last_mv[ref_mv_xy+1][0]*ref_mv_scale + (1<<15))>>16,
+        CHECK_CLIPPED_MV((last_mv[ref_mv_xy+1][0]*ref_mv_scale + (1<<15))>>16,
                         (last_mv[ref_mv_xy+1][1]*ref_mv_scale + (1<<15))>>16)
         if(s->mb_y+1<s->end_mb_y)  //FIXME replace at least with last_slice_line
-            CHECK_CLIPED_MV((last_mv[ref_mv_xy+ref_mv_stride][0]*ref_mv_scale + (1<<15))>>16,
+            CHECK_CLIPPED_MV((last_mv[ref_mv_xy+ref_mv_stride][0]*ref_mv_scale + (1<<15))>>16,
                             (last_mv[ref_mv_xy+ref_mv_stride][1]*ref_mv_scale + (1<<15))>>16)
     }
 
@@ -1197,7 +1197,7 @@ static int epzs_motion_search2(MpegEncContext * s,
     /* first line */
     if (s->first_slice_line) {
         CHECK_MV(P_LEFT[0]>>shift, P_LEFT[1]>>shift)
-        CHECK_CLIPED_MV((last_mv[ref_mv_xy][0]*ref_mv_scale + (1<<15))>>16,
+        CHECK_CLIPPED_MV((last_mv[ref_mv_xy][0]*ref_mv_scale + (1<<15))>>16,
                         (last_mv[ref_mv_xy][1]*ref_mv_scale + (1<<15))>>16)
         CHECK_MV(P_MV1[0]>>shift, P_MV1[1]>>shift)
     }else{
@@ -1207,14 +1207,14 @@ static int epzs_motion_search2(MpegEncContext * s,
         CHECK_MV(P_LEFT[0]>>shift, P_LEFT[1]>>shift)
         CHECK_MV(P_TOP[0]>>shift, P_TOP[1]>>shift)
         CHECK_MV(P_TOPRIGHT[0]>>shift, P_TOPRIGHT[1]>>shift)
-        CHECK_CLIPED_MV((last_mv[ref_mv_xy][0]*ref_mv_scale + (1<<15))>>16,
+        CHECK_CLIPPED_MV((last_mv[ref_mv_xy][0]*ref_mv_scale + (1<<15))>>16,
                         (last_mv[ref_mv_xy][1]*ref_mv_scale + (1<<15))>>16)
     }
     if(dmin>64*4){
-        CHECK_CLIPED_MV((last_mv[ref_mv_xy+1][0]*ref_mv_scale + (1<<15))>>16,
+        CHECK_CLIPPED_MV((last_mv[ref_mv_xy+1][0]*ref_mv_scale + (1<<15))>>16,
                         (last_mv[ref_mv_xy+1][1]*ref_mv_scale + (1<<15))>>16)
         if(s->mb_y+1<s->end_mb_y)  //FIXME replace at least with last_slice_line
-            CHECK_CLIPED_MV((last_mv[ref_mv_xy+ref_mv_stride][0]*ref_mv_scale + (1<<15))>>16,
+            CHECK_CLIPPED_MV((last_mv[ref_mv_xy+ref_mv_stride][0]*ref_mv_scale + (1<<15))>>16,
                             (last_mv[ref_mv_xy+ref_mv_stride][1]*ref_mv_scale + (1<<15))>>16)
     }
 
