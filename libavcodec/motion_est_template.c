@@ -658,6 +658,79 @@ if(256*256*256*64 % (stats[0]+1)==0){
     return dmin;
 }
 
+static int hex_search(MpegEncContext * s, int *best, int dmin,
+                                       int src_index, int ref_index, int const penalty_factor,
+                                       int size, int h, int flags, int dia_size)
+{
+    MotionEstContext * const c= &s->me;
+    me_cmp_func cmpf, chroma_cmpf;
+    LOAD_COMMON
+    LOAD_COMMON2
+    int map_generation= c->map_generation;
+    int x,y,i,d;
+    static const int hex[6][2]={{-2, 0}, { 2,0}, {-1,-2}, {1,-2}, {-1,2},{1,2}};
+
+    cmpf= s->dsp.me_cmp[size];
+    chroma_cmpf= s->dsp.me_cmp[size+1];
+
+    for(;dia_size; dia_size--){
+        do{
+            x= best[0];
+            y= best[1];
+            for(i=0; i<6; i++){
+                CHECK_CLIPED_MV(x+hex[i][0]*dia_size, y+hex[i][1]*dia_size);
+            }
+        }while(best[0] != x || best[1] != y);
+    }
+
+    do{
+        x= best[0];
+        y= best[1];
+        CHECK_CLIPED_MV(x+1, y);
+        CHECK_CLIPED_MV(x, y+1);
+        CHECK_CLIPED_MV(x-1, y);
+        CHECK_CLIPED_MV(x, y-1);
+    }while(best[0] != x || best[1] != y);
+
+    return dmin;
+}
+
+static int l2s_dia_search(MpegEncContext * s, int *best, int dmin,
+                                       int src_index, int ref_index, int const penalty_factor,
+                                       int size, int h, int flags)
+{
+    MotionEstContext * const c= &s->me;
+    me_cmp_func cmpf, chroma_cmpf;
+    LOAD_COMMON
+    LOAD_COMMON2
+    int map_generation= c->map_generation;
+    int x,y,i,d, dia_size;
+    static const int hex[8][2]={{-2, 0}, {-1,-1}, { 0,-2}, { 1,-1},
+                                { 2, 0}, { 1, 1}, { 0, 2}, {-1, 1}};
+
+    cmpf= s->dsp.me_cmp[size];
+    chroma_cmpf= s->dsp.me_cmp[size+1];
+
+    for(dia_size= c->dia_size&0xFF; dia_size; dia_size--){
+        do{
+            x= best[0];
+            y= best[1];
+            for(i=0; i<8; i++){
+                CHECK_CLIPED_MV(x+hex[i][0]*dia_size, y+hex[i][1]*dia_size);
+            }
+        }while(best[0] != x || best[1] != y);
+    }
+
+    x= best[0];
+    y= best[1];
+    CHECK_CLIPED_MV(x+1, y);
+    CHECK_CLIPED_MV(x, y+1);
+    CHECK_CLIPED_MV(x-1, y);
+    CHECK_CLIPED_MV(x, y-1);
+
+    return dmin;
+}
+
 static int umh_search(MpegEncContext * s, int *best, int dmin,
                                        int src_index, int ref_index, int const penalty_factor,
                                        int size, int h, int flags)
@@ -672,7 +745,6 @@ static int umh_search(MpegEncContext * s, int *best, int dmin,
                                  { 4,-2}, { 4,-1}, { 4, 0}, { 4, 1}, { 4, 2},
                                  {-2, 3}, { 0, 4}, { 2, 3},
                                  {-2,-3}, { 0,-4}, { 2,-3},};
-    static const int hex2[6][2]={{-2, 0}, { 2,0}, {-1,-2}, {1,-2}, {-1,2},{1,2}};
 
     cmpf= s->dsp.me_cmp[size];
     chroma_cmpf= s->dsp.me_cmp[size+1];
@@ -702,24 +774,7 @@ static int umh_search(MpegEncContext * s, int *best, int dmin,
         }
     }
 
-    do{
-        x= best[0];
-        y= best[1];
-        for(i=0; i<6; i++){
-            CHECK_CLIPED_MV(x+hex2[i][0], y+hex2[i][1]);
-        }
-    }while(best[0] != x || best[1] != y);
-
-    do{
-        x= best[0];
-        y= best[1];
-        CHECK_CLIPED_MV(x+1, y);
-        CHECK_CLIPED_MV(x, y+1);
-        CHECK_CLIPED_MV(x-1, y);
-        CHECK_CLIPED_MV(x, y-1);
-    }while(best[0] != x || best[1] != y);
-
-    return dmin;
+    return hex_search(s, best, dmin, src_index, ref_index, penalty_factor, size, h, flags, 1);
 }
 
 #define SAB_CHECK_MV(ax,ay)\
@@ -919,6 +974,10 @@ static always_inline int diamond_search(MpegEncContext * s, int *best, int dmin,
         return   sab_diamond_search(s, best, dmin, src_index, ref_index, penalty_factor, size, h, flags);
     else if(c->dia_size<2)
         return small_diamond_search(s, best, dmin, src_index, ref_index, penalty_factor, size, h, flags);
+    else if(c->dia_size>512)
+        return           hex_search(s, best, dmin, src_index, ref_index, penalty_factor, size, h, flags, c->dia_size&0xFF);
+    else if(c->dia_size>256)
+        return       l2s_dia_search(s, best, dmin, src_index, ref_index, penalty_factor, size, h, flags);
     else
         return   var_diamond_search(s, best, dmin, src_index, ref_index, penalty_factor, size, h, flags);
 }
