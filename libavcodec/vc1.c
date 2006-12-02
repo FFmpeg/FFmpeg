@@ -790,6 +790,10 @@ static void vc1_mc_1mv(VC1Context *v, int dir)
     }
     uvmx = (mx + ((mx & 3) == 3)) >> 1;
     uvmy = (my + ((my & 3) == 3)) >> 1;
+    if(v->fastuvmc) {
+        uvmx = uvmx + ((uvmx<0)?(uvmx&1):-(uvmx&1));
+        uvmy = uvmy + ((uvmy<0)?(uvmy&1):-(uvmy&1));
+    }
     if(!dir) {
         srcY = s->last_picture.data[0];
         srcU = s->last_picture.data[1];
@@ -876,11 +880,6 @@ static void vc1_mc_1mv(VC1Context *v, int dir)
             }
         }
         srcY += s->mspel * (1 + s->linesize);
-    }
-
-    if(v->fastuvmc) {
-        uvmx = uvmx + ((uvmx<0)?-(uvmx&1):(uvmx&1));
-        uvmy = uvmy + ((uvmy<0)?-(uvmy&1):(uvmy&1));
     }
 
     if(s->mspel) {
@@ -1052,6 +1051,10 @@ static void vc1_mc_4mv_chroma(VC1Context *v)
     s->current_picture.motion_val[1][s->block_index[0]][1] = ty;
     uvmx = (tx + ((tx&3) == 3)) >> 1;
     uvmy = (ty + ((ty&3) == 3)) >> 1;
+    if(v->fastuvmc) {
+        uvmx = uvmx + ((uvmx<0)?(uvmx&1):-(uvmx&1));
+        uvmy = uvmy + ((uvmy<0)?(uvmy&1):-(uvmy&1));
+    }
 
     uvsrc_x = s->mb_x * 8 + (uvmx >> 2);
     uvsrc_y = s->mb_y * 8 + (uvmy >> 2);
@@ -1100,11 +1103,6 @@ static void vc1_mc_4mv_chroma(VC1Context *v)
                 src2 += s->uvlinesize;
             }
         }
-    }
-
-    if(v->fastuvmc) {
-        uvmx = uvmx + ((uvmx<0)?-(uvmx&1):(uvmx&1));
-        uvmy = uvmy + ((uvmy<0)?-(uvmy&1):(uvmy&1));
     }
 
     /* Chroma MC always uses qpel bilinear */
@@ -2061,6 +2059,10 @@ static void vc1_interp_mc(VC1Context *v)
     my = s->mv[1][0][1];
     uvmx = (mx + ((mx & 3) == 3)) >> 1;
     uvmy = (my + ((my & 3) == 3)) >> 1;
+    if(v->fastuvmc) {
+        uvmx = uvmx + ((uvmx<0)?-(uvmx&1):(uvmx&1));
+        uvmy = uvmy + ((uvmy<0)?-(uvmy&1):(uvmy&1));
+    }
     srcY = s->next_picture.data[0];
     srcU = s->next_picture.data[1];
     srcV = s->next_picture.data[2];
@@ -2121,11 +2123,6 @@ static void vc1_interp_mc(VC1Context *v)
             }
         }
         srcY += s->mspel * (1 + s->linesize);
-    }
-
-    if(v->fastuvmc) {
-        uvmx = uvmx + ((uvmx<0)?-(uvmx&1):(uvmx&1));
-        uvmy = uvmy + ((uvmy<0)?-(uvmy&1):(uvmy&1));
     }
 
     mx >>= 1;
