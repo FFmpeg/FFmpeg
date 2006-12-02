@@ -162,7 +162,8 @@ do_video_decoding()
 
 do_video_encoding()
 {
-    do_ffmpeg $file -y $1 -f pgmyuv -i $raw_src $2 $file
+    file=${outfile}$1
+    do_ffmpeg $file -y $2 -f pgmyuv -i $raw_src $3 $file
 }
 
 do_audio_encoding()
@@ -217,8 +218,7 @@ do_ffmpeg_nocheck $pcm_ref -y -ab 128 -ac 2 -ar 44100 -f s16le -i $pcm_src -f wa
 ###################################
 if [ -n "$do_mpeg" ] ; then
 # mpeg1 encoding
-file=${outfile}mpeg1.mpg
-do_video_encoding "-qscale 10" "-f mpeg1video"
+do_video_encoding mpeg1.mpg "-qscale 10" "-f mpeg1video"
 
 # mpeg1 decoding
 do_video_decoding
@@ -227,29 +227,25 @@ fi
 ###################################
 if [ -n "$do_mpeg2" ] ; then
 # mpeg2 encoding
-file=${outfile}mpeg2.mpg
-do_video_encoding "-qscale 10" "-vcodec mpeg2video -f mpeg1video"
+do_video_encoding mpeg2.mpg "-qscale 10" "-vcodec mpeg2video -f mpeg1video"
 
 # mpeg2 decoding
 do_video_decoding
 
 # mpeg2 encoding using intra vlc
-file=${outfile}mpeg2ivlc.mpg
-do_video_encoding "-qscale 10" "-vcodec mpeg2video -f mpeg1video -flags2 +ivlc"
+do_video_encoding mpeg2ivlc.mpg "-qscale 10" "-vcodec mpeg2video -f mpeg1video -flags2 +ivlc"
 
 # mpeg2 decoding
 do_video_decoding
 
 # mpeg2 encoding
-file=${outfile}mpeg2.mpg
-do_video_encoding "-qscale 10" "-vcodec mpeg2video -idct int -dct int -f mpeg1video"
+do_video_encoding mpeg2.mpg "-qscale 10" "-vcodec mpeg2video -idct int -dct int -f mpeg1video"
 
 # mpeg2 decoding
 do_ffmpeg $raw_dst -y -idct int -i $file -f rawvideo $raw_dst
 
 # mpeg2 encoding interlaced
-file=${outfile}mpeg2i.mpg
-do_video_encoding "-qscale 10" "-vcodec mpeg2video -f mpeg1video -flags +ildct+ilme"
+do_video_encoding mpeg2i.mpg "-qscale 10" "-vcodec mpeg2video -f mpeg1video -flags +ildct+ilme"
 
 # mpeg2 decoding
 do_video_decoding
@@ -258,15 +254,13 @@ fi
 ###################################
 if [ -n "$do_mpeg2thread" ] ; then
 # mpeg2 encoding interlaced
-file=${outfile}mpeg2thread.mpg
-do_video_encoding "-qscale 10" "-vcodec mpeg2video -f mpeg1video -bf 2 -flags +ildct+ilme -threads 2"
+do_video_encoding mpeg2thread.mpg "-qscale 10" "-vcodec mpeg2video -f mpeg1video -bf 2 -flags +ildct+ilme -threads 2"
 
 # mpeg2 decoding
 do_video_decoding
 
 # mpeg2 encoding interlaced using intra vlc
-file=${outfile}mpeg2threadivlc.mpg
-do_video_encoding "-qscale 10" "-vcodec mpeg2video -f mpeg1video -bf 2 -flags +ildct+ilme -flags2 +ivlc -threads 2"
+do_video_encoding mpeg2threadivlc.mpg "-qscale 10" "-vcodec mpeg2video -f mpeg1video -bf 2 -flags +ildct+ilme -flags2 +ivlc -threads 2"
 
 # mpeg2 decoding
 do_video_decoding
@@ -282,8 +276,7 @@ fi
 ###################################
 if [ -n "$do_msmpeg4v2" ] ; then
 # msmpeg4 encoding
-file=${outfile}msmpeg4v2.avi
-do_video_encoding "-qscale 10" "-an -vcodec msmpeg4v2"
+do_video_encoding msmpeg4v2.avi "-qscale 10" "-an -vcodec msmpeg4v2"
 
 # msmpeg4v2 decoding
 do_video_decoding
@@ -292,8 +285,7 @@ fi
 ###################################
 if [ -n "$do_msmpeg4" ] ; then
 # msmpeg4 encoding
-file=${outfile}msmpeg4.avi
-do_video_encoding "-qscale 10" "-an -vcodec msmpeg4"
+do_video_encoding msmpeg4.avi "-qscale 10" "-an -vcodec msmpeg4"
 
 # msmpeg4 decoding
 do_video_decoding
@@ -302,8 +294,7 @@ fi
 ###################################
 if [ -n "$do_wmv1" ] ; then
 # wmv1 encoding
-file=${outfile}wmv1.avi
-do_video_encoding "-qscale 10" "-an -vcodec wmv1"
+do_video_encoding wmv1.avi "-qscale 10" "-an -vcodec wmv1"
 
 # wmv1 decoding
 do_video_decoding
@@ -312,8 +303,7 @@ fi
 ###################################
 if [ -n "$do_wmv2" ] ; then
 # wmv2 encoding
-file=${outfile}wmv2.avi
-do_video_encoding "-qscale 10" "-an -vcodec wmv2"
+do_video_encoding wmv2.avi "-qscale 10" "-an -vcodec wmv2"
 
 # wmv2 decoding
 do_video_decoding
@@ -322,8 +312,7 @@ fi
 ###################################
 if [ -n "$do_h261" ] ; then
 # h261 encoding
-file=${outfile}h261.avi
-do_video_encoding "-qscale 11" "-s 352x288 -an -vcodec h261"
+do_video_encoding h261.avi "-qscale 11" "-s 352x288 -an -vcodec h261"
 
 # h261 decoding
 do_video_decoding
@@ -332,8 +321,7 @@ fi
 ###################################
 if [ -n "$do_h263" ] ; then
 # h263 encoding
-file=${outfile}h263.avi
-do_video_encoding "-qscale 10" "-s 352x288 -an -vcodec h263"
+do_video_encoding h263.avi "-qscale 10" "-s 352x288 -an -vcodec h263"
 
 # h263 decoding
 do_video_decoding
@@ -342,8 +330,7 @@ fi
 ###################################
 if [ -n "$do_h263p" ] ; then
 # h263p encoding
-file=${outfile}h263p.avi
-do_video_encoding "-qscale 2 -flags +umv+aiv+aic" "-s 352x288 -an -vcodec h263p -ps 300"
+do_video_encoding h263p.avi "-qscale 2 -flags +umv+aiv+aic" "-s 352x288 -an -vcodec h263p -ps 300"
 
 # h263p decoding
 do_video_decoding
@@ -352,8 +339,7 @@ fi
 ###################################
 if [ -n "$do_mpeg4" ] ; then
 # mpeg4
-file=${outfile}odivx.mp4
-do_video_encoding "-flags +mv4 -mbd bits -qscale 10" "-an -vcodec mpeg4"
+do_video_encoding odivx.mp4 "-flags +mv4 -mbd bits -qscale 10" "-an -vcodec mpeg4"
 
 # mpeg4 decoding
 do_video_decoding
@@ -362,8 +348,7 @@ fi
 ###################################
 if [ -n "$do_huffyuv" ] ; then
 # huffyuv
-file=${outfile}huffyuv.avi
-do_video_encoding "" "-an -vcodec huffyuv -pix_fmt yuv422p"
+do_video_encoding huffyuv.avi "" "-an -vcodec huffyuv -pix_fmt yuv422p"
 
 # huffyuv decoding
 do_video_decoding -strict -2 -pix_fmt yuv420p
@@ -372,8 +357,7 @@ fi
 ###################################
 if [ -n "$do_rc" ] ; then
 # mpeg4 rate control
-file=${outfile}mpeg4-rc.avi
-do_video_encoding "-b 400k -bf 2" "-an -vcodec mpeg4"
+do_video_encoding mpeg4-rc.avi "-b 400k -bf 2" "-an -vcodec mpeg4"
 
 # mpeg4 rate control decoding
 do_video_decoding
@@ -382,8 +366,7 @@ fi
 ###################################
 if [ -n "$do_mpeg4adv" ] ; then
 # mpeg4
-file=${outfile}mpeg4-adv.avi
-do_video_encoding "-qscale 9 -flags +mv4+part+aic+trell -mbd bits -ps 200" "-an -vcodec mpeg4"
+do_video_encoding mpeg4-adv.avi "-qscale 9 -flags +mv4+part+aic+trell -mbd bits -ps 200" "-an -vcodec mpeg4"
 
 # mpeg4 decoding
 do_video_decoding
@@ -392,8 +375,7 @@ fi
 ###################################
 if [ -n "$do_mpeg4thread" ] ; then
 # mpeg4
-file=${outfile}mpeg4-thread.avi
-do_video_encoding "-b 500k -flags +mv4+part+aic+trell -mbd bits -ps 200 -bf 2" "-an -vcodec mpeg4 -threads 2"
+do_video_encoding mpeg4-thread.avi "-b 500k -flags +mv4+part+aic+trell -mbd bits -ps 200 -bf 2" "-an -vcodec mpeg4 -threads 2"
 
 # mpeg4 decoding
 do_video_decoding
@@ -402,8 +384,7 @@ fi
 ###################################
 if [ -n "$do_mpeg4adv" ] ; then
 # mpeg4
-file=${outfile}mpeg4-Q.avi
-do_video_encoding "-qscale 7 -flags +mv4+qpel -mbd 2 -bf 2 -cmp 1 -subcmp 2" "-an -vcodec mpeg4"
+do_video_encoding mpeg4-Q.avi "-qscale 7 -flags +mv4+qpel -mbd 2 -bf 2 -cmp 1 -subcmp 2" "-an -vcodec mpeg4"
 
 # mpeg4 decoding
 do_video_decoding
@@ -419,8 +400,7 @@ fi
 ###################################
 if [ -n "$do_error" ] ; then
 # damaged mpeg4
-file=${outfile}error-mpeg4-adv.avi
-do_video_encoding "-qscale 7 -flags +mv4+part+aic -mbd rd -ps 250 -error 10" "-an -vcodec mpeg4"
+do_video_encoding error-mpeg4-adv.avi "-qscale 7 -flags +mv4+part+aic -mbd rd -ps 250 -error 10" "-an -vcodec mpeg4"
 
 # damaged mpeg4 decoding
 do_video_decoding
@@ -429,8 +409,7 @@ fi
 ###################################
 if [ -n "$do_mpeg4nr" ] ; then
 # noise reduction
-file=${outfile}mpeg4-nr.avi
-do_video_encoding "-qscale 8 -flags +mv4 -mbd rd -nr 200" "-an -vcodec mpeg4"
+do_video_encoding mpeg4-nr.avi "-qscale 8 -flags +mv4 -mbd rd -nr 200" "-an -vcodec mpeg4"
 
 # mpeg4 decoding
 do_video_decoding
@@ -439,8 +418,7 @@ fi
 ###################################
 if [ -n "$do_mpeg1b" ] ; then
 # mpeg1
-file=${outfile}mpeg1b.mpg
-do_video_encoding "-qscale 8 -bf 3 -ps 200" "-an -vcodec mpeg1video -f mpeg1video"
+do_video_encoding mpeg1b.mpg "-qscale 8 -bf 3 -ps 200" "-an -vcodec mpeg1video -f mpeg1video"
 
 # mpeg1 decoding
 do_video_decoding
@@ -449,8 +427,7 @@ fi
 ###################################
 if [ -n "$do_mjpeg" ] ; then
 # mjpeg
-file=${outfile}mjpeg.avi
-do_video_encoding "-qscale 10" "-an -vcodec mjpeg -pix_fmt yuvj420p"
+do_video_encoding mjpeg.avi "-qscale 10" "-an -vcodec mjpeg -pix_fmt yuvj420p"
 
 # mjpeg decoding
 do_video_decoding -pix_fmt yuv420p
@@ -459,8 +436,7 @@ fi
 ###################################
 if [ -n "$do_ljpeg" ] ; then
 # ljpeg
-file=${outfile}ljpeg.avi
-do_video_encoding "" "-an -vcodec ljpeg -strict -1"
+do_video_encoding ljpeg.avi "" "-an -vcodec ljpeg -strict -1"
 
 # ljpeg decoding
 do_video_decoding
@@ -469,8 +445,7 @@ fi
 ###################################
 if [ -n "$do_jpegls" ] ; then
 # jpeg ls
-file=${outfile}jpegls.avi
-do_video_encoding "" "-an -vcodec jpegls -vtag MJPG"
+do_video_encoding jpegls.avi "" "-an -vcodec jpegls -vtag MJPG"
 
 # jpeg ls decoding
 do_video_decoding -pix_fmt yuv420p
@@ -479,8 +454,7 @@ fi
 ###################################
 if [ -n "$do_rv10" ] ; then
 # rv10 encoding
-file=${outfile}rv10.rm
-do_video_encoding "-qscale 10" "-an"
+do_video_encoding rv10.rm "-qscale 10" "-an"
 
 # rv10 decoding
 do_video_decoding
@@ -489,8 +463,7 @@ fi
 ###################################
 if [ -n "$do_rv20" ] ; then
 # rv20 encoding
-file=${outfile}rv20.rm
-do_video_encoding "-qscale 10" "-vcodec rv20 -an"
+do_video_encoding rv20.rm "-qscale 10" "-vcodec rv20 -an"
 
 # rv20 decoding
 do_video_decoding
@@ -499,8 +472,7 @@ fi
 ###################################
 if [ -n "$do_asv1" ] ; then
 # asv1 encoding
-file=${outfile}asv1.avi
-do_video_encoding "-qscale 10" "-an -vcodec asv1"
+do_video_encoding asv1.avi "-qscale 10" "-an -vcodec asv1"
 
 # asv1 decoding
 do_video_decoding
@@ -509,8 +481,7 @@ fi
 ###################################
 if [ -n "$do_asv2" ] ; then
 # asv2 encoding
-file=${outfile}asv2.avi
-do_video_encoding "-qscale 10" "-an -vcodec asv2"
+do_video_encoding asv2.avi "-qscale 10" "-an -vcodec asv2"
 
 # asv2 decoding
 do_video_decoding
@@ -519,8 +490,7 @@ fi
 ###################################
 if [ -n "$do_flv" ] ; then
 # flv encoding
-file=${outfile}flv.flv
-do_video_encoding "-qscale 10" "-an -vcodec flv"
+do_video_encoding flv.flv "-qscale 10" "-an -vcodec flv"
 
 # flv decoding
 do_video_decoding
@@ -529,8 +499,7 @@ fi
 ###################################
 if [ -n "$do_ffv1" ] ; then
 # ffv1 encoding
-file=${outfile}ffv1.avi
-do_video_encoding "-strict -2" "-an -vcodec ffv1"
+do_video_encoding ffv1.avi "-strict -2" "-an -vcodec ffv1"
 
 # ffv1 decoding
 do_video_decoding
@@ -539,8 +508,7 @@ fi
 ###################################
 if [ -n "$do_snow" ] ; then
 # snow encoding
-file=${outfile}snow.avi
-do_video_encoding "-strict -2" "-an -vcodec snow -qscale 2 -flags +qpel -me iter -dia_size 2 -cmp 12 -subcmp 12 -s 128x64"
+do_video_encoding snow.avi "-strict -2" "-an -vcodec snow -qscale 2 -flags +qpel -me iter -dia_size 2 -cmp 12 -subcmp 12 -s 128x64"
 
 # snow decoding
 do_video_decoding -s 352x288
@@ -549,8 +517,7 @@ fi
 ###################################
 if [ -n "$do_snowll" ] ; then
 # snow encoding
-file=${outfile}snow53.avi
-do_video_encoding "-strict -2" "-an -vcodec snow -qscale .001 -pred 1 -flags +mv4+qpel"
+do_video_encoding snow53.avi "-strict -2" "-an -vcodec snow -qscale .001 -pred 1 -flags +mv4+qpel"
 
 # snow decoding
 do_video_decoding
@@ -559,8 +526,7 @@ fi
 ###################################
 if [ -n "$do_dv" ] ; then
 # dv encoding
-file=${outfile}dv.dv
-do_video_encoding "-dct int" "-s pal -an"
+do_video_encoding dv.dv "-dct int" "-s pal -an"
 
 # dv decoding
 do_video_decoding -s cif
@@ -569,8 +535,7 @@ fi
 ###################################
 if [ -n "$do_dv50" ] ; then
 # dv50 encoding
-file=${outfile}dv.dv
-do_video_encoding "-dct int" "-s pal -pix_fmt yuv422p -an"
+do_video_encoding dv.dv "-dct int" "-s pal -pix_fmt yuv422p -an"
 
 # dv50 decoding
 do_video_decoding -s cif -pix_fmt yuv420p
@@ -580,8 +545,7 @@ fi
 ###################################
 if [ -n "$do_svq1" ] ; then
 # svq1 encoding
-file=${outfile}svq1.mov
-do_video_encoding "" "-an -vcodec svq1 -qscale 3 -pix_fmt yuv410p"
+do_video_encoding svq1.mov "" "-an -vcodec svq1 -qscale 3 -pix_fmt yuv410p"
 
 # svq1 decoding
 do_video_decoding -pix_fmt yuv420p
