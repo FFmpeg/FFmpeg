@@ -202,7 +202,7 @@ void put_no_rnd_h264_chroma_mc8_altivec(uint8_t * dst, uint8_t * src, int stride
     vector signed short vsrc0ssH, vsrc1ssH;
     vector unsigned char vsrcCuc, vsrc2uc, vsrc3uc;
     vector signed short vsrc2ssH, vsrc3ssH, psum;
-    vector unsigned char vdst, ppsum, vfdst, fsum;
+    vector unsigned char vdst, ppsum, fsum;
 
     if (((unsigned long)dst) % 16 == 0) {
       fperm = (vector unsigned char)AVV(0x10, 0x11, 0x12, 0x13,
