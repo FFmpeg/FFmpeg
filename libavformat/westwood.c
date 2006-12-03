@@ -249,7 +249,7 @@ static int wsvqa_read_header(AVFormatContext *s,
     st->codec->time_base.den = VQA_FRAMERATE;
 
     /* initialize the audio decoder stream for VQA v1 or nonzero samplerate */
-    if (LE_16(&header[24]) || (LE_16(&header[0]) == 1)) {
+    if (LE_16(&header[24]) || (LE_16(&header[0]) == 1 && LE_16(&header[2]) == 1)) {
         st = av_new_stream(s, 0);
         if (!st)
             return AVERROR_NOMEM;
