@@ -34,6 +34,7 @@
 #    define ENODATA  61
 #endif
 
+#include "intreadwrite.h"
 #include "bswap.h"
 
 #include <stddef.h>
