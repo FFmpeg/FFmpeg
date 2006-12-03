@@ -224,7 +224,7 @@ static int wsvqa_read_header(AVFormatContext *s,
     st = av_new_stream(s, 0);
     if (!st)
         return AVERROR_NOMEM;
-    av_set_pts_info(st, 33, 1, 90000);
+    av_set_pts_info(st, 33, 1, VQA_FRAMERATE);
     wsvqa->video_stream_index = st->index;
     st->codec->codec_type = CODEC_TYPE_VIDEO;
     st->codec->codec_id = CODEC_ID_WS_VQA;
@@ -245,15 +245,12 @@ static int wsvqa_read_header(AVFormatContext *s,
     st->codec->width = LE_16(&header[6]);
     st->codec->height = LE_16(&header[8]);
 
-    st->codec->time_base.num = 1;
-    st->codec->time_base.den = VQA_FRAMERATE;
-
     /* initialize the audio decoder stream for VQA v1 or nonzero samplerate */
     if (LE_16(&header[24]) || (LE_16(&header[0]) == 1 && LE_16(&header[2]) == 1)) {
         st = av_new_stream(s, 0);
         if (!st)
             return AVERROR_NOMEM;
-        av_set_pts_info(st, 33, 1, 90000);
+        av_set_pts_info(st, 33, 1, VQA_FRAMERATE);
         st->codec->codec_type = CODEC_TYPE_AUDIO;
         if (LE_16(&header[0]) == 1)
             st->codec->codec_id = CODEC_ID_WESTWOOD_SND1;
@@ -342,25 +339,14 @@ static int wsvqa_read_packet(AVFormatContext *s,
 
             if (chunk_type == SND2_TAG) {
                 pkt->stream_index = wsvqa->audio_stream_index;
-
-                pkt->pts = 90000;
-                pkt->pts *= wsvqa->audio_frame_counter;
-                pkt->pts /= wsvqa->audio_samplerate;
-
                 /* 2 samples/byte, 1 or 2 samples per frame depending on stereo */
                 wsvqa->audio_frame_counter += (chunk_size * 2) / wsvqa->audio_channels;
             } else if(chunk_type == SND1_TAG) {
                 pkt->stream_index = wsvqa->audio_stream_index;
-
-                pkt->pts = 90000;
-                pkt->pts *= wsvqa->audio_frame_counter;
-                pkt->pts /= wsvqa->audio_samplerate;
-
                 /* unpacked size is stored in header */
                 wsvqa->audio_frame_counter += LE_16(pkt->data) / wsvqa->audio_channels;
             } else {
                 pkt->stream_index = wsvqa->video_stream_index;
-                pkt->pts = wsvqa->video_pts;
                 wsvqa->video_pts += VQA_VIDEO_PTS_INC;
             }
             /* stay on 16-bit alignment */
