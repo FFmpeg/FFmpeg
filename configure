@@ -746,7 +746,7 @@ mingw32="yes"
 ;;
 CYGWIN*)
 targetos=CYGWIN
-shlibdir='${PREFIX}/bin'
+shlibdir="$bindir"
 video4linux="no"
 video4linux2="no"
 audio_oss="yes"
