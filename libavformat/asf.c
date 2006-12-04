@@ -203,8 +203,10 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 goto fail;
             st->priv_data = asf_st;
             st->start_time = asf->hdr.preroll;
-            st->duration = asf->hdr.send_time /
-                (10000000 / 1000) - st->start_time;
+            if(!(asf->hdr.flags & 0x01)) { // if we aren't streaming...
+                st->duration = asf->hdr.send_time /
+                    (10000000 / 1000) - st->start_time;
+            }
             get_guid(pb, &g);
 
             test_for_ext_stream_audio = 0;
@@ -328,7 +330,8 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             url_fskip(pb, gsize - (pos2 - pos1 + 24));
         } else if (!memcmp(&g, &data_header, sizeof(GUID))) {
             asf->data_object_offset = url_ftell(pb);
-            if (gsize != (uint64_t)-1 && gsize >= 24) {
+            // if not streaming, gsize is not unlimited (how?), and there is enough space in the file..
+            if (!(asf->hdr.flags & 0x01) && gsize != (uint64_t)-1 && gsize >= 24) {
                 asf->data_object_size = gsize - 24;
             } else {
                 asf->data_object_size = (uint64_t)-1;

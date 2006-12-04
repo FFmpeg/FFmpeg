@@ -86,7 +86,7 @@ typedef struct {
     int asfid2avid[128];        /* conversion table from asf ID 2 AVStream ID */
     ASFStream streams[128];     /* it's max number and it's not that big */
     /* non streamed additonnal info */
-    int64_t nb_packets;
+    uint64_t nb_packets;
     int64_t duration; /* in 100ns units */
     /* packet filling */
     unsigned char multi_payloads_present;
