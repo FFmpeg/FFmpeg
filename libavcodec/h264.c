@@ -165,20 +165,6 @@ typedef struct H264Context{
     MpegEncContext s;
     int nal_ref_idc;
     int nal_unit_type;
-#define NAL_SLICE                1
-#define NAL_DPA                  2
-#define NAL_DPB                  3
-#define NAL_DPC                  4
-#define NAL_IDR_SLICE            5
-#define NAL_SEI                  6
-#define NAL_SPS                  7
-#define NAL_PPS                  8
-#define NAL_AUD                  9
-#define NAL_END_SEQUENCE        10
-#define NAL_END_STREAM          11
-#define NAL_FILLER_DATA         12
-#define NAL_SPS_EXT             13
-#define NAL_AUXILIARY_SLICE     19
     uint8_t *rbsp_buffer;
     unsigned int rbsp_buffer_size;
 
