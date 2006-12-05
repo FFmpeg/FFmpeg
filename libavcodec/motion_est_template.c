@@ -774,7 +774,7 @@ static int umh_search(MpegEncContext * s, int *best, int dmin,
         }
     }
 
-    return hex_search(s, best, dmin, src_index, ref_index, penalty_factor, size, h, flags, 1);
+    return hex_search(s, best, dmin, src_index, ref_index, penalty_factor, size, h, flags, 2);
 }
 
 #define SAB_CHECK_MV(ax,ay)\
