@@ -378,6 +378,7 @@ typedef struct DSPContext {
 #define BASIS_SHIFT 16
 #define RECON_SHIFT 6
 
+    /* h264 functions */
     void (*h264_idct_add)(uint8_t *dst, DCTELEM *block, int stride);
     void (*h264_idct8_add)(uint8_t *dst, DCTELEM *block, int stride);
     void (*h264_idct_dc_add)(uint8_t *dst, DCTELEM *block, int stride);
