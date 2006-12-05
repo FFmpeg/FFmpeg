@@ -4883,6 +4883,10 @@ static int decode_residual(H264Context *h, GetBitContext *gb, DCTELEM *block, in
 
     if(total_coeff==0)
         return 0;
+    if(total_coeff<0) {
+        av_log(h->s.avctx, AV_LOG_ERROR, "corrupted macroblock %d %d (total_coeff<0)\n", s->mb_x, s->mb_y);
+        return -1;
+    }
 
     trailing_ones= coeff_token&3;
     tprintf("trailing:%d, total:%d\n", trailing_ones, total_coeff);
