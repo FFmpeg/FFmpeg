@@ -3942,8 +3942,10 @@ int main(int argc, char **argv)
         int j;
         if (!(s->oformat->flags & AVFMT_NOFILE))
             url_fclose(&s->pb);
-        for(j=0;j<s->nb_streams;j++)
+        for(j=0;j<s->nb_streams;j++) {
+            av_free(s->streams[j]->codec);
             av_free(s->streams[j]);
+        }
         av_free(s);
     }
     for(i=0;i<nb_input_files;i++)
