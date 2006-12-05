@@ -667,30 +667,27 @@ static int hex_search(MpegEncContext * s, int *best, int dmin,
     LOAD_COMMON
     LOAD_COMMON2
     int map_generation= c->map_generation;
-    int x,y,i,d;
-    static const int hex[6][2]={{-2, 0}, { 2,0}, {-1,-2}, {1,-2}, {-1,2},{1,2}};
+    int x,y,d;
+    const int dec= dia_size & (dia_size-1);
 
     cmpf= s->dsp.me_cmp[size];
     chroma_cmpf= s->dsp.me_cmp[size+1];
 
-    for(;dia_size; dia_size--){
+    for(;dia_size; dia_size= dec ? dia_size-1 : dia_size>>1){
         do{
             x= best[0];
             y= best[1];
-            for(i=0; i<6; i++){
-                CHECK_CLIPPED_MV(x+hex[i][0]*dia_size, y+hex[i][1]*dia_size);
+
+            CHECK_CLIPPED_MV(x  -dia_size    , y);
+            CHECK_CLIPPED_MV(x+  dia_size    , y);
+            CHECK_CLIPPED_MV(x+( dia_size>>1), y+dia_size);
+            CHECK_CLIPPED_MV(x+( dia_size>>1), y-dia_size);
+            if(dia_size>1){
+                CHECK_CLIPPED_MV(x+(-dia_size>>1), y+dia_size);
+                CHECK_CLIPPED_MV(x+(-dia_size>>1), y-dia_size);
             }
         }while(best[0] != x || best[1] != y);
     }
-
-    do{
-        x= best[0];
-        y= best[1];
-        CHECK_CLIPPED_MV(x+1, y);
-        CHECK_CLIPPED_MV(x, y+1);
-        CHECK_CLIPPED_MV(x-1, y);
-        CHECK_CLIPPED_MV(x, y-1);
-    }while(best[0] != x || best[1] != y);
 
     return dmin;
 }
@@ -704,14 +701,16 @@ static int l2s_dia_search(MpegEncContext * s, int *best, int dmin,
     LOAD_COMMON
     LOAD_COMMON2
     int map_generation= c->map_generation;
-    int x,y,i,d, dia_size;
+    int x,y,i,d;
+    int dia_size= c->dia_size&0xFF;
+    const int dec= dia_size & (dia_size-1);
     static const int hex[8][2]={{-2, 0}, {-1,-1}, { 0,-2}, { 1,-1},
                                 { 2, 0}, { 1, 1}, { 0, 2}, {-1, 1}};
 
     cmpf= s->dsp.me_cmp[size];
     chroma_cmpf= s->dsp.me_cmp[size+1];
 
-    for(dia_size= c->dia_size&0xFF; dia_size; dia_size--){
+    for(; dia_size; dia_size= dec ? dia_size-1 : dia_size>>1){
         do{
             x= best[0];
             y= best[1];
