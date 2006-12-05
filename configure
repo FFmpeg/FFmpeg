@@ -838,9 +838,9 @@ for opt do
   ;;
   --log=*) logging="$optval"
   ;;
-  --prefix=*) PREFIX="$optval"; force_prefix=yes
+  --prefix=*) PREFIX="$optval"
   ;;
-  --libdir=*) libdir="$optval"; force_libdir=yes
+  --libdir=*) libdir="$optval"
   ;;
   --shlibdir=*) shlibdir="$optval"
   ;;
@@ -1066,9 +1066,6 @@ EOF
     SLIBNAME_WITH_MAJOR='$(SLIBPREF)$(NAME)-$(LIBMAJOR)$(SLIBSUF)'
     SLIB_EXTRA_CMD="-lib /machine:i386 /def:\$(@:${SLIBSUF}=.def)"
     SHFLAGS="-shared -Wl,--output-def,\$(@:${SLIBSUF}=.def),--out-implib,lib\$(SLIBNAME:\$(SLIBSUF)=.dll.a)"
-    if test "$force_prefix" != yes; then PREFIX="$PROGRAMFILES/FFmpeg"; fi
-    if test "$force_libdir" != yes; then bindir='${PREFIX}'; fi
-    shlibdir='${PREFIX}'
 fi
 
 # Combine FFLDFLAGS and the LDFLAGS environment variable.
