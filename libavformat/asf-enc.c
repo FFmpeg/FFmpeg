@@ -269,8 +269,8 @@ static int64_t unix_to_file_time(int ti)
 {
     int64_t t;
 
-    t = ti * int64_t_C(10000000);
-    t += int64_t_C(116444736000000000);
+    t = ti * INT64_C(10000000);
+    t += INT64_C(116444736000000000);
     return t;
 }
 
@@ -739,7 +739,7 @@ static int asf_write_packet(AVFormatContext *s, AVPacket *pkt)
     pts = (pkt->pts != AV_NOPTS_VALUE) ? pkt->pts : pkt->dts;
     if (pts == AV_NOPTS_VALUE) {
         if (codec->codec_type == CODEC_TYPE_AUDIO) {
-            duration = (codec->frame_number * (int64_t)codec->frame_size * int64_t_C(10000000)) /
+            duration = (codec->frame_number * (int64_t)codec->frame_size * INT64_C(10000000)) /
                 codec->sample_rate;
         } else {
             duration = av_rescale(codec->frame_number * (int64_t)codec->time_base.num, 10000000, codec->time_base.den);
@@ -755,8 +755,8 @@ static int asf_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     /* check index */
     if ((!asf->is_streamed) && (codec->codec_type == CODEC_TYPE_VIDEO) && (pkt->flags & PKT_FLAG_KEY)) {
-        start_sec = (int)(duration / int64_t_C(10000000));
-        if (start_sec != (int)(asf->last_indexed_pts / int64_t_C(10000000))) {
+        start_sec = (int)(duration / INT64_C(10000000));
+        if (start_sec != (int)(asf->last_indexed_pts / INT64_C(10000000))) {
             for(i=asf->nb_index_count;i<start_sec;i++) {
                 if (i>=asf->nb_index_memory_alloc) {
                     asf->nb_index_memory_alloc += ASF_INDEX_BLOCK;

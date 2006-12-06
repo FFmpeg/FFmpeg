@@ -321,16 +321,16 @@ static int grab_read_packet(AVFormatContext *s1, AVPacket *pkt)
     struct timespec ts;
 
     /* Calculate the time of the next frame */
-    s->time_frame += int64_t_C(1000000);
+    s->time_frame += INT64_C(1000000);
 
     /* wait based on the frame rate */
     for(;;) {
         curtime = av_gettime();
         delay = s->time_frame  * s->frame_rate_base / s->frame_rate - curtime;
         if (delay <= 0) {
-            if (delay < int64_t_C(-1000000) * s->frame_rate_base / s->frame_rate) {
+            if (delay < INT64_C(-1000000) * s->frame_rate_base / s->frame_rate) {
                 /* printf("grabbing is %d frames late (dropping)\n", (int) -(delay / 16666)); */
-                s->time_frame += int64_t_C(1000000);
+                s->time_frame += INT64_C(1000000);
             }
             break;
         }

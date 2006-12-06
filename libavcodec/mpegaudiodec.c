@@ -327,7 +327,7 @@ static int decode_init(AVCodecContext * avctx)
         for(i=0;i<15;i++) {
             int n, norm;
             n = i + 2;
-            norm = ((int64_t_C(1) << n) * FRAC_ONE) / ((1 << n) - 1);
+            norm = ((INT64_C(1) << n) * FRAC_ONE) / ((1 << n) - 1);
             scale_factor_mult[i][0] = MULL(FIXR(1.0 * 2.0), norm);
             scale_factor_mult[i][1] = MULL(FIXR(0.7937005259 * 2.0), norm);
             scale_factor_mult[i][2] = MULL(FIXR(0.6299605249 * 2.0), norm);

@@ -40,11 +40,11 @@ extern "C" {
 /* packet functions */
 
 #ifndef MAXINT64
-#define MAXINT64 int64_t_C(0x7fffffffffffffff)
+#define MAXINT64 INT64_C(0x7fffffffffffffff)
 #endif
 
 #ifndef MININT64
-#define MININT64 int64_t_C(0x8000000000000000)
+#define MININT64 INT64_C(0x8000000000000000)
 #endif
 
 typedef struct AVPacket {

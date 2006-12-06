@@ -2758,7 +2758,7 @@ int64_t parse_date(const char *datestr, int duration)
         if (duration)
             return 0;
         else
-            return now * int64_t_C(1000000);
+            return now * INT64_C(1000000);
     }
 
     if (duration) {

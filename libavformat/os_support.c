@@ -42,11 +42,11 @@
 int64_t av_gettime(void)
 {
 #if defined(CONFIG_WINCE)
-    return timeGetTime() * int64_t_C(1000);
+    return timeGetTime() * INT64_C(1000);
 #elif defined(__MINGW32__)
     struct timeb tb;
     _ftime(&tb);
-    return ((int64_t)tb.time * int64_t_C(1000) + (int64_t)tb.millitm) * int64_t_C(1000);
+    return ((int64_t)tb.time * INT64_C(1000) + (int64_t)tb.millitm) * INT64_C(1000);
 #else
     struct timeval tv;
     gettimeofday(&tv,NULL);

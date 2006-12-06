@@ -469,7 +469,7 @@ static int ffm_read_header(AVFormatContext *s, AVFormatParameters *ap)
         ffm->file_size = url_fsize(pb);
         adjust_write_index(s);
     } else {
-        ffm->file_size = (uint64_t_C(1) << 63) - 1;
+        ffm->file_size = (UINT64_C(1) << 63) - 1;
     }
 
     nb_streams = get_be32(pb);

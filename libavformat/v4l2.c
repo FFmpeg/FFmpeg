@@ -316,7 +316,7 @@ static int mmap_read_frame(struct video_data *s, void *frame, int64_t *ts)
 
     /* Image is at s->buff_start[buf.index] */
     memcpy(frame, s->buf_start[buf.index], buf.bytesused);
-    *ts = buf.timestamp.tv_sec * int64_t_C(1000000) + buf.timestamp.tv_usec;
+    *ts = buf.timestamp.tv_sec * INT64_C(1000000) + buf.timestamp.tv_usec;
 
     res = ioctl (s->fd, VIDIOC_QBUF, &buf);
     if (res < 0) {
