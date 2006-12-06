@@ -2288,12 +2288,10 @@ static void truncate_ts(AVStream *st, AVPacket *pkt){
 //    if(pkt->dts < 0)
 //        pkt->dts= 0;  //this happens for low_delay=0 and b frames, FIXME, needs further invstigation about what we should do here
 
-    if( pkt->pts != AV_NOPTS_VALUE ) {
+    if (pkt->pts != AV_NOPTS_VALUE)
         pkt->pts &= pts_mask;
-    }
-    if( pkt->dts != AV_NOPTS_VALUE ) {
+    if (pkt->dts != AV_NOPTS_VALUE)
         pkt->dts &= pts_mask;
-    }
 }
 
 /**
