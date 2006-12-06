@@ -50,6 +50,78 @@
 #endif
 #endif
 
+#ifndef M_PI
+#define M_PI    3.14159265358979323846
+#endif
+
+#ifndef PRId64
+#define PRId64 "lld"
+#endif
+
+#ifndef PRIu64
+#define PRIu64 "llu"
+#endif
+
+#ifndef PRIx64
+#define PRIx64 "llx"
+#endif
+
+#ifndef PRIX64
+#define PRIX64 "llX"
+#endif
+
+#ifndef PRId32
+#define PRId32 "d"
+#endif
+
+#ifndef PRIdFAST16
+#define PRIdFAST16 PRId32
+#endif
+
+#ifndef PRIdFAST32
+#define PRIdFAST32 PRId32
+#endif
+
+#ifndef INT16_MIN
+#define INT16_MIN       (-0x7fff-1)
+#endif
+
+#ifndef INT16_MAX
+#define INT16_MAX       0x7fff
+#endif
+
+#ifndef INT32_MIN
+#define INT32_MIN       (-0x7fffffff-1)
+#endif
+
+#ifndef INT32_MAX
+#define INT32_MAX       0x7fffffff
+#endif
+
+#ifndef UINT32_MAX
+#define UINT32_MAX      0xffffffff
+#endif
+
+#ifndef INT64_MIN
+#define INT64_MIN       (-0x7fffffffffffffffLL-1)
+#endif
+
+#ifndef INT64_MAX
+#define INT64_MAX int64_t_C(9223372036854775807)
+#endif
+
+#ifndef UINT64_MAX
+#define UINT64_MAX uint64_t_C(0xFFFFFFFFFFFFFFFF)
+#endif
+
+#ifndef INT_BIT
+#    if INT_MAX != 2147483647
+#        define INT_BIT 64
+#    else
+#        define INT_BIT 32
+#    endif
+#endif
+
 #if ( defined(__PIC__) || defined(__pic__) ) && ! defined(PIC)
 #    define PIC
 #endif
