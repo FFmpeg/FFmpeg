@@ -47,11 +47,6 @@
 #    include <math.h>
 #endif /* HAVE_AV_CONFIG_H */
 
-/* Suppress restrict if it was not defined in config.h.  */
-#ifndef restrict
-#    define restrict
-#endif
-
 #ifndef always_inline
 #if defined(__GNUC__) && (__GNUC__ > 3 || __GNUC__ == 3 && __GNUC_MINOR__ > 0)
 #    define always_inline __attribute__((always_inline)) inline
