@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 #include "avformat.h"
+#include "flv.h"
 
 #undef NDEBUG
 #include <assert.h>
@@ -33,21 +34,21 @@ typedef struct FLVContext {
 } FLVContext;
 
 static int get_audio_flags(AVCodecContext *enc){
-    int flags = (enc->bits_per_sample == 16) ? 0x2 : 0x0;
+    int flags = (enc->bits_per_sample == 16) ? FLV_SAMPLESSIZE_16BIT : FLV_SAMPLESSIZE_8BIT;
 
     switch (enc->sample_rate) {
         case    44100:
-            flags |= 0x0C;
+            flags |= FLV_SAMPLERATE_44100HZ;
             break;
         case    22050:
-            flags |= 0x08;
+            flags |= FLV_SAMPLERATE_22050HZ;
             break;
         case    11025:
-            flags |= 0x04;
+            flags |= FLV_SAMPLERATE_11025HZ;
             break;
         case     8000: //nellymoser only
         case     5512: //not mp3
-            flags |= 0x00;
+            flags |= FLV_SAMPLERATE_SPECIAL;
             break;
         default:
             av_log(enc, AV_LOG_ERROR, "flv doesnt support that sample rate, choose from (44100, 22050, 11025)\n");
@@ -55,23 +56,24 @@ static int get_audio_flags(AVCodecContext *enc){
     }
 
     if (enc->channels > 1) {
-        flags |= 0x01;
+        flags |= FLV_STEREO;
     }
 
     switch(enc->codec_id){
     case CODEC_ID_MP3:
-        flags |= 0x20 | 0x2;
+        flags |= FLV_CODECID_MP3    | FLV_SAMPLESSIZE_16BIT;
         break;
     case CODEC_ID_PCM_S8:
+        flags |= FLV_CODECID_PCM_BE | FLV_SAMPLESSIZE_8BIT;
         break;
     case CODEC_ID_PCM_S16BE:
-        flags |= 0x2;
+        flags |= FLV_CODECID_PCM_BE | FLV_SAMPLESSIZE_16BIT;
         break;
     case CODEC_ID_PCM_S16LE:
-        flags |= 0x30 | 0x2;
+        flags |= FLV_CODECID_PCM_LE | FLV_SAMPLESSIZE_16BIT;
         break;
     case CODEC_ID_ADPCM_SWF:
-        flags |= 0x10;
+        flags |= FLV_CODECID_ADPCM;
         break;
     case 0:
         flags |= enc->codec_tag<<4;
@@ -84,14 +86,6 @@ static int get_audio_flags(AVCodecContext *enc){
     return flags;
 }
 
-#define AMF_DOUBLE  0
-#define AMF_BOOLEAN 1
-#define AMF_STRING  2
-#define AMF_OBJECT  3
-#define AMF_MIXED_ARRAY 8
-#define AMF_ARRAY  10
-#define AMF_DATE   11
-
 static void put_amf_string(ByteIOContext *pb, const char *str)
 {
     size_t len = strlen(str);
@@ -101,7 +95,7 @@ static void put_amf_string(ByteIOContext *pb, const char *str)
 
 static void put_amf_double(ByteIOContext *pb, double d)
 {
-    put_byte(pb, AMF_DOUBLE);
+    put_byte(pb, AMF_DATA_TYPE_NUMBER);
     put_be64(pb, av_dbl2int(d));
 }
 
@@ -160,11 +154,11 @@ static int flv_write_header(AVFormatContext *s)
     /* now data of data_size size */
 
     /* first event name as a string */
-    put_byte(pb, AMF_STRING); // 1 byte
+    put_byte(pb, AMF_DATA_TYPE_STRING);
     put_amf_string(pb, "onMetaData"); // 12 bytes
 
     /* mixed array (hash) with size and string/type/data tuples */
-    put_byte(pb, AMF_MIXED_ARRAY);
+    put_byte(pb, AMF_DATA_TYPE_MIXEDARRAY);
     put_be32(pb, 4*flv->hasVideo + flv->hasAudio + 2); // +2 for duration and file size
 
     put_amf_string(pb, "duration");
@@ -195,7 +189,7 @@ static int flv_write_header(AVFormatContext *s)
     put_amf_double(pb, 0); // delayed write
 
     put_amf_string(pb, "");
-    put_byte(pb, 9); // end marker 1 byte
+    put_byte(pb, AMF_END_OF_OBJECT);
 
     /* write total size of tag */
     data_size= url_ftell(pb) - metadata_size_pos - 10;
@@ -216,8 +210,8 @@ static int flv_write_trailer(AVFormatContext *s)
     FLVContext *flv = s->priv_data;
 
     file_size = url_ftell(pb);
-    flags |= flv->hasAudio ? 4 : 0;
-    flags |= flv->hasVideo ? 1 : 0;
+    flags |= flv->hasAudio ? FLV_HEADER_FLAG_HASAUDIO : 0;
+    flags |= flv->hasVideo ? FLV_HEADER_FLAG_HASVIDEO : 0;
     url_fseek(pb, 4, SEEK_SET);
     put_byte(pb,flags);
 
@@ -242,16 +236,16 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
 //    av_log(s, AV_LOG_DEBUG, "type:%d pts: %"PRId64" size:%d\n", enc->codec_type, timestamp, size);
 
     if (enc->codec_type == CODEC_TYPE_VIDEO) {
-        put_byte(pb, 9);
-        flags = 2; // choose h263
-        flags |= pkt->flags & PKT_FLAG_KEY ? 0x10 : 0x20; // add keyframe indicator
+        put_byte(pb, FLV_TAG_TYPE_VIDEO);
+        flags = FLV_CODECID_H263;
+        flags |= pkt->flags & PKT_FLAG_KEY ? FLV_FRAME_KEY : FLV_FRAME_INTER;
     } else {
         assert(enc->codec_type == CODEC_TYPE_AUDIO);
         flags = get_audio_flags(enc);
 
         assert(size);
 
-        put_byte(pb, 8);
+        put_byte(pb, FLV_TAG_TYPE_AUDIO);
     }
 
     put_be24(pb,size+1); // include flags
