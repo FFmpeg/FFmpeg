@@ -2268,7 +2268,7 @@ static void pred4x4_horizontal_down_c(uint8_t *src, uint8_t *topright, int strid
     src[1+3*stride]=(l1 + 2*l2 + l3 + 2)>>2;
 }
 
-static void pred16x16_vertical_c(uint8_t *src, int stride){
+void ff_pred16x16_vertical_c(uint8_t *src, int stride){
     int i;
     const uint32_t a= ((uint32_t*)(src-stride))[0];
     const uint32_t b= ((uint32_t*)(src-stride))[1];
@@ -2283,7 +2283,7 @@ static void pred16x16_vertical_c(uint8_t *src, int stride){
     }
 }
 
-static void pred16x16_horizontal_c(uint8_t *src, int stride){
+void ff_pred16x16_horizontal_c(uint8_t *src, int stride){
     int i;
 
     for(i=0; i<16; i++){
@@ -2294,7 +2294,7 @@ static void pred16x16_horizontal_c(uint8_t *src, int stride){
     }
 }
 
-static void pred16x16_dc_c(uint8_t *src, int stride){
+void ff_pred16x16_dc_c(uint8_t *src, int stride){
     int i, dc=0;
 
     for(i=0;i<16; i++){
@@ -2348,7 +2348,7 @@ static void pred16x16_top_dc_c(uint8_t *src, int stride){
     }
 }
 
-static void pred16x16_128_dc_c(uint8_t *src, int stride){
+void ff_pred16x16_128_dc_c(uint8_t *src, int stride){
     int i;
 
     for(i=0; i<16; i++){
@@ -2399,11 +2399,11 @@ static inline void pred16x16_plane_compat_c(uint8_t *src, int stride, const int 
   }
 }
 
-static void pred16x16_plane_c(uint8_t *src, int stride){
+void ff_pred16x16_plane_c(uint8_t *src, int stride){
     pred16x16_plane_compat_c(src, stride, 0);
 }
 
-static void pred8x8_vertical_c(uint8_t *src, int stride){
+void ff_pred8x8_vertical_c(uint8_t *src, int stride){
     int i;
     const uint32_t a= ((uint32_t*)(src-stride))[0];
     const uint32_t b= ((uint32_t*)(src-stride))[1];
@@ -2414,7 +2414,7 @@ static void pred8x8_vertical_c(uint8_t *src, int stride){
     }
 }
 
-static void pred8x8_horizontal_c(uint8_t *src, int stride){
+void ff_pred8x8_horizontal_c(uint8_t *src, int stride){
     int i;
 
     for(i=0; i<8; i++){
@@ -2423,7 +2423,7 @@ static void pred8x8_horizontal_c(uint8_t *src, int stride){
     }
 }
 
-static void pred8x8_128_dc_c(uint8_t *src, int stride){
+void ff_pred8x8_128_dc_c(uint8_t *src, int stride){
     int i;
 
     for(i=0; i<8; i++){
@@ -2477,7 +2477,7 @@ static void pred8x8_top_dc_c(uint8_t *src, int stride){
 }
 
 
-static void pred8x8_dc_c(uint8_t *src, int stride){
+void ff_pred8x8_dc_c(uint8_t *src, int stride){
     int i;
     int dc0, dc1, dc2, dc3;
 
@@ -2502,7 +2502,7 @@ static void pred8x8_dc_c(uint8_t *src, int stride){
     }
 }
 
-static void pred8x8_plane_c(uint8_t *src, int stride){
+void ff_pred8x8_plane_c(uint8_t *src, int stride){
   int j, k;
   int a;
   uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
@@ -3131,21 +3131,21 @@ static void init_pred_ptrs(H264Context *h){
     h->pred8x8l[TOP_DC_PRED         ]= pred8x8l_top_dc_c;
     h->pred8x8l[DC_128_PRED         ]= pred8x8l_128_dc_c;
 
-    h->pred8x8[DC_PRED8x8     ]= pred8x8_dc_c;
-    h->pred8x8[VERT_PRED8x8   ]= pred8x8_vertical_c;
-    h->pred8x8[HOR_PRED8x8    ]= pred8x8_horizontal_c;
-    h->pred8x8[PLANE_PRED8x8  ]= pred8x8_plane_c;
+    h->pred8x8[DC_PRED8x8     ]= ff_pred8x8_dc_c;
+    h->pred8x8[VERT_PRED8x8   ]= ff_pred8x8_vertical_c;
+    h->pred8x8[HOR_PRED8x8    ]= ff_pred8x8_horizontal_c;
+    h->pred8x8[PLANE_PRED8x8  ]= ff_pred8x8_plane_c;
     h->pred8x8[LEFT_DC_PRED8x8]= pred8x8_left_dc_c;
     h->pred8x8[TOP_DC_PRED8x8 ]= pred8x8_top_dc_c;
-    h->pred8x8[DC_128_PRED8x8 ]= pred8x8_128_dc_c;
+    h->pred8x8[DC_128_PRED8x8 ]= ff_pred8x8_128_dc_c;
 
-    h->pred16x16[DC_PRED8x8     ]= pred16x16_dc_c;
-    h->pred16x16[VERT_PRED8x8   ]= pred16x16_vertical_c;
-    h->pred16x16[HOR_PRED8x8    ]= pred16x16_horizontal_c;
-    h->pred16x16[PLANE_PRED8x8  ]= pred16x16_plane_c;
+    h->pred16x16[DC_PRED8x8     ]= ff_pred16x16_dc_c;
+    h->pred16x16[VERT_PRED8x8   ]= ff_pred16x16_vertical_c;
+    h->pred16x16[HOR_PRED8x8    ]= ff_pred16x16_horizontal_c;
+    h->pred16x16[PLANE_PRED8x8  ]= ff_pred16x16_plane_c;
     h->pred16x16[LEFT_DC_PRED8x8]= pred16x16_left_dc_c;
     h->pred16x16[TOP_DC_PRED8x8 ]= pred16x16_top_dc_c;
-    h->pred16x16[DC_128_PRED8x8 ]= pred16x16_128_dc_c;
+    h->pred16x16[DC_128_PRED8x8 ]= ff_pred16x16_128_dc_c;
 }
 
 static void free_tables(H264Context *h){
