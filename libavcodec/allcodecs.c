@@ -155,7 +155,9 @@ void avcodec_register_all(void)
     REGISTER_ENCODER(XVID, xvid);
 #endif
     REGISTER_ENCDEC (ZLIB, zlib);
-    REGISTER_DECODER(ZMBV, zmbv);
+#ifdef CONFIG_ZLIB
+    REGISTER_ENCDEC (ZMBV, zmbv);
+#endif
 
     /* audio codecs */
 #ifdef CONFIG_FAAD

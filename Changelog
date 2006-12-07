@@ -38,7 +38,7 @@ version <next>
 - ADTS AAC file reading and writing
 - Creative VOC file reading and writing
 - American Laser Games multimedia (*.mm) playback system
-- Zip Blocks Motion Video decoder
+- Zip Blocks Motion Video decoder and encoder
 - Improved Theora/VP3 decoder
 - True Audio (TTA) decoder
 - AVS demuxer and video decoder
