@@ -383,6 +383,7 @@ typedef struct DSPContext {
     void (*h264_idct8_add)(uint8_t *dst, DCTELEM *block, int stride);
     void (*h264_idct_dc_add)(uint8_t *dst, DCTELEM *block, int stride);
     void (*h264_idct8_dc_add)(uint8_t *dst, DCTELEM *block, int stride);
+    void (*h264_dct)(DCTELEM block[4][4]);
 
     /* snow wavelet */
     void (*vertical_compose97i)(DWTELEM *b0, DWTELEM *b1, DWTELEM *b2, DWTELEM *b3, DWTELEM *b4, DWTELEM *b5, int width);
