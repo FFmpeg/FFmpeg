@@ -11,12 +11,19 @@
 # try to make this part work with most shells
 
 try_exec(){
+    echo "Trying shell $1"
     type "$1" >/dev/null 2>&1 && exec "$@"
 }
 
 unset foo
-(: ${foo%%bar}) 2>/dev/null && ! (: ${foo?}) 2>/dev/null
-if test "$?" != 0; then
+(: ${foo%%bar}) 2>/dev/null
+E1="$?"
+
+(: ${foo?}) 2>/dev/null
+E2="$?"
+
+if test "$E1" != 0 || test "$E2" = 0; then
+    echo "Broken shell detected.  Trying alternatives."
     export FF_CONF_EXEC
     if test "0$FF_CONF_EXEC" -lt 1; then
         FF_CONF_EXEC=1
@@ -339,7 +346,7 @@ check_header(){
 int x;
 EOF
     err=$?
-    var=`echo $header | sed 's/[^[:alnum:]]/_/g'`
+    var=`echo $header | sed 's/[^A-Za-z0-9_]/_/g'`
     test "$err" = 0 && enable $var || disable $var
     return $err
 }
