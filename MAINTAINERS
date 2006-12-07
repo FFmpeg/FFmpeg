@@ -179,7 +179,7 @@ Codecs:
   xan.c                                 Mike Melanson
   xl.c                                  Kostya Shishkov
   xvmcvideo.c                           Ivan Kalvachev
-  zmbv.c                                Kostya Shishkov
+  zmbv*                                 Kostya Shishkov
 
 
 libavformat
