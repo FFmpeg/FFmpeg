@@ -198,9 +198,10 @@ endif
 .depend: $(SRCS) version.h
 	$(CC) -MM $(CFLAGS) $(SDL_CFLAGS) $(filter-out %.h,$^) 1>.depend
 
-.libs: lib
-	@test -f .libs || touch .libs
-	@for i in $(DEP_LIBS) ; do if test $$i -nt .libs ; then touch .libs; fi ; done
+$(DEP_LIBS): lib
+
+.libs: $(DEP_LIBS)
+	touch $@
 
 clean:
 	$(MAKE) -C libavutil   clean
