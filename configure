@@ -1897,7 +1897,6 @@ lavu_version=`grep '#define LIBAVUTIL_VERSION ' "$source_path/libavutil/avutil.h
 
 
 if test "$lshared" = "yes" ; then
-  echo "#define BUILD_SHARED_AV 1" >> $TMPH
   echo "BUILD_SHARED=yes" >> config.mak
   echo "PIC=-fPIC -DPIC" >> config.mak
   echo "SPPMAJOR=${lavc_version%%.*}" >> config.mak
