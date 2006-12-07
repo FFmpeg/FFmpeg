@@ -58,13 +58,6 @@
 #define UINT64_C(c)    (c ## ULL)
 #endif
 
-#if defined(__MINGW32__) && !defined(BUILD_AVUTIL) && defined(BUILD_SHARED_AV)
-#  define FF_IMPORT_ATTR __declspec(dllimport)
-#else
-#  define FF_IMPORT_ATTR
-#endif
-
-
 #ifdef HAVE_AV_CONFIG_H
 /* only include the following when compiling package */
 #    include "internal.h"
@@ -83,7 +76,7 @@
 #define FFSWAP(type,a,b) do{type SWAP_tmp= b; b= a; a= SWAP_tmp;}while(0)
 
 /* misc math functions */
-extern FF_IMPORT_ATTR const uint8_t ff_log2_tab[256];
+extern const uint8_t ff_log2_tab[256];
 
 static inline int av_log2(unsigned int v)
 {

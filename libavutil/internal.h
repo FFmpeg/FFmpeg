@@ -229,7 +229,7 @@ extern const uint32_t ff_inverse[256];
 #    define FASTDIV(a,b)   ((a)/(b))
 #endif
 
-extern FF_IMPORT_ATTR const uint8_t ff_sqrt_tab[128];
+extern const uint8_t ff_sqrt_tab[128];
 
 static inline int ff_sqrt(int a)
 {
