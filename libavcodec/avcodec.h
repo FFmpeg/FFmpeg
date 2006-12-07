@@ -149,6 +149,7 @@ enum CodecID {
     CODEC_ID_TIERTEXSEQVIDEO,
     CODEC_ID_TIFF,
     CODEC_ID_GIF,
+    CODEC_ID_FFH264,
 
     /* various pcm "codecs" */
     CODEC_ID_PCM_S16LE= 0x10000,
