@@ -26,6 +26,8 @@
 #ifndef COMMON_H
 #define COMMON_H
 
+#include <inttypes.h>
+
 #ifdef HAVE_AV_CONFIG_H
 /* only include the following when compiling package */
 #    include "config.h"
@@ -41,6 +43,7 @@
 #        include "berrno.h"
 #    endif
 #    include <math.h>
+#    include "internal.h"
 #endif /* HAVE_AV_CONFIG_H */
 
 #ifndef attribute_deprecated
@@ -51,16 +54,9 @@
 #endif
 #endif
 
-#   include <inttypes.h>
-
 #ifndef INT64_C
 #define INT64_C(c)     (c ## LL)
 #define UINT64_C(c)    (c ## ULL)
-#endif
-
-#ifdef HAVE_AV_CONFIG_H
-/* only include the following when compiling package */
-#    include "internal.h"
 #endif
 
 //rounded divison & shift
