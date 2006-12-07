@@ -3809,8 +3809,9 @@ int ff_check_alignment(void){
         if(!did_fail){
 #if defined(HAVE_MMX) || defined(HAVE_ALTIVEC)
             av_log(NULL, AV_LOG_ERROR,
-                "Compiler did not align stack variables, your code has been misscompiled\n"
-                "and may crash, this is not a bug in the application but in the compiler\n"
+                "Compiler did not align stack variables, libavcodec has been misscompiled\n"
+                "and will possible be very slow or may crash, this is not a bug in the\n"
+                "application but in the compiler\n"
                 "so reporting it anywhere but to the compiler maintainers is senseless!\n");
 #endif
             did_fail=1;
