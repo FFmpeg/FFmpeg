@@ -881,7 +881,7 @@ static void do_video_stats(AVFormatContext *os, AVOutputStream *ost,
         }
     }
 
-    ti = MAXINT64;
+    ti = INT64_MAX;
     enc = ost->st->codec;
     if (enc->codec_type == CODEC_TYPE_VIDEO) {
         frame_number = ost->frame_number;

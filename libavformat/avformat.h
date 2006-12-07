@@ -39,14 +39,6 @@ extern "C" {
 
 /* packet functions */
 
-#ifndef MAXINT64
-#define MAXINT64 INT64_C(0x7fffffffffffffff)
-#endif
-
-#ifndef MININT64
-#define MININT64 INT64_C(0x8000000000000000)
-#endif
-
 typedef struct AVPacket {
     int64_t pts;                            ///< presentation time stamp in time_base units
     int64_t dts;                            ///< decompression time stamp in time_base units

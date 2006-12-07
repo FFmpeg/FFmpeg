@@ -1472,8 +1472,8 @@ static void av_update_stream_timings(AVFormatContext *ic)
     int i;
     AVStream *st;
 
-    start_time = MAXINT64;
-    end_time = MININT64;
+    start_time = INT64_MAX;
+    end_time = INT64_MIN;
     for(i = 0;i < ic->nb_streams; i++) {
         st = ic->streams[i];
         if (st->start_time != AV_NOPTS_VALUE) {
@@ -1488,9 +1488,9 @@ static void av_update_stream_timings(AVFormatContext *ic)
             }
         }
     }
-    if (start_time != MAXINT64) {
+    if (start_time != INT64_MAX) {
         ic->start_time = start_time;
-        if (end_time != MININT64) {
+        if (end_time != INT64_MIN) {
             ic->duration = end_time - start_time;
             if (ic->file_size > 0) {
                 /* compute the bit rate */
