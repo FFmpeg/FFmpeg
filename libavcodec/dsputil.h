@@ -410,6 +410,8 @@ typedef struct DSPContext {
 void dsputil_static_init(void);
 void dsputil_init(DSPContext* p, AVCodecContext *avctx);
 
+int ff_check_alignment(void);
+
 /**
  * permute block according to permuatation.
  * @param last last non zero element in scantable order

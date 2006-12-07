@@ -3801,10 +3801,30 @@ void dsputil_static_init(void)
     for(i=0; i<64; i++) inv_zigzag_direct16[ff_zigzag_direct[i]]= i+1;
 }
 
+int ff_check_alignment(void){
+    static int did_fail=0;
+    DECLARE_ALIGNED_16(int, aligned);
+
+    if((int)&aligned & 15){
+        if(!did_fail){
+#if defined(HAVE_MMX) || defined(HAVE_ALTIVEC)
+            av_log(NULL, AV_LOG_ERROR,
+                "Compiler did not align stack variables, your code has been misscompiled\n"
+                "and may crash, this is not a bug in the application but in the compiler\n"
+                "so reporting it anywhere but to the compiler maintainers is senseless!\n");
+#endif
+            did_fail=1;
+        }
+        return -1;
+    }
+    return 0;
+}
 
 void dsputil_init(DSPContext* c, AVCodecContext *avctx)
 {
     int i;
+
+    ff_check_alignment();
 
 #ifdef CONFIG_ENCODERS
     if(avctx->dct_algo==FF_DCT_FASTINT) {
