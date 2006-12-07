@@ -1946,42 +1946,6 @@ static inline int get_chroma_qp(int chroma_qp_index_offset, int qscale){
     return chroma_qp[clip(qscale + chroma_qp_index_offset, 0, 51)];
 }
 
-
-#if 0
-static void h264_diff_dct_c(DCTELEM *block, uint8_t *src1, uint8_t *src2, int stride){
-    int i;
-    //FIXME try int temp instead of block
-
-    for(i=0; i<4; i++){
-        const int d0= src1[0 + i*stride] - src2[0 + i*stride];
-        const int d1= src1[1 + i*stride] - src2[1 + i*stride];
-        const int d2= src1[2 + i*stride] - src2[2 + i*stride];
-        const int d3= src1[3 + i*stride] - src2[3 + i*stride];
-        const int z0= d0 + d3;
-        const int z3= d0 - d3;
-        const int z1= d1 + d2;
-        const int z2= d1 - d2;
-
-        block[0 + 4*i]=   z0 +   z1;
-        block[1 + 4*i]= 2*z3 +   z2;
-        block[2 + 4*i]=   z0 -   z1;
-        block[3 + 4*i]=   z3 - 2*z2;
-    }
-
-    for(i=0; i<4; i++){
-        const int z0= block[0*4 + i] + block[3*4 + i];
-        const int z3= block[0*4 + i] - block[3*4 + i];
-        const int z1= block[1*4 + i] + block[2*4 + i];
-        const int z2= block[1*4 + i] - block[2*4 + i];
-
-        block[0*4 + i]=   z0 +   z1;
-        block[1*4 + i]= 2*z3 +   z2;
-        block[2*4 + i]=   z0 -   z1;
-        block[3*4 + i]=   z3 - 2*z2;
-    }
-}
-#endif
-
 //FIXME need to check that this doesnt overflow signed 32 bit for low qp, i am not sure, it's very close
 //FIXME check that gcc inlines this (and optimizes intra & seperate_dc stuff away)
 static inline int quantize_c(DCTELEM *block, uint8_t *scantable, int qscale, int intra, int seperate_dc){
