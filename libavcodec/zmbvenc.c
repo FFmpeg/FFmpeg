@@ -119,7 +119,7 @@ static int encode_frame(AVCodecContext *avctx, uint8_t *buf, int buf_size, void 
     int i, j;
 
     keyframe = !c->curfrm;
-    c->curfrm = c->curfrm++;
+    c->curfrm++;
     if(c->curfrm == c->keyint)
         c->curfrm = 0;
     *p = *pict;
