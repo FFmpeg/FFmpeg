@@ -26,14 +26,6 @@
 #ifndef INTERNAL_H
 #define INTERNAL_H
 
-#ifndef always_inline
-#if defined(__GNUC__) && (__GNUC__ > 3 || __GNUC__ == 3 && __GNUC_MINOR__ > 0)
-#    define always_inline __attribute__((always_inline)) inline
-#else
-#    define always_inline inline
-#endif
-#endif
-
 #ifndef attribute_used
 #if defined(__GNUC__) && (__GNUC__ > 3 || __GNUC__ == 3 && __GNUC_MINOR__ > 0)
 #    define attribute_used __attribute__((used))
@@ -309,7 +301,7 @@ if((y)<(x)){\
 /* XXX: add ISOC specific test to avoid specific BSD testing. */
 /* better than nothing implementation. */
 /* btw, rintf() is existing on fbsd too -- alex */
-static always_inline long int lrintf(float x)
+static av_always_inline long int lrintf(float x)
 {
 #ifdef __MINGW32__
 #  ifdef ARCH_X86_32

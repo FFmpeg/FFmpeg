@@ -46,7 +46,7 @@
 //gcc 3.4 creates an incredibly bloated mess out of this
 //#    define MULH(a,b) (((int64_t)(a) * (int64_t)(b))>>32)
 
-static always_inline int MULH(int a, int b){
+static av_always_inline int MULH(int a, int b){
     return ((int64_t)(a) * (int64_t)(b))>>32;
 }
 #endif

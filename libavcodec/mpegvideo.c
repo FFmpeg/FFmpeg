@@ -2946,7 +2946,7 @@ static inline int hpel_motion_lowres(MpegEncContext *s,
 }
 
 /* apply one mpeg motion vector to the three components */
-static always_inline void mpeg_motion(MpegEncContext *s,
+static av_always_inline void mpeg_motion(MpegEncContext *s,
                                uint8_t *dest_y, uint8_t *dest_cb, uint8_t *dest_cr,
                                int field_based, int bottom_field, int field_select,
                                uint8_t **ref_picture, op_pixels_func (*pix_op)[4],
@@ -3063,7 +3063,7 @@ if(s->quarter_sample)
 }
 
 /* apply one mpeg motion vector to the three components */
-static always_inline void mpeg_motion_lowres(MpegEncContext *s,
+static av_always_inline void mpeg_motion_lowres(MpegEncContext *s,
                                uint8_t *dest_y, uint8_t *dest_cb, uint8_t *dest_cr,
                                int field_based, int bottom_field, int field_select,
                                uint8_t **ref_picture, h264_chroma_mc_func *pix_op,
@@ -3895,7 +3895,7 @@ void ff_clean_intra_table_entries(MpegEncContext *s)
    s->mv       : motion vector
    s->interlaced_dct : true if interlaced dct used (mpeg2)
  */
-static always_inline void MPV_decode_mb_internal(MpegEncContext *s, DCTELEM block[12][64], int lowres_flag)
+static av_always_inline void MPV_decode_mb_internal(MpegEncContext *s, DCTELEM block[12][64], int lowres_flag)
 {
     int mb_x, mb_y;
     const int mb_xy = s->mb_y * s->mb_stride + s->mb_x;
@@ -4318,7 +4318,7 @@ static void get_vissual_weight(int16_t *weight, uint8_t *ptr, int stride){
     }
 }
 
-static always_inline void encode_mb_internal(MpegEncContext *s, int motion_x, int motion_y, int mb_block_height, int mb_block_count)
+static av_always_inline void encode_mb_internal(MpegEncContext *s, int motion_x, int motion_y, int mb_block_height, int mb_block_count)
 {
     int16_t weight[8][64];
     DCTELEM orig[8][64];
@@ -4600,7 +4600,7 @@ static always_inline void encode_mb_internal(MpegEncContext *s, int motion_x, in
     }
 }
 
-static always_inline void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
+static av_always_inline void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
 {
     if (s->chroma_format == CHROMA_420) encode_mb_internal(s, motion_x, motion_y,  8, 6);
     else                                encode_mb_internal(s, motion_x, motion_y, 16, 8);

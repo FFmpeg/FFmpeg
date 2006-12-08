@@ -43,6 +43,17 @@
 #        include "berrno.h"
 #    endif
 #    include <math.h>
+#endif /* HAVE_AV_CONFIG_H */
+
+#ifndef av_always_inline
+#if defined(__GNUC__) && (__GNUC__ > 3 || __GNUC__ == 3 && __GNUC_MINOR__ > 0)
+#    define av_always_inline __attribute__((always_inline)) inline
+#else
+#    define av_always_inline inline
+#endif
+#endif
+
+#ifdef HAVE_AV_CONFIG_H
 #    include "internal.h"
 #endif /* HAVE_AV_CONFIG_H */
 

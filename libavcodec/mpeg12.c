@@ -508,7 +508,7 @@ static inline void put_mb_modes(MpegEncContext *s, int n, int bits,
     }
 }
 
-static always_inline void mpeg1_encode_mb_internal(MpegEncContext *s,
+static av_always_inline void mpeg1_encode_mb_internal(MpegEncContext *s,
                                                    DCTELEM block[6][64],
                                                    int motion_x, int motion_y,
                                                    int mb_block_count)

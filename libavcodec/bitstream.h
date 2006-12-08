@@ -877,7 +877,7 @@ void free_vlc(VLC *vlc);
  *                  read the longest vlc code
  *                  = (max_vlc_length + bits - 1) / bits
  */
-static always_inline int get_vlc2(GetBitContext *s, VLC_TYPE (*table)[2],
+static av_always_inline int get_vlc2(GetBitContext *s, VLC_TYPE (*table)[2],
                                   int bits, int max_depth)
 {
     int code;

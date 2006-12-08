@@ -145,7 +145,7 @@
 
 #define MULTIPLY(var,const)  ((DCTELEM) DESCALE((var) * (const), CONST_BITS))
 
-static always_inline void row_fdct(DCTELEM * data){
+static av_always_inline void row_fdct(DCTELEM * data){
   int_fast16_t tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7;
   int_fast16_t tmp10, tmp11, tmp12, tmp13;
   int_fast16_t z1, z2, z3, z4, z5, z11, z13;

@@ -560,7 +560,7 @@ static inline void dv_decode_video_segment(DVVideoContext *s,
 
 #ifdef DV_CODEC_TINY_TARGET
 /* Converts run and level (where level != 0) pair into vlc, returning bit size */
-static always_inline int dv_rl2vlc(int run, int level, int sign, uint32_t* vlc)
+static av_always_inline int dv_rl2vlc(int run, int level, int sign, uint32_t* vlc)
 {
     int size;
     if (run < DV_VLC_MAP_RUN_SIZE && level < DV_VLC_MAP_LEV_SIZE) {
@@ -585,7 +585,7 @@ static always_inline int dv_rl2vlc(int run, int level, int sign, uint32_t* vlc)
     return size;
 }
 
-static always_inline int dv_rl2vlc_size(int run, int level)
+static av_always_inline int dv_rl2vlc_size(int run, int level)
 {
     int size;
 
@@ -601,13 +601,13 @@ static always_inline int dv_rl2vlc_size(int run, int level)
     return size;
 }
 #else
-static always_inline int dv_rl2vlc(int run, int l, int sign, uint32_t* vlc)
+static av_always_inline int dv_rl2vlc(int run, int l, int sign, uint32_t* vlc)
 {
     *vlc = dv_vlc_map[run][l].vlc | sign;
     return dv_vlc_map[run][l].size;
 }
 
-static always_inline int dv_rl2vlc_size(int run, int l)
+static av_always_inline int dv_rl2vlc_size(int run, int l)
 {
     return dv_vlc_map[run][l].size;
 }
@@ -627,7 +627,7 @@ typedef struct EncBlockInfo {
     uint32_t partial_bit_buffer; /* we can't use uint16_t here */
 } EncBlockInfo;
 
-static always_inline PutBitContext* dv_encode_ac(EncBlockInfo* bi, PutBitContext* pb_pool,
+static av_always_inline PutBitContext* dv_encode_ac(EncBlockInfo* bi, PutBitContext* pb_pool,
                                        PutBitContext* pb_end)
 {
     int prev;
@@ -670,7 +670,7 @@ static always_inline PutBitContext* dv_encode_ac(EncBlockInfo* bi, PutBitContext
     return pb;
 }
 
-static always_inline void dv_set_class_number(DCTELEM* blk, EncBlockInfo* bi,
+static av_always_inline void dv_set_class_number(DCTELEM* blk, EncBlockInfo* bi,
                                               const uint8_t* zigzag_scan, const int *weight, int bias)
 {
     int i, area;
@@ -742,7 +742,7 @@ static always_inline void dv_set_class_number(DCTELEM* blk, EncBlockInfo* bi,
 
 //FIXME replace this by dsputil
 #define SC(x, y) ((s[x] - s[y]) ^ ((s[x] - s[y]) >> 7))
-static always_inline int dv_guess_dct_mode(DCTELEM *blk) {
+static av_always_inline int dv_guess_dct_mode(DCTELEM *blk) {
     DCTELEM *s;
     int score88 = 0;
     int score248 = 0;

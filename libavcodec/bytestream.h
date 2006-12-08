@@ -22,32 +22,32 @@
 #ifndef FFMPEG_BYTESTREAM_H
 #define FFMPEG_BYTESTREAM_H
 
-static always_inline unsigned int bytestream_get_le32(uint8_t **b)
+static av_always_inline unsigned int bytestream_get_le32(uint8_t **b)
 {
     (*b) += 4;
     return LE_32(*b - 4);
 }
 
-static always_inline unsigned int bytestream_get_le16(uint8_t **b)
+static av_always_inline unsigned int bytestream_get_le16(uint8_t **b)
 {
     (*b) += 2;
     return LE_16(*b - 2);
 }
 
-static always_inline unsigned int bytestream_get_byte(uint8_t **b)
+static av_always_inline unsigned int bytestream_get_byte(uint8_t **b)
 {
     (*b)++;
     return (*b)[-1];
 }
 
-static always_inline unsigned int bytestream_get_buffer(uint8_t **b, uint8_t *dst, unsigned int size)
+static av_always_inline unsigned int bytestream_get_buffer(uint8_t **b, uint8_t *dst, unsigned int size)
 {
     memcpy(dst, *b, size);
     (*b) += size;
     return size;
 }
 
-static always_inline void bytestream_put_be32(uint8_t **b, const unsigned int value)
+static av_always_inline void bytestream_put_be32(uint8_t **b, const unsigned int value)
 {
     *(*b)++ = value >> 24;
     *(*b)++ = value >> 16;
@@ -55,13 +55,13 @@ static always_inline void bytestream_put_be32(uint8_t **b, const unsigned int va
     *(*b)++ = value;
 };
 
-static always_inline void bytestream_put_be16(uint8_t **b, const unsigned int value)
+static av_always_inline void bytestream_put_be16(uint8_t **b, const unsigned int value)
 {
     *(*b)++ = value >> 8;
     *(*b)++ = value;
 }
 
-static always_inline void bytestream_put_le32(uint8_t **b, const unsigned int value)
+static av_always_inline void bytestream_put_le32(uint8_t **b, const unsigned int value)
 {
     *(*b)++ = value;
     *(*b)++ = value >> 8;
@@ -69,18 +69,18 @@ static always_inline void bytestream_put_le32(uint8_t **b, const unsigned int va
     *(*b)++ = value >> 24;
 }
 
-static always_inline void bytestream_put_le16(uint8_t **b, const unsigned int value)
+static av_always_inline void bytestream_put_le16(uint8_t **b, const unsigned int value)
 {
     *(*b)++ = value;
     *(*b)++ = value >> 8;
 }
 
-static always_inline void bytestream_put_byte(uint8_t **b, const unsigned int value)
+static av_always_inline void bytestream_put_byte(uint8_t **b, const unsigned int value)
 {
     *(*b)++ = value;
 }
 
-static always_inline void bytestream_put_buffer(uint8_t **b, const uint8_t *src, unsigned int size)
+static av_always_inline void bytestream_put_buffer(uint8_t **b, const uint8_t *src, unsigned int size)
 {
     memcpy(*b, src, size);
     (*b) += size;

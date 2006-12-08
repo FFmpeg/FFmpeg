@@ -284,7 +284,7 @@ TABLE_SSE2
 }};
 
 
-static always_inline void fdct_col(const int16_t *in, int16_t *out, int offset)
+static av_always_inline void fdct_col(const int16_t *in, int16_t *out, int offset)
 {
     movq_m2r(*(in + offset + 1 * 8), mm0);
     movq_m2r(*(in + offset + 6 * 8), mm1);
@@ -364,7 +364,7 @@ static always_inline void fdct_col(const int16_t *in, int16_t *out, int offset)
 }
 
 
-static always_inline void fdct_row_sse2(const int16_t *in, int16_t *out)
+static av_always_inline void fdct_row_sse2(const int16_t *in, int16_t *out)
 {
     asm volatile(
 #define FDCT_ROW_SSE2_H1(i,t)                    \
@@ -426,7 +426,7 @@ static always_inline void fdct_row_sse2(const int16_t *in, int16_t *out)
     );
 }
 
-static always_inline void fdct_row_mmx2(const int16_t *in, int16_t *out, const int16_t *table)
+static av_always_inline void fdct_row_mmx2(const int16_t *in, int16_t *out, const int16_t *table)
 {
     pshufw_m2r(*(in + 4), mm5, 0x1B);
     movq_m2r(*(in + 0), mm0);
@@ -469,7 +469,7 @@ static always_inline void fdct_row_mmx2(const int16_t *in, int16_t *out, const i
     movq_r2m(mm7, *(out + 4));
 }
 
-static always_inline void fdct_row_mmx(const int16_t *in, int16_t *out, const int16_t *table)
+static av_always_inline void fdct_row_mmx(const int16_t *in, int16_t *out, const int16_t *table)
 {
 //FIXME reorder (i dont have a old mmx only cpu here to benchmark ...)
     movd_m2r(*(in + 6), mm1);

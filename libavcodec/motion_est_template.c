@@ -555,7 +555,7 @@ if( (y)>(ymax<<(S)) ) printf("%d %d %d %d %d ymax" #v, ymax, (x), (y), s->mb_x, 
     const int qpel= flags&FLAG_QPEL;\
     const int shift= 1+qpel;\
 
-static always_inline int small_diamond_search(MpegEncContext * s, int *best, int dmin,
+static av_always_inline int small_diamond_search(MpegEncContext * s, int *best, int dmin,
                                        int src_index, int ref_index, int const penalty_factor,
                                        int size, int h, int flags)
 {
@@ -964,7 +964,7 @@ if(256*256*256*64 % (stats[0]+1)==0){
     return dmin;
 }
 
-static always_inline int diamond_search(MpegEncContext * s, int *best, int dmin,
+static av_always_inline int diamond_search(MpegEncContext * s, int *best, int dmin,
                                        int src_index, int ref_index, int const penalty_factor,
                                        int size, int h, int flags){
     MotionEstContext * const c= &s->me;
@@ -984,7 +984,7 @@ static always_inline int diamond_search(MpegEncContext * s, int *best, int dmin,
         return   var_diamond_search(s, best, dmin, src_index, ref_index, penalty_factor, size, h, flags);
 }
 
-static always_inline int epzs_motion_search_internal(MpegEncContext * s, int *mx_ptr, int *my_ptr,
+static av_always_inline int epzs_motion_search_internal(MpegEncContext * s, int *mx_ptr, int *my_ptr,
                              int P[10][2], int src_index, int ref_index, int16_t (*last_mv)[2],
                              int ref_mv_scale, int flags, int size, int h)
 {

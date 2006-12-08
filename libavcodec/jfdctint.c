@@ -181,7 +181,7 @@
 #endif
 
 
-static always_inline void row_fdct(DCTELEM * data){
+static av_always_inline void row_fdct(DCTELEM * data){
   int_fast32_t tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7;
   int_fast32_t tmp10, tmp11, tmp12, tmp13;
   int_fast32_t z1, z2, z3, z4, z5;

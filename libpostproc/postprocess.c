@@ -466,7 +466,7 @@ static inline void horizX1Filter(uint8_t *src, int stride, int QP)
 /**
  * accurate deblock filter
  */
-static always_inline void do_a_deblock_C(uint8_t *src, int step, int stride, PPContext *c){
+static av_always_inline void do_a_deblock_C(uint8_t *src, int step, int stride, PPContext *c){
         int y;
         const int QP= c->QP;
         const int dcOffset= ((c->nonBQP*c->ppMode.baseDcDiff)>>8) + 1;

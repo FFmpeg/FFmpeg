@@ -72,7 +72,7 @@ typedef struct VmncContext {
 } VmncContext;
 
 /* read pixel value from stream */
-static always_inline int vmnc_get_pixel(uint8_t* buf, int bpp, int be) {
+static av_always_inline int vmnc_get_pixel(uint8_t* buf, int bpp, int be) {
     switch(bpp * 2 + be) {
     case 2:
     case 3: return *buf;
@@ -172,7 +172,7 @@ static void put_cursor(uint8_t *dst, int stride, VmncContext *c, int dx, int dy)
 }
 
 /* fill rectangle with given colour */
-static always_inline void paint_rect(uint8_t *dst, int dx, int dy, int w, int h, int color, int bpp, int stride)
+static av_always_inline void paint_rect(uint8_t *dst, int dx, int dy, int w, int h, int color, int bpp, int stride)
 {
     int i, j;
     dst += dx * bpp + dy * stride;
@@ -202,7 +202,7 @@ static always_inline void paint_rect(uint8_t *dst, int dx, int dy, int w, int h,
     }
 }
 
-static always_inline void paint_raw(uint8_t *dst, int w, int h, uint8_t* src, int bpp, int be, int stride)
+static av_always_inline void paint_raw(uint8_t *dst, int w, int h, uint8_t* src, int bpp, int be, int stride)
 {
     int i, j, p;
     for(j = 0; j < h; j++) {

@@ -186,7 +186,7 @@ typedef struct FFV1Context{
     DSPContext dsp;
 }FFV1Context;
 
-static always_inline int fold(int diff, int bits){
+static av_always_inline int fold(int diff, int bits){
     if(bits==8)
         diff= (int8_t)diff;
     else{

@@ -2140,7 +2140,7 @@ static void vc1_interp_mc(VC1Context *v)
     dsp->avg_h264_chroma_pixels_tab[0](s->dest[2], srcV, s->uvlinesize, 8, uvmx, uvmy);
 }
 
-static always_inline int scale_mv(int value, int bfrac, int inv, int qs)
+static av_always_inline int scale_mv(int value, int bfrac, int inv, int qs)
 {
     int n = bfrac;
 

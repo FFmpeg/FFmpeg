@@ -98,7 +98,7 @@ static const uint8_t wp_exp2_table [256] = {
     0xea, 0xec, 0xed, 0xee, 0xf0, 0xf1, 0xf2, 0xf4, 0xf5, 0xf6, 0xf8, 0xf9, 0xfa, 0xfc, 0xfd, 0xff
 };
 
-static always_inline int wp_exp2(int16_t val)
+static av_always_inline int wp_exp2(int16_t val)
 {
     int res, neg = 0;
 
@@ -137,7 +137,7 @@ static inline int get_unary(GetBitContext *gb){
         }
 
 
-static always_inline int get_tail(GetBitContext *gb, int k)
+static av_always_inline int get_tail(GetBitContext *gb, int k)
 {
     int p, e, res;
 

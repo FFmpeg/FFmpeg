@@ -320,12 +320,12 @@ static int decode_header_trees(SmackVContext *smk) {
     return 0;
 }
 
-static always_inline void last_reset(int *recode, int *last) {
+static av_always_inline void last_reset(int *recode, int *last) {
     recode[last[0]] = recode[last[1]] = recode[last[2]] = 0;
 }
 
 /* get code and update history */
-static always_inline int smk_get_code(GetBitContext *gb, int *recode, int *last) {
+static av_always_inline int smk_get_code(GetBitContext *gb, int *recode, int *last) {
     register int *table = recode;
     int v, b;
 

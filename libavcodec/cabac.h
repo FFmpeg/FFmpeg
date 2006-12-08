@@ -363,7 +363,7 @@ static inline void renorm_cabac_decoder_once(CABACContext *c){
         refill(c);
 }
 
-static int always_inline get_cabac_inline(CABACContext *c, uint8_t * const state){
+static int av_always_inline get_cabac_inline(CABACContext *c, uint8_t * const state){
     //FIXME gcc generates duplicate load/stores for c->low and c->range
 #define LOW          "0"
 #define RANGE        "4"
@@ -631,7 +631,7 @@ static int get_cabac_bypass(CABACContext *c){
 }
 
 
-static always_inline int get_cabac_bypass_sign(CABACContext *c, int val){
+static av_always_inline int get_cabac_bypass_sign(CABACContext *c, int val){
 #if defined(ARCH_X86) && !(defined(PIC) && defined(__GNUC__))
     asm volatile(
         "movl "RANGE    "(%1), %%ebx            \n\t"

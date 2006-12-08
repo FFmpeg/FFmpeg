@@ -326,7 +326,7 @@ static void vc1_inv_trans_4x4_c(DCTELEM block[64], int n)
 
 /** Filter used to interpolate fractional pel values
  */
-static always_inline int vc1_mspel_filter(const uint8_t *src, int stride, int mode, int r)
+static av_always_inline int vc1_mspel_filter(const uint8_t *src, int stride, int mode, int r)
 {
     switch(mode){
     case 0: //no shift

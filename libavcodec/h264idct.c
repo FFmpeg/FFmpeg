@@ -28,7 +28,7 @@
 
 #include "dsputil.h"
 
-static always_inline void idct_internal(uint8_t *dst, DCTELEM *block, int stride, int block_stride, int shift, int add){
+static av_always_inline void idct_internal(uint8_t *dst, DCTELEM *block, int stride, int block_stride, int shift, int add){
     int i;
     uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
 

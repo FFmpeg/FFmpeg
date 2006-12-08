@@ -400,7 +400,7 @@ static void svq3_add_idct_c(uint8_t *dst, DCTELEM *block, int stride, int qp, in
 static void filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint8_t *img_cb, uint8_t *img_cr, unsigned int linesize, unsigned int uvlinesize);
 static void filter_mb_fast( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint8_t *img_cb, uint8_t *img_cr, unsigned int linesize, unsigned int uvlinesize);
 
-static always_inline uint32_t pack16to32(int a, int b){
+static av_always_inline uint32_t pack16to32(int a, int b){
 #ifdef WORDS_BIGENDIAN
    return (b&0xFFFF) + (a<<16);
 #else
@@ -423,7 +423,7 @@ const uint8_t ff_div6[52]={
  * @param w width of the rectangle, should be a constant
  * @param size the size of val (1 or 4), should be a constant
  */
-static always_inline void fill_rectangle(void *vp, int w, int h, int stride, uint32_t val, int size){
+static av_always_inline void fill_rectangle(void *vp, int w, int h, int stride, uint32_t val, int size){
     uint8_t *p= (uint8_t*)vp;
     assert(size==1 || size==4);
     assert(w<=4);
