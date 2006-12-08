@@ -707,6 +707,7 @@ bktr="yes"
 audio_oss="yes"
 dv1394="no"
 make="gmake"
+need_memalign="no"
 add_cflags "-pthread"
 ;;
 GNU/kFreeBSD)
@@ -734,6 +735,7 @@ video4linux="no"
 video4linux2="no"
 audio_oss="no"
 dv1394="no"
+need_memalign="no"
 SHFLAGS="-dynamiclib -Wl,-single_module -Wl,-install_name,\$(shlibdir)/\$(SLIBNAME),-current_version,\$(SPPVERSION),-compatibility_version,\$(SPPVERSION)"
 VHOOKSHFLAGS='-dynamiclib -Wl,-single_module -flat_namespace -undefined suppress -Wl,-install_name,$(shlibdir)/vhook/$@'
 extralibs=""
@@ -1167,6 +1169,8 @@ if test $mmx = "default"; then
     fi
 fi
 
+test -z "$need_memalign" && need_memalign="$mmx"
+
 #Darwin CC versions
 needmdynamicnopic="no"
 if test $targetos = Darwin; then
@@ -1415,9 +1419,8 @@ fi
 check_header malloc.h
 check_func memalign
 
-if test "$memalign" = "no" -a "$mmx" = "yes" -a \
-        "$memalign_hack" != "yes" -a "$targetos" != "Darwin" -a \
-        "$targetos" != "FreeBSD" ; then
+if test "$memalign" = "no" -a "$need_memalign" = "yes" -a \
+        "$memalign_hack" != "yes"; then
     die "Error, no memalign() but SSE enabled, disable it or use --enable-memalign-hack."
 fi
 
