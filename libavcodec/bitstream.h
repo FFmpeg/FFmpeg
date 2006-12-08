@@ -187,12 +187,12 @@ static inline uint##x##_t unaligned##x(const void *v) { \
 }
 #    elif defined(__DECC)
 #    define unaligned(x)                                        \
-static inline uint##x##_t unaligned##x##(const void *v) {       \
+static inline uint##x##_t unaligned##x(const void *v) {         \
     return *(const __unaligned uint##x##_t *) v;                \
 }
 #    else
 #    define unaligned(x)                                        \
-static inline uint##x##_t unaligned##x##(const void *v) {       \
+static inline uint##x##_t unaligned##x(const void *v) {         \
     return *(const uint##x##_t *) v;                            \
 }
 #    endif
