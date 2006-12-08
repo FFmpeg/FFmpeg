@@ -156,7 +156,7 @@ void avcodec_register_all(void)
 #endif
     REGISTER_ENCDEC (ZLIB, zlib);
 #ifdef CONFIG_ZLIB
-//    REGISTER_ENCDEC (ZMBV, zmbv);
+    REGISTER_ENCDEC (ZMBV, zmbv);
 #endif
 
     /* audio codecs */

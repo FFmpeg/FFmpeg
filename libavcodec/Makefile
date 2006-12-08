@@ -167,7 +167,7 @@ OBJS-$(CONFIG_XL_DECODER)              += xl.o
 OBJS-$(CONFIG_ZLIB_DECODER)            += lcl.o
 OBJS-$(CONFIG_ZLIB_ENCODER)            += lcl.o
 OBJS-$(CONFIG_ZMBV_DECODER)            += zmbv.o
-#OBJS-$(CONFIG_ZMBV_ENCODER)            += zmbvenc.o
+OBJS-$(CONFIG_ZMBV_ENCODER)            += zmbvenc.o
 
 OBJS-$(CONFIG_PCM_S32LE_DECODER)       += pcm.o
 OBJS-$(CONFIG_PCM_S32LE_ENCODER)       += pcm.o
