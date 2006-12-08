@@ -2084,9 +2084,6 @@ typedef struct AVCodec {
     int (*decode)(AVCodecContext *, void *outdata, int *outdata_size,
                   uint8_t *buf, int buf_size);
     int capabilities;
-#if LIBAVCODEC_VERSION_INT < ((50<<16)+(0<<8)+0)
-    void *dummy; // FIXME remove next time we break binary compatibility
-#endif
     struct AVCodec *next;
     void (*flush)(AVCodecContext *);
     const AVRational *supported_framerates; ///array of supported framerates, or NULL if any, array is terminated by {0,0}
