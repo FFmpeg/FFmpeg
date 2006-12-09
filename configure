@@ -695,9 +695,14 @@ video4linux2="no"
 bktr="yes"
 audio_oss="yes"
 dv1394="no"
+need_memalign="no"
 make="gmake"
 LIBOBJFLAGS="\$(PIC)"
 LDCONFIG="ldconfig -m \$(shlibdir)"
+SHFLAGS='-shared'
+SLIBNAME='$(SLIBPREF)$(NAME)$(SLIBSUF).$(LIBVERSION)'
+SLIBNAME_WITH_VERSION='$(SLIBNAME)'
+SLIBNAME_WITH_MAJOR='$(SLIBNAME)'
 add_extralibs "-lossaudio"
 ;;
 FreeBSD)
