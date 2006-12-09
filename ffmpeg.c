@@ -2658,7 +2658,7 @@ static void opt_input_file(const char *filename)
             if (enc->time_base.den != rfps || enc->time_base.num != rfps_base) {
 
                 if (verbose >= 0)
-                    fprintf(stderr,"\nSeems that stream %d comes from film source: %2.2f (%d/%d) -> %2.2f (%d/%d)\n",
+                    fprintf(stderr,"\nSeems stream %d codec frame rate differs from container frame rate: %2.2f (%d/%d) -> %2.2f (%d/%d)\n",
                             i, (float)enc->time_base.den / enc->time_base.num, enc->time_base.den, enc->time_base.num,
 
                     (float)rfps / rfps_base, rfps, rfps_base);
