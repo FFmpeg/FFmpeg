@@ -225,7 +225,7 @@ static int decode_init(AVCodecContext *avctx) {
         case 32: avctx->pix_fmt = PIX_FMT_RGBA32; break;
         default:
             av_log(avctx, AV_LOG_ERROR,
-                   "CamStudio codec error: unvalid depth %i bpp\n",
+                   "CamStudio codec error: invalid depth %i bpp\n",
                    avctx->bits_per_sample);
              return 1;
     }
