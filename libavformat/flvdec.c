@@ -57,7 +57,7 @@ static int amf_get_string(ByteIOContext *ioc, char *buffer, int buffsize) {
 static int flv_read_header(AVFormatContext *s,
                            AVFormatParameters *ap)
 {
-    int offset, flags, size;
+    int offset, flags;
     AVStream *st;
 
     url_fskip(&s->pb, 4);
@@ -79,17 +79,6 @@ static int flv_read_header(AVFormatContext *s,
     }
 
     offset = get_be32(&s->pb);
-
-    if(!url_is_streamed(&s->pb)){
-        const int fsize= url_fsize(&s->pb);
-        url_fseek(&s->pb, fsize-4, SEEK_SET);
-        size= get_be32(&s->pb);
-        url_fseek(&s->pb, fsize-3-size, SEEK_SET);
-        if(size == get_be24(&s->pb) + 11){
-            s->duration= get_be24(&s->pb) * (int64_t)AV_TIME_BASE / 1000;
-        }
-    }
-
     url_fseek(&s->pb, offset, SEEK_SET);
 
     s->start_time = 0;
@@ -189,6 +178,20 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
         av_add_index_entry(st, pos, pts, size, 0, AVINDEX_KEYFRAME);
     break;
  }
+
+    // if not streamed and no duration from metadata then seek to end to find the duration from the timestamps
+    if(!url_is_streamed(&s->pb) && s->duration==AV_NOPTS_VALUE){
+        int size;
+        const int pos= url_ftell(&s->pb);
+        const int fsize= url_fsize(&s->pb);
+        url_fseek(&s->pb, fsize-4, SEEK_SET);
+        size= get_be32(&s->pb);
+        url_fseek(&s->pb, fsize-3-size, SEEK_SET);
+        if(size == get_be24(&s->pb) + 11){
+            s->duration= get_be24(&s->pb) * (int64_t)AV_TIME_BASE / 1000;
+        }
+        url_fseek(&s->pb, pos, SEEK_SET);
+    }
 
     if(is_audio){
         if(st->codec->sample_rate == 0){
