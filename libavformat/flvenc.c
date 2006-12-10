@@ -110,12 +110,6 @@ static int flv_write_header(AVFormatContext *s)
     flv->hasAudio = 0;
     flv->hasVideo = 0;
 
-    put_tag(pb,"FLV");
-    put_byte(pb,1);
-    put_byte(pb,0); // delayed write
-    put_be32(pb,9);
-    put_be32(pb,0);
-
     for(i=0; i<s->nb_streams; i++){
         AVCodecContext *enc = s->streams[i]->codec;
         if (enc->codec_type == CODEC_TYPE_VIDEO) {
@@ -130,9 +124,20 @@ static int flv_write_header(AVFormatContext *s)
         } else {
             flv->hasAudio=1;
             samplerate = enc->sample_rate;
+            if(get_audio_flags(enc)<0)
+                return -1;
         }
         av_set_pts_info(s->streams[i], 24, 1, 1000); /* 24 bit pts in ms */
-        if(enc->codec_tag == 5){
+    }
+    put_tag(pb,"FLV");
+    put_byte(pb,1);
+    put_byte(pb,   FLV_HEADER_FLAG_HASAUDIO * flv->hasAudio
+                 + FLV_HEADER_FLAG_HASVIDEO * flv->hasVideo);
+    put_be32(pb,9);
+    put_be32(pb,0);
+
+    for(i=0; i<s->nb_streams; i++){
+        if(s->streams[i]->codec->codec_tag == 5){
             put_byte(pb,8); // message type
             put_be24(pb,0); // include flags
             put_be24(pb,0); // time stamp
@@ -140,8 +145,6 @@ static int flv_write_header(AVFormatContext *s)
             put_be32(pb,11); // size
             flv->reserved=5;
         }
-        if(enc->codec_type == CODEC_TYPE_AUDIO && get_audio_flags(enc)<0)
-            return -1;
     }
 
     /* write meta_tag */
@@ -204,16 +207,11 @@ static int flv_write_header(AVFormatContext *s)
 static int flv_write_trailer(AVFormatContext *s)
 {
     int64_t file_size;
-    int flags = 0;
 
     ByteIOContext *pb = &s->pb;
     FLVContext *flv = s->priv_data;
 
     file_size = url_ftell(pb);
-    flags |= flv->hasAudio ? FLV_HEADER_FLAG_HASAUDIO : 0;
-    flags |= flv->hasVideo ? FLV_HEADER_FLAG_HASVIDEO : 0;
-    url_fseek(pb, 4, SEEK_SET);
-    put_byte(pb,flags);
 
     /* update informations */
     url_fseek(pb, flv->duration_offset, SEEK_SET);
