@@ -41,12 +41,10 @@ static int flv_probe(AVProbeData *p)
 }
 
 static int amf_get_string(ByteIOContext *ioc, char *buffer, int buffsize) {
-    int length;
-
-    length = get_be16(ioc);
+    int length = get_be16(ioc);
     if(length >= buffsize) {
         url_fskip(ioc, length);
-        return -1; //string will not fit in buffer
+        return -1;
     }
 
     get_buffer(ioc, buffer, length);
