@@ -135,20 +135,14 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
             int type, len;
             double d= 0;
 
-            len= get_be16(&s->pb);
-            if(len >= sizeof(tmp) || !len)
+            if(amf_get_string(&s->pb, tmp, sizeof(tmp))<0)
                 break;
-            get_buffer(&s->pb, tmp, len);
-            tmp[len]=0;
 
             type= get_byte(&s->pb);
             if(type == AMF_DATA_TYPE_NUMBER){
                 d= av_int2dbl(get_be64(&s->pb));
             }else if(type == AMF_DATA_TYPE_STRING){
-                len= get_be16(&s->pb);
-                if(len >= sizeof(tmp))
-                    break;
-                url_fskip(&s->pb, len);
+                amf_get_string(&s->pb, NULL, 0);
             }else if(type == AMF_DATA_TYPE_MIXEDARRAY){
                 //array
                 break;
