@@ -40,6 +40,22 @@ static int flv_probe(AVProbeData *p)
     return 0;
 }
 
+static int amf_get_string(ByteIOContext *ioc, char *buffer, int buffsize) {
+    int length;
+
+    length = get_be16(ioc);
+    if(length >= buffsize) {
+        url_fskip(ioc, length);
+        return -1; //string will not fit in buffer
+    }
+
+    get_buffer(ioc, buffer, length);
+
+    buffer[length] = '\0';
+
+    return length;
+}
+
 static int flv_read_header(AVFormatContext *s,
                            AVFormatParameters *ap)
 {
