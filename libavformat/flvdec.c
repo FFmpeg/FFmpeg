@@ -44,11 +44,25 @@ static int flv_read_header(AVFormatContext *s,
                            AVFormatParameters *ap)
 {
     int offset, flags, size;
-
-    s->ctx_flags |= AVFMTCTX_NOHEADER; //ok we have a header but theres no fps, codec type, sample_rate, ...
+    AVStream *st;
 
     url_fskip(&s->pb, 4);
     flags = get_byte(&s->pb);
+
+    if(flags & FLV_HEADER_FLAG_HASVIDEO){
+        st = av_new_stream(s, 0);
+        if (!st)
+            return AVERROR_NOMEM;
+        st->codec->codec_type = CODEC_TYPE_VIDEO;
+        av_set_pts_info(st, 24, 1, 1000); /* 24 bit pts in ms */
+    }
+    if(flags & FLV_HEADER_FLAG_HASAUDIO){
+        st = av_new_stream(s, 1);
+        if (!st)
+            return AVERROR_NOMEM;
+        st->codec->codec_type = CODEC_TYPE_AUDIO;
+        av_set_pts_info(st, 24, 1, 1000); /* 24 bit pts in ms */
+    }
 
     offset = get_be32(&s->pb);
 
@@ -151,12 +165,9 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
             break;
     }
     if(i == s->nb_streams){
-        st = av_new_stream(s, is_audio);
-        if (!st)
-            return AVERROR_NOMEM;
-
-        av_set_pts_info(st, 24, 1, 1000); /* 24 bit pts in ms */
-        st->codec->time_base= (AVRational){1,1000};
+        av_log(NULL, AV_LOG_ERROR, "invalid stream\n");
+        url_fseek(&s->pb, next, SEEK_SET);
+        continue;
     }
 //    av_log(NULL, AV_LOG_DEBUG, "%d %X %d \n", is_audio, flags, st->discard);
     if(  (st->discard >= AVDISCARD_NONKEY && !((flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_KEY ||         is_audio))
@@ -173,7 +184,6 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     if(is_audio){
         if(st->codec->sample_rate == 0){
-            st->codec->codec_type = CODEC_TYPE_AUDIO;
             st->codec->channels = (flags & FLV_AUDIO_CHANNEL_MASK) == FLV_STEREO ? 2 : 1;
             if((flags & FLV_AUDIO_CODECID_MASK) == FLV_CODECID_NELLYMOSER_8HZ_MONO)
                 st->codec->sample_rate= 8000;
@@ -194,7 +204,6 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
             st->codec->bits_per_sample = (flags & FLV_AUDIO_SAMPLESIZE_MASK) ? 16 : 8;
         }
     }else{
-            st->codec->codec_type = CODEC_TYPE_VIDEO;
             switch(flags & FLV_VIDEO_CODECID_MASK){
             case FLV_CODECID_H263  : st->codec->codec_id = CODEC_ID_FLV1   ; break;
             case FLV_CODECID_SCREEN: st->codec->codec_id = CODEC_ID_FLASHSV; break;
