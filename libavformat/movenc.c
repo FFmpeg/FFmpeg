@@ -54,7 +54,6 @@ typedef struct MOVIndex {
     long        time;
     int64_t     trackDuration;
     long        sampleCount;
-    long        sampleDuration;
     long        sampleSize;
     int         hasKeyframes;
     int         hasBframes;
@@ -1501,12 +1500,10 @@ static int mov_write_header(AVFormatContext *s)
         if(st->codec->codec_type == CODEC_TYPE_VIDEO){
             track->tag = mov_find_video_codec_tag(s, track);
             track->timescale = st->codec->time_base.den;
-            track->sampleDuration = st->codec->time_base.num;
             av_set_pts_info(st, 64, 1, st->codec->time_base.den);
         }else if(st->codec->codec_type == CODEC_TYPE_AUDIO){
             track->tag = mov_find_audio_codec_tag(s, track);
             track->timescale = st->codec->sample_rate;
-            track->sampleDuration = st->codec->frame_size;
             av_set_pts_info(st, 64, 1, st->codec->sample_rate);
             switch(track->enc->codec_id){
             case CODEC_ID_MP3:
