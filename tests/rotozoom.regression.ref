@@ -105,8 +105,8 @@ bc0d8c868c1a05db0ff03f41768f6c5e *./data/a-ljpeg.avi
 4766558 ./data/a-ljpeg.avi
 dde5895817ad9d219f79a52d0bdfb001 *./data/out.yuv
 stddev:  0.00 PSNR:99.99 bytes:7602176
-8a2f3984a27a7513545cf98bc05fd066 *./data/a-jpegls.avi
-8334508 ./data/a-jpegls.avi
+f67cd488dfd06c03ad1d6d94d81b80c8 *./data/a-jpegls.avi
+8334488 ./data/a-jpegls.avi
 a63d4e3ea1f0b0c0d44821da9e09b8f4 *./data/out.yuv
 stddev:  0.67 PSNR:51.57 bytes:7602176
 989a42671603dc1a7e6b156dccf0e820 *./data/a-rv10.rm

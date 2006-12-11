@@ -804,11 +804,16 @@ static int encode_picture_ls(AVCodecContext *avctx, unsigned char *buf, int buf_
     av_free(zero);
     av_free(state);
 
+    // the specification says that after doing 0xff escaping unused bits in the
+    // last byte must be set to 0, so just append 7 "optional" zero-bits to
+    // avoid special-casing.
+    put_bits(&pb2, 7, 0);
+    size = put_bits_count(&pb2);
     flush_put_bits(&pb2);
     /* do escape coding */
-    size = put_bits_count(&pb2) >> 3;
     init_get_bits(&gb, buf2, size);
-    while(get_bits_count(&gb) < size * 8){
+    size -= 7;
+    while(get_bits_count(&gb) < size){
         int v;
         v = get_bits(&gb, 8);
         put_bits(&pb, 8, v);
