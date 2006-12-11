@@ -464,7 +464,7 @@ static inline void avg_pixels16_l2_altivec( uint8_t * dst, const uint8_t * src1,
     vec_u8_t lv = vec_ld( 7, dest );                           \
     vec_u8_t dstv   = vec_perm( hv, lv, (vec_u8_t)perm_ldv );  \
     vec_s16_t idct_sh6 = vec_sra(idctv, sixv);                 \
-    vec_u16_t dst16 = vec_mergeh(zero_u8v, dstv);              \
+    vec_u16_t dst16 = (vec_u16_t)vec_mergeh(zero_u8v, dstv);   \
     vec_s16_t idstsum = vec_adds(idct_sh6, (vec_s16_t)dst16);  \
     vec_u8_t idstsum8 = vec_packsu(zero_s16v, idstsum);        \
     vec_u8_t edgehv;                                           \
