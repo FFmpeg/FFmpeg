@@ -1518,10 +1518,10 @@ static int mov_write_header(AVFormatContext *s)
             default:
                 track->sampleSize = (av_get_bits_per_sample(st->codec->codec_id) >> 3) * st->codec->channels;
             }
-        }
-        if (!track->sampleDuration) {
-            av_log(s, AV_LOG_ERROR, "track %d: sample duration is not set\n", i);
-            return -1;
+            if (!st->codec->frame_size) {
+                av_log(s, AV_LOG_ERROR, "track %d: codec frame size is not set\n", i);
+                return -1;
+            }
         }
     }
 
