@@ -1760,6 +1760,12 @@ static int try_decode_frame(AVStream *st, const uint8_t *data, int size)
 /* maximum duration until we stop analysing the stream */
 #define MAX_STREAM_DURATION  ((int)(AV_TIME_BASE * 3.0))
 
+#define MAX_STD_TIMEBASES (60*12+3)
+static int get_std_framerate(int i){
+    if(i<60*12) return i*1001;
+    else        return (int[]){24,30,60}[i-60*12]*1000*12;
+}
+
 /**
  * Read the beginning of a media file to get stream information. This
  * is useful for file formats with no headers such as MPEG. This
@@ -1777,8 +1783,8 @@ int av_find_stream_info(AVFormatContext *ic)
     AVPacket pkt1, *pkt;
     AVPacketList *pktl=NULL, **ppktl;
     int64_t last_dts[MAX_STREAMS];
-    int64_t duration_sum[MAX_STREAMS];
     int duration_count[MAX_STREAMS]={0};
+    double duration_error[MAX_STREAMS][MAX_STD_TIMEBASES]={{0}}; //FIXME malloc()?
 
     for(i=0;i<ic->nb_streams;i++) {
         st = ic->streams[i];
@@ -1799,7 +1805,6 @@ int av_find_stream_info(AVFormatContext *ic)
 
     for(i=0;i<MAX_STREAMS;i++){
         last_dts[i]= AV_NOPTS_VALUE;
-        duration_sum[i]= INT64_MAX;
     }
 
     count = 0;
@@ -1885,17 +1890,18 @@ int av_find_stream_info(AVFormatContext *ic)
             int64_t duration= pkt->dts - last;
 
             if(pkt->dts != AV_NOPTS_VALUE && last != AV_NOPTS_VALUE && duration>0){
-                if(duration*duration_count[index]*10/9 < duration_sum[index]){
-                    duration_sum[index]= duration;
-                    duration_count[index]=1;
-                }else{
-                    int factor= av_rescale(2*duration, duration_count[index], duration_sum[index]);
-                    if(factor==3)
-                         duration_count[index] *= 2;
-                    factor= av_rescale(duration, duration_count[index], duration_sum[index]);
-                    duration_sum[index] += duration;
-                    duration_count[index]+= factor;
+                double dur= duration * av_q2d(st->time_base);
+
+//                if(st->codec->codec_type == CODEC_TYPE_VIDEO)
+//                    av_log(NULL, AV_LOG_ERROR, "%f\n", dur);
+                for(i=1; i<MAX_STD_TIMEBASES; i++){
+                    int framerate= get_std_framerate(i);
+                    int ticks= lrintf(dur*framerate/(1001*12));
+                    double error= dur - ticks*1001*12/(double)framerate;
+                    duration_error[index][i] += error*error;
                 }
+                duration_count[index]++;
+
                 if(st->codec_info_nb_frames == 0 && 0)
                     st->codec_info_duration += duration;
             }
@@ -1951,28 +1957,19 @@ int av_find_stream_info(AVFormatContext *ic)
                 st->codec->codec_tag= avcodec_pix_fmt_to_codec_tag(st->codec->pix_fmt);
 
             if(duration_count[i]
-               && (st->codec->time_base.num*101LL <= st->codec->time_base.den || st->codec->codec_id == CODEC_ID_MPEG2VIDEO) &&
+               && (st->codec->time_base.num*101LL <= st->codec->time_base.den || st->codec->codec_id == CODEC_ID_MPEG2VIDEO) /*&&
                //FIXME we should not special case mpeg2, but this needs testing with non mpeg2 ...
-               st->time_base.num*duration_sum[i]/duration_count[i]*101LL > st->time_base.den){
-                int64_t num, den, error, best_error;
+               st->time_base.num*duration_sum[i]/duration_count[i]*101LL > st->time_base.den*/){
+                double best_error= 2*av_q2d(st->time_base);
+                best_error= best_error*best_error*duration_count[i]*1000*12*30;
 
-                num= st->time_base.den*duration_count[i];
-                den= st->time_base.num*duration_sum[i];
-
-                best_error= INT64_MAX;
-                for(j=1; j<60*12; j++){
-                    error= FFABS(1001*12*num - 1001*j*den);
+                for(j=1; j<MAX_STD_TIMEBASES; j++){
+                    double error= duration_error[i][j] * get_std_framerate(j);
+//                    if(st->codec->codec_type == CODEC_TYPE_VIDEO)
+//                        av_log(NULL, AV_LOG_ERROR, "%f %f\n", get_std_framerate(j) / 12.0/1001, error);
                     if(error < best_error){
                         best_error= error;
-                        av_reduce(&st->r_frame_rate.num, &st->r_frame_rate.den, j, 12, INT_MAX);
-                    }
-                }
-                for(j=0; j<3; j++){
-                    static const int ticks[]= {24,30,60};
-                    error= FFABS(1001*12*num - 1000*12*den * ticks[j]);
-                    if(error < best_error){
-                        best_error= error;
-                        av_reduce(&st->r_frame_rate.num, &st->r_frame_rate.den, ticks[j]*1000, 1001, INT_MAX);
+                        av_reduce(&st->r_frame_rate.num, &st->r_frame_rate.den, get_std_framerate(j), 12*1001, INT_MAX);
                     }
                 }
             }
