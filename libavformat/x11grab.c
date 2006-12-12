@@ -24,9 +24,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public
- * License along with FFmpeg; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
 #include "avformat.h"
@@ -241,35 +241,21 @@ getCurrentPointer(AVFormatContext *s1, X11Grab *s, int *x, int *y)
     }
 }
 
-#define DRAW_CURSOR_TEMPLATE(type_t)									\
-    do {                                                                \
-        type_t *cursor;                                                 \
-        int width_cursor;                                               \
-        uint16_t bm_b, bm_w, mask;                                      \
-																		\
-        for (line = 0; line < min(20, (y_off + height) - *y); line++ ) { \
-            if (s->mouse_wanted == 1) {                                 \
-                bm_b = mousePointerBlack[line];                         \
-                bm_w = mousePointerWhite[line];                         \
-            } else {                                                    \
-                bm_b = mousePointerWhite[line];                         \
-                bm_w = mousePointerBlack[line];                         \
-            }                                                           \
-            mask = ( 0x0001 << 15 );                                    \
-																		\
-            for (cursor = (type_t*) im_data, width_cursor = 0;          \
-                 ((width_cursor + *x) < (width + x_off) && width_cursor < 16); \
-                 cursor++, width_cursor++) {                            \
-                if ( ( bm_b & mask ) > 0 ) {                            \
-                    *cursor &= ((~ image->red_mask) & (~ image->green_mask) & (~image->blue_mask )); \
-                } else if ( ( bm_w & mask ) > 0 ) {                     \
-                    *cursor |= (image->red_mask | image->green_mask | image->blue_mask ); \
-                }                                                       \
-                mask >>= 1;                                             \
-            }                                                           \
-            im_data += image->bytes_per_line;                           \
-        }                                                               \
-    } while (0)
+static void inline
+apply_masks(uint8_t *dst, int and, int or, int bits_per_pixel)
+{
+    switch (bits_per_pixel) {
+    case 32:
+        *(uint32_t*)dst = (*(uint32_t*)dst & and) | or;
+        break;
+    case 16:
+        *(uint16_t*)dst = (*(uint16_t*)dst & and) | or;
+        break;
+    case 8:
+        *dst = (or) ? 1 : 0;
+        break;
+    }
+}
 
 static void
 paintMousePointer(AVFormatContext *s1, X11Grab *s, int *x, int *y, XImage *image)
@@ -299,20 +285,74 @@ paintMousePointer(AVFormatContext *s1, X11Grab *s, int *x, int *y, XImage *image
            && (*y - y_off) >= 0 && *y < (height + y_off) ) {
         int line;
         uint8_t *im_data = (uint8_t*)image->data;
+        const uint16_t *black;
+        const uint16_t *white;
+        int masks;
+        int onepixel;
 
-        im_data += (image->bytes_per_line * (*y - y_off)); // shift to right line
-        im_data += (image->bits_per_pixel / 8 * (*x - x_off)); // shift to right pixel
+        /* Select correct pointer pixels */
+        if (s->mouse_wanted == 1) {
+            /* Normal pointer */
+            black = mousePointerBlack;
+            white = mousePointerWhite;
+        } else {
+            /* Inverted pointer */
+            black = mousePointerWhite;
+            white = mousePointerBlack;
+        }
 
-        switch(image->bits_per_pixel) {
+        /* Select correct masks and pixel size */
+        switch (image->bits_per_pixel) {
         case 32:
-            DRAW_CURSOR_TEMPLATE(uint32_t);
+            masks = (image->red_mask|image->green_mask|image->blue_mask);
+            onepixel = 4;
+            break;
+        case 24:
+            /* XXX: Though the code seems to support 24bit images, the
+             * apply_masks lacks support for 24bit */
+            masks = (image->red_mask|image->green_mask|image->blue_mask);
+            onepixel = 3;
             break;
         case 16:
-            DRAW_CURSOR_TEMPLATE(uint16_t);
+            masks = (image->red_mask|image->green_mask|image->blue_mask);
+            onepixel = 2;
+            break;
+        case 8:
+            masks = 1;
+            onepixel = 1;
             break;
         default:
-            /* XXX: How do we deal with 24bit and 8bit modes ? */
-            break;
+            /* Shut up gcc */
+            masks = 0;
+            onepixel = 0;
+        }
+
+        /* Shift to right line */
+        im_data += (image->bytes_per_line * (*y - y_off));
+        /* Shift to right pixel */
+        im_data += (image->bits_per_pixel / 8 * (*x - x_off));
+
+        /* Draw the cursor - proper loop */
+        for (line = 0; line < min(20, (y_off + height) - *y); line++) {
+            uint8_t *cursor = im_data;
+            int width_cursor;
+            uint16_t bm_b;
+            uint16_t bm_w;
+
+            bm_b = black[line];
+            bm_w = white[line];
+
+            for (width_cursor=0;
+                 width_cursor < 16 && (width_cursor + *x) < (width + x_off);
+                 width_cursor++) {
+                apply_masks(cursor,
+                            ~(masks*(bm_b&1)), masks*(bm_w&1),
+                            image->bits_per_pixel);
+                cursor += onepixel;
+                bm_b >>= 1;
+                bm_w >>= 1;
+            }
+            im_data += image->bytes_per_line;
         }
     }
 }
