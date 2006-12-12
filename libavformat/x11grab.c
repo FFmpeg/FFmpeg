@@ -1,46 +1,32 @@
 /*
  * X11 video grab interface
- * Copyright (C) 2006 Clemens Fruhwirth
  *
- * A quick note on licensing. This file is a mixture of LGPL code
- * (ffmpeg) and GPL code (xvidcap). The result is a file that must
- * abid both licenses. As they are compatible and GPL is more
- * strict, this code has an "effective" GPL license.
- * 
+ * This file is part of FFmpeg.
+ *
+ * FFmpeg integration:
+ * Copyright (C) 2006 Clemens Fruhwirth <clemens@endorphin.org>
+ *                    Edouard Gomez <ed.gomez@free.fr>
+ *
  * This file contains code from grab.c:
- * Copyright (c) 2000, 2001 Fabrice Bellard 
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Copyright (c) 2000-2001 Fabrice Bellard 
  *
  * This file contains code from the xvidcap project:
- * Copyright (C) 1997-98 Rasca, Berlin
- * Copyright (C) 2003,04 Karl H. Beckers, Frankfurt
+ * Copyright (C) 1997-1998 Rasca, Berlin
+ *               2003-2004 Karl H. Beckers, Frankfurt
  *
- * This program is free software; you can redistribute it and/or modify
+ * FFmpeg is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,
+ * FFmpeg is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with FFmpeg; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #include "avformat.h"
@@ -114,7 +100,7 @@ x11grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 	if (!st) {
 		return -ENOMEM;
 	}
-	av_set_pts_info(st, 48, 1, 1000000); /* 48 bits pts in us */
+	av_set_pts_info(st, 64, 1, 1000000); /* 64 bits pts in us */
 
 	use_shm = XShmQueryExtension(dpy);
 	av_log(s1, AV_LOG_INFO, "shared memory extension %s\n", use_shm ? "found" : "not found");
@@ -122,8 +108,8 @@ x11grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 	if(use_shm) {
 		int scr = XDefaultScreen(dpy);
 		image = XShmCreateImage(dpy,
-					DefaultVisual(dpy,scr),
-					DefaultDepth(dpy,scr),
+					DefaultVisual(dpy, scr),
+					DefaultDepth(dpy, scr),
 					ZPixmap,
 					NULL,
 					&x11grab->shminfo,
@@ -237,18 +223,6 @@ fail:
 	return AVERROR_IO;  
 }
 
-static uint16_t mousePointerBlack[] =
-{
-	0, 49152, 40960, 36864, 34816, 33792, 33280, 33024, 32896, 32832,
-	33728, 37376, 43264, 51456, 1152, 1152, 576, 576, 448, 0
-};
-
-static uint16_t mousePointerWhite[] =
-{
-	0, 0, 16384, 24576, 28672, 30720, 31744, 32256, 32512, 32640, 31744,
-	27648, 17920, 1536, 768, 768, 384, 384, 0, 0
-};
-
 static void
 getCurrentPointer(AVFormatContext *s1, X11Grab *s, int *x, int *y)
 {
@@ -300,6 +274,22 @@ for (line = 0; line < min(20, (y_off + height) - *y); line++ ) { \
 static void
 paintMousePointer(AVFormatContext *s1, X11Grab *s, int *x, int *y, XImage *image)
 {
+	static const uint16_t const mousePointerBlack[] =
+		{
+			0, 49152, 40960, 36864, 34816,
+			33792, 33280, 33024, 32896, 32832,
+			33728, 37376, 43264, 51456, 1152,
+			1152, 576, 576, 448, 0
+		};
+
+	static const uint16_t const mousePointerWhite[] =
+		{
+			0, 0, 16384, 24576, 28672,
+			30720, 31744, 32256, 32512, 32640,
+			31744, 27648, 17920, 1536, 768,
+			768, 384, 384, 0, 0
+		};
+
 	int x_off = s->x_off;
 	int y_off = s->y_off;
 	int width = s->width;
