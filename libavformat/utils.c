@@ -1763,7 +1763,7 @@ static int try_decode_frame(AVStream *st, const uint8_t *data, int size)
 #define MAX_STD_TIMEBASES (60*12+3)
 static int get_std_framerate(int i){
     if(i<60*12) return i*1001;
-    else        return (int[]){24,30,60}[i-60*12]*1000*12;
+    else        return ((int[]){24,30,60})[i-60*12]*1000*12;
 }
 
 /**
