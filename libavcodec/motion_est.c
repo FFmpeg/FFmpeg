@@ -1145,7 +1145,9 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
 {
     MotionEstContext * const c= &s->me;
     uint8_t *pix, *ppix;
-    int sum, varc, vard, mx, my, dmin;
+    int sum, mx, my, dmin;
+    int varc;            ///< the variance of the block (sum of squared (p[y][x]-average))
+    int vard;            ///< sum of squared differences with the estimated motion vector
     int P[10][2];
     const int shift= 1+s->quarter_sample;
     int mb_type=0;
