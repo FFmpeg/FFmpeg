@@ -823,20 +823,27 @@ static int sab_diamond_search(MpegEncContext * s, int *best, int dmin,
     cmpf= s->dsp.me_cmp[size];
     chroma_cmpf= s->dsp.me_cmp[size+1];
 
-    for(j=i=0; i<ME_MAP_SIZE; i++){
+    /*Note j<MAX_SAB_SIZE is needed if MAX_SAB_SIZE < ME_MAP_SIZE as j can
+      become larger due to MVs overflowing their ME_MAP_MV_BITS bits space in map
+     */
+    for(j=i=0; i<ME_MAP_SIZE && j<MAX_SAB_SIZE; i++){
         uint32_t key= map[i];
 
         key += (1<<(ME_MAP_MV_BITS-1)) + (1<<(2*ME_MAP_MV_BITS-1));
 
         if((key&((-1)<<(2*ME_MAP_MV_BITS))) != map_generation) continue;
 
-        assert(j<MAX_SAB_SIZE); //max j = number of predictors
-
         minima[j].height= score_map[i];
         minima[j].x= key & ((1<<ME_MAP_MV_BITS)-1); key>>=ME_MAP_MV_BITS;
         minima[j].y= key & ((1<<ME_MAP_MV_BITS)-1);
         minima[j].x-= (1<<(ME_MAP_MV_BITS-1));
         minima[j].y-= (1<<(ME_MAP_MV_BITS-1));
+
+        // all entries in map should be in range except if the mv overflows their ME_MAP_MV_BITS bits space
+        if(   minima[j].x > xmax || minima[j].x < xmin
+           || minima[j].y > ymax || minima[j].y < ymin)
+            continue;
+
         minima[j].checked=0;
         if(minima[j].x || minima[j].y)
             minima[j].height+= (mv_penalty[((minima[j].x)<<shift)-pred_x] + mv_penalty[((minima[j].y)<<shift)-pred_y])*penalty_factor;
