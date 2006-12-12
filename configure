@@ -1910,8 +1910,8 @@ lavu_version=`grep '#define LIBAVUTIL_VERSION ' "$source_path/libavutil/avutil.h
 if test "$lshared" = "yes" ; then
   echo "BUILD_SHARED=yes" >> config.mak
   echo "PIC=-fPIC -DPIC" >> config.mak
-  echo "SPPMAJOR=${lavc_version%%.*}" >> config.mak
-  echo "SPPVERSION=$lavc_version" >> config.mak
+  echo "SPPMAJOR=${pp_version%%.*}" >> config.mak
+  echo "SPPVERSION=$pp_version" >> config.mak
   echo "LAVCMAJOR=${lavc_version%%.*}" >> config.mak
   echo "LAVCVERSION=$lavc_version" >> config.mak
   echo "LAVFMAJOR=${lavf_version%%.*}" >> config.mak
@@ -2132,7 +2132,7 @@ includedir=\${prefix}/include
 
 Name: libpostproc
 Description: FFmpeg post processing library
-Version: $lavc_version
+Version: $pp_version
 Requires:
 Conflicts:
 Libs: -L\${libdir} -lpostproc
@@ -2147,7 +2147,7 @@ includedir=\${pcfiledir}/libpostproc
 
 Name: libpostproc
 Description: FFmpeg post processing library
-Version: $lavc_version
+Version: $pp_version
 Requires:
 Conflicts:
 Libs: \${libdir}/${LIBPREF}postproc${LIBSUF}
