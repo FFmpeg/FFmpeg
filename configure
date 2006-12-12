@@ -38,7 +38,7 @@ if test "$E1" != 0 || test "$E2" = 0; then
         try_exec /usr/xpg4/bin/sh "$0" "$@"
     fi
     echo "No compatible shell script interpreter found."
-    echo "This configure script requires a POSIX compatible shell"
+    echo "This configure script requires a POSIX-compatible shell"
     echo "such as bash or ksh."
     echo "THIS IS NOT A BUG IN FFMPEG, DO NOT REPORT IT AS SUCH."
     echo "Instead, install a working POSIX-compatible shell."
