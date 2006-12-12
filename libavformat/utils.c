@@ -1760,10 +1760,10 @@ static int try_decode_frame(AVStream *st, const uint8_t *data, int size)
 /* maximum duration until we stop analysing the stream */
 #define MAX_STREAM_DURATION  ((int)(AV_TIME_BASE * 3.0))
 
-#define MAX_STD_TIMEBASES (60*12+3)
+#define MAX_STD_TIMEBASES (60*12+5)
 static int get_std_framerate(int i){
     if(i<60*12) return i*1001;
-    else        return ((int[]){24,30,60})[i-60*12]*1000*12;
+    else        return ((int[]){24,30,60,12,15})[i-60*12]*1000*12;
 }
 
 /**
@@ -1894,18 +1894,21 @@ int av_find_stream_info(AVFormatContext *ic)
 
 //                if(st->codec->codec_type == CODEC_TYPE_VIDEO)
 //                    av_log(NULL, AV_LOG_ERROR, "%f\n", dur);
+                if(duration_count[index] > 0){
                 for(i=1; i<MAX_STD_TIMEBASES; i++){
                     int framerate= get_std_framerate(i);
                     int ticks= lrintf(dur*framerate/(1001*12));
                     double error= dur - ticks*1001*12/(double)framerate;
                     duration_error[index][i] += error*error;
                 }
+                }
                 duration_count[index]++;
 
                 if(st->codec_info_nb_frames == 0 && 0)
                     st->codec_info_duration += duration;
             }
-            last_dts[pkt->stream_index]= pkt->dts;
+            if(last == AV_NOPTS_VALUE || duration_count[index]<=1)
+                last_dts[pkt->stream_index]= pkt->dts;
         }
         if(st->parser && st->parser->parser->split && !st->codec->extradata){
             int i= st->parser->parser->split(st->codec, pkt->data, pkt->size);
