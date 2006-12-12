@@ -189,12 +189,12 @@ x11grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 #if 0
 		GetColorInfo (image, &c_info);
 		if ( c_info.alpha_mask == 0xFF000000 && image->green_mask == 0xFF00 ) {
-			// byte order is relevant here, not endianness
-			// endianness is handled by avcodec, but atm no such thing
-			// as having ABGR, instead of ARGB in a word. Since we
-			// need this for Solaris/SPARC, but need to do the conversion
-			// for every frame we do it outside of this loop, cf. below
-			// this matches both ARGB32 and ABGR32
+			/* byte order is relevant here, not endianness
+			 * endianness is handled by avcodec, but atm no such thing
+			 * as having ABGR, instead of ARGB in a word. Since we
+			 * need this for Solaris/SPARC, but need to do the conversion
+			 * for every frame we do it outside of this loop, cf. below
+			 * this matches both ARGB32 and ABGR32 */
 			input_pixfmt = PIX_FMT_ARGB32;
 		}  else {
 			av_log(s1, AV_LOG_ERROR,"image depth %i not supported ... aborting\n", image->bits_per_pixel);
@@ -237,13 +237,13 @@ fail:
 	return AVERROR_IO;  
 }
 
-static const uint16_t mousePointerBlack[] =
+static uint16_t mousePointerBlack[] =
 {
 	0, 49152, 40960, 36864, 34816, 33792, 33280, 33024, 32896, 32832,
 	33728, 37376, 43264, 51456, 1152, 1152, 576, 576, 448, 0
 };
 
-static const uint16_t mousePointerWhite[] =
+static uint16_t mousePointerWhite[] =
 {
 	0, 0, 16384, 24576, 28672, 30720, 31744, 32256, 32512, 32640, 31744,
 	27648, 17920, 1536, 768, 768, 384, 384, 0, 0
@@ -267,6 +267,36 @@ getCurrentPointer(AVFormatContext *s1, X11Grab *s, int *x, int *y)
 	}
 }
 
+#define DRAW_CURSOR_TEMPLATE(type_t) \
+do { \
+type_t *cursor; \
+int width_cursor; \
+uint16_t bm_b, bm_w, mask; \
+\
+for (line = 0; line < min(20, (y_off + height) - *y); line++ ) { \
+	if (s->mouse_wanted == 1) { \
+		bm_b = mousePointerBlack[line]; \
+		bm_w = mousePointerWhite[line]; \
+	} else { \
+		bm_b = mousePointerWhite[line]; \
+		bm_w = mousePointerBlack[line]; \
+	} \
+	mask = ( 0x0001 << 15 ); \
+\
+	for (cursor = (type_t*) im_data, width_cursor = 0; \
+	     ((width_cursor + *x) < (width + x_off) && width_cursor < 16); \
+	     cursor++, width_cursor++) { \
+		if ( ( bm_b & mask ) > 0 ) { \
+			*cursor &= ((~ image->red_mask) & (~ image->green_mask) & (~image->blue_mask )); \
+		} else if ( ( bm_w & mask ) > 0 ) { \
+			*cursor |= (image->red_mask | image->green_mask | image->blue_mask ); \
+		} \
+		mask >>= 1; \
+	} \
+	im_data += image->bytes_per_line; \
+} \
+} while (0)
+
 static void
 paintMousePointer(AVFormatContext *s1, X11Grab *s, int *x, int *y, XImage *image)
 {
@@ -284,135 +314,15 @@ paintMousePointer(AVFormatContext *s1, X11Grab *s, int *x, int *y, XImage *image
 		im_data += (image->bits_per_pixel / 8 * (*x - x_off)); // shift to right pixel
     
 		switch(image->bits_per_pixel) {
-		case 32: 
-		{
-			uint32_t *cursor;
-			int width_cursor;
-			uint16_t bm_b, bm_w, mask;
-      
-			for (line = 0; line < min(20, (y_off + height) - *y); line++ ) {
-				if (s->mouse_wanted == 1) {
-					bm_b = mousePointerBlack[line];
-					bm_w = mousePointerWhite[line];
-				} else {
-					bm_b = mousePointerWhite[line];
-					bm_w = mousePointerBlack[line];
-				}
-				mask = (0x0001 << 15);
-	  
-				for (cursor = (uint32_t*) im_data, width_cursor = 0; 
-				     ((width_cursor + *x) < (width + x_off) && width_cursor < 16);
-				     cursor++, width_cursor++) {
-					// Boolean pointer_b_bit, pointer_w_bit;	  
-					// pointer_b_bit = ( ( bm_b & mask ) > 0 );
-					// pointer_w_bit = ( ( bm_w & mask ) > 0 );
-					// printf("%i ", pointer_b_bit, pointer_w_bit );
-					if (( bm_b & mask) > 0 ) {
-						*cursor &= (  (~image->red_mask)
-							    & (~image->green_mask)
-							    & (~image->blue_mask));
-					} else if (( bm_w & mask) > 0 ) {
-						*cursor |= (  image->red_mask
-							    | image->green_mask
-							    | image->blue_mask );
-					}
-					mask >>= 1;
-				}
-				//						printf("\n");
-				im_data += image->bytes_per_line;
-			}
-		}
-		break;
-#if 0
-		case 24: // not sure this can occur at all ..........
-			av_log(s1, AV_LOG_ERROR, "input image bits_per_pixel %i not implemented with mouse pointer capture ... aborting!\n",
-				image->bits_per_pixel);
-			av_log(s1, AV_LOG_ERROR, "Please file a bug at http://www.sourceforge.net/projects/xvidcap/\n");
-			exit(1);
+		case 32:
+			DRAW_CURSOR_TEMPLATE(uint32_t);
 			break;
 		case 16:
-		{
-			uint16_t *cursor;
-			int width;
-			uint16_t bm_b, bm_w, mask;
-                
-			for (line = 0; line < 16; line++) {
-				if (mjob->mouseWanted == 1) {
-					bm_b = mousePointerBlack[line];
-					bm_w = mousePointerWhite[line];
-				} else {
-					bm_b = mousePointerWhite[line];
-					bm_w = mousePointerBlack[line];
-				}
-				mask = (0x0001 << 15);
-                    
-				for (cursor = (uint16_t*) im_data, width = 0;
-				     ((width + *x) < (mjob->area->width + mjob->area->x)&&width < 6);
-				     cursor++, width++) {
-					// Boolean pointer_b_bit, pointer_w_bit;
-					// pointer_b_bit = ( ( bm_b & mask ) > 0 );
-					// pointer_w_bit = ( ( bm_w & mask ) > 0 );
-					// printf("%i ", pointer_b_bit, pointer_w_bit );
-					if (( bm_b & mask ) > 0 ) {
-						*cursor &= (  (~image->red_mask)
-							    & (~image->green_mask)
-							    & (~image->blue_mask));
-					} else if (( bm_w & mask ) > 0 ) {
-						*cursor |= (  image->red_mask
-							    | image->green_mask
-							    | image->blue_mask );
-					}
-					mask >>= 1;
-				}
-				// printf("\n");
-                    
-				im_data += image->bytes_per_line;
-			}
-		}
-			break;
-		case 8:
-		{
-			uint8_t *cursor;
-			int width;
-			uint16_t bm_b, bm_w, mask;
-                
-			for (line = 0; line < 16; line++ ) {
-				if (mjob->mouseWanted == 1) {
-					bm_b = mousePointerBlack[line];
-					bm_w = mousePointerWhite[line];
-				} else {
-					bm_b = mousePointerWhite[line];
-					bm_w = mousePointerBlack[line];
-				}
-				mask = ( 0x0001 << 15 );
-                    
-				for (cursor = im_data, width = 0;
-				     ((width + *x) < (mjob->area->width + mjob->area->x)&&width < 6);
-				     cursor++, width++) {
-					// Boolean pointer_b_bit, pointer_w_bit;
-					// pointer_b_bit = ( ( bm_b & mask ) > 0 );
-					// pointer_w_bit = ( ( bm_w & mask ) > 0 );
-					// printf("%i ", pointer_b_bit, pointer_w_bit );
-					if ((bm_b & mask) > 0 ) {
-						*cursor = 0;
-					} else if (( bm_w & mask) > 0 ) {
-						*cursor = 1;
-					}
-					mask >>= 1;
-                        
-				}
-				// printf("\n");
-                    
-				im_data += image->bytes_per_line;
-			}
-		}
+			DRAW_CURSOR_TEMPLATE(uint16_t);
 			break;
 		default:
-			av_log(s1, AV_LOG_ERROR, "input image bits_per_pixel %i not supported with mouse pointer capture ... aborting!\n",
-			       image->bits_per_pixel);
-			exit(1);
-                
-#endif        
+			/* XXX: How do we deal with 24bit and 8bit modes ? */
+			break;
 		}
 	}
 }
