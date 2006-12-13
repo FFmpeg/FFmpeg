@@ -365,7 +365,7 @@ paint_mouse_pointer(XImage *image, x11_grab_t *s, int x, int y)
  * Reads new data in the image structure.
  *
  * @param dpy X11 display to grab from
- * @param d 
+ * @param d
  * @param image Image where the grab will be put
  * @param x Top-Left grabbing rectangle horizontal coordinate
  * @param y Top-Left grabbing rectangle vertical coordinate
