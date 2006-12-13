@@ -2038,168 +2038,73 @@ if test "$source_path_used" = "yes" ; then
     done
 fi
 
-# build pkg-config files libav*.pc and libpostproc.pc
-# libavutil.pc
-cat <<EOF >libavutil.pc
+
+# build pkg-config files
+
+pkgconfig_generate(){
+name=$1
+comment=$2
+version=$3
+libs=$4
+requires=$5
+include=$6
+cat <<EOF >$name.pc
 prefix=$PREFIX
 exec_prefix=\${prefix}
 libdir=\${exec_prefix}/lib
 includedir=\${prefix}/include
 
-Name: libavutil
-Description: FFmpeg utility library
-Version: $lavu_version
-Requires:
+Name: $name
+Description: $comment
+Version: $version
+Requires: $requires
 Conflicts:
-Libs: -L\${libdir} -lavutil
-Cflags: -I\${includedir} -I\${includedir}/ffmpeg
+Libs: -L\${libdir} $libs
+Cflags: -I\${includedir} -I\${includedir}/$include
 EOF
+}
 
-cat <<EOF >libavutil-uninstalled.pc
+pkgconfig_generate_uninstalled(){
+name=$1
+shortname=${name/lib/}
+comment=$2
+version=$3
+libs=$4
+requires=$5
+cat <<EOF >$name-uninstalled.pc
 prefix=
 exec_prefix=
-libdir=\${pcfiledir}/libavutil
-includedir=\${pcfiledir}/libavutil
+libdir=\${pcfiledir}/$name
+includedir=\${pcfiledir}/$name
 
-Name: libavutil
-Description: FFmpeg utility library
-Version: $lavu_version
-Requires:
+Name: $name
+Description: $comment
+Version: $version
+Requires: $requires
 Conflicts:
-Libs: \${libdir}/${LIBPREF}avutil${LIBSUF}
+Libs: \${libdir}/${LIBPREF}${shortname}${LIBSUF} $libs
 Cflags: -I\${includedir}
 EOF
+}
 
-# libavcodec.pc
-cat <<EOF >libavcodec.pc
-prefix=$PREFIX
-exec_prefix=\${prefix}
-libdir=\${exec_prefix}/lib
-includedir=\${prefix}/include
+pkgconfig_generate libavutil "FFmpeg utility library" "$lavu_version" -lavutil ffmpeg
+pkgconfig_generate_uninstalled libavutil "FFmpeg utility library" "$lavu_version"
 
-Name: libavcodec
-Description: FFmpeg codec library
-Version: $lavc_version
-Requires: $pkg_requires libavutil = $lavu_version
-Conflicts:
-Libs: -L\${libdir} -lavcodec $extralibs
-Cflags: -I\${includedir} -I\${includedir}/ffmpeg
-EOF
+pkgconfig_generate libavcodec "FFmpeg codec library" "$lavc_version" "-lavcodec $extralibs" "$pkg_requires libavutil = $lavu_version" ffmpeg
+pkgconfig_generate_uninstalled libavcodec "FFmpeg codec library" "$lavc_version" "$extralibs" "$pkg_requires libavutil = $lavu_version"
 
-cat <<EOF >libavcodec-uninstalled.pc
-prefix=
-exec_prefix=
-libdir=\${pcfiledir}/libavcodec
-includedir=\${pcfiledir}/libavcodec
+pkgconfig_generate libavformat "FFmpeg container format library" "$lavf_version" "-lavformat $extralibs" "$pkg_requires libavcodec = $lavc_version" ffmpeg
+pkgconfig_generate_uninstalled libavformat "FFmpeg container format library" "$lavf_version" "$extralibs" "$pkg_requires libavcodec = $lavc_version"
 
-Name: libavcodec
-Description: FFmpeg codec library
-Version: $lavc_version
-Requires: $pkg_requires libavutil = $lavu_version
-Conflicts:
-Libs: \${libdir}/${LIBPREF}avcodec${LIBSUF} $extralibs
-Cflags: -I\${includedir}
-EOF
-
-# libavformat.pc
-cat <<EOF >libavformat.pc
-prefix=$PREFIX
-exec_prefix=\${prefix}
-libdir=\${exec_prefix}/lib
-includedir=\${prefix}/include
-
-Name: libavformat
-Description: FFmpeg container format library
-Version: $lavf_version
-Requires: $pkg_requires libavcodec = $lavc_version
-Conflicts:
-Libs: -L\${libdir} -lavformat $extralibs
-Cflags: -I\${includedir} -I\${includedir}/ffmpeg
-EOF
-
-cat <<EOF >libavformat-uninstalled.pc
-prefix=
-exec_prefix=
-libdir=\${pcfiledir}/libavformat
-includedir=\${pcfiledir}/libavformat
-
-Name: libavformat
-Description: FFmpeg container format library
-Version: $lavf_version
-Requires: $pkg_requires libavcodec = $lavc_version
-Conflicts:
-Libs: \${libdir}/${LIBPREF}avformat${LIBSUF} $extralibs
-Cflags: -I\${includedir}
-EOF
-
-
-# libpostproc.pc
-cat <<EOF >libpostproc.pc
-prefix=$PREFIX
-exec_prefix=\${prefix}
-libdir=\${exec_prefix}/lib
-includedir=\${prefix}/include
-
-Name: libpostproc
-Description: FFmpeg post processing library
-Version: $pp_version
-Requires:
-Conflicts:
-Libs: -L\${libdir} -lpostproc
-Cflags: -I\${includedir} -I\${includedir}/postproc
-EOF
-
-cat <<EOF >libpostproc-uninstalled.pc
-prefix=
-exec_prefix=
-libdir=\${pcfiledir}/libpostproc
-includedir=\${pcfiledir}/libpostproc
-
-Name: libpostproc
-Description: FFmpeg post processing library
-Version: $pp_version
-Requires:
-Conflicts:
-Libs: \${libdir}/${LIBPREF}postproc${LIBSUF}
-Cflags: -I\${includedir}
-EOF
+pkgconfig_generate libpostproc "FFmpeg post processing library" "$pp_version" -lpostproc "" postproc
+pkgconfig_generate_uninstalled libpostproc "FFmpeg post processing library" "$pp_version"
 
 if test "$swscaler" != "no"; then
-  sws_pc_libs="-L\${libdir} -lswscale"
-  sws_pc_uninstalled_libs="\${libdir}/${LIBPREF}swscale${LIBSUF}"
-  sws_pc_requires="$pkg_requires libavutil = $lavu_version"
+  pkgconfig_generate libswscale "FFmpeg image rescaling library" "$sws_version" "-lswscale" "$pkg_requires libavutil = $lavu_version" swscale
+  pkgconfig_generate_uninstalled libswscale "FFmpeg image rescaling library" "$sws_version" "" "$pkg_requires libavutil = $lavu_version"
 else
-  sws_pc_libs=""
-  sws_pc_uninstalled_libs=""
-  sws_pc_requires="$pkg_requires libavcodec = $lavc_version"
+  pkgconfig_generate libswscale "FFmpeg image rescaling library" "$sws_version" "" "$pkg_requires libavcodec = $lavc_version" swscale
+  pkgconfig_generate_uninstalled libswscale "FFmpeg image rescaling library" "$sws_version" "" "$pkg_requires libavcodec = $lavc_version"
+  sed -i s/^Libs:.*$/Libs:/ libswscale.pc
+  sed -i s/^Libs:.*$/Libs:/ libswscale-uninstalled.pc
 fi
-# libswscale.pc
-cat <<EOF >libswscale.pc
-prefix=$PREFIX
-exec_prefix=\${prefix}
-libdir=\${exec_prefix}/lib
-includedir=\${prefix}/include
-
-Name: libswscale
-Description: FFmpeg image rescaling library
-Version: $sws_version
-Requires: $sws_pc_requires
-Conflicts:
-Libs: $sws_pc_libs
-Cflags: -I\${includedir} -I\${includedir}/swscale
-EOF
-
-cat <<EOF >libswscale-uninstalled.pc
-prefix=
-exec_prefix=
-libdir=\${pcfiledir}/libswscale
-includedir=\${pcfiledir}/libswscale
-
-Name: libswscale
-Description: FFmpeg image rescaling library
-Version: $sws_version
-Requires: $sws_pc_requires
-Conflicts:
-Libs: $sws_pc_uninstalled_libs
-Cflags: -I\${includedir}
-EOF
