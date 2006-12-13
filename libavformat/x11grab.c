@@ -428,15 +428,15 @@ x11grab_read_packet(AVFormatContext *s1, AVPacket *pkt)
     struct timespec ts;
 
     /* Calculate the time of the next frame */
-    s->time_frame += int64_t_C(1000000);
+    s->time_frame += INT64_C(1000000);
 
     /* wait based on the frame rate */
     for(;;) {
         curtime = av_gettime();
         delay = s->time_frame * av_q2d(s->time_base) - curtime;
         if (delay <= 0) {
-            if (delay < int64_t_C(-1000000) * av_q2d(s->time_base)) {
-                s->time_frame += int64_t_C(1000000);
+            if (delay < INT64_C(-1000000) * av_q2d(s->time_base)) {
+                s->time_frame += INT64_C(1000000);
             }
             break;
         }
