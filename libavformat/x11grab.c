@@ -101,6 +101,11 @@ x11grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         return AVERROR_IO;
     }
 
+    if (!ap->device) {
+        av_log(s1, AV_LOG_ERROR, "AVParameters don't specify any device. Use -vd.\n");
+        return AVERROR_IO;
+    }
+
     sscanf(ap->device, "x11:%d,%d", &x_off, &y_off);
     av_log(s1, AV_LOG_INFO, "device: %s -> x: %d y: %d width: %d height: %d\n", ap->device, x_off, y_off, ap->width, ap->height);
 
