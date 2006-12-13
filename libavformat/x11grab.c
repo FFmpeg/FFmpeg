@@ -25,8 +25,14 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
+ * with FFmpeg; if not, write to the Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ */
+
+/**
+ * @file x11grab.c
+ * X11 frame device demuxer by Clemens Fruhwirth <clemens@endorphin.org>
+ * and Edouard Gomez <ed.gomez@free.fr>.
  */
 
 #include "avformat.h"
@@ -46,41 +52,53 @@
 #include <sys/shm.h>
 #include <X11/extensions/XShm.h>
 
-typedef struct
+/**
+ * X11 Device Demuxer context
+ */
+typedef struct x11_grab_s
 {
-    Display *dpy;
-    int frame_format;
-    int frame_size;
-    int frame_rate;
-    int frame_rate_base;
-    int64_t time_frame;
+    int frame_size;          /**< Size in bytes of a grabbed frame */
+    AVRational time_base;    /**< Time base */
+    int64_t time_frame;      /**< Current time */
 
-    int height;
-    int width;
-    int x_off;
-    int y_off;
-    XImage *image;
-    int use_shm;
-    XShmSegmentInfo shminfo;
-    int mouse_wanted;
-} X11Grab;
+    int height;              /**< Height of the grab frame */
+    int width;               /**< Width of the grab frame */
+    int x_off;               /**< Horizontal top-left corner coordinate */
+    int y_off;               /**< Vertical top-left corner coordinate */
 
+    Display *dpy;            /**< X11 display from which x11grab grabs frames */
+    XImage *image;           /**< X11 image holding the grab */
+    int use_shm;             /**< !0 when using XShm extension */
+    XShmSegmentInfo shminfo; /**< When using XShm, keeps track of XShm infos */
+} x11_grab_t;
+
+/**
+ * Initializes the x11 grab device demuxer (public device demuxer API).
+ *
+ * @param s1 Context from avformat core
+ * @param ap Parameters from avformat core
+ * @return <ul>
+ *          <li>ENOMEM no memory left</li>
+ *          <li>AVERROR_IO other failure case</li>
+ *          <li>0 success</li>
+ *         </ul>
+ */
 static int
 x11grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 {
-    X11Grab *x11grab = s1->priv_data;
+    x11_grab_t *x11grab = s1->priv_data;
     Display *dpy;
     AVStream *st = NULL;
-    int width, height;
-    int frame_rate, frame_rate_base, frame_size;
     int input_pixfmt;
     XImage *image;
-    int x_off=0; int y_off = 0;
+    int x_off = 0;
+    int y_off = 0;
     int use_shm;
 
     dpy = XOpenDisplay(NULL);
     if(!dpy) {
-        goto fail;
+        av_free(st);
+        return AVERROR_IO;
     }
 
     sscanf(ap->device, "x11:%d,%d", &x_off, &y_off);
@@ -91,11 +109,6 @@ x11grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         return AVERROR_IO;
     }
 
-    width = ap->width;
-    height = ap->height;
-    frame_rate = ap->time_base.den;
-    frame_rate_base = ap->time_base.num;
-
     st = av_new_stream(s1, 0);
     if (!st) {
         return -ENOMEM;
@@ -103,7 +116,7 @@ x11grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     av_set_pts_info(st, 64, 1, 1000000); /* 64 bits pts in us */
 
     use_shm = XShmQueryExtension(dpy);
-    av_log(s1, AV_LOG_INFO, "shared memory extension %s\n", use_shm ? "found" : "not found");
+    av_log(s1, AV_LOG_INFO, "shared memory extension %s found\n", use_shm ? "" : "not");
 
     if(use_shm) {
         int scr = XDefaultScreen(dpy);
@@ -142,13 +155,14 @@ x11grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         input_pixfmt = PIX_FMT_PAL8;
         break;
     case 16:
-        if ( image->red_mask == 0xF800 && image->green_mask == 0x07E0
-             && image->blue_mask == 0x1F ) {
+        if (       image->red_mask   == 0xf800 &&
+                   image->green_mask == 0x07e0 &&
+                   image->blue_mask  == 0x001f ) {
             av_log (s1, AV_LOG_DEBUG, "16 bit RGB565\n");
             input_pixfmt = PIX_FMT_RGB565;
-        } else if ( image->red_mask == 0x7C00 &&
-                    image->green_mask == 0x03E0 &&
-                    image->blue_mask == 0x1F ) {
+        } else if (image->red_mask   == 0x7c00 &&
+                   image->green_mask == 0x03e0 &&
+                   image->blue_mask  == 0x001f ) {
             av_log(s1, AV_LOG_DEBUG, "16 bit RGB555\n");
             input_pixfmt = PIX_FMT_RGB555;
         } else {
@@ -158,12 +172,13 @@ x11grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         }
         break;
     case 24:
-        if ( image->red_mask == 0xFF0000 &&
-             image->green_mask == 0xFF00
-             && image->blue_mask == 0xFF ) {
+        if (        image->red_mask   == 0xff0000 &&
+                    image->green_mask == 0x00ff00 &&
+                    image->blue_mask  == 0x0000ff ) {
             input_pixfmt = PIX_FMT_BGR24;
-        } else if ( image->red_mask == 0xFF && image->green_mask == 0xFF00
-                    && image->blue_mask == 0xFF0000 ) {
+        } else if ( image->red_mask   == 0x0000ff &&
+                    image->green_mask == 0x00ff00 &&
+                    image->blue_mask  == 0xff0000 ) {
             input_pixfmt = PIX_FMT_RGB24;
         } else {
             av_log(s1, AV_LOG_ERROR,"rgb ordering at image depth %i not supported ... aborting\n", image->bits_per_pixel);
@@ -174,7 +189,7 @@ x11grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     case 32:
 #if 0
         GetColorInfo (image, &c_info);
-        if ( c_info.alpha_mask == 0xFF000000 && image->green_mask == 0xFF00 ) {
+        if ( c_info.alpha_mask == 0xff000000 && image->green_mask == 0x0000ff00) {
             /* byte order is relevant here, not endianness
              * endianness is handled by avcodec, but atm no such thing
              * as having ABGR, instead of ARGB in a word. Since we
@@ -194,41 +209,41 @@ x11grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         return -1;
     }
 
-    frame_size = width * height * image->bits_per_pixel/8;
-    x11grab->frame_size = frame_size;
+    x11grab->frame_size = ap->width * ap->height * image->bits_per_pixel/8;
     x11grab->dpy = dpy;
     x11grab->width = ap->width;
     x11grab->height = ap->height;
-    x11grab->frame_rate      = frame_rate;
-    x11grab->frame_rate_base = frame_rate_base;
-    x11grab->time_frame = av_gettime() * frame_rate / frame_rate_base;
+    x11grab->time_base  = ap->time_base;
+    x11grab->time_frame = av_gettime() / av_q2d(ap->time_base);
     x11grab->x_off = x_off;
     x11grab->y_off = y_off;
     x11grab->image = image;
     x11grab->use_shm = use_shm;
-    x11grab->mouse_wanted = 1;
 
     st->codec->codec_type = CODEC_TYPE_VIDEO;
     st->codec->codec_id = CODEC_ID_RAWVIDEO;
-    st->codec->width = width;
-    st->codec->height = height;
+    st->codec->width = ap->width;
+    st->codec->height = ap->height;
     st->codec->pix_fmt = input_pixfmt;
-    st->codec->time_base.den = frame_rate;
-    st->codec->time_base.num = frame_rate_base;
-    st->codec->bit_rate = frame_size * 1/av_q2d(st->codec->time_base) * 8;
+    st->codec->time_base = ap->time_base;
+    st->codec->bit_rate = x11grab->frame_size * 1/av_q2d(ap->time_base) * 8;
 
     return 0;
-fail:
-    av_free(st);
-    return AVERROR_IO;
 }
 
+/**
+ * Get pointer coordinates from X11.
+ *
+ * @param x Integer where horizontal coordinate will be returned
+ * @param y Integer where vertical coordinate will be returned
+ * @param dpy X11 display from where pointer coordinates are retrieved
+ * @param s1 Context used for logging errors if necessary
+ */
 static void
-getCurrentPointer(AVFormatContext *s1, X11Grab *s, int *x, int *y)
+get_pointer_coordinates(int *x, int *y, Display *dpy, AVFormatContext *s1)
 {
     Window mrootwindow, childwindow;
     int dummy;
-    Display *dpy = s->dpy;
 
     mrootwindow = DefaultRootWindow(dpy);
 
@@ -241,6 +256,17 @@ getCurrentPointer(AVFormatContext *s1, X11Grab *s, int *x, int *y)
     }
 }
 
+/**
+ * Mouse painting helper function that applies an 'and' and 'or' mask pair to
+ * '*dst' pixel. It actually draws a mouse pointer pixel to grabbed frame.
+ *
+ * @param dst Destination pixel
+ * @param and Part of the mask that must be applied using a bitwise 'and'
+ *            operator
+ * @param or  Part of the mask that must be applied using a bitwise 'or'
+ *            operator
+ * @param bits_per_pixel Bits per pixel used in the grabbed image
+ */
 static void inline
 apply_masks(uint8_t *dst, int and, int or, int bits_per_pixel)
 {
@@ -252,28 +278,39 @@ apply_masks(uint8_t *dst, int and, int or, int bits_per_pixel)
         *(uint16_t*)dst = (*(uint16_t*)dst & and) | or;
         break;
     case 8:
-        *dst = (or) ? 1 : 0;
+        *dst = !!or;
         break;
     }
 }
 
+/**
+ * Paints a mouse pointer in an X11 image.
+ *
+ * @param image Image where to paint the mouse pointer
+ * @param s context used to retrieve original grabbing rectangle
+ *          coordinates
+ * @param x Mouse pointer coordinate
+ * @param y Mouse pointer coordinate
+ */
 static void
-paintMousePointer(AVFormatContext *s1, X11Grab *s, int *x, int *y, XImage *image)
+paint_mouse_pointer(XImage *image, x11_grab_t *s, int x, int y)
 {
+    /* 16x20x1bpp bitmap for the black channel of the mouse pointer */
     static const uint16_t const mousePointerBlack[] =
         {
-            0, 49152, 40960, 36864, 34816,
-            33792, 33280, 33024, 32896, 32832,
-            33728, 37376, 43264, 51456, 1152,
-            1152, 576, 576, 448, 0
+            0x0000, 0xc000, 0xa000, 0x9000, 0x8800,
+            0x8400, 0x8200, 0x8100, 0x8080, 0x8040,
+            0x83c0, 0x9200, 0xa900, 0xc900, 0x0480,
+            0x0480, 0x0240, 0x0240, 0x01c0, 0x0000
         };
 
+    /* 16x20x1bpp bitmap for the white channel of the mouse pointer */
     static const uint16_t const mousePointerWhite[] =
         {
-            0, 0, 16384, 24576, 28672,
-            30720, 31744, 32256, 32512, 32640,
-            31744, 27648, 17920, 1536, 768,
-            768, 384, 384, 0, 0
+            0x0000, 0x0000, 0x4000, 0x6000, 0x7000,
+            0x7800, 0x7c00, 0x7e00, 0x7f00, 0x7f80,
+            0x7c00, 0x6c00, 0x4600, 0x0600, 0x0300,
+            0x0300, 0x0180, 0x0180, 0x0000, 0x0000
         };
 
     int x_off = s->x_off;
@@ -281,74 +318,40 @@ paintMousePointer(AVFormatContext *s1, X11Grab *s, int *x, int *y, XImage *image
     int width = s->width;
     int height = s->height;
 
-    if (   (*x - x_off) >= 0 && *x < (width + x_off)
-           && (*y - y_off) >= 0 && *y < (height + y_off) ) {
-        int line;
+    if (   x - x_off >= 0 && x < width + x_off
+        && y - y_off >= 0 && y < height + y_off) {
         uint8_t *im_data = (uint8_t*)image->data;
-        const uint16_t *black;
-        const uint16_t *white;
+        int bytes_per_pixel;
+        int line;
         int masks;
-        int onepixel;
-
-        /* Select correct pointer pixels */
-        if (s->mouse_wanted == 1) {
-            /* Normal pointer */
-            black = mousePointerBlack;
-            white = mousePointerWhite;
-        } else {
-            /* Inverted pointer */
-            black = mousePointerWhite;
-            white = mousePointerBlack;
-        }
 
         /* Select correct masks and pixel size */
-        switch (image->bits_per_pixel) {
-        case 32:
-            masks = (image->red_mask|image->green_mask|image->blue_mask);
-            onepixel = 4;
-            break;
-        case 24:
-            /* XXX: Though the code seems to support 24bit images, the
-             * apply_masks lacks support for 24bit */
-            masks = (image->red_mask|image->green_mask|image->blue_mask);
-            onepixel = 3;
-            break;
-        case 16:
-            masks = (image->red_mask|image->green_mask|image->blue_mask);
-            onepixel = 2;
-            break;
-        case 8:
+        if (image->bits_per_pixel == 8) {
             masks = 1;
-            onepixel = 1;
-            break;
-        default:
-            /* Shut up gcc */
-            masks = 0;
-            onepixel = 0;
+        } else {
+            masks = (image->red_mask|image->green_mask|image->blue_mask);
         }
+        bytes_per_pixel = image->bits_per_pixel>>3;
 
         /* Shift to right line */
-        im_data += (image->bytes_per_line * (*y - y_off));
-        /* Shift to right pixel */
-        im_data += (image->bits_per_pixel / 8 * (*x - x_off));
+        im_data += image->bytes_per_line * (y - y_off);
+        /* Shift to right pixel in the line */
+        im_data += bytes_per_pixel * (x - x_off);
 
         /* Draw the cursor - proper loop */
-        for (line = 0; line < min(20, (y_off + height) - *y); line++) {
+        for (line = 0; line < FFMIN(20, (y_off + height) - y); line++) {
             uint8_t *cursor = im_data;
-            int width_cursor;
+            int column;
             uint16_t bm_b;
             uint16_t bm_w;
 
-            bm_b = black[line];
-            bm_w = white[line];
+            bm_b = mousePointerBlack[line];
+            bm_w = mousePointerWhite[line];
 
-            for (width_cursor=0;
-                 width_cursor < 16 && (width_cursor + *x) < (width + x_off);
-                 width_cursor++) {
-                apply_masks(cursor,
-                            ~(masks*(bm_b&1)), masks*(bm_w&1),
+            for (column = 0; column < FFMIN(16, (x_off + width) - x); column++) {
+                apply_masks(cursor, ~(masks*(bm_b&1)), masks*(bm_w&1),
                             image->bits_per_pixel);
-                cursor += onepixel;
+                cursor += bytes_per_pixel;
                 bm_b >>= 1;
                 bm_w >>= 1;
             }
@@ -358,19 +361,25 @@ paintMousePointer(AVFormatContext *s1, X11Grab *s, int *x, int *y, XImage *image
 }
 
 
-/*
- * just read new data in the image structure, the image
- * structure inclusive the data area must be allocated before
+/**
+ * Reads new data in the image structure.
+ *
+ * @param dpy X11 display to grab from
+ * @param d 
+ * @param image Image where the grab will be put
+ * @param x Top-Left grabbing rectangle horizontal coordinate
+ * @param y Top-Left grabbing rectangle vertical coordinate
+ * @return 0 if error, !0 if successful
  */
 static int
-XGetZPixmap(Display *dpy, Drawable d, XImage *image, int x, int y)
+xget_zpixmap(Display *dpy, Drawable d, XImage *image, int x, int y)
 {
     xGetImageReply rep;
     xGetImageReq *req;
     long nbytes;
 
     if (!image) {
-        return False;
+        return 0;
     }
 
     LockDisplay(dpy);
@@ -385,10 +394,10 @@ XGetZPixmap(Display *dpy, Drawable d, XImage *image, int x, int y)
     req->planeMask = (unsigned int)AllPlanes;
     req->format = ZPixmap;
 
-    if (!_XReply(dpy, (xReply *) &rep, 0, xFalse) || !rep.length) {
+    if (!_XReply(dpy, (xReply *)&rep, 0, xFalse) || !rep.length) {
         UnlockDisplay(dpy);
         SyncHandle();
-        return False;
+        return 0;
     }
 
     nbytes = (long)rep.length << 2;
@@ -396,13 +405,20 @@ XGetZPixmap(Display *dpy, Drawable d, XImage *image, int x, int y)
 
     UnlockDisplay(dpy);
     SyncHandle();
-    return True;
+    return 1;
 }
 
+/**
+ * Grabs a frame from x11 (public device demuxer API).
+ *
+ * @param s1 Context from avformat core
+ * @param pkt Packet holding the brabbed frame
+ * @return frame size in bytes
+ */
 static int
 x11grab_read_packet(AVFormatContext *s1, AVPacket *pkt)
 {
-    X11Grab *s = s1->priv_data;
+    x11_grab_t *s = s1->priv_data;
     Display *dpy = s->dpy;
     XImage *image = s->image;
     int x_off = s->x_off;
@@ -417,9 +433,9 @@ x11grab_read_packet(AVFormatContext *s1, AVPacket *pkt)
     /* wait based on the frame rate */
     for(;;) {
         curtime = av_gettime();
-        delay = s->time_frame  * s->frame_rate_base / s->frame_rate - curtime;
+        delay = s->time_frame * av_q2d(s->time_base) - curtime;
         if (delay <= 0) {
-            if (delay < int64_t_C(-1000000) * s->frame_rate_base / s->frame_rate) {
+            if (delay < int64_t_C(-1000000) * av_q2d(s->time_base)) {
                 s->time_frame += int64_t_C(1000000);
             }
             break;
@@ -433,22 +449,22 @@ x11grab_read_packet(AVFormatContext *s1, AVPacket *pkt)
         return AVERROR_IO;
     }
 
-    pkt->pts = curtime & ((1LL << 48) - 1);
+    pkt->pts = curtime;
 
     if(s->use_shm) {
         if (!XShmGetImage(dpy, RootWindow(dpy, DefaultScreen(dpy)), image, x_off, y_off, AllPlanes)) {
             av_log (s1, AV_LOG_INFO, "XShmGetImage() failed\n");
         }
     } else {
-        if (!XGetZPixmap(dpy, RootWindow(dpy, DefaultScreen(dpy)), image, x_off, y_off)) {
+        if (!xget_zpixmap(dpy, RootWindow(dpy, DefaultScreen(dpy)), image, x_off, y_off)) {
             av_log (s1, AV_LOG_INFO, "XGetZPixmap() failed\n");
         }
     }
 
     {
         int pointer_x, pointer_y;
-        getCurrentPointer(s1, s, &pointer_x, &pointer_y);
-        paintMousePointer(s1, s, &pointer_x, &pointer_y, image);
+        get_pointer_coordinates(&pointer_x, &pointer_y, dpy, s1);
+        paint_mouse_pointer(image, s, pointer_x, pointer_y);
     }
 
 
@@ -457,10 +473,16 @@ x11grab_read_packet(AVFormatContext *s1, AVPacket *pkt)
     return s->frame_size;
 }
 
+/**
+ * Closes x11 frame grabber (public device demuxer API).
+ *
+ * @param s1 Context from avformat core
+ * @return 0 success, !0 failure
+ */
 static int
 x11grab_read_close(AVFormatContext *s1)
 {
-    X11Grab *x11grab = s1->priv_data;
+    x11_grab_t *x11grab = s1->priv_data;
 
     /* Detach cleanly from shared mem */
     if (x11grab->use_shm) {
@@ -480,11 +502,12 @@ x11grab_read_close(AVFormatContext *s1)
     return 0;
 }
 
+/** x11 grabber device demuxer declaration */
 AVInputFormat x11_grab_device_demuxer =
 {
     "x11grab",
     "X11grab",
-    sizeof(X11Grab),
+    sizeof(x11_grab_t),
     NULL,
     x11grab_read_header,
     x11grab_read_packet,
