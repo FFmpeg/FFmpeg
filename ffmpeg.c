@@ -3234,10 +3234,6 @@ static void prepare_grab(void)
 
     if (has_video) {
         AVInputFormat *fmt1;
-#warning FIXME: find a better interface
-        if(!strncmp(video_device,"x11:",4)) {
-            video_grab_format="x11grab";
-        }
         fmt1 = av_find_input_format(video_grab_format);
         vp->device  = video_device;
         vp->channel = video_channel;
