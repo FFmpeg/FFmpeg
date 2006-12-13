@@ -1659,6 +1659,16 @@ int dummy = V4L2_PIX_FMT_YUV420;
 struct v4l2_buffer dummy1;
 EOF
 
+# Deal with the x11 frame grabber
+enabled gpl                             &&
+enabled x11_grab_device_demuxer         &&
+check_header X11/Xlib.h                 &&
+check_header X11/extensions/XShm.h      &&
+check_func XOpenDisplay -lX11           &&
+check_func XShmCreateImage -lX11 -lXext &&
+add_extralibs -lX11 -lXext              ||
+disable x11_grab_device_demuxer
+
 enabled debug && add_cflags -g
 
 # add some useful compiler flags if supported
