@@ -2066,7 +2066,7 @@ EOF
 
 pkgconfig_generate_uninstalled(){
 name=$1
-shortname=${name/lib/}
+shortname=${name#lib}
 comment=$2
 version=$3
 libs=$4
