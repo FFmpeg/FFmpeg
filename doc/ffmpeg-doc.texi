@@ -39,6 +39,17 @@ launching FFmpeg with any TV viewer such as xawtv
 have to set the audio recording levels correctly with a
 standard mixer.
 
+@section X11 grabbing
+
+FFmpeg can grab X11 display.
+
+@example
+ffmpeg -f x11grab -vd x11:0.0 /tmp/out.mpg
+@end example
+
+0.0 is display.screen numbers of your X11 server.
+You can check $DISPLAY variable.
+
 @section Video and Audio file format conversion
 
 * FFmpeg can use any supported file format and protocol as input:
