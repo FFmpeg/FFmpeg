@@ -312,7 +312,7 @@ static int cook_decode_close(AVCodecContext *avctx)
 {
     int i;
     COOKContext *q = avctx->priv_data;
-    av_log(NULL,AV_LOG_DEBUG, "Deallocating memory.\n");
+    av_log(avctx,AV_LOG_DEBUG, "Deallocating memory.\n");
 
     /* Free allocated memory buffers. */
     av_free(q->mlt_window);
@@ -1160,12 +1160,12 @@ static int cook_decode_init(AVCodecContext *avctx)
 
     /* Take care of the codec specific extradata. */
     if (avctx->extradata_size <= 0) {
-        av_log(NULL,AV_LOG_ERROR,"Necessary extradata missing!\n");
+        av_log(avctx,AV_LOG_ERROR,"Necessary extradata missing!\n");
         return -1;
     } else {
         /* 8 for mono, 16 for stereo, ? for multichannel
            Swap to right endianness so we don't need to care later on. */
-        av_log(NULL,AV_LOG_DEBUG,"codecdata_length=%d\n",avctx->extradata_size);
+        av_log(avctx,AV_LOG_DEBUG,"codecdata_length=%d\n",avctx->extradata_size);
         if (avctx->extradata_size >= 8){
             e->cookversion = be2me_32(e->cookversion);
             e->samples_per_frame = be2me_16(e->samples_per_frame);
@@ -1201,24 +1201,24 @@ static int cook_decode_init(AVCodecContext *avctx)
     switch (e->cookversion) {
         case MONO_COOK1:
             if (q->nb_channels != 1) {
-                av_log(NULL,AV_LOG_ERROR,"Container channels != 1, report sample!\n");
+                av_log(avctx,AV_LOG_ERROR,"Container channels != 1, report sample!\n");
                 return -1;
             }
-            av_log(NULL,AV_LOG_DEBUG,"MONO_COOK1\n");
+            av_log(avctx,AV_LOG_DEBUG,"MONO_COOK1\n");
             break;
         case MONO_COOK2:
             if (q->nb_channels != 1) {
                 q->joint_stereo = 0;
                 q->bits_per_subpacket = q->bits_per_subpacket/2;
             }
-            av_log(NULL,AV_LOG_DEBUG,"MONO_COOK2\n");
+            av_log(avctx,AV_LOG_DEBUG,"MONO_COOK2\n");
             break;
         case JOINT_STEREO:
             if (q->nb_channels != 2) {
-                av_log(NULL,AV_LOG_ERROR,"Container channels != 2, report sample!\n");
+                av_log(avctx,AV_LOG_ERROR,"Container channels != 2, report sample!\n");
                 return -1;
             }
-            av_log(NULL,AV_LOG_DEBUG,"JOINT_STEREO\n");
+            av_log(avctx,AV_LOG_DEBUG,"JOINT_STEREO\n");
             if (avctx->extradata_size >= 16){
                 q->total_subbands = q->subbands + e->js_subband_start;
                 q->js_subband_start = e->js_subband_start;
@@ -1233,11 +1233,11 @@ static int cook_decode_init(AVCodecContext *avctx)
             }
             break;
         case MC_COOK:
-            av_log(NULL,AV_LOG_ERROR,"MC_COOK not supported!\n");
+            av_log(avctx,AV_LOG_ERROR,"MC_COOK not supported!\n");
             return -1;
             break;
         default:
-            av_log(NULL,AV_LOG_ERROR,"Unknown Cook version, report sample!\n");
+            av_log(avctx,AV_LOG_ERROR,"Unknown Cook version, report sample!\n");
             return -1;
             break;
     }
@@ -1280,16 +1280,16 @@ static int cook_decode_init(AVCodecContext *avctx)
 
     /* Try to catch some obviously faulty streams, othervise it might be exploitable */
     if (q->total_subbands > 53) {
-        av_log(NULL,AV_LOG_ERROR,"total_subbands > 53, report sample!\n");
+        av_log(avctx,AV_LOG_ERROR,"total_subbands > 53, report sample!\n");
         return -1;
     }
     if (q->subbands > 50) {
-        av_log(NULL,AV_LOG_ERROR,"subbands > 50, report sample!\n");
+        av_log(avctx,AV_LOG_ERROR,"subbands > 50, report sample!\n");
         return -1;
     }
     if ((q->samples_per_channel == 256) || (q->samples_per_channel == 512) || (q->samples_per_channel == 1024)) {
     } else {
-        av_log(NULL,AV_LOG_ERROR,"unknown amount of samples_per_channel = %d, report sample!\n",q->samples_per_channel);
+        av_log(avctx,AV_LOG_ERROR,"unknown amount of samples_per_channel = %d, report sample!\n",q->samples_per_channel);
         return -1;
     }
 
