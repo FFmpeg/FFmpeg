@@ -115,6 +115,8 @@ typedef struct WMADecodeContext {
     float max_exponent[MAX_CHANNELS];
     int16_t coefs1[MAX_CHANNELS][BLOCK_MAX_SIZE];
     DECLARE_ALIGNED_16(float, coefs[MAX_CHANNELS][BLOCK_MAX_SIZE]);
+    DECLARE_ALIGNED_16(FFTSample, output[BLOCK_MAX_SIZE * 2]);
+    DECLARE_ALIGNED_16(float, window[BLOCK_MAX_SIZE * 2]);
     MDCTContext mdct_ctx[BLOCK_NB_SIZES];
     float *windows[BLOCK_NB_SIZES];
     DECLARE_ALIGNED_16(FFTSample, mdct_tmp[BLOCK_MAX_SIZE]); /* temporary storage for imdct */
@@ -717,7 +719,6 @@ static int wma_decode_block(WMADecodeContext *s)
 {
     int n, v, a, ch, code, bsize;
     int coef_nb_bits, total_gain, parse_exponents;
-    DECLARE_ALIGNED_16(float, window[BLOCK_MAX_SIZE * 2]);
     int nb_coefs[MAX_CHANNELS];
     float mdct_norm;
 
@@ -1072,7 +1073,7 @@ static int wma_decode_block(WMADecodeContext *s)
         next_block_len = 1 << s->next_block_len_bits;
 
         /* right part */
-        wptr = window + block_len;
+        wptr = s->window + block_len;
         if (block_len <= next_block_len) {
             for(i=0;i<block_len;i++)
                 *wptr++ = s->windows[bsize][i];
@@ -1088,7 +1089,7 @@ static int wma_decode_block(WMADecodeContext *s)
         }
 
         /* left part */
-        wptr = window + block_len;
+        wptr = s->window + block_len;
         if (block_len <= prev_block_len) {
             for(i=0;i<block_len;i++)
                 *--wptr = s->windows[bsize][i];
@@ -1107,14 +1108,13 @@ static int wma_decode_block(WMADecodeContext *s)
 
     for(ch = 0; ch < s->nb_channels; ch++) {
         if (s->channel_coded[ch]) {
-            DECLARE_ALIGNED_16(FFTSample, output[BLOCK_MAX_SIZE * 2]);
             float *ptr;
             int n4, index, n;
 
             n = s->block_len;
             n4 = s->block_len / 2;
             s->mdct_ctx[bsize].fft.imdct_calc(&s->mdct_ctx[bsize],
-                          output, s->coefs[ch], s->mdct_tmp);
+                          s->output, s->coefs[ch], s->mdct_tmp);
 
             /* XXX: optimize all that by build the window and
                multipying/adding at the same time */
@@ -1122,13 +1122,13 @@ static int wma_decode_block(WMADecodeContext *s)
             /* multiply by the window and add in the frame */
             index = (s->frame_len / 2) + s->block_pos - n4;
             ptr = &s->frame_out[ch][index];
-            s->dsp.vector_fmul_add_add(ptr,window,output,ptr,0,2*n,1);
+            s->dsp.vector_fmul_add_add(ptr,s->window,s->output,ptr,0,2*n,1);
 
             /* specific fast case for ms-stereo : add to second
                channel if it is not coded */
             if (s->ms_stereo && !s->channel_coded[1]) {
                 ptr = &s->frame_out[1][index];
-                s->dsp.vector_fmul_add_add(ptr,window,output,ptr,0,2*n,1);
+                s->dsp.vector_fmul_add_add(ptr,s->window,s->output,ptr,0,2*n,1);
             }
         }
     }
