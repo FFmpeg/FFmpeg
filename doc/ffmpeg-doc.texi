@@ -50,6 +50,13 @@ ffmpeg -f x11grab -vd x11:0.0 /tmp/out.mpg
 0.0 is display.screen number of your X11 server, same as
 the DISPLAY environment variable.
 
+@example
+ffmpeg -f x11grab -vd x11:0.0+10,20 /tmp/out.mpg
+@end example
+
+0.0 is display.screen number of your X11 server, same as the DISPLAY environment
+variable. 10 is the x-offset and 20 the y-offset for the grabbing.
+
 @section Video and Audio file format conversion
 
 * FFmpeg can use any supported file format and protocol as input:

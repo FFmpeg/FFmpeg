@@ -94,20 +94,33 @@ x11grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     int x_off = 0;
     int y_off = 0;
     int use_shm;
-
-    dpy = XOpenDisplay(NULL);
-    if(!dpy) {
-        av_free(st);
-        return AVERROR_IO;
-    }
+    char *param, *offset;
 
     if (!ap->device) {
         av_log(s1, AV_LOG_ERROR, "AVParameters don't specify any device. Use -vd.\n");
         return AVERROR_IO;
     }
 
-    sscanf(ap->device, "x11:%d,%d", &x_off, &y_off);
-    av_log(s1, AV_LOG_INFO, "device: %s -> x: %d y: %d width: %d height: %d\n", ap->device, x_off, y_off, ap->width, ap->height);
+    param = strchr(ap->device, ':');
+    if (!param) {
+        av_free(st);
+        return AVERROR_IO;
+    }
+
+    param = av_strdup(param);
+    offset = strchr(param, '+');
+    if (offset) {
+        sscanf(offset, "%d,%d", &x_off, &y_off);
+        *offset= 0;
+    }
+
+    av_log(s1, AV_LOG_INFO, "device: %s -> display: %s x: %d y: %d width: %d height: %d\n", ap->device, param, x_off, y_off, ap->width, ap->height);
+
+    dpy = XOpenDisplay(param);
+    if(!dpy) {
+        av_log(s1, AV_LOG_ERROR, "Could not open X display.\n");
+        return AVERROR_IO;
+    }
 
     if (!ap || ap->width <= 0 || ap->height <= 0 || ap->time_base.den <= 0) {
         av_log(s1, AV_LOG_ERROR, "AVParameters don't have any video size. Use -s.\n");
