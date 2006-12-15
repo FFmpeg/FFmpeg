@@ -393,6 +393,12 @@ require(){
     check_lib $header $func "$@" || die "ERROR: $name not found"
 }
 
+apply(){
+    file=$1
+    shift
+    "$@" < "$file" > "$file.tmp" && mv "$file.tmp" "$file" || rm "$file.tmp"
+}
+
 CONFIG_LIST='
     encoders
     decoders
@@ -2105,6 +2111,6 @@ if test "$swscaler" != "no"; then
 else
   pkgconfig_generate libswscale "FFmpeg image rescaling library" "$sws_version" "" "$pkg_requires libavcodec = $lavc_version" swscale
   pkgconfig_generate_uninstalled libswscale "FFmpeg image rescaling library" "$sws_version" "" "$pkg_requires libavcodec = $lavc_version"
-  sed -i s/^Libs:.*$/Libs:/ libswscale.pc
-  sed -i s/^Libs:.*$/Libs:/ libswscale-uninstalled.pc
+  apply libswscale.pc sed s/^Libs:.*$/Libs:/
+  apply libswscale-uninstalled.pc sed s/^Libs:.*$/Libs:/
 fi
