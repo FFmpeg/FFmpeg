@@ -185,7 +185,6 @@ int url_ferror(ByteIOContext *s)
     return s->error;
 }
 
-#if defined(CONFIG_MUXERS) || defined(CONFIG_PROTOCOLS)
 void put_le32(ByteIOContext *s, unsigned int val)
 {
     put_byte(s, val);
@@ -252,7 +251,6 @@ void put_tag(ByteIOContext *s, const char *tag)
         put_byte(s, *tag++);
     }
 }
-#endif //CONFIG_MUXERS || CONFIG_PROTOCOLS
 
 /* Input stream */
 
