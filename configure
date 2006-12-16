@@ -2093,7 +2093,7 @@ Cflags: -I\${includedir}
 EOF
 }
 
-pkgconfig_generate libavutil "FFmpeg utility library" "$lavu_version" -lavutil ffmpeg
+pkgconfig_generate libavutil "FFmpeg utility library" "$lavu_version" -lavutil "" ffmpeg
 pkgconfig_generate_uninstalled libavutil "FFmpeg utility library" "$lavu_version"
 
 pkgconfig_generate libavcodec "FFmpeg codec library" "$lavc_version" "-lavcodec $extralibs" "$pkg_requires libavutil = $lavu_version" ffmpeg
