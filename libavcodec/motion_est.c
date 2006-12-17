@@ -689,6 +689,7 @@ static inline void set_p_mv_tables(MpegEncContext * s, int mx, int my, int mv4)
 static inline void get_limits(MpegEncContext *s, int x, int y)
 {
     MotionEstContext * const c= &s->me;
+    int range= c->avctx->me_range >> (1 + !!(c->flags&FLAG_QPEL));
 /*
     if(c->avctx->me_range) c->range= c->avctx->me_range >> 1;
     else                   c->range= 16;
@@ -709,6 +710,12 @@ static inline void get_limits(MpegEncContext *s, int x, int y)
         c->ymin = - y;
         c->xmax = - x + s->mb_width *16 - 16;
         c->ymax = - y + s->mb_height*16 - 16;
+    }
+    if(range){
+        c->xmin = FFMAX(c->xmin,-range);
+        c->xmax = FFMIN(c->xmax, range);
+        c->ymin = FFMAX(c->ymin,-range);
+        c->ymax = FFMIN(c->ymax, range);
     }
 }
 
