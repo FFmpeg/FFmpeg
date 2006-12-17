@@ -343,7 +343,7 @@ static int vp6_block_variance(uint8_t *src, int stride)
         }
         src += 2*stride;
     }
-    return (16*square_sum - sum*sum) / (16*16);
+    return (16*square_sum - sum*sum) >> 8;
 }
 
 static void vp6_filter_hv2(vp56_context_t *s, uint8_t *dst, uint8_t *src,
