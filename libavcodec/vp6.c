@@ -42,7 +42,9 @@ static int vp6_parse_header(vp56_context_t *s, uint8_t *buf, int buf_size,
                             int *golden_frame)
 {
     vp56_range_coder_t *c = &s->c;
-    int parse_filter_info;
+    int parse_filter_info = 0;
+    int vrt_shift = 0;
+    int sub_version;
     int rows, cols;
     int res = 1;
 
@@ -53,7 +55,10 @@ static int vp6_parse_header(vp56_context_t *s, uint8_t *buf, int buf_size,
     vp56_init_dequant(s, (buf[0] >> 1) & 0x3F);
 
     if (s->frames[VP56_FRAME_CURRENT].key_frame) {
-        if ((buf[1] & 0xFE) != 0x46)  /* would be 0x36 for VP61 */
+        sub_version = buf[1] >> 3;
+        if (sub_version > 8)
+            return 0;
+        if ((buf[1] & 0x06) != 0x06)
             return 0;
         if (buf[1] & 1) {
             av_log(s->avctx, AV_LOG_ERROR, "interlacing not supported\n");
@@ -79,27 +84,37 @@ static int vp6_parse_header(vp56_context_t *s, uint8_t *buf, int buf_size,
         vp56_rac_gets(c, 2);
 
         parse_filter_info = 1;
+        if (sub_version < 8)
+            vrt_shift = 5;
+        s->sub_version = sub_version;
     } else {
+        if (!s->sub_version)
+            return 0;
+
         vp56_init_range_decoder(c, buf+1, buf_size-1);
 
         *golden_frame = vp56_rac_get(c);
         s->deblock_filtering = vp56_rac_get(c);
         if (s->deblock_filtering)
             vp56_rac_get(c);
-        parse_filter_info = vp56_rac_get(c);
+        if (s->sub_version > 7)
+            parse_filter_info = vp56_rac_get(c);
     }
 
     if (parse_filter_info) {
         if (vp56_rac_get(c)) {
             s->filter_mode = 2;
-            s->sample_variance_threshold = vp56_rac_gets(c, 5);
+            s->sample_variance_threshold = vp56_rac_gets(c, 5) << vrt_shift;
             s->max_vector_length = 2 << vp56_rac_gets(c, 3);
         } else if (vp56_rac_get(c)) {
             s->filter_mode = 1;
         } else {
             s->filter_mode = 0;
         }
-        s->filter_selection = vp56_rac_gets(c, 4);
+        if (s->sub_version > 7)
+            s->filter_selection = vp56_rac_gets(c, 4);
+        else
+            s->filter_selection = 16;
     }
 
     vp56_rac_get(c);
@@ -439,8 +454,8 @@ static void vp6_filter(vp56_context_t *s, uint8_t *dst, uint8_t *src,
                 (FFABS(mv.x) > s->max_vector_length ||
                  FFABS(mv.y) > s->max_vector_length)) {
                 filter4 = 0;
-            } else if (!s->sample_variance_threshold
-                       || (vp6_block_variance(src+offset1, stride)
+            } else if (s->sample_variance_threshold
+                       && (vp6_block_variance(src+offset1, stride)
                            < s->sample_variance_threshold)) {
                 filter4 = 0;
             }

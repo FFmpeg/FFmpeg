@@ -76,6 +76,7 @@ struct vp56_context {
     uint8_t *edge_emu_buffer_alloc;
     uint8_t *edge_emu_buffer;
     vp56_range_coder_t c;
+    int sub_version;
 
     /* frame info */
     int plane_width[3];
