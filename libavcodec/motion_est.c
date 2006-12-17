@@ -230,9 +230,9 @@ static void zero_hpel(uint8_t *a, const uint8_t *b, int stride, int h){
 
 void ff_init_me(MpegEncContext *s){
     MotionEstContext * const c= &s->me;
-    c->avctx= s->avctx;
     int cache_size= FFMIN(ME_MAP_SIZE>>ME_MAP_SHIFT, 1<<ME_MAP_SHIFT);
     int dia_size= FFMAX(FFABS(s->avctx->dia_size)&255, FFABS(s->avctx->pre_dia_size)&255);
+    c->avctx= s->avctx;
 
     if(cache_size < 2*dia_size && !c->stride){
         av_log(s->avctx, AV_LOG_INFO, "ME_MAP size may be a little small for the selected diamond size\n");
