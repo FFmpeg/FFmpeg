@@ -186,19 +186,13 @@ static int amr_nb_encode_init(AVCodecContext * avctx)
 
     if(avctx->sample_rate!=8000)
     {
-        if(avctx->debug)
-        {
-            av_log(avctx, AV_LOG_DEBUG, "Only 8000Hz sample rate supported\n");
-        }
+        av_log(avctx, AV_LOG_ERROR, "Only 8000Hz sample rate supported\n");
         return -1;
     }
 
     if(avctx->channels!=1)
     {
-        if(avctx->debug)
-        {
-            av_log(avctx, AV_LOG_DEBUG, "Only mono supported\n");
-        }
+        av_log(avctx, AV_LOG_ERROR, "Only mono supported\n");
         return -1;
     }
 
@@ -207,10 +201,7 @@ static int amr_nb_encode_init(AVCodecContext * avctx)
 
     if(Speech_Encode_Frame_init(&s->enstate, 0, "encoder") || sid_sync_init (&s->sidstate))
     {
-        if(avctx->debug)
-        {
-            av_log(avctx, AV_LOG_DEBUG, "Speech_Encode_Frame_init error\n");
-        }
+        av_log(avctx, AV_LOG_ERROR, "Speech_Encode_Frame_init error\n");
         return -1;
     }
 
@@ -392,19 +383,13 @@ static int amr_nb_encode_init(AVCodecContext * avctx)
 
     if(avctx->sample_rate!=8000)
     {
-        if(avctx->debug)
-        {
-            av_log(avctx, AV_LOG_DEBUG, "Only 8000Hz sample rate supported\n");
-        }
+        av_log(avctx, AV_LOG_ERROR, "Only 8000Hz sample rate supported\n");
         return -1;
     }
 
     if(avctx->channels!=1)
     {
-        if(avctx->debug)
-        {
-            av_log(avctx, AV_LOG_DEBUG, "Only mono supported\n");
-        }
+        av_log(avctx, AV_LOG_ERROR, "Only mono supported\n");
         return -1;
     }
 
@@ -414,10 +399,7 @@ static int amr_nb_encode_init(AVCodecContext * avctx)
     s->enstate=Encoder_Interface_init(0);
     if(!s->enstate)
     {
-        if(avctx->debug)
-        {
-            av_log(avctx, AV_LOG_DEBUG, "Encoder_Interface_init error\n");
-        }
+        av_log(avctx, AV_LOG_ERROR, "Encoder_Interface_init error\n");
         return -1;
     }
 
@@ -587,19 +569,13 @@ static int amr_wb_encode_init(AVCodecContext * avctx)
 
     if(avctx->sample_rate!=16000)
     {
-        if(avctx->debug)
-        {
-            av_log(avctx, AV_LOG_DEBUG, "Only 16000Hz sample rate supported\n");
-        }
+        av_log(avctx, AV_LOG_ERROR, "Only 16000Hz sample rate supported\n");
         return -1;
     }
 
     if(avctx->channels!=1)
     {
-        if(avctx->debug)
-        {
-            av_log(avctx, AV_LOG_DEBUG, "Only mono supported\n");
-        }
+        av_log(avctx, AV_LOG_ERROR, "Only mono supported\n");
         return -1;
     }
 
