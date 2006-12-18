@@ -87,6 +87,8 @@ int mm_support(void)
             rval |= MM_SSE2;
         if (ecx & 1)
             rval |= MM_SSE3;
+        if (ecx & 0x00000200 )
+            rval |= MM_SSSE3;
     }
 
     cpuid(0x80000000, max_ext_level, ebx, ecx, edx);
@@ -104,11 +106,13 @@ int mm_support(void)
     }
 
 #if 0
-    av_log(NULL, AV_LOG_DEBUG, "%s%s%s%s%s%s\n",
+    av_log(NULL, AV_LOG_DEBUG, "%s%s%s%s%s%s%s%s\n",
         (rval&MM_MMX) ? "MMX ":"",
         (rval&MM_MMXEXT) ? "MMX2 ":"",
         (rval&MM_SSE) ? "SSE ":"",
         (rval&MM_SSE2) ? "SSE2 ":"",
+        (rval&MM_SSE3) ? "SSE3 ":"",
+        (rval&MM_SSSE3) ? "SSSE3 ":"",
         (rval&MM_3DNOW) ? "3DNow ":"",
         (rval&MM_3DNOWEXT) ? "3DNowExt ":"");
 #endif
