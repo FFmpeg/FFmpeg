@@ -91,7 +91,8 @@ AVCodecParserContext *av_parser_init(int codec_id)
  *       in_data += len;
  *       in_len  -= len;
  *
- *       decode_frame(data, size);
+ *       if(size)
+ *          decode_frame(data, size);
  *   }
  * @endcode
  */
