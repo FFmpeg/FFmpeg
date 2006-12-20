@@ -5172,16 +5172,6 @@ static int encode_thread(AVCodecContext *c, void *arg){
                     encode_mb_hq(s, &backup_s, &best_s, CANDIDATE_MB_TYPE_BIDIR, pb, pb2, tex_pb,
                                  &dmin, &next_block, 0, 0);
                 }
-                if(mb_type&CANDIDATE_MB_TYPE_DIRECT){
-                    int mx= s->b_direct_mv_table[xy][0];
-                    int my= s->b_direct_mv_table[xy][1];
-
-                    s->mv_dir = MV_DIR_FORWARD | MV_DIR_BACKWARD | MV_DIRECT;
-                    s->mb_intra= 0;
-                    ff_mpeg4_set_direct_mv(s, mx, my);
-                    encode_mb_hq(s, &backup_s, &best_s, CANDIDATE_MB_TYPE_DIRECT, pb, pb2, tex_pb,
-                                 &dmin, &next_block, mx, my);
-                }
                 if(mb_type&CANDIDATE_MB_TYPE_FORWARD_I){
                     s->mv_dir = MV_DIR_FORWARD;
                     s->mv_type = MV_TYPE_FIELD;
@@ -5280,10 +5270,20 @@ static int encode_thread(AVCodecContext *c, void *arg){
                                 }
                             }
                         }
-                        qp= best_s.qscale;
-                        s->current_picture.qscale_table[xy]= qp;
                     }
                 }
+                if(mb_type&CANDIDATE_MB_TYPE_DIRECT){
+                    int mx= s->b_direct_mv_table[xy][0];
+                    int my= s->b_direct_mv_table[xy][1];
+
+                    backup_s.dquant = 0;
+                    s->mv_dir = MV_DIR_FORWARD | MV_DIR_BACKWARD | MV_DIRECT;
+                    s->mb_intra= 0;
+                    ff_mpeg4_set_direct_mv(s, mx, my);
+                    encode_mb_hq(s, &backup_s, &best_s, CANDIDATE_MB_TYPE_DIRECT, pb, pb2, tex_pb,
+                                 &dmin, &next_block, mx, my);
+                }
+                s->current_picture.qscale_table[xy]= best_s.qscale;
 
                 copy_context_after_encode(s, &best_s, -1);
 
