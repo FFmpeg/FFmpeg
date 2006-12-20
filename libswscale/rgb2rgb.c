@@ -91,7 +91,7 @@ void (*yvu9_to_yuy2)(const uint8_t *src1, const uint8_t *src2, const uint8_t *sr
 			long srcStride1, long srcStride2,
 			long srcStride3, long dstStride);
 
-#if defined(ARCH_X86)
+#if defined(ARCH_X86) && defined(CONFIG_GPL)
 static const uint64_t mmx_null  __attribute__((aligned(8))) = 0x0000000000000000ULL;
 static const uint64_t mmx_one   __attribute__((aligned(8))) = 0xFFFFFFFFFFFFFFFFULL;
 static const uint64_t mask32b  attribute_used __attribute__((aligned(8))) = 0x000000FF000000FFULL;
@@ -175,7 +175,7 @@ static uint64_t __attribute__((aligned(8))) dither8[2]={
 #define RENAME(a) a ## _C
 #include "rgb2rgb_template.c"
 
-#if defined(ARCH_X86)
+#if defined(ARCH_X86) && defined(CONFIG_GPL)
 
 //MMX versions
 #undef RENAME
@@ -214,7 +214,7 @@ static uint64_t __attribute__((aligned(8))) dither8[2]={
 */
 
 void sws_rgb2rgb_init(int flags){
-#if defined(HAVE_MMX2) || defined(HAVE_3DNOW) || defined(HAVE_MMX)
+#if (defined(HAVE_MMX2) || defined(HAVE_3DNOW) || defined(HAVE_MMX))  && defined(CONFIG_GPL)
 	if(flags & SWS_CPU_CAPS_MMX2){
 		rgb15to16= rgb15to16_MMX2;
 		rgb15to24= rgb15to24_MMX2;
