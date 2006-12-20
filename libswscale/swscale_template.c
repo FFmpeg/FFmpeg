@@ -1730,7 +1730,6 @@ static inline void RENAME(yuy2ToY)(uint8_t *dst, uint8_t *src, long width)
 
 static inline void RENAME(yuy2ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1, uint8_t *src2, long width)
 {
-        assert(src1 == src2);
 #ifdef HAVE_MMX
 	asm volatile(
 		"movq "MANGLE(bm01010101)", %%mm4\n\t"
@@ -1761,6 +1760,7 @@ static inline void RENAME(yuy2ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1,
 		dstV[i]= src1[4*i + 3];
 	}
 #endif
+        assert(src1 == src2);
 }
 
 //this is allmost identical to the previous, end exists only cuz yuy2ToY/UV)(dst, src+1, ...) would have 100% unaligned accesses
@@ -1790,7 +1790,6 @@ static inline void RENAME(uyvyToY)(uint8_t *dst, uint8_t *src, long width)
 
 static inline void RENAME(uyvyToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1, uint8_t *src2, long width)
 {
-        assert(src1 == src2);
 #ifdef HAVE_MMX
 	asm volatile(
 		"movq "MANGLE(bm01010101)", %%mm4\n\t"
@@ -1821,6 +1820,7 @@ static inline void RENAME(uyvyToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1,
 		dstV[i]= src1[4*i + 2];
 	}
 #endif
+        assert(src1 == src2);
 }
 
 static inline void RENAME(bgr32ToY)(uint8_t *dst, uint8_t *src, int width)
@@ -1942,7 +1942,6 @@ static inline void RENAME(bgr24ToY)(uint8_t *dst, uint8_t *src, long width)
 
 static inline void RENAME(bgr24ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1, uint8_t *src2, long width)
 {
-        assert(src1 == src2);
 #ifdef HAVE_MMX
 	asm volatile(
 		"mov %3, %%"REG_a"		\n\t"
@@ -2072,6 +2071,7 @@ static inline void RENAME(bgr24ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1
 		dstV[i]= ((RV*r + GV*g + BV*b)>>(RGB2YUV_SHIFT+1)) + 128;
 	}
 #endif
+        assert(src1 == src2);
 }
 
 static inline void RENAME(bgr16ToY)(uint8_t *dst, uint8_t *src, int width)
