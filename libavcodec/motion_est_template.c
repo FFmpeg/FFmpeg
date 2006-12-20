@@ -1023,7 +1023,9 @@ static av_always_inline int epzs_motion_search_internal(MpegEncContext * s, int 
     dmin= cmp(s, 0, 0, 0, 0, size, h, ref_index, src_index, cmpf, chroma_cmpf, flags);
     map[0]= map_generation;
     score_map[0]= dmin;
-    if(s->flags&CODEC_FLAG_MV0)
+
+    //FIXME precalc first term below?
+    if((s->pict_type == B_TYPE  || s->flags&CODEC_FLAG_MV0) && !(c->flags & FLAG_DIRECT))
         dmin += (mv_penalty[pred_x] + mv_penalty[pred_y])*penalty_factor;
 
     /* first line */
