@@ -1023,6 +1023,8 @@ static av_always_inline int epzs_motion_search_internal(MpegEncContext * s, int 
     dmin= cmp(s, 0, 0, 0, 0, size, h, ref_index, src_index, cmpf, chroma_cmpf, flags);
     map[0]= map_generation;
     score_map[0]= dmin;
+    if(s->flags&CODEC_FLAG_MV0)
+        dmin += (mv_penalty[pred_x] + mv_penalty[pred_y])*penalty_factor;
 
     /* first line */
     if (s->first_slice_line) {
