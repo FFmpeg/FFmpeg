@@ -154,7 +154,7 @@ static int find_image_range(int *pfirst_index, int *plast_index,
 
 static int image_probe(AVProbeData *p)
 {
-    if (av_str2id(img_tags, p->filename)) {
+    if (p->filename && av_str2id(img_tags, p->filename)) {
         if (av_filename_number_test(p->filename))
             return AVPROBE_SCORE_MAX;
         else
