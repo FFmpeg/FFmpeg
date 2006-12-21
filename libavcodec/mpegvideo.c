@@ -4340,6 +4340,7 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s, int motion_x,
         update_qscale(s);
 
         if(!(s->flags&CODEC_FLAG_QP_RD)){
+            s->qscale= s->current_picture_ptr->qscale_table[mb_xy];
             s->dquant= s->qscale - last_qp;
 
             if(s->out_format==FMT_H263){
