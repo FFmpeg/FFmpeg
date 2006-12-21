@@ -79,10 +79,10 @@ stddev:  4.84 PSNR:34.41 bytes:7602176
 235016 ./data/a-mpeg4-qprd.avi
 224969c07440a23b376521c484936e75 *./data/out.yuv
 stddev:  4.24 PSNR:35.56 bytes:7602176
-62c7e87076d4741eb99d76e3ec424db0 *./data/a-mpeg4-adap.avi
-205456 ./data/a-mpeg4-adap.avi
-fe20d6bd1aa019196fb6426fdd0f4779 *./data/out.yuv
-stddev:  4.08 PSNR:35.91 bytes:7602176
+7ecfbb848740d316e2fcf573b32cb848 *./data/a-mpeg4-adap.avi
+205454 ./data/a-mpeg4-adap.avi
+c9225addf2e620e0094d26e805693af1 *./data/out.yuv
+stddev:  4.05 PSNR:35.96 bytes:7602176
 8cd8940d7451925784536fe9b2f2a5e3 *./data/a-mpeg4-thread.avi
 254260 ./data/a-mpeg4-thread.avi
 d160a4224ea1af66c85178912f8d3a7c *./data/out.yuv
