@@ -5371,6 +5371,11 @@ static int encode_thread(AVCodecContext *c, void *arg){
                     motion_y=s->b_direct_mv_table[xy][1];
                     ff_mpeg4_set_direct_mv(s, motion_x, motion_y);
                     break;
+                case CANDIDATE_MB_TYPE_DIRECT0:
+                    s->mv_dir = MV_DIR_FORWARD | MV_DIR_BACKWARD | MV_DIRECT;
+                    s->mb_intra= 0;
+                    ff_mpeg4_set_direct_mv(s, 0, 0);
+                    break;
                 case CANDIDATE_MB_TYPE_BIDIR:
                     s->mv_dir = MV_DIR_FORWARD | MV_DIR_BACKWARD;
                     s->mb_intra= 0;
