@@ -232,8 +232,8 @@ do_video_encoding mpeg2.mpg "-qscale 10" pgmyuv "-vcodec mpeg2video -f mpeg1vide
 # mpeg2 decoding
 do_video_decoding
 
-# mpeg2 encoding using intra vlc
-do_video_encoding mpeg2ivlc.mpg "-qscale 10" pgmyuv "-vcodec mpeg2video -f mpeg1video -flags2 +ivlc"
+# mpeg2 encoding intra vlc qprd
+do_video_encoding mpeg2ivlc-qprd.mpg "-b 500k -bf 2 -flags +trell+qprd+mv0 -flags2 +ivlc -cmp 2 -subcmp 2 -mbd rd" pgmyuv "-vcodec mpeg2video -f mpeg2video"
 
 # mpeg2 decoding
 do_video_decoding
