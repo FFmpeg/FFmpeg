@@ -370,6 +370,18 @@ do_video_encoding mpeg4-adv.avi "-qscale 9 -flags +mv4+part+aic+trell -mbd bits 
 
 # mpeg4 decoding
 do_video_decoding
+
+# mpeg4
+do_video_encoding mpeg4-qprd.avi "-b 450k -bf 2 -flags +mv4+trell+qprd+mv0 -cmp 2 -subcmp 2 -mbd rd" pgmyuv "-an -vcodec mpeg4"
+
+# mpeg4 decoding
+do_video_decoding
+
+# mpeg4
+do_video_encoding mpeg4-adap.avi "-b 550k -bf 2 -flags +mv4+trell+mv0 -cmp 1 -subcmp 2 -mbd rd -scplx_mask 0.3" pgmyuv "-an -vcodec mpeg4"
+
+# mpeg4 decoding
+do_video_decoding
 fi
 
 ###################################
