@@ -4344,7 +4344,7 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s, int motion_x,
             s->dquant= s->qscale - last_qp;
 
             if(s->out_format==FMT_H263){
-                s->dquant= clip(s->dquant, -2, 2); //FIXME RD
+                s->dquant= clip(s->dquant, -2, 2);
 
                 if(s->codec_id==CODEC_ID_MPEG4){
                     if(!s->mb_intra){
