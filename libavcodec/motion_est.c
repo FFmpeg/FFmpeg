@@ -1823,8 +1823,8 @@ static inline int direct_search(MpegEncContext * s, int mb_x, int mb_y)
 
     get_limits(s, 16*mb_x, 16*mb_y); //restore c->?min/max, maybe not needed
 
-    s->b_direct_mv_table[mot_xy][0]= mx;
-    s->b_direct_mv_table[mot_xy][1]= my;
+    mv_table[mot_xy][0]= mx;
+    mv_table[mot_xy][1]= my;
     c->flags     &= ~FLAG_DIRECT;
     c->sub_flags &= ~FLAG_DIRECT;
 
