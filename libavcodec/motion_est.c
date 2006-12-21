@@ -119,6 +119,7 @@ static av_always_inline int cmp(MpegEncContext *s, const int x, const int y, con
     int d;
     //FIXME check chroma 4mv, (no crashes ...)
     if(flags&FLAG_DIRECT){
+        assert(x >= c->xmin && hx <= c->xmax<<(qpel+1) && y >= c->ymin && hy <= c->ymax<<(qpel+1));
         if(x >= c->xmin && hx <= c->xmax<<(qpel+1) && y >= c->ymin && hy <= c->ymax<<(qpel+1)){
             const int time_pp= s->pp_time;
             const int time_pb= s->pb_time;
