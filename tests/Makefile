@@ -40,11 +40,11 @@ endif
 
 vsynth1/00.pgm: videogen$(EXESUF)
 	@mkdir -p vsynth1
-	./videogen 'vsynth1/'
+	$< 'vsynth1/'
 
 vsynth2/00.pgm: rotozoom$(EXESUF)
 	@mkdir -p vsynth2
-	./rotozoom 'vsynth2/' $(SRC_DIR)/lena.pnm
+	$< 'vsynth2/' $(SRC_DIR)/lena.pnm
 
 videogen$(EXESUF): videogen.c
 	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $<
@@ -55,7 +55,7 @@ rotozoom$(EXESUF): rotozoom.c
 # audio generation
 
 asynth1.sw: audiogen$(EXESUF)
-	./audiogen $@
+	$< $@
 
 audiogen$(EXESUF): audiogen.c
 	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $<
