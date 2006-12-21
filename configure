@@ -1163,11 +1163,6 @@ EOF
             echo "FAAD test failed."
         fi
     fi
-
-    if test "$swscaler" != "no"; then
-        echo "The software scaler is under GPL and --enable-gpl is not specified."
-        fail="yes"
-    fi
 fi
 
 if test "$fail" = "yes"; then
