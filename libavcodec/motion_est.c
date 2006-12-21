@@ -1843,6 +1843,18 @@ void ff_estimate_b_frame_motion(MpegEncContext * s,
     get_limits(s, 16*mb_x, 16*mb_y);
 
     c->skip=0;
+
+    if(s->codec_id == CODEC_ID_MPEG4 && s->next_picture.mbskip_table[xy]){
+        int score= direct_search(s, mb_x, mb_y); //FIXME just check 0,0
+
+        score= ((unsigned)(score*score + 128*256))>>16;
+        c->mc_mb_var_sum_temp += score;
+        s->current_picture.mc_mb_var[mb_y*s->mb_stride + mb_x] = score; //FIXME use SSE
+        s->mb_type[mb_y*s->mb_stride + mb_x]= CANDIDATE_MB_TYPE_DIRECT0;
+
+        return;
+    }
+
     if(c->avctx->me_threshold){
         int vard= check_input_motion(s, mb_x, mb_y, 0);
 

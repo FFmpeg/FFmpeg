@@ -5226,8 +5226,8 @@ static int encode_thread(AVCodecContext *c, void *arg){
                     }
                 }
 
-                if(s->flags & CODEC_FLAG_QP_RD){
-                    if(best_s.mv_type==MV_TYPE_16X16 && !(best_s.mv_dir&MV_DIRECT)){
+                if((s->flags & CODEC_FLAG_QP_RD) && dmin < INT_MAX){
+                    if(best_s.mv_type==MV_TYPE_16X16){ //FIXME move 4mv after QPRD
                         const int last_qp= backup_s.qscale;
                         int qpi, qp, dc[6];
                         DCTELEM ac[6][16];
@@ -5282,6 +5282,14 @@ static int encode_thread(AVCodecContext *c, void *arg){
                     ff_mpeg4_set_direct_mv(s, mx, my);
                     encode_mb_hq(s, &backup_s, &best_s, CANDIDATE_MB_TYPE_DIRECT, pb, pb2, tex_pb,
                                  &dmin, &next_block, mx, my);
+                }
+                if(mb_type&CANDIDATE_MB_TYPE_DIRECT0){
+                    backup_s.dquant = 0;
+                    s->mv_dir = MV_DIR_FORWARD | MV_DIR_BACKWARD | MV_DIRECT;
+                    s->mb_intra= 0;
+                    ff_mpeg4_set_direct_mv(s, 0, 0);
+                    encode_mb_hq(s, &backup_s, &best_s, CANDIDATE_MB_TYPE_DIRECT, pb, pb2, tex_pb,
+                                 &dmin, &next_block, 0, 0);
                 }
                 s->current_picture.qscale_table[xy]= best_s.qscale;
 

@@ -402,6 +402,8 @@ typedef struct MpegEncContext {
 #define CANDIDATE_MB_TYPE_BACKWARD_I 0x400
 #define CANDIDATE_MB_TYPE_BIDIR_I    0x800
 
+#define CANDIDATE_MB_TYPE_DIRECT0    0x1000
+
     int block_index[6]; ///< index to current MB in block based arrays with edges
     int block_wrap[6];
     uint8_t *dest[3];
