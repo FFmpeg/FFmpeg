@@ -22,9 +22,6 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/time.h>
-#ifndef __MINGW32__
-#include <sys/ioctl.h>
-#endif /* __MINGW32__ */
 
 
 /* standard file protocol */
