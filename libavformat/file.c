@@ -20,13 +20,10 @@
  */
 #include "avformat.h"
 #include <fcntl.h>
-#ifndef __MINGW32__
 #include <unistd.h>
-#include <sys/ioctl.h>
 #include <sys/time.h>
-#else
-#include <io.h>
-#define open(fname,oflag,pmode) _open(fname,oflag,pmode)
+#ifndef __MINGW32__
+#include <sys/ioctl.h>
 #endif /* __MINGW32__ */
 
 
@@ -72,11 +69,7 @@ static int file_write(URLContext *h, unsigned char *buf, int size)
 static offset_t file_seek(URLContext *h, offset_t pos, int whence)
 {
     int fd = (size_t)h->priv_data;
-#if defined(__MINGW32__)
-    return _lseeki64(fd, pos, whence);
-#else
     return lseek(fd, pos, whence);
-#endif
 }
 
 static int file_close(URLContext *h)
