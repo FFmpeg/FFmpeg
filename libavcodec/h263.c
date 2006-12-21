@@ -546,7 +546,6 @@ void ff_clean_mpeg4_qscales(MpegEncContext *s){
         for(i=1; i<s->mb_num; i++){
             int mb_xy= s->mb_index2xy[i];
             if(qscale_table[mb_xy] != qscale_table[s->mb_index2xy[i-1]] && (s->mb_type[mb_xy]&CANDIDATE_MB_TYPE_DIRECT)){
-                s->mb_type[mb_xy]&= ~CANDIDATE_MB_TYPE_DIRECT;
                 s->mb_type[mb_xy]|= CANDIDATE_MB_TYPE_BIDIR;
             }
         }
