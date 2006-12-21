@@ -4350,7 +4350,7 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s, int motion_x,
                     if(!s->mb_intra){
                         if(s->pict_type == B_TYPE){
                             if(s->dquant&1)
-                                s->dquant= (s->dquant/2)*2;
+                                s->dquant= 0;
                             if(s->mv_dir&MV_DIRECT)
                                 s->dquant= 0;
                         }
