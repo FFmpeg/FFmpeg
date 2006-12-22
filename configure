@@ -1092,6 +1092,7 @@ EOF
     SLIBNAME_WITH_VERSION='$(SLIBPREF)$(NAME)-$(LIBVERSION)$(SLIBSUF)'
     SLIBNAME_WITH_MAJOR='$(SLIBPREF)$(NAME)-$(LIBMAJOR)$(SLIBSUF)'
     SLIB_EXTRA_CMD="-lib /machine:i386 /def:\$(@:${SLIBSUF}=.def)"
+    SLIB_INSTALL_EXTRA_CMD="-install -m 644 \$(SLIBNAME_WITH_MAJOR:\$(SLIBSUF)=.lib) \"${shlibdir}/\$(SLIBNAME_WITH_MAJOR:\$(SLIBSUF)=.lib)\""
     SHFLAGS="-shared -Wl,--output-def,\$(@:${SLIBSUF}=.def),--out-implib,lib\$(SLIBNAME:\$(SLIBSUF)=.dll.a) -Wl,--enable-runtime-pseudo-reloc"
 fi
 
@@ -1945,6 +1946,7 @@ if test "$lshared" = "yes" ; then
   echo "SLIBNAME_WITH_VERSION=${SLIBNAME_WITH_VERSION}" >> config.mak
   echo "SLIBNAME_WITH_MAJOR=${SLIBNAME_WITH_MAJOR}" >> config.mak
   echo "SLIB_EXTRA_CMD=${SLIB_EXTRA_CMD}" >> config.mak
+  echo "SLIB_INSTALL_EXTRA_CMD=${SLIB_INSTALL_EXTRA_CMD}" >> config.mak
 fi
 echo "LIB_INSTALL_EXTRA_CMD=${LIB_INSTALL_EXTRA_CMD}" >> config.mak
 echo "EXTRALIBS=$extralibs" >> config.mak

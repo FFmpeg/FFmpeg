@@ -69,6 +69,7 @@ install-lib-shared: $(SLIBNAME)
 		ln -sf $(SLIBNAME_WITH_VERSION) $(SLIBNAME_WITH_MAJOR)
 	cd "$(shlibdir)" && \
 		ln -sf $(SLIBNAME_WITH_VERSION) $(SLIBNAME)
+	$(SLIB_INSTALL_EXTRA_CMD)
 
 install-lib-static: $(LIB)
 	install -d "$(libdir)"
