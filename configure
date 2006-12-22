@@ -1173,6 +1173,11 @@ EOF
         echo "The X11 grabber is under GPL and --enable-gpl is not specified."
         fail="yes"
     fi
+
+    if test "$swscaler" != "no"; then
+        echo "The software scaler is under GPL and --enable-gpl is not specified."
+        fail="yes"
+    fi
 fi
 
 if test "$fail" = "yes"; then
@@ -1356,11 +1361,6 @@ if test $arch = "powerpc"; then
         else
             add_cflags "-maltivec -mabi=altivec"
         fi
-    fi
-
-    if test "$swscaler" != "no"; then
-        echo "The software scaler is under GPL and --enable-gpl is not specified."
-        fail="yes"
     fi
 fi
 
