@@ -61,11 +61,6 @@ untested special converters
 #include <unistd.h>
 #include "config.h"
 #include <assert.h>
-#ifdef HAVE_MALLOC_H
-#include <malloc.h>
-#else
-#include <stdlib.h>
-#endif
 #ifdef HAVE_SYS_MMAN_H
 #include <sys/mman.h>
 #if defined(MAP_ANON) && !defined(MAP_ANONYMOUS)
