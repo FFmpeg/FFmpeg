@@ -2114,8 +2114,10 @@ pkgconfig_generate_uninstalled libavcodec "FFmpeg codec library" "$lavc_version"
 pkgconfig_generate libavformat "FFmpeg container format library" "$lavf_version" "-lavformat $extralibs" "$pkg_requires libavcodec = $lavc_version" ffmpeg
 pkgconfig_generate_uninstalled libavformat "FFmpeg container format library" "$lavf_version" "$extralibs" "$pkg_requires libavcodec = $lavc_version"
 
-pkgconfig_generate libpostproc "FFmpeg post processing library" "$pp_version" -lpostproc "" postproc
-pkgconfig_generate_uninstalled libpostproc "FFmpeg post processing library" "$pp_version"
+if test "$pp" = "yes"; then
+  pkgconfig_generate libpostproc "FFmpeg post processing library" "$pp_version" -lpostproc "" postproc
+  pkgconfig_generate_uninstalled libpostproc "FFmpeg post processing library" "$pp_version"
+fi
 
 if test "$swscaler" != "no"; then
   pkgconfig_generate libswscale "FFmpeg image rescaling library" "$sws_version" "-lswscale" "$pkg_requires libavutil = $lavu_version" swscale
