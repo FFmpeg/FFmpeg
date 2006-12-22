@@ -15,8 +15,6 @@ OBJS+=  yuv2rgb_altivec.o
 endif
 ifeq ($(CONFIG_GPL),yes)
 OBJS+=  yuv2rgb.o
-else
-OBJS+=  yuv2rgb_init.o
 endif
 
 HEADERS = swscale.h rgb2rgb.h
