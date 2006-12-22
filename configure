@@ -1357,6 +1357,11 @@ if test $arch = "powerpc"; then
             add_cflags "-maltivec -mabi=altivec"
         fi
     fi
+
+    if test "$swscaler" != "no"; then
+        echo "The software scaler is under GPL and --enable-gpl is not specified."
+        fail="yes"
+    fi
 fi
 
 check_header altivec.h
