@@ -1978,6 +1978,8 @@ void ff_estimate_b_frame_motion(MpegEncContext * s,
         }
          //FIXME something smarter
         if(dmin>256*256*16) type&= ~CANDIDATE_MB_TYPE_DIRECT; //dont try direct mode if its invalid for this MB
+        if(s->codec_id == CODEC_ID_MPEG4 && type&CANDIDATE_MB_TYPE_DIRECT && s->flags&CODEC_FLAG_MV0 && *(uint32_t*)s->b_direct_mv_table[xy])
+            type |= CANDIDATE_MB_TYPE_DIRECT0;
 #if 0
         if(s->out_format == FMT_MPEG1)
             type |= CANDIDATE_MB_TYPE_INTRA;
