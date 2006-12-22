@@ -27,6 +27,7 @@
  * miscellaneous OS support macros and functions.
  *
  * - usleep() (Win32, BeOS, OS/2)
+ * - lseek() (Win32)
  * - floatf() (OS/2)
  * - strcasecmp() (OS/2)
  */
@@ -35,6 +36,8 @@
 __declspec(dllimport) void __stdcall Sleep(unsigned long dwMilliseconds);
 // #  include <windows.h>
 #  define usleep(t)    Sleep((t) / 1000)
+#  include <fcntl.h>
+#  define lseek(f,p,w) _lseeki64((f), (p), (w))
 #endif
 
 #ifdef __BEOS__
