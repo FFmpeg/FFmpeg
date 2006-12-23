@@ -2029,6 +2029,9 @@ if test "$source_path_used" = "yes" ; then
          libavcodec/mlib \
          libavcodec/ppc \
          libavcodec/liba52 \
+         libavcodec/amr \
+         libavcodec/amr_float \
+         libavcodec/amrwb_float \
          libpostproc \
          libavutil \
          libswscale \
