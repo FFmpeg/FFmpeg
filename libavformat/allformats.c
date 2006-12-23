@@ -166,7 +166,9 @@ void av_register_all(void)
     REGISTER_DEMUXER (WSAUD, wsaud);
     REGISTER_DEMUXER (WSVQA, wsvqa);
     REGISTER_DEMUXER (WV, wv);
+#ifdef CONFIG_X11GRAB
     REGISTER_DEMUXER (X11_GRAB_DEVICE, x11_grab_device);
+#endif
     REGISTER_MUXDEMUX(YUV4MPEGPIPE, yuv4mpegpipe);
 
 #ifdef CONFIG_PROTOCOLS
