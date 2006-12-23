@@ -6,6 +6,7 @@ include ../config.mak
 
 VPATH=$(SRC_PATH_BARE)/tests
 SRC_DIR=$(SRC_PATH)/tests
+BUILD_DIR=$(BUILD_ROOT)/tests
 CFLAGS=-O2 -Wall -g
 
 REFFILE1=$(SRC_DIR)/ffmpeg.regression.ref
@@ -40,11 +41,11 @@ endif
 
 vsynth1/00.pgm: videogen$(EXESUF)
 	@mkdir -p vsynth1
-	$< 'vsynth1/'
+	$(BUILD_DIR)/$< 'vsynth1/'
 
 vsynth2/00.pgm: rotozoom$(EXESUF)
 	@mkdir -p vsynth2
-	$< 'vsynth2/' $(SRC_DIR)/lena.pnm
+	$(BUILD_DIR)/$< 'vsynth2/' $(SRC_DIR)/lena.pnm
 
 videogen$(EXESUF): videogen.c
 	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $<
@@ -55,7 +56,7 @@ rotozoom$(EXESUF): rotozoom.c
 # audio generation
 
 asynth1.sw: audiogen$(EXESUF)
-	$< $@
+	$(BUILD_DIR)/$< $@
 
 audiogen$(EXESUF): audiogen.c
 	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $<
