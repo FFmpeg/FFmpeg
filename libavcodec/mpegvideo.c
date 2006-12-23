@@ -4330,7 +4330,7 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s, int motion_x,
     uint8_t *ptr_y, *ptr_cb, *ptr_cr;
     int wrap_y, wrap_c;
 
-    for(i=0; i<mb_block_count; i++) skip_dct[i]=0;
+    for(i=0; i<mb_block_count; i++) skip_dct[i]=s->skipdct;
 
     if(s->adaptive_quant){
         const int last_qp= s->qscale;
@@ -5290,6 +5290,39 @@ static int encode_thread(AVCodecContext *c, void *arg){
                     encode_mb_hq(s, &backup_s, &best_s, CANDIDATE_MB_TYPE_DIRECT, pb, pb2, tex_pb,
                                  &dmin, &next_block, 0, 0);
                 }
+                if(!best_s.mb_intra && s->flags2&CODEC_FLAG2_SKIP_RD){
+                    int coded=0;
+                    for(i=0; i<6; i++)
+                        coded |= s->block_last_index[i];
+                    if(coded){
+                        int mx,my;
+                        memcpy(s->mv, best_s.mv, sizeof(s->mv));
+                        if(best_s.mv_dir & MV_DIRECT){
+                            mx=my=0; //FIXME find the one we actually used
+                            ff_mpeg4_set_direct_mv(s, mx, my);
+                        }else if(best_s.mv_dir&MV_DIR_BACKWARD){
+                            mx= s->mv[1][0][0];
+                            my= s->mv[1][0][1];
+                        }else{
+                            mx= s->mv[0][0][0];
+                            my= s->mv[0][0][1];
+                        }
+
+                        s->mv_dir= best_s.mv_dir;
+                        s->mv_type = best_s.mv_type;
+                        s->mb_intra= 0;
+/*                        s->mv[0][0][0] = best_s.mv[0][0][0];
+                        s->mv[0][0][1] = best_s.mv[0][0][1];
+                        s->mv[1][0][0] = best_s.mv[1][0][0];
+                        s->mv[1][0][1] = best_s.mv[1][0][1];*/
+                        backup_s.dquant= 0;
+                        s->skipdct=1;
+                        encode_mb_hq(s, &backup_s, &best_s, CANDIDATE_MB_TYPE_INTER /* wrong but unused */, pb, pb2, tex_pb,
+                                        &dmin, &next_block, mx, my);
+                        s->skipdct=0;
+                    }
+                }
+
                 s->current_picture.qscale_table[xy]= best_s.qscale;
 
                 copy_context_after_encode(s, &best_s, -1);

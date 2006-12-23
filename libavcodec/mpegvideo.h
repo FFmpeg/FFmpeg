@@ -324,6 +324,7 @@ typedef struct MpegEncContext {
     int dropable;
     int frame_rate_index;
     int last_lambda_for[5];     ///< last lambda for a specific pict type
+    int skipdct;                ///< skip dct and code zero residual
 
     /* motion compensation */
     int unrestricted_mv;        ///< mv can point outside of the coded picture
