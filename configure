@@ -88,6 +88,7 @@ show_help(){
   echo "  --enable-amr_if2         enable amr_wb IF2 audio codec"
   echo "  --enable-sunmlib         use Sun medialib [default=no]"
   echo "  --enable-pthreads        use pthreads [default=no]"
+  echo "  --enable-w32threads      use Win32 threads [default=no]"
   echo "  --enable-x11grab         enable X11 grabbing [default=no]"
   echo "  --enable-dc1394          enable IIDC-1394 grabbing using libdc1394"
   echo "                           and libraw1394 [default=no]"
@@ -641,6 +642,7 @@ amr_nb_fixed="no"
 amr_if2="no"
 mlib="no"
 pthreads="no"
+w32threads="no"
 swscaler="no"
 gpl="no"
 memalign_hack="no"
@@ -1006,6 +1008,8 @@ for opt do
   ;;
   --enable-pthreads) pthreads="yes"
   ;;
+  --enable-w32threads) w32threads="yes"
+  ;;
   --enable-swscaler) swscaler="yes"
   ;;
   --enable-gpl) gpl="yes"
@@ -1080,9 +1084,6 @@ EOF
     dc1394="no"
     ffserver="no"
     network="no"
-    if enabled mingw32; then
-        w32threads="yes"
-    fi
     if test "$wince" = "yes"; then
         protocols="no"
     fi
