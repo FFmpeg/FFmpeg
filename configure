@@ -1117,11 +1117,9 @@ EOF
     exit 1;
 fi
 
-if test "$libvorbis" = "yes" ; then
-    if test "$libogg" = "no"; then
-        echo "libogg must be enabled to enable Vorbis."
-        fail="yes"
-    fi
+if test "$libvorbis" = "yes" && test "$libogg" = "no"; then
+    echo "libogg must be enabled to enable libvorbis."
+    fail="yes"
 fi
 
 if test "$gpl" != "yes"; then
