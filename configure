@@ -1078,7 +1078,6 @@ EOF
     fi
     video4linux="no"
     video4linux2="no"
-    bktr="no"
     audio_oss="no"
     dv1394="no"
     dc1394="no"
