@@ -1117,34 +1117,28 @@ EOF
 fi
 
 if test "$libvorbis" = "yes" && test "$libogg" = "no"; then
-    echo "libogg must be enabled to enable libvorbis."
-    fail="yes"
+    die "libogg must be enabled to enable libvorbis."
 fi
 
 if test "$gpl" != "yes"; then
     if test "$pp" != "no"; then
-        echo "The Postprocessing code is under GPL and --enable-gpl is not specified."
-        fail="yes"
+        die "The Postprocessing code is under GPL and --enable-gpl is not specified."
     fi
 
     if test "$a52" != "no" -o "$a52bin" != "no"; then
-        echo "liba52 is under GPL and --enable-gpl is not specified."
-        fail="yes"
+        die "liba52 is under GPL and --enable-gpl is not specified."
     fi
 
     if test "$xvid" != "no"; then
-        echo "libxvidcore is under GPL and --enable-gpl is not specified."
-        fail="yes"
+        die "libxvidcore is under GPL and --enable-gpl is not specified."
     fi
 
     if test "$x264" != "no"; then
-        echo "x264 is under GPL and --enable-gpl is not specified."
-        fail="yes"
+        die "x264 is under GPL and --enable-gpl is not specified."
     fi
 
     if test "$dts" != "no"; then
-        echo "libdts is under GPL and --enable-gpl is not specified."
-        fail="yes"
+        die "libdts is under GPL and --enable-gpl is not specified."
     fi
 
     if test "$faad" != "no" -o "$faadbin" != "no"; then
@@ -1157,8 +1151,7 @@ if test "$gpl" != "yes"; then
                 int main( void ) { return 0; }
 EOF
             if test $? = 0 ; then
-                echo "FAAD2 is under GPL and --enable-gpl is not specified."
-                fail="yes"
+                die "FAAD2 is under GPL and --enable-gpl is not specified."
             fi
         else
             faad="no"
@@ -1168,18 +1161,12 @@ EOF
     fi
 
     if test "$x11grab" != "no"; then
-        echo "The X11 grabber is under GPL and --enable-gpl is not specified."
-        fail="yes"
+        die "The X11 grabber is under GPL and --enable-gpl is not specified."
     fi
 
     if test "$swscaler" != "no"; then
-        echo "The software scaler is under GPL and --enable-gpl is not specified."
-        fail="yes"
+        die "The software scaler is under GPL and --enable-gpl is not specified."
     fi
-fi
-
-if test "$fail" = "yes"; then
-    exit 1
 fi
 
 # compute MMX state
