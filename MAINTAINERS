@@ -137,6 +137,7 @@ Codecs:
   lzo.h, lzo.c                          Reimar Doeffinger
   mdec.c                                Michael Niedermayer
   mjpeg.c                               Michael Niedermayer
+  mpc*                                  Kostya Shishkov
   mpeg12.c, mpeg12data.h                Michael Niedermayer
   mpegvideo.c, mpegvideo.h              Michael Niedermayer
   msmpeg4.c, msmpeg4data.h              Michael Niedermayer
@@ -211,6 +212,7 @@ Muxers/Demuxers:
   matroska.c                            Aurelien Jacobs
   mov.c                                 Francois Revol, Michael Niedermayer
   movenc.c                              Michael Niedermayer, Baptiste Coudurier
+  mpc.c                                 Kostya Shishkov
   mpegts*                               Mans Rullgard
   mtv.c                                 Reynaldo H. Verdejo Pinochet
   mxf.c                                 Baptiste Coudurier

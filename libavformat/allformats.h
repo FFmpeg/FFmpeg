@@ -82,6 +82,7 @@ extern AVOutputFormat tg2_muxer;
 extern AVInputFormat mp3_demuxer;
 extern AVOutputFormat mp2_muxer;
 extern AVOutputFormat mp3_muxer;
+extern AVInputFormat mpc_demuxer;
 extern AVOutputFormat mpeg1system_muxer;
 extern AVOutputFormat mpeg1vcd_muxer;
 extern AVOutputFormat mpeg2vob_muxer;

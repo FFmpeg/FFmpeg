@@ -66,6 +66,7 @@ version <next>
 - TIFF picture decoder
 - GIF picture decoder
 - Intel Music decoder
+- Musepack decoder
 
 version 0.4.9-pre1:
 

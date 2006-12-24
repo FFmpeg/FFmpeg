@@ -101,6 +101,7 @@ OBJS-$(CONFIG_MACE3_DECODER)           += mace.o
 OBJS-$(CONFIG_MACE6_DECODER)           += mace.o
 OBJS-$(CONFIG_MMVIDEO_DECODER)         += mmvideo.o
 OBJS-$(CONFIG_MP2_ENCODER)             += mpegaudio.o
+OBJS-$(CONFIG_MPC7_DECODER)            += mpc.o
 OBJS-$(CONFIG_MSRLE_DECODER)           += msrle.o
 OBJS-$(CONFIG_MSVIDEO1_DECODER)        += msvideo1.o
 OBJS-$(CONFIG_MSZH_DECODER)            += lcl.o

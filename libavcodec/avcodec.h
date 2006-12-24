@@ -37,8 +37,8 @@ extern "C" {
 #define AV_STRINGIFY(s)         AV_TOSTRING(s)
 #define AV_TOSTRING(s) #s
 
-#define LIBAVCODEC_VERSION_INT  ((51<<16)+(27<<8)+0)
-#define LIBAVCODEC_VERSION      51.27.0
+#define LIBAVCODEC_VERSION_INT  ((51<<16)+(28<<8)+0)
+#define LIBAVCODEC_VERSION      51.28.0
 #define LIBAVCODEC_BUILD        LIBAVCODEC_VERSION_INT
 
 #define LIBAVCODEC_IDENT        "Lavc" AV_STRINGIFY(LIBAVCODEC_VERSION)
@@ -237,6 +237,7 @@ enum CodecID {
     CODEC_ID_WAVPACK,
     CODEC_ID_DSICINAUDIO,
     CODEC_ID_IMC,
+    CODEC_ID_MUSEPACK7,
 
     /* subtitle codecs */
     CODEC_ID_DVD_SUBTITLE= 0x17000,
@@ -2317,6 +2318,7 @@ extern AVCodec dsicinaudio_decoder;
 extern AVCodec tiertexseqvideo_decoder;
 extern AVCodec tiff_decoder;
 extern AVCodec imc_decoder;
+extern AVCodec mpc7_decoder;
 
 /* pcm codecs */
 #define PCM_CODEC(id, name) \
