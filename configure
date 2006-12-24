@@ -455,6 +455,11 @@ HAVE_LIST='
     beosthreads
     byteswap_h
     dcbzl
+    dev_bktr_ioctl_bt848_h
+    dev_bktr_ioctl_meteor_h
+    dev_ic_bt8xx_h
+    dev_video_meteor_ioctl_meteor_h
+    dev_video_bktr_ioctl_bt848_h
     dlfcn_h
     dlopen
     freetype2
@@ -463,6 +468,8 @@ HAVE_LIST='
     inet_aton
     localtime_r
     lrintf
+    machine_ioctl_bt848_h
+    machine_ioctl_meteor_h
     malloc_h
     memalign
     mlib
@@ -1659,6 +1666,20 @@ enabled video4linux2 && check_cc <<EOF || video4linux2="no"
 int dummy = V4L2_PIX_FMT_YUV420;
 struct v4l2_buffer dummy1;
 EOF
+
+# check for ioctl_meteor.h, ioctl_bt848.h and alternatives
+if enabled bktr; then
+    check_header dev/bktr/ioctl_meteor.h
+    check_header dev/bktr/ioctl_bt848.h
+
+    check_header machine/ioctl_meteor.h
+    check_header machine/ioctl_bt848.h
+
+    check_header dev/video/meteor/ioctl_meteor.h
+    check_header dev/video/bktr/ioctl_bt848.h
+
+    check_header dev/ic/bt8xx.h
+fi
 
 # Deal with the x11 frame grabber
 enabled x11grab                         &&

@@ -24,21 +24,16 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 #include "avformat.h"
-#if defined(__FreeBSD__)
-# if __FreeBSD__ >= 502100
-#  include <dev/bktr/ioctl_meteor.h>
-#  include <dev/bktr/ioctl_bt848.h>
-# else
-#  include <machine/ioctl_meteor.h>
-#  include <machine/ioctl_bt848.h>
-# endif
-#elif defined(__FreeBSD_kernel__)
+#if defined (HAVE_DEV_BKTR_IOCTL_METEOR_H) && defined (HAVE_DEV_BKTR_IOCTL_BT848_H)
 # include <dev/bktr/ioctl_meteor.h>
 # include <dev/bktr/ioctl_bt848.h>
-#elif defined(__DragonFly__)
+#elif defined (HAVE_MACHINE_IOCTL_METEOR_H) && defined (HAVE_MACHINE_IOCTL_BT848_H)
+# include <machine/ioctl_meteor.h>
+# include <machine/ioctl_bt848.h>
+#elif defined (HAVE_DEV_VIDEO_METEOR_IOCTL_METEOR_H) && defined (HAVE_DEV_VIDEO_METEOR_IOCTL_BT848_H)
 # include <dev/video/meteor/ioctl_meteor.h>
 # include <dev/video/bktr/ioctl_bt848.h>
-#else
+#elif HAVE_DEV_IC_BT8XX_H
 # include <dev/ic/bt8xx.h>
 #endif
 #include <unistd.h>
