@@ -832,10 +832,10 @@ int yuv2rgb_c_init_tables (SwsContext *c, const int inv_table[4], int fullRange,
     }
 
     for (i = 0; i < 256; i++) {
-	c->table_rV[i] = table_r + entry_size * div_round (crv * (i-128), 76309);
-	c->table_gU[i] = table_g + entry_size * div_round (cgu * (i-128), 76309);
+	c->table_rV[i] = (uint8_t *)table_r + entry_size * div_round (crv * (i-128), 76309);
+	c->table_gU[i] = (uint8_t *)table_g + entry_size * div_round (cgu * (i-128), 76309);
 	c->table_gV[i] = entry_size * div_round (cgv * (i-128), 76309);
-	c->table_bU[i] = table_b + entry_size * div_round (cbu * (i-128), 76309);
+	c->table_bU[i] = (uint8_t *)table_b + entry_size * div_round (cbu * (i-128), 76309);
     }
 
     av_free(c->yuvTable);
