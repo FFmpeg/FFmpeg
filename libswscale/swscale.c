@@ -417,9 +417,9 @@ static inline void yuv2nv12XinC(int16_t *lumFilter, int16_t **lumSrc, int lumFil
                         
 #define YSCALE_YUV_2_RGBX_C(type) \
 			YSCALE_YUV_2_PACKEDX_C(type)\
-			r = c->table_rV[V];\
-			g = c->table_gU[U] + c->table_gV[V];\
-			b = c->table_bU[U];\
+			r = (type *)c->table_rV[V];\
+			g = (type *)(c->table_gU[U] + c->table_gV[V]);\
+			b = (type *)c->table_bU[U];\
 
 #define YSCALE_YUV_2_PACKED2_C \
 		for(i=0; i<(dstW>>1); i++){\
@@ -432,9 +432,9 @@ static inline void yuv2nv12XinC(int16_t *lumFilter, int16_t **lumSrc, int lumFil
 #define YSCALE_YUV_2_RGB2_C(type) \
 			YSCALE_YUV_2_PACKED2_C\
 			type *r, *b, *g;\
-			r = c->table_rV[V];\
-			g = c->table_gU[U] + c->table_gV[V];\
-			b = c->table_bU[U];\
+			r = (type *)c->table_rV[V];\
+			g = (type *)(c->table_gU[U] + c->table_gV[V]);\
+			b = (type *)c->table_bU[U];\
 
 #define YSCALE_YUV_2_PACKED1_C \
 		for(i=0; i<(dstW>>1); i++){\
@@ -447,9 +447,9 @@ static inline void yuv2nv12XinC(int16_t *lumFilter, int16_t **lumSrc, int lumFil
 #define YSCALE_YUV_2_RGB1_C(type) \
 			YSCALE_YUV_2_PACKED1_C\
 			type *r, *b, *g;\
-			r = c->table_rV[V];\
-			g = c->table_gU[U] + c->table_gV[V];\
-			b = c->table_bU[U];\
+			r = (type *)c->table_rV[V];\
+			g = (type *)(c->table_gU[U] + c->table_gV[V]);\
+			b = (type *)c->table_bU[U];\
 
 #define YSCALE_YUV_2_PACKED1B_C \
 		for(i=0; i<(dstW>>1); i++){\
@@ -462,9 +462,9 @@ static inline void yuv2nv12XinC(int16_t *lumFilter, int16_t **lumSrc, int lumFil
 #define YSCALE_YUV_2_RGB1B_C(type) \
 			YSCALE_YUV_2_PACKED1B_C\
 			type *r, *b, *g;\
-			r = c->table_rV[V];\
-			g = c->table_gU[U] + c->table_gV[V];\
-			b = c->table_bU[U];\
+			r = (type *)c->table_rV[V];\
+			g = (type *)(c->table_gU[U] + c->table_gV[V]);\
+			b = (type *)c->table_bU[U];\
 
 #define YSCALE_YUV_2_ANYRGB_C(func, func2)\
 	switch(c->dstFormat)\

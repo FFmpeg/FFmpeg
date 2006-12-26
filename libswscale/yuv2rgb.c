@@ -213,9 +213,9 @@ const int32_t Inverse_Table_6_9[8][4] = {
 #define RGB(i)					\
 	U = pu[i];				\
 	V = pv[i];				\
-	r = c->table_rV[V];			\
-	g = c->table_gU[U] + c->table_gV[V];		\
-	b = c->table_bU[U];
+	r = (void *)c->table_rV[V];			\
+	g = (void *)(c->table_gU[U] + c->table_gV[V]);		\
+	b = (void *)c->table_bU[U];
 
 #define DST1(i)					\
 	Y = py_1[2*i];				\
