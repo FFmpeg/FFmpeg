@@ -101,10 +101,10 @@ typedef struct SwsContext{
 	int dstY;
 	int flags;
 	void * yuvTable;			// pointer to the yuv->rgb table start so it can be freed()
-	void * table_rV[256];
-	void * table_gU[256];
+	uint8_t * table_rV[256];
+	uint8_t * table_gU[256];
 	int    table_gV[256];
-	void * table_bU[256];
+	uint8_t * table_bU[256];
 
 	//Colorspace stuff
 	int contrast, brightness, saturation;	// for sws_getColorspaceDetails
