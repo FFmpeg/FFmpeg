@@ -386,7 +386,7 @@ static inline void yuv2nv12XinC(int16_t *lumFilter, int16_t **lumSrc, int lumFil
 			int Y2=1<<18;\
 			int U=1<<18;\
 			int V=1<<18;\
-			type *r, *b, *g;\
+			type attribute_unused *r, *b, *g;\
 			const int i2= 2*i;\
 			\
 			for(j=0; j<lumFilterSize; j++)\

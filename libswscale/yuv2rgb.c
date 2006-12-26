@@ -265,14 +265,16 @@ static int func_name(SwsContext *c, uint8_t* src[], int srcStride[], int srcSlic
     for(y=0; y<srcSliceH; y+=2){\
 	dst_type *dst_1= (dst_type*)(dst[0] + (y+srcSliceY  )*dstStride[0]);\
 	dst_type *dst_2= (dst_type*)(dst[0] + (y+srcSliceY+1)*dstStride[0]);\
-	dst_type *r, *g, *b;\
+	dst_type attribute_unused *r, *b;\
+	dst_type *g;\
 	uint8_t *py_1= src[0] + y*srcStride[0];\
 	uint8_t *py_2= py_1 + srcStride[0];\
 	uint8_t *pu= src[1] + (y>>1)*srcStride[1];\
 	uint8_t *pv= src[2] + (y>>1)*srcStride[2];\
 	unsigned int h_size= c->dstW>>3;\
 	while (h_size--) {\
-	    int U, V, Y;\
+	    int attribute_unused U, V;\
+	    int Y;\
 
 #define EPILOG(dst_delta)\
 	    pu += 4;\
