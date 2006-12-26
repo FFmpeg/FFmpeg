@@ -85,6 +85,11 @@ ffplay_g$(EXESUF): ffplay.o cmdutils.o .libs
 	cp -p $< $@
 	$(STRIP) $@
 
+SVN_ENTRIES = $(SRC_PATH_BARE)/.svn/entries
+ifeq ($(wildcard $(SVN_ENTRIES)),$(SVN_ENTRIES))
+version.h: $(SVN_ENTRIES)
+endif
+
 version.h:
 	$(SRC_PATH)/version.sh $(SRC_PATH)
 
