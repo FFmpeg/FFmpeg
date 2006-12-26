@@ -2129,8 +2129,8 @@ if test "$pp" = "yes"; then
 fi
 
 if test "$swscaler" != "no"; then
-  pkgconfig_generate libswscale "FFmpeg image rescaling library" "$sws_version" "-lswscale" "$pkg_requires libavutil = $lavu_version" swscale
-  pkgconfig_generate_uninstalled libswscale "FFmpeg image rescaling library" "$sws_version" "" "$pkg_requires libavutil = $lavu_version"
+  pkgconfig_generate libswscale "FFmpeg image rescaling library" "$sws_version" "-lswscale" "libavutil = $lavu_version" swscale
+  pkgconfig_generate_uninstalled libswscale "FFmpeg image rescaling library" "$sws_version" "" "libavutil = $lavu_version"
 else
   pkgconfig_generate libswscale "FFmpeg image rescaling library" "$sws_version" "" "$pkg_requires libavcodec = $lavc_version" swscale
   pkgconfig_generate_uninstalled libswscale "FFmpeg image rescaling library" "$sws_version" "" "$pkg_requires libavcodec = $lavc_version"
