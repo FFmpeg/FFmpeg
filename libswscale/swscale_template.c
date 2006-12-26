@@ -3107,15 +3107,15 @@ i--;
 		int i;
             if(flags & SWS_ACCURATE_RND){
                         for(i=0; i<vLumFilterSize; i+=2){
-                                lumMmxFilter[2*i+0]= lumSrcPtr[i  ];
-                                lumMmxFilter[2*i+1]= lumSrcPtr[i+(vLumFilterSize>1)];
+                                lumMmxFilter[2*i+0]= (int32_t)lumSrcPtr[i  ];
+                                lumMmxFilter[2*i+1]= (int32_t)lumSrcPtr[i+(vLumFilterSize>1)];
                                 lumMmxFilter[2*i+2]=
                                 lumMmxFilter[2*i+3]= vLumFilter[dstY*vLumFilterSize + i    ]
                                                 + (vLumFilterSize>1 ? vLumFilter[dstY*vLumFilterSize + i + 1]<<16 : 0);
                         }
                         for(i=0; i<vChrFilterSize; i+=2){
-                                chrMmxFilter[2*i+0]= chrSrcPtr[i  ];
-                                chrMmxFilter[2*i+1]= chrSrcPtr[i+(vChrFilterSize>1)];
+                                chrMmxFilter[2*i+0]= (int32_t)chrSrcPtr[i  ];
+                                chrMmxFilter[2*i+1]= (int32_t)chrSrcPtr[i+(vChrFilterSize>1)];
                                 chrMmxFilter[2*i+2]=
                                 chrMmxFilter[2*i+3]= vChrFilter[chrDstY*vChrFilterSize + i    ]
                                                 + (vChrFilterSize>1 ? vChrFilter[chrDstY*vChrFilterSize + i + 1]<<16 : 0);
