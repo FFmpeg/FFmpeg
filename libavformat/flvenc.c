@@ -20,9 +20,26 @@
  */
 #include "avformat.h"
 #include "flv.h"
+#include "riff.h"
 
 #undef NDEBUG
 #include <assert.h>
+
+static const CodecTag flv_video_codec_ids[] = {
+    {CODEC_ID_FLV1,    FLV_CODECID_H263  },
+    {CODEC_ID_FLASHSV, FLV_CODECID_SCREEN},
+    {CODEC_ID_VP6F,    FLV_CODECID_VP6   },
+    {CODEC_ID_NONE,    0}
+};
+
+static const CodecTag flv_audio_codec_ids[] = {
+    {CODEC_ID_MP3,       FLV_CODECID_MP3    >> FLV_AUDIO_CODECID_OFFSET},
+    {CODEC_ID_PCM_S8,    FLV_CODECID_PCM_BE >> FLV_AUDIO_CODECID_OFFSET},
+    {CODEC_ID_PCM_S16BE, FLV_CODECID_PCM_BE >> FLV_AUDIO_CODECID_OFFSET},
+    {CODEC_ID_PCM_S16LE, FLV_CODECID_PCM_LE >> FLV_AUDIO_CODECID_OFFSET},
+    {CODEC_ID_ADPCM_SWF, FLV_CODECID_ADPCM  >> FLV_AUDIO_CODECID_OFFSET},
+    {CODEC_ID_NONE,      0}
+};
 
 typedef struct FLVContext {
     int hasAudio;
@@ -99,11 +116,16 @@ static void put_amf_double(ByteIOContext *pb, double d)
     put_be64(pb, av_dbl2int(d));
 }
 
+static void put_amf_bool(ByteIOContext *pb, int b) {
+    put_byte(pb, AMF_DATA_TYPE_BOOL);
+    put_byte(pb, !!b);
+}
+
 static int flv_write_header(AVFormatContext *s)
 {
     ByteIOContext *pb = &s->pb;
     FLVContext *flv = s->priv_data;
-    int i, width, height, samplerate;
+    int i, width, height, samplerate, samplesize, channels, audiocodecid, videocodecid;
     double framerate = 0.0;
     int metadata_size_pos, data_size;
 
@@ -121,9 +143,20 @@ static int flv_write_header(AVFormatContext *s)
                 framerate = 1/av_q2d(s->streams[i]->codec->time_base);
             }
             flv->hasVideo=1;
+
+            videocodecid = codec_get_tag(flv_video_codec_ids, enc->codec_id);
+            if(videocodecid == 0) {
+                av_log(enc, AV_LOG_ERROR, "video codec not compatible with flv\n");
+                return -1;
+            }
         } else {
             flv->hasAudio=1;
             samplerate = enc->sample_rate;
+            channels = enc->channels;
+
+            audiocodecid = codec_get_tag(flv_audio_codec_ids, enc->codec_id);
+            samplesize = (enc->codec_id == CODEC_ID_PCM_S8) ? 8 : 16;
+
             if(get_audio_flags(enc)<0)
                 return -1;
         }
@@ -162,7 +195,7 @@ static int flv_write_header(AVFormatContext *s)
 
     /* mixed array (hash) with size and string/type/data tuples */
     put_byte(pb, AMF_DATA_TYPE_MIXEDARRAY);
-    put_be32(pb, 4*flv->hasVideo + flv->hasAudio + 2); // +2 for duration and file size
+    put_be32(pb, 5*flv->hasVideo + 4*flv->hasAudio + 2); // +2 for duration and file size
 
     put_amf_string(pb, "duration");
     flv->duration_offset= url_ftell(pb);
@@ -180,11 +213,23 @@ static int flv_write_header(AVFormatContext *s)
 
         put_amf_string(pb, "framerate");
         put_amf_double(pb, framerate);
+
+        put_amf_string(pb, "videocodecid");
+        put_amf_double(pb, videocodecid);
     }
 
     if(flv->hasAudio){
         put_amf_string(pb, "audiosamplerate");
         put_amf_double(pb, samplerate);
+
+        put_amf_string(pb, "audiosamplesize");
+        put_amf_double(pb, samplesize);
+
+        put_amf_string(pb, "stereo");
+        put_amf_bool(pb, (channels == 2));
+
+        put_amf_string(pb, "audiocodecid");
+        put_amf_double(pb, audiocodecid);
     }
 
     put_amf_string(pb, "filesize");
