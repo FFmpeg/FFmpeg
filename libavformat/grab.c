@@ -219,8 +219,11 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     } else {
         s->video_buf = mmap(0,s->gb_buffers.size,PROT_READ|PROT_WRITE,MAP_SHARED,video_fd,0);
         if ((unsigned char*)-1 == s->video_buf) {
-            perror("mmap");
-            goto fail;
+            s->video_buf = mmap(0,s->gb_buffers.size,PROT_READ|PROT_WRITE,MAP_PRIVATE,video_fd,0);
+            if ((unsigned char*)-1 == s->video_buf) {
+                perror("mmap");
+                goto fail;
+            }
         }
         s->gb_frame = 0;
         s->time_frame = av_gettime() * s->frame_rate / s->frame_rate_base;
