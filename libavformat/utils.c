@@ -1880,7 +1880,8 @@ int av_find_stream_info(AVFormatContext *ic)
         read_size += pkt->size;
 
         st = ic->streams[pkt->stream_index];
-        st->codec_info_duration += pkt->duration;
+        if(st->codec_info_nb_frames>1) //FIXME move codec_info_nb_frames and codec_info_duration from AVStream into this func
+            st->codec_info_duration += pkt->duration;
         if (pkt->duration != 0)
             st->codec_info_nb_frames++;
 
