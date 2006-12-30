@@ -2142,26 +2142,13 @@ static void stream_cycle_channel(VideoState *is, int codec_type)
 
 static void toggle_full_screen(void)
 {
-    int w, h, flags;
     is_full_screen = !is_full_screen;
     if (!fs_screen_width) {
         /* use default SDL method */
         SDL_WM_ToggleFullScreen(screen);
     } else {
         /* use the recorded resolution */
-        flags = SDL_HWSURFACE|SDL_ASYNCBLIT|SDL_HWACCEL;
-        if (is_full_screen) {
-            w = fs_screen_width;
-            h = fs_screen_height;
-            flags |= SDL_FULLSCREEN;
-        } else {
-            w = screen_width;
-            h = screen_height;
-            flags |= SDL_RESIZABLE;
-        }
-        screen = SDL_SetVideoMode(w, h, 0, flags);
-        cur_stream->width = w;
-        cur_stream->height = h;
+        video_open(cur_stream);
     }
 }
 
