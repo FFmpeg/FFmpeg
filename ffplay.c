@@ -184,8 +184,8 @@ static AVInputFormat *file_iformat;
 static const char *input_filename;
 static int fs_screen_width;
 static int fs_screen_height;
-static int screen_width = 640;
-static int screen_height = 480;
+static int screen_width = 0;
+static int screen_height = 0;
 static int audio_disable;
 static int video_disable;
 static int seek_by_bytes;
@@ -1595,6 +1595,44 @@ void sdl_audio_callback(void *opaque, Uint8 *stream, int len)
     }
 }
 
+static int video_open(VideoState *is){
+    int flags = SDL_HWSURFACE|SDL_ASYNCBLIT|SDL_HWACCEL;
+    int w,h;
+
+    if (is_full_screen && fs_screen_width) {
+        w = fs_screen_width;
+        h = fs_screen_height;
+        flags |= SDL_FULLSCREEN;
+    } else {
+        if(screen_width){
+            w = screen_width;
+            h = screen_height;
+        }else if (is->video_st && is->video_st->codec->width){
+            w = is->video_st->codec->width;
+            h = is->video_st->codec->height;
+        } else {
+            w = 640;
+            h = 480;
+        }
+        flags |= SDL_RESIZABLE;
+    }
+#ifndef CONFIG_DARWIN
+    screen = SDL_SetVideoMode(w, h, 0, flags);
+#else
+    /* setting bits_per_pixel = 0 or 32 causes blank video on OS X */
+    screen = SDL_SetVideoMode(w, h, 24, flags);
+#endif
+    if (!screen) {
+        fprintf(stderr, "SDL: could not set video mode - exiting\n");
+        return -1;
+    }
+    SDL_WM_SetCaption("FFplay", "FFplay");
+
+    is->width = screen->w;
+    is->height = screen->h;
+
+    return 0;
+}
 
 /* open a given stream. Return 0 if OK */
 static int stream_component_open(VideoState *is, int stream_index)
@@ -2008,10 +2046,6 @@ static VideoState *stream_open(const char *filename, AVInputFormat *iformat)
         return NULL;
     pstrcpy(is->filename, sizeof(is->filename), filename);
     is->iformat = iformat;
-    if (screen) {
-        is->width = screen->w;
-        is->height = screen->h;
-    }
     is->ytop = 0;
     is->xleft = 0;
 
@@ -2270,6 +2304,7 @@ static void event_loop(void)
             do_exit();
             break;
         case FF_ALLOC_EVENT:
+            video_open(event.user.data1);
             alloc_picture(event.user.data1);
             break;
         case FF_REFRESH_EVENT:
@@ -2411,7 +2446,7 @@ void parse_arg_file(const char *filename)
 /* Called from the main */
 int main(int argc, char **argv)
 {
-    int flags, w, h;
+    int flags;
 
     /* register all codecs, demux and protocols */
     av_register_all();
@@ -2447,27 +2482,6 @@ int main(int argc, char **argv)
         fs_screen_width = vi->current_w;
         fs_screen_height = vi->current_h;
 #endif
-        flags = SDL_HWSURFACE|SDL_ASYNCBLIT|SDL_HWACCEL;
-        if (is_full_screen && fs_screen_width) {
-            w = fs_screen_width;
-            h = fs_screen_height;
-            flags |= SDL_FULLSCREEN;
-        } else {
-            w = screen_width;
-            h = screen_height;
-            flags |= SDL_RESIZABLE;
-        }
-#ifndef CONFIG_DARWIN
-        screen = SDL_SetVideoMode(w, h, 0, flags);
-#else
-        /* setting bits_per_pixel = 0 or 32 causes blank video on OS X */
-        screen = SDL_SetVideoMode(w, h, 24, flags);
-#endif
-        if (!screen) {
-            fprintf(stderr, "SDL: could not set video mode - exiting\n");
-            exit(1);
-        }
-        SDL_WM_SetCaption("FFplay", "FFplay");
     }
 
     SDL_EventState(SDL_ACTIVEEVENT, SDL_IGNORE);
@@ -2479,6 +2493,9 @@ int main(int argc, char **argv)
     flush_pkt.data= "FLUSH";
 
     cur_stream = stream_open(input_filename, file_iformat);
+
+    if(video_disable && !display_disable)
+        video_open(cur_stream);
 
     event_loop();
 
