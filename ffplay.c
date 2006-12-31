@@ -2308,11 +2308,19 @@ static void event_loop(void)
 void opt_width(const char *arg)
 {
     screen_width = atoi(arg);
+    if(screen_width<=0){
+        fprintf(stderr, "invalid width\n");
+        exit(1);
+    }
 }
 
 void opt_height(const char *arg)
 {
     screen_height = atoi(arg);
+    if(screen_height<=0){
+        fprintf(stderr, "invalid height\n");
+        exit(1);
+    }
 }
 
 static void opt_format(const char *arg)
