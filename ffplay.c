@@ -833,22 +833,21 @@ static int video_open(VideoState *is){
     int flags = SDL_HWSURFACE|SDL_ASYNCBLIT|SDL_HWACCEL;
     int w,h;
 
+    if(is_full_screen) flags |= SDL_FULLSCREEN;
+    else               flags |= SDL_RESIZABLE;
+
     if (is_full_screen && fs_screen_width) {
         w = fs_screen_width;
         h = fs_screen_height;
-        flags |= SDL_FULLSCREEN;
+    } else if(!is_full_screen && screen_width){
+        w = screen_width;
+        h = screen_height;
+    }else if (is->video_st && is->video_st->codec->width){
+        w = is->video_st->codec->width;
+        h = is->video_st->codec->height;
     } else {
-        if(screen_width){
-            w = screen_width;
-            h = screen_height;
-        }else if (is->video_st && is->video_st->codec->width){
-            w = is->video_st->codec->width;
-            h = is->video_st->codec->height;
-        } else {
-            w = 640;
-            h = 480;
-        }
-        flags |= SDL_RESIZABLE;
+        w = 640;
+        h = 480;
     }
 #ifndef CONFIG_DARWIN
     screen = SDL_SetVideoMode(w, h, 0, flags);
@@ -2147,11 +2146,9 @@ static void toggle_full_screen(void)
     is_full_screen = !is_full_screen;
     if (!fs_screen_width) {
         /* use default SDL method */
-        SDL_WM_ToggleFullScreen(screen);
-    } else {
-        /* use the recorded resolution */
-        video_open(cur_stream);
+//        SDL_WM_ToggleFullScreen(screen);
     }
+    video_open(cur_stream);
 }
 
 static void toggle_pause(void)
