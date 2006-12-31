@@ -2281,8 +2281,8 @@ static void event_loop(void)
             if (cur_stream) {
                 screen = SDL_SetVideoMode(event.resize.w, event.resize.h, 0,
                                           SDL_HWSURFACE|SDL_RESIZABLE|SDL_ASYNCBLIT|SDL_HWACCEL);
-                cur_stream->width = event.resize.w;
-                cur_stream->height = event.resize.h;
+                screen_width = cur_stream->width = event.resize.w;
+                screen_height= cur_stream->height= event.resize.h;
             }
             break;
         case SDL_QUIT:
