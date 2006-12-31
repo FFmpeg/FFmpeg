@@ -829,9 +829,13 @@ static void video_audio_display(VideoState *s)
     SDL_UpdateRect(screen, s->xleft, s->ytop, s->width, s->height);
 }
 
+static int video_open(VideoState *is);
+
 /* display the current picture, if any */
 static void video_display(VideoState *is)
 {
+    if(!screen)
+        video_open(cur_stream);
     if (is->audio_st && is->show_audio)
         video_audio_display(is);
     else if (is->video_st)
@@ -2480,9 +2484,6 @@ int main(int argc, char **argv)
     flush_pkt.data= "FLUSH";
 
     cur_stream = stream_open(input_filename, file_iformat);
-
-    if(video_disable && !display_disable)
-        video_open(cur_stream);
 
     event_loop();
 
