@@ -829,7 +829,44 @@ static void video_audio_display(VideoState *s)
     SDL_UpdateRect(screen, s->xleft, s->ytop, s->width, s->height);
 }
 
-static int video_open(VideoState *is);
+static int video_open(VideoState *is){
+    int flags = SDL_HWSURFACE|SDL_ASYNCBLIT|SDL_HWACCEL;
+    int w,h;
+
+    if (is_full_screen && fs_screen_width) {
+        w = fs_screen_width;
+        h = fs_screen_height;
+        flags |= SDL_FULLSCREEN;
+    } else {
+        if(screen_width){
+            w = screen_width;
+            h = screen_height;
+        }else if (is->video_st && is->video_st->codec->width){
+            w = is->video_st->codec->width;
+            h = is->video_st->codec->height;
+        } else {
+            w = 640;
+            h = 480;
+        }
+        flags |= SDL_RESIZABLE;
+    }
+#ifndef CONFIG_DARWIN
+    screen = SDL_SetVideoMode(w, h, 0, flags);
+#else
+    /* setting bits_per_pixel = 0 or 32 causes blank video on OS X */
+    screen = SDL_SetVideoMode(w, h, 24, flags);
+#endif
+    if (!screen) {
+        fprintf(stderr, "SDL: could not set video mode - exiting\n");
+        return -1;
+    }
+    SDL_WM_SetCaption("FFplay", "FFplay");
+
+    is->width = screen->w;
+    is->height = screen->h;
+
+    return 0;
+}
 
 /* display the current picture, if any */
 static void video_display(VideoState *is)
@@ -1597,45 +1634,6 @@ void sdl_audio_callback(void *opaque, Uint8 *stream, int len)
         stream += len1;
         is->audio_buf_index += len1;
     }
-}
-
-static int video_open(VideoState *is){
-    int flags = SDL_HWSURFACE|SDL_ASYNCBLIT|SDL_HWACCEL;
-    int w,h;
-
-    if (is_full_screen && fs_screen_width) {
-        w = fs_screen_width;
-        h = fs_screen_height;
-        flags |= SDL_FULLSCREEN;
-    } else {
-        if(screen_width){
-            w = screen_width;
-            h = screen_height;
-        }else if (is->video_st && is->video_st->codec->width){
-            w = is->video_st->codec->width;
-            h = is->video_st->codec->height;
-        } else {
-            w = 640;
-            h = 480;
-        }
-        flags |= SDL_RESIZABLE;
-    }
-#ifndef CONFIG_DARWIN
-    screen = SDL_SetVideoMode(w, h, 0, flags);
-#else
-    /* setting bits_per_pixel = 0 or 32 causes blank video on OS X */
-    screen = SDL_SetVideoMode(w, h, 24, flags);
-#endif
-    if (!screen) {
-        fprintf(stderr, "SDL: could not set video mode - exiting\n");
-        return -1;
-    }
-    SDL_WM_SetCaption("FFplay", "FFplay");
-
-    is->width = screen->w;
-    is->height = screen->h;
-
-    return 0;
 }
 
 /* open a given stream. Return 0 if OK */
