@@ -69,6 +69,8 @@ void url_set_interrupt_cb(URLInterruptCB *interrupt_cb);
 /* not implemented */
 int url_poll(URLPollEntry *poll_table, int n, int timeout);
 
+#define AVSEEK_SIZE 0x10000
+
 typedef struct URLProtocol {
     const char *name;
     int (*url_open)(URLContext *h, const char *filename, int flags);

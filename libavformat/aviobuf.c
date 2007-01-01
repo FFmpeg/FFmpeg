@@ -170,8 +170,11 @@ offset_t url_fsize(ByteIOContext *s)
 
     if (!s->seek)
         return -EPIPE;
+    size = s->seek(s->opaque, 0, AVSEEK_SIZE);
+    if(size<0){
     size = s->seek(s->opaque, -1, SEEK_END) + 1;
     s->seek(s->opaque, s->pos, SEEK_SET);
+    }
     return size;
 }
 
