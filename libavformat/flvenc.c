@@ -29,6 +29,7 @@ static const CodecTag flv_video_codec_ids[] = {
     {CODEC_ID_FLV1,    FLV_CODECID_H263  },
     {CODEC_ID_FLASHSV, FLV_CODECID_SCREEN},
     {CODEC_ID_VP6F,    FLV_CODECID_VP6   },
+    {CODEC_ID_VP6,     FLV_CODECID_VP6   },
     {CODEC_ID_NONE,    0}
 };
 
@@ -280,7 +281,13 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     if (enc->codec_type == CODEC_TYPE_VIDEO) {
         put_byte(pb, FLV_TAG_TYPE_VIDEO);
-        flags = FLV_CODECID_H263;
+
+        flags = codec_get_tag(flv_video_codec_ids, enc->codec_id);
+        if(flags == 0) {
+            av_log(enc, AV_LOG_ERROR, "video codec %X not compatible with flv\n",enc->codec_id);
+            return -1;
+        }
+
         flags |= pkt->flags & PKT_FLAG_KEY ? FLV_FRAME_KEY : FLV_FRAME_INTER;
     } else {
         assert(enc->codec_type == CODEC_TYPE_AUDIO);
@@ -291,10 +298,17 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
         put_byte(pb, FLV_TAG_TYPE_AUDIO);
     }
 
-    put_be24(pb,size+1); // include flags
+    if ((enc->codec_id == CODEC_ID_VP6) || (enc->codec_id == CODEC_ID_VP6F))
+        put_be24(pb,size+2); // include the extra byte needed for VP6 in flv and flags
+    else
+        put_be24(pb,size+1); // include flags
     put_be24(pb,pkt->pts);
     put_be32(pb,flv->reserved);
     put_byte(pb,flags);
+    if (enc->codec_id == CODEC_ID_VP6)
+        put_byte(pb,0);
+    if (enc->codec_id == CODEC_ID_VP6F)
+        put_byte(pb, enc->extradata_size ? enc->extradata[0] : 0);
     put_buffer(pb, pkt->data, size);
     put_be32(pb,size+1+11); // previous tag size
     flv->duration = pkt->pts + pkt->duration;
