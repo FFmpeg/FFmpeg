@@ -45,6 +45,8 @@ static int mpc_probe(AVProbeData *p)
         return 0;
     if (d[0] == 'M' && d[1] == 'P' && d[2] == '+' && (d[3] == 0x17 || d[3] == 0x7))
         return AVPROBE_SCORE_MAX;
+    if (d[0] == 'I' && d[1] == 'D' && d[2] == '3')
+        return AVPROBE_SCORE_MAX / 2;
     return 0;
 }
 
@@ -52,10 +54,26 @@ static int mpc_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     MPCContext *c = s->priv_data;
     AVStream *st;
+    int t;
 
-    if(get_le24(&s->pb) != MKTAG('M', 'P', '+', 0)){
-        av_log(s, AV_LOG_ERROR, "Not a Musepack file\n");
-        return -1;
+    t = get_le24(&s->pb);
+    if(t != MKTAG('M', 'P', '+', 0)){
+        if(t != MKTAG('I', 'D', '3', 0)){
+            av_log(s, AV_LOG_ERROR, "Not a Musepack file\n");
+            return -1;
+        }
+        /* skip ID3 tags and try again */
+        url_fskip(&s->pb, 3);
+        t  = get_byte(&s->pb) << 21;
+        t |= get_byte(&s->pb) << 14;
+        t |= get_byte(&s->pb) <<  7;
+        t |= get_byte(&s->pb);
+        av_log(s, AV_LOG_DEBUG, "Skipping %d(%X) bytes of ID3 data\n", t, t);
+        url_fskip(&s->pb, t);
+        if(get_le24(&s->pb) != MKTAG('M', 'P', '+', 0)){
+            av_log(s, AV_LOG_ERROR, "Not a Musepack file\n");
+            return -1;
+        }
     }
     c->ver = get_byte(&s->pb);
     if(c->ver != 0x07 && c->ver != 0x17){
