@@ -22,6 +22,7 @@
 #include "bitstream.h"
 
 #define MPC_FRAMESIZE  1152
+#define DELAY_FRAMES   32
 
 static const int mpc_rate[4] = { 44100, 48000, 37800, 32000 };
 typedef struct {
@@ -155,6 +156,7 @@ static int mpc_read_packet(AVFormatContext *s, AVPacket *pkt)
     pkt->data[1] = (c->curframe > c->fcount);
 
     pkt->stream_index = 0;
+    pkt->pts = cur;
     ret = get_buffer(&s->pb, pkt->data + 4, size);
     if(c->curbits)
         url_fseek(&s->pb, -4, SEEK_CUR);
@@ -188,7 +190,7 @@ static int mpc_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
     MPCContext *c = s->priv_data;
     AVPacket pkt1, *pkt = &pkt1;
     int ret;
-    int index = av_index_search_timestamp(st, timestamp, flags);
+    int index = av_index_search_timestamp(st, timestamp - DELAY_FRAMES, flags);
     uint32_t lastframe;
 
     /* if found, seek there */
@@ -199,6 +201,7 @@ static int mpc_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
     /* if timestamp is out of bounds, return error */
     if(timestamp < 0 || timestamp >= c->fcount)
         return -1;
+    timestamp -= DELAY_FRAMES;
     /* seek to the furthest known position and read packets until
        we reach desired position */
     lastframe = c->curframe;

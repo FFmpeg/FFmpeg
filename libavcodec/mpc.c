@@ -51,6 +51,7 @@ typedef struct {
     int lastframelen, bands;
     int oldDSCF[2][BANDS];
     int rnd;
+    int frames_to_skip;
     /* for synthesis */
     DECLARE_ALIGNED_16(MPA_INT, synth_buf[MPA_MAX_CHANNELS][512*2]);
     int synth_buf_offset[MPA_MAX_CHANNELS];
@@ -98,6 +99,7 @@ static int mpc7_decode_init(AVCodecContext * avctx)
     c->lastframelen = get_bits(&gb, 11);
     av_log(avctx, AV_LOG_DEBUG, "IS: %d, MSS: %d, TG: %d, LFL: %d, bands: %d\n",
             c->IS, c->MSS, c->gapless, c->lastframelen, c->bands);
+    c->frames_to_skip = 0;
 
     if(vlc_inited) return 0;
     av_log(avctx, AV_LOG_DEBUG, "Initing VLC\n");
@@ -328,11 +330,23 @@ static int mpc7_decode_frame(AVCodecContext * avctx,
         av_log(NULL,0, "Error decoding frame: used %i of %i bits\n", bits_used, bits_avail);
         return -1;
     }
+    if(c->frames_to_skip){
+        c->frames_to_skip--;
+        *data_size = 0;
+        return buf_size;
+    }
     *data_size = (buf[1] ? c->lastframelen : MPC_FRAME_SIZE) * 4;
 
     return buf_size;
 }
 
+static void mpc7_decode_flush(AVCodecContext *avctx)
+{
+    MPCContext *c = avctx->priv_data;
+
+    memset(c->oldDSCF, 0, sizeof(c->oldDSCF));
+    c->frames_to_skip = 32;
+}
 
 AVCodec mpc7_decoder = {
     "mpc sv7",
@@ -343,4 +357,5 @@ AVCodec mpc7_decoder = {
     NULL,
     NULL,
     mpc7_decode_frame,
+    .flush = mpc7_decode_flush,
 };
