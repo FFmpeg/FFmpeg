@@ -69,6 +69,11 @@ void url_set_interrupt_cb(URLInterruptCB *interrupt_cb);
 /* not implemented */
 int url_poll(URLPollEntry *poll_table, int n, int timeout);
 
+/**
+ * passing this as the "whence" parameter to a seek function causes it to
+ * return the filesize without seeking anywhere, supporting this is optional
+ * if its not supprted then the seek function will return <0
+ */
 #define AVSEEK_SIZE 0x10000
 
 typedef struct URLProtocol {
