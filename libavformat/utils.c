@@ -1895,14 +1895,14 @@ int av_find_stream_info(AVFormatContext *ic)
 
 //                if(st->codec->codec_type == CODEC_TYPE_VIDEO)
 //                    av_log(NULL, AV_LOG_ERROR, "%f\n", dur);
-                if(duration_count[index] > 0){
+                if(duration_count[index] < 2)
+                    memset(duration_error, 0, sizeof(duration_error));
                     for(i=1; i<MAX_STD_TIMEBASES; i++){
                         int framerate= get_std_framerate(i);
                         int ticks= lrintf(dur*framerate/(1001*12));
                         double error= dur - ticks*1001*12/(double)framerate;
                         duration_error[index][i] += error*error;
                     }
-                }
                 duration_count[index]++;
 
                 if(st->codec_info_nb_frames == 0 && 0)
@@ -1960,7 +1960,7 @@ int av_find_stream_info(AVFormatContext *ic)
             if(st->codec->codec_id == CODEC_ID_RAWVIDEO && !st->codec->codec_tag && !st->codec->bits_per_sample)
                 st->codec->codec_tag= avcodec_pix_fmt_to_codec_tag(st->codec->pix_fmt);
 
-            if(1
+            if(duration_count[i]
                && (st->codec->time_base.num*101LL <= st->codec->time_base.den || st->codec->codec_id == CODEC_ID_MPEG2VIDEO) /*&&
                //FIXME we should not special case mpeg2, but this needs testing with non mpeg2 ...
                st->time_base.num*duration_sum[i]/duration_count[i]*101LL > st->time_base.den*/){
