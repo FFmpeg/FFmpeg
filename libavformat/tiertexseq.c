@@ -62,7 +62,7 @@ static int seq_probe(AVProbeData *p)
 {
     int i;
 
-    if (p->buf_size < 256)
+    if (p->buf_size < 258)
         return 0;
 
     /* there's no real header in a .seq file, the only thing they have in common */
@@ -70,6 +70,9 @@ static int seq_probe(AVProbeData *p)
     for (i = 0; i < 256; i++)
         if (p->buf[i] != 0)
             return 0;
+
+    if(p->buf[256]==0 && p->buf[257]==0)
+        return 0;
 
     /* only one fourth of the score since the previous check is too naive */
     return AVPROBE_SCORE_MAX / 4;
