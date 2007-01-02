@@ -1897,12 +1897,12 @@ int av_find_stream_info(AVFormatContext *ic)
 //                    av_log(NULL, AV_LOG_ERROR, "%f\n", dur);
                 if(duration_count[index] < 2)
                     memset(duration_error, 0, sizeof(duration_error));
-                    for(i=1; i<MAX_STD_TIMEBASES; i++){
-                        int framerate= get_std_framerate(i);
-                        int ticks= lrintf(dur*framerate/(1001*12));
-                        double error= dur - ticks*1001*12/(double)framerate;
-                        duration_error[index][i] += error*error;
-                    }
+                for(i=1; i<MAX_STD_TIMEBASES; i++){
+                    int framerate= get_std_framerate(i);
+                    int ticks= lrintf(dur*framerate/(1001*12));
+                    double error= dur - ticks*1001*12/(double)framerate;
+                    duration_error[index][i] += error*error;
+                }
                 duration_count[index]++;
 
                 if(st->codec_info_nb_frames == 0 && 0)
