@@ -439,6 +439,7 @@ typedef struct SnowContext{
     int always_reset;
     int version;
     int spatial_decomposition_type;
+    int last_spatial_decomposition_type;
     int temporal_decomposition_type;
     int spatial_decomposition_count;
     int temporal_decomposition_count;
@@ -452,15 +453,19 @@ typedef struct SnowContext{
     int chroma_v_shift;
     int spatial_scalability;
     int qlog;
+    int last_qlog;
     int lambda;
     int lambda2;
     int pass1_rc;
     int mv_scale;
+    int last_mv_scale;
     int qbias;
+    int last_qbias;
 #define QBIAS_SHIFT 3
     int b_width;
     int b_height;
     int block_max_depth;
+    int last_block_max_depth;
     Plane plane[MAX_PLANES];
     BlockNode *block;
 #define ME_CACHE_SIZE 1024
@@ -1849,7 +1854,7 @@ static inline void decode_subband_slice_buffered(SnowContext *s, SubBand *b, sli
     return;
 }
 
-static void reset_contexts(SnowContext *s){
+static void reset_contexts(SnowContext *s){ //FIXME better initial contexts
     int plane_index, level, orientation;
 
     for(plane_index=0; plane_index<3; plane_index++){
@@ -3603,8 +3608,14 @@ static void encode_header(SnowContext *s){
     memset(kstate, MID_STATE, sizeof(kstate));
 
     put_rac(&s->c, kstate, s->keyframe);
-    if(s->keyframe || s->always_reset)
+    if(s->keyframe || s->always_reset){
         reset_contexts(s);
+        s->last_spatial_decomposition_type=
+        s->last_qlog=
+        s->last_qbias=
+        s->last_mv_scale=
+        s->last_block_max_depth= 0;
+    }
     if(s->keyframe){
         put_symbol(&s->c, s->header_state, s->version, 0);
         put_rac(&s->c, s->header_state, s->always_reset);
@@ -3627,11 +3638,17 @@ static void encode_header(SnowContext *s){
             }
         }
     }
-    put_symbol(&s->c, s->header_state, s->spatial_decomposition_type, 0);
-    put_symbol(&s->c, s->header_state, s->qlog, 1);
-    put_symbol(&s->c, s->header_state, s->mv_scale, 0);
-    put_symbol(&s->c, s->header_state, s->qbias, 1);
-    put_symbol(&s->c, s->header_state, s->block_max_depth, 0);
+    put_symbol(&s->c, s->header_state, s->spatial_decomposition_type - s->last_spatial_decomposition_type, 1);
+    put_symbol(&s->c, s->header_state, s->qlog            - s->last_qlog    , 1);
+    put_symbol(&s->c, s->header_state, s->mv_scale        - s->last_mv_scale, 1);
+    put_symbol(&s->c, s->header_state, s->qbias           - s->last_qbias   , 1);
+    put_symbol(&s->c, s->header_state, s->block_max_depth - s->last_block_max_depth, 1);
+
+    s->last_spatial_decomposition_type= s->spatial_decomposition_type;
+    s->last_qlog                      = s->qlog;
+    s->last_qbias                     = s->qbias;
+    s->last_mv_scale                  = s->mv_scale;
+    s->last_block_max_depth           = s->block_max_depth;
 }
 
 static int decode_header(SnowContext *s){
@@ -3641,8 +3658,14 @@ static int decode_header(SnowContext *s){
     memset(kstate, MID_STATE, sizeof(kstate));
 
     s->keyframe= get_rac(&s->c, kstate);
-    if(s->keyframe || s->always_reset)
+    if(s->keyframe || s->always_reset){
         reset_contexts(s);
+        s->spatial_decomposition_type=
+        s->qlog=
+        s->qbias=
+        s->mv_scale=
+        s->block_max_depth= 0;
+    }
     if(s->keyframe){
         s->version= get_symbol(&s->c, s->header_state, 0);
         if(s->version>0){
@@ -3673,16 +3696,16 @@ static int decode_header(SnowContext *s){
         }
     }
 
-    s->spatial_decomposition_type= get_symbol(&s->c, s->header_state, 0);
+    s->spatial_decomposition_type+= get_symbol(&s->c, s->header_state, 1);
     if(s->spatial_decomposition_type > 2){
         av_log(s->avctx, AV_LOG_ERROR, "spatial_decomposition_type %d not supported", s->spatial_decomposition_type);
         return -1;
     }
 
-    s->qlog= get_symbol(&s->c, s->header_state, 1);
-    s->mv_scale= get_symbol(&s->c, s->header_state, 0);
-    s->qbias= get_symbol(&s->c, s->header_state, 1);
-    s->block_max_depth= get_symbol(&s->c, s->header_state, 0);
+    s->qlog           += get_symbol(&s->c, s->header_state, 1);
+    s->mv_scale       += get_symbol(&s->c, s->header_state, 1);
+    s->qbias          += get_symbol(&s->c, s->header_state, 1);
+    s->block_max_depth+= get_symbol(&s->c, s->header_state, 1);
     if(s->block_max_depth > 1 || s->block_max_depth < 0){
         av_log(s->avctx, AV_LOG_ERROR, "block_max_depth= %d is too large", s->block_max_depth);
         s->block_max_depth= 0;
@@ -4170,7 +4193,6 @@ redo_frame:
             pict->pict_type= FF_I_TYPE;
             s->keyframe=1;
             s->current_picture.key_frame=1;
-            reset_contexts(s);
             goto redo_frame;
         }
 
