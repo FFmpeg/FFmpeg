@@ -1,0 +1,259 @@
+=============================================
+SNOW Video Codec Specification Draft 20070103
+=============================================
+
+
+Definitions:
+============
+
+MUST    the specific part must be done to conform to this standard
+SHOULD  it is recommended to be done that way, but not strictly required
+
+ilog2(x) is the rounded down logarithm of x with basis 2
+ilog2(0) = 0
+
+Type definitions:
+=================
+
+b   1-bit range coded
+u   unsigned scalar value range coded
+s   signed scalar value range coded
+
+
+Bitstream syntax:
+=================
+
+frame:
+    header
+    prediction
+    residual
+
+header:
+    keyframe                            b   MID_STATE
+    if(keyframe || always_reset)
+        reset_contexts
+    if(keyframe){
+        version                         u   header_state
+        always_reset                    b   header_state
+        temporal_decomposition_type     u   header_state
+        temporal_decomposition_count    u   header_state
+        spatial_decomposition_count     u   header_state
+        colorspace_type                 u   header_state
+        chroma_h_shift                  u   header_state
+        chroma_v_shift                  u   header_state
+        spatial_scalability             b   header_state
+        max_ref_frames-1                u   header_state
+        qlogs
+    }
+
+    spatial_decomposition_type          s   header_state
+    qlog                                s   header_state
+    mv_scale                            s   header_state
+    qbias                               s   header_state
+    block_max_depth                     s   header_state
+
+qlogs:
+    for(plane=0; plane<2; plane++){
+        quant_table[plane][0][0]        s   header_state
+        for(level=0; level < spatial_decomposition_count; level++){
+            quant_table[plane][level][1]s   header_state
+            quant_table[plane][level][3]s   header_state
+        }
+    }
+
+reset_contexts
+    *_state[*]= MID_STATE
+
+prediction:
+    for(y=0; y<block_count_vertical; y++)
+        for(x=0; x<block_count_horizontal; x++)
+            block(0)
+
+block(level):
+    if(keyframe){
+        intra=1
+        y_diff=cb_diff=cr_diff=0
+    }else{
+        if(level!=max_block_depth){
+            s_context= 2*left->level + 2*top->level + topleft->level + topright->level
+            leaf                        b   block_state[4 + s_context]
+        }
+        if(level==max_block_depth || leaf){
+            intra                       b   block_state[1 + left->intra + top->intra]
+            if(intra){
+                y_diff                  s   block_state[32]
+                cb_diff                 s   block_state[64]
+                cr_diff                 s   block_state[96]
+            }else{
+                ref_context= ilog2(2*left->ref) + ilog2(2*top->ref)
+                if(ref_frames > 1)
+                    ref                 u   block_state[128 + 1024 + 32*ref_context]
+                mx_context= ilog2(2*abs(left->mx - top->mx))
+                my_context= ilog2(2*abs(left->my - top->my))
+                mvx_diff                s   block_state[128 + 32*(mx_context + 16*!!ref)]
+                mvy_diff                s   block_state[128 + 32*(my_context + 16*!!ref)]
+            }
+        }else{
+            block(level+1)
+            block(level+1)
+            block(level+1)
+            block(level+1)
+        }
+    }
+
+
+residual:
+    FIXME
+
+
+
+Tag description:
+----------------
+
+version
+    0
+    this MUST NOT change within a bitstream
+
+always_reset
+    if 1 then the range coder contexts will be reset after each frame
+
+temporal_decomposition_type
+    0
+
+temporal_decomposition_count
+    0
+
+spatial_decomposition_count
+    FIXME
+
+colorspace_type
+    0
+    this MUST NOT change within a bitstream
+
+chroma_h_shift
+    log2(luma.width / chroma.width)
+    this MUST NOT change within a bitstream
+
+chroma_v_shift
+    log2(luma.height / chroma.height)
+    this MUST NOT change within a bitstream
+
+spatial_scalability
+    0
+
+max_ref_frames
+    maximum number of reference frames
+    this MUST NOT change within a bitstream
+
+ref_frames
+    minimum of the number of available reference frames and max_ref_frames
+    for example the first frame after a key frame always has ref_frames=1
+
+spatial_decomposition_type
+    wavelet type
+    0 is a 9/7 symmetric compact integer wavelet
+    1 is a 5/3 symmetric compact integer wavelet
+    others are reserved
+    stored as delta from last, last is reset to 0 if always_reset || keyframe
+
+qlog
+    quality (logarthmic quantizer scale)
+    stored as delta from last, last is reset to 0 if always_reset || keyframe
+
+mv_scale
+    stored as delta from last, last is reset to 0 if always_reset || keyframe
+    FIXME check that everything works fine if this chanes between frames
+
+qbias
+    dequantization bias
+    stored as delta from last, last is reset to 0 if always_reset || keyframe
+
+block_max_depth
+    maximum depth of the block tree
+    stored as delta from last, last is reset to 0 if always_reset || keyframe
+
+quant_table
+    quantiztation table
+
+Range Coder:
+============
+FIXME
+
+Neighboring Blocks:
+===================
+left and top are set to the respective blocks unless they are outside of
+the image in which case they are set to the Null block
+
+top-left is set to the top left block unless its outside of the image in
+which case it is set to the left block
+
+if this block has no larger parent block or its at the left side of its
+parent block and the top right block is not outside of the image then the
+top right block is used for top-right else the top-left block is used
+
+Null block
+y,cb,cr are 128
+level, ref, mx and my are 0
+
+
+Motion Vector Prediction:
+=========================
+1. the motion vectors of all the neighboring blocks are scaled to
+compensate for the difference of reference frames
+
+scaled_mv= (mv * (256 * (current_reference+1) / (mv.reference+1)) + 128)>>8
+
+2. the median of the scaled left, top and top-right vectors is used as
+motion vector prediction
+
+3. the used motion vector is the sum of the predictor and
+   (mvx_diff, mvy_diff)*mv_scale
+
+
+Intra DC Predicton:
+======================
+the luma and chroma values of the left block are used as predictors
+
+the used luma and chroma is the sum of the predictor and y_diff, cb_diff, cr_diff
+
+
+Motion Compensation:
+====================
+FIXME
+
+LL band prediction:
+===================
+FIXME
+
+Dequantizaton:
+==============
+FIXME
+
+Wavelet Transform:
+==================
+FIXME
+
+TODO:
+=====
+Important:
+finetune initial contexts
+spatial_decomposition_count per frame?
+flip wavelet?
+try to use the wavelet transformed predicted image (motion compensated image) as context for coding the residual coefficients
+try the MV length as context for coding the residual coefficients
+use extradata for stuff which is in the keyframes now?
+the MV median predictor is patented IIRC
+
+Not Important:
+spatial_scalability b vs u (!= 0 breaks syntax anyway so we can add a u later)
+
+
+Credits:
+========
+Michael Niedermayer
+Loren Merritt
+
+
+Copyright:
+==========
+GPL + GFDL + whatever is needed to make this a RFC
