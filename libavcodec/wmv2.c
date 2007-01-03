@@ -643,6 +643,12 @@ void ff_mspel_motion(MpegEncContext *s,
     v_edge_pos = s->v_edge_pos;
     src_x = clip(src_x, -16, s->width);
     src_y = clip(src_y, -16, s->height);
+
+    if(src_x<=-16 || src_x >= s->width)
+        dxy &= ~3;
+    if(src_y<=-16 || src_y >= s->height)
+        dxy &= ~4;
+
     linesize   = s->linesize;
     uvlinesize = s->uvlinesize;
     ptr = ref_picture[0] + (src_y * linesize) + src_x;
