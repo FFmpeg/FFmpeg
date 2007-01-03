@@ -2290,12 +2290,10 @@ static void decode_q_branch(SnowContext *s, int level, int x, int y){
     }
 
     if(level==s->block_max_depth || get_rac(&s->c, &s->block_state[4 + s_context])){
-        int type;
+        int type, mx, my;
         int l = left->color[0];
         int cb= left->color[1];
         int cr= left->color[2];
-        int mx= mid_pred(left->mx, top->mx, tr->mx);
-        int my= mid_pred(left->my, top->my, tr->my);
         int ref = 0;
         int ref_context= av_log2(2*left->ref) + av_log2(2*top->ref);
         int mx_context= av_log2(2*FFABS(left->mx - top->mx)) + 0*av_log2(2*FFABS(tr->mx - top->mx));
