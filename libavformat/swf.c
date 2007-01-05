@@ -822,13 +822,10 @@ static int swf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             get_byte(pb);
             v = get_byte(pb);
             swf->samples_per_frame = get_le16(pb);
-            if (len!=4)
+            if (len > 4)
                 url_fskip(pb,len-4);
             /* if mp3 streaming found, OK */
             if ((v & 0x20) != 0) {
-                if ( tag == TAG_STREAMHEAD2 ) {
-                    get_le16(pb);
-                }
                 ast = av_new_stream(s, 1);
                 if (!ast)
                     return -ENOMEM;
