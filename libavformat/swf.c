@@ -831,10 +831,7 @@ static int swf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     return -ENOMEM;
                 av_set_pts_info(ast, 24, 1, 1000); /* 24 bit pts in ms */
 
-                if (v & 0x01)
-                    ast->codec->channels = 2;
-                else
-                    ast->codec->channels = 1;
+                ast->codec->channels = 1 + (v&1);
 
                 switch((v>> 2) & 0x03) {
                 case 1:
