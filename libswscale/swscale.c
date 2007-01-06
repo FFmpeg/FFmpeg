@@ -1245,8 +1245,7 @@ static inline int initFilter(int16_t **outFilter, int16_t **filterPos, int *outF
 
 	// Note the +1 is for the MMXscaler which reads over the end
 	/* align at 16 for AltiVec (needed by hScale_altivec_real) */
-	*outFilter= av_malloc(*outFilterSize*(dstW+1)*sizeof(int16_t));
-	memset(*outFilter, 0, *outFilterSize*(dstW+1)*sizeof(int16_t));
+	*outFilter= av_mallocz(*outFilterSize*(dstW+1)*sizeof(int16_t));
 
 	/* Normalize & Store in outFilter */
 	for(i=0; i<dstW; i++)
@@ -1988,8 +1987,7 @@ SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, int dstH
 	if(!dstFilter) dstFilter= &dummyFilter;
 	if(!srcFilter) srcFilter= &dummyFilter;
 
-	c= av_malloc(sizeof(SwsContext));
-	memset(c, 0, sizeof(SwsContext));
+	c= av_mallocz(sizeof(SwsContext));
 
 	c->srcW= srcW;
 	c->srcH= srcH;
@@ -2276,12 +2274,11 @@ SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, int dstH
 	//Note we need at least one pixel more at the end because of the mmx code (just in case someone wanna replace the 4000/8000)
 	/* align at 16 bytes for AltiVec */
 	for(i=0; i<c->vLumBufSize; i++)
-		c->lumPixBuf[i]= c->lumPixBuf[i+c->vLumBufSize]= av_malloc(4000);
+		c->lumPixBuf[i]= c->lumPixBuf[i+c->vLumBufSize]= av_mallocz(4000);
 	for(i=0; i<c->vChrBufSize; i++)
 		c->chrPixBuf[i]= c->chrPixBuf[i+c->vChrBufSize]= av_malloc(8000);
 
 	//try to avoid drawing green stuff between the right end and the stride end
-	for(i=0; i<c->vLumBufSize; i++) memset(c->lumPixBuf[i], 0, 4000);
 	for(i=0; i<c->vChrBufSize; i++) memset(c->chrPixBuf[i], 64, 8000);
 
 	ASSERT(c->chrDstH <= dstH)
