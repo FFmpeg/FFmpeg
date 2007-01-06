@@ -177,7 +177,7 @@ void avcodec_register_all(void)
 #endif
     REGISTER_DECODER(COOK, cook);
     REGISTER_DECODER(DSICINAUDIO, dsicinaudio);
-#ifdef CONFIG_DTS
+#ifdef CONFIG_LIBDTS
     REGISTER_DECODER(DTS, dts);
 #endif
 #ifdef CONFIG_FAAC

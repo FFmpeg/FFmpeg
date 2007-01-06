@@ -264,7 +264,7 @@ OBJS-$(CONFIG_LIBA52)$(CONFIG_LIBA52BIN)  += liba52/bit_allocate.o \
                                           liba52/resample.o
 
 # currently using libdts for dts decoding
-OBJS-$(CONFIG_DTS)                     += dtsdec.o
+OBJS-$(CONFIG_LIBDTS)                  += dtsdec.o
 
 OBJS-$(CONFIG_AMR)                     += amr.o
 OBJS-$(CONFIG_AMR_NB)                  += amr_float/sp_dec.o     \

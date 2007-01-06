@@ -76,7 +76,7 @@ show_help(){
   echo "  --enable-mingwce         enable MinGW native/cross WinCE compile"
   echo "  --enable-a52             enable GPLed liba52 support [default=no]"
   echo "  --enable-a52bin          open liba52.so.0 at runtime [default=no]"
-  echo "  --enable-dts             enable GPLed DTS support [default=no]"
+  echo "  --enable-dts             enable GPLed libdts support [default=no]"
   echo "  --enable-pp              enable GPLed postprocessing support [default=no]"
   echo "  --enable-static          build static libraries [default=yes]"
   echo "  --disable-static         do not build static libraries [default=no]"
@@ -417,7 +417,6 @@ CONFIG_LIST='
     beos_netserver
     bktr
     dc1394
-    dts
     dv1394
     faac
     faad
@@ -429,6 +428,7 @@ CONFIG_LIST='
     ipv6
     liba52
     liba52bin
+    libdts
     libgsm
     libnut
     libogg
@@ -594,6 +594,7 @@ liba52="no"
 liba52bin="no"
 libgsm="no"
 mp3lame="no"
+libdts="no"
 libnut="no"
 libogg="no"
 libvorbis="no"
@@ -602,7 +603,6 @@ faadbin="no"
 faac="no"
 xvid="no"
 x264="no"
-dts="no"
 pp="no"
 mingw32="no"
 wince="no"
@@ -938,7 +938,7 @@ for opt do
   ;;
   --enable-a52bin) liba52bin="yes"
   ;;
-  --enable-dts) dts="yes"
+  --enable-dts) libdts="yes"
   ;;
   --enable-pp) pp="yes"
   ;;
@@ -1144,7 +1144,7 @@ if test "$gpl" != "yes"; then
         die "x264 is under GPL and --enable-gpl is not specified."
     fi
 
-    if test "$dts" != "no"; then
+    if test "$libdts" != "no"; then
         die "libdts is under GPL and --enable-gpl is not specified."
     fi
 
@@ -1463,7 +1463,7 @@ if enabled pthreads; then
 fi
 
 # these are off by default, so fail if requested and not available
-enabled dts     && require libdts dts.h dts_init -ldts -lm
+enabled libdts  && require libdts dts.h dts_init -ldts -lm
 enabled libgsm  && require libgsm gsm.h gsm_create -lgsm
 enabled mp3lame && require LAME lame/lame.h lame_init -lmp3lame -lm
 enabled libvorbis && require libvorbis vorbis/vorbisenc.h vorbis_info_init -lvorbis -lvorbisenc -logg
@@ -1794,7 +1794,7 @@ echo "Sun medialib support      $mlib"
 echo "AVISynth enabled          $avisynth"
 echo "liba52 support            $liba52"
 echo "liba52 dlopened           $liba52bin"
-echo "libdts support            $dts"
+echo "libdts support            $libdts"
 echo "libfaac enabled           $faac"
 echo "libfaad enabled           $faad"
 echo "faadbin enabled           $faadbin"
