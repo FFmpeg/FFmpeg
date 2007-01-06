@@ -243,8 +243,8 @@ OBJS-$(CONFIG_ADPCM_XA_ENCODER)        += adpcm.o
 OBJS-$(CONFIG_ADPCM_YAMAHA_DECODER)    += adpcm.o
 OBJS-$(CONFIG_ADPCM_YAMAHA_ENCODER)    += adpcm.o
 
-OBJS-$(CONFIG_FAAD)                    += faad.o
-OBJS-$(CONFIG_FAAC)                    += faac.o
+OBJS-$(CONFIG_LIBFAAD)                 += faad.o
+OBJS-$(CONFIG_LIBFAAC)                 += faac.o
 OBJS-$(CONFIG_XVID)                    += xvidff.o xvid_rc.o
 OBJS-$(CONFIG_X264)                    += x264.o
 OBJS-$(CONFIG_MP3LAME)                 += mp3lameaudio.o

@@ -418,9 +418,6 @@ CONFIG_LIST='
     bktr
     dc1394
     dv1394
-    faac
-    faad
-    faadbin
     ffmpeg
     ffplay
     ffserver
@@ -429,6 +426,9 @@ CONFIG_LIST='
     liba52
     liba52bin
     libdts
+    libfaac
+    libfaad
+    libfaadbin
     libgsm
     libnut
     libogg
@@ -592,15 +592,15 @@ ipv6="yes"
 zlib="yes"
 liba52="no"
 liba52bin="no"
+libfaac="no"
+libfaad="no"
+libfaadbin="no"
 libgsm="no"
 mp3lame="no"
 libdts="no"
 libnut="no"
 libogg="no"
 libvorbis="no"
-faad="no"
-faadbin="no"
-faac="no"
 xvid="no"
 x264="no"
 pp="no"
@@ -954,11 +954,11 @@ for opt do
   --enable-vorbis) libvorbis="yes"
     pkg_requires="$pkg_requires vorbis vorbisenc"
   ;;
-  --enable-faad) faad="yes"
+  --enable-faad) libfaad="yes"
   ;;
-  --enable-faadbin) faadbin="yes"
+  --enable-faadbin) libfaadbin="yes"
   ;;
-  --enable-faac) faac="yes"
+  --enable-faac) libfaac="yes"
   ;;
   --enable-xvid) xvid="yes"
   ;;
@@ -1148,7 +1148,7 @@ if test "$gpl" != "yes"; then
         die "libdts is under GPL and --enable-gpl is not specified."
     fi
 
-    if test "$faad" != "no" -o "$faadbin" != "no"; then
+    if test "$libfaad" != "no" -o "$libfaadbin" != "no"; then
         if check_header faad.h; then
             check_cc << EOF
                 #include <faad.h>
@@ -1161,8 +1161,8 @@ EOF
                 die "FAAD2 is under GPL and --enable-gpl is not specified."
             fi
         else
-            faad="no"
-            faadbin="no"
+            libfaad="no"
+            libfaadbin="no"
             echo "FAAD test failed."
         fi
     fi
@@ -1474,9 +1474,9 @@ enabled x264    && require x264 x264.h x264_encoder_open -lx264
 enabled dc1394  && require libdc1394 libdc1394/dc1394_control.h dc1394_create_handle -ldc1394_control -lraw1394
 enabled mlib    && require mediaLib mlib_types.h mlib_VectorSub_S16_U8_Mod -lmlib
 
-# Ugh, faac uses stdcall calling convention on win32 so we can't use
+# Ugh, libfaac uses stdcall calling convention on win32 so we can't use
 # the generic test functions
-if enabled faac; then
+if enabled libfaac; then
     save_flags
     temp_extralibs -lfaac
     check_ld <<EOF && add_extralibs -lfaac || die "ERROR: libfaac not found"
@@ -1493,7 +1493,7 @@ fi
 
 # Ugh, recent faad2 versions have renamed all functions and #define the
 # old names in faad.h.  Generic tests won't work.
-if enabled faad; then
+if enabled libfaad; then
     save_flags
     temp_extralibs -lfaad
     check_ld <<EOF && add_extralibs -lfaad || die "ERROR: libfaad not found"
@@ -1550,7 +1550,7 @@ if test "$vhook" = "default"; then
     vhook="$dlopen"
 fi
 
-if enabled_any vhook liba52bin faadbin; then
+if enabled_any vhook liba52bin libfaadbin; then
     add_extralibs $ldl
 fi
 
@@ -1795,9 +1795,9 @@ echo "AVISynth enabled          $avisynth"
 echo "liba52 support            $liba52"
 echo "liba52 dlopened           $liba52bin"
 echo "libdts support            $libdts"
-echo "libfaac enabled           $faac"
-echo "libfaad enabled           $faad"
-echo "faadbin enabled           $faadbin"
+echo "libfaac enabled           $libfaac"
+echo "libfaad enabled           $libfaad"
+echo "faadbin enabled           $libfaadbin"
 echo "libgsm enabled            $libgsm"
 echo "libmp3lame enabled        $mp3lame"
 echo "libnut enabled            $libnut"

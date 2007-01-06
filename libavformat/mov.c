@@ -1012,7 +1012,7 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
         st->codec->width= 0; /* let decoder init width/height */
         st->codec->height= 0;
         break;
-#ifdef CONFIG_FAAD
+#ifdef CONFIG_LIBFAAD
     case CODEC_ID_AAC:
 #endif
 #ifdef CONFIG_VORBIS_DECODER

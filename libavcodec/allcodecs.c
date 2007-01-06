@@ -160,7 +160,7 @@ void avcodec_register_all(void)
 #endif
 
     /* audio codecs */
-#ifdef CONFIG_FAAD
+#ifdef CONFIG_LIBFAAD
     REGISTER_DECODER(AAC, aac);
     REGISTER_DECODER(MPEG4AAC, mpeg4aac);
 #endif
@@ -180,7 +180,7 @@ void avcodec_register_all(void)
 #ifdef CONFIG_LIBDTS
     REGISTER_DECODER(DTS, dts);
 #endif
-#ifdef CONFIG_FAAC
+#ifdef CONFIG_LIBFAAC
     REGISTER_ENCODER(FAAC, faac);
 #endif
     REGISTER_ENCDEC (FLAC, flac);
