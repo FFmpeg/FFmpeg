@@ -1742,75 +1742,75 @@ if test $asmalign_pot = "unknown"; then
     echo 'asm (".align 3");' | check_cc && asmalign_pot="yes"
 fi
 
-echo "install prefix   $PREFIX"
-echo "source path      $source_path"
-echo "C compiler       $cc"
-echo "make             $make"
-echo "ARCH             $arch ($cpu)"
+echo "install prefix            $PREFIX"
+echo "source path               $source_path"
+echo "C compiler                $cc"
+echo "make                      $make"
+echo "ARCH                      $arch ($cpu)"
 if test "$BUILDSUF" != ""; then
-    echo "build suffix     $BUILDSUF"
+    echo "build suffix              $BUILDSUF"
 fi
-echo "big-endian       $bigendian"
+echo "big-endian                $bigendian"
 if test $arch = "x86_32" -o $arch = "x86_64"; then
-    echo "MMX enabled      $mmx"
-    echo "CMOV enabled     $cmov"
-    echo "CMOV is fast     $cmov_is_fast"
+    echo "MMX enabled               $mmx"
+    echo "CMOV enabled              $cmov"
+    echo "CMOV is fast              $cmov_is_fast"
 fi
 if test $arch = "armv4l"; then
-    echo "ARMv5TE enabled  $armv5te"
-    echo "IWMMXT enabled   $iwmmxt"
+    echo "ARMv5TE enabled           $armv5te"
+    echo "IWMMXT enabled            $iwmmxt"
 fi
 if test $arch = "mips"; then
-    echo "MMI enabled      $mmi"
+    echo "MMI enabled               $mmi"
 fi
 if test $arch = "powerpc"; then
-    echo "AltiVec enabled  $altivec"
-    echo "dcbzl available  $dcbzl"
+    echo "AltiVec enabled           $altivec"
+    echo "dcbzl available           $dcbzl"
 fi
-echo "gprof enabled    $gprof"
-echo "zlib enabled     $zlib"
-echo "libgsm enabled   $libgsm"
-echo "mp3lame enabled  $mp3lame"
-echo "libnut enabled   $libnut"
-echo "libogg enabled   $libogg"
-echo "Vorbis enabled   $libvorbis"
-echo "FAAD enabled     $faad"
-echo "faadbin enabled  $faadbin"
-echo "FAAC enabled     $faac"
-echo "XviD enabled     $xvid"
-echo "x264 enabled     $x264"
-echo "a52 support      $a52"
-echo "a52 dlopened     $a52bin"
-echo "DTS support      $dts"
-echo "pp support       $pp"
-echo "Software Scaler enabled $swscaler"
-echo "AVISynth enabled $avisynth"
-echo "debug symbols    $debug"
-echo "strip symbols    $dostrip"
-echo "optimize         $optimize"
-echo "static           $lstatic"
-echo "shared           $lshared"
-echo "video hooking    $vhook"
-echo "SDL support      $sdl"
+echo "gprof enabled             $gprof"
+echo "zlib enabled              $zlib"
+echo "libgsm enabled            $libgsm"
+echo "mp3lame enabled           $mp3lame"
+echo "libnut enabled            $libnut"
+echo "libogg enabled            $libogg"
+echo "Vorbis enabled            $libvorbis"
+echo "FAAD enabled              $faad"
+echo "faadbin enabled           $faadbin"
+echo "FAAC enabled              $faac"
+echo "XviD enabled              $xvid"
+echo "x264 enabled              $x264"
+echo "a52 support               $a52"
+echo "a52 dlopened              $a52bin"
+echo "DTS support               $dts"
+echo "pp support                $pp"
+echo "Software Scaler enabled   $swscaler"
+echo "AVISynth enabled          $avisynth"
+echo "debug symbols             $debug"
+echo "strip symbols             $dostrip"
+echo "optimize                  $optimize"
+echo "static                    $lstatic"
+echo "shared                    $lshared"
+echo "video hooking             $vhook"
+echo "SDL support               $sdl"
 if test $sdl_too_old = "yes"; then
     echo "-> Your SDL version is too old - please upgrade to have FFplay/SDL support."
 fi
 
 if test "$vhook" = "yes"; then
-    echo "Imlib2 support   $imlib2"
-    echo "FreeType support $freetype2"
+    echo "Imlib2 support            $imlib2"
+    echo "FreeType support          $freetype2"
 fi
-echo "Sun medialib support"  $mlib
-echo "pthreads support"      $pthreads
-echo "AMR-NB float support"  $amr_nb
-echo "AMR-NB fixed support"  $amr_nb_fixed
-echo "AMR-WB float support"  $amr_wb
-echo "AMR-WB IF2 support"    $amr_if2
-echo "network support      $network"
+echo "Sun medialib support      $mlib"
+echo "pthreads support          $pthreads"
+echo "AMR-NB float support      $amr_nb"
+echo "AMR-NB fixed support      $amr_nb_fixed"
+echo "AMR-WB float support      $amr_wb"
+echo "AMR-WB IF2 support        $amr_if2"
+echo "network support           $network"
 if test "$network" = "yes" ; then
-    echo "IPv6 support         $ipv6"
+    echo "IPv6 support              $ipv6"
 fi
-echo ".align is power-of-two" $asmalign_pot
+echo ".align is power-of-two    $asmalign_pot"
 if test "$gpl" = "no" ; then
     echo "License: LGPL"
 else
