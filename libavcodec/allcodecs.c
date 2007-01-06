@@ -164,7 +164,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER(AAC, aac);
     REGISTER_DECODER(MPEG4AAC, mpeg4aac);
 #endif
-#ifdef CONFIG_A52
+#ifdef CONFIG_LIBA52
     REGISTER_DECODER(AC3, ac3);
 #endif
     REGISTER_ENCODER(AC3, ac3);

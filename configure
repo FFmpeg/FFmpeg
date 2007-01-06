@@ -74,7 +74,7 @@ show_help(){
   echo "  --enable-x264            enable H.264 encoding via x264 [default=no]"
   echo "  --enable-mingw32         enable MinGW native/cross Windows compile"
   echo "  --enable-mingwce         enable MinGW native/cross WinCE compile"
-  echo "  --enable-a52             enable GPLed A52 support [default=no]"
+  echo "  --enable-a52             enable GPLed liba52 support [default=no]"
   echo "  --enable-a52bin          open liba52.so.0 at runtime [default=no]"
   echo "  --enable-dts             enable GPLed DTS support [default=no]"
   echo "  --enable-pp              enable GPLed postprocessing support [default=no]"
@@ -407,8 +407,6 @@ CONFIG_LIST='
     parsers
     muxers
     demuxers
-    a52
-    a52bin
     amr
     amr_nb
     amr_nb_fixed
@@ -429,6 +427,8 @@ CONFIG_LIST='
     ffserver
     gpl
     ipv6
+    liba52
+    liba52bin
     libgsm
     libnut
     libogg
@@ -590,6 +590,8 @@ dc1394="no"
 network="yes"
 ipv6="yes"
 zlib="yes"
+liba52="no"
+liba52bin="no"
 libgsm="no"
 mp3lame="no"
 libnut="no"
@@ -600,8 +602,6 @@ faadbin="no"
 faac="no"
 xvid="no"
 x264="no"
-a52="no"
-a52bin="no"
 dts="no"
 pp="no"
 mingw32="no"
@@ -934,9 +934,9 @@ for opt do
   ;;
   --disable-zlib) zlib="no"
   ;;
-  --enable-a52) a52="yes"
+  --enable-a52) liba52="yes"
   ;;
-  --enable-a52bin) a52bin="yes"
+  --enable-a52bin) liba52bin="yes"
   ;;
   --enable-dts) dts="yes"
   ;;
@@ -1132,7 +1132,7 @@ if test "$gpl" != "yes"; then
         die "The Postprocessing code is under GPL and --enable-gpl is not specified."
     fi
 
-    if test "$a52" != "no" -o "$a52bin" != "no"; then
+    if test "$liba52" != "no" -o "$liba52bin" != "no"; then
         die "liba52 is under GPL and --enable-gpl is not specified."
     fi
 
@@ -1550,7 +1550,7 @@ if test "$vhook" = "default"; then
     vhook="$dlopen"
 fi
 
-if enabled_any vhook a52bin faadbin; then
+if enabled_any vhook liba52bin faadbin; then
     add_extralibs $ldl
 fi
 
@@ -1792,8 +1792,8 @@ if test $sdl_too_old = "yes"; then
 fi
 echo "Sun medialib support      $mlib"
 echo "AVISynth enabled          $avisynth"
-echo "liba52 support            $a52"
-echo "liba52 dlopened           $a52bin"
+echo "liba52 support            $liba52"
+echo "liba52 dlopened           $liba52bin"
 echo "libdts support            $dts"
 echo "libfaac enabled           $faac"
 echo "libfaad enabled           $faad"
