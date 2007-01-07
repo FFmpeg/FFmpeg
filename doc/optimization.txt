@@ -150,6 +150,15 @@ http://www.agner.org/assem/
 AMD Athlon Processor x86 Code Optimization Guide:
 http://www.amd.com/us-en/assets/content_type/white_papers_and_tech_docs/22007.pdf
 
+
+ARM-specific:
+ARM Architecture Reference Manual:
+http://www.arm.com/community/academy/resources.html
+
+Instructions timings and optimization guide for ARM9E:
+http://www.arm.com/pdfs/DDI0222B_9EJS_r1p2.pdf
+
+
 GCC asm links:
 official doc but quite ugly
 http://gcc.gnu.org/onlinedocs/gcc/Extended-Asm.html
