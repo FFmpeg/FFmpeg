@@ -71,6 +71,8 @@ show_help(){
   echo "  --enable-pp              enable GPLed postprocessing support [default=no]"
   echo "  --enable-swscaler        software scaler support [default=no]"
   echo "  --enable-sunmlib         use Sun medialib [default=no]"
+  echo "  --enable-beosthreads     use BeOS threads [default=no]"
+  echo "  --enable-os2threads      use OS/2 threads [default=no]"
   echo "  --enable-pthreads        use pthreads [default=no]"
   echo "  --enable-w32threads      use Win32 threads [default=no]"
   echo "  --enable-x11grab         enable X11 grabbing [default=no]"
@@ -648,8 +650,11 @@ amr_wb="no"
 amr_nb_fixed="no"
 amr_if2="no"
 mlib="no"
+beosthreads="no"
+os2threads="no"
 pthreads="no"
 w32threads="no"
+thread_type="no"
 swscaler="no"
 gpl="no"
 memalign_hack="no"
@@ -681,7 +686,6 @@ video4linux2="no"
 dv1394="no"
 # enable BeOS things
 audio_beos="yes"
-beosthreads="yes"
 # no need for libm, but the inet stuff
 # Check for BONE
 if (echo $BEINCLUDES|grep 'headers/be/bone' >/dev/null); then
@@ -829,7 +833,6 @@ dv1394="no"
 ffserver="no"
 vhook="no"
 os2="yes"
-os2threads="yes"
 ;;
 *)
 targetos="${targetos}-UNKNOWN"
@@ -1016,6 +1019,10 @@ for opt do
   --enable-pthreads) pthreads="yes"
   ;;
   --enable-w32threads) w32threads="yes"
+  ;;
+  --enable-beosthreads) beosthreads="yes"
+  ;;
+  --enable-os2threads) os2threads="yes"
   ;;
   --enable-swscaler) swscaler="yes"
   ;;
@@ -1462,6 +1469,16 @@ if enabled pthreads; then
     fi
 fi
 
+for thread in pthreads beosthreads os2threads w32threads; do
+    if enabled $thread; then
+        if test $thread_type != "no"; then
+            die "ERROR: Only one thread type must be selected."
+        else
+            thread_type="$thread"
+        fi
+    fi
+done
+
 # these are off by default, so fail if requested and not available
 enabled libdts  && require libdts dts.h dts_init -ldts -lm
 enabled libgsm  && require libgsm gsm.h gsm_create -lgsm
@@ -1785,7 +1802,7 @@ echo "network support           $network"
 if test "$network" = "yes" ; then
     echo "IPv6 support              $ipv6"
 fi
-echo "pthreads support          $pthreads"
+echo "threading support         $thread_type"
 echo "SDL support               $sdl"
 if test $sdl_too_old = "yes"; then
     echo "-> Your SDL version is too old - please upgrade to have FFplay/SDL support."
