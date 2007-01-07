@@ -35,7 +35,7 @@
 #endif
 
 #ifndef attribute_unused
-#if defined(__GNUC__) && (__GNUC__ > 3 || __GNUC__ == 3 && __GNUC_MINOR__ > 0)
+#if defined(__GNUC__)
 #    define attribute_unused __attribute__((unused))
 #else
 #    define attribute_unused
