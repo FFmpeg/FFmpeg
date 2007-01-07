@@ -351,6 +351,7 @@ OBJS-$(TARGET_IWMMXT)                  += armv4l/dsputil_iwmmxt.o   \
                                           armv4l/mpegvideo_iwmmxt.o \
 
 ASM_OBJS-$(TARGET_ARMV5TE)             += armv4l/simple_idct_armv5te.o \
+                                          armv4l/mpegvideo_armv5te.o \
 
 # sun sparc
 OBJS-$(TARGET_ARCH_SPARC)              += sparc/dsputil_vis.o \
