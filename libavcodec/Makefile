@@ -243,28 +243,23 @@ OBJS-$(CONFIG_ADPCM_XA_ENCODER)        += adpcm.o
 OBJS-$(CONFIG_ADPCM_YAMAHA_DECODER)    += adpcm.o
 OBJS-$(CONFIG_ADPCM_YAMAHA_ENCODER)    += adpcm.o
 
-OBJS-$(CONFIG_LIBFAAD)                 += faad.o
+# external codec libraries
+OBJS-$(CONFIG_LIBA52)                  += a52dec.o
+OBJS-$(CONFIG_LIBA52)$(CONFIG_LIBA52BIN)  += liba52/bit_allocate.o \
+                                             liba52/bitstream.o    \
+                                             liba52/downmix.o      \
+                                             liba52/imdct.o        \
+                                             liba52/parse.o        \
+                                             liba52/crc.o          \
+                                             liba52/resample.o
+OBJS-$(CONFIG_LIBDTS)                  += dtsdec.o
 OBJS-$(CONFIG_LIBFAAC)                 += faac.o
-OBJS-$(CONFIG_XVID)                    += xvidff.o xvid_rc.o
-OBJS-$(CONFIG_X264)                    += x264.o
+OBJS-$(CONFIG_LIBFAAD)                 += faad.o
+OBJS-$(CONFIG_LIBGSM)                  += libgsm.o
 OBJS-$(CONFIG_LIBMP3LAME)              += mp3lameaudio.o
 OBJS-$(CONFIG_LIBVORBIS)               += oggvorbis.o
-OBJS-$(CONFIG_LIBGSM)                  += libgsm.o
-
-# currently using liba52 for ac3 decoding
-OBJS-$(CONFIG_LIBA52)                  += a52dec.o
-
-# using builtin liba52 or runtime linked liba52.so.0
-OBJS-$(CONFIG_LIBA52)$(CONFIG_LIBA52BIN)  += liba52/bit_allocate.o \
-                                          liba52/bitstream.o    \
-                                          liba52/downmix.o      \
-                                          liba52/imdct.o        \
-                                          liba52/parse.o        \
-                                          liba52/crc.o          \
-                                          liba52/resample.o
-
-# currently using libdts for dts decoding
-OBJS-$(CONFIG_LIBDTS)                  += dtsdec.o
+OBJS-$(CONFIG_X264)                    += x264.o
+OBJS-$(CONFIG_XVID)                    += xvidff.o xvid_rc.o
 
 OBJS-$(CONFIG_AMR)                     += amr.o
 OBJS-$(CONFIG_AMR_NB)                  += amr_float/sp_dec.o     \
