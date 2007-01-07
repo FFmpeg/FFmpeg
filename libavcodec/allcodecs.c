@@ -193,7 +193,7 @@ void avcodec_register_all(void)
     REGISTER_ENCDEC (MP2, mp2);
     REGISTER_DECODER(MP3, mp3);
     REGISTER_DECODER(MP3ADU, mp3adu);
-#ifdef CONFIG_MP3LAME
+#ifdef CONFIG_LIBMP3LAME
     REGISTER_ENCODER(MP3LAME, mp3lame);
 #endif
     REGISTER_DECODER(MP3ON4, mp3on4);

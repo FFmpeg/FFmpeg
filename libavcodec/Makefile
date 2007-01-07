@@ -247,7 +247,7 @@ OBJS-$(CONFIG_LIBFAAD)                 += faad.o
 OBJS-$(CONFIG_LIBFAAC)                 += faac.o
 OBJS-$(CONFIG_XVID)                    += xvidff.o xvid_rc.o
 OBJS-$(CONFIG_X264)                    += x264.o
-OBJS-$(CONFIG_MP3LAME)                 += mp3lameaudio.o
+OBJS-$(CONFIG_LIBMP3LAME)              += mp3lameaudio.o
 OBJS-$(CONFIG_LIBVORBIS)               += oggvorbis.o
 OBJS-$(CONFIG_LIBGSM)                  += libgsm.o
 

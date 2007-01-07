@@ -1443,7 +1443,7 @@ AVOutputFormat nut_muxer = {
     sizeof(NUTContext),
 #ifdef CONFIG_LIBVORBIS
     CODEC_ID_VORBIS,
-#elif defined(CONFIG_MP3LAME)
+#elif defined(CONFIG_LIBMP3LAME)
     CODEC_ID_MP3,
 #else
     CODEC_ID_MP2, /* AC3 needs liba52 decoder */

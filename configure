@@ -430,11 +430,11 @@ CONFIG_LIST='
     libfaad
     libfaadbin
     libgsm
+    libmp3lame
     libnut
     libogg
     libvorbis
     memalign_hack
-    mp3lame
     mpegaudio_hp
     network
     pp
@@ -596,8 +596,8 @@ libfaac="no"
 libfaad="no"
 libfaadbin="no"
 libgsm="no"
-mp3lame="no"
 libdts="no"
+libmp3lame="no"
 libnut="no"
 libogg="no"
 libvorbis="no"
@@ -944,7 +944,7 @@ for opt do
   ;;
   --enable-libgsm) libgsm="yes"
   ;;
-  --enable-mp3lame) mp3lame="yes"
+  --enable-mp3lame) libmp3lame="yes"
   ;;
   --enable-libnut) libnut="yes"
   ;;
@@ -1465,7 +1465,7 @@ fi
 # these are off by default, so fail if requested and not available
 enabled libdts  && require libdts dts.h dts_init -ldts -lm
 enabled libgsm  && require libgsm gsm.h gsm_create -lgsm
-enabled mp3lame && require LAME lame/lame.h lame_init -lmp3lame -lm
+enabled libmp3lame && require LAME lame/lame.h lame_init -lmp3lame -lm
 enabled libvorbis && require libvorbis vorbis/vorbisenc.h vorbis_info_init -lvorbis -lvorbisenc -logg
 enabled libogg  && require libogg ogg/ogg.h ogg_sync_init -logg
 enabled libnut  && require libnut libnut.h nut_demuxer_init -lnut
@@ -1799,7 +1799,7 @@ echo "libfaac enabled           $libfaac"
 echo "libfaad enabled           $libfaad"
 echo "faadbin enabled           $libfaadbin"
 echo "libgsm enabled            $libgsm"
-echo "libmp3lame enabled        $mp3lame"
+echo "libmp3lame enabled        $libmp3lame"
 echo "libnut enabled            $libnut"
 echo "libogg enabled            $libogg"
 echo "libvorbis enabled         $libvorbis"

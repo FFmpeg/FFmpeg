@@ -832,7 +832,7 @@ AVOutputFormat asf_muxer = {
     "video/x-ms-asf",
     "asf,wmv,wma",
     sizeof(ASFContext),
-#ifdef CONFIG_MP3LAME
+#ifdef CONFIG_LIBMP3LAME
     CODEC_ID_MP3,
 #else
     CODEC_ID_MP2,
@@ -852,7 +852,7 @@ AVOutputFormat asf_stream_muxer = {
     "video/x-ms-asf",
     "asf,wmv,wma",
     sizeof(ASFContext),
-#ifdef CONFIG_MP3LAME
+#ifdef CONFIG_LIBMP3LAME
     CODEC_ID_MP3,
 #else
     CODEC_ID_MP2,
