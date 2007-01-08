@@ -306,17 +306,12 @@ static void put_swf_matrix(ByteIOContext *pb,
 /* */
 static int swf_write_header(AVFormatContext *s)
 {
-    SWFContext *swf;
+    SWFContext *swf = s->priv_data;
     ByteIOContext *pb = &s->pb;
     AVCodecContext *enc, *audio_enc, *video_enc;
     PutBitContext p;
     uint8_t buf1[256];
     int i, width, height, rate, rate_base;
-
-    swf = av_malloc(sizeof(SWFContext));
-    if (!swf)
-        return -1;
-    s->priv_data = swf;
 
     swf->ch_id = -1;
     swf->audio_in_pos = 0;
@@ -452,7 +447,6 @@ static int swf_write_header(AVFormatContext *s)
             /* not supported */
             av_log(s, AV_LOG_ERROR, "swf doesnt support that sample rate, choose from (44100, 22050, 11025)\n");
             av_free(swf->audio_fifo);
-            av_free(swf);
             return -1;
         }
         v |= 0x02; /* 16 bit playback */
