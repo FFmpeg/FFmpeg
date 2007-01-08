@@ -2184,6 +2184,13 @@ int av_write_header(AVFormatContext *s)
         }
     }
 
+    if (s->oformat->priv_data_size > 0) {
+        s->priv_data = av_mallocz(s->oformat->priv_data_size);
+        if (!s->priv_data)
+            return AVERROR_NOMEM;
+    } else
+        s->priv_data = NULL;
+
     if(s->oformat->write_header){
         ret = s->oformat->write_header(s);
         if (ret < 0)
