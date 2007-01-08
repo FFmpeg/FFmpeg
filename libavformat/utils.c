@@ -32,7 +32,6 @@
 
 static void av_frac_init(AVFrac *f, int64_t val, int64_t num, int64_t den);
 static void av_frac_add(AVFrac *f, int64_t incr);
-static void av_frac_set(AVFrac *f, int64_t val);
 
 /** head of registered input format linked list. */
 AVInputFormat *first_iformat = NULL;
@@ -3077,15 +3076,6 @@ static void av_frac_init(AVFrac *f, int64_t val, int64_t num, int64_t den)
     f->val = val;
     f->num = num;
     f->den = den;
-}
-
-/**
- * Set f to (val + 0.5).
- */
-static void av_frac_set(AVFrac *f, int64_t val)
-{
-    f->val = val;
-    f->num = f->den >> 1;
 }
 
 /**
