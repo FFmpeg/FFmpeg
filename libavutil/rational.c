@@ -38,8 +38,10 @@ int av_reduce(int *dst_nom, int *dst_den, int64_t nom, int64_t den, int64_t max)
     int sign= (nom<0) ^ (den<0);
     int64_t gcd= ff_gcd(FFABS(nom), FFABS(den));
 
-    nom = FFABS(nom)/gcd;
-    den = FFABS(den)/gcd;
+    if(gcd){
+        nom = FFABS(nom)/gcd;
+        den = FFABS(den)/gcd;
+    }
     if(nom<=max && den<=max){
         a1= (AVRational){nom, den};
         den=0;
@@ -65,7 +67,7 @@ int av_reduce(int *dst_nom, int *dst_den, int64_t nom, int64_t den, int64_t max)
         nom= den;
         den= next_den;
     }
-    assert(ff_gcd(a1.num, a1.den) == 1);
+    assert(ff_gcd(a1.num, a1.den) <= 1U);
 
     *dst_nom = sign ? -a1.num : a1.num;
     *dst_den = a1.den;
