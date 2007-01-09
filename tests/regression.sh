@@ -650,8 +650,8 @@ do_libav mpg
 # mpegts
 do_libav ts
 
-# swf (decode audio only)
-do_libav swf "-acodec mp2"
+# swf
+do_libav swf -an
 
 # ffm
 do_libav ffm
