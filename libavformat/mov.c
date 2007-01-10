@@ -120,6 +120,8 @@ static const CodecTag mov_video_tags[] = {
     { CODEC_ID_TARGA, MKTAG('t', 'g', 'a', ' ') }, /* Truevision Targa */
     { CODEC_ID_TIFF, MKTAG('t', 'i', 'f', 'f') }, /* TIFF embedded in MOV */
     { CODEC_ID_RAWVIDEO, MKTAG('2', 'v', 'u', 'y') }, /* UNCOMPRESSED 8BIT 4:2:2 */
+    { CODEC_ID_VC1,  MKTAG('v', 'c', '-', '1') }, /* SMPTE RP 2025 */
+    { CODEC_ID_WMV3, MKTAG('v', 'c', '-', '1') }, /* SMPTE RP 2025 */
     { CODEC_ID_NONE, 0 },
 };
 
