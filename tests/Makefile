@@ -37,6 +37,15 @@ libavtest:
 	@echo
 endif
 
+ifeq ($(CONFIG_SWSCALER),yes)
+test-server codectest mpeg4 mpeg ac3 snow snowll libavtest: swscale_error
+swscale_error:
+	@echo
+	@echo "This regression test is incompatible with --enable-swscaler."
+	@echo
+	@exit 1
+endif
+
 # video generation
 
 vsynth1/00.pgm: videogen$(EXESUF)
