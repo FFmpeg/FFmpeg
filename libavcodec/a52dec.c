@@ -217,6 +217,7 @@ static int a52_decode_frame(AVCodecContext *avctx,
             level = 1;
             if (s->a52_frame(s->state, s->inbuf, &flags, &level, 384)) {
             fail:
+                av_log(avctx, AV_LOG_ERROR, "Error decoding frame\n");
                 s->inbuf_ptr = s->inbuf;
                 s->frame_size = 0;
                 continue;
