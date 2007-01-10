@@ -2083,6 +2083,7 @@ fi
 
 
 # build pkg-config files
+# FIXME: libdir and includedir are hardcoded and may differ from the real path.
 
 pkgconfig_generate(){
 name=$1
