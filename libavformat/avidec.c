@@ -289,6 +289,8 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
             print_tag("strh", tag1, -1);
 #endif
             if(tag1 == MKTAG('i', 'a', 'v', 's') || tag1 == MKTAG('i', 'v', 'a', 's')){
+                int64_t dv_dur;
+
                 /*
                  * After some consideration -- I don't think we
                  * have to support anything but DV in a type1 AVIs.
@@ -314,8 +316,20 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 url_fskip(pb, 3 * 4);
                 ast->scale = get_le32(pb);
                 ast->rate = get_le32(pb);
+                url_fskip(pb, 4);  /* start time */
+
+                dv_dur = get_le32(pb);
+                if (ast->scale > 0 && ast->rate > 0 && dv_dur > 0) {
+                    dv_dur *= AV_TIME_BASE;
+                    s->duration = av_rescale(dv_dur, ast->scale, ast->rate);
+                }
+                /*
+                 * else, leave duration alone; timing estimation in utils.c
+                 *      will make a guess based on bit rate.
+                 */
+
                 stream_index = s->nb_streams - 1;
-                url_fskip(pb, size - 7*4);
+                url_fskip(pb, size - 9*4);
                 break;
             }
 
@@ -903,6 +917,21 @@ static int avi_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
 
 //    av_log(NULL, AV_LOG_DEBUG, "XX %"PRId64" %d %"PRId64"\n", timestamp, index, st->index_entries[index].timestamp);
 
+    if (ENABLE_DV_DEMUXER && avi->dv_demux) {
+        /* One and only one real stream for DV in AVI, and it has video  */
+        /* offsets. Calling with other stream indices should have failed */
+        /* the av_index_search_timestamp call above.                     */
+        assert(stream_index == 0);
+
+        /* Feed the DV video stream version of the timestamp to the */
+        /* DV demux so it can synth correct timestamps              */
+        dv_offset_reset(avi->dv_demux, timestamp);
+
+        url_fseek(&s->pb, pos, SEEK_SET);
+        avi->stream_index= -1;
+        return 0;
+    }
+
     for(i = 0; i < s->nb_streams; i++) {
         AVStream *st2 = s->streams[i];
         AVIStream *ast2 = st2->priv_data;
@@ -937,8 +966,6 @@ static int avi_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
             ast2->frame_offset *=ast2->sample_size;
     }
 
-    if (ENABLE_DV_DEMUXER && avi->dv_demux)
-        dv_flush_audio_packets(avi->dv_demux);
     /* do the seek */
     url_fseek(&s->pb, pos, SEEK_SET);
     avi->stream_index= -1;
