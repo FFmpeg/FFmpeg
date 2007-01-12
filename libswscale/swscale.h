@@ -27,6 +27,8 @@
  *     external api for the swscale stuff
  */
 
+#include "avutil.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -109,7 +111,7 @@ struct SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, i
 int sws_scale(struct SwsContext *context, uint8_t* src[], int srcStride[], int srcSliceY,
                            int srcSliceH, uint8_t* dst[], int dstStride[]);
 int sws_scale_ordered(struct SwsContext *context, uint8_t* src[], int srcStride[], int srcSliceY,
-                           int srcSliceH, uint8_t* dst[], int dstStride[]);
+                           int srcSliceH, uint8_t* dst[], int dstStride[]) attribute_deprecated;
 
 
 int sws_setColorspaceDetails(struct SwsContext *c, const int inv_table[4], int srcRange, const int table[4], int dstRange, int brightness, int contrast, int saturation);
