@@ -2414,7 +2414,7 @@ SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, int dstH
  * swscale warper, so we don't need to export the SwsContext.
  * assumes planar YUV to be in YUV order instead of YVU
  */
-int sws_scale_ordered(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
+int sws_scale(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
                            int srcSliceH, uint8_t* dst[], int dstStride[]){
 	if (c->sliceDir == 0 && srcSliceY != 0 && srcSliceY + srcSliceH != c->srcH) {
 	    MSG_ERR("swScaler: slices start in the middle!\n");
@@ -2449,15 +2449,9 @@ int sws_scale_ordered(SwsContext *c, uint8_t* src[], int srcStride[], int srcSli
 /**
  * swscale warper, so we don't need to export the SwsContext
  */
-int sws_scale(SwsContext *c, uint8_t* srcParam[], int srcStride[], int srcSliceY,
-                           int srcSliceH, uint8_t* dstParam[], int dstStride[]){
-	uint8_t *src[3];
-	uint8_t *dst[3];
-	src[0] = srcParam[0]; src[1] = srcParam[1]; src[2] = srcParam[2];
-	dst[0] = dstParam[0]; dst[1] = dstParam[1]; dst[2] = dstParam[2];
-//printf("sws: slice %d %d\n", srcSliceY, srcSliceH);
-
-	return c->swScale(c, src, srcStride, srcSliceY, srcSliceH, dst, dstStride);
+int sws_scale_ordered(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
+                           int srcSliceH, uint8_t* dst[], int dstStride[]){
+	return sws_scale(c, src, srcStride, srcSliceY, srcSliceH, dst, dstStride);
 }
 
 SwsFilter *sws_getDefaultFilter(float lumaGBlur, float chromaGBlur, 
