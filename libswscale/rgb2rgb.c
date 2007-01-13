@@ -341,7 +341,7 @@ void sws_rgb2rgb_init(int flags){
 }
 
 /**
- * Pallete is assumed to contain bgr32
+ * Palette is assumed to contain BGR32.
  */
 void palette8torgb32(const uint8_t *src, uint8_t *dst, long num_pixels, const uint8_t *palette)
 {
@@ -391,7 +391,7 @@ void palette8tobgr32(const uint8_t *src, uint8_t *dst, long num_pixels, const ui
 }
 
 /**
- * Pallete is assumed to contain bgr32
+ * Palette is assumed to contain BGR32.
  */
 void palette8torgb24(const uint8_t *src, uint8_t *dst, long num_pixels, const uint8_t *palette)
 {
@@ -446,7 +446,7 @@ void palette8tobgr16(const uint8_t *src, uint8_t *dst, long num_pixels, const ui
 }
 
 /**
- * Pallete is assumed to contain bgr15, see rgb32to15 to convert the palette
+ * Palette is assumed to contain BGR15, see rgb32to15 to convert the palette.
  */
 void palette8torgb15(const uint8_t *src, uint8_t *dst, long num_pixels, const uint8_t *palette)
 {
