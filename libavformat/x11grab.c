@@ -169,7 +169,7 @@ x11grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 
     switch (image->bits_per_pixel) {
     case 8:
-        av_log (s1, AV_LOG_DEBUG, "8 bit pallete\n");
+        av_log (s1, AV_LOG_DEBUG, "8 bit palette\n");
         input_pixfmt = PIX_FMT_PAL8;
         break;
     case 16:
