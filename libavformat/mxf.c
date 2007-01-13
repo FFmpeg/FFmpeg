@@ -808,7 +808,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
 
             for (k = 0; k < mxf->packages_count; k++) {
                 if (!(temp_package = mxf_resolve_strong_ref(mxf, &mxf->packages_refs[k]))) {
-                    av_log(mxf->fc, AV_LOG_ERROR, "could not resolve source track strong ref\n");
+                    av_log(mxf->fc, AV_LOG_ERROR, "could not resolve package strong ref\n");
                     return -1;
                 }
                 if (!memcmp(temp_package->package_uid, component->source_package_uid, 16)) {
