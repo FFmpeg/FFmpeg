@@ -55,6 +55,7 @@ extern void av_vlog(void*, int level, const char *fmt, va_list);
 extern int av_log_get_level(void);
 extern void av_log_set_level(int);
 extern void av_log_set_callback(void (*)(void*, int, const char*, va_list));
+extern void av_log_default_callback(void* ptr, int level, const char* fmt, va_list vl);
 #else
 extern void (*av_vlog)(void*, int, const char*, va_list);
 #endif

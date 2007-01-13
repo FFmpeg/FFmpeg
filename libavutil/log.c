@@ -28,7 +28,7 @@
 
 int av_log_level = AV_LOG_INFO;
 
-static void av_log_default_callback(void* ptr, int level, const char* fmt, va_list vl)
+void av_log_default_callback(void* ptr, int level, const char* fmt, va_list vl)
 {
     static int print_prefix=1;
     AVClass* avc= ptr ? *(AVClass**)ptr : NULL;
