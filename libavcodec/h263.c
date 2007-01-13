@@ -5928,6 +5928,10 @@ static int decode_vop_header(MpegEncContext *s, GetBitContext *gb){
                            - ROUNDED_DIV(s->last_non_b_time - s->pp_time, s->t_frame))*2;
         s->pb_field_time= (  ROUNDED_DIV(s->time, s->t_frame)
                            - ROUNDED_DIV(s->last_non_b_time - s->pp_time, s->t_frame))*2;
+        if(!s->progressive_sequence){
+            if(s->pp_field_time <= s->pb_field_time || s->pb_field_time <= 1)
+                return FRAME_SKIPPED;
+        }
     }
 //av_log(s->avctx, AV_LOG_DEBUG, "last nonb %"PRId64" last_base %d time %"PRId64" pp %d pb %d t %d ppf %d pbf %d\n", s->last_non_b_time, s->last_time_base, s->time, s->pp_time, s->pb_time, s->t_frame, s->pp_field_time, s->pb_field_time);
 
