@@ -741,14 +741,15 @@ static enum CodecType mxf_get_codec_type(const MXFDataDefinitionUL *uls, UID *ui
     return uls->type;
 }
 
-static void *mxf_resolve_strong_ref(MXFContext *mxf, UID *strong_ref)
+static void *mxf_resolve_strong_ref(MXFContext *mxf, UID *strong_ref, enum MXFMetadataSetType type)
 {
     int i;
 
     if (!strong_ref)
         return NULL;
     for (i = 0; i < mxf->metadata_sets_count; i++) {
-        if (!memcmp(*strong_ref, mxf->metadata_sets[i]->uid, 16)) {
+        if (!memcmp(*strong_ref, mxf->metadata_sets[i]->uid, 16) &&
+            mxf->metadata_sets[i]->type == type) {
             return mxf->metadata_sets[i];
         }
     }
@@ -764,14 +765,8 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
     dprintf("metadata sets count %d\n", mxf->metadata_sets_count);
     /* TODO: handle multiple material packages (OP3x) */
     for (i = 0; i < mxf->packages_count; i++) {
-        if (!(temp_package = mxf_resolve_strong_ref(mxf, &mxf->packages_refs[i]))) {
-            av_log(mxf->fc, AV_LOG_ERROR, "could not resolve package strong ref\n");
-            return -1;
-        }
-        if (temp_package->type == MaterialPackage) {
-            material_package = temp_package;
-            break;
-        }
+        material_package = mxf_resolve_strong_ref(mxf, &mxf->packages_refs[i], MaterialPackage);
+        if (material_package) break;
     }
     if (!material_package) {
         av_log(mxf->fc, AV_LOG_ERROR, "no material package found\n");
@@ -789,12 +784,12 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
         const MXFCodecUL *container_ul = NULL;
         AVStream *st;
 
-        if (!(material_track = mxf_resolve_strong_ref(mxf, &material_package->tracks_refs[i]))) {
+        if (!(material_track = mxf_resolve_strong_ref(mxf, &material_package->tracks_refs[i], Track))) {
             av_log(mxf->fc, AV_LOG_ERROR, "could not resolve material track strong ref\n");
             continue;
         }
 
-        if (!(material_track->sequence = mxf_resolve_strong_ref(mxf, &material_track->sequence_ref))) {
+        if (!(material_track->sequence = mxf_resolve_strong_ref(mxf, &material_track->sequence_ref, Sequence))) {
             av_log(mxf->fc, AV_LOG_ERROR, "could not resolve material track sequence strong ref\n");
             return -1;
         }
@@ -802,15 +797,14 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
         /* TODO: handle multiple source clips */
         for (j = 0; j < material_track->sequence->structural_components_count; j++) {
             /* TODO: handle timecode component */
-            component = mxf_resolve_strong_ref(mxf, &material_track->sequence->structural_components_refs[j]);
-            if (!component || component->type != SourceClip)
+            component = mxf_resolve_strong_ref(mxf, &material_track->sequence->structural_components_refs[j], SourceClip);
+            if (!component)
                 continue;
 
             for (k = 0; k < mxf->packages_count; k++) {
-                if (!(temp_package = mxf_resolve_strong_ref(mxf, &mxf->packages_refs[k]))) {
-                    av_log(mxf->fc, AV_LOG_ERROR, "could not resolve package strong ref\n");
-                    return -1;
-                }
+                temp_package = mxf_resolve_strong_ref(mxf, &mxf->packages_refs[k], SourcePackage);
+                if (!temp_package)
+                    continue;
                 if (!memcmp(temp_package->package_uid, component->source_package_uid, 16)) {
                     source_package = temp_package;
                     break;
@@ -821,7 +815,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
                 break;
             }
             for (k = 0; k < source_package->tracks_count; k++) {
-                if (!(temp_track = mxf_resolve_strong_ref(mxf, &source_package->tracks_refs[k]))) {
+                if (!(temp_track = mxf_resolve_strong_ref(mxf, &source_package->tracks_refs[k], Track))) {
                     av_log(mxf->fc, AV_LOG_ERROR, "could not resolve source track strong ref\n");
                     return -1;
                 }
@@ -846,7 +840,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
         st->start_time = component->start_position;
         av_set_pts_info(st, 64, material_track->edit_rate.num, material_track->edit_rate.den);
 
-        if (!(source_track->sequence = mxf_resolve_strong_ref(mxf, &source_track->sequence_ref))) {
+        if (!(source_track->sequence = mxf_resolve_strong_ref(mxf, &source_track->sequence_ref, Sequence))) {
             av_log(mxf->fc, AV_LOG_ERROR, "could not resolve source track sequence strong ref\n");
             return -1;
         }
@@ -856,11 +850,11 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
 #endif
         st->codec->codec_type = mxf_get_codec_type(mxf_data_definition_uls, &source_track->sequence->data_definition_ul);
 
-        source_package->descriptor = mxf_resolve_strong_ref(mxf, &source_package->descriptor_ref);
+        source_package->descriptor = mxf_resolve_strong_ref(mxf, &source_package->descriptor_ref, Descriptor);
         if (source_package->descriptor) {
             if (source_package->descriptor->type == MultipleDescriptor) {
                 for (j = 0; j < source_package->descriptor->sub_descriptors_count; j++) {
-                    MXFDescriptor *sub_descriptor = mxf_resolve_strong_ref(mxf, &source_package->descriptor->sub_descriptors_refs[j]);
+                    MXFDescriptor *sub_descriptor = mxf_resolve_strong_ref(mxf, &source_package->descriptor->sub_descriptors_refs[j], Descriptor);
 
                     if (!sub_descriptor) {
                         av_log(mxf->fc, AV_LOG_ERROR, "could not resolve sub descriptor strong ref\n");
