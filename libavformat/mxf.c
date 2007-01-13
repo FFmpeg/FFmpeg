@@ -359,26 +359,37 @@ static int mxf_read_metadata_content_storage(MXFContext *mxf, KLVPacket *klv)
     return 0;
 }
 
+#define MXF_READ_LOCAL_TAGS_START(typename, ctype, name) \
+    ByteIOContext *pb = &mxf->fc->pb;\
+    ctype *name = av_mallocz(sizeof(*name));\
+    int bytes_read = 0;\
+\
+    while (bytes_read < klv->length) {\
+        int tag = get_be16(pb);\
+        int size = get_be16(pb); /* KLV specified by 0x53 */\
+\
+        bytes_read += size + 4;\
+        dprintf("tag 0x%04X, size %d\n", tag, size);\
+        if (!size) { /* ignore empty tag, needed for some files with empty UMID tag */\
+            av_log(mxf->fc, AV_LOG_ERROR, "local tag 0x%04X with 0 size\n", tag);\
+            continue;\
+        }\
+        switch (tag) {\
+        case 0x3C0A:\
+            get_buffer(pb, name->uid, 16);\
+            break;
+
+#define MXF_READ_LOCAL_TAGS_STOP(typename, ctype, name)\
+        default:\
+            url_fskip(pb, size);\
+        }\
+    }\
+    name->type = typename;\
+    return mxf_add_metadata_set(mxf, name);
+
 static int mxf_read_metadata_source_clip(MXFContext *mxf, KLVPacket *klv)
 {
-    ByteIOContext *pb = &mxf->fc->pb;
-    MXFStructuralComponent *source_clip = av_mallocz(sizeof(*source_clip));
-    int bytes_read = 0;
-
-    while (bytes_read < klv->length) {
-        int tag = get_be16(pb);
-        int size = get_be16(pb); /* SMPTE 336M Table 8 KLV specified length, 0x53 */
-
-        bytes_read += size + 4;
-        dprintf("tag 0x%04X, size %d\n", tag, size);
-        if (!size) { /* ignore empty tag, needed for some files with empty UMID tag */
-            av_log(mxf->fc, AV_LOG_ERROR, "local tag 0x%04X with 0 size\n", tag);
-            continue;
-        }
-        switch (tag) {
-        case 0x3C0A:
-            get_buffer(pb, source_clip->uid, 16);
-            break;
+MXF_READ_LOCAL_TAGS_START(SourceClip, MXFStructuralComponent, source_clip)
         case 0x0202:
             source_clip->duration = get_be64(pb);
             break;
@@ -393,28 +404,12 @@ static int mxf_read_metadata_source_clip(MXFContext *mxf, KLVPacket *klv)
         case 0x1102:
             source_clip->source_track_id = get_be32(pb);
             break;
-        default:
-            url_fskip(pb, size);
-        }
-    }
-    source_clip->type = SourceClip;
-    return mxf_add_metadata_set(mxf, source_clip);
+MXF_READ_LOCAL_TAGS_STOP(SourceClip, MXFStructuralComponent, source_clip)
 }
 
 static int mxf_read_metadata_material_package(MXFContext *mxf, KLVPacket *klv)
 {
-    ByteIOContext *pb = &mxf->fc->pb;
-    MXFPackage *package = av_mallocz(sizeof(*package));
-    int bytes_read = 0;
-
-    while (bytes_read < klv->length) {
-        int tag = get_be16(pb);
-        int size = get_be16(pb); /* KLV specified by 0x53 */
-
-        switch (tag) {
-        case 0x3C0A:
-            get_buffer(pb, package->uid, 16);
-            break;
+MXF_READ_LOCAL_TAGS_START(MaterialPackage, MXFPackage, package)
         case 0x4403:
             package->tracks_count = get_be32(pb);
             if (package->tracks_count >= UINT_MAX / sizeof(UID))
@@ -423,30 +418,12 @@ static int mxf_read_metadata_material_package(MXFContext *mxf, KLVPacket *klv)
             url_fskip(pb, 4); /* useless size of objects, always 16 according to specs */
             get_buffer(pb, (uint8_t *)package->tracks_refs, package->tracks_count * sizeof(UID));
             break;
-        default:
-            url_fskip(pb, size);
-        }
-        bytes_read += size + 4;
-    }
-    package->type = MaterialPackage;
-    return mxf_add_metadata_set(mxf, package);
+MXF_READ_LOCAL_TAGS_STOP(MaterialPackage, MXFPackage, package)
 }
 
 static int mxf_read_metadata_track(MXFContext *mxf, KLVPacket *klv)
 {
-    ByteIOContext *pb = &mxf->fc->pb;
-    MXFTrack *track = av_mallocz(sizeof(*track));
-    int bytes_read = 0;
-
-    while (bytes_read < klv->length) {
-        int tag = get_be16(pb);
-        int size = get_be16(pb); /* KLV specified by 0x53 */
-
-        dprintf("tag 0x%04X, size %d\n", tag, size);
-        switch (tag) {
-        case 0x3C0A:
-            get_buffer(pb, track->uid, 16);
-            break;
+MXF_READ_LOCAL_TAGS_START(Track, MXFTrack, track)
         case 0x4801:
             track->track_id = get_be32(pb);
             break;
@@ -460,30 +437,12 @@ static int mxf_read_metadata_track(MXFContext *mxf, KLVPacket *klv)
         case 0x4803:
             get_buffer(pb, track->sequence_ref, 16);
             break;
-        default:
-            url_fskip(pb, size);
-        }
-        bytes_read += size + 4;
-    }
-    track->type = Track;
-    return mxf_add_metadata_set(mxf, track);
+MXF_READ_LOCAL_TAGS_STOP(Track, MXFTrack, track)
 }
 
 static int mxf_read_metadata_sequence(MXFContext *mxf, KLVPacket *klv)
 {
-    ByteIOContext *pb = &mxf->fc->pb;
-    MXFSequence *sequence = av_mallocz(sizeof(*sequence));
-    int bytes_read = 0;
-
-    while (bytes_read < klv->length) {
-        int tag = get_be16(pb);
-        int size = get_be16(pb); /* KLV specified by 0x53 */
-
-        dprintf("tag 0x%04X, size %d\n", tag, size);
-        switch (tag) {
-        case 0x3C0A:
-            get_buffer(pb, sequence->uid, 16);
-            break;
+MXF_READ_LOCAL_TAGS_START(Sequence, MXFSequence, sequence)
         case 0x0202:
             sequence->duration = get_be64(pb);
             break;
@@ -498,30 +457,12 @@ static int mxf_read_metadata_sequence(MXFContext *mxf, KLVPacket *klv)
             url_fskip(pb, 4); /* useless size of objects, always 16 according to specs */
             get_buffer(pb, (uint8_t *)sequence->structural_components_refs, sequence->structural_components_count * sizeof(UID));
             break;
-        default:
-            url_fskip(pb, size);
-        }
-        bytes_read += size + 4;
-    }
-    sequence->type = Sequence;
-    return mxf_add_metadata_set(mxf, sequence);
+MXF_READ_LOCAL_TAGS_STOP(Sequence, MXFSequence, sequence)
 }
 
 static int mxf_read_metadata_source_package(MXFContext *mxf, KLVPacket *klv)
 {
-    ByteIOContext *pb = &mxf->fc->pb;
-    MXFPackage *package = av_mallocz(sizeof(*package));
-    int bytes_read = 0;
-
-    while (bytes_read < klv->length) {
-        int tag = get_be16(pb);
-        int size = get_be16(pb); /* KLV specified by 0x53 */
-
-        dprintf("tag 0x%04X, size %d\n", tag, size);
-        switch (tag) {
-        case 0x3C0A:
-            get_buffer(pb, package->uid, 16);
-            break;
+MXF_READ_LOCAL_TAGS_START(SourcePackage, MXFPackage, package)
         case 0x4403:
             package->tracks_count = get_be32(pb);
             if (package->tracks_count >= UINT_MAX / sizeof(UID))
@@ -538,30 +479,12 @@ static int mxf_read_metadata_source_package(MXFContext *mxf, KLVPacket *klv)
         case 0x4701:
             get_buffer(pb, package->descriptor_ref, 16);
             break;
-        default:
-            url_fskip(pb, size);
-        }
-        bytes_read += size + 4;
-    }
-    package->type = SourcePackage;
-    return mxf_add_metadata_set(mxf, package);
+MXF_READ_LOCAL_TAGS_STOP(SourcePackage, MXFPackage, package)
 }
 
 static int mxf_read_metadata_multiple_descriptor(MXFContext *mxf, KLVPacket *klv)
 {
-    ByteIOContext *pb = &mxf->fc->pb;
-    MXFDescriptor *descriptor = av_mallocz(sizeof(*descriptor));
-    int bytes_read = 0;
-
-    while (bytes_read < klv->length) {
-        int tag = get_be16(pb);
-        int size = get_be16(pb); /* KLV specified by 0x53 */
-
-        dprintf("tag 0x%04X, size %d\n", tag, size);
-        switch (tag) {
-        case 0x3C0A:
-            get_buffer(pb, descriptor->uid, 16);
-            break;
+MXF_READ_LOCAL_TAGS_START(MultipleDescriptor, MXFDescriptor, descriptor)
         case 0x3F01:
             descriptor->sub_descriptors_count = get_be32(pb);
             if (descriptor->sub_descriptors_count >= UINT_MAX / sizeof(UID))
@@ -570,13 +493,7 @@ static int mxf_read_metadata_multiple_descriptor(MXFContext *mxf, KLVPacket *klv
             url_fskip(pb, 4); /* useless size of objects, always 16 according to specs */
             get_buffer(pb, (uint8_t *)descriptor->sub_descriptors_refs, descriptor->sub_descriptors_count * sizeof(UID));
             break;
-        default:
-            url_fskip(pb, size);
-        }
-        bytes_read += size + 4;
-    }
-    descriptor->type = MultipleDescriptor;
-    return mxf_add_metadata_set(mxf, descriptor);
+MXF_READ_LOCAL_TAGS_STOP(MultipleDescriptor, MXFDescriptor, descriptor)
 }
 
 static void mxf_read_metadata_pixel_layout(ByteIOContext *pb, MXFDescriptor *descriptor)
@@ -604,19 +521,7 @@ static void mxf_read_metadata_pixel_layout(ByteIOContext *pb, MXFDescriptor *des
 
 static int mxf_read_metadata_generic_descriptor(MXFContext *mxf, KLVPacket *klv)
 {
-    ByteIOContext *pb = &mxf->fc->pb;
-    MXFDescriptor *descriptor = av_mallocz(sizeof(*descriptor));
-    int bytes_read = 0;
-
-    while (bytes_read < klv->length) {
-        int tag = get_be16(pb);
-        int size = get_be16(pb); /* KLV specified by 0x53 */
-
-        dprintf("tag 0x%04X, size %d\n", tag, size);
-        switch (tag) {
-        case 0x3C0A:
-            get_buffer(pb, descriptor->uid, 16);
-            break;
+MXF_READ_LOCAL_TAGS_START(Descriptor, MXFDescriptor, descriptor)
         case 0x3004:
             get_buffer(pb, descriptor->essence_container_ul, 16);
             break;
@@ -657,13 +562,7 @@ static int mxf_read_metadata_generic_descriptor(MXFContext *mxf, KLVPacket *klv)
             descriptor->extradata_size = size;
             get_buffer(pb, descriptor->extradata, size);
             break;
-        default:
-            url_fskip(pb, size);
-        }
-        bytes_read += size + 4;
-    }
-    descriptor->type = Descriptor;
-    return mxf_add_metadata_set(mxf, descriptor);
+MXF_READ_LOCAL_TAGS_STOP(Descriptor, MXFDescriptor, descriptor)
 }
 
 /* SMPTE RP224 http://www.smpte-ra.org/mdd/index.html */
