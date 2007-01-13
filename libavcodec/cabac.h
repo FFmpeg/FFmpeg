@@ -539,26 +539,26 @@ static int av_always_inline get_cabac_inline(CABACContext *c, uint8_t * const st
 
     c->range -= RangeLPS;
 #ifndef BRANCHLESS_CABAC_DECODER
-    if(c->low < (c->range<<17)){
+    if(c->low < (c->range<<(CABAC_BITS+1))){
         bit= s&1;
         *state= ff_h264_mps_state[s];
         renorm_cabac_decoder_once(c);
     }else{
         bit= ff_h264_norm_shift[RangeLPS];
-        c->low -= (c->range<<17);
+        c->low -= (c->range<<(CABAC_BITS+1));
         *state= ff_h264_lps_state[s];
         c->range = RangeLPS<<bit;
         c->low <<= bit;
         bit= (s&1)^1;
 
-        if(!(c->low & 0xFFFF)){
+        if(!(c->low & CABAC_MASK)){
             refill2(c);
         }
     }
 #else /* BRANCHLESS_CABAC_DECODER */
-    lps_mask= ((c->range<<17) - c->low)>>31;
+    lps_mask= ((c->range<<(CABAC_BITS+1)) - c->low)>>31;
 
-    c->low -= (c->range<<17) & lps_mask;
+    c->low -= (c->range<<(CABAC_BITS+1)) & lps_mask;
     c->range += (RangeLPS - c->range) & lps_mask;
 
     s^=lps_mask;
@@ -620,7 +620,7 @@ static int get_cabac_bypass(CABACContext *c){
     if(!(c->low & CABAC_MASK))
         refill(c);
 
-    range= c->range<<17;
+    range= c->range<<(CABAC_BITS+1);
     if(c->low < range){
         return 0;
     }else{
@@ -669,7 +669,7 @@ static av_always_inline int get_cabac_bypass_sign(CABACContext *c, int val){
     if(!(c->low & CABAC_MASK))
         refill(c);
 
-    range= c->range<<17;
+    range= c->range<<(CABAC_BITS+1);
     c->low -= range;
     mask= c->low >> 31;
     range &= mask;
@@ -794,7 +794,7 @@ static int decode_significance_8x8_x86(CABACContext *c, uint8_t *significant_coe
  */
 static int get_cabac_terminate(CABACContext *c){
     c->range -= 2;
-    if(c->low < c->range<<17){
+    if(c->low < c->range<<(CABAC_BITS+1)){
         renorm_cabac_decoder_once(c);
         return 0;
     }else{
