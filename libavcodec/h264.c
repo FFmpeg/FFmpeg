@@ -6224,7 +6224,10 @@ decode_intra_mb:
         // FIXME The two following lines get the bitstream position in the cabac
         // decode, I think it should be done by a function in cabac.h (or cabac.c).
         ptr= h->cabac.bytestream;
-        if (h->cabac.low&0x1) ptr-=CABAC_BITS/8;
+        if(h->cabac.low&0x1) ptr--;
+        if(CABAC_BITS==16){
+            if(h->cabac.low&0x1FF) ptr--;
+        }
 
         // The pixels are stored in the same order as levels in h->mb array.
         for(y=0; y<16; y++){
