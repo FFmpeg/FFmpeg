@@ -800,6 +800,7 @@ static int swf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             }
         } else if ( ( tag == TAG_STREAMHEAD || tag == TAG_STREAMHEAD2 ) && !ast) {
             /* streaming found */
+            int sample_rate_code;
             get_byte(pb);
             v = get_byte(pb);
             swf->samples_per_frame = get_le16(pb);
@@ -811,20 +812,10 @@ static int swf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             if (v & 0x20)
                 ast->codec->codec_id = CODEC_ID_MP3;
             ast->need_parsing = 1;
-            switch((v>> 2) & 0x03) {
-            case 1:
-                ast->codec->sample_rate = 11025;
-                break;
-            case 2:
-                ast->codec->sample_rate = 22050;
-                break;
-            case 3:
-                ast->codec->sample_rate = 44100;
-                break;
-            default:
+            sample_rate_code= (v>>2) & 3;
+            if (!sample_rate_code)
                 return AVERROR_IO;
-            }
-
+            ast->codec->sample_rate = 11025 << (sample_rate_code-1);
             if (len > 4)
                 url_fskip(pb,len-4);
 
