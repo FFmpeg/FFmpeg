@@ -1287,7 +1287,7 @@ if test $cpu != "generic"; then
             cmov="no"
         ;;
         # targets that do support conditional mov (cmov)
-        i686|pentiumpro|pentium[23]|pentium-m|athlon|athlon-tbird|athlon-4|athlon-[mx]p|athlon64|k8|opteron|athlon-fx)
+        i686|pentiumpro|pentium[23]|pentium-m|athlon|athlon-tbird|athlon-4|athlon-[mx]p|athlon64|k8|opteron|athlon-fx|core2)
             add_cflags "-march=$cpu"
             cmov="yes"
             cmov_is_fast="yes"
