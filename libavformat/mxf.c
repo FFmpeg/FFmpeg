@@ -214,7 +214,7 @@ static int mxf_get_stream_index(AVFormatContext *s, KLVPacket *klv)
 
     for (i = 0; i < s->nb_streams; i++) {
         MXFTrack *track = s->streams[i]->priv_data;
-         /* SMPTE 379M 7.3 */
+        /* SMPTE 379M 7.3 */
         if (!memcmp(klv->key + sizeof(mxf_essence_element_key), track->track_number, sizeof(track->track_number)))
             return i;
     }
@@ -302,161 +302,161 @@ static int mxf_add_metadata_set(MXFContext *mxf, void *metadata_set)
 
 static int mxf_read_metadata_preface(MXFContext *mxf, ByteIOContext *pb, int tag)
 {
-        switch (tag) {
-        case 0x3B03:
-            get_buffer(pb, mxf->content_storage_uid, 16);
-            break;
-        case 0x3B09:
-            get_buffer(pb, mxf->operational_pattern_ul, 16);
-            break;
-        case 0x3B0A:
-            mxf->essence_containers_uls_count = get_be32(pb);
-            if (mxf->essence_containers_uls_count >= UINT_MAX / sizeof(UID))
-                return -1;
-            mxf->essence_containers_uls = av_malloc(mxf->essence_containers_uls_count * sizeof(UID));
-            url_fskip(pb, 4); /* useless size of objects, always 16 according to specs */
-            get_buffer(pb, (uint8_t *)mxf->essence_containers_uls, mxf->essence_containers_uls_count * sizeof(UID));
-            break;
-        }
+    switch (tag) {
+    case 0x3B03:
+        get_buffer(pb, mxf->content_storage_uid, 16);
+        break;
+    case 0x3B09:
+        get_buffer(pb, mxf->operational_pattern_ul, 16);
+        break;
+    case 0x3B0A:
+        mxf->essence_containers_uls_count = get_be32(pb);
+        if (mxf->essence_containers_uls_count >= UINT_MAX / sizeof(UID))
+            return -1;
+        mxf->essence_containers_uls = av_malloc(mxf->essence_containers_uls_count * sizeof(UID));
+        url_fskip(pb, 4); /* useless size of objects, always 16 according to specs */
+        get_buffer(pb, (uint8_t *)mxf->essence_containers_uls, mxf->essence_containers_uls_count * sizeof(UID));
+        break;
+    }
     return 0;
 }
 
 static int mxf_read_metadata_content_storage(MXFContext *mxf, ByteIOContext *pb, int tag)
 {
-        switch (tag) {
-        case 0x1901:
-            mxf->packages_count = get_be32(pb);
-            if (mxf->packages_count >= UINT_MAX / sizeof(UID))
-                return -1;
-            mxf->packages_refs = av_malloc(mxf->packages_count * sizeof(UID));
-            url_fskip(pb, 4); /* useless size of objects, always 16 according to specs */
-            get_buffer(pb, (uint8_t *)mxf->packages_refs, mxf->packages_count * sizeof(UID));
-            break;
-        case 0x1902:
-            mxf->essence_container_data_sets_count = get_be32(pb);
-            if (mxf->essence_container_data_sets_count >= UINT_MAX / sizeof(UID))
-                return -1;
-            mxf->essence_container_data_sets_refs = av_malloc(mxf->essence_container_data_sets_count * sizeof(UID));
-            url_fskip(pb, 4); /* useless size of objects, always 16 according to specs */
-            get_buffer(pb, (uint8_t *)mxf->essence_container_data_sets_refs, mxf->essence_container_data_sets_count * sizeof(UID));
-            break;
-        }
+    switch (tag) {
+    case 0x1901:
+        mxf->packages_count = get_be32(pb);
+        if (mxf->packages_count >= UINT_MAX / sizeof(UID))
+            return -1;
+        mxf->packages_refs = av_malloc(mxf->packages_count * sizeof(UID));
+        url_fskip(pb, 4); /* useless size of objects, always 16 according to specs */
+        get_buffer(pb, (uint8_t *)mxf->packages_refs, mxf->packages_count * sizeof(UID));
+        break;
+    case 0x1902:
+        mxf->essence_container_data_sets_count = get_be32(pb);
+        if (mxf->essence_container_data_sets_count >= UINT_MAX / sizeof(UID))
+            return -1;
+        mxf->essence_container_data_sets_refs = av_malloc(mxf->essence_container_data_sets_count * sizeof(UID));
+        url_fskip(pb, 4); /* useless size of objects, always 16 according to specs */
+        get_buffer(pb, (uint8_t *)mxf->essence_container_data_sets_refs, mxf->essence_container_data_sets_count * sizeof(UID));
+        break;
+    }
     return 0;
 }
 
 static int mxf_read_metadata_source_clip(MXFStructuralComponent *source_clip, ByteIOContext *pb, int tag)
 {
-        switch(tag) {
-        case 0x0202:
-            source_clip->duration = get_be64(pb);
-            break;
-        case 0x1201:
-            source_clip->start_position = get_be64(pb);
-            break;
-        case 0x1101:
-            /* UMID, only get last 16 bytes */
-            url_fskip(pb, 16);
-            get_buffer(pb, source_clip->source_package_uid, 16);
-            break;
-        case 0x1102:
-            source_clip->source_track_id = get_be32(pb);
-            break;
-        }
-        return 0;
+    switch(tag) {
+    case 0x0202:
+        source_clip->duration = get_be64(pb);
+        break;
+    case 0x1201:
+        source_clip->start_position = get_be64(pb);
+        break;
+    case 0x1101:
+        /* UMID, only get last 16 bytes */
+        url_fskip(pb, 16);
+        get_buffer(pb, source_clip->source_package_uid, 16);
+        break;
+    case 0x1102:
+        source_clip->source_track_id = get_be32(pb);
+        break;
+    }
+    return 0;
 }
 
 static int mxf_read_metadata_material_package(MXFPackage *package, ByteIOContext *pb, int tag)
 {
-        switch(tag) {
-        case 0x4403:
-            package->tracks_count = get_be32(pb);
-            if (package->tracks_count >= UINT_MAX / sizeof(UID))
-                return -1;
-            package->tracks_refs = av_malloc(package->tracks_count * sizeof(UID));
-            url_fskip(pb, 4); /* useless size of objects, always 16 according to specs */
-            get_buffer(pb, (uint8_t *)package->tracks_refs, package->tracks_count * sizeof(UID));
-            break;
-        }
-        return 0;
+    switch(tag) {
+    case 0x4403:
+        package->tracks_count = get_be32(pb);
+        if (package->tracks_count >= UINT_MAX / sizeof(UID))
+            return -1;
+        package->tracks_refs = av_malloc(package->tracks_count * sizeof(UID));
+        url_fskip(pb, 4); /* useless size of objects, always 16 according to specs */
+        get_buffer(pb, (uint8_t *)package->tracks_refs, package->tracks_count * sizeof(UID));
+        break;
+    }
+    return 0;
 }
 
 static int mxf_read_metadata_track(MXFTrack *track, ByteIOContext *pb, int tag)
 {
-        switch(tag) {
-        case 0x4801:
-            track->track_id = get_be32(pb);
-            break;
-        case 0x4804:
-            get_buffer(pb, track->track_number, 4);
-            break;
-        case 0x4B01:
-            track->edit_rate.den = get_be32(pb);
-            track->edit_rate.num = get_be32(pb);
-            break;
-        case 0x4803:
-            get_buffer(pb, track->sequence_ref, 16);
-            break;
-        }
-        return 0;
+    switch(tag) {
+    case 0x4801:
+        track->track_id = get_be32(pb);
+        break;
+    case 0x4804:
+        get_buffer(pb, track->track_number, 4);
+        break;
+    case 0x4B01:
+        track->edit_rate.den = get_be32(pb);
+        track->edit_rate.num = get_be32(pb);
+        break;
+    case 0x4803:
+        get_buffer(pb, track->sequence_ref, 16);
+        break;
+    }
+    return 0;
 }
 
 static int mxf_read_metadata_sequence(MXFSequence *sequence, ByteIOContext *pb, int tag)
 {
-        switch(tag) {
-        case 0x0202:
-            sequence->duration = get_be64(pb);
-            break;
-        case 0x0201:
-            get_buffer(pb, sequence->data_definition_ul, 16);
-            break;
-        case 0x1001:
-            sequence->structural_components_count = get_be32(pb);
-            if (sequence->structural_components_count >= UINT_MAX / sizeof(UID))
-                return -1;
-            sequence->structural_components_refs = av_malloc(sequence->structural_components_count * sizeof(UID));
-            url_fskip(pb, 4); /* useless size of objects, always 16 according to specs */
-            get_buffer(pb, (uint8_t *)sequence->structural_components_refs, sequence->structural_components_count * sizeof(UID));
-            break;
-        }
-        return 0;
+    switch(tag) {
+    case 0x0202:
+        sequence->duration = get_be64(pb);
+        break;
+    case 0x0201:
+        get_buffer(pb, sequence->data_definition_ul, 16);
+        break;
+    case 0x1001:
+        sequence->structural_components_count = get_be32(pb);
+        if (sequence->structural_components_count >= UINT_MAX / sizeof(UID))
+            return -1;
+        sequence->structural_components_refs = av_malloc(sequence->structural_components_count * sizeof(UID));
+        url_fskip(pb, 4); /* useless size of objects, always 16 according to specs */
+        get_buffer(pb, (uint8_t *)sequence->structural_components_refs, sequence->structural_components_count * sizeof(UID));
+        break;
+    }
+    return 0;
 }
 
 static int mxf_read_metadata_source_package(MXFPackage *package, ByteIOContext *pb, int tag)
 {
-        switch(tag) {
-        case 0x4403:
-            package->tracks_count = get_be32(pb);
-            if (package->tracks_count >= UINT_MAX / sizeof(UID))
-                return -1;
-            package->tracks_refs = av_malloc(package->tracks_count * sizeof(UID));
-            url_fskip(pb, 4); /* useless size of objects, always 16 according to specs */
-            get_buffer(pb, (uint8_t *)package->tracks_refs, package->tracks_count * sizeof(UID));
-            break;
-        case 0x4401:
-            /* UMID, only get last 16 bytes */
-            url_fskip(pb, 16);
-            get_buffer(pb, package->package_uid, 16);
-            break;
-        case 0x4701:
-            get_buffer(pb, package->descriptor_ref, 16);
-            break;
-        }
-        return 0;
+    switch(tag) {
+    case 0x4403:
+        package->tracks_count = get_be32(pb);
+        if (package->tracks_count >= UINT_MAX / sizeof(UID))
+            return -1;
+        package->tracks_refs = av_malloc(package->tracks_count * sizeof(UID));
+        url_fskip(pb, 4); /* useless size of objects, always 16 according to specs */
+        get_buffer(pb, (uint8_t *)package->tracks_refs, package->tracks_count * sizeof(UID));
+        break;
+    case 0x4401:
+        /* UMID, only get last 16 bytes */
+        url_fskip(pb, 16);
+        get_buffer(pb, package->package_uid, 16);
+        break;
+    case 0x4701:
+        get_buffer(pb, package->descriptor_ref, 16);
+        break;
+    }
+    return 0;
 }
 
 static int mxf_read_metadata_multiple_descriptor(MXFDescriptor *descriptor, ByteIOContext *pb, int tag)
 {
-        switch(tag) {
-        case 0x3F01:
-            descriptor->sub_descriptors_count = get_be32(pb);
-            if (descriptor->sub_descriptors_count >= UINT_MAX / sizeof(UID))
-                return -1;
-            descriptor->sub_descriptors_refs = av_malloc(descriptor->sub_descriptors_count * sizeof(UID));
-            url_fskip(pb, 4); /* useless size of objects, always 16 according to specs */
-            get_buffer(pb, (uint8_t *)descriptor->sub_descriptors_refs, descriptor->sub_descriptors_count * sizeof(UID));
-            break;
-        }
-        return 0;
+    switch(tag) {
+    case 0x3F01:
+        descriptor->sub_descriptors_count = get_be32(pb);
+        if (descriptor->sub_descriptors_count >= UINT_MAX / sizeof(UID))
+            return -1;
+        descriptor->sub_descriptors_refs = av_malloc(descriptor->sub_descriptors_count * sizeof(UID));
+        url_fskip(pb, 4); /* useless size of objects, always 16 according to specs */
+        get_buffer(pb, (uint8_t *)descriptor->sub_descriptors_refs, descriptor->sub_descriptors_count * sizeof(UID));
+        break;
+    }
+    return 0;
 }
 
 static void mxf_read_metadata_pixel_layout(ByteIOContext *pb, MXFDescriptor *descriptor)
@@ -484,49 +484,49 @@ static void mxf_read_metadata_pixel_layout(ByteIOContext *pb, MXFDescriptor *des
 
 static int mxf_read_metadata_generic_descriptor(MXFDescriptor *descriptor, ByteIOContext *pb, int tag, int size)
 {
-        switch(tag) {
-        case 0x3004:
-            get_buffer(pb, descriptor->essence_container_ul, 16);
-            break;
-        case 0x3006:
-            descriptor->linked_track_id = get_be32(pb);
-            break;
-        case 0x3201: /* PictureEssenceCoding */
-            get_buffer(pb, descriptor->essence_codec_ul, 16);
-            break;
-        case 0x3203:
-            descriptor->width = get_be32(pb);
-            break;
-        case 0x3202:
-            descriptor->height = get_be32(pb);
-            break;
-        case 0x320E:
-            descriptor->aspect_ratio.num = get_be32(pb);
-            descriptor->aspect_ratio.den = get_be32(pb);
-            break;
-        case 0x3D03:
-            descriptor->sample_rate.num = get_be32(pb);
-            descriptor->sample_rate.den = get_be32(pb);
-            break;
-        case 0x3D06: /* SoundEssenceCompression */
-            get_buffer(pb, descriptor->essence_codec_ul, 16);
-            break;
-        case 0x3D07:
-            descriptor->channels = get_be32(pb);
-            break;
-        case 0x3D01:
-            descriptor->bits_per_sample = get_be32(pb);
-            break;
-        case 0x3401:
-            mxf_read_metadata_pixel_layout(pb, descriptor);
-            break;
-        case 0x8201: /* Private tag used by SONY C0023S01.mxf */
-            descriptor->extradata = av_malloc(size);
-            descriptor->extradata_size = size;
-            get_buffer(pb, descriptor->extradata, size);
-            break;
-        }
-        return 0;
+    switch(tag) {
+    case 0x3004:
+        get_buffer(pb, descriptor->essence_container_ul, 16);
+        break;
+    case 0x3006:
+        descriptor->linked_track_id = get_be32(pb);
+        break;
+    case 0x3201: /* PictureEssenceCoding */
+        get_buffer(pb, descriptor->essence_codec_ul, 16);
+        break;
+    case 0x3203:
+        descriptor->width = get_be32(pb);
+        break;
+    case 0x3202:
+        descriptor->height = get_be32(pb);
+        break;
+    case 0x320E:
+        descriptor->aspect_ratio.num = get_be32(pb);
+        descriptor->aspect_ratio.den = get_be32(pb);
+        break;
+    case 0x3D03:
+        descriptor->sample_rate.num = get_be32(pb);
+        descriptor->sample_rate.den = get_be32(pb);
+        break;
+    case 0x3D06: /* SoundEssenceCompression */
+        get_buffer(pb, descriptor->essence_codec_ul, 16);
+        break;
+    case 0x3D07:
+        descriptor->channels = get_be32(pb);
+        break;
+    case 0x3D01:
+        descriptor->bits_per_sample = get_be32(pb);
+        break;
+    case 0x3401:
+        mxf_read_metadata_pixel_layout(pb, descriptor);
+        break;
+    case 0x8201: /* Private tag used by SONY C0023S01.mxf */
+        descriptor->extradata = av_malloc(size);
+        descriptor->extradata_size = size;
+        get_buffer(pb, descriptor->extradata, size);
+        break;
+    }
+    return 0;
 }
 
 /* SMPTE RP224 http://www.smpte-ra.org/mdd/index.html */
