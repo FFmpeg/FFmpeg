@@ -40,39 +40,33 @@
 /* used for protocol handling */
 #define BUFFER_SIZE 1024
 #define URL_SIZE    4096
+#define MAX_REDIRECTS 8
 
 typedef struct {
     URLContext *hd;
     unsigned char buffer[BUFFER_SIZE], *buf_ptr, *buf_end;
     int line_count;
     int http_code;
+    offset_t off, filesize;
     char location[URL_SIZE];
 } HTTPContext;
 
 static int http_connect(URLContext *h, const char *path, const char *hoststr,
-                        const char *auth);
+                        const char *auth, int *new_location);
 static int http_write(URLContext *h, uint8_t *buf, int size);
 
 
 /* return non zero if error */
-static int http_open(URLContext *h, const char *uri, int flags)
+static int http_open_cnx(URLContext *h)
 {
     const char *path, *proxy_path;
     char hostname[1024], hoststr[1024];
     char auth[1024];
     char path1[1024];
     char buf[1024];
-    int port, use_proxy, err;
-    HTTPContext *s;
+    int port, use_proxy, err, location_changed = 0, redirects = 0;
+    HTTPContext *s = h->priv_data;
     URLContext *hd = NULL;
-
-    h->is_streamed = 1;
-
-    s = av_malloc(sizeof(HTTPContext));
-    if (!s) {
-        return -ENOMEM;
-    }
-    h->priv_data = s;
 
     proxy_path = getenv("http_proxy");
     use_proxy = (proxy_path != NULL) && !getenv("no_proxy") &&
@@ -82,7 +76,7 @@ static int http_open(URLContext *h, const char *uri, int flags)
  redo:
     /* needed in any case to build the host string */
     url_split(NULL, 0, auth, sizeof(auth), hostname, sizeof(hostname), &port,
-              path1, sizeof(path1), uri);
+              path1, sizeof(path1), s->location);
     if (port > 0) {
         snprintf(hoststr, sizeof(hoststr), "%s:%d", hostname, port);
     } else {
@@ -92,7 +86,7 @@ static int http_open(URLContext *h, const char *uri, int flags)
     if (use_proxy) {
         url_split(NULL, 0, auth, sizeof(auth), hostname, sizeof(hostname), &port,
                   NULL, 0, proxy_path);
-        path = uri;
+        path = s->location;
     } else {
         if (path1[0] == '\0')
             path = "/";
@@ -108,22 +102,44 @@ static int http_open(URLContext *h, const char *uri, int flags)
         goto fail;
 
     s->hd = hd;
-    if (http_connect(h, path, hoststr, auth) < 0)
+    if (http_connect(h, path, hoststr, auth, &location_changed) < 0)
         goto fail;
-    if (s->http_code == 303 && s->location[0] != '\0') {
+    if (s->http_code == 303 && location_changed == 1) {
         /* url moved, get next */
-        uri = s->location;
         url_close(hd);
+        if (redirects++ >= MAX_REDIRECTS)
+            return AVERROR_IO;
+        location_changed = 0;
         goto redo;
     }
     return 0;
  fail:
     if (hd)
         url_close(hd);
-    av_free(s);
     return AVERROR_IO;
 }
 
+static int http_open(URLContext *h, const char *uri, int flags)
+{
+    HTTPContext *s;
+    int ret;
+
+    h->is_streamed = 1;
+
+    s = av_malloc(sizeof(HTTPContext));
+    if (!s) {
+        return -ENOMEM;
+    }
+    h->priv_data = s;
+    s->filesize = -1;
+    s->off = 0;
+    pstrcpy (s->location, URL_SIZE, uri);
+
+    ret = http_open_cnx(h);
+    if (ret != 0)
+        av_free (s);
+    return ret;
+}
 static int http_getc(HTTPContext *s)
 {
     int len;
@@ -141,8 +157,10 @@ static int http_getc(HTTPContext *s)
     return *s->buf_ptr++;
 }
 
-static int process_line(HTTPContext *s, char *line, int line_count)
+static int process_line(URLContext *h, char *line, int line_count,
+                        int *new_location)
 {
+    HTTPContext *s = h->priv_data;
     char *tag, *p;
 
     /* end of header */
@@ -172,18 +190,32 @@ static int process_line(HTTPContext *s, char *line, int line_count)
             p++;
         if (!strcmp(tag, "Location")) {
             strcpy(s->location, p);
+            *new_location = 1;
+        } else if (!strcmp (tag, "Content-Length") && s->filesize == -1) {
+            s->filesize = atoll(p);
+        } else if (!strcmp (tag, "Content-Range")) {
+            /* "bytes $from-$to/$document_size" */
+            const char *slash;
+            if (!strncmp (p, "bytes ", 6)) {
+                p += 6;
+                s->off = atoll(p);
+                if ((slash = strchr(p, '/')) && strlen(slash) > 0)
+                    s->filesize = atoll(slash+1);
+            }
+            h->is_streamed = 0; /* we _can_ in fact seek */
         }
     }
     return 1;
 }
 
 static int http_connect(URLContext *h, const char *path, const char *hoststr,
-                        const char *auth)
+                        const char *auth, int *new_location)
 {
     HTTPContext *s = h->priv_data;
     int post, err, ch;
     char line[1024], *q;
     char *auth_b64;
+    offset_t off = s->off;
 
 
     /* send http header */
@@ -191,15 +223,17 @@ static int http_connect(URLContext *h, const char *path, const char *hoststr,
 
     auth_b64 = av_base64_encode((uint8_t *)auth, strlen(auth));
     snprintf(s->buffer, sizeof(s->buffer),
-             "%s %s HTTP/1.0\r\n"
+             "%s %s HTTP/1.1\r\n"
              "User-Agent: %s\r\n"
              "Accept: */*\r\n"
+             "Range: bytes=%llu-\r\n"
              "Host: %s\r\n"
              "Authorization: Basic %s\r\n"
              "\r\n",
              post ? "POST" : "GET",
              path,
              LIBAVFORMAT_IDENT,
+             s->off,
              hoststr,
              auth_b64);
 
@@ -211,7 +245,7 @@ static int http_connect(URLContext *h, const char *path, const char *hoststr,
     s->buf_ptr = s->buffer;
     s->buf_end = s->buffer;
     s->line_count = 0;
-    s->location[0] = '\0';
+    s->off = 0;
     if (post) {
         sleep(1);
         return 0;
@@ -231,11 +265,11 @@ static int http_connect(URLContext *h, const char *path, const char *hoststr,
 #ifdef DEBUG
             printf("header='%s'\n", line);
 #endif
-            err = process_line(s, line, s->line_count);
+            err = process_line(h, line, s->line_count, new_location);
             if (err < 0)
                 return err;
             if (err == 0)
-                return 0;
+                break;
             s->line_count++;
             q = line;
         } else {
@@ -243,6 +277,8 @@ static int http_connect(URLContext *h, const char *path, const char *hoststr,
                 *q++ = ch;
         }
     }
+
+    return (off == s->off) ? 0 : -1;
 }
 
 
@@ -261,6 +297,8 @@ static int http_read(URLContext *h, uint8_t *buf, int size)
     } else {
         len = url_read(s->hd, buf, size);
     }
+    if (len > 0)
+        s->off += len;
     return len;
 }
 
@@ -279,11 +317,40 @@ static int http_close(URLContext *h)
     return 0;
 }
 
+static offset_t http_seek(URLContext *h, offset_t off, int whence)
+{
+    HTTPContext *s = h->priv_data;
+    URLContext *old_hd = s->hd;
+    offset_t old_off = s->off;
+
+    if (whence == AVSEEK_SIZE)
+        return s->filesize;
+    else if ((s->filesize == -1 && whence == SEEK_END) || h->is_streamed)
+        return -1;
+
+    /* we save the old context in case the seek fails */
+    s->hd = NULL;
+    if (whence == SEEK_CUR)
+        off += s->off;
+    else if (whence == SEEK_END)
+        off += s->filesize;
+    s->off = off;
+
+    /* if it fails, continue on old connection */
+    if (http_open_cnx(h) < 0) {
+        s->hd = old_hd;
+        s->off = old_off;
+        return -1;
+    }
+    url_close(old_hd);
+    return off;
+}
+
 URLProtocol http_protocol = {
     "http",
     http_open,
     http_read,
     http_write,
-    NULL, /* seek */
+    http_seek,
     http_close,
 };
