@@ -53,9 +53,9 @@ static inline void addkey(uint64_t state[2], uint64_t round_key[2]){
 #define SUBSHIFT2(s, box) t=s[0]; s[0]=box[s[ 8]]; s[ 8]=box[    t]; t=s[ 4]; s[ 4]=box[s[12]]; s[12]=box[t];
 #define SUBSHIFT3(s, box) t=s[0]; s[0]=box[s[12]]; s[12]=box[s[ 8]];          s[ 8]=box[s[ 4]]; s[ 4]=box[t];
 
-#define SUBSHIFT1x(s, box) t=s[0]; s[0]=s[ 4]; s[ 4]=s[ 8];          s[ 8]=s[12]; s[12]=t;
-#define SUBSHIFT2x(s, box) t=s[0]; s[0]=s[ 8]; s[ 8]=    t; t=s[ 4]; s[ 4]=s[12]; s[12]=t;
-#define SUBSHIFT3x(s, box) t=s[0]; s[0]=s[12]; s[12]=s[ 8];          s[ 8]=s[ 4]; s[ 4]=t;
+#define SUBSHIFT1x(s) t=s[0]; s[0]=s[ 4]; s[ 4]=s[ 8];          s[ 8]=s[12]; s[12]=t;
+#define SUBSHIFT2x(s) t=s[0]; s[0]=s[ 8]; s[ 8]=    t; t=s[ 4]; s[ 4]=s[12]; s[12]=t;
+#define SUBSHIFT3x(s) t=s[0]; s[0]=s[12]; s[12]=s[ 8];          s[ 8]=s[ 4]; s[ 4]=t;
 
 #define ROT(x,s) ((x<<s)|(x>>(32-s)))
 
@@ -77,10 +77,9 @@ void av_aes_decrypt(AVAES *a){
 
     addkey(a->state, a->round_enc_key[a->rounds]);
     for(r=a->rounds-2; r>=0; r--){
-//        SUBSHIFT0((a->state[0]+0), inv_sbox)
-        SUBSHIFT3x((a->state[0]+1), inv_sbox)
-        SUBSHIFT2x((a->state[0]+2), inv_sbox)
-        SUBSHIFT1x((a->state[0]+3), inv_sbox)
+        SUBSHIFT3x((a->state[0]+1))
+        SUBSHIFT2x((a->state[0]+2))
+        SUBSHIFT1x((a->state[0]+3))
         mix(a->state, dec_multbl);
         addkey(a->state, a->round_dec_key[r+1]);
     }
@@ -96,9 +95,9 @@ void av_aes_encrypt(AVAES *a){
 
     for(r=0; r<a->rounds-1; r++){
         addkey(a->state, a->round_enc_key[r]);
-        SUBSHIFT1x((a->state[0]+1), sbox)
-        SUBSHIFT2x((a->state[0]+2), sbox)
-        SUBSHIFT3x((a->state[0]+3), sbox)
+        SUBSHIFT1x((a->state[0]+1))
+        SUBSHIFT2x((a->state[0]+2))
+        SUBSHIFT3x((a->state[0]+3))
         mix(a->state, enc_multbl); //FIXME replace log8 by const / optimze mix as this can be simplified alot
     }
     addkey(a->state, a->round_enc_key[r]);
