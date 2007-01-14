@@ -1,5 +1,5 @@
 /*
- * copyright (c) 2007 Michael Niedermayer <michaelni@gmx.at>
+ * copyright (c) 2007 Michael Niedermayer <michaelni@gmx.at> and Reimar Döffinger
  *
  * This file is part of FFmpeg.
  *
