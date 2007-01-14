@@ -833,6 +833,16 @@ static int swf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             if (len > 4)
                 url_fskip(pb,len-4);
 
+        } else if (tag == TAG_JPEG2 && !vst) {
+            vst = av_new_stream(s, -2); /* -2 to avoid clash with video stream and audio stream */
+            av_set_pts_info(vst, 24, 1, 1000); /* 24 bit pts in ms */
+            vst->codec->codec_type = CODEC_TYPE_VIDEO;
+            vst->codec->codec_id = CODEC_ID_MJPEG;
+            if (swf->samples_per_frame) {
+                vst->codec->time_base.den = 1000. / swf->ms_per_frame;
+                vst->codec->time_base.num = 1;
+            }
+            url_fskip(pb, len);
         } else {
             url_fskip(pb, len);
         }
@@ -873,6 +883,24 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
                 av_get_packet(pb, pkt, len-4);
                 pkt->stream_index = st->index;
                 return pkt->size;
+            }
+        } else if (tag == TAG_JPEG2) {
+            for (i=0; i<s->nb_streams; i++) {
+                st = s->streams[i];
+                if (st->id == -2) {
+                    get_le16(pb); /* BITMAP_ID */
+                    av_new_packet(pkt, len-2);
+                    get_buffer(pb, pkt->data, 4);
+                    if (BE_32(pkt->data) == 0xffd8ffd9) {
+                        /* old SWF files containing SOI/EOI as data start */
+                        pkt->size -= 4;
+                        get_buffer(pb, pkt->data, pkt->size);
+                    } else {
+                        get_buffer(pb, pkt->data + 4, pkt->size - 4);
+                    }
+                    pkt->stream_index = st->index;
+                    return pkt->size;
+                }
             }
         }
         url_fskip(pb, len);
