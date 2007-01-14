@@ -52,11 +52,6 @@ static inline void addkey(uint64_t state[2], uint64_t round_key[2]){
 #define SUBSHIFT2(s, box) t=s[0]; s[0]=box[s[ 8]]; s[ 8]=box[    t]; t=s[ 4]; s[ 4]=box[s[12]]; s[12]=box[t];
 #define SUBSHIFT3(s, box) t=s[0]; s[0]=box[s[12]]; s[12]=box[s[ 8]];          s[ 8]=box[s[ 4]]; s[ 4]=box[t];
 
-static inline int mul(int a, int b, uint8_t alog8[256]){
-    if(a==255) return 0;
-    else       return alog8[a+b];
-}
-
 #define ROT(x,s) ((x>>s)|(x<<(32-s))
 
 static inline void mix(uint8_t state[4][4], uint32_t multbl[4][256]){
@@ -104,6 +99,12 @@ void av_aes_encrypt(AVAES *a){
     }
 }
 
+static init_multbl(uint8_t tbl[256], int c[4], uint8_t *log8, uint8_t *alog8){
+    int i;
+    for(i=4; i<1024; i++)
+        tbl[i]= alog8[ log8[i/4] + log8[c[i&3]] ];
+}
+
 // this is based on the reference AES code by Paulo Barreto and Vincent Rijmen
 AVAES *av_aes_init(uint8_t *key, int key_bits) {
     AVAES *a;
@@ -131,8 +132,15 @@ AVAES *av_aes_init(uint8_t *key, int key_bits) {
             inv_sbox[j]= i;
             sbox    [i]= j;
 //            av_log(NULL, AV_LOG_ERROR, "%d, ", log8[i]);
-            //FIXME multbl init
         }
+        init_multbl(dec_multbl[0], (int[4]){0xe, 0x9, 0xd, 0xb}, log8, alog8);
+        init_multbl(dec_multbl[1], (int[4]){0xb, 0xe, 0x9, 0xd}, log8, alog8);
+        init_multbl(dec_multbl[2], (int[4]){0xd, 0xb, 0xe, 0x9}, log8, alog8);
+        init_multbl(dec_multbl[3], (int[4]){0x9, 0xd, 0xb, 0xe}, log8, alog8);
+        init_multbl(enc_multbl[0], (int[4]){0x2, 0x1, 0x1, 0x3}, log8, alog8);
+        init_multbl(enc_multbl[1], (int[4]){0x3, 0x2, 0x1, 0x1}, log8, alog8);
+        init_multbl(enc_multbl[2], (int[4]){0x1, 0x3, 0x2, 0x1}, log8, alog8);
+        init_multbl(enc_multbl[3], (int[4]){0x1, 0x1, 0x3, 0x2}, log8, alog8);
     }
 
     if(key_bits!=128 && key_bits!=192 && key_bits!=256)
@@ -166,8 +174,22 @@ AVAES *av_aes_init(uint8_t *key, int key_bits) {
 int main(){
     int i,j,k;
     AVAES *a= av_aes_init("PI=3.141592654..", 128);
+    uint8_t ct[16], pt[16], key[32];
 
     for(i=0; i<10000; i++){
+        for(j=0; j<16; j++){
+            pt[j]= random();
+        }
+        memcpy(a->state, pt, 16);
+        av_aes_encrypt(a);
+        if(!(i&(i-1)))
+            av_log(NULL, AV_LOG_ERROR, "%02X %02X %02X %02X\n", a->state[0][0], a->state[1][1], a->state[2][2], a->state[3][3]);
+        av_aes_decrypt(a);
+        for(j=0; j<16; j++){
+            if(pt[j] != a->state[0][j]){
+                av_log(NULL, AV_LOG_ERROR, "%d %d %02X %02X\n", i,j, pt[j], a->state[0][j]);
+            }
+        }
     }
     return 0;
 }
