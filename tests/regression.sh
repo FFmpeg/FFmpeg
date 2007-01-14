@@ -352,19 +352,16 @@ do_video_decoding
 # mpeg4
 do_video_encoding mpeg4-adap.avi "-b 550k -bf 2 -flags +mv4+trell+mv0 -cmp 1 -subcmp 2 -mbd rd -scplx_mask 0.3" pgmyuv "-an -vcodec mpeg4"
 do_video_decoding
+
+# mpeg4
+do_video_encoding mpeg4-Q.avi "-qscale 7 -flags +mv4+qpel -mbd 2 -bf 2 -cmp 1 -subcmp 2" pgmyuv "-an -vcodec mpeg4"
+do_video_decoding
 fi
 
 ###################################
 if [ -n "$do_mpeg4thread" ] ; then
 # mpeg4
 do_video_encoding mpeg4-thread.avi "-b 500k -flags +mv4+part+aic+trell -mbd bits -ps 200 -bf 2" pgmyuv "-an -vcodec mpeg4 -threads 2"
-do_video_decoding
-fi
-
-###################################
-if [ -n "$do_mpeg4adv" ] ; then
-# mpeg4
-do_video_encoding mpeg4-Q.avi "-qscale 7 -flags +mv4+qpel -mbd 2 -bf 2 -cmp 1 -subcmp 2" pgmyuv "-an -vcodec mpeg4"
 do_video_decoding
 fi
 
