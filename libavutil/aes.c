@@ -52,7 +52,7 @@ static inline void addkey(uint64_t state[2], uint64_t round_key[2]){
 #define SUBSHIFT2(s, box) t=s[0]; s[0]=box[s[ 8]]; s[ 8]=box[    t]; t=s[ 4]; s[ 4]=box[s[12]]; s[12]=box[t];
 #define SUBSHIFT3(s, box) t=s[0]; s[0]=box[s[12]]; s[12]=box[s[ 8]];          s[ 8]=box[s[ 4]]; s[ 4]=box[t];
 
-#define ROT(x,s) ((x>>s)|(x<<(32-s))
+#define ROT(x,s) ((x<<s)|(x>>(32-s)))
 
 static inline void mix(uint8_t state[4][4], uint32_t multbl[4][256]){
     int i;
@@ -97,7 +97,7 @@ void av_aes_encrypt(AVAES *a){
     addkey(a->state, a->round_key[r]);
 }
 
-static init_multbl(uint8_t tbl[256], int c[4], uint8_t *log8, uint8_t *alog8){
+static init_multbl(uint8_t tbl[1024], int c[4], uint8_t *log8, uint8_t *alog8){
     int i;
     for(i=4; i<1024; i++)
         tbl[i]= alog8[ log8[i/4] + log8[c[i&3]] ];
@@ -132,13 +132,17 @@ AVAES *av_aes_init(uint8_t *key, int key_bits) {
 //            av_log(NULL, AV_LOG_ERROR, "%d, ", log8[i]);
         }
         init_multbl(dec_multbl[0], (int[4]){0xe, 0x9, 0xd, 0xb}, log8, alog8);
+#ifndef CONFIG_SMALL
         init_multbl(dec_multbl[1], (int[4]){0xb, 0xe, 0x9, 0xd}, log8, alog8);
         init_multbl(dec_multbl[2], (int[4]){0xd, 0xb, 0xe, 0x9}, log8, alog8);
         init_multbl(dec_multbl[3], (int[4]){0x9, 0xd, 0xb, 0xe}, log8, alog8);
+#endif
         init_multbl(enc_multbl[0], (int[4]){0x2, 0x1, 0x1, 0x3}, log8, alog8);
+#ifndef CONFIG_SMALL
         init_multbl(enc_multbl[1], (int[4]){0x3, 0x2, 0x1, 0x1}, log8, alog8);
         init_multbl(enc_multbl[2], (int[4]){0x1, 0x3, 0x2, 0x1}, log8, alog8);
         init_multbl(enc_multbl[3], (int[4]){0x1, 0x1, 0x3, 0x2}, log8, alog8);
+#endif
     }
 
     if(key_bits!=128 && key_bits!=192 && key_bits!=256)
