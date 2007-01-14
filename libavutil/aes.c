@@ -153,10 +153,9 @@ AVAES *av_aes_init(uint8_t *key, int key_bits) {
 
         for(j = 1; j < KC; j++){
             if(KC != 8 || j != KC/2)
-                for(i = 0; i < 4; i++) tk[j][i] ^= tk[j-1][i];
+                for(i = 0; i < 4; i++) tk[j][i] ^=      tk[j-1][i];
             else
-                for(i = 0; i < 4; i++)
-                    tk[KC/2][i] ^= sbox[tk[KC/2 - 1][i]];
+                for(i = 0; i < 4; i++) tk[j][i] ^= sbox[tk[j-1][i]];
         }
     }
     return a;
