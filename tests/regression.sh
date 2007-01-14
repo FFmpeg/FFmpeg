@@ -93,6 +93,8 @@ ffmpeg="../ffmpeg_g"
 tiny_psnr="./tiny_psnr"
 reffile="$2"
 benchfile="$datadir/ffmpeg.bench"
+bench="$datadir/bench.tmp"
+bench2="$datadir/bench2.tmp"
 raw_src="$3/%02d.pgm"
 raw_dst="$datadir/out.yuv"
 raw_ref="$datadir/ref.yuv"
@@ -117,7 +119,7 @@ do_ffmpeg()
     f="$1"
     shift
     echo $ffmpeg $FFMPEG_OPTS $*
-    $ffmpeg $FFMPEG_OPTS -benchmark $* > $datadir/bench.tmp 2> /tmp/ffmpeg$$
+    $ffmpeg $FFMPEG_OPTS -benchmark $* > $bench 2> /tmp/ffmpeg$$
     egrep -v "^(Stream|Press|Input|Output|frame|  Stream|  Duration|video:)" /tmp/ffmpeg$$ || true
     rm -f /tmp/ffmpeg$$
     do_md5sum $f >> $logfile
@@ -128,8 +130,8 @@ do_ffmpeg()
     else
         wc -c $f >> $logfile
     fi
-    expr "`cat $datadir/bench.tmp`" : '.*utime=\(.*s\)' > $datadir/bench2.tmp
-    echo `cat $datadir/bench2.tmp` $f >> $benchfile
+    expr "`cat $bench`" : '.*utime=\(.*s\)' > $bench2
+    echo `cat $bench2` $f >> $benchfile
 }
 
 do_ffmpeg_crc()
@@ -148,11 +150,11 @@ do_ffmpeg_nocheck()
     f="$1"
     shift
     echo $ffmpeg $FFMPEG_OPTS $*
-    $ffmpeg $FFMPEG_OPTS -benchmark $* > $datadir/bench.tmp 2> /tmp/ffmpeg$$
+    $ffmpeg $FFMPEG_OPTS -benchmark $* > $bench 2> /tmp/ffmpeg$$
     egrep -v "^(Stream|Press|Input|Output|frame|  Stream|  Duration|video:)" /tmp/ffmpeg$$ || true
     rm -f /tmp/ffmpeg$$
-    expr "`cat $datadir/bench.tmp`" : '.*utime=\(.*s\)' > $datadir/bench2.tmp
-    echo `cat $datadir/bench2.tmp` $f >> $benchfile
+    expr "`cat $bench`" : '.*utime=\(.*s\)' > $bench2
+    echo `cat $bench2` $f >> $benchfile
 }
 
 do_video_decoding()
