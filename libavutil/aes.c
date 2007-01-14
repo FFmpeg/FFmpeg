@@ -1,5 +1,5 @@
 /*
- * copyright (c) 2007 Michael Niedermayer <michaelni@gmx.at> and Reimar Doeffinger
+ * copyright (c) 2007 Michael Niedermayer <michaelni@gmx.at>
  *
  * This file is part of FFmpeg.
  *
@@ -16,6 +16,8 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ *
+ * some optimization ideas from aes128.c by Reimar Doeffinger
  */
 
 #include "common.h"
