@@ -50,6 +50,7 @@
 typedef uint8_t UID[16];
 
 enum MXFMetadataSetType {
+    AnyType,
     MaterialPackage,
     SourcePackage,
     SourceClip,
@@ -648,7 +649,7 @@ static void *mxf_resolve_strong_ref(MXFContext *mxf, UID *strong_ref, enum MXFMe
         return NULL;
     for (i = 0; i < mxf->metadata_sets_count; i++) {
         if (!memcmp(*strong_ref, mxf->metadata_sets[i]->uid, 16) &&
-            mxf->metadata_sets[i]->type == type) {
+            (type == AnyType || mxf->metadata_sets[i]->type == type)) {
             return mxf->metadata_sets[i];
         }
     }
@@ -749,7 +750,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
 #endif
         st->codec->codec_type = mxf_get_codec_type(mxf_data_definition_uls, &source_track->sequence->data_definition_ul);
 
-        source_package->descriptor = mxf_resolve_strong_ref(mxf, &source_package->descriptor_ref, Descriptor);
+        source_package->descriptor = mxf_resolve_strong_ref(mxf, &source_package->descriptor_ref, AnyType);
         if (source_package->descriptor) {
             if (source_package->descriptor->type == MultipleDescriptor) {
                 for (j = 0; j < source_package->descriptor->sub_descriptors_count; j++) {
@@ -764,7 +765,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
                         break;
                     }
                 }
-            } else
+            } else if (source_package->descriptor->type == Descriptor)
                 descriptor = source_package->descriptor;
         }
         if (!descriptor) {
