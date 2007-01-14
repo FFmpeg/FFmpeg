@@ -70,10 +70,9 @@ static inline void mix(uint8_t state[4][4], uint32_t multbl[4][256]){
 void av_aes_decrypt(AVAES *a){
     int t, r;
 
+    addkey(a->state, a->round_key[a->rounds]);
     for(r=a->rounds-1; r>=0; r--){
-        if(r==a->rounds-1)
-            addkey(a->state, a->round_key[r+1]);
-        else
+        if(r!=a->rounds-1)
             mix(a->state, dec_multbl);
         SUBSHIFT0((a->state[0]+0), inv_sbox)
         SUBSHIFT3((a->state[0]+1), inv_sbox)
@@ -92,11 +91,10 @@ void av_aes_encrypt(AVAES *a){
         SUBSHIFT1((a->state[0]+1), sbox)
         SUBSHIFT2((a->state[0]+2), sbox)
         SUBSHIFT3((a->state[0]+3), sbox)
-        if(r==a->rounds-1)
-            addkey(a->state, a->round_key[r+1]);
-        else
+        if(r!=a->rounds-1)
             mix(a->state, enc_multbl); //FIXME replace log8 by const / optimze mix as this can be simplified alot
     }
+    addkey(a->state, a->round_key[r]);
 }
 
 static init_multbl(uint8_t tbl[256], int c[4], uint8_t *log8, uint8_t *alog8){
