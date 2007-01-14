@@ -72,7 +72,6 @@ static inline void mix(uint8_t state[4][4], uint32_t multbl[4][256]){
 #endif
 }
 
-
 void av_aes_decrypt(AVAES *a){
     int t, r;
 
@@ -145,11 +144,11 @@ AVAES *av_aes_init(uint8_t *key, int key_bits) {
     memcpy(tk, key, KC*4);
 
     for(t= 0; t < (rounds+1)*4; ) {
-        for(j = 0; (j < KC) && (t < (rounds+1)*4); j++, t++)
+        for(j = 0; j < KC && t < (rounds+1)*4; j++, t++)
             memcpy(a->round_key[0][t],  tk[j], 4);
 
         for(i = 0; i < 4; i++)
-                tk[0][i] ^= sbox[tk[KC-1][(i+1)&3]];
+            tk[0][i] ^= sbox[tk[KC-1][(i+1)&3]];
         tk[0][0] ^= rcon[rconpointer++];
 
         for(j = 1; j < KC; j++){
