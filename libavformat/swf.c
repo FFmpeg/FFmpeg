@@ -811,35 +811,30 @@ static int swf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             get_byte(pb);
             v = get_byte(pb);
             swf->samples_per_frame = get_le16(pb);
+            ast = av_new_stream(s, 1);
+            av_set_pts_info(ast, 24, 1, 1000); /* 24 bit pts in ms */
+            ast->codec->channels = 1 + (v&1);
+            ast->codec->codec_type = CODEC_TYPE_AUDIO;
+            if (v & 0x20)
+                ast->codec->codec_id = CODEC_ID_MP3;
+            ast->need_parsing = 1;
+            switch((v>> 2) & 0x03) {
+            case 1:
+                ast->codec->sample_rate = 11025;
+                break;
+            case 2:
+                ast->codec->sample_rate = 22050;
+                break;
+            case 3:
+                ast->codec->sample_rate = 44100;
+                break;
+            default:
+                return AVERROR_IO;
+            }
+
             if (len > 4)
                 url_fskip(pb,len-4);
-            /* if mp3 streaming found, OK */
-            if ((v & 0x20) != 0) {
-                ast = av_new_stream(s, 1);
-                if (!ast)
-                    return -ENOMEM;
-                av_set_pts_info(ast, 24, 1, 1000); /* 24 bit pts in ms */
 
-                ast->codec->channels = 1 + (v&1);
-
-                switch((v>> 2) & 0x03) {
-                case 1:
-                    ast->codec->sample_rate = 11025;
-                    break;
-                case 2:
-                    ast->codec->sample_rate = 22050;
-                    break;
-                case 3:
-                    ast->codec->sample_rate = 44100;
-                    break;
-                default:
-                    av_free(ast);
-                    return AVERROR_IO;
-                }
-                ast->codec->codec_type = CODEC_TYPE_AUDIO;
-                ast->codec->codec_id = CODEC_ID_MP3;
-                ast->need_parsing = 1;
-            }
         } else {
             url_fskip(pb, len);
         }
