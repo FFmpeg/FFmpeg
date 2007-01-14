@@ -98,7 +98,7 @@ void av_aes_encrypt(AVAES *a){
         SUBSHIFT1x((a->state[0]+1))
         SUBSHIFT2x((a->state[0]+2))
         SUBSHIFT3x((a->state[0]+3))
-        mix(a->state, enc_multbl); //FIXME replace log8 by const / optimze mix as this can be simplified alot
+        mix(a->state, enc_multbl);
     }
     addkey(a->state, a->round_enc_key[r]);
     SUBSHIFT0((a->state[0]+0), sbox)
