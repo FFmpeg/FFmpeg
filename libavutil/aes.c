@@ -99,22 +99,16 @@ void av_aes_encrypt(AVAES *a){
     crypt(a, 2, sbox, enc_multbl);
 }
 
-static void init_multbl3(uint8_t tbl[4][256][4]){
-    int i, j, k;
-    for(k=1; k<4; k++)
-        for(j=0; j<256; j++)
-            for(i=0; i<4; i++)
-                tbl[k][j][i]= tbl[k-1][j][(i-1)&3];
-}
-
 static void init_multbl2(uint8_t tbl[1024], int c[4], uint8_t *log8, uint8_t *alog8, uint8_t *sbox){
-    int i;
+    int i, j;
     for(i=0; i<1024; i++){
         int x= sbox[i/4];
         if(x) tbl[i]= alog8[ log8[x] + log8[c[i&3]] ];
     }
 #ifndef CONFIG_SMALL
-    init_multbl3(tbl);
+    for(j=256; j<1024; j++)
+        for(i=0; i<4; i++)
+            tbl[4*j+i]= tbl[4*j + ((i-1)&3) - 1024];
 #endif
 }
 
