@@ -321,9 +321,8 @@ fi
 ###################################
 if [ -n "$do_mpeg4" ] ; then
 # mpeg4
-do_video_encoding odivx.mp4 "-flags +mv4 -mbd bits -qscale 10" pgmyuv "-an -vcodec mpeg4" + decoding
-
-
+do_video_encoding odivx.mp4 "-flags +mv4 -mbd bits -qscale 10" pgmyuv "-an -vcodec mpeg4"
+do_video_decoding
 fi
 
 ###################################
@@ -336,9 +335,8 @@ fi
 ###################################
 if [ -n "$do_rc" ] ; then
 # mpeg4 rate control
-do_video_encoding mpeg4-rc.avi "-b 400k -bf 2" pgmyuv "-an -vcodec mpeg4" + decoding
-
-
+do_video_encoding mpeg4-rc.avi "-b 400k -bf 2" pgmyuv "-an -vcodec mpeg4"
+do_video_decoding
 fi
 
 ###################################
