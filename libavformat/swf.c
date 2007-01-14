@@ -792,24 +792,19 @@ static int swf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             return AVERROR_IO;
         }
         if ( tag == TAG_VIDEOSTREAM && !vst) {
-            int codec_id;
             swf->ch_id = get_le16(pb);
             get_le16(pb);
             get_le16(pb);
             get_le16(pb);
             get_byte(pb);
             /* Check for FLV1 */
-            codec_id = codec_get_id(swf_codec_tags, get_byte(pb));
-            if ( codec_id ) {
-                vst = av_new_stream(s, 0);
-                av_set_pts_info(vst, 24, 1, 1000); /* 24 bit pts in ms */
-
-                vst->codec->codec_type = CODEC_TYPE_VIDEO;
-                vst->codec->codec_id = codec_id;
-                if ( swf->samples_per_frame ) {
-                    vst->codec->time_base.den = 1000. / swf->ms_per_frame;
-                    vst->codec->time_base.num = 1;
-                }
+            vst = av_new_stream(s, 0);
+            av_set_pts_info(vst, 24, 1, 1000); /* 24 bit pts in ms */
+            vst->codec->codec_type = CODEC_TYPE_VIDEO;
+            vst->codec->codec_id = codec_get_id(swf_codec_tags, get_byte(pb));
+            if (swf->samples_per_frame) {
+                vst->codec->time_base.den = 1000. / swf->ms_per_frame;
+                vst->codec->time_base.num = 1;
             }
         } else if ( ( tag == TAG_STREAMHEAD || tag == TAG_STREAMHEAD2 ) && !ast) {
             /* streaming found */
