@@ -231,7 +231,7 @@ static int mpc7_decode_frame(AVCodecContext * avctx,
         av_log(avctx, AV_LOG_ERROR, "Too small buffer passed (%i bytes)\n", buf_size);
     }
 
-    bits = av_malloc((buf_size - 1) & ~3);
+    bits = av_malloc(((buf_size - 1) & ~3) + FF_INPUT_BUFFER_PADDING_SIZE);
     c->dsp.bswap_buf(bits, buf + 4, (buf_size - 4) >> 2);
     init_get_bits(&gb, bits, (buf_size - 4)* 8);
     skip_bits(&gb, buf[0]);
