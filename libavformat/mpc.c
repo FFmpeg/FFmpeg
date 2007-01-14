@@ -118,7 +118,7 @@ static int mpc_read_packet(AVFormatContext *s, AVPacket *pkt)
     int ret, size, size2, curbits, cur = c->curframe;
     int64_t tmp, pos;
 
-    if (c->curframe > c->fcount)
+    if (c->curframe >= c->fcount)
         return -1;
 
     if(c->curframe != c->lastframe + 1){
