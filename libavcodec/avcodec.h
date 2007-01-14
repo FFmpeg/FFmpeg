@@ -2511,18 +2511,21 @@ int avcodec_default_execute(AVCodecContext *c, int (*func)(AVCodecContext *c2, v
  */
 int avcodec_open(AVCodecContext *avctx, AVCodec *codec);
 
+
+attribute_deprecated int avcodec_decode_audio(AVCodecContext *avctx, int16_t *samples,
+                         int *frame_size_ptr,
+                         uint8_t *buf, int buf_size);
 /**
  * Decode an audio frame.
  *
  * @param avctx the codec context.
  * @param samples output buffer, 16 byte aligned
- * @param frame_size_ptr the output buffer size in bytes, zero if no frame could be compressed
+ * @param frame_size_ptr the output buffer size in bytes (you MUST set this to the allocated size before calling avcodec_decode_audio2()), zero if no frame could be compressed
  * @param buf input buffer, 16 byte aligned
  * @param buf_size the input buffer size
  * @return 0 if successful, -1 if not.
  */
-
-int avcodec_decode_audio(AVCodecContext *avctx, int16_t *samples,
+int avcodec_decode_audio2(AVCodecContext *avctx, int16_t *samples,
                          int *frame_size_ptr,
                          uint8_t *buf, int buf_size);
 int avcodec_decode_video(AVCodecContext *avctx, AVFrame *picture,

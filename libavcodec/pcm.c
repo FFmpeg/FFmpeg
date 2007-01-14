@@ -410,8 +410,8 @@ static int pcm_decode_frame(AVCodecContext *avctx,
     samples = data;
     src = buf;
 
-    if(buf_size > AVCODEC_MAX_AUDIO_FRAME_SIZE/2)
-        buf_size = AVCODEC_MAX_AUDIO_FRAME_SIZE/2;
+    buf_size= FFMIN(buf_size, *data_size/2);
+    *data_size=0;
 
     switch(avctx->codec->id) {
     case CODEC_ID_PCM_S32LE:

@@ -918,21 +918,43 @@ int avcodec_decode_video(AVCodecContext *avctx, AVFrame *picture,
    *number of bytes used. If no frame could be decompressed,
    *frame_size_ptr is zero. Otherwise, it is the decompressed frame
    *size in BYTES. */
-int avcodec_decode_audio(AVCodecContext *avctx, int16_t *samples,
+int avcodec_decode_audio2(AVCodecContext *avctx, int16_t *samples,
                          int *frame_size_ptr,
                          uint8_t *buf, int buf_size)
 {
     int ret;
 
-    *frame_size_ptr= 0;
+    //FIXME remove the check below _after_ ensuring that all audio check that the available space is enough
+    if(*frame_size_ptr < AVCODEC_MAX_AUDIO_FRAME_SIZE){
+        av_log(avctx, AV_LOG_ERROR, "buffer smaller then AVCODEC_MAX_AUDIO_FRAME_SIZE\n");
+        return -1;
+    }
+    if(*frame_size_ptr < FF_MIN_BUFFER_SIZE ||
+       *frame_size_ptr < avctx->channels * avctx->frame_size * sizeof(int16_t) ||
+       *frame_size_ptr < buf_size){
+        av_log(avctx, AV_LOG_ERROR, "buffer too small\n");
+        return -1;
+    }
     if((avctx->codec->capabilities & CODEC_CAP_DELAY) || buf_size){
         ret = avctx->codec->decode(avctx, samples, frame_size_ptr,
                                 buf, buf_size);
         avctx->frame_number++;
-    }else
+    }else{
         ret= 0;
+        *frame_size_ptr=0;
+    }
     return ret;
 }
+
+#if LIBAVCODEC_VERSION_INT < ((52<<16)+(0<<8)+0)
+int avcodec_decode_audio(AVCodecContext *avctx, int16_t *samples,
+                         int *frame_size_ptr,
+                         uint8_t *buf, int buf_size){
+    *frame_size_ptr= AVCODEC_MAX_AUDIO_FRAME_SIZE;
+    return avcodec_decode_audio2(avctx, samples, frame_size_ptr, buf, buf_size);
+}
+#endif
+
 
 /* decode a subtitle message. return -1 if error, otherwise return the
    *number of bytes used. If no subtitle could be decompressed,
