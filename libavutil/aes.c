@@ -35,10 +35,15 @@ static const uint8_t rcon[30] = {
   0xb3, 0x7d, 0xfa, 0xef, 0xc5, 0x91
 };
 
-static uint8_t  log8[256];
-static uint8_t alog8[512];
 static uint8_t     sbox[256];
 static uint8_t inv_sbox[256];
+#ifdef CONFIG_SMALL
+static uint32_t enc_multbl[1][256];
+static uint32_t dec_multbl[1][256];
+#else
+static uint32_t enc_multbl[4][256];
+static uint32_t dec_multbl[4][256];
+#endif
 
 static inline void addkey(uint64_t state[2], uint64_t round_key[2]){
     state[0] ^= round_key[0];
@@ -50,23 +55,24 @@ static inline void addkey(uint64_t state[2], uint64_t round_key[2]){
 #define SUBSHIFT2(s, box) t=s[0]; s[0]=box[s[ 8]]; s[ 8]=box[    t]; t=s[ 4]; s[ 4]=box[s[12]]; s[12]=box[t];
 #define SUBSHIFT3(s, box) t=s[0]; s[0]=box[s[12]]; s[12]=box[s[ 8]];          s[ 8]=box[s[ 4]]; s[ 4]=box[t];
 
-static inline int mul(int a, int b){
+static inline int mul(int a, int b, uint8_t alog8[256]){
     if(a==255) return 0;
     else       return alog8[a+b];
 }
 
-static inline void mix(uint8_t state[4][4], int c0, int c1, int c2, int c3){
-    uint8_t tmp[4][4];
-    int i, j;
+#define ROT(x,s) ((x>>s)|(x<<(32-s))
 
-    for(i=0; i<16; i++)
-        tmp[0][i]= log8[ state[0][i] ];
-    for(j=0; j<4; j++)
-        for(i=0; i<4; i++)
-                state[j][i]= mul( tmp[j][ i      ], c0 )
-                            ^mul( tmp[j][(i+ 1)&3], c1 )
-                            ^mul( tmp[j][(i+ 2)&3], c2 )
-                            ^mul( tmp[j][(i+ 3)&3], c3 );
+static inline void mix(uint8_t state[4][4], uint32_t multbl[4][256]){
+    int i;
+    for(i=0; i<4; i++)
+#ifdef CONFIG_SMALL
+        ((uint32_t *)(state))[i] =     multbl[0][state[i][0]]     ^ ROT(multbl[0][state[i][1]], 8)
+                                  ^ROT(multbl[0][state[i][2]],16) ^ ROT(multbl[0][state[i][3]],24);
+
+#else
+        ((uint32_t *)(state))[i] = multbl[0][state[i][0]] ^ multbl[1][state[i][1]]
+                                  ^multbl[2][state[i][2]] ^ multbl[3][state[i][3]];
+#endif
 }
 
 
@@ -77,7 +83,7 @@ void av_aes_decrypt(AVAES *a){
         if(r==a->rounds-1)
             addkey(a->state, a->round_key[r+1]);
         else
-            mix(a->state, log8[0xe], log8[0xb], log8[0xd], log8[9]); //FIXME replace log8 by const
+            mix(a->state, dec_multbl);
         SUBSHIFT0((a->state[0]+0), inv_sbox)
         SUBSHIFT3((a->state[0]+1), inv_sbox)
         SUBSHIFT2((a->state[0]+2), inv_sbox)
@@ -98,7 +104,7 @@ void av_aes_encrypt(AVAES *a){
         if(r==a->rounds-1)
             addkey(a->state, a->round_key[r+1]);
         else
-            mix(a->state, log8[2], log8[3], 0, 0); //FIXME replace log8 by const / optimze mix as this can be simplified alot
+            mix(a->state, enc_multbl); //FIXME replace log8 by const / optimze mix as this can be simplified alot
     }
 }
 
@@ -109,6 +115,8 @@ AVAES *av_aes_init(uint8_t *key, int key_bits) {
     uint8_t tk[8][4];
     int KC= key_bits/32;
     int rounds= KC + 6;
+    uint8_t  log8[256];
+    uint8_t alog8[512];
 
     if(!sbox[255]){
         j=1;
@@ -127,6 +135,7 @@ AVAES *av_aes_init(uint8_t *key, int key_bits) {
             inv_sbox[j]= i;
             sbox    [i]= j;
 //            av_log(NULL, AV_LOG_ERROR, "%d, ", log8[i]);
+            //FIXME multbl init
         }
     }
 
