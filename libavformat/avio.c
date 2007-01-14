@@ -70,11 +70,14 @@ int url_open(URLContext **puc, const char *filename, int flags)
     err = -ENOENT;
     goto fail;
  found:
-    uc = av_malloc(sizeof(URLContext) + strlen(filename));
+    uc = av_malloc(sizeof(URLContext) + strlen(filename) + 1);
     if (!uc) {
         err = -ENOMEM;
         goto fail;
     }
+#if LIBAVFORMAT_VERSION_INT >= (52<<16)
+    uc->filename = (char *) &uc[1];
+#endif
     strcpy(uc->filename, filename);
     uc->prot = up;
     uc->flags = flags;

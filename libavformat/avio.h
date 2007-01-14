@@ -33,7 +33,11 @@ struct URLContext {
     int is_streamed;  /* true if streamed (no seek possible), default = false */
     int max_packet_size;  /* if non zero, the stream is packetized with this max packet size */
     void *priv_data;
+#if LIBAVFORMAT_VERSION_INT >= (52<<16)
+    char *filename; /* specified filename */
+#else
     char filename[1]; /* specified filename */
+#endif
 };
 
 typedef struct URLContext URLContext;
