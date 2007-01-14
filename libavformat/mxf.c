@@ -182,19 +182,15 @@ static const uint8_t mxf_essence_element_key[]             = { 0x06,0x0e,0x2b,0x
 
 static int64_t klv_decode_ber_length(ByteIOContext *pb)
 {
-    int64_t size = 0;
-    uint8_t length = get_byte(pb);
-    int type = length >> 7;
-
-    if (type) { /* long form */
-        int bytes_num = length & 0x7f;
+    uint64_t size = get_byte(pb);
+    if (size & 0x80) { /* long form */
+        int bytes_num = size & 0x7f;
         /* SMPTE 379M 5.3.4 guarantee that bytes_num must not exceed 8 bytes */
         if (bytes_num > 8)
             return -1;
+        size = 0;
         while (bytes_num--)
             size = size << 8 | get_byte(pb);
-    } else {
-        size = length & 0x7f;
     }
     return size;
 }
