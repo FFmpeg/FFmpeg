@@ -855,17 +855,17 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
             return AVERROR_IO;
         if (tag == TAG_VIDEOFRAME) {
             int ch_id = get_le16(pb);
+            len -= 2;
             for( i=0; i<s->nb_streams; i++ ) {
                 st = s->streams[i];
                 if (st->codec->codec_type == CODEC_TYPE_VIDEO && st->id == ch_id) {
                     frame = get_le16(pb);
-                    av_get_packet(pb, pkt, len-4);
+                    av_get_packet(pb, pkt, len-2);
                     pkt->pts = frame * swf->ms_per_frame;
                     pkt->stream_index = st->index;
                     return pkt->size;
                 }
             }
-            url_fskip(pb, len-2);
         } else if (tag == TAG_STREAMBLOCK) {
             st = s->streams[swf->audio_stream_index];
             if (st->codec->codec_id == CODEC_ID_MP3) {
@@ -874,10 +874,8 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
                 pkt->stream_index = st->index;
                 return pkt->size;
             }
-            url_fskip(pb, len);
-        } else {
-            url_fskip(pb, len);
         }
+        url_fskip(pb, len);
     }
     return 0;
 }
