@@ -40,10 +40,9 @@ static uint8_t alog8[512];
 static uint8_t     sbox[256];
 static uint8_t inv_sbox[256];
 
-static inline void addkey(uint32_t state[4], uint32_t round_key[4]){
-    int i;
-    for(i=0; i<4; i++)
-        state[i] ^= round_key[i]; //partial memory stall? FIXME benchmark
+static inline void addkey(uint64_t state[2], uint64_t round_key[2]){
+    state[0] ^= round_key[0];
+    state[1] ^= round_key[1];
 }
 
 #define SUBSHIFT0(s, box)         s[0]=box[s[ 0]]; s[ 4]=box[s[ 4]];          s[ 8]=box[s[ 8]]; s[12]=box[s[12]];
