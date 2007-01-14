@@ -183,11 +183,11 @@ AVAES *av_aes_init(uint8_t *key, int key_bits, int decrypt) {
     }
 
     if(decrypt){
-    for(i=1; i<rounds; i++){
-        for(j=0; j<16; j++)
-            a->round_key[i][0][j]= sbox[a->round_key[i][0][j]];
-        mix(a->round_key[i], dec_multbl);
-    }
+        for(i=1; i<rounds; i++){
+            for(j=0; j<16; j++)
+                a->round_key[i][0][j]= sbox[a->round_key[i][0][j]];
+            mix(a->round_key[i], dec_multbl);
+        }
     }
 
     return a;
