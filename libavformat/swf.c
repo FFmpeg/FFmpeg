@@ -69,7 +69,6 @@ typedef struct {
     int swf_frame_number;
     int video_frame_number;
     int ms_per_frame;
-    int ch_id;
     int tag;
 
     uint8_t *audio_fifo;
@@ -313,7 +312,6 @@ static int swf_write_header(AVFormatContext *s)
     uint8_t buf1[256];
     int i, width, height, rate, rate_base;
 
-    swf->ch_id = -1;
     swf->audio_in_pos = 0;
     swf->audio_out_pos = 0;
     swf->audio_size = 0;
@@ -775,7 +773,6 @@ static int swf_read_header(AVFormatContext *s, AVFormatParameters *ap)
        a correct framerate */
     swf->ms_per_frame = ( 1000 * 256 ) / frame_rate;
     swf->samples_per_frame = 0;
-    swf->ch_id = -1;
 
     firstTagOff = url_ftell(pb);
     for(;;) {
@@ -792,13 +789,13 @@ static int swf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             return AVERROR_IO;
         }
         if ( tag == TAG_VIDEOSTREAM && !vst) {
-            swf->ch_id = get_le16(pb);
+            int ch_id = get_le16(pb);
             get_le16(pb);
             get_le16(pb);
             get_le16(pb);
             get_byte(pb);
             /* Check for FLV1 */
-            vst = av_new_stream(s, 0);
+            vst = av_new_stream(s, ch_id);
             av_set_pts_info(vst, 24, 1, 1000); /* 24 bit pts in ms */
             vst->codec->codec_type = CODEC_TYPE_VIDEO;
             vst->codec->codec_id = codec_get_id(swf_codec_tags, get_byte(pb));
@@ -856,22 +853,18 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
         if (tag < 0)
             return AVERROR_IO;
         if (tag == TAG_VIDEOFRAME) {
+            int ch_id = get_le16(pb);
             for( i=0; i<s->nb_streams; i++ ) {
                 st = s->streams[i];
-                if (st->id == 0) {
-                    if ( get_le16(pb) == swf->ch_id ) {
-                        frame = get_le16(pb);
-                        av_get_packet(pb, pkt, len-4);
-                        pkt->pts = frame * swf->ms_per_frame;
-                        pkt->stream_index = st->index;
-                        return pkt->size;
-                    } else {
-                        url_fskip(pb, len-2);
-                        continue;
-                    }
+                if (st->codec->codec_type == CODEC_TYPE_VIDEO && st->id == ch_id) {
+                    frame = get_le16(pb);
+                    av_get_packet(pb, pkt, len-4);
+                    pkt->pts = frame * swf->ms_per_frame;
+                    pkt->stream_index = st->index;
+                    return pkt->size;
                 }
             }
-            url_fskip(pb, len);
+            url_fskip(pb, len-2);
         } else if (tag == TAG_STREAMBLOCK) {
             for( i=0; i<s->nb_streams; i++ ) {
                 st = s->streams[i];
