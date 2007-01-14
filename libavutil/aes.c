@@ -23,8 +23,8 @@
 #include "aes.h"
 
 typedef struct AVAES{
-    uint8_t state[4][4];
     uint8_t round_key[15][4][4];
+    uint8_t state[4][4];
     int rounds;
 }AVAES;
 
@@ -143,9 +143,9 @@ AVAES *av_aes_init(uint8_t *key, int key_bits) {
 
     memcpy(tk, key, KC*4);
 
-    for(t= 0; t < (rounds+1)*4; ) {
-        for(j = 0; j < KC && t < (rounds+1)*4; j++, t++)
-            memcpy(a->round_key[0][t],  tk[j], 4);
+    for(t= 0; t < (rounds+1)*4;) {
+        memcpy(a->round_key[0][t], tk, KC*4);
+        t+= KC;
 
         for(i = 0; i < 4; i++)
             tk[0][i] ^= sbox[tk[KC-1][(i+1)&3]];
