@@ -133,8 +133,6 @@ typedef struct {
 typedef struct MXFContext {
     UID *packages_refs;
     int packages_count;
-    UID *essence_container_data_sets_refs;
-    int essence_container_data_sets_count;
     MXFMetadataSet **metadata_sets;
     int metadata_sets_count;
     const uint8_t *sync_key;
@@ -306,14 +304,6 @@ static int mxf_read_metadata_content_storage(MXFContext *mxf, ByteIOContext *pb,
         mxf->packages_refs = av_malloc(mxf->packages_count * sizeof(UID));
         url_fskip(pb, 4); /* useless size of objects, always 16 according to specs */
         get_buffer(pb, (uint8_t *)mxf->packages_refs, mxf->packages_count * sizeof(UID));
-        break;
-    case 0x1902:
-        mxf->essence_container_data_sets_count = get_be32(pb);
-        if (mxf->essence_container_data_sets_count >= UINT_MAX / sizeof(UID))
-            return -1;
-        mxf->essence_container_data_sets_refs = av_malloc(mxf->essence_container_data_sets_count * sizeof(UID));
-        url_fskip(pb, 4); /* useless size of objects, always 16 according to specs */
-        get_buffer(pb, (uint8_t *)mxf->essence_container_data_sets_refs, mxf->essence_container_data_sets_count * sizeof(UID));
         break;
     }
     return 0;
@@ -860,7 +850,6 @@ static int mxf_read_close(AVFormatContext *s)
     int i;
 
     av_freep(&mxf->packages_refs);
-    av_freep(&mxf->essence_container_data_sets_refs);
     for (i = 0; i < mxf->metadata_sets_count; i++) {
         switch (mxf->metadata_sets[i]->type) {
         case MultipleDescriptor:
