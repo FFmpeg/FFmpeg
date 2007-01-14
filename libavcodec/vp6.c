@@ -103,11 +103,11 @@ static int vp6_parse_header(vp56_context_t *s, uint8_t *buf, int buf_size,
 
         *golden_frame = vp56_rac_get(c);
         if (s->filter_header) {
-        s->deblock_filtering = vp56_rac_get(c);
-        if (s->deblock_filtering)
-            vp56_rac_get(c);
-        if (s->sub_version > 7)
-            parse_filter_info = vp56_rac_get(c);
+            s->deblock_filtering = vp56_rac_get(c);
+            if (s->deblock_filtering)
+                vp56_rac_get(c);
+            if (s->sub_version > 7)
+                parse_filter_info = vp56_rac_get(c);
         }
     }
 
