@@ -141,7 +141,7 @@ typedef struct MXFContext {
     UID content_storage_uid;
     MXFMetadataSet **metadata_sets;
     int metadata_sets_count;
-    uint8_t *sync_key;
+    const uint8_t *sync_key;
     AVFormatContext *fc;
 } MXFContext;
 
