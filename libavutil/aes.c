@@ -75,7 +75,7 @@ static inline void mix(uint8_t state[4][4], uint32_t multbl[4][256]){
 void av_aes_decrypt(AVAES *a){
     int t, r;
 
-    addkey(a->state, a->round_enc_key[a->rounds]);
+    addkey(a->state, a->round_dec_key[a->rounds]);
     for(r=a->rounds-2; r>=0; r--){
         SUBSHIFT3x((a->state[0]+1))
         SUBSHIFT2x((a->state[0]+2))
@@ -87,7 +87,7 @@ void av_aes_decrypt(AVAES *a){
     SUBSHIFT3((a->state[0]+1), inv_sbox)
     SUBSHIFT2((a->state[0]+2), inv_sbox)
     SUBSHIFT1((a->state[0]+3), inv_sbox)
-    addkey(a->state, a->round_enc_key[0]);
+    addkey(a->state, a->round_dec_key[0]);
 }
 
 void av_aes_encrypt(AVAES *a){
@@ -183,10 +183,12 @@ AVAES *av_aes_init(uint8_t *key, int key_bits) {
         }
     }
 
-    for(i=0; i<sizeof(a->round_enc_key); i++)
-        a->round_dec_key[0][0][i]= sbox[a->round_enc_key[0][0][i]];
-    for(i=1; i<rounds; i++)
+    memcpy(a->round_dec_key, a->round_enc_key, sizeof(a->round_enc_key));
+    for(i=1; i<rounds; i++){
+        for(j=0; j<16; j++)
+            a->round_dec_key[i][0][j]= sbox[a->round_enc_key[i][0][j]];
         mix(a->round_dec_key[i], dec_multbl);
+    }
 
     return a;
 }
