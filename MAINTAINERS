@@ -226,6 +226,7 @@ Muxers/Demuxers:
   raw.c                                 Michael Niedermayer
   rm.c                                  Roberto Togni
   segafilm.c                            Mike Melanson
+  swf.c                                 Baptiste Coudurier
   v4l2.c                                Luca Abeni
   voc.c                                 Aurelien Jacobs
   wav.c                                 Michael Niedermayer
