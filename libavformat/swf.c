@@ -59,7 +59,7 @@
 #include <assert.h>
 
 typedef struct {
-
+    int audio_stream_index;
     offset_t duration_pos;
     offset_t tag_pos;
 
@@ -808,8 +808,9 @@ static int swf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             get_byte(pb);
             v = get_byte(pb);
             swf->samples_per_frame = get_le16(pb);
-            ast = av_new_stream(s, 1);
+            ast = av_new_stream(s, -1); /* -1 to avoid clash with video stream ch_id */
             av_set_pts_info(ast, 24, 1, 1000); /* 24 bit pts in ms */
+            swf->audio_stream_index = ast->index;
             ast->codec->channels = 1 + (v&1);
             ast->codec->codec_type = CODEC_TYPE_AUDIO;
             if (v & 0x20)
@@ -866,14 +867,12 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
             }
             url_fskip(pb, len-2);
         } else if (tag == TAG_STREAMBLOCK) {
-            for( i=0; i<s->nb_streams; i++ ) {
-                st = s->streams[i];
-                if (st->id == 1) {
-                    url_fskip(pb, 4);
-                    av_get_packet(pb, pkt, len-4);
-                    pkt->stream_index = st->index;
-                    return pkt->size;
-                }
+            st = s->streams[swf->audio_stream_index];
+            if (st->codec->codec_id == CODEC_ID_MP3) {
+                url_fskip(pb, 4);
+                av_get_packet(pb, pkt, len-4);
+                pkt->stream_index = st->index;
+                return pkt->size;
             }
             url_fskip(pb, len);
         } else {
