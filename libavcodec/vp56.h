@@ -76,6 +76,8 @@ struct vp56_context {
     uint8_t *edge_emu_buffer_alloc;
     uint8_t *edge_emu_buffer;
     vp56_range_coder_t c;
+    vp56_range_coder_t cc;
+    vp56_range_coder_t *ccp;
     int sub_version;
 
     /* frame info */
@@ -108,6 +110,7 @@ struct vp56_context {
     int vector_candidate_pos;
 
     /* filtering hints */
+    int filter_header;               /* used in vp6 only */
     int deblock_filtering;
     int filter_selection;
     int filter_mode;
