@@ -71,40 +71,30 @@ static inline void mix(uint8_t state[4][4], uint32_t multbl[4][256]){
 #endif
 }
 
-void av_aes_decrypt(AVAES *a){
+static inline void crypt(AVAES *a, int s, uint8_t *sbox, uint32_t *multbl){
     int t, r;
 
     for(r=a->rounds; r>1; r--){
         addkey(a->state, a->round_key[r]);
-        SUBSHIFT3x((a->state[0]+1))
+        SUBSHIFT3x((a->state[0]+1+s))
         SUBSHIFT2x((a->state[0]+2))
-        SUBSHIFT1x((a->state[0]+3))
-        mix(a->state, dec_multbl);
+        SUBSHIFT1x((a->state[0]+3-s))
+        mix(a->state, multbl);
     }
     addkey(a->state, a->round_key[1]);
-    SUBSHIFT0((a->state[0]+0), inv_sbox)
-    SUBSHIFT3((a->state[0]+1), inv_sbox)
-    SUBSHIFT2((a->state[0]+2), inv_sbox)
-    SUBSHIFT1((a->state[0]+3), inv_sbox)
+    SUBSHIFT0((a->state[0]+0  ), sbox)
+    SUBSHIFT3((a->state[0]+1+s), sbox)
+    SUBSHIFT2((a->state[0]+2  ), sbox)
+    SUBSHIFT1((a->state[0]+3-s), sbox)
     addkey(a->state, a->round_key[0]);
 }
 
-void av_aes_encrypt(AVAES *a){
-    int r, t;
+void av_aes_decrypt(AVAES *a){
+    crypt(a, 0, inv_sbox, dec_multbl);
+}
 
-    for(r=0; r<a->rounds-1; r++){
-        addkey(a->state, a->round_key[r]);
-        SUBSHIFT1x((a->state[0]+1))
-        SUBSHIFT2x((a->state[0]+2))
-        SUBSHIFT3x((a->state[0]+3))
-        mix(a->state, enc_multbl);
-    }
-    addkey(a->state, a->round_key[r]);
-    SUBSHIFT0((a->state[0]+0), sbox)
-    SUBSHIFT1((a->state[0]+1), sbox)
-    SUBSHIFT2((a->state[0]+2), sbox)
-    SUBSHIFT3((a->state[0]+3), sbox)
-    addkey(a->state, a->round_key[r+1]);
+void av_aes_encrypt(AVAES *a){
+    crypt(a, 2, sbox, enc_multbl);
 }
 
 static init_multbl2(uint8_t tbl[1024], int c[4], uint8_t *log8, uint8_t *alog8, uint8_t *sbox){
@@ -187,6 +177,11 @@ AVAES *av_aes_init(uint8_t *key, int key_bits, int decrypt) {
             for(j=0; j<16; j++)
                 a->round_key[i][0][j]= sbox[a->round_key[i][0][j]];
             mix(a->round_key[i], dec_multbl);
+        }
+    }else{
+        for(i=0; i<(rounds+1)/2; i++){
+            for(j=0; j<16; j++)
+                FFSWAP(int, a->round_key[i][0][j], a->round_key[rounds-i][0][j]);
         }
     }
 
