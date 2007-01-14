@@ -75,14 +75,14 @@ static inline void mix(uint8_t state[4][4], uint32_t multbl[4][256]){
 void av_aes_decrypt(AVAES *a){
     int t, r;
 
-    addkey(a->state, a->round_dec_key[a->rounds]);
-    for(r=a->rounds-2; r>=0; r--){
+    for(r=a->rounds; r>1; r--){
+        addkey(a->state, a->round_dec_key[r]);
         SUBSHIFT3x((a->state[0]+1))
         SUBSHIFT2x((a->state[0]+2))
         SUBSHIFT1x((a->state[0]+3))
         mix(a->state, dec_multbl);
-        addkey(a->state, a->round_dec_key[r+1]);
     }
+    addkey(a->state, a->round_dec_key[1]);
     SUBSHIFT0((a->state[0]+0), inv_sbox)
     SUBSHIFT3((a->state[0]+1), inv_sbox)
     SUBSHIFT2((a->state[0]+2), inv_sbox)
