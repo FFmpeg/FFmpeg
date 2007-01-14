@@ -135,10 +135,6 @@ typedef struct MXFContext {
     int packages_count;
     UID *essence_container_data_sets_refs;
     int essence_container_data_sets_count;
-    UID *essence_containers_uls; /* Universal Labels SMPTE RP224 */
-    int essence_containers_uls_count;
-    UID operational_pattern_ul;
-    UID content_storage_uid;
     MXFMetadataSet **metadata_sets;
     int metadata_sets_count;
     const uint8_t *sync_key;
@@ -297,27 +293,6 @@ static int mxf_add_metadata_set(MXFContext *mxf, void *metadata_set)
     mxf->metadata_sets = av_realloc(mxf->metadata_sets, (mxf->metadata_sets_count + 1) * sizeof(*mxf->metadata_sets));
     mxf->metadata_sets[mxf->metadata_sets_count] = metadata_set;
     mxf->metadata_sets_count++;
-    return 0;
-}
-
-static int mxf_read_metadata_preface(MXFContext *mxf, ByteIOContext *pb, int tag)
-{
-    switch (tag) {
-    case 0x3B03:
-        get_buffer(pb, mxf->content_storage_uid, 16);
-        break;
-    case 0x3B09:
-        get_buffer(pb, mxf->operational_pattern_ul, 16);
-        break;
-    case 0x3B0A:
-        mxf->essence_containers_uls_count = get_be32(pb);
-        if (mxf->essence_containers_uls_count >= UINT_MAX / sizeof(UID))
-            return -1;
-        mxf->essence_containers_uls = av_malloc(mxf->essence_containers_uls_count * sizeof(UID));
-        url_fskip(pb, 4); /* useless size of objects, always 16 according to specs */
-        get_buffer(pb, (uint8_t *)mxf->essence_containers_uls, mxf->essence_containers_uls_count * sizeof(UID));
-        break;
-    }
     return 0;
 }
 
@@ -780,7 +755,6 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
 }
 
 static const MXFMetadataReadTableEntry mxf_metadata_read_table[] = {
-    { { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x2F,0x00 }, mxf_read_metadata_preface, 0, AnyType },
     { { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x18,0x00 }, mxf_read_metadata_content_storage, 0, AnyType },
     { { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x37,0x00 }, mxf_read_metadata_source_package, sizeof(MXFPackage), SourcePackage },
     { { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x36,0x00 }, mxf_read_metadata_material_package, sizeof(MXFPackage), MaterialPackage },
@@ -887,7 +861,6 @@ static int mxf_read_close(AVFormatContext *s)
 
     av_freep(&mxf->packages_refs);
     av_freep(&mxf->essence_container_data_sets_refs);
-    av_freep(&mxf->essence_containers_uls);
     for (i = 0; i < mxf->metadata_sets_count; i++) {
         switch (mxf->metadata_sets[i]->type) {
         case MultipleDescriptor:
