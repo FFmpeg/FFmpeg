@@ -99,14 +99,24 @@ void av_aes_encrypt(AVAES *a){
     crypt(a, 2, sbox, enc_multbl);
 }
 
+static void init_multbl3(uint8_t tbl[4][256][4]){
+    int i, j, k;
+    for(k=1; k<4; k++)
+        for(j=0; j<256; j++)
+            for(i=0; i<4; i++)
+                tbl[k][j][i]= tbl[k-1][j][(i-1)&3];
+}
+
 static void init_multbl2(uint8_t tbl[1024], int c[4], uint8_t *log8, uint8_t *alog8, uint8_t *sbox){
     int i;
     for(i=0; i<1024; i++){
         int x= sbox[i/4];
         if(x) tbl[i]= alog8[ log8[x] + log8[c[i&3]] ];
     }
+#ifndef CONFIG_SMALL
+    init_multbl3(tbl);
+#endif
 }
-
 
 // this is based on the reference AES code by Paulo Barreto and Vincent Rijmen
 AVAES *av_aes_init(uint8_t *key, int key_bits, int decrypt) {
@@ -136,17 +146,7 @@ AVAES *av_aes_init(uint8_t *key, int key_bits, int decrypt) {
 //            av_log(NULL, AV_LOG_ERROR, "%d, ", log8[i]);
         }
         init_multbl2(dec_multbl[0], (int[4]){0xe, 0x9, 0xd, 0xb}, log8, alog8, inv_sbox);
-#ifndef CONFIG_SMALL
-        init_multbl2(dec_multbl[1], (int[4]){0xb, 0xe, 0x9, 0xd}, log8, alog8, inv_sbox);
-        init_multbl2(dec_multbl[2], (int[4]){0xd, 0xb, 0xe, 0x9}, log8, alog8, inv_sbox);
-        init_multbl2(dec_multbl[3], (int[4]){0x9, 0xd, 0xb, 0xe}, log8, alog8, inv_sbox);
-#endif
         init_multbl2(enc_multbl[0], (int[4]){0x2, 0x1, 0x1, 0x3}, log8, alog8, sbox);
-#ifndef CONFIG_SMALL
-        init_multbl2(enc_multbl[1], (int[4]){0x3, 0x2, 0x1, 0x1}, log8, alog8, sbox);
-        init_multbl2(enc_multbl[2], (int[4]){0x1, 0x3, 0x2, 0x1}, log8, alog8, sbox);
-        init_multbl2(enc_multbl[3], (int[4]){0x1, 0x1, 0x3, 0x2}, log8, alog8, sbox);
-#endif
     }
 
     if(key_bits!=128 && key_bits!=192 && key_bits!=256)
