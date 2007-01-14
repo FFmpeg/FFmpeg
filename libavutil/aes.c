@@ -52,6 +52,10 @@ static inline void addkey(uint64_t state[2], uint64_t round_key[2]){
 #define SUBSHIFT2(s, box) t=s[0]; s[0]=box[s[ 8]]; s[ 8]=box[    t]; t=s[ 4]; s[ 4]=box[s[12]]; s[12]=box[t];
 #define SUBSHIFT3(s, box) t=s[0]; s[0]=box[s[12]]; s[12]=box[s[ 8]];          s[ 8]=box[s[ 4]]; s[ 4]=box[t];
 
+#define SUBSHIFT1x(s, box) t=s[0]; s[0]=s[ 4]; s[ 4]=s[ 8];          s[ 8]=s[12]; s[12]=t;
+#define SUBSHIFT2x(s, box) t=s[0]; s[0]=s[ 8]; s[ 8]=    t; t=s[ 4]; s[ 4]=s[12]; s[12]=t;
+#define SUBSHIFT3x(s, box) t=s[0]; s[0]=s[12]; s[12]=s[ 8];          s[ 8]=s[ 4]; s[ 4]=t;
+
 #define ROT(x,s) ((x<<s)|(x>>(32-s)))
 
 static inline void mix(uint8_t state[4][4], uint32_t multbl[4][256]){
@@ -85,16 +89,19 @@ void av_aes_decrypt(AVAES *a){
 void av_aes_encrypt(AVAES *a){
     int r, t;
 
-    for(r=0; r<a->rounds; r++){
+    for(r=0; r<a->rounds-1; r++){
         addkey(a->state, a->round_key[r]);
-        SUBSHIFT0((a->state[0]+0), sbox)
-        SUBSHIFT1((a->state[0]+1), sbox)
-        SUBSHIFT2((a->state[0]+2), sbox)
-        SUBSHIFT3((a->state[0]+3), sbox)
-        if(r!=a->rounds-1)
-            mix(a->state, enc_multbl); //FIXME replace log8 by const / optimze mix as this can be simplified alot
+        SUBSHIFT1x((a->state[0]+1), sbox)
+        SUBSHIFT2x((a->state[0]+2), sbox)
+        SUBSHIFT3x((a->state[0]+3), sbox)
+        mix(a->state, enc_multbl); //FIXME replace log8 by const / optimze mix as this can be simplified alot
     }
     addkey(a->state, a->round_key[r]);
+    SUBSHIFT0((a->state[0]+0), sbox)
+    SUBSHIFT1((a->state[0]+1), sbox)
+    SUBSHIFT2((a->state[0]+2), sbox)
+    SUBSHIFT3((a->state[0]+3), sbox)
+    addkey(a->state, a->round_key[r+1]);
 }
 
 static init_multbl(uint8_t tbl[1024], int c[4], uint8_t *log8, uint8_t *alog8){
@@ -102,6 +109,15 @@ static init_multbl(uint8_t tbl[1024], int c[4], uint8_t *log8, uint8_t *alog8){
     for(i=4; i<1024; i++)
         tbl[i]= alog8[ log8[i/4] + log8[c[i&3]] ];
 }
+
+static init_multbl2(uint8_t tbl[1024], int c[4], uint8_t *log8, uint8_t *alog8, uint8_t *sbox){
+    int i;
+    for(i=0; i<1024; i++){
+        int x= sbox[i/4];
+        if(x) tbl[i]= alog8[ log8[x] + log8[c[i&3]] ];
+    }
+}
+
 
 // this is based on the reference AES code by Paulo Barreto and Vincent Rijmen
 AVAES *av_aes_init(uint8_t *key, int key_bits) {
@@ -137,11 +153,11 @@ AVAES *av_aes_init(uint8_t *key, int key_bits) {
         init_multbl(dec_multbl[2], (int[4]){0xd, 0xb, 0xe, 0x9}, log8, alog8);
         init_multbl(dec_multbl[3], (int[4]){0x9, 0xd, 0xb, 0xe}, log8, alog8);
 #endif
-        init_multbl(enc_multbl[0], (int[4]){0x2, 0x1, 0x1, 0x3}, log8, alog8);
+        init_multbl2(enc_multbl[0], (int[4]){0x2, 0x1, 0x1, 0x3}, log8, alog8, sbox);
 #ifndef CONFIG_SMALL
-        init_multbl(enc_multbl[1], (int[4]){0x3, 0x2, 0x1, 0x1}, log8, alog8);
-        init_multbl(enc_multbl[2], (int[4]){0x1, 0x3, 0x2, 0x1}, log8, alog8);
-        init_multbl(enc_multbl[3], (int[4]){0x1, 0x1, 0x3, 0x2}, log8, alog8);
+        init_multbl2(enc_multbl[1], (int[4]){0x3, 0x2, 0x1, 0x1}, log8, alog8, sbox);
+        init_multbl2(enc_multbl[2], (int[4]){0x1, 0x3, 0x2, 0x1}, log8, alog8, sbox);
+        init_multbl2(enc_multbl[3], (int[4]){0x1, 0x1, 0x3, 0x2}, log8, alog8, sbox);
 #endif
     }
 
@@ -177,9 +193,19 @@ int main(){
     int i,j,k;
     AVAES *a= av_aes_init("PI=3.141592654..", 128);
     uint8_t zero[16]= {0};
-    AVAES *b= av_aes_init(zero, 128);
     uint8_t pt[16]= {0x6a, 0x84, 0x86, 0x7c, 0xd7, 0x7e, 0x12, 0xad, 0x07, 0xea, 0x1b, 0xe8, 0x95, 0xc5, 0x3f, 0xa3};
     uint8_t ct[16]= {0x73, 0x22, 0x81, 0xc0, 0xa0, 0xaa, 0xb8, 0xf7, 0xa5, 0x4a, 0x0c, 0x67, 0xa0, 0xc4, 0x5e, 0xcf};
+    AVAES *b= av_aes_init(zero, 128);
+
+/*    uint8_t key[16]= {0x42, 0x78, 0xb8, 0x40, 0xfb, 0x44, 0xaa, 0xa7, 0x57, 0xc1, 0xbf, 0x04, 0xac, 0xbe, 0x1a, 0x3e};
+    uint8_t IV[16] = {0x57, 0xf0, 0x2a, 0x5c, 0x53, 0x39, 0xda, 0xeb, 0x0a, 0x29, 0x08, 0xa0, 0x6a, 0xc6, 0x39, 0x3f};
+    uint8_t pt[16] = {0x3c, 0x88, 0x8b, 0xbb, 0xb1, 0xa8, 0xeb, 0x9f, 0x3e, 0x9b, 0x87, 0xac, 0xaa, 0xd9, 0x86, 0xc4};
+//            66e2f7071c83083b8a557971918850e5
+    uint8_t ct[16] = {0x47, 0x9c, 0x89, 0xec, 0x14, 0xbc, 0x98, 0x99, 0x4e, 0x62, 0xb2, 0xc7, 0x05, 0xb5, 0x0, 0x14e};
+//             175bd7832e7e60a1e92aac568a861eb7*/
+    uint8_t ckey[16]= {0x10, 0xa5, 0x88, 0x69, 0xd7, 0x4b, 0xe5, 0xa3, 0x74, 0xcf, 0x86, 0x7c, 0xfb, 0x47, 0x38, 0x59};
+    uint8_t cct[16] = {0x6d, 0x25, 0x1e, 0x69, 0x44, 0xb0, 0x51, 0xe0, 0x4e, 0xaa, 0x6f, 0xb4, 0xdb, 0xf7, 0x84, 0x65};
+    AVAES *c= av_aes_init(ckey, 128);
 
     av_log_level= AV_LOG_DEBUG;
 
@@ -188,6 +214,13 @@ int main(){
     for(j=0; j<16; j++)
         if(pt[j] != b->state[0][j]){
             av_log(NULL, AV_LOG_ERROR, "%d %02X %02X\n", j, pt[j], b->state[0][j]);
+        }
+
+    memcpy(c->state, cct, 16);
+    av_aes_decrypt(c);
+    for(j=0; j<16; j++)
+        if(zero[j] != c->state[0][j]){
+            av_log(NULL, AV_LOG_ERROR, "%d %02X %02X\n", j, zero[j], c->state[0][j]);
         }
 
     for(i=0; i<10000; i++){
