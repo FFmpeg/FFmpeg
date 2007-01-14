@@ -739,17 +739,12 @@ static int swf_probe(AVProbeData *p)
 
 static int swf_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
-    SWFContext *swf = 0;
+    SWFContext *swf = s->priv_data;
     ByteIOContext *pb = &s->pb;
     int nbits, len, frame_rate, tag, v;
     offset_t firstTagOff;
     AVStream *ast = 0;
     AVStream *vst = 0;
-
-    swf = av_malloc(sizeof(SWFContext));
-    if (!swf)
-        return -1;
-    s->priv_data = swf;
 
     tag = get_be32(pb) & 0xffffff00;
 
