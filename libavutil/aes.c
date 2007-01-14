@@ -23,7 +23,8 @@
 #include "aes.h"
 
 typedef struct AVAES{
-    uint8_t round_key[15][4][4];
+    uint8_t round_enc_key[15][4][4];
+    uint8_t round_dec_key[15][4][4];
     uint8_t state[4][4];
     int rounds;
 }AVAES;
@@ -74,40 +75,38 @@ static inline void mix(uint8_t state[4][4], uint32_t multbl[4][256]){
 void av_aes_decrypt(AVAES *a){
     int t, r;
 
-    addkey(a->state, a->round_key[a->rounds]);
-    for(r=a->rounds-1; r>=0; r--){
-        if(r!=a->rounds-1)
-            mix(a->state, dec_multbl);
-        SUBSHIFT0((a->state[0]+0), inv_sbox)
-        SUBSHIFT3((a->state[0]+1), inv_sbox)
-        SUBSHIFT2((a->state[0]+2), inv_sbox)
-        SUBSHIFT1((a->state[0]+3), inv_sbox)
-        addkey(a->state, a->round_key[r]);
+    addkey(a->state, a->round_enc_key[a->rounds]);
+    for(r=a->rounds-2; r>=0; r--){
+//        SUBSHIFT0((a->state[0]+0), inv_sbox)
+        SUBSHIFT3x((a->state[0]+1), inv_sbox)
+        SUBSHIFT2x((a->state[0]+2), inv_sbox)
+        SUBSHIFT1x((a->state[0]+3), inv_sbox)
+        mix(a->state, dec_multbl);
+        addkey(a->state, a->round_dec_key[r+1]);
     }
+    SUBSHIFT0((a->state[0]+0), inv_sbox)
+    SUBSHIFT3((a->state[0]+1), inv_sbox)
+    SUBSHIFT2((a->state[0]+2), inv_sbox)
+    SUBSHIFT1((a->state[0]+3), inv_sbox)
+    addkey(a->state, a->round_enc_key[0]);
 }
 
 void av_aes_encrypt(AVAES *a){
     int r, t;
 
     for(r=0; r<a->rounds-1; r++){
-        addkey(a->state, a->round_key[r]);
+        addkey(a->state, a->round_enc_key[r]);
         SUBSHIFT1x((a->state[0]+1), sbox)
         SUBSHIFT2x((a->state[0]+2), sbox)
         SUBSHIFT3x((a->state[0]+3), sbox)
         mix(a->state, enc_multbl); //FIXME replace log8 by const / optimze mix as this can be simplified alot
     }
-    addkey(a->state, a->round_key[r]);
+    addkey(a->state, a->round_enc_key[r]);
     SUBSHIFT0((a->state[0]+0), sbox)
     SUBSHIFT1((a->state[0]+1), sbox)
     SUBSHIFT2((a->state[0]+2), sbox)
     SUBSHIFT3((a->state[0]+3), sbox)
-    addkey(a->state, a->round_key[r+1]);
-}
-
-static init_multbl(uint8_t tbl[1024], int c[4], uint8_t *log8, uint8_t *alog8){
-    int i;
-    for(i=4; i<1024; i++)
-        tbl[i]= alog8[ log8[i/4] + log8[c[i&3]] ];
+    addkey(a->state, a->round_enc_key[r+1]);
 }
 
 static init_multbl2(uint8_t tbl[1024], int c[4], uint8_t *log8, uint8_t *alog8, uint8_t *sbox){
@@ -147,11 +146,11 @@ AVAES *av_aes_init(uint8_t *key, int key_bits) {
             sbox    [i]= j;
 //            av_log(NULL, AV_LOG_ERROR, "%d, ", log8[i]);
         }
-        init_multbl(dec_multbl[0], (int[4]){0xe, 0x9, 0xd, 0xb}, log8, alog8);
+        init_multbl2(dec_multbl[0], (int[4]){0xe, 0x9, 0xd, 0xb}, log8, alog8, inv_sbox);
 #ifndef CONFIG_SMALL
-        init_multbl(dec_multbl[1], (int[4]){0xb, 0xe, 0x9, 0xd}, log8, alog8);
-        init_multbl(dec_multbl[2], (int[4]){0xd, 0xb, 0xe, 0x9}, log8, alog8);
-        init_multbl(dec_multbl[3], (int[4]){0x9, 0xd, 0xb, 0xe}, log8, alog8);
+        init_multbl2(dec_multbl[1], (int[4]){0xb, 0xe, 0x9, 0xd}, log8, alog8, inv_sbox);
+        init_multbl2(dec_multbl[2], (int[4]){0xd, 0xb, 0xe, 0x9}, log8, alog8, inv_sbox);
+        init_multbl2(dec_multbl[3], (int[4]){0x9, 0xd, 0xb, 0xe}, log8, alog8, inv_sbox);
 #endif
         init_multbl2(enc_multbl[0], (int[4]){0x2, 0x1, 0x1, 0x3}, log8, alog8, sbox);
 #ifndef CONFIG_SMALL
@@ -170,7 +169,7 @@ AVAES *av_aes_init(uint8_t *key, int key_bits) {
     memcpy(tk, key, KC*4);
 
     for(t= 0; t < (rounds+1)*4;) {
-        memcpy(a->round_key[0][t], tk, KC*4);
+        memcpy(a->round_enc_key[0][t], tk, KC*4);
         t+= KC;
 
         for(i = 0; i < 4; i++)
@@ -184,6 +183,12 @@ AVAES *av_aes_init(uint8_t *key, int key_bits) {
                 for(i = 0; i < 4; i++) tk[j][i] ^= sbox[tk[j-1][i]];
         }
     }
+
+    for(i=0; i<sizeof(a->round_enc_key); i++)
+        a->round_dec_key[0][0][i]= sbox[a->round_enc_key[0][0][i]];
+    for(i=1; i<rounds; i++)
+        mix(a->round_dec_key[i], dec_multbl);
+
     return a;
 }
 
