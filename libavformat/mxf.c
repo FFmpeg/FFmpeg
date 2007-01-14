@@ -141,6 +141,7 @@ typedef struct MXFContext {
     UID content_storage_uid;
     MXFMetadataSet **metadata_sets;
     int metadata_sets_count;
+    uint8_t *sync_key;
     AVFormatContext *fc;
 } MXFContext;
 
@@ -174,6 +175,8 @@ typedef struct MXFMetadataReadTableEntry {
 /* partial keys to match */
 static const uint8_t mxf_header_partition_pack_key[]       = { 0x06,0x0e,0x2b,0x34,0x02,0x05,0x01,0x01,0x0d,0x01,0x02,0x01,0x01,0x02 };
 static const uint8_t mxf_essence_element_key[]             = { 0x06,0x0e,0x2b,0x34,0x01,0x02,0x01,0x01,0x0d,0x01,0x03,0x01 };
+/* complete keys to match */
+static const uint8_t mxf_encrypted_triplet_key[]           = { 0x06,0x0e,0x2b,0x34,0x02,0x04,0x01,0x07,0x0d,0x01,0x03,0x01,0x02,0x7e,0x01,0x00 };
 
 #define IS_KLV_KEY(x, y) (!memcmp(x, y, sizeof(y)))
 
@@ -248,6 +251,7 @@ static int mxf_get_d10_aes3_packet(ByteIOContext *pb, AVStream *st, AVPacket *pk
 
 static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
+    MXFContext *mxf = s->priv_data;
     KLVPacket klv;
 
     while (!url_feof(&s->pb)) {
@@ -258,6 +262,11 @@ static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
 #ifdef DEBUG
         PRINT_KEY("read packet", klv.key);
 #endif
+        if (IS_KLV_KEY(klv.key, mxf_encrypted_triplet_key)) {
+            mxf->sync_key = mxf_encrypted_triplet_key;
+            av_log(s, AV_LOG_ERROR, "encrypted triplet not supported\n");
+            return -1;
+        }
         if (IS_KLV_KEY(klv.key, mxf_essence_element_key)) {
             int index = mxf_get_stream_index(s, &klv);
             if (index < 0) {
@@ -856,6 +865,7 @@ static int mxf_read_header(AVFormatContext *s, AVFormatParameters *ap)
     MXFContext *mxf = s->priv_data;
     KLVPacket klv;
 
+    mxf->sync_key = mxf_essence_element_key;
     if (!mxf_read_sync(&s->pb, mxf_header_partition_pack_key, 14)) {
         av_log(s, AV_LOG_ERROR, "could not find header partition pack key\n");
         return -1;
@@ -942,6 +952,7 @@ static int mxf_probe(AVProbeData *p) {
 /* XXX: use MXF Index */
 static int mxf_read_seek(AVFormatContext *s, int stream_index, int64_t sample_time, int flags)
 {
+    MXFContext *mxf = s->priv_data;
     AVStream *st = s->streams[stream_index];
     int64_t seconds;
 
@@ -951,7 +962,7 @@ static int mxf_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
         sample_time = 0;
     seconds = av_rescale(sample_time, st->time_base.num, st->time_base.den);
     url_fseek(&s->pb, (s->bit_rate * seconds) >> 3, SEEK_SET);
-    if (!mxf_read_sync(&s->pb, mxf_essence_element_key, 12))
+    if (!mxf_read_sync(&s->pb, mxf->sync_key, 12))
         return -1;
 
     /* found KLV key */
