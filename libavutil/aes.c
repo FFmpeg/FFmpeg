@@ -176,9 +176,19 @@ AVAES *av_aes_init(uint8_t *key, int key_bits) {
 int main(){
     int i,j,k;
     AVAES *a= av_aes_init("PI=3.141592654..", 128);
-    uint8_t ct[16], pt[16], key[32];
+    uint8_t zero[16]= {0};
+    AVAES *b= av_aes_init(zero, 128);
+    uint8_t pt[16]= {0x6a, 0x84, 0x86, 0x7c, 0xd7, 0x7e, 0x12, 0xad, 0x07, 0xea, 0x1b, 0xe8, 0x95, 0xc5, 0x3f, 0xa3};
+    uint8_t ct[16]= {0x73, 0x22, 0x81, 0xc0, 0xa0, 0xaa, 0xb8, 0xf7, 0xa5, 0x4a, 0x0c, 0x67, 0xa0, 0xc4, 0x5e, 0xcf};
 
     av_log_level= AV_LOG_DEBUG;
+
+    memcpy(b->state, ct, 16);
+    av_aes_decrypt(b);
+    for(j=0; j<16; j++)
+        if(pt[j] != b->state[0][j]){
+            av_log(NULL, AV_LOG_ERROR, "%d %02X %02X\n", j, pt[j], b->state[0][j]);
+        }
 
     for(i=0; i<10000; i++){
         for(j=0; j<16; j++){
