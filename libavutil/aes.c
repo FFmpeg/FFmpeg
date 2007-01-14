@@ -123,9 +123,8 @@ AVAES *av_aes_init(uint8_t *key, int keyBits) {
         log8[0]= 255;
         for(i=0; i<256; i++){
             j= i ? alog8[255-log8[i]] : 0;
-            j ^= (j<<1) ^ (j<<2) ^ (j<<3) ^ (j<<4)
-                ^(j>>7) ^ (j>>6) ^ (j>>5) ^ (j>>4) ^ 99;
-            j&=255;
+            j ^= (j<<1) ^ (j<<2) ^ (j<<3) ^ (j<<4);
+            j = (j ^ (j>>8) ^ 99) & 255;
             inv_sbox[j]= i;
             sbox    [i]= j;
 //            av_log(NULL, AV_LOG_ERROR, "%d, ", log8[i]);
