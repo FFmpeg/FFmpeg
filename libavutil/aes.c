@@ -158,9 +158,7 @@ AVAES *av_aes_init(uint8_t *key, int key_bits, int decrypt) {
     memcpy(tk, key, KC*4);
 
     for(t= 0; t < (rounds+1)*4;) {
-        if(decrypt) memcpy(a->round_key[0     ][ t], tk, KC*4);
-        else        memcpy(a->round_key[rounds][-t], tk, KC*4);
-
+        memcpy(a->round_key[0][t], tk, KC*4);
         t+= KC;
 
         for(i = 0; i < 4; i++)
@@ -180,6 +178,11 @@ AVAES *av_aes_init(uint8_t *key, int key_bits, int decrypt) {
             for(j=0; j<16; j++)
                 a->round_key[i][0][j]= sbox[a->round_key[i][0][j]];
             mix(a->round_key[i], dec_multbl);
+        }
+    }else{
+        for(i=0; i<(rounds+1)/2; i++){
+            for(j=0; j<16; j++)
+                FFSWAP(int, a->round_key[i][0][j], a->round_key[rounds-i][0][j]);
         }
     }
 
