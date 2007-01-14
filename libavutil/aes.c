@@ -23,8 +23,7 @@
 #include "aes.h"
 
 typedef struct AVAES{
-    uint8_t round_enc_key[15][4][4];
-    uint8_t round_dec_key[15][4][4];
+    uint8_t round_key[15][4][4];
     uint8_t state[4][4];
     int rounds;
 }AVAES;
@@ -76,36 +75,36 @@ void av_aes_decrypt(AVAES *a){
     int t, r;
 
     for(r=a->rounds; r>1; r--){
-        addkey(a->state, a->round_dec_key[r]);
+        addkey(a->state, a->round_key[r]);
         SUBSHIFT3x((a->state[0]+1))
         SUBSHIFT2x((a->state[0]+2))
         SUBSHIFT1x((a->state[0]+3))
         mix(a->state, dec_multbl);
     }
-    addkey(a->state, a->round_dec_key[1]);
+    addkey(a->state, a->round_key[1]);
     SUBSHIFT0((a->state[0]+0), inv_sbox)
     SUBSHIFT3((a->state[0]+1), inv_sbox)
     SUBSHIFT2((a->state[0]+2), inv_sbox)
     SUBSHIFT1((a->state[0]+3), inv_sbox)
-    addkey(a->state, a->round_dec_key[0]);
+    addkey(a->state, a->round_key[0]);
 }
 
 void av_aes_encrypt(AVAES *a){
     int r, t;
 
     for(r=0; r<a->rounds-1; r++){
-        addkey(a->state, a->round_enc_key[r]);
+        addkey(a->state, a->round_key[r]);
         SUBSHIFT1x((a->state[0]+1))
         SUBSHIFT2x((a->state[0]+2))
         SUBSHIFT3x((a->state[0]+3))
         mix(a->state, enc_multbl);
     }
-    addkey(a->state, a->round_enc_key[r]);
+    addkey(a->state, a->round_key[r]);
     SUBSHIFT0((a->state[0]+0), sbox)
     SUBSHIFT1((a->state[0]+1), sbox)
     SUBSHIFT2((a->state[0]+2), sbox)
     SUBSHIFT3((a->state[0]+3), sbox)
-    addkey(a->state, a->round_enc_key[r+1]);
+    addkey(a->state, a->round_key[r+1]);
 }
 
 static init_multbl2(uint8_t tbl[1024], int c[4], uint8_t *log8, uint8_t *alog8, uint8_t *sbox){
@@ -118,7 +117,7 @@ static init_multbl2(uint8_t tbl[1024], int c[4], uint8_t *log8, uint8_t *alog8, 
 
 
 // this is based on the reference AES code by Paulo Barreto and Vincent Rijmen
-AVAES *av_aes_init(uint8_t *key, int key_bits) {
+AVAES *av_aes_init(uint8_t *key, int key_bits, int decrypt) {
     AVAES *a;
     int i, j, t, rconpointer = 0;
     uint8_t tk[8][4];
@@ -168,7 +167,7 @@ AVAES *av_aes_init(uint8_t *key, int key_bits) {
     memcpy(tk, key, KC*4);
 
     for(t= 0; t < (rounds+1)*4;) {
-        memcpy(a->round_enc_key[0][t], tk, KC*4);
+        memcpy(a->round_key[0][t], tk, KC*4);
         t+= KC;
 
         for(i = 0; i < 4; i++)
@@ -183,11 +182,12 @@ AVAES *av_aes_init(uint8_t *key, int key_bits) {
         }
     }
 
-    memcpy(a->round_dec_key, a->round_enc_key, sizeof(a->round_enc_key));
+    if(decrypt){
     for(i=1; i<rounds; i++){
         for(j=0; j<16; j++)
-            a->round_dec_key[i][0][j]= sbox[a->round_enc_key[i][0][j]];
-        mix(a->round_dec_key[i], dec_multbl);
+            a->round_key[i][0][j]= sbox[a->round_key[i][0][j]];
+        mix(a->round_key[i], dec_multbl);
+    }
     }
 
     return a;
@@ -197,11 +197,12 @@ AVAES *av_aes_init(uint8_t *key, int key_bits) {
 
 int main(){
     int i,j,k;
-    AVAES *a= av_aes_init("PI=3.141592654..", 128);
+    AVAES *ae= av_aes_init("PI=3.141592654..", 128, 0);
+    AVAES *ad= av_aes_init("PI=3.141592654..", 128, 1);
     uint8_t zero[16]= {0};
     uint8_t pt[16]= {0x6a, 0x84, 0x86, 0x7c, 0xd7, 0x7e, 0x12, 0xad, 0x07, 0xea, 0x1b, 0xe8, 0x95, 0xc5, 0x3f, 0xa3};
     uint8_t ct[16]= {0x73, 0x22, 0x81, 0xc0, 0xa0, 0xaa, 0xb8, 0xf7, 0xa5, 0x4a, 0x0c, 0x67, 0xa0, 0xc4, 0x5e, 0xcf};
-    AVAES *b= av_aes_init(zero, 128);
+    AVAES *b= av_aes_init(zero, 128, 1);
 
 /*    uint8_t key[16]= {0x42, 0x78, 0xb8, 0x40, 0xfb, 0x44, 0xaa, 0xa7, 0x57, 0xc1, 0xbf, 0x04, 0xac, 0xbe, 0x1a, 0x3e};
     uint8_t IV[16] = {0x57, 0xf0, 0x2a, 0x5c, 0x53, 0x39, 0xda, 0xeb, 0x0a, 0x29, 0x08, 0xa0, 0x6a, 0xc6, 0x39, 0x3f};
@@ -211,7 +212,7 @@ int main(){
 //             175bd7832e7e60a1e92aac568a861eb7*/
     uint8_t ckey[16]= {0x10, 0xa5, 0x88, 0x69, 0xd7, 0x4b, 0xe5, 0xa3, 0x74, 0xcf, 0x86, 0x7c, 0xfb, 0x47, 0x38, 0x59};
     uint8_t cct[16] = {0x6d, 0x25, 0x1e, 0x69, 0x44, 0xb0, 0x51, 0xe0, 0x4e, 0xaa, 0x6f, 0xb4, 0xdb, 0xf7, 0x84, 0x65};
-    AVAES *c= av_aes_init(ckey, 128);
+    AVAES *c= av_aes_init(ckey, 128, 1);
 
     av_log_level= AV_LOG_DEBUG;
 
@@ -233,16 +234,17 @@ int main(){
         for(j=0; j<16; j++){
             pt[j]= random();
         }
-        memcpy(a->state, pt, 16);
+        memcpy(ae->state, pt, 16);
 {START_TIMER
-        av_aes_encrypt(a);
+        av_aes_encrypt(ae);
         if(!(i&(i-1)))
-            av_log(NULL, AV_LOG_ERROR, "%02X %02X %02X %02X\n", a->state[0][0], a->state[1][1], a->state[2][2], a->state[3][3]);
-        av_aes_decrypt(a);
+            av_log(NULL, AV_LOG_ERROR, "%02X %02X %02X %02X\n", ae->state[0][0], ae->state[1][1], ae->state[2][2], ae->state[3][3]);
+        memcpy(ad->state, ae->state, 16);
+        av_aes_decrypt(ad);
 STOP_TIMER("aes")}
         for(j=0; j<16; j++){
-            if(pt[j] != a->state[0][j]){
-                av_log(NULL, AV_LOG_ERROR, "%d %d %02X %02X\n", i,j, pt[j], a->state[0][j]);
+            if(pt[j] != ad->state[0][j]){
+                av_log(NULL, AV_LOG_ERROR, "%d %d %02X %02X\n", i,j, pt[j], ad->state[0][j]);
             }
         }
     }
