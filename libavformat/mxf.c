@@ -169,7 +169,9 @@ typedef struct MXFDataDefinitionUL {
 
 typedef struct MXFMetadataReadTableEntry {
     const UID key;
-    int (*read)(MXFContext *mxf, KLVPacket *klv);
+    int (*read)();
+    int ctx_size;
+    enum MXFMetadataSetType type;
 } MXFMetadataReadTableEntry;
 
 /* partial keys to match */
@@ -298,15 +300,8 @@ static int mxf_add_metadata_set(MXFContext *mxf, void *metadata_set)
     return 0;
 }
 
-static int mxf_read_metadata_preface(MXFContext *mxf, KLVPacket *klv)
+static int mxf_read_metadata_preface(MXFContext *mxf, ByteIOContext *pb, int tag)
 {
-    ByteIOContext *pb = &mxf->fc->pb;
-    int bytes_read = 0;
-
-    while (bytes_read < klv->length) {
-        int tag = get_be16(pb);
-        int size = get_be16(pb); /* SMPTE 336M Table 8 KLV specified length, 0x53 */
-
         switch (tag) {
         case 0x3B03:
             get_buffer(pb, mxf->content_storage_uid, 16);
@@ -322,24 +317,12 @@ static int mxf_read_metadata_preface(MXFContext *mxf, KLVPacket *klv)
             url_fskip(pb, 4); /* useless size of objects, always 16 according to specs */
             get_buffer(pb, (uint8_t *)mxf->essence_containers_uls, mxf->essence_containers_uls_count * sizeof(UID));
             break;
-        default:
-            url_fskip(pb, size);
         }
-        bytes_read += size + 4;
-    }
     return 0;
 }
 
-static int mxf_read_metadata_content_storage(MXFContext *mxf, KLVPacket *klv)
+static int mxf_read_metadata_content_storage(MXFContext *mxf, ByteIOContext *pb, int tag)
 {
-    ByteIOContext *pb = &mxf->fc->pb;
-    int bytes_read = 0;
-
-    while (bytes_read < klv->length) {
-        int tag = get_be16(pb);
-        int size = get_be16(pb); /* SMPTE 336M Table 8 KLV specified length, 0x53 */
-
-        dprintf("tag 0x%04X, size %d\n", tag, size);
         switch (tag) {
         case 0x1901:
             mxf->packages_count = get_be32(pb);
@@ -357,45 +340,13 @@ static int mxf_read_metadata_content_storage(MXFContext *mxf, KLVPacket *klv)
             url_fskip(pb, 4); /* useless size of objects, always 16 according to specs */
             get_buffer(pb, (uint8_t *)mxf->essence_container_data_sets_refs, mxf->essence_container_data_sets_count * sizeof(UID));
             break;
-        default:
-            url_fskip(pb, size);
         }
-        bytes_read += size + 4;
-    }
     return 0;
 }
 
-#define MXF_READ_LOCAL_TAGS_START(typename, ctype, name) \
-    ByteIOContext *pb = &mxf->fc->pb;\
-    ctype *name = av_mallocz(sizeof(*name));\
-    int bytes_read = 0;\
-\
-    while (bytes_read < klv->length) {\
-        int tag = get_be16(pb);\
-        int size = get_be16(pb); /* KLV specified by 0x53 */\
-\
-        bytes_read += size + 4;\
-        dprintf("tag 0x%04X, size %d\n", tag, size);\
-        if (!size) { /* ignore empty tag, needed for some files with empty UMID tag */\
-            av_log(mxf->fc, AV_LOG_ERROR, "local tag 0x%04X with 0 size\n", tag);\
-            continue;\
-        }\
-        switch (tag) {\
-        case 0x3C0A:\
-            get_buffer(pb, name->uid, 16);\
-            break;
-
-#define MXF_READ_LOCAL_TAGS_STOP(typename, ctype, name)\
-        default:\
-            url_fskip(pb, size);\
-        }\
-    }\
-    name->type = typename;\
-    return mxf_add_metadata_set(mxf, name);
-
-static int mxf_read_metadata_source_clip(MXFContext *mxf, KLVPacket *klv)
+static int mxf_read_metadata_source_clip(MXFStructuralComponent *source_clip, ByteIOContext *pb, int tag)
 {
-MXF_READ_LOCAL_TAGS_START(SourceClip, MXFStructuralComponent, source_clip)
+        switch(tag) {
         case 0x0202:
             source_clip->duration = get_be64(pb);
             break;
@@ -410,12 +361,13 @@ MXF_READ_LOCAL_TAGS_START(SourceClip, MXFStructuralComponent, source_clip)
         case 0x1102:
             source_clip->source_track_id = get_be32(pb);
             break;
-MXF_READ_LOCAL_TAGS_STOP(SourceClip, MXFStructuralComponent, source_clip)
+        }
+        return 0;
 }
 
-static int mxf_read_metadata_material_package(MXFContext *mxf, KLVPacket *klv)
+static int mxf_read_metadata_material_package(MXFPackage *package, ByteIOContext *pb, int tag)
 {
-MXF_READ_LOCAL_TAGS_START(MaterialPackage, MXFPackage, package)
+        switch(tag) {
         case 0x4403:
             package->tracks_count = get_be32(pb);
             if (package->tracks_count >= UINT_MAX / sizeof(UID))
@@ -424,12 +376,13 @@ MXF_READ_LOCAL_TAGS_START(MaterialPackage, MXFPackage, package)
             url_fskip(pb, 4); /* useless size of objects, always 16 according to specs */
             get_buffer(pb, (uint8_t *)package->tracks_refs, package->tracks_count * sizeof(UID));
             break;
-MXF_READ_LOCAL_TAGS_STOP(MaterialPackage, MXFPackage, package)
+        }
+        return 0;
 }
 
-static int mxf_read_metadata_track(MXFContext *mxf, KLVPacket *klv)
+static int mxf_read_metadata_track(MXFTrack *track, ByteIOContext *pb, int tag)
 {
-MXF_READ_LOCAL_TAGS_START(Track, MXFTrack, track)
+        switch(tag) {
         case 0x4801:
             track->track_id = get_be32(pb);
             break;
@@ -443,12 +396,13 @@ MXF_READ_LOCAL_TAGS_START(Track, MXFTrack, track)
         case 0x4803:
             get_buffer(pb, track->sequence_ref, 16);
             break;
-MXF_READ_LOCAL_TAGS_STOP(Track, MXFTrack, track)
+        }
+        return 0;
 }
 
-static int mxf_read_metadata_sequence(MXFContext *mxf, KLVPacket *klv)
+static int mxf_read_metadata_sequence(MXFSequence *sequence, ByteIOContext *pb, int tag)
 {
-MXF_READ_LOCAL_TAGS_START(Sequence, MXFSequence, sequence)
+        switch(tag) {
         case 0x0202:
             sequence->duration = get_be64(pb);
             break;
@@ -463,12 +417,13 @@ MXF_READ_LOCAL_TAGS_START(Sequence, MXFSequence, sequence)
             url_fskip(pb, 4); /* useless size of objects, always 16 according to specs */
             get_buffer(pb, (uint8_t *)sequence->structural_components_refs, sequence->structural_components_count * sizeof(UID));
             break;
-MXF_READ_LOCAL_TAGS_STOP(Sequence, MXFSequence, sequence)
+        }
+        return 0;
 }
 
-static int mxf_read_metadata_source_package(MXFContext *mxf, KLVPacket *klv)
+static int mxf_read_metadata_source_package(MXFPackage *package, ByteIOContext *pb, int tag)
 {
-MXF_READ_LOCAL_TAGS_START(SourcePackage, MXFPackage, package)
+        switch(tag) {
         case 0x4403:
             package->tracks_count = get_be32(pb);
             if (package->tracks_count >= UINT_MAX / sizeof(UID))
@@ -485,12 +440,13 @@ MXF_READ_LOCAL_TAGS_START(SourcePackage, MXFPackage, package)
         case 0x4701:
             get_buffer(pb, package->descriptor_ref, 16);
             break;
-MXF_READ_LOCAL_TAGS_STOP(SourcePackage, MXFPackage, package)
+        }
+        return 0;
 }
 
-static int mxf_read_metadata_multiple_descriptor(MXFContext *mxf, KLVPacket *klv)
+static int mxf_read_metadata_multiple_descriptor(MXFDescriptor *descriptor, ByteIOContext *pb, int tag)
 {
-MXF_READ_LOCAL_TAGS_START(MultipleDescriptor, MXFDescriptor, descriptor)
+        switch(tag) {
         case 0x3F01:
             descriptor->sub_descriptors_count = get_be32(pb);
             if (descriptor->sub_descriptors_count >= UINT_MAX / sizeof(UID))
@@ -499,7 +455,8 @@ MXF_READ_LOCAL_TAGS_START(MultipleDescriptor, MXFDescriptor, descriptor)
             url_fskip(pb, 4); /* useless size of objects, always 16 according to specs */
             get_buffer(pb, (uint8_t *)descriptor->sub_descriptors_refs, descriptor->sub_descriptors_count * sizeof(UID));
             break;
-MXF_READ_LOCAL_TAGS_STOP(MultipleDescriptor, MXFDescriptor, descriptor)
+        }
+        return 0;
 }
 
 static void mxf_read_metadata_pixel_layout(ByteIOContext *pb, MXFDescriptor *descriptor)
@@ -525,9 +482,9 @@ static void mxf_read_metadata_pixel_layout(ByteIOContext *pb, MXFDescriptor *des
     } while (code != 0); /* SMPTE 377M E.2.46 */
 }
 
-static int mxf_read_metadata_generic_descriptor(MXFContext *mxf, KLVPacket *klv)
+static int mxf_read_metadata_generic_descriptor(MXFDescriptor *descriptor, ByteIOContext *pb, int tag, int size)
 {
-MXF_READ_LOCAL_TAGS_START(Descriptor, MXFDescriptor, descriptor)
+        switch(tag) {
         case 0x3004:
             get_buffer(pb, descriptor->essence_container_ul, 16);
             break;
@@ -568,7 +525,8 @@ MXF_READ_LOCAL_TAGS_START(Descriptor, MXFDescriptor, descriptor)
             descriptor->extradata_size = size;
             get_buffer(pb, descriptor->extradata, size);
             break;
-MXF_READ_LOCAL_TAGS_STOP(Descriptor, MXFDescriptor, descriptor)
+        }
+        return 0;
 }
 
 /* SMPTE RP224 http://www.smpte-ra.org/mdd/index.html */
@@ -829,22 +787,22 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
 }
 
 static const MXFMetadataReadTableEntry mxf_metadata_read_table[] = {
-    { { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x2F,0x00 }, mxf_read_metadata_preface },
-    { { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x18,0x00 }, mxf_read_metadata_content_storage },
-    { { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x37,0x00 }, mxf_read_metadata_source_package },
-    { { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x36,0x00 }, mxf_read_metadata_material_package },
-    { { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x0F,0x00 }, mxf_read_metadata_sequence },
-    { { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x11,0x00 }, mxf_read_metadata_source_clip },
-    { { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x44,0x00 }, mxf_read_metadata_multiple_descriptor },
-    { { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x42,0x00 }, mxf_read_metadata_generic_descriptor }, /* Generic Sound */
-    { { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x28,0x00 }, mxf_read_metadata_generic_descriptor }, /* CDCI */
-    { { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x29,0x00 }, mxf_read_metadata_generic_descriptor }, /* RGBA */
-    { { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x51,0x00 }, mxf_read_metadata_generic_descriptor }, /* MPEG 2 Video */
-    { { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x48,0x00 }, mxf_read_metadata_generic_descriptor }, /* Wave */
-    { { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x47,0x00 }, mxf_read_metadata_generic_descriptor }, /* AES3 */
-    { { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x3A,0x00 }, mxf_read_metadata_track }, /* Static Track */
-    { { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x3B,0x00 }, mxf_read_metadata_track }, /* Generic Track */
-    { { 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 }, NULL },
+    { { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x2F,0x00 }, mxf_read_metadata_preface, 0, AnyType },
+    { { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x18,0x00 }, mxf_read_metadata_content_storage, 0, AnyType },
+    { { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x37,0x00 }, mxf_read_metadata_source_package, sizeof(MXFPackage), SourcePackage },
+    { { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x36,0x00 }, mxf_read_metadata_material_package, sizeof(MXFPackage), MaterialPackage },
+    { { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x0F,0x00 }, mxf_read_metadata_sequence, sizeof(MXFSequence), Sequence },
+    { { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x11,0x00 }, mxf_read_metadata_source_clip, sizeof(MXFStructuralComponent), SourceClip },
+    { { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x44,0x00 }, mxf_read_metadata_multiple_descriptor, sizeof(MXFDescriptor), MultipleDescriptor },
+    { { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x42,0x00 }, mxf_read_metadata_generic_descriptor, sizeof(MXFDescriptor), Descriptor }, /* Generic Sound */
+    { { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x28,0x00 }, mxf_read_metadata_generic_descriptor, sizeof(MXFDescriptor), Descriptor }, /* CDCI */
+    { { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x29,0x00 }, mxf_read_metadata_generic_descriptor, sizeof(MXFDescriptor), Descriptor }, /* RGBA */
+    { { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x51,0x00 }, mxf_read_metadata_generic_descriptor, sizeof(MXFDescriptor), Descriptor }, /* MPEG 2 Video */
+    { { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x48,0x00 }, mxf_read_metadata_generic_descriptor, sizeof(MXFDescriptor), Descriptor }, /* Wave */
+    { { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x47,0x00 }, mxf_read_metadata_generic_descriptor, sizeof(MXFDescriptor), Descriptor }, /* AES3 */
+    { { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x3A,0x00 }, mxf_read_metadata_track, sizeof(MXFTrack), Track }, /* Static Track */
+    { { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x3B,0x00 }, mxf_read_metadata_track, sizeof(MXFTrack), Track }, /* Generic Track */
+    { { 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 }, NULL, 0, AnyType },
 };
 
 static int mxf_read_sync(ByteIOContext *pb, const uint8_t *key, unsigned size)
@@ -858,6 +816,32 @@ static int mxf_read_sync(ByteIOContext *pb, const uint8_t *key, unsigned size)
             i = -1;
     }
     return i == size;
+}
+
+static int mxf_read_local_tags(MXFContext *mxf, KLVPacket *klv, int (*read_child)(), int ctx_size, enum MXFMetadataSetType type)
+{
+    ByteIOContext *pb = &mxf->fc->pb;
+    MXFMetadataSet *ctx = ctx_size ? av_mallocz(ctx_size) : mxf;
+    uint64_t klv_end= url_ftell(pb) + klv->length;
+
+    while (url_ftell(pb) + 4 < klv_end) {
+        int tag = get_be16(pb);
+        int size = get_be16(pb); /* KLV specified by 0x53 */
+        uint64_t next= url_ftell(pb) + size;
+
+        if (!size) { /* ignore empty tag, needed for some files with empty UMID tag */
+            av_log(mxf->fc, AV_LOG_ERROR, "local tag 0x%04X with 0 size\n", tag);
+            continue;
+        }
+        if(ctx_size && tag == 0x3C0A)
+            get_buffer(pb, ctx->uid, 16);
+        else
+            read_child(ctx, pb, tag, size);
+
+        url_fseek(pb, next, SEEK_SET);
+    }
+    if (ctx_size) ctx->type = type;
+    return ctx_size ? mxf_add_metadata_set(mxf, ctx) : 0;
 }
 
 static int mxf_read_header(AVFormatContext *s, AVFormatParameters *ap)
@@ -890,7 +874,7 @@ static int mxf_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
         for (function = mxf_metadata_read_table; function->read; function++) {
             if (IS_KLV_KEY(klv.key, function->key)) {
-                if (function->read(mxf, &klv) < 0) {
+                if (mxf_read_local_tags(mxf, &klv, function->read, function->ctx_size, function->type) < 0) {
                     av_log(s, AV_LOG_ERROR, "error reading header metadata\n");
                     return -1;
                 }
