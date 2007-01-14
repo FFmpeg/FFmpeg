@@ -99,7 +99,7 @@ void av_aes_encrypt(AVAES *a){
     crypt(a, 2, sbox, enc_multbl);
 }
 
-static init_multbl2(uint8_t tbl[1024], int c[4], uint8_t *log8, uint8_t *alog8, uint8_t *sbox){
+static void init_multbl2(uint8_t tbl[1024], int c[4], uint8_t *log8, uint8_t *alog8, uint8_t *sbox){
     int i;
     for(i=0; i<1024; i++){
         int x= sbox[i/4];
@@ -192,7 +192,7 @@ AVAES *av_aes_init(uint8_t *key, int key_bits, int decrypt) {
 #ifdef TEST
 
 int main(){
-    int i,j,k;
+    int i,j;
     AVAES *ae= av_aes_init("PI=3.141592654..", 128, 0);
     AVAES *ad= av_aes_init("PI=3.141592654..", 128, 1);
     uint8_t zero[16]= {0};
