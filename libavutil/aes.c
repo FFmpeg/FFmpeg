@@ -105,7 +105,7 @@ void av_aes_encrypt(AVAES *a){
 
 // this is based on the reference AES code by Paulo Barreto and Vincent Rijmen
 AVAES *av_aes_init(uint8_t *key, int keyBits) {
-    AVAES *a= av_malloc(sizeof(AVAES));
+    AVAES *a;
     int i, j, t, rconpointer = 0;
     uint8_t tk[8][4];
     int KC= keyBits/32;
@@ -131,10 +131,11 @@ AVAES *av_aes_init(uint8_t *key, int keyBits) {
         }
     }
 
-    a->rounds= ROUNDS;
-
     if(keyBits!=128 && keyBits!=192 && keyBits!=256)
         return NULL;
+
+    a= av_malloc(sizeof(AVAES));
+    a->rounds= ROUNDS;
 
     memcpy(tk, key, KC*4);
 
