@@ -146,8 +146,7 @@ AVAES *av_aes_init(uint8_t *key, int key_bits) {
 
     for(t= 0; t < (rounds+1)*4; ) {
         for(j = 0; (j < KC) && (t < (rounds+1)*4); j++, t++)
-            for(i = 0; i < 4; i++)
-                a->round_key[0][t][i] = tk[j][i];
+            memcpy(a->round_key[0][t],  tk[j], 4);
 
         for(i = 0; i < 4; i++)
                 tk[0][i] ^= sbox[tk[KC-1][(i+1)&3]];
