@@ -4,7 +4,7 @@
 #
 #
 #set -x
-# Even in the 21st century some diffs are not supporting -u.
+# Even in the 21st century some diffs do not support -u.
 diff -u "$0" "$0" > /dev/null 2>&1
 if [ $? -eq 0 ]; then
   diff_cmd="diff -u"
@@ -24,7 +24,7 @@ datadir="./data"
 logfile="$datadir/ffmpeg.regression"
 outfile="$datadir/a-"
 
-# tests to do
+# tests to run
 if [ "$1" = "mpeg4" ] ; then
     do_mpeg4=y
 elif [ "$1" = "mpeg" ] ; then
@@ -107,7 +107,7 @@ else
     do_md5sum() { echo No md5sum program found; }
 fi
 
-# create the data directory if it does not exists
+# create the data directory if it does not exist
 mkdir -p $datadir
 
 FFMPEG_OPTS="-y -flags +bitexact -dct fastint -idct simple"
