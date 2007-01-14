@@ -444,21 +444,6 @@ static int mxf_read_metadata_source_package(MXFPackage *package, ByteIOContext *
     return 0;
 }
 
-static int mxf_read_metadata_multiple_descriptor(MXFDescriptor *descriptor, ByteIOContext *pb, int tag)
-{
-    switch(tag) {
-    case 0x3F01:
-        descriptor->sub_descriptors_count = get_be32(pb);
-        if (descriptor->sub_descriptors_count >= UINT_MAX / sizeof(UID))
-            return -1;
-        descriptor->sub_descriptors_refs = av_malloc(descriptor->sub_descriptors_count * sizeof(UID));
-        url_fskip(pb, 4); /* useless size of objects, always 16 according to specs */
-        get_buffer(pb, (uint8_t *)descriptor->sub_descriptors_refs, descriptor->sub_descriptors_count * sizeof(UID));
-        break;
-    }
-    return 0;
-}
-
 static void mxf_read_metadata_pixel_layout(ByteIOContext *pb, MXFDescriptor *descriptor)
 {
     int code;
@@ -485,6 +470,14 @@ static void mxf_read_metadata_pixel_layout(ByteIOContext *pb, MXFDescriptor *des
 static int mxf_read_metadata_generic_descriptor(MXFDescriptor *descriptor, ByteIOContext *pb, int tag, int size)
 {
     switch(tag) {
+    case 0x3F01:
+        descriptor->sub_descriptors_count = get_be32(pb);
+        if (descriptor->sub_descriptors_count >= UINT_MAX / sizeof(UID))
+            return -1;
+        descriptor->sub_descriptors_refs = av_malloc(descriptor->sub_descriptors_count * sizeof(UID));
+        url_fskip(pb, 4); /* useless size of objects, always 16 according to specs */
+        get_buffer(pb, (uint8_t *)descriptor->sub_descriptors_refs, descriptor->sub_descriptors_count * sizeof(UID));
+        break;
     case 0x3004:
         get_buffer(pb, descriptor->essence_container_ul, 16);
         break;
@@ -793,7 +786,7 @@ static const MXFMetadataReadTableEntry mxf_metadata_read_table[] = {
     { { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x36,0x00 }, mxf_read_metadata_material_package, sizeof(MXFPackage), MaterialPackage },
     { { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x0F,0x00 }, mxf_read_metadata_sequence, sizeof(MXFSequence), Sequence },
     { { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x11,0x00 }, mxf_read_metadata_source_clip, sizeof(MXFStructuralComponent), SourceClip },
-    { { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x44,0x00 }, mxf_read_metadata_multiple_descriptor, sizeof(MXFDescriptor), MultipleDescriptor },
+    { { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x44,0x00 }, mxf_read_metadata_generic_descriptor, sizeof(MXFDescriptor), MultipleDescriptor },
     { { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x42,0x00 }, mxf_read_metadata_generic_descriptor, sizeof(MXFDescriptor), Descriptor }, /* Generic Sound */
     { { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x28,0x00 }, mxf_read_metadata_generic_descriptor, sizeof(MXFDescriptor), Descriptor }, /* CDCI */
     { { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x29,0x00 }, mxf_read_metadata_generic_descriptor, sizeof(MXFDescriptor), Descriptor }, /* RGBA */
