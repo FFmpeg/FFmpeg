@@ -66,7 +66,6 @@ static inline void mix(uint8_t state[4][4], uint32_t multbl[4][256]){
 #ifdef CONFIG_SMALL
         ((uint32_t *)(state))[i] =     multbl[0][state[i][0]]     ^ ROT(multbl[0][state[i][1]], 8)
                                   ^ROT(multbl[0][state[i][2]],16) ^ ROT(multbl[0][state[i][3]],24);
-
 #else
         ((uint32_t *)(state))[i] = multbl[0][state[i][0]] ^ multbl[1][state[i][1]]
                                   ^multbl[2][state[i][2]] ^ multbl[3][state[i][3]];
@@ -137,7 +136,6 @@ AVAES *av_aes_init(uint8_t *key, int key_bits, int decrypt) {
             j = (j ^ (j>>8) ^ 99) & 255;
             inv_sbox[j]= i;
             sbox    [i]= j;
-//            av_log(NULL, AV_LOG_ERROR, "%d, ", log8[i]);
         }
         init_multbl2(dec_multbl[0], (int[4]){0xe, 0x9, 0xd, 0xb}, log8, alog8, inv_sbox);
         init_multbl2(enc_multbl[0], (int[4]){0x2, 0x1, 0x1, 0x3}, log8, alog8, sbox);
