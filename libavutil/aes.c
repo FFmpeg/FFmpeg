@@ -121,7 +121,7 @@ AVAES *av_aes_init(uint8_t *key, int key_bits, int decrypt) {
     uint8_t  log8[256];
     uint8_t alog8[512];
 
-    if(!sbox[255]){
+    if(!enc_multbl[4][1023]){
         j=1;
         for(i=0; i<255; i++){
             alog8[i]=
