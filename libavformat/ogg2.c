@@ -484,7 +484,8 @@ ogg_get_length (AVFormatContext * s)
     url_fseek (&s->pb, end, SEEK_SET);
 
     while (!ogg_read_page (s, &i)){
-        if (ogg->streams[i].granule != -1 && ogg->streams[i].granule != 0)
+        if (ogg->streams[i].granule != -1 && ogg->streams[i].granule != 0 &&
+            ogg->streams[i].codec)
             idx = i;
     }
 
