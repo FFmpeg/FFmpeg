@@ -145,7 +145,6 @@ do_ffmpeg_crc()
 
 do_ffmpeg_nocheck()
 {
-    f="$1"
     shift
     echo $ffmpeg $FFMPEG_OPTS $*
     $ffmpeg $FFMPEG_OPTS -benchmark $* > $bench 2> /tmp/ffmpeg$$
