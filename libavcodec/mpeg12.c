@@ -3178,6 +3178,10 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
                             if(mpeg_field_start(s2) < 0)
                         return -1;
                     }
+                if(!s2->current_picture_ptr){
+                    av_log(avctx, AV_LOG_ERROR, "current_picture not initalized\n");
+                    return -1;
+                }
 
                 if(avctx->thread_count > 1){
                     int threshold= (s2->mb_height*s->slice_count + avctx->thread_count/2) / avctx->thread_count;
