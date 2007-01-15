@@ -21,13 +21,15 @@
 #ifndef AES_H
 #define AES_H
 
+extern const int av_aes_size;
+
 struct AVAES;
 
 /**
- * creates a AVAES context, which can be freed with av_free()
+ * initalizes a AVAES context
  * @param key_bits 128, 192 or 256
  * @param decrypt 0 for encryption, 1 for decryption
  */
-struct AVAES *av_aes_init(uint8_t *key, int key_bits, int decrypt);
+int av_aes_init(struct AVAES *a, uint8_t *key, int key_bits, int decrypt);
 
 #endif /* AES_H */

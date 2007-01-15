@@ -30,6 +30,8 @@ typedef struct AVAES{
     int rounds;
 }AVAES;
 
+const int av_aes_size= sizeof(AVAES);
+
 static const uint8_t rcon[10] = {
   0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36
 };
@@ -112,8 +114,7 @@ static void init_multbl2(uint8_t tbl[1024], int c[4], uint8_t *log8, uint8_t *al
 }
 
 // this is based on the reference AES code by Paulo Barreto and Vincent Rijmen
-AVAES *av_aes_init(uint8_t *key, int key_bits, int decrypt) {
-    AVAES *a;
+int av_aes_init(AVAES *a, uint8_t *key, int key_bits, int decrypt) {
     int i, j, t, rconpointer = 0;
     uint8_t tk[8][4];
     int KC= key_bits>>5;
@@ -142,9 +143,8 @@ AVAES *av_aes_init(uint8_t *key, int key_bits, int decrypt) {
     }
 
     if(key_bits!=128 && key_bits!=192 && key_bits!=256)
-        return NULL;
+        return -1;
 
-    a= av_malloc(sizeof(AVAES));
     a->rounds= rounds;
 
     memcpy(tk, key, KC*4);
@@ -178,15 +178,14 @@ AVAES *av_aes_init(uint8_t *key, int key_bits, int decrypt) {
         }
     }
 
-    return a;
+    return 0;
 }
 
 #ifdef TEST
 
 int main(){
     int i,j;
-    AVAES *ae= av_aes_init("PI=3.141592654..", 128, 0);
-    AVAES *ad= av_aes_init("PI=3.141592654..", 128, 1);
+    AVAES ae, ad, b;
     uint8_t rkey[2][16]= {
         {0},
         {0x10, 0xa5, 0x88, 0x69, 0xd7, 0x4b, 0xe5, 0xa3, 0x74, 0xcf, 0x86, 0x7c, 0xfb, 0x47, 0x38, 0x59}};
@@ -197,32 +196,34 @@ int main(){
         {0x73, 0x22, 0x81, 0xc0, 0xa0, 0xaa, 0xb8, 0xf7, 0xa5, 0x4a, 0x0c, 0x67, 0xa0, 0xc4, 0x5e, 0xcf},
         {0x6d, 0x25, 0x1e, 0x69, 0x44, 0xb0, 0x51, 0xe0, 0x4e, 0xaa, 0x6f, 0xb4, 0xdb, 0xf7, 0x84, 0x65}};
 
+    av_aes_init(&ae, "PI=3.141592654..", 128, 0);
+    av_aes_init(&ad, "PI=3.141592654..", 128, 1);
     av_log_level= AV_LOG_DEBUG;
 
     for(i=0; i<2; i++){
-        AVAES *b= av_aes_init(rkey[i], 128, 1);
-        memcpy(b->state, rct[i], 16);
-        av_aes_decrypt(b);
+        av_aes_init(&b, rkey[i], 128, 1);
+        memcpy(b.state, rct[i], 16);
+        av_aes_decrypt(&b);
         for(j=0; j<16; j++)
-            if(rpt[i][j] != b->state[0][j])
-                av_log(NULL, AV_LOG_ERROR, "%d %02X %02X\n", j, rpt[i][j], b->state[0][j]);
+            if(rpt[i][j] != b.state[0][j])
+                av_log(NULL, AV_LOG_ERROR, "%d %02X %02X\n", j, rpt[i][j], b.state[0][j]);
     }
 
     for(i=0; i<10000; i++){
         for(j=0; j<16; j++){
             pt[j]= random();
         }
-        memcpy(ae->state, pt, 16);
+        memcpy(ae.state, pt, 16);
 {START_TIMER
-        av_aes_encrypt(ae);
+        av_aes_encrypt(&ae);
         if(!(i&(i-1)))
-            av_log(NULL, AV_LOG_ERROR, "%02X %02X %02X %02X\n", ae->state[0][0], ae->state[1][1], ae->state[2][2], ae->state[3][3]);
-        memcpy(ad->state, ae->state, 16);
-        av_aes_decrypt(ad);
+            av_log(NULL, AV_LOG_ERROR, "%02X %02X %02X %02X\n", ae.state[0][0], ae.state[1][1], ae.state[2][2], ae.state[3][3]);
+        memcpy(ad.state, ae.state, 16);
+        av_aes_decrypt(&ad);
 STOP_TIMER("aes")}
         for(j=0; j<16; j++){
-            if(pt[j] != ad->state[0][j]){
-                av_log(NULL, AV_LOG_ERROR, "%d %d %02X %02X\n", i,j, pt[j], ad->state[0][j]);
+            if(pt[j] != ad.state[0][j]){
+                av_log(NULL, AV_LOG_ERROR, "%d %d %02X %02X\n", i,j, pt[j], ad.state[0][j]);
             }
         }
     }
