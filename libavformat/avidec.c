@@ -397,7 +397,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
             break;
         case MKTAG('s', 't', 'r', 'f'):
             /* stream header */
-            if (stream_index >= s->nb_streams || avi->dv_demux) {
+            if (stream_index >= (unsigned)s->nb_streams || avi->dv_demux) {
                 url_fskip(pb, size);
             } else {
                 st = s->streams[stream_index];
