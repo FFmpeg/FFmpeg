@@ -101,7 +101,7 @@ void av_aes_encrypt(AVAES *a){
 static void init_multbl2(uint8_t tbl[1024], int c[4], uint8_t *log8, uint8_t *alog8, uint8_t *sbox){
     int i, j;
     for(i=0; i<1024; i++){
-        int x= sbox[i/4];
+        int x= sbox[i>>2];
         if(x) tbl[i]= alog8[ log8[x] + log8[c[i&3]] ];
     }
 #ifndef CONFIG_SMALL
@@ -116,7 +116,7 @@ AVAES *av_aes_init(uint8_t *key, int key_bits, int decrypt) {
     AVAES *a;
     int i, j, t, rconpointer = 0;
     uint8_t tk[8][4];
-    int KC= key_bits/32;
+    int KC= key_bits>>5;
     int rounds= KC + 6;
     uint8_t  log8[256];
     uint8_t alog8[512];
@@ -158,7 +158,7 @@ AVAES *av_aes_init(uint8_t *key, int key_bits, int decrypt) {
         tk[0][0] ^= rcon[rconpointer++];
 
         for(j = 1; j < KC; j++){
-            if(KC != 8 || j != KC/2)
+            if(KC != 8 || j != KC>>1)
                 for(i = 0; i < 4; i++) tk[j][i] ^=      tk[j-1][i];
             else
                 for(i = 0; i < 4; i++) tk[j][i] ^= sbox[tk[j-1][i]];
@@ -172,7 +172,7 @@ AVAES *av_aes_init(uint8_t *key, int key_bits, int decrypt) {
             mix(a->round_key[i], dec_multbl);
         }
     }else{
-        for(i=0; i<(rounds+1)/2; i++){
+        for(i=0; i<(rounds+1)>>1; i++){
             for(j=0; j<16; j++)
                 FFSWAP(int, a->round_key[i][0][j], a->round_key[rounds-i][0][j]);
         }
