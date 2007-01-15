@@ -21,7 +21,6 @@
  */
 
 #include "common.h"
-#include "log.h"
 #include "aes.h"
 
 typedef struct AVAES{
@@ -182,6 +181,7 @@ int av_aes_init(AVAES *a, uint8_t *key, int key_bits, int decrypt) {
 }
 
 #ifdef TEST
+#include "log.h"
 
 int main(){
     int i,j;
