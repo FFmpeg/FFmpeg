@@ -23,4 +23,11 @@
 
 struct AVAES;
 
+/**
+ * creates a AVAES context, which can be freed with av_free()
+ * @param key_bits 128, 192 or 256
+ * @param decrypt 0 for encryption, 1 for decryption
+ */
+struct AVAES *av_aes_init(uint8_t *key, int key_bits, int decrypt);
+
 #endif /* AES_H */
