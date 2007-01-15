@@ -50,17 +50,16 @@ static inline void addkey(uint64_t state[2], uint64_t round_key[2]){
     state[1] ^= round_key[1];
 }
 
-#define SUBSHIFT0(s, box)         s[0]=box[s[ 0]]; s[ 4]=box[s[ 4]];          s[ 8]=box[s[ 8]]; s[12]=box[s[12]];
-#define SUBSHIFT1(s, box) t=s[0]; s[0]=box[s[ 4]]; s[ 4]=box[s[ 8]];          s[ 8]=box[s[12]]; s[12]=box[t];
-#define SUBSHIFT2(s, box) t=s[0]; s[0]=box[s[ 8]]; s[ 8]=box[    t]; t=s[ 4]; s[ 4]=box[s[12]]; s[12]=box[t];
-#define SUBSHIFT3(s, box) t=s[0]; s[0]=box[s[12]]; s[12]=box[s[ 8]];          s[ 8]=box[s[ 4]]; s[ 4]=box[t];
-
-#define SUBSHIFT1x(s) t=s[0]; s[0]=s[ 4]; s[ 4]=s[ 8];          s[ 8]=s[12]; s[12]=t;
-#define SUBSHIFT2x(s) t=s[0]; s[0]=s[ 8]; s[ 8]=    t; t=s[ 4]; s[ 4]=s[12]; s[12]=t;
-#define SUBSHIFT3x(s) t=s[0]; s[0]=s[12]; s[12]=s[ 8];          s[ 8]=s[ 4]; s[ 4]=t;
+static void subshift(uint8_t s0[4], uint8_t s1[4], uint8_t s2[4], uint8_t s3[4], uint8_t *box){
+    int t;
+             s0[0]=box[s0[ 0]]; s0[ 4]=box[s0[ 4]];          s0[ 8]=box[s0[ 8]]; s0[12]=box[s0[12]];
+    t=s1[0]; s1[0]=box[s1[ 4]]; s1[ 4]=box[s1[ 8]];          s1[ 8]=box[s1[12]]; s1[12]=box[t];
+    t=s2[0]; s2[0]=box[s2[ 8]]; s2[ 8]=box[    t]; t=s2[ 4]; s2[ 4]=box[s2[12]]; s2[12]=box[t];
+    t=s3[0]; s3[0]=box[s3[12]]; s3[12]=box[s3[ 8]];          s3[ 8]=box[s3[ 4]]; s3[ 4]=box[t];
+}
 
 #define ROT(x,s) ((x<<s)|(x>>(32-s)))
-
+#if 0
 static inline void mix(uint8_t state[4][4], uint32_t multbl[4][256]){
     int i;
     for(i=0; i<4; i++)
@@ -72,22 +71,32 @@ static inline void mix(uint8_t state[4][4], uint32_t multbl[4][256]){
                                   ^multbl[2][state[i][2]] ^ multbl[3][state[i][3]];
 #endif
 }
+#endif
+static inline void mix2(uint8_t state[4][4], uint32_t multbl[4][256], int s1, int s3){
+    int a = multbl[0][state[0][0]] ^ multbl[1][state[s1  ][1]]
+           ^multbl[2][state[2][2]] ^ multbl[3][state[s3  ][3]];
+    int b = multbl[0][state[1][0]] ^ multbl[1][state[s3-1][1]]
+           ^multbl[2][state[3][2]] ^ multbl[3][state[s1-1][3]];
+    int c = multbl[0][state[2][0]] ^ multbl[1][state[s3  ][1]]
+           ^multbl[2][state[0][2]] ^ multbl[3][state[s1  ][3]];
+    int d = multbl[0][state[3][0]] ^ multbl[1][state[s1-1][1]]
+           ^multbl[2][state[1][2]] ^ multbl[3][state[s3-1][3]];
+
+    ((uint32_t *)(state))[0]=a;
+    ((uint32_t *)(state))[1]=b;
+    ((uint32_t *)(state))[2]=c;
+    ((uint32_t *)(state))[3]=d;
+}
 
 static inline void crypt(AVAES *a, int s, uint8_t *sbox, uint32_t *multbl){
     int t, r;
 
     for(r=a->rounds; r>1; r--){
         addkey(a->state, a->round_key[r]);
-        SUBSHIFT3x((a->state[0]+1+s))
-        SUBSHIFT2x((a->state[0]+2))
-        SUBSHIFT1x((a->state[0]+3-s))
-        mix(a->state, multbl);
+        mix2(a->state, multbl, 3-s, 1+s);
     }
     addkey(a->state, a->round_key[1]);
-    SUBSHIFT0((a->state[0]+0  ), sbox)
-    SUBSHIFT3((a->state[0]+1+s), sbox)
-    SUBSHIFT2((a->state[0]+2  ), sbox)
-    SUBSHIFT1((a->state[0]+3-s), sbox)
+    subshift(a->state[0], a->state[0]+3-s, a->state[0]+2, a->state[0]+1+s, sbox);
     addkey(a->state, a->round_key[0]);
 }
 
@@ -166,9 +175,8 @@ int av_aes_init(AVAES *a, uint8_t *key, int key_bits, int decrypt) {
 
     if(decrypt){
         for(i=1; i<rounds; i++){
-            for(j=0; j<16; j++)
-                a->round_key[i][0][j]= sbox[a->round_key[i][0][j]];
-            mix(a->round_key[i], dec_multbl);
+            subshift(a->round_key[i][0], a->round_key[i][0]+3, a->round_key[i][0]+2, a->round_key[i][0]+1, sbox);
+            mix2(a->round_key[i], dec_multbl, 1, 3);
         }
     }else{
         for(i=0; i<(rounds+1)>>1; i++){
