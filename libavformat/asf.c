@@ -601,6 +601,10 @@ static int asf_read_packet(AVFormatContext *s, AVPacket *pkt)
                 assert(asf->packet_replic_size >= 8);
                 // it should be always at least 8 bytes - FIXME validate
                 asf->packet_obj_size = get_le32(pb);
+                if(asf->packet_obj_size >= (1<<24) || asf->packet_obj_size <= 0){
+                    av_log(s, AV_LOG_ERROR, "packet_obj_size invalid\n");
+                    continue;
+                }
                 asf->packet_frag_timestamp = get_le32(pb); // timestamp
                 if (asf->packet_replic_size > 8)
                     url_fskip(pb, asf->packet_replic_size - 8);
