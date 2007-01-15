@@ -57,6 +57,7 @@ typedef struct ogg_state {
     uint64_t pos;
     int curidx;
     struct ogg_state *next;
+    int nstreams;
     ogg_stream_t streams[1];
 } ogg_state_t;
 

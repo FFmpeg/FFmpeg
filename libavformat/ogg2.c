@@ -90,6 +90,7 @@ ogg_save (AVFormatContext * s)
     ost->pos = url_ftell (&s->pb);;
     ost->curidx = ogg->curidx;
     ost->next = ogg->state;
+    ost->nstreams = ogg->nstreams;
     memcpy(ost->streams, ogg->streams, ogg->nstreams * sizeof(*ogg->streams));
 
     for (i = 0; i < ogg->nstreams; i++){
@@ -123,8 +124,9 @@ ogg_restore (AVFormatContext * s, int discard)
 
         url_fseek (bc, ost->pos, SEEK_SET);
         ogg->curidx = ost->curidx;
-        memcpy (ogg->streams, ost->streams,
-        ogg->nstreams * sizeof (*ogg->streams));
+        ogg->nstreams = ost->nstreams;
+        memcpy(ogg->streams, ost->streams,
+               ost->nstreams * sizeof(*ogg->streams));
     }
 
     av_free (ost);
