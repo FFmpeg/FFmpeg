@@ -116,33 +116,31 @@ FFMPEG_OPTS="-y -flags +bitexact -dct fastint -idct simple"
 
 do_ffmpeg()
 {
-    f="$1"
     shift
     echo $ffmpeg $FFMPEG_OPTS $*
     $ffmpeg $FFMPEG_OPTS -benchmark $* > $bench 2> /tmp/ffmpeg$$
     egrep -v "^(Stream|Press|Input|Output|frame|  Stream|  Duration|video:)" /tmp/ffmpeg$$ || true
     rm -f /tmp/ffmpeg$$
-    do_md5sum $f >> $logfile
-    if [ $f = $raw_dst ] ; then
-        $tiny_psnr $f $raw_ref >> $logfile
-    elif [ $f = $pcm_dst ] ; then
-        $tiny_psnr $f $pcm_ref 2 >> $logfile
+    do_md5sum $1 >> $logfile
+    if [ $1 = $raw_dst ] ; then
+        $tiny_psnr $1 $raw_ref >> $logfile
+    elif [ $1 = $pcm_dst ] ; then
+        $tiny_psnr $1 $pcm_ref 2 >> $logfile
     else
-        wc -c $f >> $logfile
+        wc -c $1 >> $logfile
     fi
     expr "`cat $bench`" : '.*utime=\(.*s\)' > $bench2
-    echo `cat $bench2` $f >> $benchfile
+    echo `cat $bench2` $1 >> $benchfile
 }
 
 do_ffmpeg_crc()
 {
-    f="$1"
     shift
     echo $ffmpeg $FFMPEG_OPTS $* -f crc $datadir/ffmpeg.crc
     $ffmpeg $FFMPEG_OPTS $* -f crc $datadir/ffmpeg.crc > /tmp/ffmpeg$$ 2>&1
     egrep -v "^(Stream|Press|Input|Output|frame|  Stream|  Duration|video:|ffmpeg version|  configuration|  built)" /tmp/ffmpeg$$ || true
     rm -f /tmp/ffmpeg$$
-    echo "$f `cat $datadir/ffmpeg.crc`" >> $logfile
+    echo "$1 `cat $datadir/ffmpeg.crc`" >> $logfile
 }
 
 do_ffmpeg_nocheck()
@@ -154,7 +152,7 @@ do_ffmpeg_nocheck()
     egrep -v "^(Stream|Press|Input|Output|frame|  Stream|  Duration|video:)" /tmp/ffmpeg$$ || true
     rm -f /tmp/ffmpeg$$
     expr "`cat $bench`" : '.*utime=\(.*s\)' > $bench2
-    echo `cat $bench2` $f >> $benchfile
+    echo `cat $bench2` $1 >> $benchfile
 }
 
 do_video_decoding()
