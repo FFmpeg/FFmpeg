@@ -28,6 +28,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 #include <time.h>
+#include <stdarg.h>
 #include "avformat.h"
 #include "dvdata.h"
 #include "dv.h"
@@ -66,11 +67,12 @@ static int dv_audio_frame_size(const DVprofile* sys, int frame)
                                             sizeof(sys->audio_samples_dist[0]))];
 }
 
-static int dv_write_pack(enum dv_pack_type pack_id, DVMuxContext *c, uint8_t* buf)
+static int dv_write_pack(enum dv_pack_type pack_id, DVMuxContext *c, uint8_t* buf, ...)
 {
     struct tm tc;
     time_t ct;
     int ltc_frame;
+    va_list ap;
 
     buf[0] = (uint8_t)pack_id;
     switch (pack_id) {
@@ -99,7 +101,8 @@ static int dv_write_pack(enum dv_pack_type pack_id, DVMuxContext *c, uint8_t* bu
                    (tc.tm_hour % 10);         /* Units of hours */
           break;
     case dv_audio_source:  /* AAUX source pack */
-          buf[1] = (0 << 7) | /* locked mode       */
+          va_start(ap, buf);
+          buf[1] = (1 << 7) | /* locked mode -- SMPTE only supports locked mode */
                    (1 << 6) | /* reserved -- always 1 */
                    (dv_audio_frame_size(c->sys, c->frames) -
                     c->sys->audio_min_samples[0]);
@@ -107,7 +110,7 @@ static int dv_write_pack(enum dv_pack_type pack_id, DVMuxContext *c, uint8_t* bu
           buf[2] = (0 << 7) | /* multi-stereo      */
                    (0 << 5) | /* #of audio channels per block: 0 -- 1 channel */
                    (0 << 4) | /* pair bit: 0 -- one pair of channels */
-                    0;        /* audio mode        */
+                   !!va_arg(ap, int); /* audio mode        */
           buf[3] = (1 << 7) | /* res               */
                    (1 << 6) | /* multi-language flag */
                    (c->sys->dsf << 5) | /*  system: 60fields/50fields */
@@ -116,6 +119,7 @@ static int dv_write_pack(enum dv_pack_type pack_id, DVMuxContext *c, uint8_t* bu
                    (0 << 6) | /* emphasis time constant: 0 -- reserved */
                    (0 << 3) | /* frequency: 0 -- 48Khz, 1 -- 44,1Khz, 2 -- 32Khz */
                     0;        /* quantization: 0 -- 16bit linear, 1 -- 12bit nonlinear */
+          va_end(ap);
           break;
     case dv_audio_control:
           buf[1] = (0 << 6) | /* copy protection: 0 -- unrestricted */
@@ -179,7 +183,7 @@ static void dv_inject_audio(DVMuxContext *c, int channel, uint8_t* frame_ptr)
     for (i = 0; i < c->sys->difseg_size; i++) {
        frame_ptr += 6 * 80; /* skip DIF segment header */
        for (j = 0; j < 9; j++) {
-          dv_write_pack(dv_aaux_packs_dist[i][j], c, &frame_ptr[3]);
+          dv_write_pack(dv_aaux_packs_dist[i][j], c, &frame_ptr[3], i >= c->sys->difseg_size/2);
           for (d = 8; d < 80; d+=2) {
              of = c->sys->audio_shuffle[i][j] + (d - 8)/2 * c->sys->audio_stride;
              if (of*2 >= size)

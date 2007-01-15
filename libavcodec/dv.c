@@ -1229,6 +1229,10 @@ static int dvvideo_encode_frame(AVCodecContext *c, uint8_t *buf, int buf_size,
 
 static int dvvideo_close(AVCodecContext *c)
 {
+    DVVideoContext *s = c->priv_data;
+
+    if(s->picture.data[0])
+        c->release_buffer(c, &s->picture);
 
     return 0;
 }
@@ -1242,10 +1246,7 @@ AVCodec dvvideo_encoder = {
     sizeof(DVVideoContext),
     dvvideo_init,
     dvvideo_encode_frame,
-    dvvideo_close,
-    NULL,
-    CODEC_CAP_DR1,
-    NULL
+    .pix_fmts = (enum PixelFormat[]) {PIX_FMT_YUV411P, PIX_FMT_YUV422P, PIX_FMT_YUV420P, -1},
 };
 #endif // CONFIG_DVVIDEO_ENCODER
 
