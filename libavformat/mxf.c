@@ -814,7 +814,7 @@ static int mxf_read_header(AVFormatContext *s, AVFormatParameters *ap)
     url_fseek(&s->pb, -14, SEEK_CUR);
     mxf->fc = s;
     while (!url_feof(&s->pb)) {
-        const MXFMetadataReadTableEntry *function;
+        const MXFMetadataReadTableEntry *metadata;
 
         if (klv_read_packet(&klv, &s->pb) < 0) {
             av_log(s, AV_LOG_ERROR, "error reading KLV packet\n");
@@ -829,16 +829,16 @@ static int mxf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             break;
         }
 
-        for (function = mxf_metadata_read_table; function->read; function++) {
-            if (IS_KLV_KEY(klv.key, function->key)) {
-                if (mxf_read_local_tags(mxf, &klv, function->read, function->ctx_size, function->type) < 0) {
+        for (metadata = mxf_metadata_read_table; metadata->read; metadata++) {
+            if (IS_KLV_KEY(klv.key, metadata->key)) {
+                if (mxf_read_local_tags(mxf, &klv, metadata->read, metadata->ctx_size, metadata->type) < 0) {
                     av_log(s, AV_LOG_ERROR, "error reading header metadata\n");
                     return -1;
                 }
                 break;
             }
         }
-        if (!function->read)
+        if (!metadata->read)
             url_fskip(&s->pb, klv.length);
     }
     return mxf_parse_structural_metadata(mxf);
