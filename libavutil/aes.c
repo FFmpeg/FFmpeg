@@ -91,11 +91,11 @@ static inline void crypt(AVAES *a, int s, uint8_t *sbox, uint32_t *multbl){
     addkey(a->state, a->round_key[0]);
 }
 
-void av_aes_decrypt(AVAES *a){
+static void aes_decrypt(AVAES *a){
     crypt(a, 0, inv_sbox, dec_multbl);
 }
 
-void av_aes_encrypt(AVAES *a){
+static void aes_encrypt(AVAES *a){
     crypt(a, 2, sbox, enc_multbl);
 }
 
@@ -203,7 +203,7 @@ int main(){
     for(i=0; i<2; i++){
         av_aes_init(&b, rkey[i], 128, 1);
         memcpy(b.state, rct[i], 16);
-        av_aes_decrypt(&b);
+        aes_decrypt(&b);
         for(j=0; j<16; j++)
             if(rpt[i][j] != b.state[0][j])
                 av_log(NULL, AV_LOG_ERROR, "%d %02X %02X\n", j, rpt[i][j], b.state[0][j]);
@@ -215,11 +215,11 @@ int main(){
         }
         memcpy(ae.state, pt, 16);
 {START_TIMER
-        av_aes_encrypt(&ae);
+        aes_encrypt(&ae);
         if(!(i&(i-1)))
             av_log(NULL, AV_LOG_ERROR, "%02X %02X %02X %02X\n", ae.state[0][0], ae.state[1][1], ae.state[2][2], ae.state[3][3]);
         memcpy(ad.state, ae.state, 16);
-        av_aes_decrypt(&ad);
+        aes_decrypt(&ad);
 STOP_TIMER("aes")}
         for(j=0; j<16; j++){
             if(pt[j] != ad.state[0][j]){
