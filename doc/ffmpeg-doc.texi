@@ -1101,12 +1101,6 @@ performance on systems without hardware floating point support).
 
 @chapter Platform Specific information
 
-@section Linux
-
-FFmpeg should be compiled with at least GCC 2.95.3. GCC 3.2 is the
-preferred compiler now for FFmpeg. All future optimizations will depend on
-features only found in GCC 3.2.
-
 @section BSD
 
 BSD make will not build FFmpeg, you need to install and use GNU Make
