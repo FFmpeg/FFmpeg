@@ -298,7 +298,7 @@ typedef struct AVFormatContext {
     struct AVOutputFormat *oformat;
     void *priv_data;
     ByteIOContext pb;
-    int nb_streams;
+    unsigned int nb_streams;
     AVStream *streams[MAX_STREAMS];
     char filename[1024]; /* input or output filename */
     /* stream info */
