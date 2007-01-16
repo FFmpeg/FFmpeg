@@ -110,7 +110,7 @@ static double av_strtod(const char *name, char **tail) {
 
         if(*next=='B') {
             d*=8;
-            *next++;
+            next++;
         }
     }
     /* if requested, fill in tail with the position after the last parsed
