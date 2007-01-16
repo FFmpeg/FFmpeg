@@ -85,24 +85,35 @@ static inline void mix(uint8_t state[2][4][4], uint32_t multbl[4][256], int s1, 
                               ^multbl[2][state[1][1][2]] ^ multbl[3][state[1][s3-1][3]];
 }
 
-static inline void crypt(AVAES *a, int s, uint8_t *sbox, uint32_t *multbl, uint8_t *dst, uint8_t *src){
+static inline void crypt(AVAES *a, int s, uint8_t *sbox, uint32_t *multbl){
     int r;
 
-    addkey(a->state[1], src, a->round_key[a->rounds]);
     for(r=a->rounds-1; r>0; r--){
         mix(a->state, multbl, 3-s, 1+s);
         addkey(a->state[1], a->state[0], a->round_key[r]);
     }
     subshift(a->state[0][0], s, sbox);
-    addkey(dst, a->state[0], a->round_key[0]);
 }
 
-static void aes_decrypt(AVAES *a, uint8_t *dst, uint8_t *src){
-    crypt(a, 0, inv_sbox, dec_multbl, dst, src);
-}
-
-static void aes_encrypt(AVAES *a, uint8_t *dst, uint8_t *src){
-    crypt(a, 2, sbox, enc_multbl, dst, src);
+void aes_crypt(AVAES *a, uint8_t *dst, uint8_t *src, int count, uint8_t *iv, int decrypt){
+    while(count--){
+        addkey(a->state[1], src, a->round_key[a->rounds]);
+        if(decrypt) {
+            crypt(a, 0, inv_sbox, dec_multbl);
+            if(iv){
+                addkey(a->state[0], a->state[0], iv);
+                memcpy(iv, src, 16);
+            }
+            addkey(dst, a->state[0], a->round_key[0]);
+        }else{
+            if(iv) addkey(a->state[1], a->state[1], iv);
+            crypt(a, 2,     sbox, enc_multbl);
+            addkey(dst, a->state[0], a->round_key[0]);
+            if(iv) memcpy(iv, dst, 16);
+        }
+        src+=16;
+        dst+=16;
+    }
 }
 
 static void init_multbl2(uint8_t tbl[1024], int c[4], uint8_t *log8, uint8_t *alog8, uint8_t *sbox){
@@ -211,7 +222,7 @@ int main(){
 
     for(i=0; i<2; i++){
         av_aes_init(&b, rkey[i], 128, 1);
-        aes_decrypt(&b, temp, rct[i]);
+        aes_crypt(&b, temp, rct[i], 1, NULL, 1);
         for(j=0; j<16; j++)
             if(rpt[i][j] != temp[j])
                 av_log(NULL, AV_LOG_ERROR, "%d %02X %02X\n", j, rpt[i][j], temp[j]);
@@ -222,10 +233,10 @@ int main(){
             pt[j]= random();
         }
 {START_TIMER
-        aes_encrypt(&ae, temp, pt);
+        aes_crypt(&ae, temp, pt, 1, NULL, 0);
         if(!(i&(i-1)))
             av_log(NULL, AV_LOG_ERROR, "%02X %02X %02X %02X\n", temp[0], temp[5], temp[10], temp[15]);
-        aes_decrypt(&ad, temp, temp);
+        aes_crypt(&ad, temp, temp, 1, NULL, 1);
 STOP_TIMER("aes")}
         for(j=0; j<16; j++){
             if(pt[j] != temp[j]){
