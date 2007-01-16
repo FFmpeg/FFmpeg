@@ -89,7 +89,7 @@ static inline void mix2(uint8_t state[4][4], uint32_t multbl[4][256], int s1, in
 }
 
 static inline void crypt(AVAES *a, int s, uint8_t *sbox, uint32_t *multbl){
-    int t, r;
+    int r;
 
     for(r=a->rounds; r>1; r--){
         addkey(a->state, a->round_key[r]);
