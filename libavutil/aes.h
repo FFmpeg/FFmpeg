@@ -40,6 +40,6 @@ int av_aes_init(struct AVAES *a, uint8_t *key, int key_bits, int decrypt);
  * @param iv initalization vector for CBC mode, if NULL then ECB will be used
  * @param decrypt 0 for encryption, 1 for decryption
  */
-void aes_crypt(AVAES *a, uint8_t *dst, uint8_t *src, int count, uint8_t *iv, int decrypt);
+void aes_crypt(struct AVAES *a, uint8_t *dst, uint8_t *src, int count, uint8_t *iv, int decrypt);
 
 #endif /* AES_H */
