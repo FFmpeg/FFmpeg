@@ -172,10 +172,9 @@ int av_aes_init(AVAES *a, uint8_t *key, int key_bits, int decrypt) {
 
     if(decrypt){
         for(i=1; i<rounds; i++){
-            uint8_t tmp[2][16];
-            memcpy(tmp[1], a->round_key[i][0], 16);
-            subshift(tmp[0], 0, sbox);
-            memcpy(tmp[1], tmp[0], 16);
+            uint8_t tmp[3][16];
+            memcpy(tmp[2], a->round_key[i][0], 16);
+            subshift(tmp[1], 0, sbox);
             mix(tmp, dec_multbl, 1, 3);
             memcpy(a->round_key[i][0], tmp[0], 16);
         }
