@@ -8067,6 +8067,7 @@ static int decode_nal_units(H264Context *h, uint8_t *buf, int buf_size){
             h->inter_gb_ptr= &h->inter_gb;
 
             if(h->redundant_pic_count==0 && h->intra_gb_ptr && s->data_partitioning
+               && s->context_initialized
                && s->hurry_up < 5
                && (avctx->skip_frame < AVDISCARD_NONREF || h->nal_ref_idc)
                && (avctx->skip_frame < AVDISCARD_BIDIR  || h->slice_type!=B_TYPE)
