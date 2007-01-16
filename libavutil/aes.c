@@ -50,11 +50,13 @@ static inline void addkey(uint64_t state[2], uint64_t round_key[2]){
     state[3] = state[1] ^ round_key[1];
 }
 
-static void subshift(uint8_t s0[2][16], uint8_t s1[2][16], uint8_t s3[2][16], uint8_t *box){
+static void subshift(uint8_t s0[2][16], int s, uint8_t *box){
+    uint8_t (*s1)[16]= s0[0] - s;
+    uint8_t (*s3)[16]= s0[0] + s;
     s0[0][0]=box[s0[1][ 0]]; s0[0][ 4]=box[s0[1][ 4]]; s0[0][ 8]=box[s0[1][ 8]]; s0[0][12]=box[s0[1][12]];
-    s1[0][0]=box[s1[1][ 4]]; s1[0][ 4]=box[s1[1][ 8]]; s1[0][ 8]=box[s1[1][12]]; s1[0][12]=box[s1[1][ 0]];
+    s1[0][3]=box[s1[1][ 7]]; s1[0][ 7]=box[s1[1][11]]; s1[0][11]=box[s1[1][15]]; s1[0][15]=box[s1[1][ 3]];
     s0[0][2]=box[s0[1][10]]; s0[0][10]=box[s0[1][ 2]]; s0[0][ 6]=box[s0[1][14]]; s0[0][14]=box[s0[1][ 6]];
-    s3[0][0]=box[s3[1][12]]; s3[0][12]=box[s3[1][ 8]]; s3[0][ 8]=box[s3[1][ 4]]; s3[0][ 4]=box[s3[1][ 0]];
+    s3[0][1]=box[s3[1][13]]; s3[0][13]=box[s3[1][ 9]]; s3[0][ 9]=box[s3[1][ 5]]; s3[0][ 5]=box[s3[1][ 1]];
 }
 
 #define ROT(x,s) ((x<<s)|(x>>(32-s)))
@@ -91,7 +93,7 @@ static inline void crypt(AVAES *a, int s, uint8_t *sbox, uint32_t *multbl){
         mix(a->state, multbl, 3-s, 1+s);
     }
     addkey(a->state, a->round_key[1]);
-    subshift(a->state[0][0], a->state[0][0]+3-s, a->state[0][0]+1+s, sbox);
+    subshift(a->state[0][0], s, sbox);
     addkey(a->state, a->round_key[0]);
 }
 
@@ -172,7 +174,7 @@ int av_aes_init(AVAES *a, uint8_t *key, int key_bits, int decrypt) {
         for(i=1; i<rounds; i++){
             uint8_t tmp[2][16];
             memcpy(tmp[1], a->round_key[i][0], 16);
-            subshift(tmp[0], tmp[0]+3, tmp[0]+1, sbox);
+            subshift(tmp[0], 0, sbox);
             memcpy(tmp[1], tmp[0], 16);
             mix(tmp, dec_multbl, 1, 3);
             memcpy(a->round_key[i][0], tmp[0], 16);
