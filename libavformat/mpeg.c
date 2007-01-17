@@ -1522,21 +1522,18 @@ static int mpegps_read_pes_header(AVFormatContext *s,
         len -= 2;
         if (header_len > len)
             goto error_redo;
+        len -= header_len;
         if (flags & 0x80) {
             dts = pts = get_pts(&s->pb, -1);
             header_len -= 5;
-            len -= 5;
             if (flags & 0x40) {
                 dts = get_pts(&s->pb, -1);
                 header_len -= 5;
-                len -= 5;
             }
         }
-        len -= header_len;
-        while (header_len > 0) {
-            get_byte(&s->pb);
-            header_len--;
-        }
+        if(header_len < 0)
+            goto error_redo;
+        url_fskip(&s->pb, header_len);
     }
     else if( c!= 0xf )
         goto redo;
