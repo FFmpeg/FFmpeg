@@ -1484,7 +1484,7 @@ static int mpegps_read_pes_header(AVFormatContext *s,
         *ppos = url_ftell(&s->pb) - 4;
     }
     len = get_be16(&s->pb);
-    pts = AV_NOPTS_VALUE;
+    pts =
     dts = AV_NOPTS_VALUE;
     /* stuffing */
     for(;;) {
