@@ -50,20 +50,7 @@ int av_fifo_size(AVFifoBuffer *f)
  */
 int av_fifo_read(AVFifoBuffer *f, uint8_t *buf, int buf_size)
 {
-    int size = av_fifo_size(f);
-
-    if (size < buf_size)
-        return -1;
-    while (buf_size > 0) {
-        int len = FFMIN(f->end - f->rptr, buf_size);
-        memcpy(buf, f->rptr, len);
-        buf += len;
-        f->rptr += len;
-        if (f->rptr >= f->end)
-            f->rptr = f->buffer;
-        buf_size -= len;
-    }
-    return 0;
+    return av_fifo_generic_read(f, buf_size, NULL, buf);
 }
 
 /**
@@ -111,7 +98,11 @@ int av_fifo_generic_read(AVFifoBuffer *f, int buf_size, void (*func)(void*, void
         return -1;
     while (buf_size > 0) {
         int len = FFMIN(f->end - f->rptr, buf_size);
-        func(dest, f->rptr, len);
+        if(func) func(dest, f->rptr, len);
+        else{
+            memcpy(dest, f->rptr, len);
+            dest = (uint8_t*)dest + len;
+        }
         f->rptr += len;
         if (f->rptr >= f->end)
             f->rptr = f->buffer;
