@@ -60,18 +60,14 @@ void av_fifo_realloc(AVFifoBuffer *f, unsigned int new_size) {
     unsigned int old_size= f->end - f->buffer;
 
     if(old_size < new_size){
-        uint8_t *old= f->buffer;
+        int len= av_fifo_size(f);
+        AVFifoBuffer f2;
 
-        f->buffer= av_realloc(f->buffer, new_size);
-
-        f->rptr += f->buffer - old;
-        f->wptr += f->buffer - old;
-
-        if(f->wptr < f->rptr){
-            memmove(f->rptr + new_size - old_size, f->rptr, f->buffer + old_size - f->rptr);
-            f->rptr += new_size - old_size;
-        }
-        f->end= f->buffer + new_size;
+        av_fifo_init(&f2, new_size);
+        av_fifo_read(f, f2.buffer, len);
+        f2.wptr += len;
+        av_free(f->buffer);
+        *f= f2;
     }
 }
 
