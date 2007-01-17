@@ -1445,14 +1445,17 @@ static int mpegps_read_pes_header(AVFormatContext *s,
 {
     MpegDemuxContext *m = s->priv_data;
     int len, size, startcode, c, flags, header_len;
-    int64_t pts, dts, last_pos;
+    int64_t pts, dts;
+    int64_t last_sync= url_ftell(&s->pb);
 
-    last_pos = -1;
+ error_redo:
+        url_fseek(&s->pb, last_sync, SEEK_SET);
  redo:
         /* next start code (should be immediately after) */
         m->header_state = 0xff;
         size = MAX_SYNC_SIZE;
         startcode = find_next_start_code(&s->pb, &size, &m->header_state);
+        last_sync = url_ftell(&s->pb);
     //printf("startcode=%x pos=0x%"PRIx64"\n", startcode, url_ftell(&s->pb));
     if (startcode < 0)
         return AVERROR_IO;
@@ -1486,7 +1489,7 @@ static int mpegps_read_pes_header(AVFormatContext *s,
     /* stuffing */
     for(;;) {
         if (len < 1)
-            goto redo;
+            goto error_redo;
         c = get_byte(&s->pb);
         len--;
         /* XXX: for mpeg1, should test only bit 7 */
@@ -1496,19 +1499,19 @@ static int mpegps_read_pes_header(AVFormatContext *s,
     if ((c & 0xc0) == 0x40) {
         /* buffer scale & size */
         if (len < 2)
-            goto redo;
+            goto error_redo;
         get_byte(&s->pb);
         c = get_byte(&s->pb);
         len -= 2;
     }
     if ((c & 0xf0) == 0x20) {
         if (len < 4)
-            goto redo;
+            goto error_redo;
         dts = pts = get_pts(&s->pb, c);
         len -= 4;
     } else if ((c & 0xf0) == 0x30) {
         if (len < 9)
-            goto redo;
+            goto error_redo;
         pts = get_pts(&s->pb, c);
         dts = get_pts(&s->pb, -1);
         len -= 9;
@@ -1524,18 +1527,18 @@ static int mpegps_read_pes_header(AVFormatContext *s,
         header_len = get_byte(&s->pb);
         len -= 2;
         if (header_len > len)
-            goto redo;
+            goto error_redo;
         if ((flags & 0xc0) == 0x80) {
             dts = pts = get_pts(&s->pb, -1);
             if (header_len < 5)
-                goto redo;
+                goto error_redo;
             header_len -= 5;
             len -= 5;
         } if ((flags & 0xc0) == 0xc0) {
             pts = get_pts(&s->pb, -1);
             dts = get_pts(&s->pb, -1);
             if (header_len < 10)
-                goto redo;
+                goto error_redo;
             header_len -= 10;
             len -= 10;
         }
@@ -1550,13 +1553,13 @@ static int mpegps_read_pes_header(AVFormatContext *s,
 
     if (startcode == PRIVATE_STREAM_1 && !m->psm_es_type[startcode & 0xff]) {
         if (len < 1)
-            goto redo;
+            goto error_redo;
         startcode = get_byte(&s->pb);
         len--;
         if (startcode >= 0x80 && startcode <= 0xbf) {
             /* audio: skip header */
             if (len < 3)
-                goto redo;
+                goto error_redo;
             get_byte(&s->pb);
             get_byte(&s->pb);
             get_byte(&s->pb);
