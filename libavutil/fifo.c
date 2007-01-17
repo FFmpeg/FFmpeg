@@ -26,9 +26,9 @@ int av_fifo_init(AVFifoBuffer *f, int size)
 {
     f->wptr = f->rptr =
     f->buffer = av_malloc(size);
+    f->end = f->buffer + size;
     if (!f->buffer)
         return -1;
-    f->end = f->buffer + size;
     return 0;
 }
 
