@@ -99,9 +99,7 @@ int av_fifo_generic_read(AVFifoBuffer *f, int buf_size, void (*func)(void*, void
             memcpy(dest, f->rptr, len);
             dest = (uint8_t*)dest + len;
         }
-        f->rptr += len;
-        if (f->rptr >= f->end)
-            f->rptr = f->buffer;
+        av_fifo_drain(f, len);
         buf_size -= len;
     }
     return 0;
