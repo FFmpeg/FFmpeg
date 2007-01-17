@@ -50,15 +50,12 @@ int av_fifo_size(AVFifoBuffer *f)
  */
 int av_fifo_read(AVFifoBuffer *f, uint8_t *buf, int buf_size)
 {
-    int len;
-    int size = f->wptr - f->rptr;
-    if (size < 0)
-        size += f->end - f->buffer;
+    int size = av_fifo_size(f);
 
     if (size < buf_size)
         return -1;
     while (buf_size > 0) {
-        len = FFMIN(f->end - f->rptr, buf_size);
+        int len = FFMIN(f->end - f->rptr, buf_size);
         memcpy(buf, f->rptr, len);
         buf += len;
         f->rptr += len;
