@@ -90,10 +90,8 @@ void av_fifo_realloc(AVFifoBuffer *f, unsigned int new_size) {
 
 void av_fifo_write(AVFifoBuffer *f, const uint8_t *buf, int size)
 {
-    int len;
-
     while (size > 0) {
-        len = FFMIN(f->end - f->wptr, size);
+        int len = FFMIN(f->end - f->wptr, size);
         memcpy(f->wptr, buf, len);
         f->wptr += len;
         if (f->wptr >= f->end)
@@ -107,15 +105,12 @@ void av_fifo_write(AVFifoBuffer *f, const uint8_t *buf, int size)
 /* get data from the fifo (return -1 if not enough data) */
 int av_fifo_generic_read(AVFifoBuffer *f, int buf_size, void (*func)(void*, void*, int), void* dest)
 {
-    int len;
-    int size = f->wptr - f->rptr;
-    if (size < 0)
-        size += f->end - f->buffer;
+    int size = av_fifo_size(f);
 
     if (size < buf_size)
         return -1;
     while (buf_size > 0) {
-        len = FFMIN(f->end - f->rptr, buf_size);
+        int len = FFMIN(f->end - f->rptr, buf_size);
         func(dest, f->rptr, len);
         f->rptr += len;
         if (f->rptr >= f->end)
