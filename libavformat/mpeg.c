@@ -1502,13 +1502,13 @@ static int mpegps_read_pes_header(AVFormatContext *s,
         c = get_byte(&s->pb);
         len -= 2;
     }
-    if ((c & 0xf0) == 0x20) {
+    if ((c & 0xe0) == 0x20) {
         dts = pts = get_pts(&s->pb, c);
         len -= 4;
-    } else if ((c & 0xf0) == 0x30) {
-        pts = get_pts(&s->pb, c);
-        dts = get_pts(&s->pb, -1);
-        len -= 9;
+        if (c & 0x10){
+            dts = get_pts(&s->pb, -1);
+            len -= 5;
+        }
     } else if ((c & 0xc0) == 0x80) {
         /* mpeg 2 PES */
 #if 0 /* some streams have this field set for no apparent reason */
@@ -1522,15 +1522,15 @@ static int mpegps_read_pes_header(AVFormatContext *s,
         len -= 2;
         if (header_len > len)
             goto error_redo;
-        if ((flags & 0xc0) == 0x80) {
+        if (flags & 0x80) {
             dts = pts = get_pts(&s->pb, -1);
             header_len -= 5;
             len -= 5;
-        } if ((flags & 0xc0) == 0xc0) {
-            pts = get_pts(&s->pb, -1);
-            dts = get_pts(&s->pb, -1);
-            header_len -= 10;
-            len -= 10;
+            if (flags & 0x40) {
+                dts = get_pts(&s->pb, -1);
+                header_len -= 5;
+                len -= 5;
+            }
         }
         len -= header_len;
         while (header_len > 0) {
