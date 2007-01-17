@@ -1498,20 +1498,14 @@ static int mpegps_read_pes_header(AVFormatContext *s,
     }
     if ((c & 0xc0) == 0x40) {
         /* buffer scale & size */
-        if (len < 2)
-            goto error_redo;
         get_byte(&s->pb);
         c = get_byte(&s->pb);
         len -= 2;
     }
     if ((c & 0xf0) == 0x20) {
-        if (len < 4)
-            goto error_redo;
         dts = pts = get_pts(&s->pb, c);
         len -= 4;
     } else if ((c & 0xf0) == 0x30) {
-        if (len < 9)
-            goto error_redo;
         pts = get_pts(&s->pb, c);
         dts = get_pts(&s->pb, -1);
         len -= 9;
@@ -1530,15 +1524,11 @@ static int mpegps_read_pes_header(AVFormatContext *s,
             goto error_redo;
         if ((flags & 0xc0) == 0x80) {
             dts = pts = get_pts(&s->pb, -1);
-            if (header_len < 5)
-                goto error_redo;
             header_len -= 5;
             len -= 5;
         } if ((flags & 0xc0) == 0xc0) {
             pts = get_pts(&s->pb, -1);
             dts = get_pts(&s->pb, -1);
-            if (header_len < 10)
-                goto error_redo;
             header_len -= 10;
             len -= 10;
         }
@@ -1552,20 +1542,18 @@ static int mpegps_read_pes_header(AVFormatContext *s,
         goto redo;
 
     if (startcode == PRIVATE_STREAM_1 && !m->psm_es_type[startcode & 0xff]) {
-        if (len < 1)
-            goto error_redo;
         startcode = get_byte(&s->pb);
         len--;
         if (startcode >= 0x80 && startcode <= 0xbf) {
             /* audio: skip header */
-            if (len < 3)
-                goto error_redo;
             get_byte(&s->pb);
             get_byte(&s->pb);
             get_byte(&s->pb);
             len -= 3;
         }
     }
+    if(len<0)
+        goto error_redo;
     if(dts != AV_NOPTS_VALUE && ppos){
         int i;
         for(i=0; i<s->nb_streams; i++){
