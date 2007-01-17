@@ -85,7 +85,7 @@ void av_fifo_write(AVFifoBuffer *f, const uint8_t *buf, int size)
 }
 
 
-/* get data from the fifo (return -1 if not enough data) */
+/** get data from the fifo (return -1 if not enough data) */
 int av_fifo_generic_read(AVFifoBuffer *f, int buf_size, void (*func)(void*, void*, int), void* dest)
 {
     int size = av_fifo_size(f);
@@ -105,7 +105,7 @@ int av_fifo_generic_read(AVFifoBuffer *f, int buf_size, void (*func)(void*, void
     return 0;
 }
 
-/* discard data from the fifo */
+/** discard data from the fifo */
 void av_fifo_drain(AVFifoBuffer *f, int size)
 {
     f->rptr += size;
