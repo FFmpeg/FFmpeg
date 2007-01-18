@@ -174,12 +174,13 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
                 pict.palette=VIDEO_PALETTE_RGB24;
                 pict.depth=24;
                 ret = ioctl(video_fd, VIDIOCSPICT, &pict);
-                if (ret < 0)
+                if (ret < 0) {
                     pict.palette=VIDEO_PALETTE_GREY;
                     pict.depth=8;
                     ret = ioctl(video_fd, VIDIOCSPICT, &pict);
                     if (ret < 0)
                         goto fail1;
+                }
             }
         }
     }
