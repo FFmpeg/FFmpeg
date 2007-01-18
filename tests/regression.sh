@@ -41,7 +41,7 @@ elif [ "$1" = "snow" ] ; then
 elif [ "$1" = "snowll" ] ; then
     do_snowll=y
 elif [ "$1" = "libavtest" ] ; then
-    do_libav=y
+    do_libavtest=y
     logfile="$datadir/libav.regression"
     outfile="$datadir/b-"
 else
@@ -545,7 +545,7 @@ fi
 # libav testing
 ###################################
 
-if [ -n "$do_libav" ] ; then
+if [ -n "$do_libavtest" ] ; then
 
 # avi
 do_libav avi
