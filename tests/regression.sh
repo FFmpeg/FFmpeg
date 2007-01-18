@@ -542,7 +542,7 @@ do_audio_decoding
 fi
 
 ###################################
-# libav testing
+# libavformat testing
 ###################################
 
 if [ -n "$do_libavtest" ] ; then
@@ -660,7 +660,7 @@ for pix_fmt in $conversions ; do
                     -f rawvideo -s 352x288 -pix_fmt yuv444p $file
 done
 
-fi
+fi #  [ -n "$do_libavtest" ]
 
 
 
