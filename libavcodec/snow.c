@@ -2051,10 +2051,10 @@ static int encode_q_branch(SnowContext *s, int level, int x, int y){
     s->m.mb_stride=2;
     s->m.mb_x=
     s->m.mb_y= 0;
-    s->m.me.skip= 0;
+    c->skip= 0;
 
-    assert(s->m.me.  stride ==   stride);
-    assert(s->m.me.uvstride == uvstride);
+    assert(c->  stride ==   stride);
+    assert(c->uvstride == uvstride);
 
     c->penalty_factor    = get_penalty_factor(s->lambda, s->lambda2, c->avctx->me_cmp);
     c->sub_penalty_factor= get_penalty_factor(s->lambda, s->lambda2, c->avctx->me_sub_cmp);
@@ -2098,7 +2098,7 @@ static int encode_q_branch(SnowContext *s, int level, int x, int y){
         assert(ref_my >= c->ymin);
         assert(ref_my <= c->ymax);
 
-        ref_score= s->m.me.sub_motion_search(&s->m, &ref_mx, &ref_my, ref_score, 0, 0, level-LOG2_MB_SIZE+4, block_w);
+        ref_score= c->sub_motion_search(&s->m, &ref_mx, &ref_my, ref_score, 0, 0, level-LOG2_MB_SIZE+4, block_w);
         ref_score= ff_get_mb_score(&s->m, ref_mx, ref_my, 0, 0, level-LOG2_MB_SIZE+4, block_w, 0);
         ref_score+= 2*av_log2(2*ref)*c->penalty_factor;
         if(s->ref_mvs[ref]){
