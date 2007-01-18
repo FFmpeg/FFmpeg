@@ -359,7 +359,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
     getsockname(udp_fd, (struct sockaddr *)&my_addr1, &len);
     s->local_port = ntohs(my_addr1.sin_port);
 
-#ifndef CONFIG_BEOS_NETSERVER
+#ifdef IP_MULTICAST_TTL
     if (s->is_multicast) {
         if (h->flags & URL_WRONLY) {
             /* output */
@@ -387,7 +387,6 @@ static int udp_open(URLContext *h, const char *uri, int flags)
     udp_fd = udp_ipv6_set_local(h);
     if (udp_fd < 0)
         goto fail;
-#ifndef CONFIG_BEOS_NETSERVER
     if (s->is_multicast) {
         if (h->flags & URL_WRONLY) {
             if (udp_ipv6_set_multicast_ttl(udp_fd, s->ttl, (struct sockaddr *)&s->dest_addr) < 0)
@@ -397,7 +396,6 @@ static int udp_open(URLContext *h, const char *uri, int flags)
                 goto fail;
         }
     }
-#endif
 #endif
 
     if (is_output) {
