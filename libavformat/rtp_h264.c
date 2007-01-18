@@ -45,11 +45,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <assert.h>
-#ifndef __BEOS__
-# include <arpa/inet.h>
-#else
-# include "barpainet.h"
-#endif
+#include <arpa/inet.h>
 #include <netdb.h>
 
 #include "rtp_internal.h"

@@ -24,11 +24,7 @@
 #include <sys/time.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
-#ifndef __BEOS__
-# include <arpa/inet.h>
-#else
-# include "barpainet.h"
-#endif
+#include <arpa/inet.h>
 
 #include "rtp_internal.h"
 

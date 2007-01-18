@@ -23,14 +23,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#if defined(__BEOS__) || defined(__INNOTEK_LIBC__)
-typedef int socklen_t;
-#endif
-#ifndef __BEOS__
 # include <arpa/inet.h>
-#else
-# include "barpainet.h"
-#endif
 #include <netdb.h>
 #include <sys/time.h>
 #include <fcntl.h>
@@ -127,7 +120,7 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     ret = AVERROR_IO;
  fail1:
     if (fd >= 0)
-        close(fd);
+        closesocket(fd);
     av_free(s);
     return ret;
 }
@@ -213,11 +206,7 @@ static int tcp_write(URLContext *h, uint8_t *buf, int size)
 static int tcp_close(URLContext *h)
 {
     TCPContext *s = h->priv_data;
-#ifdef CONFIG_BEOS_NETSERVER
     closesocket(s->fd);
-#else
-    close(s->fd);
-#endif
     av_free(s);
     return 0;
 }

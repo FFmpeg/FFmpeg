@@ -23,11 +23,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#ifndef __BEOS__
-# include <arpa/inet.h>
-#else
-# include "barpainet.h"
-#endif
+#include <arpa/inet.h>
 #include <netdb.h>
 
 #include "base64.h"
