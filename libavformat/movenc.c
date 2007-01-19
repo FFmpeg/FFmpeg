@@ -480,7 +480,7 @@ static int mov_write_avcc_tag(ByteIOContext *pb, MOVTrack *track)
     put_tag(pb, "avcC");
     if (track->vosLen > 6) {
         /* check for h264 start code */
-        if (BE_32(track->vosData) == 0x00000001) {
+        if (AV_RB32(track->vosData) == 0x00000001) {
             uint8_t *buf, *end;
             uint32_t sps_size=0, pps_size=0;
             uint8_t *sps=0, *pps=0;
@@ -493,7 +493,7 @@ static int mov_write_avcc_tag(ByteIOContext *pb, MOVTrack *track)
             while (buf < end) {
                 unsigned int size;
                 uint8_t nal_type;
-                size = BE_32(buf);
+                size = AV_RB32(buf);
                 nal_type = buf[4] & 0x1f;
                 if (nal_type == 7) { /* SPS */
                     sps = buf + 4;

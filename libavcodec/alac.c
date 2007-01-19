@@ -110,11 +110,11 @@ static int alac_set_info(ALACContext *alac)
     ptr += 4; /* alac */
     ptr += 4; /* 0 ? */
 
-    if(BE_32(ptr) >= UINT_MAX/4){
+    if(AV_RB32(ptr) >= UINT_MAX/4){
         av_log(alac->avctx, AV_LOG_ERROR, "setinfo_max_samples_per_frame too large\n");
         return -1;
     }
-    alac->setinfo_max_samples_per_frame = BE_32(ptr); /* buffer size / 2 ? */
+    alac->setinfo_max_samples_per_frame = AV_RB32(ptr); /* buffer size / 2 ? */
     ptr += 4;
     alac->setinfo_7a = *ptr++;
     alac->setinfo_sample_size = *ptr++;
@@ -122,13 +122,13 @@ static int alac_set_info(ALACContext *alac)
     alac->setinfo_rice_initialhistory = *ptr++;
     alac->setinfo_rice_kmodifier = *ptr++;
     alac->setinfo_7f = *ptr++; // channels?
-    alac->setinfo_80 = BE_16(ptr);
+    alac->setinfo_80 = AV_RB16(ptr);
     ptr += 2;
-    alac->setinfo_82 = BE_32(ptr); // max coded frame size
+    alac->setinfo_82 = AV_RB32(ptr); // max coded frame size
     ptr += 4;
-    alac->setinfo_86 = BE_32(ptr); // bitrate ?
+    alac->setinfo_86 = AV_RB32(ptr); // bitrate ?
     ptr += 4;
-    alac->setinfo_8a_rate = BE_32(ptr); // samplerate
+    alac->setinfo_8a_rate = AV_RB32(ptr); // samplerate
     ptr += 4;
 
     allocate_buffers(alac);

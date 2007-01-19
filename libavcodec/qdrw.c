@@ -58,7 +58,7 @@ static int decode_frame(AVCodecContext *avctx,
     outdata = a->pic.data[0];
 
     buf += 0x68; /* jump to palette */
-    colors = BE_32(buf);
+    colors = AV_RB32(buf);
     buf += 4;
 
     if(colors < 0 || colors > 256) {
@@ -68,7 +68,7 @@ static int decode_frame(AVCodecContext *avctx,
 
     for (i = 0; i <= colors; i++) {
         unsigned int idx;
-        idx = BE_16(buf); /* color index */
+        idx = AV_RB16(buf); /* color index */
         buf += 2;
 
         if (idx > 255) {
@@ -93,7 +93,7 @@ static int decode_frame(AVCodecContext *avctx,
 
         /* decode line */
         out = outdata;
-        size = BE_16(buf); /* size of packed line */
+        size = AV_RB16(buf); /* size of packed line */
         buf += 2;
         left = size;
         next = buf + size;

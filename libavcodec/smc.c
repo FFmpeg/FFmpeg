@@ -120,7 +120,7 @@ static void smc_decode_stream(SmcContext *s)
         s->avctx->palctrl->palette_changed = 0;
     }
 
-    chunk_size = BE_32(&s->buf[stream_ptr]) & 0x00FFFFFF;
+    chunk_size = AV_RB32(&s->buf[stream_ptr]) & 0x00FFFFFF;
     stream_ptr += 4;
     if (chunk_size != s->size)
         av_log(s->avctx, AV_LOG_INFO, "warning: MOV chunk size != encoded chunk size (%d != %d); using MOV chunk size\n",
@@ -278,7 +278,7 @@ static void smc_decode_stream(SmcContext *s)
                 color_table_index = CPAIR * s->buf[stream_ptr++];
 
             while (n_blocks--) {
-                color_flags = BE_16(&s->buf[stream_ptr]);
+                color_flags = AV_RB16(&s->buf[stream_ptr]);
                 stream_ptr += 2;
                 flag_mask = 0x8000;
                 block_ptr = row_ptr + pixel_ptr;
@@ -321,7 +321,7 @@ static void smc_decode_stream(SmcContext *s)
                 color_table_index = CQUAD * s->buf[stream_ptr++];
 
             while (n_blocks--) {
-                color_flags = BE_32(&s->buf[stream_ptr]);
+                color_flags = AV_RB32(&s->buf[stream_ptr]);
                 stream_ptr += 4;
                 /* flag mask actually acts as a bit shift count here */
                 flag_mask = 30;

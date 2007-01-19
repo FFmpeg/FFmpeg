@@ -277,10 +277,10 @@ static int decode_header_trees(SmackVContext *smk) {
     GetBitContext gb;
     int mmap_size, mclr_size, full_size, type_size;
 
-    mmap_size = LE_32(smk->avctx->extradata);
-    mclr_size = LE_32(smk->avctx->extradata + 4);
-    full_size = LE_32(smk->avctx->extradata + 8);
-    type_size = LE_32(smk->avctx->extradata + 12);
+    mmap_size = AV_RL32(smk->avctx->extradata);
+    mclr_size = AV_RL32(smk->avctx->extradata + 4);
+    full_size = AV_RL32(smk->avctx->extradata + 8);
+    type_size = AV_RL32(smk->avctx->extradata + 12);
 
     init_get_bits(&gb, smk->avctx->extradata + 16, (smk->avctx->extradata_size - 16) * 8);
 
@@ -584,7 +584,7 @@ static int smka_decode_frame(AVCodecContext *avctx, void *data, int *data_size, 
     int bits, stereo;
     int pred[2] = {0, 0};
 
-    unp_size = LE_32(buf);
+    unp_size = AV_RL32(buf);
 
     init_get_bits(&gb, buf + 4, (buf_size - 4) * 8);
 

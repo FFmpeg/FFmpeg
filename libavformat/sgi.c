@@ -50,7 +50,7 @@ typedef struct SGIInfo{
 static int sgi_probe(AVProbeData *pd)
 {
     /* test for sgi magic */
-    if (pd->buf_size >= 2 && BE_16(&pd->buf[0]) == SGI_MAGIC) {
+    if (pd->buf_size >= 2 && AV_RB16(&pd->buf[0]) == SGI_MAGIC) {
         return AVPROBE_SCORE_MAX;
     } else {
         return 0;
@@ -197,7 +197,7 @@ static int read_rle_sgi(const SGIInfo *sgi_info,
         for (y = 0; y < ysize; y++) {
             dest_row = pict->data[0] + (ysize - 1 - y) * (xsize * zsize);
 
-            start_offset = BE_32(&start_table[y + z * ysize]);
+            start_offset = AV_RB32(&start_table[y + z * ysize]);
 
             /* don't seek if already at the next rle start offset */
             if (url_ftell(f) != start_offset) {

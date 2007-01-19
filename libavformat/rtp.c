@@ -504,7 +504,7 @@ static int rtp_parse_mp4_au(RTPDemuxContext *s, const uint8_t *buf)
 
     /* decode the first 2 bytes where are stored the AUHeader sections
        length in bits */
-    au_headers_length = BE_16(buf);
+    au_headers_length = AV_RB16(buf);
 
     if (au_headers_length > RTP_MAX_PACKET_LENGTH)
       return -1;

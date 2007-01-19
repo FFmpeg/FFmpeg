@@ -90,7 +90,7 @@ static void cinepak_decode_codebook (cvid_codebook_t *codebook,
             if ((data + 4) > eod)
                 break;
 
-            flag  = BE_32 (data);
+            flag  = AV_RB32 (data);
             data += 4;
             mask  = 0x80000000;
         }
@@ -152,7 +152,7 @@ static int cinepak_decode_vectors (CinepakContext *s, cvid_strip_t *strip,
                 if ((data + 4) > eod)
                     return -1;
 
-                flag  = BE_32 (data);
+                flag  = AV_RB32 (data);
                 data += 4;
                 mask  = 0x80000000;
             }
@@ -162,7 +162,7 @@ static int cinepak_decode_vectors (CinepakContext *s, cvid_strip_t *strip,
                     if ((data + 4) > eod)
                         return -1;
 
-                    flag  = BE_32 (data);
+                    flag  = AV_RB32 (data);
                     data += 4;
                     mask  = 0x80000000;
                 }
@@ -278,8 +278,8 @@ static int cinepak_decode_strip (CinepakContext *s,
         return -1;
 
     while ((data + 4) <= eod) {
-        chunk_id   = BE_16 (&data[0]);
-        chunk_size = BE_16 (&data[2]) - 4;
+        chunk_id   = AV_RB16 (&data[0]);
+        chunk_size = AV_RB16 (&data[2]) - 4;
         if(chunk_size < 0)
             return -1;
 
@@ -328,8 +328,8 @@ static int cinepak_decode (CinepakContext *s)
         return -1;
 
     frame_flags = s->data[0];
-    num_strips  = BE_16 (&s->data[8]);
-    encoded_buf_size = ((s->data[1] << 16) | BE_16 (&s->data[2]));
+    num_strips  = AV_RB16 (&s->data[8]);
+    encoded_buf_size = ((s->data[1] << 16) | AV_RB16 (&s->data[2]));
 
     /* if this is the first frame, check for deviant Sega FILM data */
     if (s->sega_film_skip_bytes == -1) {
@@ -361,13 +361,13 @@ static int cinepak_decode (CinepakContext *s)
         if ((s->data + 12) > eod)
             return -1;
 
-        s->strips[i].id = BE_16 (s->data);
+        s->strips[i].id = AV_RB16 (s->data);
         s->strips[i].y1 = y0;
         s->strips[i].x1 = 0;
-        s->strips[i].y2 = y0 + BE_16 (&s->data[8]);
+        s->strips[i].y2 = y0 + AV_RB16 (&s->data[8]);
         s->strips[i].x2 = s->avctx->width;
 
-        strip_size = BE_16 (&s->data[2]) - 12;
+        strip_size = AV_RB16 (&s->data[2]) - 12;
         s->data   += 12;
         strip_size = ((s->data + strip_size) > eod) ? (eod - s->data) : strip_size;
 

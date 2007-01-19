@@ -58,7 +58,7 @@ static int flic_probe(AVProbeData *p)
     if (p->buf_size < 6)
         return 0;
 
-    magic_number = LE_16(&p->buf[4]);
+    magic_number = AV_RL16(&p->buf[4]);
     if ((magic_number != FLIC_FILE_MAGIC_1) &&
         (magic_number != FLIC_FILE_MAGIC_2) &&
         (magic_number != FLIC_FILE_MAGIC_3))
@@ -83,8 +83,8 @@ static int flic_read_header(AVFormatContext *s,
     if (get_buffer(pb, header, FLIC_HEADER_SIZE) != FLIC_HEADER_SIZE)
         return AVERROR_IO;
 
-    magic_number = LE_16(&header[4]);
-    speed = LE_32(&header[0x10]);
+    magic_number = AV_RL16(&header[4]);
+    speed = AV_RL32(&header[0x10]);
 
     /* initialize the decoder streams */
     st = av_new_stream(s, 0);
@@ -94,8 +94,8 @@ static int flic_read_header(AVFormatContext *s,
     st->codec->codec_type = CODEC_TYPE_VIDEO;
     st->codec->codec_id = CODEC_ID_FLIC;
     st->codec->codec_tag = 0;  /* no fourcc */
-    st->codec->width = LE_16(&header[0x08]);
-    st->codec->height = LE_16(&header[0x0A]);
+    st->codec->width = AV_RL16(&header[0x08]);
+    st->codec->height = AV_RL16(&header[0x0A]);
 
     if (!st->codec->width || !st->codec->height)
         return AVERROR_INVALIDDATA;
@@ -110,7 +110,7 @@ static int flic_read_header(AVFormatContext *s,
     /* Time to figure out the framerate: If there is a FLIC chunk magic
      * number at offset 0x10, assume this is from the Bullfrog game,
      * Magic Carpet. */
-    if (LE_16(&header[0x10]) == FLIC_CHUNK_MAGIC_1) {
+    if (AV_RL16(&header[0x10]) == FLIC_CHUNK_MAGIC_1) {
 
         flic->frame_pts_inc = FLIC_MC_PTS_INC;
 
@@ -174,8 +174,8 @@ static int flic_read_packet(AVFormatContext *s,
             break;
         }
 
-        size = LE_32(&preamble[0]);
-        magic = LE_16(&preamble[4]);
+        size = AV_RL32(&preamble[0]);
+        magic = AV_RL16(&preamble[4]);
 
         if (((magic == FLIC_CHUNK_MAGIC_1) || (magic == FLIC_CHUNK_MAGIC_2)) && size > FLIC_PREAMBLE_SIZE) {
             if (av_new_packet(pkt, size)) {

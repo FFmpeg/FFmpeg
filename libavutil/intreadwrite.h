@@ -26,14 +26,14 @@ struct unaligned_16 { uint16_t l; } __attribute__((packed));
 #endif /* !__GNUC__ */
 
 /* endian macros */
-#if !defined(BE_16) || !defined(BE_32) || !defined(LE_16) || !defined(LE_32)
-#define BE_16(x)  ((((uint8_t*)(x))[0] << 8) | ((uint8_t*)(x))[1])
-#define BE_32(x)  ((((uint8_t*)(x))[0] << 24) | \
+#if !defined(AV_RB16) || !defined(AV_RB32) || !defined(AV_RL16) || !defined(AV_RL32)
+#define AV_RB16(x)  ((((uint8_t*)(x))[0] << 8) | ((uint8_t*)(x))[1])
+#define AV_RB32(x)  ((((uint8_t*)(x))[0] << 24) | \
                    (((uint8_t*)(x))[1] << 16) | \
                    (((uint8_t*)(x))[2] << 8) | \
                     ((uint8_t*)(x))[3])
-#define LE_16(x)  ((((uint8_t*)(x))[1] << 8) | ((uint8_t*)(x))[0])
-#define LE_32(x)  ((((uint8_t*)(x))[3] << 24) | \
+#define AV_RL16(x)  ((((uint8_t*)(x))[1] << 8) | ((uint8_t*)(x))[0])
+#define AV_RL32(x)  ((((uint8_t*)(x))[3] << 24) | \
                    (((uint8_t*)(x))[2] << 16) | \
                    (((uint8_t*)(x))[1] << 8) | \
                     ((uint8_t*)(x))[0])

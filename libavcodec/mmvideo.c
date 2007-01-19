@@ -110,7 +110,7 @@ static void mm_decode_intra(MmContext * s, int half_horiz, int half_vert, const 
 
 static void mm_decode_inter(MmContext * s, int half_horiz, int half_vert, const uint8_t *buf, int buf_size)
 {
-    const int data_ptr = 2 + LE_16(&buf[0]);
+    const int data_ptr = 2 + AV_RL16(&buf[0]);
     int d, r, y;
     d = data_ptr; r = 2; y = 0;
 
@@ -162,7 +162,7 @@ static int mm_decode_frame(AVCodecContext *avctx,
         palette_control->palette_changed = 0;
     }
 
-    type = LE_16(&buf[0]);
+    type = AV_RL16(&buf[0]);
     buf += MM_PREAMBLE_SIZE;
     buf_size -= MM_PREAMBLE_SIZE;
 

@@ -74,8 +74,8 @@ avs_decode_frame(AVCodecContext * avctx,
         int first, last;
         uint32_t *pal = (uint32_t *) avs->picture.data[1];
 
-        first = LE_16(buf);
-        last = first + LE_16(buf + 2);
+        first = AV_RL16(buf);
+        last = first + AV_RL16(buf + 2);
         buf += 4;
         for (i=first; i<last; i++, buf+=3)
             pal[i] = (buf[0] << 18) | (buf[1] << 10) | (buf[2] << 2);

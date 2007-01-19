@@ -138,7 +138,7 @@ static int fraps2_decode_plane(FrapsContext *s, uint8_t *dst, int stride, int w,
 
     for(i = 0; i < 256; i++){
         s->nodes[i].sym = i;
-        s->nodes[i].count = LE_32(src);
+        s->nodes[i].count = AV_RL32(src);
         s->nodes[i].n0 = -2;
         if(s->nodes[i].count < 0) {
             av_log(s->avctx, AV_LOG_ERROR, "Symbol count < 0\n");
@@ -215,7 +215,7 @@ static int decode_frame(AVCodecContext *avctx,
     int i, is_chroma, planes;
 
 
-    header = LE_32(buf);
+    header = AV_RL32(buf);
     version = header & 0xff;
     header_size = (header & (1<<30))? 8 : 4; /* bit 30 means pad to 8 bytes */
 
@@ -337,12 +337,12 @@ static int decode_frame(AVCodecContext *avctx,
         }
         f->pict_type = FF_I_TYPE;
         f->key_frame = 1;
-        if ((LE_32(buf) != FPS_TAG)||(buf_size < (planes*1024 + 24))) {
+        if ((AV_RL32(buf) != FPS_TAG)||(buf_size < (planes*1024 + 24))) {
             av_log(avctx, AV_LOG_ERROR, "Fraps: error in data stream\n");
             return -1;
         }
         for(i = 0; i < planes; i++) {
-            offs[i] = LE_32(buf + 4 + i * 4);
+            offs[i] = AV_RL32(buf + 4 + i * 4);
             if(offs[i] >= buf_size || (i && offs[i] <= offs[i - 1] + 1024)) {
                 av_log(avctx, AV_LOG_ERROR, "Fraps: plane %i offset is out of bounds\n", i);
                 return -1;

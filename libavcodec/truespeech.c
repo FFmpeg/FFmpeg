@@ -62,7 +62,7 @@ static void truespeech_read_frame(TSContext *dec, uint8_t *input)
     uint32_t t;
 
     /* first dword */
-    t = LE_32(input);
+    t = AV_RL32(input);
     input += 4;
 
     dec->flag = t & 1;
@@ -77,7 +77,7 @@ static void truespeech_read_frame(TSContext *dec, uint8_t *input)
     dec->vector[7] = ts_codebook[7][(t >> 29) &  0x7];
 
     /* second dword */
-    t = LE_32(input);
+    t = AV_RL32(input);
     input += 4;
 
     dec->offset2[0] = (t >>  0) & 0x7F;
@@ -88,7 +88,7 @@ static void truespeech_read_frame(TSContext *dec, uint8_t *input)
     dec->offset1[0] = ((t >> 28) & 0xF) << 4;
 
     /* third dword */
-    t = LE_32(input);
+    t = AV_RL32(input);
     input += 4;
 
     dec->pulseval[0] = (t >>  0) & 0x3FFF;
@@ -97,7 +97,7 @@ static void truespeech_read_frame(TSContext *dec, uint8_t *input)
     dec->offset1[1] = (t >> 28) & 0x0F;
 
     /* fourth dword */
-    t = LE_32(input);
+    t = AV_RL32(input);
     input += 4;
 
     dec->pulseval[2] = (t >>  0) & 0x3FFF;
@@ -106,7 +106,7 @@ static void truespeech_read_frame(TSContext *dec, uint8_t *input)
     dec->offset1[1] |= ((t >> 28) & 0x0F) << 4;
 
     /* fifth dword */
-    t = LE_32(input);
+    t = AV_RL32(input);
     input += 4;
 
     dec->pulsepos[0] = (t >> 4) & 0x7FFFFFF;
@@ -116,7 +116,7 @@ static void truespeech_read_frame(TSContext *dec, uint8_t *input)
     dec->offset1[0] |= (t >> 31) & 1;
 
     /* sixth dword */
-    t = LE_32(input);
+    t = AV_RL32(input);
     input += 4;
 
     dec->pulsepos[1] = (t >> 4) & 0x7FFFFFF;
@@ -126,7 +126,7 @@ static void truespeech_read_frame(TSContext *dec, uint8_t *input)
     dec->offset1[0] |= ((t >> 31) & 1) << 1;
 
     /* seventh dword */
-    t = LE_32(input);
+    t = AV_RL32(input);
     input += 4;
 
     dec->pulsepos[2] = (t >> 4) & 0x7FFFFFF;
@@ -136,7 +136,7 @@ static void truespeech_read_frame(TSContext *dec, uint8_t *input)
     dec->offset1[0] |= ((t >> 31) & 1) << 2;
 
     /* eighth dword */
-    t = LE_32(input);
+    t = AV_RL32(input);
     input += 4;
 
     dec->pulsepos[3] = (t >> 4) & 0x7FFFFFF;

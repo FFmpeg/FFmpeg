@@ -92,7 +92,7 @@ static int wv_read_block_header(AVFormatContext *ctx, ByteIOContext *pb)
     get_le32(pb); // total samples in file
     get_le32(pb); // offset in samples of current block
     get_buffer(pb, wc->extra, WV_EXTRA_SIZE);
-    wc->flags = LE_32(wc->extra + 4);
+    wc->flags = AV_RL32(wc->extra + 4);
     //parse flags
     if(wc->flags & WV_FLOAT){
         av_log(ctx, AV_LOG_ERROR, "Floating point data is not supported\n");

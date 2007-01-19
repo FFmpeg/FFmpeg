@@ -69,7 +69,7 @@ static int film_probe(AVProbeData *p)
     if (p->buf_size < 4)
         return 0;
 
-    if (BE_32(&p->buf[0]) != FILM_TAG)
+    if (AV_RB32(&p->buf[0]) != FILM_TAG)
         return 0;
 
     return AVPROBE_SCORE_MAX;
@@ -93,8 +93,8 @@ static int film_read_header(AVFormatContext *s,
     /* load the main FILM header */
     if (get_buffer(pb, scratch, 16) != 16)
         return AVERROR_IO;
-    data_offset = BE_32(&scratch[4]);
-    film->version = BE_32(&scratch[8]);
+    data_offset = AV_RB32(&scratch[4]);
+    film->version = AV_RB32(&scratch[8]);
 
     /* load the FDSC chunk */
     if (film->version == 0) {
@@ -110,7 +110,7 @@ static int film_read_header(AVFormatContext *s,
         /* normal Saturn .cpk files; 32-byte header */
         if (get_buffer(pb, scratch, 32) != 32)
             return AVERROR_IO;
-        film->audio_samplerate = BE_16(&scratch[24]);;
+        film->audio_samplerate = AV_RB16(&scratch[24]);;
         film->audio_channels = scratch[21];
         film->audio_bits = scratch[22];
         if (film->audio_bits == 8)
@@ -121,10 +121,10 @@ static int film_read_header(AVFormatContext *s,
             film->audio_type = 0;
     }
 
-    if (BE_32(&scratch[0]) != FDSC_TAG)
+    if (AV_RB32(&scratch[0]) != FDSC_TAG)
         return AVERROR_INVALIDDATA;
 
-    if (BE_32(&scratch[8]) == CVID_TAG) {
+    if (AV_RB32(&scratch[8]) == CVID_TAG) {
         film->video_type = CODEC_ID_CINEPAK;
     } else
         film->video_type = 0;
@@ -138,8 +138,8 @@ static int film_read_header(AVFormatContext *s,
         st->codec->codec_type = CODEC_TYPE_VIDEO;
         st->codec->codec_id = film->video_type;
         st->codec->codec_tag = 0;  /* no fourcc */
-        st->codec->width = BE_32(&scratch[16]);
-        st->codec->height = BE_32(&scratch[12]);
+        st->codec->width = AV_RB32(&scratch[16]);
+        st->codec->height = AV_RB32(&scratch[12]);
     }
 
     if (film->audio_type) {
@@ -162,10 +162,10 @@ static int film_read_header(AVFormatContext *s,
     /* load the sample table */
     if (get_buffer(pb, scratch, 16) != 16)
         return AVERROR_IO;
-    if (BE_32(&scratch[0]) != STAB_TAG)
+    if (AV_RB32(&scratch[0]) != STAB_TAG)
         return AVERROR_INVALIDDATA;
-    film->base_clock = BE_32(&scratch[8]);
-    film->sample_count = BE_32(&scratch[12]);
+    film->base_clock = AV_RB32(&scratch[8]);
+    film->sample_count = AV_RB32(&scratch[12]);
     if(film->sample_count >= UINT_MAX / sizeof(film_sample_t))
         return -1;
     film->sample_table = av_malloc(film->sample_count * sizeof(film_sample_t));
@@ -181,9 +181,9 @@ static int film_read_header(AVFormatContext *s,
             return AVERROR_IO;
         }
         film->sample_table[i].sample_offset =
-            data_offset + BE_32(&scratch[0]);
-        film->sample_table[i].sample_size = BE_32(&scratch[4]);
-        if (BE_32(&scratch[8]) == 0xFFFFFFFF) {
+            data_offset + AV_RB32(&scratch[0]);
+        film->sample_table[i].sample_size = AV_RB32(&scratch[4]);
+        if (AV_RB32(&scratch[8]) == 0xFFFFFFFF) {
             film->sample_table[i].stream = film->audio_stream_index;
             film->sample_table[i].pts = audio_frame_counter;
             film->sample_table[i].pts *= film->base_clock;
@@ -193,7 +193,7 @@ static int film_read_header(AVFormatContext *s,
                 (film->audio_channels * film->audio_bits / 8));
         } else {
             film->sample_table[i].stream = film->video_stream_index;
-            film->sample_table[i].pts = BE_32(&scratch[8]) & 0x7FFFFFFF;
+            film->sample_table[i].pts = AV_RB32(&scratch[8]) & 0x7FFFFFFF;
             film->sample_table[i].keyframe = (scratch[8] & 0x80) ? 0 : 1;
         }
     }

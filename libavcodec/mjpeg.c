@@ -2540,12 +2540,12 @@ static int mjpega_dump_header(AVBitStreamFilterContext *bsfc, AVCodecContext *av
                 break;
             case SOS:
                 bytestream_put_be32(&poutbufp, i + 46); /* scan off */
-                bytestream_put_be32(&poutbufp, i + 46 + BE_16(buf + i + 2)); /* data off */
+                bytestream_put_be32(&poutbufp, i + 46 + AV_RB16(buf + i + 2)); /* data off */
                 bytestream_put_buffer(&poutbufp, buf + 2, buf_size - 2); /* skip already written SOI */
                 *poutbuf_size = poutbufp - *poutbuf;
                 return 1;
             case APP1:
-                if (i + 8 < buf_size && LE_32(buf + i + 8) == ff_get_fourcc("mjpg")) {
+                if (i + 8 < buf_size && AV_RL32(buf + i + 8) == ff_get_fourcc("mjpg")) {
                     av_log(avctx, AV_LOG_ERROR, "bitstream already formatted\n");
                     memcpy(*poutbuf, buf, buf_size);
                     *poutbuf_size = buf_size;

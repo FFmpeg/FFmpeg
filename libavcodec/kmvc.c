@@ -368,13 +368,13 @@ static int decode_init(AVCodecContext * avctx)
         av_log(NULL, 0, "Extradata missing, decoding may not work properly...\n");
         c->palsize = 127;
     } else {
-        c->palsize = LE_16(avctx->extradata + 10);
+        c->palsize = AV_RL16(avctx->extradata + 10);
     }
 
     if (avctx->extradata_size == 1036) {        // palette in extradata
         uint8_t *src = avctx->extradata + 12;
         for (i = 0; i < 256; i++) {
-            c->pal[i] = LE_32(src);
+            c->pal[i] = AV_RL32(src);
             src += 4;
         }
         c->setpal = 1;

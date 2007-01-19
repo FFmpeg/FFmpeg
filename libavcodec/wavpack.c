@@ -387,15 +387,15 @@ static int wavpack_decode_frame(AVCodecContext *avctx,
 
     memset(s->decorr, 0, MAX_TERMS * sizeof(Decorr));
 
-    s->samples = LE_32(buf); buf += 4;
+    s->samples = AV_RL32(buf); buf += 4;
     if(!s->samples) return buf_size;
     /* should not happen but who knows */
     if(s->samples * 2 * avctx->channels > AVCODEC_MAX_AUDIO_FRAME_SIZE){
         av_log(avctx, AV_LOG_ERROR, "Packet size is too big to be handled in lavc!\n");
         return -1;
     }
-    s->joint = LE_32(buf) & WV_JOINT; buf += 4;
-    s->CRC = LE_32(buf); buf += 4;
+    s->joint = AV_RL32(buf) & WV_JOINT; buf += 4;
+    s->CRC = AV_RL32(buf); buf += 4;
     // parse metadata blocks
     while(buf < buf_end){
         id = *buf++;
@@ -467,23 +467,23 @@ static int wavpack_decode_frame(AVCodecContext *avctx,
             t = 0;
             for(i = s->terms - 1; (i >= 0) && (t < size); i--) {
                 if(s->decorr[i].value > 8){
-                    s->decorr[i].samplesA[0] = wp_exp2(LE_16(buf)); buf += 2;
-                    s->decorr[i].samplesA[1] = wp_exp2(LE_16(buf)); buf += 2;
+                    s->decorr[i].samplesA[0] = wp_exp2(AV_RL16(buf)); buf += 2;
+                    s->decorr[i].samplesA[1] = wp_exp2(AV_RL16(buf)); buf += 2;
                     if(s->stereo){
-                        s->decorr[i].samplesB[0] = wp_exp2(LE_16(buf)); buf += 2;
-                        s->decorr[i].samplesB[1] = wp_exp2(LE_16(buf)); buf += 2;
+                        s->decorr[i].samplesB[0] = wp_exp2(AV_RL16(buf)); buf += 2;
+                        s->decorr[i].samplesB[1] = wp_exp2(AV_RL16(buf)); buf += 2;
                         t += 4;
                     }
                     t += 4;
                 }else if(s->decorr[i].value < 0){
-                    s->decorr[i].samplesA[0] = wp_exp2(LE_16(buf)); buf += 2;
-                    s->decorr[i].samplesB[0] = wp_exp2(LE_16(buf)); buf += 2;
+                    s->decorr[i].samplesA[0] = wp_exp2(AV_RL16(buf)); buf += 2;
+                    s->decorr[i].samplesB[0] = wp_exp2(AV_RL16(buf)); buf += 2;
                     t += 4;
                 }else{
                     for(j = 0; j < s->decorr[i].value; j++){
-                        s->decorr[i].samplesA[j] = wp_exp2(LE_16(buf)); buf += 2;
+                        s->decorr[i].samplesA[j] = wp_exp2(AV_RL16(buf)); buf += 2;
                         if(s->stereo){
-                            s->decorr[i].samplesB[j] = wp_exp2(LE_16(buf)); buf += 2;
+                            s->decorr[i].samplesB[j] = wp_exp2(AV_RL16(buf)); buf += 2;
                         }
                     }
                     t += s->decorr[i].value * 2 * avctx->channels;
@@ -498,7 +498,7 @@ static int wavpack_decode_frame(AVCodecContext *avctx,
                 continue;
             }
             for(i = 0; i < 3 * avctx->channels; i++){
-                s->median[i] = wp_exp2(LE_16(buf));
+                s->median[i] = wp_exp2(AV_RL16(buf));
                 buf += 2;
             }
             got_entropy = 1;

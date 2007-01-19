@@ -878,7 +878,7 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
                     get_le16(pb); /* BITMAP_ID */
                     av_new_packet(pkt, len-2);
                     get_buffer(pb, pkt->data, 4);
-                    if (BE_32(pkt->data) == 0xffd8ffd9) {
+                    if (AV_RB32(pkt->data) == 0xffd8ffd9) {
                         /* old SWF files containing SOI/EOI as data start */
                         pkt->size -= 4;
                         get_buffer(pb, pkt->data, pkt->size);

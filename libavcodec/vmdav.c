@@ -92,10 +92,10 @@ static void lz_unpack(unsigned char *src, unsigned char *dest, int dest_len)
     s = src;
     d = dest;
     d_end = d + dest_len;
-    dataleft = LE_32(s);
+    dataleft = AV_RL32(s);
     s += 4;
     memset(queue, 0x20, QUEUE_SIZE);
-    if (LE_32(s) == 0x56781234) {
+    if (AV_RL32(s) == 0x56781234) {
         s += 4;
         qpos = 0x111;
         speclen = 0xF + 3;
@@ -204,10 +204,10 @@ static void vmd_decode(VmdVideoContext *s)
     int frame_width, frame_height;
     int dp_size;
 
-    frame_x = LE_16(&s->buf[6]);
-    frame_y = LE_16(&s->buf[8]);
-    frame_width = LE_16(&s->buf[10]) - frame_x + 1;
-    frame_height = LE_16(&s->buf[12]) - frame_y + 1;
+    frame_x = AV_RL16(&s->buf[6]);
+    frame_y = AV_RL16(&s->buf[8]);
+    frame_width = AV_RL16(&s->buf[10]) - frame_x + 1;
+    frame_height = AV_RL16(&s->buf[12]) - frame_y + 1;
 
     /* if only a certain region will be updated, copy the entire previous
      * frame before the decode */
@@ -339,7 +339,7 @@ static int vmdvideo_decode_init(AVCodecContext *avctx)
     }
     vmd_header = (unsigned char *)avctx->extradata;
 
-    s->unpack_buffer_size = LE_32(&vmd_header[800]);
+    s->unpack_buffer_size = AV_RL32(&vmd_header[800]);
     s->unpack_buffer = av_malloc(s->unpack_buffer_size);
     if (!s->unpack_buffer)
         return -1;

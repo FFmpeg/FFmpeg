@@ -138,7 +138,7 @@ static int mp3_header_compress(AVBitStreamFilterContext *bsfc, AVCodecContext *a
         return -1;
     }
 
-    header = BE_32(buf);
+    header = AV_RB32(buf);
     mode_extension= (header>>4)&3;
 
     if(ff_mpa_check_header(header) < 0 || (header&0x60000) != 0x20000){
@@ -160,7 +160,7 @@ output_unchanged:
         av_log(avctx, AV_LOG_ERROR, "Extradata invalid\n");
         return -1;
     }
-    extraheader = BE_32(avctx->extradata+11);
+    extraheader = AV_RB32(avctx->extradata+11);
     if((extraheader&MP3_MASK) != (header&MP3_MASK))
         goto output_unchanged;
 
@@ -192,7 +192,7 @@ static int mp3_header_decompress(AVBitStreamFilterContext *bsfc, AVCodecContext 
     int sample_rate_index=0;
     int lsf, mpeg25, bitrate_index, frame_size;
 
-    header = BE_32(buf);
+    header = AV_RB32(buf);
     if(ff_mpa_check_header(header) >= 0){
         *poutbuf= (uint8_t *) buf;
         *poutbuf_size= buf_size;
@@ -205,7 +205,7 @@ static int mp3_header_decompress(AVBitStreamFilterContext *bsfc, AVCodecContext 
         return -1;
     }
 
-    header= BE_32(avctx->extradata+11) & MP3_MASK;
+    header= AV_RB32(avctx->extradata+11) & MP3_MASK;
 
     lsf     = sample_rate < (24000+32000)/2;
     mpeg25  = sample_rate < (12000+16000)/2;

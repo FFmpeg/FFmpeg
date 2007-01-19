@@ -237,20 +237,20 @@ static int decode_init(AVCodecContext *avctx){
                avctx->extradata_size);
         return -1;
     }
-    version = LE_32(avctx->extradata);
+    version = AV_RL32(avctx->extradata);
     switch(version) {
     case 1:
         l->lossy = 0;
         break;
     case 2:
-        l->lossy = LE_32(avctx->extradata + 8);
+        l->lossy = AV_RL32(avctx->extradata + 8);
         break;
     default:
-        l->lossy = LE_32(avctx->extradata + 8);
+        l->lossy = AV_RL32(avctx->extradata + 8);
         av_log(avctx, AV_LOG_INFO, "This is LOCO codec version %i, please upload file for study\n", version);
     }
 
-    l->mode = LE_32(avctx->extradata + 4);
+    l->mode = AV_RL32(avctx->extradata + 4);
     switch(l->mode) {
     case LOCO_CYUY2: case LOCO_YUY2: case LOCO_UYVY:
         avctx->pix_fmt = PIX_FMT_YUV422P;

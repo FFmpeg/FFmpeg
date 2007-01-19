@@ -57,9 +57,9 @@ static int ws_snd_decode_frame(AVCodecContext *avctx,
     if (!buf_size)
         return 0;
 
-    out_size = LE_16(&buf[0]);
+    out_size = AV_RL16(&buf[0]);
     *data_size = out_size * 2;
-    in_size = LE_16(&buf[2]);
+    in_size = AV_RL16(&buf[2]);
     buf += 4;
 
     if (in_size == out_size) {

@@ -179,7 +179,7 @@ static int dpcm_decode_frame(AVCodecContext *avctx,
 
     case CODEC_ID_ROQ_DPCM:
         if (s->channels == 1)
-            predictor[0] = LE_16(&buf[6]);
+            predictor[0] = AV_RL16(&buf[6]);
         else {
             predictor[0] = buf[7] << 8;
             predictor[1] = buf[6] << 8;
@@ -200,12 +200,12 @@ static int dpcm_decode_frame(AVCodecContext *avctx,
 
     case CODEC_ID_INTERPLAY_DPCM:
         in = 6;  /* skip over the stream mask and stream length */
-        predictor[0] = LE_16(&buf[in]);
+        predictor[0] = AV_RL16(&buf[in]);
         in += 2;
         SE_16BIT(predictor[0])
         output_samples[out++] = predictor[0];
         if (s->channels == 2) {
-            predictor[1] = LE_16(&buf[in]);
+            predictor[1] = AV_RL16(&buf[in]);
             in += 2;
             SE_16BIT(predictor[1])
             output_samples[out++] = predictor[1];
@@ -225,11 +225,11 @@ static int dpcm_decode_frame(AVCodecContext *avctx,
     case CODEC_ID_XAN_DPCM:
         in = 0;
         shift[0] = shift[1] = 4;
-        predictor[0] = LE_16(&buf[in]);
+        predictor[0] = AV_RL16(&buf[in]);
         in += 2;
         SE_16BIT(predictor[0]);
         if (s->channels == 2) {
-            predictor[1] = LE_16(&buf[in]);
+            predictor[1] = AV_RL16(&buf[in]);
             in += 2;
             SE_16BIT(predictor[1]);
         }

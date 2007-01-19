@@ -64,9 +64,9 @@ static int get_quant(AVCodecContext *avctx, NuvContext *c,
         return -1;
     }
     for (i = 0; i < 64; i++, buf += 4)
-        c->lq[i] = LE_32(buf);
+        c->lq[i] = AV_RL32(buf);
     for (i = 0; i < 64; i++, buf += 4)
-        c->cq[i] = LE_32(buf);
+        c->cq[i] = AV_RL32(buf);
     return 0;
 }
 

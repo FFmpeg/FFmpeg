@@ -245,25 +245,25 @@ static void msvideo1_decode_16bit(Msvideo1Context *s)
                 flags = (byte_b << 8) | byte_a;
 
                 CHECK_STREAM_PTR(4);
-                colors[0] = LE_16(&s->buf[stream_ptr]);
+                colors[0] = AV_RL16(&s->buf[stream_ptr]);
                 stream_ptr += 2;
-                colors[1] = LE_16(&s->buf[stream_ptr]);
+                colors[1] = AV_RL16(&s->buf[stream_ptr]);
                 stream_ptr += 2;
 
                 if (colors[0] & 0x8000) {
                     /* 8-color encoding */
                     CHECK_STREAM_PTR(12);
-                    colors[2] = LE_16(&s->buf[stream_ptr]);
+                    colors[2] = AV_RL16(&s->buf[stream_ptr]);
                     stream_ptr += 2;
-                    colors[3] = LE_16(&s->buf[stream_ptr]);
+                    colors[3] = AV_RL16(&s->buf[stream_ptr]);
                     stream_ptr += 2;
-                    colors[4] = LE_16(&s->buf[stream_ptr]);
+                    colors[4] = AV_RL16(&s->buf[stream_ptr]);
                     stream_ptr += 2;
-                    colors[5] = LE_16(&s->buf[stream_ptr]);
+                    colors[5] = AV_RL16(&s->buf[stream_ptr]);
                     stream_ptr += 2;
-                    colors[6] = LE_16(&s->buf[stream_ptr]);
+                    colors[6] = AV_RL16(&s->buf[stream_ptr]);
                     stream_ptr += 2;
-                    colors[7] = LE_16(&s->buf[stream_ptr]);
+                    colors[7] = AV_RL16(&s->buf[stream_ptr]);
                     stream_ptr += 2;
 
                     for (pixel_y = 0; pixel_y < 4; pixel_y++) {

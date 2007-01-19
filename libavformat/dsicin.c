@@ -62,11 +62,11 @@ static int cin_probe(AVProbeData *p)
         return 0;
 
     /* header starts with this special marker */
-    if (LE_32(&p->buf[0]) != 0x55AA0000)
+    if (AV_RL32(&p->buf[0]) != 0x55AA0000)
         return 0;
 
     /* for accuracy, check some header field values */
-    if (LE_32(&p->buf[12]) != 22050 || p->buf[16] != 16 || p->buf[17] != 0)
+    if (AV_RL32(&p->buf[12]) != 22050 || p->buf[16] != 16 || p->buf[17] != 0)
         return 0;
 
     return AVPROBE_SCORE_MAX;

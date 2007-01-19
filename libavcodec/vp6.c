@@ -63,7 +63,7 @@ static int vp6_parse_header(vp56_context_t *s, uint8_t *buf, int buf_size,
             return 0;
         }
         if (separated_coeff || !s->filter_header) {
-            coeff_offset = BE_16(buf+2) - 2;
+            coeff_offset = AV_RB16(buf+2) - 2;
             buf += 2;
             buf_size -= 2;
         }
@@ -95,7 +95,7 @@ static int vp6_parse_header(vp56_context_t *s, uint8_t *buf, int buf_size,
             return 0;
 
         if (separated_coeff || !s->filter_header) {
-            coeff_offset = BE_16(buf+1) - 2;
+            coeff_offset = AV_RB16(buf+1) - 2;
             buf += 2;
             buf_size -= 2;
         }

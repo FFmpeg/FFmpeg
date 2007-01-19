@@ -830,7 +830,7 @@ static int svq3_decode_frame (AVCodecContext *avctx,
 
       GetBitContext gb;
 
-      size = BE_32(&extradata[4]);
+      size = AV_RB32(&extradata[4]);
       init_get_bits (&gb, extradata + 8, size*8);
 
       /* 'frame size code' and optional 'width, height' */

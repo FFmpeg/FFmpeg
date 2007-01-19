@@ -61,9 +61,9 @@ static int mm_probe(AVProbeData *p)
     /* the first chunk is always the header */
     if (p->buf_size < MM_PREAMBLE_SIZE)
         return 0;
-    if (LE_16(&p->buf[0]) != MM_TYPE_HEADER)
+    if (AV_RL16(&p->buf[0]) != MM_TYPE_HEADER)
         return 0;
-    if (LE_32(&p->buf[2]) != MM_HEADER_LEN_V && LE_32(&p->buf[2]) != MM_HEADER_LEN_AV)
+    if (AV_RL32(&p->buf[2]) != MM_HEADER_LEN_V && AV_RL32(&p->buf[2]) != MM_HEADER_LEN_AV)
         return 0;
 
     /* only return half certainty since this check is a bit sketchy */
@@ -141,8 +141,8 @@ static int mm_read_packet(AVFormatContext *s,
             return AVERROR_IO;
         }
 
-        type = LE_16(&preamble[0]);
-        length = LE_16(&preamble[2]);
+        type = AV_RL16(&preamble[0]);
+        length = AV_RL16(&preamble[2]);
 
         switch(type) {
         case MM_TYPE_PALETTE :

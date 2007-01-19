@@ -1100,19 +1100,19 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
         }
         break;
     case CODEC_ID_ADPCM_EA:
-        samples_in_chunk = LE_32(src);
+        samples_in_chunk = AV_RL32(src);
         if (samples_in_chunk >= ((buf_size - 12) * 2)) {
             src += buf_size;
             break;
         }
         src += 4;
-        current_left_sample = (int16_t)LE_16(src);
+        current_left_sample = (int16_t)AV_RL16(src);
         src += 2;
-        previous_left_sample = (int16_t)LE_16(src);
+        previous_left_sample = (int16_t)AV_RL16(src);
         src += 2;
-        current_right_sample = (int16_t)LE_16(src);
+        current_right_sample = (int16_t)AV_RL16(src);
         src += 2;
-        previous_right_sample = (int16_t)LE_16(src);
+        previous_right_sample = (int16_t)AV_RL16(src);
         src += 2;
 
         for (count1 = 0; count1 < samples_in_chunk/28;count1++) {

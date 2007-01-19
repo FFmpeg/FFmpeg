@@ -73,7 +73,7 @@ static int decode_frame(AVCodecContext *avctx,
 
         for (j = 0; j < avctx->width; j += 4) {
             /* value is stored in LE dword with word swapped */
-            val = LE_32(buf);
+            val = AV_RL32(buf);
             buf -= 4;
             val = ((val >> 16) & 0xFFFF) | ((val & 0xFFFF) << 16);
 

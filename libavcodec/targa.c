@@ -61,7 +61,7 @@ static void targa_decode_rle(AVCodecContext *avctx, TargaContext *s, uint8_t *sr
                 *dst = *src;
                 break;
             case 2:
-                *((uint16_t*)dst) = LE_16(src);
+                *((uint16_t*)dst) = AV_RL16(src);
                 break;
             case 3:
                 dst[0] = src[0];
@@ -69,7 +69,7 @@ static void targa_decode_rle(AVCodecContext *avctx, TargaContext *s, uint8_t *sr
                 dst[2] = src[2];
                 break;
             case 4:
-                *((uint32_t*)dst) = LE_32(src);
+                *((uint32_t*)dst) = AV_RL32(src);
                 break;
             }
             dst += depth;
@@ -104,13 +104,13 @@ static int decode_frame(AVCodecContext *avctx,
     idlen = *buf++;
     pal = *buf++;
     compr = *buf++;
-    first_clr = LE_16(buf); buf += 2;
-    colors = LE_16(buf); buf += 2;
+    first_clr = AV_RL16(buf); buf += 2;
+    colors = AV_RL16(buf); buf += 2;
     csize = *buf++;
-    x = LE_16(buf); buf += 2;
-    y = LE_16(buf); buf += 2;
-    w = LE_16(buf); buf += 2;
-    h = LE_16(buf); buf += 2;
+    x = AV_RL16(buf); buf += 2;
+    y = AV_RL16(buf); buf += 2;
+    w = AV_RL16(buf); buf += 2;
+    h = AV_RL16(buf); buf += 2;
     bpp = *buf++;
     flags = *buf++;
     //skip identifier if any
@@ -200,11 +200,11 @@ static int decode_frame(AVCodecContext *avctx,
                 if((s->bpp + 1) >> 3 == 2){
                     uint16_t *dst16 = (uint16_t*)dst;
                     for(x = 0; x < s->width; x++)
-                        dst16[x] = LE_16(buf + x * 2);
+                        dst16[x] = AV_RL16(buf + x * 2);
                 }else if((s->bpp + 1) >> 3 == 4){
                     uint32_t *dst32 = (uint32_t*)dst;
                     for(x = 0; x < s->width; x++)
-                        dst32[x] = LE_32(buf + x * 4);
+                        dst32[x] = AV_RL32(buf + x * 4);
                 }else
 #endif
                     memcpy(dst, buf, s->width * ((s->bpp + 1) >> 3));

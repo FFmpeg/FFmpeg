@@ -2372,7 +2372,7 @@ matroska_find_track_by_num (MatroskaDemuxContext *matroska,
 static inline int
 rv_offset(uint8_t *data, int slice, int slices)
 {
-    return LE_32(data+8*slice+4) + 8*slices;
+    return AV_RL32(data+8*slice+4) + 8*slices;
 }
 
 static int

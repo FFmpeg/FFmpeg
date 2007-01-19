@@ -190,7 +190,7 @@ static int nuv_packet(AVFormatContext *s, AVPacket *pkt) {
         if (ret <= 0)
             return ret ? ret : -1;
         frametype = hdr[0];
-        size = PKTSIZE(LE_32(&hdr[8]));
+        size = PKTSIZE(AV_RL32(&hdr[8]));
         switch (frametype) {
             case NUV_VIDEO:
             case NUV_EXTRADATA:
@@ -203,7 +203,7 @@ static int nuv_packet(AVFormatContext *s, AVPacket *pkt) {
                 if (ret < 0)
                     return ret;
                 pkt->pos = url_ftell(pb);
-                pkt->pts = LE_32(&hdr[4]);
+                pkt->pts = AV_RL32(&hdr[4]);
                 pkt->stream_index = ctx->v_id;
                 memcpy(pkt->data, hdr, HDRSIZE);
                 ret = get_buffer(pb, pkt->data + HDRSIZE, size);
@@ -215,7 +215,7 @@ static int nuv_packet(AVFormatContext *s, AVPacket *pkt) {
                     break;
                 }
                 ret = av_get_packet(pb, pkt, size);
-                pkt->pts = LE_32(&hdr[4]);
+                pkt->pts = AV_RL32(&hdr[4]);
                 pkt->stream_index = ctx->a_id;
                 return ret;
             case NUV_SEEKP:

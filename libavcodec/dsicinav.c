@@ -159,7 +159,7 @@ static void cin_decode_lzss(const unsigned char *src, int src_size, unsigned cha
             if (code & (1 << i)) {
                 *dst++ = *src++;
             } else {
-                cmd = LE_16(src); src += 2;
+                cmd = AV_RL16(src); src += 2;
                 offset = cmd >> 4;
                 sz = (cmd & 0xF) + 2;
                 /* don't use memcpy/memmove here as the decoding routine (ab)uses */
@@ -321,7 +321,7 @@ static int cinaudio_decode_frame(AVCodecContext *avctx,
 
     if (cin->initial_decode_frame) {
         cin->initial_decode_frame = 0;
-        cin->delta = (int16_t)LE_16(src); src += 2;
+        cin->delta = (int16_t)AV_RL16(src); src += 2;
         *samples++ = cin->delta;
         buf_size -= 2;
     }

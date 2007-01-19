@@ -4128,7 +4128,7 @@ static int vc1_decode_init(AVCodecContext *avctx)
         }
         while(edata_size > 8) {
             // test if we've found header
-            if(BE_32(edata) == 0x0000010F) {
+            if(AV_RB32(edata) == 0x0000010F) {
                 edata += 4;
                 edata_size -= 4;
                 break;
@@ -4144,7 +4144,7 @@ static int vc1_decode_init(AVCodecContext *avctx)
 
         while(edata_size > 8) {
             // test if we've found entry point
-            if(BE_32(edata) == 0x0000010E) {
+            if(AV_RB32(edata) == 0x0000010E) {
                 edata += 4;
                 edata_size -= 4;
                 break;

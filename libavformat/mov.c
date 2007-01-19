@@ -1447,7 +1447,7 @@ static int mov_probe(AVProbeData *p)
         /* ignore invalid offset */
         if ((offset + 8) > (unsigned int)p->buf_size)
             return score;
-        tag = LE_32(p->buf + offset + 4);
+        tag = AV_RL32(p->buf + offset + 4);
         switch(tag) {
         /* check for obvious tags */
         case MKTAG( 'j', 'P', ' ', ' ' ): /* jpeg 2000 signature */
@@ -1465,7 +1465,7 @@ static int mov_probe(AVProbeData *p)
         case MKTAG( 'f', 't', 'y', 'p' ):
         case MKTAG( 's', 'k', 'i', 'p' ):
         case MKTAG( 'u', 'u', 'i', 'd' ):
-            offset = BE_32(p->buf+offset) + offset;
+            offset = AV_RB32(p->buf+offset) + offset;
             /* if we only find those cause probedata is too small at least rate them */
             score = AVPROBE_SCORE_MAX - 50;
             break;

@@ -25,13 +25,13 @@
 static av_always_inline unsigned int bytestream_get_le32(uint8_t **b)
 {
     (*b) += 4;
-    return LE_32(*b - 4);
+    return AV_RL32(*b - 4);
 }
 
 static av_always_inline unsigned int bytestream_get_le16(uint8_t **b)
 {
     (*b) += 2;
-    return LE_16(*b - 2);
+    return AV_RL16(*b - 2);
 }
 
 static av_always_inline unsigned int bytestream_get_byte(uint8_t **b)

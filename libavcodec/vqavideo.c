@@ -151,8 +151,8 @@ static int vqa_decode_init(AVCodecContext *avctx)
     /* load up the VQA parameters from the header */
     vqa_header = (unsigned char *)s->avctx->extradata;
     s->vqa_version = vqa_header[0];
-    s->width = LE_16(&vqa_header[6]);
-    s->height = LE_16(&vqa_header[8]);
+    s->width = AV_RL16(&vqa_header[6]);
+    s->height = AV_RL16(&vqa_header[8]);
     if(avcodec_check_dimensions(avctx, s->width, s->height)){
         s->width= s->height= 0;
         return -1;
@@ -232,9 +232,9 @@ static void decode_format80(unsigned char *src, int src_size,
         if (src[src_index] == 0xFF) {
 
             src_index++;
-            count = LE_16(&src[src_index]);
+            count = AV_RL16(&src[src_index]);
             src_index += 2;
-            src_pos = LE_16(&src[src_index]);
+            src_pos = AV_RL16(&src[src_index]);
             src_index += 2;
             vqa_debug("(1) copy %X bytes from absolute pos %X\n", count, src_pos);
             CHECK_COUNT();
@@ -245,7 +245,7 @@ static void decode_format80(unsigned char *src, int src_size,
         } else if (src[src_index] == 0xFE) {
 
             src_index++;
-            count = LE_16(&src[src_index]);
+            count = AV_RL16(&src[src_index]);
             src_index += 2;
             color = src[src_index++];
             vqa_debug("(2) set %X bytes to %02X\n", count, color);
@@ -256,7 +256,7 @@ static void decode_format80(unsigned char *src, int src_size,
         } else if ((src[src_index] & 0xC0) == 0xC0) {
 
             count = (src[src_index++] & 0x3F) + 3;
-            src_pos = LE_16(&src[src_index]);
+            src_pos = AV_RL16(&src[src_index]);
             src_index += 2;
             vqa_debug("(3) copy %X bytes from absolute pos %X\n", count, src_pos);
             CHECK_COUNT();
@@ -276,7 +276,7 @@ static void decode_format80(unsigned char *src, int src_size,
         } else {
 
             count = ((src[src_index] & 0x70) >> 4) + 3;
-            src_pos = BE_16(&src[src_index]) & 0x0FFF;
+            src_pos = AV_RB16(&src[src_index]) & 0x0FFF;
             src_index += 2;
             vqa_debug("(5) copy %X bytes from relpos %X\n", count, src_pos);
             CHECK_COUNT();
@@ -326,8 +326,8 @@ static void vqa_decode_chunk(VqaContext *s)
     /* first, traverse through the frame and find the subchunks */
     while (index < s->size) {
 
-        chunk_type = BE_32(&s->buf[index]);
-        chunk_size = BE_32(&s->buf[index + 4]);
+        chunk_type = AV_RB32(&s->buf[index]);
+        chunk_size = AV_RB32(&s->buf[index + 4]);
 
         switch (chunk_type) {
 
@@ -391,7 +391,7 @@ static void vqa_decode_chunk(VqaContext *s)
     /* convert the RGB palette into the machine's endian format */
     if (cpl0_chunk != -1) {
 
-        chunk_size = BE_32(&s->buf[cpl0_chunk + 4]);
+        chunk_size = AV_RB32(&s->buf[cpl0_chunk + 4]);
         /* sanity check the palette size */
         if (chunk_size / 3 > 256) {
             av_log(s->avctx, AV_LOG_ERROR, "  VQA video: problem: found a palette chunk with %d colors\n",
@@ -419,7 +419,7 @@ static void vqa_decode_chunk(VqaContext *s)
     /* decompress the full codebook chunk */
     if (cbfz_chunk != -1) {
 
-        chunk_size = BE_32(&s->buf[cbfz_chunk + 4]);
+        chunk_size = AV_RB32(&s->buf[cbfz_chunk + 4]);
         cbfz_chunk += CHUNK_PREAMBLE_SIZE;
         decode_format80(&s->buf[cbfz_chunk], chunk_size,
             s->codebook, s->codebook_size, 0);
@@ -428,7 +428,7 @@ static void vqa_decode_chunk(VqaContext *s)
     /* copy a full codebook */
     if (cbf0_chunk != -1) {
 
-        chunk_size = BE_32(&s->buf[cbf0_chunk + 4]);
+        chunk_size = AV_RB32(&s->buf[cbf0_chunk + 4]);
         /* sanity check the full codebook size */
         if (chunk_size > MAX_CODEBOOK_SIZE) {
             av_log(s->avctx, AV_LOG_ERROR, "  VQA video: problem: CBF0 chunk too large (0x%X bytes)\n",
@@ -448,7 +448,7 @@ static void vqa_decode_chunk(VqaContext *s)
         return;
     }
 
-    chunk_size = BE_32(&s->buf[vptz_chunk + 4]);
+    chunk_size = AV_RB32(&s->buf[vptz_chunk + 4]);
     vptz_chunk += CHUNK_PREAMBLE_SIZE;
     decode_format80(&s->buf[vptz_chunk], chunk_size,
         s->decode_buffer, s->decode_buffer_size, 1);
@@ -522,7 +522,7 @@ static void vqa_decode_chunk(VqaContext *s)
 
     if (cbp0_chunk != -1) {
 
-        chunk_size = BE_32(&s->buf[cbp0_chunk + 4]);
+        chunk_size = AV_RB32(&s->buf[cbp0_chunk + 4]);
         cbp0_chunk += CHUNK_PREAMBLE_SIZE;
 
         /* accumulate partial codebook */
@@ -545,7 +545,7 @@ static void vqa_decode_chunk(VqaContext *s)
 
     if (cbpz_chunk != -1) {
 
-        chunk_size = BE_32(&s->buf[cbpz_chunk + 4]);
+        chunk_size = AV_RB32(&s->buf[cbpz_chunk + 4]);
         cbpz_chunk += CHUNK_PREAMBLE_SIZE;
 
         /* accumulate partial codebook */

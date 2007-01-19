@@ -296,10 +296,10 @@ static void xan_wc3_decode_frame(XanContext *s) {
     unsigned char *vector_segment;
     unsigned char *imagedata_segment;
 
-    huffman_segment =   s->buf + LE_16(&s->buf[0]);
-    size_segment =      s->buf + LE_16(&s->buf[2]);
-    vector_segment =    s->buf + LE_16(&s->buf[4]);
-    imagedata_segment = s->buf + LE_16(&s->buf[6]);
+    huffman_segment =   s->buf + AV_RL16(&s->buf[0]);
+    size_segment =      s->buf + AV_RL16(&s->buf[2]);
+    vector_segment =    s->buf + AV_RL16(&s->buf[4]);
+    imagedata_segment = s->buf + AV_RL16(&s->buf[6]);
 
     xan_huffman_decode(opcode_buffer, huffman_segment, opcode_buffer_size);
 
@@ -350,7 +350,7 @@ static void xan_wc3_decode_frame(XanContext *s) {
 
         case 10:
         case 20:
-            size = BE_16(&size_segment[0]);
+            size = AV_RB16(&size_segment[0]);
             size_segment += 2;
             break;
 

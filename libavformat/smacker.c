@@ -311,7 +311,7 @@ static int smacker_read_packet(AVFormatContext *s, AVPacket *pkt)
         pkt->size = smk->buf_sizes[smk->curstream];
         pkt->stream_index = smk->stream_id[smk->curstream];
         pkt->pts = smk->aud_pts[smk->curstream];
-        smk->aud_pts[smk->curstream] += LE_32(pkt->data);
+        smk->aud_pts[smk->curstream] += AV_RL32(pkt->data);
         smk->curstream--;
     }
 

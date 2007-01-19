@@ -76,10 +76,10 @@ static av_always_inline int vmnc_get_pixel(uint8_t* buf, int bpp, int be) {
     switch(bpp * 2 + be) {
     case 2:
     case 3: return *buf;
-    case 4: return LE_16(buf);
-    case 5: return BE_16(buf);
-    case 8: return LE_32(buf);
-    case 9: return BE_32(buf);
+    case 4: return AV_RL16(buf);
+    case 5: return AV_RB16(buf);
+    case 8: return AV_RL32(buf);
+    case 9: return AV_RB32(buf);
     default: return 0;
     }
 }
@@ -328,13 +328,13 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
         }
     }
     src += 2;
-    chunks = BE_16(src); src += 2;
+    chunks = AV_RB16(src); src += 2;
     while(chunks--) {
-        dx = BE_16(src); src += 2;
-        dy = BE_16(src); src += 2;
-        w  = BE_16(src); src += 2;
-        h  = BE_16(src); src += 2;
-        enc = BE_32(src); src += 4;
+        dx = AV_RB16(src); src += 2;
+        dy = AV_RB16(src); src += 2;
+        w  = AV_RB16(src); src += 2;
+        h  = AV_RB16(src); src += 2;
+        enc = AV_RB32(src); src += 4;
         outptr = c->pic.data[0] + dx * c->bpp2 + dy * c->pic.linesize[0];
         size_left = buf_size - (src - buf);
         switch(enc) {

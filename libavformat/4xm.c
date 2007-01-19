@@ -82,8 +82,8 @@ static int fourxm_probe(AVProbeData *p)
     if (p->buf_size < 12)
         return 0;
 
-    if ((LE_32(&p->buf[0]) != RIFF_TAG) ||
-        (LE_32(&p->buf[8]) != _4XMV_TAG))
+    if ((AV_RL32(&p->buf[0]) != RIFF_TAG) ||
+        (AV_RL32(&p->buf[8]) != _4XMV_TAG))
         return 0;
 
     return AVPROBE_SCORE_MAX;
@@ -125,19 +125,19 @@ static int fourxm_read_header(AVFormatContext *s,
 
     /* take the lazy approach and search for any and all vtrk and strk chunks */
     for (i = 0; i < header_size - 8; i++) {
-        fourcc_tag = LE_32(&header[i]);
-        size = LE_32(&header[i + 4]);
+        fourcc_tag = AV_RL32(&header[i]);
+        size = AV_RL32(&header[i + 4]);
 
         if (fourcc_tag == std__TAG) {
-            fourxm->fps = av_int2flt(LE_32(&header[i + 12]));
+            fourxm->fps = av_int2flt(AV_RL32(&header[i + 12]));
         } else if (fourcc_tag == vtrk_TAG) {
             /* check that there is enough data */
             if (size != vtrk_SIZE) {
                 av_free(header);
                 return AVERROR_INVALIDDATA;
             }
-            fourxm->width = LE_32(&header[i + 36]);
-            fourxm->height = LE_32(&header[i + 40]);
+            fourxm->width = AV_RL32(&header[i + 36]);
+            fourxm->height = AV_RL32(&header[i + 40]);
             i += 8 + size;
 
             /* allocate a new AVStream */
@@ -160,7 +160,7 @@ static int fourxm_read_header(AVFormatContext *s,
                 av_free(header);
                 return AVERROR_INVALIDDATA;
             }
-            current_track = LE_32(&header[i + 8]);
+            current_track = AV_RL32(&header[i + 8]);
             if (current_track + 1 > fourxm->track_count) {
                 fourxm->track_count = current_track + 1;
                 if((unsigned)fourxm->track_count >= UINT_MAX / sizeof(AudioTrack))
@@ -172,10 +172,10 @@ static int fourxm_read_header(AVFormatContext *s,
                     return AVERROR_NOMEM;
                 }
             }
-            fourxm->tracks[current_track].adpcm = LE_32(&header[i + 12]);
-            fourxm->tracks[current_track].channels = LE_32(&header[i + 36]);
-            fourxm->tracks[current_track].sample_rate = LE_32(&header[i + 40]);
-            fourxm->tracks[current_track].bits = LE_32(&header[i + 44]);
+            fourxm->tracks[current_track].adpcm = AV_RL32(&header[i + 12]);
+            fourxm->tracks[current_track].channels = AV_RL32(&header[i + 36]);
+            fourxm->tracks[current_track].sample_rate = AV_RL32(&header[i + 40]);
+            fourxm->tracks[current_track].bits = AV_RL32(&header[i + 44]);
             i += 8 + size;
 
             /* allocate a new AVStream */
@@ -235,8 +235,8 @@ static int fourxm_read_packet(AVFormatContext *s,
 
         if ((ret = get_buffer(&s->pb, header, 8)) < 0)
             return ret;
-        fourcc_tag = LE_32(&header[0]);
-        size = LE_32(&header[4]);
+        fourcc_tag = AV_RL32(&header[0]);
+        size = AV_RL32(&header[4]);
         if (url_feof(pb))
             return AVERROR_IO;
         switch (fourcc_tag) {

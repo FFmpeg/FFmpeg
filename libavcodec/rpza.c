@@ -98,7 +98,7 @@ static void rpza_decode_stream(RpzaContext *s)
             s->buf[stream_ptr]);
 
     /* Get chunk size, ingnoring first byte */
-    chunk_size = BE_32(&s->buf[stream_ptr]) & 0x00FFFFFF;
+    chunk_size = AV_RB32(&s->buf[stream_ptr]) & 0x00FFFFFF;
     stream_ptr += 4;
 
     /* If length mismatch use size from MOV file and try to decode anyway */
@@ -140,7 +140,7 @@ static void rpza_decode_stream(RpzaContext *s)
 
         /* Fill blocks with one color */
         case 0xa0:
-            colorA = BE_16 (&s->buf[stream_ptr]);
+            colorA = AV_RB16 (&s->buf[stream_ptr]);
             stream_ptr += 2;
             while (n_blocks--) {
                 block_ptr = row_ptr + pixel_ptr;
@@ -157,10 +157,10 @@ static void rpza_decode_stream(RpzaContext *s)
 
         /* Fill blocks with 4 colors */
         case 0xc0:
-            colorA = BE_16 (&s->buf[stream_ptr]);
+            colorA = AV_RB16 (&s->buf[stream_ptr]);
             stream_ptr += 2;
         case 0x20:
-            colorB = BE_16 (&s->buf[stream_ptr]);
+            colorB = AV_RB16 (&s->buf[stream_ptr]);
             stream_ptr += 2;
 
             /* sort out the colors */
@@ -209,7 +209,7 @@ static void rpza_decode_stream(RpzaContext *s)
                 for (pixel_x = 0; pixel_x < 4; pixel_x++){
                     /* We already have color of upper left pixel */
                     if ((pixel_y != 0) || (pixel_x !=0)) {
-                        colorA = BE_16 (&s->buf[stream_ptr]);
+                        colorA = AV_RB16 (&s->buf[stream_ptr]);
                         stream_ptr += 2;
                     }
                     pixels[block_ptr] = colorA;

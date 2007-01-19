@@ -109,27 +109,27 @@ static int idcin_probe(AVProbeData *p)
         return 0;
 
     /* check the video width */
-    number = LE_32(&p->buf[0]);
+    number = AV_RL32(&p->buf[0]);
     if ((number == 0) || (number > 1024))
        return 0;
 
     /* check the video height */
-    number = LE_32(&p->buf[4]);
+    number = AV_RL32(&p->buf[4]);
     if ((number == 0) || (number > 1024))
        return 0;
 
     /* check the audio sample rate */
-    number = LE_32(&p->buf[8]);
+    number = AV_RL32(&p->buf[8]);
     if ((number != 0) && ((number < 8000) | (number > 48000)))
         return 0;
 
     /* check the audio bytes/sample */
-    number = LE_32(&p->buf[12]);
+    number = AV_RL32(&p->buf[12]);
     if (number > 2)
         return 0;
 
     /* check the audio channels */
-    number = LE_32(&p->buf[16]);
+    number = AV_RL32(&p->buf[16]);
     if (number > 2)
         return 0;
 

@@ -101,7 +101,7 @@ static int wsaud_probe(AVProbeData *p)
         return 0;
 
     /* check sample rate */
-    field = LE_16(&p->buf[0]);
+    field = AV_RL16(&p->buf[0]);
     if ((field < 8000) || (field > 48000))
         return 0;
 
@@ -124,7 +124,7 @@ static int wsaud_read_header(AVFormatContext *s,
 
     if (get_buffer(pb, header, AUD_HEADER_SIZE) != AUD_HEADER_SIZE)
         return AVERROR_IO;
-    wsaud->audio_samplerate = LE_16(&header[0]);
+    wsaud->audio_samplerate = AV_RL16(&header[0]);
     if (header[11] == 99)
         wsaud->audio_type = CODEC_ID_ADPCM_IMA_WS;
     else
@@ -170,10 +170,10 @@ static int wsaud_read_packet(AVFormatContext *s,
         return AVERROR_IO;
 
     /* validate the chunk */
-    if (LE_32(&preamble[4]) != AUD_CHUNK_SIGNATURE)
+    if (AV_RL32(&preamble[4]) != AUD_CHUNK_SIGNATURE)
         return AVERROR_INVALIDDATA;
 
-    chunk_size = LE_16(&preamble[0]);
+    chunk_size = AV_RL16(&preamble[0]);
     ret= av_get_packet(pb, pkt, chunk_size);
     if (ret != chunk_size)
         return AVERROR_IO;
@@ -202,8 +202,8 @@ static int wsvqa_probe(AVProbeData *p)
         return 0;
 
     /* check for the VQA signatures */
-    if ((BE_32(&p->buf[0]) != FORM_TAG) ||
-        (BE_32(&p->buf[8]) != WVQA_TAG))
+    if ((AV_RB32(&p->buf[0]) != FORM_TAG) ||
+        (AV_RB32(&p->buf[8]) != WVQA_TAG))
         return 0;
 
     return AVPROBE_SCORE_MAX;
@@ -242,22 +242,22 @@ static int wsvqa_read_header(AVFormatContext *s,
         av_free(st->codec->extradata);
         return AVERROR_IO;
     }
-    st->codec->width = LE_16(&header[6]);
-    st->codec->height = LE_16(&header[8]);
+    st->codec->width = AV_RL16(&header[6]);
+    st->codec->height = AV_RL16(&header[8]);
 
     /* initialize the audio decoder stream for VQA v1 or nonzero samplerate */
-    if (LE_16(&header[24]) || (LE_16(&header[0]) == 1 && LE_16(&header[2]) == 1)) {
+    if (AV_RL16(&header[24]) || (AV_RL16(&header[0]) == 1 && AV_RL16(&header[2]) == 1)) {
         st = av_new_stream(s, 0);
         if (!st)
             return AVERROR_NOMEM;
         av_set_pts_info(st, 33, 1, VQA_FRAMERATE);
         st->codec->codec_type = CODEC_TYPE_AUDIO;
-        if (LE_16(&header[0]) == 1)
+        if (AV_RL16(&header[0]) == 1)
             st->codec->codec_id = CODEC_ID_WESTWOOD_SND1;
         else
             st->codec->codec_id = CODEC_ID_ADPCM_IMA_WS;
         st->codec->codec_tag = 0;  /* no tag */
-        st->codec->sample_rate = LE_16(&header[24]);
+        st->codec->sample_rate = AV_RL16(&header[24]);
         if (!st->codec->sample_rate)
             st->codec->sample_rate = 22050;
         st->codec->channels = header[26];
@@ -281,8 +281,8 @@ static int wsvqa_read_header(AVFormatContext *s,
             av_free(st->codec->extradata);
             return AVERROR_IO;
         }
-        chunk_tag = BE_32(&scratch[0]);
-        chunk_size = BE_32(&scratch[4]);
+        chunk_tag = AV_RB32(&scratch[0]);
+        chunk_size = AV_RB32(&scratch[4]);
 
         /* catch any unknown header tags, for curiousity */
         switch (chunk_tag) {
@@ -323,8 +323,8 @@ static int wsvqa_read_packet(AVFormatContext *s,
     int skip_byte;
 
     while (get_buffer(pb, preamble, VQA_PREAMBLE_SIZE) == VQA_PREAMBLE_SIZE) {
-        chunk_type = BE_32(&preamble[0]);
-        chunk_size = BE_32(&preamble[4]);
+        chunk_type = AV_RB32(&preamble[0]);
+        chunk_size = AV_RB32(&preamble[4]);
         skip_byte = chunk_size & 0x01;
 
         if ((chunk_type == SND1_TAG) || (chunk_type == SND2_TAG) || (chunk_type == VQFR_TAG)) {
@@ -344,7 +344,7 @@ static int wsvqa_read_packet(AVFormatContext *s,
             } else if(chunk_type == SND1_TAG) {
                 pkt->stream_index = wsvqa->audio_stream_index;
                 /* unpacked size is stored in header */
-                wsvqa->audio_frame_counter += LE_16(pkt->data) / wsvqa->audio_channels;
+                wsvqa->audio_frame_counter += AV_RL16(pkt->data) / wsvqa->audio_channels;
             } else {
                 pkt->stream_index = wsvqa->video_stream_index;
                 wsvqa->video_pts += VQA_VIDEO_PTS_INC;

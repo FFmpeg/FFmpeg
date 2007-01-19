@@ -348,9 +348,9 @@ static int truemotion1_decode_header(TrueMotion1Context *s)
     header.compression = header_buffer[0];
     header.deltaset = header_buffer[1];
     header.vectable = header_buffer[2];
-    header.ysize = LE_16(&header_buffer[3]);
-    header.xsize = LE_16(&header_buffer[5]);
-    header.checksum = LE_16(&header_buffer[7]);
+    header.ysize = AV_RL16(&header_buffer[3]);
+    header.xsize = AV_RL16(&header_buffer[5]);
+    header.checksum = AV_RL16(&header_buffer[7]);
     header.version = header_buffer[9];
     header.header_type = header_buffer[10];
     header.flags = header_buffer[11];

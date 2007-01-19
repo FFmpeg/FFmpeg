@@ -64,7 +64,7 @@ static int vmd_probe(AVProbeData *p)
 
     /* check if the first 2 bytes of the file contain the appropriate size
      * of a VMD header chunk */
-    if (LE_16(&p->buf[0]) != VMD_HEADER_SIZE - 2)
+    if (AV_RL16(&p->buf[0]) != VMD_HEADER_SIZE - 2)
         return 0;
 
     /* only return half certainty since this check is a bit sketchy */
@@ -103,14 +103,14 @@ static int vmd_read_header(AVFormatContext *s,
     vst->codec->codec_type = CODEC_TYPE_VIDEO;
     vst->codec->codec_id = CODEC_ID_VMDVIDEO;
     vst->codec->codec_tag = 0;  /* no fourcc */
-    vst->codec->width = LE_16(&vmd->vmd_header[12]);
-    vst->codec->height = LE_16(&vmd->vmd_header[14]);
+    vst->codec->width = AV_RL16(&vmd->vmd_header[12]);
+    vst->codec->height = AV_RL16(&vmd->vmd_header[14]);
     vst->codec->extradata_size = VMD_HEADER_SIZE;
     vst->codec->extradata = av_mallocz(VMD_HEADER_SIZE + FF_INPUT_BUFFER_PADDING_SIZE);
     memcpy(vst->codec->extradata, vmd->vmd_header, VMD_HEADER_SIZE);
 
     /* if sample rate is 0, assume no audio */
-    vmd->sample_rate = LE_16(&vmd->vmd_header[804]);
+    vmd->sample_rate = AV_RL16(&vmd->vmd_header[804]);
     if (vmd->sample_rate) {
         st = av_new_stream(s, 0);
         if (!st)
@@ -121,7 +121,7 @@ static int vmd_read_header(AVFormatContext *s,
         st->codec->codec_tag = 0;  /* no fourcc */
         st->codec->channels = (vmd->vmd_header[811] & 0x80) ? 2 : 1;
         st->codec->sample_rate = vmd->sample_rate;
-        st->codec->block_align = LE_16(&vmd->vmd_header[806]);
+        st->codec->block_align = AV_RL16(&vmd->vmd_header[806]);
         if (st->codec->block_align & 0x8000) {
             st->codec->bits_per_sample = 16;
             st->codec->block_align = -(st->codec->block_align - 0x10000);
@@ -140,14 +140,14 @@ static int vmd_read_header(AVFormatContext *s,
         pts_inc = num;
     }
 
-    toc_offset = LE_32(&vmd->vmd_header[812]);
-    vmd->frame_count = LE_16(&vmd->vmd_header[6]);
-    vmd->frames_per_block = LE_16(&vmd->vmd_header[18]);
+    toc_offset = AV_RL32(&vmd->vmd_header[812]);
+    vmd->frame_count = AV_RL16(&vmd->vmd_header[6]);
+    vmd->frames_per_block = AV_RL16(&vmd->vmd_header[18]);
     url_fseek(pb, toc_offset, SEEK_SET);
 
     raw_frame_table = NULL;
     vmd->frame_table = NULL;
-    sound_buffers = LE_16(&vmd->vmd_header[808]);
+    sound_buffers = AV_RL16(&vmd->vmd_header[808]);
     raw_frame_table_size = vmd->frame_count * 6;
     raw_frame_table = av_malloc(raw_frame_table_size);
     if(vmd->frame_count * vmd->frames_per_block  >= UINT_MAX / sizeof(vmd_frame_t)){
@@ -170,7 +170,7 @@ static int vmd_read_header(AVFormatContext *s,
     total_frames = 0;
     for (i = 0; i < vmd->frame_count; i++) {
 
-        current_offset = LE_32(&raw_frame_table[6 * i + 2]);
+        current_offset = AV_RL32(&raw_frame_table[6 * i + 2]);
 
         /* handle each entry in index block */
         for (j = 0; j < vmd->frames_per_block; j++) {
@@ -179,7 +179,7 @@ static int vmd_read_header(AVFormatContext *s,
 
             get_buffer(pb, chunk, BYTES_PER_FRAME_RECORD);
             type = chunk[0];
-            size = LE_32(&chunk[2]);
+            size = AV_RL32(&chunk[2]);
             if(!size)
                 continue;
             switch(type) {

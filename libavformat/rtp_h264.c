@@ -209,7 +209,7 @@ static int h264_handle_packet(RTPDemuxContext * s,
                 int src_len= len;
 
                 do {
-                    uint16_t nal_size = BE_16(src); // this going to be a problem if unaligned (can it be?)
+                    uint16_t nal_size = AV_RB16(src); // this going to be a problem if unaligned (can it be?)
 
                     // consume the length of the aggregate...
                     src += 2;

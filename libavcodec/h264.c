@@ -8215,7 +8215,7 @@ static int decode_frame(AVCodecContext *avctx,
         cnt = *(p+5) & 0x1f; // Number of sps
         p += 6;
         for (i = 0; i < cnt; i++) {
-            nalsize = BE_16(p) + 2;
+            nalsize = AV_RB16(p) + 2;
             if(decode_nal_units(h, p, nalsize) < 0) {
                 av_log(avctx, AV_LOG_ERROR, "Decoding sps %d from avcC failed\n", i);
                 return -1;
@@ -8225,7 +8225,7 @@ static int decode_frame(AVCodecContext *avctx,
         // Decode pps from avcC
         cnt = *(p++); // Number of pps
         for (i = 0; i < cnt; i++) {
-            nalsize = BE_16(p) + 2;
+            nalsize = AV_RB16(p) + 2;
             if(decode_nal_units(h, p, nalsize)  != nalsize) {
                 av_log(avctx, AV_LOG_ERROR, "Decoding pps %d from avcC failed\n", i);
                 return -1;

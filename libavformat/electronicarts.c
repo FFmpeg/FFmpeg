@@ -168,7 +168,7 @@ static int ea_probe(AVProbeData *p)
     if (p->buf_size < 4)
         return 0;
 
-    if (LE_32(&p->buf[0]) != SCHl_TAG)
+    if (AV_RL32(&p->buf[0]) != SCHl_TAG)
         return 0;
 
     return AVPROBE_SCORE_MAX;
@@ -230,8 +230,8 @@ static int ea_read_packet(AVFormatContext *s,
 
         if (get_buffer(pb, preamble, EA_PREAMBLE_SIZE) != EA_PREAMBLE_SIZE)
             return AVERROR_IO;
-        chunk_type = LE_32(&preamble[0]);
-        chunk_size = LE_32(&preamble[4]) - EA_PREAMBLE_SIZE;
+        chunk_type = AV_RL32(&preamble[0]);
+        chunk_size = AV_RL32(&preamble[4]) - EA_PREAMBLE_SIZE;
 
         switch (chunk_type) {
         /* audio data */

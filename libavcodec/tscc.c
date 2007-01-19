@@ -121,14 +121,14 @@ static int decode_rle(CamtasiaContext *c, unsigned int srcsize)
                 }
             } else if (c->bpp == 16) {
                 for(i = 0; i < p2; i++) {
-                    pix16 = LE_16(src);
+                    pix16 = AV_RL16(src);
                     src += 2;
                     *(uint16_t*)output = pix16;
                     output += 2;
                 }
             } else if (c->bpp == 32) {
                 for(i = 0; i < p2; i++) {
-                    pix32 = LE_32(src);
+                    pix32 = AV_RL32(src);
                     src += 4;
                     *(uint32_t*)output = pix32;
                     output += 4;
@@ -140,7 +140,7 @@ static int decode_rle(CamtasiaContext *c, unsigned int srcsize)
             switch(c->bpp){
             case  8: pix[0] = *src++;
                      break;
-            case 16: pix16 = LE_16(src);
+            case 16: pix16 = AV_RL16(src);
                      src += 2;
                      *(uint16_t*)pix = pix16;
                      break;
@@ -148,7 +148,7 @@ static int decode_rle(CamtasiaContext *c, unsigned int srcsize)
                      pix[1] = *src++;
                      pix[2] = *src++;
                      break;
-            case 32: pix32 = LE_32(src);
+            case 32: pix32 = AV_RL32(src);
                      src += 4;
                      *(uint32_t*)pix = pix32;
                      break;
