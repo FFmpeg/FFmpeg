@@ -128,7 +128,8 @@ typedef struct AVFormatParameters {
     enum CodecID audio_codec_id;
 } AVFormatParameters;
 
-#define AVFMT_NOFILE        0x0001 /* no file should be opened */
+//! demuxer will use url_fopen, no opened file should be provided by the caller
+#define AVFMT_NOFILE        0x0001
 #define AVFMT_NEEDNUMBER    0x0002 /* needs '%d' in filename */
 #define AVFMT_SHOW_IDS      0x0008 /* show format stream IDs numbers */
 #define AVFMT_RAWPICTURE    0x0020 /* format wants AVPicture structure for

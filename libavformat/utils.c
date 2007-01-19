@@ -270,6 +270,9 @@ int av_filename_number_test(const char *filename)
 
 /**
  * Guess file format.
+ *
+ * @param is_opened whether the file is already opened, determines whether
+ *                  demuxers with or without AVFMT_NOFILE are probed
  */
 AVInputFormat *av_probe_input_format(AVProbeData *pd, int is_opened)
 {
