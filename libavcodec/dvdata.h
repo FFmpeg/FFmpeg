@@ -49,7 +49,7 @@ typedef struct DVprofile {
                                           /* for 48Khz, 44.1Khz and 32Khz */
     int              audio_samples_dist[5];/* how many samples are supposed to be */
                                          /* in each frame in a 5 frames window */
-    const uint16_t (*audio_shuffle)[9];  /* PCM shuffling table */
+    const uint8_t  (*audio_shuffle)[9];  /* PCM shuffling table */
 } DVprofile;
 
 #define NB_DV_VLC 409
@@ -2504,7 +2504,7 @@ static const int dv_iweight_248[64] = {
  22017, 25191, 24457, 27962, 22733, 24600, 25971, 29642,
 };
 
-static const uint16_t dv_audio_shuffle525[10][9] = {
+static const uint8_t dv_audio_shuffle525[10][9] = {
   {  0, 30, 60, 20, 50, 80, 10, 40, 70 }, /* 1st channel */
   {  6, 36, 66, 26, 56, 86, 16, 46, 76 },
   { 12, 42, 72,  2, 32, 62, 22, 52, 82 },
@@ -2518,7 +2518,7 @@ static const uint16_t dv_audio_shuffle525[10][9] = {
   { 25, 55, 85, 15, 45, 75,  5, 35, 65 },
 };
 
-static const uint16_t dv_audio_shuffle625[12][9] = {
+static const uint8_t dv_audio_shuffle625[12][9] = {
   {   0,  36,  72,  26,  62,  98,  16,  52,  88}, /* 1st channel */
   {   6,  42,  78,  32,  68, 104,  22,  58,  94},
   {  12,  48,  84,   2,  38,  74,  28,  64, 100},
