@@ -117,7 +117,7 @@ typedef struct SPS{
  * Picture parameter set
  */
 typedef struct PPS{
-    int sps_id;
+    unsigned int sps_id;
     int cabac;                  ///< entropy_coding_mode_flag
     int pic_order_present;      ///< pic_order_present_flag
     int slice_group_count;      ///< num_slice_groups_minus1 + 1
@@ -1779,6 +1779,10 @@ static uint8_t *decode_nal(H264Context *h, uint8_t *src, int *dst_length, int *c
 
     h->rbsp_buffer= av_fast_realloc(h->rbsp_buffer, &h->rbsp_buffer_size, length);
     dst= h->rbsp_buffer;
+
+    if (dst == NULL){
+        return NULL;
+    }
 
 //printf("decoding esc\n");
     si=di=0;
@@ -3950,10 +3954,14 @@ static int decode_ref_pic_list_reordering(H264Context *h){
                     }else{
                         pic_id= get_ue_golomb(&s->gb); //long_term_pic_idx
                         ref = h->long_ref[pic_id];
-                        ref->pic_id= pic_id;
-                        assert(ref->reference == 3);
-                        assert(ref->long_ref);
-                        i=0;
+                        if(ref){
+                            ref->pic_id= pic_id;
+                            assert(ref->reference == 3);
+                            assert(ref->long_ref);
+                            i=0;
+                        }else{
+                            i=-1;
+                        }
                     }
 
                     if (i < 0) {
@@ -4259,8 +4267,10 @@ static int execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count){
             if(pic) unreference_pic(h, pic);
 
             h->long_ref[ mmco[i].long_index ]= remove_short(h, mmco[i].short_frame_num);
-            h->long_ref[ mmco[i].long_index ]->long_ref=1;
-            h->long_ref_count++;
+            if (h->long_ref[ mmco[i].long_index ]){
+                h->long_ref[ mmco[i].long_index ]->long_ref=1;
+                h->long_ref_count++;
+            }
             break;
         case MMCO_LONG2UNUSED:
             pic= remove_long(h, mmco[i].long_index);
@@ -4290,7 +4300,7 @@ static int execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count){
         case MMCO_RESET:
             while(h->short_ref_count){
                 pic= remove_short(h, h->short_ref[0]->frame_num);
-                unreference_pic(h, pic);
+                if(pic) unreference_pic(h, pic);
             }
             for(j = 0; j < 16; j++) {
                 pic= remove_long(h, j);
@@ -4473,7 +4483,8 @@ static int init_poc(H264Context *h){
  */
 static int decode_slice_header(H264Context *h){
     MpegEncContext * const s = &h->s;
-    int first_mb_in_slice, pps_id;
+    int first_mb_in_slice;
+    unsigned int pps_id;
     int num_ref_idx_active_override_flag;
     static const uint8_t slice_type_map[5]= {P_TYPE, B_TYPE, I_TYPE, SP_TYPE, SI_TYPE};
     int slice_type;
@@ -4505,7 +4516,7 @@ static int decode_slice_header(H264Context *h){
     s->pict_type= h->slice_type; // to make a few old func happy, it's wrong though
 
     pps_id= get_ue_golomb(&s->gb);
-    if(pps_id>255){
+    if(pps_id>=MAX_PPS_COUNT){
         av_log(h->s.avctx, AV_LOG_ERROR, "pps_id out of range\n");
         return -1;
     }
@@ -4521,8 +4532,8 @@ static int decode_slice_header(H264Context *h){
         return -1;
     }
 
-    if(h->dequant_coeff_pps != pps_id){
-        h->dequant_coeff_pps = pps_id;
+    if(h->dequant_coeff_pps != (int)pps_id){
+        h->dequant_coeff_pps = (int)pps_id;
         init_dequant_tables(h);
     }
 
@@ -4762,7 +4773,7 @@ static int decode_slice_header(H264Context *h){
     h->emu_edge_height= FRAME_MBAFF ? 0 : h->emu_edge_width;
 
     if(s->avctx->debug&FF_DEBUG_PICT_INFO){
-        av_log(h->s.avctx, AV_LOG_DEBUG, "slice:%d %s mb:%d %c pps:%d frame:%d poc:%d/%d ref:%d/%d qp:%d loop:%d:%d:%d weight:%d%s\n",
+        av_log(h->s.avctx, AV_LOG_DEBUG, "slice:%d %s mb:%d %c pps:%u frame:%d poc:%d/%d ref:%d/%d qp:%d loop:%d:%d:%d weight:%d%s\n",
                h->slice_num,
                (s->picture_structure==PICT_FRAME ? "F" : s->picture_structure==PICT_TOP_FIELD ? "T" : "B"),
                first_mb_in_slice,
@@ -7672,7 +7683,8 @@ static void decode_scaling_matrices(H264Context *h, SPS *sps, PPS *pps, int is_s
 static inline int decode_seq_parameter_set(H264Context *h){
     MpegEncContext * const s = &h->s;
     int profile_idc, level_idc;
-    int sps_id, i;
+    unsigned int sps_id;
+    int i;
     SPS *sps;
 
     profile_idc= get_bits(&s->gb, 8);
@@ -7683,6 +7695,12 @@ static inline int decode_seq_parameter_set(H264Context *h){
     get_bits(&s->gb, 4); // reserved
     level_idc= get_bits(&s->gb, 8);
     sps_id= get_ue_golomb(&s->gb);
+
+    if (sps_id >= MAX_SPS_COUNT){
+        // ok it has gone out of hand, someone is sending us bad stuff.
+        av_log(h->s.avctx, AV_LOG_ERROR, "illegal sps_id (%d)\n", sps_id);
+        return -1;
+    }
 
     sps= &h->sps_buffer[ sps_id ];
     sps->profile_idc= profile_idc;
@@ -7764,7 +7782,7 @@ static inline int decode_seq_parameter_set(H264Context *h){
         decode_vui_parameters(h, sps);
 
     if(s->avctx->debug&FF_DEBUG_PICT_INFO){
-        av_log(h->s.avctx, AV_LOG_DEBUG, "sps:%d profile:%d/%d poc:%d ref:%d %dx%d %s %s crop:%d/%d/%d/%d %s\n",
+        av_log(h->s.avctx, AV_LOG_DEBUG, "sps:%u profile:%d/%d poc:%d ref:%d %dx%d %s %s crop:%d/%d/%d/%d %s\n",
                sps_id, sps->profile_idc, sps->level_idc,
                sps->poc_type,
                sps->ref_frame_count,
@@ -7781,8 +7799,14 @@ static inline int decode_seq_parameter_set(H264Context *h){
 
 static inline int decode_picture_parameter_set(H264Context *h, int bit_length){
     MpegEncContext * const s = &h->s;
-    int pps_id= get_ue_golomb(&s->gb);
-    PPS *pps= &h->pps_buffer[pps_id];
+    unsigned int pps_id= get_ue_golomb(&s->gb);
+    PPS *pps;
+
+    if(pps_id>=MAX_PPS_COUNT){
+        av_log(h->s.avctx, AV_LOG_ERROR, "pps_id out of range\n");
+        return -1;
+    }
+    pps = &h->pps_buffer[pps_id];
 
     pps->sps_id= get_ue_golomb(&s->gb);
     pps->cabac= get_bits1(&s->gb);
@@ -7853,7 +7877,7 @@ static inline int decode_picture_parameter_set(H264Context *h, int bit_length){
     }
 
     if(s->avctx->debug&FF_DEBUG_PICT_INFO){
-        av_log(h->s.avctx, AV_LOG_DEBUG, "pps:%d sps:%d %s slice_groups:%d ref:%d/%d %s qp:%d/%d/%d %s %s %s %s\n",
+        av_log(h->s.avctx, AV_LOG_DEBUG, "pps:%u sps:%u %s slice_groups:%d ref:%d/%d %s qp:%d/%d/%d %s %s %s %s\n",
                pps_id, pps->sps_id,
                pps->cabac ? "CABAC" : "CAVLC",
                pps->slice_group_count,
@@ -7987,7 +8011,7 @@ static int decode_nal_units(H264Context *h, uint8_t *buf, int buf_size){
         nalsize = 0;
         for(i = 0; i < h->nal_length_size; i++)
             nalsize = (nalsize << 8) | buf[buf_index++];
-        if(nalsize <= 1){
+        if(nalsize <= 1 || nalsize > buf_size){
             if(nalsize == 1){
                 buf_index++;
                 continue;
@@ -8010,6 +8034,9 @@ static int decode_nal_units(H264Context *h, uint8_t *buf, int buf_size){
       }
 
         ptr= decode_nal(h, buf + buf_index, &dst_length, &consumed, h->is_avc ? nalsize : buf_size - buf_index);
+        if (ptr==NULL || dst_length <= 0){
+            return -1;
+        }
         while(ptr[dst_length - 1] == 0 && dst_length > 1)
             dst_length--;
         bit_length= 8*dst_length - decode_rbsp_trailing(ptr + dst_length - 1);
