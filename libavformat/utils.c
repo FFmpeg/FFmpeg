@@ -279,7 +279,7 @@ AVInputFormat *av_probe_input_format(AVProbeData *pd, int is_opened)
     fmt = NULL;
     score_max = 0;
     for(fmt1 = first_iformat; fmt1 != NULL; fmt1 = fmt1->next) {
-        if (!is_opened && !(fmt1->flags & AVFMT_NOFILE))
+        if (!is_opened == !(fmt1->flags & AVFMT_NOFILE))
             continue;
         score = 0;
         if (fmt1->read_probe) {
