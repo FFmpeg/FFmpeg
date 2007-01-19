@@ -34,8 +34,8 @@ extern "C" {
 #define AV_STRINGIFY(s)         AV_TOSTRING(s)
 #define AV_TOSTRING(s) #s
 
-#define LIBAVUTIL_VERSION_INT   ((49<<16)+(1<<8)+0)
-#define LIBAVUTIL_VERSION       49.1.0
+#define LIBAVUTIL_VERSION_INT   ((49<<16)+(2<<8)+0)
+#define LIBAVUTIL_VERSION       49.2.0
 #define LIBAVUTIL_BUILD         LIBAVUTIL_VERSION_INT
 
 #define LIBAVUTIL_IDENT         "Lavu" AV_STRINGIFY(LIBAVUTIL_VERSION)
