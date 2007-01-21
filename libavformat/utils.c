@@ -2182,6 +2182,17 @@ int av_write_header(AVFormatContext *s)
             }
             break;
         }
+
+        if(s->oformat->codec_tag){
+            if(st->codec->codec_tag){
+                //FIXME
+                //check that tag + id is in the table
+                //if neither is in the table -> ok
+                //if tag is in the table with another id -> FAIL
+                //if id is in the table with another tag -> FAIL unless strict < ?
+            }else
+                st->codec->codec_tag= av_codec_get_tag(s->oformat->codec_tag, st->codec->codec_id);
+        }
     }
 
     if (!s->priv_data && s->oformat->priv_data_size > 0) {
