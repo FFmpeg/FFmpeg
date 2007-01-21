@@ -66,7 +66,7 @@ void avcodec_register_all(void)
     REGISTER_ENCDEC (FFV1, ffv1);
     REGISTER_ENCDEC (FFVHUFF, ffvhuff);
 #ifdef CONFIG_ZLIB
-    REGISTER_DECODER(FLASHSV, flashsv);
+    REGISTER_ENCDEC (FLASHSV, flashsv);
 #endif
     REGISTER_DECODER(FLIC, flic);
     REGISTER_ENCDEC (FLV, flv);

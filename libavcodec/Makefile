@@ -245,6 +245,7 @@ OBJS-$(CONFIG_ADPCM_YAMAHA_ENCODER)    += adpcm.o
 # external dependencies
 ifeq ($(CONFIG_ZLIB),yes)
 OBJS-$(CONFIG_FLASHSV_DECODER)         += flashsv.o
+OBJS-$(CONFIG_FLASHSV_ENCODER)         += flashsvenc.o
 endif
 
 # external codec libraries
