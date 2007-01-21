@@ -210,29 +210,21 @@ static void put_guid(ByteIOContext *s, const GUID *g)
         put_byte(s, g->v4[i]);
 }
 
+static void put_str16_nolen(ByteIOContext *s, const char *tag);
 static void put_str16(ByteIOContext *s, const char *tag)
 {
-    int c;
-
     put_le16(s,strlen(tag) + 1);
-    for(;;) {
-        c = (uint8_t)*tag++;
-        put_le16(s, c);
-        if (c == '\0')
-            break;
-    }
+    put_str16_nolen(s, tag);
 }
 
 static void put_str16_nolen(ByteIOContext *s, const char *tag)
 {
     int c;
 
-    for(;;) {
+    do{
         c = (uint8_t)*tag++;
         put_le16(s, c);
-        if (c == '\0')
-            break;
-    }
+    }while(c);
 }
 
 static int64_t put_header(ByteIOContext *pb, const GUID *g)
@@ -458,15 +450,13 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size, int64_t data
         /* id */
         if (enc->codec_type == CODEC_TYPE_AUDIO) {
             put_le16(pb, 2);
-            if(!enc->codec_tag)
-                return -1;
             put_le16(pb, enc->codec_tag);
         } else {
             put_le16(pb, 4);
-            if(!enc->codec_tag)
-                return -1;
             put_le32(pb, enc->codec_tag);
         }
+        if(!enc->codec_tag)
+            return -1;
     }
     end_header(pb, hpos);
 
@@ -751,8 +741,7 @@ static int asf_write_packet(AVFormatContext *s, AVPacket *pkt)
     } else {
         duration = pts * 10000;
     }
-    if (duration > asf->duration)
-        asf->duration = duration;
+    asf->duration= FFMAX(asf->duration, duration);
 
     packet_st = asf->nb_packets;
     put_frame(s, stream, pkt->pts, pkt->data, pkt->size, pkt->flags);
@@ -769,8 +758,7 @@ static int asf_write_packet(AVFormatContext *s, AVPacket *pkt)
                 // store
                 asf->index_ptr[i].packet_number = (uint32_t)packet_st;
                 asf->index_ptr[i].packet_count  = (uint16_t)(asf->nb_packets-packet_st);
-                if (asf->maximum_packet < (uint16_t)(asf->nb_packets-packet_st))
-                    asf->maximum_packet = (uint16_t)(asf->nb_packets-packet_st);
+                asf->maximum_packet = FFMAX(asf->maximum_packet, (uint16_t)(asf->nb_packets-packet_st));
             }
             asf->nb_index_count = start_sec;
             asf->last_indexed_pts = duration;
