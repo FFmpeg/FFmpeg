@@ -129,29 +129,21 @@ OBJS-$(CONFIG_YUV4MPEGPIPE_DEMUXER)      += yuv4mpeg.o
 
 OBJS+= framehook.o
 
-ifeq ($(CONFIG_X11GRAB),yes)
 OBJS-$(CONFIG_X11_GRAB_DEVICE_DEMUXER)   += x11grab.o
-endif
 
 ifeq ($(CONFIG_VIDEO4LINUX),yes)
 OBJS-$(CONFIG_VIDEO_GRAB_DEVICE_DEMUXER) += grab.o
 endif
 
-ifeq ($(CONFIG_VIDEO4LINUX2),yes)
 OBJS-$(CONFIG_V4L2_DEMUXER)              += v4l2.o
-endif
 
 ifeq ($(CONFIG_BKTR),yes)
 OBJS-$(CONFIG_VIDEO_GRAB_DEVICE_DEMUXER) += grab_bktr.o
 endif
 
-ifeq ($(CONFIG_DV1394),yes)
 OBJS-$(CONFIG_DV1394_DEMUXER)            += dv1394.o
-endif
 
-ifeq ($(CONFIG_DC1394),yes)
 OBJS-$(CONFIG_DC1394_DEMUXER)            += dc1394.o
-endif
 
 ifeq ($(CONFIG_AUDIO_OSS),yes)
 OBJS-$(CONFIG_AUDIO_DEMUXER)             += audio.o
@@ -183,13 +175,9 @@ OBJS-$(CONFIG_NUT_DEMUXER)               += nutdec.o riff.o
 #OBJS-$(CONFIG_NUT_MUXER)                 += nutenc.o riff.o
 endif
 
-ifeq ($(CONFIG_LIBOGG),yes)
 OBJS-$(CONFIG_OGG_MUXER)                 += ogg.o
-endif
 
-ifeq ($(CONFIG_GPL),yes)
 OBJS-$(CONFIG_GXF_MUXER)                 += gxfenc.o
-endif
 
 OBJS += $(OBJS-yes)
 
