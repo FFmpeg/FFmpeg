@@ -51,28 +51,26 @@ static int voc_write_packet(AVFormatContext *s, AVPacket *pkt)
     ByteIOContext *pb = &s->pb;
 
     if (!voc->param_written) {
-        int format = codec_get_tag(voc_codec_tags, enc->codec_id);
-
-        if (format > 0xFF) {
+        if (enc->codec_tag > 0xFF) {
             put_byte(pb, VOC_TYPE_NEW_VOICE_DATA);
             put_le24(pb, pkt->size + 12);
             put_le32(pb, enc->sample_rate);
             put_byte(pb, enc->bits_per_sample);
             put_byte(pb, enc->channels);
-            put_le16(pb, format);
+            put_le16(pb, enc->codec_tag);
             put_le32(pb, 0);
         } else {
             if (s->streams[0]->codec->channels > 1) {
                 put_byte(pb, VOC_TYPE_EXTENDED);
                 put_le24(pb, 4);
                 put_le16(pb, 65536-256000000/(enc->sample_rate*enc->channels));
-                put_byte(pb, format);
+                put_byte(pb, enc->codec_tag);
                 put_byte(pb, enc->channels - 1);
             }
             put_byte(pb, VOC_TYPE_VOICE_DATA);
             put_le24(pb, pkt->size + 2);
             put_byte(pb, 256 - 1000000 / enc->sample_rate);
-            put_byte(pb, format);
+            put_byte(pb, enc->codec_tag);
         }
         voc->param_written = 1;
     } else {
