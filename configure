@@ -91,7 +91,7 @@ show_help(){
   echo "  --enable-libogg          enable Ogg support via libogg [default=no]"
   echo "  --enable-vorbis          enable Vorbis support via libvorbis [default=no]"
   echo "  --enable-x264            enable H.264 encoding via x264 [default=no]"
-  echo "  --enable-xvid            enable XviD support via xvidcore [default=no]"
+  echo "  --enable-xvid            enable Xvid encoding via xvidcore [default=no]"
   echo "  --enable-amr_nb          enable amr_nb float audio codec"
   echo "  --enable-amr_nb-fixed    use fixed point for amr-nb codec"
   echo "  --enable-amr_wb          enable amr_wb float audio codec"
