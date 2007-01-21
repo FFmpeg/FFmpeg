@@ -225,6 +225,10 @@ static int decode_residuals(FLACContext *s, int channel, int pred_order)
     rice_order = get_bits(&s->gb, 4);
 
     samples= s->blocksize >> rice_order;
+    if (pred_order > samples) {
+        av_log(s->avctx, AV_LOG_ERROR, "invalid predictor order: %i > %i\n", pred_order, samples);
+        return -1;
+    }
 
     sample=
     i= pred_order;
