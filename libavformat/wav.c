@@ -235,7 +235,7 @@ AVInputFormat wav_demuxer = {
     wav_read_packet,
     wav_read_close,
     wav_read_seek,
-    .codec_tag= {codec_wav_tags},
+    .codec_tag= (const AVCodecTag*[]){codec_wav_tags, 0},
 };
 #endif
 #ifdef CONFIG_WAV_MUXER
@@ -250,6 +250,6 @@ AVOutputFormat wav_muxer = {
     wav_write_header,
     wav_write_packet,
     wav_write_trailer,
-    .codec_tag= {codec_wav_tags},
+    .codec_tag= (const AVCodecTag*[]){codec_wav_tags, 0},
 };
 #endif

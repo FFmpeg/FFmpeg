@@ -233,7 +233,7 @@ enum CodecID codec_get_id(const AVCodecTag *tags, unsigned int tag)
 unsigned int av_codec_get_tag(const AVCodecTag *tags[4], enum CodecID id)
 {
     int i;
-    for(i=0; i<4 && tags[i]; i++){
+    for(i=0; tags && tags[i]; i++){
         int tag= codec_get_tag(tags[i], id);
         if(tag) return tag;
     }
@@ -243,7 +243,7 @@ unsigned int av_codec_get_tag(const AVCodecTag *tags[4], enum CodecID id)
 enum CodecID av_codec_get_id(const AVCodecTag *tags[4], unsigned int tag)
 {
     int i;
-    for(i=0; i<4 && tags[i]; i++){
+    for(i=0; tags && tags[i]; i++){
         enum CodecID id= codec_get_id(tags[i], tag);
         if(id!=CODEC_ID_NONE) return id;
     }

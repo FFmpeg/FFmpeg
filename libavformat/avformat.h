@@ -162,7 +162,7 @@ typedef struct AVOutputFormat {
      * list of supported codec_id-codec_tag pairs, ordered by "better choice first"
      * the arrays are all CODEC_ID_NONE terminated
      */
-    const struct AVCodecTag *codec_tag[4];
+    const struct AVCodecTag **codec_tag;
 
     /* private fields */
     struct AVOutputFormat *next;
@@ -219,7 +219,7 @@ typedef struct AVInputFormat {
        (RTSP) */
     int (*read_pause)(struct AVFormatContext *);
 
-    const struct AVCodecTag *codec_tag[4];
+    const struct AVCodecTag **codec_tag;
 
     /* private fields */
     struct AVInputFormat *next;
@@ -408,8 +408,8 @@ void av_pkt_dump(FILE *f, AVPacket *pkt, int dump_payload);
 void av_register_all(void);
 
 /* codec tag <-> codec id */
-enum CodecID av_codec_get_id(const struct AVCodecTag *tags[4], unsigned int tag);
-unsigned int av_codec_get_tag(const struct AVCodecTag *tags[4], enum CodecID id);
+enum CodecID av_codec_get_id(const struct AVCodecTag **tags, unsigned int tag);
+unsigned int av_codec_get_tag(const struct AVCodecTag **tags, enum CodecID id);
 
 /* media file input */
 AVInputFormat *av_find_input_format(const char *short_name);
