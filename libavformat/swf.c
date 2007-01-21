@@ -80,7 +80,7 @@ typedef struct {
     int audio_type;
 } SWFContext;
 
-static const CodecTag swf_codec_tags[] = {
+static const AVCodecTag swf_codec_tags[] = {
     {CODEC_ID_FLV1, 0x02},
     {CODEC_ID_VP6F, 0x04},
     {0, 0},

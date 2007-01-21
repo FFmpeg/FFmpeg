@@ -25,8 +25,8 @@
 extern "C" {
 #endif
 
-#define LIBAVFORMAT_VERSION_INT ((51<<16)+(7<<8)+0)
-#define LIBAVFORMAT_VERSION     51.7.0
+#define LIBAVFORMAT_VERSION_INT ((51<<16)+(8<<8)+0)
+#define LIBAVFORMAT_VERSION     51.8.0
 #define LIBAVFORMAT_BUILD       LIBAVFORMAT_VERSION_INT
 
 #define LIBAVFORMAT_IDENT       "Lavf" AV_STRINGIFY(LIBAVFORMAT_VERSION)
@@ -96,6 +96,8 @@ typedef struct AVFrac {
 /*************************************************/
 /* input/output formats */
 
+struct AVCodecTag;
+
 struct AVFormatContext;
 
 /* this structure contains the data a format has to probe a file */
@@ -155,6 +157,13 @@ typedef struct AVOutputFormat {
     /* currently only used to set pixel format if not YUV420P */
     int (*set_parameters)(struct AVFormatContext *, AVFormatParameters *);
     int (*interleave_packet)(struct AVFormatContext *, AVPacket *out, AVPacket *in, int flush);
+
+    /**
+     * list of supported codec_id-codec_tag pairs, ordered by "better choice first"
+     * the arrays are all CODEC_ID_NONE terminated
+     */
+    const struct AVCodecTag *codec_tag[4];
+
     /* private fields */
     struct AVOutputFormat *next;
 } AVOutputFormat;
@@ -209,6 +218,8 @@ typedef struct AVInputFormat {
     /* pause playing - only meaningful if using a network based format
        (RTSP) */
     int (*read_pause)(struct AVFormatContext *);
+
+    const struct AVCodecTag *codec_tag[4];
 
     /* private fields */
     struct AVInputFormat *next;
@@ -395,6 +406,10 @@ void av_hex_dump(FILE *f, uint8_t *buf, int size);
 void av_pkt_dump(FILE *f, AVPacket *pkt, int dump_payload);
 
 void av_register_all(void);
+
+/* codec tag <-> codec id */
+enum CodecID av_codec_get_id(const struct AVCodecTag *tags[4], unsigned int tag);
+unsigned int av_codec_get_tag(const struct AVCodecTag *tags[4], enum CodecID id);
 
 /* media file input */
 AVInputFormat *av_find_input_format(const char *short_name);

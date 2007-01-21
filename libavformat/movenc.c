@@ -322,7 +322,7 @@ static int mov_write_wave_tag(ByteIOContext *pb, MOVTrack* track)
     return updateSize (pb, pos);
 }
 
-static const CodecTag codec_movaudio_tags[] = {
+static const AVCodecTag codec_movaudio_tags[] = {
     { CODEC_ID_PCM_MULAW, MKTAG('u', 'l', 'a', 'w') },
     { CODEC_ID_PCM_ALAW, MKTAG('a', 'l', 'a', 'w') },
     { CODEC_ID_ADPCM_IMA_QT, MKTAG('i', 'm', 'a', '4') },
@@ -526,7 +526,7 @@ static int mov_write_avcc_tag(ByteIOContext *pb, MOVTrack *track)
     return updateSize(pb, pos);
 }
 
-static const CodecTag codec_movvideo_tags[] = {
+static const AVCodecTag codec_movvideo_tags[] = {
     { CODEC_ID_SVQ1, MKTAG('S', 'V', 'Q', '1') },
     { CODEC_ID_SVQ3, MKTAG('S', 'V', 'Q', '3') },
     { CODEC_ID_MPEG4, MKTAG('m', 'p', '4', 'v') },

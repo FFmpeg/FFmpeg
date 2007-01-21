@@ -183,7 +183,7 @@ typedef struct {
     //DVDemuxContext* dv_demux;
 } NSVContext;
 
-static const CodecTag nsv_codec_video_tags[] = {
+static const AVCodecTag nsv_codec_video_tags[] = {
     { CODEC_ID_VP3, MKTAG('V', 'P', '3', ' ') },
     { CODEC_ID_VP3, MKTAG('V', 'P', '3', '0') },
     { CODEC_ID_VP3, MKTAG('V', 'P', '3', '1') },
@@ -202,7 +202,7 @@ static const CodecTag nsv_codec_video_tags[] = {
     { 0, 0 },
 };
 
-static const CodecTag nsv_codec_audio_tags[] = {
+static const AVCodecTag nsv_codec_audio_tags[] = {
     { CODEC_ID_MP3, MKTAG('M', 'P', '3', ' ') },
     { CODEC_ID_AAC, MKTAG('A', 'A', 'C', ' ') },
     { CODEC_ID_AAC, MKTAG('A', 'A', 'C', 'P') }, /* _CUTTED__MUXED_2 Heads - Out Of The City.nsv */

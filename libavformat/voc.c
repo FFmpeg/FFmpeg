@@ -23,7 +23,7 @@
 
 const unsigned char voc_magic[21] = "Creative Voice File\x1A";
 
-const CodecTag voc_codec_tags[] = {
+const AVCodecTag voc_codec_tags[] = {
     {CODEC_ID_PCM_U8,        0x00},
     {CODEC_ID_ADPCM_SBPRO_4, 0x01},
     {CODEC_ID_ADPCM_SBPRO_3, 0x02},

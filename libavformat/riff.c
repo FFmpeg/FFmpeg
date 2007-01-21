@@ -22,10 +22,11 @@
 #include "avformat.h"
 #include "avcodec.h"
 #include "riff.h"
+#include "allformats.h" // for asf_muxer
 
 /* Note: when encoding, the first matching tag is used, so order is
    important if multiple tags possible for a given codec. */
-const CodecTag codec_bmp_tags[] = {
+const AVCodecTag codec_bmp_tags[] = {
     { CODEC_ID_H264, MKTAG('H', '2', '6', '4') },
     { CODEC_ID_H264, MKTAG('h', '2', '6', '4') },
     { CODEC_ID_H264, MKTAG('X', '2', '6', '4') },
@@ -42,10 +43,10 @@ const CodecTag codec_bmp_tags[] = {
     { CODEC_ID_H263P, MKTAG('U', '2', '6', '3') },
     { CODEC_ID_H263P, MKTAG('v', 'i', 'v', '1') },
 
-    { CODEC_ID_MPEG4, MKTAG('F', 'M', 'P', '4')},
-    { CODEC_ID_MPEG4, MKTAG('D', 'I', 'V', 'X'), .invalid_asf = 1 },
-    { CODEC_ID_MPEG4, MKTAG('D', 'X', '5', '0'), .invalid_asf = 1 },
-    { CODEC_ID_MPEG4, MKTAG('X', 'V', 'I', 'D'), .invalid_asf = 1 },
+    { CODEC_ID_MPEG4, MKTAG('F', 'M', 'P', '4') },
+    { CODEC_ID_MPEG4, MKTAG('D', 'I', 'V', 'X') },
+    { CODEC_ID_MPEG4, MKTAG('D', 'X', '5', '0') },
+    { CODEC_ID_MPEG4, MKTAG('X', 'V', 'I', 'D') },
     { CODEC_ID_MPEG4, MKTAG('M', 'P', '4', 'S') },
     { CODEC_ID_MPEG4, MKTAG('M', '4', 'S', '2') },
     { CODEC_ID_MPEG4, MKTAG(0x04, 0, 0, 0) }, /* some broken avi use this */
@@ -60,7 +61,7 @@ const CodecTag codec_bmp_tags[] = {
 
     { CODEC_ID_MPEG4, MKTAG('R', 'M', 'P', '4') },
 
-    { CODEC_ID_MSMPEG4V3, MKTAG('D', 'I', 'V', '3'), .invalid_asf = 1 }, /* default signature when using MSMPEG4 */
+    { CODEC_ID_MSMPEG4V3, MKTAG('D', 'I', 'V', '3') }, /* default signature when using MSMPEG4 */
     { CODEC_ID_MSMPEG4V3, MKTAG('M', 'P', '4', '3') },
 
     /* added based on MPlayer */
@@ -168,7 +169,7 @@ const CodecTag codec_bmp_tags[] = {
     { CODEC_ID_NONE, 0 },
 };
 
-const CodecTag codec_wav_tags[] = {
+const AVCodecTag codec_wav_tags[] = {
     { CODEC_ID_MP2, 0x50 },
     { CODEC_ID_MP3, 0x55 },
     { CODEC_ID_AC3, 0x2000 },
@@ -206,7 +207,7 @@ const CodecTag codec_wav_tags[] = {
     { 0, 0 },
 };
 
-unsigned int codec_get_tag(const CodecTag *tags, int id)
+unsigned int codec_get_tag(const AVCodecTag *tags, int id)
 {
     while (tags->id != CODEC_ID_NONE) {
         if (tags->id == id)
@@ -216,17 +217,7 @@ unsigned int codec_get_tag(const CodecTag *tags, int id)
     return 0;
 }
 
-unsigned int codec_get_asf_tag(const CodecTag *tags, unsigned int id)
-{
-    while (tags->id != CODEC_ID_NONE) {
-        if (!tags->invalid_asf && tags->id == id)
-            return tags->tag;
-        tags++;
-    }
-    return 0;
-}
-
-enum CodecID codec_get_id(const CodecTag *tags, unsigned int tag)
+enum CodecID codec_get_id(const AVCodecTag *tags, unsigned int tag)
 {
     while (tags->id != CODEC_ID_NONE) {
         if(   toupper((tag >> 0)&0xFF) == toupper((tags->tag >> 0)&0xFF)
@@ -235,6 +226,26 @@ enum CodecID codec_get_id(const CodecTag *tags, unsigned int tag)
            && toupper((tag >>24)&0xFF) == toupper((tags->tag >>24)&0xFF))
             return tags->id;
         tags++;
+    }
+    return CODEC_ID_NONE;
+}
+
+unsigned int av_codec_get_tag(const AVCodecTag *tags[4], enum CodecID id)
+{
+    int i;
+    for(i=0; i<4 && tags[i]; i++){
+        int tag= codec_get_tag(tags[i], id);
+        if(tag) return tag;
+    }
+    return 0;
+}
+
+enum CodecID av_codec_get_id(const AVCodecTag *tags[4], unsigned int tag)
+{
+    int i;
+    for(i=0; i<4 && tags[i]; i++){
+        enum CodecID id= codec_get_id(tags[i], tag);
+        if(id!=CODEC_ID_NONE) return id;
     }
     return CODEC_ID_NONE;
 }
@@ -367,7 +378,7 @@ int put_wav_header(ByteIOContext *pb, AVCodecContext *enc)
 }
 
 /* BITMAPINFOHEADER header */
-void put_bmp_header(ByteIOContext *pb, AVCodecContext *enc, const CodecTag *tags, int for_asf)
+void put_bmp_header(ByteIOContext *pb, AVCodecContext *enc, const AVCodecTag *tags, int for_asf)
 {
     put_le32(pb, 40 + enc->extradata_size); /* size */
     put_le32(pb, enc->width);
@@ -376,7 +387,7 @@ void put_bmp_header(ByteIOContext *pb, AVCodecContext *enc, const CodecTag *tags
 
     put_le16(pb, enc->bits_per_sample ? enc->bits_per_sample : 24); /* depth */
     /* compression type */
-    put_le32(pb, for_asf ? (enc->codec_tag ? enc->codec_tag : codec_get_asf_tag(tags, enc->codec_id)) : enc->codec_tag); //
+    put_le32(pb, for_asf ? (enc->codec_tag ? enc->codec_tag : av_codec_get_tag(asf_muxer.codec_tag, enc->codec_id)) : enc->codec_tag); //
     put_le32(pb, enc->width * enc->height * 3);
     put_le32(pb, 0);
     put_le32(pb, 0);

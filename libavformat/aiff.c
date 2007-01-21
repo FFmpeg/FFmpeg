@@ -23,7 +23,7 @@
 #include "riff.h"
 #include "intfloat_readwrite.h"
 
-static const CodecTag codec_aiff_tags[] = {
+static const AVCodecTag codec_aiff_tags[] = {
     { CODEC_ID_PCM_S16BE, MKTAG('N','O','N','E') },
     { CODEC_ID_PCM_S8, MKTAG('N','O','N','E') },
     { CODEC_ID_PCM_S24BE, MKTAG('N','O','N','E') },

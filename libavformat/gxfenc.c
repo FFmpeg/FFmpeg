@@ -85,7 +85,7 @@ static const GXF_Lines gxf_lines_tab[] = {
     { 720,  6 },
 };
 
-static const CodecTag gxf_media_types[] = {
+static const AVCodecTag gxf_media_types[] = {
     { CODEC_ID_MJPEG     ,   3 }, /* NTSC */
     { CODEC_ID_MJPEG     ,   4 }, /* PAL */
     { CODEC_ID_PCM_S24LE ,   9 },

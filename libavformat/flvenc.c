@@ -25,7 +25,7 @@
 #undef NDEBUG
 #include <assert.h>
 
-static const CodecTag flv_video_codec_ids[] = {
+static const AVCodecTag flv_video_codec_ids[] = {
     {CODEC_ID_FLV1,    FLV_CODECID_H263  },
     {CODEC_ID_FLASHSV, FLV_CODECID_SCREEN},
     {CODEC_ID_VP6F,    FLV_CODECID_VP6   },
@@ -33,7 +33,7 @@ static const CodecTag flv_video_codec_ids[] = {
     {CODEC_ID_NONE,    0}
 };
 
-static const CodecTag flv_audio_codec_ids[] = {
+static const AVCodecTag flv_audio_codec_ids[] = {
     {CODEC_ID_MP3,       FLV_CODECID_MP3    >> FLV_AUDIO_CODECID_OFFSET},
     {CODEC_ID_PCM_S8,    FLV_CODECID_PCM_BE >> FLV_AUDIO_CODECID_OFFSET},
     {CODEC_ID_PCM_S16BE, FLV_CODECID_PCM_BE >> FLV_AUDIO_CODECID_OFFSET},

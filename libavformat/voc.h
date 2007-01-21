@@ -43,7 +43,7 @@ typedef enum voc_type {
 } voc_type_t;
 
 extern const unsigned char voc_magic[21];
-extern const CodecTag voc_codec_tags[];
+extern const AVCodecTag voc_codec_tags[];
 
 int voc_get_packet(AVFormatContext *s, AVPacket *pkt,
                    AVStream *st, int max_size);

@@ -10,7 +10,7 @@ typedef struct {
     nut_stream_header_t * s;
 } NUTContext;
 
-static const CodecTag nut_tags[] = {
+static const AVCodecTag nut_tags[] = {
     { CODEC_ID_MPEG4,  MKTAG('m', 'p', '4', 'v') },
     { CODEC_ID_MP3,    MKTAG('m', 'p', '3', ' ') },
     { CODEC_ID_VORBIS, MKTAG('v', 'r', 'b', 's') },

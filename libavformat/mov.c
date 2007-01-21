@@ -66,7 +66,7 @@
 #undef NDEBUG
 #include <assert.h>
 
-static const CodecTag mov_video_tags[] = {
+static const AVCodecTag mov_video_tags[] = {
 /*  { CODEC_ID_, MKTAG('c', 'v', 'i', 'd') }, *//* Cinepak */
 /*  { CODEC_ID_H263, MKTAG('r', 'a', 'w', ' ') }, *//* Uncompressed RGB */
 /*  { CODEC_ID_H263, MKTAG('Y', 'u', 'v', '2') }, *//* Uncompressed YUV422 */
@@ -127,7 +127,7 @@ static const CodecTag mov_video_tags[] = {
     { CODEC_ID_NONE, 0 },
 };
 
-static const CodecTag mov_audio_tags[] = {
+static const AVCodecTag mov_audio_tags[] = {
     { CODEC_ID_PCM_S32BE, MKTAG('i', 'n', '3', '2') },
     { CODEC_ID_PCM_S24BE, MKTAG('i', 'n', '2', '4') },
     { CODEC_ID_PCM_S16BE, MKTAG('N', 'O', 'N', 'E') }, /* uncompressed */

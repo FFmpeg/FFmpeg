@@ -187,6 +187,13 @@
                 2*PAYLOAD_HEADER_SIZE_MULTIPLE_PAYLOADS \
                 )
 
+static const AVCodecTag codec_asf_bmp_tags[] = {
+    { CODEC_ID_MPEG4, MKTAG('M', 'P', '4', 'S') },
+    { CODEC_ID_MPEG4, MKTAG('M', '4', 'S', '2') },
+    { CODEC_ID_MSMPEG4V3, MKTAG('M', 'P', '4', '3') },
+    { CODEC_ID_NONE, 0 },
+};
+
 static int preroll_time = 2000;
 
 static const uint8_t error_spread_ADPCM_G726[] = { 0x01, 0x90, 0x01, 0x90, 0x01, 0x01, 0x00, 0x00 };
@@ -842,6 +849,7 @@ AVOutputFormat asf_muxer = {
     asf_write_packet,
     asf_write_trailer,
     .flags = AVFMT_GLOBALHEADER,
+    .codec_tag= {codec_asf_bmp_tags, codec_bmp_tags, codec_wav_tags},
 };
 #endif
 
@@ -862,5 +870,6 @@ AVOutputFormat asf_stream_muxer = {
     asf_write_packet,
     asf_write_trailer,
     .flags = AVFMT_GLOBALHEADER,
+    .codec_tag= {codec_asf_bmp_tags, codec_bmp_tags, codec_wav_tags},
 };
 #endif //CONFIG_ASF_STREAM_MUXER
