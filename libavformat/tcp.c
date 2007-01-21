@@ -142,11 +142,7 @@ static int tcp_read(URLContext *h, uint8_t *buf, int size)
         tv.tv_usec = 100 * 1000;
         ret = select(fd_max + 1, &rfds, NULL, NULL, &tv);
         if (ret > 0 && FD_ISSET(s->fd, &rfds)) {
-#ifdef __BEOS__
             len = recv(s->fd, buf, size, 0);
-#else
-            len = read(s->fd, buf, size);
-#endif
             if (len < 0) {
                 if (errno != EINTR && errno != EAGAIN)
 #ifdef __BEOS__
@@ -179,11 +175,7 @@ static int tcp_write(URLContext *h, uint8_t *buf, int size)
         tv.tv_usec = 100 * 1000;
         ret = select(fd_max + 1, NULL, &wfds, NULL, &tv);
         if (ret > 0 && FD_ISSET(s->fd, &wfds)) {
-#ifdef __BEOS__
             len = send(s->fd, buf, size, 0);
-#else
-            len = write(s->fd, buf, size);
-#endif
             if (len < 0) {
                 if (errno != EINTR && errno != EAGAIN) {
 #ifdef __BEOS__
