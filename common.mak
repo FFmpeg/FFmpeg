@@ -33,10 +33,6 @@ $(SLIBNAME_WITH_MAJOR): $(SHARED_OBJS)
 %.o: %.S
 	$(CC) $(CFLAGS) $(LIBOBJFLAGS) -c -o $@ $<
 
-# BeOS: remove -Wall to get rid of all the "multibyte constant" warnings
-%.o: %.cpp
-	g++ $(subst -Wall,,$(CFLAGS)) -c -o $@ $<
-
 %: %.o $(LIB)
 	$(CC) $(LDFLAGS) -o $@ $^ $(EXTRALIBS)
 
