@@ -65,9 +65,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER(EIGHTBPS, eightbps);
     REGISTER_ENCDEC (FFV1, ffv1);
     REGISTER_ENCDEC (FFVHUFF, ffvhuff);
-#ifdef CONFIG_ZLIB
     REGISTER_ENCDEC (FLASHSV, flashsv);
-#endif
     REGISTER_DECODER(FLIC, flic);
     REGISTER_ENCDEC (FLV, flv);
     REGISTER_DECODER(FOURXM, fourxm);
@@ -91,9 +89,7 @@ void avcodec_register_all(void)
     REGISTER_ENCDEC (MJPEG, mjpeg);
     REGISTER_DECODER(MJPEGB, mjpegb);
     REGISTER_DECODER(MMVIDEO, mmvideo);
-#ifdef HAVE_XVMC
     REGISTER_DECODER(MPEG_XVMC, mpeg_xvmc);
-#endif
     REGISTER_ENCDEC (MPEG1VIDEO, mpeg1video);
     REGISTER_ENCDEC (MPEG2VIDEO, mpeg2video);
     REGISTER_ENCDEC (MPEG4, mpeg4);
@@ -109,9 +105,7 @@ void avcodec_register_all(void)
     REGISTER_ENCODER(PBM, pbm);
     REGISTER_ENCODER(PGM, pgm);
     REGISTER_ENCODER(PGMYUV, pgmyuv);
-#ifdef CONFIG_ZLIB
     REGISTER_ENCDEC (PNG, png);
-#endif
     REGISTER_ENCODER(PPM, ppm);
     REGISTER_DECODER(QDRAW, qdraw);
     REGISTER_DECODER(QPEG, qpeg);
@@ -148,56 +142,34 @@ void avcodec_register_all(void)
     REGISTER_ENCDEC (WMV2, wmv2);
     REGISTER_DECODER(WMV3, wmv3);
     REGISTER_DECODER(WNV1, wnv1);
-#ifdef CONFIG_X264
     REGISTER_ENCODER(X264, x264);
-#endif
     REGISTER_DECODER(XAN_WC3, xan_wc3);
     REGISTER_DECODER(XL, xl);
-#ifdef CONFIG_XVID
     REGISTER_ENCODER(XVID, xvid);
-#endif
     REGISTER_ENCDEC (ZLIB, zlib);
-#ifdef CONFIG_ZLIB
     REGISTER_ENCDEC (ZMBV, zmbv);
-#endif
 
     /* audio codecs */
-#ifdef CONFIG_LIBFAAD
     REGISTER_DECODER(AAC, aac);
     REGISTER_DECODER(MPEG4AAC, mpeg4aac);
-#endif
-#ifdef CONFIG_LIBA52
     REGISTER_DECODER(AC3, ac3);
-#endif
     REGISTER_ENCODER(AC3, ac3);
     REGISTER_DECODER(ALAC, alac);
-#if defined(CONFIG_AMR_NB) || defined(CONFIG_AMR_NB_FIXED)
     REGISTER_ENCDEC (AMR_NB, amr_nb);
-#endif
-#ifdef CONFIG_AMR_WB
     REGISTER_ENCDEC (AMR_WB, amr_wb);
-#endif
     REGISTER_DECODER(COOK, cook);
     REGISTER_DECODER(DSICINAUDIO, dsicinaudio);
-#ifdef CONFIG_LIBDTS
     REGISTER_DECODER(DTS, dts);
-#endif
-#ifdef CONFIG_LIBFAAC
     REGISTER_ENCODER(FAAC, faac);
-#endif
     REGISTER_ENCDEC (FLAC, flac);
     REGISTER_DECODER(IMC, imc);
-#ifdef CONFIG_LIBGSM
     REGISTER_ENCDEC (LIBGSM, libgsm);
-#endif
     REGISTER_DECODER(MACE3, mace3);
     REGISTER_DECODER(MACE6, mace6);
     REGISTER_ENCDEC (MP2, mp2);
     REGISTER_DECODER(MP3, mp3);
     REGISTER_DECODER(MP3ADU, mp3adu);
-#ifdef CONFIG_LIBMP3LAME
     REGISTER_ENCODER(MP3LAME, mp3lame);
-#endif
     REGISTER_DECODER(MP3ON4, mp3on4);
     REGISTER_DECODER(MPC7, mpc7);
 #ifdef CONFIG_LIBVORBIS

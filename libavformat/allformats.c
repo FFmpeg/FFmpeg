@@ -52,9 +52,7 @@ void av_register_all(void)
     REGISTER_MUXDEMUX(ASF, asf);
     REGISTER_MUXER   (ASF_STREAM, asf_stream);
     REGISTER_MUXDEMUX(AU, au);
-#if defined(CONFIG_AUDIO_OSS) || defined(CONFIG_AUDIO_BEOS)
     REGISTER_MUXDEMUX(AUDIO, audio);
-#endif
     REGISTER_MUXDEMUX(AVI, avi);
 #ifdef CONFIG_AVISYNTH
     av_register_input_format(&avisynth_demuxer);
@@ -62,15 +60,11 @@ void av_register_all(void)
     REGISTER_DEMUXER (AVS, avs);
     REGISTER_MUXER   (CRC, crc);
     REGISTER_DEMUXER (DAUD, daud);
-#ifdef CONFIG_DC1394
     REGISTER_DEMUXER (DC1394, dc1394);
-#endif
     REGISTER_DEMUXER (DSICIN, dsicin);
     REGISTER_DEMUXER (DTS, dts);
     REGISTER_MUXDEMUX(DV, dv);
-#ifdef CONFIG_DV1394
     REGISTER_DEMUXER (DV1394, dv1394);
-#endif
     REGISTER_DEMUXER (EA, ea);
     REGISTER_MUXDEMUX(FFM, ffm);
     REGISTER_MUXDEMUX(FLAC, flac);
@@ -80,9 +74,7 @@ void av_register_all(void)
     REGISTER_MUXER   (FRAMECRC, framecrc);
     REGISTER_MUXDEMUX(GIF, gif);
     REGISTER_DEMUXER (GXF, gxf);
-#ifdef CONFIG_GPL
     REGISTER_MUXER   (GXF, gxf);
-#endif
     REGISTER_MUXDEMUX(H261, h261);
     REGISTER_MUXDEMUX(H263, h263);
     REGISTER_MUXDEMUX(H264, h264);
@@ -117,14 +109,10 @@ void av_register_all(void)
     REGISTER_DEMUXER (NSV, nsv);
     REGISTER_MUXER   (NULL, null);
     REGISTER_DEMUXER (NUT, nut);
-#ifdef CONFIG_LIBNUT
     REGISTER_MUXER   (NUT, nut);
-#endif
     REGISTER_DEMUXER (NUV, nuv);
     REGISTER_DEMUXER (OGG, ogg);
-#ifdef CONFIG_LIBOGG
     REGISTER_MUXER   (OGG, ogg);
-#endif
     REGISTER_MUXDEMUX(PCM_ALAW,  pcm_alaw);
     REGISTER_MUXDEMUX(PCM_MULAW, pcm_mulaw);
     REGISTER_MUXDEMUX(PCM_S16BE, pcm_s16be);
@@ -137,11 +125,11 @@ void av_register_all(void)
     REGISTER_MUXDEMUX(RAWVIDEO, rawvideo);
     REGISTER_MUXDEMUX(RM, rm);
     REGISTER_DEMUXER (ROQ, roq);
-#ifdef CONFIG_NETWORK
     REGISTER_DEMUXER (REDIR, redir);
     REGISTER_MUXER   (RTP, rtp);
     REGISTER_DEMUXER (RTSP, rtsp);
     REGISTER_DEMUXER (SDP, sdp);
+#ifdef CONFIG_NETWORK
     av_register_rtp_dynamic_payload_handlers();
 #endif
     REGISTER_DEMUXER (SEGAFILM, segafilm);
@@ -154,12 +142,8 @@ void av_register_all(void)
     REGISTER_MUXER   (TGP, tgp);
     REGISTER_DEMUXER (TIERTEXSEQ, tiertexseq);
     REGISTER_DEMUXER (TTA, tta);
-#ifdef CONFIG_VIDEO4LINUX2
     REGISTER_DEMUXER (V4L2, v4l2);
-#endif
-#if defined(CONFIG_VIDEO4LINUX) || defined(CONFIG_BKTR)
     REGISTER_DEMUXER (VIDEO_GRAB_DEVICE, video_grab_device);
-#endif
     REGISTER_DEMUXER (VMD, vmd);
     REGISTER_MUXDEMUX(VOC, voc);
     REGISTER_MUXDEMUX(WAV, wav);
@@ -167,9 +151,7 @@ void av_register_all(void)
     REGISTER_DEMUXER (WSAUD, wsaud);
     REGISTER_DEMUXER (WSVQA, wsvqa);
     REGISTER_DEMUXER (WV, wv);
-#ifdef CONFIG_X11GRAB
     REGISTER_DEMUXER (X11_GRAB_DEVICE, x11_grab_device);
-#endif
     REGISTER_MUXDEMUX(YUV4MPEGPIPE, yuv4mpegpipe);
 
 #ifdef CONFIG_PROTOCOLS
