@@ -342,13 +342,13 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                         char *name, *value;
 
                         name_len = get_le16(pb);
-                        name = (char *)av_malloc(name_len * 2);
+                        name = av_malloc(name_len * 2);
                         get_str16_nolen(pb, name_len, name, name_len * 2);
                         value_type = get_le16(pb);
                         value_len = get_le16(pb);
                         if ((value_type == 0) || (value_type == 1)) // unicode or byte
                         {
-                                value = (char *)av_malloc(value_len * 2);
+                                value = av_malloc(value_len * 2);
                                 get_str16_nolen(pb, value_len, value,
                                         value_len * 2);
                                 if (strcmp(name,"WM/AlbumTitle")==0) { pstrcpy(s->album, sizeof(s->album), value); }
