@@ -31,7 +31,7 @@
 // Fix Me! FRAME_HEADER_SIZE may be different.
 
 static const GUID index_guid = {
-    0x33000890, 0xe5b1, 0x11cf, { 0x89, 0xf4, 0x00, 0xa0, 0xc9, 0x03, 0x49, 0xcb },
+    0x90, 0x08, 0x00, 0x33, 0xb1, 0xe5, 0xcf, 0x11, 0x89, 0xf4, 0x00, 0xa0, 0xc9, 0x03, 0x49, 0xcb
 };
 
 /**********************************/
@@ -69,9 +69,8 @@ static void print_guid(const GUID *g)
     else PRINT_IF_GUID(g, ext_stream_audio_stream);
     else
         printf("(GUID: unknown) ");
-    printf("0x%08x, 0x%04x, 0x%04x, {", g->v1, g->v2, g->v3);
-    for(i=0;i<8;i++)
-        printf(" 0x%02x,", g->v4[i]);
+    for(i=0;i<16;i++)
+        printf(" 0x%02x,", (*g)[i]);
     printf("}\n");
 }
 #undef PRINT_IF_GUID
@@ -79,13 +78,8 @@ static void print_guid(const GUID *g)
 
 static void get_guid(ByteIOContext *s, GUID *g)
 {
-    int i;
-
-    g->v1 = get_le32(s);
-    g->v2 = get_le16(s);
-    g->v3 = get_le16(s);
-    for(i=0;i<8;i++)
-        g->v4[i] = get_byte(s);
+    assert(sizeof(*g) == 16);
+    get_buffer(s, g, sizeof(*g));
 }
 
 #if 0
@@ -119,24 +113,11 @@ static void get_str16_nolen(ByteIOContext *pb, int len, char *buf, int buf_size)
 
 static int asf_probe(AVProbeData *pd)
 {
-    GUID g;
-    const unsigned char *p;
-    int i;
-
     /* check file header */
     if (pd->buf_size <= 32)
         return 0;
-    p = pd->buf;
-    g.v1 = p[0] | (p[1] << 8) | (p[2] << 16) | (p[3] << 24);
-    p += 4;
-    g.v2 = p[0] | (p[1] << 8);
-    p += 2;
-    g.v3 = p[0] | (p[1] << 8);
-    p += 2;
-    for(i=0;i<8;i++)
-        g.v4[i] = *p++;
 
-    if (!memcmp(&g, &asf_header, sizeof(GUID)))
+    if (!memcmp(pd->buf, &asf_header, sizeof(GUID)))
         return AVPROBE_SCORE_MAX;
     else
         return 0;

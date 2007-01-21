@@ -200,13 +200,8 @@ static const uint8_t error_spread_ADPCM_G726[] = { 0x01, 0x90, 0x01, 0x90, 0x01,
 
 static void put_guid(ByteIOContext *s, const GUID *g)
 {
-    int i;
-
-    put_le32(s, g->v1);
-    put_le16(s, g->v2);
-    put_le16(s, g->v3);
-    for(i=0;i<8;i++)
-        put_byte(s, g->v4[i]);
+    assert(sizeof(*g) == 16);
+    put_buffer(s, g, sizeof(*g));
 }
 
 static void put_str16_nolen(ByteIOContext *s, const char *tag);
