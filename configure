@@ -235,6 +235,15 @@ enabled_any(){
     done
 }
 
+check_deps(){
+    for cfg; do
+        eval dep_all="\$${cfg}_deps"
+        eval dep_any="\$${cfg}_deps_any"
+        enabled_all $dep_all || disable $cfg
+        enabled_any $dep_any || disable $cfg
+    done
+}
+
 print_config(){
     pfx=$1
     header=$2
@@ -483,6 +492,45 @@ HAVE_LIST='
     threads
     w32threads
 '
+
+flashsv_decoder_deps="zlib"
+mpeg_xvmc_decoder_deps="xvmc"
+png_decoder_deps="zlib"
+png_encoder_deps="zlib"
+x264_encoder_deps="x264"
+xvid_encoder_deps="xvid"
+zmbv_decoder_deps="zlib"
+zmbv_encoder_deps="zlib"
+
+aac_decoder_deps="libfaad"
+mpeg4aac_decoder_deps="libfaad"
+ac3_decoder_deps="liba52"
+amr_nb_decoder_deps_any="amr_nb amr_nb_fixed"
+amr_nb_encoder_deps_any="amr_nb amr_nb_fixed"
+amr_wb_decoder_deps="amr_wb"
+amr_wb_encoder_deps="amr_wb"
+dts_decoder_deps="libdts"
+faac_encoder_deps="libfaac"
+gsm_decoder_deps="libgsm"
+gsm_encoder_deps="libgsm"
+mp3lame_encoder_deps="libmp3lame"
+oggvorbis_decoder_deps="libvorbis"
+oggvorbis_encoder_deps="libvorbis"
+
+audio_demuxer_deps_any="audio_oss audio_beos"
+audio_muxer_deps_any="audio_oss audio_beos"
+dc1394_demuxer_deps="dc1394"
+dv1394_demuxer_deps="dv1394"
+gxf_muxer_deps="gpl"
+nut_muxer_deps="libnut"
+ogg_muxer_deps="libogg"
+redir_demuxer_deps="network"
+rtp_muxer_deps="network"
+rtsp_demuxer_deps="network"
+sdp_demuxer_deps="network"
+v4l2_demuxer_deps="video4linux2"
+video_gram_device_demuxer_deps_any="video4linux bktr"
+x11_grab_device_demuxer_deps="x11grab"
 
 # set temporary file name
 if test ! -z "$TMPDIR" ; then
@@ -1984,6 +2032,9 @@ enabled_any $MUXER_LIST   && enable muxers
 enabled_any $DEMUXER_LIST && enable demuxers
 
 enabled_any pthreads beosthreads os2threads w32threads && enable threads
+
+check_deps $CONFIG_LIST $HAVE_LIST $DECODER_LIST $ENCODER_LIST $PARSER_LIST \
+    $DEMUXER_LIST $MUXER_LIST
 
 print_config HAVE_   $TMPH config.mak $HAVE_LIST
 print_config CONFIG_ $TMPH config.mak $CONFIG_LIST
