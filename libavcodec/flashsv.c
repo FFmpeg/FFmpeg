@@ -135,12 +135,12 @@ static int flashsv_decode_frame(AVCodecContext *avctx,
     if(s->block_size < s->block_width*s->block_height) {
         if (s->tmpblock != NULL)
             av_free(s->tmpblock);
-        s->block_size = s->block_width*s->block_height;
-        if ((s->tmpblock = av_malloc(3*s->block_size)) == NULL) {
+        if ((s->tmpblock = av_malloc(3*s->block_width*s->block_height)) == NULL) {
             av_log(avctx, AV_LOG_ERROR, "Can't allocate decompression buffer.\n");
             return -1;
         }
     }
+    s->block_size = s->block_width*s->block_height;
 
     /* init the image size once */
     if((avctx->width==0) && (avctx->height==0)){
