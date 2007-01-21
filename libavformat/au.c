@@ -47,8 +47,6 @@ static const AVCodecTag codec_au_tags[] = {
 static int put_au_header(ByteIOContext *pb, AVCodecContext *enc)
 {
     if(!enc->codec_tag)
-       enc->codec_tag = codec_get_tag(codec_au_tags, enc->codec_id);
-    if(!enc->codec_tag)
         return -1;
     put_tag(pb, ".snd");       /* magic number */
     put_be32(pb, 24);           /* header size */

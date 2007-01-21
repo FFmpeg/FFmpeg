@@ -145,7 +145,7 @@ static int flv_write_header(AVFormatContext *s)
             }
             flv->hasVideo=1;
 
-            videocodecid = codec_get_tag(flv_video_codec_ids, enc->codec_id);
+            videocodecid = enc->codec_tag;
             if(videocodecid == 0) {
                 av_log(enc, AV_LOG_ERROR, "video codec not compatible with flv\n");
                 return -1;
@@ -155,7 +155,7 @@ static int flv_write_header(AVFormatContext *s)
             samplerate = enc->sample_rate;
             channels = enc->channels;
 
-            audiocodecid = codec_get_tag(flv_audio_codec_ids, enc->codec_id);
+            audiocodecid = enc->codec_tag;
             samplesize = (enc->codec_id == CODEC_ID_PCM_S8) ? 8 : 16;
 
             if(get_audio_flags(enc)<0)
@@ -282,7 +282,7 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (enc->codec_type == CODEC_TYPE_VIDEO) {
         put_byte(pb, FLV_TAG_TYPE_VIDEO);
 
-        flags = codec_get_tag(flv_video_codec_ids, enc->codec_id);
+        flags = enc->codec_tag;
         if(flags == 0) {
             av_log(enc, AV_LOG_ERROR, "video codec %X not compatible with flv\n",enc->codec_id);
             return -1;

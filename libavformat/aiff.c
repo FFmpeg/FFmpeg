@@ -165,7 +165,6 @@ static int aiff_write_header(AVFormatContext *s)
     AVExtFloat sample_rate;
 
     /* First verify if format is ok */
-    enc->codec_tag = codec_get_tag(codec_aiff_tags, enc->codec_id);
     if (!enc->codec_tag) {
         av_free(aiff);
         return -1;

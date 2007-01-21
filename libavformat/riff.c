@@ -296,8 +296,6 @@ int put_wav_header(ByteIOContext *pb, AVCodecContext *enc)
     int hdrsize = 18;
 
     if(!enc->codec_tag || enc->codec_tag > 0xffff)
-       enc->codec_tag = codec_get_tag(codec_wav_tags, enc->codec_id);
-    if(!enc->codec_tag || enc->codec_tag > 0xffff)
         return -1;
 
     put_le16(pb, enc->codec_tag);
@@ -387,7 +385,7 @@ void put_bmp_header(ByteIOContext *pb, AVCodecContext *enc, const AVCodecTag *ta
 
     put_le16(pb, enc->bits_per_sample ? enc->bits_per_sample : 24); /* depth */
     /* compression type */
-    put_le32(pb, for_asf ? (enc->codec_tag ? enc->codec_tag : av_codec_get_tag(asf_muxer.codec_tag, enc->codec_id)) : enc->codec_tag); //
+    put_le32(pb, enc->codec_tag);
     put_le32(pb, enc->width * enc->height * 3);
     put_le32(pb, 0);
     put_le32(pb, 0);

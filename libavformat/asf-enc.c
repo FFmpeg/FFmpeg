@@ -459,14 +459,10 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size, int64_t data
         if (enc->codec_type == CODEC_TYPE_AUDIO) {
             put_le16(pb, 2);
             if(!enc->codec_tag)
-                enc->codec_tag = codec_get_tag(codec_wav_tags, enc->codec_id);
-            if(!enc->codec_tag)
                 return -1;
             put_le16(pb, enc->codec_tag);
         } else {
             put_le16(pb, 4);
-            if(!enc->codec_tag)
-                enc->codec_tag = codec_get_tag(codec_bmp_tags, enc->codec_id);
             if(!enc->codec_tag)
                 return -1;
             put_le32(pb, enc->codec_tag);
