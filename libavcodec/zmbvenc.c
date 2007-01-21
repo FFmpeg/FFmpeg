@@ -31,7 +31,6 @@
 #include "common.h"
 #include "avcodec.h"
 
-#ifdef CONFIG_ZLIB
 #include <zlib.h>
 
 #define ZMBV_KEYFRAME 1
@@ -325,4 +324,3 @@ AVCodec zmbv_encoder = {
     encode_end,
     .pix_fmts = (enum PixelFormat[]){PIX_FMT_PAL8, -1},
 };
-#endif
