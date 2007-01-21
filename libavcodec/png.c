@@ -25,7 +25,6 @@
  * - use filters when generating a png (better compression)
  */
 
-#ifdef CONFIG_ZLIB
 #include <zlib.h>
 
 //#define DEBUG
@@ -965,4 +964,3 @@ AVCodec png_encoder = {
     .pix_fmts= (enum PixelFormat[]){PIX_FMT_RGB24, PIX_FMT_RGBA32, PIX_FMT_PAL8, PIX_FMT_GRAY8, PIX_FMT_MONOBLACK, -1},
 };
 #endif // CONFIG_PNG_ENCODER
-#endif
