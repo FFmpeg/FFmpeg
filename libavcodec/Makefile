@@ -77,7 +77,6 @@ OBJS-$(CONFIG_FFVHUFF_DECODER)         += huffyuv.o
 OBJS-$(CONFIG_FFVHUFF_ENCODER)         += huffyuv.o
 OBJS-$(CONFIG_FLAC_DECODER)            += flac.o
 OBJS-$(CONFIG_FLAC_ENCODER)            += flacenc.o
-OBJS-$(CONFIG_FLASHSV_DECODER)         += flashsv.o
 OBJS-$(CONFIG_FLIC_DECODER)            += flicvideo.o
 OBJS-$(CONFIG_FOURXM_DECODER)          += 4xm.o
 OBJS-$(CONFIG_FRAPS_DECODER)           += fraps.o
@@ -242,6 +241,11 @@ OBJS-$(CONFIG_ADPCM_XA_DECODER)        += adpcm.o
 OBJS-$(CONFIG_ADPCM_XA_ENCODER)        += adpcm.o
 OBJS-$(CONFIG_ADPCM_YAMAHA_DECODER)    += adpcm.o
 OBJS-$(CONFIG_ADPCM_YAMAHA_ENCODER)    += adpcm.o
+
+# external dependencies
+ifeq ($(CONFIG_ZLIB),yes)
+OBJS-$(CONFIG_FLASHSV_DECODER)         += flashsv.o
+endif
 
 # external codec libraries
 OBJS-$(CONFIG_LIBA52)                  += a52dec.o
