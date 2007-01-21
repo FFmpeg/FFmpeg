@@ -300,7 +300,7 @@ static int encode_init(AVCodecContext *avctx)
 
 
 /**
- * Uninit zmbv decoder
+ * Uninit zmbv encoder
  */
 static int encode_end(AVCodecContext *avctx)
 {
