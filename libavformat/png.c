@@ -25,7 +25,6 @@
  * - use filters when generating a png (better compression)
  */
 
-#ifdef CONFIG_ZLIB
 #include <zlib.h>
 
 //#define DEBUG
@@ -886,4 +885,3 @@ AVImageFormat png_image_format = {
     png_write,
     AVIMAGE_INTERLEAVED,
 };
-#endif
