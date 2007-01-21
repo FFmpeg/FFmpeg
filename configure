@@ -494,6 +494,7 @@ HAVE_LIST='
 '
 
 flashsv_decoder_deps="zlib"
+flashsv_encoder_deps="zlib"
 mpeg_xvmc_decoder_deps="xvmc"
 png_decoder_deps="zlib"
 png_encoder_deps="zlib"
