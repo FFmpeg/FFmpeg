@@ -29,9 +29,11 @@ OBJS-$(CONFIG_AVS_DEMUXER)               += avs.o vocdec.o voc.o riff.o
 OBJS-$(CONFIG_CRC_MUXER)                 += crc.o
 OBJS-$(CONFIG_FRAMECRC_MUXER)            += crc.o
 OBJS-$(CONFIG_DAUD_DEMUXER)              += daud.o
+OBJS-$(CONFIG_DC1394_DEMUXER)            += dc1394.o
 OBJS-$(CONFIG_DSICIN_DEMUXER)            += dsicin.o
 OBJS-$(CONFIG_DV_DEMUXER)                += dv.o
 OBJS-$(CONFIG_DV_MUXER)                  += dvenc.o
+OBJS-$(CONFIG_DV1394_DEMUXER)            += dv1394.o
 OBJS-$(CONFIG_EA_DEMUXER)                += electronicarts.o
 OBJS-$(CONFIG_FFM_DEMUXER)               += ffm.o
 OBJS-$(CONFIG_FFM_MUXER)                 += ffm.o
@@ -41,6 +43,7 @@ OBJS-$(CONFIG_FLV_MUXER)                 += flvenc.o
 OBJS-$(CONFIG_GIF_MUXER)                 += gif.o
 OBJS-$(CONFIG_GIF_DEMUXER)               += gifdec.o
 OBJS-$(CONFIG_GXF_DEMUXER)               += gxf.o
+OBJS-$(CONFIG_GXF_MUXER)                 += gxfenc.o
 OBJS-$(CONFIG_IDCIN_DEMUXER)             += idcin.o
 OBJS-$(CONFIG_ROQ_DEMUXER)               += idroq.o
 OBJS-$(CONFIG_IMAGE2_DEMUXER)            += img2.o
@@ -81,6 +84,7 @@ OBJS-$(CONFIG_OGG_DEMUXER)               += ogg2.o           \
                                             oggparseflac.o   \
                                             oggparseogm.o    \
                                             riff.o
+OBJS-$(CONFIG_OGG_MUXER)                 += ogg.o
 OBJS-$(CONFIG_STR_DEMUXER)               += psxstr.o
 OBJS-$(CONFIG_SHORTEN_DEMUXER)           += raw.o
 OBJS-$(CONFIG_FLAC_DEMUXER)              += raw.o
@@ -116,6 +120,7 @@ OBJS-$(CONFIG_SWF_DEMUXER)               += swf.o
 OBJS-$(CONFIG_SWF_MUXER)                 += swf.o
 OBJS-$(CONFIG_TIERTEXSEQ_DEMUXER)        += tiertexseq.o
 OBJS-$(CONFIG_TTA_DEMUXER)               += tta.o
+OBJS-$(CONFIG_V4L2_DEMUXER)              += v4l2.o
 OBJS-$(CONFIG_VOC_DEMUXER)               += vocdec.o voc.o riff.o
 OBJS-$(CONFIG_VOC_MUXER)                 += vocenc.o voc.o riff.o
 OBJS-$(CONFIG_WAV_DEMUXER)               += wav.o riff.o
@@ -124,26 +129,19 @@ OBJS-$(CONFIG_WC3_DEMUXER)               += wc3movie.o
 OBJS-$(CONFIG_WSAUD_DEMUXER)             += westwood.o
 OBJS-$(CONFIG_WSVQA_DEMUXER)             += westwood.o
 OBJS-$(CONFIG_WV_DEMUXER)                += wv.o
+OBJS-$(CONFIG_X11_GRAB_DEVICE_DEMUXER)   += x11grab.o
 OBJS-$(CONFIG_YUV4MPEGPIPE_MUXER)        += yuv4mpeg.o
 OBJS-$(CONFIG_YUV4MPEGPIPE_DEMUXER)      += yuv4mpeg.o
 
 OBJS+= framehook.o
 
-OBJS-$(CONFIG_X11_GRAB_DEVICE_DEMUXER)   += x11grab.o
-
 ifeq ($(CONFIG_VIDEO4LINUX),yes)
 OBJS-$(CONFIG_VIDEO_GRAB_DEVICE_DEMUXER) += grab.o
 endif
 
-OBJS-$(CONFIG_V4L2_DEMUXER)              += v4l2.o
-
 ifeq ($(CONFIG_BKTR),yes)
 OBJS-$(CONFIG_VIDEO_GRAB_DEVICE_DEMUXER) += grab_bktr.o
 endif
-
-OBJS-$(CONFIG_DV1394_DEMUXER)            += dv1394.o
-
-OBJS-$(CONFIG_DC1394_DEMUXER)            += dc1394.o
 
 ifeq ($(CONFIG_AUDIO_OSS),yes)
 OBJS-$(CONFIG_AUDIO_DEMUXER)             += audio.o
@@ -174,10 +172,6 @@ else
 OBJS-$(CONFIG_NUT_DEMUXER)               += nutdec.o riff.o
 #OBJS-$(CONFIG_NUT_MUXER)                 += nutenc.o riff.o
 endif
-
-OBJS-$(CONFIG_OGG_MUXER)                 += ogg.o
-
-OBJS-$(CONFIG_GXF_MUXER)                 += gxfenc.o
 
 OBJS += $(OBJS-yes)
 
