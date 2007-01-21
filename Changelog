@@ -67,6 +67,7 @@ version <next>
 - GIF picture decoder
 - Intel Music decoder
 - Musepack decoder
+- Flash Screen Video encoder
 
 version 0.4.9-pre1:
 
