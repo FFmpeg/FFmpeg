@@ -166,7 +166,6 @@ static int aiff_write_header(AVFormatContext *s)
 
     /* First verify if format is ok */
     if (!enc->codec_tag) {
-        av_free(aiff);
         return -1;
     }
 
