@@ -578,17 +578,14 @@ static int asf_read_packet(AVFormatContext *s, AVPacket *pkt)
             DO_2BITS(asf->packet_property >> 2, asf->packet_frag_offset, 0);
             DO_2BITS(asf->packet_property, asf->packet_replic_size, 0);
 //printf("key:%d stream:%d seq:%d offset:%d replic_size:%d\n", asf->packet_key_frame, asf->stream_index, asf->packet_seq, //asf->packet_frag_offset, asf->packet_replic_size);
-            if (asf->packet_replic_size > 1) {
-                assert(asf->packet_replic_size >= 8);
-                // it should be always at least 8 bytes - FIXME validate
+            if (asf->packet_replic_size >= 8) {
                 asf->packet_obj_size = get_le32(pb);
                 if(asf->packet_obj_size >= (1<<24) || asf->packet_obj_size <= 0){
                     av_log(s, AV_LOG_ERROR, "packet_obj_size invalid\n");
                     continue;
                 }
                 asf->packet_frag_timestamp = get_le32(pb); // timestamp
-                if (asf->packet_replic_size > 8)
-                    url_fskip(pb, asf->packet_replic_size - 8);
+                url_fskip(pb, asf->packet_replic_size - 8);
                 rsize += asf->packet_replic_size; // FIXME - check validity
             } else if (asf->packet_replic_size==1){
                 // multipacket - frag_offset is begining timestamp
@@ -598,8 +595,9 @@ static int asf_read_packet(AVFormatContext *s, AVPacket *pkt)
 
                 asf->packet_time_delta = get_byte(pb);
                 rsize++;
-            }else{
-                assert(asf->packet_replic_size==0);
+            }else if(asf->packet_replic_size!=0){
+                av_log(s, AV_LOG_ERROR, "unexpected packet_replic_size of %d\n", asf->packet_replic_size);
+                continue;
             }
             if (asf->packet_flags & 0x01) {
                 DO_2BITS(asf->packet_segsizetype >> 6, asf->packet_frag_size, 0); // 0 is illegal
