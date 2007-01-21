@@ -571,7 +571,7 @@ static int asf_read_packet(AVFormatContext *s, AVPacket *pkt)
             int num = get_byte(pb);
             asf->packet_segments--;
             rsize++;
-            asf->packet_key_frame = (num & 0x80) >> 7;
+            asf->packet_key_frame = num >> 7;
             asf->stream_index = asf->asfid2avid[num & 0x7f];
             // sequence should be ignored!
             DO_2BITS(asf->packet_property >> 4, asf->packet_seq, 0);
