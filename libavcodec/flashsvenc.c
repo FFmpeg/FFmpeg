@@ -294,7 +294,6 @@ static int flashsv_encode_frame(AVCodecContext *avctx, uint8_t *buf, int buf_siz
 
     res = encode_bitstream(s, p, buf, buf_size, opt_w*16, opt_h*16, s->previous_frame, &I_frame);
 #endif
-    av_log(avctx, AV_LOG_ERROR, "res %d\n", res);
     //save the current frame
     memcpy(s->previous_frame, p->data[0], s->image_height*p->linesize[0]*3);
 
