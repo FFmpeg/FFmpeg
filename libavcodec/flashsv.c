@@ -49,6 +49,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#ifdef CONFIG_ZLIB
 #include <zlib.h>
 
 #include "common.h"
@@ -257,3 +258,4 @@ AVCodec flashsv_decoder = {
     CODEC_CAP_DR1,
     .pix_fmts = (enum PixelFormat[]){PIX_FMT_BGR24, -1},
 };
+#endif //CONFIG_ZLIB
