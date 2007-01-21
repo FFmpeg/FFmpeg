@@ -190,7 +190,6 @@
 static const AVCodecTag codec_asf_bmp_tags[] = {
     { CODEC_ID_MPEG4, MKTAG('M', 'P', '4', 'S') },
     { CODEC_ID_MPEG4, MKTAG('M', '4', 'S', '2') },
-    { CODEC_ID_MSMPEG4V3, MKTAG('D', 'I', 'V', '3') },
     { CODEC_ID_MSMPEG4V3, MKTAG('M', 'P', '4', '3') },
     { CODEC_ID_NONE, 0 },
 };
