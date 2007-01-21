@@ -190,6 +190,7 @@ AVInputFormat au_demuxer = {
     au_read_packet,
     au_read_close,
     pcm_read_seek,
+    .codec_tag= {codec_au_tags},
 };
 #endif
 
@@ -205,5 +206,6 @@ AVOutputFormat au_muxer = {
     au_write_header,
     au_write_packet,
     au_write_trailer,
+    .codec_tag= {codec_au_tags},
 };
 #endif //CONFIG_AU_MUXER

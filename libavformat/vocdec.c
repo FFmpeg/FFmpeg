@@ -152,4 +152,5 @@ AVInputFormat voc_demuxer = {
     voc_read_header,
     voc_read_packet,
     voc_read_close,
+    .codec_tag={voc_codec_tags},
 };

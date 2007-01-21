@@ -101,4 +101,5 @@ AVOutputFormat voc_muxer = {
     voc_write_header,
     voc_write_packet,
     voc_write_trailer,
+    .codec_tag={voc_codec_tags},
 };
