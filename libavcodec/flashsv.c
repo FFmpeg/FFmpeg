@@ -49,12 +49,13 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#ifdef CONFIG_ZLIB
-#include <zlib.h>
 
 #include "common.h"
 #include "avcodec.h"
 #include "bitstream.h"
+
+#ifdef CONFIG_ZLIB
+#include <zlib.h>
 
 typedef struct FlashSVContext {
     AVCodecContext *avctx;
