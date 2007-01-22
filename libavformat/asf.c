@@ -641,27 +641,6 @@ static int asf_read_packet(AVFormatContext *s, AVPacket *pkt)
         }
         asf_st = asf->asf_st;
 
-        if ((asf->packet_frag_offset != asf_st->frag_offset
-             || (asf->packet_frag_offset
-                 && asf->packet_seq != asf_st->seq)) // seq should be ignored
-           ) {
-            /* cannot continue current packet: free it */
-            // FIXME better check if packet was already allocated
-            av_log(s, AV_LOG_INFO, "ff asf parser skips: %d - %d     o:%d - %d    %d %d   fl:%d\n",
-                   asf_st->pkt.size,
-                   asf->packet_obj_size,
-                   asf->packet_frag_offset, asf_st->frag_offset,
-                   asf->packet_seq, asf_st->seq, asf->packet_frag_size);
-            if (asf_st->pkt.size)
-                av_free_packet(&asf_st->pkt);
-            asf_st->frag_offset = 0;
-            if (asf->packet_frag_offset != 0) {
-                url_fskip(pb, asf->packet_frag_size);
-                av_log(s, AV_LOG_INFO, "ff asf parser skipping %db\n", asf->packet_frag_size);
-                asf->packet_size_left -= asf->packet_frag_size;
-                continue;
-            }
-        }
         if (asf->packet_replic_size == 1) {
             // frag_offset is here used as the begining timestamp
             asf->packet_frag_timestamp = asf->packet_time_start;
@@ -679,7 +658,12 @@ static int asf_read_packet(AVFormatContext *s, AVPacket *pkt)
             asf->packet_multi_size -= asf->packet_obj_size;
             //printf("COMPRESS size  %d  %d  %d   ms:%d\n", asf->packet_obj_size, asf->packet_frag_timestamp, asf->packet_size_left, asf->packet_multi_size);
         }
-        if (asf_st->frag_offset == 0) {
+        if (asf_st->pkt.size != asf->packet_obj_size) { //FIXME is this condition sufficient?
+            if(asf_st->pkt.data){
+                av_log(s, AV_LOG_INFO, "freeing incomplete packet size %d, new %d\n", asf_st->pkt.size, asf->packet_obj_size);
+                asf_st->frag_offset = 0;
+                av_free_packet(&asf_st->pkt);
+            }
             /* new packet */
             av_new_packet(&asf_st->pkt, asf->packet_obj_size);
             asf_st->seq = asf->packet_seq;
