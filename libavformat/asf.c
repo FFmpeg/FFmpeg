@@ -754,8 +754,6 @@ static void asf_reset_header(AVFormatContext *s)
     int i;
 
     asf->packet_nb_frames = 0;
-    asf->packet_timestamp_start = -1;
-    asf->packet_timestamp_end = -1;
     asf->packet_size_left = 0;
     asf->packet_segments = 0;
     asf->packet_flags = 0;
