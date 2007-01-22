@@ -155,7 +155,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             get_guid(pb, &asf->hdr.guid);
             asf->hdr.file_size          = get_le64(pb);
             asf->hdr.create_time        = get_le64(pb);
-            asf->hdr.packets_count      = get_le64(pb);
+            asf->nb_packets             = get_le64(pb);
             asf->hdr.send_time          = get_le64(pb);
             asf->hdr.play_time          = get_le64(pb);
             asf->hdr.preroll            = get_le32(pb);
@@ -165,7 +165,6 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             asf->hdr.max_pktsize        = get_le32(pb);
             asf->hdr.max_bitrate        = get_le32(pb);
             asf->packet_size = asf->hdr.max_pktsize;
-            asf->nb_packets = asf->hdr.packets_count;
         } else if (!memcmp(&g, &stream_header, sizeof(GUID))) {
             int type, type_specific_size, sizeX;
             uint64_t total_size;
@@ -236,8 +235,8 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     asf_st->ds_span = get_byte(pb);
                     asf_st->ds_packet_size = get_le16(pb);
                     asf_st->ds_chunk_size = get_le16(pb);
-                    asf_st->ds_data_size = get_le16(pb);
-                    asf_st->ds_silence_data = get_byte(pb);
+                    get_le16(pb); //ds_data_size
+                    get_byte(pb); //ds_silence_data
                 }
                 //printf("Descrambling: ps:%d cs:%d ds:%d s:%d  sd:%d\n",
                 //       asf_st->ds_packet_size, asf_st->ds_chunk_size,

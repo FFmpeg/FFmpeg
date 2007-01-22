@@ -31,8 +31,6 @@ typedef struct {
     int ds_span;                /* descrambling  */
     int ds_packet_size;
     int ds_chunk_size;
-    int ds_data_size;
-    int ds_silence_data;
 
     int64_t packet_pos;
 
@@ -45,8 +43,6 @@ typedef struct {
     uint64_t file_size;         // in bytes
                                 // invalid if broadcasting
     uint64_t create_time;       // time of creation, in 100-nanosecond units since 1.1.1601
-                                // invalid if broadcasting
-    uint64_t packets_count;     // how many packets are there in the file
                                 // invalid if broadcasting
     uint64_t play_time;         // play time, in 100-nanosecond units
                                 // invalid if broadcasting
@@ -81,7 +77,7 @@ typedef struct {
     int asfid2avid[128];        /* conversion table from asf ID 2 AVStream ID */
     ASFStream streams[128];     /* it's max number and it's not that big */
     /* non streamed additonnal info */
-    uint64_t nb_packets;
+    uint64_t nb_packets;                 ///< how many packets are there in the file, invalid if broadcasting
     int64_t duration; /* in 100ns units */
     /* packet filling */
     unsigned char multi_payloads_present;
