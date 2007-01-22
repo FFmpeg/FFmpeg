@@ -722,7 +722,7 @@ static int asf_read_packet(AVFormatContext *s, AVPacket *pkt)
                 }
             }
             asf_st->frag_offset = 0;
-            memcpy(pkt, &asf_st->pkt, sizeof(AVPacket));
+            *pkt= asf_st->pkt;
             //printf("packet %d %d\n", asf_st->pkt.size, asf->packet_frag_size);
             asf_st->pkt.size = 0;
             asf_st->pkt.data = 0;
