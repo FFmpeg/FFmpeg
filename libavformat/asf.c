@@ -326,10 +326,10 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             len3 = get_le16(pb);
             len4 = get_le16(pb);
             len5 = get_le16(pb);
-            get_str16_nolen(pb, len1, s->title, sizeof(s->title));
-            get_str16_nolen(pb, len2, s->author, sizeof(s->author));
+            get_str16_nolen(pb, len1, s->title    , sizeof(s->title));
+            get_str16_nolen(pb, len2, s->author   , sizeof(s->author));
             get_str16_nolen(pb, len3, s->copyright, sizeof(s->copyright));
-            get_str16_nolen(pb, len4, s->comment, sizeof(s->comment));
+            get_str16_nolen(pb, len4, s->comment  , sizeof(s->comment));
             url_fskip(pb, len5);
        } else if (!memcmp(&g, &extended_content_header, sizeof(GUID))) {
                 int desc_count, i;
@@ -356,8 +356,8 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                                 if (value_type==3) value_num = get_le32(pb);
                                 if (value_type==4) value_num = get_le64(pb);
                                 if (value_type==5) value_num = get_le16(pb);
-                                if (strcmp(name,"WM/Track")==0) s->track = value_num + 1;
-                                if (strcmp(name,"WM/TrackNumber")==0) s->track = value_num;
+                                if (!strcmp(name,"WM/Track"      )) s->track = value_num + 1;
+                                if (!strcmp(name,"WM/TrackNumber")) s->track = value_num;
                         }
                 }
         } else if (!memcmp(&g, &ext_stream_header, sizeof(GUID))) {
