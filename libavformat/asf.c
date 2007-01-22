@@ -339,11 +339,10 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 {
                         int name_len,value_type,value_len;
                         uint64_t value_num = 0;
-                        char *name;
+                        char name[1024];
 
                         name_len = get_le16(pb);
-                        name = av_malloc(name_len * 2);
-                        get_str16_nolen(pb, name_len, name, name_len * 2);
+                        get_str16_nolen(pb, name_len, name, sizeof(name));
                         value_type = get_le16(pb);
                         value_len = get_le16(pb);
                         if ((value_type == 0) || (value_type == 1)) // unicode or byte
@@ -360,7 +359,6 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                                 if (strcmp(name,"WM/Track")==0) s->track = value_num + 1;
                                 if (strcmp(name,"WM/TrackNumber")==0) s->track = value_num;
                         }
-                        av_free(name);
                 }
         } else if (!memcmp(&g, &ext_stream_header, sizeof(GUID))) {
             int ext_len, payload_ext_ct, stream_ct;
