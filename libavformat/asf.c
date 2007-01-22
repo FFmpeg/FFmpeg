@@ -244,7 +244,8 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 //       asf_st->ds_data_size, asf_st->ds_span, asf_st->ds_silence_data);
                 if (asf_st->ds_span > 1) {
                     if (!asf_st->ds_chunk_size
-                        || (asf_st->ds_packet_size/asf_st->ds_chunk_size <= 1))
+                        || (asf_st->ds_packet_size/asf_st->ds_chunk_size <= 1)
+                        || asf_st->ds_packet_size % asf_st->ds_chunk_size)
                         asf_st->ds_span = 0; // disable descrambling
                 }
                 switch (st->codec->codec_id) {
@@ -702,6 +703,9 @@ static int asf_read_packet(AVFormatContext *s, AVPacket *pkt)
         if (asf_st->frag_offset == asf_st->pkt.size) {
             /* return packet */
             if (asf_st->ds_span > 1) {
+              if(asf_st->pkt.size != asf_st->ds_packet_size * asf_st->ds_span){
+                    av_log(s, AV_LOG_ERROR, "pkt.size != ds_packet_size * ds_span\n");
+              }else{
                 /* packet descrambling */
                 uint8_t *newdata = av_malloc(asf_st->pkt.size);
                 if (newdata) {
@@ -712,6 +716,9 @@ static int asf_read_packet(AVFormatContext *s, AVPacket *pkt)
                         int col = off % asf_st->ds_span;
                         int idx = row + col * asf_st->ds_packet_size / asf_st->ds_chunk_size;
                         //printf("off:%d  row:%d  col:%d  idx:%d\n", off, row, col, idx);
+
+                        assert(offset + asf_st->ds_chunk_size <= asf_st->pkt.size);
+                        assert(idx+1 <= asf_st->pkt.size / asf_st->ds_chunk_size);
                         memcpy(newdata + offset,
                                asf_st->pkt.data + idx * asf_st->ds_chunk_size,
                                asf_st->ds_chunk_size);
@@ -720,6 +727,7 @@ static int asf_read_packet(AVFormatContext *s, AVPacket *pkt)
                     av_free(asf_st->pkt.data);
                     asf_st->pkt.data = newdata;
                 }
+              }
             }
             asf_st->frag_offset = 0;
             *pkt= asf_st->pkt;
