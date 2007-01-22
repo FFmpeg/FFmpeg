@@ -2868,7 +2868,8 @@ static void new_video_stream(AVFormatContext *oc)
             if(p) p++;
         }
         video_enc->rc_override_count=i;
-        video_enc->rc_initial_buffer_occupancy = video_enc->rc_buffer_size*3/4;
+        if (!video_enc->rc_initial_buffer_occupancy)
+            video_enc->rc_initial_buffer_occupancy = video_enc->rc_buffer_size*3/4;
         video_enc->me_threshold= me_threshold;
         video_enc->intra_dc_precision= intra_dc_precision - 8;
         video_enc->strict_std_compliance = strict;
