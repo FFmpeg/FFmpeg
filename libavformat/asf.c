@@ -474,8 +474,6 @@ static int asf_get_packet(AVFormatContext *s)
     int rsize = 9;
     int c;
 
-    assert((url_ftell(&s->pb) - s->data_offset) % asf->packet_size == 0);
-
     c = get_byte(pb);
     if (c != 0x82) {
         if (!url_feof(pb))
@@ -545,11 +543,16 @@ static int asf_read_packet(AVFormatContext *s, AVPacket *pkt)
             //asf->packet_size_left <= asf->packet_padsize) {
             int ret = asf->packet_size_left + asf->packet_padsize;
             //printf("PacketLeftSize:%d  Pad:%d Pos:%"PRId64"\n", asf->packet_size_left, asf->packet_padsize, url_ftell(pb));
-            if((url_ftell(&s->pb) + ret - s->data_offset) % asf->packet_size)
-                ret += asf->packet_size - ((url_ftell(&s->pb) + ret - s->data_offset) % asf->packet_size);
             assert(ret>=0);
             /* fail safe */
             url_fskip(pb, ret);
+
+            ret= (url_ftell(&s->pb) - s->data_offset) % asf->packet_size;
+            if(asf->hdr.max_pktsize == asf->hdr.min_pktsize && ret){
+                av_log(s, AV_LOG_ERROR, "packet end missaligned skiping %d\n", ret);
+                url_fskip(pb, asf->packet_size - ret);
+            }
+
             asf->packet_pos= url_ftell(&s->pb);
             if (asf->data_object_size != (uint64_t)-1 &&
                 (asf->packet_pos - asf->data_object_offset >= asf->data_object_size))
