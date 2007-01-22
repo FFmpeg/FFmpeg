@@ -703,6 +703,14 @@ static int asf_read_packet(AVFormatContext *s, AVPacket *pkt)
         asf->packet_size_left -= asf->packet_frag_size;
         if (asf->packet_size_left < 0)
             continue;
+
+        if(   asf->packet_frag_offset >= asf_st->pkt.size
+           || asf->packet_frag_size > asf_st->pkt.size - asf->packet_frag_offset){
+            av_log(s, AV_LOG_ERROR, "packet fragment position invalid %u,%u not in %u\n",
+                asf->packet_frag_offset, asf->packet_frag_size, asf_st->pkt.size);
+            continue;
+        }
+
         get_buffer(pb, asf_st->pkt.data + asf->packet_frag_offset,
                    asf->packet_frag_size);
         asf_st->frag_offset += asf->packet_frag_size;
