@@ -504,7 +504,7 @@ static int asf_get_packet(AVFormatContext *s)
         av_log(s, AV_LOG_ERROR, "invalid packet_length %d at:%"PRId64"\n", packet_length, url_ftell(pb));
         return -1;
     }
-    if(padsize >= (1U<<29)){
+    if(padsize >= packet_length){
         av_log(s, AV_LOG_ERROR, "invalid padsize %d at:%"PRId64"\n", padsize, url_ftell(pb));
         return -1;
     }
