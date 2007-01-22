@@ -22,8 +22,8 @@
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with GNU Make; see the file COPYING.  If not, write to
- *  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
+ *  along with mpeg2dec; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  *
  * MMX/MMX2 Template stuff from Michael Niedermayer (michaelni@gmx.at) (needed for fast movntq support)
  * 1,4,8bpp support by Michael Niedermayer (michaelni@gmx.at)
