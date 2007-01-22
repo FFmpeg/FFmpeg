@@ -571,6 +571,10 @@ static int asf_read_frame_header(AVFormatContext *s){
     }
     if (asf->packet_flags & 0x01) {
         DO_2BITS(asf->packet_segsizetype >> 6, asf->packet_frag_size, 0); // 0 is illegal
+        if(asf->packet_frag_size > asf->packet_size_left - rsize){
+            av_log(s, AV_LOG_ERROR, "packet_frag_size is invalid\n");
+            return -1;
+        }
         //printf("Fragsize %d\n", asf->packet_frag_size);
     } else {
         asf->packet_frag_size = asf->packet_size_left - rsize;
