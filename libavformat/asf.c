@@ -746,7 +746,7 @@ static int asf_read_close(AVFormatContext *s)
     for(i=0;i<s->nb_streams;i++) {
         AVStream *st = s->streams[i];
         av_free(st->priv_data);
-    av_free(st->codec->palctrl);
+        av_free(st->codec->palctrl);
     }
     return 0;
 }
