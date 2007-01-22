@@ -339,7 +339,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 {
                         int name_len,value_type,value_len;
                         uint64_t value_num = 0;
-                        char *name, *value;
+                        char *name;
 
                         name_len = get_le16(pb);
                         name = av_malloc(name_len * 2);
@@ -348,12 +348,8 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                         value_len = get_le16(pb);
                         if ((value_type == 0) || (value_type == 1)) // unicode or byte
                         {
-                                value = av_malloc(value_len * 2);
-                                get_str16_nolen(pb, value_len, value,
-                                        value_len * 2);
-                                if (strcmp(name,"WM/AlbumTitle")==0) { pstrcpy(s->album, sizeof(s->album), value); }
-                                if (strcmp(name,"WM/Genre")==0) { pstrcpy(s->genre, sizeof(s->genre), value); }
-                                av_free(value);
+                                if (!strcmp(name,"WM/AlbumTitle")) get_str16_nolen(pb, value_len, s->album, sizeof(s->album));
+                                if (!strcmp(name,"WM/Genre"     )) get_str16_nolen(pb, value_len, s->genre, sizeof(s->genre));
                         }
                         if ((value_type >= 2) && (value_type <= 5)) // boolean or DWORD or QWORD or WORD
                         {
