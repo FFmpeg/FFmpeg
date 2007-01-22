@@ -502,11 +502,11 @@ static int asf_get_packet(AVFormatContext *s)
     //the following checks prevent overflows and infinite loops
     if(packet_length >= (1U<<29)){
         av_log(s, AV_LOG_ERROR, "invalid packet_length %d at:%"PRId64"\n", packet_length, url_ftell(pb));
-        return 0; // FIXME this should be -1
+        return -1;
     }
     if(padsize >= (1U<<29)){
         av_log(s, AV_LOG_ERROR, "invalid padsize %d at:%"PRId64"\n", padsize, url_ftell(pb));
-        return 0; // FIXME this should be -1
+        return -1;
     }
 
     asf->packet_timestamp = get_le32(pb);
@@ -598,6 +598,8 @@ static int asf_read_packet(AVFormatContext *s, AVPacket *pkt)
     ByteIOContext *pb = &s->pb;
     //static int pc = 0;
     for (;;) {
+        if(url_feof(pb))
+            return AVERROR_IO;
         if (asf->packet_size_left < FRAME_HEADER_SIZE
             || asf->packet_segments < 1) {
             //asf->packet_size_left <= asf->packet_padsize) {
@@ -619,8 +621,8 @@ static int asf_read_packet(AVFormatContext *s, AVPacket *pkt)
                 return AVERROR_IO; /* Do not exceed the size of the data object */
             ret = asf_get_packet(s);
             //printf("READ ASF PACKET  %d   r:%d   c:%d\n", ret, asf->packet_size_left, pc++);
-            if (ret < 0 || url_feof(pb))
-                return AVERROR_IO;
+            if (ret < 0)
+                assert(asf->packet_size_left < FRAME_HEADER_SIZE || asf->packet_segments < 1);
             asf->packet_time_start = 0;
             continue;
         }
