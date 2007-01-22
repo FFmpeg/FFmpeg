@@ -466,6 +466,10 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
     default: var = defval; break; \
     }
 
+/**
+ *
+ * @return <0 in case of an error
+ */
 static int asf_get_packet(AVFormatContext *s)
 {
     ASFContext *asf = s->priv_data;
@@ -483,7 +487,7 @@ static int asf_get_packet(AVFormatContext *s)
         if (get_le16(pb) != 0) {
             if (!url_feof(pb))
                 av_log(s, AV_LOG_ERROR, "ff asf bad non zero\n");
-            return AVERROR_IO;
+            return -1;
         }
         rsize+=2;
 /*    }else{
