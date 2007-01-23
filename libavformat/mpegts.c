@@ -162,7 +162,7 @@ static MpegTSFilter *mpegts_open_section_filter(MpegTSContext *ts, unsigned int 
     MpegTSSectionFilter *sec;
 
 #ifdef DEBUG_SI
-    printf("Filter: pid=0x%x\n", pid);
+    av_log(NULL, AV_LOG_DEBUG, "Filter: pid=0x%x\n", pid);
 #endif
     if (pid >= NB_PID_MAX || ts->pids[pid])
         return NULL;
@@ -357,7 +357,8 @@ static MpegTSService *new_service(MpegTSContext *ts, int sid,
     MpegTSService *service;
 
 #ifdef DEBUG_SI
-    printf("new_service: sid=0x%04x provider='%s' name='%s'\n",
+    av_log(NULL, AV_LOG_DEBUG, "new_service: "
+           "sid=0x%04x provider='%s' name='%s'\n",
            sid, provider_name, name);
 #endif
 
@@ -384,7 +385,7 @@ static void pmt_cb(void *opaque, const uint8_t *section, int section_len)
     char language[4];
 
 #ifdef DEBUG_SI
-    printf("PMT:\n");
+    av_log(NULL, AV_LOG_DEBUG, "PMT: len %i\n", section_len);
     av_hex_dump(stdout, (uint8_t *)section, section_len);
 #endif
     p_end = section + section_len - 4;
@@ -392,7 +393,8 @@ static void pmt_cb(void *opaque, const uint8_t *section, int section_len)
     if (parse_section_header(h, &p, p_end) < 0)
         return;
 #ifdef DEBUG_SI
-    printf("sid=0x%x sec_num=%d/%d\n", h->id, h->sec_num, h->last_sec_num);
+    av_log(NULL, AV_LOG_DEBUG, "sid=0x%x sec_num=%d/%d\n",
+           h->id, h->sec_num, h->last_sec_num);
 #endif
     if (h->tid != PMT_TID || (ts->req_sid >= 0 && h->id != ts->req_sid) )
         return;
@@ -402,7 +404,7 @@ static void pmt_cb(void *opaque, const uint8_t *section, int section_len)
         return;
     ts->pcr_pid = pcr_pid;
 #ifdef DEBUG_SI
-    printf("pcr_pid=0x%x\n", pcr_pid);
+    av_log(NULL, AV_LOG_DEBUG, "pcr_pid=0x%x\n", pcr_pid);
 #endif
     program_info_length = get16(&p, p_end) & 0xfff;
     if (program_info_length < 0)
@@ -443,7 +445,8 @@ static void pmt_cb(void *opaque, const uint8_t *section, int section_len)
             if (desc_end > desc_list_end)
                 break;
 #ifdef DEBUG_SI
-            printf("tag: 0x%02x len=%d\n", desc_tag, desc_len);
+            av_log(NULL, AV_LOG_DEBUG, "tag: 0x%02x len=%d\n",
+                   desc_tag, desc_len);
 #endif
             switch(desc_tag) {
             case DVB_SUBT_DESCID:
@@ -473,7 +476,8 @@ static void pmt_cb(void *opaque, const uint8_t *section, int section_len)
         p = desc_list_end;
 
 #ifdef DEBUG_SI
-        printf("stream_type=%d pid=0x%x\n", stream_type, pid);
+        av_log(NULL, AV_LOG_DEBUG, "stream_type=%d pid=0x%x\n",
+               stream_type, pid);
 #endif
 
         /* now create ffmpeg stream */
@@ -524,7 +528,7 @@ static void pat_cb(void *opaque, const uint8_t *section, int section_len)
     int sid, pmt_pid;
 
 #ifdef DEBUG_SI
-    printf("PAT:\n");
+    av_log(NULL, AV_LOG_DEBUG, "PAT:\n");
     av_hex_dump(stdout, (uint8_t *)section, section_len);
 #endif
     p_end = section + section_len - 4;
@@ -542,7 +546,7 @@ static void pat_cb(void *opaque, const uint8_t *section, int section_len)
         if (pmt_pid < 0)
             break;
 #ifdef DEBUG_SI
-        printf("sid=0x%x pid=0x%x\n", sid, pmt_pid);
+        av_log(NULL, AV_LOG_DEBUG, "sid=0x%x pid=0x%x\n", sid, pmt_pid);
 #endif
         if (sid == 0x0000) {
             /* NIT info */
@@ -573,7 +577,7 @@ static void pat_scan_cb(void *opaque, const uint8_t *section, int section_len)
     char buf[256];
 
 #ifdef DEBUG_SI
-    printf("PAT:\n");
+    av_log(NULL, AV_LOG_DEBUG, "PAT:\n");
     av_hex_dump(stdout, (uint8_t *)section, section_len);
 #endif
     p_end = section + section_len - 4;
@@ -591,7 +595,7 @@ static void pat_scan_cb(void *opaque, const uint8_t *section, int section_len)
         if (pmt_pid < 0)
             break;
 #ifdef DEBUG_SI
-        printf("sid=0x%x pid=0x%x\n", sid, pmt_pid);
+        av_log(NULL, AV_LOG_DEBUG, "sid=0x%x pid=0x%x\n", sid, pmt_pid);
 #endif
         if (sid == 0x0000) {
             /* NIT info */
@@ -634,7 +638,7 @@ static void sdt_cb(void *opaque, const uint8_t *section, int section_len)
     char *name, *provider_name;
 
 #ifdef DEBUG_SI
-    printf("SDT:\n");
+    av_log(NULL, AV_LOG_DEBUG, "SDT:\n");
     av_hex_dump(stdout, (uint8_t *)section, section_len);
 #endif
 
@@ -672,7 +676,8 @@ static void sdt_cb(void *opaque, const uint8_t *section, int section_len)
             if (desc_end > desc_list_end)
                 break;
 #ifdef DEBUG_SI
-            printf("tag: 0x%02x len=%d\n", desc_tag, desc_len);
+            av_log(NULL, AV_LOG_DEBUG, "tag: 0x%02x len=%d\n",
+                   desc_tag, desc_len);
 #endif
             switch(desc_tag) {
             case 0x48:
@@ -1234,7 +1239,7 @@ goto_auto_guess:
                 service = ts->services[i];
                 sid = service->sid;
 #ifdef DEBUG_SI
-                printf("tuning to '%s'\n", service->name);
+                av_log(NULL, AV_LOG_DEBUG, "tuning to '%s'\n", service->name);
 #endif
 
                 /* now find the info for the first service if we found any,
@@ -1258,7 +1263,7 @@ goto_auto_guess:
             }
 
 #ifdef DEBUG_SI
-            printf("tuning done\n");
+            av_log(NULL, AV_LOG_DEBUG, "tuning done\n");
 #endif
         }
         s->ctx_flags |= AVFMTCTX_NOHEADER;
@@ -1309,7 +1314,7 @@ goto_auto_guess:
         st->codec->bit_rate = s->bit_rate;
         st->start_time = ts->cur_pcr;
 #if 0
-        printf("start=%0.3f pcr=%0.3f incr=%d\n",
+        av_log(NULL, AV_LOG_DEBUG, "start=%0.3f pcr=%0.3f incr=%d\n",
                st->start_time / 1000000.0, pcrs[0] / 27e6, ts->pcr_incr);
 #endif
     }
