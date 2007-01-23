@@ -654,10 +654,6 @@ resync:
         if(!ast->remaining){
             avi->stream_index= -1;
             ast->packet_size= 0;
-            if (size & 1) {
-                get_byte(pb);
-                size++;
-            }
         }
 
         return size;
