@@ -257,7 +257,7 @@ int av_dup_packet(AVPacket *pkt)
 }
 
 /**
- * Allocate the payload of a packet and intialized its fields to default values.
+ * Check whether filename actually is a numbered sequence generator.
  *
  * @param filename possible numbered sequence string
  * @return 1 if a valid numbered sequence string, 0 otherwise.
