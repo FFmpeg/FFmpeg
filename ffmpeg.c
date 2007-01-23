@@ -2577,7 +2577,7 @@ static void opt_input_file(const char *filename)
         ap->video_codec_id= CODEC_ID_PGMYUV;
 
     for(i=0; i<opt_name_count; i++){
-        AVOption *opt;
+        const AVOption *opt;
         double d= av_get_double(avformat_opts, opt_names[i], &opt);
         if(d==d && (opt->flags&AV_OPT_FLAG_DECODING_PARAM))
             av_set_double(ic, opt_names[i], d);
@@ -2627,7 +2627,7 @@ static void opt_input_file(const char *filename)
         switch(enc->codec_type) {
         case CODEC_TYPE_AUDIO:
             for(j=0; j<opt_name_count; j++){
-                AVOption *opt;
+                const AVOption *opt;
                 double d= av_get_double(avctx_opts, opt_names[j], &opt);
                 if(d==d && (opt->flags&AV_OPT_FLAG_AUDIO_PARAM) && (opt->flags&AV_OPT_FLAG_DECODING_PARAM))
                     av_set_double(enc, opt_names[j], d);
@@ -2640,7 +2640,7 @@ static void opt_input_file(const char *filename)
             break;
         case CODEC_TYPE_VIDEO:
             for(j=0; j<opt_name_count; j++){
-                AVOption *opt;
+                const AVOption *opt;
                 double d= av_get_double(avctx_opts, opt_names[j], &opt);
                 if(d==d && (opt->flags&AV_OPT_FLAG_VIDEO_PARAM) && (opt->flags&AV_OPT_FLAG_DECODING_PARAM))
                     av_set_double(enc, opt_names[j], d);
@@ -2787,7 +2787,7 @@ static void new_video_stream(AVFormatContext *oc)
         codec = avcodec_find_encoder(codec_id);
 
         for(i=0; i<opt_name_count; i++){
-             AVOption *opt;
+             const AVOption *opt;
              double d= av_get_double(avctx_opts, opt_names[i], &opt);
              if(d==d && (opt->flags&AV_OPT_FLAG_VIDEO_PARAM) && (opt->flags&AV_OPT_FLAG_ENCODING_PARAM))
                  av_set_double(video_enc, opt_names[i], d);
@@ -2938,7 +2938,7 @@ static void new_audio_stream(AVFormatContext *oc)
         codec_id = av_guess_codec(oc->oformat, NULL, oc->filename, NULL, CODEC_TYPE_AUDIO);
 
         for(i=0; i<opt_name_count; i++){
-            AVOption *opt;
+            const AVOption *opt;
             double d= av_get_double(avctx_opts, opt_names[i], &opt);
             if(d==d && (opt->flags&AV_OPT_FLAG_AUDIO_PARAM) && (opt->flags&AV_OPT_FLAG_ENCODING_PARAM))
                 av_set_double(audio_enc, opt_names[i], d);
@@ -3001,7 +3001,7 @@ static void opt_new_subtitle_stream(void)
         st->stream_copy = 1;
     } else {
         for(i=0; i<opt_name_count; i++){
-             AVOption *opt;
+             const AVOption *opt;
              double d= av_get_double(avctx_opts, opt_names[i], &opt);
              if(d==d && (opt->flags&AV_OPT_FLAG_SUBTITLE_PARAM) && (opt->flags&AV_OPT_FLAG_ENCODING_PARAM))
                  av_set_double(subtitle_enc, opt_names[i], d);
@@ -3169,7 +3169,7 @@ static void opt_output_file(const char *filename)
     oc->loop_output = loop_output;
 
     for(i=0; i<opt_name_count; i++){
-        AVOption *opt;
+        const AVOption *opt;
         double d = av_get_double(avformat_opts, opt_names[i], &opt);
         if(d==d && (opt->flags&AV_OPT_FLAG_ENCODING_PARAM))
             av_set_double(oc, opt_names[i], d);
@@ -3661,7 +3661,7 @@ static void show_version(void)
 }
 
 static int opt_default(const char *opt, const char *arg){
-    AVOption *o= av_set_string(avctx_opts, opt, arg);
+    const AVOption *o= av_set_string(avctx_opts, opt, arg);
     if(!o)
         o = av_set_string(avformat_opts, opt, arg);
     if(!o)
