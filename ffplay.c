@@ -1959,7 +1959,18 @@ static int decode_thread(void *arg)
         }
 #endif
         if (is->seek_req) {
-            ret = av_seek_frame(is->ic, -1, is->seek_pos, is->seek_flags);
+            int stream_index= -1;
+            int64_t seek_target= is->seek_pos;
+
+            if     (is->   video_stream >= 0) stream_index= is->   video_stream;
+            else if(is->   audio_stream >= 0) stream_index= is->   audio_stream;
+            else if(is->subtitle_stream >= 0) stream_index= is->subtitle_stream;
+
+            if(stream_index>=0){
+                seek_target= av_rescale_q(seek_target, AV_TIME_BASE_Q, ic->streams[stream_index]->time_base);
+            }
+
+            ret = av_seek_frame(is->ic, stream_index, seek_target, is->seek_flags);
             if (ret < 0) {
                 fprintf(stderr, "%s: error while seeking\n", is->ic->filename);
             }else{
