@@ -4889,8 +4889,8 @@ static int decode_residual(H264Context *h, GetBitContext *gb, DCTELEM *block, in
 
     if(total_coeff==0)
         return 0;
-    if(total_coeff<0) {
-        av_log(h->s.avctx, AV_LOG_ERROR, "corrupted macroblock %d %d (total_coeff<0)\n", s->mb_x, s->mb_y);
+    if(total_coeff > (unsigned)max_coeff) {
+        av_log(h->s.avctx, AV_LOG_ERROR, "corrupted macroblock %d %d (total_coeff=%d)\n", s->mb_x, s->mb_y, total_coeff);
         return -1;
     }
 
