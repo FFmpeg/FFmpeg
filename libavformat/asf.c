@@ -476,19 +476,30 @@ static int asf_get_packet(AVFormatContext *s)
     ByteIOContext *pb = &s->pb;
     uint32_t packet_length, padsize;
     int rsize = 9;
-    int c;
+    int c, d, e, off;
 
-    c = get_byte(pb);
+    off= (url_ftell(&s->pb) - s->data_offset) % asf->packet_size + 3;
+
+    c=d=e=-1;
+    while(off-- > 0){
+        c=d; d=e;
+        e= get_byte(pb);
+        if(c == 0x82 && !d && !e)
+            break;
+    }
+
     if (c != 0x82) {
         if (!url_feof(pb))
             av_log(s, AV_LOG_ERROR, "ff asf bad header %x  at:%"PRId64"\n", c, url_ftell(pb));
     }
     if ((c & 0x0f) == 2) { // always true for now
-        if (get_le16(pb) != 0) {
+        if (d || e) {
             if (!url_feof(pb))
                 av_log(s, AV_LOG_ERROR, "ff asf bad non zero\n");
             return -1;
         }
+        d= get_byte(pb);
+        e= get_byte(pb);
         rsize+=2;
 /*    }else{
         if (!url_feof(pb))
@@ -496,8 +507,8 @@ static int asf_get_packet(AVFormatContext *s)
         return AVERROR_IO;*/
     }
 
-    asf->packet_flags = get_byte(pb);
-    asf->packet_property = get_byte(pb);
+    asf->packet_flags = d;
+    asf->packet_property = e;
 
     DO_2BITS(asf->packet_flags >> 5, packet_length, asf->packet_size);
     DO_2BITS(asf->packet_flags >> 1, padsize, 0); // sequence ignored
@@ -612,12 +623,6 @@ static int asf_read_packet(AVFormatContext *s, AVPacket *pkt)
             assert(ret>=0);
             /* fail safe */
             url_fskip(pb, ret);
-
-            ret= (url_ftell(&s->pb) - s->data_offset) % asf->packet_size;
-            if(asf->hdr.max_pktsize == asf->hdr.min_pktsize && ret){
-                av_log(s, AV_LOG_ERROR, "packet end missaligned skiping %d\n", ret);
-                url_fskip(pb, asf->packet_size - ret);
-            }
 
             asf->packet_pos= url_ftell(&s->pb);
             if (asf->data_object_size != (uint64_t)-1 &&
@@ -833,7 +838,7 @@ static int64_t asf_read_pts(AVFormatContext *s, int stream_index, int64_t *ppos,
 
             asf_st= s->streams[i]->priv_data;
 
-            assert((asf_st->packet_pos - s->data_offset) % asf->packet_size == 0);
+//            assert((asf_st->packet_pos - s->data_offset) % asf->packet_size == 0);
             pos= asf_st->packet_pos;
 
             av_add_index_entry(s->streams[i], pos, pts, pkt->size, pos - start_pos[i] + 1, AVINDEX_KEYFRAME);
