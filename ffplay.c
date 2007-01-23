@@ -188,6 +188,7 @@ static int screen_width = 0;
 static int screen_height = 0;
 static int audio_disable;
 static int video_disable;
+static int wanted_audio_stream= 0;
 static int seek_by_bytes;
 static int display_disable;
 static int show_status;
@@ -1905,7 +1906,7 @@ static int decode_thread(void *arg)
         AVCodecContext *enc = ic->streams[i]->codec;
         switch(enc->codec_type) {
         case CODEC_TYPE_AUDIO:
-            if (audio_index < 0 && !audio_disable)
+            if ((audio_index < 0 || wanted_audio_stream-- > 0) && !audio_disable)
                 audio_index = i;
             break;
         case CODEC_TYPE_VIDEO:
@@ -2380,6 +2381,7 @@ const OptionDef options[] = {
     { "fs", OPT_BOOL, {(void*)&is_full_screen}, "force full screen" },
     { "an", OPT_BOOL, {(void*)&audio_disable}, "disable audio" },
     { "vn", OPT_BOOL, {(void*)&video_disable}, "disable video" },
+    { "ast", OPT_INT | HAS_ARG | OPT_EXPERT, {(void*)&wanted_audio_stream}, "", "" },
     { "ss", HAS_ARG, {(void*)&opt_seek}, "seek to a given position in seconds", "pos" },
     { "bytes", OPT_BOOL, {(void*)&seek_by_bytes}, "seek by bytes" },
     { "nodisp", OPT_BOOL, {(void*)&display_disable}, "disable graphical display" },
