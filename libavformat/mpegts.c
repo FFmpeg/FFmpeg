@@ -75,47 +75,62 @@ typedef struct MpegTSFilter {
 
 typedef struct MpegTSService {
     int running:1;
-    int sid;
-    char *provider_name;
-    char *name;
+    int sid;    /**< MPEG Program Number of stream */
+    char *provider_name; /**< DVB Network name, "" if not DVB stream */
+    char *name; /**< DVB Service name, "MPEG Program [sid]" if not DVB stream*/
 } MpegTSService;
 
 struct MpegTSContext {
     /* user data */
     AVFormatContext *stream;
-    int raw_packet_size; /* raw packet size, including FEC if present */
-    int auto_guess; /* if true, all pids are analized to find streams */
+    /** raw packet size, including FEC if present            */
+    int raw_packet_size;
+    /** if true, all pids are analyzed to find streams       */
+    int auto_guess;
     int set_service_ret;
 
-    int mpeg2ts_raw;  /* force raw MPEG2 transport stream output, if possible */
-    int mpeg2ts_compute_pcr; /* compute exact PCR for each transport stream packet */
+    /** force raw MPEG2 transport stream output, if possible */
+    int mpeg2ts_raw;
+    /** compute exact PCR for each transport stream packet   */
+    int mpeg2ts_compute_pcr;
 
-    /* used to estimate the exact PCR */
-    int64_t cur_pcr;
-    int pcr_incr;
-    int pcr_pid;
+    int64_t cur_pcr;    /**< used to estimate the exact PCR  */
+    int pcr_incr;       /**< used to estimate the exact PCR  */
+    int pcr_pid;        /**< used to estimate the exact PCR  */
 
     /* data needed to handle file based ts */
-    int stop_parse; /* stop parsing loop */
-    AVPacket *pkt; /* packet containing av data */
+    /** stop parsing loop                                    */
+    int stop_parse;
+    /** packet containing Audio/Video data                   */
+    AVPacket *pkt;
 
     /******************************************/
     /* private mpegts data */
     /* scan context */
     MpegTSFilter *sdt_filter;
+    /** number of PMTs in the last PAT seen                  */
     int nb_services;
+    /** list of PMTs in the last PAT seen                    */
     MpegTSService **services;
 
     /* set service context (XXX: allocated it ?) */
     SetServiceCallback *set_service_cb;
     void *set_service_opaque;
+    /** filter for the PAT                                   */
     MpegTSFilter *pat_filter;
+    /** filter for the PMT for the MPEG program number specified by req_sid */
     MpegTSFilter *pmt_filter;
+    /** MPEG program number of stream we want to decode      */
     int req_sid;
 
+    /** filters for various streams specified by PMT + for the PAT and PMT */
     MpegTSFilter *pids[NB_PID_MAX];
 };
 
+/**
+ *  Assembles PES packets out of TS packets, and then calls the "section_cb"
+ *  function when they are complete.
+ */
 static void write_section_data(AVFormatContext *s, MpegTSFilter *tss1,
                                const uint8_t *buf, int buf_size, int is_start)
 {
