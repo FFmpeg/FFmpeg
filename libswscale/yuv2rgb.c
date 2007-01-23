@@ -611,7 +611,7 @@ SwsFunc yuv2rgb_get_func_ptr (SwsContext *c)
     }
 #endif
 
-    MSG_WARN("No accelerated colorspace conversion found\n");
+    av_log(c, AV_LOG_WARNING, "No accelerated colorspace conversion found\n");
 
     switch(c->dstFormat){
     case PIX_FMT_BGR32:
@@ -828,7 +828,7 @@ int yuv2rgb_c_init_tables (SwsContext *c, const int inv_table[4], int fullRange,
 
     default:
 	table_start= NULL;
-	MSG_ERR("%ibpp not supported by yuv2rgb\n", bpp);
+	av_log(c, AV_LOG_ERROR, "%ibpp not supported by yuv2rgb\n", bpp);
 	//free mem?
 	return -1;
     }

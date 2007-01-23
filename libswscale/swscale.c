@@ -203,6 +203,12 @@ extern const uint8_t dither_8x8_32[8][8];
 extern const uint8_t dither_8x8_73[8][8];
 extern const uint8_t dither_8x8_220[8][8];
 
+static const char * sws_context_to_name(void * ptr) {
+    return "swscaler";
+}
+
+static AVClass sws_context_class = { "SWScaler", sws_context_to_name, NULL };
+
 char *sws_format_name(enum PixelFormat format)
 {
     switch (format) {
@@ -1196,7 +1202,7 @@ static inline int initFilter(int16_t **outFilter, int16_t **filterPos, int *outF
 	*outFilterSize= filterSize;
 
 	if(flags&SWS_PRINT_INFO)
-		MSG_V("SwScaler: reducing / aligning filtersize %d -> %d\n", filter2Size, filterSize);
+		av_log(NULL, AV_LOG_VERBOSE, "SwScaler: reducing / aligning filtersize %d -> %d\n", filter2Size, filterSize);
 	/* try to reduce the filter-size (step2 reduce it) */
 	for(i=0; i<dstW; i++)
 	{
@@ -1572,7 +1578,7 @@ static int rgb2rgbWrapper(SwsContext *c, uint8_t* src[], int srcStride[], int sr
 		case 0x83: conv= rgb15to32; break;
 		case 0x84: conv= rgb16to32; break;
 		case 0x86: conv= rgb24to32; break;
-		default: MSG_ERR("swScaler: internal error %s -> %s converter\n", 
+		default: av_log(c, AV_LOG_ERROR, "swScaler: internal error %s -> %s converter\n", 
 				 sws_format_name(srcFormat), sws_format_name(dstFormat)); break;
 		}
 	}else if(   (isBGR(srcFormat) && isRGB(dstFormat))
@@ -1594,11 +1600,11 @@ static int rgb2rgbWrapper(SwsContext *c, uint8_t* src[], int srcStride[], int sr
 		case 0x84: conv= rgb16tobgr32; break;
 		case 0x86: conv= rgb24tobgr32; break;
 		case 0x88: conv= rgb32tobgr32; break;
-		default: MSG_ERR("swScaler: internal error %s -> %s converter\n", 
+		default: av_log(c, AV_LOG_ERROR, "swScaler: internal error %s -> %s converter\n", 
 				 sws_format_name(srcFormat), sws_format_name(dstFormat)); break;
 		}
 	}else{
-		MSG_ERR("swScaler: internal error %s -> %s converter\n", 
+		av_log(c, AV_LOG_ERROR, "swScaler: internal error %s -> %s converter\n", 
 			 sws_format_name(srcFormat), sws_format_name(dstFormat));
 	}
 
@@ -1967,19 +1973,19 @@ SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, int dstH
 
 	if(!isSupportedIn(srcFormat)) 
 	{
-		MSG_ERR("swScaler: %s is not supported as input format\n", sws_format_name(srcFormat));
+		av_log(NULL, AV_LOG_ERROR, "swScaler: %s is not supported as input format\n", sws_format_name(srcFormat));
 		return NULL;
 	}
 	if(!isSupportedOut(dstFormat))
 	{
-		MSG_ERR("swScaler: %s is not supported as output format\n", sws_format_name(dstFormat));
+		av_log(NULL, AV_LOG_ERROR, "swScaler: %s is not supported as output format\n", sws_format_name(dstFormat));
 		return NULL;
 	}
 
 	/* sanity check */
 	if(srcW<4 || srcH<1 || dstW<8 || dstH<1) //FIXME check if these are enough and try to lowwer them after fixing the relevant parts of the code
 	{
-		 MSG_ERR("swScaler: %dx%d -> %dx%d is invalid scaling dimension\n", 
+		 av_log(NULL, AV_LOG_ERROR, "swScaler: %dx%d -> %dx%d is invalid scaling dimension\n", 
 			srcW, srcH, dstW, dstH);
 		return NULL;
 	}
@@ -1989,6 +1995,7 @@ SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, int dstH
 
 	c= av_mallocz(sizeof(SwsContext));
 
+	c->av_class = &sws_context_class;
 	c->srcW= srcW;
 	c->srcH= srcH;
 	c->dstW= dstW;
@@ -2130,7 +2137,7 @@ SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, int dstH
 
 		if(c->swScale){
 			if(flags&SWS_PRINT_INFO)
-				MSG_INFO("SwScaler: using unscaled %s -> %s special converter\n", 
+				av_log(c, AV_LOG_INFO, "SwScaler: using unscaled %s -> %s special converter\n", 
 					sws_format_name(srcFormat), sws_format_name(dstFormat));
 			return c;
 		}
@@ -2142,7 +2149,7 @@ SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, int dstH
 		if(!c->canMMX2BeUsed && dstW >=srcW && (srcW&15)==0 && (flags&SWS_FAST_BILINEAR))
 		{
 			if(flags&SWS_PRINT_INFO)
-				MSG_INFO("SwScaler: output Width is not a multiple of 32 -> no MMX2 scaler\n");
+				av_log(c, AV_LOG_INFO, "SwScaler: output Width is not a multiple of 32 -> no MMX2 scaler\n");
 		}
 		if(usesHFilter) c->canMMX2BeUsed=0;
 	}
@@ -2291,47 +2298,47 @@ SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, int dstH
 		char *dither= "";
 #endif
 		if(flags&SWS_FAST_BILINEAR)
-			MSG_INFO("SwScaler: FAST_BILINEAR scaler, ");
+			av_log(c, AV_LOG_INFO, "SwScaler: FAST_BILINEAR scaler, ");
 		else if(flags&SWS_BILINEAR)
-			MSG_INFO("SwScaler: BILINEAR scaler, ");
+			av_log(c, AV_LOG_INFO, "SwScaler: BILINEAR scaler, ");
 		else if(flags&SWS_BICUBIC)
-			MSG_INFO("SwScaler: BICUBIC scaler, ");
+			av_log(c, AV_LOG_INFO, "SwScaler: BICUBIC scaler, ");
 		else if(flags&SWS_X)
-			MSG_INFO("SwScaler: Experimental scaler, ");
+			av_log(c, AV_LOG_INFO, "SwScaler: Experimental scaler, ");
 		else if(flags&SWS_POINT)
-			MSG_INFO("SwScaler: Nearest Neighbor / POINT scaler, ");
+			av_log(c, AV_LOG_INFO, "SwScaler: Nearest Neighbor / POINT scaler, ");
 		else if(flags&SWS_AREA)
-			MSG_INFO("SwScaler: Area Averageing scaler, ");
+			av_log(c, AV_LOG_INFO, "SwScaler: Area Averageing scaler, ");
 		else if(flags&SWS_BICUBLIN)
-			MSG_INFO("SwScaler: luma BICUBIC / chroma BILINEAR scaler, ");
+			av_log(c, AV_LOG_INFO, "SwScaler: luma BICUBIC / chroma BILINEAR scaler, ");
 		else if(flags&SWS_GAUSS)
-			MSG_INFO("SwScaler: Gaussian scaler, ");
+			av_log(c, AV_LOG_INFO, "SwScaler: Gaussian scaler, ");
 		else if(flags&SWS_SINC)
-			MSG_INFO("SwScaler: Sinc scaler, ");
+			av_log(c, AV_LOG_INFO, "SwScaler: Sinc scaler, ");
 		else if(flags&SWS_LANCZOS)
-			MSG_INFO("SwScaler: Lanczos scaler, ");
+			av_log(c, AV_LOG_INFO, "SwScaler: Lanczos scaler, ");
 		else if(flags&SWS_SPLINE)
-			MSG_INFO("SwScaler: Bicubic spline scaler, ");
+			av_log(c, AV_LOG_INFO, "SwScaler: Bicubic spline scaler, ");
 		else
-			MSG_INFO("SwScaler: ehh flags invalid?! ");
+			av_log(c, AV_LOG_INFO, "SwScaler: ehh flags invalid?! ");
 
 		if(dstFormat==PIX_FMT_BGR555 || dstFormat==PIX_FMT_BGR565)
-			MSG_INFO("from %s to%s %s ", 
+			av_log(c, AV_LOG_INFO, "from %s to%s %s ", 
 				sws_format_name(srcFormat), dither, sws_format_name(dstFormat));
 		else
-			MSG_INFO("from %s to %s ", 
+			av_log(c, AV_LOG_INFO, "from %s to %s ", 
 				sws_format_name(srcFormat), sws_format_name(dstFormat));
 
 		if(flags & SWS_CPU_CAPS_MMX2)
-			MSG_INFO("using MMX2\n");
+			av_log(c, AV_LOG_INFO, "using MMX2\n");
 		else if(flags & SWS_CPU_CAPS_3DNOW)
-			MSG_INFO("using 3DNOW\n");
+			av_log(c, AV_LOG_INFO, "using 3DNOW\n");
 		else if(flags & SWS_CPU_CAPS_MMX)
-			MSG_INFO("using MMX\n");
+			av_log(c, AV_LOG_INFO, "using MMX\n");
 		else if(flags & SWS_CPU_CAPS_ALTIVEC)
-			MSG_INFO("using AltiVec\n");
+			av_log(c, AV_LOG_INFO, "using AltiVec\n");
 		else 
-			MSG_INFO("using C\n");
+			av_log(c, AV_LOG_INFO, "using C\n");
 	}
 
 	if(flags & SWS_PRINT_INFO)
@@ -2339,70 +2346,70 @@ SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, int dstH
 		if(flags & SWS_CPU_CAPS_MMX)
 		{
 			if(c->canMMX2BeUsed && (flags&SWS_FAST_BILINEAR))
-				MSG_V("SwScaler: using FAST_BILINEAR MMX2 scaler for horizontal scaling\n");
+				av_log(c, AV_LOG_VERBOSE, "SwScaler: using FAST_BILINEAR MMX2 scaler for horizontal scaling\n");
 			else
 			{
 				if(c->hLumFilterSize==4)
-					MSG_V("SwScaler: using 4-tap MMX scaler for horizontal luminance scaling\n");
+					av_log(c, AV_LOG_VERBOSE, "SwScaler: using 4-tap MMX scaler for horizontal luminance scaling\n");
 				else if(c->hLumFilterSize==8)
-					MSG_V("SwScaler: using 8-tap MMX scaler for horizontal luminance scaling\n");
+					av_log(c, AV_LOG_VERBOSE, "SwScaler: using 8-tap MMX scaler for horizontal luminance scaling\n");
 				else
-					MSG_V("SwScaler: using n-tap MMX scaler for horizontal luminance scaling\n");
+					av_log(c, AV_LOG_VERBOSE, "SwScaler: using n-tap MMX scaler for horizontal luminance scaling\n");
 
 				if(c->hChrFilterSize==4)
-					MSG_V("SwScaler: using 4-tap MMX scaler for horizontal chrominance scaling\n");
+					av_log(c, AV_LOG_VERBOSE, "SwScaler: using 4-tap MMX scaler for horizontal chrominance scaling\n");
 				else if(c->hChrFilterSize==8)
-					MSG_V("SwScaler: using 8-tap MMX scaler for horizontal chrominance scaling\n");
+					av_log(c, AV_LOG_VERBOSE, "SwScaler: using 8-tap MMX scaler for horizontal chrominance scaling\n");
 				else
-					MSG_V("SwScaler: using n-tap MMX scaler for horizontal chrominance scaling\n");
+					av_log(c, AV_LOG_VERBOSE, "SwScaler: using n-tap MMX scaler for horizontal chrominance scaling\n");
 			}
 		}
 		else
 		{
 #if defined(ARCH_X86)
-			MSG_V("SwScaler: using X86-Asm scaler for horizontal scaling\n");
+			av_log(c, AV_LOG_VERBOSE, "SwScaler: using X86-Asm scaler for horizontal scaling\n");
 #else
 			if(flags & SWS_FAST_BILINEAR)
-				MSG_V("SwScaler: using FAST_BILINEAR C scaler for horizontal scaling\n");
+				av_log(c, AV_LOG_VERBOSE, "SwScaler: using FAST_BILINEAR C scaler for horizontal scaling\n");
 			else
-				MSG_V("SwScaler: using C scaler for horizontal scaling\n");
+				av_log(c, AV_LOG_VERBOSE, "SwScaler: using C scaler for horizontal scaling\n");
 #endif
 		}
 		if(isPlanarYUV(dstFormat))
 		{
 			if(c->vLumFilterSize==1)
-				MSG_V("SwScaler: using 1-tap %s \"scaler\" for vertical scaling (YV12 like)\n", (flags & SWS_CPU_CAPS_MMX) ? "MMX" : "C");
+				av_log(c, AV_LOG_VERBOSE, "SwScaler: using 1-tap %s \"scaler\" for vertical scaling (YV12 like)\n", (flags & SWS_CPU_CAPS_MMX) ? "MMX" : "C");
 			else
-				MSG_V("SwScaler: using n-tap %s scaler for vertical scaling (YV12 like)\n", (flags & SWS_CPU_CAPS_MMX) ? "MMX" : "C");
+				av_log(c, AV_LOG_VERBOSE, "SwScaler: using n-tap %s scaler for vertical scaling (YV12 like)\n", (flags & SWS_CPU_CAPS_MMX) ? "MMX" : "C");
 		}
 		else
 		{
 			if(c->vLumFilterSize==1 && c->vChrFilterSize==2)
-				MSG_V("SwScaler: using 1-tap %s \"scaler\" for vertical luminance scaling (BGR)\n"
+				av_log(c, AV_LOG_VERBOSE, "SwScaler: using 1-tap %s \"scaler\" for vertical luminance scaling (BGR)\n"
 				       "SwScaler:       2-tap scaler for vertical chrominance scaling (BGR)\n",(flags & SWS_CPU_CAPS_MMX) ? "MMX" : "C");
 			else if(c->vLumFilterSize==2 && c->vChrFilterSize==2)
-				MSG_V("SwScaler: using 2-tap linear %s scaler for vertical scaling (BGR)\n", (flags & SWS_CPU_CAPS_MMX) ? "MMX" : "C");
+				av_log(c, AV_LOG_VERBOSE, "SwScaler: using 2-tap linear %s scaler for vertical scaling (BGR)\n", (flags & SWS_CPU_CAPS_MMX) ? "MMX" : "C");
 			else
-				MSG_V("SwScaler: using n-tap %s scaler for vertical scaling (BGR)\n", (flags & SWS_CPU_CAPS_MMX) ? "MMX" : "C");
+				av_log(c, AV_LOG_VERBOSE, "SwScaler: using n-tap %s scaler for vertical scaling (BGR)\n", (flags & SWS_CPU_CAPS_MMX) ? "MMX" : "C");
 		}
 
 		if(dstFormat==PIX_FMT_BGR24)
-			MSG_V("SwScaler: using %s YV12->BGR24 Converter\n",
+			av_log(c, AV_LOG_VERBOSE, "SwScaler: using %s YV12->BGR24 Converter\n",
 				(flags & SWS_CPU_CAPS_MMX2) ? "MMX2" : ((flags & SWS_CPU_CAPS_MMX) ? "MMX" : "C"));
 		else if(dstFormat==PIX_FMT_RGB32)
-			MSG_V("SwScaler: using %s YV12->BGR32 Converter\n", (flags & SWS_CPU_CAPS_MMX) ? "MMX" : "C");
+			av_log(c, AV_LOG_VERBOSE, "SwScaler: using %s YV12->BGR32 Converter\n", (flags & SWS_CPU_CAPS_MMX) ? "MMX" : "C");
 		else if(dstFormat==PIX_FMT_BGR565)
-			MSG_V("SwScaler: using %s YV12->BGR16 Converter\n", (flags & SWS_CPU_CAPS_MMX) ? "MMX" : "C");
+			av_log(c, AV_LOG_VERBOSE, "SwScaler: using %s YV12->BGR16 Converter\n", (flags & SWS_CPU_CAPS_MMX) ? "MMX" : "C");
 		else if(dstFormat==PIX_FMT_BGR555)
-			MSG_V("SwScaler: using %s YV12->BGR15 Converter\n", (flags & SWS_CPU_CAPS_MMX) ? "MMX" : "C");
+			av_log(c, AV_LOG_VERBOSE, "SwScaler: using %s YV12->BGR15 Converter\n", (flags & SWS_CPU_CAPS_MMX) ? "MMX" : "C");
 
-		MSG_V("SwScaler: %dx%d -> %dx%d\n", srcW, srcH, dstW, dstH);
+		av_log(c, AV_LOG_VERBOSE, "SwScaler: %dx%d -> %dx%d\n", srcW, srcH, dstW, dstH);
 	}
 	if(flags & SWS_PRINT_INFO)
 	{
-		MSG_DBG2("SwScaler:Lum srcW=%d srcH=%d dstW=%d dstH=%d xInc=%d yInc=%d\n",
+		av_log(c, AV_LOG_DEBUG, "SwScaler:Lum srcW=%d srcH=%d dstW=%d dstH=%d xInc=%d yInc=%d\n",
 			c->srcW, c->srcH, c->dstW, c->dstH, c->lumXInc, c->lumYInc);
-		MSG_DBG2("SwScaler:Chr srcW=%d srcH=%d dstW=%d dstH=%d xInc=%d yInc=%d\n",
+		av_log(c, AV_LOG_DEBUG, "SwScaler:Chr srcW=%d srcH=%d dstW=%d dstH=%d xInc=%d yInc=%d\n",
 			c->chrSrcW, c->chrSrcH, c->chrDstW, c->chrDstH, c->chrXInc, c->chrYInc);
 	}
 
@@ -2417,7 +2424,7 @@ SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, int dstH
 int sws_scale(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
                            int srcSliceH, uint8_t* dst[], int dstStride[]){
 	if (c->sliceDir == 0 && srcSliceY != 0 && srcSliceY + srcSliceH != c->srcH) {
-	    MSG_ERR("swScaler: slices start in the middle!\n");
+	    av_log(c, AV_LOG_ERROR, "swScaler: slices start in the middle!\n");
 	    return 0;
 	}
 	if (c->sliceDir == 0) {
@@ -2715,9 +2722,9 @@ void sws_printVec(SwsVector *a){
 	for(i=0; i<a->length; i++)
 	{
 		int x= (int)((a->coeff[i]-min)*60.0/range +0.5);
-		MSG_DBG2("%1.3f ", a->coeff[i]);
-		for(;x>0; x--) MSG_DBG2(" ");
-		MSG_DBG2("|\n");
+		av_log(NULL, AV_LOG_DEBUG, "%1.3f ", a->coeff[i]);
+		for(;x>0; x--) av_log(NULL, AV_LOG_DEBUG, " ");
+		av_log(NULL, AV_LOG_DEBUG, "|\n");
 	}
 }
 

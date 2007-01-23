@@ -33,13 +33,6 @@
 #define AVV(x...) {x}
 #endif
 
-#define MSG_WARN(args...) av_log(NULL, AV_LOG_DEBUG, ##args )
-#define MSG_FATAL(args...) av_log(NULL, AV_LOG_ERROR, ##args )
-#define MSG_ERR(args...) av_log(NULL, AV_LOG_ERROR, ##args )
-#define MSG_V(args...) av_log(NULL, AV_LOG_INFO, ##args )
-#define MSG_DBG2(args...) av_log(NULL, AV_LOG_DEBUG, ##args )
-#define MSG_INFO(args...) av_log(NULL, AV_LOG_INFO, ##args )
-
 #define MAX_FILTER_SIZE 256
 
 typedef int (*SwsFunc)(struct SwsContext *context, uint8_t* src[], int srcStride[], int srcSliceY,
@@ -47,6 +40,11 @@ typedef int (*SwsFunc)(struct SwsContext *context, uint8_t* src[], int srcStride
 
 /* this struct should be aligned on at least 32-byte boundary */
 typedef struct SwsContext{
+        /**
+         * info on struct for av_log
+         */
+        AVClass *av_class;
+
 	/**
 	 *
 	 * Note the src,dst,srcStride,dstStride will be copied, in the sws_scale() warper so they can freely be modified here

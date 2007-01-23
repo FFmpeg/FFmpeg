@@ -2972,7 +2972,7 @@ i--;
 		static int firstTime=1; //FIXME move this into the context perhaps
 		if(flags & SWS_PRINT_INFO && firstTime)
 		{
-			MSG_WARN("SwScaler: Warning: dstStride is not aligned!\n"
+			av_log(c, AV_LOG_WARNING, "SwScaler: Warning: dstStride is not aligned!\n"
 					"SwScaler:          ->cannot do aligned memory acesses anymore\n");
 			firstTime=0;
 		}

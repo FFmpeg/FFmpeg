@@ -710,22 +710,22 @@ SwsFunc yuv2rgb_init_altivec (SwsContext *c)
 
     switch(c->dstFormat){
     case PIX_FMT_RGB24:
-      MSG_WARN("ALTIVEC: Color Space RGB24\n");
+      av_log(c, AV_LOG_WARNING, "ALTIVEC: Color Space RGB24\n");
       return altivec_yuv2_rgb24;
     case PIX_FMT_BGR24:
-      MSG_WARN("ALTIVEC: Color Space BGR24\n");
+      av_log(c, AV_LOG_WARNING, "ALTIVEC: Color Space BGR24\n");
       return altivec_yuv2_bgr24;
     case PIX_FMT_ARGB:
-      MSG_WARN("ALTIVEC: Color Space ARGB\n");
+      av_log(c, AV_LOG_WARNING, "ALTIVEC: Color Space ARGB\n");
       return altivec_yuv2_argb;
     case PIX_FMT_ABGR:
-      MSG_WARN("ALTIVEC: Color Space ABGR\n");
+      av_log(c, AV_LOG_WARNING, "ALTIVEC: Color Space ABGR\n");
       return altivec_yuv2_abgr;
     case PIX_FMT_RGBA:
-      MSG_WARN("ALTIVEC: Color Space RGBA\n");
+      av_log(c, AV_LOG_WARNING, "ALTIVEC: Color Space RGBA\n");
       return altivec_yuv2_rgba;
     case PIX_FMT_BGRA:
-      MSG_WARN("ALTIVEC: Color Space BGRA\n");
+      av_log(c, AV_LOG_WARNING, "ALTIVEC: Color Space BGRA\n");
       return altivec_yuv2_bgra;
     default: return NULL;
     }
@@ -734,7 +734,7 @@ SwsFunc yuv2rgb_init_altivec (SwsContext *c)
   case PIX_FMT_UYVY422:
     switch(c->dstFormat){
     case PIX_FMT_BGR32:
-      MSG_WARN("ALTIVEC: Color Space UYVY -> RGB32\n");
+      av_log(c, AV_LOG_WARNING, "ALTIVEC: Color Space UYVY -> RGB32\n");
       return altivec_uyvy_rgb32;
     default: return NULL;
     }
@@ -877,7 +877,7 @@ altivec_yuv2packedX (SwsContext *c,
              instead. */
           static int printed_error_message;
           if(!printed_error_message) {
-            MSG_ERR("altivec_yuv2packedX doesn't support %s output\n",
+            av_log(c, AV_LOG_ERROR, "altivec_yuv2packedX doesn't support %s output\n",
                     sws_format_name(c->dstFormat));
             printed_error_message=1;
           }
@@ -952,7 +952,7 @@ altivec_yuv2packedX (SwsContext *c,
       case PIX_FMT_BGR24: out_bgr24 (R,G,B,nout); break;
       default:
         /* Unreachable, I think. */
-        MSG_ERR("altivec_yuv2packedX doesn't support %s output\n",
+        av_log(c, AV_LOG_ERROR, "altivec_yuv2packedX doesn't support %s output\n",
                 sws_format_name(c->dstFormat));
         return;
     }
