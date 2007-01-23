@@ -8341,6 +8341,9 @@ static int decode_frame(AVCodecContext *avctx,
 
         pics = 0;
         while(h->delayed_pic[pics]) pics++;
+
+        assert(pics+1 < sizeof(h->delayed_pic) / sizeof(h->delayed_pic[0]));
+
         h->delayed_pic[pics++] = cur;
         if(cur->reference == 0)
             cur->reference = 1;
