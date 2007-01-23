@@ -330,7 +330,7 @@ typedef struct H264Context{
     Picture *long_ref[32];
     Picture default_ref_list[2][32];
     Picture ref_list[2][48];     ///< 0..15: frame refs, 16..47: mbaff field refs
-    Picture *delayed_pic[16]; //FIXME size?
+    Picture *delayed_pic[18]; //FIXME size?
     Picture *delayed_output_pic;
 
     /**
@@ -7672,13 +7672,21 @@ static inline int decode_vui_parameters(H264Context *h, SPS *sps){
 
     sps->bitstream_restriction_flag = get_bits1(&s->gb);
     if(sps->bitstream_restriction_flag){
+        unsigned int num_reorder_frames;
         get_bits1(&s->gb);     /* motion_vectors_over_pic_boundaries_flag */
         get_ue_golomb(&s->gb); /* max_bytes_per_pic_denom */
         get_ue_golomb(&s->gb); /* max_bits_per_mb_denom */
         get_ue_golomb(&s->gb); /* log2_max_mv_length_horizontal */
         get_ue_golomb(&s->gb); /* log2_max_mv_length_vertical */
-        sps->num_reorder_frames = get_ue_golomb(&s->gb);
-        get_ue_golomb(&s->gb); /* max_dec_frame_buffering */
+        num_reorder_frames= get_ue_golomb(&s->gb);
+        get_ue_golomb(&s->gb); /*max_dec_frame_buffering*/
+
+        if(num_reorder_frames > 16 /*max_dec_frame_buffering || max_dec_frame_buffering > 16*/){
+            av_log(h->s.avctx, AV_LOG_ERROR, "illegal num_reorder_frames %d\n", num_reorder_frames);
+            return -1;
+        }
+
+        sps->num_reorder_frames= num_reorder_frames;
     }
 
     return 0;
