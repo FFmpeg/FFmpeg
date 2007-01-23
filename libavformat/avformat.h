@@ -373,6 +373,11 @@ typedef struct AVFormatContext {
     int loop_input;
     /* decoding: size of data to probe; encoding unused */
     unsigned int probesize;
+
+    /**
+     * maximum duration in AV_TIME_BASE units over which the input should be analyzed in av_find_stream_info()
+     */
+    int max_analyze_duration;
 } AVFormatContext;
 
 typedef struct AVPacketList {
