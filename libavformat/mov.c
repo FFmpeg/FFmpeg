@@ -1097,7 +1097,7 @@ static int mov_read_stss(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 
     sc->keyframe_count = entries;
 #ifdef DEBUG
-    av_log(NULL, AV_LOG_DEBUG, "keyframe_count = %ld\n", sc->keyframe_count);
+    av_log(NULL, AV_LOG_DEBUG, "keyframe_count = %d\n", sc->keyframe_count);
 #endif
     sc->keyframes = av_malloc(entries * sizeof(long));
     if (!sc->keyframes)
@@ -1132,7 +1132,7 @@ static int mov_read_stsz(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
         return 0;
 
 #ifdef DEBUG
-    av_log(NULL, AV_LOG_DEBUG, "sample_size = %ld sample_count = %ld\n", sc->sample_size, sc->sample_count);
+    av_log(NULL, AV_LOG_DEBUG, "sample_size = %d sample_count = %d\n", sc->sample_size, sc->sample_count);
 #endif
     sc->sample_sizes = av_malloc(entries * sizeof(long));
     if (!sc->sample_sizes)
