@@ -826,7 +826,7 @@ static int svq3_decode_frame (AVCodecContext *avctx,
     }
 
     /* if a match was found, parse the extra data */
-    if (!memcmp (extradata, "SEQH", 4)) {
+    if (extradata && !memcmp (extradata, "SEQH", 4)) {
 
       GetBitContext gb;
 
