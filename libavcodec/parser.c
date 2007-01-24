@@ -632,9 +632,14 @@ static const int ac3_bitrates[64] = {
     384, 448, 448, 512, 512, 576, 576, 640, 640,
 };
 
-static const int ac3_channels[8] = {
+static const uint8_t ac3_channels[8] = {
     2, 1, 2, 3, 3, 4, 4, 5
 };
+
+static const uint8_t eac3_blocks[4] = {
+    1, 2, 3, 6
+};
+
 #endif /* CONFIG_AC3_PARSER */
 
 #ifdef CONFIG_AAC_PARSER
@@ -653,6 +658,7 @@ static int ac3_sync(const uint8_t *buf, int *channels, int *sample_rate,
                     int *bit_rate, int *samples)
 {
     unsigned int fscod, frmsizecod, acmod, bsid, lfeon;
+    unsigned int strmtyp, substreamid, frmsiz, fscod2, numblkscod;
     GetBitContext bits;
 
     init_get_bits(&bits, buf, AC3_HEADER_SIZE * 8);
@@ -660,16 +666,16 @@ static int ac3_sync(const uint8_t *buf, int *channels, int *sample_rate,
     if(get_bits(&bits, 16) != 0x0b77)
         return 0;
 
+    bsid = show_bits_long(&bits, 29) & 0x1f;
+    if(bsid <= 8) {             /* Normal AC-3 */
     skip_bits(&bits, 16);       /* crc */
     fscod = get_bits(&bits, 2);
     frmsizecod = get_bits(&bits, 6);
 
-    if(!ac3_sample_rates[fscod])
+    if(fscod == 3)
         return 0;
 
-    bsid = get_bits(&bits, 5);
-    if(bsid > 8)
-        return 0;
+    skip_bits(&bits, 5);        /* bsid */
     skip_bits(&bits, 3);        /* bsmod */
     acmod = get_bits(&bits, 3);
     if(acmod & 1 && acmod != 1)
@@ -686,6 +692,41 @@ static int ac3_sync(const uint8_t *buf, int *channels, int *sample_rate,
     *samples = 6 * 256;
 
     return ac3_frame_sizes[frmsizecod][fscod] * 2;
+    } else if (bsid >= 10 && bsid <= 16) { /* Enhanced AC-3 */
+        strmtyp = get_bits(&bits, 2);
+        substreamid = get_bits(&bits, 3);
+
+        if (strmtyp != 0 || substreamid != 0)
+            return 0;   /* Currently don't support additional streams */
+
+        frmsiz = get_bits(&bits, 11) + 1;
+        fscod = get_bits(&bits, 2);
+        if (fscod == 3) {
+            fscod2 = get_bits(&bits, 2);
+            numblkscod = 3;
+
+            if(fscod2 == 3)
+                return 0;
+
+            *sample_rate = ac3_sample_rates[fscod2] / 2;
+        } else {
+            numblkscod = get_bits(&bits, 2);
+
+            *sample_rate = ac3_sample_rates[fscod];
+        }
+
+        acmod = get_bits(&bits, 3);
+        lfeon = get_bits1(&bits);
+
+        *samples = eac3_blocks[numblkscod] * 256;
+        *bit_rate = frmsiz * (*sample_rate) * 16 / (*samples);
+        *channels = ac3_channels[acmod] + lfeon;
+
+        return frmsiz * 2;
+    }
+
+    /* Unsupported bitstream version */
+    return 0;
 }
 #endif /* CONFIG_AC3_PARSER */
 
