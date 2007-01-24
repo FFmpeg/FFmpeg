@@ -274,9 +274,6 @@ typedef struct MOVContext {
     int64_t mdat_size;
     int64_t mdat_offset;
     int total_streams;
-    /* some streams listed here aren't presented to the ffmpeg API, since they aren't either video nor audio
-     * but we need the info to be able to skip data from those streams in the 'mdat' section
-     */
     MOVStreamContext *streams[MAX_STREAMS];
 
     int ctab_size;
