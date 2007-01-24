@@ -1095,7 +1095,7 @@ int MPV_encode_init(AVCodecContext *avctx)
     }
 
     if(s->avctx->scenechange_threshold < 1000000000 && (s->flags & CODEC_FLAG_CLOSED_GOP)){
-        av_log(avctx, AV_LOG_ERROR, "closed gop with scene change detection arent supported yet\n");
+        av_log(avctx, AV_LOG_ERROR, "closed gop with scene change detection arent supported yet, set threshold to 1000000000\n");
         return -1;
     }
 
