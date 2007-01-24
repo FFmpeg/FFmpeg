@@ -241,21 +241,21 @@ struct MOVParseTableEntry;
 typedef struct MOVStreamContext {
     int ffindex; /* the ffmpeg stream id */
     long next_chunk;
-    long chunk_count;
+    unsigned int chunk_count;
     int64_t *chunk_offsets;
-    int stts_count;
+    unsigned int stts_count;
     Time2Sample *stts_data;
-    int ctts_count;
+    unsigned int ctts_count;
     Time2Sample *ctts_data;
-    int edit_count;             /* number of 'edit' (elst atom) */
-    long sample_to_chunk_sz;
+    unsigned int edit_count; /* number of 'edit' (elst atom) */
+    unsigned int sample_to_chunk_sz;
     MOV_sample_to_chunk_tbl *sample_to_chunk;
     int sample_to_ctime_index;
     int sample_to_ctime_sample;
-    long sample_size;
-    long sample_count;
+    unsigned int sample_size;
+    unsigned int sample_count;
     long *sample_sizes;
-    long keyframe_count;
+    unsigned int keyframe_count;
     long *keyframes;
     int time_scale;
     int time_rate;
