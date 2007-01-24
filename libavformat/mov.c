@@ -1619,7 +1619,12 @@ static int mov_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
     for(i=0; i<mov->total_streams; i++) {
         MOVStreamContext *sc = mov->streams[i];
-
+        /* sanity checks */
+        if(!sc->stts_count || !sc->chunk_count || !sc->sample_to_chunk_sz ||
+           (!sc->sample_size && !sc->sample_count)){
+            av_log(s, AV_LOG_ERROR, "missing mandatory atoms, broken header\n");
+            return -1;
+        }
         if(!sc->time_rate)
             sc->time_rate=1;
         if(!sc->time_scale)
