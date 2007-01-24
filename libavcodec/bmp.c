@@ -28,10 +28,10 @@ typedef struct BMPContext {
 } BMPContext;
 
 typedef enum {
-    BMP_RGB=0,
-    BMP_RLE8,
-    BMP_RLE4,
-    BMP_BITFIELDS,
+    BMP_RGB         =0,
+    BMP_RLE8        =1,
+    BMP_RLE4        =2,
+    BMP_BITFIELDS   =3,
 } BiCompression;
 
 #define read16(bits) bswap_16(get_bits(bits, 16))
