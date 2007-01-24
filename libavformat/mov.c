@@ -271,7 +271,6 @@ typedef struct MOVContext {
     int64_t duration; /* duration of the longest track */
     int found_moov; /* when both 'moov' and 'mdat' sections has been found */
     int found_mdat; /* we suppose we have enough data to read the file */
-    int64_t mdat_size;
     int64_t mdat_offset;
     int total_streams;
     MOVStreamContext *streams[MAX_STREAMS];
@@ -505,7 +504,6 @@ static int mov_read_mdat(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     c->mdat_count++;
     c->found_mdat=1;
     c->mdat_offset = atom.offset;
-    c->mdat_size = atom.size;
     if(c->found_moov)
         return 1; /* found both, just go */
     url_fskip(pb, atom.size);
