@@ -49,6 +49,14 @@ Philip'a TODO list: (alphabetically ordered) (please help)
 - Make ffm files more resilient to changes in the codec structures so that you
   can play old ffm files.
 
+Baptiste's TODO list:
+-----------------
+- mov edit list support (AVEditList)
+- support quicktime "None" fourcc, and corresponding pixel formats
+- YUV 10 bit per component support "2vuy"
+- mxf muxer
+- mpeg2 non linear quantizer
+
 unassigned TODO: (unordered)
 ---------------
 - use AVFrame for audio codecs too
@@ -80,3 +88,6 @@ unassigned TODO: (unordered)
 - write a script which iteratively changes all functions between always_inline and noinline and benchmarks the result to find the best set of inlined functions
 - set up roundup bugtracker somewhere with (newBug, reproduced, analyzed, fixed, worksForMe, duplicate, wontFix, invalid, needMoreInfo, newPatch, ok, applied, rejected, needChanges, newRequest, implemented, wontImplement, invalidReq) states and a checked integer
 - convert all the non SIMD asm into small asm vs. C testcases and submit them to the gcc devels so they can improve gcc
+- generic audio mixing API
+- extract PES packetizer from PS muxer and use it for new TS muxer
+- implement automatic AVBistreamFilter activation
