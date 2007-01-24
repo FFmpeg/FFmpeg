@@ -1477,16 +1477,16 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
     MOVStreamContext *sc = st->priv_data;
     offset_t current_offset;
     int64_t current_dts = 0;
-    int stts_index = 0;
-    int stsc_index = 0;
-    int stss_index = 0;
-    int i, j, k;
+    unsigned int stts_index = 0;
+    unsigned int stsc_index = 0;
+    unsigned int stss_index = 0;
+    unsigned int i, j, k;
 
     if (sc->sample_sizes || st->codec->codec_type == CODEC_TYPE_VIDEO || sc->dv_audio_container) {
-        int keyframe, sample_size;
-        int current_sample = 0;
-        int stts_sample = 0;
-        int distance = 0;
+        unsigned int current_sample = 0;
+        unsigned int stts_sample = 0;
+        unsigned int keyframe, sample_size;
+        unsigned int distance = 0;
 
         st->nb_frames = sc->sample_count;
         for (i = 0; i < sc->chunk_count; i++) {
@@ -1521,7 +1521,7 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
             }
         }
     } else { /* read whole chunk */
-        int chunk_samples, chunk_size, chunk_duration;
+        unsigned int chunk_samples, chunk_size, chunk_duration;
 
         for (i = 0; i < sc->chunk_count; i++) {
             current_offset = sc->chunk_offsets[i];
