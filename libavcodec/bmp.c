@@ -27,10 +27,12 @@ typedef struct BMPContext {
     AVFrame picture;
 } BMPContext;
 
-#define BMP_RGB       0
-#define BMP_RLE8      1
-#define BMP_RLE4      2
-#define BMP_BITFIELDS 3
+typedef enum {
+    BMP_RGB=0,
+    BMP_RLE8,
+    BMP_RLE4,
+    BMP_BITFIELDS,
+} BiCompression;
 
 #define read16(bits) bswap_16(get_bits(bits, 16))
 #define read32(bits) bswap_32(get_bits_long(bits, 32))
@@ -55,7 +57,7 @@ static int bmp_decode_frame(AVCodecContext *avctx,
     unsigned int fsize, hsize;
     int width, height;
     unsigned int depth;
-    unsigned int comp;
+    BiCompression comp;
     unsigned int ihsize;
     int i, j, n, linesize;
     uint32_t rgb[3];
