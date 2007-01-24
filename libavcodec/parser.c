@@ -668,30 +668,30 @@ static int ac3_sync(const uint8_t *buf, int *channels, int *sample_rate,
 
     bsid = show_bits_long(&bits, 29) & 0x1f;
     if(bsid <= 8) {             /* Normal AC-3 */
-    skip_bits(&bits, 16);       /* crc */
-    fscod = get_bits(&bits, 2);
-    frmsizecod = get_bits(&bits, 6);
+        skip_bits(&bits, 16);       /* crc */
+        fscod = get_bits(&bits, 2);
+        frmsizecod = get_bits(&bits, 6);
 
-    if(fscod == 3)
-        return 0;
+        if(fscod == 3)
+            return 0;
 
-    skip_bits(&bits, 5);        /* bsid */
-    skip_bits(&bits, 3);        /* bsmod */
-    acmod = get_bits(&bits, 3);
-    if(acmod & 1 && acmod != 1)
-        skip_bits(&bits, 2);    /* cmixlev */
-    if(acmod & 4)
-        skip_bits(&bits, 2);    /* surmixlev */
-    if(acmod & 2)
-        skip_bits(&bits, 2);    /* dsurmod */
-    lfeon = get_bits1(&bits);
+        skip_bits(&bits, 5);        /* bsid */
+        skip_bits(&bits, 3);        /* bsmod */
+        acmod = get_bits(&bits, 3);
+        if(acmod & 1 && acmod != 1)
+            skip_bits(&bits, 2);    /* cmixlev */
+        if(acmod & 4)
+            skip_bits(&bits, 2);    /* surmixlev */
+        if(acmod & 2)
+            skip_bits(&bits, 2);    /* dsurmod */
+        lfeon = get_bits1(&bits);
 
-    *sample_rate = ac3_sample_rates[fscod];
-    *bit_rate = ac3_bitrates[frmsizecod] * 1000;
-    *channels = ac3_channels[acmod] + lfeon;
-    *samples = 6 * 256;
+        *sample_rate = ac3_sample_rates[fscod];
+        *bit_rate = ac3_bitrates[frmsizecod] * 1000;
+        *channels = ac3_channels[acmod] + lfeon;
+        *samples = 6 * 256;
 
-    return ac3_frame_sizes[frmsizecod][fscod] * 2;
+        return ac3_frame_sizes[frmsizecod][fscod] * 2;
     } else if (bsid >= 10 && bsid <= 16) { /* Enhanced AC-3 */
         strmtyp = get_bits(&bits, 2);
         substreamid = get_bits(&bits, 3);
