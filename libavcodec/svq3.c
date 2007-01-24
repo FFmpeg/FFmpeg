@@ -910,7 +910,8 @@ static int svq3_decode_frame (AVCodecContext *avctx,
       s->next_p_frame_damaged = 0;
   }
 
-  frame_start (h);
+  if (frame_start (h) < 0)
+    return -1;
 
   if (s->pict_type == B_TYPE) {
     h->frame_num_offset = (h->slice_num - h->prev_frame_num);
