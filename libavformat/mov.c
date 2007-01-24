@@ -1494,6 +1494,10 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
             if (stsc_index + 1 < sc->sample_to_chunk_sz && i + 1 == sc->sample_to_chunk[stsc_index + 1].first)
                 stsc_index++;
             for (j = 0; j < sc->sample_to_chunk[stsc_index].count; j++) {
+                if (current_sample >= sc->sample_count) {
+                    av_log(mov->fc, AV_LOG_ERROR, "wrong sample count\n");
+                    goto out;
+                }
                 keyframe = !sc->keyframe_count || current_sample + 1 == sc->keyframes[stss_index];
                 if (keyframe) {
                     distance = 0;
@@ -1509,8 +1513,7 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
                 current_dts += sc->stts_data[stts_index].duration / sc->time_rate;
                 distance++;
                 stts_sample++;
-                if (current_sample + 1 < sc->sample_count)
-                    current_sample++;
+                current_sample++;
                 if (stts_index + 1 < sc->stts_count && stts_sample == sc->stts_data[stts_index].count) {
                     stts_sample = 0;
                     stts_index++;
@@ -1578,6 +1581,7 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
             current_dts += chunk_duration / sc->time_rate;
         }
     }
+ out:
     /* adjust sample count to avindex entries */
     sc->sample_count = st->nb_index_entries;
 }
