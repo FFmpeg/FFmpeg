@@ -1268,6 +1268,10 @@ static int decode_sequence_header_adv(VC1Context *v, GetBitContext *gb)
     v->s.avctx->coded_height = (get_bits(gb, 12) + 1) << 1;
     v->broadcast = get_bits1(gb);
     v->interlace = get_bits1(gb);
+    if(v->interlace){
+        av_log(v->s.avctx, AV_LOG_ERROR, "Interlaced mode not supported (yet)\n");
+        return -1;
+    }
     v->tfcntrflag = get_bits1(gb);
     v->finterpflag = get_bits1(gb);
     get_bits1(gb); // reserved
