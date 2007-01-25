@@ -332,6 +332,7 @@ static int tiff_decode_tag(TiffContext *s, uint8_t *start, uint8_t *buf, uint8_t
         }else
             s->stripdata = start + off;
         s->strips = count;
+        if(s->strips == 1) s->rps = s->height;
         s->sot = type;
         if(s->stripdata > end_buf){
             av_log(s->avctx, AV_LOG_ERROR, "Tag referencing position outside the image\n");
