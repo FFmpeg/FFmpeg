@@ -3547,7 +3547,7 @@ static void correlate_slice_buffered(SnowContext *s, slice_buffer * sb, SubBand 
 
 //    START_TIMER
 
-    DWTELEM * line;
+    DWTELEM * line=0; // silence silly "could be used without having been initialized" warning
     DWTELEM * prev;
 
     if (start_y != 0)
