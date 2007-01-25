@@ -1776,6 +1776,7 @@ check_cflags -Wno-switch
 check_cflags -Wdisabled-optimization
 check_cflags -Wpointer-arith
 check_cflags -Wredundant-decls
+check_cflags -Wno-pointer-sign
 enabled extrawarnings && check_cflags -Winline
 
 # add some linker flags
