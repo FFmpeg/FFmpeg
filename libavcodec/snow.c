@@ -1965,12 +1965,12 @@ static inline void pred_mv(SnowContext *s, int *mx, int *my, int ref,
         *my = mid_pred(left->my, top->my, tr->my);
     }else{
         const int *scale = scale_mv_ref[ref];
-        *mx = mid_pred(left->mx * scale[left->ref] + 128 >>8,
-                       top ->mx * scale[top ->ref] + 128 >>8,
-                       tr  ->mx * scale[tr  ->ref] + 128 >>8);
-        *my = mid_pred(left->my * scale[left->ref] + 128 >>8,
-                       top ->my * scale[top ->ref] + 128 >>8,
-                       tr  ->my * scale[tr  ->ref] + 128 >>8);
+        *mx = mid_pred((left->mx * scale[left->ref] + 128) >>8,
+                       (top ->mx * scale[top ->ref] + 128) >>8,
+                       (tr  ->mx * scale[tr  ->ref] + 128) >>8);
+        *my = mid_pred((left->my * scale[left->ref] + 128) >>8,
+                       (top ->my * scale[top ->ref] + 128) >>8,
+                       (tr  ->my * scale[tr  ->ref] + 128) >>8);
     }
 }
 
