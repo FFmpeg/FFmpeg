@@ -257,9 +257,9 @@ already incorporate ffmpeg at (@url{projects.php}).
 
 @section Can you support my C compiler XXX ?
 
-No. Only GCC is supported. GCC is ported to most systems available and there
-is no need to pollute the source code with @code{#ifdef}s
-related to the compiler.
+It depends. If your compiler is C99-compliant, then patches to support
+it are likely to be welcome if they do not pollute the source code
+with @code{#ifdef}s related to the compiler.
 
 @section Can I use FFmpeg or libavcodec under Windows ?
 
@@ -270,9 +270,7 @@ sections in the FFmpeg documentation to find more information.
 
 @section Can you add automake, libtool or autoconf support ?
 
-No. These tools are too bloated and they complicate the build. Moreover,
-since only @samp{gcc} is supported they would add little advantages in
-terms of portability.
+No. These tools are too bloated and they complicate the build.
 
 @section Why not rewrite ffmpeg in object-oriented C++ ?
 
