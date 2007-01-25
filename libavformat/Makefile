@@ -173,8 +173,6 @@ OBJS-$(CONFIG_NUT_DEMUXER)               += nutdec.o riff.o
 #OBJS-$(CONFIG_NUT_MUXER)                 += nutenc.o riff.o
 endif
 
-OBJS += $(OBJS-yes)
-
 NAME=avformat
 ifeq ($(BUILD_SHARED),yes)
 LIBVERSION=$(LAVFVERSION)

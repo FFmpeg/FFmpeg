@@ -400,10 +400,6 @@ endif
 
 OBJS-$(TARGET_ARCH_BFIN)               += bfin/dsputil_bfin.o \
 
-CFLAGS += $(CFLAGS-yes)
-OBJS += $(OBJS-yes)
-ASM_OBJS += $(ASM_OBJS-yes)
-
 EXTRALIBS := -L$(BUILD_ROOT)/libavutil -lavutil$(BUILDSUF) $(EXTRALIBS)
 
 NAME=avcodec

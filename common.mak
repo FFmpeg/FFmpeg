@@ -5,6 +5,10 @@
 VPATH = $(SRC_PATH_BARE)/lib$(NAME)
 SRC_DIR = "$(VPATH)"
 
+CFLAGS   += $(CFLAGS-yes)
+OBJS     += $(OBJS-yes)
+ASM_OBJS += $(ASM_OBJS-yes)
+
 CFLAGS += -DHAVE_AV_CONFIG_H -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE \
           -D_ISOC9X_SOURCE -I$(BUILD_ROOT) -I$(SRC_PATH) \
           -I$(SRC_PATH)/libavutil $(OPTFLAGS)
