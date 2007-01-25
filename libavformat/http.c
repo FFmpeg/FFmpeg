@@ -222,7 +222,7 @@ static int http_connect(URLContext *h, const char *path, const char *hoststr,
              "%s %s HTTP/1.1\r\n"
              "User-Agent: %s\r\n"
              "Accept: */*\r\n"
-             "Range: bytes=%llu-\r\n"
+             "Range: bytes=%"PRId64"-\r\n"
              "Host: %s\r\n"
              "Authorization: Basic %s\r\n"
              "\r\n",
