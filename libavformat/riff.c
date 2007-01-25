@@ -422,22 +422,30 @@ void get_wav_header(ByteIOContext *pb, AVCodecContext *codec, int size)
         codec->bits_per_sample = 8;
     }else
         codec->bits_per_sample = get_le16(pb);
-    codec->codec_id = wav_codec_get_id(id, codec->bits_per_sample);
-
-    if (size > 16) {  /* We're obviously dealing with WAVEFORMATEX */
-        codec->extradata_size = get_le16(pb);
-        if (codec->extradata_size > 0) {
-            if (codec->extradata_size > size - 18)
-                codec->extradata_size = size - 18;
+    if (size >= 18) {  /* We're obviously dealing with WAVEFORMATEX */
+        int cbSize = get_le16(pb); /* cbSize */
+        size -= 18;
+        cbSize = FFMIN(size, cbSize);
+        if (cbSize >= 22 && id == 0xfffe) { /* WAVEFORMATEXTENSIBLE */
+            codec->bits_per_sample = get_le16(pb);
+            get_le32(pb); /* dwChannelMask */
+            id = get_le32(pb); /* 4 first bytes of GUID */
+            url_fskip(pb, 12); /* skip end of GUID */
+            cbSize -= 22;
+            size -= 22;
+        }
+        codec->extradata_size = cbSize;
+        if (cbSize > 0) {
             codec->extradata = av_mallocz(codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
             get_buffer(pb, codec->extradata, codec->extradata_size);
-        } else
-            codec->extradata_size = 0;
+            size -= cbSize;
+        }
 
         /* It is possible for the chunk to contain garbage at the end */
-        if (size - codec->extradata_size - 18 > 0)
-            url_fskip(pb, size - codec->extradata_size - 18);
+        if (size > 0)
+            url_fskip(pb, size);
     }
+    codec->codec_id = wav_codec_get_id(id, codec->bits_per_sample);
 }
 
 
