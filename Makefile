@@ -126,7 +126,7 @@ endif
 	install -d "$(bindir)"
 	install -c $(INSTALLSTRIP) -m 755 $(PROGS) "$(bindir)"
 
-# create the window installer
+# Create the Windows installer.
 wininstaller: all install
 	makensis ffinstall.nsi
 
