@@ -972,7 +972,7 @@ following image formats are supported:
 @item Theora                 @tab  X  @tab  X @tab still experimental
 @item Intel Indeo 3          @tab     @tab  X
 @item FLV                    @tab  X  @tab  X @tab Sorenson H.263 used in Flash
-@item Flash Screen Video     @tab     @tab  X @tab fourcc: FSV1
+@item Flash Screen Video     @tab  X  @tab  X @tab fourcc: FSV1
 @item ATI VCR1               @tab     @tab  X @tab fourcc: VCR1
 @item ATI VCR2               @tab     @tab  X @tab fourcc: VCR2
 @item Cirrus Logic AccuPak   @tab     @tab  X @tab fourcc: CLJR
