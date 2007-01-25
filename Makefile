@@ -124,7 +124,7 @@ else
 install-progs: $(PROGS)
 endif
 	install -d "$(bindir)"
-	install -c $(INSTALLSTRIP) -m 755 $(PROGS) "$(bindir)"
+	install -c -m 755 $(PROGS) "$(bindir)"
 
 # Create the Windows installer.
 wininstaller: all install

@@ -63,8 +63,8 @@ install-libs: $(INSTLIBTARGETS)
 
 install-lib-shared: $(SLIBNAME)
 	install -d "$(shlibdir)"
-	install $(INSTALLSTRIP) -m 755 $(SLIBNAME) \
-		"$(shlibdir)/$(SLIBNAME_WITH_VERSION)"
+	install -m 755 $(SLIBNAME) "$(shlibdir)/$(SLIBNAME_WITH_VERSION)"
+	$(STRIP) "$(shlibdir)/$(SLIBNAME_WITH_VERSION)"
 	cd "$(shlibdir)" && \
 		ln -sf $(SLIBNAME_WITH_VERSION) $(SLIBNAME_WITH_MAJOR)
 	cd "$(shlibdir)" && \

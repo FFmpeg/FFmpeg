@@ -668,7 +668,6 @@ optimize="yes"
 debug="yes"
 extrawarnings="no"
 dostrip="yes"
-installstrip="-s"
 extralibs="-lm"
 bigendian="no"
 vhook="default"
@@ -810,7 +809,6 @@ dv1394="no"
 extralibs="-lpoll -lgnugetopt -lm"
 make="gmake"
 strip="strip -d"
-installstrip=""
 ;;
 Darwin)
 cc="cc"
@@ -823,7 +821,6 @@ SHFLAGS="-dynamiclib -Wl,-single_module -Wl,-install_name,\$(shlibdir)/\$(SLIBNA
 VHOOKSHFLAGS='-dynamiclib -Wl,-single_module -flat_namespace -undefined suppress -Wl,-install_name,$(shlibdir)/vhook/$@'
 extralibs=""
 strip="strip -x"
-installstrip=""
 FFLDFLAGS="-Wl,-dynamic,-search_paths_first"
 SLIBSUF=".dylib"
 SLIBNAME_WITH_VERSION='$(SLIBPREF)$(NAME).$(LIBVERSION)$(SLIBSUF)'
@@ -1914,10 +1911,8 @@ echo "AR=$ar" >> config.mak
 echo "RANLIB=$ranlib" >> config.mak
 if test "$dostrip" = "yes" ; then
     echo "STRIP=$strip" >> config.mak
-    echo "INSTALLSTRIP=$installstrip" >> config.mak
 else
     echo "STRIP=echo ignoring strip" >> config.mak
-    echo "INSTALLSTRIP=" >> config.mak
 fi
 
 echo "OPTFLAGS=$CFLAGS" >> config.mak
