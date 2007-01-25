@@ -164,6 +164,7 @@ void avcodec_register_all(void)
     REGISTER_ENCDEC (FLAC, flac);
     REGISTER_DECODER(IMC, imc);
     REGISTER_ENCDEC (LIBGSM, libgsm);
+    REGISTER_ENCODER(LIBTHEORA, libtheora);
     REGISTER_DECODER(MACE3, mace3);
     REGISTER_DECODER(MACE6, mace6);
     REGISTER_ENCDEC (MP2, mp2);

@@ -969,7 +969,7 @@ following image formats are supported:
 @item On2 VP3                @tab     @tab  X @tab still experimental
 @item On2 VP5                @tab     @tab  X @tab fourcc: VP50
 @item On2 VP6                @tab     @tab  X @tab fourcc: VP60,VP61,VP62
-@item Theora                 @tab     @tab  X @tab still experimental
+@item Theora                 @tab  X  @tab  X @tab still experimental
 @item Intel Indeo 3          @tab     @tab  X
 @item FLV                    @tab  X  @tab  X @tab Sorenson H.263 used in Flash
 @item Flash Screen Video     @tab     @tab  X @tab fourcc: FSV1

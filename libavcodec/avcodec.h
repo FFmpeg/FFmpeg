@@ -2162,6 +2162,7 @@ extern AVCodec h264_encoder;
 extern AVCodec huffyuv_encoder;
 extern AVCodec jpegls_encoder;
 extern AVCodec libgsm_encoder;
+extern AVCodec libtheora_encoder;
 extern AVCodec ljpeg_encoder;
 extern AVCodec mdec_encoder;
 extern AVCodec mjpeg_encoder;

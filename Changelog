@@ -68,6 +68,7 @@ version <next>
 - Intel Music decoder
 - Musepack decoder
 - Flash Screen Video encoder
+- Theora encoding via libtheora
 
 version 0.4.9-pre1:
 

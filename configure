@@ -89,6 +89,7 @@ show_help(){
   echo "  --enable-mp3lame         enable MP3 encoding via libmp3lame [default=no]"
   echo "  --enable-libnut          enable NUT support via libnut [default=no]"
   echo "  --enable-libogg          enable Ogg support via libogg [default=no]"
+  echo "  --enable-libtheora       enable Theora support via libtheora [default=no]"
   echo "  --enable-vorbis          enable Vorbis support via libvorbis [default=no]"
   echo "  --enable-x264            enable H.264 encoding via x264 [default=no]"
   echo "  --enable-xvid            enable Xvid encoding via xvidcore [default=no]"
@@ -444,6 +445,7 @@ CONFIG_LIST='
     libmp3lame
     libnut
     libogg
+    libtheora
     libvorbis
     memalign_hack
     mpegaudio_hp
@@ -514,6 +516,7 @@ dts_decoder_deps="libdts"
 faac_encoder_deps="libfaac"
 libgsm_decoder_deps="libgsm"
 libgsm_encoder_deps="libgsm"
+libtheora_encoder_deps="libtheora"
 mp3lame_encoder_deps="libmp3lame"
 oggvorbis_decoder_deps="libvorbis"
 oggvorbis_encoder_deps="libvorbis"
@@ -651,6 +654,7 @@ libgsm="no"
 libmp3lame="no"
 libnut="no"
 libogg="no"
+libtheora="no"
 libvorbis="no"
 xvid="no"
 x264="no"
@@ -1003,6 +1007,9 @@ for opt do
   --enable-libogg) libogg="yes"
     pkg_requires="$pkg_requires ogg >= 1.1"
   ;;
+  --enable-libtheora) libtheora="yes"
+    pkg_requires="$pkg_requires theora"
+  ;;
   --enable-vorbis) libvorbis="yes"
     pkg_requires="$pkg_requires vorbis vorbisenc"
   ;;
@@ -1177,6 +1184,10 @@ build the shared libraries as well. To only build the shared libraries specify
 --disable-static in addition to --enable-shared.
 EOF
     exit 1;
+fi
+
+if test "$libtheora" = "yes" && test "$libogg" = "no"; then
+    die "libogg must be enabled to enable libtheora."
 fi
 
 if test "$libvorbis" = "yes" && test "$libogg" = "no"; then
@@ -1532,6 +1543,7 @@ done
 enabled libdts  && require libdts dts.h dts_init -ldts -lm
 enabled libgsm  && require libgsm gsm.h gsm_create -lgsm
 enabled libmp3lame && require LAME lame/lame.h lame_init -lmp3lame -lm
+enabled libtheora && require libtheora theora/theora.h theora_info_init -ltheora -logg
 enabled libvorbis && require libvorbis vorbis/vorbisenc.h vorbis_info_init -lvorbis -lvorbisenc -logg
 enabled libogg  && require libogg ogg/ogg.h ogg_sync_init -logg
 enabled libnut  && require libnut libnut.h nut_demuxer_init -lnut
@@ -1868,6 +1880,7 @@ echo "libgsm enabled            $libgsm"
 echo "libmp3lame enabled        $libmp3lame"
 echo "libnut enabled            $libnut"
 echo "libogg enabled            $libogg"
+echo "libtheora enabled         $libtheora"
 echo "libvorbis enabled         $libvorbis"
 echo "x264 enabled              $x264"
 echo "XviD enabled              $xvid"
