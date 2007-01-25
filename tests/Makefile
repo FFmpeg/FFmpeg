@@ -16,9 +16,13 @@ SERVER_REFFILE=$(SRC_DIR)/ffserver.regression.ref
 
 LIBAV_REFFILE=$(SRC_DIR)/libav.regression.ref
 
-all fulltest test: codectest libavtest test-server
+all fulltest test: codectest libavtest
 
 test-server: vsynth1/00.pgm asynth1.sw
+	@echo
+	@echo "Unfortunately ffserver is broken and therefore its regression"
+	@echo "test fails randomly. Treat the results accordingly."
+	@echo
 	@$(SRC_DIR)/server-regression.sh $(SERVER_REFFILE) $(SRC_DIR)/test.conf
 
 # fast regression tests for all codecs
