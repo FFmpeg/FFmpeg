@@ -59,7 +59,7 @@ LDFLAGS+=-L./libswscale
 EXTRALIBS+=-lswscale$(BUILDSUF)
 endif
 
-all: lib $(PROGS_G) $(PROGS) $(VHOOK) $(DOC)
+all: lib $(PROGS) $(VHOOK) $(DOC)
 
 lib:
 	$(MAKE) -C libavutil   all
