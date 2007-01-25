@@ -2954,13 +2954,7 @@ static void new_audio_stream(AVFormatContext *oc)
             audio_enc->global_quality = st->quality = FF_QP2LAMBDA * audio_qscale;
         }
         audio_enc->thread_count = thread_count;
-        /* For audio codecs other than AC3 or DTS we limit */
-        /* the number of coded channels to stereo   */
-        if (audio_channels > 2 && codec_id != CODEC_ID_AC3
-            && codec_id != CODEC_ID_DTS) {
-            audio_enc->channels = 2;
-        } else
-            audio_enc->channels = audio_channels;
+        audio_enc->channels = audio_channels;
     }
     audio_enc->sample_rate = audio_sample_rate;
     audio_enc->time_base= (AVRational){1, audio_sample_rate};
