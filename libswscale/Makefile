@@ -10,12 +10,9 @@ endif
 EXTRALIBS := -L$(BUILD_ROOT)/libavutil -lavutil$(BUILDSUF) $(EXTRALIBS)
 
 OBJS= swscale.o rgb2rgb.o
-ifeq ($(TARGET_ALTIVEC),yes)
-OBJS+=  yuv2rgb_altivec.o
-endif
-ifeq ($(CONFIG_GPL),yes)
-OBJS+=  yuv2rgb.o
-endif
+
+OBJS-$(TARGET_ALTIVEC)     +=  yuv2rgb_altivec.o
+OBJS-$(CONFIG_GPL)         +=  yuv2rgb.o
 
 HEADERS = swscale.h rgb2rgb.h
 
