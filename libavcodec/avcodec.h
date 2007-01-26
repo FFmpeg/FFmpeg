@@ -865,7 +865,7 @@ typedef struct AVCodecContext {
     int qmax;
 
     /**
-     * maximum quantizer difference etween frames.
+     * maximum quantizer difference between frames.
      * - encoding: set by user.
      * - decoding: unused
      */
