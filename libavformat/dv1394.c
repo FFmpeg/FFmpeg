@@ -40,7 +40,7 @@ struct dv1394_data {
     int channel;
     int format;
 
-    void *ring; /* Ring buffer */
+    uint8_t *ring; /* Ring buffer */
     int index;  /* Current frame index */
     int avail;  /* Number of frames available for reading */
     int done;   /* Number of completed frames */

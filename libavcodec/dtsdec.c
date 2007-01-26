@@ -210,7 +210,7 @@ dts_decode_frame (AVCodecContext *avctx, void *data, int *data_size,
   static uint8_t buf[BUFFER_SIZE];
   static uint8_t * bufptr = buf;
   static uint8_t * bufpos = buf + HEADER_SIZE;
-
+  int16_t *out_samples = data;
   static int sample_rate;
   static int frame_length;
   static int flags;
@@ -273,10 +273,10 @@ dts_decode_frame (AVCodecContext *avctx, void *data, int *data_size,
                   {
                     int chans;
                     chans = channels_multi (flags);
-                    convert2s16_multi (dts_samples (state), data,
+                    convert2s16_multi (dts_samples (state), out_samples,
                                        flags & (DTS_CHANNEL_MASK | DTS_LFE));
 
-                    data += 256 * sizeof (int16_t) * chans;
+                    out_samples += 256 * chans;
                     *data_size += 256 * sizeof (int16_t) * chans;
                   }
                 }
