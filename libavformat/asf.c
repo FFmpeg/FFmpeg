@@ -367,21 +367,21 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             int64_t pos_ex_st;
             pos_ex_st = url_ftell(pb);
 
-            get_le64(pb);
-            get_le64(pb);
-            get_le32(pb);
-            get_le32(pb);
-            get_le32(pb);
-            get_le32(pb);
-            get_le32(pb);
-            get_le32(pb);
-            get_le32(pb);
-            get_le32(pb);
-            get_le16(pb);
-            get_le16(pb);
-            get_le64(pb);
-            stream_ct = get_le16(pb);
-            payload_ext_ct = get_le16(pb);
+            get_le64(pb); // starttime
+            get_le64(pb); // endtime
+            get_le32(pb); // leak-datarate
+            get_le32(pb); // bucket-datasize
+            get_le32(pb); // init-bucket-fullness
+            get_le32(pb); // alt-leak-datarate
+            get_le32(pb); // alt-bucket-datasize
+            get_le32(pb); // alt-init-bucket-fullness
+            get_le32(pb); // max-object-size
+            get_le32(pb); // flags (reliable,seekable,no_cleanpoints?,resend-live-cleanpoints, rest of bits reserved)
+            get_le16(pb); // stream-num
+            get_le16(pb); // stream-language-id-index
+            get_le64(pb); // avg frametime in 100ns units
+            stream_ct = get_le16(pb); //stream-name-count
+            payload_ext_ct = get_le16(pb); //payload-extension-system-count
 
             for (i=0; i<stream_ct; i++){
                 get_le16(pb);
