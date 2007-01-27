@@ -1296,12 +1296,14 @@ static int decode_sequence_header_adv(VC1Context *v, GetBitContext *gb)
         w = get_bits(gb, 14) + 1;
         h = get_bits(gb, 14) + 1;
         av_log(v->s.avctx, AV_LOG_INFO, "Display dimensions: %ix%i\n", w, h);
-        //TODO: store aspect ratio in AVCodecContext
         if(get_bits1(gb))
             ar = get_bits(gb, 4);
-        if(ar == 15) {
+        if(ar && ar < 14){
+            v->s.avctx->sample_aspect_ratio = vc1_pixel_aspect[ar];
+        }else if(ar == 15){
             w = get_bits(gb, 8);
             h = get_bits(gb, 8);
+            v->s.avctx->sample_aspect_ratio = (AVRational){w, h};
         }
 
         if(get_bits1(gb)){ //framerate stuff
