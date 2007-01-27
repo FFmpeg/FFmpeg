@@ -1155,7 +1155,7 @@ static void dump_cook_context(COOKContext *q, COOKextradata *e)
 
 static int cook_decode_init(AVCodecContext *avctx)
 {
-    COOKextradata *e = avctx->extradata;
+    COOKextradata *e = (COOKextradata *)avctx->extradata;
     COOKContext *q = avctx->priv_data;
 
     /* Take care of the codec specific extradata. */
