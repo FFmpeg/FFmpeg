@@ -141,8 +141,8 @@ static av_always_inline int get_tail(GetBitContext *gb, int k)
 {
     int p, e, res;
 
-    if(k<1 || k>65535)return 0;
-    p = av_log2_16bit(k);
+    if(k<1)return 0;
+    p = av_log2(k);
     e = (1 << (p + 1)) - k - 1;
     res = p ? get_bits(gb, p) : 0;
     if(res >= e){
