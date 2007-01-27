@@ -480,6 +480,7 @@ HAVE_LIST='
     dev_video_bktr_ioctl_bt848_h
     dlfcn_h
     dlopen
+    fast_cmov
     freetype2
     gprof
     imlib2
@@ -589,7 +590,7 @@ cpu="generic"
 powerpc_perf="no"
 mmx="default"
 cmov="no"
-cmov_is_fast="no"
+fast_cmov="no"
 armv5te="default"
 armv6="default"
 iwmmxt="default"
@@ -1367,13 +1368,13 @@ if test $cpu != "generic"; then
         i686|pentiumpro|pentium[23]|pentium-m|athlon|athlon-tbird|athlon-4|athlon-[mx]p|athlon64|k8|opteron|athlon-fx|core2)
             add_cflags "-march=$cpu"
             cmov="yes"
-            cmov_is_fast="yes"
+            fast_cmov="yes"
         ;;
         # targets that do support conditional mov but on which it's slow
         pentium4|prescott|nocona)
             add_cflags "-march=$cpu"
             cmov="yes"
-            cmov_is_fast="no"
+            fast_cmov="no"
         ;;
         sparc64)
             add_cflags "-mcpu=v9"
@@ -1859,7 +1860,7 @@ echo "big-endian                $bigendian"
 if test $arch = "x86_32" -o $arch = "x86_64"; then
     echo "MMX enabled               $mmx"
     echo "CMOV enabled              $cmov"
-    echo "CMOV is fast              $cmov_is_fast"
+    echo "CMOV is fast              $fast_cmov"
 fi
 if test $arch = "armv4l"; then
     echo "ARMv5TE enabled           $armv5te"
@@ -1998,10 +1999,6 @@ if enabled bigendian; then
 fi
 if enabled mmx; then
   echo "#define __CPU__ 586" >> $TMPH
-fi
-if enabled cmov_is_fast; then
-  echo "TARGET_CMOV_IS_FAST=yes" >> config.mak
-  echo "#define CMOV_IS_FAST 1" >> $TMPH
 fi
 
 if enabled sdl; then
