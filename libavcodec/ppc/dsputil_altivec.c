@@ -1107,12 +1107,10 @@ POWERPC_PERF_START_COUNT(altivec_hadamard8_diff8x8_num, 1);
       register vector signed short srcV, dstV;                          \
       register vector signed short but0, but1, but2, op1, op2, op3;     \
       src1 = vec_ld(stride * i, src);                                   \
-      if ((((stride * i) + (unsigned long)src) & 0x0000000F) > 8)       \
-        src2 = vec_ld((stride * i) + 16, src);                          \
+      src2 = vec_ld((stride * i) + 15, src);                            \
       srcO = vec_perm(src1, src2, vec_lvsl(stride * i, src));           \
       dst1 = vec_ld(stride * i, dst);                                   \
-      if ((((stride * i) + (unsigned long)dst) & 0x0000000F) > 8)       \
-        dst2 = vec_ld((stride * i) + 16, dst);                          \
+      dst2 = vec_ld((stride * i) + 15, dst);                            \
       dstO = vec_perm(dst1, dst2, vec_lvsl(stride * i, dst));           \
       /* promote the unsigned chars to signed shorts */                 \
       /* we're in the 8x8 function, we only care for the first 8 */     \
