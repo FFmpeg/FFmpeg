@@ -1197,7 +1197,7 @@ if enabled libvorbis && test "$libogg" = "no"; then
 fi
 
 if test "$gpl" != "yes"; then
-    if test "$pp" != "no"; then
+    if enabled pp; then
         die "The Postprocessing code is under GPL and --enable-gpl is not specified."
     fi
 
@@ -1205,15 +1205,15 @@ if test "$gpl" != "yes"; then
         die "liba52 is under GPL and --enable-gpl is not specified."
     fi
 
-    if test "$xvid" != "no"; then
+    if enabled xvid; then
         die "libxvidcore is under GPL and --enable-gpl is not specified."
     fi
 
-    if test "$x264" != "no"; then
+    if enabled x264; then
         die "x264 is under GPL and --enable-gpl is not specified."
     fi
 
-    if test "$libdts" != "no"; then
+    if enabled libdts; then
         die "libdts is under GPL and --enable-gpl is not specified."
     fi
 
@@ -1236,11 +1236,11 @@ EOF
         fi
     fi
 
-    if test "$x11grab" != "no"; then
+    if enabled x11grab; then
         die "The X11 grabber is under GPL and --enable-gpl is not specified."
     fi
 
-    if test "$swscaler" != "no"; then
+    if enabled swscaler; then
         die "The software scaler is under GPL and --enable-gpl is not specified."
     fi
 fi
@@ -2220,7 +2220,7 @@ if enabled pp; then
   pkgconfig_generate_uninstalled libpostproc "FFmpeg post processing library" "$pp_version"
 fi
 
-if test "$swscaler" != "no"; then
+if enabled swscaler; then
   pkgconfig_generate libswscale "FFmpeg image rescaling library" "$sws_version" "-lswscale" "libavutil = $lavu_version" swscale
   pkgconfig_generate_uninstalled libswscale "FFmpeg image rescaling library" "$sws_version" "" "libavutil = $lavu_version"
 else
