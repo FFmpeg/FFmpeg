@@ -224,3 +224,35 @@ int lzo1x_decode(void *out, int *outlen, void *in, int *inlen) {
     *outlen = c.out_end - c.out;
     return c.error;
 }
+
+#ifdef TEST
+#include <stdio.h>
+#include <lzo/lzo1x.h>
+#include "log.h"
+#define MAXSZ (10*1024*1024)
+int main(int argc, char *argv[]) {
+    FILE *in = fopen(argv[1], "rb");
+    uint8_t *orig = av_malloc(MAXSZ + 16);
+    uint8_t *comp = av_malloc(2*MAXSZ + 16);
+    uint8_t *decomp = av_malloc(MAXSZ + 16);
+    size_t s = fread(orig, 1, MAXSZ, in);
+    lzo_uint clen = 0;
+    long tmp[LZO1X_MEM_COMPRESS];
+    int inlen, outlen;
+    int i;
+    av_log_level = AV_LOG_DEBUG;
+    lzo1x_999_compress(orig, s, comp, &clen, tmp);
+    for (i = 0; i < 300; i++) {
+START_TIMER
+        inlen = clen; outlen = MAXSZ;
+        if (lzo1x_decode(decomp, &outlen, comp, &inlen))
+            av_log(NULL, AV_LOG_ERROR, "decompression error\n");
+STOP_TIMER("lzod")
+    }
+    if (memcmp(orig, decomp, s))
+        av_log(NULL, AV_LOG_ERROR, "decompression incorrect\n");
+    else
+        av_log(NULL, AV_LOG_ERROR, "decompression ok\n");
+    return 0;
+}
+#endif
