@@ -397,7 +397,7 @@ check_lib(){
 }
 
 check_exec(){
-    check_ld "$@" && { test "$cross_compile" = yes || $TMPE >>$logfile 2>&1; }
+    check_ld "$@" && { enabled cross_compile || $TMPE >>$logfile 2>&1; }
 }
 
 require(){
@@ -1131,7 +1131,7 @@ for opt do
 done
 
 if test "$logging" != no; then
-    test "$logging" = yes || logfile="$logging"
+    enabled logging || logfile="$logging"
     echo "# $0 $@" >$logfile
     set >>$logfile
 else
@@ -1155,7 +1155,7 @@ EOF
     dc1394="no"
     ffserver="no"
     network="no"
-    if test "$wince" = "yes"; then
+    if enabled wince; then
         protocols="no"
     fi
     SLIBPREF=""
@@ -1188,11 +1188,11 @@ EOF
     exit 1;
 fi
 
-if test "$libtheora" = "yes" && test "$libogg" = "no"; then
+if enabled libtheora && test "$libogg" = "no"; then
     die "libogg must be enabled to enable libtheora."
 fi
 
-if test "$libvorbis" = "yes" && test "$libogg" = "no"; then
+if enabled libvorbis && test "$libogg" = "no"; then
     die "libogg must be enabled to enable libvorbis."
 fi
 
@@ -1302,25 +1302,25 @@ if test $cpu != "generic"; then
     case $cpu in
         601|ppc601|PowerPC601)
             add_cflags "-mcpu=601"
-            if test $altivec = "yes"; then
+            if enabled altivec; then
                 echo "WARNING: Tuning for PPC601 but AltiVec enabled!";
             fi
         ;;
         603*|ppc603*|PowerPC603*)
             add_cflags "-mcpu=603"
-            if test $altivec = "yes"; then
+            if enabled altivec; then
                 echo "WARNING: Tuning for PPC603 but AltiVec enabled!";
             fi
         ;;
         604*|ppc604*|PowerPC604*)
             add_cflags "-mcpu=604"
-            if test $altivec = "yes"; then
+            if enabled altivec; then
                 echo "WARNING: Tuning for PPC604 but AltiVec enabled!";
             fi
         ;;
         G3|g3|75*|ppc75*|PowerPC75*)
             add_cflags "-mcpu=750 -mpowerpc-gfxopt"
-            if test $altivec = "yes"; then
+            if enabled altivec; then
                 echo "WARNING: Tuning for PPC75x but AltiVec enabled!";
             fi
         ;;
@@ -1416,7 +1416,7 @@ fi
 
 # AltiVec flags: The FSF version of GCC differs from the Apple version
 if test $arch = "powerpc"; then
-    if test $altivec = "yes"; then
+    if enabled altivec; then
         if test -n "`$cc -v 2>&1 | grep version | grep Apple`"; then
             add_cflags "-faltivec"
         else
@@ -1428,8 +1428,8 @@ fi
 check_header altivec.h
 
 # check if our compiler supports Motorola AltiVec C API
-if test $altivec = "yes"; then
-    if test $altivec_h = "yes"; then
+if enabled altivec; then
+    if enabled altivec_h; then
         inc_altivec_h="#include <altivec.h>"
     else
         inc_altivec_h=
@@ -1808,7 +1808,7 @@ if enabled optimize; then
 fi
 
 # PIC flags for shared library objects where they are needed
-if test "$lshared" = "yes" ; then
+if enabled lshared; then
     # LIBOBJFLAGS may have already been set in the OS configuration
     if test -z "$LIBOBJFLAGS" ; then
         case "$arch" in
@@ -1817,13 +1817,13 @@ if test "$lshared" = "yes" ; then
     fi
 fi
 
-if test "$gprof" = "yes" ; then
+if enabled gprof; then
     add_cflags  "-p"
     add_ldflags "-p"
 fi
 
 VHOOKCFLAGS="-fPIC $CFLAGS"
-test "$needmdynamicnopic" = yes && add_cflags -mdynamic-no-pic
+enabled needmdynamicnopic && add_cflags -mdynamic-no-pic
 
 # find if .align arg is power-of-two or not
 if test $asmalign_pot = "unknown"; then
@@ -1867,17 +1867,17 @@ echo "shared                    $lshared"
 echo "postprocessing support    $pp"
 echo "software scaler enabled   $swscaler"
 echo "video hooking             $vhook"
-if test "$vhook" = "yes"; then
+if enabled vhook; then
     echo "Imlib2 support            $imlib2"
     echo "FreeType support          $freetype2"
 fi
 echo "network support           $network"
-if test "$network" = "yes" ; then
+if enabled network; then
     echo "IPv6 support              $ipv6"
 fi
 echo "threading support         $thread_type"
 echo "SDL support               $sdl"
-if test $sdl_too_old = "yes"; then
+if enabled sdl_too_old; then
     echo "-> Your SDL version is too old - please upgrade to have FFplay/SDL support."
 fi
 echo "Sun medialib support      $mlib"
@@ -1924,7 +1924,7 @@ echo "MAKE=$make" >> config.mak
 echo "CC=$cc" >> config.mak
 echo "AR=$ar" >> config.mak
 echo "RANLIB=$ranlib" >> config.mak
-if test "$dostrip" = "yes" ; then
+if enabled dostrip; then
     echo "STRIP=$strip" >> config.mak
 else
     echo "STRIP=echo ignoring strip" >> config.mak
@@ -1943,7 +1943,7 @@ echo "BUILD_STATIC=$lstatic" >> config.mak
 echo "BUILDSUF=$BUILDSUF" >> config.mak
 echo "LIBPREF=$LIBPREF" >> config.mak
 echo "LIBSUF=\${BUILDSUF}$LIBSUF" >> config.mak
-if test "$lstatic" = "yes" ; then
+if enabled lstatic; then
   echo "LIB=$LIB" >> config.mak
 else # Some Make complain if this variable does not exist.
   echo "LIB=" >> config.mak
@@ -1967,7 +1967,7 @@ case "$arch" in
         if test "$POWERPCMODE" = "64bits"; then
             echo "#define POWERPC_MODE_64BITS 1" >> $TMPH
         fi
-        if test "$powerpc_perf" = "yes"; then
+        if enabled powerpc_perf; then
             echo "#define POWERPC_PERFORMANCE_REPORT 1" >> $TMPH
         fi
         ;;
@@ -1977,46 +1977,46 @@ case "$arch" in
         ;;
 esac
 
-if test "$bigendian" = "yes" ; then
+if enabled bigendian; then
   echo "WORDS_BIGENDIAN=yes" >> config.mak
   echo "#define WORDS_BIGENDIAN 1" >> $TMPH
 fi
-if test "$mmx" = "yes" ; then
+if enabled mmx; then
   echo "TARGET_MMX=yes" >> config.mak
   echo "#define HAVE_MMX 1" >> $TMPH
   echo "#define __CPU__ 586" >> $TMPH
 fi
-if test "$cmov" = "yes" ; then
+if enabled cmov; then
   echo "TARGET_CMOV=yes" >> config.mak
   echo "#define HAVE_CMOV 1" >> $TMPH
 fi
-if test "$cmov_is_fast" = "yes" ; then
+if enabled cmov_is_fast; then
   echo "TARGET_CMOV_IS_FAST=yes" >> config.mak
   echo "#define CMOV_IS_FAST 1" >> $TMPH
 fi
-if test "$armv5te" = "yes" ; then
+if enabled armv5te; then
   echo "TARGET_ARMV5TE=yes" >> config.mak
   echo "#define HAVE_ARMV5TE 1" >> $TMPH
 fi
-if test "$iwmmxt" = "yes" ; then
+if enabled iwmmxt; then
   echo "TARGET_IWMMXT=yes" >> config.mak
   echo "#define HAVE_IWMMXT 1" >> $TMPH
 fi
-if test "$mmi" = "yes" ; then
+if enabled mmi; then
   echo "TARGET_MMI=yes" >> config.mak
   echo "#define HAVE_MMI 1" >> $TMPH
 fi
 
-if test "$altivec" = "yes" ; then
+if enabled altivec; then
   echo "TARGET_ALTIVEC=yes" >> config.mak
   echo "#define HAVE_ALTIVEC 1" >> $TMPH
 fi
 
-if test "$sdl" = "yes" ; then
+if enabled sdl; then
   echo "SDL_LIBS=`"${SDL_CONFIG}" --libs`" >> config.mak
   echo "SDL_CFLAGS=`"${SDL_CONFIG}" --cflags`" >> config.mak
 fi
-if test "$texi2html" = "yes"; then
+if enabled texi2html; then
   echo "BUILD_DOC=yes" >> config.mak
 fi
 
@@ -2028,7 +2028,7 @@ lavu_version=`grep '#define LIBAVUTIL_VERSION ' "$source_path/libavutil/avutil.h
 
 
 
-if test "$lshared" = "yes" ; then
+if enabled lshared; then
   echo "BUILD_SHARED=yes" >> config.mak
   echo "PIC=-fPIC -DPIC" >> config.mak
   echo "SPPMAJOR=${pp_version%%.*}" >> config.mak
@@ -2078,12 +2078,12 @@ echo "SRC_PATH=\"$source_path\"" >> config.mak
 echo "SRC_PATH_BARE=$source_path" >> config.mak
 echo "BUILD_ROOT=\"$PWD\"" >> config.mak
 
-if test "$amr_if2" = "yes" ; then
+if enabled amr_if2; then
   echo "AMR_CFLAGS=-DIF2=1" >> config.mak
 fi
 
 # Apparently it's not possible to portably echo a backslash.
-if test "$asmalign_pot" = "yes" ; then
+if enabled asmalign_pot; then
   printf '#define ASMALIGN(ZEROBITS) ".align " #ZEROBITS "\\n\\t"\n' >> $TMPH
 else
   printf '#define ASMALIGN(ZEROBITS) ".align 1<<" #ZEROBITS "\\n\\t"\n' >> $TMPH
@@ -2113,7 +2113,7 @@ fi
 rm -f $TMPO $TMPC $TMPE $TMPS $TMPH
 
 # build tree in object directory if source path is different from current one
-if test "$source_path_used" = "yes" ; then
+if enabled source_path_used; then
     DIRS="\
          doc \
          libavformat \
@@ -2215,7 +2215,7 @@ pkgconfig_generate_uninstalled libavcodec "FFmpeg codec library" "$lavc_version"
 pkgconfig_generate libavformat "FFmpeg container format library" "$lavf_version" "-lavformat $extralibs" "$pkg_requires libavcodec = $lavc_version" ffmpeg
 pkgconfig_generate_uninstalled libavformat "FFmpeg container format library" "$lavf_version" "$extralibs" "$pkg_requires libavcodec = $lavc_version"
 
-if test "$pp" = "yes"; then
+if enabled pp; then
   pkgconfig_generate libpostproc "FFmpeg post processing library" "$pp_version" -lpostproc "" postproc
   pkgconfig_generate_uninstalled libpostproc "FFmpeg post processing library" "$pp_version"
 fi
