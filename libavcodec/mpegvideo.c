@@ -2260,15 +2260,6 @@ static int estimate_best_b_count(MpegEncContext *s){
         int csize= (c->width/2)*(c->height/2);
         Picture pre_input, *pre_input_ptr= i ? s->input_picture[i-1] : s->next_picture_ptr;
 
-        if(pre_input_ptr)
-            pre_input= *pre_input_ptr;
-
-        if(pre_input.type != FF_BUFFER_TYPE_SHARED && i){
-            pre_input.data[0]+=INPLACE_OFFSET;
-            pre_input.data[1]+=INPLACE_OFFSET;
-            pre_input.data[2]+=INPLACE_OFFSET;
-        }
-
         avcodec_get_frame_defaults(&input[i]);
         input[i].data[0]= av_malloc(ysize + 2*csize);
         input[i].data[1]= input[i].data[0] + ysize;
@@ -2277,7 +2268,15 @@ static int estimate_best_b_count(MpegEncContext *s){
         input[i].linesize[1]=
         input[i].linesize[2]= c->width/2;
 
-        if(!i || s->input_picture[i-1]){
+        if(pre_input_ptr && (!i || s->input_picture[i-1])) {
+            pre_input= *pre_input_ptr;
+
+            if(pre_input.type != FF_BUFFER_TYPE_SHARED && i) {
+                pre_input.data[0]+=INPLACE_OFFSET;
+                pre_input.data[1]+=INPLACE_OFFSET;
+                pre_input.data[2]+=INPLACE_OFFSET;
+            }
+
             s->dsp.shrink[scale](input[i].data[0], input[i].linesize[0], pre_input.data[0], pre_input.linesize[0], c->width, c->height);
             s->dsp.shrink[scale](input[i].data[1], input[i].linesize[1], pre_input.data[1], pre_input.linesize[1], c->width>>1, c->height>>1);
             s->dsp.shrink[scale](input[i].data[2], input[i].linesize[2], pre_input.data[2], pre_input.linesize[2], c->width>>1, c->height>>1);
@@ -5358,7 +5357,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
                 if(s->avctx->mb_decision == FF_MB_DECISION_BITS)
                     MPV_decode_mb(s, s->block);
             } else {
-                int motion_x, motion_y;
+                int motion_x = 0, motion_y = 0;
                 s->mv_type=MV_TYPE_16X16;
                 // only one MB-Type possible
 
@@ -5384,7 +5383,6 @@ static int encode_thread(AVCodecContext *c, void *arg){
                         s->mv[0][i][0] = s->p_field_mv_table[i][j][xy][0];
                         s->mv[0][i][1] = s->p_field_mv_table[i][j][xy][1];
                     }
-                    motion_x = motion_y = 0;
                     break;
                 case CANDIDATE_MB_TYPE_INTER4V:
                     s->mv_dir = MV_DIR_FORWARD;
@@ -5394,7 +5392,6 @@ static int encode_thread(AVCodecContext *c, void *arg){
                         s->mv[0][i][0] = s->current_picture.motion_val[0][s->block_index[i]][0];
                         s->mv[0][i][1] = s->current_picture.motion_val[0][s->block_index[i]][1];
                     }
-                    motion_x= motion_y= 0;
                     break;
                 case CANDIDATE_MB_TYPE_DIRECT:
                     s->mv_dir = MV_DIR_FORWARD | MV_DIR_BACKWARD | MV_DIRECT;
@@ -5411,8 +5408,6 @@ static int encode_thread(AVCodecContext *c, void *arg){
                 case CANDIDATE_MB_TYPE_BIDIR:
                     s->mv_dir = MV_DIR_FORWARD | MV_DIR_BACKWARD;
                     s->mb_intra= 0;
-                    motion_x=0;
-                    motion_y=0;
                     s->mv[0][0][0] = s->b_bidir_forw_mv_table[xy][0];
                     s->mv[0][0][1] = s->b_bidir_forw_mv_table[xy][1];
                     s->mv[1][0][0] = s->b_bidir_back_mv_table[xy][0];
@@ -5440,7 +5435,6 @@ static int encode_thread(AVCodecContext *c, void *arg){
                         s->mv[0][i][0] = s->b_field_mv_table[0][i][j][xy][0];
                         s->mv[0][i][1] = s->b_field_mv_table[0][i][j][xy][1];
                     }
-                    motion_x=motion_y=0;
                     break;
                 case CANDIDATE_MB_TYPE_BACKWARD_I:
                     s->mv_dir = MV_DIR_BACKWARD;
@@ -5451,7 +5445,6 @@ static int encode_thread(AVCodecContext *c, void *arg){
                         s->mv[1][i][0] = s->b_field_mv_table[1][i][j][xy][0];
                         s->mv[1][i][1] = s->b_field_mv_table[1][i][j][xy][1];
                     }
-                    motion_x=motion_y=0;
                     break;
                 case CANDIDATE_MB_TYPE_BIDIR_I:
                     s->mv_dir = MV_DIR_FORWARD | MV_DIR_BACKWARD;
@@ -5464,10 +5457,8 @@ static int encode_thread(AVCodecContext *c, void *arg){
                             s->mv[dir][i][1] = s->b_field_mv_table[dir][i][j][xy][1];
                         }
                     }
-                    motion_x=motion_y=0;
                     break;
                 default:
-                    motion_x=motion_y=0; //gcc warning fix
                     av_log(s->avctx, AV_LOG_ERROR, "illegal MB type\n");
                 }
 
@@ -6170,7 +6161,7 @@ static int dct_quantize_refine(MpegEncContext *s, //FIXME breaks denoise?
     uint8_t * length;
     uint8_t * last_length;
     int lambda;
-    int rle_index, run, q, sum;
+    int rle_index, run, q = 1, sum; //q is only used when s->mb_intra is true
 #ifdef REFINE_STATS
 static int count=0;
 static int after_last=0;
