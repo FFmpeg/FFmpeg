@@ -1138,8 +1138,8 @@ else
     logfile=/dev/null
 fi
 
-if test "$mingw32" = "yes" -o "$wince" = "yes"; then
-    if test "$lshared" = "yes" && test "$lstatic" = "yes" ; then
+if enabled_any mingw32 wince; then
+    if enabled_all lshared lstatic; then
         cat <<EOF
 You can only build one library type at once on MinGW.
 Specify --disable-static --enable-shared to only build
