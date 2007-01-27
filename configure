@@ -465,10 +465,13 @@ CONFIG_LIST='
 '
 
 HAVE_LIST='
+    altivec
     altivec_h
+    armv5te
     armv6
     beosthreads
     byteswap_h
+    cmov
     dcbzl
     dev_bktr_ioctl_bt848_h
     dev_bktr_ioctl_meteor_h
@@ -481,6 +484,7 @@ HAVE_LIST='
     gprof
     imlib2
     inet_aton
+    iwmmxt
     localtime_r
     lrintf
     machine_ioctl_bt848_h
@@ -488,6 +492,8 @@ HAVE_LIST='
     malloc_h
     memalign
     mlib
+    mmi
+    mmx
     os2
     os2threads
     pthreads
@@ -495,6 +501,15 @@ HAVE_LIST='
     sdl_video_size
     threads
     w32threads
+'
+
+TARGET_LIST='
+    altivec
+    armv5te
+    cmov
+    iwmmxt
+    mmi
+    mmx
 '
 
 flashsv_decoder_deps="zlib"
@@ -1982,34 +1997,11 @@ if enabled bigendian; then
   echo "#define WORDS_BIGENDIAN 1" >> $TMPH
 fi
 if enabled mmx; then
-  echo "TARGET_MMX=yes" >> config.mak
-  echo "#define HAVE_MMX 1" >> $TMPH
   echo "#define __CPU__ 586" >> $TMPH
-fi
-if enabled cmov; then
-  echo "TARGET_CMOV=yes" >> config.mak
-  echo "#define HAVE_CMOV 1" >> $TMPH
 fi
 if enabled cmov_is_fast; then
   echo "TARGET_CMOV_IS_FAST=yes" >> config.mak
   echo "#define CMOV_IS_FAST 1" >> $TMPH
-fi
-if enabled armv5te; then
-  echo "TARGET_ARMV5TE=yes" >> config.mak
-  echo "#define HAVE_ARMV5TE 1" >> $TMPH
-fi
-if enabled iwmmxt; then
-  echo "TARGET_IWMMXT=yes" >> config.mak
-  echo "#define HAVE_IWMMXT 1" >> $TMPH
-fi
-if enabled mmi; then
-  echo "TARGET_MMI=yes" >> config.mak
-  echo "#define HAVE_MMI 1" >> $TMPH
-fi
-
-if enabled altivec; then
-  echo "TARGET_ALTIVEC=yes" >> config.mak
-  echo "#define HAVE_ALTIVEC 1" >> $TMPH
 fi
 
 if enabled sdl; then
@@ -2062,6 +2054,7 @@ check_deps $CONFIG_LIST $HAVE_LIST $DECODER_LIST $ENCODER_LIST $PARSER_LIST \
 
 print_config HAVE_   $TMPH config.mak $HAVE_LIST
 print_config CONFIG_ $TMPH config.mak $CONFIG_LIST
+print_config TARGET_ $TMPH config.mak $TARGET_LIST
 
 if test "$targetos" = "Darwin"; then
   echo "#define CONFIG_DARWIN 1"  >> $TMPH
