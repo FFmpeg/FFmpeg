@@ -1,5 +1,5 @@
 /*
- * BMP image format
+ * BMP image format decoder
  * Copyright (c) 2005 Mans Rullgard
  *
  * This file is part of FFmpeg.
@@ -22,17 +22,7 @@
 #include "avcodec.h"
 #include "bitstream.h"
 #include "bswap.h"
-
-typedef struct BMPContext {
-    AVFrame picture;
-} BMPContext;
-
-typedef enum {
-    BMP_RGB         =0,
-    BMP_RLE8        =1,
-    BMP_RLE4        =2,
-    BMP_BITFIELDS   =3,
-} BiCompression;
+#include "bmp.h"
 
 #define read16(bits) bswap_16(get_bits(bits, 16))
 #define read32(bits) bswap_32(get_bits_long(bits, 32))
