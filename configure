@@ -235,9 +235,21 @@ enabled_all(){
     done
 }
 
+disabled_all(){
+    for opt; do
+        disabled $opt || return 1
+    done
+}
+
 enabled_any(){
     for opt; do
         enabled $opt && return 0
+    done
+}
+
+disabled_any(){
+    for opt; do
+        disabled $opt && return 0
     done
 }
 
