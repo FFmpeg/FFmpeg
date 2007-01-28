@@ -27,7 +27,7 @@
 #define LZO_INVALID_BACKPTR 4
 #define LZO_ERROR 8
 
-#define LZO_INPUT_PADDING 4
+#define LZO_INPUT_PADDING 8
 #define LZO_OUTPUT_PADDING 12
 
 int lzo1x_decode(void *out, int *outlen, void *in, int *inlen);

@@ -26,7 +26,7 @@
 
 //! define if we may write up to 12 bytes beyond the output buffer
 #define OUTBUF_PADDED 1
-//! define if we may read up to 4 bytes beyond the input buffer
+//! define if we may read up to 8 bytes beyond the input buffer
 #define INBUF_PADDED 1
 typedef struct LZOContext {
     uint8_t *in, *in_end;
@@ -44,6 +44,12 @@ static inline int get_byte(LZOContext *c) {
     c->error |= LZO_INPUT_DEPLETED;
     return 1;
 }
+
+#ifdef INBUF_PADDED
+#define GETB(c) (*(c).in++)
+#else
+#define GETB(c) get_byte(&(c))
+#endif
 
 /**
  * \brief decode a length value in the coding used by lzo
@@ -170,10 +176,10 @@ int lzo1x_decode(void *out, int *outlen, void *in, int *inlen) {
     c.out = c.out_start = out;
     c.out_end = (uint8_t *)out + * outlen;
     c.error = 0;
-    x = get_byte(&c);
+    x = GETB(c);
     if (x > 17) {
         copy(&c, x - 17);
-        x = get_byte(&c);
+        x = GETB(c);
         if (x < 16) c.error |= LZO_ERROR;
     }
     while (!c.error) {
@@ -181,16 +187,16 @@ int lzo1x_decode(void *out, int *outlen, void *in, int *inlen) {
         if (x >> 4) {
             if (x >> 6) {
                 cnt = (x >> 5) - 1;
-                back = (get_byte(&c) << 3) + ((x >> 2) & 7) + 1;
+                back = (GETB(c) << 3) + ((x >> 2) & 7) + 1;
             } else if (x >> 5) {
                 cnt = get_len(&c, x, 31);
-                x = get_byte(&c);
-                back = (get_byte(&c) << 6) + (x >> 2) + 1;
+                x = GETB(c);
+                back = (GETB(c) << 6) + (x >> 2) + 1;
             } else {
                 cnt = get_len(&c, x, 7);
                 back = (1 << 14) + ((x & 8) << 11);
-                x = get_byte(&c);
-                back += (get_byte(&c) << 6) + (x >> 2);
+                x = GETB(c);
+                back += (GETB(c) << 6) + (x >> 2);
                 if (back == (1 << 14)) {
                     if (cnt != 1)
                         c.error |= LZO_ERROR;
@@ -202,15 +208,15 @@ int lzo1x_decode(void *out, int *outlen, void *in, int *inlen) {
             case COPY:
                 cnt = get_len(&c, x, 15);
                 copy(&c, cnt + 3);
-                x = get_byte(&c);
+                x = GETB(c);
                 if (x >> 4)
                     continue;
                 cnt = 1;
-                back = (1 << 11) + (get_byte(&c) << 2) + (x >> 2) + 1;
+                back = (1 << 11) + (GETB(c) << 2) + (x >> 2) + 1;
                 break;
             case BACKPTR:
                 cnt = 0;
-                back = (get_byte(&c) << 2) + (x >> 2) + 1;
+                back = (GETB(c) << 2) + (x >> 2) + 1;
                 break;
         }
         copy_backptr(&c, back, cnt + 2);
@@ -218,9 +224,13 @@ int lzo1x_decode(void *out, int *outlen, void *in, int *inlen) {
         state = cnt ? BACKPTR : COPY;
         if (cnt)
             copy(&c, cnt);
-        x = get_byte(&c);
+        x = GETB(c);
+        if (c.in > c.in_end)
+            c.error |= LZO_INPUT_DEPLETED;
     }
     *inlen = c.in_end - c.in;
+    if (c.in > c.in_end)
+        *inlen = 0;
     *outlen = c.out_end - c.out;
     return c.error;
 }
