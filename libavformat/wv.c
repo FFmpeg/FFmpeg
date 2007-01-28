@@ -50,8 +50,10 @@ static const int wv_rates[16] = {
 typedef struct{
     uint32_t blksize, flags;
     int rate, chan, bpp;
+    uint32_t samples, soff;
     int block_parsed;
     uint8_t extra[WV_EXTRA_SIZE];
+    int64_t pos;
 }WVContext;
 
 static int wv_probe(AVProbeData *p)
@@ -73,6 +75,7 @@ static int wv_read_block_header(AVFormatContext *ctx, ByteIOContext *pb)
     int size;
     int rate, bpp, chan;
 
+    wc->pos = url_ftell(pb);
     tag = get_le32(pb);
     if (tag != MKTAG('w', 'v', 'p', 'k'))
         return -1;
@@ -89,8 +92,8 @@ static int wv_read_block_header(AVFormatContext *ctx, ByteIOContext *pb)
     }
     get_byte(pb); // track no
     get_byte(pb); // track sub index
-    get_le32(pb); // total samples in file
-    get_le32(pb); // offset in samples of current block
+    wc->samples = get_le32(pb); // total samples in file
+    wc->soff = get_le32(pb); // offset in samples of current block
     get_buffer(pb, wc->extra, WV_EXTRA_SIZE);
     wc->flags = AV_RL32(wc->extra + 4);
     //parse flags
@@ -155,6 +158,8 @@ static int wv_read_header(AVFormatContext *s,
     st->codec->sample_rate = wc->rate;
     st->codec->bits_per_sample = wc->bpp;
     av_set_pts_info(st, 64, 1, wc->rate);
+    s->start_time = 0;
+    s->duration = (int64_t)wc->samples * AV_TIME_BASE / st->codec->sample_rate;
     return 0;
 }
 
@@ -182,12 +187,45 @@ static int wv_read_packet(AVFormatContext *s,
     pkt->stream_index = 0;
     wc->block_parsed = 1;
     pkt->size = ret + WV_EXTRA_SIZE;
-
+    pkt->pts = wc->soff;
+    av_add_index_entry(s->streams[0], wc->pos, pkt->pts, 0, 0, AVINDEX_KEYFRAME);
     return 0;
 }
 
 static int wv_read_close(AVFormatContext *s)
 {
+    return 0;
+}
+
+static int wv_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp, int flags)
+{
+    AVStream *st = s->streams[stream_index];
+    WVContext *wc = s->priv_data;
+    AVPacket pkt1, *pkt = &pkt1;
+    int ret;
+    int index = av_index_search_timestamp(st, timestamp, flags);
+    int64_t pos, pts;
+
+    /* if found, seek there */
+    if (index >= 0){
+        wc->block_parsed = 1;
+        url_fseek(&s->pb, st->index_entries[index].pos, SEEK_SET);
+        return 0;
+    }
+    /* if timestamp is out of bounds, return error */
+    if(timestamp < 0 || timestamp >= s->duration)
+        return -1;
+
+    pos = url_ftell(&s->pb);
+    do{
+        ret = av_read_frame(s, pkt);
+        if (ret < 0){
+            url_fseek(&s->pb, pos, SEEK_SET);
+            return -1;
+        }
+        pts = pkt->pts;
+        av_free_packet(pkt);
+    }while(pts < timestamp);
     return 0;
 }
 
@@ -199,4 +237,5 @@ AVInputFormat wv_demuxer = {
     wv_read_header,
     wv_read_packet,
     wv_read_close,
+    wv_read_seek,
 };
