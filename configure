@@ -1227,7 +1227,7 @@ if enabled libvorbis && disabled libogg; then
     die "libogg must be enabled to enable libvorbis."
 fi
 
-if test "$gpl" != "yes"; then
+if disabled gpl ; then
     if enabled pp; then
         die "The Postprocessing code is under GPL and --enable-gpl is not specified."
     fi
