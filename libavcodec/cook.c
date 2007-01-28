@@ -54,8 +54,8 @@
 #include "cookdata.h"
 
 /* the different Cook versions */
-#define MONO_COOK1      0x1000001
-#define MONO_COOK2      0x1000002
+#define MONO            0x1000001
+#define STEREO          0x1000002
 #define JOINT_STEREO    0x1000003
 #define MC_COOK         0x2000000   //multichannel Cook, not supported
 
@@ -1165,7 +1165,7 @@ static void dump_cook_context(COOKContext *q, COOKextradata *e)
 #define PRINT(a,b) av_log(NULL,AV_LOG_ERROR," %s = %d\n", a, b);
     av_log(NULL,AV_LOG_ERROR,"COOKextradata\n");
     av_log(NULL,AV_LOG_ERROR,"cookversion=%x\n",e->cookversion);
-    if (e->cookversion > MONO_COOK2) {
+    if (e->cookversion > STEREO) {
         PRINT("js_subband_start",e->js_subband_start);
         PRINT("js_vlc_bits",e->js_vlc_bits);
     }
@@ -1237,19 +1237,19 @@ static int cook_decode_init(AVCodecContext *avctx)
     /* Initialize version-dependent variables */
     av_log(NULL,AV_LOG_DEBUG,"e->cookversion=%x\n",e->cookversion);
     switch (e->cookversion) {
-        case MONO_COOK1:
+        case MONO:
             if (q->nb_channels != 1) {
                 av_log(avctx,AV_LOG_ERROR,"Container channels != 1, report sample!\n");
                 return -1;
             }
-            av_log(avctx,AV_LOG_DEBUG,"MONO_COOK1\n");
+            av_log(avctx,AV_LOG_DEBUG,"MONO\n");
             break;
-        case MONO_COOK2:
+        case STEREO:
             if (q->nb_channels != 1) {
                 q->joint_stereo = 0;
                 q->bits_per_subpacket = q->bits_per_subpacket/2;
             }
-            av_log(avctx,AV_LOG_DEBUG,"MONO_COOK2\n");
+            av_log(avctx,AV_LOG_DEBUG,"STEREO\n");
             break;
         case JOINT_STEREO:
             if (q->nb_channels != 2) {
