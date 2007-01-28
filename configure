@@ -1232,7 +1232,7 @@ if test "$gpl" != "yes"; then
         die "The Postprocessing code is under GPL and --enable-gpl is not specified."
     fi
 
-    if test "$liba52" != "no" -o "$liba52bin" != "no"; then
+    if enabled_any liba52 liba52bin ; then
         die "liba52 is under GPL and --enable-gpl is not specified."
     fi
 
@@ -1248,7 +1248,7 @@ if test "$gpl" != "yes"; then
         die "libdts is under GPL and --enable-gpl is not specified."
     fi
 
-    if test "$libfaad" != "no" -o "$libfaadbin" != "no"; then
+    if enabled_any libfaad libfaadbin ; then
         if check_header faad.h; then
             check_cc << EOF
                 #include <faad.h>
