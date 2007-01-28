@@ -1543,7 +1543,7 @@ fi
 check_header malloc.h
 check_func memalign
 
-if disabled memalign && enabled_all need_memalign memalign_hack ; then
+if disabled_all memalign memalign_hack && enabled_all need_memalign ; then
     die "Error, no memalign() but SSE enabled, disable it or use --enable-memalign-hack."
 fi
 
