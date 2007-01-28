@@ -57,7 +57,7 @@ int frame_hook_add(int argc, char *argv[])
 
     fhe = av_mallocz(sizeof(*fhe));
     if (!fhe) {
-        return errno;
+        return -ENOMEM;
     }
 
     fhe->Configure = dlsym(loaded, "Configure");
