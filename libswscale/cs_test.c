@@ -54,7 +54,7 @@ static char *args_parse(int argc, char *argv[])
                 cpu_caps |= SWS_CPU_CAPS_3DNOW;
                 break;
             default:
-                fprintf(stderr, "Unknown option %c\n", o);
+                av_log(NULL, AV_LOG_ERROR, "Unknown option %c\n", o);
         }
     }
 
@@ -69,9 +69,9 @@ int main(int argc, char **argv)
 	int failedNum=0;
 	int passedNum=0;
 	
-	printf("memory corruption test ...\n");
+	av_log(NULL, AV_LOG_INFO, "memory corruption test ...\n");
 	args_parse(argc, argv);
-	fprintf(stderr, "CPU capabilities forced to %x\n", cpu_caps);
+	av_log(NULL, AV_LOG_INFO, "CPU capabilities forced to %x\n", cpu_caps);
 	sws_rgb2rgb_init(cpu_caps);
 	
 	for(funcNum=0; funcNum<100; funcNum++){
@@ -80,7 +80,7 @@ int main(int argc, char **argv)
 		int srcBpp=0;
 		int dstBpp=0;
 
-		printf("."); fflush(stdout);
+		av_log(NULL, AV_LOG_INFO,"."); fflush(stdout);
 		memset(srcBuffer, srcByte, SIZE);
 
 		for(width=32; width<64; width++){
@@ -149,6 +149,7 @@ int main(int argc, char **argv)
 						srcBpp=4;
 						dstBpp=2;
 						name="rgb32to15";
+                        //((*s++) << TGA_SHIFT32) | TGA_ALPHA32;
 						rgb32to15(src, dst, width*srcBpp);
 						break;
 					case 9:
@@ -272,7 +273,7 @@ int main(int argc, char **argv)
 
 					for(i=0; i<SIZE; i++){
 						if(srcBuffer[i]!=srcByte){
-							printf("src damaged at %d w:%d src:%d dst:%d %s\n", 
+							av_log(NULL, AV_LOG_INFO, "src damaged at %d w:%d src:%d dst:%d %s\n", 
 								i, width, srcOffset, dstOffset, name);
 							failed=1;
 							break;
@@ -280,7 +281,7 @@ int main(int argc, char **argv)
 					}
 					for(i=0; i<dstOffset; i++){
 						if(dstBuffer[i]!=dstByte){
-							printf("dst damaged at %d w:%d src:%d dst:%d %s\n", 
+							av_log(NULL, AV_LOG_INFO, "dst damaged at %d w:%d src:%d dst:%d %s\n", 
 								i, width, srcOffset, dstOffset, name);
 							failed=1;
 							break;
@@ -288,7 +289,7 @@ int main(int argc, char **argv)
 					}
 					for(i=dstOffset + width*dstBpp; i<SIZE; i++){
 						if(dstBuffer[i]!=dstByte){
-							printf("dst damaged at %d w:%d src:%d dst:%d %s\n", 
+							av_log(NULL, AV_LOG_INFO, "dst damaged at %d w:%d src:%d dst:%d %s\n", 
 								i, width, srcOffset, dstOffset, name);
 							failed=1;
 							break;
@@ -301,6 +302,6 @@ int main(int argc, char **argv)
 		else if(srcBpp) passedNum++;
 	}
 	
-	printf("%d converters passed, %d converters randomly overwrote memory\n", passedNum, failedNum);
+	av_log(NULL, AV_LOG_INFO, "%d converters passed, %d converters randomly overwrote memory\n", passedNum, failedNum);
 	return failedNum;
 }
