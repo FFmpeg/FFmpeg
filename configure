@@ -225,6 +225,10 @@ enabled(){
     eval test "x\$$1" = "xyes"
 }
 
+disabled(){
+    eval test "x\$$1" = "xno"
+}
+
 enabled_all(){
     for opt; do
         enabled $opt || return 1
@@ -1193,7 +1197,7 @@ ranlib="${cross_prefix}${ranlib}"
 strip="${cross_prefix}${strip}"
 
 # we need to build at least one lib type
-if test "$lstatic" = "no" && test "$lshared" = "no" ; then
+if disabled lstatic && disabled lshared; then
     cat <<EOF
 At least one library type must be built.
 Specify --enable-static to build the static libraries or --enable-shared to
@@ -1203,11 +1207,11 @@ EOF
     exit 1;
 fi
 
-if enabled libtheora && test "$libogg" = "no"; then
+if enabled libtheora && disabled libogg; then
     die "libogg must be enabled to enable libtheora."
 fi
 
-if enabled libvorbis && test "$libogg" = "no"; then
+if enabled libvorbis && disabled libogg; then
     die "libogg must be enabled to enable libvorbis."
 fi
 
@@ -1284,13 +1288,13 @@ if test $targetos = Darwin; then
                 ;;
             *[34].*)
                 add_cflags "-no-cpp-precomp -pipe -force_cpusubtype_ALL -Wno-sign-compare"
-                if test "$lshared" = no; then
+                if disabled lshared; then
                    needmdynamicnopic="yes"
                 fi
                 ;;
             *)
                 add_cflags "-no-cpp-precomp -pipe"
-                if test "$lshared" = no; then
+                if disabled lshared; then
                    needmdynamicnopic="yes"
                 fi
                 ;;
@@ -1341,19 +1345,19 @@ if test $cpu != "generic"; then
         ;;
         G4|g4|745*|ppc745*|PowerPC745*)
             add_cflags "-mcpu=7450 -mpowerpc-gfxopt"
-            if test $altivec = "no"; then
+            if disabled altivec; then
                 echo "WARNING: Tuning for PPC745x but AltiVec disabled!";
             fi
         ;;
         74*|ppc74*|PowerPC74*)
             add_cflags "-mcpu=7400 -mpowerpc-gfxopt"
-            if test $altivec = "no"; then
+            if disabled altivec; then
                 echo "WARNING: Tuning for PPC74xx but AltiVec disabled!";
             fi
         ;;
         G5|g5|970|ppc970|PowerPC970|power4*|Power4*)
             add_cflags "-mcpu=970 -mpowerpc-gfxopt -mpowerpc64"
-            if test $altivec = "no"; then
+            if disabled altivec; then
                 echo "WARNING: Tuning for PPC970 but AltiVec disabled!";
             fi
             POWERPCMODE="64bits"
@@ -1506,7 +1510,7 @@ EOF
 
 # ---
 # big/little-endian test
-if test "$cross_compile" = "no"; then
+if disabled cross_compile; then
     check_ld <<EOF || die "endian test failed" && $TMPE && bigendian="yes"
 #include <inttypes.h>
 int main(int argc, char ** argv){
@@ -1916,7 +1920,7 @@ echo "AMR-NB float support      $amr_nb"
 echo "AMR-NB fixed support      $amr_nb_fixed"
 echo "AMR-WB float support      $amr_wb"
 echo "AMR-WB IF2 support        $amr_if2"
-if test "$gpl" = "no" ; then
+if disabled gpl; then
     echo "License: LGPL"
 else
     echo "License: GPL"
