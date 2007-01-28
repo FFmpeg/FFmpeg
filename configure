@@ -1161,7 +1161,7 @@ for opt do
   esac
 done
 
-if test "$logging" != no; then
+if ! disabled logging ; then
     enabled logging || logfile="$logging"
     echo "# $0 $@" >$logfile
     set >>$logfile
@@ -1314,7 +1314,7 @@ if test $targetos = Darwin; then
     fi
 fi
 
-if test $optimize != "no"; then
+if ! disabled optimize ; then
     add_cflags "-fomit-frame-pointer"
 fi
 
@@ -1571,7 +1571,7 @@ fi
 
 for thread in pthreads beosthreads os2threads w32threads; do
     if enabled $thread; then
-        if test $thread_type != "no"; then
+        if ! disabled thread_type ; then
             die "ERROR: Only one thread type must be selected."
         else
             thread_type="$thread"
