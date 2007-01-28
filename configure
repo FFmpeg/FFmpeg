@@ -1334,43 +1334,43 @@ if test $cpu != "generic"; then
         601|ppc601|PowerPC601)
             add_cflags "-mcpu=601"
             if enabled altivec; then
-                echo "WARNING: Tuning for PPC601 but AltiVec enabled!";
+                echo "WARNING: Tuning for PPC601 but AltiVec enabled.";
             fi
         ;;
         603*|ppc603*|PowerPC603*)
             add_cflags "-mcpu=603"
             if enabled altivec; then
-                echo "WARNING: Tuning for PPC603 but AltiVec enabled!";
+                echo "WARNING: Tuning for PPC603 but AltiVec enabled.";
             fi
         ;;
         604*|ppc604*|PowerPC604*)
             add_cflags "-mcpu=604"
             if enabled altivec; then
-                echo "WARNING: Tuning for PPC604 but AltiVec enabled!";
+                echo "WARNING: Tuning for PPC604 but AltiVec enabled.";
             fi
         ;;
         G3|g3|75*|ppc75*|PowerPC75*)
             add_cflags "-mcpu=750 -mpowerpc-gfxopt"
             if enabled altivec; then
-                echo "WARNING: Tuning for PPC75x but AltiVec enabled!";
+                echo "WARNING: Tuning for PPC75x but AltiVec enabled.";
             fi
         ;;
         G4|g4|745*|ppc745*|PowerPC745*)
             add_cflags "-mcpu=7450 -mpowerpc-gfxopt"
             if disabled altivec; then
-                echo "WARNING: Tuning for PPC745x but AltiVec disabled!";
+                echo "WARNING: Tuning for PPC745x but AltiVec disabled.";
             fi
         ;;
         74*|ppc74*|PowerPC74*)
             add_cflags "-mcpu=7400 -mpowerpc-gfxopt"
             if disabled altivec; then
-                echo "WARNING: Tuning for PPC74xx but AltiVec disabled!";
+                echo "WARNING: Tuning for PPC74xx but AltiVec disabled.";
             fi
         ;;
         G5|g5|970|ppc970|PowerPC970|power4*|Power4*)
             add_cflags "-mcpu=970 -mpowerpc-gfxopt -mpowerpc64"
             if disabled altivec; then
-                echo "WARNING: Tuning for PPC970 but AltiVec disabled!";
+                echo "WARNING: Tuning for PPC970 but AltiVec disabled.";
             fi
             POWERPCMODE="64bits"
         ;;
@@ -1580,17 +1580,17 @@ for thread in pthreads beosthreads os2threads w32threads; do
 done
 
 # these are off by default, so fail if requested and not available
-enabled libdts  && require libdts dts.h dts_init -ldts -lm
-enabled libgsm  && require libgsm gsm.h gsm_create -lgsm
+enabled libdts     && require libdts dts.h dts_init -ldts -lm
+enabled libgsm     && require libgsm gsm.h gsm_create -lgsm
 enabled libmp3lame && require LAME lame/lame.h lame_init -lmp3lame -lm
-enabled libtheora && require libtheora theora/theora.h theora_info_init -ltheora -logg
-enabled libvorbis && require libvorbis vorbis/vorbisenc.h vorbis_info_init -lvorbis -lvorbisenc -logg
-enabled libogg  && require libogg ogg/ogg.h ogg_sync_init -logg
-enabled libnut  && require libnut libnut.h nut_demuxer_init -lnut
-enabled xvid    && require XviD xvid.h xvid_global -lxvidcore
-enabled x264    && require x264 x264.h x264_encoder_open -lx264
-enabled dc1394  && require libdc1394 libdc1394/dc1394_control.h dc1394_create_handle -ldc1394_control -lraw1394
-enabled mlib    && require mediaLib mlib_types.h mlib_VectorSub_S16_U8_Mod -lmlib
+enabled libtheora  && require libtheora theora/theora.h theora_info_init -ltheora -logg
+enabled libvorbis  && require libvorbis vorbis/vorbisenc.h vorbis_info_init -lvorbis -lvorbisenc -logg
+enabled libogg     && require libogg ogg/ogg.h ogg_sync_init -logg
+enabled libnut     && require libnut libnut.h nut_demuxer_init -lnut
+enabled xvid       && require XviD xvid.h xvid_global -lxvidcore
+enabled x264       && require x264 x264.h x264_encoder_open -lx264
+enabled dc1394     && require libdc1394 libdc1394/dc1394_control.h dc1394_create_handle -ldc1394_control -lraw1394
+enabled mlib       && require mediaLib mlib_types.h mlib_VectorSub_S16_U8_Mod -lmlib
 
 # Ugh, libfaac uses stdcall calling convention on win32 so we can't use
 # the generic test functions
