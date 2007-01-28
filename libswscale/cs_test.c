@@ -80,7 +80,7 @@ int main(int argc, char **argv)
 		int srcBpp=0;
 		int dstBpp=0;
 
-		av_log(NULL, AV_LOG_INFO,"."); fflush(stdout);
+		av_log(NULL, AV_LOG_INFO,".");
 		memset(srcBuffer, srcByte, SIZE);
 
 		for(width=32; width<64; width++){
