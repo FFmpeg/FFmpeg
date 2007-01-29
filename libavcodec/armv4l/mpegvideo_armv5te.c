@@ -72,7 +72,7 @@ static inline void dct_unquantize_h263_helper_c(DCTELEM *block, int qmul, int qa
    int xqmul = xxqmul, xqadd = xxqadd, xcount = xxcount, xtmp; \
    int xdata1, xdata2; \
 __asm__ __volatile__( \
-        "subs %[count], #2                 \n\t" \
+        "subs %[count], %[count], #2       \n\t" \
         "ble 2f                            \n\t" \
         "ldrd r4, [%[block], #0]           \n\t" \
         "1:                                \n\t" \
@@ -128,11 +128,11 @@ __asm__ __volatile__( \
         "strh r7, [%[block]], #2            \n\t" \
         "strh %[data2], [%[block]], #2      \n\t" \
 \
-        "subs %[count], #8                  \n\t" \
+        "subs %[count], %[count], #8        \n\t" \
         "ldrgtd r4, [%[block], #0]          \n\t" /* load data early to avoid load/use pipeline stall */ \
         "bgt 1b                             \n\t" \
 \
-        "adds %[count], #2                  \n\t" \
+        "adds %[count], %[count], #2        \n\t" \
         "ble  3f                            \n\t" \
         "2:                                 \n\t" \
         "ldrsh %[data1], [%[block], #0]     \n\t" \
