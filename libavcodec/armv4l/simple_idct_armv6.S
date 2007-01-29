@@ -72,13 +72,13 @@ w57:    .long W57
         ldr    lr, [a1, #12]         /* lr = row[7,5] */
         pkhtb  a3, ip, v7, asr #16   /* a4 = W7 | (W3 << 16) */
         pkhbt  a2, ip, v7, lsl #16   /* a2 = W1 | (W5 << 16) */
+        smusdx v6, a3, a4            /* v6 = -B1 = W7*row[3] - W3*row[1] */
         smlad  v5, lr, v7, v5        /* B0 += W5*row[5] + W7*row[7] */
         smusdx v7, a4, a2            /* v7 = B2 = W5*row[1] - W1*row[3] */
-        smusdx v6, a3, a4            /* v6 = -B1 = W7*row[3] - W3*row[1] */
 
+        ldr    a4, [pc, #(w42n-.-8)] /* a4 = -W4 | (-W2 << 16) */
         smlad  v7, lr, a3, v7        /* B2 += W7*row[5] + W3*row[7] */
         ldr    a3, [a1, #4]          /* a3 = row[6,4] */
-        ldr    a4, [pc, #(w42n-.-8)] /* a4 = -W4 | (-W2 << 16) */
         smlsdx fp, lr, ip, fp        /* B3 += W3*row[5] - W1*row[7] */
         ldr    ip, [pc, #(w46-.-8)]  /* ip = W4 | (W6 << 16) */
         smlad  v6, lr, a2, v6        /* B1 -= W1*row[5] + W5*row[7] */
