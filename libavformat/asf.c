@@ -673,7 +673,8 @@ static int asf_read_packet(AVFormatContext *s, AVPacket *pkt)
             asf->packet_multi_size -= asf->packet_obj_size;
             //printf("COMPRESS size  %d  %d  %d   ms:%d\n", asf->packet_obj_size, asf->packet_frag_timestamp, asf->packet_size_left, asf->packet_multi_size);
         }
-        if (asf_st->pkt.size != asf->packet_obj_size) { //FIXME is this condition sufficient?
+        if (   asf_st->pkt.size != asf->packet_obj_size
+            || asf_st->frag_offset + asf->packet_frag_size > asf_st->pkt.size) { //FIXME is this condition sufficient?
             if(asf_st->pkt.data){
                 av_log(s, AV_LOG_INFO, "freeing incomplete packet size %d, new %d\n", asf_st->pkt.size, asf->packet_obj_size);
                 asf_st->frag_offset = 0;
